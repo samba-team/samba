@@ -747,6 +747,312 @@ static int net_sam_show(int argc, const char **argv)
 	return 0;
 }
 
+/*
+ * Init an LDAP tree with default users and Groups
+ * if ldapsam:editposix is enabled
+ */
+
+static int net_sam_provision(int argc, const char **argv)
+{
+	TALLOC_CTX *tc;
+	char *ldap_bk;
+	char *ldap_uri = NULL;
+	char *p;
+	struct smbldap_state *ls;
+	GROUP_MAP gmap;
+	DOM_SID gsid;
+	gid_t domusers_gid = -1;
+	struct samu *samuser;
+	struct passwd *pwd;
+
+	tc = talloc_new(NULL);
+	if (!tc) {
+		d_fprintf(stderr, "Out of Memory!\n");
+		return -1;
+	}
+
+	ldap_bk = talloc_strdup(tc, lp_passdb_backend());
+	p = strchr(ldap_bk, ':');
+	if (p) {
+		*p = 0;
+		ldap_uri = talloc_strdup(tc, p+1);
+		trim_char(ldap_uri, ' ', ' ');
+	}
+
+	trim_char(ldap_bk, ' ', ' ');
+	        
+	if (strcmp(ldap_bk, "ldapsam") != 0) {
+		d_fprintf(stderr, "Provisioning works only with ldapsam backend\n");
+		goto failed;
+	}
+	
+	if (!lp_parm_bool(-1, "ldapsam", "trusted", False) ||
+	    !lp_parm_bool(-1, "ldapsam", "editposix", False)) {
+
+		d_fprintf(stderr, "Provisioning works only if ldapsam:trusted"
+				  " and ldapsam:editposix are enabled.\n");
+		goto failed;
+	}
+
+	if (!winbind_ping()) {
+		d_fprintf(stderr, "winbind seems not to run. Provisioning "
+			  "LDAP only works when winbind runs.\n");
+		goto failed;
+	}
+
+	if (!NT_STATUS_IS_OK(smbldap_init(tc, ldap_uri, &ls))) {
+		d_fprintf(stderr, "Unable to connect to the LDAP server.\n");
+		goto failed;
+	}
+
+	d_printf("Checking for Domain Users group.\n");
+
+	sid_compose(&gsid, get_global_sam_sid(), DOMAIN_GROUP_RID_USERS);
+
+	if (!pdb_getgrsid(&gmap, gsid)) {
+		LDAPMod **mods = NULL;
+		char *dn;
+		char *uname;
+		char *wname;
+		char *gidstr;
+		char *gtype;
+		int rc;
+
+		d_printf("Adding the Domain Users group.\n");
+
+		/* lets allocate a new groupid for this group */
+		if (!winbind_allocate_gid(&domusers_gid)) {
+			d_fprintf(stderr, "Unable to allocate a new gid to create Domain Users group!\n");
+			goto domu_done;
+		}
+
+		uname = talloc_strdup(tc, "domusers");
+		wname = talloc_strdup(tc, "Domain Users");
+		dn = talloc_asprintf(tc, "cn=%s,%s", "domusers", lp_ldap_group_suffix());
+		gidstr = talloc_asprintf(tc, "%d", domusers_gid);
+		gtype = talloc_asprintf(tc, "%d", SID_NAME_DOM_GRP);
+
+		if (!uname || !wname || !dn || !gidstr || !gtype) {
+			d_fprintf(stderr, "Out of Memory!\n");
+			goto failed;
+		}
+
+		smbldap_set_mod(&mods, LDAP_MOD_ADD, "objectclass", LDAP_OBJ_POSIXGROUP);
+		smbldap_set_mod(&mods, LDAP_MOD_ADD, "objectClass", LDAP_OBJ_GROUPMAP);
+		smbldap_set_mod(&mods, LDAP_MOD_ADD, "cn", uname);
+		smbldap_set_mod(&mods, LDAP_MOD_ADD, "displayName", wname);
+		smbldap_set_mod(&mods, LDAP_MOD_ADD, "gidNumber", gidstr);
+		smbldap_set_mod(&mods, LDAP_MOD_ADD, "sambaSid", sid_string_static(&gsid));
+		smbldap_set_mod(&mods, LDAP_MOD_ADD, "sambaGroupType", gtype);
+
+		talloc_autofree_ldapmod(tc, mods);
+
+		rc = smbldap_add(ls, dn, mods);
+
+		if (rc != LDAP_SUCCESS) {
+			d_fprintf(stderr, "Failed to add Domain Users group to ldap directory\n");
+		}
+	} else {
+		d_printf("found!\n");
+	}	
+
+domu_done:
+
+	d_printf("Checking for Domain Admins group.\n");
+
+	sid_compose(&gsid, get_global_sam_sid(), DOMAIN_GROUP_RID_ADMINS);
+
+	if (!pdb_getgrsid(&gmap, gsid)) {
+		LDAPMod **mods = NULL;
+		char *dn;
+		char *uname;
+		char *wname;
+		char *gidstr;
+		char *gtype;
+		gid_t gid;
+		int rc;
+
+		d_printf("Adding the Domain Admins group.\n");
+
+		/* lets allocate a new groupid for this group */
+		if (!winbind_allocate_gid(&gid)) {
+			d_fprintf(stderr, "Unable to allocate a new gid to create Domain Admins group!\n");
+			goto doma_done;
+		}
+
+		uname = talloc_strdup(tc, "domadmins");
+		wname = talloc_strdup(tc, "Domain Admins");
+		dn = talloc_asprintf(tc, "cn=%s,%s", "domadmins", lp_ldap_group_suffix());
+		gidstr = talloc_asprintf(tc, "%d", gid);
+		gtype = talloc_asprintf(tc, "%d", SID_NAME_DOM_GRP);
+
+		if (!uname || !wname || !dn || !gidstr || !gtype) {
+			d_fprintf(stderr, "Out of Memory!\n");
+			goto failed;
+		}
+
+		smbldap_set_mod(&mods, LDAP_MOD_ADD, "objectclass", LDAP_OBJ_POSIXGROUP);
+		smbldap_set_mod(&mods, LDAP_MOD_ADD, "objectClass", LDAP_OBJ_GROUPMAP);
+		smbldap_set_mod(&mods, LDAP_MOD_ADD, "cn", uname);
+		smbldap_set_mod(&mods, LDAP_MOD_ADD, "displayName", wname);
+		smbldap_set_mod(&mods, LDAP_MOD_ADD, "gidNumber", gidstr);
+		smbldap_set_mod(&mods, LDAP_MOD_ADD, "sambaSid", sid_string_static(&gsid));
+		smbldap_set_mod(&mods, LDAP_MOD_ADD, "sambaGroupType", gtype);
+
+		talloc_autofree_ldapmod(tc, mods);
+
+		rc = smbldap_add(ls, dn, mods);
+
+		if (rc != LDAP_SUCCESS) {
+			d_fprintf(stderr, "Failed to add Domain Admins group to ldap directory\n");
+		}
+	} else {
+		d_printf("found!\n");
+	}
+
+doma_done:
+
+
+	d_printf("Checking for Guest user.\n");
+
+	samuser = samu_new(tc);
+	if (!samuser) {
+		d_fprintf(stderr, "Out of Memory!\n");
+		goto failed;
+	}
+
+	if (!pdb_getsampwnam(samuser, lp_guestaccount())) {
+		LDAPMod **mods = NULL;
+		DOM_SID sid;
+		char *dn;
+		char *uidstr;
+		char *gidstr;
+		int rc;
+		
+		d_printf("Adding the Guest user.\n");
+
+		pwd = getpwnam_alloc(NULL, lp_guestaccount());
+
+		if (!pwd) {
+			if (domusers_gid == -1) {
+				d_fprintf(stderr, "Can't create Guest user, Domain Users group not available!\n");
+				goto done;
+			}
+			pwd = talloc(tc, struct passwd);
+			pwd->pw_name = talloc_strdup(pwd, lp_guestaccount());
+			if (!winbind_allocate_uid(&(pwd->pw_uid))) {
+				d_fprintf(stderr, "Unable to allocate a new uid to create the Guest user!\n");
+				goto done;
+			}
+			pwd->pw_gid = domusers_gid;
+			pwd->pw_dir = talloc_strdup(tc, "/");
+			pwd->pw_shell = talloc_strdup(tc, "/bin/false");
+			if (!pwd->pw_dir || !pwd->pw_shell) {
+				d_fprintf(stderr, "Out of Memory!\n");
+				goto failed;
+			}
+		}
+
+		sid_compose(&sid, get_global_sam_sid(), DOMAIN_USER_RID_GUEST);
+
+		dn = talloc_asprintf(tc, "uid=%s,%s", pwd->pw_name, lp_ldap_user_suffix ());
+		uidstr = talloc_asprintf(tc, "%d", pwd->pw_uid);
+		gidstr = talloc_asprintf(tc, "%d", pwd->pw_gid);
+		if (!dn || !uidstr || !gidstr) {
+			d_fprintf(stderr, "Out of Memory!\n");
+			goto failed;
+		}
+
+		smbldap_set_mod(&mods, LDAP_MOD_ADD, "objectClass", LDAP_OBJ_ACCOUNT);
+		smbldap_set_mod(&mods, LDAP_MOD_ADD, "objectClass", LDAP_OBJ_POSIXACCOUNT);
+		smbldap_set_mod(&mods, LDAP_MOD_ADD, "objectClass", LDAP_OBJ_SAMBASAMACCOUNT);
+		smbldap_set_mod(&mods, LDAP_MOD_ADD, "uid", pwd->pw_name);
+		smbldap_set_mod(&mods, LDAP_MOD_ADD, "cn", pwd->pw_name);
+		smbldap_set_mod(&mods, LDAP_MOD_ADD, "displayName", pwd->pw_name);
+		smbldap_set_mod(&mods, LDAP_MOD_ADD, "uidNumber", uidstr);
+		smbldap_set_mod(&mods, LDAP_MOD_ADD, "gidNumber", gidstr);
+		smbldap_set_mod(&mods, LDAP_MOD_ADD, "sambaSID", sid_string_static(&sid));
+		smbldap_set_mod(&mods, LDAP_MOD_ADD, "homeDirectory", pwd->pw_dir);
+		smbldap_set_mod(&mods, LDAP_MOD_ADD, "loginShell", pwd->pw_shell);
+
+		talloc_autofree_ldapmod(tc, mods);
+
+		rc = smbldap_add(ls, dn, mods);
+
+		if (rc != LDAP_SUCCESS) {
+			d_fprintf(stderr, "Failed to add Guest user to ldap directory\n");
+		}
+	} else {
+		d_printf("found!\n");
+	}
+
+	d_printf("Checking Guest's group.\n");
+
+	pwd = getpwnam_alloc(NULL, lp_guestaccount());
+	if (!pwd) {
+		d_fprintf(stderr, "Failed to find just created Guest account!\n"
+				  "   Is nssswitch properly configured?!\n");
+		goto failed;
+	}
+
+	if (pwd->pw_gid == domusers_gid) {
+		d_printf("found!\n");
+		goto done;
+	}
+
+	if (!pdb_getgrgid(&gmap, pwd->pw_gid)) {
+		LDAPMod **mods = NULL;
+		char *dn;
+		char *uname;
+		char *wname;
+		char *gidstr;
+		char *gtype;
+		int rc;
+
+		d_printf("Adding the Domain Guests group.\n");
+
+		uname = talloc_strdup(tc, "domguests");
+		wname = talloc_strdup(tc, "Domain Guests");
+		dn = talloc_asprintf(tc, "cn=%s,%s", "domguests", lp_ldap_group_suffix());
+		gidstr = talloc_asprintf(tc, "%d", pwd->pw_gid);
+		gtype = talloc_asprintf(tc, "%d", SID_NAME_DOM_GRP);
+
+		if (!uname || !wname || !dn || !gidstr || !gtype) {
+			d_fprintf(stderr, "Out of Memory!\n");
+			goto failed;
+		}
+
+		sid_compose(&gsid, get_global_sam_sid(), DOMAIN_GROUP_RID_GUESTS);
+
+		smbldap_set_mod(&mods, LDAP_MOD_ADD, "objectclass", LDAP_OBJ_POSIXGROUP);
+		smbldap_set_mod(&mods, LDAP_MOD_ADD, "objectClass", LDAP_OBJ_GROUPMAP);
+		smbldap_set_mod(&mods, LDAP_MOD_ADD, "cn", uname);
+		smbldap_set_mod(&mods, LDAP_MOD_ADD, "displayName", wname);
+		smbldap_set_mod(&mods, LDAP_MOD_ADD, "gidNumber", gidstr);
+		smbldap_set_mod(&mods, LDAP_MOD_ADD, "sambaSid", sid_string_static(&gsid));
+		smbldap_set_mod(&mods, LDAP_MOD_ADD, "sambaGroupType", gtype);
+
+		talloc_autofree_ldapmod(tc, mods);
+
+		rc = smbldap_add(ls, dn, mods);
+
+		if (rc != LDAP_SUCCESS) {
+			d_fprintf(stderr, "Failed to add Domain Guests group to ldap directory\n");
+		}
+	} else {
+		d_printf("found!\n");
+	}
+
+
+done:
+	talloc_free(tc);
+	return 0;
+
+failed:
+	talloc_free(tc);
+	return -1;
+}
+
 /***********************************************************
  migrated functionality from smbgroupedit
  **********************************************************/
@@ -769,6 +1075,8 @@ int net_sam(int argc, const char **argv)
 		  "Show details of a SAM entry" },
 		{ "set", net_sam_set,
 		  "Set details of a SAM account" },
+		{ "provision", net_sam_provision,
+		  "Provision a clean User Database" },
 		{ NULL, NULL, NULL }
 	};
 
