@@ -762,6 +762,7 @@ static int net_sam_provision(int argc, const char **argv)
 	GROUP_MAP gmap;
 	DOM_SID gsid;
 	gid_t domusers_gid = -1;
+	gid_t domadmins_gid = -1;
 	struct samu *samuser;
 	struct passwd *pwd;
 
@@ -869,13 +870,12 @@ domu_done:
 		char *wname;
 		char *gidstr;
 		char *gtype;
-		gid_t gid;
 		int rc;
 
 		d_printf("Adding the Domain Admins group.\n");
 
 		/* lets allocate a new groupid for this group */
-		if (!winbind_allocate_gid(&gid)) {
+		if (!winbind_allocate_gid(&domadmins_gid)) {
 			d_fprintf(stderr, "Unable to allocate a new gid to create Domain Admins group!\n");
 			goto doma_done;
 		}
@@ -883,7 +883,7 @@ domu_done:
 		uname = talloc_strdup(tc, "domadmins");
 		wname = talloc_strdup(tc, "Domain Admins");
 		dn = talloc_asprintf(tc, "cn=%s,%s", "domadmins", lp_ldap_group_suffix());
-		gidstr = talloc_asprintf(tc, "%d", gid);
+		gidstr = talloc_asprintf(tc, "%d", domadmins_gid);
 		gtype = talloc_asprintf(tc, "%d", SID_NAME_DOM_GRP);
 
 		if (!uname || !wname || !dn || !gidstr || !gtype) {
@@ -912,6 +912,81 @@ domu_done:
 
 doma_done:
 
+	d_printf("Check for Administrator account.\n");
+
+	samuser = samu_new(tc);
+	if (!samuser) {
+		d_fprintf(stderr, "Out of Memory!\n");
+		goto failed;
+	}
+
+	if (!pdb_getsampwnam(samuser, "Administrator")) {
+		LDAPMod **mods = NULL;
+		DOM_SID sid;
+		char *dn;
+		char *name;
+		char *uidstr;
+		char *gidstr;
+		char *shell;
+		char *dir;
+		uid_t uid;
+		int rc;
+		
+		d_printf("Adding the Administrator user.\n");
+
+		if (domadmins_gid == -1) {
+			d_fprintf(stderr, "Can't create Administrtor user, Domain Admins group not available!\n");
+			goto done;
+		}
+		if (!winbind_allocate_uid(&uid)) {
+			d_fprintf(stderr, "Unable to allocate a new uid to create the Administrator user!\n");
+			goto done;
+		}
+		name = talloc_strdup(tc, "Administrator");
+		dn = talloc_asprintf(tc, "uid=Administrator,%s", lp_ldap_user_suffix());
+		uidstr = talloc_asprintf(tc, "%d", uid);
+		gidstr = talloc_asprintf(tc, "%d", domadmins_gid);
+		dir = talloc_sub_specified(tc, lp_template_homedir(),
+						"Administrator",
+						get_global_sam_name(),
+						uid, domadmins_gid);
+		shell = talloc_sub_specified(tc, lp_template_shell(),
+						"Administrator",
+						get_global_sam_name(),
+						uid, domadmins_gid);
+
+		if (!name || !dn || !uidstr || !gidstr || !dir || !shell) {
+			d_fprintf(stderr, "Out of Memory!\n");
+			goto failed;
+		}
+
+		sid_compose(&sid, get_global_sam_sid(), DOMAIN_USER_RID_ADMIN);
+
+		smbldap_set_mod(&mods, LDAP_MOD_ADD, "objectClass", LDAP_OBJ_ACCOUNT);
+		smbldap_set_mod(&mods, LDAP_MOD_ADD, "objectClass", LDAP_OBJ_POSIXACCOUNT);
+		smbldap_set_mod(&mods, LDAP_MOD_ADD, "objectClass", LDAP_OBJ_SAMBASAMACCOUNT);
+		smbldap_set_mod(&mods, LDAP_MOD_ADD, "uid", name);
+		smbldap_set_mod(&mods, LDAP_MOD_ADD, "cn", name);
+		smbldap_set_mod(&mods, LDAP_MOD_ADD, "displayName", name);
+		smbldap_set_mod(&mods, LDAP_MOD_ADD, "uidNumber", uidstr);
+		smbldap_set_mod(&mods, LDAP_MOD_ADD, "gidNumber", gidstr);
+		smbldap_set_mod(&mods, LDAP_MOD_ADD, "homeDirectory", dir);
+		smbldap_set_mod(&mods, LDAP_MOD_ADD, "loginShell", shell);
+		smbldap_set_mod(&mods, LDAP_MOD_ADD, "sambaSID", sid_string_static(&sid));
+		smbldap_set_mod(&mods, LDAP_MOD_ADD, "sambaAcctFlags",
+				pdb_encode_acct_ctrl(ACB_NORMAL|ACB_DISABLED,
+				NEW_PW_FORMAT_SPACE_PADDED_LEN));
+
+		talloc_autofree_ldapmod(tc, mods);
+
+		rc = smbldap_add(ls, dn, mods);
+
+		if (rc != LDAP_SUCCESS) {
+			d_fprintf(stderr, "Failed to add Administrator user to ldap directory\n");
+		}
+	} else {
+		d_printf("found!\n");
+	}
 
 	d_printf("Checking for Guest user.\n");
 
@@ -931,7 +1006,7 @@ doma_done:
 		
 		d_printf("Adding the Guest user.\n");
 
-		pwd = getpwnam_alloc(NULL, lp_guestaccount());
+		pwd = getpwnam_alloc(tc, lp_guestaccount());
 
 		if (!pwd) {
 			if (domusers_gid == -1) {
@@ -971,9 +1046,12 @@ doma_done:
 		smbldap_set_mod(&mods, LDAP_MOD_ADD, "displayName", pwd->pw_name);
 		smbldap_set_mod(&mods, LDAP_MOD_ADD, "uidNumber", uidstr);
 		smbldap_set_mod(&mods, LDAP_MOD_ADD, "gidNumber", gidstr);
-		smbldap_set_mod(&mods, LDAP_MOD_ADD, "sambaSID", sid_string_static(&sid));
 		smbldap_set_mod(&mods, LDAP_MOD_ADD, "homeDirectory", pwd->pw_dir);
 		smbldap_set_mod(&mods, LDAP_MOD_ADD, "loginShell", pwd->pw_shell);
+		smbldap_set_mod(&mods, LDAP_MOD_ADD, "sambaSID", sid_string_static(&sid));
+		smbldap_set_mod(&mods, LDAP_MOD_ADD, "sambaAcctFlags",
+				pdb_encode_acct_ctrl(ACB_NORMAL|ACB_DISABLED,
+				NEW_PW_FORMAT_SPACE_PADDED_LEN));
 
 		talloc_autofree_ldapmod(tc, mods);
 
