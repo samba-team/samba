@@ -2174,7 +2174,23 @@ SPOOL_R_GETPRINTPROCESSORDIRECTORY;
 
 /**************************************/
 
-typedef struct spool_q_xcvdataport {
+typedef struct {
+	UNISTR portname;	/* constant 64 wchars */
+	uint32 version;
+	uint32 protocol;
+	uint32 size;
+	uint32 reserved;
+	UNISTR hostaddress;	/* constant 49 wchars */
+	UNISTR snmpcommunity;	/* constant 33 wchars */
+	uint32 dblspool;
+	UNISTR queue;		/* constant 33 wchars */
+	UNISTR ipaddress;	/* constant 17 wchars */
+	uint32 port;
+	uint32 snmpenabled;
+	uint32 snmpdevindex;
+} SPOOL_PORT_DATA_1;
+
+typedef struct {
 	POLICY_HND handle;
 	UNISTR2 dataname;
 	RPC_BUFFER indata;
@@ -2183,7 +2199,7 @@ typedef struct spool_q_xcvdataport {
 	uint32 unknown;
 } SPOOL_Q_XCVDATAPORT;
 
-typedef struct spool_r_xcvdataport {
+typedef struct {
 	RPC_BUFFER outdata;
 	uint32 needed;
 	uint32 unknown;
