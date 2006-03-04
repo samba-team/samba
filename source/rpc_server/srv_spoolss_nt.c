@@ -91,7 +91,7 @@ extern STANDARD_MAPPING printer_std_mapping, printserver_std_mapping;
 
 struct xcv_api_table {
 	const char *name;
-	WERROR(*fn) (RPC_BUFFER *in, RPC_BUFFER *out, uint32 *needed);
+	WERROR(*fn) (NT_USER_TOKEN *token, RPC_BUFFER *in, RPC_BUFFER *out, uint32 *needed);
 };
 
 
@@ -5956,6 +5956,52 @@ static BOOL check_printer_ok(NT_PRINTER_INFO_LEVEL_2 *info, int snum)
 /****************************************************************************
 ****************************************************************************/
 
+WERROR add_port_hook(NT_USER_TOKEN *token, const char *portname, const char *uri )
+{
+	char *cmd = lp_addport_cmd();
+	pstring command;
+	int ret;
+	int fd;
+	SE_PRIV se_printop = SE_PRINT_OPERATOR;
+	BOOL is_print_op = False;
+
+	if ( !*cmd ) {
+		return WERR_ACCESS_DENIED;
+	}
+		
+	slprintf(command, sizeof(command)-1, "%s \"%s\" \"%s\"", cmd, portname, uri );
+
+	if ( token )
+		is_print_op = user_has_privileges( token, &se_printop );
+
+	DEBUG(10,("Running [%s]\n", command));
+
+	/********* BEGIN SePrintOperatorPrivilege **********/
+
+	if ( is_print_op )
+		become_root();
+	
+	ret = smbrun(command, &fd);
+
+	if ( is_print_op )
+		unbecome_root();
+
+	/********* END SePrintOperatorPrivilege **********/
+
+	DEBUGADD(10,("returned [%d]\n", ret));
+
+	if ( ret != 0 ) {
+		if (fd != -1)
+			close(fd);
+		return WERR_ACCESS_DENIED;
+	}
+	
+	return WERR_OK;
+}
+
+/****************************************************************************
+****************************************************************************/
+
 BOOL add_printer_hook(NT_USER_TOKEN *token, NT_PRINTER_INFO_LEVEL *printer)
 {
 	char *cmd = lp_addprinter_cmd();
@@ -6024,6 +6070,7 @@ BOOL add_printer_hook(NT_USER_TOKEN *token, NT_PRINTER_INFO_LEVEL *printer)
 	file_lines_free(qlines);
 	return True;
 }
+
 
 /********************************************************************
  * Called by spoolss_api_setprinter
@@ -9400,7 +9447,8 @@ WERROR _spoolss_getprintprocessordirectory(pipes_struct *p, SPOOL_Q_GETPRINTPROC
  Streams the monitor UI DLL name in UNICODE
 *******************************************************************/
 
-static WERROR xcvtcp_monitorui( RPC_BUFFER *in, RPC_BUFFER *out, uint32 *needed )
+static WERROR xcvtcp_monitorui( NT_USER_TOKEN *token, RPC_BUFFER *in, 
+                                RPC_BUFFER *out, uint32 *needed )
 {
 	const char *dllname = "tcpmonui.dll";
 	
@@ -9418,15 +9466,53 @@ static WERROR xcvtcp_monitorui( RPC_BUFFER *in, RPC_BUFFER *out, uint32 *needed 
 }
 
 /*******************************************************************
+ Create a new TCP/IP port
+*******************************************************************/
+
+static WERROR xcvtcp_addport( NT_USER_TOKEN *token, RPC_BUFFER *in, 
+                              RPC_BUFFER *out, uint32 *needed )
+{
+	NT_PORT_DATA_1 port1;
+	pstring device_uri;
+
+	ZERO_STRUCT( port1 );
+
+	/* convert to our internal port data structure */
+
+	if ( !convert_port_data_1( &port1, in ) ) {
+		return WERR_NOMEM;
+	}
+
+	/* create the device URI and call the add_port_hook() */
+
+	switch ( port1.protocol ) {
+	case PORT_PROTOCOL_DIRECT:
+		pstr_sprintf( device_uri, "socket://%s:%d/", port1.hostaddr, port1.port );
+		break;
+
+	case PORT_PROTOCOL_LPR:
+		pstr_sprintf( device_uri, "lpr://%s/%s", port1.hostaddr, port1.queue );
+		break;
+	
+	default:
+		return WERR_UNKNOWN_PORT;
+	}
+
+	return add_port_hook( token, port1.name, device_uri );
+}
+
+/*******************************************************************
 *******************************************************************/
 
 struct xcv_api_table xcvtcp_cmds[] = {
 	{ "MonitorUI",	xcvtcp_monitorui },
+	{ "AddPort",	xcvtcp_addport},
 	{ NULL,		NULL }
 };
 
-static WERROR process_xcvtcp_command( const char *command, RPC_BUFFER *inbuf,
-                                        RPC_BUFFER *outbuf, uint32 *needed )
+static WERROR process_xcvtcp_command( NT_USER_TOKEN *token, const char *command, 
+                                      RPC_BUFFER *inbuf, RPC_BUFFER *outbuf, 
+                                      uint32 *needed )
 {
 	int i;
 	
@@ -9434,7 +9520,7 @@ static WERROR process_xcvtcp_command( const char *command, RPC_BUFFER *inbuf,
 	
 	for ( i=0; xcvtcp_cmds[i].name; i++ ) {
 		if ( strcmp( command, xcvtcp_cmds[i].name ) == 0 )
-			return xcvtcp_cmds[i].fn( inbuf, outbuf, needed );
+			return xcvtcp_cmds[i].fn( token, inbuf, outbuf, needed );
 	}
 	
 	return WERR_BADFUNC;
@@ -9443,7 +9529,8 @@ static WERROR process_xcvtcp_command( const char *command, RPC_BUFFER *inbuf,
 /*******************************************************************
 *******************************************************************/
 
-static WERROR xcvlocal_monitorui( RPC_BUFFER *in, RPC_BUFFER *out, uint32 *needed )
+static WERROR xcvlocal_monitorui( NT_USER_TOKEN *token, RPC_BUFFER *in, 
+                                  RPC_BUFFER *out, uint32 *needed )
 {
 	const char *dllname = "localui.dll";
 	
@@ -9472,8 +9559,9 @@ struct xcv_api_table xcvlocal_cmds[] = {
 /*******************************************************************
 *******************************************************************/
 
-static WERROR process_xcvlocal_command( const char *command, RPC_BUFFER *inbuf, 
-                                        RPC_BUFFER *outbuf, uint32 *needed )
+static WERROR process_xcvlocal_command( NT_USER_TOKEN *token, const char *command, 
+                                        RPC_BUFFER *inbuf, RPC_BUFFER *outbuf, 
+					uint32 *needed )
 {
 	int i;
 	
@@ -9482,7 +9570,7 @@ static WERROR process_xcvlocal_command( const char *command, RPC_BUFFER *inbuf,
 
 	for ( i=0; xcvlocal_cmds[i].name; i++ ) {
 		if ( strcmp( command, xcvlocal_cmds[i].name ) == 0 )
-			return xcvlocal_cmds[i].fn( inbuf, outbuf , needed );
+			return xcvlocal_cmds[i].fn( token, inbuf, outbuf , needed );
 	}
 	return WERR_BADFUNC;
 }
@@ -9526,9 +9614,11 @@ WERROR _spoolss_xcvdataport(pipes_struct *p, SPOOL_Q_XCVDATAPORT *q_u, SPOOL_R_X
 	
 	switch ( Printer->printer_type ) {
 	case SPLHND_PORTMON_TCP:
-		return process_xcvtcp_command( command, &q_u->indata, &r_u->outdata, &r_u->needed );
+		return process_xcvtcp_command( p->pipe_user.nt_user_token, command, 
+			&q_u->indata, &r_u->outdata, &r_u->needed );
 	case SPLHND_PORTMON_LOCAL:
-		return process_xcvlocal_command( command, &q_u->indata, &r_u->outdata, &r_u->needed );
+		return process_xcvlocal_command( p->pipe_user.nt_user_token, command, 
+			&q_u->indata, &r_u->outdata, &r_u->needed );
 	}
 
 	return WERR_INVALID_PRINT_MONITOR;

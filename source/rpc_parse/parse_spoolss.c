@@ -7488,3 +7488,103 @@ BOOL make_monitorui_buf( RPC_BUFFER *buf, const char *dllname )
 
 	return True;
 }
+
+/*******************************************************************
+ ********************************************************************/  
+
+static BOOL smb_io_port_data_1( const char *desc, RPC_BUFFER *buf, int depth, SPOOL_PORT_DATA_1 *p1 )
+{
+	prs_struct *ps = &buf->prs;
+	uint8 *fodder;
+
+	prs_debug(ps, depth, desc, "smb_io_port_data_1");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;	
+		
+	if ( UNMARSHALLING(ps) ) {
+		p1->portname.buffer = PRS_ALLOC_MEM( ps, uint16, 64 );
+		p1->hostaddress.buffer = PRS_ALLOC_MEM( ps, uint16, 49 );
+		p1->snmpcommunity.buffer = PRS_ALLOC_MEM( ps, uint16, 33 );
+		p1->queue.buffer = PRS_ALLOC_MEM( ps, uint16, 33 );
+		p1->ipaddress.buffer = PRS_ALLOC_MEM( ps, uint16, 17 );	
+		fodder = PRS_ALLOC_MEM( ps, uint8, 540 );	
+	}
+
+	if( !prs_uint16s(True, "portname", ps, depth, p1->portname.buffer, 64))
+		return False;
+
+	if (!prs_uint32("version", ps, depth, &p1->version))
+		return False;
+	if (!prs_uint32("protocol", ps, depth, &p1->protocol))
+		return False;
+	if (!prs_uint32("size", ps, depth, &p1->size))
+		return False;
+	if (!prs_uint32("reserved", ps, depth, &p1->reserved))
+		return False;
+
+	if( !prs_uint16s(True, "hostaddress", ps, depth, p1->hostaddress.buffer, 49))
+		return False;
+	if( !prs_uint16s(True, "snmpcommunity", ps, depth, p1->snmpcommunity.buffer, 33))
+		return False;
+
+	if (!prs_uint32("dblspool", ps, depth, &p1->dblspool))
+		return False;
+		
+	if( !prs_uint16s(True, "queue", ps, depth, p1->queue.buffer, 33))
+		return False;
+	if( !prs_uint16s(True, "ipaddress", ps, depth, p1->ipaddress.buffer, 17))
+		return False;
+
+	/* fodder according to MSDN */
+	if( !prs_uint8s(False, "", ps, depth, fodder, 540))
+		return False;
+		
+	if (!prs_uint32("port", ps, depth, &p1->port))
+		return False;
+	if (!prs_uint32("snmpenabled", ps, depth, &p1->snmpenabled))
+		return False;
+	if (!prs_uint32("snmpdevindex", ps, depth, &p1->snmpdevindex))
+		return False;
+		
+	return True;
+}
+
+/*******************************************************************
+ ********************************************************************/  
+
+BOOL convert_port_data_1( NT_PORT_DATA_1 *port1, RPC_BUFFER *buf ) 
+{
+	SPOOL_PORT_DATA_1 spdata_1;
+	
+	ZERO_STRUCT( spdata_1 );
+	
+	if ( !smb_io_port_data_1( "port_data_1", buf, 0, &spdata_1 ) )
+		return False;
+		
+	rpcstr_pull(port1->name, spdata_1.portname.buffer, sizeof(port1->name),
+		-1, 0);
+	rpcstr_pull(port1->queue, spdata_1.queue.buffer, sizeof(port1->queue), 
+		-1, 0);
+	rpcstr_pull(port1->hostaddr, spdata_1.hostaddress.buffer, 
+		sizeof(port1->hostaddr), -1, 0);
+	
+	port1->port = spdata_1.port;
+	
+	switch ( spdata_1.protocol ) {
+	case 1:
+		port1->protocol = PORT_PROTOCOL_DIRECT;
+		break;
+	case 2:
+		port1->protocol = PORT_PROTOCOL_LPR;
+		break;
+	default:
+		DEBUG(3,("convert_port_data_1: unknown protocol [%d]!\n", 
+			spdata_1.protocol));
+		return False;
+	}
+
+	return True;
+}
+
