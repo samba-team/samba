@@ -1970,7 +1970,7 @@ static NTSTATUS ldapsam_add_sam_account(struct pdb_methods *my_methods, struct s
 		num_result = ldap_count_entries(ldap_state->smbldap_state->ldap_struct, result);
 		
 		if (num_result > 1) {
-			DEBUG (0, ("ldapsam_add_sam_account: More than one user with that uid exists: bailing out!\n"));
+			DEBUG (0, ("ldapsam_add_sam_account: More than one user with specified Sid exists: bailing out!\n"));
 			TALLOC_FREE( attr_list );
 			ldap_msgfree(result);
 			return NT_STATUS_UNSUCCESSFUL;
