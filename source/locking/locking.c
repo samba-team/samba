@@ -81,24 +81,24 @@ BOOL is_locked(files_struct *fsp,
 	int snum = SNUM(fsp->conn);
 	int strict_locking = lp_strict_locking(snum);
 	enum brl_flavour lock_flav = lp_posix_cifsu_locktype();
-	BOOL ret;
+	BOOL ret = True;
 	
 	if (count == 0) {
-		return(False);
+		return False;
 	}
 
 	if (!lp_locking(snum) || !strict_locking) {
-		return(False);
+		return False;
 	}
 
 	if (strict_locking == Auto) {
 		if  (EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type) && (lock_type == READ_LOCK || lock_type == WRITE_LOCK)) {
 			DEBUG(10,("is_locked: optimisation - exclusive oplock on file %s\n", fsp->fsp_name ));
-			ret = 0;
+			ret = False;
 		} else if ((fsp->oplock_type == LEVEL_II_OPLOCK) &&
 			   (lock_type == READ_LOCK)) {
 			DEBUG(10,("is_locked: optimisation - level II oplock on file %s\n", fsp->fsp_name ));
-			ret = 0;
+			ret = False;
 		} else {
 			struct byte_range_lock *br_lck = brl_get_locks(NULL, fsp);
 			ret = !brl_locktest(br_lck,
