@@ -398,7 +398,7 @@ static int sockaddr_convert_from_un(const struct socket_info *si,
 	return -1;
 }
 
-int swrap_socket(int domain, int type, int protocol)
+_PUBLIC_ int swrap_socket(int domain, int type, int protocol)
 {
 	struct socket_info *si;
 	int fd;
@@ -423,7 +423,7 @@ int swrap_socket(int domain, int type, int protocol)
 	return si->fd;
 }
 
-int swrap_accept(int s, struct sockaddr *addr, socklen_t *addrlen)
+_PUBLIC_ int swrap_accept(int s, struct sockaddr *addr, socklen_t *addrlen)
 {
 	struct socket_info *parent_si, *child_si;
 	int fd;
@@ -537,7 +537,7 @@ static int swrap_auto_bind(struct socket_info *si)
 }
 
 
-int swrap_connect(int s, const struct sockaddr *serv_addr, socklen_t addrlen)
+_PUBLIC_ int swrap_connect(int s, const struct sockaddr *serv_addr, socklen_t addrlen)
 {
 	int ret;
 	struct sockaddr_un un_addr;
@@ -573,7 +573,7 @@ int swrap_connect(int s, const struct sockaddr *serv_addr, socklen_t addrlen)
 	return ret;
 }
 
-int swrap_bind(int s, const struct sockaddr *myaddr, socklen_t addrlen)
+_PUBLIC_ int swrap_bind(int s, const struct sockaddr *myaddr, socklen_t addrlen)
 {
 	int ret;
 	struct sockaddr_un un_addr;
@@ -601,7 +601,7 @@ int swrap_bind(int s, const struct sockaddr *myaddr, socklen_t addrlen)
 	return ret;
 }
 
-int swrap_getpeername(int s, struct sockaddr *name, socklen_t *addrlen)
+_PUBLIC_ int swrap_getpeername(int s, struct sockaddr *name, socklen_t *addrlen)
 {
 	struct socket_info *si = find_socket_info(s);
 
@@ -621,7 +621,7 @@ int swrap_getpeername(int s, struct sockaddr *name, socklen_t *addrlen)
 	return 0;
 }
 
-int swrap_getsockname(int s, struct sockaddr *name, socklen_t *addrlen)
+_PUBLIC_ int swrap_getsockname(int s, struct sockaddr *name, socklen_t *addrlen)
 {
 	struct socket_info *si = find_socket_info(s);
 
@@ -635,7 +635,7 @@ int swrap_getsockname(int s, struct sockaddr *name, socklen_t *addrlen)
 	return 0;
 }
 
-int swrap_getsockopt(int s, int level, int optname, void *optval, socklen_t *optlen)
+_PUBLIC_ int swrap_getsockopt(int s, int level, int optname, void *optval, socklen_t *optlen)
 {
 	struct socket_info *si = find_socket_info(s);
 
@@ -656,7 +656,7 @@ int swrap_getsockopt(int s, int level, int optname, void *optval, socklen_t *opt
 	}
 }
 
-int swrap_setsockopt(int s, int  level,  int  optname,  const  void  *optval, socklen_t optlen)
+_PUBLIC_ int swrap_setsockopt(int s, int  level,  int  optname,  const  void  *optval, socklen_t optlen)
 {
 	struct socket_info *si = find_socket_info(s);
 
@@ -683,7 +683,7 @@ int swrap_setsockopt(int s, int  level,  int  optname,  const  void  *optval, so
 	}
 }
 
-ssize_t swrap_recvfrom(int s, void *buf, size_t len, int flags, struct sockaddr *from, socklen_t *fromlen)
+_PUBLIC_ ssize_t swrap_recvfrom(int s, void *buf, size_t len, int flags, struct sockaddr *from, socklen_t *fromlen)
 {
 	struct sockaddr_un un_addr;
 	socklen_t un_addrlen = sizeof(un_addr);
@@ -709,7 +709,7 @@ ssize_t swrap_recvfrom(int s, void *buf, size_t len, int flags, struct sockaddr 
 }
 
 
-ssize_t swrap_sendto(int  s,  const  void *buf, size_t len, int flags, const struct sockaddr *to, socklen_t tolen)
+_PUBLIC_ ssize_t swrap_sendto(int  s,  const  void *buf, size_t len, int flags, const struct sockaddr *to, socklen_t tolen)
 {
 	struct sockaddr_un un_addr;
 	int ret;
@@ -759,7 +759,7 @@ ssize_t swrap_sendto(int  s,  const  void *buf, size_t len, int flags, const str
 	return ret;
 }
 
-int swrap_close(int fd)
+_PUBLIC_ int swrap_close(int fd)
 {
 	struct socket_info *si = find_socket_info(fd);
 

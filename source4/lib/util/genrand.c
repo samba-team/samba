@@ -40,13 +40,13 @@ static void (*reseed_callback)(int *newseed);
  Copy any user given reseed data.
 **/
 
-void set_rand_reseed_callback(void (*fn)(int *))
+_PUBLIC_ void set_rand_reseed_callback(void (*fn)(int *))
 {
 	reseed_callback = fn;
 	set_need_random_reseed();
 }
 
-void set_need_random_reseed(void)
+_PUBLIC_ void set_need_random_reseed(void)
 {
 	done_reseed = False;
 }
@@ -204,7 +204,7 @@ static int do_reseed(BOOL use_fd, int fd)
 /**
  Interface to the (hopefully) good crypto random number generator.
 **/
-void generate_random_buffer(uint8_t *out, int len)
+_PUBLIC_ void generate_random_buffer(uint8_t *out, int len)
 {
 	static int urand_fd = -1;
 	unsigned char md4_buf[64];
@@ -250,7 +250,7 @@ void generate_random_buffer(uint8_t *out, int len)
 /**
   generate a single random uint32_t
 **/
-uint32_t generate_random(void)
+_PUBLIC_ uint32_t generate_random(void)
 {
 	uint8_t v[4];
 	generate_random_buffer(v, 4);
@@ -261,7 +261,7 @@ uint32_t generate_random(void)
 /**
   very basic password quality checker
 **/
-BOOL check_password_quality(const char *s)
+_PUBLIC_ BOOL check_password_quality(const char *s)
 {
 	int has_digit=0, has_capital=0, has_lower=0;
 	while (*s) {
@@ -282,7 +282,7 @@ BOOL check_password_quality(const char *s)
  Use the random number generator to generate a random string.
 **/
 
-char *generate_random_str_list(TALLOC_CTX *mem_ctx, size_t len, const char *list)
+_PUBLIC_ char *generate_random_str_list(TALLOC_CTX *mem_ctx, size_t len, const char *list)
 {
 	size_t i;
 	size_t list_len = strlen(list);
@@ -299,7 +299,7 @@ char *generate_random_str_list(TALLOC_CTX *mem_ctx, size_t len, const char *list
 	return retstr;
 }
 
-char *generate_random_str(TALLOC_CTX *mem_ctx, size_t len)
+_PUBLIC_ char *generate_random_str(TALLOC_CTX *mem_ctx, size_t len)
 {
 	char *retstr;
 	const char *c_list = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+_-#.,";

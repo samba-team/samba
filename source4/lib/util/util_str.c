@@ -40,7 +40,7 @@
  * Based on a routine by GJC@VILLAGE.COM. 
  * Extensively modified by Andrew.Tridgell@anu.edu.au
  **/
-BOOL next_token(const char **ptr,char *buff, const char *sep, size_t bufsize)
+_PUBLIC_ BOOL next_token(const char **ptr,char *buff, const char *sep, size_t bufsize)
 {
 	const char *s;
 	BOOL quoted;
@@ -82,7 +82,7 @@ BOOL next_token(const char **ptr,char *buff, const char *sep, size_t bufsize)
 /**
  Case insensitive string compararison
 **/
-int strcasecmp_m(const char *s1, const char *s2)
+_PUBLIC_ int strcasecmp_m(const char *s1, const char *s2)
 {
 	codepoint_t c1=0, c2=0;
 	size_t size1, size2;
@@ -117,7 +117,7 @@ int strcasecmp_m(const char *s1, const char *s2)
  *
  * @note The comparison is case-insensitive.
  **/
-BOOL strequal(const char *s1, const char *s2)
+_PUBLIC_ BOOL strequal(const char *s1, const char *s2)
 {
 	if (s1 == s2)
 		return(True);
@@ -130,7 +130,7 @@ BOOL strequal(const char *s1, const char *s2)
 /**
  Compare 2 strings (case sensitive).
 **/
-BOOL strcsequal(const char *s1,const char *s2)
+_PUBLIC_ BOOL strcsequal(const char *s1,const char *s2)
 {
 	if (s1 == s2)
 		return(True);
@@ -144,7 +144,7 @@ BOOL strcsequal(const char *s1,const char *s2)
 /**
 Do a case-insensitive, whitespace-ignoring string compare.
 **/
-int strwicmp(const char *psz1, const char *psz2)
+_PUBLIC_ int strwicmp(const char *psz1, const char *psz2)
 {
 	/* if BOTH strings are NULL, return TRUE, if ONE is NULL return */
 	/* appropriate value. */
@@ -175,7 +175,7 @@ int strwicmp(const char *psz1, const char *psz2)
  String replace.
  NOTE: oldc and newc must be 7 bit characters
 **/
-void string_replace(char *s, char oldc, char newc)
+_PUBLIC_ void string_replace(char *s, char oldc, char newc)
 {
 	while (*s) {
 		size_t size;
@@ -190,7 +190,7 @@ void string_replace(char *s, char oldc, char newc)
 /**
  Trim the specified elements off the front and back of a string.
 **/
-BOOL trim_string(char *s,const char *front,const char *back)
+_PUBLIC_ BOOL trim_string(char *s,const char *front,const char *back)
 {
 	BOOL ret = False;
 	size_t front_len;
@@ -229,7 +229,7 @@ BOOL trim_string(char *s,const char *front,const char *back)
 /**
  Find the number of 'c' chars in a string
 **/
-size_t count_chars(const char *s, char c)
+_PUBLIC_ size_t count_chars(const char *s, char c)
 {
 	size_t count = 0;
 
@@ -247,7 +247,7 @@ size_t count_chars(const char *s, char c)
  Safe string copy into a known length string. maxlength does not
  include the terminating zero.
 **/
-char *safe_strcpy(char *dest,const char *src, size_t maxlength)
+_PUBLIC_ char *safe_strcpy(char *dest,const char *src, size_t maxlength)
 {
 	size_t len;
 
@@ -289,7 +289,7 @@ char *safe_strcpy(char *dest,const char *src, size_t maxlength)
  Safe string cat into a string. maxlength does not
  include the terminating zero.
 **/
-char *safe_strcat(char *dest, const char *src, size_t maxlength)
+_PUBLIC_ char *safe_strcat(char *dest, const char *src, size_t maxlength)
 {
 	size_t src_len, dest_len;
 
@@ -331,7 +331,7 @@ char *safe_strcat(char *dest, const char *src, size_t maxlength)
  characters. Don't change it !
 **/
 
-char *alpha_strcpy(char *dest, const char *src, const char *other_safe_chars, size_t maxlength)
+_PUBLIC_ char *alpha_strcpy(char *dest, const char *src, const char *other_safe_chars, size_t maxlength)
 {
 	size_t len, i;
 
@@ -375,7 +375,7 @@ char *alpha_strcpy(char *dest, const char *src, const char *other_safe_chars, si
  The variable n should always be one less than the available size.
 **/
 
-char *StrnCpy(char *dest,const char *src,size_t n)
+_PUBLIC_ char *StrnCpy(char *dest,const char *src,size_t n)
 {
 	char *d = dest;
 	if (!dest)
@@ -401,7 +401,7 @@ char *StrnCpy(char *dest,const char *src,size_t n)
 
 
 **/
-size_t strhex_to_str(char *p, size_t len, const char *strhex)
+_PUBLIC_ size_t strhex_to_str(char *p, size_t len, const char *strhex)
 {
 	size_t i;
 	size_t num_chars = 0;
@@ -436,7 +436,7 @@ size_t strhex_to_str(char *p, size_t len, const char *strhex)
 	return num_chars;
 }
 
-DATA_BLOB strhex_to_data_blob(const char *strhex) 
+_PUBLIC_ DATA_BLOB strhex_to_data_blob(const char *strhex) 
 {
 	DATA_BLOB ret_blob = data_blob(NULL, strlen(strhex)/2+1);
 
@@ -451,7 +451,7 @@ DATA_BLOB strhex_to_data_blob(const char *strhex)
 /**
  * Routine to print a buffer as HEX digits, into an allocated string.
  */
-void hex_encode(const unsigned char *buff_in, size_t len, char **out_hex_buffer)
+_PUBLIC_ void hex_encode(const unsigned char *buff_in, size_t len, char **out_hex_buffer)
 {
 	int i;
 	char *hex_buffer;
@@ -466,7 +466,7 @@ void hex_encode(const unsigned char *buff_in, size_t len, char **out_hex_buffer)
 /**
  Check if a string is part of a list.
 **/
-BOOL in_list(const char *s, const char *list, BOOL casesensitive)
+_PUBLIC_ BOOL in_list(const char *s, const char *list, BOOL casesensitive)
 {
 	pstring tok;
 	const char *p=list;
@@ -504,7 +504,7 @@ static BOOL string_init(char **dest,const char *src)
 /**
  Free a string value.
 **/
-void string_free(char **s)
+_PUBLIC_ void string_free(char **s)
 {
 	if (s) SAFE_FREE(*s);
 }
@@ -513,7 +513,7 @@ void string_free(char **s)
  Set a string value, deallocating any existing space, and allocing the space
  for the string
 **/
-BOOL string_set(char **dest, const char *src)
+_PUBLIC_ BOOL string_set(char **dest, const char *src)
 {
 	string_free(dest);
 	return string_init(dest,src);
@@ -531,7 +531,7 @@ BOOL string_set(char **dest, const char *src)
  use of len==0 which was for no length checks to be done.
 **/
 
-void string_sub(char *s,const char *pattern, const char *insert, size_t len)
+_PUBLIC_ void string_sub(char *s,const char *pattern, const char *insert, size_t len)
 {
 	char *p;
 	ssize_t ls,lp,li, i;
@@ -585,7 +585,7 @@ void string_sub(char *s,const char *pattern, const char *insert, size_t len)
  use of len==0 which was for no length checks to be done.
 **/
 
-void all_string_sub(char *s,const char *pattern,const char *insert, size_t len)
+_PUBLIC_ void all_string_sub(char *s,const char *pattern,const char *insert, size_t len)
 {
 	char *p;
 	ssize_t ls,lp,li;
@@ -623,7 +623,7 @@ void all_string_sub(char *s,const char *pattern,const char *insert, size_t len)
 /**
  Strchr and strrchr_m are a bit complex on general multi-byte strings. 
 **/
-char *strchr_m(const char *s, char c)
+_PUBLIC_ char *strchr_m(const char *s, char c)
 {
 	/* characters below 0x3F are guaranteed to not appear in
 	   non-initial position in multi-byte charsets */
@@ -643,7 +643,7 @@ char *strchr_m(const char *s, char c)
 	return NULL;
 }
 
-char *strrchr_m(const char *s, char c)
+_PUBLIC_ char *strrchr_m(const char *s, char c)
 {
 	char *ret = NULL;
 
@@ -668,7 +668,7 @@ char *strrchr_m(const char *s, char c)
 /*
   return True if any (multi-byte) character is lower case
 */
-BOOL strhaslower(const char *string)
+_PUBLIC_ BOOL strhaslower(const char *string)
 {
 	while (*string) {
 		size_t c_size;
@@ -691,7 +691,7 @@ BOOL strhaslower(const char *string)
 /*
   return True if any (multi-byte) character is upper case
 */
-BOOL strhasupper(const char *string)
+_PUBLIC_ BOOL strhasupper(const char *string)
 {
 	while (*string) {
 		size_t c_size;
@@ -714,7 +714,7 @@ BOOL strhasupper(const char *string)
 /**
  Convert a string to lower case, allocated with talloc
 **/
-char *strlower_talloc(TALLOC_CTX *ctx, const char *src)
+_PUBLIC_ char *strlower_talloc(TALLOC_CTX *ctx, const char *src)
 {
 	size_t size=0;
 	char *dest;
@@ -749,7 +749,7 @@ char *strlower_talloc(TALLOC_CTX *ctx, const char *src)
 /**
  Convert a string to UPPER case, allocated with talloc
 **/
-char *strupper_talloc(TALLOC_CTX *ctx, const char *src)
+_PUBLIC_ char *strupper_talloc(TALLOC_CTX *ctx, const char *src)
 {
 	size_t size=0;
 	char *dest;
@@ -788,7 +788,7 @@ char *strupper_talloc(TALLOC_CTX *ctx, const char *src)
 /**
  Convert a string to lower case.
 **/
-void strlower_m(char *s)
+_PUBLIC_ void strlower_m(char *s)
 {
 	char *d;
 
@@ -824,7 +824,7 @@ void strlower_m(char *s)
 /**
  Convert a string to UPPER case.
 **/
-void strupper_m(char *s)
+_PUBLIC_ void strupper_m(char *s)
 {
 	char *d;
 
@@ -862,7 +862,7 @@ void strupper_m(char *s)
  be the same as the number of bytes in a string for single byte strings,
  but will be different for multibyte.
 **/
-size_t strlen_m(const char *s)
+_PUBLIC_ size_t strlen_m(const char *s)
 {
 	size_t count = 0;
 
@@ -897,7 +897,7 @@ size_t strlen_m(const char *s)
    Work out the number of multibyte chars in a string, including the NULL
    terminator.
 **/
-size_t strlen_m_term(const char *s)
+_PUBLIC_ size_t strlen_m_term(const char *s)
 {
 	if (!s) {
 		return 0;
@@ -910,7 +910,7 @@ size_t strlen_m_term(const char *s)
  Unescape a URL encoded string, in place.
 **/
 
-void rfc1738_unescape(char *buf)
+_PUBLIC_ void rfc1738_unescape(char *buf)
 {
 	char *p=buf;
 
@@ -949,7 +949,7 @@ void rfc1738_unescape(char *buf)
 /**
  * Decode a base64 string into a DATA_BLOB - simple and slow algorithm
  **/
-DATA_BLOB base64_decode_data_blob(TALLOC_CTX *mem_ctx, const char *s)
+_PUBLIC_ DATA_BLOB base64_decode_data_blob(TALLOC_CTX *mem_ctx, const char *s)
 {
 	DATA_BLOB ret = data_blob_talloc(mem_ctx, s, strlen(s)+1);
 	ret.length = ldb_base64_decode((char *)ret.data);
@@ -959,7 +959,7 @@ DATA_BLOB base64_decode_data_blob(TALLOC_CTX *mem_ctx, const char *s)
 /**
  * Decode a base64 string in-place - wrapper for the above
  **/
-void base64_decode_inplace(char *s)
+_PUBLIC_ void base64_decode_inplace(char *s)
 {
 	ldb_base64_decode(s);
 }
@@ -967,7 +967,7 @@ void base64_decode_inplace(char *s)
 /**
  * Encode a base64 string into a talloc()ed string caller to free.
  **/
-char *base64_encode_data_blob(TALLOC_CTX *mem_ctx, DATA_BLOB data)
+_PUBLIC_ char *base64_encode_data_blob(TALLOC_CTX *mem_ctx, DATA_BLOB data)
 {
 	return ldb_base64_encode(mem_ctx, (const char *)data.data, data.length);
 }
@@ -987,7 +987,7 @@ size_t valgrind_strlen(const char *s)
   format a string into length-prefixed dotted domain format, as used in NBT
   and in some ADS structures
 **/
-const char *str_format_nbt_domain(TALLOC_CTX *mem_ctx, const char *s)
+_PUBLIC_ const char *str_format_nbt_domain(TALLOC_CTX *mem_ctx, const char *s)
 {
 	char *ret;
 	int i;
@@ -1016,7 +1016,7 @@ const char *str_format_nbt_domain(TALLOC_CTX *mem_ctx, const char *s)
 	return ret;
 }
 
-BOOL add_string_to_array(TALLOC_CTX *mem_ctx,
+_PUBLIC_ BOOL add_string_to_array(TALLOC_CTX *mem_ctx,
 			 const char *str, const char ***strings, int *num)
 {
 	char *dup_str = talloc_strdup(mem_ctx, str);
@@ -1039,7 +1039,7 @@ BOOL add_string_to_array(TALLOC_CTX *mem_ctx,
 /**
   varient of strcmp() that handles NULL ptrs
 **/
-int strcmp_safe(const char *s1, const char *s2)
+_PUBLIC_ int strcmp_safe(const char *s1, const char *s2)
 {
 	if (s1 == s2) {
 		return 0;
@@ -1056,7 +1056,7 @@ return the number of bytes occupied by a buffer in ASCII format
 the result includes the null termination
 limited by 'n' bytes
 **/
-size_t ascii_len_n(const char *src, size_t n)
+_PUBLIC_ size_t ascii_len_n(const char *src, size_t n)
 {
 	size_t len;
 
@@ -1072,7 +1072,7 @@ size_t ascii_len_n(const char *src, size_t n)
 /**
  Return a string representing a CIFS attribute for a file.
 **/
-char *attrib_string(TALLOC_CTX *mem_ctx, uint32_t attrib)
+_PUBLIC_ char *attrib_string(TALLOC_CTX *mem_ctx, uint32_t attrib)
 {
 	int i, len;
 	const struct {
@@ -1119,7 +1119,7 @@ char *attrib_string(TALLOC_CTX *mem_ctx, uint32_t attrib)
  represent a boolean.
 **/
 
-BOOL set_boolean(const char *boolean_string, BOOL *boolean)
+_PUBLIC_ BOOL set_boolean(const char *boolean_string, BOOL *boolean)
 {
 	if (strwicmp(boolean_string, "yes") == 0 ||
 	    strwicmp(boolean_string, "true") == 0 ||
@@ -1137,7 +1137,7 @@ BOOL set_boolean(const char *boolean_string, BOOL *boolean)
 	return False;
 }
 
-BOOL conv_str_bool(const char * str, BOOL * val)
+_PUBLIC_ BOOL conv_str_bool(const char * str, BOOL * val)
 {
 	char *	end = NULL;
 	long	lval;
@@ -1158,7 +1158,7 @@ BOOL conv_str_bool(const char * str, BOOL * val)
 /**
  * Convert a size specification like 16K into an integral number of bytes. 
  **/
-BOOL conv_str_size(const char * str, uint64_t * val)
+_PUBLIC_ BOOL conv_str_size(const char * str, uint64_t * val)
 {
 	char *		    end = NULL;
 	unsigned long long  lval;
@@ -1192,7 +1192,7 @@ BOOL conv_str_size(const char * str, uint64_t * val)
 	return True;
 }
 
-BOOL conv_str_u64(const char * str, uint64_t * val)
+_PUBLIC_ BOOL conv_str_u64(const char * str, uint64_t * val)
 {
 	char *		    end = NULL;
 	unsigned long long  lval;

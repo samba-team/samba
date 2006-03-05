@@ -45,7 +45,7 @@
 /**
  External access to time_t_min and time_t_max.
 **/
-time_t get_time_t_max(void)
+_PUBLIC_ time_t get_time_t_max(void)
 {
 	return TIME_T_MAX;
 }
@@ -53,7 +53,7 @@ time_t get_time_t_max(void)
 /**
 a gettimeofday wrapper
 **/
-void GetTimeOfDay(struct timeval *tval)
+_PUBLIC_ void GetTimeOfDay(struct timeval *tval)
 {
 #ifdef HAVE_GETTIMEOFDAY_TZ
 	gettimeofday(tval,NULL);
@@ -69,7 +69,7 @@ void GetTimeOfDay(struct timeval *tval)
 interpret an 8 byte "filetime" structure to a time_t
 It's originally in "100ns units since jan 1st 1601"
 **/
-time_t nt_time_to_unix(NTTIME nt)
+_PUBLIC_ time_t nt_time_to_unix(NTTIME nt)
 {
 	if (nt == 0) {
 		return 0;
@@ -93,7 +93,7 @@ time_t nt_time_to_unix(NTTIME nt)
 put a 8 byte filetime from a time_t
 This takes GMT as input
 **/
-void unix_to_nt_time(NTTIME *nt, time_t t)
+_PUBLIC_ void unix_to_nt_time(NTTIME *nt, time_t t)
 {
 	uint64_t t2; 
 
@@ -117,7 +117,7 @@ void unix_to_nt_time(NTTIME *nt, time_t t)
 /**
 check if it's a null unix time
 **/
-BOOL null_time(time_t t)
+_PUBLIC_ BOOL null_time(time_t t)
 {
 	return t == 0 || 
 		t == (time_t)0xFFFFFFFF || 
@@ -128,7 +128,7 @@ BOOL null_time(time_t t)
 /**
 check if it's a null NTTIME
 **/
-BOOL null_nttime(NTTIME t)
+_PUBLIC_ BOOL null_nttime(NTTIME t)
 {
 	return t == 0 || t == (NTTIME)-1;
 }
@@ -185,7 +185,7 @@ static uint32_t make_dos_date(time_t unixdate, int zone_offset)
 put a dos date into a buffer (time/date format)
 This takes GMT time and puts local time in the buffer
 **/
-void push_dos_date(uint8_t *buf, int offset, time_t unixdate, int zone_offset)
+_PUBLIC_ void push_dos_date(uint8_t *buf, int offset, time_t unixdate, int zone_offset)
 {
 	uint32_t x = make_dos_date(unixdate, zone_offset);
 	SIVAL(buf,offset,x);
@@ -195,7 +195,7 @@ void push_dos_date(uint8_t *buf, int offset, time_t unixdate, int zone_offset)
 put a dos date into a buffer (date/time format)
 This takes GMT time and puts local time in the buffer
 **/
-void push_dos_date2(uint8_t *buf,int offset,time_t unixdate, int zone_offset)
+_PUBLIC_ void push_dos_date2(uint8_t *buf,int offset,time_t unixdate, int zone_offset)
 {
 	uint32_t x;
 	x = make_dos_date(unixdate, zone_offset);
@@ -208,7 +208,7 @@ put a dos 32 bit "unix like" date into a buffer. This routine takes
 GMT and converts it to LOCAL time before putting it (most SMBs assume
 localtime for this sort of date)
 **/
-void push_dos_date3(uint8_t *buf,int offset,time_t unixdate, int zone_offset)
+_PUBLIC_ void push_dos_date3(uint8_t *buf,int offset,time_t unixdate, int zone_offset)
 {
 	if (!null_time(unixdate)) {
 		unixdate -= zone_offset;
@@ -238,7 +238,7 @@ static void interpret_dos_date(uint32_t date,int *year,int *month,int *day,int *
   create a unix date (int GMT) from a dos date (which is actually in
   localtime)
 **/
-time_t pull_dos_date(const uint8_t *date_ptr, int zone_offset)
+_PUBLIC_ time_t pull_dos_date(const uint8_t *date_ptr, int zone_offset)
 {
 	uint32_t dos_date=0;
 	struct tm t;
@@ -262,7 +262,7 @@ time_t pull_dos_date(const uint8_t *date_ptr, int zone_offset)
 /**
 like make_unix_date() but the words are reversed
 **/
-time_t pull_dos_date2(const uint8_t *date_ptr, int zone_offset)
+_PUBLIC_ time_t pull_dos_date2(const uint8_t *date_ptr, int zone_offset)
 {
 	uint32_t x,x2;
 
@@ -277,7 +277,7 @@ time_t pull_dos_date2(const uint8_t *date_ptr, int zone_offset)
   create a unix GMT date from a dos date in 32 bit "unix like" format
   these generally arrive as localtimes, with corresponding DST
 **/
-time_t pull_dos_date3(const uint8_t *date_ptr, int zone_offset)
+_PUBLIC_ time_t pull_dos_date3(const uint8_t *date_ptr, int zone_offset)
 {
 	time_t t = (time_t)IVAL(date_ptr,0);
 	if (!null_time(t)) {
@@ -290,7 +290,7 @@ time_t pull_dos_date3(const uint8_t *date_ptr, int zone_offset)
 /**
 return a HTTP/1.0 time string
 **/
-char *http_timestring(TALLOC_CTX *mem_ctx, time_t t)
+_PUBLIC_ char *http_timestring(TALLOC_CTX *mem_ctx, time_t t)
 {
 	char *buf;
 	char tempTime[60];
@@ -316,7 +316,7 @@ char *http_timestring(TALLOC_CTX *mem_ctx, time_t t)
 /**
  Return the date and time as a string
 **/
-char *timestring(TALLOC_CTX *mem_ctx, time_t t)
+_PUBLIC_ char *timestring(TALLOC_CTX *mem_ctx, time_t t)
 {
 	char *TimeBuf;
 	char tempTime[80];
@@ -346,7 +346,7 @@ char *timestring(TALLOC_CTX *mem_ctx, time_t t)
 /**
   return a talloced string representing a NTTIME for human consumption
 */
-const char *nt_time_string(TALLOC_CTX *mem_ctx, NTTIME nt)
+_PUBLIC_ const char *nt_time_string(TALLOC_CTX *mem_ctx, NTTIME nt)
 {
 	time_t t;
 	if (nt == 0) {
@@ -360,7 +360,7 @@ const char *nt_time_string(TALLOC_CTX *mem_ctx, NTTIME nt)
 /**
   put a NTTIME into a packet
 */
-void push_nttime(uint8_t *base, uint16_t offset, NTTIME t)
+_PUBLIC_ void push_nttime(uint8_t *base, uint16_t offset, NTTIME t)
 {
 	SBVAL(base, offset,   t);
 }
@@ -368,7 +368,7 @@ void push_nttime(uint8_t *base, uint16_t offset, NTTIME t)
 /**
   pull a NTTIME from a packet
 */
-NTTIME pull_nttime(uint8_t *base, uint16_t offset)
+_PUBLIC_ NTTIME pull_nttime(uint8_t *base, uint16_t offset)
 {
 	NTTIME ret = BVAL(base, offset);
 	return ret;
@@ -377,7 +377,7 @@ NTTIME pull_nttime(uint8_t *base, uint16_t offset)
 /**
   parse a nttime as a large integer in a string and return a NTTIME
 */
-NTTIME nttime_from_string(const char *s)
+_PUBLIC_ NTTIME nttime_from_string(const char *s)
 {
 	return strtoull(s, NULL, 0);
 }
@@ -385,7 +385,7 @@ NTTIME nttime_from_string(const char *s)
 /**
   return (tv1 - tv2) in microseconds
 */
-int64_t usec_time_diff(struct timeval *tv1, struct timeval *tv2)
+_PUBLIC_ int64_t usec_time_diff(struct timeval *tv1, struct timeval *tv2)
 {
 	int64_t sec_diff = tv1->tv_sec - tv2->tv_sec;
 	return (sec_diff * 1000000) + (int64_t)(tv1->tv_usec - tv2->tv_usec);
@@ -395,7 +395,7 @@ int64_t usec_time_diff(struct timeval *tv1, struct timeval *tv2)
 /**
   return a zero timeval
 */
-struct timeval timeval_zero(void)
+_PUBLIC_ struct timeval timeval_zero(void)
 {
 	struct timeval tv;
 	tv.tv_sec = 0;
@@ -406,7 +406,7 @@ struct timeval timeval_zero(void)
 /**
   return True if a timeval is zero
 */
-BOOL timeval_is_zero(const struct timeval *tv)
+_PUBLIC_ BOOL timeval_is_zero(const struct timeval *tv)
 {
 	return tv->tv_sec == 0 && tv->tv_usec == 0;
 }
@@ -414,7 +414,7 @@ BOOL timeval_is_zero(const struct timeval *tv)
 /**
   return a timeval for the current time
 */
-struct timeval timeval_current(void)
+_PUBLIC_ struct timeval timeval_current(void)
 {
 	struct timeval tv;
 	GetTimeOfDay(&tv);
@@ -424,7 +424,7 @@ struct timeval timeval_current(void)
 /**
   return a timeval struct with the given elements
 */
-struct timeval timeval_set(uint32_t secs, uint32_t usecs)
+_PUBLIC_ struct timeval timeval_set(uint32_t secs, uint32_t usecs)
 {
 	struct timeval tv;
 	tv.tv_sec = secs;
@@ -436,7 +436,7 @@ struct timeval timeval_set(uint32_t secs, uint32_t usecs)
 /**
   return a timeval ofs microseconds after tv
 */
-struct timeval timeval_add(const struct timeval *tv,
+_PUBLIC_ struct timeval timeval_add(const struct timeval *tv,
 			   uint32_t secs, uint32_t usecs)
 {
 	struct timeval tv2 = *tv;
@@ -460,7 +460,7 @@ struct timeval timeval_sum(const struct timeval *tv1,
 /**
   return a timeval secs/usecs into the future
 */
-struct timeval timeval_current_ofs(uint32_t secs, uint32_t usecs)
+_PUBLIC_ struct timeval timeval_current_ofs(uint32_t secs, uint32_t usecs)
 {
 	struct timeval tv = timeval_current();
 	return timeval_add(&tv, secs, usecs);
@@ -472,7 +472,7 @@ struct timeval timeval_current_ofs(uint32_t secs, uint32_t usecs)
   Return 0 if tv1 == tv2
   Return 1 if tv1 > tv2
 */
-int timeval_compare(const struct timeval *tv1, const struct timeval *tv2)
+_PUBLIC_ int timeval_compare(const struct timeval *tv1, const struct timeval *tv2)
 {
 	if (tv1->tv_sec  > tv2->tv_sec)  return 1;
 	if (tv1->tv_sec  < tv2->tv_sec)  return -1;
@@ -484,7 +484,7 @@ int timeval_compare(const struct timeval *tv1, const struct timeval *tv2)
 /**
   return True if a timer is in the past
 */
-BOOL timeval_expired(const struct timeval *tv)
+_PUBLIC_ BOOL timeval_expired(const struct timeval *tv)
 {
 	struct timeval tv2 = timeval_current();
 	if (tv2.tv_sec > tv->tv_sec) return True;
@@ -495,7 +495,7 @@ BOOL timeval_expired(const struct timeval *tv)
 /**
   return the number of seconds elapsed between two times
 */
-double timeval_elapsed2(const struct timeval *tv1, const struct timeval *tv2)
+_PUBLIC_ double timeval_elapsed2(const struct timeval *tv1, const struct timeval *tv2)
 {
 	return (tv2->tv_sec - tv1->tv_sec) + 
 	       (tv2->tv_usec - tv1->tv_usec)*1.0e-6;
@@ -504,7 +504,7 @@ double timeval_elapsed2(const struct timeval *tv1, const struct timeval *tv2)
 /**
   return the number of seconds elapsed since a given time
 */
-double timeval_elapsed(const struct timeval *tv)
+_PUBLIC_ double timeval_elapsed(const struct timeval *tv)
 {
 	struct timeval tv2 = timeval_current();
 	return timeval_elapsed2(tv, &tv2);
@@ -513,7 +513,7 @@ double timeval_elapsed(const struct timeval *tv)
 /**
   return the lesser of two timevals
 */
-struct timeval timeval_min(const struct timeval *tv1,
+_PUBLIC_ struct timeval timeval_min(const struct timeval *tv1,
 			   const struct timeval *tv2)
 {
 	if (tv1->tv_sec < tv2->tv_sec) return *tv1;
@@ -525,7 +525,7 @@ struct timeval timeval_min(const struct timeval *tv1,
 /**
   return the greater of two timevals
 */
-struct timeval timeval_max(const struct timeval *tv1,
+_PUBLIC_ struct timeval timeval_max(const struct timeval *tv1,
 			   const struct timeval *tv2)
 {
 	if (tv1->tv_sec > tv2->tv_sec) return *tv1;
@@ -539,7 +539,7 @@ struct timeval timeval_max(const struct timeval *tv1,
   if tv1 comes after tv2, then return a zero timeval
   (this is *tv2 - *tv1)
 */
-struct timeval timeval_until(const struct timeval *tv1,
+_PUBLIC_ struct timeval timeval_until(const struct timeval *tv1,
 			     const struct timeval *tv2)
 {
 	struct timeval t;
@@ -560,7 +560,7 @@ struct timeval timeval_until(const struct timeval *tv1,
 /**
   convert a timeval to a NTTIME
 */
-NTTIME timeval_to_nttime(const struct timeval *tv)
+_PUBLIC_ NTTIME timeval_to_nttime(const struct timeval *tv)
 {
 	return 10*(tv->tv_usec + 
 		  ((TIME_FIXUP_CONSTANT + (uint64_t)tv->tv_sec) * 1000000));
@@ -587,7 +587,7 @@ static int tm_diff(struct tm *a, struct tm *b)
 /**
   return the UTC offset in seconds west of UTC, or 0 if it cannot be determined
  */
-int get_time_zone(time_t t)
+_PUBLIC_ int get_time_zone(time_t t)
 {
 	struct tm *tm = gmtime(&t);
 	struct tm tm_utc;
