@@ -36,7 +36,7 @@
  * return the pid in a pidfile. return 0 if the process (or pidfile)
  * does not exist 
  */
-pid_t pidfile_pid(const char *name)
+_PUBLIC_ pid_t pidfile_pid(const char *name)
 {
 	int fd;
 	char pidstr[20];

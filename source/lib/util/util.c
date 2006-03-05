@@ -37,7 +37,7 @@
  Find a suitable temporary directory. The result should be copied immediately
  as it may be overwritten by a subsequent call.
 **/
-const char *tmpdir(void)
+_PUBLIC_ const char *tmpdir(void)
 {
 	char *p;
 	if ((p = getenv("TMPDIR")))
@@ -49,7 +49,7 @@ const char *tmpdir(void)
 /**
  Check if a file exists - call vfs_file_exist for samba files.
 **/
-BOOL file_exist(const char *fname)
+_PUBLIC_ BOOL file_exist(const char *fname)
 {
 	struct stat st;
 
@@ -64,7 +64,7 @@ BOOL file_exist(const char *fname)
  Check a files mod time.
 **/
 
-time_t file_modtime(const char *fname)
+_PUBLIC_ time_t file_modtime(const char *fname)
 {
 	struct stat st;
   
@@ -78,7 +78,7 @@ time_t file_modtime(const char *fname)
  Check if a directory exists.
 **/
 
-BOOL directory_exist(const char *dname)
+_PUBLIC_ BOOL directory_exist(const char *dname)
 {
 	struct stat st;
 	BOOL ret;
@@ -93,7 +93,7 @@ BOOL directory_exist(const char *dname)
 	return ret;
 }
 
-BOOL directory_create_or_exist(const char *dname, uid_t uid, 
+_PUBLIC_ BOOL directory_create_or_exist(const char *dname, uid_t uid, 
 			       mode_t dir_perms)
 {
 	mode_t old_umask;
@@ -179,7 +179,7 @@ static void close_low_fds(BOOL stderr_too)
   if BSD use FNDELAY
 **/
 
-int set_blocking(int fd, BOOL set)
+_PUBLIC_ int set_blocking(int fd, BOOL set)
 {
 	int val;
 #ifdef O_NONBLOCK
@@ -207,7 +207,7 @@ int set_blocking(int fd, BOOL set)
  Sleep for a specified number of milliseconds.
 **/
 
-void msleep(uint_t t)
+_PUBLIC_ void msleep(uint_t t)
 {
 	struct timeval tval;  
 
@@ -222,7 +222,7 @@ void msleep(uint_t t)
  Become a daemon, discarding the controlling terminal.
 **/
 
-void become_daemon(BOOL Fork)
+_PUBLIC_ void become_daemon(BOOL Fork)
 {
 	if (Fork) {
 		if (fork()) {
@@ -255,7 +255,7 @@ void become_daemon(BOOL Fork)
  Exists only because we need to pass a function pointer somewhere --SSS
 **/
 
-void safe_free(void *p)
+_PUBLIC_ void safe_free(void *p)
 {
 	SAFE_FREE(p);
 }
@@ -265,7 +265,7 @@ void safe_free(void *p)
   see if a string matches either our primary or one of our secondary 
   netbios aliases. do a case insensitive match
 */
-BOOL is_myname(const char *name)
+_PUBLIC_ BOOL is_myname(const char *name)
 {
 	const char **aliases;
 	int i;
@@ -289,7 +289,7 @@ BOOL is_myname(const char *name)
  Get my own name, return in malloc'ed storage.
 **/
 
-char* get_myname(void)
+_PUBLIC_ char* get_myname(void)
 {
 	char *hostname;
 	const int host_name_max = 255;
@@ -320,7 +320,7 @@ char* get_myname(void)
  Return true if a string could be a pure IP address.
 **/
 
-BOOL is_ipaddress(const char *str)
+_PUBLIC_ BOOL is_ipaddress(const char *str)
 {
 	BOOL pure_address = True;
 	int i;
@@ -338,7 +338,7 @@ BOOL is_ipaddress(const char *str)
 /**
  Interpret an internet address or name into an IP address in 4 byte form.
 **/
-uint32_t interpret_addr(const char *str)
+_PUBLIC_ uint32_t interpret_addr(const char *str)
 {
 	struct hostent *hp;
 	uint32_t res;
@@ -383,7 +383,7 @@ uint32_t interpret_addr(const char *str)
 /**
  A convenient addition to interpret_addr().
 **/
-struct ipv4_addr interpret_addr2(const char *str)
+_PUBLIC_ struct ipv4_addr interpret_addr2(const char *str)
 {
 	struct ipv4_addr ret;
 	uint32_t a = interpret_addr(str);
@@ -395,7 +395,7 @@ struct ipv4_addr interpret_addr2(const char *str)
  Check if an IP is the 0.0.0.0.
 **/
 
-BOOL is_zero_ip(struct ipv4_addr ip)
+_PUBLIC_ BOOL is_zero_ip(struct ipv4_addr ip)
 {
 	return ip.addr == 0;
 }
@@ -404,7 +404,7 @@ BOOL is_zero_ip(struct ipv4_addr ip)
  Are two IPs on the same subnet?
 **/
 
-BOOL same_net(struct ipv4_addr ip1,struct ipv4_addr ip2,struct ipv4_addr mask)
+_PUBLIC_ BOOL same_net(struct ipv4_addr ip1,struct ipv4_addr ip2,struct ipv4_addr mask)
 {
 	uint32_t net1,net2,nmask;
 
@@ -420,7 +420,7 @@ BOOL same_net(struct ipv4_addr ip1,struct ipv4_addr ip2,struct ipv4_addr mask)
  Check if a process exists. Does this work on all unixes?
 **/
 
-BOOL process_exists(pid_t pid)
+_PUBLIC_ BOOL process_exists(pid_t pid)
 {
 	/* Doing kill with a non-positive pid causes messages to be
 	 * sent to places we don't want. */
@@ -433,7 +433,7 @@ BOOL process_exists(pid_t pid)
  is dealt with in posix.c
 **/
 
-BOOL fcntl_lock(int fd, int op, off_t offset, off_t count, int type)
+_PUBLIC_ BOOL fcntl_lock(int fd, int op, off_t offset, off_t count, int type)
 {
 	struct flock lock;
 	int ret;
@@ -486,7 +486,7 @@ static void print_asc(int level, const uint8_t *buf,int len)
 		DEBUGADD(level,("%c", isprint(buf[i])?buf[i]:'.'));
 }
 
-void dump_data(int level, const uint8_t *buf,int len)
+_PUBLIC_ void dump_data(int level, const uint8_t *buf,int len)
 {
 	int i=0;
 	if (len<=0) return;
@@ -522,7 +522,7 @@ void dump_data(int level, const uint8_t *buf,int len)
  malloc that aborts with smb_panic on fail or zero size.
 **/
 
-void *smb_xmalloc(size_t size)
+_PUBLIC_ void *smb_xmalloc(size_t size)
 {
 	void *p;
 	if (size == 0)
@@ -536,7 +536,7 @@ void *smb_xmalloc(size_t size)
  Memdup with smb_panic on fail.
 **/
 
-void *smb_xmemdup(const void *p, size_t size)
+_PUBLIC_ void *smb_xmemdup(const void *p, size_t size)
 {
 	void *p2;
 	p2 = smb_xmalloc(size);
@@ -548,7 +548,7 @@ void *smb_xmemdup(const void *p, size_t size)
  strdup that aborts on malloc fail.
 **/
 
-char *smb_xstrdup(const char *s)
+_PUBLIC_ char *smb_xstrdup(const char *s)
 {
 	char *s1 = strdup(s);
 	if (!s1)
@@ -561,7 +561,7 @@ char *smb_xstrdup(const char *s)
  Like strdup but for memory.
 **/
 
-void *memdup(const void *p, size_t size)
+_PUBLIC_ void *memdup(const void *p, size_t size)
 {
 	void *p2;
 	if (size == 0)
@@ -576,7 +576,7 @@ void *memdup(const void *p, size_t size)
 /**
  A useful function for returning a path in the Samba lock directory.
 **/
-char *lock_path(TALLOC_CTX* mem_ctx, const char *name)
+_PUBLIC_ char *lock_path(TALLOC_CTX* mem_ctx, const char *name)
 {
 	char *fname, *dname;
 	if (name == NULL) {
@@ -631,7 +631,7 @@ static char *pid_path(TALLOC_CTX* mem_ctx, const char *name)
  * @retval Pointer to a talloc'ed string containing the full path.
  **/
 
-char *lib_path(TALLOC_CTX* mem_ctx, const char *name)
+_PUBLIC_ char *lib_path(TALLOC_CTX* mem_ctx, const char *name)
 {
 	char *fname;
 	fname = talloc_asprintf(mem_ctx, "%s/%s", dyn_LIBDIR, name);
@@ -646,7 +646,7 @@ char *lib_path(TALLOC_CTX* mem_ctx, const char *name)
  *
  * @retval Pointer to a talloc'ed string containing the full path.
  **/
-char *private_path(TALLOC_CTX* mem_ctx, const char *name)
+_PUBLIC_ char *private_path(TALLOC_CTX* mem_ctx, const char *name)
 {
 	char *fname;
 	if (name == NULL) {
@@ -664,7 +664,7 @@ char *private_path(TALLOC_CTX* mem_ctx, const char *name)
   for smbd go. If NULL is passed for name then return the directory 
   path itself
 */
-char *smbd_tmp_path(TALLOC_CTX *mem_ctx, const char *name)
+_PUBLIC_ char *smbd_tmp_path(TALLOC_CTX *mem_ctx, const char *name)
 {
 	char *fname, *dname;
 
@@ -688,7 +688,7 @@ static char *modules_path(TALLOC_CTX* mem_ctx, const char *name)
 	return talloc_asprintf(mem_ctx, "%s/%s", dyn_MODULESDIR, name);
 }
 
-init_module_fn *load_samba_modules(TALLOC_CTX *mem_ctx, const char *subsystem)
+_PUBLIC_ init_module_fn *load_samba_modules(TALLOC_CTX *mem_ctx, const char *subsystem)
 {
 	char *path = modules_path(mem_ctx, subsystem);
 	init_module_fn *ret;
@@ -700,7 +700,7 @@ init_module_fn *load_samba_modules(TALLOC_CTX *mem_ctx, const char *subsystem)
 	return ret;
 }
 
-void dump_data_pw(const char *msg, const uint8_t * data, size_t len)
+_PUBLIC_ void dump_data_pw(const char *msg, const uint8_t * data, size_t len)
 {
 #ifdef DEBUG_PASSWORD
 	DEBUG(11, ("%s", msg));
@@ -716,7 +716,7 @@ void dump_data_pw(const char *msg, const uint8_t * data, size_t len)
  * see if a range of memory is all zero. A NULL pointer is considered
  * to be all zero 
  */
-BOOL all_zero(const uint8_t *ptr, uint_t size)
+_PUBLIC_ BOOL all_zero(const uint8_t *ptr, uint_t size)
 {
 	int i;
 	if (!ptr) return True;
@@ -729,7 +729,7 @@ BOOL all_zero(const uint8_t *ptr, uint_t size)
 /**
   realloc an array, checking for integer overflow in the array size
 */
-void *realloc_array(void *ptr, size_t el_size, unsigned count)
+_PUBLIC_ void *realloc_array(void *ptr, size_t el_size, unsigned count)
 {
 #define MAX_MALLOC_SIZE 0x7fffffff
 	if (count == 0 ||

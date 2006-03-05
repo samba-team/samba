@@ -30,7 +30,7 @@
  **/
 
 /* this global variable determines what messages are printed */
-int DEBUGLEVEL;
+_PUBLIC_ int DEBUGLEVEL;
 
 
 /* the registered mutex handlers */
@@ -68,7 +68,7 @@ static void log_timestring(int level, const char *location, const char *func)
   the backend for debug messages. Note that the DEBUG() macro has already
   ensured that the log level has been met before this is called
 */
-void do_debug_header(int level, const char *location, const char *func)
+_PUBLIC_ void do_debug_header(int level, const char *location, const char *func)
 {
 	log_timestring(level, location, func);
 	log_task_id();
@@ -78,7 +78,7 @@ void do_debug_header(int level, const char *location, const char *func)
   the backend for debug messages. Note that the DEBUG() macro has already
   ensured that the log level has been met before this is called
 */
-void do_debug(const char *format, ...) _PRINTF_ATTRIBUTE(1,2)
+_PUBLIC_ void do_debug(const char *format, ...) _PRINTF_ATTRIBUTE(1,2)
 {
 	va_list ap;
 	char *s = NULL;
@@ -101,7 +101,7 @@ void do_debug(const char *format, ...) _PRINTF_ATTRIBUTE(1,2)
 /**
   reopen the log file (usually called because the log file name might have changed)
 */
-void reopen_logs(void)
+_PUBLIC_ void reopen_logs(void)
 {
 	const char *logfile = lp_logfile();
 	char *fname = NULL;
@@ -147,7 +147,7 @@ void reopen_logs(void)
   control the name of the logfile and whether logging will be to stdout, stderr
   or a file
 */
-void setup_logging(const char *prog_name, enum debug_logtype new_logtype)
+_PUBLIC_ void setup_logging(const char *prog_name, enum debug_logtype new_logtype)
 {
 	if (state.logtype < new_logtype) {
 		state.logtype = new_logtype;
@@ -162,7 +162,7 @@ void setup_logging(const char *prog_name, enum debug_logtype new_logtype)
   return a string constant containing n tabs
   no more than 10 tabs are returned
 */
-const char *do_debug_tab(uint_t n)
+_PUBLIC_ const char *do_debug_tab(uint_t n)
 {
 	const char *tabs[] = {"", "\t", "\t\t", "\t\t\t", "\t\t\t\t", "\t\t\t\t\t", 
 			      "\t\t\t\t\t\t", "\t\t\t\t\t\t\t", "\t\t\t\t\t\t\t\t", 
@@ -174,7 +174,7 @@ const char *do_debug_tab(uint_t n)
 /**
   log suspicious usage - print comments and backtrace
 */	
-void log_suspicious_usage(const char *from, const char *info)
+_PUBLIC_ void log_suspicious_usage(const char *from, const char *info)
 {
 	if (debug_handlers.ops.log_suspicious_usage) {
 		debug_handlers.ops.log_suspicious_usage(from, info);
@@ -185,15 +185,14 @@ void log_suspicious_usage(const char *from, const char *info)
 /**
   print suspicious usage - print comments and backtrace
 */	
-
-void print_suspicious_usage(const char* from, const char* info)
+_PUBLIC_ void print_suspicious_usage(const char* from, const char* info)
 {
 	if (debug_handlers.ops.print_suspicious_usage) {
 		debug_handlers.ops.print_suspicious_usage(from, info);
 	}
 }
 
-uint32_t get_task_id(void)
+_PUBLIC_ uint32_t get_task_id(void)
 {
 	if (debug_handlers.ops.get_task_id) {
 		return debug_handlers.ops.get_task_id();
@@ -201,7 +200,7 @@ uint32_t get_task_id(void)
 	return getpid();
 }
 
-void log_task_id(void)
+_PUBLIC_ void log_task_id(void)
 {
 	if (debug_handlers.ops.log_task_id) {
 		debug_handlers.ops.log_task_id(state.fd);
@@ -211,7 +210,7 @@ void log_task_id(void)
 /**
   register a set of debug handlers. 
 */
-void register_debug_handlers(const char *name, struct debug_ops *ops)
+_PUBLIC_ void register_debug_handlers(const char *name, struct debug_ops *ops)
 {
 	debug_handlers.name = name;
 	debug_handlers.ops = *ops;

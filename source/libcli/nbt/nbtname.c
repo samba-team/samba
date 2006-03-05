@@ -32,10 +32,10 @@
 /* don't allow an unlimited number of name components */
 #define MAX_COMPONENTS 10
 
-/*
+/**
   print a nbt string
 */
-void ndr_print_nbt_string(struct ndr_print *ndr, const char *name, const char *s)
+_PUBLIC_ void ndr_print_nbt_string(struct ndr_print *ndr, const char *name, const char *s)
 {
 	ndr_print_string(ndr, name, s);
 }
@@ -88,10 +88,10 @@ static NTSTATUS ndr_pull_component(struct ndr_pull *ndr, uint8_t **component,
 	return NT_STATUS_BAD_NETWORK_NAME;
 }
 
-/*
+/**
   pull a nbt_string from the wire
 */
-NTSTATUS ndr_pull_nbt_string(struct ndr_pull *ndr, int ndr_flags, const char **s)
+_PUBLIC_ NTSTATUS ndr_pull_nbt_string(struct ndr_pull *ndr, int ndr_flags, const char **s)
 {
 	NTSTATUS status;
 	uint32_t offset = ndr->offset;
@@ -132,10 +132,10 @@ NTSTATUS ndr_pull_nbt_string(struct ndr_pull *ndr, int ndr_flags, const char **s
 	return NT_STATUS_OK;
 }
 
-/*
+/**
   push a nbt string to the wire
 */
-NTSTATUS ndr_push_nbt_string(struct ndr_push *ndr, int ndr_flags, const char *s)
+_PUBLIC_ NTSTATUS ndr_push_nbt_string(struct ndr_push *ndr, int ndr_flags, const char *s)
 {
 	if (!(ndr_flags & NDR_SCALARS)) {
 		return NT_STATUS_OK;
@@ -274,10 +274,10 @@ static uint8_t *compress_name(TALLOC_CTX *mem_ctx,
 }
 
 
-/*
+/**
   pull a nbt name from the wire
 */
-NTSTATUS ndr_pull_nbt_name(struct ndr_pull *ndr, int ndr_flags, struct nbt_name *r)
+_PUBLIC_ NTSTATUS ndr_pull_nbt_name(struct ndr_pull *ndr, int ndr_flags, struct nbt_name *r)
 {
 	NTSTATUS status;
 	uint8_t *scope;
@@ -320,10 +320,10 @@ NTSTATUS ndr_pull_nbt_name(struct ndr_pull *ndr, int ndr_flags, struct nbt_name 
 	return NT_STATUS_OK;
 }
 
-/*
+/**
   push a nbt name to the wire
 */
-NTSTATUS ndr_push_nbt_name(struct ndr_push *ndr, int ndr_flags, const struct nbt_name *r)
+_PUBLIC_ NTSTATUS ndr_push_nbt_name(struct ndr_push *ndr, int ndr_flags, const struct nbt_name *r)
 {
 	uint8_t *cname, *fullname;
 	NTSTATUS status;
@@ -349,10 +349,10 @@ NTSTATUS ndr_push_nbt_name(struct ndr_push *ndr, int ndr_flags, const struct nbt
 }
 
 
-/*
+/**
   copy a nbt name structure
 */
-NTSTATUS nbt_name_dup(TALLOC_CTX *mem_ctx, struct nbt_name *name, struct nbt_name *newname)
+_PUBLIC_ NTSTATUS nbt_name_dup(TALLOC_CTX *mem_ctx, struct nbt_name *name, struct nbt_name *newname)
 {
 	*newname = *name;
 	newname->name = talloc_strdup(mem_ctx, newname->name);
@@ -364,33 +364,33 @@ NTSTATUS nbt_name_dup(TALLOC_CTX *mem_ctx, struct nbt_name *name, struct nbt_nam
 	return NT_STATUS_OK;
 }
 
-/*
+/**
   push a nbt name into a blob
 */
-NTSTATUS nbt_name_to_blob(TALLOC_CTX *mem_ctx, DATA_BLOB *blob, struct nbt_name *name)
+_PUBLIC_ NTSTATUS nbt_name_to_blob(TALLOC_CTX *mem_ctx, DATA_BLOB *blob, struct nbt_name *name)
 {
 	return ndr_push_struct_blob(blob, mem_ctx, name, 
 				    (ndr_push_flags_fn_t)ndr_push_nbt_name);
 }
 
 
-/*
+/**
   pull a nbt name from a blob
 */
-NTSTATUS nbt_name_from_blob(TALLOC_CTX *mem_ctx, const DATA_BLOB *blob, struct nbt_name *name)
+_PUBLIC_ NTSTATUS nbt_name_from_blob(TALLOC_CTX *mem_ctx, const DATA_BLOB *blob, struct nbt_name *name)
 {
 	return ndr_pull_struct_blob(blob, mem_ctx, name, 
 				    (ndr_pull_flags_fn_t)ndr_pull_nbt_name);
 }
 
 
-/*
+/**
   choose a name to use when calling a server in a NBT session request.
   we use heuristics to see if the name we have been given is a IP
   address, or a too-long name. If it is then use *SMBSERVER, or a
   truncated name
 */
-void nbt_choose_called_name(TALLOC_CTX *mem_ctx,
+_PUBLIC_ void nbt_choose_called_name(TALLOC_CTX *mem_ctx,
 			    struct nbt_name *n, const char *name, int type)
 {
 	n->scope = NULL;
@@ -450,10 +450,10 @@ static const char *nbt_hex_encode(TALLOC_CTX *mem_ctx, const char *s)
 }
 
 
-/*
+/**
   form a string for a NBT name
 */
-char *nbt_name_string(TALLOC_CTX *mem_ctx, const struct nbt_name *name)
+_PUBLIC_ char *nbt_name_string(TALLOC_CTX *mem_ctx, const struct nbt_name *name)
 {
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
 	char *ret;
@@ -471,10 +471,10 @@ char *nbt_name_string(TALLOC_CTX *mem_ctx, const struct nbt_name *name)
 	return ret;
 }
 
-/*
+/**
   pull a nbt name, WINS Replication uses another on wire format for nbt name
 */
-NTSTATUS ndr_pull_wrepl_nbt_name(struct ndr_pull *ndr, int ndr_flags, struct nbt_name **_r)
+_PUBLIC_ NTSTATUS ndr_pull_wrepl_nbt_name(struct ndr_pull *ndr, int ndr_flags, struct nbt_name **_r)
 {
 	struct nbt_name *r;
 	uint8_t *namebuf;
@@ -532,10 +532,10 @@ NTSTATUS ndr_pull_wrepl_nbt_name(struct ndr_pull *ndr, int ndr_flags, struct nbt
 	return NT_STATUS_OK;
 }
 
-/*
+/**
   push a nbt name, WINS Replication uses another on wire format for nbt name
 */
-NTSTATUS ndr_push_wrepl_nbt_name(struct ndr_push *ndr, int ndr_flags, const struct nbt_name *r)
+_PUBLIC_ NTSTATUS ndr_push_wrepl_nbt_name(struct ndr_push *ndr, int ndr_flags, const struct nbt_name *r)
 {
 	uint8_t *namebuf;
 	uint32_t namebuf_len;
@@ -587,7 +587,7 @@ NTSTATUS ndr_push_wrepl_nbt_name(struct ndr_push *ndr, int ndr_flags, const stru
 	return NT_STATUS_OK;
 }
 
-void ndr_print_wrepl_nbt_name(struct ndr_print *ndr, const char *name, const struct nbt_name *r)
+_PUBLIC_ void ndr_print_wrepl_nbt_name(struct ndr_print *ndr, const char *name, const struct nbt_name *r)
 {
 	char *s = nbt_name_string(ndr, r);
 	ndr_print_string(ndr, name, s);

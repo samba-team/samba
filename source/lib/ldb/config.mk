@@ -3,7 +3,6 @@
 [MODULE::libldb_asq]
 INIT_FUNCTION = ldb_asq_init
 SUBSYSTEM = LIBLDB
-OUTPUT_TYPE = MERGEDOBJ
 OBJ_FILES = \
 		modules/asq.o
 # End MODULE libldb_asq
@@ -14,7 +13,6 @@ OBJ_FILES = \
 [MODULE::libldb_sort]
 INIT_FUNCTION = ldb_sort_init
 SUBSYSTEM = LIBLDB
-OUTPUT_TYPE = MERGEDOBJ
 OBJ_FILES = \
 		modules/sort.o
 # End MODULE libldb_sort
@@ -25,7 +23,6 @@ OBJ_FILES = \
 [MODULE::libldb_paged_results]
 INIT_FUNCTION = ldb_paged_results_init
 SUBSYSTEM = LIBLDB
-OUTPUT_TYPE = MERGEDOBJ
 OBJ_FILES = \
 		modules/paged_results.o
 # End MODULE libldb_paged_results
@@ -36,7 +33,6 @@ OBJ_FILES = \
 [MODULE::libldb_operational]
 SUBSYSTEM = LIBLDB
 INIT_FUNCTION = ldb_operational_init
-OUTPUT_TYPE = MERGEDOBJ
 OBJ_FILES = \
 		modules/operational.o
 # End MODULE libldb_operational
@@ -47,7 +43,6 @@ OBJ_FILES = \
 [MODULE::libldb_objectclass]
 INIT_FUNCTION = ldb_objectclass_init
 SUBSYSTEM = LIBLDB
-OUTPUT_TYPE = MERGEDOBJ
 OBJ_FILES = \
 		modules/objectclass.o
 # End MODULE libldb_objectclass
@@ -58,7 +53,6 @@ OBJ_FILES = \
 [MODULE::libldb_rdn_name]
 SUBSYSTEM = LIBLDB
 INIT_FUNCTION = ldb_rdn_name_init
-OUTPUT_TYPE = MERGEDOBJ
 OBJ_FILES = \
 		modules/rdn_name.o
 # End MODULE libldb_rdn_name
@@ -69,7 +63,6 @@ OBJ_FILES = \
 [MODULE::libldb_schema]
 INIT_FUNCTION = ldb_schema_init
 SUBSYSTEM = LIBLDB
-OUTPUT_TYPE = MERGEDOBJ
 OBJ_FILES = \
 		modules/schema.o
 # End MODULE libldb_schema
@@ -79,7 +72,6 @@ OBJ_FILES = \
 # Start MODULE libldb_ildap
 [MODULE::libldb_ildap]
 SUBSYSTEM = LIBLDB
-OUTPUT_TYPE = MERGEDOBJ
 INIT_FUNCTION = ldb_ildap_init
 OBJ_FILES = \
 		ldb_ildap/ldb_ildap.o
@@ -93,7 +85,6 @@ NOPROTO = YES
 # Start MODULE libldb_map
 [MODULE::libldb_map]
 SUBSYSTEM = LIBLDB
-OUTPUT_TYPE = MERGEDOBJ
 OBJ_FILES = modules/ldb_map.o
 # End MODULE libldb_map
 ################################################
@@ -103,7 +94,6 @@ OBJ_FILES = modules/ldb_map.o
 [MODULE::libldb_skel]
 SUBSYSTEM = LIBLDB
 INIT_FUNCTION = ldb_skel_init
-OUTPUT_TYPE = MERGEDOBJ
 OBJ_FILES = modules/skel.o
 # End MODULE libldb_skel
 ################################################
@@ -112,7 +102,6 @@ OBJ_FILES = modules/skel.o
 # Start MODULE libldb_sqlite3
 [MODULE::libldb_sqlite3]
 SUBSYSTEM = LIBLDB
-OUTPUT_TYPE = MERGEDOBJ
 INIT_FUNCTION = ldb_sqlite3_init
 OBJ_FILES = \
 		ldb_sqlite3/ldb_sqlite3.o
@@ -127,7 +116,6 @@ NOPROTO = YES
 [MODULE::libldb_tdb]
 SUBSYSTEM = LIBLDB
 INIT_FUNCTION = ldb_tdb_init
-OUTPUT_TYPE = MERGEDOBJ
 OBJ_FILES = \
 		ldb_tdb/ldb_tdb.o \
 		ldb_tdb/ldb_search.o \

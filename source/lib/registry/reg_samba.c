@@ -63,7 +63,7 @@ static WERROR reg_samba_get_predef (struct registry_context *ctx, uint32_t hkey,
 	return error;
 }
 
-WERROR reg_open_local (struct registry_context **ctx)
+_PUBLIC_ WERROR reg_open_local (struct registry_context **ctx)
 {
 	*ctx = talloc(NULL, struct registry_context);
 	(*ctx)->get_predefined_key = reg_samba_get_predef;

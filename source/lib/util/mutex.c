@@ -39,7 +39,7 @@ static struct {
   register a set of mutex/rwlock handlers. 
   Should only be called once in the execution of smbd.
 */
-BOOL register_mutex_handlers(const char *name, struct mutex_ops *ops)
+_PUBLIC_ BOOL register_mutex_handlers(const char *name, struct mutex_ops *ops)
 {
 	if (mutex_handlers.name != NULL) {
 		/* it's already registered! */

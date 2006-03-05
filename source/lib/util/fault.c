@@ -46,7 +46,7 @@ static const char *progname;
 /**
  * Write backtrace to debug log
  */
-void call_backtrace(void)
+_PUBLIC_ void call_backtrace(void)
 {
 #ifdef HAVE_BACKTRACE
 #define BACKTRACE_STACK_SIZE 64
@@ -112,7 +112,7 @@ void call_backtrace(void)
 /**
  Something really nasty happened - panic !
 **/
-void smb_panic(const char *why)
+_PUBLIC_ void smb_panic(const char *why)
 {
 	const char *cmd = lp_panic_action();
 	int result;
@@ -181,7 +181,7 @@ static void sig_fault(int sig)
 /**
 setup our fault handlers
 **/
-void fault_setup(const char *pname)
+_PUBLIC_ void fault_setup(const char *pname)
 {
 	if (progname == NULL) {
 		progname = pname;
@@ -204,7 +204,7 @@ void fault_setup(const char *pname)
   register a fault handler. 
   Should only be called once in the execution of smbd.
 */
-BOOL register_fault_handler(const char *name, void (*fault_handler)(int sig))
+_PUBLIC_ BOOL register_fault_handler(const char *name, void (*fault_handler)(int sig))
 {
 	if (fault_handlers.name != NULL) {
 		/* it's already registered! */
