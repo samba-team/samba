@@ -124,8 +124,10 @@ static void copy4(uint8_t *out, uint32_t x)
 	out[3] = (x>>24)&0xFF;
 }
 
-/* produce a md4 message digest from data of length n bytes */
-void mdfour(uint8_t *out, const uint8_t *in, int n)
+/**
+ * produce a md4 message digest from data of length n bytes 
+ */
+_PUBLIC_ void mdfour(uint8_t *out, const uint8_t *in, int n)
 {
 	uint8_t buf[128];
 	uint32_t M[16];

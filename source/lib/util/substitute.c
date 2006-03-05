@@ -32,7 +32,7 @@
    argument this is needed */
 static struct substitute_context *sub;
 
-void sub_set_context(struct substitute_context *subptr)
+_PUBLIC_ void sub_set_context(struct substitute_context *subptr)
 {
 	sub = subptr;
 }
@@ -59,13 +59,13 @@ static void setup_string(char **dest, const char *str)
 	(*dest) = s;
 }
 
-void sub_set_remote_proto(const char *str)
+_PUBLIC_ void sub_set_remote_proto(const char *str)
 {
 	if (!sub) return;
 	setup_string(&sub->remote_proto, str);
 }
 
-void sub_set_remote_arch(const char *str)
+_PUBLIC_ void sub_set_remote_arch(const char *str)
 {
 	if (!sub) return;
 	setup_string(&sub->remote_arch, str);
@@ -74,7 +74,7 @@ void sub_set_remote_arch(const char *str)
 /**
   setup the string used by %U substitution 
 */
-void sub_set_user_name(const char *name)
+_PUBLIC_ void sub_set_user_name(const char *name)
 {
 	if (!sub) return;
 	setup_string(&sub->user_name, name);
@@ -83,7 +83,7 @@ void sub_set_user_name(const char *name)
 /**
 FIXME
 **/
-void standard_sub_basic(char *str,size_t len)
+_PUBLIC_ void standard_sub_basic(char *str,size_t len)
 {
 }
 
@@ -91,12 +91,12 @@ void standard_sub_basic(char *str,size_t len)
  Do some standard substitutions in a string.
  This function will return an allocated string that have to be freed.
 **/
-char *talloc_sub_basic(TALLOC_CTX *mem_ctx, const char *smb_name, const char *str)
+_PUBLIC_ char *talloc_sub_basic(TALLOC_CTX *mem_ctx, const char *smb_name, const char *str)
 {
 	return talloc_strdup(mem_ctx, str);
 }
 
-char *alloc_sub_basic(const char *smb_name, const char *str)
+_PUBLIC_ char *alloc_sub_basic(const char *smb_name, const char *str)
 {
 	return strdup(str);
 }
@@ -106,7 +106,7 @@ char *alloc_sub_basic(const char *smb_name, const char *str)
  This function will return an allocated string that have to be freed.
 **/
 
-char *talloc_sub_specified(TALLOC_CTX *mem_ctx,
+_PUBLIC_ char *talloc_sub_specified(TALLOC_CTX *mem_ctx,
 			const char *input_string,
 			const char *username,
 			const char *domain,
@@ -116,7 +116,7 @@ char *talloc_sub_specified(TALLOC_CTX *mem_ctx,
 	return talloc_strdup(mem_ctx, input_string);
 }
 
-char *alloc_sub_specified(const char *input_string,
+_PUBLIC_ char *alloc_sub_specified(const char *input_string,
 			const char *username,
 			const char *domain,
 			uid_t uid,
@@ -125,7 +125,7 @@ char *alloc_sub_specified(const char *input_string,
 	return strdup(input_string);
 }
 
-char *talloc_sub_advanced(TALLOC_CTX *mem_ctx,
+_PUBLIC_ char *talloc_sub_advanced(TALLOC_CTX *mem_ctx,
 			int snum,
 			const char *user,
 			const char *connectpath,
@@ -136,7 +136,7 @@ char *talloc_sub_advanced(TALLOC_CTX *mem_ctx,
 	return talloc_strdup(mem_ctx, str);
 }
 
-char *alloc_sub_advanced(int snum, const char *user, 
+_PUBLIC_ char *alloc_sub_advanced(int snum, const char *user, 
 				  const char *connectpath, gid_t gid, 
 				  const char *smb_name, char *str)
 {
@@ -147,16 +147,16 @@ char *alloc_sub_advanced(int snum, const char *user,
  Do some standard substitutions in a string.
 **/
 
-void standard_sub_tcon(struct smbsrv_tcon *tcon, char *str, size_t len)
+_PUBLIC_ void standard_sub_tcon(struct smbsrv_tcon *tcon, char *str, size_t len)
 {
 }
 
-char *talloc_sub_tcon(TALLOC_CTX *mem_ctx, struct smbsrv_tcon *tcon, char *str)
+_PUBLIC_ char *talloc_sub_tcon(TALLOC_CTX *mem_ctx, struct smbsrv_tcon *tcon, char *str)
 {
 	return talloc_strdup(mem_ctx, str);
 }
 
-char *alloc_sub_tcon(struct smbsrv_tcon *tcon, char *str)
+_PUBLIC_ char *alloc_sub_tcon(struct smbsrv_tcon *tcon, char *str)
 {
 	return strdup(str);
 }
@@ -165,6 +165,6 @@ char *alloc_sub_tcon(struct smbsrv_tcon *tcon, char *str)
  Like standard_sub but by snum. FIXME
 **/
 
-void standard_sub_snum(int snum, char *str, size_t len)
+_PUBLIC_ void standard_sub_snum(int snum, char *str, size_t len)
 {
 }

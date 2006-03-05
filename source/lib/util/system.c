@@ -44,7 +44,7 @@ in the root domain, which can cause dial-on-demand links to come up for no
 apparent reason.
 ****************************************************************************/
 
-struct hostent *sys_gethostbyname(const char *name)
+_PUBLIC_ struct hostent *sys_gethostbyname(const char *name)
 {
 #ifdef REDUCE_ROOT_DNS_LOOKUPS
 	char query[256], hostname[256];
@@ -80,14 +80,14 @@ struct hostent *sys_gethostbyname(const char *name)
 #endif /* REDUCE_ROOT_DNS_LOOKUPS */
 }
 
-const char *sys_inet_ntoa(struct ipv4_addr in)
+_PUBLIC_ const char *sys_inet_ntoa(struct ipv4_addr in)
 {
 	struct in_addr in2;
 	in2.s_addr = in.addr;
 	return inet_ntoa(in2);
 }
 
-struct ipv4_addr sys_inet_makeaddr(int net, int host)
+_PUBLIC_ struct ipv4_addr sys_inet_makeaddr(int net, int host)
 {
 	struct in_addr in;
 	struct ipv4_addr in2;

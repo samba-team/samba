@@ -61,7 +61,7 @@ static smb_iconv_t conv_handles[NUM_CHARSETS][NUM_CHARSETS];
 /**
  re-initialize iconv conversion descriptors
 **/
-void init_iconv(void)
+_PUBLIC_ void init_iconv(void)
 {
 	charset_t c1, c2;
 	for (c1=0;c1<NUM_CHARSETS;c1++) {
@@ -138,7 +138,7 @@ static smb_iconv_t get_conv_handle(charset_t from, charset_t to)
  * @param destlen maximal length allowed for string
  * @returns the number of bytes occupied in the destination
  **/
-ssize_t convert_string(charset_t from, charset_t to,
+_PUBLIC_ ssize_t convert_string(charset_t from, charset_t to,
 		      void const *src, size_t srclen, 
 		      void *dest, size_t destlen)
 {
@@ -201,7 +201,7 @@ ssize_t convert_string(charset_t from, charset_t to,
  * @returns Size in bytes of the converted string; or -1 in case of error.
  **/
 
-ssize_t convert_string_talloc(TALLOC_CTX *ctx, charset_t from, charset_t to,
+_PUBLIC_ ssize_t convert_string_talloc(TALLOC_CTX *ctx, charset_t from, charset_t to,
 			      void const *src, size_t srclen, void **dest)
 {
 	size_t i_len, o_len, destlen;
@@ -287,7 +287,7 @@ convert:
  * @param dest_len the maximum length in bytes allowed in the
  * destination.  If @p dest_len is -1 then no maximum is used.
  **/
-ssize_t push_ascii(void *dest, const char *src, size_t dest_len, int flags)
+_PUBLIC_ ssize_t push_ascii(void *dest, const char *src, size_t dest_len, int flags)
 {
 	size_t src_len;
 	ssize_t ret;
@@ -319,7 +319,7 @@ ssize_t push_ascii(void *dest, const char *src, size_t dest_len, int flags)
  * @returns The number of bytes occupied by the string in the destination
  *         or -1 in case of error.
  **/
-ssize_t push_ascii_talloc(TALLOC_CTX *ctx, char **dest, const char *src)
+_PUBLIC_ ssize_t push_ascii_talloc(TALLOC_CTX *ctx, char **dest, const char *src)
 {
 	size_t src_len = strlen(src)+1;
 
@@ -343,7 +343,7 @@ ssize_t push_ascii_talloc(TALLOC_CTX *ctx, char **dest, const char *src)
  * @param src_len is the length of the source area in bytes.
  * @returns the number of bytes occupied by the string in @p src.
  **/
-ssize_t pull_ascii(char *dest, const void *src, size_t dest_len, size_t src_len, int flags)
+_PUBLIC_ ssize_t pull_ascii(char *dest, const void *src, size_t dest_len, size_t src_len, int flags)
 {
 	size_t ret;
 
@@ -382,7 +382,7 @@ ssize_t pull_ascii(char *dest, const void *src, size_t dest_len, size_t src_len,
  * @param dest_len is the maximum length allowed in the
  * destination. If dest_len is -1 then no maxiumum is used.
  **/
-ssize_t push_ucs2(void *dest, const char *src, size_t dest_len, int flags)
+_PUBLIC_ ssize_t push_ucs2(void *dest, const char *src, size_t dest_len, int flags)
 {
 	size_t len=0;
 	size_t src_len = strlen(src);
@@ -431,7 +431,7 @@ ssize_t push_ucs2(void *dest, const char *src, size_t dest_len, int flags)
  * @returns The number of bytes occupied by the string in the destination
  *         or -1 in case of error.
  **/
-ssize_t push_ucs2_talloc(TALLOC_CTX *ctx, void **dest, const char *src)
+_PUBLIC_ ssize_t push_ucs2_talloc(TALLOC_CTX *ctx, void **dest, const char *src)
 {
 	size_t src_len = strlen(src)+1;
 	*dest = NULL;
@@ -447,7 +447,7 @@ ssize_t push_ucs2_talloc(TALLOC_CTX *ctx, void **dest, const char *src)
  * @returns The number of bytes occupied by the string in the destination
  **/
 
-ssize_t push_utf8_talloc(TALLOC_CTX *ctx, char **dest, const char *src)
+_PUBLIC_ ssize_t push_utf8_talloc(TALLOC_CTX *ctx, char **dest, const char *src)
 {
 	size_t src_len = strlen(src)+1;
 
@@ -466,7 +466,7 @@ ssize_t push_utf8_talloc(TALLOC_CTX *ctx, char **dest, const char *src)
  The resulting string in "dest" is always null terminated.
 **/
 
-size_t pull_ucs2(char *dest, const void *src, size_t dest_len, size_t src_len, int flags)
+_PUBLIC_ size_t pull_ucs2(char *dest, const void *src, size_t dest_len, size_t src_len, int flags)
 {
 	size_t ret;
 
@@ -503,7 +503,7 @@ size_t pull_ucs2(char *dest, const void *src, size_t dest_len, size_t src_len, i
  * @returns The number of bytes occupied by the string in the destination
  **/
 
-ssize_t pull_ucs2_talloc(TALLOC_CTX *ctx, char **dest, const void *src)
+_PUBLIC_ ssize_t pull_ucs2_talloc(TALLOC_CTX *ctx, char **dest, const void *src)
 {
 	size_t src_len = utf16_len(src);
 	*dest = NULL;
@@ -518,7 +518,7 @@ ssize_t pull_ucs2_talloc(TALLOC_CTX *ctx, char **dest, const void *src)
  * @returns The number of bytes occupied by the string in the destination
  **/
 
-ssize_t pull_utf8_talloc(TALLOC_CTX *ctx, char **dest, const char *src)
+_PUBLIC_ ssize_t pull_utf8_talloc(TALLOC_CTX *ctx, char **dest, const char *src)
 {
 	size_t src_len = strlen(src)+1;
 	*dest = NULL;
@@ -539,7 +539,7 @@ ssize_t pull_utf8_talloc(TALLOC_CTX *ctx, char **dest, const char *src)
  is -1 then no maxiumum is used.
 **/
 
-ssize_t push_string(void *dest, const char *src, size_t dest_len, int flags)
+_PUBLIC_ ssize_t push_string(void *dest, const char *src, size_t dest_len, int flags)
 {
 	if (flags & STR_ASCII) {
 		return push_ascii(dest, src, dest_len, flags);
@@ -566,7 +566,7 @@ ssize_t push_string(void *dest, const char *src, size_t dest_len, int flags)
  The resulting string in "dest" is always null terminated.
 **/
 
-ssize_t pull_string(char *dest, const void *src, size_t dest_len, size_t src_len, int flags)
+_PUBLIC_ ssize_t pull_string(char *dest, const void *src, size_t dest_len, size_t src_len, int flags)
 {
 	if (flags & STR_ASCII) {
 		return pull_ascii(dest, src, dest_len, src_len, flags);
@@ -588,7 +588,7 @@ ssize_t pull_string(char *dest, const void *src, size_t dest_len, size_t src_len
 
   return INVALID_CODEPOINT if the next character cannot be converted
 */
-codepoint_t next_codepoint(const char *str, size_t *size)
+_PUBLIC_ codepoint_t next_codepoint(const char *str, size_t *size)
 {
 	/* it cannot occupy more than 4 bytes in UTF16 format */
 	uint8_t buf[4];
@@ -660,7 +660,7 @@ codepoint_t next_codepoint(const char *str, size_t *size)
   return the number of bytes occupied by the CH_UNIX character, or
   -1 on failure
 */
-ssize_t push_codepoint(char *str, codepoint_t c)
+_PUBLIC_ ssize_t push_codepoint(char *str, codepoint_t c)
 {
 	smb_iconv_t descriptor;
 	uint8_t buf[4];
