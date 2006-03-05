@@ -24,6 +24,11 @@
 #ifndef _SAMBA_UTIL_H_
 #define _SAMBA_UTIL_H_
 
+/**
+ * @file
+ * @brief Helpful macros
+ */
+
 struct substitute_context;
 
 #include "util/xfile.h"
@@ -32,34 +37,55 @@ struct substitute_context;
 #include "util/byteorder.h"
 #include "util/util_proto.h"
 
-/* zero a structure */
+/** 
+ * zero a structure 
+ */
 #define ZERO_STRUCT(x) memset((char *)&(x), 0, sizeof(x))
 
-/* zero a structure given a pointer to the structure */
+/** 
+ * zero a structure given a pointer to the structure 
+ */
 #define ZERO_STRUCTP(x) do { if ((x) != NULL) memset((char *)(x), 0, sizeof(*(x))); } while(0)
 
-/* zero a structure given a pointer to the structure - no zero check */
+/** 
+ * zero a structure given a pointer to the structure - no zero check 
+ */
 #define ZERO_STRUCTPN(x) memset((char *)(x), 0, sizeof(*(x)))
 
-/* pointer difference macro */
+/** 
+ * pointer difference macro 
+ */
 #define PTR_DIFF(p1,p2) ((ptrdiff_t)(((const char *)(p1)) - (const char *)(p2)))
 
-/* work out how many elements there are in a static array */
+/**
+ * work out how many elements there are in a static array 
+ */
 #define ARRAY_SIZE(a) (sizeof(a)/sizeof(a[0]))
 
-/* assert macros */
+/**
+ * assert macros 
+ */
 #define SMB_ASSERT(b) do { if (!(b)) { \
 	DEBUG(0,("PANIC: assert failed at %s(%d)\n", __FILE__, __LINE__)); \
 	smb_panic("assert failed"); }} while (0)
 
+/**
+ * determine the lowest of two values
+ */
 #ifndef MIN
 #define MIN(a,b) ((a)<(b)?(a):(b))
 #endif
 
+/**
+ * determine the highest of two values
+ */
 #ifndef MAX
 #define MAX(a,b) ((a)>(b)?(a):(b))
 #endif
 
+/**
+ * determine absolute value
+ */
 #ifndef ABS
 #define ABS(a) ((a)>0?(a):(-(a)))
 #endif
@@ -77,5 +103,30 @@ struct substitute_context;
 #define malloc_p(type) (type *)malloc(sizeof(type))
 #define malloc_array_p(type, count) (type *)realloc_array(NULL, sizeof(type), count)
 #define realloc_p(p, type, count) (type *)realloc_array(p, sizeof(type), count)
+
+#if defined(VALGRIND)
+#define strlen(x) valgrind_strlen(x)
+#endif
+
+/**
+  this is a warning hack. The idea is to use this everywhere that we
+  get the "discarding const" warning from gcc. That doesn't actually
+  fix the problem of course, but it means that when we do get to
+  cleaning them up we can do it by searching the code for
+  discard_const.
+
+  It also means that other error types aren't as swamped by the noise
+  of hundreds of const warnings, so we are more likely to notice when
+  we get new errors.
+
+  Please only add more uses of this macro when you find it
+  _really_ hard to fix const warnings. Our aim is to eventually use
+  this function in only a very few places.
+
+  Also, please call this via the discard_const_p() macro interface, as that
+  makes the return type safe.
+*/
+#define discard_const(ptr) ((void *)((intptr_t)(ptr)))
+#define discard_const_p(type, ptr) ((type *)discard_const(ptr))
 
 #endif /* _SAMBA_UTIL_H_ */
