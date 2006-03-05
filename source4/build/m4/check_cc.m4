@@ -124,14 +124,16 @@ if test x"$GCC" = x"yes" ; then
 fi
 if test -n "$VISIBILITY_CFLAGS"; then
 	OLD_CFLAGS="${CFLAGS}"
-	CFLAGS="${CFLAGS} ${VISIBILITY_CFLAGS} -D_PUBLIC_=__attribute__((visibility(\"default\")))"
-	VISIBILITY_CFLAGS="${VISIBILITY_CFLAGS} -D_PUBLIC_=\"__attribute__((visibility(\\\"default\\\")))\""
-	AC_MSG_CHECKING([that the C compiler can use the VISIBILITY_CFLAGS])
+	CFLAGS="${CFLAGS} ${VISIBILITY_CFLAGS}"
+	AC_MSG_CHECKING([whether the C compiler supports the visibility attribute])
 	AC_TRY_RUN([
-		_PUBLIC_ void vis_foo1(void) {}
-		__attribute__((visibility("default"))) void vis_foo2(void) {}
-		#include "${srcdir-.}/build/tests/trivial.c"
-		], AC_MSG_RESULT(yes), [AC_MSG_RESULT(no);VISIBILITY_CFLAGS=""])
+#pragma GCC visibility push(hidden)
+void vis_foo1(void) {}
+__attribute__((visibility("default"))) void vis_foo2(void) {}
+#include "${srcdir-.}/build/tests/trivial.c"
+], [AC_MSG_RESULT(yes);
+AC_DEFINE(HAVE_VISIBILITY_ATTR,1,[Whether the C compiler supports the visibility attribute])], 
+[AC_MSG_RESULT(no);VISIBILITY_CFLAGS=""])
 	CFLAGS="${OLD_CFLAGS}"
 fi
 
