@@ -132,36 +132,9 @@ enum brl_type {
 
 #include "util/safe_string.h"
 
-extern int DEBUGLEVEL;
-
-#if defined(VALGRIND)
-#define strlen(x) valgrind_strlen(x)
-#endif
-
 #if 0
 /* darn, we can't do this now that we don't link the ldb tools to all the smb libs */
 #define TALLOC_ABORT(reason) smb_panic(reason)
 #endif
-
-/*
-  this is a warning hack. The idea is to use this everywhere that we
-  get the "discarding const" warning from gcc. That doesn't actually
-  fix the problem of course, but it means that when we do get to
-  cleaning them up we can do it by searching the code for
-  discard_const.
-
-  It also means that other error types aren't as swamped by the noise
-  of hundreds of const warnings, so we are more likely to notice when
-  we get new errors.
-
-  Please only add more uses of this macro when you find it
-  _really_ hard to fix const warnings. Our aim is to eventually use
-  this function in only a very few places.
-
-  Also, please call this via the discard_const_p() macro interface, as that
-  makes the return type safe.
-*/
-#define discard_const(ptr) ((void *)((intptr_t)(ptr)))
-#define discard_const_p(type, ptr) ((type *)discard_const(ptr))
 
 #endif /* _INCLUDES_H */
