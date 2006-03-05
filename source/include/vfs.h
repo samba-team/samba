@@ -59,9 +59,10 @@
 /* Changed to version 12 to add mask and attributes to opendir(). JRA 
    Also include aio calls. JRA. */
 /* Changed to version 13 as the internal structure of files_struct has changed. JRA */
-/* Changed to version 14 as the we had to change DIR to SMB_STRUCT_DIR. JRA */
-/* Changed to version 15 as the we added the statvfs call. JRA */
-#define SMB_VFS_INTERFACE_VERSION 15
+/* Changed to version 14 as we had to change DIR to SMB_STRUCT_DIR. JRA */
+/* Changed to version 15 as we added the statvfs call. JRA */
+/* Changed to version 16 as we added the getlock call. JRA */
+#define SMB_VFS_INTERFACE_VERSION 16
 
 
 /* to bug old modules which are trying to compile with the old functions */
@@ -141,6 +142,7 @@ typedef enum _vfs_op_type {
 	SMB_VFS_OP_UTIME,
 	SMB_VFS_OP_FTRUNCATE,
 	SMB_VFS_OP_LOCK,
+	SMB_VFS_OP_GETLOCK,
 	SMB_VFS_OP_SYMLINK,
 	SMB_VFS_OP_READLINK,
 	SMB_VFS_OP_LINK,
@@ -262,6 +264,7 @@ struct vfs_ops {
 		int (*utime)(struct vfs_handle_struct *handle, struct connection_struct *conn, const char *path, struct utimbuf *times);
 		int (*ftruncate)(struct vfs_handle_struct *handle, struct files_struct *fsp, int fd, SMB_OFF_T offset);
 		BOOL (*lock)(struct vfs_handle_struct *handle, struct files_struct *fsp, int fd, int op, SMB_OFF_T offset, SMB_OFF_T count, int type);
+		BOOL (*getlock)(struct vfs_handle_struct *handle, struct files_struct *fsp, int fd, SMB_OFF_T *poffset, SMB_OFF_T *pcount, int *ptype, pid_t *ppid);
 		int (*symlink)(struct vfs_handle_struct *handle, struct connection_struct *conn, const char *oldpath, const char *newpath);
 		int (*readlink)(struct vfs_handle_struct *handle, struct connection_struct *conn, const char *path, char *buf, size_t bufsiz);
 		int (*link)(struct vfs_handle_struct *handle, struct connection_struct *conn, const char *oldpath, const char *newpath);
@@ -375,6 +378,7 @@ struct vfs_ops {
 		struct vfs_handle_struct *utime;
 		struct vfs_handle_struct *ftruncate;
 		struct vfs_handle_struct *lock;
+		struct vfs_handle_struct *getlock;
 		struct vfs_handle_struct *symlink;
 		struct vfs_handle_struct *readlink;
 		struct vfs_handle_struct *link;

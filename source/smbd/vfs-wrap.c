@@ -759,8 +759,18 @@ BOOL vfswrap_lock(vfs_handle_struct *handle, files_struct *fsp, int fd, int op, 
 	BOOL result;
 
 	START_PROFILE(syscall_fcntl_lock);
-	result =  fcntl_lock(fd, op, offset, count,type);
+	result =  fcntl_lock(fd, op, offset, count, type);
 	END_PROFILE(syscall_fcntl_lock);
+	return result;
+}
+
+BOOL vfswrap_getlock(vfs_handle_struct *handle, files_struct *fsp, int fd, SMB_OFF_T *poffset, SMB_OFF_T *pcount, int *ptype, pid_t *ppid)
+{
+	BOOL result;
+
+	START_PROFILE(syscall_fcntl_getlock);
+	result =  fcntl_getlock(fd, poffset, pcount, ptype, ppid);
+	END_PROFILE(syscall_fcntl_getlock);
 	return result;
 }
 

@@ -658,7 +658,12 @@ static BOOL posix_fcntl_lock(files_struct *fsp, int op, SMB_OFF_T offset, SMB_OF
 
 	DEBUG(8,("posix_fcntl_lock %d %d %.0f %.0f %d\n",fsp->fh->fd,op,(double)offset,(double)count,type));
 
-	ret = SMB_VFS_LOCK(fsp,fsp->fh->fd,op,offset,count,type);
+	if (op != SMB_F_GETLK) {
+		ret = SMB_VFS_LOCK(fsp,fsp->fh->fd,op,offset,count,type);
+	} else {
+		pid_t pid;
+		ret = SMB_VFS_GETLOCK(fsp,fsp->fh->fd,&offset,&count,&type,&pid);
+	}
 
 	if (!ret && ((errno == EFBIG) || (errno == ENOLCK) || (errno ==  EINVAL))) {
 
@@ -682,12 +687,16 @@ static BOOL posix_fcntl_lock(files_struct *fsp, int op, SMB_OFF_T offset, SMB_OF
 			DEBUG(0,("Count greater than 31 bits - retrying with 31 bit truncated length.\n"));
 			errno = 0;
 			count &= 0x7fffffff;
-			ret = SMB_VFS_LOCK(fsp,fsp->fh->fd,op,offset,count,type);
+			if (op != SMB_F_GETLK) {
+				ret = SMB_VFS_LOCK(fsp,fsp->fh->fd,op,offset,count,type);
+			} else {
+				pid_t pid;
+				ret = SMB_VFS_GETLOCK(fsp,fsp->fh->fd,&offset,&count,&type,&pid);
+			}
 		}
 	}
 
 	DEBUG(8,("posix_fcntl_lock: Lock call %s\n", ret ? "successful" : "failed"));
-
 	return ret;
 }
 
@@ -723,7 +732,11 @@ BOOL is_posix_locked(files_struct *fsp,
 	 * fd. So we don't need to use map_lock_type here.
 	 */ 
 
-	return posix_fcntl_lock(fsp,SMB_F_GETLK,offset,count,posix_lock_type);
+	if (!posix_fcntl_lock(fsp,SMB_F_GETLK,&offset,&count,&posix_lock_type)) {
+		return False;
+	}
+
+	return (posix_lock_type != F_UNLCK ? True : False);
 }
 
 /*
