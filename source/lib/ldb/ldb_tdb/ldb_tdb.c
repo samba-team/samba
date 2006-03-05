@@ -1033,7 +1033,7 @@ static const struct ldb_module_ops ltdb_ops = {
 /*
   connect to the database
 */
-int ltdb_connect(struct ldb_context *ldb, const char *url, 
+static int ltdb_connect(struct ldb_context *ldb, const char *url, 
 		 unsigned int flags, const char *options[])
 {
 	const char *path;
@@ -1093,4 +1093,9 @@ int ltdb_connect(struct ldb_context *ldb, const char *url,
 	ldb->sequence_number = ltdb_sequence_number;
 
 	return 0;
+}
+
+int ldb_tdb_init(void)
+{
+	return ldb_register_backend("tdb:", ltdb_connect);
 }

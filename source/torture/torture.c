@@ -26,6 +26,7 @@
 #include "system/filesys.h"
 #include "libcli/raw/ioctl.h"
 #include "libcli/libcli.h"
+#include "lib/ldb/include/ldb.h"
 #include "librpc/rpc/dcerpc_table.h"
 
 #include "torture/basic/proto.h"
@@ -2631,6 +2632,8 @@ static void max_runtime_handler(int sig)
 		signal(SIGALRM, max_runtime_handler);
 		alarm(max_runtime);
 	}
+
+	ldb_global_init();
 
 	dcerpc_init();
 

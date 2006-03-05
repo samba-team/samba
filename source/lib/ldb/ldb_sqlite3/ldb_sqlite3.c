@@ -2070,7 +2070,7 @@ static const struct ldb_module_ops lsqlite3_ops = {
 /*
  * connect to the database
  */
-int lsqlite3_connect(struct ldb_context *ldb,
+static int lsqlite3_connect(struct ldb_context *ldb,
 		     const char *url, 
 		     unsigned int flags, 
 		     const char *options[])
@@ -2137,3 +2137,7 @@ failed:
 	return -1;
 }
 
+int ldb_sqlite3_init(void)
+{
+	return ldb_register_backend("sqlite3", lsqlite3_connect);
+}
