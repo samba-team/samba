@@ -1970,7 +1970,7 @@ static NTSTATUS ldapsam_add_sam_account(struct pdb_methods *my_methods, struct s
 		num_result = ldap_count_entries(ldap_state->smbldap_state->ldap_struct, result);
 		
 		if (num_result > 1) {
-			DEBUG (0, ("ldapsam_add_sam_account: More than one user with that uid exists: bailing out!\n"));
+			DEBUG (0, ("ldapsam_add_sam_account: More than one user with specified Sid exists: bailing out!\n"));
 			TALLOC_FREE( attr_list );
 			ldap_msgfree(result);
 			return NT_STATUS_UNSUCCESSFUL;
@@ -2326,9 +2326,11 @@ static NTSTATUS ldapsam_enum_group_members(struct pdb_methods *methods,
 	*p_num_members = 0;
 
 	filter = talloc_asprintf(mem_ctx,
-				 "(&(objectClass=sambaGroupMapping)"
-				 "(objectClass=posixGroup)"
+				 "(&(objectClass=%s)"
+				 "(objectClass=%s)"
 				 "(sambaSID=%s))",
+				 LDAP_OBJ_POSIXGROUP,
+				 LDAP_OBJ_GROUPMAP,
 				 sid_string_static(group));
 
 	rc = smbldap_search(conn, lp_ldap_group_suffix(),
@@ -2369,7 +2371,7 @@ static NTSTATUS ldapsam_enum_group_members(struct pdb_methods *methods,
 
 	if (values) {
 
-		filter = talloc_strdup(mem_ctx, "(&(objectClass=sambaSamAccount)(|");
+		filter = talloc_asprintf(mem_ctx, "(&(objectClass=%s)(|", LDAP_OBJ_SAMBAACCOUNT);
 		if (filter == NULL) {
 			ret = NT_STATUS_NO_MEMORY;
 			goto done;
@@ -2437,8 +2439,10 @@ static NTSTATUS ldapsam_enum_group_members(struct pdb_methods *methods,
 	}
 
 	filter = talloc_asprintf(mem_ctx,
-				 "(&(objectClass=sambaSamAccount)"
-				 "(gidNumber=%s))", gidstr);
+				 "(&(objectClass=%s)"
+				 "(gidNumber=%s))",
+				 LDAP_OBJ_SAMBASAMACCOUNT,
+				 gidstr);
 
 	rc = smbldap_search(conn, lp_ldap_user_suffix(),
 			    LDAP_SCOPE_SUBTREE, filter, sid_attrs, 0,
@@ -2489,38 +2493,73 @@ static NTSTATUS ldapsam_enum_group_memberships(struct pdb_methods *methods,
 	struct ldapsam_privates *ldap_state =
 		(struct ldapsam_privates *)methods->private_data;
 	struct smbldap_state *conn = ldap_state->smbldap_state;
-	pstring filter;
+	char *filter;
 	const char *attrs[] = { "gidNumber", "sambaSID", NULL };
 	char *escape_name;
-	int rc;
-	LDAPMessage *msg = NULL;
+	int rc, count;
+	LDAPMessage *result = NULL;
 	LDAPMessage *entry;
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
 	size_t num_sids, num_gids;
-	gid_t primary_gid;
+	char *gidstr;
+	gid_t primary_gid = -1;
 
 	*pp_sids = NULL;
 	num_sids = 0;
 
-	if (!sid_to_gid(pdb_get_group_sid(user), &primary_gid)) {
-		DEBUG(1, ("sid_to_gid failed for user's primary group\n"));
-		return NT_STATUS_INTERNAL_DB_CORRUPTION;
-	}
-
 	escape_name = escape_ldap_string_alloc(pdb_get_username(user));
-
 	if (escape_name == NULL)
 		return NT_STATUS_NO_MEMORY;
 
-	pstr_sprintf(filter, "(&(objectClass=posixGroup)"
-		     "(|(memberUid=%s)(gidNumber=%d)))",
-		     escape_name, primary_gid);
+	/* retrieve the users primary gid */
+	filter = talloc_asprintf(mem_ctx,
+				 "(&(objectClass=%s)(uid=%s))",
+				 LDAP_OBJ_SAMBASAMACCOUNT,
+				 escape_name);
 
-	rc = smbldap_search(conn, lp_ldap_group_suffix(),
-			    LDAP_SCOPE_SUBTREE, filter, attrs, 0, &msg);
+	rc = smbldap_search(conn, lp_ldap_user_suffix(),
+			    LDAP_SCOPE_SUBTREE, filter, attrs, 0, &result);
 
 	if (rc != LDAP_SUCCESS)
 		goto done;
+
+	talloc_autofree_ldapmsg(mem_ctx, result);
+
+	count = ldap_count_entries(priv2ld(ldap_state), result);
+
+	switch (count) {
+	case 0:	
+		DEBUG(1, ("User account [%s] not found!\n", pdb_get_username(user)));
+		ret = NT_STATUS_NO_SUCH_USER;
+		goto done;
+	case 1:
+		entry = ldap_first_entry(priv2ld(ldap_state), result);
+
+		gidstr = smbldap_talloc_single_attribute(priv2ld(ldap_state), entry, "gidNumber", mem_ctx);
+		if (!gidstr) {
+			DEBUG (1, ("Unable to find the member's gid!\n"));
+			ret = NT_STATUS_INTERNAL_DB_CORRUPTION;
+			goto done;
+		}
+		primary_gid = strtoul(gidstr, NULL, 10);
+		break;
+	default:
+		DEBUG(1, ("found more than one accoutn with the same user name ?!\n"));
+		ret = NT_STATUS_INTERNAL_DB_CORRUPTION;
+		goto done;
+	}
+
+	filter = talloc_asprintf(mem_ctx,
+				 "(&(objectClass=%s)(|(memberUid=%s)(gidNumber=%d)))",
+				 LDAP_OBJ_POSIXGROUP, escape_name, primary_gid);
+
+	rc = smbldap_search(conn, lp_ldap_group_suffix(),
+			    LDAP_SCOPE_SUBTREE, filter, attrs, 0, &result);
+
+	if (rc != LDAP_SUCCESS)
+		goto done;
+
+	talloc_autofree_ldapmsg(mem_ctx, result);
 
 	num_gids = 0;
 	*pp_gids = NULL;
@@ -2536,7 +2575,7 @@ static NTSTATUS ldapsam_enum_group_memberships(struct pdb_methods *methods,
 
 	add_sid_to_array_unique(mem_ctx, &global_sid_NULL, pp_sids, &num_sids);
 
-	for (entry = ldap_first_entry(conn->ldap_struct, msg);
+	for (entry = ldap_first_entry(conn->ldap_struct, result);
 	     entry != NULL;
 	     entry = ldap_next_entry(conn->ldap_struct, entry))
 	{
@@ -2581,15 +2620,12 @@ static NTSTATUS ldapsam_enum_group_memberships(struct pdb_methods *methods,
 
 	*p_num_groups = num_sids;
 
-	result = NT_STATUS_OK;
+	ret = NT_STATUS_OK;
 
  done:
 
 	SAFE_FREE(escape_name);
-	if (msg != NULL)
-		ldap_msgfree(msg);
-
-	return result;
+	return ret;
 }
 
 /**********************************************************************
@@ -2814,9 +2850,10 @@ static NTSTATUS ldapsam_update_group_mapping_entry(struct pdb_methods *methods,
 	/* Make 100% sure that sid, gid and type are not changed by looking up
 	 * exactly the values we're given in LDAP. */
 
-	filter = talloc_asprintf(mem_ctx, "(&(objectClass=sambaGroupMapping)"
+	filter = talloc_asprintf(mem_ctx, "(&(objectClass=%s)"
 				 "(sambaSid=%s)(gidNumber=%u)"
 				 "(sambaGroupType=%d))",
+				 LDAP_OBJ_GROUPMAP,
 				 sid_string_static(&map->sid), map->gid,
 				 map->sid_name_use);
 	if (filter == NULL) {
@@ -3613,8 +3650,7 @@ static NTSTATUS ldapsam_lookup_rids(struct pdb_methods *methods,
 
 	for (i=0; i<num_rids; i++) {
 		DOM_SID sid;
-		sid_copy(&sid, domain_sid);
-		sid_append_rid(&sid, rids[i]);
+		sid_compose(&sid, domain_sid, rids[i]);
 		allsids = talloc_asprintf_append(allsids, "(sambaSid=%s)",
 						 sid_string_static(&sid));
 		if (allsids == NULL) {
@@ -3629,8 +3665,8 @@ static NTSTATUS ldapsam_lookup_rids(struct pdb_methods *methods,
 		const char *ldap_attrs[] = { "uid", "sambaSid", NULL };
 
 		filter = talloc_asprintf(
-			mem_ctx, ("(&(objectClass=sambaSamAccount)(|%s))"),
-			allsids);
+			mem_ctx, ("(&(objectClass=%s)(|%s))"),
+			LDAP_OBJ_SAMBASAMACCOUNT, allsids);
 
 		if (filter == NULL) {
 			goto done;
@@ -3698,8 +3734,8 @@ static NTSTATUS ldapsam_lookup_rids(struct pdb_methods *methods,
 					     "sambaGroupType", NULL };
 
 		filter = talloc_asprintf(
-			mem_ctx, "(&(objectClass=sambaGroupMapping)(|%s))",
-			allsids);
+			mem_ctx, "(&(objectClass=%s)(|%s))",
+			LDAP_OBJ_GROUPMAP, allsids);
 		if (filter == NULL) {
 			goto done;
 		}
@@ -4464,9 +4500,9 @@ static BOOL ldapsam_sid_to_id(struct pdb_methods *methods,
 
 	filter = talloc_asprintf(mem_ctx,
 				 "(&(sambaSid=%s)"
-				 "(|(objectClass=sambaGroupMapping)"
-				 "(objectClass=sambaSamAccount)))",
-				 sid_string_static(sid));
+				 "(|(objectClass=%s)(objectClass=%s)))",
+				 sid_string_static(sid),
+				 LDAP_OBJ_GROUPMAP, LDAP_OBJ_SAMBASAMACCOUNT);
 	if (filter == NULL) {
 		DEBUG(5, ("talloc_asprintf failed\n"));
 		goto done;
@@ -4568,12 +4604,16 @@ static NTSTATUS ldapsam_create_user(struct pdb_methods *my_methods,
 	NTSTATUS ret;
 	int rc;
 	
-	if ((acb_info & ACB_NORMAL) && name[strlen(name)-1] == '$') {
+	if (((acb_info & ACB_NORMAL) && name[strlen(name)-1] == '$') ||
+	      acb_info & ACB_WSTRUST ||
+	      acb_info & ACB_SVRTRUST ||
+	      acb_info & ACB_DOMTRUST) {
 		is_machine = True;
 	}
 
 	username = escape_ldap_string_alloc(name);
-	filter = talloc_asprintf(tmp_ctx, "(&(uid=%s)(objectClass=posixAccount))", username);
+	filter = talloc_asprintf(tmp_ctx, "(&(uid=%s)(objectClass=%s))",
+				 username, LDAP_OBJ_POSIXACCOUNT);
 	SAFE_FREE(username);
 
 	rc = smbldap_search_suffix(ldap_state->smbldap_state, filter, NULL, &result);
@@ -4625,8 +4665,7 @@ static NTSTATUS ldapsam_create_user(struct pdb_methods *my_methods,
 		return ret;
 	}
 
-	sid_copy(&user_sid, get_global_sam_sid());
-	sid_append_rid(&user_sid, *rid);
+	sid_compose(&user_sid, get_global_sam_sid(), *rid);
 
 	user = samu_new(tmp_ctx);
 	if (!user) {
@@ -4643,9 +4682,16 @@ static NTSTATUS ldapsam_create_user(struct pdb_methods *my_methods,
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 	if (is_machine) {
-		if (!pdb_set_acct_ctrl(user, ACB_WSTRUST | ACB_DISABLED, PDB_SET)) {
-			DEBUG(1,("ldapsam_create_user: Unable to fill user structs\n"));
-			return NT_STATUS_UNSUCCESSFUL;
+		if (acb_info & ACB_NORMAL) {
+			if (!pdb_set_acct_ctrl(user, ACB_WSTRUST, PDB_SET)) {
+				DEBUG(1,("ldapsam_create_user: Unable to fill user structs\n"));
+				return NT_STATUS_UNSUCCESSFUL;
+			}
+		} else {
+			if (!pdb_set_acct_ctrl(user, acb_info, PDB_SET)) {
+				DEBUG(1,("ldapsam_create_user: Unable to fill user structs\n"));
+				return NT_STATUS_UNSUCCESSFUL;
+			}
 		}
 	} else {
 		if (!pdb_set_acct_ctrl(user, ACB_NORMAL | ACB_DISABLED, PDB_SET)) {
@@ -4664,17 +4710,10 @@ static NTSTATUS ldapsam_create_user(struct pdb_methods *my_methods,
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	switch ( ldap_state->schema_ver ) {
-		case SCHEMAVER_SAMBAACCOUNT:
-			smbldap_set_mod(&mods, LDAP_MOD_ADD, "objectClass", LDAP_OBJ_SAMBAACCOUNT);
-			break;
-		case SCHEMAVER_SAMBASAMACCOUNT:
-			smbldap_set_mod(&mods, LDAP_MOD_ADD, "objectClass", LDAP_OBJ_SAMBASAMACCOUNT);
-			break;
-		default:
-			DEBUG(0,("ldapsam_add_sam_account: invalid schema version specified\n"));
-			break;
+	if (ldap_state->schema_ver != SCHEMAVER_SAMBASAMACCOUNT) {
+		DEBUG(1,("ldapsam_create_user: Unsupported schema version\n"));
 	}
+	smbldap_set_mod(&mods, LDAP_MOD_ADD, "objectClass", LDAP_OBJ_SAMBASAMACCOUNT);
 
 	if (add_posix) {
 		DEBUG(3,("ldapsam_create_user: Creating new posix user\n"));
@@ -4757,9 +4796,11 @@ static NTSTATUS ldapsam_delete_user(struct pdb_methods *my_methods, TALLOC_CTX *
 	
 	filter = talloc_asprintf(tmp_ctx,
 				 "(&(uid=%s)"
-				 "(objectClass=posixAccount)"
-				 "(objectClass=sambaSamAccount))",
-				 pdb_get_username(sam_acct));
+				 "(objectClass=%s)"
+				 "(objectClass=%s))",
+				 pdb_get_username(sam_acct),
+				 LDAP_OBJ_POSIXACCOUNT,
+				 LDAP_OBJ_SAMBASAMACCOUNT);
 
 	rc = smbldap_search_suffix(ldap_state->smbldap_state, filter, NULL, &result);
 	if (rc != LDAP_SUCCESS) {
@@ -4833,7 +4874,8 @@ static NTSTATUS ldapsam_create_dom_group(struct pdb_methods *my_methods,
 	int rc;
 	
 	groupname = escape_ldap_string_alloc(name);
-	filter = talloc_asprintf(tmp_ctx, "(&(cn=%s)(objectClass=posixGroup))", groupname);
+	filter = talloc_asprintf(tmp_ctx, "(&(cn=%s)(objectClass=%s))",
+				 groupname, LDAP_OBJ_POSIXGROUP);
 	SAFE_FREE(groupname);
 
 	rc = smbldap_search_suffix(ldap_state->smbldap_state, filter, NULL, &result);
@@ -4912,8 +4954,7 @@ static NTSTATUS ldapsam_create_dom_group(struct pdb_methods *my_methods,
 		return ret;
 	}
 
-	sid_copy(&group_sid, get_global_sam_sid());
-	sid_append_rid(&group_sid, *rid);
+	sid_compose(&group_sid, get_global_sam_sid(), *rid);
 
 	groupsidstr = talloc_strdup(tmp_ctx, sid_string_static(&group_sid));
 	grouptype = talloc_asprintf(tmp_ctx, "%d", SID_NAME_DOM_GRP);
@@ -4923,7 +4964,7 @@ static NTSTATUS ldapsam_create_dom_group(struct pdb_methods *my_methods,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	smbldap_set_mod(&mods, LDAP_MOD_ADD, "objectClass", "sambaGroupMapping");
+	smbldap_set_mod(&mods, LDAP_MOD_ADD, "objectClass", LDAP_OBJ_GROUPMAP);
 	smbldap_set_mod(&mods, LDAP_MOD_ADD, "sambaSid", groupsidstr);
 	smbldap_set_mod(&mods, LDAP_MOD_ADD, "sambaGroupType", grouptype);
 	smbldap_set_mod(&mods, LDAP_MOD_ADD, "displayName", name);
@@ -4966,14 +5007,15 @@ static NTSTATUS ldapsam_delete_dom_group(struct pdb_methods *my_methods, TALLOC_
 	int rc;
 
 	/* get the group sid */
-	sid_copy(&group_sid, get_global_sam_sid());
-	sid_append_rid(&group_sid, rid);
+	sid_compose(&group_sid, get_global_sam_sid(), rid);
 
 	filter = talloc_asprintf(tmp_ctx,
 				 "(&(sambaSID=%s)"
-				 "(objectClass=posixGroup)"
-				 "(objectClass=sambaGroupMapping))",
-				 sid_string_static(&group_sid));
+				 "(objectClass=%s)"
+				 "(objectClass=%s))",
+				 sid_string_static(&group_sid),
+				 LDAP_OBJ_POSIXGROUP,
+				 LDAP_OBJ_GROUPMAP);
 
 	rc = smbldap_search_suffix(ldap_state->smbldap_state, filter, NULL, &result);
 	if (rc != LDAP_SUCCESS) {
@@ -5015,9 +5057,11 @@ static NTSTATUS ldapsam_delete_dom_group(struct pdb_methods *my_methods, TALLOC_
 	/* check no user have this group marked as primary group */
 	filter = talloc_asprintf(tmp_ctx,
 				 "(&(gidNumber=%s)"
-				 "(objectClass=posixAccount)"
-				 "(objectClass=sambaSamAccount))",
-				 gidstr);
+				 "(objectClass=%s)"
+				 "(objectClass=%s))",
+				 gidstr,
+				 LDAP_OBJ_POSIXACCOUNT,
+				 LDAP_OBJ_SAMBASAMACCOUNT);
 
 	rc = smbldap_search_suffix(ldap_state->smbldap_state, filter, NULL, &result);
 	if (rc != LDAP_SUCCESS) {
@@ -5071,18 +5115,18 @@ static NTSTATUS ldapsam_change_groupmem(struct pdb_methods *my_methods,
 	}
 	
 	/* get member sid  */
-	sid_copy(&member_sid, get_global_sam_sid());
-	sid_append_rid(&member_sid, member_rid);
+	sid_compose(&member_sid, get_global_sam_sid(), member_rid);
 
 	/* get the group sid */
-	sid_copy(&group_sid, get_global_sam_sid());
-	sid_append_rid(&group_sid, group_rid);
+	sid_compose(&group_sid, get_global_sam_sid(), group_rid);
 
 	filter = talloc_asprintf(tmp_ctx,
 				 "(&(sambaSID=%s)"
-				 "(objectClass=posixAccount)"
-				 "(objectClass=sambaSamAccount))",
-				 sid_string_static(&member_sid));
+				 "(objectClass=%s)"
+				 "(objectClass=%s))",
+				 sid_string_static(&member_sid),
+				 LDAP_OBJ_POSIXACCOUNT,
+				 LDAP_OBJ_SAMBASAMACCOUNT);
 
 	/* get the member uid */
 	rc = smbldap_search_suffix(ldap_state->smbldap_state, filter, NULL, &result);
@@ -5142,9 +5186,11 @@ static NTSTATUS ldapsam_change_groupmem(struct pdb_methods *my_methods,
 
 	filter = talloc_asprintf(tmp_ctx,
 				 "(&(sambaSID=%s)"
-				 "(objectClass=posixGroup)"
-				 "(objectClass=sambaGroupMapping))",
-				 sid_string_static(&group_sid));
+				 "(objectClass=%s)"
+				 "(objectClass=%s))",
+				 sid_string_static(&group_sid),
+				 LDAP_OBJ_POSIXGROUP,
+				 LDAP_OBJ_GROUPMAP);
 
 	/* get the group */
 	rc = smbldap_search_suffix(ldap_state->smbldap_state, filter, NULL, &result);
@@ -5242,9 +5288,11 @@ static NTSTATUS ldapsam_set_primary_group(struct pdb_methods *my_methods,
 	
 	filter = talloc_asprintf(mem_ctx,
 				 "(&(uid=%s)"
-				 "(objectClass=posixAccount)"
-				 "(objectClass=sambaSamAccount))",
-				 pdb_get_username(sampass));
+				 "(objectClass=%s)"
+				 "(objectClass=%s))",
+				 pdb_get_username(sampass),
+				 LDAP_OBJ_POSIXACCOUNT,
+				 LDAP_OBJ_SAMBASAMACCOUNT);
 
 	rc = smbldap_search_suffix(ldap_state->smbldap_state, filter, NULL, &result);
 	if (rc != LDAP_SUCCESS) {
