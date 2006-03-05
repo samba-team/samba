@@ -32,6 +32,7 @@ for bindoptions in validate seal; do
         "-k no --option=usespnego=yes --option=clientntlmv2auth=yes --option=ntlmssp_client:128bit=no" \
         "-k no --option=usespnego=yes --option=clientntlmv2auth=yes --option=ntlmssp_client:128bit=no --option=ntlmssp_client:56bit=yes" \
         "-k no --option=usespnego=no --option=clientntlmv2auth=yes" \
+        "-k no --option=gensec:spnego=no --option=clientntlmv2auth=yes" \
         "-k no --option=usespnego=no" \
     ; do
    name="RPC-SECRETS on $transport:$server[$bindoptions] with NTLM2:$ntlm2 KEYEX:$keyexchange LM_KEY:$lm_key $ntlmoptions"
