@@ -199,7 +199,7 @@ sub fn_declare($$)
 
 	if (has_property($fn, "public")) {
 		pidl_hdr "$decl;";
-		pidl "$decl";
+		pidl "_PUBLIC_ $decl";
 	} else {
 		pidl "static $decl";
 	}
@@ -1867,7 +1867,7 @@ sub ParseTypedefPrint($)
 
 	my $args = $typefamily{$e->{DATA}->{TYPE}}->{DECL}->($e,"print");
 
-	pidl "void ndr_print_$e->{NAME}(struct ndr_print *ndr, const char *name, $args)";
+	pidl "_PUBLIC_ void ndr_print_$e->{NAME}(struct ndr_print *ndr, const char *name, $args)";
 	pidl_hdr "void ndr_print_$e->{NAME}(struct ndr_print *ndr, const char *name, $args);";
 	pidl "{";
 	indent;
@@ -1904,7 +1904,7 @@ sub ParseFunctionPrint($)
 
 	return if has_property($fn, "noprint");
 
-	pidl "void ndr_print_$fn->{NAME}(struct ndr_print *ndr, const char *name, int flags, const struct $fn->{NAME} *r)";
+	pidl "_PUBLIC_ void ndr_print_$fn->{NAME}(struct ndr_print *ndr, const char *name, int flags, const struct $fn->{NAME} *r)";
 	pidl_hdr "void ndr_print_$fn->{NAME}(struct ndr_print *ndr, const char *name, int flags, const struct $fn->{NAME} *r);";
 	pidl "{";
 	indent;

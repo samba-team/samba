@@ -22,10 +22,10 @@
 
 #include "includes.h"
 
-/*
+/**
   pull a general string from the wire
 */
-NTSTATUS ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, const char **s)
+_PUBLIC_ NTSTATUS ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, const char **s)
 {
 	char *as=NULL;
 	uint32_t len1, ofs, len2;
@@ -281,10 +281,10 @@ NTSTATUS ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, const char **s)
 }
 
 
-/*
+/**
   push a general string onto the wire
 */
-NTSTATUS ndr_push_string(struct ndr_push *ndr, int ndr_flags, const char *s)
+_PUBLIC_ NTSTATUS ndr_push_string(struct ndr_push *ndr, int ndr_flags, const char *s)
 {
 	ssize_t s_len, c_len, d_len;
 	int ret;
@@ -461,10 +461,10 @@ NTSTATUS ndr_push_string(struct ndr_push *ndr, int ndr_flags, const char *s)
 	return NT_STATUS_OK;
 }
 
-/*
+/**
   push a general string onto the wire
 */
-size_t ndr_string_array_size(struct ndr_push *ndr, const char *s)
+_PUBLIC_ size_t ndr_string_array_size(struct ndr_push *ndr, const char *s)
 {
 	size_t c_len;
 	unsigned flags = ndr->flags;
@@ -497,7 +497,7 @@ size_t ndr_string_array_size(struct ndr_push *ndr, const char *s)
 	return c_len;
 }
 
-void ndr_print_string(struct ndr_print *ndr, const char *name, const char *s)
+_PUBLIC_ void ndr_print_string(struct ndr_print *ndr, const char *name, const char *s)
 {
 	if (s) {
 		ndr->print(ndr, "%-25s: '%s'", name, s);
@@ -506,17 +506,17 @@ void ndr_print_string(struct ndr_print *ndr, const char *name, const char *s)
 	}
 }
 
-uint32_t ndr_size_string(int ret, const char * const* string, int flags) 
+_PUBLIC_ uint32_t ndr_size_string(int ret, const char * const* string, int flags) 
 {
 	/* FIXME: Is this correct for all strings ? */
 	if(!(*string)) return ret;
 	return ret+strlen(*string)+1;
 }
 
-/*
+/**
   pull a general string array from the wire
 */
-NTSTATUS ndr_pull_string_array(struct ndr_pull *ndr, int ndr_flags, const char ***_a)
+_PUBLIC_ NTSTATUS ndr_pull_string_array(struct ndr_pull *ndr, int ndr_flags, const char ***_a)
 {
 	const char **a = *_a;
 	uint32_t count;
@@ -549,10 +549,10 @@ NTSTATUS ndr_pull_string_array(struct ndr_pull *ndr, int ndr_flags, const char *
 	return NT_STATUS_OK;
 }
 
-/*
+/**
   push a general string array onto the wire
 */
-NTSTATUS ndr_push_string_array(struct ndr_push *ndr, int ndr_flags, const char **a)
+_PUBLIC_ NTSTATUS ndr_push_string_array(struct ndr_push *ndr, int ndr_flags, const char **a)
 {
 	uint32_t count;
 
@@ -569,7 +569,7 @@ NTSTATUS ndr_push_string_array(struct ndr_push *ndr, int ndr_flags, const char *
 	return NT_STATUS_OK;
 }
 
-void ndr_print_string_array(struct ndr_print *ndr, const char *name, const char **a)
+_PUBLIC_ void ndr_print_string_array(struct ndr_print *ndr, const char *name, const char **a)
 {
 	uint32_t count;
 	uint32_t i;
@@ -589,8 +589,10 @@ void ndr_print_string_array(struct ndr_print *ndr, const char *name, const char 
 	ndr->depth--;
 }
 
-/* Return number of elements in a string including the last (zeroed) element */
-uint32_t ndr_string_length(const void *_var, uint32_t element_size)
+/**
+ * Return number of elements in a string including the last (zeroed) element 
+ */
+_PUBLIC_ uint32_t ndr_string_length(const void *_var, uint32_t element_size)
 {
 	uint32_t i;
 	uint8_t zero[4] = {0,0,0,0};
@@ -601,7 +603,7 @@ uint32_t ndr_string_length(const void *_var, uint32_t element_size)
 	return i+1;
 }
 
-NTSTATUS ndr_check_string_terminator(struct ndr_pull *ndr, uint32_t count, uint32_t element_size)
+_PUBLIC_ NTSTATUS ndr_check_string_terminator(struct ndr_pull *ndr, uint32_t count, uint32_t element_size)
 {
 	uint32_t i;
 	struct ndr_pull_save save_offset;
@@ -623,7 +625,7 @@ NTSTATUS ndr_check_string_terminator(struct ndr_pull *ndr, uint32_t count, uint3
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_charset(struct ndr_pull *ndr, int ndr_flags, const char **var, uint32_t length, uint8_t byte_mul, int chset)
+_PUBLIC_ NTSTATUS ndr_pull_charset(struct ndr_pull *ndr, int ndr_flags, const char **var, uint32_t length, uint8_t byte_mul, int chset)
 {
 	int ret;
 	if (length == 0) {
@@ -647,7 +649,7 @@ NTSTATUS ndr_pull_charset(struct ndr_pull *ndr, int ndr_flags, const char **var,
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_push_charset(struct ndr_push *ndr, int ndr_flags, const char *var, uint32_t length, uint8_t byte_mul, int chset)
+_PUBLIC_ NTSTATUS ndr_push_charset(struct ndr_push *ndr, int ndr_flags, const char *var, uint32_t length, uint8_t byte_mul, int chset)
 {
 	ssize_t ret, required;
 
@@ -673,7 +675,7 @@ NTSTATUS ndr_push_charset(struct ndr_push *ndr, int ndr_flags, const char *var, 
 }
 
 /* Return number of elements in a string in the specified charset */
-uint32_t ndr_charset_length(const void *var, int chset)
+_PUBLIC_ uint32_t ndr_charset_length(const void *var, int chset)
 {
 	/* FIXME: Treat special chars special here, taking chset into account */
 	/* Also include 0 byte */
