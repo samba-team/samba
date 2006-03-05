@@ -747,6 +747,8 @@ static int net_sam_show(int argc, const char **argv)
 	return 0;
 }
 
+#ifdef HAVE_LDAP
+
 /*
  * Init an LDAP tree with default users and Groups
  * if ldapsam:editposix is enabled
@@ -1130,6 +1132,7 @@ failed:
 	talloc_free(tc);
 	return -1;
 }
+#endif
 
 /***********************************************************
  migrated functionality from smbgroupedit
@@ -1153,8 +1156,10 @@ int net_sam(int argc, const char **argv)
 		  "Show details of a SAM entry" },
 		{ "set", net_sam_set,
 		  "Set details of a SAM account" },
+#ifdef HAVE_LDAP
 		{ "provision", net_sam_provision,
 		  "Provision a clean User Database" },
+#endif
 		{ NULL, NULL, NULL }
 	};
 
