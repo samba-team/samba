@@ -23,10 +23,11 @@
 #include "includes.h"
 #include "libcli/nbt/libnbt.h"
 #include "lib/socket/socket.h"
-/*
+
+/**
   send a nbt name query
 */
-struct nbt_name_request *nbt_name_query_send(struct nbt_name_socket *nbtsock,
+_PUBLIC_ struct nbt_name_request *nbt_name_query_send(struct nbt_name_socket *nbtsock,
 					     struct nbt_name_query *io)
 {
 	struct nbt_name_request *req;
@@ -67,10 +68,10 @@ failed:
 	return NULL;	
 }
 
-/*
+/**
   wait for a name query reply
 */
-NTSTATUS nbt_name_query_recv(struct nbt_name_request *req, 
+_PUBLIC_ NTSTATUS nbt_name_query_recv(struct nbt_name_request *req, 
 			     TALLOC_CTX *mem_ctx, struct nbt_name_query *io)
 {
 	NTSTATUS status;
@@ -122,10 +123,10 @@ NTSTATUS nbt_name_query_recv(struct nbt_name_request *req,
 	return NT_STATUS_OK;
 }
 
-/*
+/**
   wait for a name query reply
 */
-NTSTATUS nbt_name_query(struct nbt_name_socket *nbtsock, 
+_PUBLIC_ NTSTATUS nbt_name_query(struct nbt_name_socket *nbtsock, 
 			TALLOC_CTX *mem_ctx, struct nbt_name_query *io)
 {
 	struct nbt_name_request *req = nbt_name_query_send(nbtsock, io);
@@ -133,10 +134,10 @@ NTSTATUS nbt_name_query(struct nbt_name_socket *nbtsock,
 }
 
 
-/*
+/**
   send a nbt name status
 */
-struct nbt_name_request *nbt_name_status_send(struct nbt_name_socket *nbtsock,
+_PUBLIC_ struct nbt_name_request *nbt_name_status_send(struct nbt_name_socket *nbtsock,
 					      struct nbt_name_status *io)
 {
 	struct nbt_name_request *req;
@@ -171,10 +172,10 @@ failed:
 	return NULL;	
 }
 
-/*
+/**
   wait for a name status reply
 */
-NTSTATUS nbt_name_status_recv(struct nbt_name_request *req, 
+_PUBLIC_ NTSTATUS nbt_name_status_recv(struct nbt_name_request *req, 
 			     TALLOC_CTX *mem_ctx, struct nbt_name_status *io)
 {
 	NTSTATUS status;
@@ -220,10 +221,10 @@ NTSTATUS nbt_name_status_recv(struct nbt_name_request *req,
 	return NT_STATUS_OK;
 }
 
-/*
+/**
   wait for a name status reply
 */
-NTSTATUS nbt_name_status(struct nbt_name_socket *nbtsock, 
+_PUBLIC_ NTSTATUS nbt_name_status(struct nbt_name_socket *nbtsock, 
 			TALLOC_CTX *mem_ctx, struct nbt_name_status *io)
 {
 	struct nbt_name_request *req = nbt_name_status_send(nbtsock, io);

@@ -26,7 +26,7 @@
 #include "includes.h"
 #include "system/network.h"
 
-void ndr_print_ipv4_addr(struct ndr_print *ndr, const char *name, const struct ipv4_addr *_ip)
+_PUBLIC_ void ndr_print_ipv4_addr(struct ndr_print *ndr, const char *name, const struct ipv4_addr *_ip)
 {
 	struct ipv4_addr ip;
 
@@ -35,10 +35,10 @@ void ndr_print_ipv4_addr(struct ndr_print *ndr, const char *name, const struct i
 	ndr->print(ndr, "%-25s: %s", name, sys_inet_ntoa(ip));
 }
 
-/*
+/**
   build a GUID from a string
 */
-NTSTATUS GUID_from_string(const char *s, struct GUID *guid)
+_PUBLIC_ NTSTATUS GUID_from_string(const char *s, struct GUID *guid)
 {
 	NTSTATUS status = NT_STATUS_INVALID_PARAMETER;
 	uint32_t time_low;
@@ -79,7 +79,9 @@ NTSTATUS GUID_from_string(const char *s, struct GUID *guid)
 	return NT_STATUS_OK;
 }
 
-/* generate a random GUID */
+/**
+ * generate a random GUID
+ */
 struct GUID GUID_random(void)
 {
 	struct GUID guid;
@@ -91,8 +93,10 @@ struct GUID GUID_random(void)
 	return guid;
 }
 
-/* generate a random GUID */
-struct GUID GUID_zero(void)
+/**
+ * generate an empty GUID 
+ */
+_PUBLIC_ struct GUID GUID_zero(void)
 {
 	struct GUID guid;
 
@@ -101,7 +105,7 @@ struct GUID GUID_zero(void)
 	return guid;
 }
 
-BOOL GUID_all_zero(const struct GUID *u)
+_PUBLIC_ BOOL GUID_all_zero(const struct GUID *u)
 {
 	if (u->time_low != 0 ||
 	    u->time_mid != 0 ||
@@ -114,7 +118,7 @@ BOOL GUID_all_zero(const struct GUID *u)
 	return True;
 }
 
-BOOL GUID_equal(const struct GUID *u1, const struct GUID *u2)
+_PUBLIC_ BOOL GUID_equal(const struct GUID *u1, const struct GUID *u2)
 {
 	if (u1->time_low != u2->time_low ||
 	    u1->time_mid != u2->time_mid ||
@@ -127,10 +131,10 @@ BOOL GUID_equal(const struct GUID *u1, const struct GUID *u2)
 	return True;
 }
 
-/*
+/**
   its useful to be able to display these in debugging messages
 */
-char *GUID_string(TALLOC_CTX *mem_ctx, const struct GUID *guid)
+_PUBLIC_ char *GUID_string(TALLOC_CTX *mem_ctx, const struct GUID *guid)
 {
 	return talloc_asprintf(mem_ctx, 
 			       "%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x",
@@ -143,7 +147,7 @@ char *GUID_string(TALLOC_CTX *mem_ctx, const struct GUID *guid)
 			       guid->node[4], guid->node[5]);
 }
 
-char *GUID_string2(TALLOC_CTX *mem_ctx, const struct GUID *guid)
+_PUBLIC_ char *GUID_string2(TALLOC_CTX *mem_ctx, const struct GUID *guid)
 {
 	char *ret, *s = GUID_string(mem_ctx, guid);
 	ret = talloc_asprintf(mem_ctx, "{%s}", s);
@@ -151,13 +155,12 @@ char *GUID_string2(TALLOC_CTX *mem_ctx, const struct GUID *guid)
 	return ret;
 }
 
-
-void ndr_print_GUID(struct ndr_print *ndr, const char *name, const struct GUID *guid)
+_PUBLIC_ void ndr_print_GUID(struct ndr_print *ndr, const char *name, const struct GUID *guid)
 {
 	ndr->print(ndr, "%-25s: %s", name, GUID_string(ndr, guid));
 }
 
-BOOL policy_handle_empty(struct policy_handle *h) 
+_PUBLIC_ BOOL policy_handle_empty(struct policy_handle *h) 
 {
 	return (h->handle_type == 0 && GUID_all_zero(&h->uuid));
 }

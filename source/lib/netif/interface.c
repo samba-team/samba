@@ -233,7 +233,7 @@ static void load_interfaces(void)
 /*
   unload the interfaces list, so it can be reloaded when needed
 */
-void unload_interfaces(void)
+_PUBLIC_ void unload_interfaces(void)
 {
 	talloc_free(local_interfaces);
 	local_interfaces = NULL;
@@ -242,7 +242,7 @@ void unload_interfaces(void)
 /****************************************************************************
   how many interfaces do we have
   **************************************************************************/
-int iface_count(void)
+_PUBLIC_ int iface_count(void)
 {
 	int ret = 0;
 	struct interface *i;
@@ -257,7 +257,7 @@ int iface_count(void)
 /****************************************************************************
   return IP of the Nth interface
   **************************************************************************/
-const char *iface_n_ip(int n)
+_PUBLIC_ const char *iface_n_ip(int n)
 {
 	struct interface *i;
   
@@ -275,7 +275,7 @@ const char *iface_n_ip(int n)
 /****************************************************************************
   return bcast of the Nth interface
   **************************************************************************/
-const char *iface_n_bcast(int n)
+_PUBLIC_ const char *iface_n_bcast(int n)
 {
 	struct interface *i;
   
@@ -293,7 +293,7 @@ const char *iface_n_bcast(int n)
 /****************************************************************************
   return netmask of the Nth interface
   **************************************************************************/
-const char *iface_n_netmask(int n)
+_PUBLIC_ const char *iface_n_netmask(int n)
 {
 	struct interface *i;
   
@@ -312,7 +312,7 @@ const char *iface_n_netmask(int n)
   return the local IP address that best matches a destination IP, or
   our first interface if none match
 */
-const char *iface_best_ip(const char *dest)
+_PUBLIC_ const char *iface_best_ip(const char *dest)
 {
 	struct interface *iface;
 	struct in_addr ip;
@@ -330,7 +330,7 @@ const char *iface_best_ip(const char *dest)
 /*
   return True if an IP is one one of our local networks
 */
-BOOL iface_is_local(const char *dest)
+_PUBLIC_ BOOL iface_is_local(const char *dest)
 {
 	struct in_addr ip;
 
@@ -346,7 +346,7 @@ BOOL iface_is_local(const char *dest)
 /*
   return True if a IP matches a IP/netmask pair
 */
-BOOL iface_same_net(const char *ip1, const char *ip2, const char *netmask)
+_PUBLIC_ BOOL iface_same_net(const char *ip1, const char *ip2, const char *netmask)
 {
 	return same_net(interpret_addr2(ip1),
 			interpret_addr2(ip2),

@@ -143,7 +143,7 @@ struct timed_event *event_add_timed(struct event_context *ev, TALLOC_CTX *mem_ct
 /*
   do a single event loop using the events defined in ev 
 */
-int event_loop_once(struct event_context *ev)
+_PUBLIC_ int event_loop_once(struct event_context *ev)
 {
 	return ev->ops->loop_once(ev);
 }
