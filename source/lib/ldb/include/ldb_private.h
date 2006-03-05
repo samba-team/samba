@@ -64,6 +64,7 @@ struct ldb_module_ops {
 	int (*async_wait)(struct ldb_module *, struct ldb_async_handle *, enum ldb_async_wait_type);
 };
 
+typedef int (*ldb_connect_fn) (struct ldb_context *ldb, const char *url, unsigned int flags, const char *options[]);
 
 /*
   schema related information needed for matching rules
@@ -133,6 +134,7 @@ void ldb_set_errstring(struct ldb_context *ldb, char *err_string);
 void ldb_reset_err_string(struct ldb_context *ldb);
 
 int ldb_register_module(const struct ldb_module_ops *);
+int ldb_register_backend(const char *url_prefix, ldb_connect_fn);
 
 /* The following definitions come from lib/ldb/common/ldb_debug.c  */
 void ldb_debug(struct ldb_context *ldb, enum ldb_debug_level level, const char *fmt, ...) PRINTF_ATTRIBUTE(3, 4);
@@ -142,27 +144,16 @@ void ldb_debug_set(struct ldb_context *ldb, enum ldb_debug_level level,
 /* The following definitions come from lib/ldb/common/ldb_ldif.c  */
 int ldb_should_b64_encode(const struct ldb_val *val);
 
-int ltdb_connect(struct ldb_context *ldb, const char *url, 
-		 unsigned int flags, 
-		 const char *options[]);
-int lldb_connect(struct ldb_context *ldb, const char *url, 
-		 unsigned int flags, 
-		 const char *options[]);
-int ildb_connect(struct ldb_context *ldb,
-		 const char *url, 
-		 unsigned int flags, 
-		 const char *options[]);
-int lsqlite3_connect(struct ldb_context *ldb,
-		     const char *url, 
-		     unsigned int flags, 
-		     const char *options[]);
-
 int ldb_objectclass_init(void);
 int ldb_operational_init(void);
 int ldb_paged_results_init(void);
 int ldb_rdn_name_init(void);
 int ldb_schema_init(void);
 int ldb_sort_init(void);
+int ldb_ldap_init(void);
+int ldb_ildap_init(void);
+int ldb_tdb_init(void);
+int ldb_sqlite3_init(void);
 
 int ldb_match_msg(struct ldb_context *ldb,
 		  struct ldb_message *msg,

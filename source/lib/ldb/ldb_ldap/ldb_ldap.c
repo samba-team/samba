@@ -1042,7 +1042,7 @@ static int lldb_destructor(void *p)
 /*
   connect to the database
 */
-int lldb_connect(struct ldb_context *ldb,
+static int lldb_connect(struct ldb_context *ldb,
 		 const char *url, 
 		 unsigned int flags, 
 		 const char *options[])
@@ -1093,3 +1093,7 @@ failed:
 	return -1;
 }
 
+int ldb_ldap_init(void)
+{
+	return ldb_register_backend("ldap", lldb_connect);
+}

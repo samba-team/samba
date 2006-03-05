@@ -987,7 +987,7 @@ static const struct ldb_module_ops ildb_ops = {
 /*
   connect to the database
 */
-int ildb_connect(struct ldb_context *ldb, const char *url, 
+static int ildb_connect(struct ldb_context *ldb, const char *url, 
 		 unsigned int flags, const char *options[])
 {
 	struct ildb_private *ildb = NULL;
@@ -1065,3 +1065,7 @@ failed:
 	return -1;
 }
 
+int ldb_ildap_init(void)
+{
+	return ldb_register_backend("ldap", ildb_connect);
+}
