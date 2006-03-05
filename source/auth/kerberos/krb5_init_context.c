@@ -371,7 +371,7 @@ static void smb_krb5_send_and_recv_close_func(krb5_context context, void *data)
 }
 
 
-_PUBLIC_  krb5_error_code smb_krb5_init_context(void *parent_ctx, 
+krb5_error_code smb_krb5_init_context(void *parent_ctx, 
 				       struct smb_krb5_context **smb_krb5_context) 
 {
 	krb5_error_code ret;
