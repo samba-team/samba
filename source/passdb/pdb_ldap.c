@@ -4874,7 +4874,7 @@ static NTSTATUS ldapsam_create_dom_group(struct pdb_methods *my_methods,
 	int rc;
 	
 	groupname = escape_ldap_string_alloc(name);
-	filter = talloc_asprintf(tmp_ctx, "(&(cn=%s)objectClass=))",
+	filter = talloc_asprintf(tmp_ctx, "(&(cn=%s)(objectClass=%s))",
 				 groupname, LDAP_OBJ_POSIXGROUP);
 	SAFE_FREE(groupname);
 
