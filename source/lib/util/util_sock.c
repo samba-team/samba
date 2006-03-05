@@ -75,7 +75,7 @@ static const struct {
 /**
  Set user socket options.
 **/
-void set_socket_options(int fd, const char *options)
+_PUBLIC_ void set_socket_options(int fd, const char *options)
 {
 	const char **options_list = str_list_make(NULL, options, " \t,");
 	int j;

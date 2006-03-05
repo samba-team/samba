@@ -31,7 +31,7 @@
   separator list. The separator list must contain characters less than
   or equal to 0x2f for this to work correctly on multi-byte strings
 */
-const char **str_list_make(TALLOC_CTX *mem_ctx, const char *string, const char *sep)
+_PUBLIC_ const char **str_list_make(TALLOC_CTX *mem_ctx, const char *string, const char *sep)
 {
 	int num_elements = 0;
 	const char **ret = NULL;
@@ -81,7 +81,7 @@ const char **str_list_make(TALLOC_CTX *mem_ctx, const char *string, const char *
  * Entries are seperated by spaces and can be enclosed by quotes. 
  * Does NOT support escaping
  */
-const char **str_list_make_shell(TALLOC_CTX *mem_ctx, const char *string, const char *sep)
+_PUBLIC_ const char **str_list_make_shell(TALLOC_CTX *mem_ctx, const char *string, const char *sep)
 {
 	int num_elements = 0;
 	const char **ret = NULL;
@@ -140,7 +140,7 @@ const char **str_list_make_shell(TALLOC_CTX *mem_ctx, const char *string, const 
 /**
  * join a list back to one string 
  */
-char *str_list_join(TALLOC_CTX *mem_ctx, const char **list, char seperator)
+_PUBLIC_ char *str_list_join(TALLOC_CTX *mem_ctx, const char **list, char seperator)
 {
 	char *ret = NULL;
 	int i;
@@ -159,7 +159,7 @@ char *str_list_join(TALLOC_CTX *mem_ctx, const char **list, char seperator)
 
 /** join a list back to one (shell-like) string; entries 
  * seperated by spaces, using quotes where necessary */
-char *str_list_join_shell(TALLOC_CTX *mem_ctx, const char **list, char sep)
+_PUBLIC_ char *str_list_join_shell(TALLOC_CTX *mem_ctx, const char **list, char sep)
 {
 	char *ret = NULL;
 	int i;
@@ -185,7 +185,7 @@ char *str_list_join_shell(TALLOC_CTX *mem_ctx, const char **list, char sep)
 /**
   return the number of elements in a string list
 */
-size_t str_list_length(const char **list)
+_PUBLIC_ size_t str_list_length(const char **list)
 {
 	size_t ret;
 	for (ret=0;list && list[ret];ret++) /* noop */ ;
@@ -196,7 +196,7 @@ size_t str_list_length(const char **list)
 /**
   copy a string list
 */
-const char **str_list_copy(TALLOC_CTX *mem_ctx, const char **list)
+_PUBLIC_ const char **str_list_copy(TALLOC_CTX *mem_ctx, const char **list)
 {
 	int i;
 	const char **ret = talloc_array(mem_ctx, const char *, str_list_length(list)+1);
@@ -216,7 +216,7 @@ const char **str_list_copy(TALLOC_CTX *mem_ctx, const char **list)
 /**
    Return true if all the elements of the list match exactly.
  */
-BOOL str_list_equal(const char **list1, const char **list2)
+_PUBLIC_ BOOL str_list_equal(const char **list1, const char **list2)
 {
 	int i;
 	
@@ -239,7 +239,7 @@ BOOL str_list_equal(const char **list1, const char **list2)
 /**
   add an entry to a string list
 */
-const char **str_list_add(const char **list, const char *s)
+_PUBLIC_ const char **str_list_add(const char **list, const char *s)
 {
 	size_t len = str_list_length(list);
 	const char **ret;
@@ -258,7 +258,7 @@ const char **str_list_add(const char **list, const char *s)
 /**
   remove an entry from a string list
 */
-void str_list_remove(const char **list, const char *s)
+_PUBLIC_ void str_list_remove(const char **list, const char *s)
 {
 	int i;
 
@@ -276,7 +276,7 @@ void str_list_remove(const char **list, const char *s)
 /**
   return True if a string is in a list
 */
-BOOL str_list_check(const char **list, const char *s)
+_PUBLIC_ BOOL str_list_check(const char **list, const char *s)
 {
 	int i;
 
@@ -289,7 +289,7 @@ BOOL str_list_check(const char **list, const char *s)
 /**
   return True if a string is in a list, case insensitively
 */
-BOOL str_list_check_ci(const char **list, const char *s)
+_PUBLIC_ BOOL str_list_check_ci(const char **list, const char *s)
 {
 	int i;
 

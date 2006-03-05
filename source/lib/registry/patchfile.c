@@ -250,7 +250,7 @@ _PUBLIC_ WERROR reg_diff_save(const struct reg_diff *diff, const char *filename)
 /*
  * Load diff file
  */
-struct reg_diff *reg_diff_load(TALLOC_CTX *ctx, const char *fn)
+_PUBLIC_ struct reg_diff *reg_diff_load(TALLOC_CTX *ctx, const char *fn)
 {
 	struct reg_diff *diff;
 	int fd;

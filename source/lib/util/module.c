@@ -56,7 +56,11 @@ static void *load_module(TALLOC_CTX *mem_ctx, const char *dir, const char *name)
 	return init_fn;
 }
 
-init_module_fn *load_modules(TALLOC_CTX *mem_ctx, const char *path)
+/**
+ * Obtain list of init functions from the modules in the specified
+ * directory
+ */
+_PUBLIC_ init_module_fn *load_modules(TALLOC_CTX *mem_ctx, const char *path)
 {
 	DIR *dir;
 	struct dirent *entry;
@@ -88,7 +92,12 @@ init_module_fn *load_modules(TALLOC_CTX *mem_ctx, const char *path)
 	return ret;
 }
 
-BOOL run_init_functions(NTSTATUS (**fns) (void))
+/**
+ * Run the specified init functions.
+ *
+ * @return True if all functions ran successfully, False otherwise
+ */
+_PUBLIC_ BOOL run_init_functions(NTSTATUS (**fns) (void))
 {
 	int i;
 	BOOL ret;

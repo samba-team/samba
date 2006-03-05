@@ -43,7 +43,7 @@ static void byteReverse(uint8_t *buf, uint_t longs)
  * Start MD5 accumulation.  Set bit count to 0 and buffer to mysterious
  * initialization constants.
  */
-void MD5Init(struct MD5Context *ctx)
+_PUBLIC_ void MD5Init(struct MD5Context *ctx)
 {
     ctx->buf[0] = 0x67452301;
     ctx->buf[1] = 0xefcdab89;
@@ -58,7 +58,7 @@ void MD5Init(struct MD5Context *ctx)
  * Update context to reflect the concatenation of another buffer full
  * of bytes.
  */
-void MD5Update(struct MD5Context *ctx, const uint8_t *buf, uint_t len)
+_PUBLIC_ void MD5Update(struct MD5Context *ctx, const uint8_t *buf, uint_t len)
 {
     register uint32_t t;
 
@@ -106,7 +106,7 @@ void MD5Update(struct MD5Context *ctx, const uint8_t *buf, uint_t len)
  * Final wrapup - pad to 64-byte boundary with the bit pattern 
  * 1 0* (64-bit count of bits processed, MSB-first)
  */
-void MD5Final(uint8_t digest[16], struct MD5Context *ctx)
+_PUBLIC_ void MD5Final(uint8_t digest[16], struct MD5Context *ctx)
 {
     uint_t count;
     uint8_t *p;

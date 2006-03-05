@@ -310,21 +310,21 @@ static int _idr_remove(struct idr_context *idp, int id)
   this is the public interface
 **************************************************************************/
 
-/*
+/**
   initialise a idr tree. The context return value must be passed to
   all subsequent idr calls. To destroy the idr tree use talloc_free()
   on this context
  */
-struct idr_context *idr_init(TALLOC_CTX *mem_ctx)
+_PUBLIC_ struct idr_context *idr_init(TALLOC_CTX *mem_ctx)
 {
 	return talloc_zero(mem_ctx, struct idr_context);
 }
 
-/*
+/**
   allocate the next available id, and assign 'ptr' into its slot.
   you can retrieve later this pointer using idr_find()
 */
-int idr_get_new(struct idr_context *idp, void *ptr, int limit)
+_PUBLIC_ int idr_get_new(struct idr_context *idp, void *ptr, int limit)
 {
 	int ret = idr_get_new_above_int(idp, ptr, 0);
 	if (ret > limit) {
@@ -334,11 +334,11 @@ int idr_get_new(struct idr_context *idp, void *ptr, int limit)
 	return ret;
 }
 
-/* 
+/**
    allocate a new id, giving the first available value greater than or
    equal to the given starting id
 */
-int idr_get_new_above(struct idr_context *idp, void *ptr, int starting_id, int limit)
+_PUBLIC_ int idr_get_new_above(struct idr_context *idp, void *ptr, int starting_id, int limit)
 {
 	int ret = idr_get_new_above_int(idp, ptr, starting_id);
 	if (ret > limit) {
@@ -348,10 +348,10 @@ int idr_get_new_above(struct idr_context *idp, void *ptr, int starting_id, int l
 	return ret;
 }
 
-/*
+/**
   allocate a new id randomly in the given range
 */
-int idr_get_new_random(struct idr_context *idp, void *ptr, int limit)
+_PUBLIC_ int idr_get_new_random(struct idr_context *idp, void *ptr, int limit)
 {
 	int id;
 
@@ -366,18 +366,18 @@ int idr_get_new_random(struct idr_context *idp, void *ptr, int limit)
 	return id;
 }
 
-/*
+/**
   find a pointer value previously set with idr_get_new given an id
 */
-void *idr_find(struct idr_context *idp, int id)
+_PUBLIC_ void *idr_find(struct idr_context *idp, int id)
 {
 	return _idr_find(idp, id);
 }
 
-/*
+/**
   remove an id from the idr tree
 */
-int idr_remove(struct idr_context *idp, int id)
+_PUBLIC_ int idr_remove(struct idr_context *idp, int id)
 {
 	int ret;
 	ret = _idr_remove((struct idr_context *)idp, id);

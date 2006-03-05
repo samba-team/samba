@@ -30,7 +30,7 @@
 /*
   block until a composite function has completed, then return the status
 */
-NTSTATUS composite_wait(struct composite_context *c)
+_PUBLIC_ NTSTATUS composite_wait(struct composite_context *c)
 {
 	if (c == NULL) return NT_STATUS_NO_MEMORY;
 
@@ -50,7 +50,7 @@ NTSTATUS composite_wait(struct composite_context *c)
  * Some composite helpers that are handy if you write larger composite
  * functions.
  */
-BOOL composite_is_ok(struct composite_context *ctx)
+_PUBLIC_ BOOL composite_is_ok(struct composite_context *ctx)
 {
 	if (NT_STATUS_IS_OK(ctx->status)) {
 		return True;
@@ -85,7 +85,7 @@ static void composite_trigger(struct event_context *ev, struct timed_event *te,
 }
 
 
-void composite_error(struct composite_context *ctx, NTSTATUS status)
+_PUBLIC_ void composite_error(struct composite_context *ctx, NTSTATUS status)
 {
 	if (!ctx->used_wait && !ctx->async.fn) {
 		event_add_timed(ctx->event_ctx, ctx, timeval_zero(), composite_trigger, ctx);
@@ -94,7 +94,7 @@ void composite_error(struct composite_context *ctx, NTSTATUS status)
 	SMB_ASSERT(!composite_is_ok(ctx));
 }
 
-BOOL composite_nomem(const void *p, struct composite_context *ctx)
+_PUBLIC_ BOOL composite_nomem(const void *p, struct composite_context *ctx)
 {
 	if (p != NULL) {
 		return False;
@@ -103,7 +103,7 @@ BOOL composite_nomem(const void *p, struct composite_context *ctx)
 	return True;
 }
 
-void composite_done(struct composite_context *ctx)
+_PUBLIC_ void composite_done(struct composite_context *ctx)
 {
 	if (!ctx->used_wait && !ctx->async.fn) {
 		event_add_timed(ctx->event_ctx, ctx, timeval_zero(), composite_trigger, ctx);
@@ -114,7 +114,7 @@ void composite_done(struct composite_context *ctx)
 	}
 }
 
-void composite_continue(struct composite_context *ctx,
+_PUBLIC_ void composite_continue(struct composite_context *ctx,
 			struct composite_context *new_ctx,
 			void (*continuation)(struct composite_context *),
 			void *private_data)
@@ -124,7 +124,7 @@ void composite_continue(struct composite_context *ctx,
 	new_ctx->async.private_data = private_data;
 }
 
-void composite_continue_rpc(struct composite_context *ctx,
+_PUBLIC_ void composite_continue_rpc(struct composite_context *ctx,
 			    struct rpc_request *new_req,
 			    void (*continuation)(struct rpc_request *),
 			    void *private_data)
@@ -134,7 +134,7 @@ void composite_continue_rpc(struct composite_context *ctx,
 	new_req->async.private = private_data;
 }
 
-void composite_continue_irpc(struct composite_context *ctx,
+_PUBLIC_ void composite_continue_irpc(struct composite_context *ctx,
 			     struct irpc_request *new_req,
 			     void (*continuation)(struct irpc_request *),
 			     void *private_data)
@@ -144,7 +144,7 @@ void composite_continue_irpc(struct composite_context *ctx,
 	new_req->async.private = private_data;
 }
 
-void composite_continue_smb(struct composite_context *ctx,
+_PUBLIC_ void composite_continue_smb(struct composite_context *ctx,
 			    struct smbcli_request *new_req,
 			    void (*continuation)(struct smbcli_request *),
 			    void *private_data)
@@ -154,7 +154,7 @@ void composite_continue_smb(struct composite_context *ctx,
 	new_req->async.private = private_data;
 }
 
-void composite_continue_nbt(struct composite_context *ctx,
+_PUBLIC_ void composite_continue_nbt(struct composite_context *ctx,
 			    struct nbt_name_request *new_req,
 			    void (*continuation)(struct nbt_name_request *),
 			    void *private_data)

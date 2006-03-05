@@ -34,7 +34,7 @@ read a line from a file with possible \ continuation chars.
 Blanks at the start or end of a line are stripped.
 The string will be allocated if s2 is NULL
 **/
-char *fgets_slash(char *s2,int maxlen,XFILE *f)
+_PUBLIC_ char *fgets_slash(char *s2,int maxlen,XFILE *f)
 {
   char *s=s2;
   int len = 0;
@@ -106,7 +106,7 @@ char *fgets_slash(char *s2,int maxlen,XFILE *f)
 /**
  * Read one line (data until next newline or eof) and allocate it 
  */
-char *afdgets(int fd, TALLOC_CTX *mem_ctx, size_t hint)
+_PUBLIC_ char *afdgets(int fd, TALLOC_CTX *mem_ctx, size_t hint)
 {
 	char *data = NULL;
 	ssize_t alloc_size = 0, offset = 0, ret;
@@ -156,8 +156,7 @@ char *afdgets(int fd, TALLOC_CTX *mem_ctx, size_t hint)
 /**
 load a file into memory from a fd.
 **/
-
-char *fd_load(int fd, size_t *size, TALLOC_CTX *mem_ctx)
+_PUBLIC_ char *fd_load(int fd, size_t *size, TALLOC_CTX *mem_ctx)
 {
 	struct stat sbuf;
 	char *p;
@@ -181,7 +180,7 @@ char *fd_load(int fd, size_t *size, TALLOC_CTX *mem_ctx)
 /**
 load a file into memory
 **/
-char *file_load(const char *fname, size_t *size, TALLOC_CTX *mem_ctx)
+_PUBLIC_ char *file_load(const char *fname, size_t *size, TALLOC_CTX *mem_ctx)
 {
 	int fd;
 	char *p;
@@ -202,7 +201,7 @@ char *file_load(const char *fname, size_t *size, TALLOC_CTX *mem_ctx)
 /**
 mmap (if possible) or read a file
 **/
-void *map_file(const char *fname, size_t size)
+_PUBLIC_ void *map_file(const char *fname, size_t size)
 {
 	size_t s2 = 0;
 	void *p = NULL;
@@ -278,7 +277,7 @@ static char **file_lines_parse(char *p, size_t size, int *numlines, TALLOC_CTX *
 load a file into memory and return an array of pointers to lines in the file
 must be freed with talloc_free(). 
 **/
-char **file_lines_load(const char *fname, int *numlines, TALLOC_CTX *mem_ctx)
+_PUBLIC_ char **file_lines_load(const char *fname, int *numlines, TALLOC_CTX *mem_ctx)
 {
 	char *p;
 	char **lines;
@@ -299,7 +298,7 @@ load a fd into memory and return an array of pointers to lines in the file
 must be freed with talloc_free(). If convert is true calls unix_to_dos on
 the list.
 **/
-char **fd_lines_load(int fd, int *numlines, TALLOC_CTX *mem_ctx)
+_PUBLIC_ char **fd_lines_load(int fd, int *numlines, TALLOC_CTX *mem_ctx)
 {
 	char *p;
 	char **lines;
@@ -320,7 +319,7 @@ char **fd_lines_load(int fd, int *numlines, TALLOC_CTX *mem_ctx)
 take a list of lines and modify them to produce a list where \ continues
 a line
 **/
-void file_lines_slashcont(char **lines)
+_PUBLIC_ void file_lines_slashcont(char **lines)
 {
 	int i, j;
 
@@ -342,7 +341,7 @@ void file_lines_slashcont(char **lines)
 /**
   save a lump of data into a file. Mostly used for debugging 
 */
-BOOL file_save(const char *fname, const void *packet, size_t length)
+_PUBLIC_ BOOL file_save(const char *fname, const void *packet, size_t length)
 {
 	int fd;
 	fd = open(fname, O_WRONLY|O_CREAT|O_TRUNC, 0644);
@@ -359,7 +358,7 @@ BOOL file_save(const char *fname, const void *packet, size_t length)
 /**
   see if a file exists
 */
-BOOL file_exists(const char *path)
+_PUBLIC_ BOOL file_exists(const char *path)
 {
 	struct stat st;
 	return (stat(path, &st) == 0);

@@ -499,7 +499,7 @@ static NTSTATUS gensec_start(TALLOC_CTX *mem_ctx,
  * @note Used by SPNEGO in particular, for the actual implementation mechanism
  */
 
-NTSTATUS gensec_subcontext_start(TALLOC_CTX *mem_ctx, 
+_PUBLIC_ NTSTATUS gensec_subcontext_start(TALLOC_CTX *mem_ctx, 
 				 struct gensec_security *parent, 
 				 struct gensec_security **gensec_security)
 {
@@ -522,7 +522,7 @@ NTSTATUS gensec_subcontext_start(TALLOC_CTX *mem_ctx,
   @param gensec_security Returned GENSEC context pointer.
   @note  The mem_ctx is only a parent and may be NULL.
 */
-NTSTATUS gensec_client_start(TALLOC_CTX *mem_ctx, 
+_PUBLIC_ NTSTATUS gensec_client_start(TALLOC_CTX *mem_ctx, 
 			     struct gensec_security **gensec_security,
 			     struct event_context *ev)
 {
@@ -691,7 +691,7 @@ NTSTATUS gensec_start_mech_by_sasl_name(struct gensec_security *gensec_security,
  *
  */
 
-NTSTATUS gensec_start_mech_by_sasl_list(struct gensec_security *gensec_security, 
+_PUBLIC_ NTSTATUS gensec_start_mech_by_sasl_list(struct gensec_security *gensec_security, 
 					const char **sasl_names) 
 {
 	NTSTATUS nt_status;
@@ -811,7 +811,7 @@ size_t gensec_sig_size(struct gensec_security *gensec_security, size_t data_size
 	return gensec_security->ops->sig_size(gensec_security, data_size);
 }
 
-NTSTATUS gensec_wrap(struct gensec_security *gensec_security, 
+_PUBLIC_ NTSTATUS gensec_wrap(struct gensec_security *gensec_security, 
 		     TALLOC_CTX *mem_ctx, 
 		     const DATA_BLOB *in, 
 		     DATA_BLOB *out) 
@@ -822,7 +822,7 @@ NTSTATUS gensec_wrap(struct gensec_security *gensec_security,
 	return gensec_security->ops->wrap(gensec_security, mem_ctx, in, out);
 }
 
-NTSTATUS gensec_unwrap(struct gensec_security *gensec_security, 
+_PUBLIC_ NTSTATUS gensec_unwrap(struct gensec_security *gensec_security, 
 		       TALLOC_CTX *mem_ctx, 
 		       const DATA_BLOB *in, 
 		       DATA_BLOB *out) 
@@ -876,7 +876,7 @@ NTSTATUS gensec_session_info(struct gensec_security *gensec_security,
  *                or NT_STATUS_OK if the user is authenticated. 
  */
 
-NTSTATUS gensec_update(struct gensec_security *gensec_security, TALLOC_CTX *out_mem_ctx, 
+_PUBLIC_ NTSTATUS gensec_update(struct gensec_security *gensec_security, TALLOC_CTX *out_mem_ctx, 
 		       const DATA_BLOB in, DATA_BLOB *out) 
 {
 	return gensec_security->ops->update(gensec_security, out_mem_ctx, in, out);
@@ -887,7 +887,7 @@ NTSTATUS gensec_update(struct gensec_security *gensec_security, TALLOC_CTX *out_
  *
  */
 
-void gensec_want_feature(struct gensec_security *gensec_security,
+_PUBLIC_ void gensec_want_feature(struct gensec_security *gensec_security,
 			 uint32_t feature) 
 {
 	gensec_security->want_features |= feature;
@@ -898,7 +898,7 @@ void gensec_want_feature(struct gensec_security *gensec_security,
  *
  */
 
-BOOL gensec_have_feature(struct gensec_security *gensec_security,
+_PUBLIC_ BOOL gensec_have_feature(struct gensec_security *gensec_security,
 			 uint32_t feature) 
 {
 	if (!gensec_security->ops->have_feature) {
@@ -917,7 +917,7 @@ BOOL gensec_have_feature(struct gensec_security *gensec_security,
  *
  */
 
-NTSTATUS gensec_set_credentials(struct gensec_security *gensec_security, struct cli_credentials *credentials) 
+_PUBLIC_ NTSTATUS gensec_set_credentials(struct gensec_security *gensec_security, struct cli_credentials *credentials) 
 {
 	gensec_security->credentials = talloc_reference(gensec_security, credentials);
 	return NT_STATUS_OK;
@@ -941,7 +941,7 @@ struct cli_credentials *gensec_get_credentials(struct gensec_security *gensec_se
  *
  */
 
-NTSTATUS gensec_set_target_service(struct gensec_security *gensec_security, const char *service) 
+_PUBLIC_ NTSTATUS gensec_set_target_service(struct gensec_security *gensec_security, const char *service) 
 {
 	gensec_security->target.service = talloc_strdup(gensec_security, service);
 	if (!gensec_security->target.service) {
@@ -950,7 +950,7 @@ NTSTATUS gensec_set_target_service(struct gensec_security *gensec_security, cons
 	return NT_STATUS_OK;
 }
 
-const char *gensec_get_target_service(struct gensec_security *gensec_security) 
+_PUBLIC_ const char *gensec_get_target_service(struct gensec_security *gensec_security) 
 {
 	if (gensec_security->target.service) {
 		return gensec_security->target.service;
@@ -964,7 +964,7 @@ const char *gensec_get_target_service(struct gensec_security *gensec_security)
  *
  */
 
-NTSTATUS gensec_set_target_hostname(struct gensec_security *gensec_security, const char *hostname) 
+_PUBLIC_ NTSTATUS gensec_set_target_hostname(struct gensec_security *gensec_security, const char *hostname) 
 {
 	gensec_security->target.hostname = talloc_strdup(gensec_security, hostname);
 	if (!gensec_security->target.hostname) {
@@ -973,7 +973,7 @@ NTSTATUS gensec_set_target_hostname(struct gensec_security *gensec_security, con
 	return NT_STATUS_OK;
 }
 
-const char *gensec_get_target_hostname(struct gensec_security *gensec_security) 
+_PUBLIC_ const char *gensec_get_target_hostname(struct gensec_security *gensec_security) 
 {
 	if (gensec_security->target.hostname) {
 		return gensec_security->target.hostname;
