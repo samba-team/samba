@@ -36,6 +36,12 @@
 /** Feel free to add definitions for other compilers here. */
 #endif
 
+#ifdef HAVE_VISIBILITY_ATTR
+#  define _PUBLIC_ __attribute__((visibility("default")))
+#else
+#  define _PUBLIC_
+#endif
+
 #ifndef PRINTF_ATTRIBUTE
 #if !defined(NO_PRINTF_ATTRIBUTE) && (__GNUC__ >= 3)
 /** Use gcc attribute to check printf fns.  a1 is the 1-based index of
@@ -157,9 +163,5 @@ extern int DEBUGLEVEL;
 */
 #define discard_const(ptr) ((void *)((intptr_t)(ptr)))
 #define discard_const_p(type, ptr) ((type *)discard_const(ptr))
-
-#ifndef _PUBLIC_
-#define _PUBLIC_
-#endif
 
 #endif /* _INCLUDES_H */
