@@ -7495,7 +7495,7 @@ BOOL make_monitorui_buf( RPC_BUFFER *buf, const char *dllname )
 static BOOL smb_io_port_data_1( const char *desc, RPC_BUFFER *buf, int depth, SPOOL_PORT_DATA_1 *p1 )
 {
 	prs_struct *ps = &buf->prs;
-	uint8 *fodder;
+	uint8 *fodder = NULL;
 
 	prs_debug(ps, depth, desc, "smb_io_port_data_1");
 	depth++;
