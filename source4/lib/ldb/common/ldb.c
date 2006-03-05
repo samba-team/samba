@@ -55,6 +55,40 @@ struct ldb_context *ldb_init(void *mem_ctx)
 	return ldb;
 }
 
+static struct ldb_backend {
+	const char *name;
+	ldb_connect_fn connect_fn;
+	struct ldb_backend *prev, *next;
+} *ldb_backends = NULL;
+/*
+ register a new ldb backend
+*/
+int ldb_register_backend(const char *url_prefix, ldb_connect_fn connectfn)
+{
+	struct ldb_backend *backend = talloc(talloc_autofree_context(), struct ldb_backend);
+
+	/* Maybe check for duplicity here later on? */
+
+	backend->name = talloc_strdup(backend, url_prefix);
+	backend->connect_fn = connectfn;
+	DLIST_ADD(ldb_backends, backend);
+
+	return LDB_SUCCESS;
+}
+
+static ldb_connect_fn ldb_find_backend(const char *url)
+{
+	struct ldb_backend *backend;
+
+	for (backend = ldb_backends; backend; backend = backend->next) {
+		if (strncmp(backend->name, url, strlen(backend->name)) == 0) {
+			return backend->connect_fn;
+		}
+	}
+
+	return NULL;
+}
+
 /* 
  connect to a database. The URL can either be one of the following forms
    ldb://path
@@ -68,30 +102,21 @@ struct ldb_context *ldb_init(void *mem_ctx)
 int ldb_connect(struct ldb_context *ldb, const char *url, unsigned int flags, const char *options[])
 {
 	int ret;
+	ldb_connect_fn fn;
 
-	if (strncmp(url, "tdb:", 4) == 0 ||
-	    strchr(url, ':') == NULL) {
-		ret = ltdb_connect(ldb, url, flags, options);
+	if (strchr(url, ':') != NULL) {
+		fn = ldb_find_backend(url);
+	} else {
+		/* Default to tdb */
+		fn = ldb_find_backend("tdb:");
 	}
 
-#if HAVE_ILDAP
-	else if (strncmp(url, "ldap", 4) == 0) {
-		ret = ildb_connect(ldb, url, flags, options);
-	}
-#elif HAVE_LDAP
-	else if (strncmp(url, "ldap", 4) == 0) {
-		ret = lldb_connect(ldb, url, flags, options);
-	}
-#endif
-#if HAVE_SQLITE3
-	else if (strncmp(url, "sqlite:", 7) == 0) {
-                ret = lsqlite3_connect(ldb, url, flags, options);
-	}
-#endif
-	else {
+	if (fn == NULL) {
 		ldb_debug(ldb, LDB_DEBUG_FATAL, "Unable to find backend for '%s'\n", url);
 		return LDB_ERR_OTHER;
 	}
+
+	ret = fn(ldb, url, flags, options);
 
 	if (ret != LDB_SUCCESS) {
 		ldb_debug(ldb, LDB_DEBUG_ERROR, "Failed to connect to '%s'\n", url);

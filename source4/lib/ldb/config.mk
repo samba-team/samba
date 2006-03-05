@@ -80,6 +80,7 @@ OBJ_FILES = \
 [MODULE::libldb_ildap]
 SUBSYSTEM = LIBLDB
 OUTPUT_TYPE = MERGEDOBJ
+INIT_FUNCTION = ldb_ildap_init
 OBJ_FILES = \
 		ldb_ildap/ldb_ildap.o
 REQUIRED_SUBSYSTEMS = \
@@ -112,6 +113,7 @@ OBJ_FILES = modules/skel.o
 [MODULE::libldb_sqlite3]
 SUBSYSTEM = LIBLDB
 OUTPUT_TYPE = MERGEDOBJ
+INIT_FUNCTION = ldb_sqlite3_init
 OBJ_FILES = \
 		ldb_sqlite3/ldb_sqlite3.o
 REQUIRED_SUBSYSTEMS = \
@@ -124,6 +126,7 @@ NOPROTO = YES
 # Start MODULE libldb_tdb
 [MODULE::libldb_tdb]
 SUBSYSTEM = LIBLDB
+INIT_FUNCTION = ldb_tdb_init
 OUTPUT_TYPE = MERGEDOBJ
 OBJ_FILES = \
 		ldb_tdb/ldb_tdb.o \
