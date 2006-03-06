@@ -536,6 +536,8 @@ void queue_wins_refresh(struct nmb_name *nmbname,
 
 	userdata = (struct userdata_struct *)SMB_MALLOC(sizeof(*userdata) + strlen(tag) + 1);
 	if (!userdata) {
+		p->locked = False;
+		free_packet(p);
 		DEBUG(0,("Failed to allocate userdata structure!\n"));
 		return;
 	}
