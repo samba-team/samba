@@ -30,7 +30,7 @@
 /* check req->async.status and if not OK then send an error reply */
 #define CHECK_ASYNC_STATUS do { \
 	if (!NT_STATUS_IS_OK(req->async_states->status)) { \
-		req_reply_error(req, req->async_states->status); \
+		smbsrv_send_error(req, req->async_states->status); \
 		return; \
 	}} while (0)
 	
@@ -48,7 +48,7 @@
 #define REQ_TALLOC(ptr) do { \
 	ptr = talloc_size(req, sizeof(*(ptr))); \
 	if (!ptr) { \
-		req_reply_error(req, NT_STATUS_NO_MEMORY); \
+		smbsrv_send_error(req, NT_STATUS_NO_MEMORY); \
 		return; \
 	}} while (0)
 		
@@ -127,7 +127,7 @@ void smbsrv_reply_search(struct smbsrv_request *req)
 	
 	/* parse request */
 	if (req->in.wct != 2) {
-		req_reply_error(req, NT_STATUS_INVALID_PARAMETER);
+		smbsrv_send_error(req, NT_STATUS_INVALID_PARAMETER);
 		return;
 	}
 	
@@ -135,16 +135,16 @@ void smbsrv_reply_search(struct smbsrv_request *req)
 	p += req_pull_ascii4(req, &sf->search_first.in.pattern, 
 			     p, STR_TERMINATE);
 	if (!sf->search_first.in.pattern) {
-		req_reply_error(req, NT_STATUS_OBJECT_NAME_NOT_FOUND);
+		smbsrv_send_error(req, NT_STATUS_OBJECT_NAME_NOT_FOUND);
 		return;
 	}
 
 	if (req_data_oob(req, p, 3)) {
-		req_reply_error(req, NT_STATUS_INVALID_PARAMETER);
+		smbsrv_send_error(req, NT_STATUS_INVALID_PARAMETER);
 		return;
 	}
 	if (*p != 5) {
-		req_reply_error(req, NT_STATUS_INVALID_PARAMETER);
+		smbsrv_send_error(req, NT_STATUS_INVALID_PARAMETER);
 		return;
 	}
 	resume_key_length = SVAL(p, 1);
@@ -156,14 +156,14 @@ void smbsrv_reply_search(struct smbsrv_request *req)
 	state.last_entry_offset = 0;
 	
 	/* construct reply */
-	req_setup_reply(req, 1, 0);
+	smbsrv_setup_reply(req, 1, 0);
 	req_append_var_block(req, NULL, 0);
 
 	if (resume_key_length != 0) {
 		if (resume_key_length != 21 || 
 		    req_data_oob(req, p, 21) ||
 		    level == RAW_SEARCH_FUNIQUE) {
-			req_reply_error(req, NT_STATUS_INVALID_PARAMETER);
+			smbsrv_send_error(req, NT_STATUS_INVALID_PARAMETER);
 			return;
 		}
 
@@ -195,11 +195,11 @@ void smbsrv_reply_search(struct smbsrv_request *req)
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {
-		req_reply_error(req, status);
+		smbsrv_send_error(req, status);
 		return;
 	}
 
-	req_send_reply(req);
+	smbsrv_send_reply(req);
 }
 
 
@@ -211,11 +211,11 @@ static void reply_fclose_send(struct smbsrv_request *req)
 	CHECK_ASYNC_STATUS;
 	
 	/* construct reply */
-	req_setup_reply(req, 1, 0);
+	smbsrv_setup_reply(req, 1, 0);
 
 	SSVAL(req->out.vwv, VWV(0), 0);
 
-	req_send_reply(req);
+	smbsrv_send_reply(req);
 }
 
 
@@ -233,35 +233,35 @@ void smbsrv_reply_fclose(struct smbsrv_request *req)
 
 	/* parse request */
 	if (req->in.wct != 2) {
-		req_reply_error(req, NT_STATUS_INVALID_PARAMETER);
+		smbsrv_send_error(req, NT_STATUS_INVALID_PARAMETER);
 		return;
 	}
 	
 	p = req->in.data;
 	p += req_pull_ascii4(req, &pattern, p, STR_TERMINATE);
 	if (pattern && *pattern) {
-		req_reply_error(req, NT_STATUS_INVALID_PARAMETER);
+		smbsrv_send_error(req, NT_STATUS_INVALID_PARAMETER);
 		return;
 	}
 	
 	if (req_data_oob(req, p, 3)) {
-		req_reply_error(req, NT_STATUS_INVALID_PARAMETER);
+		smbsrv_send_error(req, NT_STATUS_INVALID_PARAMETER);
 		return;
 	}
 	if (*p != 5) {
-		req_reply_error(req, NT_STATUS_INVALID_PARAMETER);
+		smbsrv_send_error(req, NT_STATUS_INVALID_PARAMETER);
 		return;
 	}
 	resume_key_length = SVAL(p, 1);
 	p += 3;
 
 	if (resume_key_length != 21) {
-		req_reply_error(req, NT_STATUS_INVALID_PARAMETER);
+		smbsrv_send_error(req, NT_STATUS_INVALID_PARAMETER);
 		return;
 	}
 
 	if (req_data_oob(req, p, 21)) {
-		req_reply_error(req, NT_STATUS_INVALID_PARAMETER);
+		smbsrv_send_error(req, NT_STATUS_INVALID_PARAMETER);
 		return;
 	}
 

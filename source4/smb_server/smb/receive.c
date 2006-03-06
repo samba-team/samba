@@ -34,9 +34,12 @@ BOOL req_send_oplock_break(struct smbsrv_tcon *tcon, uint16_t fnum, uint8_t leve
 {
 	struct smbsrv_request *req;
 
-	req = init_smb_request(tcon->smb_conn);
+	req = smbsrv_init_request(tcon->smb_conn);
+	if (!req) {
+		return False;
+	}
 
-	req_setup_reply(req, 8, 0);
+	smbsrv_setup_reply(req, 8, 0);
 	
 	SCVAL(req->out.hdr,HDR_COM,SMBlockingX);
 	SSVAL(req->out.hdr,HDR_TID,tcon->tid);
@@ -55,7 +58,7 @@ BOOL req_send_oplock_break(struct smbsrv_tcon *tcon, uint16_t fnum, uint8_t leve
 	SSVAL(req->out.vwv, VWV(6), 0);
 	SSVAL(req->out.vwv, VWV(7), 0);
 
-	req_send_reply(req);
+	smbsrv_send_reply(req);
 	return True;
 }
 
@@ -73,7 +76,7 @@ NTSTATUS smbsrv_recv_smb_request(void *private, DATA_BLOB blob)
 
 	/* see if its a special NBT packet */
 	if (CVAL(blob.data, 0) != 0) {
-		req = init_smb_request(smb_conn);
+		req = smbsrv_init_request(smb_conn);
 		NT_STATUS_HAVE_NO_MEMORY(req);
 
 		ZERO_STRUCT(req->in);
@@ -100,7 +103,7 @@ NTSTATUS smbsrv_recv_smb_request(void *private, DATA_BLOB blob)
 		return NT_STATUS_OK;
 	}
 
-	req = init_smb_request(smb_conn);
+	req = smbsrv_init_request(smb_conn);
 	NT_STATUS_HAVE_NO_MEMORY(req);
 
 	req->in.buffer = talloc_steal(req, blob.data);
@@ -145,8 +148,8 @@ NTSTATUS smbsrv_recv_smb_request(void *private, DATA_BLOB blob)
 	req->flags2	= SVAL(req->in.hdr, HDR_FLG2);
 	req->smbpid	= SVAL(req->in.hdr, HDR_PID);
 
-	if (!req_signing_check_incoming(req)) {
-		req_reply_error(req, NT_STATUS_ACCESS_DENIED);
+	if (!smbsrv_signing_check_incoming(req)) {
+		smbsrv_send_error(req, NT_STATUS_ACCESS_DENIED);
 		return NT_STATUS_OK;
 	}
 
@@ -491,7 +494,7 @@ static void switch_message(int type, struct smbsrv_request *req)
 
 	/* this must be called before we do any reply */
 	if (flags & SIGNING_NO_REPLY) {
-		req_signing_no_reply(req);
+		smbsrv_signing_no_reply(req);
 	}
 
 	/* see if the vuid is valid */
@@ -518,7 +521,7 @@ static void switch_message(int type, struct smbsrv_request *req)
 			talloc_free(req);
 			return;
 		}
-		req_reply_error(req, status);
+		smbsrv_send_error(req, status);
 		return;
 	}
 
@@ -546,7 +549,7 @@ static void switch_message(int type, struct smbsrv_request *req)
 			talloc_free(req);
 			return;
 		}
-		req_reply_error(req, status);
+		smbsrv_send_error(req, status);
 		return;
 	}
 
@@ -565,7 +568,7 @@ void smbsrv_chain_reply(struct smbsrv_request *req)
 	uint16_t data_size;
 
 	if (req->in.wct < 2 || req->out.wct < 2) {
-		req_reply_dos_error(req, ERRSRV, ERRerror);
+		smbsrv_send_dos_error(req, ERRSRV, ERRerror);
 		return;
 	}
 
@@ -576,7 +579,7 @@ void smbsrv_chain_reply(struct smbsrv_request *req)
 		/* end of chain */
 		SSVAL(req->out.vwv, VWV(0), SMB_CHAIN_NONE);
 		SSVAL(req->out.vwv, VWV(1), 0);
-		req_send_reply(req);
+		smbsrv_send_reply(req);
 		return;
 	}
 
@@ -620,7 +623,7 @@ void smbsrv_chain_reply(struct smbsrv_request *req)
 error:
 	SSVAL(req->out.vwv, VWV(0), SMB_CHAIN_NONE);
 	SSVAL(req->out.vwv, VWV(1), 0);
-	req_reply_dos_error(req, ERRSRV, ERRerror);
+	smbsrv_send_dos_error(req, ERRSRV, ERRerror);
 }
 
 /*
@@ -648,7 +651,7 @@ NTSTATUS smbsrv_init_smb_connection(struct smbsrv_connection *smb_conn)
 	status = smbsrv_smb_init_tcons(smb_conn);
 	NT_STATUS_NOT_OK_RETURN(status);
 
-	srv_init_signing(smb_conn);
+	smbsrv_init_signing(smb_conn);
 
 	return NT_STATUS_OK;
 }

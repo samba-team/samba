@@ -231,19 +231,19 @@ static NTSTATUS sesssetup_nt1(struct smbsrv_request *req, union smb_sesssetup *s
 		return NT_STATUS_OK;
 	}
 
- 	if (!srv_setup_signing(req->smb_conn, &session_info->session_key, &sess->nt1.in.password2)) {
+ 	if (!smbsrv_setup_signing(req->smb_conn, &session_info->session_key, &sess->nt1.in.password2)) {
 		/* Already signing, or disabled */
 		return NT_STATUS_OK;
 	}
 
 	/* Force check of the request packet, now we know the session key */
-	req_signing_check_incoming(req);
+	smbsrv_signing_check_incoming(req);
 /* TODO: why don't we check the result here? */
 
 	/* Unfortunetly win2k3 as a client doesn't sign the request
 	 * packet here, so we have to force signing to start again */
 
-	srv_signing_restart(req->smb_conn,  &session_info->session_key, &sess->nt1.in.password2);
+	smbsrv_signing_restart(req->smb_conn,  &session_info->session_key, &sess->nt1.in.password2);
 
 	return NT_STATUS_OK;
 }
@@ -331,11 +331,11 @@ static NTSTATUS sesssetup_spnego(struct smbsrv_request *req, union smb_sesssetup
 	skey_status = gensec_session_key(smb_sess->gensec_ctx, &session_key);
 	if (NT_STATUS_IS_OK(skey_status) &&
 	    session_info->server_info->authenticated &&
-	    srv_setup_signing(req->smb_conn, &session_key, NULL)) {
+	    smbsrv_setup_signing(req->smb_conn, &session_key, NULL)) {
 		/* Force check of the request packet, now we know the session key */
-		req_signing_check_incoming(req);
+		smbsrv_signing_check_incoming(req);
 
-		srv_signing_restart(req->smb_conn, &session_key, NULL);
+		smbsrv_signing_restart(req->smb_conn, &session_key, NULL);
 	}
 
 	/* Ensure this is marked as a 'real' vuid, not one

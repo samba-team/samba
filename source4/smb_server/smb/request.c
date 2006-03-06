@@ -36,7 +36,7 @@
 construct a basic request packet, mostly used to construct async packets
 such as change notify and oplock break requests
 ****************************************************************************/
-struct smbsrv_request *init_smb_request(struct smbsrv_connection *smb_conn)
+struct smbsrv_request *smbsrv_init_request(struct smbsrv_connection *smb_conn)
 {
 	struct smbsrv_request *req;
 
@@ -98,7 +98,7 @@ static void req_setup_chain_reply(struct smbsrv_request *req, uint_t wct, uint_t
   the caller will then fill in the command words and data before calling req_send_reply() to 
   send the reply on its way
 */
-void req_setup_reply(struct smbsrv_request *req, uint_t wct, uint_t buflen)
+void smbsrv_setup_reply(struct smbsrv_request *req, uint_t wct, uint_t buflen)
 {
 	uint16_t flags2;
 
@@ -165,7 +165,7 @@ void req_setup_reply(struct smbsrv_request *req, uint_t wct, uint_t buflen)
   setup a copy of a request, used when the server needs to send
   more than one reply for a single request packet
 */
-struct smbsrv_request *req_setup_secondary(struct smbsrv_request *old_req)
+struct smbsrv_request *smbsrv_setup_secondary_request(struct smbsrv_request *old_req)
 {
 	struct smbsrv_request *req;
 	ptrdiff_t diff;
@@ -282,7 +282,7 @@ void req_grow_data(struct smbsrv_request *req, uint_t new_size)
   note that this only looks at req->out.buffer and req->out.size, allowing manually 
   constructed packets to be sent
 */
-void req_send_reply_nosign(struct smbsrv_request *req)
+void smbsrv_send_reply_nosign(struct smbsrv_request *req)
 {
 	DATA_BLOB blob;
 	NTSTATUS status;
@@ -305,11 +305,11 @@ void req_send_reply_nosign(struct smbsrv_request *req)
   note that this only looks at req->out.buffer and req->out.size, allowing manually 
   constructed packets to be sent
 */
-void req_send_reply(struct smbsrv_request *req)
+void smbsrv_send_reply(struct smbsrv_request *req)
 {
-	req_sign_packet(req);
+	smbsrv_sign_packet(req);
 
-	req_send_reply_nosign(req);
+	smbsrv_send_reply_nosign(req);
 }
 
 
@@ -318,23 +318,23 @@ void req_send_reply(struct smbsrv_request *req)
    construct and send an error packet with a forced DOS error code
    this is needed to match win2000 behaviour for some parts of the protocol
 */
-void req_reply_dos_error(struct smbsrv_request *req, uint8_t eclass, uint16_t ecode)
+void smbsrv_send_dos_error(struct smbsrv_request *req, uint8_t eclass, uint16_t ecode)
 {
 	/* if the basic packet hasn't been setup yet then do it now */
 	if (req->out.buffer == NULL) {
-		req_setup_reply(req, 0, 0);
+		smbsrv_setup_reply(req, 0, 0);
 	}
 
 	SCVAL(req->out.hdr, HDR_RCLS, eclass);
 	SSVAL(req->out.hdr, HDR_ERR, ecode);
 	SSVAL(req->out.hdr, HDR_FLG2, SVAL(req->out.hdr, HDR_FLG2) & ~FLAGS2_32_BIT_ERROR_CODES);	
-	req_send_reply(req);
+	smbsrv_send_reply(req);
 }
 
 /* 
    setup the header of a reply to include an NTSTATUS code
 */
-void req_setup_error(struct smbsrv_request *req, NTSTATUS status)
+void smbsrv_setup_error(struct smbsrv_request *req, NTSTATUS status)
 {
 	if (!req->smb_conn->config.nt_status_support || !(req->smb_conn->negotiate.client_caps & CAP_STATUS32)) {
 		/* convert to DOS error codes */
@@ -362,20 +362,20 @@ void req_setup_error(struct smbsrv_request *req, NTSTATUS status)
    construct and send an error packet, then destroy the request 
    auto-converts to DOS error format when appropriate
 */
-void req_reply_error(struct smbsrv_request *req, NTSTATUS status)
+void smbsrv_send_error(struct smbsrv_request *req, NTSTATUS status)
 {
 	if (req->smb_conn->connection->event.fde == NULL) {
 		/* the socket has been destroyed - no point trying to send an error! */
 		talloc_free(req);
 		return;
 	}
-	req_setup_reply(req, 0, 0);
+	smbsrv_setup_reply(req, 0, 0);
 
 	/* error returns never have any data */
 	req_grow_data(req, 0);
 
-	req_setup_error(req, status);
-	req_send_reply(req);
+	smbsrv_setup_error(req, status);
+	smbsrv_send_reply(req);
 }
 
 
