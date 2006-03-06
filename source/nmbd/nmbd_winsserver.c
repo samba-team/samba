@@ -1246,25 +1246,24 @@ already exists in WINS as a GROUP name.\n", nmb_namestr(question) ));
 
 	if ( namerec != NULL ) {
 		pull_ascii_nstring(name, sizeof(name), namerec->name.name);
+		if( is_myname(name) ) {
+			if(!ismyip(from_ip)) {
+				DEBUG(3,("wins_process_name_registration_request: Attempt to register name %s. Name \
+is one of our (WINS server) names. Denying registration.\n", nmb_namestr(question) ));
+				send_wins_name_registration_response(RFS_ERR, 0, p);
+				return;
+			} else {
+				/*
+				 * It's one of our names and one of our IP's - update the ttl.
+				 */
+				update_name_ttl(namerec, ttl);
+				wins_hook("refresh", namerec, ttl);
+				send_wins_name_registration_response(0, ttl, p);
+				return;
+			}
+		}
 	} else {
 		name[0] = '\0';
-	}
-		
-	if( is_myname(name) ) {
-		if(!ismyip(from_ip)) {
-			DEBUG(3,("wins_process_name_registration_request: Attempt to register name %s. Name \
-is one of our (WINS server) names. Denying registration.\n", nmb_namestr(question) ));
-			send_wins_name_registration_response(RFS_ERR, 0, p);
-			return;
-		} else {
-			/*
-			 * It's one of our names and one of our IP's - update the ttl.
-			 */
-			update_name_ttl(namerec, ttl);
-			wins_hook("refresh", namerec, ttl);
-			send_wins_name_registration_response(0, ttl, p);
-			return;
-		}
 	}
 
 	/*
