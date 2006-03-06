@@ -443,10 +443,10 @@ static const struct {
 
 void reply_negprot(struct smbsrv_request *req)
 {
-	int Index=0;
-	int choice = -1;
 	int protocol;
 	uint8_t *p;
+	uint32_t protos_count = 0;
+	char **protos = NULL;
 
 	if (req->smb_conn->negotiate.done_negprot) {
 		smbsrv_terminate_connection(req->smb_conn, "multiple negprot's are not permitted");
@@ -454,37 +454,41 @@ void reply_negprot(struct smbsrv_request *req)
 	}
 	req->smb_conn->negotiate.done_negprot = True;
 
-	p = req->in.data + 1;
+	p = req->in.data;
+	while (True) {
+		size_t len;
 
-	while (p < req->in.data + req->in.data_size) { 
-		Index++;
-		DEBUG(3,("Requested protocol [%s]\n",(const char *)p));
-		p += strlen((const char *)p) + 2;
+		protos = talloc_realloc(req, protos, char *, protos_count + 1);
+		if (!protos) {
+			smbsrv_terminate_connection(req->smb_conn, nt_errstr(NT_STATUS_NO_MEMORY));
+			return;
+		}
+		protos[protos_count] = NULL;
+		len = req_pull_ascii4(req, (const char **)&protos[protos_count], p, STR_ASCII|STR_TERMINATE);
+		p += len;
+		if (len == 0 || !protos[protos_count]) break;
+
+		DEBUG(3,("Requested protocol [%d][%s]\n", protos_count, protos[protos_count]));
+		protos_count++;
 	}
-    
+
 	/* Check for protocols, most desirable first */
 	for (protocol = 0; supported_protocols[protocol].proto_name; protocol++) {
-		p = req->in.data+1;
-		Index = 0;
-		if ((supported_protocols[protocol].protocol_level <= lp_maxprotocol()) &&
-				(supported_protocols[protocol].protocol_level >= lp_minprotocol()))
-			while (p < (req->in.data + req->in.data_size)) { 
-				if (strequal((const char *)p,supported_protocols[protocol].proto_name))
-					choice = Index;
-				Index++;
-				p += strlen((const char *)p) + 2;
-			}
-		if(choice != -1)
-			break;
+		int i;
+
+		if (supported_protocols[protocol].protocol_level > lp_maxprotocol()) continue;
+		if (supported_protocols[protocol].protocol_level < lp_minprotocol()) continue;
+
+		for (i = 0; i < protos_count; i++) {
+			if (strcmp(supported_protocols[protocol].proto_name, protos[i]) != 0) continue;
+
+			supported_protocols[protocol].proto_reply_fn(req, i);
+			sub_set_remote_proto(supported_protocols[protocol].short_name);
+			DEBUG(3,("Selected protocol [%d][%s]\n",
+				i, supported_protocols[protocol].proto_name));
+			return;
+		}
 	}
-  
-	if(choice != -1) {
-		sub_set_remote_proto(supported_protocols[protocol].short_name);
-		supported_protocols[protocol].proto_reply_fn(req, choice);
-		DEBUG(3,("Selected protocol %s\n",supported_protocols[protocol].proto_name));
-	} else {
-		DEBUG(0,("No protocol supported !\n"));
-	}
-  
-	DEBUG(5,("negprot index=%d\n", choice));
+
+	smbsrv_terminate_connection(req->smb_conn, "No protocol supported !");
 }
