@@ -185,7 +185,7 @@ void reply_tcon_and_X(struct smbsrv_request *req)
 	SSVAL(req->in.hdr, HDR_TID, con.tconx.out.tid);
 	SSVAL(req->out.hdr,HDR_TID, con.tconx.out.tid);
 
-	chain_reply(req);
+	smbsrv_chain_reply(req);
 }
 
 
@@ -487,7 +487,7 @@ static void reply_open_and_X_send(struct smbsrv_request *req)
 
 	req->chained_fnum = oi->openx.out.fnum;
 
-	chain_reply(req);
+	smbsrv_chain_reply(req);
 }
 
 
@@ -877,7 +877,7 @@ static void reply_read_and_X_send(struct smbsrv_request *req)
 	SSVAL(req->out.vwv, VWV(6), PTR_DIFF(io->readx.out.data, req->out.hdr));
 	REQ_VWV_RESERVED(7, 5);
 
-	chain_reply(req);
+	smbsrv_chain_reply(req);
 }
 
 /****************************************************************************
@@ -1079,7 +1079,7 @@ static void reply_write_and_X_send(struct smbsrv_request *req)
 	SSVAL(req->out.vwv, VWV(4), io->writex.out.nwritten >> 16);
 	REQ_VWV_RESERVED(5, 1);
 
-	chain_reply(req);
+	smbsrv_chain_reply(req);
 }
 
 /****************************************************************************
@@ -1769,7 +1769,7 @@ static void reply_lockingX_send(struct smbsrv_request *req)
 	SSVAL(req->out.vwv, VWV(0), SMB_CHAIN_NONE);
 	SSVAL(req->out.vwv, VWV(1), 0);
 
-	chain_reply(req);
+	smbsrv_chain_reply(req);
 }
 
 
@@ -2005,7 +2005,7 @@ static void reply_sesssetup_old(struct smbsrv_request *req)
 
 	SSVAL(req->out.hdr, HDR_UID, sess.old.out.vuid);
 
-	chain_reply(req);
+	smbsrv_chain_reply(req);
 }
 
 
@@ -2075,7 +2075,7 @@ static void reply_sesssetup_nt1(struct smbsrv_request *req)
 	req_push_str(req, NULL, sess.nt1.out.lanman, -1, STR_TERMINATE);
 	req_push_str(req, NULL, sess.nt1.out.domain, -1, STR_TERMINATE);
 
-	chain_reply(req);
+	smbsrv_chain_reply(req);
 }
 
 
@@ -2138,7 +2138,7 @@ static void reply_sesssetup_spnego(struct smbsrv_request *req)
 	req_push_str(req, NULL, sess.spnego.out.lanman,    -1, STR_TERMINATE);
 	req_push_str(req, NULL, sess.spnego.out.workgroup, -1, STR_TERMINATE);
 
-	chain_reply(req);
+	smbsrv_chain_reply(req);
 }
 
 
@@ -2200,7 +2200,7 @@ void reply_ulogoffX(struct smbsrv_request *req)
 	SSVAL(req->out.vwv, VWV(0), SMB_CHAIN_NONE);
 	SSVAL(req->out.vwv, VWV(1), 0);	
 	
-	chain_reply(req);
+	smbsrv_chain_reply(req);
 }
 
 
@@ -2274,7 +2274,7 @@ static void reply_ntcreate_and_X_send(struct smbsrv_request *req)
 
 	req->chained_fnum = io->ntcreatex.out.fnum;
 
-	chain_reply(req);
+	smbsrv_chain_reply(req);
 }
 
 /****************************************************************************
