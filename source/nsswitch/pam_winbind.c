@@ -321,7 +321,7 @@ static int winbind_auth_request(pam_handle_t * pamh,
 	request.data.auth.krb5_cc_type[0] = '\0';
 	request.data.auth.uid = -1;
 	
-	request.flags = WBFLAG_PAM_INFO3_TEXT | WBFLAG_PAM_CONTACT_TRUSTDOM;
+	request.flags = WBFLAG_PAM_INFO3_TEXT;
 
 	if (ctrl & WINBIND_KRB5_AUTH) {
 
@@ -498,7 +498,7 @@ static int winbind_chauthtok_request(pam_handle_t * pamh,
 	}
 
 	if (ctrl & WINBIND_KRB5_AUTH) {
-		request.flags = WBFLAG_PAM_KRB5 | WBFLAG_PAM_CONTACT_TRUSTDOM;
+		request.flags = WBFLAG_PAM_KRB5;
 	}
 
 	ret = pam_winbind_request_log(pamh, ctrl, WINBINDD_PAM_CHAUTHTOK, &request, &response, user);
@@ -1098,7 +1098,7 @@ int pam_sm_close_session(pam_handle_t *pamh, int flags,
 		}
 		request.data.logoff.uid = pwd->pw_uid;
 
-		request.flags = WBFLAG_PAM_KRB5 | WBFLAG_PAM_CONTACT_TRUSTDOM;
+		request.flags = WBFLAG_PAM_KRB5;
 
 	        return pam_winbind_request_log(pamh, ctrl, WINBINDD_PAM_LOGOFF, &request, &response, user);
 	}

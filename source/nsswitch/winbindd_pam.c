@@ -221,18 +221,6 @@ static struct winbindd_domain *find_auth_domain(struct winbindd_cli_state *state
 		return NULL;
 	}
 
-	/* we can auth against trusted domains */
-	if (state->request.flags & WBFLAG_PAM_CONTACT_TRUSTDOM) {
-		domain = find_domain_from_name_noinit(domain_name);
-		if (domain == NULL) {
-			DEBUG(3, ("Authentication for domain [%s] skipped " 
-				  "as it is not a trusted domain\n", 
-				  domain_name));
-		} else {
-			return domain;
-		}
-	}
-
 	return find_our_domain();
 }
 
