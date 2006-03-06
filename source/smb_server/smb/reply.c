@@ -2123,7 +2123,7 @@ static void reply_sesssetup_spnego(struct smbsrv_request *req)
 	smbsrv_setup_reply(req, 4, sess.spnego.out.secblob.length);
 
 	if (NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-		smbsrv_send_error(req, status);
+		smbsrv_setup_error(req, status);
 	}
 
 	SSVAL(req->out.vwv, VWV(0), SMB_CHAIN_NONE);
