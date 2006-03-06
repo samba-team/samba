@@ -557,7 +557,7 @@ static void switch_message(int type, struct smbsrv_request *req)
   we call this when first first part of a possibly chained request has been completed
   and we need to call the 2nd part, if any
 */
-void chain_reply(struct smbsrv_request *req)
+void smbsrv_chain_reply(struct smbsrv_request *req)
 {
 	uint16_t chain_cmd, chain_offset;
 	uint8_t *vwv, *data;
