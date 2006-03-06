@@ -1576,7 +1576,7 @@ static void reply_trans_complete(struct smbsrv_request *req, uint8_t command,
 /*
   Reply to an SMBtrans or SMBtrans2 request
 */
-void reply_trans_generic(struct smbsrv_request *req, uint8_t command)
+static void reply_trans_generic(struct smbsrv_request *req, uint8_t command)
 {
 	struct smb_trans2 *trans;
 	int i;
