@@ -312,25 +312,6 @@ void smbsrv_send_reply(struct smbsrv_request *req)
 	smbsrv_send_reply_nosign(req);
 }
 
-
-
-/* 
-   construct and send an error packet with a forced DOS error code
-   this is needed to match win2000 behaviour for some parts of the protocol
-*/
-void smbsrv_send_dos_error(struct smbsrv_request *req, uint8_t eclass, uint16_t ecode)
-{
-	/* if the basic packet hasn't been setup yet then do it now */
-	if (req->out.buffer == NULL) {
-		smbsrv_setup_reply(req, 0, 0);
-	}
-
-	SCVAL(req->out.hdr, HDR_RCLS, eclass);
-	SSVAL(req->out.hdr, HDR_ERR, ecode);
-	SSVAL(req->out.hdr, HDR_FLG2, SVAL(req->out.hdr, HDR_FLG2) & ~FLAGS2_32_BIT_ERROR_CODES);	
-	smbsrv_send_reply(req);
-}
-
 /* 
    setup the header of a reply to include an NTSTATUS code
 */

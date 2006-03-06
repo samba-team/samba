@@ -1610,7 +1610,7 @@ static void reply_trans_generic(struct smbsrv_request *req, uint8_t command)
 	trans->in.setup_count = CVAL(req->in.vwv, VWV(13));
 
 	if (req->in.wct != 14 + trans->in.setup_count) {
-		smbsrv_send_dos_error(req, ERRSRV, ERRerror);
+		smbsrv_send_error(req, NT_STATUS_DOS(ERRSRV, ERRerror));
 		return;
 	}
 

@@ -568,7 +568,7 @@ void smbsrv_chain_reply(struct smbsrv_request *req)
 	uint16_t data_size;
 
 	if (req->in.wct < 2 || req->out.wct < 2) {
-		smbsrv_send_dos_error(req, ERRSRV, ERRerror);
+		smbsrv_send_error(req, NT_STATUS_DOS(ERRSRV, ERRerror));
 		return;
 	}
 
@@ -623,7 +623,7 @@ void smbsrv_chain_reply(struct smbsrv_request *req)
 error:
 	SSVAL(req->out.vwv, VWV(0), SMB_CHAIN_NONE);
 	SSVAL(req->out.vwv, VWV(1), 0);
-	smbsrv_send_dos_error(req, ERRSRV, ERRerror);
+	smbsrv_send_error(req, NT_STATUS_DOS(ERRSRV, ERRerror));
 }
 
 /*
