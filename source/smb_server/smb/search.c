@@ -106,7 +106,7 @@ static BOOL find_callback(void *private, union smb_search_data *file)
 /****************************************************************************
  Reply to a search.
 ****************************************************************************/
-void reply_search(struct smbsrv_request *req)
+void smbsrv_reply_search(struct smbsrv_request *req)
 {
 	union smb_search_first *sf;
 	union smb_search_next *sn;
@@ -222,7 +222,7 @@ static void reply_fclose_send(struct smbsrv_request *req)
 /****************************************************************************
  Reply to fclose (stop directory search).
 ****************************************************************************/
-void reply_fclose(struct smbsrv_request *req)
+void smbsrv_reply_fclose(struct smbsrv_request *req)
 {
 	union smb_search_close *sc;
 	uint16_t resume_key_length;

@@ -80,7 +80,7 @@ static void reply_simple_send(struct smbsrv_request *req)
 /****************************************************************************
  Reply to a tcon.
 ****************************************************************************/
-void reply_tcon(struct smbsrv_request *req)
+void smbsrv_reply_tcon(struct smbsrv_request *req)
 {
 	union smb_tcon con;
 	NTSTATUS status;
@@ -123,7 +123,7 @@ void reply_tcon(struct smbsrv_request *req)
 /****************************************************************************
  Reply to a tcon and X.
 ****************************************************************************/
-void reply_tcon_and_X(struct smbsrv_request *req)
+void smbsrv_reply_tcon_and_X(struct smbsrv_request *req)
 {
 	NTSTATUS status;
 	union smb_tcon con;
@@ -192,7 +192,7 @@ void reply_tcon_and_X(struct smbsrv_request *req)
 /****************************************************************************
  Reply to an unknown request
 ****************************************************************************/
-void reply_unknown(struct smbsrv_request *req)
+void smbsrv_reply_unknown(struct smbsrv_request *req)
 {
 	int type;
 
@@ -227,7 +227,7 @@ static void reply_ioctl_send(struct smbsrv_request *req)
 /****************************************************************************
  Reply to an ioctl.
 ****************************************************************************/
-void reply_ioctl(struct smbsrv_request *req)
+void smbsrv_reply_ioctl(struct smbsrv_request *req)
 {
 	union smb_ioctl *io;
 
@@ -253,7 +253,7 @@ void reply_ioctl(struct smbsrv_request *req)
 /****************************************************************************
  Reply to a chkpth.
 ****************************************************************************/
-void reply_chkpth(struct smbsrv_request *req)
+void smbsrv_reply_chkpth(struct smbsrv_request *req)
 {
 	struct smb_chkpath *io;
 
@@ -294,7 +294,7 @@ static void reply_getatr_send(struct smbsrv_request *req)
 /****************************************************************************
  Reply to a getatr.
 ****************************************************************************/
-void reply_getatr(struct smbsrv_request *req)
+void smbsrv_reply_getatr(struct smbsrv_request *req)
 {
 	union smb_fileinfo *st;
 
@@ -323,7 +323,7 @@ void reply_getatr(struct smbsrv_request *req)
 /****************************************************************************
  Reply to a setatr.
 ****************************************************************************/
-void reply_setatr(struct smbsrv_request *req)
+void smbsrv_reply_setatr(struct smbsrv_request *req)
 {
 	union smb_setfileinfo *st;
 
@@ -378,7 +378,7 @@ static void reply_dskattr_send(struct smbsrv_request *req)
 /****************************************************************************
  Reply to a dskattr.
 ****************************************************************************/
-void reply_dskattr(struct smbsrv_request *req)
+void smbsrv_reply_dskattr(struct smbsrv_request *req)
 {
 	union smb_fsinfo *fs;
 
@@ -422,7 +422,7 @@ static void reply_open_send(struct smbsrv_request *req)
 /****************************************************************************
  Reply to an open.
 ****************************************************************************/
-void reply_open(struct smbsrv_request *req)
+void smbsrv_reply_open(struct smbsrv_request *req)
 {
 	union smb_open *oi;
 
@@ -494,7 +494,7 @@ static void reply_open_and_X_send(struct smbsrv_request *req)
 /****************************************************************************
  Reply to an open and X.
 ****************************************************************************/
-void reply_open_and_X(struct smbsrv_request *req)
+void smbsrv_reply_open_and_X(struct smbsrv_request *req)
 {
 	union smb_open *oi;
 
@@ -551,7 +551,7 @@ static void reply_mknew_send(struct smbsrv_request *req)
 /****************************************************************************
  Reply to a mknew or a create.
 ****************************************************************************/
-void reply_mknew(struct smbsrv_request *req)
+void smbsrv_reply_mknew(struct smbsrv_request *req)
 {
 	union smb_open *oi;
 
@@ -607,7 +607,7 @@ static void reply_ctemp_send(struct smbsrv_request *req)
 /****************************************************************************
  Reply to a create temporary file.
 ****************************************************************************/
-void reply_ctemp(struct smbsrv_request *req)
+void smbsrv_reply_ctemp(struct smbsrv_request *req)
 {
 	union smb_open *oi;
 
@@ -642,7 +642,7 @@ void reply_ctemp(struct smbsrv_request *req)
 /****************************************************************************
  Reply to a unlink
 ****************************************************************************/
-void reply_unlink(struct smbsrv_request *req)
+void smbsrv_reply_unlink(struct smbsrv_request *req)
 {
 	struct smb_unlink *unl;
 
@@ -670,7 +670,7 @@ void reply_unlink(struct smbsrv_request *req)
  only the 4 byte NBT header
  This command must be replied to synchronously
 ****************************************************************************/
-void reply_readbraw(struct smbsrv_request *req)
+void smbsrv_reply_readbraw(struct smbsrv_request *req)
 {
 	NTSTATUS status;
 	union smb_read io;
@@ -757,7 +757,7 @@ static void reply_lockread_send(struct smbsrv_request *req)
  Reply to a lockread (core+ protocol).
  note that the lock is a write lock, not a read lock!
 ****************************************************************************/
-void reply_lockread(struct smbsrv_request *req)
+void smbsrv_reply_lockread(struct smbsrv_request *req)
 {
 	union smb_read *io;
 	
@@ -816,7 +816,7 @@ static void reply_read_send(struct smbsrv_request *req)
 /****************************************************************************
  Reply to a read.
 ****************************************************************************/
-void reply_read(struct smbsrv_request *req)
+void smbsrv_reply_read(struct smbsrv_request *req)
 {
 	union smb_read *io;
 
@@ -883,7 +883,7 @@ static void reply_read_and_X_send(struct smbsrv_request *req)
 /****************************************************************************
  Reply to a read and X.
 ****************************************************************************/
-void reply_read_and_X(struct smbsrv_request *req)
+void smbsrv_reply_read_and_X(struct smbsrv_request *req)
 {
 	union smb_read *io;
 
@@ -939,7 +939,7 @@ void reply_read_and_X(struct smbsrv_request *req)
 /****************************************************************************
  Reply to a writebraw (core+ or LANMAN1.0 protocol).
 ****************************************************************************/
-void reply_writebraw(struct smbsrv_request *req)
+void smbsrv_reply_writebraw(struct smbsrv_request *req)
 {
 	req_reply_dos_error(req, ERRSRV, ERRuseSTD);
 }
@@ -965,7 +965,7 @@ static void reply_writeunlock_send(struct smbsrv_request *req)
 /****************************************************************************
  Reply to a writeunlock (core+).
 ****************************************************************************/
-void reply_writeunlock(struct smbsrv_request *req)
+void smbsrv_reply_writeunlock(struct smbsrv_request *req)
 {
 	union smb_write *io;
 
@@ -1023,7 +1023,7 @@ static void reply_write_send(struct smbsrv_request *req)
 /****************************************************************************
  Reply to a write
 ****************************************************************************/
-void reply_write(struct smbsrv_request *req)
+void smbsrv_reply_write(struct smbsrv_request *req)
 {
 	union smb_write *io;
 
@@ -1085,7 +1085,7 @@ static void reply_write_and_X_send(struct smbsrv_request *req)
 /****************************************************************************
  Reply to a write and X.
 ****************************************************************************/
-void reply_write_and_X(struct smbsrv_request *req)
+void smbsrv_reply_write_and_X(struct smbsrv_request *req)
 {
 	union smb_write *io;
 	
@@ -1147,7 +1147,7 @@ static void reply_lseek_send(struct smbsrv_request *req)
 /****************************************************************************
  Reply to a lseek.
 ****************************************************************************/
-void reply_lseek(struct smbsrv_request *req)
+void smbsrv_reply_lseek(struct smbsrv_request *req)
 {
 	struct smb_seek *io;
 
@@ -1171,7 +1171,7 @@ void reply_lseek(struct smbsrv_request *req)
 /****************************************************************************
  Reply to a flush.
 ****************************************************************************/
-void reply_flush(struct smbsrv_request *req)
+void smbsrv_reply_flush(struct smbsrv_request *req)
 {
 	struct smb_flush *io;
 
@@ -1194,7 +1194,7 @@ void reply_flush(struct smbsrv_request *req)
 /****************************************************************************
  Reply to a exit. This closes all files open by a smbpid
 ****************************************************************************/
-void reply_exit(struct smbsrv_request *req)
+void smbsrv_reply_exit(struct smbsrv_request *req)
 {
 	NTSTATUS status;
 	struct smbsrv_tcon *tcon;
@@ -1220,7 +1220,7 @@ void reply_exit(struct smbsrv_request *req)
 
  Note that this has to deal with closing a directory opened by NT SMB's.
 ****************************************************************************/
-void reply_close(struct smbsrv_request *req)
+void smbsrv_reply_close(struct smbsrv_request *req)
 {
 	union smb_close *io;
 
@@ -1263,7 +1263,7 @@ static void reply_writeclose_send(struct smbsrv_request *req)
 /****************************************************************************
  Reply to a writeclose (Core+ protocol).
 ****************************************************************************/
-void reply_writeclose(struct smbsrv_request *req)
+void smbsrv_reply_writeclose(struct smbsrv_request *req)
 {
 	union smb_write *io;
 
@@ -1300,7 +1300,7 @@ void reply_writeclose(struct smbsrv_request *req)
 /****************************************************************************
  Reply to a lock.
 ****************************************************************************/
-void reply_lock(struct smbsrv_request *req)
+void smbsrv_reply_lock(struct smbsrv_request *req)
 {
 	union smb_lock *lck;
 
@@ -1326,7 +1326,7 @@ void reply_lock(struct smbsrv_request *req)
 /****************************************************************************
  Reply to a unlock.
 ****************************************************************************/
-void reply_unlock(struct smbsrv_request *req)
+void smbsrv_reply_unlock(struct smbsrv_request *req)
 {
 	union smb_lock *lck;
 
@@ -1352,7 +1352,7 @@ void reply_unlock(struct smbsrv_request *req)
 /****************************************************************************
  Reply to a tdis.
 ****************************************************************************/
-void reply_tdis(struct smbsrv_request *req)
+void smbsrv_reply_tdis(struct smbsrv_request *req)
 {
 	REQ_CHECK_WCT(req, 0);
 
@@ -1374,7 +1374,7 @@ void reply_tdis(struct smbsrv_request *req)
  Reply to a echo. This is one of the few calls that is handled directly (the
  backends don't see it at all)
 ****************************************************************************/
-void reply_echo(struct smbsrv_request *req)
+void smbsrv_reply_echo(struct smbsrv_request *req)
 {
 	uint16_t count;
 	int i;
@@ -1423,7 +1423,7 @@ static void reply_printopen_send(struct smbsrv_request *req)
 /****************************************************************************
  Reply to a printopen.
 ****************************************************************************/
-void reply_printopen(struct smbsrv_request *req)
+void smbsrv_reply_printopen(struct smbsrv_request *req)
 {
 	union smb_open *oi;
 
@@ -1450,7 +1450,7 @@ void reply_printopen(struct smbsrv_request *req)
 /****************************************************************************
  Reply to a printclose.
 ****************************************************************************/
-void reply_printclose(struct smbsrv_request *req)
+void smbsrv_reply_printclose(struct smbsrv_request *req)
 {
 	union smb_close *io;
 
@@ -1473,7 +1473,7 @@ void reply_printclose(struct smbsrv_request *req)
 /****************************************************************************
  Reply to a printqueue.
 ****************************************************************************/
-void reply_printqueue_send(struct smbsrv_request *req)
+static void reply_printqueue_send(struct smbsrv_request *req)
 {
 	union smb_lpq *lpq = req->async_states->private_data;
 	int i, maxcount;
@@ -1518,7 +1518,7 @@ void reply_printqueue_send(struct smbsrv_request *req)
 /****************************************************************************
  Reply to a printqueue.
 ****************************************************************************/
-void reply_printqueue(struct smbsrv_request *req)
+void smbsrv_reply_printqueue(struct smbsrv_request *req)
 {
 	union smb_lpq *lpq;
 
@@ -1544,7 +1544,7 @@ void reply_printqueue(struct smbsrv_request *req)
 /****************************************************************************
  Reply to a printwrite.
 ****************************************************************************/
-void reply_printwrite(struct smbsrv_request *req)
+void smbsrv_reply_printwrite(struct smbsrv_request *req)
 {
 	union smb_write *io;
 
@@ -1582,7 +1582,7 @@ void reply_printwrite(struct smbsrv_request *req)
 /****************************************************************************
  Reply to a mkdir.
 ****************************************************************************/
-void reply_mkdir(struct smbsrv_request *req)
+void smbsrv_reply_mkdir(struct smbsrv_request *req)
 {
 	union smb_mkdir *io;
 
@@ -1606,7 +1606,7 @@ void reply_mkdir(struct smbsrv_request *req)
 /****************************************************************************
  Reply to a rmdir.
 ****************************************************************************/
-void reply_rmdir(struct smbsrv_request *req)
+void smbsrv_reply_rmdir(struct smbsrv_request *req)
 {
 	struct smb_rmdir *io;
  
@@ -1629,7 +1629,7 @@ void reply_rmdir(struct smbsrv_request *req)
 /****************************************************************************
  Reply to a mv.
 ****************************************************************************/
-void reply_mv(struct smbsrv_request *req)
+void smbsrv_reply_mv(struct smbsrv_request *req)
 {
 	union smb_rename *io;
 	uint8_t *p;
@@ -1663,7 +1663,7 @@ void reply_mv(struct smbsrv_request *req)
 /****************************************************************************
  Reply to an NT rename.
 ****************************************************************************/
-void reply_ntrename(struct smbsrv_request *req)
+void smbsrv_reply_ntrename(struct smbsrv_request *req)
 {
 	union smb_rename *io;
 	uint8_t *p;
@@ -1715,7 +1715,7 @@ static void reply_copy_send(struct smbsrv_request *req)
 /****************************************************************************
  Reply to a file copy.
 ****************************************************************************/
-void reply_copy(struct smbsrv_request *req)
+void smbsrv_reply_copy(struct smbsrv_request *req)
 {
 	struct smb_copy *cp;
 	uint8_t *p;
@@ -1776,7 +1776,7 @@ static void reply_lockingX_send(struct smbsrv_request *req)
 /****************************************************************************
  Reply to a lockingX request.
 ****************************************************************************/
-void reply_lockingX(struct smbsrv_request *req)
+void smbsrv_reply_lockingX(struct smbsrv_request *req)
 {
 	union smb_lock *lck;
 	uint_t total_locks, i;
@@ -1851,7 +1851,7 @@ void reply_lockingX(struct smbsrv_request *req)
 /****************************************************************************
  Reply to a SMBreadbmpx (read block multiplex) request.
 ****************************************************************************/
-void reply_readbmpx(struct smbsrv_request *req)
+void smbsrv_reply_readbmpx(struct smbsrv_request *req)
 {
 	/* tell the client to not use a multiplexed read - its too broken to use */
 	req_reply_dos_error(req, ERRSRV, ERRuseSTD);
@@ -1861,7 +1861,7 @@ void reply_readbmpx(struct smbsrv_request *req)
 /****************************************************************************
  Reply to a SMBsetattrE.
 ****************************************************************************/
-void reply_setattrE(struct smbsrv_request *req)
+void smbsrv_reply_setattrE(struct smbsrv_request *req)
 {
 	union smb_setfileinfo *info;
 
@@ -1888,7 +1888,7 @@ void reply_setattrE(struct smbsrv_request *req)
 /****************************************************************************
  Reply to a SMBwritebmpx (write block multiplex primary) request.
 ****************************************************************************/
-void reply_writebmpx(struct smbsrv_request *req)
+void smbsrv_reply_writebmpx(struct smbsrv_request *req)
 {
 	req_reply_dos_error(req, ERRSRV, ERRuseSTD);
 }
@@ -1897,7 +1897,7 @@ void reply_writebmpx(struct smbsrv_request *req)
 /****************************************************************************
  Reply to a SMBwritebs (write block multiplex secondary) request.
 ****************************************************************************/
-void reply_writebs(struct smbsrv_request *req)
+void smbsrv_reply_writebs(struct smbsrv_request *req)
 {
 	req_reply_dos_error(req, ERRSRV, ERRuseSTD);
 }
@@ -1929,7 +1929,7 @@ static void reply_getattrE_send(struct smbsrv_request *req)
 /****************************************************************************
  Reply to a SMBgetattrE.
 ****************************************************************************/
-void reply_getattrE(struct smbsrv_request *req)
+void smbsrv_reply_getattrE(struct smbsrv_request *req)
 {
 	union smb_fileinfo *info;
 
@@ -2145,7 +2145,7 @@ static void reply_sesssetup_spnego(struct smbsrv_request *req)
 /****************************************************************************
 reply to a session setup command
 ****************************************************************************/
-void reply_sesssetup(struct smbsrv_request *req)
+void smbsrv_reply_sesssetup(struct smbsrv_request *req)
 {
 	switch (req->in.wct) {
 	case 10:
@@ -2169,7 +2169,7 @@ void reply_sesssetup(struct smbsrv_request *req)
 /****************************************************************************
  Reply to a SMBulogoffX.
 ****************************************************************************/
-void reply_ulogoffX(struct smbsrv_request *req)
+void smbsrv_reply_ulogoffX(struct smbsrv_request *req)
 {
 	struct smbsrv_tcon *tcon;
 	NTSTATUS status;
@@ -2207,7 +2207,7 @@ void reply_ulogoffX(struct smbsrv_request *req)
 /****************************************************************************
  Reply to an SMBfindclose request
 ****************************************************************************/
-void reply_findclose(struct smbsrv_request *req)
+void smbsrv_reply_findclose(struct smbsrv_request *req)
 {
 	NTSTATUS status;
 	union smb_search_close io;
@@ -2236,7 +2236,7 @@ void reply_findclose(struct smbsrv_request *req)
 /****************************************************************************
  Reply to an SMBfindnclose request
 ****************************************************************************/
-void reply_findnclose(struct smbsrv_request *req)
+void smbsrv_reply_findnclose(struct smbsrv_request *req)
 {
 	req_reply_error(req, NT_STATUS_FOOBAR);
 }
@@ -2280,7 +2280,7 @@ static void reply_ntcreate_and_X_send(struct smbsrv_request *req)
 /****************************************************************************
  Reply to an SMBntcreateX request
 ****************************************************************************/
-void reply_ntcreate_and_X(struct smbsrv_request *req)
+void smbsrv_reply_ntcreate_and_X(struct smbsrv_request *req)
 {
 	union smb_open *io;
 	uint16_t fname_len;
@@ -2332,7 +2332,7 @@ void reply_ntcreate_and_X(struct smbsrv_request *req)
 /****************************************************************************
  Reply to an SMBntcancel request
 ****************************************************************************/
-void reply_ntcancel(struct smbsrv_request *req)
+void smbsrv_reply_ntcancel(struct smbsrv_request *req)
 {
 	/* NOTE: this request does not generate a reply */
 	ntvfs_cancel(req);
@@ -2342,7 +2342,7 @@ void reply_ntcancel(struct smbsrv_request *req)
 /****************************************************************************
  Reply to an SMBsends request
 ****************************************************************************/
-void reply_sends(struct smbsrv_request *req)
+void smbsrv_reply_sends(struct smbsrv_request *req)
 {
 	req_reply_error(req, NT_STATUS_FOOBAR);
 }
@@ -2350,7 +2350,7 @@ void reply_sends(struct smbsrv_request *req)
 /****************************************************************************
  Reply to an SMBsendstrt request
 ****************************************************************************/
-void reply_sendstrt(struct smbsrv_request *req)
+void smbsrv_reply_sendstrt(struct smbsrv_request *req)
 {
 	req_reply_error(req, NT_STATUS_FOOBAR);
 }
@@ -2358,7 +2358,7 @@ void reply_sendstrt(struct smbsrv_request *req)
 /****************************************************************************
  Reply to an SMBsendend request
 ****************************************************************************/
-void reply_sendend(struct smbsrv_request *req)
+void smbsrv_reply_sendend(struct smbsrv_request *req)
 {
 	req_reply_error(req, NT_STATUS_FOOBAR);
 }
@@ -2366,7 +2366,7 @@ void reply_sendend(struct smbsrv_request *req)
 /****************************************************************************
  Reply to an SMBsendtxt request
 ****************************************************************************/
-void reply_sendtxt(struct smbsrv_request *req)
+void smbsrv_reply_sendtxt(struct smbsrv_request *req)
 {
 	req_reply_error(req, NT_STATUS_FOOBAR);
 }
@@ -2413,7 +2413,7 @@ static NTSTATUS parse_session_request(struct smbsrv_request *req)
 /****************************************************************************
  Reply to a special message - a SMB packet with non zero NBT message type
 ****************************************************************************/
-void reply_special(struct smbsrv_request *req)
+void smbsrv_reply_special(struct smbsrv_request *req)
 {
 	uint8_t msg_type;
 	uint8_t *buf = talloc_zero_array(req, uint8_t, 4);

@@ -1753,7 +1753,7 @@ failed:
 /*
   Reply to an SMBtrans2
 */
-void reply_trans2(struct smbsrv_request *req)
+void smbsrv_reply_trans2(struct smbsrv_request *req)
 {
 	reply_trans_generic(req, SMBtrans2);
 }
@@ -1761,7 +1761,7 @@ void reply_trans2(struct smbsrv_request *req)
 /*
   Reply to an SMBtrans
 */
-void reply_trans(struct smbsrv_request *req)
+void smbsrv_reply_trans(struct smbsrv_request *req)
 {
 	reply_trans_generic(req, SMBtrans);
 }
@@ -1769,7 +1769,7 @@ void reply_trans(struct smbsrv_request *req)
 /*
   Reply to an SMBtranss request
 */
-void reply_transs(struct smbsrv_request *req)
+void smbsrv_reply_transs(struct smbsrv_request *req)
 {
 	reply_transs_generic(req, SMBtrans);
 }
@@ -1777,8 +1777,7 @@ void reply_transs(struct smbsrv_request *req)
 /*
   Reply to an SMBtranss2 request
 */
-void reply_transs2(struct smbsrv_request *req)
+void smbsrv_reply_transs2(struct smbsrv_request *req)
 {
 	reply_transs_generic(req, SMBtrans2);
 }
-
