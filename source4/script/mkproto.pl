@@ -133,7 +133,7 @@ sub process_file($$$)
 
 		next if ($line =~ /^\/|[;]/);
 
-		if ($line =~ s/^_PUBLIC_[\t ]/extern /) {
+		if ($line =~ /^_PUBLIC_[\t ]/) {
 			$target = $public_file;
 			$is_public = 1;
 		}
