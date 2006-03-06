@@ -645,6 +645,7 @@ BOOL initialise_wins(void)
 		/* Allocate the space for the ip_list. */
 		if((ip_list = SMB_MALLOC_ARRAY( struct in_addr, num_ips)) == NULL) {
 			DEBUG(0,("initialise_wins: Malloc fail !\n"));
+			x_fclose(fp);
 			return False;
 		}
  
