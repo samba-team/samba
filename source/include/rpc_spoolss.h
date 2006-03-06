@@ -2174,17 +2174,23 @@ SPOOL_R_GETPRINTPROCESSORDIRECTORY;
 
 /**************************************/
 
+#define MAX_PORTNAME		64
+#define MAX_NETWORK_NAME	49
+#define MAX_SNMP_COMM_NAME	33
+#define	MAX_QUEUE_NAME		33
+#define MAX_IPADDR_STRING	17
+		
 typedef struct {
-	UNISTR portname;	/* constant 64 wchars */
+	uint16 portname[MAX_PORTNAME];
 	uint32 version;
 	uint32 protocol;
 	uint32 size;
 	uint32 reserved;
-	UNISTR hostaddress;	/* constant 49 wchars */
-	UNISTR snmpcommunity;	/* constant 33 wchars */
+	uint16 hostaddress[MAX_NETWORK_NAME];
+	uint16 snmpcommunity[MAX_SNMP_COMM_NAME];
 	uint32 dblspool;
-	UNISTR queue;		/* constant 33 wchars */
-	UNISTR ipaddress;	/* constant 17 wchars */
+	uint16 queue[MAX_QUEUE_NAME];
+	uint16 ipaddress[MAX_IPADDR_STRING];
 	uint32 port;
 	uint32 snmpenabled;
 	uint32 snmpdevindex;
