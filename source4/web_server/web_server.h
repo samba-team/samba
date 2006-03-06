@@ -19,6 +19,7 @@
 */
 
 #include "smbd/process_model.h"
+#include "web_server/proto.h"
 
 /*
   context of one open web connection
