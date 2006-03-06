@@ -32,6 +32,7 @@
 #include "ads.h"
 #include "dsdb/samdb/samdb.h"
 #include "libcli/ldap/ldap.h"
+#include "rpc_server/samr/proto.h"
 
 
 /*

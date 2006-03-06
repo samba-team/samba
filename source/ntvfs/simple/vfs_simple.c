@@ -34,6 +34,7 @@
 #include "dlinklist.h"
 #include "smb_server/smb_server.h"
 #include "ntvfs/ntvfs.h"
+#include "ntvfs/simple/proto.h"
 
 #ifndef O_DIRECTORY
 #define O_DIRECTORY 0

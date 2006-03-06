@@ -42,6 +42,7 @@
 #include "torture/com/proto.h"
 #include "torture/nbt/proto.h"
 #include "torture/libnet/proto.h"
+#include "torture/torture.h"
 
 int torture_nprocs=4;
 int torture_numops=10;
