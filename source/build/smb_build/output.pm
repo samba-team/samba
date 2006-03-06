@@ -92,9 +92,9 @@ sub generate_binary($)
 	$bin->{BINARY} = $bin->{NAME};
 }
 
-sub create_output($)
+sub create_output($$)
 {
-	my $depend = shift;
+	my ($depend, $config) = @_;
 	my $part;
 
 	foreach $part (values %{$depend}) {
@@ -109,6 +109,11 @@ sub create_output($)
 			scalar(@{$part->{OBJ_LIST}}) == 0) and 
 			$part->{OUTPUT_TYPE} eq "MERGEDOBJ") {
 			$part->{OUTPUT_TYPE} = "OBJLIST";
+		}
+
+		if ($part->{DEFAULT_VISIBILITY} ne "default" and 
+			$config->{visibility_attribute} eq "yes") {
+			$part->{EXTRA_CFLAGS} .= " -fvisibility=$part->{DEFAULT_VISIBILITY}";
 		}
 
 		generate_binary($part) if $part->{OUTPUT_TYPE} eq "BINARY";

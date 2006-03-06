@@ -1,11 +1,6 @@
-- split up proto.h into headers with public or private prototypes. 
-  Public prototypes can be marked with _PUBLIC_ in the source
-   - get rid of include/structs.h
-- install Samba-specific headers in $INCLUDEDIR/samba-4.0. talloc.h, tdb.h and 
-	ldb.h belong in $INCLUDEDIR
+- get rid of include/structs.h
 - add register function to smbtorture
 - install shared modules
 - improve (un)install scripts (rewrite in perl?)
 - proper #include dependencies
 - determine dependencies from #include lines ?
-- clean up include/smb.h

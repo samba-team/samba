@@ -15,6 +15,7 @@ sub create_cflags($$)
 	foreach my $key (values %{$CTX}) {
 		next unless defined ($key->{OBJ_LIST});
 		next unless defined ($key->{EXTRA_CFLAGS});
+		next if ($key->{EXTRA_CFLAGS} eq "");
 
 		foreach (@{$key->{OBJ_LIST}}) {
 			print CFLAGS_TXT "$_: $key->{EXTRA_CFLAGS}\n";

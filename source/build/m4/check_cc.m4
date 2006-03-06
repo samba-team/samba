@@ -39,15 +39,11 @@ AC_CACHE_CHECK([that the C compiler can precompile header files],samba_cv_precom
 	dnl Check whether the compiler can generate precompiled headers
 	touch conftest.h
 	if ${CC-cc} conftest.h 2> /dev/null && test -f conftest.h.gch; then
-		samba_cv_precompiled_headers=yes
+		precompiled_headers=yes
 	else
-		samba_cv_precompiled_headers=no
+		precompiled_headers=no
 	fi])
-PCH_AVAILABLE="#"
-if test x"$samba_cv_precompiled_headers" = x"yes"; then
-	PCH_AVAILABLE=""
-fi
-AC_SUBST(PCH_AVAILABLE)
+AC_SUBST(precompiled_headers)
 
 
 dnl Check if the C compiler understands volatile (it should, being ANSI).
@@ -119,23 +115,19 @@ AC_TRY_RUN([#include "${srcdir-.}/build/tests/trivial.c"],
 #
 # Check if the compiler support ELF visibility for symbols
 #
-if test x"$GCC" = x"yes" ; then
-    AX_CFLAGS_GCC_OPTION([-fvisibility=hidden], VISIBILITY_CFLAGS)
-fi
-if test -n "$VISIBILITY_CFLAGS"; then
-	OLD_CFLAGS="${CFLAGS}"
-	CFLAGS="${CFLAGS} ${VISIBILITY_CFLAGS}"
-	AC_MSG_CHECKING([whether the C compiler supports the visibility attribute])
-	AC_TRY_RUN([
+visibility_attribute=no
+AC_MSG_CHECKING([whether the C compiler supports the visibility attribute])
+AC_TRY_RUN([
 #pragma GCC visibility push(hidden)
 void vis_foo1(void) {}
 __attribute__((visibility("default"))) void vis_foo2(void) {}
 #include "${srcdir-.}/build/tests/trivial.c"
-], [AC_MSG_RESULT(yes);
-AC_DEFINE(HAVE_VISIBILITY_ATTR,1,[Whether the C compiler supports the visibility attribute])], 
-[AC_MSG_RESULT(no);VISIBILITY_CFLAGS=""])
-	CFLAGS="${OLD_CFLAGS}"
-fi
+], [
+	AC_MSG_RESULT(yes)
+	AC_DEFINE(HAVE_VISIBILITY_ATTR,1,[Whether the C compiler supports the visibility attribute])
+	visibility_attribute=yes
+], [AC_MSG_RESULT(no);])
+AC_SUBST(visibility_attribute)
 
 #
 # Check if the compiler can handle the options we selected by
