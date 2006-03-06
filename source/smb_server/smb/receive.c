@@ -515,7 +515,7 @@ static void switch_message(int type, struct smbsrv_request *req)
 		    (req->smb_conn->signing.signing_state != SMB_SIGNING_ENGINE_OFF)) {
 			DEBUG(1,("SKIP ERROR REPLY: %s %s because of unknown smb signing case\n",
 				smb_fn_name(type), nt_errstr(status)));
-			req_destroy(req);
+			talloc_free(req);
 			return;
 		}
 		req_reply_error(req, status);
@@ -543,7 +543,7 @@ static void switch_message(int type, struct smbsrv_request *req)
 		    (req->smb_conn->signing.signing_state != SMB_SIGNING_ENGINE_OFF)) {
 			DEBUG(1,("SKIP ERROR REPLY: %s %s because of unknown smb signing case\n",
 				smb_fn_name(type), nt_errstr(status)));
-			req_destroy(req);
+			talloc_free(req);
 			return;
 		}
 		req_reply_error(req, status);

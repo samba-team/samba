@@ -32,14 +32,6 @@
 /* we over allocate the data buffer to prevent too many realloc calls */
 #define REQ_OVER_ALLOCATION 0
 
-/* destroy a request structure */
-void req_destroy(struct smbsrv_request *req)
-{
-	/* ahh, its so nice to destroy a complex structure in such a
-	 * simple way! */
-	talloc_free(req);
-}
-
 /****************************************************************************
 construct a basic request packet, mostly used to construct async packets
 such as change notify and oplock break requests
@@ -304,7 +296,7 @@ void req_send_reply_nosign(struct smbsrv_request *req)
 	if (!NT_STATUS_IS_OK(status)) {
 		smbsrv_terminate_connection(req->smb_conn, nt_errstr(status));
 	}
-	req_destroy(req);
+	talloc_free(req);
 }
 
 /*
