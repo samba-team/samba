@@ -85,6 +85,10 @@ returned for name %s.\n", nmb_namestr(nmbname) ));
 					nmbname->name_type, nb_flags, ttl,
 					WINS_PROXY_NAME, num_ips, iplist );
 
+	if(iplist != &ip) {
+		SAFE_FREE(iplist);
+	}
+
 	namerec = find_name_on_subnet(orig_broadcast_subnet, nmbname, FIND_ANY_NAME);
 	if (!namerec) {
 		DEBUG(0,("wins_proxy_name_query_request_success: failed to add "
@@ -92,10 +96,6 @@ returned for name %s.\n", nmb_namestr(nmbname) ));
 			name,
 			orig_broadcast_subnet->subnet_name ));
 		return;
-	}
-
-	if(iplist != &ip) {
-		SAFE_FREE(iplist);
 	}
 
 	/*
