@@ -50,7 +50,8 @@ input.pm - Input validation
 main.pm - Main
 makefile.pm - Makefile generation
 output.pm - Dependency calculation
-smb_build_h.pm - smb_build.h generation
+header.pm - build.h generation
+cflags.pm - Generates cflags.txt for file-specific cflags
 
 Layout
 -------
