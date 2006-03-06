@@ -5393,3 +5393,4 @@ enum brl_flavour lp_posix_cifsu_locktype(void)
 void lp_set_posix_cifsx_locktype(enum brl_flavour val)
 {
 	posix_cifsx_locktype = val;
+}
