@@ -625,7 +625,7 @@ void auth_session_info_debug(int dbg_lev,
 			     const struct auth_session_info *session_info)
 {
 	if (!session_info) {
-		DEBUGC(dbg_class, dbg_lev, ("Session Info: (NULL)\n"));
+		DEBUG(dbg_lev, ("Session Info: (NULL)\n"));
 		return;	
 	}
 

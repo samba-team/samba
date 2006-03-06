@@ -93,6 +93,12 @@ _PUBLIC_ BOOL directory_exist(const char *dname)
 	return ret;
 }
 
+/**
+ * Try to create the specified directory if it didn't exist.
+ *
+ * @retval True if the directory already existed and has the right permissions 
+ * or was successfully created.
+ */
 _PUBLIC_ BOOL directory_create_or_exist(const char *dname, uid_t uid, 
 			       mode_t dir_perms)
 {
@@ -486,6 +492,11 @@ static void print_asc(int level, const uint8_t *buf,int len)
 		DEBUGADD(level,("%c", isprint(buf[i])?buf[i]:'.'));
 }
 
+/**
+ * Write dump of binary data to the log file.
+ *
+ * The data is only written if the log level is at least level.
+ */
 _PUBLIC_ void dump_data(int level, const uint8_t *buf,int len)
 {
 	int i=0;
@@ -688,6 +699,12 @@ static char *modules_path(TALLOC_CTX* mem_ctx, const char *name)
 	return talloc_asprintf(mem_ctx, "%s/%s", dyn_MODULESDIR, name);
 }
 
+/**
+ * Load the initialization functions from DSO files for a specific subsystem.
+ *
+ * Will return an array of function pointers to initialization functions
+ */
+
 _PUBLIC_ init_module_fn *load_samba_modules(TALLOC_CTX *mem_ctx, const char *subsystem)
 {
 	char *path = modules_path(mem_ctx, subsystem);
@@ -700,6 +717,12 @@ _PUBLIC_ init_module_fn *load_samba_modules(TALLOC_CTX *mem_ctx, const char *sub
 	return ret;
 }
 
+/**
+ * Write a password to the log file.
+ *
+ * @note Only actually does something if DEBUG_PASSWORD was defined during 
+ * compile-time.
+ */
 _PUBLIC_ void dump_data_pw(const char *msg, const uint8_t * data, size_t len)
 {
 #ifdef DEBUG_PASSWORD
