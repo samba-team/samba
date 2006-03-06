@@ -1454,7 +1454,7 @@ static void reply_trans_continue(struct smbsrv_request *req, uint8_t command,
 	/* make sure they don't flood us */
 	for (count=0,tp=req->smb_conn->trans_partial;tp;tp=tp->next) count++;
 	if (count > 100) {
-		req_reply_error(req, NT_STATUS_INSUFFICIENT_RESOURCES);
+		smbsrv_send_error(req, NT_STATUS_INSUFFICIENT_RESOURCES);
 		return;
 	}
 
@@ -1467,8 +1467,8 @@ static void reply_trans_continue(struct smbsrv_request *req, uint8_t command,
 	DLIST_ADD(req->smb_conn->trans_partial, tp);
 
 	/* send a 'please continue' reply */
-	req_setup_reply(req, 0, 0);
-	req_send_reply(req);
+	smbsrv_setup_reply(req, 0, 0);
+	smbsrv_send_reply(req);
 }
 
 
@@ -1491,7 +1491,7 @@ static void reply_trans_complete(struct smbsrv_request *req, uint8_t command,
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
-		req_reply_error(req, status);
+		smbsrv_send_error(req, status);
 		return;
 	}
 
@@ -1500,10 +1500,10 @@ static void reply_trans_complete(struct smbsrv_request *req, uint8_t command,
 	params      = trans->out.params.data;
 	data        = trans->out.data.data;
 
-	req_setup_reply(req, 10 + trans->out.setup_count, 0);
+	smbsrv_setup_reply(req, 10 + trans->out.setup_count, 0);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		req_setup_error(req, status);
+		smbsrv_setup_error(req, status);
 	}
 
 	/* we need to divide up the reply into chunks that fit into
@@ -1529,7 +1529,7 @@ static void reply_trans_complete(struct smbsrv_request *req, uint8_t command,
 		/* don't destroy unless this is the last chunk */
 		if (params_left - this_param != 0 || 
 		    data_left - this_data != 0) {
-			this_req = req_setup_secondary(req);
+			this_req = smbsrv_setup_secondary_request(req);
 		} else {
 			this_req = req;
 		}
@@ -1568,7 +1568,7 @@ static void reply_trans_complete(struct smbsrv_request *req, uint8_t command,
 		params += this_param;
 		data += this_data;
 
-		req_send_reply(this_req);
+		smbsrv_send_reply(this_req);
 	} while (params_left != 0 || data_left != 0);
 }
 
@@ -1586,13 +1586,13 @@ static void reply_trans_generic(struct smbsrv_request *req, uint8_t command)
 
 	trans = talloc(req, struct smb_trans2);
 	if (trans == NULL) {
-		req_reply_error(req, NT_STATUS_NO_MEMORY);
+		smbsrv_send_error(req, NT_STATUS_NO_MEMORY);
 		return;
 	}
 
 	/* parse request */
 	if (req->in.wct < 14) {
-		req_reply_error(req, NT_STATUS_INVALID_PARAMETER);
+		smbsrv_send_error(req, NT_STATUS_INVALID_PARAMETER);
 		return;
 	}
 
@@ -1610,14 +1610,14 @@ static void reply_trans_generic(struct smbsrv_request *req, uint8_t command)
 	trans->in.setup_count = CVAL(req->in.vwv, VWV(13));
 
 	if (req->in.wct != 14 + trans->in.setup_count) {
-		req_reply_dos_error(req, ERRSRV, ERRerror);
+		smbsrv_send_dos_error(req, ERRSRV, ERRerror);
 		return;
 	}
 
 	/* parse out the setup words */
 	trans->in.setup = talloc_array(req, uint16_t, trans->in.setup_count);
 	if (trans->in.setup_count && !trans->in.setup) {
-		req_reply_error(req, NT_STATUS_NO_MEMORY);
+		smbsrv_send_error(req, NT_STATUS_NO_MEMORY);
 		return;
 	}
 	for (i=0;i<trans->in.setup_count;i++) {
@@ -1630,7 +1630,7 @@ static void reply_trans_generic(struct smbsrv_request *req, uint8_t command)
 
 	if (!req_pull_blob(req, req->in.hdr + param_ofs, param_count, &trans->in.params) ||
 	    !req_pull_blob(req, req->in.hdr + data_ofs, data_count, &trans->in.data)) {
-		req_reply_error(req, NT_STATUS_FOOBAR);
+		smbsrv_send_error(req, NT_STATUS_FOOBAR);
 		return;
 	}
 
@@ -1665,7 +1665,7 @@ static void reply_transs_generic(struct smbsrv_request *req, uint8_t command)
 	}
 
 	if (tp == NULL) {
-		req_reply_error(req, NT_STATUS_INVALID_PARAMETER);
+		smbsrv_send_error(req, NT_STATUS_INVALID_PARAMETER);
 		return;
 	}
 
@@ -1673,7 +1673,7 @@ static void reply_transs_generic(struct smbsrv_request *req, uint8_t command)
 
 	/* parse request */
 	if (req->in.wct < 8) {
-		req_reply_error(req, NT_STATUS_INVALID_PARAMETER);
+		smbsrv_send_error(req, NT_STATUS_INVALID_PARAMETER);
 		return;
 	}
 
@@ -1688,7 +1688,7 @@ static void reply_transs_generic(struct smbsrv_request *req, uint8_t command)
 
 	if (!req_pull_blob(req, req->in.hdr + param_ofs, param_count, &params) ||
 	    !req_pull_blob(req, req->in.hdr + data_ofs, data_count, &data)) {
-		req_reply_error(req, NT_STATUS_INVALID_PARAMETER);
+		smbsrv_send_error(req, NT_STATUS_INVALID_PARAMETER);
 		return;
 	}
 
@@ -1697,7 +1697,7 @@ static void reply_transs_generic(struct smbsrv_request *req, uint8_t command)
 	     param_disp != trans->in.params.length) ||
 	    (data_count != 0 && 
 	     data_disp != trans->in.data.length)) {
-		req_reply_error(req, NT_STATUS_INVALID_PARAMETER);
+		smbsrv_send_error(req, NT_STATUS_INVALID_PARAMETER);
 		return;		
 	}
 
@@ -1743,7 +1743,7 @@ static void reply_transs_generic(struct smbsrv_request *req, uint8_t command)
 	return;
 
 failed:	
-	req_reply_error(tp->req, NT_STATUS_NO_MEMORY);
+	smbsrv_send_error(tp->req, NT_STATUS_NO_MEMORY);
 	DLIST_REMOVE(req->smb_conn->trans_partial, tp);
 	talloc_free(req);
 	talloc_free(tp);
