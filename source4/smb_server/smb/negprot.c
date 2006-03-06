@@ -471,7 +471,7 @@ static const struct {
  Reply to a negprot.
 ****************************************************************************/
 
-void reply_negprot(struct smbsrv_request *req)
+void smbsrv_reply_negprot(struct smbsrv_request *req)
 {
 	int protocol;
 	uint8_t *p;
