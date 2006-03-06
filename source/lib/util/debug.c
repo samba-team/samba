@@ -98,7 +98,6 @@ _PUBLIC_ void do_debug(const char *format, ...) _PRINTF_ATTRIBUTE(1,2)
 	va_end(ap);
 
 	write(state.fd, s, strlen(s));
-	fsync(state.fd);
 	free(s);
 }
 
@@ -130,6 +129,7 @@ _PUBLIC_ void reopen_logs(void)
 			int newfd = open(fname, O_CREAT|O_APPEND|O_WRONLY, 0600);
 			if (newfd == -1) {
 				DEBUG(1, ("Failed to open new logfile: %s\n", fname));
+				old_fd = -1;
 			} else {
 				state.fd = newfd;
 			}
@@ -142,7 +142,6 @@ _PUBLIC_ void reopen_logs(void)
 	}
 
 	if (old_fd > 2) {
-		fsync(old_fd);
 		close(old_fd);
 	}
 }
