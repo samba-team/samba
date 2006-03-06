@@ -115,18 +115,25 @@ AC_TRY_RUN([#include "${srcdir-.}/build/tests/trivial.c"],
 #
 # Check if the compiler support ELF visibility for symbols
 #
+
 visibility_attribute=no
-AC_MSG_CHECKING([whether the C compiler supports the visibility attribute])
-AC_TRY_RUN([
-#pragma GCC visibility push(hidden)
-void vis_foo1(void) {}
-__attribute__((visibility("default"))) void vis_foo2(void) {}
-#include "${srcdir-.}/build/tests/trivial.c"
-], [
-	AC_MSG_RESULT(yes)
-	AC_DEFINE(HAVE_VISIBILITY_ATTR,1,[Whether the C compiler supports the visibility attribute])
-	visibility_attribute=yes
-], [AC_MSG_RESULT(no);])
+if test x"$GCC" = x"yes" ; then
+    AX_CFLAGS_GCC_OPTION([-fvisibility=hidden], VISIBILITY_CFLAGS)
+fi
+
+if test -n "$VISIBILITY_CFLAGS"; then
+	AC_MSG_CHECKING([whether the C compiler supports the visibility attribute])
+	AC_TRY_RUN([
+	#pragma GCC visibility push(hidden)
+	void vis_foo1(void) {}
+	__attribute__((visibility("default"))) void vis_foo2(void) {}
+	#include "${srcdir-.}/build/tests/trivial.c"
+	], [
+		AC_MSG_RESULT(yes)
+		AC_DEFINE(HAVE_VISIBILITY_ATTR,1,[Whether the C compiler supports the visibility attribute])
+		visibility_attribute=yes
+	], [AC_MSG_RESULT(no);])
+fi
 AC_SUBST(visibility_attribute)
 
 #
