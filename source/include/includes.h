@@ -89,7 +89,8 @@ enum protocol_types {
 	PROTOCOL_COREPLUS,
 	PROTOCOL_LANMAN1,
 	PROTOCOL_LANMAN2,
-	PROTOCOL_NT1
+	PROTOCOL_NT1,
+	PROTOCOL_SMB2
 };
 
 /* passed to br lock code. FIXME: Move to one of the smb-specific headers */

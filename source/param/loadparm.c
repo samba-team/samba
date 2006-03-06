@@ -279,6 +279,7 @@ static BOOL handle_copy(const char *pszParmValue, char **ptr);
 static void set_default_server_announce_type(void);
 
 static const struct enum_list enum_protocol[] = {
+	{PROTOCOL_SMB2, "SMB2"},
 	{PROTOCOL_NT1, "NT1"},
 	{PROTOCOL_LANMAN2, "LANMAN2"},
 	{PROTOCOL_LANMAN1, "LANMAN1"},
@@ -595,7 +596,6 @@ static void init_globals(void)
 	myname = get_myname();
 	do_parameter("netbios name", myname, NULL);
 	SAFE_FREE(myname);
-	do_parameter("max protocol", "NT1", NULL);
 	do_parameter("name resolve order", "lmhosts wins host bcast", NULL);
 
 	do_parameter("fstype", FSTYPE_STRING, NULL);
@@ -646,7 +646,8 @@ static void init_globals(void)
 	do_parameter("max xmit", "12288", NULL);
 	do_parameter("password level", "0", NULL);
 	do_parameter("LargeReadwrite", "True", NULL);
-	do_parameter("minprotocol", "CORE", NULL);
+	do_parameter("min protocol", "CORE", NULL);
+	do_parameter("max protocol", "NT1", NULL);
 	do_parameter("security", "USER", NULL);
 	do_parameter("paranoid server security", "True", NULL);
 	do_parameter("EncryptPasswords", "True", NULL);

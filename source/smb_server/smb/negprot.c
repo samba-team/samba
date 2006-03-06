@@ -21,7 +21,10 @@
 #include "includes.h"
 #include "auth/auth.h"
 #include "smb_server/smb_server.h"
+#include "libcli/smb2/smb2.h"
+#include "smb_server/smb2/smb2_server.h"
 #include "smbd/service_stream.h"
+#include "lib/stream/packet.h"
 
 
 /* initialise the auth_context for this server and return the cryptkey */
@@ -415,7 +418,33 @@ static void reply_nt1(struct smbsrv_request *req, uint16_t choice)
 	req_send_reply_nosign(req);	
 }
 
- 
+/*
+ after a SMB2 2.001 negprot reply to a SMB negprot request
+ no (SMB or SMB2) requests are allowed anymore,
+ vista resets the connection in this case 
+*/
+static NTSTATUS smbsrv_recv_disabled_request(void *private, DATA_BLOB blob)
+{
+	struct smbsrv_connection *smb_conn = talloc_get_type(private, struct smbsrv_connection);
+	smbsrv_terminate_connection(smb_conn, "Receive Packet after SMB -> SMB2 negprot");
+	return NT_STATUS_OK;
+}
+
+/****************************************************************************
+ Reply for the SMB2 2.001 protocol
+****************************************************************************/
+static void reply_smb2(struct smbsrv_request *req, uint16_t choice)
+{
+	struct smbsrv_connection *smb_conn = req->smb_conn;
+
+	/* reply with a SMB2 packet */
+	smb2srv_reply_smb_negprot(req);
+	req = NULL;
+
+	/* disallow requests */
+	packet_set_callback(smb_conn->packet, smbsrv_recv_disabled_request);
+}
+
 /* List of supported protocols, most desired first */
 static const struct {
 	const char *proto_name;
@@ -423,6 +452,7 @@ static const struct {
 	void (*proto_reply_fn)(struct smbsrv_request *req, uint16_t choice);
 	int protocol_level;
 } supported_protocols[] = {
+	{"SMB 2.001",			"SMB2",		reply_smb2,	PROTOCOL_SMB2},
 	{"NT LANMAN 1.0",		"NT1",		reply_nt1,	PROTOCOL_NT1},
 	{"NT LM 0.12",			"NT1",		reply_nt1,	PROTOCOL_NT1},
 	{"LANMAN2.1",			"LANMAN2",	reply_lanman2,	PROTOCOL_LANMAN2},
