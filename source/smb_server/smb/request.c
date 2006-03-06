@@ -609,7 +609,7 @@ size_t req_pull_ascii4(struct smbsrv_request *req, const char **dest, const uint
 	ssize_t ret;
 
 	if (PTR_DIFF(src, req->in.data) + 1 > req->in.data_size) {
-		/* win2000 treats this as the NULL string! */
+		/* win2000 treats this as the empty string! */
 		(*dest) = talloc_strdup(req, "");
 		return 0;
 	}
