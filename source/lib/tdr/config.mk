@@ -1,0 +1,8 @@
+[LIBRARY::TDR]
+PUBLIC_HEADERS = tdr.h
+MAJOR_VERSION = 0
+MINOR_VERSION = 0
+RELEASE_VERSION = 1
+DESCRIPTION = Simple marshall/unmarshall library
+PRIVATE_PROTO_HEADER = tdr_proto.h
+OBJ_FILES = tdr.o

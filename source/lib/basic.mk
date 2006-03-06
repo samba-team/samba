@@ -17,6 +17,7 @@ include appweb/config.mk
 include replace/config.mk
 include stream/config.mk
 include util/config.mk
+include tdr/config.mk
 
 ##############################
 # Start SUBSYSTEM LIBNETIF
@@ -26,15 +27,6 @@ OBJ_FILES = \
 		netif/netif.o
 # End SUBSYSTEM LIBNETIF
 ##############################
-
-[LIBRARY::TDR]
-PUBLIC_HEADERS = tdr/tdr.h
-MAJOR_VERSION = 0
-MINOR_VERSION = 0
-RELEASE_VERSION = 1
-DESCRIPTION = Simple marshall/unmarshall library
-PRIVATE_PROTO_HEADER = tdr/tdr_proto.h
-OBJ_FILES = tdr/tdr.o
 
 ##############################
 # Start SUBSYSTEM LIBCRYPTO
