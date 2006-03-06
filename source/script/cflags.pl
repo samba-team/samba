@@ -5,7 +5,6 @@
 # tridge@samba.org, July 2005
 # jelmer@samba.org, March 2006
 use strict;
-use warnings;
 
 my $target = shift;
 
