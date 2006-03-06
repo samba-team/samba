@@ -86,6 +86,15 @@ extern STANDARD_MAPPING printer_std_mapping, printserver_std_mapping;
 #define OUR_HANDLE(hnd) (((hnd)==NULL)?"NULL":(IVAL((hnd)->data5,4)==(uint32)sys_getpid()?"OURS":"OTHER")), \
 ((unsigned int)IVAL((hnd)->data5,4)),((unsigned int)sys_getpid())
 
+
+/* API table for Xcv Monitor functions */
+
+struct xcv_api_table {
+	const char *name;
+	WERROR(*fn) (NT_USER_TOKEN *token, RPC_BUFFER *in, RPC_BUFFER *out, uint32 *needed);
+};
+
+
 /* translate between internal status numbers and NT status numbers */
 static int nt_printj_status(int v)
 {
@@ -200,10 +209,10 @@ static void free_printer_entry(void *ptr)
 	if (Printer->notify.client_connected==True) {
 		int snum = -1;
 
-		if ( Printer->printer_type == PRINTER_HANDLE_IS_PRINTSERVER) {
+		if ( Printer->printer_type == SPLHND_SERVER) {
 			snum = -1;
 			srv_spoolss_replycloseprinter(snum, &Printer->notify.client_hnd);
-		} else if (Printer->printer_type == PRINTER_HANDLE_IS_PRINTER) {
+		} else if (Printer->printer_type == SPLHND_PRINTER) {
 			snum = print_queue_snum(Printer->sharename);
 			if (snum != -1)
 				srv_spoolss_replycloseprinter(snum,
@@ -395,11 +404,11 @@ static BOOL get_printer_snum(pipes_struct *p, POLICY_HND *hnd, int *number)
 	}
 	
 	switch (Printer->printer_type) {
-		case PRINTER_HANDLE_IS_PRINTER:		
+		case SPLHND_PRINTER:		
 			DEBUG(4,("short name:%s\n", Printer->sharename));			
 			*number = print_queue_snum(Printer->sharename);
 			return (*number != -1);
-		case PRINTER_HANDLE_IS_PRINTSERVER:
+		case SPLHND_SERVER:
 			return False;
 		default:
 			return False;
@@ -423,19 +432,22 @@ static BOOL set_printer_hnd_printertype(Printer_entry *Printer, char *handlename
 	/* it's a print server */
 	if (*handlename=='\\' && *(handlename+1)=='\\' && !strchr_m(handlename+2, '\\')) {
 		DEBUGADD(4,("Printer is a print server\n"));
-		Printer->printer_type = PRINTER_HANDLE_IS_PRINTSERVER;		
+		Printer->printer_type = SPLHND_SERVER;		
 	}
-	/* it's a printer */
+	/* it's a printer (set_printer_hnd_name() will handle port monitors */
 	else {
 		DEBUGADD(4,("Printer is a printer\n"));
-		Printer->printer_type = PRINTER_HANDLE_IS_PRINTER;
+		Printer->printer_type = SPLHND_PRINTER;
 	}
 
 	return True;
 }
 
 /****************************************************************************
- Set printer handle name.
+ Set printer handle name..  Accept names like \\server, \\server\printer, 
+ \\server\SHARE, & "\\server\,XcvMonitor Standard TCP/IP Port"    See
+ the MSDN docs regarding OpenPrinter() for details on the XcvData() and 
+ XcvDataPort() interface.
 ****************************************************************************/
 
 static BOOL set_printer_hnd_name(Printer_entry *Printer, char *handlename)
@@ -470,13 +482,26 @@ static BOOL set_printer_hnd_name(Printer_entry *Printer, char *handlename)
 
 	fstrcpy( Printer->servername, servername );
 	
-	if ( Printer->printer_type == PRINTER_HANDLE_IS_PRINTSERVER )
+	if ( Printer->printer_type == SPLHND_SERVER )
 		return True;
 
-	if ( Printer->printer_type != PRINTER_HANDLE_IS_PRINTER )
+	if ( Printer->printer_type != SPLHND_PRINTER )
 		return False;
 
 	DEBUGADD(5, ("searching for [%s]\n", aprinter ));
+	
+	/* check for the Port Monitor Interface */
+	
+	if ( strequal( aprinter, SPL_XCV_MONITOR_TCPMON ) ) {
+		Printer->printer_type = SPLHND_PORTMON_TCP;
+		fstrcpy(sname, SPL_XCV_MONITOR_TCPMON);
+		found = True;
+	}
+	else if ( strequal( aprinter, SPL_XCV_MONITOR_LOCALMON ) ) {
+		Printer->printer_type = SPLHND_PORTMON_LOCAL;
+		fstrcpy(sname, SPL_XCV_MONITOR_LOCALMON);
+		found = True;
+	}
 
 	/* Search all sharenames first as this is easier than pulling 
 	   the printer_info_2 off of disk. Don't use find_service() since
@@ -943,7 +968,7 @@ static void send_notify2_changes( SPOOLSS_NOTIFY_MSG_CTR *ctr, uint32 idx )
 		/* For this printer?  Print servers always receive 
                    notifications. */
 
-		if ( ( p->printer_type == PRINTER_HANDLE_IS_PRINTER )  &&
+		if ( ( p->printer_type == SPLHND_PRINTER )  &&
 		    ( !strequal(msg_group->printername, p->sharename) ) )
 			continue;
 
@@ -985,7 +1010,7 @@ static void send_notify2_changes( SPOOLSS_NOTIFY_MSG_CTR *ctr, uint32 idx )
 			 * --jerry
 			 */
 
-			if ( ( p->printer_type == PRINTER_HANDLE_IS_PRINTER ) && ( msg->type == PRINTER_NOTIFY_TYPE ) )
+			if ( ( p->printer_type == SPLHND_PRINTER ) && ( msg->type == PRINTER_NOTIFY_TYPE ) )
 				id = 0;
 			else
 				id = msg->id;
@@ -1249,7 +1274,7 @@ void update_monitored_printq_cache( void )
 	   client_connected == True */
 	while ( printer ) 
 	{
-		if ( (printer->printer_type == PRINTER_HANDLE_IS_PRINTER) 
+		if ( (printer->printer_type == SPLHND_PRINTER) 
 			&& printer->notify.client_connected ) 
 		{
 			snum = print_queue_snum(printer->sharename);
@@ -1473,60 +1498,6 @@ WERROR _spoolss_open_printer(pipes_struct *p, SPOOL_Q_OPEN_PRINTER *q_u, SPOOL_R
 }
 
 /********************************************************************
- * spoolss_open_printer
- *
- * If the openprinterex rpc call contains a devmode,
- * it's a per-user one. This per-user devmode is derivated
- * from the global devmode. Openprinterex() contains a per-user 
- * devmode for when you do EMF printing and spooling.
- * In the EMF case, the NT workstation is only doing half the job
- * of rendering the page. The other half is done by running the printer
- * driver on the server.
- * The EMF file doesn't contain the page description (paper size, orientation, ...).
- * The EMF file only contains what is to be printed on the page.
- * So in order for the server to know how to print, the NT client sends
- * a devicemode attached to the openprinterex call.
- * But this devicemode is short lived, it's only valid for the current print job.
- *
- * If Samba would have supported EMF spooling, this devicemode would
- * have been attached to the handle, to sent it to the driver to correctly
- * rasterize the EMF file.
- *
- * As Samba only supports RAW spooling, we only receive a ready-to-print file,
- * we just act as a pass-thru between windows and the printer.
- *
- * In order to know that Samba supports only RAW spooling, NT has to call
- * getprinter() at level 2 (attribute field) or NT has to call startdoc()
- * and until NT sends a RAW job, we refuse it.
- *
- * But to call getprinter() or startdoc(), you first need a valid handle,
- * and to get an handle you have to call openprintex(). Hence why you have
- * a devicemode in the openprinterex() call.
- *
- *
- * Differences between NT4 and NT 2000.
- * NT4:
- * ---
- * On NT4, you only have a global devicemode. This global devicemode can be changed
- * by the administrator (or by a user with enough privs). Everytime a user
- * wants to print, the devicemode is resetted to the default. In Word, everytime
- * you print, the printer's characteristics are always reset to the global devicemode.
- *
- * NT 2000:
- * -------
- * In W2K, there is the notion of per-user devicemode. The first time you use
- * a printer, a per-user devicemode is build from the global devicemode.
- * If you change your per-user devicemode, it is saved in the registry, under the
- * H_KEY_CURRENT_KEY sub_tree. So that everytime you print, you have your default
- * printer preferences available.
- *
- * To change the per-user devicemode: it's the "Printing Preferences ..." button
- * on the General Tab of the printer properties windows.
- *
- * To change the global devicemode: it's the "Printing Defaults..." button
- * on the Advanced Tab of the printer properties window.
- *
- * JFM.
  ********************************************************************/
 
 WERROR _spoolss_open_printer_ex( pipes_struct *p, SPOOL_Q_OPEN_PRINTER_EX *q_u, SPOOL_R_OPEN_PRINTER_EX *r_u)
@@ -1581,10 +1552,16 @@ WERROR _spoolss_open_printer_ex( pipes_struct *p, SPOOL_Q_OPEN_PRINTER_EX *q_u, 
 	 * Second case: the user is opening a printer:
 	 * NT doesn't let us connect to a printer if the connecting user
 	 * doesn't have print permission.
+	 * 
+	 * Third case: user is opening a Port Monitor
+	 * access checks same as opening a handle to the print server.
 	 */
 
-	if (Printer->printer_type == PRINTER_HANDLE_IS_PRINTSERVER) 
+	switch (Printer->printer_type ) 
 	{
+	case SPLHND_SERVER:
+	case SPLHND_PORTMON_TCP:
+	case SPLHND_PORTMON_LOCAL:
 		/* Printserver handles use global struct... */
 
 		snum = -1;
@@ -1642,10 +1619,9 @@ WERROR _spoolss_open_printer_ex( pipes_struct *p, SPOOL_Q_OPEN_PRINTER_EX *q_u, 
 			? "SERVER_ACCESS_ADMINISTER" : "SERVER_ACCESS_ENUMERATE" ));
 			
 		/* We fall through to return WERR_OK */
-		
-	}
-	else
-	{
+		break;
+
+	case SPLHND_PRINTER:
 		/* NT doesn't let us connect to a printer if the connecting user
 		   doesn't have print permission.  */
 
@@ -1702,6 +1678,11 @@ WERROR _spoolss_open_printer_ex( pipes_struct *p, SPOOL_Q_OPEN_PRINTER_EX *q_u, 
 		DEBUG(4,("Setting printer access = %s\n", (printer_default->access_required == PRINTER_ACCESS_ADMINISTER) 
 			? "PRINTER_ACCESS_ADMINISTER" : "PRINTER_ACCESS_USE" ));
 
+		break;
+
+	default:
+		/* sanity check to prevent programmer error */
+		return WERR_BADFID;
 	}
 	
 	Printer->access_granted = printer_default->access_required;
@@ -1711,7 +1692,7 @@ WERROR _spoolss_open_printer_ex( pipes_struct *p, SPOOL_Q_OPEN_PRINTER_EX *q_u, 
 	 * save it here in case we get a job submission on this handle
 	 */
 	
-	 if ( (Printer->printer_type != PRINTER_HANDLE_IS_PRINTSERVER)
+	 if ( (Printer->printer_type != SPLHND_SERVER)
 	 	&& q_u->printer_default.devmode_cont.devmode_ptr )
 	 { 
 	 	convert_devicemode( Printer->sharename, q_u->printer_default.devmode_cont.devmode,
@@ -2465,7 +2446,7 @@ WERROR _spoolss_getprinterdata(pipes_struct *p, SPOOL_Q_GETPRINTERDATA *q_u, SPO
 	
 	unistr2_to_ascii(value, valuename, sizeof(value)-1);
 	
-	if ( Printer->printer_type == PRINTER_HANDLE_IS_PRINTSERVER )
+	if ( Printer->printer_type == SPLHND_SERVER )
 		status = getprinterdata_printer_server( p->mem_ctx, value, type, data, needed, *out_size );
 	else
 	{
@@ -2684,9 +2665,9 @@ WERROR _spoolss_rffpcnex(pipes_struct *p, SPOOL_Q_RFFPCNEX *q_u, SPOOL_R_RFFPCNE
 
 	/* Connect to the client machine and send a ReplyOpenPrinter */
 
-	if ( Printer->printer_type == PRINTER_HANDLE_IS_PRINTSERVER)
+	if ( Printer->printer_type == SPLHND_SERVER)
 		snum = -1;
-	else if ( (Printer->printer_type == PRINTER_HANDLE_IS_PRINTER) &&
+	else if ( (Printer->printer_type == SPLHND_PRINTER) &&
 			!get_printer_snum(p, handle, &snum) )
 		return WERR_BADFID;
 		
@@ -3876,11 +3857,11 @@ WERROR _spoolss_rfnpcnex( pipes_struct *p, SPOOL_Q_RFNPCNEX *q_u, SPOOL_R_RFNPCN
 	/* just ignore the SPOOL_NOTIFY_OPTION */
 	
 	switch (Printer->printer_type) {
-		case PRINTER_HANDLE_IS_PRINTSERVER:
+		case SPLHND_SERVER:
 			result = printserver_notify_info(p, handle, info, p->mem_ctx);
 			break;
 			
-		case PRINTER_HANDLE_IS_PRINTER:
+		case SPLHND_PRINTER:
 			result = printer_notify_info(p, handle, info, p->mem_ctx);
 			break;
 	}
@@ -5975,6 +5956,52 @@ static BOOL check_printer_ok(NT_PRINTER_INFO_LEVEL_2 *info, int snum)
 /****************************************************************************
 ****************************************************************************/
 
+WERROR add_port_hook(NT_USER_TOKEN *token, const char *portname, const char *uri )
+{
+	char *cmd = lp_addport_cmd();
+	pstring command;
+	int ret;
+	int fd;
+	SE_PRIV se_printop = SE_PRINT_OPERATOR;
+	BOOL is_print_op = False;
+
+	if ( !*cmd ) {
+		return WERR_ACCESS_DENIED;
+	}
+		
+	slprintf(command, sizeof(command)-1, "%s \"%s\" \"%s\"", cmd, portname, uri );
+
+	if ( token )
+		is_print_op = user_has_privileges( token, &se_printop );
+
+	DEBUG(10,("Running [%s]\n", command));
+
+	/********* BEGIN SePrintOperatorPrivilege **********/
+
+	if ( is_print_op )
+		become_root();
+	
+	ret = smbrun(command, &fd);
+
+	if ( is_print_op )
+		unbecome_root();
+
+	/********* END SePrintOperatorPrivilege **********/
+
+	DEBUGADD(10,("returned [%d]\n", ret));
+
+	if ( ret != 0 ) {
+		if (fd != -1)
+			close(fd);
+		return WERR_ACCESS_DENIED;
+	}
+	
+	return WERR_OK;
+}
+
+/****************************************************************************
+****************************************************************************/
+
 BOOL add_printer_hook(NT_USER_TOKEN *token, NT_PRINTER_INFO_LEVEL *printer)
 {
 	char *cmd = lp_addprinter_cmd();
@@ -6043,6 +6070,7 @@ BOOL add_printer_hook(NT_USER_TOKEN *token, NT_PRINTER_INFO_LEVEL *printer)
 	file_lines_free(qlines);
 	return True;
 }
+
 
 /********************************************************************
  * Called by spoolss_api_setprinter
@@ -6321,9 +6349,9 @@ WERROR _spoolss_fcpn(pipes_struct *p, SPOOL_Q_FCPN *q_u, SPOOL_R_FCPN *r_u)
 	if (Printer->notify.client_connected==True) {
 		int snum = -1;
 
-		if ( Printer->printer_type == PRINTER_HANDLE_IS_PRINTSERVER)
+		if ( Printer->printer_type == SPLHND_SERVER)
 			snum = -1;
-		else if ( (Printer->printer_type == PRINTER_HANDLE_IS_PRINTER) &&
+		else if ( (Printer->printer_type == SPLHND_PRINTER) &&
 				!get_printer_snum(p, handle, &snum) )
 			return WERR_BADFID;
 
@@ -7175,13 +7203,15 @@ static void fill_port_1(PORT_INFO_1 *port, const char *name)
 }
 
 /****************************************************************************
+ TODO: This probably needs distinguish between TCP/IP and Local ports 
+ somehow.
 ****************************************************************************/
 
 static void fill_port_2(PORT_INFO_2 *port, const char *name)
 {
 	init_unistr(&port->port_name, name);
 	init_unistr(&port->monitor_name, "Local Monitor");
-	init_unistr(&port->description, "Local Port");
+	init_unistr(&port->description, SPL_LOCAL_PORT );
 	port->port_type=PORT_TYPE_WRITE;
 	port->reserved=0x0;	
 }
@@ -8005,7 +8035,7 @@ WERROR _spoolss_setprinterdata( pipes_struct *p, SPOOL_Q_SETPRINTERDATA *q_u, SP
 		return WERR_BADFID;
 	}
 
-	if ( Printer->printer_type == PRINTER_HANDLE_IS_PRINTSERVER ) {
+	if ( Printer->printer_type == SPLHND_SERVER ) {
 		DEBUG(10,("_spoolss_setprinterdata: Not implemented for server handles yet\n"));
 		return WERR_INVALID_PARAM;
 	}
@@ -8162,7 +8192,7 @@ WERROR _spoolss_addform( pipes_struct *p, SPOOL_Q_ADDFORM *q_u, SPOOL_R_ADDFORM 
 	
 	/* forms can be added on printer of on the print server handle */
 	
-	if ( Printer->printer_type == PRINTER_HANDLE_IS_PRINTER )
+	if ( Printer->printer_type == SPLHND_PRINTER )
 	{
 		if (!get_printer_snum(p,handle, &snum))
 	                return WERR_BADFID;
@@ -8198,7 +8228,7 @@ WERROR _spoolss_addform( pipes_struct *p, SPOOL_Q_ADDFORM *q_u, SPOOL_R_ADDFORM 
 	 * ChangeID must always be set if this is a printer
 	 */
 	 
-	if ( Printer->printer_type == PRINTER_HANDLE_IS_PRINTER )
+	if ( Printer->printer_type == SPLHND_PRINTER )
 		status = mod_a_printer(printer, 2);
 	
 done:
@@ -8233,7 +8263,7 @@ WERROR _spoolss_deleteform( pipes_struct *p, SPOOL_Q_DELETEFORM *q_u, SPOOL_R_DE
 
 	/* forms can be deleted on printer of on the print server handle */
 	
-	if ( Printer->printer_type == PRINTER_HANDLE_IS_PRINTER )
+	if ( Printer->printer_type == SPLHND_PRINTER )
 	{
 		if (!get_printer_snum(p,handle, &snum))
 	                return WERR_BADFID;
@@ -8265,7 +8295,7 @@ WERROR _spoolss_deleteform( pipes_struct *p, SPOOL_Q_DELETEFORM *q_u, SPOOL_R_DE
 	 * ChangeID must always be set if this is a printer
 	 */
 	 
-	if ( Printer->printer_type == PRINTER_HANDLE_IS_PRINTER )
+	if ( Printer->printer_type == SPLHND_PRINTER )
 		status = mod_a_printer(printer, 2);
 	
 done:
@@ -8301,7 +8331,7 @@ WERROR _spoolss_setform(pipes_struct *p, SPOOL_Q_SETFORM *q_u, SPOOL_R_SETFORM *
 
 	/* forms can be modified on printer of on the print server handle */
 	
-	if ( Printer->printer_type == PRINTER_HANDLE_IS_PRINTER )
+	if ( Printer->printer_type == SPLHND_PRINTER )
 	{
 		if (!get_printer_snum(p,handle, &snum))
 	                return WERR_BADFID;
@@ -8331,7 +8361,7 @@ WERROR _spoolss_setform(pipes_struct *p, SPOOL_Q_SETFORM *q_u, SPOOL_R_SETFORM *
 	 * ChangeID must always be set if this is a printer
 	 */
 	 
-	if ( Printer->printer_type == PRINTER_HANDLE_IS_PRINTER )
+	if ( Printer->printer_type == SPLHND_PRINTER )
 		status = mod_a_printer(printer, 2);
 	
 	
@@ -8496,18 +8526,22 @@ WERROR _spoolss_enumprintprocdatatypes(pipes_struct *p, SPOOL_Q_ENUMPRINTPROCDAT
 
 static WERROR enumprintmonitors_level_1(RPC_BUFFER *buffer, uint32 offered, uint32 *needed, uint32 *returned)
 {
-	PRINTMONITOR_1 *info_1=NULL;
+	PRINTMONITOR_1 *info_1;
 	WERROR result = WERR_OK;
+	int i;
 	
-	if((info_1 = SMB_MALLOC_P(PRINTMONITOR_1)) == NULL)
+	if((info_1 = SMB_MALLOC_ARRAY(PRINTMONITOR_1, 2)) == NULL)
 		return WERR_NOMEM;
 
-	(*returned) = 0x1;
+	*returned = 2;
 	
-	init_unistr(&info_1->name, "Local Port");
+	init_unistr(&(info_1[0].name), SPL_LOCAL_PORT ); 
+	init_unistr(&(info_1[1].name), SPL_TCPIP_PORT );
 
-	*needed += spoolss_size_printmonitor_info_1(info_1);
-
+	for ( i=0; i<*returned; i++ ) {
+		*needed += spoolss_size_printmonitor_info_1(&info_1[i]);
+	}
+	
 	if (*needed > offered) {
 		result = WERR_INSUFFICIENT_BUFFER;
 		goto out;
@@ -8518,7 +8552,9 @@ static WERROR enumprintmonitors_level_1(RPC_BUFFER *buffer, uint32 offered, uint
 		goto out;
 	}
 
-	smb_io_printmonitor_info_1("", buffer, info_1, 0);
+	for ( i=0; i<*returned; i++ ) {
+		smb_io_printmonitor_info_1("", buffer, &info_1[i], 0);
+	}
 
 out:
 	SAFE_FREE(info_1);
@@ -8535,20 +8571,27 @@ out:
 
 static WERROR enumprintmonitors_level_2(RPC_BUFFER *buffer, uint32 offered, uint32 *needed, uint32 *returned)
 {
-	PRINTMONITOR_2 *info_2=NULL;
+	PRINTMONITOR_2 *info_2;
 	WERROR result = WERR_OK;
+	int i;
 	
-	if((info_2 = SMB_MALLOC_P(PRINTMONITOR_2)) == NULL)
+	if((info_2 = SMB_MALLOC_ARRAY(PRINTMONITOR_2, 2)) == NULL)
 		return WERR_NOMEM;
 
-	(*returned) = 0x1;
+	*returned = 2;
 	
-	init_unistr(&info_2->name, "Local Port");
-	init_unistr(&info_2->environment, "Windows NT X86");
-	init_unistr(&info_2->dll_name, "localmon.dll");
+	init_unistr( &(info_2[0].name), SPL_LOCAL_PORT );
+	init_unistr( &(info_2[0].environment), "Windows NT X86" );
+	init_unistr( &(info_2[0].dll_name), "localmon.dll" );
+	
+	init_unistr( &(info_2[1].name), SPL_TCPIP_PORT );
+	init_unistr( &(info_2[1].environment), "Windows NT X86" );
+	init_unistr( &(info_2[1].dll_name), "tcpmon.dll" );
 
-	*needed += spoolss_size_printmonitor_info_2(info_2);
-
+	for ( i=0; i<*returned; i++ ) {
+		*needed += spoolss_size_printmonitor_info_2(&info_2[i]);
+	}
+	
 	if (*needed > offered) {
 		result = WERR_INSUFFICIENT_BUFFER;
 		goto out;
@@ -8559,7 +8602,9 @@ static WERROR enumprintmonitors_level_2(RPC_BUFFER *buffer, uint32 offered, uint
 		goto out;
 	}
 
-	smb_io_printmonitor_info_2("", buffer, info_2, 0);
+	for ( i=0; i<*returned; i++ ) {
+		smb_io_printmonitor_info_2("", buffer, &info_2[i], 0);
+	}
 
 out:
 	SAFE_FREE(info_2);
@@ -8843,7 +8888,7 @@ WERROR _spoolss_getprinterdataex(pipes_struct *p, SPOOL_Q_GETPRINTERDATAEX *q_u,
 
 	/* Is the handle to a printer or to the server? */
 
-	if (Printer->printer_type == PRINTER_HANDLE_IS_PRINTSERVER) {
+	if (Printer->printer_type == SPLHND_SERVER) {
 		DEBUG(10,("_spoolss_getprinterdataex: Not implemented for server handles yet\n"));
 		status = WERR_INVALID_PARAM;
 		goto done;
@@ -8930,7 +8975,7 @@ WERROR _spoolss_setprinterdataex(pipes_struct *p, SPOOL_Q_SETPRINTERDATAEX *q_u,
 		return WERR_BADFID;
 	}
 
-	if ( Printer->printer_type == PRINTER_HANDLE_IS_PRINTSERVER ) {
+	if ( Printer->printer_type == SPLHND_SERVER ) {
 		DEBUG(10,("_spoolss_setprinterdataex: Not implemented for server handles yet\n"));
 		return WERR_INVALID_PARAM;
 	}
@@ -9398,23 +9443,191 @@ WERROR _spoolss_getprintprocessordirectory(pipes_struct *p, SPOOL_Q_GETPRINTPROC
 	return result;
 }
 
-#if 0
+/*******************************************************************
+ Streams the monitor UI DLL name in UNICODE
+*******************************************************************/
 
-WERROR _spoolss_replyopenprinter(pipes_struct *p, SPOOL_Q_REPLYOPENPRINTER *q_u, 
-				 SPOOL_R_REPLYOPENPRINTER *r_u)
+static WERROR xcvtcp_monitorui( NT_USER_TOKEN *token, RPC_BUFFER *in, 
+                                RPC_BUFFER *out, uint32 *needed )
 {
- 	DEBUG(5,("_spoolss_replyopenprinter\n"));
-
-	DEBUG(10, ("replyopenprinter for localprinter %d\n", q_u->printer));
-
+	const char *dllname = "tcpmonui.dll";
+	
+	*needed = (strlen(dllname)+1) * 2;
+	
+	if ( rpcbuf_get_size(out) < *needed ) {
+		return WERR_INSUFFICIENT_BUFFER;		
+	}
+	
+	if ( !make_monitorui_buf( out, dllname ) ) {
+		return WERR_NOMEM;
+	}
+	
 	return WERR_OK;
 }
 
-WERROR _spoolss_replycloseprinter(pipes_struct *p, SPOOL_Q_REPLYCLOSEPRINTER *q_u, 
-				  SPOOL_R_REPLYCLOSEPRINTER *r_u)
+/*******************************************************************
+ Create a new TCP/IP port
+*******************************************************************/
+
+static WERROR xcvtcp_addport( NT_USER_TOKEN *token, RPC_BUFFER *in, 
+                              RPC_BUFFER *out, uint32 *needed )
 {
- 	DEBUG(5,("_spoolss_replycloseprinter\n"));
+	NT_PORT_DATA_1 port1;
+	pstring device_uri;
+
+	ZERO_STRUCT( port1 );
+
+	/* convert to our internal port data structure */
+
+	if ( !convert_port_data_1( &port1, in ) ) {
+		return WERR_NOMEM;
+	}
+
+	/* create the device URI and call the add_port_hook() */
+
+	switch ( port1.protocol ) {
+	case PORT_PROTOCOL_DIRECT:
+		pstr_sprintf( device_uri, "socket://%s:%d/", port1.hostaddr, port1.port );
+		break;
+
+	case PORT_PROTOCOL_LPR:
+		pstr_sprintf( device_uri, "lpr://%s/%s", port1.hostaddr, port1.queue );
+		break;
+	
+	default:
+		return WERR_UNKNOWN_PORT;
+	}
+
+	return add_port_hook( token, port1.name, device_uri );
+}
+
+/*******************************************************************
+*******************************************************************/
+
+struct xcv_api_table xcvtcp_cmds[] = {
+	{ "MonitorUI",	xcvtcp_monitorui },
+	{ "AddPort",	xcvtcp_addport},
+	{ NULL,		NULL }
+};
+
+static WERROR process_xcvtcp_command( NT_USER_TOKEN *token, const char *command, 
+                                      RPC_BUFFER *inbuf, RPC_BUFFER *outbuf, 
+                                      uint32 *needed )
+{
+	int i;
+	
+	DEBUG(10,("process_xcvtcp_command: Received command \"%s\"\n", command));
+	
+	for ( i=0; xcvtcp_cmds[i].name; i++ ) {
+		if ( strcmp( command, xcvtcp_cmds[i].name ) == 0 )
+			return xcvtcp_cmds[i].fn( token, inbuf, outbuf, needed );
+	}
+	
+	return WERR_BADFUNC;
+}
+
+/*******************************************************************
+*******************************************************************/
+#if 0 	/* don't support management using the "Local Port" monitor */
+
+static WERROR xcvlocal_monitorui( NT_USER_TOKEN *token, RPC_BUFFER *in, 
+                                  RPC_BUFFER *out, uint32 *needed )
+{
+	const char *dllname = "localui.dll";
+	
+	*needed = (strlen(dllname)+1) * 2;
+	
+	if ( rpcbuf_get_size(out) < *needed ) {
+		return WERR_INSUFFICIENT_BUFFER;		
+	}
+	
+	if ( !make_monitorui_buf( out, dllname )) {
+		return WERR_NOMEM;
+	}
+	
 	return WERR_OK;
 }
 
+/*******************************************************************
+*******************************************************************/
+
+struct xcv_api_table xcvlocal_cmds[] = {
+	{ "MonitorUI",	xcvlocal_monitorui },
+	{ NULL,		NULL }
+};
+#else
+struct xcv_api_table xcvlocal_cmds[] = {
+	{ NULL,		NULL }
+};
 #endif
+
+
+
+/*******************************************************************
+*******************************************************************/
+
+static WERROR process_xcvlocal_command( NT_USER_TOKEN *token, const char *command, 
+                                        RPC_BUFFER *inbuf, RPC_BUFFER *outbuf, 
+					uint32 *needed )
+{
+	int i;
+	
+	DEBUG(10,("process_xcvlocal_command: Received command \"%s\"\n", command));
+
+	for ( i=0; xcvlocal_cmds[i].name; i++ ) {
+		if ( strcmp( command, xcvlocal_cmds[i].name ) == 0 )
+			return xcvlocal_cmds[i].fn( token, inbuf, outbuf , needed );
+	}
+	return WERR_BADFUNC;
+}
+
+/*******************************************************************
+*******************************************************************/
+
+WERROR _spoolss_xcvdataport(pipes_struct *p, SPOOL_Q_XCVDATAPORT *q_u, SPOOL_R_XCVDATAPORT *r_u)
+{	
+	Printer_entry *Printer = find_printer_index_by_hnd(p, &q_u->handle);
+	fstring command;
+
+	if (!Printer) {
+		DEBUG(2,("_spoolss_xcvdataport: Invalid handle (%s:%u:%u).\n", OUR_HANDLE(&q_u->handle)));
+		return WERR_BADFID;
+	}
+
+	/* Has to be a handle to the TCP/IP port monitor */
+	
+	if ( !(Printer->printer_type & (SPLHND_PORTMON_LOCAL|SPLHND_PORTMON_TCP)) ) {
+		DEBUG(2,("_spoolss_xcvdataport: Call only valid for Port Monitors\n"));
+		return WERR_BADFID;
+	}
+	
+	/* requires administrative access to the server */
+	
+	if ( !(Printer->access_granted & SERVER_ACCESS_ADMINISTER) ) {
+		DEBUG(2,("_spoolss_xcvdataport: denied by handle permissions.\n"));
+		return WERR_ACCESS_DENIED;
+	}
+
+	/* Get the command name.  There's numerous commands supported by the 
+	   TCPMON interface. */
+	
+	rpcstr_pull(command, q_u->dataname.buffer, sizeof(command), 
+		q_u->dataname.uni_str_len*2, 0);
+		
+	/* Allocate the outgoing buffer */
+	
+	rpcbuf_init( &r_u->outdata, q_u->offered, p->mem_ctx );
+	
+	switch ( Printer->printer_type ) {
+	case SPLHND_PORTMON_TCP:
+		return process_xcvtcp_command( p->pipe_user.nt_user_token, command, 
+			&q_u->indata, &r_u->outdata, &r_u->needed );
+	case SPLHND_PORTMON_LOCAL:
+		return process_xcvlocal_command( p->pipe_user.nt_user_token, command, 
+			&q_u->indata, &r_u->outdata, &r_u->needed );
+	}
+
+	return WERR_INVALID_PRINT_MONITOR;
+}
+
+

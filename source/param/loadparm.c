@@ -104,6 +104,7 @@ typedef struct {
 	char *unix_charset;
 	char *display_charset;
 	char *szPrintcapname;
+	char *szAddPortCommand;
 	char *szEnumPortsCommand;
 	char *szAddPrinterCommand;
 	char *szDeletePrinterCommand;
@@ -574,7 +575,7 @@ static service sDefault = {
 	False,			/* bInheritOwner */
 	True,			/* bMSDfsRoot */
 	False,			/* bUseClientDriver */
-	False,			/* bDefaultDevmode */
+	True,			/* bDefaultDevmode */
 	False,			/* bForcePrintername */
 	True,			/* bNTAclSupport */
 	False,                  /* bForceUnknownAclUser */
@@ -1050,6 +1051,7 @@ static struct parm_struct parm_table[] = {
 	{"queuepause command", P_STRING, P_LOCAL, &sDefault.szQueuepausecommand, NULL, NULL, FLAG_ADVANCED | FLAG_PRINT | FLAG_GLOBAL}, 
 	{"queueresume command", P_STRING, P_LOCAL, &sDefault.szQueueresumecommand, NULL, NULL, FLAG_ADVANCED | FLAG_PRINT | FLAG_GLOBAL}, 
 
+	{"addport command", P_STRING, P_GLOBAL, &Globals.szAddPortCommand, NULL, NULL, FLAG_ADVANCED}, 
 	{"enumports command", P_STRING, P_GLOBAL, &Globals.szEnumPortsCommand, NULL, NULL, FLAG_ADVANCED}, 
 	{"addprinter command", P_STRING, P_GLOBAL, &Globals.szAddPrinterCommand, NULL, NULL, FLAG_ADVANCED}, 
 	{"deleteprinter command", P_STRING, P_GLOBAL, &Globals.szDeletePrinterCommand, NULL, NULL, FLAG_ADVANCED}, 
@@ -1763,6 +1765,7 @@ FN_GLOBAL_STRING(lp_smb_passwd_file, &Globals.szSMBPasswdFile)
 FN_GLOBAL_STRING(lp_private_dir, &Globals.szPrivateDir)
 FN_GLOBAL_STRING(lp_serverstring, &Globals.szServerString)
 FN_GLOBAL_INTEGER(lp_printcap_cache_time, &Globals.PrintcapCacheTime)
+FN_GLOBAL_STRING(lp_addport_cmd, &Globals.szAddPortCommand)
 FN_GLOBAL_STRING(lp_enumports_cmd, &Globals.szEnumPortsCommand)
 FN_GLOBAL_STRING(lp_addprinter_cmd, &Globals.szAddPrinterCommand)
 FN_GLOBAL_STRING(lp_deleteprinter_cmd, &Globals.szDeletePrinterCommand)
@@ -5390,4 +5393,3 @@ enum brl_flavour lp_posix_cifsu_locktype(void)
 void lp_set_posix_cifsx_locktype(enum brl_flavour val)
 {
 	posix_cifsx_locktype = val;
-}
