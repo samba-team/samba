@@ -85,7 +85,7 @@ _PUBLIC_ NTSTATUS registry_init(void)
 }
 
 /** Check whether a certain backend is present. */
-BOOL reg_has_backend(const char *backend)
+_PUBLIC_ BOOL reg_has_backend(const char *backend)
 {
 	return reg_find_backend_entry(backend) != NULL?True:False;
 }
@@ -123,7 +123,7 @@ _PUBLIC_ int reg_list_predefs(TALLOC_CTX *mem_ctx, char ***predefs, uint32_t **h
 }
 
 /** Obtain name of specific hkey. */
-const char *reg_get_predef_name(uint32_t hkey)
+_PUBLIC_ const char *reg_get_predef_name(uint32_t hkey)
 {
 	int i;
 	for (i = 0; predef_names[i].name; i++) {
@@ -134,7 +134,7 @@ const char *reg_get_predef_name(uint32_t hkey)
 }
 
 /** Get predefined key by name. */
-WERROR reg_get_predefined_key_by_name(struct registry_context *ctx, const char *name, struct registry_key **key)
+_PUBLIC_ WERROR reg_get_predefined_key_by_name(struct registry_context *ctx, const char *name, struct registry_key **key)
 {
 	int i;
 	
@@ -148,7 +148,7 @@ WERROR reg_get_predefined_key_by_name(struct registry_context *ctx, const char *
 }
 
 /** Get predefined key by id. */
-WERROR reg_get_predefined_key(struct registry_context *ctx, uint32_t hkey, struct registry_key **key)
+_PUBLIC_ WERROR reg_get_predefined_key(struct registry_context *ctx, uint32_t hkey, struct registry_key **key)
 {
 	WERROR ret = ctx->get_predefined_key(ctx, hkey, key);
 
@@ -283,7 +283,7 @@ _PUBLIC_ WERROR reg_key_get_value_by_index(TALLOC_CTX *mem_ctx, const struct reg
 /** 
  * Get the number of subkeys.
  */
-WERROR reg_key_num_subkeys(const struct registry_key *key, uint32_t *count)
+_PUBLIC_ WERROR reg_key_num_subkeys(const struct registry_key *key, uint32_t *count)
 {
 	if(!key) return WERR_INVALID_PARAM;
 	
@@ -311,7 +311,7 @@ WERROR reg_key_num_subkeys(const struct registry_key *key, uint32_t *count)
 /**
  * Get the number of values of a key.
  */
-WERROR reg_key_num_values(const struct registry_key *key, uint32_t *count)
+_PUBLIC_ WERROR reg_key_num_values(const struct registry_key *key, uint32_t *count)
 {
 	
 	if(!key) return WERR_INVALID_PARAM;
@@ -340,7 +340,7 @@ WERROR reg_key_num_values(const struct registry_key *key, uint32_t *count)
 /**
  * Get subkey by index.
  */
-WERROR reg_key_get_subkey_by_index(TALLOC_CTX *mem_ctx, const struct registry_key *key, int idx, struct registry_key **subkey)
+_PUBLIC_ WERROR reg_key_get_subkey_by_index(TALLOC_CTX *mem_ctx, const struct registry_key *key, int idx, struct registry_key **subkey)
 {
 	if(!key) return WERR_INVALID_PARAM;
 
@@ -399,7 +399,7 @@ WERROR reg_key_get_subkey_by_name(TALLOC_CTX *mem_ctx, const struct registry_key
 /**
  * Get value by name.
  */
-WERROR reg_key_get_value_by_name(TALLOC_CTX *mem_ctx, const struct registry_key *key, const char *name, struct registry_value **val)
+_PUBLIC_ WERROR reg_key_get_value_by_name(TALLOC_CTX *mem_ctx, const struct registry_key *key, const char *name, struct registry_value **val)
 {
 	int i;
 	WERROR error = WERR_OK;
@@ -426,7 +426,7 @@ WERROR reg_key_get_value_by_name(TALLOC_CTX *mem_ctx, const struct registry_key 
 /**
  * Delete a key.
  */
-WERROR reg_key_del(struct registry_key *parent, const char *name)
+_PUBLIC_ WERROR reg_key_del(struct registry_key *parent, const char *name)
 {
 	WERROR error;
 	if(!parent) return WERR_INVALID_PARAM;
@@ -444,7 +444,7 @@ WERROR reg_key_del(struct registry_key *parent, const char *name)
 /**
  * Add a key.
  */
-WERROR reg_key_add_name(TALLOC_CTX *mem_ctx, const struct registry_key *parent, const char *name, uint32_t access_mask, struct security_descriptor *desc, struct registry_key **newkey)
+_PUBLIC_ WERROR reg_key_add_name(TALLOC_CTX *mem_ctx, const struct registry_key *parent, const char *name, uint32_t access_mask, struct security_descriptor *desc, struct registry_key **newkey)
 {
 	WERROR error;
 	
@@ -485,7 +485,7 @@ _PUBLIC_ WERROR reg_val_set(struct registry_key *key, const char *value, uint32_
 /**
  * Get the security descriptor on a key.
  */
-WERROR reg_get_sec_desc(TALLOC_CTX *ctx, const struct registry_key *key, struct security_descriptor **secdesc)
+_PUBLIC_ WERROR reg_get_sec_desc(TALLOC_CTX *ctx, const struct registry_key *key, struct security_descriptor **secdesc)
 {
 	/* A 'real' set function has preference */
 	if (key->hive->functions->key_get_sec_desc) 
@@ -514,7 +514,7 @@ _PUBLIC_ WERROR reg_del_value(const struct registry_key *key, const char *valnam
 /**
  * Flush a key to disk.
  */
-WERROR reg_key_flush(const struct registry_key *key)
+_PUBLIC_ WERROR reg_key_flush(const struct registry_key *key)
 {
 	if (!key) {
 		return WERR_INVALID_PARAM;
@@ -531,7 +531,7 @@ WERROR reg_key_flush(const struct registry_key *key)
 /**
  * Get the maximum name and data lengths of the subkeys.
  */
-WERROR reg_key_subkeysizes(const struct registry_key *key, uint32_t *max_subkeylen, uint32_t *max_subkeysize)
+_PUBLIC_ WERROR reg_key_subkeysizes(const struct registry_key *key, uint32_t *max_subkeylen, uint32_t *max_subkeysize)
 {
 	int i = 0; 
 	struct registry_key *subkey;
@@ -559,7 +559,7 @@ WERROR reg_key_subkeysizes(const struct registry_key *key, uint32_t *max_subkeyl
 /**
  * Get the maximum name and data lengths of the values.
  */
-WERROR reg_key_valuesizes(const struct registry_key *key, uint32_t *max_valnamelen, uint32_t *max_valbufsize)
+_PUBLIC_ WERROR reg_key_valuesizes(const struct registry_key *key, uint32_t *max_valnamelen, uint32_t *max_valbufsize)
 {
 	int i = 0; 
 	struct registry_value *value;
