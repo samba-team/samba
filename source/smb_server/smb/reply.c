@@ -33,14 +33,14 @@
 	if ((req)->in.wct != (wcount)) { \
 		DEBUG(1,("Unexpected WCT %d at %s(%d) - expected %d\n", \
 			 (req)->in.wct, __FILE__, __LINE__, wcount)); \
-		req_reply_dos_error(req, ERRSRV, ERRerror); \
+		smbsrv_send_dos_error(req, ERRSRV, ERRerror); \
 		return; \
 	}} while (0)
 
 /* check req->async_states->status and if not OK then send an error reply */
 #define CHECK_ASYNC_STATUS do { \
 	if (!NT_STATUS_IS_OK(req->async_states->status)) { \
-		req_reply_error(req, req->async_states->status); \
+		smbsrv_send_error(req, req->async_states->status); \
 		return; \
 	}} while (0)
 	
@@ -48,7 +48,7 @@
 #define REQ_TALLOC(ptr, size) do { \
 	ptr = talloc_size(req, size); \
 	if (!ptr) { \
-		req_reply_error(req, NT_STATUS_NO_MEMORY); \
+		smbsrv_send_error(req, NT_STATUS_NO_MEMORY); \
 		return; \
 	}} while (0)
 
@@ -72,8 +72,8 @@ static void reply_simple_send(struct smbsrv_request *req)
 {
 	CHECK_ASYNC_STATUS;
 
-	req_setup_reply(req, 0, 0);
-	req_send_reply(req);
+	smbsrv_setup_reply(req, 0, 0);
+	smbsrv_send_reply(req);
 }
 
 
@@ -97,7 +97,7 @@ void smbsrv_reply_tcon(struct smbsrv_request *req)
 	p += req_pull_ascii4(req, &con.tcon.in.dev, p, STR_TERMINATE);
 
 	if (!con.tcon.in.service || !con.tcon.in.password || !con.tcon.in.dev) {
-		req_reply_error(req, NT_STATUS_INVALID_PARAMETER);
+		smbsrv_send_error(req, NT_STATUS_INVALID_PARAMETER);
 		return;
 	}
 
@@ -105,18 +105,18 @@ void smbsrv_reply_tcon(struct smbsrv_request *req)
 	status = smbsrv_tcon_backend(req, &con);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		req_reply_error(req, status);
+		smbsrv_send_error(req, status);
 		return;
 	}
 
 	/* construct reply */
-	req_setup_reply(req, 2, 0);
+	smbsrv_setup_reply(req, 2, 0);
 
 	SSVAL(req->out.vwv, VWV(0), con.tcon.out.max_xmit);
 	SSVAL(req->out.vwv, VWV(1), con.tcon.out.tid);
 	SSVAL(req->out.hdr, HDR_TID, req->tcon->tid);
   
-	req_send_reply(req);
+	smbsrv_send_reply(req);
 }
 
 
@@ -141,7 +141,7 @@ void smbsrv_reply_tcon_and_X(struct smbsrv_request *req)
 	p = req->in.data;
 
 	if (!req_pull_blob(req, p, passlen, &con.tconx.in.password)) {
-		req_reply_error(req, NT_STATUS_ILL_FORMED_PASSWORD);
+		smbsrv_send_error(req, NT_STATUS_ILL_FORMED_PASSWORD);
 		return;
 	}
 	p += passlen;
@@ -150,7 +150,7 @@ void smbsrv_reply_tcon_and_X(struct smbsrv_request *req)
 	p += req_pull_string(req, &con.tconx.in.device, p, -1, STR_ASCII);
 
 	if (!con.tconx.in.path || !con.tconx.in.device) {
-		req_reply_error(req, NT_STATUS_BAD_DEVICE_TYPE);
+		smbsrv_send_error(req, NT_STATUS_BAD_DEVICE_TYPE);
 		return;
 	}
 
@@ -158,20 +158,20 @@ void smbsrv_reply_tcon_and_X(struct smbsrv_request *req)
 	status = smbsrv_tcon_backend(req, &con);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		req_reply_error(req, status);
+		smbsrv_send_error(req, status);
 		return;
 	}
 
 	/* construct reply - two variants */
 	if (req->smb_conn->negotiate.protocol < PROTOCOL_NT1) {
-		req_setup_reply(req, 2, 0);
+		smbsrv_setup_reply(req, 2, 0);
 
 		SSVAL(req->out.vwv, VWV(0), SMB_CHAIN_NONE);
 		SSVAL(req->out.vwv, VWV(1), 0);
 
 		req_push_str(req, NULL, con.tconx.out.dev_type, -1, STR_TERMINATE|STR_ASCII);
 	} else {
-		req_setup_reply(req, 3, 0);
+		smbsrv_setup_reply(req, 3, 0);
 
 		SSVAL(req->out.vwv, VWV(0), SMB_CHAIN_NONE);
 		SSVAL(req->out.vwv, VWV(1), 0);
@@ -200,7 +200,7 @@ void smbsrv_reply_unknown(struct smbsrv_request *req)
   
 	DEBUG(0,("unknown command type %d (0x%X)\n", type, type));
 
-	req_reply_dos_error(req, ERRSRV, ERRunknownsmb);
+	smbsrv_send_dos_error(req, ERRSRV, ERRunknownsmb);
 }
 
 
@@ -214,14 +214,14 @@ static void reply_ioctl_send(struct smbsrv_request *req)
 	CHECK_ASYNC_STATUS;
 
 	/* the +1 is for nicer alignment */
-	req_setup_reply(req, 8, io->ioctl.out.blob.length+1);
+	smbsrv_setup_reply(req, 8, io->ioctl.out.blob.length+1);
 	SSVAL(req->out.vwv, VWV(1), io->ioctl.out.blob.length);
 	SSVAL(req->out.vwv, VWV(5), io->ioctl.out.blob.length);
 	SSVAL(req->out.vwv, VWV(6), PTR_DIFF(req->out.data, req->out.hdr) + 1);
 
 	memcpy(req->out.data+1, io->ioctl.out.blob.data, io->ioctl.out.blob.length);
 
-	req_send_reply(req);
+	smbsrv_send_reply(req);
 }
 
 /****************************************************************************
@@ -279,7 +279,7 @@ static void reply_getatr_send(struct smbsrv_request *req)
 	CHECK_ASYNC_STATUS;
 	
 	/* construct reply */
-	req_setup_reply(req, 10, 0);
+	smbsrv_setup_reply(req, 10, 0);
 
 	SSVAL(req->out.vwv,         VWV(0), st->getattr.out.attrib);
 	srv_push_dos_date3(req->smb_conn, req->out.vwv, VWV(1), st->getattr.out.write_time);
@@ -287,7 +287,7 @@ static void reply_getatr_send(struct smbsrv_request *req)
 
 	REQ_VWV_RESERVED(5, 5);
 
-	req_send_reply(req);
+	smbsrv_send_reply(req);
 }
 
 
@@ -305,7 +305,7 @@ void smbsrv_reply_getatr(struct smbsrv_request *req)
 	/* parse request */
 	req_pull_ascii4(req, &st->getattr.in.fname, req->in.data, STR_TERMINATE);
 	if (!st->getattr.in.fname) {
-		req_reply_error(req, NT_STATUS_OBJECT_NAME_NOT_FOUND);
+		smbsrv_send_error(req, NT_STATUS_OBJECT_NAME_NOT_FOUND);
 		return;
 	}
 
@@ -338,7 +338,7 @@ void smbsrv_reply_setatr(struct smbsrv_request *req)
 	req_pull_ascii4(req, &st->setattr.file.fname, req->in.data, STR_TERMINATE);
 
 	if (!st->setattr.file.fname) {
-		req_reply_error(req, NT_STATUS_OBJECT_NAME_NOT_FOUND);
+		smbsrv_send_error(req, NT_STATUS_OBJECT_NAME_NOT_FOUND);
 		return;
 	}
 	
@@ -362,7 +362,7 @@ static void reply_dskattr_send(struct smbsrv_request *req)
 	CHECK_ASYNC_STATUS;
 	
 	/* construct reply */
-	req_setup_reply(req, 5, 0);
+	smbsrv_setup_reply(req, 5, 0);
 
 	SSVAL(req->out.vwv, VWV(0), fs->dskattr.out.units_total);
 	SSVAL(req->out.vwv, VWV(1), fs->dskattr.out.blocks_per_unit);
@@ -371,7 +371,7 @@ static void reply_dskattr_send(struct smbsrv_request *req)
 
 	REQ_VWV_RESERVED(4, 1);
 
-	req_send_reply(req);
+	smbsrv_send_reply(req);
 }
 
 
@@ -408,7 +408,7 @@ static void reply_open_send(struct smbsrv_request *req)
 	CHECK_ASYNC_STATUS;
 
 	/* construct reply */
-	req_setup_reply(req, 7, 0);
+	smbsrv_setup_reply(req, 7, 0);
 
 	SSVAL(req->out.vwv, VWV(0), oi->openold.out.fnum);
 	SSVAL(req->out.vwv, VWV(1), oi->openold.out.attrib);
@@ -416,7 +416,7 @@ static void reply_open_send(struct smbsrv_request *req)
 	SIVAL(req->out.vwv, VWV(4), oi->openold.out.size);
 	SSVAL(req->out.vwv, VWV(6), oi->openold.out.rmode);
 
-	req_send_reply(req);
+	smbsrv_send_reply(req);
 }
 
 /****************************************************************************
@@ -437,7 +437,7 @@ void smbsrv_reply_open(struct smbsrv_request *req)
 	req_pull_ascii4(req, &oi->openold.in.fname, req->in.data, STR_TERMINATE);
 
 	if (!oi->openold.in.fname) {
-		req_reply_error(req, NT_STATUS_OBJECT_NAME_NOT_FOUND);
+		smbsrv_send_error(req, NT_STATUS_OBJECT_NAME_NOT_FOUND);
 		return;
 	}
 
@@ -463,9 +463,9 @@ static void reply_open_and_X_send(struct smbsrv_request *req)
 
 	/* build the reply */
 	if (oi->openx.in.flags & OPENX_FLAGS_EXTENDED_RETURN) {
-		req_setup_reply(req, 19, 0);
+		smbsrv_setup_reply(req, 19, 0);
 	} else {
-		req_setup_reply(req, 15, 0);
+		smbsrv_setup_reply(req, 15, 0);
 	}
 
 	SSVAL(req->out.vwv, VWV(0), SMB_CHAIN_NONE);
@@ -515,7 +515,7 @@ void smbsrv_reply_open_and_X(struct smbsrv_request *req)
 	req_pull_ascii4(req, &oi->openx.in.fname, req->in.data, STR_TERMINATE);
 
 	if (!oi->openx.in.fname) {
-		req_reply_error(req, NT_STATUS_OBJECT_NAME_NOT_FOUND);
+		smbsrv_send_error(req, NT_STATUS_OBJECT_NAME_NOT_FOUND);
 		return;
 	}
 
@@ -540,11 +540,11 @@ static void reply_mknew_send(struct smbsrv_request *req)
 	CHECK_ASYNC_STATUS;
 
 	/* build the reply */
-	req_setup_reply(req, 1, 0);
+	smbsrv_setup_reply(req, 1, 0);
 
 	SSVAL(req->out.vwv, VWV(0), oi->mknew.out.fnum);
 
-	req_send_reply(req);
+	smbsrv_send_reply(req);
 }
 
 
@@ -570,7 +570,7 @@ void smbsrv_reply_mknew(struct smbsrv_request *req)
 	req_pull_ascii4(req, &oi->mknew.in.fname, req->in.data, STR_TERMINATE);
 
 	if (!oi->mknew.in.fname) {
-		req_reply_error(req, NT_STATUS_OBJECT_NAME_NOT_FOUND);
+		smbsrv_send_error(req, NT_STATUS_OBJECT_NAME_NOT_FOUND);
 		return;
 	}
 
@@ -594,14 +594,14 @@ static void reply_ctemp_send(struct smbsrv_request *req)
 	CHECK_ASYNC_STATUS;
 
 	/* build the reply */
-	req_setup_reply(req, 1, 0);
+	smbsrv_setup_reply(req, 1, 0);
 
 	SSVAL(req->out.vwv, VWV(0), oi->ctemp.out.fnum);
 
 	/* the returned filename is relative to the directory */
 	req_push_str(req, NULL, oi->ctemp.out.name, -1, STR_TERMINATE | STR_ASCII);
 
-	req_send_reply(req);
+	smbsrv_send_reply(req);
 }
 
 /****************************************************************************
@@ -624,7 +624,7 @@ void smbsrv_reply_ctemp(struct smbsrv_request *req)
 	req_pull_ascii4(req, &oi->ctemp.in.directory, req->in.data, STR_TERMINATE);
 
 	if (!oi->ctemp.in.directory) {
-		req_reply_error(req, NT_STATUS_OBJECT_NAME_NOT_FOUND);
+		smbsrv_send_error(req, NT_STATUS_OBJECT_NAME_NOT_FOUND);
 		return;
 	}
 
@@ -715,7 +715,7 @@ void smbsrv_reply_readbraw(struct smbsrv_request *req)
 
 	req->out.size = io.readbraw.out.nread + NBT_HDR_SIZE;
 
-	req_send_reply_nosign(req);
+	smbsrv_send_reply_nosign(req);
 	return;
 
 failed:
@@ -724,7 +724,7 @@ failed:
 	req->out.buffer = talloc_size(req, req->out.size);
 	SIVAL(req->out.buffer, 0, 0); /* init NBT header */
 
-	req_send_reply_nosign(req);
+	smbsrv_send_reply_nosign(req);
 }
 
 
@@ -749,7 +749,7 @@ static void reply_lockread_send(struct smbsrv_request *req)
 	SCVAL(req->out.data, 0, SMB_DATA_BLOCK);
 	SSVAL(req->out.data, 1, io->lockread.out.nread);
 
-	req_send_reply(req);
+	smbsrv_send_reply(req);
 }
 
 
@@ -772,7 +772,7 @@ void smbsrv_reply_lockread(struct smbsrv_request *req)
 	io->lockread.in.remaining = SVAL(req->in.vwv, VWV(4));
 	
 	/* setup the reply packet assuming the maximum possible read */
-	req_setup_reply(req, 5, 3 + io->lockread.in.count);
+	smbsrv_setup_reply(req, 5, 3 + io->lockread.in.count);
 
 	/* tell the backend where to put the data */
 	io->lockread.out.data = req->out.data + 3;
@@ -810,7 +810,7 @@ static void reply_read_send(struct smbsrv_request *req)
 	SCVAL(req->out.data, 0, SMB_DATA_BLOCK);
 	SSVAL(req->out.data, 1, io->read.out.nread);
 
-	req_send_reply(req);
+	smbsrv_send_reply(req);
 }
 
 /****************************************************************************
@@ -831,7 +831,7 @@ void smbsrv_reply_read(struct smbsrv_request *req)
 	io->read.in.remaining     = SVAL(req->in.vwv, VWV(4));
 	
 	/* setup the reply packet assuming the maximum possible read */
-	req_setup_reply(req, 5, 3 + io->read.in.count);
+	smbsrv_setup_reply(req, 5, 3 + io->read.in.count);
 
 	/* tell the backend where to put the data */
 	io->read.out.data = req->out.data + 3;
@@ -915,7 +915,7 @@ void smbsrv_reply_read_and_X(struct smbsrv_request *req)
 	}
 
 	/* setup the reply packet assuming the maximum possible read */
-	req_setup_reply(req, 12, 1 + io->readx.in.maxcnt);
+	smbsrv_setup_reply(req, 12, 1 + io->readx.in.maxcnt);
 
 	/* tell the backend where to put the data. Notice the pad byte. */
 	if (io->readx.in.maxcnt != 0xFFFF &&
@@ -941,7 +941,7 @@ void smbsrv_reply_read_and_X(struct smbsrv_request *req)
 ****************************************************************************/
 void smbsrv_reply_writebraw(struct smbsrv_request *req)
 {
-	req_reply_dos_error(req, ERRSRV, ERRuseSTD);
+	smbsrv_send_dos_error(req, ERRSRV, ERRuseSTD);
 }
 
 
@@ -955,11 +955,11 @@ static void reply_writeunlock_send(struct smbsrv_request *req)
 	CHECK_ASYNC_STATUS;
 
 	/* construct reply */
-	req_setup_reply(req, 1, 0);
+	smbsrv_setup_reply(req, 1, 0);
 
 	SSVAL(req->out.vwv, VWV(0), io->writeunlock.out.nwritten);
 
-	req_send_reply(req);
+	smbsrv_send_reply(req);
 }
 
 /****************************************************************************
@@ -981,13 +981,13 @@ void smbsrv_reply_writeunlock(struct smbsrv_request *req)
 
 	/* make sure they gave us the data they promised */
 	if (io->writeunlock.in.count+3 > req->in.data_size) {
-		req_reply_error(req, NT_STATUS_FOOBAR);
+		smbsrv_send_error(req, NT_STATUS_FOOBAR);
 		return;
 	}
 
 	/* make sure the data block is big enough */
 	if (SVAL(req->in.data, 1) < io->writeunlock.in.count) {
-		req_reply_error(req, NT_STATUS_FOOBAR);
+		smbsrv_send_error(req, NT_STATUS_FOOBAR);
 		return;
 	}
 
@@ -1013,11 +1013,11 @@ static void reply_write_send(struct smbsrv_request *req)
 	CHECK_ASYNC_STATUS;
 
 	/* construct reply */
-	req_setup_reply(req, 1, 0);
+	smbsrv_setup_reply(req, 1, 0);
 
 	SSVAL(req->out.vwv, VWV(0), io->write.out.nwritten);
 
-	req_send_reply(req);
+	smbsrv_send_reply(req);
 }
 
 /****************************************************************************
@@ -1039,13 +1039,13 @@ void smbsrv_reply_write(struct smbsrv_request *req)
 
 	/* make sure they gave us the data they promised */
 	if (req_data_oob(req, io->write.in.data, io->write.in.count)) {
-		req_reply_error(req, NT_STATUS_FOOBAR);
+		smbsrv_send_error(req, NT_STATUS_FOOBAR);
 		return;
 	}
 
 	/* make sure the data block is big enough */
 	if (SVAL(req->in.data, 1) < io->write.in.count) {
-		req_reply_error(req, NT_STATUS_FOOBAR);
+		smbsrv_send_error(req, NT_STATUS_FOOBAR);
 		return;
 	}
 
@@ -1070,7 +1070,7 @@ static void reply_write_and_X_send(struct smbsrv_request *req)
 	CHECK_ASYNC_STATUS;
 
 	/* construct reply */
-	req_setup_reply(req, 6, 0);
+	smbsrv_setup_reply(req, 6, 0);
 
 	SSVAL(req->out.vwv, VWV(0), SMB_CHAIN_NONE);
 	SSVAL(req->out.vwv, VWV(1), 0);
@@ -1112,7 +1112,7 @@ void smbsrv_reply_write_and_X(struct smbsrv_request *req)
 
 	/* make sure the data is in bounds */
 	if (req_data_oob(req, io->writex.in.data, io->writex.in.count)) {
-		req_reply_error(req, NT_STATUS_FOOBAR);
+		smbsrv_send_error(req, NT_STATUS_FOOBAR);
 		return;
 	} 
 
@@ -1137,11 +1137,11 @@ static void reply_lseek_send(struct smbsrv_request *req)
 	CHECK_ASYNC_STATUS;
 
 	/* construct reply */
-	req_setup_reply(req, 2, 0);
+	smbsrv_setup_reply(req, 2, 0);
 
 	SIVALS(req->out.vwv, VWV(0), io->out.offset);
 
-	req_send_reply(req);
+	smbsrv_send_reply(req);
 }
 
 /****************************************************************************
@@ -1205,13 +1205,13 @@ void smbsrv_reply_exit(struct smbsrv_request *req)
 		status = ntvfs_exit(req);
 		req->tcon = NULL;
 		if (!NT_STATUS_IS_OK(status)) {
-			req_reply_error(req, status);
+			smbsrv_send_error(req, status);
 			return;
 		}
 	}
 
-	req_setup_reply(req, 0, 0);
-	req_send_reply(req);
+	smbsrv_setup_reply(req, 0, 0);
+	smbsrv_send_reply(req);
 }
 
 
@@ -1253,11 +1253,11 @@ static void reply_writeclose_send(struct smbsrv_request *req)
 	CHECK_ASYNC_STATUS;
 
 	/* construct reply */
-	req_setup_reply(req, 1, 0);
+	smbsrv_setup_reply(req, 1, 0);
 
 	SSVAL(req->out.vwv, VWV(0), io->write.out.nwritten);
 
-	req_send_reply(req);
+	smbsrv_send_reply(req);
 }
 
 /****************************************************************************
@@ -1283,7 +1283,7 @@ void smbsrv_reply_writeclose(struct smbsrv_request *req)
 
 	/* make sure they gave us the data they promised */
 	if (req_data_oob(req, io->writeclose.in.data, io->writeclose.in.count)) {
-		req_reply_error(req, NT_STATUS_FOOBAR);
+		smbsrv_send_error(req, NT_STATUS_FOOBAR);
 		return;
 	}
 
@@ -1357,16 +1357,16 @@ void smbsrv_reply_tdis(struct smbsrv_request *req)
 	REQ_CHECK_WCT(req, 0);
 
 	if (req->tcon == NULL) {
-		req_reply_error(req, NT_STATUS_INVALID_HANDLE);
+		smbsrv_send_error(req, NT_STATUS_INVALID_HANDLE);
 		return;
 	}
 
 	talloc_free(req->tcon);
 
 	/* construct reply */
-	req_setup_reply(req, 0, 0);
+	smbsrv_setup_reply(req, 0, 0);
 
-	req_send_reply(req);
+	smbsrv_send_reply(req);
 }
 
 
@@ -1383,7 +1383,7 @@ void smbsrv_reply_echo(struct smbsrv_request *req)
 
 	count = SVAL(req->in.vwv, VWV(0));
 
-	req_setup_reply(req, 1, req->in.data_size);
+	smbsrv_setup_reply(req, 1, req->in.data_size);
 
 	memcpy(req->out.data, req->in.data, req->in.data_size);
 
@@ -1391,13 +1391,13 @@ void smbsrv_reply_echo(struct smbsrv_request *req)
 		struct smbsrv_request *this_req;
 		
 		if (i != count) {
-			this_req = req_setup_secondary(req);
+			this_req = smbsrv_setup_secondary_request(req);
 		} else {
 			this_req = req;
 		}
 
 		SSVAL(this_req->out.vwv, VWV(0), i);
-		req_send_reply(this_req);
+		smbsrv_send_reply(this_req);
 	}
 }
 
@@ -1413,11 +1413,11 @@ static void reply_printopen_send(struct smbsrv_request *req)
 	CHECK_ASYNC_STATUS;
 
 	/* construct reply */
-	req_setup_reply(req, 1, 0);
+	smbsrv_setup_reply(req, 1, 0);
 
 	SSVAL(req->out.vwv, VWV(0), oi->openold.out.fnum);
 
-	req_send_reply(req);
+	smbsrv_send_reply(req);
 }
 
 /****************************************************************************
@@ -1482,7 +1482,7 @@ static void reply_printqueue_send(struct smbsrv_request *req)
 	CHECK_ASYNC_STATUS;
 
 	/* construct reply */
-	req_setup_reply(req, 2, 0);
+	smbsrv_setup_reply(req, 2, 0);
 
 	/* truncate the returned list to fit in the negotiated buffer size */
 	maxcount = (req_max_data(req) - 3) / el_size;
@@ -1512,7 +1512,7 @@ static void reply_printqueue_send(struct smbsrv_request *req)
 		req->out.ptr += el_size;
 	}
 
-	req_send_reply(req);
+	smbsrv_send_reply(req);
 }
 
 /****************************************************************************
@@ -1555,7 +1555,7 @@ void smbsrv_reply_printwrite(struct smbsrv_request *req)
 	io->splwrite.level = RAW_WRITE_SPLWRITE;
 
 	if (req->in.data_size < 3) {
-		req_reply_error(req, NT_STATUS_FOOBAR);
+		smbsrv_send_error(req, NT_STATUS_FOOBAR);
 		return;
 	}
 
@@ -1565,7 +1565,7 @@ void smbsrv_reply_printwrite(struct smbsrv_request *req)
 
 	/* make sure they gave us the data they promised */
 	if (req_data_oob(req, io->splwrite.in.data, io->splwrite.in.count)) {
-		req_reply_error(req, NT_STATUS_FOOBAR);
+		smbsrv_send_error(req, NT_STATUS_FOOBAR);
 		return;
 	}
 
@@ -1646,7 +1646,7 @@ void smbsrv_reply_mv(struct smbsrv_request *req)
 	p += req_pull_ascii4(req, &io->rename.in.pattern2, p, STR_TERMINATE);
 
 	if (!io->rename.in.pattern1 || !io->rename.in.pattern2) {
-		req_reply_error(req, NT_STATUS_FOOBAR);
+		smbsrv_send_error(req, NT_STATUS_FOOBAR);
 		return;
 	}
 
@@ -1682,7 +1682,7 @@ void smbsrv_reply_ntrename(struct smbsrv_request *req)
 	p += req_pull_ascii4(req, &io->ntrename.in.new_name, p, STR_TERMINATE);
 
 	if (!io->ntrename.in.old_name || !io->ntrename.in.new_name) {
-		req_reply_error(req, NT_STATUS_FOOBAR);
+		smbsrv_send_error(req, NT_STATUS_FOOBAR);
 		return;
 	}
 
@@ -1705,11 +1705,11 @@ static void reply_copy_send(struct smbsrv_request *req)
 	CHECK_ASYNC_STATUS;
 
 	/* build the reply */
-	req_setup_reply(req, 1, 0);
+	smbsrv_setup_reply(req, 1, 0);
 
 	SSVAL(req->out.vwv, VWV(0), cp->out.count);
 
-	req_send_reply(req);
+	smbsrv_send_reply(req);
 }
 
 /****************************************************************************
@@ -1733,7 +1733,7 @@ void smbsrv_reply_copy(struct smbsrv_request *req)
 	p += req_pull_ascii4(req, &cp->in.path2, p, STR_TERMINATE);
 
 	if (!cp->in.path1 || !cp->in.path2) {
-		req_reply_error(req, NT_STATUS_FOOBAR);
+		smbsrv_send_error(req, NT_STATUS_FOOBAR);
 		return;
 	}
 
@@ -1764,7 +1764,7 @@ static void reply_lockingX_send(struct smbsrv_request *req)
 	}
 
 	/* construct reply */
-	req_setup_reply(req, 2, 0);
+	smbsrv_setup_reply(req, 2, 0);
 	
 	SSVAL(req->out.vwv, VWV(0), SMB_CHAIN_NONE);
 	SSVAL(req->out.vwv, VWV(1), 0);
@@ -1805,7 +1805,7 @@ void smbsrv_reply_lockingX(struct smbsrv_request *req)
 
 	/* make sure we got the promised data */
 	if (req_data_oob(req, req->in.data, total_locks * lck_size)) {
-		req_reply_error(req, NT_STATUS_FOOBAR);
+		smbsrv_send_error(req, NT_STATUS_FOOBAR);
 		return;
 	}
 
@@ -1854,7 +1854,7 @@ void smbsrv_reply_lockingX(struct smbsrv_request *req)
 void smbsrv_reply_readbmpx(struct smbsrv_request *req)
 {
 	/* tell the client to not use a multiplexed read - its too broken to use */
-	req_reply_dos_error(req, ERRSRV, ERRuseSTD);
+	smbsrv_send_dos_error(req, ERRSRV, ERRuseSTD);
 }
 
 
@@ -1890,7 +1890,7 @@ void smbsrv_reply_setattrE(struct smbsrv_request *req)
 ****************************************************************************/
 void smbsrv_reply_writebmpx(struct smbsrv_request *req)
 {
-	req_reply_dos_error(req, ERRSRV, ERRuseSTD);
+	smbsrv_send_dos_error(req, ERRSRV, ERRuseSTD);
 }
 
 
@@ -1899,7 +1899,7 @@ void smbsrv_reply_writebmpx(struct smbsrv_request *req)
 ****************************************************************************/
 void smbsrv_reply_writebs(struct smbsrv_request *req)
 {
-	req_reply_dos_error(req, ERRSRV, ERRuseSTD);
+	smbsrv_send_dos_error(req, ERRSRV, ERRuseSTD);
 }
 
 
@@ -1914,7 +1914,7 @@ static void reply_getattrE_send(struct smbsrv_request *req)
 	CHECK_ASYNC_STATUS;
 
 	/* setup reply */
-	req_setup_reply(req, 11, 0);
+	smbsrv_setup_reply(req, 11, 0);
 
 	srv_push_dos_date2(req->smb_conn, req->out.vwv, VWV(0), info->getattre.out.create_time);
 	srv_push_dos_date2(req->smb_conn, req->out.vwv, VWV(2), info->getattre.out.access_time);
@@ -1923,7 +1923,7 @@ static void reply_getattrE_send(struct smbsrv_request *req)
 	SIVAL(req->out.vwv,         VWV(8), info->getattre.out.alloc_size);
 	SSVAL(req->out.vwv,        VWV(10), info->getattre.out.attrib);
 
-	req_send_reply(req);
+	smbsrv_send_reply(req);
 }
 
 /****************************************************************************
@@ -1972,13 +1972,13 @@ static void reply_sesssetup_old(struct smbsrv_request *req)
 
 	/* check the request isn't malformed */
 	if (req_data_oob(req, req->in.data, passlen)) {
-		req_reply_error(req, NT_STATUS_FOOBAR);
+		smbsrv_send_error(req, NT_STATUS_FOOBAR);
 		return;
 	}
 	
 	p = req->in.data;
 	if (!req_pull_blob(req, p, passlen, &sess.old.in.password)) {
-		req_reply_error(req, NT_STATUS_FOOBAR);
+		smbsrv_send_error(req, NT_STATUS_FOOBAR);
 		return;
 	}
 	p += passlen;
@@ -1992,12 +1992,12 @@ static void reply_sesssetup_old(struct smbsrv_request *req)
 	status = smbsrv_sesssetup_backend(req, &sess);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		req_reply_error(req, status);
+		smbsrv_send_error(req, status);
 		return;
 	}
 
 	/* construct reply */
-	req_setup_reply(req, 3, 0);
+	smbsrv_setup_reply(req, 3, 0);
 
 	SSVAL(req->out.vwv, VWV(0), SMB_CHAIN_NONE);
 	SSVAL(req->out.vwv, VWV(1), 0);
@@ -2033,18 +2033,18 @@ static void reply_sesssetup_nt1(struct smbsrv_request *req)
 	/* check the request isn't malformed */
 	if (req_data_oob(req, req->in.data, passlen1) ||
 	    req_data_oob(req, req->in.data + passlen1, passlen2)) {
-		req_reply_error(req, NT_STATUS_FOOBAR);
+		smbsrv_send_error(req, NT_STATUS_FOOBAR);
 		return;
 	}
 	
 	p = req->in.data;
 	if (!req_pull_blob(req, p, passlen1, &sess.nt1.in.password1)) {
-		req_reply_error(req, NT_STATUS_FOOBAR);
+		smbsrv_send_error(req, NT_STATUS_FOOBAR);
 		return;
 	}
 	p += passlen1;
 	if (!req_pull_blob(req, p, passlen2, &sess.nt1.in.password2)) {
-		req_reply_error(req, NT_STATUS_FOOBAR);
+		smbsrv_send_error(req, NT_STATUS_FOOBAR);
 		return;
 	}
 	p += passlen2;
@@ -2058,12 +2058,12 @@ static void reply_sesssetup_nt1(struct smbsrv_request *req)
 	status = smbsrv_sesssetup_backend(req, &sess);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		req_reply_error(req, status);
+		smbsrv_send_error(req, status);
 		return;
 	}
 
 	/* construct reply */
-	req_setup_reply(req, 3, 0);
+	smbsrv_setup_reply(req, 3, 0);
 
 	SSVAL(req->out.vwv, VWV(0), SMB_CHAIN_NONE);
 	SSVAL(req->out.vwv, VWV(1), 0);
@@ -2101,7 +2101,7 @@ static void reply_sesssetup_spnego(struct smbsrv_request *req)
 
 	p = req->in.data;
 	if (!req_pull_blob(req, p, blob_len, &sess.spnego.in.secblob)) {
-		req_reply_error(req, NT_STATUS_FOOBAR);
+		smbsrv_send_error(req, NT_STATUS_FOOBAR);
 		return;
 	}
 	p += blob_len;
@@ -2115,15 +2115,15 @@ static void reply_sesssetup_spnego(struct smbsrv_request *req)
 
 	if (!NT_STATUS_IS_OK(status) && 
 	    !NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-		req_reply_error(req, status);
+		smbsrv_send_error(req, status);
 		return;
 	}
 
 	/* construct reply */
-	req_setup_reply(req, 4, sess.spnego.out.secblob.length);
+	smbsrv_setup_reply(req, 4, sess.spnego.out.secblob.length);
 
 	if (NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-		req_setup_error(req, status);
+		smbsrv_send_error(req, status);
 	}
 
 	SSVAL(req->out.vwv, VWV(0), SMB_CHAIN_NONE);
@@ -2163,7 +2163,7 @@ void smbsrv_reply_sesssetup(struct smbsrv_request *req)
 	}
 
 	/* unsupported variant */
-	req_reply_error(req, NT_STATUS_FOOBAR);
+	smbsrv_send_error(req, NT_STATUS_FOOBAR);
 }
 
 /****************************************************************************
@@ -2175,7 +2175,7 @@ void smbsrv_reply_ulogoffX(struct smbsrv_request *req)
 	NTSTATUS status;
 
 	if (!req->session) {
-		req_reply_error(req, NT_STATUS_DOS(ERRSRV, ERRbaduid));
+		smbsrv_send_error(req, NT_STATUS_DOS(ERRSRV, ERRbaduid));
 		return;
 	}
 
@@ -2186,7 +2186,7 @@ void smbsrv_reply_ulogoffX(struct smbsrv_request *req)
 		status = ntvfs_logoff(req);
 		req->tcon = NULL;
 		if (!NT_STATUS_IS_OK(status)) {
-			req_reply_error(req, status);
+			smbsrv_send_error(req, status);
 			return;
 		}
 	}
@@ -2195,7 +2195,7 @@ void smbsrv_reply_ulogoffX(struct smbsrv_request *req)
 	req->session = NULL; /* it is now invalid, don't use on 
 				any chained packets */
 
-	req_setup_reply(req, 2, 0);
+	smbsrv_setup_reply(req, 2, 0);
 
 	SSVAL(req->out.vwv, VWV(0), SMB_CHAIN_NONE);
 	SSVAL(req->out.vwv, VWV(1), 0);	
@@ -2223,14 +2223,14 @@ void smbsrv_reply_findclose(struct smbsrv_request *req)
 	status = ntvfs_search_close(req, &io);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		req_reply_error(req, status);
+		smbsrv_send_error(req, status);
 		return;
 	}
 
 	/* construct reply */
-	req_setup_reply(req, 0, 0);
+	smbsrv_setup_reply(req, 0, 0);
 
-	req_send_reply(req);	
+	smbsrv_send_reply(req);	
 }
 
 /****************************************************************************
@@ -2238,7 +2238,7 @@ void smbsrv_reply_findclose(struct smbsrv_request *req)
 ****************************************************************************/
 void smbsrv_reply_findnclose(struct smbsrv_request *req)
 {
-	req_reply_error(req, NT_STATUS_FOOBAR);
+	smbsrv_send_error(req, NT_STATUS_FOOBAR);
 }
 
 
@@ -2252,7 +2252,7 @@ static void reply_ntcreate_and_X_send(struct smbsrv_request *req)
 	CHECK_ASYNC_STATUS;
 
 	/* construct reply */
-	req_setup_reply(req, 34, 0);
+	smbsrv_setup_reply(req, 34, 0);
 
 	SSVAL(req->out.vwv, VWV(0), SMB_CHAIN_NONE);
 	SSVAL(req->out.vwv, VWV(1), 0);	
@@ -2314,7 +2314,7 @@ void smbsrv_reply_ntcreate_and_X(struct smbsrv_request *req)
 
 	req_pull_string(req, &io->ntcreatex.in.fname, req->in.data, fname_len, STR_TERMINATE);
 	if (!io->ntcreatex.in.fname) {
-		req_reply_error(req, NT_STATUS_FOOBAR);
+		smbsrv_send_error(req, NT_STATUS_FOOBAR);
 		return;
 	}
 
@@ -2344,7 +2344,7 @@ void smbsrv_reply_ntcancel(struct smbsrv_request *req)
 ****************************************************************************/
 void smbsrv_reply_sends(struct smbsrv_request *req)
 {
-	req_reply_error(req, NT_STATUS_FOOBAR);
+	smbsrv_send_error(req, NT_STATUS_FOOBAR);
 }
 
 /****************************************************************************
@@ -2352,7 +2352,7 @@ void smbsrv_reply_sends(struct smbsrv_request *req)
 ****************************************************************************/
 void smbsrv_reply_sendstrt(struct smbsrv_request *req)
 {
-	req_reply_error(req, NT_STATUS_FOOBAR);
+	smbsrv_send_error(req, NT_STATUS_FOOBAR);
 }
 
 /****************************************************************************
@@ -2360,7 +2360,7 @@ void smbsrv_reply_sendstrt(struct smbsrv_request *req)
 ****************************************************************************/
 void smbsrv_reply_sendend(struct smbsrv_request *req)
 {
-	req_reply_error(req, NT_STATUS_FOOBAR);
+	smbsrv_send_error(req, NT_STATUS_FOOBAR);
 }
 
 /****************************************************************************
@@ -2368,7 +2368,7 @@ void smbsrv_reply_sendend(struct smbsrv_request *req)
 ****************************************************************************/
 void smbsrv_reply_sendtxt(struct smbsrv_request *req)
 {
-	req_reply_error(req, NT_STATUS_FOOBAR);
+	smbsrv_send_error(req, NT_STATUS_FOOBAR);
 }
 
 
@@ -2438,7 +2438,7 @@ void smbsrv_reply_special(struct smbsrv_request *req)
 
 		req->out.buffer = buf;
 		req->out.size = 4;
-		req_send_reply_nosign(req);
+		smbsrv_send_reply_nosign(req);
 		return;
 		
 	case 0x89: /* session keepalive request 
@@ -2447,7 +2447,7 @@ void smbsrv_reply_special(struct smbsrv_request *req)
 		SCVAL(buf, 3, 0);
 		req->out.buffer = buf;
 		req->out.size = 4;
-		req_send_reply_nosign(req);
+		smbsrv_send_reply_nosign(req);
 		return;
 		
 	case SMBkeepalive: 

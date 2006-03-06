@@ -362,7 +362,7 @@ void smbsrv_reply_nttrans(struct smbsrv_request *req)
 
 	/* parse request */
 	if (req->in.wct < 19) {
-		req_reply_error(req, NT_STATUS_FOOBAR);
+		smbsrv_send_error(req, NT_STATUS_FOOBAR);
 		return;
 	}
 
@@ -379,14 +379,14 @@ void smbsrv_reply_nttrans(struct smbsrv_request *req)
 	trans.in.function	 = SVAL(req->in.vwv, 36);
 
 	if (req->in.wct != 19 + trans.in.setup_count) {
-		req_reply_dos_error(req, ERRSRV, ERRerror);
+		smbsrv_send_dos_error(req, ERRSRV, ERRerror);
 		return;
 	}
 
 	/* parse out the setup words */
 	trans.in.setup = talloc_array(req, uint16_t, trans.in.setup_count);
 	if (!trans.in.setup) {
-		req_reply_error(req, NT_STATUS_NO_MEMORY);
+		smbsrv_send_error(req, NT_STATUS_NO_MEMORY);
 		return;
 	}
 	for (i=0;i<trans.in.setup_count;i++) {
@@ -395,7 +395,7 @@ void smbsrv_reply_nttrans(struct smbsrv_request *req)
 
 	if (!req_pull_blob(req, req->in.hdr + param_ofs, param_count, &trans.in.params) ||
 	    !req_pull_blob(req, req->in.hdr + data_ofs, data_count, &trans.in.data)) {
-		req_reply_error(req, NT_STATUS_FOOBAR);
+		smbsrv_send_error(req, NT_STATUS_FOOBAR);
 		return;
 	}
 
@@ -410,14 +410,14 @@ void smbsrv_reply_nttrans(struct smbsrv_request *req)
 	status = nttrans_backend(req, &trans);
 
 	if (NT_STATUS_IS_ERR(status)) {
-		req_reply_error(req, status);
+		smbsrv_send_error(req, status);
 		return;
 	}
 
 #if 0
 	/* w2k3 does not check the max_setup count */
 	if (trans.out.setup_count > trans.in.max_setup) {
-		req_reply_error(req, NT_STATUS_BUFFER_TOO_SMALL);
+		smbsrv_send_error(req, NT_STATUS_BUFFER_TOO_SMALL);
 		return;
 	}
 #endif
@@ -435,10 +435,10 @@ void smbsrv_reply_nttrans(struct smbsrv_request *req)
 	params      = trans.out.params.data;
 	data        = trans.out.data.data;
 
-	req_setup_reply(req, 18 + trans.out.setup_count, 0);
+	smbsrv_setup_reply(req, 18 + trans.out.setup_count, 0);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		req_setup_error(req, status);
+		smbsrv_setup_error(req, status);
 	}
 
 	/* we need to divide up the reply into chunks that fit into
@@ -464,7 +464,7 @@ void smbsrv_reply_nttrans(struct smbsrv_request *req)
 		/* don't destroy unless this is the last chunk */
 		if (params_left - this_param != 0 || 
 		    data_left - this_data != 0) {
-			this_req = req_setup_secondary(req);
+			this_req = smbsrv_setup_secondary_request(req);
 		} else {
 			this_req = req;
 		}
@@ -505,7 +505,7 @@ void smbsrv_reply_nttrans(struct smbsrv_request *req)
 		params += this_param;
 		data += this_data;
 
-		req_send_reply(this_req);
+		smbsrv_send_reply(this_req);
 	} while (params_left != 0 || data_left != 0);
 }
 
@@ -515,5 +515,5 @@ void smbsrv_reply_nttrans(struct smbsrv_request *req)
 ****************************************************************************/
 void smbsrv_reply_nttranss(struct smbsrv_request *req)
 {
-	req_reply_error(req, NT_STATUS_FOOBAR);
+	smbsrv_send_error(req, NT_STATUS_FOOBAR);
 }

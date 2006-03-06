@@ -65,7 +65,7 @@ static NTSTATUS get_challenge(struct smbsrv_connection *smb_conn, uint8_t buff[8
 ****************************************************************************/
 static void reply_corep(struct smbsrv_request *req, uint16_t choice)
 {
-	req_setup_reply(req, 1, 0);
+	smbsrv_setup_reply(req, 1, 0);
 
 	SSVAL(req->out.vwv, VWV(0), choice);
 
@@ -77,7 +77,7 @@ static void reply_corep(struct smbsrv_request *req, uint16_t choice)
 		return;
 	}
 
-	req_send_reply(req);
+	smbsrv_send_reply(req);
 }
 
 /****************************************************************************
@@ -89,7 +89,7 @@ static void reply_coreplus(struct smbsrv_request *req, uint16_t choice)
 {
 	uint16_t raw = (lp_readraw()?1:0) | (lp_writeraw()?2:0);
 
-	req_setup_reply(req, 13, 0);
+	smbsrv_setup_reply(req, 13, 0);
 
 	/* Reply, SMBlockread, SMBwritelock supported. */
 	SCVAL(req->out.hdr,HDR_FLG,
@@ -110,7 +110,7 @@ static void reply_coreplus(struct smbsrv_request *req, uint16_t choice)
 		return;
 	}
 
-	req_send_reply(req);
+	smbsrv_send_reply(req);
 }
 
 /****************************************************************************
@@ -132,7 +132,7 @@ static void reply_lanman1(struct smbsrv_request *req, uint16_t choice)
 
 	req->smb_conn->negotiate.protocol = PROTOCOL_LANMAN1;
 
-	req_setup_reply(req, 13, req->smb_conn->negotiate.encrypted_passwords ? 8 : 0);
+	smbsrv_setup_reply(req, 13, req->smb_conn->negotiate.encrypted_passwords ? 8 : 0);
 
 	/* SMBlockread, SMBwritelock supported. */
 	SCVAL(req->out.hdr,HDR_FLG,
@@ -168,7 +168,7 @@ static void reply_lanman1(struct smbsrv_request *req, uint16_t choice)
 		return;
 	}
 
-	req_send_reply(req);	
+	smbsrv_send_reply(req);	
 }
 
 /****************************************************************************
@@ -190,7 +190,7 @@ static void reply_lanman2(struct smbsrv_request *req, uint16_t choice)
 
 	req->smb_conn->negotiate.protocol = PROTOCOL_LANMAN2;
 
-	req_setup_reply(req, 13, 0);
+	smbsrv_setup_reply(req, 13, 0);
 
 	SSVAL(req->out.vwv, VWV(0), choice);
 	SSVAL(req->out.vwv, VWV(1), secword); 
@@ -218,7 +218,7 @@ static void reply_lanman2(struct smbsrv_request *req, uint16_t choice)
 		return;
 	}
 
-	req_send_reply(req);
+	smbsrv_send_reply(req);
 }
 
 static void reply_nt1_orig(struct smbsrv_request *req)
@@ -313,7 +313,7 @@ static void reply_nt1(struct smbsrv_request *req, uint16_t choice)
 	
 	req->smb_conn->negotiate.protocol = PROTOCOL_NT1;
 
-	req_setup_reply(req, 17, 0);
+	smbsrv_setup_reply(req, 17, 0);
 	
 	SSVAL(req->out.vwv, VWV(0), choice);
 	SCVAL(req->out.vwv, VWV(1), secword);
@@ -415,7 +415,7 @@ static void reply_nt1(struct smbsrv_request *req, uint16_t choice)
 		DEBUG(3,("using SPNEGO\n"));
 	}
 	
-	req_send_reply_nosign(req);	
+	smbsrv_send_reply_nosign(req);	
 }
 
 /*

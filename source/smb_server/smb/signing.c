@@ -26,7 +26,7 @@
 /*
   sign an outgoing packet
 */
-void req_sign_packet(struct smbsrv_request *req)
+void smbsrv_sign_packet(struct smbsrv_request *req)
 {
 #if 0
 	/* enable this when packet signing is preventing you working out why valgrind 
@@ -63,9 +63,9 @@ void req_sign_packet(struct smbsrv_request *req)
   setup the signing key for a connection. Called after authentication succeeds
   in a session setup
 */
-BOOL srv_setup_signing(struct smbsrv_connection *smb_conn,
-		       DATA_BLOB *session_key,
-		       DATA_BLOB *response)
+BOOL smbsrv_setup_signing(struct smbsrv_connection *smb_conn,
+			  DATA_BLOB *session_key,
+			  DATA_BLOB *response)
 {
 	if (!set_smb_signing_common(&smb_conn->signing)) {
 		return False;
@@ -74,15 +74,15 @@ BOOL srv_setup_signing(struct smbsrv_connection *smb_conn,
 					 &smb_conn->signing, session_key, response);
 }
 
-void srv_signing_restart(struct smbsrv_connection *smb_conn,
-			 DATA_BLOB *session_key,
-			 DATA_BLOB *response) 
+void smbsrv_signing_restart(struct smbsrv_connection *smb_conn,
+			    DATA_BLOB *session_key,
+			    DATA_BLOB *response) 
 {
 	if (!smb_conn->signing.seen_valid) {
 		DEBUG(5, ("Client did not send a valid signature on "
 			  "SPNEGO session setup - ignored, expect good next time\n"));
 		/* force things back on (most clients do not sign this packet)... */
-		srv_setup_signing(smb_conn, session_key, response);
+		smbsrv_setup_signing(smb_conn, session_key, response);
 		smb_conn->signing.next_seq_num = 2;
 		if (smb_conn->signing.mandatory_signing) {
 			DEBUG(5, ("Configured for mandatory signing, 'good packet seen' forced on\n"));
@@ -95,7 +95,7 @@ void srv_signing_restart(struct smbsrv_connection *smb_conn,
 	}
 }
 
-BOOL srv_init_signing(struct smbsrv_connection *smb_conn)
+BOOL smbsrv_init_signing(struct smbsrv_connection *smb_conn)
 {
 	smb_conn->signing.mac_key = data_blob(NULL, 0);
 	if (!smbcli_set_signing_off(&smb_conn->signing)) {
@@ -139,7 +139,7 @@ static void req_signing_alloc_seq_num(struct smbsrv_request *req)
 /*
   called for requests that do not produce a reply of their own
 */
-void req_signing_no_reply(struct smbsrv_request *req)
+void smbsrv_signing_no_reply(struct smbsrv_request *req)
 {
 	if (req->smb_conn->signing.signing_state != SMB_SIGNING_ENGINE_OFF) {
 		req->smb_conn->signing.next_seq_num--;
@@ -154,7 +154,7 @@ void req_signing_no_reply(struct smbsrv_request *req)
  * @return False if we had an established signing connection
  *         which had a back checksum, True otherwise
  */
-BOOL req_signing_check_incoming(struct smbsrv_request *req)
+BOOL smbsrv_signing_check_incoming(struct smbsrv_request *req)
 {
 	BOOL good;
 
