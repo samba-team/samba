@@ -379,7 +379,7 @@ void smbsrv_reply_nttrans(struct smbsrv_request *req)
 	trans.in.function	 = SVAL(req->in.vwv, 36);
 
 	if (req->in.wct != 19 + trans.in.setup_count) {
-		smbsrv_send_dos_error(req, ERRSRV, ERRerror);
+		smbsrv_send_error(req, NT_STATUS_DOS(ERRSRV, ERRerror));
 		return;
 	}
 

@@ -33,7 +33,7 @@
 	if ((req)->in.wct != (wcount)) { \
 		DEBUG(1,("Unexpected WCT %d at %s(%d) - expected %d\n", \
 			 (req)->in.wct, __FILE__, __LINE__, wcount)); \
-		smbsrv_send_dos_error(req, ERRSRV, ERRerror); \
+		smbsrv_send_error(req, NT_STATUS_DOS(ERRSRV, ERRerror)); \
 		return; \
 	}} while (0)
 
@@ -200,7 +200,7 @@ void smbsrv_reply_unknown(struct smbsrv_request *req)
   
 	DEBUG(0,("unknown command type %d (0x%X)\n", type, type));
 
-	smbsrv_send_dos_error(req, ERRSRV, ERRunknownsmb);
+	smbsrv_send_error(req, NT_STATUS_DOS(ERRSRV, ERRunknownsmb));
 }
 
 
@@ -941,7 +941,7 @@ void smbsrv_reply_read_and_X(struct smbsrv_request *req)
 ****************************************************************************/
 void smbsrv_reply_writebraw(struct smbsrv_request *req)
 {
-	smbsrv_send_dos_error(req, ERRSRV, ERRuseSTD);
+	smbsrv_send_error(req, NT_STATUS_DOS(ERRSRV, ERRuseSTD));
 }
 
 
@@ -1854,7 +1854,7 @@ void smbsrv_reply_lockingX(struct smbsrv_request *req)
 void smbsrv_reply_readbmpx(struct smbsrv_request *req)
 {
 	/* tell the client to not use a multiplexed read - its too broken to use */
-	smbsrv_send_dos_error(req, ERRSRV, ERRuseSTD);
+	smbsrv_send_error(req, NT_STATUS_DOS(ERRSRV, ERRuseSTD));
 }
 
 
@@ -1890,7 +1890,7 @@ void smbsrv_reply_setattrE(struct smbsrv_request *req)
 ****************************************************************************/
 void smbsrv_reply_writebmpx(struct smbsrv_request *req)
 {
-	smbsrv_send_dos_error(req, ERRSRV, ERRuseSTD);
+	smbsrv_send_error(req, NT_STATUS_DOS(ERRSRV, ERRuseSTD));
 }
 
 
@@ -1899,7 +1899,7 @@ void smbsrv_reply_writebmpx(struct smbsrv_request *req)
 ****************************************************************************/
 void smbsrv_reply_writebs(struct smbsrv_request *req)
 {
-	smbsrv_send_dos_error(req, ERRSRV, ERRuseSTD);
+	smbsrv_send_error(req, NT_STATUS_DOS(ERRSRV, ERRuseSTD));
 }
 
 
