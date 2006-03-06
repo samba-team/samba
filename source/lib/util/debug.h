@@ -18,6 +18,11 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+/**
+ * @file
+ * @brief Debugging macros
+ */
+
 /* If we have these macros, we can add additional info to the header. */
 
 #ifdef HAVE_FUNCTION_MACRO
@@ -54,10 +59,21 @@ extern int DEBUGLEVEL;
 		do_debug body; \
 	} \
 } while (0)
+/** 
+ * Write to the debug log.
+ */
 #define DEBUG(level, body) _DEBUG(level, body, True)
+/**
+ * Add data to an existing debug log entry.
+ */
 #define DEBUGADD(level, body) _DEBUG(level, body, False)
-#define DEBUGC(class, level, body) DEBUG(level, body)
-#define DEBUGADDC(class, level, body) DEBUGADD(level, body)
+
+/**
+ * Obtain indentation string for the debug log. 
+ *
+ * Level specified by n.
+ */
 #define DEBUGTAB(n) do_debug_tab(n)
 
+/** Possible destinations for the debug log */
 enum debug_logtype {DEBUG_STDOUT = 0, DEBUG_FILE = 1, DEBUG_STDERR = 2};

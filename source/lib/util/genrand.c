@@ -46,6 +46,9 @@ _PUBLIC_ void set_rand_reseed_callback(void (*fn)(int *))
 	set_need_random_reseed();
 }
 
+/**
+ * Tell the random number generator it needs to reseed.
+ */
 _PUBLIC_ void set_need_random_reseed(void)
 {
 	done_reseed = False;
@@ -298,6 +301,13 @@ _PUBLIC_ char *generate_random_str_list(TALLOC_CTX *mem_ctx, size_t len, const c
 
 	return retstr;
 }
+
+/**
+ * Generate a random text string consisting of the specified length.
+ * The returned string will be allocated.
+ *
+ * Characters used are: ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+_-#.,
+ */
 
 _PUBLIC_ char *generate_random_str(TALLOC_CTX *mem_ctx, size_t len)
 {
