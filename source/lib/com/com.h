@@ -31,4 +31,7 @@ struct com_context
 
 typedef struct IUnknown *(*get_class_object_function) (const struct GUID *clsid);
 
+
+#include "lib/com/proto.h"
+
 #endif /* _COM_H */

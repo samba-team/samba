@@ -21,6 +21,7 @@
 
 #include "includes.h"
 #include "lib/com/com.h"
+#include "lib/com/dcom/dcom.h"
 #include "librpc/gen_ndr/com_dcom.h"
 #include "lib/cmdline/popt_common.h"
 
