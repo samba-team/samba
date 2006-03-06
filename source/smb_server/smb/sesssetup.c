@@ -357,8 +357,8 @@ failed:
 /*
   backend for sessionsetup call - this takes all 3 variants of the call
 */
-NTSTATUS sesssetup_backend(struct smbsrv_request *req, 
-			   union smb_sesssetup *sess)
+NTSTATUS smbsrv_sesssetup_backend(struct smbsrv_request *req,
+				  union smb_sesssetup *sess)
 {
 	NTSTATUS status = NT_STATUS_INVALID_LEVEL;
 
@@ -380,5 +380,3 @@ NTSTATUS sesssetup_backend(struct smbsrv_request *req,
 
 	return status;
 }
-
-

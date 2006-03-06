@@ -102,7 +102,7 @@ void smbsrv_reply_tcon(struct smbsrv_request *req)
 	}
 
 	/* call backend */
-	status = tcon_backend(req, &con);
+	status = smbsrv_tcon_backend(req, &con);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		req_reply_error(req, status);
@@ -155,7 +155,7 @@ void smbsrv_reply_tcon_and_X(struct smbsrv_request *req)
 	}
 
 	/* call backend */
-	status = tcon_backend(req, &con);
+	status = smbsrv_tcon_backend(req, &con);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		req_reply_error(req, status);
@@ -1989,7 +1989,7 @@ static void reply_sesssetup_old(struct smbsrv_request *req)
 	p += req_pull_string(req, &sess.old.in.lanman, p, -1, STR_TERMINATE);
 
 	/* call the generic handler */
-	status = sesssetup_backend(req, &sess);
+	status = smbsrv_sesssetup_backend(req, &sess);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		req_reply_error(req, status);
@@ -2055,7 +2055,7 @@ static void reply_sesssetup_nt1(struct smbsrv_request *req)
 	p += req_pull_string(req, &sess.nt1.in.lanman, p, -1, STR_TERMINATE);
 
 	/* call the generic handler */
-	status = sesssetup_backend(req, &sess);
+	status = smbsrv_sesssetup_backend(req, &sess);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		req_reply_error(req, status);
@@ -2111,7 +2111,7 @@ static void reply_sesssetup_spnego(struct smbsrv_request *req)
 	p += req_pull_string(req, &sess.spnego.in.workgroup, p, -1, STR_TERMINATE);
 
 	/* call the generic handler */
-	status = sesssetup_backend(req, &sess);
+	status = smbsrv_sesssetup_backend(req, &sess);
 
 	if (!NT_STATUS_IS_OK(status) && 
 	    !NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
