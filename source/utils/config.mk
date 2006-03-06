@@ -86,7 +86,8 @@ REQUIRED_SUBSYSTEMS = \
 		LIBBASIC \
 		LIBCLI_NBT \
 		LIBPOPT \
-		POPT_SAMBA
+		POPT_SAMBA \
+		LIBNETIF
 # End BINARY nmblookup
 #################################
 

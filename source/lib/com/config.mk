@@ -1,10 +1,12 @@
 [SUBSYSTEM::COM]
+PRIVATE_PROTO_HEADER = com_proto.h
 OBJ_FILES = \
 		tables.o \
 		rot.o \
 		main.o
 
 [SUBSYSTEM::DCOM]
+PRIVATE_PROTO_HEADER = dcom_proto.h
 OBJ_FILES = \
 		dcom/main.o \
 		dcom/tables.o

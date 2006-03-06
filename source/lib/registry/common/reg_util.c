@@ -40,7 +40,7 @@ static const struct {
 };
 
 /** Return string description of registry value type */
-const char *str_regtype(int type)
+_PUBLIC_ const char *str_regtype(int type)
 {
 	int i;
 	for (i = 0; reg_value_types[i].name; i++) {
@@ -51,7 +51,7 @@ const char *str_regtype(int type)
 	return "Unknown";
 }
 
-char *reg_val_data_string(TALLOC_CTX *mem_ctx, uint32_t type, DATA_BLOB *data)
+_PUBLIC_ char *reg_val_data_string(TALLOC_CTX *mem_ctx, uint32_t type, DATA_BLOB *data)
 { 
   char *ret = NULL;
 
@@ -85,12 +85,12 @@ char *reg_val_data_string(TALLOC_CTX *mem_ctx, uint32_t type, DATA_BLOB *data)
 }
 
 /** Generate a string that describes a registry value */
-char *reg_val_description(TALLOC_CTX *mem_ctx, struct registry_value *val) 
+_PUBLIC_ char *reg_val_description(TALLOC_CTX *mem_ctx, struct registry_value *val) 
 {
 	return talloc_asprintf(mem_ctx, "%s = %s : %s", val->name?val->name:"<No Name>", str_regtype(val->data_type), reg_val_data_string(mem_ctx, val->data_type, &val->data));
 }
 
-BOOL reg_string_to_val(TALLOC_CTX *mem_ctx, const char *type_str, const char *data_str, uint32_t *type, DATA_BLOB *data)
+_PUBLIC_ BOOL reg_string_to_val(TALLOC_CTX *mem_ctx, const char *type_str, const char *data_str, uint32_t *type, DATA_BLOB *data)
 {
 	int i;
 	*type = -1;
