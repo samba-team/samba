@@ -1,5 +1,9 @@
 2006-02-22  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* cert.c: Add exceptions for null (empty) subjectNames
+
+	* data/nist-data: Add some more name constraints tests.
+
 	* data/nist-data: Add some of the test from 4.13 Name Constraints.
 
 	* cert.c: Name constraits needs to be evaluated in block as they
