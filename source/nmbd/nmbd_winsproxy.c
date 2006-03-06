@@ -47,11 +47,11 @@ static void wins_proxy_name_query_request_success( struct subnet_record *subrec,
 	memcpy( (char *)&original_packet, &userdata->data[sizeof(struct subnet_record *)],
 			sizeof(struct packet_struct *) );
 
-	nb_flags = get_nb_flags( rrec->rdata );
-
 	if (rrec) {
+		nb_flags = get_nb_flags( rrec->rdata );
 		num_ips = rrec->rdlength / 6;
 	} else {
+		nb_flags = 0;
 		num_ips = 0;
 	}
 
