@@ -1670,11 +1670,13 @@ static BOOL create_listen_fdset(fd_set **ppset, int **psock_array, int *listen_n
 	if((count*2) + 2 > FD_SETSIZE) {
 		DEBUG(0,("create_listen_fdset: Too many file descriptors needed (%d). We can \
 only use %d.\n", (count*2) + 2, FD_SETSIZE));
+		SAFE_FREE(pset);
 		return True;
 	}
 
 	if((sock_array = SMB_MALLOC_ARRAY(int, (count*2) + 2)) == NULL) {
 		DEBUG(0,("create_listen_fdset: malloc fail for socket array.\n"));
+		SAFE_FREE(pset);
 		return True;
 	}
 
