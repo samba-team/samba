@@ -572,6 +572,8 @@ struct in_addr *name_query(int fd,const char *name,int name_type,
 			if (!tmp_ip_list) {
 				DEBUG(0,("name_query: Realloc failed.\n"));
 				SAFE_FREE(ip_list);
+				free_packet(p2);
+				return( NULL );
 			}
 			
 			ip_list = tmp_ip_list;
