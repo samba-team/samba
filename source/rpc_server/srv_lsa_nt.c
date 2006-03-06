@@ -1661,7 +1661,7 @@ NTSTATUS _lsa_getsystemaccount(pipes_struct *p, LSA_Q_GETSYSTEMACCOUNT *q_u, LSA
 		return NT_STATUS_INVALID_HANDLE;
 
 	if (!lookup_sid(p->mem_ctx, &info->sid, NULL, NULL, NULL))
-		return NT_STATUS_ACCESS_DENIED;
+		return NT_STATUS_OK;
 
 	/*
 	  0x01 -> Log on locally
