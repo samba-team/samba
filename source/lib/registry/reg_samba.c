@@ -20,6 +20,11 @@
 #include "includes.h"
 #include "registry.h"
 
+/**
+ * @file
+ * @brief Samba-specific registry functions
+ */
+
 static WERROR reg_samba_get_predef (struct registry_context *ctx, uint32_t hkey, struct registry_key **k)
 {
 	WERROR error;

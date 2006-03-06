@@ -22,6 +22,11 @@
 #include "lib/registry/registry.h"
 #include "librpc/gen_ndr/winreg.h"
 
+/**
+ * @file
+ * @brief Registry utility functions
+ */
+
 static const struct {
 	uint32_t id;
 	const char *name;
@@ -34,7 +39,7 @@ static const struct {
 	{ 0, NULL }
 };
 
-/* Return string description of registry value type */
+/** Return string description of registry value type */
 const char *str_regtype(int type)
 {
 	int i;
@@ -79,6 +84,7 @@ char *reg_val_data_string(TALLOC_CTX *mem_ctx, uint32_t type, DATA_BLOB *data)
   return ret;
 }
 
+/** Generate a string that describes a registry value */
 char *reg_val_description(TALLOC_CTX *mem_ctx, struct registry_value *val) 
 {
 	return talloc_asprintf(mem_ctx, "%s = %s : %s", val->name?val->name:"<No Name>", str_regtype(val->data_type), reg_val_data_string(mem_ctx, val->data_type, &val->data));
@@ -154,7 +160,7 @@ char *reg_path_unix2win(char *path)
 	return path;
 }
 
-/* Open a key by name (including the predefined key name!) */
+/** Open a key by name (including the predefined key name!) */
 WERROR reg_open_key_abs(TALLOC_CTX *mem_ctx, struct registry_context *handle, const char *name, struct registry_key **result)
 {
 	struct registry_key *predef;

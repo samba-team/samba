@@ -23,6 +23,11 @@
 #include "lib/registry/registry.h"
 #include "system/filesys.h"
 
+/**
+ * @file
+ * @brief Registry patch files
+ */
+
 #define DEFAULT_IDENT_STRING "SAMBA4 REGISTRY"
 
 static struct reg_diff_key *diff_find_add_key(struct reg_diff *diff, const char *path)
@@ -168,7 +173,7 @@ static WERROR reg_generate_diff_key(struct reg_diff *diff, struct registry_key *
 	return WERR_OK;
 }
 
-/* 
+/**
  * Generate diff between two registry contexts 
  */
 _PUBLIC_ struct reg_diff *reg_generate_diff(TALLOC_CTX *mem_ctx, struct registry_context *ctx1, struct registry_context *ctx2)
@@ -197,7 +202,7 @@ _PUBLIC_ struct reg_diff *reg_generate_diff(TALLOC_CTX *mem_ctx, struct registry
 	return diff;
 }
 
-/*
+/**
  * Save registry diff
  */
 _PUBLIC_ WERROR reg_diff_save(const struct reg_diff *diff, const char *filename)
@@ -247,7 +252,7 @@ _PUBLIC_ WERROR reg_diff_save(const struct reg_diff *diff, const char *filename)
 	return WERR_OK;
 }
 
-/*
+/**
  * Load diff file
  */
 _PUBLIC_ struct reg_diff *reg_diff_load(TALLOC_CTX *ctx, const char *fn)
@@ -358,7 +363,7 @@ _PUBLIC_ struct reg_diff *reg_diff_load(TALLOC_CTX *ctx, const char *fn)
 	return diff;
 }
 
-/* 
+/**
  * Apply diff to a registry context 
  */
 _PUBLIC_ BOOL reg_diff_apply (const struct reg_diff *diff, struct registry_context *ctx)
