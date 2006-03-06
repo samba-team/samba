@@ -173,3 +173,56 @@ void smb2srv_negprot_recv(struct smb2srv_request *req)
 	}
 	smb2srv_negprot_send(req, io);
 }
+
+/*
+ * reply to a SMB negprot request with dialect "SMB 2.001"
+ */
+void smb2srv_reply_smb_negprot(struct smbsrv_request *smb_req)
+{
+	struct smb2srv_request *req;
+	uint32_t body_fixed_size = 0x26;
+
+	/* create a fake SMB2 negprot request */
+	req = talloc_zero(smb_req->smb_conn, struct smb2srv_request);
+	if (!req) goto nomem;
+	req->smb_conn		= smb_req->smb_conn;
+	req->request_time	= smb_req->request_time;
+	talloc_steal(req, smb_req);
+
+	req->in.size      = NBT_HDR_SIZE+SMB2_HDR_BODY+body_fixed_size;
+	req->in.allocated = req->in.size;
+	req->in.buffer    = talloc_size(req, req->in.allocated);
+	if (!req->in.buffer) goto nomem;
+	req->in.hdr       = req->in.buffer + NBT_HDR_SIZE;
+	req->in.body      = req->in.hdr + SMB2_HDR_BODY;
+	req->in.body_size = body_fixed_size;
+	req->in.dynamic   = NULL;
+
+	SIVAL(req->in.hdr, 0,                SMB2_MAGIC);
+	SSVAL(req->in.hdr, SMB2_HDR_LENGTH,  SMB2_HDR_BODY);
+	SSVAL(req->in.hdr, SMB2_HDR_PAD1,    0);
+	SIVAL(req->in.hdr, SMB2_HDR_STATUS,  0);
+	SSVAL(req->in.hdr, SMB2_HDR_OPCODE,  SMB2_OP_NEGPROT);
+	SSVAL(req->in.hdr, SMB2_HDR_PAD2,    0);
+	SIVAL(req->in.hdr, SMB2_HDR_FLAGS,   0);
+	SIVAL(req->in.hdr, SMB2_HDR_UNKNOWN, 0);
+	SBVAL(req->in.hdr, SMB2_HDR_SEQNUM,  0);
+	SIVAL(req->in.hdr, SMB2_HDR_PID,     0);
+	SIVAL(req->in.hdr, SMB2_HDR_TID,     0);
+	SBVAL(req->in.hdr, SMB2_HDR_UID,     0);
+	memset(req->in.hdr+SMB2_HDR_SIG, 0, 16);
+
+	/* this seems to be a bug, they use 0x24 but the length is 0x26 */
+	SSVAL(req->in.body, 0x00, 0x24);
+
+	SSVAL(req->in.body, 0x02, 1);
+	memset(req->in.body+0x04, 0, 32);
+	SSVAL(req->in.body, 0x24, 0);
+
+	smb2srv_negprot_recv(req);
+	return;
+nomem:
+	smbsrv_terminate_connection(smb_req->smb_conn, nt_errstr(NT_STATUS_NO_MEMORY));
+	talloc_free(req);
+	return;
+}

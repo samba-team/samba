@@ -56,14 +56,14 @@ static NTSTATUS smbsrv_recv_generic_request(void *private, DATA_BLOB blob)
 		packet_set_callback(smb_conn->packet, smbsrv_recv_smb_request);
 		return smbsrv_recv_smb_request(smb_conn, blob);
 	case SMB2_MAGIC:
-		if (!lp_parm_bool(-1, "smbsrv", "enable smb2", False)) break;
+		if (lp_maxprotocol() < PROTOCOL_SMB2) break;
 		status = smbsrv_init_smb2_connection(smb_conn);
 		NT_STATUS_NOT_OK_RETURN(status);
 		packet_set_callback(smb_conn->packet, smbsrv_recv_smb2_request);
 		return smbsrv_recv_smb2_request(smb_conn, blob);
 	}
 
-	DEBUG(2,("Invalid SMB packet: protocl prefix: 0x%08X\n", protocol_version));
+	DEBUG(2,("Invalid SMB packet: protocol prefix: 0x%08X\n", protocol_version));
 	smbsrv_terminate_connection(smb_conn, "NON-SMB packet");
 	return NT_STATUS_OK;
 }
