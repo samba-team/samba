@@ -152,7 +152,7 @@ static NTSTATUS make_connection(struct smbsrv_request *req,
 /*
   backend for tree connect call
 */
-NTSTATUS tcon_backend(struct smbsrv_request *req, union smb_tcon *con)
+NTSTATUS smbsrv_tcon_backend(struct smbsrv_request *req, union smb_tcon *con)
 {
 	NTSTATUS status;
 
