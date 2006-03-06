@@ -7491,28 +7491,21 @@ BOOL make_monitorui_buf( RPC_BUFFER *buf, const char *dllname )
 
 /*******************************************************************
  ********************************************************************/  
+ 
+#define PORT_DATA_1_PAD    540
 
 static BOOL smb_io_port_data_1( const char *desc, RPC_BUFFER *buf, int depth, SPOOL_PORT_DATA_1 *p1 )
 {
 	prs_struct *ps = &buf->prs;
-	uint8 *fodder = NULL;
+	uint8 padding[PORT_DATA_1_PAD];
 
 	prs_debug(ps, depth, desc, "smb_io_port_data_1");
 	depth++;
 
 	if(!prs_align(ps))
 		return False;	
-		
-	if ( UNMARSHALLING(ps) ) {
-		p1->portname.buffer = PRS_ALLOC_MEM( ps, uint16, 64 );
-		p1->hostaddress.buffer = PRS_ALLOC_MEM( ps, uint16, 49 );
-		p1->snmpcommunity.buffer = PRS_ALLOC_MEM( ps, uint16, 33 );
-		p1->queue.buffer = PRS_ALLOC_MEM( ps, uint16, 33 );
-		p1->ipaddress.buffer = PRS_ALLOC_MEM( ps, uint16, 17 );	
-		fodder = PRS_ALLOC_MEM( ps, uint8, 540 );	
-	}
 
-	if( !prs_uint16s(True, "portname", ps, depth, p1->portname.buffer, 64))
+	if( !prs_uint16s(True, "portname", ps, depth, p1->portname, MAX_PORTNAME))
 		return False;
 
 	if (!prs_uint32("version", ps, depth, &p1->version))
@@ -7524,21 +7517,20 @@ static BOOL smb_io_port_data_1( const char *desc, RPC_BUFFER *buf, int depth, SP
 	if (!prs_uint32("reserved", ps, depth, &p1->reserved))
 		return False;
 
-	if( !prs_uint16s(True, "hostaddress", ps, depth, p1->hostaddress.buffer, 49))
+	if( !prs_uint16s(True, "hostaddress", ps, depth, p1->hostaddress, MAX_NETWORK_NAME))
 		return False;
-	if( !prs_uint16s(True, "snmpcommunity", ps, depth, p1->snmpcommunity.buffer, 33))
+	if( !prs_uint16s(True, "snmpcommunity", ps, depth, p1->snmpcommunity, MAX_SNMP_COMM_NAME))
 		return False;
 
 	if (!prs_uint32("dblspool", ps, depth, &p1->dblspool))
 		return False;
 		
-	if( !prs_uint16s(True, "queue", ps, depth, p1->queue.buffer, 33))
+	if( !prs_uint16s(True, "queue", ps, depth, p1->queue, MAX_QUEUE_NAME))
 		return False;
-	if( !prs_uint16s(True, "ipaddress", ps, depth, p1->ipaddress.buffer, 17))
+	if( !prs_uint16s(True, "ipaddress", ps, depth, p1->ipaddress, MAX_IPADDR_STRING))
 		return False;
 
-	/* fodder according to MSDN */
-	if( !prs_uint8s(False, "", ps, depth, fodder, 540))
+	if( !prs_uint8s(False, "", ps, depth, padding, PORT_DATA_1_PAD))
 		return False;
 		
 	if (!prs_uint32("port", ps, depth, &p1->port))
@@ -7563,12 +7555,9 @@ BOOL convert_port_data_1( NT_PORT_DATA_1 *port1, RPC_BUFFER *buf )
 	if ( !smb_io_port_data_1( "port_data_1", buf, 0, &spdata_1 ) )
 		return False;
 		
-	rpcstr_pull(port1->name, spdata_1.portname.buffer, sizeof(port1->name),
-		-1, 0);
-	rpcstr_pull(port1->queue, spdata_1.queue.buffer, sizeof(port1->queue), 
-		-1, 0);
-	rpcstr_pull(port1->hostaddr, spdata_1.hostaddress.buffer, 
-		sizeof(port1->hostaddr), -1, 0);
+	rpcstr_pull(port1->name, spdata_1.portname, sizeof(port1->name), -1, 0);
+	rpcstr_pull(port1->queue, spdata_1.queue, sizeof(port1->queue), -1, 0);
+	rpcstr_pull(port1->hostaddr, spdata_1.hostaddress, sizeof(port1->hostaddr), -1, 0);
 	
 	port1->port = spdata_1.port;
 	

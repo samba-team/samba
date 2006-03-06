@@ -9528,6 +9528,7 @@ static WERROR process_xcvtcp_command( NT_USER_TOKEN *token, const char *command,
 
 /*******************************************************************
 *******************************************************************/
+#if 0 	/* don't support management using the "Local Port" monitor */
 
 static WERROR xcvlocal_monitorui( NT_USER_TOKEN *token, RPC_BUFFER *in, 
                                   RPC_BUFFER *out, uint32 *needed )
@@ -9554,6 +9555,12 @@ struct xcv_api_table xcvlocal_cmds[] = {
 	{ "MonitorUI",	xcvlocal_monitorui },
 	{ NULL,		NULL }
 };
+#else
+struct xcv_api_table xcvlocal_cmds[] = {
+	{ NULL,		NULL }
+};
+#endif
+
 
 
 /*******************************************************************
@@ -9566,7 +9573,6 @@ static WERROR process_xcvlocal_command( NT_USER_TOKEN *token, const char *comman
 	int i;
 	
 	DEBUG(10,("process_xcvlocal_command: Received command \"%s\"\n", command));
-	
 
 	for ( i=0; xcvlocal_cmds[i].name; i++ ) {
 		if ( strcmp( command, xcvlocal_cmds[i].name ) == 0 )
