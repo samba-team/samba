@@ -31,6 +31,7 @@
 #include "libcli/ldap/ldap.h"
 #include "dsdb/samdb/samdb.h"
 #include "auth/auth.h"
+#include "rpc_server/samr/proto.h"
 
 /* 
   samr_ChangePasswordUser 

@@ -24,6 +24,7 @@
 
 #include "includes.h"
 #include "auth/auth.h"
+#include "auth/gensec/spnego_proto.h"
 
 enum spnego_state_position {
 	SPNEGO_SERVER_START,

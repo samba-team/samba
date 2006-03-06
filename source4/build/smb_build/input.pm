@@ -148,7 +148,11 @@ sub check($$$$$)
 
 	foreach my $part (values %$INPUT) {
 		unless(defined($part->{NOPROTO})) {
-			$part->{NOPROTO} = "NO";
+			if ($part->{TYPE} eq "MODULE" or $part->{TYPE} eq "BINARY") {
+				$part->{NOPROTO} = "YES";
+			} else {
+				$part->{NOPROTO} = "NO";
+			}
 		}
 
 		if (defined($part->{PRIVATE_PROTO_HEADER})) {

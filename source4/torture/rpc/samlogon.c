@@ -28,6 +28,7 @@
 #include "lib/crypto/crypto.h"
 #include "lib/cmdline/popt_common.h"
 #include "torture/rpc/proto.h"
+#include "auth/gensec/schannel_proto.h"
 
 #define TEST_MACHINE_NAME "samlogontest"
 #define TEST_USER_NAME "samlogontestuser"

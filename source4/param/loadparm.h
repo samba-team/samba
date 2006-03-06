@@ -71,10 +71,6 @@ struct parm_struct {
 #define FLAG_DEFAULT    0x4000 /* this option was a default */
 #define FLAG_CMDLINE    0x8000 /* this option was set from the command line */
 
-#ifndef GLOBAL_NAME
-#define GLOBAL_NAME "global"
-#endif
-
 #ifndef PRINTERS_NAME
 #define PRINTERS_NAME "printers"
 #endif
