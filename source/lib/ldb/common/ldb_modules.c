@@ -242,31 +242,32 @@ int ldb_load_modules(struct ldb_context *ldb, const char *options[])
 		talloc_free(res);
 	}
 
-	if (modules == NULL) {
-		ldb_debug(ldb, LDB_DEBUG_TRACE, "No modules specified for this database\n");
-		return 0;
-	}
-
-	for (i = 0; modules[i] != NULL; i++) {
-		struct ldb_module *current;
-		const struct ldb_module_ops *ops;
+	if (modules != NULL) {
+		for (i = 0; modules[i] != NULL; i++) {
+			struct ldb_module *current;
+			const struct ldb_module_ops *ops;
 				
-		ops = ldb_find_module_ops(modules[i]);
-		if (ops == NULL) {
-			ldb_debug(ldb, LDB_DEBUG_WARNING, "WARNING: Module [%s] not found\n", 
-				  modules[i]);
-			continue;
-		}
+			ops = ldb_find_module_ops(modules[i]);
+			if (ops == NULL) {
+				ldb_debug(ldb, LDB_DEBUG_WARNING, "WARNING: Module [%s] not found\n", 
+					  modules[i]);
+				continue;
+			}
 
-		current = talloc_zero(ldb, struct ldb_module);
-		if (current == NULL) {
-			return -1;
-		}
+			current = talloc_zero(ldb, struct ldb_module);
+			if (current == NULL) {
+				return -1;
+			}
 
-		current->ldb = ldb;
-		current->ops = ops;
+			current->ldb = ldb;
+			current->ops = ops;
 		
-		DLIST_ADD(ldb->modules, current);
+			DLIST_ADD(ldb->modules, current);
+		}
+
+		talloc_free(modules);
+	} else {
+		ldb_debug(ldb, LDB_DEBUG_TRACE, "No modules specified for this database\n");
 	}
 
 	module = ldb->modules;
@@ -280,7 +281,6 @@ int ldb_load_modules(struct ldb_context *ldb, const char *options[])
 		return -1;
 	}
 
-	talloc_free(modules);
 	return 0; 
 }
 
