@@ -305,10 +305,10 @@ int ldb_request(struct ldb_context *ldb, struct ldb_request *request)
 	/* the search call is the only one that returns something
 	   other than a status code. We steal the results into
 	   the context of the ldb before freeing the request */
-	if (request->operation == LDB_REQ_SEARCH) {
+	if (status == LDB_SUCCESS && request->operation == LDB_REQ_SEARCH) {
 		request->op.search.res = talloc_steal(ldb, r->op.search.res);
 	}
-	if (request->operation == LDB_ASYNC_SEARCH) {
+	if (status == LDB_SUCCESS && request->operation == LDB_ASYNC_SEARCH) {
 		request->async.handle = r->async.handle;
 	}
 	talloc_free(r);
