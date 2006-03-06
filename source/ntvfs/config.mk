@@ -77,6 +77,7 @@ OBJ_FILES = \
 		common/brlock.o \
 		common/opendb.o \
 		common/sidmap.o
+REQUIRED_SUBSYSTEMS = NDR_OPENDB
 #
 # End SUBSYSTEM NTVFS
 ################################################

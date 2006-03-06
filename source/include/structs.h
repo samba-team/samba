@@ -148,7 +148,6 @@ struct smbcli_tree;
 
 struct smb2_tree;
 
-struct com_context;
 struct IUnknown;
 struct IUnknown_vtable;
 

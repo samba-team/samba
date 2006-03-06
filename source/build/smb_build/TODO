@@ -1,3 +1,4 @@
+- sonames
 - get rid of include/structs.h
 - add register function to smbtorture
 - install shared modules

@@ -7,6 +7,6 @@ OBJ_FILES = \
 		cldap_server.o \
 		netlogon.o
 REQUIRED_SUBSYSTEMS = \
-		LIBCLI_CLDAP
+		LIBCLI_CLDAP LIBNETIF
 # End SUBSYSTEM CLDAPD
 #######################

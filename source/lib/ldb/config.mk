@@ -152,7 +152,7 @@ OBJ_FILES = \
 		common/ldb_controls.o \
 		common/qsort.o
 REQUIRED_SUBSYSTEMS = \
-		LIBREPLACE LIBTALLOC LDBSAMBA
+		LIBREPLACE LIBTALLOC 
 NOPROTO = YES
 MANPAGE = man/ldb.3
 PUBLIC_HEADERS = include/ldb.h
@@ -163,6 +163,7 @@ PUBLIC_HEADERS = include/ldb.h
 ################################################
 # Start SUBSYSTEM LDBSAMBA
 [SUBSYSTEM::LDBSAMBA]
+REQUIRED_SUBSYSTEMS = LIB_SECURITY SAMDB
 OBJ_FILES = \
 		samba/ldif_handlers.o
 # End SUBSYSTEM LDBSAMBA
