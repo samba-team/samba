@@ -1808,7 +1808,7 @@ NTSTATUS rpccli_samr_remove_sid_foreign_domain(struct rpc_pipe_client *cli,
 /* Query user security object */
 
 NTSTATUS rpccli_samr_query_sec_obj(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
-                                 POLICY_HND *user_pol, uint16 switch_value, 
+                                 POLICY_HND *user_pol, uint32 sec_info, 
                                  TALLOC_CTX *ctx, SEC_DESC_BUF **sec_desc_buf)
 {
 	prs_struct qbuf, rbuf;
@@ -1823,7 +1823,7 @@ NTSTATUS rpccli_samr_query_sec_obj(struct rpc_pipe_client *cli, TALLOC_CTX *mem_
 
 	/* Marshall data and send request */
 
-	init_samr_q_query_sec_obj(&q, user_pol, switch_value);
+	init_samr_q_query_sec_obj(&q, user_pol, sec_info);
 
 	CLI_DO_RPC(cli, mem_ctx, PI_SAMR, SAMR_QUERY_SEC_OBJECT,
 		q, r,
@@ -1839,6 +1839,41 @@ NTSTATUS rpccli_samr_query_sec_obj(struct rpc_pipe_client *cli, TALLOC_CTX *mem_
 
 	return result;
 }
+
+/* Set user security object */
+
+NTSTATUS rpccli_samr_set_sec_obj(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
+                                 POLICY_HND *user_pol, uint32 sec_info, 
+                                 SEC_DESC_BUF *sec_desc_buf)
+{
+	prs_struct qbuf, rbuf;
+	SAMR_Q_SET_SEC_OBJ q;
+	SAMR_R_SET_SEC_OBJ r;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+
+	DEBUG(10,("cli_samr_set_sec_obj\n"));
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Marshall data and send request */
+
+	init_samr_q_set_sec_obj(&q, user_pol, sec_info, sec_desc_buf);
+
+	CLI_DO_RPC(cli, mem_ctx, PI_SAMR, SAMR_SET_SEC_OBJECT,
+		q, r,
+		qbuf, rbuf,
+		samr_io_q_set_sec_obj,
+		samr_io_r_set_sec_obj,
+		NT_STATUS_UNSUCCESSFUL); 
+
+	/* Return output parameters */
+
+	result = r.status;
+
+	return result;
+}
+
 
 /* Get domain password info */
 

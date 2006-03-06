@@ -919,6 +919,21 @@ BOOL samr_io_r_query_dom_info(const char *desc, SAMR_R_QUERY_DOMAIN_INFO * r_u,
 }
 
 /*******************************************************************
+reads or writes a structure.
+********************************************************************/
+
+void init_samr_q_set_sec_obj(SAMR_Q_SET_SEC_OBJ * q_u,
+			     POLICY_HND *pol, uint32 sec_info, SEC_DESC_BUF *buf)
+{
+	DEBUG(5, ("samr_init_samr_q_set_sec_obj\n"));
+
+	q_u->pol = *pol;
+	q_u->sec_info = sec_info;
+	q_u->buf = buf;
+}
+
+
+/*******************************************************************
 reads or writes a SAMR_R_SET_SEC_OBJ structure.
 ********************************************************************/
 
