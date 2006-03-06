@@ -960,6 +960,7 @@ static BOOL resolve_lmhosts(const char *name, int name_type,
 					(*return_count)+1);
 
 		if ((*return_iplist) == NULL) {
+			endlmhosts(fp);
 			DEBUG(3,("resolve_lmhosts: malloc fail !\n"));
 			return False;
 		}
