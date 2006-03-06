@@ -349,7 +349,7 @@ static NTSTATUS nttrans_backend(struct smbsrv_request *req,
 /****************************************************************************
  Reply to an SMBnttrans request
 ****************************************************************************/
-void reply_nttrans(struct smbsrv_request *req)
+void smbsrv_reply_nttrans(struct smbsrv_request *req)
 {
 	struct smb_nttrans trans;
 	int i;
@@ -513,7 +513,7 @@ void reply_nttrans(struct smbsrv_request *req)
 /****************************************************************************
  Reply to an SMBnttranss request
 ****************************************************************************/
-void reply_nttranss(struct smbsrv_request *req)
+void smbsrv_reply_nttranss(struct smbsrv_request *req)
 {
 	req_reply_error(req, NT_STATUS_FOOBAR);
 }
