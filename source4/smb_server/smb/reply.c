@@ -1759,7 +1759,7 @@ static void reply_lockingX_send(struct smbsrv_request *req)
 	/* if it was an oplock break ack then we only send a reply if
 	   there was an error */
 	if (lck->lockx.in.ulock_cnt + lck->lockx.in.lock_cnt == 0) {
-		req_destroy(req);
+		talloc_free(req);
 		return;
 	}
 
@@ -2336,7 +2336,7 @@ void smbsrv_reply_ntcancel(struct smbsrv_request *req)
 {
 	/* NOTE: this request does not generate a reply */
 	ntvfs_cancel(req);
-	req_destroy(req);
+	talloc_free(req);
 }
 
 /****************************************************************************
@@ -2452,10 +2452,10 @@ void smbsrv_reply_special(struct smbsrv_request *req)
 		
 	case SMBkeepalive: 
 		/* session keepalive - swallow it */
-		req_destroy(req);
+		talloc_free(req);
 		return;
 	}
 
 	DEBUG(0,("Unexpected NBT session packet (%d)\n", msg_type));
-	req_destroy(req);
+	talloc_free(req);
 }
