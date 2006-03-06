@@ -82,6 +82,7 @@ REQUIRED_SUBSYSTEMS = \
 ################################################
 # Start SUBSYSTEM REGISTRY
 [LIBRARY::REGISTRY]
+DEFAULT_VISIBILITY = hidden
 MAJOR_VERSION = 0
 MINOR_VERSION = 0
 DESCRIPTION = Windows-style registry library

@@ -35,6 +35,8 @@ my $section_types = {
 		"PUBLIC_HEADERS"	=> "list",
 
 		"EXTRA_CFLAGS"		=> "string",
+
+		"DEFAULT_VISIBILITY" => "string"
 		},
 	"MODULE" => {
 		"SUBSYSTEM"		=> "string",
@@ -92,7 +94,9 @@ my $section_types = {
 		"PUBLIC_PROTO_HEADER"	=> "string",
 		"PRIVATE_PROTO_HEADER"	=> "string",
 
-		"EXTRA_CFLAGS"		=> "string"
+		"EXTRA_CFLAGS"		=> "string",
+
+		"DEFAULT_VISIBILITY" => "string"
 		}
 };
 

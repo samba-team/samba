@@ -154,6 +154,14 @@ sub check($$$$$)
 		if (defined($part->{PRIVATE_PROTO_HEADER})) {
 			$part->{NOPROTO} = "YES";
 		}
+
+		unless (defined($part->{DEFAULT_VISIBILITY})) {
+			$part->{DEFAULT_VISIBILITY} = "default";
+		}
+
+		unless (defined($part->{EXTRA_CFLAGS})) {
+			$part->{EXTRA_CFLAGS} = "";
+		}
 		
 		if (defined($part->{PUBLIC_PROTO_HEADER})) {
 			$part->{NOPROTO} = "YES";

@@ -57,7 +57,7 @@ if (defined($ENV{"MODULE_OUTPUT_TYPE"})) {
 
 my $DEPEND = smb_build::input::check($INPUT, \%config::enabled, 
 	$subsystem_output_type, $library_output_type, $module_output_type);
-my $OUTPUT = output::create_output($DEPEND);
+my $OUTPUT = output::create_output($DEPEND, \%config::config);
 $config::config{SUBSYSTEM_OUTPUT_TYPE} = $subsystem_output_type;
 $config::config{LIBRARY_OUTPUT_TYPE} = $library_output_type;
 $config::config{MODULE_OUTPUT_TYPE} = $module_output_type;
