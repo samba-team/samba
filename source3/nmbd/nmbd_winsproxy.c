@@ -49,7 +49,12 @@ static void wins_proxy_name_query_request_success( struct subnet_record *subrec,
 
 	nb_flags = get_nb_flags( rrec->rdata );
 
-	num_ips = rrec->rdlength / 6;
+	if (rrec) {
+		num_ips = rrec->rdlength / 6;
+	} else {
+		num_ips = 0;
+	}
+
 	if(num_ips == 0) {
 		DEBUG(0,("wins_proxy_name_query_request_success: Invalid number of IP records (0) \
 returned for name %s.\n", nmb_namestr(nmbname) ));
@@ -71,7 +76,7 @@ returned for name %s.\n", nmb_namestr(nmbname) ));
 
 	/* Add the queried name to the original subnet as a WINS_PROXY_NAME. */
 
-	if(rrec == PERMANENT_TTL) {
+	if(rrec && (rrec == PERMANENT_TTL)) {
 		ttl = lp_max_ttl();
 	}
 
