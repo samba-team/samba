@@ -115,12 +115,55 @@ void display_sec_acl(SEC_ACL *sec_acl)
 				
 }
 
+void display_acl_type(uint16 type)
+{
+	static fstring typestr="";
+
+	typestr[0] = 0;
+
+	if (type & SEC_DESC_OWNER_DEFAULTED)	/* 0x0001 */
+		fstrcat(typestr, "SEC_DESC_OWNER_DEFAULTED ");
+	if (type & SEC_DESC_GROUP_DEFAULTED)	/* 0x0002 */
+		fstrcat(typestr, "SEC_DESC_GROUP_DEFAULTED ");
+	if (type & SEC_DESC_DACL_PRESENT) 	/* 0x0004 */
+		fstrcat(typestr, "SEC_DESC_DACL_PRESENT ");
+	if (type & SEC_DESC_DACL_DEFAULTED)	/* 0x0008 */
+		fstrcat(typestr, "SEC_DESC_DACL_DEFAULTED ");
+	if (type & SEC_DESC_SACL_PRESENT)	/* 0x0010 */
+		fstrcat(typestr, "SEC_DESC_SACL_PRESENT ");
+	if (type & SEC_DESC_SACL_DEFAULTED)	/* 0x0020 */
+		fstrcat(typestr, "SEC_DESC_SACL_DEFAULTED ");
+	if (type & SEC_DESC_DACL_TRUSTED)	/* 0x0040 */
+		fstrcat(typestr, "SEC_DESC_DACL_TRUSTED ");
+	if (type & SEC_DESC_SERVER_SECURITY)	/* 0x0080 */
+		fstrcat(typestr, "SEC_DESC_SERVER_SECURITY ");
+	if (type & 0x0100) fstrcat(typestr, "0x0100 ");
+	if (type & 0x0200) fstrcat(typestr, "0x0200 ");
+	if (type & 0x0400) fstrcat(typestr, "0x0400 ");
+	if (type & 0x0800) fstrcat(typestr, "0x0800 ");
+	if (type & 0x1000) fstrcat(typestr, "0x1000 ");
+	if (type & 0x2000) fstrcat(typestr, "0x2000 ");
+	if (type & 0x4000) fstrcat(typestr, "0x4000 ");
+	if (type & SEC_DESC_SELF_RELATIVE)	/* 0x8000 */
+		fstrcat(typestr, "SEC_DESC_SELF_RELATIVE ");
+	
+	printf("type: 0x%04x: %s\n", type, typestr);
+}
+
 /****************************************************************************
  display sec_desc structure
  ****************************************************************************/
 void display_sec_desc(SEC_DESC *sec)
 {
 	fstring sid_str;
+
+	if (!sec) {
+		printf("NULL\n");
+		return;
+	}
+
+	printf("revision: %d\n", sec->revision);
+	display_acl_type(sec->type);
 
 	if (sec->sacl) {
 		printf("SACL\n");

@@ -2343,7 +2343,7 @@ int cac_SamGetSecurityObject(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct S
    struct rpc_pipe_client *pipe_hnd = NULL;
 
    /*this number taken from rpcclient/cmd_samr.c, I think it is the only supported level*/
-   uint16 info_level = 4;
+   uint32 sec_info = DACL_SECURITY_INFORMATION;
 
    SEC_DESC_BUF *sec_out = NULL;
 
@@ -2366,7 +2366,7 @@ int cac_SamGetSecurityObject(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct S
       return CAC_FAILURE;
    }
 
-   hnd->status = rpccli_samr_query_sec_obj(pipe_hnd, mem_ctx, op->in.pol, info_level, mem_ctx, &sec_out);
+   hnd->status = rpccli_samr_query_sec_obj(pipe_hnd, mem_ctx, op->in.pol, sec_info, mem_ctx, &sec_out);
 
    if(!NT_STATUS_IS_OK(hnd->status))
       return CAC_FAILURE;
