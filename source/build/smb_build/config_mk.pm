@@ -33,6 +33,8 @@ my $section_types = {
 		"PRIVATE_PROTO_HEADER"	=> "string",
 
 		"PUBLIC_HEADERS"	=> "list",
+
+		"EXTRA_CFLAGS"		=> "string",
 		},
 	"MODULE" => {
 		"SUBSYSTEM"		=> "string",
@@ -48,7 +50,9 @@ my $section_types = {
 		"OUTPUT_TYPE" => "string",
 
 		"MANPAGE"		=> "string",
-		"PRIVATE_PROTO_HEADER"	=> "string"
+		"PRIVATE_PROTO_HEADER"	=> "string",
+
+		"EXTRA_CFLAGS"		=> "string"
 		},
 	"BINARY" => {
 		"OBJ_FILES"		=> "list",
@@ -61,7 +65,9 @@ my $section_types = {
 		"MANPAGE"		=> "string",
 		"INSTALLDIR"		=> "string",
 		"PRIVATE_PROTO_HEADER"	=> "string",
-		"PUBLIC_HEADERS" => "string"
+		"PUBLIC_HEADERS" => "string", 
+
+		"EXTRA_CFLAGS"		=> "string"
 		},
 	"LIBRARY" => {
 		"MAJOR_VERSION"		=> "string",
@@ -84,7 +90,9 @@ my $section_types = {
 		"PUBLIC_HEADERS"	=> "list",
 
 		"PUBLIC_PROTO_HEADER"	=> "string",
-		"PRIVATE_PROTO_HEADER"	=> "string"
+		"PRIVATE_PROTO_HEADER"	=> "string",
+
+		"EXTRA_CFLAGS"		=> "string"
 		}
 };
 
