@@ -28,6 +28,7 @@
 #include "libcli/libcli.h"
 #include "lib/ldb/include/ldb.h"
 #include "librpc/rpc/dcerpc_table.h"
+#include "lib/events/events.h"
 
 #include "torture/basic/proto.h"
 #include "torture/raw/proto.h"
@@ -910,10 +911,10 @@ static BOOL run_negprot_nowait(void)
 
 	printf("Filling send buffer\n");
 
-	for (i=0;i<1000;i++) {
+	for (i=0;i<100;i++) {
 		struct smbcli_request *req;
 		req = smb_raw_negotiate_send(cli->transport, PROTOCOL_NT1);
-		smbcli_transport_process(cli->transport);
+		event_loop_once(cli->transport->socket->event.ctx);
 		if (req->state == SMBCLI_REQUEST_ERROR) {
 			printf("Failed to fill pipe - %s\n", nt_errstr(req->status));
 			torture_close_connection(cli);
