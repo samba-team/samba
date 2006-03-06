@@ -436,6 +436,9 @@ _PUBLIC_ size_t strhex_to_str(char *p, size_t len, const char *strhex)
 	return num_chars;
 }
 
+/** 
+ * Parse a hex string and return a data blob. 
+ */
 _PUBLIC_ DATA_BLOB strhex_to_data_blob(const char *strhex) 
 {
 	DATA_BLOB ret_blob = data_blob(NULL, strlen(strhex)/2+1);
@@ -643,6 +646,9 @@ _PUBLIC_ char *strchr_m(const char *s, char c)
 	return NULL;
 }
 
+/**
+ * Multibyte-character version of strrchr
+ */
 _PUBLIC_ char *strrchr_m(const char *s, char c)
 {
 	char *ret = NULL;
@@ -665,7 +671,7 @@ _PUBLIC_ char *strrchr_m(const char *s, char c)
 	return ret;
 }
 
-/*
+/**
   return True if any (multi-byte) character is lower case
 */
 _PUBLIC_ BOOL strhaslower(const char *string)
@@ -688,7 +694,7 @@ _PUBLIC_ BOOL strhaslower(const char *string)
 	return False;
 } 
 
-/*
+/**
   return True if any (multi-byte) character is upper case
 */
 _PUBLIC_ BOOL strhasupper(const char *string)
@@ -1016,6 +1022,12 @@ _PUBLIC_ const char *str_format_nbt_domain(TALLOC_CTX *mem_ctx, const char *s)
 	return ret;
 }
 
+/**
+ * Add a string to an array of strings.
+ *
+ * num should be a pointer to an integer that holds the current 
+ * number of elements in strings. It will be updated by this function.
+ */
 _PUBLIC_ BOOL add_string_to_array(TALLOC_CTX *mem_ctx,
 			 const char *str, const char ***strings, int *num)
 {
@@ -1137,6 +1149,13 @@ _PUBLIC_ BOOL set_boolean(const char *boolean_string, BOOL *boolean)
 	return False;
 }
 
+/**
+ * Parse a string containing a boolean value.
+ *
+ * val will be set to the read value.
+ *
+ * @retval True if a boolean value was parsed, False otherwise.
+ */
 _PUBLIC_ BOOL conv_str_bool(const char * str, BOOL * val)
 {
 	char *	end = NULL;
@@ -1192,6 +1211,13 @@ _PUBLIC_ BOOL conv_str_size(const char * str, uint64_t * val)
 	return True;
 }
 
+/**
+ * Parse a uint64_t value from a string
+ *
+ * val will be set to the value read.
+ *
+ * @retval True if parsing was successful, False otherwise
+ */
 _PUBLIC_ BOOL conv_str_u64(const char * str, uint64_t * val)
 {
 	char *		    end = NULL;

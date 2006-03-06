@@ -21,6 +21,11 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+/** 
+ * @file
+ * @brief Mutex operations
+ */
+
 struct mutex_ops;
 
 /* To add a new read/write lock, add it to enum rwlock_id

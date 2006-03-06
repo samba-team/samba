@@ -51,7 +51,7 @@ XFILE *x_stderr = &_x_stderr;
 #define X_FLAG_ERROR 2
 #define X_FLAG_EINVAL 3
 
-/* simulate setvbuf() */
+/** simulate setvbuf() */
 int x_setvbuf(XFILE *f, char *buf, int mode, size_t size)
 {
 	x_fflush(f);
@@ -93,7 +93,7 @@ static int x_allocate_buffer(XFILE *f)
 }
 
 
-/* this looks more like open() than fopen(), but that is quite deliberate.
+/** this looks more like open() than fopen(), but that is quite deliberate.
    I want programmers to *think* about O_EXCL, O_CREAT etc not just
    get them magically added 
 */
@@ -126,7 +126,7 @@ XFILE *x_fopen(const char *fname, int flags, mode_t mode)
 	return ret;
 }
 
-/* simulate fclose() */
+/** simulate fclose() */
 int x_fclose(XFILE *f)
 {
 	int ret;
@@ -150,7 +150,7 @@ int x_fclose(XFILE *f)
 	return ret;
 }
 
-/* simulate fwrite() */
+/** simulate fwrite() */
 size_t x_fwrite(const void *p, size_t size, size_t nmemb, XFILE *f)
 {
 	ssize_t ret;
@@ -195,7 +195,7 @@ size_t x_fwrite(const void *p, size_t size, size_t nmemb, XFILE *f)
 	return total/size;
 }
 
-/* thank goodness for asprintf() */
+/** thank goodness for asprintf() */
  int x_vfprintf(XFILE *f, const char *format, va_list ap)
 {
 	char *p;
@@ -228,7 +228,7 @@ int x_fileno(XFILE *f)
 	return f->fd;
 }
 
-/* simulate fflush() */
+/** simulate fflush() */
 int x_fflush(XFILE *f)
 {
 	int ret;
@@ -255,33 +255,33 @@ int x_fflush(XFILE *f)
 	return 0;
 }
 
-/* simulate setbuffer() */
+/** simulate setbuffer() */
 void x_setbuffer(XFILE *f, char *buf, size_t size)
 {
 	x_setvbuf(f, buf, buf?X_IOFBF:X_IONBF, size);
 }
 
-/* simulate setbuf() */
+/** simulate setbuf() */
 void x_setbuf(XFILE *f, char *buf)
 {
 	x_setvbuf(f, buf, buf?X_IOFBF:X_IONBF, XBUFSIZE);
 }
 
-/* simulate setlinebuf() */
+/** simulate setlinebuf() */
 void x_setlinebuf(XFILE *f)
 {
 	x_setvbuf(f, NULL, X_IOLBF, 0);
 }
 
 
-/* simulate feof() */
+/** simulate feof() */
 int x_feof(XFILE *f)
 {
 	if (f->flags & X_FLAG_EOF) return 1;
 	return 0;
 }
 
-/* simulate ferror() */
+/** simulate ferror() */
 int x_ferror(XFILE *f)
 {
 	if (f->flags & X_FLAG_ERROR) return 1;
@@ -303,7 +303,7 @@ static void x_fillbuf(XFILE *f)
 	f->next = f->buf;
 }
 
-/* simulate fgetc() */
+/** simulate fgetc() */
 int x_fgetc(XFILE *f)
 {
 	int ret;
@@ -323,7 +323,7 @@ int x_fgetc(XFILE *f)
 	return ret;
 }
 
-/* simulate fread */
+/** simulate fread */
 size_t x_fread(void *p, size_t size, size_t nmemb, XFILE *f)
 {
 	size_t total = 0;
@@ -336,7 +336,7 @@ size_t x_fread(void *p, size_t size, size_t nmemb, XFILE *f)
 	return total/size;
 }
 
-/* simulate fgets() */
+/** simulate fgets() */
 char *x_fgets(char *s, int size, XFILE *stream) 
 {
 	char *s0 = s;
@@ -355,7 +355,8 @@ char *x_fgets(char *s, int size, XFILE *stream)
 	return s0;
 }
 
-/* trivial seek, works only for SEEK_SET and SEEK_END if SEEK_CUR is
+/** 
+ * trivial seek, works only for SEEK_SET and SEEK_END if SEEK_CUR is
  * set then an error is returned */
 off_t x_tseek(XFILE *f, off_t offset, int whence)
 {

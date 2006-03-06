@@ -29,9 +29,10 @@
  * @brief Debug logging
  **/
 
-/* this global variable determines what messages are printed */
+/** 
+ * this global variable determines what messages are printed 
+ */
 _PUBLIC_ int DEBUGLEVEL;
-
 
 /* the registered mutex handlers */
 static struct {
@@ -64,7 +65,7 @@ static void log_timestring(int level, const char *location, const char *func)
 	free(s);
 }
 
-/*
+/**
   the backend for debug messages. Note that the DEBUG() macro has already
   ensured that the log level has been met before this is called
 */
@@ -74,9 +75,12 @@ _PUBLIC_ void do_debug_header(int level, const char *location, const char *func)
 	log_task_id();
 }
 
-/*
+/**
   the backend for debug messages. Note that the DEBUG() macro has already
   ensured that the log level has been met before this is called
+
+  @note You should never have to call this function directly. Call the DEBUG()
+  macro instead.
 */
 _PUBLIC_ void do_debug(const char *format, ...) _PRINTF_ATTRIBUTE(1,2)
 {

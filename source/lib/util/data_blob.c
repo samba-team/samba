@@ -178,6 +178,10 @@ _PUBLIC_ DATA_BLOB data_blob_string_const(const char *str)
 	return blob;
 }
 
+/**
+ * Create a new data blob from const data 
+ */
+
 _PUBLIC_ DATA_BLOB data_blob_const(const void *p, size_t length)
 {
 	DATA_BLOB blob;

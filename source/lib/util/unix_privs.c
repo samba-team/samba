@@ -59,6 +59,12 @@ static int privileges_destructor(void *ptr)
 	return 0;
 }
 
+/**
+ * Obtain root privileges for the current process.
+ *
+ * The privileges can be dropped by talloc_free()-ing the 
+ * token returned by this function
+ */
 void *root_privileges(void)
 {
 	struct saved_state *s;

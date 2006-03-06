@@ -100,8 +100,20 @@ struct substitute_context;
 #define SAFE_FREE(x) do { if ((x) != NULL) {free(discard_const_p(void *, (x))); (x)=NULL;} } while(0)
 #endif
 
+/** 
+ * Type-safe version of malloc. Allocated one copy of the 
+ * specified data type.
+ */
 #define malloc_p(type) (type *)malloc(sizeof(type))
+
+/**
+ * Allocate an array of elements of one data type. Does type-checking.
+ */
 #define malloc_array_p(type, count) (type *)realloc_array(NULL, sizeof(type), count)
+
+/** 
+ * Resize an array of elements of one data type. Does type-checking.
+ */
 #define realloc_p(p, type, count) (type *)realloc_array(p, sizeof(type), count)
 
 #if defined(VALGRIND)
@@ -127,6 +139,8 @@ struct substitute_context;
   makes the return type safe.
 */
 #define discard_const(ptr) ((void *)((intptr_t)(ptr)))
+
+/** Type-safe version of discard_const */
 #define discard_const_p(type, ptr) ((type *)discard_const(ptr))
 
 #endif /* _SAMBA_UTIL_H_ */
