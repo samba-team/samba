@@ -1757,7 +1757,7 @@ static NTSTATUS cmd_samr_query_sec_obj(struct rpc_pipe_client *cli,
 {
 	POLICY_HND connect_pol, domain_pol, user_pol, *pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	uint32 info_level = 4;
+	uint32 sec_info = DACL_SECURITY_INFORMATION;
 	fstring server;
 	uint32 user_rid = 0;
 	TALLOC_CTX *ctx = NULL;
@@ -1766,8 +1766,8 @@ static NTSTATUS cmd_samr_query_sec_obj(struct rpc_pipe_client *cli,
 
 	ctx=talloc_init("cmd_samr_query_sec_obj");
 	
-	if ((argc < 1) || (argc > 2)) {
-		printf("Usage: %s [rid|-d]\n", argv[0]);
+	if ((argc < 1) || (argc > 3)) {
+		printf("Usage: %s [rid|-d] [sec_info]\n", argv[0]);
 		printf("\tSpecify rid for security on user, -d for security on domain\n");
 		return NT_STATUS_OK;
 	}
@@ -1777,6 +1777,10 @@ static NTSTATUS cmd_samr_query_sec_obj(struct rpc_pipe_client *cli,
 			domain = True;
 		else
 			sscanf(argv[1], "%i", &user_rid);
+	}
+
+	if (argc == 3) {
+		sec_info = atoi(argv[2]);
 	}
 	
 	slprintf(server, sizeof(fstring)-1, "\\\\%s", cli->cli->desthost);
@@ -1815,14 +1819,14 @@ static NTSTATUS cmd_samr_query_sec_obj(struct rpc_pipe_client *cli,
 
 	/* Query SAM security object */
 
-	result = rpccli_samr_query_sec_obj(cli, mem_ctx, pol, info_level, ctx, 
+	result = rpccli_samr_query_sec_obj(cli, mem_ctx, pol, sec_info, ctx, 
 					&sec_desc_buf);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
 	display_sec_desc(sec_desc_buf->sec);
-	
+
 	rpccli_samr_close(cli, mem_ctx, &user_pol);
 	rpccli_samr_close(cli, mem_ctx, &domain_pol);
 	rpccli_samr_close(cli, mem_ctx, &connect_pol);
