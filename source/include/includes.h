@@ -111,6 +111,7 @@ enum brl_type {
 #include "charset/charset.h"
 #include "structs.h"
 #include "util/util.h"
+#include "param/param.h"
 #include "libcli/util/nterr.h"
 #include "libcli/util/doserr.h"
 #include "librpc/ndr/libndr.h"

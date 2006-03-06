@@ -31,13 +31,13 @@ GtkWidget *mainwin;
 GtkWidget *seldomain;
 static GtkWidget *mnu_disconnect;
 
-void update_grouplist(void)
+static void update_grouplist(void)
 {
 	if(!sam_pipe) return;
 	//FIXME
 }
 
-void update_userlist(void)
+static void update_userlist(void)
 {
 	NTSTATUS status;
 	struct samr_EnumDomainUsers r;

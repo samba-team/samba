@@ -19,6 +19,7 @@ REQUIRED_SUBSYSTEMS = \
 [MODULE::ntvfs_simple]
 INIT_FUNCTION = ntvfs_simple_init 
 SUBSYSTEM = NTVFS
+PRIVATE_PROTO_HEADER = simple/proto.h
 OBJ_FILES = \
 		simple/vfs_simple.o \
 		simple/svfs_util.o
@@ -40,6 +41,7 @@ OBJ_FILES = \
 [MODULE::ntvfs_ipc]
 SUBSYSTEM = NTVFS
 INIT_FUNCTION = ntvfs_ipc_init 
+PRIVATE_PROTO_HEADER = ipc/proto.h
 OBJ_FILES = \
 		ipc/vfs_ipc.o \
 		ipc/ipc_rap.o \

@@ -29,6 +29,7 @@
 #include "lib/crypto/crypto.h"
 #include "system/time.h"
 #include "torture/rpc/proto.h"
+#include "auth/gensec/schannel_proto.h"
 
 #define TEST_MACHINE_NAME "samsynctest"
 #define TEST_WKSTA_MACHINE_NAME "samsynctest2"

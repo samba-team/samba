@@ -9,6 +9,7 @@ include credentials/config.mk
 [MODULE::auth_sam]
 INIT_FUNCTION = auth_sam_init
 SUBSYSTEM = AUTH
+NOPROTO = NO
 OBJ_FILES = \
 		auth_sam.o
 REQUIRED_SUBSYSTEMS = \

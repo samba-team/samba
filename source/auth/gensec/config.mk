@@ -38,6 +38,7 @@ REQUIRED_SUBSYSTEMS = KERBEROS AUTH
 [MODULE::gensec_spnego]
 SUBSYSTEM = GENSEC
 INIT_FUNCTION = gensec_spnego_init
+PRIVATE_PROTO_HEADER = spnego_proto.h
 OBJ_FILES = spnego.o \
 			spnego_parse.o
 # End MODULE gensec_spnego
@@ -47,6 +48,7 @@ OBJ_FILES = spnego.o \
 # Start MODULE gensec_schannel
 [MODULE::gensec_schannel]
 SUBSYSTEM = GENSEC
+PRIVATE_PROTO_HEADER = schannel_proto.h
 INIT_FUNCTION = gensec_schannel_init
 OBJ_FILES = schannel.o \
 			schannel_sign.o

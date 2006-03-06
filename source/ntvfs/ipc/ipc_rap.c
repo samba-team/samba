@@ -21,6 +21,7 @@
 
 #include "includes.h"
 #include "libcli/rap/rap.h"
+#include "ntvfs/ipc/proto.h"
 
 #define NERR_Success 0
 #define NERR_badpass 86

@@ -32,6 +32,7 @@
 #include "heimdal/lib/krb5/krb5-private.h"
 #include "auth/auth.h"
 #include "dsdb/samdb/samdb.h"
+#include "rpc_server/samr/proto.h"
 
 /* hold information about one kdc socket */
 struct kpasswd_socket {

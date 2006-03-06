@@ -103,6 +103,7 @@ REQUIRED_SUBSYSTEMS = \
 # Start MODULE dcerpc_samr
 [MODULE::dcerpc_samr]
 INIT_FUNCTION = dcerpc_server_samr_init
+PRIVATE_PROTO_HEADER = samr/proto.h
 SUBSYSTEM = DCERPC_SERVER
 OBJ_FILES = \
 		samr/dcesrv_samr.o \

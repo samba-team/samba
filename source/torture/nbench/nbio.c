@@ -26,6 +26,7 @@
 #include "dlinklist.h"
 #include "libcli/libcli.h"
 #include "libcli/raw/libcliraw.h"
+#include "torture/torture.h"
 
 #define MAX_FILES 100
 
