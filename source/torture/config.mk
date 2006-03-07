@@ -255,9 +255,12 @@ OBJ_FILES = \
 		gentest.o \
 		torture_util.o
 REQUIRED_SUBSYSTEMS = \
-		LIBSMB \
 		CONFIG \
-		LIBBASIC
+		LIBBASIC \
+		LIBPOPT \
+		POPT_SAMBA \
+		POPT_CREDENTIALS \
+		LIBSMB
 MANPAGE = man/gentest.1
 # End BINARY gentest
 #################################
@@ -269,9 +272,12 @@ INSTALLDIR = BINDIR
 OBJ_FILES = \
 		masktest.o
 REQUIRED_SUBSYSTEMS = \
-		LIBSMB \
 		CONFIG \
-		LIBBASIC
+		LIBBASIC \
+		LIBPOPT \
+		POPT_SAMBA \
+		POPT_CREDENTIALS \
+		LIBSMB
 MANPAGE = man/masktest.1
 # End BINARY masktest
 #################################
