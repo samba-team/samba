@@ -494,7 +494,7 @@ static NTSTATUS sam_account_from_delta(struct samu *account, SAM_ACCOUNT_INFO *d
 
 static NTSTATUS fetch_account_info(uint32 rid, SAM_ACCOUNT_INFO *delta)
 {
-	NTSTATUS nt_ret;
+	NTSTATUS nt_ret = NT_STATUS_UNSUCCESSFUL;
 	fstring account;
 	pstring add_script;
 	struct samu *sam_account=NULL;
@@ -1434,12 +1434,11 @@ static NTSTATUS fetch_account_info_to_ldif(SAM_DELTA_CTR *delta, GROUPMAP *group
 		   	   ACCOUNTMAP *accountmap, FILE *add_fd,
 			   fstring sid, char *suffix, int alloced)
 {
-	fstring username, homedir, logonscript, homedrive, homepath;
+	fstring username, logonscript, homedrive, homepath = "", homedir = "";
 	fstring hex_nt_passwd, hex_lm_passwd;
 	fstring description, fullname, sambaSID;
 	uchar lm_passwd[16], nt_passwd[16];
 	char *flags;
-	const char *blank = "", *shell = "/bin/bash";
 	const char* nopasswd = "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX";
 	static uchar zero_buf[16];
 	uint32 rid = 0, group_rid = 0, gidNumber = 0;
@@ -1459,12 +1458,14 @@ static NTSTATUS fetch_account_info_to_ldif(SAM_DELTA_CTR *delta, GROUPMAP *group
 	pstr_sprintf(accountmap->cn, "%s", username);
 
 	/* Get the home directory */
-	unistr2_to_ascii(homedir, &(delta->account_info.uni_home_dir),
-			 sizeof(homedir)-1);
-	if (strcmp(homedir, blank) == 0) {
-		pstr_sprintf(homedir, "/home/%s", username);
-	} else {
-		strncpy(homepath, homedir, sizeof(homepath));
+	if (delta->account_info.acb_info & ACB_NORMAL) {
+		unistr2_to_ascii(homedir, &(delta->account_info.uni_home_dir),
+				 sizeof(homedir)-1);
+		if (!*homedir) {
+			pstr_sprintf(homedir, "/home/%s", username);
+		} else {
+			pstr_sprintf(homedir, "dev/null");
+		}
 	}	
 
         /* Get the logon script */
@@ -1478,7 +1479,7 @@ static NTSTATUS fetch_account_info_to_ldif(SAM_DELTA_CTR *delta, GROUPMAP *group
 	/* Get the description */
 	unistr2_to_ascii(description, &(delta->account_info.uni_acct_desc),
 			 sizeof(description)-1);
-	if (strcmp(description, blank) == 0) {
+	if (!*description) {
 		pstr_sprintf(description, "System User");
 	}
 
@@ -1548,18 +1549,20 @@ static NTSTATUS fetch_account_info_to_ldif(SAM_DELTA_CTR *delta, GROUPMAP *group
 	fprintf(add_fd, "uidNumber: %d\n", ldif_uid);
 	fprintf(add_fd, "gidNumber: %d\n", gidNumber);
 	fprintf(add_fd, "homeDirectory: %s\n", homedir);
-	if (strcmp(homepath, blank) != 0)
+	if (*homepath)
 		fprintf(add_fd, "SambaHomePath: %s\n", homepath);
-        if (strcmp(homedrive, blank) != 0)
+        if (*homedrive)
                 fprintf(add_fd, "SambaHomeDrive: %s\n", homedrive);
-        if (strcmp(logonscript, blank) != 0)
+        if (*logonscript)
                 fprintf(add_fd, "SambaLogonScript: %s\n", logonscript);
-	fprintf(add_fd, "loginShell: %s\n", shell);
+	fprintf(add_fd, "loginShell: %s\n", 
+		((delta->account_info.acb_info & ACB_NORMAL) ?
+		 "/bin/bash" : "/bin/false"));
 	fprintf(add_fd, "gecos: System User\n");
 	fprintf(add_fd, "description: %s\n", description);
 	fprintf(add_fd, "sambaSID: %s-%d\n", sid, rid);
 	fprintf(add_fd, "sambaPrimaryGroupSID: %s\n", sambaSID);
-	if(strcmp(fullname, blank) != 0)
+	if(*fullname)
 		fprintf(add_fd, "displayName: %s\n", fullname);
 	if (strcmp(nopasswd, hex_lm_passwd) != 0)
 		fprintf(add_fd, "sambaLMPassword: %s\n", hex_lm_passwd);
