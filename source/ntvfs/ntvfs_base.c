@@ -163,7 +163,7 @@ NTSTATUS ntvfs_init_connection(struct smbsrv_request *req, enum ntvfs_type type)
 
 NTSTATUS ntvfs_init(void)
 {
-	init_module_fn static_init[] = STATIC_NTVFS_MODULES;
+	init_module_fn static_init[] = STATIC_ntvfs_MODULES;
 	init_module_fn *shared_init = load_samba_modules(NULL, "ntvfs");
 
 	run_init_functions(static_init);

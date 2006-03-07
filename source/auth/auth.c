@@ -335,7 +335,7 @@ const struct auth_critical_sizes *auth_interface_version(void)
 
 NTSTATUS server_service_auth_init(void)
 {
-	init_module_fn static_init[] = STATIC_AUTH_MODULES;
+	init_module_fn static_init[] = STATIC_auth_MODULES;
 	init_module_fn *shared_init = load_samba_modules(NULL, "auth");
 
 	run_init_functions(static_init);
