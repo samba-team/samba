@@ -384,7 +384,7 @@ static BOOL decode_forms_1(TALLOC_CTX *mem_ctx, RPC_BUFFER *buffer,
 	int i;
 
 	*forms = TALLOC_ARRAY(mem_ctx, FORM_1, num_forms);
-	if (!forms) {
+	if (*forms == NULL) {
 		return False;
 	}
 	prs_set_offset(&buffer->prs,0);
