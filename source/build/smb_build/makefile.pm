@@ -119,10 +119,11 @@ CFLAGS=-I\$(srcdir)/include -I\$(srcdir) -I\$(srcdir)/lib -D_SAMBA_BUILD_ -DHAVE
 PICFLAG=$self->{config}->{PICFLAG}
 HOSTCC=$self->{config}->{HOSTCC}
 
-LD=$self->{config}->{LD} 
-LDFLAGS=$self->{config}->{LDFLAGS} -L\$(builddir)/bin
 LOCAL_LINK_FLAGS=$devld_local
 INSTALL_LINK_FLAGS=$devld_install
+
+LD=$self->{config}->{LD} 
+LDFLAGS=$self->{config}->{LDFLAGS} -L\$(builddir)/bin
 
 STLD=$self->{config}->{AR}
 STLD_FLAGS=-rc -L\$(builddir)/bin
@@ -255,6 +256,14 @@ sub SharedLibrary($$)
 {
 	my ($self,$ctx) = @_;
 
+	my $installdir;
+	
+	if ($self->{duplicate_build}) {
+		$installdir = "bin/install";
+	} else {
+		$installdir = "bin";
+	}
+
 	push (@{$self->{shared_libs}}, "bin/$ctx->{LIBRARY_REALNAME}");
 	push (@{$self->{shared_modules}}, "bin/$ctx->{LIBRARY_REALNAME}");
 
@@ -270,12 +279,40 @@ sub SharedLibrary($$)
 		push(@{$self->{proto_objs}}, "\$($ctx->{TYPE}_$ctx->{NAME}_OBJ_LIST\)");
 	}
 
-	$self->output(<< "__EOD__"
+	if ($self->{duplicate_build}) {
+		$self->output(<< "__EOD__"
 #
 
 bin/$ctx->{LIBRARY_REALNAME}: \$($ctx->{TYPE}_$ctx->{NAME}_DEPEND_LIST) \$($ctx->{TYPE}_$ctx->{NAME}_OBJ_LIST) 
 	\@echo Linking \$\@
-	\@\$(SHLD) \$(SHLD_FLAGS) -o \$\@ \\
+	\@\$(SHLD) \$(SHLD_FLAGS) -o \$\@ \$(LOCAL_LINK_FLAGS) \\
+		\$($ctx->{TYPE}_$ctx->{NAME}_LINK_FLAGS) \\
+		\$($ctx->{TYPE}_$ctx->{NAME}_LINK_LIST)
+
+__EOD__
+);
+		if (defined($ctx->{LIBRARY_SONAME})) {
+			$self->output(<< "__EOD__"
+# Symlink $ctx->{LIBRARY_SONAME}
+bin/$ctx->{LIBRARY_SONAME}: bin/$ctx->{LIBRARY_REALNAME} 
+	\@echo Symlink \$\@
+	\@ln -sf $ctx->{LIBRARY_REALNAME} \$\@
+# Symlink $ctx->{LIBRARY_NAME}
+bin/$ctx->{LIBRARY_NAME}: bin/$ctx->{LIBRARY_SONAME} 
+	\@echo Symlink \$\@
+	\@ln -sf $ctx->{LIBRARY_SONAME} \$\@
+
+__EOD__
+);
+		}
+	}
+
+	$self->output(<< "__EOD__"
+#
+
+$installdir/$ctx->{LIBRARY_REALNAME}: \$($ctx->{TYPE}_$ctx->{NAME}_DEPEND_LIST) \$($ctx->{TYPE}_$ctx->{NAME}_OBJ_LIST)
+	\@echo Linking \$\@
+	\@\$(SHLD) \$(SHLD_FLAGS) -o \$\@ \$(INSTALL_LINK_FLAGS) \\
 		\$($ctx->{TYPE}_$ctx->{NAME}_LINK_FLAGS) \\
 		\$($ctx->{TYPE}_$ctx->{NAME}_LINK_LIST)
 
@@ -284,11 +321,11 @@ __EOD__
 	if (defined($ctx->{LIBRARY_SONAME})) {
 	    $self->output(<< "__EOD__"
 # Symlink $ctx->{LIBRARY_SONAME}
-bin/$ctx->{LIBRARY_SONAME}: bin/$ctx->{LIBRARY_REALNAME} 
+$installdir/$ctx->{LIBRARY_SONAME}: $installdir/$ctx->{LIBRARY_REALNAME}
 	\@echo Symlink \$\@
 	\@ln -sf $ctx->{LIBRARY_REALNAME} \$\@
 # Symlink $ctx->{LIBRARY_NAME}
-bin/$ctx->{LIBRARY_NAME}: bin/$ctx->{LIBRARY_SONAME} 
+$installdir/$ctx->{LIBRARY_NAME}: $installdir/$ctx->{LIBRARY_SONAME}
 	\@echo Symlink \$\@
 	\@ln -sf $ctx->{LIBRARY_SONAME} \$\@
 
