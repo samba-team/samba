@@ -380,7 +380,7 @@ int reply_trans(connection_struct *conn, char *inbuf,char *outbuf, int size, int
 	unsigned int dscnt = SVAL(inbuf,smb_vwv11);
 	unsigned int dsoff = SVAL(inbuf,smb_vwv12);
 	unsigned int suwcnt = CVAL(inbuf,smb_vwv13);
-	fstring local_machine_name;
+	char *local_machine_name;
 	START_PROFILE(SMBtrans);
 
 	memset(name, '\0',sizeof(name));
@@ -542,11 +542,22 @@ int reply_trans(connection_struct *conn, char *inbuf,char *outbuf, int size, int
 	 * WinCE wierdness....
 	 */
 
-	fstrcpy( local_machine_name, get_local_machine_name() );
+	asprintf(&local_machine_name, "\\%s\\", get_local_machine_name());
 
-	if (name[0] == '\\' && (StrnCaseCmp(&name[1],local_machine_name, strlen(local_machine_name)) == 0) &&
-			(name[strlen(local_machine_name)+1] == '\\'))
-		name_offset = strlen(local_machine_name)+1;
+	if (local_machine_name == NULL) {
+		srv_signing_trans_stop();
+		SAFE_FREE(data);
+		SAFE_FREE(params);
+		SAFE_FREE(setup);
+		END_PROFILE(SMBtrans);
+		return ERROR_NT(NT_STATUS_NO_MEMORY);
+	}
+
+	if (strnequal(name, local_machine_name,	strlen(local_machine_name))) {
+		name_offset = strlen(local_machine_name)-1;
+	}
+
+	SAFE_FREE(local_machine_name);
 
 	if (strnequal(&name[name_offset], "\\PIPE", strlen("\\PIPE"))) {
 		name_offset += strlen("\\PIPE");
