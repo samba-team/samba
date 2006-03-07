@@ -6,6 +6,7 @@ lib_LTLIBRARIES = libhcrypto.la
 libhcrypto_la_LDFLAGS = -version-info 3:1:0
 libhcrypto_la_LIBADD = \
 	$(top_builddir)/lib/asn1/libasn1.la \
+	$(LIB_dlopen) \
 	$(LIB_roken)
 
 hcryptoincludedir = $(includedir)/hcrypto
