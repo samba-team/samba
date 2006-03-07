@@ -93,8 +93,6 @@ static SMB_STRUCT_DIR *shadow_copy_opendir(vfs_handle_struct *handle, connection
 
 	while (True) {
 		SMB_STRUCT_DIRENT *d;
-		SMB_STRUCT_DIRENT *r;
-
 
 		d = SMB_VFS_NEXT_READDIR(handle, conn, p);
 		if (d == NULL) {
