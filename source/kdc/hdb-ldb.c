@@ -355,21 +355,19 @@ static krb5_error_code LDB_message2entry(krb5_context context, HDB *db,
 		*entry_ex->entry.valid_end = nt_time_to_unix(acct_expiry);
 	}
 
-	if (!(userAccountControl & UF_DONT_EXPIRE_PASSWD) &&
-	    (ent_type != HDB_LDB_ENT_TYPE_KRBTGT)) {
+	if (ent_type != HDB_LDB_ENT_TYPE_KRBTGT) {
 		NTTIME must_change_time
 			= samdb_result_force_password_change((struct ldb_context *)db->hdb_db, mem_ctx, 
-							     domain_dn, msg, 
-							     "pwdLastSet");
-		if (must_change_time != 0) {
+							     domain_dn, msg);
+		if (must_change_time == 0x7FFFFFFFFFFFFFFFULL) {
+			entry_ex->entry.pw_end = NULL;
+		} else {
 			entry_ex->entry.pw_end = malloc(sizeof(*entry_ex->entry.pw_end));
 			if (entry_ex->entry.pw_end == NULL) {
 				ret = ENOMEM;
 				goto out;
 			}
 			*entry_ex->entry.pw_end = nt_time_to_unix(must_change_time);
-		} else {
-			entry_ex->entry.pw_end = NULL;
 		}
 	} else {
 		entry_ex->entry.pw_end = NULL;

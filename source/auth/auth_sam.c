@@ -172,8 +172,7 @@ NTSTATUS authsam_account_ok(TALLOC_CTX *mem_ctx,
 	
 	acct_expiry = samdb_result_nttime(msg, "accountExpires", 0);
 	must_change_time = samdb_result_force_password_change(sam_ctx, mem_ctx, 
-							      domain_dn, msg, 
-							      "pwdLastSet");
+							      domain_dn, msg);
 	last_set_time = samdb_result_nttime(msg, "pwdLastSet", 0);
 
 	workstation_list = samdb_result_string(msg, "userWorkstations", NULL);
@@ -423,10 +422,10 @@ static NTSTATUS authsam_authenticate(struct auth_context *auth_context,
 }
 
 NTSTATUS authsam_make_server_info(TALLOC_CTX *mem_ctx, struct ldb_context *sam_ctx,
-					 struct ldb_message *msg,
-					 struct ldb_message *msg_domain_ref,
-					 DATA_BLOB user_sess_key, DATA_BLOB lm_sess_key,
-					 struct auth_serversupplied_info **_server_info)
+				  struct ldb_message *msg,
+				  struct ldb_message *msg_domain_ref,
+				  DATA_BLOB user_sess_key, DATA_BLOB lm_sess_key,
+				  struct auth_serversupplied_info **_server_info)
 {
 	struct auth_serversupplied_info *server_info;
 	struct ldb_message **group_msgs;
@@ -523,13 +522,17 @@ NTSTATUS authsam_make_server_info(TALLOC_CTX *mem_ctx, struct ldb_context *sam_c
 	server_info->acct_expiry = samdb_result_nttime(msg, "accountExpires", 0);
 	server_info->last_password_change = samdb_result_nttime(msg, "pwdLastSet", 0);
 
-	ncname = samdb_result_dn(mem_ctx, msg_domain_ref, "nCName", ldb_dn_new(mem_ctx));
-
-	server_info->allow_password_change = samdb_result_allow_password_change(sam_ctx, mem_ctx, 
-							ncname, msg, "pwdLastSet");
-	server_info->force_password_change = samdb_result_force_password_change(sam_ctx, mem_ctx, 
-							ncname, msg, "pwdLastSet");
-
+	ncname = samdb_result_dn(mem_ctx, msg_domain_ref, "nCName", NULL);
+	if (!ncname) {
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+	server_info->allow_password_change
+		= samdb_result_allow_password_change(sam_ctx, mem_ctx, 
+						     ncname, msg, "pwdLastSet");
+	server_info->force_password_change
+		= samdb_result_force_password_change(sam_ctx, mem_ctx, 
+						     ncname, msg);
+	
 	server_info->logon_count = samdb_result_uint(msg, "logonCount", 0);
 	server_info->bad_password_count = samdb_result_uint(msg, "badPwdCount", 0);
 

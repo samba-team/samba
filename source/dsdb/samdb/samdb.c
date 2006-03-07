@@ -29,6 +29,7 @@
 #include "system/filesys.h"
 #include "db_wrap.h"
 #include "dsdb/samdb/samdb.h"
+#include "ads.h"
 
 /*
   connect to the SAM database
@@ -487,11 +488,15 @@ NTTIME samdb_result_allow_password_change(struct ldb_context *sam_ldb,
 NTTIME samdb_result_force_password_change(struct ldb_context *sam_ldb, 
 					  TALLOC_CTX *mem_ctx, 
 					  const struct ldb_dn *domain_dn, 
-					  struct ldb_message *msg, 
-					  const char *attr)
+					  struct ldb_message *msg)
 {
-	uint64_t attr_time = samdb_result_uint64(msg, attr, 0);
+	uint64_t attr_time = samdb_result_uint64(msg, "pwdLastSet", 0);
+	uint32_t user_flags = samdb_result_uint64(msg, "userAccountControl", 0);
 	int64_t maxPwdAge;
+
+	if (user_flags & UF_DONT_EXPIRE_PASSWD) {
+		return 0x7FFFFFFFFFFFFFFFULL;
+	}
 
 	if (attr_time == 0) {
 		return 0;
