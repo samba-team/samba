@@ -1464,7 +1464,7 @@ static NTSTATUS fetch_account_info_to_ldif(SAM_DELTA_CTR *delta, GROUPMAP *group
 		if (!*homedir) {
 			pstr_sprintf(homedir, "/home/%s", username);
 		} else {
-			pstr_sprintf(homedir, "dev/null");
+			pstr_sprintf(homedir, "/dev/null");
 		}
 	}	
 
