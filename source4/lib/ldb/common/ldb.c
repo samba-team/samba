@@ -231,7 +231,7 @@ int ldb_transaction_cancel(struct ldb_context *ldb)
 	return status;
 }
 
-int ldb_async_wait(struct ldb_context *ldb, struct ldb_async_handle *handle, enum ldb_async_wait_type type)
+int ldb_async_wait(struct ldb_async_handle *handle, enum ldb_async_wait_type type)
 {
 	return handle->module->ops->async_wait(handle, type);
 }
