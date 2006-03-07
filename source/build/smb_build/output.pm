@@ -111,7 +111,7 @@ sub create_output($$)
 			$part->{OUTPUT_TYPE} = "OBJLIST";
 		}
 
-		if (($part->{STANDARD_VISIBILITY} ne "hidden") and 
+		if (($part->{STANDARD_VISIBILITY} ne "default") and 
 			($config->{visibility_attribute} eq "yes")) {
 			$part->{EXTRA_CFLAGS} .= " -fvisibility=$part->{STANDARD_VISIBILITY}";
 		}
