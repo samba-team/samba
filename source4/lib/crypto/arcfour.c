@@ -24,7 +24,7 @@
 #include "lib/crypto/crypto.h"
 
 /* initialise the arcfour sbox with key */
-void arcfour_init(struct arcfour_state *state, const DATA_BLOB *key) 
+_PUBLIC_ void arcfour_init(struct arcfour_state *state, const DATA_BLOB *key) 
 {
 	int ind;
 	uint8_t j = 0;
@@ -46,7 +46,7 @@ void arcfour_init(struct arcfour_state *state, const DATA_BLOB *key)
 }
 
 /* crypt the data with arcfour */
-void arcfour_crypt_sbox(struct arcfour_state *state, uint8_t *data, int len) 
+_PUBLIC_ void arcfour_crypt_sbox(struct arcfour_state *state, uint8_t *data, int len) 
 {
 	int ind;
 	
@@ -69,7 +69,7 @@ void arcfour_crypt_sbox(struct arcfour_state *state, uint8_t *data, int len)
 /*
   arcfour encryption with a blob key
 */
-void arcfour_crypt_blob(uint8_t *data, int len, const DATA_BLOB *key) 
+_PUBLIC_ void arcfour_crypt_blob(uint8_t *data, int len, const DATA_BLOB *key) 
 {
 	struct arcfour_state state;
 	arcfour_init(&state, key);
@@ -80,7 +80,7 @@ void arcfour_crypt_blob(uint8_t *data, int len, const DATA_BLOB *key)
   a variant that assumes a 16 byte key. This should be removed
   when the last user is gone
 */
-void arcfour_crypt(uint8_t *data, const uint8_t keystr[16], int len)
+_PUBLIC_ void arcfour_crypt(uint8_t *data, const uint8_t keystr[16], int len)
 {
 	DATA_BLOB key = data_blob(keystr, 16);
 	
