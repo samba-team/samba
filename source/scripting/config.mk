@@ -8,6 +8,13 @@ REQUIRED_SUBSYSTEMS = LIBTDB
 #######################
 
 #######################
+# Start LIBRARY swig_ldb
+[LIBRARY::swig_ldb]
+REQUIRED_SUBSYSTEMS = ldb
+# End LIBRARY swig_ldb
+#######################
+
+#######################
 # Start LIBRARY swig_dcerpc
 [LIBRARY::swig_dcerpc]
 REQUIRED_SUBSYSTEMS = LIBCLI NDR_MISC LIBBASIC CONFIG RPC_NDR_SAMR RPC_NDR_LSA
@@ -15,7 +22,7 @@ REQUIRED_SUBSYSTEMS = LIBCLI NDR_MISC LIBBASIC CONFIG RPC_NDR_SAMR RPC_NDR_LSA
 #######################
 
 # Swig extensions
-swig: scripting/swig/_tdb.so scripting/swig/_dcerpc.so
+swig: scripting/swig/_tdb.so scripting/swig/_ldb.so scripting/swig/_dcerpc.so
 
 scripting/swig/tdb_wrap.c: scripting/swig/tdb.i
 	swig -python scripting/swig/tdb.i
@@ -23,6 +30,13 @@ scripting/swig/tdb_wrap.c: scripting/swig/tdb.i
 scripting/swig/_tdb.so: scripting/swig/tdb_wrap.o $(LIBRARY_swig_tdb_DEPEND_LIST)
 	$(SHLD) $(SHLD_FLAGS) -o scripting/swig/_tdb.so scripting/swig/tdb_wrap.o \
 		$(LIBRARY_swig_tdb_LINK_LIST) $(LIBRARY_swig_tdb_LINK_FLAGS)
+
+scripting/swig/ldb_wrap.c: scripting/swig/ldb.i
+	swig -python scripting/swig/ldb.i
+
+scripting/swig/_ldb.so: scripting/swig/ldb_wrap.o $(LIBRARY_swig_ldb_DEPEND_LIST)
+	$(SHLD) $(SHLD_FLAGS) -o scripting/swig/_ldb.so scripting/swig/ldb_wrap.o \
+		$(LIBRARY_swig_ldb_LINK_LIST) $(LIBRARY_swig_ldb_LINK_FLAGS)
 
 SWIG_INCLUDES = librpc/gen_ndr/samr.i librpc/gen_ndr/lsa.i librpc/gen_ndr/spoolss.i
 
