@@ -539,7 +539,7 @@ static int ildb_search_bytree(struct ldb_module *module, const struct ldb_dn *ba
 				res, &ildb_search_sync_callback, ildb->ldap->timeout, &handle);
 
 	if (ret == LDB_SUCCESS) {
-		ret = ldb_async_wait(module->ldb, handle, LDB_WAIT_ALL);
+		ret = ldb_async_wait(handle, LDB_WAIT_ALL);
 		talloc_free(handle);
 	}
 
@@ -616,7 +616,7 @@ static int ildb_add(struct ldb_module *module, const struct ldb_message *msg)
 	if (ret != LDB_SUCCESS)
 		return ret;
 
-	ret = ldb_async_wait(module->ldb, handle, LDB_WAIT_ALL);
+	ret = ldb_async_wait(handle, LDB_WAIT_ALL);
 
 	talloc_free(handle);
 	return ret;
@@ -688,7 +688,7 @@ static int ildb_modify(struct ldb_module *module, const struct ldb_message *msg)
 	if (ret != LDB_SUCCESS)
 		return ret;
 
-	ret = ldb_async_wait(module->ldb, handle, LDB_WAIT_ALL);
+	ret = ldb_async_wait(handle, LDB_WAIT_ALL);
 
 	talloc_free(handle);
 	return ret;
@@ -741,7 +741,7 @@ static int ildb_delete(struct ldb_module *module, const struct ldb_dn *dn)
 	if (ret != LDB_SUCCESS)
 		return ret;
 
-	ret = ldb_async_wait(module->ldb, handle, LDB_WAIT_ALL);
+	ret = ldb_async_wait(handle, LDB_WAIT_ALL);
 
 	talloc_free(handle);
 	return ret;
@@ -813,7 +813,7 @@ static int ildb_rename(struct ldb_module *module, const struct ldb_dn *olddn, co
 	if (ret != LDB_SUCCESS)
 		return ret;
 
-	ret = ldb_async_wait(module->ldb, handle, LDB_WAIT_ALL);
+	ret = ldb_async_wait(handle, LDB_WAIT_ALL);
 
 	talloc_free(handle);
 	return ret;

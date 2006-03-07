@@ -309,7 +309,7 @@ static int ltdb_add(struct ldb_module *module, const struct ldb_message *msg)
 	if (ret != LDB_SUCCESS)
 		return ret;
 
-	ret = ldb_async_wait(module->ldb, handle, LDB_WAIT_ALL);
+	ret = ldb_async_wait(handle, LDB_WAIT_ALL);
 
 	talloc_free(handle);
 	return ret;
@@ -413,7 +413,7 @@ static int ltdb_delete(struct ldb_module *module, const struct ldb_dn *dn)
 	if (ret != LDB_SUCCESS)
 		return ret;
 
-	ret = ldb_async_wait(module->ldb, handle, LDB_WAIT_ALL);
+	ret = ldb_async_wait(handle, LDB_WAIT_ALL);
 
 	talloc_free(handle);
 	return ret;
@@ -786,7 +786,7 @@ static int ltdb_modify(struct ldb_module *module, const struct ldb_message *msg)
 	if (ret != LDB_SUCCESS)
 		return ret;
 
-	ret = ldb_async_wait(module->ldb, handle, LDB_WAIT_ALL);
+	ret = ldb_async_wait(handle, LDB_WAIT_ALL);
 
 	talloc_free(handle);
 	return ret;
@@ -872,7 +872,7 @@ static int ltdb_rename(struct ldb_module *module, const struct ldb_dn *olddn, co
 	if (ret != LDB_SUCCESS)
 		return ret;
 
-	ret = ldb_async_wait(module->ldb, handle, LDB_WAIT_ALL);
+	ret = ldb_async_wait(handle, LDB_WAIT_ALL);
 
 	talloc_free(handle);
 	return ret;

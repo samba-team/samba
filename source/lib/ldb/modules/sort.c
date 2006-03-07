@@ -525,7 +525,7 @@ static int server_sort_async_wait(struct ldb_async_handle *handle, enum ldb_asyn
 
 	ac = talloc_get_type(handle->private_data, struct sort_async_context);
 
-	ret = ldb_async_wait(handle->module->ldb, ac->req->async.handle, type);
+	ret = ldb_async_wait(ac->req->async.handle, type);
 
 	if (ret != LDB_SUCCESS) {
 		handle->status = ret;
