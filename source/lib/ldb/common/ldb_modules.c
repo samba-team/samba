@@ -342,9 +342,3 @@ int ldb_next_del_trans(struct ldb_module *module)
 	FIND_OP(module, del_transaction);
 	return module->ops->del_transaction(module);
 }
-
-int ldb_next_async_wait(struct ldb_module *module, struct ldb_async_handle *handle, enum ldb_async_wait_type type)
-{
-	FIND_OP(module, async_wait);
-	return module->ops->async_wait(module, handle, type);
-}

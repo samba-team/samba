@@ -233,11 +233,7 @@ int ldb_transaction_cancel(struct ldb_context *ldb)
 
 int ldb_async_wait(struct ldb_context *ldb, struct ldb_async_handle *handle, enum ldb_async_wait_type type)
 {
-	struct ldb_module *module;
-
-	FIRST_OP(ldb, async_wait);
-
-	return module->ops->async_wait(module, handle, type);
+	return handle->module->ops->async_wait(handle, type);
 }
 
 /*

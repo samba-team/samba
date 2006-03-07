@@ -341,6 +341,8 @@ static int ildb_request_send(struct ldb_module *module, struct ldap_message *msg
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
+	h->module = module;
+
 	ildb_ac = talloc(h, struct ildb_async_context);
 	if (ildb_ac == NULL) {
 		ldb_set_errstring(module->ldb, talloc_asprintf(module, "Out of Memory"));
@@ -916,7 +918,7 @@ static int ildb_request(struct ldb_module *module, struct ldb_request *req)
 	}
 }
 
-static int ildb_async_wait(struct ldb_module *module, struct ldb_async_handle *handle, enum ldb_async_wait_type type)
+static int ildb_async_wait(struct ldb_async_handle *handle, enum ldb_async_wait_type type)
 {
 	struct ildb_async_context *ac = talloc_get_type(handle->private_data, struct ildb_async_context);
 

@@ -76,6 +76,8 @@ static struct ldb_async_handle *init_handle(struct lldb_private *lldb, struct ld
 		return NULL;
 	}
 
+	h->module = module;
+
 	ac = talloc(h, struct lldb_async_context);
 	if (ac == NULL) {
 		ldb_set_errstring(module->ldb, talloc_asprintf(module, "Out of Memory"));
@@ -875,10 +877,10 @@ error:
 	return handle->status;
 }
 
-static int lldb_async_wait(struct ldb_module *module, struct ldb_async_handle *handle, enum ldb_async_wait_type type)
+static int lldb_async_wait(struct ldb_async_handle *handle, enum ldb_async_wait_type type)
 {
 	struct lldb_async_context *ac = talloc_get_type(handle->private_data, struct lldb_async_context);
-	struct lldb_private *lldb = talloc_get_type(ac->module->private_data, struct lldb_private);
+	struct lldb_private *lldb = talloc_get_type(handle->module->private_data, struct lldb_private);
 	struct timeval timeout;
 	LDAPMessage *result;
 	int ret = LDB_ERR_OPERATIONS_ERROR;
