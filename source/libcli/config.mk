@@ -140,6 +140,6 @@ OBJ_FILES = raw/rawfile.o \
 		raw/rawacl.o \
 		raw/rawdate.o \
 		raw/rawlpq.o
-REQUIRED_SUBSYSTEMS = LIBPACKET
+REQUIRED_SUBSYSTEMS = LIBPACKET GENSEC
 
 include smb2/config.mk
