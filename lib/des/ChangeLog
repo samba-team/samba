@@ -1,5 +1,9 @@
-2006-02-28  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-03-07  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* Makefile.am: EVP interface depends on dlopen, add it to LIBFLAGS
+	
+2006-02-28  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* Makefile.am: Add pkcs5 files.
 
 	* test_pkcs5.c: Testcases for pkcs5 pbe2.
