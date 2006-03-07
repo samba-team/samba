@@ -23,7 +23,7 @@
 #include "includes.h"
 #include "smbd/service_task.h"
 #include "smbd/service_stream.h"
-#include "smbd/proto.h"
+#include "smbd/service.h"
 #include "web_server/web_server.h"
 #include "lib/events/events.h"
 #include "system/filesys.h"
