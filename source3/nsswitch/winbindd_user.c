@@ -553,16 +553,12 @@ static BOOL get_sam_user_entries(struct getent_state *ent, TALLOC_CTX *mem_ctx)
 					  &info);
 		
 	if (num_entries) {
-		struct getpwent_user *tnl;
+		name_list = SMB_REALLOC_ARRAY(name_list, struct getpwent_user, ent->num_sam_entries + num_entries);
 		
-		tnl = SMB_REALLOC_ARRAY(name_list, struct getpwent_user, ent->num_sam_entries + num_entries);
-		
-		if (!tnl) {
+		if (!name_list) {
 			DEBUG(0,("get_sam_user_entries realloc failed.\n"));
-			SAFE_FREE(name_list);
 			goto done;
-		} else
-			name_list = tnl;
+		}
 	}
 
 	for (i = 0; i < num_entries; i++) {
@@ -731,7 +727,7 @@ void winbindd_list_users(struct winbindd_cli_state *state)
 	WINBIND_USERINFO *info;
 	const char *which_domain;
 	uint32 num_entries = 0, total_entries = 0;
-	char *ted, *extra_data = NULL;
+	char *extra_data = NULL;
 	int extra_data_len = 0;
 	enum winbindd_result rv = WINBINDD_ERROR;
 
@@ -767,15 +763,13 @@ void winbindd_list_users(struct winbindd_cli_state *state)
 		/* Allocate some memory for extra data */
 		total_entries += num_entries;
 			
-		ted = SMB_REALLOC(extra_data, sizeof(fstring) * total_entries);
+		extra_data = SMB_REALLOC(extra_data, sizeof(fstring) * total_entries);
 			
-		if (!ted) {
+		if (!extra_data) {
 			DEBUG(0,("failed to enlarge buffer!\n"));
-			SAFE_FREE(extra_data);
 			goto done;
-		} else 
-			extra_data = ted;
-			
+		}
+
 		/* Pack user list into extra data fields */
 			
 		for (i = 0; i < num_entries; i++) {

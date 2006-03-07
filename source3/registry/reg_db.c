@@ -298,7 +298,7 @@ int regdb_close( void )
 static BOOL regdb_store_keys_internal( const char *key, REGSUBKEY_CTR *ctr )
 {
 	TDB_DATA kbuf, dbuf;
-	char *buffer, *tmpbuf;
+	char *buffer;
 	int i = 0;
 	uint32 len, buflen;
 	BOOL ret = True;
@@ -327,12 +327,11 @@ static BOOL regdb_store_keys_internal( const char *key, REGSUBKEY_CTR *ctr )
 		len += tdb_pack( buffer+len, buflen-len, "f", regsubkey_ctr_specific_key(ctr, i) );
 		if ( len > buflen ) {
 			/* allocate some extra space */
-			if ((tmpbuf = SMB_REALLOC( buffer, len*2 )) == NULL) {
+			if ((buffer = SMB_REALLOC( buffer, len*2 )) == NULL) {
 				DEBUG(0,("regdb_store_keys: Failed to realloc memory of size [%d]\n", len*2));
 				ret = False;
 				goto done;
 			}
-			buffer = tmpbuf;
 			buflen = len*2;
 					
 			len = tdb_pack( buffer+len, buflen-len, "f", regsubkey_ctr_specific_key(ctr, i) );

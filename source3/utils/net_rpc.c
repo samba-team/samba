@@ -4094,6 +4094,9 @@ static void add_sid_to_token(NT_USER_TOKEN *token, DOM_SID *sid)
 		return;
 
 	token->user_sids = SMB_REALLOC_ARRAY(token->user_sids, DOM_SID, token->num_sids+1);
+	if (!token->user_sids) {
+		return;
+	}
 
 	sid_copy(&token->user_sids[token->num_sids], sid);
 
@@ -4477,6 +4480,10 @@ static void collect_share(const char *name, uint32 m,
 
 	share_list->num_shares += 1;
 	share_list->shares = SMB_REALLOC_ARRAY(share_list->shares, char *, share_list->num_shares);
+	if (!share_list->shares) {
+		share_list->num_shares = 0;
+		return;
+	}
 	share_list->shares[share_list->num_shares-1] = SMB_STRDUP(name);
 }
 

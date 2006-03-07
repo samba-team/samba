@@ -31,14 +31,11 @@ BOOL asn1_write(ASN1_DATA *data, const void *p, int len)
 {
 	if (data->has_error) return False;
 	if (data->length < data->ofs+len) {
-		uint8 *newp;
-		newp = SMB_REALLOC(data->data, data->ofs+len);
-		if (!newp) {
-			SAFE_FREE(data->data);
+		data->data = SMB_REALLOC(data->data, data->ofs+len);
+		if (!data->data) {
 			data->has_error = True;
 			return False;
 		}
-		data->data = newp;
 		data->length = data->ofs+len;
 	}
 	memcpy(data->data + data->ofs, p, len);

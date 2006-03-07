@@ -870,11 +870,11 @@ static int call_trans2open(connection_struct *conn, char *inbuf, char *outbuf, i
 	}
 
 	/* Realloc the size of parameters and data we will return */
-	params = SMB_REALLOC(*pparams, 30);
-	if( params == NULL ) {
+	*pparams = SMB_REALLOC(*pparams, 30);
+	if(*pparams == NULL ) {
 		return ERROR_NT(NT_STATUS_NO_MEMORY);
 	}
-	*pparams = params;
+	params = *pparams;
 
 	SSVAL(params,0,fsp->fnum);
 	SSVAL(params,2,open_attr);
@@ -1711,21 +1711,20 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 		}
 	}
 
-	pdata = SMB_REALLOC(*ppdata, max_data_bytes + DIR_ENTRY_SAFETY_MARGIN);
-	if( pdata == NULL ) {
+	*ppdata = SMB_REALLOC(*ppdata, max_data_bytes + DIR_ENTRY_SAFETY_MARGIN);
+	if(*ppdata == NULL ) {
 		talloc_destroy(ea_ctx);
 		return ERROR_NT(NT_STATUS_NO_MEMORY);
 	}
-
-	*ppdata = pdata;
+	pdata = *ppdata;
 
 	/* Realloc the params space */
-	params = SMB_REALLOC(*pparams, 10);
-	if (params == NULL) {
+	*pparams = SMB_REALLOC(*pparams, 10);
+	if (*pparams == NULL) {
 		talloc_destroy(ea_ctx);
 		return ERROR_NT(NT_STATUS_NO_MEMORY);
 	}
-	*pparams = params;
+	params = *pparams;
 
 	/* Save the wildcard match and attribs we are using on this directory - 
 		needed as lanman2 assumes these are being saved between calls */
@@ -1962,22 +1961,22 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 		}
 	}
 
-	pdata = SMB_REALLOC( *ppdata, max_data_bytes + DIR_ENTRY_SAFETY_MARGIN);
-	if(pdata == NULL) {
+	*ppdata = SMB_REALLOC( *ppdata, max_data_bytes + DIR_ENTRY_SAFETY_MARGIN);
+	if(*ppdata == NULL) {
 		talloc_destroy(ea_ctx);
 		return ERROR_NT(NT_STATUS_NO_MEMORY);
 	}
 
-	*ppdata = pdata;
+	pdata = *ppdata;
 
 	/* Realloc the params space */
-	params = SMB_REALLOC(*pparams, 6*SIZEOFWORD);
-	if( params == NULL ) {
+	*pparams = SMB_REALLOC(*pparams, 6*SIZEOFWORD);
+	if(*pparams == NULL ) {
 		talloc_destroy(ea_ctx);
 		return ERROR_NT(NT_STATUS_NO_MEMORY);
 	}
 
-	*pparams = params;
+	params = *pparams;
 
 	/* Check that the dptr is valid */
 	if(!(conn->dirptr = dptr_fetch_lanman2(dptr_num))) {
@@ -2134,12 +2133,12 @@ static int call_trans2qfsinfo(connection_struct *conn, char *inbuf, char *outbuf
 		return ERROR_DOS(ERRSRV,ERRinvdevice);
 	}
 
-	pdata = SMB_REALLOC(*ppdata, max_data_bytes + DIR_ENTRY_SAFETY_MARGIN);
-	if ( pdata == NULL ) {
+	*ppdata = SMB_REALLOC(*ppdata, max_data_bytes + DIR_ENTRY_SAFETY_MARGIN);
+	if (*ppdata == NULL ) {
 		return ERROR_NT(NT_STATUS_NO_MEMORY);
 	}
 
-	*ppdata = pdata;
+	pdata = *ppdata;
 	memset((char *)pdata,'\0',max_data_bytes + DIR_ENTRY_SAFETY_MARGIN);
 
 	switch (info_level) {
@@ -2943,20 +2942,20 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 		}
 	}
 
-	params = SMB_REALLOC(*pparams,2);
-	if (params == NULL) {
+	*pparams = SMB_REALLOC(*pparams,2);
+	if (*pparams == NULL) {
 		talloc_destroy(ea_ctx);
 		return ERROR_NT(NT_STATUS_NO_MEMORY);
 	}
-	*pparams = params;
+	params = *pparams;
 	SSVAL(params,0,0);
 	data_size = max_data_bytes + DIR_ENTRY_SAFETY_MARGIN;
-	pdata = SMB_REALLOC(*ppdata, data_size); 
-	if ( pdata == NULL ) {
+	*ppdata = SMB_REALLOC(*ppdata, data_size); 
+	if (*ppdata == NULL ) {
 		talloc_destroy(ea_ctx);
 		return ERROR_NT(NT_STATUS_NO_MEMORY);
 	}
-	*ppdata = pdata;
+	pdata = *ppdata;
 
 	c_time = get_create_time(&sbuf,lp_fake_dir_create_times(SNUM(conn)));
 
@@ -3683,11 +3682,11 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 		tran_call,fname, fsp ? fsp->fnum : -1, info_level,total_data));
 
 	/* Realloc the parameter size */
-	params = SMB_REALLOC(*pparams,2);
-	if(params == NULL) {
+	*pparams = SMB_REALLOC(*pparams,2);
+	if (*pparams == NULL) {
 		return ERROR_NT(NT_STATUS_NO_MEMORY);
 	}
-	*pparams = params;
+	params = *pparams;
 
 	SSVAL(params,0,0);
 
@@ -4543,11 +4542,11 @@ static int call_trans2mkdir(connection_struct *conn, char *inbuf, char *outbuf, 
 	}
 
 	/* Realloc the parameter and data sizes */
-	params = SMB_REALLOC(*pparams,2);
-	if(params == NULL) {
+	*pparams = SMB_REALLOC(*pparams,2);
+	if(*pparams == NULL) {
 		return ERROR_NT(NT_STATUS_NO_MEMORY);
 	}
-	*pparams = params;
+	params = *pparams;
 
 	SSVAL(params,0,0);
 
@@ -4585,11 +4584,11 @@ static int call_trans2findnotifyfirst(connection_struct *conn, char *inbuf, char
 	}
 
 	/* Realloc the parameter and data sizes */
-	params = SMB_REALLOC(*pparams,6);
-	if(params == NULL) {
+	*pparams = SMB_REALLOC(*pparams,6);
+	if (*pparams == NULL) {
 		return ERROR_NT(NT_STATUS_NO_MEMORY);
 	}
-	*pparams = params;
+	params = *pparams;
 
 	SSVAL(params,0,fnf_handle);
 	SSVAL(params,2,0); /* No changes */
@@ -4619,11 +4618,11 @@ static int call_trans2findnotifynext(connection_struct *conn, char *inbuf, char 
 	DEBUG(3,("call_trans2findnotifynext\n"));
 
 	/* Realloc the parameter and data sizes */
-	params = SMB_REALLOC(*pparams,4);
-	if(params == NULL) {
+	*pparams = SMB_REALLOC(*pparams,4);
+	if (*pparams == NULL) {
 		return ERROR_NT(NT_STATUS_NO_MEMORY);
 	}
-	*pparams = params;
+	params = *pparams;
 
 	SSVAL(params,0,0); /* No changes */
 	SSVAL(params,2,0); /* No EA errors */
@@ -4688,11 +4687,11 @@ static int call_trans2ioctl(connection_struct *conn, char* inbuf, char* outbuf, 
 
 	if ((SVAL(inbuf,(smb_setup+4)) == LMCAT_SPL) &&
 			(SVAL(inbuf,(smb_setup+6)) == LMFUNC_GETJOBID)) {
-		pdata = SMB_REALLOC(*ppdata, 32);
-		if(pdata == NULL) {
+		*ppdata = SMB_REALLOC(*ppdata, 32);
+		if (*ppdata == NULL) {
 			return ERROR_NT(NT_STATUS_NO_MEMORY);
 		}
-		*ppdata = pdata;
+		pdata = *ppdata;
 
 		/* NOTE - THIS IS ASCII ONLY AT THE MOMENT - NOT SURE IF OS/2
 			CAN ACCEPT THIS IN UNICODE. JRA. */

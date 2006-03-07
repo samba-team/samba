@@ -99,20 +99,17 @@ static BOOL add_fd_to_close_entry(files_struct *fsp)
 {
 	TDB_DATA kbuf = locking_key_fsp(fsp);
 	TDB_DATA dbuf;
-	char *tp;
 
 	dbuf.dptr = NULL;
 	dbuf.dsize = 0;
 
 	dbuf = tdb_fetch(posix_pending_close_tdb, kbuf);
 
-	tp = SMB_REALLOC(dbuf.dptr, dbuf.dsize + sizeof(int));
-	if (!tp) {
+	dbuf.dptr = SMB_REALLOC(dbuf.dptr, dbuf.dsize + sizeof(int));
+	if (!dbuf.dptr) {
 		DEBUG(0,("add_fd_to_close_entry: Realloc fail !\n"));
-		SAFE_FREE(dbuf.dptr);
 		return False;
-	} else
-		dbuf.dptr = tp;
+	}
 
 	memcpy(dbuf.dptr + dbuf.dsize, &fsp->fh->fd, sizeof(int));
 	dbuf.dsize += sizeof(int);
@@ -358,7 +355,6 @@ static BOOL add_posix_lock_entry(files_struct *fsp, SMB_OFF_T start, SMB_OFF_T s
 	TDB_DATA kbuf = locking_key_fsp(fsp);
 	TDB_DATA dbuf;
 	struct posix_lock pl;
-	char *tp;
 
 	dbuf.dptr = NULL;
 	dbuf.dsize = 0;
@@ -376,12 +372,11 @@ static BOOL add_posix_lock_entry(files_struct *fsp, SMB_OFF_T start, SMB_OFF_T s
 	pl.size = size;
 	pl.lock_type = lock_type;
 
-	tp = SMB_REALLOC(dbuf.dptr, dbuf.dsize + sizeof(struct posix_lock));
-	if (!tp) {
+	dbuf.dptr = SMB_REALLOC(dbuf.dptr, dbuf.dsize + sizeof(struct posix_lock));
+	if (!dbuf.dptr) {
 		DEBUG(0,("add_posix_lock_entry: Realloc fail !\n"));
 		goto fail;
-	} else
-		dbuf.dptr = tp;
+	}
 
 	memcpy(dbuf.dptr + dbuf.dsize, &pl, sizeof(struct posix_lock));
 	dbuf.dsize += sizeof(struct posix_lock);
