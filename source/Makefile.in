@@ -699,9 +699,9 @@ CAC_PICOBJS = $(CAC_OBJ:.o=.@PICSUFFIX@)
 
 
 PAM_SMBPASS_OBJ_0 = pam_smbpass/pam_smb_auth.o pam_smbpass/pam_smb_passwd.o \
-               pam_smbpass/pam_smb_acct.o pam_smbpass/support.o \
-               $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) $(PASSDB_OBJ) $(GROUPDB_OBJ) \
-               $(SECRETS_OBJ) $(SMBLDAP_OBJ) $(LIBSAMBA_OBJ) \
+		pam_smbpass/pam_smb_acct.o pam_smbpass/support.o \
+		$(PARAM_OBJ) $(LIB_NONSMBD_OBJ) $(PASSDB_OBJ) $(GROUPDB_OBJ) \
+		$(SECRETS_OBJ) $(SMBLDAP_OBJ) $(LIBSAMBA_OBJ) \
 		$(RPC_PARSE_OBJ1) $(DOSERR_OBJ)
 
 PAM_SMBPASS_PICOOBJ = $(PAM_SMBPASS_OBJ_0:.o=.@PICSUFFIX@)
