@@ -27,7 +27,8 @@ REQUIRED_SUBSYSTEMS = \
 		CONFIG \
 		LIBBASIC \
 		LIBPOPT \
-		POPT_SAMBA
+		POPT_SAMBA \
+		POPT_CREDENTIALS
 MANPAGE = man/ntlm_auth.1
 # End BINARY ntlm_auth
 #################################
