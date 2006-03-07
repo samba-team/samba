@@ -35,7 +35,7 @@
 #include "ntptr/ntptr.h"
 #include "auth/gensec/gensec.h"
 #include "smbd/process_model.h"
-#include "smbd/proto.h"
+#include "smbd/service.h"
 
 /*
   recursively delete a directory tree
