@@ -50,7 +50,7 @@ add_addrs(krb5_context context,
 	++n;
 
     tmp = realloc(addr->val, (addr->len + n) * sizeof(*addr->val));
-    if (tmp == NULL) {
+    if (tmp == NULL && (addr->len + n) != 0) {
 	krb5_set_error_string(context, "malloc: out of memory");
 	ret = ENOMEM;
 	goto fail;
