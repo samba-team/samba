@@ -71,7 +71,7 @@ REQUIRED_SUBSYSTEMS = \
 		CONFIG \
 		LIBBASIC \
 		NDR_XATTR \
-		NDR_SAMR
+		NDR_SECURITY
 # End BINARY setnttoken
 #################################
 
