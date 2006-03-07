@@ -1557,7 +1557,7 @@ static NTSTATUS samr_OpenGroup(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 							   a_state->domain_state->domain_dn, msg, attr);
 #define QUERY_FPASSC(msg, field, attr) \
 	r->out.info->field = samdb_result_force_password_change(a_state->sam_ctx, mem_ctx, \
-							   a_state->domain_state->domain_dn, msg, attr);
+							   a_state->domain_state->domain_dn, msg);
 #define QUERY_LHOURS(msg, field, attr) \
 	r->out.info->field = samdb_result_logon_hours(mem_ctx, msg, attr);
 #define QUERY_AFLAGS(msg, field, attr) \
