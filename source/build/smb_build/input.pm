@@ -160,7 +160,7 @@ sub check($$$$$)
 		}
 
 		unless (defined($part->{DEFAULT_VISIBILITY})) {
-			$part->{DEFAULT_VISIBILITY} = "default";
+			$part->{DEFAULT_VISIBILITY} = "hidden";
 		}
 
 		unless (defined($part->{EXTRA_CFLAGS})) {
