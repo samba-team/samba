@@ -1469,8 +1469,10 @@ static NTSTATUS lookup_useraliases(struct winbindd_domain *domain,
 
 	(*alias_rids) = TALLOC_ARRAY(mem_ctx, uint32, *num_aliases);
 
-	if ((*num_aliases != 0) && ((*alias_rids) == NULL))
+	if ((*num_aliases != 0) && ((*alias_rids) == NULL)) {
+		centry_free(centry);
 		return NT_STATUS_NO_MEMORY;
+	}
 
 	for (i=0; i<(*num_aliases); i++)
 		(*alias_rids)[i] = centry_uint32(centry);
