@@ -43,14 +43,12 @@ sinclude(web_server/config.m4)
 sinclude(auth/config.m4)
 sinclude(kdc/config.m4)
 
-AC_DEFINE_UNQUOTED(STRING_STATIC_MODULES, "$string_static_modules", [String list of builtin modules])
-
-#################################################
-# do extra things if we are running insure
-
-if test "${ac_cv_prog_CC}" = "insure"; then
-	CPPFLAGS="$CPPFLAGS -D__INSURE__"
-fi
+AC_ARG_ENABLE(dso,
+[  --enable-dso 		Enable building internal libraries as DSO's (experimental)],
+[ if test x$enable_dso != xyes; then
+ 	BLDSHARED=false
+  fi], 
+[BLDSHARED=false])
 
 #################################################
 # add *_CFLAGS only for the real build
