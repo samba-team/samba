@@ -54,10 +54,7 @@ REQUIRED_SUBSYSTEMS = \
 #INSTALLDIR = BINDIR
 OBJ_FILES = \
 		setntacl.o
-REQUIRED_SUBSYSTEMS = \
-		CONFIG \
-		LIBBASIC \
-		NDR_XATTR
+REQUIRED_SUBSYSTEMS =
 # End BINARY setntacl
 #################################
 
@@ -67,11 +64,7 @@ REQUIRED_SUBSYSTEMS = \
 INSTALLDIR = BINDIR
 OBJ_FILES = \
 		setnttoken.o
-REQUIRED_SUBSYSTEMS = \
-		CONFIG \
-		LIBBASIC \
-		NDR_XATTR \
-		NDR_SECURITY
+REQUIRED_SUBSYSTEMS =
 # End BINARY setnttoken
 #################################
 
