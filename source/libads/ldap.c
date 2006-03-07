@@ -823,34 +823,6 @@ char *ads_get_dn_canonical(ADS_STRUCT *ads, void *msg)
 #endif
 }
 
-
-/**
- * Get the parent dn from a search result
- * @param ads connection to ads server
- * @param msg Search result
- * @return parent dn string
- **/
-char *ads_get_parent_dn(ADS_STRUCT *ads, void *msg)
-{
-	char *mydn, *p, *dn;
-
-	dn = ads_get_dn(ads, msg);
-	if (dn == NULL) {
-		return NULL;
-	}
-
-	mydn = dn;
-	ads_memfree(ads, dn);
-	
-	p = strchr(mydn, ',');
-
-	if (p == NULL) {
-		return NULL;
-	}
-
-	return p+1;
-}
-
 /**
  * Get the parent from a dn
  * @param dn the dn to return the parent from
