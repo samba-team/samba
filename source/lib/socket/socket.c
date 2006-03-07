@@ -81,8 +81,8 @@ static NTSTATUS socket_create_with_ops(TALLOC_CTX *mem_ctx, const struct socket_
 	return NT_STATUS_OK;
 }
 
-NTSTATUS socket_create(const char *name, enum socket_type type, 
-		       struct socket_context **new_sock, uint32_t flags)
+_PUBLIC_ NTSTATUS socket_create(const char *name, enum socket_type type, 
+			        struct socket_context **new_sock, uint32_t flags)
 {
 	const struct socket_ops *ops;
 
@@ -94,10 +94,10 @@ NTSTATUS socket_create(const char *name, enum socket_type type,
 	return socket_create_with_ops(NULL, ops, new_sock, type, flags);
 }
 
-NTSTATUS socket_connect(struct socket_context *sock,
-			const struct socket_address *my_address, 
-			const struct socket_address *server_address,
-			uint32_t flags)
+_PUBLIC_ NTSTATUS socket_connect(struct socket_context *sock,
+				 const struct socket_address *my_address, 
+				 const struct socket_address *server_address,
+				 uint32_t flags)
 {
 	if (sock == NULL) {
 		return NT_STATUS_CONNECTION_DISCONNECTED;
@@ -113,7 +113,7 @@ NTSTATUS socket_connect(struct socket_context *sock,
 	return sock->ops->fn_connect(sock, my_address, server_address, flags);
 }
 
-NTSTATUS socket_connect_complete(struct socket_context *sock, uint32_t flags)
+_PUBLIC_ NTSTATUS socket_connect_complete(struct socket_context *sock, uint32_t flags)
 {
 	if (!sock->ops->fn_connect_complete) {
 		return NT_STATUS_NOT_IMPLEMENTED;
@@ -121,9 +121,9 @@ NTSTATUS socket_connect_complete(struct socket_context *sock, uint32_t flags)
 	return sock->ops->fn_connect_complete(sock, flags);
 }
 
-NTSTATUS socket_listen(struct socket_context *sock, 
-		       const struct socket_address *my_address, 
-		       int queue_size, uint32_t flags)
+_PUBLIC_ NTSTATUS socket_listen(struct socket_context *sock, 
+			        const struct socket_address *my_address, 
+			        int queue_size, uint32_t flags)
 {
 	if (sock == NULL) {
 		return NT_STATUS_CONNECTION_DISCONNECTED;
@@ -139,7 +139,7 @@ NTSTATUS socket_listen(struct socket_context *sock,
 	return sock->ops->fn_listen(sock, my_address, queue_size, flags);
 }
 
-NTSTATUS socket_accept(struct socket_context *sock, struct socket_context **new_sock)
+_PUBLIC_ NTSTATUS socket_accept(struct socket_context *sock, struct socket_context **new_sock)
 {
 	NTSTATUS status;
 
@@ -167,8 +167,8 @@ NTSTATUS socket_accept(struct socket_context *sock, struct socket_context **new_
 	return status;
 }
 
-NTSTATUS socket_recv(struct socket_context *sock, void *buf, 
-		     size_t wantlen, size_t *nread, uint32_t flags)
+_PUBLIC_ NTSTATUS socket_recv(struct socket_context *sock, void *buf, 
+			      size_t wantlen, size_t *nread, uint32_t flags)
 {
 	if (sock == NULL) {
 		return NT_STATUS_CONNECTION_DISCONNECTED;
@@ -194,9 +194,9 @@ NTSTATUS socket_recv(struct socket_context *sock, void *buf,
 	return sock->ops->fn_recv(sock, buf, wantlen, nread, flags);
 }
 
-NTSTATUS socket_recvfrom(struct socket_context *sock, void *buf, 
-			 size_t wantlen, size_t *nread, uint32_t flags,
-			 TALLOC_CTX *mem_ctx, struct socket_address **src_addr)
+_PUBLIC_ NTSTATUS socket_recvfrom(struct socket_context *sock, void *buf, 
+				  size_t wantlen, size_t *nread, uint32_t flags,
+				  TALLOC_CTX *mem_ctx, struct socket_address **src_addr)
 {
 	if (sock == NULL) {
 		return NT_STATUS_CONNECTION_DISCONNECTED;
@@ -213,8 +213,8 @@ NTSTATUS socket_recvfrom(struct socket_context *sock, void *buf,
 				      mem_ctx, src_addr);
 }
 
-NTSTATUS socket_send(struct socket_context *sock, 
-		     const DATA_BLOB *blob, size_t *sendlen, uint32_t flags)
+_PUBLIC_ NTSTATUS socket_send(struct socket_context *sock, 
+			      const DATA_BLOB *blob, size_t *sendlen, uint32_t flags)
 {
 	if (sock == NULL) {
 		return NT_STATUS_CONNECTION_DISCONNECTED;
@@ -242,9 +242,9 @@ NTSTATUS socket_send(struct socket_context *sock,
 }
 
 
-NTSTATUS socket_sendto(struct socket_context *sock, 
-		       const DATA_BLOB *blob, size_t *sendlen, uint32_t flags,
-		       const struct socket_address *dest_addr)
+_PUBLIC_ NTSTATUS socket_sendto(struct socket_context *sock, 
+			        const DATA_BLOB *blob, size_t *sendlen, uint32_t flags,
+			        const struct socket_address *dest_addr)
 {
 	if (sock == NULL) {
 		return NT_STATUS_CONNECTION_DISCONNECTED;
@@ -269,7 +269,7 @@ NTSTATUS socket_sendto(struct socket_context *sock,
 /*
   ask for the number of bytes in a pending incoming packet
 */
-NTSTATUS socket_pending(struct socket_context *sock, size_t *npending)
+_PUBLIC_ NTSTATUS socket_pending(struct socket_context *sock, size_t *npending)
 {
 	if (sock == NULL) {
 		return NT_STATUS_CONNECTION_DISCONNECTED;
@@ -281,7 +281,7 @@ NTSTATUS socket_pending(struct socket_context *sock, size_t *npending)
 }
 
 
-NTSTATUS socket_set_option(struct socket_context *sock, const char *option, const char *val)
+_PUBLIC_ NTSTATUS socket_set_option(struct socket_context *sock, const char *option, const char *val)
 {
 	if (sock == NULL) {
 		return NT_STATUS_CONNECTION_DISCONNECTED;
@@ -293,7 +293,7 @@ NTSTATUS socket_set_option(struct socket_context *sock, const char *option, cons
 	return sock->ops->fn_set_option(sock, option, val);
 }
 
-char *socket_get_peer_name(struct socket_context *sock, TALLOC_CTX *mem_ctx)
+_PUBLIC_ char *socket_get_peer_name(struct socket_context *sock, TALLOC_CTX *mem_ctx)
 {
 	if (!sock->ops->fn_get_peer_name) {
 		return NULL;
@@ -302,7 +302,7 @@ char *socket_get_peer_name(struct socket_context *sock, TALLOC_CTX *mem_ctx)
 	return sock->ops->fn_get_peer_name(sock, mem_ctx);
 }
 
-struct socket_address *socket_get_peer_addr(struct socket_context *sock, TALLOC_CTX *mem_ctx)
+_PUBLIC_ struct socket_address *socket_get_peer_addr(struct socket_context *sock, TALLOC_CTX *mem_ctx)
 {
 	if (!sock->ops->fn_get_peer_addr) {
 		return NULL;
@@ -311,7 +311,7 @@ struct socket_address *socket_get_peer_addr(struct socket_context *sock, TALLOC_
 	return sock->ops->fn_get_peer_addr(sock, mem_ctx);
 }
 
-struct socket_address *socket_get_my_addr(struct socket_context *sock, TALLOC_CTX *mem_ctx)
+_PUBLIC_ struct socket_address *socket_get_my_addr(struct socket_context *sock, TALLOC_CTX *mem_ctx)
 {
 	if (!sock->ops->fn_get_my_addr) {
 		return NULL;
@@ -320,7 +320,7 @@ struct socket_address *socket_get_my_addr(struct socket_context *sock, TALLOC_CT
 	return sock->ops->fn_get_my_addr(sock, mem_ctx);
 }
 
-int socket_get_fd(struct socket_context *sock)
+_PUBLIC_ int socket_get_fd(struct socket_context *sock)
 {
 	if (!sock->ops->fn_get_fd) {
 		return -1;
@@ -335,7 +335,7 @@ int socket_get_fd(struct socket_context *sock)
   efficient (select speed depends on the maxiumum fd number passed to
   it)
 */
-NTSTATUS socket_dup(struct socket_context *sock)
+_PUBLIC_ NTSTATUS socket_dup(struct socket_context *sock)
 {
 	int fd;
 	if (sock->fd == -1) {
@@ -355,10 +355,10 @@ NTSTATUS socket_dup(struct socket_context *sock)
  * The host parameter may be an IP or a hostname 
  */
 
-struct socket_address *socket_address_from_strings(TALLOC_CTX *mem_ctx,
-						   const char *family,
-						   const char *host,
-						   int port)
+_PUBLIC_ struct socket_address *socket_address_from_strings(TALLOC_CTX *mem_ctx,
+							    const char *family,
+							    const char *host,
+							    int port)
 {
 	struct socket_address *addr = talloc(mem_ctx, struct socket_address);
 	if (!addr) {
@@ -382,9 +382,9 @@ struct socket_address *socket_address_from_strings(TALLOC_CTX *mem_ctx,
  * structure.  Used for hooks in the kerberos libraries, where they
  * supply only a struct sockaddr */
 
-struct socket_address *socket_address_from_sockaddr(TALLOC_CTX *mem_ctx, 
-						    struct sockaddr *sockaddr, 
-						    size_t sockaddrlen)
+_PUBLIC_ struct socket_address *socket_address_from_sockaddr(TALLOC_CTX *mem_ctx, 
+							     struct sockaddr *sockaddr, 
+							     size_t sockaddrlen)
 {
 	struct socket_address *addr = talloc(mem_ctx, struct socket_address);
 	if (!addr) {
@@ -402,11 +402,11 @@ struct socket_address *socket_address_from_sockaddr(TALLOC_CTX *mem_ctx,
 	return addr;
 }
 
-const struct socket_ops *socket_getops_byname(const char *family, enum socket_type type)
+_PUBLIC_ const struct socket_ops *socket_getops_byname(const char *family, enum socket_type type)
 {
-	extern const struct socket_ops *socket_ipv4_ops(enum socket_type );
-	extern const struct socket_ops *socket_ipv6_ops(enum socket_type );
-	extern const struct socket_ops *socket_unixdom_ops(enum socket_type );
+	extern const struct socket_ops *socket_ipv4_ops(enum socket_type);
+	extern const struct socket_ops *socket_ipv6_ops(enum socket_type);
+	extern const struct socket_ops *socket_unixdom_ops(enum socket_type);
 
 	if (strcmp("ip", family) == 0 || 
 	    strcmp("ipv4", family) == 0) {
