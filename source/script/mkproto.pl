@@ -89,7 +89,7 @@ sub handle_loadparm($$)
 {
 	my ($file,$line) = @_;
 
-	if ($line =~ /^FN_(GLOBAL|LOCAL)_(CONST_STRING|STRING|BOOL|CHAR|INTEGER|LIST)\((\w+),.*\)/o) {
+	if ($line =~ /^_PUBLIC_ FN_(GLOBAL|LOCAL)_(CONST_STRING|STRING|BOOL|CHAR|INTEGER|LIST)\((\w+),.*\)/o) {
 		my $scope = $1;
 		my $type = $2;
 		my $name = $3;
@@ -133,6 +133,11 @@ sub process_file($$$)
 
 		next if ($line =~ /^\/|[;]/);
 
+		if ($line =~ /^_PUBLIC_ FN_/) {
+			handle_loadparm($public_file, $line);
+			next;
+		}
+
 		if ($line =~ /^_PUBLIC_[\t ]/) {
 			$target = $public_file;
 			$is_public = 1;
@@ -146,11 +151,6 @@ sub process_file($$$)
 			      /xo);
 
 		next if ($line =~ /^int\s*main/);
-
-		if ($line =~ /^FN_/) {
-			handle_loadparm($public_file, $line);
-			next;
-		}
 
 		if ( $line =~ /\(.*\)\s*$/o ) {
 			chomp $line;
