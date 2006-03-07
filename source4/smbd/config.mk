@@ -6,7 +6,7 @@
 INIT_FUNCTION = server_service_auth_init
 SUBSYSTEM = SERVER_SERVICE
 REQUIRED_SUBSYSTEMS = \
-		AUTH
+		auth
 # End MODULE server_auth
 ################################################
 

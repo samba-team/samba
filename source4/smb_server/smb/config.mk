@@ -15,6 +15,6 @@ OBJ_FILES = \
 		trans2.o \
 		signing.o
 REQUIRED_SUBSYSTEMS = \
-		NTVFS LIBPACKET
+		ntvfs LIBPACKET
 # End SUBSYSTEM SMB_PROTOCOL
 #######################

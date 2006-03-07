@@ -14,7 +14,7 @@ REQUIRED_SUBSYSTEMS = \
 		LIBREPLACE
 PUBLIC_HEADERS = include/tdb.h
 #
-# End SUBSYSTEM LIBLDB
+# End SUBSYSTEM ldb
 ################################################
 
 ################################################

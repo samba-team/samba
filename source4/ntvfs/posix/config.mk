@@ -1,7 +1,7 @@
 ################################################
 # Start MODULE ntvfs_posix
 [MODULE::ntvfs_posix]
-SUBSYSTEM = NTVFS
+SUBSYSTEM = ntvfs
 INIT_FUNCTION = ntvfs_posix_init 
 PRIVATE_PROTO_HEADER = vfs_posix_proto.h
 OBJ_FILES = \
