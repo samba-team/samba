@@ -108,19 +108,34 @@ BOOL prs_rpcbuffer_p(const char *desc, prs_struct *ps, int depth, RPC_BUFFER **b
 
 	data_p = *buffer ? 0xf000baaa : 0;
 
-	if ( !prs_uint32("ptr", ps, depth, &data_p ))
+	if ( !prs_uint32("ptr", ps, depth, &data_p )) {
 		return False;
+	}
+
+	/* We must always return a valid buffer pointer even if the
+	   client didn't send one - just leave it initialized to null. */
+	if ( UNMARSHALLING(ps) ) {
+		if ( !(*buffer = PRS_ALLOC_MEM(ps, RPC_BUFFER, 1)) ) {
+			return False;
+		}
+	}
 
 	/* we're done if there is no data */
 
-	if ( !data_p )
+	if (!data_p) {
+		if (UNMARSHALLING(ps)) {
+			RPC_BUFFER *pbuffer = *buffer;
+			/* On unmarshalling we must return a valid,
+			   but zero size value RPC_BUFFER. */
+			pbuffer->size = 0;
+			pbuffer->string_at_end = 0;
+			if (!prs_init(&pbuffer->prs, 0, prs_get_mem_context(ps), UNMARSHALL)) {
+				return False;
+			}
+		}
 		return True;
-		
-	if ( UNMARSHALLING(ps) ) {
-		if ( !(*buffer = PRS_ALLOC_MEM(ps, RPC_BUFFER, 1)) )
-			return False;
 	}
-
+		
 	return prs_rpcbuffer( desc, ps, depth, *buffer);
 }
 
