@@ -22,6 +22,7 @@
 
 #include "includes.h"
 #include "auth/auth.h"
+#include "libcli/security/proto.h"
 
 /** 
  * Return an error based on username

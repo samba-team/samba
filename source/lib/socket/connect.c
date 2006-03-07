@@ -26,6 +26,7 @@
 #include "lib/socket/socket.h"
 #include "lib/events/events.h"
 #include "libcli/composite/composite.h"
+#include "libcli/resolve/resolve.h"
 
 
 struct connect_state {

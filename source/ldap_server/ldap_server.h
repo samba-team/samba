@@ -60,3 +60,5 @@ struct ldapsrv_service;
 struct ldapsrv_service {
 	struct tls_params *tls_params;
 };
+
+#include "ldap_server/proto.h"

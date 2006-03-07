@@ -24,6 +24,7 @@
 #include "auth/auth.h"
 #include "vfs_posix.h"
 #include "librpc/gen_ndr/ndr_xattr.h"
+#include "libcli/security/proto.h"
 
 
 /*

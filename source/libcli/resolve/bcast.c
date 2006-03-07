@@ -21,6 +21,9 @@
 */
 
 #include "includes.h"
+#include "libcli/resolve/resolve.h"
+#include "system/network.h"
+#include "netif/netif.h"
 
 /*
   broadcast name resolution method - async send

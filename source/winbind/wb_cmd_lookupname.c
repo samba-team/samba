@@ -23,6 +23,8 @@
 #include "includes.h"
 #include "libcli/composite/composite.h"
 #include "winbind/wb_server.h"
+#include "winbind/wb_async_helpers.h"
+#include "winbind/wb_helper.h"
 #include "smbd/service_task.h"
 
 struct cmd_lookupname_state {

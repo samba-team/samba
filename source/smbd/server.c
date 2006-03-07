@@ -34,6 +34,7 @@
 #include "ntvfs/ntvfs.h"
 #include "ntptr/ntptr.h"
 #include "auth/gensec/gensec.h"
+#include "smbd/process_model.h"
 
 /*
   recursively delete a directory tree

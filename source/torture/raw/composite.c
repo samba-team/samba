@@ -25,6 +25,7 @@
 #include "lib/events/events.h"
 #include "libcli/raw/libcliraw.h"
 #include "libcli/libcli.h"
+#include "libcli/security/proto.h"
 #include "libcli/composite/composite.h"
 #include "libcli/smb_composite/smb_composite.h"
 #include "lib/cmdline/popt_common.h"

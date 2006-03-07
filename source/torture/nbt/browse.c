@@ -22,6 +22,7 @@
 
 #include "includes.h"
 #include "librpc/gen_ndr/ndr_nbt.h"
+#include "libcli/resolve/resolve.h"
 
 /*
   test nbt dgram operations

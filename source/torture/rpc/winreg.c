@@ -23,6 +23,7 @@
 #include "includes.h"
 #include "torture/torture.h"
 #include "librpc/gen_ndr/ndr_winreg.h"
+#include "libcli/security/proto.h"
 
 #define TEST_KEY_BASE "smbtorture test"
 #define TEST_KEY1 TEST_KEY_BASE "\\spottyfoot"

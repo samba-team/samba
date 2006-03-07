@@ -1,3 +1,7 @@
+- for each subsystem:
+ - include line in Makefile
+ - rule in Makefile
+ - 
 - sonames
 - get rid of include/structs.h
 - add register function to smbtorture

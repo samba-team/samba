@@ -27,6 +27,8 @@
 #include "libcli/wrepl/winsrepl.h"
 #include "lib/stream/packet.h"
 #include "libcli/composite/composite.h"
+#include "system/network.h"
+#include "netif/netif.h"
 
 static struct wrepl_request *wrepl_request_finished(struct wrepl_request *req, NTSTATUS status);
 

@@ -34,6 +34,8 @@
 #include "lib/ldb/include/ldb.h"
 #include "lib/ldb/include/ldb_errors.h"
 #include "lib/ldb/include/ldb_private.h"
+#include "system/network.h"
+#include "netif/netif.h"
 
 /* add_record: do things with the sambaPassword attribute */
 static int wins_ldb_verify(struct ldb_module *module, struct ldb_request *req, const struct ldb_message *msg)

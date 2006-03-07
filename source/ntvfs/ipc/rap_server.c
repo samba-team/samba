@@ -22,6 +22,7 @@
 #include "includes.h"
 #include "libcli/rap/rap.h"
 #include "librpc/gen_ndr/ndr_srvsvc.h"
+#include "rpc_server/common/common.h"
 
 /* At this moment these are just dummy functions, but you might get the
  * idea. */

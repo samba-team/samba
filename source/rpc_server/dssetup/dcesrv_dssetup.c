@@ -27,6 +27,7 @@
 #include "rpc_server/common/common.h"
 #include "ldb/include/ldb.h"
 #include "dsdb/samdb/samdb.h"
+#include "db_wrap.h"
 /* 
   dssetup_DsRoleGetPrimaryDomainInformation 
 */

@@ -24,6 +24,8 @@
 #include "nbt_server/nbt_server.h"
 #include "smbd/service_task.h"
 #include "lib/socket/socket.h"
+#include "libcli/resolve/resolve.h"
+#include "nbt_server/dgram/proto.h"
 
 /*
   a list of mailslots that we have static handlers for

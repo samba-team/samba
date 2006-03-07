@@ -22,6 +22,7 @@
 
 #include "includes.h"
 #include "lib/events/events.h"
+#include "libcli/resolve/resolve.h"
 
 struct result_struct {
 	int num_pass;

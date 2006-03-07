@@ -23,6 +23,8 @@
 #include "includes.h"
 #include "lib/socket/socket.h"
 #include "lib/events/events.h"
+#include "system/network.h"
+#include "netif/netif.h"
 
 #define CHECK_STATUS(status, correct) do { \
 	if (!NT_STATUS_EQUAL(status, correct)) { \

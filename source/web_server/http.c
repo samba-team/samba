@@ -30,6 +30,7 @@
 #include "lib/appweb/ejs/ejsInternal.h"
 #include "dlinklist.h"
 #include "lib/tls/tls.h"
+#include "scripting/ejs/smbcalls.h"
 
 #define SWAT_SESSION_KEY "SwatSessionId"
 #define HTTP_PREAUTH_URI "/scripting/preauth.esp"

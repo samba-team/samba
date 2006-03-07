@@ -29,6 +29,7 @@
 #include "lib/ldb/include/ldb.h"
 #include "librpc/rpc/dcerpc_table.h"
 #include "lib/events/events.h"
+#include "libcli/resolve/resolve.h"
 
 #include "torture/basic/proto.h"
 #include "torture/raw/proto.h"

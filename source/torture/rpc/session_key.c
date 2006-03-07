@@ -25,6 +25,7 @@
 #include "librpc/gen_ndr/ndr_lsa.h"
 
 #include "torture/rpc/proto.h"
+#include "libcli/auth/proto.h"
 
 static void init_lsa_String(struct lsa_String *name, const char *s)
 {

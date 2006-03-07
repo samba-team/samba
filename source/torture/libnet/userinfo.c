@@ -23,6 +23,7 @@
 #include "torture/torture.h"
 #include "libnet/libnet.h"
 #include "libnet/userinfo.h"
+#include "libcli/security/proto.h"
 
 #define TEST_USERNAME  "libnetuserinfotest"
 

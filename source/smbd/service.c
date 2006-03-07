@@ -23,6 +23,7 @@
 
 #include "includes.h"
 #include "dlinklist.h"
+#include "smbd/process_model.h"
 
 /*
   a linked list of registered servers

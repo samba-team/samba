@@ -23,6 +23,7 @@
 #include "includes.h"
 #include "lib/events/events.h"
 #include "libcli/composite/composite.h"
+#include "libcli/resolve/resolve.h"
 
 struct resolve_state {
 	struct nbt_name name;
