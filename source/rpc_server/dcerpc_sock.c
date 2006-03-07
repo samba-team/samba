@@ -67,6 +67,7 @@ static void dcesrv_sock_accept(struct stream_connection *srv_conn)
 					 srv_conn,
 					 dcesrv_sock->endpoint,
 					 srv_conn,
+					 DCESRV_CALL_STATE_FLAG_MAY_ASYNC,
 					 &dcesrv_conn);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("dcesrv_sock_accept: dcesrv_endpoint_connect failed: %s\n", 
