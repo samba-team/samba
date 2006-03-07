@@ -274,6 +274,9 @@ extern int 		mprMemcpy(char *dest, int destMax, const char *src, int nbytes);
 extern void mprSetCtx(void *ctx);
 extern void *mprMemCtx(void);
 
+/* This function needs to be provided by anyone using ejs */
+void ejs_exception(const char *reason);
+
 #define mprStrCmpAnyCase(s1, s2) strcasecmp_m(s1, s2)
 
 #ifdef __cplusplus

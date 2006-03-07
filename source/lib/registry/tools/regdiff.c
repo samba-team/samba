@@ -21,6 +21,7 @@
 
 #include "includes.h"
 #include "lib/registry/registry.h"
+#include "lib/registry/reg_backend_rpc.h"
 #include "lib/cmdline/popt_common.h"
 
 int main(int argc, char **argv)

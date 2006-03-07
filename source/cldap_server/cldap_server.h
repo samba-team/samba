@@ -29,3 +29,5 @@ struct cldapd_server {
 	struct task_server *task;
 	struct ldb_context *samctx;
 };
+
+#include "cldap_server/proto.h"

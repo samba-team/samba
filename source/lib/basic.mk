@@ -45,6 +45,7 @@ OBJ_FILES = \
 ################################################
 # Start SUBSYSTEM LIBCOMPRESSION
 [SUBSYSTEM::LIBCOMPRESSION]
+NOPROTO = YES
 OBJ_FILES = \
 		compression/mszip.o
 # End SUBSYSTEM LIBCOMPRESION
