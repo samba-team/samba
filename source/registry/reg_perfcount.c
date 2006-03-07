@@ -499,7 +499,7 @@ static BOOL _reg_perfcount_get_counter_info(PERF_DATA_BLOCK *block,
 	obj->counters[obj->NumCounters].CounterType = atoi(buf);
 	DEBUG(10, ("_reg_perfcount_get_counter_info: Got type [%d] for counter [%d].\n",
 		   obj->counters[obj->NumCounters].CounterType, CounterIndex));
-	free(data.dptr);
+	SAFE_FREE(data.dptr);
 
 	/* Fetch the actual data */
 	_reg_perfcount_make_key(&key, buf, PERFCOUNT_MAX_LEN, CounterIndex, "");
@@ -544,7 +544,7 @@ static BOOL _reg_perfcount_get_counter_info(PERF_DATA_BLOCK *block,
 		memset(buf, 0, PERFCOUNT_MAX_LEN);
 		memcpy(buf, data.dptr, data.dsize);
 	}
-	free(data.dptr);
+	SAFE_FREE(data.dptr);
 
 	obj->counter_data.ByteLength += dsize + padding;
 	obj->counter_data.data = TALLOC_REALLOC_ARRAY(ps->mem_ctx,
@@ -694,7 +694,7 @@ BOOL _reg_perfcount_get_instance_info(PERF_INSTANCE_DEFINITION *inst,
 		return False;
 	memset(inst->counter_data.data, 0, data.dsize);
 	memcpy(inst->counter_data.data, data.dptr, data.dsize);
-	free(data.dptr);
+	SAFE_FREE(data.dptr);
 
 	/* Fetch instance name */
 	memset(temp, 0, PERFCOUNT_MAX_LEN);
@@ -719,7 +719,7 @@ BOOL _reg_perfcount_get_instance_info(PERF_INSTANCE_DEFINITION *inst,
 						  uint8,
 						  inst->NameLength);
 		memcpy(inst->data, name, inst->NameLength);
-		free(data.dptr);
+		SAFE_FREE(data.dptr);
 	}
 
 	inst->ParentObjectTitleIndex = 0;
@@ -807,7 +807,7 @@ static int _reg_perfcount_assemble_global(PERF_DATA_BLOCK *block,
 				DEBUG(3, ("_reg_perfcount_assemble_global: Failed to add new relationship for counter [%d].\n", j));
 				retval = -1;
 			}
-			free(data.dptr);
+			SAFE_FREE(data.dptr);
 		}
 		else
 			DEBUG(3, ("NULL relationship for counter [%d] using key [%s].\n", j, keybuf));
@@ -837,7 +837,7 @@ static BOOL _reg_perfcount_get_64(SMB_BIG_UINT *retval,
 
 	memset(buf, 0, PERFCOUNT_MAX_LEN);
 	memcpy(buf, data.dptr, data.dsize);
-	free(data.dptr);
+	SAFE_FREE(data.dptr);
 
 	*retval = atof(buf);
 
