@@ -1062,7 +1062,7 @@ enum winbindd_result winbindd_dual_pam_auth(struct winbindd_domain *domain,
 {
 	NTSTATUS result = NT_STATUS_LOGON_FAILURE;
 	fstring name_domain, name_user;
-	NET_USER_INFO_3 *info3;
+	NET_USER_INFO_3 *info3 = NULL;
 	
 	/* Ensure null termination */
 	state->request.data.auth.user[sizeof(state->request.data.auth.user)-1]='\0';
