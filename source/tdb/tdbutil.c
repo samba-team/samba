@@ -495,21 +495,24 @@ BOOL tdb_pack_append(TALLOC_CTX *mem_ctx, uint8 **buf, size_t *len,
 	len1 = tdb_pack_va(NULL, 0, fmt, ap);
 	va_end(ap);
 
-	if (mem_ctx != NULL)
+	if (mem_ctx != NULL) {
 		*buf = TALLOC_REALLOC_ARRAY(mem_ctx, *buf, uint8,
 					    (*len) + len1);
-	else
+	} else {
 		*buf = SMB_REALLOC_ARRAY(*buf, uint8, (*len) + len1);
+	}
 
-	if (*buf == NULL)
+	if (*buf == NULL) {
 		return False;
+	}
 
 	va_start(ap, fmt);
 	len2 = tdb_pack_va((char *)(*buf)+(*len), len1, fmt, ap);
 	va_end(ap);
 
-	if (len1 != len2)
+	if (len1 != len2) {
 		return False;
+	}
 
 	*len += len2;
 

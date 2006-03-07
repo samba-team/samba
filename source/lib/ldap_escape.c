@@ -37,7 +37,6 @@ char *escape_ldap_string_alloc(const char *s)
 {
 	size_t len = strlen(s)+1;
 	char *output = SMB_MALLOC(len);
-	char *output_tmp;
 	const char *sub;
 	int i = 0;
 	char *p = output;
@@ -65,12 +64,10 @@ char *escape_ldap_string_alloc(const char *s)
 		
 		if (sub) {
 			len = len + 3;
-			output_tmp = SMB_REALLOC(output, len);
-			if (!output_tmp) { 
-				SAFE_FREE(output);
+			output = SMB_REALLOC(output, len);
+			if (!output) { 
 				return NULL;
 			}
-			output = output_tmp;
 			
 			p = &output[i];
 			strncpy (p, sub, 3);

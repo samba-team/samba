@@ -179,7 +179,7 @@ int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
 	pstring mask;
 	file_info finfo;
 	int i;
-	char *tdl, *dirlist = NULL;
+	char *dirlist = NULL;
 	int dirlist_len = 0;
 	int total_received = -1;
 	BOOL First = True;
@@ -338,15 +338,13 @@ int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
 
 		/* grab the data for later use */
 		/* and add them to the dirlist pool */
-		tdl = SMB_REALLOC(dirlist,dirlist_len + data_len);
+		dirlist = SMB_REALLOC(dirlist,dirlist_len + data_len);
 
-		if (!tdl) {
+		if (!dirlist) {
 			DEBUG(0,("cli_list_new: Failed to expand dirlist\n"));
 			SAFE_FREE(rdata);
 			SAFE_FREE(rparam);
 			break;
-		} else {
-			dirlist = tdl;
 		}
 
 		memcpy(dirlist+dirlist_len,p,data_len);
@@ -421,7 +419,7 @@ int cli_list_old(struct cli_state *cli,const char *Mask,uint16 attribute,
 	int num_asked = (cli->max_xmit - 100)/DIR_STRUCT_SIZE;
 	int num_received = 0;
 	int i;
-	char *tdl, *dirlist = NULL;
+	char *dirlist = NULL;
 	pstring mask;
 	
 	ZERO_ARRAY(status);
@@ -466,14 +464,11 @@ int cli_list_old(struct cli_state *cli,const char *Mask,uint16 attribute,
 
 		first = False;
 
-		tdl = SMB_REALLOC(dirlist,(num_received + received)*DIR_STRUCT_SIZE);
-
-		if (!tdl) {
+		dirlist = SMB_REALLOC(dirlist,(num_received + received)*DIR_STRUCT_SIZE);
+		if (!dirlist) {
 			DEBUG(0,("cli_list_old: failed to expand dirlist"));
-			SAFE_FREE(dirlist);
 			return 0;
 		}
-		else dirlist = tdl;
 
 		p = smb_buf(cli->inbuf) + 3;
 

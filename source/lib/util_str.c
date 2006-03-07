@@ -1049,14 +1049,13 @@ char *realloc_string_sub(char *string, const char *pattern,
 	while ((p = strstr_m(s,pattern))) {
 		if (ld > 0) {
 			int offset = PTR_DIFF(s,string);
-			char *t = SMB_REALLOC(string, ls + ld + 1);
-			if (!t) {
+			string = SMB_REALLOC(string, ls + ld + 1);
+			if (!string) {
 				DEBUG(0, ("realloc_string_sub: out of memory!\n"));
 				SAFE_FREE(in);
 				return NULL;
 			}
-			string = t;
-			p = t + offset + (p - s);
+			p = string + offset + (p - s);
 		}
 		if (li != lp) {
 			memmove(p+li,p+lp,strlen(p+lp)+1);
@@ -1119,15 +1118,14 @@ char *talloc_string_sub(TALLOC_CTX *mem_ctx, const char *src,
 	while ((p = strstr_m(s,pattern))) {
 		if (ld > 0) {
 			int offset = PTR_DIFF(s,string);
-			char *t = TALLOC_REALLOC(mem_ctx, string, ls + ld + 1);
-			if (!t) {
+			string = TALLOC_REALLOC(mem_ctx, string, ls + ld + 1);
+			if (!string) {
 				DEBUG(0, ("talloc_string_sub: out of "
 					  "memory!\n"));
 				SAFE_FREE(in);
 				return NULL;
 			}
-			string = t;
-			p = t + offset + (p - s);
+			p = string + offset + (p - s);
 		}
 		if (li != lp) {
 			memmove(p+li,p+lp,strlen(p+lp)+1);
@@ -1703,7 +1701,9 @@ static char **str_list_make_internal(TALLOC_CTX *mem_ctx, const char *string, co
 			if (mem_ctx) {
 				rlist = TALLOC_REALLOC_ARRAY(mem_ctx, list, char *, lsize +1);
 			} else {
-				rlist = SMB_REALLOC_ARRAY(list, char *, lsize +1);
+				/* We need to keep the old list on error so we can free the elements
+				   if the realloc fails. */
+				rlist = SMB_REALLOC_ARRAY_KEEP_OLD_ON_ERROR(list, char *, lsize +1);
 			}
 			if (!rlist) {
 				DEBUG(0,("str_list_make: Unable to allocate memory"));
@@ -1714,8 +1714,9 @@ static char **str_list_make_internal(TALLOC_CTX *mem_ctx, const char *string, co
 					SAFE_FREE(s);
 				}
 				return NULL;
-			} else
+			} else {
 				list = rlist;
+			}
 			memset (&list[num], 0, ((sizeof(char**)) * (S_LIST_ABS +1)));
 		}
 
@@ -1773,7 +1774,7 @@ BOOL str_list_copy(char ***dest, const char **src)
 	while (src[num]) {
 		if (num == lsize) {
 			lsize += S_LIST_ABS;
-			rlist = SMB_REALLOC_ARRAY(list, char *, lsize +1);
+			rlist = SMB_REALLOC_ARRAY_KEEP_OLD_ON_ERROR(list, char *, lsize +1);
 			if (!rlist) {
 				DEBUG(0,("str_list_copy: Unable to re-allocate memory"));
 				str_list_free(&list);
@@ -2266,8 +2267,9 @@ void string_append(char **left, const char *right)
 		*left = SMB_REALLOC(*left, new_len);
 	}
 
-	if (*left == NULL)
+	if (*left == NULL) {
 		return;
+	}
 
 	safe_strcat(*left, right, new_len-1);
 }
@@ -2334,14 +2336,16 @@ void sprintf_append(TALLOC_CTX *mem_ctx, char **string, ssize_t *len,
 	}
 
 	if (increased) {
-		if (mem_ctx != NULL)
+		if (mem_ctx != NULL) {
 			*string = TALLOC_REALLOC_ARRAY(mem_ctx, *string, char,
 						       *bufsize);
-		else
+		} else {
 			*string = SMB_REALLOC_ARRAY(*string, char, *bufsize);
+		}
 
-		if (*string == NULL)
+		if (*string == NULL) {
 			goto error;
+		}
 	}
 
 	StrnCpy((*string)+(*len), newstr, ret);

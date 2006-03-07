@@ -383,7 +383,7 @@ void add_session_user(const char *user)
 				 "too large.\n"));
 			return;
 		}
-		newlist = (char *)SMB_REALLOC(
+		newlist = (char *)SMB_REALLOC_KEEP_OLD_ON_ERROR(
 			session_userlist,
 			len_session_userlist + PSTRING_LEN );
 		if( newlist == NULL ) {

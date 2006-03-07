@@ -169,8 +169,6 @@ BOOL cli_receive_trans(struct cli_state *cli,int trans,
 	unsigned int total_param=0;
 	unsigned int this_data,this_param;
 	NTSTATUS status;
-	char *tdata;
-	char *tparam;
 
 	*data_len = *param_len = 0;
 
@@ -209,25 +207,21 @@ BOOL cli_receive_trans(struct cli_state *cli,int trans,
 
 	/* allocate it */
 	if (total_data!=0) {
-		tdata = SMB_REALLOC(*data,total_data);
-		if (!tdata) {
+		*data = SMB_REALLOC(*data,total_data);
+		if (!(*data)) {
 			DEBUG(0,("cli_receive_trans: failed to enlarge data buffer\n"));
 			cli_signing_trans_stop(cli);
 			return False;
 		}
-		else
-			*data = tdata;
 	}
 
 	if (total_param!=0) {
-		tparam = SMB_REALLOC(*param,total_param);
-		if (!tparam) {
+		*param = SMB_REALLOC(*param,total_param);
+		if (!(*param)) {
 			DEBUG(0,("cli_receive_trans: failed to enlarge param buffer\n"));
 			cli_signing_trans_stop(cli);
 			return False;
 		}
-		else
-			*param = tparam;
 	}
 
 	for (;;)  {
@@ -476,8 +470,6 @@ BOOL cli_receive_nt_trans(struct cli_state *cli,
 	unsigned int this_data,this_param;
 	uint8 eclass;
 	uint32 ecode;
-	char *tdata;
-	char *tparam;
 
 	*data_len = *param_len = 0;
 
@@ -526,24 +518,20 @@ BOOL cli_receive_nt_trans(struct cli_state *cli,
 
 	/* allocate it */
 	if (total_data) {
-		tdata = SMB_REALLOC(*data,total_data);
-		if (!tdata) {
+		*data = SMB_REALLOC(*data,total_data);
+		if (!(*data)) {
 			DEBUG(0,("cli_receive_nt_trans: failed to enlarge data buffer to %d\n",total_data));
 			cli_signing_trans_stop(cli);
 			return False;
-		} else {
-			*data = tdata;
 		}
 	}
 
 	if (total_param) {
-		tparam = SMB_REALLOC(*param,total_param);
-		if (!tparam) {
+		*param = SMB_REALLOC(*param,total_param);
+		if (!(*param)) {
 			DEBUG(0,("cli_receive_nt_trans: failed to enlarge param buffer to %d\n", total_param));
 			cli_signing_trans_stop(cli);
 			return False;
-		} else {
-			*param = tparam;
 		}
 	}
 

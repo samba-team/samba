@@ -108,13 +108,12 @@ static SMB_STRUCT_DIR *shadow_copy_opendir(vfs_handle_struct *handle, connection
 
 		DEBUG(10,("shadow_copy_opendir: not hide [%s]\n",d->d_name));
 
-		r = SMB_REALLOC_ARRAY(dirp->dirs,SMB_STRUCT_DIRENT, dirp->num+1);
-		if (!r) {
+		dirp->dirs = SMB_REALLOC_ARRAY(dirp->dirs,SMB_STRUCT_DIRENT, dirp->num+1);
+		if (!dirp->dirs) {
 			DEBUG(0,("shadow_copy_opendir: Out of memory\n"));
 			break;
 		}
 
-		dirp->dirs = r;
 		dirp->dirs[dirp->num++] = *d;
 	}
 

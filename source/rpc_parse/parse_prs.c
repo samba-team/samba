@@ -207,16 +207,21 @@ BOOL prs_set_buffer_size(prs_struct *ps, uint32 newsize)
 		return prs_force_grow(ps, newsize - ps->buffer_size);
 
 	if (newsize < ps->buffer_size) {
-		char *new_data_p = SMB_REALLOC(ps->data_p, newsize);
-		/* if newsize is zero, Realloc acts like free() & returns NULL*/
-		if (new_data_p == NULL && newsize != 0) {
-			DEBUG(0,("prs_set_buffer_size: Realloc failure for size %u.\n",
-				(unsigned int)newsize));
-			DEBUG(0,("prs_set_buffer_size: Reason %s\n",strerror(errno)));
-			return False;
-		}
-		ps->data_p = new_data_p;
 		ps->buffer_size = newsize;
+
+		/* newsize == 0 acts as a free and set pointer to NULL */
+		if (newsize == 0) {
+			SAFE_FREE(ps->data_p);
+		} else {
+			ps->data_p = SMB_REALLOC(ps->data_p, newsize);
+
+			if (ps->data_p == NULL) {
+				DEBUG(0,("prs_set_buffer_size: Realloc failure for size %u.\n",
+					(unsigned int)newsize));
+				DEBUG(0,("prs_set_buffer_size: Reason %s\n",strerror(errno)));
+				return False;
+			}
+		}
 	}
 
 	return True;
@@ -230,7 +235,6 @@ BOOL prs_set_buffer_size(prs_struct *ps, uint32 newsize)
 BOOL prs_grow(prs_struct *ps, uint32 extra_space)
 {
 	uint32 new_size;
-	char *new_data;
 
 	ps->grow_size = MAX(ps->grow_size, ps->data_offset + extra_space);
 
@@ -261,11 +265,11 @@ BOOL prs_grow(prs_struct *ps, uint32 extra_space)
 
 		new_size = MAX(RPC_MAX_PDU_FRAG_LEN,extra_space);
 
-		if((new_data = SMB_MALLOC(new_size)) == NULL) {
+		if((ps->data_p = SMB_MALLOC(new_size)) == NULL) {
 			DEBUG(0,("prs_grow: Malloc failure for size %u.\n", (unsigned int)new_size));
 			return False;
 		}
-		memset(new_data, '\0', (size_t)new_size );
+		memset(ps->data_p, '\0', (size_t)new_size );
 	} else {
 		/*
 		 * If the current buffer size is bigger than the space needed, just 
@@ -273,16 +277,15 @@ BOOL prs_grow(prs_struct *ps, uint32 extra_space)
 		 */
 		new_size = MAX(ps->buffer_size*2, ps->buffer_size + extra_space);		
 
-		if ((new_data = SMB_REALLOC(ps->data_p, new_size)) == NULL) {
+		if ((ps->data_p = SMB_REALLOC(ps->data_p, new_size)) == NULL) {
 			DEBUG(0,("prs_grow: Realloc failure for size %u.\n",
 				(unsigned int)new_size));
 			return False;
 		}
 
-		memset(&new_data[ps->buffer_size], '\0', (size_t)(new_size - ps->buffer_size));
+		memset(&ps->data_p[ps->buffer_size], '\0', (size_t)(new_size - ps->buffer_size));
 	}
 	ps->buffer_size = new_size;
-	ps->data_p = new_data;
 
 	return True;
 }
@@ -296,7 +299,6 @@ BOOL prs_grow(prs_struct *ps, uint32 extra_space)
 BOOL prs_force_grow(prs_struct *ps, uint32 extra_space)
 {
 	uint32 new_size = ps->buffer_size + extra_space;
-	char *new_data;
 
 	if(!UNMARSHALLING(ps) || !ps->is_dynamic) {
 		DEBUG(0,("prs_force_grow: Buffer overflow - unable to expand buffer by %u bytes.\n",
@@ -304,16 +306,15 @@ BOOL prs_force_grow(prs_struct *ps, uint32 extra_space)
 		return False;
 	}
 
-	if((new_data = SMB_REALLOC(ps->data_p, new_size)) == NULL) {
+	if((ps->data_p = SMB_REALLOC(ps->data_p, new_size)) == NULL) {
 		DEBUG(0,("prs_force_grow: Realloc failure for size %u.\n",
 			(unsigned int)new_size));
 		return False;
 	}
 
-	memset(&new_data[ps->buffer_size], '\0', (size_t)(new_size - ps->buffer_size));
+	memset(&ps->data_p[ps->buffer_size], '\0', (size_t)(new_size - ps->buffer_size));
 
 	ps->buffer_size = new_size;
-	ps->data_p = new_data;
 
 	return True;
 }

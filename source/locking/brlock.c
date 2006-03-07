@@ -343,7 +343,6 @@ static NTSTATUS brl_lock_windows(struct byte_range_lock *br_lck,
 	unsigned int i;
 	files_struct *fsp = br_lck->fsp;
 	struct lock_struct *locks = (struct lock_struct *)br_lck->lock_data;
-	struct lock_struct *tp;
 
 	for (i=0; i < br_lck->num_locks; i++) {
 		/* Do any Windows or POSIX locks conflict ? */
@@ -380,16 +379,15 @@ static NTSTATUS brl_lock_windows(struct byte_range_lock *br_lck,
 	}
 
 	/* no conflicts - add it to the list of locks */
-	tp = (struct lock_struct *)SMB_REALLOC(locks, (br_lck->num_locks + 1) * sizeof(*locks));
-	if (!tp) {
+	locks = (struct lock_struct *)SMB_REALLOC(locks, (br_lck->num_locks + 1) * sizeof(*locks));
+	if (!locks) {
 		return NT_STATUS_NO_MEMORY;
-	} else {
-		locks = tp;
-		memcpy(&locks[br_lck->num_locks], plock, sizeof(struct lock_struct));
-		br_lck->num_locks += 1;
-		br_lck->lock_data = (void *)locks;
-		br_lck->modified = True;
 	}
+
+	memcpy(&locks[br_lck->num_locks], plock, sizeof(struct lock_struct));
+	br_lck->num_locks += 1;
+	br_lck->lock_data = (void *)locks;
+	br_lck->modified = True;
 
 	return NT_STATUS_OK;
 }
@@ -599,7 +597,7 @@ static NTSTATUS brl_lock_posix(struct byte_range_lock *br_lck,
 {
 	unsigned int i, count;
 	struct lock_struct *locks = (struct lock_struct *)br_lck->lock_data;
-	struct lock_struct *tp, *tp1;
+	struct lock_struct *tp;
 	files_struct *fsp = br_lck->fsp;
 	BOOL lock_was_added = False;
 
@@ -677,12 +675,12 @@ static NTSTATUS brl_lock_posix(struct byte_range_lock *br_lck,
 	}
 
 	/* Realloc so we don't leak entries per lock call. */
-	tp1 = (struct lock_struct *)SMB_REALLOC(tp, count * sizeof(*locks));
-	if (!tp1) {
+	tp = (struct lock_struct *)SMB_REALLOC(tp, count * sizeof(*locks));
+	if (!tp) {
 		return NT_STATUS_NO_MEMORY;
 	}
 	br_lck->num_locks = count;
-	br_lck->lock_data = (void *)tp1;
+	br_lck->lock_data = (void *)tp;
 	br_lck->modified = True;
 	return NT_STATUS_OK;
 }
@@ -853,7 +851,7 @@ static BOOL brl_unlock_posix(struct byte_range_lock *br_lck, const struct lock_s
 {
 	unsigned int i, j, count;
 	struct lock_struct *lock;
-	struct lock_struct *tp, *tp1;
+	struct lock_struct *tp;
 	struct lock_struct *locks = (struct lock_struct *)br_lck->lock_data;
 	BOOL overlap_found = False;
 
@@ -967,23 +965,23 @@ static BOOL brl_unlock_posix(struct byte_range_lock *br_lck, const struct lock_s
 
 	/* Realloc so we don't leak entries per unlock call. */
 	if (count) {
-		tp1 = (struct lock_struct *)SMB_REALLOC(tp, count * sizeof(*locks));
-		if (!tp1) {
+		tp = (struct lock_struct *)SMB_REALLOC(tp, count * sizeof(*locks));
+		if (!tp) {
 			DEBUG(10,("brl_unlock_posix: realloc fail\n"));
 			return False;
 		}
 	} else {
 		/* We deleted the last lock. */
 		SAFE_FREE(tp);
-		tp1 = NULL;
+		tp = NULL;
 	}
 
 	br_lck->num_locks = count;
-	br_lck->lock_data = (void *)tp1;
+	br_lck->lock_data = (void *)tp;
 	br_lck->modified = True;
 
 	/* Send unlock messages to any pending waiters that overlap. */
-	locks = tp1;
+	locks = tp;
 
 	for (j=0; j < br_lck->num_locks; j++) {
 		struct lock_struct *pend_lock = &locks[j];
