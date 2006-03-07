@@ -24,6 +24,8 @@ sub new($$$)
 	$self->{static_libs} = [];
 	$self->{shared_libs} = [];
 	$self->{headers} = [];
+	$self->{install_plugins} = "";
+	$self->{uninstall_plugins} = "";
 	$self->{pc_files} = [];
 	$self->{proto_headers} = [];
 	$self->{output} = "";
@@ -264,8 +266,14 @@ sub SharedLibrary($$)
 		$installdir = "bin";
 	}
 
-	push (@{$self->{shared_libs}}, "bin/$ctx->{LIBRARY_REALNAME}");
-	push (@{$self->{shared_modules}}, "bin/$ctx->{LIBRARY_REALNAME}");
+	if ($ctx->{TYPE} eq "LIBRARY") {
+		push (@{$self->{shared_libs}}, "bin/$ctx->{LIBRARY_REALNAME}");
+	} elsif ($ctx->{TYPE} eq "MODULE") {
+		push (@{$self->{shared_modules}}, "bin/$ctx->{LIBRARY_REALNAME}");
+
+		$self->{install_plugins} .= "\t\@cp $installdir/$ctx->{LIBRARY_REALNAME} \$(DESTDIR)\$(MODULESDIR)/$ctx->{SUBSYSTEM}/$ctx->{NAME}.\$(SHLIBEXT)\n";
+		$self->{uninstall_plugins} .= "\t\@rm \$(DESTDIR)\$(MODULESDIR)/$ctx->{SUBSYSTEM}/$ctx->{NAME}.\$(SHLIBEXT)\n";
+	}
 
 	$self->_prepare_list($ctx, "OBJ_LIST");
 	$self->_prepare_list($ctx, "CFLAGS");
@@ -551,6 +559,9 @@ sub write($$)
 	$self->output("PROTO_OBJS = " . array2oneperline($self->{proto_objs}) .  "\n");
 	$self->output("PROTO_HEADERS = " . array2oneperline($self->{proto_headers}) .  "\n");
 	$self->output("SHARED_MODULES = " . array2oneperline($self->{shared_modules}) . "\n");
+
+	$self->output("\ninstallplugins: \$(SHARED_MODULES)\n".$self->{install_plugins}."\n");
+	$self->output("\nuninstallplugins:\n".$self->{uninstall_plugins}."\n");
 
 	$self->_prepare_mk_files();
 

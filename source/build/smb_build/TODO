@@ -1,11 +1,10 @@
-- for each subsystem:
- - include line in Makefile
- - rule in Makefile
- - 
 - sonames
-- get rid of include/structs.h
+- saner names for some of the .pc files
+- get rid of include/structs.h and include/proto.h
 - add register function to smbtorture
-- install shared modules
 - improve (un)install scripts (rewrite in perl?)
-- proper #include dependencies
+- proper #include dependencies:
+  for each subsystem:
+  - include line in Makefile
+  - rule in Makefile
 - determine dependencies from #include lines ?

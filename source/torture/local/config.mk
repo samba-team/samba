@@ -20,7 +20,7 @@ OBJ_FILES = \
 REQUIRED_SUBSYSTEMS = \
 		LIBSMB \
 		MESSAGING \
-		REGISTRY
+		registry
 # End SUBSYSTEM TORTURE_LOCAL
 #################################
 
