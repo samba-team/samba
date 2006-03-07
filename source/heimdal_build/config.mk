@@ -186,9 +186,10 @@ NOPROTO = YES
 #######################
 # Start SUBSYSTEM HEIMDAL_ASN1
 [SUBSYSTEM::HEIMDAL_ASN1]
-EXTRA_CFLAGS = -Iheimdal_build -Iheimdal/lib/asn1 \
-			   -Iheimdal/kdc -Iheimdal/lib/des \
-			   -Iheimdal/lib/roken -DNO_PRINTF_ATTRIBUTE
+EXTRA_CFLAGS = \
+	-Iheimdal_build -Iheimdal/lib/asn1 \
+	-Iheimdal/kdc -Iheimdal/lib/des \
+	-Iheimdal/lib/roken -DNO_PRINTF_ATTRIBUTE
 OBJ_FILES = \
 	../heimdal/lib/asn1/der_get.o \
 	../heimdal/lib/asn1/der_put.o \
@@ -264,9 +265,10 @@ NOPROTO = YES
 #######################
 # Start SUBSYSTEM HEIMDAL_DES
 [SUBSYSTEM::HEIMDAL_DES]
-EXTRA_CFLAGS = -Iheimdal_build -Iheimdal/kdc \
-			   -Iheimdal/lib/des -Iheimdal/lib/roken \
-			   -DNO_PRINTF_ATTRIBUTE
+EXTRA_CFLAGS = \
+	-Iheimdal_build -Iheimdal/kdc \
+	-Iheimdal/lib/des -Iheimdal/lib/roken \
+	-DNO_PRINTF_ATTRIBUTE
 OBJ_FILES = \
 	../heimdal/lib/des/aes.o \
 	../heimdal/lib/des/des.o \
@@ -310,8 +312,9 @@ NOPROTO = YES
 #######################
 # Start SUBSYSTEM HEIMDAL_ROKEN
 [SUBSYSTEM::HEIMDAL_ROKEN]
-EXTRA_CFLAGS = -Iheimdal_build -Iheimdal/kdc \
-			   -Iheimdal/lib/des -Iheimdal/lib/roken -DNO_PRINTF_ATTRIBUTE
+EXTRA_CFLAGS = \
+	-Iheimdal_build -Iheimdal/kdc \
+	-Iheimdal/lib/des -Iheimdal/lib/roken -DNO_PRINTF_ATTRIBUTE
 OBJ_FILES = \
 	../heimdal/lib/roken/base64.o \
 	../heimdal/lib/roken/bswap.o \
@@ -344,9 +347,10 @@ NOPROTO = YES
 #######################
 # Start SUBSYSTEM HEIMDAL_VERS
 [SUBSYSTEM::HEIMDAL_VERS]
-EXTRA_CFLAGS = -Iheimdal_build -Iheimdal/kdc \
-			   -Iheimdal/lib/des -Iheimdal/lib/roken \
-			   -DNO_PRINTF_ATTRIBUTE
+EXTRA_CFLAGS = \
+	-Iheimdal_build -Iheimdal/kdc \
+	-Iheimdal/lib/des -Iheimdal/lib/roken \
+	-DNO_PRINTF_ATTRIBUTE
 OBJ_FILES = ../heimdal/lib/vers/print_version.o
 NOPROTO = YES
 # End SUBSYSTEM HEIMDAL_VERS
@@ -363,9 +367,10 @@ REQUIRED_SUBSYSTEMS = LIBNETIF
 #######################
 # Start SUBSYSTEM HEIMDAL_COM_ERR
 [SUBSYSTEM::HEIMDAL_COM_ERR]
-EXTRA_CFLAGS = -Iheimdal_build -Iheimdal/lib/com_err \
-			   -Iheimdal/kdc -Iheimdal/lib/des \
-			   -Iheimdal/lib/roken -DNO_PRINTF_ATTRIBUTE
+EXTRA_CFLAGS = \
+	-Iheimdal_build -Iheimdal/lib/com_err \
+	-Iheimdal/kdc -Iheimdal/lib/des \
+	-Iheimdal/lib/roken -DNO_PRINTF_ATTRIBUTE
 OBJ_FILES = \
 	../heimdal/lib/com_err/com_err.o \
 	../heimdal/lib/com_err/error.o
@@ -376,10 +381,10 @@ NOPROTO = YES
 #######################
 # Start BINARY asn1_compile
 [BINARY::asn1_compile]
-EXTRA_CFLAGS = -Iheimdal_build -Iheimdal/lib/asn1 \
-			   -Iheimdal/kdc -Iheimdal/lib/des \
-			   -Iheimdal/lib/roken -DNO_PRINTF_ATTRIBUTE
-NOPROTO = YES
+EXTRA_CFLAGS = \
+	-Iheimdal_build -Iheimdal/lib/asn1 \
+	-Iheimdal/kdc -Iheimdal/lib/des \
+	-Iheimdal/lib/roken -DNO_PRINTF_ATTRIBUTE
 OBJ_FILES = \
 	../heimdal/lib/asn1/main.ho \
 	../heimdal/lib/asn1/gen.ho \
@@ -411,7 +416,6 @@ OBJ_FILES = \
 #######################
 # Start BINARY compile_et
 [BINARY::compile_et]
-NOPROTO = YES
 OBJ_FILES = ../heimdal/lib/vers/print_version.ho \
 	../heimdal/lib/com_err/lex.ho \
 	../heimdal/lib/com_err/parse.ho \
