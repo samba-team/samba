@@ -36,6 +36,10 @@
 #include "includes.h"
 #include "ldb/include/includes.h"
 
+#ifdef _SAMBA_BUILD_
+#include "build.h"
+#endif
+
 #define LDB_MODULE_PREFIX	"modules:"
 #define LDB_MODULE_PREFIX_LEN	8
 
