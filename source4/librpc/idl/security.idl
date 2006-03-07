@@ -5,7 +5,8 @@
 */
 
 [
-	pointer_default(unique)
+	pointer_default(unique),
+	depends(misc)
 ]
 interface security
 {
