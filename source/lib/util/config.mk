@@ -3,7 +3,7 @@ MAJOR_VERSION = 0
 MINOR_VERSION = 0
 RELEASE_VERSION = 1
 DESCRIPTION = Generic utility functions
-PUBLIC_PROTO_HEADER = util_proto.h
+PRIVATE_PROTO_HEADER = util_proto.h
 PUBLIC_HEADERS = util.h \
 				 byteorder.h \
 				 debug.h \
