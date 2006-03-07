@@ -561,7 +561,8 @@ static int password_hash_handle(struct ldb_module *module, struct ldb_request *r
 	}
 
 	/* If the original caller did anything with pwdLastSet then skip this.  It could be an incoming samsync */
-	if ((attribute = ldb_msg_find_element(msg, "pwdLastSet")) == NULL ) {
+	attribute = ldb_msg_find_element(msg, "pwdLastSet");
+	if (attribute == NULL) {
 		/* Update the password last set time */
 		unix_to_nt_time(&now_nt, now);
 		CHECK_RET(ldb_msg_add_empty(modify_msg, "pwdLastSet", LDB_FLAG_MOD_REPLACE));
@@ -569,7 +570,8 @@ static int password_hash_handle(struct ldb_module *module, struct ldb_request *r
 	}
 
 	/* If the original caller did anything with "msDS-KeyVersionNumber" then skip this.  It could be an incoming samsync */
-	if ((attribute = ldb_msg_find_element(msg, "msDS-KeyVersionNumber")) == NULL ) {
+	attribute = ldb_msg_find_element(msg, "msDS-KeyVersionNumber");
+	if (attribute == NULL) {
 		if (kvno == 0) {
 			CHECK_RET(ldb_msg_add_empty(modify_msg, "msDS-KeyVersionNumber",
 						    LDB_FLAG_MOD_REPLACE));
