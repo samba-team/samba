@@ -24,6 +24,7 @@
 #include "smbd/service_task.h"
 #include "web_server/web_server.h"
 #include "smbd/service_stream.h"
+#include "smbd/proto.h"
 #include "lib/events/events.h"
 #include "system/time.h"
 #include "lib/appweb/esp/esp.h"
