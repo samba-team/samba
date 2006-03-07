@@ -28,3 +28,4 @@ struct tdb_wrap {
 	struct tdb_wrap *next, *prev;
 };
 
+#include "db_wrap_proto.h"

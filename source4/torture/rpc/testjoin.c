@@ -35,6 +35,8 @@
 #include "lib/ldb/include/ldb.h"
 
 #include "torture/rpc/proto.h"
+#include "libcli/security/proto.h"
+#include "libcli/auth/proto.h"
 
 struct test_join {
 	struct dcerpc_pipe *p;

@@ -61,3 +61,5 @@ struct process_model_critical_sizes {
 	int interface_version;
 	int sizeof_model_ops;
 };
+
+#include "smbd/process_model_proto.h"

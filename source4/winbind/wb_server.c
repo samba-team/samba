@@ -25,6 +25,7 @@
 #include "dlinklist.h"
 #include "lib/events/events.h"
 #include "smbd/service_task.h"
+#include "smbd/process_model.h"
 #include "smbd/service_stream.h"
 #include "nsswitch/winbind_nss_config.h"
 #include "winbind/wb_server.h"

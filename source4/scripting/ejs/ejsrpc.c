@@ -27,6 +27,7 @@
 #include "librpc/gen_ndr/ndr_lsa.h"
 #include "librpc/gen_ndr/ndr_winreg.h"
 #include "scripting/ejs/ejsrpc.h"
+#include "libcli/security/proto.h"
 
 /*
   set the switch var to be used by the next union switch

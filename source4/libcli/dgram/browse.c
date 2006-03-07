@@ -24,6 +24,7 @@
 #include "includes.h"
 #include "libcli/dgram/libdgram.h"
 #include "lib/socket/socket.h"
+#include "libcli/resolve/resolve.h"
 
 NTSTATUS dgram_mailslot_browse_send(struct nbt_dgram_socket *dgmsock,
 				    struct nbt_name *dest_name,

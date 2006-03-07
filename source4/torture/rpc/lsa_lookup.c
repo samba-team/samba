@@ -23,6 +23,7 @@
 #include "torture/torture.h"
 #include "librpc/gen_ndr/ndr_lsa.h"
 #include "lib/events/events.h"
+#include "libcli/security/proto.h"
 
 static BOOL open_policy(TALLOC_CTX *mem_ctx, struct dcerpc_pipe *p,
 			struct policy_handle **handle)

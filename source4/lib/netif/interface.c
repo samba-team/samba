@@ -25,7 +25,7 @@
 #include "lib/netif/netif.h"
 #include "dlinklist.h"
 
-/* used for network interfaces */
+/** used for network interfaces */
 struct interface {
 	struct interface *next, *prev;
 	struct ipv4_addr ip;
@@ -105,7 +105,7 @@ static void add_interface(struct in_addr ip, struct in_addr nmask)
 
 
 
-/****************************************************************************
+/**
 interpret a single element from a interfaces= config line 
 
 This handles the following different forms:
@@ -115,7 +115,7 @@ This handles the following different forms:
 3) IP/masklen
 4) ip/mask
 5) bcast/mask
-****************************************************************************/
+**/
 static void interpret_interface(const char *token, 
 				struct iface_struct *probed_ifaces, 
 				int total_probed)
@@ -184,9 +184,9 @@ static void interpret_interface(const char *token,
 }
 
 
-/****************************************************************************
+/**
 load the list of network interfaces
-****************************************************************************/
+**/
 static void load_interfaces(void)
 {
 	const char **ptr;
@@ -230,19 +230,19 @@ static void load_interfaces(void)
 }
 
 
-/*
+/**
   unload the interfaces list, so it can be reloaded when needed
 */
-_PUBLIC_ void unload_interfaces(void)
+void unload_interfaces(void)
 {
 	talloc_free(local_interfaces);
 	local_interfaces = NULL;
 }
 
-/****************************************************************************
+/**
   how many interfaces do we have
-  **************************************************************************/
-_PUBLIC_ int iface_count(void)
+  **/
+int iface_count(void)
 {
 	int ret = 0;
 	struct interface *i;
@@ -254,10 +254,10 @@ _PUBLIC_ int iface_count(void)
 	return ret;
 }
 
-/****************************************************************************
+/**
   return IP of the Nth interface
-  **************************************************************************/
-_PUBLIC_ const char *iface_n_ip(int n)
+  **/
+const char *iface_n_ip(int n)
 {
 	struct interface *i;
   
@@ -272,10 +272,10 @@ _PUBLIC_ const char *iface_n_ip(int n)
 	return NULL;
 }
 
-/****************************************************************************
+/**
   return bcast of the Nth interface
-  **************************************************************************/
-_PUBLIC_ const char *iface_n_bcast(int n)
+  **/
+const char *iface_n_bcast(int n)
 {
 	struct interface *i;
   
@@ -290,10 +290,10 @@ _PUBLIC_ const char *iface_n_bcast(int n)
 	return NULL;
 }
 
-/****************************************************************************
+/**
   return netmask of the Nth interface
-  **************************************************************************/
-_PUBLIC_ const char *iface_n_netmask(int n)
+  **/
+const char *iface_n_netmask(int n)
 {
 	struct interface *i;
   
@@ -308,11 +308,11 @@ _PUBLIC_ const char *iface_n_netmask(int n)
 	return NULL;
 }
 
-/*
+/**
   return the local IP address that best matches a destination IP, or
   our first interface if none match
 */
-_PUBLIC_ const char *iface_best_ip(const char *dest)
+const char *iface_best_ip(const char *dest)
 {
 	struct interface *iface;
 	struct in_addr ip;
@@ -327,10 +327,10 @@ _PUBLIC_ const char *iface_best_ip(const char *dest)
 	return iface_n_ip(0);
 }
 
-/*
+/**
   return True if an IP is one one of our local networks
 */
-_PUBLIC_ BOOL iface_is_local(const char *dest)
+BOOL iface_is_local(const char *dest)
 {
 	struct in_addr ip;
 
@@ -343,10 +343,10 @@ _PUBLIC_ BOOL iface_is_local(const char *dest)
 	return False;
 }
 
-/*
+/**
   return True if a IP matches a IP/netmask pair
 */
-_PUBLIC_ BOOL iface_same_net(const char *ip1, const char *ip2, const char *netmask)
+BOOL iface_same_net(const char *ip1, const char *ip2, const char *netmask)
 {
 	return same_net(interpret_addr2(ip1),
 			interpret_addr2(ip2),

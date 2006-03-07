@@ -41,6 +41,8 @@
 #include "system/iconv.h"
 #include "librpc/gen_ndr/netlogon.h"
 #include "auth/auth.h"
+#include "auth/auth_sam.h"
+#include "db_wrap.h"
 #include "dsdb/samdb/samdb.h"
 
 enum hdb_ldb_ent_type 

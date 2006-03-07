@@ -36,6 +36,8 @@
 #include "lib/stream/packet.h"
 #include "lib/ldb/include/ldb.h"
 #include "lib/ldb/include/ldb_errors.h"
+#include "system/network.h"
+#include "netif/netif.h"
 
 /*
   close the socket and shutdown a server_context

@@ -4,6 +4,7 @@
 SUBSYSTEM = GENSEC
 NOPROTO = NO
 INIT_FUNCTION = gensec_ntlmssp_init
+PRIVATE_PROTO_HEADER = proto.h
 OBJ_FILES = ntlmssp.o \
 		ntlmssp_sign.o \
 		ntlmssp_client.o \

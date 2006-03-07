@@ -185,4 +185,4 @@ struct gensec_ntlmssp_state
 	struct auth_serversupplied_info *server_info;
 };
 
-
+#include "auth/ntlmssp/proto.h"

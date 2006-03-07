@@ -23,6 +23,7 @@
 #include "includes.h"
 #include "system/network.h"
 #include "system/kerberos.h"
+#include "netif/netif.h"
 
 /*
   get the list of IP addresses for configured interfaces

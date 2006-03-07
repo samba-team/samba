@@ -28,6 +28,8 @@
 #include "auth/auth.h"
 #include "dsdb/samdb/samdb.h"
 #include "rpc_server/samr/proto.h"
+#include "db_wrap.h"
+#include "libcli/auth/proto.h"
 
 struct server_pipe_state {
 	struct netr_Credential client_challenge;

@@ -170,3 +170,5 @@ struct smb_composite_connectmulti {
 		struct smbcli_socket *socket;
 	} out;
 };
+
+#include "libcli/smb_composite/proto.h"

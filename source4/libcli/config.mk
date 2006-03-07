@@ -16,11 +16,13 @@ OBJ_FILES = util/clilsa.o
 REQUIRED_SUBSYSTEMS = RPC_NDR_LSA
 
 [SUBSYSTEM::LIBCLI_COMPOSITE]
+PRIVATE_PROTO_HEADER = composite/proto.h
 OBJ_FILES = \
 	composite/composite.o
 REQUIRED_SUBSYSTEMS = LIBEVENTS
 
 [SUBSYSTEM::LIBCLI_SMB_COMPOSITE]
+PRIVATE_PROTO_HEADER = smb_composite/proto.h
 OBJ_FILES = \
 	smb_composite/loadfile.o \
 	smb_composite/savefile.o \
@@ -80,6 +82,7 @@ OBJ_FILES = \
 REQUIRED_SUBSYSTEMS = NDR_WINSREPL SOCKET LIBEVENTS
 
 [SUBSYSTEM::LIBCLI_RESOLVE]
+PRIVATE_PROTO_HEADER = resolve/resolve.h
 OBJ_FILES = \
 	resolve/resolve.o \
 	resolve/nbtlist.o \

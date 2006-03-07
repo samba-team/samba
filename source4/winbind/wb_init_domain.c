@@ -24,9 +24,12 @@
 #include "libcli/composite/composite.h"
 #include "libcli/smb_composite/smb_composite.h"
 #include "winbind/wb_server.h"
+#include "winbind/wb_async_helpers.h"
+#include "winbind/wb_helper.h"
 #include "smbd/service_task.h"
 
 #include "libcli/auth/credentials.h"
+#include "libcli/security/proto.h"
 
 #include "libcli/ldap/ldap_client.h"
 

@@ -38,6 +38,7 @@
 #include "libcli/ldap/ldap.h"
 #include "libcli/cldap/cldap.h"
 #include "lib/socket/socket.h"
+#include "libcli/security/proto.h"
 
 /*
   destroy a pending request

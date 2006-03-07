@@ -105,7 +105,7 @@ enum brl_type {
 #include "lib/replace/replace.h"
 
 /* Lists, trees, caching, database... */
-#include "nt_status.h"
+#include "libcli/util/nt_status.h"
 #include "talloc/talloc.h"
 #include "core.h"
 #include "charset/charset.h"

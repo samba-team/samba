@@ -77,6 +77,7 @@
 #endif
 
 #include <net/if.h>
+#define BOOL int
 #include "netif.h"
 
 #if HAVE_IFACE_IFCONF
