@@ -73,7 +73,7 @@ static struct reg_init_function_entry *reg_find_backend_entry(const char *name)
 /** Initialize the registry subsystem */
 _PUBLIC_ NTSTATUS registry_init(void)
 {
-	init_module_fn static_init[] = STATIC_REGISTRY_MODULES;
+	init_module_fn static_init[] = STATIC_registry_MODULES;
 	init_module_fn *shared_init = load_samba_modules(NULL, "registry");
 
 	run_init_functions(static_init);

@@ -94,7 +94,7 @@ NTSTATUS com_init(void)
 {
 	static BOOL initialized = False;
 	
-	init_module_fn static_init[] = STATIC_COM_MODULES; 
+	init_module_fn static_init[] = STATIC_com_MODULES; 
 	init_module_fn *shared_init;
 
 	if (initialized) return NT_STATUS_OK;
