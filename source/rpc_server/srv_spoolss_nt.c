@@ -4624,10 +4624,12 @@ WERROR _spoolss_enumprinters( pipes_struct *p, SPOOL_Q_ENUMPRINTERS *q_u, SPOOL_
 	
 	/* that's an [in out] buffer */
 
-	if ( q_u->buffer ) {
-		rpcbuf_move(q_u->buffer, &r_u->buffer);
-		buffer = r_u->buffer;
+	if (!q_u->buffer) {
+		return WERR_INVALID_PARAM;
 	}
+
+	rpcbuf_move(q_u->buffer, &r_u->buffer);
+	buffer = r_u->buffer;
 
 	DEBUG(4,("_spoolss_enumprinters\n"));
 
@@ -4933,10 +4935,12 @@ WERROR _spoolss_getprinter(pipes_struct *p, SPOOL_Q_GETPRINTER *q_u, SPOOL_R_GET
 
 	/* that's an [in out] buffer */
 
-	if ( q_u->buffer ) {
-		rpcbuf_move(q_u->buffer, &r_u->buffer);
-		buffer = r_u->buffer;
+	if (!q_u->buffer) {
+		return WERR_INVALID_PARAM;
 	}
+
+	rpcbuf_move(q_u->buffer, &r_u->buffer);
+	buffer = r_u->buffer;
 
 	*needed=0;
 
@@ -5530,10 +5534,12 @@ WERROR _spoolss_getprinterdriver2(pipes_struct *p, SPOOL_Q_GETPRINTERDRIVER2 *q_
 
 	/* that's an [in out] buffer */
 
-	if ( q_u->buffer ) {
-		rpcbuf_move(q_u->buffer, &r_u->buffer);
-		buffer = r_u->buffer;
+	if (!q_u->buffer) {
+		return WERR_INVALID_PARAM;
 	}
+
+	rpcbuf_move(q_u->buffer, &r_u->buffer);
+	buffer = r_u->buffer;
 
 	DEBUG(4,("_spoolss_getprinterdriver2\n"));
 
@@ -6367,8 +6373,11 @@ WERROR _spoolss_addjob(pipes_struct *p, SPOOL_Q_ADDJOB *q_u, SPOOL_R_ADDJOB *r_u
 {
 	/* that's an [in out] buffer */
 
-	if ( q_u->buffer ) 
-		rpcbuf_move(q_u->buffer, &r_u->buffer);
+	if (!q_u->buffer) {
+		return WERR_INVALID_PARAM;
+	}
+
+	rpcbuf_move(q_u->buffer, &r_u->buffer);
 
 	r_u->needed = 0;
 	return WERR_INVALID_PARAM; /* this is what a NT server
@@ -6579,10 +6588,12 @@ WERROR _spoolss_enumjobs( pipes_struct *p, SPOOL_Q_ENUMJOBS *q_u, SPOOL_R_ENUMJO
 
 	/* that's an [in out] buffer */
 
-	if ( q_u->buffer ) {
-		rpcbuf_move(q_u->buffer, &r_u->buffer);
-		buffer = r_u->buffer;
+	if (!q_u->buffer) {
+		return WERR_INVALID_PARAM;
 	}
+
+	rpcbuf_move(q_u->buffer, &r_u->buffer);
+	buffer = r_u->buffer;
 
 	DEBUG(4,("_spoolss_enumjobs\n"));
 
@@ -6944,10 +6955,12 @@ WERROR _spoolss_enumprinterdrivers( pipes_struct *p, SPOOL_Q_ENUMPRINTERDRIVERS 
 
 	/* that's an [in out] buffer */
 
-	if ( q_u->buffer ) {
-		rpcbuf_move(q_u->buffer, &r_u->buffer);
-		buffer = r_u->buffer;
+	if (!q_u->buffer) {
+		return WERR_INVALID_PARAM;
 	}
+
+	rpcbuf_move(q_u->buffer, &r_u->buffer);
+	buffer = r_u->buffer;
 
 	DEBUG(4,("_spoolss_enumprinterdrivers\n"));
 	
@@ -7007,10 +7020,12 @@ WERROR _spoolss_enumforms(pipes_struct *p, SPOOL_Q_ENUMFORMS *q_u, SPOOL_R_ENUMF
 
 	/* that's an [in out] buffer */
 
-	if ( q_u->buffer ) {
-		rpcbuf_move(q_u->buffer, &r_u->buffer);
-		buffer = r_u->buffer;
+	if (!q_u->buffer) {
+		return WERR_INVALID_PARAM;
 	}
+
+	rpcbuf_move(q_u->buffer, &r_u->buffer);
+	buffer = r_u->buffer;
 
 	DEBUG(4,("_spoolss_enumforms\n"));
 	DEBUGADD(5,("Offered buffer size [%d]\n", offered));
@@ -7114,10 +7129,12 @@ WERROR _spoolss_getform(pipes_struct *p, SPOOL_Q_GETFORM *q_u, SPOOL_R_GETFORM *
 
 	/* that's an [in out] buffer */
 
-	if ( q_u->buffer ) {
-		rpcbuf_move(q_u->buffer, &r_u->buffer);
-		buffer = r_u->buffer;
+	if (!q_u->buffer) {
+		return WERR_INVALID_PARAM;
 	}
+
+	rpcbuf_move(q_u->buffer, &r_u->buffer);
+	buffer = r_u->buffer;
 
 	unistr2_to_ascii(form_name, uni_formname, sizeof(form_name)-1);
 
@@ -7392,10 +7409,12 @@ WERROR _spoolss_enumports( pipes_struct *p, SPOOL_Q_ENUMPORTS *q_u, SPOOL_R_ENUM
 
 	/* that's an [in out] buffer */
 
-	if ( q_u->buffer ) {
-		rpcbuf_move(q_u->buffer, &r_u->buffer);
-		buffer = r_u->buffer;
+	if (!q_u->buffer) {
+		return WERR_INVALID_PARAM;
 	}
+
+	rpcbuf_move(q_u->buffer, &r_u->buffer);
+	buffer = r_u->buffer;
 
 	DEBUG(4,("_spoolss_enumports\n"));
 	
@@ -7800,10 +7819,12 @@ WERROR _spoolss_getprinterdriverdirectory(pipes_struct *p, SPOOL_Q_GETPRINTERDRI
 
 	/* that's an [in out] buffer */
 
-	if ( q_u->buffer ) {
-		rpcbuf_move(q_u->buffer, &r_u->buffer);
-		buffer = r_u->buffer;
+	if (!q_u->buffer ) {
+		return WERR_INVALID_PARAM;
 	}
+
+	rpcbuf_move(q_u->buffer, &r_u->buffer);
+	buffer = r_u->buffer;
 
 	DEBUG(4,("_spoolss_getprinterdriverdirectory\n"));
 
@@ -8410,10 +8431,12 @@ WERROR _spoolss_enumprintprocessors(pipes_struct *p, SPOOL_Q_ENUMPRINTPROCESSORS
 
 	/* that's an [in out] buffer */
 
-	if ( q_u->buffer ) {
-		rpcbuf_move(q_u->buffer, &r_u->buffer);
-		buffer = r_u->buffer;
+	if (!q_u->buffer) {
+		return WERR_INVALID_PARAM;
 	}
+
+	rpcbuf_move(q_u->buffer, &r_u->buffer);
+	buffer = r_u->buffer;
 
  	DEBUG(5,("spoolss_enumprintprocessors\n"));
 
@@ -8487,10 +8510,12 @@ WERROR _spoolss_enumprintprocdatatypes(pipes_struct *p, SPOOL_Q_ENUMPRINTPROCDAT
 
 	/* that's an [in out] buffer */
 
-	if ( q_u->buffer ) {
-		rpcbuf_move(q_u->buffer, &r_u->buffer);
-		buffer = r_u->buffer;
+	if (!q_u->buffer) {
+		return WERR_INVALID_PARAM;
 	}
+
+	rpcbuf_move(q_u->buffer, &r_u->buffer);
+	buffer = r_u->buffer;
 
  	DEBUG(5,("_spoolss_enumprintprocdatatypes\n"));
 	
@@ -8613,10 +8638,12 @@ WERROR _spoolss_enumprintmonitors(pipes_struct *p, SPOOL_Q_ENUMPRINTMONITORS *q_
 
 	/* that's an [in out] buffer */
 
-	if ( q_u->buffer ) {
-		rpcbuf_move(q_u->buffer, &r_u->buffer);
-		buffer = r_u->buffer;
+	if (!q_u->buffer) {
+		return WERR_INVALID_PARAM;
 	}
+
+	rpcbuf_move(q_u->buffer, &r_u->buffer);
+	buffer = r_u->buffer;
 
  	DEBUG(5,("spoolss_enumprintmonitors\n"));
 
@@ -8787,10 +8814,12 @@ WERROR _spoolss_getjob( pipes_struct *p, SPOOL_Q_GETJOB *q_u, SPOOL_R_GETJOB *r_
 
 	/* that's an [in out] buffer */
 
-	if ( q_u->buffer ) {
-		rpcbuf_move(q_u->buffer, &r_u->buffer);
-		buffer = r_u->buffer;
+	if (!q_u->buffer) {
+		return WERR_INVALID_PARAM;
 	}
+
+	rpcbuf_move(q_u->buffer, &r_u->buffer);
+	buffer = r_u->buffer;
 
 	DEBUG(5,("spoolss_getjob\n"));
 	
@@ -9407,10 +9436,12 @@ WERROR _spoolss_getprintprocessordirectory(pipes_struct *p, SPOOL_Q_GETPRINTPROC
 
 	/* that's an [in out] buffer */
 
-	if ( q_u->buffer ) {
-		rpcbuf_move(q_u->buffer, &r_u->buffer);
-		buffer = r_u->buffer;
+	if (!q_u->buffer) {
+		return WERR_INVALID_PARAM;
 	}
+
+	rpcbuf_move(q_u->buffer, &r_u->buffer);
+	buffer = r_u->buffer;
 
  	DEBUG(5,("_spoolss_getprintprocessordirectory\n"));
 	
