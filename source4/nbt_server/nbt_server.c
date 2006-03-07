@@ -22,6 +22,7 @@
 
 #include "includes.h"
 #include "smbd/service_task.h"
+#include "smbd/proto.h"
 #include "nbt_server/nbt_server.h"
 #include "nbt_server/wins/winsserver.h"
 #include "system/network.h"

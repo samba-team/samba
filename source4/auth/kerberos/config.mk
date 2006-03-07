@@ -1,6 +1,7 @@
 #################################
 # Start SUBSYSTEM KERBEROS
 [SUBSYSTEM::KERBEROS]
+PRIVATE_PROTO_HEADER = proto.h
 OBJ_FILES = kerberos.o \
 			clikrb5.o \
 			kerberos_verify.o \

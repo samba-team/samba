@@ -25,6 +25,7 @@
 #include "lib/socket/socket.h"
 #include "lib/messaging/irpc.h"
 #include "smbd/service_task.h"
+#include "smbd/service.h"
 #include "cldap_server/cldap_server.h"
 #include "system/network.h"
 #include "netif/netif.h"
