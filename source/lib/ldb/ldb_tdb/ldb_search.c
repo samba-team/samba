@@ -596,7 +596,7 @@ int ltdb_search_bytree(struct ldb_module *module, const struct ldb_dn *base,
 				&handle);
 
 	if (ret == LDB_SUCCESS) {
-		ret = ldb_async_wait(module->ldb, handle, LDB_WAIT_ALL);
+		ret = ldb_async_wait(handle, LDB_WAIT_ALL);
 		talloc_free(handle);
 	}
 

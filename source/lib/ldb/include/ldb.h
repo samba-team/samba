@@ -664,7 +664,7 @@ struct ldb_request {
 
 int ldb_request(struct ldb_context *ldb, struct ldb_request *request);
 
-int ldb_async_wait(struct ldb_context *ldb, struct ldb_async_handle *handle, enum ldb_async_wait_type type);
+int ldb_async_wait(struct ldb_async_handle *handle, enum ldb_async_wait_type type);
 
 /**
   Initialise ldbs' global information
