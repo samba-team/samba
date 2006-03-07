@@ -144,6 +144,7 @@ void ldb_debug_set(struct ldb_context *ldb, enum ldb_debug_level level,
 /* The following definitions come from lib/ldb/common/ldb_ldif.c  */
 int ldb_should_b64_encode(const struct ldb_val *val);
 
+#ifndef _SAMBA_BUILD_
 int ldb_objectclass_init(void);
 int ldb_operational_init(void);
 int ldb_paged_results_init(void);
@@ -154,6 +155,7 @@ int ldb_ldap_init(void);
 int ldb_ildap_init(void);
 int ldb_tdb_init(void);
 int ldb_sqlite3_init(void);
+#endif
 
 int ldb_match_msg(struct ldb_context *ldb,
 		  struct ldb_message *msg,
