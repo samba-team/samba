@@ -78,7 +78,7 @@ recv_loop (int fd,
 		 krb5_data_free (rep);
 		 return -1;
 	     }
-	     if(nbytes == 0)
+	     if(nbytes <= 0)
 		 return 0;
 
 	     if (limit)
