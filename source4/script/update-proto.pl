@@ -3,9 +3,6 @@
 #
 # Copyright (C) 2006 Jelmer Vernooij <jelmer@samba.org>
 # Published under the GNU GPL
-#
-# TODO:
-#  - update for prototypes that span lines
 
 use strict;
 use warnings;
@@ -52,8 +49,8 @@ Show list of options
 
 =head1 BUGS
 
-Prototypes must appear on one line - they can't be split across multiple lines.
-Some things are erroneously recognized as functions
+Strange complex functions are not recognized. In particular those 
+created by macros or returning (without typedef) function pointers.
 
 =head1 LICENSE
 
@@ -89,6 +86,14 @@ GetOptions(
 	'v|verbose' => sub { $verbose += 1; }
 ) or Usage();
 
+sub count($$)
+{
+	my ($t, $s) = @_;
+	my $count = 0;
+	while($s =~ s/^(.)//) { $count++ if $1 eq $t; }
+	return $count;
+}
+
 my $header = shift @ARGV;
 
 sub process_file($)
@@ -96,18 +101,33 @@ sub process_file($)
 	my $file = shift;
 	open (IN, "<$file");
 	while (my $line = <IN>) {
-		next if ($line =~ /^\s/);
-		next unless ($line =~ /\(/);
-		next if ($line =~ /^\/|[;]|^#|}|^\s*static/);
-		next unless ($line =~ /^([^(]+)(\s+)(\w+)\s*\((.*)\)\s*{*\s*$/);
+		$_ = $line;
+		next if /^\s/;
+		next unless /\(/;
+		next if /^\/|[;]|^#|}|^\s*static/;
+		s/\/\*(.*?)\*\///g;
+		my $public = s/_PUBLIC_//g;
+		s/_PRINTF_ATTRIBUTE\([^)]+\)//g;
+		next unless /^(struct\s+\w+|union\s+\w+|\w+)\s+\**\s*(\w+)\s*\((.*)$/;
 
-		my $name = $3;
+		my $name = $2;
 
 		next if ($name eq "main");
-		next unless ($1 =~ /^[\*\w\s]+$/);
 
-		$line =~ s/}\s*$//g;
-		$line =~ s/\n//g;
+		# Read continuation lines if any
+		my $prn = 1 + count("(", $3) - count(")", $3);
+
+		while ($prn) {
+			my $l = <IN>;
+			$l or die("EOF while parsing function prototype");
+			$line .= $l;
+			$prn += count("(", $l) - count(")", $l);
+		}
+
+		$line =~ s/\n$//;
+
+		# Strip off possible start of function
+		$line =~ s/{\s*$//g;
 		
 		$new_protos{$name} = "$line;";
 	}
@@ -131,20 +151,36 @@ sub insert_new_protos()
 	%new_protos = ();
 }
 
+my $blankline_due = 0;
+
 open (HDR, "<$header");
 while (my $line = <HDR>) {
-	# Insert prototypes that weren't in the header before
-	if ($line =~ /^\/\* New prototypes are inserted above this line.*\*\/\s*$/) {
-		insert_new_protos();
-		print "$line\n";
-		next;
+	if ($line eq "\n") {
+		$blankline_due = 1;
+		$line = <HDR>;
 	}
 
 	# Recognize C files that prototypes came from
-	if ($line =~ /^\/\* The following definitions come from (.*) \*\//) {
+	if ($line =~ /\/\* The following definitions come from (.*) \*\//) {
 		insert_new_protos();
+		if ($blankline_due) {
+			print "\n";
+			$blankline_due = 0;
+		}
 		process_file($1);
 		print "$line";
+		next;
+	}
+
+	if ($blankline_due) {
+		print "\n";
+		$blankline_due = 0;
+	}
+
+	# Insert prototypes that weren't in the header before
+	if ($line =~ /\/\* New prototypes are inserted above this line.*\*\/\s*/) {
+		insert_new_protos();
+		print "$line\n";
 		next;
 	}
 	
@@ -153,12 +189,26 @@ while (my $line = <HDR>) {
 		next;
 	}
 
-	unless ($line =~ /^([^(]+)(\s+)(\w+)\s*\((.*)\)\s*;\s*$/)  {
+	$_ = $line;
+	s/\/\*(.*?)\*\///g;
+	my $public = s/_PUBLIC_//g;
+	s/_PRINTF_ATTRIBUTE\([^)]+\)//g;
+	unless (/^(struct\s+\w+|union\s+\w+|\w+)\s+\**\s*(\w+)\s*\((.*)$/) {
 		print "$line";
 		next;
 	}
 
-	my $name = $3;
+	# Read continuation lines if any
+	my $prn = 1 + count("(", $3) - count(")", $3);
+
+	while ($prn) {
+		my $l = <HDR>;
+		$l or die("EOF while parsing function prototype");
+		$line .= $l;
+		$prn += count("(", $l) - count(")", $l);
+	}
+
+	my $name = $2;
 
 	# This prototype is for a function that was removed
 	unless (defined($new_protos{$name})) {
