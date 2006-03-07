@@ -1,3 +1,27 @@
+2006-03-07  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/send_to_kdc.c (recv_loop): it should never happen, but
+	make sure nbytes > 0
+
+	* lib/krb5/get_for_creds.c (add_addrs): handle the case where
+	addr->len == 0 and n == 0, then realloc might return NULL.
+
+	* lib/krb5/crypto.c (decrypt_*): handle the case where the
+	plaintext is 0 bytes long, realloc might then return NULL.
+	
+2006-02-28  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/krb5_string_to_key.3: Drop krb5_string_to_key_derived.
+
+	* lib/krb5/krb5.3: Remove krb5_string_to_key_derived.
+
+	* lib/krb5/crypto.c (AES_string_to_key): drop _krb5_PKCS5_PBKDF2
+	and use PKCS5_PBKDF2_HMAC_SHA1 instead.
+
+	* lib/krb5/aes-test.c: reformat, avoid free-ing un-init'd memory
+
+	* lib/krb5/aes-test.c: Only use PKCS5_PBKDF2_HMAC_SHA1.
+	
 2006-02-27  Johan Danielsson  <joda@pdc.kth.se>
 
 	* doc/setup.texi: remove cartouches - we don't use them anywhere
