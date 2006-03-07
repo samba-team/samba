@@ -43,58 +43,58 @@
  **/
 
 /** Directory with super-user binaries */
-const char *dyn_SBINDIR = SBINDIR;
+_PUBLIC_ const char *dyn_SBINDIR = SBINDIR;
 
 /** Directory with generic binaries */
-const char *dyn_BINDIR = BINDIR;
+_PUBLIC_ const char *dyn_BINDIR = BINDIR;
 
 /**< Location of smb.conf file. **/
-const char *dyn_CONFIGFILE = CONFIGFILE; 
+_PUBLIC_ const char *dyn_CONFIGFILE = CONFIGFILE; 
 
 /** Log file directory. **/
-const char *dyn_LOGFILEBASE = LOGFILEBASE; 
+_PUBLIC_ const char *dyn_LOGFILEBASE = LOGFILEBASE; 
 
 /** Directory for local RPC (ncalrpc: transport) */
-const char *dyn_NCALRPCDIR = NCALRPCDIR;
+_PUBLIC_ const char *dyn_NCALRPCDIR = NCALRPCDIR;
 
 /** Statically configured LanMan hosts. **/
-const char *dyn_LMHOSTSFILE = LMHOSTSFILE; 
+_PUBLIC_ const char *dyn_LMHOSTSFILE = LMHOSTSFILE; 
 
 /** Samba library directory. */
-const char *dyn_LIBDIR = LIBDIR;
+_PUBLIC_ const char *dyn_LIBDIR = LIBDIR;
 
-const char *dyn_MODULESDIR = MODULESDIR;
+_PUBLIC_ const char *dyn_MODULESDIR = MODULESDIR;
 
 /** Shared library extension */
-const char *dyn_SHLIBEXT = SHLIBEXT;
+_PUBLIC_ const char *dyn_SHLIBEXT = SHLIBEXT;
 
 /**
  * @brief Directory holding lock files.
  *
  * Not writable, but used to set a default in the parameter table.
  **/
-const char *dyn_LOCKDIR = LOCKDIR;
+_PUBLIC_ const char *dyn_LOCKDIR = LOCKDIR;
 
 /** pid file directory */
-const char *dyn_PIDDIR  = PIDDIR;
+_PUBLIC_ const char *dyn_PIDDIR  = PIDDIR;
 
 /** Private data directory; holds ldb files and the like */
-const char *dyn_PRIVATE_DIR = PRIVATE_DIR;
+_PUBLIC_ const char *dyn_PRIVATE_DIR = PRIVATE_DIR;
 
 /** SWAT data file (images, etc) directory */
-const char *dyn_SWATDIR = SWATDIR;
+_PUBLIC_ const char *dyn_SWATDIR = SWATDIR;
 
 /** SETUP files (source files used by the provision) */
-const char *dyn_SETUPDIR = SETUPDIR;
+_PUBLIC_ const char *dyn_SETUPDIR = SETUPDIR;
 
 /** EJS Javascript library includes */
-const char *dyn_JSDIR = JSDIR;
+_PUBLIC_ const char *dyn_JSDIR = JSDIR;
 
 /** Where to find the winbindd socket */
 
-const char *dyn_WINBINDD_SOCKET_DIR = WINBINDD_SOCKET_DIR;
+_PUBLIC_ const char *dyn_WINBINDD_SOCKET_DIR = WINBINDD_SOCKET_DIR;
 
-const char *samba_version_string(void)
+_PUBLIC_ const char *samba_version_string(void)
 {
 	const char *official_string = SAMBA_VERSION_OFFICIAL_STRING;
 #ifdef SAMBA_VERSION_RELEASE_NICKNAME
