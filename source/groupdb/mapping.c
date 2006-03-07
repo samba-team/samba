@@ -868,7 +868,7 @@ int smb_create_group(const char *unix_group, gid_t *new_gid)
 	if ( *lp_addgroup_script() ) {
 		pstrcpy(add_script, lp_addgroup_script());
 		pstring_sub(add_script, "%g", unix_group);
-		ret = smbrun(add_script, (new_gid!=NULL) ? &fd : NULL);
+		ret = smbrun(add_script, &fd);
 		DEBUG(ret ? 0 : 3,("smb_create_group: Running the command `%s' gave %d\n",add_script,ret));
 		if (ret != 0)
 			return ret;
