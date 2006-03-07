@@ -1516,7 +1516,7 @@ static NTSTATUS ldapsam_modify_entry(struct pdb_methods *my_methods,
 	struct ldapsam_privates *ldap_state = (struct ldapsam_privates *)my_methods->private_data;
 	int rc;
 	
-	if (!my_methods || !newpwd || !dn) {
+	if (!newpwd || !dn) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 	
