@@ -76,7 +76,7 @@ static NTSTATUS make_user_info(auth_usersupplied_info **user_info,
 	DEBUG(5,("attempting to make a user_info for %s (%s)\n", internal_username, smb_name));
 
 	*user_info = SMB_MALLOC_P(auth_usersupplied_info);
-	if (!user_info) {
+	if (*user_info == NULL) {
 		DEBUG(0,("malloc failed for user_info (size %lu)\n", (unsigned long)sizeof(*user_info)));
 		return NT_STATUS_NO_MEMORY;
 	}
