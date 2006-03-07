@@ -364,7 +364,7 @@ _PUBLIC_ BOOL file_exists(const char *path)
 	return (stat(path, &st) == 0);
 }
 
-int vfdprintf(int fd, const char *format, va_list ap) _PRINTF_ATTRIBUTE(2,0)
+_PUBLIC_ int vfdprintf(int fd, const char *format, va_list ap) _PRINTF_ATTRIBUTE(2,0)
 {
 	char *p;
 	int len, ret;
@@ -379,7 +379,7 @@ int vfdprintf(int fd, const char *format, va_list ap) _PRINTF_ATTRIBUTE(2,0)
 	return ret;
 }
 
-int fdprintf(int fd, const char *format, ...) _PRINTF_ATTRIBUTE(2,3)
+_PUBLIC_ int fdprintf(int fd, const char *format, ...) _PRINTF_ATTRIBUTE(2,3)
 {
 	va_list ap;
 	int ret;

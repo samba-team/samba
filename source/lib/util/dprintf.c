@@ -31,7 +31,7 @@
 
 #include "includes.h"
 
-int d_vfprintf(FILE *f, const char *format, va_list ap) _PRINTF_ATTRIBUTE(2,0)
+_PUBLIC_ int d_vfprintf(FILE *f, const char *format, va_list ap) _PRINTF_ATTRIBUTE(2,0)
 {
 	char *p, *p2;
 	int ret, maxlen, clen;
@@ -71,7 +71,7 @@ again:
 }
 
 
-int d_fprintf(FILE *f, const char *format, ...) _PRINTF_ATTRIBUTE(2,3)
+_PUBLIC_ int d_fprintf(FILE *f, const char *format, ...) _PRINTF_ATTRIBUTE(2,3)
 {
 	int ret;
 	va_list ap;
@@ -85,7 +85,7 @@ int d_fprintf(FILE *f, const char *format, ...) _PRINTF_ATTRIBUTE(2,3)
 
 static FILE *outfile;
 
-int d_printf(const char *format, ...) _PRINTF_ATTRIBUTE(1,2)
+_PUBLIC_ int d_printf(const char *format, ...) _PRINTF_ATTRIBUTE(1,2)
 {
 	int ret;
 	va_list ap;
@@ -101,7 +101,7 @@ int d_printf(const char *format, ...) _PRINTF_ATTRIBUTE(1,2)
 
 /* interactive programs need a way of tell d_*() to write to stderr instead
    of stdout */
-void display_set_stderr(void)
+_PUBLIC_ void display_set_stderr(void)
 {
 	outfile = stderr;
 }
