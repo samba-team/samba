@@ -227,6 +227,7 @@ static NTSTATUS ipc_open_generic(struct ntvfs_module_context *ntvfs,
 						ep_description, 
 						req->session->session_info,
 						srv_conn,
+						0,
 						&p->dce_conn);
 	if (!NT_STATUS_IS_OK(status)) {
 		idr_remove(private->idtree_fnum, p->fnum);

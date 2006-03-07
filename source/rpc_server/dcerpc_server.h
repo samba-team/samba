@@ -177,6 +177,10 @@ struct dcesrv_connection {
 	DATA_BLOB transport_session_key;
 
 	BOOL processing;
+
+	/* this is the default state_flags for dcesrv_call_state structs */
+	uint32_t state_flags;
+
 };
 
 
@@ -220,9 +224,6 @@ struct dcesrv_context {
 			struct dcesrv_interface iface;
 		} *interface_list;
 	} *endpoint_list;
-
-	/* this is the default state_flags for dcesrv_call_state structs */
-	uint32_t state_flags;
 };
 
 /* this structure is used by modules to determine the size of some critical types */

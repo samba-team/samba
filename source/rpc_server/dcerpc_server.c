@@ -287,6 +287,7 @@ NTSTATUS dcesrv_endpoint_connect(struct dcesrv_context *dce_ctx,
 				 TALLOC_CTX *mem_ctx,
 				 const struct dcesrv_endpoint *ep,
 				 struct stream_connection *srv_conn,
+				 uint32_t state_flags,
 				 struct dcesrv_connection **_p)
 {
 	struct dcesrv_connection *p;
@@ -307,6 +308,7 @@ NTSTATUS dcesrv_endpoint_connect(struct dcesrv_context *dce_ctx,
 	p->auth_state.session_key = dcesrv_generic_session_key;
 	p->srv_conn = srv_conn;
 	p->processing = False;
+	p->state_flags = state_flags;
 
 	talloc_set_destructor(p, dcesrv_endpoint_destructor);
 
@@ -322,6 +324,7 @@ NTSTATUS dcesrv_endpoint_search_connect(struct dcesrv_context *dce_ctx,
 					const struct dcerpc_binding *ep_description,
 					struct auth_session_info *session_info,
 					struct stream_connection *srv_conn,
+					uint32_t state_flags,
 					struct dcesrv_connection **dce_conn_p)
 {
 	NTSTATUS status;
@@ -333,7 +336,7 @@ NTSTATUS dcesrv_endpoint_search_connect(struct dcesrv_context *dce_ctx,
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 
-	status = dcesrv_endpoint_connect(dce_ctx, mem_ctx, ep, srv_conn, dce_conn_p);
+	status = dcesrv_endpoint_connect(dce_ctx, mem_ctx, ep, srv_conn, state_flags, dce_conn_p);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -724,7 +727,7 @@ static NTSTATUS dcesrv_request(struct dcesrv_call_state *call)
 	struct dcesrv_connection_context *context;
 
 	call->fault_code	= 0;
-	call->state_flags	= call->conn->dce_ctx->state_flags;
+	call->state_flags	= call->conn->state_flags;
 	call->time		= timeval_current();
 
 	/* if authenticated, and the mech we use can't do async replies, don't use them... */
@@ -1134,7 +1137,7 @@ NTSTATUS dcesrv_output(struct dcesrv_connection *dce_conn,
 	return status;
 }
 
-static NTSTATUS dcesrv_init_context(TALLOC_CTX *mem_ctx, const char **endpoint_servers, uint32_t state_flags, struct dcesrv_context **_dce_ctx)
+static NTSTATUS dcesrv_init_context(TALLOC_CTX *mem_ctx, const char **endpoint_servers, struct dcesrv_context **_dce_ctx)
 {
 	NTSTATUS status;
 	struct dcesrv_context *dce_ctx;
@@ -1148,7 +1151,6 @@ static NTSTATUS dcesrv_init_context(TALLOC_CTX *mem_ctx, const char **endpoint_s
 	dce_ctx = talloc(mem_ctx, struct dcesrv_context);
 	NT_STATUS_HAVE_NO_MEMORY(dce_ctx);
 	dce_ctx->endpoint_list	= NULL;
-	dce_ctx->state_flags	= state_flags;
 
 	for (i=0;endpoint_servers[i];i++) {
 		const struct dcesrv_endpoint_server *ep_server;
@@ -1179,7 +1181,7 @@ NTSTATUS dcesrv_init_ipc_context(TALLOC_CTX *mem_ctx, struct dcesrv_context **_d
 	NTSTATUS status;
 	struct dcesrv_context *dce_ctx;
 
-	status = dcesrv_init_context(mem_ctx, lp_dcerpc_endpoint_servers(), 0, &dce_ctx);
+	status = dcesrv_init_context(mem_ctx, lp_dcerpc_endpoint_servers(), &dce_ctx);
 	NT_STATUS_NOT_OK_RETURN(status);
 
 	*_dce_ctx = dce_ctx;
@@ -1278,7 +1280,6 @@ static NTSTATUS dcesrv_init(struct event_context *event_context, const struct mo
 
 	status = dcesrv_init_context(event_context,
 				     lp_dcerpc_endpoint_servers(),
-				     DCESRV_CALL_STATE_FLAG_MAY_ASYNC,
 				     &dce_ctx);
 	NT_STATUS_NOT_OK_RETURN(status);
 
