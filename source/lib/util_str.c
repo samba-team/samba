@@ -1779,8 +1779,9 @@ BOOL str_list_copy(char ***dest, const char **src)
 				DEBUG(0,("str_list_copy: Unable to re-allocate memory"));
 				str_list_free(&list);
 				return False;
-			} else
+			} else {
 				list = rlist;
+			}
 			memset (&list[num], 0, ((sizeof(char **)) * (S_LIST_ABS +1)));
 		}
 		
