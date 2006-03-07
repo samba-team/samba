@@ -1126,6 +1126,7 @@ BOOL internal_resolve_name(const char *name, int name_type,
 			/* if it's in the form of an IP address then get the lib to interpret it */
 			if (((*return_iplist)->ip.s_addr = inet_addr(name)) == 0xFFFFFFFF ){
 				DEBUG(1,("internal_resolve_name: inet_addr failed on %s\n", name));
+				SAFE_FREE(*return_iplist);
 				return False;
 			}
 		} else {
