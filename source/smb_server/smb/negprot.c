@@ -234,7 +234,7 @@ static void reply_nt1_orig(struct smbsrv_request *req)
 	}
 	req_push_str(req, NULL, lp_workgroup(), -1, STR_UNICODE|STR_TERMINATE|STR_NOALIGN);
 	req_push_str(req, NULL, lp_netbios_name(), -1, STR_UNICODE|STR_TERMINATE|STR_NOALIGN);
-	DEBUG(3,("not using SPNEGO\n"));
+	DEBUG(3,("not using extended security (SPNEGO or NTLMSSP)\n"));
 }
 
 /****************************************************************************
@@ -387,7 +387,9 @@ static void reply_nt1(struct smbsrv_request *req, uint16_t choice)
 			}
 		}
 
-		if (!NT_STATUS_IS_OK(nt_status) && !NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+		if (NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+			DEBUG(3,("using SPNEGO\n"));
+		} else {
 			DEBUG(5, ("Failed to start SPNEGO, falling back to NTLMSSP only: %s\n", nt_errstr(nt_status)));
 			oid = GENSEC_OID_NTLMSSP;
 			nt_status = gensec_start_mech_by_oid(gensec_security, oid);
@@ -399,6 +401,7 @@ static void reply_nt1(struct smbsrv_request *req, uint16_t choice)
 			}
 			/* NTLMSSP is a client-first exchange */
 			blob = data_blob(NULL, 0);
+			DEBUG(3,("using raw-NTLMSSP\n"));
 		}
 
 		req->smb_conn->negotiate.oid = oid;
@@ -412,7 +415,6 @@ static void reply_nt1(struct smbsrv_request *req, uint16_t choice)
 		memcpy(req->out.ptr, blob.data, blob.length);
 		SCVAL(req->out.vwv+1, VWV(16), blob.length + 16);
 		req->out.ptr += blob.length;
-		DEBUG(3,("using SPNEGO\n"));
 	}
 	
 	smbsrv_send_reply_nosign(req);	
