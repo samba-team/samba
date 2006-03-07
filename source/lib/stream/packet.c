@@ -80,7 +80,7 @@ static int packet_destructor(void *p)
 /*
   initialise a packet receiver
 */
-struct packet_context *packet_init(TALLOC_CTX *mem_ctx)
+_PUBLIC_ struct packet_context *packet_init(TALLOC_CTX *mem_ctx)
 {
 	struct packet_context *pc = talloc_zero(mem_ctx, struct packet_context);
 	if (pc != NULL) {
@@ -93,7 +93,7 @@ struct packet_context *packet_init(TALLOC_CTX *mem_ctx)
 /*
   set the request callback, called when a full request is ready
 */
-void packet_set_callback(struct packet_context *pc, packet_callback_fn_t callback)
+_PUBLIC_ void packet_set_callback(struct packet_context *pc, packet_callback_fn_t callback)
 {
 	pc->callback = callback;
 }
@@ -101,7 +101,7 @@ void packet_set_callback(struct packet_context *pc, packet_callback_fn_t callbac
 /*
   set the error handler
 */
-void packet_set_error_handler(struct packet_context *pc, packet_error_handler_fn_t handler)
+_PUBLIC_ void packet_set_error_handler(struct packet_context *pc, packet_error_handler_fn_t handler)
 {
 	pc->error_handler = handler;
 }
@@ -109,7 +109,7 @@ void packet_set_error_handler(struct packet_context *pc, packet_error_handler_fn
 /*
   set the private pointer passed to the callback functions
 */
-void packet_set_private(struct packet_context *pc, void *private)
+_PUBLIC_ void packet_set_private(struct packet_context *pc, void *private)
 {
 	pc->private = private;
 }
@@ -120,7 +120,7 @@ void packet_set_private(struct packet_context *pc, void *private)
      STATUS_MORE_ENTRIES == blob is not complete yet
      any error == blob is not a valid 
 */
-void packet_set_full_request(struct packet_context *pc, packet_full_request_fn_t callback)
+_PUBLIC_ void packet_set_full_request(struct packet_context *pc, packet_full_request_fn_t callback)
 {
 	pc->full_request = callback;
 }
@@ -128,7 +128,7 @@ void packet_set_full_request(struct packet_context *pc, packet_full_request_fn_t
 /*
   set a tls context to use. You must either set a tls_context or a socket_context
 */
-void packet_set_tls(struct packet_context *pc, struct tls_context *tls)
+_PUBLIC_ void packet_set_tls(struct packet_context *pc, struct tls_context *tls)
 {
 	pc->tls = tls;
 }
@@ -136,7 +136,7 @@ void packet_set_tls(struct packet_context *pc, struct tls_context *tls)
 /*
   set a socket context to use. You must either set a tls_context or a socket_context
 */
-void packet_set_socket(struct packet_context *pc, struct socket_context *sock)
+_PUBLIC_ void packet_set_socket(struct packet_context *pc, struct socket_context *sock)
 {
 	pc->sock = sock;
 }
@@ -148,7 +148,7 @@ void packet_set_socket(struct packet_context *pc, struct socket_context *sock)
   time on a socket. This can matter for code that relies on not
   getting more than one packet per event
 */
-void packet_set_event_context(struct packet_context *pc, struct event_context *ev)
+_PUBLIC_ void packet_set_event_context(struct packet_context *pc, struct event_context *ev)
 {
 	pc->ev = ev;
 }
@@ -156,7 +156,7 @@ void packet_set_event_context(struct packet_context *pc, struct event_context *e
 /*
   tell the packet layer the fde for the socket
 */
-void packet_set_fde(struct packet_context *pc, struct fd_event *fde)
+_PUBLIC_ void packet_set_fde(struct packet_context *pc, struct fd_event *fde)
 {
 	pc->fde = fde;
 }
@@ -166,7 +166,7 @@ void packet_set_fde(struct packet_context *pc, struct fd_event *fde)
   requests at once on one connection. You must have set the
   event_context and fde
 */
-void packet_set_serialise(struct packet_context *pc)
+_PUBLIC_ void packet_set_serialise(struct packet_context *pc)
 {
 	pc->serialise = True;
 }
@@ -175,7 +175,7 @@ void packet_set_serialise(struct packet_context *pc)
   tell the packet layer how much to read when starting a new packet
   this ensures it doesn't overread
 */
-void packet_set_initial_read(struct packet_context *pc, uint32_t initial_read)
+_PUBLIC_ void packet_set_initial_read(struct packet_context *pc, uint32_t initial_read)
 {
 	pc->initial_read = initial_read;
 }
@@ -183,7 +183,7 @@ void packet_set_initial_read(struct packet_context *pc, uint32_t initial_read)
 /*
   tell the packet system not to steal/free blobs given to packet_send()
 */
-void packet_set_nofree(struct packet_context *pc)
+_PUBLIC_ void packet_set_nofree(struct packet_context *pc)
 {
 	pc->nofree = True;
 }
@@ -237,7 +237,7 @@ static void packet_next_event(struct event_context *ev, struct timed_event *te,
   call this when the socket becomes readable to kick off the whole
   stream parsing process
 */
-void packet_recv(struct packet_context *pc)
+_PUBLIC_ void packet_recv(struct packet_context *pc)
 {
 	size_t npending;
 	NTSTATUS status;
@@ -422,7 +422,7 @@ next_partial:
 /*
   temporarily disable receiving 
 */
-void packet_recv_disable(struct packet_context *pc)
+_PUBLIC_ void packet_recv_disable(struct packet_context *pc)
 {
 	EVENT_FD_NOT_READABLE(pc->fde);
 	pc->recv_disable = True;
@@ -431,7 +431,7 @@ void packet_recv_disable(struct packet_context *pc)
 /*
   re-enable receiving 
 */
-void packet_recv_enable(struct packet_context *pc)
+_PUBLIC_ void packet_recv_enable(struct packet_context *pc)
 {
 	EVENT_FD_READABLE(pc->fde);
 	pc->recv_disable = False;
@@ -443,7 +443,7 @@ void packet_recv_enable(struct packet_context *pc)
 /*
   trigger a run of the send queue
 */
-void packet_queue_run(struct packet_context *pc)
+_PUBLIC_ void packet_queue_run(struct packet_context *pc)
 {
 	while (pc->send_queue) {
 		struct send_element *el = pc->send_queue;
@@ -479,7 +479,7 @@ void packet_queue_run(struct packet_context *pc)
 /*
   put a packet in the send queue
 */
-NTSTATUS packet_send(struct packet_context *pc, DATA_BLOB blob)
+_PUBLIC_ NTSTATUS packet_send(struct packet_context *pc, DATA_BLOB blob)
 {
 	struct send_element *el;
 	el = talloc(pc, struct send_element);
@@ -508,7 +508,7 @@ NTSTATUS packet_send(struct packet_context *pc, DATA_BLOB blob)
 /*
   a full request checker for NBT formatted packets (first 3 bytes are length)
 */
-NTSTATUS packet_full_request_nbt(void *private, DATA_BLOB blob, size_t *size)
+_PUBLIC_ NTSTATUS packet_full_request_nbt(void *private, DATA_BLOB blob, size_t *size)
 {
 	if (blob.length < 4) {
 		return STATUS_MORE_ENTRIES;
@@ -525,7 +525,7 @@ NTSTATUS packet_full_request_nbt(void *private, DATA_BLOB blob, size_t *size)
   work out if a packet is complete for protocols that use a 32 bit network byte
   order length
 */
-NTSTATUS packet_full_request_u32(void *private, DATA_BLOB blob, size_t *size)
+_PUBLIC_ NTSTATUS packet_full_request_u32(void *private, DATA_BLOB blob, size_t *size)
 {
 	if (blob.length < 4) {
 		return STATUS_MORE_ENTRIES;
