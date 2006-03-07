@@ -713,6 +713,7 @@ static int lldb_parse_result(struct ldb_async_handle *handle, LDAPMessage *resul
 	char *errmsgp = NULL;
 	char **referralsp = NULL;
 	LDAPControl **serverctrlsp = NULL;
+	int ret;
 
 	type = ldap_msgtype(result);
 
@@ -763,17 +764,19 @@ static int lldb_parse_result(struct ldb_async_handle *handle, LDAPMessage *resul
 					lldb_add_msg_attr(ac->module->ldb, ares->message, attr, bval);
 					ldap_value_free_len(bval);
 				}					  
-				
-				ldap_memfree(attr);
 			}
 			if (berptr) ber_free(berptr, 0);
 
 
 			ares->type = LDB_REPLY_ENTRY;
 			handle->state = LDB_ASYNC_PENDING;
-			handle->status = ac->callback(ac->module->ldb, ac->context, ares);
-
-			ldap_msgfree(result);
+			ret = ac->callback(ac->module->ldb, ac->context, ares);
+			if (ret != LDB_SUCCESS) {
+				handle->status = ret;
+			}
+		} else {
+			handle->status = LDB_ERR_PROTOCOL_ERROR;
+			handle->state = LDB_ASYNC_DONE;
 		}
 		break;
 
@@ -798,7 +801,10 @@ static int lldb_parse_result(struct ldb_async_handle *handle, LDAPMessage *resul
 		ares->referral = talloc_strdup(ares, *referralsp);
 		ares->type = LDB_REPLY_REFERRAL;
 		handle->state = LDB_ASYNC_PENDING;
-		handle->status = ac->callback(ac->module->ldb, ac->context, ares);
+		ret = ac->callback(ac->module->ldb, ac->context, ares);
+		if (ret != LDB_SUCCESS) {
+			handle->status = ret;
+		}
 
 		break;
 
@@ -823,7 +829,10 @@ static int lldb_parse_result(struct ldb_async_handle *handle, LDAPMessage *resul
 		
 		ares->type = LDB_REPLY_DONE;
 		handle->state = LDB_ASYNC_DONE;
-		handle->status = ac->callback(ac->module->ldb, ac->context, ares);
+		ret = ac->callback(ac->module->ldb, ac->context, ares);
+		if (ret != LDB_SUCCESS) {
+			handle->status = ret;
+		}
 
 		break;
 
@@ -845,7 +854,8 @@ static int lldb_parse_result(struct ldb_async_handle *handle, LDAPMessage *resul
 		break;
 
 	default:
-		handle->state = LDB_ERR_PROTOCOL_ERROR;
+		handle->status = LDB_ERR_PROTOCOL_ERROR;
+		goto error;
 	}
 
 	if (matcheddnp) ldap_memfree(matcheddnp);
@@ -856,10 +866,12 @@ static int lldb_parse_result(struct ldb_async_handle *handle, LDAPMessage *resul
 	if (referralsp) ldap_value_free(referralsp);
 	if (serverctrlsp) ldap_controls_free(serverctrlsp);
 
+	ldap_msgfree(result);
 	return handle->status;
 
 error:
 	handle->state = LDB_ASYNC_DONE;
+	ldap_msgfree(result);
 	return handle->status;
 }
 
