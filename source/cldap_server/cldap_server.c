@@ -26,6 +26,8 @@
 #include "lib/messaging/irpc.h"
 #include "smbd/service_task.h"
 #include "cldap_server/cldap_server.h"
+#include "system/network.h"
+#include "netif/netif.h"
 
 /*
   handle incoming cldap requests
@@ -95,7 +97,7 @@ static NTSTATUS cldapd_add_socket(struct cldapd_server *cldapd, const char *addr
 /*
   setup our listening sockets on the configured network interfaces
 */
-NTSTATUS cldapd_startup_interfaces(struct cldapd_server *cldapd)
+static NTSTATUS cldapd_startup_interfaces(struct cldapd_server *cldapd)
 {
 	int num_interfaces = iface_count();
 	TALLOC_CTX *tmp_ctx = talloc_new(cldapd);

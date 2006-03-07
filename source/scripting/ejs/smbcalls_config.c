@@ -24,6 +24,8 @@
 #include "scripting/ejs/smbcalls.h"
 #include "lib/appweb/ejs/ejs.h"
 #include "param/loadparm.h"
+#include "system/network.h"
+#include "netif/netif.h"
 
 /*
   return a list of defined services

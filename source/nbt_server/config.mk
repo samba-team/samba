@@ -40,6 +40,7 @@ REQUIRED_SUBSYSTEMS = \
 #######################
 # Start SUBSYSTEM NBTD_DGRAM
 [SUBSYSTEM::NBTD_DGRAM]
+PRIVATE_PROTO_HEADER = dgram/proto.h
 OBJ_FILES = \
 		dgram/request.o \
 		dgram/netlogon.o \

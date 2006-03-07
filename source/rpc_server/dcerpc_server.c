@@ -29,6 +29,7 @@
 #include "lib/events/events.h"
 #include "smbd/service_stream.h"
 #include "system/filesys.h"
+#include "libcli/security/proto.h"
 #include "build.h"
 
 /*

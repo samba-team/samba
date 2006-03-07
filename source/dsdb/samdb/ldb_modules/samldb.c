@@ -38,6 +38,8 @@
 #include "lib/ldb/include/ldb_errors.h"
 #include "lib/ldb/include/ldb_private.h"
 #include "dsdb/samdb/samdb.h"
+#include "libcli/security/proto.h"
+#include "db_wrap.h"
 
 
 /* if value is not null also check for attribute to have exactly that value */

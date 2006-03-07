@@ -22,6 +22,7 @@
 
 #include "includes.h"
 #include "system/iconv.h"
+#include "libcli/security/proto.h"
 
 struct flag_map {
 	const char *name;

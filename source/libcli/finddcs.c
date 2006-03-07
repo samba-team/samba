@@ -27,6 +27,7 @@
 #include "librpc/gen_ndr/ndr_samr.h"
 #include "libcli/composite/composite.h"
 #include "libcli/libcli.h"
+#include "libcli/resolve/resolve.h"
 
 struct finddcs_state {
 	struct composite_context *ctx;

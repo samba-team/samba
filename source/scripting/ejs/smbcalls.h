@@ -28,3 +28,5 @@ NTSTATUS mprGetVar(struct MprVar **v, const char *name);
 void mprAddArray(struct MprVar *var, int i, struct MprVar v);
 void mprSetCFunction(struct MprVar *obj, const char *name, MprCFunction fn);
 void mprSetStringCFunction(struct MprVar *obj, const char *name, MprStringCFunction fn);
+
+#include "scripting/ejs/proto.h"

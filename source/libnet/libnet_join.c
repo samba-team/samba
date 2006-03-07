@@ -27,6 +27,8 @@
 #include "lib/ldb/include/ldb_errors.h"
 #include "passdb/secrets.h"
 #include "dsdb/samdb/samdb.h"
+#include "db_wrap.h"
+#include "libcli/security/proto.h"
 
 /*
  * complete a domain join, when joining to a AD domain:

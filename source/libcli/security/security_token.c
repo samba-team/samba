@@ -23,6 +23,7 @@
 
 #include "includes.h"
 #include "dsdb/samdb/samdb.h"
+#include "libcli/security/proto.h"
 
 /*
   return a blank security token

@@ -23,6 +23,7 @@
 
 #include "includes.h"
 #include "auth/auth.h"
+#include "libcli/auth/proto.h"
 
 /*
   get a schannel key using a netlogon challenge on a secondary pipe

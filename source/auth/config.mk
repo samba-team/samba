@@ -7,9 +7,9 @@ include credentials/config.mk
 #######################
 # Start MODULE auth_sam
 [MODULE::auth_sam]
+PRIVATE_PROTO_HEADER = auth_sam.h
 INIT_FUNCTION = auth_sam_init
 SUBSYSTEM = AUTH
-NOPROTO = NO
 OBJ_FILES = \
 		auth_sam.o
 REQUIRED_SUBSYSTEMS = \

@@ -24,6 +24,8 @@
 #include "libcli/ldap/ldap.h"
 #include "dsdb/samdb/samdb.h"
 #include "auth/auth.h"
+#include "libcli/security/proto.h"
+#include "db_wrap.h"
 
 /*
   add privilege bits for one sid to a security_token

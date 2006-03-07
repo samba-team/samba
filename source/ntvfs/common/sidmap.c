@@ -26,6 +26,8 @@
 #include "dsdb/samdb/samdb.h"
 #include "auth/auth.h"
 #include "libcli/ldap/ldap.h"
+#include "db_wrap.h"
+#include "libcli/security/proto.h"
 
 /*
   these are used for the fallback local uid/gid to sid mapping

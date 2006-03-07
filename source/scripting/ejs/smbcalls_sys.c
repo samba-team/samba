@@ -25,6 +25,8 @@
 #include "lib/appweb/ejs/ejs.h"
 #include "lib/ldb/include/ldb.h"
 #include "system/time.h"
+#include "system/network.h"
+#include "netif/netif.h"
 
 /*
   return the list of configured network interfaces

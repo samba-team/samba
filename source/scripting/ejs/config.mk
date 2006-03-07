@@ -10,6 +10,7 @@ NOPROTO = YES
 #######################
 # Start LIBRARY SMBCALLS
 [SUBSYSTEM::SMBCALLS]
+PRIVATE_PROTO_HEADER = proto.h
 OBJ_FILES = \
 		smbcalls.o \
 		smbcalls_config.o \

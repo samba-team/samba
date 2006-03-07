@@ -22,6 +22,7 @@
 
 #include "includes.h"
 #include "lib/events/events.h"
+#include "libcli/resolve/resolve.h"
 
 static BOOL test_async_resolve(TALLOC_CTX *mem_ctx)
 {

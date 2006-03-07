@@ -21,6 +21,7 @@
 */
 
 #include "includes.h"
+#include "libcli/security/proto.h"
 
 /*
   return a blank security descriptor (no owners, dacl or sacl)

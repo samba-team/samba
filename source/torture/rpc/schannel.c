@@ -25,6 +25,8 @@
 #include "torture/rpc/proto.h"
 #include "lib/cmdline/popt_common.h"
 #include "auth/gensec/schannel_proto.h"
+#include "libcli/auth/proto.h"
+#include "libcli/security/proto.h"
 
 #define TEST_MACHINE_NAME "schannel"
 

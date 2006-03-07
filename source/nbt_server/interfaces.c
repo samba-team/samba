@@ -26,6 +26,9 @@
 #include "smbd/service_task.h"
 #include "lib/socket/socket.h"
 #include "nbt_server/wins/winsserver.h"
+#include "nbt_server/dgram/proto.h"
+#include "system/network.h"
+#include "netif/netif.h"
 
 
 /*

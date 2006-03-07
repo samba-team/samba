@@ -29,6 +29,8 @@
 #include "dsdb/samdb/samdb.h"
 #include "auth/auth.h"
 #include "librpc/gen_ndr/ndr_misc.h"
+#include "db_wrap.h"
+#include "libcli/security/proto.h"
 
 struct samsync_ldb_secret {
 	struct samsync_ldb_secret *prev, *next;

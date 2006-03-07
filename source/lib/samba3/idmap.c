@@ -27,6 +27,7 @@
 #include "lib/tdb/include/tdbutil.h"
 #include "lib/samba3/samba3.h"
 #include "system/filesys.h"
+#include "libcli/security/proto.h"
 
 /* High water mark keys */
 #define HWM_GROUP  "GROUP HWM"

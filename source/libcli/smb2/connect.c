@@ -25,6 +25,7 @@
 #include "libcli/smb2/smb2.h"
 #include "libcli/smb2/smb2_calls.h"
 #include "libcli/composite/composite.h"
+#include "libcli/resolve/resolve.h"
 
 struct smb2_connect_state {
 	struct cli_credentials *credentials;

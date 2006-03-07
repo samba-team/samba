@@ -30,6 +30,7 @@
 #include "ldb/include/ldb.h"
 #include "ldb/include/ldb_errors.h"
 #include "auth/auth.h"
+#include "db_wrap.h"
 
 static struct ldb_context *wins_config_db_connect(TALLOC_CTX *mem_ctx)
 {

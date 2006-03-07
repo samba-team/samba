@@ -22,6 +22,7 @@ include tdr/config.mk
 ##############################
 # Start SUBSYSTEM LIBNETIF
 [SUBSYSTEM::LIBNETIF]
+PRIVATE_PROTO_HEADER = netif/proto.h
 OBJ_FILES = \
 		netif/interface.o \
 		netif/netif.o
@@ -55,6 +56,7 @@ OBJ_FILES = \
 		gencache/gencache.o \
 
 [SUBSYSTEM::DB_WRAP]
+PRIVATE_PROTO_HEADER = db_wrap_proto.h
 OBJ_FILES = db_wrap.o \
 		gendb.o
 REQUIRED_SUBSYSTEMS = LIBLDB LIBTDB LDBSAMBA

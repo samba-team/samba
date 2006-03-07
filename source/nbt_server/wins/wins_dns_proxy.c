@@ -27,6 +27,7 @@
 #include "system/time.h"
 #include "libcli/composite/composite.h"
 #include "smbd/service_task.h"
+#include "libcli/resolve/resolve.h"
 
 struct wins_dns_proxy_state {
 	struct nbt_name_socket *nbtsock;

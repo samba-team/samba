@@ -21,6 +21,7 @@
 */
 
 #include "includes.h"
+#include "libcli/resolve/resolve.h"
 
 /*
   wins name resolution method - async send

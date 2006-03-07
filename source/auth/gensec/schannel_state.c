@@ -25,8 +25,9 @@
 #include "lib/ldb/include/ldb.h"
 #include "lib/ldb/include/ldb_errors.h"
 #include "dsdb/samdb/samdb.h"
+#include "db_wrap.h"
 
-/*
+/**
   connect to the schannel ldb
 */
 struct ldb_context *schannel_db_connect(TALLOC_CTX *mem_ctx)

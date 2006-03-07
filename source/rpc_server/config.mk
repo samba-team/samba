@@ -3,6 +3,7 @@
 ################################################
 # Start SUBSYSTEM DCERPC_COMMON
 [SUBSYSTEM::DCERPC_COMMON]
+PRIVATE_PROTO_HEADER = common/proto.h
 OBJ_FILES = \
 		common/server_info.o \
 		common/share_info.o

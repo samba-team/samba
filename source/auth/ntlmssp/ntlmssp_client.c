@@ -26,6 +26,7 @@
 #include "auth/auth.h"
 #include "auth/ntlmssp/ntlmssp.h"
 #include "lib/crypto/crypto.h"
+#include "libcli/auth/proto.h"
 
 /*********************************************************************
  Client side NTLMSSP

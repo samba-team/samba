@@ -28,6 +28,10 @@
 #include "lib/messaging/irpc.h"
 #include "librpc/gen_ndr/ndr_irpc.h"
 #include "libcli/auth/credentials.h"
+#include "libcli/security/proto.h"
+#include "libcli/auth/proto.h"
+
+#include "winbind/wb_helper.h"
 
 struct get_schannel_creds_state {
 	struct cli_credentials *wks_creds;

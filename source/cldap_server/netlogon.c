@@ -28,6 +28,9 @@
 #include "cldap_server/cldap_server.h"
 #include "dsdb/samdb/samdb.h"
 #include "auth/auth.h"
+#include "db_wrap.h"
+#include "system/network.h"
+#include "netif/netif.h"
 
 /*
   fill in the cldap netlogon union for a given version

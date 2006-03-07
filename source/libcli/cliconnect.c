@@ -24,6 +24,7 @@
 #include "includes.h"
 #include "libcli/libcli.h"
 #include "libcli/raw/libcliraw.h"
+#include "libcli/auth/proto.h"
 #include "libcli/smb_composite/smb_composite.h"
 
 /*

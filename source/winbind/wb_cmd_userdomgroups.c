@@ -22,7 +22,9 @@
 
 #include "includes.h"
 #include "libcli/composite/composite.h"
+#include "libcli/security/proto.h"
 #include "winbind/wb_server.h"
+#include "winbind/wb_helper.h"
 #include "smbd/service_task.h"
 
 struct cmd_userdomgroups_state {

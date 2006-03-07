@@ -25,6 +25,7 @@
 #include "includes.h"
 #include "smbd/service_task.h"
 #include "smbd/service_stream.h"
+#include "smbd/process_model.h"
 #include "lib/events/events.h"
 #include "lib/socket/socket.h"
 #include "kdc/kdc.h"
@@ -32,8 +33,8 @@
 #include "dlinklist.h"
 #include "lib/messaging/irpc.h"
 #include "lib/stream/packet.h"
-
 #include "librpc/gen_ndr/samr.h"
+#include "netif/netif.h"
 
 /* hold all the info needed to send a reply */
 struct kdc_reply {

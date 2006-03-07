@@ -29,6 +29,7 @@
 #include "includes.h"
 #include "libcli/raw/libcliraw.h"
 #include "libcli/libcli.h"
+#include "libcli/security/proto.h"
 #include "librpc/gen_ndr/ndr_lsa.h"
 
 struct smblsa_state {

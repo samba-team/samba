@@ -36,6 +36,7 @@
 #include "ldb/include/ldb_private.h"
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "librpc/gen_ndr/ndr_samr.h"
+#include "libcli/auth/proto.h"
 #include "system/kerberos.h"
 #include "auth/kerberos/kerberos.h"
 #include "system/time.h"

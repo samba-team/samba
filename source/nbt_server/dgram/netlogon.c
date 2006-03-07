@@ -26,6 +26,7 @@
 #include "lib/ldb/include/ldb.h"
 #include "dsdb/samdb/samdb.h"
 #include "auth/auth.h"
+#include "db_wrap.h"
 
 /*
   reply to a GETDC request

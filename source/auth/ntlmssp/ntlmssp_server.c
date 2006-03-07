@@ -28,6 +28,7 @@
 #include "lib/crypto/crypto.h"
 #include "pstring.h"
 #include "system/filesys.h"
+#include "libcli/auth/proto.h"
 
 /** 
  * Set a username on an NTLMSSP context - ensures it is talloc()ed 

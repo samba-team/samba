@@ -25,6 +25,7 @@
 #include "libcli/composite/composite.h"
 
 #include "libcli/raw/libcliraw.h"
+#include "libcli/security/proto.h"
 #include "librpc/gen_ndr/ndr_samr.h"
 
 

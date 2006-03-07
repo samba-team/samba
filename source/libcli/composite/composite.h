@@ -60,3 +60,5 @@ struct composite_context {
 
 	BOOL used_wait;
 };
+
+#include "libcli/composite/proto.h"

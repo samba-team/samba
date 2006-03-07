@@ -32,6 +32,8 @@
 #include "dsdb/samdb/samdb.h"
 #include "auth/auth.h"
 #include "rpc_server/samr/proto.h"
+#include "libcli/auth/proto.h"
+#include "db_wrap.h"
 
 /* 
   samr_ChangePasswordUser 

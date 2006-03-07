@@ -77,6 +77,7 @@ foreach my $key (values %$OUTPUT) {
 	$mkenv->Header($key) if defined($key->{PUBLIC_HEADERS});
 	$mkenv->ProtoHeader($key) if defined($key->{PRIVATE_PROTO_HEADER});
 
+#	$mkenv->DependencyInfo($key) if $config::config{developer} eq "yes";
 }
 
 $mkenv->write("Makefile");

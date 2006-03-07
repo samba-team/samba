@@ -29,6 +29,8 @@
 #include "librpc/gen_ndr/ndr_security.h"
 #include "smbd/service_stream.h"
 #include "lib/tdb/include/tdb.h"
+#include "db_wrap.h"
+#include "libcli/security/proto.h"
 
 
 /*

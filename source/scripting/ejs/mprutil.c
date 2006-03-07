@@ -23,6 +23,7 @@
 #include "includes.h"
 #include "lib/appweb/ejs/ejs.h"
 #include "lib/ldb/include/ldb.h"
+#include "scripting/ejs/smbcalls.h"
 
 /*
   return a default mpr object

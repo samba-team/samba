@@ -248,7 +248,7 @@ include/includes.h: \
 		libcli/nbt/libnbt.h \
 		lib/util/util_proto.h \
 		lib/charset/charset.h \
-		param/param.h
+		param/param.h \
 
 clean_pch: 
 	-rm -f include/includes.h.gch

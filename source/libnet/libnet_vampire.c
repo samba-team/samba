@@ -24,6 +24,7 @@
 #include "includes.h"
 #include "libnet/libnet.h"
 #include "auth/gensec/schannel_proto.h"
+#include "libcli/auth/proto.h"
 
 
 /**

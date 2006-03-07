@@ -24,8 +24,6 @@
 #ifndef __DCERPC_H__
 #define __DCERPC_H__
 
-#include <nt_status.h>
-
 enum dcerpc_transport_t {
 	NCACN_NP, NCACN_IP_TCP, NCACN_IP_UDP, NCACN_VNS_IPC, NCACN_VNS_SPP, 
 	NCACN_AT_DSP, NCADG_AT_DDP, NCALRPC, NCACN_UNIX_STREAM, NCADG_UNIX_DGRAM,

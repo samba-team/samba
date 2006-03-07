@@ -26,6 +26,9 @@
 #include "lib/socket/socket.h"
 #include "lib/events/events.h"
 #include "torture/rpc/proto.h"
+#include "libcli/resolve/resolve.h"
+#include "system/network.h"
+#include "netif/netif.h"
 
 #define TEST_NAME "TORTURE_TEST"
 

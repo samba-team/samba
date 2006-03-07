@@ -22,6 +22,9 @@
 
 #include "includes.h"
 #include "lib/socket/socket.h"
+#include "libcli/resolve/resolve.h"
+#include "system/network.h"
+#include "netif/netif.h"
 
 #define CHECK_VALUE(v, correct) do { \
 	if ((v) != (correct)) { \

@@ -25,6 +25,7 @@
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "lib/ldb/include/ldb.h"
 #include "lib/ldb/include/ldb_errors.h"
+#include "libcli/security/proto.h"
 #include "system/time.h"
 #include "system/filesys.h"
 #include "db_wrap.h"

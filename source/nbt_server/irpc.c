@@ -26,6 +26,7 @@
 #include "nbt_server/nbt_server.h"
 #include "nbt_server/wins/winsserver.h"
 #include "lib/socket/socket.h"
+#include "libcli/resolve/resolve.h"
 
 /*
   serve out the nbt statistics

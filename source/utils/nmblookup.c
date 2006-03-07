@@ -26,6 +26,8 @@
 #include "lib/cmdline/popt_common.h"
 #include "system/iconv.h"
 #include "lib/socket/socket.h"
+#include "system/network.h"
+#include "netif/netif.h"
 
 /* command line options */
 static struct {

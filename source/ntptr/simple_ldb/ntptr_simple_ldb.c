@@ -34,6 +34,8 @@
 #include "lib/ldb/include/ldb.h"
 #include "auth/auth.h"
 #include "dsdb/samdb/samdb.h"
+#include "db_wrap.h"
+#include "rpc_server/common/common.h"
 
 /*
   connect to the SPOOLSS database
