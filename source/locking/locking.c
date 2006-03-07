@@ -101,7 +101,7 @@ BOOL is_locked(files_struct *fsp,
 			ret = False;
 		} else {
 			struct byte_range_lock *br_lck = brl_get_locks(NULL, fsp);
-			if (!brl_lock) {
+			if (!br_lck) {
 				return False;
 			}
 			ret = !brl_locktest(br_lck,
@@ -115,7 +115,7 @@ BOOL is_locked(files_struct *fsp,
 		}
 	} else {
 		struct byte_range_lock *br_lck = brl_get_locks(NULL, fsp);
-		if (!brl_lock) {
+		if (!br_lck) {
 			return False;
 		}
 		ret = !brl_locktest(br_lck,
