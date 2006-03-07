@@ -22,7 +22,7 @@ fi
 # ones...
 AC_PREFIX_DEFAULT(/usr/local/samba)
 
-rootsbindir="/sbin"
+rootsbindir="\${prefix}/sbin"
 lockdir="\${VARDIR}/locks"
 piddir="\${VARDIR}/locks"
 mandir="\${prefix}/man"
@@ -66,7 +66,7 @@ AC_ARG_WITH(privatedir,
 #################################################
 # set root sbin directory location
 AC_ARG_WITH(rootsbindir,
-[  --with-rootsbindir=DIR  Which directory to use for root sbin (/sbin)],
+[  --with-rootsbindir=DIR  Which directory to use for root sbin ($ac_default_prefix/sbin)],
 [ case "$withval" in
   yes|no)
   #
