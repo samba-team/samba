@@ -69,8 +69,7 @@ void set_werror_exception(int status)
 
 %init  %{
 	setup_logging("python", DEBUG_STDOUT);	
-	lp_load(dyn_CONFIGFILE, True, False, False);
-	load_interfaces();
+	lp_load();
 	ntstatus_exception = PyErr_NewException("_dcerpc.NTSTATUS", NULL, NULL);
 	werror_exception = PyErr_NewException("_dcerpc.WERROR", NULL, NULL);
 	PyDict_SetItemString(d, "NTSTATUS", ntstatus_exception);
