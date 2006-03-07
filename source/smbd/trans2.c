@@ -3511,13 +3511,17 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 
 		case SMB_QUERY_POSIX_LOCK:
 		{
-			NTSTATUS status;
+			NTSTATUS status = NT_STATUS_INVALID_LEVEL;
 			SMB_BIG_UINT count;
 			SMB_BIG_UINT offset;
 			uint16 lock_pid;
 			enum brl_type lock_type;
 
-			switch (SVAL(lock_data, POSIX_LOCK_TYPE_OFFSET)) {
+			if (total_data != POSIX_LOCK_DATA_SIZE) {
+				return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+			}
+
+			switch (SVAL(pdata, POSIX_LOCK_TYPE_OFFSET)) {
 				case POSIX_LOCK_TYPE_READ:
 					lock_type = READ_LOCK;
 					break;
@@ -3531,15 +3535,15 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 					return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 			}
 
-			lock_pid = (uint16)IVAL(lock_data, POSIX_LOCK_PID_OFFSET);
+			lock_pid = (uint16)IVAL(pdata, POSIX_LOCK_PID_OFFSET);
 #if defined(HAVE_LONGLONG)
-			offset = (((SMB_BIG_UINT) IVAL(lock_data,(POSIX_LOCK_START_OFFSET+4))) << 32) |
-					((SMB_BIG_UINT) IVAL(lock_data,POSIX_LOCK_START_OFFSET));
-			count = (((SMB_BIG_UINT) IVAL(lock_data,(POSIX_LOCK_LEN_OFFSET+4))) << 32) |
-					((SMB_BIG_UINT) IVAL(lock_data,POSIX_LOCK_LEN_OFFSET));
+			offset = (((SMB_BIG_UINT) IVAL(pdata,(POSIX_LOCK_START_OFFSET+4))) << 32) |
+					((SMB_BIG_UINT) IVAL(pdata,POSIX_LOCK_START_OFFSET));
+			count = (((SMB_BIG_UINT) IVAL(pdata,(POSIX_LOCK_LEN_OFFSET+4))) << 32) |
+					((SMB_BIG_UINT) IVAL(pdata,POSIX_LOCK_LEN_OFFSET));
 #else /* HAVE_LONGLONG */
-			offset = (SMB_BIG_UINT)IVAL(lock_data,POSIX_LOCK_START_OFFSET);
-			count = (SMB_BIG_UINT)IVAL(lock_data,POSIX_LOCK_LEN_OFFSET);
+			offset = (SMB_BIG_UINT)IVAL(pdata,POSIX_LOCK_START_OFFSET);
+			count = (SMB_BIG_UINT)IVAL(pdata,POSIX_LOCK_LEN_OFFSET);
 #endif /* HAVE_LONGLONG */
 
 #if 0
@@ -3553,16 +3557,19 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 					&my_lock_ctx);
 #endif
 
-			if (!NT_STATUS_IS_OK(status)) {
+			if (ERROR_WAS_LOCK_DENIED(status)) {
 				/* Here we need to report who has it locked... */
 				data_size = POSIX_LOCK_DATA_SIZE;
-				memcpy(pdata, lock_data, POSIX_LOCK_DATA_SIZE);
-			} else {
+				/* FIXME - Coverity tmp fix. */
+				memset(pdata, '\0', POSIX_LOCK_DATA_SIZE);
+			} else if (NT_STATUS_IS_OK(status)) {
 				/* For success we just return a copy of what we sent
 				   with the lock type set to POSIX_LOCK_TYPE_UNLOCK. */
 				data_size = POSIX_LOCK_DATA_SIZE;
 				memcpy(pdata, lock_data, POSIX_LOCK_DATA_SIZE);
 				SSVAL(pdata, POSIX_LOCK_TYPE_OFFSET,POSIX_LOCK_TYPE_UNLOCK);
+			} else {
+				return ERROR_NT(status);
 			}
 			break;
 		}
