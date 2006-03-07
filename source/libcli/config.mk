@@ -13,6 +13,7 @@ OBJ_FILES = util/asn1.o \
 		util/smbdes.o
 
 [SUBSYSTEM::LIBCLI_LSA]
+PRIVATE_PROTO_HEADER = util/clilsa.h
 OBJ_FILES = util/clilsa.o
 REQUIRED_SUBSYSTEMS = RPC_NDR_LSA
 

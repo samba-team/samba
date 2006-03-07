@@ -22,6 +22,7 @@
 
 #include "includes.h"
 #include "vfs_posix.h"
+#include "util/unix_privs.h"
 
 /*
   pull a xattr as a blob

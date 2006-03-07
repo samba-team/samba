@@ -30,6 +30,7 @@
 #include "lib/messaging/irpc.h"
 #include "db_wrap.h"
 #include "lib/tdb/include/tdbutil.h"
+#include "util/unix_privs.h"
 
 /* change the message version with any incompatible changes in the protocol */
 #define MESSAGING_VERSION 1

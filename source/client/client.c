@@ -28,6 +28,7 @@
 #include "librpc/gen_ndr/ndr_srvsvc.h"
 #include "librpc/gen_ndr/ndr_lsa.h"
 #include "libcli/raw/libcliraw.h"
+#include "libcli/util/clilsa.h"
 #include "system/dir.h"
 #include "system/filesys.h"
 #include "dlinklist.h"

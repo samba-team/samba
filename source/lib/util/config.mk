@@ -3,7 +3,7 @@ MAJOR_VERSION = 0
 MINOR_VERSION = 0
 RELEASE_VERSION = 1
 DESCRIPTION = Generic utility functions
-PRIVATE_PROTO_HEADER = util_proto.h
+PUBLIC_PROTO_HEADER = util_proto.h
 PUBLIC_HEADERS = util.h \
 				 byteorder.h \
 				 debug.h \
@@ -39,7 +39,9 @@ REQUIRED_SUBSYSTEMS = \
 		LIBLDB 
 
 [SUBSYSTEM::PIDFILE]
+PRIVATE_PROTO_HEADER = pidfile.h
 OBJ_FILES = pidfile.o
 
 [SUBSYSTEM::UNIX_PRIVS]
+PRIVATE_PROTO_HEADER = unix_privs.h
 OBJ_FILES = unix_privs.o
