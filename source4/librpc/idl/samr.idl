@@ -36,7 +36,8 @@
 		ACB_TRUSTED_FOR_DELEGATION	= 0x00002000,  /* 1 = Trusted for Delegation */
 		ACB_NOT_DELEGATED		= 0x00004000,  /* 1 = Not delegated */
 		ACB_USE_DES_KEY_ONLY		= 0x00008000,  /* 1 = Use DES key only */
-		ACB_DONT_REQUIRE_PREAUTH	= 0x00010000   /* 1 = Preauth not required */
+		ACB_DONT_REQUIRE_PREAUTH	= 0x00010000,  /* 1 = Preauth not required */
+		ACB_PW_EXPIRED                  = 0x00020000   /* 1 = Password Expired */
 	} samr_AcctFlags;
 
 	/******************/
