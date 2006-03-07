@@ -163,5 +163,7 @@ NTSTATUS kerberos_decode_pac(TALLOC_CTX *mem_ctx,
 					  gss_cred_id_t gssapi_cred,
 					  enum credentials_obtained obtained); 
 
+#include "auth/kerberos/proto.h"
+
 #endif /* HAVE_KRB5 */
 

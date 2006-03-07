@@ -30,6 +30,7 @@
 #include "nsswitch/winbind_nss_config.h"
 #include "winbind/wb_server.h"
 #include "lib/stream/packet.h"
+#include "smbd/service.h"
 
 void wbsrv_terminate_connection(struct wbsrv_connection *wbconn, const char *reason)
 {

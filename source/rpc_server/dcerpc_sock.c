@@ -27,6 +27,7 @@
 #include "lib/events/events.h"
 #include "rpc_server/dcerpc_server.h"
 #include "smbd/service_stream.h"
+#include "smbd/proto.h"
 #include "lib/messaging/irpc.h"
 #include "system/network.h"
 #include "netif/netif.h"

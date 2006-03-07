@@ -3,7 +3,7 @@ include ldap/config.mk
 include security/config.mk
 
 [SUBSYSTEM::LIBCLI_UTILS]
-PUBLIC_HEADERS = util/nterr.h util/doserr.h
+PUBLIC_HEADERS = util/nterr.h util/doserr.h util/nt_status.h
 OBJ_FILES = util/asn1.o \
 		util/doserr.o \
 		util/errormap.o \

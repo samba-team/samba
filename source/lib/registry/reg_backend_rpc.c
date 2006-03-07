@@ -356,7 +356,7 @@ static struct hive_operations reg_backend_rpc = {
 	.num_values = rpc_num_values,
 };
 
-WERROR _PUBLIC_ reg_open_remote(struct registry_context **ctx, struct cli_credentials *credentials, 
+_PUBLIC_ WERROR reg_open_remote(struct registry_context **ctx, struct cli_credentials *credentials, 
 		       const char *location, struct event_context *ev)
 {
 	NTSTATUS status;

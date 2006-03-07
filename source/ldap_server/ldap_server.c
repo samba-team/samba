@@ -30,6 +30,7 @@
 #include "ldap_server/ldap_server.h"
 #include "smbd/service_task.h"
 #include "smbd/service_stream.h"
+#include "smbd/proto.h"
 #include "lib/socket/socket.h"
 #include "lib/tls/tls.h"
 #include "lib/messaging/irpc.h"

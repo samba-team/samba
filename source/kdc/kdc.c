@@ -24,6 +24,7 @@
 
 #include "includes.h"
 #include "smbd/service_task.h"
+#include "smbd/service.h"
 #include "smbd/service_stream.h"
 #include "smbd/process_model.h"
 #include "lib/events/events.h"

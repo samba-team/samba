@@ -23,6 +23,7 @@
 #include "includes.h"
 #include "dlinklist.h"
 #include "smbd/service_task.h"
+#include "smbd/service.h"
 #include "lib/messaging/irpc.h"
 #include "librpc/gen_ndr/ndr_winsrepl.h"
 #include "wrepl_server/wrepl_server.h"
