@@ -20,7 +20,6 @@
 */
 
 #include "includes.h"
-#include "rpcclient.h"
 
 /****************************************************************************
 convert a security permissions into a string
