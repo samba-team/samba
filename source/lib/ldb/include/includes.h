@@ -10,8 +10,6 @@
 #include "system/iconv.h"
 #include "system/time.h"
 
-#include "build.h"
-
 /* tell ldb we have the internal ldap code */
 #define HAVE_ILDAP 1
 
