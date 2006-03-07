@@ -48,21 +48,16 @@ static const char *known_nt_pipes[] = {
 
 static char *nttrans_realloc(char **ptr, size_t size)
 {
-	char *tptr = NULL;
 	if (ptr==NULL) {
 		smb_panic("nttrans_realloc() called with NULL ptr\n");
 	}
 		
-	tptr = SMB_REALLOC(*ptr, size);
-	if(tptr == NULL) {
-		*ptr = NULL;
+	*ptr = SMB_REALLOC(*ptr, size);
+	if(*ptr == NULL) {
 		return NULL;
 	}
-	memset(tptr,'\0',size);
-
-	*ptr = tptr;
-
-	return tptr;
+	memset(*ptr,'\0',size);
+	return *ptr;
 }
 
 /****************************************************************************

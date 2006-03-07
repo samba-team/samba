@@ -335,7 +335,7 @@ static int wb_getgroups(const char *user, gid_t **groups)
 
 int winbind_initgroups(char *user, gid_t gid)
 {
-	gid_t *tgr, *groups = NULL;
+	gid_t *groups = NULL;
 	int result;
 
 	/* Call normal initgroups if we are a local user */
@@ -364,14 +364,12 @@ int winbind_initgroups(char *user, gid_t gid)
 		/* Add group to list if necessary */
 
 		if (!is_member) {
-			tgr = SMB_REALLOC_ARRAY(groups, gid_t, ngroups + 1);
-			
-			if (!tgr) {
+			groups = SMB_REALLOC_ARRAY(groups, gid_t, ngroups + 1);
+			if (!groups) {
 				errno = ENOMEM;
 				result = -1;
 				goto done;
 			}
-			else groups = tgr;
 
 			groups[ngroups] = gid;
 			ngroups++;

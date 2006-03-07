@@ -537,19 +537,17 @@ size_t convert_string_allocate(TALLOC_CTX *ctx, charset_t from, charset_t to,
 		destlen = destlen * 2;
 	}
 
-	if (ctx)
+	if (ctx) {
 		ob = (char *)TALLOC_REALLOC(ctx, ob, destlen);
-	else
+	} else {
 		ob = (char *)SMB_REALLOC(ob, destlen);
+	}
 
 	if (!ob) {
 		DEBUG(0, ("convert_string_allocate: realloc failed!\n"));
-		if (!ctx)
-			SAFE_FREE(outbuf);
 		return (size_t)-1;
-	} else {
-		outbuf = ob;
 	}
+	outbuf = ob;
 	i_len = srclen;
 	o_len = destlen;
 
@@ -587,17 +585,18 @@ size_t convert_string_allocate(TALLOC_CTX *ctx, charset_t from, charset_t to,
   out:
 
 	destlen = destlen - o_len;
-	if (ctx)
-		*dest = (char *)TALLOC_REALLOC(ctx,ob,destlen);
-	else
-		*dest = (char *)SMB_REALLOC(ob,destlen);
-	if (destlen && !*dest) {
+	if (ctx) {
+		ob = (char *)TALLOC_REALLOC(ctx,ob,destlen);
+	} else {
+		ob = (char *)SMB_REALLOC(ob,destlen);
+	}
+
+	if (destlen && !ob) {
 		DEBUG(0, ("convert_string_allocate: out of memory!\n"));
-		if (!ctx)
-			SAFE_FREE(ob);
 		return (size_t)-1;
 	}
 
+	*dest = ob;
 	return destlen;
 
  use_as_is:

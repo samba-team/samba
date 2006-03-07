@@ -1820,6 +1820,8 @@ static NTSTATUS fetch_database_to_ldif(struct rpc_pipe_client *pipe_hnd,
 					num_deltas+num_alloced);
 		if (groupmap == NULL || accountmap == NULL) {
 			DEBUG(1,("GROUPMAP malloc failed\n"));
+			SAFE_FREE(groupmap);
+			SAFE_FREE(accountmap);
 			return NT_STATUS_NO_MEMORY;
 		}
 

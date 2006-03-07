@@ -798,6 +798,9 @@ static BOOL api_DosPrintQGetInfo(connection_struct *conn,
 		*rdata_len = 0;
 		*rparam_len = 6;
 		*rparam = SMB_REALLOC_LIMIT(*rparam,*rparam_len);
+		if (!*rparam) {
+			return False;
+		}
 		SSVALS(*rparam,0,ERRunknownlevel);
 		SSVAL(*rparam,2,0);
 		SSVAL(*rparam,4,0);
@@ -817,6 +820,9 @@ static BOOL api_DosPrintQGetInfo(connection_struct *conn,
 
 	if (mdrcnt > 0) {
 		*rdata = SMB_REALLOC_LIMIT(*rdata,mdrcnt);
+		if (!*rdata) {
+			return False;
+		}
 		desc.base = *rdata;
 		desc.buflen = mdrcnt;
 	} else {
@@ -846,6 +852,9 @@ static BOOL api_DosPrintQGetInfo(connection_struct *conn,
 	*rdata_len = desc.usedlen;
 	*rparam_len = 6;
 	*rparam = SMB_REALLOC_LIMIT(*rparam,*rparam_len);
+	if (!*rparam) {
+		return False;
+	}
 	SSVALS(*rparam,0,desc.errcode);
 	SSVAL(*rparam,2,0);
 	SSVAL(*rparam,4,desc.neededlen);
@@ -896,6 +905,9 @@ static BOOL api_DosPrintQEnum(connection_struct *conn, uint16 vuid, char* param,
 		*rdata_len = 0;
 		*rparam_len = 6;
 		*rparam = SMB_REALLOC_LIMIT(*rparam,*rparam_len);
+		if (!*rparam) {
+			return False;
+		}
 		SSVALS(*rparam,0,ERRunknownlevel);
 		SSVAL(*rparam,2,0);
 		SSVAL(*rparam,4,0);
@@ -1066,15 +1078,11 @@ static int get_server_info(uint32 servertype,
 		}
     
 		if (count == alloced) {
-			struct srv_info_struct *ts;
-      
 			alloced += 10;
-			ts = SMB_REALLOC_ARRAY(*servers,struct srv_info_struct, alloced);
-			if (!ts) {
+			*servers = SMB_REALLOC_ARRAY(*servers,struct srv_info_struct, alloced);
+			if (!*servers) {
 				DEBUG(0,("get_server_info: failed to enlarge servers info struct!\n"));
 				return 0;
-			} else {
-				*servers = ts;
 			}
 			memset((char *)((*servers)+count),'\0',sizeof(**servers)*(alloced-count));
 		}
@@ -1332,6 +1340,9 @@ static BOOL api_RNetServerEnum(connection_struct *conn, uint16 vuid, char *param
 
 	*rdata_len = fixed_len + string_len;
 	*rdata = SMB_REALLOC_LIMIT(*rdata,*rdata_len);
+	if (!*rdata) {
+		return False;
+	}
 	memset(*rdata,'\0',*rdata_len);
   
 	p2 = (*rdata) + fixed_len;	/* auxilliary data (strings) will go here */
@@ -1359,6 +1370,9 @@ static BOOL api_RNetServerEnum(connection_struct *conn, uint16 vuid, char *param
   
 	*rparam_len = 8;
 	*rparam = SMB_REALLOC_LIMIT(*rparam,*rparam_len);
+	if (!*rparam) {
+		return False;
+	}
 	SSVAL(*rparam,0,(missed == 0 ? NERR_Success : ERRmoredata));
 	SSVAL(*rparam,2,0);
 	SSVAL(*rparam,4,counted);
@@ -1399,6 +1413,9 @@ static BOOL api_RNetGroupGetUsers(connection_struct *conn, uint16 vuid, char *pa
   
 	*rparam_len = 8;
 	*rparam = SMB_REALLOC_LIMIT(*rparam,*rparam_len);
+	if (!*rparam) {
+		return False;
+	}
 
 	SSVAL(*rparam,0,0x08AC); /* informational warning message */
 	SSVAL(*rparam,2,0);
@@ -1581,6 +1598,9 @@ static BOOL api_RNetShareGetInfo(connection_struct *conn,uint16 vuid, char *para
 	}
  
 	*rdata = SMB_REALLOC_LIMIT(*rdata,mdrcnt);
+	if (!*rdata) {
+		return False;
+	}
 	p = *rdata;
 	*rdata_len = fill_share_info(conn,snum,uLevel,&p,&mdrcnt,0,0,0);
 	if (*rdata_len < 0) {
@@ -1589,6 +1609,9 @@ static BOOL api_RNetShareGetInfo(connection_struct *conn,uint16 vuid, char *para
  
 	*rparam_len = 6;
 	*rparam = SMB_REALLOC_LIMIT(*rparam,*rparam_len);
+	if (!*rparam) {
+		return False;
+	}
 	SSVAL(*rparam,0,NERR_Success);
 	SSVAL(*rparam,2,0);		/* converter word */
 	SSVAL(*rparam,4,*rdata_len);
@@ -1665,6 +1688,9 @@ static BOOL api_RNetShareEnum( connection_struct *conn,
 
 	*rdata_len = fixed_len + string_len;
 	*rdata = SMB_REALLOC_LIMIT(*rdata,*rdata_len);
+	if (!*rdata) {
+		return False;
+	}
 	memset(*rdata,0,*rdata_len);
   
 	p2 = (*rdata) + fixed_len;	/* auxiliary data (strings) will go here */
@@ -1688,6 +1714,9 @@ static BOOL api_RNetShareEnum( connection_struct *conn,
   
 	*rparam_len = 8;
 	*rparam = SMB_REALLOC_LIMIT(*rparam,*rparam_len);
+	if (!*rparam) {
+		return False;
+	}
 	SSVAL(*rparam,0,missed ? ERRmoredata : NERR_Success);
 	SSVAL(*rparam,2,0);
 	SSVAL(*rparam,4,counted);
@@ -1792,6 +1821,9 @@ static BOOL api_RNetShareAdd(connection_struct *conn,uint16 vuid, char *param,ch
 
 	*rparam_len = 6;
 	*rparam = SMB_REALLOC_LIMIT(*rparam,*rparam_len);
+	if (!*rparam) {
+		return False;
+	}
 	SSVAL(*rparam,0,NERR_Success);
 	SSVAL(*rparam,2,0);		/* converter word */
 	SSVAL(*rparam,4,*rdata_len);
@@ -1803,6 +1835,9 @@ static BOOL api_RNetShareAdd(connection_struct *conn,uint16 vuid, char *param,ch
 
 	*rparam_len = 4;
 	*rparam = SMB_REALLOC_LIMIT(*rparam,*rparam_len);
+	if (!*rparam) {
+		return False;
+	}
 	*rdata_len = 0;
 	SSVAL(*rparam,0,res);
 	SSVAL(*rparam,2,0);
@@ -1868,6 +1903,9 @@ static BOOL api_RNetGroupEnum(connection_struct *conn,uint16 vuid, char *param,c
 
 	*rdata_len = cli_buf_size;
 	*rdata = SMB_REALLOC_LIMIT(*rdata,*rdata_len);
+	if (!*rdata) {
+		return False;
+	}
 
 	p = *rdata;
 
@@ -1895,7 +1933,9 @@ static BOOL api_RNetGroupEnum(connection_struct *conn,uint16 vuid, char *param,c
 
 	*rparam_len = 8;
 	*rparam = SMB_REALLOC_LIMIT(*rparam,*rparam_len);
-
+	if (!*rparam) {
+		return False;
+	}
   	SSVAL(*rparam, 0, errflags);
   	SSVAL(*rparam, 2, 0);		/* converter word */
   	SSVAL(*rparam, 4, i);	/* is this right?? */
@@ -1933,6 +1973,9 @@ static BOOL api_NetUserGetGroups(connection_struct *conn,uint16 vuid, char *para
 
 	*rparam_len = 8;
 	*rparam = SMB_REALLOC_LIMIT(*rparam,*rparam_len);
+	if (!*rparam) {
+		return False;
+	}
   
 	/* check it's a supported varient */
 	
@@ -1952,7 +1995,9 @@ static BOOL api_NetUserGetGroups(connection_struct *conn,uint16 vuid, char *para
 
 	*rdata_len = mdrcnt + 1024;
 	*rdata = SMB_REALLOC_LIMIT(*rdata,*rdata_len);
-
+	if (!*rdata) {
+		return False;
+	}
 	SSVAL(*rparam,0,NERR_Success);
 	SSVAL(*rparam,2,0);		/* converter word */
 
@@ -2068,6 +2113,9 @@ static BOOL api_RNetUserEnum(connection_struct *conn,uint16 vuid, char *param,ch
 
 	*rparam_len = 8;
 	*rparam = SMB_REALLOC_LIMIT(*rparam,*rparam_len);
+	if (!*rparam) {
+		return False;
+	}
 
 	/* check it's a supported varient */
 	if (strcmp("B21",str2) != 0)
@@ -2075,6 +2123,9 @@ static BOOL api_RNetUserEnum(connection_struct *conn,uint16 vuid, char *param,ch
 
 	*rdata_len = cli_buf_size;
 	*rdata = SMB_REALLOC_LIMIT(*rdata,*rdata_len);
+	if (!*rdata) {
+		return False;
+	}
 
 	p = *rdata;
 
@@ -2138,9 +2189,15 @@ static BOOL api_NetRemoteTOD(connection_struct *conn,uint16 vuid, char *param,ch
 
 	*rparam_len = 4;
 	*rparam = SMB_REALLOC_LIMIT(*rparam,*rparam_len);
+	if (!*rparam) {
+		return False;
+	}
 
 	*rdata_len = 21;
 	*rdata = SMB_REALLOC_LIMIT(*rdata,*rdata_len);
+	if (!*rdata) {
+		return False;
+	}
 
 	SSVAL(*rparam,0,NERR_Success);
 	SSVAL(*rparam,2,0);		/* converter word */
@@ -2194,6 +2251,9 @@ static BOOL api_SetUserPassword(connection_struct *conn,uint16 vuid, char *param
 
 	*rparam_len = 4;
 	*rparam = SMB_REALLOC_LIMIT(*rparam,*rparam_len);
+	if (!*rparam) {
+		return False;
+	}
 
 	*rdata_len = 0;
 
@@ -2266,6 +2326,9 @@ static BOOL api_SamOEMChangePassword(connection_struct *conn,uint16 vuid, char *
 	char *p = param + 2;
 	*rparam_len = 2;
 	*rparam = SMB_REALLOC_LIMIT(*rparam,*rparam_len);
+	if (!*rparam) {
+		return False;
+	}
 
 	*rdata_len = 0;
 
@@ -2333,6 +2396,9 @@ static BOOL api_RDosPrintJobDel(connection_struct *conn,uint16 vuid, char *param
 
 	*rparam_len = 4;
 	*rparam = SMB_REALLOC_LIMIT(*rparam,*rparam_len);	
+	if (!*rparam) {
+		return False;
+	}
 	*rdata_len = 0;
 
 	if (!print_job_exists(sharename, jobid)) {
@@ -2396,6 +2462,9 @@ static BOOL api_WPrintQueueCtrl(connection_struct *conn,uint16 vuid, char *param
 
 	*rparam_len = 4;
 	*rparam = SMB_REALLOC_LIMIT(*rparam,*rparam_len);
+	if (!*rparam) {
+		return False;
+	}
 	*rdata_len = 0;
 
 	snum = print_queue_snum(QueueName);
@@ -2470,6 +2539,9 @@ static BOOL api_PrintJobInfo(connection_struct *conn,uint16 vuid,char *param,cha
 		return False;
 	*rparam_len = 4;
 	*rparam = SMB_REALLOC_LIMIT(*rparam,*rparam_len);
+	if (!*rparam) {
+		return False;
+	}
 
 	if ( (snum = lp_servicenumber(sharename)) == -1 ) {
 		DEBUG(0,("api_PrintJobInfo: unable to get service number from sharename [%s]\n",
@@ -2586,6 +2658,9 @@ static BOOL api_RNetServerGetInfo(connection_struct *conn,uint16 vuid, char *par
 
 	*rdata_len = mdrcnt;
 	*rdata = SMB_REALLOC_LIMIT(*rdata,*rdata_len);
+	if (!*rdata) {
+		return False;
+	}
 
 	p = *rdata;
 	p2 = p + struct_len;
@@ -2635,6 +2710,9 @@ static BOOL api_RNetServerGetInfo(connection_struct *conn,uint16 vuid, char *par
 
 	*rparam_len = 6;
 	*rparam = SMB_REALLOC_LIMIT(*rparam,*rparam_len);
+	if (!*rparam) {
+		return False;
+	}
 	SSVAL(*rparam,0,NERR_Success);
 	SSVAL(*rparam,2,0);		/* converter word */
 	SSVAL(*rparam,4,*rdata_len);
@@ -2661,6 +2739,9 @@ static BOOL api_NetWkstaGetInfo(connection_struct *conn,uint16 vuid, char *param
 
 	*rparam_len = 6;
 	*rparam = SMB_REALLOC_LIMIT(*rparam,*rparam_len);
+	if (!*rparam) {
+		return False;
+	}
 
 	/* check it's a supported varient */
 	if (!(level==10 && strcsequal(str1,"WrLh") && strcsequal(str2,"zzzBBzz"))) {
@@ -2669,6 +2750,9 @@ static BOOL api_NetWkstaGetInfo(connection_struct *conn,uint16 vuid, char *param
 
 	*rdata_len = mdrcnt + 1024;
 	*rdata = SMB_REALLOC_LIMIT(*rdata,*rdata_len);
+	if (!*rdata) {
+		return False;
+	}
 
 	SSVAL(*rparam,0,NERR_Success);
 	SSVAL(*rparam,2,0);		/* converter word */
@@ -2908,6 +2992,9 @@ static BOOL api_RNetUserGetInfo(connection_struct *conn,uint16 vuid, char *param
 
 	*rparam_len = 6;
 	*rparam = SMB_REALLOC_LIMIT(*rparam,*rparam_len);
+	if (!*rparam) {
+		return False;
+	}
 
 	DEBUG(4,("RNetUserGetInfo level=%d\n", uLevel));
   
@@ -2930,6 +3017,9 @@ static BOOL api_RNetUserGetInfo(connection_struct *conn,uint16 vuid, char *param
 
 	*rdata_len = mdrcnt + 1024;
 	*rdata = SMB_REALLOC_LIMIT(*rdata,*rdata_len);
+	if (!*rdata) {
+		return False;
+	}
 
 	SSVAL(*rparam,0,NERR_Success);
 	SSVAL(*rparam,2,0);		/* converter word */
@@ -3082,6 +3172,9 @@ static BOOL api_WWkstaUserLogon(connection_struct *conn,uint16 vuid, char *param
 	}
 	if (mdrcnt > 0) {
 		*rdata = SMB_REALLOC_LIMIT(*rdata,mdrcnt);
+		if (!*rdata) {
+			return False;
+		}
 	}
 
 	desc.base = *rdata;
@@ -3121,6 +3214,9 @@ static BOOL api_WWkstaUserLogon(connection_struct *conn,uint16 vuid, char *param
 	*rdata_len = desc.usedlen;
 	*rparam_len = 6;
 	*rparam = SMB_REALLOC_LIMIT(*rparam,*rparam_len);
+	if (!*rparam) {
+		return False;
+	}
 	SSVALS(*rparam,0,desc.errcode);
 	SSVAL(*rparam,2,0);
 	SSVAL(*rparam,4,desc.neededlen);
@@ -3156,6 +3252,9 @@ static BOOL api_WAccessGetUserPerms(connection_struct *conn,uint16 vuid, char *p
 
 	*rparam_len = 6;
 	*rparam = SMB_REALLOC_LIMIT(*rparam,*rparam_len);
+	if (!*rparam) {
+		return False;
+	}
 	SSVALS(*rparam,0,0);		/* errorcode */
 	SSVAL(*rparam,2,0);		/* converter word */
 	SSVAL(*rparam,4,0x7f);	/* permission flags */
@@ -3219,6 +3318,9 @@ static BOOL api_WPrintJobGetInfo(connection_struct *conn,uint16 vuid, char *para
 
 	if (mdrcnt > 0) {
 		*rdata = SMB_REALLOC_LIMIT(*rdata,mdrcnt);
+		if (!*rdata) {
+			return False;
+		}
 		desc.base = *rdata;
 		desc.buflen = mdrcnt;
 	} else {
@@ -3242,6 +3344,9 @@ static BOOL api_WPrintJobGetInfo(connection_struct *conn,uint16 vuid, char *para
 
 	*rparam_len = 6;
 	*rparam = SMB_REALLOC_LIMIT(*rparam,*rparam_len);
+	if (!*rparam) {
+		return False;
+	}
 	SSVALS(*rparam,0,desc.errcode);
 	SSVAL(*rparam,2,0);
 	SSVAL(*rparam,4,desc.neededlen);
@@ -3300,6 +3405,9 @@ static BOOL api_WPrintJobEnumerate(connection_struct *conn,uint16 vuid, char *pa
 	count = print_queue_status(snum,&queue,&status);
 	if (mdrcnt > 0) {
 		*rdata = SMB_REALLOC_LIMIT(*rdata,mdrcnt);
+		if (!*rdata) {
+			return False;
+		}
 	}
 	desc.base = *rdata;
 	desc.buflen = mdrcnt;
@@ -3318,6 +3426,9 @@ static BOOL api_WPrintJobEnumerate(connection_struct *conn,uint16 vuid, char *pa
 
 	*rparam_len = 8;
 	*rparam = SMB_REALLOC_LIMIT(*rparam,*rparam_len);
+	if (!*rparam) {
+		return False;
+	}
 	SSVALS(*rparam,0,desc.errcode);
 	SSVAL(*rparam,2,0);
 	SSVAL(*rparam,4,succnt);
@@ -3429,6 +3540,9 @@ static BOOL api_WPrintDestGetInfo(connection_struct *conn,uint16 vuid, char *par
 	} else {
 		if (mdrcnt > 0) {
 			*rdata = SMB_REALLOC_LIMIT(*rdata,mdrcnt);
+			if (!*rdata) {
+				return False;
+			}
 			desc.base = *rdata;
 			desc.buflen = mdrcnt;
 		} else {
@@ -3447,6 +3561,9 @@ static BOOL api_WPrintDestGetInfo(connection_struct *conn,uint16 vuid, char *par
 
 	*rparam_len = 6;
 	*rparam = SMB_REALLOC_LIMIT(*rparam,*rparam_len);
+	if (!*rparam) {
+		return False;
+	}
 	SSVALS(*rparam,0,desc.errcode);
 	SSVAL(*rparam,2,0);
 	SSVAL(*rparam,4,desc.neededlen);
@@ -3494,6 +3611,9 @@ static BOOL api_WPrintDestEnum(connection_struct *conn,uint16 vuid, char *param,
 
 	if (mdrcnt > 0) {
 		*rdata = SMB_REALLOC_LIMIT(*rdata,mdrcnt);
+		if (!*rdata) {
+			return False;
+		}
 	}
 
 	desc.base = *rdata;
@@ -3516,6 +3636,9 @@ static BOOL api_WPrintDestEnum(connection_struct *conn,uint16 vuid, char *param,
 
 	*rparam_len = 8;
 	*rparam = SMB_REALLOC_LIMIT(*rparam,*rparam_len);
+	if (!*rparam) {
+		return False;
+	}
 	SSVALS(*rparam,0,desc.errcode);
 	SSVAL(*rparam,2,0);
 	SSVAL(*rparam,4,succnt);
@@ -3554,6 +3677,9 @@ static BOOL api_WPrintDriverEnum(connection_struct *conn,uint16 vuid, char *para
 
 	if (mdrcnt > 0) {
 		*rdata = SMB_REALLOC_LIMIT(*rdata,mdrcnt);
+		if (!*rdata) {
+			return False;
+		}
 	}
 	desc.base = *rdata;
 	desc.buflen = mdrcnt;
@@ -3567,6 +3693,9 @@ static BOOL api_WPrintDriverEnum(connection_struct *conn,uint16 vuid, char *para
 
 	*rparam_len = 8;
 	*rparam = SMB_REALLOC_LIMIT(*rparam,*rparam_len);
+	if (!*rparam) {
+		return False;
+	}
 	SSVALS(*rparam,0,desc.errcode);
 	SSVAL(*rparam,2,0);
 	SSVAL(*rparam,4,succnt);
@@ -3605,6 +3734,9 @@ static BOOL api_WPrintQProcEnum(connection_struct *conn,uint16 vuid, char *param
 
 	if (mdrcnt > 0) {
 		*rdata = SMB_REALLOC_LIMIT(*rdata,mdrcnt);
+		if (!*rdata) {
+			return False;
+		}
 	}
 	desc.base = *rdata;
 	desc.buflen = mdrcnt;
@@ -3619,6 +3751,9 @@ static BOOL api_WPrintQProcEnum(connection_struct *conn,uint16 vuid, char *param
 
 	*rparam_len = 8;
 	*rparam = SMB_REALLOC_LIMIT(*rparam,*rparam_len);
+	if (!*rparam) {
+		return False;
+	}
 	SSVALS(*rparam,0,desc.errcode);
 	SSVAL(*rparam,2,0);
 	SSVAL(*rparam,4,succnt);
@@ -3657,6 +3792,9 @@ static BOOL api_WPrintPortEnum(connection_struct *conn,uint16 vuid, char *param,
 
 	if (mdrcnt > 0) {
 		*rdata = SMB_REALLOC_LIMIT(*rdata,mdrcnt);
+		if (!*rdata) {
+			return False;
+		}
 	}
 	memset((char *)&desc,'\0',sizeof(desc));
 	desc.base = *rdata;
@@ -3672,6 +3810,9 @@ static BOOL api_WPrintPortEnum(connection_struct *conn,uint16 vuid, char *param,
 
 	*rparam_len = 8;
 	*rparam = SMB_REALLOC_LIMIT(*rparam,*rparam_len);
+	if (!*rparam) {
+		return False;
+	}
 	SSVALS(*rparam,0,desc.errcode);
 	SSVAL(*rparam,2,0);
 	SSVAL(*rparam,4,succnt);
@@ -3720,6 +3861,9 @@ static BOOL api_RNetSessionEnum(connection_struct *conn,uint16 vuid, char *param
 
 	if (mdrcnt > 0) {
 		*rdata = SMB_REALLOC_LIMIT(*rdata,mdrcnt);
+		if (!*rdata) {
+			return False;
+		}
 	}
 	memset((char *)&desc,'\0',sizeof(desc));
 	desc.base = *rdata;
@@ -3745,6 +3889,9 @@ static BOOL api_RNetSessionEnum(connection_struct *conn,uint16 vuid, char *param
 
 	*rparam_len = 8;
 	*rparam = SMB_REALLOC_LIMIT(*rparam,*rparam_len);
+	if (!*rparam) {
+		return False;
+	}
 	SSVALS(*rparam,0,desc.errcode);
 	SSVAL(*rparam,2,0); /* converter */
 	SSVAL(*rparam,4,num_sessions); /* count */
@@ -3766,6 +3913,9 @@ static BOOL api_TooSmall(connection_struct *conn,uint16 vuid, char *param, char 
 {
 	*rparam_len = MIN(*rparam_len,mprcnt);
 	*rparam = SMB_REALLOC_LIMIT(*rparam,*rparam_len);
+	if (!*rparam) {
+		return False;
+	}
 
 	*rdata_len = 0;
 
@@ -3787,6 +3937,9 @@ static BOOL api_Unsupported(connection_struct *conn, uint16 vuid, char *param, c
 {
 	*rparam_len = 4;
 	*rparam = SMB_REALLOC_LIMIT(*rparam,*rparam_len);
+	if (!*rparam) {
+		return False;
+	}
 
 	*rdata_len = 0;
 
@@ -3919,11 +4072,14 @@ int api_reply(connection_struct *conn,uint16 vuid,char *outbuf,char *data,char *
 
 	/* if we get False back then it's actually unsupported */
 	if (!reply) {
-		api_Unsupported(conn,vuid,params,data,mdrcnt,mprcnt,
+		reply = api_Unsupported(conn,vuid,params,data,mdrcnt,mprcnt,
 			&rdata,&rparam,&rdata_len,&rparam_len);
 	}
 
-	send_trans_reply(outbuf, rparam, rparam_len, rdata, rdata_len, False);
+	/* If api_Unsupported returns false we can't return anything. */
+	if (reply) {
+		send_trans_reply(outbuf, rparam, rparam_len, rdata, rdata_len, False);
+	}
 
 	SAFE_FREE(rdata);
 	SAFE_FREE(rparam);

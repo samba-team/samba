@@ -689,12 +689,8 @@ char *sys_acl_to_text(SMB_ACL_T acl_d, ssize_t *len_p)
 		 * for each entry still to be processed
 		 */
 		if ((len + nbytes) > maxlen) {
-			char *oldtext = text;
-
 			maxlen += nbytes + 20 * (acl_d->count - i);
-
-			if ((text = SMB_REALLOC(oldtext, maxlen)) == NULL) {
-				SAFE_FREE(oldtext);
+			if ((text = SMB_REALLOC(text, maxlen)) == NULL) {
 				errno = ENOMEM;
 				return NULL;
 			}
@@ -1320,11 +1316,8 @@ char *sys_acl_to_text(SMB_ACL_T acl_d, ssize_t *len_p)
 		 * for each entry still to be processed
 		 */
 		if ((len + nbytes) > maxlen) {
-			char *oldtext = text;
-
 			maxlen += nbytes + 20 * (acl_d->count - i);
-
-			if ((text = SMB_REALLOC(oldtext, maxlen)) == NULL) {
+			if ((text = SMB_REALLOC(text, maxlen)) == NULL) {
 				free(oldtext);
 				errno = ENOMEM;
 				return NULL;

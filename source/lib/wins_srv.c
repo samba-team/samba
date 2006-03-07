@@ -245,6 +245,9 @@ char **wins_srv_tags(void)
 
 		/* add it to the list */
 		ret = SMB_REALLOC_ARRAY(ret, char *, count+2);
+		if (!ret) {
+			return NULL;
+		}
 		ret[count] = SMB_STRDUP(t_ip.tag);
 		if (!ret[count]) break;
 		count++;

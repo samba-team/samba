@@ -287,7 +287,13 @@ static NTSTATUS rid_idmap_get_domains(uint32 *num_domains, fstring **domain_name
 	*num_domains = trusted_num_domains + own_domains;
 	*domain_names = SMB_REALLOC_ARRAY(*domain_names, fstring,
 					  *num_domains);
+	if (!*domain_names) {
+		goto out;
+	}
 	*domain_sids = SMB_REALLOC_ARRAY(*domain_sids, DOM_SID, *num_domains);
+	if (!*domain_sids) {
+		goto out;
+	}
 
 	/* first add mydomain */
 	fstrcpy((*domain_names)[0], domain_name);

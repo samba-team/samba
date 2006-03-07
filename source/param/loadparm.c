@@ -2470,7 +2470,7 @@ static int add_a_service(const service *pservice, const char *name)
 		service **tsp;
 		int *tinvalid;
 		
-		tsp = SMB_REALLOC_ARRAY(ServicePtrs, service *, num_to_alloc);
+		tsp = SMB_REALLOC_ARRAY_KEEP_OLD_ON_ERROR(ServicePtrs, service *, num_to_alloc);
 		if (tsp == NULL) {
 			DEBUG(0,("add_a_service: failed to enlarge ServicePtrs!\n"));
 			return (-1);
@@ -2484,7 +2484,7 @@ static int add_a_service(const service *pservice, const char *name)
 		iNumServices++;
 
 		/* enlarge invalid_services here for now... */
-		tinvalid = SMB_REALLOC_ARRAY(invalid_services, int,
+		tinvalid = SMB_REALLOC_ARRAY_KEEP_OLD_ON_ERROR(invalid_services, int,
 					     num_to_alloc);
 		if (tinvalid == NULL) {
 			DEBUG(0,("add_a_service: failed to enlarge "

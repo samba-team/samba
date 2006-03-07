@@ -3540,7 +3540,7 @@ static BOOL construct_notify_printer_info(Printer_entry *print_hnd, SPOOL_NOTIFY
 	uint16 type;
 	uint16 field;
 
-	SPOOL_NOTIFY_INFO_DATA *current_data, *tid;
+	SPOOL_NOTIFY_INFO_DATA *current_data;
 	NT_PRINTER_INFO_LEVEL *printer = NULL;
 	print_queue_struct *queue=NULL;
 
@@ -3561,11 +3561,10 @@ static BOOL construct_notify_printer_info(Printer_entry *print_hnd, SPOOL_NOTIFY
 		if (!search_notify(type, field, &j) )
 			continue;
 
-		if((tid=SMB_REALLOC_ARRAY(info->data, SPOOL_NOTIFY_INFO_DATA, info->count+1)) == NULL) {
+		if((info->data=SMB_REALLOC_ARRAY(info->data, SPOOL_NOTIFY_INFO_DATA, info->count+1)) == NULL) {
 			DEBUG(2,("construct_notify_printer_info: failed to enlarge buffer info->data!\n"));
 			return False;
-		} else 
-			info->data = tid;
+		}
 
 		current_data = &info->data[info->count];
 
@@ -3601,7 +3600,7 @@ static BOOL construct_notify_jobs_info(print_queue_struct *queue,
 	uint16 type;
 	uint16 field;
 
-	SPOOL_NOTIFY_INFO_DATA *current_data, *tid;
+	SPOOL_NOTIFY_INFO_DATA *current_data;
 	
 	DEBUG(4,("construct_notify_jobs_info\n"));
 	
@@ -3617,11 +3616,10 @@ static BOOL construct_notify_jobs_info(print_queue_struct *queue,
 		if (!search_notify(type, field, &j) )
 			continue;
 
-		if((tid=SMB_REALLOC_ARRAY(info->data, SPOOL_NOTIFY_INFO_DATA, info->count+1)) == NULL) {
+		if((info->data=SMB_REALLOC_ARRAY(info->data, SPOOL_NOTIFY_INFO_DATA, info->count+1)) == NULL) {
 			DEBUG(2,("construct_notify_jobs_info: failed to enlarg buffer info->data!\n"));
 			return False;
 		}
-		else info->data = tid;
 
 		current_data=&(info->data[info->count]);
 
@@ -4296,7 +4294,7 @@ static WERROR enum_all_printers_info_1(uint32 flags, RPC_BUFFER *buffer, uint32 
 	int snum;
 	int i;
 	int n_services=lp_numservices();
-	PRINTER_INFO_1 *tp, *printers=NULL;
+	PRINTER_INFO_1 *printers=NULL;
 	PRINTER_INFO_1 current_prt;
 	WERROR result = WERR_OK;
 	
@@ -4307,13 +4305,11 @@ static WERROR enum_all_printers_info_1(uint32 flags, RPC_BUFFER *buffer, uint32 
 			DEBUG(4,("Found a printer in smb.conf: %s[%x]\n", lp_servicename(snum), snum));
 
 			if (construct_printer_info_1(NULL, flags, &current_prt, snum)) {
-				if((tp=SMB_REALLOC_ARRAY(printers, PRINTER_INFO_1, *returned +1)) == NULL) {
+				if((printers=SMB_REALLOC_ARRAY(printers, PRINTER_INFO_1, *returned +1)) == NULL) {
 					DEBUG(2,("enum_all_printers_info_1: failed to enlarge printers buffer!\n"));
-					SAFE_FREE(printers);
 					*returned=0;
 					return WERR_NOMEM;
 				}
-				else printers = tp;
 				DEBUG(4,("ReAlloced memory for [%d] PRINTER_INFO_1\n", *returned));		
 
 				memcpy(&printers[*returned], &current_prt, sizeof(PRINTER_INFO_1));
@@ -4484,7 +4480,7 @@ static WERROR enum_all_printers_info_2(RPC_BUFFER *buffer, uint32 offered, uint3
 	int snum;
 	int i;
 	int n_services=lp_numservices();
-	PRINTER_INFO_2 *tp, *printers=NULL;
+	PRINTER_INFO_2 *printers=NULL;
 	PRINTER_INFO_2 current_prt;
 	WERROR result = WERR_OK;
 
@@ -4492,18 +4488,15 @@ static WERROR enum_all_printers_info_2(RPC_BUFFER *buffer, uint32 offered, uint3
 		if (lp_browseable(snum) && lp_snum_ok(snum) && lp_print_ok(snum) ) {
 			DEBUG(4,("Found a printer in smb.conf: %s[%x]\n", lp_servicename(snum), snum));
 				
-			if (construct_printer_info_2(NULL, &current_prt, snum)) 
-			{
-				if ( !(tp=SMB_REALLOC_ARRAY(printers, PRINTER_INFO_2, *returned +1)) ) {
+			if (construct_printer_info_2(NULL, &current_prt, snum)) {
+				if ( !(printers=SMB_REALLOC_ARRAY(printers, PRINTER_INFO_2, *returned +1)) ) {
 					DEBUG(2,("enum_all_printers_info_2: failed to enlarge printers buffer!\n"));
-					SAFE_FREE(printers);
 					*returned = 0;
 					return WERR_NOMEM;
 				}
 
-				DEBUG(4,("ReAlloced memory for [%d] PRINTER_INFO_2\n", *returned));		
+				DEBUG(4,("ReAlloced memory for [%d] PRINTER_INFO_2\n", *returned + 1));		
 
-				printers = tp;
 				memcpy(&printers[*returned], &current_prt, sizeof(PRINTER_INFO_2));
 
 				(*returned)++;
@@ -5074,7 +5067,6 @@ static uint32 init_unistr_array(uint16 **uni_array, fstring *char_array, const c
 	int j=0;
 	const char *v;
 	pstring line;
-	uint16 *tuary;
 
 	DEBUG(6,("init_unistr_array\n"));
 	*uni_array=NULL;
@@ -5102,12 +5094,11 @@ static uint32 init_unistr_array(uint16 **uni_array, fstring *char_array, const c
 
 		/* add one extra unit16 for the second terminating NULL */
 		
-		if ( (tuary=SMB_REALLOC_ARRAY(*uni_array, uint16, j+1+strlen(line)+2)) == NULL ) {
+		if ( (*uni_array=SMB_REALLOC_ARRAY(*uni_array, uint16, j+1+strlen(line)+2)) == NULL ) {
 			DEBUG(2,("init_unistr_array: Realloc error\n" ));
 			return 0;
-		} else
-			*uni_array = tuary;
-			
+		}
+
 		if ( !strlen(v) ) 
 			break;
 		
@@ -6699,7 +6690,7 @@ static WERROR enumprinterdrivers_level1(fstring servername, fstring architecture
 	uint32 version;
 	fstring *list = NULL;
 	NT_PRINTER_DRIVER_INFO_LEVEL driver;
-	DRIVER_INFO_1 *tdi1, *driver_info_1=NULL;
+	DRIVER_INFO_1 *driver_info_1=NULL;
 	WERROR result = WERR_OK;
 
 	*returned=0;
@@ -6713,13 +6704,11 @@ static WERROR enumprinterdrivers_level1(fstring servername, fstring architecture
 			return WERR_NOMEM;
 
 		if(ndrivers != 0) {
-			if((tdi1=SMB_REALLOC_ARRAY(driver_info_1, DRIVER_INFO_1, *returned+ndrivers )) == NULL) {
+			if((driver_info_1=SMB_REALLOC_ARRAY(driver_info_1, DRIVER_INFO_1, *returned+ndrivers )) == NULL) {
 				DEBUG(0,("enumprinterdrivers_level1: failed to enlarge driver info buffer!\n"));
-				SAFE_FREE(driver_info_1);
 				SAFE_FREE(list);
 				return WERR_NOMEM;
 			}
-			else driver_info_1 = tdi1;
 		}
 
 		for (i=0; i<ndrivers; i++) {
@@ -6782,7 +6771,7 @@ static WERROR enumprinterdrivers_level2(fstring servername, fstring architecture
 	uint32 version;
 	fstring *list = NULL;
 	NT_PRINTER_DRIVER_INFO_LEVEL driver;
-	DRIVER_INFO_2 *tdi2, *driver_info_2=NULL;
+	DRIVER_INFO_2 *driver_info_2=NULL;
 	WERROR result = WERR_OK;
 
 	*returned=0;
@@ -6796,13 +6785,11 @@ static WERROR enumprinterdrivers_level2(fstring servername, fstring architecture
 			return WERR_NOMEM;
 
 		if(ndrivers != 0) {
-			if((tdi2=SMB_REALLOC_ARRAY(driver_info_2, DRIVER_INFO_2, *returned+ndrivers )) == NULL) {
+			if((driver_info_2=SMB_REALLOC_ARRAY(driver_info_2, DRIVER_INFO_2, *returned+ndrivers )) == NULL) {
 				DEBUG(0,("enumprinterdrivers_level2: failed to enlarge driver info buffer!\n"));
-				SAFE_FREE(driver_info_2);
 				SAFE_FREE(list);
 				return WERR_NOMEM;
 			}
-			else driver_info_2 = tdi2;
 		}
 		
 		for (i=0; i<ndrivers; i++) {
@@ -6866,7 +6853,7 @@ static WERROR enumprinterdrivers_level3(fstring servername, fstring architecture
 	uint32 version;
 	fstring *list = NULL;
 	NT_PRINTER_DRIVER_INFO_LEVEL driver;
-	DRIVER_INFO_3 *tdi3, *driver_info_3=NULL;
+	DRIVER_INFO_3 *driver_info_3=NULL;
 	WERROR result = WERR_OK;
 
 	*returned=0;
@@ -6880,13 +6867,11 @@ static WERROR enumprinterdrivers_level3(fstring servername, fstring architecture
 			return WERR_NOMEM;
 
 		if(ndrivers != 0) {
-			if((tdi3=SMB_REALLOC_ARRAY(driver_info_3, DRIVER_INFO_3, *returned+ndrivers )) == NULL) {
+			if((driver_info_3=SMB_REALLOC_ARRAY(driver_info_3, DRIVER_INFO_3, *returned+ndrivers )) == NULL) {
 				DEBUG(0,("enumprinterdrivers_level3: failed to enlarge driver info buffer!\n"));
-				SAFE_FREE(driver_info_3);
 				SAFE_FREE(list);
 				return WERR_NOMEM;
 			}
-			else driver_info_3 = tdi3;
 		}
 
 		for (i=0; i<ndrivers; i++) {

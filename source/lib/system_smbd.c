@@ -166,15 +166,10 @@ BOOL getgroups_unix_user(TALLOC_CTX *mem_ctx, const char *user,
 	}
 
 	if (sys_getgrouplist(user, primary_gid, temp_groups, &max_grp) == -1) {
-		gid_t *groups_tmp;
-
-		groups_tmp = SMB_REALLOC_ARRAY(temp_groups, gid_t, max_grp);
-		
-		if (!groups_tmp) {
-			SAFE_FREE(temp_groups);
+		temp_groups = SMB_REALLOC_ARRAY(temp_groups, gid_t, max_grp);
+		if (!temp_groups) {
 			return False;
 		}
-		temp_groups = groups_tmp;
 		
 		if (sys_getgrouplist(user, primary_gid,
 				     temp_groups, &max_grp) == -1) {

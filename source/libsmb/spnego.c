@@ -48,6 +48,10 @@ static BOOL read_negTokenInit(ASN1_DATA *asn1, negTokenInit_t *token)
 				char *p_oid = NULL;
 				token->mechTypes = 
 					SMB_REALLOC_ARRAY(token->mechTypes, const char *, i + 2);
+				if (!token->mechTypes) {
+					asn1->has_error = True;
+					return False;
+				}
 				asn1_read_OID(asn1, &p_oid);
 				token->mechTypes[i] = p_oid;
 			}

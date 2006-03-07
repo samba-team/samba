@@ -560,16 +560,14 @@ static struct cache_entry *wcache_fetch(struct winbind_cache *cache,
 */
 static void centry_expand(struct cache_entry *centry, uint32 len)
 {
-	uint8 *p;
 	if (centry->len - centry->ofs >= len)
 		return;
 	centry->len *= 2;
-	p = SMB_REALLOC(centry->data, centry->len);
-	if (!p) {
+	centry->data = SMB_REALLOC(centry->data, centry->len);
+	if (!centry->data) {
 		DEBUG(0,("out of memory: needed %d bytes in centry_expand\n", centry->len));
 		smb_panic("out of memory in centry_expand");
 	}
-	centry->data = p;
 }
 
 /*

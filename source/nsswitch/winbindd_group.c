@@ -494,7 +494,7 @@ static BOOL get_sam_group_entries(struct getent_state *ent)
 {
 	NTSTATUS status;
 	uint32 num_entries;
-	struct acct_info *name_list = NULL, *tmp_name_list = NULL;
+	struct acct_info *name_list = NULL;
 	TALLOC_CTX *mem_ctx;
 	BOOL result = False;
 	struct acct_info *sam_grp_entries = NULL;
@@ -569,17 +569,14 @@ static BOOL get_sam_group_entries(struct getent_state *ent)
 		/* Copy entries into return buffer */
 
 		if ( num_entries ) {
-			if ( !(tmp_name_list = SMB_REALLOC_ARRAY( name_list, struct acct_info, ent->num_sam_entries+num_entries)) )
+			if ( !(name_list = SMB_REALLOC_ARRAY( name_list, struct acct_info, ent->num_sam_entries+num_entries)) )
 			{
 				DEBUG(0,("get_sam_group_entries: Failed to realloc more memory for %d local groups!\n", 
 					num_entries));
 				result = False;
-				SAFE_FREE( name_list );
 				goto done;
 			}
 			
-			name_list = tmp_name_list;
-				
 			memcpy( &name_list[ent->num_sam_entries], sam_grp_entries, 
 				num_entries * sizeof(struct acct_info) );
 		}
@@ -610,7 +607,7 @@ void winbindd_getgrent(struct winbindd_cli_state *state)
 	struct getent_state *ent;
 	struct winbindd_gr *group_list = NULL;
 	int num_groups, group_list_ndx = 0, i, gr_mem_list_len = 0;
-	char *new_extra_data, *gr_mem_list = NULL;
+	char *gr_mem_list = NULL;
 
 	DEBUG(3, ("[%5lu]: getgrent\n", (unsigned long)state->pid));
 
@@ -651,7 +648,7 @@ void winbindd_getgrent(struct winbindd_cli_state *state)
 		uint32 result;
 		gid_t group_gid;
 		size_t gr_mem_len;
-		char *gr_mem, *new_gr_mem_list;
+		char *gr_mem;
 		DOM_SID group_sid;
 		struct winbindd_domain *domain;
 				
@@ -766,19 +763,16 @@ void winbindd_getgrent(struct winbindd_cli_state *state)
 
 		if (result) {
 			/* Append to group membership list */
-			new_gr_mem_list = SMB_REALLOC( gr_mem_list, gr_mem_list_len + gr_mem_len);
+			gr_mem_list = SMB_REALLOC( gr_mem_list, gr_mem_list_len + gr_mem_len);
 
-			if (!new_gr_mem_list && (group_list[group_list_ndx].num_gr_mem != 0)) {
+			if (!gr_mem_list) {
 				DEBUG(0, ("out of memory\n"));
-				SAFE_FREE(gr_mem_list);
 				gr_mem_list_len = 0;
 				break;
 			}
 
 			DEBUG(10, ("list_len = %d, mem_len = %d\n",
 				   gr_mem_list_len, gr_mem_len));
-
-			gr_mem_list = new_gr_mem_list;
 
 			memcpy(&gr_mem_list[gr_mem_list_len], gr_mem,
 			       gr_mem_len);
@@ -817,20 +811,17 @@ void winbindd_getgrent(struct winbindd_cli_state *state)
 	if (group_list_ndx == 0)
 		goto done;
 
-	new_extra_data = SMB_REALLOC(
+	state->response.extra_data = SMB_REALLOC(
 		state->response.extra_data,
 		group_list_ndx * sizeof(struct winbindd_gr) + gr_mem_list_len);
 
-	if (!new_extra_data) {
+	if (!state->response.extra_data) {
 		DEBUG(0, ("out of memory\n"));
 		group_list_ndx = 0;
-		SAFE_FREE(state->response.extra_data);
 		SAFE_FREE(gr_mem_list);
 		request_error(state);
 		return;
 	}
-
-	state->response.extra_data = new_extra_data;
 
 	memcpy(&((char *)state->response.extra_data)
 	       [group_list_ndx * sizeof(struct winbindd_gr)], 
@@ -861,7 +852,6 @@ void winbindd_list_groups(struct winbindd_cli_state *state)
 	struct winbindd_domain *domain;
 	const char *which_domain;
 	char *extra_data = NULL;
-	char *ted = NULL;
 	unsigned int extra_data_len = 0, i;
 
 	DEBUG(3, ("[%5lu]: list groups\n", (unsigned long)state->pid));
@@ -901,15 +891,13 @@ void winbindd_list_groups(struct winbindd_cli_state *state)
 		
 		/* Allocate some memory for extra data.  Note that we limit
 		   account names to sizeof(fstring) = 128 characters.  */		
-                ted = SMB_REALLOC(extra_data, sizeof(fstring) * total_entries);
+		extra_data = SMB_REALLOC(extra_data, sizeof(fstring) * total_entries);
  
-		if (!ted) {
+		if (!extra_data) {
 			DEBUG(0,("failed to enlarge buffer!\n"));
-			SAFE_FREE(extra_data);
 			request_error(state);
 			return;
-		} else
-			extra_data = ted;
+		}
 
 		/* Pack group list into extra data fields */
 		for (i = 0; i < groups.num_sam_entries; i++) {

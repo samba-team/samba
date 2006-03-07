@@ -563,14 +563,16 @@ DOM_SID *sid_dup_talloc(TALLOC_CTX *ctx, const DOM_SID *src)
 void add_sid_to_array(TALLOC_CTX *mem_ctx, const DOM_SID *sid, 
 		      DOM_SID **sids, size_t *num)
 {
-	if (mem_ctx != NULL)
+	if (mem_ctx != NULL) {
 		*sids = TALLOC_REALLOC_ARRAY(mem_ctx, *sids, DOM_SID,
 					     (*num)+1);
-	else
+	} else {
 		*sids = SMB_REALLOC_ARRAY(*sids, DOM_SID, (*num)+1);
+	}
 
-	if (*sids == NULL)
+	if (*sids == NULL) {
 		return;
+	}
 
 	sid_copy(&((*sids)[*num]), sid);
 	*num += 1;

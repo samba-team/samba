@@ -541,15 +541,11 @@ static BOOL pjob_store(const char* sharename, uint32 jobid, struct printjob *pjo
 		len += pack_devicemode(pjob->nt_devmode, buf+len, buflen-len);
 	
 		if (buflen != len) {
-			char *tb;
-
-			tb = (char *)SMB_REALLOC(buf, len);
-			if (!tb) {
+			buf = (char *)SMB_REALLOC(buf, len);
+			if (!buf) {
 				DEBUG(0,("pjob_store: failed to enlarge buffer!\n"));
 				goto done;
 			}
-			else 
-				buf = tb;
 			newlen = len;
 		}
 	} while ( buflen != len );
