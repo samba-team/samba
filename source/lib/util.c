@@ -1009,15 +1009,15 @@ void *Realloc(void *p, size_t size, BOOL free_old_on_error)
  Type-safe realloc.
 ****************************************************************************/
 
-void *realloc_array(void *p, size_t el_size, unsigned int count, BOOL keep_old_on_error)
+void *realloc_array(void *p, size_t el_size, unsigned int count, BOOL free_old_on_error)
 {
 	if (count >= MAX_ALLOC_SIZE/el_size) {
-		if (!keep_old_on_error) {
+		if (free_old_on_error) {
 			SAFE_FREE(p);
 		}
 		return NULL;
 	}
-	return Realloc(p, el_size*count, keep_old_on_error);
+	return Realloc(p, el_size*count, free_old_on_error);
 }
 
 /****************************************************************************
