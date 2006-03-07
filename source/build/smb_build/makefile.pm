@@ -273,7 +273,7 @@ sub SharedLibrary($$)
 	$self->output(<< "__EOD__"
 #
 
-bin/$ctx->{LIBRARY_REALNAME}: \$($ctx->{TYPE}_$ctx->{NAME}_DEPEND_LIST) \$($ctx->{TYPE}_$ctx->{NAME}_OBJ_LIST) bin/.dummy
+bin/$ctx->{LIBRARY_REALNAME}: \$($ctx->{TYPE}_$ctx->{NAME}_DEPEND_LIST) \$($ctx->{TYPE}_$ctx->{NAME}_OBJ_LIST) 
 	\@echo Linking \$\@
 	\@\$(SHLD) \$(SHLD_FLAGS) -o \$\@ \\
 		\$($ctx->{TYPE}_$ctx->{NAME}_LINK_FLAGS) \\
@@ -284,11 +284,11 @@ __EOD__
 	if (defined($ctx->{LIBRARY_SONAME})) {
 	    $self->output(<< "__EOD__"
 # Symlink $ctx->{LIBRARY_SONAME}
-bin/$ctx->{LIBRARY_SONAME}: bin/$ctx->{LIBRARY_REALNAME} bin/.dummy
+bin/$ctx->{LIBRARY_SONAME}: bin/$ctx->{LIBRARY_REALNAME} 
 	\@echo Symlink \$\@
 	\@ln -sf $ctx->{LIBRARY_REALNAME} \$\@
 # Symlink $ctx->{LIBRARY_NAME}
-bin/$ctx->{LIBRARY_NAME}: bin/$ctx->{LIBRARY_SONAME} bin/.dummy
+bin/$ctx->{LIBRARY_NAME}: bin/$ctx->{LIBRARY_SONAME} 
 	\@echo Symlink \$\@
 	\@ln -sf $ctx->{LIBRARY_SONAME} \$\@
 
@@ -361,7 +361,7 @@ sub StaticLibrary($$)
 
 	$self->output(<< "__EOD__"
 #
-$ctx->{TARGET}: \$($ctx->{TYPE}_$ctx->{NAME}_DEPEND_LIST) \$($ctx->{TYPE}_$ctx->{NAME}_OBJ_LIST) bin/.dummy
+$ctx->{TARGET}: \$($ctx->{TYPE}_$ctx->{NAME}_DEPEND_LIST) \$($ctx->{TYPE}_$ctx->{NAME}_OBJ_LIST) 
 	\@echo Linking \$@
 	\@\$(STLD) \$(STLD_FLAGS) \$@ \\
 		\$($ctx->{TYPE}_$ctx->{NAME}_LINK_LIST)
@@ -415,7 +415,7 @@ sub Binary($$)
 	if ($self->{duplicate_build}) {
 	$self->output(<< "__EOD__"
 #
-bin/$ctx->{BINARY}: bin/.dummy \$($ctx->{TYPE}_$ctx->{NAME}_DEPEND_LIST) \$($ctx->{TYPE}_$ctx->{NAME}_OBJ_LIST)
+bin/$ctx->{BINARY}: \$($ctx->{TYPE}_$ctx->{NAME}_DEPEND_LIST) \$($ctx->{TYPE}_$ctx->{NAME}_OBJ_LIST)
 	\@echo Linking \$\@
 	\@\$(CC) \$(LDFLAGS) -o \$\@ \$(LOCAL_LINK_FLAGS) \\
 		\$\($ctx->{TYPE}_$ctx->{NAME}_LINK_LIST) \\
