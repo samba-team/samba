@@ -30,6 +30,7 @@
 #include "libcli/security/proto.h"
 #include "libcli/auth/proto.h"
 #include "ntvfs/ntvfs.h"
+#include "passdb/secrets.h"
 #include "db_wrap.h"
 
 /*

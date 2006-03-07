@@ -35,4 +35,6 @@ struct machine_acct_pass {
 #define SECRETS_KRBTGT_SEARCH "(&((|(realm=%s)(flatname=%s))(samAccountName=krbtgt)))"
 #define SECRETS_PRINCIPAL_SEARCH "(&(|(realm=%s)(flatname=%s))(servicePrincipalName=%s))"
 
+#include "passdb/proto.h"
+
 #endif /* _SECRETS_H */

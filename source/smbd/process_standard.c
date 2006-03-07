@@ -27,9 +27,11 @@
 #include "lib/tdb/include/tdb.h"
 #include "smb_server/smb_server.h"
 
-/* For sepecifiying event context to GSSAPI below */
+/* For specifiying event context to GSSAPI below */
 #include "system/kerberos.h"
 #include "heimdal/lib/gssapi/gssapi_locl.h"
+
+#include "passdb/secrets.h"
 
 /*
   called when the process model is selected

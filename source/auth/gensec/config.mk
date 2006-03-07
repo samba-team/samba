@@ -59,6 +59,7 @@ REQUIRED_SUBSYSTEMS = AUTH SCHANNELDB NDR_SCHANNEL
 ################################################
 # Start SUBSYSTEM SCHANNELDB
 [SUBSYSTEM::SCHANNELDB]
+PRIVATE_PROTO_HEADER = schannel_state.h
 OBJ_FILES = \
 		schannel_state.o
 #

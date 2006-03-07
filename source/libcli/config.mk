@@ -3,6 +3,7 @@ include ldap/config.mk
 include security/config.mk
 
 [SUBSYSTEM::LIBCLI_UTILS]
+PRIVATE_PROTO_HEADER = util/proto.h
 PUBLIC_HEADERS = util/nterr.h util/doserr.h util/nt_status.h
 OBJ_FILES = util/asn1.o \
 		util/doserr.o \
@@ -92,6 +93,7 @@ OBJ_FILES = \
 REQUIRED_SUBSYSTEMS = LIBCLI_NBT LIBNETIF
 
 [SUBSYSTEM::LIBCLI_FINDDCS]
+PRIVATE_PROTO_HEADER = finddcs.h
 OBJ_FILES = \
 	finddcs.o
 REQUIRED_SUBSYSTEMS = LIBCLI_NBT MESSAGING

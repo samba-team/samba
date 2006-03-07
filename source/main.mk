@@ -248,6 +248,7 @@ include/includes.h: \
 		lib/util/util_proto.h \
 		lib/charset/charset.h \
 		param/param.h \
+		libcli/util/proto.h
 
 clean_pch: 
 	-rm -f include/includes.h.gch

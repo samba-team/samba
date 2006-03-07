@@ -21,6 +21,7 @@
 
 #include "includes.h"
 #include "lib/cmdline/popt_common.h"
+#include "lib/cmdline/credentials.h"
 #include "auth/gensec/gensec.h"
 
 /* Handle command line options:

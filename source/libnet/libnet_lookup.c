@@ -29,6 +29,7 @@
 #include "lib/messaging/messaging.h"
 #include "lib/messaging/irpc.h"
 #include "libcli/resolve/resolve.h"
+#include "libcli/finddcs.h"
 
 struct lookup_state {
 	struct composite_context *resolve_ctx;
