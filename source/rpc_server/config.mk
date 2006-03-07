@@ -25,7 +25,7 @@ OBJ_FILES = \
 		librpc/gen_ndr/ndr_dcom_d.o
 REQUIRED_SUBSYSTEMS = \
 		DCERPC_COMMON \
-		DCOM
+		dcom
 # End MODULE dcerpc_dcom
 ################################################
 
@@ -125,7 +125,7 @@ OUTPUT_TYPE = MERGEDOBJ
 OBJ_FILES = \
 		winreg/rpc_winreg.o
 REQUIRED_SUBSYSTEMS = \
-		REGISTRY NDR_WINREG
+		registry NDR_WINREG
 # End MODULE dcerpc_winreg
 ################################################
 
@@ -212,7 +212,7 @@ OBJ_FILES = \
 REQUIRED_SUBSYSTEMS = \
 		LIBCLI_AUTH \
 		LIBNDR \
-		LIBDCERPC
+		dcerpc
 #
 # End SUBSYSTEM DCERPC
 ################################################

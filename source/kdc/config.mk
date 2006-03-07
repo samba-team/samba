@@ -8,7 +8,7 @@ OBJ_FILES = \
 		kdc.o \
 		kpasswdd.o
 REQUIRED_SUBSYSTEMS = \
-		LIBLDB KERBEROS_LIB HEIMDAL_KDC HEIMDAL_HDB 
+		ldb KERBEROS_LIB HEIMDAL_KDC HEIMDAL_HDB 
 # End SUBSYSTEM KDC
 #######################
 
@@ -20,7 +20,7 @@ OBJ_FILES = \
 		hdb-ldb.o \
 		pac-glue.o 
 REQUIRED_SUBSYSTEMS = \
-		LIBLDB KERBEROS_LIB HEIMDAL_HDB 
+		ldb KERBEROS_LIB HEIMDAL_HDB 
 # End SUBSYSTEM KDC
 #######################
 

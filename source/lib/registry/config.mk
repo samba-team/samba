@@ -4,7 +4,7 @@
 # Start MODULE registry_nt4
 [MODULE::registry_nt4]
 INIT_FUNCTION = registry_nt4_init
-SUBSYSTEM = REGISTRY
+SUBSYSTEM = registry
 OBJ_FILES = \
 		reg_backend_nt4.o
 REQUIRED_SUBSYSTEMS = TDR_REGF
@@ -26,7 +26,7 @@ lib/registry/tdr_regf.c: lib/registry/regf.idl
 # Start MODULE registry_w95
 [MODULE::registry_w95]
 INIT_FUNCTION = registry_w95_init
-SUBSYSTEM = REGISTRY
+SUBSYSTEM = registry
 OBJ_FILES = \
 		reg_backend_w95.o
 # End MODULE registry_w95
@@ -36,7 +36,7 @@ OBJ_FILES = \
 # Start MODULE registry_dir
 [MODULE::registry_dir]
 INIT_FUNCTION = registry_dir_init
-SUBSYSTEM = REGISTRY
+SUBSYSTEM = registry
 OBJ_FILES = \
 		reg_backend_dir.o
 # End MODULE registry_dir
@@ -48,7 +48,7 @@ OBJ_FILES = \
 INIT_FUNCTION = registry_rpc_init
 PRIVATE_PROTO_HEADER = reg_backend_rpc.h
 OUTPUT_TYPE = MERGEDOBJ
-SUBSYSTEM = REGISTRY
+SUBSYSTEM = registry
 OBJ_FILES = \
 		reg_backend_rpc.o
 REQUIRED_SUBSYSTEMS = RPC_NDR_WINREG
@@ -61,7 +61,7 @@ REQUIRED_SUBSYSTEMS = RPC_NDR_WINREG
 # Start MODULE registry_gconf
 [MODULE::registry_gconf]
 INIT_FUNCTION = registry_gconf_init
-SUBSYSTEM = REGISTRY
+SUBSYSTEM = registry
 OBJ_FILES = \
 		reg_backend_gconf.o
 REQUIRED_SUBSYSTEMS = EXT_LIB_gconf
@@ -72,17 +72,17 @@ REQUIRED_SUBSYSTEMS = EXT_LIB_gconf
 # Start MODULE registry_ldb
 [MODULE::registry_ldb]
 INIT_FUNCTION = registry_ldb_init
-SUBSYSTEM = REGISTRY
+SUBSYSTEM = registry
 OBJ_FILES = \
 		reg_backend_ldb.o
 REQUIRED_SUBSYSTEMS = \
-		LIBLDB
+		ldb
 # End MODULE registry_ldb
 ################################################
 
 ################################################
-# Start SUBSYSTEM REGISTRY
-[LIBRARY::REGISTRY]
+# Start SUBSYSTEM registry
+[LIBRARY::registry]
 MAJOR_VERSION = 0
 MINOR_VERSION = 0
 DESCRIPTION = Windows-style registry library
@@ -106,7 +106,7 @@ INSTALLDIR = BINDIR
 OBJ_FILES= \
 		tools/regdiff.o
 REQUIRED_SUBSYSTEMS = \
-		CONFIG REGISTRY LIBPOPT POPT_SAMBA POPT_CREDENTIALS
+		CONFIG registry LIBPOPT POPT_SAMBA POPT_CREDENTIALS
 MANPAGE = man/regdiff.1
 # End BINARY regdiff
 ################################################
@@ -118,7 +118,7 @@ INSTALLDIR = BINDIR
 OBJ_FILES= \
 		tools/regpatch.o
 REQUIRED_SUBSYSTEMS = \
-		CONFIG REGISTRY LIBPOPT POPT_SAMBA POPT_CREDENTIALS
+		CONFIG registry LIBPOPT POPT_SAMBA POPT_CREDENTIALS
 MANPAGE = man/regpatch.1
 # End BINARY regpatch
 ################################################
@@ -130,7 +130,7 @@ INSTALLDIR = BINDIR
 OBJ_FILES= \
 		tools/regshell.o
 REQUIRED_SUBSYSTEMS = \
-		CONFIG LIBPOPT REGISTRY POPT_SAMBA POPT_CREDENTIALS LIBREADLINE
+		CONFIG LIBPOPT registry POPT_SAMBA POPT_CREDENTIALS LIBREADLINE
 MANPAGE = man/regshell.1
 # End BINARY regshell
 ################################################
@@ -142,7 +142,7 @@ INSTALLDIR = BINDIR
 OBJ_FILES= \
 		tools/regtree.o
 REQUIRED_SUBSYSTEMS = \
-		CONFIG LIBPOPT REGISTRY POPT_SAMBA POPT_CREDENTIALS
+		CONFIG LIBPOPT registry POPT_SAMBA POPT_CREDENTIALS
 MANPAGE = man/regtree.1
 # End BINARY regtree
 ################################################

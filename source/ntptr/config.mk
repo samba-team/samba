@@ -8,7 +8,7 @@ SUBSYSTEM = NTPTR
 OBJ_FILES = \
 		simple_ldb/ntptr_simple_ldb.o
 REQUIRED_SUBSYSTEMS = \
-		LIBLDB
+		ldb
 # End MODULE ntptr_simple_ldb
 ################################################
 

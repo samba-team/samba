@@ -10,6 +10,6 @@ OBJ_FILES = \
 		fileio.o \
 		keepalive.o
 REQUIRED_SUBSYSTEMS = \
-		NTVFS LIBPACKET LIBCLI_SMB2
+		ntvfs LIBPACKET LIBCLI_SMB2
 # End SUBSYSTEM SMB2_PROTOCOL
 #######################

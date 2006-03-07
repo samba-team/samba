@@ -6,7 +6,7 @@ include unixuid/config.mk
 # Start MODULE ntvfs_cifs
 [MODULE::ntvfs_cifs]
 INIT_FUNCTION = ntvfs_cifs_init 
-SUBSYSTEM = NTVFS
+SUBSYSTEM = ntvfs
 OBJ_FILES = \
 		cifs/vfs_cifs.o
 REQUIRED_SUBSYSTEMS = \
@@ -18,7 +18,7 @@ REQUIRED_SUBSYSTEMS = \
 # Start MODULE ntvfs_simple
 [MODULE::ntvfs_simple]
 INIT_FUNCTION = ntvfs_simple_init 
-SUBSYSTEM = NTVFS
+SUBSYSTEM = ntvfs 
 PRIVATE_PROTO_HEADER = simple/proto.h
 OBJ_FILES = \
 		simple/vfs_simple.o \
@@ -30,7 +30,7 @@ OBJ_FILES = \
 # Start MODULE ntvfs_print
 [MODULE::ntvfs_print]
 INIT_FUNCTION = ntvfs_print_init 
-SUBSYSTEM = NTVFS
+SUBSYSTEM = ntvfs 
 OBJ_FILES = \
 		print/vfs_print.o
 # End MODULE ntvfs_print
@@ -39,7 +39,7 @@ OBJ_FILES = \
 ################################################
 # Start MODULE ntvfs_ipc
 [MODULE::ntvfs_ipc]
-SUBSYSTEM = NTVFS
+SUBSYSTEM = ntvfs
 INIT_FUNCTION = ntvfs_ipc_init 
 PRIVATE_PROTO_HEADER = ipc/proto.h
 OBJ_FILES = \
@@ -54,7 +54,7 @@ OBJ_FILES = \
 ################################################
 # Start MODULE ntvfs_nbench
 [MODULE::ntvfs_nbench]
-SUBSYSTEM = NTVFS
+SUBSYSTEM = ntvfs
 INIT_FUNCTION = ntvfs_nbench_init 
 OBJ_FILES = \
 		nbench/vfs_nbench.o
@@ -64,7 +64,7 @@ OBJ_FILES = \
 
 ################################################
 # Start SUBSYSTEM NTVFS
-[LIBRARY::NTVFS]
+[LIBRARY::ntvfs]
 PUBLIC_HEADERS = ntvfs.h
 MAJOR_VERSION = 0
 MINOR_VERSION = 0

@@ -71,7 +71,7 @@ PRIVATE_PROTO_HEADER = \
 OBJ_FILES = \
 		com/simple.o
 REQUIRED_SUBSYSTEMS = \
-		COM DCOM
+		com dcom
 # End SUBSYSTEM TORTURE_COM
 #################################
 
@@ -149,7 +149,7 @@ OBJ_FILES = \
 		auth/ntlmssp.o \
 		auth/pac.o
 REQUIRED_SUBSYSTEMS = \
-		LIBSMB GENSEC AUTH
+		LIBSMB gensec auth
 # End SUBSYSTEM TORTURE_AUTH
 #################################
 
