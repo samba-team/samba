@@ -208,6 +208,7 @@ NET_USER_INFO_3* netsamlogon_cache_get( TALLOC_CTX *mem_ctx, const DOM_SID *user
 		
 		if ( !prs_uint32( "timestamp", &ps, 0, &t ) ) {
 			prs_mem_free( &ps );
+			SAFE_FREE(user);
 			return False;
 		}
 		
