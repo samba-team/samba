@@ -764,6 +764,7 @@ void release_level_2_oplocks_on_change(files_struct *fsp)
 	if (lck == NULL) {
 		DEBUG(0,("release_level_2_oplocks_on_change: failed to lock "
 			 "share mode entry for file %s.\n", fsp->fsp_name ));
+		return;
 	}
 
 	DEBUG(10,("release_level_2_oplocks_on_change: num_share_modes = %d\n", 
