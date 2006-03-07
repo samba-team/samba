@@ -35,8 +35,7 @@ my $section_types = {
 		"PUBLIC_HEADERS"	=> "list",
 
 		"EXTRA_CFLAGS"		=> "string",
-
-		"DEFAULT_VISIBILITY" => "string"
+		"DEFAULT_VISIBILITY"	=> "string"
 		},
 	"MODULE" => {
 		"SUBSYSTEM"		=> "string",
@@ -67,7 +66,7 @@ my $section_types = {
 		"MANPAGE"		=> "string",
 		"INSTALLDIR"		=> "string",
 		"PRIVATE_PROTO_HEADER"	=> "string",
-		"PUBLIC_HEADERS" => "string", 
+		"PUBLIC_HEADERS"	=> "string", 
 
 		"EXTRA_CFLAGS"		=> "string"
 		},
@@ -95,8 +94,7 @@ my $section_types = {
 		"PRIVATE_PROTO_HEADER"	=> "string",
 
 		"EXTRA_CFLAGS"		=> "string",
-
-		"DEFAULT_VISIBILITY" => "string"
+		"DEFAULT_VISIBILITY"	=> "string"
 		}
 };
 
