@@ -492,9 +492,9 @@ RPCCLIENT_OBJ1 = rpcclient/rpcclient.o rpcclient/cmd_lsarpc.o \
 	         rpcclient/cmd_samr.o rpcclient/cmd_spoolss.o \
 		 rpcclient/cmd_netlogon.o rpcclient/cmd_srvsvc.o \
 		 rpcclient/cmd_dfs.o rpcclient/cmd_reg.o \
-		 rpcclient/display_sec.o rpcclient/cmd_ds.o \
-		 rpcclient/cmd_echo.o rpcclient/cmd_shutdown.o \
-		 rpcclient/cmd_test.o 
+		 rpcclient/cmd_ds.o rpcclient/cmd_echo.o \
+		 rpcclient/cmd_shutdown.o rpcclient/cmd_test.o \
+		 lib/display_sec.o
 
 RPCCLIENT_OBJ = $(RPCCLIENT_OBJ1) \
              $(PARAM_OBJ) $(LIBSMB_OBJ) $(LIB_NONSMBD_OBJ) \
@@ -574,7 +574,7 @@ NET_OBJ = $(NET_OBJ1) $(PARAM_OBJ) $(SECRETS_OBJ) $(LIBSMB_OBJ) \
 	  $(LIBADS_OBJ) $(LIBADS_SERVER_OBJ) $(POPT_LIB_OBJ) \
 	  $(SMBLDAP_OBJ) $(DCUTIL_OBJ) $(SERVER_MUTEX_OBJ) \
 	  $(AFS_OBJ) $(AFS_SETTOKEN_OBJ) $(REGFIO_OBJ) $(READLINE_OBJ) \
-	  rpcclient/display_sec.o
+	  lib/display_sec.o
 
 CUPS_OBJ = client/smbspool.o $(PARAM_OBJ) $(LIBSMB_OBJ) \
 	  $(LIB_NONSMBD_OBJ) $(KRBCLIENT_OBJ) $(SECRETS_OBJ)
