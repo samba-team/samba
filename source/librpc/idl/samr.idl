@@ -13,7 +13,7 @@
   endpoint("ncacn_np:[\\pipe\\samr]","ncacn_ip_tcp:", "ncalrpc:"),
   pointer_default(unique),
   pointer_default_top(unique),
-  depends(lsa,security)
+  depends(misc,lsa,security)
 ] interface samr
 {
 	declare bitmap security_secinfo;
