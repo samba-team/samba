@@ -111,9 +111,9 @@ sub create_output($$)
 			$part->{OUTPUT_TYPE} = "OBJLIST";
 		}
 
-		if (($part->{DEFAULT_VISIBILITY} ne "hidden") and 
+		if (($part->{STANDARD_VISIBILITY} ne "hidden") and 
 			($config->{visibility_attribute} eq "yes")) {
-			$part->{EXTRA_CFLAGS} .= " -fvisibility=$part->{DEFAULT_VISIBILITY}";
+			$part->{EXTRA_CFLAGS} .= " -fvisibility=$part->{STANDARD_VISIBILITY}";
 		}
 
 		generate_binary($part) if $part->{OUTPUT_TYPE} eq "BINARY";

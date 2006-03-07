@@ -159,8 +159,8 @@ sub check($$$$$)
 			$part->{NOPROTO} = "YES";
 		}
 
-		unless (defined($part->{DEFAULT_VISIBILITY})) {
-			$part->{DEFAULT_VISIBILITY} = "hidden";
+		unless (defined($part->{STANDARD_VISIBILITY})) {
+			$part->{STANDARD_VISIBILITY} = "hidden";
 		}
 
 		unless (defined($part->{EXTRA_CFLAGS})) {
