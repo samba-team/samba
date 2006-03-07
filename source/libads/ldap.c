@@ -1526,9 +1526,9 @@ static ADS_STATUS ads_add_machine_acct(ADS_STRUCT *ads, const char *machine_name
 	if (!exists) {
 		ads_mod_str(ctx, &mods, "cn", machine_name);
 		ads_mod_str(ctx, &mods, "sAMAccountName", samAccountName);
-		ads_mod_str(ctx, &mods, "userAccountControl", controlstr);
 		ads_mod_strlist(ctx, &mods, "objectClass", objectClass);
 	}
+	ads_mod_str(ctx, &mods, "userAccountControl", controlstr);
 	ads_mod_str(ctx, &mods, "dNSHostName", my_fqdn);
 	ads_mod_str(ctx, &mods, "userPrincipalName", host_upn);
 	ads_mod_strlist(ctx, &mods, "servicePrincipalName", servicePrincipalName);
