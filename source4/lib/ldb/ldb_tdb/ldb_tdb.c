@@ -91,6 +91,8 @@ struct ldb_async_handle *init_ltdb_handle(struct ltdb_private *ltdb, struct ldb_
 		return NULL;
 	}
 
+	h->module = module;
+
 	ac = talloc_zero(h, struct ltdb_async_context);
 	if (ac == NULL) {
 		ldb_set_errstring(module->ldb, talloc_asprintf(module, "Out of Memory"));
@@ -909,7 +911,7 @@ static int ltdb_del_trans(struct ldb_module *module)
 	return LDB_SUCCESS;
 }
 
-static int ltdb_async_wait(struct ldb_module *module, struct ldb_async_handle *handle, enum ldb_async_wait_type type)
+static int ltdb_async_wait(struct ldb_async_handle *handle, enum ldb_async_wait_type type)
 {
 	return handle->status;
 }

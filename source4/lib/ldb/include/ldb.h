@@ -605,6 +605,7 @@ struct ldb_async_handle {
 	int status;
 	enum ldb_async_state state;
 	void *private_data;
+	struct ldb_module *module;
 };
 
 struct ldb_search {
