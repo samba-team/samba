@@ -70,6 +70,8 @@ static struct ldb_async_handle *init_lsql_handle(struct lsqlite3_private *lsqlit
 		return NULL;
 	}
 
+	h->module = module;
+
 	ac = talloc(h, struct lsql_async_context);
 	if (ac == NULL) {
 		ldb_set_errstring(module->ldb, talloc_asprintf(module, "Out of Memory"));
@@ -1969,7 +1971,7 @@ destructor(void *p)
 	return 0;
 }
 
-static int lsql_async_wait(struct ldb_module *module, struct ldb_async_handle *handle, enum ldb_async_wait_type type)
+static int lsql_async_wait(struct ldb_async_handle *handle, enum ldb_async_wait_type type)
 {
 	return handle->status;
 }
