@@ -33,9 +33,7 @@ my $library_output_type;
 if (defined($ENV{"LIBRARY_OUTPUT_TYPE"})) {
 	$library_output_type = $ENV{LIBRARY_OUTPUT_TYPE};
 } elsif ($config::config{BLDSHARED} eq "true") {
-	#FIXME: This should eventually become SHARED_LIBRARY 
-	# rather then MERGEDOBJ once I'm certain it works ok -- jelmer
-	$library_output_type = "MERGEDOBJ";
+	$library_output_type = "SHARED_LIBRARY";
 } elsif ($config::config{BLDMERGED} eq "true") {
 	$library_output_type = "MERGEDOBJ";
 } else {
@@ -46,9 +44,7 @@ my $module_output_type;
 if (defined($ENV{"MODULE_OUTPUT_TYPE"})) {
 	$module_output_type = $ENV{MODULE_OUTPUT_TYPE};
 } elsif ($config::config{BLDSHARED} eq "true") {
-	#FIXME: This should eventually become SHARED_LIBRARY 
-	# rather then MERGEDOBJ once I'm certain it works ok -- jelmer
-	$module_output_type = "MERGEDOBJ";
+	$module_output_type = "SHARED_LIBRARY";
 } elsif ($config::config{BLDMERGED} eq "true") {
 	$module_output_type = "MERGEDOBJ";
 } else {
