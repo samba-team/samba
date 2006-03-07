@@ -63,6 +63,7 @@ REQUIRED_SUBSYSTEMS = \
 #######################
 
 [SUBSYSTEM::PAM_ERRORS]
+PRIVATE_PROTO_HEADER = pam_errors.h
 OBJ_FILES = pam_errors.o
 
 #######################
