@@ -28,7 +28,7 @@
 #include "rpc_server/dcerpc_server.h"
 #include "lib/events/events.h"
 #include "smbd/service_stream.h"
-#include "smbd/proto.h"
+#include "smbd/service.h"
 #include "system/filesys.h"
 #include "libcli/security/proto.h"
 #include "build.h"
