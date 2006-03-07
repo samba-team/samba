@@ -178,8 +178,8 @@ static BOOL test_SetUserInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	uint32_t user_extra_flags = 0;
 	if (base_acct_flags == ACB_NORMAL) {
-		/* Don't know what this is, but it is always here for users - you can't get rid of it */
-		user_extra_flags = 0x20000;
+		/* When created, accounts are expired by default */
+		user_extra_flags = ACB_PW_EXPIRED;
 	}
 
 	s.in.user_handle = handle;
@@ -359,7 +359,7 @@ static BOOL test_SetUserInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			  (base_acct_flags  | ACB_DISABLED | user_extra_flags), 
 			  0);
 	
-	/* Setting PWNOEXP clears the magic 0x20000 flag */
+	/* Setting PWNOEXP clears the magic ACB_PW_EXPIRED flag */
 	TEST_USERINFO_INT_EXP(16, acct_flags, 5, acct_flags, 
 			  (base_acct_flags  | ACB_DISABLED | ACB_PWNOEXP), 
 			  (base_acct_flags  | ACB_DISABLED | ACB_PWNOEXP), 

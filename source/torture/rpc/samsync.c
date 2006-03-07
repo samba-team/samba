@@ -221,8 +221,8 @@ static struct sec_desc_buf *samsync_query_lsa_sec_desc(TALLOC_CTX *mem_ctx,
 } while (0)
 #define TEST_INT_EQUAL(i1, i2) do {\
 	if (i1 != i2) {\
-	      printf("%s: integer mismatch: " #i1 ":%d != " #i2 ": %d\n", \
-		     __location__, i1, i2);\
+	      printf("%s: integer mismatch: " #i1 ": 0x%08x (%d) != " #i2 ": 0x%08x (%d)\n", \
+		     __location__, i1, i1, i2, i2);			\
 	      ret = False;\
 	} \
 } while (0)
@@ -498,7 +498,22 @@ static BOOL samsync_handle_user(TALLOC_CTX *mem_ctx, struct samsync_state *samsy
 	TEST_TIME_EQUAL(q.out.info->info21.acct_expiry,
 		       user->acct_expiry);
 
-	TEST_INT_EQUAL(q.out.info->info21.acct_flags, user->acct_flags);
+	TEST_INT_EQUAL((q.out.info->info21.acct_flags & ~ACB_PW_EXPIRED), user->acct_flags);
+	if (user->acct_flags & ACB_PWNOEXP) {
+		if (q.out.info->info21.acct_flags & ACB_PW_EXPIRED) {
+			printf("ACB flags mismatch: both expired and no expiry!\n");
+			ret = False;
+		}
+		if (q.out.info->info21.force_password_change != (NTTIME)0x7FFFFFFFFFFFFFFFULL) {
+			printf("ACB flags mismatch: no password expiry, but force password change 0x%016llx (%lld) != 0x%016llx (%lld)\n",
+			       (unsigned long long)q.out.info->info21.force_password_change, 
+			       (unsigned long long)q.out.info->info21.force_password_change,
+			       (unsigned long long)0x7FFFFFFFFFFFFFFFULL, (unsigned long long)0x7FFFFFFFFFFFFFFFULL
+				);
+			ret = False;
+		}
+	}
+
 	TEST_INT_EQUAL(q.out.info->info21.nt_password_set, user->nt_password_present);
 	TEST_INT_EQUAL(q.out.info->info21.lm_password_set, user->lm_password_present);
 	TEST_INT_EQUAL(q.out.info->info21.password_expired, user->password_expired);
@@ -586,6 +601,10 @@ static BOOL samsync_handle_user(TALLOC_CTX *mem_ctx, struct samsync_state *samsy
 		if (user->acct_flags & ACB_AUTOLOCK) {
 			return True;
 		}
+	} else if (NT_STATUS_EQUAL(nt_status, NT_STATUS_PASSWORD_EXPIRED)) {
+		if (q.out.info->info21.acct_flags & ACB_PW_EXPIRED) {
+			return True;
+		}
 	} else if (NT_STATUS_EQUAL(nt_status, NT_STATUS_WRONG_PASSWORD)) {
 		if (!lm_hash_p && !nt_hash_p) {
 			return True;
@@ -618,6 +637,7 @@ static BOOL samsync_handle_user(TALLOC_CTX *mem_ctx, struct samsync_state *samsy
 		TEST_TIME_EQUAL(user->last_logon, info3->base.last_logon);
 		TEST_TIME_EQUAL(user->acct_expiry, info3->base.acct_expiry);
 		TEST_TIME_EQUAL(user->last_password_change, info3->base.last_password_change);
+		TEST_TIME_EQUAL(q.out.info->info21.force_password_change, info3->base.force_password_change);
 
 		/* Does the concept of a logoff time ever really
 		 * exist? (not in any sensible way, according to the
@@ -1176,21 +1196,24 @@ static BOOL test_DatabaseSync(struct samsync_state *samsync_state,
 						ret = False;
 					}
 					break;
+				case NETR_DELTA_GROUP_MEMBER:
+				case NETR_DELTA_ALIAS_MEMBER:
+					/* These are harder to cross-check, and we expect them */
+					break;
 				case NETR_DELTA_DELETE_GROUP:
 				case NETR_DELTA_RENAME_GROUP:
 				case NETR_DELTA_DELETE_USER:
 				case NETR_DELTA_RENAME_USER:
-				case NETR_DELTA_GROUP_MEMBER:
 				case NETR_DELTA_DELETE_ALIAS:
 				case NETR_DELTA_RENAME_ALIAS:
-				case NETR_DELTA_ALIAS_MEMBER:
 				case NETR_DELTA_DELETE_TRUST:
 				case NETR_DELTA_DELETE_ACCOUNT:
 				case NETR_DELTA_DELETE_SECRET:
 				case NETR_DELTA_DELETE_GROUP2:
 				case NETR_DELTA_DELETE_USER2:
 				case NETR_DELTA_MODIFY_COUNT:
-					printf("Unhandled delta type %d\n", r.out.delta_enum_array->delta_enum[d].delta_type);
+				default:
+					printf("Uxpected delta type %d\n", r.out.delta_enum_array->delta_enum[d].delta_type);
 					ret = False;
 					break;
 				}
