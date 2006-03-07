@@ -30,6 +30,7 @@
 #include "rpc_server/samr/proto.h"
 #include "db_wrap.h"
 #include "libcli/auth/proto.h"
+#include "auth/gensec/schannel_state.h"
 
 struct server_pipe_state {
 	struct netr_Credential client_challenge;

@@ -123,6 +123,7 @@ enum brl_type {
 #include "libcli/raw/interfaces.h"
 #include "auth/credentials/credentials.h"
 #include "libcli/nbt/libnbt.h"
+#include "libcli/util/proto.h"
 
 #undef _PRINTF_ATTRIBUTE
 #define _PRINTF_ATTRIBUTE(a1, a2)
