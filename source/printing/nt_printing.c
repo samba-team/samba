@@ -743,12 +743,12 @@ BOOL get_a_builtin_ntform(UNISTR2 *uni_formname,nt_forms_struct *form)
 }
 
 /****************************************************************************
-get a form struct list
+ get a form struct list.
 ****************************************************************************/
+
 int get_ntforms(nt_forms_struct **list)
 {
 	TDB_DATA kbuf, newkey, dbuf;
-	nt_forms_struct *tl;
 	nt_forms_struct form;
 	int ret;
 	int i;
@@ -773,12 +773,11 @@ int get_ntforms(nt_forms_struct **list)
 		if (ret != dbuf.dsize) 
 			continue;
 
-		tl = SMB_REALLOC_ARRAY(*list, nt_forms_struct, n+1);
-		if (!tl) {
+		*list = SMB_REALLOC_ARRAY(*list, nt_forms_struct, n+1);
+		if (!*list) {
 			DEBUG(0,("get_ntforms: Realloc fail.\n"));
 			return 0;
 		}
-		*list = tl;
 		(*list)[n] = form;
 		n++;
 	}
@@ -823,7 +822,6 @@ BOOL add_a_form(nt_forms_struct **list, const FORM *form, int *count)
 	int n=0;
 	BOOL update;
 	fstring form_name;
-	nt_forms_struct *tl;
 
 	/*
 	 * NT tries to add forms even when
@@ -842,11 +840,10 @@ BOOL add_a_form(nt_forms_struct **list, const FORM *form, int *count)
 	}
 
 	if (update==False) {
-		if((tl=SMB_REALLOC_ARRAY(*list, nt_forms_struct, n+1)) == NULL) {
+		if((*list=SMB_REALLOC_ARRAY(*list, nt_forms_struct, n+1)) == NULL) {
 			DEBUG(0,("add_a_form: failed to enlarge forms list!\n"));
 			return False;
 		}
-		*list = tl;
 		unistr2_to_ascii((*list)[n].name, &form->name, sizeof((*list)[n].name)-1);
 		(*count)++;
 	}
@@ -940,7 +937,6 @@ int get_ntdrivers(fstring **list, const char *architecture, uint32 version)
 {
 	int total=0;
 	const char *short_archi;
-	fstring *fl;
 	pstring key;
 	TDB_DATA kbuf, newkey;
 
@@ -954,11 +950,10 @@ int get_ntdrivers(fstring **list, const char *architecture, uint32 version)
 		if (strncmp(kbuf.dptr, key, strlen(key)) != 0)
 			continue;
 		
-		if((fl = SMB_REALLOC_ARRAY(*list, fstring, total+1)) == NULL) {
+		if((*list = SMB_REALLOC_ARRAY(*list, fstring, total+1)) == NULL) {
 			DEBUG(0,("get_ntdrivers: failed to enlarge list!\n"));
 			return -1;
 		}
-		else *list = fl;
 
 		fstrcpy((*list)[total], kbuf.dptr+strlen(key));
 		total++;
@@ -1973,15 +1968,12 @@ static uint32 add_a_printer_driver_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 *driver)
 	}
 
 	if (len != buflen) {
-		char *tb;
-
-		tb = (char *)SMB_REALLOC(buf, len);
-		if (!tb) {
+		buf = (char *)SMB_REALLOC(buf, len);
+		if (!buf) {
 			DEBUG(0,("add_a_printer_driver_3: failed to enlarge buffer\n!"));
 			ret = -1;
 			goto done;
 		}
-		else buf = tb;
 		buflen = len;
 		goto again;
 	}
@@ -2098,15 +2090,11 @@ static WERROR get_a_printer_driver_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 **info_ptr, 
 
 	i=0;
 	while (len < dbuf.dsize) {
-		fstring *tddfs;
-
-		tddfs = SMB_REALLOC_ARRAY(driver.dependentfiles, fstring, i+2);
-		if ( !tddfs ) {
+		driver.dependentfiles = SMB_REALLOC_ARRAY(driver.dependentfiles, fstring, i+2);
+		if ( !driver.dependentfiles ) {
 			DEBUG(0,("get_a_printer_driver_3: failed to enlarge buffer!\n"));
 			break;
 		}
-		else 
-			driver.dependentfiles = tddfs;
 
 		len += tdb_unpack(dbuf.dptr+len, dbuf.dsize-len, "f",
 				  &driver.dependentfiles[i]);
@@ -2406,15 +2394,12 @@ static WERROR update_a_printer_2(NT_PRINTER_INFO_LEVEL_2 *info)
 	len += pack_values( info->data, buf+len, buflen-len );
 
 	if (buflen != len) {
-		char *tb;
-
-		tb = (char *)SMB_REALLOC(buf, len);
-		if (!tb) {
+		buf = (char *)SMB_REALLOC(buf, len);
+		if (!buf) {
 			DEBUG(0,("update_a_printer_2: failed to enlarge buffer!\n"));
 			ret = WERR_NOMEM;
 			goto done;
 		}
-		else buf = tb;
 		buflen = len;
 		goto again;
 	}
@@ -2744,7 +2729,7 @@ int get_printer_subkeys( NT_PRINTER_DATA *data, const char* key, fstring **subke
 	int	key_len;
 	int	num_subkeys = 0;
 	char	*p;
-	fstring	*ptr, *subkeys_ptr = NULL;
+	fstring	*subkeys_ptr = NULL;
 	fstring subkeyname;
 	
 	if ( !data )
@@ -2760,14 +2745,12 @@ int get_printer_subkeys( NT_PRINTER_DATA *data, const char* key, fstring **subke
 		
 			/* found a match, so allocate space and copy the name */
 			
-			if ( !(ptr = SMB_REALLOC_ARRAY( subkeys_ptr, fstring, num_subkeys+2)) ) {
+			if ( !(subkeys_ptr = SMB_REALLOC_ARRAY( subkeys_ptr, fstring, num_subkeys+2)) ) {
 				DEBUG(0,("get_printer_subkeys: Realloc failed for [%d] entries!\n", 
 					num_subkeys+1));
-				SAFE_FREE( subkeys );
 				return -1;
 			}
 			
-			subkeys_ptr = ptr;
 			fstrcpy( subkeys_ptr[num_subkeys], data->keys[i].name );
 			num_subkeys++;
 		}
@@ -2807,14 +2790,12 @@ int get_printer_subkeys( NT_PRINTER_DATA *data, const char* key, fstring **subke
 
 			/* found a match, so allocate space and copy the name */
 			
-			if ( !(ptr = SMB_REALLOC_ARRAY( subkeys_ptr, fstring, num_subkeys+2)) ) {
+			if ( !(subkeys_ptr = SMB_REALLOC_ARRAY( subkeys_ptr, fstring, num_subkeys+2)) ) {
 				DEBUG(0,("get_printer_subkeys: Realloc failed for [%d] entries!\n", 
 					num_subkeys+1));
-				SAFE_FREE( subkeys );
 				return 0;
 			}
 			
-			subkeys_ptr = ptr;
 			fstrcpy( subkeys_ptr[num_subkeys], subkeyname );
 			num_subkeys++;
 		}
@@ -4080,16 +4061,12 @@ static uint32 update_driver_init_2(NT_PRINTER_INFO_LEVEL_2 *info)
 	len += pack_values( info->data, buf+len, buflen-len );
 
 	if (buflen < len) {
-		char *tb;
-
-		tb = (char *)SMB_REALLOC(buf, len);
-		if (!tb) {
+		buf = (char *)SMB_REALLOC(buf, len);
+		if (!buf) {
 			DEBUG(0, ("update_driver_init_2: failed to enlarge buffer!\n"));
 			ret = -1;
 			goto done;
 		}
-		else
-			buf = tb;
 		buflen = len;
 		goto again;
 	}

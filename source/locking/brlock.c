@@ -354,7 +354,6 @@ NTSTATUS brl_lock(SMB_DEV_T dev, SMB_INO_T ino, int fnum,
 	TDB_DATA kbuf, dbuf;
 	int count, i;
 	struct lock_struct lock, *locks;
-	char *tp;
 	NTSTATUS status = NT_STATUS_OK;
 
 	*my_lock_ctx = False;
@@ -401,12 +400,10 @@ NTSTATUS brl_lock(SMB_DEV_T dev, SMB_INO_T ino, int fnum,
 	}
 
 	/* no conflicts - add it to the list of locks */
-	tp = SMB_REALLOC(dbuf.dptr, dbuf.dsize + sizeof(*locks));
-	if (!tp) {
+	dbuf.dptr = SMB_REALLOC(dbuf.dptr, dbuf.dsize + sizeof(*locks));
+	if (!dbuf.dptr) {
 		status = NT_STATUS_NO_MEMORY;
 		goto fail;
-	} else {
-		dbuf.dptr = tp;
 	}
 	memcpy(dbuf.dptr + dbuf.dsize, &lock, sizeof(lock));
 	dbuf.dsize += sizeof(lock);

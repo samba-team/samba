@@ -816,16 +816,13 @@ static int cups_queue_get(const char *sharename,
 		if (qcount >= qalloc) {
 			qalloc += 16;
 
-			temp = SMB_REALLOC_ARRAY(queue, print_queue_struct, qalloc);
+			queue = SMB_REALLOC_ARRAY(queue, print_queue_struct, qalloc);
 
-			if (temp == NULL) {
+			if (queue == NULL) {
 				DEBUG(0,("cups_queue_get: Not enough memory!"));
 				qcount = 0;
-				SAFE_FREE(queue);
 				goto out;
 			}
-
-			queue = temp;
 		}
 
 		temp = queue + qcount;

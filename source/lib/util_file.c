@@ -322,16 +322,11 @@ char *fgets_slash(char *s2,int maxlen,XFILE *f)
 		}
 
 		if (!s2 && len > maxlen-3) {
-			char *t;
-	  
 			maxlen *= 2;
-			t = (char *)SMB_REALLOC(s,maxlen);
-			if (!t) {
+			s = (char *)SMB_REALLOC(s,maxlen);
+			if (!s) {
 				DEBUG(0,("fgets_slash: failed to expand buffer!\n"));
-				SAFE_FREE(s);
 				return(NULL);
-			} else {
-				s = t;
 			}
 		}
 	}
@@ -345,7 +340,7 @@ char *fgets_slash(char *s2,int maxlen,XFILE *f)
 char *file_pload(char *syscmd, size_t *size)
 {
 	int fd, n;
-	char *p, *tp;
+	char *p;
 	pstring buf;
 	size_t total;
 	
@@ -358,19 +353,19 @@ char *file_pload(char *syscmd, size_t *size)
 	total = 0;
 
 	while ((n = read(fd, buf, sizeof(buf))) > 0) {
-		tp = SMB_REALLOC(p, total + n + 1);
-		if (!tp) {
+		p = SMB_REALLOC(p, total + n + 1);
+		if (!p) {
 		        DEBUG(0,("file_pload: failed to expand buffer!\n"));
 			close(fd);
-			SAFE_FREE(p);
 			return NULL;
-		} else {
-			p = tp;
 		}
 		memcpy(p+total, buf, n);
 		total += n;
 	}
-	if (p) p[total] = 0;
+
+	if (p) {
+		p[total] = 0;
+	}
 
 	/* FIXME: Perhaps ought to check that the command completed
 	 * successfully (returned 0); if not the data may be

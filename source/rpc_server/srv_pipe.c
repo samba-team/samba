@@ -1032,7 +1032,7 @@ NTSTATUS rpc_pipe_register_commands(int version, const char *clnt, const char *s
            rpc_lookup will still be valid afterwards.  It could then succeed if
            called again later */
 	rpc_lookup_size++;
-        rpc_entry = SMB_REALLOC_ARRAY(rpc_lookup, struct rpc_table, rpc_lookup_size);
+        rpc_entry = SMB_REALLOC_ARRAY_KEEP_OLD_ON_ERROR(rpc_lookup, struct rpc_table, rpc_lookup_size);
         if (NULL == rpc_entry) {
                 rpc_lookup_size--;
                 DEBUG(0, ("rpc_pipe_register_commands: memory allocation failed\n"));
@@ -1046,6 +1046,9 @@ NTSTATUS rpc_pipe_register_commands(int version, const char *clnt, const char *s
         rpc_entry->pipe.clnt = SMB_STRDUP(clnt);
         rpc_entry->pipe.srv = SMB_STRDUP(srv);
         rpc_entry->cmds = SMB_REALLOC_ARRAY(rpc_entry->cmds, struct api_struct, rpc_entry->n_cmds + size);
+	if (!rpc_entry->cmds) {
+		return NT_STATUS_NO_MEMORY;
+	}
         memcpy(rpc_entry->cmds + rpc_entry->n_cmds, cmds, size * sizeof(struct api_struct));
         rpc_entry->n_cmds += size;
         

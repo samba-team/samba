@@ -224,6 +224,10 @@ static int gather_sessioninfo(TDB_CONTEXT *stdb, TDB_DATA kbuf, TDB_DATA dbuf,
 	sesslist->count += 1;
 	sesslist->sessions = SMB_REALLOC_ARRAY(sesslist->sessions, struct sessionid,
 					sesslist->count);
+	if (!sesslist->sessions) {
+		sesslist->count = 0;
+		return -1;
+	}
 
 	memcpy(&sesslist->sessions[sesslist->count - 1], current, 
 	       sizeof(struct sessionid));

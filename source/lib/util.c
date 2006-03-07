@@ -291,13 +291,15 @@ void add_gid_to_array_unique(TALLOC_CTX *mem_ctx, gid_t gid,
 			return;
 	}
 
-	if (mem_ctx != NULL)
+	if (mem_ctx != NULL) {
 		*gids = TALLOC_REALLOC_ARRAY(mem_ctx, *gids, gid_t, *num_gids+1);
-	else
+	} else {
 		*gids = SMB_REALLOC_ARRAY(*gids, gid_t, *num_gids+1);
+	}
 
-	if (*gids == NULL)
+	if (*gids == NULL) {
 		return;
+	}
 
 	(*gids)[*num_gids] = gid;
 	*num_gids += 1;
@@ -342,14 +344,10 @@ const char *get_numlist(const char *p, uint32 **num, int *count)
 	(*num  ) = NULL;
 
 	while ((p = Atoic(p, &val, ":,")) != NULL && (*p) != ':') {
-		uint32 *tn;
-		
-		tn = SMB_REALLOC_ARRAY((*num), uint32, (*count)+1);
-		if (tn == NULL) {
-			SAFE_FREE(*num);
+		*num = SMB_REALLOC_ARRAY((*num), uint32, (*count)+1);
+		if (!(*num)) {
 			return NULL;
-		} else
-			(*num) = tn;
+		}
 		(*num)[(*count)] = val;
 		(*count)++;
 		p++;
@@ -941,32 +939,68 @@ void *calloc_array(size_t size, size_t nmemb)
 
 /****************************************************************************
  Expand a pointer to be a particular size.
+ Note that this version of Realloc has an extra parameter that decides
+ whether to free the passed in storage on allocation failure or if the
+ new size is zero.
+
+ This is designed for use in the typical idiom of :
+
+ p = SMB_REALLOC(p, size)
+ if (!p) {
+    return error;
+ }
+
+ and not to have to keep track of the old 'p' contents to free later, nor
+ to worry if the size parameter was zero. In the case where NULL is returned
+ we guarentee that p has been freed.
+
+ If free later semantics are desired, then pass 'free_old_on_error' as False which
+ guarentees that the old contents are not freed on error, even if size == 0. To use
+ this idiom use :
+
+ tmp = SMB_REALLOC_KEEP_OLD_ON_ERROR(p, size);
+ if (!tmp) {
+    SAFE_FREE(p);
+    return error;
+ } else {
+    p = tmp;
+ }
+
+ Changes were instigated by Coverity error checking. JRA.
 ****************************************************************************/
 
-void *Realloc(void *p,size_t size)
+void *Realloc(void *p, size_t size, BOOL free_old_on_error)
 {
 	void *ret=NULL;
 
 	if (size == 0) {
-		SAFE_FREE(p);
-		DEBUG(5,("Realloc asked for 0 bytes\n"));
+		if (free_old_on_error) {
+			SAFE_FREE(p);
+		}
+		DEBUG(2,("Realloc asked for 0 bytes\n"));
 		return NULL;
 	}
 
 #if defined(PARANOID_MALLOC_CHECKER)
-	if (!p)
+	if (!p) {
 		ret = (void *)malloc_(size);
-	else
+	} else {
 		ret = (void *)realloc_(p,size);
+	}
 #else
-	if (!p)
+	if (!p) {
 		ret = (void *)malloc(size);
-	else
+	} else {
 		ret = (void *)realloc(p,size);
+	}
 #endif
 
-	if (!ret)
+	if (!ret) {
+		if (free_old_on_error && p) {
+			SAFE_FREE(p);
+		}
 		DEBUG(0,("Memory allocation error: failed to expand to %d bytes\n",(int)size));
+	}
 
 	return(ret);
 }
@@ -975,23 +1009,28 @@ void *Realloc(void *p,size_t size)
  Type-safe realloc.
 ****************************************************************************/
 
-void *realloc_array(void *p,size_t el_size, unsigned int count)
+void *realloc_array(void *p, size_t el_size, unsigned int count, BOOL keep_old_on_error)
 {
 	if (count >= MAX_ALLOC_SIZE/el_size) {
+		if (!keep_old_on_error) {
+			SAFE_FREE(p);
+		}
 		return NULL;
 	}
-	return Realloc(p,el_size*count);
+	return Realloc(p, el_size*count, keep_old_on_error);
 }
 
 /****************************************************************************
- (Hopefully) efficient array append
+ (Hopefully) efficient array append.
 ****************************************************************************/
+
 void add_to_large_array(TALLOC_CTX *mem_ctx, size_t element_size,
 			void *element, void **array, uint32 *num_elements,
 			ssize_t *array_size)
 {
-	if (*array_size < 0)
+	if (*array_size < 0) {
 		return;
+	}
 
 	if (*array == NULL) {
 		if (*array_size == 0) {
@@ -1002,13 +1041,15 @@ void add_to_large_array(TALLOC_CTX *mem_ctx, size_t element_size,
 			goto error;
 		}
 
-		if (mem_ctx != NULL)
+		if (mem_ctx != NULL) {
 			*array = TALLOC(mem_ctx, element_size * (*array_size));
-		else
+		} else {
 			*array = SMB_MALLOC(element_size * (*array_size));
+		}
 
-		if (*array == NULL)
+		if (*array == NULL) {
 			goto error;
+		}
 	}
 
 	if (*num_elements == *array_size) {
@@ -1018,15 +1059,17 @@ void add_to_large_array(TALLOC_CTX *mem_ctx, size_t element_size,
 			goto error;
 		}
 
-		if (mem_ctx != NULL)
+		if (mem_ctx != NULL) {
 			*array = TALLOC_REALLOC(mem_ctx, *array,
 						element_size * (*array_size));
-		else
+		} else {
 			*array = SMB_REALLOC(*array,
 					     element_size * (*array_size));
+		}
 
-		if (*array == NULL)
+		if (*array == NULL) {
 			goto error;
+		}
 	}
 
 	memcpy((char *)(*array) + element_size*(*num_elements),

@@ -130,6 +130,10 @@ static int collect_pid(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf,
 
 	ids->num_entries += 1;
 	ids->entries = SMB_REALLOC_ARRAY(ids->entries, struct sessionid, ids->num_entries);
+	if (!ids->entries) {
+		ids->num_entries = 0;
+		return 0;
+	}
 	ids->entries[ids->num_entries-1] = sessionid;
 
 	return 0;

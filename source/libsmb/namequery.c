@@ -501,7 +501,6 @@ struct in_addr *name_query(int fd,const char *name,int name_type,
 	
 	while (1) {
 		struct timeval tval2;
-		struct in_addr *tmp_ip_list;
 		
 		GetTimeOfDay(&tval2);
 		if (TvalDiff(&tval,&tval2) > retry_time) {
@@ -566,27 +565,22 @@ struct in_addr *name_query(int fd,const char *name,int name_type,
 				continue;
 			}
 			
-			tmp_ip_list = SMB_REALLOC_ARRAY( ip_list, struct in_addr,
+			ip_list = SMB_REALLOC_ARRAY( ip_list, struct in_addr,
 						(*count) + nmb2->answers->rdlength/6 );
 			
-			if (!tmp_ip_list) {
+			if (!ip_list) {
 				DEBUG(0,("name_query: Realloc failed.\n"));
-				SAFE_FREE(ip_list);
 				free_packet(p2);
 				return( NULL );
 			}
 			
-			ip_list = tmp_ip_list;
-			
-			if (ip_list) {
-				DEBUG(2,("Got a positive name query response from %s ( ", inet_ntoa(p2->ip)));
-				for (i=0;i<nmb2->answers->rdlength/6;i++) {
-					putip((char *)&ip_list[(*count)],&nmb2->answers->rdata[2+i*6]);
-					DEBUGADD(2,("%s ",inet_ntoa(ip_list[(*count)])));
-					(*count)++;
-				}
-				DEBUGADD(2,(")\n"));
+			DEBUG(2,("Got a positive name query response from %s ( ", inet_ntoa(p2->ip)));
+			for (i=0;i<nmb2->answers->rdlength/6;i++) {
+				putip((char *)&ip_list[(*count)],&nmb2->answers->rdata[2+i*6]);
+				DEBUGADD(2,("%s ",inet_ntoa(ip_list[(*count)])));
+				(*count)++;
 			}
+			DEBUGADD(2,(")\n"));
 			
 			found=True;
 			retries=0;

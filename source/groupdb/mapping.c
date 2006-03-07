@@ -477,14 +477,13 @@ static BOOL enum_group_mapping(enum SID_NAME_USE sid_name_use, GROUP_MAP **pp_rm
 			  "type %s\n", map.nt_name,
 			  sid_type_lookup(map.sid_name_use)));
 
-		mapt= SMB_REALLOC_ARRAY((*pp_rmap), GROUP_MAP, entries+1);
-		if (!mapt) {
+		(*pp_rmap) = SMB_REALLOC_ARRAY((*pp_rmap), GROUP_MAP, entries+1);
+		if (!(*pp_rmap)) {
 			DEBUG(0,("enum_group_mapping: Unable to enlarge group map!\n"));
-			SAFE_FREE(*pp_rmap);
 			return False;
 		}
-		else
-			(*pp_rmap) = mapt;
+
+		mapt = (*pp_rmap);
 
 		mapt[entries].gid = map.gid;
 		sid_copy( &mapt[entries].sid, &map.sid);

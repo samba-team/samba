@@ -59,7 +59,7 @@ static char *grab_line(FILE *f, int *cl)
 			char *ret2;
 			if (len == 0) len = 1024;
 			else len *= 2;
-			ret2 = (char *)SMB_REALLOC(ret, len);
+			ret2 = (char *)SMB_REALLOC_KEEP_OLD_ON_ERROR(ret, len);
 			if (!ret2) return ret;
 			ret = ret2;
 		}

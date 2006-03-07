@@ -643,9 +643,8 @@ static int setup_ver2_dfs_referral(char *pathname, char **ppdata,
 	if(pdata == NULL) {
 		DEBUG(0,("malloc failed for Realloc!\n"));
 		return -1;
-	} else {
-		*ppdata = pdata;
 	}
+	*ppdata = pdata;
 
 	/* copy in the dfs requested paths.. required for offset calculations */
 	memcpy(pdata+uni_reqpathoffset1,uni_requestedpath,requestedpathlen);
@@ -729,9 +728,8 @@ static int setup_ver3_dfs_referral(char *pathname, char **ppdata,
 	if(pdata == NULL) {
 		DEBUG(0,("version3 referral setup: malloc failed for Realloc!\n"));
 		return -1;
-	} else {
-		*ppdata = pdata;
 	}
+	*ppdata = pdata;
 
 	/* create the header */
 	SSVAL(pdata,0,consumedcnt * 2); /* path consumed */

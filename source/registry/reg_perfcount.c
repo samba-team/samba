@@ -158,7 +158,7 @@ static uint32 _reg_perfcount_multi_sz_from_tdb(TDB_CONTEXT *tdb,
 {
 	TDB_DATA kbuf, dbuf;
 	char temp[256];
-	char *buf1 = *retbuf, *buf2 = NULL;
+	char *buf1 = *retbuf;
 	uint32 working_size = 0;
 	UNISTR2 name_index, name;
 
@@ -177,27 +177,21 @@ static uint32 _reg_perfcount_multi_sz_from_tdb(TDB_CONTEXT *tdb,
 	}
 	/* First encode the name_index */
 	working_size = (kbuf.dsize + 1)*sizeof(uint16);
-	buf2 = SMB_REALLOC(buf1, buffer_size + working_size);
-	if(!buf2)
-	{
-		SAFE_FREE(buf1);
+	buf1 = SMB_REALLOC(buf1, buffer_size + working_size);
+	if(!buf1) {
 		buffer_size = 0;
 		return buffer_size;
 	}
-	buf1 = buf2;
 	init_unistr2(&name_index, kbuf.dptr, UNI_STR_TERMINATE);
 	memcpy(buf1+buffer_size, (char *)name_index.buffer, working_size);
 	buffer_size += working_size;
 	/* Now encode the actual name */
 	working_size = (dbuf.dsize + 1)*sizeof(uint16);
-	buf2 = SMB_REALLOC(buf1, buffer_size + working_size);
-	if(!buf2)
-	{
-		SAFE_FREE(buf1);
+	buf1 = SMB_REALLOC(buf1, buffer_size + working_size);
+	if(!buf1) {
 		buffer_size = 0;
 		return buffer_size;
 	}
-	buf1 = buf2;
 	memset(temp, 0, sizeof(temp));
 	memcpy(temp, dbuf.dptr, dbuf.dsize);
 	SAFE_FREE(dbuf.dptr);
@@ -215,7 +209,7 @@ static uint32 _reg_perfcount_multi_sz_from_tdb(TDB_CONTEXT *tdb,
 
 uint32 reg_perfcount_get_counter_help(uint32 base_index, char **retbuf)
 {
-	char *buf1 = NULL, *buf2 = NULL;
+	char *buf1 = NULL;
 	uint32 buffer_size = 0;
 	TDB_CONTEXT *names;
 	const char *fname = counters_directory( NAMES_DB );
@@ -240,15 +234,10 @@ uint32 reg_perfcount_get_counter_help(uint32 base_index, char **retbuf)
 
 	/* Now terminate the MULTI_SZ with a double unicode NULL */
 	buf1 = *retbuf;
-	buf2 = SMB_REALLOC(buf1, buffer_size + 2);
-	if(!buf2)
-	{
-		SAFE_FREE(buf1);
+	buf1 = SMB_REALLOC(buf1, buffer_size + 2);
+	if(!buf1) {
 		buffer_size = 0;
-	}
-	else
-	{
-		buf1 = buf2;
+	} else {
 		buf1[buffer_size++] = '\0';
 		buf1[buffer_size++] = '\0';
 	}
@@ -263,7 +252,7 @@ uint32 reg_perfcount_get_counter_help(uint32 base_index, char **retbuf)
 
 uint32 reg_perfcount_get_counter_names(uint32 base_index, char **retbuf)
 {
-	char *buf1 = NULL, *buf2 = NULL;
+	char *buf1 = NULL;
 	uint32 buffer_size = 0;
 	TDB_CONTEXT *names;
 	const char *fname = counters_directory( NAMES_DB );
@@ -290,15 +279,10 @@ uint32 reg_perfcount_get_counter_names(uint32 base_index, char **retbuf)
 
 	/* Now terminate the MULTI_SZ with a double unicode NULL */
 	buf1 = *retbuf;
-	buf2 = SMB_REALLOC(buf1, buffer_size + 2);
-	if(!buf2)
-	{
-		SAFE_FREE(buf1);
+	buf1 = SMB_REALLOC(buf1, buffer_size + 2);
+	if(!buf1) {
 		buffer_size = 0;
-	}
-	else
-	{
-		buf1 = buf2;
+	} else {
 		buf1[buffer_size++] = '\0';
 		buf1[buffer_size++] = '\0';
 	}

@@ -4968,7 +4968,7 @@ BOOL spool_io_printer_driver_info_level_6(const char *desc, SPOOL_PRINTER_DRIVER
 ********************************************************************/  
 static BOOL uniarray_2_dosarray(BUFFER5 *buf5, fstring **ar)
 {
-	fstring f, *tar;
+	fstring f;
 	int n = 0;
 	char *src;
 
@@ -4981,11 +4981,9 @@ static BOOL uniarray_2_dosarray(BUFFER5 *buf5, fstring **ar)
 	while (src < ((char *)buf5->buffer) + buf5->buf_len*2) {
 		rpcstr_pull(f, src, sizeof(f)-1, -1, STR_TERMINATE);
 		src = skip_unibuf(src, 2*buf5->buf_len - PTR_DIFF(src,buf5->buffer));
-		tar = SMB_REALLOC_ARRAY(*ar, fstring, n+2);
-		if (!tar)
+		*ar = SMB_REALLOC_ARRAY(*ar, fstring, n+2);
+		if (!*ar)
 			return False;
-		else
-			*ar = tar;
 		fstrcpy((*ar)[n], f);
 		n++;
 	}
