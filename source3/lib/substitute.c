@@ -532,7 +532,9 @@ char *talloc_sub_basic(TALLOC_CTX *mem_ctx, const char *smb_name, const char *st
 {
 	char *a, *t;
        	a = alloc_sub_basic(smb_name, str);
-	if (!a) return NULL;
+	if (!a) {
+		return NULL;
+	}
 	t = talloc_strdup(mem_ctx, a);
 	SAFE_FREE(a);
 	return t;
@@ -540,14 +542,14 @@ char *talloc_sub_basic(TALLOC_CTX *mem_ctx, const char *smb_name, const char *st
 
 char *alloc_sub_basic(const char *smb_name, const char *str)
 {
-	char *b, *p, *s, *t, *r, *a_string;
+	char *b, *p, *s, *r, *a_string;
 	fstring pidstr;
 	struct passwd *pass;
 	const char *local_machine_name = get_local_machine_name();
 
-	/* workaround to prevent a crash while lookinf at bug #687 */
+	/* workaround to prevent a crash while looking at bug #687 */
 	
-	if ( !str ) {
+	if (!str) {
 		DEBUG(0,("alloc_sub_basic: NULL source string!  This should not happen\n"));
 		return NULL;
 	}
@@ -561,68 +563,75 @@ char *alloc_sub_basic(const char *smb_name, const char *str)
 	for (b = s = a_string; (p = strchr_m(s, '%')); s = a_string + (p - b)) {
 
 		r = NULL;
-		b = t = a_string;
+		b = a_string;
 		
 		switch (*(p+1)) {
 		case 'U' : 
 			r = strdup_lower(smb_name);
-			if (r == NULL) goto error;
-			t = realloc_string_sub(t, "%U", r);
+			if (r == NULL) {
+				goto error;
+			}
+			a_string = realloc_string_sub(a_string, "%U", r);
 			break;
 		case 'G' :
 			r = SMB_STRDUP(smb_name);
-			if (r == NULL) goto error;
+			if (r == NULL) {
+				goto error;
+			}
 			if ((pass = Get_Pwnam(r))!=NULL) {
-				t = realloc_string_sub(t, "%G", gidtoname(pass->pw_gid));
+				a_string = realloc_string_sub(a_string, "%G", gidtoname(pass->pw_gid));
 			} 
 			break;
 		case 'D' :
 			r = strdup_upper(current_user_info.domain);
-			if (r == NULL) goto error;
-			t = realloc_string_sub(t, "%D", r);
+			if (r == NULL) {
+				goto error;
+			}
+			a_string = realloc_string_sub(a_string, "%D", r);
 			break;
 		case 'I' :
-			t = realloc_string_sub(t, "%I", client_addr());
+			a_string = realloc_string_sub(a_string, "%I", client_addr());
 			break;
 		case 'L' : 
-			if (local_machine_name && *local_machine_name)
-				t = realloc_string_sub(t, "%L", local_machine_name); 
-			else
-				t = realloc_string_sub(t, "%L", global_myname()); 
+			if (local_machine_name && *local_machine_name) {
+				a_string = realloc_string_sub(a_string, "%L", local_machine_name); 
+			} else {
+				a_string = realloc_string_sub(a_string, "%L", global_myname()); 
+			}
 			break;
 		case 'N':
-			t = realloc_string_sub(t, "%N", automount_server(smb_name));
+			a_string = realloc_string_sub(a_string, "%N", automount_server(smb_name));
 			break;
 		case 'M' :
-			t = realloc_string_sub(t, "%M", client_name());
+			a_string = realloc_string_sub(a_string, "%M", client_name());
 			break;
 		case 'R' :
-			t = realloc_string_sub(t, "%R", remote_proto);
+			a_string = realloc_string_sub(a_string, "%R", remote_proto);
 			break;
 		case 'T' :
-			t = realloc_string_sub(t, "%T", timestring(False));
+			a_string = realloc_string_sub(a_string, "%T", timestring(False));
 			break;
 		case 'a' :
-			t = realloc_string_sub(t, "%a", remote_arch);
+			a_string = realloc_string_sub(a_string, "%a", remote_arch);
 			break;
 		case 'd' :
 			slprintf(pidstr,sizeof(pidstr)-1, "%d",(int)sys_getpid());
-			t = realloc_string_sub(t, "%d", pidstr);
+			a_string = realloc_string_sub(a_string, "%d", pidstr);
 			break;
 		case 'h' :
-			t = realloc_string_sub(t, "%h", myhostname());
+			a_string = realloc_string_sub(a_string, "%h", myhostname());
 			break;
 		case 'm' :
-			t = realloc_string_sub(t, "%m", remote_machine);
+			a_string = realloc_string_sub(a_string, "%m", remote_machine);
 			break;
 		case 'v' :
-			t = realloc_string_sub(t, "%v", SAMBA_VERSION_STRING);
+			a_string = realloc_string_sub(a_string, "%v", SAMBA_VERSION_STRING);
 			break;
 		case 'w' :
-			t = realloc_string_sub(t, "%w", lp_winbind_separator());
+			a_string = realloc_string_sub(a_string, "%w", lp_winbind_separator());
 			break;
 		case '$' :
-			t = realloc_expand_env_var(t, p); /* Expand environment variables */
+			a_string = realloc_expand_env_var(a_string, p); /* Expand environment variables */
 			break;
 			
 		default: 
@@ -631,11 +640,13 @@ char *alloc_sub_basic(const char *smb_name, const char *str)
 
 		p++;
 		SAFE_FREE(r);
-		if (t == NULL) goto error;
-		a_string = t;
+		if (a_string == NULL) {
+			return NULL;
+		}
 	}
 
 	return a_string;
+
 error:
 	SAFE_FREE(a_string);
 	return NULL;
@@ -655,7 +666,9 @@ char *talloc_sub_specified(TALLOC_CTX *mem_ctx,
 {
 	char *a, *t;
        	a = alloc_sub_specified(input_string, username, domain, uid, gid);
-	if (!a) return NULL;
+	if (!a) {
+		return NULL;
+	}
 	t = talloc_strdup(mem_ctx, a);
 	SAFE_FREE(a);
 	return t;
@@ -668,7 +681,7 @@ char *alloc_sub_specified(const char *input_string,
 			gid_t gid)
 {
 	char *a_string, *ret_string;
-	char *b, *p, *s, *t;
+	char *b, *p, *s;
 
 	a_string = SMB_STRDUP(input_string);
 	if (a_string == NULL) {
@@ -678,45 +691,43 @@ char *alloc_sub_specified(const char *input_string,
 	
 	for (b = s = a_string; (p = strchr_m(s, '%')); s = a_string + (p - b)) {
 		
-		b = t = a_string;
+		b = a_string;
 		
 		switch (*(p+1)) {
 		case 'U' : 
-			t = realloc_string_sub(t, "%U", username);
+			a_string = realloc_string_sub(a_string, "%U", username);
 			break;
 		case 'u' : 
-			t = realloc_string_sub(t, "%u", username);
+			a_string = realloc_string_sub(a_string, "%u", username);
 			break;
 		case 'G' :
 			if (gid != -1) {
-				t = realloc_string_sub(t, "%G", gidtoname(gid));
+				a_string = realloc_string_sub(a_string, "%G", gidtoname(gid));
 			} else {
-				t = realloc_string_sub(t, "%G", "NO_GROUP");
+				a_string = realloc_string_sub(a_string, "%G", "NO_GROUP");
 			}
 			break;
 		case 'g' :
 			if (gid != -1) {
-				t = realloc_string_sub(t, "%g", gidtoname(gid));
+				a_string = realloc_string_sub(a_string, "%g", gidtoname(gid));
 			} else {
-				t = realloc_string_sub(t, "%g", "NO_GROUP");
+				a_string = realloc_string_sub(a_string, "%g", "NO_GROUP");
 			}
 			break;
 		case 'D' :
-			t = realloc_string_sub(t, "%D", domain);
+			a_string = realloc_string_sub(a_string, "%D", domain);
 			break;
 		case 'N' : 
-			t = realloc_string_sub(t, "%N", automount_server(username)); 
+			a_string = realloc_string_sub(a_string, "%N", automount_server(username)); 
 			break;
 		default: 
 			break;
 		}
 
 		p++;
-		if (t == NULL) {
-			SAFE_FREE(a_string);
+		if (a_string == NULL) {
 			return NULL;
 		}
-		a_string = t;
 	}
 
 	ret_string = alloc_sub_basic(username, a_string);
@@ -734,7 +745,9 @@ char *talloc_sub_advanced(TALLOC_CTX *mem_ctx,
 {
 	char *a, *t;
        	a = alloc_sub_advanced(snum, user, connectpath, gid, smb_name, str);
-	if (!a) return NULL;
+	if (!a) {
+		return NULL;
+	}
 	t = talloc_strdup(mem_ctx, a);
 	SAFE_FREE(a);
 	return t;
@@ -745,7 +758,7 @@ char *alloc_sub_advanced(int snum, const char *user,
 				  const char *smb_name, const char *str)
 {
 	char *a_string, *ret_string;
-	char *b, *p, *s, *t, *h;
+	char *b, *p, *s, *h;
 
 	a_string = SMB_STRDUP(str);
 	if (a_string == NULL) {
@@ -755,27 +768,27 @@ char *alloc_sub_advanced(int snum, const char *user,
 	
 	for (b = s = a_string; (p = strchr_m(s, '%')); s = a_string + (p - b)) {
 		
-		b = t = a_string;
+		b = a_string;
 		
 		switch (*(p+1)) {
 		case 'N' :
-			t = realloc_string_sub(t, "%N", automount_server(user));
+			a_string = realloc_string_sub(a_string, "%N", automount_server(user));
 			break;
 		case 'H':
 			if ((h = get_user_home_dir(user)))
-				t = realloc_string_sub(t, "%H", h);
+				a_string = realloc_string_sub(a_string, "%H", h);
 			break;
 		case 'P': 
-			t = realloc_string_sub(t, "%P", connectpath); 
+			a_string = realloc_string_sub(a_string, "%P", connectpath); 
 			break;
 		case 'S': 
-			t = realloc_string_sub(t, "%S", lp_servicename(snum)); 
+			a_string = realloc_string_sub(a_string, "%S", lp_servicename(snum)); 
 			break;
 		case 'g': 
-			t = realloc_string_sub(t, "%g", gidtoname(gid)); 
+			a_string = realloc_string_sub(a_string, "%g", gidtoname(gid)); 
 			break;
 		case 'u': 
-			t = realloc_string_sub(t, "%u", user); 
+			a_string = realloc_string_sub(a_string, "%u", user); 
 			break;
 			
 			/* Patch from jkf@soton.ac.uk Left the %N (NIS
@@ -786,7 +799,7 @@ char *alloc_sub_advanced(int snum, const char *user,
 			 * "path =" string in [homes] and so needs the
 			 * service name, not the username.  */
 		case 'p': 
-			t = realloc_string_sub(t, "%p", automount_path(lp_servicename(snum))); 
+			a_string = realloc_string_sub(a_string, "%p", automount_path(lp_servicename(snum))); 
 			break;
 			
 		default: 
@@ -794,11 +807,9 @@ char *alloc_sub_advanced(int snum, const char *user,
 		}
 
 		p++;
-		if (t == NULL) {
-			SAFE_FREE(a_string);
+		if (a_string == NULL) {
 			return NULL;
 		}
-		a_string = t;
 	}
 
 	ret_string = alloc_sub_basic(smb_name, a_string);
