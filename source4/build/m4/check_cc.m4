@@ -137,7 +137,6 @@ if test -n "$VISIBILITY_CFLAGS"; then
 		visibility_attribute=yes
 	],[
 		AC_MSG_RESULT(no)
-		VISIBILITY_CFLAGS=""
 	])
 	CFLAGS="$OLD_CFLAGS"
 fi
