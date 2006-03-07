@@ -312,7 +312,7 @@ __EOD__
 
 $installdir/$ctx->{LIBRARY_REALNAME}: \$($ctx->{TYPE}_$ctx->{NAME}_DEPEND_LIST) \$($ctx->{TYPE}_$ctx->{NAME}_OBJ_LIST)
 	\@echo Linking \$\@
-	\@\$(SHLD) \$(SHLD_FLAGS) -o \$\@ \$(INSTALL_LINK_FLAGS) \\
+	\@\$(SHLD) \$(SHLD_FLAGS) -o \$\@ \\
 		\$($ctx->{TYPE}_$ctx->{NAME}_LINK_FLAGS) \\
 		\$($ctx->{TYPE}_$ctx->{NAME}_LINK_LIST)
 
