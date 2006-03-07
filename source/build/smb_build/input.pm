@@ -160,7 +160,11 @@ sub check($$$$$)
 		}
 
 		unless (defined($part->{STANDARD_VISIBILITY})) {
-			$part->{STANDARD_VISIBILITY} = "hidden";
+			if ($part->{TYPE} eq "BINARY") {
+				$part->{STANDARD_VISIBILITY} = "hidden";
+			} else {
+				$part->{STANDARD_VISIBILITY} = "default";
+			}
 		}
 
 		unless (defined($part->{EXTRA_CFLAGS})) {

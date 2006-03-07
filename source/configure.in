@@ -52,7 +52,7 @@ AC_ARG_ENABLE(dso,
 
 #################################################
 # add *_CFLAGS only for the real build
-CFLAGS="${CFLAGS} ${VISIBILITY_CFLAGS} ${DEVELOPER_CFLAGS}"
+CFLAGS="${CFLAGS} ${DEVELOPER_CFLAGS}"
 
 #################################################
 # final configure stuff
