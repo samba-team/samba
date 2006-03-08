@@ -83,8 +83,6 @@ ADS_STATUS ads_sid_to_dn(ADS_STRUCT *ads,
 	*dn = talloc_strdup(mem_ctx, dn2);
 
 	if (!*dn) {
-		ads_memfree(ads, dn2);
-		dn2 = NULL;
 		rc = ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
 		goto done;
 	}
