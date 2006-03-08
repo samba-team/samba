@@ -39,17 +39,25 @@ struct nttrans_op {
 
 
 /* setup a nttrans reply, given the data and params sizes */
-static void nttrans_setup_reply(struct smbsrv_request *req, 
-			       struct smb_nttrans *trans,
-			       uint16_t param_size, uint16_t data_size,
-			       uint16_t setup_count)
+static NTSTATUS nttrans_setup_reply(struct nttrans_op *op, 
+				    struct smb_nttrans *trans,
+				    uint16_t param_size, uint16_t data_size,
+				    uint16_t setup_count)
 {
 	trans->out.setup_count = setup_count;
 	if (setup_count != 0) {
-		trans->out.setup = talloc_zero_array(req, uint16_t, setup_count);
+		trans->out.setup = talloc_zero_array(op, uint16_t, setup_count);
+		NT_STATUS_HAVE_NO_MEMORY(trans->out.setup);
 	}
-	trans->out.params = data_blob_talloc(req, NULL, param_size);
-	trans->out.data = data_blob_talloc(req, NULL, data_size);
+	trans->out.params = data_blob_talloc(op, NULL, param_size);
+	if (param_size != 0) {
+		NT_STATUS_HAVE_NO_MEMORY(trans->out.params.data);
+	}
+	trans->out.data = data_blob_talloc(op, NULL, data_size);
+	if (data_size != 0) {
+		NT_STATUS_HAVE_NO_MEMORY(trans->out.data.data);
+	}
+	return NT_STATUS_OK;
 }
 
 /*
@@ -296,6 +304,7 @@ static NTSTATUS nttrans_ioctl(struct smbsrv_request *req,
 	uint8_t filter;
 	BOOL fsctl;
 	DATA_BLOB *blob;
+	NTSTATUS status;
 
 	/* should have at least 4 setup words */
 	if (trans->in.setup_count != 4) {
@@ -318,7 +327,9 @@ static NTSTATUS nttrans_ioctl(struct smbsrv_request *req,
 	nt->ntioctl.in.fsctl = fsctl;
 	nt->ntioctl.in.filter = filter;
 
-	nttrans_setup_reply(req, trans, 0, 0, 1);
+	status = nttrans_setup_reply(op, trans, 0, 0, 1);
+	NT_STATUS_NOT_OK_RETURN(status);
+
 	trans->out.setup[0] = 0;
 	
 	return ntvfs_ioctl(req, nt);
@@ -330,7 +341,49 @@ static NTSTATUS nttrans_ioctl(struct smbsrv_request *req,
  */
 static NTSTATUS nttrans_notify_change_send(struct nttrans_op *op)
 {
-	return NT_STATUS_NOT_IMPLEMENTED;
+	struct smb_notify *info = talloc_get_type(op->op_info, struct smb_notify);
+	size_t size = 0;
+	int i;
+	NTSTATUS status;
+	uint32_t ofs=0;
+	uint8_t *p;
+#define MAX_BYTES_PER_CHAR 3
+	
+	/* work out how big the reply buffer could be */
+	for (i=0;i<info->out.num_changes;i++) {
+		size += 12 + 3 + (1+strlen(info->out.changes[i].name.s)) * MAX_BYTES_PER_CHAR;
+	}
+
+	status = nttrans_setup_reply(op, op->trans, size, 0, 0);
+	NT_STATUS_NOT_OK_RETURN(status);
+
+	p = op->trans->out.params.data;
+
+	/* construct the changes buffer */
+	for (i=0;i<info->out.num_changes;i++) {
+		ssize_t len;
+
+		SIVAL(p, 4, info->out.changes[i].action);
+		len = push_string(p + 12, info->out.changes[i].name.s, 
+				  op->trans->out.params.length - (ofs+12), STR_UNICODE);
+		SIVAL(p, 8, len);
+		
+		ofs += len + 12;
+
+		if (ofs & 3) {
+			int pad = 4 - (ofs & 3);
+			memset(p+ofs, 0, pad);
+			ofs += pad;
+		}
+
+		SIVAL(p, 0, ofs);
+
+		p = op->trans->out.params.data + ofs;
+	}
+
+	op->trans->out.params.length = ofs;
+
+	return NT_STATUS_OK;
 }
 
 /* 
