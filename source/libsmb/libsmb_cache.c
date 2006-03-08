@@ -94,6 +94,7 @@ static int smbc_add_cached_server(SMBCCTX * context, SMBCSRV * newsrv,
 	SAFE_FREE(srvcache->share_name);
 	SAFE_FREE(srvcache->workgroup);
 	SAFE_FREE(srvcache->username);
+	SAFE_FREE(srvcache);
 	
 	return 1;
 }
