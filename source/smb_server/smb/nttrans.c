@@ -27,12 +27,15 @@
 #include "ntvfs/ntvfs.h"
 #include "libcli/raw/libcliraw.h"
 
-
-
-#define CHECK_MIN_BLOB_SIZE(blob, size) do { \
-	if ((blob)->length < (size)) { \
-		return NT_STATUS_INFO_LENGTH_MISMATCH; \
-	}} while (0)
+/*
+  hold the state of a nttrans op while in progress. Needed to allow for async backend
+  functions.
+*/
+struct nttrans_op {
+	struct smb_nttrans *trans;
+	NTSTATUS (*send_fn)(struct nttrans_op *);
+	void *op_info;
+};
 
 
 /* setup a nttrans reply, given the data and params sizes */
@@ -49,13 +52,47 @@ static void nttrans_setup_reply(struct smbsrv_request *req,
 	trans->out.data = data_blob_talloc(req, NULL, data_size);
 }
 
+/*
+  send a nttrans create reply
+*/
+static NTSTATUS nttrans_create_send(struct nttrans_op *op)
+{
+	union smb_open *io = talloc_get_type(op->op_info, union smb_open);
+	uint8_t *params;
+
+	op->trans->out.setup_count = 0;
+	op->trans->out.setup       = NULL;
+	op->trans->out.params      = data_blob_talloc(op, NULL, 69);
+	op->trans->out.data        = data_blob(NULL, 0);
+
+	params = op->trans->out.params.data;
+	NT_STATUS_HAVE_NO_MEMORY(params);
+
+	SSVAL(params,        0, io->ntcreatex.out.oplock_level);
+	SSVAL(params,        2, io->ntcreatex.out.fnum);
+	SIVAL(params,        4, io->ntcreatex.out.create_action);
+	SIVAL(params,        8, 0); /* ea error offset */
+	push_nttime(params, 12, io->ntcreatex.out.create_time);
+	push_nttime(params, 20, io->ntcreatex.out.access_time);
+	push_nttime(params, 28, io->ntcreatex.out.write_time);
+	push_nttime(params, 36, io->ntcreatex.out.change_time);
+	SIVAL(params,       44, io->ntcreatex.out.attrib);
+	SBVAL(params,       48, io->ntcreatex.out.alloc_size);
+	SBVAL(params,       56, io->ntcreatex.out.size);
+	SSVAL(params,       64, io->ntcreatex.out.file_type);
+	SSVAL(params,       66, io->ntcreatex.out.ipc_state);
+	SCVAL(params,       68, io->ntcreatex.out.is_directory);
+
+	return NT_STATUS_OK;
+}
 
 /* 
    parse NTTRANS_CREATE request
  */
 static NTSTATUS nttrans_create(struct smbsrv_request *req, 
-			       struct smb_nttrans *trans)
+			       struct nttrans_op *op)
 {
+	struct smb_nttrans *trans = op->trans;
 	union smb_open *io;
 	uint16_t fname_len;
 	uint32_t sd_length, ea_length;
@@ -67,10 +104,8 @@ static NTSTATUS nttrans_create(struct smbsrv_request *req,
 	}
 
 	/* parse the request */
-	io = talloc(req, union smb_open);
-	if (io == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
+	io = talloc(op, union smb_open);
+	NT_STATUS_HAVE_NO_MEMORY(io);
 
 	io->ntcreatex.level = RAW_OPEN_NTTRANS_CREATE;
 
@@ -141,87 +176,63 @@ static NTSTATUS nttrans_create(struct smbsrv_request *req,
 		}
 	}
 
-	/* call the backend - notice that we do it sync for now, until we support
-	   async nttrans requests */	
-	status = ntvfs_openfile(req, io);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
+	op->send_fn = nttrans_create_send;
+	op->op_info = io;
+
+	return ntvfs_openfile(req, io);
+}
+
+
+/* 
+   send NTTRANS_QUERY_SEC_DESC reply
+ */
+static NTSTATUS nttrans_query_sec_desc_send(struct nttrans_op *op)
+{
+	struct smb_nttrans *trans = op->trans;
+	union smb_fileinfo *io = talloc_get_type(op->op_info, union smb_fileinfo);
+	NTSTATUS status;
 
 	trans->out.setup_count = 0;
 	trans->out.setup       = NULL;
-	trans->out.params      = data_blob_talloc(req, NULL, 69);
+	trans->out.params      = data_blob_talloc(op, NULL, 4);
 	trans->out.data        = data_blob(NULL, 0);
+	NT_STATUS_HAVE_NO_MEMORY(trans->out.params.data);
 
-	params = trans->out.params.data;
-	if (params == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
+	status = ndr_push_struct_blob(&trans->out.data, op, 
+				      io->query_secdesc.out.sd, 
+				      (ndr_push_flags_fn_t)ndr_push_security_descriptor);
+	NT_STATUS_NOT_OK_RETURN(status);
 
-	SSVAL(params,        0, io->ntcreatex.out.oplock_level);
-	SSVAL(params,        2, io->ntcreatex.out.fnum);
-	SIVAL(params,        4, io->ntcreatex.out.create_action);
-	SIVAL(params,        8, 0); /* ea error offset */
-	push_nttime(params, 12, io->ntcreatex.out.create_time);
-	push_nttime(params, 20, io->ntcreatex.out.access_time);
-	push_nttime(params, 28, io->ntcreatex.out.write_time);
-	push_nttime(params, 36, io->ntcreatex.out.change_time);
-	SIVAL(params,       44, io->ntcreatex.out.attrib);
-	SBVAL(params,       48, io->ntcreatex.out.alloc_size);
-	SBVAL(params,       56, io->ntcreatex.out.size);
-	SSVAL(params,       64, io->ntcreatex.out.file_type);
-	SSVAL(params,       66, io->ntcreatex.out.ipc_state);
-	SCVAL(params,       68, io->ntcreatex.out.is_directory);
+	SIVAL(trans->out.params.data, 0, trans->out.data.length);
 
 	return NT_STATUS_OK;
 }
-
 
 /* 
    parse NTTRANS_QUERY_SEC_DESC request
  */
 static NTSTATUS nttrans_query_sec_desc(struct smbsrv_request *req, 
-				       struct smb_nttrans *trans)
+				       struct nttrans_op *op)
 {
+	struct smb_nttrans *trans = op->trans;
 	union smb_fileinfo *io;
-	NTSTATUS status;
 
 	if (trans->in.params.length < 8) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	/* parse the request */
-	io = talloc(req, union smb_fileinfo);
-	if (io == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
+	io = talloc(op, union smb_fileinfo);
+	NT_STATUS_HAVE_NO_MEMORY(io);
 
 	io->query_secdesc.level            = RAW_FILEINFO_SEC_DESC;
 	io->query_secdesc.in.fnum          = SVAL(trans->in.params.data, 0);
 	io->query_secdesc.secinfo_flags    = IVAL(trans->in.params.data, 4);
 
-	/* call the backend - notice that we do it sync for now, until we support
-	   async nttrans requests */	
-	status = ntvfs_qfileinfo(req, io);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
+	op->op_info = io;
+	op->send_fn = nttrans_query_sec_desc_send;
 
-	trans->out.setup_count = 0;
-	trans->out.setup       = NULL;
-	trans->out.params      = data_blob_talloc(req, NULL, 4);
-	trans->out.data        = data_blob(NULL, 0);
-
-	status = ndr_push_struct_blob(&trans->out.data, req, 
-				      io->query_secdesc.out.sd, 
-				      (ndr_push_flags_fn_t)ndr_push_security_descriptor);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	SIVAL(trans->out.params.data, 0, trans->out.data.length);
-
-	return NT_STATUS_OK;
+	return ntvfs_qfileinfo(req, io);
 }
 
 
@@ -229,8 +240,9 @@ static NTSTATUS nttrans_query_sec_desc(struct smbsrv_request *req,
    parse NTTRANS_SET_SEC_DESC request
  */
 static NTSTATUS nttrans_set_sec_desc(struct smbsrv_request *req, 
-				       struct smb_nttrans *trans)
+				     struct nttrans_op *op)
 {
+	struct smb_nttrans *trans = op->trans;
 	union smb_setfileinfo *io;
 	NTSTATUS status;
 
@@ -240,57 +252,45 @@ static NTSTATUS nttrans_set_sec_desc(struct smbsrv_request *req,
 
 	/* parse the request */
 	io = talloc(req, union smb_setfileinfo);
-	if (io == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
+	NT_STATUS_HAVE_NO_MEMORY(io);
 
 	io->set_secdesc.level            = RAW_SFILEINFO_SEC_DESC;
 	io->set_secdesc.file.fnum        = SVAL(trans->in.params.data, 0);
 	io->set_secdesc.in.secinfo_flags = IVAL(trans->in.params.data, 4);
 
 	io->set_secdesc.in.sd = talloc(io, struct security_descriptor);
-	if (io->set_secdesc.in.sd == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
+	NT_STATUS_HAVE_NO_MEMORY(io->set_secdesc.in.sd);
 
 	status = ndr_pull_struct_blob(&trans->in.data, req, 
 				      io->set_secdesc.in.sd, 
 				      (ndr_pull_flags_fn_t)ndr_pull_security_descriptor);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	/* call the backend - notice that we do it sync for now, until we support
-	   async nttrans requests */	
-	status = ntvfs_setfileinfo(req, io);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
+	NT_STATUS_NOT_OK_RETURN(status);
 
 	trans->out.setup_count = 0;
 	trans->out.setup       = NULL;
 	trans->out.params      = data_blob(NULL, 0);
 	trans->out.data        = data_blob(NULL, 0);
 
-	return NT_STATUS_OK;
+	return ntvfs_setfileinfo(req, io);
 }
 
 
 /* parse NTTRANS_RENAME request
  */
 static NTSTATUS nttrans_rename(struct smbsrv_request *req, 
-			       struct smb_nttrans *trans)
+			       struct nttrans_op *op)
 {
-	return NT_STATUS_FOOBAR;
+	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
 /* 
    parse NTTRANS_IOCTL request
  */
 static NTSTATUS nttrans_ioctl(struct smbsrv_request *req, 
-		struct smb_nttrans *trans)
+			      struct nttrans_op *op)
 {
-	union smb_ioctl nt;
+	struct smb_nttrans *trans = op->trans;
+	union smb_ioctl *nt;
 	uint32_t function;
 	uint16_t fnum;
 	uint8_t filter;
@@ -301,6 +301,9 @@ static NTSTATUS nttrans_ioctl(struct smbsrv_request *req,
 	if (trans->in.setup_count != 4) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
+
+	nt = talloc(op, union smb_ioctl);
+	NT_STATUS_HAVE_NO_MEMORY(nt);
 	
 	function  = IVAL(trans->in.setup, 0);
 	fnum  = SVAL(trans->in.setup, 4);
@@ -309,137 +312,126 @@ static NTSTATUS nttrans_ioctl(struct smbsrv_request *req,
 
 	blob = &trans->in.data;
 
-	nt.ntioctl.level = RAW_IOCTL_NTIOCTL;
-	nt.ntioctl.in.fnum = fnum;
-	nt.ntioctl.in.function = function;
-	nt.ntioctl.in.fsctl = fsctl;
-	nt.ntioctl.in.filter = filter;
+	nt->ntioctl.level = RAW_IOCTL_NTIOCTL;
+	nt->ntioctl.in.fnum = fnum;
+	nt->ntioctl.in.function = function;
+	nt->ntioctl.in.fsctl = fsctl;
+	nt->ntioctl.in.filter = filter;
 
 	nttrans_setup_reply(req, trans, 0, 0, 1);
 	trans->out.setup[0] = 0;
 	
-	return ntvfs_ioctl(req, &nt);
+	return ntvfs_ioctl(req, nt);
+}
+
+
+/* 
+   send NTTRANS_NOTIFY_CHANGE reply
+ */
+static NTSTATUS nttrans_notify_change_send(struct nttrans_op *op)
+{
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+/* 
+   parse NTTRANS_NOTIFY_CHANGE request
+ */
+static NTSTATUS nttrans_notify_change(struct smbsrv_request *req, 
+				      struct nttrans_op *op)
+{
+	struct smb_nttrans *trans = op->trans;
+	struct smb_notify *info;
+
+	/* should have at least 4 setup words */
+	if (trans->in.setup_count != 4) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	info = talloc(op, struct smb_notify);
+	NT_STATUS_HAVE_NO_MEMORY(info);
+
+	info->in.completion_filter = IVAL(trans->in.setup, 0);
+	info->in.fnum              = SVAL(trans->in.setup, 4);
+	info->in.recursive         = SVAL(trans->in.setup, 6);
+	info->in.buffer_size       = trans->in.max_param;
+
+	op->op_info = info;
+	op->send_fn = nttrans_notify_change_send;
+	
+	return ntvfs_notify(req, info);
 }
 
 /*
   backend for nttrans requests
 */
 static NTSTATUS nttrans_backend(struct smbsrv_request *req, 
-		struct smb_nttrans *trans)
+				struct nttrans_op *op)
 {
 	/* the nttrans command is in function */
-	switch (trans->in.function) {
+	switch (op->trans->in.function) {
 	case NT_TRANSACT_CREATE:
-		return nttrans_create(req, trans);
+		return nttrans_create(req, op);
 	case NT_TRANSACT_IOCTL:
-		return nttrans_ioctl(req, trans);
+		return nttrans_ioctl(req, op);
 	case NT_TRANSACT_RENAME:
-		return nttrans_rename(req, trans);
+		return nttrans_rename(req, op);
 	case NT_TRANSACT_QUERY_SECURITY_DESC:
-		return nttrans_query_sec_desc(req, trans);
+		return nttrans_query_sec_desc(req, op);
 	case NT_TRANSACT_SET_SECURITY_DESC:
-		return nttrans_set_sec_desc(req, trans);
+		return nttrans_set_sec_desc(req, op);
+	case NT_TRANSACT_NOTIFY_CHANGE:
+		return nttrans_notify_change(req, op);
 	}
 
 	/* an unknown nttrans command */
-	return NT_STATUS_FOOBAR;
+	return NT_STATUS_DOS(ERRSRV, ERRerror);
 }
 
 
-/****************************************************************************
- Reply to an SMBnttrans request
-****************************************************************************/
-void smbsrv_reply_nttrans(struct smbsrv_request *req)
+static void reply_nttrans_send(struct smbsrv_request *req)
 {
-	struct smb_nttrans trans;
-	int i;
-	uint16_t param_ofs, data_ofs;
-	uint16_t param_count, data_count;
 	uint16_t params_left, data_left;
-	uint16_t param_total, data_total;
 	uint8_t *params, *data;
-	NTSTATUS status;
+	struct smb_nttrans *trans;
+	struct nttrans_op *op;
 
-	/* parse request */
-	if (req->in.wct < 19) {
-		smbsrv_send_error(req, NT_STATUS_FOOBAR);
+	if (!NT_STATUS_IS_OK(req->async_states->status)) {
+		smbsrv_send_error(req, req->async_states->status);
 		return;
 	}
 
-	trans.in.max_setup   = CVAL(req->in.vwv, 0);
-	param_total          = IVAL(req->in.vwv, 3);
-	data_total           = IVAL(req->in.vwv, 7);
-	trans.in.max_param   = IVAL(req->in.vwv, 11);
-	trans.in.max_data    = IVAL(req->in.vwv, 15);
-	param_count          = IVAL(req->in.vwv, 19);
-	param_ofs            = IVAL(req->in.vwv, 23);
-	data_count           = IVAL(req->in.vwv, 27);
-	data_ofs             = IVAL(req->in.vwv, 31);
-	trans.in.setup_count = CVAL(req->in.vwv, 35);
-	trans.in.function	 = SVAL(req->in.vwv, 36);
+	op = talloc_get_type(req->async_states->private_data, struct nttrans_op);
+	trans = op->trans;
 
-	if (req->in.wct != 19 + trans.in.setup_count) {
-		smbsrv_send_error(req, NT_STATUS_DOS(ERRSRV, ERRerror));
-		return;
+	/* if this function needs work to form the nttrans reply buffer, then
+	   call that now */
+	if (op->send_fn != NULL) {
+		NTSTATUS status;
+		status = op->send_fn(op);
+		if (!NT_STATUS_IS_OK(status)) {
+			smbsrv_send_error(req, status);
+			return;
+		}
 	}
 
-	/* parse out the setup words */
-	trans.in.setup = talloc_array(req, uint16_t, trans.in.setup_count);
-	if (!trans.in.setup) {
-		smbsrv_send_error(req, NT_STATUS_NO_MEMORY);
-		return;
+	/* note that we don't check the max_setup count (matching w2k3
+	   behaviour) */
+
+	if (trans->out.params.length > trans->in.max_param) {
+		smbsrv_setup_error(req, NT_STATUS_BUFFER_TOO_SMALL);
+		trans->out.params.length = trans->in.max_param;
 	}
-	for (i=0;i<trans.in.setup_count;i++) {
-		trans.in.setup[i] = SVAL(req->in.vwv, VWV(19+i));
+	if (trans->out.data.length > trans->in.max_data) {
+		smbsrv_setup_error(req, NT_STATUS_BUFFER_TOO_SMALL);
+		trans->out.data.length = trans->in.max_data;
 	}
 
-	if (!req_pull_blob(req, req->in.hdr + param_ofs, param_count, &trans.in.params) ||
-	    !req_pull_blob(req, req->in.hdr + data_ofs, data_count, &trans.in.data)) {
-		smbsrv_send_error(req, NT_STATUS_FOOBAR);
-		return;
-	}
+	params_left = trans->out.params.length;
+	data_left   = trans->out.data.length;
+	params      = trans->out.params.data;
+	data        = trans->out.data.data;
 
-	/* is it a partial request? if so, then send a 'send more' message */
-	if (param_total > param_count ||
-	    data_total > data_count) {
-		DEBUG(0,("REWRITE: not handling partial nttrans requests!\n"));
-		return;
-	}
-
-	/* its a full request, give it to the backend */
-	status = nttrans_backend(req, &trans);
-
-	if (NT_STATUS_IS_ERR(status)) {
-		smbsrv_send_error(req, status);
-		return;
-	}
-
-#if 0
-	/* w2k3 does not check the max_setup count */
-	if (trans.out.setup_count > trans.in.max_setup) {
-		smbsrv_send_error(req, NT_STATUS_BUFFER_TOO_SMALL);
-		return;
-	}
-#endif
-	if (trans.out.params.length > trans.in.max_param) {
-		status = NT_STATUS_BUFFER_TOO_SMALL;
-		trans.out.params.length = trans.in.max_param;
-	}
-	if (trans.out.data.length > trans.in.max_data) {
-		status = NT_STATUS_BUFFER_TOO_SMALL;
-		trans.out.data.length = trans.in.max_data;
-	}
-
-	params_left = trans.out.params.length;
-	data_left   = trans.out.data.length;
-	params      = trans.out.params.data;
-	data        = trans.out.data.data;
-
-	smbsrv_setup_reply(req, 18 + trans.out.setup_count, 0);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		smbsrv_setup_error(req, status);
-	}
+	smbsrv_setup_reply(req, 18 + trans->out.setup_count, 0);
 
 	/* we need to divide up the reply into chunks that fit into
 	   the negotiated buffer size */
@@ -447,6 +439,7 @@ void smbsrv_reply_nttrans(struct smbsrv_request *req)
 		uint16_t this_data, this_param, max_bytes;
 		uint_t align1 = 1, align2 = (params_left ? 2 : 0);
 		struct smbsrv_request *this_req;
+		int i;
 
 		max_bytes = req_max_data(req) - (align1 + align2);
 
@@ -473,21 +466,21 @@ void smbsrv_reply_nttrans(struct smbsrv_request *req)
 
 		SSVAL(this_req->out.vwv, 0, 0); /* reserved */
 		SCVAL(this_req->out.vwv, 2, 0); /* reserved */
-		SIVAL(this_req->out.vwv, 3, trans.out.params.length);
-		SIVAL(this_req->out.vwv, 7, trans.out.data.length);
+		SIVAL(this_req->out.vwv, 3, trans->out.params.length);
+		SIVAL(this_req->out.vwv, 7, trans->out.data.length);
 
 		SIVAL(this_req->out.vwv, 11, this_param);
 		SIVAL(this_req->out.vwv, 15, align1 + PTR_DIFF(this_req->out.data, this_req->out.hdr));
-		SIVAL(this_req->out.vwv, 19, PTR_DIFF(params, trans.out.params.data));
+		SIVAL(this_req->out.vwv, 19, PTR_DIFF(params, trans->out.params.data));
 
 		SIVAL(this_req->out.vwv, 23, this_data);
 		SIVAL(this_req->out.vwv, 27, align1 + align2 + 
 		      PTR_DIFF(this_req->out.data + this_param, this_req->out.hdr));
-		SIVAL(this_req->out.vwv, 31, PTR_DIFF(data, trans.out.data.data));
+		SIVAL(this_req->out.vwv, 31, PTR_DIFF(data, trans->out.data.data));
 
-		SCVAL(this_req->out.vwv, 35, trans.out.setup_count);
-		for (i=0;i<trans.out.setup_count;i++) {
-			SSVAL(this_req->out.vwv, VWV(18+i), trans.out.setup[i]);
+		SCVAL(this_req->out.vwv, 35, trans->out.setup_count);
+		for (i=0;i<trans->out.setup_count;i++) {
+			SSVAL(this_req->out.vwv, VWV(18+i), trans->out.setup[i]);
 		}
 
 		memset(this_req->out.data, 0, align1);
@@ -507,6 +500,94 @@ void smbsrv_reply_nttrans(struct smbsrv_request *req)
 
 		smbsrv_send_reply(this_req);
 	} while (params_left != 0 || data_left != 0);
+}
+
+
+/****************************************************************************
+ Reply to an SMBnttrans request
+****************************************************************************/
+void smbsrv_reply_nttrans(struct smbsrv_request *req)
+{
+	struct nttrans_op *op;
+	struct smb_nttrans *trans;
+	int i;
+	uint16_t param_ofs, data_ofs;
+	uint16_t param_count, data_count;
+	uint16_t param_total, data_total;
+
+	/* parse request */
+	if (req->in.wct < 19) {
+		smbsrv_send_error(req, NT_STATUS_FOOBAR);
+		return;
+	}
+
+	op = talloc(req, struct nttrans_op);
+	if (op == NULL) {
+		smbsrv_send_error(req, NT_STATUS_NO_MEMORY);
+		return;
+	}
+
+	trans = talloc(op, struct smb_nttrans);
+	if (trans == NULL) {
+		smbsrv_send_error(req, NT_STATUS_NO_MEMORY);
+		return;
+	}
+
+	op->trans = trans;
+	op->op_info = NULL;
+	op->send_fn = NULL;
+
+	trans->in.max_setup   = CVAL(req->in.vwv, 0);
+	param_total          = IVAL(req->in.vwv, 3);
+	data_total           = IVAL(req->in.vwv, 7);
+	trans->in.max_param   = IVAL(req->in.vwv, 11);
+	trans->in.max_data    = IVAL(req->in.vwv, 15);
+	param_count          = IVAL(req->in.vwv, 19);
+	param_ofs            = IVAL(req->in.vwv, 23);
+	data_count           = IVAL(req->in.vwv, 27);
+	data_ofs             = IVAL(req->in.vwv, 31);
+	trans->in.setup_count = CVAL(req->in.vwv, 35);
+	trans->in.function	 = SVAL(req->in.vwv, 36);
+
+	if (req->in.wct != 19 + trans->in.setup_count) {
+		smbsrv_send_error(req, NT_STATUS_DOS(ERRSRV, ERRerror));
+		return;
+	}
+
+	/* parse out the setup words */
+	trans->in.setup = talloc_array(req, uint16_t, trans->in.setup_count);
+	if (!trans->in.setup) {
+		smbsrv_send_error(req, NT_STATUS_NO_MEMORY);
+		return;
+	}
+	for (i=0;i<trans->in.setup_count;i++) {
+		trans->in.setup[i] = SVAL(req->in.vwv, VWV(19+i));
+	}
+
+	if (!req_pull_blob(req, req->in.hdr + param_ofs, param_count, &trans->in.params) ||
+	    !req_pull_blob(req, req->in.hdr + data_ofs, data_count, &trans->in.data)) {
+		smbsrv_send_error(req, NT_STATUS_FOOBAR);
+		return;
+	}
+
+	/* is it a partial request? if so, then send a 'send more' message */
+	if (param_total > param_count ||
+	    data_total > data_count) {
+		DEBUG(0,("REWRITE: not handling partial nttrans requests!\n"));
+		return;
+	}
+
+	req->async_states->state |= NTVFS_ASYNC_STATE_MAY_ASYNC;
+	req->async_states->send_fn = reply_nttrans_send;
+	req->async_states->private_data = op;
+
+	/* its a full request, give it to the backend */
+	req->async_states->status = nttrans_backend(req, op);
+
+	/* if the backend replied synchronously, then send now */
+	if (!(req->async_states->state & NTVFS_ASYNC_STATE_ASYNC)) {
+		req->async_states->send_fn(req);
+	}
 }
 
 
