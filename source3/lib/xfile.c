@@ -96,13 +96,16 @@ XFILE *x_fopen(const char *fname, int flags, mode_t mode)
 	XFILE *ret;
 
 	ret = SMB_MALLOC_P(XFILE);
-	if (!ret) return NULL;
+	if (!ret) {
+		return NULL;
+	}
 
 	memset(ret, 0, sizeof(XFILE));
 
 	if ((flags & O_ACCMODE) == O_RDWR) {
 		/* we don't support RDWR in XFILE - use file 
 		   descriptors instead */
+		SAFE_FREE(ret);
 		errno = EINVAL;
 		return NULL;
 	}
