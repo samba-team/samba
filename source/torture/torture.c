@@ -931,10 +931,12 @@ static BOOL run_negprot_nowait(void)
 
 	printf("Opening secondary connection\n");
 	if (!torture_open_connection(&cli2)) {
+		printf("Failed to open secondary connection\n");
 		correct = False;
 	}
 
 	if (!torture_close_connection(cli2)) {
+		printf("Failed to close secondary connection\n");
 		correct = False;
 	}
 
