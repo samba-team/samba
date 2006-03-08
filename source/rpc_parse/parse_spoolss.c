@@ -5061,6 +5061,10 @@ BOOL make_spoolss_q_addprinterdriver(TALLOC_CTX *mem_ctx,
 {
 	DEBUG(5,("make_spoolss_q_addprinterdriver\n"));
 	
+	if (!srv_name || !info) {
+		return False;
+	}
+
 	q_u->server_name_ptr = (srv_name!=NULL)?1:0;
 	init_unistr2(&q_u->server_name, srv_name, UNI_STR_TERMINATE);
 	
