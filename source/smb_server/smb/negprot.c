@@ -500,7 +500,7 @@ void smbsrv_reply_negprot(struct smbsrv_request *req)
 		p += len;
 		if (len == 0 || !protos[protos_count]) break;
 
-		DEBUG(3,("Requested protocol [%d][%s]\n", protos_count, protos[protos_count]));
+		DEBUG(5,("Requested protocol [%d][%s]\n", protos_count, protos[protos_count]));
 		protos_count++;
 	}
 
