@@ -838,6 +838,36 @@ static NTSTATUS cvfs_trans(struct ntvfs_module_context *ntvfs,
 }
 
 /*
+  a handler for async change notify replies
+ */
+static void async_changenotify(struct smbcli_request *c_req)
+{
+	struct async_info *async = c_req->async.private;
+	struct smbsrv_request *req = async->req;
+	req->async_states->status = smb_raw_changenotify_recv(c_req, req, async->parms);
+	req->async_states->send_fn(req);
+}
+
+/* change notify request - always async */
+static NTSTATUS cvfs_notify(struct ntvfs_module_context *ntvfs, 
+			    struct smbsrv_request *req, struct smb_notify *info)
+{
+	struct cvfs_private *private = ntvfs->private_data;
+	struct smbcli_request *c_req;
+
+	SETUP_PID;
+
+	/* this request doesn't make sense unless its async */
+	if (!(req->async_states->state & NTVFS_ASYNC_STATE_MAY_ASYNC)) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+	
+	c_req = smb_raw_changenotify_send(private->tree, info);
+
+	ASYNC_RECV_TAIL(info, async_changenotify);
+}
+
+/*
   initialise the CIFS->CIFS backend, registering ourselves with the ntvfs subsystem
  */
 NTSTATUS ntvfs_cifs_init(void)
@@ -882,6 +912,7 @@ NTSTATUS ntvfs_cifs_init(void)
 	ops.logoff = cvfs_logoff;
 	ops.async_setup = cvfs_async_setup;
 	ops.cancel = cvfs_cancel;
+	ops.notify = cvfs_notify;
 
 	if (lp_parm_bool(-1, "cifs", "maptrans2", False)) {
 		ops.trans2 = cvfs_trans2;
