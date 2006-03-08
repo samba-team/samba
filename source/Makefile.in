@@ -1650,7 +1650,7 @@ ctags:
 	ctags `find $(srcdir) -name "*.[ch]" | grep -v /CVS/`
 
 realclean: clean delheaders
-	-rm -f config.log bin/.dummy script/findsmb
+	-rm -f config.log bin/.dummy script/findsmb script/gen-8bit-gap.sh
 	-rm -f script/installbin.sh script/uninstallbin.sh
 
 distclean: realclean
