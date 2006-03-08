@@ -32,19 +32,24 @@
 #include "smbd/service_stream.h"
 #include "auth/auth.h"
 #include "ntvfs/ntvfs.h"
+#include "include/dlinklist.h"
 
 /* this is stored in ntvfs_private */
 struct cvfs_private {
 	struct smbcli_tree *tree;
 	struct smbcli_transport *transport;
 	struct smbsrv_tcon *tcon;
+	struct async_info *pending;
 	BOOL map_generic;
 };
 
 
 /* a structure used to pass information to an async handler */
 struct async_info {
+	struct async_info *next, *prev;
+	struct cvfs_private *cvfs;
 	struct smbsrv_request *req;
+	struct smbcli_request *c_req;
 	void *parms;
 };
 
@@ -93,11 +98,10 @@ static NTSTATUS cvfs_connect(struct ntvfs_module_context *ntvfs,
 
 	machine_account = lp_parm_bool(req->tcon->service, "cifs", "use_machine_account", False);
 
-	private = talloc(ntvfs, struct cvfs_private);
+	private = talloc_zero(ntvfs, struct cvfs_private);
 	if (!private) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	ZERO_STRUCTP(private);
 
 	ntvfs->private_data = private;
 
@@ -184,6 +188,16 @@ static NTSTATUS cvfs_disconnect(struct ntvfs_module_context *ntvfs,
 }
 
 /*
+  destroy an async info structure
+*/
+static int async_info_destructor(void *p)
+{
+	struct async_info *async = talloc_get_type(p, struct async_info);
+	DLIST_REMOVE(async->cvfs->pending, async);
+	return 0;
+}
+
+/*
   a handler for simple async replies
   this handler can only be used for functions that don't return any
   parameters (those that just return a status code)
@@ -206,7 +220,11 @@ static void async_simple(struct smbcli_request *c_req)
 		if (!async) return NT_STATUS_NO_MEMORY; \
 		async->parms = io; \
 		async->req = req; \
+		async->cvfs = private; \
+		async->c_req = c_req; \
+		DLIST_ADD(private->pending, async); \
 		c_req->async.private = async; \
+		talloc_set_destructor(async, async_info_destructor); \
 	} \
 	c_req->async.fn = async_fn; \
 	req->async_states->state |= NTVFS_ASYNC_STATE_ASYNC; \
@@ -673,7 +691,21 @@ static NTSTATUS cvfs_async_setup(struct ntvfs_module_context *ntvfs,
 static NTSTATUS cvfs_cancel(struct ntvfs_module_context *ntvfs, 
 			    struct smbsrv_request *req)
 {
-	return NT_STATUS_NOT_IMPLEMENTED;
+	struct cvfs_private *private = ntvfs->private_data;
+
+	/* find the matching request */
+	struct async_info *a;
+	for (a=private->pending;a;a=a->next) {
+		if (SVAL(a->req->in.hdr, HDR_MID) == SVAL(req->in.hdr, HDR_MID)) {
+			break;
+		}
+	}
+
+	if (a == NULL) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	return smb_raw_ntcancel(a->c_req);
 }
 
 /*
