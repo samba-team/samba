@@ -76,7 +76,7 @@ returned for name %s.\n", nmb_namestr(nmbname) ));
 
 	/* Add the queried name to the original subnet as a WINS_PROXY_NAME. */
 
-	if(rrec && (rrec == PERMANENT_TTL)) {
+	if(rrec->ttl == PERMANENT_TTL) {
 		ttl = lp_max_ttl();
 	}
 
