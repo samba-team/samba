@@ -59,6 +59,8 @@
 #define MS_MOVE 8192 
 #endif 
 
+#define CONST_DISCARD(type, ptr)      ((type) ((void *) (ptr)))
+
 const char *thisprogram;
 int verboseflag = 0;
 static int got_password = 0;
@@ -1206,7 +1208,7 @@ mount_retry:
 		if(pmntfile) {
 			mountent.mnt_fsname = share_name;
 			mountent.mnt_dir = mountpoint; 
-			mountent.mnt_type = "cifs"; 
+			mountent.mnt_type = CONST_DISCARD(char *,"cifs"); 
 			mountent.mnt_opts = malloc(220);
 			if(mountent.mnt_opts) {
 				char * mount_user = getusername();
