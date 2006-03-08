@@ -118,7 +118,7 @@ static NTSTATUS ldapsrv_SearchRequest(struct ldapsrv_call *call)
 	struct ldb_context *samdb = talloc_get_type(call->conn->ldb, struct ldb_context);
 	struct ldb_dn *basedn;
 	struct ldb_result *res = NULL;
-	struct ldb_request lreq;
+	struct ldb_request *lreq;
 	enum ldb_scope scope = LDB_SCOPE_DEFAULT;
 	const char **attrs = NULL;
 	const char *errstr = NULL;
@@ -172,19 +172,21 @@ static NTSTATUS ldapsrv_SearchRequest(struct ldapsrv_call *call)
 	DEBUG(5,("ldb_request dn=%s filter=%s\n", 
 		 req->basedn, ldb_filter_from_tree(call, req->tree)));
 
-	ZERO_STRUCT(lreq);
-	lreq.operation = LDB_REQ_SEARCH;
-	lreq.op.search.base = basedn;
-	lreq.op.search.scope = scope;
-	lreq.op.search.tree = req->tree;
-	lreq.op.search.attrs = attrs;
+	lreq = talloc(local_ctx, struct ldb_request);
+	NT_STATUS_HAVE_NO_MEMORY(local_ctx);
+	
+	lreq->operation = LDB_REQ_SEARCH;
+	lreq->op.search.base = basedn;
+	lreq->op.search.scope = scope;
+	lreq->op.search.tree = req->tree;
+	lreq->op.search.attrs = attrs;
 
-	lreq.controls = call->request->controls;
+	lreq->controls = call->request->controls;
 
-	ldb_ret = ldb_request(samdb, &lreq);
+	ldb_ret = ldb_request(samdb, lreq);
 
 	/* Ensure we don't keep the search results around for too long */
-	res = talloc_steal(local_ctx, lreq.op.search.res);
+	res = talloc_steal(local_ctx, lreq->op.search.res);
 
 	if (ldb_ret == LDB_SUCCESS) {
 		for (i = 0; i < res->count; i++) {

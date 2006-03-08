@@ -271,19 +271,26 @@ static int extended_request(struct ldb_module *module, struct ldb_request *req)
 
 static int extended_init(struct ldb_module *module)
 {
-	struct ldb_request request;
+	struct ldb_request *req;
 	int ret;
 
-	request.operation = LDB_REQ_REGISTER;
-	request.op.reg.oid = LDB_CONTROL_EXTENDED_DN_OID;
-	request.controls = NULL;
-
-	ret = ldb_request(module->ldb, &request);
-	if (ret != LDB_SUCCESS) {
-		ldb_debug(module->ldb, LDB_DEBUG_ERROR, "extended_dn: Unable to register control with rootdse!\n");
-		return LDB_ERR_OTHER;
+	req = talloc(module, struct ldb_request);
+	if (req == NULL) {
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
+	req->operation = LDB_REQ_REGISTER;
+	req->op.reg.oid = LDB_CONTROL_EXTENDED_DN_OID;
+	req->controls = NULL;
+
+	ret = ldb_request(module->ldb, req);
+	if (ret != LDB_SUCCESS) {
+		ldb_debug(module->ldb, LDB_DEBUG_ERROR, "extended_dn: Unable to register control with rootdse!\n");
+		talloc_free(req);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	talloc_free(req);
 	return ldb_next_init(module);
 }
 

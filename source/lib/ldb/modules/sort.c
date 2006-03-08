@@ -395,6 +395,8 @@ static int server_sort_search_async(struct ldb_module *module, struct ldb_contro
 	ac->reverse = sort_ctrls[0]->reverse;
 
 	ac->req = talloc(req, struct ldb_request);
+	if (!ac->req)
+		return LDB_ERR_OPERATIONS_ERROR;
 
 	ac->req->operation = req->operation;
 	ac->req->op.search.base = req->op.search.base;
@@ -548,19 +550,26 @@ static int server_sort_async_wait(struct ldb_async_handle *handle, enum ldb_asyn
 
 static int server_sort_init(struct ldb_module *module)
 {
-	struct ldb_request request;
+	struct ldb_request *req;
 	int ret;
 
-	request.operation = LDB_REQ_REGISTER;
-	request.op.reg.oid = LDB_CONTROL_SERVER_SORT_OID;
-	request.controls = NULL;
+	req = talloc(module, struct ldb_request);
+	if (req == NULL) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
 
-	ret = ldb_request(module->ldb, &request);
+	req->operation = LDB_REQ_REGISTER;
+	req->op.reg.oid = LDB_CONTROL_SERVER_SORT_OID;
+	req->controls = NULL;
+
+	ret = ldb_request(module->ldb, req);
 	if (ret != LDB_SUCCESS) {
 		ldb_debug(module->ldb, LDB_DEBUG_ERROR, "server_sort: Unable to register control with rootdse!\n");
+		talloc_free(req);
 		return LDB_ERR_OTHER;
 	}
 
+	talloc_free(req);
 	return ldb_next_init(module);
 }
 

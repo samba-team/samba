@@ -249,7 +249,7 @@ static void proxy_convert_record(struct ldb_module *module, struct ldb_message *
 static int proxy_search_bytree(struct ldb_module *module, struct ldb_request *req)
 {
 	struct proxy_data *proxy = talloc_get_type(module->private_data, struct proxy_data);
-	struct ldb_request newreq;
+	struct ldb_request *newreq;
 	struct ldb_dn *base;
 	int ret, i;
 
@@ -268,43 +268,47 @@ static int proxy_search_bytree(struct ldb_module *module, struct ldb_request *re
 		goto passthru;
 	}
 
-	newreq.op.search.tree = proxy_convert_tree(module, req->op.search.tree);
+	newreq = talloc(module, struct ldb_request);
+	if (newreq == NULL) {
+		return -1;
+	}
+
+	newreq->op.search.tree = proxy_convert_tree(module, req->op.search.tree);
 
 	/* convert the basedn of this search */
 	base = ldb_dn_copy(proxy, req->op.search.base);
 	if (base == NULL) {
+		talloc_free(newreq);
 		goto failed;
 	}
 	base->comp_num -= proxy->newdn->comp_num;
-	base = ldb_dn_compose(proxy, newreq.op.search.base, proxy->olddn);
+	base = ldb_dn_compose(proxy, newreq->op.search.base, proxy->olddn);
 
 	ldb_debug(module->ldb, LDB_DEBUG_FATAL, "proxying: '%s' with dn '%s' \n", 
-		  ldb_filter_from_tree(proxy, newreq.op.search.tree), ldb_dn_linearize(proxy, newreq.op.search.base));
+		  ldb_filter_from_tree(proxy, newreq->op.search.tree), ldb_dn_linearize(proxy, newreq->op.search.base));
 	for (i = 0; req->op.search.attrs && req->op.search.attrs[i]; i++) {
 		ldb_debug(module->ldb, LDB_DEBUG_FATAL, "attr: '%s'\n", req->op.search.attrs[i]);
 	}
 
-	newreq.op.search.base = base;
-	newreq.op.search.scope = req->op.search.scope;
-	newreq.op.search.attrs = req->op.search.attrs;
-	newreq.op.search.res = req->op.search.res;
-	newreq.controls = req->controls;
-	ret = ldb_request(proxy->upstream, &newreq);
+	newreq->op.search.base = base;
+	newreq->op.search.scope = req->op.search.scope;
+	newreq->op.search.attrs = req->op.search.attrs;
+	newreq->op.search.res = req->op.search.res;
+	newreq->controls = req->controls;
+	ret = ldb_request(proxy->upstream, newreq);
 	if (ret != LDB_SUCCESS) {
 		ldb_set_errstring(module->ldb, talloc_strdup(module, ldb_errstring(proxy->upstream)));
+		talloc_free(newreq);
 		return -1;
 	}
 
-	for (i = 0; i < newreq.op.search.res->count; i++) {
-		struct ldb_ldif ldif;
+	for (i = 0; i < newreq->op.search.res->count; i++) {
 		printf("# record %d\n", i+1);
 		
-		proxy_convert_record(module, newreq.op.search.res->msgs[i]);
-
-		ldif.changetype = LDB_CHANGETYPE_NONE;
-		ldif.msg = newreq.op.search.res->msgs[i];
+		proxy_convert_record(module, newreq->op.search.res->msgs[i]);
 	}
 
+	talloc_free(newreq);
 	return ret;
 
 failed:

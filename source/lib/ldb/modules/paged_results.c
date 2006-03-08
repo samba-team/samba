@@ -249,29 +249,36 @@ static int paged_request(struct ldb_module *module, struct ldb_request *req)
 
 static int paged_request_init(struct ldb_module *module)
 {
-	struct ldb_request request;
-	int ret;
 	struct private_data *data;
+	struct ldb_request *req;
+	int ret;
 
 	data = talloc(module, struct private_data);
 	if (data == NULL) {
 		return LDB_ERR_OTHER;
 	}
-
+	
 	data->next_free_id = 1;
 	data->store = NULL;
 	module->private_data = data;
 
-	request.operation = LDB_REQ_REGISTER;
-	request.op.reg.oid = LDB_CONTROL_PAGED_RESULTS_OID;
-	request.controls = NULL;
+	req = talloc(module, struct ldb_request);
+	if (req == NULL) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
 
-	ret = ldb_request(module->ldb, &request);
+	req->operation = LDB_REQ_REGISTER;
+	req->op.reg.oid = LDB_CONTROL_PAGED_RESULTS_OID;
+	req->controls = NULL;
+
+	ret = ldb_request(module->ldb, req);
 	if (ret != LDB_SUCCESS) {
 		ldb_debug(module->ldb, LDB_DEBUG_ERROR, "paged_request: Unable to register control with rootdse!\n");
+		talloc_free(req);
 		return LDB_ERR_OTHER;
 	}
 
+	talloc_free(req);
 	return ldb_next_init(module);
 }
 
