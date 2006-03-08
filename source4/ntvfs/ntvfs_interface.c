@@ -324,6 +324,19 @@ _PUBLIC_ NTSTATUS ntvfs_cancel(struct smbsrv_request *req)
 }
 
 
+/*
+  change notify request
+*/
+_PUBLIC_ NTSTATUS ntvfs_notify(struct smbsrv_request *req, struct smb_notify *info)
+{
+	struct ntvfs_module_context *ntvfs = req->tcon->ntvfs_ctx->modules;
+	if (!ntvfs->ops->notify) {
+		return NT_STATUS_NOT_IMPLEMENTED;
+	}
+	return ntvfs->ops->notify(ntvfs, req, info);
+}
+
+
 /* initial setup */
 _PUBLIC_ NTSTATUS ntvfs_next_connect(struct ntvfs_module_context *ntvfs, 
 				     struct smbsrv_request *req, const char *sharename)
