@@ -1458,10 +1458,14 @@ TDB_DATA tdb_nextkey(TDB_CONTEXT *tdb, TDB_DATA oldkey)
 					    rec.key_len))
 		    || memcmp(k, oldkey.dptr, oldkey.dsize) != 0) {
 			/* No, it wasn't: unlock it and start from scratch */
-			if (unlock_record(tdb, tdb->travlocks.off) != 0)
+			if (unlock_record(tdb, tdb->travlocks.off) != 0) {
+				SAFE_FREE(k);
 				return tdb_null;
-			if (tdb_unlock(tdb, tdb->travlocks.hash, F_WRLCK) != 0)
+			}
+			if (tdb_unlock(tdb, tdb->travlocks.hash, F_WRLCK) != 0) {
+				SAFE_FREE(k);
 				return tdb_null;
+			}
 			tdb->travlocks.off = 0;
 		}
 
