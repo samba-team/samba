@@ -629,3 +629,15 @@ _PUBLIC_ NTSTATUS ntvfs_next_cancel(struct ntvfs_module_context *ntvfs,
 	}
 	return ntvfs->next->ops->cancel(ntvfs->next, req);
 }
+
+/*
+  change notify request
+*/
+_PUBLIC_ NTSTATUS ntvfs_next_notify(struct ntvfs_module_context *ntvfs,
+				    struct smbsrv_request *req, struct smb_notify *info)
+{
+	if (!ntvfs->next || !ntvfs->next->ops->notify) {
+		return NT_STATUS_NOT_IMPLEMENTED;
+	}
+	return ntvfs->next->ops->notify(ntvfs, req, info);
+}
