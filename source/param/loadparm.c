@@ -4534,6 +4534,7 @@ static int process_usershare_file(const char *dir_name, const char *file_name, i
 	if (lines == NULL) {
 		DEBUG(0,("process_usershare_file: loading file %s owned by %u failed.\n",
 			fname, (unsigned int)sbuf.st_uid ));
+		return -1;
 	}
 
 	/* Should we allow printers to be shared... ? */
