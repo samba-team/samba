@@ -108,37 +108,22 @@ BOOL prs_rpcbuffer_p(const char *desc, prs_struct *ps, int depth, RPC_BUFFER **b
 
 	data_p = *buffer ? 0xf000baaa : 0;
 
-	if ( !prs_uint32("ptr", ps, depth, &data_p )) {
+	if ( !prs_uint32("ptr", ps, depth, &data_p ))
 		return False;
-	}
-
-	/* We must always return a valid buffer pointer even if the
-	   client didn't send one - just leave it initialized to null. */
-	if ( UNMARSHALLING(ps) ) {
-		if ( !(*buffer = PRS_ALLOC_MEM(ps, RPC_BUFFER, 1)) ) {
-			return False;
-		}
-	}
 
 	/* we're done if there is no data */
 
-	if (!data_p) {
-		if (UNMARSHALLING(ps)) {
-			RPC_BUFFER *pbuffer = *buffer;
-			/* On unmarshalling we must return a valid,
-			   but zero size value RPC_BUFFER. */
-			pbuffer->size = 0;
-			pbuffer->string_at_end = 0;
-			if (!prs_init(&pbuffer->prs, 0, prs_get_mem_context(ps), UNMARSHALL)) {
-				return False;
-			}
-		}
+	if ( !data_p )
 		return True;
-	}
 
-	/* Coverity paranoia. Buffer must be valid. */
-	if (!*buffer) {
-		return False;
+	if ( UNMARSHALLING(ps) ) {
+		if ( !(*buffer = PRS_ALLOC_MEM(ps, RPC_BUFFER, 1)) )
+			return False;
+	} else {
+		/* Marshalling case. - coverity paranoia - should already be ok if data_p != 0 */
+		if (!*buffer) {
+			return True;
+		}
 	}
 
 	return prs_rpcbuffer( desc, ps, depth, *buffer);
@@ -158,7 +143,11 @@ BOOL rpcbuf_alloc_size(RPC_BUFFER *buffer, uint32 buffer_size)
 	
 	if ( buffer_size == 0x0 )
 		return True;
-	
+
+	if (!buffer) {
+		return False;
+	}
+
 	ps= &buffer->prs;
 
 	/* damn, I'm doing the reverse operation of prs_grow() :) */
