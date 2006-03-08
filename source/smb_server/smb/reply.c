@@ -45,8 +45,8 @@
 	}} while (0)
 	
 /* useful wrapper for talloc with NO_MEMORY reply */
-#define REQ_TALLOC(ptr, size) do { \
-	ptr = talloc_size(req, size); \
+#define REQ_TALLOC(ptr, type) do { \
+	ptr = talloc(req, type); \
 	if (!ptr) { \
 		smbsrv_send_error(req, NT_STATUS_NO_MEMORY); \
 		return; \
@@ -233,7 +233,7 @@ void smbsrv_reply_ioctl(struct smbsrv_request *req)
 
 	/* parse request */
 	REQ_CHECK_WCT(req, 3);
-	REQ_TALLOC(io, sizeof(*io));
+	REQ_TALLOC(io, union smb_ioctl);
 
 	io->ioctl.level = RAW_IOCTL_IOCTL;
 	io->ioctl.in.fnum     = req_fnum(req, req->in.vwv, VWV(0));
@@ -257,7 +257,7 @@ void smbsrv_reply_chkpth(struct smbsrv_request *req)
 {
 	struct smb_chkpath *io;
 
-	REQ_TALLOC(io, sizeof(*io));
+	REQ_TALLOC(io, struct smb_chkpath);
 
 	req_pull_ascii4(req, &io->in.path, req->in.data, STR_TERMINATE);
 
@@ -298,7 +298,7 @@ void smbsrv_reply_getatr(struct smbsrv_request *req)
 {
 	union smb_fileinfo *st;
 
-	REQ_TALLOC(st, sizeof(*st));
+	REQ_TALLOC(st, union smb_fileinfo);
 	
 	st->getattr.level = RAW_FILEINFO_GETATTR;
 
@@ -329,7 +329,7 @@ void smbsrv_reply_setatr(struct smbsrv_request *req)
 
 	/* parse request */
 	REQ_CHECK_WCT(req, 8);
-	REQ_TALLOC(st, sizeof(*st));
+	REQ_TALLOC(st, union smb_setfileinfo);
 
 	st->setattr.level = RAW_SFILEINFO_SETATTR;
 	st->setattr.in.attrib     = SVAL(req->in.vwv, VWV(0));
@@ -382,7 +382,7 @@ void smbsrv_reply_dskattr(struct smbsrv_request *req)
 {
 	union smb_fsinfo *fs;
 
-	REQ_TALLOC(fs, sizeof(*fs));
+	REQ_TALLOC(fs, union smb_fsinfo);
 	
 	fs->dskattr.level = RAW_QFS_DSKATTR;
 
@@ -428,7 +428,7 @@ void smbsrv_reply_open(struct smbsrv_request *req)
 
 	/* parse request */
 	REQ_CHECK_WCT(req, 2);
-	REQ_TALLOC(oi, sizeof(*oi));
+	REQ_TALLOC(oi, union smb_open);
 
 	oi->openold.level = RAW_OPEN_OPEN;
 	oi->openold.in.open_mode = SVAL(req->in.vwv, VWV(0));
@@ -500,7 +500,7 @@ void smbsrv_reply_open_and_X(struct smbsrv_request *req)
 
 	/* parse the request */
 	REQ_CHECK_WCT(req, 15);
-	REQ_TALLOC(oi, sizeof(*oi));
+	REQ_TALLOC(oi, union smb_open);
 
 	oi->openx.level = RAW_OPEN_OPENX;
 	oi->openx.in.flags        = SVAL(req->in.vwv, VWV(2));
@@ -557,7 +557,7 @@ void smbsrv_reply_mknew(struct smbsrv_request *req)
 
 	/* parse the request */
 	REQ_CHECK_WCT(req, 3);
-	REQ_TALLOC(oi, sizeof(*oi));
+	REQ_TALLOC(oi, union smb_open);
 
 	if (CVAL(req->in.hdr, HDR_COM) == SMBmknew) {
 		oi->mknew.level = RAW_OPEN_MKNEW;
@@ -613,7 +613,7 @@ void smbsrv_reply_ctemp(struct smbsrv_request *req)
 
 	/* parse the request */
 	REQ_CHECK_WCT(req, 3);
-	REQ_TALLOC(oi, sizeof(*oi));
+	REQ_TALLOC(oi, union smb_open);
 
 	oi->ctemp.level = RAW_OPEN_CTEMP;
 	oi->ctemp.in.attrib = SVAL(req->in.vwv, VWV(0));
@@ -648,7 +648,7 @@ void smbsrv_reply_unlink(struct smbsrv_request *req)
 
 	/* parse the request */
 	REQ_CHECK_WCT(req, 1);
-	REQ_TALLOC(unl, sizeof(*unl));
+	REQ_TALLOC(unl, struct smb_unlink);
 	
 	unl->in.attrib = SVAL(req->in.vwv, VWV(0));
 
@@ -763,7 +763,7 @@ void smbsrv_reply_lockread(struct smbsrv_request *req)
 	
 	/* parse request */
 	REQ_CHECK_WCT(req, 5);
-	REQ_TALLOC(io, sizeof(*io));
+	REQ_TALLOC(io, union smb_read);
 
 	io->lockread.level = RAW_READ_LOCKREAD;
 	io->lockread.in.fnum      = req_fnum(req, req->in.vwv, VWV(0));
@@ -822,7 +822,7 @@ void smbsrv_reply_read(struct smbsrv_request *req)
 
 	/* parse request */
 	REQ_CHECK_WCT(req, 5);
-	REQ_TALLOC(io, sizeof(*io));
+	REQ_TALLOC(io, union smb_read);
 	
 	io->read.level = RAW_READ_READ;
 	io->read.in.fnum          = req_fnum(req, req->in.vwv, VWV(0));
@@ -892,7 +892,7 @@ void smbsrv_reply_read_and_X(struct smbsrv_request *req)
 		REQ_CHECK_WCT(req, 10);
 	}
 
-	REQ_TALLOC(io, sizeof(*io));
+	REQ_TALLOC(io, union smb_read);
 
 	io->readx.level = RAW_READ_READX;
 	io->readx.in.fnum          = req_fnum(req, req->in.vwv, VWV(2));
@@ -970,7 +970,7 @@ void smbsrv_reply_writeunlock(struct smbsrv_request *req)
 	union smb_write *io;
 
 	REQ_CHECK_WCT(req, 5);
-	REQ_TALLOC(io, sizeof(*io));
+	REQ_TALLOC(io, union smb_write);
 
 	io->writeunlock.level = RAW_WRITE_WRITEUNLOCK;
 	io->writeunlock.in.fnum        = req_fnum(req, req->in.vwv, VWV(0));
@@ -1028,7 +1028,7 @@ void smbsrv_reply_write(struct smbsrv_request *req)
 	union smb_write *io;
 
 	REQ_CHECK_WCT(req, 5);
-	REQ_TALLOC(io, sizeof(*io));
+	REQ_TALLOC(io, union smb_write);
 
 	io->write.level = RAW_WRITE_WRITE;
 	io->write.in.fnum        = req_fnum(req, req->in.vwv, VWV(0));
@@ -1093,7 +1093,7 @@ void smbsrv_reply_write_and_X(struct smbsrv_request *req)
 		REQ_CHECK_WCT(req, 12);
 	}
 
-	REQ_TALLOC(io, sizeof(*io));
+	REQ_TALLOC(io, union smb_write);
 
 	io->writex.level = RAW_WRITE_WRITEX;
 	io->writex.in.fnum      = req_fnum(req, req->in.vwv, VWV(2));
@@ -1152,7 +1152,7 @@ void smbsrv_reply_lseek(struct smbsrv_request *req)
 	struct smb_seek *io;
 
 	REQ_CHECK_WCT(req, 4);
-	REQ_TALLOC(io, sizeof(*io));
+	REQ_TALLOC(io, struct smb_seek);
 
 	io->in.fnum   = req_fnum(req, req->in.vwv,  VWV(0));
 	io->in.mode   = SVAL(req->in.vwv,  VWV(1));
@@ -1177,7 +1177,7 @@ void smbsrv_reply_flush(struct smbsrv_request *req)
 
 	/* parse request */
 	REQ_CHECK_WCT(req, 1);
-	REQ_TALLOC(io, sizeof(*io));
+	REQ_TALLOC(io, struct smb_flush);
 
 	io->in.fnum   = req_fnum(req, req->in.vwv,  VWV(0));
 	
@@ -1226,7 +1226,7 @@ void smbsrv_reply_close(struct smbsrv_request *req)
 
 	/* parse request */
 	REQ_CHECK_WCT(req, 3);
-	REQ_TALLOC(io, sizeof(*io));
+	REQ_TALLOC(io, union smb_close);
 
 	io->close.level = RAW_CLOSE_CLOSE;
 	io->close.in.fnum  = req_fnum(req, req->in.vwv,  VWV(0));
@@ -1272,7 +1272,7 @@ void smbsrv_reply_writeclose(struct smbsrv_request *req)
 		REQ_CHECK_WCT(req, 6);
 	}
 
-	REQ_TALLOC(io, sizeof(*io));
+	REQ_TALLOC(io, union smb_write);
 
 	io->writeclose.level = RAW_WRITE_WRITECLOSE;
 	io->writeclose.in.fnum   = req_fnum(req, req->in.vwv, VWV(0));
@@ -1306,7 +1306,7 @@ void smbsrv_reply_lock(struct smbsrv_request *req)
 
 	/* parse request */
 	REQ_CHECK_WCT(req, 5);
-	REQ_TALLOC(lck, sizeof(*lck));
+	REQ_TALLOC(lck, union smb_lock);
 
 	lck->lock.level     = RAW_LOCK_LOCK;
 	lck->lock.in.fnum   = req_fnum(req, req->in.vwv, VWV(0));
@@ -1332,7 +1332,7 @@ void smbsrv_reply_unlock(struct smbsrv_request *req)
 
 	/* parse request */
 	REQ_CHECK_WCT(req, 5);
-	REQ_TALLOC(lck, sizeof(*lck));
+	REQ_TALLOC(lck, union smb_lock);
 
 	lck->unlock.level = RAW_LOCK_UNLOCK;
 	lck->unlock.in.fnum   = req_fnum(req, req->in.vwv, VWV(0));
@@ -1429,7 +1429,7 @@ void smbsrv_reply_printopen(struct smbsrv_request *req)
 
 	/* parse request */
 	REQ_CHECK_WCT(req, 2);
-	REQ_TALLOC(oi, sizeof(*oi));
+	REQ_TALLOC(oi, union smb_open);
 
 	oi->splopen.level = RAW_OPEN_SPLOPEN;
 	oi->splopen.in.setup_length = SVAL(req->in.vwv, VWV(0));
@@ -1456,7 +1456,7 @@ void smbsrv_reply_printclose(struct smbsrv_request *req)
 
 	/* parse request */
 	REQ_CHECK_WCT(req, 3);
-	REQ_TALLOC(io, sizeof(*io));
+	REQ_TALLOC(io, union smb_close);
 
 	io->splclose.level = RAW_CLOSE_SPLCLOSE;
 	io->splclose.in.fnum = req_fnum(req, req->in.vwv,  VWV(0));
@@ -1524,7 +1524,7 @@ void smbsrv_reply_printqueue(struct smbsrv_request *req)
 
 	/* parse request */
 	REQ_CHECK_WCT(req, 2);
-	REQ_TALLOC(lpq, sizeof(*lpq));
+	REQ_TALLOC(lpq, union smb_lpq);
 
 	lpq->retq.level = RAW_LPQ_RETQ;
 	lpq->retq.in.maxcount = SVAL(req->in.vwv,  VWV(0));
@@ -1550,7 +1550,7 @@ void smbsrv_reply_printwrite(struct smbsrv_request *req)
 
 	/* parse request */
 	REQ_CHECK_WCT(req, 1);
-	REQ_TALLOC(io, sizeof(*io));
+	REQ_TALLOC(io, union smb_write);
 
 	io->splwrite.level = RAW_WRITE_SPLWRITE;
 
@@ -1588,7 +1588,7 @@ void smbsrv_reply_mkdir(struct smbsrv_request *req)
 
 	/* parse the request */
 	REQ_CHECK_WCT(req, 0);
-	REQ_TALLOC(io, sizeof(*io));
+	REQ_TALLOC(io, union smb_mkdir);
 
 	io->generic.level = RAW_MKDIR_MKDIR;
 	req_pull_ascii4(req, &io->mkdir.in.path, req->in.data, STR_TERMINATE);
@@ -1612,7 +1612,7 @@ void smbsrv_reply_rmdir(struct smbsrv_request *req)
  
 	/* parse the request */
 	REQ_CHECK_WCT(req, 0);
-	REQ_TALLOC(io, sizeof(*io));
+	REQ_TALLOC(io, struct smb_rmdir);
 
 	req_pull_ascii4(req, &io->in.path, req->in.data, STR_TERMINATE);
 
@@ -1636,7 +1636,7 @@ void smbsrv_reply_mv(struct smbsrv_request *req)
  
 	/* parse the request */
 	REQ_CHECK_WCT(req, 1);
-	REQ_TALLOC(io, sizeof(*io));
+	REQ_TALLOC(io, union smb_rename);
 
 	io->generic.level = RAW_RENAME_RENAME;
 	io->rename.in.attrib = SVAL(req->in.vwv, VWV(0));
@@ -1670,7 +1670,7 @@ void smbsrv_reply_ntrename(struct smbsrv_request *req)
  
 	/* parse the request */
 	REQ_CHECK_WCT(req, 4);
-	REQ_TALLOC(io, sizeof(*io));
+	REQ_TALLOC(io, union smb_rename);
 
 	io->generic.level = RAW_RENAME_NTRENAME;
 	io->ntrename.in.attrib  = SVAL(req->in.vwv, VWV(0));
@@ -1722,7 +1722,7 @@ void smbsrv_reply_copy(struct smbsrv_request *req)
 
 	/* parse request */
 	REQ_CHECK_WCT(req, 3);
-	REQ_TALLOC(cp, sizeof(*cp));
+	REQ_TALLOC(cp, struct smb_copy);
 
 	cp->in.tid2  = SVAL(req->in.vwv, VWV(0));
 	cp->in.ofun  = SVAL(req->in.vwv, VWV(1));
@@ -1785,7 +1785,7 @@ void smbsrv_reply_lockingX(struct smbsrv_request *req)
 
 	/* parse request */
 	REQ_CHECK_WCT(req, 8);
-	REQ_TALLOC(lck, sizeof(*lck));
+	REQ_TALLOC(lck, union smb_lock);
 
 	lck->lockx.level = RAW_LOCK_LOCKX;
 	lck->lockx.in.fnum      = req_fnum(req, req->in.vwv, VWV(2));
@@ -1811,7 +1811,12 @@ void smbsrv_reply_lockingX(struct smbsrv_request *req)
 
 	/* allocate the locks array */
 	if (total_locks) {
-		REQ_TALLOC(lck->lockx.in.locks, total_locks * sizeof(lck->lockx.in.locks[0]));
+		lck->lockx.in.locks = talloc_array(req, struct smb_lock_entry, 
+						   total_locks);
+		if (lck->lockx.in.locks == NULL) {
+			smbsrv_send_error(req, NT_STATUS_NO_MEMORY);
+			return;
+		}
 	}
 
 	p = req->in.data;
@@ -1867,7 +1872,7 @@ void smbsrv_reply_setattrE(struct smbsrv_request *req)
 
 	/* parse request */
 	REQ_CHECK_WCT(req, 7);
-	REQ_TALLOC(info, sizeof(*info));
+	REQ_TALLOC(info, union smb_setfileinfo);
 
 	info->setattre.level = RAW_SFILEINFO_SETATTRE;
 	info->setattre.file.fnum =      req_fnum(req, req->in.vwv,    VWV(0));
@@ -1935,7 +1940,7 @@ void smbsrv_reply_getattrE(struct smbsrv_request *req)
 
 	/* parse request */
 	REQ_CHECK_WCT(req, 1);
-	REQ_TALLOC(info, sizeof(*info));
+	REQ_TALLOC(info, union smb_fileinfo);
 
 	info->getattr.level = RAW_FILEINFO_GETATTRE;
 	info->getattr.in.fnum = req_fnum(req, req->in.vwv, VWV(0));
@@ -2287,7 +2292,7 @@ void smbsrv_reply_ntcreate_and_X(struct smbsrv_request *req)
 
 	/* parse the request */
 	REQ_CHECK_WCT(req, 24);
-	REQ_TALLOC(io, sizeof(*io));
+	REQ_TALLOC(io, union smb_open);
 
 	io->ntcreatex.level = RAW_OPEN_NTCREATEX;
 
