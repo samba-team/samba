@@ -2,14 +2,14 @@
 
 INSTALLPERMS=$1
 DESTDIR=$2
-BASEDIR=`echo $3 | sed 's/\/\//\//g'`
+prefix=`echo $3 | sed 's/\/\//\//g'`
 LIBDIR=`echo $4 | sed 's/\/\//\//g'`
 shift
 shift
 shift
 shift
 
-for d in $BASEDIR $LIBDIR; do
+for d in $prefix $LIBDIR; do
 if [ ! -d $DESTDIR/$d ]; then
 mkdir $DESTDIR/$d
 if [ ! -d $DESTDIR/$d ]; then
