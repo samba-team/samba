@@ -3,7 +3,7 @@
 
 INSTALLPERMS=$1
 DESTDIR=$2
-BASEDIR=`echo $3 | sed 's/\/\//\//g'`
+prefix=`echo $3 | sed 's/\/\//\//g'`
 LIBDIR=`echo $4 | sed 's/\/\//\//g'`
 shift
 shift
