@@ -971,7 +971,7 @@ BOOL parse_lpq_entry(enum printing_types printing_type,char *line,
   }
 
   /* in the LPRNG case, we skip lines starting by a space.*/
-  if (line && !ret && (printing_type==PRINT_LPRNG) )
+  if (!ret && (printing_type==PRINT_LPRNG) )
   {
   	if (line[0]==' ')
 		return ret;

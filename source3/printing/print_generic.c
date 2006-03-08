@@ -193,21 +193,24 @@ static int generic_queue_get(const char *printer_name,
 	/* turn the lpq output into a series of job structures */
 	qcount = 0;
 	ZERO_STRUCTP(status);
-	if (numlines)
+	if (numlines) {
 		queue = SMB_MALLOC_ARRAY(print_queue_struct, numlines+1);
-
-	if (queue) {
-		memset(queue, '\0', sizeof(print_queue_struct)*(numlines+1));
-		for (i=0; i<numlines; i++) {
-			/* parse the line */
-			if (parse_lpq_entry(printing_type,qlines[i],
-					    &queue[qcount],status,qcount==0)) {
-				qcount++;
-			}
-		}		
+		if (!queue) {
+			file_lines_free(qlines);
+			*q = NULL;
+			return 0;
+		}
 	}
-	file_lines_free(qlines);
 
+	memset(queue, '\0', sizeof(print_queue_struct)*(numlines+1));
+	for (i=0; i<numlines; i++) {
+		/* parse the line */
+		if (parse_lpq_entry(printing_type,qlines[i],
+				    &queue[qcount],status,qcount==0)) {
+			qcount++;
+		}
+	}		
+	file_lines_free(qlines);
         *q = queue;
 	return qcount;
 }
