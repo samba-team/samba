@@ -1431,7 +1431,7 @@ install-everything: install installmodules
 # is not used
 
 installdirs:
-	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS) $(DESTDIR) $(BASEDIR) $(BINDIR) $(SBINDIR) $(LIBDIR) $(VARDIR) $(PRIVATEDIR) $(PIDDIR) $(LOCKDIR) $(MANDIR)
+	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS) $(DESTDIR) $(prefix) $(BINDIR) $(SBINDIR) $(LIBDIR) $(VARDIR) $(PRIVATEDIR) $(PIDDIR) $(LOCKDIR) $(MANDIR)
 
 installservers: all installdirs
 	@$(SHELL) $(srcdir)/script/installbin.sh $(INSTALLPERMS) $(DESTDIR) $(SBINDIR) $(SBIN_PROGS)
@@ -1446,12 +1446,12 @@ installcifsmount: @CIFSMOUNT_PROGS@
 # Some symlinks are required for the 'probing' of modules. 
 # This mechanism should go at some point..
 installmodules: modules installdirs
-	@$(SHELL) $(srcdir)/script/installmodules.sh $(INSTALLPERMS) $(DESTDIR) $(BASEDIR) $(VFSLIBDIR) $(VFS_MODULES)
-	@$(SHELL) $(srcdir)/script/installmodules.sh $(INSTALLPERMS) $(DESTDIR) $(BASEDIR) $(PDBLIBDIR) $(PDB_MODULES)
-	@$(SHELL) $(srcdir)/script/installmodules.sh $(INSTALLPERMS) $(DESTDIR) $(BASEDIR) $(RPCLIBDIR) $(RPC_MODULES)
-	@$(SHELL) $(srcdir)/script/installmodules.sh $(INSTALLPERMS) $(DESTDIR) $(BASEDIR) $(IDMAPLIBDIR) $(IDMAP_MODULES)
-	@$(SHELL) $(srcdir)/script/installmodules.sh $(INSTALLPERMS) $(DESTDIR) $(BASEDIR) $(CHARSETLIBDIR) $(CHARSET_MODULES)
-	@$(SHELL) $(srcdir)/script/installmodules.sh $(INSTALLPERMS) $(DESTDIR) $(BASEDIR) $(AUTHLIBDIR) $(AUTH_MODULES)
+	@$(SHELL) $(srcdir)/script/installmodules.sh $(INSTALLPERMS) $(DESTDIR) $(prefix) $(VFSLIBDIR) $(VFS_MODULES)
+	@$(SHELL) $(srcdir)/script/installmodules.sh $(INSTALLPERMS) $(DESTDIR) $(prefix) $(PDBLIBDIR) $(PDB_MODULES)
+	@$(SHELL) $(srcdir)/script/installmodules.sh $(INSTALLPERMS) $(DESTDIR) $(prefix) $(RPCLIBDIR) $(RPC_MODULES)
+	@$(SHELL) $(srcdir)/script/installmodules.sh $(INSTALLPERMS) $(DESTDIR) $(prefix) $(IDMAPLIBDIR) $(IDMAP_MODULES)
+	@$(SHELL) $(srcdir)/script/installmodules.sh $(INSTALLPERMS) $(DESTDIR) $(prefix) $(CHARSETLIBDIR) $(CHARSET_MODULES)
+	@$(SHELL) $(srcdir)/script/installmodules.sh $(INSTALLPERMS) $(DESTDIR) $(prefix) $(AUTHLIBDIR) $(AUTH_MODULES)
 	@$(SHELL) $(srcdir)/script/linkmodules.sh $(DESTDIR)$(PDBLIBDIR) ldapsam.@SHLIBEXT@ ldapsam_compat.@SHLIBEXT@
 	@$(SHELL) $(srcdir)/script/linkmodules.sh $(DESTDIR)$(AUTHLIBDIR) rhosts.@SHLIBEXT@ hostsequiv.@SHLIBEXT@
 	@$(SHELL) $(srcdir)/script/linkmodules.sh $(DESTDIR)$(AUTHLIBDIR) sam.@SHLIBEXT@ sam_ignoredomain.@SHLIBEXT@
@@ -1527,7 +1527,7 @@ installman: installdirs
 
 showlayout:
 	@echo "Samba will be installed into:"
-	@echo "  basedir:     $(BASEDIR)"
+	@echo "  prefix:      $(prefix)"
 	@echo "  bindir:      $(BINDIR)"
 	@echo "  sbindir:     $(SBINDIR)"
 	@echo "  libdir:      $(LIBDIR)"
@@ -1555,12 +1555,12 @@ uninstallcifsmount:
 	@$(SHELL) $(srcdir)/script/uninstallbin.sh $(INSTALLPERMS) $(DESTDIR) $(ROOTSBINDIR) @CIFSMOUNT_PROGS@
 
 uninstallmodules:
-	@$(SHELL) $(srcdir)/script/uninstallmodules.sh $(INSTALLPERMS) $(DESTDIR) $(BASEDIR) $(VFSLIBDIR) $(VFS_MODULES)
-	@$(SHELL) $(srcdir)/script/uninstallmodules.sh $(INSTALLPERMS) $(DESTDIR) $(BASEDIR) $(PDBLIBDIR) $(PDB_MODULES)
-	@$(SHELL) $(srcdir)/script/uninstallmodules.sh $(INSTALLPERMS) $(DESTDIR) $(BASEDIR) $(RPCLIBDIR) $(RPC_MODULES)
-	@$(SHELL) $(srcdir)/script/uninstallmodules.sh $(INSTALLPERMS) $(DESTDIR) $(BASEDIR) $(IDMAPLIBDIR) $(IDMAP_MODULES)
-	@$(SHELL) $(srcdir)/script/uninstallmodules.sh $(INSTALLPERMS) $(DESTDIR) $(BASEDIR) $(CHARSETLIBDIR) $(CHARSET_MODULES)
-	@$(SHELL) $(srcdir)/script/uninstallmodules.sh $(INSTALLPERMS) $(DESTDIR) $(BASEDIR) $(AUTHLIBDIR) $(AUTH_MODULES)
+	@$(SHELL) $(srcdir)/script/uninstallmodules.sh $(INSTALLPERMS) $(DESTDIR) $(prefix) $(VFSLIBDIR) $(VFS_MODULES)
+	@$(SHELL) $(srcdir)/script/uninstallmodules.sh $(INSTALLPERMS) $(DESTDIR) $(prefix) $(PDBLIBDIR) $(PDB_MODULES)
+	@$(SHELL) $(srcdir)/script/uninstallmodules.sh $(INSTALLPERMS) $(DESTDIR) $(prefix) $(RPCLIBDIR) $(RPC_MODULES)
+	@$(SHELL) $(srcdir)/script/uninstallmodules.sh $(INSTALLPERMS) $(DESTDIR) $(prefix) $(IDMAPLIBDIR) $(IDMAP_MODULES)
+	@$(SHELL) $(srcdir)/script/uninstallmodules.sh $(INSTALLPERMS) $(DESTDIR) $(prefix) $(CHARSETLIBDIR) $(CHARSET_MODULES)
+	@$(SHELL) $(srcdir)/script/uninstallmodules.sh $(INSTALLPERMS) $(DESTDIR) $(prefix) $(AUTHLIBDIR) $(AUTH_MODULES)
 
 uninstallscripts:
 	@$(SHELL) $(srcdir)/script/uninstallscripts.sh $(INSTALLPERMS) $(DESTDIR)$(BINDIR) $(SCRIPTS)
