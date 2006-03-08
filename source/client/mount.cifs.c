@@ -59,7 +59,7 @@
 #define MS_MOVE 8192 
 #endif 
 
-char * thisprogram;
+const char *thisprogram;
 int verboseflag = 0;
 static int got_password = 0;
 static int got_user = 0;
@@ -301,7 +301,7 @@ static int get_password_from_file(int file_descript, char * filename)
 
 static int parse_options(char ** optionsp, int * filesys_flags)
 {
-	char * data;
+	const char * data;
 	char * percent_char = NULL;
 	char * value = NULL;
 	char * next_keyword = NULL;
