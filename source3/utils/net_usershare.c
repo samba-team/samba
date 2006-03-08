@@ -348,6 +348,8 @@ static int info_fn(struct file_list *fl, void *priv)
 				comment,
 				&psd);
 
+	file_lines_free(lines);
+
 	if (us_err != USERSHARE_OK) {
 		d_fprintf(stderr, "info_fn: file %s is not a well formed usershare file.\n",
 			basepath );
