@@ -762,6 +762,11 @@ void init_string2(STRING2 *str, const char *buf, size_t max_len, size_t str_len)
 	/* set up string lengths. */
 	SMB_ASSERT(max_len >= str_len);
 
+	/* Ensure buf is valid if str_len was set. Coverity check. */
+	if (str_len && !buf) {
+		return;
+	}
+
 	str->str_max_len = max_len;
 	str->offset = 0;
 	str->str_str_len = str_len;
