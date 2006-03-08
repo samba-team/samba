@@ -98,6 +98,11 @@ static void cleanup_tmp_files(void)
 	talloc_free(mem_ctx);
 }
 
+static void sig_hup(int sig)
+{
+	debug_schedule_reopen_logs();
+}
+
 /*
   setup signal masks
 */
@@ -124,9 +129,7 @@ static void setup_signals(void)
 	BlockSignals(False, SIGHUP);
 	BlockSignals(False, SIGTERM);
 
-	/* as we don't handle on this signals yet, we need to ignore them,
-	 * instead of terminating */
-	CatchSignal(SIGHUP, SIG_IGN);
+	CatchSignal(SIGHUP, sig_hup);
 }
 
 /*
