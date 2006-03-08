@@ -2778,7 +2778,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 	char *fullpathname;
 	char *base_name;
 	char *p;
-	char *lock_data;
+	char *lock_data = NULL;
 	SMB_OFF_T pos = 0;
 	BOOL bad_path = False;
 	BOOL delete_pending = False;
