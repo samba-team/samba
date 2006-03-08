@@ -47,7 +47,7 @@ BOOL prs_rpcbuffer(const char *desc, prs_struct *ps, int depth, RPC_BUFFER *buff
 {
 	prs_debug(ps, depth, desc, "prs_rpcbuffer");
 	depth++;
-		
+
 	/* reading */
 	if (UNMARSHALLING(ps)) {
 		buffer->size=0;
@@ -135,7 +135,12 @@ BOOL prs_rpcbuffer_p(const char *desc, prs_struct *ps, int depth, RPC_BUFFER **b
 		}
 		return True;
 	}
-		
+
+	/* Coverity paranoia. Buffer must be valid. */
+	if (!*buffer) {
+		return False;
+	}
+
 	return prs_rpcbuffer( desc, ps, depth, *buffer);
 }
 
