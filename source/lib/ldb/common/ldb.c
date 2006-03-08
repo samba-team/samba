@@ -257,57 +257,35 @@ static int ldb_op_finish(struct ldb_context *ldb, int status)
 /*
   start an ldb request
   autostarts a transacion if none active and the operation is not a search
+  NOTE: the request must be a talloc context.
   returns LDB_ERR_* on errors.
 */
-int ldb_request(struct ldb_context *ldb, struct ldb_request *request)
+int ldb_request(struct ldb_context *ldb, struct ldb_request *req)
 {
 	int status, started_transaction=0;
-	struct ldb_request *r;
 
 	ldb_reset_err_string(ldb);
 
-	/* to allow ldb modules to assume they can use the request ptr
-	   as a talloc context for the request, we have to copy the 
-	   structure here */
-	r = talloc(ldb, struct ldb_request);
-	if (r == NULL) {
-		ldb_oom(ldb);
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	*r = *request;
-
-	if (r->operation == LDB_REQ_SEARCH) {
-		r->op.search.res = NULL;
+	if (req->operation == LDB_REQ_SEARCH) {
+		req->op.search.res = NULL;
 	}
 
 	/* start a transaction if needed */
 	if ((!ldb->transaction_active) &&
-	    (request->operation == LDB_REQ_ADD ||
-	     request->operation == LDB_REQ_MODIFY ||
-	     request->operation == LDB_REQ_DELETE ||
-	     request->operation == LDB_REQ_RENAME)) {
+	    (req->operation == LDB_REQ_ADD ||
+	     req->operation == LDB_REQ_MODIFY ||
+	     req->operation == LDB_REQ_DELETE ||
+	     req->operation == LDB_REQ_RENAME)) {
 		status = ldb_transaction_start(ldb);
 		if (status != LDB_SUCCESS) {
-			talloc_free(r);
+			talloc_free(req);
 			return status;
 		}
 		started_transaction = 1;
 	}
 
 	/* call the first module in the chain */
-	status = ldb->modules->ops->request(ldb->modules, r);
-
-	/* the search call is the only one that returns something
-	   other than a status code. We steal the results into
-	   the context of the ldb before freeing the request */
-	if (status == LDB_SUCCESS && request->operation == LDB_REQ_SEARCH) {
-		request->op.search.res = talloc_steal(ldb, r->op.search.res);
-	}
-	if (status == LDB_SUCCESS && request->operation == LDB_ASYNC_SEARCH) {
-		request->async.handle = r->async.handle;
-	}
-	talloc_free(r);
+	status = ldb->modules->ops->request(ldb->modules, req);
 
 	if (started_transaction) {
 		return ldb_op_finish(ldb, status);
@@ -331,31 +309,36 @@ int ldb_search(struct ldb_context *ldb,
 	       const char * const *attrs, 
 	       struct ldb_result **res)
 {
-	struct ldb_request request;
-	struct ldb_parse_tree *tree;
+	struct ldb_request *req;
 	int ret;
 
 	(*res) = NULL;
 
-	tree = ldb_parse_tree(ldb, expression);
-	if (tree == NULL) {
-		ldb_set_errstring(ldb, talloc_strdup(ldb, "Unable to parse search expression"));
-		return -1;
+	req = talloc(ldb, struct ldb_request);
+	if (req == NULL) {
+		ldb_set_errstring(ldb, talloc_strdup(ldb, "Out of memory!"));
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	request.operation = LDB_REQ_SEARCH;
-	request.op.search.base = base;
-	request.op.search.scope = scope;
-	request.op.search.tree = tree;
-	request.op.search.attrs = attrs;
-	request.controls = NULL;
+	req->operation = LDB_REQ_SEARCH;
+	req->op.search.base = base;
+	req->op.search.scope = scope;
 
-	ret = ldb_request(ldb, &request);
+	req->op.search.tree = ldb_parse_tree(req, expression);
+	if (req->op.search.tree == NULL) {
+		ldb_set_errstring(ldb, talloc_strdup(ldb, "Unable to parse search expression"));
+		talloc_free(req);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
 
-	(*res) = request.op.search.res;
+	req->op.search.attrs = attrs;
+	req->controls = NULL;
 
-	talloc_free(tree);
+	ret = ldb_request(ldb, req);
 
+	(*res) = talloc_steal(ldb, req->op.search.res);
+
+	talloc_free(req);
 	return ret;
 }
 
@@ -366,17 +349,26 @@ int ldb_search(struct ldb_context *ldb,
 int ldb_add(struct ldb_context *ldb, 
 	    const struct ldb_message *message)
 {
-	struct ldb_request request;
-	int status;
+	struct ldb_request *req;
+	int ret;
 
-	status = ldb_msg_sanity_check(message);
-	if (status != LDB_SUCCESS) return status;
+	ret = ldb_msg_sanity_check(message);
+	if (ret != LDB_SUCCESS) return ret;
 
-	request.operation = LDB_REQ_ADD;
-	request.op.add.message = message;
-	request.controls = NULL;
+	req = talloc(ldb, struct ldb_request);
+	if (req == NULL) {
+		ldb_set_errstring(ldb, talloc_strdup(ldb, "Out of memory!"));
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
 
-	return ldb_request(ldb, &request);
+	req->operation = LDB_REQ_ADD;
+	req->op.add.message = message;
+	req->controls = NULL;
+
+	ret = ldb_request(ldb, req);
+
+	talloc_free(req);
+	return ret;
 }
 
 /*
@@ -385,17 +377,26 @@ int ldb_add(struct ldb_context *ldb,
 int ldb_modify(struct ldb_context *ldb, 
 	       const struct ldb_message *message)
 {
-	struct ldb_request request;
-	int status;
+	struct ldb_request *req;
+	int ret;
 
-	status = ldb_msg_sanity_check(message);
-	if (status != LDB_SUCCESS) return status;
+	ret = ldb_msg_sanity_check(message);
+	if (ret != LDB_SUCCESS) return ret;
 
-	request.operation = LDB_REQ_MODIFY;
-	request.op.mod.message = message;
-	request.controls = NULL;
+	req = talloc(ldb, struct ldb_request);
+	if (req == NULL) {
+		ldb_set_errstring(ldb, talloc_strdup(ldb, "Out of memory!"));
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
 
-	return ldb_request(ldb, &request);
+	req->operation = LDB_REQ_MODIFY;
+	req->op.add.message = message;
+	req->controls = NULL;
+
+	ret = ldb_request(ldb, req);
+
+	talloc_free(req);
+	return ret;
 }
 
 
@@ -404,13 +405,23 @@ int ldb_modify(struct ldb_context *ldb,
 */
 int ldb_delete(struct ldb_context *ldb, const struct ldb_dn *dn)
 {
-	struct ldb_request request;
+	struct ldb_request *req;
+	int ret;
 
-	request.operation = LDB_REQ_DELETE;
-	request.op.del.dn = dn;
-	request.controls = NULL;
+	req = talloc(ldb, struct ldb_request);
+	if (req == NULL) {
+		ldb_set_errstring(ldb, talloc_strdup(ldb, "Out of memory!"));
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
 
-	return ldb_request(ldb, &request);
+	req->operation = LDB_REQ_DELETE;
+	req->op.del.dn = dn;
+	req->controls = NULL;
+
+	ret = ldb_request(ldb, req);
+
+	talloc_free(req);
+	return ret;
 }
 
 /*
@@ -418,14 +429,24 @@ int ldb_delete(struct ldb_context *ldb, const struct ldb_dn *dn)
 */
 int ldb_rename(struct ldb_context *ldb, const struct ldb_dn *olddn, const struct ldb_dn *newdn)
 {
-	struct ldb_request request;
+	struct ldb_request *req;
+	int ret;
 
-	request.operation = LDB_REQ_RENAME;
-	request.op.rename.olddn = olddn;
-	request.op.rename.newdn = newdn;
-	request.controls = NULL;
+	req = talloc(ldb, struct ldb_request);
+	if (req == NULL) {
+		ldb_set_errstring(ldb, talloc_strdup(ldb, "Out of memory!"));
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
 
-	return ldb_request(ldb, &request);
+	req->operation = LDB_REQ_RENAME;
+	req->op.rename.olddn = olddn;
+	req->op.rename.newdn = newdn;
+	req->controls = NULL;
+
+	ret = ldb_request(ldb, req);
+
+	talloc_free(req);
+	return ret;
 }
 
 

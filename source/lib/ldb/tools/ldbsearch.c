@@ -68,33 +68,34 @@ static int do_search(struct ldb_context *ldb,
 	int loop = 0;
 	int total = 0;
 	int refs = 0;
-	struct ldb_request req;
+	struct ldb_request *req;
 	struct ldb_result *result = NULL;
 
-	req.operation = LDB_REQ_SEARCH;
-	req.op.search.base = basedn;
-	req.op.search.scope = options->scope;
-	req.op.search.tree = ldb_parse_tree(ldb, expression);
-	if (req.op.search.tree == NULL) return -1;
-	req.op.search.attrs = attrs;
-	req.op.search.res = NULL;
-	req.controls = parse_controls(ldb, options->controls);
-	if (options->controls != NULL && req.controls == NULL) return -1;
-	req.creds = NULL;
+	req = talloc(ldb, struct ldb_request);
+	req->operation = LDB_REQ_SEARCH;
+	req->op.search.base = basedn;
+	req->op.search.scope = options->scope;
+	req->op.search.tree = ldb_parse_tree(ldb, expression);
+	if (req->op.search.tree == NULL) return -1;
+	req->op.search.attrs = attrs;
+	req->op.search.res = NULL;
+	req->controls = parse_controls(ldb, options->controls);
+	if (options->controls != NULL && req->controls == NULL) return -1;
+	req->creds = NULL;
 
 	do {
 		loop = 0;
 
-		ret = ldb_request(ldb, &req);
+		ret = ldb_request(ldb, req);
 		if (ret != LDB_SUCCESS) {
 			printf("search failed - %s\n", ldb_errstring(ldb));
-			if (req.op.search.res && req.op.search.res->controls) {
-				handle_controls_reply(req.op.search.res->controls, req.controls);
+			if (req->op.search.res && req->op.search.res->controls) {
+				handle_controls_reply(req->op.search.res->controls, req->controls);
 			}
 			return -1;
 		}
 
-		result = req.op.search.res;
+		result = req->op.search.res;
 
 		if (options->sorted) {
 			ldb_qsort(result->msgs, result->count, sizeof(struct ldb_message *),
@@ -127,7 +128,7 @@ static int do_search(struct ldb_context *ldb,
 		}
 		
 		if (result->controls) {
-			if (handle_controls_reply(result->controls, req.controls) == 1)
+			if (handle_controls_reply(result->controls, req->controls) == 1)
 				loop = 1;
 		}
 
@@ -139,7 +140,7 @@ static int do_search(struct ldb_context *ldb,
 			}
 		}
 
-		req.op.search.res = NULL;
+		req->op.search.res = NULL;
 		
 	} while(loop);
 
