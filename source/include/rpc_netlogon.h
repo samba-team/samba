@@ -108,8 +108,20 @@
 #define SE_GROUP_RESOURCE 		0x20000000
 
 /* Flags for controlling the behaviour of a particular logon */
-#define MSV1_0_ALLOW_SERVER_TRUST_ACCOUNT	( 0x020 )
-#define MSV1_0_ALLOW_WORKSTATION_TRUST_ACCOUNT	( 0x800 )
+
+/* sets LOGON_SERVER_TRUST_ACCOUNT user_flag */
+#define MSV1_0_ALLOW_SERVER_TRUST_ACCOUNT	0x00000020
+#define MSV1_0_ALLOW_WORKSTATION_TRUST_ACCOUNT	0x00000800
+
+/* updates the "logon time" on network logon */
+#define MSV1_0_UPDATE_LOGON_STATISTICS		0x00000004
+
+/* returns the user parameters in the driveletter */
+#define MSV1_0_RETURN_USER_PARAMETERS		0x00000008
+
+/* returns the profilepath in the driveletter and 
+ * sets LOGON_PROFILE_PATH_RETURNED user_flag */
+#define MSV1_0_RETURN_PROFILE_PATH		0x00000200
 
 #if 0
 /* I think this is correct - it's what gets parsed on the wire. JRA. */
