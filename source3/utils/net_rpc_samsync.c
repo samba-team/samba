@@ -396,6 +396,7 @@ static NTSTATUS sam_account_from_delta(struct samu *account, SAM_ACCOUNT_INFO *d
 
 		if (STRING_CHANGED)
 			pdb_set_munged_dial(account, new_string, PDB_CHANGED);
+		SAFE_FREE(new_string);
 	}
 
 	/* User and group sid */
