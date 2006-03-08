@@ -1158,7 +1158,7 @@ static NTSTATUS populate_ldap_for_ldif(fstring sid, const char *suffix, const ch
 	fprintf(add_fd, "gidNumber: 514\n");
 	fprintf(add_fd, "uid: nobody\n");
 	fprintf(add_fd, "uidNumber: 999\n");
-	fprintf(add_fd, "homeDirectory: /dev/null\n");
+	fprintf(add_fd, "homeDirectory: /nobodyshomedir\n");
 	fprintf(add_fd, "sambaPwdLastSet: 0\n");
 	fprintf(add_fd, "sambaLogonTime: 0\n");
 	fprintf(add_fd, "sambaLogoffTime: 2147483647\n");
@@ -1472,7 +1472,7 @@ static NTSTATUS fetch_account_info_to_ldif(SAM_DELTA_CTR *delta, GROUPMAP *group
 		if (!*homedir) {
 			pstr_sprintf(homedir, "/home/%s", username);
 		} else {
-			pstr_sprintf(homedir, "/dev/null");
+			pstr_sprintf(homedir, "/nobodyshomedir");
 		}
 	}	
 
