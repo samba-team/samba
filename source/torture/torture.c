@@ -918,24 +918,27 @@ static BOOL run_negprot_nowait(void)
 		req = smb_raw_negotiate_send(cli->transport, PROTOCOL_NT1);
 		event_loop_once(cli->transport->socket->event.ctx);
 		if (req->state == SMBCLI_REQUEST_ERROR) {
-			printf("Failed to fill pipe - %s\n", nt_errstr(req->status));
-			torture_close_connection(cli);
-			return correct;
+			if (i > 0) {
+				printf("Failed to fill pipe packet[%d] - %s (ignored)\n", i+1, nt_errstr(req->status));
+				break;
+			} else {
+				printf("Failed to fill pipe - %s \n", nt_errstr(req->status));
+				torture_close_connection(cli);
+				return False;
+			}
 		}
 	}
 
 	printf("Opening secondary connection\n");
 	if (!torture_open_connection(&cli2)) {
-		return False;
-	}
-
-	if (!torture_close_connection(cli)) {
 		correct = False;
 	}
 
 	if (!torture_close_connection(cli2)) {
 		correct = False;
 	}
+
+	torture_close_connection(cli);
 
 	printf("finished negprot nowait test\n");
 
