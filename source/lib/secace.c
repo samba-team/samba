@@ -149,7 +149,13 @@ BOOL sec_ace_equal(SEC_ACE *s1, SEC_ACE *s2)
 {
 	/* Trivial case */
 
-	if (!s1 && !s2) return True;
+	if (!s1 && !s2) {
+		return True;
+	}
+
+	if (!s1 || !s2) {
+		return False;
+	}
 
 	/* Check top level stuff */
 
