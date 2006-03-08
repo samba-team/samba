@@ -73,6 +73,10 @@ BOOL sec_desc_equal(SEC_DESC *s1, SEC_DESC *s2)
 		goto done;
 	}
 
+	if (!s1 || !s2) {
+		return False;
+	}
+
 	/* Check top level stuff */
 
 	if (s1->revision != s2->revision) {
