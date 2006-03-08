@@ -330,6 +330,8 @@ static void *make_internal_rpc_pipe_p(char *pipe_name,
 		DEBUG(0,("open_rpc_pipe_p: malloc fail for in_data struct.\n"));
 		talloc_destroy(p->mem_ctx);
 		talloc_destroy(p->pipe_state_mem_ctx);
+		close_policy_by_pipe(p);
+		SAFE_FREE(p);
 		return NULL;
 	}
 
