@@ -243,6 +243,7 @@ typedef struct nttime_info {
 #define ACB_NOT_DELEGATED		0x00004000  /* 1 = Not delegated */
 #define ACB_USE_DES_KEY_ONLY		0x00008000  /* 1 = Use DES key only */
 #define ACB_DONT_REQUIRE_PREAUTH	0x00010000  /* 1 = Preauth not required */
+#define ACB_PWEXPIRED			0x00020000  /* 1 = Password is expired */
 #define ACB_NO_AUTH_DATA_REQD		0x00080000  /* 1 = No authorization data required */
 
 #define MAX_HOURS_LEN 32
