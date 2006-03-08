@@ -97,9 +97,6 @@ init_generate (const char *filename, const char *base)
     fprintf (headerfile, 
 	     "#include <stddef.h>\n"
 	     "#include <time.h>\n\n");
-#ifndef HAVE_TIMEGM
-    fprintf (headerfile, "time_t timegm (struct tm*);\n\n");
-#endif
     fprintf (headerfile,
 	     "#ifndef __asn1_common_definitions__\n"
 	     "#define __asn1_common_definitions__\n\n");
