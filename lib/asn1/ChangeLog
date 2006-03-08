@@ -1,3 +1,8 @@
+2006-03-08  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* gen.c (init_generate): Nothing in the generated files needs
+	timegm(), so no need to provide a prototype for it.
+	
 2006-02-13  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* pkinit.asn1: paChecksum is now OPTIONAL so it can be upgraded to
