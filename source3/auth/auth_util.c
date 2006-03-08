@@ -821,6 +821,10 @@ NTSTATUS create_local_token(auth_serversupplied_info *server_info)
 		pdb_get_group_sid(server_info->sam_account),
 		server_info->guest,
 		server_info->num_sids, server_info->sids);
+
+	if ( !server_info->ptok ) {
+		return NT_STATUS_NO_SUCH_USER;
+	}
 	
 	/* Convert the SIDs to gids. */
 
