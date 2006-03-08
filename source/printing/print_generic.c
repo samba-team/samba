@@ -200,16 +200,17 @@ static int generic_queue_get(const char *printer_name,
 			*q = NULL;
 			return 0;
 		}
+		memset(queue, '\0', sizeof(print_queue_struct)*(numlines+1));
+
+		for (i=0; i<numlines; i++) {
+			/* parse the line */
+			if (parse_lpq_entry(printing_type,qlines[i],
+					    &queue[qcount],status,qcount==0)) {
+				qcount++;
+			}
+		}		
 	}
 
-	memset(queue, '\0', sizeof(print_queue_struct)*(numlines+1));
-	for (i=0; i<numlines; i++) {
-		/* parse the line */
-		if (parse_lpq_entry(printing_type,qlines[i],
-				    &queue[qcount],status,qcount==0)) {
-			qcount++;
-		}
-	}		
 	file_lines_free(qlines);
         *q = queue;
 	return qcount;
