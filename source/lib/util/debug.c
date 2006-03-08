@@ -47,10 +47,30 @@ static struct {
 	const char *prog_name;
 } state;
 
+static BOOL reopen_logs_scheduled;
+static BOOL check_reopen_logs(void)
+{
+	if (state.fd == 0 || reopen_logs_scheduled) {
+		reopen_logs_scheduled = False;
+		reopen_logs();
+	}
+
+	if (state.fd <= 0) return False;
+
+	return True;
+}
+
+_PUBLIC_ void debug_schedule_reopen_logs(void)
+{
+	reopen_logs_scheduled = True;
+}
+
 static void log_timestring(int level, const char *location, const char *func)
 {
 	char *t = NULL;
 	char *s = NULL;
+
+	if (!check_reopen_logs()) return;
 
 	if (state.logtype != DEBUG_FILE) return;
 
@@ -87,11 +107,7 @@ _PUBLIC_ void do_debug(const char *format, ...) _PRINTF_ATTRIBUTE(1,2)
 	va_list ap;
 	char *s = NULL;
 
-	if (state.fd == 0) {
-		reopen_logs();
-	}
-
-	if (state.fd <= 0) return;
+	if (!check_reopen_logs()) return;
 
 	va_start(ap, format);
 	vasprintf(&s, format, ap);
@@ -179,9 +195,9 @@ _PUBLIC_ const char *do_debug_tab(uint_t n)
 */	
 _PUBLIC_ void log_suspicious_usage(const char *from, const char *info)
 {
-	if (debug_handlers.ops.log_suspicious_usage) {
-		debug_handlers.ops.log_suspicious_usage(from, info);
-	}
+	if (!debug_handlers.ops.log_suspicious_usage) return;
+
+	debug_handlers.ops.log_suspicious_usage(from, info);
 }
 
 
@@ -190,9 +206,9 @@ _PUBLIC_ void log_suspicious_usage(const char *from, const char *info)
 */	
 _PUBLIC_ void print_suspicious_usage(const char* from, const char* info)
 {
-	if (debug_handlers.ops.print_suspicious_usage) {
-		debug_handlers.ops.print_suspicious_usage(from, info);
-	}
+	if (!debug_handlers.ops.print_suspicious_usage) return;
+
+	debug_handlers.ops.print_suspicious_usage(from, info);
 }
 
 _PUBLIC_ uint32_t get_task_id(void)
@@ -205,9 +221,11 @@ _PUBLIC_ uint32_t get_task_id(void)
 
 _PUBLIC_ void log_task_id(void)
 {
-	if (debug_handlers.ops.log_task_id) {
-		debug_handlers.ops.log_task_id(state.fd);
-	}
+	if (!debug_handlers.ops.log_task_id) return;
+
+	if (!check_reopen_logs()) return;
+
+	debug_handlers.ops.log_task_id(state.fd);
 }
 
 /**
