@@ -305,6 +305,10 @@ NTSTATUS rpc_samdump_internals(const DOM_SID *domain_sid,
 		    (!old_string && new_string) ||\
 		(old_string && new_string && (strcmp(old_string, new_string) != 0))
 
+#define STRING_CHANGED_NC(s1,s2) ((s1) && !(s2)) ||\
+		    (!(s1) && (s2)) ||\
+		((s1) && (s2) && (strcmp((s1), (s2)) != 0))
+
 static NTSTATUS sam_account_from_delta(struct samu *account, SAM_ACCOUNT_INFO *delta)
 {
 	const char *old_string, *new_string;
@@ -389,14 +393,15 @@ static NTSTATUS sam_account_from_delta(struct samu *account, SAM_ACCOUNT_INFO *d
 
 	if (delta->hdr_parameters.buffer) {
 		DATA_BLOB mung;
+		char *newstr;
 		old_string = pdb_get_munged_dial(account);
 		mung.length = delta->hdr_parameters.uni_str_len;
 		mung.data = (uint8 *) delta->uni_parameters.buffer;
-		new_string = (mung.length == 0) ? NULL : base64_encode_data_blob(mung);
+		newstr = (mung.length == 0) ? NULL : base64_encode_data_blob(mung);
 
-		if (STRING_CHANGED)
-			pdb_set_munged_dial(account, new_string, PDB_CHANGED);
-		SAFE_FREE(new_string);
+		if (STRING_CHANGED_NC(old_string, newstr))
+			pdb_set_munged_dial(account, newstr, PDB_CHANGED);
+		SAFE_FREE(newstr);
 	}
 
 	/* User and group sid */
@@ -1086,11 +1091,13 @@ static NTSTATUS populate_ldap_for_ldif(fstring sid, const char *suffix, const ch
 	if (idmap_suffix && *idmap_suffix &&
 	    strcmp(idmap_suffix, user_suffix) &&
 	    strcmp(idmap_suffix, suffix)) {
+		char *s;
 		fprintf(add_fd, "# %s\n", idmap_suffix);
 		fprintf(add_fd, "dn: %s\n", idmap_suffix);
 		fprintf(add_fd, "ObjectClass: organizationalUnit\n");
-		fprintf(add_fd, "ou: %s\n", 
-			sstring_sub(lp_ldap_idmap_suffix(), '=', ','));
+		s = sstring_sub(lp_ldap_idmap_suffix(), '=', ',');
+		fprintf(add_fd, "ou: %s\n", s);
+		SAFE_FREE(s);
 		fprintf(add_fd, "\n");
 		fflush(add_fd);
 	}
