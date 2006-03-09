@@ -1462,10 +1462,6 @@ time_t timegm(struct tm *tm);
 
 #if defined(HAVE_KRB5)
 
-#ifndef KRB5KRB_ERR_RESPONSE_TOO_BIG
-#define KRB5KRB_ERR_RESPONSE_TOO_BIG (-1765328332L)
-#endif
-
 #ifndef HAVE_KRB5_SET_REAL_TIME
 krb5_error_code krb5_set_real_time(krb5_context context, int32_t seconds, int32_t microseconds);
 #endif
@@ -1538,6 +1534,8 @@ int cli_krb5_get_ticket(const char *principal, time_t time_offset,
 PAC_LOGON_INFO *get_logon_info_from_pac(PAC_DATA *pac_data);
 krb5_error_code smb_krb5_renew_ticket(const char *ccache_string, const char *client_string, const char *service_string, time_t *new_start_time);
 krb5_error_code kpasswd_err_to_krb5_err(krb5_error_code res_code);
+NTSTATUS krb5_to_nt_status(krb5_error_code kerberos_error);
+krb5_error_code nt_status_to_krb5(NTSTATUS nt_status);
 #endif /* HAVE_KRB5 */
 
 
