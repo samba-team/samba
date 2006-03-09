@@ -23,7 +23,7 @@
 #ifdef HAVE_KRB5
 
 static const struct {
-	long krb5_code;
+	krb5_error_code krb5_code;
 	NTSTATUS ntstatus;
 } krb5_to_nt_status_map[] = {
 	{KRB5_CC_IO, NT_STATUS_UNEXPECTED_IO_ERROR},
@@ -52,13 +52,15 @@ static const struct {
 	{KRB5KRB_AP_ERR_SKEW, NT_STATUS_TIME_DIFFERENCE_AT_DC},
 	{KRB5KRB_AP_ERR_TKT_EXPIRED, NT_STATUS_LOGON_FAILURE},
 	{KRB5KRB_ERR_GENERIC, NT_STATUS_UNSUCCESSFUL},
+#if defined(KRB5KRB_ERR_RESPONSE_TOO_BIG)
 	{KRB5KRB_ERR_RESPONSE_TOO_BIG, NT_STATUS_PROTOCOL_UNREACHABLE},
+#endif
 	{0, NT_STATUS_OK}
 };
 
 static const struct {
 	NTSTATUS ntstatus;
-	long krb5_code;
+	krb5_error_code krb5_code;
 } nt_status_to_krb5_map[] = {
 	{NT_STATUS_LOGON_FAILURE, KRB5KDC_ERR_PREAUTH_FAILED},
 	{NT_STATUS_NO_LOGON_SERVERS, KRB5_KDC_UNREACH},
@@ -68,7 +70,7 @@ static const struct {
 /*****************************************************************************
 convert a KRB5 error to a NT status32 code
  *****************************************************************************/
-NTSTATUS krb5_to_nt_status(int kerberos_error)
+ NTSTATUS krb5_to_nt_status(krb5_error_code kerberos_error)
 {
 	int i;
 	
@@ -87,7 +89,7 @@ NTSTATUS krb5_to_nt_status(int kerberos_error)
 /*****************************************************************************
 convert an NT status32 code to a KRB5 error
  *****************************************************************************/
-int nt_status_to_krb5(NTSTATUS nt_status)
+ krb5_error_code nt_status_to_krb5(NTSTATUS nt_status)
 {
 	int i;
 	
@@ -101,31 +103,6 @@ int nt_status_to_krb5(NTSTATUS nt_status)
 	}
 
 	return KRB5KRB_ERR_GENERIC;
-}
-
-#else 
-
-/*****************************************************************************
-convert a KRB5 error to a NT status32 code
- *****************************************************************************/
-NTSTATUS krb5_to_nt_status(int kerberos_error)
-{
-	if (kerberos_error == 0) {
-		return NT_STATUS_OK;
-	}
-	
-	return NT_STATUS_UNSUCCESSFUL;
-}
-
-/*****************************************************************************
-convert an NT status32 code to a KRB5 error
- *****************************************************************************/
-int nt_status_to_krb5(NTSTATUS nt_status)
-{
-	if (NT_STATUS_EQUAL(nt_status, NT_STATUS_OK)) {
-		return 0;
-	}
-	return -1; /* FIXME: what to return here ? */
 }
 
 #endif
