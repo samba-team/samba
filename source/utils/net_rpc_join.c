@@ -137,7 +137,7 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 
 	NTSTATUS result;
 	int retval = 1;
-	char *domain;
+	char *domain = NULL;
 	uint32 num_rids, *name_types, *user_rids;
 	uint32 flags = 0x3e8;
 	char *acct_name;
