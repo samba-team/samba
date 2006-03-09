@@ -25,16 +25,30 @@ AC_MSG_RESULT(no)
 
 SMB_EXT_LIB(PTHREAD,[-lpthread])
 
-AC_CHECK_HEADERS(setproctitle.h)
-AC_CHECK_LIB_EXT(setproctitle, SETPROCTITLE_LIBS, setproctitle)
-AC_MSG_CHECKING(whether to use setproctitle)
-if test x"$ac_cv_header_setproctitle_h" = x"yes" -a x"$ac_cv_lib_ext_setproctitle_setproctitle" = x"yes"; then
-	AC_MSG_RESULT(yes)
-	SMB_EXT_LIB_ENABLE(SETPROCTITLE,YES)
-	AC_DEFINE(HAVE_SETPROCTITLE,1,[Whether setproctitle() is available])
-else 
-	AC_MSG_RESULT(no)
-fi
+AC_MSG_CHECKING(whether to search for setproctitle support)
+AC_ARG_WITH(setproctitle,
+[  --with-setproctitle          Search for setproctitle support (default=no)],
+[ case "$withval" in
+	yes)
+		AC_MSG_RESULT(yes)
+		AC_CHECK_HEADERS(setproctitle.h)
+		AC_CHECK_LIB_EXT(setproctitle, SETPROCTITLE_LIBS, setproctitle)
+		AC_MSG_CHECKING(whether to use setproctitle)
+		if test x"$ac_cv_header_setproctitle_h" = x"yes" -a \
+		   x"$ac_cv_lib_ext_setproctitle_setproctitle" = x"yes"; then
+			AC_MSG_RESULT(yes)
+			SMB_EXT_LIB_ENABLE(SETPROCTITLE,YES)
+			AC_DEFINE(HAVE_SETPROCTITLE,1,[Whether setproctitle() is available])
+		else 
+			AC_MSG_RESULT(no)
+		fi
+	;;
+	*)
+		AC_MSG_RESULT(no)
+	;;
+  esac ],
+AC_MSG_RESULT(no)
+)
 
 SMB_EXT_LIB(SETPROCTITLE,
 	[${SETPROCTITLE_LIBS}],
