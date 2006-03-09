@@ -66,6 +66,12 @@ sub check_module($$$)
 		return;
 	}
 
+	if (exists($INPUT->{$mod->{SUBSYSTEM}}{INIT_FUNCTION_TYPE})) {
+		$mod->{INIT_FUNCTION_TYPE} = $INPUT->{$mod->{SUBSYSTEM}}{INIT_FUNCTION_TYPE};
+	} else {
+		$mod->{INIT_FUNCTION_TYPE} = "NTSTATUS (*) (void)";
+	}
+
 	if (defined($mod->{CHOSEN_BUILD}) and $mod->{CHOSEN_BUILD} ne "DEFAULT") 
 	{
 		$mod->{OUTPUT_TYPE} = $mod->{CHOSEN_BUILD};
@@ -160,7 +166,7 @@ sub check($$$$$)
 		}
 
 		unless (defined($part->{STANDARD_VISIBILITY})) {
-			if ($part->{TYPE} eq "BINARY") {
+			if ($part->{TYPE} eq "MODULE" or $part->{TYPE} eq "BINARY") {
 				$part->{STANDARD_VISIBILITY} = "hidden";
 			} else {
 				$part->{STANDARD_VISIBILITY} = "default";
