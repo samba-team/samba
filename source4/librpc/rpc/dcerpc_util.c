@@ -23,6 +23,7 @@
 */
 
 #include "includes.h"
+#include "libcli/composite/composite.h"
 #include "librpc/gen_ndr/ndr_epmapper.h"
 #include "librpc/gen_ndr/ndr_dcerpc.h"
 #include "librpc/gen_ndr/ndr_misc.h"
@@ -757,14 +758,182 @@ NTSTATUS dcerpc_binding_build_tower(TALLOC_CTX *mem_ctx, struct dcerpc_binding *
 	return NT_STATUS_OK;
 }
 
+
+struct epm_map_binding_state {
+	struct dcerpc_binding *binding;
+	const struct dcerpc_interface_table *table;
+	struct dcerpc_pipe *pipe;
+	struct epm_twr_t twr;
+	struct epm_twr_t *twr_r;
+	struct epm_Map r;
+};
+
+
+static void continue_epm_recv_binding(struct composite_context *ctx);
+static void continue_epm_map(struct rpc_request *req);
+
+
+static void continue_epm_recv_binding(struct composite_context *ctx)
+{
+	struct policy_handle handle;
+	struct GUID guid;
+	struct rpc_request *map_req;
+
+	struct composite_context *c = talloc_get_type(ctx->async.private_data,
+						      struct composite_context);
+	struct epm_map_binding_state *s = talloc_get_type(c->private_data,
+							  struct epm_map_binding_state);
+
+	c->status = dcerpc_pipe_connect_b_recv(ctx, c, &s->pipe);
+	if (!composite_is_ok(c)) return;
+
+	ZERO_STRUCT(handle);
+	ZERO_STRUCT(guid);
+
+	s->binding->object         = s->table->uuid;
+	s->binding->object_version = s->table->if_version;
+
+	c->status = dcerpc_binding_build_tower(s->pipe, s->binding, &s->twr.tower);
+	if (!composite_is_ok(c)) return;
+	
+	/* with some nice pretty paper around it of course */
+	s->r.in.object        = &guid;
+	s->r.in.map_tower     = &s->twr;
+	s->r.in.entry_handle  = &handle;
+	s->r.in.max_towers    = 1;
+	s->r.out.entry_handle = &handle;
+
+	map_req = dcerpc_epm_Map_send(s->pipe, c, &s->r);
+	if (composite_nomem(map_req, c)) return;
+	
+	composite_continue_rpc(c, map_req, continue_epm_map, c);
+}
+
+
+static void continue_epm_map(struct rpc_request *req)
+{
+	struct composite_context *c = talloc_get_type(req->async.private,
+						      struct composite_context);
+	struct epm_map_binding_state *s = talloc_get_type(c->private_data,
+							  struct epm_map_binding_state);
+
+	c->status = dcerpc_ndr_request_recv(req);
+	if (!composite_is_ok(c)) return;
+
+	if (s->r.out.result != 0 || s->r.out.num_towers != 1) {
+		composite_error(c, NT_STATUS_PORT_UNREACHABLE);
+		return;
+	}
+	
+	s->twr_r = s->r.out.towers[0].twr;
+	if (s->twr_r == NULL) {
+		composite_error(c, NT_STATUS_PORT_UNREACHABLE);
+		return;
+	}
+
+	if (s->twr_r->tower.num_floors != s->twr.tower.num_floors ||
+	    s->twr_r->tower.floors[3].lhs.protocol != s->twr.tower.floors[3].lhs.protocol) {
+		composite_error(c, NT_STATUS_PORT_UNREACHABLE);
+		return;
+	}
+
+	s->binding->endpoint = talloc_reference(s->binding,
+						dcerpc_floor_get_rhs_data(c, &s->twr_r->tower.floors[3]));
+	composite_done(c);
+}
+
+
+struct composite_context *dcerpc_epm_map_binding_send(TALLOC_CTX *mem_ctx,
+						      struct dcerpc_binding *binding,
+						      const struct dcerpc_interface_table *table,
+						      struct event_context *ev)
+{
+	struct composite_context *c;
+	struct epm_map_binding_state *s;
+	struct composite_context *pipe_connect_req;
+
+	NTSTATUS status;
+	struct dcerpc_binding *epmapper_binding;
+	int i;
+
+	/* composite context allocation and setup */
+	c = talloc_zero(mem_ctx, struct composite_context);
+	if (c == NULL) return NULL;
+
+	s = talloc_zero(c, struct epm_map_binding_state);
+	if (composite_nomem(s, c)) return c;
+
+	c->state = COMPOSITE_STATE_IN_PROGRESS;
+	c->private_data = s;
+	c->event_ctx = ev;
+	
+	s->binding = binding;
+	s->table   = table;
+
+	struct cli_credentials *anon_creds = cli_credentials_init(mem_ctx);
+	cli_credentials_set_conf(anon_creds);
+	cli_credentials_set_anonymous(anon_creds);
+
+	/* First, check if there is a default endpoint specified in the IDL */
+
+	if (table) {
+		struct dcerpc_binding *default_binding;
+
+		/* Find one of the default pipes for this interface */
+		for (i = 0; i < table->endpoints->count; i++) {
+			status = dcerpc_parse_binding(mem_ctx, table->endpoints->names[i], &default_binding);
+
+			if (NT_STATUS_IS_OK(status)) {
+				if (default_binding->transport == binding->transport && default_binding->endpoint) {
+					binding->endpoint = talloc_reference(binding, default_binding->endpoint);
+					talloc_free(default_binding);
+
+					composite_done(c);
+					return c;
+
+				} else {
+					talloc_free(default_binding);
+				}
+			}
+		}
+	}
+
+	epmapper_binding = talloc_zero(c, struct dcerpc_binding);
+	if (composite_nomem(epmapper_binding, c)) return c;
+
+	epmapper_binding->transport  = binding->transport;
+	epmapper_binding->host       = talloc_reference(epmapper_binding, binding->host);
+	epmapper_binding->options    = NULL;
+	epmapper_binding->flags      = 0;
+	epmapper_binding->endpoint   = NULL;
+
+	pipe_connect_req = dcerpc_pipe_connect_b_send(c, &s->pipe, epmapper_binding, &dcerpc_table_epmapper,
+						      anon_creds, ev);
+	if (composite_nomem(pipe_connect_req, c)) return c;
+	
+	composite_continue(c, pipe_connect_req, continue_epm_recv_binding, c);
+	return c;
+}
+
+
+NTSTATUS dcerpc_epm_map_binding_recv(struct composite_context *c)
+{
+	NTSTATUS status = composite_wait(c);
+	
+	talloc_free(c);
+	return status;
+}
+
+
+
 NTSTATUS dcerpc_epm_map_binding(TALLOC_CTX *mem_ctx, struct dcerpc_binding *binding,
 				const struct dcerpc_interface_table *table, struct event_context *ev)
 {
 	struct dcerpc_pipe *p;
 	NTSTATUS status;
-	struct epm_Map r;
 	struct policy_handle handle;
 	struct GUID guid;
+	struct epm_Map r;
 	struct epm_twr_t twr, *twr_r;
 	struct dcerpc_binding *epmapper_binding;
 	int i;
@@ -865,6 +1034,175 @@ NTSTATUS dcerpc_epm_map_binding(TALLOC_CTX *mem_ctx, struct dcerpc_binding *bind
 }
 
 
+struct pipe_auth_state {
+	struct dcerpc_pipe *pipe;
+	struct dcerpc_binding *binding;
+	const struct dcerpc_interface_table *table;
+	struct cli_credentials *credentials;
+};
+
+
+static void continue_auth_schannel(struct composite_context *ctx);
+static void continue_auth(struct composite_context *ctx);
+static void continue_auth_none(struct composite_context *ctx);
+
+
+static void continue_auth_schannel(struct composite_context *ctx)
+{
+	struct composite_context *c = talloc_get_type(ctx->async.private_data,
+						      struct composite_context);
+
+	c->status = dcerpc_bind_auth_schannel_recv(ctx);
+	if (!composite_is_ok(c)) return;
+
+	composite_done(c);
+}
+
+
+static void continue_auth(struct composite_context *ctx)
+{
+	struct composite_context *c = talloc_get_type(ctx->async.private_data,
+						      struct composite_context);
+
+	c->status = dcerpc_bind_auth_recv(ctx);
+	if (!composite_is_ok(c)) return;
+	
+	composite_done(c);
+}
+
+
+static void continue_auth_none(struct composite_context *ctx)
+{
+	struct composite_context *c = talloc_get_type(ctx->async.private_data,
+						      struct composite_context);
+
+	c->status = dcerpc_bind_auth_none_recv(ctx);
+	if (!composite_is_ok(c)) return;
+	
+	composite_done(c);
+}
+
+
+struct composite_context *dcerpc_pipe_auth_send(struct dcerpc_pipe *p, 
+						struct dcerpc_binding *binding,
+						const struct dcerpc_interface_table *table,
+						struct cli_credentials *credentials)
+{
+	struct composite_context *c;
+	struct pipe_auth_state *s;
+	struct composite_context *auth_schannel_req;
+	struct composite_context *auth_req;
+	struct composite_context *auth_none_req;
+
+	/* composite context allocation and setup */
+	c = talloc_zero(NULL, struct composite_context);
+	if (c == NULL) return NULL;
+
+	s = talloc_zero(c, struct pipe_auth_state);
+	if (composite_nomem(s, c)) return c;
+
+	c->state = COMPOSITE_STATE_IN_PROGRESS;
+	c->private_data = s;
+	c->event_ctx = p->conn->event_ctx;
+
+	s->binding      = binding;
+	s->table        = table;
+	s->credentials  = credentials;
+	s->pipe         = p;
+
+	s->pipe->conn->flags = binding->flags;
+	
+	/* remember the binding string for possible secondary connections */
+	s->pipe->conn->binding_string = dcerpc_binding_string(p, binding);
+
+	if (!cli_credentials_is_anonymous(s->credentials) &&
+	    (binding->flags & DCERPC_SCHANNEL) &&
+	    !cli_credentials_get_netlogon_creds(s->credentials)) {
+
+		/* If we don't already have netlogon credentials for
+		 * the schannel bind, then we have to get these
+		 * first */
+		auth_schannel_req = dcerpc_bind_auth_schannel_send(c, s->pipe, s->table,
+								   s->credentials,
+								   dcerpc_auth_level(s->pipe->conn));
+		if (composite_nomem(auth_schannel_req, c)) return c;
+
+		composite_continue(c, auth_schannel_req, continue_auth_schannel, c);
+
+	} else if (!cli_credentials_is_anonymous(s->credentials) &&
+		   !(s->pipe->conn->transport.transport == NCACN_NP &&
+		     !(s->binding->flags & DCERPC_SIGN) &&
+		     !(s->binding->flags & DCERPC_SEAL))) {
+
+		/* Perform an authenticated DCE-RPC bind, except where
+		 * we ask for a connection on NCACN_NP, and that
+		 * connection is not signed or sealed.  For that case
+		 * we rely on the already authenticated CIFS connection
+		 */
+		
+		uint8_t auth_type;
+
+		if ((s->pipe->conn->flags & (DCERPC_SIGN|DCERPC_SEAL)) == 0) {
+			/*
+			  we are doing an authenticated connection,
+			  but not using sign or seal. We must force
+			  the CONNECT dcerpc auth type as a NONE auth
+			  type doesn't allow authentication
+			  information to be passed.
+			*/
+			s->pipe->conn->flags |= DCERPC_CONNECT;
+		}
+
+		if (s->binding->flags & DCERPC_AUTH_SPNEGO) {
+			auth_type = DCERPC_AUTH_TYPE_SPNEGO;
+
+		} else if (s->binding->flags & DCERPC_AUTH_KRB5) {
+			auth_type = DCERPC_AUTH_TYPE_KRB5;
+
+		} else if (s->binding->flags & DCERPC_SCHANNEL) {
+			auth_type = DCERPC_AUTH_TYPE_SCHANNEL;
+
+		} else {
+			auth_type = DCERPC_AUTH_TYPE_NTLMSSP;
+		}
+		
+		auth_req = dcerpc_bind_auth_send(c, s->pipe, s->table,
+						 s->credentials, auth_type,
+						 dcerpc_auth_level(s->pipe->conn),
+						 s->table->authservices->names[0]);
+		if (composite_nomem(auth_req, c)) return c;
+		
+		composite_continue(c, auth_req, continue_auth, c);
+
+	} else {
+		auth_none_req = dcerpc_bind_auth_none_send(c, s->pipe, s->table);
+		if (composite_nomem(auth_none_req, c)) return c;
+
+		composite_continue(c, auth_none_req, continue_auth_none, c);
+	}
+
+	return c;
+}
+
+
+NTSTATUS dcerpc_pipe_auth_recv(struct composite_context *c)
+{
+	NTSTATUS status;
+
+	struct pipe_auth_state *s = talloc_get_type(c->private_data,
+						    struct pipe_auth_state);
+	status = composite_wait(c);
+	if (!NT_STATUS_IS_OK(status)) {
+		char *uuid_str = GUID_string(s->pipe, &s->table->uuid);
+		DEBUG(0, ("Failed to bind to uuid %s - %s\n", uuid_str, nt_errstr(status)));
+		talloc_free(uuid_str);
+	}
+
+	talloc_free(c);
+	return status;
+}
+
+
 /* 
    perform an authenticated bind if needed
 */
@@ -942,205 +1280,6 @@ NTSTATUS dcerpc_pipe_auth(struct dcerpc_pipe *p,
 	return status;
 }
 
-
-/* open a rpc connection to a rpc pipe on SMB using the binding
-   structure to determine the endpoint and options */
-static NTSTATUS dcerpc_pipe_connect_ncacn_np(TALLOC_CTX *tmp_ctx, 
-					     struct dcerpc_pipe_connect *io)
-{
-	if (io->binding->flags & DCERPC_SMB2) {
-		return dcerpc_pipe_connect_ncacn_np_smb2(tmp_ctx, io);
-
-	}
-	return dcerpc_pipe_connect_ncacn_np_smb(tmp_ctx, io);
-}
-
-
-/* open a rpc connection to a rpc pipe, using the specified 
-   binding structure to determine the endpoint and options */
-NTSTATUS dcerpc_pipe_connect_b(TALLOC_CTX *parent_ctx, 
-			       struct dcerpc_pipe **pp, 
-			       struct dcerpc_binding *binding,
-			       const struct dcerpc_interface_table *table,
-			       struct cli_credentials *credentials,
-			       struct event_context *ev)
-{
-	NTSTATUS status = NT_STATUS_INVALID_PARAMETER;
-	struct dcerpc_pipe *p; 
-	struct dcerpc_pipe_connect pc;
-	
-	TALLOC_CTX *tmp_ctx;
-
-	(*pp) = NULL;
-
-	p = dcerpc_pipe_init(parent_ctx, ev);
-	if (p == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	tmp_ctx = talloc_named(p, 0, "dcerpc_pipe_connect_b tmp_ctx");
-
-	switch (binding->transport) {
-	case NCACN_NP:
-	case NCACN_IP_TCP:
-	case NCALRPC:
-		if (!binding->endpoint) {
-			status = dcerpc_epm_map_binding(tmp_ctx, binding, table,
-							p->conn->event_ctx);
-			if (!NT_STATUS_IS_OK(status)) {
-				DEBUG(0,("Failed to map DCERPC endpoint for '%s' - %s\n", 
-					 GUID_string(tmp_ctx, &table->uuid), nt_errstr(status)));
-				talloc_free(tmp_ctx);
-				return status;
-			}
-			DEBUG(2,("Mapped to DCERPC endpoint %s\n", binding->endpoint));
-		}
-		break;
-
-		/* Fall through to next switch statement */
-
-	default:
-		break;
-	}
-
-	pc.pipe          = p;
-	pc.binding       = binding;
-	pc.interface 	 = table;
-	pc.creds         = credentials;
-
-	switch (binding->transport) {
-	case NCACN_NP:
-		status = dcerpc_pipe_connect_ncacn_np(tmp_ctx, &pc);
-		break;
-
-	case NCACN_IP_TCP:
-		status = dcerpc_pipe_connect_ncacn_ip_tcp(tmp_ctx, &pc);
-		break;
-
-	case NCACN_UNIX_STREAM:
-		status = dcerpc_pipe_connect_ncacn_unix_stream(tmp_ctx, &pc);
-		break;
-
-	case NCALRPC:
-		status = dcerpc_pipe_connect_ncalrpc(tmp_ctx, &pc);
-		break;
-
-	default:
-		return NT_STATUS_NOT_SUPPORTED;
-	}
-
-	if (!NT_STATUS_IS_OK(status)) {
-		talloc_free(p);
-		return status;
-	}
-
-	p->binding = binding;
-	if (!talloc_reference(p, binding)) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	status = dcerpc_pipe_auth(p, binding, table, credentials);
-	if (!NT_STATUS_IS_OK(status)) {
-		talloc_free(p);
-		return status;
-	}
-	*pp = p;
-	talloc_free(tmp_ctx);
-
-	return status;
-}
-
-
-/* open a rpc connection to a rpc pipe, using the specified string
-   binding to determine the endpoint and options */
-NTSTATUS dcerpc_pipe_connect(TALLOC_CTX *parent_ctx, 
-			     struct dcerpc_pipe **pp, 
-			     const char *binding,
-			     const struct dcerpc_interface_table *table,
-			     struct cli_credentials *credentials,
-			     struct event_context *ev)
-{
-	struct dcerpc_binding *b;
-	NTSTATUS status;
-	TALLOC_CTX *tmp_ctx;
-
-	tmp_ctx = talloc_named(parent_ctx, 0, "dcerpc_pipe_connect tmp_ctx");
-	if (!tmp_ctx) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	status = dcerpc_parse_binding(tmp_ctx, binding, &b);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,("Failed to parse dcerpc binding '%s'\n", binding));
-		talloc_free(tmp_ctx);
-		return status;
-	}
-
-	DEBUG(3,("Using binding %s\n", dcerpc_binding_string(tmp_ctx, b)));
-
-	status = dcerpc_pipe_connect_b(tmp_ctx, pp, b, table, credentials, ev);
-
-	if (NT_STATUS_IS_OK(status)) {
-		*pp = talloc_steal(parent_ctx, *pp);
-	}
-	talloc_free(tmp_ctx);
-
-	return status;
-}
-
-
-/*
-  create a secondary dcerpc connection from a primary connection
-
-  if the primary is a SMB connection then the secondary connection
-  will be on the same SMB connection, but use a new fnum
-*/
-NTSTATUS dcerpc_secondary_connection(struct dcerpc_pipe *p, struct dcerpc_pipe **p2,
-				     struct dcerpc_binding *b)
-
-
-{
-	struct smbcli_tree *tree;
-	NTSTATUS status = NT_STATUS_INVALID_PARAMETER;
-
-	(*p2) = dcerpc_pipe_init(p, p->conn->event_ctx);
-	if (*p2 == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	
-	switch (p->conn->transport.transport) {
-	case NCACN_NP:
-		tree = dcerpc_smb_tree(p->conn);
-		if (!tree) {
-			return NT_STATUS_INVALID_PARAMETER;
-		}
-		status = dcerpc_pipe_open_smb((*p2)->conn, tree, b->endpoint);
-		break;
-
-	case NCACN_IP_TCP:
-		status = dcerpc_pipe_open_tcp((*p2)->conn, b->host, atoi(b->endpoint));
-		break;
-
-	case NCALRPC:
-		status = dcerpc_pipe_open_pipe((*p2)->conn, b->endpoint);
-		break;
-
-	default:
-		return NT_STATUS_NOT_SUPPORTED;
-	}
-
-	if (!NT_STATUS_IS_OK(status)) {
-		talloc_free(*p2);
-		return status;
-	}
-
-	(*p2)->conn->flags = p->conn->flags;
-	(*p2)->binding = b;
-	if (!talloc_reference(*p2, b)) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	return NT_STATUS_OK;
-}
 
 NTSTATUS dcerpc_generic_session_key(struct dcerpc_connection *c,
 				    DATA_BLOB *session_key)
