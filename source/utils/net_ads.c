@@ -367,15 +367,15 @@ static int ads_user_info(int argc, const char **argv)
 	}
 
 	escaped_user = escape_ldap_string_alloc(argv[0]);
-	
-	if (!(ads = ads_startup())) {
-		return -1;
-	}
 
 	if (!escaped_user) {
 		d_fprintf(stderr, "ads_user_info: failed to escape user %s\n", argv[0]);
-		ads_destroy(&ads);
-	 	return -1;
+		return -1;
+	}
+
+	if (!(ads = ads_startup())) {
+		SAFE_FREE(escaped_user);
+		return -1;
 	}
 
 	asprintf(&searchstring, "(sAMAccountName=%s)", escaped_user);
@@ -385,6 +385,7 @@ static int ads_user_info(int argc, const char **argv)
 	if (!ADS_ERR_OK(rc)) {
 		d_fprintf(stderr, "ads_search: %s\n", ads_errstr(rc));
 		ads_destroy(&ads);
+		SAFE_FREE(escaped_user);
 		return -1;
 	}
 	
@@ -403,6 +404,7 @@ static int ads_user_info(int argc, const char **argv)
 	
 	ads_msgfree(ads, res);
 	ads_destroy(&ads);
+	SAFE_FREE(escaped_user);
 	return 0;
 }
 
