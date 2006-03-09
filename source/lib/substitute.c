@@ -2,6 +2,7 @@
    Unix SMB/CIFS implementation.
    string substitution functions
    Copyright (C) Andrew Tridgell 1992-2000
+   Copyright (C) Gerald Carter   2006
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -171,61 +172,6 @@ const char* get_current_username( void )
 }
 
 /*******************************************************************
- Given a pointer to a %$(NAME) expand it as an environment variable.
- Return the number of characters by which the pointer should be advanced.
- Based on code by Branko Cibej <branko.cibej@hermes.si>
- When this is called p points at the '%' character.
-********************************************************************/
-
-static size_t expand_env_var(char *p, int len)
-{
-	fstring envname;
-	char *envval;
-	char *q, *r;
-	int copylen;
-
-	if (p[1] != '$')
-		return 1;
-
-	if (p[2] != '(')
-		return 2;
-
-	/*
-	 * Look for the terminating ')'.
-	 */
-
-	if ((q = strchr_m(p,')')) == NULL) {
-		DEBUG(0,("expand_env_var: Unterminated environment variable [%s]\n", p));
-		return 2;
-	}
-
-	/*
-	 * Extract the name from within the %$(NAME) string.
-	 */
-
-	r = p+3;
-	copylen = MIN((q-r),(sizeof(envname)-1));
-	strncpy(envname,r,copylen);
-	envname[copylen] = '\0';
-
-	if ((envval = getenv(envname)) == NULL) {
-		DEBUG(0,("expand_env_var: Environment variable [%s] not set\n", envname));
-		return 2;
-	}
-
-	/*
-	 * Copy the full %$(NAME) into envname so it
-	 * can be replaced.
-	 */
-
-	copylen = MIN((q+1-p),(sizeof(envname)-1));
-	strncpy(envname,p,copylen);
-	envname[copylen] = '\0';
-	string_sub(p,envname,envval,len);
-	return 0; /* Allow the environment contents to be parsed. */
-}
-
-/*******************************************************************
  Given a pointer to a %$(NAME) in p and the whole string in str
  expand it as an environment variable.
  Return a new allocated and expanded string.
@@ -234,7 +180,6 @@ static size_t expand_env_var(char *p, int len)
  May substitute multiple occurrencies of the same env var.
 ********************************************************************/
 
-
 static char * realloc_expand_env_var(char *str, char *p)
 {
 	char *envname;
@@ -242,8 +187,9 @@ static char * realloc_expand_env_var(char *str, char *p)
 	char *q, *r;
 	int copylen;
 
-	if (p[0] != '%' || p[1] != '$' || p[2] != '(')
+	if (p[0] != '%' || p[1] != '$' || p[2] != '(') {
 		return str;
+	}
 
 	/*
 	 * Look for the terminating ')'.
@@ -260,8 +206,12 @@ static char * realloc_expand_env_var(char *str, char *p)
 
 	r = p + 3;
 	copylen = q - r;
-	envname = (char *)SMB_MALLOC(copylen + 1 + 4); /* reserve space for use later add %$() chars */
-	if (envname == NULL) return NULL;
+	
+	/* reserve space for use later add %$() chars */
+	if ( (envname = (char *)SMB_MALLOC(copylen + 1 + 4)) == NULL ) {
+		return NULL;
+	}
+	
 	strncpy(envname,r,copylen);
 	envname[copylen] = '\0';
 
@@ -281,7 +231,105 @@ static char * realloc_expand_env_var(char *str, char *p)
 	envname[copylen] = '\0';
 	r = realloc_string_sub(str, envname, envval);
 	SAFE_FREE(envname);
-	if (r == NULL) return NULL;
+		
+	return r;
+}
+
+/*******************************************************************
+*******************************************************************/
+
+static char *longvar_domainsid( void )
+{
+	DOM_SID sid;
+	char *sid_string;
+	
+	if ( !secrets_fetch_domain_sid( lp_workgroup(), &sid ) ) {
+		return NULL;
+	}
+	
+	sid_string = SMB_STRDUP( sid_string_static( &sid ) );
+	
+	if ( !sid_string ) {
+		DEBUG(0,("longvar_domainsid: failed to dup SID string!\n"));
+	}
+	
+	return sid_string;
+}
+
+/*******************************************************************
+*******************************************************************/
+
+struct api_longvar {
+	const char *name;
+	char* (*fn)( void );
+};
+
+struct api_longvar longvar_table[] = {
+	{ "DomainSID",		longvar_domainsid },
+	{ NULL, 		NULL }
+};
+
+static char *get_longvar_val( const char *varname )
+{
+	int i;
+	
+	DEBUG(7,("get_longvar_val: expanding variable [%s]\n", varname));
+	
+	for ( i=0; longvar_table[i].name; i++ ) {
+		if ( strequal( longvar_table[i].name, varname ) ) {
+			return longvar_table[i].fn();
+		}
+	}
+	
+	return NULL;
+}
+
+/*******************************************************************
+ Expand the long smb.conf variable names given a pointer to a %(NAME).
+ Return the number of characters by which the pointer should be advanced.
+ When this is called p points at the '%' character.
+********************************************************************/
+
+static char *realloc_expand_longvar(char *str, char *p)
+{
+	fstring varname;
+	char *value;
+	char *q, *r;
+	int copylen;
+
+	if ( p[0] != '%' || p[1] != '(' ) {
+		return str;
+	}
+
+	/* Look for the terminating ')'.*/
+
+	if ((q = strchr_m(p,')')) == NULL) {
+		DEBUG(0,("realloc_expand_longvar: Unterminated environment variable [%s]\n", p));
+		return str;
+	}
+
+	/* Extract the name from within the %(NAME) string.*/
+
+	r = p+2;
+	copylen = MIN( (q-r), (sizeof(varname)-1) );
+	strncpy(varname, r, copylen);
+	varname[copylen] = '\0';
+
+	if ((value = get_longvar_val(varname)) == NULL) {
+		DEBUG(0,("realloc_expand_longvar: Variable [%s] not set.  Skipping\n", varname));
+		return str;
+	}
+
+	/* Copy the full %(NAME) into envname so it can be replaced.*/
+
+	copylen = MIN( (q+1-p),(sizeof(varname)-1) );
+	strncpy( varname, p, copylen );
+	varname[copylen] = '\0';
+	r = realloc_string_sub(str, varname, value);
+	SAFE_FREE( value );
+	
+	/* skip over the %(varname) */
+	
 	return r;
 }
 
@@ -367,160 +415,16 @@ static const char *automount_server(const char *user_name)
  don't allow expansions.
 ****************************************************************************/
 
-void standard_sub_basic(const char *smb_name, char *str,size_t len)
+void standard_sub_basic(const char *smb_name, char *str, size_t len)
 {
-	char *p, *s;
-	fstring pidstr;
-	struct passwd *pass;
-	const char *local_machine_name = get_local_machine_name();
-
-	for (s=str; (p=strchr_m(s, '%'));s=p) {
-		fstring tmp_str;
-
-		int l = (int)len - (int)(p-str);
-
-		if (l < 0)
-			l = 0;
-		
-		switch (*(p+1)) {
-		case 'U' : 
-			fstrcpy(tmp_str, smb_name);
-			strlower_m(tmp_str);
-			string_sub(p,"%U",tmp_str,l);
-			break;
-		case 'G' :
-			fstrcpy(tmp_str, smb_name);
-			if ((pass = Get_Pwnam(tmp_str))!=NULL) {
-				string_sub(p,"%G",gidtoname(pass->pw_gid),l);
-			} else {
-				p += 2;
-			}
-			break;
-		case 'D' :
-			fstrcpy(tmp_str, current_user_info.domain);
-			strupper_m(tmp_str);
-			string_sub(p,"%D", tmp_str,l);
-			break;
-		case 'I' :
-			string_sub(p,"%I", client_addr(),l);
-			break;
-		case 'i' :
-			string_sub(p,"%i", client_socket_addr(),l);
-			break;
-		case 'L' :
-			if (!StrnCaseCmp(p, "%LOGONSERVER%", strlen("%LOGONSERVER%"))) {
-				p++;
-				break;
-			}
-
-			if (local_machine_name && *local_machine_name) {
-				string_sub_once(p, "%L", local_machine_name, l); 
-			} else {
-				pstring temp_name;
-
-				pstrcpy(temp_name, global_myname());
-				strlower_m(temp_name);
-				string_sub_once(p, "%L", temp_name, l); 
-			}
-			break;
-		case 'M' :
-			string_sub(p,"%M", client_name(),l);
-			break;
-		case 'R' :
-			string_sub(p,"%R", remote_proto,l);
-			break;
-		case 'T' :
-			string_sub(p,"%T", timestring(False),l);
-			break;
-		case 'a' :
-			string_sub(p,"%a", remote_arch,l);
-			break;
-		case 'd' :
-			slprintf(pidstr,sizeof(pidstr)-1, "%d",(int)sys_getpid());
-			string_sub(p,"%d", pidstr,l);
-			break;
-		case 'h' :
-			string_sub(p,"%h", myhostname(),l);
-			break;
-		case 'm' :
-			string_sub(p,"%m", get_remote_machine_name(),l);
-			break;
-		case 'v' :
-			string_sub(p,"%v", SAMBA_VERSION_STRING,l);
-			break;
-		case 'w' :
-			string_sub(p,"%w", lp_winbind_separator(),l);
-			break;
-		case '$' :
-			p += expand_env_var(p,l);
-			break; /* Expand environment variables */
-		case '\0': 
-			p++; 
-			break; /* don't run off the end of the string */
-			
-		default: p+=2; 
-			break;
-		}
-	}
-}
-
-static void standard_sub_advanced(int snum, const char *user, 
-				  const char *connectpath, gid_t gid, 
-				  const char *smb_name, char *str, size_t len)
-{
-	char *p, *s, *home;
-
-	for (s=str; (p=strchr_m(s, '%'));s=p) {
-		int l = (int)len - (int)(p-str);
+	char *s;
 	
-		if (l < 0)
-			l = 0;
-	
-		switch (*(p+1)) {
-		case 'N' :
-			string_sub(p,"%N", automount_server(user),l);
-			break;
-		case 'H':
-			if ((home = get_user_home_dir(user)))
-				string_sub(p,"%H",home, l);
-			else
-				p += 2;
-			break;
-		case 'P': 
-			string_sub(p,"%P", connectpath, l); 
-			break;
-		case 'S': 
-			if ( snum != -1 )
-				string_sub(p,"%S", lp_servicename(snum), l); 
-			break;
-		case 'g': 
-			string_sub(p,"%g", gidtoname(gid), l); 
-			break;
-		case 'u': 
-			string_sub(p,"%u", user, l); 
-			break;
-			
-			/* Patch from jkf@soton.ac.uk Left the %N (NIS
-			 * server name) in standard_sub_basic as it is
-			 * a feature for logon servers, hence uses the
-			 * username.  The %p (NIS server path) code is
-			 * here as it is used instead of the default
-			 * "path =" string in [homes] and so needs the
-			 * service name, not the username.  */
-		case 'p': 
-			if ( snum != -1 )
-				string_sub(p,"%p", automount_path(lp_servicename(snum)), l); 
-			break;
-		case '\0': 
-			p++; 
-			break; /* don't run off the end of the string */
-			
-		default: p+=2; 
-			break;
-		}
+	if ( (s = alloc_sub_basic( smb_name, str )) != NULL ) {
+		strncpy( str, s, len );
 	}
-
-	standard_sub_basic(smb_name, str, len);
+	
+	SAFE_FREE( s );
+	
 }
 
 /****************************************************************************
@@ -531,14 +435,17 @@ static void standard_sub_advanced(int snum, const char *user,
 char *talloc_sub_basic(TALLOC_CTX *mem_ctx, const char *smb_name, const char *str)
 {
 	char *a, *t;
-       	a = alloc_sub_basic(smb_name, str);
-	if (!a) {
+	
+	if ( (a = alloc_sub_basic(smb_name, str)) == NULL ) {
 		return NULL;
 	}
 	t = talloc_strdup(mem_ctx, a);
 	SAFE_FREE(a);
 	return t;
 }
+
+/****************************************************************************
+****************************************************************************/
 
 char *alloc_sub_basic(const char *smb_name, const char *str)
 {
@@ -592,7 +499,13 @@ char *alloc_sub_basic(const char *smb_name, const char *str)
 		case 'I' :
 			a_string = realloc_string_sub(a_string, "%I", client_addr());
 			break;
+		case 'i': 
+			a_string = realloc_string_sub( a_string, "%i", client_socket_addr() );
+			break;
 		case 'L' : 
+			if ( StrnCaseCmp(p, "%LOGONSERVER%", strlen("%LOGONSERVER%")) == 0 ) {
+				break;
+			}
 			if (local_machine_name && *local_machine_name) {
 				a_string = realloc_string_sub(a_string, "%L", local_machine_name); 
 			} else {
@@ -633,14 +546,17 @@ char *alloc_sub_basic(const char *smb_name, const char *str)
 		case '$' :
 			a_string = realloc_expand_env_var(a_string, p); /* Expand environment variables */
 			break;
-			
+		case '(':
+			a_string = realloc_expand_longvar( a_string, p );
+			break;
 		default: 
 			break;
 		}
 
 		p++;
 		SAFE_FREE(r);
-		if (a_string == NULL) {
+		
+		if ( !a_string ) {
 			return NULL;
 		}
 	}
@@ -673,6 +589,9 @@ char *talloc_sub_specified(TALLOC_CTX *mem_ctx,
 	SAFE_FREE(a);
 	return t;
 }
+
+/****************************************************************************
+****************************************************************************/
 
 char *alloc_sub_specified(const char *input_string,
 			const char *username,
@@ -735,6 +654,9 @@ char *alloc_sub_specified(const char *input_string,
 	return ret_string;
 }
 
+/****************************************************************************
+****************************************************************************/
+
 char *talloc_sub_advanced(TALLOC_CTX *mem_ctx,
 			int snum,
 			const char *user,
@@ -752,6 +674,9 @@ char *talloc_sub_advanced(TALLOC_CTX *mem_ctx,
 	SAFE_FREE(a);
 	return t;
 }
+
+/****************************************************************************
+****************************************************************************/
 
 char *alloc_sub_advanced(int snum, const char *user, 
 				  const char *connectpath, gid_t gid, 
@@ -823,9 +748,19 @@ char *alloc_sub_advanced(int snum, const char *user,
 
 void standard_sub_conn(connection_struct *conn, char *str, size_t len)
 {
-	standard_sub_advanced(SNUM(conn), conn->user, conn->connectpath,
-			conn->gid, smb_user_name, str, len);
+	char *s;
+	
+	s = alloc_sub_advanced(SNUM(conn), conn->user, conn->connectpath,
+			conn->gid, smb_user_name, str);
+
+	if ( s ) {
+		strncpy( str, s, len );
+		SAFE_FREE( s );
+	}
 }
+
+/****************************************************************************
+****************************************************************************/
 
 char *talloc_sub_conn(TALLOC_CTX *mem_ctx, connection_struct *conn, const char *str)
 {
@@ -833,6 +768,9 @@ char *talloc_sub_conn(TALLOC_CTX *mem_ctx, connection_struct *conn, const char *
 			conn->connectpath, conn->gid,
 			smb_user_name, str);
 }
+
+/****************************************************************************
+****************************************************************************/
 
 char *alloc_sub_conn(connection_struct *conn, const char *str)
 {
@@ -848,6 +786,8 @@ void standard_sub_snum(int snum, char *str, size_t len)
 {
 	static uid_t cached_uid = -1;
 	static fstring cached_user;
+	char *s;
+	
 	/* calling uidtoname() on every substitute would be too expensive, so
 	   we cache the result here as nearly every call is for the same uid */
 
@@ -856,6 +796,11 @@ void standard_sub_snum(int snum, char *str, size_t len)
 		cached_uid = current_user.ut.uid;
 	}
 
-	standard_sub_advanced(snum, cached_user, "", current_user.ut.gid,
-			      smb_user_name, str, len);
+	s = alloc_sub_advanced(snum, cached_user, "", current_user.ut.gid,
+			      smb_user_name, str);
+
+	if ( s ) {
+		strncpy( str, s, len );
+		SAFE_FREE( s );
+	}
 }
