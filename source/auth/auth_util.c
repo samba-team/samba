@@ -1301,8 +1301,6 @@ BOOL init_guest_info(void)
 {
 	if (guest_info != NULL)
 		return True;
-		
-	
 
 	return NT_STATUS_IS_OK(make_new_server_info_guest(&guest_info));
 }

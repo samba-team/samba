@@ -349,6 +349,21 @@ static int reply_spnego_kerberos(connection_struct *conn,
 			pdb_set_domain(server_info->sam_account, domain, PDB_SET);
 		}
 	}
+	
+	/* we need to build the token for the user. make_server_info_guest()
+	   already does this */
+	
+	if ( !server_info->ptok ) {
+		ret = create_local_token( server_info );
+		if ( !NT_STATUS_IS_OK(ret) ) {
+			SAFE_FREE(client);
+			data_blob_free(&ap_rep);
+			data_blob_free(&session_key);
+			TALLOC_FREE( mem_ctx );
+			TALLOC_FREE( server_info );
+			return ERROR_NT(ret);
+		}
+	}
 
 	/* register_vuid keeps the server info */
 	/* register_vuid takes ownership of session_key, no need to free after this.
@@ -357,7 +372,7 @@ static int reply_spnego_kerberos(connection_struct *conn,
 
 	SAFE_FREE(client);
 
-	if (sess_vuid == -1) {
+	if (sess_vuid == UID_FIELD_INVALID ) {
 		ret = NT_STATUS_LOGON_FAILURE;
 	} else {
 		/* current_user_info is changed on new vuid */
@@ -429,7 +444,7 @@ static BOOL reply_spnego_ntlmssp(connection_struct *conn, char *inbuf, char *out
 		sess_vuid = register_vuid(server_info, session_key, nullblob, (*auth_ntlmssp_state)->ntlmssp_state->user);
 		(*auth_ntlmssp_state)->server_info = NULL;
 
-		if (sess_vuid == -1) {
+		if (sess_vuid == UID_FIELD_INVALID ) {
 			nt_status = NT_STATUS_LOGON_FAILURE;
 		} else {
 			
@@ -674,7 +689,7 @@ static int reply_sesssetup_and_X_spnego(connection_struct *conn, char *inbuf,
 	vuser = get_partial_auth_user_struct(vuid);
 	if (!vuser) {
 		vuid = register_vuid(NULL, data_blob(NULL, 0), data_blob(NULL, 0), NULL);
-		if (vuid == -1) {
+		if (vuid == UID_FIELD_INVALID ) {
 			return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 		}
 	
@@ -1100,7 +1115,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 	data_blob_free(&nt_resp);
 	data_blob_free(&lm_resp);
 
-	if (sess_vuid == -1) {
+	if (sess_vuid == UID_FIELD_INVALID) {
 		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
 	}
 
