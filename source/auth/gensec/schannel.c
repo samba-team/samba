@@ -147,7 +147,8 @@ static NTSTATUS schannel_update(struct gensec_security *gensec_security, TALLOC_
  * Make sure not to call this unless gensec is using schannel...
  */
 
-_PUBLIC_/* TODO: make this non-public */NTSTATUS dcerpc_schannel_creds(struct gensec_security *gensec_security,
+/* TODO: make this non-public */
+_PUBLIC_ NTSTATUS dcerpc_schannel_creds(struct gensec_security *gensec_security,
 			       TALLOC_CTX *mem_ctx,
 			       struct creds_CredentialState **creds)
 { 
