@@ -48,7 +48,7 @@ my $section_types = {
 		"ENABLE"		=> "bool",
 		"NOPROTO"		=> "bool",
 
-		"OUTPUT_TYPE" => "string",
+		"OUTPUT_TYPE"		=> "string",
 
 		"MANPAGE"		=> "string",
 		"PRIVATE_PROTO_HEADER"	=> "string",
@@ -75,7 +75,7 @@ my $section_types = {
 		"MINOR_VERSION"		=> "string",
 		"RELEASE_VERSION"	=> "string",
 		
-		"INIT_FUNCTION_TYPE" => "string",
+		"INIT_FUNCTION_TYPE"	=> "string",
 
 		"OBJ_FILES"		=> "list",
 
