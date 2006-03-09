@@ -275,11 +275,15 @@ sub SharedLibrary($$)
 		push (@{$self->{shared_modules}}, "bin/$ctx->{LIBRARY_REALNAME}");
 		push (@{$self->{plugins}}, "$installdir/$ctx->{LIBRARY_REALNAME}");
 
-		$self->{install_plugins} .= "\t\@echo Install $installdir/$ctx->{LIBRARY_REALNAME} as \$(DESTDIR)\$(MODULESDIR)/$ctx->{SUBSYSTEM}/$ctx->{NAME}.\$(SHLIBEXT)\n";
+		my $fixedname = $ctx->{NAME};
+
+		$fixedname =~ s/^$ctx->{SUBSYSTEM}_//g;
+
+		$self->{install_plugins} .= "\t\@echo Installing $installdir/$ctx->{LIBRARY_REALNAME} as \$(DESTDIR)\$(MODULESDIR)/$ctx->{SUBSYSTEM}/$fixedname.\$(SHLIBEXT)\n";
 		$self->{install_plugins} .= "\t\@mkdir -p \$(DESTDIR)\$(MODULESDIR)/$ctx->{SUBSYSTEM}/\n";
-		$self->{install_plugins} .= "\t\@cp $installdir/$ctx->{LIBRARY_REALNAME} \$(DESTDIR)\$(MODULESDIR)/$ctx->{SUBSYSTEM}/$ctx->{NAME}.\$(SHLIBEXT)\n";
-		$self->{uninstall_plugins} .= "\t\@echo Uninstall \$(DESTDIR)\$(MODULESDIR)/$ctx->{SUBSYSTEM}/$ctx->{NAME}.\$(SHLIBEXT)\n";
-		$self->{uninstall_plugins} .= "\t\@rm \$(DESTDIR)\$(MODULESDIR)/$ctx->{SUBSYSTEM}/$ctx->{NAME}.\$(SHLIBEXT)\n";
+		$self->{install_plugins} .= "\t\@cp $installdir/$ctx->{LIBRARY_REALNAME} \$(DESTDIR)\$(MODULESDIR)/$ctx->{SUBSYSTEM}/$fixedname.\$(SHLIBEXT)\n";
+		$self->{uninstall_plugins} .= "\t\@echo Uninstalling \$(DESTDIR)\$(MODULESDIR)/$ctx->{SUBSYSTEM}/$fixedname.\$(SHLIBEXT)\n";
+		$self->{uninstall_plugins} .= "\t\@-rm \$(DESTDIR)\$(MODULESDIR)/$ctx->{SUBSYSTEM}/$fixedname.\$(SHLIBEXT)\n";
 	}
 
 	$self->_prepare_list($ctx, "OBJ_LIST");
