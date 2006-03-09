@@ -31,7 +31,7 @@ include scripting/config.mk
 include kdc/config.mk
 include passdb/config.mk
 
-DEFAULT_HEADERS = $(srcdir)/include/smb.h $(srcdir)/include/core.h
+DEFAULT_HEADERS = $(srcdir)/include/core.h
 
 binaries: $(BINARIES)
 libraries: $(STATIC_LIBS) $(SHARED_LIBS)

@@ -1,5 +1,6 @@
 - sonames
 - saner names for some of the .pc files
+- .pc files also when there is a public header?
 - get rid of include/structs.h and include/proto.h
 - add register function to smbtorture
 - improve (un)install scripts (rewrite in perl?)
