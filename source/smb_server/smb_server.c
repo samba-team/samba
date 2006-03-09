@@ -20,6 +20,7 @@
 */
 
 #include "includes.h"
+#include "smbd/service_task.h"
 #include "smbd/service_stream.h"
 #include "smbd/service.h"
 #include "smb_server/smb_server.h"
@@ -183,12 +184,13 @@ static NTSTATUS smb_add_socket(struct event_context *event_context,
 }
 
 /*
-  called on startup of the smb server service It's job is to start
-  listening on all configured SMB server sockets
+  open the smb server sockets
 */
-static NTSTATUS smbsrv_init(struct event_context *event_context, const struct model_ops *model_ops)
+static void smbsrv_task_init(struct task_server *task)
 {	
 	NTSTATUS status;
+
+	task_server_set_title(task, "task[smbsrv]");
 
 	if (lp_interfaces() && lp_bind_interfaces_only()) {
 		int num_interfaces = iface_count();
@@ -200,16 +202,28 @@ static NTSTATUS smbsrv_init(struct event_context *event_context, const struct mo
 		*/
 		for(i = 0; i < num_interfaces; i++) {
 			const char *address = iface_n_ip(i);
-			status = smb_add_socket(event_context, model_ops, address);
-			NT_STATUS_NOT_OK_RETURN(status);
+			status = smb_add_socket(task->event_ctx, task->model_ops, address);
+			if (!NT_STATUS_IS_OK(status)) goto failed;
 		}
 	} else {
 		/* Just bind to lp_socket_address() (usually 0.0.0.0) */
-		status = smb_add_socket(event_context, model_ops, lp_socket_address());
-		NT_STATUS_NOT_OK_RETURN(status);
+		status = smb_add_socket(task->event_ctx, task->model_ops, lp_socket_address());
+		if (!NT_STATUS_IS_OK(status)) goto failed;
 	}
 
-	return NT_STATUS_OK;
+	return;
+failed:
+	task_server_terminate(task, "Failed to startup smb server task");	
+}
+
+/*
+  called on startup of the smb server service It's job is to start
+  listening on all configured sockets
+*/
+static NTSTATUS smbsrv_init(struct event_context *event_context, 
+			    const struct model_ops *model_ops)
+{	
+	return task_server_startup(event_context, model_ops, smbsrv_task_init);
 }
 
 /* called at smbd startup - register ourselves as a server service */

@@ -27,6 +27,7 @@
 #include "dlinklist.h"
 #include "rpc_server/dcerpc_server.h"
 #include "lib/events/events.h"
+#include "smbd/service_task.h"
 #include "smbd/service_stream.h"
 #include "smbd/service.h"
 #include "system/filesys.h"
@@ -1272,18 +1273,20 @@ const struct dcesrv_critical_sizes *dcerpc_module_version(void)
 }
 
 /*
-  initialise the dcerpc server context 
+  open the dcerpc server sockets
 */
-static NTSTATUS dcesrv_init(struct event_context *event_context, const struct model_ops *model_ops)
+static void dcesrv_task_init(struct task_server *task)
 {
 	NTSTATUS status;
 	struct dcesrv_context *dce_ctx;
 	struct dcesrv_endpoint *e;
 
-	status = dcesrv_init_context(event_context,
+	task_server_set_title(task, "task[dcesrv]");
+
+	status = dcesrv_init_context(task->event_ctx,
 				     lp_dcerpc_endpoint_servers(),
 				     &dce_ctx);
-	NT_STATUS_NOT_OK_RETURN(status);
+	if (!NT_STATUS_IS_OK(status)) goto failed;
 
 	/* Make sure the directory for NCALRPC exists */
 	if (!directory_exist(lp_ncalrpc_dir())) {
@@ -1293,31 +1296,44 @@ static NTSTATUS dcesrv_init(struct event_context *event_context, const struct mo
 	for (e=dce_ctx->endpoint_list;e;e=e->next) {
 		switch (e->ep_description->transport) {
 		case NCACN_UNIX_STREAM:
-			status = dcesrv_add_ep_unix(dce_ctx, e, event_context, model_ops);
-			NT_STATUS_NOT_OK_RETURN(status);
+			status = dcesrv_add_ep_unix(dce_ctx, e, task->event_ctx, task->model_ops);
+			if (!NT_STATUS_IS_OK(status)) goto failed;
 			break;
 		
 		case NCALRPC:
-			status = dcesrv_add_ep_ncalrpc(dce_ctx, e, event_context, model_ops);
-			NT_STATUS_NOT_OK_RETURN(status);
+			status = dcesrv_add_ep_ncalrpc(dce_ctx, e, task->event_ctx, task->model_ops);
+			if (!NT_STATUS_IS_OK(status)) goto failed;
 			break;
 
 		case NCACN_IP_TCP:
-			status = dcesrv_add_ep_tcp(dce_ctx, e, event_context, model_ops);
-			NT_STATUS_NOT_OK_RETURN(status);
+			status = dcesrv_add_ep_tcp(dce_ctx, e, task->event_ctx, task->model_ops);
+			if (!NT_STATUS_IS_OK(status)) goto failed;
 			break;
 			
 		case NCACN_NP:
-/*			FIXME: status = dcesrv_add_ep_np(dce_ctx, e, event_context, model_ops);
-			NT_STATUS_NOT_OK_RETURN(status); */
-			break;
+/*			FIXME: status = dcesrv_add_ep_np(dce_ctx, e, task->event_ctx, task->model_ops);
+			if (!NT_STATUS_IS_OK(status)) goto failed;
+*/			break;
 
 		default:
-			return NT_STATUS_NOT_SUPPORTED;
+			status = NT_STATUS_NOT_SUPPORTED;
+			if (!NT_STATUS_IS_OK(status)) goto failed;
 		}
 	}
 
-	return NT_STATUS_OK;	
+	return;
+failed:
+	task_server_terminate(task, "Failed to startup dcerpc server task");	
+}
+
+/*
+  called on startup of the smb server service It's job is to start
+  listening on all configured sockets
+*/
+static NTSTATUS dcesrv_init(struct event_context *event_context, 
+			    const struct model_ops *model_ops)
+{	
+	return task_server_startup(event_context, model_ops, dcesrv_task_init);
 }
 
 NTSTATUS server_service_rpc_init(void)
