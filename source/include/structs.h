@@ -98,6 +98,8 @@ struct dcesrv_call_state;
 struct libnet_context;
 struct libnet_JoinDomain;
 
+struct pipe_connect_state;
+
 struct clilist_file_info;
 
 struct netr_LMSessionKey;
