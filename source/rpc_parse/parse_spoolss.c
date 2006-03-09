@@ -3733,7 +3733,7 @@ BOOL make_spoolss_q_setprinter(TALLOC_CTX *mem_ctx, SPOOL_Q_SETPRINTER *q_u,
 	SEC_DESC *secdesc;
 	DEVICEMODE *devmode;
 
-	if (q_u == NULL)
+	if (!q_u || !info)
 		return False;
 	
 	memcpy(&q_u->handle, hnd, sizeof(q_u->handle));
