@@ -480,9 +480,12 @@ static NTSTATUS libnet_SetPassword_samr_handle(struct libnet_context *ctx, TALLO
 	for (i=0; i < ARRAY_SIZE(levels); i++) {
 		r->generic.level = levels[i];
 		status = libnet_SetPassword(ctx, mem_ctx, r);
-		if (!NT_STATUS_EQUAL(status, NT_STATUS_INVALID_INFO_CLASS) && !NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
-			break;
+		if (NT_STATUS_EQUAL(status, NT_STATUS_INVALID_INFO_CLASS)
+		    || NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
+			/* Try another password set mechanism */
+			continue;
 		}
+		break;
 	}
 	
 	return status;
