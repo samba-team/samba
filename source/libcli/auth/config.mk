@@ -6,6 +6,6 @@ OBJ_FILES = credentials.o \
 		session.o \
 		smbencrypt.o 
 REQUIRED_SUBSYSTEMS = \
-		auth SCHANNELDB gensec_ntlmssp
+		auth SCHANNELDB MSRPC_PARSE
 # End SUBSYSTEM LIBCLI_AUTH
 #################################

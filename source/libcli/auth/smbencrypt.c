@@ -26,6 +26,7 @@
 #include "system/time.h"
 #include "smb.h"
 #include "auth/ntlmssp/ntlmssp.h"
+#include "auth/ntlmssp/msrpc_parse.h"
 #include "lib/crypto/crypto.h"
 #include "libcli/auth/proto.h"
 #include "pstring.h"
