@@ -17,6 +17,7 @@ INIT_FUNCTION = process_model_standard_init
 SUBSYSTEM = PROCESS_MODEL
 OBJ_FILES = \
 		process_standard.o
+REQUIRED_SUBSYSTEMS = EXT_LIB_SETPROCTITLE
 # End MODULE process_model_standard
 ################################################
 

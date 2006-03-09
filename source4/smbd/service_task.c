@@ -23,6 +23,7 @@
 #include "includes.h"
 #include "process_model.h"
 #include "lib/events/events.h"
+#include "smbd/service.h"
 #include "smbd/service_task.h"
 #include "lib/messaging/irpc.h"
 
@@ -90,3 +91,10 @@ NTSTATUS task_server_startup(struct event_context *event_ctx,
 	return NT_STATUS_OK;
 }
 
+/*
+  setup a task title 
+*/
+void task_server_set_title(struct task_server *task, const char *title)
+{
+	task->model_ops->set_title(task->event_ctx, title);
+}
