@@ -154,7 +154,7 @@ static void smbsrv_accept(struct stream_connection *conn)
 }
 
 static const struct stream_server_ops smb_stream_ops = {
-	.name			= "smb",
+	.name			= "smbsrv",
 	.accept_connection	= smbsrv_accept,
 	.recv_handler		= smbsrv_recv,
 	.send_handler		= smbsrv_send,

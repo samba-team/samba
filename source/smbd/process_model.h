@@ -51,9 +51,11 @@ struct model_ops {
 			 void (*)(struct event_context *, uint32_t, void *),
 			 void *);
 
-	/* function to terminate a task */
+	/* function to terminate a connection or task */
 	void (*terminate)(struct event_context *, const char *reason);
 
+	/* function to set a title for the connection or task */
+	void (*set_title)(struct event_context *, const char *title);
 };
 
 /* this structure is used by modules to determine the size of some critical types */

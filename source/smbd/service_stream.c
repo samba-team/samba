@@ -25,6 +25,7 @@
 #include "process_model.h"
 #include "lib/events/events.h"
 #include "lib/socket/socket.h"
+#include "smbd/service.h"
 #include "smbd/service_stream.h"
 #include "lib/messaging/irpc.h"
 
@@ -143,6 +144,7 @@ static void stream_new_connection(struct event_context *ev,
 {
 	struct stream_socket *stream_socket = talloc_get_type(private, struct stream_socket);
 	struct stream_connection *srv_conn;
+	struct socket_address *c, *s;
 
 	srv_conn = talloc_zero(ev, struct stream_connection);
 	if (!srv_conn) {
@@ -173,6 +175,21 @@ static void stream_new_connection(struct event_context *ev,
 		stream_terminate_connection(srv_conn, "messaging_init() failed");
 		return;
 	}
+
+	c = socket_get_peer_addr(sock, ev);
+	s = socket_get_my_addr(sock, ev);
+	if (s && c) {
+		const char *title;
+		title = talloc_asprintf(s, "conn[%s] c[%s:%u] s[%s:%u] server_id[%d]",
+					stream_socket->ops->name, 
+					c->addr, c->port, s->addr, s->port,
+					server_id);
+		if (title) {
+			stream_connection_set_title(srv_conn, title);
+		}
+	}
+	talloc_free(c);
+	talloc_free(s);
 
 	/* call the server specific accept code */
 	stream_socket->ops->accept_connection(srv_conn);
@@ -270,4 +287,12 @@ NTSTATUS stream_setup_socket(struct event_context *event_context,
 	stream_socket->model_ops        = model_ops;
 
 	return NT_STATUS_OK;
+}
+
+/*
+  setup a connection title 
+*/
+void stream_connection_set_title(struct stream_connection *conn, const char *title)
+{
+	conn->model_ops->set_title(conn->event.ctx, title);
 }

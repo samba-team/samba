@@ -26,12 +26,20 @@
 #include "lib/events/events.h"
 #include "lib/tdb/include/tdb.h"
 #include "smb_server/smb_server.h"
+#include "lib/socket/socket.h"
 
 /* For specifiying event context to GSSAPI below */
 #include "system/kerberos.h"
 #include "heimdal/lib/gssapi/gssapi_locl.h"
 
 #include "passdb/secrets.h"
+
+#ifdef HAVE_SETPROCTITLE
+#include <setproctitle.h>
+#define SETPROCTITLE(x) setproctitle x
+#else
+#define SETPROCTITLE(x)
+#endif
 
 /*
   called when the process model is selected
@@ -54,6 +62,7 @@ static void standard_accept_connection(struct event_context *ev,
 	struct socket_context *sock2;
 	pid_t pid;
 	struct event_context *ev2;
+	struct socket_address *c, *s;
 
 	/* accept an incoming connection. */
 	status = socket_accept(sock, &sock2);
@@ -74,6 +83,8 @@ static void standard_accept_connection(struct event_context *ev,
 		/* go back to the event loop */
 		return;
 	}
+
+	pid = getpid();
 
 	/* This is now the child code. We need a completely new event_context to work with */
 	ev2 = event_context_init(NULL);
@@ -104,8 +115,18 @@ static void standard_accept_connection(struct event_context *ev,
 	/* Ensure that the forked children do not expose identical random streams */
 	set_need_random_reseed();
 
+	/* setup the process title */
+	c = socket_get_peer_addr(sock2, ev2);
+	s = socket_get_my_addr(sock2, ev2);
+	if (s && c) {
+		SETPROCTITLE(("conn c[%s:%u] s[%s:%u] server_id[%d]",
+			      c->addr, c->port, s->addr, s->port, pid));
+	}
+	talloc_free(c);
+	talloc_free(s);
+
 	/* setup this new connection */
-	new_conn(ev2, sock2, getpid(), private);
+	new_conn(ev2, sock2, pid, private);
 
 	/* we can't return to the top level here, as that event context is gone,
 	   so we now process events in the new event context until there are no
@@ -133,6 +154,8 @@ static void standard_new_task(struct event_context *ev,
 		return;
 	}
 
+	pid = getpid();
+
 	/* This is now the child code. We need a completely new event_context to work with */
 	ev2 = event_context_init(NULL);
 
@@ -153,8 +176,10 @@ static void standard_new_task(struct event_context *ev,
 	/* Ensure that the forked children do not expose identical random streams */
 	set_need_random_reseed();
 
+	SETPROCTITLE(("task server_id[%d]", pid));
+
 	/* setup this new connection */
-	new_task(ev2, getpid(), private);
+	new_task(ev2, pid, private);
 
 	/* we can't return to the top level here, as that event context is gone,
 	   so we now process events in the new event context until there are no
@@ -184,6 +209,15 @@ static void standard_terminate(struct event_context *ev, const char *reason)
 	exit(0);
 }
 
+/* called to set a title of a task or connection */
+static void standard_set_title(struct event_context *ev, const char *title) 
+{
+	if (title) {
+		SETPROCTITLE(("%s", title));
+	} else {
+		SETPROCTITLE((NULL));
+	}
+}
 
 static const struct model_ops standard_ops = {
 	.name			= "standard",
@@ -191,6 +225,7 @@ static const struct model_ops standard_ops = {
 	.accept_connection	= standard_accept_connection,
 	.new_task               = standard_new_task,
 	.terminate              = standard_terminate,
+	.set_title              = standard_set_title,
 };
 
 /*

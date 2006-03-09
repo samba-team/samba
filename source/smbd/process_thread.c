@@ -188,6 +188,11 @@ static void thread_terminate(struct event_context *event_ctx, const char *reason
 	pthread_exit(NULL);  /* thread cleanup routine will do actual cleanup */
 }
 
+/* called to set a title of a task or connection */
+static void thread_set_title(struct event_context *ev, const char *title) 
+{
+}
+
 /*
   mutex init function for thread model
 */
@@ -520,6 +525,7 @@ static const struct model_ops thread_ops = {
 	.accept_connection	= thread_accept_connection,
 	.new_task               = thread_new_task,
 	.terminate              = thread_terminate,
+	.set_title		= thread_set_title,
 };
 
 /*

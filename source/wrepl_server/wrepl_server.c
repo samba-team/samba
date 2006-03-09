@@ -437,6 +437,8 @@ static void wreplsrv_task_init(struct task_server *task)
 	NTSTATUS status;
 	struct wreplsrv_service *service;
 
+	task_server_set_title(task, "task[wreplsrv]");
+
 	service = talloc_zero(task, struct wreplsrv_service);
 	if (!service) {
 		task_server_terminate(task, "wreplsrv_task_init: out of memory");

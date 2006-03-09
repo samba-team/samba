@@ -548,6 +548,8 @@ static void ldapsrv_task_init(struct task_server *task)
 	struct ldapsrv_service *ldap_service;
 	NTSTATUS status;
 
+	task_server_set_title(task, "task[ldapsrv]");
+
 	ldap_service = talloc_zero(task, struct ldapsrv_service);
 	if (ldap_service == NULL) goto failed;
 
