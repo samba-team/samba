@@ -268,12 +268,17 @@ clean: heimdal_clean clean_pch
 	@echo Removing hostcc objects
 	@-find . -name '*.ho' -exec rm -f '{}' \;
 	@echo Removing binaries
-	@-rm -f $(BIN_PROGS) $(SBIN_PROGS)
+	@-rm -f $(BIN_PROGS) $(SBIN_PROGS) $(BINARIES)
 	@echo Removing libraries
-	@-rm -f bin/*.$(SHLIBEXT).*
+	@-rm -f $(STATIC_LIBRARIES) $(SHARED_LIBRARIES)
+	@-rm -f bin/*.$(SHLIBEXT)*
+	@echo Removing modules
+	@-rm -f $(SHARED_MODULES) $(PLUGINS)
+	@-rm -f bin/*_init_module.c
 	@echo Removing dummy targets
 	@-rm -f bin/.*_*
 	@echo Removing generated files
+	@-rm -f bin/*_init_module.c
 	@-rm -rf librpc/gen_* 
 	@-rm -f lib/registry/regf.h lib/registry/tdr_regf*
 	@echo Removing proto headers
@@ -286,6 +291,7 @@ distclean: clean
 	-rm -f config.log config.cache
 	-rm -f samba4-deps.dot
 	-rm -f config.pm config.mk
+	-rm -f $(PC_FILES)
 
 removebackup:
 	-rm -f *.bak *~ */*.bak */*~ */*/*.bak */*/*~ */*/*/*.bak */*/*/*~

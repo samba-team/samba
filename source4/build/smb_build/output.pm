@@ -43,15 +43,23 @@ sub generate_shared_library($)
 {
 	my $lib = shift;
 	my $link_name;
+	my $lib_name;
 
 	@{$lib->{DEPEND_LIST}} = ();
 	@{$lib->{LINK_LIST}} = ("\$($lib->{TYPE}_$lib->{NAME}\_OBJ_LIST)");
 
-	$link_name = $lib->{NAME};
-	$link_name =~ s/^LIB//;
-	$link_name = lc($link_name);
+	$link_name = lc($lib->{NAME});
+	$lib_name = $link_name;
 
-	$lib->{LIBRARY_REALNAME} = $lib->{LIBRARY_NAME} = "lib$link_name.\$(SHLIBEXT)";
+	if ($lib->{TYPE} eq "LIBRARY") {
+		$link_name = $lib->{NAME};
+		$link_name =~ s/^LIB//;
+		$link_name = lc($link_name);
+		$lib_name = "lib$link_name";
+		$lib->{OUTPUT} = "-l$link_name";
+	}
+
+	$lib->{LIBRARY_REALNAME} = $lib->{LIBRARY_NAME} = "$lib_name.\$(SHLIBEXT)";
 	$lib->{TARGET} = "bin/$lib->{LIBRARY_NAME}";
 	if (defined($lib->{MAJOR_VERSION})) {
 		$lib->{LIBRARY_SONAME} = $lib->{LIBRARY_NAME}.".$lib->{MAJOR_VERSION}";
@@ -59,7 +67,6 @@ sub generate_shared_library($)
 		$lib->{TARGET} = "bin/$lib->{LIBRARY_REALNAME}";
 		@{$lib->{LINK_FLAGS}} = ("\$(SONAMEFLAG)$lib->{LIBRARY_SONAME}");
 	}
-	$lib->{OUTPUT} = "-l$link_name";
 }
 
 sub generate_static_library($)

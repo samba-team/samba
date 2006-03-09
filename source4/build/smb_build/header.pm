@@ -48,26 +48,6 @@ sub _prepare_build_h($)
 	}
 
 	#
-	# Shared modules
-	#
-	foreach my $key (values %{$depend}) {
-		next if $key->{TYPE} ne "MODULE";
-		next if $key->{ENABLE} ne "YES";
-		next if $key->{OUTPUT_TYPE} ne "SHARED_LIBRARY";
-
-		my $name = $key->{NAME};
-		next if not defined($key->{INIT_FUNCTION});
-
-		my $DEFINE = ();
-		
-		$DEFINE->{COMMENT} = "$name is built shared";
-		$DEFINE->{KEY} = $key->{INIT_FUNCTION};
-		$DEFINE->{VAL} = "init_module";
-
-		push(@defines,$DEFINE);
-	}
-
-	#
 	# loop over all BUILD_H define sections
 	#
 	foreach (@defines) { $output .= _add_define_section($_); }
