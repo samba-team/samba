@@ -5541,7 +5541,11 @@ void init_sam_user_info23W(SAM_USER_INFO_23 * usr, NTTIME * logon_time,	/* all z
 	copy_unistr2(&usr->uni_munged_dial, mung_dial);
 	init_uni_hdr(&usr->hdr_munged_dial, &usr->uni_munged_dial);
 
-	memcpy(&usr->logon_hrs, hrs, sizeof(usr->logon_hrs));
+	if (hrs) {
+		memcpy(&usr->logon_hrs, hrs, sizeof(usr->logon_hrs));
+	} else {
+		ZERO_STRUCT(usr->logon_hrs);
+	}
 }
 
 /*************************************************************************
