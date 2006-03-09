@@ -744,8 +744,8 @@ static NTSTATUS rpc_api_pipe(struct rpc_pipe_client *cli,
 	char *rparam = NULL;
 	uint32 rparam_len = 0;
 	uint16 setup[2];
-	char *pdata = data ? prs_data_p(data) : NULL;
-	uint32 data_len = data ? prs_offset(data) : 0;
+	char *pdata = prs_data_p(data);
+	uint32 data_len = prs_offset(data);
 	char *prdata = NULL;
 	uint32 rdata_len = 0;
 	uint32 max_data = cli->max_xmit_frag ? cli->max_xmit_frag : RPC_MAX_PDU_FRAG_LEN;
