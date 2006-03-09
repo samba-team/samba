@@ -2272,6 +2272,11 @@ fi
 if test x"$samba_cv_HAVE_LIBFAM" = x"yes" ; then
     AC_DEFINE(HAVE_FAM_CHANGE_NOTIFY, 1,
 	    [Whether FAM is file notifications are available])
+    AC_TRY_COMPILE([#include <fam.h>],
+		[FAMCodes code = FAMChanged;],
+		AC_DEFINE(HAVE_FAM_H_FAMCODES_TYPEDEF, 1,
+		    [Whether fam.h contains a typedef for enum FAMCodes]),
+		[])
 fi
 
 AC_CACHE_CHECK([for kernel share modes],samba_cv_HAVE_KERNEL_SHARE_MODES,[

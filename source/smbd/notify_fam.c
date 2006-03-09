@@ -24,6 +24,13 @@
 
 #include <fam.h>
 
+#if !defined(HAVE_FAM_H_FAMCODES_TYPEDEF)
+/* Gamin provides this typedef which means we can't use 'enum FAMCodes' as per
+ * every other FAM implementation. Phooey.
+ */
+typedef enum FAMCodes FAMCodes;
+#endif
+
 /* NOTE: There are multiple versions of FAM floating around the net, each with
  * slight differences from the original SGI FAM implementation. In this file,
  * we rely only on the SGI features and do not assume any extensions. For
@@ -40,7 +47,7 @@ struct fam_req_info
 {
     FAMRequest	    req;
     int		    generation;
-    enum FAMCodes   code;
+    FAMCodes	    code;
     enum
     {
 	/* We are waiting for an event. */
@@ -91,9 +98,9 @@ static struct cnotify_fns global_fam_notify =
  * because that might not work across all flavours of FAM.
  */
 static const char *
-fam_event_str(enum FAMCodes code)
+fam_event_str(FAMCodes code)
 {
-    static struct { enum FAMCodes code; const char * name; } evstr[] =
+    static const struct { FAMCodes code; const char * name; } evstr[] =
     {
 	{ FAMChanged,		"FAMChanged"},
 	{ FAMDeleted,		"FAMDeleted"},
@@ -188,7 +195,7 @@ fam_monitor_path(connection_struct *	conn,
 }
 
 static BOOL
-fam_handle_event(enum FAMCodes code, uint32 flags)
+fam_handle_event(const FAMCodes code, uint32 flags)
 {
 #define F_CHANGE_MASK (FILE_NOTIFY_CHANGE_FILE | \
 			FILE_NOTIFY_CHANGE_ATTRIBUTES | \
