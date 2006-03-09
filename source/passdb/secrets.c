@@ -702,6 +702,7 @@ NTSTATUS secrets_trusted_domains(TALLOC_CTX *mem_ctx, uint32 *num_domains,
 					     k->node_key.dsize);
 		if (!secrets_key) {
 			DEBUG(0, ("strndup failed!\n"));
+			tdb_search_list_free(keys);
 			return NT_STATUS_NO_MEMORY;
 		}
 
@@ -728,12 +729,14 @@ NTSTATUS secrets_trusted_domains(TALLOC_CTX *mem_ctx, uint32 *num_domains,
 		dom_info = TALLOC_P(mem_ctx, struct trustdom_info);
 		if (dom_info == NULL) {
 			DEBUG(0, ("talloc failed\n"));
+			tdb_search_list_free(keys);
 			return NT_STATUS_NO_MEMORY;
 		}
 
 		if (pull_ucs2_talloc(mem_ctx, &dom_info->name,
 				     pass.uni_name) < 0) {
 			DEBUG(2, ("pull_ucs2_talloc failed\n"));
+			tdb_search_list_free(keys);
 			return NT_STATUS_NO_MEMORY;
 		}
 
@@ -743,6 +746,7 @@ NTSTATUS secrets_trusted_domains(TALLOC_CTX *mem_ctx, uint32 *num_domains,
 			     domains, num_domains);
 
 		if (*domains == NULL) {
+			tdb_search_list_free(keys);
 			return NT_STATUS_NO_MEMORY;
 		}
 		talloc_steal(*domains, dom_info);
