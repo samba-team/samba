@@ -305,7 +305,7 @@ int register_vuid(auth_serversupplied_info *server_info,
 		DEBUG(1, ("Failed to claim session for vuid=%d\n",
 			  vuser->vuid));
 		invalidate_vuid(vuser->vuid);
-		return -1;
+		return UID_FIELD_INVALID;
 	}
 
 	/* Register a home dir service for this user iff
