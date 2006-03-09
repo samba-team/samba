@@ -851,6 +851,7 @@ struct composite_context *dcerpc_epm_map_binding_send(TALLOC_CTX *mem_ctx,
 	struct composite_context *c;
 	struct epm_map_binding_state *s;
 	struct composite_context *pipe_connect_req;
+	struct cli_credentials *anon_creds;
 
 	NTSTATUS status;
 	struct dcerpc_binding *epmapper_binding;
@@ -870,7 +871,7 @@ struct composite_context *dcerpc_epm_map_binding_send(TALLOC_CTX *mem_ctx,
 	s->binding = binding;
 	s->table   = table;
 
-	struct cli_credentials *anon_creds = cli_credentials_init(mem_ctx);
+	anon_creds = cli_credentials_init(mem_ctx);
 	cli_credentials_set_conf(anon_creds);
 	cli_credentials_set_anonymous(anon_creds);
 
