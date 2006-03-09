@@ -33,7 +33,7 @@
 #include "lib/events/events.h"
 #include "dlinklist.h"
 #include "smb_server/smb_server.h"
-#include "mutex.h"
+#include "lib/util/mutex.h"
 
 /* For specifying event context to GSSAPI below */
 #include "system/kerberos.h"
