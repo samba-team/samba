@@ -25,6 +25,7 @@
 #include "includes.h"
 #include "auth/auth.h"
 #include "auth/ntlmssp/ntlmssp.h"
+#include "auth/ntlmssp/msrpc_parse.h"
 #include "lib/crypto/crypto.h"
 #include "pstring.h"
 #include "system/filesys.h"
