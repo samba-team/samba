@@ -295,7 +295,7 @@ static void cifsdd_help_message(poptContext pctx,
 		const char * parg,
 		void * pdata)
 {
-	static const char const notes[] = 
+	static const char notes[] = 
 "FILE can be a local filename or a UNC path of the form //server/share/path.\n";
 
 	char prefix[24];

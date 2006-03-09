@@ -1,10 +1,10 @@
-# NTPTR Server subsystem
+# ntptr server subsystem
 
 ################################################
 # Start MODULE ntptr_simple_ldb
 [MODULE::ntptr_simple_ldb]
 INIT_FUNCTION = ntptr_simple_ldb_init
-SUBSYSTEM = NTPTR
+SUBSYSTEM = ntptr
 OBJ_FILES = \
 		simple_ldb/ntptr_simple_ldb.o
 REQUIRED_SUBSYSTEMS = \
@@ -13,12 +13,12 @@ REQUIRED_SUBSYSTEMS = \
 ################################################
 
 ################################################
-# Start SUBSYSTEM NTPTR
-[SUBSYSTEM::NTPTR]
+# Start SUBSYSTEM ntptr
+[SUBSYSTEM::ntptr]
 PRIVATE_PROTO_HEADER = ntptr_proto.h
 OBJ_FILES = \
 		ntptr_base.o \
 		ntptr_interface.o
 #
-# End SUBSYSTEM NTPTR
+# End SUBSYSTEM ntptr
 ################################################

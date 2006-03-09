@@ -39,6 +39,7 @@ INIT_FUNCTION = registry_dir_init
 SUBSYSTEM = registry
 OBJ_FILES = \
 		reg_backend_dir.o
+REQUIRED_SUBSYSTEMS = LIBTALLOC
 # End MODULE registry_dir
 ################################################
 
