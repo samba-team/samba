@@ -88,12 +88,18 @@ static void single_terminate(struct event_context *ev, const char *reason)
 	DEBUG(2,("single_terminate: reason[%s]\n",reason));
 }
 
+/* called to set a title of a task or connection */
+static void single_set_title(struct event_context *ev, const char *title) 
+{
+}
+
 static const struct model_ops single_ops = {
 	.name			= "single",
 	.model_init		= single_model_init,
 	.new_task               = single_new_task,
 	.accept_connection	= single_accept_connection,
 	.terminate              = single_terminate,
+	.set_title		= single_set_title,
 };
 
 /*

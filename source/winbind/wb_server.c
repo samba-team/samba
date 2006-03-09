@@ -116,6 +116,8 @@ static void winbind_task_init(struct task_server *task)
 	struct wbsrv_service *service;
 	struct wbsrv_listen_socket *listen_socket;
 
+	task_server_set_title(task, "task[winbind]");
+
 	/* within the winbind task we want to be a single process, so
 	   ask for the single process model ops and pass these to the
 	   stream_setup_socket() call. */

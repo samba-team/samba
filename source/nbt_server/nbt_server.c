@@ -41,6 +41,8 @@ static void nbtd_task_init(struct task_server *task)
 		return;
 	}
 
+	task_server_set_title(task, "task[nbtd]");
+
 	nbtsrv = talloc(task, struct nbtd_server);
 	if (nbtsrv == NULL) {
 		task_server_terminate(task, "nbtd: out of memory");

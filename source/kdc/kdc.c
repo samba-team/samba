@@ -544,6 +544,8 @@ static void kdc_task_init(struct task_server *task)
 		return;
 	}
 
+	task_server_set_title(task, "task[kdc]");
+
 	kdc = talloc(task, struct kdc_server);
 	if (kdc == NULL) {
 		task_server_terminate(task, "kdc: out of memory");

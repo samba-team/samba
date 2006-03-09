@@ -238,6 +238,8 @@ static void websrv_task_init(struct task_server *task)
 	uint16_t port = lp_web_port();
 	const struct model_ops *model_ops;
 
+	task_server_set_title(task, "task[websrv]");
+
 	/* run the web server as a single process */
 	model_ops = process_model_byname("single");
 	if (!model_ops) goto failed;

@@ -137,6 +137,8 @@ static void cldapd_task_init(struct task_server *task)
 		return;
 	}
 
+	task_server_set_title(task, "task[cldapd]");
+
 	cldapd = talloc(task, struct cldapd_server);
 	if (cldapd == NULL) {
 		task_server_terminate(task, "cldapd: out of memory");
