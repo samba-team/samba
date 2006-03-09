@@ -853,8 +853,27 @@ static int rebindproc_connect_with_state (LDAP *ldap_struct,
 	    username and password to? */
 
 	rc = ldap_simple_bind_s(ldap_struct, ldap_state->bind_dn, ldap_state->bind_secret);
-	
-	GetTimeOfDay(&ldap_state->last_rebind);
+
+	/* only set the last rebind timestamp when we did rebind after a
+	 * non-read LDAP operation. That way we avoid the replication sleep
+	 * after a simple redirected search operation - Guenther */
+
+	switch (request) {
+
+		case LDAP_REQ_MODIFY:
+		case LDAP_REQ_ADD:
+		case LDAP_REQ_DELETE:
+		case LDAP_REQ_MODDN:
+		case LDAP_REQ_EXTENDED:
+			DEBUG(10,("rebindproc_connect_with_state: "
+				"setting last_rebind timestamp "
+				"(req: 0x%02x)\n", request));
+			GetTimeOfDay(&ldap_state->last_rebind);
+			break;
+		default:
+			ZERO_STRUCT(ldap_state->last_rebind);
+			break;
+	}
 
 	return rc;
 }
