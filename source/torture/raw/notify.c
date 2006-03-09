@@ -22,6 +22,7 @@
 #include "torture/torture.h"
 #include "libcli/raw/libcliraw.h"
 #include "libcli/libcli.h"
+#include "system/filesys.h"
 
 #define BASEDIR "\\test_notify"
 
@@ -36,7 +37,7 @@
 
 #define CHECK_VAL(v, correct) do { \
 	if ((v) != (correct)) { \
-		printf("(%d) wrong value for %s  0x%x - 0x%x\n", \
+		printf("(%d) wrong value for %s  0x%x should be 0x%x\n", \
 		       __LINE__, #v, (int)v, (int)correct); \
 		ret = False; \
 		goto done; \
@@ -61,8 +62,9 @@ BOOL torture_raw_notify(void)
 	NTSTATUS status;
 	struct smb_notify notify;
 	union smb_open io;
-	int fnum = -1;
-	struct smbcli_request *req;
+	int i, count, fnum, fnum2;
+	struct smbcli_request *req, *req2;
+	extern int torture_numops;
 		
 	if (!torture_open_connection(&cli)) {
 		return False;
@@ -94,9 +96,13 @@ BOOL torture_raw_notify(void)
 	CHECK_STATUS(status, NT_STATUS_OK);
 	fnum = io.ntcreatex.out.fnum;
 
+	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	fnum2 = io.ntcreatex.out.fnum;
+
 	/* ask for a change notify */
-	notify.in.buffer_size = 4096;
-	notify.in.completion_filter = 0xFF;
+	notify.in.buffer_size = 1000;
+	notify.in.completion_filter = 0x3;
 	notify.in.fnum = fnum;
 	notify.in.recursive = True;
 
@@ -130,6 +136,80 @@ BOOL torture_raw_notify(void)
 	smbcli_mkdir(cli->tree, BASEDIR "\\subdir-name");
 	status = smb_raw_changenotify_recv(req, mem_ctx, &notify);
 	CHECK_STATUS(status, NT_STATUS_CANCELLED);
+
+	count = torture_numops;
+	printf("testing buffered notify on create of %d files\n", count);
+	for (i=0;i<count;i++) {
+		char *fname = talloc_asprintf(cli, BASEDIR "\\test%d.txt", i);
+		int fnum3 = smbcli_open(cli->tree, fname, O_CREAT|O_RDWR, DENY_NONE);
+		if (fnum3 == -1) {
+			printf("Failed to create %s - %s\n", 
+			       fname, smbcli_errstr(cli->tree));
+			ret = False;
+			goto done;
+		}
+		talloc_free(fname);
+		smbcli_close(cli->tree, fnum3);
+	}
+
+	/* setup a new notify on a different directory handle. This
+	   new notify won't see the events above. */
+	notify.in.fnum = fnum2;
+	req2 = smb_raw_changenotify_send(cli->tree, &notify);
+
+	/* whereas this notify will see the above buffered events as
+	   well */
+	notify.in.fnum = fnum;
+	req = smb_raw_changenotify_send(cli->tree, &notify);
+
+	status = smbcli_unlink(cli->tree, BASEDIR "\\test0.txt");
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	/* receive the reply from the 2nd notify */
+	status = smb_raw_changenotify_recv(req, mem_ctx, &notify);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	CHECK_VAL(notify.out.num_changes, count+1);
+	for (i=0;i<notify.out.num_changes;i++) {
+		CHECK_VAL(notify.out.changes[i].action, NOTIFY_ACTION_ADDED);
+	}
+	CHECK_WSTR(notify.out.changes[0].name, "subdir-name", STR_UNICODE);
+
+	/* and now from the 1st notify */
+	status = smb_raw_changenotify_recv(req2, mem_ctx, &notify);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_VAL(notify.out.num_changes, 1);
+
+	printf("testing notify on wildcard unlink for %d files\n", count);
+
+	req = smb_raw_changenotify_send(cli->tree, &notify);
+	status = smbcli_unlink(cli->tree, BASEDIR "\\test*.txt");
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	status = smb_raw_changenotify_recv(req, mem_ctx, &notify);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	CHECK_VAL(notify.out.num_changes, 1);
+	CHECK_VAL(notify.out.changes[0].action, NOTIFY_ACTION_REMOVED);
+	CHECK_WSTR(notify.out.changes[0].name, "test0.txt", STR_UNICODE);
+
+	/* and we now see the rest of the unlink calls */
+	req = smb_raw_changenotify_send(cli->tree, &notify);
+	status = smb_raw_changenotify_recv(req, mem_ctx, &notify);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_VAL(notify.out.num_changes, count-1);
+	for (i=0;i<notify.out.num_changes;i++) {
+		CHECK_VAL(notify.out.changes[i].action, NOTIFY_ACTION_REMOVED);
+	}
+
+	notify.in.fnum = fnum2;
+	req = smb_raw_changenotify_send(cli->tree, &notify);
+	status = smb_raw_changenotify_recv(req, mem_ctx, &notify);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_VAL(notify.out.num_changes, count-1);
+	for (i=0;i<notify.out.num_changes;i++) {
+		CHECK_VAL(notify.out.changes[i].action, NOTIFY_ACTION_REMOVED);
+	}
 
 done:
 	smb_raw_exit(cli->session);
