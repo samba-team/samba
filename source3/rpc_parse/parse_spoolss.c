@@ -937,7 +937,7 @@ BOOL make_spoolss_q_addprinterex( TALLOC_CTX *mem_ctx, SPOOL_Q_ADDPRINTEREX *q_u
 {
 	DEBUG(5,("make_spoolss_q_addprinterex\n"));
 	
-	if (!ctr) 
+	if (!ctr || !ctr->printers_2) 
 		return False;
 
 	ZERO_STRUCTP(q_u);
