@@ -43,7 +43,7 @@ struct pipe_np_smb_state {
 /*
   Stage 3 of ncacn_np_smb: Named pipe opened (or not)
 */
-void continue_pipe_open_smb(struct composite_context *ctx)
+static void continue_pipe_open_smb(struct composite_context *ctx)
 {
 	struct composite_context *c = talloc_get_type(ctx->async.private_data,
 						      struct composite_context);
@@ -52,9 +52,8 @@ void continue_pipe_open_smb(struct composite_context *ctx)
 
 	/* receive result of named pipe open request on smb */
 	c->status = dcerpc_pipe_open_smb_recv(ctx);
-	if (!NT_STATUS_IS_OK(c->status)) {
+	if (!composite_is_ok(c)) {
 		DEBUG(0,("Failed to open pipe %s - %s\n", s->io.pipe_name, nt_errstr(c->status)));
-		composite_error(c, c->status);
 		return;
 	}
 
@@ -64,7 +63,7 @@ void continue_pipe_open_smb(struct composite_context *ctx)
 /*
   Stage 2 of ncacn_np_smb: Open a named pipe after successful smb connection
 */
-void continue_smb_connect(struct composite_context *ctx)
+static void continue_smb_connect(struct composite_context *ctx)
 {
 	struct composite_context *open_ctx;
 	struct composite_context *c = talloc_get_type(ctx->async.private_data,
@@ -74,9 +73,8 @@ void continue_smb_connect(struct composite_context *ctx)
 	
 	/* receive result of smb connect request */
 	c->status = smb_composite_connect_recv(ctx, c);
-	if (!NT_STATUS_IS_OK(c->status)) {
+	if (!composite_is_ok(c)) {
 		DEBUG(0,("Failed to connect to %s - %s\n", s->io.binding->host, nt_errstr(c->status)));
-		composite_error(c, c->status);
 		return;
 	}
 
@@ -86,10 +84,7 @@ void continue_smb_connect(struct composite_context *ctx)
 
 	/* send named pipe open request */
 	open_ctx = dcerpc_pipe_open_smb_send(s->io.pipe->conn, s->tree, s->io.pipe_name);
-	if (open_ctx == NULL) {
-		composite_error(c, NT_STATUS_NO_MEMORY);
-		return;
-	}
+	if (composite_nomem(open_ctx, c)) return;
 
 	composite_continue(c, open_ctx, continue_pipe_open_smb, c);
 }
@@ -112,10 +107,7 @@ struct composite_context *dcerpc_pipe_connect_ncacn_np_smb_send(TALLOC_CTX *mem_
 	if (c == NULL) return NULL;
 
 	s = talloc_zero(c, struct pipe_np_smb_state);
-	if (s == NULL) {
-		composite_error(c, NT_STATUS_NO_MEMORY);
-		goto done;
-	}
+	if (composite_nomem(s, c)) return c;
 
 	c->state = COMPOSITE_STATE_IN_PROGRESS;
 	c->private_data = s;
@@ -133,6 +125,9 @@ struct composite_context *dcerpc_pipe_connect_ncacn_np_smb_send(TALLOC_CTX *mem_
 	conn->in.service_type           = NULL;
 	conn->in.workgroup              = lp_workgroup();
 
+	/* verify if called_name has been allocated when uppercasing */
+	if (composite_nomem(conn->in.called_name, c)) return c;
+
 	/*
 	 * provide proper credentials - user supplied, but allow a
 	 * fallback to anonymous if this is an schannel connection
@@ -148,14 +143,9 @@ struct composite_context *dcerpc_pipe_connect_ncacn_np_smb_send(TALLOC_CTX *mem_
 
 	/* send smb connect request */
 	conn_req = smb_composite_connect_send(conn, s->io.pipe->conn, s->io.pipe->conn->event_ctx);
-	if (!conn_req) {
-		composite_error(c, NT_STATUS_NO_MEMORY);
-		goto done;
-	}
+	if (composite_nomem(conn_req, c)) return c;
 
 	composite_continue(c, conn_req, continue_smb_connect, c);
-
-done:
 	return c;
 }
 
@@ -193,7 +183,7 @@ struct pipe_np_smb2_state {
 /*
   Stage 3 of ncacn_np_smb: Named pipe opened (or not)
 */
-void continue_pipe_open_smb2(struct composite_context *ctx)
+static void continue_pipe_open_smb2(struct composite_context *ctx)
 {
 	struct composite_context *c = talloc_get_type(ctx->async.private_data,
 						      struct composite_context);
@@ -202,9 +192,8 @@ void continue_pipe_open_smb2(struct composite_context *ctx)
 
 	/* receive result of named pipe open request on smb2 */
 	c->status = dcerpc_pipe_open_smb2_recv(ctx);
-	if (!NT_STATUS_IS_OK(c->status)) {
+	if (!composite_is_ok(c)) {
 		DEBUG(0,("Failed to open pipe %s - %s\n", s->io.pipe_name, nt_errstr(c->status)));
-		composite_error(c, c->status);
 		return;
 	}
 
@@ -215,7 +204,7 @@ void continue_pipe_open_smb2(struct composite_context *ctx)
 /*
   Stage 2 of ncacn_np_smb2: Open a named pipe after successful smb2 connection
 */
-void continue_smb2_connect(struct composite_context *ctx)
+static void continue_smb2_connect(struct composite_context *ctx)
 {
 	struct composite_context *open_req;
 	struct composite_context *c = talloc_get_type(ctx->async.private_data,
@@ -225,9 +214,8 @@ void continue_smb2_connect(struct composite_context *ctx)
 
 	/* receive result of smb2 connect request */
 	c->status = smb2_connect_recv(ctx, c, &s->tree);
-	if (!NT_STATUS_IS_OK(c->status)) {
+	if (!composite_is_ok(c)) {
 		DEBUG(0,("Failed to connect to %s - %s\n", s->io.binding->host, nt_errstr(c->status)));
-		composite_error(c, c->status);
 		return;
 	}
 
@@ -236,10 +224,7 @@ void continue_smb2_connect(struct composite_context *ctx)
 
 	/* send named pipe open request */
 	open_req = dcerpc_pipe_open_smb2_send(s->io.pipe->conn, s->tree, s->io.pipe_name);
-	if (open_req == NULL) {
-		composite_error(c, NT_STATUS_NO_MEMORY);
-		return;
-	}
+	if (composite_nomem(open_req, c)) return;
 
 	composite_continue(c, open_req, continue_pipe_open_smb2, c);
 }
@@ -261,10 +246,7 @@ struct composite_context *dcerpc_pipe_connect_ncacn_np_smb2_send(TALLOC_CTX *mem
 	if (c == NULL) return NULL;
 
 	s = talloc_zero(c, struct pipe_np_smb2_state);
-	if (s == NULL) {
-		composite_error(c, NT_STATUS_NO_MEMORY);
-		goto done;
-	}
+	if (composite_nomem(s, c)) return c;
 	
 	c->state = COMPOSITE_STATE_IN_PROGRESS;
 	c->private_data = s;
@@ -278,10 +260,7 @@ struct composite_context *dcerpc_pipe_connect_ncacn_np_smb2_send(TALLOC_CTX *mem
 	 */
 	if (s->io.binding->flags & DCERPC_SCHANNEL) {
 		s->io.creds = cli_credentials_init(mem_ctx);
-		if (s->io.creds) {
-			composite_error(c, NT_STATUS_NO_MEMORY);
-			goto done;
-		}
+		if (composite_nomem(s->io.creds, c)) return c;
 
 		cli_credentials_set_anonymous(s->io.creds);
 		cli_credentials_guess(s->io.creds);
@@ -290,14 +269,10 @@ struct composite_context *dcerpc_pipe_connect_ncacn_np_smb2_send(TALLOC_CTX *mem
 	/* send smb2 connect request */
 	conn_req = smb2_connect_send(mem_ctx, s->io.binding->host, "IPC$", s->io.creds,
 				     c->event_ctx);
-	if (conn_req == NULL) {
-		composite_error(c, NT_STATUS_NO_MEMORY);
-		goto done;
-	}
+	if (composite_nomem(conn_req, c)) return c;
 
 	composite_continue(c, conn_req, continue_smb2_connect, c);
 
-done:
 	return c;
 }
 
@@ -336,7 +311,7 @@ struct pipe_ip_tcp_state {
 /*
   Stage 2 of ncacn_ip_tcp: rpc pipe opened (or not)
 */
-void continue_pipe_open_ncacn_ip_tcp(struct composite_context *ctx)
+static void continue_pipe_open_ncacn_ip_tcp(struct composite_context *ctx)
 {
 	struct composite_context *c = talloc_get_type(ctx->async.private_data,
 						      struct composite_context);
@@ -345,10 +320,9 @@ void continue_pipe_open_ncacn_ip_tcp(struct composite_context *ctx)
 
 	/* receive result of named pipe open request on tcp/ip */
 	c->status = dcerpc_pipe_open_tcp_recv(ctx);
-	if (!NT_STATUS_IS_OK(c->status)) {
+	if (!composite_is_ok(c)) {
 		DEBUG(0,("Failed to connect to %s:%d - %s\n", s->host, s->port,
 			 nt_errstr(c->status)));
-		composite_error(c, c->status);
 		return;
 	}
 
@@ -372,10 +346,7 @@ struct composite_context* dcerpc_pipe_connect_ncacn_ip_tcp_send(TALLOC_CTX *mem_
 	if (c == NULL) return NULL;
 
 	s = talloc_zero(c, struct pipe_ip_tcp_state);
-	if (s == NULL) {
-		composite_error(c, NT_STATUS_NO_MEMORY);
-		goto done;
-	}
+	if (composite_nomem(s, c)) return c;
 	
 	c->state = COMPOSITE_STATE_IN_PROGRESS;
 	c->private_data = s;
@@ -388,13 +359,9 @@ struct composite_context* dcerpc_pipe_connect_ncacn_ip_tcp_send(TALLOC_CTX *mem_
 
 	/* send pipe open request on tcp/ip */
 	pipe_req = dcerpc_pipe_open_tcp_send(s->io.pipe->conn, s->host, s->port);
-	if (pipe_req == NULL) {
-		composite_error(c, NT_STATUS_NO_MEMORY);
-		goto done;
-	}
+	if (composite_nomem(pipe_req, c)) return c;
 
 	composite_continue(c, pipe_req, continue_pipe_open_ncacn_ip_tcp, c);
-done:
 	return c;
 }
 
@@ -432,7 +399,7 @@ struct pipe_unix_state {
 /*
   Stage 2 of ncacn_unix: rpc pipe opened (or not)
 */
-void continue_pipe_open_ncacn_unix_stream(struct composite_context *ctx)
+static void continue_pipe_open_ncacn_unix_stream(struct composite_context *ctx)
 {
 	struct composite_context *c = talloc_get_type(ctx->async.private_data,
 						      struct composite_context);
@@ -441,10 +408,9 @@ void continue_pipe_open_ncacn_unix_stream(struct composite_context *ctx)
 
 	/* receive result of pipe open request on unix socket */
 	c->status = dcerpc_pipe_open_unix_stream_recv(ctx);
-	if (!NT_STATUS_IS_OK(c->status)) {
+	if (!composite_is_ok(c)) {
 		DEBUG(0,("Failed to open unix socket %s - %s\n",
 			 s->io.binding->endpoint, nt_errstr(c->status)));
-		composite_error(c, c->status);
 		return;
 	}
 
@@ -468,10 +434,7 @@ struct composite_context* dcerpc_pipe_connect_ncacn_unix_stream_send(TALLOC_CTX 
 	if (c == NULL) return NULL;
 
 	s = talloc_zero(c, struct pipe_unix_state);
-	if (s == NULL) {
-		composite_error(c, NT_STATUS_NO_MEMORY);
-		goto done;
-	}
+	if (composite_nomem(s, c)) return c;
 	
 	c->state = COMPOSITE_STATE_IN_PROGRESS;
 	c->private_data = s;
@@ -484,20 +447,16 @@ struct composite_context* dcerpc_pipe_connect_ncacn_unix_stream_send(TALLOC_CTX 
 	if (!io->binding->endpoint) {
 		DEBUG(0, ("Path to unix socket not specified\n"));
 		composite_error(c, NT_STATUS_INVALID_PARAMETER);
-		goto done;
+		return c;
 	}
 
 	s->path  = talloc_strdup(c, io->binding->endpoint);  /* path is a binding endpoint here */
 
 	/* send pipe open request on unix socket */
 	pipe_req = dcerpc_pipe_open_unix_stream_send(s->io.pipe->conn, s->path);
-	if (pipe_req == NULL) {
-		composite_error(c, NT_STATUS_NO_MEMORY);
-		goto done;
-	}
+	if (composite_nomem(pipe_req, c)) return c;
 
 	composite_continue(c, pipe_req, continue_pipe_open_ncacn_unix_stream, c);
-done:
 	return c;
 }
 
@@ -534,7 +493,7 @@ struct pipe_ncalrpc_state {
 /*
   Stage 2 of ncalrpc: rpc pipe opened (or not)
 */
-void continue_pipe_open_ncalrpc(struct composite_context *ctx)
+static void continue_pipe_open_ncalrpc(struct composite_context *ctx)
 {
 	struct composite_context *c = talloc_get_type(ctx->async.private_data,
 						      struct composite_context);
@@ -543,10 +502,9 @@ void continue_pipe_open_ncalrpc(struct composite_context *ctx)
 
 	/* receive result of pipe open request on ncalrpc */
 	c->status = dcerpc_pipe_connect_ncalrpc_recv(ctx);
-	if (!NT_STATUS_IS_OK(c->status)) {
+	if (!composite_is_ok(c)) {
 		DEBUG(0,("Failed to open ncalrpc pipe '%s' - %s\n", s->io.binding->endpoint,
 			 nt_errstr(c->status)));
-		composite_error(c, c->status);
 		return;
 	}
 
@@ -570,10 +528,7 @@ struct composite_context* dcerpc_pipe_connect_ncalrpc_send(TALLOC_CTX *mem_ctx,
 	if (c == NULL) return NULL;
 
 	s = talloc_zero(c, struct pipe_ncalrpc_state);
-	if (s == NULL) {
-		composite_error(c, NT_STATUS_NO_MEMORY);
-		goto done;
-	}
+	if (composite_nomem(s, c)) return c;
 	
 	c->state = COMPOSITE_STATE_IN_PROGRESS;
 	c->private_data = s;
@@ -584,13 +539,9 @@ struct composite_context* dcerpc_pipe_connect_ncalrpc_send(TALLOC_CTX *mem_ctx,
 
 	/* send pipe open request */
 	pipe_req = dcerpc_pipe_open_pipe_send(s->io.pipe->conn, s->io.binding->endpoint);
-	if (pipe_req == NULL) {
-		composite_error(c, NT_STATUS_NO_MEMORY);
-		goto done;
-	}
+	if (composite_nomem(pipe_req, c)) return c;
 	
 	composite_continue(c, pipe_req, continue_pipe_open_ncalrpc, c);
-done:
 	return c;
 }
 
@@ -615,4 +566,583 @@ NTSTATUS dcerpc_pipe_connect_ncalrpc(TALLOC_CTX *mem_ctx,
 {
 	struct composite_context *c = dcerpc_pipe_connect_ncalrpc_send(mem_ctx, io);
 	return dcerpc_pipe_connect_ncalrpc_recv(c);
+}
+
+
+struct pipe_connect_state {
+	struct dcerpc_pipe *pipe;
+	struct dcerpc_binding *binding;
+	const struct dcerpc_interface_table *table;
+	struct cli_credentials *credentials;
+};
+
+
+static void continue_map_binding(struct composite_context *ctx);
+static void continue_connect(struct composite_context *c, struct pipe_connect_state *s);
+static void continue_pipe_connect_ncacn_np_smb2(struct composite_context *ctx);
+static void continue_pipe_connect_ncacn_np_smb(struct composite_context *ctx);
+static void continue_pipe_connect_ncacn_ip_tcp(struct composite_context *ctx);
+static void continue_pipe_connect_ncacn_unix(struct composite_context *ctx);
+static void continue_pipe_connect_ncalrpc(struct composite_context *ctx);
+static void continue_pipe_connect(struct composite_context *c, struct pipe_connect_state *s);
+static void continue_pipe_auth(struct composite_context *ctx);
+
+
+static void continue_map_binding(struct composite_context *ctx)
+{
+	struct composite_context *c = talloc_get_type(ctx->async.private_data,
+						      struct composite_context);
+	struct pipe_connect_state *s = talloc_get_type(c->private_data,
+						       struct pipe_connect_state);
+	
+	c->status = dcerpc_epm_map_binding_recv(ctx);
+	if (!composite_is_ok(c)) {
+		DEBUG(0,("Failed to map DCERPC endpoint for '%s' - %s\n", 
+			 GUID_string(c, &s->table->uuid), nt_errstr(c->status)));
+		return;
+	}
+
+	DEBUG(2,("Mapped to DCERPC endpoint %s\n", s->binding->endpoint));
+	
+	continue_connect(c, s);
+}
+
+
+static void continue_connect(struct composite_context *c, struct pipe_connect_state *s)
+{
+	struct dcerpc_pipe_connect pc;
+
+	/* potential exits to another stage by sending an async request */
+	struct composite_context *ncacn_np_smb2_req;
+	struct composite_context *ncacn_np_smb_req;
+	struct composite_context *ncacn_ip_tcp_req;
+	struct composite_context *ncacn_unix_req;
+	struct composite_context *ncalrpc_req;
+
+	/* dcerpc pipe connect input parameters */
+	pc.pipe         = s->pipe;
+	pc.binding      = s->binding;
+	pc.interface    = s->table;
+	pc.creds        = s->credentials;
+	
+	switch (s->binding->transport) {
+	case NCACN_NP:
+		if (pc.binding->flags & DCERPC_SMB2) {
+			/* new varient of SMB a.k.a. SMB2 */
+			ncacn_np_smb2_req = dcerpc_pipe_connect_ncacn_np_smb2_send(c, &pc);
+			if (composite_nomem(ncacn_np_smb2_req, c)) return;
+
+			composite_continue(c, ncacn_np_smb2_req, continue_pipe_connect_ncacn_np_smb2, c);
+			return;
+
+		} else {
+			/* good old ordinary SMB */
+			ncacn_np_smb_req = dcerpc_pipe_connect_ncacn_np_smb_send(c, &pc);
+			if (composite_nomem(ncacn_np_smb_req, c)) return;
+			
+			composite_continue(c, ncacn_np_smb_req, continue_pipe_connect_ncacn_np_smb, c);
+			return;
+		}
+		break;
+
+	case NCACN_IP_TCP:
+		ncacn_ip_tcp_req = dcerpc_pipe_connect_ncacn_ip_tcp_send(c, &pc);
+		if (composite_nomem(ncacn_ip_tcp_req, c)) return;
+		
+		composite_continue(c, ncacn_ip_tcp_req, continue_pipe_connect_ncacn_ip_tcp, c);
+		return;
+
+	case NCACN_UNIX_STREAM:
+		ncacn_unix_req = dcerpc_pipe_connect_ncacn_unix_stream_send(c, &pc);
+		if (composite_nomem(ncacn_unix_req, c)) return;
+		
+		composite_continue(c, ncacn_unix_req, continue_pipe_connect_ncacn_unix, c);
+		return;
+
+	case NCALRPC:
+		ncalrpc_req = dcerpc_pipe_connect_ncalrpc_send(c, &pc);
+		if (composite_nomem(ncalrpc_req, c)) return;
+		
+		composite_continue(c, ncalrpc_req, continue_pipe_connect_ncalrpc, c);
+		return;
+
+	default:
+		composite_error(c, NT_STATUS_NOT_SUPPORTED);
+	}
+}
+
+
+static void continue_pipe_connect_ncacn_np_smb2(struct composite_context *ctx)
+{
+	struct composite_context *c = talloc_get_type(ctx->async.private_data,
+						      struct composite_context);
+	struct pipe_connect_state *s = talloc_get_type(c->private_data,
+						       struct pipe_connect_state);
+
+	c->status = dcerpc_pipe_connect_ncacn_np_smb2_recv(ctx);
+	if (!composite_is_ok(c)) return;
+
+	continue_pipe_connect(c, s);
+}
+
+
+static void continue_pipe_connect_ncacn_np_smb(struct composite_context *ctx)
+{
+	struct composite_context *c = talloc_get_type(ctx->async.private_data,
+						      struct composite_context);
+	struct pipe_connect_state *s = talloc_get_type(c->private_data,
+						       struct pipe_connect_state);
+
+	c->status = dcerpc_pipe_connect_ncacn_np_smb_recv(ctx);
+	if (!composite_is_ok(c)) return;
+	
+	continue_pipe_connect(c, s);
+}
+
+
+static void continue_pipe_connect_ncacn_ip_tcp(struct composite_context *ctx)
+{
+	struct composite_context *c = talloc_get_type(ctx->async.private_data,
+						      struct composite_context);
+	struct pipe_connect_state *s = talloc_get_type(c->private_data,
+						       struct pipe_connect_state);
+
+	c->status = dcerpc_pipe_connect_ncacn_ip_tcp_recv(ctx);
+	if (!composite_is_ok(c)) return;
+
+	continue_pipe_connect(c, s);
+}
+
+
+static void continue_pipe_connect_ncacn_unix(struct composite_context *ctx)
+{
+	struct composite_context *c = talloc_get_type(ctx->async.private_data,
+						      struct composite_context);
+	struct pipe_connect_state *s = talloc_get_type(c->private_data,
+						       struct pipe_connect_state);
+	
+	c->status = dcerpc_pipe_connect_ncacn_unix_stream_recv(ctx);
+	if (!composite_is_ok(c)) return;
+	
+	continue_pipe_connect(c, s);
+}
+
+
+static void continue_pipe_connect_ncalrpc(struct composite_context *ctx)
+{
+	struct composite_context *c = talloc_get_type(ctx->async.private_data,
+						      struct composite_context);
+	struct pipe_connect_state *s = talloc_get_type(c->private_data,
+						       struct pipe_connect_state);
+	
+	c->status = dcerpc_pipe_connect_ncalrpc_recv(ctx);
+	if (!composite_is_ok(c)) return;
+
+	continue_pipe_connect(c, s);
+}
+
+
+static void continue_pipe_connect(struct composite_context *c, struct pipe_connect_state *s)
+{
+	struct composite_context *auth_bind_req;
+
+	s->pipe->binding = s->binding;
+	if (!talloc_reference(s->pipe, s->binding)) {
+		composite_error(c, NT_STATUS_NO_MEMORY);
+		return;
+	}
+
+	auth_bind_req = dcerpc_pipe_auth_send(s->pipe, s->binding, s->table,
+					      s->credentials);
+	if (composite_nomem(auth_bind_req, c)) return;
+	
+	composite_continue(c, auth_bind_req, continue_pipe_auth, c);
+}
+
+
+static void continue_pipe_auth(struct composite_context *ctx)
+{
+	struct composite_context *c = talloc_get_type(ctx->async.private_data,
+						      struct composite_context);
+
+	c->status = dcerpc_pipe_auth_recv(ctx);
+	if (!composite_is_ok(c)) return;
+
+	composite_done(c);
+}
+
+
+struct composite_context* dcerpc_pipe_connect_b_send(TALLOC_CTX *parent_ctx,
+						     struct dcerpc_pipe **pp,
+						     struct dcerpc_binding *binding,
+						     const struct dcerpc_interface_table *table,
+						     struct cli_credentials *credentials,
+						     struct event_context *ev)
+{
+	struct composite_context *c;
+	struct pipe_connect_state *s;
+
+	struct composite_context *binding_req;
+
+	/* composite context allocation and setup */
+	c = talloc_zero(parent_ctx, struct composite_context);
+	if (c == NULL) return NULL;
+
+	s = talloc_zero(c, struct pipe_connect_state);
+	if (composite_nomem(s, c)) return c;
+
+	c->state = COMPOSITE_STATE_IN_PROGRESS;
+	c->private_data = s;
+
+	(*pp) = NULL;
+
+	/* initialise dcerpc pipe structure */
+	s->pipe = dcerpc_pipe_init(c, ev);
+	if (composite_nomem(s->pipe, c)) return c;
+
+	c->event_ctx = s->pipe->conn->event_ctx;
+	(*pp) = s->pipe;
+
+	s->binding      = binding;
+	s->table        = table;
+	s->credentials  = credentials;
+	
+	switch (s->binding->transport) {
+	case NCACN_NP:
+	case NCACN_IP_TCP:
+	case NCALRPC:
+		if (!s->binding->endpoint) {
+			binding_req = dcerpc_epm_map_binding_send(c, s->binding, s->table,
+								  s->pipe->conn->event_ctx);
+			composite_continue(c, binding_req, continue_map_binding, c);
+			return c;
+		}
+
+	default:
+		break;
+	}
+
+	continue_connect(c, s);
+	return c;
+}
+
+
+NTSTATUS dcerpc_pipe_connect_b_recv(struct composite_context *c, TALLOC_CTX *mem_ctx,
+				    struct dcerpc_pipe **p)
+{
+	NTSTATUS status;
+	struct pipe_connect_state *s;
+	
+	status = composite_wait(c);
+	
+	if (NT_STATUS_IS_OK(status) && p) {
+		s = talloc_get_type(c->private_data, struct pipe_connect_state);
+		talloc_steal(mem_ctx, s->pipe);
+		*p = s->pipe;
+	}
+	
+	talloc_free(c);
+	return status;
+}
+
+
+/*
+  open a rpc connection to a rpc pipe, using the specified 
+  binding structure to determine the endpoint and options - sync version
+*/
+NTSTATUS dcerpc_pipe_connect_b(TALLOC_CTX *parent_ctx,
+			       struct dcerpc_pipe **pp,
+			       struct dcerpc_binding *binding,
+			       const struct dcerpc_interface_table *table,
+			       struct cli_credentials *credentials,
+			       struct event_context *ev)
+{
+	struct composite_context *c;
+	
+	c = dcerpc_pipe_connect_b_send(parent_ctx, pp, binding, table,
+				       credentials, ev);
+	return dcerpc_pipe_connect_b_recv(c, parent_ctx, pp);
+}
+
+
+struct pipe_conn_state {
+	struct dcerpc_pipe *pipe;
+};
+
+
+static void continue_pipe_connect_b(struct composite_context *ctx);
+
+struct composite_context* dcerpc_pipe_connect_send(TALLOC_CTX *parent_ctx,
+						   struct dcerpc_pipe **pp,
+						   const char *binding,
+						   const struct dcerpc_interface_table *table,
+						   struct cli_credentials *credentials,
+						   struct event_context *ev)
+{
+	NTSTATUS status;
+	struct composite_context *c;
+	struct pipe_conn_state *s;
+	struct dcerpc_binding *b;
+	struct composite_context *pipe_conn_req;
+
+	c = talloc_zero(parent_ctx, struct composite_context);
+	if (c == NULL) return NULL;
+
+	s = talloc_zero(c, struct pipe_conn_state);
+	if (composite_nomem(s, c)) return c;
+
+	c->state = COMPOSITE_STATE_IN_PROGRESS;
+	c->private_data = s;
+
+	status = dcerpc_parse_binding(c, binding, &b);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("Failed to parse dcerpc binding '%s'\n", binding));
+		composite_error(c, status);
+		return c;
+	}
+
+	DEBUG(3, ("Using binding %s\n", dcerpc_binding_string(c, b)));
+	
+	pipe_conn_req = dcerpc_pipe_connect_b_send(c, &s->pipe, b, table,
+						   credentials, ev);
+	c->event_ctx = s->pipe->conn->event_ctx;
+
+	if (composite_nomem(pipe_conn_req, c)) return c;
+
+	composite_continue(c, pipe_conn_req, continue_pipe_connect_b, c);
+	return c;
+}
+
+
+static void continue_pipe_connect_b(struct composite_context *ctx)
+{
+	struct composite_context *c = talloc_get_type(ctx->async.private_data,
+						      struct composite_context);
+	struct pipe_conn_state *s = talloc_get_type(c->private_data,
+						    struct pipe_conn_state);
+
+	c->status = dcerpc_pipe_connect_b_recv(ctx, c, &s->pipe);
+	if (!composite_is_ok(c)) return;
+
+	composite_done(c);
+}
+
+
+NTSTATUS dcerpc_pipe_connect_recv(struct composite_context *c,
+				  TALLOC_CTX *mem_ctx,
+				  struct dcerpc_pipe **pp)
+{
+	NTSTATUS status;
+	struct pipe_conn_state *s;
+
+	status = composite_wait(c);
+	if (NT_STATUS_IS_OK(status) && pp) {
+		s = talloc_get_type(c->private_data, struct pipe_conn_state);
+		*pp = talloc_steal(mem_ctx, s->pipe);
+	}
+
+	talloc_free(c);
+	return status;
+}
+
+
+/*
+  open a rpc connection to a rpc pipe, using the specified string
+  binding to determine the endpoint and options - sync version
+*/
+NTSTATUS dcerpc_pipe_connect(TALLOC_CTX *parent_ctx, 
+			     struct dcerpc_pipe **pp, 
+			     const char *binding,
+			     const struct dcerpc_interface_table *table,
+			     struct cli_credentials *credentials,
+			     struct event_context *ev)
+{
+	struct composite_context *c;
+	c = dcerpc_pipe_connect_send(parent_ctx, pp, binding, table,
+				     credentials, ev);
+	return dcerpc_pipe_connect_recv(c, parent_ctx, pp);
+}
+
+
+struct sec_conn_state {
+	struct dcerpc_pipe *pipe;
+	struct dcerpc_pipe **pipe2;
+	struct dcerpc_binding *binding;
+	struct smbcli_tree *tree;
+};
+
+
+static void continue_open_smb(struct composite_context *ctx);
+static void continue_open_tcp(struct composite_context *ctx);
+static void continue_open_pipe(struct composite_context *ctx);
+static void continue_pipe_open(struct composite_context *c);
+
+
+struct composite_context* dcerpc_secondary_connection_send(TALLOC_CTX *mem_ctx,
+							   struct dcerpc_pipe *p,
+							   struct dcerpc_pipe **p2,
+							   struct dcerpc_binding *b)
+{
+	struct composite_context *c;
+	struct sec_conn_state *s;
+	struct composite_context *pipe_smb_req;
+	struct composite_context *pipe_tcp_req;
+	struct composite_context *pipe_ncalrpc_req;
+	
+	c = talloc_zero(mem_ctx, struct composite_context);
+	if (c == NULL) return NULL;
+
+	s = talloc_zero(c, struct sec_conn_state);
+	if (s == NULL) {
+		composite_error(c, NT_STATUS_NO_MEMORY);
+		return c;
+	}
+
+	c->state = COMPOSITE_STATE_IN_PROGRESS;
+	c->private_data = s;
+
+	s->pipe     = p;
+	s->pipe2    = p2;
+	s->binding  = b;
+
+	(*s->pipe2) = dcerpc_pipe_init(s->pipe, s->pipe->conn->event_ctx);
+	if (s->pipe2 == NULL) {
+		composite_error(c, NT_STATUS_NO_MEMORY);
+		return c;
+	}
+
+	c->event_ctx = (*s->pipe2)->conn->event_ctx;
+
+	switch (s->pipe->conn->transport.transport) {
+	case NCACN_NP:
+		s->tree = dcerpc_smb_tree(s->pipe->conn);
+		if (!s->tree) {
+			composite_error(c, NT_STATUS_INVALID_PARAMETER);
+			return c;
+		}
+
+		pipe_smb_req = dcerpc_pipe_open_smb_send((*s->pipe2)->conn, s->tree,
+							 s->binding->endpoint);
+		if (composite_nomem(pipe_smb_req, c)) return c;
+
+		composite_continue(c, pipe_smb_req, continue_open_smb, c);
+		return c;
+
+	case NCACN_IP_TCP:
+		pipe_tcp_req = dcerpc_pipe_open_tcp_send((*s->pipe2)->conn,
+							 s->binding->host,
+							 atoi(s->binding->endpoint));
+		if (composite_nomem(pipe_tcp_req, c)) return c;
+
+		composite_continue(c, pipe_tcp_req, continue_open_tcp, c);
+		return c;
+
+	case NCALRPC:
+		pipe_ncalrpc_req = dcerpc_pipe_open_pipe_send((*s->pipe2)->conn,
+							      s->binding->endpoint);
+		if (composite_nomem(pipe_ncalrpc_req, c)) return c;
+
+		composite_continue(c, pipe_ncalrpc_req, continue_open_pipe, c);
+		return c;
+
+	default:
+		composite_error(c, NT_STATUS_NOT_SUPPORTED);
+	}
+
+	return c;
+}
+
+
+static void continue_open_smb(struct composite_context *ctx)
+{
+	struct composite_context *c = talloc_get_type(ctx->async.private_data,
+						      struct composite_context);
+	struct sec_conn_state *s = talloc_get_type(c->private_data,
+						   struct sec_conn_state);
+	
+	c->status = dcerpc_pipe_open_smb_recv(ctx);
+	if (!composite_is_ok(c)) {
+		talloc_free(*s->pipe2);
+		return;
+	}
+
+	continue_pipe_open(c);
+}
+
+
+static void continue_open_tcp(struct composite_context *ctx)
+{
+	struct composite_context *c = talloc_get_type(ctx->async.private_data,
+						      struct composite_context);
+	struct sec_conn_state *s = talloc_get_type(c->private_data,
+						   struct sec_conn_state);
+	
+	c->status = dcerpc_pipe_open_tcp_recv(ctx);
+	if (!composite_is_ok(c)) {
+		talloc_free(*s->pipe2);
+		return;
+	}
+
+	continue_pipe_open(c);
+}
+
+
+static void continue_open_pipe(struct composite_context *ctx)
+{
+	struct composite_context *c = talloc_get_type(ctx->async.private_data,
+						      struct composite_context);
+	struct sec_conn_state *s = talloc_get_type(c->private_data,
+						   struct sec_conn_state);
+
+	c->status = dcerpc_pipe_open_pipe_recv(ctx);
+	if (!composite_is_ok(c)) {
+		talloc_free(*s->pipe2);
+		return;
+	}
+
+	continue_pipe_open(c);
+}
+
+
+static void continue_pipe_open(struct composite_context *c)
+{
+	struct sec_conn_state *s;
+
+	s = talloc_get_type(c->private_data, struct sec_conn_state);
+
+	(*s->pipe2)->conn->flags = s->pipe->conn->flags;
+	(*s->pipe2)->binding     = s->binding;
+	if (!talloc_reference((*s->pipe2), s->binding)) {
+		composite_error(c, NT_STATUS_NO_MEMORY);
+		return;
+	}
+
+	composite_done(c);
+}
+
+
+NTSTATUS dcerpc_secondary_connection_recv(struct composite_context *c)
+{
+	NTSTATUS status = composite_wait(c);
+
+	talloc_free(c);
+	return status;
+}
+
+
+/*
+  create a secondary dcerpc connection from a primary connection
+  - sync version
+
+  if the primary is a SMB connection then the secondary connection
+  will be on the same SMB connection, but use a new fnum
+*/
+NTSTATUS dcerpc_secondary_connection(struct dcerpc_pipe *p,
+				     struct dcerpc_pipe **p2,
+				     struct dcerpc_binding *b)
+{
+	struct composite_context *c;
+	
+	c = dcerpc_secondary_connection_send(NULL, p, p2, b);
+	return dcerpc_secondary_connection_recv(c);
 }

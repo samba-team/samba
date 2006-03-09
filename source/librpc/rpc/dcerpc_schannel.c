@@ -23,120 +23,315 @@
 
 #include "includes.h"
 #include "auth/auth.h"
+#include "libcli/composite/composite.h"
 #include "libcli/auth/proto.h"
 
-/*
-  get a schannel key using a netlogon challenge on a secondary pipe
-*/
-static NTSTATUS dcerpc_schannel_key(TALLOC_CTX *tmp_ctx, 
-				    struct dcerpc_pipe *p,
-				    struct cli_credentials *credentials)
-{
-	NTSTATUS status;
-	struct dcerpc_binding *b;
-	struct dcerpc_pipe *p2;
+
+struct schannel_key_state {
+	struct dcerpc_pipe *pipe;
+	struct dcerpc_pipe *pipe2;
+	struct dcerpc_binding *binding;
+	struct cli_credentials *credentials;
+	struct creds_CredentialState *creds;
+	uint32_t negotiate_flags;
+	struct netr_Credential credentials1;
+	struct netr_Credential credentials2;
+	struct netr_Credential credentials3;
 	struct netr_ServerReqChallenge r;
 	struct netr_ServerAuthenticate2 a;
-	struct netr_Credential credentials1, credentials2, credentials3;
 	const struct samr_Password *mach_pwd;
-	uint32_t negotiate_flags;
-	struct creds_CredentialState *creds;
-	creds = talloc(tmp_ctx, struct creds_CredentialState);
-	if (!creds) {
-		return NT_STATUS_NO_MEMORY;
+};
+
+
+static void continue_secondary_connection(struct composite_context *ctx);
+static void continue_bind_auth_none(struct composite_context *ctx);
+static void continue_srv_challenge(struct rpc_request *req);
+static void continue_srv_auth2(struct rpc_request *req);
+
+
+static void continue_epm_map_binding(struct composite_context *ctx)
+{
+	struct composite_context *c;
+	struct schannel_key_state *s;
+	struct composite_context *sec_conn_req;
+
+	c = talloc_get_type(ctx->async.private_data, struct composite_context);
+	s = talloc_get_type(c->private_data, struct schannel_key_state);
+
+	c->status = dcerpc_epm_map_binding_recv(ctx);
+	if (!composite_is_ok(c)) {
+		DEBUG(0,("Failed to map DCERPC/TCP NCACN_NP pipe for '%s' - %s\n",
+			 DCERPC_NETLOGON_UUID, nt_errstr(c->status)));
+		return;
 	}
 
-	if (p->conn->flags & DCERPC_SCHANNEL_128) {
-		negotiate_flags = NETLOGON_NEG_AUTH2_ADS_FLAGS;
-	} else {
-		negotiate_flags = NETLOGON_NEG_AUTH2_FLAGS;
-	}
+	sec_conn_req = dcerpc_secondary_connection_send(c, s->pipe, &s->pipe2,
+							s->binding);
+	if (composite_nomem(sec_conn_req, c)) return;
 
-	/*
-	  step 1 - establish a netlogon connection, with no authentication
-	*/
-
-	b = talloc(tmp_ctx, struct dcerpc_binding);
-	if (!b) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	*b = *p->binding;
-
-	/* Make binding string for netlogon, not the other pipe */
-	status = dcerpc_epm_map_binding(tmp_ctx, b, 
-					&dcerpc_table_netlogon,
-					p->conn->event_ctx);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,("Failed to map DCERPC/TCP NCACN_NP pipe for '%s' - %s\n", 
-			 DCERPC_NETLOGON_UUID, nt_errstr(status)));
-		return status;
-	}
-
-	status = dcerpc_secondary_connection(p, &p2, b);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	status = dcerpc_bind_auth_none(p2, &dcerpc_table_netlogon);
-	if (!NT_STATUS_IS_OK(status)) {
-		talloc_free(p2);
-                return status;
-        }
-
-	/*
-	  step 2 - request a netlogon challenge
-	*/
-	r.in.server_name = talloc_asprintf(tmp_ctx, "\\\\%s", dcerpc_server_name(p));
-	r.in.computer_name = cli_credentials_get_workstation(credentials);
-	r.in.credentials = &credentials1;
-	r.out.credentials = &credentials2;
-
-	generate_random_buffer(credentials1.data, sizeof(credentials1.data));
-
-	status = dcerpc_netr_ServerReqChallenge(p2, tmp_ctx, &r);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	/*
-	  step 3 - authenticate on the netlogon pipe
-	*/
-	mach_pwd = cli_credentials_get_nt_hash(credentials, tmp_ctx);
-
-	creds_client_init(creds, &credentials1, &credentials2, 
-			  mach_pwd, &credentials3,
-			  negotiate_flags);
-
-	a.in.server_name = r.in.server_name;
-	a.in.account_name = cli_credentials_get_username(credentials);
-	a.in.secure_channel_type = 
-		cli_credentials_get_secure_channel_type(credentials);
-	a.in.computer_name = cli_credentials_get_workstation(credentials);
-	a.in.negotiate_flags = &negotiate_flags;
-	a.out.negotiate_flags = &negotiate_flags;
-	a.in.credentials = &credentials3;
-	a.out.credentials = &credentials3;
-
-	status = dcerpc_netr_ServerAuthenticate2(p2, tmp_ctx, &a);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	if (!creds_client_check(creds, a.out.credentials)) {
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
-	cli_credentials_set_netlogon_creds(credentials, creds);
-
-	/*
-	  the schannel session key is now in creds.session_key
-
-	  we no longer need the netlogon pipe open
-	*/
-	talloc_free(p2);
-
-	return NT_STATUS_OK;
+	composite_continue(c, sec_conn_req, continue_secondary_connection, c);
 }
+
+
+static void continue_secondary_connection(struct composite_context *ctx)
+{
+	struct composite_context *c;
+	struct schannel_key_state *s;
+	struct composite_context *auth_none_req;
+
+	c = talloc_get_type(ctx->async.private_data, struct composite_context);
+	s = talloc_get_type(c->private_data, struct schannel_key_state);
+
+	c->status = dcerpc_secondary_connection_recv(ctx);
+	if (!composite_is_ok(c)) return;
+
+	auth_none_req = dcerpc_bind_auth_none_send(c, s->pipe2, &dcerpc_table_netlogon);
+	if (composite_nomem(auth_none_req, c)) return;
+
+	composite_continue(c, auth_none_req, continue_bind_auth_none, c);
+}
+
+
+static void continue_bind_auth_none(struct composite_context *ctx)
+{
+	struct composite_context *c;
+	struct schannel_key_state *s;
+	struct rpc_request *srv_challenge_req;
+
+	c = talloc_get_type(ctx->async.private_data, struct composite_context);
+	s = talloc_get_type(c->private_data, struct schannel_key_state);
+	
+	c->status = dcerpc_bind_auth_none_recv(ctx);
+	if (!composite_is_ok(c)) {
+		talloc_free(s->pipe2);
+		return;
+	}
+
+	s->r.in.server_name   = talloc_asprintf(c, "\\\\%s", dcerpc_server_name(s->pipe));
+	if (composite_nomem(s->r.in.server_name, c)) return;
+	s->r.in.computer_name = cli_credentials_get_workstation(s->credentials);
+	s->r.in.credentials   = &s->credentials1;
+	s->r.out.credentials  = &s->credentials2;
+
+	generate_random_buffer(s->credentials1.data, sizeof(s->credentials1.data));
+
+	/*
+	  request a netlogon challenge
+	*/
+
+	srv_challenge_req = dcerpc_netr_ServerReqChallenge_send(s->pipe2, c, &s->r);
+	if (composite_nomem(srv_challenge_req, c)) return;
+
+	composite_continue_rpc(c, srv_challenge_req, continue_srv_challenge, c);
+}
+
+
+static void continue_srv_challenge(struct rpc_request *req)
+{
+	struct composite_context *c;
+	struct schannel_key_state *s;
+	struct rpc_request *srv_auth2_req;
+
+	c = talloc_get_type(req->async.private, struct composite_context);
+	s = talloc_get_type(c->private_data, struct schannel_key_state);
+
+	c->status = dcerpc_ndr_request_recv(req);
+	if (!composite_is_ok(c)) return;
+
+	/*
+	  authenticate on the netlogon pipe
+	*/
+
+	s->mach_pwd = cli_credentials_get_nt_hash(s->credentials, c);
+
+	creds_client_init(s->creds, &s->credentials1, &s->credentials2,
+			  s->mach_pwd, &s->credentials3, s->negotiate_flags);
+
+	s->a.in.server_name      = s->r.in.server_name;
+	s->a.in.account_name     = cli_credentials_get_username(s->credentials);
+	s->a.in.secure_channel_type =
+		cli_credentials_get_secure_channel_type(s->credentials);
+	s->a.in.computer_name    = cli_credentials_get_workstation(s->credentials);
+	s->a.in.negotiate_flags  = &s->negotiate_flags;
+	s->a.in.credentials      = &s->credentials3;
+	s->a.out.negotiate_flags = &s->negotiate_flags;
+	s->a.out.credentials     = &s->credentials3;
+
+	srv_auth2_req = dcerpc_netr_ServerAuthenticate2_send(s->pipe2, c, &s->a);
+	if (composite_nomem(srv_auth2_req, c)) return;
+
+	composite_continue_rpc(c, srv_auth2_req, continue_srv_auth2, c);
+}
+
+
+static void continue_srv_auth2(struct rpc_request *req)
+{
+	struct composite_context *c;
+	struct schannel_key_state *s;
+
+	c = talloc_get_type(req->async.private, struct composite_context);
+	s = talloc_get_type(c->private_data, struct schannel_key_state);
+
+	c->status = dcerpc_ndr_request_recv(req);
+	if (!composite_is_ok(c)) return;
+
+	if (!creds_client_check(s->creds, s->a.out.credentials)) {
+		composite_error(c, NT_STATUS_UNSUCCESSFUL);
+		return;
+	}
+
+	cli_credentials_set_netlogon_creds(s->credentials, s->creds);
+	talloc_free(s->pipe2);
+	
+	composite_done(c);
+}
+
+
+/*
+  initiate getting a schannel key using a netlogon challenge on a secondary pipe
+*/
+struct composite_context *dcerpc_schannel_key_send(TALLOC_CTX *mem_ctx,
+						   struct dcerpc_pipe *p,
+						   struct cli_credentials *credentials)
+{
+	struct composite_context *c;
+	struct schannel_key_state *s;
+	struct composite_context *epm_map_req;
+	
+	c = talloc_zero(mem_ctx, struct composite_context);
+	if (c == NULL) return NULL;
+
+	s = talloc_zero(c, struct schannel_key_state);
+	if (composite_nomem(s, c)) return c;
+
+	c->state = COMPOSITE_STATE_IN_PROGRESS;
+	c->private_data = s;
+	c->event_ctx = p->conn->event_ctx;
+
+	s->pipe        = p;
+	s->credentials = credentials;
+
+	s->creds = talloc(c, struct creds_CredentialState);
+	if (composite_nomem(s->creds, c)) return c;
+
+	if (s->pipe->conn->flags & DCERPC_SCHANNEL_128) {
+		s->negotiate_flags = NETLOGON_NEG_AUTH2_ADS_FLAGS;
+	} else {
+		s->negotiate_flags = NETLOGON_NEG_AUTH2_FLAGS;
+	}
+
+	s->binding = talloc(c, struct dcerpc_binding);
+	if (composite_nomem(s->binding, c)) return c;
+
+	*s->binding = *s->pipe->binding;
+
+	epm_map_req = dcerpc_epm_map_binding_send(c, s->binding,
+						  &dcerpc_table_netlogon,
+						  s->pipe->conn->event_ctx);
+	if (composite_nomem(epm_map_req, c)) return c;
+
+	composite_continue(c, epm_map_req, continue_epm_map_binding, c);
+	return c;
+}
+
+
+NTSTATUS dcerpc_schannel_key_recv(struct composite_context *c)
+{
+	NTSTATUS status = composite_wait(c);
+	
+	talloc_free(c);
+	return status;
+}
+
+
+struct auth_schannel_state {
+	struct dcerpc_pipe *pipe;
+	struct cli_credentials *credentials;
+	const struct dcerpc_interface_table *table;
+	uint8_t auth_level;
+};
+
+
+static void continue_bind_auth(struct composite_context *ctx);
+
+
+static void continue_schannel_key(struct composite_context *ctx)
+{
+	struct composite_context *auth_req;
+	struct composite_context *c = talloc_get_type(ctx->async.private_data,
+						      struct composite_context);
+	struct auth_schannel_state *s = talloc_get_type(c->private_data,
+							struct auth_schannel_state);
+
+	c->status = dcerpc_schannel_key_recv(ctx);
+	if (!composite_is_ok(c)) {
+		DEBUG(1, ("Failed to setup credentials for account %s: %s\n",
+			  cli_credentials_get_username(s->credentials), nt_errstr(c->status)));
+		return;
+	}
+
+	auth_req = dcerpc_bind_auth_send(c, s->pipe, s->table, s->credentials, 
+					 DCERPC_AUTH_TYPE_SCHANNEL, s->auth_level,
+					 NULL);
+	if (composite_nomem(auth_req, c)) return;
+	
+	composite_continue(c, auth_req, continue_bind_auth, c);
+}
+
+
+static void continue_bind_auth(struct composite_context *ctx)
+{
+	struct composite_context *c = talloc_get_type(ctx->async.private_data,
+						      struct composite_context);
+
+	c->status = dcerpc_bind_auth_recv(ctx);
+	if (!composite_is_ok(c)) return;
+
+	composite_done(c);
+}
+
+
+struct composite_context *dcerpc_bind_auth_schannel_send(TALLOC_CTX *tmp_ctx, 
+							 struct dcerpc_pipe *p,
+							 const struct dcerpc_interface_table *table,
+							 struct cli_credentials *credentials,
+							 uint8_t auth_level)
+{
+	struct composite_context *c;
+	struct auth_schannel_state *s;
+	struct composite_context *schan_key_req;
+
+	c = talloc_zero(tmp_ctx, struct composite_context);
+	if (c == NULL) return NULL;
+	
+	s = talloc_zero(c, struct auth_schannel_state);
+	if (composite_nomem(s, c)) return c;
+	
+	c->state = COMPOSITE_STATE_IN_PROGRESS;
+	c->private_data = s;
+	c->event_ctx = p->conn->event_ctx;
+
+	s->pipe        = p;
+	s->credentials = credentials;
+	s->table       = table;
+	s->auth_level  = auth_level;
+
+	schan_key_req = dcerpc_schannel_key_send(c, p, credentials);
+	if (composite_nomem(schan_key_req, c)) return c;
+
+	composite_continue(c, schan_key_req, continue_schannel_key, c);
+	return c;
+}
+
+
+NTSTATUS dcerpc_bind_auth_schannel_recv(struct composite_context *c)
+{
+	NTSTATUS status = composite_wait(c);
+	
+	talloc_free(c);
+	return status;
+}
+
 
 NTSTATUS dcerpc_bind_auth_schannel(TALLOC_CTX *tmp_ctx, 
 				   struct dcerpc_pipe *p,
@@ -144,21 +339,9 @@ NTSTATUS dcerpc_bind_auth_schannel(TALLOC_CTX *tmp_ctx,
 				   struct cli_credentials *credentials,
 				   uint8_t auth_level)
 {
-	NTSTATUS status;
+	struct composite_context *c;
 
-	/* Fills in NETLOGON credentials */
-	status = dcerpc_schannel_key(tmp_ctx, 
-				     p, credentials);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1, ("Failed to setup credentials for account %s: %s\n",
-			  cli_credentials_get_username(credentials), 
-			  nt_errstr(status)));
-		return status;
-	}
-
-	return dcerpc_bind_auth(p, table, credentials, 
-				DCERPC_AUTH_TYPE_SCHANNEL, auth_level,
-				NULL);
+	c = dcerpc_bind_auth_schannel_send(tmp_ctx, p, table, credentials,
+					   auth_level);
+	return dcerpc_bind_auth_schannel_recv(c);
 }
-
