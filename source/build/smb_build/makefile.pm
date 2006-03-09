@@ -538,6 +538,10 @@ sub PkgConfig($$)
 
 	push (@{$self->{pc_files}}, $path);
 
+	if (not defined($ctx->{CFLAGS}) ) { 
+		$ctx->{CFLAGS} = [];
+	}
+
 	smb_build::env::PkgConfig($self,
 		$path,
 		$link_name,
