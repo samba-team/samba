@@ -53,6 +53,7 @@ INIT_FUNCTION = gensec_schannel_init
 OBJ_FILES = schannel.o \
 			schannel_sign.o
 REQUIRED_SUBSYSTEMS = auth SCHANNELDB NDR_SCHANNEL
+OUTPUT_TYPE = MERGEDOBJ
 # End MODULE gensec_schannel
 ################################################
 
