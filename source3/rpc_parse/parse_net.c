@@ -1544,6 +1544,9 @@ void init_net_user_info3(TALLOC_CTX *ctx, NET_USER_INFO_3 *usr,
 	if (acct_flags & ACB_NO_AUTH_DATA_REQD) {
 		DEBUGADD(lvl,("\taccount has ACB_NO_AUTH_DATA_REQD set\n"));
 	}
+	if (acct_flags & ACB_PWEXPIRED) {
+		DEBUGADD(lvl,("\taccount has ACB_PWEXPIRED set\n"));
+	}
 }
 
  void dump_user_flgs(uint32 user_flags) {
@@ -1561,6 +1564,12 @@ void init_net_user_info3(TALLOC_CTX *ctx, NET_USER_INFO_3 *usr,
 	}
 	if (user_flags & LOGON_CACHED_ACCOUNT) {
 		DEBUGADD(lvl,("\taccount has LOGON_CACHED_ACCOUNT\n"));
+	}
+	if (user_flags & LOGON_PROFILE_PATH_RETURNED) {
+		DEBUGADD(lvl,("\taccount has LOGON_PROFILE_PATH_RETURNED\n"));
+	}
+	if (user_flags & LOGON_SERVER_TRUST_ACCOUNT) {
+		DEBUGADD(lvl,("\taccount has LOGON_SERVER_TRUST_ACCOUNT\n"));
 	}
 
 
