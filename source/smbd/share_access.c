@@ -85,6 +85,13 @@ static BOOL token_contains_name(TALLOC_CTX *mem_ctx,
 		 * result that might be interpreted in a wrong way. */
 		smb_panic("substitutions failed\n");
 	}
+	
+	/* check to see is we already have a SID */
+
+	if ( string_to_sid( &sid, name ) ) {
+		DEBUG(5,("token_contains_name: Checking for SID [%s] in token\n", name));
+		return nt_token_check_sid( &sid, token );
+	}
 
 	if (!do_group_checks(&name, &prefix)) {
 		if (!lookup_name(mem_ctx, name, LOOKUP_NAME_ALL,
@@ -153,14 +160,12 @@ BOOL token_contains_name_in_list(const char *username,
 		return False;
 	}
 
-	mem_ctx = talloc_new(NULL);
-	if (mem_ctx == NULL) {
+	if ( (mem_ctx = talloc_new(NULL)) == NULL ) {
 		smb_panic("talloc_new failed\n");
 	}
 
 	while (*list != NULL) {
-		if (token_contains_name(mem_ctx, username, sharename,
-					token, *list)) {
+		if (token_contains_name(mem_ctx, username, sharename,token, *list)) {
 			TALLOC_FREE(mem_ctx);
 			return True;
 		}
