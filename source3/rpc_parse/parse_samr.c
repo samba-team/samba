@@ -5633,7 +5633,11 @@ void init_sam_user_info23A(SAM_USER_INFO_23 * usr, NTTIME * logon_time,	/* all z
 
 	data_blob_free(&blob);
 	
-	memcpy(&usr->logon_hrs, hrs, sizeof(usr->logon_hrs));
+	if (hrs) {
+		memcpy(&usr->logon_hrs, hrs, sizeof(usr->logon_hrs));
+	} else {
+		ZERO_STRUCT(usr->logon_hrs);
+	}
 }
 
 /*******************************************************************
