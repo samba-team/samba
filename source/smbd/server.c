@@ -30,6 +30,7 @@
 #include "system/dir.h"
 #include "system/filesys.h"
 #include "build.h"
+#include "ldb/include/ldb.h"
 #include "registry/registry.h"
 #include "ntvfs/ntvfs.h"
 #include "ntptr/ntptr.h"
@@ -225,7 +226,9 @@ static int binary_smbd_main(const char *binary_name, int argc, const char *argv[
 		exit(1);
 	}
 
-	gensec_init();
+	ldb_global_init(); /* FIXME: */
+
+	gensec_init(); /* FIXME: */
 
 	registry_init(); /* FIXME: maybe run this in the initialization function 
 						of the winreg RPC server instead? */
