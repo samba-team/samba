@@ -124,7 +124,8 @@ static NTSTATUS ntlmssp_make_packet_signature(struct gensec_ntlmssp_state *gense
 	return NT_STATUS_OK;
 }
 
-_PUBLIC_/* TODO: make this non-public */NTSTATUS gensec_ntlmssp_sign_packet(struct gensec_security *gensec_security, 
+/* TODO: make this non-public */
+_PUBLIC_ NTSTATUS gensec_ntlmssp_sign_packet(struct gensec_security *gensec_security, 
 				    TALLOC_CTX *sig_mem_ctx, 
 				    const uint8_t *data, size_t length, 
 				    const uint8_t *whole_pdu, size_t pdu_length, 
@@ -298,7 +299,8 @@ NTSTATUS gensec_ntlmssp_unseal_packet(struct gensec_security *gensec_security,
 /**
    Initialise the state for NTLMSSP signing.
 */
-_PUBLIC_/* TODO: make this non-public */NTSTATUS ntlmssp_sign_init(struct gensec_ntlmssp_state *gensec_ntlmssp_state)
+/* TODO: make this non-public */
+_PUBLIC_ NTSTATUS ntlmssp_sign_init(struct gensec_ntlmssp_state *gensec_ntlmssp_state)
 {
 	TALLOC_CTX *mem_ctx = talloc_new(gensec_ntlmssp_state);
 
