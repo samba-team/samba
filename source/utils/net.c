@@ -249,12 +249,21 @@ NTSTATUS connect_dst_pipe(struct cli_state **cli_dst, struct rpc_pipe_client **p
 	struct cli_state *cli_tmp = NULL;
 	struct rpc_pipe_client *pipe_hnd = NULL;
 
-	if (opt_destination)
-		server_name = SMB_STRDUP(opt_destination);
+	if (server_name == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (opt_destination) {
+		SAFE_FREE(server_name);
+		if ((server_name = SMB_STRDUP(opt_destination)) == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+	}
 
 	/* make a connection to a named pipe */
 	nt_status = connect_to_ipc(&cli_tmp, NULL, server_name);
 	if (!NT_STATUS_IS_OK(nt_status)) {
+		SAFE_FREE(server_name);
 		return nt_status;
 	}
 
@@ -262,11 +271,13 @@ NTSTATUS connect_dst_pipe(struct cli_state **cli_dst, struct rpc_pipe_client **p
 	if (!pipe_hnd) {
 		DEBUG(0, ("couldn't not initialize pipe\n"));
 		cli_shutdown(cli_tmp);
+		SAFE_FREE(server_name);
 		return nt_status;
 	}
 
 	*cli_dst = cli_tmp;
 	*pp_pipe_hnd = pipe_hnd;
+	SAFE_FREE(server_name);
 
 	return nt_status;
 }
