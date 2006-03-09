@@ -39,6 +39,8 @@
 #include "system/kerberos.h"
 #include "heimdal/lib/gssapi/gssapi_locl.h"
 
+static pthread_key_t title_key;
+
 struct new_conn_state {
 	struct event_context *ev;
 	struct socket_context *sock;
@@ -191,6 +193,14 @@ static void thread_terminate(struct event_context *event_ctx, const char *reason
 /* called to set a title of a task or connection */
 static void thread_set_title(struct event_context *ev, const char *title) 
 {
+	char *old_title;
+	char *new_title;
+
+	old_title = pthread_getspecific(title_key);
+	talloc_free(old_title);
+
+	new_title = talloc_strdup(ev, title);
+	pthread_setspecific(title_key, new_title);
 }
 
 /*
@@ -412,8 +422,10 @@ static uint32_t thread_get_task_id(void)
 static void thread_log_task_id(int fd)
 {
 	char *s= NULL;
-	
-	asprintf(&s, "thread %u: ", (uint32_t)pthread_self());
+
+	asprintf(&s, "thread[%u][%s]:\n", 
+		(uint32_t)pthread_self(),
+		(const char *)pthread_getspecific(title_key));
 	if (!s) return;
 	write(fd, s, strlen(s));
 	free(s);
@@ -425,7 +437,10 @@ catch serious errors
 static void thread_sig_fault(int sig)
 {
 	DEBUG(0,("===============================================================\n"));
-	DEBUG(0,("TERMINAL ERROR: Recursive signal %d in thread %lu (%s)\n",sig,(unsigned long int)pthread_self(),SAMBA_VERSION_STRING));
+	DEBUG(0,("TERMINAL ERROR: Recursive signal %d in thread [%u][%s] (%s)\n",
+		sig,(uint32_t)pthread_self(),
+		(const char *)pthread_getspecific(title_key),
+		SAMBA_VERSION_STRING));
 	DEBUG(0,("===============================================================\n"));
 	exit(1); /* kill the whole server for now */
 }
@@ -459,7 +474,10 @@ static void thread_fault_handler(int sig)
 	counter++;	/* count number of faults that have occurred */
 
 	DEBUG(0,("===============================================================\n"));
-	DEBUG(0,("INTERNAL ERROR: Signal %d in thread %lu (%s)\n",sig,(unsigned long int)pthread_self(),SAMBA_VERSION_STRING));
+	DEBUG(0,("INTERNAL ERROR: Signal %d in thread [%u] [%s] (%s)\n",
+		sig,(uint32_t)pthread_self(),
+		(const char *)pthread_getspecific(title_key),
+		SAMBA_VERSION_STRING));
 	DEBUG(0,("Please read the file BUGS.txt in the distribution\n"));
 	DEBUG(0,("===============================================================\n"));
 #ifdef HAVE_BACKTRACE
@@ -490,6 +508,9 @@ static void thread_model_init(struct event_context *event_context)
 
 	ZERO_STRUCT(m_ops);
 	ZERO_STRUCT(d_ops);
+
+	pthread_key_create(&title_key, NULL);
+	pthread_setspecific(title_key, talloc_strdup(event_context, ""));
 
 	/* register mutex/rwlock handlers */
 	m_ops.mutex_init = thread_mutex_init;
