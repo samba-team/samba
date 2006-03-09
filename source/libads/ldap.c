@@ -2692,7 +2692,7 @@ ADS_STATUS ads_workgroup_name(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, const char *
 	asprintf(&expr, "(&(objectclass=computer)(dnshostname=%s.%s))", 
 		 ads->config.ldap_server_name, ads->config.realm);
 	if (expr == NULL) {
-		ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
+		return ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
 	}
 
 	rc = ads_search(ads, &res, expr, attrs);
