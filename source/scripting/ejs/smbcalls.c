@@ -127,23 +127,13 @@ static int ejs_version(MprVarHandle eid, int argc, struct MprVar **argv)
 */
 void smb_setup_ejs_functions(void)
 {
-	init_module_fn static_init[] = STATIC_SMBCALLS_MODULES;
+	init_module_fn static_init[] = STATIC_smbcalls_MODULES;
 	init_module_fn *shared_init;
 
-	smb_setup_ejs_config();
-	smb_setup_ejs_ldb();
-	smb_setup_ejs_nbt();
 	smb_setup_ejs_cli();
-	smb_setup_ejs_auth();
 	smb_setup_ejs_options();
-	smb_setup_ejs_nss();
-	smb_setup_ejs_string();
-	smb_setup_ejs_random();
-	smb_setup_ejs_system();
 	smb_setup_ejs_credentials();
-	smb_setup_ejs_samba3();
 	smb_setup_ejs_param();
-	smb_setup_ejs_datablob();
 	
 	ejsnet_setup();
 

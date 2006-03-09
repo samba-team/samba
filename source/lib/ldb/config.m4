@@ -1,1 +1,1 @@
-SMB_ENABLE(libldb_sqlite3,$with_sqlite3_support)
+SMB_ENABLE(ldb_sqlite3,$with_sqlite3_support)
