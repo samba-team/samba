@@ -9,9 +9,9 @@ OBJ_FILES = \
 REQUIRED_SUBSYSTEMS = \
 		CONFIG \
 		LIBBASIC \
-		NDR_ALL \
 		LIBPOPT \
-		POPT_SAMBA
+		POPT_SAMBA \
+		NDR_TABLE
 MANPAGE = man/ndrdump.1
 # FIXME: ndrdump shouldn't have to depend on RPC...
 # End BINARY ndrdump
