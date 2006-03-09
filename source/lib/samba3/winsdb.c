@@ -35,7 +35,7 @@ NTSTATUS samba3_read_winsdb( const char *fn, TALLOC_CTX *ctx, struct samba3_wins
 	if((fp = x_fopen(fn,O_RDONLY,0)) == NULL) {
 		DEBUG(0,("initialise_wins: Can't open wins database file %s. Error was %s\n",
 			fn, strerror(errno) ));
-		return NT_STATUS_UNSUCCESSFUL;
+		return NT_STATUS_OPEN_FAILED;
 	}
 
 	*count = 0;
@@ -53,8 +53,9 @@ NTSTATUS samba3_read_winsdb( const char *fn, TALLOC_CTX *ctx, struct samba3_wins
 		/* Read a line from the wins.dat file. Strips whitespace
 			from the beginning and end of the line.  */
 		line = fgets_slash(NULL,8,fp);
-		if (!line) 
-			return NT_STATUS_UNSUCCESSFUL;
+		if (!line) {
+			return NT_STATUS_UNEXPECTED_IO_ERROR;
+		}
       
 		if (*line == '#') {
 			SAFE_FREE(line);
@@ -67,7 +68,7 @@ NTSTATUS samba3_read_winsdb( const char *fn, TALLOC_CTX *ctx, struct samba3_wins
 				DEBUG(0,("Discarding invalid wins.dat file [%s]\n",line));
 				SAFE_FREE(line);
 				x_fclose(fp);
-				return NT_STATUS_UNSUCCESSFUL;
+				return NT_STATUS_REVISION_MISMATCH;
 			}
 			SAFE_FREE(line);
 
