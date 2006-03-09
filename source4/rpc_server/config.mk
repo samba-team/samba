@@ -16,7 +16,7 @@ OBJ_FILES = \
 [MODULE::dcerpc_dcom]
 ENABLE = NO
 INIT_FUNCTION = dcerpc_server_dcom_init
-SUBSYSTEM = DCERPC_SERVER
+SUBSYSTEM = dcerpc_server
 OBJ_FILES = \
 		dcom/oxidresolver.o \
 		dcom/rot.o \
@@ -33,7 +33,7 @@ REQUIRED_SUBSYSTEMS = \
 # Start MODULE dcerpc_rpcecho
 [MODULE::dcerpc_rpcecho]
 INIT_FUNCTION = dcerpc_server_rpcecho_init
-SUBSYSTEM = DCERPC_SERVER
+SUBSYSTEM = dcerpc_server
 OBJ_FILES = \
 		echo/rpc_echo.o
 REQUIRED_SUBSYSTEMS = NDR_ECHO
@@ -44,7 +44,7 @@ REQUIRED_SUBSYSTEMS = NDR_ECHO
 # Start MODULE dcerpc_epmapper
 [MODULE::dcerpc_epmapper]
 INIT_FUNCTION = dcerpc_server_epmapper_init
-SUBSYSTEM = DCERPC_SERVER
+SUBSYSTEM = dcerpc_server
 OBJ_FILES = \
 		epmapper/rpc_epmapper.o
 REQUIRED_SUBSYSTEMS = NDR_EPMAPPER
@@ -55,7 +55,7 @@ REQUIRED_SUBSYSTEMS = NDR_EPMAPPER
 # Start MODULE dcerpc_remote
 [MODULE::dcerpc_remote]
 INIT_FUNCTION = dcerpc_server_remote_init
-SUBSYSTEM = DCERPC_SERVER
+SUBSYSTEM = dcerpc_server
 OBJ_FILES = \
 		remote/dcesrv_remote.o
 REQUIRED_SUBSYSTEMS = \
@@ -67,7 +67,7 @@ REQUIRED_SUBSYSTEMS = \
 # Start MODULE dcerpc_srvsvc
 [MODULE::dcerpc_srvsvc]
 INIT_FUNCTION = dcerpc_server_srvsvc_init
-SUBSYSTEM = DCERPC_SERVER
+SUBSYSTEM = dcerpc_server
 OBJ_FILES = \
 		srvsvc/dcesrv_srvsvc.o
 REQUIRED_SUBSYSTEMS = \
@@ -79,7 +79,7 @@ REQUIRED_SUBSYSTEMS = \
 # Start MODULE dcerpc_wkssvc
 [MODULE::dcerpc_wkssvc]
 INIT_FUNCTION = dcerpc_server_wkssvc_init
-SUBSYSTEM = DCERPC_SERVER
+SUBSYSTEM = dcerpc_server
 OBJ_FILES = \
 		wkssvc/dcesrv_wkssvc.o
 REQUIRED_SUBSYSTEMS = \
@@ -91,7 +91,7 @@ REQUIRED_SUBSYSTEMS = \
 # Start MODULE dcerpc_unixinfo
 [MODULE::dcerpc_unixinfo]
 INIT_FUNCTION = dcerpc_server_unixinfo_init
-SUBSYSTEM = DCERPC_SERVER
+SUBSYSTEM = dcerpc_server
 OBJ_FILES = \
 		unixinfo/dcesrv_unixinfo.o
 REQUIRED_SUBSYSTEMS = \
@@ -105,7 +105,7 @@ REQUIRED_SUBSYSTEMS = \
 [MODULE::dcerpc_samr]
 INIT_FUNCTION = dcerpc_server_samr_init
 PRIVATE_PROTO_HEADER = samr/proto.h
-SUBSYSTEM = DCERPC_SERVER
+SUBSYSTEM = dcerpc_server
 OBJ_FILES = \
 		samr/dcesrv_samr.o \
 		samr/samr_password.o
@@ -120,7 +120,7 @@ REQUIRED_SUBSYSTEMS = \
 # Start MODULE dcerpc_winreg
 [MODULE::dcerpc_winreg]
 INIT_FUNCTION = dcerpc_server_winreg_init
-SUBSYSTEM = DCERPC_SERVER
+SUBSYSTEM = dcerpc_server
 OUTPUT_TYPE = MERGEDOBJ
 OBJ_FILES = \
 		winreg/rpc_winreg.o
@@ -133,7 +133,7 @@ REQUIRED_SUBSYSTEMS = \
 # Start MODULE dcerpc_netlogon
 [MODULE::dcerpc_netlogon]
 INIT_FUNCTION = dcerpc_server_netlogon_init
-SUBSYSTEM = DCERPC_SERVER
+SUBSYSTEM = dcerpc_server
 OBJ_FILES = \
 		netlogon/dcerpc_netlogon.o
 REQUIRED_SUBSYSTEMS = \
@@ -147,7 +147,7 @@ REQUIRED_SUBSYSTEMS = \
 # Start MODULE dcerpc_lsa
 [MODULE::dcerpc_lsarpc]
 INIT_FUNCTION = dcerpc_server_lsarpc_init
-SUBSYSTEM = DCERPC_SERVER
+SUBSYSTEM = dcerpc_server
 OBJ_FILES = \
 		lsa/dcesrv_lsa.o
 REQUIRED_SUBSYSTEMS = \
@@ -161,14 +161,14 @@ REQUIRED_SUBSYSTEMS = \
 # Start MODULE dcerpc_spoolss
 [MODULE::dcerpc_spoolss]
 INIT_FUNCTION = dcerpc_server_spoolss_init
-SUBSYSTEM = DCERPC_SERVER
+SUBSYSTEM = dcerpc_server
 OUTPUT_TYPE = MERGEDOBJ
 OBJ_FILES = \
 		spoolss/dcesrv_spoolss.o
 REQUIRED_SUBSYSTEMS = \
 		DCERPC_COMMON \
 		NDR_SPOOLSS \
-		NTPTR
+		ntptr
 # End MODULE dcerpc_spoolss
 ################################################
 
@@ -176,7 +176,7 @@ REQUIRED_SUBSYSTEMS = \
 # Start MODULE dcerpc_drsuapi
 [MODULE::dcerpc_drsuapi]
 INIT_FUNCTION = dcerpc_server_drsuapi_init
-SUBSYSTEM = DCERPC_SERVER
+SUBSYSTEM = dcerpc_server
 OBJ_FILES = \
 		drsuapi/dcesrv_drsuapi.o
 REQUIRED_SUBSYSTEMS = \
@@ -190,7 +190,7 @@ REQUIRED_SUBSYSTEMS = \
 # Start MODULE dcerpc_dssetup
 [MODULE::dcerpc_dssetup]
 INIT_FUNCTION = dcerpc_server_dssetup_init
-SUBSYSTEM = DCERPC_SERVER
+SUBSYSTEM = dcerpc_server
 OBJ_FILES = \
 		dssetup/dcesrv_dssetup.o
 REQUIRED_SUBSYSTEMS = \
@@ -201,8 +201,8 @@ REQUIRED_SUBSYSTEMS = \
 ################################################
 
 ################################################
-# Start SUBSYSTEM DCERPC_SERVER
-[SUBSYSTEM::DCERPC_SERVER]
+# Start SUBSYSTEM dcerpc_server
+[SUBSYSTEM::dcerpc_server]
 PRIVATE_PROTO_HEADER = dcerpc_server_proto.h
 OBJ_FILES = \
 		dcerpc_server.o \

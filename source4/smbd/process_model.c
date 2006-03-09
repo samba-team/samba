@@ -82,7 +82,7 @@ NTSTATUS register_process_model(const void *_ops)
 
 NTSTATUS process_model_init(void)
 {
-	init_module_fn static_init[] = STATIC_PROCESS_MODEL_MODULES;
+	init_module_fn static_init[] = STATIC_process_model_MODULES;
 	init_module_fn *shared_init = load_samba_modules(NULL, "process_model");
 
 	run_init_functions(static_init);

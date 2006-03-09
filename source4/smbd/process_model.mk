@@ -4,7 +4,7 @@
 # Start MODULE process_model_single
 [MODULE::process_model_single]
 INIT_FUNCTION = process_model_single_init 
-SUBSYSTEM = PROCESS_MODEL
+SUBSYSTEM = process_model
 OBJ_FILES = \
 		process_single.o
 # End MODULE process_model_single
@@ -14,7 +14,7 @@ OBJ_FILES = \
 # Start MODULE process_model_standard
 [MODULE::process_model_standard]
 INIT_FUNCTION = process_model_standard_init 
-SUBSYSTEM = PROCESS_MODEL
+SUBSYSTEM = process_model
 OBJ_FILES = \
 		process_standard.o
 REQUIRED_SUBSYSTEMS = EXT_LIB_SETPROCTITLE
@@ -25,7 +25,7 @@ REQUIRED_SUBSYSTEMS = EXT_LIB_SETPROCTITLE
 # Start MODULE process_model_thread
 [MODULE::process_model_thread]
 INIT_FUNCTION = process_model_thread_init 
-SUBSYSTEM = PROCESS_MODEL
+SUBSYSTEM = process_model
 OBJ_FILES = \
 		process_thread.o
 REQUIRED_SUBSYSTEMS = EXT_LIB_PTHREAD
@@ -33,11 +33,11 @@ REQUIRED_SUBSYSTEMS = EXT_LIB_PTHREAD
 ################################################
 
 ################################################
-# Start SUBSYSTEM PROCESS_MODEL
-[SUBSYSTEM::PROCESS_MODEL]
+# Start SUBSYSTEM process_model
+[SUBSYSTEM::process_model]
 PRIVATE_PROTO_HEADER = process_model_proto.h
 OBJ_FILES = \
 		process_model.o
 #
-# End SUBSYSTEM PROCESS_MODEL
+# End SUBSYSTEM process_model
 ################################################
