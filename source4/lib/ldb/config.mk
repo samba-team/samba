@@ -1,76 +1,76 @@
 ################################################
-# Start MODULE libldb_asq
-[MODULE::libldb_asq]
+# Start MODULE ldb_asq
+[MODULE::ldb_asq]
 INIT_FUNCTION = ldb_asq_init
 SUBSYSTEM = ldb
 OBJ_FILES = \
 		modules/asq.o
-# End MODULE libldb_asq
+# End MODULE ldb_asq
 ################################################
 
 ################################################
-# Start MODULE libldb_sort
-[MODULE::libldb_sort]
+# Start MODULE ldb_sort
+[MODULE::ldb_sort]
 INIT_FUNCTION = ldb_sort_init
 SUBSYSTEM = ldb
 OBJ_FILES = \
 		modules/sort.o
-# End MODULE libldb_sort
+# End MODULE ldb_sort
 ################################################
 
 ################################################
-# Start MODULE libldb_paged_results
-[MODULE::libldb_paged_results]
+# Start MODULE ldb_paged_results
+[MODULE::ldb_paged_results]
 INIT_FUNCTION = ldb_paged_results_init
 SUBSYSTEM = ldb
 OBJ_FILES = \
 		modules/paged_results.o
-# End MODULE libldb_paged_results
+# End MODULE ldb_paged_results
 ################################################
 
 ################################################
-# Start MODULE libldb_operational
-[MODULE::libldb_operational]
+# Start MODULE ldb_operational
+[MODULE::ldb_operational]
 SUBSYSTEM = ldb
 INIT_FUNCTION = ldb_operational_init
 OBJ_FILES = \
 		modules/operational.o
-# End MODULE libldb_operational
+# End MODULE ldb_operational
 ################################################
 
 ################################################
-# Start MODULE libldb_objectclass
-[MODULE::libldb_objectclass]
+# Start MODULE ldb_objectclass
+[MODULE::ldb_objectclass]
 INIT_FUNCTION = ldb_objectclass_init
 SUBSYSTEM = ldb
 OBJ_FILES = \
 		modules/objectclass.o
-# End MODULE libldb_objectclass
+# End MODULE ldb_objectclass
 ################################################
 
 ################################################
-# Start MODULE libldb_rdn_name
-[MODULE::libldb_rdn_name]
+# Start MODULE ldb_rdn_name
+[MODULE::ldb_rdn_name]
 SUBSYSTEM = ldb
 INIT_FUNCTION = ldb_rdn_name_init
 OBJ_FILES = \
 		modules/rdn_name.o
-# End MODULE libldb_rdn_name
+# End MODULE ldb_rdn_name
 ################################################
 
 ################################################
-# Start MODULE libldb_schema
-[MODULE::libldb_schema]
+# Start MODULE ldb_schema
+[MODULE::ldb_schema]
 INIT_FUNCTION = ldb_schema_init
 SUBSYSTEM = ldb
 OBJ_FILES = \
 		modules/schema.o
-# End MODULE libldb_schema
+# End MODULE ldb_schema
 ################################################
 
 ################################################
-# Start MODULE libldb_ildap
-[MODULE::libldb_ildap]
+# Start MODULE ldb_ildap
+[MODULE::ldb_ildap]
 SUBSYSTEM = ldb
 INIT_FUNCTION = ldb_ildap_init
 OBJ_FILES = \
@@ -78,29 +78,29 @@ OBJ_FILES = \
 REQUIRED_SUBSYSTEMS = \
 		LIBCLI_LDAP
 NOPROTO = YES
-# End MODULE libldb_ildap
+# End MODULE ldb_ildap
 ################################################
 
 ################################################
-# Start MODULE libldb_map
-[MODULE::libldb_map]
+# Start MODULE ldb_map
+[MODULE::ldb_map]
 SUBSYSTEM = ldb
 OBJ_FILES = modules/ldb_map.o
-# End MODULE libldb_map
+# End MODULE ldb_map
 ################################################
 
 ################################################
-# Start MODULE libldb_skel
-[MODULE::libldb_skel]
+# Start MODULE ldb_skel
+[MODULE::ldb_skel]
 SUBSYSTEM = ldb
 INIT_FUNCTION = ldb_skel_init
 OBJ_FILES = modules/skel.o
-# End MODULE libldb_skel
+# End MODULE ldb_skel
 ################################################
 
 ################################################
-# Start MODULE libldb_sqlite3
-[MODULE::libldb_sqlite3]
+# Start MODULE ldb_sqlite3
+[MODULE::ldb_sqlite3]
 SUBSYSTEM = ldb
 INIT_FUNCTION = ldb_sqlite3_init
 OBJ_FILES = \
@@ -108,12 +108,12 @@ OBJ_FILES = \
 REQUIRED_SUBSYSTEMS = \
 		EXT_LIB_SQLITE3
 NOPROTO = YES
-# End MODULE libldb_sqlite3
+# End MODULE ldb_sqlite3
 ################################################
 
 ################################################
-# Start MODULE libldb_tdb
-[MODULE::libldb_tdb]
+# Start MODULE ldb_tdb
+[MODULE::ldb_tdb]
 SUBSYSTEM = ldb
 INIT_FUNCTION = ldb_tdb_init
 OBJ_FILES = \
@@ -126,7 +126,7 @@ OBJ_FILES = \
 REQUIRED_SUBSYSTEMS = \
 		LIBTDB
 NOPROTO = YES
-# End MODULE libldb_tdb
+# End MODULE ldb_tdb
 ################################################
 
 ################################################
