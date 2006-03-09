@@ -635,7 +635,8 @@ EVTLOGADM_OBJ0	= utils/eventlogadm.o
 
 EVTLOGADM_OBJ	= $(EVTLOGADM_OBJ0) $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) $(REGOBJS_OBJ) \
 		$(ERRORMAP_OBJ) $(RPC_PARSE_OBJ1) $(LIBSAMBA_OBJ) $(DOSERR_OBJ) \
-		registry/reg_eventlog.o rpc_server/srv_eventlog_lib.o registry/reg_util.o \
+		$(SECRETS_OBJ) \
+	        registry/reg_eventlog.o rpc_server/srv_eventlog_lib.o registry/reg_util.o \
 		registry/reg_db.o 
 
 TALLOCTORT_OBJ = lib/talloctort.o $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) \
