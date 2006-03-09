@@ -177,13 +177,16 @@ BOOL secrets_fetch_domain_guid(const char *domain, struct uuid *guid)
 	strupper_m(key);
 	dyn_guid = (struct uuid *)secrets_fetch(key, &size);
 
-	if ((!dyn_guid) && (lp_server_role() == ROLE_DOMAIN_PDC)) {
-		smb_uuid_generate_random(&new_guid);
-		if (!secrets_store_domain_guid(domain, &new_guid))
+	if (!dyn_guid) {
+		if (lp_server_role() == ROLE_DOMAIN_PDC) {
+			smb_uuid_generate_random(&new_guid);
+			if (!secrets_store_domain_guid(domain, &new_guid))
+				return False;
+			dyn_guid = (struct uuid *)secrets_fetch(key, &size);
+		}
+		if (dyn_guid == NULL) {
 			return False;
-		dyn_guid = (struct uuid *)secrets_fetch(key, &size);
-		if (dyn_guid == NULL)
-			return False;
+		}
 	}
 
 	if (size != sizeof(struct uuid)) { 
