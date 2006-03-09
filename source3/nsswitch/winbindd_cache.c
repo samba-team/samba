@@ -1672,7 +1672,15 @@ do_query:
  
 	status = domain->backend->trusted_domains(domain, mem_ctx, num_domains,
 						names, alt_names, dom_sids);
- 
+
+	/* no trusts gives NT_STATUS_NO_MORE_ENTRIES resetting to NT_STATUS_OK
+	 * so that the generic centry handling still applies correctly -
+	 * Guenther*/
+
+	if (!NT_STATUS_IS_ERR(status)) {
+		status = NT_STATUS_OK;
+	}
+
 	/* and save it */
 	refresh_sequence_number(domain, False);
  
