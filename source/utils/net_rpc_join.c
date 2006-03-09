@@ -196,6 +196,12 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 	rpccli_lsa_close(pipe_hnd, mem_ctx, &lsa_pol);
 	cli_rpc_pipe_close(pipe_hnd); /* Done with this pipe */
 
+	/* Bail out if domain didn't get set. */
+	if (!domain) {
+		DEBUG(0, ("Could not get domain name.\n"));
+		goto done;
+	}
+
 	/* Create domain user */
 	pipe_hnd = cli_rpc_pipe_open_noauth(cli, PI_SAMR, &result);
 	if (!pipe_hnd) {
@@ -402,10 +408,12 @@ done:
 
 	/* Display success or failure */
 
-	if (retval != 0) {
-		fprintf(stderr,"Unable to join domain %s.\n",domain);
-	} else {
-		printf("Joined domain %s.\n",domain);
+	if (domain) {
+		if (retval != 0) {
+			fprintf(stderr,"Unable to join domain %s.\n",domain);
+		} else {
+			printf("Joined domain %s.\n",domain);
+		}
 	}
 	
 	cli_shutdown(cli);
