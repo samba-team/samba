@@ -166,7 +166,7 @@ static int binary_smbd_main(const char *binary_name, int argc, const char *argv[
 	BOOL interactive = False;
 	int opt;
 	poptContext pc;
-	init_module_fn static_init[] = STATIC_SERVER_SERVICE_MODULES;
+	init_module_fn static_init[] = STATIC_service_MODULES;
 	init_module_fn *shared_init;
 	struct event_context *event_ctx;
 	NTSTATUS status;

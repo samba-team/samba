@@ -1,110 +1,110 @@
 # server subsystem
 
 ################################################
-# Start MODULE server_service_auth
-[MODULE::server_service_auth]
+# Start MODULE service_auth
+[MODULE::service_auth]
 INIT_FUNCTION = server_service_auth_init
-SUBSYSTEM = SERVER_SERVICE
+SUBSYSTEM = service
 REQUIRED_SUBSYSTEMS = \
 		auth
 # End MODULE server_auth
 ################################################
 
 ################################################
-# Start MODULE server_service_smb
-[MODULE::server_service_smb]
+# Start MODULE service_smb
+[MODULE::service_smb]
 INIT_FUNCTION = server_service_smb_init
 OUTPUT_TYPE = MERGEDOBJ
-SUBSYSTEM = SERVER_SERVICE
+SUBSYSTEM = service
 REQUIRED_SUBSYSTEMS = \
 		SMB
 # End MODULE server_smb
 ################################################
 
 ################################################
-# Start MODULE server_service_rpc
-[MODULE::server_service_rpc]
+# Start MODULE service_rpc
+[MODULE::service_rpc]
 INIT_FUNCTION = server_service_rpc_init
-SUBSYSTEM = SERVER_SERVICE
+SUBSYSTEM = service
 OUTPUT_TYPE = MERGEDOBJ
 REQUIRED_SUBSYSTEMS = \
-		DCERPC_SERVER
+		dcerpc_server
 # End MODULE server_rpc
 ################################################
 
 ################################################
-# Start MODULE server_service_ldap
-[MODULE::server_service_ldap]
+# Start MODULE service_ldap
+[MODULE::service_ldap]
 INIT_FUNCTION = server_service_ldap_init
-SUBSYSTEM = SERVER_SERVICE
+SUBSYSTEM = service
 REQUIRED_SUBSYSTEMS = \
 		LDAP
 # End MODULE server_ldap
 ################################################
 
 ################################################
-# Start MODULE server_service_nbtd
-[MODULE::server_service_nbtd]
+# Start MODULE service_nbtd
+[MODULE::service_nbtd]
 INIT_FUNCTION = server_service_nbtd_init
-SUBSYSTEM = SERVER_SERVICE
+SUBSYSTEM = service
 REQUIRED_SUBSYSTEMS = \
 		NBTD
-# End MODULE server_service_nbtd
+# End MODULE service_nbtd
 ################################################
 
 ################################################
-# Start MODULE server_service_wrepl
-[MODULE::server_service_wrepl]
+# Start MODULE service_wrepl
+[MODULE::service_wrepl]
 INIT_FUNCTION = server_service_wrepl_init
-SUBSYSTEM = SERVER_SERVICE
+SUBSYSTEM = service
 REQUIRED_SUBSYSTEMS = \
 		WREPL_SRV
-# End MODULE server_service_wrepl
+# End MODULE service_wrepl
 ################################################
 
 ################################################
-# Start MODULE server_service_cldapd
-[MODULE::server_service_cldap]
+# Start MODULE service_cldapd
+[MODULE::service_cldap]
 INIT_FUNCTION = server_service_cldapd_init
-SUBSYSTEM = SERVER_SERVICE
+SUBSYSTEM = service
 REQUIRED_SUBSYSTEMS = \
 		CLDAPD
-# End MODULE server_service_cldapd
+# End MODULE service_cldapd
 ################################################
 
 ################################################
-# Start MODULE server_service_web
-[MODULE::server_service_web]
+# Start MODULE service_web
+[MODULE::service_web]
 INIT_FUNCTION = server_service_web_init
-SUBSYSTEM = SERVER_SERVICE
+SUBSYSTEM = service
 REQUIRED_SUBSYSTEMS = \
 		WEB
-# End MODULE server_service_web
+# End MODULE service_web
 ################################################
 
 ################################################
-# Start MODULE server_service_web
-[MODULE::server_service_kdc]
+# Start MODULE service_web
+[MODULE::service_kdc]
 INIT_FUNCTION = server_service_kdc_init
-SUBSYSTEM = SERVER_SERVICE
+SUBSYSTEM = service
 REQUIRED_SUBSYSTEMS = \
 		KDC
-# End MODULE server_service_web
+# End MODULE service_web
 ################################################
 
 ################################################
-# Start MODULE server_service_winbind
-[MODULE::server_service_winbind]
+# Start MODULE service_winbind
+[MODULE::service_winbind]
 INIT_FUNCTION = server_service_winbind_init
-SUBSYSTEM = SERVER_SERVICE
+SUBSYSTEM = service
 REQUIRED_SUBSYSTEMS = \
 		WINBIND
-# End MODULE server_service_winbind
+# End MODULE service_winbind
 ################################################
 
 #######################
-# Start SUBSYSTEM SERVICE
-[SUBSYSTEM::SERVER_SERVICE]
+# Start SUBSERVICE
+[SUBSYSTEM::service]
 PRIVATE_PROTO_HEADER = service.h
 OBJ_FILES = \
 		service.o \
@@ -123,8 +123,8 @@ MANPAGE = smbd.8
 OBJ_FILES = \
 		server.o
 REQUIRED_SUBSYSTEMS = \
-		PROCESS_MODEL \
-		SERVER_SERVICE \
+		process_model \
+		service \
 		CONFIG \
 		LIBBASIC \
 		PIDFILE \

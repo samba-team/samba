@@ -1,4 +1,4 @@
-all: basics bin/asn1_compile bin/compile_et binaries
+all: basics bin/asn1_compile bin/compile_et binaries libraries modules
 
 include heimdal_build/config.mk
 include config.mk
@@ -87,7 +87,7 @@ PATH_FLAGS = -DCONFIGFILE=\"$(CONFIGFILE)\"  -DSBINDIR=\"$(SBINDIR)\" \
 	 -DSETUPDIR=\"$(SETUPDIR)\" -DWINBINDD_SOCKET_DIR=\"$(WINBINDD_SOCKET_DIR)\"
 
 install: showlayout installbin installdat installswat installmisc installlib \
-	installheader installpc
+	installheader installpc installplugins
 
 # DESTDIR is used here to prevent packagers wasting their time
 # duplicating the Makefile. Remove it and you will have the privilege
@@ -151,7 +151,8 @@ installmisc: installdirs
 installpc: installdirs
 	@$(SHELL) $(srcdir)/script/installpc.sh $(srcdir) $(DESTDIR)$(PKGCONFIGDIR) $(PC_FILES)
 
-uninstall: uninstallbin uninstallman uninstallmisc uninstalllib uninstallheader
+uninstall: uninstallbin uninstallman uninstallmisc uninstalllib uninstallheader \
+	uninstallplugins
 
 uninstallmisc:
 	#FIXME
