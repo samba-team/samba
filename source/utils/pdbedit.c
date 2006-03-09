@@ -338,10 +338,10 @@ static int set_user_info (struct pdb_methods *in, const char *username,
 		pdb_set_domain(sam_pwent, user_domain, PDB_CHANGED);
 
 	if (account_control) {
-		uint16 not_settable = ~(ACB_DISABLED|ACB_HOMDIRREQ|ACB_PWNOTREQ|
+		uint32 not_settable = ~(ACB_DISABLED|ACB_HOMDIRREQ|ACB_PWNOTREQ|
 					ACB_PWNOEXP|ACB_AUTOLOCK);
 
-		uint16 newflag = pdb_decode_acct_ctrl(account_control);
+		uint32 newflag = pdb_decode_acct_ctrl(account_control);
 
 		if (newflag & not_settable) {
 			fprintf(stderr, "Can only set [NDHLX] flags\n");
