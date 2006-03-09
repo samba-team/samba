@@ -412,6 +412,7 @@ BOOL secrets_store_trusted_domain_password(const char* domain, const char* pwd,
 	
 	strncpy_w(pass.uni_name, uni_dom_name, sizeof(pass.uni_name) - 1);
 	pass.uni_name_len = strlen_w(uni_dom_name)+1;
+	SAFE_FREE(uni_dom_name);
 
 	/* last change time */
 	pass.mod_time = time(NULL);
