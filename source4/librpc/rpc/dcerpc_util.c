@@ -1205,80 +1205,17 @@ NTSTATUS dcerpc_pipe_auth_recv(struct composite_context *c)
 
 
 /* 
-   perform an authenticated bind if needed
+   perform an authenticated bind if needed - sync version
 */
 NTSTATUS dcerpc_pipe_auth(struct dcerpc_pipe *p, 
 			  struct dcerpc_binding *binding,
 			  const struct dcerpc_interface_table *table,
 			  struct cli_credentials *credentials)
 {
-	NTSTATUS status;
-	TALLOC_CTX *tmp_ctx;
-	tmp_ctx = talloc_new(p);
+	struct composite_context *c;
 
-	p->conn->flags = binding->flags;
-
-	/* remember the binding string for possible secondary connections */
-	p->conn->binding_string = dcerpc_binding_string(p, binding);
-
-	if (!cli_credentials_is_anonymous(credentials) &&
-		(binding->flags & DCERPC_SCHANNEL) && 
-		!cli_credentials_get_netlogon_creds(credentials)) {
-		
-		/* If we don't already have netlogon credentials for
-		 * the schannel bind, then we have to get these
-		 * first */
-		status = dcerpc_bind_auth_schannel(tmp_ctx, p, table, credentials,
-						   dcerpc_auth_level(p->conn));
-	} else if (!cli_credentials_is_anonymous(credentials) &&
-		!(p->conn->transport.transport == NCACN_NP &&
-		  !(binding->flags & DCERPC_SIGN) &&
-		  !(binding->flags & DCERPC_SEAL))) { 	
-	
-		/* Perform an authenticated DCE-RPC bind, except where
-		 * we ask for a connection on NCACN_NP, and that
-		 * connection is not signed or sealed.  For that case
-		 * we rely on the already authenicated CIFS connection
-		 */
-
-		uint8_t auth_type;
-		
-		if ((p->conn->flags & (DCERPC_SIGN|DCERPC_SEAL)) == 0) {
-			/*
-			  we are doing an authenticated connection,
-			  but not using sign or seal. We must force
-			  the CONNECT dcerpc auth type as a NONE auth
-			  type doesn't allow authentication
-			  information to be passed.
-			*/
-			p->conn->flags |= DCERPC_CONNECT;
-		}
-
-		if (binding->flags & DCERPC_AUTH_SPNEGO) {
-			auth_type = DCERPC_AUTH_TYPE_SPNEGO;
-		} else if (binding->flags & DCERPC_AUTH_KRB5) {
-			auth_type = DCERPC_AUTH_TYPE_KRB5;
-		} else if (binding->flags & DCERPC_SCHANNEL) {
-			auth_type = DCERPC_AUTH_TYPE_SCHANNEL;
-		} else {
-			auth_type = DCERPC_AUTH_TYPE_NTLMSSP;
-		}
-
-		status = dcerpc_bind_auth(p, table,
-					  credentials, auth_type, 
-					  dcerpc_auth_level(p->conn),
-					  table->authservices->names[0]);
-	} else {
-		status = dcerpc_bind_auth_none(p, table);
-	}
-
-	if (!NT_STATUS_IS_OK(status)) {
-		char *uuid_str = GUID_string(p, &table->uuid);
-		DEBUG(0,("Failed to bind to uuid %s - %s\n", uuid_str, nt_errstr(status)));
-		talloc_free(uuid_str);
-	}
-	talloc_free(tmp_ctx);
-	return status;
+	c = dcerpc_pipe_auth_send(p, binding, table, credentials);
+	return dcerpc_pipe_auth_recv(c);
 }
 
 
