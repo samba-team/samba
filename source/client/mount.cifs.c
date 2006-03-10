@@ -756,7 +756,7 @@ static char * parse_server(char ** punc_name)
 
 	if(length < 3) {
 		/* BB add code to find DFS root here */
-		printf("\nMounting the DFS root for domain not implemented yet");
+		printf("\nMounting the DFS root for domain not implemented yet\n");
 		return NULL;
 	} else {
 		if(strncmp(unc_name,"//",2) && strncmp(unc_name,"\\\\",2)) {
@@ -887,7 +887,11 @@ int main(int argc, char ** argv)
 
 	if(argc && argv) {
 		thisprogram = argv[0];
+	} else {
+		mount_cifs_usage();
+		exit(1);
 	}
+
 	if(thisprogram == NULL)
 		thisprogram = "mount.cifs";
 
@@ -1113,6 +1117,8 @@ mount_retry:
 		optlen += strlen(share_name) + 4;
 	else {
 		printf("No server share name specified\n");
+		printf("\nMounting the DFS root for server not implemented yet\n");
+                exit(1);
 	}
 	if(user_name)
 		optlen += strlen(user_name) + 6;
