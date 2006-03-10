@@ -1044,7 +1044,10 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 	} else {
 		struct auth_context *plaintext_auth_context = NULL;
 		const uint8 *chal;
-		if (NT_STATUS_IS_OK(nt_status = make_auth_context_subsystem(&plaintext_auth_context))) {
+
+		nt_status = make_auth_context_subsystem(&plaintext_auth_context);
+
+		if (NT_STATUS_IS_OK(nt_status)) {
 			chal = plaintext_auth_context->get_ntlm_challenge(plaintext_auth_context);
 			
 			if (!make_user_info_for_reply(&user_info, 
