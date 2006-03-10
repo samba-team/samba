@@ -318,7 +318,6 @@ static struct smbcli_request *smb_raw_nttrans_create_send(struct smbcli_tree *tr
 	SIVAL(params, 40, ea_blob.length);
 	SIVAL(params, 48, parms->ntcreatex.in.impersonation);
 	SCVAL(params, 52, parms->ntcreatex.in.security_flags);
-	SCVAL(params, 53, 0);
 
 	/* the empty string first forces the correct alignment */
 	smbcli_blob_append_string(tree->session, mem_ctx, &nt.in.params,"", 0);
