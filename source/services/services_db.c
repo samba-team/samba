@@ -160,7 +160,7 @@ static char* cleanup_string( const char *string )
 	while ( isspace(*begin) )
 		begin++;
 
-	if ( !begin )
+	if ( *begin == '\0' )
 		return NULL;
 			
 	/* trim any trailing whitespace or carriage returns.
