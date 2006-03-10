@@ -58,7 +58,8 @@ static NTSTATUS print_disconnect(struct ntvfs_module_context *ntvfs)
   lots of operations are not allowed on printing shares - mostly return NT_STATUS_ACCESS_DENIED
 */
 static NTSTATUS print_unlink(struct ntvfs_module_context *ntvfs,
-			     struct ntvfs_request *req, struct smb_unlink *unl)
+			     struct ntvfs_request *req,
+			     union smb_unlink *unl)
 {
 	return NT_STATUS_ACCESS_DENIED;
 }

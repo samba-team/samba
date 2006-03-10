@@ -65,13 +65,13 @@ static BOOL test_mux_open(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	io.ntcreatex.in.fname = BASEDIR "\\open.dat";
 	status = smb_raw_open(cli->tree, mem_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	fnum1 = io.ntcreatex.out.fnum;
+	fnum1 = io.ntcreatex.file.fnum;
 
 	printf("send 2nd open, non-conflicting\n");
 	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_OPEN;
 	status = smb_raw_open(cli->tree, mem_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	fnum2 = io.ntcreatex.out.fnum;
+	fnum2 = io.ntcreatex.file.fnum;
 
 	tv = timeval_current();
 
@@ -131,7 +131,7 @@ static BOOL test_mux_open(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	}
 
 	printf("close the 1st async open\n");
-	smbcli_close(cli->tree, io.ntcreatex.out.fnum);
+	smbcli_close(cli->tree, io.ntcreatex.file.fnum);
 
 done:
 	return ret;
@@ -171,7 +171,7 @@ static BOOL test_mux_write(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	/* send an async write */
 	io.generic.level = RAW_WRITE_WRITEX;
-	io.writex.in.fnum = fnum;
+	io.writex.file.fnum = fnum;
 	io.writex.in.offset = 0;
 	io.writex.in.wmode = 0;
 	io.writex.in.remaining = 0;
@@ -217,7 +217,7 @@ static BOOL test_mux_lock(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	printf("establishing a lock\n");
 	io.lockx.level = RAW_LOCK_LOCKX;
-	io.lockx.in.fnum = fnum;
+	io.lockx.file.fnum = fnum;
 	io.lockx.in.mode = 0;
 	io.lockx.in.timeout = 0;
 	io.lockx.in.lock_cnt = 1;
@@ -258,7 +258,7 @@ static BOOL test_mux_lock(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	printf("Now trying with a cancel\n");
 
 	io.lockx.level = RAW_LOCK_LOCKX;
-	io.lockx.in.fnum = fnum;
+	io.lockx.file.fnum = fnum;
 	io.lockx.in.mode = 0;
 	io.lockx.in.timeout = 0;
 	io.lockx.in.lock_cnt = 1;

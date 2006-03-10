@@ -54,7 +54,7 @@ static NTSTATUS setup_close(struct composite_context *c,
 	NT_STATUS_HAVE_NO_MEMORY(io_close);
 	
 	io_close->close.level = RAW_CLOSE_CLOSE;
-	io_close->close.in.fnum = fnum;
+	io_close->close.file.fnum = fnum;
 	io_close->close.in.write_time = 0;
 
 	state->req = smb_raw_close_send(tree, io_close);
@@ -93,7 +93,7 @@ static NTSTATUS loadfile_open(struct composite_context *c,
 	NT_STATUS_HAVE_NO_MEMORY(io->out.data);
 
 	if (io->out.size == 0) {
-		return setup_close(c, tree, state->io_open->ntcreatex.out.fnum);
+		return setup_close(c, tree, state->io_open->ntcreatex.file.fnum);
 	}
 
 	/* setup for the read */
@@ -101,7 +101,7 @@ static NTSTATUS loadfile_open(struct composite_context *c,
 	NT_STATUS_HAVE_NO_MEMORY(state->io_read);
 	
 	state->io_read->readx.level        = RAW_READ_READX;
-	state->io_read->readx.in.fnum      = state->io_open->ntcreatex.out.fnum;
+	state->io_read->readx.file.fnum    = state->io_open->ntcreatex.file.fnum;
 	state->io_read->readx.in.offset    = 0;
 	state->io_read->readx.in.mincnt    = MIN(32768, io->out.size);
 	state->io_read->readx.in.maxcnt    = state->io_read->readx.in.mincnt;
@@ -139,7 +139,7 @@ static NTSTATUS loadfile_read(struct composite_context *c,
 	/* we might be done */
 	if (state->io_read->readx.in.offset +
 	    state->io_read->readx.out.nread == io->out.size) {
-		return setup_close(c, tree, state->io_read->readx.in.fnum);
+		return setup_close(c, tree, state->io_read->readx.file.fnum);
 	}
 
 	/* setup for the next read */

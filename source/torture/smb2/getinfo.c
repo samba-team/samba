@@ -99,23 +99,23 @@ static BOOL torture_smb2_fileinfo(struct smb2_tree *tree)
 
 	for (i=0;i<ARRAY_SIZE(file_levels);i++) {
 		if (file_levels[i].level == RAW_FILEINFO_SEC_DESC) {
-			file_levels[i].finfo.query_secdesc.secinfo_flags = 0x7;
-			file_levels[i].dinfo.query_secdesc.secinfo_flags = 0x7;
+			file_levels[i].finfo.query_secdesc.in.secinfo_flags = 0x7;
+			file_levels[i].dinfo.query_secdesc.in.secinfo_flags = 0x7;
 		}
 		if (file_levels[i].level == RAW_FILEINFO_SMB2_ALL_EAS) {
-			file_levels[i].finfo.all_eas.continue_flags = 
+			file_levels[i].finfo.all_eas.in.continue_flags = 
 				SMB2_CONTINUE_FLAG_RESTART;
-			file_levels[i].dinfo.all_eas.continue_flags = 
+			file_levels[i].dinfo.all_eas.in.continue_flags = 
 				SMB2_CONTINUE_FLAG_RESTART;
 		}
 		file_levels[i].finfo.generic.level = file_levels[i].level;
-		file_levels[i].finfo.generic.in.handle = hfile;
+		file_levels[i].finfo.generic.file.handle = hfile;
 		file_levels[i].fstatus = smb2_getinfo_file(tree, tree, &file_levels[i].finfo);
 		if (!NT_STATUS_IS_OK(file_levels[i].fstatus)) {
 			printf("%s failed on file - %s\n", file_levels[i].name, nt_errstr(file_levels[i].fstatus));
 		}
 		file_levels[i].dinfo.generic.level = file_levels[i].level;
-		file_levels[i].dinfo.generic.in.handle = hdir;
+		file_levels[i].dinfo.generic.file.handle = hdir;
 		file_levels[i].dstatus = smb2_getinfo_file(tree, tree, &file_levels[i].dinfo);
 		if (!NT_STATUS_IS_OK(file_levels[i].dstatus)) {
 			printf("%s failed on dir - %s\n", file_levels[i].name, nt_errstr(file_levels[i].dstatus));

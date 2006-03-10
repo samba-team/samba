@@ -40,7 +40,7 @@ NTSTATUS pvfs_write(struct ntvfs_module_context *ntvfs,
 		return ntvfs_map_write(ntvfs, req, wr);
 	}
 
-	f = pvfs_find_fd(pvfs, req, wr->writex.in.fnum);
+	f = pvfs_find_fd(pvfs, req, wr->writex.file.fnum);
 	if (!f) {
 		return NT_STATUS_INVALID_HANDLE;
 	}

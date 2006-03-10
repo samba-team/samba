@@ -250,7 +250,8 @@ static NTSTATUS unixuid_disconnect(struct ntvfs_module_context *ntvfs)
   delete a file
 */
 static NTSTATUS unixuid_unlink(struct ntvfs_module_context *ntvfs,
-			      struct ntvfs_request *req, struct smb_unlink *unl)
+			      struct ntvfs_request *req,
+			      union smb_unlink *unl)
 {
 	NTSTATUS status;
 
@@ -276,7 +277,8 @@ static NTSTATUS unixuid_ioctl(struct ntvfs_module_context *ntvfs,
   check if a directory exists
 */
 static NTSTATUS unixuid_chkpath(struct ntvfs_module_context *ntvfs,
-			       struct ntvfs_request *req, struct smb_chkpath *cp)
+			        struct ntvfs_request *req,
+				union smb_chkpath *cp)
 {
 	NTSTATUS status;
 
@@ -420,7 +422,8 @@ static NTSTATUS unixuid_write(struct ntvfs_module_context *ntvfs,
   seek in a file
 */
 static NTSTATUS unixuid_seek(struct ntvfs_module_context *ntvfs,
-			    struct ntvfs_request *req, struct smb_seek *io)
+			     struct ntvfs_request *req,
+			     union smb_seek *io)
 {
 	NTSTATUS status;
 
@@ -433,7 +436,8 @@ static NTSTATUS unixuid_seek(struct ntvfs_module_context *ntvfs,
   flush a file
 */
 static NTSTATUS unixuid_flush(struct ntvfs_module_context *ntvfs,
-			     struct ntvfs_request *req, struct smb_flush *io)
+			      struct ntvfs_request *req,
+			      union smb_flush *io)
 {
 	NTSTATUS status;
 

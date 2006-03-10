@@ -42,7 +42,7 @@ static NTSTATUS pvfs_ntioctl(struct ntvfs_module_context *ntvfs,
 	struct pvfs_state *pvfs = ntvfs->private_data;
 	struct pvfs_file *f;
 
-	f = pvfs_find_fd(pvfs, req, io->ntioctl.in.fnum);
+	f = pvfs_find_fd(pvfs, req, io->ntioctl.file.fnum);
 	if (!f) {
 		return NT_STATUS_INVALID_HANDLE;
 	}
@@ -62,7 +62,8 @@ static NTSTATUS pvfs_ntioctl(struct ntvfs_module_context *ntvfs,
   ioctl interface 
 */
 NTSTATUS pvfs_ioctl(struct ntvfs_module_context *ntvfs,
-		    struct ntvfs_request *req, union smb_ioctl *io)
+		    struct ntvfs_request *req,
+		    union smb_ioctl *io)
 {
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 

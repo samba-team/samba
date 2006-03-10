@@ -67,7 +67,7 @@ NTSTATUS create_directory_handle(struct smbcli_tree *tree, const char *dname, in
 	talloc_free(mem_ctx);
 
 	if (NT_STATUS_IS_OK(status)) {
-		*fnum = io.ntcreatex.out.fnum;
+		*fnum = io.ntcreatex.file.fnum;
 	}
 
 	return status;
@@ -134,7 +134,7 @@ int create_complex_file(struct smbcli_state *cli, TALLOC_CTX *mem_ctx, const cha
 
 	/* make sure all the timestamps aren't the same */
 	fileinfo.generic.level = RAW_FILEINFO_GETATTRE;
-	fileinfo.generic.in.fnum = fnum;
+	fileinfo.generic.file.fnum = fnum;
 
 	status = smb_raw_fileinfo(cli->tree, mem_ctx, &fileinfo);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -211,7 +211,7 @@ int create_complex_dir(struct smbcli_state *cli, TALLOC_CTX *mem_ctx, const char
 
 	/* make sure all the timestamps aren't the same */
 	fileinfo.generic.level = RAW_FILEINFO_GETATTRE;
-	fileinfo.generic.in.fnum = fnum;
+	fileinfo.generic.file.fnum = fnum;
 
 	status = smb_raw_fileinfo(cli->tree, mem_ctx, &fileinfo);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -337,7 +337,7 @@ void torture_all_info(struct smbcli_tree *tree, const char *fname)
 	NTSTATUS status;
 
 	finfo.generic.level = RAW_FILEINFO_ALL_INFO;
-	finfo.generic.in.fname = fname;
+	finfo.generic.file.path = fname;
 	status = smb_raw_pathinfo(tree, mem_ctx, &finfo);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("%s - %s\n", fname, nt_errstr(status));
@@ -379,7 +379,7 @@ BOOL torture_set_file_attribute(struct smbcli_tree *tree, const char *fname, uin
 	NTSTATUS status;
 
 	sfinfo.generic.level = RAW_SFILEINFO_BASIC_INFORMATION;
-	sfinfo.generic.file.fname = fname;
+	sfinfo.generic.file.path = fname;
 
 	ZERO_STRUCT(sfinfo.basic_info.in);
 	sfinfo.basic_info.in.attrib = attrib;
@@ -404,7 +404,7 @@ NTSTATUS torture_set_sparse(struct smbcli_tree *tree, int fnum)
 
 	nt.ntioctl.level = RAW_IOCTL_NTIOCTL;
 	nt.ntioctl.in.function = 0x900c4;
-	nt.ntioctl.in.fnum = fnum;
+	nt.ntioctl.file.fnum = fnum;
 	nt.ntioctl.in.fsctl = True;
 	nt.ntioctl.in.filter = 0;
 
@@ -427,7 +427,7 @@ NTSTATUS torture_check_ea(struct smbcli_state *cli,
 	TALLOC_CTX *mem_ctx = talloc_new(cli);
 
 	info.ea_list.level = RAW_FILEINFO_EA_LIST;
-	info.ea_list.file.fname = fname;
+	info.ea_list.file.path = fname;
 	info.ea_list.in.num_names = 1;
 	info.ea_list.in.ea_names = &ea;
 

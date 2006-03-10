@@ -27,14 +27,15 @@
   seek in a file
 */
 NTSTATUS pvfs_seek(struct ntvfs_module_context *ntvfs,
-		   struct ntvfs_request *req, struct smb_seek *io)
+		   struct ntvfs_request *req,
+		   union smb_seek *io)
 {
 	struct pvfs_state *pvfs = ntvfs->private_data;
 	struct pvfs_file *f;
 	struct pvfs_file_handle *h;
 	NTSTATUS status;
 
-	f = pvfs_find_fd(pvfs, req, io->in.fnum);
+	f = pvfs_find_fd(pvfs, req, io->lseek.file.fnum);
 	if (!f) {
 		return NT_STATUS_INVALID_HANDLE;
 	}
@@ -42,22 +43,22 @@ NTSTATUS pvfs_seek(struct ntvfs_module_context *ntvfs,
 
 	status = NT_STATUS_OK;
 
-	switch (io->in.mode) {
+	switch (io->lseek.in.mode) {
 	case SEEK_MODE_START:
-		h->seek_offset = io->in.offset;
+		h->seek_offset = io->lseek.in.offset;
 		break;
 
 	case SEEK_MODE_CURRENT:
-		h->seek_offset += io->in.offset;
+		h->seek_offset += io->lseek.in.offset;
 		break;
 
 	case SEEK_MODE_END:
 		status = pvfs_resolve_name_fd(pvfs, h->fd, h->name);
-		h->seek_offset = h->name->st.st_size + io->in.offset;
+		h->seek_offset = h->name->st.st_size + io->lseek.in.offset;
 		break;
 	}
 
-	io->out.offset = h->seek_offset;
+	io->lseek.out.offset = h->seek_offset;
 
 	return status;
 }

@@ -37,7 +37,7 @@ static struct smbcli_request *smb_raw_smbioctl_send(struct smbcli_tree *tree,
 
 	SETUP_REQUEST(SMBioctl, 3, 0);
 
-	SSVAL(req->out.vwv, VWV(0), parms->ioctl.in.fnum);
+	SSVAL(req->out.vwv, VWV(0), parms->ioctl.file.fnum);
 	SIVAL(req->out.vwv, VWV(1), parms->ioctl.in.request);
 
 	if (!smbcli_request_send(req)) {
@@ -81,7 +81,7 @@ static struct smbcli_request *smb_raw_ntioctl_send(struct smbcli_tree *tree,
 	nt.in.setup_count = 4;
 	nt.in.setup = setup;
 	SIVAL(setup, 0, parms->ntioctl.in.function);
-	SSVAL(setup, 4, parms->ntioctl.in.fnum);
+	SSVAL(setup, 4, parms->ntioctl.file.fnum);
 	SCVAL(setup, 6, parms->ntioctl.in.fsctl);
 	SCVAL(setup, 7, parms->ntioctl.in.filter);
 	nt.in.function = NT_TRANSACT_IOCTL;

@@ -184,14 +184,14 @@ BOOL torture_raw_qfileinfo(void)
 	for (i=0; levels[i].name; i++) {
 		if (!levels[i].only_paths) {
 			levels[i].fnum_finfo.generic.level = levels[i].level;
-			levels[i].fnum_finfo.generic.in.fnum = fnum;
+			levels[i].fnum_finfo.generic.file.fnum = fnum;
 			levels[i].fnum_status = smb_raw_fileinfo(cli->tree, mem_ctx, 
 								 &levels[i].fnum_finfo);
 		}
 
 		if (!levels[i].only_handles) {
 			levels[i].fname_finfo.generic.level = levels[i].level;
-			levels[i].fname_finfo.generic.in.fname = talloc_strdup(mem_ctx, fname);
+			levels[i].fname_finfo.generic.file.path = talloc_strdup(mem_ctx, fname);
 			levels[i].fname_status = smb_raw_pathinfo(cli->tree, mem_ctx, 
 								  &levels[i].fname_finfo);
 		}

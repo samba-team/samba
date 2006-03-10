@@ -41,7 +41,7 @@ struct smbcli_request *smb_raw_read_send(struct smbcli_tree *tree, union smb_rea
 			bigoffset = True;
 		}
 		SETUP_REQUEST(SMBreadbraw, bigoffset? 10:8, 0);
-		SSVAL(req->out.vwv, VWV(0), parms->readbraw.in.fnum);
+		SSVAL(req->out.vwv, VWV(0), parms->readbraw.file.fnum);
 		SIVAL(req->out.vwv, VWV(1), parms->readbraw.in.offset);
 		SSVAL(req->out.vwv, VWV(3), parms->readbraw.in.maxcnt);
 		SSVAL(req->out.vwv, VWV(4), parms->readbraw.in.mincnt);
@@ -54,7 +54,7 @@ struct smbcli_request *smb_raw_read_send(struct smbcli_tree *tree, union smb_rea
 
 	case RAW_READ_LOCKREAD:
 		SETUP_REQUEST(SMBlockread, 5, 0);
-		SSVAL(req->out.vwv, VWV(0), parms->lockread.in.fnum);
+		SSVAL(req->out.vwv, VWV(0), parms->lockread.file.fnum);
 		SSVAL(req->out.vwv, VWV(1), parms->lockread.in.count);
 		SIVAL(req->out.vwv, VWV(2), parms->lockread.in.offset);
 		SSVAL(req->out.vwv, VWV(4), parms->lockread.in.remaining);
@@ -62,7 +62,7 @@ struct smbcli_request *smb_raw_read_send(struct smbcli_tree *tree, union smb_rea
 
 	case RAW_READ_READ:
 		SETUP_REQUEST(SMBread, 5, 0);
-		SSVAL(req->out.vwv, VWV(0), parms->read.in.fnum);
+		SSVAL(req->out.vwv, VWV(0), parms->read.file.fnum);
 		SSVAL(req->out.vwv, VWV(1), parms->read.in.count);
 		SIVAL(req->out.vwv, VWV(2), parms->read.in.offset);
 		SSVAL(req->out.vwv, VWV(4), parms->read.in.remaining);
@@ -75,7 +75,7 @@ struct smbcli_request *smb_raw_read_send(struct smbcli_tree *tree, union smb_rea
 		SETUP_REQUEST(SMBreadX, bigoffset ? 12 : 10, 0);
 		SSVAL(req->out.vwv, VWV(0), SMB_CHAIN_NONE);
 		SSVAL(req->out.vwv, VWV(1), 0);
-		SSVAL(req->out.vwv, VWV(2), parms->readx.in.fnum);
+		SSVAL(req->out.vwv, VWV(2), parms->readx.file.fnum);
 		SIVAL(req->out.vwv, VWV(3), parms->readx.in.offset);
 		SSVAL(req->out.vwv, VWV(5), parms->readx.in.maxcnt & 0xFFFF);
 		SSVAL(req->out.vwv, VWV(6), parms->readx.in.mincnt);
@@ -183,7 +183,7 @@ struct smbcli_request *smb_raw_write_send(struct smbcli_tree *tree, union smb_wr
 	switch (parms->generic.level) {
 	case RAW_WRITE_WRITEUNLOCK:
 		SETUP_REQUEST(SMBwriteunlock, 5, 3 + parms->writeunlock.in.count);
-		SSVAL(req->out.vwv, VWV(0), parms->writeunlock.in.fnum);
+		SSVAL(req->out.vwv, VWV(0), parms->writeunlock.file.fnum);
 		SSVAL(req->out.vwv, VWV(1), parms->writeunlock.in.count);
 		SIVAL(req->out.vwv, VWV(2), parms->writeunlock.in.offset);
 		SSVAL(req->out.vwv, VWV(4), parms->writeunlock.in.remaining);
@@ -197,7 +197,7 @@ struct smbcli_request *smb_raw_write_send(struct smbcli_tree *tree, union smb_wr
 
 	case RAW_WRITE_WRITE:
 		SETUP_REQUEST(SMBwrite, 5,  3 + parms->write.in.count);
-		SSVAL(req->out.vwv, VWV(0), parms->write.in.fnum);
+		SSVAL(req->out.vwv, VWV(0), parms->write.file.fnum);
 		SSVAL(req->out.vwv, VWV(1), parms->write.in.count);
 		SIVAL(req->out.vwv, VWV(2), parms->write.in.offset);
 		SSVAL(req->out.vwv, VWV(4), parms->write.in.remaining);
@@ -210,7 +210,7 @@ struct smbcli_request *smb_raw_write_send(struct smbcli_tree *tree, union smb_wr
 
 	case RAW_WRITE_WRITECLOSE:
 		SETUP_REQUEST(SMBwriteclose, 6, 1 + parms->writeclose.in.count);
-		SSVAL(req->out.vwv, VWV(0), parms->writeclose.in.fnum);
+		SSVAL(req->out.vwv, VWV(0), parms->writeclose.file.fnum);
 		SSVAL(req->out.vwv, VWV(1), parms->writeclose.in.count);
 		SIVAL(req->out.vwv, VWV(2), parms->writeclose.in.offset);
 		raw_push_dos_date3(tree->session->transport,
@@ -229,7 +229,7 @@ struct smbcli_request *smb_raw_write_send(struct smbcli_tree *tree, union smb_wr
 		SETUP_REQUEST(SMBwriteX, bigoffset ? 14 : 12, parms->writex.in.count);
 		SSVAL(req->out.vwv, VWV(0), SMB_CHAIN_NONE);
 		SSVAL(req->out.vwv, VWV(1), 0);
-		SSVAL(req->out.vwv, VWV(2), parms->writex.in.fnum);
+		SSVAL(req->out.vwv, VWV(2), parms->writex.file.fnum);
 		SIVAL(req->out.vwv, VWV(3), parms->writex.in.offset);
 		SIVAL(req->out.vwv, VWV(5), 0); /* reserved */
 		SSVAL(req->out.vwv, VWV(7), parms->writex.in.wmode);
@@ -247,7 +247,7 @@ struct smbcli_request *smb_raw_write_send(struct smbcli_tree *tree, union smb_wr
 
 	case RAW_WRITE_SPLWRITE:
 		SETUP_REQUEST(SMBsplwr, 1, parms->splwrite.in.count);
-		SSVAL(req->out.vwv, VWV(0), parms->splwrite.in.fnum);
+		SSVAL(req->out.vwv, VWV(0), parms->splwrite.file.fnum);
 		if (parms->splwrite.in.count > 0) {
 			memcpy(req->out.data, parms->splwrite.in.data, parms->splwrite.in.count);
 		}

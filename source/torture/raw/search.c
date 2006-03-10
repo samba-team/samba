@@ -187,7 +187,7 @@ static BOOL test_one_file(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	/* get the all_info file into to check against */
 	all_info.generic.level = RAW_FILEINFO_ALL_INFO;
-	all_info.generic.in.fname = fname;
+	all_info.generic.file.path = fname;
 	status = smb_raw_pathinfo(cli->tree, mem_ctx, &all_info);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("RAW_FILEINFO_ALL_INFO failed - %s\n", nt_errstr(status));
@@ -196,7 +196,7 @@ static BOOL test_one_file(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	}
 
 	alt_info.generic.level = RAW_FILEINFO_ALT_NAME_INFO;
-	alt_info.generic.in.fname = fname;
+	alt_info.generic.file.path = fname;
 	status = smb_raw_pathinfo(cli->tree, mem_ctx, &alt_info);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("RAW_FILEINFO_ALT_NAME_INFO failed - %s\n", nt_errstr(status));
@@ -205,7 +205,7 @@ static BOOL test_one_file(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	}
 
 	internal_info.generic.level = RAW_FILEINFO_INTERNAL_INFORMATION;
-	internal_info.generic.in.fname = fname;
+	internal_info.generic.file.path = fname;
 	status = smb_raw_pathinfo(cli->tree, mem_ctx, &internal_info);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("RAW_FILEINFO_INTERNAL_INFORMATION failed - %s\n", nt_errstr(status));
@@ -214,7 +214,7 @@ static BOOL test_one_file(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	}
 
 	name_info.generic.level = RAW_FILEINFO_NAME_INFO;
-	name_info.generic.in.fname = fname;
+	name_info.generic.file.path = fname;
 	status = smb_raw_pathinfo(cli->tree, mem_ctx, &name_info);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("RAW_FILEINFO_NAME_INFO failed - %s\n", nt_errstr(status));
@@ -1219,7 +1219,7 @@ static BOOL test_ea_list(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	smbcli_close(cli->tree, fnum);
 
 	setfile.generic.level = RAW_SFILEINFO_EA_SET;
-	setfile.generic.file.fname = BASEDIR "\\file2.txt";
+	setfile.generic.file.path = BASEDIR "\\file2.txt";
 	setfile.ea_set.in.num_eas = 2;
 	setfile.ea_set.in.eas = talloc_array(mem_ctx, struct ea_struct, 2);
 	setfile.ea_set.in.eas[0].flags = 0;
@@ -1232,7 +1232,7 @@ static BOOL test_ea_list(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	status = smb_raw_setpathinfo(cli->tree, &setfile);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
-	setfile.generic.file.fname = BASEDIR "\\file3.txt";
+	setfile.generic.file.path = BASEDIR "\\file3.txt";
 	status = smb_raw_setpathinfo(cli->tree, &setfile);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	

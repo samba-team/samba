@@ -310,7 +310,7 @@ NTSTATUS pvfs_acl_query(struct pvfs_state *pvfs,
 		return NT_STATUS_INVALID_ACL;
 	}
 
-	normalise_sd_flags(sd, info->query_secdesc.secinfo_flags);
+	normalise_sd_flags(sd, info->query_secdesc.in.secinfo_flags);
 
 	info->query_secdesc.out.sd = sd;
 

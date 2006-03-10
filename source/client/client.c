@@ -1727,7 +1727,7 @@ static int cmd_allinfo(struct smbclient_context *ctx, const char **args)
 
 	/* first a ALL_INFO QPATHINFO */
 	finfo.generic.level = RAW_FILEINFO_ALL_INFO;
-	finfo.generic.in.fname = fname;
+	finfo.generic.file.path = fname;
 	status = smb_raw_pathinfo(ctx->cli->tree, ctx, &finfo);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("%s - %s\n", fname, nt_errstr(status));
@@ -1821,8 +1821,8 @@ static int cmd_eainfo(struct smbclient_context *ctx, const char **args)
 	}
 	fname = talloc_strdup(ctx, args[1]);
 
-	finfo.generic.in.fname = fname;
 	finfo.generic.level = RAW_FILEINFO_ALL_EAS;
+	finfo.generic.file.path = fname;
 	status = smb_raw_pathinfo(ctx->cli->tree, ctx, &finfo);
 	
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1877,8 +1877,8 @@ static int cmd_acl(struct smbclient_context *ctx, const char **args)
 	}
 
 	query.query_secdesc.level = RAW_FILEINFO_SEC_DESC;
-	query.query_secdesc.in.fnum = fnum;
-	query.query_secdesc.secinfo_flags = 0x7;
+	query.query_secdesc.file.fnum = fnum;
+	query.query_secdesc.in.secinfo_flags = 0x7;
 
 	status = smb_raw_fileinfo(ctx->cli->tree, ctx, &query);
 	if (!NT_STATUS_IS_OK(status)) {

@@ -39,7 +39,7 @@
 */
 static BOOL test_unlink(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 {
-	struct smb_unlink io;
+	union smb_unlink io;
 	NTSTATUS status;
 	BOOL ret = True;
 	const char *fname = BASEDIR "\\test.txt";
@@ -49,15 +49,15 @@ static BOOL test_unlink(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	}
 
 	printf("Trying non-existant file\n");
-	io.in.pattern = fname;
-	io.in.attrib = 0;
+	io.unlink.in.pattern = fname;
+	io.unlink.in.attrib = 0;
 	status = smb_raw_unlink(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_NOT_FOUND);
 
 	smbcli_close(cli->tree, smbcli_open(cli->tree, fname, O_RDWR|O_CREAT, DENY_NONE));
 
-	io.in.pattern = fname;
-	io.in.attrib = 0;
+	io.unlink.in.pattern = fname;
+	io.unlink.in.attrib = 0;
 	status = smb_raw_unlink(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
@@ -65,94 +65,94 @@ static BOOL test_unlink(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	smbcli_close(cli->tree, smbcli_open(cli->tree, fname, O_RDWR|O_CREAT, DENY_NONE));
 	torture_set_file_attribute(cli->tree, fname, FILE_ATTRIBUTE_HIDDEN);
 
-	io.in.pattern = fname;
-	io.in.attrib = 0;
+	io.unlink.in.pattern = fname;
+	io.unlink.in.attrib = 0;
 	status = smb_raw_unlink(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_NO_SUCH_FILE);
 
-	io.in.pattern = fname;
-	io.in.attrib = FILE_ATTRIBUTE_HIDDEN;
+	io.unlink.in.pattern = fname;
+	io.unlink.in.attrib = FILE_ATTRIBUTE_HIDDEN;
 	status = smb_raw_unlink(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
-	io.in.pattern = fname;
-	io.in.attrib = FILE_ATTRIBUTE_HIDDEN;
+	io.unlink.in.pattern = fname;
+	io.unlink.in.attrib = FILE_ATTRIBUTE_HIDDEN;
 	status = smb_raw_unlink(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_NOT_FOUND);
 
 	printf("Trying a directory\n");
-	io.in.pattern = BASEDIR;
-	io.in.attrib = 0;
+	io.unlink.in.pattern = BASEDIR;
+	io.unlink.in.attrib = 0;
 	status = smb_raw_unlink(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_FILE_IS_A_DIRECTORY);
 
-	io.in.pattern = BASEDIR;
-	io.in.attrib = FILE_ATTRIBUTE_DIRECTORY;
+	io.unlink.in.pattern = BASEDIR;
+	io.unlink.in.attrib = FILE_ATTRIBUTE_DIRECTORY;
 	status = smb_raw_unlink(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_FILE_IS_A_DIRECTORY);
 
 	printf("Trying a bad path\n");
-	io.in.pattern = "..";
-	io.in.attrib = 0;
+	io.unlink.in.pattern = "..";
+	io.unlink.in.attrib = 0;
 	status = smb_raw_unlink(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_OBJECT_PATH_SYNTAX_BAD);
 
-	io.in.pattern = "\\..";
-	io.in.attrib = 0;
+	io.unlink.in.pattern = "\\..";
+	io.unlink.in.attrib = 0;
 	status = smb_raw_unlink(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_OBJECT_PATH_SYNTAX_BAD);
 
-	io.in.pattern = BASEDIR "\\..\\..";
-	io.in.attrib = 0;
+	io.unlink.in.pattern = BASEDIR "\\..\\..";
+	io.unlink.in.attrib = 0;
 	status = smb_raw_unlink(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_OBJECT_PATH_SYNTAX_BAD);
 
-	io.in.pattern = BASEDIR "\\..";
-	io.in.attrib = 0;
+	io.unlink.in.pattern = BASEDIR "\\..";
+	io.unlink.in.attrib = 0;
 	status = smb_raw_unlink(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_FILE_IS_A_DIRECTORY);
 
 	printf("Trying wildcards\n");
 	smbcli_close(cli->tree, smbcli_open(cli->tree, fname, O_RDWR|O_CREAT, DENY_NONE));
-	io.in.pattern = BASEDIR "\\t*.t";
-	io.in.attrib = 0;
+	io.unlink.in.pattern = BASEDIR "\\t*.t";
+	io.unlink.in.attrib = 0;
 	status = smb_raw_unlink(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_NO_SUCH_FILE);
 
-	io.in.pattern = BASEDIR "\\z*";
-	io.in.attrib = 0;
+	io.unlink.in.pattern = BASEDIR "\\z*";
+	io.unlink.in.attrib = 0;
 	status = smb_raw_unlink(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_NO_SUCH_FILE);
 
-	io.in.pattern = BASEDIR "\\z*";
-	io.in.attrib = FILE_ATTRIBUTE_DIRECTORY;
+	io.unlink.in.pattern = BASEDIR "\\z*";
+	io.unlink.in.attrib = FILE_ATTRIBUTE_DIRECTORY;
 	status = smb_raw_unlink(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_NO_SUCH_FILE);
 
-	io.in.pattern = BASEDIR "\\*";
-	io.in.attrib = FILE_ATTRIBUTE_DIRECTORY;
+	io.unlink.in.pattern = BASEDIR "\\*";
+	io.unlink.in.attrib = FILE_ATTRIBUTE_DIRECTORY;
 	status = smb_raw_unlink(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_INVALID);
 
-	io.in.pattern = BASEDIR "\\?";
-	io.in.attrib = FILE_ATTRIBUTE_DIRECTORY;
+	io.unlink.in.pattern = BASEDIR "\\?";
+	io.unlink.in.attrib = FILE_ATTRIBUTE_DIRECTORY;
 	status = smb_raw_unlink(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_INVALID);
 
-	io.in.pattern = BASEDIR "\\t*";
-	io.in.attrib = FILE_ATTRIBUTE_DIRECTORY;
+	io.unlink.in.pattern = BASEDIR "\\t*";
+	io.unlink.in.attrib = FILE_ATTRIBUTE_DIRECTORY;
 	status = smb_raw_unlink(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 	smbcli_close(cli->tree, smbcli_open(cli->tree, fname, O_RDWR|O_CREAT, DENY_NONE));
 
-	io.in.pattern = BASEDIR "\\*.dat";
-	io.in.attrib = FILE_ATTRIBUTE_DIRECTORY;
+	io.unlink.in.pattern = BASEDIR "\\*.dat";
+	io.unlink.in.attrib = FILE_ATTRIBUTE_DIRECTORY;
 	status = smb_raw_unlink(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_NO_SUCH_FILE);
 
-	io.in.pattern = BASEDIR "\\*.tx?";
-	io.in.attrib = 0;
+	io.unlink.in.pattern = BASEDIR "\\*.tx?";
+	io.unlink.in.attrib = 0;
 	status = smb_raw_unlink(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
@@ -173,7 +173,7 @@ done:
 static BOOL test_delete_on_close(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 {
 	union smb_open op;
-	struct smb_unlink io;
+	union smb_unlink io;
 	struct smb_rmdir dio;
 	NTSTATUS status;
 	BOOL ret = True;
@@ -189,8 +189,8 @@ static BOOL test_delete_on_close(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	dio.in.path = dname;
 
-	io.in.pattern = fname;
-	io.in.attrib = 0;
+	io.unlink.in.pattern = fname;
+	io.unlink.in.attrib = 0;
 	status = smb_raw_unlink(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_NOT_FOUND);
 
@@ -303,7 +303,7 @@ static BOOL test_delete_on_close(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	status = smb_raw_open(cli->tree, mem_ctx, &op);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	fnum = op.ntcreatex.out.fnum;
+	fnum = op.ntcreatex.file.fnum;
 
 	smbcli_close(cli->tree, fnum);
 
@@ -335,7 +335,7 @@ static BOOL test_delete_on_close(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	status = smb_raw_open(cli->tree, mem_ctx, &op);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	fnum2 = op.ntcreatex.out.fnum;
+	fnum2 = op.ntcreatex.file.fnum;
 
 	smbcli_close(cli->tree, fnum2);
 
@@ -370,13 +370,13 @@ static BOOL test_delete_on_close(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	status = smb_raw_open(cli->tree, mem_ctx, &op);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	fnum = op.ntcreatex.out.fnum;
+	fnum = op.ntcreatex.file.fnum;
 
 	/* open without delete on close */
 	op.ntcreatex.in.create_options = NTCREATEX_OPTIONS_DIRECTORY;
 	status = smb_raw_open(cli->tree, mem_ctx, &op);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	fnum2 = op.ntcreatex.out.fnum;
+	fnum2 = op.ntcreatex.file.fnum;
 
 	/* close 2nd file handle */
 	smbcli_close(cli->tree, fnum2);

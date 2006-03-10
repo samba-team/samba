@@ -100,7 +100,7 @@ static BOOL torture_smb2_find_levels(struct smb2_tree *tree)
 	}
 
 	io.generic.level = RAW_FILEINFO_ALT_NAME_INFORMATION;
-	io.generic.in.handle = handle;
+	io.generic.file.handle = handle;
 	status = smb2_getinfo_file(tree, tree, &io);
 	if (!NT_STATUS_IS_OK(status)) {
 		return False;
@@ -108,7 +108,7 @@ static BOOL torture_smb2_find_levels(struct smb2_tree *tree)
 	alt_name = talloc_strdup(tree, io.alt_name_info.out.fname.s);	
 
 	io.generic.level = RAW_FILEINFO_SMB2_ALL_INFORMATION;
-	io.generic.in.handle = handle;
+	io.generic.file.handle = handle;
 	status = smb2_getinfo_file(tree, tree, &io);
 	if (!NT_STATUS_IS_OK(status)) {
 		return False;

@@ -1922,7 +1922,7 @@ BOOL torture_ioctl_test(void)
 	}
 
 	parms.ioctl.level = RAW_IOCTL_IOCTL;
-	parms.ioctl.in.fnum = fnum;
+	parms.ioctl.file.fnum = fnum;
 	parms.ioctl.in.request = IOCTL_QUERY_JOB_INFO;
 	status = smb_raw_ioctl(cli->tree, mem_ctx, &parms);
 	printf("ioctl job info: %s\n", smbcli_errstr(cli->tree));

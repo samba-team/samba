@@ -237,7 +237,7 @@ static void async_simple(struct smbcli_request *c_req)
   The name can contain CIFS wildcards, but rarely does (except with OS/2 clients)
 */
 static NTSTATUS cvfs_unlink(struct ntvfs_module_context *ntvfs, 
-			    struct ntvfs_request *req, struct smb_unlink *unl)
+			    struct ntvfs_request *req, union smb_unlink *unl)
 {
 	struct cvfs_private *private = ntvfs->private_data;
 	struct smbcli_request *c_req;
@@ -292,7 +292,7 @@ static NTSTATUS cvfs_ioctl(struct ntvfs_module_context *ntvfs,
   check if a directory exists
 */
 static NTSTATUS cvfs_chkpath(struct ntvfs_module_context *ntvfs, 
-				struct ntvfs_request *req, struct smb_chkpath *cp)
+				struct ntvfs_request *req, union smb_chkpath *cp)
 {
 	struct cvfs_private *private = ntvfs->private_data;
 	struct smbcli_request *c_req;
@@ -583,7 +583,8 @@ static void async_seek(struct smbcli_request *c_req)
   seek in a file
 */
 static NTSTATUS cvfs_seek(struct ntvfs_module_context *ntvfs, 
-			  struct ntvfs_request *req, struct smb_seek *io)
+			  struct ntvfs_request *req,
+			  union smb_seek *io)
 {
 	struct cvfs_private *private = ntvfs->private_data;
 	struct smbcli_request *c_req;
@@ -603,7 +604,8 @@ static NTSTATUS cvfs_seek(struct ntvfs_module_context *ntvfs,
   flush a file
 */
 static NTSTATUS cvfs_flush(struct ntvfs_module_context *ntvfs, 
-			   struct ntvfs_request *req, struct smb_flush *io)
+			   struct ntvfs_request *req,
+			   union smb_flush *io)
 {
 	struct cvfs_private *private = ntvfs->private_data;
 	struct smbcli_request *c_req;
@@ -844,7 +846,8 @@ static void async_trans2(struct smbcli_request *c_req)
 
 /* raw trans2 */
 static NTSTATUS cvfs_trans2(struct ntvfs_module_context *ntvfs, 
-				struct ntvfs_request *req, struct smb_trans2 *trans2)
+			    struct ntvfs_request *req,
+			    struct smb_trans2 *trans2)
 {
 	struct cvfs_private *private = ntvfs->private_data;
 	struct smbcli_request *c_req;
@@ -863,7 +866,8 @@ static NTSTATUS cvfs_trans2(struct ntvfs_module_context *ntvfs,
 
 /* SMBtrans - not used on file shares */
 static NTSTATUS cvfs_trans(struct ntvfs_module_context *ntvfs, 
-				struct ntvfs_request *req, struct smb_trans2 *trans2)
+			   struct ntvfs_request *req,
+			   struct smb_trans2 *trans2)
 {
 	return NT_STATUS_ACCESS_DENIED;
 }
@@ -881,7 +885,8 @@ static void async_changenotify(struct smbcli_request *c_req)
 
 /* change notify request - always async */
 static NTSTATUS cvfs_notify(struct ntvfs_module_context *ntvfs, 
-			    struct ntvfs_request *req, struct smb_notify *info)
+			    struct ntvfs_request *req,
+			    union smb_notify *info)
 {
 	struct cvfs_private *private = ntvfs->private_data;
 	struct smbcli_request *c_req;

@@ -159,7 +159,7 @@ static NTSTATUS smb2_create_complex(struct smb2_tree *tree, const char *fname,
 
 	/* make sure all the timestamps aren't the same */
 	fileinfo.generic.level = RAW_FILEINFO_BASIC_INFORMATION;
-	fileinfo.generic.in.handle = *handle;
+	fileinfo.generic.file.handle = *handle;
 
 	status = smb2_getinfo_file(tree, tree, &fileinfo);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -207,7 +207,7 @@ void torture_smb2_all_info(struct smb2_tree *tree, struct smb2_handle handle)
 	union smb_fileinfo io;
 
 	io.generic.level = RAW_FILEINFO_SMB2_ALL_INFORMATION;
-	io.generic.in.handle = handle;
+	io.generic.file.handle = handle;
 
 	status = smb2_getinfo_file(tree, tmp_ctx, &io);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -272,7 +272,7 @@ void torture_smb2_all_info(struct smb2_tree *tree, struct smb2_handle handle)
 	if (DEBUGLVL(1)) {
 		/* the security descriptor */
 		io.query_secdesc.level = RAW_FILEINFO_SEC_DESC;
-		io.query_secdesc.secinfo_flags = 
+		io.query_secdesc.in.secinfo_flags = 
 			SECINFO_OWNER|SECINFO_GROUP|
 			SECINFO_DACL;
 		status = smb2_getinfo_file(tree, tmp_ctx, &io);
