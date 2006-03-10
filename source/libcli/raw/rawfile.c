@@ -297,7 +297,7 @@ static struct smbcli_request *smb_raw_nttrans_create_send(struct smbcli_tree *tr
 				    parms->ntcreatex.in.ea_list->eas);
 	}
 
-	nt.in.params = data_blob_talloc(mem_ctx, NULL, 54);
+	nt.in.params = data_blob_talloc(mem_ctx, NULL, 53);
 	if (nt.in.params.data == NULL) {
 		talloc_free(mem_ctx);
 		return NULL;
@@ -319,7 +319,9 @@ static struct smbcli_request *smb_raw_nttrans_create_send(struct smbcli_tree *tr
 	SIVAL(params, 48, parms->ntcreatex.in.impersonation);
 	SCVAL(params, 52, parms->ntcreatex.in.security_flags);
 	SCVAL(params, 53, 0);
-	
+
+	/* the empty string first forces the correct alignment */
+	smbcli_blob_append_string(tree->session, mem_ctx, &nt.in.params,"", 0);
 	fname_len = smbcli_blob_append_string(tree->session, mem_ctx, &nt.in.params,
 					      parms->ntcreatex.in.fname, STR_TERMINATE);
 
