@@ -577,7 +577,6 @@ enum ldb_reply_type {
 
 enum ldb_async_wait_type {
 	LDB_WAIT_ALL,
-	LDB_WAIT_ONCE,
 	LDB_WAIT_NONE
 };
 
