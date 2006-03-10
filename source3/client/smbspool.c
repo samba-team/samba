@@ -299,15 +299,21 @@ list_devices(void)
 static
 char * get_ticket_cache( uid_t uid )
 {
+  char *ticket_file = NULL;
+
+#ifdef WITH_KCM
+  snprintf(ticket_file, CC_MAX_FILE_LEN, "KCM:%d", uid );
+  goto done;
+#else
+ {
   SMB_STRUCT_DIR *tcdir;                  /* directory where ticket caches are stored */
   SMB_STRUCT_DIRENT *dirent;   /* directory entry */
   char *filename = NULL;       /* holds file names on the tmp directory */
   SMB_STRUCT_STAT buf;        
   char user_cache_prefix[CC_MAX_FILE_LEN];
   char file_path[CC_MAX_FILE_PATH_LEN];
-  char *ticket_file = NULL;
   time_t t = 0;
-  
+
   snprintf(user_cache_prefix, CC_MAX_FILE_LEN, "%s%d", CC_PREFIX, uid );
   tcdir = sys_opendir( TICKET_CC_DIR );
   if ( tcdir == NULL ) 
@@ -343,6 +349,10 @@ char * get_ticket_cache( uid_t uid )
   }
 
   sys_closedir(tcdir);
+ }
+#endif
+
+done:
 
   if ( ticket_file == NULL )
   {
