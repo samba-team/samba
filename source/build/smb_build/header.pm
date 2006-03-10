@@ -2,6 +2,7 @@
 # - create output for build.h
 #
 #  Copyright (C) Stefan (metze) Metzmacher 2004
+#  Copyright (C) Jelmer Vernooij 2005
 #  Released under the GNU GPL
 
 package header;
