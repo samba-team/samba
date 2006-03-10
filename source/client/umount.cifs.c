@@ -83,7 +83,7 @@ static struct option longopts[] = {
 	{ NULL, 0, NULL, 0 }
 };
 
-char * thisprogram;
+const char * thisprogram;
 int verboseflg = 0;
 
 static void umount_cifs_usage(void)
