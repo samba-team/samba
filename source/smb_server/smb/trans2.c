@@ -452,7 +452,7 @@ static NTSTATUS trans2_open(struct smbsrv_request *req, struct smb_trans2 *trans
 		return status;
 	}
 
-	status = ntvfs_openfile(req, io);
+	status = ntvfs_open(req, io);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}

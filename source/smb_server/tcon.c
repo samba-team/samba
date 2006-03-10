@@ -102,7 +102,7 @@ static int smbsrv_tcon_destructor(void *ptr)
 
 	/* tell the ntvfs backend that we are disconnecting */
 	if (tcon->ntvfs_ctx) {
-		ntvfs_disconnect(tcon);
+		ntvfs_disconnect(tcon->ntvfs_ctx);
 	}
 
 	if (tcon->smb2.session) {

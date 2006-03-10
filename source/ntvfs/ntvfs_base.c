@@ -99,19 +99,18 @@ _PUBLIC_ const struct ntvfs_ops *ntvfs_backend_byname(const char *name, enum ntv
   This can be used by backends to either detect compilation errors, or provide
   multiple implementations for different smbd compilation options in one module
 */
+static const struct ntvfs_critical_sizes critical_sizes = {
+	.interface_version		= NTVFS_INTERFACE_VERSION,
+	.sizeof_ntvfs_critical_sizes	= sizeof(struct ntvfs_critical_sizes),
+	.sizeof_ntvfs_context		= sizeof(struct ntvfs_context),
+	.sizeof_ntvfs_module_context	= sizeof(struct ntvfs_module_context),
+	.sizeof_ntvfs_ops		= sizeof(struct ntvfs_ops),
+	.sizeof_ntvfs_async_state	= sizeof(struct ntvfs_async_state),
+	.sizeof_ntvfs_request		= sizeof(struct ntvfs_request),
+};
+
 _PUBLIC_ const struct ntvfs_critical_sizes *ntvfs_interface_version(void)
 {
-	static const struct ntvfs_critical_sizes critical_sizes = {
-		NTVFS_INTERFACE_VERSION,
-		sizeof(struct ntvfs_critical_sizes),
-		sizeof(struct ntvfs_context),
-		sizeof(struct ntvfs_module_context),
-		sizeof(struct ntvfs_ops),
-		sizeof(struct ntvfs_async_state),
-		sizeof(struct smbsrv_tcon),
-		sizeof(struct smbsrv_request),
-	};
-
 	return &critical_sizes;
 }
 
@@ -119,7 +118,7 @@ _PUBLIC_ const struct ntvfs_critical_sizes *ntvfs_interface_version(void)
 /*
   initialise a connection structure to point at a NTVFS backend
 */
-NTSTATUS ntvfs_init_connection(struct smbsrv_request *req, enum ntvfs_type type)
+NTSTATUS ntvfs_init_connection(struct ntvfs_request *req, enum ntvfs_type type)
 {
 	const char **handlers = lp_ntvfs_handler(req->tcon->service);
 	int i;

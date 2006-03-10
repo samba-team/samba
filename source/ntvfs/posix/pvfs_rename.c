@@ -121,7 +121,7 @@ static const char *pvfs_resolve_wildcard(TALLOC_CTX *mem_ctx,
   rename one file from a wildcard set
 */
 static NTSTATUS pvfs_rename_one(struct pvfs_state *pvfs, 
-				struct smbsrv_request *req, 
+				struct ntvfs_request *req, 
 				const char *dir_path,
 				const char *fname1,
 				const char *fname2,
@@ -190,7 +190,7 @@ failed:
   rename a set of files with wildcards
 */
 static NTSTATUS pvfs_rename_wildcard(struct pvfs_state *pvfs, 
-				     struct smbsrv_request *req, 
+				     struct ntvfs_request *req, 
 				     union smb_rename *ren, 
 				     struct pvfs_filename *name1, 
 				     struct pvfs_filename *name2)
@@ -244,7 +244,7 @@ static NTSTATUS pvfs_rename_wildcard(struct pvfs_state *pvfs,
   rename a set of files - SMBmv interface
 */
 static NTSTATUS pvfs_rename_mv(struct ntvfs_module_context *ntvfs,
-			       struct smbsrv_request *req, union smb_rename *ren)
+			       struct ntvfs_request *req, union smb_rename *ren)
 {
 	struct pvfs_state *pvfs = ntvfs->private_data;
 	NTSTATUS status;
@@ -309,7 +309,7 @@ static NTSTATUS pvfs_rename_mv(struct ntvfs_module_context *ntvfs,
   rename a set of files - ntrename interface
 */
 static NTSTATUS pvfs_rename_nt(struct ntvfs_module_context *ntvfs,
-			       struct smbsrv_request *req, union smb_rename *ren)
+			       struct ntvfs_request *req, union smb_rename *ren)
 {
 	struct pvfs_state *pvfs = ntvfs->private_data;
 	NTSTATUS status;
@@ -408,7 +408,7 @@ static NTSTATUS pvfs_rename_nt(struct ntvfs_module_context *ntvfs,
   rename a set of files - ntrename interface
 */
 NTSTATUS pvfs_rename(struct ntvfs_module_context *ntvfs,
-		     struct smbsrv_request *req, union smb_rename *ren)
+		     struct ntvfs_request *req, union smb_rename *ren)
 {
 	switch (ren->generic.level) {
 	case RAW_RENAME_RENAME:

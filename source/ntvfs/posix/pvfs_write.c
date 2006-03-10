@@ -29,7 +29,7 @@
   write to a file
 */
 NTSTATUS pvfs_write(struct ntvfs_module_context *ntvfs,
-		    struct smbsrv_request *req, union smb_write *wr)
+		    struct ntvfs_request *req, union smb_write *wr)
 {
 	struct pvfs_state *pvfs = ntvfs->private_data;
 	ssize_t ret;
@@ -37,7 +37,7 @@ NTSTATUS pvfs_write(struct ntvfs_module_context *ntvfs,
 	NTSTATUS status;
 
 	if (wr->generic.level != RAW_WRITE_WRITEX) {
-		return ntvfs_map_write(req, wr, ntvfs);
+		return ntvfs_map_write(ntvfs, req, wr);
 	}
 
 	f = pvfs_find_fd(pvfs, req, wr->writex.in.fnum);

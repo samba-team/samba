@@ -323,7 +323,7 @@ static void pvfs_search_cleanup(struct pvfs_state *pvfs)
    list files in a directory matching a wildcard pattern - old SMBsearch interface
 */
 static NTSTATUS pvfs_search_first_old(struct ntvfs_module_context *ntvfs,
-				      struct smbsrv_request *req, union smb_search_first *io, 
+				      struct ntvfs_request *req, union smb_search_first *io, 
 				      void *search_private, 
 				      BOOL (*callback)(void *, union smb_search_data *))
 {
@@ -411,7 +411,7 @@ static NTSTATUS pvfs_search_first_old(struct ntvfs_module_context *ntvfs,
 
 /* continue a old style search */
 static NTSTATUS pvfs_search_next_old(struct ntvfs_module_context *ntvfs,
-				     struct smbsrv_request *req, union smb_search_next *io, 
+				     struct ntvfs_request *req, union smb_search_next *io, 
 				     void *search_private, 
 				     BOOL (*callback)(void *, union smb_search_data *))
 {
@@ -455,7 +455,7 @@ static NTSTATUS pvfs_search_next_old(struct ntvfs_module_context *ntvfs,
    list files in a directory matching a wildcard pattern
 */
 NTSTATUS pvfs_search_first(struct ntvfs_module_context *ntvfs,
-			   struct smbsrv_request *req, union smb_search_first *io, 
+			   struct ntvfs_request *req, union smb_search_first *io, 
 			   void *search_private, 
 			   BOOL (*callback)(void *, union smb_search_data *))
 {
@@ -554,7 +554,7 @@ NTSTATUS pvfs_search_first(struct ntvfs_module_context *ntvfs,
 
 /* continue a search */
 NTSTATUS pvfs_search_next(struct ntvfs_module_context *ntvfs,
-			  struct smbsrv_request *req, union smb_search_next *io, 
+			  struct ntvfs_request *req, union smb_search_next *io, 
 			  void *search_private, 
 			  BOOL (*callback)(void *, union smb_search_data *))
 {
@@ -619,7 +619,7 @@ NTSTATUS pvfs_search_next(struct ntvfs_module_context *ntvfs,
 
 /* close a search */
 NTSTATUS pvfs_search_close(struct ntvfs_module_context *ntvfs,
-			   struct smbsrv_request *req, union smb_search_close *io)
+			   struct ntvfs_request *req, union smb_search_close *io)
 {
 	struct pvfs_state *pvfs = ntvfs->private_data;
 	struct pvfs_search_state *search;
