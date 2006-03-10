@@ -1076,11 +1076,15 @@ static NTSTATUS populate_ldap_for_ldif(fstring sid, const char *suffix, const ch
 	if (machine_suffix && *machine_suffix && 
 	    strcmp(machine_suffix, user_suffix) &&
 	    strcmp(machine_suffix, suffix)) {
-		fprintf(add_fd, "# %s\n", lp_ldap_machine_suffix());
-		fprintf(add_fd, "dn: %s\n", lp_ldap_machine_suffix());
+		char *machine_ou = NULL;
+		fprintf(add_fd, "# %s\n", machine_suffix);
+		fprintf(add_fd, "dn: %s\n", machine_suffix);
 		fprintf(add_fd, "objectClass: organizationalUnit\n");
-		fprintf(add_fd, "ou: %s\n", 
-			sstring_sub(lp_ldap_machine_suffix(), '=', ','));
+		/* this isn't totally correct as it assumes that
+		   there _must_ be an ou. just fixing memleak now. jmcd */
+		machine_ou = sstring_sub(lp_ldap_machine_suffix(), '=', ',');
+		fprintf(add_fd, "ou: %s\n", machine_ou);
+		SAFE_FREE(machine_ou);
 		fprintf(add_fd, "\n");
 		fflush(add_fd);
 	}
