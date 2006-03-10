@@ -38,8 +38,8 @@
 
 /* a second stage function converts from the out parameters of the generic
    call onto the out parameters of the specific call made */
-typedef NTSTATUS (*second_stage_t)(struct smbsrv_request *, 
-				   struct ntvfs_module_context *,
+typedef NTSTATUS (*second_stage_t)(struct ntvfs_module_context *,
+				   struct ntvfs_request *,
 				   void *, void *, NTSTATUS);
 
 /* 
@@ -55,14 +55,14 @@ struct ntvfs_map_async {
   this is a async wrapper, called from the backend when it has completed
   a function that it has decided to reply to in an async fashion
 */
-static void ntvfs_map_async_send(struct smbsrv_request *req)
+static void ntvfs_map_async_send(struct ntvfs_request *req)
 {
 	struct ntvfs_map_async *m = req->async_states->private_data;
 
 	ntvfs_async_state_pop(req);
 
 	/* call the _finish function setup in ntvfs_map_async_setup() */
-	req->async_states->status = m->fn(req, m->ntvfs, m->io, m->io2, req->async_states->status);
+	req->async_states->status = m->fn(m->ntvfs, req, m->io, m->io2, req->async_states->status);
 
 	/* call the send function from the next module up */
 	req->async_states->send_fn(req);
@@ -74,8 +74,8 @@ static void ntvfs_map_async_send(struct smbsrv_request *req)
   io2 is the new call structure for the mapped call
   fn is a second stage function for processing the out arguments
 */
-static NTSTATUS ntvfs_map_async_setup(struct smbsrv_request *req,
-				      struct ntvfs_module_context *ntvfs,
+static NTSTATUS ntvfs_map_async_setup(struct ntvfs_module_context *ntvfs,
+				      struct ntvfs_request *req,
 				      void *io, void *io2,
 				      second_stage_t fn)
 {
@@ -88,14 +88,13 @@ static NTSTATUS ntvfs_map_async_setup(struct smbsrv_request *req,
 	m->io = io;
 	m->io2 = io2;
 	m->fn = fn;
-	return ntvfs_async_state_push(req, m, ntvfs_map_async_send, ntvfs);
+	return ntvfs_async_state_push(ntvfs, req, m, ntvfs_map_async_send);
 }
-
 
 /*
   called when first stage processing is complete. 
 */	
-static NTSTATUS ntvfs_map_async_finish(struct smbsrv_request *req, NTSTATUS status)
+static NTSTATUS ntvfs_map_async_finish(struct ntvfs_request *req, NTSTATUS status)
 {
 	struct ntvfs_map_async *m;
 
@@ -111,9 +110,8 @@ static NTSTATUS ntvfs_map_async_finish(struct smbsrv_request *req, NTSTATUS stat
 
 	ntvfs_async_state_pop(req);
 
-	return m->fn(req, m->ntvfs, m->io, m->io2, status);
+	return m->fn(m->ntvfs, req, m->io, m->io2, status);
 }
-
 
 /*
   see if a filename ends in EXE COM DLL or SYM. This is needed for the
@@ -140,8 +138,8 @@ BOOL is_exe_filename(const char *fname)
 /* 
    NTVFS openx to ntcreatex mapper
 */
-static NTSTATUS ntvfs_map_open_finish(struct smbsrv_request *req, 
-				      struct ntvfs_module_context *ntvfs,
+static NTSTATUS ntvfs_map_open_finish(struct ntvfs_module_context *ntvfs,
+				      struct ntvfs_request *req, 
 				      union smb_open *io, 
 				      union smb_open *io2, 
 				      NTSTATUS status)
@@ -206,6 +204,7 @@ static NTSTATUS ntvfs_map_open_finish(struct smbsrv_request *req,
 		io->ctemp.out.fnum  = io2->generic.out.fnum;
 		io->ctemp.out.name = talloc_strdup(req, io2->generic.in.fname + 
 						   strlen(io->ctemp.in.directory) + 1);
+		NT_STATUS_HAVE_NO_MEMORY(io->ctemp.out.name);
 		break;
 
 	default:
@@ -218,9 +217,10 @@ static NTSTATUS ntvfs_map_open_finish(struct smbsrv_request *req,
 	req->async_states->state &= ~NTVFS_ASYNC_STATE_MAY_ASYNC;
 
 	if (write_time != 0) {
-		sf = talloc(req, union smb_setfileinfo);			
-		sf->generic.level            = RAW_SFILEINFO_STANDARD;
-		sf->generic.file.fnum        = io2->generic.out.fnum;
+		sf = talloc(req, union smb_setfileinfo);
+		NT_STATUS_HAVE_NO_MEMORY(sf);
+		sf->generic.level           = RAW_SFILEINFO_STANDARD;
+		sf->generic.file.fnum       = io2->generic.out.fnum;
 		sf->standard.in.create_time = 0;
 		sf->standard.in.write_time  = write_time;
 		sf->standard.in.access_time = 0;
@@ -229,6 +229,7 @@ static NTSTATUS ntvfs_map_open_finish(struct smbsrv_request *req,
 
 	if (set_size != 0) {
 		sf = talloc(req, union smb_setfileinfo);			
+		NT_STATUS_HAVE_NO_MEMORY(sf);
 		sf->generic.level            = RAW_SFILEINFO_END_OF_FILE_INFORMATION;
 		sf->generic.file.fnum        = io2->generic.out.fnum;
 		sf->end_of_file_info.in.size = set_size;
@@ -346,8 +347,9 @@ static NTSTATUS map_openx_open(uint16_t flags, uint16_t open_mode,
 /* 
    NTVFS open generic to any mapper
 */
-_PUBLIC_ NTSTATUS ntvfs_map_open(struct smbsrv_request *req, union smb_open *io, 
-				 struct ntvfs_module_context *ntvfs)
+_PUBLIC_ NTSTATUS ntvfs_map_open(struct ntvfs_module_context *ntvfs,
+				 struct ntvfs_request *req,
+				 union smb_open *io)
 {
 	NTSTATUS status;
 	union smb_open *io2;
@@ -357,7 +359,8 @@ _PUBLIC_ NTSTATUS ntvfs_map_open(struct smbsrv_request *req, union smb_open *io,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	status = ntvfs_map_async_setup(req, ntvfs, io, io2, 
+	status = ntvfs_map_async_setup(ntvfs, req,
+				       io, io2, 
 				       (second_stage_t)ntvfs_map_open_finish);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -379,7 +382,7 @@ _PUBLIC_ NTSTATUS ntvfs_map_open(struct smbsrv_request *req, union smb_open *io,
 		io2->generic.in.file_attr = io->openx.in.file_attrs;
 		io2->generic.in.fname = io->openx.in.fname;
 		
-		status = ntvfs->ops->openfile(ntvfs, req, io2);
+		status = ntvfs->ops->open(ntvfs, req, io2);
 		break;
 		
 		
@@ -396,7 +399,7 @@ _PUBLIC_ NTSTATUS ntvfs_map_open(struct smbsrv_request *req, union smb_open *io,
 		io2->generic.in.file_attr = io->openold.in.search_attrs;
 		io2->generic.in.fname = io->openold.in.fname;
 
-		status = ntvfs->ops->openfile(ntvfs, req, io2);
+		status = ntvfs->ops->open(ntvfs, req, io2);
 		break;
 
 	case RAW_OPEN_T2OPEN:
@@ -422,7 +425,7 @@ _PUBLIC_ NTSTATUS ntvfs_map_open(struct smbsrv_request *req, union smb_open *io,
 		io2->generic.in.ea_list->num_eas = io->t2open.in.num_eas;
 		io2->generic.in.ea_list->eas     = io->t2open.in.eas;
 
-		status = ntvfs->ops->openfile(ntvfs, req, io2);
+		status = ntvfs->ops->open(ntvfs, req, io2);
 		break;
 
 	case RAW_OPEN_MKNEW:
@@ -435,7 +438,7 @@ _PUBLIC_ NTSTATUS ntvfs_map_open(struct smbsrv_request *req, union smb_open *io,
 		io2->generic.in.share_access = 
 			NTCREATEX_SHARE_ACCESS_READ | 
 			NTCREATEX_SHARE_ACCESS_WRITE;
-		status = ntvfs->ops->openfile(ntvfs, req, io2);
+		status = ntvfs->ops->open(ntvfs, req, io2);
 		break;
 
 	case RAW_OPEN_CREATE:
@@ -448,7 +451,7 @@ _PUBLIC_ NTSTATUS ntvfs_map_open(struct smbsrv_request *req, union smb_open *io,
 		io2->generic.in.share_access = 
 			NTCREATEX_SHARE_ACCESS_READ | 
 			NTCREATEX_SHARE_ACCESS_WRITE;
-		status = ntvfs->ops->openfile(ntvfs, req, io2);
+		status = ntvfs->ops->open(ntvfs, req, io2);
 		break;
 
 	case RAW_OPEN_CTEMP:
@@ -465,7 +468,7 @@ _PUBLIC_ NTSTATUS ntvfs_map_open(struct smbsrv_request *req, union smb_open *io,
 		io2->generic.in.share_access = 
 			NTCREATEX_SHARE_ACCESS_READ | 
 			NTCREATEX_SHARE_ACCESS_WRITE;
-		status = ntvfs->ops->openfile(ntvfs, req, io2);
+		status = ntvfs->ops->open(ntvfs, req, io2);
 		break;
 
 	default:
@@ -480,8 +483,9 @@ done:
 /* 
    NTVFS fsinfo generic to any mapper
 */
-_PUBLIC_ NTSTATUS ntvfs_map_fsinfo(struct smbsrv_request *req, union smb_fsinfo *fs, 
-				   struct ntvfs_module_context *ntvfs)
+_PUBLIC_ NTSTATUS ntvfs_map_fsinfo(struct ntvfs_module_context *ntvfs,
+				   struct ntvfs_request *req,
+				   union smb_fsinfo *fs)
 {
 	NTSTATUS status;
 	union smb_fsinfo *fs2;
@@ -608,7 +612,8 @@ _PUBLIC_ NTSTATUS ntvfs_map_fsinfo(struct smbsrv_request *req, union smb_fsinfo 
 /* 
    NTVFS fileinfo generic to any mapper
 */
-_PUBLIC_ NTSTATUS ntvfs_map_fileinfo(struct smbsrv_request *req, union smb_fileinfo *info, 
+_PUBLIC_ NTSTATUS ntvfs_map_fileinfo(TALLOC_CTX *mem_ctx,
+				     union smb_fileinfo *info, 
 				     union smb_fileinfo *info2)
 {
 	int i;
@@ -714,7 +719,7 @@ _PUBLIC_ NTSTATUS ntvfs_map_fileinfo(struct smbsrv_request *req, union smb_filei
 		info->stream_info.out.num_streams = info2->generic.out.num_streams;
 		if (info->stream_info.out.num_streams > 0) {
 			info->stream_info.out.streams = 
-				talloc_array(req, 
+				talloc_array(mem_ctx, 
 					       struct stream_struct,
 					       info->stream_info.out.num_streams);
 			if (!info->stream_info.out.streams) {
@@ -725,7 +730,8 @@ _PUBLIC_ NTSTATUS ntvfs_map_fileinfo(struct smbsrv_request *req, union smb_filei
 			for (i=0; i < info->stream_info.out.num_streams; i++) {
 				info->stream_info.out.streams[i] = info2->generic.out.streams[i];
 				info->stream_info.out.streams[i].stream_name.s = 
-					talloc_strdup(req, info2->generic.out.streams[i].stream_name.s);
+					talloc_strdup(info->stream_info.out.streams,
+						      info2->generic.out.streams[i].stream_name.s);
 				if (!info->stream_info.out.streams[i].stream_name.s) {
 					DEBUG(2,("ntvfs_map_fileinfo: no memory for stream_name\n"));
 					return NT_STATUS_NO_MEMORY;
@@ -736,13 +742,15 @@ _PUBLIC_ NTSTATUS ntvfs_map_fileinfo(struct smbsrv_request *req, union smb_filei
 
 	case RAW_FILEINFO_NAME_INFO:
 	case RAW_FILEINFO_NAME_INFORMATION:
-		info->name_info.out.fname.s = talloc_strdup(req, info2->generic.out.fname.s);
+		info->name_info.out.fname.s = talloc_strdup(mem_ctx, info2->generic.out.fname.s);
+		NT_STATUS_HAVE_NO_MEMORY(info->name_info.out.fname.s);
 		info->name_info.out.fname.private_length = info2->generic.out.fname.private_length;
 		return NT_STATUS_OK;
 		
 	case RAW_FILEINFO_ALT_NAME_INFO:
 	case RAW_FILEINFO_ALT_NAME_INFORMATION:
-		info->alt_name_info.out.fname.s = talloc_strdup(req, info2->generic.out.alt_fname.s);
+		info->alt_name_info.out.fname.s = talloc_strdup(mem_ctx, info2->generic.out.alt_fname.s);
+		NT_STATUS_HAVE_NO_MEMORY(info->alt_name_info.out.fname.s);
 		info->alt_name_info.out.fname.private_length = info2->generic.out.alt_fname.private_length;
 		return NT_STATUS_OK;
 	
@@ -753,7 +761,7 @@ _PUBLIC_ NTSTATUS ntvfs_map_fileinfo(struct smbsrv_request *req, union smb_filei
 	case RAW_FILEINFO_ALL_EAS:
 		info->all_eas.out.num_eas = info2->generic.out.num_eas;
 		if (info->all_eas.out.num_eas > 0) {
-			info->all_eas.out.eas = talloc_array(req, 
+			info->all_eas.out.eas = talloc_array(mem_ctx, 
 							       struct ea_struct,
 							       info->all_eas.out.num_eas);
 			if (!info->all_eas.out.eas) {
@@ -764,13 +772,14 @@ _PUBLIC_ NTSTATUS ntvfs_map_fileinfo(struct smbsrv_request *req, union smb_filei
 			for (i = 0; i < info->all_eas.out.num_eas; i++) {
 				info->all_eas.out.eas[i] = info2->generic.out.eas[i];
 				info->all_eas.out.eas[i].name.s = 
-					talloc_strdup(req, info2->generic.out.eas[i].name.s);
+					talloc_strdup(info->all_eas.out.eas,
+						      info2->generic.out.eas[i].name.s);
 				if (!info->all_eas.out.eas[i].name.s) {
 					DEBUG(2,("ntvfs_map_fileinfo: no memory for stream_name\n"));
 					return NT_STATUS_NO_MEMORY;
 				}
 				info->all_eas.out.eas[i].value.data = 
-					talloc_memdup(req,
+					talloc_memdup(info->all_eas.out.eas,
 						info2->generic.out.eas[i].value.data,
 						info2->generic.out.eas[i].value.length);
 				if (!info->all_eas.out.eas[i].value.data) {
@@ -834,8 +843,9 @@ _PUBLIC_ NTSTATUS ntvfs_map_fileinfo(struct smbsrv_request *req, union smb_filei
 /* 
    NTVFS fileinfo generic to any mapper
 */
-_PUBLIC_ NTSTATUS ntvfs_map_qfileinfo(struct smbsrv_request *req, union smb_fileinfo *info, 
-				      struct ntvfs_module_context *ntvfs)
+_PUBLIC_ NTSTATUS ntvfs_map_qfileinfo(struct ntvfs_module_context *ntvfs,
+				      struct ntvfs_request *req,
+				      union smb_fileinfo *info)
 {
 	NTSTATUS status;
 	union smb_fileinfo *info2;
@@ -866,8 +876,9 @@ _PUBLIC_ NTSTATUS ntvfs_map_qfileinfo(struct smbsrv_request *req, union smb_file
 /* 
    NTVFS pathinfo generic to any mapper
 */
-_PUBLIC_ NTSTATUS ntvfs_map_qpathinfo(struct smbsrv_request *req, union smb_fileinfo *info, 
-				      struct ntvfs_module_context *ntvfs)
+_PUBLIC_ NTSTATUS ntvfs_map_qpathinfo(struct ntvfs_module_context *ntvfs,
+				      struct ntvfs_request *req,
+				      union smb_fileinfo *info)
 {
 	NTSTATUS status;
 	union smb_fileinfo *info2;
@@ -899,8 +910,9 @@ _PUBLIC_ NTSTATUS ntvfs_map_qpathinfo(struct smbsrv_request *req, union smb_file
 /* 
    NTVFS lock generic to any mapper
 */
-_PUBLIC_ NTSTATUS ntvfs_map_lock(struct smbsrv_request *req, union smb_lock *lck, 
-				 struct ntvfs_module_context *ntvfs)
+_PUBLIC_ NTSTATUS ntvfs_map_lock(struct ntvfs_module_context *ntvfs,
+				 struct ntvfs_request *req,
+				 union smb_lock *lck)
 {
 	union smb_lock *lck2;
 	struct smb_lock_entry *locks;
@@ -951,12 +963,11 @@ _PUBLIC_ NTSTATUS ntvfs_map_lock(struct smbsrv_request *req, union smb_lock *lck
 /* 
    NTVFS write generic to any mapper
 */
-static NTSTATUS ntvfs_map_write_finish(struct smbsrv_request *req, 
-				       struct ntvfs_module_context *ntvfs,
+static NTSTATUS ntvfs_map_write_finish(struct ntvfs_module_context *ntvfs,
+				       struct ntvfs_request *req,
 				       union smb_write *wr, 
 				       union smb_write *wr2, 
 				       NTSTATUS status)
-				       
 {
 	union smb_lock *lck;
 	union smb_close *cl;
@@ -1027,8 +1038,9 @@ static NTSTATUS ntvfs_map_write_finish(struct smbsrv_request *req,
 /* 
    NTVFS write generic to any mapper
 */
-_PUBLIC_ NTSTATUS ntvfs_map_write(struct smbsrv_request *req, union smb_write *wr, 
-				  struct ntvfs_module_context *ntvfs)
+_PUBLIC_ NTSTATUS ntvfs_map_write(struct ntvfs_module_context *ntvfs,
+				  struct ntvfs_request *req,
+				  union smb_write *wr)
 {
 	union smb_write *wr2;
 	NTSTATUS status;
@@ -1038,7 +1050,7 @@ _PUBLIC_ NTSTATUS ntvfs_map_write(struct smbsrv_request *req, union smb_write *w
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	status = ntvfs_map_async_setup(req, ntvfs, wr, wr2, 
+	status = ntvfs_map_async_setup(ntvfs, req, wr, wr2, 
 				       (second_stage_t)ntvfs_map_write_finish);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -1099,8 +1111,8 @@ _PUBLIC_ NTSTATUS ntvfs_map_write(struct smbsrv_request *req, union smb_write *w
 /* 
    NTVFS read generic to any mapper - finish the out mapping
 */
-static NTSTATUS ntvfs_map_read_finish(struct smbsrv_request *req, 
-				      struct ntvfs_module_context *ntvfs, 
+static NTSTATUS ntvfs_map_read_finish(struct ntvfs_module_context *ntvfs,
+				      struct ntvfs_request *req, 
 				      union smb_read *rd, 
 				      union smb_read *rd2,
 				      NTSTATUS status)
@@ -1125,8 +1137,9 @@ static NTSTATUS ntvfs_map_read_finish(struct smbsrv_request *req,
 /* 
    NTVFS read* to readx mapper
 */
-_PUBLIC_ NTSTATUS ntvfs_map_read(struct smbsrv_request *req, union smb_read *rd, 
-				 struct ntvfs_module_context *ntvfs)
+_PUBLIC_ NTSTATUS ntvfs_map_read(struct ntvfs_module_context *ntvfs,
+				 struct ntvfs_request *req,
+				 union smb_read *rd)
 {
 	union smb_read *rd2;
 	union smb_lock *lck;
@@ -1138,7 +1151,7 @@ _PUBLIC_ NTSTATUS ntvfs_map_read(struct smbsrv_request *req, union smb_read *rd,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	status = ntvfs_map_async_setup(req, ntvfs, rd, rd2, 
+	status = ntvfs_map_async_setup(ntvfs, req, rd, rd2, 
 				       (second_stage_t)ntvfs_map_read_finish);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -1209,8 +1222,9 @@ done:
 /* 
    NTVFS close generic to any mapper
 */
-_PUBLIC_ NTSTATUS ntvfs_map_close(struct smbsrv_request *req, union smb_close *cl, 
-				  struct ntvfs_module_context *ntvfs)
+_PUBLIC_ NTSTATUS ntvfs_map_close(struct ntvfs_module_context *ntvfs,
+				  struct ntvfs_request *req,
+				  union smb_close *cl)
 {
 	union smb_close *cl2;
 

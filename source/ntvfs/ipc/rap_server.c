@@ -27,30 +27,30 @@
 /* At this moment these are just dummy functions, but you might get the
  * idea. */
 
-NTSTATUS rap_netshareenum(struct smbsrv_request *req,
+NTSTATUS rap_netshareenum(TALLOC_CTX *mem_ctx,
 			  struct rap_NetShareEnum *r)
 {
 	int i;
 	r->out.status = 0;
-	r->out.available = dcesrv_common_get_count_of_shares(req, NULL);
-	r->out.info = talloc_array(req,
-				     union rap_shareenum_info, r->out.available);
+	r->out.available = dcesrv_common_get_count_of_shares(mem_ctx, NULL);
+	r->out.info = talloc_array(mem_ctx,
+				   union rap_shareenum_info, r->out.available);
 
 	for (i=0;i<r->out.available;i++) {
 		strncpy(r->out.info[i].info1.name, 
-			dcesrv_common_get_share_name(req, NULL, i),
+			dcesrv_common_get_share_name(mem_ctx, NULL, i),
 			sizeof(r->out.info[0].info1.name));
 		r->out.info[i].info1.pad = 0;
-		r->out.info[i].info1.type = dcesrv_common_get_share_type(req, NULL, i);
-		r->out.info[i].info1.comment = talloc_strdup(req, 
-							     dcesrv_common_get_share_comment(req, NULL, i));
+		r->out.info[i].info1.type = dcesrv_common_get_share_type(mem_ctx, NULL, i);
+		r->out.info[i].info1.comment = talloc_strdup(mem_ctx, 
+							     dcesrv_common_get_share_comment(mem_ctx, NULL, i));
 	}
 	
 	return NT_STATUS_OK;
 }
 
-NTSTATUS rap_netserverenum2(struct smbsrv_request *req,
-				   struct rap_NetServerEnum2 *r)
+NTSTATUS rap_netserverenum2(TALLOC_CTX *mem_ctx,
+			    struct rap_NetServerEnum2 *r)
 {
 	r->out.status = 0;
 	r->out.available = 0;

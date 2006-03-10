@@ -126,7 +126,7 @@ static NTSTATUS pvfs_query_all_eas(struct pvfs_state *pvfs, TALLOC_CTX *mem_ctx,
   approximately map a struct pvfs_filename to a generic fileinfo struct
 */
 static NTSTATUS pvfs_map_fileinfo(struct pvfs_state *pvfs, 
-				  struct smbsrv_request *req,
+				  struct ntvfs_request *req,
 				  struct pvfs_filename *name, union smb_fileinfo *info, 
 				  int fd)
 {
@@ -282,7 +282,7 @@ static NTSTATUS pvfs_map_fileinfo(struct pvfs_state *pvfs,
   return info on a pathname
 */
 NTSTATUS pvfs_qpathinfo(struct ntvfs_module_context *ntvfs,
-		        struct smbsrv_request *req, union smb_fileinfo *info)
+		        struct ntvfs_request *req, union smb_fileinfo *info)
 {
 	struct pvfs_state *pvfs = ntvfs->private_data;
 	struct pvfs_filename *name;
@@ -318,7 +318,7 @@ NTSTATUS pvfs_qpathinfo(struct ntvfs_module_context *ntvfs,
   query info on a open file
 */
 NTSTATUS pvfs_qfileinfo(struct ntvfs_module_context *ntvfs,
-		        struct smbsrv_request *req, union smb_fileinfo *info)
+		        struct ntvfs_request *req, union smb_fileinfo *info)
 {
 	struct pvfs_state *pvfs = ntvfs->private_data;
 	struct pvfs_file *f;

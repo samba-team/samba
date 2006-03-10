@@ -39,7 +39,7 @@
   find open file handle given fnum
 */
 struct pvfs_file *pvfs_find_fd(struct pvfs_state *pvfs,
-			       struct smbsrv_request *req, uint16_t fnum)
+			       struct ntvfs_request *req, uint16_t fnum)
 {
 	struct pvfs_file *f;
 
@@ -123,7 +123,7 @@ static int pvfs_dir_fnum_destructor(void *p)
   setup any EAs and the ACL on newly created files/directories
 */
 static NTSTATUS pvfs_open_setup_eas_acl(struct pvfs_state *pvfs,
-					struct smbsrv_request *req,
+					struct ntvfs_request *req,
 					struct pvfs_filename *name,
 					int fd,	int fnum,
 					union smb_open *io)
@@ -186,7 +186,7 @@ static NTSTATUS pvfs_locking_key(struct pvfs_filename *name,
   open a directory
 */
 static NTSTATUS pvfs_open_directory(struct pvfs_state *pvfs, 
-				    struct smbsrv_request *req, 
+				    struct ntvfs_request *req, 
 				    struct pvfs_filename *name, 
 				    union smb_open *io)
 {
@@ -537,7 +537,7 @@ static NTSTATUS pvfs_brl_locking_key(struct pvfs_filename *name,
   create a new file
 */
 static NTSTATUS pvfs_create_file(struct pvfs_state *pvfs, 
-				 struct smbsrv_request *req, 
+				 struct ntvfs_request *req, 
 				 struct pvfs_filename *name, 
 				 union smb_open *io)
 {
@@ -743,7 +743,7 @@ cleanup_delete:
 */
 struct pvfs_open_retry {
 	struct ntvfs_module_context *ntvfs;
-	struct smbsrv_request *req;
+	struct ntvfs_request *req;
 	union smb_open *io;
 	void *wait_handle;
 	DATA_BLOB odb_locking_key;
@@ -772,7 +772,7 @@ static void pvfs_open_retry(void *private, enum pvfs_wait_notice reason)
 {
 	struct pvfs_open_retry *r = private;
 	struct ntvfs_module_context *ntvfs = r->ntvfs;
-	struct smbsrv_request *req = r->req;
+	struct ntvfs_request *req = r->req;
 	union smb_open *io = r->io;
 	NTSTATUS status;
 
@@ -828,7 +828,7 @@ static void pvfs_open_retry(void *private, enum pvfs_wait_notice reason)
   open processing continues.
 */
 static NTSTATUS pvfs_open_deny_dos(struct ntvfs_module_context *ntvfs,
-				   struct smbsrv_request *req, union smb_open *io,
+				   struct ntvfs_request *req, union smb_open *io,
 				   struct pvfs_file *f, struct odb_lock *lck)
 {
 	struct pvfs_state *pvfs = ntvfs->private_data;
@@ -904,7 +904,7 @@ static NTSTATUS pvfs_open_deny_dos(struct ntvfs_module_context *ntvfs,
   setup for a open retry after a sharing violation
 */
 static NTSTATUS pvfs_open_setup_retry(struct ntvfs_module_context *ntvfs,
-				      struct smbsrv_request *req, 
+				      struct ntvfs_request *req, 
 				      union smb_open *io,
 				      struct pvfs_file *f,
 				      struct odb_lock *lck)
@@ -964,7 +964,7 @@ static NTSTATUS pvfs_open_setup_retry(struct ntvfs_module_context *ntvfs,
   open a file
 */
 NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
-		   struct smbsrv_request *req, union smb_open *io)
+		   struct ntvfs_request *req, union smb_open *io)
 {
 	struct pvfs_state *pvfs = ntvfs->private_data;
 	int flags;
@@ -982,7 +982,7 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 	   different open calls. */
 	if (io->generic.level != RAW_OPEN_GENERIC &&
 	    io->generic.level != RAW_OPEN_NTTRANS_CREATE) {
-		return ntvfs_map_open(req, io, ntvfs);
+		return ntvfs_map_open(ntvfs, req, io);
 	}
 
 	/* resolve the cifs name to a posix name */
@@ -1264,7 +1264,7 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
   close a file
 */
 NTSTATUS pvfs_close(struct ntvfs_module_context *ntvfs,
-		    struct smbsrv_request *req, union smb_close *io)
+		    struct ntvfs_request *req, union smb_close *io)
 {
 	struct pvfs_state *pvfs = ntvfs->private_data;
 	struct pvfs_file *f;
@@ -1275,7 +1275,7 @@ NTSTATUS pvfs_close(struct ntvfs_module_context *ntvfs,
 	}
 
 	if (io->generic.level != RAW_CLOSE_CLOSE) {
-		return ntvfs_map_close(req, io, ntvfs);
+		return ntvfs_map_close(ntvfs, req, io);
 	}
 
 	f = pvfs_find_fd(pvfs, req, io->close.in.fnum);
@@ -1303,7 +1303,7 @@ NTSTATUS pvfs_close(struct ntvfs_module_context *ntvfs,
   logoff - close all file descriptors open by a vuid
 */
 NTSTATUS pvfs_logoff(struct ntvfs_module_context *ntvfs,
-		     struct smbsrv_request *req)
+		     struct ntvfs_request *req)
 {
 	struct pvfs_state *pvfs = ntvfs->private_data;
 	struct pvfs_file *f, *next;
@@ -1323,7 +1323,7 @@ NTSTATUS pvfs_logoff(struct ntvfs_module_context *ntvfs,
   exit - close files for the current pid
 */
 NTSTATUS pvfs_exit(struct ntvfs_module_context *ntvfs,
-		   struct smbsrv_request *req)
+		   struct ntvfs_request *req)
 {
 	struct pvfs_state *pvfs = ntvfs->private_data;
 	struct pvfs_file *f, *next;
@@ -1343,7 +1343,7 @@ NTSTATUS pvfs_exit(struct ntvfs_module_context *ntvfs,
   change the delete on close flag on an already open file
 */
 NTSTATUS pvfs_set_delete_on_close(struct pvfs_state *pvfs,
-				  struct smbsrv_request *req, 
+				  struct ntvfs_request *req, 
 				  struct pvfs_file *f, BOOL del_on_close)
 {
 	struct odb_lock *lck;
@@ -1382,7 +1382,7 @@ NTSTATUS pvfs_set_delete_on_close(struct pvfs_state *pvfs,
   already open file
 */
 NTSTATUS pvfs_can_delete(struct pvfs_state *pvfs, 
-			 struct smbsrv_request *req,
+			 struct ntvfs_request *req,
 			 struct pvfs_filename *name,
 			 struct odb_lock **lckp)
 {
@@ -1427,7 +1427,7 @@ NTSTATUS pvfs_can_delete(struct pvfs_state *pvfs,
   already open file
 */
 NTSTATUS pvfs_can_rename(struct pvfs_state *pvfs, 
-			 struct smbsrv_request *req,
+			 struct ntvfs_request *req,
 			 struct pvfs_filename *name,
 			 struct odb_lock **lckp)
 {
@@ -1467,7 +1467,7 @@ NTSTATUS pvfs_can_rename(struct pvfs_state *pvfs,
   already open file
 */
 NTSTATUS pvfs_can_stat(struct pvfs_state *pvfs, 
-		       struct smbsrv_request *req,
+		       struct ntvfs_request *req,
 		       struct pvfs_filename *name)
 {
 	NTSTATUS status;

@@ -53,7 +53,7 @@ struct pvfs_pending_lock {
 	struct pvfs_state *pvfs;
 	union smb_lock *lck;
 	struct pvfs_file *f;
-	struct smbsrv_request *req;
+	struct ntvfs_request *req;
 	int pending_lock;
 	void *wait_handle;
 	struct timeval end_time;
@@ -64,7 +64,7 @@ struct pvfs_pending_lock {
   the locks we did get and send an error
 */
 static void pvfs_lock_async_failed(struct pvfs_state *pvfs,
-				   struct smbsrv_request *req,
+				   struct ntvfs_request *req,
 				   struct pvfs_file *f,
 				   struct smb_lock_entry *locks,
 				   int i,
@@ -96,7 +96,7 @@ static void pvfs_pending_lock_continue(void *private, enum pvfs_wait_notice reas
 	struct pvfs_pending_lock *pending = private;
 	struct pvfs_state *pvfs = pending->pvfs;
 	struct pvfs_file *f = pending->f;
-	struct smbsrv_request *req = pending->req;
+	struct ntvfs_request *req = pending->req;
 	union smb_lock *lck = pending->lck;
 	struct smb_lock_entry *locks;
 	enum brl_type rw;
@@ -234,7 +234,7 @@ void pvfs_lock_close(struct pvfs_state *pvfs, struct pvfs_file *f)
 /*
   cancel a set of locks
 */
-static NTSTATUS pvfs_lock_cancel(struct pvfs_state *pvfs, struct smbsrv_request *req, union smb_lock *lck,
+static NTSTATUS pvfs_lock_cancel(struct pvfs_state *pvfs, struct ntvfs_request *req, union smb_lock *lck,
 				 struct pvfs_file *f)
 {
 	struct pvfs_pending_lock *p;
@@ -271,7 +271,7 @@ static NTSTATUS pvfs_lock_cancel(struct pvfs_state *pvfs, struct smbsrv_request 
   lock or unlock a byte range
 */
 NTSTATUS pvfs_lock(struct ntvfs_module_context *ntvfs,
-		   struct smbsrv_request *req, union smb_lock *lck)
+		   struct ntvfs_request *req, union smb_lock *lck)
 {
 	struct pvfs_state *pvfs = ntvfs->private_data;
 	struct pvfs_file *f;
@@ -282,7 +282,7 @@ NTSTATUS pvfs_lock(struct ntvfs_module_context *ntvfs,
 	NTSTATUS status;
 
 	if (lck->generic.level != RAW_LOCK_GENERIC) {
-		return ntvfs_map_lock(req, lck, ntvfs);
+		return ntvfs_map_lock(ntvfs, req, lck);
 	}
 
 	f = pvfs_find_fd(pvfs, req, lck->lockx.in.fnum);

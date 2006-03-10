@@ -37,10 +37,10 @@ struct nbench_private {
 /*
   log one request to the nbench log
 */
-static void nbench_log(struct smbsrv_request *req,
+static void nbench_log(struct ntvfs_request *req,
 		       const char *format, ...) PRINTF_ATTRIBUTE(2, 3);
 
-static void nbench_log(struct smbsrv_request *req,
+static void nbench_log(struct ntvfs_request *req,
 		       const char *format, ...)
 {
 	struct nbench_private *private = req->async_states->ntvfs->private_data;
@@ -63,7 +63,7 @@ static void nbench_log(struct smbsrv_request *req,
   status code and any result parameters much harder.
 */
 #define PASS_THRU_REQ_PRE_ASYNC(ntvfs, req, op, par1) do { \
-	status = ntvfs_async_state_push(req, par1, nbench_##op##_send, ntvfs); \
+	status = ntvfs_async_state_push(ntvfs, req, par1, nbench_##op##_send); \
 	if (!NT_STATUS_IS_OK(status)) { \
 		return status; \
 	} \
@@ -93,7 +93,7 @@ static void nbench_log(struct smbsrv_request *req,
   connect to a share - used when a tree_connect operation comes in.
 */
 static NTSTATUS nbench_connect(struct ntvfs_module_context *ntvfs,
-			       struct smbsrv_request *req, const char *sharename)
+			       struct ntvfs_request *req, const char *sharename)
 {
 	struct nbench_private *nprivates;
 	NTSTATUS status;
@@ -123,15 +123,14 @@ static NTSTATUS nbench_connect(struct ntvfs_module_context *ntvfs,
 /*
   disconnect from a share
 */
-static NTSTATUS nbench_disconnect(struct ntvfs_module_context *ntvfs,
-				  struct smbsrv_tcon *tcon)
+static NTSTATUS nbench_disconnect(struct ntvfs_module_context *ntvfs)
 {
 	struct nbench_private *nprivates = ntvfs->private_data;
 	NTSTATUS status;
 
 	close(nprivates->log_fd);
 
-	status = ntvfs_next_disconnect(ntvfs, tcon);
+	status = ntvfs_next_disconnect(ntvfs);
 
 	return status;
 }
@@ -140,7 +139,7 @@ static NTSTATUS nbench_disconnect(struct ntvfs_module_context *ntvfs,
   delete a file - the dirtype specifies the file types to include in the search. 
   The name can contain CIFS wildcards, but rarely does (except with OS/2 clients)
 */
-static void nbench_unlink_send(struct smbsrv_request *req)
+static void nbench_unlink_send(struct ntvfs_request *req)
 {
 	struct smb_unlink *unl = req->async_states->private_data;
 
@@ -152,7 +151,7 @@ static void nbench_unlink_send(struct smbsrv_request *req)
 }
 
 static NTSTATUS nbench_unlink(struct ntvfs_module_context *ntvfs,
-			      struct smbsrv_request *req, struct smb_unlink *unl)
+			      struct ntvfs_request *req, struct smb_unlink *unl)
 {
 	NTSTATUS status;
 
@@ -164,7 +163,7 @@ static NTSTATUS nbench_unlink(struct ntvfs_module_context *ntvfs,
 /*
   ioctl interface
 */
-static void nbench_ioctl_send(struct smbsrv_request *req)
+static void nbench_ioctl_send(struct ntvfs_request *req)
 {
 	nbench_log(req, "Ioctl - NOT HANDLED\n");
 
@@ -172,7 +171,7 @@ static void nbench_ioctl_send(struct smbsrv_request *req)
 }
 
 static NTSTATUS nbench_ioctl(struct ntvfs_module_context *ntvfs,
-			     struct smbsrv_request *req, union smb_ioctl *io)
+			     struct ntvfs_request *req, union smb_ioctl *io)
 {
 	NTSTATUS status;
 
@@ -184,7 +183,7 @@ static NTSTATUS nbench_ioctl(struct ntvfs_module_context *ntvfs,
 /*
   check if a directory exists
 */
-static void nbench_chkpath_send(struct smbsrv_request *req)
+static void nbench_chkpath_send(struct ntvfs_request *req)
 {
 	struct smb_chkpath *cp = req->async_states->private_data;
 
@@ -196,7 +195,7 @@ static void nbench_chkpath_send(struct smbsrv_request *req)
 }
 
 static NTSTATUS nbench_chkpath(struct ntvfs_module_context *ntvfs,
-			       struct smbsrv_request *req, struct smb_chkpath *cp)
+			       struct ntvfs_request *req, struct smb_chkpath *cp)
 {
 	NTSTATUS status;
 
@@ -208,7 +207,7 @@ static NTSTATUS nbench_chkpath(struct ntvfs_module_context *ntvfs,
 /*
   return info on a pathname
 */
-static void nbench_qpathinfo_send(struct smbsrv_request *req)
+static void nbench_qpathinfo_send(struct ntvfs_request *req)
 {
 	union smb_fileinfo *info = req->async_states->private_data;
 
@@ -221,7 +220,7 @@ static void nbench_qpathinfo_send(struct smbsrv_request *req)
 }
 
 static NTSTATUS nbench_qpathinfo(struct ntvfs_module_context *ntvfs,
-				 struct smbsrv_request *req, union smb_fileinfo *info)
+				 struct ntvfs_request *req, union smb_fileinfo *info)
 {
 	NTSTATUS status;
 
@@ -233,7 +232,7 @@ static NTSTATUS nbench_qpathinfo(struct ntvfs_module_context *ntvfs,
 /*
   query info on a open file
 */
-static void nbench_qfileinfo_send(struct smbsrv_request *req)
+static void nbench_qfileinfo_send(struct ntvfs_request *req)
 {
 	union smb_fileinfo *info = req->async_states->private_data;
 
@@ -246,7 +245,7 @@ static void nbench_qfileinfo_send(struct smbsrv_request *req)
 }
 
 static NTSTATUS nbench_qfileinfo(struct ntvfs_module_context *ntvfs,
-				 struct smbsrv_request *req, union smb_fileinfo *info)
+				 struct ntvfs_request *req, union smb_fileinfo *info)
 {
 	NTSTATUS status;
 
@@ -258,7 +257,7 @@ static NTSTATUS nbench_qfileinfo(struct ntvfs_module_context *ntvfs,
 /*
   set info on a pathname
 */
-static void nbench_setpathinfo_send(struct smbsrv_request *req)
+static void nbench_setpathinfo_send(struct ntvfs_request *req)
 {
 	union smb_setfileinfo *st = req->async_states->private_data;
 
@@ -271,7 +270,7 @@ static void nbench_setpathinfo_send(struct smbsrv_request *req)
 }
 
 static NTSTATUS nbench_setpathinfo(struct ntvfs_module_context *ntvfs,
-				   struct smbsrv_request *req, union smb_setfileinfo *st)
+				   struct ntvfs_request *req, union smb_setfileinfo *st)
 {
 	NTSTATUS status;
 
@@ -283,7 +282,7 @@ static NTSTATUS nbench_setpathinfo(struct ntvfs_module_context *ntvfs,
 /*
   open a file
 */
-static void nbench_openfile_send(struct smbsrv_request *req)
+static void nbench_open_send(struct ntvfs_request *req)
 {
 	union smb_open *io = req->async_states->private_data;
 
@@ -309,12 +308,12 @@ static void nbench_openfile_send(struct smbsrv_request *req)
 	PASS_THRU_REP_POST(req);
 }
 
-static NTSTATUS nbench_openfile(struct ntvfs_module_context *ntvfs,
-				struct smbsrv_request *req, union smb_open *io)
+static NTSTATUS nbench_open(struct ntvfs_module_context *ntvfs,
+			    struct ntvfs_request *req, union smb_open *io)
 {
 	NTSTATUS status;
 
-	PASS_THRU_REQ(ntvfs, req, openfile, io, (ntvfs, req, io));
+	PASS_THRU_REQ(ntvfs, req, open, io, (ntvfs, req, io));
 
 	return status;
 }
@@ -322,7 +321,7 @@ static NTSTATUS nbench_openfile(struct ntvfs_module_context *ntvfs,
 /*
   create a directory
 */
-static void nbench_mkdir_send(struct smbsrv_request *req)
+static void nbench_mkdir_send(struct ntvfs_request *req)
 {
 	nbench_log(req, "Mkdir - NOT HANDLED\n");
 
@@ -330,7 +329,7 @@ static void nbench_mkdir_send(struct smbsrv_request *req)
 }
 
 static NTSTATUS nbench_mkdir(struct ntvfs_module_context *ntvfs,
-			     struct smbsrv_request *req, union smb_mkdir *md)
+			     struct ntvfs_request *req, union smb_mkdir *md)
 {
 	NTSTATUS status;
 
@@ -342,7 +341,7 @@ static NTSTATUS nbench_mkdir(struct ntvfs_module_context *ntvfs,
 /*
   remove a directory
 */
-static void nbench_rmdir_send(struct smbsrv_request *req)
+static void nbench_rmdir_send(struct ntvfs_request *req)
 {
 	struct smb_rmdir *rd = req->async_states->private_data;
 
@@ -354,7 +353,7 @@ static void nbench_rmdir_send(struct smbsrv_request *req)
 }
 
 static NTSTATUS nbench_rmdir(struct ntvfs_module_context *ntvfs,
-			     struct smbsrv_request *req, struct smb_rmdir *rd)
+			     struct ntvfs_request *req, struct smb_rmdir *rd)
 {
 	NTSTATUS status;
 
@@ -366,7 +365,7 @@ static NTSTATUS nbench_rmdir(struct ntvfs_module_context *ntvfs,
 /*
   rename a set of files
 */
-static void nbench_rename_send(struct smbsrv_request *req)
+static void nbench_rename_send(struct ntvfs_request *req)
 {
 	union smb_rename *ren = req->async_states->private_data;
 
@@ -388,7 +387,7 @@ static void nbench_rename_send(struct smbsrv_request *req)
 }
 
 static NTSTATUS nbench_rename(struct ntvfs_module_context *ntvfs,
-			      struct smbsrv_request *req, union smb_rename *ren)
+			      struct ntvfs_request *req, union smb_rename *ren)
 {
 	NTSTATUS status;
 
@@ -400,7 +399,7 @@ static NTSTATUS nbench_rename(struct ntvfs_module_context *ntvfs,
 /*
   copy a set of files
 */
-static void nbench_copy_send(struct smbsrv_request *req)
+static void nbench_copy_send(struct ntvfs_request *req)
 {
 	nbench_log(req, "Copy - NOT HANDLED\n");
 
@@ -408,7 +407,7 @@ static void nbench_copy_send(struct smbsrv_request *req)
 }
 
 static NTSTATUS nbench_copy(struct ntvfs_module_context *ntvfs,
-			    struct smbsrv_request *req, struct smb_copy *cp)
+			    struct ntvfs_request *req, struct smb_copy *cp)
 {
 	NTSTATUS status;
 
@@ -420,7 +419,7 @@ static NTSTATUS nbench_copy(struct ntvfs_module_context *ntvfs,
 /*
   read from a file
 */
-static void nbench_read_send(struct smbsrv_request *req)
+static void nbench_read_send(struct ntvfs_request *req)
 {
 	union smb_read *rd = req->async_states->private_data;
 	
@@ -446,7 +445,7 @@ static void nbench_read_send(struct smbsrv_request *req)
 }
 
 static NTSTATUS nbench_read(struct ntvfs_module_context *ntvfs,
-			    struct smbsrv_request *req, union smb_read *rd)
+			    struct ntvfs_request *req, union smb_read *rd)
 {
 	NTSTATUS status;
 
@@ -458,7 +457,7 @@ static NTSTATUS nbench_read(struct ntvfs_module_context *ntvfs,
 /*
   write to a file
 */
-static void nbench_write_send(struct smbsrv_request *req)
+static void nbench_write_send(struct ntvfs_request *req)
 {
 	union smb_write *wr = req->async_states->private_data;
 
@@ -497,7 +496,7 @@ static void nbench_write_send(struct smbsrv_request *req)
 }
 
 static NTSTATUS nbench_write(struct ntvfs_module_context *ntvfs,
-			     struct smbsrv_request *req, union smb_write *wr)
+			     struct ntvfs_request *req, union smb_write *wr)
 {
 	NTSTATUS status;
 
@@ -509,7 +508,7 @@ static NTSTATUS nbench_write(struct ntvfs_module_context *ntvfs,
 /*
   seek in a file
 */
-static void nbench_seek_send(struct smbsrv_request *req)
+static void nbench_seek_send(struct ntvfs_request *req)
 {
 	nbench_log(req, "Seek - NOT HANDLED\n");
 
@@ -517,7 +516,7 @@ static void nbench_seek_send(struct smbsrv_request *req)
 }
 
 static NTSTATUS nbench_seek(struct ntvfs_module_context *ntvfs,
-			    struct smbsrv_request *req, struct smb_seek *io)
+			    struct ntvfs_request *req, struct smb_seek *io)
 {
 	NTSTATUS status;
 
@@ -529,7 +528,7 @@ static NTSTATUS nbench_seek(struct ntvfs_module_context *ntvfs,
 /*
   flush a file
 */
-static void nbench_flush_send(struct smbsrv_request *req)
+static void nbench_flush_send(struct ntvfs_request *req)
 {
 	struct smb_flush *io = req->async_states->private_data;
 
@@ -541,7 +540,7 @@ static void nbench_flush_send(struct smbsrv_request *req)
 }
 
 static NTSTATUS nbench_flush(struct ntvfs_module_context *ntvfs,
-			     struct smbsrv_request *req, struct smb_flush *io)
+			     struct ntvfs_request *req, struct smb_flush *io)
 {
 	NTSTATUS status;
 
@@ -553,7 +552,7 @@ static NTSTATUS nbench_flush(struct ntvfs_module_context *ntvfs,
 /*
   close a file
 */
-static void nbench_close_send(struct smbsrv_request *req)
+static void nbench_close_send(struct ntvfs_request *req)
 {
 	union smb_close *io = req->async_states->private_data;
 
@@ -574,7 +573,7 @@ static void nbench_close_send(struct smbsrv_request *req)
 }
 
 static NTSTATUS nbench_close(struct ntvfs_module_context *ntvfs,
-			     struct smbsrv_request *req, union smb_close *io)
+			     struct ntvfs_request *req, union smb_close *io)
 {
 	NTSTATUS status;
 
@@ -586,7 +585,7 @@ static NTSTATUS nbench_close(struct ntvfs_module_context *ntvfs,
 /*
   exit - closing files
 */
-static void nbench_exit_send(struct smbsrv_request *req)
+static void nbench_exit_send(struct ntvfs_request *req)
 {
 	nbench_log(req, "Exit - NOT HANDLED\n");
 
@@ -594,7 +593,7 @@ static void nbench_exit_send(struct smbsrv_request *req)
 }
 
 static NTSTATUS nbench_exit(struct ntvfs_module_context *ntvfs,
-			    struct smbsrv_request *req)
+			    struct ntvfs_request *req)
 {
 	NTSTATUS status;
 
@@ -606,7 +605,7 @@ static NTSTATUS nbench_exit(struct ntvfs_module_context *ntvfs,
 /*
   logoff - closing files
 */
-static void nbench_logoff_send(struct smbsrv_request *req)
+static void nbench_logoff_send(struct ntvfs_request *req)
 {
 	nbench_log(req, "Logoff - NOT HANDLED\n");
 
@@ -614,7 +613,7 @@ static void nbench_logoff_send(struct smbsrv_request *req)
 }
 
 static NTSTATUS nbench_logoff(struct ntvfs_module_context *ntvfs,
-			      struct smbsrv_request *req)
+			      struct ntvfs_request *req)
 {
 	NTSTATUS status;
 
@@ -626,7 +625,7 @@ static NTSTATUS nbench_logoff(struct ntvfs_module_context *ntvfs,
 /*
   async_setup - send fn
 */
-static void nbench_async_setup_send(struct smbsrv_request *req)
+static void nbench_async_setup_send(struct ntvfs_request *req)
 {
 	PASS_THRU_REP_POST(req);
 }
@@ -635,7 +634,7 @@ static void nbench_async_setup_send(struct smbsrv_request *req)
   async setup
 */
 static NTSTATUS nbench_async_setup(struct ntvfs_module_context *ntvfs,
-				   struct smbsrv_request *req,
+				   struct ntvfs_request *req,
 				   void *private)
 {
 	NTSTATUS status;
@@ -646,7 +645,7 @@ static NTSTATUS nbench_async_setup(struct ntvfs_module_context *ntvfs,
 }
 
 
-static void nbench_cancel_send(struct smbsrv_request *req)
+static void nbench_cancel_send(struct ntvfs_request *req)
 {
 	PASS_THRU_REP_POST(req);
 }
@@ -655,7 +654,7 @@ static void nbench_cancel_send(struct smbsrv_request *req)
   cancel an existing async request
 */
 static NTSTATUS nbench_cancel(struct ntvfs_module_context *ntvfs,
-			      struct smbsrv_request *req)
+			      struct ntvfs_request *req)
 {
 	NTSTATUS status;
 
@@ -667,7 +666,7 @@ static NTSTATUS nbench_cancel(struct ntvfs_module_context *ntvfs,
 /*
   lock a byte range
 */
-static void nbench_lock_send(struct smbsrv_request *req)
+static void nbench_lock_send(struct ntvfs_request *req)
 {
 	union smb_lock *lck = req->async_states->private_data;
 
@@ -694,7 +693,7 @@ static void nbench_lock_send(struct smbsrv_request *req)
 }
 
 static NTSTATUS nbench_lock(struct ntvfs_module_context *ntvfs,
-			    struct smbsrv_request *req, union smb_lock *lck)
+			    struct ntvfs_request *req, union smb_lock *lck)
 {
 	NTSTATUS status;
 
@@ -706,7 +705,7 @@ static NTSTATUS nbench_lock(struct ntvfs_module_context *ntvfs,
 /*
   set info on a open file
 */
-static void nbench_setfileinfo_send(struct smbsrv_request *req)
+static void nbench_setfileinfo_send(struct ntvfs_request *req)
 {
 	union smb_setfileinfo *info = req->async_states->private_data;
 
@@ -719,7 +718,7 @@ static void nbench_setfileinfo_send(struct smbsrv_request *req)
 }
 
 static NTSTATUS nbench_setfileinfo(struct ntvfs_module_context *ntvfs,
-				   struct smbsrv_request *req, 
+				   struct ntvfs_request *req, 
 				   union smb_setfileinfo *info)
 {
 	NTSTATUS status;
@@ -732,7 +731,7 @@ static NTSTATUS nbench_setfileinfo(struct ntvfs_module_context *ntvfs,
 /*
   return filesystem space info
 */
-static void nbench_fsinfo_send(struct smbsrv_request *req)
+static void nbench_fsinfo_send(struct ntvfs_request *req)
 {
 	union smb_fsinfo *fs = req->async_states->private_data;
 
@@ -744,7 +743,7 @@ static void nbench_fsinfo_send(struct smbsrv_request *req)
 }
 
 static NTSTATUS nbench_fsinfo(struct ntvfs_module_context *ntvfs,
-			      struct smbsrv_request *req, union smb_fsinfo *fs)
+			      struct ntvfs_request *req, union smb_fsinfo *fs)
 {
 	NTSTATUS status;
 
@@ -756,7 +755,7 @@ static NTSTATUS nbench_fsinfo(struct ntvfs_module_context *ntvfs,
 /*
   return print queue info
 */
-static void nbench_lpq_send(struct smbsrv_request *req)
+static void nbench_lpq_send(struct ntvfs_request *req)
 {
 	union smb_lpq *lpq = req->async_states->private_data;
 
@@ -766,7 +765,7 @@ static void nbench_lpq_send(struct smbsrv_request *req)
 }
 
 static NTSTATUS nbench_lpq(struct ntvfs_module_context *ntvfs,
-			   struct smbsrv_request *req, union smb_lpq *lpq)
+			   struct ntvfs_request *req, union smb_lpq *lpq)
 {
 	NTSTATUS status;
 
@@ -778,7 +777,7 @@ static NTSTATUS nbench_lpq(struct ntvfs_module_context *ntvfs,
 /* 
    list files in a directory matching a wildcard pattern
 */
-static void nbench_search_first_send(struct smbsrv_request *req)
+static void nbench_search_first_send(struct ntvfs_request *req)
 {
 	union smb_search_first *io = req->async_states->private_data;
 	
@@ -804,7 +803,7 @@ static void nbench_search_first_send(struct smbsrv_request *req)
 }
 
 static NTSTATUS nbench_search_first(struct ntvfs_module_context *ntvfs,
-				    struct smbsrv_request *req, union smb_search_first *io, 
+				    struct ntvfs_request *req, union smb_search_first *io, 
 				    void *search_private, 
 				    BOOL (*callback)(void *, union smb_search_data *))
 {
@@ -816,7 +815,7 @@ static NTSTATUS nbench_search_first(struct ntvfs_module_context *ntvfs,
 }
 
 /* continue a search */
-static void nbench_search_next_send(struct smbsrv_request *req)
+static void nbench_search_next_send(struct ntvfs_request *req)
 {
 	union smb_search_next *io = req->async_states->private_data;
 
@@ -826,7 +825,7 @@ static void nbench_search_next_send(struct smbsrv_request *req)
 }
 
 static NTSTATUS nbench_search_next(struct ntvfs_module_context *ntvfs,
-				   struct smbsrv_request *req, union smb_search_next *io, 
+				   struct ntvfs_request *req, union smb_search_next *io, 
 				   void *search_private, 
 				   BOOL (*callback)(void *, union smb_search_data *))
 {
@@ -838,7 +837,7 @@ static NTSTATUS nbench_search_next(struct ntvfs_module_context *ntvfs,
 }
 
 /* close a search */
-static void nbench_search_close_send(struct smbsrv_request *req)
+static void nbench_search_close_send(struct ntvfs_request *req)
 {
 	union smb_search_close *io = req->async_states->private_data;
 
@@ -848,7 +847,7 @@ static void nbench_search_close_send(struct smbsrv_request *req)
 }
 
 static NTSTATUS nbench_search_close(struct ntvfs_module_context *ntvfs,
-				    struct smbsrv_request *req, union smb_search_close *io)
+				    struct ntvfs_request *req, union smb_search_close *io)
 {
 	NTSTATUS status;
 
@@ -858,7 +857,7 @@ static NTSTATUS nbench_search_close(struct ntvfs_module_context *ntvfs,
 }
 
 /* SMBtrans - not used on file shares */
-static void nbench_trans_send(struct smbsrv_request *req)
+static void nbench_trans_send(struct ntvfs_request *req)
 {
 	nbench_log(req, "Trans - NOT HANDLED\n");
 
@@ -866,7 +865,7 @@ static void nbench_trans_send(struct smbsrv_request *req)
 }
 
 static NTSTATUS nbench_trans(struct ntvfs_module_context *ntvfs,
-			     struct smbsrv_request *req, struct smb_trans2 *trans2)
+			     struct ntvfs_request *req, struct smb_trans2 *trans2)
 {
 	NTSTATUS status;
 
@@ -896,7 +895,7 @@ NTSTATUS ntvfs_nbench_init(void)
 	ops.chkpath = nbench_chkpath;
 	ops.qpathinfo = nbench_qpathinfo;
 	ops.setpathinfo = nbench_setpathinfo;
-	ops.openfile = nbench_openfile;
+	ops.open = nbench_open;
 	ops.mkdir = nbench_mkdir;
 	ops.rmdir = nbench_rmdir;
 	ops.rename = nbench_rename;

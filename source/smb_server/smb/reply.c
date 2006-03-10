@@ -446,7 +446,7 @@ void smbsrv_reply_open(struct smbsrv_request *req)
 	req->async_states->private_data = oi;
 	
 	/* call backend */
-	req->async_states->status = ntvfs_openfile(req, oi);
+	req->async_states->status = ntvfs_open(req, oi);
 
 	REQ_ASYNC_TAIL;
 }
@@ -524,7 +524,7 @@ void smbsrv_reply_open_and_X(struct smbsrv_request *req)
 	req->async_states->private_data = oi;
 
 	/* call the backend */
-	req->async_states->status = ntvfs_openfile(req, oi);
+	req->async_states->status = ntvfs_open(req, oi);
 
 	REQ_ASYNC_TAIL;
 }
@@ -579,7 +579,7 @@ void smbsrv_reply_mknew(struct smbsrv_request *req)
 	req->async_states->private_data = oi;
 
 	/* call the backend */
-	req->async_states->status = ntvfs_openfile(req, oi);
+	req->async_states->status = ntvfs_open(req, oi);
 
 	REQ_ASYNC_TAIL;
 }
@@ -633,7 +633,7 @@ void smbsrv_reply_ctemp(struct smbsrv_request *req)
 	req->async_states->private_data = oi;
 
 	/* call the backend */
-	req->async_states->status = ntvfs_openfile(req, oi);
+	req->async_states->status = ntvfs_open(req, oi);
 
 	REQ_ASYNC_TAIL;
 }
@@ -1442,7 +1442,7 @@ void smbsrv_reply_printopen(struct smbsrv_request *req)
 	req->async_states->private_data = oi;
 
 	/* call backend */
-	req->async_states->status = ntvfs_openfile(req, oi);
+	req->async_states->status = ntvfs_open(req, oi);
 
 	REQ_ASYNC_TAIL;
 }
@@ -2328,7 +2328,7 @@ void smbsrv_reply_ntcreate_and_X(struct smbsrv_request *req)
 	req->async_states->private_data = io;
 
 	/* call the backend */
-	req->async_states->status = ntvfs_openfile(req, io);
+	req->async_states->status = ntvfs_open(req, io);
 
 	REQ_ASYNC_TAIL;
 }

@@ -141,7 +141,7 @@ struct smbsrv_tcon {
    functions */
 struct smbsrv_request {
 	/* the smbsrv_connection needs a list of requests queued for send */
-	struct smbsrv_request *next, *prev;
+	struct smbsrv_request_foo *next, *prev;
 
 	/* the server_context contains all context specific to this SMB socket */
 	struct smbsrv_connection *smb_conn;

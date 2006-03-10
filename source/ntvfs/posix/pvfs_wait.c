@@ -37,7 +37,7 @@ struct pvfs_wait {
 	int msg_type;
 	struct messaging_context *msg_ctx;
 	struct event_context *ev;
-	struct smbsrv_request *req;
+	struct ntvfs_request *req;
 	enum pvfs_wait_notice reason;
 };
 
@@ -47,7 +47,7 @@ struct pvfs_wait {
   previous ntvfs handlers in the chain (such as security context)
 */
 NTSTATUS pvfs_async_setup(struct ntvfs_module_context *ntvfs,
-			  struct smbsrv_request *req, void *private)
+			  struct ntvfs_request *req, void *private)
 {
 	struct pvfs_wait *pwait = private;
 	pwait->handler(pwait->private, pwait->reason);
@@ -61,7 +61,7 @@ static void pvfs_wait_dispatch(struct messaging_context *msg, void *private, uin
 			       uint32_t src, DATA_BLOB *data)
 {
 	struct pvfs_wait *pwait = private;
-	struct smbsrv_request *req;
+	struct ntvfs_request *req;
 
 	/* we need to check that this one is for us. See
 	   messaging_send_ptr() for the other side of this.
@@ -90,7 +90,7 @@ static void pvfs_wait_timeout(struct event_context *ev,
 			      struct timed_event *te, struct timeval t, void *private)
 {
 	struct pvfs_wait *pwait = talloc_get_type(private, struct pvfs_wait);
-	struct smbsrv_request *req = pwait->req;
+	struct ntvfs_request *req = pwait->req;
 
 	pwait->reason = PVFS_WAIT_TIMEOUT;
 
@@ -118,8 +118,8 @@ static int pvfs_wait_destructor(void *ptr)
   the return value is a handle. To stop waiting talloc_free this
   handle.
 */
- void *pvfs_wait_message(struct pvfs_state *pvfs, 
-			struct smbsrv_request *req, 
+void *pvfs_wait_message(struct pvfs_state *pvfs, 
+			struct ntvfs_request *req, 
 			int msg_type, 
 			struct timeval end_time,
 			void (*fn)(void *, enum pvfs_wait_notice),
@@ -167,7 +167,7 @@ static int pvfs_wait_destructor(void *ptr)
 /*
   cancel an outstanding async request
 */
-NTSTATUS pvfs_cancel(struct ntvfs_module_context *ntvfs, struct smbsrv_request *req)
+NTSTATUS pvfs_cancel(struct ntvfs_module_context *ntvfs, struct ntvfs_request *req)
 {
 	struct pvfs_state *pvfs = ntvfs->private_data;
 	struct pvfs_wait *pwait;

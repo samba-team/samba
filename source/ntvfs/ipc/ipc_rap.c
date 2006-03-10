@@ -201,8 +201,7 @@ static NTSTATUS rap_push_string(struct ndr_push *data_push,
 				goto done; \
                         } while (0)
 
-static NTSTATUS _rap_netshareenum(struct smbsrv_request *req,
-				  struct rap_call *call)
+static NTSTATUS _rap_netshareenum(struct rap_call *call)
 {
 	struct rap_NetShareEnum r;
 	NTSTATUS result;
@@ -225,7 +224,7 @@ static NTSTATUS _rap_netshareenum(struct smbsrv_request *req,
 		break;
 	}
 
-	result = rap_netshareenum(req, &r);
+	result = rap_netshareenum(call, &r);
 
 	if (!NT_STATUS_IS_OK(result))
 		return result;
@@ -282,8 +281,7 @@ static NTSTATUS _rap_netshareenum(struct smbsrv_request *req,
 	return result;
 }
 
-static NTSTATUS _rap_netserverenum2(struct smbsrv_request *req,
-				    struct rap_call *call)
+static NTSTATUS _rap_netserverenum2(struct rap_call *call)
 {
 	struct rap_NetServerEnum2 r;
 	NTSTATUS result;
@@ -308,7 +306,7 @@ static NTSTATUS _rap_netserverenum2(struct smbsrv_request *req,
 		break;
 	}
 
-	result = rap_netserverenum2(req, &r);
+	result = rap_netserverenum2(call, &r);
 
 	if (!NT_STATUS_IS_OK(result))
 		return result;
@@ -367,8 +365,7 @@ static NTSTATUS _rap_netserverenum2(struct smbsrv_request *req,
 	return result;
 }
 
-static NTSTATUS api_Unsupported(struct smbsrv_request *req,
-				struct rap_call *call)
+static NTSTATUS api_Unsupported(struct rap_call *call)
 {
 	call->status = NERR_notsupported;
 	call->convert = 0;
@@ -379,14 +376,14 @@ static const struct
 {
 	const char *name;
 	int id;
-	NTSTATUS (*fn)(struct smbsrv_request *req, struct rap_call *call);
+	NTSTATUS (*fn)(struct rap_call *call);
 } api_commands[] = {
 	{"NetShareEnum", RAP_WshareEnum, _rap_netshareenum },
 	{"NetServerEnum2", RAP_NetServerEnum2, _rap_netserverenum2 },
 	{NULL, -1, api_Unsupported}
 };
 
-NTSTATUS ipc_rap_call(struct smbsrv_request *req, struct smb_trans2 *trans)
+NTSTATUS ipc_rap_call(TALLOC_CTX *mem_ctx, struct smb_trans2 *trans)
 {
 	int i;
 	NTSTATUS result;
@@ -395,7 +392,7 @@ NTSTATUS ipc_rap_call(struct smbsrv_request *req, struct smb_trans2 *trans)
 	struct ndr_push *final_param;
 	struct ndr_push *final_data;
 
-	call = new_rap_srv_call(req, trans);
+	call = new_rap_srv_call(mem_ctx, trans);
 
 	if (call == NULL)
 		return NT_STATUS_NO_MEMORY;
@@ -406,8 +403,8 @@ NTSTATUS ipc_rap_call(struct smbsrv_request *req, struct smb_trans2 *trans)
 	NDR_CHECK(ndr_pull_string(call->ndr_pull_param, NDR_SCALARS,
 				  &call->datadesc));
 
-	call->ndr_push_param = ndr_push_init_ctx(req);
-	call->ndr_push_data = ndr_push_init_ctx(req);
+	call->ndr_push_param = ndr_push_init_ctx(call);
+	call->ndr_push_data = ndr_push_init_ctx(call);
 
 	if ((call->ndr_push_param == NULL) || (call->ndr_push_data == NULL))
 		return NT_STATUS_NO_MEMORY;
@@ -421,7 +418,7 @@ NTSTATUS ipc_rap_call(struct smbsrv_request *req, struct smb_trans2 *trans)
 		if (api_commands[i].id == call->callno) {
 			DEBUG(5, ("Running RAP call %s\n",
 				  api_commands[i].name));
-			result = api_commands[i].fn(req, call);
+			result = api_commands[i].fn(call);
 			break;
 		}
 	}
@@ -432,8 +429,8 @@ NTSTATUS ipc_rap_call(struct smbsrv_request *req, struct smb_trans2 *trans)
 	result_param = ndr_push_blob(call->ndr_push_param);
 	result_data = ndr_push_blob(call->ndr_push_data);
 
-	final_param = ndr_push_init_ctx(req);
-	final_data = ndr_push_init_ctx(req);
+	final_param = ndr_push_init_ctx(call);
+	final_data = ndr_push_init_ctx(call);
 
 	if ((final_param == NULL) || (final_data == NULL))
 		return NT_STATUS_NO_MEMORY;

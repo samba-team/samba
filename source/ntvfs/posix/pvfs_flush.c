@@ -40,7 +40,7 @@ static void pvfs_flush_file(struct pvfs_state *pvfs, struct pvfs_file *f)
   flush a fnum
 */
 NTSTATUS pvfs_flush(struct ntvfs_module_context *ntvfs,
-		    struct smbsrv_request *req, struct smb_flush *io)
+		    struct ntvfs_request *req, struct smb_flush *io)
 {
 	struct pvfs_state *pvfs = ntvfs->private_data;
 	struct pvfs_file *f;

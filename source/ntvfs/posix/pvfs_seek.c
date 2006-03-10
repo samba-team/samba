@@ -27,7 +27,7 @@
   seek in a file
 */
 NTSTATUS pvfs_seek(struct ntvfs_module_context *ntvfs,
-		   struct smbsrv_request *req, struct smb_seek *io)
+		   struct ntvfs_request *req, struct smb_seek *io)
 {
 	struct pvfs_state *pvfs = ntvfs->private_data;
 	struct pvfs_file *f;

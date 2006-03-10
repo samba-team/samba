@@ -96,7 +96,7 @@ static NTSTATUS set_unix_security(struct unix_sec_ctx *sec)
   form a unix_sec_ctx from the current security_token
 */
 static NTSTATUS nt_token_to_unix_security(struct ntvfs_module_context *ntvfs,
-					  struct smbsrv_request *req,
+					  struct ntvfs_request *req,
 					  struct security_token *token,
 					  struct unix_sec_ctx **sec)
 {
@@ -143,7 +143,7 @@ static NTSTATUS nt_token_to_unix_security(struct ntvfs_module_context *ntvfs,
   setup our unix security context according to the session authentication info
 */
 static NTSTATUS unixuid_setup_security(struct ntvfs_module_context *ntvfs,
-				       struct smbsrv_request *req, struct unix_sec_ctx **sec)
+				       struct ntvfs_request *req, struct unix_sec_ctx **sec)
 {
 	struct unixuid_private *private = ntvfs->private_data;
 	struct security_token *token;
@@ -202,7 +202,7 @@ static NTSTATUS unixuid_setup_security(struct ntvfs_module_context *ntvfs,
   connect to a share - used when a tree_connect operation comes in.
 */
 static NTSTATUS unixuid_connect(struct ntvfs_module_context *ntvfs,
-				struct smbsrv_request *req, const char *sharename)
+				struct ntvfs_request *req, const char *sharename)
 {
 	struct unixuid_private *private;
 	NTSTATUS status;
@@ -232,8 +232,7 @@ static NTSTATUS unixuid_connect(struct ntvfs_module_context *ntvfs,
 /*
   disconnect from a share
 */
-static NTSTATUS unixuid_disconnect(struct ntvfs_module_context *ntvfs,
-				   struct smbsrv_tcon *tcon)
+static NTSTATUS unixuid_disconnect(struct ntvfs_module_context *ntvfs)
 {
 	struct unixuid_private *private = ntvfs->private_data;
 	NTSTATUS status;
@@ -241,7 +240,7 @@ static NTSTATUS unixuid_disconnect(struct ntvfs_module_context *ntvfs,
 	talloc_free(private);
 	ntvfs->private_data = NULL;
 
-	status = ntvfs_next_disconnect(ntvfs, tcon);
+	status = ntvfs_next_disconnect(ntvfs);
  
 	return status;
 }
@@ -251,7 +250,7 @@ static NTSTATUS unixuid_disconnect(struct ntvfs_module_context *ntvfs,
   delete a file
 */
 static NTSTATUS unixuid_unlink(struct ntvfs_module_context *ntvfs,
-			      struct smbsrv_request *req, struct smb_unlink *unl)
+			      struct ntvfs_request *req, struct smb_unlink *unl)
 {
 	NTSTATUS status;
 
@@ -264,7 +263,7 @@ static NTSTATUS unixuid_unlink(struct ntvfs_module_context *ntvfs,
   ioctl interface
 */
 static NTSTATUS unixuid_ioctl(struct ntvfs_module_context *ntvfs,
-			     struct smbsrv_request *req, union smb_ioctl *io)
+			     struct ntvfs_request *req, union smb_ioctl *io)
 {
 	NTSTATUS status;
 
@@ -277,7 +276,7 @@ static NTSTATUS unixuid_ioctl(struct ntvfs_module_context *ntvfs,
   check if a directory exists
 */
 static NTSTATUS unixuid_chkpath(struct ntvfs_module_context *ntvfs,
-			       struct smbsrv_request *req, struct smb_chkpath *cp)
+			       struct ntvfs_request *req, struct smb_chkpath *cp)
 {
 	NTSTATUS status;
 
@@ -290,7 +289,7 @@ static NTSTATUS unixuid_chkpath(struct ntvfs_module_context *ntvfs,
   return info on a pathname
 */
 static NTSTATUS unixuid_qpathinfo(struct ntvfs_module_context *ntvfs,
-				 struct smbsrv_request *req, union smb_fileinfo *info)
+				 struct ntvfs_request *req, union smb_fileinfo *info)
 {
 	NTSTATUS status;
 
@@ -303,7 +302,7 @@ static NTSTATUS unixuid_qpathinfo(struct ntvfs_module_context *ntvfs,
   query info on a open file
 */
 static NTSTATUS unixuid_qfileinfo(struct ntvfs_module_context *ntvfs,
-				 struct smbsrv_request *req, union smb_fileinfo *info)
+				 struct ntvfs_request *req, union smb_fileinfo *info)
 {
 	NTSTATUS status;
 
@@ -317,7 +316,7 @@ static NTSTATUS unixuid_qfileinfo(struct ntvfs_module_context *ntvfs,
   set info on a pathname
 */
 static NTSTATUS unixuid_setpathinfo(struct ntvfs_module_context *ntvfs,
-				   struct smbsrv_request *req, union smb_setfileinfo *st)
+				   struct ntvfs_request *req, union smb_setfileinfo *st)
 {
 	NTSTATUS status;
 
@@ -329,12 +328,12 @@ static NTSTATUS unixuid_setpathinfo(struct ntvfs_module_context *ntvfs,
 /*
   open a file
 */
-static NTSTATUS unixuid_openfile(struct ntvfs_module_context *ntvfs,
-				 struct smbsrv_request *req, union smb_open *io)
+static NTSTATUS unixuid_open(struct ntvfs_module_context *ntvfs,
+			     struct ntvfs_request *req, union smb_open *io)
 {
 	NTSTATUS status;
 
-	PASS_THRU_REQ(ntvfs, req, openfile, (ntvfs, req, io));
+	PASS_THRU_REQ(ntvfs, req, open, (ntvfs, req, io));
 
 	return status;
 }
@@ -343,7 +342,7 @@ static NTSTATUS unixuid_openfile(struct ntvfs_module_context *ntvfs,
   create a directory
 */
 static NTSTATUS unixuid_mkdir(struct ntvfs_module_context *ntvfs,
-			     struct smbsrv_request *req, union smb_mkdir *md)
+			     struct ntvfs_request *req, union smb_mkdir *md)
 {
 	NTSTATUS status;
 
@@ -356,7 +355,7 @@ static NTSTATUS unixuid_mkdir(struct ntvfs_module_context *ntvfs,
   remove a directory
 */
 static NTSTATUS unixuid_rmdir(struct ntvfs_module_context *ntvfs,
-			     struct smbsrv_request *req, struct smb_rmdir *rd)
+			     struct ntvfs_request *req, struct smb_rmdir *rd)
 {
 	NTSTATUS status;
 
@@ -369,7 +368,7 @@ static NTSTATUS unixuid_rmdir(struct ntvfs_module_context *ntvfs,
   rename a set of files
 */
 static NTSTATUS unixuid_rename(struct ntvfs_module_context *ntvfs,
-			      struct smbsrv_request *req, union smb_rename *ren)
+			      struct ntvfs_request *req, union smb_rename *ren)
 {
 	NTSTATUS status;
 
@@ -382,7 +381,7 @@ static NTSTATUS unixuid_rename(struct ntvfs_module_context *ntvfs,
   copy a set of files
 */
 static NTSTATUS unixuid_copy(struct ntvfs_module_context *ntvfs,
-			    struct smbsrv_request *req, struct smb_copy *cp)
+			    struct ntvfs_request *req, struct smb_copy *cp)
 {
 	NTSTATUS status;
 
@@ -395,7 +394,7 @@ static NTSTATUS unixuid_copy(struct ntvfs_module_context *ntvfs,
   read from a file
 */
 static NTSTATUS unixuid_read(struct ntvfs_module_context *ntvfs,
-			    struct smbsrv_request *req, union smb_read *rd)
+			    struct ntvfs_request *req, union smb_read *rd)
 {
 	NTSTATUS status;
 
@@ -408,7 +407,7 @@ static NTSTATUS unixuid_read(struct ntvfs_module_context *ntvfs,
   write to a file
 */
 static NTSTATUS unixuid_write(struct ntvfs_module_context *ntvfs,
-			     struct smbsrv_request *req, union smb_write *wr)
+			     struct ntvfs_request *req, union smb_write *wr)
 {
 	NTSTATUS status;
 
@@ -421,7 +420,7 @@ static NTSTATUS unixuid_write(struct ntvfs_module_context *ntvfs,
   seek in a file
 */
 static NTSTATUS unixuid_seek(struct ntvfs_module_context *ntvfs,
-			    struct smbsrv_request *req, struct smb_seek *io)
+			    struct ntvfs_request *req, struct smb_seek *io)
 {
 	NTSTATUS status;
 
@@ -434,7 +433,7 @@ static NTSTATUS unixuid_seek(struct ntvfs_module_context *ntvfs,
   flush a file
 */
 static NTSTATUS unixuid_flush(struct ntvfs_module_context *ntvfs,
-			     struct smbsrv_request *req, struct smb_flush *io)
+			     struct ntvfs_request *req, struct smb_flush *io)
 {
 	NTSTATUS status;
 
@@ -447,7 +446,7 @@ static NTSTATUS unixuid_flush(struct ntvfs_module_context *ntvfs,
   close a file
 */
 static NTSTATUS unixuid_close(struct ntvfs_module_context *ntvfs,
-			     struct smbsrv_request *req, union smb_close *io)
+			     struct ntvfs_request *req, union smb_close *io)
 {
 	NTSTATUS status;
 
@@ -460,7 +459,7 @@ static NTSTATUS unixuid_close(struct ntvfs_module_context *ntvfs,
   exit - closing files
 */
 static NTSTATUS unixuid_exit(struct ntvfs_module_context *ntvfs,
-			    struct smbsrv_request *req)
+			    struct ntvfs_request *req)
 {
 	NTSTATUS status;
 
@@ -473,7 +472,7 @@ static NTSTATUS unixuid_exit(struct ntvfs_module_context *ntvfs,
   logoff - closing files
 */
 static NTSTATUS unixuid_logoff(struct ntvfs_module_context *ntvfs,
-			      struct smbsrv_request *req)
+			      struct ntvfs_request *req)
 {
 	struct unixuid_private *private = ntvfs->private_data;
 	NTSTATUS status;
@@ -489,7 +488,7 @@ static NTSTATUS unixuid_logoff(struct ntvfs_module_context *ntvfs,
   async setup
 */
 static NTSTATUS unixuid_async_setup(struct ntvfs_module_context *ntvfs,
-				    struct smbsrv_request *req, 
+				    struct ntvfs_request *req, 
 				    void *private)
 {
 	NTSTATUS status;
@@ -503,7 +502,7 @@ static NTSTATUS unixuid_async_setup(struct ntvfs_module_context *ntvfs,
   cancel an async request
 */
 static NTSTATUS unixuid_cancel(struct ntvfs_module_context *ntvfs,
-			       struct smbsrv_request *req)
+			       struct ntvfs_request *req)
 {
 	NTSTATUS status;
 
@@ -516,7 +515,7 @@ static NTSTATUS unixuid_cancel(struct ntvfs_module_context *ntvfs,
   lock a byte range
 */
 static NTSTATUS unixuid_lock(struct ntvfs_module_context *ntvfs,
-			    struct smbsrv_request *req, union smb_lock *lck)
+			    struct ntvfs_request *req, union smb_lock *lck)
 {
 	NTSTATUS status;
 
@@ -529,7 +528,7 @@ static NTSTATUS unixuid_lock(struct ntvfs_module_context *ntvfs,
   set info on a open file
 */
 static NTSTATUS unixuid_setfileinfo(struct ntvfs_module_context *ntvfs,
-				   struct smbsrv_request *req, 
+				   struct ntvfs_request *req, 
 				   union smb_setfileinfo *info)
 {
 	NTSTATUS status;
@@ -544,7 +543,7 @@ static NTSTATUS unixuid_setfileinfo(struct ntvfs_module_context *ntvfs,
   return filesystem space info
 */
 static NTSTATUS unixuid_fsinfo(struct ntvfs_module_context *ntvfs,
-			      struct smbsrv_request *req, union smb_fsinfo *fs)
+			      struct ntvfs_request *req, union smb_fsinfo *fs)
 {
 	NTSTATUS status;
 
@@ -557,7 +556,7 @@ static NTSTATUS unixuid_fsinfo(struct ntvfs_module_context *ntvfs,
   return print queue info
 */
 static NTSTATUS unixuid_lpq(struct ntvfs_module_context *ntvfs,
-			   struct smbsrv_request *req, union smb_lpq *lpq)
+			   struct ntvfs_request *req, union smb_lpq *lpq)
 {
 	NTSTATUS status;
 
@@ -570,7 +569,7 @@ static NTSTATUS unixuid_lpq(struct ntvfs_module_context *ntvfs,
    list files in a directory matching a wildcard pattern
 */
 static NTSTATUS unixuid_search_first(struct ntvfs_module_context *ntvfs,
-				    struct smbsrv_request *req, union smb_search_first *io, 
+				    struct ntvfs_request *req, union smb_search_first *io, 
 				    void *search_private, 
 				    BOOL (*callback)(void *, union smb_search_data *))
 {
@@ -583,7 +582,7 @@ static NTSTATUS unixuid_search_first(struct ntvfs_module_context *ntvfs,
 
 /* continue a search */
 static NTSTATUS unixuid_search_next(struct ntvfs_module_context *ntvfs,
-				   struct smbsrv_request *req, union smb_search_next *io, 
+				   struct ntvfs_request *req, union smb_search_next *io, 
 				   void *search_private, 
 				   BOOL (*callback)(void *, union smb_search_data *))
 {
@@ -596,7 +595,7 @@ static NTSTATUS unixuid_search_next(struct ntvfs_module_context *ntvfs,
 
 /* close a search */
 static NTSTATUS unixuid_search_close(struct ntvfs_module_context *ntvfs,
-				    struct smbsrv_request *req, union smb_search_close *io)
+				    struct ntvfs_request *req, union smb_search_close *io)
 {
 	NTSTATUS status;
 
@@ -607,7 +606,7 @@ static NTSTATUS unixuid_search_close(struct ntvfs_module_context *ntvfs,
 
 /* SMBtrans - not used on file shares */
 static NTSTATUS unixuid_trans(struct ntvfs_module_context *ntvfs,
-			     struct smbsrv_request *req, struct smb_trans2 *trans2)
+			     struct ntvfs_request *req, struct smb_trans2 *trans2)
 {
 	NTSTATUS status;
 
@@ -633,7 +632,7 @@ NTSTATUS ntvfs_unixuid_init(void)
 	ops.chkpath = unixuid_chkpath;
 	ops.qpathinfo = unixuid_qpathinfo;
 	ops.setpathinfo = unixuid_setpathinfo;
-	ops.openfile = unixuid_openfile;
+	ops.open = unixuid_open;
 	ops.mkdir = unixuid_mkdir;
 	ops.rmdir = unixuid_rmdir;
 	ops.rename = unixuid_rename;

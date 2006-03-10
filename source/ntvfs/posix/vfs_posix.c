@@ -112,7 +112,7 @@ static void pvfs_setup_options(struct pvfs_state *pvfs)
   that comes later)
 */
 static NTSTATUS pvfs_connect(struct ntvfs_module_context *ntvfs,
-			     struct smbsrv_request *req, const char *sharename)
+			     struct ntvfs_request *req, const char *sharename)
 {
 	struct smbsrv_tcon *tcon = req->tcon;
 	struct pvfs_state *pvfs;
@@ -194,8 +194,7 @@ static NTSTATUS pvfs_connect(struct ntvfs_module_context *ntvfs,
 /*
   disconnect from a share
 */
-static NTSTATUS pvfs_disconnect(struct ntvfs_module_context *ntvfs,
-				struct smbsrv_tcon *tcon)
+static NTSTATUS pvfs_disconnect(struct ntvfs_module_context *ntvfs)
 {
 	return NT_STATUS_OK;
 }
@@ -204,7 +203,7 @@ static NTSTATUS pvfs_disconnect(struct ntvfs_module_context *ntvfs,
   check if a directory exists
 */
 static NTSTATUS pvfs_chkpath(struct ntvfs_module_context *ntvfs,
-			     struct smbsrv_request *req, struct smb_chkpath *cp)
+			     struct ntvfs_request *req, struct smb_chkpath *cp)
 {
 	struct pvfs_state *pvfs = ntvfs->private_data;
 	struct pvfs_filename *name;
@@ -229,7 +228,7 @@ static NTSTATUS pvfs_chkpath(struct ntvfs_module_context *ntvfs,
   copy a set of files
 */
 static NTSTATUS pvfs_copy(struct ntvfs_module_context *ntvfs,
-			  struct smbsrv_request *req, struct smb_copy *cp)
+			  struct ntvfs_request *req, struct smb_copy *cp)
 {
 	DEBUG(0,("pvfs_copy not implemented\n"));
 	return NT_STATUS_NOT_SUPPORTED;
@@ -239,14 +238,14 @@ static NTSTATUS pvfs_copy(struct ntvfs_module_context *ntvfs,
   return print queue info
 */
 static NTSTATUS pvfs_lpq(struct ntvfs_module_context *ntvfs,
-			 struct smbsrv_request *req, union smb_lpq *lpq)
+			 struct ntvfs_request *req, union smb_lpq *lpq)
 {
 	return NT_STATUS_NOT_SUPPORTED;
 }
 
 /* SMBtrans - not used on file shares */
 static NTSTATUS pvfs_trans(struct ntvfs_module_context *ntvfs,
-			   struct smbsrv_request *req, struct smb_trans2 *trans2)
+			   struct ntvfs_request *req, struct smb_trans2 *trans2)
 {
 	return NT_STATUS_ACCESS_DENIED;
 }
@@ -270,7 +269,7 @@ NTSTATUS ntvfs_posix_init(void)
 	ops.chkpath = pvfs_chkpath;
 	ops.qpathinfo = pvfs_qpathinfo;
 	ops.setpathinfo = pvfs_setpathinfo;
-	ops.openfile = pvfs_open;
+	ops.open = pvfs_open;
 	ops.mkdir = pvfs_mkdir;
 	ops.rmdir = pvfs_rmdir;
 	ops.rename = pvfs_rename;

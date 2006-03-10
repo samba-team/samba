@@ -28,7 +28,7 @@
   read from a file
 */
 NTSTATUS pvfs_read(struct ntvfs_module_context *ntvfs,
-		   struct smbsrv_request *req, union smb_read *rd)
+		   struct ntvfs_request *req, union smb_read *rd)
 {
 	struct pvfs_state *pvfs = ntvfs->private_data;
 	ssize_t ret;
@@ -38,7 +38,7 @@ NTSTATUS pvfs_read(struct ntvfs_module_context *ntvfs,
 	uint32_t mask;
 
 	if (rd->generic.level != RAW_READ_READX) {
-		return ntvfs_map_read(req, rd, ntvfs);
+		return ntvfs_map_read(ntvfs, req, rd);
 	}
 
 	f = pvfs_find_fd(pvfs, req, rd->readx.in.fnum);

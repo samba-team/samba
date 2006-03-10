@@ -187,7 +187,7 @@ static NTSTATUS nttrans_create(struct smbsrv_request *req,
 	op->send_fn = nttrans_create_send;
 	op->op_info = io;
 
-	return ntvfs_openfile(req, io);
+	return ntvfs_open(req, io);
 }
 
 

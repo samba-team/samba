@@ -69,7 +69,7 @@ static uint32_t pvfs_setfileinfo_access(union smb_setfileinfo *info)
   rename_information level
 */
 static NTSTATUS pvfs_setfileinfo_rename(struct pvfs_state *pvfs, 
-					struct smbsrv_request *req, 
+					struct ntvfs_request *req, 
 					struct pvfs_filename *name,
 					struct smb_rename_information *r)
 {
@@ -238,7 +238,7 @@ NTSTATUS pvfs_setfileinfo_ea_set(struct pvfs_state *pvfs,
   set info on a open file
 */
 NTSTATUS pvfs_setfileinfo(struct ntvfs_module_context *ntvfs,
-			  struct smbsrv_request *req, 
+			  struct ntvfs_request *req, 
 			  union smb_setfileinfo *info)
 {
 	struct pvfs_state *pvfs = ntvfs->private_data;
@@ -425,7 +425,7 @@ NTSTATUS pvfs_setfileinfo(struct ntvfs_module_context *ntvfs,
   set info on a pathname
 */
 NTSTATUS pvfs_setpathinfo(struct ntvfs_module_context *ntvfs,
-			  struct smbsrv_request *req, union smb_setfileinfo *info)
+			  struct ntvfs_request *req, union smb_setfileinfo *info)
 {
 	struct pvfs_state *pvfs = ntvfs->private_data;
 	struct pvfs_filename *name;
