@@ -72,7 +72,7 @@ static BOOL test_eas(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	io.ntcreatex.in.fname = fname;
 	status = smb_raw_open(cli->tree, mem_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	fnum = io.ntcreatex.out.fnum;
+	fnum = io.ntcreatex.file.fnum;
 	
 	ret &= check_ea(cli, fname, "EAONE", NULL);
 
@@ -297,7 +297,7 @@ static BOOL test_max_eas(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	io.ntcreatex.in.fname = fname;
 	status = smb_raw_open(cli->tree, mem_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	fnum = io.ntcreatex.out.fnum;
+	fnum = io.ntcreatex.file.fnum;
 	
 	eablob = data_blob_talloc(mem_ctx, NULL, maxeasize);
 	if (eablob.data == NULL) {
@@ -409,7 +409,7 @@ static BOOL test_nttrans_create(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	status = smb_raw_open(cli->tree, mem_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	fnum = io.ntcreatex.out.fnum;
+	fnum = io.ntcreatex.file.fnum;
 	
 	ret &= check_ea(cli, fname, "EAONE", NULL);
 	ret &= check_ea(cli, fname, "1st EA", "Value One");
@@ -429,7 +429,7 @@ static BOOL test_nttrans_create(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	status = smb_raw_open(cli->tree, mem_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	fnum = io.ntcreatex.out.fnum;
+	fnum = io.ntcreatex.file.fnum;
 	
 	ret &= check_ea(cli, fname, "1st EA", "Value One");
 	ret &= check_ea(cli, fname, "2nd EA", "Second Value");

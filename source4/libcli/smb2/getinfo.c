@@ -118,14 +118,14 @@ struct smb2_request *smb2_getinfo_file_send(struct smb2_tree *tree, union smb_fi
 
 	ZERO_STRUCT(b);
 	b.in.max_response_size = 0x10000;
-	b.in.handle            = io->generic.in.handle;
+	b.in.handle            = io->generic.file.handle;
 	b.in.level             = smb2_level;
 
 	if (io->generic.level == RAW_FILEINFO_SEC_DESC) {
-		b.in.flags = io->query_secdesc.secinfo_flags;
+		b.in.flags = io->query_secdesc.in.secinfo_flags;
 	}
 	if (io->generic.level == RAW_FILEINFO_SMB2_ALL_EAS) {
-		b.in.flags2 = io->all_eas.continue_flags;
+		b.in.flags2 = io->all_eas.in.continue_flags;
 	}
 
 	return smb2_getinfo_send(tree, &b);

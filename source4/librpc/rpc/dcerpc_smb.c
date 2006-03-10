@@ -152,7 +152,7 @@ static NTSTATUS send_read_request_continue(struct dcerpc_connection *c, DATA_BLO
 
 	io = state->io;
 	io->generic.level = RAW_READ_READX;
-	io->readx.in.fnum = smb->fnum;
+	io->readx.file.fnum = smb->fnum;
 	io->readx.in.mincnt = state->data.length - state->received;
 	io->readx.in.maxcnt = io->readx.in.mincnt;
 	io->readx.in.offset = 0;
@@ -295,7 +295,7 @@ static NTSTATUS smb_send_request(struct dcerpc_connection *c, DATA_BLOB *blob, B
 	}
 
 	io.generic.level = RAW_WRITE_WRITEX;
-	io.writex.in.fnum = smb->fnum;
+	io.writex.file.fnum = smb->fnum;
 	io.writex.in.offset = 0;
 	io.writex.in.wmode = PIPE_START_MESSAGE;
 	io.writex.in.remaining = blob->length;
@@ -334,7 +334,7 @@ static NTSTATUS smb_shutdown_pipe(struct dcerpc_connection *c)
 	if (!smb) return NT_STATUS_OK;
 
 	io.close.level = RAW_CLOSE_CLOSE;
-	io.close.in.fnum = smb->fnum;
+	io.close.file.fnum = smb->fnum;
 	io.close.in.write_time = 0;
 	req = smb_raw_close_send(smb->tree, &io);
 	if (req != NULL) {
@@ -478,7 +478,7 @@ static void pipe_open_recv(struct smbcli_request *req)
 		goto done;
 	}
 
-	smb->fnum	= state->open->ntcreatex.out.fnum;
+	smb->fnum	= state->open->ntcreatex.file.fnum;
 	smb->tree	= talloc_reference(smb, state->tree);
 	smb->server_name= strupper_talloc(
 		smb, state->tree->session->transport->called.name);

@@ -58,7 +58,7 @@ static BOOL check_delete_on_close(struct smbcli_state *cli, int fnum,
 		int nlink = expect_it ? 0 : 1;
 
 		io.all_info.level = RAW_FILEINFO_ALL_INFO;
-		io.all_info.in.fnum = fnum;
+		io.all_info.file.fnum = fnum;
 
 		status = smb_raw_fileinfo(cli->tree, mem_ctx, &io);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -83,7 +83,7 @@ static BOOL check_delete_on_close(struct smbcli_state *cli, int fnum,
 		}
 
 		io.standard_info.level = RAW_FILEINFO_STANDARD_INFO;
-		io.standard_info.in.fnum = fnum;
+		io.standard_info.file.fnum = fnum;
 
 		status = smb_raw_fileinfo(cli->tree, mem_ctx, &io);
 		if (!NT_STATUS_IS_OK(status)) {

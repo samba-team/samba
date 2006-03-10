@@ -47,7 +47,7 @@
 */
 static BOOL test_seek(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 {
-	struct smb_seek io;
+	union smb_seek io;
 	union smb_fileinfo finfo;
 	union smb_setfileinfo sfinfo;
 	NTSTATUS status;
@@ -68,72 +68,72 @@ static BOOL test_seek(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	}
 
 	finfo.generic.level = RAW_FILEINFO_POSITION_INFORMATION;
-	finfo.position_information.in.fnum = fnum;
+	finfo.position_information.file.fnum = fnum;
 	
 	printf("Trying bad handle\n");
-	io.in.fnum = fnum+1;
-	io.in.mode = SEEK_MODE_START;
-	io.in.offset = 0;
+	io.lseek.file.fnum = fnum+1;
+	io.lseek.in.mode = SEEK_MODE_START;
+	io.lseek.in.offset = 0;
 	status = smb_raw_seek(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_INVALID_HANDLE);
 
 	printf("Trying simple seek\n");
-	io.in.fnum = fnum;
-	io.in.mode = SEEK_MODE_START;
-	io.in.offset = 17;
+	io.lseek.file.fnum = fnum;
+	io.lseek.in.mode = SEEK_MODE_START;
+	io.lseek.in.offset = 17;
 	status = smb_raw_seek(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	CHECK_VALUE(io.out.offset, 17);
+	CHECK_VALUE(io.lseek.out.offset, 17);
 	status = smb_raw_fileinfo(cli->tree, mem_ctx, &finfo);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_VALUE(finfo.position_information.out.position, 0);
 	
 	printf("Trying relative seek\n");
-	io.in.fnum = fnum;
-	io.in.mode = SEEK_MODE_CURRENT;
-	io.in.offset = -3;
+	io.lseek.file.fnum = fnum;
+	io.lseek.in.mode = SEEK_MODE_CURRENT;
+	io.lseek.in.offset = -3;
 	status = smb_raw_seek(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	CHECK_VALUE(io.out.offset, 14);
+	CHECK_VALUE(io.lseek.out.offset, 14);
 
 	printf("Trying end seek\n");
-	io.in.fnum = fnum;
-	io.in.mode = SEEK_MODE_END;
-	io.in.offset = 0;
+	io.lseek.file.fnum = fnum;
+	io.lseek.in.mode = SEEK_MODE_END;
+	io.lseek.in.offset = 0;
 	status = smb_raw_seek(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	finfo.generic.level = RAW_FILEINFO_ALL_INFO;
-	finfo.all_info.in.fnum = fnum;
+	finfo.all_info.file.fnum = fnum;
 	status = smb_raw_fileinfo(cli->tree, mem_ctx, &finfo);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	CHECK_VALUE(io.out.offset, finfo.all_info.out.size);
+	CHECK_VALUE(io.lseek.out.offset, finfo.all_info.out.size);
 
 	printf("Trying max seek\n");
-	io.in.fnum = fnum;
-	io.in.mode = SEEK_MODE_START;
-	io.in.offset = -1;
+	io.lseek.file.fnum = fnum;
+	io.lseek.in.mode = SEEK_MODE_START;
+	io.lseek.in.offset = -1;
 	status = smb_raw_seek(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	CHECK_VALUE(io.out.offset, 0xffffffff);
+	CHECK_VALUE(io.lseek.out.offset, 0xffffffff);
 
 	printf("Testing position information change\n");
 	finfo.generic.level = RAW_FILEINFO_POSITION_INFORMATION;
-	finfo.position_information.in.fnum = fnum;
+	finfo.position_information.file.fnum = fnum;
 	status = smb_raw_fileinfo(cli->tree, mem_ctx, &finfo);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_VALUE(finfo.position_information.out.position, 0);
 
 	printf("Trying max overflow\n");
-	io.in.fnum = fnum;
-	io.in.mode = SEEK_MODE_CURRENT;
-	io.in.offset = 1000;
+	io.lseek.file.fnum = fnum;
+	io.lseek.in.mode = SEEK_MODE_CURRENT;
+	io.lseek.in.offset = 1000;
 	status = smb_raw_seek(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	CHECK_VALUE(io.out.offset, 999);
+	CHECK_VALUE(io.lseek.out.offset, 999);
 
 	printf("Testing position information change\n");
 	finfo.generic.level = RAW_FILEINFO_POSITION_INFORMATION;
-	finfo.position_information.in.fnum = fnum;
+	finfo.position_information.file.fnum = fnum;
 	status = smb_raw_fileinfo(cli->tree, mem_ctx, &finfo);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_VALUE(finfo.position_information.out.position, 0);
@@ -148,17 +148,17 @@ static BOOL test_seek(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	printf("Testing position information change\n");
 	finfo.generic.level = RAW_FILEINFO_POSITION_INFORMATION;
-	finfo.position_information.in.fnum = fnum;
+	finfo.position_information.file.fnum = fnum;
 	status = smb_raw_fileinfo(cli->tree, mem_ctx, &finfo);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_VALUE(finfo.position_information.out.position, 0);
 
-	io.in.fnum = fnum;
-	io.in.mode = SEEK_MODE_CURRENT;
-	io.in.offset = 0;
+	io.lseek.file.fnum = fnum;
+	io.lseek.in.mode = SEEK_MODE_CURRENT;
+	io.lseek.in.offset = 0;
 	status = smb_raw_seek(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	CHECK_VALUE(io.out.offset, 2);
+	CHECK_VALUE(io.lseek.out.offset, 2);
 	
 	if (smbcli_read(cli->tree, fnum, c, 0, 1) != 1) {
 		printf("Read failed - %s\n", smbcli_errstr(cli->tree));
@@ -168,14 +168,14 @@ static BOOL test_seek(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	printf("Testing position information change\n");
 	finfo.generic.level = RAW_FILEINFO_POSITION_INFORMATION;
-	finfo.position_information.in.fnum = fnum;
+	finfo.position_information.file.fnum = fnum;
 	status = smb_raw_fileinfo(cli->tree, mem_ctx, &finfo);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_VALUE(finfo.position_information.out.position, 1);
 
 	status = smb_raw_seek(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	CHECK_VALUE(io.out.offset, 1);
+	CHECK_VALUE(io.lseek.out.offset, 1);
 
 	printf("Testing position information\n");
 	fnum2 = smbcli_open(cli->tree, fname, O_RDWR, DENY_NONE);
@@ -191,13 +191,13 @@ static BOOL test_seek(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 	finfo.generic.level = RAW_FILEINFO_POSITION_INFORMATION;
-	finfo.position_information.in.fnum = fnum2;
+	finfo.position_information.file.fnum = fnum2;
 	status = smb_raw_fileinfo(cli->tree, mem_ctx, &finfo);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_VALUE(finfo.position_information.out.position, 25);
 
 	finfo.generic.level = RAW_FILEINFO_POSITION_INFORMATION;
-	finfo.position_information.in.fnum = fnum;
+	finfo.position_information.file.fnum = fnum;
 	status = smb_raw_fileinfo(cli->tree, mem_ctx, &finfo);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_VALUE(finfo.position_information.out.position, 1);
@@ -205,19 +205,19 @@ static BOOL test_seek(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	printf("position_information via paths\n");
 
 	sfinfo.generic.level = RAW_SFILEINFO_POSITION_INFORMATION;
-	sfinfo.position_information.file.fname = fname;
+	sfinfo.position_information.file.path = fname;
 	sfinfo.position_information.in.position = 32;
 	status = smb_raw_setpathinfo(cli->tree, &sfinfo);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 	finfo.generic.level = RAW_FILEINFO_POSITION_INFORMATION;
-	finfo.position_information.in.fnum = fnum2;
+	finfo.position_information.file.fnum = fnum2;
 	status = smb_raw_fileinfo(cli->tree, mem_ctx, &finfo);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_VALUE(finfo.position_information.out.position, 25);
 
 	finfo.generic.level = RAW_FILEINFO_POSITION_INFORMATION;
-	finfo.position_information.in.fname = fname;
+	finfo.position_information.file.path = fname;
 	status = smb_raw_pathinfo(cli->tree, mem_ctx, &finfo);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_VALUE(finfo.position_information.out.position, 0);

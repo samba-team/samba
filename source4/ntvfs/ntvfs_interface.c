@@ -68,7 +68,7 @@ _PUBLIC_ NTSTATUS ntvfs_fsinfo(struct ntvfs_request *req, union smb_fsinfo *fs)
 }
 
 /* path operations */
-_PUBLIC_ NTSTATUS ntvfs_unlink(struct ntvfs_request *req, struct smb_unlink *unl)
+_PUBLIC_ NTSTATUS ntvfs_unlink(struct ntvfs_request *req, union smb_unlink *unl)
 {
 	struct ntvfs_module_context *ntvfs = req->tcon->ntvfs_ctx->modules;
 	if (!ntvfs->ops->unlink) {
@@ -77,7 +77,7 @@ _PUBLIC_ NTSTATUS ntvfs_unlink(struct ntvfs_request *req, struct smb_unlink *unl
 	return ntvfs->ops->unlink(ntvfs, req, unl);
 }
 
-_PUBLIC_ NTSTATUS ntvfs_chkpath(struct ntvfs_request *req, struct smb_chkpath *cp)
+_PUBLIC_ NTSTATUS ntvfs_chkpath(struct ntvfs_request *req, union smb_chkpath *cp)
 {
 	struct ntvfs_module_context *ntvfs = req->tcon->ntvfs_ctx->modules;
 	if (!ntvfs->ops->chkpath) {
@@ -207,7 +207,7 @@ _PUBLIC_ NTSTATUS ntvfs_write(struct ntvfs_request *req, union smb_write *io)
 	return ntvfs->ops->write(ntvfs, req, io);
 }
 
-_PUBLIC_ NTSTATUS ntvfs_seek(struct ntvfs_request *req, struct smb_seek *io)
+_PUBLIC_ NTSTATUS ntvfs_seek(struct ntvfs_request *req, union smb_seek *io)
 {
 	struct ntvfs_module_context *ntvfs = req->tcon->ntvfs_ctx->modules;
 	if (!ntvfs->ops->seek) {
@@ -217,7 +217,7 @@ _PUBLIC_ NTSTATUS ntvfs_seek(struct ntvfs_request *req, struct smb_seek *io)
 }
 
 _PUBLIC_ NTSTATUS ntvfs_flush(struct ntvfs_request *req,
-			      struct smb_flush *flush)
+			      union smb_flush *flush)
 {
 	struct ntvfs_module_context *ntvfs = req->tcon->ntvfs_ctx->modules;
 	if (!ntvfs->ops->flush) {
@@ -314,7 +314,7 @@ _PUBLIC_ NTSTATUS ntvfs_exit(struct ntvfs_request *req)
 /*
   change notify request
 */
-_PUBLIC_ NTSTATUS ntvfs_notify(struct ntvfs_request *req, struct smb_notify *info)
+_PUBLIC_ NTSTATUS ntvfs_notify(struct ntvfs_request *req, union smb_notify *info)
 {
 	struct ntvfs_module_context *ntvfs = req->tcon->ntvfs_ctx->modules;
 	if (!ntvfs->ops->notify) {
@@ -378,7 +378,7 @@ _PUBLIC_ NTSTATUS ntvfs_next_fsinfo(struct ntvfs_module_context *ntvfs,
 /* path operations */
 _PUBLIC_ NTSTATUS ntvfs_next_unlink(struct ntvfs_module_context *ntvfs, 
 				    struct ntvfs_request *req,
-				    struct smb_unlink *unl)
+				    union smb_unlink *unl)
 {
 	if (!ntvfs->next || !ntvfs->next->ops->unlink) {
 		return NT_STATUS_NOT_IMPLEMENTED;
@@ -388,7 +388,7 @@ _PUBLIC_ NTSTATUS ntvfs_next_unlink(struct ntvfs_module_context *ntvfs,
 
 _PUBLIC_ NTSTATUS ntvfs_next_chkpath(struct ntvfs_module_context *ntvfs, 
 				     struct ntvfs_request *req,
-				     struct smb_chkpath *cp)
+				     union smb_chkpath *cp)
 {
 	if (!ntvfs->next || !ntvfs->next->ops->chkpath) {
 		return NT_STATUS_NOT_IMPLEMENTED;
@@ -533,7 +533,7 @@ _PUBLIC_ NTSTATUS ntvfs_next_write(struct ntvfs_module_context *ntvfs,
 
 _PUBLIC_ NTSTATUS ntvfs_next_seek(struct ntvfs_module_context *ntvfs, 
 				  struct ntvfs_request *req,
-				  struct smb_seek *io)
+				  union smb_seek *io)
 {
 	if (!ntvfs->next || !ntvfs->next->ops->seek) {
 		return NT_STATUS_NOT_IMPLEMENTED;
@@ -543,7 +543,7 @@ _PUBLIC_ NTSTATUS ntvfs_next_seek(struct ntvfs_module_context *ntvfs,
 
 _PUBLIC_ NTSTATUS ntvfs_next_flush(struct ntvfs_module_context *ntvfs, 
 				   struct ntvfs_request *req,
-				   struct smb_flush *flush)
+				   union smb_flush *flush)
 {
 	if (!ntvfs->next || !ntvfs->next->ops->flush) {
 		return NT_STATUS_NOT_IMPLEMENTED;
@@ -618,7 +618,7 @@ _PUBLIC_ NTSTATUS ntvfs_next_trans2(struct ntvfs_module_context *ntvfs,
 */
 _PUBLIC_ NTSTATUS ntvfs_next_notify(struct ntvfs_module_context *ntvfs,
 				    struct ntvfs_request *req,
-				    struct smb_notify *info)
+				    union smb_notify *info)
 {
 	if (!ntvfs->next || !ntvfs->next->ops->notify) {
 		return NT_STATUS_NOT_IMPLEMENTED;

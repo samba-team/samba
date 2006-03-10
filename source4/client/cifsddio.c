@@ -169,7 +169,7 @@ BOOL smb_read_func(void * handle,
 	smbh = IO_HANDLE_TO_SMB(handle);
 
 	r.generic.level = RAW_READ_READX;
-	r.readx.in.fnum = smbh->fnum;
+	r.readx.file.fnum = smbh->fnum;
 	r.readx.in.offset = smbh->offset;
 	r.readx.in.mincnt = wanted;
 	r.readx.in.maxcnt = wanted;
@@ -207,7 +207,7 @@ BOOL smb_write_func(void * handle,
 	smbh = IO_HANDLE_TO_SMB(handle);
 
 	w.generic.level = RAW_WRITE_WRITEX;
-	w.writex.in.fnum = smbh->fnum;
+	w.writex.file.fnum = smbh->fnum;
 	w.writex.in.offset = smbh->offset;
 	w.writex.in.count = wanted;
 	w.writex.in.data = buf;
@@ -290,7 +290,7 @@ static int open_smb_file(struct smbcli_state * cli,
 		return(-1);
 	}
 
-	return(o.ntcreatex.out.fnum);
+	return(o.ntcreatex.file.fnum);
 }
 
 static struct dd_iohandle * open_smb_handle(const char * host,

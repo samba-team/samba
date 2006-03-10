@@ -141,17 +141,18 @@ static NTSTATUS nbench_disconnect(struct ntvfs_module_context *ntvfs)
 */
 static void nbench_unlink_send(struct ntvfs_request *req)
 {
-	struct smb_unlink *unl = req->async_states->private_data;
+	union smb_unlink *unl = req->async_states->private_data;
 
 	nbench_log(req, "Unlink \"%s\" 0x%x %s\n", 
-		   unl->in.pattern, unl->in.attrib, 
+		   unl->unlink.in.pattern, unl->unlink.in.attrib, 
 		   get_nt_error_c_code(req->async_states->status));
 
 	PASS_THRU_REP_POST(req);
 }
 
 static NTSTATUS nbench_unlink(struct ntvfs_module_context *ntvfs,
-			      struct ntvfs_request *req, struct smb_unlink *unl)
+			      struct ntvfs_request *req,
+			      union smb_unlink *unl)
 {
 	NTSTATUS status;
 
@@ -185,17 +186,18 @@ static NTSTATUS nbench_ioctl(struct ntvfs_module_context *ntvfs,
 */
 static void nbench_chkpath_send(struct ntvfs_request *req)
 {
-	struct smb_chkpath *cp = req->async_states->private_data;
+	union smb_chkpath *cp = req->async_states->private_data;
 
 	nbench_log(req, "Chkpath \"%s\" %s\n", 
-		   cp->in.path, 
+		   cp->chkpath.in.path, 
 		   get_nt_error_c_code(req->async_states->status));
 
 	PASS_THRU_REP_POST(req);
 }
 
 static NTSTATUS nbench_chkpath(struct ntvfs_module_context *ntvfs,
-			       struct ntvfs_request *req, struct smb_chkpath *cp)
+			       struct ntvfs_request *req,
+			       union smb_chkpath *cp)
 {
 	NTSTATUS status;
 
@@ -212,7 +214,7 @@ static void nbench_qpathinfo_send(struct ntvfs_request *req)
 	union smb_fileinfo *info = req->async_states->private_data;
 
 	nbench_log(req, "QUERY_PATH_INFORMATION \"%s\" %d %s\n", 
-		   info->generic.in.fname, 
+		   info->generic.file.path, 
 		   info->generic.level,
 		   get_nt_error_c_code(req->async_states->status));
 
@@ -237,7 +239,7 @@ static void nbench_qfileinfo_send(struct ntvfs_request *req)
 	union smb_fileinfo *info = req->async_states->private_data;
 
 	nbench_log(req, "QUERY_FILE_INFORMATION %d %d %s\n", 
-		   info->generic.in.fnum, 
+		   info->generic.file.fnum, 
 		   info->generic.level,
 		   get_nt_error_c_code(req->async_states->status));
 
@@ -262,7 +264,7 @@ static void nbench_setpathinfo_send(struct ntvfs_request *req)
 	union smb_setfileinfo *st = req->async_states->private_data;
 
 	nbench_log(req, "SET_PATH_INFORMATION \"%s\" %d %s\n", 
-		   st->generic.file.fname, 
+		   st->generic.file.path, 
 		   st->generic.level,
 		   get_nt_error_c_code(req->async_states->status));
 
@@ -295,7 +297,7 @@ static void nbench_open_send(struct ntvfs_request *req)
 			   io->ntcreatex.in.fname, 
 			   io->ntcreatex.in.create_options, 
 			   io->ntcreatex.in.open_disposition, 
-			   io->ntcreatex.out.fnum,
+			   io->ntcreatex.file.fnum,
 			   get_nt_error_c_code(req->async_states->status));
 		break;
 
@@ -429,7 +431,7 @@ static void nbench_read_send(struct ntvfs_request *req)
 			ZERO_STRUCT(rd->readx.out);
 		}
 		nbench_log(req, "ReadX %d %d %d %d %s\n", 
-			   rd->readx.in.fnum, 
+			   rd->readx.file.fnum, 
 			   (int)rd->readx.in.offset,
 			   rd->readx.in.maxcnt,
 			   rd->readx.out.nread,
@@ -467,7 +469,7 @@ static void nbench_write_send(struct ntvfs_request *req)
 			ZERO_STRUCT(wr->writex.out);
 		}
 		nbench_log(req, "WriteX %d %d %d %d %s\n", 
-			   wr->writex.in.fnum, 
+			   wr->writex.file.fnum, 
 			   (int)wr->writex.in.offset,
 			   wr->writex.in.count,
 			   wr->writex.out.nwritten,
@@ -479,7 +481,7 @@ static void nbench_write_send(struct ntvfs_request *req)
 			ZERO_STRUCT(wr->write.out);
 		}
 		nbench_log(req, "Write %d %d %d %d %s\n", 
-			   wr->write.in.fnum, 
+			   wr->write.file.fnum, 
 			   wr->write.in.offset,
 			   wr->write.in.count,
 			   wr->write.out.nwritten,
@@ -516,7 +518,8 @@ static void nbench_seek_send(struct ntvfs_request *req)
 }
 
 static NTSTATUS nbench_seek(struct ntvfs_module_context *ntvfs,
-			    struct ntvfs_request *req, struct smb_seek *io)
+			    struct ntvfs_request *req,
+			    union smb_seek *io)
 {
 	NTSTATUS status;
 
@@ -530,17 +533,18 @@ static NTSTATUS nbench_seek(struct ntvfs_module_context *ntvfs,
 */
 static void nbench_flush_send(struct ntvfs_request *req)
 {
-	struct smb_flush *io = req->async_states->private_data;
+	union smb_flush *io = req->async_states->private_data;
 
 	nbench_log(req, "Flush %d %s\n",
-		   io->in.fnum,
+		   io->flush.file.fnum,
 		   get_nt_error_c_code(req->async_states->status));
 
 	PASS_THRU_REP_POST(req);
 }
 
 static NTSTATUS nbench_flush(struct ntvfs_module_context *ntvfs,
-			     struct ntvfs_request *req, struct smb_flush *io)
+			     struct ntvfs_request *req,
+			     union smb_flush *io)
 {
 	NTSTATUS status;
 
@@ -559,7 +563,7 @@ static void nbench_close_send(struct ntvfs_request *req)
 	switch (io->generic.level) {
 	case RAW_CLOSE_CLOSE:
 		nbench_log(req, "Close %d %s\n",
-			   io->close.in.fnum,
+			   io->close.file.fnum,
 			   get_nt_error_c_code(req->async_states->status));
 		break;
 
@@ -674,14 +678,14 @@ static void nbench_lock_send(struct ntvfs_request *req)
 	    lck->lockx.in.lock_cnt == 1 &&
 	    lck->lockx.in.ulock_cnt == 0) {
 		nbench_log(req, "LockX %d %d %d %s\n", 
-			   lck->lockx.in.fnum,
+			   lck->lockx.file.fnum,
 			   (int)lck->lockx.in.locks[0].offset,
 			   (int)lck->lockx.in.locks[0].count,
 			   get_nt_error_c_code(req->async_states->status));
 	} else if (lck->generic.level == RAW_LOCK_LOCKX &&
 		   lck->lockx.in.ulock_cnt == 1) {
 		nbench_log(req, "UnlockX %d %d %d %s\n", 
-			   lck->lockx.in.fnum,
+			   lck->lockx.file.fnum,
 			   (int)lck->lockx.in.locks[0].offset,
 			   (int)lck->lockx.in.locks[0].count,
 			   get_nt_error_c_code(req->async_states->status));

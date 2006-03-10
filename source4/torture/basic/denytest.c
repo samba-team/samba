@@ -1847,20 +1847,20 @@ static BOOL torture_ntdenytest(struct smbcli_state *cli1, struct smbcli_state *c
 		} else {
 			res = A_0;
 			if (smbcli_read(cli2->tree, 
-					io2.ntcreatex.out.fnum, buf, 0, sizeof(buf)) >= 1) {
+					io2.ntcreatex.file.fnum, buf, 0, sizeof(buf)) >= 1) {
 				res += A_R;
 			}
 			if (smbcli_write(cli2->tree, 
-					 io2.ntcreatex.out.fnum, 0, buf, 0, sizeof(buf)) >= 1) {
+					 io2.ntcreatex.file.fnum, 0, buf, 0, sizeof(buf)) >= 1) {
 				res += A_W;
 			}
 		}
 		
 		if (NT_STATUS_IS_OK(status1)) {
-			smbcli_close(cli1->tree, io1.ntcreatex.out.fnum);
+			smbcli_close(cli1->tree, io1.ntcreatex.file.fnum);
 		}
 		if (NT_STATUS_IS_OK(status2)) {
-			smbcli_close(cli2->tree, io2.ntcreatex.out.fnum);
+			smbcli_close(cli2->tree, io2.ntcreatex.file.fnum);
 		}
 		
 		status2_p = predict_share_conflict(io1.ntcreatex.in.share_access,
@@ -2000,11 +2000,11 @@ BOOL torture_denydos_sharing(void)
 	printf("openx twice with RDWR/DENY_DOS\n");
 	status = smb_raw_open(cli->tree, mem_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	fnum1 = io.openx.out.fnum;
+	fnum1 = io.openx.file.fnum;
 
 	status = smb_raw_open(cli->tree, mem_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	fnum2 = io.openx.out.fnum;
+	fnum2 = io.openx.file.fnum;
 
 	printf("fnum1=%d fnum2=%d\n", fnum1, fnum2);
 
@@ -2016,12 +2016,12 @@ BOOL torture_denydos_sharing(void)
 
 	printf("two handles should be same file handle\n");
 	finfo.position_information.level = RAW_FILEINFO_POSITION_INFORMATION;
-	finfo.position_information.in.fnum = fnum1;
+	finfo.position_information.file.fnum = fnum1;
 	status = smb_raw_fileinfo(cli->tree, mem_ctx, &finfo);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_VAL(finfo.position_information.out.position, 1000);
 
-	finfo.position_information.in.fnum = fnum2;
+	finfo.position_information.file.fnum = fnum2;
 	status = smb_raw_fileinfo(cli->tree, mem_ctx, &finfo);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_VAL(finfo.position_information.out.position, 1000);
@@ -2034,12 +2034,12 @@ BOOL torture_denydos_sharing(void)
 	io.openx.in.open_mode = OPENX_MODE_ACCESS_RDWR | OPENX_MODE_DENY_NONE;
 	status = smb_raw_open(cli->tree, mem_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	fnum1 = io.openx.out.fnum;
+	fnum1 = io.openx.file.fnum;
 
 	io.openx.in.open_func = OPENX_OPEN_FUNC_OPEN;
 	status = smb_raw_open(cli->tree, mem_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	fnum2 = io.openx.out.fnum;
+	fnum2 = io.openx.file.fnum;
 
 	printf("fnum1=%d fnum2=%d\n", fnum1, fnum2);
 
@@ -2051,12 +2051,12 @@ BOOL torture_denydos_sharing(void)
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 	finfo.position_information.level = RAW_FILEINFO_POSITION_INFORMATION;
-	finfo.position_information.in.fnum = fnum1;
+	finfo.position_information.file.fnum = fnum1;
 	status = smb_raw_fileinfo(cli->tree, mem_ctx, &finfo);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_VAL(finfo.position_information.out.position, 1000);
 
-	finfo.position_information.in.fnum = fnum2;
+	finfo.position_information.file.fnum = fnum2;
 	status = smb_raw_fileinfo(cli->tree, mem_ctx, &finfo);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_VAL(finfo.position_information.out.position, 0);

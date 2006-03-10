@@ -203,14 +203,15 @@ static NTSTATUS pvfs_disconnect(struct ntvfs_module_context *ntvfs)
   check if a directory exists
 */
 static NTSTATUS pvfs_chkpath(struct ntvfs_module_context *ntvfs,
-			     struct ntvfs_request *req, struct smb_chkpath *cp)
+			     struct ntvfs_request *req,
+			     union smb_chkpath *cp)
 {
 	struct pvfs_state *pvfs = ntvfs->private_data;
 	struct pvfs_filename *name;
 	NTSTATUS status;
 
 	/* resolve the cifs name to a posix name */
-	status = pvfs_resolve_name(pvfs, req, cp->in.path, 0, &name);
+	status = pvfs_resolve_name(pvfs, req, cp->chkpath.in.path, 0, &name);
 	NT_STATUS_NOT_OK_RETURN(status);
 
 	if (!name->exists) {

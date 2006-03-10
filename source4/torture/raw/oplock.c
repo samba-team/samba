@@ -88,7 +88,7 @@ static BOOL oplock_handler_close(struct smbcli_transport *transport, uint16_t ti
 	printf("Closing in oplock handler\n");
 
 	io.close.level = RAW_CLOSE_CLOSE;
-	io.close.in.fnum = fnum;
+	io.close.file.fnum = fnum;
 	io.close.in.write_time = 0;
 	req = smb_raw_close_send(tree, &io);
 	if (req == NULL) {
@@ -111,7 +111,7 @@ static BOOL test_oplock(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	NTSTATUS status;
 	BOOL ret = True;
 	union smb_open io;
-	struct smb_unlink unl;
+	union smb_unlink unl;
 	union smb_read rd;
 	uint16_t fnum=0, fnum2=0;
 
@@ -141,12 +141,12 @@ static BOOL test_oplock(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	status = smb_raw_open(cli->tree, mem_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	fnum = io.ntcreatex.out.fnum;
+	fnum = io.ntcreatex.file.fnum;
 	CHECK_VAL(io.ntcreatex.out.oplock_level, EXCLUSIVE_OPLOCK_RETURN);
 
 	printf("unlink it - should be no break\n");
-	unl.in.pattern = fname;
-	unl.in.attrib = 0;
+	unl.unlink.in.pattern = fname;
+	unl.unlink.in.attrib = 0;
 	status = smb_raw_unlink(cli->tree, &unl);
 	CHECK_STATUS(status, NT_STATUS_SHARING_VIOLATION);
 	CHECK_VAL(break_info.count, 0);
@@ -164,12 +164,12 @@ static BOOL test_oplock(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 		NTCREATEX_FLAGS_REQUEST_BATCH_OPLOCK;
 	status = smb_raw_open(cli->tree, mem_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	fnum = io.ntcreatex.out.fnum;
+	fnum = io.ntcreatex.file.fnum;
 	CHECK_VAL(io.ntcreatex.out.oplock_level, BATCH_OPLOCK_RETURN);
 
 	printf("unlink should generate a break\n");
-	unl.in.pattern = fname;
-	unl.in.attrib = 0;
+	unl.unlink.in.pattern = fname;
+	unl.unlink.in.attrib = 0;
 	status = smb_raw_unlink(cli->tree, &unl);
 	CHECK_STATUS(status, NT_STATUS_SHARING_VIOLATION);
 
@@ -188,11 +188,11 @@ static BOOL test_oplock(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 		NTCREATEX_FLAGS_REQUEST_BATCH_OPLOCK;
 	status = smb_raw_open(cli->tree, mem_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	fnum = io.ntcreatex.out.fnum;
+	fnum = io.ntcreatex.file.fnum;
 	CHECK_VAL(io.ntcreatex.out.oplock_level, BATCH_OPLOCK_RETURN);
 
-	unl.in.pattern = fname;
-	unl.in.attrib = 0;
+	unl.unlink.in.pattern = fname;
+	unl.unlink.in.attrib = 0;
 	ZERO_STRUCT(break_info);
 	status = smb_raw_unlink(cli->tree, &unl);
 	CHECK_STATUS(status, NT_STATUS_OK);
@@ -212,11 +212,11 @@ static BOOL test_oplock(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 		NTCREATEX_FLAGS_REQUEST_BATCH_OPLOCK;
 	status = smb_raw_open(cli->tree, mem_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	fnum = io.ntcreatex.out.fnum;
+	fnum = io.ntcreatex.file.fnum;
 	CHECK_VAL(io.ntcreatex.out.oplock_level, BATCH_OPLOCK_RETURN);
 
 	rd.read.level = RAW_READ_READ;
-	rd.read.in.fnum = fnum;
+	rd.read.file.fnum = fnum;
 	rd.read.in.count = 1;
 	rd.read.in.offset = 0;
 	rd.read.in.remaining = 0;
@@ -235,7 +235,7 @@ static BOOL test_oplock(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 		NTCREATEX_FLAGS_REQUEST_BATCH_OPLOCK;
 	status = smb_raw_open(cli->tree, mem_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	fnum = io.ntcreatex.out.fnum;
+	fnum = io.ntcreatex.file.fnum;
 	CHECK_VAL(io.ntcreatex.out.oplock_level, BATCH_OPLOCK_RETURN);
 
 	ZERO_STRUCT(break_info);
@@ -259,7 +259,7 @@ static BOOL test_oplock(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 		NTCREATEX_FLAGS_REQUEST_BATCH_OPLOCK;
 	status = smb_raw_open(cli->tree, mem_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	fnum2 = io.ntcreatex.out.fnum;
+	fnum2 = io.ntcreatex.file.fnum;
 	CHECK_VAL(io.ntcreatex.out.oplock_level, BATCH_OPLOCK_RETURN);
 
 	ZERO_STRUCT(break_info);
@@ -269,7 +269,7 @@ static BOOL test_oplock(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 		NTCREATEX_FLAGS_REQUEST_BATCH_OPLOCK;
 	status = smb_raw_open(cli->tree, mem_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	fnum = io.ntcreatex.out.fnum;
+	fnum = io.ntcreatex.file.fnum;
 	CHECK_VAL(io.ntcreatex.out.oplock_level, BATCH_OPLOCK_RETURN);
 
 	CHECK_VAL(break_info.count, 1);
@@ -288,7 +288,7 @@ static BOOL test_oplock(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 		NTCREATEX_FLAGS_REQUEST_BATCH_OPLOCK;
 	status = smb_raw_open(cli->tree, mem_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	fnum = io.ntcreatex.out.fnum;
+	fnum = io.ntcreatex.file.fnum;
 	CHECK_VAL(io.ntcreatex.out.oplock_level, BATCH_OPLOCK_RETURN);
 
 	ZERO_STRUCT(break_info);
@@ -300,7 +300,7 @@ static BOOL test_oplock(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	io.ntcreatex.in.access_mask = SEC_FILE_READ_ATTRIBUTE|SEC_FILE_WRITE_ATTRIBUTE|SEC_STD_SYNCHRONIZE;
 	status = smb_raw_open(cli->tree, mem_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	fnum2 = io.ntcreatex.out.fnum;
+	fnum2 = io.ntcreatex.file.fnum;
 	CHECK_VAL(io.ntcreatex.out.oplock_level, NO_OPLOCK_RETURN);
 	CHECK_VAL(break_info.count, 0);
 	CHECK_VAL(break_info.fnum, 0);
@@ -319,7 +319,7 @@ static BOOL test_oplock(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_CREATE;
 	status = smb_raw_open(cli->tree, mem_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	fnum = io.ntcreatex.out.fnum;
+	fnum = io.ntcreatex.file.fnum;
 	CHECK_VAL(io.ntcreatex.out.oplock_level, BATCH_OPLOCK_RETURN);
 
 	printf("Subsequent normal open should break oplock on attribute only open to level II\n");
@@ -334,7 +334,7 @@ static BOOL test_oplock(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_OPEN;
 	status = smb_raw_open(cli->tree, mem_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	fnum2 = io.ntcreatex.out.fnum;
+	fnum2 = io.ntcreatex.file.fnum;
 	CHECK_VAL(break_info.count, 1);
 	CHECK_VAL(break_info.fnum, fnum);
 	CHECK_VAL(break_info.failures, 0);
@@ -351,7 +351,7 @@ static BOOL test_oplock(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_OPEN;
 	status = smb_raw_open(cli->tree, mem_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	fnum2 = io.ntcreatex.out.fnum;
+	fnum2 = io.ntcreatex.file.fnum;
 	CHECK_VAL(break_info.count, 0);
 	CHECK_VAL(break_info.failures, 0);
 	CHECK_VAL(io.ntcreatex.out.oplock_level, LEVEL_II_OPLOCK_RETURN);
@@ -362,7 +362,7 @@ static BOOL test_oplock(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	{
 		union smb_write wr;
 		wr.write.level = RAW_WRITE_WRITE;
-		wr.write.in.fnum = fnum2;
+		wr.write.file.fnum = fnum2;
 		wr.write.in.count = 1;
 		wr.write.in.offset = 0;
 		wr.write.in.remaining = 0;
@@ -379,7 +379,7 @@ static BOOL test_oplock(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	{
 		union smb_write wr;
 		wr.write.level = RAW_WRITE_WRITE;
-		wr.write.in.fnum = fnum2;
+		wr.write.file.fnum = fnum2;
 		wr.write.in.count = 1;
 		wr.write.in.offset = 0;
 		wr.write.in.remaining = 0;
@@ -407,7 +407,7 @@ static BOOL test_oplock(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_OPEN;
 	status = smb_raw_open(cli->tree, mem_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	fnum = io.ntcreatex.out.fnum;
+	fnum = io.ntcreatex.file.fnum;
 	CHECK_VAL(break_info.count, 0);
 	CHECK_VAL(break_info.fnum, 0);
 	CHECK_VAL(break_info.failures, 0);
@@ -423,7 +423,7 @@ static BOOL test_oplock(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_OPEN;
 	status = smb_raw_open(cli->tree, mem_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	fnum2 = io.ntcreatex.out.fnum;
+	fnum2 = io.ntcreatex.file.fnum;
 	CHECK_VAL(break_info.count, 0);
 	CHECK_VAL(break_info.fnum, 0);
 	CHECK_VAL(break_info.failures, 0);
@@ -433,7 +433,7 @@ static BOOL test_oplock(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	{
 		union smb_write wr;
 		wr.write.level = RAW_WRITE_WRITE;
-		wr.write.in.fnum = fnum;
+		wr.write.file.fnum = fnum;
 		wr.write.in.count = 1;
 		wr.write.in.offset = 0;
 		wr.write.in.remaining = 0;
@@ -450,7 +450,7 @@ static BOOL test_oplock(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	{
 		union smb_write wr;
 		wr.write.level = RAW_WRITE_WRITE;
-		wr.write.in.fnum = fnum;
+		wr.write.file.fnum = fnum;
 		wr.write.in.count = 1;
 		wr.write.in.offset = 0;
 		wr.write.in.remaining = 0;

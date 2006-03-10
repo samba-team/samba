@@ -289,7 +289,7 @@ NTSTATUS pvfs_qpathinfo(struct ntvfs_module_context *ntvfs,
 	NTSTATUS status;
 
 	/* resolve the cifs name to a posix name */
-	status = pvfs_resolve_name(pvfs, req, info->generic.in.fname, PVFS_RESOLVE_STREAMS, &name);
+	status = pvfs_resolve_name(pvfs, req, info->generic.file.path, PVFS_RESOLVE_STREAMS, &name);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -326,7 +326,7 @@ NTSTATUS pvfs_qfileinfo(struct ntvfs_module_context *ntvfs,
 	NTSTATUS status;
 	uint32_t access_needed;
 
-	f = pvfs_find_fd(pvfs, req, info->generic.in.fnum);
+	f = pvfs_find_fd(pvfs, req, info->generic.file.fnum);
 	if (!f) {
 		return NT_STATUS_INVALID_HANDLE;
 	}

@@ -37,8 +37,8 @@ static NTSTATUS appendacl_open(struct composite_context *c,
 	NT_STATUS_HAVE_NO_MEMORY(state->io_fileinfo);
 	
 	state->io_fileinfo->query_secdesc.level = RAW_FILEINFO_SEC_DESC;
-	state->io_fileinfo->query_secdesc.in.fnum = state->io_open->ntcreatex.out.fnum;
-	state->io_fileinfo->query_secdesc.secinfo_flags = SECINFO_DACL;
+	state->io_fileinfo->query_secdesc.file.fnum = state->io_open->ntcreatex.file.fnum;
+	state->io_fileinfo->query_secdesc.in.secinfo_flags = SECINFO_DACL;
 
 	state->req = smb_raw_fileinfo_send(tree, state->io_fileinfo);
 	NT_STATUS_HAVE_NO_MEMORY(state->req);
@@ -69,7 +69,7 @@ static NTSTATUS appendacl_get(struct composite_context *c,
 	NT_STATUS_HAVE_NO_MEMORY(state->io_setfileinfo);
 	
 	state->io_setfileinfo->set_secdesc.level            = RAW_SFILEINFO_SEC_DESC;
-	state->io_setfileinfo->set_secdesc.file.fnum        = state->io_fileinfo->query_secdesc.in.fnum;
+	state->io_setfileinfo->set_secdesc.file.fnum        = state->io_fileinfo->query_secdesc.file.fnum;
 	
 	state->io_setfileinfo->set_secdesc.in.secinfo_flags = SECINFO_DACL;
 	state->io_setfileinfo->set_secdesc.in.sd            = state->io_fileinfo->query_secdesc.out.sd;
@@ -115,8 +115,8 @@ static NTSTATUS appendacl_set(struct composite_context *c,
 	
 
 	state->io_fileinfo->query_secdesc.level = RAW_FILEINFO_SEC_DESC;
-	state->io_fileinfo->query_secdesc.in.fnum = state->io_setfileinfo->set_secdesc.file.fnum;
-	state->io_fileinfo->query_secdesc.secinfo_flags = SECINFO_DACL;
+	state->io_fileinfo->query_secdesc.file.fnum = state->io_setfileinfo->set_secdesc.file.fnum;
+	state->io_fileinfo->query_secdesc.in.secinfo_flags = SECINFO_DACL;
 
 	state->req = smb_raw_fileinfo_send(tree, state->io_fileinfo);
 	NT_STATUS_HAVE_NO_MEMORY(state->req);
@@ -150,7 +150,7 @@ static NTSTATUS appendacl_getagain(struct composite_context *c,
 	NT_STATUS_HAVE_NO_MEMORY(io_close);
 	
 	io_close->close.level = RAW_CLOSE_CLOSE;
-	io_close->close.in.fnum = state->io_fileinfo->query_secdesc.in.fnum;
+	io_close->close.file.fnum = state->io_fileinfo->query_secdesc.file.fnum;
 	io_close->close.in.write_time = 0;
 
 	state->req = smb_raw_close_send(tree, io_close);
