@@ -2598,6 +2598,9 @@ static void max_runtime_handler(int sig)
 	setbuffer(stdout, NULL, 0);
 #endif
 
+	/* we are never interested in SIGPIPE */
+	BlockSignals(True,SIGPIPE);
+
 	pc = poptGetContext("smbtorture", argc, (const char **) argv, long_options, 
 			    POPT_CONTEXT_KEEP_FIRST);
 
