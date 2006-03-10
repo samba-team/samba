@@ -65,7 +65,7 @@ static void continue_epm_map_binding(struct composite_context *ctx)
 		return;
 	}
 
-	sec_conn_req = dcerpc_secondary_connection_send(c, s->pipe, &s->pipe2,
+	sec_conn_req = dcerpc_secondary_connection_send(s->pipe,
 							s->binding);
 	if (composite_nomem(sec_conn_req, c)) return;
 
@@ -82,7 +82,7 @@ static void continue_secondary_connection(struct composite_context *ctx)
 	c = talloc_get_type(ctx->async.private_data, struct composite_context);
 	s = talloc_get_type(c->private_data, struct schannel_key_state);
 
-	c->status = dcerpc_secondary_connection_recv(ctx);
+	c->status = dcerpc_secondary_connection_recv(ctx, &s->pipe2);
 	if (!composite_is_ok(c)) return;
 
 	auth_none_req = dcerpc_bind_auth_none_send(c, s->pipe2, &dcerpc_table_netlogon);
