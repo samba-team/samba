@@ -763,6 +763,8 @@ struct epm_map_binding_state {
 	struct dcerpc_binding *binding;
 	const struct dcerpc_interface_table *table;
 	struct dcerpc_pipe *pipe;
+	struct policy_handle handle;
+	struct GUID guid;
 	struct epm_twr_t twr;
 	struct epm_twr_t *twr_r;
 	struct epm_Map r;
@@ -775,8 +777,6 @@ static void continue_epm_map(struct rpc_request *req);
 
 static void continue_epm_recv_binding(struct composite_context *ctx)
 {
-	struct policy_handle handle;
-	struct GUID guid;
 	struct rpc_request *map_req;
 
 	struct composite_context *c = talloc_get_type(ctx->async.private_data,
@@ -787,8 +787,8 @@ static void continue_epm_recv_binding(struct composite_context *ctx)
 	c->status = dcerpc_pipe_connect_b_recv(ctx, c, &s->pipe);
 	if (!composite_is_ok(c)) return;
 
-	ZERO_STRUCT(handle);
-	ZERO_STRUCT(guid);
+	ZERO_STRUCT(s->handle);
+	ZERO_STRUCT(s->guid);
 
 	s->binding->object         = s->table->uuid;
 	s->binding->object_version = s->table->if_version;
@@ -797,11 +797,11 @@ static void continue_epm_recv_binding(struct composite_context *ctx)
 	if (!composite_is_ok(c)) return;
 	
 	/* with some nice pretty paper around it of course */
-	s->r.in.object        = &guid;
+	s->r.in.object        = &s->guid;
 	s->r.in.map_tower     = &s->twr;
-	s->r.in.entry_handle  = &handle;
+	s->r.in.entry_handle  = &s->handle;
 	s->r.in.max_towers    = 1;
-	s->r.out.entry_handle = &handle;
+	s->r.out.entry_handle = &s->handle;
 
 	map_req = dcerpc_epm_Map_send(s->pipe, c, &s->r);
 	if (composite_nomem(map_req, c)) return;
