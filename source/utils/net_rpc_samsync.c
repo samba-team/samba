@@ -1309,7 +1309,9 @@ static NTSTATUS populate_ldap_for_ldif(fstring sid, const char *suffix, const ch
 	fflush(add_fd);
 
 	/* Deallocate memory, and return */
-	if (suffix_attr != NULL) SAFE_FREE(suffix_attr);
+	SAFE_FREE(suffix_attr);
+	SAFE_FREE(user_attr);
+	SAFE_FREE(group_attr);
 	return NT_STATUS_OK;
 }
 
