@@ -1636,6 +1636,7 @@ static NTSTATUS fetch_alias_info_to_ldif(SAM_DELTA_CTR *delta, GROUPMAP *groupma
 	    strcmp(aliasname, "Print Operators") == 0 ||
 	    strcmp(aliasname, "Backup Operators") == 0 ||
 	    strcmp(aliasname, "Replicator") == 0) {
+		SAFE_FREE(group_attr);
 		return NT_STATUS_OK;
 	} else {
 		/* Increment the gid for the new group */
@@ -1663,6 +1664,7 @@ static NTSTATUS fetch_alias_info_to_ldif(SAM_DELTA_CTR *delta, GROUPMAP *groupma
 	fprintf(add_fd, "\n");
 	fflush(add_fd);
 
+	SAFE_FREE(group_attr);
 	/* Return */
 	return NT_STATUS_OK;
 }
