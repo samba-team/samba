@@ -36,6 +36,7 @@ sub show($$)
 	showitem($output, "threads in smbd", ["PTHREAD"]);
 	showitem($output, "intelligent command line editing", ["READLINE"]);
 	showitem($output, "changing process titles", ["SETPROCTITLE"]);
+	showitem($output, "using extended attributes", ["XATTR"]);
 	print "Using external popt: $output->{EXT_LIB_POPT}->{ENABLE}\n";
 	print "Using shared libraries internally (experimental): ";
 
