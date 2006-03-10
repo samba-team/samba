@@ -89,6 +89,9 @@ static struct ldb_async_handle *init_handle(void *mem_ctx, struct ldb_module *mo
 
 	h->private_data = (void *)ac;
 
+	h->state = LDB_ASYNC_INIT;
+	h->status = LDB_SUCCESS;
+
 	ac->module = module;
 	ac->up_context = context;
 	ac->up_callback = callback;
@@ -423,31 +426,6 @@ static int server_sort_search_async(struct ldb_module *module, struct ldb_contro
 	return ldb_next_request(module, ac->req);
 }
 
-static int server_sort(struct ldb_module *module, struct ldb_request *req)
-{
-	struct ldb_control *control;
-
-	/* check if there's a paged request control */
-	control = get_control_from_list(req->controls, LDB_CONTROL_SERVER_SORT_OID);
-	if (control == NULL) {
-		/* not found go on */
-		return ldb_next_request(module, req);
-	}
-
-	switch (req->operation) {
-
-	case LDB_REQ_SEARCH:
-		return server_sort_search(module, control, req);
-
-	case LDB_ASYNC_SEARCH:
-		return server_sort_search_async(module, control, req);
-
-	default:
-		return LDB_ERR_PROTOCOL_ERROR;
-
-	}
-}
-
 static int server_sort_async_results(struct ldb_async_handle *handle)
 {
 	struct sort_async_context *ac;
@@ -546,6 +524,31 @@ static int server_sort_async_wait(struct ldb_async_handle *handle, enum ldb_asyn
 	}
 
 	return ret;
+}
+
+static int server_sort(struct ldb_module *module, struct ldb_request *req)
+{
+	struct ldb_control *control;
+
+	/* check if there's a paged request control */
+	control = get_control_from_list(req->controls, LDB_CONTROL_SERVER_SORT_OID);
+	if (control == NULL) {
+		/* not found go on */
+		return ldb_next_request(module, req);
+	}
+
+	switch (req->operation) {
+
+	case LDB_REQ_SEARCH:
+		return server_sort_search(module, control, req);
+
+	case LDB_ASYNC_SEARCH:
+		return server_sort_search_async(module, control, req);
+
+	default:
+		return LDB_ERR_PROTOCOL_ERROR;
+
+	}
 }
 
 static int server_sort_init(struct ldb_module *module)
