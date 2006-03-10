@@ -1,0 +1,6 @@
+Samba 4 is still feature incomplete. If you are using it for anything other
+then education you are insane.
+
+Please file bug reports at https://bugzilla.samba.org/, product: Samba4. 
+Please include as much information as possible, such as SVN revision number 
+and backtraces.
