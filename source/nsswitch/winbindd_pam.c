@@ -313,7 +313,7 @@ static const char *generate_krb5_ccache(TALLOC_CTX *mem_ctx,
 					uid_t uid,
 					BOOL *internal_ccache)
 {
-	/* accept KCM, FILE and WRFILE as krb5_cc_type from the client and then
+	/* accept FILE and WRFILE as krb5_cc_type from the client and then
 	 * build the full ccname string based on the user's uid here -
 	 * Guenther*/
 
@@ -333,10 +333,6 @@ static const char *generate_krb5_ccache(TALLOC_CTX *mem_ctx,
 		gen_cc = talloc_asprintf(mem_ctx, "FILE:/tmp/krb5cc_%d", uid);
 	} else if (strequal(type, "WRFILE")) {
 		gen_cc = talloc_asprintf(mem_ctx, "WRFILE:/tmp/krb5cc_%d", uid);
-#ifdef WITH_KCM
-	} else if (strequal(type, "KCM")) {
-		gen_cc = talloc_asprintf(mem_ctx, "KCM:%d", uid);
-#endif
 	} else {
 		DEBUG(10,("we don't allow to set a %s type ccache\n", type));
 		goto memory_ccache;
@@ -383,9 +379,6 @@ static void setup_return_cc_name(struct winbindd_cli_state *state, const char *c
 	}
 
 	if (!strequal(type, "FILE") &&
-#ifdef WITH_KCM
-	    !strequal(type, "KCM") &&
-#endif
 	    !strequal(type, "WRFILE")) {
 	    	DEBUG(10,("won't return krbccname for a %s type ccache\n", 
 			type));

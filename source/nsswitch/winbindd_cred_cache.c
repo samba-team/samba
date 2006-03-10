@@ -228,8 +228,6 @@ NTSTATUS add_ccache_to_list(const char *princ_name,
 	new_entry->uid = uid;
 
 
-#ifndef WITH_KCM /* no point in doing the refresh in KCM and by ourself */
-
 	if (schedule_refresh_event && renew_until > 0) {
 
 		struct timeval t = timeval_set((ticket_end -1 ), 0);
@@ -240,7 +238,6 @@ NTSTATUS add_ccache_to_list(const char *princ_name,
 						   krb5_ticket_refresh_handler,
 						   new_entry);
 	}
-#endif /* WITH_KCM */
 
 	DLIST_ADD(ccache_list, new_entry);
 
