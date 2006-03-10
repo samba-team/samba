@@ -57,10 +57,10 @@ struct ntvfs_ops {
 	/* path operations */
 	NTSTATUS (*unlink)(struct ntvfs_module_context *ntvfs,
 			   struct ntvfs_request *req,
-			   struct smb_unlink *unl);
+			   union smb_unlink *unl);
 	NTSTATUS (*chkpath)(struct ntvfs_module_context *ntvfs,
 			    struct ntvfs_request *req,
-			    struct smb_chkpath *cp);
+			    union smb_chkpath *cp);
 	NTSTATUS (*qpathinfo)(struct ntvfs_module_context *ntvfs,
 			      struct ntvfs_request *req,
 			      union smb_fileinfo *st);
@@ -108,10 +108,10 @@ struct ntvfs_ops {
 			  union smb_write *io);
 	NTSTATUS (*seek)(struct ntvfs_module_context *ntvfs,
 			 struct ntvfs_request *req,
-			 struct smb_seek *io);
+			 union smb_seek *io);
 	NTSTATUS (*flush)(struct ntvfs_module_context *ntvfs,
 			  struct ntvfs_request *req,
-			  struct smb_flush *flush);
+			  union smb_flush *flush);
 	NTSTATUS (*lock)(struct ntvfs_module_context *ntvfs,
 			 struct ntvfs_request *req,
 			 union smb_lock *lck);
@@ -138,7 +138,7 @@ struct ntvfs_ops {
 	/* change notify request */
 	NTSTATUS (*notify)(struct ntvfs_module_context *ntvfs,
 			   struct ntvfs_request *req,
-			   struct smb_notify *info);
+			   union smb_notify *info);
 
 	/* cancel - cancels any pending async request */
 	NTSTATUS (*cancel)(struct ntvfs_module_context *ntvfs,

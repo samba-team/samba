@@ -85,7 +85,7 @@ static struct {
 static struct {
 	int notify_count;
 	NTSTATUS status;
-	struct smb_notify notify;
+	union smb_notify notify;
 } notifies[NSERVERS][NINSTANCES];
 
 /* info relevant to the current operation */
@@ -681,7 +681,7 @@ static struct ea_struct gen_ea_struct(void)
 */
 static void async_notify(struct smbcli_request *req)
 {
-	struct smb_notify notify;
+	union smb_notify notify;
 	NTSTATUS status;
 	int i, j;
 	uint16_t tid;
@@ -693,9 +693,9 @@ static void async_notify(struct smbcli_request *req)
 	if (NT_STATUS_IS_OK(status)) {
 		printf("notify tid=%d num_changes=%d action=%d name=%s\n", 
 		       tid, 
-		       notify.out.num_changes,
-		       notify.out.changes[0].action,
-		       notify.out.changes[0].name.s);
+		       notify.notify.out.num_changes,
+		       notify.notify.out.changes[0].action,
+		       notify.notify.out.changes[0].name.s);
 	}
 
 	for (i=0;i<NSERVERS;i++) {
@@ -762,7 +762,7 @@ static BOOL oplock_handler(struct smbcli_transport *transport, uint16_t tid, uin
 	printf("oplock close fnum=%d\n", fnum);
 
 	io.close.level = RAW_CLOSE_CLOSE;
-	io.close.in.fnum = fnum;
+	io.close.file.fnum = fnum;
 	io.close.in.write_time = 0;
 	req = smb_raw_close_send(tree, &io);
 
@@ -893,7 +893,7 @@ again:
 	for (j=0;j<NINSTANCES;j++) {
 		for (i=1;i<NSERVERS;i++) {
 			int n;
-			struct smb_notify not1, not2;
+			union smb_notify not1, not2;
 
 			if (notifies[0][j].notify_count != notifies[i][j].notify_count) {
 				if (tries++ < 10) goto again;
@@ -920,26 +920,26 @@ again:
 			not1 = notifies[0][j].notify;
 			not2 = notifies[i][j].notify;
 
-			for (n=0;n<not1.out.num_changes;n++) {
-				if (not1.out.changes[n].action != 
-				    not2.out.changes[n].action) {
+			for (n=0;n<not1.notify.out.num_changes;n++) {
+				if (not1.notify.out.changes[n].action != 
+				    not2.notify.out.changes[n].action) {
 					printf("Notify action %d inconsistent %d %d\n", n,
-					       not1.out.changes[n].action,
-					       not2.out.changes[n].action);
+					       not1.notify.out.changes[n].action,
+					       not2.notify.out.changes[n].action);
 					return False;
 				}
-				if (strcmp(not1.out.changes[n].name.s,
-					   not2.out.changes[n].name.s)) {
+				if (strcmp(not1.notify.out.changes[n].name.s,
+					   not2.notify.out.changes[n].name.s)) {
 					printf("Notify name %d inconsistent %s %s\n", n,
-					       not1.out.changes[n].name.s,
-					       not2.out.changes[n].name.s);
+					       not1.notify.out.changes[n].name.s,
+					       not2.notify.out.changes[n].name.s);
 					return False;
 				}
-				if (not1.out.changes[n].name.private_length !=
-				    not2.out.changes[n].name.private_length) {
+				if (not1.notify.out.changes[n].name.private_length !=
+				    not2.notify.out.changes[n].name.private_length) {
 					printf("Notify name length %d inconsistent %d %d\n", n,
-					       not1.out.changes[n].name.private_length,
-					       not2.out.changes[n].name.private_length);
+					       not1.notify.out.changes[n].name.private_length,
+					       not2.notify.out.changes[n].name.private_length);
 					return False;
 				}
 			}
@@ -1095,7 +1095,7 @@ static BOOL handler_openx(int instance)
 	CHECK_TIMES_EQUAL(openx.out.write_time);
 
 	/* open creates a new file handle */
-	ADD_HANDLE(parm[0].openx.in.fname, openx.out.fnum);
+	ADD_HANDLE(parm[0].openx.in.fname, openx.file.fnum);
 
 	return True;
 }
@@ -1129,7 +1129,7 @@ static BOOL handler_open(int instance)
 	CHECK_EQUAL(openold.out.rmode);
 
 	/* open creates a new file handle */
-	ADD_HANDLE(parm[0].openold.in.fname, openold.out.fnum);
+	ADD_HANDLE(parm[0].openold.in.fname, openold.file.fnum);
 
 	return True;
 }
@@ -1182,7 +1182,7 @@ static BOOL handler_ntcreatex(int instance)
 	CHECK_EQUAL(ntcreatex.out.is_directory);
 
 	/* ntcreatex creates a new file handle */
-	ADD_HANDLE(parm[0].ntcreatex.in.fname, ntcreatex.out.fnum);
+	ADD_HANDLE(parm[0].ntcreatex.in.fname, ntcreatex.file.fnum);
 
 	return True;
 }
@@ -1196,14 +1196,14 @@ static BOOL handler_close(int instance)
 	NTSTATUS status[NSERVERS];
 
 	parm[0].close.level = RAW_CLOSE_CLOSE;
-	parm[0].close.in.fnum = gen_fnum_close(instance);
+	parm[0].close.file.fnum = gen_fnum_close(instance);
 	parm[0].close.in.write_time = gen_timet();
 
 	GEN_COPY_PARM;
-	GEN_SET_FNUM(close.in.fnum);
+	GEN_SET_FNUM(close.file.fnum);
 	GEN_CALL(smb_raw_close(tree, &parm[i]));
 
-	REMOVE_HANDLE(close.in.fnum);
+	REMOVE_HANDLE(close.file.fnum);
 
 	return True;
 }
@@ -1213,11 +1213,11 @@ static BOOL handler_close(int instance)
 */
 static BOOL handler_unlink(int instance)
 {
-	struct smb_unlink parm[NSERVERS];
+	union smb_unlink parm[NSERVERS];
 	NTSTATUS status[NSERVERS];
 
-	parm[0].in.pattern = gen_pattern();
-	parm[0].in.attrib = gen_attrib();
+	parm[0].unlink.in.pattern = gen_pattern();
+	parm[0].unlink.in.attrib = gen_attrib();
 
 	GEN_COPY_PARM;
 	GEN_CALL(smb_raw_unlink(tree, &parm[i]));
@@ -1230,10 +1230,10 @@ static BOOL handler_unlink(int instance)
 */
 static BOOL handler_chkpath(int instance)
 {
-	struct smb_chkpath parm[NSERVERS];
+	union smb_chkpath parm[NSERVERS];
 	NTSTATUS status[NSERVERS];
 
-	parm[0].in.path = gen_fname_open(instance);
+	parm[0].chkpath.in.path = gen_fname_open(instance);
 
 	GEN_COPY_PARM;
 	GEN_CALL(smb_raw_chkpath(tree, &parm[i]));
@@ -1320,18 +1320,18 @@ static BOOL handler_ntrename(int instance)
 */
 static BOOL handler_seek(int instance)
 {
-	struct smb_seek parm[NSERVERS];
+	union smb_seek parm[NSERVERS];
 	NTSTATUS status[NSERVERS];
 
-	parm[0].in.fnum = gen_fnum(instance);
-	parm[0].in.mode = gen_bits_mask2(0x3, 0xFFFF);
-	parm[0].in.offset = gen_offset();
+	parm[0].lseek.file.fnum = gen_fnum(instance);
+	parm[0].lseek.in.mode = gen_bits_mask2(0x3, 0xFFFF);
+	parm[0].lseek.in.offset = gen_offset();
 
 	GEN_COPY_PARM;
-	GEN_SET_FNUM(in.fnum);
+	GEN_SET_FNUM(lseek.file.fnum);
 	GEN_CALL(smb_raw_seek(tree, &parm[i]));
 
-	CHECK_EQUAL(out.offset);
+	CHECK_EQUAL(lseek.out.offset);
 
 	return True;
 }
@@ -1346,7 +1346,7 @@ static BOOL handler_readx(int instance)
 	NTSTATUS status[NSERVERS];
 
 	parm[0].readx.level = RAW_READ_READX;
-	parm[0].readx.in.fnum = gen_fnum(instance);
+	parm[0].readx.file.fnum = gen_fnum(instance);
 	parm[0].readx.in.offset = gen_offset();
 	parm[0].readx.in.mincnt = gen_io_count();
 	parm[0].readx.in.maxcnt = gen_io_count();
@@ -1355,7 +1355,7 @@ static BOOL handler_readx(int instance)
 					     MAX(parm[0].readx.in.mincnt, parm[0].readx.in.maxcnt));
 
 	GEN_COPY_PARM;
-	GEN_SET_FNUM(readx.in.fnum);
+	GEN_SET_FNUM(readx.file.fnum);
 	GEN_CALL(smb_raw_read(tree, &parm[i]));
 
 	CHECK_EQUAL(readx.out.remaining);
@@ -1374,7 +1374,7 @@ static BOOL handler_writex(int instance)
 	NTSTATUS status[NSERVERS];
 
 	parm[0].writex.level = RAW_WRITE_WRITEX;
-	parm[0].writex.in.fnum = gen_fnum(instance);
+	parm[0].writex.file.fnum = gen_fnum(instance);
 	parm[0].writex.in.offset = gen_offset();
 	parm[0].writex.in.wmode = gen_bits_mask(0xFFFF);
 	parm[0].writex.in.remaining = gen_io_count();
@@ -1382,7 +1382,7 @@ static BOOL handler_writex(int instance)
 	parm[0].writex.in.data = talloc_zero_size(current_op.mem_ctx, parm[0].writex.in.count);
 
 	GEN_COPY_PARM;
-	GEN_SET_FNUM(writex.in.fnum);
+	GEN_SET_FNUM(writex.file.fnum);
 	GEN_CALL(smb_raw_write(tree, &parm[i]));
 
 	CHECK_EQUAL(writex.out.nwritten);
@@ -1401,7 +1401,7 @@ static BOOL handler_lockingx(int instance)
 	int n, nlocks;
 
 	parm[0].lockx.level = RAW_LOCK_LOCKX;
-	parm[0].lockx.in.fnum = gen_fnum(instance);
+	parm[0].lockx.file.fnum = gen_fnum(instance);
 	parm[0].lockx.in.mode = gen_lock_mode();
 	parm[0].lockx.in.timeout = gen_timeout();
 	do {
@@ -1424,7 +1424,7 @@ static BOOL handler_lockingx(int instance)
 	}
 
 	GEN_COPY_PARM;
-	GEN_SET_FNUM(lockx.in.fnum);
+	GEN_SET_FNUM(lockx.file.fnum);
 	GEN_CALL(smb_raw_lock(tree, &parm[i]));
 
 	return True;
@@ -1641,7 +1641,7 @@ static BOOL handler_qpathinfo(int instance)
 	union smb_fileinfo parm[NSERVERS];
 	NTSTATUS status[NSERVERS];
 
-	parm[0].generic.in.fname = gen_fname_open(instance);
+	parm[0].generic.file.path = gen_fname_open(instance);
 
 	gen_fileinfo(instance, &parm[0]);
 
@@ -1659,12 +1659,12 @@ static BOOL handler_qfileinfo(int instance)
 	union smb_fileinfo parm[NSERVERS];
 	NTSTATUS status[NSERVERS];
 
-	parm[0].generic.in.fnum = gen_fnum(instance);
+	parm[0].generic.file.fnum = gen_fnum(instance);
 
 	gen_fileinfo(instance, &parm[0]);
 
 	GEN_COPY_PARM;
-	GEN_SET_FNUM(generic.in.fnum);
+	GEN_SET_FNUM(generic.file.fnum);
 	GEN_CALL(smb_raw_fileinfo(tree, current_op.mem_ctx, &parm[i]));
 
 	return cmp_fileinfo(instance, parm, status);
@@ -1777,7 +1777,7 @@ static BOOL handler_spathinfo(int instance)
 	union smb_setfileinfo parm[NSERVERS];
 	NTSTATUS status[NSERVERS];
 
-	parm[0].generic.file.fname = gen_fname_open(instance);
+	parm[0].generic.file.path = gen_fname_open(instance);
 
 	gen_setfileinfo(instance, &parm[0]);
 
@@ -1820,16 +1820,16 @@ static BOOL handler_sfileinfo(int instance)
 */
 static BOOL handler_notify(int instance)
 {
-	struct smb_notify parm[NSERVERS];
+	union smb_notify parm[NSERVERS];
 	int n;
 
-	parm[0].in.buffer_size = gen_io_count();
-	parm[0].in.completion_filter = gen_bits_mask(0xFF);
-	parm[0].in.fnum = gen_fnum(instance);
-	parm[0].in.recursive = gen_bool();
+	parm[0].notify.in.buffer_size = gen_io_count();
+	parm[0].notify.in.completion_filter = gen_bits_mask(0xFF);
+	parm[0].notify.file.fnum = gen_fnum(instance);
+	parm[0].notify.in.recursive = gen_bool();
 
 	GEN_COPY_PARM;
-	GEN_SET_FNUM(in.fnum);
+	GEN_SET_FNUM(notify.file.fnum);
 
 	for (n=0;n<NSERVERS;n++) {
 		struct smbcli_request *req;

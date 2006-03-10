@@ -36,7 +36,7 @@ NTSTATUS smbcli_qpathinfo(struct smbcli_tree *tree, const char *fname,
 	if (!mem_ctx) return NT_STATUS_NO_MEMORY;
 
 	parms.standard.level = RAW_FILEINFO_STANDARD;
-	parms.standard.in.fname = fname;
+	parms.standard.file.path = fname;
 
 	status = smb_raw_pathinfo(tree, mem_ctx, &parms);
 	talloc_free(mem_ctx);
@@ -78,7 +78,7 @@ NTSTATUS smbcli_qpathinfo2(struct smbcli_tree *tree, const char *fname,
 	if (!mem_ctx) return NT_STATUS_NO_MEMORY;
 
 	parms.all_info.level = RAW_FILEINFO_ALL_INFO;
-	parms.all_info.in.fname = fname;
+	parms.all_info.file.path = fname;
 
 	status = smb_raw_pathinfo(tree, mem_ctx, &parms);
 	talloc_free(mem_ctx);
@@ -121,7 +121,7 @@ NTSTATUS smbcli_qfilename(struct smbcli_tree *tree, int fnum, const char **name)
 	if (!mem_ctx) return NT_STATUS_NO_MEMORY;
 
 	parms.name_info.level = RAW_FILEINFO_NAME_INFO;
-	parms.name_info.in.fnum = fnum;
+	parms.name_info.file.fnum = fnum;
 
 	status = smb_raw_fileinfo(tree, mem_ctx, &parms);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -155,7 +155,7 @@ NTSTATUS smbcli_qfileinfo(struct smbcli_tree *tree, int fnum,
 		return NT_STATUS_NO_MEMORY;
 
 	parms.all_info.level = RAW_FILEINFO_ALL_INFO;
-	parms.all_info.in.fnum = fnum;
+	parms.all_info.file.fnum = fnum;
 
 	status = smb_raw_fileinfo(tree, mem_ctx, &parms);
 	talloc_free(mem_ctx);
@@ -200,7 +200,7 @@ NTSTATUS smbcli_qpathinfo_alt_name(struct smbcli_tree *tree, const char *fname,
 	NTSTATUS status;
 
 	parms.alt_name_info.level = RAW_FILEINFO_ALT_NAME_INFO;
-	parms.alt_name_info.in.fname = fname;
+	parms.alt_name_info.file.path = fname;
 
 	mem_ctx = talloc_init("smbcli_qpathinfo_alt_name");
 	if (!mem_ctx) return NT_STATUS_NO_MEMORY;

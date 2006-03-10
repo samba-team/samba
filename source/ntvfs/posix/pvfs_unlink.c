@@ -113,7 +113,8 @@ static NTSTATUS pvfs_unlink_one(struct pvfs_state *pvfs,
   The name can contain CIFS wildcards, but rarely does (except with OS/2 clients)
 */
 NTSTATUS pvfs_unlink(struct ntvfs_module_context *ntvfs,
-		     struct ntvfs_request *req, struct smb_unlink *unl)
+		     struct ntvfs_request *req,
+		     union smb_unlink *unl)
 {
 	struct pvfs_state *pvfs = ntvfs->private_data;
 	struct pvfs_dir *dir;
@@ -124,7 +125,7 @@ NTSTATUS pvfs_unlink(struct ntvfs_module_context *ntvfs,
 	uint_t ofs;
 
 	/* resolve the cifs name to a posix name */
-	status = pvfs_resolve_name(pvfs, req, unl->in.pattern, 
+	status = pvfs_resolve_name(pvfs, req, unl->unlink.in.pattern, 
 				   PVFS_RESOLVE_WILDCARD | PVFS_RESOLVE_STREAMS, &name);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -140,7 +141,7 @@ NTSTATUS pvfs_unlink(struct ntvfs_module_context *ntvfs,
 	}
 
 	if (name->stream_name) {
-		return pvfs_unlink_stream(pvfs, req, name, unl->in.attrib);
+		return pvfs_unlink_stream(pvfs, req, name, unl->unlink.in.attrib);
 	}
 
 	/* get list of matching files */
@@ -155,13 +156,13 @@ NTSTATUS pvfs_unlink(struct ntvfs_module_context *ntvfs,
 
 	while ((fname = pvfs_list_next(dir, &ofs))) {
 		/* this seems to be a special case */
-		if ((unl->in.attrib & FILE_ATTRIBUTE_DIRECTORY) &&
+		if ((unl->unlink.in.attrib & FILE_ATTRIBUTE_DIRECTORY) &&
 		    (strcmp(fname, ".") == 0 ||
 		     strcmp(fname, "..") == 0)) {
 			return NT_STATUS_OBJECT_NAME_INVALID;
 		}
 
-		status = pvfs_unlink_one(pvfs, req, pvfs_list_unix_path(dir), fname, unl->in.attrib);
+		status = pvfs_unlink_one(pvfs, req, pvfs_list_unix_path(dir), fname, unl->unlink.in.attrib);
 		if (NT_STATUS_IS_OK(status)) {
 			total_deleted++;
 		}

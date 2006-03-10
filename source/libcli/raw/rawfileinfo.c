@@ -536,7 +536,7 @@ static struct smbcli_request *smb_raw_getattr_send(struct smbcli_tree *tree,
 	req = smbcli_request_setup(tree, SMBgetatr, 0, 0);
 	if (!req) return NULL;
 
-	smbcli_req_append_ascii4(req, parms->getattr.in.fname, STR_TERMINATE);
+	smbcli_req_append_ascii4(req, parms->getattr.file.path, STR_TERMINATE);
 	
 	if (!smbcli_request_send(req)) {
 		smbcli_request_destroy(req);
@@ -579,7 +579,7 @@ static struct smbcli_request *smb_raw_getattrE_send(struct smbcli_tree *tree,
 	req = smbcli_request_setup(tree, SMBgetattrE, 1, 0);
 	if (!req) return NULL;
 	
-	SSVAL(req->out.vwv, VWV(0), parms->getattre.in.fnum);
+	SSVAL(req->out.vwv, VWV(0), parms->getattre.file.fnum);
 	if (!smbcli_request_send(req)) {
 		smbcli_request_destroy(req);
 		return NULL;
@@ -647,7 +647,7 @@ struct smbcli_request *smb_raw_fileinfo_send(struct smbcli_tree *tree,
 	}
 
 	req = smb_raw_fileinfo_blob_send(tree, 
-					 parms->generic.in.fnum,
+					 parms->generic.file.fnum,
 					 parms->generic.level, data);
 
 	data_blob_free(&data);
@@ -722,7 +722,7 @@ struct smbcli_request *smb_raw_pathinfo_send(struct smbcli_tree *tree,
 		}
 	}
 
-	req = smb_raw_pathinfo_blob_send(tree, parms->generic.in.fname,
+	req = smb_raw_pathinfo_blob_send(tree, parms->generic.file.path,
 					 parms->generic.level, data);
 	data_blob_free(&data);
 

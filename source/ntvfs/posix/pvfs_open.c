@@ -390,7 +390,7 @@ static NTSTATUS pvfs_open_directory(struct pvfs_state *pvfs,
 	talloc_steal(pvfs, f);
 
 	io->generic.out.oplock_level  = OPLOCK_NONE;
-	io->generic.out.fnum          = f->fnum;
+	io->generic.file.fnum         = f->fnum;
 	io->generic.out.create_action = create_action;
 	io->generic.out.create_time   = name->dos.create_time;
 	io->generic.out.access_time   = name->dos.access_time;
@@ -712,7 +712,7 @@ static NTSTATUS pvfs_create_file(struct pvfs_state *pvfs,
 	} else {
 		io->generic.out.oplock_level  = OPLOCK_NONE;
 	}
-	io->generic.out.fnum          = f->fnum;
+	io->generic.file.fnum         = f->fnum;
 	io->generic.out.create_action = NTCREATEX_ACTION_CREATED;
 	io->generic.out.create_time   = name->dos.create_time;
 	io->generic.out.access_time   = name->dos.access_time;
@@ -880,7 +880,7 @@ static NTSTATUS pvfs_open_deny_dos(struct ntvfs_module_context *ntvfs,
 	name = f->handle->name;
 
 	io->generic.out.oplock_level  = OPLOCK_NONE;
-	io->generic.out.fnum	      = f->fnum;
+	io->generic.file.fnum	      = f->fnum;
 	io->generic.out.create_action = NTCREATEX_ACTION_EXISTED;
 	io->generic.out.create_time   = name->dos.create_time;
 	io->generic.out.access_time   = name->dos.access_time;
@@ -1239,7 +1239,7 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 	} else {
 		io->generic.out.oplock_level  = OPLOCK_NONE;
 	}
-	io->generic.out.fnum	      = f->fnum;
+	io->generic.file.fnum	      = f->fnum;
 	io->generic.out.create_action = stream_existed?
 		NTCREATEX_ACTION_EXISTED:NTCREATEX_ACTION_CREATED;
 	io->generic.out.create_time   = name->dos.create_time;
@@ -1278,7 +1278,7 @@ NTSTATUS pvfs_close(struct ntvfs_module_context *ntvfs,
 		return ntvfs_map_close(ntvfs, req, io);
 	}
 
-	f = pvfs_find_fd(pvfs, req, io->close.in.fnum);
+	f = pvfs_find_fd(pvfs, req, io->close.file.fnum);
 	if (!f) {
 		return NT_STATUS_INVALID_HANDLE;
 	}

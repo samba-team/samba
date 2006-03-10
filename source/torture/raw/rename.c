@@ -78,7 +78,7 @@ static BOOL test_mv(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	status = smb_raw_open(cli->tree, mem_ctx, &op);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	fnum = op.ntcreatex.out.fnum;
+	fnum = op.ntcreatex.file.fnum;
 
 	io.generic.level = RAW_RENAME_RENAME;
 	io.rename.in.pattern1 = fname1;
@@ -98,7 +98,7 @@ static BOOL test_mv(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 		NTCREATEX_SHARE_ACCESS_WRITE;
 	status = smb_raw_open(cli->tree, mem_ctx, &op);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	fnum = op.ntcreatex.out.fnum;
+	fnum = op.ntcreatex.file.fnum;
 
 	printf("trying rename while first file open with SHARE_ACCESS_DELETE\n");
 	status = smb_raw_rename(cli->tree, &io);
@@ -250,13 +250,13 @@ static BOOL test_ntrename(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	torture_set_file_attribute(cli->tree, fname1, FILE_ATTRIBUTE_SYSTEM);
 
 	finfo.generic.level = RAW_FILEINFO_ALL_INFO;
-	finfo.generic.in.fname = fname2;
+	finfo.generic.file.path = fname2;
 	status = smb_raw_pathinfo(cli->tree, mem_ctx, &finfo);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_VALUE(finfo.all_info.out.nlink, 2);
 	CHECK_VALUE(finfo.all_info.out.attrib, FILE_ATTRIBUTE_SYSTEM);
 
-	finfo.generic.in.fname = fname1;
+	finfo.generic.file.path = fname1;
 	status = smb_raw_pathinfo(cli->tree, mem_ctx, &finfo);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_VALUE(finfo.all_info.out.nlink, 2);
@@ -266,7 +266,7 @@ static BOOL test_ntrename(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	smbcli_unlink(cli->tree, fname2);
 
-	finfo.generic.in.fname = fname1;
+	finfo.generic.file.path = fname1;
 	status = smb_raw_pathinfo(cli->tree, mem_ctx, &finfo);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_VALUE(finfo.all_info.out.nlink, 1);
@@ -281,14 +281,14 @@ static BOOL test_ntrename(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 	finfo.generic.level = RAW_FILEINFO_ALL_INFO;
-	finfo.generic.in.fname = fname1;
+	finfo.generic.file.path = fname1;
 	status = smb_raw_pathinfo(cli->tree, mem_ctx, &finfo);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_VALUE(finfo.all_info.out.nlink, 1);
 	CHECK_VALUE(finfo.all_info.out.attrib, FILE_ATTRIBUTE_NORMAL);
 
 	finfo.generic.level = RAW_FILEINFO_ALL_INFO;
-	finfo.generic.in.fname = fname2;
+	finfo.generic.file.path = fname2;
 	status = smb_raw_pathinfo(cli->tree, mem_ctx, &finfo);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_VALUE(finfo.all_info.out.nlink, 1);
@@ -297,13 +297,13 @@ static BOOL test_ntrename(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	torture_set_file_attribute(cli->tree, fname1, FILE_ATTRIBUTE_SYSTEM);
 
 	finfo.generic.level = RAW_FILEINFO_ALL_INFO;
-	finfo.generic.in.fname = fname2;
+	finfo.generic.file.path = fname2;
 	status = smb_raw_pathinfo(cli->tree, mem_ctx, &finfo);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_VALUE(finfo.all_info.out.nlink, 1);
 	CHECK_VALUE(finfo.all_info.out.attrib, FILE_ATTRIBUTE_NORMAL);
 
-	finfo.generic.in.fname = fname1;
+	finfo.generic.file.path = fname1;
 	status = smb_raw_pathinfo(cli->tree, mem_ctx, &finfo);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_VALUE(finfo.all_info.out.nlink, 1);
@@ -313,7 +313,7 @@ static BOOL test_ntrename(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	smbcli_unlink(cli->tree, fname2);
 
-	finfo.generic.in.fname = fname1;
+	finfo.generic.file.path = fname1;
 	status = smb_raw_pathinfo(cli->tree, mem_ctx, &finfo);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_VALUE(finfo.all_info.out.nlink, 1);

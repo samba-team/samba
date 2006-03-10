@@ -54,7 +54,7 @@ static BOOL test_delayed_write_update(struct smbcli_state *cli, TALLOC_CTX *mem_
 	}
 
 	finfo1.basic_info.level = RAW_FILEINFO_BASIC_INFO;
-	finfo1.basic_info.in.fnum = fnum1;
+	finfo1.basic_info.file.fnum = fnum1;
 	finfo2 = finfo1;
 
 	status = smb_raw_fileinfo(cli->tree, mem_ctx, &finfo1);
@@ -129,7 +129,7 @@ static BOOL test_delayed_write_update2(struct smbcli_state *cli, TALLOC_CTX *mem
 	BOOL ret = True;
 	ssize_t written;
 	time_t t;
-	struct smb_flush flsh;
+	union smb_flush flsh;
 
 	printf("Testing delayed update of write time using 2 connections\n");
 
@@ -148,7 +148,7 @@ static BOOL test_delayed_write_update2(struct smbcli_state *cli, TALLOC_CTX *mem
 	}
 
 	finfo1.basic_info.level = RAW_FILEINFO_BASIC_INFO;
-	finfo1.basic_info.in.fnum = fnum1;
+	finfo1.basic_info.file.fnum = fnum1;
 	finfo2 = finfo1;
 
 	status = smb_raw_fileinfo(cli->tree, mem_ctx, &finfo1);
@@ -195,7 +195,7 @@ static BOOL test_delayed_write_update2(struct smbcli_state *cli, TALLOC_CTX *mem
 	t = time(NULL);
 
 	while (time(NULL) < t+120) {
-		finfo2.basic_info.in.fname = fname;
+		finfo2.basic_info.file.path = fname;
 	
 		status = smb_raw_pathinfo(cli2->tree, mem_ctx, &finfo2);
 
@@ -223,7 +223,7 @@ static BOOL test_delayed_write_update2(struct smbcli_state *cli, TALLOC_CTX *mem
 	/* Now try a write to see if the write time gets reset. */
 
 	finfo1.basic_info.level = RAW_FILEINFO_BASIC_INFO;
-	finfo1.basic_info.in.fnum = fnum1;
+	finfo1.basic_info.file.fnum = fnum1;
 	finfo2 = finfo1;
 
 	status = smb_raw_fileinfo(cli->tree, mem_ctx, &finfo1);
@@ -252,7 +252,7 @@ static BOOL test_delayed_write_update2(struct smbcli_state *cli, TALLOC_CTX *mem
 
 	printf("Doing flush after write\n");
 
-	flsh.in.fnum = fnum1;
+	flsh.flush.file.fnum = fnum1;
 	status = smb_raw_flush(cli->tree, &flsh);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("smbflush failed: %s\n", nt_errstr(status)));
@@ -330,7 +330,7 @@ static BOOL test_delayed_write_update2(struct smbcli_state *cli, TALLOC_CTX *mem
 	}
 
 	finfo1.basic_info.level = RAW_FILEINFO_BASIC_INFO;
-	finfo1.basic_info.in.fnum = fnum2;
+	finfo1.basic_info.file.fnum = fnum2;
 	finfo2 = finfo1;
 	status = smb_raw_fileinfo(cli->tree, mem_ctx, &finfo2);
 
@@ -384,7 +384,7 @@ static BOOL test_delayed_write_update2(struct smbcli_state *cli, TALLOC_CTX *mem
 	}
 
 	finfo1.basic_info.level = RAW_FILEINFO_BASIC_INFO;
-	finfo1.basic_info.in.fnum = fnum1;
+	finfo1.basic_info.file.fnum = fnum1;
 	finfo2 = finfo1;
 
 	status = smb_raw_fileinfo(cli->tree, mem_ctx, &finfo1);
@@ -409,7 +409,7 @@ static BOOL test_delayed_write_update2(struct smbcli_state *cli, TALLOC_CTX *mem
 	}
 
 	finfo1.basic_info.level = RAW_FILEINFO_BASIC_INFO;
-	finfo1.basic_info.in.fnum = fnum1;
+	finfo1.basic_info.file.fnum = fnum1;
 	finfo2 = finfo1;
 	status = smb_raw_fileinfo(cli->tree, mem_ctx, &finfo2);
 
@@ -502,7 +502,7 @@ static BOOL test_finfo_after_write(struct smbcli_state *cli, TALLOC_CTX *mem_ctx
 	}
 
 	finfo1.basic_info.level = RAW_FILEINFO_BASIC_INFO;
-	finfo1.basic_info.in.fnum = fnum1;
+	finfo1.basic_info.file.fnum = fnum1;
 
 	status = smb_raw_fileinfo(cli->tree, mem_ctx, &finfo1);
 
@@ -545,7 +545,7 @@ static BOOL test_finfo_after_write(struct smbcli_state *cli, TALLOC_CTX *mem_ctx
 	}
 	
 	finfo2.basic_info.level = RAW_FILEINFO_BASIC_INFO;
-	finfo2.basic_info.in.fname = fname;
+	finfo2.basic_info.file.path = fname;
 	
 	status = smb_raw_pathinfo(cli2->tree, mem_ctx, &finfo2);
 	
@@ -598,7 +598,7 @@ static BOOL test_finfo_after_write(struct smbcli_state *cli, TALLOC_CTX *mem_ctx
 
 	/* This call is only for the people looking at ethereal :-) */
 	finfo2.basic_info.level = RAW_FILEINFO_BASIC_INFO;
-	finfo2.basic_info.in.fname = fname;
+	finfo2.basic_info.file.path = fname;
 
 	status = smb_raw_pathinfo(cli->tree, mem_ctx, &finfo2);
 

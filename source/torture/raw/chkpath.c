@@ -55,9 +55,9 @@ static NTSTATUS single_search(struct smbcli_state *cli,
 
 static BOOL test_path(struct smbcli_state *cli, const char *path, NTSTATUS expected, NTSTATUS dos_expected)
 {
-	struct smb_chkpath io;
+	union smb_chkpath io;
 	NTSTATUS status;
-	io.in.path = path;
+	io.chkpath.in.path = path;
 	status = smb_raw_chkpath(cli->tree, &io);
 	if (!NT_STATUS_EQUAL(status, expected) && !NT_STATUS_EQUAL(status, dos_expected)) {
 		printf("%-40s FAILED %s should be %s or %s\n", 
@@ -72,13 +72,13 @@ static BOOL test_path(struct smbcli_state *cli, const char *path, NTSTATUS expec
 
 static BOOL test_chkpath(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 {
-	struct smb_chkpath io;
+	union smb_chkpath io;
 	NTSTATUS status;
 	BOOL ret = True;
 	int fnum = -1;
 	int fnum1 = -1;
 
-	io.in.path = BASEDIR;
+	io.chkpath.in.path = BASEDIR;
 
 	status = smb_raw_chkpath(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_OK, NT_STATUS_OK);

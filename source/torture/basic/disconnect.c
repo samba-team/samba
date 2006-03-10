@@ -96,7 +96,7 @@ static BOOL test_disconnect_lock(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	}
 
 	io.lockx.level = RAW_LOCK_LOCKX;
-	io.lockx.in.fnum = fnum;
+	io.lockx.file.fnum = fnum;
 	io.lockx.in.mode = 0;
 	io.lockx.in.timeout = 0;
 	io.lockx.in.lock_cnt = 1;
