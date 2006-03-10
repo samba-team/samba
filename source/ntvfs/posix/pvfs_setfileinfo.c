@@ -435,7 +435,7 @@ NTSTATUS pvfs_setpathinfo(struct ntvfs_module_context *ntvfs,
 	uint32_t access_needed;
 
 	/* resolve the cifs name to a posix name */
-	status = pvfs_resolve_name(pvfs, req, info->generic.file.fname, 
+	status = pvfs_resolve_name(pvfs, req, info->generic.file.path, 
 				   PVFS_RESOLVE_STREAMS, &name);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
