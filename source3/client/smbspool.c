@@ -375,9 +375,14 @@ static struct cli_state
     return NULL;      
   }
     
-    
+  /* We pretty much guarentee password must be valid or a pointer
+     to a 0 char. */
+  if (!password) {
+    return NULL;
+  }
+  
   if ( (username) && (*username) && 
-      ((!password) || ((password) && (strlen(password) == 0 ))) && 
+      (strlen(password) == 0 ) && 
        (cli->use_kerberos) ) 
   {
     /* Use kerberos authentication */
