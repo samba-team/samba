@@ -1102,6 +1102,7 @@ NTSTATUS make_server_info_pac(auth_serversupplied_info **server_info,
 	DOM_SID user_sid, group_sid;
 	fstring dom_name;
 	auth_serversupplied_info *result;
+	int i;
 
 	if ( !(sampass = samu_new( NULL )) ) {
 		return NT_STATUS_NO_MEMORY;
@@ -1139,9 +1140,35 @@ NTSTATUS make_server_info_pac(auth_serversupplied_info **server_info,
 	result->uid = pwd->pw_uid;
 	result->gid = pwd->pw_gid;
 
-	/* TODO: Add groups from pac */
 	result->sids = NULL;
 	result->num_sids = 0;
+
+	/* and create (by appending rids) the 'domain' sids */
+	
+	for (i = 0; i < logon_info->info3.num_groups2; i++) {
+		DOM_SID sid;
+		if (!sid_compose(&sid, &logon_info->info3.dom_sid.sid,
+				 logon_info->info3.gids[i].g_rid)) {
+			DEBUG(3,("could not append additional group rid "
+				 "0x%x\n", logon_info->info3.gids[i].g_rid));
+			TALLOC_FREE(result);
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+		add_sid_to_array(result, &sid, &result->sids,
+				 &result->num_sids);
+	}
+
+	/* Copy 'other' sids.  We need to do sid filtering here to
+ 	   prevent possible elevation of privileges.  See:
+
+           http://www.microsoft.com/windows2000/techinfo/administration/security/sidfilter.asp
+         */
+
+	for (i = 0; i < logon_info->info3.num_other_sids; i++) {
+		add_sid_to_array(result, &logon_info->info3.other_sids[i].sid,
+				 &result->sids,
+				 &result->num_sids);
+	}
 
 	*server_info = result;
 
