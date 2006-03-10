@@ -47,15 +47,10 @@ static void continue_pipe_open_smb(struct composite_context *ctx)
 {
 	struct composite_context *c = talloc_get_type(ctx->async.private_data,
 						      struct composite_context);
-	struct pipe_np_smb_state *s = talloc_get_type(c->private_data,
-						      struct pipe_np_smb_state);
 
 	/* receive result of named pipe open request on smb */
 	c->status = dcerpc_pipe_open_smb_recv(ctx);
-	if (!composite_is_ok(c)) {
-		DEBUG(0,("Failed to open pipe %s - %s\n", s->io.pipe_name, nt_errstr(c->status)));
-		return;
-	}
+	if (!composite_is_ok(c)) return;
 
 	composite_done(c);
 }
@@ -73,10 +68,7 @@ static void continue_smb_connect(struct composite_context *ctx)
 	
 	/* receive result of smb connect request */
 	c->status = smb_composite_connect_recv(ctx, c);
-	if (!composite_is_ok(c)) {
-		DEBUG(0,("Failed to connect to %s - %s\n", s->io.binding->host, nt_errstr(c->status)));
-		return;
-	}
+	if (!composite_is_ok(c)) return;
 
 	/* prepare named pipe open parameters */
 	s->tree         = s->conn.out.tree;
@@ -187,15 +179,10 @@ static void continue_pipe_open_smb2(struct composite_context *ctx)
 {
 	struct composite_context *c = talloc_get_type(ctx->async.private_data,
 						      struct composite_context);
-	struct pipe_np_smb2_state *s = talloc_get_type(c->private_data,
-						       struct pipe_np_smb2_state);
 
 	/* receive result of named pipe open request on smb2 */
 	c->status = dcerpc_pipe_open_smb2_recv(ctx);
-	if (!composite_is_ok(c)) {
-		DEBUG(0,("Failed to open pipe %s - %s\n", s->io.pipe_name, nt_errstr(c->status)));
-		return;
-	}
+	if (!composite_is_ok(c)) return;
 
 	composite_done(c);
 }
@@ -214,10 +201,7 @@ static void continue_smb2_connect(struct composite_context *ctx)
 
 	/* receive result of smb2 connect request */
 	c->status = smb2_connect_recv(ctx, c, &s->tree);
-	if (!composite_is_ok(c)) {
-		DEBUG(0,("Failed to connect to %s - %s\n", s->io.binding->host, nt_errstr(c->status)));
-		return;
-	}
+	if (!composite_is_ok(c)) return;
 
 	/* prepare named pipe open parameters */
 	s->io.pipe_name = s->io.binding->endpoint;
@@ -315,16 +299,10 @@ static void continue_pipe_open_ncacn_ip_tcp(struct composite_context *ctx)
 {
 	struct composite_context *c = talloc_get_type(ctx->async.private_data,
 						      struct composite_context);
-	struct pipe_ip_tcp_state *s = talloc_get_type(c->private_data,
-						      struct pipe_ip_tcp_state);
 
 	/* receive result of named pipe open request on tcp/ip */
 	c->status = dcerpc_pipe_open_tcp_recv(ctx);
-	if (!composite_is_ok(c)) {
-		DEBUG(0,("Failed to connect to %s:%d - %s\n", s->host, s->port,
-			 nt_errstr(c->status)));
-		return;
-	}
+	if (!composite_is_ok(c)) return;
 
 	composite_done(c);
 }
@@ -403,16 +381,10 @@ static void continue_pipe_open_ncacn_unix_stream(struct composite_context *ctx)
 {
 	struct composite_context *c = talloc_get_type(ctx->async.private_data,
 						      struct composite_context);
-	struct pipe_unix_state *s = talloc_get_type(c->private_data,
-						    struct pipe_unix_state);
 
 	/* receive result of pipe open request on unix socket */
 	c->status = dcerpc_pipe_open_unix_stream_recv(ctx);
-	if (!composite_is_ok(c)) {
-		DEBUG(0,("Failed to open unix socket %s - %s\n",
-			 s->io.binding->endpoint, nt_errstr(c->status)));
-		return;
-	}
+	if (!composite_is_ok(c)) return;
 
 	composite_done(c);
 }
@@ -497,16 +469,10 @@ static void continue_pipe_open_ncalrpc(struct composite_context *ctx)
 {
 	struct composite_context *c = talloc_get_type(ctx->async.private_data,
 						      struct composite_context);
-	struct pipe_ncalrpc_state *s = talloc_get_type(c->private_data,
-							 struct pipe_ncalrpc_state);
 
 	/* receive result of pipe open request on ncalrpc */
 	c->status = dcerpc_pipe_connect_ncalrpc_recv(ctx);
-	if (!composite_is_ok(c)) {
-		DEBUG(0,("Failed to open ncalrpc pipe '%s' - %s\n", s->io.binding->endpoint,
-			 nt_errstr(c->status)));
-		return;
-	}
+	if (!composite_is_ok(c)) return;
 
 	composite_done(c);
 }
@@ -599,11 +565,7 @@ static void continue_map_binding(struct composite_context *ctx)
 						       struct pipe_connect_state);
 	
 	c->status = dcerpc_epm_map_binding_recv(ctx);
-	if (!composite_is_ok(c)) {
-		DEBUG(0,("Failed to map DCERPC endpoint for '%s' - %s\n", 
-			 GUID_string(c, &s->table->uuid), nt_errstr(c->status)));
-		return;
-	}
+	if (!composite_is_ok(c)) return;
 
 	DEBUG(2,("Mapped to DCERPC endpoint %s\n", s->binding->endpoint));
 	
