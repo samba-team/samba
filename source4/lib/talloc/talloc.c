@@ -960,10 +960,12 @@ char *talloc_append_string(const void *t, char *orig, const char *append)
 {
 	char *ret;
 	size_t olen = strlen(orig);
-	size_t alenz = strlen(append) + 1;
+	size_t alenz;
 
 	if (!append)
 		return orig;
+
+	alenz = strlen(append) + 1;
 
 	ret = talloc_realloc(t, orig, char, olen + alenz);
 	if (!ret)
