@@ -1282,8 +1282,8 @@ smbc_write_ctx(SMBCCTX *context,
 	pstring path, targetpath;
 	struct cli_state *targetcli;
 
-        offset = file->offset; /* See "offset" comment in smbc_read_ctx() */
-
+	/* First check all pointers before dereferencing them */
+	
 	if (!context || !context->internal ||
 	    !context->internal->_initialized) {
 
@@ -1307,6 +1307,8 @@ smbc_write_ctx(SMBCCTX *context,
 		return -1;
 
 	}
+
+        offset = file->offset; /* See "offset" comment in smbc_read_ctx() */
 
 	/*d_printf(">>>write: parsing %s\n", file->fname);*/
 	if (smbc_parse_path(context, file->fname,
