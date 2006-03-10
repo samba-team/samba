@@ -65,19 +65,22 @@ static DATA_BLOB encode_krb5_setpw(const char *principal, const char *password)
 	princ = SMB_STRDUP(principal);
 
 	if ((c = strchr_m(princ, '/')) == NULL) {
-	    c = princ; 
+		c = princ; 
 	} else {
-	    *c = '\0';
-	    c++;
-	    princ_part1 = princ;
+		*c = '\0';
+		c++;
+		princ_part1 = princ;
 	}
 
 	princ_part2 = c;
 
 	if ((c = strchr_m(c, '@')) != NULL) {
-	    *c = '\0';
-	    c++;
-	    realm = c;
+		*c = '\0';
+		c++;
+		realm = c;
+	} else {
+		/* We must have a realm component. */
+		return data_blob(NULL, 0);
 	}
 
 	memset(&req, 0, sizeof(req));
@@ -97,8 +100,9 @@ static DATA_BLOB encode_krb5_setpw(const char *principal, const char *password)
 	asn1_push_tag(&req, ASN1_CONTEXT(1));
 	asn1_push_tag(&req, ASN1_SEQUENCE(0));
 
-	if (princ_part1) 
-	    asn1_write_GeneralString(&req, princ_part1);
+	if (princ_part1) {
+		asn1_write_GeneralString(&req, princ_part1);
+	}
 	
 	asn1_write_GeneralString(&req, princ_part2);
 	asn1_pop_tag(&req);
@@ -150,6 +154,10 @@ static krb5_error_code build_kpasswd_request(uint16 pversion,
 		setpw = encode_krb5_setpw(princ, passwd);
 	else
 		return EINVAL;
+
+	if (setpw.data == NULL || setpw.length == 0) {
+		return EINVAL;
+	}
 
 	encoded_setpw.data = (char *)setpw.data;
 	encoded_setpw.length = setpw.length;
