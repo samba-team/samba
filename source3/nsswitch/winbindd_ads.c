@@ -59,11 +59,7 @@ static ADS_STRUCT *ads_cached_connection(struct winbindd_domain *domain)
 	}
 
 	/* we don't want this to affect the users ccache */
-#ifdef WITH_KCM
-	setenv("KRB5CCNAME", "KCM:SYSTEM", 1);
-#else
 	setenv("KRB5CCNAME", "MEMORY:winbind_ccache", 1);
-#endif
 
 	ads = ads_init(domain->alt_name, domain->name, NULL);
 	if (!ads) {
