@@ -4484,6 +4484,8 @@ static WERROR enum_all_printers_info_2(RPC_BUFFER *buffer, uint32 offered, uint3
 	PRINTER_INFO_2 current_prt;
 	WERROR result = WERR_OK;
 
+	*returned = 0;
+
 	for (snum=0; snum<n_services; snum++) {
 		if (lp_browseable(snum) && lp_snum_ok(snum) && lp_print_ok(snum) ) {
 			DEBUG(4,("Found a printer in smb.conf: %s[%x]\n", lp_servicename(snum), snum));
