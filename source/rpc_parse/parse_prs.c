@@ -607,12 +607,12 @@ BOOL prs_uint8(const char *name, prs_struct *ps, int depth, uint8 *data8)
 	if (q == NULL)
 		return False;
 
-    if (UNMARSHALLING(ps))
+	if (UNMARSHALLING(ps))
 		*data8 = CVAL(q,0);
 	else
 		SCVAL(q,0,*data8);
 
-    DEBUG(5,("%s%04x %s: %02x\n", tab_depth(depth), ps->data_offset, name, *data8));
+	DEBUG(5,("%s%04x %s: %02x\n", tab_depth(depth), ps->data_offset, name, *data8));
 
 	ps->data_offset += 1;
 
