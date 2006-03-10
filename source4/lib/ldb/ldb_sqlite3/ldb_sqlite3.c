@@ -57,9 +57,9 @@ struct lsql_async_context {
 	int (*callback)(struct ldb_context *, void *, struct ldb_async_result *);
 };
 
-static struct ldb_async_handle *init_lsql_handle(struct lsqlite3_private *lsqlite3, struct ldb_module *module,
-						 void *context,
-						 int (*callback)(struct ldb_context *, void *, struct ldb_async_result *))
+static struct ldb_async_handle *init_handle(struct lsqlite3_private *lsqlite3, struct ldb_module *module,
+					    void *context,
+					    int (*callback)(struct ldb_context *, void *, struct ldb_async_result *))
 {
 	struct lsql_async_context *ac;
 	struct ldb_async_handle *h;
@@ -80,6 +80,9 @@ static struct ldb_async_handle *init_lsql_handle(struct lsqlite3_private *lsqlit
 	}
 
 	h->private_data = (void *)ac;
+
+	h->state = LDB_ASYNC_INIT;
+	h->status = LDB_SUCCESS;
 
 	ac->module = module;
 	ac->context = context;
@@ -899,7 +902,7 @@ int lsql_search_async(struct ldb_module *module, const struct ldb_dn *base,
 	char *query = NULL;
         int ret;
 
-	*handle = init_lsql_handle(lsqlite3, module, context, callback);
+	*handle = init_handle(lsqlite3, module, context, callback);
 	if (*handle == NULL) {
 		talloc_free(*handle);
 		return LDB_ERR_OPERATIONS_ERROR;
@@ -1111,7 +1114,7 @@ static int lsql_add_async(struct ldb_module *module, struct ldb_message *msg,
 	int i;
 	int ret = LDB_ERR_OPERATIONS_ERROR;
 
-	*handle = init_lsql_handle(lsqlite3, module, context, callback);
+	*handle = init_handle(lsqlite3, module, context, callback);
 	if (*handle == NULL) {
 		goto failed;
 	}
@@ -1267,7 +1270,7 @@ static int lsql_modify_async(struct ldb_module *module, const struct ldb_message
 	int i;
 	int ret = LDB_ERR_OPERATIONS_ERROR;
 
-	*handle = init_lsql_handle(lsqlite3, module, context, callback);
+	*handle = init_handle(lsqlite3, module, context, callback);
 	if (*handle == NULL) {
 		goto failed;
 	}
@@ -1481,7 +1484,7 @@ static int lsql_delete_async(struct ldb_module *module, const struct ldb_dn *dn,
 	int ret = LDB_ERR_OPERATIONS_ERROR;
 
 
-	*handle = init_lsql_handle(lsqlite3, module, context, callback);
+	*handle = init_handle(lsqlite3, module, context, callback);
 	if (*handle == NULL) {
 		goto failed;
 	}
@@ -1559,7 +1562,7 @@ static int lsql_rename_async(struct ldb_module *module, const struct ldb_dn *old
 	char *query;
 	int ret = LDB_ERR_OPERATIONS_ERROR;
 
-	*handle = init_lsql_handle(lsqlite3, module, context, callback);
+	*handle = init_handle(lsqlite3, module, context, callback);
 	if (*handle == NULL) {
 		goto failed;
 	}

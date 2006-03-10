@@ -102,6 +102,9 @@ struct ldb_async_handle *init_ltdb_handle(struct ltdb_private *ltdb, struct ldb_
 
 	h->private_data = (void *)ac;
 
+	h->state = LDB_ASYNC_INIT;
+	h->status = LDB_SUCCESS;
+
 	ac->module = module;
 	ac->context = context;
 	ac->callback = callback;
