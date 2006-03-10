@@ -736,16 +736,19 @@ static NTSTATUS cmd_lsa_query_secobj(struct rpc_pipe_client *cli,
 	POLICY_HND pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	SEC_DESC_BUF *sdb;
-	uint32 sec_info = 0x00000004; /* ??? */
+	uint32 sec_info = DACL_SECURITY_INFORMATION;
 
-	if (argc != 1 ) {
-		printf("Usage: %s\n", argv[0]);
+	if (argc < 1 || argc > 2) {
+		printf("Usage: %s [sec_info]\n", argv[0]);
 		return NT_STATUS_OK;
 	}
 
 	result = rpccli_lsa_open_policy2(cli, mem_ctx, True, 
 				      SEC_RIGHTS_MAXIMUM_ALLOWED,
 				      &pol);
+
+	if (argc == 2) 
+		sscanf(argv[1], "%x", &sec_info);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
