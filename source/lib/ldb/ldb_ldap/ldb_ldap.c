@@ -913,16 +913,6 @@ static int lldb_async_wait(struct ldb_async_handle *handle, enum ldb_async_wait_
 		}
 		ret = lldb_parse_result(handle, result);
 		break;
-	case LDB_WAIT_ONCE:
-		timeout.tv_sec = ac->timeout;
-		timeout.tv_usec = 0;
-		ret = ldap_result(lldb->ldap, ac->msgid, 0, &timeout, &result);
-		if (ret == -1 || ret == 0) {
-			handle->status = LDB_ERR_OPERATIONS_ERROR;
-			return handle->status;
-		}
-		ret = lldb_parse_result(handle, result);
-		break;
 	case LDB_WAIT_ALL:
 		timeout.tv_sec = ac->timeout;
 		timeout.tv_usec = 0;

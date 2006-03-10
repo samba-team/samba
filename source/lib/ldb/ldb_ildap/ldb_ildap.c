@@ -941,13 +941,6 @@ static int ildb_async_wait(struct ldb_async_handle *handle, enum ldb_async_wait_
 			return LDB_ERR_OTHER;
 		}
 		break;
-	case LDB_WAIT_ONCE:
-		while (handle->status == LDB_SUCCESS && handle->state == LDB_ASYNC_INIT) {
-		       if (event_loop_once(ac->req->conn->event.event_ctx) != 0) {
-				return LDB_ERR_OTHER;
-			}
-		}
-		break;
 	case LDB_WAIT_ALL:
 		while (handle->status == LDB_SUCCESS && handle->state != LDB_ASYNC_DONE) {
 			if (event_loop_once(ac->req->conn->event.event_ctx) != 0) {
