@@ -567,10 +567,16 @@ void init_r_enum_trust_dom(TALLOC_CTX *ctx, LSA_R_ENUM_TRUST_DOM *out,
 		/* allocate container memory */
 		
 		out->domlist = TALLOC_P( ctx, DOMAIN_LIST );
+
+		if ( !out->domlist ) {
+			out->status = NT_STATUS_NO_MEMORY;
+			return;
+		}
+
 		out->domlist->domains = TALLOC_ARRAY( ctx, DOMAIN_INFO,
 						      out->count );
 		
-		if ( !out->domlist || !out->domlist->domains ) {
+		if ( !out->domlist->domains ) {
 			out->status = NT_STATUS_NO_MEMORY;
 			return;
 		}
