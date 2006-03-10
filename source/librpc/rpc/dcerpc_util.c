@@ -6,6 +6,7 @@
    Copyright (C) Andrew Tridgell 2003
    Copyright (C) Jelmer Vernooij 2004
    Copyright (C) Andrew Bartlett <abartlet@samba.org> 2005
+   Copyright (C) Rafal Szczesniak 2006
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -1048,6 +1049,9 @@ static void continue_auth(struct composite_context *ctx);
 static void continue_auth_none(struct composite_context *ctx);
 
 
+/*
+  Stage 2 of pipe_auth: Receive result of schannel bind request
+*/
 static void continue_auth_schannel(struct composite_context *ctx)
 {
 	struct composite_context *c = talloc_get_type(ctx->async.private_data,
@@ -1060,6 +1064,9 @@ static void continue_auth_schannel(struct composite_context *ctx)
 }
 
 
+/*
+  Stage 2 of pipe_auth: Receive result of authenticated bind request
+*/
 static void continue_auth(struct composite_context *ctx)
 {
 	struct composite_context *c = talloc_get_type(ctx->async.private_data,
@@ -1072,6 +1079,9 @@ static void continue_auth(struct composite_context *ctx)
 }
 
 
+/*
+  Stage 2 of pipe_auth: Receive result of non-authenticated bind request
+*/
 static void continue_auth_none(struct composite_context *ctx)
 {
 	struct composite_context *c = talloc_get_type(ctx->async.private_data,
@@ -1084,6 +1094,10 @@ static void continue_auth_none(struct composite_context *ctx)
 }
 
 
+/*
+  Request to perform an authenticated bind if required. Authentication
+  is determined using credentials passed and binding flags.
+*/
 struct composite_context *dcerpc_pipe_auth_send(struct dcerpc_pipe *p, 
 						struct dcerpc_binding *binding,
 						const struct dcerpc_interface_table *table,
@@ -1106,6 +1120,7 @@ struct composite_context *dcerpc_pipe_auth_send(struct dcerpc_pipe *p,
 	c->private_data = s;
 	c->event_ctx = p->conn->event_ctx;
 
+	/* store parameters in state structure */
 	s->binding      = binding;
 	s->table        = table;
 	s->credentials  = credentials;
@@ -1186,6 +1201,9 @@ struct composite_context *dcerpc_pipe_auth_send(struct dcerpc_pipe *p,
 }
 
 
+/*
+  Receive result of authenticated bind request on dcerpc pipe
+*/
 NTSTATUS dcerpc_pipe_auth_recv(struct composite_context *c)
 {
 	NTSTATUS status;
@@ -1205,7 +1223,7 @@ NTSTATUS dcerpc_pipe_auth_recv(struct composite_context *c)
 
 
 /* 
-   perform an authenticated bind if needed - sync version
+   Perform an authenticated bind if needed - sync version
 */
 NTSTATUS dcerpc_pipe_auth(struct dcerpc_pipe *p, 
 			  struct dcerpc_binding *binding,
