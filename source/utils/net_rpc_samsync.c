@@ -1710,14 +1710,14 @@ static NTSTATUS fetch_database_to_ldif(struct rpc_pipe_client *pipe_hnd,
 	char *ldif_file;
 	fstring sid, domainname;
 	uint32 sync_context = 0;
-	NTSTATUS result;
+	NTSTATUS ret = NT_STATUS_OK, result;
 	int k;
 	TALLOC_CTX *mem_ctx;
 	SAM_DELTA_HDR *hdr_deltas;
 	SAM_DELTA_CTR *deltas;
 	uint32 num_deltas;
 	const char *add_ldif = "/tmp/add.ldif", *mod_ldif = "/tmp/mod.ldif";
-	FILE *add_fd, *mod_fd, *ldif_fd;
+	FILE *add_fd = NULL, *mod_fd = NULL, *ldif_fd = NULL;
 	char sys_cmd[1024];
 	int num_alloced = 0, g_index = 0, a_index = 0, sys_cmd_result;
 
@@ -1739,22 +1739,29 @@ static NTSTATUS fetch_database_to_ldif(struct rpc_pipe_client *pipe_hnd,
 	else
 		ldif_file = talloc_strdup(mem_ctx, "/tmp/tmp.ldif");
 	
-	if (ldif_file == NULL)
-		return NT_STATUS_NO_MEMORY;
+	if (ldif_file == NULL) {
+		ret = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
 
 	/* Open the add and mod ldif files */
-	add_fd = fopen(add_ldif, "a");
-	mod_fd = fopen(mod_ldif, "a");
-	if (add_fd == NULL || mod_fd == NULL) {
+	if (!(add_fd = fopen(add_ldif, "a"))) {
 		DEBUG(1, ("Could not open %s\n", add_ldif));
-		return NT_STATUS_UNSUCCESSFUL;
+		ret = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+	if (!(mod_fd = fopen(mod_ldif, "a"))) {
+		DEBUG(1, ("Could not open %s\n", mod_ldif));
+		ret = NT_STATUS_UNSUCCESSFUL;
+		goto done;
 	} 
 
 	/* Open the user's ldif file */
 	ldif_fd = fopen(ldif_file, "a");
 	if (ldif_fd == NULL) {
 		DEBUG(1, ("Could not open %s\n", ldif_file));
-		return NT_STATUS_UNSUCCESSFUL;
+		ret = NT_STATUS_UNSUCCESSFUL;
+		goto done;
 	}
 
 	/* Get the sid */
@@ -1779,7 +1786,8 @@ static NTSTATUS fetch_database_to_ldif(struct rpc_pipe_client *pipe_hnd,
 		accountmap = SMB_MALLOC_ARRAY(ACCOUNTMAP, 8);
 		if (groupmap == NULL || accountmap == NULL) {
 			DEBUG(1,("GROUPMAP malloc failed\n"));
-			return NT_STATUS_NO_MEMORY;
+			ret = NT_STATUS_NO_MEMORY;
+			goto done;
 		}
 
 		/* Initialize the arrays */
@@ -1821,7 +1829,8 @@ static NTSTATUS fetch_database_to_ldif(struct rpc_pipe_client *pipe_hnd,
 					       &deltas);
 		if (!NT_STATUS_IS_OK(result) &&
 		    !NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES)) {
-			return NT_STATUS_OK;
+			ret = NT_STATUS_OK;
+			goto done; /* is this correct? jmcd */
 		}
 
 		/* Re-allocate memory for groupmap and accountmap arrays */
@@ -1831,9 +1840,8 @@ static NTSTATUS fetch_database_to_ldif(struct rpc_pipe_client *pipe_hnd,
 					num_deltas+num_alloced);
 		if (groupmap == NULL || accountmap == NULL) {
 			DEBUG(1,("GROUPMAP malloc failed\n"));
-			SAFE_FREE(groupmap);
-			SAFE_FREE(accountmap);
-			return NT_STATUS_NO_MEMORY;
+			ret = NT_STATUS_NO_MEMORY;
+			goto done;
 		}
 
 		/* Initialize the new records */
@@ -1925,7 +1933,9 @@ static NTSTATUS fetch_database_to_ldif(struct rpc_pipe_client *pipe_hnd,
 
 	/* Close the ldif files */
 	fclose(add_fd);
+	add_fd = NULL;
 	fclose(mod_fd);
+	mod_fd = NULL;
 
 	/* Write ldif data to the user's file */
 	if (db_type == SAM_DATABASE_DOMAIN) {
@@ -1946,7 +1956,8 @@ static NTSTATUS fetch_database_to_ldif(struct rpc_pipe_client *pipe_hnd,
 	if (sys_cmd_result) {
 		d_fprintf(stderr, "%s failed.  Error was (%s)\n",
 			sys_cmd, strerror(errno));
-		return NT_STATUS_UNSUCCESSFUL;
+		ret = NT_STATUS_UNSUCCESSFUL;
+		goto done;
 	}
 	if (db_type == SAM_DATABASE_DOMAIN) {
 		fprintf(ldif_fd,
@@ -1966,20 +1977,26 @@ static NTSTATUS fetch_database_to_ldif(struct rpc_pipe_client *pipe_hnd,
 	if (sys_cmd_result) {
 		d_fprintf(stderr, "%s failed.  Error was (%s)\n",
 			sys_cmd, strerror(errno));
-		return NT_STATUS_UNSUCCESSFUL;
+		ret = NT_STATUS_UNSUCCESSFUL;
+		goto done;
 	}
 
 	/* Delete the temporary ldif files */
-	pstr_sprintf(sys_cmd, "rm -f %s %s", add_ldif, mod_ldif);
-	sys_cmd_result = system(sys_cmd);
-	if (sys_cmd_result) {
-		d_fprintf(stderr, "%s failed.  Error was (%s)\n",
-			sys_cmd, strerror(errno));
-		return NT_STATUS_UNSUCCESSFUL;
-	}
+	if (unlink(add_ldif))
+		d_fprintf(stderr, "unlink(%s) failed, error was (%s)\n",
+			  add_ldif, strerror(errno));
+	if (unlink(mod_ldif))
+		d_fprintf(stderr, "unlink(%s) failed, error was (%s)\n",
+			  mod_ldif, strerror(errno));
 
-	/* Close the ldif file */
-	fclose(ldif_fd);
+  done:
+	/* Close the ldif files */
+	if (add_fd)
+		fclose(add_fd);
+	if (mod_fd)
+		fclose(mod_fd);
+	if (ldif_fd)
+		fclose(ldif_fd);
 
 	/* Deallocate memory for the mapping arrays */
 	SAFE_FREE(groupmap);
@@ -1987,7 +2004,7 @@ static NTSTATUS fetch_database_to_ldif(struct rpc_pipe_client *pipe_hnd,
 
 	/* Return */
 	talloc_destroy(mem_ctx);
-	return NT_STATUS_OK;
+	return ret;
 }
 
 /** 
