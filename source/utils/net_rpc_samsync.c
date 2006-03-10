@@ -1455,7 +1455,7 @@ static NTSTATUS fetch_account_info_to_ldif(SAM_DELTA_CTR *delta, GROUPMAP *group
 	fstring hex_nt_passwd, hex_lm_passwd;
 	fstring description, fullname, sambaSID;
 	uchar lm_passwd[16], nt_passwd[16];
-	char *flags;
+	char *flags, *user_rdn;
 	const char* nopasswd = "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX";
 	static uchar zero_buf[16];
 	uint32 rid = 0, group_rid = 0, gidNumber = 0;
@@ -1551,10 +1551,11 @@ static NTSTATUS fetch_account_info_to_ldif(SAM_DELTA_CTR *delta, GROUPMAP *group
 				     NEW_PW_FORMAT_SPACE_PADDED_LEN);
 
 	/* Add the user to the temporary add ldif file */
-	fprintf(add_fd, "# %s, %s, %s\n", username, 
-		sstring_sub(lp_ldap_user_suffix(), '=', ','), suffix);
-	fprintf(add_fd, "dn: uid=%s,ou=%s,%s\n", username, 
-		sstring_sub(lp_ldap_user_suffix(), '=', ','), suffix);
+	/* this isn't quite right...we can't assume there's just OU=. jmcd */
+	user_rdn = sstring_sub(lp_ldap_user_suffix(), '=', ',');
+	fprintf(add_fd, "# %s, %s, %s\n", username, user_rdn, suffix);
+	fprintf(add_fd, "dn: uid=%s,ou=%s,%s\n", username, user_rdn, suffix);
+	SAFE_FREE(user_rdn);
 	fprintf(add_fd, "ObjectClass: top\n");
 	fprintf(add_fd, "objectClass: inetOrgPerson\n");
 	fprintf(add_fd, "objectClass: posixAccount\n");
