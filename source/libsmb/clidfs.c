@@ -585,11 +585,11 @@ BOOL cli_resolve_path( const char *mountpt, struct cli_state *rootcli, const cha
 	SMB_STRUCT_STAT sbuf;
 	uint32 attributes;
 	
-	*targetcli = NULL;
-	
 	if ( !rootcli || !path || !targetcli )
 		return False;
 		
+	*targetcli = NULL;
+	
 	/* send a trans2_query_path_info to check for a referral */
 	
 	clean_path( cleanpath, 	path );
