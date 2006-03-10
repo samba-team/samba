@@ -352,6 +352,9 @@ static int ildb_request_send(struct ldb_module *module, struct ldap_message *msg
 
 	h->private_data = (void *)ildb_ac;
 
+	h->state = LDB_ASYNC_INIT;
+	h->status = LDB_SUCCESS;
+
 	req = ldap_request_send(ildb->ldap, msg);
 	if (req == NULL) {
 		ldb_set_errstring(module->ldb, talloc_asprintf(module, "async send request failed"));
@@ -921,6 +924,10 @@ static int ildb_request(struct ldb_module *module, struct ldb_request *req)
 static int ildb_async_wait(struct ldb_async_handle *handle, enum ldb_async_wait_type type)
 {
 	struct ildb_async_context *ac = talloc_get_type(handle->private_data, struct ildb_async_context);
+
+	if (handle->state == LDB_ASYNC_DONE) {
+		return handle->status;
+	}
 
 	if (!ac) {
 		return LDB_ERR_OPERATIONS_ERROR;

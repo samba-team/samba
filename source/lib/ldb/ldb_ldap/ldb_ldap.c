@@ -87,6 +87,9 @@ static struct ldb_async_handle *init_handle(struct lldb_private *lldb, struct ld
 
 	h->private_data = (void *)ac;
 
+	h->state = LDB_ASYNC_INIT;
+	h->status = LDB_SUCCESS;
+
 	ac->module = module;
 	ac->context = context;
 	ac->callback = callback;
@@ -885,12 +888,15 @@ static int lldb_async_wait(struct ldb_async_handle *handle, enum ldb_async_wait_
 	LDAPMessage *result;
 	int ret = LDB_ERR_OPERATIONS_ERROR;
 
-	if (!ac->msgid) {
+	if (handle->state == LDB_ASYNC_DONE) {
+		return handle->status;
+	}
+
+	if (!ac || !ac->msgid) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	handle->status = LDB_SUCCESS;
-	handle->state = LDB_ASYNC_INIT;
 
 	switch(type) {
 	case LDB_WAIT_NONE:
