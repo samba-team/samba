@@ -588,6 +588,9 @@ static void continue_pipe_connect(struct composite_context *c, struct pipe_conne
 static void continue_pipe_auth(struct composite_context *ctx);
 
 
+/*
+  Stage 2 of pipe_connect_b: Receive result of endpoint mapping
+*/
 static void continue_map_binding(struct composite_context *ctx)
 {
 	struct composite_context *c = talloc_get_type(ctx->async.private_data,
@@ -608,6 +611,9 @@ static void continue_map_binding(struct composite_context *ctx)
 }
 
 
+/*
+  Stage 2 of pipe_connect_b: Continue connection after endpoint is known
+*/
 static void continue_connect(struct composite_context *c, struct pipe_connect_state *s)
 {
 	struct dcerpc_pipe_connect pc;
@@ -625,6 +631,7 @@ static void continue_connect(struct composite_context *c, struct pipe_connect_st
 	pc.interface    = s->table;
 	pc.creds        = s->credentials;
 	
+	/* connect dcerpc pipe depending on required transport */
 	switch (s->binding->transport) {
 	case NCACN_NP:
 		if (pc.binding->flags & DCERPC_SMB2) {
@@ -667,11 +674,16 @@ static void continue_connect(struct composite_context *c, struct pipe_connect_st
 		return;
 
 	default:
+		/* looks like a transport we don't support now */
 		composite_error(c, NT_STATUS_NOT_SUPPORTED);
 	}
 }
 
 
+/*
+  Stage 3 of pipe_connect_b: Receive result of pipe connect request on
+  named pipe on smb2
+*/
 static void continue_pipe_connect_ncacn_np_smb2(struct composite_context *ctx)
 {
 	struct composite_context *c = talloc_get_type(ctx->async.private_data,
@@ -686,6 +698,10 @@ static void continue_pipe_connect_ncacn_np_smb2(struct composite_context *ctx)
 }
 
 
+/*
+  Stage 3 of pipe_connect_b: Receive result of pipe connect request on
+  named pipe on smb
+*/
 static void continue_pipe_connect_ncacn_np_smb(struct composite_context *ctx)
 {
 	struct composite_context *c = talloc_get_type(ctx->async.private_data,
@@ -700,6 +716,9 @@ static void continue_pipe_connect_ncacn_np_smb(struct composite_context *ctx)
 }
 
 
+/*
+  Stage 3 of pipe_connect_b: Receive result of pipe connect request on tcp/ip
+*/
 static void continue_pipe_connect_ncacn_ip_tcp(struct composite_context *ctx)
 {
 	struct composite_context *c = talloc_get_type(ctx->async.private_data,
@@ -714,6 +733,9 @@ static void continue_pipe_connect_ncacn_ip_tcp(struct composite_context *ctx)
 }
 
 
+/*
+  Stage 3 of pipe_connect_b: Receive result of pipe connect request on unix socket
+*/
 static void continue_pipe_connect_ncacn_unix(struct composite_context *ctx)
 {
 	struct composite_context *c = talloc_get_type(ctx->async.private_data,
@@ -728,6 +750,9 @@ static void continue_pipe_connect_ncacn_unix(struct composite_context *ctx)
 }
 
 
+/*
+  Stage 3 of pipe_connect_b: Receive result of pipe connect request on local rpc
+*/
 static void continue_pipe_connect_ncalrpc(struct composite_context *ctx)
 {
 	struct composite_context *c = talloc_get_type(ctx->async.private_data,
@@ -742,6 +767,10 @@ static void continue_pipe_connect_ncalrpc(struct composite_context *ctx)
 }
 
 
+/*
+  Stage 4 of pipe_connect_b: Start an authentication on connected dcerpc pipe
+  depending on credentials and binding flags passed.
+*/
 static void continue_pipe_connect(struct composite_context *c, struct pipe_connect_state *s)
 {
 	struct composite_context *auth_bind_req;
@@ -760,6 +789,10 @@ static void continue_pipe_connect(struct composite_context *c, struct pipe_conne
 }
 
 
+/*
+  Stage 5 of pipe_connect_b: Receive result of pipe authentication request
+  and say if all went ok
+*/
 static void continue_pipe_auth(struct composite_context *ctx)
 {
 	struct composite_context *c = talloc_get_type(ctx->async.private_data,
@@ -772,6 +805,10 @@ static void continue_pipe_auth(struct composite_context *ctx)
 }
 
 
+/*
+  start a request to open a rpc connection to a rpc pipe, using
+  specified binding structure to determine the endpoint and options
+*/
 struct composite_context* dcerpc_pipe_connect_b_send(TALLOC_CTX *parent_ctx,
 						     struct dcerpc_pipe **pp,
 						     struct dcerpc_binding *binding,
@@ -800,9 +837,11 @@ struct composite_context* dcerpc_pipe_connect_b_send(TALLOC_CTX *parent_ctx,
 	s->pipe = dcerpc_pipe_init(c, ev);
 	if (composite_nomem(s->pipe, c)) return c;
 
+	/* get event context from initialised dcerpc pipe */
 	c->event_ctx = s->pipe->conn->event_ctx;
 	(*pp) = s->pipe;
 
+	/* store parameters in state structure */
 	s->binding      = binding;
 	s->table        = table;
 	s->credentials  = credentials;
@@ -827,6 +866,9 @@ struct composite_context* dcerpc_pipe_connect_b_send(TALLOC_CTX *parent_ctx,
 }
 
 
+/*
+  receive result of a request to open a rpc connection to a rpc pipe
+*/
 NTSTATUS dcerpc_pipe_connect_b_recv(struct composite_context *c, TALLOC_CTX *mem_ctx,
 				    struct dcerpc_pipe **p)
 {
@@ -872,6 +914,12 @@ struct pipe_conn_state {
 
 static void continue_pipe_connect_b(struct composite_context *ctx);
 
+
+/*
+  Initiate rpc connection to a rpc pipe, using the specified string
+  binding to determine the endpoint and options.
+  The string is to be parsed to a binding structure first.
+*/
 struct composite_context* dcerpc_pipe_connect_send(TALLOC_CTX *parent_ctx,
 						   struct dcerpc_pipe **pp,
 						   const char *binding,
@@ -885,6 +933,7 @@ struct composite_context* dcerpc_pipe_connect_send(TALLOC_CTX *parent_ctx,
 	struct dcerpc_binding *b;
 	struct composite_context *pipe_conn_req;
 
+	/* composite context allocation and setup */
 	c = talloc_zero(parent_ctx, struct composite_context);
 	if (c == NULL) return NULL;
 
@@ -894,6 +943,7 @@ struct composite_context* dcerpc_pipe_connect_send(TALLOC_CTX *parent_ctx,
 	c->state = COMPOSITE_STATE_IN_PROGRESS;
 	c->private_data = s;
 
+	/* parse binding string to the structure */
 	status = dcerpc_parse_binding(c, binding, &b);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("Failed to parse dcerpc binding '%s'\n", binding));
@@ -902,9 +952,15 @@ struct composite_context* dcerpc_pipe_connect_send(TALLOC_CTX *parent_ctx,
 	}
 
 	DEBUG(3, ("Using binding %s\n", dcerpc_binding_string(c, b)));
-	
+
+	/* 
+	   start connecting to a rpc pipe after binding structure
+	   is established
+	 */
 	pipe_conn_req = dcerpc_pipe_connect_b_send(c, &s->pipe, b, table,
 						   credentials, ev);
+
+	/* event context for created dcerpc_pipe would be useful... */
 	c->event_ctx = s->pipe->conn->event_ctx;
 
 	if (composite_nomem(pipe_conn_req, c)) return c;
@@ -914,6 +970,10 @@ struct composite_context* dcerpc_pipe_connect_send(TALLOC_CTX *parent_ctx,
 }
 
 
+/*
+  Stage 2 of pipe_connect: Receive result of actual pipe connect request
+  and say if we're done ok
+*/
 static void continue_pipe_connect_b(struct composite_context *ctx)
 {
 	struct composite_context *c = talloc_get_type(ctx->async.private_data,
@@ -928,6 +988,10 @@ static void continue_pipe_connect_b(struct composite_context *ctx)
 }
 
 
+/*
+  Receive result of pipe connect (using binding string) request
+  and return connected pipe structure.
+*/
 NTSTATUS dcerpc_pipe_connect_recv(struct composite_context *c,
 				  TALLOC_CTX *mem_ctx,
 				  struct dcerpc_pipe **pp)
@@ -947,7 +1011,7 @@ NTSTATUS dcerpc_pipe_connect_recv(struct composite_context *c,
 
 
 /*
-  open a rpc connection to a rpc pipe, using the specified string
+  Open a rpc connection to a rpc pipe, using the specified string
   binding to determine the endpoint and options - sync version
 */
 NTSTATUS dcerpc_pipe_connect(TALLOC_CTX *parent_ctx, 
@@ -978,6 +1042,10 @@ static void continue_open_pipe(struct composite_context *ctx);
 static void continue_pipe_open(struct composite_context *c);
 
 
+/*
+  Send request to create a secondary dcerpc connection from a primary
+  connection
+*/
 struct composite_context* dcerpc_secondary_connection_send(struct dcerpc_pipe *p,
 							   struct dcerpc_binding *b)
 {
@@ -987,6 +1055,7 @@ struct composite_context* dcerpc_secondary_connection_send(struct dcerpc_pipe *p
 	struct composite_context *pipe_tcp_req;
 	struct composite_context *pipe_ncalrpc_req;
 	
+	/* composite context allocation and setup */
 	c = talloc_zero(p, struct composite_context);
 	if (c == NULL) return NULL;
 
@@ -1004,11 +1073,14 @@ struct composite_context* dcerpc_secondary_connection_send(struct dcerpc_pipe *p
 	s->pipe     = p;
 	s->binding  = b;
 
+	/* initialise second dcerpc pipe based on primary pipe's event context */
 	s->pipe2 = dcerpc_pipe_init(c, s->pipe->conn->event_ctx);
 	if (composite_nomem(s->pipe2, c)) return c;
 
+	/* open second dcerpc pipe using the same transport as for primary pipe */
 	switch (s->pipe->conn->transport.transport) {
 	case NCACN_NP:
+		/* get smb tree of primary dcerpc pipe opened on smb */
 		s->tree = dcerpc_smb_tree(s->pipe->conn);
 		if (!s->tree) {
 			composite_error(c, NT_STATUS_INVALID_PARAMETER);
@@ -1040,6 +1112,7 @@ struct composite_context* dcerpc_secondary_connection_send(struct dcerpc_pipe *p
 		return c;
 
 	default:
+		/* looks like a transport we don't support */
 		composite_error(c, NT_STATUS_NOT_SUPPORTED);
 	}
 
@@ -1047,6 +1120,9 @@ struct composite_context* dcerpc_secondary_connection_send(struct dcerpc_pipe *p
 }
 
 
+/*
+  Stage 2 of secondary_connection: Receive result of pipe open request on smb
+*/
 static void continue_open_smb(struct composite_context *ctx)
 {
 	struct composite_context *c = talloc_get_type(ctx->async.private_data,
@@ -1059,6 +1135,9 @@ static void continue_open_smb(struct composite_context *ctx)
 }
 
 
+/*
+  Stage 2 of secondary_connection: Receive result of pipe open request on tcp/ip
+*/
 static void continue_open_tcp(struct composite_context *ctx)
 {
 	struct composite_context *c = talloc_get_type(ctx->async.private_data,
@@ -1071,6 +1150,9 @@ static void continue_open_tcp(struct composite_context *ctx)
 }
 
 
+/*
+  Stage 2 of secondary_connection: Receive result of pipe open request on ncalrpc
+*/
 static void continue_open_pipe(struct composite_context *ctx)
 {
 	struct composite_context *c = talloc_get_type(ctx->async.private_data,
@@ -1083,6 +1165,10 @@ static void continue_open_pipe(struct composite_context *ctx)
 }
 
 
+/*
+  Stage 3 of secondary_connection: Get binding data and flags from primary pipe
+  and say if we're done ok.
+*/
 static void continue_pipe_open(struct composite_context *c)
 {
 	struct sec_conn_state *s;
@@ -1100,6 +1186,10 @@ static void continue_pipe_open(struct composite_context *c)
 }
 
 
+/*
+  Receive result of secondary rpc connection request and return
+  second dcerpc pipe.
+*/
 NTSTATUS dcerpc_secondary_connection_recv(struct composite_context *c,
 					  struct dcerpc_pipe **p2)
 {
@@ -1117,11 +1207,11 @@ NTSTATUS dcerpc_secondary_connection_recv(struct composite_context *c,
 }
 
 /*
-  create a secondary dcerpc connection from a primary connection
+  Create a secondary dcerpc connection from a primary connection
   - sync version
 
-  if the primary is a SMB connection then the secondary connection
-  will be on the same SMB connection, but use a new fnum
+  If the primary is a SMB connection then the secondary connection
+  will be on the same SMB connection, but using a new fnum
 */
 NTSTATUS dcerpc_secondary_connection(struct dcerpc_pipe *p,
 				     struct dcerpc_pipe **p2,
