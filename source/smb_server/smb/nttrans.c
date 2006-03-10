@@ -136,8 +136,8 @@ static NTSTATUS nttrans_create(struct smbsrv_request *req,
 	io->ntcreatex.in.ea_list          = NULL;
 
 	req_pull_string(req, &io->ntcreatex.in.fname, 
-			params + 54, 
-			trans->in.params.length - 54,
+			params + 53, 
+			MIN(fname_len+1, trans->in.params.length - 53),
 			STR_NO_RANGE_CHECK | STR_TERMINATE);
 	if (!io->ntcreatex.in.fname) {
 		return NT_STATUS_INVALID_PARAMETER;
