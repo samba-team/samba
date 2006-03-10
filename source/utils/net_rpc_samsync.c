@@ -1384,6 +1384,7 @@ static NTSTATUS map_populate_groups(GROUPMAP *groupmap, ACCOUNTMAP *accountmap, 
 		     group_attr, suffix);
 	accountmap[7].rid = 551;
 	pstr_sprintf(accountmap[7].cn, "%s", "Replicators");
+	SAFE_FREE(group_attr);
 	return NT_STATUS_OK;
 }
 
