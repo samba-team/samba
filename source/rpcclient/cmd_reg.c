@@ -42,7 +42,7 @@
  *
  */
 
-#if 0 /* This whole file need to be rewritten for the cirrent rpcclient interface */
+#if 0 /* This whole file need to be rewritten for the current rpcclient interface */
 
 /****************************************************************************
 nt registry enum

@@ -100,7 +100,7 @@ static NTSTATUS rpc_registry_enumerate_internal(const DOM_SID *domain_sid,
 	
 	if (argc != 1 ) {
 		d_printf("Usage:    net rpc enumerate <path> [recurse]\n");
-		d_printf("Example:: net rpc enumerate 'HKLM\\Software\\Samba'\n");
+		d_printf("Example:  net rpc enumerate 'HKLM\\Software\\Samba'\n");
 		return NT_STATUS_OK;
 	}
 	
