@@ -28,7 +28,7 @@
   unlink a stream
  */
 static NTSTATUS pvfs_unlink_stream(struct pvfs_state *pvfs, 
-				   struct smbsrv_request *req,
+				   struct ntvfs_request *req,
 				   struct pvfs_filename *name, 
 				   uint16_t attrib)
 {
@@ -58,7 +58,7 @@ static NTSTATUS pvfs_unlink_stream(struct pvfs_state *pvfs,
   unlink one file
 */
 static NTSTATUS pvfs_unlink_one(struct pvfs_state *pvfs, 
-				struct smbsrv_request *req,
+				struct ntvfs_request *req,
 				const char *unix_path, 
 				const char *fname, uint32_t attrib)
 {
@@ -113,7 +113,7 @@ static NTSTATUS pvfs_unlink_one(struct pvfs_state *pvfs,
   The name can contain CIFS wildcards, but rarely does (except with OS/2 clients)
 */
 NTSTATUS pvfs_unlink(struct ntvfs_module_context *ntvfs,
-		     struct smbsrv_request *req, struct smb_unlink *unl)
+		     struct ntvfs_request *req, struct smb_unlink *unl)
 {
 	struct pvfs_state *pvfs = ntvfs->private_data;
 	struct pvfs_dir *dir;

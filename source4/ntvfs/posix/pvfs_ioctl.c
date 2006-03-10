@@ -28,7 +28,7 @@
   old ioctl interface 
 */
 static NTSTATUS pvfs_ioctl_old(struct ntvfs_module_context *ntvfs,
-			struct smbsrv_request *req, union smb_ioctl *io)
+			struct ntvfs_request *req, union smb_ioctl *io)
 {
 	return NT_STATUS_DOS(ERRSRV, ERRerror);
 }
@@ -37,7 +37,7 @@ static NTSTATUS pvfs_ioctl_old(struct ntvfs_module_context *ntvfs,
   nt ioctl interface 
 */
 static NTSTATUS pvfs_ntioctl(struct ntvfs_module_context *ntvfs,
-			     struct smbsrv_request *req, union smb_ioctl *io)
+			     struct ntvfs_request *req, union smb_ioctl *io)
 {
 	struct pvfs_state *pvfs = ntvfs->private_data;
 	struct pvfs_file *f;
@@ -62,7 +62,7 @@ static NTSTATUS pvfs_ntioctl(struct ntvfs_module_context *ntvfs,
   ioctl interface 
 */
 NTSTATUS pvfs_ioctl(struct ntvfs_module_context *ntvfs,
-		    struct smbsrv_request *req, union smb_ioctl *io)
+		    struct ntvfs_request *req, union smb_ioctl *io)
 {
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 

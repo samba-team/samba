@@ -29,7 +29,7 @@
   create a directory with EAs
 */
 static NTSTATUS pvfs_t2mkdir(struct pvfs_state *pvfs,
-			     struct smbsrv_request *req, union smb_mkdir *md)
+			     struct ntvfs_request *req, union smb_mkdir *md)
 {
 	NTSTATUS status;
 	struct pvfs_filename *name;
@@ -90,7 +90,7 @@ static NTSTATUS pvfs_t2mkdir(struct pvfs_state *pvfs,
   create a directory
 */
 NTSTATUS pvfs_mkdir(struct ntvfs_module_context *ntvfs,
-		    struct smbsrv_request *req, union smb_mkdir *md)
+		    struct ntvfs_request *req, union smb_mkdir *md)
 {
 	struct pvfs_state *pvfs = ntvfs->private_data;
 	NTSTATUS status;
@@ -142,7 +142,7 @@ NTSTATUS pvfs_mkdir(struct ntvfs_module_context *ntvfs,
   remove a directory
 */
 NTSTATUS pvfs_rmdir(struct ntvfs_module_context *ntvfs,
-		    struct smbsrv_request *req, struct smb_rmdir *rd)
+		    struct ntvfs_request *req, struct smb_rmdir *rd)
 {
 	struct pvfs_state *pvfs = ntvfs->private_data;
 	NTSTATUS status;

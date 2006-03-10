@@ -63,7 +63,7 @@ static void pvfs_translate_generic_bits(struct security_acl *acl)
   setup a default ACL for a file
 */
 static NTSTATUS pvfs_default_acl(struct pvfs_state *pvfs,
-				 struct smbsrv_request *req,
+				 struct ntvfs_request *req,
 				 struct pvfs_filename *name, int fd, 
 				 struct xattr_NTACL *acl)
 {
@@ -183,7 +183,7 @@ static void normalise_sd_flags(struct security_descriptor *sd, uint32_t secinfo_
   answer a setfileinfo for an ACL
 */
 NTSTATUS pvfs_acl_set(struct pvfs_state *pvfs, 
-		      struct smbsrv_request *req,
+		      struct ntvfs_request *req,
 		      struct pvfs_filename *name, int fd, 
 		      uint32_t access_mask,
 		      union smb_setfileinfo *info)
@@ -281,7 +281,7 @@ NTSTATUS pvfs_acl_set(struct pvfs_state *pvfs,
   answer a fileinfo query for the ACL
 */
 NTSTATUS pvfs_acl_query(struct pvfs_state *pvfs, 
-			struct smbsrv_request *req,
+			struct ntvfs_request *req,
 			struct pvfs_filename *name, int fd, 
 			union smb_fileinfo *info)
 {
@@ -325,7 +325,7 @@ NTSTATUS pvfs_acl_query(struct pvfs_state *pvfs,
   specific NT ACL
 */
 NTSTATUS pvfs_access_check_unix(struct pvfs_state *pvfs, 
-				struct smbsrv_request *req,
+				struct ntvfs_request *req,
 				struct pvfs_filename *name,
 				uint32_t *access_mask)
 {
@@ -358,7 +358,7 @@ NTSTATUS pvfs_access_check_unix(struct pvfs_state *pvfs,
   *access_mask is modified with the access actually granted
 */
 NTSTATUS pvfs_access_check(struct pvfs_state *pvfs, 
-			   struct smbsrv_request *req,
+			   struct ntvfs_request *req,
 			   struct pvfs_filename *name,
 			   uint32_t *access_mask)
 {
@@ -410,7 +410,7 @@ NTSTATUS pvfs_access_check(struct pvfs_state *pvfs,
   do not take or return an access check mask
 */
 NTSTATUS pvfs_access_check_simple(struct pvfs_state *pvfs, 
-				  struct smbsrv_request *req,
+				  struct ntvfs_request *req,
 				  struct pvfs_filename *name,
 				  uint32_t access_needed)
 {
@@ -424,7 +424,7 @@ NTSTATUS pvfs_access_check_simple(struct pvfs_state *pvfs,
   access check for creating a new file/directory
 */
 NTSTATUS pvfs_access_check_create(struct pvfs_state *pvfs, 
-				  struct smbsrv_request *req,
+				  struct ntvfs_request *req,
 				  struct pvfs_filename *name,
 				  uint32_t *access_mask)
 {
@@ -452,7 +452,7 @@ NTSTATUS pvfs_access_check_create(struct pvfs_state *pvfs,
   access check for creating a new file/directory - no access mask supplied
 */
 NTSTATUS pvfs_access_check_parent(struct pvfs_state *pvfs, 
-				  struct smbsrv_request *req,
+				  struct ntvfs_request *req,
 				  struct pvfs_filename *name,
 				  uint32_t access_mask)
 {
@@ -578,7 +578,7 @@ static NTSTATUS pvfs_acl_inherit_aces(struct pvfs_state *pvfs,
   as the default ACL applies anyway
 */
 NTSTATUS pvfs_acl_inherit(struct pvfs_state *pvfs, 
-			  struct smbsrv_request *req,
+			  struct ntvfs_request *req,
 			  struct pvfs_filename *name,
 			  int fd)
 {

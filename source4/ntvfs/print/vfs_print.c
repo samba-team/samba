@@ -33,7 +33,7 @@
   is available
 */
 static NTSTATUS print_connect(struct ntvfs_module_context *ntvfs,
-			      struct smbsrv_request *req, const char *sharename)
+			      struct ntvfs_request *req, const char *sharename)
 {
 	struct smbsrv_tcon *tcon = req->tcon;
 
@@ -49,8 +49,7 @@ static NTSTATUS print_connect(struct ntvfs_module_context *ntvfs,
 /*
   disconnect from a share
 */
-static NTSTATUS print_disconnect(struct ntvfs_module_context *ntvfs,
-				 struct smbsrv_tcon *tcon)
+static NTSTATUS print_disconnect(struct ntvfs_module_context *ntvfs)
 {
 	return NT_STATUS_OK;
 }
@@ -59,7 +58,7 @@ static NTSTATUS print_disconnect(struct ntvfs_module_context *ntvfs,
   lots of operations are not allowed on printing shares - mostly return NT_STATUS_ACCESS_DENIED
 */
 static NTSTATUS print_unlink(struct ntvfs_module_context *ntvfs,
-			     struct smbsrv_request *req, struct smb_unlink *unl)
+			     struct ntvfs_request *req, struct smb_unlink *unl)
 {
 	return NT_STATUS_ACCESS_DENIED;
 }
@@ -69,7 +68,7 @@ static NTSTATUS print_unlink(struct ntvfs_module_context *ntvfs,
   ioctl - used for job query
 */
 static NTSTATUS print_ioctl(struct ntvfs_module_context *ntvfs,
-			    struct smbsrv_request *req, union smb_ioctl *io)
+			    struct ntvfs_request *req, union smb_ioctl *io)
 {
 	char *p;
 

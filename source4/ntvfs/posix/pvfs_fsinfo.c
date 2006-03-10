@@ -79,7 +79,7 @@ static NTSTATUS pvfs_cache_base_fs_uuid(struct pvfs_state *pvfs, struct stat *st
   return filesystem space info
 */
 NTSTATUS pvfs_fsinfo(struct ntvfs_module_context *ntvfs,
-		     struct smbsrv_request *req, union smb_fsinfo *fs)
+		     struct ntvfs_request *req, union smb_fsinfo *fs)
 {
 	NTSTATUS status;
 	struct pvfs_state *pvfs = ntvfs->private_data;

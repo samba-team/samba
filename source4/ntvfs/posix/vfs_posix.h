@@ -195,16 +195,6 @@ struct pvfs_dir;
 /* types of notification for pvfs wait events */
 enum pvfs_wait_notice {PVFS_WAIT_EVENT, PVFS_WAIT_TIMEOUT, PVFS_WAIT_CANCEL};
 
-
-/* putting this prototype here avoids us having to expose this whole header in the
-   rest of Samba */
-void *pvfs_wait_message(struct pvfs_state *pvfs, 
-			 struct smbsrv_request *req, 
-			 int msg_type, 
-			 struct timeval end_time,
-			 void (*fn)(void *, enum pvfs_wait_notice),
-			 void *private);
-
 #include "ntvfs/posix/vfs_posix_proto.h"
 
 #endif /* _VFS_POSIX_H_ */
