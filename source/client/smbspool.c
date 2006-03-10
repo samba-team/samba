@@ -300,12 +300,6 @@ static
 char * get_ticket_cache( uid_t uid )
 {
   char *ticket_file = NULL;
-
-#ifdef WITH_KCM
-  snprintf(ticket_file, CC_MAX_FILE_LEN, "KCM:%d", uid );
-  goto done;
-#else
- {
   SMB_STRUCT_DIR *tcdir;                  /* directory where ticket caches are stored */
   SMB_STRUCT_DIRENT *dirent;   /* directory entry */
   char *filename = NULL;       /* holds file names on the tmp directory */
@@ -349,10 +343,6 @@ char * get_ticket_cache( uid_t uid )
   }
 
   sys_closedir(tcdir);
- }
-#endif
-
-done:
 
   if ( ticket_file == NULL )
   {
