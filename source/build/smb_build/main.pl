@@ -12,6 +12,7 @@ use smb_build::config_mk;
 use smb_build::output;
 use smb_build::env;
 use smb_build::cflags;
+use smb_build::summary;
 use config;
 use strict;
 
@@ -80,5 +81,7 @@ $mkenv->write("Makefile");
 header::create_smb_build_h($OUTPUT, "include/build.h");
 
 cflags::create_cflags($OUTPUT, "extra_cflags.txt");
+
+summary::show($OUTPUT, \%config::config);
 
 1;

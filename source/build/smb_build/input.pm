@@ -33,10 +33,7 @@ sub str2array($)
 sub check_subsystem($$$)
 {
 	my ($INPUT, $subsys, $default_ot) = @_;
-	if ($subsys->{ENABLE} ne "YES") {
-		printf("Subsystem `%s' disabled\n",$subsys->{NAME});
-		return;
-	}
+	return if ($subsys->{ENABLE} ne "YES");
 	
 	unless(defined($subsys->{OUTPUT_TYPE})) {
 		$subsys->{OUTPUT_TYPE} = $default_ot;
@@ -60,11 +57,7 @@ sub check_module($$$)
 		return;
 	}
 
-	if ($mod->{ENABLE} ne "YES")
-	{
-		printf("Module `%s' disabled\n",$mod->{NAME});
-		return;
-	}
+	return if ($mod->{ENABLE} ne "YES");
 
 	if (exists($INPUT->{$mod->{SUBSYSTEM}}{INIT_FUNCTION_TYPE})) {
 		$mod->{INIT_FUNCTION_TYPE} = $INPUT->{$mod->{SUBSYSTEM}}{INIT_FUNCTION_TYPE};
@@ -91,10 +84,7 @@ sub check_library($$$)
 {
 	my ($INPUT, $lib, $default_ot) = @_;
 
-	if ($lib->{ENABLE} ne "YES") {
-		printf("Library `%s' disabled\n",$lib->{NAME});
-		return;
-	}
+	return if ($lib->{ENABLE} ne "YES");
 
 	$lib->{OUTPUT_TYPE} = $default_ot;
 
@@ -114,10 +104,7 @@ sub check_binary($$)
 {
 	my ($INPUT, $bin) = @_;
 
-	if ($bin->{ENABLE} ne "YES") {
-		printf("Binary `%s' disabled\n",$bin->{NAME});
-		return;
-	}
+	return if ($bin->{ENABLE} ne "YES");
 
 	($bin->{BINARY} = (lc $bin->{NAME})) if not defined($bin->{BINARY});
 
