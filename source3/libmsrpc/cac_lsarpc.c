@@ -521,6 +521,7 @@ int cac_LsaEnumSids(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct LsaEnumSid
 
    if(!op || !op->in.pol) {
       hnd->status = NT_STATUS_INVALID_PARAMETER;
+      return CAC_FAILURE;
    }
 
    pipe_hnd = cac_GetPipe(hnd, PI_LSARPC);
