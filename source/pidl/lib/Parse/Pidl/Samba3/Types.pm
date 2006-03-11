@@ -205,6 +205,15 @@ my $known_types =
 			return "smb_io_pol_hnd(\"$e->{NAME}\", &n, ps, depth)";
 		}
 	},
+	security_descriptor => 
+	{
+		DECL => "SEC_DESC",
+		INIT => "",
+		DISSECT_P => sub {
+			my ($e,$l,$n,$w,$a) = @_;
+			return "sec_io_desc(\"$e->{NAME}\", &n, ps, depth)";
+		}
+	},
 	hyper => 
 	{
 		DECL => "uint64",

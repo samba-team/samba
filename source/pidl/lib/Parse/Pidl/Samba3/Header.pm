@@ -32,7 +32,8 @@ sub ParseElement($)
 			pidl "\tuint32 ptr$l->{POINTER_INDEX}_$e->{NAME};";
 		} elsif ($l->{TYPE} eq "SWITCH") {
 		} elsif ($l->{TYPE} eq "DATA") {
-			pidl "\t" . DeclShort($e) . ";";
+			my $n = DeclShort($e);
+			pidl "\t$n;" if ($n);
 		} elsif ($l->{TYPE} eq "ARRAY" and $l->{IS_ZERO_TERMINATED}) {
 			my ($t,$f) = StringType($e,$l);
 			pidl "\t" . uc($t) . " $e->{NAME};";
