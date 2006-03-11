@@ -159,3 +159,7 @@ struct smbcli_session;
 struct smbcli_state;
 
 struct model_ops;
+
+struct smb_wire_string;
+
+union smb_fileinfo;

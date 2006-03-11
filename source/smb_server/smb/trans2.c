@@ -123,7 +123,7 @@ static size_t trans2_push_data_string(struct smbsrv_request *req,
 				      struct smb_trans2 *trans,
 				      uint32_t len_offset,
 				      uint32_t offset,
-				      const WIRE_STRING *str,
+				      const struct smb_wire_string *str,
 				      int dest_len,
 				      int flags)
 {
@@ -190,7 +190,7 @@ static size_t trans2_push_data_string(struct smbsrv_request *req,
 */
 static void trans2_append_data_string(struct smbsrv_request *req, 
 					struct smb_trans2 *trans,
-					const WIRE_STRING *str,
+					const struct smb_wire_string *str,
 					uint_t len_offset,
 					int flags)
 {

@@ -119,8 +119,6 @@ enum brl_type {
 #include "librpc/ndr/ndr_orpc.h"
 #include "librpc/gen_ndr/orpc.h"
 #include "librpc/rpc/dcerpc.h"
-#include "libcli/raw/trans2.h"
-#include "libcli/raw/interfaces.h"
 #include "auth/credentials/credentials.h"
 #include "libcli/nbt/libnbt.h"
 #include "libcli/util/proto.h"

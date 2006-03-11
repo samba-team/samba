@@ -827,7 +827,7 @@ static size_t smbcli_blob_pull_ascii(TALLOC_CTX *mem_ctx,
 }
 
 /*
-  pull a string from a blob, returning a talloced WIRE_STRING
+  pull a string from a blob, returning a talloced struct smb_wire_string
 
   the string length is limited by the 3 things:
    - the data size in the blob
@@ -843,7 +843,7 @@ static size_t smbcli_blob_pull_ascii(TALLOC_CTX *mem_ctx,
 size_t smbcli_blob_pull_string(struct smbcli_session *session,
 			       TALLOC_CTX *mem_ctx,
 			       const DATA_BLOB *blob, 
-			       WIRE_STRING *dest, 
+			       struct smb_wire_string *dest, 
 			       uint16_t len_offset, uint16_t str_offset, 
 			       uint_t flags)
 {

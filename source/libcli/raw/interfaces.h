@@ -34,27 +34,10 @@
    is always determined by NULL or packet termination a normal char*
    is used in the structure definition.
  */
-typedef struct {
+struct smb_wire_string {
 	uint32_t private_length;
 	const char *s;
-} WIRE_STRING;
-
-
-/* 
-   use the same structure for dom_sid2 as dom_sid. A dom_sid2 is really
-   just a dom sid, but with the sub_auths represented as a conformant
-   array. As with all in-structure conformant arrays, the array length
-   is placed before the start of the structure. That's what gives rise
-   to the extra num_auths elemenent. We don't want the Samba code to
-   have to bother with such esoteric NDR details, so its easier to just
-   define it as a dom_sid and use pidl magic to make it all work. It
-   just means you need to mark a sid as a "dom_sid2" in the IDL when you
-   know it is of the conformant array variety
-*/
-#define dom_sid2 dom_sid
-
-/* same struct as dom_sid but inside a 28 bytes fixed buffer in NDR */
-#define dom_sid28 dom_sid
+};
 
 /*
  a generic container for file handles
@@ -368,7 +351,7 @@ union smb_fileinfo {
 			uint_t num_eas;
 			struct ea_struct {
 				uint8_t flags;
-				WIRE_STRING name;
+				struct smb_wire_string name;
 				DATA_BLOB value;
 			} *eas;		
 			NTTIME create_time;
@@ -378,8 +361,8 @@ union smb_fileinfo {
 			uint64_t alloc_size;
 			uint64_t size;
 			uint32_t nlink;
-			WIRE_STRING fname;	
-			WIRE_STRING alt_fname;	
+			struct smb_wire_string fname;	
+			struct smb_wire_string alt_fname;	
 			uint8_t delete_pending;
 			uint8_t directory;
 			uint64_t compressed_size;
@@ -397,7 +380,7 @@ union smb_fileinfo {
 			struct stream_struct {
 				uint64_t size;
 				uint64_t alloc_size;
-				WIRE_STRING stream_name;
+				struct smb_wire_string stream_name;
 			} *streams;
 		} out;
 	} generic;
@@ -455,7 +438,7 @@ union smb_fileinfo {
 		struct {
 			uint_t num_names;
 			struct ea_name {
-				WIRE_STRING name;
+				struct smb_wire_string name;
 			} *ea_names;	
 		} in;	
 
@@ -528,7 +511,7 @@ union smb_fileinfo {
 		union smb_file file;
 
 		struct {
-			WIRE_STRING fname;
+			struct smb_wire_string fname;
 		} out;
 	} name_info;
 
@@ -549,7 +532,7 @@ union smb_fileinfo {
 			uint8_t delete_pending;
 			uint8_t directory;
 			uint32_t ea_size;
-			WIRE_STRING fname;
+			struct smb_wire_string fname;
 		} out;
 	} all_info;	
 
@@ -576,7 +559,7 @@ union smb_fileinfo {
 			uint32_t access_mask;
 			uint64_t position;
 			uint64_t mode;
-			WIRE_STRING fname;
+			struct smb_wire_string fname;
 		} out;
 	} all_info2;	
 
@@ -586,7 +569,7 @@ union smb_fileinfo {
 		union smb_file file;
 
 		struct {
-			WIRE_STRING fname;
+			struct smb_wire_string fname;
 		} out;
 	} alt_name_info;
 
@@ -643,7 +626,7 @@ union smb_fileinfo {
 		union smb_file file;
 
 		struct {
-			WIRE_STRING link_dest;
+			struct smb_wire_string link_dest;
 		} out;
 	} unix_link_info;
 
@@ -1009,7 +992,7 @@ union smb_fsinfo {
 
 		struct {
 			uint32_t serial_number;
-			WIRE_STRING volume_name;
+			struct smb_wire_string volume_name;
 		} out;
 	} volume;
 
@@ -1021,7 +1004,7 @@ union smb_fsinfo {
 		struct {
 			NTTIME create_time;
 			uint32_t serial_number;
-			WIRE_STRING volume_name;
+			struct smb_wire_string volume_name;
 		} out;
 	} volume_info;
 
@@ -1058,7 +1041,7 @@ union smb_fsinfo {
 		struct {
 			uint32_t fs_attr;
 			uint32_t max_file_component_length;
-			WIRE_STRING fs_type;
+			struct smb_wire_string fs_type;
 		} out;
 	} attribute_info;
 
@@ -1741,7 +1724,7 @@ union smb_notify {
 			uint32_t num_changes;
 			struct notify_changes {
 				uint32_t action;
-				WIRE_STRING name;
+				struct smb_wire_string name;
 			} *changes;
 		} out;
 	} notify;
@@ -1876,7 +1859,7 @@ union smb_search_data {
 		uint32_t size;
 		uint32_t alloc_size;
 		uint16_t attrib;
-		WIRE_STRING name;
+		struct smb_wire_string name;
 	} standard;
 
 	/* trans2 findfirst RAW_SEARCH_EA_SIZE level */
@@ -1889,7 +1872,7 @@ union smb_search_data {
 		uint32_t alloc_size;
 		uint16_t attrib;
 		uint32_t ea_size;
-		WIRE_STRING name;
+		struct smb_wire_string name;
 	} ea_size;
 
 	/* trans2 findfirst RAW_SEARCH_EA_LIST level */
@@ -1902,7 +1885,7 @@ union smb_search_data {
 		uint32_t alloc_size;
 		uint16_t attrib;
 		struct smb_ea_list eas;
-		WIRE_STRING name;
+		struct smb_wire_string name;
 	} ea_list;
 
 	/* RAW_SEARCH_DIRECTORY_INFO interface */
@@ -1915,7 +1898,7 @@ union smb_search_data {
 		uint64_t  size;
 		uint64_t  alloc_size;
 		uint32_t   attrib;
-		WIRE_STRING name;
+		struct smb_wire_string name;
 	} directory_info;
 
 	/* RAW_SEARCH_FULL_DIRECTORY_INFO interface */
@@ -1929,13 +1912,13 @@ union smb_search_data {
 		uint64_t  alloc_size;
 		uint32_t   attrib;
 		uint32_t   ea_size;
-		WIRE_STRING name;
+		struct smb_wire_string name;
 	} full_directory_info;
 
 	/* RAW_SEARCH_NAME_INFO interface */
 	struct {
 		uint32_t file_index;
-		WIRE_STRING name;
+		struct smb_wire_string name;
 	} name_info;
 
 	/* RAW_SEARCH_BOTH_DIRECTORY_INFO interface */
@@ -1949,8 +1932,8 @@ union smb_search_data {
 		uint64_t  alloc_size;
 		uint32_t   attrib;
 		uint32_t   ea_size;
-		WIRE_STRING short_name;
-		WIRE_STRING name;
+		struct smb_wire_string short_name;
+		struct smb_wire_string name;
 	} both_directory_info;
 
 	/* RAW_SEARCH_ID_FULL_DIRECTORY_INFO interface */
@@ -1965,7 +1948,7 @@ union smb_search_data {
 		uint32_t attrib;
 		uint32_t ea_size;
 		uint64_t file_id;
-		WIRE_STRING name;
+		struct smb_wire_string name;
 	} id_full_directory_info;
 
 	/* RAW_SEARCH_ID_BOTH_DIRECTORY_INFO interface */
@@ -1980,8 +1963,8 @@ union smb_search_data {
 		uint32_t  attrib;
 		uint32_t  ea_size;
 		uint64_t file_id;
-		WIRE_STRING short_name;
-		WIRE_STRING name;
+		struct smb_wire_string short_name;
+		struct smb_wire_string name;
 	} id_both_directory_info;
 
 	/* RAW_SEARCH_UNIX_INFO interface */

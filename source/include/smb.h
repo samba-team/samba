@@ -579,4 +579,7 @@
 #define _smb2_setlen(buf,len) do {(buf)[0] = 0; (buf)[1] = ((len)&0xFF0000)>>16; \
         (buf)[2] = ((len)&0xFF00)>>8; (buf)[3] = (len)&0xFF;} while (0)
 
+#include "libcli/raw/trans2.h"
+#include "libcli/raw/interfaces.h"
+
 #endif /* _SMB_H */
