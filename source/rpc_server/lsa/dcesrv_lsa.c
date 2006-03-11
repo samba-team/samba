@@ -29,6 +29,7 @@
 #include "libcli/ldap/ldap.h"
 #include "libcli/security/proto.h"
 #include "libcli/auth/proto.h"
+#include "smb.h"
 #include "ntvfs/ntvfs.h"
 #include "passdb/secrets.h"
 #include "db_wrap.h"

@@ -25,6 +25,7 @@
 #include "rpc_server/common/common.h"
 #include "librpc/gen_ndr/ndr_unixinfo.h"
 #include "lib/events/events.h"
+#include "smb.h"
 #include "ntvfs/ntvfs.h"
 
 #include <sys/types.h>
