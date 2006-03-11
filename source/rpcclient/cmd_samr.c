@@ -1291,7 +1291,7 @@ static NTSTATUS cmd_samr_query_dominfo(struct rpc_pipe_client *cli,
 	uint32 access_mask = MAXIMUM_ALLOWED_ACCESS;
 	SAM_UNK_CTR ctr;
 
-	if (argc > 2) {
+	if (argc > 3) {
 		printf("Usage: %s [info level] [access mask]\n", argv[0]);
 		return NT_STATUS_OK;
 	}
