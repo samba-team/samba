@@ -59,6 +59,12 @@ int cac_LsaOpenPolicy(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct LsaOpenP
       hnd->_internal.pipes[PI_LSARPC] = True;
    }
 
+   pipe_hnd = cac_GetPipe(hnd, PI_LSARPC);
+   if(!pipe_hnd) {
+      hnd->status = NT_STATUS_INVALID_HANDLE;
+      return CAC_FAILURE;
+   }
+
    policy = SMB_MALLOC_P(POLICY_HND);
    if(!policy) {
       errno = ENOMEM;
