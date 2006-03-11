@@ -793,6 +793,11 @@ int cac_LsaOpenAccount(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct LsaOpen
       return CAC_FAILURE;
    }
 
+   pipe_hnd = cac_GetPipe(hnd, PI_LSARPC);
+   if(!pipe_hnd) {
+      hnd->status = NT_STATUS_INVALID_HANDLE;
+      return CAC_FAILURE;
+   }
 
    /*look up the user's SID if we have to*/
    if(op->in.name && !op->in.sid) {
