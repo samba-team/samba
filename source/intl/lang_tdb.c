@@ -40,7 +40,10 @@ static BOOL load_msg(const char *msg_file)
 		return False;
 	}
 
-	if (tdb_lockall(tdb) != 0) return False;
+	if (tdb_lockall(tdb) != 0) {
+		file_lines_free(lines);
+		return False;
+	}
 
 	/* wipe the db */
 	tdb_traverse(tdb, tdb_traverse_delete_fn, NULL);
