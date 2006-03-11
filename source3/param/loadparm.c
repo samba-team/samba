@@ -622,7 +622,6 @@ static BOOL handle_workgroup( int snum, const char *pszParmValue, char **ptr );
 static BOOL handle_netbios_aliases( int snum, const char *pszParmValue, char **ptr );
 static BOOL handle_netbios_scope( int snum, const char *pszParmValue, char **ptr );
 static BOOL handle_charset( int snum, const char *pszParmValue, char **ptr );
-static BOOL handle_acl_compatibility( int snum, const char *pszParmValue, char **ptr);
 static BOOL handle_printing( int snum, const char *pszParmValue, char **ptr);
 
 static void set_server_role(void);
@@ -778,6 +777,13 @@ static const struct enum_list enum_smb_signing_vals[] = {
 	{-1, NULL}
 };
 
+/* ACL compatibility options. */
+static const struct enum_list enum_acl_compat_vals[] = {
+    { ACL_COMPAT_AUTO, "auto" },
+    { ACL_COMPAT_WINNT, "winnt" },
+    { ACL_COMPAT_WIN2K, "win2k" },
+    { -1, NULL}
+};
 
 /* 
    Do you want session setups at user level security with a invalid
@@ -969,7 +975,7 @@ static struct parm_struct parm_table[] = {
 	{"disable netbios", P_BOOL, P_GLOBAL, &Globals.bDisableNetbios, NULL, NULL, FLAG_ADVANCED}, 
 	{"reset on zero vc", P_BOOL, P_GLOBAL, &Globals.bResetOnZeroVC, NULL, NULL, FLAG_ADVANCED}, 
 
-	{"acl compatibility", P_STRING, P_GLOBAL, &Globals.szAclCompat, handle_acl_compatibility,  NULL, FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL}, 
+	{"acl compatibility", P_STRING, P_GLOBAL, &Globals.szAclCompat, NULL,  enum_acl_compat_vals, FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL}, 
 	{"defer sharing violations", P_BOOL, P_GLOBAL, &Globals.bDeferSharingViolations, NULL, NULL, FLAG_ADVANCED | FLAG_GLOBAL},
 	{"ea support", P_BOOL, P_LOCAL, &sDefault.bEASupport, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL}, 
 	{"nt acl support", P_BOOL, P_LOCAL, &sDefault.bNTAclSupport, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL}, 
@@ -1832,7 +1838,7 @@ FN_GLOBAL_STRING(lp_wins_partners, &Globals.szWINSPartners)
 FN_GLOBAL_CONST_STRING(lp_template_homedir, &Globals.szTemplateHomedir)
 FN_GLOBAL_CONST_STRING(lp_template_shell, &Globals.szTemplateShell)
 FN_GLOBAL_CONST_STRING(lp_winbind_separator, &Globals.szWinbindSeparator)
-FN_GLOBAL_STRING(lp_acl_compatibility, &Globals.szAclCompat)
+FN_GLOBAL_INTEGER(lp_acl_compatibility, &Globals.szAclCompat)
 FN_GLOBAL_BOOL(lp_winbind_enum_users, &Globals.bWinbindEnumUsers)
 FN_GLOBAL_BOOL(lp_winbind_enum_groups, &Globals.bWinbindEnumGroups)
 FN_GLOBAL_BOOL(lp_winbind_use_default_domain, &Globals.bWinbindUseDefaultDomain)
@@ -3303,23 +3309,6 @@ char *lp_ldap_idmap_suffix(void)
 		return append_ldap_suffix(Globals.szLdapIdmapSuffix);
 
 	return lp_string(Globals.szLdapSuffix);
-}
-
-/***************************************************************************
-***************************************************************************/
-
-static BOOL handle_acl_compatibility(int snum, const char *pszParmValue, char **ptr)
-{
-	if (strequal(pszParmValue, "auto"))
-		string_set(ptr, "");
-	else if (strequal(pszParmValue, "winnt"))
-		string_set(ptr, "winnt");
-	else if (strequal(pszParmValue, "win2k"))
-		string_set(ptr, "win2k");
-	else
-		return False;
-
-	return True;
 }
 
 /****************************************************************************
