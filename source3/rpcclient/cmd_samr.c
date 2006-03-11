@@ -1163,7 +1163,7 @@ static NTSTATUS cmd_samr_query_dispinfo(struct rpc_pipe_client *cli,
 	int loop_count = 0;
 	BOOL got_params = False; /* Use get_query_dispinfo_params() or not? */
 
-	if (argc > 5) {
+	if (argc > 6) {
 		printf("Usage: %s [info level] [start index] [max entries] [max size] [access mask]\n", argv[0]);
 		return NT_STATUS_OK;
 	}
