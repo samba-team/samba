@@ -481,7 +481,7 @@ int cac_LsaQueryInfoPolicy(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct Lsa
       return CAC_FAILURE;
    }
 
-   if(!op->in.pol) {
+   if(!op || !op->in.pol) {
       hnd->status = NT_STATUS_INVALID_PARAMETER;
       return CAC_FAILURE;
    }
