@@ -25,6 +25,7 @@
 #include "system/kerberos.h"
 #include "auth/kerberos/kerberos.h"
 #include "lib/socket/socket.h"
+#include "system/network.h"
 #include "lib/events/events.h"
 
 /*
