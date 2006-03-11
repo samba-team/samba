@@ -890,6 +890,7 @@ static NTSTATUS cvfs_notify(struct ntvfs_module_context *ntvfs,
 {
 	struct cvfs_private *private = ntvfs->private_data;
 	struct smbcli_request *c_req;
+	int saved_timeout = private->transport->options.request_timeout;
 
 	SETUP_PID;
 
@@ -897,8 +898,14 @@ static NTSTATUS cvfs_notify(struct ntvfs_module_context *ntvfs,
 	if (!(req->async_states->state & NTVFS_ASYNC_STATE_MAY_ASYNC)) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
-	
+
+	/* we must not timeout on notify requests - they wait
+	   forever */
+	private->transport->options.request_timeout = 0;
+
 	c_req = smb_raw_changenotify_send(private->tree, info);
+
+	private->transport->options.request_timeout = saved_timeout;
 
 	ASYNC_RECV_TAIL(info, async_changenotify);
 }
