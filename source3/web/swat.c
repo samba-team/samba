@@ -275,16 +275,6 @@ static void show_parameter(int snum, struct parm_struct *parm)
 			_("Set Default"), make_parm_name(parm->label),fix_backslash((char *)(parm->def.svalue)));
 		break;
 
-	case P_GSTRING:
-	case P_UGSTRING:
-		push_utf8_allocate(&utf8_s1, (char *)ptr);
-		printf("<input type=text size=40 name=\"parm_%s\" value=\"%s\">",
-		       make_parm_name(parm->label), fix_quotes(utf8_s1));
-		SAFE_FREE(utf8_s1);
-		printf("<input type=button value=\"%s\" onClick=\"swatform.parm_%s.value=\'%s\'\">",
-			_("Set Default"), make_parm_name(parm->label),fix_backslash((char *)(parm->def.svalue)));
-		break;
-
 	case P_BOOL:
 		printf("<select name=\"parm_%s\">",make_parm_name(parm->label)); 
 		printf("<option %s>Yes", (*(BOOL *)ptr)?"selected":"");
@@ -376,11 +366,6 @@ static void show_parameters(int snum, int allparameters, unsigned int parm_filte
 				case P_STRING:
 				case P_USTRING:
 					if (!strcmp(*(char **)ptr,(char *)(parm->def.svalue))) continue;
-					break;
-
-				case P_GSTRING:
-				case P_UGSTRING:
-					if (!strcmp((char *)ptr,(char *)(parm->def.svalue))) continue;
 					break;
 
 				case P_BOOL:
