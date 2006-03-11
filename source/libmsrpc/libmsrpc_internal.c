@@ -165,6 +165,7 @@ RPC_DATA_BLOB *cac_MakeRpcDataBlob(TALLOC_CTX *mem_ctx, uint32 data_type, REG_VA
       default:
          TALLOC_FREE(blob);
          blob = NULL;
+         return NULL;
    }
 
    if(!(blob->buffer)) {
