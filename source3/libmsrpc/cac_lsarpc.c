@@ -65,7 +65,7 @@ int cac_LsaOpenPolicy(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct LsaOpenP
       return CAC_FAILURE;
    }
 
-   policy = SMB_MALLOC_P(POLICY_HND);
+   policy = TALLOC_P(mem_ctx, POLICY_HND);
    if(!policy) {
       errno = ENOMEM;
       hnd->status = NT_STATUS_NO_MEMORY;
@@ -95,7 +95,6 @@ int cac_LsaOpenPolicy(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct LsaOpenP
    }
 
    if(!NT_STATUS_IS_OK(hnd->status)) {
-      SAFE_FREE(policy);
       return CAC_FAILURE;
    }
 
@@ -125,13 +124,12 @@ int cac_LsaClosePolicy(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, POLICY_HND *po
       return CAC_FAILURE;
    }
 
-
    hnd->status = rpccli_lsa_close(pipe_hnd, mem_ctx, pol);
+
+   TALLOC_FREE(pol);
 
    if(!NT_STATUS_IS_OK(hnd->status))
       return CAC_FAILURE;
-
-   SAFE_FREE(pol);
 
    return CAC_SUCCESS;
 }
