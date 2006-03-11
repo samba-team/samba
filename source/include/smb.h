@@ -1455,6 +1455,8 @@ enum remote_arch_types {RA_UNKNOWN, RA_WFWG, RA_OS2, RA_WIN95, RA_WINNT,
 /* case handling */
 enum case_handling {CASE_LOWER,CASE_UPPER};
 
+/* ACL compatibility */
+enum acl_compatibility {ACL_COMPAT_AUTO, ACL_COMPAT_WINNT, ACL_COMPAT_WIN2K};
 /*
  * Global value meaing that the smb_uid field should be
  * ingored (in share level security and protocol level == CORE)
