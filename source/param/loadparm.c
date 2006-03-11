@@ -1016,7 +1016,7 @@ static struct parm_struct parm_table[] = {
 	{"max open files", P_INTEGER, P_GLOBAL, &Globals.max_open_files, NULL, NULL, FLAG_ADVANCED}, 
 	{"min print space", P_INTEGER, P_LOCAL, &sDefault.iMinPrintSpace, NULL, NULL, FLAG_ADVANCED | FLAG_PRINT}, 
 
-	{"socket options", P_GSTRING, P_GLOBAL, user_socket_options, NULL, NULL, FLAG_ADVANCED}, 
+	{"socket options", P_STRING, P_GLOBAL, user_socket_options, NULL, NULL, FLAG_ADVANCED}, 
 	{"strict allocate", P_BOOL, P_LOCAL, &sDefault.bStrictAllocate, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE}, 
 	{"strict sync", P_BOOL, P_LOCAL, &sDefault.bStrictSync, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE}, 
 	{"sync always", P_BOOL, P_LOCAL, &sDefault.bSyncAlways, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE}, 
@@ -2716,8 +2716,8 @@ void show_parameter_list(void)
 	BOOL hadFlag;
 	const char *section_names[] = { "local", "global", NULL};
 	const char *type[] = { "P_BOOL", "P_BOOLREV", "P_CHAR", "P_INTEGER",
-		"P_OCTAL", "P_LIST", "P_STRING", "P_USTRING", "P_GSTRING",
-		"P_UGSTRING", "P_ENUM", "P_SEP"};
+		"P_OCTAL", "P_LIST", "P_STRING", "P_USTRING",
+		"P_ENUM", "P_SEP"};
 	unsigned flags[] = { FLAG_BASIC, FLAG_SHARE, FLAG_PRINT, FLAG_GLOBAL,
 		FLAG_WIZARD, FLAG_ADVANCED, FLAG_DEVELOPER, FLAG_DEPRECATED,
 		FLAG_HIDE, FLAG_DOS_STRING};
@@ -3529,15 +3529,6 @@ BOOL lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 			strupper_m(*(char **)parm_ptr);
 			break;
 
-		case P_GSTRING:
-			pstrcpy((char *)parm_ptr, pszParmValue);
-			break;
-
-		case P_UGSTRING:
-			pstrcpy((char *)parm_ptr, pszParmValue);
-			strupper_m((char *)parm_ptr);
-			break;
-
 		case P_ENUM:
 			lp_set_enum_parm( &parm_table[parmnum], pszParmValue, (int*)parm_ptr );
 			break;
@@ -3616,13 +3607,6 @@ static void print_parameter(struct parm_struct *p, void *ptr, FILE * f)
 			}
 			break;
 
-		case P_GSTRING:
-		case P_UGSTRING:
-			if ((char *)ptr) {
-				fprintf(f, "%s", (char *)ptr);
-			}
-			break;
-
 		case P_STRING:
 		case P_USTRING:
 			if (*(char **)ptr) {
@@ -3656,16 +3640,6 @@ static BOOL equal_parameter(parm_type type, void *ptr1, void *ptr2)
 		case P_LIST:
 			return str_list_compare(*(char ***)ptr1, *(char ***)ptr2);
 
-		case P_GSTRING:
-		case P_UGSTRING:
-		{
-			char *p1 = (char *)ptr1, *p2 = (char *)ptr2;
-			if (p1 && !*p1)
-				p1 = NULL;
-			if (p2 && !*p2)
-				p2 = NULL;
-			return (p1 == p2 || strequal(p1, p2));
-		}
 		case P_STRING:
 		case P_USTRING:
 		{
@@ -3759,10 +3733,6 @@ static BOOL is_default(int i)
 		case P_USTRING:
 			return strequal(parm_table[i].def.svalue,
 					*(char **)parm_table[i].ptr);
-		case P_GSTRING:
-		case P_UGSTRING:
-			return strequal(parm_table[i].def.svalue,
-					(char *)parm_table[i].ptr);
 		case P_BOOL:
 		case P_BOOLREV:
 			return parm_table[i].def.bvalue ==
@@ -4121,14 +4091,6 @@ static void lp_save_defaults(void)
 			case P_USTRING:
 				if (parm_table[i].ptr) {
 					parm_table[i].def.svalue = SMB_STRDUP(*(char **)parm_table[i].ptr);
-				} else {
-					parm_table[i].def.svalue = NULL;
-				}
-				break;
-			case P_GSTRING:
-			case P_UGSTRING:
-				if (parm_table[i].ptr) {
-					parm_table[i].def.svalue = SMB_STRDUP((char *)parm_table[i].ptr);
 				} else {
 					parm_table[i].def.svalue = NULL;
 				}

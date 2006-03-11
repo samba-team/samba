@@ -760,7 +760,7 @@ struct connections_data {
 /* the following are used by loadparm for option lists */
 typedef enum {
 	P_BOOL,P_BOOLREV,P_CHAR,P_INTEGER,P_OCTAL,P_LIST,
-	P_STRING,P_USTRING,P_GSTRING,P_UGSTRING,P_ENUM,P_SEP
+	P_STRING,P_USTRING,P_ENUM,P_SEP
 } parm_type;
 
 typedef enum {
