@@ -437,6 +437,7 @@ void nb_readx(int handle, int offset, int size, int ret_size, NTSTATUS status)
 	io.readx.in.mincnt    = size;
 	io.readx.in.maxcnt    = size;
 	io.readx.in.remaining = 0;
+	io.readx.in.read_for_execute = False;
 	io.readx.out.data     = buf;
 		
 	ret = smb_raw_read(c->tree, &io);

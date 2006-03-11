@@ -157,6 +157,7 @@ static NTSTATUS send_read_request_continue(struct dcerpc_connection *c, DATA_BLO
 	io->readx.in.maxcnt = io->readx.in.mincnt;
 	io->readx.in.offset = 0;
 	io->readx.in.remaining = 0;
+	io->readx.in.read_for_execute = False;
 	io->readx.out.data = state->data.data + state->received;
 	req = smb_raw_read_send(smb->tree, io);
 	if (req == NULL) {

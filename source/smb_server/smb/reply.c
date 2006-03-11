@@ -900,6 +900,11 @@ void smbsrv_reply_read_and_X(struct smbsrv_request *req)
 	io->readx.in.maxcnt        = SVAL(req->in.vwv, VWV(5));
 	io->readx.in.mincnt        = SVAL(req->in.vwv, VWV(6));
 	io->readx.in.remaining     = SVAL(req->in.vwv, VWV(9));
+	if (req->flags2 & FLAGS2_READ_PERMIT_EXECUTE) {
+		io->readx.in.read_for_execute = True;
+	} else {
+		io->readx.in.read_for_execute = False;
+	}
 
 	if (req->smb_conn->negotiate.client_caps & CAP_LARGE_READX) {
 		uint32_t high_part = IVAL(req->in.vwv, VWV(7));

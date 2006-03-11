@@ -1693,7 +1693,7 @@ static const char *bit_string(TALLOC_CTX *mem_ctx, const struct bit_value *bv, i
   determine if two opens conflict
 */
 static NTSTATUS predict_share_conflict(uint32_t sa1, uint32_t am1, uint32_t sa2, uint32_t am2,
-				       uint16_t flags2, enum deny_result *res)
+				       BOOL read_for_execute, enum deny_result *res)
 {
 #define CHECK_MASK(am, sa, right, share) do { \
 	if (((am) & (right)) && !((sa) & (share))) { \
@@ -1707,8 +1707,7 @@ static NTSTATUS predict_share_conflict(uint32_t sa1, uint32_t am1, uint32_t sa2,
 	}
 	if (am2 & SEC_FILE_READ_DATA) {
 		*res += A_R;
-	} else if ((am2 & SEC_FILE_EXECUTE) && 
-		   (flags2 & FLAGS2_READ_PERMIT_EXECUTE)) {
+	} else if ((am2 & SEC_FILE_EXECUTE) && read_for_execute) {
 		*res += A_R;
 	}
 
@@ -1822,6 +1821,7 @@ static BOOL torture_ntdenytest(struct smbcli_state *cli1, struct smbcli_state *c
 		int b_am1 = random() & ((1<<nbits2)-1);
 		int b_sa2 = random() & ((1<<nbits1)-1);
 		int b_am2 = random() & ((1<<nbits2)-1);
+		BOOL read_for_execute;
 
 		progress_bar(i, torture_numops);
 		
@@ -1835,9 +1835,9 @@ static BOOL torture_ntdenytest(struct smbcli_state *cli1, struct smbcli_state *c
 		status2 = smb_raw_open(cli2->tree, mem_ctx, &io2);
 
 		if (random() % 2 == 0) {
-			cli2->tree->session->flags2 |= FLAGS2_READ_PERMIT_EXECUTE;
+			read_for_execute = True;
 		} else {
-			cli2->tree->session->flags2 &= ~FLAGS2_READ_PERMIT_EXECUTE;
+			read_for_execute = False;
 		}
 		
 		if (!NT_STATUS_IS_OK(status1)) {
@@ -1845,9 +1845,23 @@ static BOOL torture_ntdenytest(struct smbcli_state *cli1, struct smbcli_state *c
 		} else if (!NT_STATUS_IS_OK(status2)) {
 			res = A_0;
 		} else {
+			union smb_read r;
+			NTSTATUS status;
+
+			/* we can't use smbcli_read() as we need to
+			   set read_for_execute */
+			r.readx.level = RAW_READ_READX;
+			r.readx.file.fnum = io2.ntcreatex.file.fnum;
+			r.readx.in.offset = 0;
+			r.readx.in.mincnt = sizeof(buf);
+			r.readx.in.maxcnt = sizeof(buf);
+			r.readx.in.remaining = 0;
+			r.readx.in.read_for_execute = read_for_execute;
+			r.readx.out.data = buf;
+
 			res = A_0;
-			if (smbcli_read(cli2->tree, 
-					io2.ntcreatex.file.fnum, buf, 0, sizeof(buf)) >= 1) {
+			status = smb_raw_read(cli2->tree, &r);
+			if (NT_STATUS_IS_OK(status)) {
 				res += A_R;
 			}
 			if (smbcli_write(cli2->tree, 
@@ -1867,7 +1881,7 @@ static BOOL torture_ntdenytest(struct smbcli_state *cli1, struct smbcli_state *c
 						   io1.ntcreatex.in.access_mask,
 						   io2.ntcreatex.in.share_access,
 						   io2.ntcreatex.in.access_mask, 
-						   cli2->tree->session->flags2,
+						   read_for_execute,
 						   &res2);
 		
 		GetTimeOfDay(&tv);
