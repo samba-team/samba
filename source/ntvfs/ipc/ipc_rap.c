@@ -20,6 +20,7 @@
 */
 
 #include "includes.h"
+#include "smb.h"
 #include "libcli/rap/rap.h"
 #include "ntvfs/ipc/proto.h"
 

@@ -19,6 +19,7 @@
 */
 
 #include "includes.h"
+#include "smb.h"
 #include "libcli/raw/libcliraw.h"
 #include "libcli/libcli.h"
 #include "system/shmem.h"
@@ -274,7 +275,7 @@ void *shm_setup(int size)
   check that a wire string matches the flags specified 
   not 100% accurate, but close enough for testing
 */
-BOOL wire_bad_flags(WIRE_STRING *str, int flags, struct smbcli_state *cli)
+BOOL wire_bad_flags(struct smb_wire_string *str, int flags, struct smbcli_state *cli)
 {
 	BOOL server_unicode;
 	int len;

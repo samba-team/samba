@@ -19,6 +19,7 @@
 */
 
 #include "includes.h"
+#include "smb.h"
 
 /*
   work out how many bytes on the wire a ea list will consume. 
