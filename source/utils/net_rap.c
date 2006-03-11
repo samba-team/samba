@@ -200,6 +200,10 @@ static int rap_share_add(int argc, const char **argv)
 
 	sharename = SMB_STRDUP(argv[0]);
 	p = strchr(sharename, '=');
+	if (p == NULL) {
+		d_printf("Server path not specified\n");
+		return net_rap_share_usage(argc, argv);
+	}
 	*p = 0;
 	strlcpy(sinfo.share_name, sharename, sizeof(sinfo.share_name));
 	sinfo.reserved1 = '\0';
