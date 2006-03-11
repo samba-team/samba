@@ -56,6 +56,12 @@ int cac_RegConnect(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct RegConnect 
       hnd->_internal.pipes[PI_WINREG] = True;
    }
 
+   pipe_hnd = cac_GetPipe(hnd, PI_WINREG);
+   if(!pipe_hnd) {
+      hnd->status = NT_STATUS_INVALID_HANDLE;
+      return CAC_FAILURE;
+   }
+
    key = talloc(mem_ctx, POLICY_HND);
    if(!key) {
       hnd->status = NT_STATUS_NO_MEMORY;
