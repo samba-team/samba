@@ -21,6 +21,7 @@
 */
 
 #include "includes.h"
+#include "smb.h"
 #include "libcli/composite/composite.h"
 #include "libcli/smb_composite/smb_composite.h"
 #include "winbind/wb_server.h"
