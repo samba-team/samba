@@ -129,7 +129,7 @@ static enum drsuapi_DsNameStatus LDB_lookup_spn_alias(krb5_context context, stru
 			}
 		} while (p);
 	}
-	DEBUG(1, ("LDB_lookup_spn_alias: no alias for service %s applicable\n", alias_from));
+	DEBUG(4, ("LDB_lookup_spn_alias: no alias for service %s applicable\n", alias_from));
 	talloc_free(tmp_ctx);
 	return DRSUAPI_DS_NAME_STATUS_NOT_FOUND;
 }
