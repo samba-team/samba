@@ -25,10 +25,14 @@
 #include "kdc/kdc.h"
 #include "include/ads.h"
 #include "lib/ldb/include/ldb.h"
-#include "heimdal/lib/krb5/krb5_locl.h"
 #include "librpc/gen_ndr/krb5pac.h"
 #include "auth/auth.h"
 #include "auth/auth_sam.h"
+
+struct krb5_dh_moduli;
+struct _krb5_krb_auth_data;
+
+#include "heimdal/lib/krb5/krb5-private.h"
 
 /* Given the right private pointer from hdb_ldb, get a PAC from the attached ldb messages */
 static krb5_error_code samba_get_pac(krb5_context context, 
