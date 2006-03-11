@@ -24,6 +24,7 @@
 */
 
 #include "includes.h"
+#include "lib/events/events.h"
 #include "libcli/composite/composite.h"
 #include "librpc/gen_ndr/ndr_epmapper.h"
 #include "librpc/gen_ndr/ndr_dcerpc.h"
@@ -868,6 +869,14 @@ struct composite_context *dcerpc_epm_map_binding_send(TALLOC_CTX *mem_ctx,
 	c->state = COMPOSITE_STATE_IN_PROGRESS;
 	c->private_data = s;
 	c->event_ctx = ev;
+
+	/* Try to find event context in memory context in case passed
+	 * event_context (argument) was NULL. If there's none, just
+	 * create a new one.
+	 */
+	if (c->event_ctx == NULL) {
+		c->event_ctx = event_context_find(mem_ctx);
+	}
 	
 	s->binding = binding;
 	s->table   = table;
@@ -910,7 +919,7 @@ struct composite_context *dcerpc_epm_map_binding_send(TALLOC_CTX *mem_ctx,
 	epmapper_binding->endpoint   = NULL;
 
 	pipe_connect_req = dcerpc_pipe_connect_b_send(c, &s->pipe, epmapper_binding, &dcerpc_table_epmapper,
-						      anon_creds, ev);
+						      anon_creds, c->event_ctx);
 	if (composite_nomem(pipe_connect_req, c)) return c;
 	
 	composite_continue(c, pipe_connect_req, continue_epm_recv_binding, c);
@@ -927,112 +936,13 @@ NTSTATUS dcerpc_epm_map_binding_recv(struct composite_context *c)
 }
 
 
-
 NTSTATUS dcerpc_epm_map_binding(TALLOC_CTX *mem_ctx, struct dcerpc_binding *binding,
 				const struct dcerpc_interface_table *table, struct event_context *ev)
 {
-	struct dcerpc_pipe *p;
-	NTSTATUS status;
-	struct policy_handle handle;
-	struct GUID guid;
-	struct epm_Map r;
-	struct epm_twr_t twr, *twr_r;
-	struct dcerpc_binding *epmapper_binding;
-	int i;
+	struct composite_context *c;
 
-	struct cli_credentials *anon_creds
-		= cli_credentials_init(mem_ctx);
-	cli_credentials_set_conf(anon_creds);
-	cli_credentials_set_anonymous(anon_creds);
-
-	/* First, check if there is a default endpoint specified in the IDL */
-
-	if (table) {
-		struct dcerpc_binding *default_binding;
-
-		/* Find one of the default pipes for this interface */
-		for (i = 0; i < table->endpoints->count; i++) {
-			status = dcerpc_parse_binding(mem_ctx, table->endpoints->names[i], &default_binding);
-
-			if (NT_STATUS_IS_OK(status)) {
-				if (default_binding->transport == binding->transport && default_binding->endpoint) {
-					binding->endpoint = talloc_reference(binding, default_binding->endpoint);
-					talloc_free(default_binding);
-					return NT_STATUS_OK;
-				} else {
-					talloc_free(default_binding);
-				}
-			}
-		}
-	}
-
-	epmapper_binding = talloc_zero(mem_ctx, struct dcerpc_binding);
-	if (!epmapper_binding) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	epmapper_binding->transport = binding->transport;
-	epmapper_binding->host = talloc_reference(epmapper_binding, 
-						  binding->host);
-	epmapper_binding->options = NULL;
-	epmapper_binding->flags = 0;
-	epmapper_binding->endpoint = NULL;
-	
-	status = dcerpc_pipe_connect_b(mem_ctx, 
-				       &p,
-				       epmapper_binding,
-				       &dcerpc_table_epmapper,
-				       anon_creds, ev);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	ZERO_STRUCT(handle);
-	ZERO_STRUCT(guid);
-
-	binding->object = table->uuid;
-	binding->object_version = table->if_version;
-
-	status = dcerpc_binding_build_tower(p, binding, &twr.tower);
-	if (NT_STATUS_IS_ERR(status)) {
-		return status;
-	}
-
-	/* with some nice pretty paper around it of course */
-	r.in.object = &guid;
-	r.in.map_tower = &twr;
-	r.in.entry_handle = &handle;
-	r.in.max_towers = 1;
-	r.out.entry_handle = &handle;
-
-	status = dcerpc_epm_Map(p, p, &r);
-	if (!NT_STATUS_IS_OK(status)) {
-		talloc_free(p);
-		return status;
-	}
-	if (r.out.result != 0 || r.out.num_towers != 1) {
-		talloc_free(p);
-		return NT_STATUS_PORT_UNREACHABLE;
-	}
-
-	twr_r = r.out.towers[0].twr;
-	if (!twr_r) {
-		talloc_free(p);
-		return NT_STATUS_PORT_UNREACHABLE;
-	}
-
-	if (twr_r->tower.num_floors != twr.tower.num_floors ||
-	    twr_r->tower.floors[3].lhs.protocol != twr.tower.floors[3].lhs.protocol) {
-		talloc_free(p);
-		return NT_STATUS_PORT_UNREACHABLE;
-	}
-
-	binding->endpoint = talloc_reference(binding, dcerpc_floor_get_rhs_data(mem_ctx, &twr_r->tower.floors[3]));
-
-	talloc_free(p);
-
-	return NT_STATUS_OK;
+	c = dcerpc_epm_map_binding_send(mem_ctx, binding, table, ev);
+	return dcerpc_epm_map_binding_recv(c);
 }
 
 
