@@ -28,4 +28,6 @@ struct iface_struct {
 
 #define MAX_INTERFACES 128
 
+#ifndef AUTOCONF_TEST
 #include "netif/proto.h"
+#endif
