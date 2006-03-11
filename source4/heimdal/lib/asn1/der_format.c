@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997-2001 Kungliga Tekniska Högskolan
+ * Copyright (c) 2005 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -31,44 +31,75 @@
  * SUCH DAMAGE. 
  */
 
-/* $Id: hdb_locl.h,v 1.19 2003/09/10 21:54:58 lha Exp $ */
+#include "der_locl.h"
+#include <hex.h>
 
-#ifndef __HDB_LOCL_H__
-#define __HDB_LOCL_H__
+RCSID("$Id: der_format.c,v 1.2 2006/01/16 23:01:11 lha Exp $");
 
-#include <config.h>
+int
+der_parse_hex_heim_integer (const char *p, heim_integer *data)
+{
+    ssize_t len;
 
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include <errno.h>
-#ifdef HAVE_SYS_TYPES_H
-#include <sys/types.h>
-#endif
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif
-#ifdef HAVE_FCNTL_H
-#include <fcntl.h>
-#endif
-#ifdef HAVE_SYS_FILE_H
-#include <sys/file.h>
-#endif
-#ifdef HAVE_LIMITS_H
-#include <limits.h>
-#endif
-#include <roken.h>
+    data->length = 0;
+    data->negative = 0;
+    data->data = NULL;
 
-#include "crypto-headers.h"
-#include <krb5.h>
-#include <hdb.h>
-#include <hdb-private.h>
+    if (*p == '-') {
+	p++;
+	data->negative = 1;
+    }
 
-krb5_error_code
-hdb_ldb_create (
-       krb5_context /*context*/,
-       HDB ** /*db*/,
-       const char */*arg*/);
+    len = strlen(p);
+    if (len < 0) {
+	data->data = NULL;
+	data->length = 0;
+	return EINVAL;
+    }
+    
+    data->length = (len / 2) + 1;
+    data->data = malloc(data->length);
+    if (data->data == NULL) {
+	data->length = 0;
+	return ENOMEM;
+    }
 
+    len = hex_decode(p, data->data, data->length);
+    if (len < 0) {
+	free(data->data);
+	data->data = NULL;
+	data->length = 0;
+	return EINVAL;
+    }
 
-#endif /* __HDB_LOCL_H__ */
+    {
+	unsigned char *p = data->data;
+	while(*p == 0 && len > 0) {
+	    p++;
+	    len--;
+	}
+	data->length = len;
+	memmove(data->data, p, len);
+    }
+    return 0;
+}
+
+int
+der_print_hex_heim_integer (const heim_integer *data, char **p)
+{
+    ssize_t len;
+    char *q;
+
+    len = hex_encode(data->data, data->length, p);
+    if (len < 0)
+	return ENOMEM;
+
+    if (data->negative) {
+	len = asprintf(&q, "-%s", *p);
+	free(*p);
+	if (len < 0)
+	    return ENOMEM;
+	*p = q;
+    }
+    return 0;
+}

@@ -33,7 +33,7 @@
 
 #include "der_locl.h"
 
-RCSID("$Id: der_length.c,v 1.17 2005/07/12 06:27:22 lha Exp $");
+RCSID("$Id: der_length.c,v 1.18 2006/01/20 10:04:46 lha Exp $");
 
 size_t
 _heim_len_unsigned (unsigned val)
@@ -178,7 +178,7 @@ length_heim_integer (const heim_integer *k)
     if (k->length == 0)
 	return 1;
     if (k->negative)
-	return k->length + ((((unsigned char *)k->data)[0] & 0x80) ? 0 : 1);
+	return k->length + (((~(((unsigned char *)k->data)[0])) & 0x80) ? 0 : 1);
     else
 	return k->length + ((((unsigned char *)k->data)[0] & 0x80) ? 1 : 0);
 }

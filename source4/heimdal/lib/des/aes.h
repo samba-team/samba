@@ -31,10 +31,21 @@
  * SUCH DAMAGE.
  */
 
-/* $Id: aes.h,v 1.4 2005/04/10 19:09:47 lha Exp $ */
+/* $Id: aes.h,v 1.5 2006/01/08 21:47:27 lha Exp $ */
 
 #ifndef HEIM_AES_H
 #define HEIM_AES_H 1
+
+/* symbol renaming */
+#define AES_set_encrypt_key hc_AES_set_encrypt_key
+#define AES_set_decrypt_key hc_AES_decrypt_key
+#define AES_encrypt hc_AES_encrypt
+#define AES_decrypt hc_AES_decrypt
+#define AES_cbc_encrypt hc_AES_cbc_encrypt
+
+/*
+ *
+ */
 
 #define AES_BLOCK_SIZE 16
 #define AES_MAXNR 14

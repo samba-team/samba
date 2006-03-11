@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2004 Kungliga Tekniska Högskolan
+ * Copyright (c) 2005 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -31,16 +31,25 @@
  * SUCH DAMAGE.
  */
 
-/* $Id: rc4.h,v 1.4 2006/01/08 21:47:29 lha Exp $ */
+/* $Id: hex.h,v 1.3 2005/04/12 11:28:50 lha Exp $ */
 
-/* symbol renaming */
-#define RC4_set_key hc_RC4_set_key
-#define RC4 hc_RC4
+#ifndef _rk_HEX_H_
+#define _rk_HEX_H_ 1
 
-typedef struct rc4_key {
-    unsigned int x, y;
-    unsigned int state[256];
-} RC4_KEY;
+#ifndef ROKEN_LIB_FUNCTION
+#ifdef _WIN32
+#define ROKEN_LIB_FUNCTION _stdcall
+#else
+#define ROKEN_LIB_FUNCTION
+#endif
+#endif
 
-void RC4_set_key(RC4_KEY *, const int, unsigned char *);
-void RC4(RC4_KEY *, const int, const unsigned char *, unsigned char *);
+#define hex_encode rk_hex_encode
+#define hex_decode rk_hex_decode
+
+ssize_t	ROKEN_LIB_FUNCTION
+	hex_encode(const void *, size_t, char **);
+ssize_t ROKEN_LIB_FUNCTION
+	hex_decode(const char *, void *, size_t);
+
+#endif /* _rk_HEX_H_ */

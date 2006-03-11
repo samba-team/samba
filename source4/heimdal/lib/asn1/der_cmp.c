@@ -74,10 +74,10 @@ heim_bit_string_cmp(const heim_bit_string *p, const heim_bit_string *q)
 int
 heim_integer_cmp(const heim_integer *p, const heim_integer *q)
 {
+    if (p->negative != q->negative)
+	return q->negative - p->negative;
     if (p->length != q->length)
 	return p->length - q->length;
-    if (p->negative != q->negative)
-	return p->negative - q->negative;
     return memcmp(p->data, q->data, p->length);
 }
 

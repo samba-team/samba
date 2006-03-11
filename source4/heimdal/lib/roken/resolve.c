@@ -45,7 +45,7 @@
 
 #include <assert.h>
 
-RCSID("$Id: resolve.c,v 1.52 2005/08/22 19:16:21 lha Exp $");
+RCSID("$Id: resolve.c,v 1.53 2006/02/06 19:30:16 lha Exp $");
 
 #ifdef _AIX /* AIX have broken res_nsearch() in 5.1 (5.0 also ?) */
 #undef HAVE_RES_NSEARCH
@@ -275,7 +275,7 @@ parse_record(const unsigned char *data, const unsigned char *end_data,
 	}
 
 	/* the signer name is placed after the sig_data, to make it
-           easy to free this struture; the size calculation below
+           easy to free this structure; the size calculation below
            includes the zero-termination if the structure itself.
 	   don't you just love C?
 	*/

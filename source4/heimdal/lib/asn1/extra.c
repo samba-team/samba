@@ -34,7 +34,7 @@
 #include "der_locl.h"
 #include "heim_asn1.h"
 
-RCSID("$Id: extra.c,v 1.5 2005/07/19 18:05:16 lha Exp $");
+RCSID("$Id: extra.c,v 1.6 2006/01/31 09:44:54 lha Exp $");
 
 int
 encode_heim_any(unsigned char *p, size_t len, 
@@ -59,10 +59,7 @@ decode_heim_any(const unsigned char *p, size_t len,
     unsigned int thistag;
     int e;
 
-    if (data == NULL && len == 0) { /* XXX tag less OPTIONAL */
-	*size = 0;
-	return 0;
-    }
+    memset(data, 0, sizeof(*data));
 
     e = der_get_tag (p, len, &thisclass, &thistype, &thistag, &l);
     if (e) return e;
@@ -73,16 +70,15 @@ decode_heim_any(const unsigned char *p, size_t len,
     if (length + len_len + l > len)
 	return ASN1_OVERFLOW;
 
-    if (data) { /* XXX hack to workaround tag less OPTIONAL data */
-	memset(data, 0, sizeof(*data));
-	
-	data->data = malloc(length + len_len + l);
-	if (data->data == NULL)
-	    return ENOMEM;
-	data->length = length + len_len + l;
-	memcpy(data->data, p, length + len_len + l);
-    }
-    if (size) *size = length + len_len + l;
+    data->data = malloc(length + len_len + l);
+    if (data->data == NULL)
+	return ENOMEM;
+    data->length = length + len_len + l;
+    memcpy(data->data, p, length + len_len + l);
+
+    if (size)
+	*size = length + len_len + l;
+
     return 0;
 }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997-2001 Kungliga Tekniska Högskolan
+ * Copyright (c) 2006 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -31,44 +31,82 @@
  * SUCH DAMAGE. 
  */
 
-/* $Id: hdb_locl.h,v 1.19 2003/09/10 21:54:58 lha Exp $ */
-
-#ifndef __HDB_LOCL_H__
-#define __HDB_LOCL_H__
-
+#ifdef HAVE_CONFIG_H
 #include <config.h>
+#endif
+
+RCSID("$Id: pkcs5.c,v 1.1 2006/02/28 14:16:57 lha Exp $");
 
 #include <stdio.h>
-#include <string.h>
 #include <stdlib.h>
-#include <errno.h>
-#ifdef HAVE_SYS_TYPES_H
-#include <sys/types.h>
-#endif
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif
-#ifdef HAVE_FCNTL_H
-#include <fcntl.h>
-#endif
-#ifdef HAVE_SYS_FILE_H
-#include <sys/file.h>
-#endif
-#ifdef HAVE_LIMITS_H
-#include <limits.h>
-#endif
+
+#include <evp.h>
+#include <hmac.h>
+
 #include <roken.h>
 
-#include "crypto-headers.h"
-#include <krb5.h>
-#include <hdb.h>
-#include <hdb-private.h>
+int
+PKCS5_PBKDF2_HMAC_SHA1(const void * password, size_t password_len,
+		       const void * salt, size_t salt_len,
+		       unsigned long iter,
+		       size_t keylen, void *key)
+{
+    size_t datalen, leftofkey, checksumsize;
+    char *data, *tmpcksum;
+    u_int32_t keypart;
+    const EVP_MD *md;
+    unsigned long i;
+    int j;
+    char *p;
+    unsigned int hmacsize;
+    
+    md = EVP_sha1();
+    checksumsize = EVP_MD_size(md);
+    datalen = salt_len + 4;
 
-krb5_error_code
-hdb_ldb_create (
-       krb5_context /*context*/,
-       HDB ** /*db*/,
-       const char */*arg*/);
+    tmpcksum = malloc(checksumsize + datalen);
+    if (tmpcksum == NULL)
+	return 0;
 
+    data = &tmpcksum[checksumsize];
 
-#endif /* __HDB_LOCL_H__ */
+    memcpy(data, salt, salt_len);
+
+    keypart = 1;
+    leftofkey = keylen;
+    p = key;
+
+    while (leftofkey) {
+	int len;
+
+	if (leftofkey > checksumsize)
+	    len = checksumsize;
+	else
+	    len = leftofkey;
+
+	data[datalen - 4] = (keypart >> 24) & 0xff;
+	data[datalen - 3] = (keypart >> 16) & 0xff;
+	data[datalen - 2] = (keypart >> 8)  & 0xff;
+	data[datalen - 1] = (keypart)       & 0xff;
+
+	HMAC(md, password, password_len, data, datalen, 
+	     tmpcksum, &hmacsize);
+
+	memcpy(p, tmpcksum, len);
+	for (i = 1; i < iter; i++) {
+	    HMAC(md, password, password_len, tmpcksum, checksumsize,
+		 tmpcksum, &hmacsize);
+
+	    for (j = 0; j < len; j++)
+		p[j] ^= tmpcksum[j];
+	}
+
+	p += len;
+	leftofkey -= len;
+	keypart++;
+    }
+
+    free(tmpcksum);
+
+    return 1;
+}

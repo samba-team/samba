@@ -804,8 +804,7 @@ _kdc_as_rep(krb5_context context,
     KDC_REQ_BODY *b = &req->req_body;
     AS_REP rep;
     KDCOptions f = b->kdc_options;
-    hdb_entry_ex *client = NULL;
-    hdb_entry_ex *server = NULL;
+    hdb_entry_ex *client = NULL, *server = NULL;
     krb5_enctype cetype, setype;
     EncTicketPart et;
     EncKDCRepPart ek;

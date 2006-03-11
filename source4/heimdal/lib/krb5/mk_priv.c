@@ -33,7 +33,7 @@
 
 #include <krb5_locl.h>
 
-RCSID("$Id: mk_priv.c,v 1.34 2004/05/25 21:33:32 lha Exp $");
+RCSID("$Id: mk_priv.c,v 1.35 2006/02/01 12:39:26 lha Exp $");
 
       
 krb5_error_code KRB5_LIB_FUNCTION
@@ -129,9 +129,11 @@ krb5_mk_priv(krb5_context context,
 
 
     ASN1_MALLOC_ENCODE(KRB_PRIV, buf, buf_size, &s, &len, ret);
-
-    if(ret)
+    if (ret)
 	goto fail;
+    if (buf_size != len)
+	krb5_abortx(context, "internal error in ASN.1 encoder");
+
     krb5_data_free (&s.enc_part.cipher);
 
     ret = krb5_data_copy(outbuf, buf + buf_size - len, len);
