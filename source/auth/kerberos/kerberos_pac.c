@@ -303,7 +303,7 @@ static krb5_error_code check_pac_checksum(TALLOC_CTX *mem_ctx,
 	}
 #endif
 
-	DEBUG(0,("account_name: %s [%s]\n",
+	DEBUG(3,("Found account name from PAC: %s [%s]\n",
 		 logon_info->info3.base.account_name.string, 
 		 logon_info->info3.base.full_name.string));
 	*pac_data_out = pac_data;
