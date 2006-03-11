@@ -908,7 +908,7 @@ void init_unistr4_w( TALLOC_CTX *ctx, UNISTR4 *uni4, const smb_ucs2_t *buf )
 
 void init_unistr2_w(TALLOC_CTX *ctx, UNISTR2 *str, const smb_ucs2_t *buf)
 {
-	uint32 len = strlen_w(buf);
+	uint32 len = buf ? strlen_w(buf) : 0;
 
 	ZERO_STRUCTP(str);
 
