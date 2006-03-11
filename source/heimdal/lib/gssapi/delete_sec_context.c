@@ -33,7 +33,7 @@
 
 #include "gssapi_locl.h"
 
-RCSID("$Id: delete_sec_context.c,v 1.15 2005/04/27 17:48:17 lha Exp $");
+RCSID("$Id: delete_sec_context.c,v 1.16 2006/01/16 13:12:29 lha Exp $");
 
 OM_uint32 gss_delete_sec_context
            (OM_uint32 * minor_status,
@@ -43,10 +43,15 @@ OM_uint32 gss_delete_sec_context
 {
     GSSAPI_KRB5_INIT ();
 
+    *minor_status = 0;
+
     if (output_token) {
 	output_token->length = 0;
 	output_token->value  = NULL;
     }
+
+    if (*context_handle == GSS_C_NO_CONTEXT)
+	return GSS_S_COMPLETE;
 
     HEIMDAL_MUTEX_lock(&(*context_handle)->ctx_id_mutex);
 
@@ -74,6 +79,5 @@ OM_uint32 gss_delete_sec_context
     memset(*context_handle, 0, sizeof(**context_handle));
     free (*context_handle);
     *context_handle = GSS_C_NO_CONTEXT;
-    *minor_status = 0;
     return GSS_S_COMPLETE;
 }

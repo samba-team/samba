@@ -20,15 +20,6 @@ extern "C" {
 #endif
 #endif
 
-void
-initialize_heim_error_table_r (struct et_list **/*list*/);
-
-void
-initialize_k524_error_table_r (struct et_list **/*list*/);
-
-void
-initialize_krb5_error_table_r (struct et_list **/*list*/);
-
 krb5_error_code KRB5_LIB_FUNCTION
 krb524_convert_creds_kdc (
 	krb5_context /*context*/,
@@ -1685,6 +1676,11 @@ krb5_get_default_realms (
 
 const char* KRB5_LIB_FUNCTION
 krb5_get_err_text (
+	krb5_context /*context*/,
+	krb5_error_code /*code*/);
+
+char * KRB5_LIB_FUNCTION
+krb5_get_error_message (
 	krb5_context /*context*/,
 	krb5_error_code /*code*/);
 

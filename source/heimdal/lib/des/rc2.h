@@ -31,7 +31,17 @@
  * SUCH DAMAGE.
  */
 
-/* $Id: rc2.h,v 1.1 2004/04/23 19:23:00 lha Exp $ */
+/* $Id: rc2.h,v 1.2 2006/01/08 21:47:29 lha Exp $ */
+
+/* symbol renaming */
+#define RC2_set_key hc_RC2_set_key 
+#define RC2_encryptc hc_RC2_encryptc
+#define RC2_decryptc hc_RC2_decryptc
+#define RC2_cbc_encrypt hc_RC2_cbc_encrypt
+
+/*
+ *
+ */
 
 #define RC2_ENCRYPT	1
 #define RC2_DECRYPT	0

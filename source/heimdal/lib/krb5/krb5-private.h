@@ -12,19 +12,6 @@
 #endif
 #endif
 
-struct krb5_dh_moduli;
-struct _krb5_krb_auth_data;
-
-krb5_error_code KRB5_LIB_FUNCTION
-_krb5_PKCS5_PBKDF2 (
-	krb5_context /*context*/,
-	krb5_cksumtype /*cktype*/,
-	krb5_data /*password*/,
-	krb5_salt /*salt*/,
-	u_int32_t /*iter*/,
-	krb5_keytype /*type*/,
-	krb5_keyblock */*key*/);
-
 void KRB5_LIB_FUNCTION
 _krb5_aes_cts_encrypt (
 	const unsigned char */*in*/,
@@ -91,6 +78,9 @@ _krb5_find_type_in_ad (
 
 void
 _krb5_free_krbhst_info (krb5_krbhst_info */*hi*/);
+
+void
+_krb5_free_moduli (struct krb5_dh_moduli **/*moduli*/);
 
 krb5_error_code
 _krb5_get_default_principal_local (

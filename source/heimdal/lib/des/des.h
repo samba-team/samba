@@ -31,10 +31,40 @@
  * SUCH DAMAGE.
  */
 
-/* $Id: des.h,v 1.24 2005/07/20 10:49:23 lha Exp $ */
+/* $Id: des.h,v 1.25 2006/01/08 21:47:28 lha Exp $ */
 
 #ifndef _DESperate_H
 #define _DESperate_H 1
+
+/* symbol renaming */
+#define DES_set_odd_parity hc_DES_set_odd_parity
+#define DES_is_weak_key hc_DES_is_weak_key
+#define DES_key_sched hc_DES_key_sched
+#define DES_set_key hc_DES_set_key
+#define DES_set_key_checked hc_DES_set_key_checked
+#define DES_set_key_sched hc_DES_set_key_sched
+#define DES_new_random_key hc_DES_new_random_key
+#define DES_string_to_key hc_DES_string_to_key
+#define DES_read_password hc_DES_read_password
+#define DES_rand_data hc_DES_rand_data
+#define DES_set_random_generator_seed hc_DES_set_random_generator_seed
+#define DES_generate_random_block hc_DES_generate_random_block
+#define DES_set_sequence_number hc_DES_set_sequence_number
+#define DES_init_random_number_generator hc_DES_init_random_number_generator
+#define DES_random_key hc_DES_random_key
+#define DES_encrypt hc_DES_encrypt
+#define DES_ecb_encrypt hc_DES_ecb_encrypt
+#define DES_ecb3_encrypt hc_DES_ecb3_encrypt
+#define DES_pcbc_encrypt hc_DES_pcbc_encrypt
+#define DES_cbc_encrypt hc_DES_cbc_encrypt
+#define DES_cbc_cksum hc_DES_cbc_cksum
+#define DES_ede3_cbc_encrypt hc_DES_ede3_cbc_encrypt
+#define DES_cfb64_encrypt hc_DES_cfb64_encrypt
+#define	_DES_ipfp_test _hc_DES_ipfp_test
+
+/*
+ *
+ */
 
 #define DES_CBLOCK_LEN 8
 #define DES_KEY_SZ 8
@@ -48,6 +78,10 @@ typedef struct DES_key_schedule
 	uint32_t ks[32];
 } DES_key_schedule;
 
+/*
+ *
+ */
+
 int	DES_set_odd_parity(DES_cblock *);
 int	DES_is_weak_key(DES_cblock *);
 int	DES_set_key(DES_cblock *, DES_key_schedule *);
@@ -56,8 +90,6 @@ int	DES_key_sched(DES_cblock *, DES_key_schedule *);
 int	DES_new_random_key(DES_cblock *);
 void	DES_string_to_key(const char *, DES_cblock *);
 int	DES_read_password(DES_cblock *, char *, int);
-
-int	UI_UTIL_read_pw_string(char *, int, const char *, int); /* XXX */
 
 void	DES_rand_data(void *, int);
 void	DES_set_random_generator_seed(DES_cblock *);

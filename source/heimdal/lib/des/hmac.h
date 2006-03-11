@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2004 Kungliga Tekniska Högskolan
+ * Copyright (c) 2005 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -31,16 +31,52 @@
  * SUCH DAMAGE.
  */
 
-/* $Id: rc4.h,v 1.4 2006/01/08 21:47:29 lha Exp $ */
+/* $Id: hmac.h,v 1.3 2006/01/13 15:26:52 lha Exp $ */
+
+#ifndef HEIM_HMAC_H
+#define HEIM_HMAC_H 1
+
+#include <hcrypto/evp.h>
 
 /* symbol renaming */
-#define RC4_set_key hc_RC4_set_key
-#define RC4 hc_RC4
+#define HMAC_CTX_init hc_HMAC_CTX_init
+#define HMAC_CTX_cleanup hc_HMAC_CTX_cleanup
+#define HMAC_size hc_HMAC_size
+#define HMAC_Init_ex hc_HMAC_Init_ex
+#define HMAC_Update hc_HMAC_Update
+#define HMAC_Final hc_HMAC_Final
+#define HMAC hc_HMAC
 
-typedef struct rc4_key {
-    unsigned int x, y;
-    unsigned int state[256];
-} RC4_KEY;
+/*
+ *
+ */
 
-void RC4_set_key(RC4_KEY *, const int, unsigned char *);
-void RC4(RC4_KEY *, const int, const unsigned char *, unsigned char *);
+#define HMAC_MAX_MD_CBLOCK	64
+
+typedef struct hc_HMAC_CTX HMAC_CTX;
+
+struct hc_HMAC_CTX {
+    const EVP_MD *md;
+    ENGINE *engine;
+    EVP_MD_CTX *ctx;
+    size_t key_length;
+    void *opad;
+    void *ipad;
+    void *buf;
+};
+
+
+void	HMAC_CTX_init(HMAC_CTX *);
+void	HMAC_CTX_cleanup(HMAC_CTX *ctx);
+
+size_t	HMAC_size(const HMAC_CTX *ctx);
+
+void	HMAC_Init_ex(HMAC_CTX *, const void *, size_t,
+		     const EVP_MD *, ENGINE *);
+void	HMAC_Update(HMAC_CTX *ctx, const void *data, size_t len);
+void	HMAC_Final(HMAC_CTX *ctx, void *md, unsigned int *len);
+
+void *	HMAC(const EVP_MD *evp_md, const void *key, size_t key_len,
+	     const void *data, size_t n, void *md, unsigned int *md_len);
+
+#endif /* HEIM_HMAC_H */

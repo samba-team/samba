@@ -34,7 +34,7 @@
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 
-RCSID("$Id: rnd_keys.c,v 1.69 2005/07/20 10:49:24 lha Exp $");
+RCSID("$Id: rnd_keys.c,v 1.70 2006/01/08 21:47:29 lha Exp $");
 #endif
 
 #ifdef KRB5
@@ -324,6 +324,8 @@ DES_generate_random_block(DES_cblock *block)
   DES_rand_data((unsigned char *)block, sizeof(*block));
 }
 
+#define DES_rand_data_key hc_DES_rand_data_key
+
 void
 DES_rand_data_key(DES_cblock *key);
 
@@ -353,6 +355,9 @@ DES_rand_data_key(DES_cblock *key)
  * It's neccessary to be root to run it. Returns -1 if there were any
  * problems with permissions.
  */
+
+#define DES_mem_rand8 hc_DES_mem_rand8
+
 int
 DES_mem_rand8(unsigned char *data);
 

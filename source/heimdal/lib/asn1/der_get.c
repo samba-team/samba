@@ -33,7 +33,7 @@
 
 #include "der_locl.h"
 
-RCSID("$Id: der_get.c,v 1.44 2005/07/19 18:04:00 lha Exp $");
+RCSID("$Id: der_get.c,v 1.45 2006/01/20 10:03:50 lha Exp $");
 
 #include <version.h>
 
@@ -241,19 +241,40 @@ der_get_heim_integer (const unsigned char *p, size_t len,
 	return 0;
     }
     if (p[0] & 0x80) {
+	unsigned char *q;
+	int carry = 1;
 	data->negative = 1;
 
-	return ASN1_OVERRUN;
-    } else {
-	data->negative = 0;
 	data->length = len;
 
-	if (p[0] == 0 && data->length != 1) {
+	if (p[0] == 0xff) {
 	    p++;
 	    data->length--;
 	}
 	data->data = malloc(data->length);
 	if (data->data == NULL) {
+	    data->length = 0;
+	    return ENOMEM;
+	}
+	q = &((unsigned char*)data->data)[data->length - 1];
+	p += data->length - 1;
+	while (q >= (unsigned char*)data->data) {
+	    *q = *p ^ 0xff;
+	    if (carry)
+		carry = !++*q;
+	    p--;
+	    q--;
+	}
+    } else {
+	data->negative = 0;
+	data->length = len;
+
+	if (p[0] == 0) {
+	    p++;
+	    data->length--;
+	}
+	data->data = malloc(data->length);
+	if (data->data == NULL && data->length != 0) {
 	    data->length = 0;
 	    return ENOMEM;
 	}

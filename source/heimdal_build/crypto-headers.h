@@ -8,4 +8,9 @@
 #include <rc4.h>
 #include <rc2.h>
 #include <aes.h>
+#include <ui.h>
+#include <evp.h>
+#include <rand.h>
+#include <engine.h>
+#include <pkcs12.h>
 #endif /* __crypto_headers_h__ */

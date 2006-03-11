@@ -33,7 +33,7 @@
 
 #include "kdc_locl.h"
 
-RCSID("$Id: misc.c,v 1.26 2005/12/12 12:37:31 lha Exp $");
+RCSID("$Id: misc.c,v 1.27 2006/01/01 23:17:16 lha Exp $");
 
 struct timeval _kdc_now;
 
@@ -47,7 +47,7 @@ _kdc_db_fetch(krb5_context context,
     krb5_error_code ret = HDB_ERR_NOENTRY;
     int i;
 
-    ent = malloc (sizeof (*ent));
+    ent = calloc (1, sizeof (*ent));
     if (ent == NULL)
 	return ENOMEM;
 

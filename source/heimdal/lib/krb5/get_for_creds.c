@@ -33,7 +33,7 @@
 
 #include <krb5_locl.h>
 
-RCSID("$Id: get_for_creds.c,v 1.46 2005/11/28 20:43:02 lha Exp $");
+RCSID("$Id: get_for_creds.c,v 1.47 2006/02/03 11:37:29 lha Exp $");
 
 static krb5_error_code
 add_addrs(krb5_context context,
@@ -284,21 +284,14 @@ krb5_get_forwarded_creds (krb5_context	    context,
 	enc_krb_cred_part.usec = NULL;
     }
 
-    if (auth_context->local_address && auth_context->local_port) {
-	krb5_boolean noaddr;
-	krb5_const_realm srealm;
+    if (auth_context->local_address && auth_context->local_port && paddrs) {
 
-	srealm = krb5_principal_get_realm(context, out_creds->server);
-	krb5_appdefault_boolean(context, NULL, srealm, "no-addresses", 
-				paddrs == NULL,	&noaddr);
-	if (!noaddr) {
-	    ret = krb5_make_addrport (context,
-				      &enc_krb_cred_part.s_address,
-				      auth_context->local_address,
-				      auth_context->local_port);
-	    if (ret)
-		goto out4;
-	}
+	ret = krb5_make_addrport (context,
+				  &enc_krb_cred_part.s_address,
+				  auth_context->local_address,
+				  auth_context->local_port);
+	if (ret)
+	    goto out4;
     }
 
     if (auth_context->remote_address) {

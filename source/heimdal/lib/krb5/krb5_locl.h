@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997-2002 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2002 Kungliga Tekniska HÃ¶gskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -31,7 +31,7 @@
  * SUCH DAMAGE. 
  */
 
-/* $Id: krb5_locl.h,v 1.84 2005/12/13 15:40:50 lha Exp $ */
+/* $Id: krb5_locl.h,v 1.87 2006/02/09 11:36:27 lha Exp $ */
 
 #ifndef __KRB5_LOCL_H__
 #define __KRB5_LOCL_H__
@@ -170,14 +170,6 @@ struct _krb5_krb_auth_data;
 
 #define KRB5_BUFSIZ 1024
 
-#ifndef KRB5_DEFAULT_CCNAME
-#ifdef __APPLE__
-#define KRB5_DEFAULT_CCNAME "API:"
-#else
-#define KRB5_DEFAULT_CCNAME "FILE:/tmp/krb5cc_%{uid}"
-#endif
-#endif
-
 typedef enum {
     KRB5_PA_PAC_DONT_CARE = 0, 
     KRB5_PA_PAC_REQ_TRUE,
@@ -195,5 +187,21 @@ struct _krb5_get_init_creds_opt_private {
     krb5_pk_init_ctx pk_init_ctx;
     int canonicalize;
 };
+
+/*
+ * Configurable options
+ */
+
+#ifndef KRB5_DEFAULT_CCNAME
+#ifdef __APPLE__
+#define KRB5_DEFAULT_CCNAME "API:"
+#else
+#define KRB5_DEFAULT_CCNAME "FILE:/tmp/krb5cc_%{uid}"
+#endif
+#endif
+
+#ifndef KRB5_ADDRESSLESS_DEFAULT
+#define KRB5_ADDRESSLESS_DEFAULT FALSE
+#endif
 
 #endif /* __KRB5_LOCL_H__ */

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997-2001 Kungliga Tekniska Högskolan
+ * Copyright (c) 2006 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -31,44 +31,27 @@
  * SUCH DAMAGE. 
  */
 
-/* $Id: hdb_locl.h,v 1.19 2003/09/10 21:54:58 lha Exp $ */
+/*
+ * $Id: pkcs12.h,v 1.2 2006/01/13 15:26:52 lha Exp $
+ */
 
-#ifndef __HDB_LOCL_H__
-#define __HDB_LOCL_H__
+#ifndef _HEIM_PKCS12_H
+#define _HEIM_PKCS12_H 1
 
-#include <config.h>
+/* symbol renaming */
+#define PKCS12_key_gen hc_PKCS12_key_gen
 
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include <errno.h>
-#ifdef HAVE_SYS_TYPES_H
-#include <sys/types.h>
-#endif
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif
-#ifdef HAVE_FCNTL_H
-#include <fcntl.h>
-#endif
-#ifdef HAVE_SYS_FILE_H
-#include <sys/file.h>
-#endif
-#ifdef HAVE_LIMITS_H
-#include <limits.h>
-#endif
-#include <roken.h>
+/*
+ *
+ */
 
-#include "crypto-headers.h"
-#include <krb5.h>
-#include <hdb.h>
-#include <hdb-private.h>
+#include <hcrypto/evp.h>
 
-krb5_error_code
-hdb_ldb_create (
-       krb5_context /*context*/,
-       HDB ** /*db*/,
-       const char */*arg*/);
+#define PKCS12_KEY_ID 1
+#define PKCS12_IV_ID 2
+
+int	PKCS12_key_gen(const void *, size_t, const void *,
+		       size_t, int, int, size_t, void *, const EVP_MD *);
 
 
-#endif /* __HDB_LOCL_H__ */
+#endif /* _HEIM_PKCS12_H */

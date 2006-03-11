@@ -33,7 +33,7 @@
 
 #include "der_locl.h"
 
-RCSID("$Id: der_copy.c,v 1.13 2005/07/12 06:27:20 lha Exp $");
+RCSID("$Id: der_copy.c,v 1.14 2006/01/04 23:41:29 lha Exp $");
 
 int
 copy_general_string (const heim_general_string *from, heim_general_string *to)
@@ -106,6 +106,7 @@ copy_heim_integer (const heim_integer *from, heim_integer *to)
     if(to->length != 0 && to->data == NULL)
 	return ENOMEM;
     memcpy(to->data, from->data, to->length);
+    to->negative = from->negative;
     return 0;
 }
 

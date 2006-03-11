@@ -97,6 +97,10 @@ NOPROTO = YES
 #######################
 # Start SUBSYSTEM HEIMDAL_KRB5
 [SUBSYSTEM::HEIMDAL_KRB5]
+EXTRA_CFLAGS = \
+	-Iheimdal_build -Iheimdal/kdc \
+	-Iheimdal/lib/des -Iheimdal/lib/roken \
+	-DNO_PRINTF_ATTRIBUTE
 OBJ_FILES = \
 	../heimdal/lib/krb5/acache.o \
 	../heimdal/lib/krb5/add_et_list.o \
@@ -194,6 +198,7 @@ OBJ_FILES = \
 	../heimdal/lib/asn1/der_get.o \
 	../heimdal/lib/asn1/der_put.o \
 	../heimdal/lib/asn1/der_free.o \
+	../heimdal/lib/asn1/der_format.o \
 	../heimdal/lib/asn1/der_length.o \
 	../heimdal/lib/asn1/der_copy.o \
 	../heimdal/lib/asn1/der_cmp.o \
@@ -272,6 +277,7 @@ EXTRA_CFLAGS = \
 OBJ_FILES = \
 	../heimdal/lib/des/aes.o \
 	../heimdal/lib/des/des.o \
+	../heimdal/lib/des/md2.o \
 	../heimdal/lib/des/md4.o \
 	../heimdal/lib/des/md5.o \
 	../heimdal/lib/des/rc2.o \
@@ -279,7 +285,10 @@ OBJ_FILES = \
 	../heimdal/lib/des/rijndael-alg-fst.o \
 	../heimdal/lib/des/rnd_keys.o \
 	../heimdal/lib/des/sha.o \
-	../heimdal/lib/des/ui.o
+	../heimdal/lib/des/ui.o \
+	../heimdal/lib/des/evp.o \
+	../heimdal/lib/des/pkcs5.o \
+	../heimdal/lib/des/hmac.o
 NOPROTO = YES
 # End SUBSYSTEM HEIMDAL_DES
 #######################
@@ -317,6 +326,7 @@ EXTRA_CFLAGS = \
 	-Iheimdal/lib/des -Iheimdal/lib/roken -DNO_PRINTF_ATTRIBUTE
 OBJ_FILES = \
 	../heimdal/lib/roken/base64.o \
+	../heimdal/lib/roken/hex.o \
 	../heimdal/lib/roken/bswap.o \
 	../heimdal/lib/roken/get_window_size.o \
 	../heimdal/lib/roken/getprogname.o \

@@ -31,10 +31,21 @@
  * SUCH DAMAGE.
  */
 
-/* $Id: md4.h,v 1.9 2005/04/10 19:12:38 lha Exp $ */
+/* $Id: md4.h,v 1.10 2006/01/08 21:47:28 lha Exp $ */
 
 #ifndef HEIM_MD4_H
 #define HEIM_MD4_H 1
+
+/* symbol renaming */
+#define MD4_Init hc_MD4_Init
+#define MD4_Update hc_MD4_Update
+#define MD4_Final hc_MD4_Final
+
+/*
+ *
+ */
+
+#define MD4_DIGEST_LENGTH 16
 
 struct md4 {
   unsigned int sz[2];

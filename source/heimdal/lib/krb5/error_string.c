@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2001 Kungliga Tekniska Högskolan
+ * Copyright (c) 2001, 2003, 2005 - 2006 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -33,7 +33,7 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id: error_string.c,v 1.3 2004/05/25 21:23:55 lha Exp $");
+RCSID("$Id: error_string.c,v 1.7 2006/02/16 07:49:23 lha Exp $");
 
 #undef __attribute__
 #define __attribute__(X)
@@ -107,3 +107,24 @@ krb5_have_error_string(krb5_context context)
     HEIMDAL_MUTEX_unlock(context->mutex);
     return str != NULL;
 }
+
+char * KRB5_LIB_FUNCTION
+krb5_get_error_message(krb5_context context, krb5_error_code code)
+{
+    const char *cstr;
+    char *str;
+
+    str = krb5_get_error_string(context);
+    if (str)
+	return str;
+
+    cstr = krb5_get_err_text(context, code);
+    if (cstr)
+	return strdup(cstr);
+
+    if (asprintf(&str, "<unknown error: %d>", code) == -1)
+	return NULL;
+
+    return str;
+}
+

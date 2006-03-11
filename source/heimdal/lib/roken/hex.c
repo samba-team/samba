@@ -1,23 +1,23 @@
 /*
- * Copyright (c) 2004 Kungliga Tekniska Högskolan
+ * Copyright (c) 2004-2005 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright
  *    notice, this list of conditions and the following disclaimer.
- * 
+ *
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
  *    documentation and/or other materials provided with the distribution.
- * 
+ *
  * 3. Neither the name of the Institute nor the names of its contributors
  *    may be used to endorse or promote products derived from this software
  *    without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -31,16 +31,73 @@
  * SUCH DAMAGE.
  */
 
-/* $Id: rc4.h,v 1.4 2006/01/08 21:47:29 lha Exp $ */
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+RCSID("$Id: hex.c,v 1.8 2006/01/09 17:09:29 lha Exp $");
+#endif
+#include "roken.h"
+#include <ctype.h>
+#include "hex.h"
 
-/* symbol renaming */
-#define RC4_set_key hc_RC4_set_key
-#define RC4 hc_RC4
+const static char hexchar[] = "0123456789ABCDEF";
 
-typedef struct rc4_key {
-    unsigned int x, y;
-    unsigned int state[256];
-} RC4_KEY;
+static int 
+pos(char c)
+{
+    const char *p;
+    c = toupper((unsigned char)c);
+    for (p = hexchar; *p; p++)
+	if (*p == c)
+	    return p - hexchar;
+    return -1;
+}
 
-void RC4_set_key(RC4_KEY *, const int, unsigned char *);
-void RC4(RC4_KEY *, const int, const unsigned char *, unsigned char *);
+ssize_t ROKEN_LIB_FUNCTION
+hex_encode(const void *data, size_t size, char **str)
+{
+    const unsigned char *q = data;
+    size_t i;
+    char *p;
+
+    /* check for overflow */
+    if (size * 2 < size)
+	return -1;
+
+    p = malloc(size * 2 + 1);
+    if (p == NULL)
+	return -1;
+    
+    for (i = 0; i < size; i++) {
+	p[i * 2] = hexchar[(*q >> 4) & 0xf];
+	p[i * 2 + 1] = hexchar[*q & 0xf];
+	q++;
+    }
+    p[i * 2] = '\0';
+    *str = p;
+
+    return i * 2;
+}
+
+ssize_t ROKEN_LIB_FUNCTION
+hex_decode(const char *str, void *data, size_t len)
+{
+    size_t l;
+    unsigned char *p = data;
+    size_t i;
+	
+    l = strlen(str);
+    
+    /* check for overflow, same as (l+1)/2 but overflow safe */
+    if ((l/2) + (l&1) > len)
+	return -1;
+
+    i = 0;
+    if (l & 1) {
+	p[0] = pos(str[0]);
+	str++;
+	p++;
+    }
+    for (i = 0; i < l / 2; i++)
+	p[i] = pos(str[i * 2]) << 4 | pos(str[(i * 2) + 1]);
+    return i + (l & 1);
+}

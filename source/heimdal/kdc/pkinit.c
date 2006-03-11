@@ -33,7 +33,7 @@
 
 #include "kdc_locl.h"
 
-RCSID("$Id: pkinit.c,v 1.49 2005/10/21 17:14:19 lha Exp $");
+RCSID("$Id: pkinit.c,v 1.50 2006/02/13 11:48:21 lha Exp $");
 
 #ifdef PKINIT
 
@@ -175,13 +175,17 @@ pk_check_pkauthenticator(krb5_context context,
 	return ret;
     }
 	
-    if (a->paChecksum.length != checksum.checksum.length ||
-	memcmp(a->paChecksum.data, checksum.checksum.data, 
-	       checksum.checksum.length) != 0)
-    {
+    if (a->paChecksum == NULL) {
+	krb5_clear_error_string(context);
+	ret = KRB5_KDC_ERR_PA_CHECKSUM_MUST_BE_INCLUDED;
+	goto out;
+    }
+
+    if (heim_octet_string_cmp(a->paChecksum, &checksum.checksum) != 0) {
 	krb5_clear_error_string(context);
 	ret = KRB5KRB_ERR_GENERIC;
     }
+out:
     free_Checksum(&checksum);
 
     return ret;
@@ -1122,7 +1126,7 @@ krb5_error_code
 _kdc_pk_mk_pa_reply(krb5_context context,
 		    krb5_kdc_configuration *config,
 		    pk_client_params *client_params,
-		    const hdb_entry *client,
+		    const hdb_entry_ex *client,
 		    const KDC_REQ *req,
 		    const krb5_data *req_buffer,
 		    krb5_keyblock **reply_key,
@@ -1379,7 +1383,7 @@ krb5_error_code
 _kdc_pk_check_client(krb5_context context,
 		     krb5_kdc_configuration *config,
 		     krb5_principal client_princ,
-		     const hdb_entry *client,
+		     const hdb_entry_ex *client,
 		     pk_client_params *client_params,
 		     char **subject_name)
 {
