@@ -120,7 +120,7 @@ static int init_dom_ref(DOM_R_REF *ref, const char *dom_name, DOM_SID *dom_sid)
 	ref->max_entries = MAX_REF_DOMAINS;
 	ref->num_ref_doms_2 = num+1;
 
-	ref->hdr_ref_dom[num].ptr_dom_sid = dom_sid != NULL ? 1 : 0;
+	ref->hdr_ref_dom[num].ptr_dom_sid = 1; /* dom sid cannot be NULL. */
 
 	init_unistr2(&ref->ref_dom[num].uni_dom_name, dom_name, UNI_FLAGS_NONE);
 	init_uni_hdr(&ref->hdr_ref_dom[num].hdr_dom_name, &ref->ref_dom[num].uni_dom_name);
