@@ -1352,6 +1352,7 @@ union smb_read {
 			uint16_t mincnt;
 			uint32_t maxcnt;
 			uint16_t remaining;
+			BOOL read_for_execute;
 		} in;
 		struct {
 			uint8_t *data;

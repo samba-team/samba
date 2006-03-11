@@ -1351,6 +1351,7 @@ static BOOL handler_readx(int instance)
 	parm[0].readx.in.mincnt = gen_io_count();
 	parm[0].readx.in.maxcnt = gen_io_count();
 	parm[0].readx.in.remaining = gen_io_count();
+	parm[0].readx.in.read_for_execute = gen_bool();
 	parm[0].readx.out.data = talloc_size(current_op.mem_ctx,
 					     MAX(parm[0].readx.in.mincnt, parm[0].readx.in.maxcnt));
 

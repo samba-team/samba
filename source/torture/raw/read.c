@@ -382,6 +382,7 @@ static BOOL test_readx(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	io.readx.in.maxcnt = 1;
 	io.readx.in.offset = 0;
 	io.readx.in.remaining = 0;
+	io.readx.in.read_for_execute = False;
 	io.readx.out.data = buf;
 	status = smb_raw_read(cli->tree, &io);
 
@@ -411,6 +412,7 @@ static BOOL test_readx(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	io.readx.file.fnum = fnum;
 	io.readx.in.offset = 0;
 	io.readx.in.remaining = 0;
+	io.readx.in.read_for_execute = False;
 	io.readx.in.mincnt = strlen(test_data);
 	io.readx.in.maxcnt = strlen(test_data);
 	status = smb_raw_read(cli->tree, &io);

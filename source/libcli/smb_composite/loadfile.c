@@ -106,6 +106,7 @@ static NTSTATUS loadfile_open(struct composite_context *c,
 	state->io_read->readx.in.mincnt    = MIN(32768, io->out.size);
 	state->io_read->readx.in.maxcnt    = state->io_read->readx.in.mincnt;
 	state->io_read->readx.in.remaining = 0;
+	state->io_read->readx.in.read_for_execute = False;
 	state->io_read->readx.out.data     = io->out.data;
 
 	state->req = smb_raw_read_send(tree, state->io_read);

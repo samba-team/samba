@@ -56,6 +56,7 @@ ssize_t smbcli_read(struct smbcli_tree *tree, int fnum, void *_buf, off_t offset
 		parms.readx.in.mincnt    = readsize;
 		parms.readx.in.maxcnt    = readsize;
 		parms.readx.in.remaining = size - total;
+		parms.readx.in.read_for_execute = False;
 		parms.readx.out.data     = buf + total;
 		
 		status = smb_raw_read(tree, &parms);
