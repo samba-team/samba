@@ -4,9 +4,6 @@
 	Released under the GNU GPL v2 or later
 */
 
-/* used to generate sequence numbers for records */
-provision_next_usn = 1;
-
 sys = sys_init();
 
 /*
@@ -59,8 +56,6 @@ dn: CN=%s,CN=ForeignSecurityPrincipals,%s
 objectClass: top
 objectClass: foreignSecurityPrincipal
 description: %s
-uSNCreated: 1
-uSNChanged: 1
 ",
 			  sid, subobj.BASEDN, desc);
 	/* deliberately ignore errors from this, as the records may
@@ -132,14 +127,6 @@ function hostip()
 	return list[0];
 }
 
-/*
-  return next USN in the sequence
-*/
-function nextusn()
-{
-	provision_next_usn = provision_next_usn+1;
-	return provision_next_usn;
-}
 
 /*
   return first part of hostname
@@ -358,8 +345,6 @@ function provision(subobj, message, blank, paths, session_info, credentials)
 	var rdns = split(",", subobj.BASEDN);
 	subobj.RDN_DC = substr(rdns[0], strlen("DC="));
 
-	provision_next_usn = 1;
-
 	info.subobj = subobj;
 	info.message = message;
 	info.credentials = credentials;
@@ -465,7 +450,6 @@ function provision_guess()
 	subobj.NTTIME       = nttime;
 	subobj.LDAPTIME     = ldaptime;
 	subobj.DATESTRING   = datestring;
-	subobj.USN          = nextusn;
 	subobj.ROOT         = findnss(nss.getpwnam, "root");
 	subobj.NOBODY       = findnss(nss.getpwnam, "nobody");
 	subobj.NOGROUP      = findnss(nss.getgrnam, "nogroup", "nobody");
