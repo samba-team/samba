@@ -13,8 +13,6 @@ forceLogoff: 0x8000000000000000
 lockoutDuration: -18000000000
 lockOutObservationWindow: -18000000000
 lockoutThreshold: 0
-uSNCreated: 1
-uSNChanged: 1
 maxPwdAge: -37108517437440
 minPwdAge: 0
 minPwdLength: 7
@@ -41,8 +39,6 @@ objectClass: container
 cn: Users
 description: Default container for upgraded user accounts
 instanceType: 4
-uSNCreated: 1
-uSNChanged: 1
 showInAdvancedViewOnly: FALSE
 systemFlags: 0x8c000000
 objectCategory: CN=Container,CN=Schema,CN=Configuration,${BASEDN}
@@ -56,8 +52,6 @@ objectClass: container
 cn: Computers
 description: Default container for upgraded computer accounts
 instanceType: 4
-uSNCreated: 1
-uSNChanged: 1
 showInAdvancedViewOnly: FALSE
 systemFlags: 0x8c000000
 objectCategory: CN=Container,CN=Schema,CN=Configuration,${BASEDN}
@@ -69,8 +63,6 @@ objectClass: organizationalUnit
 ou: Domain Controllers
 description: Default container for domain controllers
 instanceType: 4
-uSNCreated: 1
-uSNChanged: 1
 showInAdvancedViewOnly: FALSE
 systemFlags: 0x8c000000
 objectCategory: CN=Organizational-Unit,CN=Schema,CN=Configuration,${BASEDN}
@@ -82,8 +74,6 @@ objectClass: container
 cn: ForeignSecurityPrincipals
 description: Default container for security identifiers (SIDs) associated with objects from external, trusted domains
 instanceType: 4
-uSNCreated: 1
-uSNChanged: 1
 showInAdvancedViewOnly: FALSE
 systemFlags: 0x8c000000
 objectCategory: CN=Container,CN=Schema,CN=Configuration,${BASEDN}
@@ -95,8 +85,6 @@ objectClass: container
 cn: System
 description: Builtin system settings
 instanceType: 4
-uSNCreated: 1
-uSNChanged: 1
 showInAdvancedViewOnly: TRUE
 systemFlags: 0x8c000000
 objectCategory: CN=Container,CN=Schema,CN=Configuration,${BASEDN}
@@ -107,8 +95,6 @@ objectclass: top
 objectclass: rIDManager
 cn: RID Manager$
 instanceType: 4
-uSNCreated: 1
-uSNChanged: 1
 showInAdvancedViewOnly: TRUE
 systemFlags: 0x8c000000
 objectCategory: CN=RID-Manager,CN=Schema,CN=Configuration,${BASEDN}
@@ -121,8 +107,6 @@ objectClass: top
 objectClass: container
 cn: DomainUpdates
 instanceType: 4
-uSNCreated: 1
-uSNChanged: 1
 showInAdvancedViewOnly: TRUE
 objectCategory: CN=Container,CN=Schema,CN=Configuration,${BASEDN}
 
@@ -131,8 +115,6 @@ objectClass: top
 objectClass: container
 cn: Windows2003Update
 instanceType: 4
-uSNCreated: 1
-uSNChanged: 1
 showInAdvancedViewOnly: TRUE
 objectCategory: CN=Container,CN=Schema,CN=Configuration,${BASEDN}
 revision: 8
@@ -142,8 +124,6 @@ objectclass: top
 objectclass: infrastructureUpdate
 cn: Infrastructure
 instanceType: 4
-uSNCreated: 1
-uSNChanged: 1
 showInAdvancedViewOnly: TRUE
 systemFlags: 0x8c000000
 objectCategory: CN=Infrastructure-Update,CN=Schema,CN=Configuration,${BASEDN}
@@ -182,8 +162,6 @@ objectClass: top
 objectClass: configuration
 cn: Configuration
 instanceType: 13
-uSNCreated: ${USN}
-uSNChanged: ${USN}
 showInAdvancedViewOnly: TRUE
 objectCategory: CN=Configuration,CN=Schema,CN=Configuration,${BASEDN}
 subRefs: CN=Schema,CN=Configuration,${BASEDN}
@@ -195,8 +173,6 @@ objectClass: top
 objectClass: crossRefContainer
 cn: Partitions
 instanceType: 4
-uSNCreated: ${USN}
-uSNChanged: ${USN}
 showInAdvancedViewOnly: TRUE
 systemFlags: 0x80000000
 objectCategory: CN=Cross-Ref-Container,CN=Schema,CN=Configuration,${BASEDN}
@@ -208,8 +184,6 @@ objectClass: top
 objectClass: crossRef
 cn: Enterprise Configuration
 instanceType: 4
-uSNCreated: ${USN}
-uSNChanged: ${USN}
 showInAdvancedViewOnly: TRUE
 systemFlags: 0x00000001
 objectCategory: CN=Cross-Ref,CN=Schema,CN=Configuration,${BASEDN}
@@ -221,8 +195,6 @@ objectClass: top
 objectClass: crossRef
 cn: Enterprise Schema
 instanceType: 4
-uSNCreated: ${USN}
-uSNChanged: ${USN}
 showInAdvancedViewOnly: TRUE
 systemFlags: 0x00000001
 objectCategory: CN=Cross-Ref,CN=Schema,CN=Configuration,${BASEDN}
@@ -234,8 +206,6 @@ objectClass: top
 objectClass: crossRef
 cn: ${DOMAIN}
 instanceType: 4
-uSNCreated: ${USN}
-uSNChanged: ${USN}
 showInAdvancedViewOnly: TRUE
 systemFlags: 0x00000003
 objectCategory: CN=Cross-Ref,CN=Schema,CN=Configuration,${BASEDN}
@@ -248,8 +218,6 @@ objectClass: top
 objectClass: sitesContainer
 cn: Sites
 instanceType: 4
-uSNCreated: ${USN}
-uSNChanged: ${USN}
 showInAdvancedViewOnly: TRUE
 systemFlags: 0x82000000
 objectCategory: CN=Sites-Container,CN=Schema,CN=Configuration,${BASEDN}
@@ -259,8 +227,6 @@ objectClass: top
 objectClass: site
 cn: ${DEFAULTSITE}
 instanceType: 4
-uSNCreated: ${USN}
-uSNChanged: ${USN}
 showInAdvancedViewOnly: TRUE
 systemFlags: 0x82000000
 objectCategory: CN=Site,CN=Schema,CN=Configuration,${BASEDN}
@@ -270,8 +236,6 @@ objectClass: top
 objectClass: serversContainer
 cn: Servers
 instanceType: 4
-uSNCreated: ${USN}
-uSNChanged: ${USN}
 showInAdvancedViewOnly: TRUE
 systemFlags: 0x82000000
 objectCategory: CN=Servers-Container,CN=Schema,CN=Configuration,${BASEDN}
@@ -281,8 +245,6 @@ objectClass: top
 objectClass: server
 cn: ${NETBIOSNAME}
 instanceType: 4
-uSNCreated: ${USN}
-uSNChanged: ${USN}
 showInAdvancedViewOnly: TRUE
 systemFlags: 0x52000000
 objectCategory: CN=Server,CN=Schema,CN=Configuration,${BASEDN}
@@ -295,8 +257,6 @@ objectClass: applicationSettings
 objectClass: nTDSDSA
 cn: NTDS Settings
 instanceType: 4
-uSNCreated: ${USN}
-uSNChanged: ${USN}
 showInAdvancedViewOnly: TRUE
 systemFlags: 0x02000000
 objectCategory: CN=NTDS-DSA,CN=Schema,CN=Configuration,${BASEDN}
@@ -310,8 +270,6 @@ objectClass: top
 objectClass: container
 cn: Services
 instanceType: 4
-uSNCreated: ${USN}
-uSNChanged: ${USN}
 showInAdvancedViewOnly: TRUE
 systemFlags: 0x80000000
 objectCategory: CN=Container,CN=Schema,CN=Configuration,${BASEDN}
@@ -321,8 +279,6 @@ objectClass: top
 objectClass: container
 cn: Windows NT
 instanceType: 4
-uSNCreated: ${USN}
-uSNChanged: ${USN}
 showInAdvancedViewOnly: TRUE
 objectCategory: CN=Container,CN=Schema,CN=Configuration,${BASEDN}
 
@@ -331,8 +287,6 @@ objectClass: top
 objectClass: nTDSService
 cn: Directory Service
 instanceType: 4
-uSNCreated: ${USN}
-uSNChanged: ${USN}
 showInAdvancedViewOnly: TRUE
 objectCategory: CN=NTDS-Service,CN=Schema,CN=Configuration,${BASEDN}
 sPNMappings: host=ldap,dns,cifs,http
@@ -342,8 +296,6 @@ objectClass: top
 objectClass: container
 cn: Query-Policies
 instanceType: 4
-uSNCreated: ${USN}
-uSNChanged: ${USN}
 showInAdvancedViewOnly: TRUE
 objectCategory: CN=Container,CN=Schema,CN=Configuration,${BASEDN}
 
@@ -352,8 +304,6 @@ objectClass: top
 objectClass: queryPolicy
 cn: Default Query Policy
 instanceType: 4
-uSNCreated: ${USN}
-uSNChanged: ${USN}
 showInAdvancedViewOnly: TRUE
 objectCategory: CN=Query-Policy,CN=Schema,CN=Configuration,${BASEDN}
 lDAPAdminLimits: MaxValRange=1500
@@ -379,8 +329,6 @@ objectClass: top
 objectClass: dMD
 cn: Schema
 instanceType: 13
-uSNCreated: ${USN}
-uSNChanged: ${USN}
 showInAdvancedViewOnly: TRUE
 objectCategory: CN=DMD,CN=Schema,CN=Configuration,${BASEDN}
 masteredBy: CN=NTDS Settings,CN=${NETBIOSNAME},CN=Servers,CN=${DEFAULTSITE},CN=Sites,CN=Configuration,${BASEDN}

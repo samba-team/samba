@@ -4,8 +4,6 @@ objectClass: container
 cn: Templates
 description: Container for SAM account templates
 instanceType: 4
-uSNCreated: 1
-uSNChanged: 1
 showInAdvancedViewOnly: TRUE
 systemFlags: 0x8c000000
 objectCategory: CN=Container,CN=Schema,CN=Configuration,${BASEDN}

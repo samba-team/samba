@@ -2,13 +2,11 @@ dn: CN=Administrator,CN=Users,${BASEDN}
 objectClass: user
 cn: Administrator
 description: Built-in account for administering the computer/domain
-uSNCreated: 1
 memberOf: CN=Group Policy Creator Owners,CN=Users,${BASEDN}
 memberOf: CN=Domain Admins,CN=Users,${BASEDN}
 memberOf: CN=Enterprise Admins,CN=Users,${BASEDN}
 memberOf: CN=Schema Admins,CN=Users,${BASEDN}
 memberOf: CN=Administrators,CN=Builtin,${BASEDN}
-uSNChanged: 1
 userAccountControl: 0x10200
 objectSid: ${DOMAINSID}-500
 adminCount: 1
@@ -21,9 +19,7 @@ dn: CN=Guest,CN=Users,${BASEDN}
 objectClass: user
 cn: Guest
 description: Built-in account for guest access to the computer/domain
-uSNCreated: 1
 memberOf: CN=Guests,CN=Builtin,${BASEDN}
-uSNChanged: 1
 userAccountControl: 0x10222
 primaryGroupID: 514
 objectSid: ${DOMAINSID}-501
@@ -38,8 +34,6 @@ description: Administrators have complete and unrestricted access to the compute
 member: CN=Domain Admins,CN=Users,${BASEDN}
 member: CN=Enterprise Admins,CN=Users,${BASEDN}
 member: CN=Administrator,CN=Users,${BASEDN}
-uSNCreated: 1
-uSNChanged: 1
 objectSid: S-1-5-32-544
 adminCount: 1
 sAMAccountName: Administrators
@@ -77,8 +71,6 @@ privilege: SeRemoteInteractiveLogonRight
 dn: CN=${NETBIOSNAME},OU=Domain Controllers,${BASEDN}
 objectClass: computer
 cn: ${NETBIOSNAME}
-uSNCreated: 1
-uSNChanged: 1
 objectGUID: ${HOSTGUID}
 userAccountControl: 532480
 localPolicyFlags: 0
@@ -105,8 +97,6 @@ objectClass: group
 cn: Users
 description: Users are prevented from making accidental or intentional system-wide changes.  Thus, Users can run certified applications, but not most legacy applications
 member: CN=Domain Users,CN=Users,${BASEDN}
-uSNCreated: 1
-uSNChanged: 1
 objectSid: S-1-5-32-545
 sAMAccountName: Users
 sAMAccountType: 0x20000000
@@ -122,8 +112,6 @@ cn: Guests
 description: Guests have the same access as members of the Users group by default, except for the Guest account which is further restricted
 member: CN=Domain Guests,CN=Users,${BASEDN}
 member: CN=Guest,CN=Users,${BASEDN}
-uSNCreated: 1
-uSNChanged: 1
 objectSid: S-1-5-32-546
 sAMAccountName: Guests
 sAMAccountType: 0x20000000
@@ -137,8 +125,6 @@ objectClass: top
 objectClass: group
 cn: Print Operators
 description: Members can administer domain printers
-uSNCreated: 1
-uSNChanged: 1
 objectSid: S-1-5-32-550
 adminCount: 1
 sAMAccountName: Print Operators
@@ -156,8 +142,6 @@ objectClass: top
 objectClass: group
 cn: Backup Operators
 description: Backup Operators can override security restrictions for the sole purpose of backing up or restoring files
-uSNCreated: 1
-uSNChanged: 1
 objectSid: S-1-5-32-551
 adminCount: 1
 sAMAccountName: Backup Operators
@@ -176,8 +160,6 @@ objectClass: top
 objectClass: group
 cn: Replicator
 description: Supports file replication in a domain
-uSNCreated: 1
-uSNChanged: 1
 objectSid: S-1-5-32-552
 adminCount: 1
 sAMAccountName: Replicator
@@ -192,8 +174,6 @@ objectClass: top
 objectClass: group
 cn: Remote Desktop Users
 description: Members in this group are granted the right to logon remotely
-uSNCreated: 1
-uSNChanged: 1
 objectSid: S-1-5-32-555
 sAMAccountName: Remote Desktop Users
 sAMAccountType: 0x20000000
@@ -207,8 +187,6 @@ objectClass: top
 objectClass: group
 cn: Network Configuration Operators
 description: Members in this group can have some administrative privileges to manage configuration of networking features
-uSNCreated: 1
-uSNChanged: 1
 objectSid: S-1-5-32-556
 sAMAccountName: Network Configuration Operators
 sAMAccountType: 0x20000000
@@ -222,8 +200,6 @@ objectClass: top
 objectClass: group
 cn: Performance Monitor Users
 description: Members of this group have remote access to monitor this computer
-uSNCreated: 1
-uSNChanged: 1
 objectSid: S-1-5-32-558
 sAMAccountName: Performance Monitor Users
 sAMAccountType: 0x20000000
@@ -237,8 +213,6 @@ objectClass: top
 objectClass: group
 cn: Performance Log Users
 description: Members of this group have remote access to schedule logging of performance counters on this computer
-uSNCreated: 1
-uSNChanged: 1
 objectSid: S-1-5-32-559
 sAMAccountName: Performance Log Users
 sAMAccountType: 0x20000000
@@ -254,8 +228,6 @@ objectClass: organizationalPerson
 objectClass: user
 cn: krbtgt
 description: Key Distribution Center Service Account
-uSNCreated: 1
-uSNChanged: 1
 showInAdvancedViewOnly: TRUE
 userAccountControl: 514
 objectSid: ${DOMAINSID}-502
@@ -272,8 +244,6 @@ objectClass: top
 objectClass: group
 cn: Domain Computers
 description: All workstations and servers joined to the domain
-uSNCreated: 1
-uSNChanged: 1
 objectSid: ${DOMAINSID}-515
 sAMAccountName: Domain Computers
 objectCategory: CN=Group,CN=Schema,CN=Configuration,${BASEDN}
@@ -284,8 +254,6 @@ objectClass: top
 objectClass: group
 cn: Domain Controllers
 description: All domain controllers in the domain
-uSNCreated: 1
-uSNChanged: 1
 objectSid: ${DOMAINSID}-516
 adminCount: 1
 sAMAccountName: Domain Controllers
@@ -297,8 +265,6 @@ objectClass: group
 cn: Schema Admins
 description: Designated administrators of the schema
 member: CN=Administrator,CN=Users,${BASEDN}
-uSNCreated: 1
-uSNChanged: 1
 objectSid: ${DOMAINSID}-518
 adminCount: 1
 sAMAccountName: Schema Admins
@@ -310,9 +276,7 @@ objectClass: group
 cn: Enterprise Admins
 description: Designated administrators of the enterprise
 member: CN=Administrator,CN=Users,${BASEDN}
-uSNCreated: 1
 memberOf: CN=Administrators,CN=Builtin,${BASEDN}
-uSNChanged: 1
 objectSid: ${DOMAINSID}-519
 adminCount: 1
 sAMAccountName: Enterprise Admins
@@ -323,8 +287,6 @@ objectClass: top
 objectClass: group
 cn: Cert Publishers
 description: Members of this group are permitted to publish certificates to the Active Directory
-uSNCreated: 1
-uSNChanged: 1
 groupType: 0x80000004
 sAMAccountType: 0x20000000
 objectSid: ${DOMAINSID}-517
@@ -338,9 +300,7 @@ objectClass: group
 cn: Domain Admins
 description: Designated administrators of the domain
 member: CN=Administrator,CN=Users,${BASEDN}
-uSNCreated: 1
 memberOf: CN=Administrators,CN=Builtin,${BASEDN}
-uSNChanged: 1
 objectSid: ${DOMAINSID}-512
 adminCount: 1
 sAMAccountName: Domain Admins
@@ -351,9 +311,7 @@ objectClass: top
 objectClass: group
 cn: Domain Users
 description: All domain users
-uSNCreated: 1
 memberOf: CN=Users,CN=Builtin,${BASEDN}
-uSNChanged: 1
 objectSid: ${DOMAINSID}-513
 sAMAccountName: Domain Users
 isCriticalSystemObject: TRUE
@@ -363,9 +321,7 @@ objectClass: top
 objectClass: group
 cn: Domain Guests
 description: All domain guests
-uSNCreated: 1
 memberOf: CN=Guests,CN=Builtin,${BASEDN}
-uSNChanged: 1
 objectSid: ${DOMAINSID}-514
 sAMAccountName: Domain Guests
 isCriticalSystemObject: TRUE
@@ -376,8 +332,6 @@ objectClass: group
 cn: Group Policy Creator Owners
 description: Members in this group can modify group policy for the domain
 member: CN=Administrator,CN=Users,${BASEDN}
-uSNCreated: 1
-uSNChanged: 1
 objectSid: ${DOMAINSID}-520
 sAMAccountName: Group Policy Creator Owners
 objectCategory: CN=Group,CN=Schema,CN=Configuration,${BASEDN}
@@ -389,8 +343,6 @@ objectClass: group
 cn: RAS and IAS Servers
 description: Servers in this group can access remote access properties of users
 instanceType: 4
-uSNCreated: 1
-uSNChanged: 1
 objectSid: ${DOMAINSID}-553
 sAMAccountName: RAS and IAS Servers
 sAMAccountType: 0x20000000
@@ -404,8 +356,6 @@ objectClass: group
 cn: Server Operators
 description: Members can administer domain servers
 instanceType: 4
-uSNCreated: 1
-uSNChanged: 1
 objectSid: S-1-5-32-549
 adminCount: 1
 sAMAccountName: Server Operators
@@ -427,8 +377,6 @@ objectClass: group
 cn: Account Operators
 description: Members can administer domain user and group accounts
 instanceType: 4
-uSNCreated: 1
-uSNChanged: 1
 objectSid: S-1-5-32-548
 adminCount: 1
 sAMAccountName: Account Operators
