@@ -45,7 +45,7 @@
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
-RCSID("$Id: des.c,v 1.15 2005/07/20 10:49:22 lha Exp $");
+RCSID("$Id: des.c,v 1.16 2006/01/08 21:47:28 lha Exp $");
 #endif
 
 #include <stdio.h>
@@ -54,6 +54,7 @@ RCSID("$Id: des.c,v 1.15 2005/07/20 10:49:22 lha Exp $");
 #include <krb5-types.h>
 
 #include "des.h"
+#include "ui.h"
 
 static void desx(uint32_t [2], DES_key_schedule *, int);
 static void IP(uint32_t [2]);

@@ -29,7 +29,7 @@ _kdc_db_fetch (
 	krb5_context /*context*/,
 	krb5_kdc_configuration */*config*/,
 	krb5_principal /*principal*/,
-	enum hdb_ent_type, 
+	enum hdb_ent_type /*ent_type*/,
 	hdb_entry_ex **/*h*/);
 
 krb5_error_code
@@ -104,7 +104,7 @@ _kdc_pk_check_client (
 	krb5_context /*context*/,
 	krb5_kdc_configuration */*config*/,
 	krb5_principal /*client_princ*/,
-	const hdb_entry */*client*/,
+	const hdb_entry_ex */*client*/,
 	pk_client_params */*client_params*/,
 	char **/*subject_name*/);
 
@@ -125,7 +125,7 @@ _kdc_pk_mk_pa_reply (
 	krb5_context /*context*/,
 	krb5_kdc_configuration */*config*/,
 	pk_client_params */*client_params*/,
-	const hdb_entry */*client*/,
+	const hdb_entry_ex */*client*/,
 	const KDC_REQ */*req*/,
 	const krb5_data */*req_buffer*/,
 	krb5_keyblock **/*reply_key*/,

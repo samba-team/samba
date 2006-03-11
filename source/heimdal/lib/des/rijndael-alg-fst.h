@@ -28,6 +28,12 @@
 #ifndef __RIJNDAEL_ALG_FST_H
 #define __RIJNDAEL_ALG_FST_H
 
+/* symbol renaming */
+#define rijndaelKeySetupEnc _hc_rijndaelKeySetupEnc
+#define rijndaelKeySetupDec _hc_rijndaelKeySetupDec
+#define rijndaelEncrypt _hc_rijndaelEncrypt
+#define rijndaelDecrypt _hc_rijndaelDecrypt
+
 #define RIJNDAEL_MAXKC	(256/32)
 #define RIJNDAEL_MAXKB	(256/8)
 #define RIJNDAEL_MAXNR	14

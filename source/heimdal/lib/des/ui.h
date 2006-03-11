@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2004 Kungliga Tekniska Högskolan
+ * Copyright (c) 2005 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -31,16 +31,15 @@
  * SUCH DAMAGE.
  */
 
-/* $Id: rc4.h,v 1.4 2006/01/08 21:47:29 lha Exp $ */
+/* $Id: ui.h,v 1.1 2006/01/08 21:47:29 lha Exp $ */
+
+#ifndef _HEIM_UI_H
+#define _HEIM_UI_H 1
 
 /* symbol renaming */
-#define RC4_set_key hc_RC4_set_key
-#define RC4 hc_RC4
+#define UI_UTIL_read_pw_string hc_UI_UTIL_read_pw_string
 
-typedef struct rc4_key {
-    unsigned int x, y;
-    unsigned int state[256];
-} RC4_KEY;
+int	UI_UTIL_read_pw_string(char *, int, const char *, int); /* XXX */
 
-void RC4_set_key(RC4_KEY *, const int, unsigned char *);
-void RC4(RC4_KEY *, const int, const unsigned char *, unsigned char *);
+#endif /* _HEIM_UI_H */
+

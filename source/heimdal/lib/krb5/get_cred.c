@@ -33,7 +33,7 @@
 
 #include <krb5_locl.h>
 
-RCSID("$Id: get_cred.c,v 1.108 2005/07/13 07:38:02 lha Exp $");
+RCSID("$Id: get_cred.c,v 1.109 2006/02/03 11:41:02 lha Exp $");
 
 /*
  * Take the `body' and encode it into `padata' using the credentials
@@ -772,7 +772,8 @@ get_cred_from_kdc_flags(krb5_context context,
 	krb5_boolean noaddr;
 
 	krb5_appdefault_boolean(context, NULL, tgt->server->realm,
-				"no-addresses", FALSE, &noaddr);
+				"no-addresses", KRB5_ADDRESSLESS_DEFAULT,
+				&noaddr);
 	if (noaddr)
 	    ret = get_cred_kdc (context, ccache, flags, NULL,
 				in_creds, tgt, *out_creds);

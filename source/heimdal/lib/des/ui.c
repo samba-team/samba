@@ -33,7 +33,7 @@
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
-RCSID("$Id: ui.c,v 1.4 2005/04/30 14:10:18 lha Exp $");
+RCSID("$Id: ui.c,v 1.5 2006/01/08 21:47:29 lha Exp $");
 #endif
 
 #include <stdio.h>
@@ -43,7 +43,7 @@ RCSID("$Id: ui.c,v 1.4 2005/04/30 14:10:18 lha Exp $");
 #include <termios.h>
 #include <roken.h>
 
-#include <des.h>
+#include <ui.h>
 
 static sig_atomic_t intr_flag;
 

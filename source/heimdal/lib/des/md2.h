@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2004 Kungliga Tekniska Högskolan
+ * Copyright (c) 2006 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -31,16 +31,33 @@
  * SUCH DAMAGE.
  */
 
-/* $Id: rc4.h,v 1.4 2006/01/08 21:47:29 lha Exp $ */
+/* $Id: md2.h,v 1.1 2006/01/08 21:47:28 lha Exp $ */
+
+#ifndef HEIM_MD2_H
+#define HEIM_MD2_H 1
 
 /* symbol renaming */
-#define RC4_set_key hc_RC4_set_key
-#define RC4 hc_RC4
+#define MD2_Init hc_MD2_Init
+#define MD2_Update hc_MD2_Update
+#define MD2_Final hc_MD2_Final
 
-typedef struct rc4_key {
-    unsigned int x, y;
-    unsigned int state[256];
-} RC4_KEY;
+/*
+ *
+ */
 
-void RC4_set_key(RC4_KEY *, const int, unsigned char *);
-void RC4(RC4_KEY *, const int, const unsigned char *, unsigned char *);
+#define MD2_DIGEST_LENGTH 16
+
+struct md2 {
+    size_t len;
+    unsigned char data[16]; /* stored unalligned data between Update's */
+    unsigned char checksum[16];
+    unsigned char state[16]; /* lower 16 bytes of X */
+};
+
+typedef struct md2 MD2_CTX;
+
+void MD2_Init (struct md2 *m);
+void MD2_Update (struct md2 *m, const void *p, size_t len);
+void MD2_Final (void *res, struct md2 *m);
+
+#endif /* HEIM_MD2_H */

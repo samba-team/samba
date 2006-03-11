@@ -33,7 +33,7 @@
 
 #include "gssapi_locl.h"
 
-RCSID("$Id: import_name.c,v 1.13 2003/03/16 17:33:31 lha Exp $");
+RCSID("$Id: import_name.c,v 1.14 2006/02/15 11:59:10 lha Exp $");
 
 static OM_uint32
 parse_krb5_name (OM_uint32 *minor_status,
@@ -207,7 +207,8 @@ OM_uint32 gss_import_name
     *minor_status = 0;
     *output_name = GSS_C_NO_NAME;
     
-    if (gss_oid_equal(input_name_type, GSS_C_NT_HOSTBASED_SERVICE))
+    if (gss_oid_equal(input_name_type, GSS_C_NT_HOSTBASED_SERVICE) ||
+	gss_oid_equal(input_name_type, GSS_C_NT_HOSTBASED_SERVICE_X))
 	return import_hostbased_name (minor_status,
 				      input_name_buffer,
 				      output_name);
