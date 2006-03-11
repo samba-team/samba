@@ -777,6 +777,10 @@ static void continue_epm_recv_binding(struct composite_context *ctx);
 static void continue_epm_map(struct rpc_request *req);
 
 
+/*
+  Stage 2 of epm_map_binding: Receive connected rpc pipe and send endpoint
+  mapping rpc request
+*/
 static void continue_epm_recv_binding(struct composite_context *ctx)
 {
 	struct rpc_request *map_req;
@@ -786,12 +790,14 @@ static void continue_epm_recv_binding(struct composite_context *ctx)
 	struct epm_map_binding_state *s = talloc_get_type(c->private_data,
 							  struct epm_map_binding_state);
 
+	/* receive result of rpc pipe connect request */
 	c->status = dcerpc_pipe_connect_b_recv(ctx, c, &s->pipe);
 	if (!composite_is_ok(c)) return;
 
 	ZERO_STRUCT(s->handle);
 	ZERO_STRUCT(s->guid);
 
+	/* prepare requested binding parameters */
 	s->binding->object         = s->table->uuid;
 	s->binding->object_version = s->table->if_version;
 
@@ -805,6 +811,7 @@ static void continue_epm_recv_binding(struct composite_context *ctx)
 	s->r.in.max_towers    = 1;
 	s->r.out.entry_handle = &s->handle;
 
+	/* send request for an endpoint mapping - a rpc request on connected pipe */
 	map_req = dcerpc_epm_Map_send(s->pipe, c, &s->r);
 	if (composite_nomem(map_req, c)) return;
 	
@@ -812,6 +819,9 @@ static void continue_epm_recv_binding(struct composite_context *ctx)
 }
 
 
+/*
+  Stage 3 of epm_map_binding: Receive endpoint mapping and provide binding details
+*/
 static void continue_epm_map(struct rpc_request *req)
 {
 	struct composite_context *c = talloc_get_type(req->async.private,
@@ -819,9 +829,11 @@ static void continue_epm_map(struct rpc_request *req)
 	struct epm_map_binding_state *s = talloc_get_type(c->private_data,
 							  struct epm_map_binding_state);
 
+	/* receive result of a rpc request */
 	c->status = dcerpc_ndr_request_recv(req);
 	if (!composite_is_ok(c)) return;
 
+	/* check the details */
 	if (s->r.out.result != 0 || s->r.out.num_towers != 1) {
 		composite_error(c, NT_STATUS_PORT_UNREACHABLE);
 		return;
@@ -839,12 +851,17 @@ static void continue_epm_map(struct rpc_request *req)
 		return;
 	}
 
+	/* get received endpoint */
 	s->binding->endpoint = talloc_reference(s->binding,
 						dcerpc_floor_get_rhs_data(c, &s->twr_r->tower.floors[3]));
 	composite_done(c);
 }
 
 
+/*
+  Request for endpoint mapping of dcerpc binding - try to request for endpoint
+  unless there is default one.
+*/
 struct composite_context *dcerpc_epm_map_binding_send(TALLOC_CTX *mem_ctx,
 						      struct dcerpc_binding *binding,
 						      const struct dcerpc_interface_table *table,
@@ -881,12 +898,14 @@ struct composite_context *dcerpc_epm_map_binding_send(TALLOC_CTX *mem_ctx,
 	s->binding = binding;
 	s->table   = table;
 
+	/* anonymous credentials for rpc connection used to get endpoint mapping */
 	anon_creds = cli_credentials_init(mem_ctx);
 	cli_credentials_set_conf(anon_creds);
 	cli_credentials_set_anonymous(anon_creds);
 
-	/* First, check if there is a default endpoint specified in the IDL */
-
+	/*
+	  First, check if there is a default endpoint specified in the IDL
+	*/
 	if (table) {
 		struct dcerpc_binding *default_binding;
 
@@ -912,12 +931,14 @@ struct composite_context *dcerpc_epm_map_binding_send(TALLOC_CTX *mem_ctx,
 	epmapper_binding = talloc_zero(c, struct dcerpc_binding);
 	if (composite_nomem(epmapper_binding, c)) return c;
 
+	/* basic endpoint mapping data */
 	epmapper_binding->transport  = binding->transport;
 	epmapper_binding->host       = talloc_reference(epmapper_binding, binding->host);
 	epmapper_binding->options    = NULL;
 	epmapper_binding->flags      = 0;
 	epmapper_binding->endpoint   = NULL;
 
+	/* initiate rpc pipe connection */
 	pipe_connect_req = dcerpc_pipe_connect_b_send(c, &s->pipe, epmapper_binding, &dcerpc_table_epmapper,
 						      anon_creds, c->event_ctx);
 	if (composite_nomem(pipe_connect_req, c)) return c;
@@ -927,6 +948,9 @@ struct composite_context *dcerpc_epm_map_binding_send(TALLOC_CTX *mem_ctx,
 }
 
 
+/*
+  Receive result of endpoint mapping request
+ */
 NTSTATUS dcerpc_epm_map_binding_recv(struct composite_context *c)
 {
 	NTSTATUS status = composite_wait(c);
@@ -936,6 +960,9 @@ NTSTATUS dcerpc_epm_map_binding_recv(struct composite_context *c)
 }
 
 
+/*
+  Get endpoint mapping for rpc connection
+*/
 NTSTATUS dcerpc_epm_map_binding(TALLOC_CTX *mem_ctx, struct dcerpc_binding *binding,
 				const struct dcerpc_interface_table *table, struct event_context *ev)
 {
