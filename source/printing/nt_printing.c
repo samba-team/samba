@@ -3533,6 +3533,7 @@ static void map_to_os2_driver(fstring drivername)
 	lines = file_lines_load(mapfile, &numlines,0);
 	if (numlines == 0 || lines == NULL) {
 		DEBUG(0,("No entries in OS/2 driver map %s\n",mapfile));
+		SAFE_FREE(lines);
 		return;
 	}
 
