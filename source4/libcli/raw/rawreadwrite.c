@@ -84,6 +84,9 @@ struct smbcli_request *smb_raw_read_send(struct smbcli_tree *tree, union smb_rea
 		if (bigoffset) {
 			SIVAL(req->out.vwv, VWV(10),parms->readx.in.offset>>32);
 		}
+		if (parms->readx.in.read_for_execute) {
+			req->flags2 |= FLAGS2_READ_PERMIT_EXECUTE;
+		}
 		break;
 	}
 

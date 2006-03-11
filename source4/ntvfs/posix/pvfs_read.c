@@ -51,7 +51,7 @@ NTSTATUS pvfs_read(struct ntvfs_module_context *ntvfs,
 	}
 
 	mask = SEC_FILE_READ_DATA;
-	if (req->flags2 & FLAGS2_READ_PERMIT_EXECUTE) {
+	if (rd->readx.in.read_for_execute) {
 		mask |= SEC_FILE_EXECUTE;
 	}
 	if (!(f->access_mask & mask)) {

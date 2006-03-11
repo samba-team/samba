@@ -1158,6 +1158,7 @@ _PUBLIC_ NTSTATUS ntvfs_map_read(struct ntvfs_module_context *ntvfs,
 	}
 
 	rd2->readx.level = RAW_READ_READX;
+	rd2->readx.in.read_for_execute = False;
 
 	switch (rd->generic.level) {
 	case RAW_READ_READX:
