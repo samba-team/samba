@@ -898,7 +898,6 @@ krb5_error_code decode_krb5_ap_req(const krb5_data *code, krb5_ap_req **rep);
 							krb5_keyblock **keyblock)
 {
 	krb5_error_code ret;
-	krb5_ap_req *ap_req = NULL;
 	krb5_kvno kvno;
 	krb5_enctype enctype;
 	krb5_keyblock *local_keyblock;
@@ -930,10 +929,6 @@ krb5_error_code decode_krb5_ap_req(const krb5_data *code, krb5_ap_req **rep);
 	}
 
 out:
-	if (ap_req) {
-		smb_krb5_free_ap_req(context, ap_req);
-	}
-
 	if (ret && local_keyblock != NULL) {
 	        krb5_free_keyblock(context, local_keyblock);
 	} else {
