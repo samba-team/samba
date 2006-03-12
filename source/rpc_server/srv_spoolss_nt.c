@@ -4823,8 +4823,10 @@ static WERROR getprinter_level_4(Printer_entry *print_hnd, int snum, RPC_BUFFER 
 	if((printer=SMB_MALLOC_P(PRINTER_INFO_4))==NULL)
 		return WERR_NOMEM;
 
-	if (!construct_printer_info_4(print_hnd, printer, snum))
+	if (!construct_printer_info_4(print_hnd, printer, snum)) {
+		SAFE_FREE(printer);
 		return WERR_NOMEM;
+	}
 	
 	/* check the required size. */	
 	*needed += spoolss_size_printer_info_4(printer);
