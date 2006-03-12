@@ -2,6 +2,7 @@
 # Readline included by default unless explicitly asked not to
 test "${with_readline+set}" != "set" && with_readline=yes
 
+EXTERNAL_READLINE=no
 # test for where we get readline() from
 AC_MSG_CHECKING(whether to use readline)
 AC_ARG_WITH(readline,
@@ -19,7 +20,7 @@ AC_ARG_WITH(readline,
       done
       AC_CHECK_LIB(readline, rl_callback_handler_install,
        [TERMLIBS="-lreadline $TERMLIBS"
-       AC_DEFINE(HAVE_LIBREADLINE,1,[Whether the system has readline])
+       EXTERNAL_READLINE=yes
        break], [TERMLIBS=], $TERMLIBS)])
     ;;
   no)
@@ -50,7 +51,7 @@ AC_ARG_WITH(readline,
        LDFLAGS="-L$with_readline/lib $LDFLAGS"
        CPPFLAGS="-I$with_readline/include $CPPFLAGS"
        TERMLIBS="-lreadline $TERMLIBS"
-       AC_DEFINE(HAVE_LIBREADLINE,1,[Whether the system has readline])
+       EXTERNAL_READLINE=yes
        break], [TERMLIBS= CPPFLAGS=$_cppflags], $TERMLIBS)])
 
     ;;
@@ -67,6 +68,18 @@ AC_CHECK_LIB(readline, rl_completion_matches,
 	     [],
 	     [$TERMLIBS])
 
-SMB_EXT_LIB(READLINE, [${TERMLIBS}])
-
-SMB_SUBSYSTEM(LIBREADLINE, [lib/replace/readline.o], [EXT_LIB_READLINE])
+AC_MSG_CHECKING(whether to use extern readline)
+if test x"$EXTERNAL_READLINE" = x"yes"; then
+	AC_MSG_RESULT(yes)
+	AC_DEFINE(HAVE_LIBREADLINE,1,[Whether the system has readline])
+	SMB_SUBSYSTEM(LIBREADLINE,
+		[lib/replace/readline.o],
+		[EXT_LIB_READLINE])
+	SMB_EXT_LIB(READLINE, [${TERMLIBS}])
+	SMB_EXT_LIB_ENABLE(READLINE,YES)
+else
+	SMB_SUBSYSTEM(LIBREADLINE,
+		[lib/replace/readline.o],
+		[])
+	AC_MSG_RESULT(no)
+fi

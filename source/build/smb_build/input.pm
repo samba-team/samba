@@ -175,7 +175,11 @@ sub check($$$$$)
 		}
 		
 		unless(defined($part->{ENABLE})) {
-			$part->{ENABLE} = "YES";
+			if ($part->{TYPE} eq "EXT_LIB") {
+				$part->{ENABLE} = "NO";
+			} else {
+				$part->{ENABLE} = "YES";
+			}
 		}
 	}
 

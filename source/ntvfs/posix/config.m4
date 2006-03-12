@@ -30,6 +30,7 @@ AC_CHECK_FUNC_EXT(flistxattr, $XATTR_LIBS)
 SMB_EXT_LIB(XATTR,[${XATTR_LIBS}],[${XATTR_CFLAGS}],[${XATTR_CPPFLAGS}],[${XATTR_LDFLAGS}])
 if test x"$ac_cv_func_ext_flistxattr" = x"yes"; then
 	AC_DEFINE(HAVE_XATTR_SUPPORT,1,[Whether we have xattr support])
+	SMB_EXT_LIB_ENABLE(XATTR,YES)
 fi
 
 AC_CHECK_HEADERS(blkid/blkid.h)
@@ -38,4 +39,5 @@ AC_CHECK_FUNC_EXT(blkid_get_cache, $BLKID_LIBS)
 SMB_EXT_LIB(BLKID,[${BLKID_LIBS}],[${BLKID_CFLAGS}],[${BLKID_CPPFLAGS}],[${BLKID_LDFLAGS}])
 if test x"$ac_cv_func_ext_blkid_get_cache" = x"yes"; then
 	AC_DEFINE(HAVE_LIBBLKID,1,[Whether we have blkid support (e2fsprogs)])
+	SMB_EXT_LIB_ENABLE(BLKID,YES)
 fi
