@@ -1365,35 +1365,46 @@ static NTSTATUS ldapsam_getsampwnam(struct pdb_methods *my_methods, struct samu 
 	int count;
 	const char ** attr_list;
 	int rc;
+	TALLOC_CTX *mem_ctx;
+
+	mem_ctx = talloc_new(user);
+	if (mem_ctx == NULL) {
+		DEBUG(0,("ldapsam_setsampwent: Out of memory!\n"));
+		return NT_STATUS_NO_MEMORY;
+	}
 	
-	attr_list = get_userattr_list( user, ldap_state->schema_ver );
-	append_attr(user, &attr_list,
+	attr_list = get_userattr_list(mem_ctx, ldap_state->schema_ver );
+	append_attr(mem_ctx, &attr_list,
 		    get_userattr_key2string(ldap_state->schema_ver,
 					    LDAP_ATTR_MOD_TIMESTAMP));
-	append_attr(user, &attr_list, "uidNumber");
-	rc = ldapsam_search_suffix_by_name(ldap_state, user, sname, &result,
+	append_attr(mem_ctx, &attr_list, "uidNumber");
+	rc = ldapsam_search_suffix_by_name(ldap_state, mem_ctx, sname, &result,
 					   attr_list);
-	TALLOC_FREE( attr_list );
 
-	if ( rc != LDAP_SUCCESS ) 
+	if ( rc != LDAP_SUCCESS ) {
+		talloc_free(mem_ctx);
 		return NT_STATUS_NO_SUCH_USER;
-	
+	}
+
 	count = ldap_count_entries(ldap_state->smbldap_state->ldap_struct, result);
 	
 	if (count < 1) {
 		DEBUG(4, ("ldapsam_getsampwnam: Unable to locate user [%s] count=%d\n", sname, count));
+		talloc_free(mem_ctx);
 		ldap_msgfree(result);
 		return NT_STATUS_NO_SUCH_USER;
 	} else if (count > 1) {
 		DEBUG(1, ("ldapsam_getsampwnam: Duplicate entries for this user [%s] Failing. count=%d\n", sname, count));
+		talloc_free(mem_ctx);
 		ldap_msgfree(result);
 		return NT_STATUS_NO_SUCH_USER;
 	}
 
-	entry = ldap_first_entry(ldap_state->smbldap_state->ldap_struct, result);
+	entry = ldap_first_entry(priv2ld(ldap_state), result);
 	if (entry) {
 		if (!init_sam_from_ldap(ldap_state, user, entry)) {
 			DEBUG(1,("ldapsam_getsampwnam: init_sam_from_ldap failed for user '%s'!\n", sname));
+			talloc_free(mem_ctx);
 			ldap_msgfree(result);
 			return NT_STATUS_NO_SUCH_USER;
 		}
@@ -1404,6 +1415,8 @@ static NTSTATUS ldapsam_getsampwnam(struct pdb_methods *my_methods, struct samu 
 	} else {
 		ldap_msgfree(result);
 	}
+
+	talloc_free(mem_ctx);
 	return ret;
 }
 
@@ -1753,6 +1766,7 @@ static NTSTATUS ldapsam_update_sam_account(struct pdb_methods *my_methods, struc
 		attr_list = get_userattr_list(mem_ctx, ldap_state->schema_ver);
 		rc = ldapsam_search_suffix_by_name(ldap_state, mem_ctx, pdb_get_username(newpwd), &result, attr_list );
 		if (rc != LDAP_SUCCESS) {
+			talloc_free(mem_ctx);
 			return NT_STATUS_UNSUCCESSFUL;
 		}
 		pdb_set_backend_private_data(newpwd, result, NULL,
@@ -1890,35 +1904,34 @@ static NTSTATUS ldapsam_add_sam_account(struct pdb_methods *my_methods, struct s
 	const char *dn = NULL;
 	char *filter;
 
+	if (!username || !*username) {
+		DEBUG(0, ("ldapsam_add_sam_account: Cannot add user without a username!\n"));
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
 	mem_ctx = talloc_new(newpwd);
 	if (mem_ctx == NULL) {
 		DEBUG(0, ("talloc_new failed\n"));
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	if (!username || !*username) {
-		DEBUG(0, ("ldapsam_add_sam_account: Cannot add user without a username!\n"));
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
 	/* free this list after the second search or in case we exit on failure */
 	attr_list = get_userattr_list(mem_ctx, ldap_state->schema_ver);
 
 	rc = ldapsam_search_suffix_by_name (ldap_state, mem_ctx, username, &result, attr_list);
-
 	if (rc != LDAP_SUCCESS) {
 		talloc_free(mem_ctx);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
+	talloc_autofree_ldapmsg(mem_ctx, result);
+
 	if (ldap_count_entries(priv2ld(ldap_state), result) != 0) {
 		DEBUG(0,("ldapsam_add_sam_account: User '%s' already in the base, with samba attributes\n", 
 			 username));
-		ldap_msgfree(result);
 		talloc_free(mem_ctx);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
-	ldap_msgfree(result);
 	result = NULL;
 
 	if (element_is_set_or_changed(newpwd, PDB_USERSID)) {
@@ -1933,6 +1946,7 @@ static NTSTATUS ldapsam_add_sam_account(struct pdb_methods *my_methods, struct s
 			}
 			ldap_msgfree(result);
 		}
+		result = NULL;
 	}
 
 	/* does the entry already exist but without a samba attributes?
