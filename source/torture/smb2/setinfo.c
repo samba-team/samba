@@ -76,7 +76,7 @@ BOOL torture_smb2_setinfo(void)
 #define CHECK_CALL(call, rightstatus) do { \
 	call_name = #call; \
 	sfinfo.generic.level = RAW_SFILEINFO_ ## call; \
-	sfinfo.generic.file.handle = handle; \
+	sfinfo.generic.in.file.handle = handle; \
 	status = smb2_setinfo_file(tree, &sfinfo); \
 	if (!NT_STATUS_EQUAL(status, rightstatus)) { \
 		printf("(%s) %s - %s (should be %s)\n", __location__, #call, \
@@ -88,7 +88,7 @@ BOOL torture_smb2_setinfo(void)
 #define CHECK1(call) \
 	do { if (NT_STATUS_IS_OK(status)) { \
 		finfo2.generic.level = RAW_FILEINFO_ ## call; \
-		finfo2.generic.file.handle = handle; \
+		finfo2.generic.in.file.handle = handle; \
 		status2 = smb2_getinfo_file(tree, mem_ctx, &finfo2); \
 		if (!NT_STATUS_IS_OK(status2)) { \
 			printf("%s - %s\n", #call, nt_errstr(status2)); \

@@ -36,7 +36,7 @@ struct smbcli_request *smb_raw_changenotify_send(struct smbcli_tree *tree, union
 	nt.in.setup_count = 4;
 	nt.in.setup = setup;
 	SIVAL(setup, 0, parms->notify.in.completion_filter);
-	SSVAL(setup, 4, parms->notify.file.fnum);
+	SSVAL(setup, 4, parms->notify.in.file.fnum);
 	SSVAL(setup, 6, parms->notify.in.recursive);	
 	nt.in.function = NT_TRANSACT_NOTIFY_CHANGE;
 	nt.in.params = data_blob(NULL, 0);

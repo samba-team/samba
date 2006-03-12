@@ -283,7 +283,7 @@ static struct smbcli_request *smb_raw_setattr_send(struct smbcli_tree *tree,
 	raw_push_dos_date3(tree->session->transport, 
 			  req->out.vwv, VWV(1), parms->setattr.in.write_time);
 	memset(req->out.vwv + VWV(3), 0, 10); /* reserved */
-	smbcli_req_append_ascii4(req, parms->setattr.file.path, STR_TERMINATE);
+	smbcli_req_append_ascii4(req, parms->setattr.in.file.path, STR_TERMINATE);
 	smbcli_req_append_ascii4(req, "", STR_TERMINATE);
 	
 	if (!smbcli_request_send(req)) {
@@ -305,7 +305,7 @@ static struct smbcli_request *smb_raw_setattrE_send(struct smbcli_tree *tree,
 	req = smbcli_request_setup(tree, SMBsetattrE, 7, 0);
 	if (!req) return NULL;
 	
-	SSVAL(req->out.vwv,         VWV(0), parms->setattre.file.fnum);
+	SSVAL(req->out.vwv,         VWV(0), parms->setattre.in.file.fnum);
 	raw_push_dos_date2(tree->session->transport, 
 			  req->out.vwv, VWV(1), parms->setattre.in.create_time);
 	raw_push_dos_date2(tree->session->transport, 
@@ -352,7 +352,7 @@ struct smbcli_request *smb_raw_setfileinfo_send(struct smbcli_tree *tree,
 	/* send request and process the output */
 	req = smb_raw_setfileinfo_blob_send(tree, 
 					    mem_ctx,
-					    parms->generic.file.fnum, 
+					    parms->generic.in.file.fnum, 
 					    parms->generic.level, 
 					    &blob);
 
@@ -399,7 +399,7 @@ struct smbcli_request *smb_raw_setpathinfo_send(struct smbcli_tree *tree,
 	/* send request and process the output */
 	req = smb_raw_setpathinfo_blob_send(tree, 
 					    mem_ctx,
-					    parms->generic.file.path, 
+					    parms->generic.in.file.path, 
 					    parms->generic.level,
 					    &blob);
 

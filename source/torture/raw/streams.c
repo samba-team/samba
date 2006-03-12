@@ -128,7 +128,7 @@ static BOOL test_stream_io(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	io.ntcreatex.in.fname = sname1;
 	status = smb_raw_open(cli->tree, mem_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	fnum = io.ntcreatex.file.fnum;
+	fnum = io.ntcreatex.out.file.fnum;
 
 	ret &= check_stream(cli, mem_ctx, fname, "Stream One", NULL);
 
@@ -137,7 +137,7 @@ static BOOL test_stream_io(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	io.ntcreatex.in.fname = fname;
 	status = smb_raw_open(cli->tree, mem_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	smbcli_close(cli->tree, io.ntcreatex.file.fnum);
+	smbcli_close(cli->tree, io.ntcreatex.out.file.fnum);
 
 	printf("writing to stream\n");
 	retsize = smbcli_write(cli->tree, fnum, 0, "test data", 0, 9);
@@ -151,7 +151,7 @@ static BOOL test_stream_io(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	io.ntcreatex.in.fname = sname1;
 	status = smb_raw_open(cli->tree, mem_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	fnum = io.ntcreatex.file.fnum;
+	fnum = io.ntcreatex.out.file.fnum;
 
 	printf("modifying stream\n");
 	retsize = smbcli_write(cli->tree, fnum, 0, "MORE DATA ", 5, 10);
@@ -166,7 +166,7 @@ static BOOL test_stream_io(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_OPEN_IF;
 	status = smb_raw_open(cli->tree, mem_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	fnum = io.ntcreatex.file.fnum;
+	fnum = io.ntcreatex.out.file.fnum;
 
 	printf("modifying stream\n");
 	retsize = smbcli_write(cli->tree, fnum, 0, "SECOND STREAM", 0, 13);
@@ -194,7 +194,7 @@ static BOOL test_stream_io(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_OPEN;
 	status = smb_raw_open(cli->tree, mem_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	fnum = io.ntcreatex.file.fnum;
+	fnum = io.ntcreatex.out.file.fnum;
 	
 	smbcli_close(cli->tree, fnum);
 	status = smbcli_unlink(cli->tree, sname2);

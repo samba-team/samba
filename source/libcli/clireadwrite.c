@@ -38,7 +38,7 @@ ssize_t smbcli_read(struct smbcli_tree *tree, int fnum, void *_buf, off_t offset
 	}
 
 	parms.readx.level = RAW_READ_READX;
-	parms.readx.file.fnum = fnum;
+	parms.readx.in.file.fnum = fnum;
 
 	/*
 	 * Set readsize to the maximum size we can handle in one readX,
@@ -101,7 +101,7 @@ ssize_t smbcli_write(struct smbcli_tree *tree,
 
 
 	parms.writex.level = RAW_WRITE_WRITEX;
-	parms.writex.file.fnum = fnum;
+	parms.writex.in.file.fnum = fnum;
 	parms.writex.in.wmode = write_mode;
 	parms.writex.in.remaining = 0;
 	
@@ -145,7 +145,7 @@ ssize_t smbcli_smbwrite(struct smbcli_tree *tree,
 		size_t size = MIN(size1, tree->session->transport->negotiate.max_xmit - 48);
 		if (size > 0xFFFF) size = 0xFFFF;
 		
-		parms.write.file.fnum = fnum;
+		parms.write.in.file.fnum = fnum;
 		parms.write.in.offset = offset;
 		parms.write.in.count = size;
 		parms.write.in.data = buf + total;

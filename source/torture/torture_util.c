@@ -68,7 +68,7 @@ NTSTATUS create_directory_handle(struct smbcli_tree *tree, const char *dname, in
 	talloc_free(mem_ctx);
 
 	if (NT_STATUS_IS_OK(status)) {
-		*fnum = io.ntcreatex.file.fnum;
+		*fnum = io.ntcreatex.out.file.fnum;
 	}
 
 	return status;
@@ -104,7 +104,7 @@ int create_complex_file(struct smbcli_state *cli, TALLOC_CTX *mem_ctx, const cha
 	if (strchr(fname, ':') == NULL) {
 		/* setup some EAs */
 		setfile.generic.level = RAW_SFILEINFO_EA_SET;
-		setfile.generic.file.fnum = fnum;
+		setfile.generic.in.file.fnum = fnum;
 		setfile.ea_set.in.num_eas = 2;	
 		setfile.ea_set.in.eas = talloc_array(mem_ctx, struct ea_struct, 2);
 		setfile.ea_set.in.eas[0].flags = 0;
@@ -122,7 +122,7 @@ int create_complex_file(struct smbcli_state *cli, TALLOC_CTX *mem_ctx, const cha
 	/* make sure all the timestamps aren't the same, and are also 
 	   in different DST zones*/
 	setfile.generic.level = RAW_SFILEINFO_SETATTRE;
-	setfile.generic.file.fnum = fnum;
+	setfile.generic.in.file.fnum = fnum;
 
 	setfile.setattre.in.create_time = t + 9*30*24*60*60;
 	setfile.setattre.in.access_time = t + 6*30*24*60*60;
@@ -135,7 +135,7 @@ int create_complex_file(struct smbcli_state *cli, TALLOC_CTX *mem_ctx, const cha
 
 	/* make sure all the timestamps aren't the same */
 	fileinfo.generic.level = RAW_FILEINFO_GETATTRE;
-	fileinfo.generic.file.fnum = fnum;
+	fileinfo.generic.in.file.fnum = fnum;
 
 	status = smb_raw_fileinfo(cli->tree, mem_ctx, &fileinfo);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -181,7 +181,7 @@ int create_complex_dir(struct smbcli_state *cli, TALLOC_CTX *mem_ctx, const char
 	if (strchr(dname, ':') == NULL) {
 		/* setup some EAs */
 		setfile.generic.level = RAW_SFILEINFO_EA_SET;
-		setfile.generic.file.fnum = fnum;
+		setfile.generic.in.file.fnum = fnum;
 		setfile.ea_set.in.num_eas = 2;	
 		setfile.ea_set.in.eas = talloc_array(mem_ctx, struct ea_struct, 2);
 		setfile.ea_set.in.eas[0].flags = 0;
@@ -199,7 +199,7 @@ int create_complex_dir(struct smbcli_state *cli, TALLOC_CTX *mem_ctx, const char
 	/* make sure all the timestamps aren't the same, and are also 
 	   in different DST zones*/
 	setfile.generic.level = RAW_SFILEINFO_SETATTRE;
-	setfile.generic.file.fnum = fnum;
+	setfile.generic.in.file.fnum = fnum;
 
 	setfile.setattre.in.create_time = t + 9*30*24*60*60;
 	setfile.setattre.in.access_time = t + 6*30*24*60*60;
@@ -212,7 +212,7 @@ int create_complex_dir(struct smbcli_state *cli, TALLOC_CTX *mem_ctx, const char
 
 	/* make sure all the timestamps aren't the same */
 	fileinfo.generic.level = RAW_FILEINFO_GETATTRE;
-	fileinfo.generic.file.fnum = fnum;
+	fileinfo.generic.in.file.fnum = fnum;
 
 	status = smb_raw_fileinfo(cli->tree, mem_ctx, &fileinfo);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -338,7 +338,7 @@ void torture_all_info(struct smbcli_tree *tree, const char *fname)
 	NTSTATUS status;
 
 	finfo.generic.level = RAW_FILEINFO_ALL_INFO;
-	finfo.generic.file.path = fname;
+	finfo.generic.in.file.path = fname;
 	status = smb_raw_pathinfo(tree, mem_ctx, &finfo);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("%s - %s\n", fname, nt_errstr(status));
@@ -380,7 +380,7 @@ BOOL torture_set_file_attribute(struct smbcli_tree *tree, const char *fname, uin
 	NTSTATUS status;
 
 	sfinfo.generic.level = RAW_SFILEINFO_BASIC_INFORMATION;
-	sfinfo.generic.file.path = fname;
+	sfinfo.generic.in.file.path = fname;
 
 	ZERO_STRUCT(sfinfo.basic_info.in);
 	sfinfo.basic_info.in.attrib = attrib;
@@ -405,7 +405,7 @@ NTSTATUS torture_set_sparse(struct smbcli_tree *tree, int fnum)
 
 	nt.ntioctl.level = RAW_IOCTL_NTIOCTL;
 	nt.ntioctl.in.function = 0x900c4;
-	nt.ntioctl.file.fnum = fnum;
+	nt.ntioctl.in.file.fnum = fnum;
 	nt.ntioctl.in.fsctl = True;
 	nt.ntioctl.in.filter = 0;
 
@@ -428,7 +428,7 @@ NTSTATUS torture_check_ea(struct smbcli_state *cli,
 	TALLOC_CTX *mem_ctx = talloc_new(cli);
 
 	info.ea_list.level = RAW_FILEINFO_EA_LIST;
-	info.ea_list.file.path = fname;
+	info.ea_list.in.file.path = fname;
 	info.ea_list.in.num_names = 1;
 	info.ea_list.in.ea_names = &ea;
 

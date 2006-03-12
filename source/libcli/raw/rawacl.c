@@ -38,7 +38,7 @@ struct smbcli_request *smb_raw_query_secdesc_send(struct smbcli_tree *tree,
 	nt.in.function = NT_TRANSACT_QUERY_SECURITY_DESC;
 	nt.in.setup = NULL;
 
-	SSVAL(params, 0, io->query_secdesc.file.fnum);
+	SSVAL(params, 0, io->query_secdesc.in.file.fnum);
 	SSVAL(params, 2, 0); /* padding */
 	SIVAL(params, 4, io->query_secdesc.in.secinfo_flags);
 
@@ -123,7 +123,7 @@ struct smbcli_request *smb_raw_set_secdesc_send(struct smbcli_tree *tree,
 	nt.in.function = NT_TRANSACT_SET_SECURITY_DESC;
 	nt.in.setup = NULL;
 
-	SSVAL(params, 0, io->set_secdesc.file.fnum);
+	SSVAL(params, 0, io->set_secdesc.in.file.fnum);
 	SSVAL(params, 2, 0); /* padding */
 	SIVAL(params, 4, io->set_secdesc.in.secinfo_flags);
 

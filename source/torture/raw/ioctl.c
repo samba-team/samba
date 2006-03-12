@@ -56,7 +56,7 @@ static BOOL test_ioctl(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
  	printf("Trying 0xFFFF\n");
  	ctl.ioctl.level = RAW_IOCTL_IOCTL;
-	ctl.ioctl.file.fnum = fnum;
+	ctl.ioctl.in.file.fnum = fnum;
 	ctl.ioctl.in.request = 0xFFFF;
 
 	status = smb_raw_ioctl(cli->tree, mem_ctx, &ctl);
@@ -64,14 +64,14 @@ static BOOL test_ioctl(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
  	printf("Trying QUERY_JOB_INFO\n");
  	ctl.ioctl.level = RAW_IOCTL_IOCTL;
-	ctl.ioctl.file.fnum = fnum;
+	ctl.ioctl.in.file.fnum = fnum;
 	ctl.ioctl.in.request = IOCTL_QUERY_JOB_INFO;
 
 	status = smb_raw_ioctl(cli->tree, mem_ctx, &ctl);
 	CHECK_STATUS(status, NT_STATUS_DOS(ERRSRV, ERRerror));
 
  	printf("Trying bad handle\n");
-	ctl.ioctl.file.fnum = fnum+1;
+	ctl.ioctl.in.file.fnum = fnum+1;
 	status = smb_raw_ioctl(cli->tree, mem_ctx, &ctl);
 	CHECK_STATUS(status, NT_STATUS_DOS(ERRSRV, ERRerror));
 
@@ -101,7 +101,7 @@ static BOOL test_fsctl(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	printf("trying sparse file\n");
 	nt.ioctl.level = RAW_IOCTL_NTIOCTL;
 	nt.ntioctl.in.function = FSCTL_SET_SPARSE;
-	nt.ntioctl.file.fnum = fnum;
+	nt.ntioctl.in.file.fnum = fnum;
 	nt.ntioctl.in.fsctl = True;
 	nt.ntioctl.in.filter = 0;
 
@@ -111,7 +111,7 @@ static BOOL test_fsctl(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	printf("trying batch oplock\n");
 	nt.ioctl.level = RAW_IOCTL_NTIOCTL;
 	nt.ntioctl.in.function = (FSCTL_FILESYSTEM | (2<<2));
-	nt.ntioctl.file.fnum = fnum;
+	nt.ntioctl.in.file.fnum = fnum;
 	nt.ntioctl.in.fsctl = True;
 	nt.ntioctl.in.filter = 0;
 
@@ -123,12 +123,12 @@ static BOOL test_fsctl(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	}
 
  	printf("Trying bad handle\n");
-	nt.ntioctl.file.fnum = fnum+1;
+	nt.ntioctl.in.file.fnum = fnum+1;
 	status = smb_raw_ioctl(cli->tree, mem_ctx, &nt);
 	CHECK_STATUS(status, NT_STATUS_INVALID_HANDLE);
 
 #if 0
-	nt.ntioctl.file.fnum = fnum;
+	nt.ntioctl.in.file.fnum = fnum;
 	for (i=0;i<100;i++) {
 		nt.ntioctl.in.function = FSCTL_FILESYSTEM + (i<<2);
 		status = smb_raw_ioctl(cli->tree, mem_ctx, &nt);

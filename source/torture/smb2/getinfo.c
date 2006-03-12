@@ -109,13 +109,13 @@ static BOOL torture_smb2_fileinfo(struct smb2_tree *tree)
 				SMB2_CONTINUE_FLAG_RESTART;
 		}
 		file_levels[i].finfo.generic.level = file_levels[i].level;
-		file_levels[i].finfo.generic.file.handle = hfile;
+		file_levels[i].finfo.generic.in.file.handle = hfile;
 		file_levels[i].fstatus = smb2_getinfo_file(tree, tree, &file_levels[i].finfo);
 		if (!NT_STATUS_IS_OK(file_levels[i].fstatus)) {
 			printf("%s failed on file - %s\n", file_levels[i].name, nt_errstr(file_levels[i].fstatus));
 		}
 		file_levels[i].dinfo.generic.level = file_levels[i].level;
-		file_levels[i].dinfo.generic.file.handle = hdir;
+		file_levels[i].dinfo.generic.in.file.handle = hdir;
 		file_levels[i].dstatus = smb2_getinfo_file(tree, tree, &file_levels[i].dinfo);
 		if (!NT_STATUS_IS_OK(file_levels[i].dstatus)) {
 			printf("%s failed on dir - %s\n", file_levels[i].name, nt_errstr(file_levels[i].dstatus));

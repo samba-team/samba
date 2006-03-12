@@ -94,16 +94,16 @@ BOOL torture_raw_notify(void)
 
 	status = smb_raw_open(cli->tree, mem_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	fnum = io.ntcreatex.file.fnum;
+	fnum = io.ntcreatex.out.file.fnum;
 
 	status = smb_raw_open(cli->tree, mem_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	fnum2 = io.ntcreatex.file.fnum;
+	fnum2 = io.ntcreatex.out.file.fnum;
 
 	/* ask for a change notify */
 	notify.notify.in.buffer_size = 1000;
 	notify.notify.in.completion_filter = 0x3;
-	notify.notify.file.fnum = fnum;
+	notify.notify.in.file.fnum = fnum;
 	notify.notify.in.recursive = True;
 
 	printf("testing notify mkdir\n");
@@ -154,12 +154,12 @@ BOOL torture_raw_notify(void)
 
 	/* setup a new notify on a different directory handle. This
 	   new notify won't see the events above. */
-	notify.notify.file.fnum = fnum2;
+	notify.notify.in.file.fnum = fnum2;
 	req2 = smb_raw_changenotify_send(cli->tree, &notify);
 
 	/* whereas this notify will see the above buffered events as
 	   well */
-	notify.notify.file.fnum = fnum;
+	notify.notify.in.file.fnum = fnum;
 	req = smb_raw_changenotify_send(cli->tree, &notify);
 
 	status = smbcli_unlink(cli->tree, BASEDIR "\\test0.txt");
@@ -202,7 +202,7 @@ BOOL torture_raw_notify(void)
 		CHECK_VAL(notify.notify.out.changes[i].action, NOTIFY_ACTION_REMOVED);
 	}
 
-	notify.notify.file.fnum = fnum2;
+	notify.notify.in.file.fnum = fnum2;
 	req = smb_raw_changenotify_send(cli->tree, &notify);
 	status = smb_raw_changenotify_recv(req, mem_ctx, &notify);
 	CHECK_STATUS(status, NT_STATUS_OK);

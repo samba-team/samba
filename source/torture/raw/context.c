@@ -179,11 +179,11 @@ static BOOL test_session(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	io.ntcreatex.in.fname = fname;
 	status = smb_raw_open(tree, mem_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	fnum = io.ntcreatex.file.fnum;
+	fnum = io.ntcreatex.out.file.fnum;
 
 	printf("write using the old vuid\n");
 	wr.generic.level = RAW_WRITE_WRITEX;
-	wr.writex.file.fnum = fnum;
+	wr.writex.in.file.fnum = fnum;
 	wr.writex.in.offset = 0;
 	wr.writex.in.wmode = 0;
 	wr.writex.in.remaining = 0;
@@ -213,7 +213,7 @@ static BOOL test_session(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	printf("the fnum should have been auto-closed\n");
 	cl.close.level = RAW_CLOSE_CLOSE;
-	cl.close.file.fnum = fnum;
+	cl.close.in.file.fnum = fnum;
 	cl.close.in.write_time = 0;
 	status = smb_raw_close(cli->tree, &cl);
 	CHECK_STATUS(status, NT_STATUS_INVALID_HANDLE);
@@ -319,11 +319,11 @@ static BOOL test_tree(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	io.ntcreatex.in.fname = fname;
 	status = smb_raw_open(tree, mem_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	fnum = io.ntcreatex.file.fnum;
+	fnum = io.ntcreatex.out.file.fnum;
 
 	printf("write using the old tid\n");
 	wr.generic.level = RAW_WRITE_WRITEX;
-	wr.writex.file.fnum = fnum;
+	wr.writex.in.file.fnum = fnum;
 	wr.writex.in.offset = 0;
 	wr.writex.in.wmode = 0;
 	wr.writex.in.remaining = 0;
@@ -348,7 +348,7 @@ static BOOL test_tree(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	printf("the fnum should have been auto-closed\n");
 	cl.close.level = RAW_CLOSE_CLOSE;
-	cl.close.file.fnum = fnum;
+	cl.close.in.file.fnum = fnum;
 	cl.close.in.write_time = 0;
 	status = smb_raw_close(cli->tree, &cl);
 	CHECK_STATUS(status, NT_STATUS_INVALID_HANDLE);
@@ -404,12 +404,12 @@ static BOOL test_pid(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	io.ntcreatex.in.fname = fname;
 	status = smb_raw_open(cli->tree, mem_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	fnum = io.ntcreatex.file.fnum;
+	fnum = io.ntcreatex.out.file.fnum;
 
 	printf("write using the old pid\n");
 	cli->session->pid = pid1;
 	wr.generic.level = RAW_WRITE_WRITEX;
-	wr.writex.file.fnum = fnum;
+	wr.writex.in.file.fnum = fnum;
 	wr.writex.in.offset = 0;
 	wr.writex.in.wmode = 0;
 	wr.writex.in.remaining = 0;
@@ -449,7 +449,7 @@ static BOOL test_pid(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	printf("the fnum should have been auto-closed\n");
 	cl.close.level = RAW_CLOSE_CLOSE;
-	cl.close.file.fnum = fnum;
+	cl.close.in.file.fnum = fnum;
 	cl.close.in.write_time = 0;
 	status = smb_raw_close(cli->tree, &cl);
 	CHECK_STATUS(status, NT_STATUS_INVALID_HANDLE);

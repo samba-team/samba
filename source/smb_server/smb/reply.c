@@ -235,9 +235,9 @@ void smbsrv_reply_ioctl(struct smbsrv_request *req)
 	REQ_CHECK_WCT(req, 3);
 	REQ_TALLOC(io, union smb_ioctl);
 
-	io->ioctl.level = RAW_IOCTL_IOCTL;
-	io->ioctl.file.fnum   = req_fnum(req, req->in.vwv, VWV(0));
-	io->ioctl.in.request  = IVAL(req->in.vwv, VWV(1));
+	io->ioctl.level		= RAW_IOCTL_IOCTL;
+	io->ioctl.in.file.fnum	= req_fnum(req, req->in.vwv, VWV(0));
+	io->ioctl.in.request	= IVAL(req->in.vwv, VWV(1));
 
 	req->async_states->state |= NTVFS_ASYNC_STATE_MAY_ASYNC;
 	req->async_states->send_fn = reply_ioctl_send;
@@ -303,8 +303,8 @@ void smbsrv_reply_getatr(struct smbsrv_request *req)
 	st->getattr.level = RAW_FILEINFO_GETATTR;
 
 	/* parse request */
-	req_pull_ascii4(req, &st->getattr.file.path, req->in.data, STR_TERMINATE);
-	if (!st->getattr.file.path) {
+	req_pull_ascii4(req, &st->getattr.in.file.path, req->in.data, STR_TERMINATE);
+	if (!st->getattr.in.file.path) {
 		smbsrv_send_error(req, NT_STATUS_OBJECT_NAME_NOT_FOUND);
 		return;
 	}
@@ -335,9 +335,9 @@ void smbsrv_reply_setatr(struct smbsrv_request *req)
 	st->setattr.in.attrib     = SVAL(req->in.vwv, VWV(0));
 	st->setattr.in.write_time = srv_pull_dos_date3(req->smb_conn, req->in.vwv + VWV(1));
 	
-	req_pull_ascii4(req, &st->setattr.file.path, req->in.data, STR_TERMINATE);
+	req_pull_ascii4(req, &st->setattr.in.file.path, req->in.data, STR_TERMINATE);
 
-	if (!st->setattr.file.path) {
+	if (!st->setattr.in.file.path) {
 		smbsrv_send_error(req, NT_STATUS_OBJECT_NAME_NOT_FOUND);
 		return;
 	}
@@ -410,7 +410,7 @@ static void reply_open_send(struct smbsrv_request *req)
 	/* construct reply */
 	smbsrv_setup_reply(req, 7, 0);
 
-	SSVAL(req->out.vwv, VWV(0), oi->openold.file.fnum);
+	SSVAL(req->out.vwv, VWV(0), oi->openold.out.file.fnum);
 	SSVAL(req->out.vwv, VWV(1), oi->openold.out.attrib);
 	srv_push_dos_date3(req->smb_conn, req->out.vwv, VWV(2), oi->openold.out.write_time);
 	SIVAL(req->out.vwv, VWV(4), oi->openold.out.size);
@@ -470,7 +470,7 @@ static void reply_open_and_X_send(struct smbsrv_request *req)
 
 	SSVAL(req->out.vwv, VWV(0), SMB_CHAIN_NONE);
 	SSVAL(req->out.vwv, VWV(1), 0);
-	SSVAL(req->out.vwv, VWV(2), oi->openx.file.fnum);
+	SSVAL(req->out.vwv, VWV(2), oi->openx.out.file.fnum);
 	SSVAL(req->out.vwv, VWV(3), oi->openx.out.attrib);
 	srv_push_dos_date3(req->smb_conn, req->out.vwv, VWV(4), oi->openx.out.write_time);
 	SIVAL(req->out.vwv, VWV(6), oi->openx.out.size);
@@ -485,7 +485,7 @@ static void reply_open_and_X_send(struct smbsrv_request *req)
 		REQ_VWV_RESERVED(17, 2);
 	}
 
-	req->chained_fnum = oi->openx.file.fnum;
+	req->chained_fnum = oi->openx.out.file.fnum;
 
 	smbsrv_chain_reply(req);
 }
@@ -542,7 +542,7 @@ static void reply_mknew_send(struct smbsrv_request *req)
 	/* build the reply */
 	smbsrv_setup_reply(req, 1, 0);
 
-	SSVAL(req->out.vwv, VWV(0), oi->mknew.file.fnum);
+	SSVAL(req->out.vwv, VWV(0), oi->mknew.out.file.fnum);
 
 	smbsrv_send_reply(req);
 }
@@ -596,7 +596,7 @@ static void reply_ctemp_send(struct smbsrv_request *req)
 	/* build the reply */
 	smbsrv_setup_reply(req, 1, 0);
 
-	SSVAL(req->out.vwv, VWV(0), oi->ctemp.file.fnum);
+	SSVAL(req->out.vwv, VWV(0), oi->ctemp.out.file.fnum);
 
 	/* the returned filename is relative to the directory */
 	req_push_str(req, NULL, oi->ctemp.out.name, -1, STR_TERMINATE | STR_ASCII);
@@ -682,7 +682,7 @@ void smbsrv_reply_readbraw(struct smbsrv_request *req)
 		goto failed;
 	}
 
-	io.readbraw.file.fnum  = req_fnum(req, req->in.vwv, VWV(0));
+	io.readbraw.in.file.fnum = req_fnum(req, req->in.vwv, VWV(0));
 	io.readbraw.in.offset  = IVAL(req->in.vwv, VWV(1));
 	io.readbraw.in.maxcnt  = SVAL(req->in.vwv, VWV(3));
 	io.readbraw.in.mincnt  = SVAL(req->in.vwv, VWV(4));
@@ -766,7 +766,7 @@ void smbsrv_reply_lockread(struct smbsrv_request *req)
 	REQ_TALLOC(io, union smb_read);
 
 	io->lockread.level = RAW_READ_LOCKREAD;
-	io->lockread.file.fnum    = req_fnum(req, req->in.vwv, VWV(0));
+	io->lockread.in.file.fnum = req_fnum(req, req->in.vwv, VWV(0));
 	io->lockread.in.count     = SVAL(req->in.vwv, VWV(1));
 	io->lockread.in.offset    = IVAL(req->in.vwv, VWV(2));
 	io->lockread.in.remaining = SVAL(req->in.vwv, VWV(4));
@@ -825,7 +825,7 @@ void smbsrv_reply_read(struct smbsrv_request *req)
 	REQ_TALLOC(io, union smb_read);
 	
 	io->read.level = RAW_READ_READ;
-	io->read.file.fnum        = req_fnum(req, req->in.vwv, VWV(0));
+	io->read.in.file.fnum     = req_fnum(req, req->in.vwv, VWV(0));
 	io->read.in.count         = SVAL(req->in.vwv, VWV(1));
 	io->read.in.offset        = IVAL(req->in.vwv, VWV(2));
 	io->read.in.remaining     = SVAL(req->in.vwv, VWV(4));
@@ -895,7 +895,7 @@ void smbsrv_reply_read_and_X(struct smbsrv_request *req)
 	REQ_TALLOC(io, union smb_read);
 
 	io->readx.level = RAW_READ_READX;
-	io->readx.file.fnum        = req_fnum(req, req->in.vwv, VWV(2));
+	io->readx.in.file.fnum     = req_fnum(req, req->in.vwv, VWV(2));
 	io->readx.in.offset        = IVAL(req->in.vwv, VWV(3));
 	io->readx.in.maxcnt        = SVAL(req->in.vwv, VWV(5));
 	io->readx.in.mincnt        = SVAL(req->in.vwv, VWV(6));
@@ -978,7 +978,7 @@ void smbsrv_reply_writeunlock(struct smbsrv_request *req)
 	REQ_TALLOC(io, union smb_write);
 
 	io->writeunlock.level = RAW_WRITE_WRITEUNLOCK;
-	io->writeunlock.file.fnum      = req_fnum(req, req->in.vwv, VWV(0));
+	io->writeunlock.in.file.fnum   = req_fnum(req, req->in.vwv, VWV(0));
 	io->writeunlock.in.count       = SVAL(req->in.vwv, VWV(1));
 	io->writeunlock.in.offset      = IVAL(req->in.vwv, VWV(2));
 	io->writeunlock.in.remaining   = SVAL(req->in.vwv, VWV(4));
@@ -1036,7 +1036,7 @@ void smbsrv_reply_write(struct smbsrv_request *req)
 	REQ_TALLOC(io, union smb_write);
 
 	io->write.level = RAW_WRITE_WRITE;
-	io->write.file.fnum      = req_fnum(req, req->in.vwv, VWV(0));
+	io->write.in.file.fnum   = req_fnum(req, req->in.vwv, VWV(0));
 	io->write.in.count       = SVAL(req->in.vwv, VWV(1));
 	io->write.in.offset      = IVAL(req->in.vwv, VWV(2));
 	io->write.in.remaining   = SVAL(req->in.vwv, VWV(4));
@@ -1101,7 +1101,7 @@ void smbsrv_reply_write_and_X(struct smbsrv_request *req)
 	REQ_TALLOC(io, union smb_write);
 
 	io->writex.level = RAW_WRITE_WRITEX;
-	io->writex.file.fnum    = req_fnum(req, req->in.vwv, VWV(2));
+	io->writex.in.file.fnum = req_fnum(req, req->in.vwv, VWV(2));
 	io->writex.in.offset    = IVAL(req->in.vwv, VWV(3));
 	io->writex.in.wmode     = SVAL(req->in.vwv, VWV(7));
 	io->writex.in.remaining = SVAL(req->in.vwv, VWV(8));
@@ -1159,9 +1159,9 @@ void smbsrv_reply_lseek(struct smbsrv_request *req)
 	REQ_CHECK_WCT(req, 4);
 	REQ_TALLOC(io, union smb_seek);
 
-	io->lseek.file.fnum   = req_fnum(req, req->in.vwv,  VWV(0));
-	io->lseek.in.mode   = SVAL(req->in.vwv,  VWV(1));
-	io->lseek.in.offset = IVALS(req->in.vwv, VWV(2));
+	io->lseek.in.file.fnum	= req_fnum(req, req->in.vwv,  VWV(0));
+	io->lseek.in.mode	= SVAL(req->in.vwv,  VWV(1));
+	io->lseek.in.offset	= IVALS(req->in.vwv, VWV(2));
 
 	req->async_states->state |= NTVFS_ASYNC_STATE_MAY_ASYNC;
 	req->async_states->send_fn = reply_lseek_send;
@@ -1184,7 +1184,7 @@ void smbsrv_reply_flush(struct smbsrv_request *req)
 	REQ_CHECK_WCT(req, 1);
 	REQ_TALLOC(io, union smb_flush);
 
-	io->flush.file.fnum   = req_fnum(req, req->in.vwv,  VWV(0));
+	io->flush.in.file.fnum = req_fnum(req, req->in.vwv,  VWV(0));
 
 	req->async_states->state |= NTVFS_ASYNC_STATE_MAY_ASYNC;
 	req->async_states->send_fn = reply_simple_send;
@@ -1234,7 +1234,7 @@ void smbsrv_reply_close(struct smbsrv_request *req)
 	REQ_TALLOC(io, union smb_close);
 
 	io->close.level = RAW_CLOSE_CLOSE;
-	io->close.file.fnum = req_fnum(req, req->in.vwv,  VWV(0));
+	io->close.in.file.fnum  = req_fnum(req, req->in.vwv,  VWV(0));
 	io->close.in.write_time = srv_pull_dos_date3(req->smb_conn, req->in.vwv + VWV(1));
 
 	req->async_states->state |= NTVFS_ASYNC_STATE_MAY_ASYNC;
@@ -1280,7 +1280,7 @@ void smbsrv_reply_writeclose(struct smbsrv_request *req)
 	REQ_TALLOC(io, union smb_write);
 
 	io->writeclose.level = RAW_WRITE_WRITECLOSE;
-	io->writeclose.file.fnum = req_fnum(req, req->in.vwv, VWV(0));
+	io->writeclose.in.file.fnum = req_fnum(req, req->in.vwv, VWV(0));
 	io->writeclose.in.count  = SVAL(req->in.vwv, VWV(1));
 	io->writeclose.in.offset = IVAL(req->in.vwv, VWV(2));
 	io->writeclose.in.mtime  = srv_pull_dos_date3(req->smb_conn, req->in.vwv + VWV(4));
@@ -1313,10 +1313,10 @@ void smbsrv_reply_lock(struct smbsrv_request *req)
 	REQ_CHECK_WCT(req, 5);
 	REQ_TALLOC(lck, union smb_lock);
 
-	lck->lock.level     = RAW_LOCK_LOCK;
-	lck->lock.file.fnum = req_fnum(req, req->in.vwv, VWV(0));
-	lck->lock.in.count  = IVAL(req->in.vwv, VWV(1));
-	lck->lock.in.offset = IVAL(req->in.vwv, VWV(3));
+	lck->lock.level		= RAW_LOCK_LOCK;
+	lck->lock.in.file.fnum	= req_fnum(req, req->in.vwv, VWV(0));
+	lck->lock.in.count	= IVAL(req->in.vwv, VWV(1));
+	lck->lock.in.offset	= IVAL(req->in.vwv, VWV(3));
 
 	req->async_states->state |= NTVFS_ASYNC_STATE_MAY_ASYNC;
 	req->async_states->send_fn = reply_simple_send;
@@ -1339,10 +1339,10 @@ void smbsrv_reply_unlock(struct smbsrv_request *req)
 	REQ_CHECK_WCT(req, 5);
 	REQ_TALLOC(lck, union smb_lock);
 
-	lck->unlock.level = RAW_LOCK_UNLOCK;
-	lck->unlock.file.fnum = req_fnum(req, req->in.vwv, VWV(0));
-	lck->unlock.in.count  = IVAL(req->in.vwv, VWV(1));
-	lck->unlock.in.offset = IVAL(req->in.vwv, VWV(3));
+	lck->unlock.level		= RAW_LOCK_UNLOCK;
+	lck->unlock.in.file.fnum	= req_fnum(req, req->in.vwv, VWV(0));
+	lck->unlock.in.count 		= IVAL(req->in.vwv, VWV(1));
+	lck->unlock.in.offset		= IVAL(req->in.vwv, VWV(3));
 
 	req->async_states->state |= NTVFS_ASYNC_STATE_MAY_ASYNC;
 	req->async_states->send_fn = reply_simple_send;
@@ -1420,7 +1420,7 @@ static void reply_printopen_send(struct smbsrv_request *req)
 	/* construct reply */
 	smbsrv_setup_reply(req, 1, 0);
 
-	SSVAL(req->out.vwv, VWV(0), oi->openold.file.fnum);
+	SSVAL(req->out.vwv, VWV(0), oi->openold.out.file.fnum);
 
 	smbsrv_send_reply(req);
 }
@@ -1464,7 +1464,7 @@ void smbsrv_reply_printclose(struct smbsrv_request *req)
 	REQ_TALLOC(io, union smb_close);
 
 	io->splclose.level = RAW_CLOSE_SPLCLOSE;
-	io->splclose.file.fnum = req_fnum(req, req->in.vwv,  VWV(0));
+	io->splclose.in.file.fnum = req_fnum(req, req->in.vwv,  VWV(0));
 
 	req->async_states->state |= NTVFS_ASYNC_STATE_MAY_ASYNC;
 	req->async_states->send_fn = reply_simple_send;
@@ -1564,7 +1564,7 @@ void smbsrv_reply_printwrite(struct smbsrv_request *req)
 		return;
 	}
 
-	io->splwrite.file.fnum= req_fnum(req, req->in.vwv, VWV(0));
+	io->splwrite.in.file.fnum = req_fnum(req, req->in.vwv, VWV(0));
 	io->splwrite.in.count = SVAL(req->in.data, 1);
 	io->splwrite.in.data  = req->in.data + 3;
 
@@ -1793,7 +1793,7 @@ void smbsrv_reply_lockingX(struct smbsrv_request *req)
 	REQ_TALLOC(lck, union smb_lock);
 
 	lck->lockx.level = RAW_LOCK_LOCKX;
-	lck->lockx.file.fnum    = req_fnum(req, req->in.vwv, VWV(2));
+	lck->lockx.in.file.fnum = req_fnum(req, req->in.vwv, VWV(2));
 	lck->lockx.in.mode      = SVAL(req->in.vwv, VWV(3));
 	lck->lockx.in.timeout   = IVAL(req->in.vwv, VWV(4));
 	lck->lockx.in.ulock_cnt = SVAL(req->in.vwv, VWV(6));
@@ -1880,7 +1880,7 @@ void smbsrv_reply_setattrE(struct smbsrv_request *req)
 	REQ_TALLOC(info, union smb_setfileinfo);
 
 	info->setattre.level = RAW_SFILEINFO_SETATTRE;
-	info->setattre.file.fnum      = req_fnum(req, req->in.vwv,    VWV(0));
+	info->setattre.in.file.fnum   = req_fnum(req, req->in.vwv,    VWV(0));
 	info->setattre.in.create_time = srv_pull_dos_date2(req->smb_conn, req->in.vwv + VWV(1));
 	info->setattre.in.access_time = srv_pull_dos_date2(req->smb_conn, req->in.vwv + VWV(3));
 	info->setattre.in.write_time  = srv_pull_dos_date2(req->smb_conn, req->in.vwv + VWV(5));
@@ -1948,7 +1948,7 @@ void smbsrv_reply_getattrE(struct smbsrv_request *req)
 	REQ_TALLOC(info, union smb_fileinfo);
 
 	info->getattr.level = RAW_FILEINFO_GETATTRE;
-	info->getattr.file.fnum = req_fnum(req, req->in.vwv, VWV(0));
+	info->getattr.in.file.fnum = req_fnum(req, req->in.vwv, VWV(0));
 
 	req->async_states->state |= NTVFS_ASYNC_STATE_MAY_ASYNC;
 	req->async_states->send_fn = reply_getattrE_send;
@@ -2269,7 +2269,7 @@ static void reply_ntcreate_and_X_send(struct smbsrv_request *req)
 	SCVAL(req->out.vwv, VWV(2), io->ntcreatex.out.oplock_level);
 
 	/* the rest of the parameters are not aligned! */
-	SSVAL(req->out.vwv,        5, io->ntcreatex.file.fnum);
+	SSVAL(req->out.vwv,        5, io->ntcreatex.out.file.fnum);
 	SIVAL(req->out.vwv,        7, io->ntcreatex.out.create_action);
 	push_nttime(req->out.vwv, 11, io->ntcreatex.out.create_time);
 	push_nttime(req->out.vwv, 19, io->ntcreatex.out.access_time);
@@ -2282,7 +2282,7 @@ static void reply_ntcreate_and_X_send(struct smbsrv_request *req)
 	SSVAL(req->out.vwv,       65, io->ntcreatex.out.ipc_state);
 	SCVAL(req->out.vwv,       67, io->ntcreatex.out.is_directory);
 
-	req->chained_fnum = io->ntcreatex.file.fnum;
+	req->chained_fnum = io->ntcreatex.out.file.fnum;
 
 	smbsrv_chain_reply(req);
 }

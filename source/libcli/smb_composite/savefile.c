@@ -55,7 +55,7 @@ static NTSTATUS setup_close(struct composite_context *c,
 	NT_STATUS_HAVE_NO_MEMORY(io_close);
 	
 	io_close->close.level = RAW_CLOSE_CLOSE;
-	io_close->close.file.fnum = fnum;
+	io_close->close.in.file.fnum = fnum;
 	io_close->close.in.write_time = 0;
 
 	state->req = smb_raw_close_send(tree, io_close);
@@ -86,7 +86,7 @@ static NTSTATUS savefile_open(struct composite_context *c,
 	NT_STATUS_NOT_OK_RETURN(status);
 	
 	if (io->in.size == 0) {
-		return setup_close(c, tree, state->io_open->ntcreatex.file.fnum);
+		return setup_close(c, tree, state->io_open->ntcreatex.out.file.fnum);
 	}
 
 	/* setup for the first write */
@@ -94,7 +94,7 @@ static NTSTATUS savefile_open(struct composite_context *c,
 	NT_STATUS_HAVE_NO_MEMORY(io_write);
 	
 	io_write->writex.level        = RAW_WRITE_WRITEX;
-	io_write->writex.file.fnum    = state->io_open->ntcreatex.file.fnum;
+	io_write->writex.in.file.fnum = state->io_open->ntcreatex.out.file.fnum;
 	io_write->writex.in.offset    = 0;
 	io_write->writex.in.wmode     = 0;
 	io_write->writex.in.remaining = 0;
@@ -135,7 +135,7 @@ static NTSTATUS savefile_write(struct composite_context *c,
 	/* we might be done */
 	if (state->io_write->writex.out.nwritten != state->io_write->writex.in.count ||
 	    state->total_written == io->in.size) {
-		return setup_close(c, tree, state->io_write->writex.file.fnum);
+		return setup_close(c, tree, state->io_write->writex.in.file.fnum);
 	}
 
 	/* setup for the next write */
