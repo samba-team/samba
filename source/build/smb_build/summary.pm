@@ -20,7 +20,7 @@ sub showitem($$$)
 	}
 
 	print "Support for $desc: ";
-	if ($#need > 0) {
+	if ($#need >= 0) {
 		print "no (install " . join(',',@need) . ")\n";
 	} else {
 		print "yes\n";
@@ -30,13 +30,16 @@ sub showitem($$$)
 sub show($$)
 {
 	my ($output,$config) = @_;
+
 	print "Summary:\n\n";
 	showitem($output, "GTK+ frontends", ["gtk","gconf"]);
 	showitem($output, "SSL in SWAT", ["GNUTLS"]);
-	showitem($output, "threads in smbd", ["PTHREAD"]);
+	showitem($output, "threads in smbd (see --with-pthread)", ["PTHREAD"]);
 	showitem($output, "intelligent command line editing", ["READLINE"]);
-	showitem($output, "changing process titles", ["SETPROCTITLE"]);
+	showitem($output, "changing process titles (see --with-setproctitle)", ["SETPROCTITLE"]);
 	showitem($output, "using extended attributes", ["XATTR"]);
+	showitem($output, "using libblkid", ["BLKID"]);
+	showitem($output, "using pam", ["PAM"]);
 	print "Using external popt: $output->{EXT_LIB_POPT}->{ENABLE}\n";
 	print "Using shared libraries internally (experimental): ";
 
