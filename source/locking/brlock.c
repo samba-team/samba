@@ -752,7 +752,7 @@ static BOOL brl_pending_overlap(struct lock_struct *lock, struct lock_struct *pe
 static BOOL brl_unlock_windows(struct byte_range_lock *br_lck, const struct lock_struct *plock)
 {
 	unsigned int i, j;
-	struct lock_struct *lock;
+	struct lock_struct *lock = NULL;
 	struct lock_struct *locks = (struct lock_struct *)br_lck->lock_data;
 
 #if ZERO_ZERO
@@ -850,7 +850,7 @@ static BOOL brl_unlock_windows(struct byte_range_lock *br_lck, const struct lock
 static BOOL brl_unlock_posix(struct byte_range_lock *br_lck, const struct lock_struct *plock)
 {
 	unsigned int i, j, count;
-	struct lock_struct *lock;
+	struct lock_struct *lock = NULL;
 	struct lock_struct *tp;
 	struct lock_struct *locks = (struct lock_struct *)br_lck->lock_data;
 	BOOL overlap_found = False;
