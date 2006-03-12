@@ -374,7 +374,7 @@ static int ildb_request_send(struct ldb_module *module, struct ldap_message *msg
 	if (timeout) {
 		req->time_event = event_add_timed(req->conn->event.event_ctx, h, 
 						  timeval_current_ofs(timeout, 0),
-						  ildb_request_timeout, ildb_ac);
+						  ildb_request_timeout, h);
 	}
 
 	*handle = h;
