@@ -523,6 +523,8 @@ static BOOL ensurepath(char *fname)
 
 	if ((partpath == NULL) || (ffname == NULL)){
 		DEBUG(0, ("Out of memory in ensurepath: %s\n", fname));
+		SAFE_FREE(partpath);
+		SAFE_FREE(ffname);
 		return(False);
 	}
 
