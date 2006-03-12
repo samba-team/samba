@@ -445,9 +445,11 @@ static BOOL receive_message_or_smb(char *buffer, int buffer_len, int timeout)
 		struct timeval tmp;
 		struct timeval *tp = get_timed_events_timeout(&tmp,SMBD_SELECT_TIMEOUT);
 
-		to = timeval_min(&to, tp);
-		if (timeval_is_zero(&to)) {
-			return True;
+		if (tp) {
+			to = timeval_min(&to, tp);
+			if (timeval_is_zero(&to)) {
+				return True;
+			}
 		}
 	}
 	
