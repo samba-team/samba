@@ -1914,7 +1914,10 @@ ADS_STATUS ads_set_machine_sd(ADS_STRUCT *ads, const char *hostname, char *dn)
 	 * we have to bail out before prs_init */
 	ps_wire.is_dynamic = False;
 
-	if (!ads) return ADS_ERROR(LDAP_SERVER_DOWN);
+	if (!ads) {
+		SAFE_FREE(escaped_hostname);
+		return ADS_ERROR(LDAP_SERVER_DOWN);
+	}
 
 	ret = ADS_ERROR(LDAP_SUCCESS);
 
@@ -1931,6 +1934,8 @@ ADS_STATUS ads_set_machine_sd(ADS_STRUCT *ads, const char *hostname, char *dn)
 	SAFE_FREE(escaped_hostname);
 
 	ret = ads_search(ads, (void *) &res, expr, attrs);
+
+	SAFE_FREE(expr);
 
 	if (!ADS_ERR_OK(ret)) return ret;
 
