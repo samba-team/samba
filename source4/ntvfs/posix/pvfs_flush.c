@@ -46,8 +46,8 @@ NTSTATUS pvfs_flush(struct ntvfs_module_context *ntvfs,
 	struct pvfs_state *pvfs = ntvfs->private_data;
 	struct pvfs_file *f;
 
-	if (io->flush.file.fnum != 0xFFFF) {
-		f = pvfs_find_fd(pvfs, req, io->flush.file.fnum);
+	if (io->flush.in.file.fnum != 0xFFFF) {
+		f = pvfs_find_fd(pvfs, req, io->flush.in.file.fnum);
 		if (!f) {
 			return NT_STATUS_INVALID_HANDLE;
 		}

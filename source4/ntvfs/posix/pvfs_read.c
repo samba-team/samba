@@ -41,7 +41,7 @@ NTSTATUS pvfs_read(struct ntvfs_module_context *ntvfs,
 		return ntvfs_map_read(ntvfs, req, rd);
 	}
 
-	f = pvfs_find_fd(pvfs, req, rd->readx.file.fnum);
+	f = pvfs_find_fd(pvfs, req, rd->readx.in.file.fnum);
 	if (!f) {
 		return NT_STATUS_INVALID_HANDLE;
 	}

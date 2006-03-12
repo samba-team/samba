@@ -65,7 +65,7 @@ BOOL torture_raw_close(void)
 	REOPEN;
 
 	io.close.level = RAW_CLOSE_CLOSE;
-	io.close.file.fnum = fnum;
+	io.close.in.file.fnum = fnum;
 	io.close.in.write_time = basetime;
 	status = smb_raw_close(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
@@ -77,7 +77,7 @@ BOOL torture_raw_close(void)
 
 	/* the file should have the write time set */
 	finfo.generic.level = RAW_FILEINFO_ALL_INFO;
-	finfo.generic.file.path = fname;
+	finfo.generic.in.file.path = fname;
 	status = smb_raw_pathinfo(cli->tree, mem_ctx, &finfo);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
@@ -108,19 +108,19 @@ BOOL torture_raw_close(void)
 	REOPEN;
 
 	finfo2.generic.level = RAW_FILEINFO_ALL_INFO;
-	finfo2.generic.file.path = fname;
+	finfo2.generic.in.file.path = fname;
 	status = smb_raw_pathinfo(cli->tree, mem_ctx, &finfo2);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 	io.close.level = RAW_CLOSE_CLOSE;
-	io.close.file.fnum = fnum;
+	io.close.in.file.fnum = fnum;
 	io.close.in.write_time = 0;
 	status = smb_raw_close(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 	/* the file should have the write time set equal to access time */
 	finfo.generic.level = RAW_FILEINFO_ALL_INFO;
-	finfo.generic.file.path = fname;
+	finfo.generic.in.file.path = fname;
 	status = smb_raw_pathinfo(cli->tree, mem_ctx, &finfo);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
@@ -136,31 +136,31 @@ BOOL torture_raw_close(void)
 	/* check splclose on a file */
 	REOPEN;
 	io.splclose.level = RAW_CLOSE_SPLCLOSE;
-	io.splclose.file.fnum = fnum;
+	io.splclose.in.file.fnum = fnum;
 	status = smb_raw_close(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_DOS(ERRSRV, ERRerror));
 
 	printf("testing flush\n");
 	smbcli_close(cli->tree, fnum);
 
-	io_flush.flush.file.fnum = fnum;
+	io_flush.flush.in.file.fnum = fnum;
 	status = smb_raw_flush(cli->tree, &io_flush);
 	CHECK_STATUS(status, NT_STATUS_INVALID_HANDLE);
 
-	io_flush.flush.file.fnum = 0xffff;
+	io_flush.flush.in.file.fnum = 0xffff;
 	status = smb_raw_flush(cli->tree, &io_flush);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 	REOPEN;
 
-	io_flush.flush.file.fnum = fnum;
+	io_flush.flush.in.file.fnum = fnum;
 	status = smb_raw_flush(cli->tree, &io_flush);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 	printf("Testing SMBexit\n");
 	smb_raw_exit(cli->session);
 
-	io_flush.flush.file.fnum = fnum;
+	io_flush.flush.in.file.fnum = fnum;
 	status = smb_raw_flush(cli->tree, &io_flush);
 	CHECK_STATUS(status, NT_STATUS_INVALID_HANDLE);
 	

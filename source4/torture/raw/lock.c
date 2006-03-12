@@ -71,7 +71,7 @@ static BOOL test_lock(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	printf("Trying 0/0 lock\n");
 	io.lock.level = RAW_LOCK_LOCK;
-	io.lock.file.fnum = fnum;
+	io.lock.in.file.fnum = fnum;
 	io.lock.in.count = 0;
 	io.lock.in.offset = 0;
 	status = smb_raw_lock(cli->tree, &io);
@@ -86,7 +86,7 @@ static BOOL test_lock(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	printf("Trying 0/1 lock\n");
 	io.lock.level = RAW_LOCK_LOCK;
-	io.lock.file.fnum = fnum;
+	io.lock.in.file.fnum = fnum;
 	io.lock.in.count = 1;
 	io.lock.in.offset = 0;
 	status = smb_raw_lock(cli->tree, &io);
@@ -104,7 +104,7 @@ static BOOL test_lock(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	printf("Trying 0xEEFFFFFF lock\n");
 	io.lock.level = RAW_LOCK_LOCK;
-	io.lock.file.fnum = fnum;
+	io.lock.in.file.fnum = fnum;
 	io.lock.in.count = 4000;
 	io.lock.in.offset = 0xEEFFFFFF;
 	status = smb_raw_lock(cli->tree, &io);
@@ -122,7 +122,7 @@ static BOOL test_lock(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	printf("Trying 0xEF000000 lock\n");
 	io.lock.level = RAW_LOCK_LOCK;
-	io.lock.file.fnum = fnum;
+	io.lock.in.file.fnum = fnum;
 	io.lock.in.count = 4000;
 	io.lock.in.offset = 0xEEFFFFFF;
 	status = smb_raw_lock(cli->tree, &io);
@@ -140,7 +140,7 @@ static BOOL test_lock(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	printf("Trying max lock\n");
 	io.lock.level = RAW_LOCK_LOCK;
-	io.lock.file.fnum = fnum;
+	io.lock.in.file.fnum = fnum;
 	io.lock.in.count = 4000;
 	io.lock.in.offset = 0xEF000000;
 	status = smb_raw_lock(cli->tree, &io);
@@ -158,7 +158,7 @@ static BOOL test_lock(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	printf("Trying wrong pid unlock\n");
 	io.lock.level = RAW_LOCK_LOCK;
-	io.lock.file.fnum = fnum;
+	io.lock.in.file.fnum = fnum;
 	io.lock.in.count = 4002;
 	io.lock.in.offset = 10001;
 	status = smb_raw_lock(cli->tree, &io);
@@ -206,7 +206,7 @@ static BOOL test_lockx(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	}
 
 	io.lockx.level = RAW_LOCK_LOCKX;
-	io.lockx.file.fnum = fnum;
+	io.lockx.in.file.fnum = fnum;
 	io.lockx.in.mode = LOCKING_ANDX_LARGE_FILES;
 	io.lockx.in.timeout = 0;
 	io.lockx.in.ulock_cnt = 0;
@@ -394,7 +394,7 @@ static BOOL test_pidhigh(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	}
 
 	io.lockx.level = RAW_LOCK_LOCKX;
-	io.lockx.file.fnum = fnum;
+	io.lockx.in.file.fnum = fnum;
 	io.lockx.in.mode = LOCKING_ANDX_LARGE_FILES;
 	io.lockx.in.timeout = 0;
 	io.lockx.in.ulock_cnt = 0;
@@ -468,7 +468,7 @@ static BOOL test_async(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	}
 
 	io.lockx.level = RAW_LOCK_LOCKX;
-	io.lockx.file.fnum = fnum;
+	io.lockx.in.file.fnum = fnum;
 	io.lockx.in.mode = LOCKING_ANDX_LARGE_FILES;
 	io.lockx.in.timeout = 0;
 	io.lockx.in.ulock_cnt = 0;
@@ -621,7 +621,7 @@ static BOOL test_changetype(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	}
 
 	io.lockx.level = RAW_LOCK_LOCKX;
-	io.lockx.file.fnum = fnum;
+	io.lockx.in.file.fnum = fnum;
 	io.lockx.in.mode = LOCKING_ANDX_SHARED_LOCK;
 	io.lockx.in.timeout = 0;
 	io.lockx.in.ulock_cnt = 0;

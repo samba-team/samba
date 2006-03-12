@@ -77,7 +77,7 @@ static NTSTATUS nttrans_create_send(struct nttrans_op *op)
 	NT_STATUS_HAVE_NO_MEMORY(params);
 
 	SSVAL(params,        0, io->ntcreatex.out.oplock_level);
-	SSVAL(params,        2, io->ntcreatex.file.fnum);
+	SSVAL(params,        2, io->ntcreatex.out.file.fnum);
 	SIVAL(params,        4, io->ntcreatex.out.create_action);
 	SIVAL(params,        8, 0); /* ea error offset */
 	push_nttime(params, 12, io->ntcreatex.out.create_time);
@@ -234,7 +234,7 @@ static NTSTATUS nttrans_query_sec_desc(struct smbsrv_request *req,
 	NT_STATUS_HAVE_NO_MEMORY(io);
 
 	io->query_secdesc.level            = RAW_FILEINFO_SEC_DESC;
-	io->query_secdesc.file.fnum        = SVAL(trans->in.params.data, 0);
+	io->query_secdesc.in.file.fnum     = SVAL(trans->in.params.data, 0);
 	io->query_secdesc.in.secinfo_flags = IVAL(trans->in.params.data, 4);
 
 	op->op_info = io;
@@ -263,7 +263,7 @@ static NTSTATUS nttrans_set_sec_desc(struct smbsrv_request *req,
 	NT_STATUS_HAVE_NO_MEMORY(io);
 
 	io->set_secdesc.level            = RAW_SFILEINFO_SEC_DESC;
-	io->set_secdesc.file.fnum        = SVAL(trans->in.params.data, 0);
+	io->set_secdesc.in.file.fnum     = SVAL(trans->in.params.data, 0);
 	io->set_secdesc.in.secinfo_flags = IVAL(trans->in.params.data, 4);
 
 	io->set_secdesc.in.sd = talloc(io, struct security_descriptor);
@@ -322,7 +322,7 @@ static NTSTATUS nttrans_ioctl(struct smbsrv_request *req,
 	blob = &trans->in.data;
 
 	nt->ntioctl.level = RAW_IOCTL_NTIOCTL;
-	nt->ntioctl.file.fnum = fnum;
+	nt->ntioctl.in.file.fnum = fnum;
 	nt->ntioctl.in.function = function;
 	nt->ntioctl.in.fsctl = fsctl;
 	nt->ntioctl.in.filter = filter;
@@ -404,7 +404,7 @@ static NTSTATUS nttrans_notify_change(struct smbsrv_request *req,
 	NT_STATUS_HAVE_NO_MEMORY(info);
 
 	info->notify.in.completion_filter = IVAL(trans->in.setup, 0);
-	info->notify.file.fnum            = SVAL(trans->in.setup, 4);
+	info->notify.in.file.fnum         = SVAL(trans->in.setup, 4);
 	info->notify.in.recursive         = SVAL(trans->in.setup, 6);
 	info->notify.in.buffer_size       = trans->in.max_param;
 

@@ -265,7 +265,7 @@ static NTSTATUS ipc_open_ntcreatex(struct ntvfs_module_context *ntvfs,
 	}
 
 	ZERO_STRUCT(oi->ntcreatex.out);
-	oi->ntcreatex.file.fnum = p->fnum;
+	oi->ntcreatex.out.file.fnum = p->fnum;
 	oi->ntcreatex.out.ipc_state = p->ipc_state;
 	oi->ntcreatex.out.file_type = FILE_TYPE_MESSAGE_MODE_PIPE;
 
@@ -288,9 +288,9 @@ static NTSTATUS ipc_open_openx(struct ntvfs_module_context *ntvfs,
 	}
 
 	ZERO_STRUCT(oi->openx.out);
-	oi->openx.file.fnum = p->fnum;
-	oi->openx.out.ftype = 2;
-	oi->openx.out.devstate = p->ipc_state;
+	oi->openx.out.file.fnum	= p->fnum;
+	oi->openx.out.ftype	= 2;
+	oi->openx.out.devstate	= p->ipc_state;
 	
 	return status;
 }
@@ -382,7 +382,7 @@ static NTSTATUS ipc_read(struct ntvfs_module_context *ntvfs,
 		return ntvfs_map_read(ntvfs, req, rd);
 	}
 
-	fnum = rd->readx.file.fnum;
+	fnum = rd->readx.in.file.fnum;
 
 	p = pipe_state_find(private, fnum);
 	if (!p) {
@@ -425,7 +425,7 @@ static NTSTATUS ipc_write(struct ntvfs_module_context *ntvfs,
 		return ntvfs_map_write(ntvfs, req, wr);
 	}
 
-	fnum = wr->writex.file.fnum;
+	fnum = wr->writex.in.file.fnum;
 	data.data = discard_const_p(void, wr->writex.in.data);
 	data.length = wr->writex.in.count;
 
@@ -478,7 +478,7 @@ static NTSTATUS ipc_close(struct ntvfs_module_context *ntvfs,
 		return ntvfs_map_close(ntvfs, req, io);
 	}
 
-	p = pipe_state_find(private, io->close.file.fnum);
+	p = pipe_state_find(private, io->close.in.file.fnum);
 	if (!p) {
 		return NT_STATUS_INVALID_HANDLE;
 	}

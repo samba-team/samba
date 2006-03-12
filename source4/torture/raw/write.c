@@ -50,7 +50,7 @@
 
 #define CHECK_ALL_INFO(v, field) do { \
 	finfo.all_info.level = RAW_FILEINFO_ALL_INFO; \
-	finfo.all_info.file.path = fname; \
+	finfo.all_info.in.file.path = fname; \
 	status = smb_raw_pathinfo(cli->tree, mem_ctx, &finfo); \
 	CHECK_STATUS(status, NT_STATUS_OK); \
 	if ((v) != finfo.all_info.out.field) { \
@@ -124,7 +124,7 @@ static BOOL test_write(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	}
 
 	printf("Trying zero write\n");
-	io.write.file.fnum = fnum;
+	io.write.in.file.fnum = fnum;
 	io.write.in.count = 0;
 	io.write.in.offset = 0;
 	io.write.in.remaining = 0;
@@ -171,7 +171,7 @@ static BOOL test_write(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_BUFFER(buf, seed, 4000);
 
 	printf("Trying bad fnum\n");
-	io.write.file.fnum = fnum+1;
+	io.write.in.file.fnum = fnum+1;
 	io.write.in.count = 4000;
 	io.write.in.offset = 0;
 	io.write.in.data = buf;
@@ -184,7 +184,7 @@ static BOOL test_write(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	
 	printf("Trying 2^32 offset\n");
 	setup_buffer(buf, seed, maxsize);
-	io.write.file.fnum = fnum;
+	io.write.in.file.fnum = fnum;
 	io.write.in.count = 4000;
 	io.write.in.offset = 0xFFFFFFFF - 2000;
 	io.write.in.data = buf;
@@ -241,7 +241,7 @@ static BOOL test_writex(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	}
 
 	printf("Trying zero write\n");
-	io.writex.file.fnum = fnum;
+	io.writex.in.file.fnum = fnum;
 	io.writex.in.offset = 0;
 	io.writex.in.wmode = 0;
 	io.writex.in.remaining = 0;
@@ -289,7 +289,7 @@ static BOOL test_writex(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_BUFFER(buf, seed, 4000);
 
 	printf("Trying bad fnum\n");
-	io.writex.file.fnum = fnum+1;
+	io.writex.in.file.fnum = fnum+1;
 	io.writex.in.count = 4000;
 	io.writex.in.offset = 0;
 	io.writex.in.data = buf;
@@ -297,7 +297,7 @@ static BOOL test_writex(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_STATUS(status, NT_STATUS_INVALID_HANDLE);
 
 	printf("Testing wmode\n");
-	io.writex.file.fnum = fnum;
+	io.writex.in.file.fnum = fnum;
 	io.writex.in.count = 1;
 	io.writex.in.offset = 0;
 	io.writex.in.wmode = 1;
@@ -332,7 +332,7 @@ static BOOL test_writex(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	
 	printf("Trying 2^32 offset\n");
 	setup_buffer(buf, seed, maxsize);
-	io.writex.file.fnum = fnum;
+	io.writex.in.file.fnum = fnum;
 	io.writex.in.count = 4000;
 	io.writex.in.offset = 0xFFFFFFFF - 2000;
 	io.writex.in.data = buf;
@@ -352,7 +352,7 @@ static BOOL test_writex(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	for (i=33;i<64;i++) {
 		printf("Trying 2^%d offset\n", i);
 		setup_buffer(buf, seed+1, maxsize);
-		io.writex.file.fnum = fnum;
+		io.writex.in.file.fnum = fnum;
 		io.writex.in.count = 4000;
 		io.writex.in.offset = ((uint64_t)1) << i;
 		io.writex.in.data = buf;
@@ -417,7 +417,7 @@ static BOOL test_writeunlock(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	}
 
 	printf("Trying zero write\n");
-	io.writeunlock.file.fnum = fnum;
+	io.writeunlock.in.file.fnum = fnum;
 	io.writeunlock.in.count = 0;
 	io.writeunlock.in.offset = 0;
 	io.writeunlock.in.remaining = 0;
@@ -482,7 +482,7 @@ static BOOL test_writeunlock(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_BUFFER(buf, seed, 4000);
 
 	printf("Trying bad fnum\n");
-	io.writeunlock.file.fnum = fnum+1;
+	io.writeunlock.in.file.fnum = fnum+1;
 	io.writeunlock.in.count = 4000;
 	io.writeunlock.in.offset = 0;
 	io.writeunlock.in.data = buf;
@@ -495,7 +495,7 @@ static BOOL test_writeunlock(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	
 	printf("Trying 2^32 offset\n");
 	setup_buffer(buf, seed, maxsize);
-	io.writeunlock.file.fnum = fnum;
+	io.writeunlock.in.file.fnum = fnum;
 	io.writeunlock.in.count = 4000;
 	io.writeunlock.in.offset = 0xFFFFFFFF - 2000;
 	io.writeunlock.in.data = buf;
@@ -554,7 +554,7 @@ static BOOL test_writeclose(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	}
 
 	printf("Trying zero write\n");
-	io.writeclose.file.fnum = fnum;
+	io.writeclose.in.file.fnum = fnum;
 	io.writeclose.in.count = 0;
 	io.writeclose.in.offset = 0;
 	io.writeclose.in.mtime = 0;
@@ -580,7 +580,7 @@ static BOOL test_writeclose(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_STATUS(status, NT_STATUS_INVALID_HANDLE);
 
 	fnum = smbcli_open(cli->tree, fname, O_RDWR, DENY_NONE);
-	io.writeclose.file.fnum = fnum;
+	io.writeclose.in.file.fnum = fnum;
 
 	if (smbcli_read(cli->tree, fnum, buf, 0, 13) != 13) {
 		printf("read failed at %s\n", __location__);
@@ -596,7 +596,7 @@ static BOOL test_writeclose(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_VALUE(io.writeclose.out.nwritten, io.writeclose.in.count);
 
 	fnum = smbcli_open(cli->tree, fname, O_RDWR, DENY_NONE);
-	io.writeclose.file.fnum = fnum;
+	io.writeclose.in.file.fnum = fnum;
 
 	memset(buf, 0, maxsize);
 	if (smbcli_read(cli->tree, fnum, buf, 0, 13) != 13) {
@@ -621,7 +621,7 @@ static BOOL test_writeclose(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_STATUS(status, NT_STATUS_INVALID_HANDLE);
 
 	fnum = smbcli_open(cli->tree, fname, O_RDWR, DENY_NONE);
-	io.writeclose.file.fnum = fnum;
+	io.writeclose.in.file.fnum = fnum;
 
 	memset(buf, 0, maxsize);
 	if (smbcli_read(cli->tree, fnum, buf, 0, 4000) != 4000) {
@@ -632,7 +632,7 @@ static BOOL test_writeclose(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_BUFFER(buf, seed, 4000);
 
 	printf("Trying bad fnum\n");
-	io.writeclose.file.fnum = fnum+1;
+	io.writeclose.in.file.fnum = fnum+1;
 	io.writeclose.in.count = 4000;
 	io.writeclose.in.offset = 0;
 	io.writeclose.in.data = buf;
@@ -645,7 +645,7 @@ static BOOL test_writeclose(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	
 	printf("Trying 2^32 offset\n");
 	setup_buffer(buf, seed, maxsize);
-	io.writeclose.file.fnum = fnum;
+	io.writeclose.in.file.fnum = fnum;
 	io.writeclose.in.count = 4000;
 	io.writeclose.in.offset = 0xFFFFFFFF - 2000;
 	io.writeclose.in.data = buf;
@@ -655,7 +655,7 @@ static BOOL test_writeclose(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_ALL_INFO(io.writeclose.in.count + (uint64_t)io.writeclose.in.offset, size);
 
 	fnum = smbcli_open(cli->tree, fname, O_RDWR, DENY_NONE);
-	io.writeclose.file.fnum = fnum;
+	io.writeclose.in.file.fnum = fnum;
 
 	memset(buf, 0, maxsize);
 	if (smbcli_read(cli->tree, fnum, buf, io.writeclose.in.offset, 4000) != 4000) {

@@ -38,11 +38,11 @@ static NTSTATUS smbcli_link_internal(struct smbcli_tree *tree,
 
 	if (hard_link) {
 		parms.generic.level = RAW_SFILEINFO_UNIX_HLINK;
-		parms.unix_hlink.file.path = fname_src;
+		parms.unix_hlink.in.file.path = fname_src;
 		parms.unix_hlink.in.link_dest = fname_dst;
 	} else {
 		parms.generic.level = RAW_SFILEINFO_UNIX_LINK;
-		parms.unix_link.file.path = fname_src;
+		parms.unix_link.in.file.path = fname_src;
 		parms.unix_link.in.link_dest = fname_dst;
 	}
 	
@@ -110,7 +110,7 @@ static NTSTATUS smbcli_unix_chmod_chown_internal(struct smbcli_tree *tree,
 	NTSTATUS status;
 
 	parms.generic.level = SMB_SFILEINFO_UNIX_BASIC;
-	parms.unix_basic.file.path = fname;
+	parms.unix_basic.in.file.path = fname;
 	parms.unix_basic.in.uid = uid;
 	parms.unix_basic.in.gid = gid;
 	parms.unix_basic.in.mode = mode;
@@ -213,7 +213,7 @@ NTSTATUS smbcli_nt_delete_on_close(struct smbcli_tree *tree, int fnum, BOOL flag
 	NTSTATUS status;
 
 	parms.disposition_info.level = RAW_SFILEINFO_DISPOSITION_INFO;
-	parms.disposition_info.file.fnum = fnum;
+	parms.disposition_info.in.file.fnum = fnum;
 	parms.disposition_info.in.delete_on_close = flag;
 	
 	status = smb_raw_setfileinfo(tree, &parms);
@@ -256,7 +256,7 @@ int smbcli_nt_create_full(struct smbcli_tree *tree, const char *fname,
 	talloc_free(mem_ctx);
 
 	if (NT_STATUS_IS_OK(status)) {
-		return open_parms.ntcreatex.file.fnum;
+		return open_parms.ntcreatex.out.file.fnum;
 	}
 	
 	return -1;
@@ -323,7 +323,7 @@ int smbcli_open(struct smbcli_tree *tree, const char *fname, int flags,
 	talloc_free(mem_ctx);
 
 	if (NT_STATUS_IS_OK(status)) {
-		return open_parms.openx.file.fnum;
+		return open_parms.openx.out.file.fnum;
 	}
 
 	return -1;
@@ -339,7 +339,7 @@ NTSTATUS smbcli_close(struct smbcli_tree *tree, int fnum)
 	NTSTATUS status;
 
 	close_parms.close.level = RAW_CLOSE_CLOSE;
-	close_parms.close.file.fnum = fnum;
+	close_parms.close.in.file.fnum = fnum;
 	close_parms.close.in.write_time = 0;
 	status = smb_raw_close(tree, &close_parms);
 	return status;
@@ -358,7 +358,7 @@ NTSTATUS smbcli_locktype(struct smbcli_tree *tree, int fnum,
 	NTSTATUS status;
 
 	parms.lockx.level = RAW_LOCK_LOCKX;
-	parms.lockx.file.fnum = fnum;
+	parms.lockx.in.file.fnum = fnum;
 	parms.lockx.in.mode = locktype;
 	parms.lockx.in.timeout = timeout;
 	parms.lockx.in.ulock_cnt = 0;
@@ -386,7 +386,7 @@ NTSTATUS smbcli_lock(struct smbcli_tree *tree, int fnum,
 	NTSTATUS status;
 
 	parms.lockx.level = RAW_LOCK_LOCKX;
-	parms.lockx.file.fnum = fnum;
+	parms.lockx.in.file.fnum = fnum;
 	parms.lockx.in.mode = (lock_type == READ_LOCK? 1 : 0);
 	parms.lockx.in.timeout = timeout;
 	parms.lockx.in.ulock_cnt = 0;
@@ -412,7 +412,7 @@ NTSTATUS smbcli_unlock(struct smbcli_tree *tree, int fnum, uint32_t offset, uint
 	NTSTATUS status;
 
 	parms.lockx.level = RAW_LOCK_LOCKX;
-	parms.lockx.file.fnum = fnum;
+	parms.lockx.in.file.fnum = fnum;
 	parms.lockx.in.mode = 0;
 	parms.lockx.in.timeout = 0;
 	parms.lockx.in.ulock_cnt = 1;
@@ -444,7 +444,7 @@ NTSTATUS smbcli_lock64(struct smbcli_tree *tree, int fnum,
 	}
 
 	parms.lockx.level = RAW_LOCK_LOCKX;
-	parms.lockx.file.fnum = fnum;
+	parms.lockx.in.file.fnum = fnum;
 	
 	ltype = (lock_type == READ_LOCK? 1 : 0);
 	ltype |= LOCKING_ANDX_LARGE_FILES;
@@ -478,7 +478,7 @@ NTSTATUS smbcli_unlock64(struct smbcli_tree *tree, int fnum, off_t offset,
 	}
 
 	parms.lockx.level = RAW_LOCK_LOCKX;
-	parms.lockx.file.fnum = fnum;
+	parms.lockx.in.file.fnum = fnum;
 	parms.lockx.in.mode = LOCKING_ANDX_LARGE_FILES;
 	parms.lockx.in.timeout = 0;
 	parms.lockx.in.ulock_cnt = 1;
@@ -505,7 +505,7 @@ NTSTATUS smbcli_getattrE(struct smbcli_tree *tree, int fnum,
 	NTSTATUS status;
 
 	parms.getattre.level = RAW_FILEINFO_GETATTRE;
-	parms.getattre.file.fnum = fnum;
+	parms.getattre.in.file.fnum = fnum;
 
 	status = smb_raw_fileinfo(tree, NULL, &parms);
 
@@ -545,7 +545,7 @@ NTSTATUS smbcli_getatr(struct smbcli_tree *tree, const char *fname,
 	NTSTATUS status;
 
 	parms.getattr.level = RAW_FILEINFO_GETATTR;
-	parms.getattr.file.path = fname;
+	parms.getattr.in.file.path = fname;
 
 	status = smb_raw_pathinfo(tree, NULL, &parms);
 	
@@ -579,7 +579,7 @@ NTSTATUS smbcli_setatr(struct smbcli_tree *tree, const char *fname, uint16_t mod
 	NTSTATUS status;
 
 	parms.setattr.level = RAW_SFILEINFO_SETATTR;
-	parms.setattr.file.path = fname;
+	parms.setattr.in.file.path = fname;
 	parms.setattr.in.attrib = mode;
 	parms.setattr.in.write_time = t;
 	
@@ -663,7 +663,7 @@ int smbcli_ctemp(struct smbcli_tree *tree, const char *path, char **tmp_path)
 	}
 	talloc_free(mem_ctx);
 	if (NT_STATUS_IS_OK(status)) {
-		return open_parms.ctemp.file.fnum;
+		return open_parms.ctemp.out.file.fnum;
 	}
 	return -1;
 }

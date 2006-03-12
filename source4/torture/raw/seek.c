@@ -68,17 +68,17 @@ static BOOL test_seek(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	}
 
 	finfo.generic.level = RAW_FILEINFO_POSITION_INFORMATION;
-	finfo.position_information.file.fnum = fnum;
+	finfo.position_information.in.file.fnum = fnum;
 	
 	printf("Trying bad handle\n");
-	io.lseek.file.fnum = fnum+1;
+	io.lseek.in.file.fnum = fnum+1;
 	io.lseek.in.mode = SEEK_MODE_START;
 	io.lseek.in.offset = 0;
 	status = smb_raw_seek(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_INVALID_HANDLE);
 
 	printf("Trying simple seek\n");
-	io.lseek.file.fnum = fnum;
+	io.lseek.in.file.fnum = fnum;
 	io.lseek.in.mode = SEEK_MODE_START;
 	io.lseek.in.offset = 17;
 	status = smb_raw_seek(cli->tree, &io);
@@ -89,7 +89,7 @@ static BOOL test_seek(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_VALUE(finfo.position_information.out.position, 0);
 	
 	printf("Trying relative seek\n");
-	io.lseek.file.fnum = fnum;
+	io.lseek.in.file.fnum = fnum;
 	io.lseek.in.mode = SEEK_MODE_CURRENT;
 	io.lseek.in.offset = -3;
 	status = smb_raw_seek(cli->tree, &io);
@@ -97,19 +97,19 @@ static BOOL test_seek(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_VALUE(io.lseek.out.offset, 14);
 
 	printf("Trying end seek\n");
-	io.lseek.file.fnum = fnum;
+	io.lseek.in.file.fnum = fnum;
 	io.lseek.in.mode = SEEK_MODE_END;
 	io.lseek.in.offset = 0;
 	status = smb_raw_seek(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	finfo.generic.level = RAW_FILEINFO_ALL_INFO;
-	finfo.all_info.file.fnum = fnum;
+	finfo.all_info.in.file.fnum = fnum;
 	status = smb_raw_fileinfo(cli->tree, mem_ctx, &finfo);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_VALUE(io.lseek.out.offset, finfo.all_info.out.size);
 
 	printf("Trying max seek\n");
-	io.lseek.file.fnum = fnum;
+	io.lseek.in.file.fnum = fnum;
 	io.lseek.in.mode = SEEK_MODE_START;
 	io.lseek.in.offset = -1;
 	status = smb_raw_seek(cli->tree, &io);
@@ -118,13 +118,13 @@ static BOOL test_seek(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	printf("Testing position information change\n");
 	finfo.generic.level = RAW_FILEINFO_POSITION_INFORMATION;
-	finfo.position_information.file.fnum = fnum;
+	finfo.position_information.in.file.fnum = fnum;
 	status = smb_raw_fileinfo(cli->tree, mem_ctx, &finfo);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_VALUE(finfo.position_information.out.position, 0);
 
 	printf("Trying max overflow\n");
-	io.lseek.file.fnum = fnum;
+	io.lseek.in.file.fnum = fnum;
 	io.lseek.in.mode = SEEK_MODE_CURRENT;
 	io.lseek.in.offset = 1000;
 	status = smb_raw_seek(cli->tree, &io);
@@ -133,7 +133,7 @@ static BOOL test_seek(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	printf("Testing position information change\n");
 	finfo.generic.level = RAW_FILEINFO_POSITION_INFORMATION;
-	finfo.position_information.file.fnum = fnum;
+	finfo.position_information.in.file.fnum = fnum;
 	status = smb_raw_fileinfo(cli->tree, mem_ctx, &finfo);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_VALUE(finfo.position_information.out.position, 0);
@@ -148,12 +148,12 @@ static BOOL test_seek(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	printf("Testing position information change\n");
 	finfo.generic.level = RAW_FILEINFO_POSITION_INFORMATION;
-	finfo.position_information.file.fnum = fnum;
+	finfo.position_information.in.file.fnum = fnum;
 	status = smb_raw_fileinfo(cli->tree, mem_ctx, &finfo);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_VALUE(finfo.position_information.out.position, 0);
 
-	io.lseek.file.fnum = fnum;
+	io.lseek.in.file.fnum = fnum;
 	io.lseek.in.mode = SEEK_MODE_CURRENT;
 	io.lseek.in.offset = 0;
 	status = smb_raw_seek(cli->tree, &io);
@@ -168,7 +168,7 @@ static BOOL test_seek(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	printf("Testing position information change\n");
 	finfo.generic.level = RAW_FILEINFO_POSITION_INFORMATION;
-	finfo.position_information.file.fnum = fnum;
+	finfo.position_information.in.file.fnum = fnum;
 	status = smb_raw_fileinfo(cli->tree, mem_ctx, &finfo);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_VALUE(finfo.position_information.out.position, 1);
@@ -185,19 +185,19 @@ static BOOL test_seek(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 		goto done;
 	}
 	sfinfo.generic.level = RAW_SFILEINFO_POSITION_INFORMATION;
-	sfinfo.position_information.file.fnum = fnum2;
+	sfinfo.position_information.in.file.fnum = fnum2;
 	sfinfo.position_information.in.position = 25;
 	status = smb_raw_setfileinfo(cli->tree, &sfinfo);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 	finfo.generic.level = RAW_FILEINFO_POSITION_INFORMATION;
-	finfo.position_information.file.fnum = fnum2;
+	finfo.position_information.in.file.fnum = fnum2;
 	status = smb_raw_fileinfo(cli->tree, mem_ctx, &finfo);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_VALUE(finfo.position_information.out.position, 25);
 
 	finfo.generic.level = RAW_FILEINFO_POSITION_INFORMATION;
-	finfo.position_information.file.fnum = fnum;
+	finfo.position_information.in.file.fnum = fnum;
 	status = smb_raw_fileinfo(cli->tree, mem_ctx, &finfo);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_VALUE(finfo.position_information.out.position, 1);
@@ -205,19 +205,19 @@ static BOOL test_seek(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	printf("position_information via paths\n");
 
 	sfinfo.generic.level = RAW_SFILEINFO_POSITION_INFORMATION;
-	sfinfo.position_information.file.path = fname;
+	sfinfo.position_information.in.file.path = fname;
 	sfinfo.position_information.in.position = 32;
 	status = smb_raw_setpathinfo(cli->tree, &sfinfo);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 	finfo.generic.level = RAW_FILEINFO_POSITION_INFORMATION;
-	finfo.position_information.file.fnum = fnum2;
+	finfo.position_information.in.file.fnum = fnum2;
 	status = smb_raw_fileinfo(cli->tree, mem_ctx, &finfo);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_VALUE(finfo.position_information.out.position, 25);
 
 	finfo.generic.level = RAW_FILEINFO_POSITION_INFORMATION;
-	finfo.position_information.file.path = fname;
+	finfo.position_information.in.file.path = fname;
 	status = smb_raw_pathinfo(cli->tree, mem_ctx, &finfo);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_VALUE(finfo.position_information.out.position, 0);

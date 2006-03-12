@@ -155,7 +155,7 @@ static NTSTATUS ntvfs_map_open_finish(struct ntvfs_module_context *ntvfs,
 
 	switch (io->generic.level) {
 	case RAW_OPEN_OPEN:
-		io->openold.file.fnum      = io2->generic.file.fnum;
+		io->openold.out.file.fnum  = io2->generic.out.file.fnum;
 		io->openold.out.attrib     = io2->generic.out.attrib;
 		io->openold.out.write_time = nt_time_to_unix(io2->generic.out.write_time);
 		io->openold.out.size       = io2->generic.out.size;
@@ -163,7 +163,7 @@ static NTSTATUS ntvfs_map_open_finish(struct ntvfs_module_context *ntvfs,
 		break;
 
 	case RAW_OPEN_OPENX:
-		io->openx.file.fnum       = io2->generic.file.fnum;
+		io->openx.out.file.fnum   = io2->generic.out.file.fnum;
 		io->openx.out.attrib      = io2->generic.out.attrib;
 		io->openx.out.write_time  = nt_time_to_unix(io2->generic.out.write_time);
 		io->openx.out.size        = io2->generic.out.size;
@@ -183,7 +183,7 @@ static NTSTATUS ntvfs_map_open_finish(struct ntvfs_module_context *ntvfs,
 		break;
 
 	case RAW_OPEN_T2OPEN:
-		io->t2open.file.fnum       = io2->generic.file.fnum;
+		io->t2open.out.file.fnum   = io2->generic.out.file.fnum;
 		io->t2open.out.attrib      = io2->generic.out.attrib;
 		io->t2open.out.write_time  = nt_time_to_unix(io2->generic.out.write_time);
 		io->t2open.out.size        = io2->generic.out.size;
@@ -196,14 +196,14 @@ static NTSTATUS ntvfs_map_open_finish(struct ntvfs_module_context *ntvfs,
 
 	case RAW_OPEN_MKNEW:
 	case RAW_OPEN_CREATE:
-		io->mknew.file.fnum = io2->generic.file.fnum;
-		write_time = io->mknew.in.write_time;
+		io->mknew.out.file.fnum	= io2->generic.out.file.fnum;
+		write_time		= io->mknew.in.write_time;
 		break;
 
 	case RAW_OPEN_CTEMP:
-		io->ctemp.file.fnum = io2->generic.file.fnum;
-		io->ctemp.out.name  = talloc_strdup(req, io2->generic.in.fname + 
-						    strlen(io->ctemp.in.directory) + 1);
+		io->ctemp.out.file.fnum = io2->generic.out.file.fnum;
+		io->ctemp.out.name 	= talloc_strdup(req, io2->generic.in.fname + 
+							strlen(io->ctemp.in.directory) + 1);
 		NT_STATUS_HAVE_NO_MEMORY(io->ctemp.out.name);
 		break;
 
@@ -220,7 +220,7 @@ static NTSTATUS ntvfs_map_open_finish(struct ntvfs_module_context *ntvfs,
 		sf = talloc(req, union smb_setfileinfo);
 		NT_STATUS_HAVE_NO_MEMORY(sf);
 		sf->generic.level           = RAW_SFILEINFO_STANDARD;
-		sf->generic.file.fnum       = io2->generic.file.fnum;
+		sf->generic.in.file.fnum    = io2->generic.out.file.fnum;
 		sf->standard.in.create_time = 0;
 		sf->standard.in.write_time  = write_time;
 		sf->standard.in.access_time = 0;
@@ -231,7 +231,7 @@ static NTSTATUS ntvfs_map_open_finish(struct ntvfs_module_context *ntvfs,
 		sf = talloc(req, union smb_setfileinfo);			
 		NT_STATUS_HAVE_NO_MEMORY(sf);
 		sf->generic.level            = RAW_SFILEINFO_END_OF_FILE_INFORMATION;
-		sf->generic.file.fnum        = io2->generic.file.fnum;
+		sf->generic.in.file.fnum     = io2->generic.out.file.fnum;
 		sf->end_of_file_info.in.size = set_size;
 		status = ntvfs->ops->setfileinfo(ntvfs, req, sf);
 		if (NT_STATUS_IS_OK(status)) {
@@ -861,7 +861,7 @@ _PUBLIC_ NTSTATUS ntvfs_map_qfileinfo(struct ntvfs_module_context *ntvfs,
 
 	/* ask the backend for the generic info */
 	info2->generic.level = RAW_FILEINFO_GENERIC;
-	info2->generic.file.fnum = info->generic.file.fnum;
+	info2->generic.in.file.fnum = info->generic.in.file.fnum;
 
 	/* only used by the simple backend, which doesn't do async */
 	req->async_states->state &= ~NTVFS_ASYNC_STATE_MAY_ASYNC;
@@ -893,8 +893,8 @@ _PUBLIC_ NTSTATUS ntvfs_map_qpathinfo(struct ntvfs_module_context *ntvfs,
 	}
 
 	/* ask the backend for the generic info */
-	info2->generic.level = RAW_FILEINFO_GENERIC;
-	info2->generic.file.path = info->generic.file.path;
+	info2->generic.level		= RAW_FILEINFO_GENERIC;
+	info2->generic.in.file.path	= info->generic.in.file.path;
 
 	/* only used by the simple backend, which doesn't do async */
 	req->async_states->state &= ~NTVFS_ASYNC_STATE_MAY_ASYNC;
@@ -943,7 +943,7 @@ _PUBLIC_ NTSTATUS ntvfs_map_lock(struct ntvfs_module_context *ntvfs,
 	}
 
 	lck2->generic.level = RAW_LOCK_GENERIC;
-	lck2->generic.file.fnum = lck->lock.file.fnum;
+	lck2->generic.in.file.fnum = lck->lock.in.file.fnum;
 	lck2->generic.in.mode = 0;
 	lck2->generic.in.timeout = 0;
 	lck2->generic.in.locks = locks;
@@ -990,10 +990,10 @@ static NTSTATUS ntvfs_map_write_finish(struct ntvfs_module_context *ntvfs,
 			return NT_STATUS_NO_MEMORY;
 		}
 
-		lck->unlock.level      = RAW_LOCK_UNLOCK;
-		lck->unlock.file.fnum  = wr->writeunlock.file.fnum;
-		lck->unlock.in.count   = wr->writeunlock.in.count;
-		lck->unlock.in.offset  = wr->writeunlock.in.offset;
+		lck->unlock.level	= RAW_LOCK_UNLOCK;
+		lck->unlock.in.file.fnum= wr->writeunlock.in.file.fnum;
+		lck->unlock.in.count	= wr->writeunlock.in.count;
+		lck->unlock.in.offset	= wr->writeunlock.in.offset;
 
 		if (lck->unlock.in.count != 0) {
 			/* do the lock sync for now */
@@ -1012,9 +1012,9 @@ static NTSTATUS ntvfs_map_write_finish(struct ntvfs_module_context *ntvfs,
 			return NT_STATUS_NO_MEMORY;
 		}
 
-		cl->close.level           = RAW_CLOSE_CLOSE;
-		cl->close.file.fnum         = wr->writeclose.file.fnum;
-		cl->close.in.write_time   = wr->writeclose.in.mtime;
+		cl->close.level		= RAW_CLOSE_CLOSE;
+		cl->close.in.file.fnum	= wr->writeclose.in.file.fnum;
+		cl->close.in.write_time	= wr->writeclose.in.mtime;
 
 		if (wr2->generic.in.count != 0) {
 			/* do the close sync for now */
@@ -1064,7 +1064,7 @@ _PUBLIC_ NTSTATUS ntvfs_map_write(struct ntvfs_module_context *ntvfs,
 		break;
 
 	case RAW_WRITE_WRITE:
-		wr2->writex.file.fnum    = wr->write.file.fnum;
+		wr2->writex.in.file.fnum = wr->write.in.file.fnum;
 		wr2->writex.in.offset    = wr->write.in.offset;
 		wr2->writex.in.wmode     = 0;
 		wr2->writex.in.remaining = wr->write.in.remaining;
@@ -1074,7 +1074,7 @@ _PUBLIC_ NTSTATUS ntvfs_map_write(struct ntvfs_module_context *ntvfs,
 		break;
 
 	case RAW_WRITE_WRITEUNLOCK:
-		wr2->writex.file.fnum    = wr->writeunlock.file.fnum;
+		wr2->writex.in.file.fnum = wr->writeunlock.in.file.fnum;
 		wr2->writex.in.offset    = wr->writeunlock.in.offset;
 		wr2->writex.in.wmode     = 0;
 		wr2->writex.in.remaining = wr->writeunlock.in.remaining;
@@ -1084,7 +1084,7 @@ _PUBLIC_ NTSTATUS ntvfs_map_write(struct ntvfs_module_context *ntvfs,
 		break;
 
 	case RAW_WRITE_WRITECLOSE:
-		wr2->writex.file.fnum    = wr->writeclose.file.fnum;
+		wr2->writex.in.file.fnum = wr->writeclose.in.file.fnum;
 		wr2->writex.in.offset    = wr->writeclose.in.offset;
 		wr2->writex.in.wmode     = 0;
 		wr2->writex.in.remaining = 0;
@@ -1094,7 +1094,7 @@ _PUBLIC_ NTSTATUS ntvfs_map_write(struct ntvfs_module_context *ntvfs,
 		break;
 
 	case RAW_WRITE_SPLWRITE:
-		wr2->writex.file.fnum    = wr->splwrite.file.fnum;
+		wr2->writex.in.file.fnum = wr->splwrite.in.file.fnum;
 		wr2->writex.in.offset    = 0;
 		wr2->writex.in.wmode     = 0;
 		wr2->writex.in.remaining = 0;
@@ -1166,7 +1166,7 @@ _PUBLIC_ NTSTATUS ntvfs_map_read(struct ntvfs_module_context *ntvfs,
 		break;
 
 	case RAW_READ_READ:
-		rd2->readx.file.fnum    = rd->read.file.fnum;
+		rd2->readx.in.file.fnum = rd->read.in.file.fnum;
 		rd2->readx.in.offset    = rd->read.in.offset;
 		rd2->readx.in.mincnt    = rd->read.in.count;
 		rd2->readx.in.maxcnt    = rd->read.in.count;
@@ -1176,7 +1176,7 @@ _PUBLIC_ NTSTATUS ntvfs_map_read(struct ntvfs_module_context *ntvfs,
 		break;
 
 	case RAW_READ_READBRAW:
-		rd2->readx.file.fnum    = rd->readbraw.file.fnum;
+		rd2->readx.in.file.fnum = rd->readbraw.in.file.fnum;
 		rd2->readx.in.offset    = rd->readbraw.in.offset;
 		rd2->readx.in.mincnt    = rd->readbraw.in.mincnt;
 		rd2->readx.in.maxcnt    = rd->readbraw.in.maxcnt;
@@ -1195,14 +1195,14 @@ _PUBLIC_ NTSTATUS ntvfs_map_read(struct ntvfs_module_context *ntvfs,
 			status = NT_STATUS_NO_MEMORY;
 			goto done;
 		}
-		lck->lock.level      = RAW_LOCK_LOCK;
-		lck->lock.file.fnum  = rd->lockread.file.fnum;
-		lck->lock.in.count   = rd->lockread.in.count;
-		lck->lock.in.offset  = rd->lockread.in.offset;
+		lck->lock.level		= RAW_LOCK_LOCK;
+		lck->lock.in.file.fnum	= rd->lockread.in.file.fnum;
+		lck->lock.in.count	= rd->lockread.in.count;
+		lck->lock.in.offset	= rd->lockread.in.offset;
 		status = ntvfs->ops->lock(ntvfs, req, lck);
 		req->async_states->state = state;
 
-		rd2->readx.file.fnum    = rd->lockread.file.fnum;
+		rd2->readx.in.file.fnum = rd->lockread.in.file.fnum;
 		rd2->readx.in.offset    = rd->lockread.in.offset;
 		rd2->readx.in.mincnt    = rd->lockread.in.count;
 		rd2->readx.in.maxcnt    = rd->lockread.in.count;
@@ -1239,8 +1239,8 @@ _PUBLIC_ NTSTATUS ntvfs_map_close(struct ntvfs_module_context *ntvfs,
 		return NT_STATUS_INVALID_LEVEL;
 
 	case RAW_CLOSE_SPLCLOSE:
-		cl2->close.level     = RAW_CLOSE_CLOSE;
-		cl2->close.file.fnum = cl->splclose.file.fnum;
+		cl2->close.level	= RAW_CLOSE_CLOSE;
+		cl2->close.in.file.fnum	= cl->splclose.in.file.fnum;
 		break;
 	}
 

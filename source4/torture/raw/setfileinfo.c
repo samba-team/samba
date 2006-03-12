@@ -85,7 +85,7 @@ BOOL torture_raw_sfileinfo(void)
 	check_fnum = True; \
 	call_name = #call; \
 	sfinfo.generic.level = RAW_SFILEINFO_ ## call; \
-	sfinfo.generic.file.fnum = fnum; \
+	sfinfo.generic.in.file.fnum = fnum; \
 	status = smb_raw_setfileinfo(cli->tree, &sfinfo); \
 	if (!NT_STATUS_EQUAL(status, rightstatus)) { \
 		printf("(%s) %s - %s (should be %s)\n", __location__, #call, \
@@ -93,7 +93,7 @@ BOOL torture_raw_sfileinfo(void)
 		ret = False; \
 	} \
 	finfo1.generic.level = RAW_FILEINFO_ALL_INFO; \
-	finfo1.generic.file.fnum = fnum; \
+	finfo1.generic.in.file.fnum = fnum; \
 	status2 = smb_raw_fileinfo(cli->tree, mem_ctx, &finfo1); \
 	if (!NT_STATUS_IS_OK(status2)) { \
 		printf("(%s) %s pathinfo - %s\n", __location__, #call, nt_errstr(status)); \
@@ -104,10 +104,10 @@ BOOL torture_raw_sfileinfo(void)
 	check_fnum = False; \
 	call_name = #call; \
 	sfinfo.generic.level = RAW_SFILEINFO_ ## call; \
-	sfinfo.generic.file.path = path_fname; \
+	sfinfo.generic.in.file.path = path_fname; \
 	status = smb_raw_setpathinfo(cli->tree, &sfinfo); \
 	if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) { \
-		sfinfo.generic.file.path = path_fname_new; \
+		sfinfo.generic.in.file.path = path_fname_new; \
 		status = smb_raw_setpathinfo(cli->tree, &sfinfo); \
 	} \
 	if (!NT_STATUS_EQUAL(status, rightstatus)) { \
@@ -116,10 +116,10 @@ BOOL torture_raw_sfileinfo(void)
 		ret = False; \
 	} \
 	finfo1.generic.level = RAW_FILEINFO_ALL_INFO; \
-	finfo1.generic.file.path = path_fname; \
+	finfo1.generic.in.file.path = path_fname; \
 	status2 = smb_raw_pathinfo(cli->tree, mem_ctx, &finfo1); \
 	if (NT_STATUS_EQUAL(status2, NT_STATUS_OBJECT_NAME_NOT_FOUND)) { \
-		finfo1.generic.file.path = path_fname_new; \
+		finfo1.generic.in.file.path = path_fname_new; \
 		status2 = smb_raw_pathinfo(cli->tree, mem_ctx, &finfo1); \
 	} \
 	if (!NT_STATUS_IS_OK(status2)) { \
@@ -131,13 +131,13 @@ BOOL torture_raw_sfileinfo(void)
 	do { if (NT_STATUS_IS_OK(status)) { \
 		finfo2.generic.level = RAW_FILEINFO_ ## call; \
 		if (check_fnum) { \
-			finfo2.generic.file.fnum = fnum; \
+			finfo2.generic.in.file.fnum = fnum; \
 			status2 = smb_raw_fileinfo(cli->tree, mem_ctx, &finfo2); \
 		} else { \
-			finfo2.generic.file.path = path_fname; \
+			finfo2.generic.in.file.path = path_fname; \
 			status2 = smb_raw_pathinfo(cli->tree, mem_ctx, &finfo2); \
 			if (NT_STATUS_EQUAL(status2, NT_STATUS_OBJECT_NAME_NOT_FOUND)) { \
-				finfo2.generic.file.path = path_fname_new; \
+				finfo2.generic.in.file.path = path_fname_new; \
 				status2 = smb_raw_pathinfo(cli->tree, mem_ctx, &finfo2); \
 			} \
 		} \
@@ -556,7 +556,7 @@ BOOL torture_raw_sfileinfo_bug(void)
 	smbcli_close(cli->tree, fnum);
 
 	sfinfo.generic.level = RAW_SFILEINFO_STANDARD;
-	sfinfo.generic.file.path = fname;
+	sfinfo.generic.in.file.path = fname;
 
 	sfinfo.standard.in.create_time = 0;
 	sfinfo.standard.in.access_time = 0;

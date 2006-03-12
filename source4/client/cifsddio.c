@@ -140,7 +140,7 @@ static struct dd_iohandle * open_fd_handle(const char * path,
 /* CIFS client IO.							     */
 /* ------------------------------------------------------------------------- */
 
-struct smb_handle
+struct cifs_handle
 {
 	struct dd_iohandle	h;
 	struct smbcli_state *	cli;
@@ -148,7 +148,7 @@ struct smb_handle
 	uint64_t		offset;
 };
 
-#define IO_HANDLE_TO_SMB(h) ((struct smb_handle *)(h))
+#define IO_HANDLE_TO_SMB(h) ((struct cifs_handle *)(h))
 
 BOOL smb_seek_func(void * handle, uint64_t offset)
 {
@@ -163,17 +163,17 @@ BOOL smb_read_func(void * handle,
 {
 	NTSTATUS		ret;
 	union smb_read		r;
-	struct smb_handle *	smbh;
+	struct cifs_handle *	smbh;
 
 	ZERO_STRUCT(r);
 	smbh = IO_HANDLE_TO_SMB(handle);
 
-	r.generic.level = RAW_READ_READX;
-	r.readx.file.fnum = smbh->fnum;
-	r.readx.in.offset = smbh->offset;
-	r.readx.in.mincnt = wanted;
-	r.readx.in.maxcnt = wanted;
-	r.readx.out.data = buf;
+	r.generic.level		= RAW_READ_READX;
+	r.readx.in.file.fnum	= smbh->fnum;
+	r.readx.in.offset	= smbh->offset;
+	r.readx.in.mincnt	= wanted;
+	r.readx.in.maxcnt	= wanted;
+	r.readx.out.data	= buf;
 
 	/* FIXME: Should I really set readx.in.remaining? That just seems
 	 * redundant.
@@ -201,16 +201,16 @@ BOOL smb_write_func(void * handle,
 {
 	NTSTATUS		ret;
 	union smb_write		w;
-	struct smb_handle *	smbh;
+	struct cifs_handle *	smbh;
 
 	ZERO_STRUCT(w);
 	smbh = IO_HANDLE_TO_SMB(handle);
 
-	w.generic.level = RAW_WRITE_WRITEX;
-	w.writex.file.fnum = smbh->fnum;
-	w.writex.in.offset = smbh->offset;
-	w.writex.in.count = wanted;
-	w.writex.in.data = buf;
+	w.generic.level		= RAW_WRITE_WRITEX;
+	w.writex.in.file.fnum	= smbh->fnum;
+	w.writex.in.offset	= smbh->offset;
+	w.writex.in.count	= wanted;
+	w.writex.in.data	= buf;
 
 	ret = smb_raw_write(smbh->cli->tree, &w);
 	if (!NT_STATUS_IS_OK(ret)) {
@@ -290,16 +290,16 @@ static int open_smb_file(struct smbcli_state * cli,
 		return(-1);
 	}
 
-	return(o.ntcreatex.file.fnum);
+	return(o.ntcreatex.out.file.fnum);
 }
 
-static struct dd_iohandle * open_smb_handle(const char * host,
+static struct dd_iohandle * open_cifs_handle(const char * host,
 					const char * share,
 					const char * path,
 					uint64_t io_size,
 					int options)
 {
-	struct smb_handle * smbh;
+	struct cifs_handle * smbh;
 
 	if (path == NULL  || *path == '\0') {
 		fprintf(stderr, "%s: missing path name within share //%s/%s\n",
@@ -309,7 +309,7 @@ static struct dd_iohandle * open_smb_handle(const char * host,
 	DEBUG(4, ("opening SMB stream to //%s/%s for %s\n",
 		host, share, path));
 
-	if ((smbh = talloc_zero(NULL, struct smb_handle)) == NULL) {
+	if ((smbh = talloc_zero(NULL, struct cifs_handle)) == NULL) {
 		return(NULL);
 	}
 
@@ -349,7 +349,7 @@ struct dd_iohandle * dd_open_path(const char * path,
 			/* Skip over leading directory separators. */
 			while (*remain == '/' || *remain == '\\') { remain++; }
 
-			return(open_smb_handle(host, share, remain,
+			return(open_cifs_handle(host, share, remain,
 						io_size, options));
 		}
 

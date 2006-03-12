@@ -198,7 +198,7 @@ static BOOL test_delete_on_close(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	fnum = create_complex_file(cli, mem_ctx, fname);
 
 	sfinfo.disposition_info.level = RAW_SFILEINFO_DISPOSITION_INFO;
-	sfinfo.disposition_info.file.fnum = fnum;
+	sfinfo.disposition_info.in.file.fnum = fnum;
 	sfinfo.disposition_info.in.delete_on_close = 0;
 	status = smb_raw_setfileinfo(cli->tree, &sfinfo);
 	CHECK_STATUS(status, NT_STATUS_OK);
@@ -210,7 +210,7 @@ static BOOL test_delete_on_close(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	printf("Testing with delete_on_close 1\n");
 	fnum = create_complex_file(cli, mem_ctx, fname);
-	sfinfo.disposition_info.file.fnum = fnum;
+	sfinfo.disposition_info.in.file.fnum = fnum;
 	sfinfo.disposition_info.in.delete_on_close = 1;
 	status = smb_raw_setfileinfo(cli->tree, &sfinfo);
 	CHECK_STATUS(status, NT_STATUS_OK);
@@ -226,7 +226,7 @@ static BOOL test_delete_on_close(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 	sfinfo.disposition_info.level = RAW_SFILEINFO_DISPOSITION_INFO;
-	sfinfo.disposition_info.file.fnum = fnum;
+	sfinfo.disposition_info.in.file.fnum = fnum;
 	sfinfo.disposition_info.in.delete_on_close = 0;
 	status = smb_raw_setfileinfo(cli->tree, &sfinfo);
 	CHECK_STATUS(status, NT_STATUS_OK);
@@ -240,7 +240,7 @@ static BOOL test_delete_on_close(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	status = create_directory_handle(cli->tree, dname, &fnum);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	
-	sfinfo.disposition_info.file.fnum = fnum;
+	sfinfo.disposition_info.in.file.fnum = fnum;
 	sfinfo.disposition_info.in.delete_on_close = 1;
 	status = smb_raw_setfileinfo(cli->tree, &sfinfo);
 	CHECK_STATUS(status, NT_STATUS_OK);
@@ -257,16 +257,16 @@ static BOOL test_delete_on_close(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	
 	fnum2 = create_complex_file(cli, mem_ctx, inside);
 
-	sfinfo.disposition_info.file.fnum = fnum;
+	sfinfo.disposition_info.in.file.fnum = fnum;
 	sfinfo.disposition_info.in.delete_on_close = 1;
 	status = smb_raw_setfileinfo(cli->tree, &sfinfo);
 	CHECK_STATUS(status, NT_STATUS_DIRECTORY_NOT_EMPTY);
 
-	sfinfo.disposition_info.file.fnum = fnum2;
+	sfinfo.disposition_info.in.file.fnum = fnum2;
 	status = smb_raw_setfileinfo(cli->tree, &sfinfo);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
-	sfinfo.disposition_info.file.fnum = fnum;
+	sfinfo.disposition_info.in.file.fnum = fnum;
 	status = smb_raw_setfileinfo(cli->tree, &sfinfo);
 	CHECK_STATUS(status, NT_STATUS_DIRECTORY_NOT_EMPTY);
 
@@ -303,7 +303,7 @@ static BOOL test_delete_on_close(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	status = smb_raw_open(cli->tree, mem_ctx, &op);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	fnum = op.ntcreatex.file.fnum;
+	fnum = op.ntcreatex.out.file.fnum;
 
 	smbcli_close(cli->tree, fnum);
 
@@ -335,7 +335,7 @@ static BOOL test_delete_on_close(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	status = smb_raw_open(cli->tree, mem_ctx, &op);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	fnum2 = op.ntcreatex.file.fnum;
+	fnum2 = op.ntcreatex.out.file.fnum;
 
 	smbcli_close(cli->tree, fnum2);
 
@@ -370,13 +370,13 @@ static BOOL test_delete_on_close(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	status = smb_raw_open(cli->tree, mem_ctx, &op);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	fnum = op.ntcreatex.file.fnum;
+	fnum = op.ntcreatex.out.file.fnum;
 
 	/* open without delete on close */
 	op.ntcreatex.in.create_options = NTCREATEX_OPTIONS_DIRECTORY;
 	status = smb_raw_open(cli->tree, mem_ctx, &op);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	fnum2 = op.ntcreatex.file.fnum;
+	fnum2 = op.ntcreatex.out.file.fnum;
 
 	/* close 2nd file handle */
 	smbcli_close(cli->tree, fnum2);
