@@ -433,7 +433,7 @@ SEC_DESC_BUF *se_create_child_secdesc(TALLOC_CTX *ctx, SEC_DESC *parent_ctr,
 	if (!(new_ace_list = TALLOC_ARRAY(ctx, SEC_ACE, the_acl->num_aces))) 
 		return NULL;
 
-	for (i = 0; the_acl && i < the_acl->num_aces; i++) {
+	for (i = 0; i < the_acl->num_aces; i++) {
 		SEC_ACE *ace = &the_acl->ace[i];
 		SEC_ACE *new_ace = &new_ace_list[new_ace_list_ndx];
 		uint8 new_flags = 0;
