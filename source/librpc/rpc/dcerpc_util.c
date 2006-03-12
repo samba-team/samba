@@ -794,9 +794,6 @@ static void continue_epm_recv_binding(struct composite_context *ctx)
 	c->status = dcerpc_pipe_connect_b_recv(ctx, c, &s->pipe);
 	if (!composite_is_ok(c)) return;
 
-	ZERO_STRUCT(s->handle);
-	ZERO_STRUCT(s->guid);
-
 	/* prepare requested binding parameters */
 	s->binding->object         = s->table->uuid;
 	s->binding->object_version = s->table->if_version;
