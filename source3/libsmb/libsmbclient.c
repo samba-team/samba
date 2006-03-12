@@ -5784,6 +5784,7 @@ smbc_new_context(void)
 
         context->internal = SMB_MALLOC_P(struct smbc_internal_data);
         if (!context->internal) {
+		SAFE_FREE(context);
                 errno = ENOMEM;
                 return NULL;
         }
