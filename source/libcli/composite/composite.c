@@ -115,9 +115,9 @@ _PUBLIC_ void composite_done(struct composite_context *ctx)
 }
 
 _PUBLIC_ void composite_continue(struct composite_context *ctx,
-			struct composite_context *new_ctx,
-			void (*continuation)(struct composite_context *),
-			void *private_data)
+				 struct composite_context *new_ctx,
+				 void (*continuation)(struct composite_context *),
+				 void *private_data)
 {
 	if (composite_nomem(new_ctx, ctx)) return;
 	new_ctx->async.fn = continuation;
@@ -125,9 +125,9 @@ _PUBLIC_ void composite_continue(struct composite_context *ctx,
 }
 
 _PUBLIC_ void composite_continue_rpc(struct composite_context *ctx,
-			    struct rpc_request *new_req,
-			    void (*continuation)(struct rpc_request *),
-			    void *private_data)
+				     struct rpc_request *new_req,
+				     void (*continuation)(struct rpc_request *),
+				     void *private_data)
 {
 	if (composite_nomem(new_req, ctx)) return;
 	new_req->async.callback = continuation;
@@ -135,9 +135,9 @@ _PUBLIC_ void composite_continue_rpc(struct composite_context *ctx,
 }
 
 _PUBLIC_ void composite_continue_irpc(struct composite_context *ctx,
-			     struct irpc_request *new_req,
-			     void (*continuation)(struct irpc_request *),
-			     void *private_data)
+				      struct irpc_request *new_req,
+				      void (*continuation)(struct irpc_request *),
+				      void *private_data)
 {
 	if (composite_nomem(new_req, ctx)) return;
 	new_req->async.fn = continuation;
@@ -145,9 +145,9 @@ _PUBLIC_ void composite_continue_irpc(struct composite_context *ctx,
 }
 
 _PUBLIC_ void composite_continue_smb(struct composite_context *ctx,
-			    struct smbcli_request *new_req,
-			    void (*continuation)(struct smbcli_request *),
-			    void *private_data)
+				     struct smbcli_request *new_req,
+				     void (*continuation)(struct smbcli_request *),
+				     void *private_data)
 {
 	if (composite_nomem(new_req, ctx)) return;
 	new_req->async.fn = continuation;
@@ -155,9 +155,9 @@ _PUBLIC_ void composite_continue_smb(struct composite_context *ctx,
 }
 
 _PUBLIC_ void composite_continue_nbt(struct composite_context *ctx,
-			    struct nbt_name_request *new_req,
-			    void (*continuation)(struct nbt_name_request *),
-			    void *private_data)
+				     struct nbt_name_request *new_req,
+				     void (*continuation)(struct nbt_name_request *),
+				     void *private_data)
 {
 	if (composite_nomem(new_req, ctx)) return;
 	new_req->async.fn = continuation;
