@@ -110,7 +110,7 @@ static BOOL test_read(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	}
 
 	printf("Trying empty file read\n");
-	io.read.file.fnum = fnum;
+	io.read.in.file.fnum = fnum;
 	io.read.in.count = 1;
 	io.read.in.offset = 0;
 	io.read.in.remaining = 0;
@@ -127,15 +127,15 @@ static BOOL test_read(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_VALUE(io.read.out.nread, 0);
 
 	printf("Trying bad fnum\n");
-	io.read.file.fnum = fnum+1;
+	io.read.in.file.fnum = fnum+1;
 	status = smb_raw_read(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_INVALID_HANDLE);
-	io.read.file.fnum = fnum;
+	io.read.in.file.fnum = fnum;
 
 	smbcli_write(cli->tree, fnum, 0, test_data, 0, strlen(test_data));
 
 	printf("Trying small read\n");
-	io.read.file.fnum = fnum;
+	io.read.in.file.fnum = fnum;
 	io.read.in.offset = 0;
 	io.read.in.remaining = 0;
 	io.read.in.count = strlen(test_data);
@@ -234,7 +234,7 @@ static BOOL test_lockread(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	}
 
 	printf("Trying empty file read\n");
-	io.lockread.file.fnum = fnum;
+	io.lockread.in.file.fnum = fnum;
 	io.lockread.in.count = 1;
 	io.lockread.in.offset = 1;
 	io.lockread.in.remaining = 0;
@@ -258,15 +258,15 @@ static BOOL test_lockread(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	smbcli_unlock(cli->tree, fnum, 1, 1);
 
 	printf("Trying bad fnum\n");
-	io.lockread.file.fnum = fnum+1;
+	io.lockread.in.file.fnum = fnum+1;
 	status = smb_raw_read(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_INVALID_HANDLE);
-	io.lockread.file.fnum = fnum;
+	io.lockread.in.file.fnum = fnum;
 
 	smbcli_write(cli->tree, fnum, 0, test_data, 0, strlen(test_data));
 
 	printf("Trying small read\n");
-	io.lockread.file.fnum = fnum;
+	io.lockread.in.file.fnum = fnum;
 	io.lockread.in.offset = 0;
 	io.lockread.in.remaining = 0;
 	io.lockread.in.count = strlen(test_data);
@@ -377,7 +377,7 @@ static BOOL test_readx(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	printf("Trying empty file read\n");
 	io.generic.level = RAW_READ_READX;
-	io.readx.file.fnum = fnum;
+	io.readx.in.file.fnum = fnum;
 	io.readx.in.mincnt = 1;
 	io.readx.in.maxcnt = 1;
 	io.readx.in.offset = 0;
@@ -401,15 +401,15 @@ static BOOL test_readx(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_VALUE(io.readx.out.compaction_mode, 0);
 
 	printf("Trying bad fnum\n");
-	io.readx.file.fnum = fnum+1;
+	io.readx.in.file.fnum = fnum+1;
 	status = smb_raw_read(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_INVALID_HANDLE);
-	io.readx.file.fnum = fnum;
+	io.readx.in.file.fnum = fnum;
 
 	smbcli_write(cli->tree, fnum, 0, test_data, 0, strlen(test_data));
 
 	printf("Trying small read\n");
-	io.readx.file.fnum = fnum;
+	io.readx.in.file.fnum = fnum;
 	io.readx.in.offset = 0;
 	io.readx.in.remaining = 0;
 	io.readx.in.read_for_execute = False;
@@ -573,7 +573,7 @@ static BOOL test_readbraw(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	printf("Trying empty file read\n");
 	io.generic.level = RAW_READ_READBRAW;
-	io.readbraw.file.fnum = fnum;
+	io.readbraw.in.file.fnum = fnum;
 	io.readbraw.in.mincnt = 1;
 	io.readbraw.in.maxcnt = 1;
 	io.readbraw.in.offset = 0;
@@ -592,16 +592,16 @@ static BOOL test_readbraw(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_VALUE(io.readbraw.out.nread, 0);
 
 	printf("Trying bad fnum\n");
-	io.readbraw.file.fnum = fnum+1;
+	io.readbraw.in.file.fnum = fnum+1;
 	status = smb_raw_read(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_VALUE(io.readbraw.out.nread, 0);
-	io.readbraw.file.fnum = fnum;
+	io.readbraw.in.file.fnum = fnum;
 
 	smbcli_write(cli->tree, fnum, 0, test_data, 0, strlen(test_data));
 
 	printf("Trying small read\n");
-	io.readbraw.file.fnum = fnum;
+	io.readbraw.in.file.fnum = fnum;
 	io.readbraw.in.offset = 0;
 	io.readbraw.in.mincnt = strlen(test_data);
 	io.readbraw.in.maxcnt = strlen(test_data);

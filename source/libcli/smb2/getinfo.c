@@ -118,7 +118,7 @@ struct smb2_request *smb2_getinfo_file_send(struct smb2_tree *tree, union smb_fi
 
 	ZERO_STRUCT(b);
 	b.in.max_response_size = 0x10000;
-	b.in.handle            = io->generic.file.handle;
+	b.in.handle            = io->generic.in.file.handle;
 	b.in.level             = smb2_level;
 
 	if (io->generic.level == RAW_FILEINFO_SEC_DESC) {

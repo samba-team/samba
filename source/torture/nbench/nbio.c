@@ -286,7 +286,7 @@ void nb_createx(const char *fname,
 
 	f = malloc_p(struct ftable);
 	f->handle = handle;
-	f->fd = io.ntcreatex.file.fnum;
+	f->fd = io.ntcreatex.out.file.fnum;
 
 	DLIST_ADD_END(ftable, f, struct ftable *);
 }
@@ -306,7 +306,7 @@ void nb_writex(int handle, int offset, int size, int ret_size, NTSTATUS status)
 	memset(buf, 0xab, size);
 
 	io.writex.level = RAW_WRITE_WRITEX;
-	io.writex.file.fnum = i;
+	io.writex.in.file.fnum = i;
 	io.writex.in.wmode = 0;
 	io.writex.in.remaining = 0;
 	io.writex.in.offset = offset;
@@ -344,7 +344,7 @@ void nb_write(int handle, int offset, int size, int ret_size, NTSTATUS status)
 	memset(buf, 0x12, size);
 
 	io.write.level = RAW_WRITE_WRITE;
-	io.write.file.fnum = i;
+	io.write.in.file.fnum = i;
 	io.write.in.remaining = 0;
 	io.write.in.offset = offset;
 	io.write.in.count = size;
@@ -380,7 +380,7 @@ void nb_lockx(int handle, uint_t offset, int size, NTSTATUS status)
 	lck.count = size;
 
 	io.lockx.level = RAW_LOCK_LOCKX;
-	io.lockx.file.fnum = i;
+	io.lockx.in.file.fnum = i;
 	io.lockx.in.mode = 0;
 	io.lockx.in.timeout = 0;
 	io.lockx.in.ulock_cnt = 0;
@@ -406,7 +406,7 @@ void nb_unlockx(int handle, uint_t offset, int size, NTSTATUS status)
 	lck.count = size;
 
 	io.lockx.level = RAW_LOCK_LOCKX;
-	io.lockx.file.fnum = i;
+	io.lockx.in.file.fnum = i;
 	io.lockx.in.mode = 0;
 	io.lockx.in.timeout = 0;
 	io.lockx.in.ulock_cnt = 1;
@@ -432,7 +432,7 @@ void nb_readx(int handle, int offset, int size, int ret_size, NTSTATUS status)
 	buf = malloc(size);
 
 	io.readx.level = RAW_READ_READX;
-	io.readx.file.fnum = i;
+	io.readx.in.file.fnum = i;
 	io.readx.in.offset    = offset;
 	io.readx.in.mincnt    = size;
 	io.readx.in.maxcnt    = size;
@@ -465,7 +465,7 @@ void nb_close(int handle, NTSTATUS status)
 	i = find_handle(handle);
 
 	io.close.level = RAW_CLOSE_CLOSE;
-	io.close.file.fnum = i;
+	io.close.in.file.fnum = i;
 	io.close.in.write_time = 0;
 
 	ret = smb_raw_close(c->tree, &io);
@@ -527,7 +527,7 @@ void nb_qpathinfo(const char *fname, int level, NTSTATUS status)
 	mem_ctx = talloc_init("nb_qpathinfo");
 
 	io.generic.level = level;
-	io.generic.file.path = fname;
+	io.generic.in.file.path = fname;
 
 	ret = smb_raw_pathinfo(c->tree, mem_ctx, &io);
 
@@ -549,7 +549,7 @@ void nb_qfileinfo(int fnum, int level, NTSTATUS status)
 	mem_ctx = talloc_init("nb_qfileinfo");
 
 	io.generic.level = level;
-	io.generic.file.fnum = i;
+	io.generic.in.file.fnum = i;
 
 	ret = smb_raw_fileinfo(c->tree, mem_ctx, &io);
 
@@ -574,7 +574,7 @@ void nb_sfileinfo(int fnum, int level, NTSTATUS status)
 	i = find_handle(fnum);
 
 	io.generic.level = level;
-	io.generic.file.fnum = i;
+	io.generic.in.file.fnum = i;
 	unix_to_nt_time(&io.basic_info.in.create_time, time(NULL));
 	unix_to_nt_time(&io.basic_info.in.access_time, 0);
 	unix_to_nt_time(&io.basic_info.in.write_time, 0);
@@ -643,7 +643,7 @@ void nb_flush(int fnum, NTSTATUS status)
 	int i;
 	i = find_handle(fnum);
 
-	io.flush.file.fnum = i;
+	io.flush.in.file.fnum = i;
 
 	ret = smb_raw_flush(c->tree, &io);
 

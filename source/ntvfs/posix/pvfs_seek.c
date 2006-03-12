@@ -35,7 +35,7 @@ NTSTATUS pvfs_seek(struct ntvfs_module_context *ntvfs,
 	struct pvfs_file_handle *h;
 	NTSTATUS status;
 
-	f = pvfs_find_fd(pvfs, req, io->lseek.file.fnum);
+	f = pvfs_find_fd(pvfs, req, io->lseek.in.file.fnum);
 	if (!f) {
 		return NT_STATUS_INVALID_HANDLE;
 	}

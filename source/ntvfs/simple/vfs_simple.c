@@ -252,12 +252,12 @@ static NTSTATUS svfs_qpathinfo(struct ntvfs_module_context *ntvfs,
 	char *unix_path;
 	struct stat st;
 
-	DEBUG(19,("svfs_qpathinfo: file %s level 0x%x\n", info->generic.file.path, info->generic.level));
+	DEBUG(19,("svfs_qpathinfo: file %s level 0x%x\n", info->generic.in.file.path, info->generic.level));
 	if (info->generic.level != RAW_FILEINFO_GENERIC) {
 		return ntvfs_map_qpathinfo(ntvfs, req, info);
 	}
 	
-	unix_path = svfs_unix_path(ntvfs, req, info->generic.file.path);
+	unix_path = svfs_unix_path(ntvfs, req, info->generic.in.file.path);
 	DEBUG(19,("svfs_qpathinfo: file %s\n", unix_path));
 	if (stat(unix_path, &st) == -1) {
 		DEBUG(19,("svfs_qpathinfo: file %s errno=%d\n", unix_path, errno));
@@ -281,12 +281,12 @@ static NTSTATUS svfs_qfileinfo(struct ntvfs_module_context *ntvfs,
 		return ntvfs_map_qfileinfo(ntvfs, req, info);
 	}
 
-	f = find_fd(private, info->generic.file.fnum);
+	f = find_fd(private, info->generic.in.file.fnum);
 	if (!f) {
 		return NT_STATUS_INVALID_HANDLE;
 	}
 	
-	if (fstat(info->generic.file.fnum, &st) == -1) {
+	if (fstat(info->generic.in.file.fnum, &st) == -1) {
 		return map_nt_error_from_unix(errno);
 	}
 
@@ -388,7 +388,7 @@ do_open:
 	unix_to_nt_time(&io->generic.out.access_time, st.st_atime);
 	unix_to_nt_time(&io->generic.out.write_time,  st.st_mtime);
 	unix_to_nt_time(&io->generic.out.change_time, st.st_mtime);
-	io->generic.file.fnum = fd;
+	io->generic.out.file.fnum = fd;
 	io->generic.out.alloc_size = st.st_size;
 	io->generic.out.size = st.st_size;
 	io->generic.out.attrib = svfs_unix_to_dos_attrib(st.st_mode);
@@ -484,7 +484,7 @@ static NTSTATUS svfs_read(struct ntvfs_module_context *ntvfs,
 		return NT_STATUS_NOT_SUPPORTED;
 	}
 
-	ret = pread(rd->readx.file.fnum, 
+	ret = pread(rd->readx.in.file.fnum, 
 		    rd->readx.out.data, 
 		    rd->readx.in.maxcnt,
 		    rd->readx.in.offset);
@@ -513,7 +513,7 @@ static NTSTATUS svfs_write(struct ntvfs_module_context *ntvfs,
 
 	CHECK_READ_ONLY(req);
 
-	ret = pwrite(wr->writex.file.fnum, 
+	ret = pwrite(wr->writex.in.file.fnum, 
 		     wr->writex.in.data, 
 		     wr->writex.in.count,
 		     wr->writex.in.offset);
@@ -544,7 +544,7 @@ static NTSTATUS svfs_flush(struct ntvfs_module_context *ntvfs,
 			   struct ntvfs_request *req,
 			   union smb_flush *io)
 {
-	fsync(io->flush.file.fnum);
+	fsync(io->flush.in.file.fnum);
 	return NT_STATUS_OK;
 }
 
@@ -563,12 +563,12 @@ static NTSTATUS svfs_close(struct ntvfs_module_context *ntvfs,
 		return NT_STATUS_INVALID_LEVEL;
 	}
 
-	f = find_fd(private, io->close.file.fnum);
+	f = find_fd(private, io->close.in.file.fnum);
 	if (!f) {
 		return NT_STATUS_INVALID_HANDLE;
 	}
 
-	if (close(io->close.file.fnum) == -1) {
+	if (close(io->close.in.file.fnum) == -1) {
 		return map_nt_error_from_unix(errno);
 	}
 
@@ -651,7 +651,7 @@ static NTSTATUS svfs_setfileinfo(struct ntvfs_module_context *ntvfs,
 	switch (info->generic.level) {
 	case RAW_SFILEINFO_END_OF_FILE_INFO:
 	case RAW_SFILEINFO_END_OF_FILE_INFORMATION:
-		if (ftruncate(info->end_of_file_info.file.fnum, 
+		if (ftruncate(info->end_of_file_info.in.file.fnum, 
 			      info->end_of_file_info.in.size) == -1) {
 			return map_nt_error_from_unix(errno);
 		}
@@ -659,7 +659,7 @@ static NTSTATUS svfs_setfileinfo(struct ntvfs_module_context *ntvfs,
 	case RAW_SFILEINFO_SETATTRE:
 		unix_times.actime = info->setattre.in.access_time;
 		unix_times.modtime = info->setattre.in.write_time;
-  		fd = info->setattre.file.fnum;
+  		fd = info->setattre.in.file.fnum;
 	
 		if (unix_times.actime == 0 && unix_times.modtime == 0) {
 			break;

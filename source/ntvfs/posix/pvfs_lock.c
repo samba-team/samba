@@ -243,7 +243,7 @@ static NTSTATUS pvfs_lock_cancel(struct pvfs_state *pvfs, struct ntvfs_request *
 		/* check if the lock request matches exactly - you can only cancel with exact matches */
 		if (p->lck->lockx.in.ulock_cnt == lck->lockx.in.ulock_cnt &&
 		    p->lck->lockx.in.lock_cnt  == lck->lockx.in.lock_cnt &&
-		    p->lck->lockx.file.fnum    == lck->lockx.file.fnum &&
+		    p->lck->lockx.in.file.fnum == lck->lockx.in.file.fnum &&
 		    p->lck->lockx.in.mode      == (lck->lockx.in.mode & ~LOCKING_ANDX_CANCEL_LOCK)) {
 			int i;
 
@@ -285,7 +285,7 @@ NTSTATUS pvfs_lock(struct ntvfs_module_context *ntvfs,
 		return ntvfs_map_lock(ntvfs, req, lck);
 	}
 
-	f = pvfs_find_fd(pvfs, req, lck->lockx.file.fnum);
+	f = pvfs_find_fd(pvfs, req, lck->lockx.in.file.fnum);
 	if (!f) {
 		return NT_STATUS_INVALID_HANDLE;
 	}

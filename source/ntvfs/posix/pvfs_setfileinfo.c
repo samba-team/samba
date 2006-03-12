@@ -71,14 +71,14 @@ static uint32_t pvfs_setfileinfo_access(union smb_setfileinfo *info)
 static NTSTATUS pvfs_setfileinfo_rename(struct pvfs_state *pvfs, 
 					struct ntvfs_request *req, 
 					struct pvfs_filename *name,
-					struct smb_rename_information *r)
+					union smb_setfileinfo *info)
 {
 	NTSTATUS status;
 	struct pvfs_filename *name2;
 	char *new_name, *p;
 
 	/* renames are only allowed within a directory */
-	if (strchr_m(r->new_name, '\\')) {
+	if (strchr_m(info->rename_information.in.new_name, '\\')) {
 		return NT_STATUS_NOT_SUPPORTED;
 	}
 
@@ -93,7 +93,7 @@ static NTSTATUS pvfs_setfileinfo_rename(struct pvfs_state *pvfs,
 	}
 
 	/* w2k3 does not appear to allow relative rename */
-	if (r->root_fid != 0) {
+	if (info->rename_information.in.root_fid != 0) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
@@ -108,7 +108,8 @@ static NTSTATUS pvfs_setfileinfo_rename(struct pvfs_state *pvfs,
 	}
 	*p = 0;
 
-	new_name = talloc_asprintf(req, "%s\\%s", new_name, r->new_name);
+	new_name = talloc_asprintf(req, "%s\\%s", new_name,
+				   info->rename_information.in.new_name);
 	if (new_name == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -128,7 +129,7 @@ static NTSTATUS pvfs_setfileinfo_rename(struct pvfs_state *pvfs,
 			return NT_STATUS_OK;
 		}
 
-		if (!r->overwrite) {
+		if (!info->rename_information.in.overwrite) {
 			return NT_STATUS_OBJECT_NAME_COLLISION;
 		}
 
@@ -249,7 +250,7 @@ NTSTATUS pvfs_setfileinfo(struct ntvfs_module_context *ntvfs,
 	NTSTATUS status;
 	uint32_t access_needed;
 
-	f = pvfs_find_fd(pvfs, req, info->generic.file.fnum);
+	f = pvfs_find_fd(pvfs, req, info->generic.in.file.fnum);
 	if (!f) {
 		return NT_STATUS_INVALID_HANDLE;
 	}
@@ -358,7 +359,7 @@ NTSTATUS pvfs_setfileinfo(struct ntvfs_module_context *ntvfs,
 
 	case RAW_SFILEINFO_RENAME_INFORMATION:
 		return pvfs_setfileinfo_rename(pvfs, req, h->name, 
-					       &info->rename_information.in);
+					       info);
 
 	case RAW_SFILEINFO_SEC_DESC:
 		return pvfs_acl_set(pvfs, req, h->name, h->fd, f->access_mask, info);
@@ -435,7 +436,7 @@ NTSTATUS pvfs_setpathinfo(struct ntvfs_module_context *ntvfs,
 	uint32_t access_needed;
 
 	/* resolve the cifs name to a posix name */
-	status = pvfs_resolve_name(pvfs, req, info->generic.file.path, 
+	status = pvfs_resolve_name(pvfs, req, info->generic.in.file.path, 
 				   PVFS_RESOLVE_STREAMS, &name);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -534,7 +535,7 @@ NTSTATUS pvfs_setpathinfo(struct ntvfs_module_context *ntvfs,
 
 	case RAW_SFILEINFO_RENAME_INFORMATION:
 		return pvfs_setfileinfo_rename(pvfs, req, name, 
-					       &info->rename_information.in);
+					       info);
 
 	case RAW_SFILEINFO_DISPOSITION_INFO:
 	case RAW_SFILEINFO_DISPOSITION_INFORMATION:

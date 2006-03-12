@@ -234,7 +234,7 @@ static NTSTATUS smb_raw_nttrans_create_recv(struct smbcli_request *req,
 	params = nt.out.params.data;
 
 	parms->ntcreatex.out.oplock_level =                 CVAL(params, 0);
-	parms->ntcreatex.file.fnum =                        SVAL(params, 2);
+	parms->ntcreatex.out.file.fnum =                    SVAL(params, 2);
 	parms->ntcreatex.out.create_action =                IVAL(params, 4);
 	parms->ntcreatex.out.create_time =   smbcli_pull_nttime(params, 12);
 	parms->ntcreatex.out.access_time =   smbcli_pull_nttime(params, 20);
@@ -406,7 +406,7 @@ static NTSTATUS smb_raw_t2open_recv(struct smbcli_request *req, TALLOC_CTX *mem_
 		return NT_STATUS_INFO_LENGTH_MISMATCH;
 	}
 
-	parms->t2open.file.fnum =       SVAL(t2.out.params.data, VWV(0));
+	parms->t2open.out.file.fnum =   SVAL(t2.out.params.data, VWV(0));
 	parms->t2open.out.attrib =      SVAL(t2.out.params.data, VWV(1));
 	parms->t2open.out.write_time =  raw_pull_dos_date3(transport, t2.out.params.data + VWV(2));
 	parms->t2open.out.size =        IVAL(t2.out.params.data, VWV(4));
@@ -572,7 +572,7 @@ NTSTATUS smb_raw_open_recv(struct smbcli_request *req, TALLOC_CTX *mem_ctx, unio
 
 	case RAW_OPEN_OPEN:
 		SMBCLI_CHECK_WCT(req, 7);
-		parms->openold.file.fnum  = SVAL(req->in.vwv, VWV(0));
+		parms->openold.out.file.fnum = SVAL(req->in.vwv, VWV(0));
 		parms->openold.out.attrib = SVAL(req->in.vwv, VWV(1));
 		parms->openold.out.write_time = raw_pull_dos_date3(req->transport,
 								req->in.vwv + VWV(2));
@@ -582,7 +582,7 @@ NTSTATUS smb_raw_open_recv(struct smbcli_request *req, TALLOC_CTX *mem_ctx, unio
 
 	case RAW_OPEN_OPENX:
 		SMBCLI_CHECK_MIN_WCT(req, 15);
-		parms->openx.file.fnum  = SVAL(req->in.vwv, VWV(2));
+		parms->openx.out.file.fnum = SVAL(req->in.vwv, VWV(2));
 		parms->openx.out.attrib = SVAL(req->in.vwv, VWV(3));
 		parms->openx.out.write_time = raw_pull_dos_date3(req->transport,
 								 req->in.vwv + VWV(4));
@@ -603,29 +603,29 @@ NTSTATUS smb_raw_open_recv(struct smbcli_request *req, TALLOC_CTX *mem_ctx, unio
 
 	case RAW_OPEN_MKNEW:
 		SMBCLI_CHECK_WCT(req, 1);
-		parms->mknew.file.fnum = SVAL(req->in.vwv, VWV(0));
+		parms->mknew.out.file.fnum = SVAL(req->in.vwv, VWV(0));
 		break;
 
 	case RAW_OPEN_CREATE:
 		SMBCLI_CHECK_WCT(req, 1);
-		parms->create.file.fnum = SVAL(req->in.vwv, VWV(0));
+		parms->create.out.file.fnum = SVAL(req->in.vwv, VWV(0));
 		break;
 
 	case RAW_OPEN_CTEMP:
 		SMBCLI_CHECK_WCT(req, 1);
-		parms->ctemp.file.fnum = SVAL(req->in.vwv, VWV(0));
+		parms->ctemp.out.file.fnum = SVAL(req->in.vwv, VWV(0));
 		smbcli_req_pull_string(req, mem_ctx, &parms->ctemp.out.name, req->in.data, -1, STR_TERMINATE | STR_ASCII);
 		break;
 
 	case RAW_OPEN_SPLOPEN:
 		SMBCLI_CHECK_WCT(req, 1);
-		parms->splopen.file.fnum = SVAL(req->in.vwv, VWV(0));
+		parms->splopen.out.file.fnum = SVAL(req->in.vwv, VWV(0));
 		break;
 
 	case RAW_OPEN_NTCREATEX:
 		SMBCLI_CHECK_MIN_WCT(req, 34);
 		parms->ntcreatex.out.oplock_level =              CVAL(req->in.vwv, 4);
-		parms->ntcreatex.file.fnum =                     SVAL(req->in.vwv, 5);
+		parms->ntcreatex.out.file.fnum =                 SVAL(req->in.vwv, 5);
 		parms->ntcreatex.out.create_action =             IVAL(req->in.vwv, 7);
 		parms->ntcreatex.out.create_time =   smbcli_pull_nttime(req->in.vwv, 11);
 		parms->ntcreatex.out.access_time =   smbcli_pull_nttime(req->in.vwv, 19);
@@ -644,7 +644,7 @@ NTSTATUS smb_raw_open_recv(struct smbcli_request *req, TALLOC_CTX *mem_ctx, unio
 
 	case RAW_OPEN_OPENX_READX:
 		SMBCLI_CHECK_MIN_WCT(req, 15);
-		parms->openxreadx.file.fnum = SVAL(req->in.vwv, VWV(2));
+		parms->openxreadx.out.file.fnum = SVAL(req->in.vwv, VWV(2));
 		parms->openxreadx.out.attrib = SVAL(req->in.vwv, VWV(3));
 		parms->openxreadx.out.write_time = raw_pull_dos_date3(req->transport,
 								 req->in.vwv + VWV(4));
@@ -706,14 +706,14 @@ struct smbcli_request *smb_raw_close_send(struct smbcli_tree *tree, union smb_cl
 	switch (parms->generic.level) {
 	case RAW_CLOSE_CLOSE:
 		SETUP_REQUEST(SMBclose, 3, 0);
-		SSVAL(req->out.vwv, VWV(0), parms->close.file.fnum);
+		SSVAL(req->out.vwv, VWV(0), parms->close.in.file.fnum);
 		raw_push_dos_date3(tree->session->transport, 
 				  req->out.vwv, VWV(1), parms->close.in.write_time);
 		break;
 
 	case RAW_CLOSE_SPLCLOSE:
 		SETUP_REQUEST(SMBsplclose, 3, 0);
-		SSVAL(req->out.vwv, VWV(0), parms->splclose.file.fnum);
+		SSVAL(req->out.vwv, VWV(0), parms->splclose.in.file.fnum);
 		SIVAL(req->out.vwv, VWV(1), 0); /* reserved */
 		break;
 	}
@@ -749,14 +749,14 @@ struct smbcli_request *smb_raw_lock_send(struct smbcli_tree *tree, union smb_loc
 	switch (parms->generic.level) {
 	case RAW_LOCK_LOCK:
 		SETUP_REQUEST(SMBlock, 5, 0);
-		SSVAL(req->out.vwv, VWV(0), parms->lock.file.fnum);
+		SSVAL(req->out.vwv, VWV(0), parms->lock.in.file.fnum);
 		SIVAL(req->out.vwv, VWV(1), parms->lock.in.count);
 		SIVAL(req->out.vwv, VWV(3), parms->lock.in.offset);
 		break;
 		
 	case RAW_LOCK_UNLOCK:
 		SETUP_REQUEST(SMBunlock, 5, 0);
-		SSVAL(req->out.vwv, VWV(0), parms->unlock.file.fnum);
+		SSVAL(req->out.vwv, VWV(0), parms->unlock.in.file.fnum);
 		SIVAL(req->out.vwv, VWV(1), parms->unlock.in.count);
 		SIVAL(req->out.vwv, VWV(3), parms->unlock.in.offset);
 		break;
@@ -770,7 +770,7 @@ struct smbcli_request *smb_raw_lock_send(struct smbcli_tree *tree, union smb_loc
 		SETUP_REQUEST(SMBlockingX, 8, lck_size * lock_count);
 		SSVAL(req->out.vwv, VWV(0), SMB_CHAIN_NONE);
 		SSVAL(req->out.vwv, VWV(1), 0);
-		SSVAL(req->out.vwv, VWV(2), parms->lockx.file.fnum);
+		SSVAL(req->out.vwv, VWV(2), parms->lockx.in.file.fnum);
 		SSVAL(req->out.vwv, VWV(3), parms->lockx.in.mode);
 		SIVAL(req->out.vwv, VWV(4), parms->lockx.in.timeout);
 		SSVAL(req->out.vwv, VWV(6), parms->lockx.in.ulock_cnt);
@@ -850,7 +850,7 @@ struct smbcli_request *smb_raw_flush_send(struct smbcli_tree *tree, union smb_fl
 	struct smbcli_request *req; 
 
 	SETUP_REQUEST(SMBflush, 1, 0);
-	SSVAL(req->out.vwv, VWV(0), parms->flush.file.fnum);
+	SSVAL(req->out.vwv, VWV(0), parms->flush.in.file.fnum);
 
 	if (!smbcli_request_send(req)) {
 		smbcli_request_destroy(req);
@@ -881,7 +881,7 @@ struct smbcli_request *smb_raw_seek_send(struct smbcli_tree *tree,
 
 	SETUP_REQUEST(SMBlseek, 4, 0);
 
-	SSVAL(req->out.vwv, VWV(0), parms->lseek.file.fnum);
+	SSVAL(req->out.vwv, VWV(0), parms->lseek.in.file.fnum);
 	SSVAL(req->out.vwv, VWV(1), parms->lseek.in.mode);
 	SIVALS(req->out.vwv, VWV(2), parms->lseek.in.offset);
 

@@ -144,7 +144,7 @@ static NTSTATUS smb2_create_complex(struct smb2_tree *tree, const char *fname,
 	/* make sure all the timestamps aren't the same, and are also 
 	   in different DST zones*/
 	setfile.generic.level = RAW_SFILEINFO_BASIC_INFORMATION;
-	setfile.generic.file.handle = *handle;
+	setfile.generic.in.file.handle = *handle;
 
 	setfile.basic_info.in.create_time = t +  9*30*24*60*60;
 	setfile.basic_info.in.access_time = t +  6*30*24*60*60;
@@ -159,7 +159,7 @@ static NTSTATUS smb2_create_complex(struct smb2_tree *tree, const char *fname,
 
 	/* make sure all the timestamps aren't the same */
 	fileinfo.generic.level = RAW_FILEINFO_BASIC_INFORMATION;
-	fileinfo.generic.file.handle = *handle;
+	fileinfo.generic.in.file.handle = *handle;
 
 	status = smb2_getinfo_file(tree, tree, &fileinfo);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -207,7 +207,7 @@ void torture_smb2_all_info(struct smb2_tree *tree, struct smb2_handle handle)
 	union smb_fileinfo io;
 
 	io.generic.level = RAW_FILEINFO_SMB2_ALL_INFORMATION;
-	io.generic.file.handle = handle;
+	io.generic.in.file.handle = handle;
 
 	status = smb2_getinfo_file(tree, tmp_ctx, &io);
 	if (!NT_STATUS_IS_OK(status)) {

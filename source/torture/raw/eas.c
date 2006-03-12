@@ -72,13 +72,13 @@ static BOOL test_eas(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	io.ntcreatex.in.fname = fname;
 	status = smb_raw_open(cli->tree, mem_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	fnum = io.ntcreatex.file.fnum;
+	fnum = io.ntcreatex.out.file.fnum;
 	
 	ret &= check_ea(cli, fname, "EAONE", NULL);
 
 	printf("Adding first two EAs\n");
 	setfile.generic.level = RAW_SFILEINFO_EA_SET;
-	setfile.generic.file.fnum = fnum;
+	setfile.generic.in.file.fnum = fnum;
 	setfile.ea_set.in.num_eas = 2;
 	setfile.ea_set.in.eas = talloc_array(mem_ctx, struct ea_struct, 2);
 	setfile.ea_set.in.eas[0].flags = 0;
@@ -153,7 +153,7 @@ static int test_one_eamax(struct smbcli_state *cli, const int fnum,
 	int i, high, low, maxeasize;
 
 	setfile.generic.level = RAW_SFILEINFO_EA_SET;
-	setfile.generic.file.fnum = fnum;
+	setfile.generic.in.file.fnum = fnum;
 	setfile.ea_set.in.num_eas = 1;
 	setfile.ea_set.in.eas = &eastruct;
 	setfile.ea_set.in.eas->flags = 0;
@@ -297,7 +297,7 @@ static BOOL test_max_eas(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	io.ntcreatex.in.fname = fname;
 	status = smb_raw_open(cli->tree, mem_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	fnum = io.ntcreatex.file.fnum;
+	fnum = io.ntcreatex.out.file.fnum;
 	
 	eablob = data_blob_talloc(mem_ctx, NULL, maxeasize);
 	if (eablob.data == NULL) {
@@ -409,7 +409,7 @@ static BOOL test_nttrans_create(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	status = smb_raw_open(cli->tree, mem_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	fnum = io.ntcreatex.file.fnum;
+	fnum = io.ntcreatex.out.file.fnum;
 	
 	ret &= check_ea(cli, fname, "EAONE", NULL);
 	ret &= check_ea(cli, fname, "1st EA", "Value One");
@@ -429,7 +429,7 @@ static BOOL test_nttrans_create(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	status = smb_raw_open(cli->tree, mem_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	fnum = io.ntcreatex.file.fnum;
+	fnum = io.ntcreatex.out.file.fnum;
 	
 	ret &= check_ea(cli, fname, "1st EA", "Value One");
 	ret &= check_ea(cli, fname, "2nd EA", "Second Value");
