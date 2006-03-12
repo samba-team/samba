@@ -835,8 +835,10 @@ static WERROR restore_registry_key ( REGISTRY_KEY *krecord, const char *fname )
 	/* get the rootkey from the regf file and then load the tree
 	   via recursive calls */
 	   
-	if ( !(rootkey = regfio_rootkey( regfile )) )
+	if ( !(rootkey = regfio_rootkey( regfile )) ) {
+		regfio_close( regfile );
 		return WERR_REG_FILE_INVALID;
+	}
 	
 	result = reg_load_tree( regfile, krecord->name, rootkey );
 		
