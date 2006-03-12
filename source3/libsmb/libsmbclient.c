@@ -1070,6 +1070,7 @@ smbc_open_ctx(SMBCCTX *context,
 		if (!cli_resolve_path( "", &srv->cli, path, &targetcli, targetpath))
 		{
 			d_printf("Could not resolve %s\n", path);
+			SAFE_FREE(file);
 			return NULL;
 		}
 		/*d_printf(">>>open: resolved %s as %s\n", path, targetpath);*/
