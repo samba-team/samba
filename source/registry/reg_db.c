@@ -525,10 +525,12 @@ static int regdb_pack_values(REGVAL_CTR *values, char *buf, int buflen)
 	int 		len = 0;
 	int 		i;
 	REGISTRY_VALUE	*val;
-	int		num_values = regval_ctr_numvals( values );
+	int		num_values;
 
 	if ( !values )
 		return 0;
+
+	num_values = regval_ctr_numvals( values );
 
 	/* pack the number of values first */
 	
