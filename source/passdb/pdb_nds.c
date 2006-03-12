@@ -662,14 +662,14 @@ Cleanup:
 
 int pdb_nds_get_password(
 	struct smbldap_state *ldap_state,
-	char *object_dn,
+	const char *object_dn,
 	size_t *pwd_len,
 	char *pwd )
 {
 	LDAP *ld = ldap_state->ldap_struct;
 	int rc = -1;
 
-	rc = nmasldap_get_password(ld, object_dn, pwd_len, (unsigned char *)pwd);
+	rc = nmasldap_get_password(ld, CONST_DISCARD(char *, object_dn), pwd_len, (unsigned char *)pwd);
 	if (rc == LDAP_SUCCESS) {
 #ifdef DEBUG_PASSWORD
 		DEBUG(100,("nmasldap_get_password returned %s for %s\n", pwd, object_dn));
@@ -680,7 +680,7 @@ int pdb_nds_get_password(
 	}
 
 	if (rc != LDAP_SUCCESS) {
-		rc = nmasldap_get_simple_pwd(ld, object_dn, *pwd_len, pwd);
+		rc = nmasldap_get_simple_pwd(ld, CONST_DISCARD(char *, object_dn), *pwd_len, pwd);
 		if (rc == LDAP_SUCCESS) {
 #ifdef DEBUG_PASSWORD
 			DEBUG(100,("nmasldap_get_simple_pwd returned %s for %s\n", pwd, object_dn));
@@ -703,7 +703,7 @@ int pdb_nds_get_password(
 
 int pdb_nds_set_password(
 	struct smbldap_state *ldap_state,
-	char *object_dn,
+	const char *object_dn,
 	const char *pwd )
 {
 	LDAP *ld = ldap_state->ldap_struct;
@@ -744,6 +744,17 @@ static NTSTATUS pdb_nds_update_login_attempts(struct pdb_methods *methods,
 					struct samu *sam_acct, BOOL success)
 {
 	struct ldapsam_privates *ldap_state;
+	int rc = 0;
+	const char *dn;
+	LDAPMessage *result = NULL;
+	LDAPMessage *entry = NULL;
+	const char **attr_list;
+	size_t pwd_len;
+	char clear_text_pw[512];
+	LDAP *ld = NULL;
+	const char *username = pdb_get_username(sam_acct);
+	BOOL got_clear_text_pw = False;
+	TALLOC_CTX *mem_ctx;
 
 	if ((!methods) || (!sam_acct)) {
 		DEBUG(3,("pdb_nds_update_login_attempts: invalid parameter.\n"));
@@ -752,98 +763,98 @@ static NTSTATUS pdb_nds_update_login_attempts(struct pdb_methods *methods,
 
 	ldap_state = (struct ldapsam_privates *)methods->private_data;
 
-	if (ldap_state) {
-		/* Attempt simple bind with user credentials to update eDirectory
-		   password policy */
-		int rc = 0;
-		char *dn;
-		LDAPMessage *result = NULL;
-		LDAPMessage *entry = NULL;
-		const char **attr_list;
-		size_t pwd_len;
-		char clear_text_pw[512];
-		LDAP *ld = NULL;
-		const char *username = pdb_get_username(sam_acct);
-		BOOL got_clear_text_pw = False;
+	if ( ! ldap_state) {
+		return NT_STATUS_OK;
+	}
 
-		DEBUG(5,("pdb_nds_update_login_attempts: %s login for %s\n",
-				success ? "Successful" : "Failed", username));
+	/* Attempt simple bind with user credentials to update eDirectory
+	   password policy */
 
-		result = pdb_get_backend_private_data(sam_acct, methods);
-		if (!result) {
-			attr_list = get_userattr_list(NULL,
-						      ldap_state->schema_ver);
-			rc = ldapsam_search_suffix_by_name(ldap_state, username, &result, attr_list );
-			TALLOC_FREE( attr_list );
-			if (rc != LDAP_SUCCESS) {
-				return NT_STATUS_OBJECT_NAME_NOT_FOUND;
-			}
-			pdb_set_backend_private_data(sam_acct, result, NULL,
-						     methods, PDB_CHANGED);
-			talloc_autofree_ldapmsg(sam_acct, result);
-		}
+	mem_ctx = talloc_new(sam_acct);
+	if (mem_ctx == NULL) {
+		DEBUG(0, ("talloc_new failed\n"));
+		return NT_STATUS_NO_MEMORY;
+	}
 
-		if (ldap_count_entries(ldap_state->smbldap_state->ldap_struct, result) == 0) {
-			DEBUG(0, ("pdb_nds_update_login_attempts: No user to modify!\n"));
+	DEBUG(5,("pdb_nds_update_login_attempts: %s login for %s\n",
+			success ? "Successful" : "Failed", username));
+
+	result = pdb_get_backend_private_data(sam_acct, methods);
+	if (!result) {
+		attr_list = get_userattr_list(mem_ctx, ldap_state->schema_ver);
+		rc = ldapsam_search_suffix_by_name(ldap_state, mem_ctx, username, &result, attr_list );
+		if (rc != LDAP_SUCCESS) {
+			talloc_free(mem_ctx);
 			return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 		}
+		pdb_set_backend_private_data(sam_acct, result, NULL, methods, PDB_CHANGED);
+		talloc_autofree_ldapmsg(sam_acct, result);
+	}
 
-		entry = ldap_first_entry(ldap_state->smbldap_state->ldap_struct, result);
-		dn = smbldap_get_dn(ldap_state->smbldap_state->ldap_struct, entry);
-		if (!dn) {
-			return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	if (ldap_count_entries(ldap_state->smbldap_state->ldap_struct, result) == 0) {
+		DEBUG(0, ("pdb_nds_update_login_attempts: No user to modify!\n"));
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	}
+
+	entry = ldap_first_entry(ldap_state->smbldap_state->ldap_struct, result);
+	dn = smbldap_talloc_dn(mem_ctx, ldap_state->smbldap_state->ldap_struct, entry);
+	if (!dn) {
+		talloc_free(mem_ctx);
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	}
+
+	DEBUG(3, ("pdb_nds_update_login_attempts: username %s found dn '%s'\n", username, dn));
+
+	pwd_len = sizeof(clear_text_pw);
+	if (success == True) {
+		if (pdb_nds_get_password(ldap_state->smbldap_state, dn, &pwd_len, clear_text_pw) == LDAP_SUCCESS) {
+			/* Got clear text password. Use simple ldap bind */
+			got_clear_text_pw = True;
+		}
+	} else {
+		generate_random_buffer((unsigned char *)clear_text_pw, 24);
+		clear_text_pw[24] = '\0';
+		DEBUG(5,("pdb_nds_update_login_attempts: using random password %s\n", clear_text_pw));
+	}
+
+	if((success != True) || (got_clear_text_pw == True)) {
+		
+		rc = smb_ldap_setup_full_conn(&ld, ldap_state->location);
+		if (rc) {
+			talloc_free(mem_ctx);
+			return NT_STATUS_INVALID_CONNECTION;
 		}
 
-		DEBUG(3, ("pdb_nds_update_login_attempts: username %s found dn '%s'\n", username, dn));
-
-		pwd_len = sizeof(clear_text_pw);
-		if (success == True) {
-			if (pdb_nds_get_password(ldap_state->smbldap_state, dn, &pwd_len, clear_text_pw) == LDAP_SUCCESS) {
-				/* Got clear text password. Use simple ldap bind */
-				got_clear_text_pw = True;
-			}
+		/* Attempt simple bind with real or bogus password */
+		rc = ldap_simple_bind_s(ld, dn, clear_text_pw);
+		if (rc == LDAP_SUCCESS) {
+			DEBUG(5,("pdb_nds_update_login_attempts: ldap_simple_bind_s Successful for %s\n", username));
+			ldap_unbind(ld);
 		} else {
-			generate_random_buffer((unsigned char *)clear_text_pw, 24);
-			clear_text_pw[24] = '\0';
-			DEBUG(5,("pdb_nds_update_login_attempts: using random password %s\n", clear_text_pw));
-		}
-
-		if((success != True) || (got_clear_text_pw == True)) {
-			
-			rc = smb_ldap_setup_full_conn(&ld, ldap_state->location);
-			if (rc) {
-				return NT_STATUS_INVALID_CONNECTION;
+			NTSTATUS nt_status = NT_STATUS_ACCOUNT_RESTRICTION;
+			DEBUG(5,("pdb_nds_update_login_attempts: ldap_simple_bind_s Failed for %s\n", username));
+			switch(rc) {
+				case LDAP_INVALID_CREDENTIALS:
+					nt_status = NT_STATUS_WRONG_PASSWORD;
+					break;
+				case LDAP_UNWILLING_TO_PERFORM:
+					/* eDir returns this if the account was disabled. */
+					/* The problem is we don't know if the given
+					   password was correct for this account or
+					   not. We have to return more info than we
+					   should and tell the client NT_STATUS_ACCOUNT_DISABLED
+					   so they don't think the password was bad. JRA. */
+					nt_status = NT_STATUS_ACCOUNT_DISABLED;
+					break;
+				default:
+					break;
 			}
-
-			/* Attempt simple bind with real or bogus password */
-			rc = ldap_simple_bind_s(ld, dn, clear_text_pw);
-			if (rc == LDAP_SUCCESS) {
-				DEBUG(5,("pdb_nds_update_login_attempts: ldap_simple_bind_s Successful for %s\n", username));
-				ldap_unbind(ld);
-			} else {
-				NTSTATUS nt_status = NT_STATUS_ACCOUNT_RESTRICTION;
-				DEBUG(5,("pdb_nds_update_login_attempts: ldap_simple_bind_s Failed for %s\n", username));
-				switch(rc) {
-					case LDAP_INVALID_CREDENTIALS:
-						nt_status = NT_STATUS_WRONG_PASSWORD;
-						break;
-					case LDAP_UNWILLING_TO_PERFORM:
-						/* eDir returns this if the account was disabled. */
-						/* The problem is we don't know if the given
-						   password was correct for this account or
-						   not. We have to return more info than we
-						   should and tell the client NT_STATUS_ACCOUNT_DISABLED
-						   so they don't think the password was bad. JRA. */
-						nt_status = NT_STATUS_ACCOUNT_DISABLED;
-						break;
-					default:
-						break;
-				}
-				return nt_status;
-			}
+			talloc_free(mem_ctx);
+			return nt_status;
 		}
 	}
-	
+
+	talloc_free(mem_ctx);
 	return NT_STATUS_OK;
 }
 
