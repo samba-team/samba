@@ -2594,6 +2594,10 @@ smbc_opendir_ctx(SMBCCTX *context,
 
                         if (!find_master_ip(workgroup, &server_addr.ip)) {
 
+				if (dir) {
+					SAFE_FREE(dir->fname);
+					SAFE_FREE(dir);
+				}
                                 errno = ENOENT;
                                 return NULL;
                         }
@@ -2705,6 +2709,10 @@ smbc_opendir_ctx(SMBCCTX *context,
                                         DEBUG(0, ("Could not get name of "
                                                   "local/domain master browser "
                                                   "for server %s\n", server));
+					if (dir) {
+						SAFE_FREE(dir->fname);
+						SAFE_FREE(dir);
+					}
 					errno = EPERM;
 					return NULL;
 
@@ -2828,6 +2836,10 @@ smbc_opendir_ctx(SMBCCTX *context,
                                               &targetcli, targetpath))
 			{
 				d_printf("Could not resolve %s\n", path);
+				if (dir) {
+					SAFE_FREE(dir->fname);
+					SAFE_FREE(dir);
+				}
 				return NULL;
 			}
 			
