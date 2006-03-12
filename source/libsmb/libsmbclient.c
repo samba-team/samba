@@ -1200,7 +1200,7 @@ smbc_read_ctx(SMBCCTX *context,
          * the call to cli_read() instead of file->offset fixes a problem
          * retrieving data at an offset greater than 4GB.
          */
-        off_t offset = file->offset;
+        off_t offset;
 
 	if (!context || !context->internal ||
 	    !context->internal->_initialized) {
@@ -1218,6 +1218,8 @@ smbc_read_ctx(SMBCCTX *context,
 		return -1;
 
 	}
+
+	offset = file->offset;
 
 	/* Check that the buffer exists ... */
 
