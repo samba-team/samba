@@ -1111,6 +1111,7 @@ static void do_tarput(void)
 		/* Get us to the next block, or the first block first time around */
 		if (next_block(tarbuf, &buffer_p, tbufsiz) <= 0) {
 			DEBUG(0, ("Empty file, short tar file, or read error: %s\n", strerror(errno)));
+			SAFE_FREE(longfilename);
 			return;
 		}
 
@@ -1182,6 +1183,7 @@ static void do_tarput(void)
 				}
 				break;
 			case 'L':
+				SAFE_FREE(longfilename);
 				longfilename = get_longfilename(finfo);
 				if (!longfilename) {
 					DEBUG(0, ("abandoning restore\n"));
