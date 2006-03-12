@@ -338,7 +338,7 @@ static BOOL decode_jobs_1(TALLOC_CTX *mem_ctx, RPC_BUFFER *buffer,
 	uint32 i;
 
 	*jobs = TALLOC_ARRAY(mem_ctx, JOB_INFO_1, num_jobs);
-	if (!jobs) {
+	if (*jobs == NULL) {
 		return False;
 	}
 	prs_set_offset(&buffer->prs,0);
