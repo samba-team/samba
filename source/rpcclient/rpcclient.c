@@ -665,13 +665,11 @@ out_free:
 	}
 */
 
-	if (argv) {
-		/* NOTE: popt allocates the whole argv, including the
-		 * strings, as a single block.  So a single free is
-		 * enough to release it -- we don't free the
-		 * individual strings.  rtfm. */
-		free(argv);
-	}
+	/* NOTE: popt allocates the whole argv, including the
+	 * strings, as a single block.  So a single free is
+	 * enough to release it -- we don't free the
+	 * individual strings.  rtfm. */
+	free(argv);
 	
 	return result;
 }
