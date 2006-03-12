@@ -3740,7 +3740,7 @@ BOOL make_spoolss_q_setprinter(TALLOC_CTX *mem_ctx, SPOOL_Q_SETPRINTER *q_u,
 
 	q_u->level = level;
 	q_u->info.level = level;
-	q_u->info.info_ptr = (info != NULL) ? 1 : 0;
+	q_u->info.info_ptr = 1;	/* Info is != NULL, see above */
 	switch (level) {
 
 	  /* There's no such thing as a setprinter level 1 */
