@@ -5071,7 +5071,7 @@ BOOL make_spoolss_q_addprinterdriver(TALLOC_CTX *mem_ctx,
 	q_u->level = level;
 	
 	q_u->info.level = level;
-	q_u->info.ptr = (info!=NULL)?1:0;
+	q_u->info.ptr = 1;	/* Info is != NULL, see above */
 	switch (level)
 	{
 	/* info level 3 is supported by Windows 95/98, WinNT and Win2k */
