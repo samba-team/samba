@@ -1724,6 +1724,7 @@ int tar_parseargs(int argc, char *argv[], const char *Optarg, int Optind)
 
 			if ((tmpstr = (char *)SMB_MALLOC(strlen(cliplist[clipcount])+1)) == NULL) {
 				DEBUG(0, ("Could not allocate space for a cliplist item, # %i\n", clipcount));
+				SAFE_FREE(tmplist);
 				return 0;
 			}
 
