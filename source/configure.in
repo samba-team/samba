@@ -266,6 +266,7 @@ AC_SUBST(UNINSTALL_CIFSMOUNT)
 AC_SUBST(EXTRA_SBIN_PROGS)
 AC_SUBST(EXTRA_ALL_TARGETS)
 AC_SUBST(CONFIG_LIBS)
+AC_SUBST(NSCD_LIBS)
 
 # Set defaults
 PIE_CFLAGS=""
@@ -3527,6 +3528,8 @@ if test x"$with_ads_support" != x"no"; then
 
 LIBS="$ac_save_LIBS"
 fi
+
+AC_CHECK_LIB_EXT(nscd, NSCD_LIBS, nscd_flush_cache)
 
 #################################################
 # check for automount support
