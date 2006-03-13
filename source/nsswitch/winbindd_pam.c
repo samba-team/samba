@@ -1137,6 +1137,13 @@ process_result:
 	
 		DOM_SID user_sid;
 
+		/* In all codepaths were result == NT_STATUS_OK info3 must have
+		   been initialized. */
+		if (!info3) {
+			result = NT_STATUS_INTERNAL_ERROR;
+			goto done;
+		}
+
 		netsamlogon_cache_store(name_user, info3);
 		wcache_invalidate_samlogon(find_domain_from_name(name_domain), info3);
 
