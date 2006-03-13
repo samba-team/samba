@@ -5107,7 +5107,7 @@ if test x"$HAVE_WINBIND" = x"yes"; then
 		SHLIB_PROGS="$SHLIB_PROGS $WINBIND_NSS $WINBIND_WINS_NSS"
 
 		if test x"$with_pam" = x"yes"; then
-			SHLIB_PROGS="$SHLIB_PROGS nsswitch/pam_winbind.$SHLIBEXT"
+			SHLIB_PROGS="$SHLIB_PROGS bin/pam_winbind.$SHLIBEXT"
 		fi
 	fi
 else
