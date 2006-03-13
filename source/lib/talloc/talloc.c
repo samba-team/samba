@@ -293,7 +293,11 @@ static int talloc_unreference(const void *context, const void *ptr)
 
 	for (h=tc->refs;h;h=h->next) {
 		struct talloc_chunk *p = talloc_parent_chunk(h);
-		if ((p==NULL && context==NULL) || TC_PTR_FROM_CHUNK(p) == context) break;
+		if (p == NULL) {
+			if (context == NULL) break;
+		} else if (TC_PTR_FROM_CHUNK(p) == context) {
+			break;
+		}
 	}
 	if (h == NULL) {
 		return -1;
@@ -1010,10 +1014,12 @@ char *talloc_vasprintf(const void *t, const char *fmt, va_list ap)
 	int len;
 	char *ret;
 	va_list ap2;
+	char c;
 	
 	VA_COPY(ap2, ap);
 
-	if ((len = vsnprintf(NULL, 0, fmt, ap2)) < 0) {
+	/* this call looks strange, but it makes it work on older solaris boxes */
+	if ((len = vsnprintf(&c, 1, fmt, ap2)) < 0) {
 		return NULL;
 	}
 
