@@ -197,6 +197,7 @@ static int smb_pam_conv(int num_msg, const struct pam_message **msg,
 				(*reply)[num].resp_retcode = PAM_SUCCESS;
 				(*reply)[num].resp = NULL;
 				DEBUG(4,("PAM Info message in conversation function: %s\n", (msg[num]->msg)));
+				break;
 
 			case PAM_ERROR_MSG:
 				(*reply)[num].resp_retcode = PAM_SUCCESS;
@@ -205,6 +206,10 @@ static int smb_pam_conv(int num_msg, const struct pam_message **msg,
 				break;
 
 			default:
+				while (num > 0) {
+					SAFE_FREE((*reply)[num-1].resp);
+					num--;
+				}
 				SAFE_FREE(*reply);
 				*reply = NULL;
 				DEBUG(1,("Error: PAM subsystme sent an UNKNOWN message type to the conversation function!\n"));
