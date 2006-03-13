@@ -1,9 +1,8 @@
 ##############################
 # Start SUBSYSTEM SOCKET_WRAPPER
 [LIBRARY::SOCKET_WRAPPER]
-MAJOR_VERSION = 0
-MINOR_VERSION = 0
-RELEASE_VERSION = 1
+VERSION = 0.0.1
+SO_VERSION = 0.0.1
 NOPROTO = YES
 DESCRIPTION = Wrapper library for testing TCP/IP connections using Unix Sockets
 PUBLIC_HEADERS = socket_wrapper.h

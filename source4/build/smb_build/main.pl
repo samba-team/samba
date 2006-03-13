@@ -67,7 +67,7 @@ foreach my $key (values %$OUTPUT) {
 	$mkenv->ObjList($key) if $key->{OUTPUT_TYPE} eq "OBJLIST";
 	$mkenv->StaticLibrary($key) if $key->{OUTPUT_TYPE} eq "STATIC_LIBRARY";
 	$mkenv->PkgConfig($key) if ($key->{OUTPUT_TYPE} eq "SHARED_LIBRARY") and
-						defined($key->{MAJOR_VERSION});
+						defined($key->{VERSION});
 	$mkenv->SharedLibrary($key) if $key->{OUTPUT_TYPE} eq "SHARED_LIBRARY";
 	$mkenv->Binary($key) if $key->{OUTPUT_TYPE} eq "BINARY";
 	$mkenv->Manpage($key) if defined($key->{MANPAGE});

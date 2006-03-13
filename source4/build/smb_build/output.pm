@@ -56,17 +56,15 @@ sub generate_shared_library($)
 		$link_name =~ s/^LIB//;
 		$link_name = lc($link_name);
 		$lib_name = "lib$link_name";
-		$lib->{OUTPUT} = "-l$link_name";
 	}
 
 	$lib->{LIBRARY_REALNAME} = $lib->{LIBRARY_NAME} = "$lib_name.\$(SHLIBEXT)";
-	$lib->{TARGET} = "bin/$lib->{LIBRARY_NAME}";
-	if (defined($lib->{MAJOR_VERSION})) {
-		$lib->{LIBRARY_SONAME} = $lib->{LIBRARY_NAME}.".$lib->{MAJOR_VERSION}";
-		$lib->{LIBRARY_REALNAME} = $lib->{LIBRARY_SONAME}.".$lib->{MINOR_VERSION}.$lib->{RELEASE_VERSION}";
-		$lib->{TARGET} = "bin/$lib->{LIBRARY_REALNAME}";
-		@{$lib->{LINK_FLAGS}} = ("\$(SONAMEFLAG)$lib->{LIBRARY_SONAME}");
+	if (defined($lib->{VERSION})) {
+		$lib->{LIBRARY_SONAME} = $lib->{LIBRARY_NAME}.".$lib->{SO_VERSION}";
+		$lib->{LIBRARY_REALNAME} = $lib->{LIBRARY_NAME}.".$lib->{VERSION}";
 	}
+	$lib->{TARGET} = "bin/$lib->{LIBRARY_REALNAME}";
+	$lib->{OUTPUT} = $lib->{TARGET};
 }
 
 sub generate_static_library($)
@@ -143,11 +141,7 @@ sub create_output($$)
 			push(@{$part->{LINK_LIST}}, $elem->{OUTPUT}) if defined($elem->{OUTPUT});
 			push(@{$part->{LINK_FLAGS}}, @{$elem->{LIBS}}) if defined($elem->{LIBS});
 			push(@{$part->{LINK_FLAGS}},@{$elem->{LDFLAGS}}) if defined($elem->{LDFLAGS});
-			if (defined($elem->{OUTPUT_TYPE}) and ($elem->{OUTPUT_TYPE} eq "SHARED_LIBRARY")) {
-			    push(@{$part->{DEPEND_LIST}}, "bin/$elem->{LIBRARY_NAME}");			    
-			} else { 
-			    push(@{$part->{DEPEND_LIST}}, $elem->{TARGET}) if defined($elem->{TARGET});
-			}
+		    push(@{$part->{DEPEND_LIST}}, $elem->{TARGET}) if defined($elem->{TARGET});
 			push(@{$part->{SUBSYSTEM_INIT_FUNCTIONS}}, $elem->{INIT_FUNCTION}) if 
 				defined($elem->{INIT_FUNCTION}) and 
 				$elem->{TYPE} ne "MODULE" and 
