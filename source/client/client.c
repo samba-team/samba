@@ -37,6 +37,7 @@
 #include "system/time.h" /* needed by some systems for asctime() */
 #include "libcli/resolve/resolve.h"
 #include "libcli/security/proto.h"
+#include "lib/replace/readline.h"
 
 static int io_bufsize = 64512;
 

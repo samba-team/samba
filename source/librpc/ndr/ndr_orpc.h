@@ -34,4 +34,6 @@ struct DUALSTRINGARRAY
 	struct SECURITYBINDING **securitybindings;
 };
 
+#include "librpc/ndr/ndr_orpc_proto.h"
+
 #endif /* __NDR_ORPC_H__ */

@@ -38,6 +38,7 @@
 #define discard_const(ptr) ((void *)((intptr_t)(ptr)))
 #define discard_const_p(type, ptr) ((type *)discard_const(ptr))
 
+#include "lib/ldb/samba/ldif_handlers.h"
 #include "talloc.h"
 
 #endif /*_SAMBA_BUILD_*/
