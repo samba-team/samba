@@ -392,6 +392,10 @@ static SEC_DESC *sec_desc_parse(char *str)
 		}
 
 		if (strncmp(tok,"OWNER:", 6) == 0) {
+			if (owner_sid) {
+				printf("Only specify owner once\n");
+				goto done;
+			}
 			owner_sid = SMB_CALLOC_ARRAY(DOM_SID, 1);
 			if (!owner_sid ||
 			    !StringToSid(owner_sid, tok+6)) {
@@ -402,6 +406,10 @@ static SEC_DESC *sec_desc_parse(char *str)
 		}
 
 		if (strncmp(tok,"GROUP:", 6) == 0) {
+			if (grp_sid) {
+				printf("Only specify group once\n");
+				goto done;
+			}
 			grp_sid = SMB_CALLOC_ARRAY(DOM_SID, 1);
 			if (!grp_sid ||
 			    !StringToSid(grp_sid, tok+6)) {
