@@ -5065,7 +5065,7 @@ BOOL make_spoolss_q_addprinterdriver(TALLOC_CTX *mem_ctx,
 		return False;
 	}
 
-	q_u->server_name_ptr = (srv_name!=NULL)?1:0;
+	q_u->server_name_ptr = 1; /* srv_name is != NULL, see above */
 	init_unistr2(&q_u->server_name, srv_name, UNI_STR_TERMINATE);
 	
 	q_u->level = level;
