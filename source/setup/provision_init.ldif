@@ -79,6 +79,11 @@ vendorVersion: ${VERSION}
 
 #Add modules to the list to activate them by default
 #beware often order is important
+#
+# Some Known ordering constraints:
+# - rootdse must be first, as it makes redirects from "" -> cn=rootdse
+# - password_hash must be before samldb, or else the template code in samldb breaks setting the pwdLastSet attribute
+
 dn: @MODULES
 @LIST: rootdse,kludge_acl,paged_results,server_sort,extended_dn,asq,password_hash,samldb,operational,objectguid,rdn_name,objectclass
 
