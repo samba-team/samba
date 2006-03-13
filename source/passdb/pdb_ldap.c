@@ -1438,10 +1438,7 @@ static int ldapsam_get_ldap_user_by_sid(struct ldapsam_privates *ldap_state,
 					    LDAP_ATTR_MOD_TIMESTAMP));
 			append_attr(mem_ctx, &attr_list, "uidNumber");
 			rc = ldapsam_search_suffix_by_sid(ldap_state, mem_ctx, sid, result, attr_list);
-			talloc_free(mem_ctx);
 
-			if (rc != LDAP_SUCCESS) 
-				return rc;
 			break;
 		}
 			
@@ -1453,10 +1450,7 @@ static int ldapsam_get_ldap_user_by_sid(struct ldapsam_privates *ldap_state,
 			attr_list = get_userattr_list(NULL,
 						      ldap_state->schema_ver);
 			rc = ldapsam_search_suffix_by_rid(ldap_state, mem_ctx, rid, result, attr_list);
-			talloc_free(mem_ctx);
 
-			if (rc != LDAP_SUCCESS) 
-				return rc;
 			break;
 	}
 	return rc;
