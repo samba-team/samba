@@ -9648,7 +9648,6 @@ BOOL torture_nbt_winsreplication_simple(void)
 
 	ret &= test_wins_replication(mem_ctx, address);
 
-done:
 	talloc_free(mem_ctx);
 
 	return ret;
@@ -9683,7 +9682,6 @@ BOOL torture_nbt_winsreplication_replica(void)
 	ret &= test_conflict_same_owner(ctx);
 	ret &= test_conflict_different_owner(ctx);
 
-done:
 	talloc_free(mem_ctx);
 
 	return ret;
@@ -9718,7 +9716,6 @@ BOOL torture_nbt_winsreplication_owned(void)
 	ret &= test_conflict_owned_released_vs_replica(ctx);
 	ret &= test_conflict_owned_active_vs_replica(ctx);
 
-done:
 	talloc_free(mem_ctx);
 
 	return ret;
