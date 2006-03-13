@@ -336,10 +336,10 @@ NTSTATUS sec_desc_add_sid(TALLOC_CTX *ctx, SEC_DESC **psd, DOM_SID *sid, uint32 
 	SEC_ACE  *ace  = 0;
 	NTSTATUS  status;
 
-	*sd_size = 0;
-
 	if (!ctx || !psd || !sid || !sd_size)
 		return NT_STATUS_INVALID_PARAMETER;
+
+	*sd_size = 0;
 
 	status = sec_ace_add_sid(ctx, &ace, psd[0]->dacl->ace, &psd[0]->dacl->num_aces, sid, mask);
 	
@@ -388,11 +388,11 @@ NTSTATUS sec_desc_del_sid(TALLOC_CTX *ctx, SEC_DESC **psd, DOM_SID *sid, size_t 
 	SEC_ACE  *ace  = 0;
 	NTSTATUS  status;
 
-	*sd_size = 0;
-	
 	if (!ctx || !psd[0] || !sid || !sd_size)
 		return NT_STATUS_INVALID_PARAMETER;
 
+	*sd_size = 0;
+	
 	status = sec_ace_del_sid(ctx, &ace, psd[0]->dacl->ace, &psd[0]->dacl->num_aces, sid);
 
 	if (!NT_STATUS_IS_OK(status))
