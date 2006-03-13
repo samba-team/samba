@@ -756,7 +756,7 @@ static char * parse_server(char ** punc_name)
 
 	if(length < 3) {
 		/* BB add code to find DFS root here */
-		printf("\nMounting the DFS root for domain not implemented yet");
+		printf("\nMounting the DFS root for domain not implemented yet\n");
 		return NULL;
 	} else {
 		if(strncmp(unc_name,"//",2) && strncmp(unc_name,"\\\\",2)) {
@@ -863,7 +863,7 @@ int main(int argc, char ** argv)
 	char * share_name = NULL;
 	char * ipaddr = NULL;
 	char * uuid = NULL;
-	char * mountpoint;
+	char * mountpoint = NULL;
 	char * options;
 	char * resolved_path;
 	char * temp;
@@ -887,7 +887,11 @@ int main(int argc, char ** argv)
 
 	if(argc && argv) {
 		thisprogram = argv[0];
+	} else {
+		mount_cifs_usage();
+		exit(1);
 	}
+
 	if(thisprogram == NULL)
 		thisprogram = "mount.cifs";
 
@@ -897,9 +901,10 @@ int main(int argc, char ** argv)
 /* #ifdef _GNU_SOURCE
 	printf(" node: %s machine: %s sysname %s domain %s\n", sysinfo.nodename,sysinfo.machine,sysinfo.sysname,sysinfo.domainname);
 #endif */
-
-	share_name = argv[1];
-	mountpoint = argv[2];
+	if(argc > 2) {
+		share_name = argv[1];
+		mountpoint = argv[2];
+	}
 
 	/* add sharename in opts string as unc= parm */
 
@@ -1028,8 +1033,10 @@ int main(int argc, char ** argv)
 		}
 	}
 
-	if(argc < 3)
+	if((argc < 3) || (share_name == NULL) || (mountpoint == NULL)) {
 		mount_cifs_usage();
+		exit(1);
+	}
 
 	if (getenv("PASSWD")) {
 		if(mountpassword == NULL)
@@ -1110,6 +1117,8 @@ mount_retry:
 		optlen += strlen(share_name) + 4;
 	else {
 		printf("No server share name specified\n");
+		printf("\nMounting the DFS root for server not implemented yet\n");
+                exit(1);
 	}
 	if(user_name)
 		optlen += strlen(user_name) + 6;
