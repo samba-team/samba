@@ -88,8 +88,13 @@ sub check_library($$$)
 
 	$lib->{OUTPUT_TYPE} = $default_ot;
 
-	unless (defined($lib->{MAJOR_VERSION})) {
-		print "$lib->{NAME}: Please specify MAJOR_VERSION\n";
+	if (defined($lib->{VERSION}) and not defined($lib->{SO_VERSION})) {
+		print "$lib->{NAME}: Please specify SO_VERSION when specifying VERSION\n";
+		return;
+	}
+
+	if (defined($lib->{SO_VERSION}) and not defined($lib->{VERSION})) {
+		print "$lib->{NAME}: Please specify VERSION when specifying SO_VERSION\n";
 		return;
 	}
 

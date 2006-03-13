@@ -1,5 +1,4 @@
 - subdir handler for install headers into a specific directory
-- sonames
 - hack for loading modules locally
  - create 
 - saner names for some of the .pc files

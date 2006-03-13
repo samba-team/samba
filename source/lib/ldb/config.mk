@@ -132,11 +132,10 @@ NOPROTO = YES
 ################################################
 # Start SUBSYSTEM ldb
 [LIBRARY::ldb]
-MAJOR_VERSION = 0
-MINOR_VERSION = 0
+VERSION = 0.0.1
+SO_VERSION = 0.0.1
 DESCRIPTION = LDAP-like embedded database library
 INIT_FUNCTION_TYPE = int (*) (void)
-RELEASE_VERSION = 1
 OBJ_FILES = \
 		common/ldb.o \
 		common/ldb_ldif.o \

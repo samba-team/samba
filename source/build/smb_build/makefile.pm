@@ -131,7 +131,6 @@ STLD_FLAGS=-rc -L\$(builddir)/bin
 
 SHLD=$self->{config}->{CC}
 SHLD_FLAGS=$self->{config}->{LDSHFLAGS} -L\$(builddir)/bin
-SONAMEFLAG=$self->{config}->{SONAMEFLAG}
 SHLIBEXT=$self->{config}->{SHLIBEXT}
 
 XSLTPROC=$self->{config}->{XSLTPROC}
@@ -258,6 +257,12 @@ __EOD__
 		$init_obj = "bin/$ctx->{NAME}_init_module.o";
 	}
 
+	my $soarg = "";
+	if ($self->{config}->{SONAMEFLAG} ne "" and 
+		defined($ctx->{LIBRARY_SONAME})) {
+		$soarg = "$self->{config}->{SONAMEFLAG}$ctx->{LIBRARY_SONAME} ";
+	}
+
 	if ($self->{duplicate_build}) {
 		$self->output(<< "__EOD__"
 #
@@ -265,25 +270,11 @@ __EOD__
 bin/$ctx->{LIBRARY_REALNAME}: \$($ctx->{TYPE}_$ctx->{NAME}_DEPEND_LIST) \$($ctx->{TYPE}_$ctx->{NAME}_OBJ_LIST) $init_obj
 	\@echo Linking \$\@
 	\@\$(SHLD) \$(SHLD_FLAGS) -o \$\@ \$(LOCAL_LINK_FLAGS) \\
-		\$($ctx->{TYPE}_$ctx->{NAME}_LINK_FLAGS) \\
+		\$($ctx->{TYPE}_$ctx->{NAME}_LINK_FLAGS) $soarg \\
 		$init_obj \$($ctx->{TYPE}_$ctx->{NAME}_LINK_LIST)
 
 __EOD__
 );
-		if (defined($ctx->{LIBRARY_SONAME})) {
-			$self->output(<< "__EOD__"
-# Symlink $ctx->{LIBRARY_SONAME}
-bin/$ctx->{LIBRARY_SONAME}: bin/$ctx->{LIBRARY_REALNAME} 
-	\@echo Symlink \$\@
-	\@ln -sf $ctx->{LIBRARY_REALNAME} \$\@
-# Symlink $ctx->{LIBRARY_NAME}
-bin/$ctx->{LIBRARY_NAME}: bin/$ctx->{LIBRARY_SONAME} 
-	\@echo Symlink \$\@
-	\@ln -sf $ctx->{LIBRARY_SONAME} \$\@
-
-__EOD__
-);
-		}
 	}
 
 	$self->output(<< "__EOD__"
@@ -292,25 +283,11 @@ __EOD__
 $installdir/$ctx->{LIBRARY_REALNAME}: \$($ctx->{TYPE}_$ctx->{NAME}_DEPEND_LIST) \$($ctx->{TYPE}_$ctx->{NAME}_OBJ_LIST) $init_obj
 	\@echo Linking \$\@
 	\@\$(SHLD) \$(SHLD_FLAGS) -o \$\@ \\
-		\$($ctx->{TYPE}_$ctx->{NAME}_LINK_FLAGS) \\
+		\$($ctx->{TYPE}_$ctx->{NAME}_LINK_FLAGS) $soarg \\
 		$init_obj \$($ctx->{TYPE}_$ctx->{NAME}_LINK_LIST)
 
 __EOD__
 );
-	if (defined($ctx->{LIBRARY_SONAME})) {
-	    $self->output(<< "__EOD__"
-# Symlink $ctx->{LIBRARY_SONAME}
-$installdir/$ctx->{LIBRARY_SONAME}: $installdir/$ctx->{LIBRARY_REALNAME}
-	\@echo Symlink \$\@
-	\@ln -sf $ctx->{LIBRARY_REALNAME} \$\@
-# Symlink $ctx->{LIBRARY_NAME}
-$installdir/$ctx->{LIBRARY_NAME}: $installdir/$ctx->{LIBRARY_SONAME}
-	\@echo Symlink \$\@
-	\@ln -sf $ctx->{LIBRARY_SONAME} \$\@
-
-__EOD__
-);
-	}
 }
 
 sub MergedObj($$)
@@ -486,7 +463,7 @@ sub PkgConfig($$)
 		$link_name,
 		$ctx->{OUTPUT},
 		"",
-		"$ctx->{MAJOR_VERSION}.$ctx->{MINOR_VERSION}.$ctx->{RELEASE_VERSION}",
+		"$ctx->{VERSION}",
 		$ctx->{DESCRIPTION}
 	); 
 }

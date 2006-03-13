@@ -1,10 +1,9 @@
 # LIB GTK SMB subsystem
 
 [LIBRARY::GTK_SAMBA]
-MAJOR_VERSION = 0
+VERSION = 0.0.1
+SO_VERSION = 0.0.1
 DESCRIPTION = Common Samba-related widgets for GTK+ applications
-MINOR_VERSION = 0
-RELEASE_VERSION = 1
 NOPROTO = YES
 PUBLIC_HEADERS = common/gtk-smb.h common/select.h
 OBJ_FILES = common/gtk-smb.o \

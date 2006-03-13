@@ -71,9 +71,8 @@ my $section_types = {
 		"EXTRA_CFLAGS"		=> "string"
 		},
 	"LIBRARY" => {
-		"MAJOR_VERSION"		=> "string",
-		"MINOR_VERSION"		=> "string",
-		"RELEASE_VERSION"	=> "string",
+		"VERSION"		=> "string",
+		"SO_VERSION"		=> "string",
 		
 		"INIT_FUNCTION_TYPE"	=> "string",
 

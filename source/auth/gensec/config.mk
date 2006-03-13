@@ -1,10 +1,9 @@
 #################################
 # Start SUBSYSTEM gensec
 [LIBRARY::gensec]
-MAJOR_VERSION = 0
-MINOR_VERSION = 0
+VERSION = 0.0.1
+SO_VERSION = 0.0.1
 DESCRIPTION = Generic Security Library
-RELEASE_VERSION = 1
 PUBLIC_HEADERS = gensec.h
 PRIVATE_PROTO_HEADER = gensec_proto.h
 OBJ_FILES = gensec.o
