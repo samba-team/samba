@@ -960,6 +960,12 @@ int cac_Shutdown(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct Shutdown *op)
       hnd->_internal.pipes[PI_SHUTDOWN] = True;
    }
 
+   pipe_hnd = cac_GetPipe(hnd, PI_SHUTDOWN);
+   if(!pipe_hnd) {
+      hnd->status = NT_STATUS_INVALID_HANDLE;
+      return CAC_FAILURE;
+   }
+
    msg = (op->in.message != NULL) ? op->in.message : talloc_strdup(mem_ctx, "");
 
    hnd->status = NT_STATUS_OK;
