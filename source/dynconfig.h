@@ -25,7 +25,6 @@
  * @brief Exported global configurations.
  **/
 
-extern const char *dyn_SBINDIR;
 extern const char *dyn_BINDIR;
 extern const char *dyn_CONFIGFILE;
 extern const char *dyn_NCALRPCDIR;

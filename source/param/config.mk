@@ -1,12 +1,12 @@
 [SUBSYSTEM::CONFIG]
-OBJ_FILES = ../dynconfig.o \
-				loadparm.o \
-				params.o \
-				generic.o
+OBJ_FILES = loadparm.o \
+			params.o \
+			generic.o \
+			../lib/version.o
 REQUIRED_SUBSYSTEMS = LIBBASIC 
 PRIVATE_PROTO_HEADER = param.h
 
-PATH_FLAGS = -DCONFIGFILE=\"$(CONFIGFILE)\"  -DSBINDIR=\"$(SBINDIR)\" \
+PATH_FLAGS = -DCONFIGFILE=\"$(CONFIGFILE)\" \
 	 -DBINDIR=\"$(BINDIR)\" -DLMHOSTSFILE=\"$(LMHOSTSFILE)\" \
 	 -DLOCKDIR=\"$(LOCKDIR)\" -DPIDDIR=\"$(PIDDIR)\" -DDATADIR=\"$(DATADIR)\" \
 	 -DLOGFILEBASE=\"$(LOGFILEBASE)\" -DSHLIBEXT=\"$(SHLIBEXT)\" \
@@ -18,3 +18,21 @@ PATH_FLAGS = -DCONFIGFILE=\"$(CONFIGFILE)\"  -DSBINDIR=\"$(SBINDIR)\" \
 dynconfig.o: dynconfig.c Makefile
 	@echo Compiling $<
 	@$(CC) $(CFLAGS) $(PICFLAG) $(PATH_FLAGS) -c $< -o $@
+
+# dynconfig defines used for binaries in bin/, when configure ran in developer 
+# mode:
+
+DEVEL_PATH_FLAGS = -DCONFIGFILE=\"$(CONFIGFILE)\" -DBINDIR=\"$(builddir)/bin\" \
+     -DLMHOSTSFILE=\"$(LMHOSTSFILE)\" -DLOCKDIR=\"$(LOCKDIR)\" \
+	 -DPIDDIR=\"$(PIDDIR)\" -DDATADIR=\"$(srcdir)/codepages\" \
+	 -DLOGFILEBASE=\"$(LOGFILEBASE)\" -DSHLIBEXT=\"$(SHLIBEXT)\" \
+	 -DCONFIGDIR=\"$(CONFIGDIR)\" -DNCALRPCDIR=\"$(NCALRPCDIR)\" \
+	 -DSWATDIR=\"$(srcdir)/../swat\" -DPRIVATE_DIR=\"$(PRIVATEDIR)\" \
+	 -DMODULESDIR=\"$(builddir)/bin/modules\" \
+	 -DJSDIR=\"$(srcdir)/scripting/libjs\" \
+	 -DSETUPDIR=\"$(srcdir)/setup\" \
+	 -DWINBINDD_SOCKET_DIR=\"$(WINBINDD_SOCKET_DIR)\"
+
+dynconfig-devel.o: dynconfig.c Makefile
+	@echo Compiling $<
+	@$(CC) $(CFLAGS) $(PICFLAG) $(DEVEL_PATH_FLAGS) -c $< -o $@
