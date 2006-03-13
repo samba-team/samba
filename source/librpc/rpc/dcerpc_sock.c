@@ -627,7 +627,7 @@ void continue_np_open_socket(struct composite_context *ctx)
 struct composite_context* dcerpc_pipe_open_pipe_send(struct dcerpc_connection *conn,
 						     const char *identifier)
 {
-	char *canon;
+	char *canon = NULL;
 
 	struct composite_context *c;
 	struct composite_context *sock_np_req;
