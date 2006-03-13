@@ -788,7 +788,7 @@ eventlogadm: SHOWFLAGS bin/eventlogadm@EXEEXT@
 talloctort : SHOWFLAGS bin/talloctort@EXEEXT@
 
 nsswitch : SHOWFLAGS bin/winbindd@EXEEXT@ bin/wbinfo@EXEEXT@ @WINBIND_NSS@ \
-	@WINBIND_WINS_NSS@ nsswitch/pam_winbind.@SHLIBEXT@
+	@WINBIND_WINS_NSS@ bin/pam_winbind.@SHLIBEXT@
 
 wins : SHOWFLAGS @WINBIND_WINS_NSS@
 
@@ -1196,7 +1196,7 @@ bin/winbindd@EXEEXT@: $(WINBINDD_OBJ) @BUILD_POPT@ bin/.dummy
 		$(LDAP_LIBS) $(KRB5LIBS) \
 		@SONAMEFLAG@`basename $@`@SONAMEVERSIONSUFFIX@
 
-nsswitch/pam_winbind.@SHLIBEXT@: $(PAM_WINBIND_PICOBJ) bin/.dummy
+bin/pam_winbind.@SHLIBEXT@: $(PAM_WINBIND_PICOBJ) bin/.dummy
 	@echo "Linking $@"
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(PAM_WINBIND_PICOBJ) \
 		@SONAMEFLAG@`basename $@` $(LIBS) -lpam
