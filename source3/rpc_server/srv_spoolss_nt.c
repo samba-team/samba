@@ -6818,6 +6818,7 @@ static WERROR enumprinterdrivers_level2(fstring servername, fstring architecture
 						      architecture, version);
 			if (!W_ERROR_IS_OK(status)) {
 				SAFE_FREE(list);
+				SAFE_FREE(driver_info_2);
 				return status;
 			}
 			fill_printer_driver_info_2(&driver_info_2[*returned+i], driver, servername);		
