@@ -2,7 +2,6 @@
 
 SWATDIR=$1
 SRCDIR=$2
-LIBDIR=$3
 
 echo Installing swat files in $SWATDIR
 

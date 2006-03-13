@@ -137,7 +137,7 @@ BOOL lang_tdb_init(const char *lang)
 	if (!mem_ctx) {
 		return False;
 	}
-	asprintf(&msg_path, "%s.msg", lib_path(mem_ctx, (const char *)lang));
+	asprintf(&msg_path, "%s.msg", data_path(mem_ctx, (const char *)lang));
 	if (stat(msg_path, &st) != 0) {
 		/* the msg file isn't available */
 		free(msg_path);

@@ -31,7 +31,7 @@ extern const char *dyn_CONFIGFILE;
 extern const char *dyn_NCALRPCDIR;
 extern const char *dyn_LOGFILEBASE;
 extern const char *dyn_LMHOSTSFILE;
-extern const char *dyn_LIBDIR;
+extern const char *dyn_DATADIR;
 extern const char *dyn_MODULESDIR;
 extern const char *dyn_SHLIBEXT;
 extern const char *dyn_LOCKDIR; 

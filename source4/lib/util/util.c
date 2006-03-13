@@ -637,15 +637,15 @@ static char *pid_path(TALLOC_CTX* mem_ctx, const char *name)
 /**
  * @brief Returns an absolute path to a file in the Samba lib directory.
  *
- * @param name File to find, relative to LIBDIR.
+ * @param name File to find, relative to DATADIR.
  *
  * @retval Pointer to a talloc'ed string containing the full path.
  **/
 
-_PUBLIC_ char *lib_path(TALLOC_CTX* mem_ctx, const char *name)
+_PUBLIC_ char *data_path(TALLOC_CTX* mem_ctx, const char *name)
 {
 	char *fname;
-	fname = talloc_asprintf(mem_ctx, "%s/%s", dyn_LIBDIR, name);
+	fname = talloc_asprintf(mem_ctx, "%s/%s", dyn_DATADIR, name);
 	return fname;
 }
 

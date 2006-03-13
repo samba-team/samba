@@ -40,7 +40,7 @@ sub show($$)
 	showitem($output, "using extended attributes", ["XATTR"]);
 	showitem($output, "using libblkid", ["BLKID"]);
 	showitem($output, "using pam", ["PAM"]);
-	print "Using external popt: $output->{EXT_LIB_POPT}->{ENABLE}\n";
+	print "Using external popt: ".lc($output->{EXT_LIB_POPT}->{ENABLE})."\n";
 	print "Using shared libraries internally (experimental): ";
 
 	if ($config->{BLDSHARED} eq "true") {
