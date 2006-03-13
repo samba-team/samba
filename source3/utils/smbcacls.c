@@ -378,7 +378,7 @@ static SEC_DESC *sec_desc_parse(char *str)
 {
 	const char *p = str;
 	fstring tok;
-	SEC_DESC *ret;
+	SEC_DESC *ret = NULL;
 	size_t sd_size;
 	DOM_SID *grp_sid=NULL, *owner_sid=NULL;
 	SEC_ACL *dacl=NULL;
@@ -396,7 +396,7 @@ static SEC_DESC *sec_desc_parse(char *str)
 			if (!owner_sid ||
 			    !StringToSid(owner_sid, tok+6)) {
 				printf("Failed to parse owner sid\n");
-				return NULL;
+				goto done;
 			}
 			continue;
 		}
@@ -406,7 +406,7 @@ static SEC_DESC *sec_desc_parse(char *str)
 			if (!grp_sid ||
 			    !StringToSid(grp_sid, tok+6)) {
 				printf("Failed to parse group sid\n");
-				return NULL;
+				goto done;
 			}
 			continue;
 		}
@@ -414,22 +414,23 @@ static SEC_DESC *sec_desc_parse(char *str)
 		if (strncmp(tok,"ACL:", 4) == 0) {
 			SEC_ACE ace;
 			if (!parse_ace(&ace, tok+4)) {
-				return NULL;
+				goto done;
 			}
 			if(!add_ace(&dacl, &ace)) {
 				printf("Failed to add ACL %s\n", tok);
-				return NULL;
+				goto done;
 			}
 			continue;
 		}
 
 		printf("Failed to parse token '%s' in security descriptor,\n", tok);
-		return NULL;
+		goto done;
 	}
 
 	ret = make_sec_desc(ctx,revision, SEC_DESC_SELF_RELATIVE, owner_sid, grp_sid, 
 			    NULL, dacl, &sd_size);
 
+  done:
 	SAFE_FREE(grp_sid);
 	SAFE_FREE(owner_sid);
 
