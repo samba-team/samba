@@ -810,7 +810,7 @@ typedef struct spool_notify_info_data
 	}
 	notify_data;
 	uint32 size;
-	BOOL enc_type;
+	uint32 enc_type;
 } SPOOL_NOTIFY_INFO_DATA;
 
 typedef struct spool_notify_info
