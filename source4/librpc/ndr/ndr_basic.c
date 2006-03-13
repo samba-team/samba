@@ -817,7 +817,7 @@ _PUBLIC_ NTSTATUS ndr_push_DATA_BLOB(struct ndr_push *ndr, int ndr_flags, DATA_B
 */
 _PUBLIC_ NTSTATUS ndr_pull_DATA_BLOB(struct ndr_pull *ndr, int ndr_flags, DATA_BLOB *blob)
 {
-	uint32_t length;
+	uint32_t length = 0;
 
 	if (ndr->flags & LIBNDR_ALIGN_FLAGS) {
 		if (ndr->flags & LIBNDR_FLAG_ALIGN2) {
