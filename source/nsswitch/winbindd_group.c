@@ -827,8 +827,6 @@ void winbindd_getgrent(struct winbindd_cli_state *state)
 	       [group_list_ndx * sizeof(struct winbindd_gr)], 
 	       gr_mem_list, gr_mem_list_len);
 
-       	SAFE_FREE(gr_mem_list);
-
 	state->response.length += gr_mem_list_len;
 
 	DEBUG(10, ("returning %d groups, length = %d\n",
@@ -837,6 +835,8 @@ void winbindd_getgrent(struct winbindd_cli_state *state)
 	/* Out of domains */
 
  done:
+
+       	SAFE_FREE(gr_mem_list);
 
 	if (group_list_ndx > 0)
 		request_ok(state);
