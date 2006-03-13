@@ -20,7 +20,6 @@
 */
 
 #include "includes.h"
-#include "version.h"
 
 /**
  * @file dynconfig.c
@@ -41,9 +40,6 @@
  * @todo Perhaps eventually these should be merged into the parameter
  * table?  There's kind of a chicken-and-egg situation there...
  **/
-
-/** Directory with super-user binaries */
-_PUBLIC_ const char *dyn_SBINDIR = SBINDIR;
 
 /** Directory with generic binaries */
 _PUBLIC_ const char *dyn_BINDIR = BINDIR;
@@ -91,45 +87,4 @@ _PUBLIC_ const char *dyn_SETUPDIR = SETUPDIR;
 _PUBLIC_ const char *dyn_JSDIR = JSDIR;
 
 /** Where to find the winbindd socket */
-
 _PUBLIC_ const char *dyn_WINBINDD_SOCKET_DIR = WINBINDD_SOCKET_DIR;
-
-_PUBLIC_ const char *samba_version_string(void)
-{
-	const char *official_string = SAMBA_VERSION_OFFICIAL_STRING;
-#ifdef SAMBA_VERSION_RELEASE_NICKNAME
- 	const char *release_nickname = SAMBA_VERSION_RELEASE_NICKNAME;
-#else
- 	const char *release_nickname = NULL;
-#endif
-#ifdef SAMBA_VERSION_VENDOR_SUFFIX
- 	const char *vendor_suffix = SAMBA_VERSION_VENDOR_SUFFIX;
-#else
- 	const char *vendor_suffix = NULL;
-#endif
-#ifdef SAMBA_VERSION_VENDOR_PATCH
- 	const char *vendor_patch = SAMBA_VERSION_VENDOR_PATCH;
-#else
- 	const char *vendor_patch = NULL;
-#endif
-	static char *samba_version;
-	static BOOL init_samba_version;
-
-	if (init_samba_version) {
-		return samba_version;
-	}
-
-	samba_version = talloc_asprintf(talloc_autofree_context(),
-					"%s%s%s%s%s%s%s%s",
-					official_string,
-					(vendor_suffix?"-":""),
-					(vendor_suffix?vendor_suffix:""),
-					(vendor_patch?"-":""),
-					(vendor_patch?vendor_patch:""),
-					(release_nickname?" (":""),
-					(release_nickname?release_nickname:""),
-					(release_nickname?")":""));
-
-	init_samba_version = True;
-	return samba_version;
-}
