@@ -576,13 +576,13 @@ static void child_msg_online(int msg_type, struct process_id src, void *buf, siz
 	ret = nscd_flush_cache("passwd");
 	if (ret) {
 		DEBUG(5,("failed to flush nscd cache for 'passwd' service: %s\n",
-			error_message(ret)));
+			strerror(ret)));
 	}
 
 	ret = nscd_flush_cache("group");
 	if (ret) {
 		DEBUG(5,("failed to flush nscd cache for 'group' service: %s\n",
-			error_message(ret)));
+			strerror(ret)));
 	}
 #endif
 
