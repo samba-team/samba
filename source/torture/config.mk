@@ -63,17 +63,15 @@ REQUIRED_SUBSYSTEMS = \
 
 include smb2/config.mk
 
-#################################
-# Start SUBSYSTEM TORTURE_COM
-[SUBSYSTEM::TORTURE_COM]
+[MODULE::torture_com]
+INIT_FUNCTION = torture_com_init
+SUBSYSTEM = smbtorture
 PRIVATE_PROTO_HEADER = \
 		com/proto.h
 OBJ_FILES = \
 		com/simple.o
 REQUIRED_SUBSYSTEMS = \
 		com dcom
-# End SUBSYSTEM TORTURE_COM
-#################################
 
 #################################
 # Start SUBSYSTEM TORTURE_RPC
@@ -235,7 +233,6 @@ REQUIRED_SUBSYSTEMS = \
 		TORTURE_LOCAL \
 		TORTURE_NBENCH \
 		TORTURE_LDAP \
-		TORTURE_COM \
 		TORTURE_NBT \
 		TORTURE_NET \
 		CONFIG \

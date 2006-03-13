@@ -24,6 +24,7 @@
 #include "lib/com/dcom/dcom.h"
 #include "librpc/gen_ndr/com_dcom.h"
 #include "lib/cmdline/popt_common.h"
+#include "torture/torture.h"
 
 #define DEFAULT_TRANS 4096
 
@@ -94,4 +95,9 @@ BOOL torture_com_simple(void)
 	talloc_free(mem_ctx);
 
 	return ret;
+}
+
+NTSTATUS torture_com_init(void)
+{
+	return register_torture_op("COM-SIMPLE", torture_com_simple, 0);
 }

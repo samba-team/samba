@@ -44,6 +44,8 @@
 #include "torture/nbt/proto.h"
 #include "torture/libnet/proto.h"
 #include "torture/torture.h"
+#include "build.h"
+#include "dlinklist.h"
 
 int torture_nprocs=4;
 int torture_numops=10;
@@ -54,6 +56,7 @@ static int procnum; /* records process count number when forking */
 static struct smbcli_state *current_cli;
 static BOOL use_oplocks;
 static BOOL use_level_II_oplocks;
+#define MAX_COLS 80 /* FIXME: Determine this at run-time */
 
 BOOL torture_showall = False;
 
@@ -2192,7 +2195,7 @@ static struct {
 	const char *name;
 	BOOL (*fn)(void);
 	BOOL (*multi_fn)(struct smbcli_state *, int );
-} torture_ops[] = {
+} builtin_torture_ops[] = {
 	/* base tests */
 	{"BASE-FDPASS", run_fdpasstest, 0},
 	{"BASE-LOCK1",  torture_locktest1,  0},
@@ -2344,9 +2347,6 @@ static struct {
 	{"LOCAL-SDDL", torture_local_sddl, 0},
 	{"LOCAL-NDR", torture_local_ndr, 0},
 
-	/* COM (Component Object Model) testers */
-	{"COM-SIMPLE", torture_com_simple, 0 },
-
 	/* ldap testers */
 	{"LDAP-BASIC", torture_ldap_basic, 0},
 	{"LDAP-CLDAP", torture_cldap, 0},
@@ -2376,7 +2376,55 @@ static struct {
 
 	{NULL, NULL, 0}};
 
+static void register_builtin_ops(void)
+{
+	int i;
+	for (i = 0; builtin_torture_ops[i].name; i++) {
+		register_torture_op(builtin_torture_ops[i].name, 
+							builtin_torture_ops[i].fn, 
+							builtin_torture_ops[i].multi_fn);
+	}
+}
 
+
+static struct torture_op {
+	const char *name;
+	BOOL (*fn)(void);
+	BOOL (*multi_fn)(struct smbcli_state *, int );
+	struct torture_op *prev, *next;
+}* torture_ops = NULL;;
+
+static struct torture_op *find_torture_op(const char *name)
+{
+	struct torture_op *o;
+	for (o = torture_ops; o; o = o->next) {
+		if (strcmp(name, o->name) == 0)
+			return o;
+	}
+
+	return NULL;
+}
+
+NTSTATUS register_torture_op(const char *name, BOOL (*fn)(void), BOOL (*multi_fn)(struct smbcli_state *, int ))
+{
+	struct torture_op *op;
+	
+	/* Check for duplicates */
+	if (find_torture_op(name) != NULL) {
+		DEBUG(0,("There already is a torture op registered with the name %s!\n", name));
+		return NT_STATUS_OBJECT_NAME_COLLISION;
+	}
+
+	op = talloc(talloc_autofree_context(), struct torture_op);
+
+	op->name = talloc_strdup(op, name);
+	op->fn = fn;
+	op->multi_fn = multi_fn;
+
+	DLIST_ADD(torture_ops, op);
+	
+	return NT_STATUS_OK;
+}
 
 /****************************************************************************
 run a specified test or "ALL"
@@ -2384,42 +2432,42 @@ run a specified test or "ALL"
 static BOOL run_test(const char *name)
 {
 	BOOL ret = True;
-	int i;
+	struct torture_op *o;
 	BOOL matched = False;
 
 	if (strequal(name,"ALL")) {
-		for (i=0;torture_ops[i].name;i++) {
-			if (!run_test(torture_ops[i].name)) {
+		for (o = torture_ops; o; o = o->next) {
+			if (!run_test(o->name)) {
 				ret = False;
 			}
 		}
 		return ret;
 	}
 
-	for (i=0;torture_ops[i].name;i++) {
-		if (gen_fnmatch(name, torture_ops[i].name) == 0) {
+	for (o = torture_ops; o; o = o->next) {
+		if (gen_fnmatch(name, o->name) == 0) {
 			double t;
 			matched = True;
 			init_iconv();
-			printf("Running %s\n", torture_ops[i].name);
-			if (torture_ops[i].multi_fn) {
+			printf("Running %s\n", o->name);
+			if (o->multi_fn) {
 				BOOL result = False;
-				t = torture_create_procs(torture_ops[i].multi_fn, 
+				t = torture_create_procs(o->multi_fn, 
 							 &result);
 				if (!result) { 
 					ret = False;
-					printf("TEST %s FAILED!\n", torture_ops[i].name);
+					printf("TEST %s FAILED!\n", o->name);
 				}
 					 
 			} else {
 				struct timeval tv = timeval_current();
-				if (!torture_ops[i].fn()) {
+				if (!o->fn()) {
 					ret = False;
-					printf("TEST %s FAILED!\n", torture_ops[i].name);
+					printf("TEST %s FAILED!\n", o->name);
 				}
 				t = timeval_elapsed(&tv);
 			}
-			printf("%s took %g secs\n\n", torture_ops[i].name, t);
+			printf("%s took %g secs\n\n", o->name, t);
 		}
 	}
 
@@ -2473,8 +2521,8 @@ static void parse_dns(const char *dns)
 
 static void usage(poptContext pc)
 {
+	struct torture_op *o;
 	int i;
-	int perline = 5;
 
 	poptPrintUsage(pc, stdout, 0);
 	printf("\n");
@@ -2523,12 +2571,15 @@ static void usage(poptContext pc)
 
 	printf("    //server/share\n\n");
 
-	printf("tests are:");
-	for (i=0;torture_ops[i].name;i++) {
-		if ((i%perline)==0) {
+	printf("tests are:\n");
+
+	i = 0;
+	for (o = torture_ops; o; o = o->next) {
+		if (i + strlen(o->name) >= MAX_COLS) {
 			printf("\n");
+			i = 0;
 		}
-		printf("%s ", torture_ops[i].name);
+		i+=printf("%s ", o->name);
 	}
 	printf("\n\n");
 
@@ -2569,7 +2620,9 @@ static void max_runtime_handler(int sig)
 	poptContext pc;
 	enum {OPT_LOADFILE=1000,OPT_UNCLIST,OPT_TIMELIMIT,OPT_DNS,
 	    OPT_DANGEROUS,OPT_SMB_PORTS};
-
+	init_module_fn static_init[] = STATIC_smbtorture_MODULES;
+	init_module_fn *shared_init = load_samba_modules(NULL, "torture");
+	
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
 		{"smb-ports",	'p', POPT_ARG_STRING, NULL,     OPT_SMB_PORTS,	"SMB ports", 	NULL},
@@ -2597,6 +2650,13 @@ static void max_runtime_handler(int sig)
 #ifdef HAVE_SETBUFFER
 	setbuffer(stdout, NULL, 0);
 #endif
+
+	register_builtin_ops();
+
+	run_init_functions(static_init);
+	run_init_functions(shared_init);
+
+	talloc_free(shared_init);
 
 	/* we are never interested in SIGPIPE */
 	BlockSignals(True,SIGPIPE);
