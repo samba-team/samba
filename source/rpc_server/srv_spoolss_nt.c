@@ -7241,6 +7241,8 @@ WERROR enumports_hook( int *count, char ***lines )
 	int ret;
 	int fd;
 
+	*count = 0;
+	*lines = NULL;
 
 	/* if no hook then just fill in the default port */
 	
@@ -7259,9 +7261,9 @@ WERROR enumports_hook( int *count, char ***lines )
 		ret = smbrun(command, &fd);
 		DEBUG(10,("Returned [%d]\n", ret));
 		if (ret != 0) {
-			if (fd != -1)
+			if (fd != -1) {
 				close(fd);
-			
+			}
 			return WERR_ACCESS_DENIED;
 		}
 
@@ -7289,8 +7291,11 @@ static WERROR enumports_level_1(RPC_BUFFER *buffer, uint32 offered, uint32 *need
 	char **qlines;
 	int numlines;
 
-	if ( !W_ERROR_IS_OK(result = enumports_hook( &numlines, &qlines )) ) 
+	result = enumports_hook( &numlines, &qlines );
+	if (!W_ERROR_IS_OK(result)) {
+		file_lines_free(qlines);
 		return result;
+	}
 	
 	if(numlines) {
 		if((ports=SMB_MALLOC_ARRAY( PORT_INFO_1, numlines )) == NULL) {
@@ -7304,9 +7309,8 @@ static WERROR enumports_level_1(RPC_BUFFER *buffer, uint32 offered, uint32 *need
 			DEBUG(6,("Filling port number [%d] with port [%s]\n", i, qlines[i]));
 			fill_port_1(&ports[i], qlines[i]);
 		}
-
-		file_lines_free(qlines);
 	}
+	file_lines_free(qlines);
 
 	*returned = numlines;
 
