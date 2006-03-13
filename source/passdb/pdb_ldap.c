@@ -335,11 +335,11 @@ int ldapsam_search_suffix_by_name(struct ldapsam_privates *ldap_state,
 	filter = talloc_asprintf(mem_ctx, "(&(uid=%s)(%s))",
 				 escape_user, get_objclass_filter_static(ldap_state->schema_ver));
 	
+	SAFE_FREE(escape_user);
+
 	if (filter == NULL) {
 		return LDAP_NO_MEMORY;
 	}
-
-	SAFE_FREE(escape_user);
 
 	return smbldap_search_suffix(ldap_state->smbldap_state, filter, attr, result);
 }
