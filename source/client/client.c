@@ -1336,15 +1336,15 @@ static struct file_list {
  Free a file_list structure.
 ****************************************************************************/
 
-static void free_file_list (struct file_list * list)
+static void free_file_list (struct file_list *list_head)
 {
-	struct file_list *tmp;
+	struct file_list *list, *next;
 	
-	while (list) {
-		tmp = list;
-		DLIST_REMOVE(list, list);
-		SAFE_FREE(tmp->file_path);
-		SAFE_FREE(tmp);
+	for (list = list_head; list; list = next) {
+		next = list->next;
+		DLIST_REMOVE(list_head, list);
+		SAFE_FREE(list->file_path);
+		SAFE_FREE(list);
 	}
 }
 
