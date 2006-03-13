@@ -6871,8 +6871,8 @@ static WERROR enumprinterdrivers_level3(fstring servername, fstring architecture
 	int ndrivers;
 	uint32 version;
 	fstring *list = NULL;
-	NT_PRINTER_DRIVER_INFO_LEVEL driver;
 	DRIVER_INFO_3 *driver_info_3=NULL;
+	NT_PRINTER_DRIVER_INFO_LEVEL driver;
 	WERROR result = WERR_OK;
 
 	*returned=0;
@@ -6882,8 +6882,10 @@ static WERROR enumprinterdrivers_level3(fstring servername, fstring architecture
 		ndrivers=get_ntdrivers(&list, architecture, version);
 		DEBUGADD(4,("we have:[%d] drivers in environment [%s] and version [%d]\n", ndrivers, architecture, version));
 
-		if(ndrivers == -1)
+		if(ndrivers == -1) {
+			SAFE_FREE(driver_info_3);
 			return WERR_NOMEM;
+		}
 
 		if(ndrivers != 0) {
 			if((driver_info_3=SMB_REALLOC_ARRAY(driver_info_3, DRIVER_INFO_3, *returned+ndrivers )) == NULL) {
@@ -6936,8 +6938,9 @@ static WERROR enumprinterdrivers_level3(fstring servername, fstring architecture
 	}
 
 out:
-	for (i=0; i<*returned; i++)
+	for (i=0; i<*returned; i++) {
 		SAFE_FREE(driver_info_3[i].dependentfiles);
+	}
 
 	SAFE_FREE(driver_info_3);
 	
