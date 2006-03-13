@@ -134,10 +134,11 @@ static NTSTATUS unixdom_listen(struct socket_context *sock,
 		unlink(my_address->addr);
 	}
 
-	if (my_address && my_address->sockaddr) {
+	if (my_address->sockaddr) {
 		ret = bind(sock->fd, (struct sockaddr *)&my_addr, sizeof(my_addr));
+	} else if (my_address->addr == NULL) {
+		return NT_STATUS_INVALID_PARAMETER;
 	} else {
-		
 		if (strlen(my_address->addr)+1 > sizeof(my_addr.sun_path)) {
 			return NT_STATUS_OBJECT_PATH_INVALID;
 		}
