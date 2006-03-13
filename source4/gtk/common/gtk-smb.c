@@ -22,6 +22,7 @@
 #include "includes.h"
 #include "gtk/common/gtk-smb.h"
 #include "gtk/common/select.h"
+#include "version.h"
 
 void gtk_show_werror(GtkWidget *win, const char *message, WERROR err) 
 {
@@ -282,7 +283,7 @@ GtkWidget *create_gtk_samba_about_dialog (const char *appname)
 	label1 = gtk_label_new (appname);
 	gtk_box_pack_start (GTK_BOX (dialog_vbox1), label1, FALSE, FALSE, 0);
 
-	label2 = gtk_label_new (samba_version_string());
+	label2 = gtk_label_new (SAMBA_VERSION_STRING);
 	gtk_box_pack_start (GTK_BOX (dialog_vbox1), label2, FALSE, FALSE, 0);
 
 	label3 = gtk_label_new_with_mnemonic ("Part of Samba <http://www.samba.org/>");
