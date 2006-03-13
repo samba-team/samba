@@ -6799,8 +6799,10 @@ static WERROR enumprinterdrivers_level2(fstring servername, fstring architecture
 		ndrivers=get_ntdrivers(&list, architecture, version);
 		DEBUGADD(4,("we have:[%d] drivers in environment [%s] and version [%d]\n", ndrivers, architecture, version));
 
-		if(ndrivers == -1)
+		if(ndrivers == -1) {
+			SAFE_FREE(driver_info_2);
 			return WERR_NOMEM;
+		}
 
 		if(ndrivers != 0) {
 			if((driver_info_2=SMB_REALLOC_ARRAY(driver_info_2, DRIVER_INFO_2, *returned+ndrivers )) == NULL) {
