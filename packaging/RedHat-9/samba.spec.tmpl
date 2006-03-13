@@ -177,7 +177,7 @@ install -m755 source/nsswitch/libnss_wins.so $RPM_BUILD_ROOT/lib
 # Install winbind shared libraries
 install -m755 source/nsswitch/libnss_winbind.so $RPM_BUILD_ROOT/lib
 ( cd $RPM_BUILD_ROOT/lib; ln -sf libnss_winbind.so libnss_winbind.so.2 )
-install -m755 source/nsswitch/pam_winbind.so $RPM_BUILD_ROOT/lib/security
+install -m755 source/bin/pam_winbind.so $RPM_BUILD_ROOT/lib/security
 
 # Install pam_smbpass.so
 install -m755 source/bin/pam_smbpass.so $RPM_BUILD_ROOT/lib/security
