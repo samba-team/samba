@@ -2237,11 +2237,6 @@ sub HeaderInterface($)
 
 	my $count = 0;
 
-	pidl_hdr "#ifndef _HEADER_RPC_$interface->{NAME}";
-	pidl_hdr "#define _HEADER_RPC_$interface->{NAME}";
-
-	pidl_hdr "";
-
 	if (defined $interface->{PROPERTIES}->{depends}) {
 		my @d = split / /, $interface->{PROPERTIES}->{depends};
 		foreach my $i (@d) {
@@ -2293,7 +2288,6 @@ sub HeaderInterface($)
 
 	pidl_hdr "#define DCERPC_" . uc $interface->{NAME} . "_CALL_COUNT ($val)";
 
-	pidl_hdr "#endif /* _HEADER_RPC_$interface->{NAME} */";
 }
 
 #####################################################################
@@ -2301,6 +2295,11 @@ sub HeaderInterface($)
 sub ParseInterface($$)
 {
 	my($interface,$needed) = @_;
+
+	pidl_hdr "#ifndef _HEADER_RPC_$interface->{NAME}";
+	pidl_hdr "#define _HEADER_RPC_$interface->{NAME}";
+
+	pidl_hdr "";
 
 	HeaderInterface($interface);
 
@@ -2329,6 +2328,8 @@ sub ParseInterface($$)
 	}
 
 	FunctionTable($interface);
+
+	pidl_hdr "#endif /* _HEADER_RPC_$interface->{NAME} */";
 }
 
 #####################################################################
@@ -2422,4 +2423,3 @@ sub NeededInterface($$)
 }
 
 1;
-
