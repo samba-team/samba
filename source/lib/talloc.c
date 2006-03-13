@@ -289,7 +289,11 @@ static int talloc_unreference(const void *context, const void *ptr)
 
 	for (h=tc->refs;h;h=h->next) {
 		struct talloc_chunk *p = talloc_parent_chunk(h);
-		if ((p==NULL && context==NULL) || TC_PTR_FROM_CHUNK(p) == context) break;
+		if (p == NULL) {
+			if (context == NULL) break;
+		} else if (TC_PTR_FROM_CHUNK(p) == context) {
+			break;
+		}
 	}
 	if (h == NULL) {
 		return -1;
@@ -1076,10 +1080,14 @@ char *talloc_vasprintf(const void *t, const char *fmt, va_list ap)
 	int len;
 	char *ret;
 	va_list ap2;
+	char c;
 	
 	VA_COPY(ap2, ap);
 
-	len = vsnprintf(NULL, 0, fmt, ap2);
+	/* this call looks strange, but it makes it work on older solaris boxes */
+	if ((len = vsnprintf(&c, 1, fmt, ap2)) < 0) {
+		return NULL;
+	}
 
 	ret = _talloc(t, len+1);
 	if (ret) {
@@ -1131,7 +1139,15 @@ static char *talloc_vasprintf_append(char *s, const char *fmt, va_list ap)
 	VA_COPY(ap2, ap);
 
 	s_len = tc->size - 1;
-	len = vsnprintf(NULL, 0, fmt, ap2);
+	if ((len = vsnprintf(NULL, 0, fmt, ap2)) <= 0) {
+		/* Either the vsnprintf failed or the format resulted in
+		 * no characters being formatted. In the former case, we
+		 * ought to return NULL, in the latter we ought to return
+		 * the original string. Most current callers of this 
+		 * function expect it to never return NULL.
+		 */
+		return s;
+	}
 
 	s = talloc_realloc(NULL, s, char, s_len + len+1);
 	if (!s) return NULL;
