@@ -44,10 +44,6 @@ sub new($$$)
 
 	$self->_prepare_path_vars();
 	$self->_prepare_compiler_linker();
-	$self->output(".SUFFIXES: .x .c .et .y .l .d .o .h .h.gch .a .so .1 .1.xml .3 .3.xml .5 .5.xml .7 .7.xml .8 .8.xml .ho\n");
-	$self->_prepare_hostcc_rule();
-	$self->_prepare_std_CC_rule("c","o",'$(PICFLAG)',"Compiling","Rule for std objectfiles");
-	$self->_prepare_std_CC_rule("h","h.gch",'$(PICFLAG)',"Precompiling","Rule for precompiled headerfiles");
 
 	return $self;
 }
@@ -165,60 +161,6 @@ sub _prepare_mk_files($)
 	}
 
 	$self->output("MK_FILES = " . array2oneperline(\@tmp) . "\n");
-}
-
-sub _prepare_dummy_MAKEDIR($)
-{
-	my ($self) = @_;
-
-	$self->output(<< '__EOD__'
-dynconfig.o: dynconfig.c Makefile
-	@echo Compiling $*.c
-	@$(CC) $(CFLAGS) $(PICFLAG) $(PATH_FLAGS) -c $< -o $@
-__EOD__
-);
-	if ($self->{config}->{BROKEN_CC} eq "yes") {
-		$self->output('	-mv `echo $@ | sed \'s%^.*/%%g\'` $@
-');
-	}
-	$self->output("\n");
-}
-
-sub _prepare_std_CC_rule($$$$$$)
-{
-	my ($self,$src,$dst,$flags,$message,$comment) = @_;
-
-	$self->output(<< "__EOD__"
-# $comment
-.$src.$dst:
-	\@echo $message \$\*.$src
-	\@\$(CC) `script/cflags.pl \$\@` \$(CFLAGS) $flags -c \$\*.$src -o \$\@
-__EOD__
-);
-	if ($self->{config}->{BROKEN_CC} eq "yes") {
-		$self->output('	-mv `echo $@ | sed \'s%^.*/%%g\'` $@
-');
-	}
-
-	$self->output("\n");
-}
-
-sub _prepare_hostcc_rule($)
-{
-	my ($self) = @_;
-	
-	$self->output(<< "__EOD__"
-.c.ho:
-	\@echo Compiling \$\*.c with host compiler
-	\@\$(HOSTCC) `script/cflags.pl \$\@` \$(CFLAGS) -c \$\*.c -o \$\@
-__EOD__
-);
-	if ($self->{config}->{BROKEN_CC} eq "yes") {
-		$self->output('	-mv `echo $@ | sed \'s%^.*/%%g\' -e \'s%\.ho$$%.o%\'` $@
-');
-	}
-
-	$self->output("\n");
 }
 
 sub array2oneperline($)
@@ -603,8 +545,6 @@ sub write($$)
 __EOD__
 );
 	}
-
-	$self->_prepare_dummy_MAKEDIR();
 
 	$self->output($self->{mkfile});
 

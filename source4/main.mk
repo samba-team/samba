@@ -333,9 +333,23 @@ unused_macros:
 # File types
 ###############################################################################
 
+.SUFFIXES: .x .c .et .y .l .d .o .h .h.gch .a .so .1 .1.xml .3 .3.xml .5 .5.xml .7 .7.xml .8 .8.xml .ho
+
+.c.ho:
+	@echo Compiling $*.c with host compiler
+	@$(HOSTCC) `script/cflags.pl $@` $(CFLAGS) -c $*.c -o $@
+
 .c.d:
 	@echo "Generating dependencies for $<"
 	@$(CC) -MM -MG -MT $(<:.c=.o) -MF $@ $(CFLAGS) $<
+
+.c.o:
+	@echo Compiling $<
+	@$(CC) `script/cflags.pl $@` $(CFLAGS) $(PICFLAG) -c $< -o $@
+
+.h.h.gch:
+	@echo Precompiling $<
+	@$(CC) `script/cflags.pl $@` $(CFLAGS) $(PICFLAG) -c $< -o $@
 
 .y.c:
 	@echo "Building $< with $(YACC)"
