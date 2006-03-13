@@ -862,6 +862,8 @@ test: all torture
 	@echo Running Samba 3 Test suite
 	@sh ./script/tests/runtests.sh t_dir
 
+# Check for PAM module problems.  Specifically, check that every module we
+# built can actually be loaded by a minimal PAM-aware application.
 test_pam_modules: pam_modules
 	@echo "Testing $(PAM_MODULES) "
 	@for module in $(PAM_MODULES); do \
