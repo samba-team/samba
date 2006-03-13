@@ -2804,8 +2804,10 @@ int get_printer_subkeys( NT_PRINTER_DATA *data, const char* key, fstring **subke
 	
 	/* return error if the key was not found */
 	
-	if ( i == data->num_keys )
+	if ( i == data->num_keys ) {
+		SAFE_FREE(subkeys_ptr);
 		return -1;
+	}
 	
 done:
 	/* tag off the end */
