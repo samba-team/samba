@@ -58,12 +58,17 @@ sub generate_shared_library($)
 		$lib_name = "lib$link_name";
 	}
 
+	$lib->{BUILDDIR} = "bin";
+	$lib->{INSTALLDIR} = "bin/install";
 	$lib->{LIBRARY_REALNAME} = $lib->{LIBRARY_NAME} = "$lib_name.\$(SHLIBEXT)";
+
 	if (defined($lib->{VERSION})) {
 		$lib->{LIBRARY_SONAME} = $lib->{LIBRARY_NAME}.".$lib->{SO_VERSION}";
 		$lib->{LIBRARY_REALNAME} = $lib->{LIBRARY_NAME}.".$lib->{VERSION}";
+	} elsif ($lib->{TYPE} eq "MODULE") {
+		$lib->{BUILDDIR} = "bin/modules/$lib->{SUBSYSTEM}";
 	}
-	$lib->{TARGET} = "bin/$lib->{LIBRARY_REALNAME}";
+	$lib->{TARGET} = "$lib->{BUILDDIR}/$lib->{LIBRARY_REALNAME}";
 	$lib->{OUTPUT} = $lib->{TARGET};
 }
 
@@ -93,7 +98,9 @@ sub generate_binary($)
 	@{$bin->{LINK_LIST}} = ("\$($bin->{TYPE}_$bin->{NAME}\_OBJ_LIST)");
 	@{$bin->{LINK_FLAGS}} = ();
 
-	$bin->{TARGET} = $bin->{OUTPUT} = "bin/$bin->{NAME}";
+	$bin->{INSTALLDIR} = "bin/install";
+	$bin->{BUILDDIR} = "bin/";
+	$bin->{TARGET} = $bin->{OUTPUT} = "$bin->{BUILDDIR}/$bin->{NAME}";
 	$bin->{BINARY} = $bin->{NAME};
 }
 

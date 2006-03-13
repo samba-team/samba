@@ -206,15 +206,15 @@ sub SharedLibrary($$)
 	my $init_obj = "";
 	
 	if ($self->{duplicate_build}) {
-		$installdir = "bin/install";
+		$installdir = $ctx->{INSTALLDIR};
 	} else {
-		$installdir = "bin";
+		$installdir = $ctx->{BUILDDIR};
 	}
 
 	if ($ctx->{TYPE} eq "LIBRARY") {
-		push (@{$self->{shared_libs}}, "bin/$ctx->{LIBRARY_REALNAME}");
+		push (@{$self->{shared_libs}}, "$ctx->{BUILDDIR}/$ctx->{LIBRARY_REALNAME}");
 	} elsif ($ctx->{TYPE} eq "MODULE") {
-		push (@{$self->{shared_modules}}, "bin/$ctx->{LIBRARY_REALNAME}");
+		push (@{$self->{shared_modules}}, "$ctx->{BUILDDIR}/$ctx->{LIBRARY_REALNAME}");
 		push (@{$self->{plugins}}, "$installdir/$ctx->{LIBRARY_REALNAME}");
 
 		my $fixedname = $ctx->{NAME};
@@ -267,8 +267,9 @@ __EOD__
 		$self->output(<< "__EOD__"
 #
 
-bin/$ctx->{LIBRARY_REALNAME}: \$($ctx->{TYPE}_$ctx->{NAME}_DEPEND_LIST) \$($ctx->{TYPE}_$ctx->{NAME}_OBJ_LIST) $init_obj
+$ctx->{TARGET}: \$($ctx->{TYPE}_$ctx->{NAME}_DEPEND_LIST) \$($ctx->{TYPE}_$ctx->{NAME}_OBJ_LIST) $init_obj
 	\@echo Linking \$\@
+	\@mkdir -p $ctx->{BUILDDIR}
 	\@\$(SHLD) \$(SHLD_FLAGS) -o \$\@ \$(LOCAL_LINK_FLAGS) \\
 		\$($ctx->{TYPE}_$ctx->{NAME}_LINK_FLAGS) $soarg \\
 		$init_obj \$($ctx->{TYPE}_$ctx->{NAME}_LINK_LIST)
