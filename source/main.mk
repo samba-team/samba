@@ -248,8 +248,9 @@ clean_pch:
 
 pch: clean_pch include/includes.h.gch
 
+proto: $(PROTO_HEADERS)
 basics: include/includes.h \
-	$(PROTO_HEADERS) \
+	proto \
 	idl \
 	heimdal_basics
 
