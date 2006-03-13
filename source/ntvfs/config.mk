@@ -66,11 +66,10 @@ OBJ_FILES = \
 # Start SUBSYSTEM NTVFS
 [LIBRARY::ntvfs]
 PUBLIC_HEADERS = ntvfs.h
-MAJOR_VERSION = 0
-MINOR_VERSION = 0
+VERSION = 0.0.1
+SO_VERSION = 0.0.1
 DESCRIPTION = Virtual File System with NTFS semantics
 PRIVATE_PROTO_HEADER = ntvfs_proto.h
-RELEASE_VERSION = 1
 OBJ_FILES = \
 		ntvfs_base.o \
 		ntvfs_generic.o \
