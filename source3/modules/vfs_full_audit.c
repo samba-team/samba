@@ -816,6 +816,10 @@ static int smb_full_audit_connect(vfs_handle_struct *handle, connection_struct *
 	const char *none[] = { NULL };
 	const char *all [] = { "all" };
 
+	if (!handle) {
+		return -1;
+	}
+
 	pd = SMB_MALLOC_P(struct vfs_full_audit_private_data);
 	if (!pd) {
 		return -1;
