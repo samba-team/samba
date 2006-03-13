@@ -138,9 +138,9 @@ static const char *rdwr_string(enum rdwr_mode m)
 
 #define SET_ATTRIB(sattrib) do { \
 	union smb_setfileinfo sfinfo; \
-	sfinfo.generic.level = RAW_SFILEINFO_BASIC_INFORMATION; \
-	sfinfo.generic.in.file.path = fname; \
 	ZERO_STRUCT(sfinfo.basic_info.in); \
+	sfinfo.basic_info.level = RAW_SFILEINFO_BASIC_INFORMATION; \
+	sfinfo.basic_info.in.file.path = fname; \
 	sfinfo.basic_info.in.attrib = sattrib; \
 	status = smb_raw_setpathinfo(cli->tree, &sfinfo); \
 	if (!NT_STATUS_IS_OK(status)) { \
