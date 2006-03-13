@@ -2919,16 +2919,22 @@ static char **remote_completion(const char *text, int len)
 	info.text = text;
 	info.len = len;
 		
-	if (len >= PATH_MAX)
+	if (len >= MIN(PATH_MAX,sizeof(pstring))) {
 		return(NULL);
+	}
 
 	info.matches = SMB_MALLOC_ARRAY(char *,MAX_COMPLETIONS);
-	if (!info.matches) return NULL;
+	if (!info.matches) {
+		return NULL;
+	}
 	info.matches[0] = NULL;
 
-	for (i = len-1; i >= 0; i--)
-		if ((text[i] == '/') || (text[i] == '\\'))
+	for (i = len-1; i >= 0; i--) {
+		if ((text[i] == '/') || (text[i] == '\\')) {
 			break;
+		}
+	}
+
 	info.text = text+i+1;
 	info.samelen = info.len = len-i-1;
 
@@ -2936,8 +2942,9 @@ static char **remote_completion(const char *text, int len)
 		strncpy(info.dirmask, text, i+1);
 		info.dirmask[i+1] = 0;
 		pstr_sprintf(dirmask, "%s%*s*", cur_dir, i-1, text);
-	} else
+	} else {
 		pstr_sprintf(dirmask, "%s*", cur_dir);
+	}
 
 	if (cli_list(cli, dirmask, aDIR | aSYSTEM | aHIDDEN, completion_remote_filter, &info) < 0)
 		goto cleanup;
