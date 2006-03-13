@@ -67,7 +67,7 @@ struct substitute_context;
  */
 #define SMB_ASSERT(b) do { if (!(b)) { \
 	DEBUG(0,("PANIC: assert failed at %s(%d)\n", __FILE__, __LINE__)); \
-	smb_panic("assert failed"); }} while (0)
+	smb_panic("assert failed"); abort(); }} while (0)
 
 /**
  * determine the lowest of two values
