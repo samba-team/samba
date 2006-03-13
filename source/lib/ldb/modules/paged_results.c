@@ -71,53 +71,6 @@ struct private_data {
 	
 };
 
-struct paged_async_context {
-	struct ldb_module *module;
-	void *up_context;
-	int (*up_callback)(struct ldb_context *, void *, struct ldb_async_result *);
-	int timeout;
-
-	int size;
-
-	struct results_store *store;
-};
-
-static struct ldb_async_handle *init_handle(void *mem_ctx, struct ldb_module *module,
-					    void *context,
-					    int (*callback)(struct ldb_context *, void *, struct ldb_async_result *),
-					    int timeout)
-{
-	struct paged_async_context *ac;
-	struct ldb_async_handle *h;
-
-	h = talloc_zero(mem_ctx, struct ldb_async_handle);
-	if (h == NULL) {
-		ldb_set_errstring(module->ldb, talloc_asprintf(module, "Out of Memory"));
-		return NULL;
-	}
-
-	h->module = module;
-
-	ac = talloc_zero(h, struct paged_async_context);
-	if (ac == NULL) {
-		ldb_set_errstring(module->ldb, talloc_asprintf(module, "Out of Memory"));
-		talloc_free(h);
-		return NULL;
-	}
-
-	h->private_data = (void *)ac;
-
-	h->state = LDB_ASYNC_INIT;
-	h->status = LDB_SUCCESS;
-
-	ac->module = module;
-	ac->up_context = context;
-	ac->up_callback = callback;
-	ac->timeout = timeout;
-
-	return h;
-}
-
 int store_destructor(void *data)
 {
 	struct results_store *store = talloc_get_type(data, struct results_store);
@@ -298,6 +251,53 @@ static int paged_search(struct ldb_module *module, struct ldb_control *control, 
 	req->op.search.res = paged_result;
 
 	return LDB_SUCCESS;	
+}
+
+struct paged_async_context {
+	struct ldb_module *module;
+	void *up_context;
+	int (*up_callback)(struct ldb_context *, void *, struct ldb_async_result *);
+	int timeout;
+
+	int size;
+
+	struct results_store *store;
+};
+
+static struct ldb_async_handle *init_handle(void *mem_ctx, struct ldb_module *module,
+					    void *context,
+					    int (*callback)(struct ldb_context *, void *, struct ldb_async_result *),
+					    int timeout)
+{
+	struct paged_async_context *ac;
+	struct ldb_async_handle *h;
+
+	h = talloc_zero(mem_ctx, struct ldb_async_handle);
+	if (h == NULL) {
+		ldb_set_errstring(module->ldb, talloc_asprintf(module, "Out of Memory"));
+		return NULL;
+	}
+
+	h->module = module;
+
+	ac = talloc_zero(h, struct paged_async_context);
+	if (ac == NULL) {
+		ldb_set_errstring(module->ldb, talloc_asprintf(module, "Out of Memory"));
+		talloc_free(h);
+		return NULL;
+	}
+
+	h->private_data = (void *)ac;
+
+	h->state = LDB_ASYNC_INIT;
+	h->status = LDB_SUCCESS;
+
+	ac->module = module;
+	ac->up_context = context;
+	ac->up_callback = callback;
+	ac->timeout = timeout;
+
+	return h;
 }
 
 static int paged_search_async_callback(struct ldb_context *ldb, void *context, struct ldb_async_result *ares)

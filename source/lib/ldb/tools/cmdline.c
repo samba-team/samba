@@ -255,6 +255,8 @@ struct ldb_control **parse_controls(void *mem_ctx, char **control_strings)
 			       
 			if ((ret < 4) || (crit < 0) || (crit > 1)) {
 				fprintf(stderr, "invalid server_sort control syntax\n");
+				fprintf(stderr, " syntax: crit(b):bc(n):ac(n):<os(n):cc(n)|attr(s)>[:ctxid(o)]\n");
+				fprintf(stderr, "   note: b = boolean, n = number, s = string, o = b64 binary blob\n");
 				return NULL;
 			}
 			ctrl[i] = talloc(ctrl, struct ldb_control);
@@ -296,6 +298,8 @@ struct ldb_control **parse_controls(void *mem_ctx, char **control_strings)
 
 			if ((ret < 3) || (crit < 0) || (crit > 1) || (flags < 0) || (max_attrs < 0)) {
 				fprintf(stderr, "invalid dirsync control syntax\n");
+				fprintf(stderr, " syntax: crit(b):flags(n):max_attrs(n)[:cookie(o)]\n");
+				fprintf(stderr, "   note: b = boolean, n = number, o = b64 binary blob\n");
 				return NULL;
 			}
 
@@ -335,6 +339,8 @@ struct ldb_control **parse_controls(void *mem_ctx, char **control_strings)
 			ret = sscanf(p, "%d:%255[^$]", &crit, attr);
 			if ((ret != 2) || (crit < 0) || (crit > 1) || (attr[0] == '\0')) {
 				fprintf(stderr, "invalid asq control syntax\n");
+				fprintf(stderr, " syntax: crit(b):attr(s)\n");
+				fprintf(stderr, "   note: b = boolean, s = string\n");
 				return NULL;
 			}
 
@@ -359,6 +365,8 @@ struct ldb_control **parse_controls(void *mem_ctx, char **control_strings)
 			ret = sscanf(p, "%d:%d", &crit, &type);
 			if ((ret != 2) || (crit < 0) || (crit > 1) || (type < 0) || (type > 1)) {
 				fprintf(stderr, "invalid extended_dn control syntax\n");
+				fprintf(stderr, " syntax: crit(b):type(b)\n");
+				fprintf(stderr, "   note: b = boolean\n");
 				return NULL;
 			}
 
@@ -382,6 +390,8 @@ struct ldb_control **parse_controls(void *mem_ctx, char **control_strings)
 
 			if ((ret != 2) || (crit < 0) || (crit > 1) || (size < 0)) {
 				fprintf(stderr, "invalid paged_results control syntax\n");
+				fprintf(stderr, " syntax: crit(b):size(n)\n");
+				fprintf(stderr, "   note: b = boolean, n = number\n");
 				return NULL;
 			}
 
@@ -410,6 +420,8 @@ struct ldb_control **parse_controls(void *mem_ctx, char **control_strings)
 			ret = sscanf(p, "%d:%d:%255[^:]:%127[^:]", &crit, &rev, attr, rule);
 			if ((ret < 3) || (crit < 0) || (crit > 1) || (rev < 0 ) || (rev > 1) ||attr[0] == '\0') {
 				fprintf(stderr, "invalid server_sort control syntax\n");
+				fprintf(stderr, " syntax: crit(b):rev(b):attr(s)[:rule(s)]\n");
+				fprintf(stderr, "   note: b = boolean, s = string\n");
 				return NULL;
 			}
 			ctrl[i] = talloc(ctrl, struct ldb_control);
@@ -437,6 +449,8 @@ struct ldb_control **parse_controls(void *mem_ctx, char **control_strings)
 			ret = sscanf(p, "%d", &crit);
 			if ((ret != 1) || (crit < 0) || (crit > 1)) {
 				fprintf(stderr, "invalid notification control syntax\n");
+				fprintf(stderr, " syntax: crit(b)\n");
+				fprintf(stderr, "   note: b = boolean\n");
 				return NULL;
 			}
 
