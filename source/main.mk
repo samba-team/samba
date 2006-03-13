@@ -218,14 +218,6 @@ include/config.h:
 	@echo "You need to rerun ./autogen.sh and ./configure"
 	@/bin/false
 
-include/proto.h: $(PROTO_OBJS:.o=.c)
-	@echo "Creating include/proto.h"
-	@$(PERL) $(srcdir)/script/mkproto.pl --public-define=_PROTO_H_ \
-		--public=include/proto.h --private=include/proto.h \
-		$(PROTO_OBJS)
-
-proto: include/proto.h
-
 librpc/gen_ndr/misc.h: idl
 librpc/ndr/libndr.h: librpc/ndr/libndr_proto.h librpc/gen_ndr/misc.h
 librpc/rpc/dcerpc.h: librpc/rpc/dcerpc_proto.h
@@ -235,7 +227,6 @@ lib/charset/charset.h: lib/charset/charset_proto.h
 
 include/includes.h: \
 		include/config.h \
-		include/proto.h	\
 		librpc/ndr/libndr.h \
 		librpc/rpc/dcerpc.h \
 		auth/credentials/credentials_proto.h \
@@ -243,7 +234,14 @@ include/includes.h: \
 		lib/util/util_proto.h \
 		lib/charset/charset.h \
 		param/param.h \
-		libcli/util/proto.h
+		libcli/util/proto.h \
+		librpc/ndr/ndr_orpc_proto.h \
+		libcli/nbt/nbtname.h \
+		librpc/ndr/ndr_sec.h \
+		librpc/ndr/ndr_drsuapi.h \
+		librpc/ndr/ndr_spoolss_buf.h \
+		librpc/ndr/ndr_krb5pac.h \
+		librpc/ndr/ndr_compression.h
 
 clean_pch: 
 	-rm -f include/includes.h.gch
@@ -256,8 +254,6 @@ basics: include/includes.h \
 	heimdal_basics
 
 clean: heimdal_clean clean_pch
-	@echo Removing headers
-	@-rm -f include/proto.h
 	@echo Removing objects
 	@-find . -name '*.o' -exec rm -f '{}' \;
 	@echo Removing hostcc objects

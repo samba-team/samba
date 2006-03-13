@@ -24,6 +24,7 @@
 #include "lib/cmdline/popt_common.h"
 #include "lib/registry/reg_backend_rpc.h"
 #include "system/time.h"
+#include "lib/replace/readline.h"
 
 /* 
  * ck/cd - change key

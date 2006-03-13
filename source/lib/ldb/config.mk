@@ -162,6 +162,7 @@ PUBLIC_HEADERS = include/ldb.h
 ################################################
 # Start SUBSYSTEM LDBSAMBA
 [SUBSYSTEM::LDBSAMBA]
+PRIVATE_PROTO_HEADER = samba/ldif_handlers.h
 REQUIRED_SUBSYSTEMS = LIB_SECURITY SAMDB
 OBJ_FILES = \
 		samba/ldif_handlers.o
