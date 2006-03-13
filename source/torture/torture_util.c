@@ -379,10 +379,9 @@ BOOL torture_set_file_attribute(struct smbcli_tree *tree, const char *fname, uin
 	union smb_setfileinfo sfinfo;
 	NTSTATUS status;
 
-	sfinfo.generic.level = RAW_SFILEINFO_BASIC_INFORMATION;
-	sfinfo.generic.in.file.path = fname;
-
 	ZERO_STRUCT(sfinfo.basic_info.in);
+	sfinfo.basic_info.level = RAW_SFILEINFO_BASIC_INFORMATION;
+	sfinfo.basic_info.in.file.path = fname;
 	sfinfo.basic_info.in.attrib = attrib;
 	status = smb_raw_setpathinfo(tree, &sfinfo);
 	return NT_STATUS_IS_OK(status);
