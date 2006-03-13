@@ -198,7 +198,6 @@ struct ldapsam_privates {
 NTSTATUS pdb_init_ldapsam_compat( struct pdb_methods **pdb_method, const char *location);
 void private_data_free_fn(void **result);
 int ldapsam_search_suffix_by_name(struct ldapsam_privates *ldap_state,
-				  void *mem_ctx,
                                   const char *user,
                                   LDAPMessage ** result,
                                   const char **attr);
