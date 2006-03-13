@@ -176,7 +176,7 @@ install: build
 	# Install winbind stuff not installed by 'make install'
 	install -m 0644 source/nsswitch/libnss_winbind.so \
 		$(DESTDIR)/lib/libnss_winbind.so.2
-	install -m 0644 source/nsswitch/pam_winbind.so \
+	install -m 0644 source/bin/pam_winbind.so \
 		$(DESTDIR)/lib/security/
 
 	# Install libnss_wins.so, which is not installed by 'make install' either.

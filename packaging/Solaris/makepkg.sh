@@ -172,8 +172,8 @@ DOCDIR=$INSTALL_BASE/docs
 ##
 cp -fp nsswitch/libnss_wins.so $TMPINSTALLDIR/$LIBDIR/nss_wins.so.1
 cp -fp nsswitch/libnss_winbind.so $TMPINSTALLDIR/$LIBDIR/nss_winbind.so.1
-if [ -f nsswitch/pam_winbind.so ]; then
-	cp -fp nsswitch/pam_winbind.so $TMPINSTALLDIR/$LIBDIR/pam_winbind.so
+if [ -f bin/pam_winbind.so ]; then
+	cp -fp bin/pam_winbind.so $TMPINSTALLDIR/$LIBDIR/pam_winbind.so
 fi
 if [ -f bin/smbwrapper.so ]; then
 	cp -fp bin/smbwrapper.so $TMPINSTALLDIR/$INSTALL_BASE/lib
