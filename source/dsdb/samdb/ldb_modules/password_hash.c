@@ -376,6 +376,7 @@ static int password_hash_handle(struct ldb_module *module, struct ldb_request *r
 	 * or replace with a new one).  Both the unicode and NT hash
 	 * only branches append keys to this multivalued entry. */
 	CHECK_RET(ldb_msg_add_empty(modify_msg, "krb5Key", LDB_FLAG_MOD_REPLACE));
+
 	/* Yay, we can compute new password hashes from the unicode
 	 * password */
 	if (sambaPassword) {
@@ -467,7 +468,7 @@ static int password_hash_handle(struct ldb_module *module, struct ldb_request *r
 
 		/* TODO: We may wish to control the encryption types chosen in future */
 		krb5_ret = hdb_generate_key_set_password(smb_krb5_context->krb5_context,
-						    salt_principal, sambaPassword, &keys, &num_keys);
+							 salt_principal, sambaPassword, &keys, &num_keys);
 		krb5_free_principal(smb_krb5_context->krb5_context, salt_principal);
 
 		if (krb5_ret) {
@@ -480,7 +481,8 @@ static int password_hash_handle(struct ldb_module *module, struct ldb_request *r
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 
-		/* Walking 
+		/* Walking all the key types generated, transform each
+		 * key into an ASN.1 blob
 		 */
 		for (i=0; i < num_keys; i++) {
 			unsigned char *buf;
@@ -651,8 +653,8 @@ static int password_hash_handle(struct ldb_module *module, struct ldb_request *r
 		}
 		sambaLMPwdHistory_len = MIN(sambaLMPwdHistory_len + 1, pwdHistoryLength);
 		
-		/* Likewise, we might not have a new NT password (lm
-		 * only password change function) */
+		/* Likewise, we might not have an old NT password (lm
+		 * only password change function on previous change) */
 		if (ntOldHash) {
 			new_sambaNTPwdHistory[0] = *ntOldHash;
 		} else {
