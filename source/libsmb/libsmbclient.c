@@ -3922,7 +3922,7 @@ sec_desc_parse(TALLOC_CTX *ctx,
 {
 	const char *p = str;
 	fstring tok;
-	SEC_DESC *ret;
+	SEC_DESC *ret = NULL;
 	size_t sd_size;
 	DOM_SID *grp_sid=NULL;
         DOM_SID *owner_sid=NULL;
@@ -3937,49 +3937,65 @@ sec_desc_parse(TALLOC_CTX *ctx,
 		}
 
 		if (StrnCaseCmp(tok,"OWNER:", 6) == 0) {
+			if (owner_sid) {
+				DEBUG(5, ("OWNER specified more than once!\n"));
+				goto done;
+			}
 			owner_sid = SMB_CALLOC_ARRAY(DOM_SID, 1);
 			if (!owner_sid ||
 			    !convert_string_to_sid(ipc_cli, pol,
                                                    numeric,
                                                    owner_sid, tok+6)) {
 				DEBUG(5, ("Failed to parse owner sid\n"));
-				return NULL;
+				goto done;
 			}
 			continue;
 		}
 
 		if (StrnCaseCmp(tok,"OWNER+:", 7) == 0) {
+			if (owner_sid) {
+				DEBUG(5, ("OWNER specified more than once!\n"));
+				goto done;
+			}
 			owner_sid = SMB_CALLOC_ARRAY(DOM_SID, 1);
 			if (!owner_sid ||
 			    !convert_string_to_sid(ipc_cli, pol,
                                                    False,
                                                    owner_sid, tok+7)) {
 				DEBUG(5, ("Failed to parse owner sid\n"));
-				return NULL;
+				goto done;
 			}
 			continue;
 		}
 
 		if (StrnCaseCmp(tok,"GROUP:", 6) == 0) {
+			if (grp_sid) {
+				DEBUG(5, ("GROUP specified more than once!\n"));
+				goto done;
+			}
 			grp_sid = SMB_CALLOC_ARRAY(DOM_SID, 1);
 			if (!grp_sid ||
 			    !convert_string_to_sid(ipc_cli, pol,
                                                    numeric,
                                                    grp_sid, tok+6)) {
 				DEBUG(5, ("Failed to parse group sid\n"));
-				return NULL;
+				goto done;
 			}
 			continue;
 		}
 
 		if (StrnCaseCmp(tok,"GROUP+:", 7) == 0) {
+			if (grp_sid) {
+				DEBUG(5, ("GROUP specified more than once!\n"));
+				goto done;
+			}
 			grp_sid = SMB_CALLOC_ARRAY(DOM_SID, 1);
 			if (!grp_sid ||
 			    !convert_string_to_sid(ipc_cli, pol,
                                                    False,
                                                    grp_sid, tok+6)) {
 				DEBUG(5, ("Failed to parse group sid\n"));
-				return NULL;
+				goto done;
 			}
 			continue;
 		}
@@ -3988,11 +4004,11 @@ sec_desc_parse(TALLOC_CTX *ctx,
 			SEC_ACE ace;
 			if (!parse_ace(ipc_cli, pol, &ace, numeric, tok+4)) {
 				DEBUG(5, ("Failed to parse ACL %s\n", tok));
-				return NULL;
+				goto done;
 			}
 			if(!add_ace(&dacl, &ace, ctx)) {
 				DEBUG(5, ("Failed to add ACL %s\n", tok));
-				return NULL;
+				goto done;
 			}
 			continue;
 		}
@@ -4001,22 +4017,23 @@ sec_desc_parse(TALLOC_CTX *ctx,
 			SEC_ACE ace;
 			if (!parse_ace(ipc_cli, pol, &ace, False, tok+5)) {
 				DEBUG(5, ("Failed to parse ACL %s\n", tok));
-				return NULL;
+				goto done;
 			}
 			if(!add_ace(&dacl, &ace, ctx)) {
 				DEBUG(5, ("Failed to add ACL %s\n", tok));
-				return NULL;
+				goto done;
 			}
 			continue;
 		}
 
 		DEBUG(5, ("Failed to parse security descriptor\n"));
-		return NULL;
+		goto done;
 	}
 
 	ret = make_sec_desc(ctx, revision, SEC_DESC_SELF_RELATIVE, 
 			    owner_sid, grp_sid, NULL, dacl, &sd_size);
 
+  done:
 	SAFE_FREE(grp_sid);
 	SAFE_FREE(owner_sid);
 
