@@ -426,18 +426,20 @@ We were expecting seq %u\n", reply_seq_number, saved_seq ));
 static void simple_free_signing_context(struct smb_sign_info *si)
 {
 	struct smb_basic_signing_context *data = si->signing_context;
-	struct outstanding_packet_lookup *list = data->outstanding_packet_list;
+	struct outstanding_packet_lookup *list;
+	struct outstanding_packet_lookup *next;
 	
-	while (list) {
-		struct outstanding_packet_lookup *old_head = list;
-		DLIST_REMOVE(list, list);
-		SAFE_FREE(old_head);
+	for (list = data->outstanding_packet_list; list; list = next) {
+		next = list->next;
+		DLIST_REMOVE(data->outstanding_packet_list, list);
+		SAFE_FREE(list);
 	}
 
 	data_blob_free(&data->mac_key);
 
-	if (data->trans_info)
+	if (data->trans_info) {
 		SAFE_FREE(data->trans_info);
+	}
 
 	SAFE_FREE(si->signing_context);
 
