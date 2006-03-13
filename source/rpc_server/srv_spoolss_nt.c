@@ -3441,25 +3441,22 @@ static uint32 size_of_notify_info_data(uint16 type, uint16 field)
 {
 	int i=0;
 
-	for (i = 0; i < sizeof(notify_info_data_table); i++) 
-	{
+	for (i = 0; i < (sizeof(notify_info_data_table)/sizeof(struct s_notify_info_data_table)); i++) {
 		if ( (notify_info_data_table[i].type == type)
-			&& (notify_info_data_table[i].field == field) ) 
-		{
-			switch(notify_info_data_table[i].size) 
-			{
-			case NOTIFY_ONE_VALUE:
-			case NOTIFY_TWO_VALUE:
-				return 1;
-			case NOTIFY_STRING:
-				return 2;
+			&& (notify_info_data_table[i].field == field) ) {
+			switch(notify_info_data_table[i].size) {
+				case NOTIFY_ONE_VALUE:
+				case NOTIFY_TWO_VALUE:
+					return 1;
+				case NOTIFY_STRING:
+					return 2;
 
-			/* The only pointer notify data I have seen on
-			   the wire is the submitted time and this has
-			   the notify size set to 4. -tpot */
+				/* The only pointer notify data I have seen on
+				   the wire is the submitted time and this has
+				   the notify size set to 4. -tpot */
 
-			case NOTIFY_POINTER:
-				return 4;
+				case NOTIFY_POINTER:
+					return 4;
 					
 				case NOTIFY_SECDESC:
 					return 5;
@@ -3476,23 +3473,23 @@ static uint32 size_of_notify_info_data(uint16 type, uint16 field)
  Return the type of notify_info_data.
 ********************************************************************/
 
-static int type_of_notify_info_data(uint16 type, uint16 field)
+static uint32 type_of_notify_info_data(uint16 type, uint16 field)
 {
-	int i=0;
+	uint32 i=0;
 
-	for (i = 0; i < sizeof(notify_info_data_table); i++) {
+	for (i = 0; i < (sizeof(notify_info_data_table)/sizeof(struct s_notify_info_data_table)); i++) {
 		if (notify_info_data_table[i].type == type &&
 		    notify_info_data_table[i].field == field)
 			return notify_info_data_table[i].size;
 	}
 
-	return False;
+	return 0;
 }
 
 /****************************************************************************
 ****************************************************************************/
 
-static int search_notify(uint16 type, uint16 field, int *value)
+static BOOL search_notify(uint16 type, uint16 field, int *value)
 {	
 	int i;
 
@@ -3521,9 +3518,7 @@ void construct_info_data(SPOOL_NOTIFY_INFO_DATA *info_data, uint16 type, uint16 
 	info_data->enc_type = type_of_notify_info_data(type, field);
 
 	info_data->id = id;
-
 }
-
 
 /*******************************************************************
  *
