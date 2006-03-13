@@ -1079,6 +1079,7 @@ static char *get_longfilename(file_info2 finfo)
 	while (left > 0) {
 		if (next_block(tarbuf, &buffer_p, tbufsiz) <= 0) {
 			DEBUG(0, ("Empty file, short tar file, or read error: %s\n", strerror(errno)));
+			SAFE_FREE(longname);
 			return(NULL);
 		}
 
