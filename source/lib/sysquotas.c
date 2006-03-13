@@ -184,12 +184,12 @@ static struct {
 static int command_get_quota(const char *path, enum SMB_QUOTA_TYPE qtype, unid_t id, SMB_DISK_QUOTA *dp)
 {
 	const char *get_quota_command;
+	char **lines = NULL;
 	
 	get_quota_command = lp_get_quota_command();
 	if (get_quota_command && *get_quota_command) {
 		const char *p;
 		char *p2;
-		char **lines;
 		pstring syscmd;
 		int _id = -1;
 
@@ -223,49 +223,79 @@ static int command_get_quota(const char *path, enum SMB_QUOTA_TYPE qtype, unid_t
 
 			dp->qflags = (enum SMB_QUOTA_TYPE)strtoul(line, &p2, 10);
 			p = p2;
-			while (p && *p && isspace(*p))
+			while (p && *p && isspace(*p)) {
 				p++;
-			if (p && *p)
+			}
+
+			if (p && *p) {
 				dp->curblocks = STR_TO_SMB_BIG_UINT(p, &p);
-			else 
+			} else {
 				goto invalid_param;
-			while (p && *p && isspace(*p))
+			}
+
+			while (p && *p && isspace(*p)) {
 				p++;
-			if (p && *p)
+			}
+
+			if (p && *p) {
 				dp->softlimit = STR_TO_SMB_BIG_UINT(p, &p);
-			else
+			} else {
 				goto invalid_param;
-			while (p && *p && isspace(*p))
+			}
+
+			while (p && *p && isspace(*p)) {
 				p++;
-			if (p && *p)
+			}
+
+			if (p && *p) {
 				dp->hardlimit = STR_TO_SMB_BIG_UINT(p, &p);
-			else 
+			} else {
 				goto invalid_param;
-			while (p && *p && isspace(*p))
+			}
+
+			while (p && *p && isspace(*p)) {
 				p++;
-			if (p && *p)
+			}
+
+			if (p && *p) {
 				dp->curinodes = STR_TO_SMB_BIG_UINT(p, &p);
-			else
+			} else {
 				goto invalid_param;
-			while (p && *p && isspace(*p))
+			}
+
+			while (p && *p && isspace(*p)) {
 				p++;
-			if (p && *p)
+			}
+
+			if (p && *p) {
 				dp->isoftlimit = STR_TO_SMB_BIG_UINT(p, &p);
-			else
+			} else {
 				goto invalid_param;
-			while (p && *p && isspace(*p))
+			}
+
+			while (p && *p && isspace(*p)) {
 				p++;
-			if (p && *p)
+			}
+
+			if (p && *p) {
 				dp->ihardlimit = STR_TO_SMB_BIG_UINT(p, &p);
-			else
+			} else {
 				goto invalid_param;	
-			while (p && *p && isspace(*p))
+			}
+
+			while (p && *p && isspace(*p)) {
 				p++;
-			if (p && *p)
+			}
+
+			if (p && *p) {
 				dp->bsize = STR_TO_SMB_BIG_UINT(p, NULL);
-			else
+			} else {
 				dp->bsize = 1024;
+			}
+
 			file_lines_free(lines);
+			lines = NULL;
+
 			DEBUG (3, ("Parsed output of get_quota, ...\n"));
 
 #ifdef LARGE_SMB_OFF_T
@@ -298,6 +328,8 @@ static int command_get_quota(const char *path, enum SMB_QUOTA_TYPE qtype, unid_t
 	return -1;
 	
 invalid_param:
+
+	file_lines_free(lines);
 	DEBUG(0,("The output of get_quota_command is invalid!\n"));
 	return -1;
 }
