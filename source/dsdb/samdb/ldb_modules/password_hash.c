@@ -496,6 +496,9 @@ static int password_hash_handle(struct ldb_module *module, struct ldb_request *r
 				continue;
 			}
 			ASN1_MALLOC_ENCODE(Key, buf, buf_size, &keys[i], &len, krb5_ret);
+			if (krb5_ret) {
+				return LDB_ERR_OPERATIONS_ERROR;
+			}
 			
 			val.data = talloc_memdup(req, buf, len);
 			val.length = len;
@@ -549,6 +552,9 @@ static int password_hash_handle(struct ldb_module *module, struct ldb_request *r
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 		ASN1_MALLOC_ENCODE(Key, buf, buf_size, &key, &len, krb5_ret);
+		if (krb5_ret) {
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
 		krb5_free_keyblock_contents(smb_krb5_context->krb5_context,
 					    &key.key);
 		
