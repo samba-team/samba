@@ -416,11 +416,14 @@ WERROR _svcctl_enum_services_status(pipes_struct *p, SVCCTL_Q_ENUM_SERVICES_STAT
 	if ( !info || (info->type != SVC_HANDLE_IS_SCM) )
 		return WERR_BADFID;
 		
-	if ( !(info->access_granted & SC_RIGHT_MGR_ENUMERATE_SERVICE) )
+	if ( !(info->access_granted & SC_RIGHT_MGR_ENUMERATE_SERVICE) ) {
 		return WERR_ACCESS_DENIED;
+	}
 
-	if ( (num_services = enumerate_status( p->mem_ctx, &services, token )) == -1 )
+	num_services = enumerate_status( p->mem_ctx, &services, token );
+	if (num_services == (uint32)-1 ) {
 		return WERR_NOMEM;
+	}
 
         for ( i=0; i<num_services; i++ ) {
 		buffer_size += svcctl_sizeof_enum_services_status(&services[i]);
