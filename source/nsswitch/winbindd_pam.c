@@ -1583,7 +1583,8 @@ void winbindd_pam_chauthtok(struct winbindd_cli_state *state)
 
 	parse_domain_user(state->request.data.chauthtok.user, domain, user);
 
-	if (!(contact_domain = find_domain_from_name(domain))) {
+	contact_domain = find_domain_from_name(domain);
+	if (!contact_domain) {
 		DEBUG(3, ("Cannot change password for [%s] -> [%s]\\[%s] as %s is not a trusted domain\n", 
 			  state->request.data.chauthtok.user, domain, user, domain)); 
 		result = NT_STATUS_NO_SUCH_USER;
@@ -1650,7 +1651,7 @@ done:
 		}
 	}		
 
-	if (!NT_STATUS_IS_OK(result) && !got_info) {
+	if (!NT_STATUS_IS_OK(result) && !got_info && contact_domain) {
 
 		NTSTATUS policy_ret;
 		
@@ -1680,10 +1681,11 @@ process_result:
 	       state->response.data.auth.nt_status_string,
 	       state->response.data.auth.pam_error));	      
 
-	if (NT_STATUS_IS_OK(result))
+	if (NT_STATUS_IS_OK(result)) {
 		request_ok(state);
-	else
+	} else {
 		request_error(state);
+	}
 }
 
 void winbindd_pam_logoff(struct winbindd_cli_state *state)
