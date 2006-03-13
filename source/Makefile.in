@@ -154,6 +154,8 @@ EVERYTHING_PROGS = bin/debug2html@EXEEXT@ bin/smbfilter@EXEEXT@ bin/talloctort@E
 
 SHLIBS = @SHLIB_PROGS@ @LIBSMBCLIENT@ @LIBSMBSHAREMODES@ cac
 
+PAM_MODULES = @PAM_MODULES@
+
 SCRIPTS = $(srcdir)/script/smbtar $(builddir)/script/findsmb
 
 VFS_MODULES = @VFS_MODULES@
@@ -768,9 +770,13 @@ NTLM_AUTH_OBJ = ${NTLM_AUTH_OBJ1} $(LIBSAMBA_OBJ) $(POPT_LIB_OBJ) \
 # now the rules...
 ######################################################################
 all : SHOWFLAGS proto_exists $(SBIN_PROGS) $(BIN_PROGS) $(ROOT_SBIN_PROGS) \
-	$(SHLIBS) $(MODULES) @EXTRA_ALL_TARGETS@
+	$(SHLIBS) $(MODULES) $(PAM_MODULES) @EXTRA_ALL_TARGETS@
 
-pam_smbpass : SHOWFLAGS bin/pam_smbpass.@SHLIBEXT@
+pam_modules : $(PAM_MODULES)
+
+pam_smbpass : SHOWFLAGS proto_exists bin/pam_smbpass.@SHLIBEXT@
+
+pam_winbind : SHOWFLAGS proto_exists bin/pam_winbind.@SHLIBEXT@
 
 smbwrapper : SHOWFLAGS @SMBWRAPPER@
 
@@ -856,6 +862,12 @@ test: all torture
 	@echo Running Samba 3 Test suite
 	@sh ./script/tests/runtests.sh t_dir
 
+test_pam_modules: pam_modules
+	@echo "Testing $(PAM_MODULES) "
+	@for module in $(PAM_MODULES); do \
+		./script/tests/dlopen.sh -lpam -ldl bin/$${module}.@SHLIBEXT@ \
+			|| exit 1; \
+	done
 
 # These dependencies are only approximately correct: we want to make
 # sure Samba's paths are updated if ./configure is re-run.  Really it
