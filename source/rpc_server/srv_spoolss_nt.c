@@ -7288,8 +7288,8 @@ static WERROR enumports_level_1(RPC_BUFFER *buffer, uint32 offered, uint32 *need
 	PORT_INFO_1 *ports=NULL;
 	int i=0;
 	WERROR result = WERR_OK;
-	char **qlines;
-	int numlines;
+	char **qlines = NULL;
+	int numlines = 0;
 
 	result = enumports_hook( &numlines, &qlines );
 	if (!W_ERROR_IS_OK(result)) {
@@ -7354,12 +7354,14 @@ static WERROR enumports_level_2(RPC_BUFFER *buffer, uint32 offered, uint32 *need
 	PORT_INFO_2 *ports=NULL;
 	int i=0;
 	WERROR result = WERR_OK;
-	char **qlines;
-	int numlines;
+	char **qlines = NULL;
+	int numlines = 0;
 
-	if ( !W_ERROR_IS_OK(result = enumports_hook( &numlines, &qlines )) ) 
+	result = enumports_hook( &numlines, &qlines );
+	if ( !W_ERROR_IS_OK(result)) {
+		file_lines_free(qlines);
 		return result;
-	
+	}
 	
 	if(numlines) {
 		if((ports=SMB_MALLOC_ARRAY( PORT_INFO_2, numlines)) == NULL) {
@@ -7371,9 +7373,9 @@ static WERROR enumports_level_2(RPC_BUFFER *buffer, uint32 offered, uint32 *need
 			DEBUG(6,("Filling port number [%d] with port [%s]\n", i, qlines[i]));
 			fill_port_2(&(ports[i]), qlines[i]);
 		}
-
-		file_lines_free(qlines);
 	}
+
+	file_lines_free(qlines);
 
 	*returned = numlines;
 
