@@ -107,6 +107,8 @@ static int sub_alloc(struct idr_context *idp, void *ptr, int *starting_id)
 	int l, id;
 	uint32_t bm;
 
+	memset(pa, 0, sizeof(pa));
+
 	id = *starting_id;
 	p = idp->top;
 	l = idp->layers;
@@ -271,7 +273,7 @@ static void *_idr_find(struct idr_context *idp, int id)
 	/* Mask off upper bits we don't use for the search. */
 	id &= MAX_ID_MASK;
 
-	while (n > 0 && p) {
+	while (n >= IDR_BITS && p) {
 		n -= IDR_BITS;
 		p = p->ary[(id >> n) & IDR_MASK];
 	}
