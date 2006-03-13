@@ -272,13 +272,13 @@ static krb5_error_code smb_krb5_send_and_recv_func(krb5_context context,
 		case KRB5_KRBHST_UDP:
 			if (lp_parm_bool(-1, "krb5", "udp", True)) {
 				status = socket_create(name, SOCKET_TYPE_DGRAM, &smb_krb5->sock, 0);
-				break;
 			}
+			break;
 		case KRB5_KRBHST_TCP:
 			if (lp_parm_bool(-1, "krb5", "tcp", True)) {
 				status = socket_create(name, SOCKET_TYPE_STREAM, &smb_krb5->sock, 0);
-				break;
 			}
+			break;
 		case KRB5_KRBHST_HTTP:
 			talloc_free(smb_krb5);
 			return EINVAL;
