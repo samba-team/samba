@@ -7046,12 +7046,17 @@ WERROR _spoolss_enumforms(pipes_struct *p, SPOOL_Q_ENUMFORMS *q_u, SPOOL_R_ENUMF
 	DEBUGADD(5,("Number of user forms [%d]\n",     *numofforms));
 	*numofforms += numbuiltinforms;
 
-	if (*numofforms == 0) 
+	if (*numofforms == 0) {
+		SAFE_FREE(builtinlist);
+		SAFE_FREE(list);
 		return WERR_NO_MORE_ITEMS;
+	}
 
 	switch (level) {
 	case 1:
 		if ((forms_1=SMB_MALLOC_ARRAY(FORM_1, *numofforms)) == NULL) {
+			SAFE_FREE(builtinlist);
+			SAFE_FREE(list);
 			*numofforms=0;
 			return WERR_NOMEM;
 		}
@@ -7114,7 +7119,6 @@ WERROR _spoolss_enumforms(pipes_struct *p, SPOOL_Q_ENUMFORMS *q_u, SPOOL_R_ENUMF
 		SAFE_FREE(builtinlist);
 		return WERR_UNKNOWN_LEVEL;
 	}
-
 }
 
 /****************************************************************************
