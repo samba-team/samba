@@ -57,6 +57,7 @@ showlayout:
 	@echo '  jsdir:       $(JSDIR)'
 	@echo '  swatdir:     $(SWATDIR)'
 	@echo '  mandir:      $(MANDIR)'
+	@echo '  datadir:     $(DATADIR)'
 	@echo '  winbindd_socket_dir:  $(WINBINDD_SOCKET_DIR)'
 
 showflags:
@@ -79,7 +80,7 @@ LMHOSTSFILE = $(CONFIGDIR)/lmhosts
 
 PATH_FLAGS = -DCONFIGFILE=\"$(CONFIGFILE)\"  -DSBINDIR=\"$(SBINDIR)\" \
 	 -DBINDIR=\"$(BINDIR)\" -DLMHOSTSFILE=\"$(LMHOSTSFILE)\" \
-	 -DLOCKDIR=\"$(LOCKDIR)\" -DPIDDIR=\"$(PIDDIR)\" -DLIBDIR=\"$(LIBDIR)\" \
+	 -DLOCKDIR=\"$(LOCKDIR)\" -DPIDDIR=\"$(PIDDIR)\" -DDATADIR=\"$(DATADIR)\" \
 	 -DLOGFILEBASE=\"$(LOGFILEBASE)\" -DSHLIBEXT=\"$(SHLIBEXT)\" \
 	 -DCONFIGDIR=\"$(CONFIGDIR)\" -DNCALRPCDIR=\"$(NCALRPCDIR)\" \
 	 -DSWATDIR=\"$(SWATDIR)\" -DPRIVATE_DIR=\"$(PRIVATEDIR)\" \
@@ -103,8 +104,10 @@ installdirs:
 		$(DESTDIR)$(BINDIR) \
 		$(DESTDIR)$(SBINDIR) \
 		$(DESTDIR)$(LIBDIR) \
+		$(DESTDIR)$(MODULESDIR) \
 		$(DESTDIR)$(VARDIR) \
 		$(DESTDIR)$(PRIVATEDIR) \
+		$(DESTDIR)$(DATADIR) \
 		$(DESTDIR)$(PIDDIR) \
 		$(DESTDIR)$(LOCKDIR) \
 		$(DESTDIR)$(LOGFILEBASE) \
@@ -137,10 +140,10 @@ installheader: headers installdirs
 	@$(SHELL) $(srcdir)/script/installheader.sh $(DESTDIR)$(INCLUDEDIR) $(PUBLIC_HEADERS) $(DEFAULT_HEADERS)
 
 installdat: installdirs
-	@$(SHELL) $(srcdir)/script/installdat.sh $(DESTDIR)$(LIBDIR) $(srcdir)
+	@$(SHELL) $(srcdir)/script/installdat.sh $(DESTDIR)$(DATADIR) $(srcdir)
 
 installswat: installdirs
-	@$(SHELL) $(srcdir)/script/installswat.sh $(DESTDIR)$(SWATDIR) $(srcdir) $(DESTDIR)$(LIBDIR)
+	@$(SHELL) $(srcdir)/script/installswat.sh $(DESTDIR)$(SWATDIR) $(srcdir)
 
 installman: installdirs
 	@$(SHELL) $(srcdir)/script/installman.sh $(DESTDIR)$(MANDIR) $(MANPAGES)
