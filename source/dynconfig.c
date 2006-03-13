@@ -60,8 +60,8 @@ _PUBLIC_ const char *dyn_NCALRPCDIR = NCALRPCDIR;
 /** Statically configured LanMan hosts. **/
 _PUBLIC_ const char *dyn_LMHOSTSFILE = LMHOSTSFILE; 
 
-/** Samba library directory. */
-_PUBLIC_ const char *dyn_LIBDIR = LIBDIR;
+/** Samba data directory. */
+_PUBLIC_ const char *dyn_DATADIR = DATADIR;
 
 _PUBLIC_ const char *dyn_MODULESDIR = MODULESDIR;
 

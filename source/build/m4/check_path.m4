@@ -16,6 +16,7 @@ logfilebase="${localstatedir}"
 lockdir="${localstatedir}/locks"
 piddir="${localstatedir}/run"
 privatedir="\${prefix}/private"
+modulesdir="\${prefix}/modules"
 winbindd_socket_dir="${localstatedir}/run/winbind_pipe"
 
 AC_ARG_WITH(fhs, 
@@ -25,7 +26,7 @@ AC_ARG_WITH(fhs,
     logfilebase="${localstatedir}/log/samba"
     privatedir="${localstatedir}/lib/samba/private"
     sysconfdir="${sysconfdir}/samba"
-    libdir="${libdir}/samba"
+	modulesdir="${libdir}/samba"
     datadir="${datadir}/samba"
     includedir="${includedir}/samba-4.0"
     winbindd_socket_dir="${localstatedir}/run/samba/winbind_pipe"
@@ -119,6 +120,7 @@ AC_SUBST(privatedir)
 AC_SUBST(bindir)
 AC_SUBST(sbindir)
 AC_SUBST(winbindd_socket_dir)
+AC_SUBST(modulesdir)
 
 #################################################
 # set prefix for 'make test'

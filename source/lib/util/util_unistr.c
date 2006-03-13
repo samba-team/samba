@@ -44,8 +44,8 @@ static void load_case_tables(void)
 	if (!mem_ctx) {
 		smb_panic("No memory for case_tables");
 	}
-	upcase_table = map_file(lib_path(mem_ctx, "upcase.dat"), 0x20000);
-	lowcase_table = map_file(lib_path(mem_ctx, "lowcase.dat"), 0x20000);
+	upcase_table = map_file(data_path(mem_ctx, "upcase.dat"), 0x20000);
+	lowcase_table = map_file(data_path(mem_ctx, "lowcase.dat"), 0x20000);
 	talloc_free(mem_ctx);
 	if (upcase_table == NULL) {
 		/* try also under codepages for testing purposes */
