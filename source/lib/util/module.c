@@ -100,12 +100,12 @@ _PUBLIC_ init_module_fn *load_modules(TALLOC_CTX *mem_ctx, const char *path)
 _PUBLIC_ BOOL run_init_functions(NTSTATUS (**fns) (void))
 {
 	int i;
-	BOOL ret;
+	BOOL ret = True;
 	
 	if (fns == NULL)
 		return True;
 	
-	for (i = 0; fns[i]; i++) { ret &= NT_STATUS_IS_OK(fns[i]()); }
+	for (i = 0; fns[i]; i++) { ret &= (BOOL)NT_STATUS_IS_OK(fns[i]()); }
 
 	return ret;
 }
