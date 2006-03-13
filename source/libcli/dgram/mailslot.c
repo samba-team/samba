@@ -137,7 +137,9 @@ struct dgram_mailslot_handler *dgram_mailslot_temp(struct nbt_dgram_socket *dgms
 		}
 		dgmslot = dgram_mailslot_listen(dgmsock, name, handler, private);
 		talloc_free(name);
-		return dgmslot;
+		if (dgmslot != NULL) {
+			return dgmslot;
+		}
 	}
 	DEBUG(2,("Unable to create temporary mailslot from %s\n", mailslot_name));
 	return NULL;
