@@ -29,6 +29,10 @@
 
 #include "winbindd_nss.h"
 
+#ifdef HAVE_LIBNSCD
+#include "libnscd.h"
+#endif
+
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
 
