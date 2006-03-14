@@ -38,7 +38,7 @@ static void init_winreg_String(struct winreg_String *name, const char *s)
 	struct winreg_Open ## u r; \
 	NTSTATUS status; \
 	\
-	r.in.system_name = 0; \
+	r.in.system_name = NULL; \
 	r.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED; \
 	r.out.handle = hnd;\
 	\
