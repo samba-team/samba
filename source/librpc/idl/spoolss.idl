@@ -10,7 +10,8 @@
   pointer_default(unique),
   pointer_default_top(unique),
   helpstring("Spooler SubSystem"),
-  depends(security)
+  depends(security),
+  helper("librpc/ndr/ndr_spoolss_buf.h")
 ] interface spoolss
 {
 	typedef struct {

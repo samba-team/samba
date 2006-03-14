@@ -7,7 +7,8 @@
   authservice("ldap"),
   helpstring("Active Directory Replication"),
   pointer_default(unique),
-  depends(security)
+  depends(security),
+  helper("librpc/ndr/ndr_drsuapi.h")
 ] 
 interface drsuapi
 {

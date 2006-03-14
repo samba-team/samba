@@ -6,7 +6,8 @@
 
 [
 	pointer_default(unique),
-	depends(misc)
+	depends(misc),
+	helper("librpc/ndr/ndr_sec.h")
 ]
 interface security
 {
