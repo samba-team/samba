@@ -327,6 +327,10 @@ unused_macros:
 	@$(CC) -MM -MG -MT $(<:.c=.o) -MF $@ $(CFLAGS) $<
 
 .c.o:
+	@if test -n "$(CC_CHECKER)"; then \
+		echo Call \'$(CC_CHECKER)\' for $<; \
+		$(CC_CHECKER) `script/cflags.pl $@` $(CFLAGS) $(PICFLAG) -c $< -o $@; \
+	fi
 	@echo Compiling $<
 	@$(CC) `script/cflags.pl $@` $(CFLAGS) $(PICFLAG) -c $< -o $@
 
