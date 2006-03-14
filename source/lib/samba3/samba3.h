@@ -23,7 +23,7 @@
 
 #include "librpc/gen_ndr/security.h"
 #include "librpc/gen_ndr/samr.h"
-#include "param/generic.h"
+#include "param/param.h"
 
 struct samba3_samaccount {
 	uint32_t logon_time,

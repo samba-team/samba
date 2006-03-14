@@ -249,6 +249,10 @@ struct rpc_request {
 struct epm_tower;
 struct epm_floor;
 
+struct smbcli_tree;
+struct smb2_tree;
+struct socket_address;
+
 #include "librpc/rpc/dcerpc_proto.h"
 
 #endif /* __DCERPC_H__ */

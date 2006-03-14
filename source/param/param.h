@@ -1,7 +1,7 @@
 /* 
    Unix SMB/CIFS implementation.
-
-   Copyright (C) Andrew Tridgell 2004
+   Generic parameter parsing interface
+   Copyright (C) Jelmer Vernooij					  2005
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -18,15 +18,29 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-/*
-  this file contains pre-declarations of private structures to avoid the
-  "scope is only this definition or declaration" warning
-*/
+#ifndef _PARAM_H /* _PARAM_H */
+#define _PARAM_H 
 
-struct asn1_data;
-struct smbsrv_tcon;
-struct smbsrv_connection;
+struct param_context {
+	struct param_section *sections;
+};
+
+struct param {
+	const char *name;
+	char *value;
+	const char **list_value;
+	struct param *prev, *next;
+};
+
+struct param_section {
+	const char *name;
+	struct param_section *prev, *next;
+	struct param *parameters;
+};
+
 struct param_context;
-struct smbcli_tree;
-struct smb2_tree;
-struct socket_address;
+struct smbsrv_connection;
+
+#include "param/proto.h"
+
+#endif /* _PARAM_H */
