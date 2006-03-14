@@ -404,7 +404,6 @@ ssize_t sys_sendfile(int tofd, int fromfd, const DATA_BLOB *header, SMB_OFF_T of
 
 ssize_t sys_sendfile(int tofd, int fromfd, const DATA_BLOB *header, SMB_OFF_T offset, size_t count)
 {
-	size_t total=0;
 	struct sf_parms hdtrl;
 
 	/* Set up the header/trailer struct params. */
