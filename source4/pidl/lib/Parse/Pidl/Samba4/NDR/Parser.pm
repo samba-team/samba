@@ -2307,6 +2307,10 @@ sub ParseInterface($$)
 
 	pidl_hdr "";
 
+	if ($needed->{"compression"}) {
+		pidl "#include \"librpc/ndr/ndr_compression.h\"";
+	}
+	
 	HeaderInterface($interface);
 
 	# Typedefs
@@ -2403,6 +2407,9 @@ sub NeededTypedef($$)
 
 		for my $e (@{$t->{DATA}->{ELEMENTS}}) {
 			$e->{PARENT} = $t->{DATA};
+			if (has_property($e, "compression")) { 
+				$needed->{"compression"} = 1;
+			}
 			if ($needed->{"pull_$t->{NAME}"} and
 				not defined($needed->{"pull_$e->{TYPE}"})) {
 				$needed->{"pull_$e->{TYPE}"} = 1;
