@@ -111,7 +111,6 @@ enum brl_type {
 #include "talloc/talloc.h"
 #include "core.h"
 #include "charset/charset.h"
-#include "structs.h"
 #include "util/util.h"
 #include "param/param.h"
 #include "libcli/util/nterr.h"

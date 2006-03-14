@@ -30,6 +30,8 @@
  */
 
 struct substitute_context;
+struct asn1_data;
+struct smbsrv_tcon;
 
 #include "util/xfile.h"
 #include "util/debug.h"
