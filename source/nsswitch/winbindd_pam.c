@@ -466,7 +466,7 @@ static NTSTATUS winbindd_raw_kerberos_login(struct winbindd_domain *domain,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	service = talloc_asprintf(state->mem_ctx, "krbtgt/%s@%s", realm, realm);
+	service = talloc_asprintf(state->mem_ctx, "%s/%s@%s", KRB5_TGS_NAME, realm, realm);
 	if (service == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
