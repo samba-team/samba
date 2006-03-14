@@ -100,7 +100,6 @@ RPC_DATA_BLOB *cac_MakeRpcDataBlob(TALLOC_CTX *mem_ctx, uint32 data_type, REG_VA
    RPC_DATA_BLOB *blob = NULL;
    int i;
    uint32 size = 0;
-   uint32 len  = 0;
    uint8 *multi = NULL;
    uint32 multi_idx = 0;
 
@@ -149,7 +148,7 @@ RPC_DATA_BLOB *cac_MakeRpcDataBlob(TALLOC_CTX *mem_ctx, uint32 data_type, REG_VA
          /*do it using rpcstr_push()*/
          multi_idx = 0;
          for(i = 0; i < data.reg_multi_sz.num_strings; i++) {
-            len = strlen(data.reg_multi_sz.strings[i]) + 1;
+            size_t len = strlen(data.reg_multi_sz.strings[i]) + 1;
 
             rpcstr_push((multi + multi_idx), data.reg_multi_sz.strings[i], len * 2, STR_TERMINATE);
 

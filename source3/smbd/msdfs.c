@@ -609,7 +609,7 @@ static int setup_ver2_dfs_referral(char *pathname, char **ppdata,
 
 	DEBUG(10,("setting up version2 referral\nRequested path:\n"));
 
-	requestedpathlen = rpcstr_push(uni_requestedpath, pathname, -1,
+	requestedpathlen = rpcstr_push(uni_requestedpath, pathname, sizeof(pstring),
 				       STR_TERMINATE);
 
 	if (DEBUGLVL(10)) {
@@ -680,7 +680,7 @@ static int setup_ver2_dfs_referral(char *pathname, char **ppdata,
 		SSVAL(pdata,offset+18,uni_reqpathoffset2-offset);
 		/* copy referred path into current offset */
 		unilen = rpcstr_push(pdata+uni_curroffset, ref->alternate_path,
-				     (size_t)-1, STR_UNICODE);
+				     sizeof(pstring), STR_UNICODE);
 
 		SSVAL(pdata,offset+20,uni_curroffset-offset);
 
@@ -709,7 +709,7 @@ static int setup_ver3_dfs_referral(char *pathname, char **ppdata,
 	
 	DEBUG(10,("setting up version3 referral\n"));
 
-	reqpathlen = rpcstr_push(uni_reqpath, pathname, (size_t)-1, STR_TERMINATE);
+	reqpathlen = rpcstr_push(uni_reqpath, pathname, sizeof(pstring), STR_TERMINATE);
 	
 	if (DEBUGLVL(10)) {
 	    dump_data(0, (char *) uni_reqpath,reqpathlen);
@@ -764,7 +764,7 @@ static int setup_ver3_dfs_referral(char *pathname, char **ppdata,
 		SSVAL(pdata,offset+14,uni_reqpathoffset2-offset);
 		/* copy referred path into current offset */
 		unilen = rpcstr_push(pdata+uni_curroffset,ref->alternate_path,
-				     -1, STR_UNICODE | STR_TERMINATE);
+				     sizeof(pstring), STR_UNICODE | STR_TERMINATE);
 		SSVAL(pdata,offset+16,uni_curroffset-offset);
 		/* copy 0x10 bytes of 00's in the ServiceSite GUID */
 		memset(pdata+offset+18,'\0',16);

@@ -3221,7 +3221,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 			/* Pathname with leading '\'. */
 			{
 				size_t byte_len;
-				byte_len = dos_PutUniCode(pdata+4,dos_fname,max_data_bytes,False);
+				byte_len = dos_PutUniCode(pdata+4,dos_fname,(size_t)max_data_bytes,False);
 				DEBUG(10,("call_trans2qfilepathinfo: SMB_FILE_NAME_INFORMATION\n"));
 				SIVAL(pdata,0,byte_len);
 				data_size = 4 + byte_len;
@@ -3265,7 +3265,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 			if (mode & aDIR) {
 				data_size = 0;
 			} else {
-				size_t byte_len = dos_PutUniCode(pdata+24,"::$DATA", 0xE, False);
+				size_t byte_len = dos_PutUniCode(pdata+24,"::$DATA", (size_t)0xE, False);
 				SIVAL(pdata,0,0); /* ??? */
 				SIVAL(pdata,4,byte_len); /* Byte length of unicode string ::$DATA */
 				SOFF_T(pdata,8,file_size);

@@ -229,7 +229,7 @@ void init_valid_table(void)
  null termination if applied
 ********************************************************************/
 
-size_t dos_PutUniCode(char *dst,const char *src, ssize_t len, BOOL null_terminate)
+size_t dos_PutUniCode(char *dst,const char *src, size_t len, BOOL null_terminate)
 {
 	int flags = null_terminate ? STR_UNICODE|STR_NOALIGN|STR_TERMINATE
 				   : STR_UNICODE|STR_NOALIGN;
@@ -308,7 +308,7 @@ char *rpcstr_pull_unistr2_talloc(TALLOC_CTX *mem_ctx, const UNISTR2 *src)
 /* Converts a string from internal samba format to unicode
  */ 
 
-int rpcstr_push(void* dest, const char *src, int dest_len, int flags)
+int rpcstr_push(void* dest, const char *src, size_t dest_len, int flags)
 {
 	return push_ucs2(NULL, dest, src, dest_len, flags|STR_UNICODE|STR_NOALIGN);
 }

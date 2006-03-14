@@ -8013,7 +8013,7 @@ WERROR _spoolss_enumprinterdata(pipes_struct *p, SPOOL_Q_ENUMPRINTERDATA *q_u, S
 			goto done;
 		}
 	
-		*out_value_len = (uint32)rpcstr_push((char *)*out_value, regval_name(val), in_value_len, 0);
+		*out_value_len = (uint32)rpcstr_push((char *)*out_value, regval_name(val), (size_t)in_value_len, 0);
 
 		/* type */
 		

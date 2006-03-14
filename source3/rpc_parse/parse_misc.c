@@ -597,7 +597,7 @@ void init_rpc_blob_str(RPC_DATA_BLOB *str, const char *buf, int len)
 
 	/* set up string lengths. */
 	str->buf_len = create_rpc_blob(str, len*2);
-	rpcstr_push(str->buffer, buf, str->buf_len, STR_TERMINATE);
+	rpcstr_push(str->buffer, buf, (size_t)str->buf_len, STR_TERMINATE);
 	
 }
 
