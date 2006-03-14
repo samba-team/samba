@@ -66,6 +66,14 @@ struct spoolss_StartDocPrinter;
 struct spoolss_EndDocPrinter;
 struct spoolss_StartPagePrinter;
 struct spoolss_EndPagePrinter;
+struct spoolss_GetPrinterData;
+struct spoolss_SetPrinterData;
+struct spoolss_EnumPrinterDrivers;
+struct spoolss_EnumMonitors;
+struct spoolss_EnumPrinters;
+struct spoolss_EnumForms;
+struct spoolss_EnumPorts;
+struct spoolss_EnumPrintProcessors;
 
 /* the ntptr operations structure - contains function pointers to 
    the backend implementations of each operation */

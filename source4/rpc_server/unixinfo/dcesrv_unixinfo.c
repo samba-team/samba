@@ -26,6 +26,7 @@
 #include "librpc/gen_ndr/ndr_unixinfo.h"
 #include "lib/events/events.h"
 #include "smb.h"
+#include "smb_server/smb_server.h"
 #include "ntvfs/ntvfs.h"
 
 #include <sys/types.h>

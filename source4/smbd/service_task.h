@@ -20,6 +20,8 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+#ifndef __SERVICE_TASK_H__
+#define __SERVICE_TASK_H__ 
 
 struct task_server {
 	struct event_context *event_ctx;
@@ -29,3 +31,4 @@ struct task_server {
 	void *private;
 };
 
+#endif /* __SERVICE_TASK_H__ */

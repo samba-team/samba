@@ -23,9 +23,8 @@
 
 #include "includes.h"
 #include "libnet/libnet.h"
-#include "auth/credentials/credentials.h"
+#include "libcli/auth/libcli_auth.h"
 #include "auth/gensec/schannel_proto.h"
-#include "libcli/auth/proto.h"
 
 
 /**

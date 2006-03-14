@@ -122,11 +122,7 @@ enum brl_type {
 #include "libcli/nbt/libnbt.h"
 #include "libcli/util/proto.h"
 
-#undef _PRINTF_ATTRIBUTE
-#define _PRINTF_ATTRIBUTE(a1, a2)
-
 /* String routines */
-
 #include "util/safe_string.h"
 
 #if 0

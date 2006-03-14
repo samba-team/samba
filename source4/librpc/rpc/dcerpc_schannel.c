@@ -25,7 +25,7 @@
 #include "includes.h"
 #include "auth/auth.h"
 #include "libcli/composite/composite.h"
-#include "libcli/auth/proto.h"
+#include "libcli/auth/libcli_auth.h"
 
 
 struct schannel_key_state {
