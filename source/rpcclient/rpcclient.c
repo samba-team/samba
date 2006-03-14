@@ -685,7 +685,6 @@ out_free:
 
  int main(int argc, char *argv[])
 {
-	BOOL 			interactive = True;
 	int 			opt;
 	static char		*cmdstr = NULL;
 	const char *server;
@@ -719,9 +718,7 @@ out_free:
 
 	/* the following functions are part of the Samba debugging
 	   facilities.  See lib/debug.c */
-	setup_logging("rpcclient", interactive);
-	if (!interactive) 
-		reopen_logs();
+	setup_logging("rpcclient", True);
 	
 	/* Parse options */
 
