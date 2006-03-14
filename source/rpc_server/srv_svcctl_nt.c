@@ -404,7 +404,7 @@ static int enumerate_status( TALLOC_CTX *ctx, ENUM_SERVICES_STATUS **status, NT_
 WERROR _svcctl_enum_services_status(pipes_struct *p, SVCCTL_Q_ENUM_SERVICES_STATUS *q_u, SVCCTL_R_ENUM_SERVICES_STATUS *r_u)
 {
 	ENUM_SERVICES_STATUS *services = NULL;
-	uint32 num_services;
+	int num_services;
 	int i = 0;
 	size_t buffer_size = 0;
 	WERROR result = WERR_OK;
@@ -421,7 +421,7 @@ WERROR _svcctl_enum_services_status(pipes_struct *p, SVCCTL_Q_ENUM_SERVICES_STAT
 	}
 
 	num_services = enumerate_status( p->mem_ctx, &services, token );
-	if (num_services == (uint32)-1 ) {
+	if (num_services == -1 ) {
 		return WERR_NOMEM;
 	}
 
@@ -444,7 +444,7 @@ WERROR _svcctl_enum_services_status(pipes_struct *p, SVCCTL_Q_ENUM_SERVICES_STAT
 	}
 
 	r_u->needed      = (buffer_size > q_u->buffer_size) ? buffer_size : q_u->buffer_size;
-	r_u->returned    = num_services;
+	r_u->returned    = (uint32)num_services;
 
 	if ( !(r_u->resume = TALLOC_P( p->mem_ctx, uint32 )) )
 		return WERR_NOMEM;
