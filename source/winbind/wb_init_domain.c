@@ -28,6 +28,7 @@
 #include "winbind/wb_async_helpers.h"
 #include "winbind/wb_helper.h"
 #include "smbd/service_task.h"
+#include "librpc/gen_ndr/ndr_lsa_c.h"
 
 #include "libcli/auth/credentials.h"
 #include "libcli/security/proto.h"

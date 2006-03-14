@@ -27,6 +27,7 @@
 #include "libcli/security/proto.h"
 #include "libnet/composite.h"
 #include "libnet/userinfo.h"
+#include "librpc/gen_ndr/ndr_samr_c.h"
 
 static void userinfo_handler(struct rpc_request *req);
 

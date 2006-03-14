@@ -27,6 +27,7 @@
 #include "winbind/wb_server.h"
 #include "smbd/service_task.h"
 #include "librpc/gen_ndr/ndr_netlogon.h"
+#include "librpc/gen_ndr/ndr_netlogon_c.h"
 
 struct trusted_dom_info_state {
 	struct composite_context *ctx;

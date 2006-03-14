@@ -25,6 +25,7 @@
 #include "winbind/wb_server.h"
 #include "smbd/service_task.h"
 #include "librpc/gen_ndr/ndr_samr.h"
+#include "librpc/gen_ndr/ndr_samr_c.h"
 #include "libcli/security/proto.h"
 
 /* Calculate the token in two steps: Go the user's originating domain, ask for

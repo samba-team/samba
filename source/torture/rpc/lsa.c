@@ -23,6 +23,7 @@
 #include "includes.h"
 #include "torture/torture.h"
 #include "librpc/gen_ndr/ndr_lsa.h"
+#include "librpc/gen_ndr/ndr_lsa_c.h"
 #include "lib/events/events.h"
 #include "libcli/security/proto.h"
 #include "libcli/auth/libcli_auth.h"

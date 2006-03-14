@@ -30,6 +30,9 @@
 #include "libcli/auth/credentials.h"
 #include "libcli/security/proto.h"
 #include "libcli/auth/libcli_auth.h"
+#include "librpc/gen_ndr/ndr_netlogon_c.h"
+#include "librpc/gen_ndr/ndr_lsa_c.h"
+#include "librpc/gen_ndr/ndr_samr_c.h"
 
 #include "winbind/wb_helper.h"
 
