@@ -23,8 +23,8 @@
 #include "includes.h"
 #include "system/time.h"
 #include "auth/auth.h"
-#include "dsdb/samdb/samdb.h"
 #include "db_wrap.h"
+#include "dsdb/samdb/samdb.h"
 #include "libcli/security/proto.h"
 #include "libcli/ldap/ldap.h"
 

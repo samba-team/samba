@@ -28,4 +28,8 @@ struct tdb_wrap {
 	struct tdb_wrap *next, *prev;
 };
 
+struct auth_session_info;
+struct ldb_message;
+struct ldb_dn;
+
 #include "db_wrap_proto.h"

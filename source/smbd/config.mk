@@ -105,7 +105,7 @@ REQUIRED_SUBSYSTEMS = \
 #######################
 # Start SUBSERVICE
 [SUBSYSTEM::service]
-PRIVATE_PROTO_HEADER = service.h
+PRIVATE_PROTO_HEADER = service_proto.h
 OBJ_FILES = \
 		service.o \
 		service_stream.o \

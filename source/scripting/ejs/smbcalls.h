@@ -29,4 +29,7 @@ void mprAddArray(struct MprVar *var, int i, struct MprVar v);
 void mprSetCFunction(struct MprVar *obj, const char *name, MprCFunction fn);
 void mprSetStringCFunction(struct MprVar *obj, const char *name, MprStringCFunction fn);
 
+struct ldb_context;
+struct ldb_message;
+
 #include "scripting/ejs/proto.h"

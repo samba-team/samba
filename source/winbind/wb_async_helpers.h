@@ -20,6 +20,9 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+#ifndef __WB_ASYNC_HELPERS_H__
+#define __WB_ASYNC_HELPERS_H__
+
 #include "librpc/gen_ndr/lsa.h"
 
 struct wb_sid_object {
@@ -29,3 +32,4 @@ struct wb_sid_object {
 	const char *name;
 };
 
+#endif /* __WB_ASYNC_HELPERS_H__ */

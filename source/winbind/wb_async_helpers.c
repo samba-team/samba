@@ -29,8 +29,7 @@
 #include "librpc/gen_ndr/ndr_irpc.h"
 #include "libcli/auth/credentials.h"
 #include "libcli/security/proto.h"
-#include "libcli/auth/proto.h"
-#include "auth/credentials/credentials.h"
+#include "libcli/auth/libcli_auth.h"
 
 #include "winbind/wb_helper.h"
 
@@ -555,7 +554,7 @@ struct cmd_checkmachacc_state {
 
 static void cmd_checkmachacc_recv_init(struct composite_context *ctx);
 
-struct composite_context *wb_cmd_checkmachacc_send(struct wbsrv_call *call)
+ struct composite_context *wb_cmd_checkmachacc_send(struct wbsrv_call *call)
 {
 	struct composite_context *result, *ctx;
 	struct cmd_checkmachacc_state *state;
@@ -599,14 +598,14 @@ static void cmd_checkmachacc_recv_init(struct composite_context *ctx)
 	composite_done(state->ctx);
 }
 
-NTSTATUS wb_cmd_checkmachacc_recv(struct composite_context *c)
+ NTSTATUS wb_cmd_checkmachacc_recv(struct composite_context *c)
 {
 	NTSTATUS status = composite_wait(c);
 	talloc_free(c);
 	return status;
 }
 
-NTSTATUS wb_cmd_checkmachacc(struct wbsrv_call *call)
+ NTSTATUS wb_cmd_checkmachacc(struct wbsrv_call *call)
 {
 	struct composite_context *c = wb_cmd_checkmachacc_send(call);
 	return wb_cmd_checkmachacc_recv(c);

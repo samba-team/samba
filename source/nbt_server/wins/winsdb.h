@@ -74,5 +74,6 @@ enum wins_hook_action {
 	WINS_HOOK_DELETE	= 2
 };
 
+struct ldb_message;
 
 #include "nbt_server/wins/winsdb_proto.h"

@@ -20,6 +20,9 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+#ifndef __LIBNET_JOIN_H__
+#define __LIBNET_JOIN_H__
+
 #include "librpc/gen_ndr/ndr_netlogon.h"
 
 enum libnet_Join_level {
@@ -76,3 +79,5 @@ struct libnet_Join {
 	} out;
 };
 
+
+#endif /* __LIBNET_JOIN_H__ */

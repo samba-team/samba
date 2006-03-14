@@ -1,8 +1,6 @@
 /* 
-   Unix SMB/CIFS implementation.
+   samba -- Unix SMB/CIFS implementation.
 
-   Copyright (C) Andrew Tridgell 2004
-   
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 2 of the License, or
@@ -17,16 +15,11 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
+#ifndef __LIBCLI_AUTH_H__
+#define __LIBCLI_AUTH_H__
 
-/*
-  this file contains pre-declarations of private structures to avoid the
-  "scope is only this definition or declaration" warning
-*/
+#include "librpc/gen_ndr/netlogon.h"
+#include "auth/credentials/credentials.h"
+#include "libcli/auth/proto.h"
 
-struct asn1_data;
-struct smbsrv_tcon;
-struct smbsrv_connection;
-struct param_context;
-struct smbcli_tree;
-struct smb2_tree;
-struct socket_address;
+#endif /* __LIBCLI_AUTH_H__ */

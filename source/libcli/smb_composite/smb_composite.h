@@ -171,4 +171,6 @@ struct smb_composite_connectmulti {
 	} out;
 };
 
+struct smbcli_session;
+
 #include "libcli/smb_composite/proto.h"

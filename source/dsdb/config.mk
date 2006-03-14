@@ -5,7 +5,7 @@ include samdb/ldb_modules/config.mk
 ################################################
 # Start SUBSYSTEM SAMDB
 [SUBSYSTEM::SAMDB]
-PRIVATE_PROTO_HEADER = samdb/samdb.h
+PRIVATE_PROTO_HEADER = samdb/samdb_proto.h
 REQUIRED_SUBSYSTEMS = DB_WRAP LIBCLI_LDAP
 OBJ_FILES = \
 		samdb/samdb.o \

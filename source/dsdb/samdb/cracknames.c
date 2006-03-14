@@ -28,11 +28,11 @@
 #include "lib/ldb/include/ldb_errors.h"
 #include "system/kerberos.h"
 #include "auth/kerberos/kerberos.h"
-#include "dsdb/samdb/samdb.h"
 #include "libcli/ldap/ldap.h"
 #include "libcli/security/proto.h"
 #include "auth/auth.h"
 #include "db_wrap.h"
+#include "dsdb/samdb/samdb.h"
 
 static WERROR DsCrackNameOneFilter(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 				   struct smb_krb5_context *smb_krb5_context,

@@ -25,7 +25,7 @@
 #include "includes.h"
 #include "auth/auth.h"
 #include "libcli/security/proto.h"
-#include "libcli/auth/proto.h"
+#include "libcli/auth/libcli_auth.h"
 
 /* this default function can be used by mostly all backends
  * which don't want to set a challlenge

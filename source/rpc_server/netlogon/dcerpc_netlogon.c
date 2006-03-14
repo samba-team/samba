@@ -29,7 +29,7 @@
 #include "dsdb/samdb/samdb.h"
 #include "rpc_server/samr/proto.h"
 #include "db_wrap.h"
-#include "libcli/auth/proto.h"
+#include "libcli/auth/libcli_auth.h"
 #include "auth/gensec/schannel_state.h"
 
 struct server_pipe_state {

@@ -27,7 +27,7 @@
 #include "lib/cmdline/popt_common.h"
 #include "auth/auth.h"
 #include "pstring.h"
-#include "libcli/auth/proto.h"
+#include "libcli/auth/libcli_auth.h"
 
 #define SQUID_BUFFER_SIZE 2010
 

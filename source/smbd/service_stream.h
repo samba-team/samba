@@ -21,6 +21,9 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+#ifndef __SERVICE_STREAM_H__
+#define __SERVICE_STREAM_H__
+
 /* modules can use the following to determine if the interface has changed
  * please increment the version number after each interface change
  * with a comment and maybe update struct stream_connection_critical_sizes.
@@ -58,3 +61,5 @@ struct stream_server_ops {
 	void (*recv_handler)(struct stream_connection *, uint16_t);
 	void (*send_handler)(struct stream_connection *, uint16_t);
 };
+
+#endif /* __SERVICE_STREAM_H__ */
