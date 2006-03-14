@@ -30,6 +30,7 @@
 #include "librpc/rpc/dcerpc_table.h"
 #include "lib/events/events.h"
 #include "libcli/resolve/resolve.h"
+#include "auth/credentials/credentials.h"
 
 #include "torture/basic/proto.h"
 #include "torture/raw/proto.h"

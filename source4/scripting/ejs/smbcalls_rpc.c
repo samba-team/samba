@@ -30,6 +30,7 @@
 #include "dlinklist.h"
 #include "lib/events/events.h"
 #include "librpc/rpc/dcerpc_table.h"
+#include "auth/credentials/credentials.h"
 
 /*
   state of a irpc 'connection'

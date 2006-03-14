@@ -34,6 +34,7 @@
 #include "smb.h"
 #include "lib/ldb/include/ldb.h"
 
+#include "auth/credentials/credentials.h"
 #include "torture/rpc/proto.h"
 #include "libcli/security/proto.h"
 #include "libcli/auth/proto.h"

@@ -23,6 +23,7 @@
 #include "utils/net/net.h"
 #include "libnet/libnet.h"
 #include "system/filesys.h"
+#include "auth/credentials/credentials.h"
 
 /*
  * Code for Changing and setting a password

@@ -30,6 +30,7 @@
 #include "system/filesys.h"
 #include "librpc/gen_ndr/ndr_security.h"
 #include "lib/tdb/include/tdbutil.h"
+#include "auth/credentials/credentials.h"
 
 /**
  * Unpack SID into a pointer

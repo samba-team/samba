@@ -24,6 +24,7 @@
 #include "includes.h"
 #include "libnet/libnet.h"
 #include "system/kerberos.h"
+#include "auth/credentials/credentials.h"
 
 static NTSTATUS samdump_keytab_handle_user(TALLOC_CTX *mem_ctx,
 					    const char *keytab_name,

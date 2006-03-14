@@ -26,6 +26,7 @@
 #include "scripting/ejs/ejsnet.h"
 #include "libnet/libnet.h"
 #include "events/events.h"
+#include "auth/credentials/credentials.h"
 
 static int ejs_net_userman(MprVarHandle, int, struct MprVar**);
 static int ejs_net_createuser(MprVarHandle, int, char**);
