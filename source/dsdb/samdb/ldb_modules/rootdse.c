@@ -54,6 +54,9 @@ static int rootdse_add_dynamic(struct ldb_module *module, struct ldb_message *ms
 
 	msg->dn = ldb_dn_explode(msg, "");
 
+	/* don't return the distinduishedName attribute if any */
+	ldb_msg_remove_attr(msg, "distinguishedName");
+
 	if (do_attribute(attrs, "currentTime")) {
 		if (ldb_msg_add_steal_string(msg, "currentTime", 
 					     ldb_timestring(msg, time(NULL))) != 0) {
