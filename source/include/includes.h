@@ -125,9 +125,6 @@ enum brl_type {
 #include "libcli/nbt/libnbt.h"
 #include "libcli/util/proto.h"
 
-/* FIXME: This header should be included by pidl where necessary */
-#include "librpc/ndr/ndr_compression.h"
-
 #undef _PRINTF_ATTRIBUTE
 #define _PRINTF_ATTRIBUTE(a1, a2)
 
