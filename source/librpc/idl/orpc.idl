@@ -6,7 +6,8 @@
  */
 
 [
-	pointer_default(unique)
+	pointer_default(unique),
+	helper("librpc/ndr/ndr_orpc.h")
 ]
 interface ObjectRpcBaseTypes
 {
@@ -37,6 +38,7 @@ interface ObjectRpcBaseTypes
 	const string dcom_ext_extended_error = "f1f19681-4d2a-11ce-a66a-0020af6e72f4";
 
 	/* Component Object Model version number */
+
 
 	typedef [public] struct 
 	{
@@ -103,6 +105,16 @@ interface ObjectRpcBaseTypes
 		nstring NetworkAddr; 
 	} 	STRINGBINDING;
 
+	typedef [public,nopush,nopull,noprint] struct 
+	{
+		STRINGBINDING **stringbindings;
+	} STRINGARRAY;
+
+	typedef [public,nopush,nopull,noprint] struct 
+	{
+		STRINGBINDING **stringbindings;
+		SECURITYBINDING **securitybindings;
+	} DUALSTRINGARRAY;
 
 	const uint16 COM_C_AUTHZ_NONE = 0xffff;
 	typedef [public,flag(NDR_NOALIGN)] struct 
