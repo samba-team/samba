@@ -750,6 +750,7 @@ my %property_list = (
 	"pointer_default"	=> ["INTERFACE"],
 	"pointer_default_top"	=> ["INTERFACE"],
 	"depends"		=> ["INTERFACE"],
+	"helper"		=> ["INTERFACE"],
 	"authservice"		=> ["INTERFACE"],
 
 	# dcom

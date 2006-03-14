@@ -7,7 +7,8 @@
 [
   version(0.0),
   pointer_default(unique),
-  depends(security,netlogon)
+  depends(security,netlogon),
+  helper("librpc/ndr/ndr_krb5pac.h")
 ]
 interface krb5pac
 {
