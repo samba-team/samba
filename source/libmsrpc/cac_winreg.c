@@ -823,7 +823,7 @@ int cac_RegGetKeySecurity(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct RegG
    WERROR err;
 
    uint32 buf_size;
-   SEC_DESC_BUF *buf = NULL;
+   SEC_DESC_BUF buf;
 
    if(!hnd) 
       return CAC_FAILURE;
@@ -844,7 +844,7 @@ int cac_RegGetKeySecurity(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct RegG
       return CAC_FAILURE;
    }
 
-   err = rpccli_reg_get_key_sec(pipe_hnd, mem_ctx, op->in.key, op->in.info_type, &buf_size, buf);
+   err = rpccli_reg_get_key_sec(pipe_hnd, mem_ctx, op->in.key, op->in.info_type, &buf_size, &buf);
    hnd->status = werror_to_ntstatus(err);
 
 
@@ -852,8 +852,12 @@ int cac_RegGetKeySecurity(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct RegG
       return CAC_FAILURE;
    }
 
-   op->out.size = buf->len;
-   op->out.descriptor = buf->sec;
+   op->out.size = buf.len;
+   op->out.descriptor = dup_sec_desc(mem_ctx, buf.sec);
+
+   if (op->out.descriptor == NULL) {
+	   return CAC_FAILURE;
+   }
 
    return CAC_SUCCESS;
 }
