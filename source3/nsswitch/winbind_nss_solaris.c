@@ -185,7 +185,7 @@ _nss_winbind_passwd_constr (const char* db_name,
 {
 	nss_backend_t *be;
   
-	if(!(be = (nss_backend_t*) malloc(sizeof(nss_backend_t))) )
+	if(!(be = SMB_MALLOC_P(nss_backend_t)) )
 		return NULL;
 
 	be->ops = passwd_ops;
@@ -329,7 +329,7 @@ _nss_winbind_group_constr (const char* db_name,
 {
 	nss_backend_t* be;
 
-	if(!(be = (nss_backend_t*) malloc(sizeof(nss_backend_t))) )
+	if(!(be = SMB_MALLOC_P(nss_backend_t)) )
 		return NULL;
 
 	be->ops = group_ops;
@@ -580,7 +580,7 @@ _nss_winbind_common_constr (nss_backend_op_t ops[], int n_ops)
 {
 	nss_backend_t* be;
 
-	if(!(be = (nss_backend_t*) malloc(sizeof(nss_backend_t))) )
+	if(!(be = SMB_MALLOC_P(nss_backend_t)) )
 	return NULL;
 
 	be->ops = ops;
