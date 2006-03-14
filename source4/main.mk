@@ -233,9 +233,9 @@ include/includes.h: \
 		libcli/nbt/libnbt.h \
 		lib/util/util_proto.h \
 		lib/charset/charset.h \
-		param/param.h \
+		param/proto.h \
 		libcli/util/proto.h \
-		librpc/ndr/ndr_orpc_proto.h \
+		librpc/ndr/ndr_orpc.h \
 		librpc/ndr/ndr_compression.h
 
 clean_pch: 
