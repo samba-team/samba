@@ -29,7 +29,7 @@
 #include "auth/kerberos/kerberos.h"
 #include "librpc/gen_ndr/ndr_krb5pac.h"
 #include "auth/auth.h"
-#include "ldb.h"
+#include "lib/ldb/include/ldb.h"
 #include "auth/auth_sam.h"
 #include "system/network.h"
 #include "lib/socket/socket.h"
