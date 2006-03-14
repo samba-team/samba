@@ -25,6 +25,7 @@
 #include "librpc/gen_ndr/ndr_lsa.h"
 #include "lib/events/events.h"
 #include "libcli/security/proto.h"
+#include "auth/credentials/credentials.h"
 #include "libcli/auth/proto.h"
 
 static void init_lsa_String(struct lsa_String *name, const char *s)

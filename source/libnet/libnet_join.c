@@ -29,6 +29,7 @@
 #include "dsdb/samdb/samdb.h"
 #include "db_wrap.h"
 #include "libcli/security/proto.h"
+#include "auth/credentials/credentials.h"
 
 /*
  * complete a domain join, when joining to a AD domain:

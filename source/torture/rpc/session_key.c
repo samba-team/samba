@@ -24,6 +24,7 @@
 #include "torture/torture.h"
 #include "librpc/gen_ndr/ndr_lsa.h"
 
+#include "auth/credentials/credentials.h"
 #include "torture/rpc/proto.h"
 #include "libcli/auth/proto.h"
 

@@ -30,6 +30,7 @@
 #include "libcli/auth/credentials.h"
 #include "libcli/security/proto.h"
 #include "libcli/auth/proto.h"
+#include "auth/credentials/credentials.h"
 
 #include "winbind/wb_helper.h"
 

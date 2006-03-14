@@ -22,6 +22,7 @@
 #include "includes.h"
 #include "utils/net/net.h"
 #include "libnet/libnet.h"
+#include "auth/credentials/credentials.h"
 
 static int net_user_add(struct net_context *ctx, int argc, const char **argv)
 {

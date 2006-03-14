@@ -29,6 +29,7 @@
 #include "librpc/gen_ndr/ndr_epmapper.h"
 #include "librpc/gen_ndr/ndr_dcerpc.h"
 #include "librpc/gen_ndr/ndr_misc.h"
+#include "auth/credentials/credentials.h"
 
 /*
   find a dcerpc call on an interface by name

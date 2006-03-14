@@ -25,6 +25,7 @@
 #include "librpc/gen_ndr/ndr_samr.h"
 #include "lib/socket/socket.h"
 #include "lib/events/events.h"
+#include "auth/credentials/credentials.h"
 #include "torture/rpc/proto.h"
 #include "libcli/resolve/resolve.h"
 #include "system/network.h"

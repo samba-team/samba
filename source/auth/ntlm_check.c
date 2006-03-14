@@ -23,6 +23,7 @@
 #include "includes.h"
 #include "lib/crypto/crypto.h"
 #include "librpc/gen_ndr/ndr_netlogon.h"
+#include "auth/credentials/credentials.h"
 #include "libcli/auth/proto.h"
 
 /****************************************************************************

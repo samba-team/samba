@@ -30,6 +30,7 @@
 #include "libcli/smb_composite/smb_composite.h"
 #include "libcli/smb2/smb2.h"
 #include "libcli/smb2/smb2_calls.h"
+#include "auth/credentials/credentials.h"
 
 
 struct dcerpc_pipe_connect;

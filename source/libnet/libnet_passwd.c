@@ -23,6 +23,7 @@
 #include "smb.h"
 #include "libnet/libnet.h"
 #include "lib/crypto/crypto.h"
+#include "auth/credentials/credentials.h"
 #include "libcli/auth/proto.h"
 
 /*

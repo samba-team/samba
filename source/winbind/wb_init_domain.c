@@ -34,6 +34,7 @@
 
 #include "libcli/ldap/ldap_client.h"
 
+#include "auth/credentials/credentials.h"
 
 /*
  * Initialize a domain:

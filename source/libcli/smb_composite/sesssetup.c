@@ -25,6 +25,7 @@
 #include "libcli/raw/libcliraw.h"
 #include "libcli/composite/composite.h"
 #include "libcli/smb_composite/smb_composite.h"
+#include "auth/credentials/credentials.h"
 #include "libcli/auth/proto.h"
 #include "auth/auth.h"
 #include "version.h"

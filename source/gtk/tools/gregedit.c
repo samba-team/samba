@@ -23,6 +23,7 @@
 #include "lib/registry/registry.h"
 #include "lib/registry/reg_backend_rpc.h"
 #include "gtk/common/gtk-smb.h"
+#include "auth/credentials/credentials.h"
 
 static GtkTreeStore *store_keys;
 static GtkListStore *store_vals;
