@@ -1,5 +1,4 @@
 - saner names for some of the .pc files
-- .pc files also when there is a public header?
 - plugin loading support in ldb
 - proper #include dependencies:
   for each subsystem:
