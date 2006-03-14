@@ -395,8 +395,8 @@ struct operational_async_context {
 	const char * const *attrs;
 };
 
-static int operational_async_callback(struct ldb_context *ldb, void *context, struct ldb_async_result *ares) {
-
+static int operational_async_callback(struct ldb_context *ldb, void *context, struct ldb_async_result *ares)
+{
 	struct operational_async_context *ac;
 
 	if (!context || !ares) {
