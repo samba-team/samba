@@ -73,9 +73,9 @@ OBJ_FILES = \
 REQUIRED_SUBSYSTEMS = \
 		com dcom
 
-#################################
-# Start SUBSYSTEM TORTURE_RPC
-[SUBSYSTEM::TORTURE_RPC]
+[MODULE::torture_rpc]
+SUBSYSTEM = smbtorture
+INIT_FUNCTION = torture_rpc_init
 PRIVATE_PROTO_HEADER = \
 		rpc/proto.h
 OBJ_FILES = \
@@ -115,7 +115,8 @@ OBJ_FILES = \
 		rpc/bind.o \
 		rpc/dssetup.o \
 		rpc/alter_context.o \
-		rpc/bench.o
+		rpc/bench.o \
+		rpc/rpc.o
 REQUIRED_SUBSYSTEMS = \
 		NDR_TABLE RPC_NDR_UNIXINFO RPC_NDR_SAMR RPC_NDR_WINREG RPC_NDR_INITSHUTDOWN \
 		RPC_NDR_OXIDRESOLVER RPC_NDR_EVENTLOG RPC_NDR_ECHO RPC_NDR_SVCCTL \
@@ -123,8 +124,6 @@ REQUIRED_SUBSYSTEMS = \
 		RPC_NDR_LSA RPC_NDR_EPMAPPER RPC_NDR_DFS RPC_NDR_SPOOLSS \
 		RPC_NDR_SRVSVC RPC_NDR_WKSSVC RPC_NDR_ROT RPC_NDR_DSSETUP \
 		RPC_NDR_REMACT RPC_NDR_OXIDRESOLVER WB_HELPER 
-# End SUBSYSTEM TORTURE_RPC
-#################################
 
 #################################
 # Start SUBSYSTEM TORTURE_RAP
@@ -219,7 +218,7 @@ REQUIRED_SUBSYSTEMS = \
 # Start BINARY smbtorture
 [BINARY::smbtorture]
 INSTALLDIR = BINDIR
-PRIVATE_PROTO_HEADER = torture.h
+PRIVATE_PROTO_HEADER = proto.h
 OBJ_FILES = \
 		torture.o \
 		torture_util.o
@@ -227,7 +226,6 @@ REQUIRED_SUBSYSTEMS = \
 		TORTURE_BASIC \
 		TORTURE_RAW \
 		TORTURE_SMB2 \
-		TORTURE_RPC \
 		TORTURE_RAP \
 		TORTURE_AUTH \
 		TORTURE_LOCAL \

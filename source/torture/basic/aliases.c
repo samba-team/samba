@@ -19,10 +19,9 @@
 */
 
 #include "includes.h"
-#include "torture/torture.h"
 #include "dlinklist.h"
 #include "libcli/raw/libcliraw.h"
-#include "libcli/libcli.h"
+#include "torture/torture.h"
 
 int create_complex_file(struct smbcli_state *cli, TALLOC_CTX *mem_ctx, const char *fname);
 

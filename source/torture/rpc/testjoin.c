@@ -34,10 +34,9 @@
 #include "smb.h"
 #include "lib/ldb/include/ldb.h"
 
-#include "auth/credentials/credentials.h"
-#include "torture/rpc/proto.h"
+#include "libcli/auth/libcli_auth.h"
+#include "torture/rpc/rpc.h"
 #include "libcli/security/proto.h"
-#include "libcli/auth/proto.h"
 
 struct test_join {
 	struct dcerpc_pipe *p;

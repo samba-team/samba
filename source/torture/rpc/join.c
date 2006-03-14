@@ -2,7 +2,7 @@
 #include "libnet/libnet.h"
 
 #include "auth/credentials/credentials.h"
-#include "torture/rpc/proto.h"
+#include "torture/rpc/rpc.h"
 
 #define TORTURE_NETBIOS_NAME "smbtorturejoin"
 

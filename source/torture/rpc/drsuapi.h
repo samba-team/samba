@@ -22,6 +22,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+#include "librpc/gen_ndr/drsuapi.h"
 
 struct DsPrivate {
 	struct policy_handle bind_handle;

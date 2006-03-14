@@ -20,7 +20,7 @@
 */
 
 #include "includes.h"
-#include "torture/torture.h"
+#include "torture/rpc/rpc.h"
 #include "libnet/libnet.h"
 #include "libnet/userinfo.h"
 #include "libcli/security/proto.h"

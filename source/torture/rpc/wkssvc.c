@@ -22,6 +22,7 @@
 #include "includes.h"
 #include "torture/torture.h"
 #include "librpc/gen_ndr/ndr_wkssvc.h"
+#include "torture/rpc/rpc.h"
 
 
 static BOOL test_NetWkstaGetInfo(struct dcerpc_pipe *p, 

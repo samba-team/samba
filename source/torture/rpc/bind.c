@@ -25,6 +25,7 @@
 #include "torture/torture.h"
 #include "librpc/gen_ndr/ndr_lsa.h"
 #include "lib/cmdline/popt_common.h"
+#include "torture/rpc/rpc.h"
 
 /*
   This test is 'bogus' in that it doesn't actually perform to the

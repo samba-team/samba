@@ -28,8 +28,8 @@
 #include "auth/auth.h"
 #include "smb.h"
 #include "lib/cmdline/popt_common.h"
-#include "torture/rpc/proto.h"
-#include "libcli/auth/proto.h"
+#include "torture/rpc/rpc.h"
+#include "libcli/auth/libcli_auth.h"
 
 static const char *machine_password;
 

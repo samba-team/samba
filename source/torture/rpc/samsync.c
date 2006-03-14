@@ -28,9 +28,9 @@
 #include "dlinklist.h"
 #include "lib/crypto/crypto.h"
 #include "system/time.h"
-#include "torture/rpc/proto.h"
+#include "torture/rpc/rpc.h"
 #include "auth/gensec/schannel_proto.h"
-#include "libcli/auth/proto.h"
+#include "libcli/auth/libcli_auth.h"
 #include "libcli/security/proto.h"
 
 #define TEST_MACHINE_NAME "samsynctest"
