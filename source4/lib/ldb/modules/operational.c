@@ -2,6 +2,7 @@
    ldb database library
 
    Copyright (C) Andrew Tridgell 2005
+   Copyright (C) Simo Sorce 2006
 
      ** NOTE! The following LGPL license applies to the ldb
      ** library. This does NOT imply that all of Samba is released
@@ -380,6 +381,247 @@ static int operational_modify(struct ldb_module *module, struct ldb_request *req
 	return ret;
 }
 
+/*
+  hook search operations
+*/
+
+struct operational_async_context {
+
+	struct ldb_module *module;
+	void *up_context;
+	int (*up_callback)(struct ldb_context *, void *, struct ldb_async_result *);
+	int timeout;
+
+	const char * const *attrs;
+};
+
+static int operational_async_callback(struct ldb_context *ldb, void *context, struct ldb_async_result *ares) {
+
+	struct operational_async_context *ac;
+
+	if (!context || !ares) {
+		ldb_set_errstring(ldb, talloc_asprintf(ldb, "NULL Context or Result in callback"));
+		goto error;
+	}
+
+	ac = talloc_get_type(context, struct operational_async_context);
+
+	if (ares->type == LDB_REPLY_ENTRY) {
+		/* for each record returned post-process to add any derived
+		   attributes that have been asked for */
+		if (operational_search_post_process(ac->module, ares->message, ac->attrs) != 0) {
+			goto error;
+		}
+	}
+
+	return ac->up_callback(ldb, ac->up_context, ares);
+
+error:
+	talloc_free(ares);
+	return LDB_ERR_OPERATIONS_ERROR;
+}
+
+static int operational_search_async(struct ldb_module *module, struct ldb_request *req)
+{
+	struct operational_async_context *ac;
+	struct ldb_request *down_req;
+	const char **search_attrs = NULL;
+	int i, a, ret;
+
+	req->async.handle = NULL;
+
+	ac = talloc(req, struct operational_async_context);
+	if (ac == NULL) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	ac->module = module;
+	ac->up_context = req->async.context;
+	ac->up_callback = req->async.callback;
+	ac->timeout = req->async.timeout;
+	ac->attrs = req->op.search.attrs;
+
+	down_req = talloc_zero(req, struct ldb_request);
+	if (down_req == NULL) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	down_req->operation = req->operation;
+	down_req->op.search.base = req->op.search.base;
+	down_req->op.search.scope = req->op.search.scope;
+	down_req->op.search.tree = req->op.search.tree;
+
+	/*  FIXME: I hink we should copy the tree and keep the original
+	 *  unmodified. SSS */
+	/* replace any attributes in the parse tree that are
+	   searchable, but are stored using a different name in the
+	   backend */
+	for (i=0;i<ARRAY_SIZE(parse_tree_sub);i++) {
+		ldb_parse_tree_attr_replace(req->op.search.tree, 
+					    parse_tree_sub[i].attr, 
+					    parse_tree_sub[i].replace);
+	}
+
+	/* in the list of attributes we are looking for, rename any
+	   attributes to the alias for any hidden attributes that can
+	   be fetched directly using non-hidden names */
+	for (a=0;ac->attrs && ac->attrs[a];a++) {
+		for (i=0;i<ARRAY_SIZE(search_sub);i++) {
+			if (ldb_attr_cmp(ac->attrs[a], search_sub[i].attr) == 0 &&
+			    search_sub[i].replace) {
+				if (!search_attrs) {
+					search_attrs = ldb_attr_list_copy(req, ac->attrs);
+					if (search_attrs == NULL) {
+						return LDB_ERR_OPERATIONS_ERROR;
+					}
+				}
+				search_attrs[a] = search_sub[i].replace;
+			}
+		}
+	}
+	
+	/* use new set of attrs if any */
+	if (search_attrs) down_req->op.search.attrs = search_attrs;
+	else down_req->op.search.attrs = req->op.search.attrs;
+	
+	down_req->controls = req->controls;
+	down_req->creds = req->creds;
+
+	down_req->async.context = ac;
+	down_req->async.callback = operational_async_callback;
+	down_req->async.timeout = req->async.timeout;
+
+	/* perform the search */
+	ret = ldb_next_request(module, down_req);
+
+	/* do not free down_req as the call results may be linked to it,
+	 * it will be freed when the upper level request get freed */
+	if (ret == LDB_SUCCESS) {
+		req->async.handle = down_req->async.handle;
+	}
+
+	return ret;
+}
+
+/*
+  hook add record ops
+*/
+static int operational_add_async(struct ldb_module *module, struct ldb_request *req)
+{
+	struct ldb_request *down_req;
+	struct ldb_message *msg;
+	time_t t = time(NULL);
+	int ret;
+
+	if (ldb_dn_is_special(req->op.add.message->dn)) {
+		return ldb_next_request(module, req);
+	}
+
+	down_req = talloc(req, struct ldb_request);
+	if (down_req == NULL) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	/* we have to copy the message as the caller might have it as a const */
+	msg = ldb_msg_copy_shallow(down_req, req->op.add.message);
+	if (msg == NULL) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	if (add_time_element(msg, "whenCreated", t) != 0 ||
+	    add_time_element(msg, "whenChanged", t) != 0) {
+		talloc_free(down_req);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	/* see if the backend can give us the USN */
+	if (module->ldb->sequence_number != NULL) {
+		uint64_t seq_num = module->ldb->sequence_number(module->ldb);
+		if (add_uint64_element(msg, "uSNCreated", seq_num) != 0 ||
+		    add_uint64_element(msg, "uSNChanged", seq_num) != 0) {
+			talloc_free(down_req);
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+	}
+
+	down_req->op.add.message = msg;
+	
+	down_req->controls = req->controls;
+	down_req->creds = req->creds;
+
+	down_req->async.context = req->async.context;
+	down_req->async.callback = req->async.callback;
+	down_req->async.timeout = req->async.timeout;
+
+	/* go on with the call chain */
+	ret = ldb_next_request(module, down_req);
+
+	/* do not free down_req as the call results may be linked to it,
+	 * it will be freed when the upper level request get freed */
+	if (ret == LDB_SUCCESS) {
+		req->async.handle = down_req->async.handle;
+	}
+
+	return ret;
+}
+
+/*
+  hook modify record ops
+*/
+static int operational_modify_async(struct ldb_module *module, struct ldb_request *req)
+{
+	struct ldb_request *down_req;
+	struct ldb_message *msg;
+	time_t t = time(NULL);
+	int ret;
+
+	if (ldb_dn_is_special(req->op.mod.message->dn)) {
+		return ldb_next_request(module, req);
+	}
+
+	down_req = talloc(req, struct ldb_request);
+	if (down_req == NULL) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	/* we have to copy the message as the caller might have it as a const */
+	msg = ldb_msg_copy_shallow(down_req, req->op.mod.message);
+	if (msg == NULL) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	if (add_time_element(msg, "whenChanged", t) != 0) {
+		talloc_free(down_req);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	/* update the records USN if possible */
+	if (module->ldb->sequence_number != NULL &&
+	    add_uint64_element(msg, "uSNChanged", 
+			       module->ldb->sequence_number(module->ldb)) != 0) {
+		talloc_free(down_req);
+		return -1;
+	}
+
+	down_req->op.mod.message = msg;
+	
+	down_req->controls = req->controls;
+	down_req->creds = req->creds;
+
+	down_req->async.context = req->async.context;
+	down_req->async.callback = req->async.callback;
+	down_req->async.timeout = req->async.timeout;
+
+	/* go on with the call chain */
+	ret = ldb_next_request(module, down_req);
+
+	/* do not free down_req as the call results may be linked to it,
+	 * it will be freed when the upper level request get freed */
+	if (ret == LDB_SUCCESS) {
+		req->async.handle = down_req->async.handle;
+	}
+
+	return ret;
+}
+
 
 static int operational_request(struct ldb_module *module, struct ldb_request *req)
 {
@@ -393,6 +635,15 @@ static int operational_request(struct ldb_module *module, struct ldb_request *re
 
 	case LDB_REQ_MODIFY:
 		return operational_modify(module, req);
+
+	case LDB_ASYNC_SEARCH:
+		return operational_search_async(module, req);
+
+	case LDB_ASYNC_ADD:
+		return operational_add_async(module, req);
+
+	case LDB_ASYNC_MODIFY:
+		return operational_modify_async(module, req);
 
 	default:
 		return ldb_next_request(module, req);
