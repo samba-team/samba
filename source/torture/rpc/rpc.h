@@ -1,8 +1,8 @@
 /* 
    Unix SMB/CIFS implementation.
-   test suite for the running object table
-
-   Copyright (C) Jelmer Vernooij 2004
+   SMB torture tester
+   Copyright (C) Andrew Tridgell 1997-2003
+   Copyright (C) Jelmer Vernooij 2006
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -19,30 +19,12 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#include "includes.h"
-#include "torture/torture.h"
-#include "librpc/gen_ndr/ndr_rot.h"
-#include "torture/rpc/rpc.h"
+#ifndef __TORTURE_RPC_H__
+#define __TORTURE_RPC_H__
 
-BOOL torture_rpc_rot(void)
-{
-	NTSTATUS status;
-	struct dcerpc_pipe *p;
-	TALLOC_CTX *mem_ctx;
-	BOOL ret = True;
+#include "auth/credentials/credentials.h"
+#include "torture/rpc/drsuapi.h"
+#include "libnet/libnet_join.h"
+#include "torture/rpc/proto.h"
 
-	mem_ctx = talloc_init("torture_rpc_rot");
-
-	status = torture_rpc_connection(mem_ctx, 
-					&p, 
-					&dcerpc_table_rot);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		talloc_free(mem_ctx);
-		return False;
-	}
-
-	talloc_free(mem_ctx);
-
-	return ret;
-}
+#endif /* __TORTURE_RPC_H__ */

@@ -24,6 +24,7 @@
 #include "torture/torture.h"
 #include "librpc/gen_ndr/ndr_mgmt.h"
 #include "librpc/rpc/dcerpc_table.h"
+#include "torture/rpc/rpc.h"
 
 /*
   work out how many calls there are for an interface

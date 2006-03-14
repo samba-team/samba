@@ -23,6 +23,7 @@
 #include "torture/torture.h"
 #include "librpc/gen_ndr/ndr_epmapper.h"
 #include "librpc/rpc/dcerpc_table.h"
+#include "torture/rpc/rpc.h"
 
 
 /*

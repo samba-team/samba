@@ -23,6 +23,7 @@
 #include "includes.h"
 #include "torture/torture.h"
 #include "librpc/gen_ndr/ndr_dssetup.h"
+#include "torture/rpc/rpc.h"
 
 
 BOOL test_DsRoleGetPrimaryDomainInformation(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)

@@ -23,6 +23,7 @@
 #include "includes.h"
 #include "torture/torture.h"
 #include "librpc/rpc/dcerpc_table.h"
+#include "torture/rpc/rpc.h"
 
 
 BOOL torture_rpc_countcalls(void)

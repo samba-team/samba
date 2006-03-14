@@ -24,6 +24,7 @@
 #include "torture/torture.h"
 #include "libcli/raw/libcliraw.h"
 #include "libcli/libcli.h"
+#include "librpc/gen_ndr/lsa.h"
 #include "libcli/util/clilsa.h"
 #include "libcli/security/proto.h"
 

@@ -24,6 +24,8 @@
 #include "librpc/gen_ndr/ndr_lsa.h"
 #include "lib/events/events.h"
 #include "libcli/security/proto.h"
+#include "libnet/libnet_join.h"
+#include "torture/rpc/rpc.h"
 
 static BOOL open_policy(TALLOC_CTX *mem_ctx, struct dcerpc_pipe *p,
 			struct policy_handle **handle)
