@@ -4,7 +4,7 @@ OBJ_FILES = loadparm.o \
 			generic.o \
 			../lib/version.o
 REQUIRED_SUBSYSTEMS = LIBBASIC 
-PRIVATE_PROTO_HEADER = param.h
+PRIVATE_PROTO_HEADER = proto.h
 
 PATH_FLAGS = -DCONFIGFILE=\"$(CONFIGFILE)\" \
 	 -DBINDIR=\"$(BINDIR)\" -DLMHOSTSFILE=\"$(LMHOSTSFILE)\" \

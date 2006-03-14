@@ -23,7 +23,7 @@
 #include "includes.h"
 #include "scripting/ejs/smbcalls.h"
 #include "lib/appweb/ejs/ejs.h"
-#include "param/generic.h"
+#include "param/param.h"
 
 /*
   get parameter
