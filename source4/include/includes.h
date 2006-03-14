@@ -116,7 +116,6 @@ enum brl_type {
 #include "libcli/util/nterr.h"
 #include "libcli/util/doserr.h"
 #include "librpc/ndr/libndr.h"
-#include "librpc/ndr/ndr_orpc.h"
 #include "librpc/rpc/dcerpc.h"
 #include "libcli/nbt/libnbt.h"
 #include "libcli/util/proto.h"
