@@ -191,12 +191,14 @@ static char *debug_list_class_names_and_levels(void)
 	char *b;
 	BOOL err = False;
 
-	if (DEBUGLEVEL_CLASS == &debug_all_class_hack)
+	if (DEBUGLEVEL_CLASS == &debug_all_class_hack) {
 		return NULL;
+	}
 
 	list = SMB_CALLOC_ARRAY(char *, debug_num_classes + 1);
-	if (!list)
+	if (!list) {
 		return NULL;
+	}
 
 	/* prepare strings */
 	for (i = 0, dim = 0; i < debug_num_classes; i++) {
@@ -227,13 +229,12 @@ static char *debug_list_class_names_and_levels(void)
 
 done:
 	/* free strings list */
-	for (i = 0; i < debug_num_classes; i++)
-		if (list[i]) free(list[i]);
-	free(list);
+	for (i = 0; i < debug_num_classes; i++) {
+		SAFE_FREE(list[i]);
+	}
+	SAFE_FREE(list);
 
 	if (err) {
-		if (buf)
-			free(buf);
 		return NULL;
 	} else {
 		return buf;
