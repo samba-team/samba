@@ -91,7 +91,6 @@ static const char *user_name(TALLOC_CTX *mem_ctx, struct ldb_module *module)
 	return talloc_asprintf(mem_ctx, "%s\\%s",
 			       session_info->server_info->domain_name,
 			       session_info->server_info->account_name);
-	return ANONYMOUS;
 }
 
 /* search */
