@@ -338,6 +338,7 @@ int ldapsam_search_suffix_by_name(struct ldapsam_privates *ldap_state,
 	   * in pstring_sub
 	 */
 	
+
 	all_string_sub(filter, "%u", escape_user, sizeof(pstring));
 	SAFE_FREE(escape_user);
 
@@ -1515,7 +1516,7 @@ static NTSTATUS ldapsam_modify_entry(struct pdb_methods *my_methods,
 	struct ldapsam_privates *ldap_state = (struct ldapsam_privates *)my_methods->private_data;
 	int rc;
 	
-	if (!my_methods || !newpwd || !dn) {
+	if (!newpwd || !dn) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 	
@@ -3075,7 +3076,6 @@ static NTSTATUS ldapsam_enum_group_mapping(struct pdb_methods *methods,
 					   BOOL unix_only)
 {
 	GROUP_MAP map;
-	GROUP_MAP *mapt;
 	size_t entries = 0;
 
 	*p_num_entries = 0;
@@ -3100,17 +3100,14 @@ static NTSTATUS ldapsam_enum_group_mapping(struct pdb_methods *methods,
 			continue;
 		}
 
-		mapt=SMB_REALLOC_ARRAY((*pp_rmap), GROUP_MAP, entries+1);
-		if (!mapt) {
+		(*pp_rmap)=SMB_REALLOC_ARRAY((*pp_rmap), GROUP_MAP, entries+1);
+		if (!(*pp_rmap)) {
 			DEBUG(0,("ldapsam_enum_group_mapping: Unable to "
 				 "enlarge group map!\n"));
-			SAFE_FREE(*pp_rmap);
 			return NT_STATUS_UNSUCCESSFUL;
 		}
-		else
-			(*pp_rmap) = mapt;
 
-		mapt[entries] = map;
+		(*pp_rmap)[entries] = map;
 
 		entries += 1;
 
