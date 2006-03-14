@@ -83,7 +83,9 @@ void winbindd_check_cache_size(time_t t)
 static struct winbind_cache *get_cache(struct winbindd_domain *domain)
 {
 	struct winbind_cache *ret = wcache;
+#ifdef HAVE_ADS
 	struct winbindd_domain *our_domain = domain;
+#endif
 
 	/* we have to know what type of domain we are dealing with first */
 
