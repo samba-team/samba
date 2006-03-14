@@ -440,7 +440,7 @@ domain:
       hnd->status = rpccli_lsa_query_info_policy( pipe_hnd, mem_ctx, op->in.pol, CAC_DOMAIN_INFO, &dom_name, &domain_sid);
       if(!NT_STATUS_IS_OK(hnd->status)) {
          /*if we succeeded above, report partial success*/
-         result = (result == CAC_SUCCESS) ? CAC_PARTIAL_SUCCESS : CAC_FAILURE;
+         result = CAC_FAILURE;
          goto done;
       }
       else if(result == CAC_FAILURE) {
