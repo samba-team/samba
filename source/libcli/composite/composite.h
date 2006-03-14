@@ -61,4 +61,7 @@ struct composite_context {
 	BOOL used_wait;
 };
 
+struct irpc_request;
+struct smbcli_request;
+
 #include "libcli/composite/proto.h"

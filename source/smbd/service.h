@@ -1,7 +1,10 @@
 /* 
    Unix SMB/CIFS implementation.
 
-   Copyright (C) Andrew Tridgell 2004
+   SERVER SERVICE code
+
+   Copyright (C) Andrew Tridgell 2003-2005
+   Copyright (C) Stefan (metze) Metzmacher	2004
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -18,15 +21,11 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-/*
-  this file contains pre-declarations of private structures to avoid the
-  "scope is only this definition or declaration" warning
-*/
+#ifndef __SERVICE_H__
+#define __SERVICE_H__
 
-struct asn1_data;
-struct smbsrv_tcon;
-struct smbsrv_connection;
-struct param_context;
-struct smbcli_tree;
-struct smb2_tree;
-struct socket_address;
+#include "smbd/service_stream.h"
+#include "smbd/service_task.h"
+#include "smbd/service_proto.h"
+
+#endif /* __SERVICE_H__ */

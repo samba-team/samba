@@ -19,6 +19,9 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+#ifndef __LIBCLI_H__
+#define __LIBCLI_H__
+
 #include "smb.h"
 
 /* 
@@ -47,3 +50,5 @@ struct nbt_dc_name {
 };
 
 #include "libcli/libcli_proto.h"
+
+#endif /* __LIBCLI_H__ */

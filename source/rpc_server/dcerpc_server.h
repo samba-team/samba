@@ -240,6 +240,8 @@ struct dcesrv_critical_sizes {
 	int sizeof_dcesrv_handle;
 };
 
+struct model_ops;
+
 #include "rpc_server/dcerpc_server_proto.h"
 
 #endif /* SAMBA_DCERPC_SERVER_H */

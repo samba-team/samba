@@ -22,6 +22,9 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+#ifndef __PROCESS_MODEL_H__
+#define __PROCESS_MODEL_H__
+
 #include "lib/socket/socket.h"
 
 /* modules can use the following to determine if the interface has changed
@@ -65,3 +68,5 @@ struct process_model_critical_sizes {
 };
 
 #include "smbd/process_model_proto.h"
+
+#endif /* __PROCESS_MODEL_H__ */

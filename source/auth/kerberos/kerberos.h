@@ -23,6 +23,9 @@
 
 #include "auth/credentials/credentials.h"
 #include "auth/kerberos/krb5_init_context.h"
+#include "librpc/gen_ndr/krb5pac.h"
+
+struct auth_serversupplied_info;
 
 struct ccache_container {
 	struct smb_krb5_context *smb_krb5_context;

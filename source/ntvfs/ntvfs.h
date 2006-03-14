@@ -213,4 +213,6 @@ struct ntvfs_critical_sizes {
 	int sizeof_ntvfs_request;
 };
 
+struct messaging_context;
+
 #include "ntvfs/ntvfs_proto.h"

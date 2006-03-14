@@ -19,7 +19,6 @@
 */
 
 #include "smbd/process_model.h"
-#include "web_server/proto.h"
 
 /*
   context of one open web connection
@@ -76,4 +75,6 @@ struct esp_data {
 	struct MprVar *application_data;
 	struct tls_params *tls_params;
 };
+
+#include "web_server/proto.h"
 
