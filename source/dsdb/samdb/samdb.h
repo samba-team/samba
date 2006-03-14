@@ -26,7 +26,7 @@
 struct auth_session_info;
 struct drsuapi_DsNameInfo1;
 
-#include "ldb.h"
+#include "lib/ldb/include/ldb.h"
 #include "dsdb/samdb/samdb_proto.h"
 
 #endif /* __SAMDB_H__ */

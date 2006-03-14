@@ -39,7 +39,7 @@ struct libnet_context {
 };
 
 
-#include "ldb.h"
+#include "lib/ldb/include/ldb.h"
 #include "libnet/libnet_passwd.h"
 #include "libnet/libnet_time.h"
 #include "libnet/libnet_rpc.h"
