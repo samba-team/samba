@@ -22,6 +22,7 @@
 
 #include "includes.h"
 #include "torture/torture.h"
+#include "torture/rpc/rpc.h"
 #include "librpc/gen_ndr/ndr_spoolss.h"
 
 struct test_spoolss_context {

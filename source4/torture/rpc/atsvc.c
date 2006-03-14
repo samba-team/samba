@@ -22,6 +22,7 @@
 #include "includes.h"
 #include "torture/torture.h"
 #include "librpc/gen_ndr/ndr_atsvc.h"
+#include "torture/rpc/rpc.h"
 
 static BOOL test_JobGetInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, uint32_t job_id)
 {

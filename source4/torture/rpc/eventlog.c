@@ -24,6 +24,7 @@
 #include "torture/torture.h"
 #include "librpc/gen_ndr/ndr_eventlog.h"
 #include "librpc/gen_ndr/ndr_lsa.h"
+#include "torture/rpc/rpc.h"
 
 static void init_lsa_String(struct lsa_String *name, const char *s)
 {

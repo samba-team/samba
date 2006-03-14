@@ -23,10 +23,10 @@
 #include "includes.h"
 #include "librpc/gen_ndr/ndr_netlogon.h"
 #include "auth/credentials/credentials.h"
-#include "torture/rpc/proto.h"
+#include "torture/rpc/rpc.h"
 #include "lib/cmdline/popt_common.h"
 #include "auth/gensec/schannel_proto.h"
-#include "libcli/auth/proto.h"
+#include "libcli/auth/libcli_auth.h"
 #include "libcli/security/proto.h"
 
 #define TEST_MACHINE_NAME "schannel"

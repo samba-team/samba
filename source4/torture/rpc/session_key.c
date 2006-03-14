@@ -24,9 +24,8 @@
 #include "torture/torture.h"
 #include "librpc/gen_ndr/ndr_lsa.h"
 
-#include "auth/credentials/credentials.h"
-#include "torture/rpc/proto.h"
-#include "libcli/auth/proto.h"
+#include "libcli/auth/libcli_auth.h"
+#include "torture/rpc/rpc.h"
 
 static void init_lsa_String(struct lsa_String *name, const char *s)
 {

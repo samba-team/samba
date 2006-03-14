@@ -2,6 +2,7 @@
    Unix SMB/CIFS implementation.
    SMB torture tester
    Copyright (C) Andrew Tridgell 1997-2003
+   Copyright (C) Jelmer Vernooij 2006
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -27,15 +28,15 @@
 #include "libcli/raw/ioctl.h"
 #include "libcli/libcli.h"
 #include "lib/ldb/include/ldb.h"
-#include "librpc/rpc/dcerpc_table.h"
 #include "lib/events/events.h"
 #include "libcli/resolve/resolve.h"
 #include "auth/credentials/credentials.h"
+#include "librpc/rpc/dcerpc_table.h"
+#include "libcli/ldap/ldap_client.h"
 
 #include "torture/basic/proto.h"
 #include "torture/raw/proto.h"
 #include "torture/smb2/proto.h"
-#include "torture/rpc/proto.h"
 #include "torture/rap/proto.h"
 #include "torture/auth/proto.h"
 #include "torture/local/proto.h"
@@ -140,63 +141,6 @@ BOOL torture_close_connection(struct smbcli_state *c)
 	return ret;
 }
 
-/* open a rpc connection to the chosen binding string */
-NTSTATUS torture_rpc_connection(TALLOC_CTX *parent_ctx, 
-				struct dcerpc_pipe **p, 
-				const struct dcerpc_interface_table *table)
-{
-        NTSTATUS status;
-	const char *binding = lp_parm_string(-1, "torture", "binding");
-
-	if (!binding) {
-		printf("You must specify a ncacn binding string\n");
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	status = dcerpc_pipe_connect(parent_ctx, 
-				     p, binding, table,
-				     cmdline_credentials, NULL);
- 
-        return status;
-}
-
-/* open a rpc connection to a specific transport */
-NTSTATUS torture_rpc_connection_transport(TALLOC_CTX *parent_ctx, 
-					  struct dcerpc_pipe **p, 
-					  const struct dcerpc_interface_table *table,
-					  enum dcerpc_transport_t transport)
-{
-        NTSTATUS status;
-	const char *binding = lp_parm_string(-1, "torture", "binding");
-	struct dcerpc_binding *b;
-	TALLOC_CTX *mem_ctx = talloc_named(parent_ctx, 0, "torture_rpc_connection_smb");
-
-	if (!binding) {
-		printf("You must specify a ncacn binding string\n");
-		talloc_free(mem_ctx);
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	status = dcerpc_parse_binding(mem_ctx, binding, &b);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,("Failed to parse dcerpc binding '%s'\n", binding));
-		talloc_free(mem_ctx);
-		return status;
-	}
-
-	b->transport = transport;
-
-	status = dcerpc_pipe_connect_b(mem_ctx, p, b, table,
-				       cmdline_credentials, NULL);
-					   
-	if (NT_STATUS_IS_OK(status)) {
-		*p = talloc_reference(parent_ctx, *p);
-	} else {
-		*p = NULL;
-	}
-	talloc_free(mem_ctx);
-        return status;
-}
 
 /* check if the server produced the expected error code */
 BOOL check_error(const char *location, struct smbcli_state *c, 
@@ -2242,7 +2186,6 @@ static struct {
 	{"BENCH-TORTURE", NULL, run_torture},
 	{"BENCH-NBT",     torture_bench_nbt, 0},
 	{"BENCH-WINS",    torture_bench_wins, 0},
-	{"BENCH-RPC",     torture_bench_rpc, 0},
 	{"BENCH-CLDAP",   torture_bench_cldap, 0},
 
 	/* RAW smb tests */
@@ -2294,42 +2237,6 @@ static struct {
 	{"SCAN-PIPE_NUMBER", run_pipe_number, 0},
 	{"SCAN-IOCTL",  torture_ioctl_test, 0},
 	{"SCAN-RAP",  torture_rap_scan, 0},
-
-	/* rpc testers */
-        {"RPC-LSA", torture_rpc_lsa, 0},
-        {"RPC-LSALOOKUP", torture_rpc_lsa_lookup, 0},
-        {"RPC-SECRETS", torture_rpc_lsa_secrets, 0},
-        {"RPC-ECHO", torture_rpc_echo, 0},
-        {"RPC-DFS", torture_rpc_dfs, 0},
-        {"RPC-SPOOLSS", torture_rpc_spoolss, 0},
-        {"RPC-SAMR", torture_rpc_samr, 0},
-        {"RPC-UNIXINFO", torture_rpc_unixinfo, 0},
-        {"RPC-NETLOGON", torture_rpc_netlogon, 0},
-        {"RPC-SAMLOGON", torture_rpc_samlogon, 0},
-        {"RPC-SAMSYNC", torture_rpc_samsync, 0},
-        {"RPC-SCHANNEL", torture_rpc_schannel, 0},
-        {"RPC-WKSSVC", torture_rpc_wkssvc, 0},
-        {"RPC-SRVSVC", torture_rpc_srvsvc, 0},
-        {"RPC-SVCCTL", torture_rpc_svcctl, 0},
-        {"RPC-ATSVC", torture_rpc_atsvc, 0},
-        {"RPC-EVENTLOG", torture_rpc_eventlog, 0},
-        {"RPC-EPMAPPER", torture_rpc_epmapper, 0},
-        {"RPC-WINREG", torture_rpc_winreg, 0},
-        {"RPC-INITSHUTDOWN", torture_rpc_initshutdown, 0},
-        {"RPC-OXIDRESOLVE", torture_rpc_oxidresolve, 0},
-        {"RPC-REMACT", torture_rpc_remact, 0},
-        {"RPC-MGMT", torture_rpc_mgmt, 0},
-        {"RPC-SCANNER", torture_rpc_scanner, 0},
-        {"RPC-AUTOIDL", torture_rpc_autoidl, 0},
-        {"RPC-COUNTCALLS", torture_rpc_countcalls, 0},
-	{"RPC-MULTIBIND", torture_multi_bind, 0},
-	{"RPC-DRSUAPI", torture_rpc_drsuapi, 0},
-	{"RPC-CRACKNAMES", torture_rpc_drsuapi_cracknames, 0},
-	{"RPC-ROT", torture_rpc_rot, 0},
-	{"RPC-DSSETUP", torture_rpc_dssetup, 0},
-        {"RPC-ALTERCONTEXT", torture_rpc_alter_context, 0},
-        {"RPC-JOIN", torture_rpc_join, 0},
-        {"RPC-DSSYNC", torture_rpc_dssync, 0},
 
 	/* local (no server) testers */
 	{"LOCAL-NTLMSSP", torture_ntlmssp_self_check, 0},

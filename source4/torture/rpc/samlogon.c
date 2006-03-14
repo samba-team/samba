@@ -27,9 +27,9 @@
 #include "auth/auth.h"
 #include "lib/crypto/crypto.h"
 #include "lib/cmdline/popt_common.h"
-#include "torture/rpc/proto.h"
+#include "torture/rpc/rpc.h"
 #include "auth/gensec/schannel_proto.h"
-#include "libcli/auth/proto.h"
+#include "libcli/auth/libcli_auth.h"
 
 #define TEST_MACHINE_NAME "samlogontest"
 #define TEST_USER_NAME "samlogontestuser"
