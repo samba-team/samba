@@ -21,6 +21,7 @@
 
 #if defined(HAVE_KRB5)
 
+#include "auth/credentials/credentials.h"
 #include "auth/kerberos/krb5_init_context.h"
 
 struct ccache_container {
@@ -166,4 +167,3 @@ NTSTATUS kerberos_decode_pac(TALLOC_CTX *mem_ctx,
 #include "auth/kerberos/proto.h"
 
 #endif /* HAVE_KRB5 */
-

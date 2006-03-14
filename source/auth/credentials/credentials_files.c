@@ -28,6 +28,7 @@
 #include "passdb/secrets.h"
 #include "system/filesys.h"
 #include "db_wrap.h"
+#include "auth/credentials/credentials.h"
 
 /**
  * Read a file descriptor, and parse it for a password (eg from a file or stdin)

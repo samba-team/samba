@@ -25,6 +25,7 @@
 #include "includes.h"
 #include "torture/torture.h"
 #include "librpc/gen_ndr/ndr_drsuapi.h"
+#include "auth/credentials/credentials.h"
 #include "torture/rpc/drsuapi.h"
 #include "torture/rpc/proto.h"
 

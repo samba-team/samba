@@ -41,6 +41,7 @@
 #include "ldb/include/ldb.h"
 #include "ldb/include/ldb_errors.h"
 #include "ldb/include/ldb_private.h"
+#include "auth/credentials/credentials.h"
 
 struct proxy_data {
 	struct ldb_context *upstream;

@@ -22,6 +22,7 @@
 #include "includes.h"
 #include "librpc/gen_ndr/ndr_atsvc.h"
 #include "gtk/common/gtk-smb.h"
+#include "auth/credentials/credentials.h"
 
 static struct dcerpc_pipe *at_pipe = NULL;
 static GtkWidget *mainwin;

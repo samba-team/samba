@@ -21,6 +21,9 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+#ifndef __GENSEC_H__
+#define __GENSEC_H__
+
 #define GENSEC_OID_NTLMSSP "1 3 6 1 4 1 311 2 2 10"
 #define GENSEC_OID_SPNEGO "1 3 6 1 5 5 2"
 #define GENSEC_OID_KERBEROS5 "1 2 840 113554 1 2 2"
@@ -124,4 +127,7 @@ struct gensec_critical_sizes {
 	int sizeof_gensec_security;
 };
 
+#include "auth/credentials/credentials.h"
 #include "gensec_proto.h"
+
+#endif /* __GENSEC_H__ */

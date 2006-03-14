@@ -20,6 +20,8 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
+#ifndef __CREDENTIALS_H__
+#define __CREDENTIALS_H__
 
 struct ccache_container;
 
@@ -103,3 +105,5 @@ struct cli_credentials {
 };
 
 #include "auth/credentials/credentials_proto.h"
+
+#endif /* __CREDENTIALS_H__ */
