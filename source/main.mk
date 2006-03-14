@@ -319,7 +319,7 @@ unused_macros:
 .SUFFIXES: .x .c .et .y .l .d .o .h .h.gch .a .so .1 .1.xml .3 .3.xml .5 .5.xml .7 .7.xml .8 .8.xml .ho
 
 .c.ho:
-	@echo Compiling $*.c with host compiler
+	@echo "Compiling $*.c with host compiler"
 	@$(HOSTCC) `script/cflags.pl $@` $(CFLAGS) -c $*.c -o $@
 
 .c.d:
@@ -328,14 +328,14 @@ unused_macros:
 
 .c.o:
 	@if test -n "$(CC_CHECKER)"; then \
-		echo Call \'$(CC_CHECKER)\' for $<; \
+		echo "Checking  $< with '$(CC_CHECKER)'"; \
 		$(CC_CHECKER) `script/cflags.pl $@` $(CFLAGS) $(PICFLAG) -c $< -o $@; \
 	fi
-	@echo Compiling $<
+	@echo "Compiling $<"
 	@$(CC) `script/cflags.pl $@` $(CFLAGS) $(PICFLAG) -c $< -o $@
 
 .h.h.gch:
-	@echo Precompiling $<
+	@echo "Precompiling $<"
 	@$(CC) `script/cflags.pl $@` $(CFLAGS) $(PICFLAG) -c $< -o $@
 
 .y.c:
