@@ -236,11 +236,6 @@ include/includes.h: \
 		param/param.h \
 		libcli/util/proto.h \
 		librpc/ndr/ndr_orpc_proto.h \
-		libcli/nbt/nbtname.h \
-		librpc/ndr/ndr_sec.h \
-		librpc/ndr/ndr_drsuapi.h \
-		librpc/ndr/ndr_spoolss_buf.h \
-		librpc/ndr/ndr_krb5pac.h \
 		librpc/ndr/ndr_compression.h
 
 clean_pch: 

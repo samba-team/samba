@@ -9,7 +9,8 @@
 */
 
 [
-  depends(security,svcctl)
+  depends(security,svcctl),
+  helper("libcli/nbt/nbtname.h")
 ] interface nbt
 {
 	const int NBT_NAME_SERVICE_PORT  = 137;

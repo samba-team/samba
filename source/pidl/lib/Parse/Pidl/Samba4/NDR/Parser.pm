@@ -2244,6 +2244,12 @@ sub HeaderInterface($)
 		}
 	}
 
+	if (defined $interface->{PROPERTIES}->{helper}) {
+		foreach (split / /, $interface->{PROPERTIES}->{helper}) {
+			pidl_hdr "#include $_";
+		}
+	}
+
 	if (defined $interface->{PROPERTIES}->{uuid}) {
 		my $name = uc $interface->{NAME};
 		pidl_hdr "#define DCERPC_$name\_UUID " . 
