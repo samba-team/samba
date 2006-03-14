@@ -22,6 +22,7 @@
 #define _DCOM_H 
 
 #include "lib/com/com.h"
+#include "librpc/gen_ndr/orpc.h"
 #include "lib/com/dcom/proto.h"
 
 struct dcom_client_context {
