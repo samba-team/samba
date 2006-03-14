@@ -18,6 +18,9 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+#ifndef __LIBNDR_H__
+#define __LIBNDR_H__
+
 /*
   this provides definitions for the libcli/rpc/ MSRPC library
 */
@@ -282,3 +285,5 @@ extern const struct dcerpc_syntax_id ndr64_transfer_syntax;
 
 #include "librpc/gen_ndr/misc.h"
 #include "librpc/ndr/libndr_proto.h"
+
+#endif /* __LIBNDR_H__ */

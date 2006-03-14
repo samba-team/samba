@@ -668,9 +668,15 @@ sub process_file($)
 	my $h_filename = "$outputdir/ndr_$basename.h";
 	if (defined($opt_client)) {
 		require Parse::Pidl::Samba4::NDR::Client;
-		my ($client) = ($opt_client or "$outputdir/ndr_$basename\_c.c");
+		my ($c_client) = ($opt_client or "$outputdir/ndr_$basename\_c.c");
+		my ($c_header) = $c_client;
+		$c_header =~ s/\.c$/.h/;
 
-		FileSave($client, Parse::Pidl::Samba4::NDR::Client::Parse($ndr,$h_filename));
+		my ($srcd,$hdrd) = Parse::Pidl::Samba4::NDR::Client::Parse(
+			$ndr,$gen_header,$h_filename,$c_header);
+
+		FileSave($c_client, $srcd);
+		FileSave($c_header, $hdrd);
 	}
 
 	if (defined($opt_ejs)) {

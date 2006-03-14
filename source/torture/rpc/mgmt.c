@@ -22,6 +22,7 @@
 #include "includes.h"
 #include "torture/torture.h"
 #include "librpc/gen_ndr/ndr_mgmt.h"
+#include "librpc/gen_ndr/ndr_mgmt_c.h"
 #include "auth/gensec/gensec.h"
 #include "librpc/rpc/dcerpc_table.h"
 #include "torture/rpc/rpc.h"

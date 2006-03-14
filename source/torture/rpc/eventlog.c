@@ -23,6 +23,7 @@
 #include "includes.h"
 #include "torture/torture.h"
 #include "librpc/gen_ndr/ndr_eventlog.h"
+#include "librpc/gen_ndr/ndr_eventlog_c.h"
 #include "librpc/gen_ndr/ndr_lsa.h"
 #include "torture/rpc/rpc.h"
 

@@ -33,6 +33,7 @@
 #include "lib/cmdline/popt_common.h"
 #include "smb.h"
 #include "lib/ldb/include/ldb.h"
+#include "librpc/gen_ndr/ndr_samr_c.h"
 
 #include "libcli/auth/libcli_auth.h"
 #include "torture/rpc/rpc.h"

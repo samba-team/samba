@@ -24,6 +24,7 @@
 #include "libnet/libnet.h"
 #include "libnet/userinfo.h"
 #include "libcli/security/proto.h"
+#include "librpc/gen_ndr/ndr_samr_c.h"
 
 #define TEST_USERNAME  "libnetuserinfotest"
 

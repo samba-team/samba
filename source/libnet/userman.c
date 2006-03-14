@@ -27,6 +27,7 @@
 #include "libnet/composite.h"
 #include "libnet/userman.h"
 #include "libnet/userinfo.h"
+#include "librpc/gen_ndr/ndr_samr_c.h"
 
 /*
  * Composite USER ADD functionality

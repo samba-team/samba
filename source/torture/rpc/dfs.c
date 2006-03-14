@@ -23,6 +23,7 @@
 #include "torture/torture.h"
 #include "torture/rpc/rpc.h"
 #include "librpc/gen_ndr/ndr_dfs.h"
+#include "librpc/gen_ndr/ndr_dfs_c.h"
 
 
 static BOOL test_GetManagerVersion(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)

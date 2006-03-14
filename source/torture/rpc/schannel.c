@@ -22,6 +22,9 @@
 
 #include "includes.h"
 #include "librpc/gen_ndr/ndr_netlogon.h"
+#include "librpc/gen_ndr/ndr_netlogon_c.h"
+#include "librpc/gen_ndr/ndr_lsa_c.h"
+#include "librpc/gen_ndr/ndr_samr_c.h"
 #include "auth/credentials/credentials.h"
 #include "torture/rpc/rpc.h"
 #include "lib/cmdline/popt_common.h"
