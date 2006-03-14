@@ -801,6 +801,89 @@ static int samldb_add(struct ldb_module *module, struct ldb_request *req)
 	return ret;
 }
 
+/* add_record */
+
+/*
+ * FIXME
+ *
+ * Actually this module is not async at all as it does a number of sync searches
+ * in the process. It still to be decided how to deal with it properly so it is
+ * left SYNC for now until we think of a good solution.
+ */
+
+static int samldb_add_async(struct ldb_module *module, struct ldb_request *req)
+{
+	const struct ldb_message *msg = req->op.add.message;
+	struct ldb_message *msg2 = NULL;
+	struct ldb_request *down_req;
+	int ret;
+
+	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "samldb_add_record\n");
+
+	if (ldb_dn_is_special(msg->dn)) { /* do not manipulate our control entries */
+		return ldb_next_request(module, req);
+	}
+
+	down_req = talloc(module, struct ldb_request);
+	if (down_req == NULL) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	/* is user or computer?  add all relevant missing objects */
+	if ((samldb_find_attribute(msg, "objectclass", "user") != NULL) || 
+	    (samldb_find_attribute(msg, "objectclass", "computer") != NULL)) {
+		ret = samldb_fill_user_or_computer_object(module, msg, &msg2);
+		if (ret) {
+			return ret;
+		}
+	}
+
+	/* is group? add all relevant missing objects */
+	if ( ! msg2 ) {
+		if (samldb_find_attribute(msg, "objectclass", "group") != NULL) {
+			ret = samldb_fill_group_object(module, msg, &msg2);
+			if (ret) {
+				return ret;
+			}
+		}
+	}
+
+	/* perhaps a foreignSecurityPrincipal? */
+	if ( ! msg2 ) {
+		if (samldb_find_attribute(msg, "objectclass", "foreignSecurityPrincipal") != NULL) {
+			ret = samldb_fill_foreignSecurityPrincipal_object(module, msg, &msg2);
+			if (ret) {
+				return ret;
+			}
+		}
+	}
+
+	
+	if (msg2 != NULL) {
+		down_req->op.add.message = talloc_steal(down_req, msg2);
+	} else {
+		down_req->op.add.message = msg;
+	}
+	
+	down_req->controls = req->controls;
+	down_req->creds = req->creds;
+
+	down_req->async.context = req->async.context;
+	down_req->async.callback = req->async.callback;
+	down_req->async.timeout = req->async.timeout;
+
+	/* go on with the call chain */
+	ret = ldb_next_request(module, down_req);
+
+	/* do not free down_req as the call results may be linked to it,
+	 * it will be freed when the upper level request get freed */
+	if (ret == LDB_SUCCESS) {
+		req->async.handle = down_req->async.handle;
+	}
+
+	return ret;
+}
+
 static int samldb_destructor(void *module_ctx)
 {
 	/* struct ldb_module *ctx = module_ctx; */
@@ -814,6 +897,9 @@ static int samldb_request(struct ldb_module *module, struct ldb_request *req)
 
 	case LDB_REQ_ADD:
 		return samldb_add(module, req);
+
+	case LDB_ASYNC_ADD:
+		return samldb_add_async(module, req);
 
 	default:
 		return ldb_next_request(module, req);
