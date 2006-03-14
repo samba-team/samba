@@ -22,6 +22,7 @@
 #include "includes.h"
 #include "libnet/libnet.h"
 #include "libcli/libcli.h"
+#include "librpc/gen_ndr/ndr_lsa_c.h"
 
 /**
  * Connects rpc pipe on remote server

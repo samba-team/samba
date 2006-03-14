@@ -24,6 +24,7 @@
 
 #include "includes.h"
 #include "librpc/gen_ndr/ndr_netlogon.h"
+#include "librpc/gen_ndr/ndr_netlogon_c.h"
 #include "auth/auth.h"
 #include "lib/crypto/crypto.h"
 #include "lib/cmdline/popt_common.h"

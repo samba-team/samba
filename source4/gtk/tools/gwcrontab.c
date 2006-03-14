@@ -21,6 +21,7 @@
 
 #include "includes.h"
 #include "librpc/gen_ndr/ndr_atsvc.h"
+#include "librpc/gen_ndr/ndr_atsvc_c.h"
 #include "gtk/common/gtk-smb.h"
 #include "auth/credentials/credentials.h"
 

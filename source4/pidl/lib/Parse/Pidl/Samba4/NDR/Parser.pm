@@ -2237,6 +2237,8 @@ sub HeaderInterface($)
 
 	my $count = 0;
 
+	pidl_hdr "#include \"librpc/ndr/libndr.h\"";
+
 	if (defined $interface->{PROPERTIES}->{depends}) {
 		my @d = split / /, $interface->{PROPERTIES}->{depends};
 		foreach my $i (@d) {
@@ -2278,9 +2280,6 @@ sub HeaderInterface($)
 		}
 		
 		pidl_hdr "#define DCERPC_$u_name ($val)";
-
-		pidl_hdr "NTSTATUS dcerpc_$_->{NAME}(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct $_->{NAME} *r);";
-	   	pidl_hdr "struct rpc_request *dcerpc_$_->{NAME}\_send(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct $_->{NAME} *r);";
 
 		pidl_hdr "";
 		$count++;

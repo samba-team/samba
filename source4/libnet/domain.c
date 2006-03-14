@@ -25,6 +25,7 @@
 #include "includes.h"
 #include "libcli/composite/composite.h"
 #include "libnet/composite.h"
+#include "librpc/gen_ndr/ndr_samr_c.h"
 
 static void domain_open_handler(struct rpc_request*);
 

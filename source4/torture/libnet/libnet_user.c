@@ -22,6 +22,7 @@
 #include "includes.h"
 #include "lib/cmdline/popt_common.h"
 #include "libnet/libnet.h"
+#include "librpc/gen_ndr/ndr_samr_c.h"
 
 
 #define TEST_USERNAME  "libnetusertest"

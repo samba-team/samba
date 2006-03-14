@@ -22,6 +22,7 @@
 #include "includes.h"
 #include "torture/rpc/rpc.h"
 #include "libnet/libnet.h"
+#include "librpc/gen_ndr/ndr_samr_c.h"
 
 static BOOL test_domainopen(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			    struct lsa_String *domname,
