@@ -178,6 +178,7 @@ static NTSTATUS session_setup_nt1(struct composite_context *c,
 							      &state->setup.nt1.in.password1,
 							      &state->setup.nt1.in.password2,
 							      NULL, &session_key);
+		NT_STATUS_NOT_OK_RETURN(nt_status);
 
 		smbcli_transport_simple_set_signing(session->transport, session_key, 
 						    state->setup.nt1.in.password2);
@@ -241,6 +242,7 @@ static NTSTATUS session_setup_old(struct composite_context *c,
 							      &state->setup.old.in.password,
 							      NULL,
 							      NULL, &session_key);
+		NT_STATUS_NOT_OK_RETURN(nt_status);
 		set_user_session_key(session, &session_key);
 		
 		data_blob_free(&session_key);
