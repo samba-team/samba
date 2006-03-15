@@ -340,7 +340,10 @@ struct smbcli_request *smb_raw_trans_send_backend(struct smbcli_tree *tree,
 		SSVAL(req2->out.vwv,VWV(7), data_disp);
 		SSVAL(req2->out.vwv,VWV(8), 0xFFFF);
 
-		memcpy(req2->out.data, parms->in.data.data + data_disp, data_length);
+		if (data_length != 0) {
+			memcpy(req2->out.data, parms->in.data.data + data_disp, 
+			       data_length);
+		}
 		
 		data_disp += data_length;
 
