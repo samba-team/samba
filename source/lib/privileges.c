@@ -867,9 +867,27 @@ BOOL privilege_set_to_se_priv( SE_PRIV *mask, PRIVILEGE_SET *privset )
 /*******************************************************************
 *******************************************************************/
 
-BOOL is_privileged_sid( DOM_SID *sid )
+BOOL is_privileged_sid( const DOM_SID *sid )
 {
 	SE_PRIV mask;
 	
 	return get_privileges( sid, &mask );
+}
+
+/*******************************************************************
+*******************************************************************/
+
+BOOL grant_all_privileges( const DOM_SID *sid )
+{
+	int i;
+	SE_PRIV mask;
+	uint32 num_privs = count_all_privileges();
+
+	se_priv_copy( &mask, &se_priv_none );
+	
+	for ( i=0; i<num_privs; i++ ) {
+		se_priv_add(&mask, &privs[i].se_priv); 
+	}
+
+	return grant_privilege( sid, &mask );
 }
