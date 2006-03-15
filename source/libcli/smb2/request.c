@@ -124,7 +124,7 @@ NTSTATUS smb2_request_destroy(struct smb2_request *req)
 		DLIST_REMOVE(req->transport->pending_recv, req);
 	}
 
-	if (req->state == SMBCLI_REQUEST_ERROR &&
+	if (req->state == SMB2_REQUEST_ERROR &&
 	    NT_STATUS_IS_OK(req->status)) {
 		req->status = NT_STATUS_INTERNAL_ERROR;
 	}
