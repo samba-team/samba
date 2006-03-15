@@ -268,6 +268,7 @@ static NTSTATUS get_md4pw(char *md4pw, char *mach_acct, uint16 sec_chan_type)
 				TALLOC_FREE(sampass);
 				return NT_STATUS_NO_TRUST_SAM_ACCOUNT;
 			}
+			break;
 		case SEC_CHAN_WKSTA:
 			if (!(acct_ctrl & ACB_WSTRUST)) {
 				DEBUG(0,("get_md4pw: Workstation %s: WORKSTATION secure channel requested "
@@ -275,6 +276,7 @@ static NTSTATUS get_md4pw(char *md4pw, char *mach_acct, uint16 sec_chan_type)
 				TALLOC_FREE(sampass);
 				return NT_STATUS_NO_TRUST_SAM_ACCOUNT;
 			}
+			break;
 		case SEC_CHAN_DOMAIN:
 			if (!(acct_ctrl & ACB_DOMTRUST)) {
 				DEBUG(0,("get_md4pw: Workstation %s: DOMAIN secure channel requested "
@@ -282,6 +284,7 @@ static NTSTATUS get_md4pw(char *md4pw, char *mach_acct, uint16 sec_chan_type)
 				TALLOC_FREE(sampass);
 				return NT_STATUS_NO_TRUST_SAM_ACCOUNT;
 			}
+			break;
 		default:
 			break;
 	}
