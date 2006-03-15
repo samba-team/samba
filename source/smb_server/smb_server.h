@@ -104,8 +104,6 @@ struct smbsrv_tcon {
 	uint32_t tid; /* an index passed over the wire (the TID) */
 
 	int service;
-	BOOL read_only;
-	BOOL admin_user;
 
 	/* the NTVFS context - see source/ntvfs/ for details */
 	struct ntvfs_context *ntvfs_ctx;
