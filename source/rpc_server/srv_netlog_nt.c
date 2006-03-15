@@ -251,9 +251,10 @@ static NTSTATUS get_md4pw(char *md4pw, char *mach_acct, uint16 sec_chan_type)
 		return NT_STATUS_ACCOUNT_DISABLED;
 	}
 
-	if (!(acct_ctrl & ACB_SVRTRUST) ||
-	    !(acct_ctrl & ACB_WSTRUST) ||
-	    !(acct_ctrl & ACB_DOMTRUST)) {
+	if (!(acct_ctrl & ACB_SVRTRUST) &&
+	    !(acct_ctrl & ACB_WSTRUST) &&
+	    !(acct_ctrl & ACB_DOMTRUST)) 
+	{
 		DEBUG(0,("get_md4pw: Workstation %s: account is not a trust account\n", mach_acct));
 		TALLOC_FREE(sampass);
 		return NT_STATUS_NO_TRUST_SAM_ACCOUNT;
