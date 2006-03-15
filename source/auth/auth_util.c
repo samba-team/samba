@@ -688,6 +688,36 @@ static NTSTATUS add_builtin_administrators( TALLOC_CTX *ctx, struct nt_user_toke
 /*******************************************************************
 *******************************************************************/
 
+static NTSTATUS create_builtin_users( void )
+{
+	NTSTATUS status;
+	DOM_SID dom_users;
+
+	status = pdb_create_builtin_alias( BUILTIN_ALIAS_RID_USERS );
+	if ( !NT_STATUS_IS_OK(status) ) {
+		DEBUG(0,("create_builtin_users: Failed to create Users\n"));
+		return status;
+	}
+	
+	/* add domain users */
+	if ((IS_DC || (lp_server_role() == ROLE_DOMAIN_MEMBER)) 
+		&& secrets_fetch_domain_sid(lp_workgroup(), &dom_users))
+	{
+		sid_append_rid(&dom_users, DOMAIN_GROUP_RID_USERS );
+		status = pdb_add_aliasmem( &global_sid_Builtin_Users, &dom_users);
+		if ( !NT_STATUS_IS_OK(status) ) {
+			DEBUG(0,("create_builtin_administrators: Failed to add Domain Users to"
+				" Users\n"));
+			return status;
+		}
+	}
+			
+	return NT_STATUS_OK;
+}		
+
+/*******************************************************************
+*******************************************************************/
+
 static NTSTATUS create_builtin_administrators( void )
 {
 	NTSTATUS status;
@@ -820,6 +850,25 @@ static struct nt_user_token *create_local_nt_token(TALLOC_CTX *mem_ctx,
 				goto done;
 			}			
 		}		
+	}
+
+	/* Deal with the BUILTIN\Users group.  If the SID can
+	   be resolved then assume that the add_aliasmem( S-1-5-32 ) 
+	   handled it. */
+
+	if ( !sid_to_gid( &global_sid_Builtin_Users, &gid ) ) {
+		/* We can only create a mapping if winbind is running 
+		   and the nested group functionality has been enabled */
+		   
+		if ( lp_winbind_nested_groups() ) {
+			become_root();
+			status = create_builtin_users( );
+			if ( !NT_STATUS_IS_OK(status) ) {
+				DEBUG(0,("create_local_nt_token: Failed to create BUILTIN\\Administrators group!\n"));
+				/* don't fail, just log the message */
+			}
+			unbecome_root();
+		}
 	}
 
 	/* Deal with local groups */
