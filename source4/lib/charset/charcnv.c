@@ -63,7 +63,7 @@ static smb_iconv_t conv_handles[NUM_CHARSETS][NUM_CHARSETS];
 **/
 _PUBLIC_ void init_iconv(void)
 {
-	charset_t c1, c2;
+	unsigned c1, c2;
 	for (c1=0;c1<NUM_CHARSETS;c1++) {
 		for (c2=0;c2<NUM_CHARSETS;c2++) {
 			if (conv_handles[c1][c2] != NULL) {
