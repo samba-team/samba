@@ -204,7 +204,7 @@ static void init_net_r_srv_pwset(NET_R_SRV_PWSET *r_s,
  gets a machine password entry.  checks access rights of the host.
  ******************************************************************/
 
-static BOOL get_md4pw(char *md4pw, char *mach_acct)
+static NTSTATUS get_md4pw(char *md4pw, char *mach_acct, uint16 sec_chan_type)
 {
 	struct samu *sampass = NULL;
 	const uint8 *pass;
@@ -230,35 +230,74 @@ static BOOL get_md4pw(char *md4pw, char *mach_acct)
 #endif /* 0 */
 
 	if ( !(sampass = samu_new( NULL )) ) {
-		return False;
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	/* JRA. This is ok as it is only used for generating the challenge. */
 	become_root();
-	ret=pdb_getsampwnam(sampass, mach_acct);
+	ret = pdb_getsampwnam(sampass, mach_acct);
 	unbecome_root();
  
- 	if (ret==False) {
+ 	if (ret == False) {
  		DEBUG(0,("get_md4pw: Workstation %s: no account in domain\n", mach_acct));
 		TALLOC_FREE(sampass);
-		return False;
+		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	acct_ctrl = pdb_get_acct_ctrl(sampass);
-	if (!(acct_ctrl & ACB_DISABLED) &&
-	    ((acct_ctrl & ACB_DOMTRUST) ||
-	     (acct_ctrl & ACB_WSTRUST) ||
-	     (acct_ctrl & ACB_SVRTRUST)) &&
-	    ((pass=pdb_get_nt_passwd(sampass)) != NULL)) {
-		memcpy(md4pw, pass, 16);
-		dump_data(5, md4pw, 16);
- 		TALLOC_FREE(sampass);
-		return True;
+	if (acct_ctrl & ACB_DISABLED) {
+		DEBUG(0,("get_md4pw: Workstation %s: account is disabled\n", mach_acct));
+		TALLOC_FREE(sampass);
+		return NT_STATUS_ACCOUNT_DISABLED;
 	}
- 	
-	DEBUG(0,("get_md4pw: Workstation %s: no account in domain\n", mach_acct));
+
+	if (!(acct_ctrl & ACB_SVRTRUST) ||
+	    !(acct_ctrl & ACB_WSTRUST) ||
+	    !(acct_ctrl & ACB_DOMTRUST)) {
+		DEBUG(0,("get_md4pw: Workstation %s: account is not a trust account\n", mach_acct));
+		TALLOC_FREE(sampass);
+		return NT_STATUS_NO_TRUST_SAM_ACCOUNT;
+	}
+
+	switch (sec_chan_type) {
+		case SEC_CHAN_BDC:
+			if (!(acct_ctrl & ACB_SVRTRUST)) {
+				DEBUG(0,("get_md4pw: Workstation %s: BDC secure channel requested "
+					 "but not a server trust account\n", mach_acct));
+				TALLOC_FREE(sampass);
+				return NT_STATUS_NO_TRUST_SAM_ACCOUNT;
+			}
+		case SEC_CHAN_WKSTA:
+			if (!(acct_ctrl & ACB_WSTRUST)) {
+				DEBUG(0,("get_md4pw: Workstation %s: WORKSTATION secure channel requested "
+					 "but not a workstation trust account\n", mach_acct));
+				TALLOC_FREE(sampass);
+				return NT_STATUS_NO_TRUST_SAM_ACCOUNT;
+			}
+		case SEC_CHAN_DOMAIN:
+			if (!(acct_ctrl & ACB_DOMTRUST)) {
+				DEBUG(0,("get_md4pw: Workstation %s: DOMAIN secure channel requested "
+					 "but not a interdomain trust account\n", mach_acct));
+				TALLOC_FREE(sampass);
+				return NT_STATUS_NO_TRUST_SAM_ACCOUNT;
+			}
+		default:
+			break;
+	}
+
+	if ((pass = pdb_get_nt_passwd(sampass)) == NULL) {
+		DEBUG(0,("get_md4pw: Workstation %s: account does not have a password\n", mach_acct));
+		TALLOC_FREE(sampass);
+		return NT_STATUS_LOGON_FAILURE;
+	}
+
+	memcpy(md4pw, pass, 16);
+	dump_data(5, md4pw, 16);
+
 	TALLOC_FREE(sampass);
-	return False;
+	
+	return NT_STATUS_OK;
+ 	
 
 }
 
@@ -313,6 +352,7 @@ static void init_net_r_auth(NET_R_AUTH *r_a, DOM_CHAL *resp_cred, NTSTATUS statu
 
 NTSTATUS _net_auth(pipes_struct *p, NET_Q_AUTH *q_u, NET_R_AUTH *r_u)
 {
+	NTSTATUS status;
 	fstring mach_acct;
 	fstring remote_machine;
 	DOM_CHAL srv_chal_out;
@@ -326,11 +366,13 @@ NTSTATUS _net_auth(pipes_struct *p, NET_Q_AUTH *q_u, NET_R_AUTH *r_u)
 	rpcstr_pull(remote_machine, q_u->clnt_id.uni_comp_name.buffer,sizeof(fstring),
 				q_u->clnt_id.uni_comp_name.uni_str_len*2,0);
 
-	if (!get_md4pw((char *)p->dc->mach_pw, mach_acct)) {
+	status = get_md4pw((char *)p->dc->mach_pw, mach_acct, q_u->clnt_id.sec_chan);
+	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("_net_auth: creds_server_check failed. Failed to "
-			"get pasword for machine account %s "
-			"from client %s\n",
-			mach_acct, remote_machine ));
+			"get password for machine account %s "
+			"from client %s: %s\n",
+			mach_acct, remote_machine, nt_errstr(status) ));
+		/* always return NT_STATUS_ACCESS_DENIED */
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
@@ -379,6 +421,7 @@ static void init_net_r_auth_2(NET_R_AUTH_2 *r_a,
 
 NTSTATUS _net_auth_2(pipes_struct *p, NET_Q_AUTH_2 *q_u, NET_R_AUTH_2 *r_u)
 {
+	NTSTATUS status;
 	NEG_FLAGS srv_flgs;
 	fstring mach_acct;
 	fstring remote_machine;
@@ -407,10 +450,12 @@ NTSTATUS _net_auth_2(pipes_struct *p, NET_Q_AUTH_2 *q_u, NET_R_AUTH_2 *r_u)
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	if (!get_md4pw((char *)p->dc->mach_pw, mach_acct)) {
+	status = get_md4pw((char *)p->dc->mach_pw, mach_acct, q_u->clnt_id.sec_chan);
+	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("_net_auth2: failed to get machine password for "
-			"account %s\n",
-			mach_acct ));
+			"account %s: %s\n",
+			mach_acct, nt_errstr(status) ));
+		/* always return NT_STATUS_ACCESS_DENIED */
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
