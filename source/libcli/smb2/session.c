@@ -170,6 +170,7 @@ static void session_request_handler(struct smb2_request *req)
 		state->req = smb2_session_setup_send(session, &state->io);
 		if (state->req == NULL) {
 			composite_error(c, NT_STATUS_NO_MEMORY);
+			return;
 		}
 
 		state->req->async.fn = session_request_handler;
