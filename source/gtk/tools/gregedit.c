@@ -435,7 +435,7 @@ static void on_open_remote_activate(GtkMenuItem *menuitem, gpointer user_data)
 static void on_save_as_activate(GtkMenuItem *menuitem, gpointer user_data)
 {
 	gint result;
-	WERROR error;
+	WERROR error = WERR_OK;
 	GtkWidget *savefilewin = create_savefilewin();
 	result = gtk_dialog_run(GTK_DIALOG(savefilewin));
 	switch(result) {
