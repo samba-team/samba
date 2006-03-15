@@ -244,6 +244,8 @@ static int server_sort_search(struct ldb_module *module, struct ldb_control *con
 		return ret;
 	}
 
+	sort_result = req->op.search.res;
+
 	/* SORT HERE */
 	if (do_sort) {
 		struct opaque *data;
@@ -257,7 +259,6 @@ static int server_sort_search(struct ldb_module *module, struct ldb_control *con
 		data->ldb = module->ldb;
 		data->h = ldb_attrib_handler(data->ldb, data->attribute);
 		data->result = 0;
-		sort_result = req->op.search.res;
 
 		ldb_qsort(sort_result->msgs,
 			  sort_result->count,
