@@ -44,6 +44,11 @@ static int wins_ldb_verify(struct ldb_module *module, struct ldb_request *req, c
 						  struct winsdb_handle);
 	char *error = NULL;
 
+	/* do not manipulate our control entries */
+	if (ldb_dn_is_special(msg->dn)) {
+		return ldb_next_request(module, req);
+	}
+
 	if (!h) {
 		error = talloc_strdup(module, "WINS_LDB: INTERNAL ERROR: no winsdb_handle present!");
 		ldb_debug(module->ldb, LDB_DEBUG_FATAL, "%s", error);
@@ -68,28 +73,28 @@ static int wins_ldb_verify(struct ldb_module *module, struct ldb_request *req, c
 
 static int wins_ldb_request(struct ldb_module *module, struct ldb_request *req)
 {
-	const struct ldb_message *msg = req->op.mod.message;
+	const struct ldb_message *msg;
 
 	switch (req->operation) {
 	case LDB_REQ_ADD:
+	case LDB_ASYNC_ADD:
+
 		msg = req->op.add.message;
 		break;
-
+		
 	case LDB_REQ_MODIFY:
+	case LDB_ASYNC_MODIFY:
+
 		msg = req->op.mod.message;
 		break;
 
 	default:
-		goto call_next;
+		return ldb_next_request(module, req);
 	}
 
-	if (ldb_dn_is_special(msg->dn)) goto call_next;
-
 	return wins_ldb_verify(module, req, msg);
-
-call_next:
-	return ldb_next_request(module, req);	
 }
+	
 
 static int wins_ldb_init(struct ldb_module *ctx)
 {
