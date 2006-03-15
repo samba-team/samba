@@ -1336,10 +1336,14 @@ browsing on networks that contain NT domains.
 <para>
 <indexterm><primary>replication</primary><secondary>WINS</secondary></indexterm>
 <indexterm><primary>WINS replication</primary></indexterm>
-Samba-3 permits WINS replication through the use of the <filename>wrepld</filename> utility.  This tool is not
-currently in use because it is still in development and has not been worked on for a long time.  As soon as
-this tool becomes moderately functional, we will prepare man pages and enhance this section of the
-documentation to provide usage and technical details.
+Samba-3 does not support native WINS replication. There was an approach to implement it, called 
+<filename>wrepld</filename>, but it was never ready for action and the development is now discontinued.
+</para>
+<para>
+Meanwhile, there is a project named <filename>samba4WINS</filename>, which makes it possible to
+run the Samba-4 WINS server parallel to Samba-3 since version 3.0.21. More information about 
+<filename>samba4WINS</filename> are available at http://ftp.sernet.de/pub/samba4WINS.
+
 </para>
 
 </sect2>
