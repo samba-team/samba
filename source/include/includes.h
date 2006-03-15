@@ -56,6 +56,18 @@
 #endif
 #endif
 
+#ifndef NORETURN_ATTRIBUTE
+#if (__GNUC__ >= 3)
+#define NORETURN_ATTRIBUTE __attribute__ ((noreturn))
+#else
+#define NORETURN_ATTRIBUTE
+#endif
+#endif
+
+/* mark smb_panic() as noreturn, so static analysers know that it is
+   used like abort */
+_PUBLIC_ void smb_panic(const char *why) NORETURN_ATTRIBUTE;
+
 #include <sys/types.h>
 #include <stdio.h>
 #include <stdlib.h>
