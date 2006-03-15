@@ -459,6 +459,251 @@ done:
 	return ret;
 }
 
+/*
+  test pid ops with 2 sessions
+*/
+static BOOL test_pid_2sess(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+{
+	NTSTATUS status;
+	BOOL ret = True;
+	struct smbcli_session *session;
+	struct smb_composite_sesssetup setup;
+	union smb_open io;
+	union smb_write wr;
+	union smb_close cl;
+	int fnum;
+	const char *fname = BASEDIR "\\test.txt";
+	uint8_t c = 1;
+	uint16_t vuid1, vuid2;
+
+	printf("TESTING PID HANDLING WITH 2 SESSIONS\n");
+
+	if (!torture_setup_dir(cli, BASEDIR)) {
+		return False;
+	}
+
+	printf("create a second security context on the same transport\n");
+	session = smbcli_session_init(cli->transport, mem_ctx, False);
+
+	setup.in.sesskey = cli->transport->negotiate.sesskey;
+	setup.in.capabilities = cli->transport->negotiate.capabilities; /* ignored in secondary session setup, except by our libs, which care about the extended security bit */
+	setup.in.workgroup = lp_workgroup();
+
+	setup.in.credentials = cmdline_credentials;
+
+	status = smb_composite_sesssetup(session, &setup);
+	CHECK_STATUS(status, NT_STATUS_OK);	
+	session->vuid = setup.out.vuid;
+
+	vuid1 = cli->session->vuid;
+	vuid2 = session->vuid;
+
+	printf("vuid1=%d vuid2=%d\n", vuid1, vuid2);
+
+	printf("create a file using the vuid1\n");
+	cli->session->vuid = vuid1;
+	io.generic.level = RAW_OPEN_NTCREATEX;
+	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.flags = 0;
+	io.ntcreatex.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
+	io.ntcreatex.in.create_options = 0;
+	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
+	io.ntcreatex.in.share_access = NTCREATEX_SHARE_ACCESS_READ | NTCREATEX_SHARE_ACCESS_WRITE;
+	io.ntcreatex.in.alloc_size = 0;
+	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_CREATE;
+	io.ntcreatex.in.impersonation = NTCREATEX_IMPERSONATION_ANONYMOUS;
+	io.ntcreatex.in.security_flags = 0;
+	io.ntcreatex.in.fname = fname;
+	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	fnum = io.ntcreatex.out.file.fnum;
+
+	printf("write using the vuid1 (fnum=%d)\n", fnum);
+	cli->session->vuid = vuid1;
+	wr.generic.level = RAW_WRITE_WRITEX;
+	wr.writex.in.file.fnum = fnum;
+	wr.writex.in.offset = 0;
+	wr.writex.in.wmode = 0;
+	wr.writex.in.remaining = 0;
+	wr.writex.in.count = 1;
+	wr.writex.in.data = &c;
+
+	status = smb_raw_write(cli->tree, &wr);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_VALUE(wr.writex.out.nwritten, 1);
+
+	printf("exit the pid with vuid2\n");
+	cli->session->vuid = vuid2;
+	status = smb_raw_exit(cli->session);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	printf("the fnum should still be accessible\n");
+	cli->session->vuid = vuid1;
+	status = smb_raw_write(cli->tree, &wr);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_VALUE(wr.writex.out.nwritten, 1);
+
+	printf("exit the pid with vuid1\n");
+	cli->session->vuid = vuid1;
+	status = smb_raw_exit(cli->session);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	printf("the fnum should not now be accessible\n");
+	status = smb_raw_write(cli->tree, &wr);
+	CHECK_STATUS(status, NT_STATUS_INVALID_HANDLE);
+
+	printf("the fnum should have been auto-closed\n");
+	cl.close.level = RAW_CLOSE_CLOSE;
+	cl.close.in.file.fnum = fnum;
+	cl.close.in.write_time = 0;
+	status = smb_raw_close(cli->tree, &cl);
+	CHECK_STATUS(status, NT_STATUS_INVALID_HANDLE);
+
+done:
+	return ret;
+}
+
+/*
+  test pid ops with 2 tcons
+*/
+static BOOL test_pid_2tcon(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+{
+	NTSTATUS status;
+	BOOL ret = True;
+	const char *share, *host;
+	struct smbcli_tree *tree;
+	union smb_tcon tcon;
+	union smb_open io;
+	union smb_write wr;
+	union smb_close cl;
+	int fnum1, fnum2;
+	const char *fname1 = BASEDIR "\\test1.txt";
+	const char *fname2 = BASEDIR "\\test2.txt";
+	uint8_t c = 1;
+	uint16_t tid1, tid2;
+
+	printf("TESTING PID HANDLING WITH 2 TCONS\n");
+
+	if (!torture_setup_dir(cli, BASEDIR)) {
+		return False;
+	}
+
+	share = lp_parm_string(-1, "torture", "share");
+	host  = lp_parm_string(-1, "torture", "host");
+	
+	printf("create a second tree context on the same session\n");
+	tree = smbcli_tree_init(cli->session, mem_ctx, False);
+
+	tcon.generic.level = RAW_TCON_TCONX;
+	tcon.tconx.in.flags = 0;
+	tcon.tconx.in.password = data_blob(NULL, 0);
+	tcon.tconx.in.path = talloc_asprintf(mem_ctx, "\\\\%s\\%s", host, share);
+	tcon.tconx.in.device = "A:";	
+	status = smb_raw_tcon(tree, mem_ctx, &tcon);
+	CHECK_STATUS(status, NT_STATUS_OK);	
+
+	tree->tid = tcon.tconx.out.tid;
+
+	tid1 = cli->tree->tid;
+	tid2 = tree->tid;
+	printf("tid1=%d tid2=%d\n", tid1, tid2);
+
+	printf("create a file using the tid1\n");
+	cli->tree->tid = tid1;
+	io.generic.level = RAW_OPEN_NTCREATEX;
+	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.flags = 0;
+	io.ntcreatex.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
+	io.ntcreatex.in.create_options = 0;
+	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
+	io.ntcreatex.in.share_access = NTCREATEX_SHARE_ACCESS_READ | NTCREATEX_SHARE_ACCESS_WRITE;
+	io.ntcreatex.in.alloc_size = 0;
+	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_CREATE;
+	io.ntcreatex.in.impersonation = NTCREATEX_IMPERSONATION_ANONYMOUS;
+	io.ntcreatex.in.security_flags = 0;
+	io.ntcreatex.in.fname = fname1;
+	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	fnum1 = io.ntcreatex.out.file.fnum;
+
+	printf("write using the tid1\n");
+	wr.generic.level = RAW_WRITE_WRITEX;
+	wr.writex.in.file.fnum = fnum1;
+	wr.writex.in.offset = 0;
+	wr.writex.in.wmode = 0;
+	wr.writex.in.remaining = 0;
+	wr.writex.in.count = 1;
+	wr.writex.in.data = &c;
+
+	status = smb_raw_write(cli->tree, &wr);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_VALUE(wr.writex.out.nwritten, 1);
+
+	printf("create a file using the tid2\n");
+	cli->tree->tid = tid2;
+	io.generic.level = RAW_OPEN_NTCREATEX;
+	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.flags = 0;
+	io.ntcreatex.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
+	io.ntcreatex.in.create_options = 0;
+	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
+	io.ntcreatex.in.share_access = NTCREATEX_SHARE_ACCESS_READ | NTCREATEX_SHARE_ACCESS_WRITE;
+	io.ntcreatex.in.alloc_size = 0;
+	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_CREATE;
+	io.ntcreatex.in.impersonation = NTCREATEX_IMPERSONATION_ANONYMOUS;
+	io.ntcreatex.in.security_flags = 0;
+	io.ntcreatex.in.fname = fname2;
+	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	fnum2 = io.ntcreatex.out.file.fnum;
+
+	printf("write using the tid2\n");
+	wr.generic.level = RAW_WRITE_WRITEX;
+	wr.writex.in.file.fnum = fnum2;
+	wr.writex.in.offset = 0;
+	wr.writex.in.wmode = 0;
+	wr.writex.in.remaining = 0;
+	wr.writex.in.count = 1;
+	wr.writex.in.data = &c;
+
+	status = smb_raw_write(cli->tree, &wr);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_VALUE(wr.writex.out.nwritten, 1);
+
+	printf("exit the pid\n");
+	status = smb_raw_exit(cli->session);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	printf("the fnum1 on tid1 should not be accessible\n");
+	cli->tree->tid = tid1;
+	wr.writex.in.file.fnum = fnum1;
+	status = smb_raw_write(cli->tree, &wr);
+	CHECK_STATUS(status, NT_STATUS_INVALID_HANDLE);
+
+	printf("the fnum1 on tid1 should have been auto-closed\n");
+	cl.close.level = RAW_CLOSE_CLOSE;
+	cl.close.in.file.fnum = fnum1;
+	cl.close.in.write_time = 0;
+	status = smb_raw_close(cli->tree, &cl);
+	CHECK_STATUS(status, NT_STATUS_INVALID_HANDLE);
+
+	printf("the fnum2 on tid2 should not be accessible\n");
+	cli->tree->tid = tid2;
+	wr.writex.in.file.fnum = fnum2;
+	status = smb_raw_write(cli->tree, &wr);
+	CHECK_STATUS(status, NT_STATUS_INVALID_HANDLE);
+
+	printf("the fnum2 on tid2 should have been auto-closed\n");
+	cl.close.level = RAW_CLOSE_CLOSE;
+	cl.close.in.file.fnum = fnum2;
+	cl.close.in.write_time = 0;
+	status = smb_raw_close(cli->tree, &cl);
+	CHECK_STATUS(status, NT_STATUS_INVALID_HANDLE);
+
+done:
+	return ret;
+}
+
 
 /* 
    basic testing of session/tree context calls
@@ -475,17 +720,11 @@ static BOOL torture_raw_context_int(void)
 
 	mem_ctx = talloc_init("torture_raw_context");
 
-	if (!test_session(cli, mem_ctx)) {
-		ret = False;
-	}
-
-	if (!test_tree(cli, mem_ctx)) {
-		ret = False;
-	}
-
-	if (!test_pid(cli, mem_ctx)) {
-		ret = False;
-	}
+	ret &= test_session(cli, mem_ctx);
+	ret &= test_tree(cli, mem_ctx);
+	ret &= test_pid(cli, mem_ctx);
+	ret &= test_pid_2sess(cli, mem_ctx);
+	ret &= test_pid_2tcon(cli, mem_ctx);
 
 	smb_raw_exit(cli->session);
 	smbcli_deltree(cli->tree, BASEDIR);
