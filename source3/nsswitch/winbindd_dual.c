@@ -559,7 +559,6 @@ static void child_msg_offline(int msg_type, struct process_id src, void *buf, si
 static void child_msg_online(int msg_type, struct process_id src, void *buf, size_t len)
 {
 	struct winbindd_domain *domain;
-	int ret;
 
 	DEBUG(5,("child_msg_online received.\n"));
 

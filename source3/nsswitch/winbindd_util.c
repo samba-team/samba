@@ -877,14 +877,14 @@ BOOL parse_domain_user_talloc(TALLOC_CTX *mem_ctx, const char *domuser,
     username is then unqualified in unix
 	 
 */
-void fill_domain_username(fstring name, const char *domain, const char *user)
+void fill_domain_username(fstring name, const char *domain, const char *user, BOOL can_assume)
 {
 	fstring tmp_user;
 
 	fstrcpy(tmp_user, user);
 	strlower_m(tmp_user);
 
-	if (assume_domain(domain)) {
+	if (can_assume && assume_domain(domain)) {
 		strlcpy(name, user, sizeof(fstring));
 	} else {
 		slprintf(name, sizeof(fstring) - 1, "%s%c%s",
