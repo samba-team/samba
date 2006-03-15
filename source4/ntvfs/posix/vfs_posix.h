@@ -31,7 +31,7 @@
 /* this is the private structure for the posix vfs backend. It is used
    to hold per-connection (per tree connect) state information */
 struct pvfs_state {
-	struct smbsrv_tcon *tcon;
+	struct ntvfs_module_context *ntvfs;
 	const char *base_directory;
 	struct GUID *base_fs_uuid;
 

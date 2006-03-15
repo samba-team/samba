@@ -93,16 +93,16 @@ static int smbsrv_tcon_destructor(void *ptr)
 {
 	struct smbsrv_tcon *tcon = talloc_get_type(ptr, struct smbsrv_tcon);
 	struct smbsrv_tcons_context *tcons_ctx;
-
 	struct socket_address *client_addr;
+
 	client_addr = socket_get_peer_addr(tcon->smb_conn->connection->socket, ptr);
 	DEBUG(3,("%s closed connection to service %s\n",
 		 client_addr ? client_addr->addr : "(unknown)",
-		 lp_servicename(tcon->service)));
+		 tcon->share_name));
 
 	/* tell the ntvfs backend that we are disconnecting */
-	if (tcon->ntvfs_ctx) {
-		ntvfs_disconnect(tcon->ntvfs_ctx);
+	if (tcon->ntvfs) {
+		ntvfs_disconnect(tcon->ntvfs);
 	}
 
 	if (tcon->smb2.session) {
@@ -119,7 +119,9 @@ static int smbsrv_tcon_destructor(void *ptr)
 /*
   find first available connection slot
 */
-static struct smbsrv_tcon *smbsrv_tcon_new(struct smbsrv_connection *smb_conn, struct smbsrv_session *smb_sess)
+static struct smbsrv_tcon *smbsrv_tcon_new(struct smbsrv_connection *smb_conn,
+					   struct smbsrv_session *smb_sess,
+					   const char *share_name)
 {
 	TALLOC_CTX *mem_ctx;
 	struct smbsrv_tcons_context *tcons_ctx;
@@ -138,11 +140,13 @@ static struct smbsrv_tcon *smbsrv_tcon_new(struct smbsrv_connection *smb_conn, s
 	if (!tcon) return NULL;
 	tcon->smb_conn		= smb_conn;
 	tcon->smb2.session	= smb_sess;
+	tcon->share_name	= talloc_strdup(tcon, share_name);
+	if (!tcon->share_name) goto failed;
 
 	i = idr_get_new_random(tcons_ctx->idtree_tid, tcon, tcons_ctx->idtree_limit);
 	if (i == -1) {
 		DEBUG(1,("ERROR! Out of connection structures\n"));
-		return NULL;
+		goto failed;
 	}
 	tcon->tid = i;
 
@@ -153,14 +157,18 @@ static struct smbsrv_tcon *smbsrv_tcon_new(struct smbsrv_connection *smb_conn, s
 	tcon->statistics.connect_time = timeval_current();
 
 	return tcon;
+
+failed:
+	talloc_free(tcon);
+	return NULL;
 }
 
-struct smbsrv_tcon *smbsrv_smb_tcon_new(struct smbsrv_connection *smb_conn)
+struct smbsrv_tcon *smbsrv_smb_tcon_new(struct smbsrv_connection *smb_conn, const char *share_name)
 {
-	return smbsrv_tcon_new(smb_conn, NULL);
+	return smbsrv_tcon_new(smb_conn, NULL, share_name);
 }
 
-struct smbsrv_tcon *smbsrv_smb2_tcon_new(struct smbsrv_session *smb_sess)
+struct smbsrv_tcon *smbsrv_smb2_tcon_new(struct smbsrv_session *smb_sess, const char *share_name)
 {
-	return smbsrv_tcon_new(smb_sess->smb_conn, smb_sess);
+	return smbsrv_tcon_new(smb_sess->smb_conn, smb_sess, share_name);
 }

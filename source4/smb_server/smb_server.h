@@ -103,16 +103,11 @@ struct smbsrv_tcon {
 	 */
 	uint32_t tid; /* an index passed over the wire (the TID) */
 
-	int service;
+	/* the share name */
+	const char *share_name;
 
 	/* the NTVFS context - see source/ntvfs/ for details */
-	struct ntvfs_context *ntvfs_ctx;
-
-	/* the reported filesystem type */
-	char *fs_type;
-
-	/* the reported device type */
-	char *dev_type;
+	struct ntvfs_context *ntvfs;
 
 	/* some stuff to support share level security */
 	struct {

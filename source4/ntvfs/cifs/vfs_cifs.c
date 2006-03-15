@@ -38,7 +38,7 @@
 struct cvfs_private {
 	struct smbcli_tree *tree;
 	struct smbcli_transport *transport;
-	struct smbsrv_tcon *tcon;
+	struct ntvfs_module_context *ntvfs;
 	struct async_info *pending;
 	BOOL map_generic;
 };
@@ -62,9 +62,12 @@ struct async_info {
 static BOOL oplock_handler(struct smbcli_transport *transport, uint16_t tid, uint16_t fnum, uint8_t level, void *p_private)
 {
 	struct cvfs_private *private = p_private;
-	
+	NTSTATUS status;
+
 	DEBUG(5,("vfs_cifs: sending oplock break level %d for fnum %d\n", level, fnum));
-	return req_send_oplock_break(private->tcon, fnum, level);
+	status = ntvfs_send_oplock_break(private->ntvfs, fnum, level);
+	if (!NT_STATUS_IS_OK(status)) return False;
+	return True;
 }
 
 /*
@@ -73,12 +76,12 @@ static BOOL oplock_handler(struct smbcli_transport *transport, uint16_t tid, uin
 static NTSTATUS cvfs_connect(struct ntvfs_module_context *ntvfs, 
 			     struct ntvfs_request *req, const char *sharename)
 {
-	struct smbsrv_tcon *tcon = req->tcon;
 	NTSTATUS status;
 	struct cvfs_private *private;
 	const char *host, *user, *pass, *domain, *remote_share;
 	struct smb_composite_connect io;
 	struct composite_context *creq;
+	int snum = ntvfs->ctx->config.snum;
 
 	struct cli_credentials *credentials;
 	BOOL machine_account;
@@ -87,16 +90,16 @@ static NTSTATUS cvfs_connect(struct ntvfs_module_context *ntvfs,
 	 * For now we use parametric options, type cifs.
 	 * Later we will use security=server and auth_server.c.
 	 */
-	host = lp_parm_string(req->tcon->service, "cifs", "server");
-	user = lp_parm_string(req->tcon->service, "cifs", "user");
-	pass = lp_parm_string(req->tcon->service, "cifs", "password");
-	domain = lp_parm_string(req->tcon->service, "cifs", "domain");
-	remote_share = lp_parm_string(req->tcon->service, "cifs", "share");
+	host = lp_parm_string(snum, "cifs", "server");
+	user = lp_parm_string(snum, "cifs", "user");
+	pass = lp_parm_string(snum, "cifs", "password");
+	domain = lp_parm_string(snum, "cifs", "domain");
+	remote_share = lp_parm_string(snum, "cifs", "share");
 	if (!remote_share) {
 		remote_share = sharename;
 	}
 
-	machine_account = lp_parm_bool(req->tcon->service, "cifs", "use_machine_account", False);
+	machine_account = lp_parm_bool(snum, "cifs", "use_machine_account", False);
 
 	private = talloc_zero(ntvfs, struct cvfs_private);
 	if (!private) {
@@ -151,7 +154,7 @@ static NTSTATUS cvfs_connect(struct ntvfs_module_context *ntvfs,
 	io.in.service = remote_share;
 	io.in.service_type = "?????";
 	
-	creq = smb_composite_connect_send(&io, private, tcon->smb_conn->connection->event.ctx);
+	creq = smb_composite_connect_send(&io, private, ntvfs->ctx->event_ctx);
 	status = smb_composite_connect_recv(creq, private);
 	NT_STATUS_NOT_OK_RETURN(status);
 
@@ -159,15 +162,17 @@ static NTSTATUS cvfs_connect(struct ntvfs_module_context *ntvfs,
 
 	private->transport = private->tree->session->transport;
 	SETUP_PID;
-	private->tcon = req->tcon;
+	private->ntvfs = ntvfs;
 
-	tcon->fs_type = talloc_strdup(tcon, "NTFS");
-	tcon->dev_type = talloc_strdup(tcon, "A:");
-	
+	ntvfs->ctx->fs_type = talloc_strdup(ntvfs->ctx, "NTFS");
+	NT_STATUS_HAVE_NO_MEMORY(ntvfs->ctx->fs_type);
+	ntvfs->ctx->dev_type = talloc_strdup(ntvfs->ctx, "A:");
+	NT_STATUS_HAVE_NO_MEMORY(ntvfs->ctx->dev_type);
+
 	/* we need to receive oplock break requests from the server */
 	smbcli_oplock_handler(private->transport, oplock_handler, private);
 
-	private->map_generic = lp_parm_bool(req->tcon->service, 
+	private->map_generic = lp_parm_bool(ntvfs->ctx->config.snum, 
 					    "cifs", "mapgeneric", False);
 
 	return NT_STATUS_OK;

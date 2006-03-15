@@ -118,9 +118,12 @@ _PUBLIC_ const struct ntvfs_critical_sizes *ntvfs_interface_version(void)
 /*
   initialise a connection structure to point at a NTVFS backend
 */
-NTSTATUS ntvfs_init_connection(struct ntvfs_request *req, enum ntvfs_type type)
+NTSTATUS ntvfs_init_connection(TALLOC_CTX *mem_ctx, int snum, enum ntvfs_type type,
+			       enum protocol_types protocol,
+			       struct event_context *ev, struct messaging_context *msg,
+			       uint32_t server_id, struct ntvfs_context **_ctx)
 {
-	const char **handlers = lp_ntvfs_handler(req->tcon->service);
+	const char **handlers = lp_ntvfs_handler(snum);
 	int i;
 	struct ntvfs_context *ctx;
 
@@ -128,19 +131,21 @@ NTSTATUS ntvfs_init_connection(struct ntvfs_request *req, enum ntvfs_type type)
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
-	ctx = talloc(req->tcon, struct ntvfs_context);
+	ctx = talloc_zero(mem_ctx, struct ntvfs_context);
 	NT_STATUS_HAVE_NO_MEMORY(ctx);
-	ctx->type = type;
-	ctx->modules = NULL;
+	ctx->protocol		= protocol;
+	ctx->type		= type;
+	ctx->config.snum	= snum;
+	ctx->event_ctx		= ev;
+	ctx->msg_ctx		= msg;
+	ctx->server_id		= server_id;
 
 	for (i=0; handlers[i]; i++) {
 		struct ntvfs_module_context *ntvfs;
 
-		ntvfs = talloc(ctx, struct ntvfs_module_context);
+		ntvfs = talloc_zero(ctx, struct ntvfs_module_context);
 		NT_STATUS_HAVE_NO_MEMORY(ntvfs);
-
-		ntvfs->private_data = NULL;
-
+		ntvfs->ctx = ctx;
 		ntvfs->ops = ntvfs_backend_byname(handlers[i], ctx->type);
 		if (!ntvfs->ops) {
 			DEBUG(1,("ntvfs_init_connection: failed to find backend=%s, type=%d\n",
@@ -155,8 +160,7 @@ NTSTATUS ntvfs_init_connection(struct ntvfs_request *req, enum ntvfs_type type)
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
-	req->tcon->ntvfs_ctx = ctx;
-
+	*_ctx = ctx;
 	return NT_STATUS_OK;
 }
 

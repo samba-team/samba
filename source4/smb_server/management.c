@@ -100,7 +100,7 @@ static NTSTATUS smbsrv_tcon_information(struct irpc_message *msg,
 		}
 
 		info->tid          = tcon->tid;
-		info->share_name   = lp_servicename(tcon->service);
+		info->share_name   = tcon->share_name;
 		info->connect_time = timeval_to_nttime(&tcon->statistics.connect_time);
 		i++;
 	}
