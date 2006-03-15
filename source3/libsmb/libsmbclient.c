@@ -4826,10 +4826,18 @@ cacl_set(TALLOC_CTX *ctx,
                                     CONST_DISCARD(char *, the_acl));
 
                 if (!sd) {
-                        errno = EINVAL;
-                        return -1;
+			errno = EINVAL;
+			return -1;
                 }
         }
+
+	/* SMBC_XATTR_MODE_REMOVE_ALL is the only caller
+	   that doesn't deref sd */
+
+	if (!sd && (mode != SMBC_XATTR_MODE_REMOVE_ALL)) {
+		errno = EINVAL;
+		return -1;
+	}
 
 	/* The desired access below is the only one I could find that works
 	   with NT4, W2KP and Samba */
