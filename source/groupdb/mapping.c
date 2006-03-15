@@ -814,8 +814,24 @@ BOOL get_domain_group_from_sid(DOM_SID sid, GROUP_MAP *map)
 	ret = pdb_getgrsid(map, sid);
 	unbecome_root();
 	
-	if ( !ret ) 
+	/* special case check for rid 513 */
+	
+	if ( !ret ) {
+		uint32 rid;
+		
+		sid_peek_rid( &sid, &rid );
+		
+		if ( rid == DOMAIN_GROUP_RID_USERS ) {
+			fstrcpy( map->nt_name, "None" );
+			fstrcpy( map->comment, "Ordinary Users" );
+			sid_copy( &map->sid, &sid );
+			map->sid_name_use = SID_NAME_DOM_GRP;
+			
+			return True;
+		}
+		
 		return False;
+	}
 
 	DEBUG(10, ("get_domain_group_from_sid: SID found in the TDB\n"));
 
