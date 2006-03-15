@@ -478,7 +478,7 @@ static krb5_error_code LDB_lookup_principal(krb5_context context, struct ldb_con
 
 	short_princ_talloc = talloc_strdup(mem_ctx, short_princ);
 	free(short_princ);
-	if (!short_princ || !short_princ_talloc) {
+	if (!short_princ_talloc) {
 		krb5_set_error_string(context, "LDB_lookup_principal: talloc_strdup() failed!");
 		return ENOMEM;
 	}
