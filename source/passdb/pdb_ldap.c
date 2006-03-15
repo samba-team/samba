@@ -4291,7 +4291,7 @@ static BOOL ldapsam_search_grouptype(struct pdb_methods *methods,
 	state->filter =	talloc_asprintf(search->mem_ctx,
 					"(&(objectclass=sambaGroupMapping)"
 					"(sambaGroupType=%d)(sambaSID=%s)", 
-					sid_string_static(sid), type);
+					type, sid_string_static(sid));
 	state->attrs = talloc_attrs(search->mem_ctx, "cn", "sambaSid",
 				    "displayName", "description",
 				    "sambaGroupType", NULL);
