@@ -165,10 +165,9 @@ static BOOL inject_extended_dn(struct ldb_message *msg,
 }
 
 /* search */
-static int extended_search(struct ldb_module *module, struct ldb_request *req)
+static int extended_search(struct ldb_module *module, struct ldb_control *control, struct ldb_request *req)
 {
 	struct ldb_result *extended_result;
-	struct ldb_control *control;
 	struct ldb_control **saved_controls;
 	struct ldb_extended_dn_control *extended_ctrl;
 	int i, ret;
@@ -176,13 +175,6 @@ static int extended_search(struct ldb_module *module, struct ldb_request *req)
 	char **new_attrs;
 	BOOL remove_guid = False;
 	BOOL remove_sid = False;
-
-	/* check if there's a paged request control */
-	control = get_control_from_list(req->controls, LDB_CONTROL_EXTENDED_DN_OID);
-	if (control == NULL) {
-		/* not found go on */
-		return ldb_next_request(module, req);
-	}
 
 	extended_ctrl = talloc_get_type(control->data, struct ldb_extended_dn_control);
 	if (!extended_ctrl) {
@@ -256,15 +248,158 @@ static int extended_search(struct ldb_module *module, struct ldb_request *req)
 	return LDB_SUCCESS;	
 }
 
+/* search */
+struct extended_async_context {
+
+	struct ldb_module *module;
+	void *up_context;
+	int (*up_callback)(struct ldb_context *, void *, struct ldb_async_result *);
+	int timeout;
+
+	const char * const *attrs;
+	BOOL remove_guid;
+	BOOL remove_sid;
+	int extended_type;
+};
+
+static int extended_async_callback(struct ldb_context *ldb, void *context, struct ldb_async_result *ares)
+{
+	struct extended_async_context *ac;
+
+	if (!context || !ares) {
+		ldb_set_errstring(ldb, talloc_asprintf(ldb, "NULL Context or Result in callback"));
+		goto error;
+	}
+
+	ac = talloc_get_type(context, struct extended_async_context);
+
+	if (ares->type == LDB_REPLY_ENTRY) {
+		/* for each record returned post-process to add any derived
+		   attributes that have been asked for */
+		if (!inject_extended_dn(ares->message, ac->extended_type, ac->remove_guid, ac->remove_sid)) {
+			goto error;
+		}
+	}
+
+	return ac->up_callback(ldb, ac->up_context, ares);
+
+error:
+	talloc_free(ares);
+	return LDB_ERR_OPERATIONS_ERROR;
+}
+
+static int extended_search_async(struct ldb_module *module, struct ldb_control *control, struct ldb_request *req)
+{
+	struct ldb_extended_dn_control *extended_ctrl;
+	struct ldb_control **saved_controls;
+	struct extended_async_context *ac;
+	struct ldb_request *down_req;
+	char **new_attrs;
+	int ret;
+
+	extended_ctrl = talloc_get_type(control->data, struct ldb_extended_dn_control);
+	if (!extended_ctrl) {
+		return LDB_ERR_PROTOCOL_ERROR;
+	}
+
+	ac = talloc(req, struct extended_async_context);
+	if (ac == NULL) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	ac->module = module;
+	ac->up_context = req->async.context;
+	ac->up_callback = req->async.callback;
+	ac->timeout = req->async.timeout;
+	ac->attrs = req->op.search.attrs;
+	ac->remove_guid = False;
+	ac->remove_sid = False;
+	ac->extended_type = extended_ctrl->type;
+
+	down_req = talloc_zero(req, struct ldb_request);
+	if (down_req == NULL) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	down_req->operation = req->operation;
+	down_req->op.search.base = req->op.search.base;
+	down_req->op.search.scope = req->op.search.scope;
+	down_req->op.search.tree = req->op.search.tree;
+
+	/* check if attrs only is specified, in that case check wether we need to modify them */
+	if (req->op.search.attrs) {
+		if (! is_attr_in_list(req->op.search.attrs, "objectGUID")) {
+			ac->remove_guid = True;
+		}
+		if (! is_attr_in_list(req->op.search.attrs, "objectSID")) {
+			ac->remove_sid = True;
+		}
+		if (ac->remove_guid || ac->remove_sid) {
+			new_attrs = copy_attrs(down_req, req->op.search.attrs);
+			if (new_attrs == NULL)
+				return LDB_ERR_OPERATIONS_ERROR;
+			
+			if (ac->remove_guid) {
+				if (!add_attrs(down_req, &new_attrs, "objectGUID"))
+					return LDB_ERR_OPERATIONS_ERROR;
+			}
+			if (ac->remove_sid) {
+				if (!add_attrs(down_req, &new_attrs, "objectSID"))
+					return LDB_ERR_OPERATIONS_ERROR;
+			}
+
+			down_req->op.search.attrs = (const char * const *)new_attrs;
+		}
+	}
+
+	down_req->controls = req->controls;
+
+	/* save it locally and remove it from the list */
+	/* we do not need to replace them later as we
+	 * are keeping the original req intact */
+	if (!save_controls(control, down_req, &saved_controls)) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	down_req->creds = req->creds;
+
+	down_req->async.context = ac;
+	down_req->async.callback = extended_async_callback;
+	down_req->async.timeout = req->async.timeout;
+
+	/* perform the search */
+	ret = ldb_next_request(module, down_req);
+
+	/* do not free down_req as the call results may be linked to it,
+	 * it will be freed when the upper level request get freed */
+	if (ret == LDB_SUCCESS) {
+		req->async.handle = down_req->async.handle;
+	}
+
+	return ret;
+}
+
 static int extended_request(struct ldb_module *module, struct ldb_request *req)
 {
+	struct ldb_control *control;
+
+	/* check if there's an extended dn control */
+	control = get_control_from_list(req->controls, LDB_CONTROL_EXTENDED_DN_OID);
+	if (control == NULL) {
+		/* not found go on */
+		return ldb_next_request(module, req);
+	}
+
 	switch (req->operation) {
 
 	case LDB_REQ_SEARCH:
-		return extended_search(module, req);
+		return extended_search(module, control, req);
+
+	case LDB_ASYNC_SEARCH:
+		return extended_search_async(module, control, req);
 
 	default:
-		return ldb_next_request(module, req);
+		return LDB_ERR_OPERATIONS_ERROR;
 
 	}
 }
