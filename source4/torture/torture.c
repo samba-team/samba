@@ -2036,7 +2036,7 @@ double torture_create_procs(BOOL (*fn)(struct smbcli_state *, int), BOOL *result
 		procnum = i;
 		if (fork() == 0) {
 			char *myname;
-			const char *hostname=NULL, *sharename;
+			char *hostname=NULL, *sharename;
 
 			pid_t mypid = getpid();
 			srandom(((int)mypid) ^ ((int)time(NULL)));
@@ -2649,7 +2649,7 @@ static void max_runtime_handler(int sig)
 		lp_set_cmdline("torture:binding", argv_new[1]);
 	} else {
 		char *binding = NULL;
-		const char *host = NULL, *share = NULL;
+		char *host = NULL, *share = NULL;
 
 		if (!smbcli_parse_unc(argv_new[1], NULL, &host, &share)) {
 			d_printf("Invalid option: %s is not a valid torture target (share or binding string)\n\n", argv_new[1]);
