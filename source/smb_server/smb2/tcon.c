@@ -28,7 +28,7 @@ static NTSTATUS smb2srv_tcon_backend(struct smb2srv_request *req, struct smb2_tr
 {
 	struct smbsrv_tcon *tcon;
 
-	tcon = smbsrv_smb2_tcon_new(req->session);
+	tcon = smbsrv_smb2_tcon_new(req->session, "fake");
 	NT_STATUS_HAVE_NO_MEMORY(tcon);
 
 	/* TODO: do real tree connect */

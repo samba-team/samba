@@ -134,8 +134,8 @@ void *pvfs_wait_message(struct pvfs_state *pvfs,
 
 	pwait->private = private;
 	pwait->handler = fn;
-	pwait->msg_ctx = pvfs->tcon->smb_conn->connection->msg_ctx;
-	pwait->ev = req->tcon->smb_conn->connection->event.ctx;
+	pwait->msg_ctx = pvfs->ntvfs->ctx->msg_ctx;
+	pwait->ev = pvfs->ntvfs->ctx->event_ctx;
 	pwait->msg_type = msg_type;
 	pwait->req = talloc_reference(pwait, req);
 	pwait->pvfs = pvfs;

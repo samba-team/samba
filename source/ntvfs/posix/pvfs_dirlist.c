@@ -177,7 +177,7 @@ static void dcache_add(struct pvfs_dir *dir, const char *name)
 const char *pvfs_list_next(struct pvfs_dir *dir, uint_t *ofs)
 {
 	struct dirent *de;
-	enum protocol_types protocol = dir->pvfs->tcon->smb_conn->negotiate.protocol;
+	enum protocol_types protocol = dir->pvfs->ntvfs->ctx->protocol;
 
 	/* non-wildcard searches are easy */
 	if (dir->no_wildcard) {

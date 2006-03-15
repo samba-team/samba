@@ -79,14 +79,13 @@ static NTSTATUS ipc_connect(struct ntvfs_module_context *ntvfs,
 			    struct ntvfs_request *req, const char *sharename)
 {
 	NTSTATUS status;
-	struct smbsrv_tcon *tcon = req->tcon;
 	struct ipc_private *private;
 
-	tcon->fs_type = talloc_strdup(tcon, "IPC");
-	NT_STATUS_HAVE_NO_MEMORY(tcon->fs_type);
+	ntvfs->ctx->fs_type = talloc_strdup(ntvfs->ctx, "IPC");
+	NT_STATUS_HAVE_NO_MEMORY(ntvfs->ctx->fs_type);
 
-	tcon->dev_type = talloc_strdup(tcon, "IPC");
-	NT_STATUS_HAVE_NO_MEMORY(tcon->dev_type);
+	ntvfs->ctx->dev_type = talloc_strdup(ntvfs->ctx, "IPC");
+	NT_STATUS_HAVE_NO_MEMORY(ntvfs->ctx->dev_type);
 
 	/* prepare the private state for this connection */
 	private = talloc(ntvfs, struct ipc_private);

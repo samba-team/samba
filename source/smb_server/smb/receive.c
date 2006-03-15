@@ -30,17 +30,16 @@
 /*
   send an oplock break request to a client
 */
-BOOL req_send_oplock_break(struct smbsrv_tcon *tcon, uint16_t fnum, uint8_t level)
+NTSTATUS smbsrv_send_oplock_break(void *p, uint16_t fnum, uint8_t level)
 {
+	struct smbsrv_tcon *tcon = talloc_get_type(p, struct smbsrv_tcon);
 	struct smbsrv_request *req;
 
 	req = smbsrv_init_request(tcon->smb_conn);
-	if (!req) {
-		return False;
-	}
+	NT_STATUS_HAVE_NO_MEMORY(req);
 
 	smbsrv_setup_reply(req, 8, 0);
-	
+
 	SCVAL(req->out.hdr,HDR_COM,SMBlockingX);
 	SSVAL(req->out.hdr,HDR_TID,tcon->tid);
 	SSVAL(req->out.hdr,HDR_PID,0xFFFF);
@@ -59,7 +58,7 @@ BOOL req_send_oplock_break(struct smbsrv_tcon *tcon, uint16_t fnum, uint8_t leve
 	SSVAL(req->out.vwv, VWV(7), 0);
 
 	smbsrv_send_reply(req);
-	return True;
+	return NT_STATUS_OK;
 }
 
 static void switch_message(int type, struct smbsrv_request *req);

@@ -67,35 +67,45 @@ static NTSTATUS make_connection_snum(struct smbsrv_request *req,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	tcon = smbsrv_smb_tcon_new(req->smb_conn);
+	tcon = smbsrv_smb_tcon_new(req->smb_conn, lp_servicename(snum));
 	if (!tcon) {
 		DEBUG(0,("Couldn't find free connection.\n"));
 		return NT_STATUS_INSUFFICIENT_RESOURCES;
 	}
 	req->tcon = tcon;
 
-	tcon->service = snum;
-
 	/* init ntvfs function pointers */
-	status = ntvfs_init_connection(req, type);
+	status = ntvfs_init_connection(tcon, snum, type,
+				       req->smb_conn->negotiate.protocol,
+				       req->smb_conn->connection->event.ctx,
+				       req->smb_conn->connection->msg_ctx,
+				       req->smb_conn->connection->server_id,
+				       &tcon->ntvfs);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("ntvfs_init_connection failed for service %s\n", 
-			  lp_servicename(tcon->service)));
-		req->tcon = NULL;
-		talloc_free(tcon);
-		return status;
+			  lp_servicename(snum)));
+		goto failed;
+	}
+
+	status = ntvfs_set_oplock_handler(tcon->ntvfs, smbsrv_send_oplock_break, tcon);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("make_connection: NTVFS failed to set the oplock handler!\n"));
+		goto failed;
 	}
 
 	/* Invoke NTVFS connection hook */
 	status = ntvfs_connect(req, lp_servicename(snum));
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("make_connection: NTVFS make connection failed!\n"));
-		req->tcon = NULL;
-		talloc_free(tcon);
-		return status;
+		goto failed;
 	}
 
 	return NT_STATUS_OK;
+
+failed:
+	req->tcon = NULL;
+	talloc_free(tcon);
+	return status;
 }
 
 /****************************************************************************
@@ -155,6 +165,7 @@ static NTSTATUS make_connection(struct smbsrv_request *req,
 NTSTATUS smbsrv_tcon_backend(struct smbsrv_request *req, union smb_tcon *con)
 {
 	NTSTATUS status;
+	int snum;
 
 	/* can only do bare tcon in share level security */
 	if (!req->session && lp_security() != SEC_SHARE) {
@@ -183,11 +194,13 @@ NTSTATUS smbsrv_tcon_backend(struct smbsrv_request *req, union smb_tcon *con)
 		return status;
 	}
 
+	snum = req->tcon->ntvfs->config.snum;
+
 	con->tconx.out.tid = req->tcon->tid;
-	con->tconx.out.dev_type = talloc_strdup(req, req->tcon->dev_type);
-	con->tconx.out.fs_type = talloc_strdup(req, req->tcon->fs_type);
-	con->tconx.out.options = SMB_SUPPORT_SEARCH_BITS | (lp_csc_policy(req->tcon->service) << 2);
-	if (lp_msdfs_root(req->tcon->service) && lp_host_msdfs()) {
+	con->tconx.out.dev_type = talloc_strdup(req, req->tcon->ntvfs->dev_type);
+	con->tconx.out.fs_type = talloc_strdup(req, req->tcon->ntvfs->fs_type);
+	con->tconx.out.options = SMB_SUPPORT_SEARCH_BITS | (lp_csc_policy(snum) << 2);
+	if (lp_msdfs_root(snum) && lp_host_msdfs()) {
 		con->tconx.out.options |= SMB_SHARE_IN_DFS;
 	}
 

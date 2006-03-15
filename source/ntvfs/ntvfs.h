@@ -158,17 +158,40 @@ struct ntvfs_ops {
 
 struct ntvfs_module_context {
 	struct ntvfs_module_context *prev, *next;
-	void *private_data;
-	const struct ntvfs_ops *ops;
+	struct ntvfs_context *ctx;
 	int depth;
+	const struct ntvfs_ops *ops;
+	void *private_data;
 };
 
 struct ntvfs_context {
 	enum ntvfs_type type;
+
+	/* the reported filesystem type */
+	char *fs_type;
+
+	/* the reported device type */
+	char *dev_type;
+
+	enum protocol_types protocol;
+
 	/* 
 	 * linked list of module contexts
 	 */
 	struct ntvfs_module_context *modules;
+
+	struct {
+		int snum;
+	} config;
+
+	uint32_t server_id;
+	struct event_context *event_ctx;
+	struct messaging_context *msg_ctx;
+
+	struct {
+		void *private_data;
+		NTSTATUS (*handler)(void *private_data, uint16_t fnum, uint8_t level);
+	} oplock;
 };
 
 
