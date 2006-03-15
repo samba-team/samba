@@ -72,7 +72,7 @@ static void pvfs_search_timer(struct event_context *ev, struct timed_event *te,
 */
 static void pvfs_search_setup_timer(struct pvfs_search_state *search)
 {
-	struct event_context *ev = search->pvfs->tcon->smb_conn->connection->event.ctx;
+	struct event_context *ev = search->pvfs->ntvfs->ctx->event_ctx;
 	talloc_free(search->te);
 	search->te = event_add_timed(ev, search, 
 				     timeval_current_ofs(search->pvfs->search_inactivity_time, 0), 

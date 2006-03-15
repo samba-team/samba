@@ -38,7 +38,7 @@
 */
 static void pvfs_setup_options(struct pvfs_state *pvfs)
 {
-	int snum = pvfs->tcon->service;
+	int snum = pvfs->ntvfs->ctx->config.snum;
 	const char *eadb;
 
 	if (lp_map_hidden(snum))     pvfs->flags |= PVFS_FLAG_MAP_HIDDEN;
@@ -114,23 +114,22 @@ static void pvfs_setup_options(struct pvfs_state *pvfs)
 static NTSTATUS pvfs_connect(struct ntvfs_module_context *ntvfs,
 			     struct ntvfs_request *req, const char *sharename)
 {
-	struct smbsrv_tcon *tcon = req->tcon;
 	struct pvfs_state *pvfs;
 	struct stat st;
 	char *base_directory;
 	NTSTATUS status;
 
-	pvfs = talloc_zero(tcon, struct pvfs_state);
+	pvfs = talloc_zero(ntvfs, struct pvfs_state);
 	NT_STATUS_HAVE_NO_MEMORY(pvfs);
 
 	/* for simplicity of path construction, remove any trailing slash now */
-	base_directory = talloc_strdup(pvfs, lp_pathname(tcon->service));
+	base_directory = talloc_strdup(pvfs, lp_pathname(ntvfs->ctx->config.snum));
 	NT_STATUS_HAVE_NO_MEMORY(base_directory);
 	if (strcmp(base_directory, "/") != 0) {
 		trim_string(base_directory, NULL, "/");
 	}
 
-	pvfs->tcon = tcon;
+	pvfs->ntvfs = ntvfs;
 	pvfs->base_directory = base_directory;
 
 	/* the directory must exist. Note that we deliberately don't
@@ -141,25 +140,25 @@ static NTSTATUS pvfs_connect(struct ntvfs_module_context *ntvfs,
 		return NT_STATUS_BAD_NETWORK_NAME;
 	}
 
-	tcon->fs_type = talloc_strdup(tcon, "NTFS");
-	NT_STATUS_HAVE_NO_MEMORY(tcon->fs_type);
+	ntvfs->ctx->fs_type = talloc_strdup(ntvfs->ctx, "NTFS");
+	NT_STATUS_HAVE_NO_MEMORY(ntvfs->ctx->fs_type);
 
-	tcon->dev_type = talloc_strdup(tcon, "A:");
-	NT_STATUS_HAVE_NO_MEMORY(tcon->dev_type);
+	ntvfs->ctx->dev_type = talloc_strdup(ntvfs->ctx, "A:");
+	NT_STATUS_HAVE_NO_MEMORY(ntvfs->ctx->dev_type);
 
 	ntvfs->private_data = pvfs;
 
 	pvfs->brl_context = brl_init(pvfs, 
-				     pvfs->tcon->smb_conn->connection->server_id,  
-				     pvfs->tcon->service,
-				     pvfs->tcon->smb_conn->connection->msg_ctx);
+				     pvfs->ntvfs->ctx->server_id,  
+				     pvfs->ntvfs->ctx->config.snum,
+				     pvfs->ntvfs->ctx->msg_ctx);
 	if (pvfs->brl_context == NULL) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
 	pvfs->odb_context = odb_init(pvfs, 
-				     pvfs->tcon->smb_conn->connection->server_id,  
-				     pvfs->tcon->smb_conn->connection->msg_ctx);
+				     pvfs->ntvfs->ctx->server_id,  
+				     pvfs->ntvfs->ctx->msg_ctx);
 	if (pvfs->odb_context == NULL) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}

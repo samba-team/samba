@@ -40,7 +40,7 @@
 #define O_DIRECTORY 0
 #endif
 
-#define CHECK_READ_ONLY(req) do { if (lp_readonly(req->tcon->service)) return NT_STATUS_ACCESS_DENIED; } while (0)
+#define CHECK_READ_ONLY(req) do { if (lp_readonly(ntvfs->ctx->config.snum)) return NT_STATUS_ACCESS_DENIED; } while (0)
 
 /*
   connect to a share - used when a tree_connect operation comes
@@ -52,13 +52,13 @@ static NTSTATUS svfs_connect(struct ntvfs_module_context *ntvfs,
 			     struct ntvfs_request *req, const char *sharename)
 {
 	struct stat st;
-	struct smbsrv_tcon *tcon = req->tcon;
 	struct svfs_private *private;
+	int snum = ntvfs->ctx->config.snum;
 
 	private = talloc(ntvfs, struct svfs_private);
 
 	private->next_search_handle = 0;
-	private->connectpath = talloc_strdup(private, lp_pathname(tcon->service));
+	private->connectpath = talloc_strdup(private, lp_pathname(snum));
 	private->open_files = NULL;
 	private->search = NULL;
 
@@ -69,8 +69,10 @@ static NTSTATUS svfs_connect(struct ntvfs_module_context *ntvfs,
 		return NT_STATUS_BAD_NETWORK_NAME;
 	}
 
-	tcon->fs_type = talloc_strdup(tcon, "NTFS");
-	tcon->dev_type = talloc_strdup(tcon, "A:");
+	ntvfs->ctx->fs_type = talloc_strdup(ntvfs->ctx, "NTFS");
+	NT_STATUS_HAVE_NO_MEMORY(ntvfs->ctx->fs_type);
+	ntvfs->ctx->dev_type = talloc_strdup(ntvfs->ctx, "A:");
+	NT_STATUS_HAVE_NO_MEMORY(ntvfs->ctx->dev_type);
 
 	ntvfs->private_data = private;
 
@@ -306,12 +308,14 @@ static NTSTATUS svfs_open(struct ntvfs_module_context *ntvfs,
 	int fd, flags;
 	struct svfs_file *f;
 	int create_flags, rdwr_flags;
+	BOOL readonly;
 	
 	if (io->generic.level != RAW_OPEN_GENERIC) {
 		return ntvfs_map_open(ntvfs, req, io);
 	}
 
-	if (lp_readonly(req->tcon->service)) {
+	readonly = lp_readonly(ntvfs->ctx->config.snum);
+	if (readonly) {
 		create_flags = 0;
 		rdwr_flags = O_RDONLY;
 	} else {
@@ -345,7 +349,7 @@ static NTSTATUS svfs_open(struct ntvfs_module_context *ntvfs,
 
 	if (io->generic.in.create_options & NTCREATEX_OPTIONS_DIRECTORY) {
 		flags = O_RDONLY | O_DIRECTORY;
-		if (lp_readonly(req->tcon->service)) {
+		if (readonly) {
 			goto do_open;
 		}
 		switch (io->generic.in.open_disposition) {
@@ -376,9 +380,11 @@ do_open:
 		return map_nt_error_from_unix(errno);
 	}
 
-	f = talloc(req->tcon, struct svfs_file);
+	f = talloc(ntvfs, struct svfs_file);
+	NT_STATUS_HAVE_NO_MEMORY(f);
 	f->fd = fd;
-	f->name = talloc_strdup(req->tcon, unix_path);
+	f->name = talloc_strdup(f, unix_path);
+	NT_STATUS_HAVE_NO_MEMORY(f->name);
 
 	DLIST_ADD(private->open_files, f);
 
@@ -719,8 +725,8 @@ static NTSTATUS svfs_fsinfo(struct ntvfs_module_context *ntvfs,
 	fs->generic.out.quota_soft = 0;
 	fs->generic.out.quota_hard = 0;
 	fs->generic.out.quota_flags = 0;
-	fs->generic.out.volume_name = talloc_strdup(req, lp_servicename(req->tcon->service));
-	fs->generic.out.fs_type = req->tcon->fs_type;
+	fs->generic.out.volume_name = talloc_strdup(req, lp_servicename(ntvfs->ctx->config.snum));
+	fs->generic.out.fs_type = ntvfs->ctx->fs_type;
 
 	return NT_STATUS_OK;
 }
