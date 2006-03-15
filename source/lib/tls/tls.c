@@ -454,7 +454,7 @@ struct tls_context *tls_init_client(struct socket_context *socket,
 				    BOOL tls_enable)
 {
 	struct tls_context *tls;
-	int ret;
+	int ret=0;
 	const int cert_type_priority[] = { GNUTLS_CRT_X509, GNUTLS_CRT_OPENPGP, 0 };
 	char *cafile;
 
