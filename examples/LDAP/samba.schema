@@ -295,8 +295,8 @@ attributetype ( 1.3.6.1.4.1.7165.2.1.54 NAME 'sambaPasswordHistory'
 attributetype ( 1.3.6.1.4.1.7165.2.1.20 NAME 'sambaSID'
 	DESC 'Security ID'
 	EQUALITY caseIgnoreIA5Match
+	SUBSTR caseExactIA5SubstringsMatch
 	SYNTAX 1.3.6.1.4.1.1466.115.121.1.26{64} SINGLE-VALUE )
-
 
 ##
 ## Primary group SID, compatible with ntSid
