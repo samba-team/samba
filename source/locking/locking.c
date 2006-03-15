@@ -1043,7 +1043,7 @@ BOOL del_share_mode(struct share_mode_lock *lck, files_struct *fsp)
 {
 	struct share_mode_entry entry, *e;
 
-	fill_share_mode_entry(&entry, fsp, 0, 0);
+	fill_share_mode_entry(&entry, fsp, 0, NO_OPLOCK);
 
 	e = find_share_mode_entry(lck, &entry);
 	if (e == NULL) {
@@ -1079,7 +1079,7 @@ BOOL remove_share_oplock(struct share_mode_lock *lck, files_struct *fsp)
 {
 	struct share_mode_entry entry, *e;
 
-	fill_share_mode_entry(&entry, fsp, 0, 0);
+	fill_share_mode_entry(&entry, fsp, 0, NO_OPLOCK);
 
 	e = find_share_mode_entry(lck, &entry);
 	if (e == NULL) {
@@ -1100,7 +1100,7 @@ BOOL downgrade_share_oplock(struct share_mode_lock *lck, files_struct *fsp)
 {
 	struct share_mode_entry entry, *e;
 
-	fill_share_mode_entry(&entry, fsp, 0, 0);
+	fill_share_mode_entry(&entry, fsp, 0, NO_OPLOCK);
 
 	e = find_share_mode_entry(lck, &entry);
 	if (e == NULL) {
