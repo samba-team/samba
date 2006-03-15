@@ -1922,7 +1922,6 @@ NTSTATUS rpc_printer_migrate_printers_internals(const DOM_SID *domain_sid,
 	if (!NT_STATUS_IS_OK(nt_status))
 		return nt_status;
 
-
 	/* enum printers */
 	if (!get_printer_info(pipe_hnd, mem_ctx, level, argc, argv, &num_printers, &ctr_enum)) {
 		nt_status = NT_STATUS_UNSUCCESSFUL;
@@ -1951,7 +1950,6 @@ NTSTATUS rpc_printer_migrate_printers_internals(const DOM_SID *domain_sid,
 		d_printf("migrating printer queue for:    [%s] / [%s]\n", 
 			printername, sharename);
 
-
 		/* open dst printer handle */
 		if (!net_spoolss_open_printer_ex(pipe_hnd_dst, mem_ctx, sharename, 
 			PRINTER_ALL_ACCESS, cli->user_name, &hnd_dst)) {
@@ -1961,25 +1959,18 @@ NTSTATUS rpc_printer_migrate_printers_internals(const DOM_SID *domain_sid,
 			got_hnd_dst = True;
 		}
 
-
 		/* check for existing dst printer */
 		if (!net_spoolss_getprinter(pipe_hnd_dst, mem_ctx, &hnd_dst, level, &ctr_dst)) {
 			printf ("could not get printer, creating printer.\n");
 		} else {
 			DEBUG(1,("printer already exists: %s\n", sharename));
-			/* close printer handles here */
-			if (got_hnd_src) {
-				rpccli_spoolss_close_printer(pipe_hnd, mem_ctx, &hnd_src);
-				got_hnd_src = False;
-			}
-
+			/* close printer handle here - dst only, not got src yet. */
 			if (got_hnd_dst) {
 				rpccli_spoolss_close_printer(pipe_hnd_dst, mem_ctx, &hnd_dst);
 				got_hnd_dst = False;
 			}
 			continue;
 		}
-
 
 		/* now get again src printer ctr via getprinter, 
 		   we first need a handle for that */
@@ -1994,7 +1985,6 @@ NTSTATUS rpc_printer_migrate_printers_internals(const DOM_SID *domain_sid,
 		/* getprinter on the src server */
 		if (!net_spoolss_getprinter(pipe_hnd, mem_ctx, &hnd_src, level, &ctr_src)) 
 			goto done;
-
 
 		/* copy each src printer to a dst printer 1:1, 
 		   maybe some values have to be changed though */
