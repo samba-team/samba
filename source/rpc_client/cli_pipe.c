@@ -2174,7 +2174,8 @@ static struct rpc_pipe_client *cli_rpc_pipe_open(struct cli_state *cli, int pipe
 	/* sanity check to protect against crashes */
 
 	if ( !cli ) {
-		return NT_STATUS_INVALID_HANDLE;
+		*perr = NT_STATUS_INVALID_HANDLE;
+		return NULL;
 	}
 
 	/* The pipe name index must fall within our array */
