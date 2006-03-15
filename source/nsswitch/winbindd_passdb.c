@@ -245,10 +245,11 @@ static NTSTATUS name_to_sid(struct winbindd_domain *domain,
 {
 	DEBUG(10, ("Finding name %s\n", name));
 
-	if (!pdb_find_alias(name, sid))
+	if ( !lookup_name( mem_ctx, name, LOOKUP_NAME_ALL, 
+		NULL, NULL, sid, type ) )
+	{
 		return NT_STATUS_NONE_MAPPED;
-
-	*type = SID_NAME_ALIAS;
+	}
 
 	return NT_STATUS_OK;
 }

@@ -4,6 +4,7 @@
    Async helpers for blocking functions
 
    Copyright (C) Volker Lendecke 2005
+   Copyright (C) Volker Lendecke 2006
    
    The helpers always consist of three functions: 
 
@@ -364,6 +365,10 @@ void idmap_sid2gid_async(TALLOC_CTX *mem_ctx, const DOM_SID *sid, BOOL alloc,
 	ZERO_STRUCT(request);
 	request.cmd = WINBINDD_DUAL_SID2GID;
 	sid_to_string(request.data.dual_sid2id.sid, sid);
+
+	DEBUG(7,("idmap_sid2gid_async: Resolving %s to a gid\n", 
+		request.data.dual_sid2id.sid));
+
 	request.data.dual_sid2id.alloc = alloc;
 	do_async(mem_ctx, idmap_child(), &request, idmap_sid2gid_recv,
 		 cont, private_data);
@@ -390,6 +395,15 @@ enum winbindd_result winbindd_dual_sid2gid(struct winbindd_domain *domain,
 	result = idmap_sid_to_gid(&sid, &(state->response.data.gid),
 				  state->request.data.dual_sid2id.alloc ?
 				  0 : ID_QUERY_ONLY);
+
+	/* If the lookup failed, the perhaps we need to look 
+	   at the passdb for local groups */
+
+	if ( !NT_STATUS_IS_OK(result) ) {
+		if ( sid_to_gid( &sid, &(state->response.data.gid) ) ) {
+			result = NT_STATUS_OK;
+		}
+	}
 
 	return NT_STATUS_IS_OK(result) ? WINBINDD_OK : WINBINDD_ERROR;
 }
@@ -1013,9 +1027,14 @@ static void gettoken_recvdomgroups(TALLOC_CTX *mem_ctx, BOOL success,
 	sids_str = response->extra_data;
 
 	if (sids_str == NULL) {
-		DEBUG(10, ("Received no domain groups\n"));
-		state->cont(state->private_data, True, NULL, 0);
-		return;
+		/* This could be normal if we are dealing with a
+		   local user and local groups */
+
+		if ( !sid_check_is_in_our_domain( &state->user_sid ) ) {
+			DEBUG(10, ("Received no domain groups\n"));
+			state->cont(state->private_data, True, NULL, 0);
+			return;
+		}
 	}
 
 	state->sids = NULL;
@@ -1024,7 +1043,7 @@ static void gettoken_recvdomgroups(TALLOC_CTX *mem_ctx, BOOL success,
 	add_sid_to_array(mem_ctx, &state->user_sid, &state->sids,
 			 &state->num_sids);
 
-	if (!parse_sidlist(mem_ctx, sids_str, &state->sids,
+	if (sids_str && !parse_sidlist(mem_ctx, sids_str, &state->sids,
 			   &state->num_sids)) {
 		DEBUG(0, ("Could not parse sids\n"));
 		state->cont(state->private_data, False, NULL, 0);
