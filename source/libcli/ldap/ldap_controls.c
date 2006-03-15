@@ -137,7 +137,9 @@ static BOOL decode_server_sort_request(void *mem_ctx, DATA_BLOB in, void **out)
 		}
 	}
 
-	lssc[num] = NULL;
+	if (lssc != NULL) {
+		lssc[num] = NULL;
+	}
 
 	if (!asn1_end_tag(&data)) {
 		return False;
