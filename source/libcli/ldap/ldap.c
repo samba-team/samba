@@ -1332,7 +1332,9 @@ BOOL ldap_decode(struct asn1_data *data, struct ldap_message *msg)
 
 		}
 
-		ctrl[i] = NULL;
+		if (ctrl != NULL) {
+			ctrl[i] = NULL;
+		}
 
 		msg->controls = ctrl;
 
