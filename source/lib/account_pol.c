@@ -288,11 +288,16 @@ BOOL init_account_policy(void)
 	/* These exist by default on NT4 in [HKLM\SECURITY\Policy\Accounts] */
 
 	privilege_create_account( &global_sid_World );
-	privilege_create_account( &global_sid_Builtin_Administrators );
 	privilege_create_account( &global_sid_Builtin_Account_Operators );
 	privilege_create_account( &global_sid_Builtin_Server_Operators );
 	privilege_create_account( &global_sid_Builtin_Print_Operators );
 	privilege_create_account( &global_sid_Builtin_Backup_Operators );
+
+	/* BUILTIN\Administrators get everything -- *always* */
+
+	if ( !grant_all_privileges( &global_sid_Builtin_Administrators ) ) {
+		DEBUG(0,("init_account_policy: Failed to grant privileges to BUILTIN\\Administrators!\n"));
+	}
 
 	return True;
 }
