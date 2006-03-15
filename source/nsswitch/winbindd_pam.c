@@ -1515,7 +1515,7 @@ enum winbindd_result winbindd_dual_pam_auth_crap(struct winbindd_domain *domain,
 				nt_domain = name_domain;
 			}
 
-			fill_domain_username(username_out, nt_domain, nt_username);
+			fill_domain_username(username_out, nt_domain, nt_username, True);
 
 			DEBUG(5, ("Setting unix username to [%s]\n", username_out));
 

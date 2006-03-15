@@ -1650,6 +1650,10 @@ NTSTATUS _samr_lookup_rids(pipes_struct *p, SAMR_Q_LOOKUP_RIDS *q_u, SAMR_R_LOOK
 				      names, attrs);
 	unbecome_root();
 
+	if ( NT_STATUS_EQUAL(r_u->status, NT_STATUS_NONE_MAPPED) && (num_rids == 0) ) {
+		r_u->status = NT_STATUS_OK;
+	}
+
 	if(!make_samr_lookup_rids(p->mem_ctx, num_rids, names,
 				  &hdr_name, &uni_name))
 		return NT_STATUS_NO_MEMORY;
@@ -2914,6 +2918,7 @@ NTSTATUS _samr_open_alias(pipes_struct *p, SAMR_Q_OPEN_ALIAS *q_u, SAMR_R_OPEN_A
 		/* Check we actually have the requested alias */
 		enum SID_NAME_USE type;
 		BOOL result;
+		gid_t gid;
 
 		become_root();
 		result = lookup_sid(NULL, &sid, NULL, NULL, &type);
@@ -2922,6 +2927,13 @@ NTSTATUS _samr_open_alias(pipes_struct *p, SAMR_Q_OPEN_ALIAS *q_u, SAMR_R_OPEN_A
 		if (!result || (type != SID_NAME_ALIAS)) {
 			return NT_STATUS_NO_SUCH_ALIAS;
 		}
+
+		/* make sure there is a mapping */
+		
+		if ( !sid_to_gid( &sid, &gid ) ) {
+			return NT_STATUS_NO_SUCH_ALIAS;
+		}
+
 	}
 
 	/* associate the alias SID with the new handle. */

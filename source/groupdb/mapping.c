@@ -3,6 +3,8 @@
  *  RPC Pipe client / server routines
  *  Copyright (C) Andrew Tridgell              1992-2000,
  *  Copyright (C) Jean François Micouleau      1998-2001.
+ *  Copyright (C) Volker Lendecke              2006.
+ *  Copyright (C) Gerald Carter                2006.
  *  
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -35,50 +37,11 @@ static TDB_CONTEXT *tdb; /* used for driver files */
  */
 #define MEMBEROF_PREFIX "MEMBEROF/"
 
-/****************************************************************************
-initialise first time the mapping list - called from init_group_mapping()
-****************************************************************************/
-static BOOL default_group_mapping(void)
-{
-	DOM_SID sid_admins;
-	DOM_SID sid_users;
-	DOM_SID sid_guests;
-	fstring str_admins;
-	fstring str_users;
-	fstring str_guests;
 
-	/* Add the Wellknown groups */
-
-	add_initial_entry(-1, "S-1-5-32-544", SID_NAME_WKN_GRP, "Administrators", "");
-	add_initial_entry(-1, "S-1-5-32-545", SID_NAME_WKN_GRP, "Users", "");
-	add_initial_entry(-1, "S-1-5-32-546", SID_NAME_WKN_GRP, "Guests", "");
-	add_initial_entry(-1, "S-1-5-32-547", SID_NAME_WKN_GRP, "Power Users", "");
-	add_initial_entry(-1, "S-1-5-32-548", SID_NAME_WKN_GRP, "Account Operators", "");
-	add_initial_entry(-1, "S-1-5-32-549", SID_NAME_WKN_GRP, "System Operators", "");
-	add_initial_entry(-1, "S-1-5-32-550", SID_NAME_WKN_GRP, "Print Operators", "");
-	add_initial_entry(-1, "S-1-5-32-551", SID_NAME_WKN_GRP, "Backup Operators", "");
-	add_initial_entry(-1, "S-1-5-32-552", SID_NAME_WKN_GRP, "Replicators", "");
-
-	/* Add the defaults domain groups */
-
-	sid_copy(&sid_admins, get_global_sam_sid());
-	sid_append_rid(&sid_admins, DOMAIN_GROUP_RID_ADMINS);
-	sid_to_string(str_admins, &sid_admins);
-	add_initial_entry(-1, str_admins, SID_NAME_DOM_GRP, "Domain Admins", "");
-
-	sid_copy(&sid_users,  get_global_sam_sid());
-	sid_append_rid(&sid_users,  DOMAIN_GROUP_RID_USERS);
-	sid_to_string(str_users, &sid_users);
-	add_initial_entry(-1, str_users,  SID_NAME_DOM_GRP, "Domain Users",  "");
-
-	sid_copy(&sid_guests, get_global_sam_sid());
-	sid_append_rid(&sid_guests, DOMAIN_GROUP_RID_GUESTS);
-	sid_to_string(str_guests, &sid_guests);
-	add_initial_entry(-1, str_guests, SID_NAME_DOM_GRP, "Domain Guests", "");
-
-	return True;
-}
-
+static BOOL enum_group_mapping(const DOM_SID *sid, enum SID_NAME_USE sid_name_use, GROUP_MAP **pp_rmap,
+                               size_t *p_num_entries, BOOL unix_only);
+static BOOL group_map_remove(const DOM_SID *sid);
+			
 /****************************************************************************
  Open the group mapping tdb.
 ****************************************************************************/
@@ -87,9 +50,12 @@ static BOOL init_group_mapping(void)
 {
 	const char *vstring = "INFO/version";
 	int32 vers_id;
+	GROUP_MAP *map_table = NULL;
+	size_t num_entries = 0;
 	
 	if (tdb)
 		return True;
+		
 	tdb = tdb_open_log(lock_path("group_mapping.tdb"), 0, TDB_DEFAULT, O_RDWR|O_CREAT, 0600);
 	if (!tdb) {
 		DEBUG(0,("Failed to open group mapping database\n"));
@@ -107,6 +73,8 @@ static BOOL init_group_mapping(void)
 		vers_id = DATABASE_VERSION_V2;
 	}
 
+	/* if its an unknown version we remove everthing in the db */
+	
 	if (vers_id != DATABASE_VERSION_V2) {
 		tdb_traverse(tdb, tdb_traverse_delete_fn, NULL);
 		tdb_store_int32(tdb, vstring, DATABASE_VERSION_V2);
@@ -114,9 +82,20 @@ static BOOL init_group_mapping(void)
 
 	tdb_unlock_bystring(tdb, vstring);
 
-	/* write a list of default groups */
-	if(!default_group_mapping())
-		return False;
+	/* cleanup any map entries with a gid == -1 */
+	
+	if ( enum_group_mapping( NULL, SID_NAME_UNKNOWN, &map_table, &num_entries, False ) ) {
+		int i;
+		
+		for ( i=0; i<num_entries; i++ ) {
+			if ( map_table[i].gid == -1 ) {
+				group_map_remove( &map_table[i].sid );
+			}
+		}
+		
+		SAFE_FREE( map_table );
+	}
+
 
 	return True;
 }
@@ -274,7 +253,7 @@ static BOOL get_group_map_from_sid(DOM_SID sid, GROUP_MAP *map)
 		DEBUG(3,("get_group_map_from_sid: tdb_unpack failure\n"));
 		return False;
 	}
-
+	
 	sid_copy(&map->sid, &sid);
 	
 	return True;
@@ -371,7 +350,7 @@ static BOOL get_group_map_from_ntname(const char *name, GROUP_MAP *map)
 			return False;
 		}
 
-		if (StrCaseCmp(name, map->nt_name)==0) {
+		if ( strequal(name, map->nt_name) ) {
 			SAFE_FREE(kbuf.dptr);
 			return True;
 		}
@@ -419,7 +398,7 @@ static BOOL group_map_remove(const DOM_SID *sid)
  Enumerate the group mapping.
 ****************************************************************************/
 
-static BOOL enum_group_mapping(enum SID_NAME_USE sid_name_use, GROUP_MAP **pp_rmap,
+static BOOL enum_group_mapping(const DOM_SID *domsid, enum SID_NAME_USE sid_name_use, GROUP_MAP **pp_rmap,
 			size_t *p_num_entries, BOOL unix_only)
 {
 	TDB_DATA kbuf, dbuf, newkey;
@@ -428,6 +407,8 @@ static BOOL enum_group_mapping(enum SID_NAME_USE sid_name_use, GROUP_MAP **pp_rm
 	GROUP_MAP *mapt;
 	int ret;
 	size_t entries=0;
+	DOM_SID grpsid;
+	uint32 rid;
 
 	if(!init_group_mapping()) {
 		DEBUG(0,("failed to initialize group mapping\n"));
@@ -471,8 +452,19 @@ static BOOL enum_group_mapping(enum SID_NAME_USE sid_name_use, GROUP_MAP **pp_rm
 			continue;
 		}
 
-		string_to_sid(&map.sid, string_sid);
+		string_to_sid(&grpsid, string_sid);
+		sid_copy( &map.sid, &grpsid );
 		
+		sid_split_rid( &grpsid, &rid );
+
+		/* Only check the domain if we were given one */
+
+		if ( domsid && !sid_equal( domsid, &grpsid ) ) {
+			DEBUG(11,("enum_group_mapping: group %s is not in domain %s\n", 
+				string_sid, sid_string_static(domsid)));
+			continue;
+		}
+
 		DEBUG(11,("enum_group_mapping: returning group %s of "
 			  "type %s\n", map.nt_name,
 			  sid_type_lookup(map.sid_name_use)));
@@ -1032,11 +1024,11 @@ NTSTATUS pdb_default_delete_group_mapping_entry(struct pdb_methods *methods,
 }
 
 NTSTATUS pdb_default_enum_group_mapping(struct pdb_methods *methods,
-					   enum SID_NAME_USE sid_name_use,
+					   const DOM_SID *sid, enum SID_NAME_USE sid_name_use,
 					   GROUP_MAP **pp_rmap, size_t *p_num_entries,
 					   BOOL unix_only)
 {
-	return enum_group_mapping(sid_name_use, pp_rmap, p_num_entries, unix_only) ?
+	return enum_group_mapping(sid, sid_name_use, pp_rmap, p_num_entries, unix_only) ?
 		NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
 }
 
@@ -1299,6 +1291,64 @@ BOOL pdb_set_dom_grp_info(const DOM_SID *sid, const struct acct_info *info)
 	fstrcpy(map.comment, info->acct_desc);
 
 	return NT_STATUS_IS_OK(pdb_update_group_mapping_entry(&map));
+}
+
+/********************************************************************
+ Really just intended to be called by smbd
+********************************************************************/
+
+NTSTATUS pdb_create_builtin_alias(uint32 rid)
+{
+	DOM_SID sid;
+	enum SID_NAME_USE type;
+	gid_t gid;
+	GROUP_MAP map;
+	TALLOC_CTX *mem_ctx;
+	NTSTATUS status;
+	const char *name = NULL;
+	fstring groupname;
+
+	DEBUG(10, ("Trying to create builtin alias %d\n", rid));
+	
+	if ( !sid_compose( &sid, &global_sid_Builtin, rid ) ) {
+		return NT_STATUS_NO_SUCH_ALIAS;
+	}
+	
+	if ( (mem_ctx = talloc_new(NULL)) == NULL ) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	
+	if ( !lookup_sid(mem_ctx, &sid, NULL, &name, &type) ) {
+		TALLOC_FREE( mem_ctx );
+		return NT_STATUS_NO_SUCH_ALIAS;
+	}
+	
+	/* validate RID so copy the name and move on */
+		
+	fstrcpy( groupname, name );
+	TALLOC_FREE( mem_ctx );
+
+	if (!winbind_allocate_gid(&gid)) {
+		DEBUG(3, ("pdb_create_builtin_alias: Could not get a gid out of winbind\n"));
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	DEBUG(10,("Creating alias %s with gid %d\n", name, gid));
+
+	map.gid = gid;
+	sid_copy(&map.sid, &sid);
+	map.sid_name_use = SID_NAME_ALIAS;
+	fstrcpy(map.nt_name, name);
+	fstrcpy(map.comment, "");
+
+	status = pdb_add_group_mapping_entry(&map);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("pdb_create_builtin_alias: Could not add group mapping entry for alias %d "
+			  "(%s)\n", rid, nt_errstr(status)));
+	}
+
+	return status;
 }
 
 

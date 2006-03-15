@@ -242,7 +242,7 @@ struct pdb_search {
  * the pdb module. Remove the latter, this might happen more often. VL.
  */
 
-#define PASSDB_INTERFACE_VERSION 12
+#define PASSDB_INTERFACE_VERSION 13
 
 struct pdb_methods 
 {
@@ -298,7 +298,7 @@ struct pdb_methods
 					       DOM_SID sid);
 
 	NTSTATUS (*enum_group_mapping)(struct pdb_methods *methods,
-				       enum SID_NAME_USE sid_name_use,
+				       const DOM_SID *sid, enum SID_NAME_USE sid_name_use,
 				       GROUP_MAP **pp_rmap, size_t *p_num_entries,
 				       BOOL unix_only);
 

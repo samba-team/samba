@@ -715,7 +715,7 @@ NTSTATUS pdb_delete_group_mapping_entry(DOM_SID sid)
 	return pdb->delete_group_mapping_entry(pdb, sid);
 }
 
-BOOL pdb_enum_group_mapping(enum SID_NAME_USE sid_name_use, GROUP_MAP **pp_rmap,
+BOOL pdb_enum_group_mapping(const DOM_SID *sid, enum SID_NAME_USE sid_name_use, GROUP_MAP **pp_rmap,
 			    size_t *p_num_entries, BOOL unix_only)
 {
 	struct pdb_methods *pdb = pdb_get_methods();
@@ -724,7 +724,7 @@ BOOL pdb_enum_group_mapping(enum SID_NAME_USE sid_name_use, GROUP_MAP **pp_rmap,
 		return False;
 	}
 
-	return NT_STATUS_IS_OK(pdb-> enum_group_mapping(pdb, sid_name_use,
+	return NT_STATUS_IS_OK(pdb-> enum_group_mapping(pdb, sid, sid_name_use,
 		pp_rmap, p_num_entries, unix_only));
 }
 
@@ -1631,7 +1631,7 @@ static BOOL lookup_global_sam_rid(TALLOC_CTX *mem_ctx, uint32 rid,
 	
 	if ( rid == DOMAIN_GROUP_RID_USERS ) {
 		*name = talloc_strdup(mem_ctx, "None" );
-		*psid_name_use = IS_DC ? SID_NAME_DOM_GRP : SID_NAME_ALIAS;
+		*psid_name_use = SID_NAME_DOM_GRP;
 		
 		return True;
 	}
@@ -1919,7 +1919,7 @@ static void search_end_groups(struct pdb_search *search)
 }
 
 static BOOL pdb_search_grouptype(struct pdb_search *search,
-				 enum SID_NAME_USE type)
+				 const DOM_SID *sid, enum SID_NAME_USE type)
 {
 	struct group_search *state;
 
@@ -1929,7 +1929,7 @@ static BOOL pdb_search_grouptype(struct pdb_search *search,
 		return False;
 	}
 
-	if (!pdb_enum_group_mapping(type, &state->groups, &state->num_groups,
+	if (!pdb_enum_group_mapping(sid, type, &state->groups, &state->num_groups,
 				    True)) {
 		DEBUG(0, ("Could not enum groups\n"));
 		return False;
@@ -1945,7 +1945,7 @@ static BOOL pdb_search_grouptype(struct pdb_search *search,
 static BOOL pdb_default_search_groups(struct pdb_methods *methods,
 				      struct pdb_search *search)
 {
-	return pdb_search_grouptype(search, SID_NAME_DOM_GRP);
+	return pdb_search_grouptype(search, get_global_sam_sid(), SID_NAME_DOM_GRP);
 }
 
 static BOOL pdb_default_search_aliases(struct pdb_methods *methods,
@@ -1953,14 +1953,7 @@ static BOOL pdb_default_search_aliases(struct pdb_methods *methods,
 				       const DOM_SID *sid)
 {
 
-	if (sid_equal(sid, get_global_sam_sid()))
-		return pdb_search_grouptype(search, SID_NAME_ALIAS);
-
-	if (sid_equal(sid, &global_sid_Builtin))
-		return pdb_search_grouptype(search, SID_NAME_WKN_GRP);
-
-	DEBUG(3, ("unknown domain sid: %s\n", sid_string_static(sid)));
-	return False;
+	return pdb_search_grouptype(search, sid, SID_NAME_ALIAS);
 }
 
 static struct samr_displayentry *pdb_search_getentry(struct pdb_search *search,

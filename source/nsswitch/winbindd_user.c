@@ -97,7 +97,7 @@ static BOOL winbindd_fill_pwent(char *dom_name, char *user_name,
 
 	/* Username */
 
-	fill_domain_username(output_username, dom_name, user_name); 
+	fill_domain_username(output_username, dom_name, user_name, True); 
 
 	safe_strcpy(pw->pw_name, output_username, sizeof(pw->pw_name) - 1);
 	
@@ -289,7 +289,7 @@ static void getpwsid_sid2gid_recv(void *private_data, BOOL success, gid_t gid)
 	pw = &s->state->response.data.pw;
 	pw->pw_uid = s->uid;
 	pw->pw_gid = s->gid;
-	fill_domain_username(output_username, s->domain->name, s->username); 
+	fill_domain_username(output_username, s->domain->name, s->username, True); 
 	safe_strcpy(pw->pw_name, output_username, sizeof(pw->pw_name) - 1);
 	safe_strcpy(pw->pw_gecos, s->fullname, sizeof(pw->pw_gecos) - 1);
 
@@ -781,7 +781,7 @@ void winbindd_list_users(struct winbindd_cli_state *state)
 				fstrcpy(acct_name, info[i].acct_name);
 			}
 			
-			fill_domain_username(name, domain->name, acct_name);
+			fill_domain_username(name, domain->name, acct_name, True);
 			
 				/* Append to extra data */
 			memcpy(&extra_data[extra_data_len], name, 
