@@ -577,49 +577,44 @@ static WERROR DsCrackNameOneFilter(struct ldb_context *sam_ctx, TALLOC_CTX *mem_
 	struct ldb_message **result_res = NULL;
 	const struct ldb_dn *result_basedn;
 
+	const char * const _domain_attrs_1779[] = { "ncName", "dnsRoot", NULL};
+	const char * const _result_attrs_null[] = { NULL };
+
+	const char * const _domain_attrs_canonical[] = { "ncName", "dnsRoot", NULL};
+	const char * const _result_attrs_canonical[] = { "canonicalName", NULL };
+
+	const char * const _domain_attrs_nt4[] = { "ncName", "dnsRoot", "nETBIOSName", NULL};
+	const char * const _result_attrs_nt4[] = { "sAMAccountName", "objectSid", NULL};
+		
+	const char * const _domain_attrs_guid[] = { "ncName", "dnsRoot", NULL};
+	const char * const _result_attrs_guid[] = { "objectGUID", NULL};
+		
+	const char * const _domain_attrs_display[] = { "ncName", "dnsRoot", NULL};
+	const char * const _result_attrs_display[] = { "displayName", "samAccountName", NULL};
+
 	/* here we need to set the attrs lists for domain and result lookups */
 	switch (format_desired) {
 	case DRSUAPI_DS_NAME_FORMAT_FQDN_1779:
-	case DRSUAPI_DS_NAME_FORMAT_CANONICAL_EX: {
-		const char * const _domain_attrs[] = { "ncName", "dnsRoot", NULL};
-		const char * const _result_attrs[] = { NULL};
-		
-		domain_attrs = _domain_attrs;
-		result_attrs = _result_attrs;
+	case DRSUAPI_DS_NAME_FORMAT_CANONICAL_EX:
+		domain_attrs = _domain_attrs_1779;
+		result_attrs = _result_attrs_null;
 		break;
-	}
-	case DRSUAPI_DS_NAME_FORMAT_CANONICAL: {
-		const char * const _domain_attrs[] = { "ncName", "dnsRoot", NULL};
-		const char * const _result_attrs[] = { "canonicalName", NULL };
-		
-		domain_attrs = _domain_attrs;
-		result_attrs = _result_attrs;
+	case DRSUAPI_DS_NAME_FORMAT_CANONICAL:
+		domain_attrs = _domain_attrs_canonical;
+		result_attrs = _result_attrs_canonical;
 		break;
-	}
-	case DRSUAPI_DS_NAME_FORMAT_NT4_ACCOUNT: {
-		const char * const _domain_attrs[] = { "ncName", "dnsRoot", "nETBIOSName", NULL};
-		const char * const _result_attrs[] = { "sAMAccountName", "objectSid", NULL};
-		
-		domain_attrs = _domain_attrs;
-		result_attrs = _result_attrs;
+	case DRSUAPI_DS_NAME_FORMAT_NT4_ACCOUNT:
+		domain_attrs = _domain_attrs_nt4;
+		result_attrs = _result_attrs_nt4;
 		break;
-	}
-	case DRSUAPI_DS_NAME_FORMAT_GUID: {
-		const char * const _domain_attrs[] = { "ncName", "dnsRoot", NULL};
-		const char * const _result_attrs[] = { "objectGUID", NULL};
-		
-		domain_attrs = _domain_attrs;
-		result_attrs = _result_attrs;
+	case DRSUAPI_DS_NAME_FORMAT_GUID:		
+		domain_attrs = _domain_attrs_guid;
+		result_attrs = _result_attrs_guid;
 		break;
-	}
-	case DRSUAPI_DS_NAME_FORMAT_DISPLAY: {
-		const char * const _domain_attrs[] = { "ncName", "dnsRoot", NULL};
-		const char * const _result_attrs[] = { "displayName", "samAccountName", NULL};
-		
-		domain_attrs = _domain_attrs;
-		result_attrs = _result_attrs;
+	case DRSUAPI_DS_NAME_FORMAT_DISPLAY:		
+		domain_attrs = _domain_attrs_display;
+		result_attrs = _result_attrs_display;
 		break;
-	}
 	default:
 		return WERR_OK;
 	}
