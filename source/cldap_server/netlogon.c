@@ -220,12 +220,12 @@ void cldapd_netlogon_request(struct cldap_socket *cldap,
 		if (t->operation != LDB_OP_EQUALITY) goto failed;
 		if (strcasecmp(t->u.equality.attr, "DnsDomain") == 0) {
 			domain = talloc_strndup(tmp_ctx, 
-						t->u.equality.value.data,
+						(const char *)t->u.equality.value.data,
 						t->u.equality.value.length);
 		}
 		if (strcasecmp(t->u.equality.attr, "Host") == 0) {
 			host = talloc_strndup(tmp_ctx, 
-					      t->u.equality.value.data,
+					      (const char *)t->u.equality.value.data,
 					      t->u.equality.value.length);
 		}
 		if (strcasecmp(t->u.equality.attr, "DomainGuid") == 0) {
@@ -239,12 +239,12 @@ void cldapd_netlogon_request(struct cldap_socket *cldap,
 		}
 		if (strcasecmp(t->u.equality.attr, "DomainSid") == 0) {
 			domain_sid = talloc_strndup(tmp_ctx, 
-						    t->u.equality.value.data,
+						    (const char *)t->u.equality.value.data,
 						    t->u.equality.value.length);
 		}
 		if (strcasecmp(t->u.equality.attr, "User") == 0) {
 			user = talloc_strndup(tmp_ctx, 
-					      t->u.equality.value.data,
+					      (const char *)t->u.equality.value.data,
 					      t->u.equality.value.length);
 		}
 		if (strcasecmp(t->u.equality.attr, "NtVer") == 0 &&
