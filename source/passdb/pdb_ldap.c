@@ -3070,7 +3070,7 @@ static NTSTATUS ldapsam_getsamgrent(struct pdb_methods *my_methods,
  *********************************************************************/
 
 static NTSTATUS ldapsam_enum_group_mapping(struct pdb_methods *methods,
-					   enum SID_NAME_USE sid_name_use,
+					   const DOM_SID *domsid, enum SID_NAME_USE sid_name_use,
 					   GROUP_MAP **pp_rmap,
 					   size_t *p_num_entries,
 					   BOOL unix_only)
