@@ -831,6 +831,8 @@ int cac_RegGetKeySecurity(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct RegG
    uint32 buf_size;
    SEC_DESC_BUF buf;
 
+   ZERO_STRUCT(buf);
+
    if(!hnd) 
       return CAC_FAILURE;
 
