@@ -2740,19 +2740,10 @@ static NTSTATUS ldapsam_add_group_mapping_entry(struct pdb_methods *methods,
 		break;
 
 	case SID_NAME_ALIAS:
-		if (!sid_check_is_in_our_domain(&map->sid)) {
-			DEBUG(3, ("Refusing to map sid %s as an alias, not "
-				  "in our domain\n",
-				  sid_string_static(&map->sid)));
-			result = NT_STATUS_INVALID_PARAMETER;
-			goto done;
-		}
-		break;
-
-	case SID_NAME_WKN_GRP:
-		if (!sid_check_is_in_builtin(&map->sid)) {
-			DEBUG(3, ("Refusing to map sid %s as an alias, not "
-				  "in builtin domain\n",
+		if (!sid_check_is_in_our_domain(&map->sid) 
+			&& !sid_check_is_in_builtin(&map->sid) ) 
+		{
+			DEBUG(3, ("Refusing to map sid %s as an alias, not in our domain\n",
 				  sid_string_static(&map->sid)));
 			result = NT_STATUS_INVALID_PARAMETER;
 			goto done;
@@ -3137,7 +3128,7 @@ static NTSTATUS ldapsam_modify_aliasmem(struct pdb_methods *methods,
 	pstring filter;
 
 	if (sid_check_is_in_builtin(alias)) {
-		type = SID_NAME_WKN_GRP;
+		type = SID_NAME_ALIAS;
 	}
 
 	if (sid_check_is_in_our_domain(alias)) {
@@ -3250,7 +3241,7 @@ static NTSTATUS ldapsam_enum_aliasmem(struct pdb_methods *methods,
 	*p_num_members = 0;
 
 	if (sid_check_is_in_builtin(alias)) {
-		type = SID_NAME_WKN_GRP;
+		type = SID_NAME_ALIAS;
 	}
 
 	if (sid_check_is_in_our_domain(alias)) {
@@ -3346,7 +3337,7 @@ static NTSTATUS ldapsam_alias_memberships(struct pdb_methods *methods,
 	enum SID_NAME_USE type = SID_NAME_USE_NONE;
 
 	if (sid_check_is_builtin(domain_sid)) {
-		type = SID_NAME_WKN_GRP;
+		type = SID_NAME_ALIAS;
 	}
 
 	if (sid_check_is_domain(domain_sid)) {
@@ -3775,7 +3766,7 @@ static NTSTATUS ldapsam_lookup_rids(struct pdb_methods *methods,
 		type = atol(attr);
 
 		/* Consistency checks */
-		if ((is_builtin && (type != SID_NAME_WKN_GRP)) ||
+		if ((is_builtin && (type != SID_NAME_ALIAS)) ||
 		    (!is_builtin && ((type != SID_NAME_ALIAS) &&
 				     (type != SID_NAME_DOM_GRP)))) {
 			DEBUG(2, ("Rejecting invalid group mapping entry %s\n", dn));
@@ -4261,25 +4252,15 @@ static BOOL ldapgroup2displayentry(struct ldap_search_state *state,
 		case SID_NAME_DOM_GRP:
 		case SID_NAME_ALIAS:
 
-			if (!sid_peek_check_rid(get_global_sam_sid(), &sid,
-						&result->rid)) {
+			if (!sid_peek_check_rid(get_global_sam_sid(), &sid, &result->rid) 
+				&& !sid_peek_check_rid(&global_sid_Builtin, &sid, &result->rid)) 
+			{
 				DEBUG(0, ("%s is not in our domain\n",
 					  sid_string_static(&sid)));
 				return False;
 			}
 			break;
 	
-		case SID_NAME_WKN_GRP:
-
-			if (!sid_peek_check_rid(&global_sid_Builtin, &sid,
-						&result->rid)) {
-
-				DEBUG(0, ("%s is not in builtin sid\n",
-					  sid_string_static(&sid)));
-				return False;
-			}
-			break;
-
 		default:
 			DEBUG(0,("unkown group type: %d\n", group_type));
 			return False;
@@ -4290,6 +4271,7 @@ static BOOL ldapgroup2displayentry(struct ldap_search_state *state,
 
 static BOOL ldapsam_search_grouptype(struct pdb_methods *methods,
 				     struct pdb_search *search,
+                                     const DOM_SID *sid,
 				     enum SID_NAME_USE type)
 {
 	struct ldapsam_privates *ldap_state = methods->private_data;
@@ -4308,7 +4290,8 @@ static BOOL ldapsam_search_grouptype(struct pdb_methods *methods,
 	state->scope = LDAP_SCOPE_SUBTREE;
 	state->filter =	talloc_asprintf(search->mem_ctx,
 					"(&(objectclass=sambaGroupMapping)"
-					"(sambaGroupType=%d))", type);
+					"(sambaGroupType=%d)(sambaSID=%s)", 
+					sid_string_static(sid), type);
 	state->attrs = talloc_attrs(search->mem_ctx, "cn", "sambaSid",
 				    "displayName", "description",
 				    "sambaGroupType", NULL);
@@ -4333,23 +4316,14 @@ static BOOL ldapsam_search_grouptype(struct pdb_methods *methods,
 static BOOL ldapsam_search_groups(struct pdb_methods *methods,
 				  struct pdb_search *search)
 {
-	return ldapsam_search_grouptype(methods, search, SID_NAME_DOM_GRP);
+	return ldapsam_search_grouptype(methods, search, get_global_sam_sid(), SID_NAME_DOM_GRP);
 }
 
 static BOOL ldapsam_search_aliases(struct pdb_methods *methods,
 				   struct pdb_search *search,
 				   const DOM_SID *sid)
 {
-	if (sid_check_is_domain(sid))
-		return ldapsam_search_grouptype(methods, search,
-						SID_NAME_ALIAS);
-
-	if (sid_check_is_builtin(sid))
-		return ldapsam_search_grouptype(methods, search,
-						SID_NAME_WKN_GRP);
-
-	DEBUG(5, ("Don't know SID %s\n", sid_string_static(sid)));
-	return False;
+	return ldapsam_search_grouptype(methods, search, sid, SID_NAME_ALIAS);
 }
 
 static BOOL ldapsam_rid_algorithm(struct pdb_methods *methods)
