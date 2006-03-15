@@ -572,6 +572,7 @@ static NTSTATUS gensec_start_mech(struct gensec_security *gensec_security)
 			}
 			return status;
 		}
+		break;
 	case GENSEC_SERVER:
 		if (gensec_security->ops->server_start) {
 			status = gensec_security->ops->server_start(gensec_security);
@@ -581,6 +582,7 @@ static NTSTATUS gensec_start_mech(struct gensec_security *gensec_security)
 			}
 			return status;
 		}
+		break;
 	}
 	return NT_STATUS_INVALID_PARAMETER;
 }
