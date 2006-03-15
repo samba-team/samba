@@ -543,7 +543,7 @@ static const char **available_local_attributes(struct ldb_module *module, const 
 	ret[0] = NULL;
 
 	for (i = 0; privdat->attribute_maps[i].local_name; i++) {
-		int avail = 0;
+		BOOL avail = False;
 		const struct ldb_map_attribute *attr = &privdat->attribute_maps[i];
 
 		/* If all remote attributes for this attribute are present, add the 
@@ -561,9 +561,9 @@ static const char **available_local_attributes(struct ldb_module *module, const 
 				break;
 
 		case MAP_GENERATE:
-				avail = 1;
+				avail = True;
 				for (j = 0; attr->u.generate.remote_names[j]; j++) {
-					avail &= (ldb_msg_find_ldb_val(msg, attr->u.generate.remote_names[j]) != NULL);
+					avail &= (BOOL)(ldb_msg_find_ldb_val(msg, attr->u.generate.remote_names[j]) != NULL);
 				}
 				break;
 		}
