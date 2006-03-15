@@ -734,13 +734,31 @@ NTSTATUS pdb_enum_group_members(TALLOC_CTX *mem_ctx,
 				size_t *p_num_members)
 {
 	struct pdb_methods *pdb = pdb_get_methods();
+	NTSTATUS result;
 
 	if ( !pdb ) {
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	return pdb->enum_group_members(pdb, mem_ctx, sid, 
-						   pp_member_rids, p_num_members);
+	result = pdb->enum_group_members(pdb, mem_ctx, 
+			sid, pp_member_rids, p_num_members);
+		
+	/* special check for rid 513 */
+		
+	if ( !NT_STATUS_IS_OK( result ) ) {
+		uint32 rid;
+		
+		sid_peek_rid( sid, &rid );
+		
+		if ( rid == DOMAIN_GROUP_RID_USERS ) {
+			*p_num_members = 0;
+			*pp_member_rids = NULL;
+			
+			return NT_STATUS_OK;
+		}
+	}
+	
+	return result;
 }
 
 NTSTATUS pdb_enum_group_memberships(TALLOC_CTX *mem_ctx, struct samu *user,

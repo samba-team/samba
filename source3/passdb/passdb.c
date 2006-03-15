@@ -548,6 +548,18 @@ BOOL lookup_global_sam_name(const char *user, int flags, uint32_t *rid,
 {
 	GROUP_MAP map;
 	BOOL ret;
+	
+	/* Windows treats "MACHINE\None" as a special name for 
+	   rid 513 on non-DCs.  You cannot create a user or group
+	   name "None" on Windows.  You will get an error that 
+	   the group already exists. */
+	   
+	if ( strequal( user, "None" ) ) {
+		*rid = DOMAIN_GROUP_RID_USERS;
+		*type = SID_NAME_DOM_GRP;
+		
+		return True;
+	}
 
 	/* LOOKUP_NAME_GROUP is a hack to allow valid users = @foo to work
 	 * correctly in the case where foo also exists as a user. If the flag
