@@ -14,6 +14,6 @@
 	Note that this option is only useful if Samba is set up as a logon server.
 	</para>
 </description>
-<value type="default">z:</value>
+<value type="default"></value>
 <value type="example">h:</value>
 </samba:parameter>
