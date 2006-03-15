@@ -1330,7 +1330,8 @@ NTSTATUS pvfs_exit(struct ntvfs_module_context *ntvfs,
 
 	for (f=pvfs->open_files;f;f=next) {
 		next = f->next;
-		if (f->smbpid == req->smbpid) {
+		if (f->session == req->session &&
+		    f->smbpid == req->smbpid) {
 			talloc_free(f);
 		}
 	}
