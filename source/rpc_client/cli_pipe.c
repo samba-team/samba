@@ -2171,6 +2171,12 @@ static struct rpc_pipe_client *cli_rpc_pipe_open(struct cli_state *cli, int pipe
 
 	*perr = NT_STATUS_NO_MEMORY;
 
+	/* sanity check to protect against crashes */
+
+	if ( !cli ) {
+		return NT_STATUS_INVALID_HANDLE;
+	}
+
 	/* The pipe name index must fall within our array */
 	SMB_ASSERT((pipe_idx >= 0) && (pipe_idx < PI_MAX_PIPES));
 
