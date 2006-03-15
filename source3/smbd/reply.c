@@ -3220,7 +3220,7 @@ int reply_exit(connection_struct *conn,
 	int outsize;
 	START_PROFILE(SMBexit);
 
-	file_close_pid(SVAL(inbuf,smb_pid));
+	file_close_pid(SVAL(inbuf,smb_pid),SVAL(inbuf,smb_uid));
 
 	outsize = set_message(outbuf,0,0,True);
 
