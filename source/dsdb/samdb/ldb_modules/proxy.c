@@ -59,7 +59,7 @@ static int load_proxy_info(struct ldb_module *module)
 {
 	struct proxy_data *proxy = talloc_get_type(module->private_data, struct proxy_data);
 	struct ldb_dn *dn;
-	struct ldb_result *res;
+	struct ldb_result *res = NULL;
 	int ret;
 	const char *olddn, *newdn, *url, *username, *password, *oldstr, *newstr;
 	struct cli_credentials *creds;
