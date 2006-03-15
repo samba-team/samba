@@ -2215,15 +2215,11 @@ static void dump_a_service(service * pService, FILE * f)
 BOOL lp_dump_a_parameter(int snum, char *parm_name, FILE * f, BOOL isGlobal)
 {
 	service * pService = ServicePtrs[snum];
-	parm_class p_class;
-	unsigned flag = 0;
 	struct parm_struct *parm;
 	void *ptr;
 	if (isGlobal) {
-		p_class = P_GLOBAL;
 		flag = FLAG_GLOBAL;
-	} else
-		p_class = P_LOCAL;
+	}
 	
 	parm = lp_parm_struct(parm_name);
 	if (!parm) {
