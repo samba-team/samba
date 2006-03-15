@@ -501,6 +501,11 @@ int cac_RegDeleteValue(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct RegDele
    return CAC_SUCCESS;
 }
 
+#if 0
+/* JRA - disabled until fix. */
+/* This code is currently broken so disable it - it needs to handle the ERROR_MORE_DATA
+   cleanly and resubmit the query. */
+
 int cac_RegQueryKeyInfo(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct RegQueryKeyInfo *op) {
    struct rpc_pipe_client *pipe_hnd = NULL;
    WERROR err;
@@ -583,6 +588,7 @@ int cac_RegQueryKeyInfo(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct RegQue
 
    return CAC_FAILURE;
 }
+#endif
 
 int cac_RegQueryValue(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct RegQueryValue *op) {
    struct rpc_pipe_client *pipe_hnd = NULL;
