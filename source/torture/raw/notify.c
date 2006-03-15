@@ -52,30 +52,20 @@
 
 
 /* 
-   basic testing of change notify
+   basic testing of change notify on directories
 */
-BOOL torture_raw_notify(void)
+static BOOL test_notify_dir(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 {
-	struct smbcli_state *cli;
 	BOOL ret = True;
-	TALLOC_CTX *mem_ctx;
 	NTSTATUS status;
 	union smb_notify notify;
 	union smb_open io;
 	int i, count, fnum, fnum2;
 	struct smbcli_request *req, *req2;
 	extern int torture_numops;
+
+	printf("TESTING CHANGE NOTIFY ON DIRECTRIES\n");
 		
-	if (!torture_open_connection(&cli)) {
-		return False;
-	}
-
-	mem_ctx = talloc_init("torture_raw_notify");
-
-	if (!torture_setup_dir(cli, BASEDIR)) {
-		return False;
-	}
-
 	/*
 	  get a handle on the directory
 	*/
@@ -100,9 +90,10 @@ BOOL torture_raw_notify(void)
 	CHECK_STATUS(status, NT_STATUS_OK);
 	fnum2 = io.ntcreatex.out.file.fnum;
 
-	/* ask for a change notify */
+	/* ask for a change notify,
+	   on file or directory name changes */
 	notify.notify.in.buffer_size = 1000;
-	notify.notify.in.completion_filter = 0x3;
+	notify.notify.in.completion_filter = FILE_NOTIFY_CHANGE_NAME;
 	notify.notify.in.file.fnum = fnum;
 	notify.notify.in.recursive = True;
 
@@ -238,6 +229,91 @@ BOOL torture_raw_notify(void)
 	}
 
 done:
+	smb_raw_exit(cli->session);
+	return ret;
+}
+
+/*
+  basic testing of change notify on files
+*/
+static BOOL test_notify_file(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+{
+	NTSTATUS status;
+	BOOL ret = True;
+	union smb_open io;
+	union smb_close cl;
+	union smb_notify notify;
+	struct smbcli_request *req;
+	int fnum;
+	const char *fname = BASEDIR "\\file.txt";
+
+	printf("TESTING CHANGE NOTIFY ON FILES\n");
+
+	io.generic.level = RAW_OPEN_NTCREATEX;
+	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.flags = 0;
+	io.ntcreatex.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
+	io.ntcreatex.in.create_options = 0;
+	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
+	io.ntcreatex.in.share_access = NTCREATEX_SHARE_ACCESS_READ | NTCREATEX_SHARE_ACCESS_WRITE;
+	io.ntcreatex.in.alloc_size = 0;
+	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_CREATE;
+	io.ntcreatex.in.impersonation = NTCREATEX_IMPERSONATION_ANONYMOUS;
+	io.ntcreatex.in.security_flags = 0;
+	io.ntcreatex.in.fname = fname;
+	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	fnum = io.ntcreatex.out.file.fnum;
+
+	/* ask for a change notify,
+	   on file or directory name changes */
+	notify.notify.in.file.fnum = fnum;
+	notify.notify.in.buffer_size = 1000;
+	notify.notify.in.completion_filter = FILE_NOTIFY_CHANGE_STREAM_NAME;
+	notify.notify.in.recursive = False;
+
+	printf("testing if notifies on file handles are invalid (should be)\n");
+
+	req = smb_raw_changenotify_send(cli->tree, &notify);
+	status = smb_raw_changenotify_recv(req, mem_ctx, &notify);
+	CHECK_STATUS(status, NT_STATUS_INVALID_PARAMETER);
+
+	cl.close.level = RAW_CLOSE_CLOSE;
+	cl.close.in.file.fnum = fnum;
+	cl.close.in.write_time = 0;
+	status = smb_raw_close(cli->tree, &cl);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	status = smbcli_unlink(cli->tree, fname);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+done:
+	smb_raw_exit(cli->session);
+	return ret;
+}
+
+/* 
+   basic testing of change notify
+*/
+BOOL torture_raw_notify(void)
+{
+	struct smbcli_state *cli;
+	BOOL ret = True;
+	TALLOC_CTX *mem_ctx;
+		
+	if (!torture_open_connection(&cli)) {
+		return False;
+	}
+
+	mem_ctx = talloc_init("torture_raw_notify");
+
+	if (!torture_setup_dir(cli, BASEDIR)) {
+		return False;
+	}
+
+	ret &= test_notify_dir(cli, mem_ctx);
+	ret &= test_notify_file(cli, mem_ctx);
+
 	smb_raw_exit(cli->session);
 	smbcli_deltree(cli->tree, BASEDIR);
 	torture_close_connection(cli);
