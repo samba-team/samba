@@ -154,16 +154,16 @@ void file_close_conn(connection_struct *conn)
 }
 
 /****************************************************************************
- Close all open files for a pid.
+ Close all open files for a pid and a vuid.
 ****************************************************************************/
 
-void file_close_pid(uint16 smbpid)
+void file_close_pid(uint16 smbpid, int vuid)
 {
 	files_struct *fsp, *next;
 	
 	for (fsp=Files;fsp;fsp=next) {
 		next = fsp->next;
-		if (fsp->file_pid == smbpid) {
+		if ((fsp->file_pid == smbpid) && (fsp->vuid == vuid)) {
 			close_file(fsp,SHUTDOWN_CLOSE); 
 		}
 	}
