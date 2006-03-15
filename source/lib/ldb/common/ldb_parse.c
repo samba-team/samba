@@ -193,7 +193,9 @@ static struct ldb_val **ldb_wildcard_decode(void *mem_ctx, const char *string)
 		val++;
 	}
 
-	ret[val] = NULL;
+	if (ret != NULL) {
+		ret[val] = NULL;
+	}
 
 	return ret;
 }
