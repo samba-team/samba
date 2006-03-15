@@ -997,8 +997,16 @@ void winbindd_getgroups(struct winbindd_cli_state *state)
 				      &s->domname, &s->username)) {
 		DEBUG(5, ("Could not parse domain user: %s\n",
 			  state->request.data.username));
-		request_error(state);
-		return;
+
+		/* error out if we do not have nested group support */
+
+		if ( !lp_winbind_nested_groups() ) {
+			request_error(state);
+			return;
+		}
+
+		s->domname = talloc_strdup( state->mem_ctx, get_global_sam_name() );
+		s->username = talloc_strdup( state->mem_ctx, state->request.data.username );
 	}
 	
 	/* Get info for the domain */
