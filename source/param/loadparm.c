@@ -2217,9 +2217,6 @@ BOOL lp_dump_a_parameter(int snum, char *parm_name, FILE * f, BOOL isGlobal)
 	service * pService = ServicePtrs[snum];
 	struct parm_struct *parm;
 	void *ptr;
-	if (isGlobal) {
-		flag = FLAG_GLOBAL;
-	}
 	
 	parm = lp_parm_struct(parm_name);
 	if (!parm) {
