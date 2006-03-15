@@ -32,11 +32,11 @@
 _PUBLIC_ void hmac_md5_init_rfc2104(const uint8_t *key, int key_len, HMACMD5Context *ctx)
 {
         int i;
+	uint8_t tk[16];
 
         /* if key is longer than 64 bytes reset it to key=MD5(key) */
         if (key_len > 64)
 	{
-		uint8_t tk[16];
                 struct MD5Context tctx;
 
                 MD5Init(&tctx);
