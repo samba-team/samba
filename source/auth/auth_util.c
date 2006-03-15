@@ -677,9 +677,68 @@ static NTSTATUS log_nt_token(TALLOC_CTX *tmp_ctx, NT_USER_TOKEN *token)
 	return NT_STATUS_OK;
 }
 
-/*
- * Create a NT token for the user, expanding local aliases
- */
+/*******************************************************************
+*******************************************************************/
+
+static NTSTATUS add_builtin_administrators( TALLOC_CTX *ctx, struct nt_user_token *token )
+{
+	return NT_STATUS_OK;
+}
+
+/*******************************************************************
+*******************************************************************/
+
+static NTSTATUS create_builtin_administrators( void )
+{
+	NTSTATUS status;
+	DOM_SID dom_admins, root_sid;
+	fstring root_name;
+	enum SID_NAME_USE type;		
+	TALLOC_CTX *ctx;
+	BOOL ret;
+
+	status = pdb_create_builtin_alias( BUILTIN_ALIAS_RID_ADMINS );
+	if ( !NT_STATUS_IS_OK(status) ) {
+		DEBUG(0,("create_builtin_administrators: Failed to create Administrators\n"));
+		return status;
+	}
+	
+	/* add domain admins */
+	if ((IS_DC || (lp_server_role() == ROLE_DOMAIN_MEMBER)) 
+		&& secrets_fetch_domain_sid(lp_workgroup(), &dom_admins))
+	{
+		sid_append_rid(&dom_admins, DOMAIN_GROUP_RID_ADMINS);
+		status = pdb_add_aliasmem( &global_sid_Builtin_Administrators, &dom_admins );
+		if ( !NT_STATUS_IS_OK(status) ) {
+			DEBUG(0,("create_builtin_administrators: Failed to add Domain Admins"
+				" Administrators\n"));
+			return status;
+		}
+	}
+			
+	/* add root */
+	if ( (ctx = talloc_init(NULL)) == NULL ) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	fstr_sprintf( root_name, "%s\\root", get_global_sam_name() );
+	ret = lookup_name( ctx, root_name, 0, NULL, NULL, &root_sid, &type );
+	TALLOC_FREE( ctx );
+
+	if ( ret ) {
+		status = pdb_add_aliasmem( &global_sid_Builtin_Administrators, &root_sid );
+		if ( !NT_STATUS_IS_OK(status) ) {
+			DEBUG(0,("create_builtin_administrators: Failed to add root"
+				" Administrators\n"));
+			return status;
+		}
+	}
+	
+	return NT_STATUS_OK;
+}		
+
+/*******************************************************************
+ Create a NT token for the user, expanding local aliases
+*******************************************************************/
 
 static struct nt_user_token *create_local_nt_token(TALLOC_CTX *mem_ctx,
 						   const DOM_SID *user_sid,
@@ -692,6 +751,7 @@ static struct nt_user_token *create_local_nt_token(TALLOC_CTX *mem_ctx,
 	struct nt_user_token *result = NULL;
 	int i;
 	NTSTATUS status;
+	gid_t gid;
 
 	tmp_ctx = talloc_new(mem_ctx);
 	if (tmp_ctx == NULL) {
@@ -705,12 +765,15 @@ static struct nt_user_token *create_local_nt_token(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	/* First create the default SIDs */
+	/* Add the user and primary group sid */
 
 	add_sid_to_array(result, user_sid,
 			 &result->user_sids, &result->num_sids);
 	add_sid_to_array(result, group_sid,
 			 &result->user_sids, &result->num_sids);
+			 
+	/* Add in BUILTIN sids */
+	
 	add_sid_to_array(result, &global_sid_World,
 			 &result->user_sids, &result->num_sids);
 	add_sid_to_array(result, &global_sid_Network,
@@ -723,7 +786,7 @@ static struct nt_user_token *create_local_nt_token(TALLOC_CTX *mem_ctx,
 		add_sid_to_array(result, &global_sid_Authenticated_Users,
 				 &result->user_sids, &result->num_sids);
 	}
-
+	
 	/* Now the SIDs we got from authentication. These are the ones from
 	 * the info3 struct or from the pdb_enum_group_memberships, depending
 	 * on who authenticated the user. */
@@ -732,7 +795,35 @@ static struct nt_user_token *create_local_nt_token(TALLOC_CTX *mem_ctx,
 		add_sid_to_array_unique(result, &groupsids[i],
 					&result->user_sids, &result->num_sids);
 	}
+	
+	/* Deal with the BUILTIN\Administrators group.  If the SID can
+	   be resolved then assume that the add_aliasmem( S-1-5-32 ) 
+	   handled it. */
 
+	if ( !sid_to_gid( &global_sid_Builtin_Administrators, &gid ) ) {
+		/* We can only create a mapping if winbind is running 
+		   and the nested group functionality has been enabled */
+		   
+		if ( lp_winbind_nested_groups() ) {
+			become_root();
+			status = create_builtin_administrators( );
+			if ( !NT_STATUS_IS_OK(status) ) {
+				DEBUG(0,("create_local_nt_token: Failed to create BUILTIN\\Administrators group!\n"));
+				/* don't fail, just log the message */
+			}
+			unbecome_root();
+		}
+		else {
+			status = add_builtin_administrators( tmp_ctx, result );	
+			if ( !NT_STATUS_IS_OK(status) ) {			
+				result = NULL;
+				goto done;
+			}			
+		}		
+	}
+
+	/* Deal with local groups */
+	
 	if (lp_winbind_nested_groups()) {
 
 		/* Now add the aliases. First the one from our local SAM */
@@ -752,40 +843,8 @@ static struct nt_user_token *create_local_nt_token(TALLOC_CTX *mem_ctx,
 			result = NULL;
 			goto done;
 		}
-	} else {
+	} 
 
-		/* Play jerry's trick to auto-add local admins if we're a
-		 * domain admin. */
-
-		DOM_SID dom_admins;
-		BOOL domain_mode = False;
-
-		if (IS_DC) {
-			sid_compose(&dom_admins, get_global_sam_sid(),
-				    DOMAIN_GROUP_RID_ADMINS);
-			domain_mode = True;
-		}
-		if ((lp_server_role() == ROLE_DOMAIN_MEMBER) &&
-		    (secrets_fetch_domain_sid(lp_workgroup(), &dom_admins))) {
-			sid_append_rid(&dom_admins, DOMAIN_GROUP_RID_ADMINS);
-			domain_mode = True;
-		}
-
-		if (domain_mode) {
-			for (i=0; i<result->num_sids; i++) {
-				if (sid_equal(&dom_admins,
-					      &result->user_sids[i])) {
-					add_sid_to_array_unique(
-						result,
-						&global_sid_Builtin_Administrators,
-						&result->user_sids,
-						&result->num_sids);
-					break;
-				}
-			}
-			
-		}
-	}
 
 	get_privileges_for_sids(&result->privileges, result->user_sids,
 				result->num_sids);

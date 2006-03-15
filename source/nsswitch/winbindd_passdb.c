@@ -33,7 +33,7 @@ static void add_member(const char *domain, const char *user,
 {
 	fstring name;
 
-	fill_domain_username(name, domain, user);
+	fill_domain_username(name, domain, user, True);
 	safe_strcat(name, ",", sizeof(name)-1);
 	string_append(pp_members, name);
 	*p_num_members += 1;
@@ -248,10 +248,7 @@ static NTSTATUS name_to_sid(struct winbindd_domain *domain,
 	if (!pdb_find_alias(name, sid))
 		return NT_STATUS_NONE_MAPPED;
 
-	if (sid_check_is_in_builtin(sid))
-		*type = SID_NAME_WKN_GRP;
-	else
-		*type = SID_NAME_ALIAS;
+	*type = SID_NAME_ALIAS;
 
 	return NT_STATUS_OK;
 }

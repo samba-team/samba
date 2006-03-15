@@ -1071,7 +1071,7 @@ NTSTATUS _lsa_lookup_names(pipes_struct *p,LSA_Q_LOOKUP_NAMES *q_u, LSA_R_LOOKUP
 
 done:
 
-	if (NT_STATUS_IS_OK(r_u->status)) {
+	if (NT_STATUS_IS_OK(r_u->status) && (num_entries != 0) ) {
 		if (mapped_count == 0)
 			r_u->status = NT_STATUS_NONE_MAPPED;
 		else if (mapped_count != num_entries)
