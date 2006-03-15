@@ -241,7 +241,9 @@ static int ltdb_index_dn_simple(struct ldb_module *module,
 
 	talloc_free(msg);
 
-	qsort(list->dn, list->count, sizeof(char *), (comparison_fn_t) list_cmp);
+	if (list->count > 1) {
+		qsort(list->dn, list->count, sizeof(char *), (comparison_fn_t) list_cmp);
+	}
 
 	return 1;
 }
