@@ -872,7 +872,7 @@ static int rebindproc_connect_with_state (LDAP *ldap_struct,
 		case LDAP_REQ_EXTENDED:
 			DEBUG(10,("rebindproc_connect_with_state: "
 				"setting last_rebind timestamp "
-				"(req: 0x%02x)\n", request));
+				"(req: 0x%02x)\n", (unsigned int)request));
 			GetTimeOfDay(&ldap_state->last_rebind);
 			break;
 		default:
