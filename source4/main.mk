@@ -123,8 +123,8 @@ installbin: $(SBIN_PROGS) $(BIN_PROGS) installdirs
 		$(DESTDIR)$(VARDIR) \
 		$(BIN_PROGS)
 
-installlib: libraries installdirs
-	@$(SHELL) $(srcdir)/script/installlib.sh $(DESTDIR)$(LIBDIR) $(SHARED_LIBS) 
+installlib: $(INSTALLABLE_SHARED_LIBS) $(STATIC_LIBS) installdirs
+	@$(SHELL) $(srcdir)/script/installlib.sh $(DESTDIR)$(LIBDIR) $(INSTALLABLE_SHARED_LIBS) 
 	@$(SHELL) $(srcdir)/script/installlib.sh $(DESTDIR)$(LIBDIR) $(STATIC_LIBS)
 
 installheader: headers installdirs

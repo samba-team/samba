@@ -84,7 +84,7 @@ REQUIRED_SUBSYSTEMS = \
 # Start SUBSYSTEM registry
 [LIBRARY::registry]
 VERSION = 0.0.1
-SO_VERSION = 0.0.1
+SO_VERSION = 0
 DESCRIPTION = Windows-style registry library
 OBJ_FILES = \
 		common/reg_interface.o \

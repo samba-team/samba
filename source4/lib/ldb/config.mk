@@ -130,7 +130,7 @@ REQUIRED_SUBSYSTEMS = \
 # Start SUBSYSTEM ldb
 [LIBRARY::ldb]
 VERSION = 0.0.1
-SO_VERSION = 0.0.1
+SO_VERSION = 0
 DESCRIPTION = LDAP-like embedded database library
 INIT_FUNCTION_TYPE = int (*) (void)
 OBJ_FILES = \

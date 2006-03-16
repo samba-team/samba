@@ -18,6 +18,13 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+#ifndef __TDR_H__
+#define __TDR_H__
+
+#include "core.h"
+#include "lib/talloc/talloc.h"
+#include "charset/charset.h"
+
 #define TDR_BIG_ENDIAN			0x01
 #define TDR_ALIGN2			0x02
 #define TDR_ALIGN4			0x04
@@ -56,3 +63,5 @@ typedef NTSTATUS (*tdr_push_fn_t) (struct tdr_push *, const void *);
 typedef NTSTATUS (*tdr_pull_fn_t) (struct tdr_pull *, TALLOC_CTX *, void *);
 
 #include "tdr/tdr_proto.h"
+
+#endif /* __TDR_H__ */

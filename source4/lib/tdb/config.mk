@@ -2,7 +2,7 @@
 # Start SUBSYSTEM LIBTDB
 [LIBRARY::LIBTDB]
 VERSION = 0.0.1
-SO_VERSION = 0.0.1
+SO_VERSION = 0
 DESCRIPTION = Trivial Database Library
 OBJ_FILES = \
 	common/tdb.o common/dump.o common/io.o common/lock.o \

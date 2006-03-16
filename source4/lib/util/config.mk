@@ -1,6 +1,6 @@
 [LIBRARY::LIBBASIC]
 VERSION = 0.0.1
-SO_VERSION = 0.0.1
+SO_VERSION = 0
 DESCRIPTION = Generic utility functions
 PUBLIC_PROTO_HEADER = util_proto.h
 PUBLIC_HEADERS = util.h \

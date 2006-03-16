@@ -66,7 +66,7 @@ sub generate_shared_library($)
 		$lib->{LIBRARY_SONAME} = $lib->{LIBRARY_NAME}.".$lib->{SO_VERSION}";
 		$lib->{LIBRARY_REALNAME} = $lib->{LIBRARY_NAME}.".$lib->{VERSION}";
 	} elsif ($lib->{TYPE} eq "MODULE") {
-		$lib->{DEBUDIR} = "bin/modules/$lib->{SUBSYSTEM}";
+		$lib->{DEBUGDIR} = "bin/modules/$lib->{SUBSYSTEM}";
 	}
 	$lib->{TARGET} = "$lib->{DEBUGDIR}/$lib->{LIBRARY_REALNAME}";
 	$lib->{OUTPUT} = $lib->{TARGET};
