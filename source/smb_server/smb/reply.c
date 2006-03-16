@@ -1362,11 +1362,6 @@ void smbsrv_reply_tdis(struct smbsrv_request *req)
 {
 	REQ_CHECK_WCT(req, 0);
 
-	if (req->tcon == NULL) {
-		smbsrv_send_error(req, NT_STATUS_INVALID_HANDLE);
-		return;
-	}
-
 	talloc_free(req->tcon);
 
 	/* construct reply */
@@ -2185,11 +2180,6 @@ void smbsrv_reply_ulogoffX(struct smbsrv_request *req)
 	struct smbsrv_tcon *tcon;
 	NTSTATUS status;
 
-	if (!req->session) {
-		smbsrv_send_error(req, NT_STATUS_DOS(ERRSRV, ERRbaduid));
-		return;
-	}
-
 	/* in user level security we are supposed to close any files
 	   open by this user on all open tree connects */
 	for (tcon=req->smb_conn->smb_tcons.list;tcon;tcon=tcon->next) {
@@ -2349,39 +2339,6 @@ void smbsrv_reply_ntcancel(struct smbsrv_request *req)
 	ntvfs_cancel(req);
 	talloc_free(req);
 }
-
-/****************************************************************************
- Reply to an SMBsends request
-****************************************************************************/
-void smbsrv_reply_sends(struct smbsrv_request *req)
-{
-	smbsrv_send_error(req, NT_STATUS_FOOBAR);
-}
-
-/****************************************************************************
- Reply to an SMBsendstrt request
-****************************************************************************/
-void smbsrv_reply_sendstrt(struct smbsrv_request *req)
-{
-	smbsrv_send_error(req, NT_STATUS_FOOBAR);
-}
-
-/****************************************************************************
- Reply to an SMBsendend request
-****************************************************************************/
-void smbsrv_reply_sendend(struct smbsrv_request *req)
-{
-	smbsrv_send_error(req, NT_STATUS_FOOBAR);
-}
-
-/****************************************************************************
- Reply to an SMBsendtxt request
-****************************************************************************/
-void smbsrv_reply_sendtxt(struct smbsrv_request *req)
-{
-	smbsrv_send_error(req, NT_STATUS_FOOBAR);
-}
-
 
 /*
   parse the called/calling names from session request
