@@ -143,9 +143,7 @@ NTSTATUS smbsrv_recv_smb_request(void *private, DATA_BLOB blob)
 		return NT_STATUS_OK;
 	}
 
-	req->flags	= CVAL(req->in.hdr, HDR_FLG);
 	req->flags2	= SVAL(req->in.hdr, HDR_FLG2);
-	req->smbpid	= SVAL(req->in.hdr, HDR_PID);
 
 	if (!smbsrv_signing_check_incoming(req)) {
 		smbsrv_send_error(req, NT_STATUS_ACCESS_DENIED);
@@ -553,6 +551,14 @@ static void switch_message(int type, struct smbsrv_request *req)
 		smbsrv_send_error(req, status);
 		return;
 	}
+
+/* TODO: remove this stuff */
+req->smbpid = SVAL(req->in.hdr, HDR_PID);
+req->smbmid = SVAL(req->in.hdr, HDR_MID);
+req->statistics.request_time = req->request_time;
+if (req->session) req->session_info = req->session->session_info;
+if (req->tcon) req->ctx = req->tcon->ntvfs;
+/* TODO: end */
 
 	smb_messages[type].fn(req);
 }

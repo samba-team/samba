@@ -1208,8 +1208,10 @@ void smbsrv_reply_exit(struct smbsrv_request *req)
 
 	for (tcon=req->smb_conn->smb_tcons.list;tcon;tcon=tcon->next) {
 		req->tcon = tcon;
+req->ctx = req->tcon->ntvfs;
 		status = ntvfs_exit(req);
 		req->tcon = NULL;
+req->ctx = NULL;
 		if (!NT_STATUS_IS_OK(status)) {
 			smbsrv_send_error(req, status);
 			return;

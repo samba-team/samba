@@ -134,7 +134,7 @@ struct smbsrv_tcon {
    functions */
 struct smbsrv_request {
 	/* the smbsrv_connection needs a list of requests queued for send */
-	struct smbsrv_request_foo *next, *prev;
+	struct smbsrv_request *next, *prev;
 
 	/* the server_context contains all context specific to this SMB socket */
 	struct smbsrv_connection *smb_conn;
@@ -148,11 +148,8 @@ struct smbsrv_request {
 	/* a set of flags to control usage of the request. See REQ_CONTROL_* */
 	unsigned control_flags;
 
-	/* the smb pid is needed for locking contexts */
-	uint16_t smbpid;
-
 	/* the flags from the SMB request, in raw form (host byte order) */
-	uint16_t flags, flags2;
+	uint16_t flags2;
 
 	/* the system time when the request arrived */
 	struct timeval request_time;
@@ -167,11 +164,32 @@ struct smbsrv_request {
 	/* the sequence number for signing */
 	uint64_t seq_num;
 
+	struct request_buffer in;
+	struct request_buffer out;
+
+	/*
+	 * the following elemets will be part of a future ntvfs_request struct
+	 */
+
+	/* the ntvfs_context this requests belongs to */
+	struct ntvfs_context *ctx;
+
 	/* ntvfs per request async states */
 	struct ntvfs_async_state *async_states;
 
-	struct request_buffer in;
-	struct request_buffer out;
+	/* the session_info, with security_token and maybe delegated credentials */
+	struct auth_session_info *session_info;
+
+	/* the smb pid is needed for locking contexts */
+	uint16_t smbpid;
+
+uint16_t smbmid;
+
+	/* some statictics for the management tools */
+	struct {
+		/* the system time when the request arrived */
+		struct timeval request_time;
+	} statistics;
 };
 
 /* this contains variables that should be used in % substitutions for

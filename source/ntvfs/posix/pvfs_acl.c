@@ -362,7 +362,7 @@ NTSTATUS pvfs_access_check(struct pvfs_state *pvfs,
 			   struct pvfs_filename *name,
 			   uint32_t *access_mask)
 {
-	struct security_token *token = req->session->session_info->security_token;
+	struct security_token *token = req->session_info->security_token;
 	struct xattr_NTACL *acl;
 	NTSTATUS status;
 	struct security_descriptor *sd;

@@ -47,6 +47,21 @@ static int find_service(const char *service)
 	return iService;
 }
 
+static struct socket_address *smbsrv_get_my_addr(void *p, TALLOC_CTX *mem_ctx)
+{
+	struct smbsrv_connection *smb_conn = talloc_get_type(p,
+					     struct smbsrv_connection);
+
+	return socket_get_my_addr(smb_conn->connection->socket, mem_ctx);
+}
+
+static struct socket_address *smbsrv_get_peer_addr(void *p, TALLOC_CTX *mem_ctx)
+{
+	struct smbsrv_connection *smb_conn = talloc_get_type(p,
+					     struct smbsrv_connection);
+
+	return socket_get_peer_addr(smb_conn->connection->socket, mem_ctx);
+}
 
 /****************************************************************************
   Make a connection, given the snum to connect to, and the vuser of the
@@ -92,6 +107,14 @@ static NTSTATUS make_connection_snum(struct smbsrv_request *req,
 		DEBUG(0,("make_connection: NTVFS failed to set the oplock handler!\n"));
 		goto failed;
 	}
+
+	status = ntvfs_set_addr_callbacks(tcon->ntvfs, smbsrv_get_my_addr, smbsrv_get_peer_addr, req->smb_conn);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("make_connection: NTVFS failed to set the oplock handler!\n"));
+		goto failed;
+	}
+
+	req->ctx = tcon->ntvfs;
 
 	/* Invoke NTVFS connection hook */
 	status = ntvfs_connect(req, lp_servicename(snum));

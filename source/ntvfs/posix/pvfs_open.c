@@ -52,7 +52,7 @@ struct pvfs_file *pvfs_find_fd(struct pvfs_state *pvfs,
 		smb_panic("pvfs_find_fd: idtree_fnum corruption\n");
 	}
 
-	if (req->session != f->session) {
+	if (req->session_info != f->session_info) {
 		DEBUG(2,("pvfs_find_fd: attempt to use wrong session for fnum %d\n", 
 			 fnum));
 		return NULL;
@@ -263,7 +263,7 @@ static NTSTATUS pvfs_open_directory(struct pvfs_state *pvfs,
 	}
 
 	f->fnum          = fnum;
-	f->session       = req->session;
+	f->session_info  = req->session_info;
 	f->smbpid        = req->smbpid;
 	f->pvfs          = pvfs;
 	f->pending_list  = NULL;
@@ -680,7 +680,7 @@ static NTSTATUS pvfs_create_file(struct pvfs_state *pvfs,
 	}
 
 	f->fnum              = fnum;
-	f->session           = req->session;
+	f->session_info      = req->session_info;
 	f->smbpid            = req->smbpid;
 	f->pvfs              = pvfs;
 	f->pending_list      = NULL;
@@ -847,7 +847,7 @@ static NTSTATUS pvfs_open_deny_dos(struct ntvfs_module_context *ntvfs,
 	*/
 	for (f2=pvfs->open_files;f2;f2=f2->next) {
 		if (f2 != f &&
-		    f2->session == req->session &&
+		    f2->session_info == req->session_info &&
 		    f2->smbpid == req->smbpid &&
 		    (f2->handle->create_options & 
 		     (NTCREATEX_OPTIONS_PRIVATE_DENY_DOS |
@@ -936,7 +936,7 @@ static NTSTATUS pvfs_open_setup_retry(struct ntvfs_module_context *ntvfs,
 					      f->handle->odb_locking_key.data, 
 					      f->handle->odb_locking_key.length);
 
-	end_time = timeval_add(&req->request_time, 0, pvfs->sharing_violation_delay);
+	end_time = timeval_add(&req->statistics.request_time, 0, pvfs->sharing_violation_delay);
 
 	/* setup a pending lock */
 	status = odb_open_file_pending(lck, r);
@@ -1105,7 +1105,7 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 	}
 
 	f->fnum          = fnum;
-	f->session       = req->session;
+	f->session_info  = req->session_info;
 	f->smbpid        = req->smbpid;
 	f->pvfs          = pvfs;
 	f->pending_list  = NULL;
@@ -1310,7 +1310,7 @@ NTSTATUS pvfs_logoff(struct ntvfs_module_context *ntvfs,
 
 	for (f=pvfs->open_files;f;f=next) {
 		next = f->next;
-		if (f->session == req->session) {
+		if (f->session_info == req->session_info) {
 			talloc_free(f);
 		}
 	}
@@ -1330,7 +1330,7 @@ NTSTATUS pvfs_exit(struct ntvfs_module_context *ntvfs,
 
 	for (f=pvfs->open_files;f;f=next) {
 		next = f->next;
-		if (f->session == req->session &&
+		if (f->session_info == req->session_info &&
 		    f->smbpid == req->smbpid) {
 			talloc_free(f);
 		}
