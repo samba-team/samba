@@ -294,45 +294,44 @@ static NTSTATUS cmd_netlogon_sam_deltas(struct rpc_pipe_client *cli,
 /* Log on a domain user */
 
 static NTSTATUS cmd_netlogon_sam_logon(struct rpc_pipe_client *cli, 
-                                       TALLOC_CTX *mem_ctx, int argc,
-                                       const char **argv)
+				       TALLOC_CTX *mem_ctx, int argc,
+				       const char **argv)
 {
-        NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-        int logon_type = NET_LOGON_TYPE;
-        const char *username, *password;
-	uint32 neg_flags = 0x000001ff;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	int logon_type = NET_LOGON_TYPE;
+	const char *username, *password;
 	int auth_level = 2;
+	uint32 logon_param = 0;
 
-        /* Check arguments */
+	/* Check arguments */
 
-        if (argc < 3 || argc > 6) {
-                fprintf(stderr, "Usage: samlogon <username> <password> "
-                        "[logon_type] [neg flags] [auth level (2 or 3)]\n"
-			"neg flags being 0x000001ff or 0x6007ffff\n");
-                return NT_STATUS_OK;
-        }
+	if (argc < 3 || argc > 6) {
+		fprintf(stderr, "Usage: samlogon <username> <password> "
+			"[logon_type (1 or 2)] [auth level (2 or 3)] [logon_parameter]\n");
+		return NT_STATUS_OK;
+	}
 
-        username = argv[1];
-        password = argv[2];
+	username = argv[1];
+	password = argv[2];
 
-        if (argc >= 4)
-                sscanf(argv[3], "%i", &logon_type);
+	if (argc >= 4)
+		sscanf(argv[3], "%i", &logon_type);
 
 	if (argc >= 5)
-                sscanf(argv[4], "%i", &neg_flags);
+		sscanf(argv[4], "%i", &auth_level);
 
 	if (argc == 6)
-                sscanf(argv[5], "%i", &auth_level);
+		sscanf(argv[5], "%x", &logon_param);
 
-        /* Perform the sam logon */
+	/* Perform the sam logon */
 
-        result = rpccli_netlogon_sam_logon(cli, mem_ctx, 0, lp_workgroup(), username, password, logon_type);
+	result = rpccli_netlogon_sam_logon(cli, mem_ctx, logon_param, lp_workgroup(), username, password, logon_type);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
  done:
-        return result;
+	return result;
 }
 
 /* Change the trust account password */
