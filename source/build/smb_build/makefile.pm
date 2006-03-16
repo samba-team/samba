@@ -206,15 +206,15 @@ sub SharedLibrary($$)
 	my $init_obj = "";
 	
 	if ($self->{duplicate_build}) {
-		$installdir = $ctx->{INSTALLDIR};
+		$installdir = $ctx->{RELEASEDIR};
 	} else {
-		$installdir = $ctx->{BUILDDIR};
+		$installdir = $ctx->{DEBUGDIR};
 	}
 
 	if ($ctx->{TYPE} eq "LIBRARY") {
-		push (@{$self->{shared_libs}}, "$ctx->{BUILDDIR}/$ctx->{LIBRARY_REALNAME}");
+		push (@{$self->{shared_libs}}, "$ctx->{DEBUDRI}/$ctx->{LIBRARY_REALNAME}");
 	} elsif ($ctx->{TYPE} eq "MODULE") {
-		push (@{$self->{shared_modules}}, "$ctx->{BUILDDIR}/$ctx->{LIBRARY_REALNAME}");
+		push (@{$self->{shared_modules}}, "$ctx->{DEBUGDIR}/$ctx->{LIBRARY_REALNAME}");
 		push (@{$self->{plugins}}, "$installdir/$ctx->{LIBRARY_REALNAME}");
 
 		my $fixedname = $ctx->{NAME};
@@ -269,7 +269,7 @@ __EOD__
 
 $ctx->{TARGET}: \$($ctx->{TYPE}_$ctx->{NAME}_DEPEND_LIST) \$($ctx->{TYPE}_$ctx->{NAME}_OBJ_LIST) $init_obj
 	\@echo Linking \$\@
-	\@mkdir -p $ctx->{BUILDDIR}
+	\@mkdir -p $ctx->{DEBUGDIR}
 	\@\$(SHLD) \$(SHLD_FLAGS) -o \$\@ \$(LOCAL_LINK_FLAGS) \\
 		\$($ctx->{TYPE}_$ctx->{NAME}_LINK_FLAGS) $soarg \\
 		$init_obj \$($ctx->{TYPE}_$ctx->{NAME}_LINK_LIST)
