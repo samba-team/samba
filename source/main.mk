@@ -128,7 +128,7 @@ installlib: libraries installdirs
 	@$(SHELL) $(srcdir)/script/installlib.sh $(DESTDIR)$(LIBDIR) $(STATIC_LIBS)
 
 installheader: headers installdirs
-	@$(SHELL) $(srcdir)/script/installheader.sh $(DESTDIR)$(INCLUDEDIR) $(PUBLIC_HEADERS) $(DEFAULT_HEADERS)
+	@$(PERL) $(srcdir)/script/installheader.pl $(DESTDIR)$(INCLUDEDIR) $(PUBLIC_HEADERS) $(DEFAULT_HEADERS)
 
 installdat: installdirs
 	@$(SHELL) $(srcdir)/script/installdat.sh $(DESTDIR)$(DATADIR) $(srcdir)
