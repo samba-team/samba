@@ -289,7 +289,7 @@ static int dcesrv_endpoint_destructor(void *ptr)
 NTSTATUS dcesrv_endpoint_connect(struct dcesrv_context *dce_ctx,
 				 TALLOC_CTX *mem_ctx,
 				 const struct dcesrv_endpoint *ep,
-				 struct stream_connection *srv_conn,
+				 struct event_context *event_ctx,
 				 uint32_t state_flags,
 				 struct dcesrv_connection **_p)
 {
@@ -309,9 +309,10 @@ NTSTATUS dcesrv_endpoint_connect(struct dcesrv_context *dce_ctx,
 	p->auth_state.gensec_security = NULL;
 	p->auth_state.session_info = NULL;
 	p->auth_state.session_key = dcesrv_generic_session_key;
-	p->srv_conn = srv_conn;
+	p->event_ctx = event_ctx;
 	p->processing = False;
 	p->state_flags = state_flags;
+	ZERO_STRUCT(p->transport);
 
 	talloc_set_destructor(p, dcesrv_endpoint_destructor);
 
@@ -326,7 +327,7 @@ NTSTATUS dcesrv_endpoint_search_connect(struct dcesrv_context *dce_ctx,
 					TALLOC_CTX *mem_ctx,
 					const struct dcerpc_binding *ep_description,
 					struct auth_session_info *session_info,
-					struct stream_connection *srv_conn,
+					struct event_context *event_ctx,
 					uint32_t state_flags,
 					struct dcesrv_connection **dce_conn_p)
 {
@@ -339,7 +340,7 @@ NTSTATUS dcesrv_endpoint_search_connect(struct dcesrv_context *dce_ctx,
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 
-	status = dcesrv_endpoint_connect(dce_ctx, mem_ctx, ep, srv_conn, state_flags, dce_conn_p);
+	status = dcesrv_endpoint_connect(dce_ctx, mem_ctx, ep, event_ctx, state_flags, dce_conn_p);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -750,7 +751,7 @@ static NTSTATUS dcesrv_request(struct dcesrv_call_state *call)
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 
 	call->context	= context;
-	call->event_ctx	= context->conn->srv_conn->event.ctx;
+	call->event_ctx	= context->conn->event_ctx;
 	call->ndr_pull	= pull;
 
 	if (call->pkt.pfc_flags & DCERPC_PFC_FLAG_ORPC) {
@@ -879,15 +880,31 @@ NTSTATUS dcesrv_reply(struct dcesrv_call_state *call)
 	DLIST_ADD_END(call->conn->call_list, call, struct dcesrv_call_state *);
 
 	if (call->conn->call_list && call->conn->call_list->replies) {
-		if (call->conn->srv_conn &&
-		    call->conn->srv_conn->event.fde) {
-			EVENT_FD_WRITEABLE(call->conn->srv_conn->event.fde);
+		if (call->conn->transport.report_output_data) {
+			call->conn->transport.report_output_data(call->conn);
 		}
 	}
 
 	return NT_STATUS_OK;
 }
 
+struct socket_address *dcesrv_connection_get_my_addr(struct dcesrv_connection *conn, TALLOC_CTX *mem_ctx)
+{
+	if (!conn->transport.get_my_addr) {
+		return NULL;
+	}
+
+	return conn->transport.get_my_addr(conn, mem_ctx);
+}
+
+struct socket_address *dcesrv_connection_get_peer_addr(struct dcesrv_connection *conn, TALLOC_CTX *mem_ctx)
+{
+	if (!conn->transport.get_peer_addr) {
+		return NULL;
+	}
+
+	return conn->transport.get_peer_addr(conn, mem_ctx);
+}
 
 /*
   work out if we have a full packet yet
@@ -939,7 +956,7 @@ NTSTATUS dcesrv_input_process(struct dcesrv_connection *dce_conn)
 	call->conn      = dce_conn;
 	call->replies   = NULL;
 	call->context   = NULL;
-	call->event_ctx = dce_conn->srv_conn->event.ctx;
+	call->event_ctx = dce_conn->event_ctx;
 
 	blob = dce_conn->partial_input;
 	blob.length = dcerpc_get_frag_length(&blob);

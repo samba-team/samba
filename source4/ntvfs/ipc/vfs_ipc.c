@@ -32,6 +32,7 @@
 #include "libcli/rap/rap.h"
 #include "ntvfs/ipc/proto.h"
 #include "rpc_server/dcerpc_server.h"
+#include "smbd/service_stream.h"
 
 #define IPC_BASE_FNUM 0x400
 
@@ -40,6 +41,8 @@
    pipes */
 struct ipc_private {
 	struct idr_context *idtree_fnum;
+
+	struct stream_connection *stream_conn;
 
 	struct dcesrv_context *dcesrv;
 
@@ -94,6 +97,8 @@ static NTSTATUS ipc_connect(struct ntvfs_module_context *ntvfs,
 	ntvfs->private_data = private;
 
 	private->pipe_list = NULL;
+
+	private->stream_conn = req->smb_conn->connection;
 
 	private->idtree_fnum = idr_init(private);
 	NT_STATUS_HAVE_NO_MEMORY(private->idtree_fnum);
@@ -173,6 +178,19 @@ static int ipc_fd_destructor(void *ptr)
 	return 0;
 }
 
+static struct socket_address *ipc_get_my_addr(struct dcesrv_connection *dce_conn, TALLOC_CTX *mem_ctx)
+{
+	struct ipc_private *private = dce_conn->transport.private_data;
+
+	return socket_get_my_addr(private->stream_conn->socket, mem_ctx);
+}
+
+static struct socket_address *ipc_get_peer_addr(struct dcesrv_connection *dce_conn, TALLOC_CTX *mem_ctx)
+{
+	struct ipc_private *private = dce_conn->transport.private_data;
+
+	return socket_get_peer_addr(private->stream_conn->socket, mem_ctx);
+}
 
 /*
   open a file backend - used for MSRPC pipes
@@ -227,7 +245,7 @@ static NTSTATUS ipc_open_generic(struct ntvfs_module_context *ntvfs,
 						p,
 						ep_description, 
 						req->session->session_info,
-						srv_conn,
+						srv_conn->event.ctx,
 						0,
 						&p->dce_conn);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -235,6 +253,11 @@ static NTSTATUS ipc_open_generic(struct ntvfs_module_context *ntvfs,
 		return status;
 	}
 
+	p->dce_conn->transport.private_data		= private;
+	p->dce_conn->transport.report_output_data	= NULL;
+	p->dce_conn->transport.get_my_addr		= ipc_get_my_addr;
+	p->dce_conn->transport.get_peer_addr		= ipc_get_peer_addr;
+	
 	DLIST_ADD(private->pipe_list, p);
 
 	p->smbpid = req->smbpid;

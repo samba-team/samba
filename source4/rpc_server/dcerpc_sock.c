@@ -34,7 +34,7 @@
 
 struct dcesrv_socket_context {
 	const struct dcesrv_endpoint *endpoint;
-	struct dcesrv_context *dcesrv_ctx;	
+	struct dcesrv_context *dcesrv_ctx;
 };
 
 /*
@@ -55,9 +55,41 @@ static NTSTATUS dcerpc_write_fn(void *private_data, DATA_BLOB *out, size_t *nwri
 
 static void dcesrv_terminate_connection(struct dcesrv_connection *dce_conn, const char *reason)
 {
-	stream_terminate_connection(dce_conn->srv_conn, reason);
+	struct stream_connection *srv_conn;
+	srv_conn = talloc_get_type(dce_conn->transport.private_data,
+				   struct stream_connection);
+
+	stream_terminate_connection(srv_conn, reason);
 }
 
+static void dcesrv_sock_report_output_data(struct dcesrv_connection *dcesrv_conn)
+{
+	struct stream_connection *srv_conn;
+	srv_conn = talloc_get_type(dcesrv_conn->transport.private_data,
+				   struct stream_connection);
+
+	if (srv_conn && srv_conn->event.fde) {
+		EVENT_FD_WRITEABLE(srv_conn->event.fde);
+	}
+}
+
+static struct socket_address *dcesrv_sock_get_my_addr(struct dcesrv_connection *dcesrv_conn, TALLOC_CTX *mem_ctx)
+{
+	struct stream_connection *srv_conn;
+	srv_conn = talloc_get_type(dcesrv_conn->transport.private_data,
+				   struct stream_connection);
+
+	return socket_get_my_addr(srv_conn->socket, mem_ctx);
+}
+
+static struct socket_address *dcesrv_sock_get_peer_addr(struct dcesrv_connection *dcesrv_conn, TALLOC_CTX *mem_ctx)
+{
+	struct stream_connection *srv_conn;
+	srv_conn = talloc_get_type(dcesrv_conn->transport.private_data,
+				   struct stream_connection);
+
+	return socket_get_peer_addr(srv_conn->socket, mem_ctx);
+}
 
 static void dcesrv_sock_accept(struct stream_connection *srv_conn)
 {
@@ -69,7 +101,7 @@ static void dcesrv_sock_accept(struct stream_connection *srv_conn)
 	status = dcesrv_endpoint_connect(dcesrv_sock->dcesrv_ctx,
 					 srv_conn,
 					 dcesrv_sock->endpoint,
-					 srv_conn,
+					 srv_conn->event.ctx,
 					 DCESRV_CALL_STATE_FLAG_MAY_ASYNC,
 					 &dcesrv_conn);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -78,6 +110,11 @@ static void dcesrv_sock_accept(struct stream_connection *srv_conn)
 		stream_terminate_connection(srv_conn, nt_errstr(status));
 		return;
 	}
+
+	dcesrv_conn->transport.private_data		= srv_conn;
+	dcesrv_conn->transport.report_output_data	= dcesrv_sock_report_output_data;
+	dcesrv_conn->transport.get_my_addr		= dcesrv_sock_get_my_addr;
+	dcesrv_conn->transport.get_peer_addr		= dcesrv_sock_get_peer_addr;
 
 	srv_conn->private = dcesrv_conn;
 
