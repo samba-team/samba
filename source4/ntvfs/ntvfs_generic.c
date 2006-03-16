@@ -534,7 +534,7 @@ _PUBLIC_ NTSTATUS ntvfs_map_fsinfo(struct ntvfs_module_context *ntvfs,
 			(fs2->generic.out.blocks_free  * (double)fs2->generic.out.block_size) / (bpunit * 512);
 
 		/* we must return a maximum of 2G to old DOS systems, or they get very confused */
-		if (bpunit > 64 && req->smb_conn->negotiate.protocol <= PROTOCOL_LANMAN2) {
+		if (bpunit > 64 && req->ctx->protocol <= PROTOCOL_LANMAN2) {
 			fs->dskattr.out.blocks_per_unit = 64;
 			fs->dskattr.out.units_total = 0xFFFF;
 			fs->dskattr.out.units_free = 0xFFFF;

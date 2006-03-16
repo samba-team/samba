@@ -171,8 +171,9 @@ NTSTATUS pvfs_cancel(struct ntvfs_module_context *ntvfs, struct ntvfs_request *r
 {
 	struct pvfs_state *pvfs = ntvfs->private_data;
 	struct pvfs_wait *pwait;
+
 	for (pwait=pvfs->wait_list;pwait;pwait=pwait->next) {
-		if (SVAL(req->in.hdr, HDR_MID) == SVAL(pwait->req->in.hdr, HDR_MID) &&
+		if (req->smbmid == pwait->req->smbmid &&
 		    req->smbpid == pwait->req->smbpid) {
 			/* trigger a cancel on the request */
 			pwait->reason = PVFS_WAIT_CANCEL;

@@ -40,12 +40,10 @@ struct smbsrv_request *smbsrv_init_request(struct smbsrv_connection *smb_conn)
 {
 	struct smbsrv_request *req;
 
-	req = talloc(smb_conn, struct smbsrv_request);
+	req = talloc_zero(smb_conn, struct smbsrv_request);
 	if (!req) {
 		return NULL;
 	}
-
-	ZERO_STRUCTP(req);
 
 	/* setup the request context */
 	req->smb_conn = smb_conn;
