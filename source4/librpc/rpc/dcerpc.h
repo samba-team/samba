@@ -24,6 +24,7 @@
 #ifndef __DCERPC_H__
 #define __DCERPC_H__
 
+#include "core.h"
 #include "librpc/gen_ndr/dcerpc.h"
 
 enum dcerpc_transport_t {
