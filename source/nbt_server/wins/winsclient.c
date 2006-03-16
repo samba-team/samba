@@ -25,6 +25,7 @@
 #include "nbt_server/wins/winsserver.h"
 #include "libcli/composite/composite.h"
 #include "lib/events/events.h"
+#include "librpc/gen_ndr/ndr_nbt.h"
 #include "smbd/service_task.h"
 
 static void nbtd_wins_refresh_handler(struct composite_context *c);

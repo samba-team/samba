@@ -24,7 +24,7 @@
 #include "lib/events/events.h"
 #include "smbd/service_task.h"
 #include "smbd/service.h"
-#include "librpc/gen_ndr/ndr_winsrepl.h"
+#include "librpc/gen_ndr/winsrepl.h"
 #include "wrepl_server/wrepl_server.h"
 
 static NTSTATUS wreplsrv_periodic_run(struct wreplsrv_service *service)

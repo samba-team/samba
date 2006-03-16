@@ -28,6 +28,7 @@
 #include "lib/events/events.h"
 #include "libcli/resolve/resolve.h"
 #include "auth/credentials/credentials.h"
+#include "librpc/gen_ndr/ndr_nbt.h"
 
 /* the stages of this call */
 enum connect_stage {CONNECT_RESOLVE, 

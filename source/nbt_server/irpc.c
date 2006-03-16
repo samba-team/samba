@@ -26,8 +26,10 @@
 #include "smbd/service.h"
 #include "nbt_server/nbt_server.h"
 #include "nbt_server/wins/winsserver.h"
+#include "librpc/gen_ndr/ndr_irpc.h"
 #include "lib/socket/socket.h"
 #include "libcli/resolve/resolve.h"
+#include "librpc/gen_ndr/ndr_nbt.h"
 
 /*
   serve out the nbt statistics

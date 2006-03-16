@@ -33,6 +33,7 @@
 #include "auth/credentials/credentials.h"
 #include "librpc/rpc/dcerpc_table.h"
 #include "libcli/ldap/ldap_client.h"
+#include "librpc/gen_ndr/ndr_nbt.h"
 
 #include "torture/basic/proto.h"
 #include "torture/raw/proto.h"

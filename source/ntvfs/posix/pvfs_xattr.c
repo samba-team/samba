@@ -23,6 +23,7 @@
 #include "includes.h"
 #include "vfs_posix.h"
 #include "util/unix_privs.h"
+#include "librpc/gen_ndr/ndr_xattr.h"
 
 /*
   pull a xattr as a blob

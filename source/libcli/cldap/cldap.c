@@ -39,6 +39,7 @@
 #include "libcli/cldap/cldap.h"
 #include "lib/socket/socket.h"
 #include "libcli/security/proto.h"
+#include "librpc/gen_ndr/ndr_nbt.h"
 
 /*
   destroy a pending request

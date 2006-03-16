@@ -23,7 +23,7 @@
 #include "libcli/raw/libcliraw.h"
 #include "system/time.h"
 #include "system/filesys.h"
-#include "librpc/gen_ndr/ndr_security.h"
+#include "librpc/gen_ndr/security.h"
 #include "lib/events/events.h"
 #include "libcli/libcli.h"
 

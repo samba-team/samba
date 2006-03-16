@@ -25,6 +25,7 @@
 #include "includes.h"
 #include "auth/auth.h"
 #include "nsswitch/winbind_client.h"
+#include "librpc/gen_ndr/ndr_netlogon.h"
 
 static NTSTATUS get_info3_from_ndr(TALLOC_CTX *mem_ctx, struct winbindd_response *response, struct netr_SamInfo3 *info3)
 {

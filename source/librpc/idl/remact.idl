@@ -10,7 +10,7 @@
 	pointer_default(unique),
   	pointer_default_top(unique),
 	endpoint("ncalrpc:", "ncacn_ip_tcp:[135]", "ncacn_np:[\\pipe\\epmapper]"),
-	depends(dcom)
+	depends(dcom,orpc)
 ]
 interface IRemoteActivation
 {

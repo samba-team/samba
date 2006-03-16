@@ -30,6 +30,7 @@
 #include "smbd/service_task.h"
 #include "lib/messaging/irpc.h"
 #include "librpc/gen_ndr/ndr_irpc.h"
+#include "librpc/gen_ndr/ndr_nbt.h"
 
 const char *wreplsrv_owner_filter(struct wreplsrv_service *service,
 				  TALLOC_CTX *mem_ctx,

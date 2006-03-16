@@ -25,6 +25,7 @@
 #include "lib/registry/reg_backend_rpc.h"
 #include "system/time.h"
 #include "lib/replace/readline.h"
+#include "librpc/gen_ndr/ndr_security.h"
 
 /* 
  * ck/cd - change key

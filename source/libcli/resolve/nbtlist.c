@@ -28,6 +28,7 @@
 #include "libcli/composite/composite.h"
 #include "system/network.h"
 #include "netif/netif.h"
+#include "librpc/gen_ndr/ndr_nbt.h"
 
 struct nbtlist_state {
 	struct nbt_name name;

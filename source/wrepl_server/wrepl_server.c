@@ -25,7 +25,7 @@
 #include "smbd/service_task.h"
 #include "smbd/service.h"
 #include "lib/messaging/irpc.h"
-#include "librpc/gen_ndr/ndr_winsrepl.h"
+#include "librpc/gen_ndr/winsrepl.h"
 #include "wrepl_server/wrepl_server.h"
 #include "nbt_server/wins/winsdb.h"
 #include "ldb/include/ldb.h"

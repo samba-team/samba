@@ -23,6 +23,7 @@
 
 #include "includes.h"
 #include "libcli/cldap/cldap.h"
+#include "librpc/gen_ndr/ndr_nbt.h"
 
 #define CHECK_STATUS(status, correct) do { \
 	if (!NT_STATUS_EQUAL(status, correct)) { \

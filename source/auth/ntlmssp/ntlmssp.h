@@ -20,7 +20,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#include "librpc/gen_ndr/ndr_samr.h"
+#include "librpc/gen_ndr/samr.h"
 
 /* NTLMSSP mode */
 enum ntlmssp_role

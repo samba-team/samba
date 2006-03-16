@@ -28,6 +28,7 @@
 #include "librpc/gen_ndr/ndr_krb5pac.h"
 #include "samba3/samba3.h"
 #include "libcli/security/proto.h"
+#include "librpc/gen_ndr/ndr_security.h"
 
 static BOOL torture_pac_self_check(void) 
 {

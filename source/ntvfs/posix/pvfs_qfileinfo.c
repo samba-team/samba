@@ -22,7 +22,7 @@
 
 #include "includes.h"
 #include "vfs_posix.h"
-#include "librpc/gen_ndr/ndr_xattr.h"
+#include "librpc/gen_ndr/xattr.h"
 
 
 /*

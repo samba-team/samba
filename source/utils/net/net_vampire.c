@@ -23,7 +23,7 @@
 #include "includes.h"
 #include "utils/net/net.h"
 #include "libnet/libnet.h"
-#include "librpc/gen_ndr/ndr_samr.h"
+#include "librpc/gen_ndr/samr.h"
 #include "auth/auth.h"
 
 static int net_samdump_keytab_usage(struct net_context *ctx, int argc, const char **argv)

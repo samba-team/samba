@@ -37,6 +37,7 @@
 #include "ldb/include/ldb_errors.h"
 #include "ldb/include/ldb_private.h"
 #include "dsdb/samdb/samdb.h"
+#include "librpc/gen_ndr/ndr_security.h"
 
 #include <time.h>
 

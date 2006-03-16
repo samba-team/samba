@@ -26,6 +26,7 @@
 #include "lib/cmdline/popt_common.h"
 #include "lib/events/events.h"
 #include "system/time.h"
+#include "librpc/gen_ndr/ndr_security.h"
 
 
 /*

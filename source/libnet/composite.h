@@ -22,7 +22,7 @@
   composite function io definitions
 */
 
-#include "librpc/gen_ndr/ndr_samr.h"
+#include "librpc/gen_ndr/samr.h"
 
 /*
  * Monitor structure and message types definitions. Composite function monitoring

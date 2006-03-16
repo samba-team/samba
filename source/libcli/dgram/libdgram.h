@@ -20,7 +20,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#include "librpc/gen_ndr/ndr_nbt.h"
+#include "librpc/gen_ndr/nbt.h"
 
 /*
   a datagram name request

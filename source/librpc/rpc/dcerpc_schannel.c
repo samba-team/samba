@@ -26,6 +26,7 @@
 #include "auth/auth.h"
 #include "libcli/composite/composite.h"
 #include "libcli/auth/libcli_auth.h"
+#include "librpc/gen_ndr/ndr_netlogon.h"
 #include "librpc/gen_ndr/ndr_netlogon_c.h"
 
 

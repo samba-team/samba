@@ -23,7 +23,7 @@
 #include "includes.h"
 #include "vfs_posix.h"
 #include "system/time.h"
-#include "librpc/gen_ndr/ndr_security.h"
+#include "librpc/gen_ndr/security.h"
 #include "smbd/service_stream.h"
 #include "lib/events/events.h"
 
