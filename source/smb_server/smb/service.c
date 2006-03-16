@@ -167,11 +167,6 @@ NTSTATUS smbsrv_tcon_backend(struct smbsrv_request *req, union smb_tcon *con)
 	NTSTATUS status;
 	int snum;
 
-	/* can only do bare tcon in share level security */
-	if (!req->session && lp_security() != SEC_SHARE) {
-		return NT_STATUS_ACCESS_DENIED;
-	}
-
 	if (con->generic.level == RAW_TCON_TCON) {
 		DATA_BLOB password;
 		password = data_blob(con->tcon.in.password, strlen(con->tcon.in.password) + 1);

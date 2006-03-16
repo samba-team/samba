@@ -160,8 +160,9 @@ NTSTATUS smbsrv_recv_smb_request(void *private, DATA_BLOB blob)
 /*
   These flags determine some of the permissions required to do an operation 
 */
-#define AS_USER (1<<0)
-#define SIGNING_NO_REPLY (1<<1)
+#define NEED_SESS		(1<<0)
+#define NEED_TCON		(1<<1)
+#define SIGNING_NO_REPLY	(1<<2)
 
 /* 
    define a list of possible SMB messages and their corresponding
@@ -175,60 +176,60 @@ static const struct smb_message_struct
 	int flags;
 }
  smb_messages[256] = {
-/* 0x00 */ { "SMBmkdir",	smbsrv_reply_mkdir,	AS_USER },
-/* 0x01 */ { "SMBrmdir",	smbsrv_reply_rmdir,	AS_USER },
-/* 0x02 */ { "SMBopen",		smbsrv_reply_open,	AS_USER },
-/* 0x03 */ { "SMBcreate",	smbsrv_reply_mknew,	AS_USER },
-/* 0x04 */ { "SMBclose",	smbsrv_reply_close,	AS_USER },
-/* 0x05 */ { "SMBflush",	smbsrv_reply_flush,	AS_USER },
-/* 0x06 */ { "SMBunlink",	smbsrv_reply_unlink,	AS_USER },
-/* 0x07 */ { "SMBmv",		smbsrv_reply_mv,	AS_USER },
-/* 0x08 */ { "SMBgetatr",	smbsrv_reply_getatr,	AS_USER },
-/* 0x09 */ { "SMBsetatr",	smbsrv_reply_setatr,	AS_USER },
-/* 0x0a */ { "SMBread",		smbsrv_reply_read,	AS_USER },
-/* 0x0b */ { "SMBwrite",	smbsrv_reply_write,	AS_USER },
-/* 0x0c */ { "SMBlock",		smbsrv_reply_lock,	AS_USER },
-/* 0x0d */ { "SMBunlock",	smbsrv_reply_unlock,	AS_USER },
-/* 0x0e */ { "SMBctemp",	smbsrv_reply_ctemp,	AS_USER },
-/* 0x0f */ { "SMBmknew",	smbsrv_reply_mknew,	AS_USER }, 
-/* 0x10 */ { "SMBchkpth",	smbsrv_reply_chkpth,	AS_USER },
-/* 0x11 */ { "SMBexit",		smbsrv_reply_exit,	0 },
-/* 0x12 */ { "SMBlseek",	smbsrv_reply_lseek,	AS_USER },
-/* 0x13 */ { "SMBlockread",	smbsrv_reply_lockread,	AS_USER },
-/* 0x14 */ { "SMBwriteunlock",	smbsrv_reply_writeunlock,AS_USER },
+/* 0x00 */ { "SMBmkdir",	smbsrv_reply_mkdir,		NEED_SESS|NEED_TCON },
+/* 0x01 */ { "SMBrmdir",	smbsrv_reply_rmdir,		NEED_SESS|NEED_TCON },
+/* 0x02 */ { "SMBopen",		smbsrv_reply_open,		NEED_SESS|NEED_TCON },
+/* 0x03 */ { "SMBcreate",	smbsrv_reply_mknew,		NEED_SESS|NEED_TCON },
+/* 0x04 */ { "SMBclose",	smbsrv_reply_close,		NEED_SESS|NEED_TCON },
+/* 0x05 */ { "SMBflush",	smbsrv_reply_flush,		NEED_SESS|NEED_TCON },
+/* 0x06 */ { "SMBunlink",	smbsrv_reply_unlink,		NEED_SESS|NEED_TCON },
+/* 0x07 */ { "SMBmv",		smbsrv_reply_mv,		NEED_SESS|NEED_TCON },
+/* 0x08 */ { "SMBgetatr",	smbsrv_reply_getatr,		NEED_SESS|NEED_TCON },
+/* 0x09 */ { "SMBsetatr",	smbsrv_reply_setatr,		NEED_SESS|NEED_TCON },
+/* 0x0a */ { "SMBread",		smbsrv_reply_read,		NEED_SESS|NEED_TCON },
+/* 0x0b */ { "SMBwrite",	smbsrv_reply_write,		NEED_SESS|NEED_TCON },
+/* 0x0c */ { "SMBlock",		smbsrv_reply_lock,		NEED_SESS|NEED_TCON },
+/* 0x0d */ { "SMBunlock",	smbsrv_reply_unlock,		NEED_SESS|NEED_TCON },
+/* 0x0e */ { "SMBctemp",	smbsrv_reply_ctemp,		NEED_SESS|NEED_TCON },
+/* 0x0f */ { "SMBmknew",	smbsrv_reply_mknew,		NEED_SESS|NEED_TCON }, 
+/* 0x10 */ { "SMBchkpth",	smbsrv_reply_chkpth,		NEED_SESS|NEED_TCON },
+/* 0x11 */ { "SMBexit",		smbsrv_reply_exit,		NEED_SESS },
+/* 0x12 */ { "SMBlseek",	smbsrv_reply_lseek,		NEED_SESS|NEED_TCON },
+/* 0x13 */ { "SMBlockread",	smbsrv_reply_lockread,		NEED_SESS|NEED_TCON },
+/* 0x14 */ { "SMBwriteunlock",	smbsrv_reply_writeunlock,	NEED_SESS|NEED_TCON },
 /* 0x15 */ { NULL, NULL, 0 },
 /* 0x16 */ { NULL, NULL, 0 },
 /* 0x17 */ { NULL, NULL, 0 },
 /* 0x18 */ { NULL, NULL, 0 },
 /* 0x19 */ { NULL, NULL, 0 },
-/* 0x1a */ { "SMBreadbraw",	smbsrv_reply_readbraw,	AS_USER },
-/* 0x1b */ { "SMBreadBmpx",	smbsrv_reply_readbmpx,	AS_USER },
-/* 0x1c */ { "SMBreadBs",	NULL,			0 },
-/* 0x1d */ { "SMBwritebraw",	smbsrv_reply_writebraw,	AS_USER },
-/* 0x1e */ { "SMBwriteBmpx",	smbsrv_reply_writebmpx,	AS_USER },
-/* 0x1f */ { "SMBwriteBs",	smbsrv_reply_writebs,	AS_USER },
-/* 0x20 */ { "SMBwritec",	NULL,			0 },
+/* 0x1a */ { "SMBreadbraw",	smbsrv_reply_readbraw,		NEED_SESS|NEED_TCON },
+/* 0x1b */ { "SMBreadBmpx",	smbsrv_reply_readbmpx,		NEED_SESS|NEED_TCON },
+/* 0x1c */ { "SMBreadBs",	NULL,				0 },
+/* 0x1d */ { "SMBwritebraw",	smbsrv_reply_writebraw,		NEED_SESS|NEED_TCON },
+/* 0x1e */ { "SMBwriteBmpx",	smbsrv_reply_writebmpx,		NEED_SESS|NEED_TCON },
+/* 0x1f */ { "SMBwriteBs",	smbsrv_reply_writebs,		NEED_SESS|NEED_TCON },
+/* 0x20 */ { "SMBwritec",	NULL,				0 },
 /* 0x21 */ { NULL, NULL, 0 },
-/* 0x22 */ { "SMBsetattrE",	smbsrv_reply_setattrE,	AS_USER },
-/* 0x23 */ { "SMBgetattrE",	smbsrv_reply_getattrE,	AS_USER },
-/* 0x24 */ { "SMBlockingX",	smbsrv_reply_lockingX,	AS_USER },
-/* 0x25 */ { "SMBtrans",	smbsrv_reply_trans,	AS_USER },
-/* 0x26 */ { "SMBtranss",	smbsrv_reply_transs,	AS_USER },
-/* 0x27 */ { "SMBioctl",	smbsrv_reply_ioctl,	AS_USER },
-/* 0x28 */ { "SMBioctls",	NULL,			AS_USER },
-/* 0x29 */ { "SMBcopy",		smbsrv_reply_copy,	AS_USER },
-/* 0x2a */ { "SMBmove",		NULL,			AS_USER },
-/* 0x2b */ { "SMBecho",		smbsrv_reply_echo,	0 },
-/* 0x2c */ { "SMBwriteclose",	smbsrv_reply_writeclose,AS_USER },
-/* 0x2d */ { "SMBopenX",	smbsrv_reply_open_and_X,AS_USER },
-/* 0x2e */ { "SMBreadX",	smbsrv_reply_read_and_X,AS_USER },
-/* 0x2f */ { "SMBwriteX",	smbsrv_reply_write_and_X,AS_USER},
+/* 0x22 */ { "SMBsetattrE",	smbsrv_reply_setattrE,		NEED_SESS|NEED_TCON },
+/* 0x23 */ { "SMBgetattrE",	smbsrv_reply_getattrE,		NEED_SESS|NEED_TCON },
+/* 0x24 */ { "SMBlockingX",	smbsrv_reply_lockingX,		NEED_SESS|NEED_TCON },
+/* 0x25 */ { "SMBtrans",	smbsrv_reply_trans,		NEED_SESS|NEED_TCON },
+/* 0x26 */ { "SMBtranss",	smbsrv_reply_transs,		NEED_SESS|NEED_TCON },
+/* 0x27 */ { "SMBioctl",	smbsrv_reply_ioctl,		NEED_SESS|NEED_TCON },
+/* 0x28 */ { "SMBioctls",	NULL,				NEED_SESS|NEED_TCON },
+/* 0x29 */ { "SMBcopy",		smbsrv_reply_copy,		NEED_SESS|NEED_TCON },
+/* 0x2a */ { "SMBmove",		NULL,				NEED_SESS|NEED_TCON },
+/* 0x2b */ { "SMBecho",		smbsrv_reply_echo,		0 },
+/* 0x2c */ { "SMBwriteclose",	smbsrv_reply_writeclose,	NEED_SESS|NEED_TCON },
+/* 0x2d */ { "SMBopenX",	smbsrv_reply_open_and_X,	NEED_SESS|NEED_TCON },
+/* 0x2e */ { "SMBreadX",	smbsrv_reply_read_and_X,	NEED_SESS|NEED_TCON },
+/* 0x2f */ { "SMBwriteX",	smbsrv_reply_write_and_X,	NEED_SESS|NEED_TCON},
 /* 0x30 */ { NULL, NULL, 0 },
 /* 0x31 */ { NULL, NULL, 0 },
-/* 0x32 */ { "SMBtrans2",	smbsrv_reply_trans2,	AS_USER },
-/* 0x33 */ { "SMBtranss2",	smbsrv_reply_transs2,	AS_USER },
-/* 0x34 */ { "SMBfindclose",	smbsrv_reply_findclose,	AS_USER },
-/* 0x35 */ { "SMBfindnclose",	smbsrv_reply_findnclose,AS_USER },
+/* 0x32 */ { "SMBtrans2",	smbsrv_reply_trans2,		NEED_SESS|NEED_TCON },
+/* 0x33 */ { "SMBtranss2",	smbsrv_reply_transs2,		NEED_SESS|NEED_TCON },
+/* 0x34 */ { "SMBfindclose",	smbsrv_reply_findclose,		NEED_SESS|NEED_TCON },
+/* 0x35 */ { "SMBfindnclose",	smbsrv_reply_findnclose,	NEED_SESS|NEED_TCON },
 /* 0x36 */ { NULL, NULL, 0 },
 /* 0x37 */ { NULL, NULL, 0 },
 /* 0x38 */ { NULL, NULL, 0 },
@@ -287,12 +288,12 @@ static const struct smb_message_struct
 /* 0x6d */ { NULL, NULL, 0 },
 /* 0x6e */ { NULL, NULL, 0 },
 /* 0x6f */ { NULL, NULL, 0 },
-/* 0x70 */ { "SMBtcon",		smbsrv_reply_tcon,	0 },
-/* 0x71 */ { "SMBtdis",		smbsrv_reply_tdis,	0 },
-/* 0x72 */ { "SMBnegprot",	smbsrv_reply_negprot,	0 },
-/* 0x73 */ { "SMBsesssetupX",	smbsrv_reply_sesssetup,	0 },
-/* 0x74 */ { "SMBulogoffX",	smbsrv_reply_ulogoffX,	0 }, /* ulogoff doesn't give a valid TID */
-/* 0x75 */ { "SMBtconX",	smbsrv_reply_tcon_and_X,0 },
+/* 0x70 */ { "SMBtcon",		smbsrv_reply_tcon,		NEED_SESS },
+/* 0x71 */ { "SMBtdis",		smbsrv_reply_tdis,		NEED_SESS },
+/* 0x72 */ { "SMBnegprot",	smbsrv_reply_negprot,		0 },
+/* 0x73 */ { "SMBsesssetupX",	smbsrv_reply_sesssetup,		0 },
+/* 0x74 */ { "SMBulogoffX",	smbsrv_reply_ulogoffX,		NEED_SESS }, /* ulogoff doesn't give a valid TID */
+/* 0x75 */ { "SMBtconX",	smbsrv_reply_tcon_and_X,	NEED_SESS },
 /* 0x76 */ { NULL, NULL, 0 },
 /* 0x77 */ { NULL, NULL, 0 },
 /* 0x78 */ { NULL, NULL, 0 },
@@ -303,11 +304,11 @@ static const struct smb_message_struct
 /* 0x7d */ { NULL, NULL, 0 },
 /* 0x7e */ { NULL, NULL, 0 },
 /* 0x7f */ { NULL, NULL, 0 },
-/* 0x80 */ { "SMBdskattr",	smbsrv_reply_dskattr,	AS_USER },
-/* 0x81 */ { "SMBsearch",	smbsrv_reply_search,	AS_USER },
-/* 0x82 */ { "SMBffirst",	smbsrv_reply_search,	AS_USER },
-/* 0x83 */ { "SMBfunique",	smbsrv_reply_search,	AS_USER },
-/* 0x84 */ { "SMBfclose",	smbsrv_reply_fclose,	AS_USER },
+/* 0x80 */ { "SMBdskattr",	smbsrv_reply_dskattr,		NEED_SESS|NEED_TCON },
+/* 0x81 */ { "SMBsearch",	smbsrv_reply_search,		NEED_SESS|NEED_TCON },
+/* 0x82 */ { "SMBffirst",	smbsrv_reply_search,		NEED_SESS|NEED_TCON },
+/* 0x83 */ { "SMBfunique",	smbsrv_reply_search,		NEED_SESS|NEED_TCON },
+/* 0x84 */ { "SMBfclose",	smbsrv_reply_fclose,		NEED_SESS|NEED_TCON },
 /* 0x85 */ { NULL, NULL, 0 },
 /* 0x86 */ { NULL, NULL, 0 },
 /* 0x87 */ { NULL, NULL, 0 },
@@ -335,12 +336,12 @@ static const struct smb_message_struct
 /* 0x9d */ { NULL, NULL, 0 },
 /* 0x9e */ { NULL, NULL, 0 },
 /* 0x9f */ { NULL, NULL, 0 },
-/* 0xa0 */ { "SMBnttrans",	smbsrv_reply_nttrans,		AS_USER },
-/* 0xa1 */ { "SMBnttranss",	smbsrv_reply_nttranss,		AS_USER},
-/* 0xa2 */ { "SMBntcreateX",	smbsrv_reply_ntcreate_and_X,	AS_USER },
+/* 0xa0 */ { "SMBnttrans",	smbsrv_reply_nttrans,		NEED_SESS|NEED_TCON },
+/* 0xa1 */ { "SMBnttranss",	smbsrv_reply_nttranss,		NEED_SESS|NEED_TCON },
+/* 0xa2 */ { "SMBntcreateX",	smbsrv_reply_ntcreate_and_X,	NEED_SESS|NEED_TCON },
 /* 0xa3 */ { NULL, NULL, 0 },
-/* 0xa4 */ { "SMBntcancel",	smbsrv_reply_ntcancel,		AS_USER | SIGNING_NO_REPLY },
-/* 0xa5 */ { "SMBntrename",	smbsrv_reply_ntrename,		AS_USER },
+/* 0xa4 */ { "SMBntcancel",	smbsrv_reply_ntcancel,		NEED_SESS|NEED_TCON|SIGNING_NO_REPLY },
+/* 0xa5 */ { "SMBntrename",	smbsrv_reply_ntrename,		NEED_SESS|NEED_TCON },
 /* 0xa6 */ { NULL, NULL, 0 },
 /* 0xa7 */ { NULL, NULL, 0 },
 /* 0xa8 */ { NULL, NULL, 0 },
@@ -367,10 +368,10 @@ static const struct smb_message_struct
 /* 0xbd */ { NULL, NULL, 0 },
 /* 0xbe */ { NULL, NULL, 0 },
 /* 0xbf */ { NULL, NULL, 0 },
-/* 0xc0 */ { "SMBsplopen",	smbsrv_reply_printopen,		AS_USER },
-/* 0xc1 */ { "SMBsplwr",	smbsrv_reply_printwrite,	AS_USER },
-/* 0xc2 */ { "SMBsplclose",	smbsrv_reply_printclose,	AS_USER },
-/* 0xc3 */ { "SMBsplretq",	smbsrv_reply_printqueue,	AS_USER },
+/* 0xc0 */ { "SMBsplopen",	smbsrv_reply_printopen,		NEED_SESS|NEED_TCON },
+/* 0xc1 */ { "SMBsplwr",	smbsrv_reply_printwrite,	NEED_SESS|NEED_TCON },
+/* 0xc2 */ { "SMBsplclose",	smbsrv_reply_printclose,	NEED_SESS|NEED_TCON },
+/* 0xc3 */ { "SMBsplretq",	smbsrv_reply_printqueue,	NEED_SESS|NEED_TCON },
 /* 0xc4 */ { NULL, NULL, 0 },
 /* 0xc5 */ { NULL, NULL, 0 },
 /* 0xc6 */ { NULL, NULL, 0 },
@@ -383,14 +384,14 @@ static const struct smb_message_struct
 /* 0xcd */ { NULL, NULL, 0 },
 /* 0xce */ { NULL, NULL, 0 },
 /* 0xcf */ { NULL, NULL, 0 },
-/* 0xd0 */ { "SMBsends",	smbsrv_reply_sends,		0 },
+/* 0xd0 */ { "SMBsends",	NULL,				0 },
 /* 0xd1 */ { "SMBsendb",	NULL,				0 },
 /* 0xd2 */ { "SMBfwdname",	NULL,				0 },
 /* 0xd3 */ { "SMBcancelf",	NULL,				0 },
 /* 0xd4 */ { "SMBgetmac",	NULL,				0 },
-/* 0xd5 */ { "SMBsendstrt",	smbsrv_reply_sendstrt,		0 },
-/* 0xd6 */ { "SMBsendend",	smbsrv_reply_sendend,		0 },
-/* 0xd7 */ { "SMBsendtxt",	smbsrv_reply_sendtxt,		0 },
+/* 0xd5 */ { "SMBsendstrt",	NULL,				0 },
+/* 0xd6 */ { "SMBsendend",	NULL,				0 },
+/* 0xd7 */ { "SMBsendtxt",	NULL,				0 },
 /* 0xd8 */ { NULL, NULL, 0 },
 /* 0xd9 */ { NULL, NULL, 0 },
 /* 0xda */ { NULL, NULL, 0 },
@@ -497,11 +498,12 @@ static void switch_message(int type, struct smbsrv_request *req)
 	}
 
 	/* see if the vuid is valid */
-	if ((flags & AS_USER) && !req->session) {
+	if ((flags & NEED_SESS) && !req->session) {
 		/* amazingly, the error code depends on the command */
 		switch (type) {
 			case SMBntcreateX:
 			case SMBntcancel:
+			case SMBulogoffX:
 				status = NT_STATUS_DOS(ERRSRV, ERRbaduid);
 				break;
 			default:
@@ -525,7 +527,7 @@ static void switch_message(int type, struct smbsrv_request *req)
 	}
 
 	/* does this protocol need a valid tree connection? */
-	if ((flags & AS_USER) && !req->tcon) {
+	if ((flags & NEED_TCON) && !req->tcon) {
 		/* amazingly, the error code depends on the command */
 		switch (type) {
 			case SMBntcreateX:
