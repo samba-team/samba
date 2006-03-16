@@ -21,9 +21,7 @@
 
 #include "includes.h"
 #include "torture/torture.h"
-#include "librpc/gen_ndr/ndr_oxidresolver.h"
 #include "librpc/gen_ndr/ndr_oxidresolver_c.h"
-#include "librpc/gen_ndr/ndr_remact.h"
 #include "librpc/gen_ndr/ndr_remact_c.h"
 #include "librpc/gen_ndr/epmapper.h"
 #include "torture/rpc/rpc.h"

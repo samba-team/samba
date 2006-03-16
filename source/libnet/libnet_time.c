@@ -21,7 +21,6 @@
 #include "includes.h"
 #include "libnet/libnet.h"
 #include "system/time.h"
-#include "librpc/gen_ndr/ndr_srvsvc.h"
 #include "librpc/gen_ndr/ndr_srvsvc_c.h"
 
 /*

@@ -22,7 +22,6 @@
 #include "includes.h"
 #include "torture/torture.h"
 #include "torture/rpc/rpc.h"
-#include "librpc/gen_ndr/ndr_dfs.h"
 #include "librpc/gen_ndr/ndr_dfs_c.h"
 
 

@@ -25,7 +25,6 @@
 #include "libcli/composite/composite.h"
 
 #include "libcli/raw/libcliraw.h"
-#include "librpc/gen_ndr/ndr_lsa.h"
 #include "librpc/gen_ndr/ndr_lsa_c.h"
 
 /* Helper to initialize LSA with a specific auth methods. Verify by opening
