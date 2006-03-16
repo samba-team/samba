@@ -4621,7 +4621,7 @@ WERROR _spoolss_enumprinters( pipes_struct *p, SPOOL_Q_ENUMPRINTERS *q_u, SPOOL_
 	
 	/* that's an [in out] buffer */
 
-	if (!q_u->buffer) {
+	if (!q_u->buffer && (offered!=0)) {
 		return WERR_INVALID_PARAM;
 	}
 
@@ -4936,7 +4936,7 @@ WERROR _spoolss_getprinter(pipes_struct *p, SPOOL_Q_GETPRINTER *q_u, SPOOL_R_GET
 
 	/* that's an [in out] buffer */
 
-	if (!q_u->buffer) {
+	if (!q_u->buffer && (offered!=0)) {
 		return WERR_INVALID_PARAM;
 	}
 
@@ -5535,7 +5535,7 @@ WERROR _spoolss_getprinterdriver2(pipes_struct *p, SPOOL_Q_GETPRINTERDRIVER2 *q_
 
 	/* that's an [in out] buffer */
 
-	if (!q_u->buffer) {
+	if (!q_u->buffer && (offered!=0)) {
 		return WERR_INVALID_PARAM;
 	}
 
@@ -6374,7 +6374,7 @@ WERROR _spoolss_addjob(pipes_struct *p, SPOOL_Q_ADDJOB *q_u, SPOOL_R_ADDJOB *r_u
 {
 	/* that's an [in out] buffer */
 
-	if (!q_u->buffer) {
+	if (!q_u->buffer && (q_u->offered!=0)) {
 		return WERR_INVALID_PARAM;
 	}
 
@@ -6589,7 +6589,7 @@ WERROR _spoolss_enumjobs( pipes_struct *p, SPOOL_Q_ENUMJOBS *q_u, SPOOL_R_ENUMJO
 
 	/* that's an [in out] buffer */
 
-	if (!q_u->buffer) {
+	if (!q_u->buffer && (offered!=0)) {
 		return WERR_INVALID_PARAM;
 	}
 
@@ -6966,7 +6966,7 @@ WERROR _spoolss_enumprinterdrivers( pipes_struct *p, SPOOL_Q_ENUMPRINTERDRIVERS 
 
 	/* that's an [in out] buffer */
 
-	if (!q_u->buffer) {
+	if (!q_u->buffer && (offered!=0)) {
 		return WERR_INVALID_PARAM;
 	}
 
@@ -7031,7 +7031,7 @@ WERROR _spoolss_enumforms(pipes_struct *p, SPOOL_Q_ENUMFORMS *q_u, SPOOL_R_ENUMF
 
 	/* that's an [in out] buffer */
 
-	if (!q_u->buffer) {
+	if (!q_u->buffer && (offered!=0) ) {
 		return WERR_INVALID_PARAM;
 	}
 
@@ -7144,7 +7144,7 @@ WERROR _spoolss_getform(pipes_struct *p, SPOOL_Q_GETFORM *q_u, SPOOL_R_GETFORM *
 
 	/* that's an [in out] buffer */
 
-	if (!q_u->buffer) {
+	if (!q_u->buffer && (offered!=0)) {
 		return WERR_INVALID_PARAM;
 	}
 
@@ -7430,7 +7430,7 @@ WERROR _spoolss_enumports( pipes_struct *p, SPOOL_Q_ENUMPORTS *q_u, SPOOL_R_ENUM
 
 	/* that's an [in out] buffer */
 
-	if (!q_u->buffer) {
+	if (!q_u->buffer && (offered!=0)) {
 		return WERR_INVALID_PARAM;
 	}
 
@@ -7840,7 +7840,7 @@ WERROR _spoolss_getprinterdriverdirectory(pipes_struct *p, SPOOL_Q_GETPRINTERDRI
 
 	/* that's an [in out] buffer */
 
-	if (!q_u->buffer ) {
+	if (!q_u->buffer && (offered!=0)) {
 		return WERR_INVALID_PARAM;
 	}
 
@@ -8452,7 +8452,7 @@ WERROR _spoolss_enumprintprocessors(pipes_struct *p, SPOOL_Q_ENUMPRINTPROCESSORS
 
 	/* that's an [in out] buffer */
 
-	if (!q_u->buffer) {
+	if (!q_u->buffer && (offered!=0)) {
 		return WERR_INVALID_PARAM;
 	}
 
@@ -8531,7 +8531,7 @@ WERROR _spoolss_enumprintprocdatatypes(pipes_struct *p, SPOOL_Q_ENUMPRINTPROCDAT
 
 	/* that's an [in out] buffer */
 
-	if (!q_u->buffer) {
+	if (!q_u->buffer && (offered!=0)) {
 		return WERR_INVALID_PARAM;
 	}
 
@@ -8659,7 +8659,7 @@ WERROR _spoolss_enumprintmonitors(pipes_struct *p, SPOOL_Q_ENUMPRINTMONITORS *q_
 
 	/* that's an [in out] buffer */
 
-	if (!q_u->buffer) {
+	if (!q_u->buffer && (offered!=0)) {
 		return WERR_INVALID_PARAM;
 	}
 
@@ -8835,7 +8835,7 @@ WERROR _spoolss_getjob( pipes_struct *p, SPOOL_Q_GETJOB *q_u, SPOOL_R_GETJOB *r_
 
 	/* that's an [in out] buffer */
 
-	if (!q_u->buffer) {
+	if (!q_u->buffer && (offered!=0)) {
 		return WERR_INVALID_PARAM;
 	}
 
@@ -9457,7 +9457,7 @@ WERROR _spoolss_getprintprocessordirectory(pipes_struct *p, SPOOL_Q_GETPRINTPROC
 
 	/* that's an [in out] buffer */
 
-	if (!q_u->buffer) {
+	if (!q_u->buffer && (offered!=0)) {
 		return WERR_INVALID_PARAM;
 	}
 
