@@ -754,6 +754,8 @@ int get_ntforms(nt_forms_struct **list)
 	int i;
 	int n = 0;
 
+	*list = NULL;
+
 	for (kbuf = tdb_firstkey(tdb_forms);
 	     kbuf.dptr;
 	     newkey = tdb_nextkey(tdb_forms, kbuf), safe_free(kbuf.dptr), kbuf=newkey) 
