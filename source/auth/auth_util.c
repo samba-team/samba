@@ -28,7 +28,7 @@
 #include "libcli/auth/libcli_auth.h"
 
 /* this default function can be used by mostly all backends
- * which don't want to set a challlenge
+ * which don't want to set a challenge
  */
 NTSTATUS auth_get_challenge_not_implemented(struct auth_method_context *ctx, TALLOC_CTX *mem_ctx, DATA_BLOB *challenge)
 {
@@ -116,6 +116,7 @@ NTSTATUS map_user_info(TALLOC_CTX *mem_ctx,
 				return nt_status;
 			}
 			user_info_in = user_info_temp2;
+			/* fall though */
 		}
 		case AUTH_PASSWORD_HASH:
 		{
@@ -171,6 +172,7 @@ NTSTATUS map_user_info(TALLOC_CTX *mem_ctx,
 			}
 
 			user_info_in = user_info_temp;
+			/* fall though */
 		}
 		case AUTH_PASSWORD_RESPONSE:
 			*user_info_encrypted = user_info_in;
@@ -206,6 +208,7 @@ NTSTATUS map_user_info(TALLOC_CTX *mem_ctx,
 			*user_info_temp->password.hash.nt = nt;
 			
 			user_info_in = user_info_temp;
+			/* fall though */
 		}
 		case AUTH_PASSWORD_HASH:
 			*user_info_encrypted = user_info_in;
