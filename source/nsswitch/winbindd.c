@@ -1071,7 +1071,7 @@ int main(int argc, char **argv)
 
 	netsamlogon_cache_init(); /* Non-critical */
 	
-	if (!init_domain_list(True)) {
+	if (!init_domain_list()) {
 		DEBUG(0,("unable to initalize domain list\n"));
 		exit(1);
 	}
