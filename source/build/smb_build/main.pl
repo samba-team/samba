@@ -72,7 +72,8 @@ foreach my $key (values %$OUTPUT) {
 	$mkenv->Binary($key) if $key->{OUTPUT_TYPE} eq "BINARY";
 	$mkenv->Manpage($key) if defined($key->{MANPAGE});
 	$mkenv->Header($key) if defined($key->{PUBLIC_HEADERS});
-	$mkenv->ProtoHeader($key) if defined($key->{PRIVATE_PROTO_HEADER});
+	$mkenv->ProtoHeader($key) if defined($key->{PRIVATE_PROTO_HEADER}) or 
+								 defined($key->{PUBLIC_PROTO_HEADER});
 
 #	$mkenv->DependencyInfo($key) if $config::config{developer} eq "yes";
 }
