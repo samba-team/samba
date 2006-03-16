@@ -6,7 +6,6 @@ OBJ_FILES = \
 		tlscert.o
 REQUIRED_SUBSYSTEMS = \
 		LIBTALLOC EXT_LIB_GNUTLS
-NOPROTO = YES
 #
 # End SUBSYSTEM LIBTLS
 ################################################

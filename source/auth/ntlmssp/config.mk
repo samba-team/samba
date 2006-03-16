@@ -6,7 +6,6 @@ OBJ_FILES = ntlmssp_parse.o
 # Start MODULE gensec_ntlmssp
 [MODULE::gensec_ntlmssp]
 SUBSYSTEM = gensec
-NOPROTO = NO
 INIT_FUNCTION = gensec_ntlmssp_init
 PRIVATE_PROTO_HEADER = proto.h
 OBJ_FILES = ntlmssp.o \

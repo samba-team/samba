@@ -3,7 +3,6 @@
 [SUBSYSTEM::REPLACE_READDIR]
 OBJ_FILES = \
 		repdir/repdir.o
-NOPROTO = YES
 # End SUBSYSTEM REPLACE_READDIR
 ##############################
 
@@ -14,7 +13,6 @@ OBJ_FILES = replace.o \
 		snprintf.o \
 		dlfcn.o \
 		getpass.o
-NOPROTO = YES
 REQUIRED_SUBSYSTEMS = REPLACE_READDIR
 # End SUBSYSTEM LIBREPLACE
 ##############################

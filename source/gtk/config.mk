@@ -4,7 +4,6 @@
 VERSION = 0.0.1
 SO_VERSION = 0.0.1
 DESCRIPTION = Common Samba-related widgets for GTK+ applications
-NOPROTO = YES
 PUBLIC_HEADERS = common/gtk-smb.h common/select.h
 OBJ_FILES = common/gtk-smb.o \
 		common/select.o \

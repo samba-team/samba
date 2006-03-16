@@ -13,7 +13,6 @@ REQUIRED_SUBSYSTEMS = TDR_REGF
 
 [SUBSYSTEM::TDR_REGF]
 REQUIRED_SUBSYSTEMS = TDR 
-NOPROTO = YES
 OBJ_FILES = tdr_regf.o
 
 lib/registry/reg_backend_nt4.c: lib/registry/tdr_regf.c

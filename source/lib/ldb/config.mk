@@ -77,7 +77,6 @@ OBJ_FILES = \
 		ldb_ildap/ldb_ildap.o
 REQUIRED_SUBSYSTEMS = \
 		LIBCLI_LDAP
-NOPROTO = YES
 # End MODULE ldb_ildap
 ################################################
 
@@ -107,7 +106,6 @@ OBJ_FILES = \
 		ldb_sqlite3/ldb_sqlite3.o
 REQUIRED_SUBSYSTEMS = \
 		EXT_LIB_SQLITE3
-NOPROTO = YES
 # End MODULE ldb_sqlite3
 ################################################
 
@@ -125,7 +123,6 @@ OBJ_FILES = \
 		ldb_tdb/ldb_tdb_wrap.o
 REQUIRED_SUBSYSTEMS = \
 		LIBTDB
-NOPROTO = YES
 # End MODULE ldb_tdb
 ################################################
 
@@ -152,7 +149,6 @@ OBJ_FILES = \
 		common/qsort.o
 REQUIRED_SUBSYSTEMS = \
 		LIBREPLACE LIBTALLOC 
-NOPROTO = YES
 MANPAGE = man/ldb.3
 PUBLIC_HEADERS = include/ldb.h
 #
@@ -172,7 +168,6 @@ OBJ_FILES = \
 ################################################
 # Start SUBSYSTEM LIBLDB_CMDLINE
 [SUBSYSTEM::LIBLDB_CMDLINE]
-NOPROTO = YES
 OBJ_FILES= \
 		tools/cmdline.o
 REQUIRED_SUBSYSTEMS = ldb LIBBASIC LIBPOPT POPT_SAMBA POPT_CREDENTIALS

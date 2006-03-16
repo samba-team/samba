@@ -6,6 +6,5 @@ OBJ_FILES = findme.o \
 				poptconfig.o \
 				popthelp.o \
 				poptparse.o
-NOPROTO = YES
 # End SUBSYSTEM INT_LIB_POPT
 ##############################

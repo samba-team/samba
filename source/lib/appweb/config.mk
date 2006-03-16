@@ -4,7 +4,6 @@
 OBJ_FILES = \
 		mpr/miniMpr.o \
 		mpr/var.o
-NOPROTO=YES
 # End SUBSYSTEM MPR
 #######################
 
@@ -18,7 +17,6 @@ OBJ_FILES = \
 		ejs/ejsParser.o \
 		ejs/ejsProcs.o
 REQUIRED_SUBSYSTEMS = MPR
-NOPROTO=YES
 # End SUBSYSTEM EJS
 #######################
 
@@ -29,6 +27,5 @@ OBJ_FILES = \
 		esp/esp.o  \
 		esp/espProcs.o
 REQUIRED_SUBSYSTEMS = EJS
-NOPROTO=YES
 # End SUBSYSTEM ESP
 #######################

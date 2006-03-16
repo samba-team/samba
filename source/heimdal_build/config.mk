@@ -11,7 +11,6 @@ OBJ_FILES = \
 	../heimdal/kdc/kerberos4.o \
 	../heimdal/kdc/kaserver.o \
 	../heimdal/kdc/process.o
-NOPROTO = YES
 # End SUBSYSTEM HEIMDAL_KDC
 #######################
 
@@ -42,7 +41,6 @@ OBJ_FILES = \
 	../heimdal/lib/hdb/asn1_hdb_entry.o \
 	../heimdal/lib/hdb/hdb_err.o
 REQUIRED_SUBSYSTEMS = HDB_LDB
-NOPROTO = YES
 # End SUBSYSTEM HEIMDAL_HDB
 #######################
 
@@ -90,7 +88,6 @@ OBJ_FILES = \
 	../heimdal/lib/gssapi/import_name.o \
 	../heimdal/lib/gssapi/init.o
 REQUIRED_SUBSYSTEMS = KERBEROS HEIMDAL_KRB5
-NOPROTO = YES
 # End SUBSYSTEM HEIMDAL_GSSAPI
 #######################
 
@@ -183,7 +180,6 @@ OBJ_FILES = \
 	../heimdal/lib/krb5/krb5_err.o \
 	../heimdal/lib/krb5/heim_err.o \
 	../heimdal/lib/krb5/k524_err.o
-NOPROTO = YES
 # End SUBSYSTEM HEIMDAL_KRB5
 #######################
 
@@ -263,7 +259,6 @@ OBJ_FILES = \
 	../heimdal/lib/asn1/asn1_err.o \
 	../heimdal/lib/asn1/asn1_krb5int32.o \
 	../heimdal/lib/asn1/asn1_krb5uint32.o
-NOPROTO = YES
 # End SUBSYSTEM HEIMDAL_KRB5
 #######################
 
@@ -289,7 +284,6 @@ OBJ_FILES = \
 	../heimdal/lib/des/evp.o \
 	../heimdal/lib/des/pkcs5.o \
 	../heimdal/lib/des/hmac.o
-NOPROTO = YES
 # End SUBSYSTEM HEIMDAL_DES
 #######################
 
@@ -297,13 +291,11 @@ NOPROTO = YES
 # Start SUBSYSTEM HEIMDAL_ROKEN_GAI_STRERROR
 [SUBSYSTEM::HEIMDAL_ROKEN_GAI_STRERROR]
 OBJ_FILES = ../heimdal/lib/roken/gai_strerror.o
-NOPROTO = YES
 
 #######################
 # Start SUBSYSTEM HEIMDAL_ROKEN_GAI_STRERROR
 [SUBSYSTEM::HEIMDAL_ROKEN_INET_ATON]
 OBJ_FILES = ../heimdal/lib/roken/inet_aton.o
-NOPROTO = YES
 
 #######################
 # Start SUBSYSTEM HEIMDAL_ROKEN_ADDRINFO
@@ -316,7 +308,6 @@ OBJ_FILES = \
 	../heimdal/lib/roken/freehostent.o \
 	../heimdal/lib/roken/copyhostent.o \
 	../heimdal/lib/roken/hostent_find_fqdn.o
-NOPROTO = YES
 
 #######################
 # Start SUBSYSTEM HEIMDAL_ROKEN
@@ -350,7 +341,6 @@ REQUIRED_SUBSYSTEMS = \
 			HEIMDAL_ROKEN_GAI_STRERROR \
 			HEIMDAL_ROKEN_INET_ATON \
 			EXT_LIB_XNET
-NOPROTO = YES
 # End SUBSYSTEM HEIMDAL_ROKEN
 #######################
 
@@ -362,7 +352,6 @@ EXTRA_CFLAGS = \
 	-Iheimdal/lib/des -Iheimdal/lib/roken \
 	-DNO_PRINTF_ATTRIBUTE
 OBJ_FILES = ../heimdal/lib/vers/print_version.o
-NOPROTO = YES
 # End SUBSYSTEM HEIMDAL_VERS
 #######################
 
@@ -384,7 +373,6 @@ EXTRA_CFLAGS = \
 OBJ_FILES = \
 	../heimdal/lib/com_err/com_err.o \
 	../heimdal/lib/com_err/error.o
-NOPROTO = YES
 # End SUBSYSTEM HEIMDAL_COM_ERR
 #######################
 
@@ -483,7 +471,6 @@ heimdal_clean:	hdb_asn1_clean spnego_asn1_clean krb5_asn1_clean
 [LIBRARY::HEIMDAL]
 VERSION = 0.0.1
 SO_VERSION = 0.0.1
-NOPROTO = YES
 REQUIRED_SUBSYSTEMS = \
 		HEIMDAL_GSSAPI HEIMDAL_KRB5 KERBEROS \
 		HEIMDAL_ASN1 HEIMDAL_DES HEIMDAL_ROKEN HEIMDAL_COM_ERR HEIMDAL_VERS HEIMDAL_GLUE EXT_LIB_RESOLV

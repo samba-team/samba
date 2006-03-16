@@ -60,7 +60,6 @@ OBJ_FILES = \
 	dgram/netlogon.o \
 	dgram/ntlogon.o \
 	dgram/browse.o
-NOPROTO=YES
 REQUIRED_SUBSYSTEMS = LIBCLI_NBT
 
 [LIBRARY::LIBCLI_CLDAP]
@@ -69,7 +68,6 @@ SO_VERSION = 0.0.1
 DESCRIPTION = CLDAP client library
 OBJ_FILES = cldap/cldap.o
 PUBLIC_HEADERS = cldap/cldap.h
-NOPROTO=YES
 REQUIRED_SUBSYSTEMS = LIBCLI_LDAP
 
 [LIBRARY::LIBCLI_WREPL]

@@ -3,7 +3,6 @@
 [SUBSYSTEM::EJSRPC]
 OBJ_FILES = \
 		ejsrpc.o
-NOPROTO = YES
 # End SUBSYSTEM EJSRPC
 #######################
 

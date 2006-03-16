@@ -32,7 +32,6 @@ OBJ_FILES = \
 ##############################
 # Start SUBSYSTEM LIBCRYPTO
 [SUBSYSTEM::LIBCRYPTO]
-NOPROTO = YES
 OBJ_FILES = \
 		crypto/crc32.o \
 		crypto/md5.o \
@@ -45,7 +44,6 @@ OBJ_FILES = \
 ################################################
 # Start SUBSYSTEM LIBCOMPRESSION
 [SUBSYSTEM::LIBCOMPRESSION]
-NOPROTO = YES
 OBJ_FILES = \
 		compression/mszip.o
 # End SUBSYSTEM LIBCOMPRESION

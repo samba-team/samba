@@ -6,7 +6,6 @@ SUBSYSTEM = SOCKET
 OUTPUT_TYPE = MERGEDOBJ
 OBJ_FILES = \
 		socket_ipv4.o
-NOPROTO=YES
 REQUIRED_SUBSYSTEMS = EXT_LIB_SOCKET
 # End MODULE socket_ipv4
 ################################################
@@ -18,7 +17,6 @@ SUBSYSTEM = SOCKET
 OUTPUT_TYPE = MERGEDOBJ
 OBJ_FILES = \
 		socket_ipv6.o
-NOPROTO=YES
 REQUIRED_SUBSYSTEMS = EXT_LIB_SOCKET
 # End MODULE socket_ipv6
 ################################################
@@ -30,7 +28,6 @@ SUBSYSTEM = SOCKET
 OUTPUT_TYPE = MERGEDOBJ
 OBJ_FILES = \
 		socket_unix.o
-NOPROTO=YES
 REQUIRED_SUBSYSTEMS = EXT_LIB_SOCKET
 # End MODULE socket_unix
 ################################################
@@ -43,7 +40,6 @@ OBJ_FILES = \
 		access.o \
 		connect_multi.o \
 		connect.o
-NOPROTO=YES
 REQUIRED_SUBSYSTEMS = LIBCLI_RESOLVE SOCKET_WRAPPER LIBTALLOC
 # End SUBSYSTEM SOCKET
 ################################################

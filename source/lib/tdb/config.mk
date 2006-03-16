@@ -8,7 +8,6 @@ OBJ_FILES = \
 	common/tdb.o common/dump.o common/io.o common/lock.o \
 	common/open.o common/traverse.o common/freelist.o \
 	common/error.o common/transaction.o common/tdbutil.o
-NOPROTO=YES
 REQUIRED_SUBSYSTEMS = \
 		LIBREPLACE
 PUBLIC_HEADERS = include/tdb.h
