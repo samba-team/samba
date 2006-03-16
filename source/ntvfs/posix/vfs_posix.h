@@ -159,7 +159,7 @@ struct pvfs_file {
 
 	/* we need to remember the session it was opened on,
 	   as it is illegal to operate on someone elses fnum */
-	struct smbsrv_session *session;
+	struct auth_session_info *session_info;
 
 	/* we need to remember the client pid that 
 	   opened the file so SMBexit works */

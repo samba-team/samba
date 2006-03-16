@@ -192,6 +192,12 @@ struct ntvfs_context {
 		void *private_data;
 		NTSTATUS (*handler)(void *private_data, uint16_t fnum, uint8_t level);
 	} oplock;
+
+	struct {
+		void *private_data;
+		struct socket_address *(*get_my_addr)(void *private_data, TALLOC_CTX *mem_ctx);
+		struct socket_address *(*get_peer_addr)(void *private_data, TALLOC_CTX *mem_ctx);
+	} client;
 };
 
 

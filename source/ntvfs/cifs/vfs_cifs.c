@@ -53,7 +53,7 @@ struct async_info {
 	void *parms;
 };
 
-#define SETUP_PID private->tree->session->pid = SVAL(req->in.hdr, HDR_PID)
+#define SETUP_PID private->tree->session->pid = req->smbpid
 
 /*
   a handler for oplock break events from the server - these need to be passed
@@ -136,9 +136,9 @@ static NTSTATUS cvfs_connect(struct ntvfs_module_context *ntvfs,
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
-	} else if (req->session->session_info->credentials) {
+	} else if (req->session_info->credentials) {
 		DEBUG(5, ("CIFS backend: Using delegated credentials\n"));
-		credentials = req->session->session_info->credentials;
+		credentials = req->session_info->credentials;
 	} else {
 		DEBUG(1,("CIFS backend: You must supply server, user and password and or have delegated credentials\n"));
 		return NT_STATUS_INVALID_PARAMETER;
@@ -698,11 +698,11 @@ static NTSTATUS cvfs_cancel(struct ntvfs_module_context *ntvfs,
 			    struct ntvfs_request *req)
 {
 	struct cvfs_private *private = ntvfs->private_data;
+	struct async_info *a;
 
 	/* find the matching request */
-	struct async_info *a;
 	for (a=private->pending;a;a=a->next) {
-		if (SVAL(a->req->in.hdr, HDR_MID) == SVAL(req->in.hdr, HDR_MID)) {
+		if (a->req->smbmid == req->smbmid) {
 			break;
 		}
 	}
