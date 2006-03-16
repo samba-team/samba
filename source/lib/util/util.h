@@ -24,6 +24,8 @@
 #ifndef _SAMBA_UTIL_H_
 #define _SAMBA_UTIL_H_
 
+#include "charset/charset.h"
+
 /**
  * @file
  * @brief Helpful macros

@@ -2,7 +2,7 @@
 # Start SUBSYSTEM LIBNET
 [LIBRARY::LIBNET]
 VERSION = 0.0.1
-SO_VERSION = 0.0.1
+SO_VERSION = 0
 DESCRIPTION = User-friendly access to Samba interfaces
 PRIVATE_PROTO_HEADER = libnet_proto.h
 PUBLIC_HEADERS = libnet.h libnet_join.h libnet_lookup.h libnet_passwd.h \
