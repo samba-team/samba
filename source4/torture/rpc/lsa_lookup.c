@@ -25,7 +25,6 @@
 #include "libcli/security/proto.h"
 #include "libnet/libnet_join.h"
 #include "torture/rpc/rpc.h"
-#include "librpc/gen_ndr/ndr_lsa.h"
 #include "librpc/gen_ndr/ndr_lsa_c.h"
 #include "librpc/gen_ndr/ndr_security.h"
 

@@ -20,9 +20,7 @@
 */
 
 #include "includes.h"
-#include "librpc/gen_ndr/ndr_epmapper.h"
 #include "librpc/gen_ndr/ndr_epmapper_c.h"
-#include "librpc/gen_ndr/ndr_mgmt.h"
 #include "librpc/gen_ndr/ndr_mgmt_c.h"
 #include "gtk/common/gtk-smb.h"
 #include "auth/gensec/gensec.h"

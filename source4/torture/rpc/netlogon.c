@@ -30,9 +30,7 @@
 #include "lib/cmdline/popt_common.h"
 #include "torture/rpc/rpc.h"
 #include "libcli/auth/libcli_auth.h"
-#include "librpc/gen_ndr/ndr_netlogon.h"
 #include "librpc/gen_ndr/ndr_netlogon_c.h"
-#include "librpc/gen_ndr/ndr_lsa.h"
 #include "librpc/gen_ndr/ndr_lsa_c.h"
 
 static const char *machine_password;

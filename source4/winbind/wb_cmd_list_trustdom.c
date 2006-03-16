@@ -24,7 +24,6 @@
 #include "libcli/composite/composite.h"
 #include "winbind/wb_server.h"
 #include "smbd/service_task.h"
-#include "librpc/gen_ndr/ndr_lsa.h"
 #include "librpc/gen_ndr/ndr_lsa_c.h"
 
 /* List trusted domains. To avoid the trouble with having to wait for other
