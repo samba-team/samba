@@ -1088,6 +1088,23 @@ enum winbindd_result winbindd_dual_pam_auth(struct winbindd_domain *domain,
 			DEBUG(10,("winbindd_dual_pam_auth_kerberos setting domain to offline\n"));
 			domain->online = False;
 		}
+
+		/* there are quite some NT_STATUS errors where there is no
+		 * point in retrying with a samlogon, we explictly have to take
+		 * care not to increase the bad logon counter on the DC */
+
+		if (NT_STATUS_EQUAL(result, NT_STATUS_ACCOUNT_DISABLED) ||
+		    NT_STATUS_EQUAL(result, NT_STATUS_ACCOUNT_EXPIRED) ||
+		    NT_STATUS_EQUAL(result, NT_STATUS_ACCOUNT_LOCKED_OUT) ||
+		    NT_STATUS_EQUAL(result, NT_STATUS_INVALID_LOGON_HOURS) ||
+		    NT_STATUS_EQUAL(result, NT_STATUS_INVALID_WORKSTATION) ||
+		    NT_STATUS_EQUAL(result, NT_STATUS_LOGON_FAILURE) ||
+		    NT_STATUS_EQUAL(result, NT_STATUS_NO_SUCH_USER) ||
+		    NT_STATUS_EQUAL(result, NT_STATUS_PASSWORD_EXPIRED) ||
+		    NT_STATUS_EQUAL(result, NT_STATUS_PASSWORD_MUST_CHANGE) ||
+		    NT_STATUS_EQUAL(result, NT_STATUS_WRONG_PASSWORD)) {
+			goto process_result;
+		}
 		
 		if (state->request.flags & WBFLAG_PAM_FALLBACK_AFTER_KRB5) {
 			DEBUG(3,("falling back to samlogon\n"));
