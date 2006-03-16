@@ -1078,6 +1078,8 @@ int main(int argc, char **argv)
 
 	init_idmap_child();
 
+	winbindd_flush_nscd_cache();
+
 	/* Loop waiting for requests */
 
 	while (1)
