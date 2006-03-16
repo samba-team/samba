@@ -128,6 +128,6 @@ struct gensec_critical_sizes {
 };
 
 #include "auth/credentials/credentials.h"
-#include "gensec_proto.h"
+#include "auth/gensec/gensec_proto.h"
 
 #endif /* __GENSEC_H__ */
