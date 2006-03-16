@@ -22,7 +22,7 @@
 
 #include "libcli/raw/request.h"
 #include "smb.h"
-#include "librpc/gen_ndr/ndr_nbt.h"
+#include "librpc/gen_ndr/nbt.h"
 
 struct smbcli_tree;  /* forward declare */
 struct smbcli_request;  /* forward declare */

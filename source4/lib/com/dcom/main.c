@@ -20,7 +20,7 @@
 
 #include "includes.h"
 #include "system/filesys.h"
-#include "librpc/gen_ndr/ndr_epmapper.h"
+#include "librpc/gen_ndr/epmapper.h"
 #include "librpc/gen_ndr/ndr_remact.h"
 #include "librpc/gen_ndr/ndr_remact_c.h"
 #include "librpc/gen_ndr/com_dcom.h"

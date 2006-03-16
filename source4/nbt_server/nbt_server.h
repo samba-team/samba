@@ -23,7 +23,7 @@
 #include "libcli/nbt/libnbt.h"
 #include "libcli/wrepl/winsrepl.h"
 #include "libcli/dgram/libdgram.h"
-#include "librpc/gen_ndr/ndr_irpc.h"
+#include "librpc/gen_ndr/irpc.h"
 #include "lib/messaging/irpc.h"
 
 /* 

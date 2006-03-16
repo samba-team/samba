@@ -29,7 +29,7 @@
 #include "libcli/composite/composite.h"
 #include "libcli/smb_composite/smb_composite.h"
 #include "lib/cmdline/popt_common.h"
-#include "librpc/gen_ndr/ndr_security.h"
+#include "librpc/gen_ndr/security.h"
 
 #define BASEDIR "\\composite"
 

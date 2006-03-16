@@ -18,7 +18,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#include "librpc/gen_ndr/ndr_srvsvc.h"
+#include "librpc/gen_ndr/srvsvc.h"
 
 enum libnet_ListShares_level {
 	LIBNET_LIST_SHARES_GENERIC,

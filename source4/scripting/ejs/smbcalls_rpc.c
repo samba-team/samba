@@ -23,7 +23,7 @@
 #include "includes.h"
 #include "scripting/ejs/smbcalls.h"
 #include "lib/appweb/ejs/ejs.h"
-#include "librpc/gen_ndr/ndr_echo.h"
+#include "librpc/gen_ndr/echo.h"
 #include "lib/cmdline/popt_common.h"
 #include "lib/messaging/irpc.h"
 #include "scripting/ejs/ejsrpc.h"

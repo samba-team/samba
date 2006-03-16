@@ -39,6 +39,8 @@
 #include "libcli/resolve/resolve.h"
 #include "libcli/security/proto.h"
 #include "lib/replace/readline.h"
+#include "librpc/gen_ndr/ndr_nbt.h"
+#include "librpc/gen_ndr/ndr_security.h"
 
 static int io_bufsize = 64512;
 

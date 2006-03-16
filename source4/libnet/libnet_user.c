@@ -21,6 +21,7 @@
 
 #include "includes.h"
 #include "libnet/libnet.h"
+#include "librpc/gen_ndr/ndr_samr.h"
 
 
 NTSTATUS libnet_CreateUser(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, struct libnet_CreateUser *r)

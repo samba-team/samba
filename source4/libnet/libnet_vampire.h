@@ -18,7 +18,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#include "librpc/gen_ndr/ndr_netlogon.h"
+#include "librpc/gen_ndr/netlogon.h"
 
 struct libnet_SamSync_state {
 	struct libnet_context *machine_net_ctx;

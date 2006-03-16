@@ -27,6 +27,7 @@
 #include "smbd/service_task.h"
 #include "libcli/auth/credentials.h"
 #include "libcli/auth/libcli_auth.h"
+#include "librpc/gen_ndr/ndr_netlogon.h"
 #include "librpc/gen_ndr/ndr_netlogon_c.h"
 
 /* Oh, there is so much to keep an eye on when authenticating a user.  Oh my! */

@@ -21,7 +21,7 @@
 */
 
 #include "includes.h"
-#include "librpc/gen_ndr/ndr_samr.h"
+#include "librpc/gen_ndr/samr.h"
 #include "ads.h"
 
 /* 

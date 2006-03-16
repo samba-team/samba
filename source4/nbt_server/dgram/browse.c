@@ -23,6 +23,7 @@
 #include "includes.h"
 #include "nbt_server/nbt_server.h"
 #include "lib/socket/socket.h"
+#include "librpc/gen_ndr/ndr_nbt.h"
 
 static const char *nbt_browse_opcode_string(enum nbt_browse_opcode r)
 {
