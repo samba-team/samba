@@ -570,22 +570,7 @@ static void child_msg_online(int msg_type, struct process_id src, void *buf, siz
 	/* Set our global state as online. */
 	set_global_winbindd_state_online();
 
-#ifdef HAVE_NSCD_FLUSH_CACHE
-	{
-		/* Flush nscd caches to get accurate new information */
-		int ret = nscd_flush_cache("passwd");
-		if (ret) {
-			DEBUG(5,("failed to flush nscd cache for 'passwd' service: %s\n",
-				strerror(ret)));
-		}
-
-		ret = nscd_flush_cache("group");
-		if (ret) {
-			DEBUG(5,("failed to flush nscd cache for 'group' service: %s\n",
-				strerror(ret)));
-		}
-	}
-#endif
+	winbindd_flush_nscd_cache();
 
 	/* Mark everything online - delete any negative cache entries
 	   to force an immediate reconnect. */
