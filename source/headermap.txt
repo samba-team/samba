@@ -40,6 +40,8 @@ lib/samba3/samba3.h: samba3.h
 include/core.h: core.h
 librpc/gen_ndr/dcerpc.h: gen_ndr/dcerpc.h
 librpc/gen_ndr/netlogon.h: gen_ndr/netlogon.h
+librpc/gen_ndr/ndr_misc.h: gen_ndr/ndr_misc.h
+librpc/gen_ndr/ndr_dcerpc.h: gen_ndr/ndr_dcerpc.h
 librpc/gen_ndr/misc.h: gen_ndr/misc.h
 librpc/gen_ndr/lsa.h: gen_ndr/lsa.h
 librpc/gen_ndr/samr.h: gen_ndr/samr.h
@@ -56,3 +58,5 @@ auth/auth_proto.h: auth/proto.h
 auth/gensec/spnego.h: gensec/spnego.h
 auth/gensec/gensec_proto.h: gensec/proto.h
 libcli/auth/credentials.h: domain_credentials.h
+lib/charset/charset.h: charset.h
+lib/charset/charset_proto.h: charset/proto.h
