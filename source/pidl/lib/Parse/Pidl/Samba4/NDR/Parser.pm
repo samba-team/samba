@@ -2239,10 +2239,14 @@ sub HeaderInterface($)
 
 	pidl_hdr "#include \"librpc/ndr/libndr.h\"";
 
+	if (has_property($interface, "object")) {
+		pidl "#include \"librpc/gen_ndr/ndr_orpc.h\"";
+	}
+
 	if (defined $interface->{PROPERTIES}->{depends}) {
 		my @d = split / /, $interface->{PROPERTIES}->{depends};
 		foreach my $i (@d) {
-			pidl_hdr "#include \"librpc/gen_ndr/ndr_$i\.h\"";
+			pidl "#include \"librpc/gen_ndr/ndr_$i\.h\"";
 		}
 	}
 

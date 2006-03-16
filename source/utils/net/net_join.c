@@ -23,6 +23,7 @@
 #include "includes.h"
 #include "utils/net/net.h"
 #include "libnet/libnet.h"
+#include "librpc/gen_ndr/ndr_security.h"
 
 int net_join(struct net_context *ctx, int argc, const char **argv) 
 {

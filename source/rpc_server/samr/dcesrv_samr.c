@@ -27,6 +27,7 @@
 #include "rpc_server/dcerpc_server.h"
 #include "rpc_server/common/common.h"
 #include "rpc_server/samr/dcesrv_samr.h"
+#include "librpc/gen_ndr/ndr_security.h"
 #include "system/time.h"
 #include "lib/ldb/include/ldb.h"
 #include "ads.h"

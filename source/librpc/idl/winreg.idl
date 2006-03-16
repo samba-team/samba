@@ -11,7 +11,7 @@
   pointer_default(unique),
   pointer_default_top(unique),
   helpstring("Remote Registry Service"),
-  depends(lsa,initshutdown)
+  depends(lsa,initshutdown,security)
 ] interface winreg
 {
 	declare bitmap security_secinfo;

@@ -27,6 +27,7 @@
 #include "librpc/gen_ndr/lsa.h"
 #include "libcli/util/clilsa.h"
 #include "libcli/security/proto.h"
+#include "librpc/gen_ndr/ndr_security.h"
 
 #define BASEDIR "\\testsd"
 

@@ -24,7 +24,7 @@
 #include "include/includes.h"
 #include "lib/messaging/irpc.h"
 #include "librpc/gen_ndr/ndr_irpc.h"
-#include "librpc/gen_ndr/ndr_samr.h"
+#include "librpc/gen_ndr/samr.h"
 #include "libcli/composite/composite.h"
 #include "libcli/libcli.h"
 #include "libcli/resolve/resolve.h"

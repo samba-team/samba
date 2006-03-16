@@ -25,6 +25,7 @@
 #include "dlinklist.h"
 #include "libcli/nbt/libnbt.h"
 #include "lib/socket/socket.h"
+#include "librpc/gen_ndr/ndr_nbt.h"
 
 #define NBT_MAX_REPLIES 1000
 

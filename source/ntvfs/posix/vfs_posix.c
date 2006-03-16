@@ -26,7 +26,7 @@
 
 #include "includes.h"
 #include "vfs_posix.h"
-#include "librpc/gen_ndr/ndr_security.h"
+#include "librpc/gen_ndr/security.h"
 #include "smbd/service_stream.h"
 #include "lib/tdb/include/tdb.h"
 #include "db_wrap.h"

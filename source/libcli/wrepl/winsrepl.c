@@ -25,6 +25,7 @@
 #include "dlinklist.h"
 #include "lib/socket/socket.h"
 #include "libcli/wrepl/winsrepl.h"
+#include "librpc/gen_ndr/ndr_winsrepl.h"
 #include "lib/stream/packet.h"
 #include "libcli/composite/composite.h"
 #include "system/network.h"

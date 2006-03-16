@@ -27,7 +27,8 @@
 #include "winbind/wb_async_helpers.h"
 #include "libcli/composite/composite.h"
 #include "version.h"
-#include "librpc/gen_ndr/ndr_netlogon.h"
+#include "librpc/gen_ndr/netlogon.h"
+#include "librpc/gen_ndr/ndr_security.h"
 #include "libcli/security/proto.h"
 #include "auth/pam_errors.h"
 

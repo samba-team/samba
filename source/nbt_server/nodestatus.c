@@ -25,6 +25,7 @@
 #include "system/network.h"
 #include "nbt_server/nbt_server.h"
 #include "lib/socket/socket.h"
+#include "librpc/gen_ndr/ndr_nbt.h"
 
 /*
   send a name status reply

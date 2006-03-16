@@ -23,7 +23,7 @@
 */
 
 #include "includes.h"
-#include "librpc/gen_ndr/ndr_drsuapi.h"
+#include "librpc/gen_ndr/drsuapi.h"
 #include "rpc_server/common/common.h"
 #include "lib/ldb/include/ldb_errors.h"
 #include "system/kerberos.h"

@@ -21,7 +21,7 @@
 */
 
 #include "includes.h"
-#include "librpc/gen_ndr/ndr_nbt.h"
+#include "librpc/gen_ndr/nbt.h"
 #include "libcli/resolve/resolve.h"
 
 /*

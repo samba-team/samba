@@ -26,6 +26,7 @@
 #include "includes.h"
 #include "smb_server/smb_server.h"
 #include "ntvfs/ntvfs.h"
+#include "librpc/gen_ndr/ndr_nbt.h"
 
 
 /* useful way of catching wct errors with file and line number */

@@ -24,6 +24,7 @@
 #include "torture/rpc/rpc.h"
 #include "libnet/libnet.h"
 #include "lib/cmdline/popt_common.h"
+#include "librpc/gen_ndr/ndr_srvsvc.h"
 #include "librpc/gen_ndr/ndr_srvsvc_c.h"
 
 

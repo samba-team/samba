@@ -26,7 +26,7 @@
 #include "system/time.h"
 #include "dlinklist.h"
 #include "messaging/messaging.h"
-#include "librpc/gen_ndr/ndr_xattr.h"
+#include "librpc/gen_ndr/xattr.h"
 
 /*
   create file handles with convenient numbers for sniffers

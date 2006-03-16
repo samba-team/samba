@@ -25,6 +25,7 @@
 #include "librpc/gen_ndr/ndr_remact_c.h"
 #include "librpc/gen_ndr/ndr_epmapper.h"
 #include "librpc/gen_ndr/ndr_epmapper_c.h"
+#include "librpc/gen_ndr/ndr_dcom.h"
 #include "torture/rpc/rpc.h"
 
 #define CLSID_IMAGEDOC "02B01C80-E03D-101A-B294-00DD010F2BF9"

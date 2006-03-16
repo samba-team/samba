@@ -21,7 +21,7 @@
 */
 
 #include "includes.h"
-#include "librpc/gen_ndr/ndr_winsrepl.h"
+#include "librpc/gen_ndr/winsrepl.h"
 #include "wrepl_server/wrepl_server.h"
 #include "libcli/composite/composite.h"
 #include "nbt_server/wins/winsdb.h"

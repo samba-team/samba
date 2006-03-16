@@ -29,6 +29,7 @@
 #include "nbt_server/wins/winsdb.h"
 #include "libcli/wrepl/winsrepl.h"
 #include "system/time.h"
+#include "librpc/gen_ndr/ndr_nbt.h"
 
 enum _R_ACTION {
 	R_INVALID,

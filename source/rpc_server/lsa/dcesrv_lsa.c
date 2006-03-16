@@ -29,6 +29,7 @@
 #include "libcli/ldap/ldap.h"
 #include "libcli/security/proto.h"
 #include "libcli/auth/libcli_auth.h"
+#include "librpc/gen_ndr/ndr_security.h"
 #include "smb.h"
 #include "smb_server/smb_server.h"
 #include "ntvfs/ntvfs.h"

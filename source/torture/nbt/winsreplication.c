@@ -28,6 +28,7 @@
 #include "libcli/resolve/resolve.h"
 #include "system/network.h"
 #include "netif/netif.h"
+#include "librpc/gen_ndr/ndr_nbt.h"
 
 #define CHECK_STATUS(status, correct) do { \
 	if (!NT_STATUS_EQUAL(status, correct)) { \

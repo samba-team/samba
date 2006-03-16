@@ -23,7 +23,7 @@
 #ifndef __LIBNBT_H__
 #define __LIBNBT_H__
 
-#include "librpc/gen_ndr/ndr_nbt.h"
+#include "librpc/gen_ndr/nbt.h"
 
 /*
   possible states for pending requests

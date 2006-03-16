@@ -27,6 +27,7 @@
 #include "dsdb/samdb/samdb.h"
 #include "auth/auth.h"
 #include "db_wrap.h"
+#include "librpc/gen_ndr/ndr_nbt.h"
 
 /*
   reply to a GETDC request

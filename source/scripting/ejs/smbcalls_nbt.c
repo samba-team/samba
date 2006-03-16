@@ -23,7 +23,7 @@
 #include "includes.h"
 #include "scripting/ejs/smbcalls.h"
 #include "lib/appweb/ejs/ejs.h"
-#include "librpc/gen_ndr/ndr_nbt.h"
+#include "librpc/gen_ndr/nbt.h"
 #include "lib/events/events.h"
 #include "libcli/resolve/resolve.h"
 

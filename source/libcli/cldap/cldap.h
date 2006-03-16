@@ -21,7 +21,7 @@
 */
 
 #include "libcli/util/asn_1.h"
-#include "librpc/gen_ndr/ndr_nbt.h"
+#include "librpc/gen_ndr/nbt.h"
 
 struct ldap_message;
 

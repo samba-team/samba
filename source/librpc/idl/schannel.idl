@@ -5,7 +5,7 @@
 */
 
 [
-	depends(netlogon)
+	depends(netlogon,nbt)
 ]
 interface schannel
 {

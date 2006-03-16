@@ -25,6 +25,7 @@
 #include "libcli/resolve/resolve.h"
 #include "system/network.h"
 #include "netif/netif.h"
+#include "librpc/gen_ndr/ndr_nbt.h"
 
 #define CHECK_VALUE(v, correct) do { \
 	if ((v) != (correct)) { \

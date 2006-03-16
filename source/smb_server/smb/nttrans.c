@@ -26,6 +26,7 @@
 #include "smb_server/smb_server.h"
 #include "ntvfs/ntvfs.h"
 #include "libcli/raw/libcliraw.h"
+#include "librpc/gen_ndr/ndr_security.h"
 
 /*
   hold the state of a nttrans op while in progress. Needed to allow for async backend

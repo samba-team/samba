@@ -23,7 +23,7 @@
 */
 
 #include "includes.h"
-#include "librpc/gen_ndr/ndr_samr.h" /* for struct samrPassword */
+#include "librpc/gen_ndr/samr.h" /* for struct samrPassword */
 #include "auth/gensec/gensec.h"
 #include "libcli/auth/libcli_auth.h"
 

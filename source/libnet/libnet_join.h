@@ -23,7 +23,7 @@
 #ifndef __LIBNET_JOIN_H__
 #define __LIBNET_JOIN_H__
 
-#include "librpc/gen_ndr/ndr_netlogon.h"
+#include "librpc/gen_ndr/netlogon.h"
 
 enum libnet_Join_level {
 	LIBNET_JOIN_AUTOMATIC,

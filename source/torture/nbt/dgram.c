@@ -22,7 +22,9 @@
 
 #include "includes.h"
 #include "libcli/dgram/libdgram.h"
-#include "librpc/gen_ndr/ndr_samr.h"
+#include "librpc/gen_ndr/samr.h"
+#include "librpc/gen_ndr/ndr_nbt.h"
+#include "librpc/gen_ndr/ndr_netlogon.h"
 #include "lib/socket/socket.h"
 #include "lib/events/events.h"
 #include "torture/rpc/rpc.h"

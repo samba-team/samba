@@ -20,7 +20,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#include "librpc/gen_ndr/ndr_netlogon.h"
+#include "librpc/gen_ndr/netlogon.h"
 
 struct creds_CredentialState {
 	uint32_t negotiate_flags;

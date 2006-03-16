@@ -28,6 +28,7 @@
 #include "auth/auth.h"
 #include "pstring.h"
 #include "libcli/auth/libcli_auth.h"
+#include "librpc/gen_ndr/ndr_security.h"
 
 #define SQUID_BUFFER_SIZE 2010
 

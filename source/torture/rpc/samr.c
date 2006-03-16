@@ -22,9 +22,10 @@
 
 #include "includes.h"
 #include "torture/torture.h"
-#include "librpc/gen_ndr/ndr_lsa.h"
+#include "librpc/gen_ndr/lsa.h"
 #include "librpc/gen_ndr/ndr_samr.h"
 #include "librpc/gen_ndr/ndr_samr_c.h"
+#include "librpc/gen_ndr/ndr_security.h"
 #include "smb.h"
 #include "lib/crypto/crypto.h"
 #include "libcli/auth/libcli_auth.h"

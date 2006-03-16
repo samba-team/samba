@@ -32,9 +32,12 @@
 #include "auth/gensec/schannel_proto.h"
 #include "libcli/auth/libcli_auth.h"
 #include "libcli/security/proto.h"
+#include "librpc/gen_ndr/ndr_netlogon.h"
 #include "librpc/gen_ndr/ndr_netlogon_c.h"
+#include "librpc/gen_ndr/ndr_lsa.h"
 #include "librpc/gen_ndr/ndr_lsa_c.h"
 #include "librpc/gen_ndr/ndr_samr_c.h"
+#include "librpc/gen_ndr/ndr_security.h"
 
 #define TEST_MACHINE_NAME "samsynctest"
 #define TEST_WKSTA_MACHINE_NAME "samsynctest2"
