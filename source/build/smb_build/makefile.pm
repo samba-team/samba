@@ -23,6 +23,7 @@ sub new($$$)
 	$self->{bin_progs} = [];
 	$self->{static_libs} = [];
 	$self->{shared_libs} = [];
+	$self->{installable_shared_libs} = [];
 	$self->{headers} = [];
 	$self->{shared_modules} = [];
 	$self->{plugins} = [];
@@ -213,6 +214,7 @@ sub SharedLibrary($$)
 
 	if ($ctx->{TYPE} eq "LIBRARY") {
 		push (@{$self->{shared_libs}}, "$ctx->{DEBUGDIR}/$ctx->{LIBRARY_REALNAME}");
+		push (@{$self->{installable_shared_libs}}, "$installdir/$ctx->{LIBRARY_REALNAME}");
 	} elsif ($ctx->{TYPE} eq "MODULE") {
 		push (@{$self->{shared_modules}}, "$ctx->{DEBUGDIR}/$ctx->{LIBRARY_REALNAME}");
 		push (@{$self->{plugins}}, "$installdir/$ctx->{LIBRARY_REALNAME}");
@@ -442,7 +444,7 @@ sub PkgConfig($$)
 	smb_build::env::PkgConfig($self,
 		$path,
 		$link_name,
-		$ctx->{OUTPUT},
+		"-l$link_name",
 		"",
 		"$ctx->{VERSION}",
 		$ctx->{DESCRIPTION}
@@ -491,6 +493,7 @@ sub write($$)
 	$self->output("BINARIES = " . array2oneperline($self->{binaries}) . "\n");
 	$self->output("STATIC_LIBS = " . array2oneperline($self->{static_libs}) . "\n");
 	$self->output("SHARED_LIBS = " . array2oneperline($self->{shared_libs}) . "\n");
+	$self->output("INSTALLABLE_SHARED_LIBS = " . array2oneperline($self->{installable_shared_libs}) . "\n");
 	$self->output("PUBLIC_HEADERS = " . array2oneperline($self->{headers}) . "\n");
 	$self->output("PC_FILES = " . array2oneperline($self->{pc_files}) . "\n");
 	$self->output("ALL_OBJS = " . array2oneperline($self->{all_objs}) . "\n");

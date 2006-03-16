@@ -2,7 +2,7 @@
 # Start SUBSYSTEM gensec
 [LIBRARY::gensec]
 VERSION = 0.0.1
-SO_VERSION = 0.0.1
+SO_VERSION = 0
 DESCRIPTION = Generic Security Library
 PUBLIC_HEADERS = gensec.h spnego.h
 PUBLIC_PROTO_HEADER = gensec_proto.h

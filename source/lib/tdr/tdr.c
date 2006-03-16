@@ -129,7 +129,7 @@ NTSTATUS tdr_print_uint32(struct tdr_print *tdr, const char *name, uint32_t *v)
 	return NT_STATUS_OK;
 }
 
-NTSTATUS tdr_pull_charset(struct tdr_pull *tdr, TALLOC_CTX *ctx, const char **v, uint32_t length, uint32_t el_size, int chset)
+NTSTATUS tdr_pull_charset(struct tdr_pull *tdr, TALLOC_CTX *ctx, const char **v, uint32_t length, uint32_t el_size, charset_t chset)
 {
 	int ret;
 
@@ -165,7 +165,7 @@ NTSTATUS tdr_pull_charset(struct tdr_pull *tdr, TALLOC_CTX *ctx, const char **v,
 	return NT_STATUS_OK;
 }
 
-NTSTATUS tdr_push_charset(struct tdr_push *tdr, const char **v, uint32_t length, uint32_t el_size, int chset)
+NTSTATUS tdr_push_charset(struct tdr_push *tdr, const char **v, uint32_t length, uint32_t el_size, charset_t chset)
 {
 	ssize_t ret, required;
 
@@ -192,7 +192,7 @@ NTSTATUS tdr_push_charset(struct tdr_push *tdr, const char **v, uint32_t length,
 	return NT_STATUS_OK;
 }
 
-NTSTATUS tdr_print_charset(struct tdr_print *tdr, const char *name, const char **v, uint32_t length, uint32_t el_size, int chset)
+NTSTATUS tdr_print_charset(struct tdr_print *tdr, const char *name, const char **v, uint32_t length, uint32_t el_size, charset_t chset)
 {
 	tdr->print(tdr, "%-25s: %s", name, *v);
 	return NT_STATUS_OK;
