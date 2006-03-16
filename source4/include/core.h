@@ -24,6 +24,8 @@
 #ifndef _SAMBA_CORE_H
 #define _SAMBA_CORE_H
 
+#include "libcli/util/nt_status.h"
+
 #define False (0)
 #define True (1)
 #define Auto (2)
@@ -73,5 +75,27 @@ typedef NTSTATUS (*init_module_fn) (void);
 
 /* same struct as dom_sid but inside a 28 bytes fixed buffer in NDR */
 #define dom_sid28 dom_sid
+
+/* protocol types. It assumes that higher protocols include lower protocols
+   as subsets. FIXME: Move to one of the smb-specific headers */
+enum protocol_types {
+	PROTOCOL_NONE,
+	PROTOCOL_CORE,
+	PROTOCOL_COREPLUS,
+	PROTOCOL_LANMAN1,
+	PROTOCOL_LANMAN2,
+	PROTOCOL_NT1,
+	PROTOCOL_SMB2
+};
+
+/* passed to br lock code. FIXME: Move to one of the smb-specific headers */
+enum brl_type {
+	READ_LOCK,
+	WRITE_LOCK,
+	PENDING_READ_LOCK,
+	PENDING_WRITE_LOCK
+};
+
+
 
 #endif /* _SAMBA_CORE_H */

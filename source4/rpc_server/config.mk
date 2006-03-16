@@ -203,7 +203,8 @@ REQUIRED_SUBSYSTEMS = \
 ################################################
 # Start SUBSYSTEM dcerpc_server
 [SUBSYSTEM::dcerpc_server]
-PRIVATE_PROTO_HEADER = dcerpc_server_proto.h
+PUBLIC_HEADERS = dcerpc_server.h
+PUBLIC_PROTO_HEADER = dcerpc_server_proto.h
 OBJ_FILES = \
 		dcerpc_server.o \
 		dcerpc_sock.o \

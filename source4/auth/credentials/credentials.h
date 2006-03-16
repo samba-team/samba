@@ -23,6 +23,8 @@
 #ifndef __CREDENTIALS_H__
 #define __CREDENTIALS_H__
 
+#include "librpc/gen_ndr/misc.h"
+
 struct ccache_container;
 
 /* In order of priority */

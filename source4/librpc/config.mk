@@ -5,7 +5,7 @@ VERSION = 0.0.1
 SO_VERSION = 0.0.1
 DESCRIPTION = Network Data Representation Core Library
 PUBLIC_HEADERS = ndr/libndr.h
-PRIVATE_PROTO_HEADER = ndr/libndr_proto.h
+PUBLIC_PROTO_HEADER = ndr/libndr_proto.h
 OBJ_FILES = \
 		ndr/ndr.o \
 		ndr/ndr_basic.o \
@@ -38,6 +38,7 @@ VERSION = 0.0.1
 SO_VERSION = 0.0.1
 DESCRIPTION =
 OBJ_FILES = gen_ndr/ndr_security.o
+PUBLIC_HEADERS = gen_ndr/security.h
 REQUIRED_SUBSYSTEMS = NDR_MISC NDR_SECURITY_HELPER
 
 [LIBRARY::NDR_AUDIOSRV]
@@ -101,6 +102,7 @@ VERSION = 0.0.1
 SO_VERSION = 0.0.1
 DESCRIPTION =
 OBJ_FILES = gen_ndr/ndr_misc.o
+PUBLIC_HEADERS = gen_ndr/misc.h
 REQUIRED_SUBSYSTEMS = LIBNDR
 
 [LIBRARY::NDR_ROT]
@@ -115,6 +117,7 @@ VERSION = 0.0.1
 SO_VERSION = 0.0.1
 DESCRIPTION =
 OBJ_FILES = gen_ndr/ndr_lsa.o
+PUBLIC_HEADERS = gen_ndr/lsa.h
 REQUIRED_SUBSYSTEMS = LIBNDR
 
 [LIBRARY::NDR_DFS]
@@ -168,6 +171,7 @@ VERSION = 0.0.1
 SO_VERSION = 0.0.1
 DESCRIPTION =
 OBJ_FILES = gen_ndr/ndr_samr.o
+PUBLIC_HEADERS = gen_ndr/samr.h
 REQUIRED_SUBSYSTEMS = LIBNDR NDR_MISC NDR_LSA NDR_SECURITY
 
 [LIBRARY::NDR_SPOOLSS]
@@ -351,6 +355,7 @@ VERSION = 0.0.1
 SO_VERSION = 0.0.1
 DESCRIPTION =
 OBJ_FILES = gen_ndr/ndr_netlogon.o
+PUBLIC_HEADERS = gen_ndr/netlogon.h
 REQUIRED_SUBSYSTEMS = LIBNDR NDR_SAMR NDR_LSA
 
 [LIBRARY::NDR_TRKWKS]
@@ -700,6 +705,7 @@ REQUIRED_SUBSYSTEMS = dcerpc NDR_KEYSVC
 [SUBSYSTEM::NDR_DCERPC]
 OBJ_FILES = gen_ndr/ndr_dcerpc.o
 REQUIRED_SUBSYSTEMS = LIBNDR NDR_MISC
+PUBLIC_HEADERS = gen_ndr/dcerpc.h
 
 ################################################
 # Start SUBSYSTEM dcerpc
@@ -708,7 +714,7 @@ VERSION = 0.0.1
 SO_VERSION = 0.0.1
 DESCRIPTION = DCE/RPC client library
 PUBLIC_HEADERS = rpc/dcerpc.h
-PRIVATE_PROTO_HEADER = rpc/dcerpc_proto.h
+PUBLIC_PROTO_HEADER = rpc/dcerpc_proto.h
 OBJ_FILES = \
 		rpc/dcerpc.o \
 		rpc/dcerpc_auth.o \
