@@ -22,7 +22,6 @@
 
 #include "includes.h"
 #include "libnet/libnet.h"
-#include "librpc/gen_ndr/ndr_drsuapi.h"
 #include "librpc/gen_ndr/ndr_drsuapi_c.h"
 #include "lib/ldb/include/ldb.h"
 #include "lib/ldb/include/ldb_errors.h"
@@ -31,7 +30,6 @@
 #include "db_wrap.h"
 #include "libcli/security/proto.h"
 #include "auth/credentials/credentials.h"
-#include "librpc/gen_ndr/ndr_samr.h"
 #include "librpc/gen_ndr/ndr_samr_c.h"
 #include "librpc/gen_ndr/ndr_security.h"
 

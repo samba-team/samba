@@ -26,7 +26,6 @@
 
 #include "libcli/raw/libcliraw.h"
 #include "libcli/security/proto.h"
-#include "librpc/gen_ndr/ndr_samr.h"
 #include "librpc/gen_ndr/ndr_samr_c.h"
 
 

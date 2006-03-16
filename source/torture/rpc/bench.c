@@ -22,7 +22,6 @@
 
 #include "includes.h"
 #include "torture/torture.h"
-#include "librpc/gen_ndr/ndr_srvsvc.h"
 #include "librpc/gen_ndr/ndr_srvsvc_c.h"
 #include "torture/rpc/rpc.h"
 

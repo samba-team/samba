@@ -19,7 +19,6 @@
  
 #include "includes.h"
 #include "registry.h"
-#include "librpc/gen_ndr/ndr_winreg.h"
 #include "librpc/gen_ndr/ndr_winreg_c.h"
 
 static struct hive_operations reg_backend_rpc;

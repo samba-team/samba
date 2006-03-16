@@ -26,7 +26,6 @@
 #include "includes.h"
 #include "lib/events/events.h"
 #include "libcli/composite/composite.h"
-#include "librpc/gen_ndr/ndr_epmapper.h"
 #include "librpc/gen_ndr/ndr_epmapper_c.h"
 #include "librpc/gen_ndr/ndr_dcerpc.h"
 #include "librpc/gen_ndr/ndr_misc.h"
