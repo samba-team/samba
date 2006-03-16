@@ -1,7 +1,8 @@
 #################################
 # Start SUBSYSTEM gensec
 [SUBSYSTEM::CREDENTIALS]
-PRIVATE_PROTO_HEADER = credentials_proto.h
+PUBLIC_PROTO_HEADER = credentials_proto.h
+PUBLIC_HEADERS = credentials.h
 OBJ_FILES = credentials.o \
 		credentials_files.o \
 		credentials_krb5.o \

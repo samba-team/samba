@@ -2,7 +2,7 @@
 VERSION = 0.0.1
 SO_VERSION = 0.0.1
 DESCRIPTION = Generic utility functions
-PRIVATE_PROTO_HEADER = util_proto.h
+PUBLIC_PROTO_HEADER = util_proto.h
 PUBLIC_HEADERS = util.h \
 				 byteorder.h \
 				 debug.h \

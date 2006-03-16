@@ -4,8 +4,8 @@
 VERSION = 0.0.1
 SO_VERSION = 0.0.1
 DESCRIPTION = Generic Security Library
-PUBLIC_HEADERS = gensec.h
-PRIVATE_PROTO_HEADER = gensec_proto.h
+PUBLIC_HEADERS = gensec.h spnego.h
+PUBLIC_PROTO_HEADER = gensec_proto.h
 OBJ_FILES = gensec.o
 REQUIRED_SUBSYSTEMS = \
 		CREDENTIALS

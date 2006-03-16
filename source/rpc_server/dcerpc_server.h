@@ -24,6 +24,11 @@
 #ifndef SAMBA_DCERPC_SERVER_H
 #define SAMBA_DCERPC_SERVER_H
 
+#include "core.h"
+#include "librpc/gen_ndr/misc.h"
+#include "librpc/gen_ndr/dcerpc.h"
+#include "librpc/ndr/libndr.h"
+
 /* modules can use the following to determine if the interface has changed
  * please increment the version number after each interface change
  * with a comment and maybe update struct dcesrv_critical_sizes.

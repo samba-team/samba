@@ -21,6 +21,9 @@
 #ifndef __LIBNDR_H__
 #define __LIBNDR_H__
 
+#include "core.h"
+#include "lib/talloc/talloc.h"
+
 /*
   this provides definitions for the libcli/rpc/ MSRPC library
 */

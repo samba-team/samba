@@ -95,31 +95,10 @@ _PUBLIC_ void smb_panic(const char *why) NORETURN_ATTRIBUTE;
 #include <varargs.h>
 #endif
 
-/* protocol types. It assumes that higher protocols include lower protocols
-   as subsets. FIXME: Move to one of the smb-specific headers */
-enum protocol_types {
-	PROTOCOL_NONE,
-	PROTOCOL_CORE,
-	PROTOCOL_COREPLUS,
-	PROTOCOL_LANMAN1,
-	PROTOCOL_LANMAN2,
-	PROTOCOL_NT1,
-	PROTOCOL_SMB2
-};
-
-/* passed to br lock code. FIXME: Move to one of the smb-specific headers */
-enum brl_type {
-	READ_LOCK,
-	WRITE_LOCK,
-	PENDING_READ_LOCK,
-	PENDING_WRITE_LOCK
-};
-
 #define _PRINTF_ATTRIBUTE(a1, a2) PRINTF_ATTRIBUTE(a1, a2)
 #include "lib/replace/replace.h"
 
 /* Lists, trees, caching, database... */
-#include "libcli/util/nt_status.h"
 #include "talloc/talloc.h"
 #include "core.h"
 #include "charset/charset.h"
