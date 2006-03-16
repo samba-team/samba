@@ -25,7 +25,6 @@ my $section_types = {
 		"REQUIRED_SUBSYSTEMS"	=> "list",
 
 		"ENABLE"		=> "bool",
-		"NOPROTO"		=> "bool",
 
 		"MANPAGE"		=> "string",
 
@@ -46,7 +45,6 @@ my $section_types = {
 		"REQUIRED_SUBSYSTEMS"	=> "list",
 
 		"ENABLE"		=> "bool",
-		"NOPROTO"		=> "bool",
 
 		"OUTPUT_TYPE"		=> "string",
 
@@ -61,7 +59,6 @@ my $section_types = {
 		"REQUIRED_SUBSYSTEMS"	=> "list",
 
 		"ENABLE"		=> "bool",
-		"NOPROTO"		=> "bool",
 
 		"MANPAGE"		=> "string",
 		"INSTALLDIR"		=> "string",
@@ -83,7 +80,6 @@ my $section_types = {
 		"REQUIRED_SUBSYSTEMS"	=> "list",
 
 		"ENABLE"		=> "bool",
-		"NOPROTO"		=> "bool",
 
 		"MANPAGE"		=> "string",
 

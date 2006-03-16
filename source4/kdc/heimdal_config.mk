@@ -334,7 +334,6 @@ OBJ_FILES = \
 	../heimdal/lib/roken/strsep_copy.o \
 	../heimdal/lib/sl/strupr.o \
 	../heimdal/lib/roken/strupr.o
-NOPROTO = YES
 TARGET_CFLAGS = -Iheimdal/lib/krb5 -Iheimdal/kdc -Iheimdal/lib/asn1 -Iheimdal/lib/des
 # End SUBSYSTEM HEIMDAL
 #######################
