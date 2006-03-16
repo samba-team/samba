@@ -11,6 +11,8 @@
 #   /usr/src/redhat directory
 #
 
+EXTRA_OPTIONS="$1"
+
 SPECDIR=`rpm --eval %_specdir`
 SRCDIR=`rpm --eval %_sourcedir`
 
@@ -39,7 +41,9 @@ esac
 ( cd ../../source; if [ -f Makefile ]; then make distclean; fi )
 ( cd ../../.. ; chown -R ${USERID}.${GRPID} samba-${VERSION} )
 
+echo -n "Creating samba-${VERSION}.tar.bz2 ... "
 ( cd ../../.. ; tar --exclude=.svn -cf - samba-${VERSION}/. | bzip2 > ${SRCDIR}/samba-${VERSION}.tar.bz2 )
+echo "Done."
 
 ##
 ## copy additional source files
@@ -51,9 +55,9 @@ cp -p ${SPECFILE} ${SPECDIR}
 ##
 ## Build
 ##
-echo Getting Ready to build release package
+echo "$(basename $0): Getting Ready to build release package"
 cd ${SPECDIR}
-${RPM} -ba --clean --rmsource $SPECFILE
+${RPM} -ba --clean --rmsource $EXTRA_OPTIONS $SPECFILE
 
-echo Done.
+echo "$(basename $0): Done."
 
