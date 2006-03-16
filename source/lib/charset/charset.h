@@ -19,6 +19,9 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+#ifndef __CHARSET_H__
+#define __CHARSET_H__
+
 /* this defines the charset types used in samba */
 typedef enum {CH_UTF16=0, CH_UNIX=1, CH_DISPLAY=2, CH_DOS=3, CH_UTF8=4, CH_UTF16BE=5} charset_t;
 
@@ -67,3 +70,5 @@ typedef struct {
 #define STR_LEN_NOTERM 256 /* the length field is the unterminated length */
 
 #include "lib/charset/charset_proto.h"
+
+#endif /* __CHARSET_H__ */

@@ -102,7 +102,7 @@ VERSION = 0.0.1
 SO_VERSION = 0.0.1
 DESCRIPTION =
 OBJ_FILES = gen_ndr/ndr_misc.o
-PUBLIC_HEADERS = gen_ndr/misc.h
+PUBLIC_HEADERS = gen_ndr/misc.h gen_ndr/ndr_misc.h
 REQUIRED_SUBSYSTEMS = LIBNDR
 
 [LIBRARY::NDR_ROT]
@@ -705,7 +705,7 @@ REQUIRED_SUBSYSTEMS = dcerpc NDR_KEYSVC
 [SUBSYSTEM::NDR_DCERPC]
 OBJ_FILES = gen_ndr/ndr_dcerpc.o
 REQUIRED_SUBSYSTEMS = LIBNDR NDR_MISC
-PUBLIC_HEADERS = gen_ndr/dcerpc.h
+PUBLIC_HEADERS = gen_ndr/dcerpc.h gen_ndr/ndr_dcerpc.h
 
 ################################################
 # Start SUBSYSTEM dcerpc

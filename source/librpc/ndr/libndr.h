@@ -23,6 +23,8 @@
 
 #include "core.h"
 #include "lib/talloc/talloc.h"
+#include "lib/util/util.h" /* for discard_const */
+#include "lib/charset/charset.h"
 
 /*
   this provides definitions for the libcli/rpc/ MSRPC library
