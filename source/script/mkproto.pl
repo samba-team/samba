@@ -183,7 +183,11 @@ if ($public_file ne $private_file) {
 
 	print $public_fd "/* this file contains prototypes for functions that " . 
 			"are part of \n * the public API of this subsystem or library. */\n\n";
+
 }
+
+print $public_fd "#ifndef _PUBLIC_\n#define _PUBLIC_\n#endif\n\n";
+
 process_file($public_fd, $private_fd, $_) foreach (@ARGV);
 print_footer($public_fd, $public_define);
 if ($public_file ne $private_file) {
