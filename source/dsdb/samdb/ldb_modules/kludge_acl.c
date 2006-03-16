@@ -2,6 +2,7 @@
    ldb database library
 
    Copyright (C) Andrew Bartlett 2005
+   Copyright (C) Simo Sorce 2006
 
     This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -127,6 +128,102 @@ static int kludge_acl_search(struct ldb_module *module, struct ldb_request *req)
 	return ret;
 }
 
+/* search */
+struct kludge_acl_async_context {
+
+	struct ldb_module *module;
+	void *up_context;
+	int (*up_callback)(struct ldb_context *, void *, struct ldb_async_result *);
+	int timeout;
+
+	enum user_is user_type;
+};
+
+static int kludge_acl_async_callback(struct ldb_context *ldb, void *context, struct ldb_async_result *ares)
+{
+	struct kludge_acl_async_context *ac;
+	struct kludge_private_data *data;
+	int i;
+
+	if (!context || !ares) {
+		ldb_set_errstring(ldb, talloc_asprintf(ldb, "NULL Context or Result in callback"));
+		goto error;
+	}
+
+	ac = talloc_get_type(context, struct kludge_acl_async_context);
+	data = talloc_get_type(ac->module->private_data, struct kludge_private_data);
+
+	if (ares->type == LDB_REPLY_ENTRY
+		&& data->password_attrs) /* if we are not initialized just get through */
+	{
+		switch (ac->user_type) {
+		case SYSTEM:
+		case ADMINISTRATOR:
+			break;
+		default:
+			/* remove password attributes */
+			for (i = 0; data->password_attrs[i]; i++) {
+				ldb_msg_remove_attr(ares->message, data->password_attrs[i]);
+			}
+		}
+	}
+
+	return ac->up_callback(ldb, ac->up_context, ares);
+
+error:
+	talloc_free(ares);
+	return LDB_ERR_OPERATIONS_ERROR;
+}
+
+static int kludge_acl_search_async(struct ldb_module *module, struct ldb_request *req)
+{
+	struct kludge_acl_async_context *ac;
+	struct ldb_request *down_req;
+	int ret;
+
+	req->async.handle = NULL;
+
+	ac = talloc(req, struct kludge_acl_async_context);
+	if (ac == NULL) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	ac->module = module;
+	ac->up_context = req->async.context;
+	ac->up_callback = req->async.callback;
+	ac->timeout = req->async.timeout;
+	ac->user_type = what_is_user(module);
+
+	down_req = talloc_zero(req, struct ldb_request);
+	if (down_req == NULL) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	down_req->operation = req->operation;
+	down_req->op.search.base = req->op.search.base;
+	down_req->op.search.scope = req->op.search.scope;
+	down_req->op.search.tree = req->op.search.tree;
+	down_req->op.search.attrs = req->op.search.attrs;
+	
+	down_req->controls = req->controls;
+	down_req->creds = req->creds;
+
+	down_req->async.context = ac;
+	down_req->async.callback = kludge_acl_async_callback;
+	down_req->async.timeout = req->async.timeout;
+
+	/* perform the search */
+	ret = ldb_next_request(module, down_req);
+
+	/* do not free down_req as the call results may be linked to it,
+	 * it will be freed when the upper level request get freed */
+	if (ret == LDB_SUCCESS) {
+		req->async.handle = down_req->async.handle;
+	}
+
+	return ret;
+}
+
 /* ANY change type */
 static int kludge_acl_change(struct ldb_module *module, struct ldb_request *req){
 	enum user_is user_type = what_is_user(module);
@@ -165,13 +262,28 @@ static int kludge_acl_request(struct ldb_module *module, struct ldb_request *req
 {
 	switch (req->operation) {
 
+	case LDB_REQ_ADD:
+	case LDB_ASYNC_ADD:
+	case LDB_REQ_MODIFY:
+	case LDB_ASYNC_MODIFY:
+	case LDB_REQ_DELETE:
+	case LDB_ASYNC_DELETE:
+	case LDB_REQ_RENAME:
+	case LDB_ASYNC_RENAME:
+		return kludge_acl_change(module, req);
+
 	case LDB_REQ_SEARCH:
 		return kludge_acl_search(module, req);
+
+	case LDB_ASYNC_SEARCH:
+		return kludge_acl_search_async(module, req);
+
 	case LDB_REQ_REGISTER:
 		return ldb_next_request(module, req);
+
 	default:
-		/* anything else must be a change of some kind */
-		return kludge_acl_change(module, req);
+		/* anything else must be something new, let's throw an error */
+		return LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS;
 	}
 }
 
