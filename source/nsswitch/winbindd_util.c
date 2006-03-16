@@ -62,7 +62,7 @@ struct winbindd_domain *domain_list(void)
 	/* Initialise list */
 
 	if (!_domain_list) 
-		init_domain_list();
+		init_domain_list(False);
 
 	return _domain_list;
 }
@@ -498,7 +498,7 @@ enum winbindd_result winbindd_dual_init_connection(struct winbindd_domain *domai
 }
 
 /* Look up global info for the winbind daemon */
-void init_domain_list(void)
+BOOL init_domain_list(BOOL initial_start)
 {
 	extern struct winbindd_methods cache_methods;
 	extern struct winbindd_methods passdb_methods;
@@ -518,7 +518,11 @@ void init_domain_list(void)
 		DOM_SID our_sid;
 
 		if (!secrets_fetch_domain_sid(lp_workgroup(), &our_sid)) {
-			smb_panic("Could not fetch our SID - did we join?\n");
+			if (initial_start) {
+				return False;
+			} else {
+				smb_panic("Could not fetch our SID - did we join?\n");
+			}
 		}
 	
 		domain = add_trusted_domain( lp_workgroup(), lp_realm(),
@@ -540,6 +544,8 @@ void init_domain_list(void)
 					    get_global_sam_sid());
 		setup_domain_child(domain, &domain->child, NULL);
 	}
+
+	return True;
 }
 
 /** 
