@@ -236,10 +236,6 @@ sub SharedLibrary($$)
 
 	push(@{$self->{all_objs}}, "\$($ctx->{TYPE}_$ctx->{NAME}_OBJ_LIST)");
 
-	if ($ctx->{NOPROTO} eq "NO") {
-		push(@{$self->{proto_objs}}, "\$($ctx->{TYPE}_$ctx->{NAME}_OBJ_LIST\)");
-	}
-
 	if ($ctx->{TYPE} eq "MODULE" and defined($ctx->{INIT_FUNCTION})) {
 		my $init_fn = $ctx->{INIT_FUNCTION_TYPE};
 		$init_fn =~ s/\(\*\)/init_module/;
@@ -303,10 +299,6 @@ sub MergedObj($$)
 
 	push(@{$self->{all_objs}}, "\$($ctx->{TYPE}_$ctx->{NAME}_OBJ_LIST)");
 		
-	if ($ctx->{NOPROTO} eq "NO") {
-		push(@{$self->{proto_objs}}, "\$($ctx->{TYPE}_$ctx->{NAME}_OBJ_LIST\)");
-	}
-
 	$self->output("$ctx->{TARGET}: \$($ctx->{TYPE}_$ctx->{NAME}_OBJ_LIST)\n");
 
 	$self->output("\t\@echo \"Pre-Linking $ctx->{TYPE} $ctx->{NAME}\"\n");
@@ -322,10 +314,6 @@ sub ObjList($$)
 
 	push(@{$self->{all_objs}}, "\$($ctx->{TYPE}_$ctx->{NAME}_OBJ_LIST)");
 		
-	if ($ctx->{NOPROTO} eq "NO") {
-		push(@{$self->{proto_objs}}, "\$($ctx->{TYPE}_$ctx->{NAME}_OBJ_LIST\)");
-	}
-
 	$self->_prepare_list($ctx, "OBJ_LIST");
 	$self->_prepare_list($ctx, "CFLAGS");
 	$self->_prepare_list($ctx, "DEPEND_LIST");
@@ -349,10 +337,6 @@ sub StaticLibrary($$)
 
 	push(@{$self->{all_objs}}, "\$($ctx->{TYPE}_$ctx->{NAME}_OBJ_LIST)");
 		
-	if ($ctx->{NOPROTO} eq "NO") {
-		push(@{$self->{proto_objs}}, "\$($ctx->{TYPE}_$ctx->{NAME}_OBJ_LIST\)");
-	}
-
 	$self->output(<< "__EOD__"
 #
 $ctx->{TARGET}: \$($ctx->{TYPE}_$ctx->{NAME}_DEPEND_LIST) \$($ctx->{TYPE}_$ctx->{NAME}_OBJ_LIST) 
@@ -387,10 +371,6 @@ sub Binary($$)
 
 	push(@{$self->{all_objs}}, "\$($ctx->{TYPE}_$ctx->{NAME}_OBJ_LIST)");
 		
-	if ($ctx->{NOPROTO} eq "NO") {
-		push(@{$self->{proto_objs}}, "\$($ctx->{TYPE}_$ctx->{NAME}_OBJ_LIST\)");
-	}
-
 	unless (defined($ctx->{INSTALLDIR})) {
 	} elsif ($ctx->{INSTALLDIR} eq "SBINDIR") {
 		push (@{$self->{sbin_progs}}, "$installdir/$ctx->{BINARY}");
@@ -505,7 +485,6 @@ sub write($$)
 	$self->output("PUBLIC_HEADERS = " . array2oneperline($self->{headers}) . "\n");
 	$self->output("PC_FILES = " . array2oneperline($self->{pc_files}) . "\n");
 	$self->output("ALL_OBJS = " . array2oneperline($self->{all_objs}) . "\n");
-	$self->output("PROTO_OBJS = " . array2oneperline($self->{proto_objs}) .  "\n");
 	$self->output("PROTO_HEADERS = " . array2oneperline($self->{proto_headers}) .  "\n");
 	$self->output("SHARED_MODULES = " . array2oneperline($self->{shared_modules}) . "\n");
 	$self->output("PLUGINS = " . array2oneperline($self->{plugins}) . "\n");
