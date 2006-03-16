@@ -1071,10 +1071,7 @@ int main(int argc, char **argv)
 
 	netsamlogon_cache_init(); /* Non-critical */
 	
-	if (!init_domain_list()) {
-		DEBUG(0, ("unable to initialize domain list\n"));
-		exit(1);
-	}
+	init_domain_list();
 
 	init_idmap_child();
 
