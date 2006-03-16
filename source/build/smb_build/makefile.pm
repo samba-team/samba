@@ -457,17 +457,26 @@ sub ProtoHeader($$)
 
 	$dir =~ s/^\.\///g;
 
-	my $comment = "";
+	my $comment = "Creating ";
+	if (defined($ctx->{PRIVATE_PROTO_HEADER})) {
+		$comment.= "$dir/$ctx->{PRIVATE_PROTO_HEADER}";
+		if (defined($ctx->{PUBLIC_PROTO_HEADER})) {
+			$comment .= " and ";
+		}
+		push (@{$self->{proto_headers}}, "$dir/$ctx->{PRIVATE_PROTO_HEADER}");
+	} else {
+		$ctx->{PRIVATE_PROTO_HEADER} = $ctx->{PUBLIC_PROTO_HEADER};
+	}
+	
 	if (defined($ctx->{PUBLIC_PROTO_HEADER})) {
-		$comment.= " and $dir/$ctx->{PUBLIC_PROTO_HEADER}";
+		$comment.= "$dir/$ctx->{PUBLIC_PROTO_HEADER}";
 		push (@{$self->{proto_headers}}, "$dir/$ctx->{PUBLIC_PROTO_HEADER}");
 	} else {
 		$ctx->{PUBLIC_PROTO_HEADER} = $ctx->{PRIVATE_PROTO_HEADER};
 	}	
-	push (@{$self->{proto_headers}}, "$dir/$ctx->{PRIVATE_PROTO_HEADER}");
 
 	$self->output("$dir/$ctx->{PUBLIC_PROTO_HEADER}: \$($ctx->{TYPE}_$ctx->{NAME}_OBJ_LIST:.o=.c)\n");
-	$self->output("\t\@echo \"Creating $dir/$ctx->{PRIVATE_PROTO_HEADER}$comment\"\n");
+	$self->output("\t\@echo \"$comment\"\n");
 
 	$self->output("\t\@\$(PERL) \$(srcdir)/script/mkproto.pl --private=$dir/$ctx->{PRIVATE_PROTO_HEADER} --public=$dir/$ctx->{PUBLIC_PROTO_HEADER} \$($ctx->{TYPE}_$ctx->{NAME}_OBJ_LIST)\n\n");
 }
