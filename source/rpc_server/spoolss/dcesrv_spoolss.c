@@ -185,7 +185,7 @@ static WERROR spoolss_check_server_name(struct dcesrv_call_state *dce_call,
 		if (ret) return WERR_OK;
 	}
 
-	myaddr = socket_get_my_addr(dce_call->conn->srv_conn->socket, mem_ctx);
+	myaddr = dcesrv_connection_get_my_addr(dce_call->conn, mem_ctx);
 	W_ERROR_HAVE_NO_MEMORY(myaddr);
 
 	ret = strequal(myaddr->addr, server_name);

@@ -176,7 +176,8 @@ struct dcesrv_connection {
 	/* the current authentication state */
 	struct dcesrv_auth auth_state;
 
-	struct stream_connection *srv_conn;
+	/* the event_context that will be used for this connection */
+	struct event_context *event_ctx;
 
 	/* the transport level session key */
 	DATA_BLOB transport_session_key;
@@ -186,6 +187,12 @@ struct dcesrv_connection {
 	/* this is the default state_flags for dcesrv_call_state structs */
 	uint32_t state_flags;
 
+	struct {
+		void *private_data;
+		void (*report_output_data)(struct dcesrv_connection *);
+		struct socket_address *(*get_my_addr)(struct dcesrv_connection *, TALLOC_CTX *mem_ctx);
+		struct socket_address *(*get_peer_addr)(struct dcesrv_connection *, TALLOC_CTX *mem_ctx);
+	} transport;
 };
 
 
