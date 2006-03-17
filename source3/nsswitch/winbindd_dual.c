@@ -508,8 +508,8 @@ static void account_lockout_policy_handler(struct timed_event *te,
 
 	DEBUG(10,("account_lockout_policy_handler called\n"));
 
-	if (child->timed_event) {
-		TALLOC_FREE(child->timed_event);
+	if (child->lockout_policy_event) {
+		TALLOC_FREE(child->lockout_policy_event);
 	}
 
 	methods = child->domain->methods;
@@ -520,11 +520,11 @@ static void account_lockout_policy_handler(struct timed_event *te,
 		return;
 	}
 
-	child->timed_event = add_timed_event(child->mem_ctx, 
-					     timeval_current_ofs(3600, 0),
-					     "account_lockout_policy_handler",
-					     account_lockout_policy_handler,
-					     child);
+	child->lockout_policy_event = add_timed_event(child->mem_ctx, 
+						      timeval_current_ofs(3600, 0),
+						      "account_lockout_policy_handler",
+						      account_lockout_policy_handler,
+						      child);
 }
 
 /* Deal with a request to go offline. */
@@ -657,7 +657,7 @@ static BOOL fork_domain_child(struct winbindd_child *child)
 
 	if (child->domain != NULL) {
 		/* We might be in the idmap child...*/
-		child->timed_event = add_timed_event(
+		child->lockout_policy_event = add_timed_event(
 			child->mem_ctx, timeval_zero(),
 			"account_lockout_policy_handler",
 			account_lockout_policy_handler,
