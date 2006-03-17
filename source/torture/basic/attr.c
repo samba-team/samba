@@ -23,6 +23,7 @@
 #include "includes.h"
 #include "torture/torture.h"
 #include "libcli/libcli.h"
+#include "torture/util.h"
 
 extern int torture_failures;
 

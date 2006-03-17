@@ -26,7 +26,6 @@
 #include "libcli/raw/libcliraw.h"
 #include "librpc/gen_ndr/security.h"
 #include "auth/gensec/gensec.h"
-#include "torture/torture.h"
 
 #define NSERVERS 2
 #define NINSTANCES 2
@@ -2135,6 +2134,28 @@ static void usage(void)
         -X            analyse even when test OK\n\
 ");
 }
+
+/**
+  split a UNC name into server and share names
+*/
+static BOOL split_unc_name(const char *unc, char **server, char **share)
+{
+	char *p = strdup(unc);
+	if (!p) return False;
+	all_string_sub(p, "\\", "/", 0);
+	if (strncmp(p, "//", 2) != 0) return False;
+
+	(*server) = p+2;
+	p = strchr(*server, '/');
+	if (!p) return False;
+
+	*p = 0;
+	(*share) = p+1;
+	
+	return True;
+}
+
+
 
 /****************************************************************************
   main program

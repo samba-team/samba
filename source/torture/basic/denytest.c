@@ -23,6 +23,7 @@
 #include "system/filesys.h"
 #include "libcli/raw/libcliraw.h"
 #include "libcli/libcli.h"
+#include "torture/util.h"
 
 extern BOOL torture_showall;
 extern int torture_failures;

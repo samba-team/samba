@@ -25,6 +25,7 @@
 #include "system/filesys.h"
 #include "libcli/raw/libcliraw.h"
 #include "libcli/libcli.h"
+#include "torture/util.h"
 
 #define BASEDIR "\\unlinktest"
 

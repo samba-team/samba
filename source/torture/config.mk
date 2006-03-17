@@ -263,8 +263,7 @@ MANPAGE = man/smbtorture.1
 [BINARY::gentest]
 INSTALLDIR = BINDIR
 OBJ_FILES = \
-		gentest.o \
-		torture_util.o
+		gentest.o
 REQUIRED_SUBSYSTEMS = \
 		CONFIG \
 		LIBBASIC \
@@ -298,8 +297,7 @@ MANPAGE = man/masktest.1
 [BINARY::locktest]
 INSTALLDIR = BINDIR
 OBJ_FILES = \
-		locktest.o \
-		torture_util.o
+		locktest.o
 REQUIRED_SUBSYSTEMS = \
 		LIBSMB \
 		CONFIG \

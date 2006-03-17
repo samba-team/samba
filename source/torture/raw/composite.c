@@ -30,6 +30,7 @@
 #include "libcli/smb_composite/smb_composite.h"
 #include "lib/cmdline/popt_common.h"
 #include "librpc/gen_ndr/security.h"
+#include "torture/util.h"
 
 #define BASEDIR "\\composite"
 

@@ -23,6 +23,7 @@
 #include "system/filesys.h"
 #include "lib/tdb/include/tdbutil.h"
 #include "libcli/libcli.h"
+#include "torture/util.h"
 #include "pstring.h"
 
 static TDB_CONTEXT *tdb;
