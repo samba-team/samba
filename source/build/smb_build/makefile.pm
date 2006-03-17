@@ -452,7 +452,8 @@ sub PkgConfig($$)
 		"-l$link_name",
 		"",
 		"$ctx->{VERSION}",
-		$ctx->{DESCRIPTION}
+		$ctx->{DESCRIPTION},
+		1
 	); 
 }
 
@@ -511,6 +512,7 @@ sub write($$)
 
 	# nasty hack to allow running locally
 	if ($self->{duplicate_build}) {
+		$self->output("bin/libdynconfig.\$(SHLIBEXT): dynconfig-devel.o\n");
 		$self->output("bin/libdynconfig.\$(SHLIBEXT): LIBRARY_DYNCONFIG_OBJ_LIST=dynconfig-devel.o\n");
 	}
 
