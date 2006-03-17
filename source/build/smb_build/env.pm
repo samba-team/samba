@@ -54,9 +54,9 @@ sub _set_config($$)
 	}
 }
 
-sub PkgConfig($$$$$$$)
+sub PkgConfig($$$$$$$$)
 {
-	my ($self,$path,$name,$libs,$cflags,$version,$desc) = @_;
+	my ($self,$path,$name,$libs,$cflags,$version,$desc,$hasmodules) = @_;
 
 	print __FILE__.": creating $path\n";
 
@@ -67,8 +67,13 @@ prefix=$self->{config}->{prefix}
 exec_prefix=$self->{config}->{exec_prefix}
 libdir=$self->{config}->{libdir}
 includedir=$self->{config}->{includedir}
-
 __EOF__
+
+	if ($hasmodules) {
+		print OUT "modulesdir=$self->{config}->{modulesdir}\n" ;
+	}
+
+	print OUT "\n";
 
 	print OUT "Name: $name\n";
 	if (defined($desc)) {
@@ -77,6 +82,9 @@ __EOF__
 	print OUT "Version: $version\n";
 	print OUT "Libs: -L\${libdir} $libs\n";
 	print OUT "Cflags: -I\${includedir} $cflags\n";
+	if ($hasmodules) {
+		print OUT "Modulesdir: \${modulesdir}\n";
+	}
 
 	close(OUT);
 }
