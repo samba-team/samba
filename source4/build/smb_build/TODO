@@ -15,3 +15,4 @@ set of test scripts that check the code:
 - minimal_includes.pl
 - check dependencies based on #include lines ?
 - check whether private headers are not used outside their own subsystem
+- undocumented (no manpage) installed binaries

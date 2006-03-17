@@ -97,6 +97,7 @@ installdirs:
 		$(DESTDIR)$(SBINDIR) \
 		$(DESTDIR)$(LIBDIR) \
 		$(DESTDIR)$(MODULESDIR) \
+		$(DESTDIR)$(MANDIR) \
 		$(DESTDIR)$(VARDIR) \
 		$(DESTDIR)$(PRIVATEDIR) \
 		$(DESTDIR)$(DATADIR) \
@@ -137,7 +138,7 @@ installdat: installdirs
 installswat: installdirs
 	@$(SHELL) $(srcdir)/script/installswat.sh $(DESTDIR)$(SWATDIR) $(srcdir)
 
-installman: installdirs
+installman: manpages installdirs
 	@$(SHELL) $(srcdir)/script/installman.sh $(DESTDIR)$(MANDIR) $(MANPAGES)
 
 installmisc: installdirs
