@@ -467,7 +467,7 @@ static void http_setup_arrays(struct esp_state *esp)
 static jmp_buf ejs_exception_buf;
 static const char *exception_reason;
 
-void ejs_exception(const char *reason)
+_PUBLIC_ void ejs_exception(const char *reason)
 {
 	Ejs *ep = ejsPtr(0);
 	if (ep) {

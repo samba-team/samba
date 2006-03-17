@@ -1,5 +1,6 @@
 all: basics bin/asn1_compile bin/compile_et binaries libraries modules
 
+include dynconfig.mk
 include heimdal_build/config.mk
 include config.mk
 include dsdb/config.mk

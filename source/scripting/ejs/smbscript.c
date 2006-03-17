@@ -30,7 +30,7 @@
 
 static EjsId eid;
 
-void ejs_exception(const char *reason)
+_PUBLIC_ void ejs_exception(const char *reason)
 {
 	Ejs *ep = ejsPtr(eid);
 	ejsSetErrorMsg(eid, "%s", reason);
