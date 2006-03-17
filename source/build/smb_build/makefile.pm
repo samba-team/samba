@@ -256,9 +256,14 @@ __EOD__
 	}
 
 	my $soarg = "";
+	my $soargdebug = "";
 	if ($self->{config}->{SONAMEFLAG} ne "" and 
 		defined($ctx->{LIBRARY_SONAME})) {
 		$soarg = "$self->{config}->{SONAMEFLAG}$ctx->{LIBRARY_SONAME} ";
+	}
+
+	if ($self->{config}->{SONAMEFLAG} ne "") {
+		$soargdebug = "$self->{config}->{SONAMEFLAG}$ctx->{LIBRARY_REALNAME} ";
 	}
 
 	if ($self->{duplicate_build}) {
@@ -269,7 +274,7 @@ $ctx->{TARGET}: \$($ctx->{TYPE}_$ctx->{NAME}_DEPEND_LIST) \$($ctx->{TYPE}_$ctx->
 	\@echo Linking \$\@
 	\@mkdir -p $ctx->{DEBUGDIR}
 	\@\$(SHLD) \$(SHLD_FLAGS) -o \$\@ \$(LOCAL_LINK_FLAGS) \\
-		\$($ctx->{TYPE}_$ctx->{NAME}_LINK_FLAGS) $soarg \\
+		\$($ctx->{TYPE}_$ctx->{NAME}_LINK_FLAGS) $soargdebug \\
 		$init_obj \$($ctx->{TYPE}_$ctx->{NAME}_LINK_LIST)
 
 __EOD__
@@ -393,7 +398,7 @@ sub Binary($$)
 #
 bin/$ctx->{BINARY}: \$($ctx->{TYPE}_$ctx->{NAME}_DEPEND_LIST) \$($ctx->{TYPE}_$ctx->{NAME}_OBJ_LIST) \$(builddir)/dynconfig-devel.o
 	\@echo Linking \$\@
-	\@\$(CC) \$(LDFLAGS) -o \$\@ \$(LOCAL_LINK_FLAGS) \\
+	\@\$(CC) \$(LDFLAGS) -o \$\@ \$(LOCAL_LINK_FLAGS) \$(INSTALL_LINK_FLAGS) \\
 		\$\($ctx->{TYPE}_$ctx->{NAME}_LINK_LIST) \\
 		\$\($ctx->{TYPE}_$ctx->{NAME}_LINK_FLAGS) \$(builddir)/dynconfig-devel.o
 

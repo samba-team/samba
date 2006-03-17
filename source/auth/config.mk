@@ -7,6 +7,8 @@ include credentials/config.mk
 #######################
 # Start MODULE auth_sam
 [MODULE::auth_sam]
+# gensec_krb5 and gensec_gssapi depend on it
+OUTPUT_TYPE = MERGEDOBJ
 PRIVATE_PROTO_HEADER = auth_sam.h
 INIT_FUNCTION = auth_sam_init
 SUBSYSTEM = auth

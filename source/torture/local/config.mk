@@ -18,6 +18,7 @@ OBJ_FILES = \
 		sddl.o \
 		ndr.o
 REQUIRED_SUBSYSTEMS = \
+		RPC_NDR_ECHO \
 		LIBSMB \
 		MESSAGING \
 		registry
