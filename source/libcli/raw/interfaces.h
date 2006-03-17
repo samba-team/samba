@@ -19,6 +19,11 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+#ifndef __LIBCLI_RAW_INTERFACES_H__
+#define __LIBCLI_RAW_INTERFACES_H__
+
+#include "smb.h" 
+
 /* this structure is just a wrapper for a string, the only reason we
    bother with this is that it allows us to check the length provided
    on the wire in testsuite test code to ensure that we are
@@ -2048,3 +2053,4 @@ union smb_search_close {
 	} findclose;
 };
 
+#endif /* __LIBCLI_RAW_INTERFACES_H__ */

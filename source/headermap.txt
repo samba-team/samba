@@ -60,3 +60,12 @@ auth/gensec/gensec_proto.h: gensec/proto.h
 libcli/auth/credentials.h: domain_credentials.h
 lib/charset/charset.h: charset.h
 lib/charset/charset_proto.h: charset/proto.h
+libcli/ldap/ldap.h: ldap.h
+libcli/ldap/ldap_proto.h: ldap_proto.h
+torture/torture.h: torture.h
+torture/proto.h: torture/proto.h
+libcli/libcli.h: client.h
+libcli/libcli_proto.h: client/proto.h
+librpc/gen_ndr/nbt.h: gen_ndr/nbt.h
+librpc/gen_ndr/svcctl.h: gen_ndr/nbt.h
+lib/cmdline/popt_common.h: samba/popt.h

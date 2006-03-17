@@ -20,8 +20,10 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+#ifndef __LIBCLI_RAW_H__
+#define __LIBCLI_RAW_H__
+
 #include "libcli/raw/request.h"
-#include "smb.h"
 #include "librpc/gen_ndr/nbt.h"
 
 struct smbcli_tree;  /* forward declare */
@@ -271,4 +273,7 @@ struct smbcli_request {
       goto failed; \
 }
 
+#include "libcli/raw/interfaces.h" 
 #include "libcli/raw/raw_proto.h"
+
+#endif /* __LIBCLI_RAW__H__ */

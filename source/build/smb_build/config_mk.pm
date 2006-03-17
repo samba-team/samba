@@ -63,7 +63,8 @@ my $section_types = {
 		"MANPAGE"		=> "string",
 		"INSTALLDIR"		=> "string",
 		"PRIVATE_PROTO_HEADER"	=> "string",
-		"PUBLIC_HEADERS"	=> "string", 
+		"PUBLIC_PROTO_HEADER"	=> "string",
+		"PUBLIC_HEADERS"	=> "list", 
 
 		"EXTRA_CFLAGS"		=> "string"
 		},
