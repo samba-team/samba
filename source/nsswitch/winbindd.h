@@ -149,7 +149,7 @@ struct winbindd_child {
 
 	TALLOC_CTX *mem_ctx;
 	struct fd_event event;
-	struct timed_event *timed_event;
+	struct timed_event *lockout_policy_event;
 	struct winbindd_async_request *requests;
 };
 
