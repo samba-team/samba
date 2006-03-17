@@ -509,6 +509,11 @@ sub write($$)
 	$self->output("\ninstallplugins: \$(PLUGINS)\n".$self->{install_plugins}."\n");
 	$self->output("\nuninstallplugins:\n".$self->{uninstall_plugins}."\n");
 
+	# nasty hack to allow running locally
+	if ($self->{duplicate_build}) {
+		$self->output("bin/libdynconfig.\$(SHLIBEXT): LIBRARY_DYNCONFIG_OBJ_LIST=dynconfig-devel.o\n");
+	}
+
 	$self->_prepare_mk_files();
 
 	if ($self->{developer}) {
