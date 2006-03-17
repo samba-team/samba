@@ -2,10 +2,13 @@
 
 #################################
 # Start SUBSYSTEM TORTURE_BASIC
-[SUBSYSTEM::TORTURE_BASIC]
+[MODULE::TORTURE_BASIC]
+SUBSYSTEM = smbtorture
+INIT_FUNCTION = torture_base_init
 PRIVATE_PROTO_HEADER = \
 		basic/proto.h
 OBJ_FILES = \
+		basic/base.o \
 		basic/scanner.o \
 		basic/utable.o \
 		basic/charset.o \
@@ -226,7 +229,6 @@ OBJ_FILES = \
 		torture.o \
 		torture_util.o
 REQUIRED_SUBSYSTEMS = \
-		TORTURE_BASIC \
 		TORTURE_RAW \
 		TORTURE_SMB2 \
 		TORTURE_RAP \
