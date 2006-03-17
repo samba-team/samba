@@ -1293,13 +1293,15 @@ int main(int argc, char **argv)
 						WBFLAG_PAM_INFO3_TEXT;
 				fstring tok;
 				int i;
-				const char *arg[] = { string_arg, NULL };
+				const char *arg[] = { NULL, NULL };
 				const char *cctypes[] = { "FILE", 
 							  "KCM", 
 							  "KCM:0", 
 							  "Garbage", 
 							  NULL, 
 							  "0"};
+
+				arg[0] = string_arg;
 
 				while (next_token(arg, tok, LIST_SEP, sizeof(tok))) {
 
