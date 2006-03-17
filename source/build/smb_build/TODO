@@ -5,6 +5,7 @@
   - include line in Makefile
   - rule in Makefile
 - generate headermap.txt
+- fixed shared library install
 
 set of test scripts that check the code:
 - configure_check_unused.pl

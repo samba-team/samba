@@ -191,12 +191,12 @@ sub DependencyInfo($$)
 {
 	my ($self,$ctx) = @_;
 
-	$self->output("bin/deps/$ctx->{TYPE}_$ctx->{NAME}: \$($ctx->{TYPE}_$ctx->{NAME}_OBJ_LIST:.o=.c)");
+	$self->output("\$(builddir)/bin/deps/$ctx->{TYPE}_$ctx->{NAME}: \$($ctx->{TYPE}_$ctx->{NAME}_OBJ_LIST:.o=.c)");
 	$self->output("\n");
 	$self->output("\t\@echo \"Generating dependency info for $ctx->{NAME}\"\n");
 	$self->output("\t\@./script/cdeps.pl \$^ > \$@\n");
 	$self->output("\n");
-	$self->output("-include bin/deps/$ctx->{TYPE}_$ctx->{NAME}\n\n");
+	$self->output("-include \$(builddir)/bin/deps/$ctx->{TYPE}_$ctx->{NAME}\n\n");
 }
 
 sub SharedLibrary($$)
@@ -245,14 +245,14 @@ sub SharedLibrary($$)
 		$proto_fn =~ s/\(\*\)/$ctx->{INIT_FUNCTION}/;
 
 		$self->output(<< "__EOD__"
-bin/$ctx->{NAME}_init_module.c:
+\$(builddir)/bin/$ctx->{NAME}_init_module.c:
 	\@echo Creating \$\@
 	\@echo \"#include \\\"includes.h\\\"\" > \$\@
 	\@echo \"$proto_fn;\" >> \$\@
 	\@echo -e \"_PUBLIC_ $init_fn \\n{\\n\\treturn $ctx->{INIT_FUNCTION}();\\n}\\n\" >> \$\@
 __EOD__
 );
-		$init_obj = "bin/$ctx->{NAME}_init_module.o";
+		$init_obj = "\$(builddir)/bin/$ctx->{NAME}_init_module.o";
 	}
 
 	my $soarg = "";
@@ -371,9 +371,9 @@ sub Binary($$)
 	my $installdir;
 	
 	if ($self->{duplicate_build}) {
-		$installdir = "bin/install";
+		$installdir = "\$(builddir)/bin/install";
 	} else {
-		$installdir = "bin";
+		$installdir = "\$(builddir)/bin";
 	}
 
 	push(@{$self->{all_objs}}, "\$($ctx->{TYPE}_$ctx->{NAME}_OBJ_LIST)");
@@ -385,7 +385,7 @@ sub Binary($$)
 		push (@{$self->{bin_progs}}, "$installdir/$ctx->{BINARY}");
 	}
 
-	push (@{$self->{binaries}}, "bin/$ctx->{BINARY}");
+	push (@{$self->{binaries}}, "\$(builddir)/bin/$ctx->{BINARY}");
 
 	$self->_prepare_list($ctx, "OBJ_LIST");
 	$self->_prepare_list($ctx, "CFLAGS");
@@ -396,7 +396,7 @@ sub Binary($$)
 	if ($self->{duplicate_build}) {
 	$self->output(<< "__EOD__"
 #
-bin/$ctx->{BINARY}: \$($ctx->{TYPE}_$ctx->{NAME}_DEPEND_LIST) \$($ctx->{TYPE}_$ctx->{NAME}_OBJ_LIST) 
+\$(builddir)/bin/$ctx->{BINARY}: \$($ctx->{TYPE}_$ctx->{NAME}_DEPEND_LIST) \$($ctx->{TYPE}_$ctx->{NAME}_OBJ_LIST) 
 	\@echo Linking \$\@
 	\@\$(CC) \$(LDFLAGS) -o \$\@ \$(LOCAL_LINK_FLAGS) \$(INSTALL_LINK_FLAGS) \\
 		\$\($ctx->{TYPE}_$ctx->{NAME}_LINK_LIST) \\
@@ -512,8 +512,8 @@ sub write($$)
 
 	# nasty hack to allow running locally
 	if ($self->{duplicate_build}) {
-		$self->output("bin/libdynconfig.\$(SHLIBEXT): dynconfig-devel.o\n");
-		$self->output("bin/libdynconfig.\$(SHLIBEXT): LIBRARY_DYNCONFIG_OBJ_LIST=dynconfig-devel.o\n");
+		$self->output("\$(builddir)/bin/libdynconfig.\$(SHLIBEXT): dynconfig-devel.o\n");
+		$self->output("\$(builddir)/bin/libdynconfig.\$(SHLIBEXT): LIBRARY_DYNCONFIG_OBJ_LIST=dynconfig-devel.o\n");
 	}
 
 	$self->_prepare_mk_files();
