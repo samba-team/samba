@@ -1657,7 +1657,7 @@ void winbindd_pam_chauthtok(struct winbindd_cli_state *state)
 		got_info = True;
 
 	/* only fallback when the chgpasswd3 call is not supported */
-	} else if ((result.v == 0x1c010002) || 
+	} else if ((NT_STATUS_EQUAL(result, NT_STATUS(0x1c010002))) ||
 		   (NT_STATUS_EQUAL(result, NT_STATUS_NOT_SUPPORTED)) ||
 		   (NT_STATUS_EQUAL(result, NT_STATUS_NOT_IMPLEMENTED))) {
 
