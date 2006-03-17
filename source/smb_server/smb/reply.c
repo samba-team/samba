@@ -2186,8 +2186,10 @@ void smbsrv_reply_ulogoffX(struct smbsrv_request *req)
 	   open by this user on all open tree connects */
 	for (tcon=req->smb_conn->smb_tcons.list;tcon;tcon=tcon->next) {
 		req->tcon = tcon;
+		req->ctx = tcon->ntvfs;
 		status = ntvfs_logoff(req);
 		req->tcon = NULL;
+		req->ctx = NULL;
 		if (!NT_STATUS_IS_OK(status)) {
 			smbsrv_send_error(req, status);
 			return;
