@@ -372,9 +372,8 @@ static krb5_error_code get_service_ticket(krb5_context ctx,
 	}
 	if ((err = kerberos_kinit_password(machine_account, password, 0, NULL, NULL, 
 					   LIBADS_CCACHE_NAME, False, 0)) != 0) {
-		DEBUG(0,("get_service_ticket: kerberos_kinit_password %s@%s failed: %s\n", 
+		DEBUG(0,("get_service_ticket: kerberos_kinit_password %s failed: %s\n", 
 			machine_account,
-			lp_realm(),
 			error_message(err)));
 		goto out;
 	}
