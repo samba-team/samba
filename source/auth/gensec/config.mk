@@ -8,7 +8,7 @@ PUBLIC_HEADERS = gensec.h spnego.h
 PUBLIC_PROTO_HEADER = gensec_proto.h
 OBJ_FILES = gensec.o
 REQUIRED_SUBSYSTEMS = \
-		CREDENTIALS
+		CREDENTIALS LIBBASIC
 # End SUBSYSTEM gensec
 #################################
 
@@ -18,7 +18,7 @@ REQUIRED_SUBSYSTEMS = \
 SUBSYSTEM = gensec
 INIT_FUNCTION = gensec_krb5_init
 OBJ_FILES = gensec_krb5.o 
-REQUIRED_SUBSYSTEMS = KERBEROS auth
+REQUIRED_SUBSYSTEMS = KERBEROS auth auth_sam
 # End MODULE gensec_krb5
 ################################################
 

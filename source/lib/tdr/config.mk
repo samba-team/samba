@@ -4,4 +4,5 @@ VERSION = 0.0.1
 SO_VERSION = 0
 DESCRIPTION = Simple marshall/unmarshall library
 PUBLIC_PROTO_HEADER = tdr_proto.h
+REQUIRED_SUBSYSTEMS = LIBTALLOC LIBBASIC
 OBJ_FILES = tdr.o

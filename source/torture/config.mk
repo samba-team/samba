@@ -74,6 +74,8 @@ REQUIRED_SUBSYSTEMS = \
 		com dcom
 
 [MODULE::torture_rpc]
+# TORTURE_NET and TORTURE_NBT use functions from torture_rpc...
+OUTPUT_TYPE = MERGEDOBJ
 SUBSYSTEM = smbtorture
 INIT_FUNCTION = torture_rpc_init
 PRIVATE_PROTO_HEADER = \

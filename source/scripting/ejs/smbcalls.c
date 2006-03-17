@@ -137,7 +137,7 @@ void smb_setup_ejs_functions(void)
 	
 	ejsnet_setup();
 
-	shared_init = load_samba_modules(NULL, "ejs");
+	shared_init = load_samba_modules(NULL, "smbcalls");
 	
 	run_init_functions(static_init);
 	run_init_functions(shared_init);
