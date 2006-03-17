@@ -20,9 +20,9 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#include "smb.h"
 #include "libcli/raw/request.h"
 #include "smbd/process_model.h"
+#include "libcli/raw/interfaces.h"
 
 /*
   this header declares the core context structures associated with smb

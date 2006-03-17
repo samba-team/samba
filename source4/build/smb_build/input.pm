@@ -147,18 +147,6 @@ sub check($$$$$)
 	my ($INPUT, $enabled, $subsys_ot, $lib_ot, $module_ot) = @_;
 
 	foreach my $part (values %$INPUT) {
-		unless(defined($part->{NOPROTO})) {
-			if ($part->{TYPE} eq "MODULE" or $part->{TYPE} eq "BINARY") {
-				$part->{NOPROTO} = "YES";
-			} else {
-				$part->{NOPROTO} = "NO";
-			}
-		}
-
-		if (defined($part->{PRIVATE_PROTO_HEADER})) {
-			$part->{NOPROTO} = "YES";
-		}
-
 		unless (defined($part->{STANDARD_VISIBILITY})) {
 			if ($part->{TYPE} eq "MODULE" or $part->{TYPE} eq "BINARY") {
 				$part->{STANDARD_VISIBILITY} = "hidden";
@@ -170,9 +158,12 @@ sub check($$$$$)
 		unless (defined($part->{EXTRA_CFLAGS})) {
 			$part->{EXTRA_CFLAGS} = "";
 		}
+
+		unless (defined($part->{PUBLIC_HEADERS})) {
+			$part->{PUBLIC_HEADERS} = [];
+		}
 		
 		if (defined($part->{PUBLIC_PROTO_HEADER})) {
-			$part->{NOPROTO} = "YES";
 			push (@{$part->{PUBLIC_HEADERS}}, $part->{PUBLIC_PROTO_HEADER});
 		}
 
