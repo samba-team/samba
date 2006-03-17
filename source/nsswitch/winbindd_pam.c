@@ -1655,8 +1655,11 @@ void winbindd_pam_chauthtok(struct winbindd_cli_state *state)
 			reject.reject_reason;
 
 		got_info = True;
-		
-	} else if (!NT_STATUS_IS_OK(result)) {
+
+	/* only fallback when the chgpasswd3 call is not supported */
+	} else if ((result.v == 0x1c010002) || 
+		   (NT_STATUS_EQUAL(result, NT_STATUS_NOT_SUPPORTED)) ||
+		   (NT_STATUS_EQUAL(result, NT_STATUS_NOT_IMPLEMENTED))) {
 
 		DEBUG(10,("Password change with chgpasswd3 failed with: %s, retrying chgpasswd_user\n", 
 			nt_errstr(result)));
