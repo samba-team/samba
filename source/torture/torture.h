@@ -38,6 +38,7 @@ extern int torture_nprocs;
 extern int torture_seed;
 extern int torture_numops;
 extern int torture_failures;
+extern BOOL use_level_II_oplocks;
 
 #include "libcli/libcli.h"
 #include "torture/proto.h"

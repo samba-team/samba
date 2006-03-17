@@ -45,6 +45,7 @@
 #include "torture/nbt/proto.h"
 #include "torture/libnet/proto.h"
 #include "torture/torture.h"
+#include "torture/util.h"
 #include "build.h"
 #include "dlinklist.h"
 
@@ -56,9 +57,9 @@ _PUBLIC_ int torture_seed=0;
 _PUBLIC_ BOOL use_oplocks;
 static int procnum; /* records process count number when forking */
 static struct smbcli_state *current_cli;
-static BOOL use_level_II_oplocks;
-
+_PUBLIC_ BOOL use_level_II_oplocks;
 _PUBLIC_ BOOL torture_showall = False;
+
 
 BOOL torture_open_connection_share(TALLOC_CTX *mem_ctx,
 				   struct smbcli_state **c, 
@@ -133,6 +134,7 @@ _PUBLIC_ BOOL check_error(const char *location, struct smbcli_state *c,
 
 	return True;
 }
+
 
 
 static BOOL wait_lock(struct smbcli_state *c, int fnum, uint32_t offset, uint32_t len)
@@ -438,7 +440,7 @@ static BOOL run_maxfidtest(struct smbcli_state *cli, int dummy)
 /*
   sees what IOCTLs are supported
  */
-BOOL torture_ioctl_test(void)
+static BOOL torture_ioctl_test(void)
 {
 	struct smbcli_state *cli;
 	uint16_t device, function;
@@ -733,20 +735,6 @@ static struct {
 	{"NBT-WINSREPLICATION-REPLICA", torture_nbt_winsreplication_replica, 0},
 	{"NBT-WINSREPLICATION-OWNED", torture_nbt_winsreplication_owned, 0},
 	
-	/* libnet tests */
-	{"NET-USERINFO", torture_userinfo, 0},
-	{"NET-USERADD", torture_useradd, 0},
-	{"NET-USERDEL", torture_userdel, 0},
-	{"NET-USERMOD", torture_usermod, 0},
-	{"NET-DOMOPEN", torture_domainopen, 0},
-	{"NET-API-LOOKUP", torture_lookup, 0},
-	{"NET-API-LOOKUPHOST", torture_lookup_host, 0},
-	{"NET-API-LOOKUPPDC", torture_lookup_pdc, 0},
-	{"NET-API-CREATEUSER", torture_createuser, 0},
-	{"NET-API-RPCCONNECT", torture_rpc_connect, 0},
-	{"NET-API-LISTSHARES", torture_listshares, 0},
-	{"NET-API-DELSHARE", torture_delshare, 0},
-
 	{NULL, NULL, 0}};
 
 static void register_builtin_ops(void)

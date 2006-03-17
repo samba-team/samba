@@ -24,6 +24,8 @@
 #include "libcli/libcli.h"
 #include "system/shmem.h"
 #include "system/time.h"
+#include "lib/cmdline/popt_common.h"
+#include "torture/torture.h"
 
 
 /**
