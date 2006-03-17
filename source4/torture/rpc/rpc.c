@@ -27,7 +27,7 @@
 #include "librpc/rpc/dcerpc_table.h"
 
 /* open a rpc connection to the chosen binding string */
-NTSTATUS torture_rpc_connection(TALLOC_CTX *parent_ctx, 
+_PUBLIC_ NTSTATUS torture_rpc_connection(TALLOC_CTX *parent_ctx, 
 				struct dcerpc_pipe **p, 
 				const struct dcerpc_interface_table *table)
 {
