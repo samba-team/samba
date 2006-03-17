@@ -1086,7 +1086,7 @@ int pam_sm_close_session(pam_handle_t *pamh, int flags,
 		ccname = pam_getenv(pamh, "KRB5CCNAME");
 		if (ccname == NULL) {
 			_pam_log_debug(ctrl, LOG_DEBUG, "user has no KRB5CCNAME environment");
-			return PAM_BUF_ERR;
+			return PAM_SUCCESS;
 		}
 
 		fstrcpy(request.data.logoff.user, user);
