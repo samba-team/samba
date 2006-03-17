@@ -396,22 +396,22 @@ sub Binary($$)
 	if ($self->{duplicate_build}) {
 	$self->output(<< "__EOD__"
 #
-bin/$ctx->{BINARY}: \$($ctx->{TYPE}_$ctx->{NAME}_DEPEND_LIST) \$($ctx->{TYPE}_$ctx->{NAME}_OBJ_LIST) \$(builddir)/dynconfig-devel.o
+bin/$ctx->{BINARY}: \$($ctx->{TYPE}_$ctx->{NAME}_DEPEND_LIST) \$($ctx->{TYPE}_$ctx->{NAME}_OBJ_LIST) 
 	\@echo Linking \$\@
 	\@\$(CC) \$(LDFLAGS) -o \$\@ \$(LOCAL_LINK_FLAGS) \$(INSTALL_LINK_FLAGS) \\
 		\$\($ctx->{TYPE}_$ctx->{NAME}_LINK_LIST) \\
-		\$\($ctx->{TYPE}_$ctx->{NAME}_LINK_FLAGS) \$(builddir)/dynconfig-devel.o
+		\$\($ctx->{TYPE}_$ctx->{NAME}_LINK_FLAGS) 
 
 __EOD__
 );
 	}
 
 $self->output(<< "__EOD__"
-$installdir/$ctx->{BINARY}: \$($ctx->{TYPE}_$ctx->{NAME}_DEPEND_LIST) \$($ctx->{TYPE}_$ctx->{NAME}_OBJ_LIST) \$(builddir)/dynconfig.o
+$installdir/$ctx->{BINARY}: \$($ctx->{TYPE}_$ctx->{NAME}_DEPEND_LIST) \$($ctx->{TYPE}_$ctx->{NAME}_OBJ_LIST) 
 	\@echo Linking \$\@
 	\@\$(CC) \$(LDFLAGS) -o \$\@ \$(INSTALL_LINK_FLAGS) \\
 		\$\($ctx->{TYPE}_$ctx->{NAME}_LINK_LIST) \\
-		\$\($ctx->{TYPE}_$ctx->{NAME}_LINK_FLAGS) \$(builddir)/dynconfig.o
+		\$\($ctx->{TYPE}_$ctx->{NAME}_LINK_FLAGS) 
 
 __EOD__
 );
