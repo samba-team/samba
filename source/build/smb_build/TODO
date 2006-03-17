@@ -5,7 +5,6 @@
   - include line in Makefile
   - rule in Makefile
 - generate headermap.txt
-- fix handling of dynconfig.o (causes too much recompiles for asn1_compile)
 
 set of test scripts that check the code:
 - configure_check_unused.pl

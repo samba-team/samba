@@ -66,7 +66,8 @@ my $section_types = {
 		"PUBLIC_PROTO_HEADER"	=> "string",
 		"PUBLIC_HEADERS"	=> "list", 
 
-		"EXTRA_CFLAGS"		=> "string"
+		"EXTRA_CFLAGS"		=> "string",
+		"STANDARD_VISIBILITY"	=> "string"
 		},
 	"LIBRARY" => {
 		"VERSION"		=> "string",
