@@ -31,7 +31,6 @@
 #include "lib/events/events.h"
 #include "libcli/resolve/resolve.h"
 #include "auth/credentials/credentials.h"
-#include "librpc/rpc/dcerpc_table.h"
 #include "libcli/ldap/ldap_client.h"
 #include "librpc/gen_ndr/ndr_nbt.h"
 
@@ -2614,10 +2613,6 @@ static void max_runtime_handler(int sig)
 	}
 
 	ldb_global_init();
-
-	dcerpc_init();
-
-	dcerpc_table_init();
 
 	if (torture_seed == 0) {
 		torture_seed = time(NULL);

@@ -24,6 +24,7 @@
 #include "lib/cmdline/popt_common.h"
 #include "torture/rpc/rpc.h"
 #include "torture/torture.h"
+#include "librpc/rpc/dcerpc_table.h"
 
 /* open a rpc connection to the chosen binding string */
 NTSTATUS torture_rpc_connection(TALLOC_CTX *parent_ctx, 
@@ -85,6 +86,10 @@ NTSTATUS torture_rpc_connection_transport(TALLOC_CTX *parent_ctx,
 
 NTSTATUS torture_rpc_init(void)
 {
+	dcerpc_init();
+
+	dcerpc_table_init();
+
     register_torture_op("RPC-LSA", torture_rpc_lsa, 0);
     register_torture_op("RPC-LSALOOKUP", torture_rpc_lsa_lookup, 0);
     register_torture_op("RPC-SECRETS", torture_rpc_lsa_secrets, 0);
