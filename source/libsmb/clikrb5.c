@@ -426,7 +426,7 @@ static BOOL ads_cleanup_expired_creds(krb5_context context,
 	   use memory ccaches, and a FILE one probably means that
 	   we're using creds obtained outside of our exectuable
 	*/
-	if (strequal(cc_type, "KCM") || strequal(cc_type, "FILE")) {
+	if (strequal(cc_type, "FILE")) {
 		DEBUG(5, ("ads_cleanup_expired_creds: We do not remove creds from a %s ccache\n", cc_type));
 		return False;
 	}

@@ -3125,11 +3125,7 @@ WERROR nt_printer_publish(Printer_entry *print_hnd, int snum, int action)
 		win_rc = WERR_SERVER_UNAVAILABLE;
 		goto done;
 	}
-#ifdef HAVE_KCM
-	setenv(KRB5_ENV_CCNAME, "KCM:SYSTEM", 1);
-#else
 	setenv(KRB5_ENV_CCNAME, "MEMORY:prtpub_cache", 1);
-#endif
 	SAFE_FREE(ads->auth.password);
 	ads->auth.password = secrets_fetch_machine_password(lp_workgroup(),
 		NULL, NULL);
