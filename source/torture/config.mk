@@ -1,9 +1,27 @@
 # TORTURE subsystem
+[LIBRARY::torture]
+PUBLIC_HEADERS = torture.h
+PUBLIC_PROTO_HEADER = proto.h
+OBJ_FILES = \
+		torture.o \
+		torture_util.o
+REQUIRED_SUBSYSTEMS = \
+		TORTURE_RAW \
+		TORTURE_SMB2 \
+		TORTURE_RAP \
+		TORTURE_AUTH \
+		TORTURE_LOCAL \
+		TORTURE_NBENCH \
+		TORTURE_LDAP \
+		TORTURE_NBT \
+		TORTURE_NET \
+		CONFIG \
+		LIBBASIC
 
 #################################
 # Start SUBSYSTEM TORTURE_BASIC
 [MODULE::TORTURE_BASIC]
-SUBSYSTEM = smbtorture
+SUBSYSTEM = torture
 INIT_FUNCTION = torture_base_init
 PRIVATE_PROTO_HEADER = \
 		basic/proto.h
@@ -68,7 +86,7 @@ include smb2/config.mk
 
 [MODULE::torture_com]
 INIT_FUNCTION = torture_com_init
-SUBSYSTEM = smbtorture
+SUBSYSTEM = torture
 PRIVATE_PROTO_HEADER = \
 		com/proto.h
 OBJ_FILES = \
@@ -79,7 +97,7 @@ REQUIRED_SUBSYSTEMS = \
 [MODULE::torture_rpc]
 # TORTURE_NET and TORTURE_NBT use functions from torture_rpc...
 OUTPUT_TYPE = MERGEDOBJ
-SUBSYSTEM = smbtorture
+SUBSYSTEM = torture
 INIT_FUNCTION = torture_rpc_init
 PRIVATE_PROTO_HEADER = \
 		rpc/proto.h
@@ -223,23 +241,10 @@ REQUIRED_SUBSYSTEMS = \
 # Start BINARY smbtorture
 [BINARY::smbtorture]
 INSTALLDIR = BINDIR
-PUBLIC_HEADERS = torture.h
-PUBLIC_PROTO_HEADER = proto.h
 OBJ_FILES = \
-		torture.o \
-		torture_util.o
+		smbtorture.o
 REQUIRED_SUBSYSTEMS = \
-		TORTURE_RAW \
-		TORTURE_SMB2 \
-		TORTURE_RAP \
-		TORTURE_AUTH \
-		TORTURE_LOCAL \
-		TORTURE_NBENCH \
-		TORTURE_LDAP \
-		TORTURE_NBT \
-		TORTURE_NET \
-		CONFIG \
-		LIBBASIC \
+		torture \
 		LIBPOPT \
 		POPT_SAMBA \
 		POPT_CREDENTIALS
