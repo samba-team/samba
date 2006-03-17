@@ -26,10 +26,10 @@
 #include "system/time.h"
 
 
-/*
+/**
   setup a directory ready for a test
 */
-BOOL torture_setup_dir(struct smbcli_state *cli, const char *dname)
+_PUBLIC_ BOOL torture_setup_dir(struct smbcli_state *cli, const char *dname)
 {
 	smb_raw_exit(cli->session);
 	if (smbcli_deltree(cli->tree, dname) == -1 ||
@@ -75,11 +75,11 @@ NTSTATUS create_directory_handle(struct smbcli_tree *tree, const char *dname, in
 }
 
 
-/*
+/**
   sometimes we need a fairly complex file to work with, so we can test
   all possible attributes. 
 */
-int create_complex_file(struct smbcli_state *cli, TALLOC_CTX *mem_ctx, const char *fname)
+_PUBLIC_ int create_complex_file(struct smbcli_state *cli, TALLOC_CTX *mem_ctx, const char *fname)
 {
 	int fnum;
 	char buf[7] = "abc";

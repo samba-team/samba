@@ -22,6 +22,9 @@
 #ifndef __TORTURE_H__
 #define __TORTURE_H__
 
+extern int torture_numops;
+extern int torture_failures;
+
 #include "libcli/libcli.h"
 #include "torture/proto.h"
 
