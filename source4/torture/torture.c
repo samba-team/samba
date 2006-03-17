@@ -747,35 +747,32 @@ static void register_builtin_ops(void)
 	}
 }
 
-
 struct torture_op *torture_ops = NULL;
-
-static struct torture_op *find_torture_op(const char *name)
-{
-	struct torture_op *o;
-	for (o = torture_ops; o; o = o->next) {
-		if (strcmp(name, o->name) == 0)
-			return o;
-	}
-
-	return NULL;
-}
 
 _PUBLIC_ NTSTATUS register_torture_op(const char *name, BOOL (*fn)(void), BOOL (*multi_fn)(struct smbcli_state *, int ))
 {
-	struct torture_op *op;
+	struct torture_op *op, *p;
 	
-	/* Check for duplicates */
-	if (find_torture_op(name) != NULL) {
-		DEBUG(0,("There already is a torture op registered with the name %s!\n", name));
-		return NT_STATUS_OBJECT_NAME_COLLISION;
-	}
-
 	op = talloc(talloc_autofree_context(), struct torture_op);
 
 	op->name = talloc_strdup(op, name);
 	op->fn = fn;
 	op->multi_fn = multi_fn;
+
+	for (p = torture_ops; p; p = p->next) {
+		if (strcmp(p->name, op->name) == 0) {
+			/* Check for duplicates */
+			DEBUG(0,("There already is a torture op registered with the name %s!\n", name));
+			talloc_free(op);
+			return NT_STATUS_OBJECT_NAME_COLLISION;
+		}
+
+		if (strcmp(p->name, op->name) < 0 && 
+			(!p->next || strcmp(p->next->name, op->name) > 0)) {
+			DLIST_ADD_AFTER(torture_ops, op, p);
+			return NT_STATUS_OK;
+		}
+	}
 
 	DLIST_ADD(torture_ops, op);
 	
