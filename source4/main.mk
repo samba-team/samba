@@ -82,7 +82,7 @@ PKGCONFIGDIR = $(LIBDIR)/pkgconfig
 LMHOSTSFILE = $(CONFIGDIR)/lmhosts
 
 install: showlayout installbin installdat installswat installmisc installlib \
-	installheader installpc installplugins
+	installheader installpc installplugins installpidl
 
 # DESTDIR is used here to prevent packagers wasting their time
 # duplicating the Makefile. Remove it and you will have the privilege
@@ -150,7 +150,7 @@ installpc: installdirs
 	@$(SHELL) $(srcdir)/script/installpc.sh $(srcdir) $(DESTDIR)$(PKGCONFIGDIR) $(PC_FILES)
 
 uninstall: uninstallbin uninstallman uninstallmisc uninstalllib uninstallheader \
-	uninstallplugins
+	uninstallplugins uninstallpidl
 
 uninstallmisc:
 	#FIXME
@@ -182,7 +182,10 @@ pidl/Makefile: pidl/Makefile.PL
 	cd pidl && $(PERL) Makefile.PL
 
 installpidl: pidl/Makefile
-	cd pidl && $(MAKE) install
+	$(MAKE) -C pidl install
+
+uninstallpidl: pidl/Makefile
+	$(MAKE) -C pidl uninstall
 
 IDL_FILES = $(wildcard librpc/idl/*.idl)
 IDL_HEADER_FILES = $(patsubst librpc/idl/%.idl,librpc/gen_ndr/%.h,$(IDL_FILES))
@@ -238,9 +241,7 @@ include/includes.h: \
 		lib/util/util_proto.h \
 		lib/charset/charset.h \
 		param/proto.h \
-		libcli/util/proto.h \
-		librpc/ndr/ndr_orpc.h \
-		librpc/ndr/ndr_compression.h
+		libcli/util/proto.h
 
 clean_pch: 
 	-rm -f include/includes.h.gch
