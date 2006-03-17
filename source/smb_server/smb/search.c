@@ -45,13 +45,13 @@
 	}} while (0)
 
 /* useful wrapper for talloc with NO_MEMORY reply */
-#define REQ_TALLOC(ptr) do { \
-	ptr = talloc_size(req, sizeof(*(ptr))); \
+#define REQ_TALLOC(ptr, type) do { \
+	ptr = talloc(req, type); \
 	if (!ptr) { \
 		smbsrv_send_error(req, NT_STATUS_NO_MEMORY); \
 		return; \
 	}} while (0)
-		
+
 #define CHECK_MIN_BLOB_SIZE(blob, size) do { \
 	if ((blob)->length < (size)) { \
 		return NT_STATUS_INFO_LENGTH_MISMATCH; \
@@ -104,16 +104,46 @@ static BOOL find_callback(void *private, union smb_search_data *file)
 }
 
 /****************************************************************************
+ Reply to a search first (async reply)
+****************************************************************************/
+static void reply_search_first_send(struct smbsrv_request *req)
+{
+	union smb_search_first *sf;
+	
+	CHECK_ASYNC_STATUS;
+
+	sf = talloc_get_type(req->async_states->private_data, union smb_search_first);
+
+	SSVAL(req->out.vwv, VWV(0), sf->search_first.out.count);
+
+	smbsrv_send_reply(req);
+}
+
+/****************************************************************************
+ Reply to a search next (async reply)
+****************************************************************************/
+static void reply_search_next_send(struct smbsrv_request *req)
+{
+	union smb_search_next *sn;
+	
+	CHECK_ASYNC_STATUS;
+
+	sn = talloc_get_type(req->async_states->private_data, union smb_search_next);
+
+	SSVAL(req->out.vwv, VWV(0), sn->search_next.out.count);
+
+	smbsrv_send_reply(req);
+}
+
+/****************************************************************************
  Reply to a search.
 ****************************************************************************/
 void smbsrv_reply_search(struct smbsrv_request *req)
 {
 	union smb_search_first *sf;
-	union smb_search_next *sn;
 	uint16_t resume_key_length;
-	struct search_state state;
+	struct search_state *state;
 	uint8_t *p;
-	NTSTATUS status;
 	enum smb_search_level level = RAW_SEARCH_SEARCH;
 	uint8_t op = CVAL(req->in.hdr,HDR_COM);
 
@@ -123,13 +153,13 @@ void smbsrv_reply_search(struct smbsrv_request *req)
 		level = RAW_SEARCH_FUNIQUE;
 	}
 
-	REQ_TALLOC(sf);
-	
 	/* parse request */
 	if (req->in.wct != 2) {
 		smbsrv_send_error(req, NT_STATUS_INVALID_PARAMETER);
 		return;
 	}
+
+	REQ_TALLOC(sf, union smb_search_first);
 	
 	p = req->in.data;
 	p += req_pull_ascii4(req, &sf->search_first.in.pattern, 
@@ -151,15 +181,19 @@ void smbsrv_reply_search(struct smbsrv_request *req)
 	p += 3;
 	
 	/* setup state for callback */
-	state.req = req;
-	state.file = NULL;
-	state.last_entry_offset = 0;
-	
+	REQ_TALLOC(state, struct search_state);
+	state->req = req;
+	state->file = NULL;
+	state->last_entry_offset = 0;
+
 	/* construct reply */
 	smbsrv_setup_reply(req, 1, 0);
+	SSVAL(req->out.vwv, VWV(0), 0);
 	req_append_var_block(req, NULL, 0);
 
 	if (resume_key_length != 0) {
+		union smb_search_next *sn;
+
 		if (resume_key_length != 21 || 
 		    req_data_oob(req, p, 21) ||
 		    level == RAW_SEARCH_FUNIQUE) {
@@ -168,7 +202,7 @@ void smbsrv_reply_search(struct smbsrv_request *req)
 		}
 
 		/* do a search next operation */
-		REQ_TALLOC(sn);
+		REQ_TALLOC(sn, union smb_search_next);
 
 		sn->search_next.in.id.reserved      = CVAL(p, 0);
 		memcpy(sn->search_next.in.id.name,    p+1, 11);
@@ -179,27 +213,27 @@ void smbsrv_reply_search(struct smbsrv_request *req)
 		sn->search_next.level = level;
 		sn->search_next.in.max_count     = SVAL(req->in.vwv, VWV(0));
 		sn->search_next.in.search_attrib = SVAL(req->in.vwv, VWV(1));
-		
+
+		req->async_states->state |= NTVFS_ASYNC_STATE_MAY_ASYNC;
+		req->async_states->send_fn = reply_search_next_send;
+		req->async_states->private_data = sn;
+
 		/* call backend */
-		status = ntvfs_search_next(req, sn, &state, find_callback);
-		SSVAL(req->out.vwv, VWV(0), sn->search_next.out.count);
+		req->async_states->status = ntvfs_search_next(req, sn, state, find_callback);
 	} else {
 		/* do a search first operation */
 		sf->search_first.level = level;
 		sf->search_first.in.search_attrib = SVAL(req->in.vwv, VWV(1));
 		sf->search_first.in.max_count     = SVAL(req->in.vwv, VWV(0));
+
+		req->async_states->state |= NTVFS_ASYNC_STATE_MAY_ASYNC;
+		req->async_states->send_fn = reply_search_first_send;
+		req->async_states->private_data = sf;
 		
-		/* call backend */
-		status = ntvfs_search_first(req, sf, &state, find_callback);
-		SSVAL(req->out.vwv, VWV(0), sf->search_first.out.count);
+		req->async_states->status = ntvfs_search_first(req, sf, state, find_callback);
 	}
 
-	if (!NT_STATUS_IS_OK(status)) {
-		smbsrv_send_error(req, status);
-		return;
-	}
-
-	smbsrv_send_reply(req);
+	REQ_ASYNC_TAIL;
 }
 
 
@@ -229,7 +263,7 @@ void smbsrv_reply_fclose(struct smbsrv_request *req)
 	uint8_t *p;
 	const char *pattern;
 
-	REQ_TALLOC(sc);
+	REQ_TALLOC(sc, union smb_search_close);
 
 	/* parse request */
 	if (req->in.wct != 2) {
