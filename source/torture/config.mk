@@ -3,9 +3,9 @@
 PUBLIC_HEADERS = torture.h
 PUBLIC_PROTO_HEADER = proto.h
 OBJ_FILES = \
-		torture.o \
-		torture_util.o
+		torture.o
 REQUIRED_SUBSYSTEMS = \
+		TORTURE_UTIL \
 		TORTURE_RAW \
 		TORTURE_SMB2 \
 		TORTURE_RAP \
@@ -14,9 +14,12 @@ REQUIRED_SUBSYSTEMS = \
 		TORTURE_NBENCH \
 		TORTURE_LDAP \
 		TORTURE_NBT \
-		TORTURE_NET \
 		CONFIG \
 		LIBBASIC
+
+[SUBSYSTEM::TORTURE_UTIL]
+OBJ_FILES = torture_util.o
+PUBLIC_PROTO_HEADER = util.h
 
 #################################
 # Start SUBSYSTEM TORTURE_BASIC
@@ -146,7 +149,7 @@ REQUIRED_SUBSYSTEMS = \
 		RPC_NDR_MGMT RPC_NDR_NETLOGON RPC_NDR_ATSVC RPC_NDR_DRSUAPI \
 		RPC_NDR_LSA RPC_NDR_EPMAPPER RPC_NDR_DFS RPC_NDR_SPOOLSS \
 		RPC_NDR_SRVSVC RPC_NDR_WKSSVC RPC_NDR_ROT RPC_NDR_DSSETUP \
-		RPC_NDR_REMACT RPC_NDR_OXIDRESOLVER WB_HELPER 
+		RPC_NDR_REMACT RPC_NDR_OXIDRESOLVER WB_HELPER LIBNET
 
 #################################
 # Start SUBSYSTEM TORTURE_RAP
@@ -221,10 +224,13 @@ REQUIRED_SUBSYSTEMS = \
 
 #################################
 # Start SUBSYSTEM TORTURE_NET
-[SUBSYSTEM::TORTURE_NET]
+[MODULE::TORTURE_NET]
+SUBSYSTEM = torture
+INIT_FUNCTION = torture_net_init
 PRIVATE_PROTO_HEADER = \
 		libnet/proto.h
 OBJ_FILES = \
+		libnet/libnet.o \
 		libnet/userinfo.o \
 		libnet/userman.o \
 		libnet/domain.o \
