@@ -33,6 +33,9 @@ It will automatically parse C files after it encounters a line that contains:
 
 /* The following definitions come from FILE */
 
+When two or more prototypes exist for a function, only the first one 
+will be kept.
+
 =head1 OPTIONS
 
 =over 4
