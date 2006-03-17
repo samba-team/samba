@@ -354,26 +354,6 @@ void torture_all_info(struct smbcli_tree *tree, const char *fname)
 
 
 /*
-  split a UNC name into server and share names
-*/
-BOOL split_unc_name(const char *unc, char **server, char **share)
-{
-	char *p = strdup(unc);
-	if (!p) return False;
-	all_string_sub(p, "\\", "/", 0);
-	if (strncmp(p, "//", 2) != 0) return False;
-
-	(*server) = p+2;
-	p = strchr(*server, '/');
-	if (!p) return False;
-
-	*p = 0;
-	(*share) = p+1;
-	
-	return True;
-}
-
-/*
   set a attribute on a file
 */
 BOOL torture_set_file_attribute(struct smbcli_tree *tree, const char *fname, uint16_t attrib)
@@ -482,4 +462,79 @@ NTSTATUS torture_check_ea(struct smbcli_state *cli,
 
 	return NT_STATUS_EA_CORRUPT_ERROR;
 }
+
+BOOL torture_open_connection_share(TALLOC_CTX *mem_ctx,
+				   struct smbcli_state **c, 
+				   const char *hostname, 
+				   const char *sharename,
+				   struct event_context *ev)
+{
+	NTSTATUS status;
+
+	status = smbcli_full_connection(mem_ctx, c, hostname, 
+					sharename, NULL,
+					cmdline_credentials, ev);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("Failed to open connection - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	(*c)->transport->options.use_oplocks = use_oplocks;
+	(*c)->transport->options.use_level2_oplocks = use_level_II_oplocks;
+
+	return True;
+}
+
+_PUBLIC_ BOOL torture_open_connection(struct smbcli_state **c)
+{
+	const char *host = lp_parm_string(-1, "torture", "host");
+	const char *share = lp_parm_string(-1, "torture", "share");
+
+	return torture_open_connection_share(NULL, c, host, share, NULL);
+}
+
+
+
+_PUBLIC_ BOOL torture_close_connection(struct smbcli_state *c)
+{
+	BOOL ret = True;
+	if (!c) return True;
+	if (NT_STATUS_IS_ERR(smbcli_tdis(c))) {
+		printf("tdis failed (%s)\n", smbcli_errstr(c->tree));
+		ret = False;
+	}
+	talloc_free(c);
+	return ret;
+}
+
+
+/* check if the server produced the expected error code */
+_PUBLIC_ BOOL check_error(const char *location, struct smbcli_state *c, 
+		 uint8_t eclass, uint32_t ecode, NTSTATUS nterr)
+{
+	NTSTATUS status;
+	
+	status = smbcli_nt_error(c->tree);
+	if (NT_STATUS_IS_DOS(status)) {
+		int class, num;
+		class = NT_STATUS_DOS_CLASS(status);
+		num = NT_STATUS_DOS_CODE(status);
+                if (eclass != class || ecode != num) {
+                        printf("unexpected error code %s\n", nt_errstr(status));
+                        printf(" expected %s or %s (at %s)\n", 
+			       nt_errstr(NT_STATUS_DOS(eclass, ecode)), 
+                               nt_errstr(nterr), location);
+                        return False;
+                }
+        } else {
+                if (!NT_STATUS_EQUAL(nterr, status)) {
+                        printf("unexpected error code %s\n", nt_errstr(status));
+                        printf(" expected %s (at %s)\n", nt_errstr(nterr), location);
+                        return False;
+                }
+        }
+
+	return True;
+}
+
 

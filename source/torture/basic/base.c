@@ -23,6 +23,7 @@
 #include "torture/torture.h"
 #include "torture/basic/proto.h"
 #include "libcli/libcli.h"
+#include "torture/util.h"
 #include "system/filesys.h"
 #include "system/time.h"
 #include "libcli/resolve/resolve.h"

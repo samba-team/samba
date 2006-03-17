@@ -26,6 +26,7 @@
 #include "lib/cmdline/popt_common.h"
 #include "lib/events/events.h"
 #include "libcli/libcli.h"
+#include "torture/util.h"
 #include "auth/credentials/credentials.h"
 
 #define BASEDIR "\\rawcontext"

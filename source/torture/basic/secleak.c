@@ -24,6 +24,7 @@
 #include "torture/torture.h"
 #include "libcli/raw/libcliraw.h"
 #include "libcli/libcli.h"
+#include "torture/util.h"
 #include "system/time.h"
 #include "libcli/smb_composite/smb_composite.h"
 #include "auth/credentials/credentials.h"

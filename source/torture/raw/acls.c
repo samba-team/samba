@@ -28,6 +28,7 @@
 #include "libcli/util/clilsa.h"
 #include "libcli/security/proto.h"
 #include "librpc/gen_ndr/ndr_security.h"
+#include "torture/util.h"
 
 #define BASEDIR "\\testsd"
 
