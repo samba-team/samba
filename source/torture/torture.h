@@ -22,6 +22,20 @@
 #ifndef __TORTURE_H__
 #define __TORTURE_H__
 
+struct torture_op {
+	const char *name;
+	BOOL (*fn)(void);
+	BOOL (*multi_fn)(struct smbcli_state *, int );
+	struct torture_op *prev, *next;
+};
+
+extern struct torture_op * torture_ops;
+
+extern BOOL use_oplocks;
+extern BOOL torture_showall;
+extern int torture_entries;
+extern int torture_nprocs;
+extern int torture_seed;
 extern int torture_numops;
 extern int torture_failures;
 
