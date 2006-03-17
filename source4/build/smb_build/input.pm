@@ -74,6 +74,8 @@ sub check_module($$$)
 
 	if ($mod->{OUTPUT_TYPE} eq "SHARED_LIBRARY") {
 		$mod->{INSTALLDIR} = "MODULESDIR/$mod->{SUBSYSTEM}";
+		push (@{$mod->{REQUIRED_SUBSYSTEMS}}, $mod->{SUBSYSTEM}) unless 
+			$INPUT->{$mod->{SUBSYSTEM}}->{TYPE} eq "BINARY";
 	} else {
 		push (@{$INPUT->{$mod->{SUBSYSTEM}}{REQUIRED_SUBSYSTEMS}}, $mod->{NAME});
 		push (@{$INPUT->{$mod->{SUBSYSTEM}}{INIT_FUNCTIONS}}, $mod->{INIT_FUNCTION}) if defined($mod->{INIT_FUNCTION});
