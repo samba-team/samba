@@ -69,3 +69,5 @@ libcli/libcli_proto.h: client/proto.h
 librpc/gen_ndr/nbt.h: gen_ndr/nbt.h
 librpc/gen_ndr/svcctl.h: gen_ndr/nbt.h
 lib/cmdline/popt_common.h: samba/popt.h
+include/dlinklist.h: dlinklist.h
+include/version.h: samba/version.h
