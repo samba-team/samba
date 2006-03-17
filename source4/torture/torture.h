@@ -22,6 +22,7 @@
 #ifndef __TORTURE_H__
 #define __TORTURE_H__
 
+struct smbcli_state;
 struct torture_op {
 	const char *name;
 	BOOL (*fn)(void);
@@ -40,7 +41,6 @@ extern int torture_numops;
 extern int torture_failures;
 extern BOOL use_level_II_oplocks;
 
-#include "libcli/libcli.h"
 #include "torture/proto.h"
 
 #endif /* __TORTURE_H__ */

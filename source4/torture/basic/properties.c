@@ -24,6 +24,7 @@
 #include "torture/torture.h"
 #include "libcli/raw/libcliraw.h"
 #include "libcli/libcli.h"
+#include "torture/util.h"
 
 struct bitmapping {
 	const char *name;

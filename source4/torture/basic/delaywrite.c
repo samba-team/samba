@@ -28,6 +28,7 @@
 #include "system/time.h"
 #include "system/filesys.h"
 #include "libcli/libcli.h"
+#include "torture/util.h"
 
 #define BASEDIR "\\delaywrite"
 

@@ -23,6 +23,7 @@
 #include "libcli/raw/libcliraw.h"
 #include "libcli/libcli.h"
 #include "system/filesys.h"
+#include "torture/util.h"
 
 #define BASEDIR "\\test_notify"
 
