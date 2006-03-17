@@ -24,6 +24,7 @@
 #ifndef _SAMBA_UTIL_H_
 #define _SAMBA_UTIL_H_
 
+#include "core.h"
 #include "charset/charset.h"
 
 /**

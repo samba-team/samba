@@ -22,7 +22,8 @@
 #ifndef __LIBCLI_H__
 #define __LIBCLI_H__
 
-#include "smb.h"
+#include <core.h>
+#include "librpc/gen_ndr/nbt.h"
 
 /* 
    smbcli_state: internal state used in libcli library for single-threaded callers, 
@@ -49,6 +50,9 @@ struct nbt_dc_name {
 	const char *name;
 };
 
+struct cli_credentials;
+struct event_context;
+#include "libcli/raw/libcliraw.h"
 #include "libcli/libcli_proto.h"
 
 #endif /* __LIBCLI_H__ */
