@@ -44,16 +44,16 @@ krb5_read_message (krb5_context context,
     u_int32_t len;
     u_int8_t buf[4];
 
+    krb5_data_zero(data);
+
     ret = krb5_net_read (context, p_fd, buf, 4);
     if(ret == -1) {
 	ret = errno;
 	krb5_clear_error_string (context);
 	return ret;
     }
-    if(ret < 4) {
-	data->length = 0;
+    if(ret < 4)
 	return HEIM_ERR_EOF;
-    }
     len = (buf[0] << 24) | (buf[1] << 16) | (buf[2] << 8) | buf[3];
     ret = krb5_data_alloc (data, len);
     if (ret)
