@@ -28,14 +28,14 @@ sub generate_mergedobj($)
 {
 	my $subsys = shift;
 
-	$subsys->{OUTPUT} = $subsys->{TARGET} = "\$(builddir)/bin/subsystems/$subsys->{TYPE}_$subsys->{NAME}.o";
+	$subsys->{OUTPUT} = $subsys->{TARGET} = "bin/subsystems/$subsys->{TYPE}_$subsys->{NAME}.o";
 }
 
 sub generate_objlist($)
 {
 	my $subsys = shift;
 
-	$subsys->{TARGET} = "\$(builddir)/bin/.$subsys->{TYPE}_$subsys->{NAME}";
+	$subsys->{TARGET} = "bin/.$subsys->{TYPE}_$subsys->{NAME}";
 	$subsys->{OUTPUT} = "\$($subsys->{TYPE}_$subsys->{NAME}_OBJ_LIST)";
 }
 
@@ -58,15 +58,15 @@ sub generate_shared_library($)
 		$lib_name = "lib$link_name";
 	}
 
-	$lib->{DEBUGDIR} = "\$(builddir)/bin";
-	$lib->{RELEASEDIR} = "\$(builddir)/bin/install";
+	$lib->{DEBUGDIR} = "bin";
+	$lib->{RELEASEDIR} = "bin/install";
 	$lib->{LIBRARY_REALNAME} = $lib->{LIBRARY_NAME} = "$lib_name.\$(SHLIBEXT)";
 
 	if (defined($lib->{VERSION})) {
 		$lib->{LIBRARY_SONAME} = $lib->{LIBRARY_NAME}.".$lib->{SO_VERSION}";
 		$lib->{LIBRARY_REALNAME} = $lib->{LIBRARY_NAME}.".$lib->{VERSION}";
 	} elsif ($lib->{TYPE} eq "MODULE") {
-		$lib->{DEBUGDIR} = "\$(builddir)/bin/modules/$lib->{SUBSYSTEM}";
+		$lib->{DEBUGDIR} = "bin/modules/$lib->{SUBSYSTEM}";
 	}
 	$lib->{TARGET} = "$lib->{DEBUGDIR}/$lib->{LIBRARY_REALNAME}";
 	$lib->{OUTPUT} = $lib->{TARGET};
@@ -86,7 +86,7 @@ sub generate_static_library($)
 	@{$lib->{LINK_LIST}} = ("\$($lib->{TYPE}_$lib->{NAME}\_OBJ_LIST)");
 	@{$lib->{LINK_FLAGS}} = ();
 
-	$lib->{TARGET} = "\$(builddir)/bin/$lib->{LIBRARY_NAME}";
+	$lib->{TARGET} = "bin/$lib->{LIBRARY_NAME}";
 	$lib->{OUTPUT} = "-l".lc($link_name);
 }
 
@@ -98,8 +98,8 @@ sub generate_binary($)
 	@{$bin->{LINK_LIST}} = ("\$($bin->{TYPE}_$bin->{NAME}\_OBJ_LIST)");
 	@{$bin->{LINK_FLAGS}} = ();
 
-	$bin->{RELEASEDIR} = "\$(builddir)/bin/install";
-	$bin->{DEBUGDIR} = "\$(builddir)/bin/";
+	$bin->{RELEASEDIR} = "bin/install";
+	$bin->{DEBUGDIR} = "bin/";
 	$bin->{TARGET} = $bin->{OUTPUT} = "$bin->{DEBUGDIR}/$bin->{NAME}";
 	$bin->{BINARY} = $bin->{NAME};
 }
