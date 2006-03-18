@@ -10,7 +10,7 @@ PATH_FLAGS = -DCONFIGFILE=\"$(CONFIGFILE)\" \
 	 -DMODULESDIR=\"$(MODULESDIR)\" -DJSDIR=\"$(JSDIR)\" \
 	 -DSETUPDIR=\"$(SETUPDIR)\" -DWINBINDD_SOCKET_DIR=\"$(WINBINDD_SOCKET_DIR)\"
 
-dynconfig.o: dynconfig.c Makefile
+./dynconfig.o: dynconfig.c Makefile
 	@echo Compiling $<
 	@$(CC) $(CFLAGS) $(PICFLAG) $(PATH_FLAGS) -c $< -o $@
 
@@ -28,6 +28,6 @@ DEVEL_PATH_FLAGS = -DCONFIGFILE=\"$(CONFIGFILE)\" -DBINDIR=\"$(builddir)/bin\" \
 	 -DSETUPDIR=\"$(srcdir)/setup\" \
 	 -DWINBINDD_SOCKET_DIR=\"$(WINBINDD_SOCKET_DIR)\"
 
-dynconfig-devel.o: dynconfig.c Makefile
+./dynconfig-devel.o: dynconfig.c Makefile
 	@echo Compiling $<
 	@$(CC) $(CFLAGS) $(PICFLAG) $(DEVEL_PATH_FLAGS) -c $< -o $@
