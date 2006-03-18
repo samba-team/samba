@@ -28,6 +28,17 @@
 #include "ntvfs/ntvfs.h"
 #include "libcli/raw/libcliraw.h"
 
+#define TRANS2_CHECK_ASYNC_STATUS_SIMPLE do { \
+	if (!NT_STATUS_IS_OK(req->ntvfs->async_states->status)) { \
+		trans2_setup_reply(trans, 0, 0, 0);\
+		return req->ntvfs->async_states->status; \
+	} \
+} while (0)
+#define TRANS2_CHECK_ASYNC_STATUS(ptr, type) do { \
+	TRANS2_CHECK_ASYNC_STATUS_SIMPLE; \
+	ptr = talloc_get_type(op->op_info, type); \
+} while (0)
+
 /*
   hold the state of a nttrans op while in progress. Needed to allow for async backend
   functions.
@@ -237,11 +248,7 @@ static NTSTATUS trans2_qfsinfo_send(struct trans_op *op)
 	uint_t i;
 	DATA_BLOB guid_blob;
 
-	if (!NT_STATUS_IS_OK(req->async_states->status)) {
-		return req->async_states->status;
-	}
-
-	fsinfo = talloc_get_type(op->op_info, union smb_fsinfo);
+	TRANS2_CHECK_ASYNC_STATUS(fsinfo, union smb_fsinfo);
 
 	switch (fsinfo->generic.level) {
 	case SMB_QFS_ALLOCATION:
@@ -384,43 +391,43 @@ static NTSTATUS trans2_qfsinfo(struct smbsrv_request *req, struct trans_op *op)
 	switch (level) {
 	case SMB_QFS_ALLOCATION:
 		fsinfo->allocation.level = RAW_QFS_ALLOCATION;
-		return ntvfs_fsinfo(req, fsinfo);
+		return ntvfs_fsinfo(req->ntvfs, fsinfo);
 
 	case SMB_QFS_VOLUME:
 		fsinfo->volume.level = RAW_QFS_VOLUME;
-		return ntvfs_fsinfo(req, fsinfo);
+		return ntvfs_fsinfo(req->ntvfs, fsinfo);
 
 	case SMB_QFS_VOLUME_INFO:
 	case SMB_QFS_VOLUME_INFORMATION:
 		fsinfo->volume_info.level = RAW_QFS_VOLUME_INFO;
-		return ntvfs_fsinfo(req, fsinfo);
+		return ntvfs_fsinfo(req->ntvfs, fsinfo);
 
 	case SMB_QFS_SIZE_INFO:
 	case SMB_QFS_SIZE_INFORMATION:
 		fsinfo->size_info.level = RAW_QFS_SIZE_INFO;
-		return ntvfs_fsinfo(req, fsinfo);
+		return ntvfs_fsinfo(req->ntvfs, fsinfo);
 
 	case SMB_QFS_DEVICE_INFO:
 	case SMB_QFS_DEVICE_INFORMATION:
 		fsinfo->device_info.level = RAW_QFS_DEVICE_INFO;
-		return ntvfs_fsinfo(req, fsinfo);
+		return ntvfs_fsinfo(req->ntvfs, fsinfo);
 
 	case SMB_QFS_ATTRIBUTE_INFO:
 	case SMB_QFS_ATTRIBUTE_INFORMATION:
 		fsinfo->attribute_info.level = RAW_QFS_ATTRIBUTE_INFO;
-		return ntvfs_fsinfo(req, fsinfo);
+		return ntvfs_fsinfo(req->ntvfs, fsinfo);
 
 	case SMB_QFS_QUOTA_INFORMATION:
 		fsinfo->quota_information.level = RAW_QFS_QUOTA_INFORMATION;
-		return ntvfs_fsinfo(req, fsinfo);
+		return ntvfs_fsinfo(req->ntvfs, fsinfo);
 
 	case SMB_QFS_FULL_SIZE_INFORMATION:
 		fsinfo->full_size_information.level = RAW_QFS_FULL_SIZE_INFORMATION;
-		return ntvfs_fsinfo(req, fsinfo);
+		return ntvfs_fsinfo(req->ntvfs, fsinfo);
 
 	case SMB_QFS_OBJECTID_INFORMATION:
 		fsinfo->objectid_information.level = RAW_QFS_OBJECTID_INFORMATION;
-		return ntvfs_fsinfo(req, fsinfo);
+		return ntvfs_fsinfo(req->ntvfs, fsinfo);
 	}
 
 	return NT_STATUS_INVALID_LEVEL;
@@ -436,11 +443,7 @@ static NTSTATUS trans2_open_send(struct trans_op *op)
 	struct smb_trans2 *trans = op->trans;
 	union smb_open *io;
 
-	if (!NT_STATUS_IS_OK(req->async_states->status)) {
-		return req->async_states->status;
-	}
-
-	io = talloc_get_type(op->op_info, union smb_open);
+	TRANS2_CHECK_ASYNC_STATUS(io, union smb_open);
 
 	trans2_setup_reply(trans, 30, 0, 0);
 
@@ -498,7 +501,7 @@ static NTSTATUS trans2_open(struct smbsrv_request *req, struct trans_op *op)
 	op->op_info = io;
 	op->send_fn = trans2_open_send;
 
-	return ntvfs_open(req, io);
+	return ntvfs_open(req->ntvfs, io);
 }
 
 
@@ -510,9 +513,7 @@ static NTSTATUS trans2_simple_send(struct trans_op *op)
 	struct smbsrv_request *req = op->req;
 	struct smb_trans2 *trans = op->trans;
 
-	if (!NT_STATUS_IS_OK(req->async_states->status)) {
-		return req->async_states->status;
-	}
+	TRANS2_CHECK_ASYNC_STATUS_SIMPLE;
 
 	trans2_setup_reply(trans, 2, 0, 0);
 
@@ -549,7 +550,7 @@ static NTSTATUS trans2_mkdir(struct smbsrv_request *req, struct trans_op *op)
 	op->op_info = io;
 	op->send_fn = trans2_simple_send;
 
-	return ntvfs_mkdir(req, io);
+	return ntvfs_mkdir(req->ntvfs, io);
 }
 
 /*
@@ -563,11 +564,7 @@ static NTSTATUS trans2_fileinfo_send(struct trans_op *op)
 	uint_t i;
 	uint32_t list_size;
 
-	if (!NT_STATUS_IS_OK(req->async_states->status)) {
-		return req->async_states->status;
-	}
-
-	st = talloc_get_type(op->op_info, union smb_fileinfo);
+	TRANS2_CHECK_ASYNC_STATUS(st, union smb_fileinfo);
 
 	switch (st->generic.level) {
 	case RAW_FILEINFO_GENERIC:
@@ -838,7 +835,7 @@ static NTSTATUS trans2_qpathinfo(struct smbsrv_request *req, struct trans_op *op
 	op->op_info = st;
 	op->send_fn = trans2_fileinfo_send;
 
-	return ntvfs_qpathinfo(req, st);
+	return ntvfs_qpathinfo(req->ntvfs, st);
 }
 
 
@@ -880,7 +877,7 @@ static NTSTATUS trans2_qfileinfo(struct smbsrv_request *req, struct trans_op *op
 	op->op_info = st;
 	op->send_fn = trans2_fileinfo_send;
 
-	return ntvfs_qfileinfo(req, st);
+	return ntvfs_qfileinfo(req->ntvfs, st);
 }
 
 
@@ -1014,7 +1011,7 @@ static NTSTATUS trans2_setfileinfo(struct smbsrv_request *req, struct trans_op *
 	op->op_info = st;
 	op->send_fn = trans2_simple_send;
 
-	return ntvfs_setfileinfo(req, st);
+	return ntvfs_setfileinfo(req->ntvfs, st);
 }
 
 /*
@@ -1054,7 +1051,7 @@ static NTSTATUS trans2_setpathinfo(struct smbsrv_request *req, struct trans_op *
 	op->op_info = st;
 	op->send_fn = trans2_simple_send;
 
-	return ntvfs_setpathinfo(req, st);
+	return ntvfs_setpathinfo(req->ntvfs, st);
 }
 
 
@@ -1305,12 +1302,7 @@ static NTSTATUS trans2_findfirst_send(struct trans_op *op)
 	struct find_state *state;
 	uint8_t *param;
 
-	if (!NT_STATUS_IS_OK(req->async_states->status)) {
-		trans2_setup_reply(trans, 0, 0, 0);
-		return req->async_states->status;
-	}
-
-	state = talloc_get_type(op->op_info, struct find_state);
+	TRANS2_CHECK_ASYNC_STATUS(state, struct find_state);
 	search = talloc_get_type(state->search, union smb_search_first);
 
 	/* fill in the findfirst reply header */
@@ -1383,7 +1375,7 @@ static NTSTATUS trans2_findfirst(struct smbsrv_request *req, struct trans_op *op
 	op->op_info = state;
 	op->send_fn = trans2_findfirst_send;
 
-	return ntvfs_search_first(req, search, state, find_callback);
+	return ntvfs_search_first(req->ntvfs, search, state, find_callback);
 }
 
 
@@ -1398,12 +1390,7 @@ static NTSTATUS trans2_findnext_send(struct trans_op *op)
 	struct find_state *state;
 	uint8_t *param;
 
-	if (!NT_STATUS_IS_OK(req->async_states->status)) {
-		trans2_setup_reply(trans, 0, 0, 0);
-		return req->async_states->status;
-	}
-
-	state = talloc_get_type(op->op_info, struct find_state);
+	TRANS2_CHECK_ASYNC_STATUS(state, struct find_state);
 	search = talloc_get_type(state->search, union smb_search_next);
 
 	/* fill in the findfirst reply header */
@@ -1474,7 +1461,7 @@ static NTSTATUS trans2_findnext(struct smbsrv_request *req, struct trans_op *op)
 	op->op_info = state;
 	op->send_fn = trans2_findnext_send;
 
-	return ntvfs_search_next(req, search, state, find_callback);
+	return ntvfs_search_next(req->ntvfs, search, state, find_callback);
 }
 
 
@@ -1487,7 +1474,7 @@ static NTSTATUS trans2_backend(struct smbsrv_request *req, struct trans_op *op)
 	NTSTATUS status;
 
 	/* direct trans2 pass thru */
-	status = ntvfs_trans2(req, trans);
+	status = ntvfs_trans2(req->ntvfs, trans);
 	if (!NT_STATUS_EQUAL(NT_STATUS_NOT_IMPLEMENTED, status)) {
 		return status;
 	}
@@ -1557,20 +1544,16 @@ static void reply_trans_continue(struct smbsrv_request *req, uint8_t command,
 /*
   answer a reconstructed trans request
 */
-static void reply_trans_send(struct smbsrv_request *req)
+static void reply_trans_send(struct ntvfs_request *ntvfs)
 {
+	struct smbsrv_request *req;
 	struct trans_op *op;
 	struct smb_trans2 *trans;
 	uint16_t params_left, data_left;
 	uint8_t *params, *data;
 	int i;
 
-	if (NT_STATUS_IS_ERR(req->async_states->status)) {
-		smbsrv_send_error(req, req->async_states->status);
-		return;
-	}
-
-	op = talloc_get_type(req->async_states->private_data, struct trans_op);
+	SMBSRV_CHECK_ASYNC_STATUS_ERR(op, struct trans_op);
 	trans = op->trans;
 
 	/* if this function needs work to form the nttrans reply buffer, then
@@ -1591,8 +1574,8 @@ static void reply_trans_send(struct smbsrv_request *req)
 
 	smbsrv_setup_reply(req, 10 + trans->out.setup_count, 0);
 
-	if (!NT_STATUS_IS_OK(req->async_states->status)) {
-		smbsrv_setup_error(req, req->async_states->status);
+	if (!NT_STATUS_IS_OK(req->ntvfs->async_states->status)) {
+		smbsrv_setup_error(req, req->ntvfs->async_states->status);
 	}
 
 	/* we need to divide up the reply into chunks that fit into
@@ -1670,11 +1653,8 @@ static void reply_trans_complete(struct smbsrv_request *req, uint8_t command,
 {
 	struct trans_op *op;
 
-	op = talloc(trans, struct trans_op);
-	if (op == NULL) {
-		smbsrv_send_error(req, NT_STATUS_NO_MEMORY);
-		return;
-	}
+	SMBSRV_TALLOC_IO_PTR(op, struct trans_op);
+	SMBSRV_SETUP_NTVFS_REQUEST(reply_trans_send, NTVFS_ASYNC_STATE_MAY_ASYNC);
 
 	op->req		= req;
 	op->trans	= trans;
@@ -1682,19 +1662,13 @@ static void reply_trans_complete(struct smbsrv_request *req, uint8_t command,
 	op->op_info	= NULL;
 	op->send_fn	= NULL;
 
-	req->async_states->state |= NTVFS_ASYNC_STATE_MAY_ASYNC;
-	req->async_states->send_fn = reply_trans_send;
-	req->async_states->private_data = op;
-
 	/* its a full request, give it to the backend */
 	if (command == SMBtrans) {
-		req->async_states->status = ntvfs_trans(req, trans);
+		SMBSRV_CALL_NTVFS_BACKEND(ntvfs_trans(req->ntvfs, trans));
+		return;
 	} else {
-		req->async_states->status = trans2_backend(req, op);
-	}
-
-	if (!(req->async_states->state & NTVFS_ASYNC_STATE_ASYNC)) {
-		req->async_states->send_fn(req);
+		SMBSRV_CALL_NTVFS_BACKEND(trans2_backend(req, op));
+		return;
 	}
 }
 

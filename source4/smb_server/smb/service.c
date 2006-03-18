@@ -114,10 +114,19 @@ static NTSTATUS make_connection_snum(struct smbsrv_request *req,
 		goto failed;
 	}
 
-	req->ctx = tcon->ntvfs;
+	req->ntvfs = ntvfs_request_create(req->tcon->ntvfs, req,
+					  req->session->session_info,
+					  SVAL(req->in.hdr,HDR_PID),
+					  SVAL(req->in.hdr,HDR_MID),
+					  req->request_time,
+					  req, NULL, 0);
+	if (!req->ntvfs) {
+		status = NT_STATUS_NO_MEMORY;
+		goto failed;
+	}
 
 	/* Invoke NTVFS connection hook */
-	status = ntvfs_connect(req, lp_servicename(snum));
+	status = ntvfs_connect(req->ntvfs, lp_servicename(snum));
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("make_connection: NTVFS make connection failed!\n"));
 		goto failed;

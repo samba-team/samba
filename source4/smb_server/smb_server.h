@@ -128,7 +128,7 @@ struct smbsrv_tcon {
 };
 
 /* a set of flags to control handling of request structures */
-#define REQ_CONTROL_LARGE     (1<<1) /* allow replies larger than max_xmit */
+#define SMBSRV_REQ_CONTROL_LARGE     (1<<1) /* allow replies larger than max_xmit */
 
 /* the context for a single SMB request. This is passed to any request-context 
    functions */
@@ -145,7 +145,7 @@ struct smbsrv_request {
 	/* the session context is derived from the vuid */
 	struct smbsrv_session *session;
 
-	/* a set of flags to control usage of the request. See REQ_CONTROL_* */
+	/* a set of flags to control usage of the request. See SMBSRV_REQ_CONTROL_* */
 	unsigned control_flags;
 
 	/* the flags from the SMB request, in raw form (host byte order) */
@@ -164,32 +164,14 @@ struct smbsrv_request {
 	/* the sequence number for signing */
 	uint64_t seq_num;
 
+	/* a pointer to the per request union smb_* io structure */
+	void *io_ptr;
+
+	/* the ntvfs_request */
+	struct ntvfs_request *ntvfs;
+
 	struct request_buffer in;
 	struct request_buffer out;
-
-	/*
-	 * the following elemets will be part of a future ntvfs_request struct
-	 */
-
-	/* the ntvfs_context this requests belongs to */
-	struct ntvfs_context *ctx;
-
-	/* ntvfs per request async states */
-	struct ntvfs_async_state *async_states;
-
-	/* the session_info, with security_token and maybe delegated credentials */
-	struct auth_session_info *session_info;
-
-	/* the smb pid is needed for locking contexts */
-	uint16_t smbpid;
-
-uint16_t smbmid;
-
-	/* some statictics for the management tools */
-	struct {
-		/* the system time when the request arrived */
-		struct timeval request_time;
-	} statistics;
 };
 
 /* this contains variables that should be used in % substitutions for
@@ -318,3 +300,79 @@ struct smbsrv_connection {
 
 #include "smb_server/smb_server_proto.h"
 #include "smb_server/smb/smb_proto.h"
+
+/* useful way of catching wct errors with file and line number */
+#define SMBSRV_CHECK_WCT(req, wcount) do { \
+	if ((req)->in.wct != (wcount)) { \
+		DEBUG(1,("Unexpected WCT %d at %s(%d) - expected %d\n", \
+			 (req)->in.wct, __FILE__, __LINE__, wcount)); \
+		smbsrv_send_error(req, NT_STATUS_DOS(ERRSRV, ERRerror)); \
+		return; \
+	} \
+} while (0)
+	
+/* useful wrapper for talloc with NO_MEMORY reply */
+#define SMBSRV_TALLOC_IO_PTR(ptr, type) do { \
+	ptr = talloc(req, type); \
+	if (!ptr) { \
+		smbsrv_send_error(req, NT_STATUS_NO_MEMORY); \
+		return; \
+	} \
+	req->io_ptr = ptr; \
+} while (0)
+
+#define SMBSRV_SETUP_NTVFS_REQUEST(send_fn, state) do { \
+	req->ntvfs = ntvfs_request_create(req->tcon->ntvfs, req, \
+					  req->session->session_info,\
+					  SVAL(req->in.hdr,HDR_PID), \
+					  SVAL(req->in.hdr,HDR_MID), \
+					  req->request_time, \
+					  req, send_fn, state); \
+	if (!req->ntvfs) { \
+		smbsrv_send_error(req, NT_STATUS_NO_MEMORY); \
+		return; \
+	} \
+	if (!talloc_reference(req->ntvfs, req)) { \
+		smbsrv_send_error(req, NT_STATUS_NO_MEMORY); \
+		return; \
+	} \
+} while (0)
+
+/* 
+   check if the backend wants to handle the request asynchronously.
+   if it wants it handled synchronously then call the send function
+   immediately
+*/
+#define SMBSRV_CALL_NTVFS_BACKEND(cmd) do { \
+	req->ntvfs->async_states->status = cmd; \
+	if (!(req->ntvfs->async_states->state & NTVFS_ASYNC_STATE_ASYNC)) { \
+		req->ntvfs->async_states->send_fn(req->ntvfs); \
+	} \
+} while (0)
+
+/* check req->ntvfs->async_states->status and if not OK then send an error reply */
+#define SMBSRV_CHECK_ASYNC_STATUS_ERR_SIMPLE do { \
+	req = talloc_get_type(ntvfs->async_states->private_data, struct smbsrv_request); \
+	if (NT_STATUS_IS_ERR(ntvfs->async_states->status)) { \
+		smbsrv_send_error(req, ntvfs->async_states->status); \
+		return; \
+	} \
+} while (0)
+#define SMBSRV_CHECK_ASYNC_STATUS_ERR(ptr, type) do { \
+	SMBSRV_CHECK_ASYNC_STATUS_ERR_SIMPLE; \
+	ptr = talloc_get_type(req->io_ptr, type); \
+} while (0)
+#define SMBSRV_CHECK_ASYNC_STATUS_SIMPLE do { \
+	req = talloc_get_type(ntvfs->async_states->private_data, struct smbsrv_request); \
+	if (!NT_STATUS_IS_OK(ntvfs->async_states->status)) { \
+		smbsrv_send_error(req, ntvfs->async_states->status); \
+		return; \
+	} \
+} while (0)
+#define SMBSRV_CHECK_ASYNC_STATUS(ptr, type) do { \
+	SMBSRV_CHECK_ASYNC_STATUS_SIMPLE; \
+	ptr = talloc_get_type(req->io_ptr, type); \
+} while (0)
+
+/* zero out some reserved fields in a reply */
+#define SMBSRV_VWV_RESERVED(start, count) memset(req->out.vwv + VWV(start), 0, (count)*2)
