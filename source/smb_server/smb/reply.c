@@ -29,49 +29,14 @@
 #include "librpc/gen_ndr/ndr_nbt.h"
 
 
-/* useful way of catching wct errors with file and line number */
-#define REQ_CHECK_WCT(req, wcount) do { \
-	if ((req)->in.wct != (wcount)) { \
-		DEBUG(1,("Unexpected WCT %d at %s(%d) - expected %d\n", \
-			 (req)->in.wct, __FILE__, __LINE__, wcount)); \
-		smbsrv_send_error(req, NT_STATUS_DOS(ERRSRV, ERRerror)); \
-		return; \
-	}} while (0)
-
-/* check req->async_states->status and if not OK then send an error reply */
-#define CHECK_ASYNC_STATUS do { \
-	if (!NT_STATUS_IS_OK(req->async_states->status)) { \
-		smbsrv_send_error(req, req->async_states->status); \
-		return; \
-	}} while (0)
-	
-/* useful wrapper for talloc with NO_MEMORY reply */
-#define REQ_TALLOC(ptr, type) do { \
-	ptr = talloc(req, type); \
-	if (!ptr) { \
-		smbsrv_send_error(req, NT_STATUS_NO_MEMORY); \
-		return; \
-	}} while (0)
-
-/* 
-   check if the backend wants to handle the request asynchronously.
-   if it wants it handled synchronously then call the send function
-   immediately
-*/
-#define REQ_ASYNC_TAIL do { \
-	if (!(req->async_states->state & NTVFS_ASYNC_STATE_ASYNC)) { \
-		req->async_states->send_fn(req); \
-	}} while (0)
-
-/* zero out some reserved fields in a reply */
-#define REQ_VWV_RESERVED(start, count) memset(req->out.vwv + VWV(start), 0, (count)*2)
-
 /****************************************************************************
  Reply to a simple request (async send)
 ****************************************************************************/
-static void reply_simple_send(struct smbsrv_request *req)
+static void reply_simple_send(struct ntvfs_request *ntvfs)
 {
-	CHECK_ASYNC_STATUS;
+	struct smbsrv_request *req;
+
+	SMBSRV_CHECK_ASYNC_STATUS_SIMPLE;
 
 	smbsrv_setup_reply(req, 0, 0);
 	smbsrv_send_reply(req);
@@ -88,7 +53,7 @@ void smbsrv_reply_tcon(struct smbsrv_request *req)
 	uint8_t *p;
 	
 	/* parse request */
-	REQ_CHECK_WCT(req, 0);
+	SMBSRV_CHECK_WCT(req, 0);
 
 	con.tcon.level = RAW_TCON_TCON;
 
@@ -134,7 +99,7 @@ void smbsrv_reply_tcon_and_X(struct smbsrv_request *req)
 	con.tconx.level = RAW_TCON_TCONX;
 
 	/* parse request */
-	REQ_CHECK_WCT(req, 4);
+	SMBSRV_CHECK_WCT(req, 4);
 
 	con.tconx.in.flags  = SVAL(req->in.vwv, VWV(2));
 	passlen             = SVAL(req->in.vwv, VWV(3));
@@ -208,11 +173,12 @@ void smbsrv_reply_unknown(struct smbsrv_request *req)
 /****************************************************************************
  Reply to an ioctl (async reply)
 ****************************************************************************/
-static void reply_ioctl_send(struct smbsrv_request *req)
+static void reply_ioctl_send(struct ntvfs_request *ntvfs)
 {
-	union smb_ioctl *io = req->async_states->private_data;
+	struct smbsrv_request *req;
+	union smb_ioctl *io;
 
-	CHECK_ASYNC_STATUS;
+	SMBSRV_CHECK_ASYNC_STATUS(io, union smb_ioctl);
 
 	/* the +1 is for nicer alignment */
 	smbsrv_setup_reply(req, 8, io->ioctl.out.blob.length+1);
@@ -233,21 +199,16 @@ void smbsrv_reply_ioctl(struct smbsrv_request *req)
 	union smb_ioctl *io;
 
 	/* parse request */
-	REQ_CHECK_WCT(req, 3);
-	REQ_TALLOC(io, union smb_ioctl);
+	SMBSRV_CHECK_WCT(req, 3);
+	SMBSRV_TALLOC_IO_PTR(io, union smb_ioctl);
+	SMBSRV_SETUP_NTVFS_REQUEST(reply_ioctl_send, NTVFS_ASYNC_STATE_MAY_ASYNC);
 
 	io->ioctl.level		= RAW_IOCTL_IOCTL;
 	io->ioctl.in.file.fnum	= req_fnum(req, req->in.vwv, VWV(0));
 	io->ioctl.in.request	= IVAL(req->in.vwv, VWV(1));
 
-	req->async_states->state |= NTVFS_ASYNC_STATE_MAY_ASYNC;
-	req->async_states->send_fn = reply_ioctl_send;
-	req->async_states->private_data = io;
-
 	/* call backend */
-	req->async_states->status = ntvfs_ioctl(req, io);
-
-	REQ_ASYNC_TAIL;
+	SMBSRV_CALL_NTVFS_BACKEND(ntvfs_ioctl(req->ntvfs, io));
 }
 
 
@@ -258,27 +219,24 @@ void smbsrv_reply_chkpth(struct smbsrv_request *req)
 {
 	union smb_chkpath *io;
 
-	REQ_TALLOC(io, union smb_chkpath);
+	SMBSRV_TALLOC_IO_PTR(io, union smb_chkpath);
+	SMBSRV_SETUP_NTVFS_REQUEST(reply_simple_send, NTVFS_ASYNC_STATE_MAY_ASYNC);
 
 	req_pull_ascii4(req, &io->chkpath.in.path, req->in.data, STR_TERMINATE);
 
-	req->async_states->state |= NTVFS_ASYNC_STATE_MAY_ASYNC;
-	req->async_states->send_fn = reply_simple_send;
-
-	req->async_states->status = ntvfs_chkpath(req, io);
-
-	REQ_ASYNC_TAIL;
+	SMBSRV_CALL_NTVFS_BACKEND(ntvfs_chkpath(req->ntvfs, io));
 }
 
 /****************************************************************************
  Reply to a getatr (async reply)
 ****************************************************************************/
-static void reply_getatr_send(struct smbsrv_request *req)
+static void reply_getatr_send(struct ntvfs_request *ntvfs)
 {
-	union smb_fileinfo *st = req->async_states->private_data;
+	struct smbsrv_request *req;
+	union smb_fileinfo *st;
 
-	CHECK_ASYNC_STATUS;
-	
+	SMBSRV_CHECK_ASYNC_STATUS(st, union smb_fileinfo);
+
 	/* construct reply */
 	smbsrv_setup_reply(req, 10, 0);
 
@@ -286,7 +244,7 @@ static void reply_getatr_send(struct smbsrv_request *req)
 	srv_push_dos_date3(req->smb_conn, req->out.vwv, VWV(1), st->getattr.out.write_time);
 	SIVAL(req->out.vwv,         VWV(3), st->getattr.out.size);
 
-	REQ_VWV_RESERVED(5, 5);
+	SMBSRV_VWV_RESERVED(5, 5);
 
 	smbsrv_send_reply(req);
 }
@@ -299,7 +257,8 @@ void smbsrv_reply_getatr(struct smbsrv_request *req)
 {
 	union smb_fileinfo *st;
 
-	REQ_TALLOC(st, union smb_fileinfo);
+	SMBSRV_TALLOC_IO_PTR(st, union smb_fileinfo);
+	SMBSRV_SETUP_NTVFS_REQUEST(reply_getatr_send, NTVFS_ASYNC_STATE_MAY_ASYNC);
 	
 	st->getattr.level = RAW_FILEINFO_GETATTR;
 
@@ -310,14 +269,7 @@ void smbsrv_reply_getatr(struct smbsrv_request *req)
 		return;
 	}
 
-	req->async_states->state |= NTVFS_ASYNC_STATE_MAY_ASYNC;
-	req->async_states->send_fn = reply_getatr_send;
-	req->async_states->private_data = st;
-
-	/* call backend */
-	req->async_states->status = ntvfs_qpathinfo(req, st);
-
-	REQ_ASYNC_TAIL;
+	SMBSRV_CALL_NTVFS_BACKEND(ntvfs_qpathinfo(req->ntvfs, st));
 }
 
 
@@ -329,8 +281,9 @@ void smbsrv_reply_setatr(struct smbsrv_request *req)
 	union smb_setfileinfo *st;
 
 	/* parse request */
-	REQ_CHECK_WCT(req, 8);
-	REQ_TALLOC(st, union smb_setfileinfo);
+	SMBSRV_CHECK_WCT(req, 8);
+	SMBSRV_TALLOC_IO_PTR(st, union smb_setfileinfo);
+	SMBSRV_SETUP_NTVFS_REQUEST(reply_simple_send, NTVFS_ASYNC_STATE_MAY_ASYNC);
 
 	st->setattr.level = RAW_SFILEINFO_SETATTR;
 	st->setattr.in.attrib     = SVAL(req->in.vwv, VWV(0));
@@ -343,25 +296,20 @@ void smbsrv_reply_setatr(struct smbsrv_request *req)
 		return;
 	}
 	
-	req->async_states->state |= NTVFS_ASYNC_STATE_MAY_ASYNC;
-	req->async_states->send_fn = reply_simple_send;
-
-	/* call backend */
-	req->async_states->status = ntvfs_setpathinfo(req, st);
-
-	REQ_ASYNC_TAIL;
+	SMBSRV_CALL_NTVFS_BACKEND(ntvfs_setpathinfo(req->ntvfs, st));
 }
 
 
 /****************************************************************************
  Reply to a dskattr (async reply)
 ****************************************************************************/
-static void reply_dskattr_send(struct smbsrv_request *req)
+static void reply_dskattr_send(struct ntvfs_request *ntvfs)
 {
-	union smb_fsinfo *fs = req->async_states->private_data;
+	struct smbsrv_request *req;
+	union smb_fsinfo *fs;
 
-	CHECK_ASYNC_STATUS;
-	
+	SMBSRV_CHECK_ASYNC_STATUS(fs, union smb_fsinfo);
+
 	/* construct reply */
 	smbsrv_setup_reply(req, 5, 0);
 
@@ -370,7 +318,7 @@ static void reply_dskattr_send(struct smbsrv_request *req)
 	SSVAL(req->out.vwv, VWV(2), fs->dskattr.out.block_size);
 	SSVAL(req->out.vwv, VWV(3), fs->dskattr.out.units_free);
 
-	REQ_VWV_RESERVED(4, 1);
+	SMBSRV_VWV_RESERVED(4, 1);
 
 	smbsrv_send_reply(req);
 }
@@ -383,30 +331,24 @@ void smbsrv_reply_dskattr(struct smbsrv_request *req)
 {
 	union smb_fsinfo *fs;
 
-	REQ_TALLOC(fs, union smb_fsinfo);
+	SMBSRV_TALLOC_IO_PTR(fs, union smb_fsinfo);
+	SMBSRV_SETUP_NTVFS_REQUEST(reply_dskattr_send, NTVFS_ASYNC_STATE_MAY_ASYNC);
 	
 	fs->dskattr.level = RAW_QFS_DSKATTR;
 
-	req->async_states->state |= NTVFS_ASYNC_STATE_MAY_ASYNC;
-	req->async_states->send_fn = reply_dskattr_send;
-	req->async_states->private_data = fs;
-
-	/* call backend */
-	req->async_states->status = ntvfs_fsinfo(req, fs);
-
-	REQ_ASYNC_TAIL;
+	SMBSRV_CALL_NTVFS_BACKEND(ntvfs_fsinfo(req->ntvfs, fs));
 }
-
 
 
 /****************************************************************************
  Reply to an open (async reply)
 ****************************************************************************/
-static void reply_open_send(struct smbsrv_request *req)
+static void reply_open_send(struct ntvfs_request *ntvfs)
 {
-	union smb_open *oi = req->async_states->private_data;
+	struct smbsrv_request *req;
+	union smb_open *oi;
 
-	CHECK_ASYNC_STATUS;
+	SMBSRV_CHECK_ASYNC_STATUS(oi, union smb_open);
 
 	/* construct reply */
 	smbsrv_setup_reply(req, 7, 0);
@@ -428,8 +370,9 @@ void smbsrv_reply_open(struct smbsrv_request *req)
 	union smb_open *oi;
 
 	/* parse request */
-	REQ_CHECK_WCT(req, 2);
-	REQ_TALLOC(oi, union smb_open);
+	SMBSRV_CHECK_WCT(req, 2);
+	SMBSRV_TALLOC_IO_PTR(oi, union smb_open);
+	SMBSRV_SETUP_NTVFS_REQUEST(reply_open_send, NTVFS_ASYNC_STATE_MAY_ASYNC);
 
 	oi->openold.level = RAW_OPEN_OPEN;
 	oi->openold.in.open_mode = SVAL(req->in.vwv, VWV(0));
@@ -442,25 +385,19 @@ void smbsrv_reply_open(struct smbsrv_request *req)
 		return;
 	}
 
-	req->async_states->state |= NTVFS_ASYNC_STATE_MAY_ASYNC;
-	req->async_states->send_fn = reply_open_send;
-	req->async_states->private_data = oi;
-	
-	/* call backend */
-	req->async_states->status = ntvfs_open(req, oi);
-
-	REQ_ASYNC_TAIL;
+	SMBSRV_CALL_NTVFS_BACKEND(ntvfs_open(req->ntvfs, oi));
 }
 
 
 /****************************************************************************
  Reply to an open and X (async reply)
 ****************************************************************************/
-static void reply_open_and_X_send(struct smbsrv_request *req)
+static void reply_open_and_X_send(struct ntvfs_request *ntvfs)
 {
-	union smb_open *oi = req->async_states->private_data;
+	struct smbsrv_request *req;
+	union smb_open *oi;
 
-	CHECK_ASYNC_STATUS;
+	SMBSRV_CHECK_ASYNC_STATUS(oi, union smb_open);
 
 	/* build the reply */
 	if (oi->openx.in.flags & OPENX_FLAGS_EXTENDED_RETURN) {
@@ -483,7 +420,7 @@ static void reply_open_and_X_send(struct smbsrv_request *req)
 	SSVAL(req->out.vwv, VWV(14),0); /* reserved */
 	if (oi->openx.in.flags & OPENX_FLAGS_EXTENDED_RETURN) {
 		SIVAL(req->out.vwv, VWV(15),oi->openx.out.access_mask);
-		REQ_VWV_RESERVED(17, 2);
+		SMBSRV_VWV_RESERVED(17, 2);
 	}
 
 	req->chained_fnum = oi->openx.out.file.fnum;
@@ -500,8 +437,9 @@ void smbsrv_reply_open_and_X(struct smbsrv_request *req)
 	union smb_open *oi;
 
 	/* parse the request */
-	REQ_CHECK_WCT(req, 15);
-	REQ_TALLOC(oi, union smb_open);
+	SMBSRV_CHECK_WCT(req, 15);
+	SMBSRV_TALLOC_IO_PTR(oi, union smb_open);
+	SMBSRV_SETUP_NTVFS_REQUEST(reply_open_and_X_send, NTVFS_ASYNC_STATE_MAY_ASYNC);
 
 	oi->openx.level = RAW_OPEN_OPENX;
 	oi->openx.in.flags        = SVAL(req->in.vwv, VWV(2));
@@ -520,25 +458,19 @@ void smbsrv_reply_open_and_X(struct smbsrv_request *req)
 		return;
 	}
 
-	req->async_states->state |= NTVFS_ASYNC_STATE_MAY_ASYNC;
-	req->async_states->send_fn = reply_open_and_X_send;
-	req->async_states->private_data = oi;
-
-	/* call the backend */
-	req->async_states->status = ntvfs_open(req, oi);
-
-	REQ_ASYNC_TAIL;
+	SMBSRV_CALL_NTVFS_BACKEND(ntvfs_open(req->ntvfs, oi));
 }
 
 
 /****************************************************************************
  Reply to a mknew or a create.
 ****************************************************************************/
-static void reply_mknew_send(struct smbsrv_request *req)
+static void reply_mknew_send(struct ntvfs_request *ntvfs)
 {
-	union smb_open *oi = req->async_states->private_data;
+	struct smbsrv_request *req;
+	union smb_open *oi;
 
-	CHECK_ASYNC_STATUS;
+	SMBSRV_CHECK_ASYNC_STATUS(oi, union smb_open);
 
 	/* build the reply */
 	smbsrv_setup_reply(req, 1, 0);
@@ -557,8 +489,9 @@ void smbsrv_reply_mknew(struct smbsrv_request *req)
 	union smb_open *oi;
 
 	/* parse the request */
-	REQ_CHECK_WCT(req, 3);
-	REQ_TALLOC(oi, union smb_open);
+	SMBSRV_CHECK_WCT(req, 3);
+	SMBSRV_TALLOC_IO_PTR(oi, union smb_open);
+	SMBSRV_SETUP_NTVFS_REQUEST(reply_mknew_send, NTVFS_ASYNC_STATE_MAY_ASYNC);
 
 	if (CVAL(req->in.hdr, HDR_COM) == SMBmknew) {
 		oi->mknew.level = RAW_OPEN_MKNEW;
@@ -575,24 +508,18 @@ void smbsrv_reply_mknew(struct smbsrv_request *req)
 		return;
 	}
 
-	req->async_states->state |= NTVFS_ASYNC_STATE_MAY_ASYNC;
-	req->async_states->send_fn = reply_mknew_send;
-	req->async_states->private_data = oi;
-
-	/* call the backend */
-	req->async_states->status = ntvfs_open(req, oi);
-
-	REQ_ASYNC_TAIL;
+	SMBSRV_CALL_NTVFS_BACKEND(ntvfs_open(req->ntvfs, oi));
 }
 
 /****************************************************************************
  Reply to a create temporary file (async reply)
 ****************************************************************************/
-static void reply_ctemp_send(struct smbsrv_request *req)
+static void reply_ctemp_send(struct ntvfs_request *ntvfs)
 {
-	union smb_open *oi = req->async_states->private_data;
+	struct smbsrv_request *req;
+	union smb_open *oi;
 
-	CHECK_ASYNC_STATUS;
+	SMBSRV_CHECK_ASYNC_STATUS(oi, union smb_open);
 
 	/* build the reply */
 	smbsrv_setup_reply(req, 1, 0);
@@ -613,8 +540,9 @@ void smbsrv_reply_ctemp(struct smbsrv_request *req)
 	union smb_open *oi;
 
 	/* parse the request */
-	REQ_CHECK_WCT(req, 3);
-	REQ_TALLOC(oi, union smb_open);
+	SMBSRV_CHECK_WCT(req, 3);
+	SMBSRV_TALLOC_IO_PTR(oi, union smb_open);
+	SMBSRV_SETUP_NTVFS_REQUEST(reply_ctemp_send, NTVFS_ASYNC_STATE_MAY_ASYNC);
 
 	oi->ctemp.level = RAW_OPEN_CTEMP;
 	oi->ctemp.in.attrib = SVAL(req->in.vwv, VWV(0));
@@ -629,14 +557,7 @@ void smbsrv_reply_ctemp(struct smbsrv_request *req)
 		return;
 	}
 
-	req->async_states->state |= NTVFS_ASYNC_STATE_MAY_ASYNC;
-	req->async_states->send_fn = reply_ctemp_send;
-	req->async_states->private_data = oi;
-
-	/* call the backend */
-	req->async_states->status = ntvfs_open(req, oi);
-
-	REQ_ASYNC_TAIL;
+	SMBSRV_CALL_NTVFS_BACKEND(ntvfs_open(req->ntvfs, oi));
 }
 
 
@@ -648,20 +569,15 @@ void smbsrv_reply_unlink(struct smbsrv_request *req)
 	union smb_unlink *unl;
 
 	/* parse the request */
-	REQ_CHECK_WCT(req, 1);
-	REQ_TALLOC(unl, union smb_unlink);
+	SMBSRV_CHECK_WCT(req, 1);
+	SMBSRV_TALLOC_IO_PTR(unl, union smb_unlink);
+	SMBSRV_SETUP_NTVFS_REQUEST(reply_simple_send, NTVFS_ASYNC_STATE_MAY_ASYNC);
 	
 	unl->unlink.in.attrib = SVAL(req->in.vwv, VWV(0));
 
 	req_pull_ascii4(req, &unl->unlink.in.pattern, req->in.data, STR_TERMINATE);
 	
-	req->async_states->state |= NTVFS_ASYNC_STATE_MAY_ASYNC;
-	req->async_states->send_fn = reply_simple_send;
-
-	/* call backend */
-	req->async_states->status = ntvfs_unlink(req, unl);
-
-	REQ_ASYNC_TAIL;
+	SMBSRV_CALL_NTVFS_BACKEND(ntvfs_unlink(req->ntvfs, unl));
 }
 
 
@@ -707,9 +623,19 @@ void smbsrv_reply_readbraw(struct smbsrv_request *req)
 	/* tell the backend where to put the data */
 	io.readbraw.out.data = req->out.buffer + NBT_HDR_SIZE;
 
-	/* call the backend */
-	status = ntvfs_read(req, &io);
+	/* prepare the ntvfs request */
+	req->ntvfs = ntvfs_request_create(req->tcon->ntvfs, req,
+					  req->session->session_info,
+					  SVAL(req->in.hdr,HDR_PID),
+					  SVAL(req->in.hdr,HDR_MID),
+					  req->request_time,
+					  req, NULL, 0);
+	if (!req->ntvfs) {
+		goto failed;
+	}
 
+	/* call the backend */
+	status = ntvfs_read(req->ntvfs, &io);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto failed;
 	}
@@ -732,11 +658,12 @@ failed:
 /****************************************************************************
  Reply to a lockread (async reply)
 ****************************************************************************/
-static void reply_lockread_send(struct smbsrv_request *req)
+static void reply_lockread_send(struct ntvfs_request *ntvfs)
 {
-	union smb_read *io = req->async_states->private_data;
+	struct smbsrv_request *req;
+	union smb_read *io;
 
-	CHECK_ASYNC_STATUS;
+	SMBSRV_CHECK_ASYNC_STATUS(io, union smb_read);
 
 	/* trim packet */
 	io->lockread.out.nread = MIN(io->lockread.out.nread,
@@ -745,7 +672,7 @@ static void reply_lockread_send(struct smbsrv_request *req)
 
 	/* construct reply */
 	SSVAL(req->out.vwv, VWV(0), io->lockread.out.nread);
-	REQ_VWV_RESERVED(1, 4);
+	SMBSRV_VWV_RESERVED(1, 4);
 
 	SCVAL(req->out.data, 0, SMB_DATA_BLOCK);
 	SSVAL(req->out.data, 1, io->lockread.out.nread);
@@ -763,8 +690,9 @@ void smbsrv_reply_lockread(struct smbsrv_request *req)
 	union smb_read *io;
 	
 	/* parse request */
-	REQ_CHECK_WCT(req, 5);
-	REQ_TALLOC(io, union smb_read);
+	SMBSRV_CHECK_WCT(req, 5);
+	SMBSRV_TALLOC_IO_PTR(io, union smb_read);
+	SMBSRV_SETUP_NTVFS_REQUEST(reply_lockread_send, NTVFS_ASYNC_STATE_MAY_ASYNC);
 
 	io->lockread.level = RAW_READ_LOCKREAD;
 	io->lockread.in.file.fnum = req_fnum(req, req->in.vwv, VWV(0));
@@ -778,14 +706,7 @@ void smbsrv_reply_lockread(struct smbsrv_request *req)
 	/* tell the backend where to put the data */
 	io->lockread.out.data = req->out.data + 3;
 
-	req->async_states->state |= NTVFS_ASYNC_STATE_MAY_ASYNC;
-	req->async_states->send_fn = reply_lockread_send;
-	req->async_states->private_data = io;
-
-	/* call backend */
-	req->async_states->status = ntvfs_read(req, io);
-
-	REQ_ASYNC_TAIL;
+	SMBSRV_CALL_NTVFS_BACKEND(ntvfs_read(req->ntvfs, io));
 }
 
 
@@ -793,11 +714,12 @@ void smbsrv_reply_lockread(struct smbsrv_request *req)
 /****************************************************************************
  Reply to a read (async reply)
 ****************************************************************************/
-static void reply_read_send(struct smbsrv_request *req)
+static void reply_read_send(struct ntvfs_request *ntvfs)
 {
-	union smb_read *io = req->async_states->private_data;
+	struct smbsrv_request *req;
+	union smb_read *io;
 
-	CHECK_ASYNC_STATUS;
+	SMBSRV_CHECK_ASYNC_STATUS(io, union smb_read);
 
 	/* trim packet */
 	io->read.out.nread = MIN(io->read.out.nread,
@@ -806,7 +728,7 @@ static void reply_read_send(struct smbsrv_request *req)
 
 	/* construct reply */
 	SSVAL(req->out.vwv, VWV(0), io->read.out.nread);
-	REQ_VWV_RESERVED(1, 4);
+	SMBSRV_VWV_RESERVED(1, 4);
 
 	SCVAL(req->out.data, 0, SMB_DATA_BLOCK);
 	SSVAL(req->out.data, 1, io->read.out.nread);
@@ -822,9 +744,10 @@ void smbsrv_reply_read(struct smbsrv_request *req)
 	union smb_read *io;
 
 	/* parse request */
-	REQ_CHECK_WCT(req, 5);
-	REQ_TALLOC(io, union smb_read);
-	
+	SMBSRV_CHECK_WCT(req, 5);
+	SMBSRV_TALLOC_IO_PTR(io, union smb_read);
+	SMBSRV_SETUP_NTVFS_REQUEST(reply_read_send, NTVFS_ASYNC_STATE_MAY_ASYNC);
+
 	io->read.level = RAW_READ_READ;
 	io->read.in.file.fnum     = req_fnum(req, req->in.vwv, VWV(0));
 	io->read.in.count         = SVAL(req->in.vwv, VWV(1));
@@ -837,29 +760,21 @@ void smbsrv_reply_read(struct smbsrv_request *req)
 	/* tell the backend where to put the data */
 	io->read.out.data = req->out.data + 3;
 
-	req->async_states->state |= NTVFS_ASYNC_STATE_MAY_ASYNC;
-	req->async_states->send_fn = reply_read_send;
-	req->async_states->private_data = io;
-
-	/* call backend */
-	req->async_states->status = ntvfs_read(req, io);
-
-	REQ_ASYNC_TAIL;
+	SMBSRV_CALL_NTVFS_BACKEND(ntvfs_read(req->ntvfs, io));
 }
-
-
 
 /****************************************************************************
  Reply to a read and X (async reply)
 ****************************************************************************/
-static void reply_read_and_X_send(struct smbsrv_request *req)
+static void reply_read_and_X_send(struct ntvfs_request *ntvfs)
 {
-	union smb_read *io = req->async_states->private_data;
+	struct smbsrv_request *req;
+	union smb_read *io;
 
-	CHECK_ASYNC_STATUS;
+	SMBSRV_CHECK_ASYNC_STATUS(io, union smb_read);
 
 	/* readx reply packets can be over-sized */
-	req->control_flags |= REQ_CONTROL_LARGE;
+	req->control_flags |= SMBSRV_REQ_CONTROL_LARGE;
 	if (io->readx.in.maxcnt != 0xFFFF &&
 	    io->readx.in.mincnt != 0xFFFF) {
 		req_grow_data(req, 1 + io->readx.out.nread);
@@ -873,10 +788,10 @@ static void reply_read_and_X_send(struct smbsrv_request *req)
 	SSVAL(req->out.vwv, VWV(1), 0);
 	SSVAL(req->out.vwv, VWV(2), io->readx.out.remaining);
 	SSVAL(req->out.vwv, VWV(3), io->readx.out.compaction_mode);
-	REQ_VWV_RESERVED(4, 1);
+	SMBSRV_VWV_RESERVED(4, 1);
 	SSVAL(req->out.vwv, VWV(5), io->readx.out.nread);
 	SSVAL(req->out.vwv, VWV(6), PTR_DIFF(io->readx.out.data, req->out.hdr));
-	REQ_VWV_RESERVED(7, 5);
+	SMBSRV_VWV_RESERVED(7, 5);
 
 	smbsrv_chain_reply(req);
 }
@@ -890,10 +805,11 @@ void smbsrv_reply_read_and_X(struct smbsrv_request *req)
 
 	/* parse request */
 	if (req->in.wct != 12) {
-		REQ_CHECK_WCT(req, 10);
+		SMBSRV_CHECK_WCT(req, 10);
 	}
 
-	REQ_TALLOC(io, union smb_read);
+	SMBSRV_TALLOC_IO_PTR(io, union smb_read);
+	SMBSRV_SETUP_NTVFS_REQUEST(reply_read_and_X_send, NTVFS_ASYNC_STATE_MAY_ASYNC);
 
 	io->readx.level = RAW_READ_READX;
 	io->readx.in.file.fnum     = req_fnum(req, req->in.vwv, VWV(2));
@@ -931,14 +847,7 @@ void smbsrv_reply_read_and_X(struct smbsrv_request *req)
 		io->readx.out.data = req->out.data;
 	}
 
-	req->async_states->state |= NTVFS_ASYNC_STATE_MAY_ASYNC;
-	req->async_states->send_fn = reply_read_and_X_send;
-	req->async_states->private_data = io;
-
-	/* call backend */
-	req->async_states->status = ntvfs_read(req, io);
-
-	REQ_ASYNC_TAIL;
+	SMBSRV_CALL_NTVFS_BACKEND(ntvfs_read(req->ntvfs, io));
 }
 
 
@@ -954,11 +863,12 @@ void smbsrv_reply_writebraw(struct smbsrv_request *req)
 /****************************************************************************
  Reply to a writeunlock (async reply)
 ****************************************************************************/
-static void reply_writeunlock_send(struct smbsrv_request *req)
+static void reply_writeunlock_send(struct ntvfs_request *ntvfs)
 {
-	union smb_write *io = req->async_states->private_data;
+	struct smbsrv_request *req;
+	union smb_write *io;
 
-	CHECK_ASYNC_STATUS;
+	SMBSRV_CHECK_ASYNC_STATUS(io, union smb_write);
 
 	/* construct reply */
 	smbsrv_setup_reply(req, 1, 0);
@@ -975,8 +885,9 @@ void smbsrv_reply_writeunlock(struct smbsrv_request *req)
 {
 	union smb_write *io;
 
-	REQ_CHECK_WCT(req, 5);
-	REQ_TALLOC(io, union smb_write);
+	SMBSRV_CHECK_WCT(req, 5);
+	SMBSRV_TALLOC_IO_PTR(io, union smb_write);
+	SMBSRV_SETUP_NTVFS_REQUEST(reply_writeunlock_send, NTVFS_ASYNC_STATE_MAY_ASYNC);
 
 	io->writeunlock.level = RAW_WRITE_WRITEUNLOCK;
 	io->writeunlock.in.file.fnum   = req_fnum(req, req->in.vwv, VWV(0));
@@ -997,14 +908,7 @@ void smbsrv_reply_writeunlock(struct smbsrv_request *req)
 		return;
 	}
 
-	req->async_states->state |= NTVFS_ASYNC_STATE_MAY_ASYNC;
-	req->async_states->send_fn = reply_writeunlock_send;
-	req->async_states->private_data = io;
-
-	/* call backend */
-	req->async_states->status = ntvfs_write(req, io);
-
-	REQ_ASYNC_TAIL;
+	SMBSRV_CALL_NTVFS_BACKEND(ntvfs_write(req->ntvfs, io));
 }
 
 
@@ -1012,11 +916,12 @@ void smbsrv_reply_writeunlock(struct smbsrv_request *req)
 /****************************************************************************
  Reply to a write (async reply)
 ****************************************************************************/
-static void reply_write_send(struct smbsrv_request *req)
+static void reply_write_send(struct ntvfs_request *ntvfs)
 {
-	union smb_write *io = req->async_states->private_data;
+	struct smbsrv_request *req;
+	union smb_write *io;
 	
-	CHECK_ASYNC_STATUS;
+	SMBSRV_CHECK_ASYNC_STATUS(io, union smb_write);
 
 	/* construct reply */
 	smbsrv_setup_reply(req, 1, 0);
@@ -1033,8 +938,9 @@ void smbsrv_reply_write(struct smbsrv_request *req)
 {
 	union smb_write *io;
 
-	REQ_CHECK_WCT(req, 5);
-	REQ_TALLOC(io, union smb_write);
+	SMBSRV_CHECK_WCT(req, 5);
+	SMBSRV_TALLOC_IO_PTR(io, union smb_write);
+	SMBSRV_SETUP_NTVFS_REQUEST(reply_write_send, NTVFS_ASYNC_STATE_MAY_ASYNC);
 
 	io->write.level = RAW_WRITE_WRITE;
 	io->write.in.file.fnum   = req_fnum(req, req->in.vwv, VWV(0));
@@ -1055,25 +961,19 @@ void smbsrv_reply_write(struct smbsrv_request *req)
 		return;
 	}
 
-	req->async_states->state |= NTVFS_ASYNC_STATE_MAY_ASYNC;
-	req->async_states->send_fn = reply_write_send;
-	req->async_states->private_data = io;
-
-	/* call backend */
-	req->async_states->status = ntvfs_write(req, io);
-
-	REQ_ASYNC_TAIL;
+	SMBSRV_CALL_NTVFS_BACKEND(ntvfs_write(req->ntvfs, io));
 }
 
 
 /****************************************************************************
  Reply to a write and X (async reply)
 ****************************************************************************/
-static void reply_write_and_X_send(struct smbsrv_request *req)
+static void reply_write_and_X_send(struct ntvfs_request *ntvfs)
 {
-	union smb_write *io = req->async_states->private_data;
+	struct smbsrv_request *req;
+	union smb_write *io;
 
-	CHECK_ASYNC_STATUS;
+	SMBSRV_CHECK_ASYNC_STATUS(io, union smb_write);
 
 	/* construct reply */
 	smbsrv_setup_reply(req, 6, 0);
@@ -1083,7 +983,7 @@ static void reply_write_and_X_send(struct smbsrv_request *req)
 	SSVAL(req->out.vwv, VWV(2), io->writex.out.nwritten & 0xFFFF);
 	SSVAL(req->out.vwv, VWV(3), io->writex.out.remaining);
 	SSVAL(req->out.vwv, VWV(4), io->writex.out.nwritten >> 16);
-	REQ_VWV_RESERVED(5, 1);
+	SMBSRV_VWV_RESERVED(5, 1);
 
 	smbsrv_chain_reply(req);
 }
@@ -1096,10 +996,11 @@ void smbsrv_reply_write_and_X(struct smbsrv_request *req)
 	union smb_write *io;
 	
 	if (req->in.wct != 14) {
-		REQ_CHECK_WCT(req, 12);
+		SMBSRV_CHECK_WCT(req, 12);
 	}
 
-	REQ_TALLOC(io, union smb_write);
+	SMBSRV_TALLOC_IO_PTR(io, union smb_write);
+	SMBSRV_SETUP_NTVFS_REQUEST(reply_write_and_X_send, NTVFS_ASYNC_STATE_MAY_ASYNC);
 
 	io->writex.level = RAW_WRITE_WRITEX;
 	io->writex.in.file.fnum = req_fnum(req, req->in.vwv, VWV(2));
@@ -1122,25 +1023,19 @@ void smbsrv_reply_write_and_X(struct smbsrv_request *req)
 		return;
 	} 
 
-	req->async_states->state |= NTVFS_ASYNC_STATE_MAY_ASYNC;
-	req->async_states->send_fn = reply_write_and_X_send;
-	req->async_states->private_data = io;
-
-	/* call backend */
-	req->async_states->status = ntvfs_write(req, io);
-
-	REQ_ASYNC_TAIL;
+	SMBSRV_CALL_NTVFS_BACKEND(ntvfs_write(req->ntvfs, io));
 }
 
 
 /****************************************************************************
  Reply to a lseek (async reply)
 ****************************************************************************/
-static void reply_lseek_send(struct smbsrv_request *req)
+static void reply_lseek_send(struct ntvfs_request *ntvfs)
 {
-	union smb_seek *io = req->async_states->private_data;
+	struct smbsrv_request *req;
+	union smb_seek *io;
 
-	CHECK_ASYNC_STATUS;
+	SMBSRV_CHECK_ASYNC_STATUS(io, union smb_seek);
 
 	/* construct reply */
 	smbsrv_setup_reply(req, 2, 0);
@@ -1157,21 +1052,15 @@ void smbsrv_reply_lseek(struct smbsrv_request *req)
 {
 	union smb_seek *io;
 
-	REQ_CHECK_WCT(req, 4);
-	REQ_TALLOC(io, union smb_seek);
+	SMBSRV_CHECK_WCT(req, 4);
+	SMBSRV_TALLOC_IO_PTR(io, union smb_seek);
+	SMBSRV_SETUP_NTVFS_REQUEST(reply_lseek_send, NTVFS_ASYNC_STATE_MAY_ASYNC);
 
 	io->lseek.in.file.fnum	= req_fnum(req, req->in.vwv,  VWV(0));
 	io->lseek.in.mode	= SVAL(req->in.vwv,  VWV(1));
 	io->lseek.in.offset	= IVALS(req->in.vwv, VWV(2));
 
-	req->async_states->state |= NTVFS_ASYNC_STATE_MAY_ASYNC;
-	req->async_states->send_fn = reply_lseek_send;
-	req->async_states->private_data = io;
-	
-	/* call backend */
-	req->async_states->status = ntvfs_seek(req, io);
-
-	REQ_ASYNC_TAIL;
+	SMBSRV_CALL_NTVFS_BACKEND(ntvfs_seek(req->ntvfs, io));
 }
 
 /****************************************************************************
@@ -1182,18 +1071,13 @@ void smbsrv_reply_flush(struct smbsrv_request *req)
 	union smb_flush *io;
 
 	/* parse request */
-	REQ_CHECK_WCT(req, 1);
-	REQ_TALLOC(io, union smb_flush);
+	SMBSRV_CHECK_WCT(req, 1);
+	SMBSRV_TALLOC_IO_PTR(io, union smb_flush);
+	SMBSRV_SETUP_NTVFS_REQUEST(reply_simple_send, NTVFS_ASYNC_STATE_MAY_ASYNC);
 
 	io->flush.in.file.fnum = req_fnum(req, req->in.vwv,  VWV(0));
 
-	req->async_states->state |= NTVFS_ASYNC_STATE_MAY_ASYNC;
-	req->async_states->send_fn = reply_simple_send;
-
-	/* call backend */
-	req->async_states->status = ntvfs_flush(req, io);
-	
-	REQ_ASYNC_TAIL;
+	SMBSRV_CALL_NTVFS_BACKEND(ntvfs_flush(req->ntvfs, io));
 }
 
 
@@ -1204,14 +1088,15 @@ void smbsrv_reply_exit(struct smbsrv_request *req)
 {
 	NTSTATUS status;
 	struct smbsrv_tcon *tcon;
-	REQ_CHECK_WCT(req, 0);
+	SMBSRV_CHECK_WCT(req, 0);
 
 	for (tcon=req->smb_conn->smb_tcons.list;tcon;tcon=tcon->next) {
 		req->tcon = tcon;
-req->ctx = req->tcon->ntvfs;
-		status = ntvfs_exit(req);
+		SMBSRV_SETUP_NTVFS_REQUEST(NULL,0);
+		status = ntvfs_exit(req->ntvfs);
+		talloc_free(req->ntvfs);
+		req->ntvfs = NULL;
 		req->tcon = NULL;
-req->ctx = NULL;
 		if (!NT_STATUS_IS_OK(status)) {
 			smbsrv_send_error(req, status);
 			return;
@@ -1233,32 +1118,27 @@ void smbsrv_reply_close(struct smbsrv_request *req)
 	union smb_close *io;
 
 	/* parse request */
-	REQ_CHECK_WCT(req, 3);
-	REQ_TALLOC(io, union smb_close);
+	SMBSRV_CHECK_WCT(req, 3);
+	SMBSRV_TALLOC_IO_PTR(io, union smb_close);
+	SMBSRV_SETUP_NTVFS_REQUEST(reply_simple_send, NTVFS_ASYNC_STATE_MAY_ASYNC);
 
 	io->close.level = RAW_CLOSE_CLOSE;
 	io->close.in.file.fnum  = req_fnum(req, req->in.vwv,  VWV(0));
 	io->close.in.write_time = srv_pull_dos_date3(req->smb_conn, req->in.vwv + VWV(1));
 
-	req->async_states->state |= NTVFS_ASYNC_STATE_MAY_ASYNC;
-	req->async_states->send_fn = reply_simple_send;
-
-	/* call backend */
-	req->async_states->status = ntvfs_close(req, io);
-
-	REQ_ASYNC_TAIL;
+	SMBSRV_CALL_NTVFS_BACKEND(ntvfs_close(req->ntvfs, io));
 }
-
 
 
 /****************************************************************************
  Reply to a writeclose (async reply)
 ****************************************************************************/
-static void reply_writeclose_send(struct smbsrv_request *req)
+static void reply_writeclose_send(struct ntvfs_request *ntvfs)
 {
-	union smb_write *io = req->async_states->private_data;
+	struct smbsrv_request *req;
+	union smb_write *io;
 
-	CHECK_ASYNC_STATUS;
+	SMBSRV_CHECK_ASYNC_STATUS(io, union smb_write);
 
 	/* construct reply */
 	smbsrv_setup_reply(req, 1, 0);
@@ -1277,10 +1157,11 @@ void smbsrv_reply_writeclose(struct smbsrv_request *req)
 
 	/* this one is pretty weird - the wct can be 6 or 12 */
 	if (req->in.wct != 12) {
-		REQ_CHECK_WCT(req, 6);
+		SMBSRV_CHECK_WCT(req, 6);
 	}
 
-	REQ_TALLOC(io, union smb_write);
+	SMBSRV_TALLOC_IO_PTR(io, union smb_write);
+	SMBSRV_SETUP_NTVFS_REQUEST(reply_writeclose_send, NTVFS_ASYNC_STATE_MAY_ASYNC);
 
 	io->writeclose.level = RAW_WRITE_WRITECLOSE;
 	io->writeclose.in.file.fnum = req_fnum(req, req->in.vwv, VWV(0));
@@ -1295,14 +1176,7 @@ void smbsrv_reply_writeclose(struct smbsrv_request *req)
 		return;
 	}
 
-	req->async_states->state |= NTVFS_ASYNC_STATE_MAY_ASYNC;
-	req->async_states->send_fn = reply_writeclose_send;
-	req->async_states->private_data = io;
-
-	/* call backend */
-	req->async_states->status = ntvfs_write(req, io);
-
-	REQ_ASYNC_TAIL;
+	SMBSRV_CALL_NTVFS_BACKEND(ntvfs_write(req->ntvfs, io));
 }
 
 /****************************************************************************
@@ -1313,21 +1187,16 @@ void smbsrv_reply_lock(struct smbsrv_request *req)
 	union smb_lock *lck;
 
 	/* parse request */
-	REQ_CHECK_WCT(req, 5);
-	REQ_TALLOC(lck, union smb_lock);
+	SMBSRV_CHECK_WCT(req, 5);
+	SMBSRV_TALLOC_IO_PTR(lck, union smb_lock);
+	SMBSRV_SETUP_NTVFS_REQUEST(reply_simple_send, NTVFS_ASYNC_STATE_MAY_ASYNC);
 
 	lck->lock.level		= RAW_LOCK_LOCK;
 	lck->lock.in.file.fnum	= req_fnum(req, req->in.vwv, VWV(0));
 	lck->lock.in.count	= IVAL(req->in.vwv, VWV(1));
 	lck->lock.in.offset	= IVAL(req->in.vwv, VWV(3));
 
-	req->async_states->state |= NTVFS_ASYNC_STATE_MAY_ASYNC;
-	req->async_states->send_fn = reply_simple_send;
-
-	/* call backend */
-	req->async_states->status = ntvfs_lock(req, lck);
-
-	REQ_ASYNC_TAIL;
+	SMBSRV_CALL_NTVFS_BACKEND(ntvfs_lock(req->ntvfs, lck));
 }
 
 
@@ -1339,21 +1208,16 @@ void smbsrv_reply_unlock(struct smbsrv_request *req)
 	union smb_lock *lck;
 
 	/* parse request */
-	REQ_CHECK_WCT(req, 5);
-	REQ_TALLOC(lck, union smb_lock);
+	SMBSRV_CHECK_WCT(req, 5);
+	SMBSRV_TALLOC_IO_PTR(lck, union smb_lock);
+	SMBSRV_SETUP_NTVFS_REQUEST(reply_simple_send, NTVFS_ASYNC_STATE_MAY_ASYNC);
 
 	lck->unlock.level		= RAW_LOCK_UNLOCK;
 	lck->unlock.in.file.fnum	= req_fnum(req, req->in.vwv, VWV(0));
 	lck->unlock.in.count 		= IVAL(req->in.vwv, VWV(1));
 	lck->unlock.in.offset		= IVAL(req->in.vwv, VWV(3));
 
-	req->async_states->state |= NTVFS_ASYNC_STATE_MAY_ASYNC;
-	req->async_states->send_fn = reply_simple_send;
-
-	/* call backend */
-	req->async_states->status = ntvfs_lock(req, lck);
-
-	REQ_ASYNC_TAIL;
+	SMBSRV_CALL_NTVFS_BACKEND(ntvfs_lock(req->ntvfs, lck));
 }
 
 
@@ -1362,9 +1226,10 @@ void smbsrv_reply_unlock(struct smbsrv_request *req)
 ****************************************************************************/
 void smbsrv_reply_tdis(struct smbsrv_request *req)
 {
-	REQ_CHECK_WCT(req, 0);
+	SMBSRV_CHECK_WCT(req, 0);
 
 	talloc_free(req->tcon);
+	req->tcon = NULL;
 
 	/* construct reply */
 	smbsrv_setup_reply(req, 0, 0);
@@ -1382,7 +1247,7 @@ void smbsrv_reply_echo(struct smbsrv_request *req)
 	uint16_t count;
 	int i;
 
-	REQ_CHECK_WCT(req, 0);
+	SMBSRV_CHECK_WCT(req, 0);
 
 	count = SVAL(req->in.vwv, VWV(0));
 
@@ -1409,11 +1274,12 @@ void smbsrv_reply_echo(struct smbsrv_request *req)
 /****************************************************************************
  Reply to a printopen (async reply)
 ****************************************************************************/
-static void reply_printopen_send(struct smbsrv_request *req)
+static void reply_printopen_send(struct ntvfs_request *ntvfs)
 {
-	union smb_open *oi = req->async_states->private_data;
+	struct smbsrv_request *req;
+	union smb_open *oi;
 
-	CHECK_ASYNC_STATUS;
+	SMBSRV_CHECK_ASYNC_STATUS(oi, union smb_open);
 
 	/* construct reply */
 	smbsrv_setup_reply(req, 1, 0);
@@ -1431,8 +1297,9 @@ void smbsrv_reply_printopen(struct smbsrv_request *req)
 	union smb_open *oi;
 
 	/* parse request */
-	REQ_CHECK_WCT(req, 2);
-	REQ_TALLOC(oi, union smb_open);
+	SMBSRV_CHECK_WCT(req, 2);
+	SMBSRV_TALLOC_IO_PTR(oi, union smb_open);
+	SMBSRV_SETUP_NTVFS_REQUEST(reply_printopen_send, NTVFS_ASYNC_STATE_MAY_ASYNC);
 
 	oi->splopen.level = RAW_OPEN_SPLOPEN;
 	oi->splopen.in.setup_length = SVAL(req->in.vwv, VWV(0));
@@ -1440,14 +1307,7 @@ void smbsrv_reply_printopen(struct smbsrv_request *req)
 
 	req_pull_ascii4(req, &oi->splopen.in.ident, req->in.data, STR_TERMINATE);
 
-	req->async_states->state |= NTVFS_ASYNC_STATE_MAY_ASYNC;
-	req->async_states->send_fn = reply_printopen_send;
-	req->async_states->private_data = oi;
-
-	/* call backend */
-	req->async_states->status = ntvfs_open(req, oi);
-
-	REQ_ASYNC_TAIL;
+	SMBSRV_CALL_NTVFS_BACKEND(ntvfs_open(req->ntvfs, oi));
 }
 
 /****************************************************************************
@@ -1458,31 +1318,27 @@ void smbsrv_reply_printclose(struct smbsrv_request *req)
 	union smb_close *io;
 
 	/* parse request */
-	REQ_CHECK_WCT(req, 3);
-	REQ_TALLOC(io, union smb_close);
+	SMBSRV_CHECK_WCT(req, 3);
+	SMBSRV_TALLOC_IO_PTR(io, union smb_close);
+	SMBSRV_SETUP_NTVFS_REQUEST(reply_simple_send, NTVFS_ASYNC_STATE_MAY_ASYNC);
 
 	io->splclose.level = RAW_CLOSE_SPLCLOSE;
 	io->splclose.in.file.fnum = req_fnum(req, req->in.vwv,  VWV(0));
 
-	req->async_states->state |= NTVFS_ASYNC_STATE_MAY_ASYNC;
-	req->async_states->send_fn = reply_simple_send;
-
-	/* call backend */
-	req->async_states->status = ntvfs_close(req, io);
-
-	REQ_ASYNC_TAIL;
+	SMBSRV_CALL_NTVFS_BACKEND(ntvfs_close(req->ntvfs, io));
 }
 
 /****************************************************************************
  Reply to a printqueue.
 ****************************************************************************/
-static void reply_printqueue_send(struct smbsrv_request *req)
+static void reply_printqueue_send(struct ntvfs_request *ntvfs)
 {
-	union smb_lpq *lpq = req->async_states->private_data;
+	struct smbsrv_request *req;
+	union smb_lpq *lpq;
 	int i, maxcount;
-	const uint_t el_size = 28;	
+	const uint_t el_size = 28;
 
-	CHECK_ASYNC_STATUS;
+	SMBSRV_CHECK_ASYNC_STATUS(lpq,union smb_lpq);
 
 	/* construct reply */
 	smbsrv_setup_reply(req, 2, 0);
@@ -1526,21 +1382,15 @@ void smbsrv_reply_printqueue(struct smbsrv_request *req)
 	union smb_lpq *lpq;
 
 	/* parse request */
-	REQ_CHECK_WCT(req, 2);
-	REQ_TALLOC(lpq, union smb_lpq);
+	SMBSRV_CHECK_WCT(req, 2);
+	SMBSRV_TALLOC_IO_PTR(lpq, union smb_lpq);
+	SMBSRV_SETUP_NTVFS_REQUEST(reply_printqueue_send, NTVFS_ASYNC_STATE_MAY_ASYNC);
 
 	lpq->retq.level = RAW_LPQ_RETQ;
 	lpq->retq.in.maxcount = SVAL(req->in.vwv,  VWV(0));
 	lpq->retq.in.startidx = SVAL(req->in.vwv,  VWV(1));
 
-	req->async_states->state |= NTVFS_ASYNC_STATE_MAY_ASYNC;
-	req->async_states->send_fn = reply_printqueue_send;
-	req->async_states->private_data = lpq;
-
-	/* call backend */
-	req->async_states->status = ntvfs_lpq(req, lpq);
-
-	REQ_ASYNC_TAIL;
+	SMBSRV_CALL_NTVFS_BACKEND(ntvfs_lpq(req->ntvfs, lpq));
 }
 
 
@@ -1552,8 +1402,9 @@ void smbsrv_reply_printwrite(struct smbsrv_request *req)
 	union smb_write *io;
 
 	/* parse request */
-	REQ_CHECK_WCT(req, 1);
-	REQ_TALLOC(io, union smb_write);
+	SMBSRV_CHECK_WCT(req, 1);
+	SMBSRV_TALLOC_IO_PTR(io, union smb_write);
+	SMBSRV_SETUP_NTVFS_REQUEST(reply_simple_send, NTVFS_ASYNC_STATE_MAY_ASYNC);
 
 	io->splwrite.level = RAW_WRITE_SPLWRITE;
 
@@ -1572,13 +1423,7 @@ void smbsrv_reply_printwrite(struct smbsrv_request *req)
 		return;
 	}
 
-	req->async_states->state |= NTVFS_ASYNC_STATE_MAY_ASYNC;
-	req->async_states->send_fn = reply_simple_send;
-
-	/* call backend */
-	req->async_states->status = ntvfs_write(req, io);
-
-	REQ_ASYNC_TAIL;
+	SMBSRV_CALL_NTVFS_BACKEND(ntvfs_write(req->ntvfs, io));
 }
 
 
@@ -1590,19 +1435,14 @@ void smbsrv_reply_mkdir(struct smbsrv_request *req)
 	union smb_mkdir *io;
 
 	/* parse the request */
-	REQ_CHECK_WCT(req, 0);
-	REQ_TALLOC(io, union smb_mkdir);
+	SMBSRV_CHECK_WCT(req, 0);
+	SMBSRV_TALLOC_IO_PTR(io, union smb_mkdir);
+	SMBSRV_SETUP_NTVFS_REQUEST(reply_simple_send, NTVFS_ASYNC_STATE_MAY_ASYNC);
 
 	io->generic.level = RAW_MKDIR_MKDIR;
 	req_pull_ascii4(req, &io->mkdir.in.path, req->in.data, STR_TERMINATE);
 
-	req->async_states->state |= NTVFS_ASYNC_STATE_MAY_ASYNC;
-	req->async_states->send_fn = reply_simple_send;
-
-	/* call backend */
-	req->async_states->status = ntvfs_mkdir(req, io);
-
-	REQ_ASYNC_TAIL;
+	SMBSRV_CALL_NTVFS_BACKEND(ntvfs_mkdir(req->ntvfs, io));
 }
 
 
@@ -1614,18 +1454,13 @@ void smbsrv_reply_rmdir(struct smbsrv_request *req)
 	struct smb_rmdir *io;
  
 	/* parse the request */
-	REQ_CHECK_WCT(req, 0);
-	REQ_TALLOC(io, struct smb_rmdir);
+	SMBSRV_CHECK_WCT(req, 0);
+	SMBSRV_TALLOC_IO_PTR(io, struct smb_rmdir);
+	SMBSRV_SETUP_NTVFS_REQUEST(reply_simple_send, NTVFS_ASYNC_STATE_MAY_ASYNC);
 
 	req_pull_ascii4(req, &io->in.path, req->in.data, STR_TERMINATE);
 
-	req->async_states->state |= NTVFS_ASYNC_STATE_MAY_ASYNC;
-	req->async_states->send_fn = reply_simple_send;
-
-	/* call backend */
-	req->async_states->status = ntvfs_rmdir(req, io);
-
-	REQ_ASYNC_TAIL;
+	SMBSRV_CALL_NTVFS_BACKEND(ntvfs_rmdir(req->ntvfs, io));
 }
 
 
@@ -1638,8 +1473,9 @@ void smbsrv_reply_mv(struct smbsrv_request *req)
 	uint8_t *p;
  
 	/* parse the request */
-	REQ_CHECK_WCT(req, 1);
-	REQ_TALLOC(io, union smb_rename);
+	SMBSRV_CHECK_WCT(req, 1);
+	SMBSRV_TALLOC_IO_PTR(io, union smb_rename);
+	SMBSRV_SETUP_NTVFS_REQUEST(reply_simple_send, NTVFS_ASYNC_STATE_MAY_ASYNC);
 
 	io->generic.level = RAW_RENAME_RENAME;
 	io->rename.in.attrib = SVAL(req->in.vwv, VWV(0));
@@ -1653,13 +1489,7 @@ void smbsrv_reply_mv(struct smbsrv_request *req)
 		return;
 	}
 
-	req->async_states->state |= NTVFS_ASYNC_STATE_MAY_ASYNC;
-	req->async_states->send_fn = reply_simple_send;
-
-	/* call backend */
-	req->async_states->status = ntvfs_rename(req, io);
-
-	REQ_ASYNC_TAIL;
+	SMBSRV_CALL_NTVFS_BACKEND(ntvfs_rename(req->ntvfs, io));
 }
 
 
@@ -1672,8 +1502,9 @@ void smbsrv_reply_ntrename(struct smbsrv_request *req)
 	uint8_t *p;
  
 	/* parse the request */
-	REQ_CHECK_WCT(req, 4);
-	REQ_TALLOC(io, union smb_rename);
+	SMBSRV_CHECK_WCT(req, 4);
+	SMBSRV_TALLOC_IO_PTR(io, union smb_rename);
+	SMBSRV_SETUP_NTVFS_REQUEST(reply_simple_send, NTVFS_ASYNC_STATE_MAY_ASYNC);
 
 	io->generic.level = RAW_RENAME_NTRENAME;
 	io->ntrename.in.attrib  = SVAL(req->in.vwv, VWV(0));
@@ -1689,23 +1520,18 @@ void smbsrv_reply_ntrename(struct smbsrv_request *req)
 		return;
 	}
 
-	req->async_states->state |= NTVFS_ASYNC_STATE_MAY_ASYNC;
-	req->async_states->send_fn = reply_simple_send;
-
-	/* call backend */
-	req->async_states->status = ntvfs_rename(req, io);
-
-	REQ_ASYNC_TAIL;
+	SMBSRV_CALL_NTVFS_BACKEND(ntvfs_rename(req->ntvfs, io));
 }
 
 /****************************************************************************
  Reply to a file copy (async reply)
 ****************************************************************************/
-static void reply_copy_send(struct smbsrv_request *req)
+static void reply_copy_send(struct ntvfs_request *ntvfs)
 {
-	struct smb_copy *cp = req->async_states->private_data;
+	struct smbsrv_request *req;
+	struct smb_copy *cp;
 
-	CHECK_ASYNC_STATUS;
+	SMBSRV_CHECK_ASYNC_STATUS(cp, struct smb_copy);
 
 	/* build the reply */
 	smbsrv_setup_reply(req, 1, 0);
@@ -1724,8 +1550,9 @@ void smbsrv_reply_copy(struct smbsrv_request *req)
 	uint8_t *p;
 
 	/* parse request */
-	REQ_CHECK_WCT(req, 3);
-	REQ_TALLOC(cp, struct smb_copy);
+	SMBSRV_CHECK_WCT(req, 3);
+	SMBSRV_TALLOC_IO_PTR(cp, struct smb_copy);
+	SMBSRV_SETUP_NTVFS_REQUEST(reply_copy_send, NTVFS_ASYNC_STATE_MAY_ASYNC);
 
 	cp->in.tid2  = SVAL(req->in.vwv, VWV(0));
 	cp->in.ofun  = SVAL(req->in.vwv, VWV(1));
@@ -1740,24 +1567,18 @@ void smbsrv_reply_copy(struct smbsrv_request *req)
 		return;
 	}
 
-	req->async_states->state |= NTVFS_ASYNC_STATE_MAY_ASYNC;
-	req->async_states->send_fn = reply_copy_send;
-	req->async_states->private_data = cp;
-
-	/* call backend */
-	req->async_states->status = ntvfs_copy(req, cp);
-
-	REQ_ASYNC_TAIL;
+	SMBSRV_CALL_NTVFS_BACKEND(ntvfs_copy(req->ntvfs, cp));
 }
 
 /****************************************************************************
  Reply to a lockingX request (async send)
 ****************************************************************************/
-static void reply_lockingX_send(struct smbsrv_request *req)
+static void reply_lockingX_send(struct ntvfs_request *ntvfs)
 {
-	union smb_lock *lck = req->async_states->private_data;
+	struct smbsrv_request *req;
+	union smb_lock *lck;
 
-	CHECK_ASYNC_STATUS;
+	SMBSRV_CHECK_ASYNC_STATUS(lck, union smb_lock);
 
 	/* if it was an oplock break ack then we only send a reply if
 	   there was an error */
@@ -1787,8 +1608,9 @@ void smbsrv_reply_lockingX(struct smbsrv_request *req)
 	uint8_t *p;
 
 	/* parse request */
-	REQ_CHECK_WCT(req, 8);
-	REQ_TALLOC(lck, union smb_lock);
+	SMBSRV_CHECK_WCT(req, 8);
+	SMBSRV_TALLOC_IO_PTR(lck, union smb_lock);
+	SMBSRV_SETUP_NTVFS_REQUEST(reply_lockingX_send, NTVFS_ASYNC_STATE_MAY_ASYNC);
 
 	lck->lockx.level = RAW_LOCK_LOCKX;
 	lck->lockx.in.file.fnum = req_fnum(req, req->in.vwv, VWV(2));
@@ -1846,14 +1668,7 @@ void smbsrv_reply_lockingX(struct smbsrv_request *req)
 		p += lck_size;
 	}
 
-	req->async_states->state |= NTVFS_ASYNC_STATE_MAY_ASYNC;
-	req->async_states->send_fn = reply_lockingX_send;
-	req->async_states->private_data = lck;
-
-	/* call backend */
-	req->async_states->status = ntvfs_lock(req, lck);
-
-	REQ_ASYNC_TAIL;
+	SMBSRV_CALL_NTVFS_BACKEND(ntvfs_lock(req->ntvfs, lck));
 }
 
 /****************************************************************************
@@ -1874,8 +1689,9 @@ void smbsrv_reply_setattrE(struct smbsrv_request *req)
 	union smb_setfileinfo *info;
 
 	/* parse request */
-	REQ_CHECK_WCT(req, 7);
-	REQ_TALLOC(info, union smb_setfileinfo);
+	SMBSRV_CHECK_WCT(req, 7);
+	SMBSRV_TALLOC_IO_PTR(info, union smb_setfileinfo);
+	SMBSRV_SETUP_NTVFS_REQUEST(reply_simple_send, NTVFS_ASYNC_STATE_MAY_ASYNC);
 
 	info->setattre.level = RAW_SFILEINFO_SETATTRE;
 	info->setattre.in.file.fnum   = req_fnum(req, req->in.vwv,    VWV(0));
@@ -1883,13 +1699,7 @@ void smbsrv_reply_setattrE(struct smbsrv_request *req)
 	info->setattre.in.access_time = srv_pull_dos_date2(req->smb_conn, req->in.vwv + VWV(3));
 	info->setattre.in.write_time  = srv_pull_dos_date2(req->smb_conn, req->in.vwv + VWV(5));
 
-	req->async_states->state |= NTVFS_ASYNC_STATE_MAY_ASYNC;
-	req->async_states->send_fn = reply_simple_send;
-
-	/* call backend */
-	req->async_states->status = ntvfs_setfileinfo(req, info);
-
-	REQ_ASYNC_TAIL;
+	SMBSRV_CALL_NTVFS_BACKEND(ntvfs_setfileinfo(req->ntvfs, info));
 }
 
 
@@ -1915,11 +1725,12 @@ void smbsrv_reply_writebs(struct smbsrv_request *req)
 /****************************************************************************
  Reply to a SMBgetattrE (async reply)
 ****************************************************************************/
-static void reply_getattrE_send(struct smbsrv_request *req)
+static void reply_getattrE_send(struct ntvfs_request *ntvfs)
 {
-	union smb_fileinfo *info = req->async_states->private_data;
+	struct smbsrv_request *req;
+	union smb_fileinfo *info;
 
-	CHECK_ASYNC_STATUS;
+	SMBSRV_CHECK_ASYNC_STATUS(info, union smb_fileinfo);
 
 	/* setup reply */
 	smbsrv_setup_reply(req, 11, 0);
@@ -1942,20 +1753,14 @@ void smbsrv_reply_getattrE(struct smbsrv_request *req)
 	union smb_fileinfo *info;
 
 	/* parse request */
-	REQ_CHECK_WCT(req, 1);
-	REQ_TALLOC(info, union smb_fileinfo);
+	SMBSRV_CHECK_WCT(req, 1);
+	SMBSRV_TALLOC_IO_PTR(info, union smb_fileinfo);
+	SMBSRV_SETUP_NTVFS_REQUEST(reply_getattrE_send, NTVFS_ASYNC_STATE_MAY_ASYNC);
 
 	info->getattr.level = RAW_FILEINFO_GETATTRE;
 	info->getattr.in.file.fnum = req_fnum(req, req->in.vwv, VWV(0));
 
-	req->async_states->state |= NTVFS_ASYNC_STATE_MAY_ASYNC;
-	req->async_states->send_fn = reply_getattrE_send;
-	req->async_states->private_data = info;
-
-	/* call backend */
-	req->async_states->status = ntvfs_qfileinfo(req, info);
-
-	REQ_ASYNC_TAIL;
+	SMBSRV_CALL_NTVFS_BACKEND(ntvfs_qfileinfo(req->ntvfs, info));
 }
 
 
@@ -2186,10 +1991,11 @@ void smbsrv_reply_ulogoffX(struct smbsrv_request *req)
 	   open by this user on all open tree connects */
 	for (tcon=req->smb_conn->smb_tcons.list;tcon;tcon=tcon->next) {
 		req->tcon = tcon;
-		req->ctx = tcon->ntvfs;
-		status = ntvfs_logoff(req);
+		SMBSRV_SETUP_NTVFS_REQUEST(NULL,0);
+		status = ntvfs_logoff(req->ntvfs);
+		talloc_free(req->ntvfs);
+		req->ntvfs = NULL;
 		req->tcon = NULL;
-		req->ctx = NULL;
 		if (!NT_STATUS_IS_OK(status)) {
 			smbsrv_send_error(req, status);
 			return;
@@ -2208,34 +2014,22 @@ void smbsrv_reply_ulogoffX(struct smbsrv_request *req)
 	smbsrv_chain_reply(req);
 }
 
-
 /****************************************************************************
  Reply to an SMBfindclose request
 ****************************************************************************/
 void smbsrv_reply_findclose(struct smbsrv_request *req)
 {
-	NTSTATUS status;
-	union smb_search_close io;
-
-	io.findclose.level = RAW_FINDCLOSE_FINDCLOSE;
+	union smb_search_close *io;
 
 	/* parse request */
-	REQ_CHECK_WCT(req, 1);
+	SMBSRV_CHECK_WCT(req, 1);
+	SMBSRV_TALLOC_IO_PTR(io, union smb_search_close);
+	SMBSRV_SETUP_NTVFS_REQUEST(reply_simple_send, NTVFS_ASYNC_STATE_MAY_ASYNC);
 
-	io.findclose.in.handle  = SVAL(req->in.vwv, VWV(0));
-	
-	/* call backend */
-	status = ntvfs_search_close(req, &io);
+	io->findclose.level	= RAW_FINDCLOSE_FINDCLOSE;
+	io->findclose.in.handle	= SVAL(req->in.vwv, VWV(0));
 
-	if (!NT_STATUS_IS_OK(status)) {
-		smbsrv_send_error(req, status);
-		return;
-	}
-
-	/* construct reply */
-	smbsrv_setup_reply(req, 0, 0);
-
-	smbsrv_send_reply(req);	
+	SMBSRV_CALL_NTVFS_BACKEND(ntvfs_search_close(req->ntvfs, io));
 }
 
 /****************************************************************************
@@ -2250,11 +2044,12 @@ void smbsrv_reply_findnclose(struct smbsrv_request *req)
 /****************************************************************************
  Reply to an SMBntcreateX request (async send)
 ****************************************************************************/
-static void reply_ntcreate_and_X_send(struct smbsrv_request *req)
+static void reply_ntcreate_and_X_send(struct ntvfs_request *ntvfs)
 {
-	union smb_open *io = req->async_states->private_data;
+	struct smbsrv_request *req;
+	union smb_open *io;
 
-	CHECK_ASYNC_STATUS;
+	SMBSRV_CHECK_ASYNC_STATUS(io, union smb_open);
 
 	/* construct reply */
 	smbsrv_setup_reply(req, 34, 0);
@@ -2291,8 +2086,9 @@ void smbsrv_reply_ntcreate_and_X(struct smbsrv_request *req)
 	uint16_t fname_len;
 
 	/* parse the request */
-	REQ_CHECK_WCT(req, 24);
-	REQ_TALLOC(io, union smb_open);
+	SMBSRV_CHECK_WCT(req, 24);
+	SMBSRV_TALLOC_IO_PTR(io, union smb_open);
+	SMBSRV_SETUP_NTVFS_REQUEST(reply_ntcreate_and_X_send, NTVFS_ASYNC_STATE_MAY_ASYNC);
 
 	io->ntcreatex.level = RAW_OPEN_NTCREATEX;
 
@@ -2323,14 +2119,7 @@ void smbsrv_reply_ntcreate_and_X(struct smbsrv_request *req)
 		return;
 	}
 
-	req->async_states->state |= NTVFS_ASYNC_STATE_MAY_ASYNC;
-	req->async_states->send_fn = reply_ntcreate_and_X_send;
-	req->async_states->private_data = io;
-
-	/* call the backend */
-	req->async_states->status = ntvfs_open(req, io);
-
-	REQ_ASYNC_TAIL;
+	SMBSRV_CALL_NTVFS_BACKEND(ntvfs_open(req->ntvfs, io));
 }
 
 
@@ -2340,7 +2129,8 @@ void smbsrv_reply_ntcreate_and_X(struct smbsrv_request *req)
 void smbsrv_reply_ntcancel(struct smbsrv_request *req)
 {
 	/* NOTE: this request does not generate a reply */
-	ntvfs_cancel(req);
+	SMBSRV_SETUP_NTVFS_REQUEST(NULL,0);
+	ntvfs_cancel(req->ntvfs);
 	talloc_free(req);
 }
 

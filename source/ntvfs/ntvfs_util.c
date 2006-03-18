@@ -27,6 +27,43 @@
 #include "ntvfs/ntvfs.h"
 
 
+_PUBLIC_ struct ntvfs_request *ntvfs_request_create(struct ntvfs_context *ctx, TALLOC_CTX *mem_ctx,
+						    struct auth_session_info *session_info,
+						    uint16_t smbpid, uint16_t smbmid,
+						    struct timeval request_time,
+						    void *private_data,
+						    void (*send_fn)(struct ntvfs_request *),
+						    uint32_t state)
+{
+	struct ntvfs_request *req;
+	struct ntvfs_async_state *async;
+
+	req = talloc(mem_ctx, struct ntvfs_request);
+	if (!req) return NULL;
+	req->ctx			= ctx;
+	req->async_states		= NULL;
+	req->session_info		= session_info;
+	req->smbpid			= smbpid;
+	req->smbmid			= smbmid;
+	req->statistics.request_time	= request_time;
+
+	async = talloc(req, struct ntvfs_async_state);
+	if (!async) goto failed;
+
+	async->state		= state;
+	async->private_data	= private_data;
+	async->send_fn		= send_fn;
+	async->status		= NT_STATUS_INTERNAL_ERROR;
+	async->ntvfs		= NULL;
+
+	DLIST_ADD(req->async_states, async);
+
+	return req;
+
+failed:
+	return NULL;
+}
+
 _PUBLIC_ NTSTATUS ntvfs_async_state_push(struct ntvfs_module_context *ntvfs,
 					 struct ntvfs_request *req,
 					 void *private_data,
@@ -35,9 +72,7 @@ _PUBLIC_ NTSTATUS ntvfs_async_state_push(struct ntvfs_module_context *ntvfs,
 	struct ntvfs_async_state *async;
 
 	async = talloc(req, struct ntvfs_async_state);
-	if (!async) {
-		return NT_STATUS_NO_MEMORY;
-	}
+	NT_STATUS_HAVE_NO_MEMORY(async);
 
 	async->state		= req->async_states->state;
 	async->private_data	= private_data;

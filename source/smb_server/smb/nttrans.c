@@ -188,7 +188,7 @@ static NTSTATUS nttrans_create(struct smbsrv_request *req,
 	op->send_fn = nttrans_create_send;
 	op->op_info = io;
 
-	return ntvfs_open(req, io);
+	return ntvfs_open(req->ntvfs, io);
 }
 
 
@@ -241,7 +241,7 @@ static NTSTATUS nttrans_query_sec_desc(struct smbsrv_request *req,
 	op->op_info = io;
 	op->send_fn = nttrans_query_sec_desc_send;
 
-	return ntvfs_qfileinfo(req, io);
+	return ntvfs_qfileinfo(req->ntvfs, io);
 }
 
 
@@ -280,7 +280,7 @@ static NTSTATUS nttrans_set_sec_desc(struct smbsrv_request *req,
 	trans->out.params      = data_blob(NULL, 0);
 	trans->out.data        = data_blob(NULL, 0);
 
-	return ntvfs_setfileinfo(req, io);
+	return ntvfs_setfileinfo(req->ntvfs, io);
 }
 
 
@@ -333,7 +333,7 @@ static NTSTATUS nttrans_ioctl(struct smbsrv_request *req,
 
 	trans->out.setup[0] = 0;
 	
-	return ntvfs_ioctl(req, nt);
+	return ntvfs_ioctl(req->ntvfs, nt);
 }
 
 
@@ -412,7 +412,7 @@ static NTSTATUS nttrans_notify_change(struct smbsrv_request *req,
 	op->op_info = info;
 	op->send_fn = nttrans_notify_change_send;
 	
-	return ntvfs_notify(req, info);
+	return ntvfs_notify(req->ntvfs, info);
 }
 
 /*
@@ -442,19 +442,16 @@ static NTSTATUS nttrans_backend(struct smbsrv_request *req,
 }
 
 
-static void reply_nttrans_send(struct smbsrv_request *req)
+static void reply_nttrans_send(struct ntvfs_request *ntvfs)
 {
+	struct smbsrv_request *req;
 	uint16_t params_left, data_left;
 	uint8_t *params, *data;
 	struct smb_nttrans *trans;
 	struct nttrans_op *op;
 
-	if (!NT_STATUS_IS_OK(req->async_states->status)) {
-		smbsrv_send_error(req, req->async_states->status);
-		return;
-	}
+	SMBSRV_CHECK_ASYNC_STATUS(op, struct nttrans_op);
 
-	op = talloc_get_type(req->async_states->private_data, struct nttrans_op);
 	trans = op->trans;
 
 	/* if this function needs work to form the nttrans reply buffer, then
@@ -575,11 +572,8 @@ void smbsrv_reply_nttrans(struct smbsrv_request *req)
 		return;
 	}
 
-	op = talloc(req, struct nttrans_op);
-	if (op == NULL) {
-		smbsrv_send_error(req, NT_STATUS_NO_MEMORY);
-		return;
-	}
+	SMBSRV_TALLOC_IO_PTR(op, struct nttrans_op);
+	SMBSRV_SETUP_NTVFS_REQUEST(reply_nttrans_send, NTVFS_ASYNC_STATE_MAY_ASYNC);
 
 	trans = talloc(op, struct smb_nttrans);
 	if (trans == NULL) {
@@ -631,17 +625,7 @@ void smbsrv_reply_nttrans(struct smbsrv_request *req)
 		return;
 	}
 
-	req->async_states->state |= NTVFS_ASYNC_STATE_MAY_ASYNC;
-	req->async_states->send_fn = reply_nttrans_send;
-	req->async_states->private_data = op;
-
-	/* its a full request, give it to the backend */
-	req->async_states->status = nttrans_backend(req, op);
-
-	/* if the backend replied synchronously, then send now */
-	if (!(req->async_states->state & NTVFS_ASYNC_STATE_ASYNC)) {
-		req->async_states->send_fn(req);
-	}
+	SMBSRV_CALL_NTVFS_BACKEND(nttrans_backend(req, op));
 }
 
 

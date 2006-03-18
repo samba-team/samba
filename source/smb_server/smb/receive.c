@@ -552,14 +552,6 @@ static void switch_message(int type, struct smbsrv_request *req)
 		return;
 	}
 
-/* TODO: remove this stuff */
-req->smbpid = SVAL(req->in.hdr, HDR_PID);
-req->smbmid = SVAL(req->in.hdr, HDR_MID);
-req->statistics.request_time = req->request_time;
-if (req->session) req->session_info = req->session->session_info;
-if (req->tcon) req->ctx = req->tcon->ntvfs;
-/* TODO: end */
-
 	smb_messages[type].fn(req);
 }
 
@@ -620,9 +612,11 @@ void smbsrv_chain_reply(struct smbsrv_request *req)
 	SSVAL(req->out.vwv, VWV(0), chain_cmd);
 	SSVAL(req->out.vwv, VWV(1), req->out.size - NBT_HDR_SIZE);
 
-	/* the current request in the chain might have used an async reply,
-	   but that doesn't mean the next element needs to */
-	ZERO_STRUCTP(req->async_states);
+	/* cleanup somestuff for the next request */
+	talloc_free(req->ntvfs);
+	req->ntvfs = NULL;
+	talloc_free(req->io_ptr);
+	req->io_ptr = NULL;
 
 	switch_message(chain_cmd, req);
 	return;

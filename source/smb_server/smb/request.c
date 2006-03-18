@@ -48,13 +48,6 @@ struct smbsrv_request *smbsrv_init_request(struct smbsrv_connection *smb_conn)
 	/* setup the request context */
 	req->smb_conn = smb_conn;
 
-	req->async_states = talloc(req, struct ntvfs_async_state);
-	if (!req->async_states) {
-		talloc_free(req);
-		return NULL;
-	}
-	req->async_states->state = 0;
-
 	return req;
 }
 
@@ -259,7 +252,7 @@ void req_grow_data(struct smbsrv_request *req, uint_t new_size)
 {
 	int delta;
 
-	if (!(req->control_flags & REQ_CONTROL_LARGE) && new_size > req_max_data(req)) {
+	if (!(req->control_flags & SMBSRV_REQ_CONTROL_LARGE) && new_size > req_max_data(req)) {
 		smb_panic("reply buffer too large!");
 	}
 

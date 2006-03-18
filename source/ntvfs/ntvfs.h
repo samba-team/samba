@@ -24,8 +24,7 @@
 #define NTVFS_INTERFACE_VERSION 0
 
 struct ntvfs_module_context;
-
-#define ntvfs_request smbsrv_request
+struct ntvfs_request;
 
 /* each backend has to be one one of the following 3 basic types. In
  * earlier versions of Samba backends needed to handle all types, now
@@ -229,6 +228,29 @@ struct ntvfs_async_state {
 
 	/* the passthru module's per session private data */
 	struct ntvfs_module_context *ntvfs;
+};
+
+struct ntvfs_request {
+	/* the ntvfs_context this requests belongs to */
+	struct ntvfs_context *ctx;
+
+	/* ntvfs per request async states */
+	struct ntvfs_async_state *async_states;
+
+	/* the session_info, with security_token and maybe delegated credentials */
+	struct auth_session_info *session_info;
+
+	/* the smb pid is needed for locking contexts */
+	uint16_t smbpid;
+
+	/* the smb mid is needed for matching requests */
+	uint16_t smbmid;
+
+	/* some statictics for the management tools */
+	struct {
+		/* the system time when the request arrived */
+		struct timeval request_time;
+	} statistics;
 };
 
 /* this structure is used by backends to determine the size of some critical types */

@@ -27,36 +27,6 @@
 #include "ntvfs/ntvfs.h"
 
 
-/* check req->async.status and if not OK then send an error reply */
-#define CHECK_ASYNC_STATUS do { \
-	if (!NT_STATUS_IS_OK(req->async_states->status)) { \
-		smbsrv_send_error(req, req->async_states->status); \
-		return; \
-	}} while (0)
-	
-/* 
-   check if the backend wants to handle the request asynchronously.
-   if it wants it handled synchronously then call the send function
-   immediately
-*/
-#define REQ_ASYNC_TAIL do { \
-	if (!(req->async_states->state & NTVFS_ASYNC_STATE_ASYNC)) { \
-		req->async_states->send_fn(req); \
-	}} while (0)
-
-/* useful wrapper for talloc with NO_MEMORY reply */
-#define REQ_TALLOC(ptr, type) do { \
-	ptr = talloc(req, type); \
-	if (!ptr) { \
-		smbsrv_send_error(req, NT_STATUS_NO_MEMORY); \
-		return; \
-	}} while (0)
-
-#define CHECK_MIN_BLOB_SIZE(blob, size) do { \
-	if ((blob)->length < (size)) { \
-		return NT_STATUS_INFO_LENGTH_MISMATCH; \
-	}} while (0)
-
 /* a structure to encapsulate the state information about 
  * an in-progress search first/next operation */
 struct search_state {
@@ -106,13 +76,12 @@ static BOOL find_callback(void *private, union smb_search_data *file)
 /****************************************************************************
  Reply to a search first (async reply)
 ****************************************************************************/
-static void reply_search_first_send(struct smbsrv_request *req)
+static void reply_search_first_send(struct ntvfs_request *ntvfs)
 {
+	struct smbsrv_request *req;
 	union smb_search_first *sf;
-	
-	CHECK_ASYNC_STATUS;
 
-	sf = talloc_get_type(req->async_states->private_data, union smb_search_first);
+	SMBSRV_CHECK_ASYNC_STATUS(sf, union smb_search_first);
 
 	SSVAL(req->out.vwv, VWV(0), sf->search_first.out.count);
 
@@ -122,13 +91,12 @@ static void reply_search_first_send(struct smbsrv_request *req)
 /****************************************************************************
  Reply to a search next (async reply)
 ****************************************************************************/
-static void reply_search_next_send(struct smbsrv_request *req)
+static void reply_search_next_send(struct ntvfs_request *ntvfs)
 {
+	struct smbsrv_request *req;
 	union smb_search_next *sn;
 	
-	CHECK_ASYNC_STATUS;
-
-	sn = talloc_get_type(req->async_states->private_data, union smb_search_next);
+	SMBSRV_CHECK_ASYNC_STATUS(sn, union smb_search_next);
 
 	SSVAL(req->out.vwv, VWV(0), sn->search_next.out.count);
 
@@ -159,8 +127,8 @@ void smbsrv_reply_search(struct smbsrv_request *req)
 		return;
 	}
 
-	REQ_TALLOC(sf, union smb_search_first);
-	
+	SMBSRV_TALLOC_IO_PTR(sf, union smb_search_first);
+
 	p = req->in.data;
 	p += req_pull_ascii4(req, &sf->search_first.in.pattern, 
 			     p, STR_TERMINATE);
@@ -181,7 +149,12 @@ void smbsrv_reply_search(struct smbsrv_request *req)
 	p += 3;
 	
 	/* setup state for callback */
-	REQ_TALLOC(state, struct search_state);
+	state = talloc(req, struct search_state);
+	if (!state) {
+		smbsrv_send_error(req, NT_STATUS_NO_MEMORY);
+		return;
+	}
+
 	state->req = req;
 	state->file = NULL;
 	state->last_entry_offset = 0;
@@ -202,7 +175,8 @@ void smbsrv_reply_search(struct smbsrv_request *req)
 		}
 
 		/* do a search next operation */
-		REQ_TALLOC(sn, union smb_search_next);
+		SMBSRV_TALLOC_IO_PTR(sn, union smb_search_next);
+		SMBSRV_SETUP_NTVFS_REQUEST(reply_search_next_send, NTVFS_ASYNC_STATE_MAY_ASYNC);
 
 		sn->search_next.in.id.reserved      = CVAL(p, 0);
 		memcpy(sn->search_next.in.id.name,    p+1, 11);
@@ -214,36 +188,30 @@ void smbsrv_reply_search(struct smbsrv_request *req)
 		sn->search_next.in.max_count     = SVAL(req->in.vwv, VWV(0));
 		sn->search_next.in.search_attrib = SVAL(req->in.vwv, VWV(1));
 
-		req->async_states->state |= NTVFS_ASYNC_STATE_MAY_ASYNC;
-		req->async_states->send_fn = reply_search_next_send;
-		req->async_states->private_data = sn;
-
 		/* call backend */
-		req->async_states->status = ntvfs_search_next(req, sn, state, find_callback);
+		SMBSRV_CALL_NTVFS_BACKEND(ntvfs_search_next(req->ntvfs, sn, state, find_callback));
 	} else {
+		SMBSRV_SETUP_NTVFS_REQUEST(reply_search_first_send, NTVFS_ASYNC_STATE_MAY_ASYNC);
+
 		/* do a search first operation */
 		sf->search_first.level = level;
 		sf->search_first.in.search_attrib = SVAL(req->in.vwv, VWV(1));
 		sf->search_first.in.max_count     = SVAL(req->in.vwv, VWV(0));
 
-		req->async_states->state |= NTVFS_ASYNC_STATE_MAY_ASYNC;
-		req->async_states->send_fn = reply_search_first_send;
-		req->async_states->private_data = sf;
-		
-		req->async_states->status = ntvfs_search_first(req, sf, state, find_callback);
+		SMBSRV_CALL_NTVFS_BACKEND(ntvfs_search_first(req->ntvfs, sf, state, find_callback));
 	}
-
-	REQ_ASYNC_TAIL;
 }
 
 
 /****************************************************************************
  Reply to a fclose (async reply)
 ****************************************************************************/
-static void reply_fclose_send(struct smbsrv_request *req)
+static void reply_fclose_send(struct ntvfs_request *ntvfs)
 {
-	CHECK_ASYNC_STATUS;
-	
+	struct smbsrv_request *req;
+
+	SMBSRV_CHECK_ASYNC_STATUS_SIMPLE;
+
 	/* construct reply */
 	smbsrv_setup_reply(req, 1, 0);
 
@@ -263,14 +231,15 @@ void smbsrv_reply_fclose(struct smbsrv_request *req)
 	uint8_t *p;
 	const char *pattern;
 
-	REQ_TALLOC(sc, union smb_search_close);
-
 	/* parse request */
 	if (req->in.wct != 2) {
 		smbsrv_send_error(req, NT_STATUS_INVALID_PARAMETER);
 		return;
 	}
-	
+
+	SMBSRV_TALLOC_IO_PTR(sc, union smb_search_close);
+	SMBSRV_SETUP_NTVFS_REQUEST(reply_fclose_send, NTVFS_ASYNC_STATE_MAY_ASYNC);
+
 	p = req->in.data;
 	p += req_pull_ascii4(req, &pattern, p, STR_TERMINATE);
 	if (pattern && *pattern) {
@@ -308,13 +277,6 @@ void smbsrv_reply_fclose(struct smbsrv_request *req)
 	sc->fclose.in.id.server_cookie = IVAL(p, 13);
 	sc->fclose.in.id.client_cookie = IVAL(p, 17);
 
-	/* do a search close operation */
-	req->async_states->state |= NTVFS_ASYNC_STATE_MAY_ASYNC;
-	req->async_states->send_fn = reply_fclose_send;
-	req->async_states->private_data = sc;
+	SMBSRV_CALL_NTVFS_BACKEND(ntvfs_search_close(req->ntvfs, sc));
 
-	/* call backend */
-	req->async_states->status = ntvfs_search_close(req, sc);
-
-	REQ_ASYNC_TAIL;
 }
