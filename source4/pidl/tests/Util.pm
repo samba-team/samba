@@ -15,6 +15,7 @@ use Parse::Pidl::IDL;
 use Parse::Pidl::NDR;
 use Parse::Pidl::Samba4::NDR::Parser;
 use Parse::Pidl::Samba4::Header;
+use Parse::Pidl::Samba4 qw(is_intree);
 
 my $sanecc = 0;
 
@@ -30,17 +31,16 @@ sub test_samba4_ndr($$$)
 	ok(defined($header), "($name) generate generic header");
 	my $pndr = Parse::Pidl::NDR::Parse($pidl);
 	ok(defined($pndr), "($name) generate NDR tree");
-	my ($ndrheader,$ndrparser) = Parse::Pidl::Samba4::NDR::Parser::Parse($pndr, "foo");
+	my ($ndrheader,$ndrparser) = Parse::Pidl::Samba4::NDR::Parser::Parse($pndr, undef, undef);
 	ok(defined($ndrparser), "($name) generate NDR parser");
 	ok(defined($ndrheader), "($name) generate NDR header");
 
 SKIP: {
 
-	my $insamba = -f "include/includes.h";
-	my $link = $insamba && 0; # FIXME
+	my $link = is_intree() && 0; # FIXME
 
 	skip "no samba environment available, skipping compilation", 3 
-		if not $insamba;
+		if not is_intree();
 
 	skip "no sane C compiler, skipping compilation", 3
 		if not $sanecc;
@@ -57,9 +57,9 @@ SKIP: {
 	#my $cflags = $ENV{CFLAGS};
 	my $cflags = "-Iinclude -Ilib -I.";
 
-	if ($insamba and $link) {
+	if (is_intree() and $link) {
 		open CC, "|cc -x c -o $outfile $cflags -";
-	} elsif ($insamba) {
+	} elsif (is_intree()) {
 			open CC, "|cc -x c -c -o $outfile $cflags -";
 	}
 	print CC "#include \"includes.h\"\n";
