@@ -34,7 +34,7 @@ include passdb/config.mk
 
 DEFAULT_HEADERS = $(srcdir)/include/core.h \
 				  $(srcdir)/include/dlinklist.h \
-				  $(srcdir)/include/version.h
+				  $(srcdir)/version.h
 
 binaries: $(BINARIES)
 libraries: $(STATIC_LIBS) $(SHARED_LIBS)
