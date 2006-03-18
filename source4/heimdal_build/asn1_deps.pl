@@ -41,7 +41,7 @@ foreach(<IN>) {
 	}
 }
 close(IN);
-print $prefix."_clean: \n";
+print "clean:: \n";
 print "\t\@echo \"Deleting ASN1 output files generated from $file\"";
 print "\n\t\@rm -f $header";
 foreach $c_file (@c_files) {
