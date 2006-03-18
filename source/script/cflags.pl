@@ -13,8 +13,10 @@ sub check_flags($)
     my ($name)=@_;
 	open (IN, "extra_cflags.txt");
     while (<IN> =~ /^([^:]+): (.*)$/) {
-		next unless ($1 eq $target);
-		print "$2 ";
+		next unless (grep(/^$target$/, (split / /, $1)));
+		$_ = $2;
+		s/^CFLAGS\+=//;
+		print "$_ ";
 	}
 	close(IN);
 	print "\n";

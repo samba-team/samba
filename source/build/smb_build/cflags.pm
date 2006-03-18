@@ -18,7 +18,10 @@ sub create_cflags($$)
 		next if ($key->{EXTRA_CFLAGS} eq "");
 
 		foreach (@{$key->{OBJ_LIST}}) {
-			print CFLAGS_TXT "$_: $key->{EXTRA_CFLAGS}\n";
+			my $ofile = $_;
+			my $dfile = $_;
+			$dfile =~ s/\.o$/.d/;
+			print CFLAGS_TXT "$ofile $dfile: CFLAGS+=$key->{EXTRA_CFLAGS}\n";
 		}
 	}
 	close(CFLAGS_TXT);
