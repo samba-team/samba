@@ -93,6 +93,9 @@ krb5_rd_safe(krb5_context context,
     KRB_SAFE safe;
     size_t len;
 
+    if (outdata)
+	krb5_data_zero(outdata);
+
     if ((auth_context->flags & 
 	 (KRB5_AUTH_CONTEXT_RET_TIME | KRB5_AUTH_CONTEXT_RET_SEQUENCE)) &&
 	outdata == NULL) {
