@@ -57,7 +57,7 @@ static void pvfs_setup_options(struct pvfs_state *pvfs)
 	pvfs->alloc_size_rounding = lp_parm_int(snum, 
 						"posix", "allocationrounding", 512);
 
-	pvfs->search_inactivity_time = lp_parm_int(snum, 
+	pvfs->search.inactivity_time = lp_parm_int(snum, 
 						   "posix", "searchinactivity", 300);
 
 #if HAVE_XATTR_SUPPORT
@@ -104,6 +104,28 @@ static void pvfs_setup_options(struct pvfs_state *pvfs)
 	}
 }
 
+static int pvfs_state_destructor(void *ptr)
+{
+	struct pvfs_state *pvfs = talloc_get_type(ptr, struct pvfs_state);
+	struct pvfs_file *f, *fn;
+	struct pvfs_search_state *s, *sn;
+
+	/* 
+	 * make sure we cleanup files and searches before anythingelse
+	 * because there destructors need to acess the pvfs_state struct
+	 */
+	for (f=pvfs->files.list; f; f=fn) {
+		fn = f->next;
+		talloc_free(f);
+	}
+
+	for (s=pvfs->search.list; s; s=sn) {
+		sn = s->next;
+		talloc_free(s);
+	}
+
+	return 0;
+}
 
 /*
   connect to a share - used when a tree_connect operation comes
@@ -169,17 +191,19 @@ static NTSTATUS pvfs_connect(struct ntvfs_module_context *ntvfs,
 	}
 
 	/* allocate the fnum id -> ptr tree */
-	pvfs->idtree_fnum = idr_init(pvfs);
-	NT_STATUS_HAVE_NO_MEMORY(pvfs->idtree_fnum);
+	pvfs->files.idtree = idr_init(pvfs);
+	NT_STATUS_HAVE_NO_MEMORY(pvfs->files.idtree);
 
 	/* allocate the search handle -> ptr tree */
-	pvfs->idtree_search = idr_init(pvfs);
-	NT_STATUS_HAVE_NO_MEMORY(pvfs->idtree_search);
+	pvfs->search.idtree = idr_init(pvfs);
+	NT_STATUS_HAVE_NO_MEMORY(pvfs->search.idtree);
 
 	status = pvfs_mangle_init(pvfs);
 	NT_STATUS_NOT_OK_RETURN(status);
 
 	pvfs_setup_options(pvfs);
+
+	talloc_set_destructor(pvfs, pvfs_state_destructor);
 
 #ifdef SIGXFSZ
 	/* who had the stupid idea to generate a signal on a large
