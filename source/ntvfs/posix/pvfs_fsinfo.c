@@ -23,6 +23,7 @@
 #include "includes.h"
 #include "vfs_posix.h"
 #include "librpc/gen_ndr/xattr.h"
+#include "librpc/ndr/libndr.h"
 
 /* We use libblkid out of e2fsprogs to identify UUID of a volume */
 #ifdef HAVE_LIBBLKID
