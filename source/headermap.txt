@@ -64,10 +64,11 @@ libcli/ldap/ldap.h: ldap.h
 libcli/ldap/ldap_proto.h: ldap_proto.h
 torture/torture.h: torture.h
 torture/proto.h: torture/proto.h
+torture/util.h: torture/util.h
 libcli/libcli.h: client.h
 libcli/libcli_proto.h: client/proto.h
 librpc/gen_ndr/nbt.h: gen_ndr/nbt.h
 librpc/gen_ndr/svcctl.h: gen_ndr/nbt.h
 lib/cmdline/popt_common.h: samba/popt.h
 include/dlinklist.h: dlinklist.h
-include/version.h: samba/version.h
+version.h: samba/version.h
