@@ -24,6 +24,7 @@
 #include "includes.h"
 #include "libcli/raw/libcliraw.h"
 #include "libcli/composite/composite.h"
+#include "librpc/rpc/dcerpc.h"
 
 /* transport private information used by SMB pipe transport */
 struct smb_private {

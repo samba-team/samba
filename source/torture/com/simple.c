@@ -24,6 +24,7 @@
 #include "lib/com/dcom/dcom.h"
 #include "librpc/gen_ndr/com_dcom.h"
 #include "lib/cmdline/popt_common.h"
+#include "librpc/rpc/dcerpc.h"
 #include "torture/torture.h"
 
 #define DEFAULT_TRANS 4096

@@ -28,6 +28,7 @@
 #include "libcli/security/proto.h"
 #include "libcli/composite/composite.h"
 #include "libcli/smb_composite/smb_composite.h"
+#include "librpc/gen_ndr/ndr_misc.h"
 #include "lib/cmdline/popt_common.h"
 #include "librpc/gen_ndr/security.h"
 #include "torture/util.h"

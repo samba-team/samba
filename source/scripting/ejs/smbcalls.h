@@ -31,5 +31,6 @@ void mprSetStringCFunction(struct MprVar *obj, const char *name, MprStringCFunct
 
 struct ldb_context;
 struct ldb_message;
+struct cli_credentials;
 
 #include "scripting/ejs/proto.h"

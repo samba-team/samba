@@ -21,6 +21,7 @@
 */
 
 #include "includes.h"
+#include "librpc/gen_ndr/security.h"
 #include "libcli/security/proto.h"
 
 

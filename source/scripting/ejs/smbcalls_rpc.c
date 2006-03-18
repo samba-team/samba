@@ -31,6 +31,7 @@
 #include "lib/events/events.h"
 #include "librpc/rpc/dcerpc_table.h"
 #include "auth/credentials/credentials.h"
+#include "librpc/rpc/dcerpc.h"
 
 /*
   state of a irpc 'connection'

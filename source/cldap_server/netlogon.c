@@ -26,6 +26,7 @@
 #include "lib/socket/socket.h"
 #include "smbd/service_task.h"
 #include "cldap_server/cldap_server.h"
+#include "librpc/gen_ndr/ndr_misc.h"
 #include "dsdb/samdb/samdb.h"
 #include "auth/auth.h"
 #include "db_wrap.h"

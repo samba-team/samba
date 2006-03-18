@@ -20,6 +20,9 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+#ifndef __EVENTS_H__
+#define __EVENTS_H__
+
 struct event_context;
 struct event_ops;
 struct fd_event;
@@ -64,3 +67,5 @@ struct event_context *event_context_find(TALLOC_CTX *mem_ctx);
 	event_set_fd_flags(fde, event_get_fd_flags(fde) & ~EVENT_FD_WRITE)
 #define EVENT_FD_NOT_READABLE(fde) \
 	event_set_fd_flags(fde, event_get_fd_flags(fde) & ~EVENT_FD_READ)
+
+#endif /* __EVENTS_H__ */

@@ -23,6 +23,7 @@
 
 #include "includes.h"
 #include "dlinklist.h"
+#include "librpc/rpc/dcerpc.h"
 #include "librpc/rpc/dcerpc_table.h"
 
 struct dcerpc_interface_list *dcerpc_pipes = NULL;

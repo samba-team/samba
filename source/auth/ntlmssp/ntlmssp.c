@@ -26,6 +26,7 @@
 #include "auth/auth.h"
 #include "auth/ntlmssp/ntlmssp.h"
 #include "auth/ntlmssp/msrpc_parse.h"
+#include "librpc/gen_ndr/ndr_dcerpc.h"
 
 /**
  * Callbacks for NTLMSSP - for both client and server operating modes

@@ -45,6 +45,7 @@
 #include "utils/net/net.h"
 #include "lib/cmdline/popt_common.h"
 #include "lib/ldb/include/ldb.h"
+#include "librpc/rpc/dcerpc.h"
 
 /*
   run a function from a function table. If not found then

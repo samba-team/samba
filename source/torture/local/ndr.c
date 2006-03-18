@@ -21,6 +21,7 @@
 
 #include "includes.h"
 #include "torture/torture.h"
+#include "librpc/ndr/libndr.h"
 
 BOOL test_check_string_terminator(TALLOC_CTX *mem_ctx)
 {

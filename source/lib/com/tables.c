@@ -21,6 +21,7 @@
 #include "includes.h"
 #include "dlinklist.h"
 #include "lib/com/com.h"
+#include "librpc/gen_ndr/ndr_misc.h"
 
 /* Specific implementation of one or more interfaces */
 struct com_class

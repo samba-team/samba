@@ -23,6 +23,7 @@
 #include "smb.h"
 #include "libcli/rap/rap.h"
 #include "ntvfs/ipc/proto.h"
+#include "librpc/ndr/libndr.h"
 
 #define NERR_Success 0
 #define NERR_badpass 86

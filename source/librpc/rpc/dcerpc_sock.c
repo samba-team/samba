@@ -27,6 +27,7 @@
 #include "lib/socket/socket.h"
 #include "lib/stream/packet.h"
 #include "libcli/composite/composite.h"
+#include "librpc/rpc/dcerpc.h"
 
 /* transport private information used by general socket pipe transports */
 struct sock_private {

@@ -24,6 +24,7 @@
 
 #include "includes.h"
 #include "libcli/composite/composite.h"
+#include "librpc/gen_ndr/security.h"
 #include "libcli/security/proto.h"
 #include "libnet/composite.h"
 #include "libnet/userinfo.h"

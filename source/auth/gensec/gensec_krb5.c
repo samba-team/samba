@@ -33,6 +33,7 @@
 #include "auth/auth_sam.h"
 #include "system/network.h"
 #include "lib/socket/socket.h"
+#include "librpc/rpc/dcerpc.h"
 
 enum GENSEC_KRB5_STATE {
 	GENSEC_KRB5_SERVER_START,

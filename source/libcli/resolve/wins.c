@@ -21,6 +21,7 @@
 */
 
 #include "includes.h"
+#include "libcli/nbt/libnbt.h"
 #include "libcli/resolve/resolve.h"
 
 /*
