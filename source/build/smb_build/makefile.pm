@@ -187,18 +187,6 @@ sub _prepare_list($$$)
 	$self->output("$ctx->{TYPE}\_$ctx->{NAME}_$var =$tmplist\n");
 }
 
-sub DependencyInfo($$)
-{
-	my ($self,$ctx) = @_;
-
-	$self->output("bin/deps/$ctx->{TYPE}_$ctx->{NAME}: \$($ctx->{TYPE}_$ctx->{NAME}_OBJ_LIST:.o=.c)");
-	$self->output("\n");
-	$self->output("\t\@echo \"Generating dependency info for $ctx->{NAME}\"\n");
-	$self->output("\t\@./script/cdeps.pl \$^ > \$@\n");
-	$self->output("\n");
-	$self->output("-include bin/deps/$ctx->{TYPE}_$ctx->{NAME}\n\n");
-}
-
 sub SharedLibrary($$)
 {
 	my ($self,$ctx) = @_;
@@ -518,16 +506,16 @@ sub write($$)
 
 	$self->_prepare_mk_files();
 
+	$self->output($self->{mkfile});
+
 	if ($self->{developer}) {
 		$self->output(<<__EOD__
 
-#-include \$(ALL_OBJS:.o=.d)
+-include \$(DEP_FILES)
 
 __EOD__
 );
 	}
-
-	$self->output($self->{mkfile});
 
 	open(MAKEFILE,">$file") || die ("Can't open $file\n");
 	print MAKEFILE $self->{output};
