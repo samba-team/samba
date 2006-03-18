@@ -105,7 +105,7 @@ void smbsrv_setup_reply(struct smbsrv_request *req, uint_t wct, uint_t buflen)
 		return;
 	}
 
-	req->out.size = NBT_HDR_SIZE + MIN_SMB_SIZE + 1 + VWV(wct) + 2 + buflen;
+	req->out.size = NBT_HDR_SIZE + MIN_SMB_SIZE + VWV(wct) + buflen;
 
 	/* over allocate by a small amount */
 	req->out.allocated = req->out.size + REQ_OVER_ALLOCATION; 
