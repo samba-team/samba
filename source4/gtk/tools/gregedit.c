@@ -21,8 +21,9 @@
 
 #include "includes.h"
 #include "lib/registry/registry.h"
-#include "lib/registry/reg_backend_rpc.h"
 #include "gtk/common/gtk-smb.h"
+#include "lib/events/events.h"
+#include "lib/registry/reg_backend_rpc.h"
 #include "auth/credentials/credentials.h"
 
 static GtkTreeStore *store_keys;

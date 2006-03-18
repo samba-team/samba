@@ -20,6 +20,9 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+#include "librpc/gen_ndr/security.h"
+#include "librpc/rpc/dcerpc.h"
+
 struct ejs_rpc {
 	int eid;
 	const char *callname;

@@ -29,6 +29,7 @@
 #include "system/network.h"
 #include "netif/netif.h"
 #include "librpc/gen_ndr/ndr_nbt.h"
+#include "libcli/nbt/libnbt.h"
 
 struct nbtlist_state {
 	struct nbt_name name;

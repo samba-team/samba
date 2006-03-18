@@ -22,6 +22,7 @@
 
 #include "includes.h"
 #include "librpc/gen_ndr/epmapper.h"
+#include "librpc/rpc/dcerpc.h"
 
 static BOOL test_BindingString(TALLOC_CTX *mem_ctx, const char *binding)
 {

@@ -25,6 +25,7 @@
 #include "includes.h"
 #include "libcli/composite/composite.h"
 #include "auth/gensec/gensec.h"
+#include "librpc/rpc/dcerpc.h"
 
 /*
   do a non-athenticated dcerpc bind

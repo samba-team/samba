@@ -21,6 +21,8 @@
 #ifndef _SAMBA_SOCKET_H
 #define _SAMBA_SOCKET_H
 
+#include "lib/events/events.h"
+
 struct socket_context;
 
 enum socket_type {

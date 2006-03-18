@@ -25,6 +25,7 @@
 
 #include "includes.h"
 #include "system/network.h"
+#include "librpc/ndr/libndr.h"
 
 _PUBLIC_ void ndr_print_ipv4_addr(struct ndr_print *ndr, const char *name, const struct ipv4_addr *_ip)
 {

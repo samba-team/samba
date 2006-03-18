@@ -21,6 +21,9 @@
 #ifndef _DCOM_H /* _DCOM_H */
 #define _DCOM_H 
 
+struct cli_credentials;
+struct dcerpc_pipe;
+
 #include "lib/com/com.h"
 #include "librpc/gen_ndr/orpc.h"
 #include "lib/com/dcom/proto.h"

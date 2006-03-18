@@ -37,6 +37,7 @@
 #include "torture/torture.h"
 #include "build.h"
 #include "dlinklist.h"
+#include "librpc/rpc/dcerpc.h"
 
 #define MAX_COLS 80 /* FIXME: Determine this at run-time */
 

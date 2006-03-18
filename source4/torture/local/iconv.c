@@ -25,6 +25,7 @@
 #include "torture/torture.h"
 #include "system/iconv.h"
 #include "system/time.h"
+#include "libcli/raw/libcliraw.h"
 #include "torture/util.h"
 
 #if HAVE_NATIVE_ICONV
