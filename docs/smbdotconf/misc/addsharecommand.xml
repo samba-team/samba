@@ -16,7 +16,7 @@
 		
 	<para>
 	When executed, <command moreinfo="none">smbd</command> will automatically invoke the 
-	<parameter moreinfo="none">add share command</parameter> with four parameters.
+	<parameter moreinfo="none">add share command</parameter> with five parameters.
 	</para>
 		
 	<itemizedlist>
@@ -41,6 +41,14 @@
 		<listitem>
 			<para><parameter moreinfo="none">comment</parameter> - comment string to associate 
 			with the new share.
+			</para>
+		</listitem>
+
+		<listitem>
+			<para><parameter moreinfo="none">max
+			connections</parameter>
+			Number of maximum simultaneous connections to this
+			share.
 			</para>
 		</listitem>
 	</itemizedlist>
