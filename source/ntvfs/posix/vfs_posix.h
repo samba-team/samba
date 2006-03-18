@@ -38,19 +38,11 @@ struct pvfs_state {
 	const char *share_name;
 	uint_t flags;
 
-	struct pvfs_file *open_files;
-
 	struct pvfs_mangle_context *mangle_ctx;
 
 	struct brl_context *brl_context;
 	struct odb_context *odb_context;
 	struct sidmap_context *sidmap;
-
-	/* an id tree mapping open search ID to a pvfs_search_state structure */
-	struct idr_context *idtree_search;
-
-	/* an id tree mapping open file handle -> struct pvfs_file */
-	struct idr_context *idtree_fnum;
 
 	/* a list of pending async requests. Needed to support
 	   ntcancel */
@@ -68,9 +60,25 @@ struct pvfs_state {
 	/* the allocation size rounding */
 	uint32_t alloc_size_rounding;
 
-	/* how long to keep inactive searches around for */
-	uint_t search_inactivity_time;
-	
+	struct {
+		/* an id tree mapping open file handle -> struct pvfs_file */
+		struct idr_context *idtree;
+
+		/* the open files as DLINKLIST */
+		struct pvfs_file *list;
+	} files;
+
+	struct {
+		/* an id tree mapping open search ID to a pvfs_search_state structure */
+		struct idr_context *idtree;
+
+		/* the open searches as DLINKLIST */
+		struct pvfs_search_state *list;
+
+		/* how long to keep inactive searches around for */
+		uint_t inactivity_time;
+	} search;
+
 	/* used to accelerate acl mapping */
 	struct {
 		const struct dom_sid *creator_owner;
@@ -173,6 +181,20 @@ struct pvfs_file {
 	uint64_t lock_count;
 };
 
+/* the state of a search started with pvfs_search_first() */
+struct pvfs_search_state {
+	struct pvfs_search_state *prev, *next;
+	struct pvfs_state *pvfs;
+	uint16_t handle;
+	uint_t current_index;
+	uint16_t search_attrib;
+	uint16_t must_attrib;
+	struct pvfs_dir *dir;
+	time_t last_used;
+	uint_t num_ea_names;
+	struct ea_name *ea_names;
+	struct timed_event *te;
+};
 
 /* flags to pvfs_resolve_name() */
 #define PVFS_RESOLVE_WILDCARD    (1<<0)
