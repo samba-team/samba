@@ -251,7 +251,7 @@ basics: include/includes.h \
 	idl \
 	heimdal_basics
 
-clean: heimdal_clean clean_pch
+clean:: clean_pch
 	@echo Removing objects
 	@-find . -name '*.o' -exec rm -f '{}' \;
 	@echo Removing hostcc objects

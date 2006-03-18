@@ -446,7 +446,7 @@ heimdal_basics: \
 	heimdal/lib/krb5/k524_err.h \
 	heimdal/lib/krb5/krb5_err.h
 
-heimdal_clean:	hdb_asn1_clean spnego_asn1_clean krb5_asn1_clean
+clean::	
 	@-rm -f heimdal/lib/roken/vis.h heimdal/lib/roken/err.h
 	@-rm -f heimdal/lib/asn1/asn1_err.{c,h}
 	@-rm -f heimdal/lib/hdb/hdb_err.{c,h}
