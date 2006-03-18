@@ -59,7 +59,7 @@ static BOOL test_notify_dir(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 {
 	BOOL ret = True;
 	NTSTATUS status;
-	union smb_notify notify;
+	struct smb_notify notify;
 	union smb_open io;
 	int i, count, fnum, fnum2;
 	struct smbcli_request *req, *req2;
@@ -93,10 +93,10 @@ static BOOL test_notify_dir(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	/* ask for a change notify,
 	   on file or directory name changes */
-	notify.notify.in.buffer_size = 1000;
-	notify.notify.in.completion_filter = FILE_NOTIFY_CHANGE_NAME;
-	notify.notify.in.file.fnum = fnum;
-	notify.notify.in.recursive = True;
+	notify.in.buffer_size = 1000;
+	notify.in.completion_filter = FILE_NOTIFY_CHANGE_NAME;
+	notify.in.file.fnum = fnum;
+	notify.in.recursive = True;
 
 	printf("testing notify cancel\n");
 
@@ -113,9 +113,9 @@ static BOOL test_notify_dir(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	status = smb_raw_changenotify_recv(req, mem_ctx, &notify);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
-	CHECK_VAL(notify.notify.out.num_changes, 1);
-	CHECK_VAL(notify.notify.out.changes[0].action, NOTIFY_ACTION_ADDED);
-	CHECK_WSTR(notify.notify.out.changes[0].name, "subdir-name", STR_UNICODE);
+	CHECK_VAL(notify.out.num_changes, 1);
+	CHECK_VAL(notify.out.changes[0].action, NOTIFY_ACTION_ADDED);
+	CHECK_WSTR(notify.out.changes[0].name, "subdir-name", STR_UNICODE);
 
 	printf("testing notify rmdir\n");
 
@@ -124,9 +124,9 @@ static BOOL test_notify_dir(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	status = smb_raw_changenotify_recv(req, mem_ctx, &notify);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	CHECK_VAL(notify.notify.out.num_changes, 1);
-	CHECK_VAL(notify.notify.out.changes[0].action, NOTIFY_ACTION_REMOVED);
-	CHECK_WSTR(notify.notify.out.changes[0].name, "subdir-name", STR_UNICODE);
+	CHECK_VAL(notify.out.num_changes, 1);
+	CHECK_VAL(notify.out.changes[0].action, NOTIFY_ACTION_REMOVED);
+	CHECK_WSTR(notify.out.changes[0].name, "subdir-name", STR_UNICODE);
 
 	printf("testing notify mkdir - rmdir - mkdir - rmdir\n");
 
@@ -137,15 +137,15 @@ static BOOL test_notify_dir(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	req = smb_raw_changenotify_send(cli->tree, &notify);
 	status = smb_raw_changenotify_recv(req, mem_ctx, &notify);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	CHECK_VAL(notify.notify.out.num_changes, 4);
-	CHECK_VAL(notify.notify.out.changes[0].action, NOTIFY_ACTION_ADDED);
-	CHECK_WSTR(notify.notify.out.changes[0].name, "subdir-name", STR_UNICODE);
-	CHECK_VAL(notify.notify.out.changes[1].action, NOTIFY_ACTION_REMOVED);
-	CHECK_WSTR(notify.notify.out.changes[1].name, "subdir-name", STR_UNICODE);
-	CHECK_VAL(notify.notify.out.changes[2].action, NOTIFY_ACTION_ADDED);
-	CHECK_WSTR(notify.notify.out.changes[2].name, "subdir-name", STR_UNICODE);
-	CHECK_VAL(notify.notify.out.changes[3].action, NOTIFY_ACTION_REMOVED);
-	CHECK_WSTR(notify.notify.out.changes[3].name, "subdir-name", STR_UNICODE);
+	CHECK_VAL(notify.out.num_changes, 4);
+	CHECK_VAL(notify.out.changes[0].action, NOTIFY_ACTION_ADDED);
+	CHECK_WSTR(notify.out.changes[0].name, "subdir-name", STR_UNICODE);
+	CHECK_VAL(notify.out.changes[1].action, NOTIFY_ACTION_REMOVED);
+	CHECK_WSTR(notify.out.changes[1].name, "subdir-name", STR_UNICODE);
+	CHECK_VAL(notify.out.changes[2].action, NOTIFY_ACTION_ADDED);
+	CHECK_WSTR(notify.out.changes[2].name, "subdir-name", STR_UNICODE);
+	CHECK_VAL(notify.out.changes[3].action, NOTIFY_ACTION_REMOVED);
+	CHECK_WSTR(notify.out.changes[3].name, "subdir-name", STR_UNICODE);
 
 	count = torture_numops;
 	printf("testing buffered notify on create of %d files\n", count);
@@ -164,12 +164,12 @@ static BOOL test_notify_dir(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	/* (1st notify) setup a new notify on a different directory handle.
 	   This new notify won't see the events above. */
-	notify.notify.in.file.fnum = fnum2;
+	notify.in.file.fnum = fnum2;
 	req2 = smb_raw_changenotify_send(cli->tree, &notify);
 
 	/* (2nd notify) whereas this notify will see the above buffered events,
 	   and it directly returns the buffered events */
-	notify.notify.in.file.fnum = fnum;
+	notify.in.file.fnum = fnum;
 	req = smb_raw_changenotify_send(cli->tree, &notify);
 
 	/* (1st unlink) as the 2nd notify directly returns,
@@ -183,18 +183,18 @@ static BOOL test_notify_dir(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	status = smb_raw_changenotify_recv(req, mem_ctx, &notify);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
-	CHECK_VAL(notify.notify.out.num_changes, count);
-	for (i=1;i<notify.notify.out.num_changes;i++) {
-		CHECK_VAL(notify.notify.out.changes[i].action, NOTIFY_ACTION_ADDED);
+	CHECK_VAL(notify.out.num_changes, count);
+	for (i=1;i<notify.out.num_changes;i++) {
+		CHECK_VAL(notify.out.changes[i].action, NOTIFY_ACTION_ADDED);
 	}
-	CHECK_WSTR(notify.notify.out.changes[0].name, "test0.txt", STR_UNICODE);
+	CHECK_WSTR(notify.out.changes[0].name, "test0.txt", STR_UNICODE);
 
 	/* and now from the 1st notify */
 	status = smb_raw_changenotify_recv(req2, mem_ctx, &notify);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	CHECK_VAL(notify.notify.out.num_changes, 1);
-	CHECK_VAL(notify.notify.out.changes[0].action, NOTIFY_ACTION_REMOVED);
-	CHECK_WSTR(notify.notify.out.changes[0].name, "test0.txt", STR_UNICODE);
+	CHECK_VAL(notify.out.num_changes, 1);
+	CHECK_VAL(notify.out.changes[0].action, NOTIFY_ACTION_REMOVED);
+	CHECK_WSTR(notify.out.changes[0].name, "test0.txt", STR_UNICODE);
 
 	/* (3rd notify) this notify will only see the 1st unlink */
 	req = smb_raw_changenotify_send(cli->tree, &notify);
@@ -207,26 +207,26 @@ static BOOL test_notify_dir(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	/* recev the 3rd notify */
 	status = smb_raw_changenotify_recv(req, mem_ctx, &notify);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	CHECK_VAL(notify.notify.out.num_changes, 1);
-	CHECK_VAL(notify.notify.out.changes[0].action, NOTIFY_ACTION_REMOVED);
-	CHECK_WSTR(notify.notify.out.changes[0].name, "test0.txt", STR_UNICODE);
+	CHECK_VAL(notify.out.num_changes, 1);
+	CHECK_VAL(notify.out.changes[0].action, NOTIFY_ACTION_REMOVED);
+	CHECK_WSTR(notify.out.changes[0].name, "test0.txt", STR_UNICODE);
 
 	/* and we now see the rest of the unlink calls on both directory handles */
-	notify.notify.in.file.fnum = fnum;
+	notify.in.file.fnum = fnum;
 	req = smb_raw_changenotify_send(cli->tree, &notify);
 	status = smb_raw_changenotify_recv(req, mem_ctx, &notify);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	CHECK_VAL(notify.notify.out.num_changes, count-1);
-	for (i=0;i<notify.notify.out.num_changes;i++) {
-		CHECK_VAL(notify.notify.out.changes[i].action, NOTIFY_ACTION_REMOVED);
+	CHECK_VAL(notify.out.num_changes, count-1);
+	for (i=0;i<notify.out.num_changes;i++) {
+		CHECK_VAL(notify.out.changes[i].action, NOTIFY_ACTION_REMOVED);
 	}
-	notify.notify.in.file.fnum = fnum2;
+	notify.in.file.fnum = fnum2;
 	req = smb_raw_changenotify_send(cli->tree, &notify);
 	status = smb_raw_changenotify_recv(req, mem_ctx, &notify);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	CHECK_VAL(notify.notify.out.num_changes, count-1);
-	for (i=0;i<notify.notify.out.num_changes;i++) {
-		CHECK_VAL(notify.notify.out.changes[i].action, NOTIFY_ACTION_REMOVED);
+	CHECK_VAL(notify.out.num_changes, count-1);
+	for (i=0;i<notify.out.num_changes;i++) {
+		CHECK_VAL(notify.out.changes[i].action, NOTIFY_ACTION_REMOVED);
 	}
 
 done:
@@ -243,7 +243,7 @@ static BOOL test_notify_file(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	BOOL ret = True;
 	union smb_open io;
 	union smb_close cl;
-	union smb_notify notify;
+	struct smb_notify notify;
 	struct smbcli_request *req;
 	int fnum;
 	const char *fname = BASEDIR "\\file.txt";
@@ -268,10 +268,10 @@ static BOOL test_notify_file(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	/* ask for a change notify,
 	   on file or directory name changes */
-	notify.notify.in.file.fnum = fnum;
-	notify.notify.in.buffer_size = 1000;
-	notify.notify.in.completion_filter = FILE_NOTIFY_CHANGE_STREAM_NAME;
-	notify.notify.in.recursive = False;
+	notify.in.file.fnum = fnum;
+	notify.in.buffer_size = 1000;
+	notify.in.completion_filter = FILE_NOTIFY_CHANGE_STREAM_NAME;
+	notify.in.recursive = False;
 
 	printf("testing if notifies on file handles are invalid (should be)\n");
 
