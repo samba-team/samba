@@ -82,7 +82,7 @@ PKGCONFIGDIR = $(LIBDIR)/pkgconfig
 LMHOSTSFILE = $(CONFIGDIR)/lmhosts
 
 install: showlayout installbin installdat installswat installmisc installlib \
-	installheader installpc installplugins installpidl
+	installheader installpc installplugins
 
 # DESTDIR is used here to prevent packagers wasting their time
 # duplicating the Makefile. Remove it and you will have the privilege
@@ -150,7 +150,7 @@ installpc: installdirs
 	@$(SHELL) $(srcdir)/script/installpc.sh $(srcdir) $(DESTDIR)$(PKGCONFIGDIR) $(PC_FILES)
 
 uninstall: uninstallbin uninstallman uninstallmisc uninstalllib uninstallheader \
-	uninstallplugins uninstallpidl
+	uninstallplugins
 
 uninstallmisc:
 	#FIXME
@@ -179,7 +179,7 @@ ctags:
 	ctags `find $(srcdir) -name "*.[ch]"`
 
 pidl/Makefile: pidl/Makefile.PL
-	cd pidl && $(PERL) Makefile.PL INSTALLSITEBIN=$(BINDIR) INSTALLSCRIPT=$(BINDIR) INSTALLSITEMAN1DIR=$(MANDIR)/man1 INSTALLSITEMAN3DIR=$(MANDIR)/man3
+	cd pidl && $(PERL) Makefile.PL 
 
 installpidl: pidl/Makefile
 	$(MAKE) -C pidl install
