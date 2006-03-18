@@ -26,6 +26,8 @@
 #include "libcli/raw/libcliraw.h"
 #include "libcli/composite/composite.h"
 #include "lib/messaging/irpc.h"
+#include "librpc/rpc/dcerpc.h"
+#include "libcli/nbt/libnbt.h"
 
 /*
   block until a composite function has completed, then return the status

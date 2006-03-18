@@ -106,9 +106,9 @@ _PUBLIC_ void smb_panic(const char *why) NORETURN_ATTRIBUTE;
 #include "param/param.h"
 #include "libcli/util/nterr.h"
 #include "libcli/util/doserr.h"
-#include "librpc/ndr/libndr.h"
-#include "librpc/rpc/dcerpc.h"
-#include "libcli/nbt/libnbt.h"
+#include "librpc/gen_ndr/misc.h"
+
+struct smbcli_tree;
 #include "libcli/util/proto.h"
 
 /* String routines */

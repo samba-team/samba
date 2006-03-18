@@ -26,6 +26,7 @@
 #include "libcli/smb2/smb2.h"
 #include "libcli/smb2/smb2_calls.h"
 #include "libcli/raw/ioctl.h"
+#include "librpc/rpc/dcerpc.h"
 
 /* transport private information used by SMB2 pipe transport */
 struct smb2_private {

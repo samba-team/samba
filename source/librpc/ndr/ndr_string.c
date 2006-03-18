@@ -21,6 +21,7 @@
 */
 
 #include "includes.h"
+#include "librpc/ndr/libndr.h"
 
 /**
   pull a general string from the wire

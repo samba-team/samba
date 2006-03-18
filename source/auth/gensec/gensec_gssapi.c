@@ -29,6 +29,7 @@
 #include "auth/auth.h"
 #include "lib/ldb/include/ldb.h"
 #include "auth/auth_sam.h"
+#include "librpc/rpc/dcerpc.h"
 
 enum gensec_gssapi_sasl_state 
 {

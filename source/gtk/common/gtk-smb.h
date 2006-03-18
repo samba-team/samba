@@ -71,6 +71,7 @@ int gtk_event_loop(void);
 struct event_context;
 struct event_context *gtk_event_context(void);
 
+struct cli_credentials;
 void cli_credentials_set_gtk_callbacks(struct cli_credentials *creds);
 
 #endif

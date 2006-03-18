@@ -234,14 +234,11 @@ lib/charset/charset.h: lib/charset/charset_proto.h
 
 include/includes.h: \
 		include/config.h \
-		librpc/ndr/libndr.h \
-		librpc/rpc/dcerpc.h \
-		auth/credentials/credentials_proto.h \
-		libcli/nbt/libnbt.h \
 		lib/util/util_proto.h \
 		lib/charset/charset.h \
 		param/proto.h \
-		libcli/util/proto.h
+		libcli/util/proto.h \
+		librpc/gen_ndr/misc.h
 
 clean_pch: 
 	-rm -f include/includes.h.gch

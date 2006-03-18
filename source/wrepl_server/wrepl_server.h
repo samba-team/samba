@@ -310,5 +310,6 @@ struct wreplsrv_service {
 	} scavenging;
 };
 
+struct socket_context;
 #include "wrepl_server/wrepl_out_helpers.h"
 #include "wrepl_server/wrepl_server_proto.h"

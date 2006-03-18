@@ -22,6 +22,9 @@
 #ifndef _REGISTRY_H /* _REGISTRY_H */
 #define _REGISTRY_H 
 
+#include "librpc/gen_ndr/security.h"
+#include "auth/credentials/credentials.h"
+
 /* Handles for the predefined keys */
 #define HKEY_CLASSES_ROOT		 0x80000000
 #define HKEY_CURRENT_USER		 0x80000001

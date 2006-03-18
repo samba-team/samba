@@ -28,7 +28,9 @@
 */
 
 #include "includes.h"
+#include "librpc/ndr/libndr.h"
 #include "dlinklist.h"
+#include "librpc/gen_ndr/dcerpc.h"
 
 #define NDR_BASE_MARSHALL_SIZE 1024
 

@@ -32,6 +32,7 @@
 #include "db_wrap.h"
 #include "libcli/security/proto.h"
 #include "librpc/gen_ndr/ndr_security.h"
+#include "librpc/rpc/dcerpc.h"
 
 struct samsync_ldb_secret {
 	struct samsync_ldb_secret *prev, *next;

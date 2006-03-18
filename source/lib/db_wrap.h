@@ -31,5 +31,6 @@ struct tdb_wrap {
 struct auth_session_info;
 struct ldb_message;
 struct ldb_dn;
+struct cli_credentials;
 
 #include "db_wrap_proto.h"

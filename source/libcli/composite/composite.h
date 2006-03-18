@@ -63,5 +63,7 @@ struct composite_context {
 
 struct irpc_request;
 struct smbcli_request;
+struct rpc_request;
+struct nbt_name_request;
 
 #include "libcli/composite/proto.h"

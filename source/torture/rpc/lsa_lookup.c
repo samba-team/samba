@@ -22,11 +22,11 @@
 #include "includes.h"
 #include "torture/torture.h"
 #include "lib/events/events.h"
-#include "libcli/security/proto.h"
 #include "libnet/libnet_join.h"
 #include "torture/rpc/rpc.h"
 #include "librpc/gen_ndr/ndr_lsa_c.h"
 #include "librpc/gen_ndr/ndr_security.h"
+#include "libcli/security/proto.h"
 
 static BOOL open_policy(TALLOC_CTX *mem_ctx, struct dcerpc_pipe *p,
 			struct policy_handle **handle)

@@ -25,6 +25,7 @@
 #include "includes.h"
 #include "auth/auth.h"
 #include "auth/gensec/spnego_proto.h"
+#include "librpc/gen_ndr/ndr_dcerpc.h"
 
 enum spnego_state_position {
 	SPNEGO_SERVER_START,

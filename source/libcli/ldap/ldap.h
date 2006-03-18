@@ -247,6 +247,10 @@ struct ldap_message {
 	struct ldb_control    **controls;
 };
 
+struct event_context;
+struct cli_credentials;
+struct dom_sid;
+
 #include "libcli/ldap/ldap_proto.h"
 
 #endif

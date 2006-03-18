@@ -25,6 +25,7 @@
 #include "auth/credentials/credentials.h"
 #include "torture/rpc/drsuapi.h"
 #include "libnet/libnet_join.h"
+#include "librpc/rpc/dcerpc.h"
 #include "torture/rpc/proto.h"
 
 #endif /* __TORTURE_RPC_H__ */

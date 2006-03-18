@@ -23,6 +23,7 @@
 #include "libcli/cldap/cldap.h"
 #include "lib/ldb/include/ldb.h"
 #include "lib/ldb/include/ldb_errors.h"
+#include "librpc/rpc/dcerpc.h"
 
 /*
  * 1. Setup a CLDAP socket.

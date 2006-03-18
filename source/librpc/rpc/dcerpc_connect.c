@@ -31,6 +31,7 @@
 #include "libcli/smb2/smb2.h"
 #include "libcli/smb2/smb2_calls.h"
 #include "auth/credentials/credentials.h"
+#include "librpc/rpc/dcerpc.h"
 
 
 struct dcerpc_pipe_connect;

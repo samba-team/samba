@@ -24,6 +24,7 @@
 #include "libnet/libnet.h"
 #include "librpc/gen_ndr/ndr_lsa.h"
 #include "librpc/gen_ndr/ndr_samr.h"
+#include "librpc/rpc/dcerpc.h"
 
 
 static BOOL test_lsa_connect(struct libnet_context *ctx)

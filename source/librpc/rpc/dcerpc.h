@@ -26,6 +26,7 @@
 
 #include "core.h"
 #include "librpc/gen_ndr/dcerpc.h"
+#include "librpc/ndr/libndr.h"
 
 enum dcerpc_transport_t {
 	NCACN_NP, NCACN_IP_TCP, NCACN_IP_UDP, NCACN_VNS_IPC, NCACN_VNS_SPP, 

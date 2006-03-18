@@ -23,6 +23,8 @@
 #include "gtk/common/gtk-smb.h"
 #include "gtk/common/select.h"
 #include "version.h"
+#include "librpc/rpc/dcerpc.h"
+#include "auth/credentials/credentials.h"
 
 void gtk_show_werror(GtkWidget *win, const char *message, WERROR err) 
 {

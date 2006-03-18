@@ -28,6 +28,8 @@
 #include "lib/socket/socket.h"
 #include "system/network.h"
 #include "netif/netif.h"
+#include "librpc/gen_ndr/nbt.h"
+#include "libcli/nbt/libnbt.h"
 
 /* command line options */
 static struct {

@@ -28,6 +28,7 @@
 #include "kdc/pac-glue.h"
 
 struct kdc_server;
+struct socket_address;
 
 NTSTATUS kdc_hdb_ldb_create(TALLOC_CTX *mem_ctx, 
 			    krb5_context context, struct HDB **db, const char *arg);

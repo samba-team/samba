@@ -35,6 +35,7 @@
 #include "librpc/gen_ndr/ndr_nbt.h"
 
 #include "torture/raw/proto.h"
+#include "libcli/smb2/smb2.h"
 #include "torture/smb2/proto.h"
 #include "torture/rap/proto.h"
 #include "torture/auth/proto.h"

@@ -21,6 +21,7 @@
 */
 
 #include "includes.h"
+#include "librpc/ndr/libndr.h"
 
 /*
   handle obfuscated subcontext buffers, which in midl land are user-marshalled, but

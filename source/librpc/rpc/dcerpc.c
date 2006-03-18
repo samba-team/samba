@@ -24,8 +24,9 @@
 #include "includes.h"
 #include "dlinklist.h"
 #include "lib/events/events.h"
-#include "librpc/gen_ndr/ndr_dcerpc.h"
+#include "librpc/rpc/dcerpc.h"
 #include "librpc/gen_ndr/ndr_misc.h"
+#include "librpc/gen_ndr/ndr_dcerpc.h"
 #include "libcli/composite/composite.h"
 #include "auth/gensec/gensec.h"
 

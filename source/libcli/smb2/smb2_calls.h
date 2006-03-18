@@ -363,4 +363,6 @@ struct smb2_flush {
 	} in;
 };
 
+struct cli_credentials;
+struct event_context;
 #include "libcli/smb2/smb2_proto.h"

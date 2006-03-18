@@ -22,6 +22,7 @@
 
 #include "includes.h"
 #include "torture/torture.h"
+#include "librpc/rpc/dcerpc.h"
 #include "librpc/rpc/dcerpc_table.h"
 #include "torture/rpc/rpc.h"
 

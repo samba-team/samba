@@ -1,9 +1,9 @@
 /* 
    Unix SMB/CIFS implementation.
 
-   interface functions for the sam database
+   general name resolution interface
 
-   Copyright (C) Andrew Tridgell 2004
+   Copyright (C) Andrew Tridgell 2005
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -20,14 +20,10 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#ifndef __SAMDB_H__
-#define __SAMDB_H__
+#ifndef __RESOLVE_H__
+#define __RESOLVE_H__
 
-struct auth_session_info;
-struct drsuapi_DsNameInfo1;
+#include "libcli/nbt/libnbt.h"
+#include "libcli/resolve/proto.h"
 
-#include "librpc/gen_ndr/security.h"
-#include "lib/ldb/include/ldb.h"
-#include "dsdb/samdb/samdb_proto.h"
-
-#endif /* __SAMDB_H__ */
+#endif /* __RESOLVE_H__ */

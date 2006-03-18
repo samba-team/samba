@@ -25,6 +25,7 @@
 #include "torture/torture.h"
 #include "librpc/gen_ndr/ndr_lsa.h"
 #include "lib/cmdline/popt_common.h"
+#include "librpc/rpc/dcerpc.h"
 #include "torture/rpc/rpc.h"
 
 /*

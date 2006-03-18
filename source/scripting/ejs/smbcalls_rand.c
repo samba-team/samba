@@ -24,6 +24,7 @@
 #include "scripting/ejs/smbcalls.h"
 #include "lib/appweb/ejs/ejs.h"
 #include "system/passwd.h"
+#include "librpc/gen_ndr/ndr_misc.h"
 
 /*
   usage:

@@ -265,5 +265,5 @@ struct ntvfs_critical_sizes {
 };
 
 struct messaging_context;
-
+#include "librpc/gen_ndr/security.h"
 #include "ntvfs/ntvfs_proto.h"

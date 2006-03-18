@@ -80,7 +80,7 @@ OBJ_FILES = \
 REQUIRED_SUBSYSTEMS = NDR_WINSREPL SOCKET LIBEVENTS
 
 [SUBSYSTEM::LIBCLI_RESOLVE]
-PRIVATE_PROTO_HEADER = resolve/resolve.h
+PRIVATE_PROTO_HEADER = resolve/proto.h
 OBJ_FILES = \
 	resolve/resolve.o \
 	resolve/nbtlist.o \

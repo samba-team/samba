@@ -31,6 +31,8 @@ struct smbcli_request;  /* forward declare */
 struct smbcli_session;  /* forward declare */
 struct smbcli_transport;  /* forward declare */
 
+struct cli_credentials;
+
 /* default timeout for all smb requests */
 #define SMB_REQUEST_TIMEOUT 60
 
