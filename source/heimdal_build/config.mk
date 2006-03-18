@@ -345,17 +345,6 @@ REQUIRED_SUBSYSTEMS = \
 #######################
 
 #######################
-# Start SUBSYSTEM HEIMDAL_VERS
-[SUBSYSTEM::HEIMDAL_VERS]
-EXTRA_CFLAGS = \
-	-Iheimdal_build -Iheimdal/kdc \
-	-Iheimdal/lib/des -Iheimdal/lib/roken \
-	-DNO_PRINTF_ATTRIBUTE
-OBJ_FILES = ../heimdal/lib/vers/print_version.o
-# End SUBSYSTEM HEIMDAL_VERS
-#######################
-
-#######################
 # Start SUBSYSTEM HEIMDAL_GLUE
 [SUBSYSTEM::HEIMDAL_GLUE]
 OBJ_FILES = glue.o
@@ -471,9 +460,15 @@ heimdal_clean:	hdb_asn1_clean spnego_asn1_clean krb5_asn1_clean
 [LIBRARY::HEIMDAL]
 VERSION = 0.0.1
 SO_VERSION = 0
+EXTRA_CFLAGS = \
+	-Iheimdal_build -Iheimdal/kdc \
+	-Iheimdal/lib/des -Iheimdal/lib/roken \
+	-DNO_PRINTF_ATTRIBUTE
+OBJ_FILES = ../heimdal/lib/vers/print_version.o
 REQUIRED_SUBSYSTEMS = \
-		HEIMDAL_GSSAPI HEIMDAL_KRB5 KERBEROS \
-		HEIMDAL_ASN1 HEIMDAL_DES HEIMDAL_ROKEN HEIMDAL_COM_ERR HEIMDAL_VERS HEIMDAL_GLUE EXT_LIB_RESOLV
+		LIBREPLACE HEIMDAL_GSSAPI HEIMDAL_KRB5 KERBEROS \
+		HEIMDAL_ASN1 HEIMDAL_DES HEIMDAL_ROKEN \
+		HEIMDAL_COM_ERR HEIMDAL_GLUE EXT_LIB_RESOLV
 # End SUBSYSTEM HEIMDAL
 #######################
 
@@ -481,6 +476,6 @@ REQUIRED_SUBSYSTEMS = \
 # Start SUBSYSTEM KERBEROS_LIB
 [SUBSYSTEM::KERBEROS_LIB]
 #REQUIRED_SUBSYSTEMS = EXT_LIB_KRB5
-REQUIRED_SUBSYSTEMS = HEIMDAL LIBREPLACE
+REQUIRED_SUBSYSTEMS = HEIMDAL
 # End SUBSYSTEM KERBEROS_LIB
 #######################
