@@ -891,7 +891,7 @@ static void async_changenotify(struct smbcli_request *c_req)
 /* change notify request - always async */
 static NTSTATUS cvfs_notify(struct ntvfs_module_context *ntvfs, 
 			    struct ntvfs_request *req,
-			    union smb_notify *info)
+			    struct smb_notify *info)
 {
 	struct cvfs_private *private = ntvfs->private_data;
 	struct smbcli_request *c_req;

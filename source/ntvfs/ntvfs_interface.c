@@ -314,7 +314,7 @@ _PUBLIC_ NTSTATUS ntvfs_exit(struct ntvfs_request *req)
 /*
   change notify request
 */
-_PUBLIC_ NTSTATUS ntvfs_notify(struct ntvfs_request *req, union smb_notify *info)
+_PUBLIC_ NTSTATUS ntvfs_notify(struct ntvfs_request *req, struct smb_notify *info)
 {
 	struct ntvfs_module_context *ntvfs = req->ctx->modules;
 	if (!ntvfs->ops->notify) {
@@ -618,7 +618,7 @@ _PUBLIC_ NTSTATUS ntvfs_next_trans2(struct ntvfs_module_context *ntvfs,
 */
 _PUBLIC_ NTSTATUS ntvfs_next_notify(struct ntvfs_module_context *ntvfs,
 				    struct ntvfs_request *req,
-				    union smb_notify *info)
+				    struct smb_notify *info)
 {
 	if (!ntvfs->next || !ntvfs->next->ops->notify) {
 		return NT_STATUS_NOT_IMPLEMENTED;

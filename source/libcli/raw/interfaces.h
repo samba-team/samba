@@ -1746,23 +1746,21 @@ struct smb_nttrans {
 
 
 /* struct for nttrans change notify call */
-union smb_notify {
+struct smb_notify {
 	struct {
-		struct {
-			union smb_handle file;
-			uint32_t buffer_size;
-			uint32_t completion_filter;
-			BOOL recursive;
-		} in;
+		union smb_handle file;
+		uint32_t buffer_size;
+		uint32_t completion_filter;
+		BOOL recursive;
+	} in;
 
-		struct {
-			uint32_t num_changes;
-			struct notify_changes {
-				uint32_t action;
-				struct smb_wire_string name;
-			} *changes;
-		} out;
-	} notify;
+	struct {
+		uint32_t num_changes;
+		struct notify_changes {
+			uint32_t action;
+			struct smb_wire_string name;
+		} *changes;
+	} out;
 };
 
 enum smb_search_level {RAW_SEARCH_GENERIC                 = 0xF000, 

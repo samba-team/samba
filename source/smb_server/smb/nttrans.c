@@ -342,7 +342,7 @@ static NTSTATUS nttrans_ioctl(struct smbsrv_request *req,
  */
 static NTSTATUS nttrans_notify_change_send(struct nttrans_op *op)
 {
-	union smb_notify *info = talloc_get_type(op->op_info, union smb_notify);
+	struct smb_notify *info = talloc_get_type(op->op_info, struct smb_notify);
 	size_t size = 0;
 	int i;
 	NTSTATUS status;
@@ -351,8 +351,8 @@ static NTSTATUS nttrans_notify_change_send(struct nttrans_op *op)
 #define MAX_BYTES_PER_CHAR 3
 	
 	/* work out how big the reply buffer could be */
-	for (i=0;i<info->notify.out.num_changes;i++) {
-		size += 12 + 3 + (1+strlen(info->notify.out.changes[i].name.s)) * MAX_BYTES_PER_CHAR;
+	for (i=0;i<info->out.num_changes;i++) {
+		size += 12 + 3 + (1+strlen(info->out.changes[i].name.s)) * MAX_BYTES_PER_CHAR;
 	}
 
 	status = nttrans_setup_reply(op, op->trans, size, 0, 0);
@@ -361,11 +361,11 @@ static NTSTATUS nttrans_notify_change_send(struct nttrans_op *op)
 	p = op->trans->out.params.data;
 
 	/* construct the changes buffer */
-	for (i=0;i<info->notify.out.num_changes;i++) {
+	for (i=0;i<info->out.num_changes;i++) {
 		ssize_t len;
 
-		SIVAL(p, 4, info->notify.out.changes[i].action);
-		len = push_string(p + 12, info->notify.out.changes[i].name.s, 
+		SIVAL(p, 4, info->out.changes[i].action);
+		len = push_string(p + 12, info->out.changes[i].name.s, 
 				  op->trans->out.params.length - (ofs+12), STR_UNICODE);
 		SIVAL(p, 8, len);
 		
@@ -394,20 +394,20 @@ static NTSTATUS nttrans_notify_change(struct smbsrv_request *req,
 				      struct nttrans_op *op)
 {
 	struct smb_nttrans *trans = op->trans;
-	union smb_notify *info;
+	struct smb_notify *info;
 
 	/* should have at least 4 setup words */
 	if (trans->in.setup_count != 4) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	info = talloc(op, union smb_notify);
+	info = talloc(op, struct smb_notify);
 	NT_STATUS_HAVE_NO_MEMORY(info);
 
-	info->notify.in.completion_filter = IVAL(trans->in.setup, 0);
-	info->notify.in.file.fnum         = SVAL(trans->in.setup, 4);
-	info->notify.in.recursive         = SVAL(trans->in.setup, 6);
-	info->notify.in.buffer_size       = trans->in.max_param;
+	info->in.completion_filter = IVAL(trans->in.setup, 0);
+	info->in.file.fnum         = SVAL(trans->in.setup, 4);
+	info->in.recursive         = SVAL(trans->in.setup, 6);
+	info->in.buffer_size       = trans->in.max_param;
 
 	op->op_info = info;
 	op->send_fn = nttrans_notify_change_send;
