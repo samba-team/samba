@@ -138,7 +138,7 @@ struct ntvfs_ops {
 	/* change notify request */
 	NTSTATUS (*notify)(struct ntvfs_module_context *ntvfs,
 			   struct ntvfs_request *req,
-			   union smb_notify *info);
+			   struct smb_notify *info);
 
 	/* cancel - cancels any pending async request */
 	NTSTATUS (*cancel)(struct ntvfs_module_context *ntvfs,
