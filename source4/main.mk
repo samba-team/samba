@@ -179,7 +179,7 @@ ctags:
 	ctags `find $(srcdir) -name "*.[ch]"`
 
 pidl/Makefile: pidl/Makefile.PL
-	cd pidl && $(PERL) Makefile.PL
+	cd pidl && $(PERL) Makefile.PL INSTALLSITEBIN=$(BINDIR) INSTALLSCRIPT=$(BINDIR) INSTALLSITEMAN1DIR=$(MANDIR)/man1 INSTALLSITEMAN3DIR=$(MANDIR)/man3
 
 installpidl: pidl/Makefile
 	$(MAKE) -C pidl install
