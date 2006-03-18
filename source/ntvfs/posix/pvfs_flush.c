@@ -60,7 +60,7 @@ NTSTATUS pvfs_flush(struct ntvfs_module_context *ntvfs,
 	}
 
 	/* they are asking to flush all open files */
-	for (f=pvfs->open_files;f;f=f->next) {
+	for (f=pvfs->files.list;f;f=f->next) {
 		pvfs_flush_file(pvfs, f);
 	}
 

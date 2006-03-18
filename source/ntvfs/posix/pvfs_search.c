@@ -26,22 +26,7 @@
 #include "librpc/gen_ndr/security.h"
 #include "smbd/service_stream.h"
 #include "lib/events/events.h"
-
-
-/* the state of a search started with pvfs_search_first() */
-struct pvfs_search_state {
-	struct pvfs_state *pvfs;
-	uint16_t handle;
-	uint_t current_index;
-	uint16_t search_attrib;
-	uint16_t must_attrib;
-	struct pvfs_dir *dir;
-	time_t last_used;
-	uint_t num_ea_names;
-	struct ea_name *ea_names;
-	struct timed_event *te;
-};
-
+#include "dlinklist.h"
 
 /* place a reasonable limit on old-style searches as clients tend to
    not send search close requests */
@@ -53,7 +38,8 @@ struct pvfs_search_state {
 static int pvfs_search_destructor(void *ptr)
 {
 	struct pvfs_search_state *search = ptr;
-	idr_remove(search->pvfs->idtree_search, search->handle);
+	DLIST_REMOVE(search->pvfs->search.list, search);
+	idr_remove(search->pvfs->search.idtree, search->handle);
 	return 0;
 }
 
@@ -75,7 +61,7 @@ static void pvfs_search_setup_timer(struct pvfs_search_state *search)
 	struct event_context *ev = search->pvfs->ntvfs->ctx->event_ctx;
 	talloc_free(search->te);
 	search->te = event_add_timed(ev, search, 
-				     timeval_current_ofs(search->pvfs->search_inactivity_time, 0), 
+				     timeval_current_ofs(search->pvfs->search.inactivity_time, 0), 
 				     pvfs_search_timer, search);
 }
 
@@ -306,7 +292,7 @@ static void pvfs_search_cleanup(struct pvfs_state *pvfs)
 	time_t t = time(NULL);
 
 	for (i=0;i<MAX_OLD_SEARCHES;i++) {
-		struct pvfs_search_state *search = idr_find(pvfs->idtree_search, i);
+		struct pvfs_search_state *search = idr_find(pvfs->search.idtree, i);
 		if (search == NULL) return;
 		if (pvfs_list_eos(search->dir, search->current_index) &&
 		    search->last_used != 0 &&
@@ -371,10 +357,10 @@ static NTSTATUS pvfs_search_first_old(struct ntvfs_module_context *ntvfs,
 
 	/* we need to give a handle back to the client so it
 	   can continue a search */
-	id = idr_get_new(pvfs->idtree_search, search, MAX_OLD_SEARCHES);
+	id = idr_get_new(pvfs->search.idtree, search, MAX_OLD_SEARCHES);
 	if (id == -1) {
 		pvfs_search_cleanup(pvfs);
-		id = idr_get_new(pvfs->idtree_search, search, MAX_OLD_SEARCHES);
+		id = idr_get_new(pvfs->search.idtree, search, MAX_OLD_SEARCHES);
 	}
 	if (id == -1) {
 		return NT_STATUS_INSUFFICIENT_RESOURCES;
@@ -388,6 +374,8 @@ static NTSTATUS pvfs_search_first_old(struct ntvfs_module_context *ntvfs,
 	search->must_attrib = (search_attrib>>8) & 0xFF;
 	search->last_used = time(NULL);
 	search->te = NULL;
+
+	DLIST_ADD(pvfs->search.list, search);
 
 	talloc_set_destructor(search, pvfs_search_destructor);
 
@@ -425,7 +413,7 @@ static NTSTATUS pvfs_search_next_old(struct ntvfs_module_context *ntvfs,
 	handle    = io->search_next.in.id.handle | (io->search_next.in.id.reserved<<8);
 	max_count = io->search_next.in.max_count;
 
-	search = idr_find(pvfs->idtree_search, handle);
+	search = idr_find(pvfs->search.idtree, handle);
 	if (search == NULL) {
 		/* we didn't find the search handle */
 		return NT_STATUS_INVALID_HANDLE;
@@ -506,7 +494,7 @@ NTSTATUS pvfs_search_first(struct ntvfs_module_context *ntvfs,
 		return status;
 	}
 
-	id = idr_get_new(pvfs->idtree_search, search, UINT16_MAX);
+	id = idr_get_new(pvfs->search.idtree, search, UINT16_MAX);
 	if (id == -1) {
 		return NT_STATUS_INSUFFICIENT_RESOURCES;
 	}
@@ -522,6 +510,7 @@ NTSTATUS pvfs_search_first(struct ntvfs_module_context *ntvfs,
 	search->ea_names = io->t2ffirst.in.ea_names;
 	search->te = NULL;
 
+	DLIST_ADD(pvfs->search.list, search);
 	talloc_set_destructor(search, pvfs_search_destructor);
 
 	status = pvfs_search_fill(pvfs, req, max_count, search, io->generic.level,
@@ -571,7 +560,7 @@ NTSTATUS pvfs_search_next(struct ntvfs_module_context *ntvfs,
 
 	handle = io->t2fnext.in.handle;
 
-	search = idr_find(pvfs->idtree_search, handle);
+	search = idr_find(pvfs->search.idtree, handle);
 	if (search == NULL) {
 		/* we didn't find the search handle */
 		return NT_STATUS_INVALID_HANDLE;
@@ -631,7 +620,7 @@ NTSTATUS pvfs_search_close(struct ntvfs_module_context *ntvfs,
 		handle = io->findclose.in.handle;
 	}
 
-	search = idr_find(pvfs->idtree_search, handle);
+	search = idr_find(pvfs->search.idtree, handle);
 	if (search == NULL) {
 		/* we didn't find the search handle */
 		return NT_STATUS_INVALID_HANDLE;
