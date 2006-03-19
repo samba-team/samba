@@ -125,8 +125,8 @@ OBJ_FILES = \
 REQUIRED_SUBSYSTEMS = \
 		process_model \
 		service \
-		CONFIG \
-		LIBBASIC \
+		LIBSAMBA-CONFIG \
+		LIBSAMBA-UTIL \
 		PIDFILE \
 		POPT_SAMBA \
 		LIBPOPT
