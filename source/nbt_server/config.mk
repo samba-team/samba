@@ -66,6 +66,6 @@ OBJ_FILES = \
 		irpc.o
 PRIVATE_PROTO_HEADER = nbt_server_proto.h
 REQUIRED_SUBSYSTEMS = \
-		LIBCLI_NBT NBTD_WINS NBTD_DGRAM
+		LIBCLI_NBT NBTD_WINS NBTD_DGRAM process_model
 # End SUBSYSTEM NBTD
 #######################

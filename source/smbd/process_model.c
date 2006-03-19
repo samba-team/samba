@@ -26,7 +26,7 @@
 /*
   setup the events for the chosen process model
 */
-const struct model_ops *process_model_startup(struct event_context *ev, const char *model)
+_PUBLIC_ const struct model_ops *process_model_startup(struct event_context *ev, const char *model)
 {
 	const struct model_ops *ops;
 
@@ -53,7 +53,7 @@ static int num_models;
   The 'name' can be later used by other backends to find the operations
   structure for this backend.  
 */
-NTSTATUS register_process_model(const void *_ops)
+_PUBLIC_ NTSTATUS register_process_model(const void *_ops)
 {
 	const struct model_ops *ops = _ops;
 
