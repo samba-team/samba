@@ -139,7 +139,7 @@ sub run_config_mk($$$)
 			$prev = "";
 		}
 
-		if ($line =~ /^\[([a-zA-Z0-9_:]+)\][\t ]*$/) 
+		if ($line =~ /^\[([-a-zA-Z0-9_:]+)\][\t ]*$/) 
 		{
 			$section = $1;
 			$infragment = 0;

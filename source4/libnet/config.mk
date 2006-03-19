@@ -1,6 +1,4 @@
-#################################
-# Start SUBSYSTEM LIBNET
-[LIBRARY::LIBNET]
+[LIBRARY::LIBSAMBA-NET]
 VERSION = 0.0.1
 SO_VERSION = 0
 DESCRIPTION = User-friendly access to Samba interfaces
@@ -27,5 +25,3 @@ OBJ_FILES = \
 		userman.o \
 		domain.o 
 REQUIRED_SUBSYSTEMS = dcerpc RPC_NDR_SAMR RPC_NDR_LSA RPC_NDR_SRVSVC RPC_NDR_DRSUAPI LIBCLI_COMPOSITE LIBCLI_RESOLVE LIBCLI_FINDDCS LIBSAMBA3 LIBCLI_CLDAP LIBCLI_FINDDCS gensec_schannel
-# End SUBSYSTEM LIBNET
-#################################
