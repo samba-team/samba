@@ -441,7 +441,6 @@ heimdal/lib/gssapi/asn1_NegTokenInit.c: heimdal/lib/gssapi/spnego_asn1.h
 heimdal/lib/gssapi/asn1_NegTokenTarg.c: heimdal/lib/gssapi/spnego_asn1.h
 heimdal/lib/gssapi/asn1_NegotiationToken.c: heimdal/lib/gssapi/spnego_asn1.h
 
-
 clean::	
 	@-rm -f heimdal/lib/roken/vis.h heimdal/lib/roken/err.h
 	@-rm -f heimdal/lib/asn1/asn1_err.{c,h}
