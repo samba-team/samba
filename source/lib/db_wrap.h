@@ -33,4 +33,4 @@ struct ldb_message;
 struct ldb_dn;
 struct cli_credentials;
 
-#include "db_wrap_proto.h"
+#include "lib/db_wrap_proto.h"

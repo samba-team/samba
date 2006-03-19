@@ -1,4 +1,4 @@
-all: basics bin/asn1_compile bin/compile_et binaries libraries modules
+all: bin/asn1_compile bin/compile_et binaries libraries modules
 
 include dynconfig.mk
 include heimdal_build/config.mk
@@ -192,6 +192,7 @@ IDL_HEADER_FILES = $(patsubst librpc/idl/%.idl,librpc/gen_ndr/%.h,$(IDL_FILES))
 IDL_NDR_HEADER_FILES = $(patsubst librpc/idl/%.idl,librpc/gen_ndr/ndr_%.h,$(IDL_FILES))
 IDL_NDR_PARSE_C_FILES = $(patsubst librpc/idl/%.idl,librpc/gen_ndr/ndr_%.c,$(IDL_FILES))
 IDL_NDR_CLIENT_C_FILES = $(patsubst librpc/idl/%.idl,librpc/gen_ndr/ndr_%_c.c,$(IDL_FILES))
+IDL_NDR_CLIENT_HEADER_FILES = $(patsubst librpc/idl/%.idl,librpc/gen_ndr/ndr_%_c.h,$(IDL_FILES))
 IDL_NDR_SERVER_C_FILES = $(patsubst librpc/idl/%.idl,librpc/gen_ndr/ndr_%_s.c,$(IDL_FILES))
 IDL_NDR_EJS_C_FILES = $(patsubst librpc/idl/%.idl,librpc/gen_ndr/ndr_%_ejs.c,$(IDL_FILES))
 IDL_NDR_EJS_H_FILES = $(patsubst librpc/idl/%.idl,librpc/gen_ndr/ndr_%_ejs.h,$(IDL_FILES))
@@ -200,6 +201,7 @@ $(IDL_HEADER_FILES): idl
 $(IDL_NDR_HEADER_FILES): idl
 $(IDL_NDR_PARSE_C_FILES): idl
 $(IDL_NDR_CLIENT_C_FILES): idl
+$(IDL_NDR_CLIENT_H_FILES): idl
 $(IDL_NDR_SERVER_C_FILES): idl
 $(IDL_NDR_EJS_C_FILES): idl
 $(IDL_NDR_EJS_H_FILES): idl
@@ -225,31 +227,10 @@ include/config.h:
 	@echo "You need to rerun ./autogen.sh and ./configure"
 	@/bin/false
 
-librpc/gen_ndr/misc.h: idl
-librpc/ndr/libndr.h: librpc/ndr/libndr_proto.h librpc/gen_ndr/misc.h
-librpc/rpc/dcerpc.h: librpc/rpc/dcerpc_proto.h
-auth/credentials/credentials.h: auth/credentials/credentials_proto.h
-libcli/nbt/libnbt.h: libcli/nbt/nbt_proto.h
-lib/charset/charset.h: lib/charset/charset_proto.h
-
-include/includes.h: \
-		include/config.h \
-		lib/util/util_proto.h \
-		lib/charset/charset.h \
-		param/proto.h \
-		libcli/util/proto.h \
-		librpc/gen_ndr/misc.h
-
 clean_pch: 
 	-rm -f include/includes.h.gch
 
 pch: clean_pch include/includes.h.gch
-
-proto: $(PROTO_HEADERS)
-basics: include/includes.h \
-	proto \
-	idl \
-	heimdal_basics
 
 clean:: clean_pch
 	@echo Removing objects
@@ -331,15 +312,22 @@ unused_macros:
 # File types
 ###############################################################################
 
-.SUFFIXES: .x .c .et .y .l .d .o .h .h.gch .a .so .1 .1.xml .3 .3.xml .5 .5.xml .7 .7.xml .8 .8.xml .ho
+.SUFFIXES: .x .c .et .y .l .d .o .h .h.gch .a .so .1 .1.xml .3 .3.xml .5 .5.xml .7 .7.xml .8 .8.xml .ho .hin .idl
+
+.hin.h:
+	@cp $< $@
 
 .c.ho:
-	@echo "Compiling $*.c with host compiler"
+	@echo "Compiling $< with host compiler"
 	@$(HOSTCC) `script/cflags.pl $@` $(CFLAGS) -c $*.c -o $@
 
 .c.d:
 	@echo "Generating dependencies for $<"
-	@$(CC) -MM -MG -MT $(<:.c=.o) -MF $@ $(CFLAGS) $<
+	@$(CC) -M -MG -MT $(<:.c=.o) `script/cflags.pl $@` $(CFLAGS) $< -o $@
+
+include/includes.d: include/includes.h
+	@echo "Generating dependencies for $<"
+	@$(CC) -M -MG -MT include/includes.h.gch $(CFLAGS) $< -o $@
 
 .c.o:
 	@if test -n "$(CC_CHECKER)"; then \
@@ -377,3 +365,9 @@ DOCBOOK_MANPAGE_URL = http://docbook.sourceforge.net/release/xsl/current/manpage
 
 .8.xml.8:
 	$(XSLTPROC) -o $@ $(DOCBOOK_MANPAGE_URL) $<
+
+DEP_FILES = $(patsubst %.ho,%.d,$(patsubst %.o,%.d,$(ALL_OBJS))) \
+		   include/includes.d
+
+clean-deps:
+	rm -f $(DEPFILES)
