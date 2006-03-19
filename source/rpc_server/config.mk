@@ -213,7 +213,8 @@ OBJ_FILES = \
 REQUIRED_SUBSYSTEMS = \
 		LIBCLI_AUTH \
 		LIBNDR \
-		dcerpc
+		dcerpc \
+		service
 #
 # End SUBSYSTEM DCERPC
 ################################################

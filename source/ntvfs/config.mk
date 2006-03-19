@@ -46,6 +46,7 @@ OBJ_FILES = \
 		ipc/vfs_ipc.o \
 		ipc/ipc_rap.o \
 		ipc/rap_server.o
+REQUIRED_SUBSYSTEMS = DCERPC_COMMON dcerpc_server
 # End MODULE ntvfs_ipc
 ################################################
 

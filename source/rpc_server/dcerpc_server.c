@@ -1115,7 +1115,7 @@ NTSTATUS dcesrv_input(struct dcesrv_connection *dce_conn, const DATA_BLOB *data)
 
   from the current fragment
 */
-NTSTATUS dcesrv_output(struct dcesrv_connection *dce_conn, 
+_PUBLIC_ NTSTATUS dcesrv_output(struct dcesrv_connection *dce_conn, 
 		       void *private_data,
 		       NTSTATUS (*write_fn)(void *private_data, DATA_BLOB *output, size_t *nwritten))
 {

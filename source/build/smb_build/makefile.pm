@@ -249,7 +249,7 @@ __EOD__
 		defined($ctx->{LIBRARY_SONAME})) {
 		$soarg = "$self->{config}->{SONAMEFLAG}$ctx->{LIBRARY_SONAME} ";
 		if ($ctx->{LIBRARY_REALNAME} ne $ctx->{LIBRARY_SONAME}) {
-			$soargdebug = "\tln -fs $ctx->{LIBRARY_REALNAME} $ctx->{DEBUGDIR}/$ctx->{LIBRARY_SONAME}\n";
+			$soargdebug = "\t\@ln -fs $ctx->{LIBRARY_REALNAME} $ctx->{DEBUGDIR}/$ctx->{LIBRARY_SONAME}\n";
 		}
 	}
 
