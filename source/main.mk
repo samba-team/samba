@@ -254,7 +254,7 @@ clean:: clean_pch
 	@echo Removing proto headers
 	@-rm -f $(PROTO_HEADERS)
 
-distclean: clean
+distclean: clean clean_deps
 	-rm -f include/config.h include/smb_build.h
 	-rm -f Makefile 
 	-rm -f config.status
@@ -373,5 +373,6 @@ DOCBOOK_MANPAGE_URL = http://docbook.sourceforge.net/release/xsl/current/manpage
 DEP_FILES = $(patsubst %.ho,%.hd,$(patsubst %.o,%.d,$(ALL_OBJS))) \
 		   include/includes.d
 
-clean-deps:
-	rm -f $(DEPFILES)
+clean_deps:
+	@echo Removing dependency files
+	@rm -f $(DEP_FILES)
