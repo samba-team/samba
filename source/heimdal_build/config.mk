@@ -418,12 +418,6 @@ OBJ_FILES = ../heimdal/lib/vers/print_version.ho \
 # End BINARY compile_et
 #######################
 
-heimdal/lib/roken/vis.h: heimdal/lib/roken/vis.hin
-	@cp heimdal/lib/roken/vis.hin heimdal/lib/roken/vis.h
-
-heimdal/lib/roken/err.h: heimdal/lib/roken/err.hin
-	@cp heimdal/lib/roken/err.hin heimdal/lib/roken/err.h
-
 include perl_path_wrapper.sh asn1_deps.pl heimdal/lib/hdb/hdb.asn1 hdb_asn1|
 include perl_path_wrapper.sh asn1_deps.pl heimdal/lib/gssapi/spnego.asn1 spnego_asn1|
 include perl_path_wrapper.sh asn1_deps.pl heimdal/lib/asn1/k5.asn1 krb5_asn1 --encode-rfc1510-bit-string|
@@ -434,17 +428,8 @@ include perl_path_wrapper.sh et_deps.pl heimdal/lib/krb5/heim_err.et|
 include perl_path_wrapper.sh et_deps.pl heimdal/lib/krb5/k524_err.et|
 include perl_path_wrapper.sh et_deps.pl heimdal/lib/krb5/krb5_err.et|
 
-heimdal_basics: \
-	heimdal/lib/roken/vis.h \
-	heimdal/lib/roken/err.h \
-	heimdal/lib/hdb/hdb_asn1.h \
-	heimdal/lib/gssapi/spnego_asn1.h \
-	heimdal/lib/asn1/krb5_asn1.h \
-	heimdal/lib/asn1/asn1_err.h \
-	heimdal/lib/hdb/hdb_err.h \
-	heimdal/lib/krb5/heim_err.h \
-	heimdal/lib/krb5/k524_err.h \
-	heimdal/lib/krb5/krb5_err.h
+./heimdal/lib/krb5/replay.c: ./heimdal/lib/roken/vis.h
+./heimdal/lib/roken/vis.c: ./heimdal/lib/roken/vis.h
 
 clean::	
 	@-rm -f heimdal/lib/roken/vis.h heimdal/lib/roken/err.h
