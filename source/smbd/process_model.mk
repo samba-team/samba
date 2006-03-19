@@ -34,7 +34,9 @@ REQUIRED_SUBSYSTEMS = EXT_LIB_PTHREAD
 
 ################################################
 # Start SUBSYSTEM process_model
-[SUBSYSTEM::process_model]
+[LIBRARY::process_model]
+VERSION = 0.0.1
+SO_VERSION = 0
 PRIVATE_PROTO_HEADER = process_model_proto.h
 OBJ_FILES = \
 		process_model.o

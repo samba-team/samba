@@ -18,7 +18,7 @@ OBJ_FILES = \
 		hdb-ldb.o \
 		pac-glue.o 
 REQUIRED_SUBSYSTEMS = \
-		ldb KERBEROS_LIB HEIMDAL_HDB 
+		ldb KERBEROS_LIB HEIMDAL_HDB auth_sam
 # End SUBSYSTEM KDC
 #######################
 

@@ -551,7 +551,7 @@ NTSTATUS authsam_make_server_info(TALLOC_CTX *mem_ctx, struct ldb_context *sam_c
 	return NT_STATUS_OK;
 }
 
-NTSTATUS sam_get_results_principal(struct ldb_context *sam_ctx,
+_PUBLIC_ NTSTATUS sam_get_results_principal(struct ldb_context *sam_ctx,
 				   TALLOC_CTX *mem_ctx, const char *principal,
 				   struct ldb_message ***msgs,
 				   struct ldb_message ***msgs_domain_ref)
