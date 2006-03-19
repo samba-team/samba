@@ -1,5 +1,7 @@
 # TORTURE subsystem
 [LIBRARY::torture]
+SO_VERSION = 0
+VERSION = 0.0.1
 PUBLIC_HEADERS = torture.h
 PUBLIC_PROTO_HEADER = proto.h
 OBJ_FILES = \

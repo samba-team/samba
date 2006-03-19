@@ -248,10 +248,9 @@ __EOD__
 	if ($self->{config}->{SONAMEFLAG} ne "" and 
 		defined($ctx->{LIBRARY_SONAME})) {
 		$soarg = "$self->{config}->{SONAMEFLAG}$ctx->{LIBRARY_SONAME} ";
-	}
-
-	if ($self->{config}->{SONAMEFLAG} ne "") {
-		$soargdebug = "$self->{config}->{SONAMEFLAG}$ctx->{LIBRARY_REALNAME} ";
+		if ($ctx->{LIBRARY_REALNAME} ne $ctx->{LIBRARY_SONAME}) {
+			$soargdebug = "\tln -fs $ctx->{LIBRARY_REALNAME} $ctx->{DEBUGDIR}/$ctx->{LIBRARY_SONAME}\n";
+		}
 	}
 
 	if ($self->{duplicate_build}) {
@@ -262,9 +261,9 @@ $ctx->{TARGET}: \$($ctx->{TYPE}_$ctx->{NAME}_DEPEND_LIST) \$($ctx->{TYPE}_$ctx->
 	\@echo Linking \$\@
 	\@mkdir -p $ctx->{DEBUGDIR}
 	\@\$(SHLD) \$(SHLD_FLAGS) -o \$\@ \$(LOCAL_LINK_FLAGS) \\
-		\$($ctx->{TYPE}_$ctx->{NAME}_LINK_FLAGS) $soargdebug \\
+		\$($ctx->{TYPE}_$ctx->{NAME}_LINK_FLAGS) $soarg \\
 		$init_obj \$($ctx->{TYPE}_$ctx->{NAME}_LINK_LIST)
-
+$soargdebug
 __EOD__
 );
 	}
