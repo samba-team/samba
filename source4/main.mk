@@ -312,18 +312,22 @@ unused_macros:
 # File types
 ###############################################################################
 
-.SUFFIXES: .x .c .et .y .l .d .o .h .h.gch .a .so .1 .1.xml .3 .3.xml .5 .5.xml .7 .7.xml .8 .8.xml .ho .hin .idl
+.SUFFIXES: .x .c .et .y .l .d .o .h .h.gch .a .so .1 .1.xml .3 .3.xml .5 .5.xml .7 .7.xml .8 .8.xml .ho .hin .idl .hd
 
 .hin.h:
 	@cp $< $@
 
 .c.ho:
 	@echo "Compiling $< with host compiler"
-	@$(HOSTCC) `script/cflags.pl $@` $(CFLAGS) -c $*.c -o $@
+	@$(HOSTCC) `script/cflags.pl $@` $(CFLAGS) -c $< -o $@
 
 .c.d:
 	@echo "Generating dependencies for $<"
 	@$(CC) -M -MG -MT $(<:.c=.o) `script/cflags.pl $@` $(CFLAGS) $< -o $@
+
+.c.hd:
+	@echo "Generating dependencies for $<"
+	@$(CC) -M -MG -MT $(<:.c=.ho) `script/cflags.pl $@` $(CFLAGS) $< -o $@
 
 include/includes.d: include/includes.h
 	@echo "Generating dependencies for $<"
@@ -366,7 +370,7 @@ DOCBOOK_MANPAGE_URL = http://docbook.sourceforge.net/release/xsl/current/manpage
 .8.xml.8:
 	$(XSLTPROC) -o $@ $(DOCBOOK_MANPAGE_URL) $<
 
-DEP_FILES = $(patsubst %.ho,%.d,$(patsubst %.o,%.d,$(ALL_OBJS))) \
+DEP_FILES = $(patsubst %.ho,%.hd,$(patsubst %.o,%.d,$(ALL_OBJS))) \
 		   include/includes.d
 
 clean-deps:
