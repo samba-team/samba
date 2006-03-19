@@ -7,7 +7,7 @@ OBJ_FILES = \
 		kdc.o \
 		kpasswdd.o
 REQUIRED_SUBSYSTEMS = \
-		ldb KERBEROS_LIB HEIMDAL_KDC HEIMDAL_HDB 
+		ldb KERBEROS_LIB HEIMDAL_KDC HEIMDAL_HDB SAMDB
 # End SUBSYSTEM KDC
 #######################
 

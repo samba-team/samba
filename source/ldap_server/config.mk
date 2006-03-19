@@ -9,6 +9,6 @@ OBJ_FILES = \
 		ldap_backend.o \
 		ldap_bind.o
 REQUIRED_SUBSYSTEMS = \
-		LIBCLI_LDAP SAMDB
+		LIBCLI_LDAP SAMDB process_model
 # End SUBSYSTEM SMB
 #######################

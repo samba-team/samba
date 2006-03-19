@@ -29,7 +29,7 @@
 */
 
 /* This hardcoded value should go into a ldb database! */
-enum srvsvc_PlatformId dcesrv_common_get_platform_id(TALLOC_CTX *mem_ctx, struct dcesrv_context *dce_ctx)
+_PUBLIC_ enum srvsvc_PlatformId dcesrv_common_get_platform_id(TALLOC_CTX *mem_ctx, struct dcesrv_context *dce_ctx)
 {
 	enum srvsvc_PlatformId id;
 
@@ -38,7 +38,7 @@ enum srvsvc_PlatformId dcesrv_common_get_platform_id(TALLOC_CTX *mem_ctx, struct
 	return id;
 }
 
-const char *dcesrv_common_get_server_name(TALLOC_CTX *mem_ctx, struct dcesrv_context *dce_ctx, const char *server_unc)
+_PUBLIC_ const char *dcesrv_common_get_server_name(TALLOC_CTX *mem_ctx, struct dcesrv_context *dce_ctx, const char *server_unc)
 {
 	const char *p = server_unc;
 
@@ -61,31 +61,31 @@ const char *dcesrv_common_get_domain_name(TALLOC_CTX *mem_ctx, struct dcesrv_con
 }
 
 /* This hardcoded value should go into a ldb database! */
-uint32_t dcesrv_common_get_version_major(TALLOC_CTX *mem_ctx, struct dcesrv_context *dce_ctx)
+_PUBLIC_ uint32_t dcesrv_common_get_version_major(TALLOC_CTX *mem_ctx, struct dcesrv_context *dce_ctx)
 {
 	return lp_parm_int(-1, "server_info", "version_major", 5);
 }
 
 /* This hardcoded value should go into a ldb database! */
-uint32_t dcesrv_common_get_version_minor(TALLOC_CTX *mem_ctx, struct dcesrv_context *dce_ctx)
+_PUBLIC_ uint32_t dcesrv_common_get_version_minor(TALLOC_CTX *mem_ctx, struct dcesrv_context *dce_ctx)
 {
 	return lp_parm_int(-1, "server_info", "version_minor", 2);
 }
 
 /* This hardcoded value should go into a ldb database! */
-uint32_t dcesrv_common_get_version_build(TALLOC_CTX *mem_ctx, struct dcesrv_context *dce_ctx)
+_PUBLIC_ uint32_t dcesrv_common_get_version_build(TALLOC_CTX *mem_ctx, struct dcesrv_context *dce_ctx)
 {
 	return lp_parm_int(-1, "server_info", "version_build", 3790);
 }
 
 /* This hardcoded value should go into a ldb database! */
-uint32_t dcesrv_common_get_server_type(TALLOC_CTX *mem_ctx, struct dcesrv_context *dce_ctx)
+_PUBLIC_ uint32_t dcesrv_common_get_server_type(TALLOC_CTX *mem_ctx, struct dcesrv_context *dce_ctx)
 {
 	return lp_default_server_announce();
 }
 
 /* This hardcoded value should go into a ldb database! */
-const char *dcesrv_common_get_lan_root(TALLOC_CTX *mem_ctx, struct dcesrv_context *dce_ctx)
+_PUBLIC_ const char *dcesrv_common_get_lan_root(TALLOC_CTX *mem_ctx, struct dcesrv_context *dce_ctx)
 {
 	return talloc_strdup(mem_ctx, "");
 }
