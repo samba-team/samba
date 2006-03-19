@@ -30,6 +30,6 @@ heimdal_basics: \
 
 proto: basics
 basics: include/includes.h \
-	proto \
 	idl \
+	$(PROTO_HEADERS) \
 	heimdal_basics
