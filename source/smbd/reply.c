@@ -2176,7 +2176,8 @@ void send_file_readbraw(connection_struct *conn, files_struct *fsp, SMB_OFF_T st
 	 * reply_readbraw has already checked the length.
 	 */
 
-	if (chain_size ==0 && (nread > 0) && (lp_write_cache_size(SNUM(conn)) == 0) && lp_use_sendfile(SNUM(conn)) ) {
+	if ( (chain_size == 0) && (nread > 0) &&
+	    (fsp->wcp == NULL) && lp_use_sendfile(SNUM(conn)) ) {
 		DATA_BLOB header;
 
 		_smb_setlen(outbuf,nread);
@@ -2529,8 +2530,8 @@ int send_file_readX(connection_struct *conn, char *inbuf,char *outbuf,int length
 	 * on a train in Germany :-). JRA.
 	 */
 
-	if (chain_size ==0 && (CVAL(inbuf,smb_vwv0) == 0xFF) && lp_use_sendfile(SNUM(conn)) &&
-			(lp_write_cache_size(SNUM(conn)) == 0) ) {
+	if ((chain_size == 0) && (CVAL(inbuf,smb_vwv0) == 0xFF) &&
+	    lp_use_sendfile(SNUM(conn)) && (fsp->wcp == NULL) ) {
 		SMB_STRUCT_STAT sbuf;
 		DATA_BLOB header;
 
