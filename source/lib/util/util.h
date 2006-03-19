@@ -40,7 +40,7 @@ struct smbsrv_tcon;
 #include "util/debug.h"
 #include "util/mutex.h"
 #include "util/byteorder.h"
-#include "util/util_proto.h"
+#include "lib/util/util_proto.h"
 
 /** 
  * zero a structure 
