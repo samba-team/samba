@@ -21,7 +21,8 @@ OBJ_FILES = \
 		wb_cmd_usersids.o \
 		wb_cmd_list_trustdom.o \
 		wb_pam_auth.o
-REQUIRED_SUBSYSTEMS = WB_HELPER RPC_NDR_LSA RPC_NDR_SAMR
+REQUIRED_SUBSYSTEMS = WB_HELPER RPC_NDR_LSA RPC_NDR_SAMR process_model \
+					  PAM_ERRORS
 # End SUBSYSTEM WINBIND
 #######################
 

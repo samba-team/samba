@@ -1,4 +1,4 @@
-# auth Server subsystem
+# auth server subsystem
 include gensec/config.mk
 include kerberos/config.mk
 include ntlmssp/config.mk
@@ -79,6 +79,6 @@ OBJ_FILES = \
 		auth_sam_reply.o \
 		ntlm_check.o \
 		auth_simple.o
-REQUIRED_SUBSYSTEMS = LIB_SECURITY
+REQUIRED_SUBSYSTEMS = LIB_SECURITY process_model
 # End SUBSYSTEM auth
 #######################
