@@ -133,16 +133,6 @@ static NTSTATUS libnet_RpcConnectSrv_recv(struct composite_context *c,
 }
 
 
-static NTSTATUS libnet_RpcConnectSrv(struct libnet_context *ctx, TALLOC_CTX *mem_ctx,
-				     struct libnet_RpcConnect *r)
-{
-	struct composite_context *c;
-
-	c = libnet_RpcConnectSrv_send(ctx, mem_ctx, r);
-	return libnet_RpcConnectSrv_recv(c, ctx, mem_ctx, r);
-}
-
-
 struct rpc_connect_dc_state {
 	struct libnet_context *ctx;
 	struct libnet_RpcConnect r;
