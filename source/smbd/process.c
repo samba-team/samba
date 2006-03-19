@@ -1072,11 +1072,10 @@ set. Ignoring max smbd restriction.\n"));
 }
 
 /****************************************************************************
- Process an smb from the client - split out from the smbd_process() code so
- it can be used by the oplock break code.
+ Process an smb from the client
 ****************************************************************************/
 
-void process_smb(char *inbuf, char *outbuf)
+static void process_smb(char *inbuf, char *outbuf)
 {
 	static int trans_num;
 	int msg_type = CVAL(inbuf,0);
