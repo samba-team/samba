@@ -52,6 +52,8 @@ lib/tdr/tdr_proto.h: tdr/proto.h
 auth/credentials/credentials.h: credentials.h
 auth/credentials/credentials_proto.h: credentials/proto.h
 rpc_server/dcerpc_server.h: dcerpc_server.h
+rpc_server/common/common.h: dcerpc_server/common.h
+rpc_server/common/proto.h: dcerpc_server/common_proto.h
 rpc_server/dcerpc_server_proto.h: dcerpc_server/proto.h
 auth/auth.h: auth.h
 auth/auth_proto.h: auth/proto.h

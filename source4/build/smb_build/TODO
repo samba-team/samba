@@ -1,11 +1,6 @@
-- saner names for some of the .pc files (reduce the amount of .pc files?)
+- saner names for some of the .pc files and libraries (reduce the amount of .pc files?)
 - plugin loading support in ldb
-- proper #include dependencies:
-  for each subsystem:
-  - include line in Makefile
-  - rule in Makefile
 - generate headermap.txt
-- fixed shared library install
 
 set of test scripts that check the code:
 - configure_check_unused.pl
