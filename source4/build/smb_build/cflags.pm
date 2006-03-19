@@ -21,6 +21,7 @@ sub create_cflags($$)
 			my $ofile = $_;
 			my $dfile = $_;
 			$dfile =~ s/\.o$/.d/;
+			$dfile =~ s/\.ho$/.d/;
 			print CFLAGS_TXT "$ofile $dfile: CFLAGS+=$key->{EXTRA_CFLAGS}\n";
 		}
 	}

@@ -509,12 +509,9 @@ sub write($$)
 	$self->output($self->{mkfile});
 
 	if ($self->{developer}) {
-		$self->output(<<__EOD__
-
--include \$(DEP_FILES)
-
-__EOD__
-);
+		$self->output("-include \$(DEP_FILES)\n");
+	} else {
+		$self->output("include static_deps.mk\n");
 	}
 
 	open(MAKEFILE,">$file") || die ("Can't open $file\n");
