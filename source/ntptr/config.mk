@@ -19,6 +19,7 @@ PRIVATE_PROTO_HEADER = ntptr_proto.h
 OBJ_FILES = \
 		ntptr_base.o \
 		ntptr_interface.o
+REQUIRED_SUBSYSTEMS = DCERPC_COMMON
 #
 # End SUBSYSTEM ntptr
 ################################################
