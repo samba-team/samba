@@ -8,6 +8,8 @@ Changes in Samba4-TP2
 Release date: UNRELEASED
 ========================================
 
+ * Make ldb async internally (idra)
+
  * Use HDB-LDB as the keytab (abartlet)
 
  * Call the wins hook script again (metze)
@@ -69,8 +71,6 @@ Release date: UNRELEASED
 
  * Fix invalid steal on supportedControls (closes: #3525) (abartlet)
 
- * Initial work on making ldb async (idra)
- 
  * Start parsing saslauthd requests (metze)
 
  * Split the NBT-WINSREPLICATION test into multiple tests (metze)
@@ -101,9 +101,67 @@ Release date: UNRELEASED
 
  * Better handling of connections without SPNEGO (abartlet)
 
+ * Generate seperate headers for RPC client functions (jelmer)
+
  * Improve NTLMSSP tests (abartlet, vl)
+
+ * Support any size pointers in pidl (tridge)
+
+ * Large overhaul of the opendb code to pass BASE-DELETE (tridge)
+
+ * Use doxygen for documenting lib/util and lib/registry (jelmer)
+
+ * Add registration mechanism for modules and backends in ldb (idra, jelmer)
+
+ * Support building shared libraries in the build system (metze, jelmer)
+
+ * Install headers in a sane location (jelmer)
+
+ * Fix BASE-NEGNOWAIT (tridge)
+
+ * Add prefixes to most of the SMB-related functions (metze) 
+
+ * Get rid of proto.h (jelmer)
+
+ * Reduce number of headers included in includes.h (jelmer)
+
+ * Support header dependencies (jelmer)
+
+ * Add RAW-NOTIFY (tridge, metze)
+
+ * Fix 'your password has expired' on every login (abartlet)
+
+ * Improvements to RPC-SAMSYNC (abartlet)
+
+ * Work on supporting change notify (tridge, metze)
+
+ * Reopen log files after SIGHUP (metze)
+
+ * Add BUGS.txt (#3523) (jelmer)
+
+ * Add summary to configure (#3442) (metze, jelmer)
+
+ * Swig fixes (idra)
+
+ * Improve NBT-WINSREPLICATION-OWNED test (metze)
+
+ * Fix a lot of compiler warnings (metze)
+
+ * Several code improvements found by static code checker (tridge, metze)
+
+ * Force correct alignment when in ASCII mode (#2921) (tridge)
+ 
+ * Fix coverity bug #127 (vl)
+
+ * Add support for changing process titles (metze)
+
+ * Support raw NTLMSSP (abartlet)
+
+ * Fix debug levels in several places (abartlet)
+
+ * Work to unify the ntvfs structures for smb and smb2 (metze, tridge)
 
  * A lot of small cleanups and typo fixes 
    (metze, abartlet, idra, jpeach, tridge, jelmer)
 
-(up to date until revno 13732)
+(up to date until revno 14554)
