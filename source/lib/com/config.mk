@@ -1,11 +1,15 @@
-[SUBSYSTEM::com]
+[LIBRARY::com]
+VERSION = 0.0.1
+SO_VERSION = 0
 PRIVATE_PROTO_HEADER = proto.h
 OBJ_FILES = \
 		tables.o \
 		rot.o \
 		main.o
 
-[SUBSYSTEM::dcom]
+[LIBRARY::dcom]
+VERSION = 0.0.1
+SO_VERSION = 0
 PRIVATE_PROTO_HEADER = dcom/proto.h
 OBJ_FILES = \
 		dcom/main.o \

@@ -202,7 +202,7 @@ sub SharedLibrary($$)
 
 	if ($ctx->{TYPE} eq "LIBRARY") {
 		push (@{$self->{shared_libs}}, "$ctx->{DEBUGDIR}/$ctx->{LIBRARY_REALNAME}");
-		push (@{$self->{installable_shared_libs}}, "$installdir/$ctx->{LIBRARY_REALNAME}");
+		push (@{$self->{installable_shared_libs}}, "$installdir/$ctx->{LIBRARY_REALNAME}") if (defined($ctx->{SO_VERSION}));
 	} elsif ($ctx->{TYPE} eq "MODULE") {
 		push (@{$self->{shared_modules}}, "$ctx->{DEBUGDIR}/$ctx->{LIBRARY_REALNAME}");
 		push (@{$self->{plugins}}, "$installdir/$ctx->{LIBRARY_REALNAME}");

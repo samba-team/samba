@@ -8,7 +8,7 @@ PUBLIC_HEADERS = gensec.h spnego.h
 PUBLIC_PROTO_HEADER = gensec_proto.h
 OBJ_FILES = gensec.o
 REQUIRED_SUBSYSTEMS = \
-		CREDENTIALS LIBBASIC
+		CREDENTIALS LIBSAMBA-UTIL
 # End SUBSYSTEM gensec
 #################################
 

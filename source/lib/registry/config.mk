@@ -92,7 +92,7 @@ OBJ_FILES = \
 		reg_samba.o \
 		patchfile.o
 REQUIRED_SUBSYSTEMS = \
-		LIBBASIC
+		LIBSAMBA-UTIL
 PRIVATE_PROTO_HEADER = registry_proto.h
 PUBLIC_HEADERS = registry.h
 # End MODULE registry_ldb
@@ -105,7 +105,7 @@ INSTALLDIR = BINDIR
 OBJ_FILES= \
 		tools/regdiff.o
 REQUIRED_SUBSYSTEMS = \
-		CONFIG registry LIBPOPT POPT_SAMBA POPT_CREDENTIALS
+		LIBSAMBA-CONFIG registry LIBPOPT POPT_SAMBA POPT_CREDENTIALS
 MANPAGE = man/regdiff.1
 # End BINARY regdiff
 ################################################
@@ -117,7 +117,7 @@ INSTALLDIR = BINDIR
 OBJ_FILES= \
 		tools/regpatch.o
 REQUIRED_SUBSYSTEMS = \
-		CONFIG registry LIBPOPT POPT_SAMBA POPT_CREDENTIALS
+		LIBSAMBA-CONFIG registry LIBPOPT POPT_SAMBA POPT_CREDENTIALS
 MANPAGE = man/regpatch.1
 # End BINARY regpatch
 ################################################
@@ -129,7 +129,7 @@ INSTALLDIR = BINDIR
 OBJ_FILES= \
 		tools/regshell.o
 REQUIRED_SUBSYSTEMS = \
-		CONFIG LIBPOPT registry POPT_SAMBA POPT_CREDENTIALS LIBREADLINE
+		LIBSAMBA-CONFIG LIBPOPT registry POPT_SAMBA POPT_CREDENTIALS LIBREADLINE
 MANPAGE = man/regshell.1
 # End BINARY regshell
 ################################################
@@ -141,7 +141,7 @@ INSTALLDIR = BINDIR
 OBJ_FILES= \
 		tools/regtree.o
 REQUIRED_SUBSYSTEMS = \
-		CONFIG LIBPOPT registry POPT_SAMBA POPT_CREDENTIALS
+		LIBSAMBA-CONFIG LIBPOPT registry POPT_SAMBA POPT_CREDENTIALS
 MANPAGE = man/regtree.1
 # End BINARY regtree
 ################################################
