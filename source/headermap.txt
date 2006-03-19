@@ -74,3 +74,5 @@ librpc/gen_ndr/svcctl.h: gen_ndr/nbt.h
 lib/cmdline/popt_common.h: samba/popt.h
 include/dlinklist.h: dlinklist.h
 version.h: samba/version.h
+param/proto.h: param/proto.h
+param/param.h: param.h
