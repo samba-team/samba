@@ -453,11 +453,15 @@ sub ProtoHeader($$)
 
 	$dir =~ s/^\.\///g;
 
+	my $target = "";
+
 	my $comment = "Creating ";
 	if (defined($ctx->{PRIVATE_PROTO_HEADER})) {
+		$target.= "$dir/$ctx->{PRIVATE_PROTO_HEADER}";
 		$comment.= "$dir/$ctx->{PRIVATE_PROTO_HEADER}";
 		if (defined($ctx->{PUBLIC_PROTO_HEADER})) {
 			$comment .= " and ";
+			$target.= " ";
 		}
 		push (@{$self->{proto_headers}}, "$dir/$ctx->{PRIVATE_PROTO_HEADER}");
 	} else {
@@ -466,6 +470,7 @@ sub ProtoHeader($$)
 	
 	if (defined($ctx->{PUBLIC_PROTO_HEADER})) {
 		$comment.= "$dir/$ctx->{PUBLIC_PROTO_HEADER}";
+		$target .= "$dir/$ctx->{PUBLIC_PROTO_HEADER}";
 		push (@{$self->{proto_headers}}, "$dir/$ctx->{PUBLIC_PROTO_HEADER}");
 	} else {
 		$ctx->{PUBLIC_PROTO_HEADER} = $ctx->{PRIVATE_PROTO_HEADER};
