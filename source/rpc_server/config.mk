@@ -3,7 +3,8 @@
 ################################################
 # Start SUBSYSTEM DCERPC_COMMON
 [SUBSYSTEM::DCERPC_COMMON]
-PRIVATE_PROTO_HEADER = common/proto.h
+PUBLIC_PROTO_HEADER = common/proto.h
+PUBLIC_HEADERS = common/common.h
 OBJ_FILES = \
 		common/server_info.o \
 		common/share_info.o
@@ -202,7 +203,9 @@ REQUIRED_SUBSYSTEMS = \
 
 ################################################
 # Start SUBSYSTEM dcerpc_server
-[SUBSYSTEM::dcerpc_server]
+[LIBRARY::dcerpc_server]
+VERSION = 0.0.1
+SO_VERSION = 0
 PUBLIC_HEADERS = dcerpc_server.h
 PUBLIC_PROTO_HEADER = dcerpc_server_proto.h
 OBJ_FILES = \
