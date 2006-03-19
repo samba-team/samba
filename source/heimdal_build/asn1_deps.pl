@@ -21,9 +21,8 @@ if (not defined $options) {
 }
 
 my $header = "$dirname/$prefix.h";
-my $short_header = "$prefix.h";
 
-print "$short_header $header: $file bin/asn1_compile\n";
+print "$header: $file bin/asn1_compile\n";
 print "\t\@echo \"Compiling ASN1 file $file\"\n";
 print "\t\@cd $dirname && ../../../bin/asn1_compile $options $basename $prefix\n\n";
 
