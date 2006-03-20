@@ -34,6 +34,9 @@
 #ifdef HAVE_STDINT_H
 #include <stdint.h>
 #endif
+#ifdef HAVE_DLFCN_H
+#include <dlfcn.h>
+#endif
 
 #define discard_const(ptr) ((void *)((intptr_t)(ptr)))
 #define discard_const_p(type, ptr) ((type *)discard_const(ptr))

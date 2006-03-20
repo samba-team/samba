@@ -1102,5 +1102,5 @@ static int ltdb_connect(struct ldb_context *ldb, const char *url,
 
 int ldb_tdb_init(void)
 {
-	return ldb_register_backend("tdb:", ltdb_connect);
+	return ldb_register_backend("tdb", ltdb_connect);
 }

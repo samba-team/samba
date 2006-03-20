@@ -13,15 +13,15 @@ REQUIRED_SUBSYSTEMS = \
 #######################
 
 #######################
-# Start MODULE libldb_wins_ldb
-[MODULE::libldb_wins_ldb]
+# Start MODULE ldb_wins_ldb
+[MODULE::ldb_wins_ldb]
 SUBSYSTEM = ldb
 INIT_FUNCTION = wins_ldb_module_init
 OBJ_FILES = \
 		wins/wins_ldb.o
 REQUIRED_SUBSYSTEMS = \
 		LIBNETIF
-# End MODULE libldb_wins_ldb
+# End MODULE ldb_wins_ldb
 #######################
 
 #######################

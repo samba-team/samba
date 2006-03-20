@@ -195,6 +195,39 @@ int ldb_register_module(const struct ldb_module_ops *ops)
 	return 0;
 }
 
+int ldb_try_load_dso(struct ldb_context *ldb, const char *name)
+{
+	char *path;
+	void *handle;
+	int (*init_fn) (void);
+
+#ifdef HAVE_DLOPEN
+	path = talloc_asprintf(ldb, "%s/%s.%s", MODULESDIR, name, SHLIBEXT);
+
+	ldb_debug(ldb, LDB_DEBUG_TRACE, "trying to load %s from %s\n", name, path);
+
+	handle = dlopen(path, 0);
+	if (handle == NULL) {
+		ldb_debug(ldb, LDB_DEBUG_WARNING, "unable to load %s from %s: %s\n", name, path, dlerror());
+		return -1;
+	}
+
+	init_fn = dlsym(handle, "init_module");
+
+	if (init_fn == NULL) {
+		ldb_debug(ldb, LDB_DEBUG_ERROR, "no symbol `init_module' found in %s: %s\n", path, dlerror());
+		return -1;
+	}
+
+	talloc_free(path);
+
+	return init_fn();
+#else
+	ldb_debug(ldb, LDB_DEBUG_TRACE, "no dlopen() - not trying to load %s module\n", name);
+	return -1;
+#endif
+}
+
 int ldb_load_modules(struct ldb_context *ldb, const char *options[])
 {
 	char **modules = NULL;
@@ -252,6 +285,12 @@ int ldb_load_modules(struct ldb_context *ldb, const char *options[])
 			const struct ldb_module_ops *ops;
 				
 			ops = ldb_find_module_ops(modules[i]);
+			if (ops == NULL) {
+				if (ldb_try_load_dso(ldb, modules[i]) == 0) {
+					ops = ldb_find_module_ops(modules[i]);
+				}
+			}
+			
 			if (ops == NULL) {
 				ldb_debug(ldb, LDB_DEBUG_WARNING, "WARNING: Module [%s] not found\n", 
 					  modules[i]);
