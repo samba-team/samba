@@ -58,7 +58,7 @@ kerb_prompter(krb5_context ctx, void *data,
   place in default cache location.
   remus@snapserver.com
 */
-int kerberos_kinit_password(const char *principal,
+int kerberos_kinit_password_ext(const char *principal,
 				const char *password,
 				int time_offset,
 				time_t *expire_time,
@@ -187,7 +187,7 @@ int ads_kinit_password(ADS_STRUCT *ads)
 		return KRB5_LIBOS_CANTREADPWD;
 	}
 	
-	ret = kerberos_kinit_password(s, ads->auth.password, ads->auth.time_offset,
+	ret = kerberos_kinit_password_ext(s, ads->auth.password, ads->auth.time_offset,
 			&ads->auth.expire, NULL, NULL, False, ads->auth.renewable);
 
 	if (ret) {
@@ -380,8 +380,8 @@ static krb5_error_code get_service_ticket(krb5_context ctx,
 	if (password == NULL) {
 		goto out;
 	}
-	if ((err = kerberos_kinit_password(machine_account, password, 0, NULL, NULL, 
-					   LIBADS_CCACHE_NAME, False, 0)) != 0) {
+	if ((err = kerberos_kinit_password(machine_account, password, 
+					   0, LIBADS_CCACHE_NAME)) != 0) {
 		DEBUG(0,("get_service_ticket: kerberos_kinit_password %s failed: %s\n", 
 			machine_account,
 			error_message(err)));
@@ -811,4 +811,20 @@ BOOL kerberos_derive_cifs_salting_principals(void)
 	}
 	return retval;
 }
+
+int kerberos_kinit_password(const char *principal,
+			    const char *password,
+			    int time_offset,
+			    const char *cache_name)
+{
+	return kerberos_kinit_password_ext(principal, 
+					   password, 
+					   time_offset, 
+					   0, 
+					   0,
+					   cache_name,
+					   False,
+					   0);
+}
+
 #endif
