@@ -2016,7 +2016,8 @@ static NTSTATUS cmd_samr_chgpasswd3(struct rpc_pipe_client *cli,
 			case REJECT_REASON_NOT_COMPLEX:
 				d_printf("REJECT_REASON_NOT_COMPLEX\n");
 				break;
-			case 0:
+			case REJECT_REASON_OTHER:
+				d_printf("REJECT_REASON_OTHER\n");
 				break;
 			default:
 				d_printf("unknown reject reason: %d\n", reject.reject_reason);
