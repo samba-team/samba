@@ -75,6 +75,7 @@ int pam_sm_authenticate(pam_handle_t *pamh, int flags,
 
 
     /* Samba initialization. */
+    load_case_tables();
     setup_logging("pam_smbpass",False);
     in_client = True;
 
