@@ -482,14 +482,14 @@ static NTSTATUS winbindd_raw_kerberos_login(struct winbindd_domain *domain,
 		DEBUG(10,("winbindd_raw_kerberos_login: uid is %d\n", uid));
 	}
 
-	krb5_ret = kerberos_kinit_password(principal_s, 
-					   state->request.data.auth.pass, 
-					   time_offset, 
-					   &ticket_lifetime,
-					   &renewal_until,
-					   cc, 
-					   True,
-					   WINBINDD_PAM_AUTH_KRB5_RENEW_TIME);
+	krb5_ret = kerberos_kinit_password_ext(principal_s, 
+					       state->request.data.auth.pass, 
+					       time_offset, 
+					       &ticket_lifetime,
+					       &renewal_until,
+					       cc, 
+					       True,
+					       WINBINDD_PAM_AUTH_KRB5_RENEW_TIME);
 
 	if (krb5_ret) {
 		DEBUG(1,("winbindd_raw_kerberos_login: kinit failed for '%s' with: %s (%d)\n", 

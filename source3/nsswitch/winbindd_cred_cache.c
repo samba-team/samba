@@ -106,14 +106,14 @@ static void krb5_ticket_refresh_handler(struct timed_event *te,
 	     
 		seteuid(entry->uid);
 
-		ret = kerberos_kinit_password(entry->principal_name,
-					      entry->pass,
-					      0, /* hm, can we do time correction here ? */
-					      &entry->refresh_time,
-					      &entry->renew_until,
-					      entry->ccname,
-					      False, /* no PAC required anymore */
-					      WINBINDD_PAM_AUTH_KRB5_RENEW_TIME);
+		ret = kerberos_kinit_password_ext(entry->principal_name,
+						  entry->pass,
+						  0, /* hm, can we do time correction here ? */
+						  &entry->refresh_time,
+						  &entry->renew_until,
+						  entry->ccname,
+						  False, /* no PAC required anymore */
+						  WINBINDD_PAM_AUTH_KRB5_RENEW_TIME);
 		seteuid(0);
 
 		if (ret) {
