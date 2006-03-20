@@ -1091,20 +1091,14 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 		struct deferred_open_record *state =
 			(struct deferred_open_record *)pml->private_data.data;
 
+		/* Remember the absolute time of the original
+		   request with this mid. We'll use it later to
+		   see if this has timed out. */
+
 		request_time = pml->request_time;
 		delayed_for_oplocks = state->delayed_for_oplocks;
 
-		/* There could be a race condition where the dev/inode pair
-		   has changed since we deferred the message. If so, just
-		   remove the deferred open entry and return sharing
-		   violation. */
-
-		/* If the timeout value is non-zero, we need to just return
-		   sharing violation. Don't retry the open as we were not
-		   notified of a close and we don't want to trigger another
-		   spurious oplock break. */
-
-		/* Now remove the deferred open entry under lock. */
+		/* Remove the deferred open entry under lock. */
 		lck = get_share_mode_lock(NULL, state->dev, state->inode, NULL, NULL);
 		if (lck == NULL) {
 			DEBUG(0, ("could not get share mode lock\n"));
@@ -1327,21 +1321,29 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 
 		if (delay_for_oplocks(lck, fsp)) {
 			struct deferred_open_record state;
+
+			/* This is a relative time, added to the absolute
+			   request_time value to get the absolute timeout time.
+			   Note that if this is the second or greater time we enter
+			   this codepath for this particular request mid then
+			   request_time is left as the absolute time of the *first*
+			   time this request mid was processed. This is what allows
+			   the request to eventually time out. */
+
 			struct timeval timeout;
-
-			if (delayed_for_oplocks) {
-				DEBUG(0, ("Trying to delay for oplocks "
-					  "twice\n"));
-				exit_server("exiting");
-			}
-
-			timeout = timeval_set(OPLOCK_BREAK_TIMEOUT*2, 0);
 
 			/* Normally the smbd we asked should respond within
 			 * OPLOCK_BREAK_TIMEOUT seconds regardless of whether
 			 * the client did, give twice the timeout as a safety
 			 * measure here in case the other smbd is stuck
 			 * somewhere else. */
+
+			timeout = timeval_set(OPLOCK_BREAK_TIMEOUT*2, 0);
+
+			/* Nothing actually uses state.delayed_for_oplocks
+			   but it's handy to differentiate in debug messages
+			   between a 30 second delay due to oplock break, and
+			   a 1 second delay for share mode conflicts. */
 
 			state.delayed_for_oplocks = True;
 			state.dev = dev;
@@ -1434,7 +1436,20 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 				struct timeval timeout;
 				struct deferred_open_record state;
 
+				/* This is a relative time, added to the absolute
+				   request_time value to get the absolute timeout time.
+				   Note that if this is the second or greater time we enter
+				   this codepath for this particular request mid then
+				   request_time is left as the absolute time of the *first*
+				   time this request mid was processed. This is what allows
+				   the request to eventually time out. */
+
 				timeout = timeval_set(0, SHARING_VIOLATION_USEC_WAIT);
+
+				/* Nothing actually uses state.delayed_for_oplocks
+				   but it's handy to differentiate in debug messages
+				   between a 30 second delay due to oplock break, and
+				   a 1 second delay for share mode conflicts. */
 
 				state.delayed_for_oplocks = False;
 				state.dev = dev;
