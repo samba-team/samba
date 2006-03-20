@@ -18,7 +18,6 @@ sub new($$$)
 	
 	bless($self, $myname);
 
-	$self->{automatic_deps} = 0;
 	$self->{manpages} = [];
 	$self->{sbin_progs} = [];
 	$self->{bin_progs} = [];

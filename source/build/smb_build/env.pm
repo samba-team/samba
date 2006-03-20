@@ -47,11 +47,8 @@ sub _set_config($$)
 		$self->{config}->{exec_prefix} = $self->{config}->{prefix};
 	}
 	
-	if ($self->{config}->{developer} eq "yes") {
-		$self->{developer} = 1;
-	} else {
-		$self->{developer} = 0;
-	}
+	$self->{developer} = ($self->{config}->{developer} eq "yes");
+	$self->{automatic_deps} = ($self->{config}->{automatic_dependencies} eq "yes");
 }
 
 sub PkgConfig($$$$$$$$)
