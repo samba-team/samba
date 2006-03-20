@@ -1379,10 +1379,7 @@ static NTSTATUS fill_sam_account(TALLOC_CTX *mem_ctx,
 	fstr_sprintf(dom_user, "%s%c%s", domain, *lp_winbind_separator(), 
 		lower_username);
 
-	/* get the passwd struct but don't create the user if he/she 
-	   does not exist.  We were explicitly called from a following
-	   a winbindd authentication request so we should assume that 
-	   nss_winbindd is working */
+	/* Get the passwd struct.  Try to create the account is necessary. */
 
 	map_username( dom_user );
 
