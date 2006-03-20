@@ -41,7 +41,7 @@ static void continue_pipe_connect(struct composite_context *ctx);
  * @param ctx initialised libnet context
  * @param mem_ctx memory context of this call
  * @param r data structure containing necessary parameters and return values
- * @return nt status of the call
+ * @return composite context of this call
  **/
 
 static struct composite_context* libnet_RpcConnectSrv_send(struct libnet_context *ctx,
@@ -52,6 +52,7 @@ static struct composite_context* libnet_RpcConnectSrv_send(struct libnet_context
 	struct rpc_connect_srv_state *s;
 	struct composite_context *pipe_connect_req;
 
+	/* composite context allocation and setup */
 	c = talloc_zero(mem_ctx, struct composite_context);
 	if (c == NULL) return NULL;
 
@@ -88,6 +89,9 @@ static struct composite_context* libnet_RpcConnectSrv_send(struct libnet_context
 }
 
 
+/*
+  Step 2 of RpcConnectSrv - get rpc connection
+*/
 static void continue_pipe_connect(struct composite_context *ctx)
 {
 	struct composite_context *c;
@@ -96,6 +100,7 @@ static void continue_pipe_connect(struct composite_context *ctx)
 	c = talloc_get_type(ctx->async.private_data, struct composite_context);
 	s = talloc_get_type(c->private_data, struct rpc_connect_srv_state);
 
+	/* receive result of rpc pipe connection */
 	c->status = dcerpc_pipe_connect_recv(ctx, c, &s->r.out.dcerpc_pipe);
 	if (!composite_is_ok(c)) return;
 
@@ -123,6 +128,7 @@ static NTSTATUS libnet_RpcConnectSrv_recv(struct composite_context *c,
 	NTSTATUS status = composite_wait(c);
 
 	if (NT_STATUS_IS_OK(status) && ctx && mem_ctx && r) {
+		/* move the returned rpc pipe between memory contexts */
 		s = talloc_get_type(c->private_data, struct rpc_connect_srv_state);
 		r->out.dcerpc_pipe = talloc_steal(mem_ctx, s->r.out.dcerpc_pipe);
 		ctx->pipe = r->out.dcerpc_pipe;
@@ -163,6 +169,7 @@ static struct composite_context* libnet_RpcConnectDC_send(struct libnet_context 
 	struct rpc_connect_dc_state *s;
 	struct composite_context *lookup_dc_req;
 
+	/* composite context allocation and setup */
 	c = talloc_zero(mem_ctx, struct composite_context);
 	if (c == NULL) return NULL;
 
@@ -201,6 +208,10 @@ static struct composite_context* libnet_RpcConnectDC_send(struct libnet_context 
 }
 
 
+/*
+  Step 2 of RpcConnectDC: get domain controller name/address and
+  initiate RpcConnect to it
+*/
 static void continue_lookup_dc(struct composite_context *ctx)
 {
 	struct composite_context *c;
@@ -210,6 +221,7 @@ static void continue_lookup_dc(struct composite_context *ctx)
 	c = talloc_get_type(ctx->async.private_data, struct composite_context);
 	s = talloc_get_type(c->private_data, struct rpc_connect_dc_state);
 	
+	/* receive result of domain controller lookup */
 	c->status = libnet_LookupDCs_recv(ctx, c, &s->f);
 	if (!composite_is_ok(c)) return;
 
@@ -228,6 +240,7 @@ static void continue_lookup_dc(struct composite_context *ctx)
 	s->r2.in.name          = talloc_strdup(c, s->connect_name);
 	s->r2.in.dcerpc_iface  = s->r.in.dcerpc_iface;	
 
+	/* send rpc connect request to the server */
 	rpc_connect_req = libnet_RpcConnect_send(s->ctx, c, &s->r2);
 	if (composite_nomem(rpc_connect_req, c)) return;
 
@@ -235,6 +248,9 @@ static void continue_lookup_dc(struct composite_context *ctx)
 }
 
 
+/*
+  Step 3 of RpcConnectDC: get rpc connection to the server
+*/
 static void continue_rpc_connect(struct composite_context *ctx)
 {
 	struct composite_context *c;
@@ -276,6 +292,7 @@ static NTSTATUS libnet_RpcConnectDC_recv(struct composite_context *c,
 	status = composite_wait(c);
 
 	if (NT_STATUS_IS_OK(status) && ctx && mem_ctx && r) {
+		/* move connected rpc pipe between memory contexts */
 		s = talloc_get_type(c->private_data, struct rpc_connect_dc_state);
 		r->out.dcerpc_pipe = talloc_steal(mem_ctx, s->r.out.dcerpc_pipe);
 		ctx->pipe = r->out.dcerpc_pipe;
@@ -352,6 +369,15 @@ NTSTATUS libnet_RpcConnect_recv(struct composite_context *c, struct libnet_conte
 	}
 }
 
+
+/**
+ * Connect to a rpc pipe on a remote server - sync version
+ *
+ * @param ctx initialised libnet context
+ * @param mem_ctx memory context of this call
+ * @param r data structure containing necessary parameters and return values
+ * @return nt status of rpc connection
+ **/
 
 NTSTATUS libnet_RpcConnect(struct libnet_context *ctx, TALLOC_CTX *mem_ctx,
 			   struct libnet_RpcConnect *r)
