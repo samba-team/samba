@@ -51,6 +51,7 @@ int pam_sm_acct_mgmt( pam_handle_t *pamh, int flags,
     extern BOOL in_client;
 
     /* Samba initialization. */
+    load_case_tables();
     setup_logging( "pam_smbpass", False );
     in_client = True;
 
