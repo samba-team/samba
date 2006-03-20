@@ -116,7 +116,7 @@ NTSTATUS map_user_info(TALLOC_CTX *mem_ctx,
 				return nt_status;
 			}
 			user_info_in = user_info_temp2;
-			/* fall though */
+			/* fall through */
 		}
 		case AUTH_PASSWORD_HASH:
 		{
@@ -172,7 +172,7 @@ NTSTATUS map_user_info(TALLOC_CTX *mem_ctx,
 			}
 
 			user_info_in = user_info_temp;
-			/* fall though */
+			/* fall through */
 		}
 		case AUTH_PASSWORD_RESPONSE:
 			*user_info_encrypted = user_info_in;
@@ -208,7 +208,7 @@ NTSTATUS map_user_info(TALLOC_CTX *mem_ctx,
 			*user_info_temp->password.hash.nt = nt;
 			
 			user_info_in = user_info_temp;
-			/* fall though */
+			/* fall through */
 		}
 		case AUTH_PASSWORD_HASH:
 			*user_info_encrypted = user_info_in;
