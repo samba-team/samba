@@ -273,15 +273,15 @@ BOOL pdb_getsampwnam(struct samu *sam_acct, const char *username)
 		return False;
 	}
 
-	if (csamuser != NULL) {
+	if ( csamuser ) {
 		TALLOC_FREE(csamuser);
-		csamuser = NULL;
 	}
 
 	pdb_force_pw_initialization( sam_acct );
 	
-	if ( (csamuser = samu_new( NULL )) != NULL )
+	if ( (csamuser = samu_new( NULL )) != NULL ) {
 		pdb_copy_sam_account(csamuser, sam_acct);
+	}
 
 	return True;
 }

@@ -1006,7 +1006,6 @@ static NTSTATUS tdbsam_getsampwent(struct pdb_methods *my_methods, struct samu *
 
 static NTSTATUS tdbsam_getsampwnam (struct pdb_methods *my_methods, struct samu *user, const char *sname)
 {
-	NTSTATUS	result;
 	TDB_DATA 	data, key;
 	fstring 	keystr;
 	fstring		name;
@@ -1039,8 +1038,8 @@ static NTSTATUS tdbsam_getsampwnam (struct pdb_methods *my_methods, struct samu 
 		DEBUG(5,("pdb_getsampwnam (TDB): error fetching database.\n"));
 		DEBUGADD(5, (" Error: %s\n", tdb_errorstr(tdbsam)));
 		DEBUGADD(5, (" Key: %s\n", keystr));
-		result = NT_STATUS_NO_SUCH_USER;
-		goto done;
+		tdbsam_close();
+		return NT_STATUS_NO_SUCH_USER;
 	}
   
   	/* unpack the buffer */
@@ -1048,17 +1047,16 @@ static NTSTATUS tdbsam_getsampwnam (struct pdb_methods *my_methods, struct samu 
 	if (!init_sam_from_buffer(user, (unsigned char *)data.dptr, data.dsize)) {
 		DEBUG(0,("pdb_getsampwent: Bad struct samu entry returned from TDB!\n"));
 		SAFE_FREE(data.dptr);
-		result = NT_STATUS_NO_MEMORY;
-		goto done;
+		tdbsam_close();
+		return NT_STATUS_NO_MEMORY;
 	}
 	
-	result = NT_STATUS_OK;
+	/* success */
 	
- done:
 	SAFE_FREE(data.dptr);
 	tdbsam_close();
 	
-	return result;
+	return NT_STATUS_OK;
 }
 
 /***************************************************************************

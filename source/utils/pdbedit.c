@@ -55,6 +55,108 @@
 #define MASK_USER_GOOD		0x00405FE0
 
 /*********************************************************
+ Add all currently available users to another db
+ ********************************************************/
+
+static int export_database (struct pdb_methods *in, 
+                            struct pdb_methods *out, 
+                            const char *username) 
+{
+	struct samu *user = NULL;
+	NTSTATUS status;
+
+	DEBUG(3, ("export_database: username=\"%s\"\n", username ? username : "(NULL)"));
+
+	status = in->setsampwent(in, 0, 0);
+	if ( NT_STATUS_IS_ERR(status) ) {
+		fprintf(stderr, "Unable to set account database iterator for %s!\n", 
+			in->name);
+		return 1;
+	}
+
+	if ( ( user = samu_new( NULL ) ) == NULL ) {
+		fprintf(stderr, "export_database: Memory allocation failure!\n");
+		return 1;
+	}
+
+	while ( NT_STATUS_IS_OK(in->getsampwent(in, user)) ) 
+	{
+		DEBUG(4, ("Processing account %s\n", user->username));
+
+		/* If we don't have a specific user or if we do and 
+		   the login name matches */
+
+		if ( !username || (strcmp(username, user->username) == 0)) {
+			struct samu *account;
+
+			if ( (account = samu_new( NULL )) == NULL ) {
+				fprintf(stderr, "export_database: Memory allocation failure!\n");
+				TALLOC_FREE( user );
+				in->endsampwent( in );
+				return 1;
+			}
+
+			printf("Importing accout for %s...", user->username);
+			if ( !NT_STATUS_IS_OK(out->getsampwnam( out, account, user->username )) ) {
+				status = out->add_sam_account(out, user);
+			} else {
+				status = out->update_sam_account( out, user );
+			}
+
+			if ( NT_STATUS_IS_OK(status) ) {
+				printf( "ok\n");
+			} else {
+				printf( "failed\n");
+			}
+
+			TALLOC_FREE( account );
+		}
+
+		/* clean up and get ready for another run */
+
+		TALLOC_FREE( user );
+
+		if ( ( user = samu_new( NULL ) ) == NULL ) {
+			fprintf(stderr, "export_database: Memory allocation failure!\n");
+			return 1;
+		}
+	}
+
+	TALLOC_FREE( user );
+
+	in->endsampwent(in);
+
+	return 0;
+}
+
+/*********************************************************
+ Add all currently available group mappings to another db
+ ********************************************************/
+
+static int export_groups (struct pdb_methods *in, struct pdb_methods *out) 
+{
+	GROUP_MAP *maps = NULL;
+	size_t i, entries = 0;
+	NTSTATUS status;
+
+	status = in->enum_group_mapping(in, get_global_sam_sid(), 
+			SID_NAME_DOM_GRP, &maps, &entries, False);
+
+	if ( NT_STATUS_IS_ERR(status) ) {
+		fprintf(stderr, "Unable to enumerate group map entries.\n");
+		return 1;
+	}
+
+	for (i=0; i<entries; i++) {
+		out->add_group_mapping_entry(out, &(maps[i]));
+	}
+
+	SAFE_FREE( maps );
+
+	return 0;
+}
+
+/*********************************************************
  Reset account policies to their default values and remove marker
  ********************************************************/
 
@@ -81,6 +183,45 @@ static int reinit_account_policies (void)
 
 	return 0;
 }
+
+
+/*********************************************************
+ Add all currently available account policy from tdb to one backend
+ ********************************************************/
+
+static int export_account_policies (struct pdb_methods *in, struct pdb_methods *out) 
+{
+	int i;
+
+	if (!account_policy_migrated(True)) {
+		fprintf(stderr, "Unable to set account policy marker in tdb\n");
+		return -1;
+	}
+
+	for ( i=1; decode_account_policy_name(i) != NULL; i++ ) {
+		uint32 policy_value;
+		NTSTATUS status;
+
+		status = in->get_account_policy(in, i, &policy_value);
+
+		if ( NT_STATUS_IS_ERR(status) ) {
+			fprintf(stderr, "Unable to get account policy from %s\n", in->name);
+			remove_account_policy_migrated();
+			return -1;
+		}
+
+		status = out->set_account_policy(out, i, policy_value);
+
+		if ( NT_STATUS_IS_ERR(status) ) {
+			fprintf(stderr, "Unable to migrate account policy to %s\n", out->name);
+			remove_account_policy_migrated();
+			return -1;
+		}
+	}
+
+	return 0;
+}
+
 
 /*********************************************************
  Print info from sam structure
@@ -175,7 +316,7 @@ static int print_user_info (struct pdb_methods *in, const char *username, BOOL v
 	struct samu *sam_pwent=NULL;
 	BOOL ret;
 
-	if ( !(sam_pwent = samu_new( NULL )) ) {
+	if ( (sam_pwent = samu_new( NULL )) == NULL ) {
 		return -1;
 	}
 
@@ -207,7 +348,7 @@ static int print_users_list (struct pdb_methods *in, BOOL verbosity, BOOL smbpwd
 	}
 
 	check = True;
-	if ( !(sam_pwent = samu_new( NULL )) ) {
+	if ( (sam_pwent = samu_new( NULL )) == NULL ) {
 		return 1;
 	}
 
@@ -217,7 +358,7 @@ static int print_users_list (struct pdb_methods *in, BOOL verbosity, BOOL smbpwd
 		print_sam_info (sam_pwent, verbosity, smbpwdstyle);
 		TALLOC_FREE(sam_pwent);
 		
-		if ( !(sam_pwent = samu_new( NULL )) ) {
+		if ( (sam_pwent = samu_new( NULL )) == NULL ) {
 			check = False;
 		}
 	}
@@ -242,7 +383,7 @@ static int fix_users_list (struct pdb_methods *in)
 	}
 
 	check = True;
-	if ( !(sam_pwent = samu_new( NULL )) ) {
+	if ( (sam_pwent = samu_new( NULL )) == NULL ) {
 		return 1;
 	}
 
@@ -253,7 +394,7 @@ static int fix_users_list (struct pdb_methods *in)
 			printf("Update of user %s failed!\n", pdb_get_username(sam_pwent));
 		}
 		TALLOC_FREE(sam_pwent);
-		if ( !(sam_pwent = samu_new( NULL )) ) {
+		if ( (sam_pwent = samu_new( NULL )) == NULL ) {
 			check = False;
 		}
 		if (!check) {
@@ -285,7 +426,7 @@ static int set_user_info (struct pdb_methods *in, const char *username,
 	struct samu *sam_pwent=NULL;
 	BOOL ret;
 	
-	if ( !(sam_pwent = samu_new( NULL )) ) {
+	if ( (sam_pwent = samu_new( NULL )) == NULL ) {
 		return 1;
 	}
 	
@@ -405,7 +546,7 @@ static int new_user (struct pdb_methods *in, const char *username,
 		return -1;
 	}
 
-	if ( !(sam_pwent = samu_new( NULL )) ) {
+	if ( (sam_pwent = samu_new( NULL )) == NULL ) {
 		DEBUG(0, ("Memory allocation failure!\n"));
 		return -1;
 	}
@@ -500,7 +641,7 @@ static int new_machine (struct pdb_methods *in, const char *machine_in)
 
 	if ((pwd = getpwnam_alloc(NULL, machineaccount))) {
 
-		if ( !(sam_pwent = samu_new( NULL )) ) {
+		if ( (sam_pwent = samu_new( NULL )) == NULL ) {
 			fprintf(stderr, "Memory allocation error!\n");
 			TALLOC_FREE(pwd);
 			return -1;
@@ -514,7 +655,7 @@ static int new_machine (struct pdb_methods *in, const char *machine_in)
 
 		TALLOC_FREE(pwd);
 	} else {
-		if ( !(sam_pwent = samu_new( NULL )) ) {
+		if ( (sam_pwent = samu_new( NULL )) == NULL ) {
 			fprintf(stderr, "Could not init sam from pw\n");
 			return -1;
 		}
@@ -543,7 +684,7 @@ static int delete_user_entry (struct pdb_methods *in, const char *username)
 {
 	struct samu *samaccount = NULL;
 
-	if ( !(samaccount = samu_new( NULL )) ) {
+	if ( (samaccount = samu_new( NULL )) == NULL ) {
 		return -1;
 	}
 
@@ -573,7 +714,7 @@ static int delete_machine_entry (struct pdb_methods *in, const char *machinename
 	if (name[strlen(name)-1] != '$')
 		fstrcat (name, "$");
 
-	if ( !(samaccount = samu_new( NULL )) ) {
+	if ( (samaccount = samu_new( NULL )) == NULL ) {
 		return -1;
 	}
 
@@ -631,8 +772,7 @@ int main (int argc, char **argv)
 	static char *pwd_must_change_time = NULL;
 	static char *pwd_time_format = NULL;
 	static BOOL pw_from_stdin = False;
-
-	struct pdb_methods *bdef = NULL;
+	struct pdb_methods *bin, *bout, *bdef;
 	poptContext pc;
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
@@ -672,6 +812,8 @@ int main (int argc, char **argv)
 		POPT_TABLEEND
 	};
 	
+	bin = bout = bdef = NULL;
+
 	load_case_tables();
 
 	setup_logging("pdbedit", True);
@@ -788,6 +930,50 @@ int main (int argc, char **argv)
 		}
 
 		exit(0);
+	}
+
+	/* import and export operations */
+
+	if ( ((checkparms & BIT_IMPORT) 
+		|| (checkparms & BIT_EXPORT))
+		&& !(checkparms & ~(BIT_IMPORT +BIT_EXPORT +BIT_USER)) ) 
+	{
+		NTSTATUS status;
+
+		bin = bout = bdef;
+
+		if (backend_in) {
+			status = make_pdb_method_name(&bin, backend_in);
+
+			if ( !NT_STATUS_IS_OK(status) ) {
+				fprintf(stderr, "Unable to initialize %s.\n", backend_in);
+				return 1;
+			}
+		}
+
+		if (backend_out) {
+			status = make_pdb_method_name(&bout, backend_out);
+
+			if ( !NT_STATUS_IS_OK(status) ) {
+				fprintf(stderr, "Unable to initialize %s.\n", backend_out);
+				return 1;
+			}
+		}
+
+		if (transfer_account_policies) {
+
+			if (!(checkparms & BIT_USER))
+				return export_account_policies(bin, bout);
+
+		} else 	if (transfer_groups) {
+
+			if (!(checkparms & BIT_USER))
+				return export_groups(bin, bout);
+
+		} else {
+				return export_database(bin, bout, 
+					(checkparms & BIT_USER) ? user_name : NULL );
+		}
 	}
 
 	/* if BIT_USER is defined but nothing else then threat it as -l -u for compatibility */
