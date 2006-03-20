@@ -3,7 +3,6 @@
 	libcli_cldap.so.0.0.1 (rename to libcldap?)
 	libcli_nbt.so.0.0.1 (rename to libnbt?)
 	libcli_wrepl.so.0.0.1 (rename to libwrepl?)
-- plugin loading support in ldb
 - generate headermap.txt
 
 set of test scripts that check the code:

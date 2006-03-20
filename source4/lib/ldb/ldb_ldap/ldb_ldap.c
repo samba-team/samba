@@ -1105,5 +1105,7 @@ failed:
 
 int ldb_ldap_init(void)
 {
-	return ldb_register_backend("ldap", lldb_connect);
+	return ldb_register_backend("ldap", lldb_connect) +
+		   ldb_register_backend("ldapi", lldb_connect) + 
+		   ldb_register_backend("ldaps", lldb_connect);
 }
