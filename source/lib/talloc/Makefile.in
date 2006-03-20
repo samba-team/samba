@@ -7,17 +7,20 @@ XSLTPROC = @XSLTPROC@
 INSTALLCMD = @INSTALL@
 CC = @CC@
 CFLAGS = @CFLAGS@ -DHAVE_CONFIG_H=
+EXTRA_TARGETS = @DOC_TARGET@
+
+.SUFFIXES: .c .o .3 .3.xml .xml .html
 
 LIBOBJ = talloc.o
 
-all: libtalloc.a testsuite 
+all: libtalloc.a testsuite $(EXTRA_TARGETS)
 
 testsuite: $(LIBOBJ) testsuite.o
 	$(CC) $(CFLAGS) -o testsuite testsuite.o $(LIBOBJ) $(LIBS)
 
 libtalloc.a: libtalloc.a($(LIBOBJ))
 
-install: all doc
+install: all 
 	${INSTALLCMD} -d ${libdir}
 	${INSTALLCMD} -m 755 libtalloc.a $(libdir)
 	${INSTALLCMD} -d ${includedir}
@@ -28,10 +31,10 @@ install: all doc
 
 doc: talloc.3
 
-%.3: %.3.xml
+.3.xml.3:
 	test -z "$(XSLTPROC)" || $(XSLTPROC) -o $@ http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl $<
 
-%.html: %.xml
+.xml.html:
 	test -z "$(XSLTPROC)" || $(XSLTPROC) -o $@ http://docbook.sourceforge.net/release/xsl/current/html/docbook.xsl $<
 
 clean:

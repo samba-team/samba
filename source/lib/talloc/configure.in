@@ -6,6 +6,11 @@ if test "x$GCC" = "xyes"; then
 fi
 AC_PROG_INSTALL
 AC_PATH_PROG(XSLTPROC,xsltproc)
+DOC_TARGET=""
+if test -n "$XSLTPROC"; then
+	DOC_TARGET=doc
+fi
+AC_SUBST(DOC_TARGET)
 AC_CONFIG_HEADER(config.h)
 sinclude(config.m4)
 AC_OUTPUT(Makefile talloc.pc)
