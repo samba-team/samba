@@ -41,6 +41,15 @@ sub show($$)
 	showitem($output, "using libblkid", ["BLKID"]);
 	showitem($output, "using pam", ["PAM"]);
 	print "Using external popt: ".lc($output->{EXT_LIB_POPT}->{ENABLE})."\n";
+	print "Developer mode: ".lc($config->{developer})."\n";
+	print "Automatic dependencies: ";
+	
+	if ($config->{automatic_dependencies} eq "yes") {
+		print "yes\n";
+	} else {
+		print "no (install GNU make >= 3.81)\n";
+	}
+	
 	print "Using shared libraries internally (experimental): ";
 
 	if ($config->{BLDSHARED} eq "true") {
