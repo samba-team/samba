@@ -103,6 +103,7 @@ int pam_sm_chauthtok(pam_handle_t *pamh, int flags,
     char *pass_new;
 
     /* Samba initialization. */
+    load_case_tables();
     setup_logging( "pam_smbpass", False );
     in_client = True;
 
@@ -128,7 +129,7 @@ int pam_sm_chauthtok(pam_handle_t *pamh, int flags,
        from a SIGPIPE it's not expecting */
     oldsig_handler = CatchSignal(SIGPIPE, SIGNAL_CAST SIG_IGN);
 
-    if (!initialize_password_db(True)) {
+    if (!initialize_password_db(False)) {
         _log_err( LOG_ALERT, "Cannot access samba password database" );
         CatchSignal(SIGPIPE, SIGNAL_CAST oldsig_handler);
         return PAM_AUTHINFO_UNAVAIL;
@@ -144,6 +145,9 @@ int pam_sm_chauthtok(pam_handle_t *pamh, int flags,
         _log_err( LOG_ALERT, "Failed to find entry for user %s.", user );
         CatchSignal(SIGPIPE, SIGNAL_CAST oldsig_handler);
         return PAM_USER_UNKNOWN;
+    }
+    if (on( SMB_DEBUG, ctrl )) {
+        _log_err( LOG_DEBUG, "Located account for %s", user );
     }
 
     if (flags & PAM_PRELIM_CHECK) {
