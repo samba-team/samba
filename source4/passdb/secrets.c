@@ -25,6 +25,7 @@
 #include "includes.h"
 #include "lib/tdb/include/tdbutil.h"
 #include "secrets.h"
+#include "param/param.h"
 #include "system/filesys.h"
 #include "db_wrap.h"
 #include "lib/ldb/include/ldb.h"

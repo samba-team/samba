@@ -109,18 +109,19 @@ _PUBLIC_ void call_backtrace(void)
 #endif
 }
 
+_PUBLIC_ const char *panic_action = NULL;
+
 /**
  Something really nasty happened - panic !
 **/
 _PUBLIC_ void smb_panic(const char *why)
 {
-	const char *cmd = lp_panic_action();
 	int result;
 
-	if (cmd && *cmd) {
+	if (panic_action && *panic_action) {
 		char pidstr[20];
 		char cmdstring[200];
-		safe_strcpy(cmdstring, cmd, sizeof(cmdstring));
+		safe_strcpy(cmdstring, panic_action, sizeof(cmdstring));
 		snprintf(pidstr, sizeof(pidstr), "%u", getpid());
 		all_string_sub(cmdstring, "%PID%", pidstr, sizeof(cmdstring));
 		if (progname) {

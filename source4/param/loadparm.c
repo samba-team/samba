@@ -103,7 +103,6 @@ typedef struct
 	char *szServerString;
 	char *szAutoServices;
 	char *szPasswdChat;
-	char *szLogFile;
 	char *szConfigFile;
 	char *szSAM_URL;
 	char *szSPOOLSS_URL;
@@ -124,7 +123,6 @@ typedef struct
 	char *szNetbiosScope;
 	char *szDomainOtherSIDs;
 	char **szNameResolveOrder;
-	char *szPanicAction;
 	char **dcerpc_ep_servers;
 	char **server_services;
 	char *ntptr_providor;
@@ -431,7 +429,7 @@ static struct parm_struct parm_table[] = {
 
 	{"log level", P_INTEGER, P_GLOBAL, &DEBUGLEVEL, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"debuglevel", P_INTEGER, P_GLOBAL, &DEBUGLEVEL, NULL, NULL, FLAG_HIDE},
-	{"log file", P_STRING, P_GLOBAL, &Globals.szLogFile, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
+	{"log file", P_STRING, P_GLOBAL, &logfile, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	
 	{"Protocol Options", P_SEP, P_SEPARATOR},
 	
@@ -544,7 +542,7 @@ static struct parm_struct parm_table[] = {
 	{"volume", P_STRING, P_LOCAL, &sDefault.volume, NULL, NULL, FLAG_SHARE },
 	{"fstype", P_STRING, P_LOCAL, &sDefault.fstype, NULL, NULL, FLAG_SHARE},
 
-	{"panic action", P_STRING, P_GLOBAL, &Globals.szPanicAction, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
+	{"panic action", P_STRING, P_GLOBAL, &panic_action, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 
 	{"msdfs root", P_BOOL, P_LOCAL, &sDefault.bMSDfsRoot, NULL, NULL, FLAG_SHARE},
 	{"host msdfs", P_BOOL, P_GLOBAL, &Globals.bHostMSDfs, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
@@ -819,7 +817,6 @@ _PUBLIC_ FN_GLOBAL_STRING(lp_tls_cafile, &Globals.tls_cafile)
 _PUBLIC_ FN_GLOBAL_STRING(lp_tls_crlfile, &Globals.tls_crlfile)
 _PUBLIC_ FN_GLOBAL_STRING(lp_unix_charset, &Globals.unix_charset)
 _PUBLIC_ FN_GLOBAL_STRING(lp_display_charset, &Globals.display_charset)
-_PUBLIC_ FN_GLOBAL_STRING(lp_logfile, &Globals.szLogFile)
 _PUBLIC_ FN_GLOBAL_STRING(lp_configfile, &Globals.szConfigFile)
 _PUBLIC_ FN_GLOBAL_STRING(lp_sam_url, &Globals.szSAM_URL)
 _PUBLIC_ FN_GLOBAL_STRING(lp_spoolss_url, &Globals.szSPOOLSS_URL)
@@ -850,7 +847,6 @@ _PUBLIC_ FN_GLOBAL_LIST(lp_wins_server_list, &Globals.szWINSservers)
 _PUBLIC_ FN_GLOBAL_LIST(lp_interfaces, &Globals.szInterfaces)
 _PUBLIC_ FN_GLOBAL_STRING(lp_socket_address, &Globals.szSocketAddress)
 _PUBLIC_ FN_GLOBAL_LIST(lp_netbios_aliases, &Globals.szNetbiosAliases)
-_PUBLIC_ FN_GLOBAL_STRING(lp_panic_action, &Globals.szPanicAction)
 
 _PUBLIC_ FN_GLOBAL_BOOL(lp_disable_netbios, &Globals.bDisableNetbios)
 _PUBLIC_ FN_GLOBAL_BOOL(lp_wins_support, &Globals.bWINSsupport)
