@@ -197,14 +197,10 @@ IDL_NDR_SERVER_C_FILES = $(patsubst librpc/idl/%.idl,librpc/gen_ndr/ndr_%_s.c,$(
 IDL_NDR_EJS_C_FILES = $(patsubst librpc/idl/%.idl,librpc/gen_ndr/ndr_%_ejs.c,$(IDL_FILES))
 IDL_NDR_EJS_H_FILES = $(patsubst librpc/idl/%.idl,librpc/gen_ndr/ndr_%_ejs.h,$(IDL_FILES))
 
-$(IDL_HEADER_FILES): idl
-$(IDL_NDR_HEADER_FILES): idl
-$(IDL_NDR_PARSE_C_FILES): idl
-$(IDL_NDR_CLIENT_C_FILES): idl
-$(IDL_NDR_CLIENT_H_FILES): idl
-$(IDL_NDR_SERVER_C_FILES): idl
-$(IDL_NDR_EJS_C_FILES): idl
-$(IDL_NDR_EJS_H_FILES): idl
+$(IDL_HEADER_FILES) $(IDL_NDR_HEADER_FILES) $(IDL_NDR_PARSE_C_FILES) \
+	$(IDL_NDR_CLIENT_C_FILES) $(IDL_NDR_CLIENT_H_FILES) \
+	$(IDL_NDR_SERVER_C_FILES) $(IDL_NDR_EJS_C_FILES) \
+	$(IDL_NDR_EJS_H_FILES): idl
 
 idl_full: pidl/lib/Parse/Pidl/IDL.pm
 	@CPP="$(CPP)" PERL="$(PERL)" script/build_idl.sh FULL $(PIDL_ARGS)
