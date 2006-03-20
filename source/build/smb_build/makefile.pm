@@ -509,11 +509,11 @@ sub write($$)
 
 	$self->output($self->{mkfile});
 
-	if ($self->{developer}) {
-		$self->output("-include \$(DEP_FILES)\n");
-	} else {
+#	if ($self->{developer}) {
+#		$self->output("-include \$(DEP_FILES)\n");
+#	} else {
 		$self->output("include static_deps.mk\n");
-	}
+#	}
 
 	open(MAKEFILE,">$file") || die ("Can't open $file\n");
 	print MAKEFILE $self->{output};
