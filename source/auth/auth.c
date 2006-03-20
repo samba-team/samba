@@ -282,7 +282,7 @@ NTSTATUS auth_register(const void *_ops)
 
 	backends = realloc_p(backends, struct auth_backend, num_backends+1);
 	if (!backends) {
-		smb_panic("out of memory in auth_register");
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	new_ops = smb_xmemdup(ops, sizeof(*ops));

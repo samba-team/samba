@@ -117,12 +117,13 @@ _PUBLIC_ void do_debug(const char *format, ...) _PRINTF_ATTRIBUTE(1,2)
 	free(s);
 }
 
+_PUBLIC_ const char *logfile = NULL;
+
 /**
   reopen the log file (usually called because the log file name might have changed)
 */
 _PUBLIC_ void reopen_logs(void)
 {
-	const char *logfile = lp_logfile();
 	char *fname = NULL;
 	int old_fd = state.fd;
 

@@ -1088,7 +1088,7 @@ NTSTATUS gensec_register(const struct gensec_security_ops *ops)
 					      struct gensec_security_ops *, 
 					      gensec_num_backends+2);
 	if (!generic_security_ops) {
-		smb_panic("out of memory (or failed to realloc referenced memory) in gensec_register");
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	generic_security_ops[gensec_num_backends] = discard_const(ops);
