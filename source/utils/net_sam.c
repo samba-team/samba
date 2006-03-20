@@ -455,6 +455,63 @@ static int net_sam_createlocalgroup(int argc, const char **argv)
 }
 
 /*
+ * Create a local group
+ */
+
+static int net_sam_createbuiltingroup(int argc, const char **argv)
+{
+	NTSTATUS status;
+	uint32 rid;
+	TALLOC_CTX *ctx;
+	enum SID_NAME_USE type;
+	fstring groupname;
+	DOM_SID sid;
+
+	if (argc != 1) {
+		d_fprintf(stderr, "usage: net sam createbuiltingroup <name>\n");
+		return -1;
+	}
+
+	if (!winbind_ping()) {
+		d_fprintf(stderr, "winbind seems not to run. createlocalgroup "
+			  "only works when winbind runs.\n");
+		return -1;
+	}
+
+	if ( (ctx = talloc_init("net_sam_createbuiltingroup")) == NULL ) {
+		d_fprintf( stderr, "Memory allocation error\n");
+		return -1;
+	}
+	
+	/* validate the name and get the group */
+	
+	fstrcpy( groupname, "BUILTIN\\" );
+	fstrcat( groupname, argv[0] );
+	
+	if ( !lookup_name(ctx, groupname, LOOKUP_NAME_ALL, NULL, NULL, &sid, &type)) {
+		d_fprintf(stderr, "%s is not a BUILTIN group\n", argv[0]);
+		return -1;
+	}
+	
+	if ( !sid_peek_rid( &sid, &rid ) ) {
+		d_fprintf(stderr, "Failed to get RID for %s\n", argv[0]);
+		return -1;
+	}
+
+	status = pdb_create_builtin_alias( rid );
+
+	if (!NT_STATUS_IS_OK(status)) {
+		d_fprintf(stderr, "Creating %s failed with %s\n",
+			  argv[0], nt_errstr(status));
+		return -1;
+	}
+
+	d_printf("Created BUILTIN group %s with RID %d\n", argv[0], rid);
+
+	return 0;
+}
+
+/*
  * Add a group member
  */
 
@@ -1140,6 +1197,8 @@ failed:
 int net_sam(int argc, const char **argv)
 {
 	struct functable2 func[] = {
+		{ "createbuiltingroup", net_sam_createbuiltingroup,
+		  "Create a new BUILTIN group" },
 		{ "createlocalgroup", net_sam_createlocalgroup,
 		  "Create a new local group" },
 		{ "mapunixgroup", net_sam_mapunixgroup,
