@@ -424,10 +424,7 @@ sub PkgConfig($$)
 	$link_name =~ s/^LIB//g;
 	$link_name = lc($link_name);
 
-	if (not defined($ctx->{DESCRIPTION})) {
-		warn("$ctx->{NAME} has not DESCRIPTION set, not generating .pc file");
-		return;
-	}
+	return if (not defined($ctx->{DESCRIPTION}));
 
 	my $path = "$ctx->{BASEDIR}/$link_name.pc";
 

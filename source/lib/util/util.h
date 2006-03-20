@@ -36,6 +36,9 @@ struct substitute_context;
 struct asn1_data;
 struct smbsrv_tcon;
 
+extern const char *logfile;
+extern const char *panic_action;
+
 #include "util/xfile.h"
 #include "util/debug.h"
 #include "util/mutex.h"
