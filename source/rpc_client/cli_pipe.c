@@ -2710,7 +2710,7 @@ struct rpc_pipe_client *cli_rpc_pipe_open_krb5(struct cli_state *cli,
 
 	/* Only get a new TGT if username/password are given. */
 	if (username && password) {
-		int ret = kerberos_kinit_password(username, password, 0, NULL, NULL, NULL, False, 0);
+		int ret = kerberos_kinit_password(username, password, 0, NULL);
 		if (ret) {
 			cli_rpc_pipe_close(result);
 			return NULL;
