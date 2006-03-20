@@ -82,8 +82,8 @@ REQUIRED_SUBSYSTEMS = \
 
 ################################################
 # Start MODULE ldb_map
-[MODULE::ldb_map]
-SUBSYSTEM = ldb
+[SUBSYSTEM::ldb_map]
+REQUIRED_SUBSYSTEMS = ldb
 OBJ_FILES = modules/ldb_map.o
 # End MODULE ldb_map
 ################################################
@@ -126,13 +126,16 @@ REQUIRED_SUBSYSTEMS = \
 # End MODULE ldb_tdb
 ################################################
 
+./lib/ldb/common/ldb_modules.o: lib/ldb/common/ldb_modules.c Makefile
+	@echo Compiling $<
+	@$(CC) $(CFLAGS) $(PICFLAG) -DMODULESDIR=\"$(MODULESDIR)/ldb\" -DSHLIBEXT=\"$(SHLIBEXT)\" -c $< -o $@
+
 ################################################
 # Start SUBSYSTEM ldb
 [LIBRARY::ldb]
 VERSION = 0.0.1
 SO_VERSION = 0
 DESCRIPTION = LDAP-like embedded database library
-EXTRA_CFLAGS = -DMODULESDIR="$(MODULESDIR)/ldb" -DSHLIBEXT="$(SHLIBEXT)"
 INIT_FUNCTION_TYPE = int (*) (void)
 OBJ_FILES = \
 		common/ldb.o \

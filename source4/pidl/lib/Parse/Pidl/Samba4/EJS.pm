@@ -124,7 +124,7 @@ sub fn_declare($$)
 
 	if (has_property($fn, "public")) {
 		pidl_hdr "$decl;\n";
-		pidl "$decl";
+		pidl "_PUBLIC_ $decl";
 	} else {
 		pidl "static $decl";
 	}

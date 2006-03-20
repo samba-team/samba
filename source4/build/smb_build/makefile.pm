@@ -505,8 +505,8 @@ sub write($$)
 
 	# nasty hack to allow running locally
 	if ($self->{duplicate_build}) {
-		$self->output("bin/libdynconfig.\$(SHLIBEXT): dynconfig-devel.o\n");
-		$self->output("bin/libdynconfig.\$(SHLIBEXT): LIBRARY_DYNCONFIG_OBJ_LIST=dynconfig-devel.o\n");
+		$self->output("bin/libdynconfig.\$(SHLIBEXT).0.0.1: dynconfig-devel.o\n");
+		$self->output("bin/libdynconfig.\$(SHLIBEXT).0.0.1: LIBRARY_DYNCONFIG_OBJ_LIST=dynconfig-devel.o\n");
 	}
 
 	$self->_prepare_mk_files();
