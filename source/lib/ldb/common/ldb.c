@@ -102,14 +102,25 @@ static ldb_connect_fn ldb_find_backend(const char *url)
 int ldb_connect(struct ldb_context *ldb, const char *url, unsigned int flags, const char *options[])
 {
 	int ret;
+	char *backend;
 	ldb_connect_fn fn;
 
 	if (strchr(url, ':') != NULL) {
-		fn = ldb_find_backend(url);
+		backend = talloc_strndup(ldb, url, strchr(url, ':')-url);
 	} else {
 		/* Default to tdb */
-		fn = ldb_find_backend("tdb:");
+		backend = talloc_strdup(ldb, "tdb");
 	}
+
+	fn = ldb_find_backend(backend);
+
+	if (fn == NULL) {
+		if (ldb_try_load_dso(ldb, backend) == 0) {
+			fn = ldb_find_backend(backend);
+		}
+	}
+
+	talloc_free(backend);
 
 	if (fn == NULL) {
 		ldb_debug(ldb, LDB_DEBUG_FATAL, "Unable to find backend for '%s'\n", url);

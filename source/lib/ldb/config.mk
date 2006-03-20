@@ -132,6 +132,7 @@ REQUIRED_SUBSYSTEMS = \
 VERSION = 0.0.1
 SO_VERSION = 0
 DESCRIPTION = LDAP-like embedded database library
+EXTRA_CFLAGS = -DMODULESDIR="$(MODULESDIR)/ldb" -DSHLIBEXT="$(SHLIBEXT)"
 INIT_FUNCTION_TYPE = int (*) (void)
 OBJ_FILES = \
 		common/ldb.o \

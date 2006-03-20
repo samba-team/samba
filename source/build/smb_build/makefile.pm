@@ -441,7 +441,7 @@ sub PkgConfig($$)
 		"",
 		"$ctx->{VERSION}",
 		$ctx->{DESCRIPTION},
-		1
+		defined($ctx->{INIT_FUNCTIONS})
 	); 
 }
 

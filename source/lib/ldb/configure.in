@@ -23,8 +23,16 @@ AC_FUNC_MMAP
 AC_PATH_PROG(XSLTPROC,xsltproc)
 AC_PATH_PROG(DOXYGEN,doxygen)
 AC_PATH_PROG(GCOV,gcov)
-AC_CHECK_HEADERS(stdint.h)
+AC_CHECK_HEADERS(stdint.h dlfcn.h)
 AC_CONFIG_HEADER(include/config.h)
+AC_CHECK_FUNCS(dlopen dlsym dlclose)
+
+SHLIBEXT="so" # Should be set based on OS later on
+AC_SUBST(SHLIBEXT)
+
+MODULESDIR="$libdir/ldb"
+AC_DEFINE(MODULESDIR,$MODULESDIR,[Modules directory])
+AC_SUBST(MODULESDIR)
 
 AC_CHECK_LIB(popt, poptGetContext)
 
