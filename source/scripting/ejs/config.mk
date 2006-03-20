@@ -27,7 +27,6 @@ SUBSYSTEM = smbcalls
 INIT_FUNCTION = smb_setup_ejs_samba3
 REQUIRED_SUBSYSTEMS = LIBSAMBA3 
 
-
 [MODULE::smbcalls_rand]
 OBJ_FILES = smbcalls_rand.o
 SUBSYSTEM = smbcalls

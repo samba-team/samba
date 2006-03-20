@@ -106,7 +106,7 @@ int ldb_connect(struct ldb_context *ldb, const char *url, unsigned int flags, co
 	ldb_connect_fn fn;
 
 	if (strchr(url, ':') != NULL) {
-		backend = talloc_strndup(ldb, url, strchr(url, ':')-url);
+		backend = talloc_strndup(ldb, url, strchr(url, ':')-url-1);
 	} else {
 		/* Default to tdb */
 		backend = talloc_strdup(ldb, "tdb");
