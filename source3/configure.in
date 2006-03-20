@@ -22,7 +22,7 @@ fi
 # ones...
 AC_PREFIX_DEFAULT(/usr/local/samba)
 
-rootsbindir="\${prefix}/sbin"
+rootsbindir="\${SBINDIR}"
 lockdir="\${VARDIR}/locks"
 piddir="\${VARDIR}/locks"
 mandir="\${prefix}/man"
