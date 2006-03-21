@@ -822,7 +822,8 @@ esac
 AC_CHECK_HEADERS(shadow.h netinet/tcp.h netinet/in_systm.h netinet/in_ip.h)
 AC_CHECK_HEADERS(nss.h nss_common.h nsswitch.h ns_api.h sys/security.h security/pam_appl.h)
 AC_CHECK_HEADERS(stropts.h poll.h)
-AC_CHECK_HEADERS(sys/capability.h syscall.h sys/syscall.h)
+AC_CHECK_HEADERS(syscall.h sys/syscall.h)
+
 AC_CHECK_HEADERS(sys/acl.h sys/attributes.h attr/xattr.h sys/xattr.h sys/extattr.h sys/uio.h)
 AC_CHECK_HEADERS(sys/ea.h sys/proplist.h)
 
@@ -2310,22 +2311,46 @@ if test x"$samba_cv_HAVE_KERNEL_OPLOCKS_IRIX" = x"yes"; then
     AC_DEFINE(HAVE_KERNEL_OPLOCKS_IRIX,1,[Whether IRIX kernel oplock type definitions are available])
 fi
 
-AC_CACHE_CHECK([for irix specific capabilities],samba_cv_HAVE_IRIX_SPECIFIC_CAPABILITIES,[
-AC_TRY_RUN([#include <sys/types.h>
+#################################################
+# Check for POSIX capability support
+
+AC_CHECK_HEADER(sys/capability.h, [samba_cv_HAVE_SYS_CAPABILITY_H=yes;
+    AC_DEFINE(HAVE_SYS_CAPABILITY_H, 1, Whether sys/capability.h is present)],
+    [], [])
+
+if test x"$samba_cv_HAVE_SYS_CAPABILITY_H" = x"yes"; then
+
+    ac_save_LIBS=$LIBS
+    AC_LIBTESTFUNC(cap, cap_get_proc)
+
+    AC_CACHE_CHECK([for POSIX capabilities],
+	    samba_cv_HAVE_POSIX_CAPABILITIES,
+	    [
+		AC_TRY_RUN([
+#include <sys/types.h>
 #include <sys/capability.h>
 main() {
  cap_t cap;
- if ((cap = cap_get_proc()) == NULL)
+ cap_value_t vals[1];
+ if (!(cap = cap_get_proc()))
    exit(1);
- cap->cap_effective |= CAP_NETWORK_MGT;
- cap->cap_inheritable |= CAP_NETWORK_MGT;
+ vals[0] = CAP_CHOWN;
+ cap_set_flag(cap, CAP_INHERITABLE, 1, vals, CAP_CLEAR);
  cap_set_proc(cap);
  exit(0);
-}
-],
-samba_cv_HAVE_IRIX_SPECIFIC_CAPABILITIES=yes,samba_cv_HAVE_IRIX_SPECIFIC_CAPABILITIES=no,samba_cv_HAVE_IRIX_SPECIFIC_CAPABILITIES=cross)])
-if test x"$samba_cv_HAVE_IRIX_SPECIFIC_CAPABILITIES" = x"yes"; then
-    AC_DEFINE(HAVE_IRIX_SPECIFIC_CAPABILITIES,1,[Whether IRIX specific capabilities are available])
+}],
+		samba_cv_HAVE_POSIX_CAPABILITIES=yes,
+		samba_cv_HAVE_POSIX_CAPABILITIES=no,
+		samba_cv_HAVE_POSIX_CAPABILITIES=cross)
+	    ])
+
+if test x"$samba_cv_HAVE_POSIX_CAPABILITIES" = x"yes"; then
+    AC_DEFINE(HAVE_POSIX_CAPABILITIES, 1,
+	    [Whether POSIX capabilities are available])
+else
+    LIBS=$ac_save_LIBS
+fi
+
 fi
 
 #

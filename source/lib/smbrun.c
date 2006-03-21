@@ -64,7 +64,7 @@ int smbrun(const char *cmd, int *outfd)
 	/*
 	 * Lose any kernel oplock capabilities we may have.
 	 */
-	oplock_set_capability(False, False);
+	drop_effective_capability(KERNEL_OPLOCK_CAPABILITY);
 
 	/* point our stdout at the file we want output to go into */
 
@@ -196,7 +196,7 @@ int smbrunsecret(const char *cmd, const char *secret)
 	/*
 	 * Lose any kernel oplock capabilities we may have.
 	 */
-	oplock_set_capability(False, False);
+	drop_effective_capability(KERNEL_OPLOCK_CAPABILITY);
 
 	/* build up an input pipe */
 	if(pipe(ifd)) {

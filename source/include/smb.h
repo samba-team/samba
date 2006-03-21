@@ -1566,7 +1566,9 @@ minimum length == 18.
  * Capabilities abstracted for different systems.
  */
 
-#define KERNEL_OPLOCK_CAPABILITY 0x1
+enum smbd_capability {
+    KERNEL_OPLOCK_CAPABILITY
+};
 
 /* if a kernel does support oplocks then a structure of the following
    typee is used to describe how to interact with the kernel */
