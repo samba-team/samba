@@ -699,7 +699,7 @@ static void process_complete_pdu(pipes_struct *p)
 		DEBUG(10,("process_complete_pdu: pipe %s in fault state.\n",
 			p->name ));
 		set_incoming_fault(p);
-		setup_fault_pdu(p, NT_STATUS(0x1c010002));
+		setup_fault_pdu(p, NT_STATUS(DCERPC_FAULT_OP_RNG_ERROR));
 		return;
 	}
 
@@ -826,7 +826,7 @@ static void process_complete_pdu(pipes_struct *p)
 	if (!reply) {
 		DEBUG(3,("process_complete_pdu: DCE/RPC fault sent on pipe %s\n", p->pipe_srv_name));
 		set_incoming_fault(p);
-		setup_fault_pdu(p, NT_STATUS(0x1c010002));
+		setup_fault_pdu(p, NT_STATUS(DCERPC_FAULT_OP_RNG_ERROR));
 		prs_mem_free(&rpc_in);
 	} else {
 		/*
