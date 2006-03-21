@@ -71,7 +71,7 @@ static BOOL create_next_pdu_ntlmssp(pipes_struct *p)
 	 */
 
 	if(p->fault_state) {
-		setup_fault_pdu(p, NT_STATUS(0x1c010002));
+		setup_fault_pdu(p, NT_STATUS(DCERPC_FAULT_OP_RNG_ERROR));
 		return True;
 	}
 
@@ -284,7 +284,7 @@ static BOOL create_next_pdu_schannel(pipes_struct *p)
 	 */
 
 	if(p->fault_state) {
-		setup_fault_pdu(p, NT_STATUS(0x1c010002));
+		setup_fault_pdu(p, NT_STATUS(DCERPC_FAULT_OP_RNG_ERROR));
 		return True;
 	}
 
@@ -460,7 +460,7 @@ static BOOL create_next_pdu_noauth(pipes_struct *p)
 	 */
 
 	if(p->fault_state) {
-		setup_fault_pdu(p, NT_STATUS(0x1c010002));
+		setup_fault_pdu(p, NT_STATUS(DCERPC_FAULT_OP_RNG_ERROR));
 		return True;
 	}
 
@@ -2250,7 +2250,7 @@ BOOL api_rpcTNP(pipes_struct *p, const char *rpc_name,
 		 * and not put the pipe into fault state. JRA.
 		 */
 		DEBUG(4, ("unknown\n"));
-		setup_fault_pdu(p, NT_STATUS(0x1c010002));
+		setup_fault_pdu(p, NT_STATUS(DCERPC_FAULT_OP_RNG_ERROR));
 		return True;
 	}
 
@@ -2268,7 +2268,7 @@ BOOL api_rpcTNP(pipes_struct *p, const char *rpc_name,
 	if (p->bad_handle_fault_state) {
 		DEBUG(4,("api_rpcTNP: bad handle fault return.\n"));
 		p->bad_handle_fault_state = False;
-		setup_fault_pdu(p, NT_STATUS(0x1C00001A));
+		setup_fault_pdu(p, NT_STATUS(DCERPC_FAULT_CONTEXT_MISMATCH));
 		return True;
 	}
 
