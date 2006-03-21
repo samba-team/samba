@@ -38,6 +38,7 @@
 
 #ifdef _SAMBA_BUILD_
 #include "build.h"
+#include "dynconfig.h"
 #endif
 
 #define LDB_MODULE_PREFIX	"modules:"
@@ -202,7 +203,11 @@ int ldb_try_load_dso(struct ldb_context *ldb, const char *name)
 	int (*init_fn) (void);
 
 #ifdef HAVE_DLOPEN
+#ifdef _SAMBA_BUILD_
+	path = talloc_asprintf(ldb, "%s/ldb/%s.%s", dyn_MODULESDIR, name, dyn_SHLIBEXT);
+#else
 	path = talloc_asprintf(ldb, "%s/%s.%s", MODULESDIR, name, SHLIBEXT);
+#endif
 
 	ldb_debug(ldb, LDB_DEBUG_TRACE, "trying to load %s from %s\n", name, path);
 

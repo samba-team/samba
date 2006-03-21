@@ -208,21 +208,17 @@ sub SharedLibrary($$)
 		push (@{$self->{shared_libs}}, "$ctx->{DEBUGDIR}/$ctx->{LIBRARY_REALNAME}");
 		push (@{$self->{installable_shared_libs}}, "$installdir/$ctx->{LIBRARY_REALNAME}") if (defined($ctx->{SO_VERSION}));
 	} elsif ($ctx->{TYPE} eq "MODULE") {
-		push (@{$self->{shared_modules}}, "$ctx->{DEBUGDIR}/$ctx->{LIBRARY_REALNAME}");
+		push (@{$self->{shared_modules}}, "$ctx->{DEBUGDIR}/$ctx->{FIXED_NAME}.\$(SHLIBEXT)");
 		push (@{$self->{plugins}}, "$installdir/$ctx->{LIBRARY_REALNAME}");
 
-		my $fixedname = $ctx->{NAME};
-
-		$fixedname =~ s/^$ctx->{SUBSYSTEM}_//g;
-
-		$self->{install_plugins} .= "\t\@echo Installing $installdir/$ctx->{LIBRARY_REALNAME} as \$(DESTDIR)\$(MODULESDIR)/$ctx->{SUBSYSTEM}/$fixedname.\$(SHLIBEXT)\n";
+		$self->{install_plugins} .= "\t\@echo Installing $installdir/$ctx->{LIBRARY_REALNAME} as \$(DESTDIR)\$(MODULESDIR)/$ctx->{SUBSYSTEM}/$ctx->{FIXED_NAME}.\$(SHLIBEXT)\n";
 		$self->{install_plugins} .= "\t\@mkdir -p \$(DESTDIR)\$(MODULESDIR)/$ctx->{SUBSYSTEM}/\n";
-		$self->{install_plugins} .= "\t\@cp $installdir/$ctx->{LIBRARY_REALNAME} \$(DESTDIR)\$(MODULESDIR)/$ctx->{SUBSYSTEM}/$fixedname.\$(SHLIBEXT)\n";
-		$self->{uninstall_plugins} .= "\t\@echo Uninstalling \$(DESTDIR)\$(MODULESDIR)/$ctx->{SUBSYSTEM}/$fixedname.\$(SHLIBEXT)\n";
-		$self->{uninstall_plugins} .= "\t\@-rm \$(DESTDIR)\$(MODULESDIR)/$ctx->{SUBSYSTEM}/$fixedname.\$(SHLIBEXT)\n";
+		$self->{install_plugins} .= "\t\@cp $installdir/$ctx->{LIBRARY_REALNAME} \$(DESTDIR)\$(MODULESDIR)/$ctx->{SUBSYSTEM}/$ctx->{FIXED_NAME}.\$(SHLIBEXT)\n";
+		$self->{uninstall_plugins} .= "\t\@echo Uninstalling \$(DESTDIR)\$(MODULESDIR)/$ctx->{SUBSYSTEM}/$ctx->{FIXED_NAME}.\$(SHLIBEXT)\n";
+		$self->{uninstall_plugins} .= "\t\@-rm \$(DESTDIR)\$(MODULESDIR)/$ctx->{SUBSYSTEM}/$ctx->{FIXED_NAME}.\$(SHLIBEXT)\n";
 		if (defined($ctx->{ALIASES})) {
 			foreach (@{$ctx->{ALIASES}}) {
-				$self->{install_plugins} .= "\t\@ln -s $fixedname.\$(SHLIBEXT) \$(DESTDIR)\$(MODULESDIR)/$ctx->{SUBSYSTEM}/$_.\$(SHLIBEXT)\n";
+				$self->{install_plugins} .= "\t\@ln -s $ctx->{FIXED_NAME}.\$(SHLIBEXT) \$(DESTDIR)\$(MODULESDIR)/$ctx->{SUBSYSTEM}/$_.\$(SHLIBEXT)\n";
 				$self->{uninstall_plugins} .= "\t\@-rm \$(DESTDIR)\$(MODULESDIR)/$ctx->{SUBSYSTEM}/$_.\$(SHLIBEXT)\n";
 			}
 		}
@@ -259,7 +255,7 @@ __EOD__
 		defined($ctx->{LIBRARY_SONAME})) {
 		$soarg = "$self->{config}->{SONAMEFLAG}$ctx->{LIBRARY_SONAME} ";
 		if ($ctx->{LIBRARY_REALNAME} ne $ctx->{LIBRARY_SONAME}) {
-			$soargdebug = "\t\@ln -fs $ctx->{LIBRARY_REALNAME} $ctx->{DEBUGDIR}/$ctx->{LIBRARY_SONAME}\n";
+			$soargdebug = "\n\t\@ln -fs $ctx->{LIBRARY_REALNAME} $ctx->{DEBUGDIR}/$ctx->{LIBRARY_SONAME}";
 		}
 	}
 
@@ -272,10 +268,16 @@ $ctx->{TARGET}: \$($ctx->{TYPE}_$ctx->{NAME}_DEPEND_LIST) \$($ctx->{TYPE}_$ctx->
 	\@mkdir -p $ctx->{DEBUGDIR}
 	\@\$(SHLD) \$(SHLD_FLAGS) -o \$\@ \$(LOCAL_LINK_FLAGS) \\
 		\$($ctx->{TYPE}_$ctx->{NAME}_LINK_FLAGS) $soarg \\
-		$init_obj \$($ctx->{TYPE}_$ctx->{NAME}_LINK_LIST)
-$soargdebug
+		$init_obj \$($ctx->{TYPE}_$ctx->{NAME}_LINK_LIST)$soargdebug
 __EOD__
 );
+		if (defined($ctx->{ALIASES})) {
+			foreach (@{$ctx->{ALIASES}}) {
+				$self->output("\t\@ln -s $ctx->{FIXED_NAME}.\$(SHLIBEXT) $ctx->{DEBUGDIR}/$_.\$(SHLIBEXT)\n");
+			}
+		}
+
+		$self->output("\n");
 	}
 
 	$self->output(<< "__EOD__"

@@ -239,7 +239,7 @@ clean:: clean_pch
 	@-rm -f $(STATIC_LIBRARIES) $(SHARED_LIBRARIES)
 	@-rm -f bin/*.$(SHLIBEXT)*
 	@echo Removing modules
-	@-rm -f $(SHARED_MODULES) $(PLUGINS)
+	@-rm -f bin/modules/*/*.$(SHLIBEXT)
 	@-rm -f bin/*_init_module.c
 	@echo Removing dummy targets
 	@-rm -f bin/.*_*
