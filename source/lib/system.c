@@ -624,85 +624,99 @@ struct hostent *sys_gethostbyname(const char *name)
 }
 
 
-#if defined(HAVE_IRIX_SPECIFIC_CAPABILITIES)
+#if defined(HAVE_POSIX_CAPABILITIES)
+
+#ifdef HAVE_SYS_CAPABILITY_H
+
+#if defined(BROKEN_REDHAT_7_SYSTEM_HEADERS) && !defined(_I386_STATFS_H) && !defined(_PPC_STATFS_H)
+#define _I386_STATFS_H
+#define _PPC_STATFS_H
+#define BROKEN_REDHAT_7_STATFS_WORKAROUND
+#endif
+
+#include <sys/capability.h>
+
+#ifdef BROKEN_REDHAT_7_STATFS_WORKAROUND
+#undef _I386_STATFS_H
+#undef _PPC_STATFS_H
+#undef BROKEN_REDHAT_7_STATFS_WORKAROUND
+#endif
+
+#endif /* HAVE_SYS_CAPABILITY_H */
+
 /**************************************************************************
  Try and abstract process capabilities (for systems that have them).
 ****************************************************************************/
-static BOOL set_process_capability( uint32 cap_flag, BOOL enable )
+
+/* Set the POSIX capabilities needed for the given purpose into the effective
+ * capability set of the current process. Make sure they are always removed
+ * from the inheritable set, because there is no circumstance in which our
+ * children should inherit our elevated privileges.
+ */
+static BOOL set_process_capability(enum smbd_capability capability,
+				   BOOL	enable)
 {
-	if(cap_flag == KERNEL_OPLOCK_CAPABILITY) {
-		cap_t cap = cap_get_proc();
+	cap_value_t cap_vals[2] = {0};
+	int num_cap_vals = 0;
 
-		if (cap == NULL) {
-			DEBUG(0,("set_process_capability: cap_get_proc failed. Error was %s\n",
-				strerror(errno)));
-			return False;
-		}
+	cap_t cap;
 
-		if(enable)
-			cap->cap_effective |= CAP_NETWORK_MGT;
-		else
-			cap->cap_effective &= ~CAP_NETWORK_MGT;
-
-		if (cap_set_proc(cap) == -1) {
-			DEBUG(0,("set_process_capability: cap_set_proc failed. Error was %s\n",
-				strerror(errno)));
-			cap_free(cap);
-			return False;
-		}
-
-		cap_free(cap);
-
-		DEBUG(10,("set_process_capability: Set KERNEL_OPLOCK_CAPABILITY.\n"));
+	cap = cap_get_proc();
+	if (cap == NULL) {
+		DEBUG(0,("set_process_capability: cap_get_proc failed: %s\n",
+			strerror(errno)));
+		return False;
 	}
-	return True;
-}
 
-/**************************************************************************
- Try and abstract inherited process capabilities (for systems that have them).
-****************************************************************************/
-
-static BOOL set_inherited_process_capability( uint32 cap_flag, BOOL enable )
-{
-	if(cap_flag == KERNEL_OPLOCK_CAPABILITY) {
-		cap_t cap = cap_get_proc();
-
-		if (cap == NULL) {
-			DEBUG(0,("set_inherited_process_capability: cap_get_proc failed. Error was %s\n",
-				strerror(errno)));
-			return False;
-		}
-
-		if(enable)
-			cap->cap_inheritable |= CAP_NETWORK_MGT;
-		else
-			cap->cap_inheritable &= ~CAP_NETWORK_MGT;
-
-		if (cap_set_proc(cap) == -1) {
-			DEBUG(0,("set_inherited_process_capability: cap_set_proc failed. Error was %s\n", 
-				strerror(errno)));
-			cap_free(cap);
-			return False;
-		}
-
-		cap_free(cap);
-
-		DEBUG(10,("set_inherited_process_capability: Set KERNEL_OPLOCK_CAPABILITY.\n"));
-	}
-	return True;
-}
+	switch (capability) {
+		case KERNEL_OPLOCK_CAPABILITY:
+#ifdef CAP_NETWORK_MGT
+			/* IRIX has CAP_NETWORK_MGT for oplocks. */
+			cap_vals[num_cap_vals++] = CAP_NETWORK_MGT;
 #endif
+			break;
+	}
+
+	SMB_ASSERT(num_cap_vals <= ARRAY_SIZE(cap_vals));
+
+	if (num_cap_vals == 0) {
+		cap_free(cap);
+		return True;
+	}
+
+	cap_set_flag(cap, CAP_EFFECTIVE, num_cap_vals, cap_vals,
+		enable ? CAP_SET : CAP_CLEAR);
+	cap_set_flag(cap, CAP_INHERITABLE, num_cap_vals, cap_vals, CAP_CLEAR);
+
+	if (cap_set_proc(cap) == -1) {
+		DEBUG(0, ("set_process_capability: cap_set_proc failed: %s\n",
+			strerror(errno)));
+		cap_free(cap);
+		return False;
+	}
+
+	cap_free(cap);
+	return True;
+}
+
+#endif /* HAVE_POSIX_CAPABILITIES */
 
 /****************************************************************************
  Gain the oplock capability from the kernel if possible.
 ****************************************************************************/
 
-void oplock_set_capability(BOOL this_process, BOOL inherit)
+void set_effective_capability(enum smbd_capability capability)
 {
-#if HAVE_KERNEL_OPLOCKS_IRIX
-	set_process_capability(KERNEL_OPLOCK_CAPABILITY,this_process);
-	set_inherited_process_capability(KERNEL_OPLOCK_CAPABILITY,inherit);
-#endif
+#if defined(HAVE_POSIX_CAPABILITIES)
+	set_process_capability(capability, True);
+#endif /* HAVE_POSIX_CAPABILITIES */
+}
+
+void drop_effective_capability(enum smbd_capability capability)
+{
+#if defined(HAVE_POSIX_CAPABILITIES)
+	set_process_capability(capability, False);
+#endif /* HAVE_POSIX_CAPABILITIES */
 }
 
 /**************************************************************************
