@@ -172,7 +172,7 @@ samba:45:0F2B255F7B67A7A9AAD3B435B51404EE:
 		modifing a user account. It will specify the windows drive
 		letter to be used to map the home directory.</para>
 
-		<para>Example: <command>-d "H:"</command>
+		<para>Example: <command>-D "H:"</command>
 		</para>
 		</listitem>
 		</varlistentry>
