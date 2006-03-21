@@ -867,7 +867,7 @@ void build_options(BOOL screen);
 
 	if (is_daemon && !interactive) {
 		DEBUG( 3, ( "Becoming a daemon.\n" ) );
-		become_daemon(Fork);
+		become_daemon(Fork, no_process_group);
 	}
 
 #if HAVE_SETPGID
