@@ -220,6 +220,12 @@ sub SharedLibrary($$)
 		$self->{install_plugins} .= "\t\@cp $installdir/$ctx->{LIBRARY_REALNAME} \$(DESTDIR)\$(MODULESDIR)/$ctx->{SUBSYSTEM}/$fixedname.\$(SHLIBEXT)\n";
 		$self->{uninstall_plugins} .= "\t\@echo Uninstalling \$(DESTDIR)\$(MODULESDIR)/$ctx->{SUBSYSTEM}/$fixedname.\$(SHLIBEXT)\n";
 		$self->{uninstall_plugins} .= "\t\@-rm \$(DESTDIR)\$(MODULESDIR)/$ctx->{SUBSYSTEM}/$fixedname.\$(SHLIBEXT)\n";
+		if (defined($ctx->{ALIASES})) {
+			foreach (@{$ctx->{ALIASES}}) {
+				$self->{install_plugins} .= "\t\@ln -s $fixedname.\$(SHLIBEXT) \$(DESTDIR)\$(MODULESDIR)/$ctx->{SUBSYSTEM}/$_.\$(SHLIBEXT)\n";
+				$self->{uninstall_plugins} .= "\t\@-rm \$(DESTDIR)\$(MODULESDIR)/$ctx->{SUBSYSTEM}/$_.\$(SHLIBEXT)\n";
+			}
+		}
 	}
 
 	$self->_prepare_list($ctx, "OBJ_LIST");

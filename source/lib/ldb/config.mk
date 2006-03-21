@@ -73,6 +73,7 @@ OBJ_FILES = \
 [MODULE::ldb_ildap]
 SUBSYSTEM = ldb
 INIT_FUNCTION = ldb_ildap_init
+ALIASES = ldapi ldaps ldap
 OBJ_FILES = \
 		ldb_ildap/ldb_ildap.o
 REQUIRED_SUBSYSTEMS = \
