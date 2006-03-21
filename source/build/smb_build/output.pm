@@ -58,6 +58,11 @@ sub generate_shared_library($)
 		$lib_name = "lib$link_name";
 	}
 
+	if ($lib->{TYPE} eq "MODULE") {
+		$lib->{FIXED_NAME} = $link_name;
+		$lib->{FIXED_NAME} =~ s/^$lib->{SUBSYSTEM}_//g;
+	}
+
 	$lib->{DEBUGDIR} = "bin";
 	$lib->{RELEASEDIR} = "bin/install";
 	$lib->{LIBRARY_REALNAME} = $lib->{LIBRARY_NAME} = "$lib_name.\$(SHLIBEXT)";
@@ -68,7 +73,12 @@ sub generate_shared_library($)
 	} elsif ($lib->{TYPE} eq "MODULE") {
 		$lib->{DEBUGDIR} = "bin/modules/$lib->{SUBSYSTEM}";
 	}
-	$lib->{TARGET} = "$lib->{DEBUGDIR}/$lib->{LIBRARY_REALNAME}";
+
+	if (defined($lib->{FIXED_NAME})) {
+		$lib->{TARGET} = "$lib->{DEBUGDIR}/$lib->{FIXED_NAME}.\$(SHLIBEXT)";
+	} else {
+		$lib->{TARGET} = "$lib->{DEBUGDIR}/$lib->{LIBRARY_REALNAME}";
+	}
 	$lib->{OUTPUT} = $lib->{TARGET};
 }
 
