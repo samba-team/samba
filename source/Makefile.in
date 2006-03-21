@@ -846,9 +846,9 @@ pch: proto_exists
 ##
 ## Targets for 'make test'
 ##
-test: all torture
-	@echo Running Samba 3 Test suite
-	@sh ./script/tests/runtests.sh t_dir
+test: all torture bin/timelimit
+	@echo Running Test suite
+	@sh ./script/tests/selftest.sh ${selftest_prefix}/st all "${smbtorture4_path}"
 
 # Check for PAM module problems.  Specifically, check that every module we
 # built can actually be loaded by a minimal PAM-aware application.
