@@ -849,7 +849,7 @@ static BOOL api_samr_set_userinfo(pipes_struct *p)
 		/* Fix for W2K SP2 */
 		/* what is that status-code ? - gd */
 		if (q_u.switch_value == 0x1a) {
-			setup_fault_pdu(p, NT_STATUS(0x1c000006));
+			setup_fault_pdu(p, NT_STATUS(DCERPC_FAULT_INVALID_TAG));
 			return True;
 		}
 		return False;
