@@ -25,10 +25,10 @@ AC_PREFIX_DEFAULT(/usr/local/samba)
 rootsbindir="\${SBINDIR}"
 lockdir="\${VARDIR}/locks"
 piddir="\${VARDIR}/locks"
-mandir="\${prefix}/man"
+test "${mandir}" || mandir="\${prefix}/man"
 logfilebase="\${VARDIR}"
 privatedir="\${prefix}/private"
-libdir="\${prefix}/lib"
+test "${libdir}" || libdir="\${prefix}/lib"
 configdir="\${LIBDIR}"
 swatdir="\${prefix}/swat"
 
