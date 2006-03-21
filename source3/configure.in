@@ -29,6 +29,7 @@ test "${mandir}" || mandir="\${prefix}/man"
 logfilebase="\${VARDIR}"
 privatedir="\${prefix}/private"
 test "${libdir}" || libdir="\${prefix}/lib"
+pammodulesdir="\${LIBDIR}/security"
 configdir="\${LIBDIR}"
 swatdir="\${prefix}/swat"
 
@@ -176,6 +177,22 @@ AC_ARG_WITH(libdir,
   esac])
 
 #################################################
+# set PAM modules directory location
+AC_ARG_WITH(pammodulesdir,
+[  --with-pammodulesdir=DIR  Which directory to use for PAM modules ($ac_default_prefix/$libdir/security)],
+[ case "$withval" in
+  yes|no)
+  #
+  # Just in case anybody calls it without argument
+  #
+    AC_MSG_WARN([--with-pammodulesdir called without argument - will use default])
+  ;;
+  * )
+    pammodulesdir="$withval"
+    ;;
+  esac])
+
+#################################################
 # set man directory location
 AC_ARG_WITH(mandir,
 [  --with-mandir=DIR       Where to put man pages ($mandir)],
@@ -219,6 +236,7 @@ AC_SUBST(swatdir)
 AC_SUBST(bindir)
 AC_SUBST(sbindir)
 AC_SUBST(rootsbindir)
+AC_SUBST(pammodulesdir)
 
 dnl Unique-to-Samba variables we'll be playing with.
 AC_SUBST(SHELL)
