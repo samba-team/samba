@@ -426,11 +426,11 @@ static char **reg_completion(const char *text, int start, int end)
 	}
 
 	if (remote) {
-		error = reg_open_remote (&h, cmdline_credentials, remote, NULL); 
+		error = reg_open_remote (&h, NULL, cmdline_credentials, remote, NULL); 
 	} else if (backend) {
-		error = reg_open_hive(NULL, backend, poptGetArg(pc), NULL, &curkey);
+		error = reg_open_hive(NULL, backend, poptGetArg(pc), NULL, cmdline_credentials, &curkey);
 	} else {
-		error = reg_open_local(&h);
+		error = reg_open_local(&h, NULL, cmdline_credentials);
 	}
 
 	if(!W_ERROR_IS_OK(error)) {

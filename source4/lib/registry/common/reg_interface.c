@@ -161,7 +161,7 @@ _PUBLIC_ WERROR reg_get_predefined_key(struct registry_context *ctx, uint32_t hk
 }
 
 /** Open a registry file/host/etc */
-_PUBLIC_ WERROR reg_open_hive(TALLOC_CTX *parent_ctx, const char *backend, const char *location, const char *credentials, struct registry_key **root)
+_PUBLIC_ WERROR reg_open_hive(TALLOC_CTX *parent_ctx, const char *backend, const char *location, struct auth_session_info *session_info, struct cli_credentials *credentials, struct registry_key **root)
 {
 	struct registry_hive *rethive;
 	struct registry_key *retkey = NULL;
@@ -181,6 +181,8 @@ _PUBLIC_ WERROR reg_open_hive(TALLOC_CTX *parent_ctx, const char *backend, const
 	
 	rethive = talloc(parent_ctx, struct registry_hive);
 	rethive->location = location?talloc_strdup(rethive, location):NULL;
+	rethive->session_info = talloc_reference(rethive, session_info);
+	rethive->credentials = talloc_reference(rethive, credentials);
 	rethive->functions = entry->hive_functions;
 	rethive->backend_data = NULL;
 
