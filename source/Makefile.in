@@ -65,6 +65,7 @@ BINDIR = @bindir@
 SBINDIR = @sbindir@
 ROOTSBINDIR = @rootsbindir@
 LIBDIR = @libdir@
+PAMMODULESDIR = @pammodulesdir@
 VFSLIBDIR = $(LIBDIR)/vfs
 PDBLIBDIR = $(LIBDIR)/pdb
 RPCLIBDIR = $(LIBDIR)/rpc
@@ -1441,7 +1442,7 @@ bin/t_snprintf@EXEEXT@: lib/snprintf.c
 bin/timelimit@EXEEXT@: script/tests/timelimit.c
 	$(CC) $(FLAGS) @PIE_LDFLAGS@ -o $@ $(DYNEXP) script/tests/timelimit.c
 
-install: installservers installbin @INSTALL_CIFSMOUNT@ installman installscripts installdat installswat installmodules @INSTALL_LIBSMBCLIENT@ @INSTALL_LIBMSRPC@
+install: installservers installbin @INSTALL_CIFSMOUNT@ installman installscripts installdat installswat installmodules @INSTALL_LIBSMBCLIENT@ @INSTALL_LIBMSRPC@ installpammodules
 
 install-everything: install installmodules
 
@@ -1507,6 +1508,16 @@ installlibmsrpc: installdirs libmsrpc
 	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS) $(DESTDIR) ${prefix}/include
 	-$(INSTALLCMD) $(srcdir)/include/libmsrpc.h $(DESTDIR)${prefix}/include
 
+installpammodules: $(PAM_MODULES)
+	@if test "$(PAM_MODULES)"; then \
+		$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS) $(DESTDIR) $(PAMMODULESDIR); \
+	fi
+	@for module in $(PAM_MODULES); do \
+		echo "Installing module $${module} as $(DESTDIR)/$(PAMMODULESDIR)/$${module}.@SHLIBEXT@ "; \
+		install -m $(INSTALLPERMS) bin/$${module}.@SHLIBEXT@ \
+			"$(DESTDIR)/$(PAMMODULESDIR)"; \
+	done
+
 # Python extensions
 
 PYTHON_OBJS = $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) $(LIBSMB_OBJ) $(RPC_PARSE_OBJ) \
@@ -1563,7 +1574,7 @@ showlayout:
 	@echo "  swatdir:     $(SWATDIR)"
 
 
-uninstall: uninstallman uninstallservers uninstallbin @UNINSTALL_CIFSMOUNT@ uninstallscripts uninstalldat uninstallswat uninstallmodules @UNINSTALL_LIBSMBCLIENT@ @UNINSTALL_LIBMSRPC@
+uninstall: uninstallman uninstallservers uninstallbin @UNINSTALL_CIFSMOUNT@ uninstallscripts uninstalldat uninstallswat uninstallmodules @UNINSTALL_LIBSMBCLIENT@ @UNINSTALL_LIBMSRPC@ uninstallpammodules
 
 uninstallman:
 	@$(SHELL) $(srcdir)/script/uninstallman.sh $(DESTDIR)$(MANDIR) $(srcdir) C
@@ -1606,6 +1617,12 @@ uninstalllibmsrpc: installdirs libmsrpc
 	-$(UNINSTALLLIBCMD_SH) $(DESTDIR)$(LIBDIR)/libmsrpc.@SHLIBEXT@
 	-$(UNINSTALLLIBCMD_A) $(DESTDIR)$(LIBDIR)/libmsrpc.a
 	-rm -f $(DESTDIR)${prefix}/include/libmsrpc.h
+
+uninstallpammodules:
+	@for module in $(PAM_MODULES); do \
+		echo "Removing $(DESTDIR)/$(PAMMODULESDIR)/$${module}.@SHLIBEXT@ "; \
+		rm -f "$(DESTDIR)/$(PAMMODULESDIR)/$${module}.@SHLIBEXT@"; \
+	done
 
 # Toplevel clean files
 TOPFILES=dynconfig.o dynconfig.@PICSUFFIX@
