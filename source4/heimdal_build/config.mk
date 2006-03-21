@@ -428,18 +428,11 @@ include perl_path_wrapper.sh et_deps.pl heimdal/lib/krb5/heim_err.et|
 include perl_path_wrapper.sh et_deps.pl heimdal/lib/krb5/k524_err.et|
 include perl_path_wrapper.sh et_deps.pl heimdal/lib/krb5/krb5_err.et|
 
-./heimdal/lib/krb5/replay.c: ./heimdal/lib/roken/vis.h
-./heimdal/lib/roken/vis.c: ./heimdal/lib/roken/vis.h
+heimdal/lib/des/hcrypto/%: heimdal/lib/des/% heimdal/lib/des/hcrypto
+	@true
 
-heimdal/lib/krb5/krb5.h: heimdal/lib/asn1/asn1_err.h \
-	heimdal/lib/krb5/krb5_err.h
-
-heimdal/lib/gssapi/asn1_ContextFlags.c: heimdal/lib/gssapi/spnego_asn1.h
-heimdal/lib/gssapi/asn1_MechType.c: heimdal/lib/gssapi/spnego_asn1.h
-heimdal/lib/gssapi/asn1_MechTypeList.c: heimdal/lib/gssapi/spnego_asn1.h
-heimdal/lib/gssapi/asn1_NegTokenInit.c: heimdal/lib/gssapi/spnego_asn1.h
-heimdal/lib/gssapi/asn1_NegTokenTarg.c: heimdal/lib/gssapi/spnego_asn1.h
-heimdal/lib/gssapi/asn1_NegotiationToken.c: heimdal/lib/gssapi/spnego_asn1.h
+heimdal/lib/des/hcrypto: 
+	ln -sf ./../des $@
 
 clean::	
 	@-rm -f heimdal/lib/roken/vis.h heimdal/lib/roken/err.h
