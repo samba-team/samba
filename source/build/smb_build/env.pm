@@ -57,6 +57,10 @@ sub PkgConfig($$$$$$$$)
 
 	print __FILE__.": creating $path\n";
 
+	if ($self->{config}->{samba_cv_immediate_structures} eq "yes") {
+		$cflags .= " -DHAVE_IMMEDIATE_STRUCTURES=1";
+	}
+
 	open(OUT, ">$path") or die("Can't open $path: $!");
 
 	print OUT <<"__EOF__";

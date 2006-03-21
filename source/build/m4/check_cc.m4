@@ -65,6 +65,7 @@ AC_CACHE_CHECK([for immediate structures],samba_cv_immediate_structures, [
 if test x"$samba_cv_immediate_structures" = x"yes"; then
    AC_DEFINE(HAVE_IMMEDIATE_STRUCTURES,1,[Whether the compiler supports immediate structures])
 fi
+AC_SUBST(samba_cv_immediate_structures)
 
 ############################################
 # check if the compiler handles c99 struct initialization
