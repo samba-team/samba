@@ -103,6 +103,11 @@ static NTSTATUS pvfs_unlink_one(struct pvfs_state *pvfs,
 		status = pvfs_map_errno(pvfs, errno);
 	}
 
+	if (NT_STATUS_IS_OK(status)) {
+		notify_trigger(pvfs->notify_context, NOTIFY_ACTION_REMOVED, 
+			       name->full_name);
+	}
+
 	talloc_free(name);
 
 	return status;

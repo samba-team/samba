@@ -42,6 +42,7 @@ struct pvfs_state {
 
 	struct brl_context *brl_context;
 	struct odb_context *odb_context;
+	struct notify_context *notify_context;
 	struct sidmap_context *sidmap;
 
 	/* a list of pending async requests. Needed to support
@@ -179,6 +180,9 @@ struct pvfs_file {
 	/* a count of active locks - used to avoid calling brl_close on
 	   file close */
 	uint64_t lock_count;
+
+	/* for directories, a buffer of pending notify events */
+	struct pvfs_notify_buffer *notify_buffer;
 };
 
 /* the state of a search started with pvfs_search_first() */
