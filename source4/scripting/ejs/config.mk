@@ -60,7 +60,9 @@ INIT_FUNCTION = smb_setup_ejs_system
 
 #######################
 # Start LIBRARY smbcalls
-[SUBSYSTEM::smbcalls]
+[LIBRARY::smbcalls]
+SO_VERSION = 0
+VERSION = 0.0.1
 PRIVATE_PROTO_HEADER = proto.h
 OBJ_FILES = \
 		smbcalls.o \
