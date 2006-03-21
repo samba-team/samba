@@ -516,6 +516,19 @@ static NTSTATUS unixuid_cancel(struct ntvfs_module_context *ntvfs,
 }
 
 /*
+  change notify
+*/
+static NTSTATUS unixuid_notify(struct ntvfs_module_context *ntvfs,
+			       struct ntvfs_request *req, struct smb_notify *info)
+{
+	NTSTATUS status;
+
+	PASS_THRU_REQ(ntvfs, req, notify, (ntvfs, req, info));
+
+	return status;
+}
+
+/*
   lock a byte range
 */
 static NTSTATUS unixuid_lock(struct ntvfs_module_context *ntvfs,
@@ -660,6 +673,7 @@ NTSTATUS ntvfs_unixuid_init(void)
 	ops.logoff = unixuid_logoff;
 	ops.async_setup = unixuid_async_setup;
 	ops.cancel = unixuid_cancel;
+	ops.notify = unixuid_notify;
 
 	ops.name = "unixuid";
 
