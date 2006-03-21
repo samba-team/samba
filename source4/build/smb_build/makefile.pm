@@ -218,7 +218,7 @@ sub SharedLibrary($$)
 		$self->{uninstall_plugins} .= "\t\@-rm \$(DESTDIR)\$(MODULESDIR)/$ctx->{SUBSYSTEM}/$ctx->{FIXED_NAME}.\$(SHLIBEXT)\n";
 		if (defined($ctx->{ALIASES})) {
 			foreach (@{$ctx->{ALIASES}}) {
-				$self->{install_plugins} .= "\t\@ln -s $ctx->{FIXED_NAME}.\$(SHLIBEXT) \$(DESTDIR)\$(MODULESDIR)/$ctx->{SUBSYSTEM}/$_.\$(SHLIBEXT)\n";
+				$self->{install_plugins} .= "\t\@ln -fs $ctx->{FIXED_NAME}.\$(SHLIBEXT) \$(DESTDIR)\$(MODULESDIR)/$ctx->{SUBSYSTEM}/$_.\$(SHLIBEXT)\n";
 				$self->{uninstall_plugins} .= "\t\@-rm \$(DESTDIR)\$(MODULESDIR)/$ctx->{SUBSYSTEM}/$_.\$(SHLIBEXT)\n";
 			}
 		}
@@ -273,7 +273,7 @@ __EOD__
 );
 		if (defined($ctx->{ALIASES})) {
 			foreach (@{$ctx->{ALIASES}}) {
-				$self->output("\t\@ln -s $ctx->{FIXED_NAME}.\$(SHLIBEXT) $ctx->{DEBUGDIR}/$_.\$(SHLIBEXT)\n");
+				$self->output("\t\@ln -fs $ctx->{FIXED_NAME}.\$(SHLIBEXT) $ctx->{DEBUGDIR}/$_.\$(SHLIBEXT)\n");
 			}
 		}
 
