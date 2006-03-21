@@ -912,10 +912,12 @@ int main(int argc, char **argv)
 	pstring logfile;
 	static BOOL Fork = True;
 	static BOOL log_stdout = False;
+	static BOOL no_process_group = False;
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
 		{ "stdout", 'S', POPT_ARG_VAL, &log_stdout, True, "Log to stdout" },
 		{ "foreground", 'F', POPT_ARG_VAL, &Fork, False, "Daemon in foreground mode" },
+		{ "no-process-group", 0, POPT_ARG_VAL, &no_process_group, True, "Don't create a new process group" },
 		{ "interactive", 'i', POPT_ARG_NONE, NULL, 'i', "Interactive mode" },
 		{ "no-caching", 'n', POPT_ARG_VAL, &opt_nocache, True, "Disable caching" },
 		POPT_COMMON_SAMBA
@@ -1036,7 +1038,7 @@ int main(int argc, char **argv)
 	CatchSignal(SIGHUP, sighup_handler);
 
 	if (!interactive)
-		become_daemon(Fork);
+		become_daemon(Fork, no_process_group);
 
 	pidfile_create("winbindd");
 
@@ -1045,7 +1047,7 @@ int main(int argc, char **argv)
 	 * If we're interactive we want to set our own process group for
 	 * signal management.
 	 */
-	if (interactive)
+	if (interactive && !no_process_group)
 		setpgid( (pid_t)0, (pid_t)0);
 #endif
 

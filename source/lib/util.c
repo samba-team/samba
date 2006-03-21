@@ -823,7 +823,7 @@ void smb_msleep(unsigned int t)
  Become a daemon, discarding the controlling terminal.
 ****************************************************************************/
 
-void become_daemon(BOOL Fork)
+void become_daemon(BOOL Fork, BOOL no_process_group)
 {
 	if (Fork) {
 		if (sys_fork()) {
@@ -833,9 +833,9 @@ void become_daemon(BOOL Fork)
 
   /* detach from the terminal */
 #ifdef HAVE_SETSID
-	setsid();
+	if (!no_process_group) setsid();
 #elif defined(TIOCNOTTY)
-	{
+	if (!no_process_group) {
 		int i = sys_open("/dev/tty", O_RDWR, 0);
 		if (i != -1) {
 			ioctl(i, (int) TIOCNOTTY, (char *)0);      
