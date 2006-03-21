@@ -99,9 +99,9 @@ static void popt_common_callback(poptContext con,
 
 	case 'l':
 		if (arg) {
-			char *logfile = talloc_asprintf(NULL, "%s/log.%s", arg, pname);
-			lp_set_cmdline("log file", logfile);
-			talloc_free(logfile);
+			char *new_logfile = talloc_asprintf(NULL, "%s/log.%s", arg, pname);
+			lp_set_cmdline("log file", new_logfile);
+			talloc_free(new_logfile);
 		}
 		break;
 		
