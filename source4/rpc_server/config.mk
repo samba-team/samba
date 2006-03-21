@@ -204,6 +204,7 @@ REQUIRED_SUBSYSTEMS = \
 ################################################
 # Start SUBSYSTEM dcerpc_server
 [LIBRARY::dcerpc_server]
+DESCRIPTION = DCE/RPC Server implementation
 VERSION = 0.0.1
 SO_VERSION = 0
 PUBLIC_HEADERS = dcerpc_server.h
