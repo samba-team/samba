@@ -11,6 +11,9 @@
 prefix=@prefix@
 exec_prefix=@exec_prefix@
 
+selftest_prefix=@selftest_prefix@
+smbtorture4_path=@smbtorture4_path@
+
 LIBS=@LIBS@
 CC=@CC@
 SHLD=@SHLD@
@@ -1405,6 +1408,10 @@ bin/t_push_ucs2@EXEEXT@: bin/libbigballofmud.@SHLIBEXT@ torture/t_push_ucs2.o
 
 bin/t_snprintf@EXEEXT@: lib/snprintf.c
 	$(CC) $(FLAGS) @PIE_LDFLAGS@ -o $@ $(DYNEXP) -DTEST_SNPRINTF lib/snprintf.c -lm
+
+bin/timelimit@EXEEXT@: script/tests/timelimit.c
+	$(CC) $(FLAGS) @PIE_LDFLAGS@ -o $@ $(DYNEXP) script/tests/timelimit.c
+
 install: installservers installbin @INSTALL_CIFSMOUNT@ installman installscripts installdat installswat installmodules @INSTALL_LIBSMBCLIENT@ @INSTALL_LIBMSRPC@
 
 install-everything: install installmodules
