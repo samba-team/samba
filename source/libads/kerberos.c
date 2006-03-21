@@ -72,9 +72,7 @@ int kerberos_kinit_password_ext(const char *principal,
 	krb5_ccache cc = NULL;
 	krb5_principal me;
 	krb5_creds my_creds;
-#if 0
 	krb5_get_init_creds_opt opt;
-#endif
 
 	initialize_krb5_error_table();
 	if ((code = krb5_init_context(&ctx)))
@@ -97,12 +95,9 @@ int kerberos_kinit_password_ext(const char *principal,
 		return code;
 	}
 
-#if 0	/* This code causes problems with MIT krb5 1.3 when asking for a 
-	   TGT for the machine account */
 	krb5_get_init_creds_opt_init(&opt);
 	krb5_get_init_creds_opt_set_renew_life(&opt, renewable_time);
 	krb5_get_init_creds_opt_set_forwardable(&opt, 1);
-#endif
 	
 	if (request_pac) {
 #ifdef HAVE_KRB5_GET_INIT_CREDS_OPT_SET_PAC_REQUEST
@@ -110,13 +105,8 @@ int kerberos_kinit_password_ext(const char *principal,
 #endif
 	}
 
-#if 0
 	if ((code = krb5_get_init_creds_password(ctx, &my_creds, me, CONST_DISCARD(char *,password), 
 						 kerb_prompter, NULL, 0, NULL, &opt)))
-#else
-	if ((code = krb5_get_init_creds_password(ctx, &my_creds, me, CONST_DISCARD(char *,password), 
-						 kerb_prompter, NULL, 0, NULL, NULL))) 
-#endif
 	{
 		krb5_free_principal(ctx, me);
 		krb5_free_context(ctx);		
