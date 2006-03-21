@@ -612,22 +612,12 @@ static BOOL delay_for_oplocks(struct share_mode_lock *lck, files_struct *fsp)
 {
 	int i;
 	struct share_mode_entry *exclusive = NULL;
+	BOOL valid_entry = False;
 	BOOL delay_it = False;
 	BOOL have_level2 = False;
 
 	if (is_stat_open(fsp->access_mask)) {
 		fsp->oplock_type = NO_OPLOCK;
-		return False;
-	}
-
-	if (lck->num_share_modes == 0) {
-		/* No files open at all: Directly grant whatever the client
-		 * wants. */
-
-		if (fsp->oplock_type == NO_OPLOCK) {
-			/* Store a level2 oplock, but don't tell the client */
-			fsp->oplock_type = FAKE_LEVEL_II_OPLOCK;
-		}
 		return False;
 	}
 
@@ -637,14 +627,28 @@ static BOOL delay_for_oplocks(struct share_mode_lock *lck, files_struct *fsp)
 			continue;
 		}
 
+		/* At least one entry is not an invalid or deferred entry. */
+		valid_entry = True;
+
 		if (EXCLUSIVE_OPLOCK_TYPE(lck->share_modes[i].op_type)) {
 			SMB_ASSERT(exclusive == NULL);			
 			exclusive = &lck->share_modes[i];
 		}
 
 		if (lck->share_modes[i].op_type == LEVEL_II_OPLOCK) {
+			SMB_ASSERT(exclusive == NULL);			
 			have_level2 = True;
 		}
+	}
+
+	if (!valid_entry) {
+		/* All entries are placeholders or deferred.
+		 * Directly grant whatever the client wants. */
+		if (fsp->oplock_type == NO_OPLOCK) {
+			/* Store a level2 oplock, but don't tell the client */
+			fsp->oplock_type = FAKE_LEVEL_II_OPLOCK;
+		}
+		return False;
 	}
 
 	if (exclusive != NULL) { /* Found an exclusive oplock */
@@ -654,7 +658,8 @@ static BOOL delay_for_oplocks(struct share_mode_lock *lck, files_struct *fsp)
 	}
 
 	if (EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type)) {
-		/* We can at most grant level2 */
+		/* We can at most grant level2 as there are other
+		 * level2 or NO_OPLOCK entries. */
 		fsp->oplock_type = LEVEL_II_OPLOCK;
 	}
 
