@@ -67,7 +67,7 @@ includedir=$self->{config}->{includedir}
 __EOF__
 
 	if ($hasmodules) {
-		print OUT "modulesdir=$self->{config}->{modulesdir}\n" ;
+		print OUT "modulesdir=$self->{config}->{modulesdir}/$name\n" ;
 	}
 
 	print OUT "\n";
@@ -79,9 +79,6 @@ __EOF__
 	print OUT "Version: $version\n";
 	print OUT "Libs: -L\${libdir} $libs\n";
 	print OUT "Cflags: -I\${includedir} $cflags\n";
-	if ($hasmodules) {
-		print OUT "Modulesdir: \${modulesdir}\n";
-	}
 
 	close(OUT);
 }

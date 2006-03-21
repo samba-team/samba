@@ -1,5 +1,6 @@
 # TORTURE subsystem
 [LIBRARY::torture]
+DESCRIPTION = Samba torture (test) suite
 SO_VERSION = 0
 VERSION = 0.0.1
 PUBLIC_HEADERS = torture.h
