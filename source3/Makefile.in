@@ -1215,7 +1215,7 @@ bin/winbindd@EXEEXT@: $(WINBINDD_OBJ) @BUILD_POPT@ bin/.dummy
 		@SONAMEFLAG@`basename $@`@NSSSONAMEVERSIONSUFFIX@
 
 bin/pam_winbind.@SHLIBEXT@: $(PAM_WINBIND_PICOBJ) bin/.dummy
-	@echo "Linking $@"
+	@echo "Linking shared library $@"
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(PAM_WINBIND_PICOBJ) \
 		@SONAMEFLAG@`basename $@` $(LIBS) -lpam
 
