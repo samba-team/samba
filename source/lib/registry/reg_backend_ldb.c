@@ -262,8 +262,8 @@ static WERROR ldb_open_hive(struct registry_hive *hive, struct registry_key **k)
 	struct ldb_context *wrap;
 
 	if (!hive->location) return WERR_INVALID_PARAM;
-	/* TODO: Support remoting with credentials and ACLs with session tokens */
-	wrap = ldb_wrap_connect(hive, hive->location, NULL, NULL, 0, NULL);
+
+	wrap = ldb_wrap_connect(hive, hive->location, hive->session_info, hive->credentials, 0, NULL);
 
 	if(!wrap) {
 		DEBUG(1, ("ldb_open_hive: unable to connect\n"));

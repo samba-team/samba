@@ -22,6 +22,7 @@
 
 #include "includes.h"
 #include "lib/registry/registry.h"
+#include "lib/cmdline/popt_common.h"
 
 static BOOL test_hive(TALLOC_CTX *mem_ctx, const char *backend, const char *location)
 {
@@ -34,7 +35,7 @@ static BOOL test_hive(TALLOC_CTX *mem_ctx, const char *backend, const char *loca
 		return True;
 	}
 
-	error = reg_open_hive(mem_ctx, backend, location, NULL, &root);
+	error = reg_open_hive(mem_ctx, backend, location, NULL, cmdline_credentials, &root);
 	if (!W_ERROR_IS_OK(error)) {
 		printf("reg_open_hive() failed\n"); 
 		return False;

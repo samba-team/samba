@@ -349,7 +349,7 @@ static void on_open_file_activate (GtkMenuItem *menuitem, gpointer user_data)
 	switch(result) {
 	case GTK_RESPONSE_OK:
 		filename = strdup(gtk_file_selection_get_filename(GTK_FILE_SELECTION(openfilewin)));
-		error = reg_open_hive(NULL, user_data, filename, NULL, &root);
+		error = reg_open_hive(NULL, user_data, filename, NULL, NULL, &root);
 		if(!W_ERROR_IS_OK(error)) {
 			gtk_show_werror(mainwin, "Error while opening hive", error);
 			break;
@@ -371,7 +371,7 @@ static void on_open_file_activate (GtkMenuItem *menuitem, gpointer user_data)
 static void on_open_gconf_activate(GtkMenuItem *menuitem, gpointer user_data)
 {
 	struct registry_key *root;
-	WERROR error = reg_open_hive(NULL, "gconf", NULL, NULL, &root);
+	WERROR error = reg_open_hive(NULL, "gconf", NULL, NULL, NULL, &root);
 	if(!W_ERROR_IS_OK(error)) {
 		gtk_show_werror(mainwin, "Error while opening GConf", error);
 		return;
@@ -385,7 +385,7 @@ static void on_open_gconf_activate(GtkMenuItem *menuitem, gpointer user_data)
 
 static void on_open_local_activate(GtkMenuItem *menuitem, gpointer user_data)
 {
-	WERROR error = reg_open_local(&registry);
+	WERROR error = reg_open_local(&registry, NULL, NULL);
 	if(!W_ERROR_IS_OK(error)) {
 		gtk_show_werror(mainwin, "Error while opening local registry", error);
 		return;
@@ -412,6 +412,7 @@ static void on_open_remote_activate(GtkMenuItem *menuitem, gpointer user_data)
 	cli_credentials_set_gtk_callbacks(creds);
 
 	error = reg_open_remote(&registry, 
+				NULL,
 				creds,
 				gtk_rpc_binding_dialog_get_binding_string(GTK_RPC_BINDING_DIALOG(rpcwin), mem_ctx),
 				NULL);
@@ -952,7 +953,7 @@ static GtkWidget* create_savefilewin (void)
 
 static int gregedit_load_defaults(void)
 {
-	WERROR error = reg_open_local(&registry);
+	WERROR error = reg_open_local(&registry, NULL, NULL);
 	if(!W_ERROR_IS_OK(error)) {
 		gtk_show_werror(mainwin, "Error while loading local registry", error);
 		return -1;

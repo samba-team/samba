@@ -125,6 +125,8 @@ struct registry_hive
 {
 	const struct hive_operations *functions;
 	struct registry_key *root;
+	struct auth_session_info *session_info;
+	struct cli_credentials *credentials;
 	void *backend_data;
 	const char *location;
 };
@@ -133,6 +135,8 @@ struct registry_hive
  * contains zero or more hives */
 struct registry_context {
     void *backend_data;
+	struct cli_credentials *credentials;
+	struct auth_session_info *session_info;
 	WERROR (*get_predefined_key) (struct registry_context *, uint32_t hkey, struct registry_key **);
 };
 
@@ -163,6 +167,8 @@ struct reg_diff
 	uint32_t numkeys;
 	struct reg_diff_key *keys;
 };
+
+struct auth_session_info;
 
 #include "lib/registry/registry_proto.h"
 
