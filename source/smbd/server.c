@@ -715,6 +715,7 @@ void build_options(BOOL screen);
 	static BOOL is_daemon = False;
 	static BOOL interactive = False;
 	static BOOL Fork = True;
+	static BOOL no_process_group = False;
 	static BOOL log_stdout = False;
 	static char *ports = NULL;
 	int opt;
@@ -725,6 +726,7 @@ void build_options(BOOL screen);
 	{"daemon", 'D', POPT_ARG_VAL, &is_daemon, True, "Become a daemon (default)" },
 	{"interactive", 'i', POPT_ARG_VAL, &interactive, True, "Run interactive (not a daemon)"},
 	{"foreground", 'F', POPT_ARG_VAL, &Fork, False, "Run daemon in foreground (for daemontools & etc)" },
+	{"no-process-group", 0, POPT_ARG_VAL, &no_process_group, True, "Don't create a new process group" },
 	{"log-stdout", 'S', POPT_ARG_VAL, &log_stdout, True, "Log to stdout" },
 	{"build-options", 'b', POPT_ARG_NONE, NULL, 'b', "Print build options" },
 	{"port", 'p', POPT_ARG_STRING, &ports, 0, "Listen on the specified ports"},
@@ -873,7 +875,7 @@ void build_options(BOOL screen);
 	 * If we're interactive we want to set our own process group for
 	 * signal management.
 	 */
-	if (interactive)
+	if (interactive && !no_process_group)
 		setpgid( (pid_t)0, (pid_t)0);
 #endif
 

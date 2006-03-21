@@ -658,11 +658,13 @@ static BOOL open_sockets(BOOL isdaemon, int port)
 	static BOOL opt_interactive;
 	poptContext pc;
 	static char *p_lmhosts = dyn_LMHOSTSFILE;
+	static BOOL no_process_group = False;
 	struct poptOption long_options[] = {
 	POPT_AUTOHELP
 	{"daemon", 'D', POPT_ARG_VAL, &is_daemon, True, "Become a daemon(default)" },
 	{"interactive", 'i', POPT_ARG_VAL, &opt_interactive, True, "Run interactive (not a daemon)" },
 	{"foreground", 'F', POPT_ARG_VAL, &Fork, False, "Run daemon in foreground (for daemontools & etc)" },
+	{"no-process-group", 0, POPT_ARG_VAL, &no_process_group, True, "Don't create a new process group" },
 	{"log-stdout", 'S', POPT_ARG_VAL, &log_stdout, True, "Log to stdout" },
 	{"hosts", 'H', POPT_ARG_STRING, &p_lmhosts, 'H', "Load a netbios hosts file"},
 	{"port", 'p', POPT_ARG_INT, &global_nmb_port, NMB_PORT, "Listen on the specified port" },
@@ -749,7 +751,7 @@ static BOOL open_sockets(BOOL isdaemon, int port)
   
 	if (is_daemon && !opt_interactive) {
 		DEBUG( 2, ( "Becoming a daemon.\n" ) );
-		become_daemon(Fork);
+		become_daemon(Fork, no_process_group);
 	}
 
 #if HAVE_SETPGID
@@ -757,7 +759,7 @@ static BOOL open_sockets(BOOL isdaemon, int port)
 	 * If we're interactive we want to set our own process group for 
 	 * signal management.
 	 */
-	if (opt_interactive)
+	if (opt_interactive && !no_process_group)
 		setpgid( (pid_t)0, (pid_t)0 );
 #endif
 
