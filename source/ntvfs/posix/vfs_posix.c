@@ -185,6 +185,13 @@ static NTSTATUS pvfs_connect(struct ntvfs_module_context *ntvfs,
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
+	pvfs->notify_context = notify_init(pvfs, 
+					   pvfs->ntvfs->ctx->server_id,  
+					   pvfs->ntvfs->ctx->msg_ctx);
+	if (pvfs->notify_context == NULL) {
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
 	pvfs->sidmap = sidmap_open(pvfs);
 	if (pvfs->sidmap == NULL) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
@@ -317,6 +324,7 @@ NTSTATUS ntvfs_posix_init(void)
 	ops.logoff = pvfs_logoff;
 	ops.async_setup = pvfs_async_setup;
 	ops.cancel = pvfs_cancel;
+	ops.notify = pvfs_notify;
 
 	/* register ourselves with the NTVFS subsystem. We register
 	   under the name 'default' as we wish to be the default

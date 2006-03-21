@@ -1,0 +1,37 @@
+#include "idl_types.h"
+
+/*
+   IDL structures for notify change code
+
+   this defines the structures used in the notify database code, and
+   the change notify buffers
+*/
+
+[
+  pointer_default(unique)
+]
+interface notify
+{
+
+	/* structure used in the notify database */
+	typedef [public] struct {
+		uint32 server;
+		uint32 filter;
+		boolean32 recursive;
+		utf8string path;
+		pointer private;
+	} notify_entry;
+
+	typedef [public] struct {
+		uint32 num_entries;
+		notify_entry entries[num_entries];
+	} notify_array;
+
+	/* structure sent between servers in notify messages */
+	typedef [public] struct {
+		uint32 action;
+		utf8string path;
+		pointer private;
+	} notify_event;
+
+}

@@ -29,6 +29,7 @@ OBJ_FILES = \
 		pvfs_xattr.o \
 		pvfs_streams.o \
 		pvfs_acl.o \
+		pvfs_notify.o \
 		xattr_system.o \
 		xattr_tdb.o
 REQUIRED_SUBSYSTEMS = NDR_XATTR EXT_LIB_XATTR EXT_LIB_BLKID
