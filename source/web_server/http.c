@@ -467,7 +467,7 @@ static void http_setup_arrays(struct esp_state *esp)
 static jmp_buf ejs_exception_buf;
 static const char *exception_reason;
 
-_PUBLIC_ void ejs_exception(const char *reason)
+static void web_server_ejs_exception(const char *reason)
 {
 	Ejs *ep = ejsPtr(0);
 	if (ep) {
@@ -480,7 +480,7 @@ _PUBLIC_ void ejs_exception(const char *reason)
 	longjmp(ejs_exception_buf, -1);
 }
 #else
-void ejs_exception(const char *reason)
+static void web_server_ejs_exception(const char *reason)
 {
 	DEBUG(0,("%s", reason));
 	smb_panic(reason);
@@ -804,7 +804,7 @@ void http_process_input(struct websrv_context *web)
 			   edata->application_data, MPR_DEEP_COPY);
 	}
 
-	smb_setup_ejs_functions();
+	smb_setup_ejs_functions(web_server_ejs_exception);
 
 	if (web->input.url == NULL) {
 		http_error(web, 400, "You must specify a GET or POST request");

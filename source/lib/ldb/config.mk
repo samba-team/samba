@@ -9,8 +9,8 @@ OBJ_FILES = \
 ################################################
 
 ################################################
-# Start MODULE ldb_sort
-[MODULE::ldb_sort]
+# Start MODULE ldb_server_sort
+[MODULE::ldb_server_sort]
 INIT_FUNCTION = ldb_sort_init
 SUBSYSTEM = ldb
 OBJ_FILES = \

@@ -121,14 +121,22 @@ static int ejs_version(MprVarHandle eid, int argc, struct MprVar **argv)
 	return 0;
 }
 
+static void (*ejs_exception_handler) (const char *) = NULL;
+
+_PUBLIC_ void ejs_exception(const char *reason)
+{
+	ejs_exception_handler(reason);		
+}
 
 /*
   setup C functions that be called from ejs
 */
-void smb_setup_ejs_functions(void)
+void smb_setup_ejs_functions(void (*exception_handler)(const char *))
 {
 	init_module_fn static_init[] = STATIC_smbcalls_MODULES;
 	init_module_fn *shared_init;
+
+	ejs_exception_handler = exception_handler;
 
 	smb_setup_ejs_cli();
 	smb_setup_ejs_options();
