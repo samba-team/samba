@@ -61,16 +61,18 @@ static WERROR reg_samba_get_predef (struct registry_context *ctx, uint32_t hkey,
 
 	/* FIXME: HKEY_LOCAL_MACHINE\Security\SAM is an alias for HKEY_LOCAL_MACHINE\SAM */
 
-	error = reg_open_hive(ctx, backend, location, NULL, k);
+	error = reg_open_hive(ctx, backend, location, ctx->session_info, ctx->credentials, k);
 
 	talloc_free(backend);
 
 	return error;
 }
 
-_PUBLIC_ WERROR reg_open_local (struct registry_context **ctx)
+_PUBLIC_ WERROR reg_open_local (struct registry_context **ctx, struct auth_session_info *session_info, struct cli_credentials *credentials)
 {
 	*ctx = talloc(NULL, struct registry_context);
+	(*ctx)->credentials = talloc_reference(*ctx, credentials);
+	(*ctx)->session_info = talloc_reference(*ctx, session_info);
 	(*ctx)->get_predefined_key = reg_samba_get_predef;
 	
 	return WERR_OK;

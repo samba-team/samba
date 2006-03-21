@@ -54,14 +54,14 @@ int main(int argc, char **argv)
 		error = WERR_OK;
 		switch(opt)	{
 		case 'L':
-			if (!h1 && !from_null) error = reg_open_local(&h1);
-			else if (!h2) error = reg_open_local(&h2);
+			if (!h1 && !from_null) error = reg_open_local(&h1, NULL, cmdline_credentials);
+			else if (!h2) error = reg_open_local(&h2, NULL, cmdline_credentials);
 			break;
 		case 'R':
 			if (!h1 && !from_null) 
-				error = reg_open_remote(&h1, cmdline_credentials, 
+				error = reg_open_remote(&h1, NULL, cmdline_credentials, 
 							poptGetOptArg(pc), NULL);
-			else if (!h2) error = reg_open_remote(&h2, cmdline_credentials, 
+			else if (!h2) error = reg_open_remote(&h2, NULL, cmdline_credentials, 
 							      poptGetOptArg(pc), NULL);
 			break;
 		}

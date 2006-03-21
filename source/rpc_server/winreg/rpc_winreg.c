@@ -32,7 +32,7 @@ enum handle_types { HTYPE_REGVAL, HTYPE_REGKEY };
 static NTSTATUS dcerpc_winreg_bind(struct dcesrv_call_state *dce_call, const struct dcesrv_interface *iface)
 {
 	struct registry_context *ctx;
-	reg_open_local(&ctx);
+	reg_open_local(&ctx, dce_call->conn->auth_state.session_info, NULL);
 
 	dce_call->context->private = ctx;
 
