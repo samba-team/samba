@@ -33,7 +33,6 @@ struct pvfs_wait {
 	struct pvfs_state *pvfs;
 	void (*handler)(void *, enum pvfs_wait_notice);
 	void *private;
-	struct timed_event *te;
 	int msg_type;
 	struct messaging_context *msg_ctx;
 	struct event_context *ev;
@@ -140,9 +139,10 @@ void *pvfs_wait_message(struct pvfs_state *pvfs,
 	pwait->req = talloc_reference(pwait, req);
 	pwait->pvfs = pvfs;
 
-	/* setup a timer */
-	pwait->te = event_add_timed(pwait->ev, pwait, end_time, 
-				    pvfs_wait_timeout, pwait);
+	if (!timeval_is_zero(&end_time)) {
+		/* setup a timer */
+		event_add_timed(pwait->ev, pwait, end_time, pvfs_wait_timeout, pwait);
+	}
 
 	/* register with the messaging subsystem for this message
 	   type */
