@@ -30,7 +30,7 @@
 
 static EjsId eid;
 
-_PUBLIC_ void ejs_exception(const char *reason)
+static void smbscript_ejs_exception(const char *reason)
 {
 	Ejs *ep = ejsPtr(eid);
 	ejsSetErrorMsg(eid, "%s", reason);
@@ -72,7 +72,7 @@ int main(int argc, const char **argv)
 		exit(127);
 	}
 
-	smb_setup_ejs_functions();
+	smb_setup_ejs_functions(smbscript_ejs_exception);
 
 	if ((eid = ejsOpenEngine(handle, 0)) == (EjsId)-1) {
 		fprintf(stderr, "smbscript: ejsOpenEngine(): unable to "

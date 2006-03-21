@@ -44,6 +44,8 @@ my $section_types = {
 
 		"REQUIRED_SUBSYSTEMS"	=> "list",
 
+		"ALIASES" => "list",
+
 		"ENABLE"		=> "bool",
 
 		"OUTPUT_TYPE"		=> "string",
