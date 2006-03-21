@@ -176,7 +176,7 @@ AC_ARG_WITH(libdir,
   esac])
 
 #################################################
-# set lib directory location
+# set man directory location
 AC_ARG_WITH(mandir,
 [  --with-mandir=DIR       Where to put man pages ($mandir)],
 [ case "$withval" in
