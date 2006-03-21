@@ -102,7 +102,7 @@ static ADS_STRUCT *ads_cached_connection(struct winbindd_domain *domain)
 			ads->auth.realm = SMB_STRDUP( lp_realm() );
 	}
 
-	ads->auth.renewable = 1;
+	ads->auth.renewable = WINBINDD_PAM_AUTH_KRB5_RENEW_TIME;
 
 	status = ads_connect(ads);
 	if (!ADS_ERR_OK(status) || !ads->config.realm) {
