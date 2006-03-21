@@ -417,7 +417,7 @@ while we were waiting\n", WTERMSIG(wstat)));
 		/*
 		 * Lose any oplock capabilities.
 		 */
-		oplock_set_capability(False, False);
+		drop_effective_capability(KERNEL_OPLOCK_CAPABILITY);
 
 		/* make sure it doesn't freeze */
 		alarm(20);

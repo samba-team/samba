@@ -35,7 +35,7 @@ static BOOL irix_oplocks_available(void)
 	int pfd[2];
 	pstring tmpname;
 
-	oplock_set_capability(True, False);
+	set_effective_capability(KERNEL_OPLOCK_CAPABILITY);
 
 	slprintf(tmpname,sizeof(tmpname)-1, "%s/koplock.%d", lp_lockdir(), (int)sys_getpid());
 
