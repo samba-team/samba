@@ -36,7 +36,7 @@ void start_smbd(void)
 
 	slprintf(binfile, sizeof(pstring) - 1, "%s/smbd", dyn_SBINDIR);
 
-	become_daemon(True);
+	become_daemon(True, False);
 
 	execl(binfile, binfile, "-D", NULL);
 
@@ -56,7 +56,7 @@ void start_nmbd(void)
 
 	slprintf(binfile, sizeof(pstring) - 1, "%s/nmbd", dyn_SBINDIR);
 	
-	become_daemon(True);
+	become_daemon(True, False);
 
 	execl(binfile, binfile, "-D", NULL);
 
@@ -76,7 +76,7 @@ void start_winbindd(void)
 
 	slprintf(binfile, sizeof(pstring) - 1, "%s/winbindd", dyn_SBINDIR);
 
-	become_daemon(True);
+	become_daemon(True, False);
 
 	execl(binfile, binfile, NULL);
 
