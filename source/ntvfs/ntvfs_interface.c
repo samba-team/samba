@@ -623,7 +623,7 @@ _PUBLIC_ NTSTATUS ntvfs_next_notify(struct ntvfs_module_context *ntvfs,
 	if (!ntvfs->next || !ntvfs->next->ops->notify) {
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
-	return ntvfs->next->ops->notify(ntvfs, req, info);
+	return ntvfs->next->ops->notify(ntvfs->next, req, info);
 }
 
 /* cancel - called to cancel an outstanding async request */
