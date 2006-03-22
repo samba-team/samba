@@ -603,7 +603,7 @@
 /**************************/
 /* srvsvc_NetSrv          */
 /**************************/
-	typedef [public] enum {
+	typedef [public,v1_enum] enum {
 		PLATFORM_ID_DOS = 300,
 		PLATFORM_ID_OS2 = 400,
 		PLATFORM_ID_NT	= 500,
