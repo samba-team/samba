@@ -355,33 +355,55 @@ static BOOL test_SetUserInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			  SAMR_FIELD_LOGON_HOURS);
 
 	TEST_USERINFO_INT_EXP(16, acct_flags, 5, acct_flags, 
-			  (base_acct_flags  | ACB_DISABLED | ACB_HOMDIRREQ), 
-			  (base_acct_flags  | ACB_DISABLED | ACB_HOMDIRREQ | user_extra_flags), 
-			  0);
+			      (base_acct_flags  | ACB_DISABLED | ACB_HOMDIRREQ), 
+			      (base_acct_flags  | ACB_DISABLED | ACB_HOMDIRREQ | user_extra_flags), 
+			      0);
 	TEST_USERINFO_INT_EXP(16, acct_flags, 5, acct_flags, 
-			  (base_acct_flags  | ACB_DISABLED), 
-			  (base_acct_flags  | ACB_DISABLED | user_extra_flags), 
-			  0);
+			      (base_acct_flags  | ACB_DISABLED), 
+			      (base_acct_flags  | ACB_DISABLED | user_extra_flags), 
+			      0);
 	
 	/* Setting PWNOEXP clears the magic ACB_PW_EXPIRED flag */
 	TEST_USERINFO_INT_EXP(16, acct_flags, 5, acct_flags, 
-			  (base_acct_flags  | ACB_DISABLED | ACB_PWNOEXP), 
-			  (base_acct_flags  | ACB_DISABLED | ACB_PWNOEXP), 
-			  0);
+			      (base_acct_flags  | ACB_DISABLED | ACB_PWNOEXP), 
+			      (base_acct_flags  | ACB_DISABLED | ACB_PWNOEXP), 
+			      0);
 	TEST_USERINFO_INT_EXP(16, acct_flags, 21, acct_flags, 
-			  (base_acct_flags | ACB_DISABLED | ACB_HOMDIRREQ), 
-			  (base_acct_flags | ACB_DISABLED | ACB_HOMDIRREQ | user_extra_flags), 
-			  0);
+			      (base_acct_flags | ACB_DISABLED | ACB_HOMDIRREQ), 
+			      (base_acct_flags | ACB_DISABLED | ACB_HOMDIRREQ | user_extra_flags), 
+			      0);
 
 	/* The 'autolock' flag doesn't stick - check this */
 	TEST_USERINFO_INT_EXP(16, acct_flags, 21, acct_flags, 
-			  (base_acct_flags | ACB_DISABLED | ACB_AUTOLOCK), 
-			  (base_acct_flags | ACB_DISABLED | user_extra_flags), 
-			  0);
+			      (base_acct_flags | ACB_DISABLED | ACB_AUTOLOCK), 
+			      (base_acct_flags | ACB_DISABLED | user_extra_flags), 
+			      0);
+
+	/* The 'store plaintext' flag does stick */
+	TEST_USERINFO_INT_EXP(16, acct_flags, 21, acct_flags, 
+			      (base_acct_flags | ACB_DISABLED | ACB_ENC_TXT_PWD_ALLOWED), 
+			      (base_acct_flags | ACB_DISABLED | ACB_ENC_TXT_PWD_ALLOWED | user_extra_flags), 
+			      0);
+	/* The 'use DES' flag does stick */
+	TEST_USERINFO_INT_EXP(16, acct_flags, 21, acct_flags, 
+			      (base_acct_flags | ACB_DISABLED | ACB_USE_DES_KEY_ONLY), 
+			      (base_acct_flags | ACB_DISABLED | ACB_USE_DES_KEY_ONLY | user_extra_flags), 
+			      0);
+	/* The 'don't require kerberos pre-authentication flag does stick */
+	TEST_USERINFO_INT_EXP(16, acct_flags, 21, acct_flags, 
+			      (base_acct_flags | ACB_DISABLED | ACB_DONT_REQUIRE_PREAUTH), 
+			      (base_acct_flags | ACB_DISABLED | ACB_DONT_REQUIRE_PREAUTH | user_extra_flags), 
+			      0);
+	/* The 'no kerberos PAC required' flag sticks */
+	TEST_USERINFO_INT_EXP(16, acct_flags, 21, acct_flags, 
+			      (base_acct_flags | ACB_DISABLED | ACB_NO_AUTH_DATA_REQD), 
+			      (base_acct_flags | ACB_DISABLED | ACB_NO_AUTH_DATA_REQD | user_extra_flags), 
+			      0);
+
 	TEST_USERINFO_INT_EXP(21, acct_flags, 21, acct_flags, 
-			  (base_acct_flags | ACB_DISABLED), 
-			  (base_acct_flags | ACB_DISABLED | user_extra_flags), 
-			  SAMR_FIELD_ACCT_FLAGS);
+			      (base_acct_flags | ACB_DISABLED), 
+			      (base_acct_flags | ACB_DISABLED | user_extra_flags), 
+			      SAMR_FIELD_ACCT_FLAGS);
 
 #if 0
 	/* these fail with win2003 - it appears you can't set the primary gid?
@@ -2594,10 +2616,9 @@ static BOOL test_QueryDisplayInfo_continue(struct dcerpc_pipe *p, TALLOC_CTX *me
 		status = dcerpc_samr_QueryDisplayInfo(p, mem_ctx, &r);
 		if (NT_STATUS_IS_OK(status) && r.out.returned_size != 0) {
 			if (r.out.info.info1.entries[0].idx != r.in.start_idx + 1) {
-				printf("failed: expected idx %d but got %d\n",
+				printf("expected idx %d but got %d\n",
 				       r.in.start_idx + 1,
 				       r.out.info.info1.entries[0].idx);
-				ret = False;
 				break;
 			}
 		}
