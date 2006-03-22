@@ -12,7 +12,7 @@
   depends(srvsvc)
 ] interface wkssvc
 {
-	declare enum srvsvc_PlatformId;
+	declare [v1_enum] enum srvsvc_PlatformId;
 
 #define BOOL uint32
 
