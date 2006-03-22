@@ -22,6 +22,10 @@
 
 #include "includes.h"
 
+#ifdef HAVE_SYS_PRCTL_H
+#include <sys/prctl.h>
+#endif
+
 /*
    The idea is that this file will eventually have wrappers around all
    important system calls in samba. The aims are:
@@ -661,6 +665,19 @@ static BOOL set_process_capability(enum smbd_capability capability,
 
 	cap_t cap;
 
+#if defined(HAVE_PRCTL) && defined(PR_GET_KEEPCAPS) && defined(PR_SET_KEEPCAPS)
+	/* On Linux, make sure that any capabilities we grab are sticky
+	 * across UID changes. We expect that this would allow us to keep both
+	 * the effective and permitted capability sets, but as of circa 2.6.16,
+	 * only the permitted set is kept. It is a bug (which we work around)
+	 * that the effective set is lost, but we still require the effective
+	 * set to be kept.
+	 */
+	if (!prctl(PR_GET_KEEPCAPS)) {
+		prctl(PR_SET_KEEPCAPS, 1);
+	}
+#endif
+
 	cap = cap_get_proc();
 	if (cap == NULL) {
 		DEBUG(0,("set_process_capability: cap_get_proc failed: %s\n",
@@ -675,6 +692,15 @@ static BOOL set_process_capability(enum smbd_capability capability,
 			cap_vals[num_cap_vals++] = CAP_NETWORK_MGT;
 #endif
 			break;
+		case DMAPI_ACCESS_CAPABILITY:
+#ifdef CAP_DEVICE_MGT
+			/* IRIX has CAP_DEVICE_MGT for DMAPI access. */
+			cap_vals[num_cap_vals++] = CAP_DEVICE_MGT;
+#elif CAP_MKNOD
+			/* Linux has CAP_MKNOD for DMAPI access. */
+			cap_vals[num_cap_vals++] = CAP_MKNOD;
+#endif
+			break;
 	}
 
 	SMB_ASSERT(num_cap_vals <= ARRAY_SIZE(cap_vals));
@@ -686,6 +712,10 @@ static BOOL set_process_capability(enum smbd_capability capability,
 
 	cap_set_flag(cap, CAP_EFFECTIVE, num_cap_vals, cap_vals,
 		enable ? CAP_SET : CAP_CLEAR);
+
+	/* We never want to pass capabilities down to our children, so make
+	 * sure they are not inherited.
+	 */
 	cap_set_flag(cap, CAP_INHERITABLE, num_cap_vals, cap_vals, CAP_CLEAR);
 
 	if (cap_set_proc(cap) == -1) {
