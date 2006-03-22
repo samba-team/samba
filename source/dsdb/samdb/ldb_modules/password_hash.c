@@ -326,7 +326,7 @@ static int password_hash_handle(struct ldb_module *module, struct ldb_request *r
 		is_computer = False;
 	}
 	
-	domain_expression  = talloc_asprintf(mem_ctx, "(&(objectSid=%s)(objectClass=domain))", 
+	domain_expression  = talloc_asprintf(mem_ctx, "(&(objectSid=%s)(|(objectClass=domain)(objectClass=builtinDomain)))", 
 					     ldap_encode_ndr_dom_sid(mem_ctx, domain_sid));
 
 	/* Find the user's domain, then find out the domain password
