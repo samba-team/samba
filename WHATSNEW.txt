@@ -5,7 +5,7 @@ Samba 3 and Samba 4.
 
 ========================================
 Changes in Samba4-TP2
-Release date: UNRELEASED
+Release date: 16 March 2006
 ========================================
 
  * Make ldb async internally (idra)
@@ -161,7 +161,11 @@ Release date: UNRELEASED
 
  * Work to unify the ntvfs structures for smb and smb2 (metze, tridge)
 
+ * Initial work on asynchronous libnet (rafal)
+
+ * Improvements to the wide character set functions (tridge)
+
+ * Several heimdal build improvements (abartlet, jelmer)
+
  * A lot of small cleanups and typo fixes 
    (metze, abartlet, idra, jpeach, tridge, jelmer)
-
-(up to date until revno 14554)

@@ -33,7 +33,7 @@
 
 #include <krb5_locl.h>
 
-RCSID("$Id: get_for_creds.c,v 1.47 2006/02/03 11:37:29 lha Exp $");
+RCSID("$Id: get_for_creds.c,v 1.48 2006/03/07 19:38:09 lha Exp $");
 
 static krb5_error_code
 add_addrs(krb5_context context,
@@ -50,7 +50,7 @@ add_addrs(krb5_context context,
 	++n;
 
     tmp = realloc(addr->val, (addr->len + n) * sizeof(*addr->val));
-    if (tmp == NULL) {
+    if (tmp == NULL && (addr->len + n) != 0) {
 	krb5_set_error_string(context, "malloc: out of memory");
 	ret = ENOMEM;
 	goto fail;

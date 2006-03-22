@@ -44,6 +44,10 @@ _PUBLIC_ NTSTATUS torture_rpc_connection(TALLOC_CTX *parent_ctx,
 				     p, binding, table,
 				     cmdline_credentials, NULL);
  
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("Failed to connect to remote server: %s %s\n", binding, nt_errstr(status));
+	}
+
         return status;
 }
 

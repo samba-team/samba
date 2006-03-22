@@ -465,6 +465,8 @@ static void reply_nttrans_send(struct ntvfs_request *ntvfs)
 		}
 	}
 
+	smbsrv_setup_reply(req, 18 + trans->out.setup_count, 0);
+
 	/* note that we don't check the max_setup count (matching w2k3
 	   behaviour) */
 
@@ -481,8 +483,6 @@ static void reply_nttrans_send(struct ntvfs_request *ntvfs)
 	data_left   = trans->out.data.length;
 	params      = trans->out.params.data;
 	data        = trans->out.data.data;
-
-	smbsrv_setup_reply(req, 18 + trans->out.setup_count, 0);
 
 	/* we need to divide up the reply into chunks that fit into
 	   the negotiated buffer size */
