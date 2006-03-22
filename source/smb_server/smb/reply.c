@@ -1247,7 +1247,7 @@ void smbsrv_reply_echo(struct smbsrv_request *req)
 	uint16_t count;
 	int i;
 
-	SMBSRV_CHECK_WCT(req, 0);
+	SMBSRV_CHECK_WCT(req, 1);
 
 	count = SVAL(req->in.vwv, VWV(0));
 
