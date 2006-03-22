@@ -442,6 +442,18 @@ static void display_group_info1(GROUP_INFO1 *info1)
 /****************************************************************************
  display group info
  ****************************************************************************/
+static void display_group_info2(GROUP_INFO2 *info2)
+{
+	fstring name;
+
+	unistr2_to_ascii(name, &info2->uni_acct_name, sizeof(name)-1);
+	printf("\tGroup Description:%s\n", name);
+}
+
+
+/****************************************************************************
+ display group info
+ ****************************************************************************/
 static void display_group_info3(GROUP_INFO3 *info3)
 {
 	printf("\tGroup Attribute:%d\n", info3->group_attr);
@@ -460,23 +472,42 @@ static void display_group_info4(GROUP_INFO4 *info4)
 }
 
 /****************************************************************************
+ display group info
+ ****************************************************************************/
+static void display_group_info5(GROUP_INFO5 *info5)
+{
+	fstring temp;
+
+	unistr2_to_ascii(temp, &info5->uni_acct_name, sizeof(temp)-1);
+	printf("\tGroup Name:\t%s\n", temp);
+	unistr2_to_ascii(temp, &info5->uni_acct_desc, sizeof(temp)-1);
+	printf("\tDescription:\t%s\n", temp);
+	printf("\tGroup Attribute:%d\n", info5->group_attr);
+	printf("\tNum Members:%d\n", info5->num_members);
+}
+
+/****************************************************************************
  display sam sync structure
  ****************************************************************************/
 static void display_group_info_ctr(GROUP_INFO_CTR *ctr)
 {
 	switch (ctr->switch_value1) {
-	    case 1: {
-		    display_group_info1(&ctr->group.info1);
-		    break;
-	    }
-	    case 3: {
-		    display_group_info3(&ctr->group.info3);
-		    break;
-	    }
-	    case 4: {
-		    display_group_info4(&ctr->group.info4);
-		    break;
-	    }
+		case 1:
+			display_group_info1(&ctr->group.info1);
+			break;
+		case 2:
+			display_group_info2(&ctr->group.info2);
+			break;
+		case 3:
+			display_group_info3(&ctr->group.info3);
+			break;
+		case 4:
+			display_group_info4(&ctr->group.info4);
+			break;
+		case 5:
+			display_group_info5(&ctr->group.info5);
+			break;
+
 	}
 }
 
