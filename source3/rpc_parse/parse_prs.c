@@ -768,6 +768,37 @@ BOOL prs_ntstatus(const char *name, prs_struct *ps, int depth, NTSTATUS *status)
 }
 
 /*******************************************************************
+ Stream a DCE error code
+ ********************************************************************/
+
+BOOL prs_dcerpc_status(const char *name, prs_struct *ps, int depth, NTSTATUS *status)
+{
+	char *q = prs_mem_get(ps, sizeof(uint32));
+	if (q == NULL)
+		return False;
+
+	if (UNMARSHALLING(ps)) {
+		if (ps->bigendian_data)
+			*status = NT_STATUS(RIVAL(q,0));
+		else
+			*status = NT_STATUS(IVAL(q,0));
+	} else {
+		if (ps->bigendian_data)
+			RSIVAL(q,0,NT_STATUS_V(*status));
+		else
+			SIVAL(q,0,NT_STATUS_V(*status));
+	}
+
+	DEBUG(5,("%s%04x %s: %s\n", tab_depth(depth), ps->data_offset, name, 
+		 dcerpc_errstr(NT_STATUS_V(*status))));
+
+	ps->data_offset += sizeof(uint32);
+
+	return True;
+}
+
+
+/*******************************************************************
  Stream a WERROR
  ********************************************************************/
 
