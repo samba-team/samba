@@ -128,8 +128,8 @@ installbin: $(SBIN_PROGS) $(BIN_PROGS) installdirs
 		$(BIN_PROGS)
 
 installlib: $(INSTALLABLE_SHARED_LIBS) $(STATIC_LIBS) installdirs
-	@$(SHELL) $(srcdir)/script/installlib.sh $(DESTDIR)$(LIBDIR) $(INSTALLABLE_SHARED_LIBS) 
-	@$(SHELL) $(srcdir)/script/installlib.sh $(DESTDIR)$(LIBDIR) $(STATIC_LIBS)
+	@$(SHELL) $(srcdir)/script/installlib.sh $(DESTDIR)$(LIBDIR) "$(SHLIBEXT)" $(INSTALLABLE_SHARED_LIBS) 
+	@$(SHELL) $(srcdir)/script/installlib.sh $(DESTDIR)$(LIBDIR) "$(STLIBEXT)" $(STATIC_LIBS)
 
 installheader: headers installdirs
 	@$(PERL) $(srcdir)/script/installheader.pl $(DESTDIR)$(INCLUDEDIR) $(PUBLIC_HEADERS) $(DEFAULT_HEADERS)
