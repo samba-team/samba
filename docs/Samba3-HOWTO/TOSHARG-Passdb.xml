@@ -1125,8 +1125,7 @@ is being added to the <command>net</command> toolset (see <link linkend="NetComm
 <indexterm><primary>account migration</primary></indexterm>
 <indexterm><primary>passdb backend</primary></indexterm>
 		One particularly important purpose of the <command>pdbedit</command> is to allow
-		the migration of account information from one passdb backend to another. See the
-		<link linkend="XMLpassdb">XML</link> password backend section of this chapter.
+		the migration of account information from one passdb backend to another. 
 		</para>
 
 		<sect3>
