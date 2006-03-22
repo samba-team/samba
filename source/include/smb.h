@@ -1581,7 +1581,8 @@ minimum length == 18.
  */
 
 enum smbd_capability {
-    KERNEL_OPLOCK_CAPABILITY
+    KERNEL_OPLOCK_CAPABILITY,
+    DMAPI_ACCESS_CAPABILITY
 };
 
 /* if a kernel does support oplocks then a structure of the following

@@ -410,6 +410,7 @@ typedef struct {
 	BOOL bMap_hidden;
 	BOOL bMap_archive;
 	BOOL bStoreDosAttributes;
+	BOOL bDmapiSupport;
 	BOOL bLocking;
 	int iStrictLocking;
 	BOOL bPosixLocking;
@@ -547,6 +548,7 @@ static service sDefault = {
 	False,			/* bMap_hidden */
 	True,			/* bMap_archive */
 	False,			/* bStoreDosAttributes */
+	False,			/* bDmapiSupport */
 	True,			/* bLocking */
 	True,			/* iStrictLocking */
 	True,			/* bPosixLocking */
@@ -1097,6 +1099,8 @@ static struct parm_struct parm_table[] = {
 	{"max stat cache size", P_INTEGER, P_GLOBAL, &Globals.iMaxStatCacheSize, NULL, NULL, FLAG_ADVANCED}, 
 	{"stat cache", P_BOOL, P_GLOBAL, &Globals.bStatCache, NULL, NULL, FLAG_ADVANCED}, 
 	{"store dos attributes", P_BOOL, P_LOCAL, &sDefault.bStoreDosAttributes, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL}, 
+	{"dmapi support", P_BOOL, P_LOCAL, &sDefault.bDmapiSupport, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL},
+
 
 	{N_("Domain Options"), P_SEP, P_SEPARATOR}, 
 
@@ -2024,6 +2028,7 @@ FN_LOCAL_BOOL(lp_print_ok, bPrint_ok)
 FN_LOCAL_BOOL(lp_map_hidden, bMap_hidden)
 FN_LOCAL_BOOL(lp_map_archive, bMap_archive)
 FN_LOCAL_BOOL(lp_store_dos_attributes, bStoreDosAttributes)
+FN_LOCAL_BOOL(lp_dmapi_support, bDmapiSupport)
 FN_LOCAL_BOOL(lp_locking, bLocking)
 FN_LOCAL_INTEGER(lp_strict_locking, iStrictLocking)
 FN_LOCAL_BOOL(lp_posix_locking, bPosixLocking)

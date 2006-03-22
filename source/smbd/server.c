@@ -929,6 +929,12 @@ void build_options(BOOL screen);
 	if ( is_daemon && !interactive )
 		start_background_queue(); 
 
+	/* Always attempt to initialize DMAPI. We will only use it later if
+	 * lp_dmapi_support is set on the share, but we need a single global
+	 * session to work with.
+	 */
+	dmapi_init_session();
+
 	if (!open_sockets_smbd(is_daemon, interactive, ports))
 		exit(1);
 

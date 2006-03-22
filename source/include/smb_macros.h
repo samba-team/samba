@@ -76,6 +76,10 @@
         (DEBUG(0,("PANIC: assert failed at %s(%d)\n", __FILE__, __LINE__))))
 #endif
 
+#define SMB_WARN(condition, message) \
+    ((condition) ? (void)0 : \
+     DEBUG(0, ("WARNING: %s: %s\n", #condition, message)))
+
 #define SMB_ASSERT_ARRAY(a,n) SMB_ASSERT((sizeof(a)/sizeof((a)[0])) >= (n))
 
 /* these are useful macros for checking validity of handles */
