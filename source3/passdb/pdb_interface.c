@@ -426,6 +426,13 @@ static int smb_delete_user(const char *unix_user)
 	pstring del_script;
 	int ret;
 
+	/* safety check */
+
+	if ( strequal( unix_user, "root" ) ) {
+		DEBUG(0,("smb_delete_user: Refusing to delete local system root account!\n"));
+		return -1;
+	}
+
 	pstrcpy(del_script, lp_deluser_script());
 	if (! *del_script)
 		return -1;
@@ -462,9 +469,20 @@ static NTSTATUS pdb_default_delete_user(struct pdb_methods *methods,
 NTSTATUS pdb_delete_user(TALLOC_CTX *mem_ctx, struct samu *sam_acct)
 {
 	struct pdb_methods *pdb = pdb_get_methods();
+	uid_t uid = -1;
 
 	if ( !pdb ) {
 		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	/* sanity check to make sure we don't delete root */
+
+	if ( !sid_to_uid( pdb_get_user_sid(sam_acct), &uid ) ) {
+		return NT_STATUS_NO_SUCH_USER;
+	}
+
+	if ( uid == 0 ) {
+		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	return pdb->delete_user(pdb, mem_ctx, sam_acct);
@@ -516,6 +534,7 @@ NTSTATUS pdb_delete_sam_account(struct samu *sam_acct)
 NTSTATUS pdb_rename_sam_account(struct samu *oldname, const char *newname)
 {
 	struct pdb_methods *pdb = pdb_get_methods();
+	uid_t uid;
 
 	if ( !pdb ) {
 		return NT_STATUS_NOT_IMPLEMENTED;
@@ -524,6 +543,16 @@ NTSTATUS pdb_rename_sam_account(struct samu *oldname, const char *newname)
 	if (csamuser != NULL) {
 		TALLOC_FREE(csamuser);
 		csamuser = NULL;
+	}
+
+	/* sanity check to make sure we don't rename root */
+
+	if ( !sid_to_uid( pdb_get_user_sid(oldname), &uid ) ) {
+		return NT_STATUS_NO_SUCH_USER;
+	}
+
+	if ( uid == 0 ) {
+		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	return pdb->rename_sam_account(pdb, oldname, newname);
@@ -976,8 +1005,7 @@ BOOL pdb_find_alias(const char *name, DOM_SID *sid)
 		return False;
 	}
 
-	return NT_STATUS_IS_OK(pdb->find_alias(pdb,
-							     name, sid));
+	return NT_STATUS_IS_OK(pdb->find_alias(pdb, name, sid));
 }
 
 NTSTATUS pdb_create_alias(const char *name, uint32 *rid)
@@ -999,8 +1027,7 @@ BOOL pdb_delete_alias(const DOM_SID *sid)
 		return False;
 	}
 
-	return NT_STATUS_IS_OK(pdb->delete_alias(pdb,
-							     sid));
+	return NT_STATUS_IS_OK(pdb->delete_alias(pdb, sid));
 							    
 }
 
@@ -1012,8 +1039,7 @@ BOOL pdb_get_aliasinfo(const DOM_SID *sid, struct acct_info *info)
 		return False;
 	}
 
-	return NT_STATUS_IS_OK(pdb->get_aliasinfo(pdb, sid,
-							      info));
+	return NT_STATUS_IS_OK(pdb->get_aliasinfo(pdb, sid, info));
 }
 
 BOOL pdb_set_aliasinfo(const DOM_SID *sid, struct acct_info *info)
@@ -1024,8 +1050,7 @@ BOOL pdb_set_aliasinfo(const DOM_SID *sid, struct acct_info *info)
 		return False;
 	}
 
-	return NT_STATUS_IS_OK(pdb->set_aliasinfo(pdb, sid,
-							      info));
+	return NT_STATUS_IS_OK(pdb->set_aliasinfo(pdb, sid, info));
 }
 
 NTSTATUS pdb_add_aliasmem(const DOM_SID *alias, const DOM_SID *member)
@@ -1192,9 +1217,21 @@ BOOL pdb_rid_algorithm(void)
 	return pdb->rid_algorithm(pdb);
 }
 
+/********************************************************************
+ Allocate a new RID from the passdb backend.  Verify that it is free
+ by calling lookup_global_sam_rid() to verify that the RID is not
+ in use.  This handles servers that have existing users or groups
+ with add RIDs (assigned from previous algorithmic mappings)
+********************************************************************/
+
 BOOL pdb_new_rid(uint32 *rid)
 {
 	struct pdb_methods *pdb = pdb_get_methods();
+	const char *name = NULL;
+	enum SID_NAME_USE type;
+	uint32 allocated_rid = 0;
+	int i;
+	TALLOC_CTX *ctx;
 
 	if ( !pdb ) {
 		return False;
@@ -1215,7 +1252,38 @@ BOOL pdb_new_rid(uint32 *rid)
 		return False;
 	}
 
-	return pdb->new_rid(pdb, rid);
+	if ( (ctx = talloc_init("pdb_new_rid")) == NULL ) {
+		DEBUG(0,("pdb_new_rid: Talloc initialization failure\n"));
+		return False;
+	}
+
+	/* Attempt to get an unused RID (max tires is 250...yes that it is 
+	   and arbitrary number I pulkled out of my head).   -- jerry */
+
+	for ( i=0; allocated_rid==0 && i<250; i++ ) {
+		/* get a new RID */
+
+		if ( !pdb->new_rid(pdb, &allocated_rid) ) {
+			return False;
+		}
+
+		/* validate that the RID is not in use */
+
+		if ( lookup_global_sam_rid( ctx, allocated_rid, &name, &type, NULL ) ) {
+			allocated_rid = 0;
+		}
+	}
+
+	TALLOC_FREE( ctx );
+
+	if ( allocated_rid == 0 ) {
+		DEBUG(0,("pdb_new_rid: Failed to find unused RID\n"));
+		return False;
+	}
+
+	*rid = allocated_rid;
+
+	return True;
 }
 
 /***************************************************************

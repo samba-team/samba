@@ -1164,6 +1164,7 @@ NTSTATUS pdb_default_set_aliasinfo(struct pdb_methods *methods,
 	if (!pdb_getgrsid(&map, *sid))
 		return NT_STATUS_NO_SUCH_ALIAS;
 
+	fstrcpy(map.nt_name, info->acct_name);
 	fstrcpy(map.comment, info->acct_desc);
 
 	return pdb_update_group_mapping_entry(&map);
