@@ -275,6 +275,8 @@ AC_SUBST(KRB5_LIBS)
 AC_SUBST(LDAP_LIBS)
 AC_SUBST(SHLIB_PROGS)
 AC_SUBST(PAM_MODULES)
+AC_SUBST(INSTALL_PAM_MODULES)
+AC_SUBST(UNINSTALL_PAM_MODULES)
 AC_SUBST(SMBWRAPPER)
 AC_SUBST(SMBWRAP_OBJS)
 AC_SUBST(SMBWRAP_INC)
@@ -3727,6 +3729,8 @@ AC_CHECK_LIB(pam, pam_get_data, [AC_DEFINE(HAVE_LIBPAM,1,[Whether libpam is avai
 #################################################
 # check for pam_smbpass support
 PAM_MODULES=""
+INSTALL_PAM_MODULES=""
+UNINSTALL_PAM_MODULES=""
 AC_MSG_CHECKING(whether to use pam_smbpass)
 AC_ARG_WITH(pam_smbpass,
 [  --with-pam_smbpass      Build PAM module for authenticating against passdb backends (default=no)],
@@ -3745,6 +3749,8 @@ AC_ARG_WITH(pam_smbpass,
        else
 	  AUTH_LIBS="$AUTH_LIBS -lpam"
           PAM_MODULES="pam_smbpass"
+          INSTALL_PAM_MODULES="installpammodules"
+          UNINSTALL_PAM_MODULES="uninstallpammodules"
        fi
     ;;
   *)
@@ -5191,6 +5197,8 @@ if test x"$HAVE_WINBIND" = x"yes"; then
 
 		if test x"$with_pam" = x"yes"; then
 			PAM_MODULES="$PAM_MODULES pam_winbind"
+			INSTALL_PAM_MODULES="installpammodules"
+			UNINSTALL_PAM_MODULES="uninstallpammodules"
 		fi
 	fi
 else
