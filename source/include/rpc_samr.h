@@ -1112,6 +1112,21 @@ typedef struct samr_group_info4
 
 } GROUP_INFO4;
 
+typedef struct samr_group_info5
+{
+	UNIHDR hdr_acct_name;
+
+	uint32 group_attr; /* 0x0000 0003 - group attribute */
+	uint32 num_members; /* 0x0000 0001 - number of group members? */
+
+	UNIHDR hdr_acct_desc;
+
+	UNISTR2 uni_acct_name;
+	UNISTR2 uni_acct_desc;
+
+} GROUP_INFO5;
+
+
 /* GROUP_INFO_CTR */
 typedef struct group_info_ctr
 {
@@ -1123,7 +1138,7 @@ typedef struct group_info_ctr
 		GROUP_INFO2 info2;
 		GROUP_INFO3 info3;
 		GROUP_INFO4 info4;
-
+		GROUP_INFO5 info5;
 	} group;
 
 } GROUP_INFO_CTR;

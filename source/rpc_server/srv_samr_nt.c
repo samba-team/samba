@@ -4362,6 +4362,10 @@ NTSTATUS _samr_query_groupinfo(pipes_struct *p, SAMR_Q_QUERY_GROUPINFO *q_u, SAM
 				      map.comment, num_members);
 			break;
 		}
+		case 2:
+			ctr->switch_value1 = 2;
+			init_samr_group_info2(&ctr->group.info2, map.nt_name);
+			break;
 		case 3:
 			ctr->switch_value1 = 3;
 			init_samr_group_info3(&ctr->group.info3);
@@ -4370,6 +4374,28 @@ NTSTATUS _samr_query_groupinfo(pipes_struct *p, SAMR_Q_QUERY_GROUPINFO *q_u, SAM
 			ctr->switch_value1 = 4;
 			init_samr_group_info4(&ctr->group.info4, map.comment);
 			break;
+		case 5: {
+			/*
+			uint32 *members;
+			size_t num_members;
+			*/
+
+			ctr->switch_value1 = 5;
+
+			/*
+			become_root();
+			r_u->status = pdb_enum_group_members(
+				p->mem_ctx, &group_sid, &members, &num_members);
+			unbecome_root();
+	
+			if (!NT_STATUS_IS_OK(r_u->status)) {
+				return r_u->status;
+			}
+			*/
+			init_samr_group_info5(&ctr->group.info5, map.nt_name,
+				      map.comment, 0 /* num_members */); /* in w2k3 this is always 0 */
+			break;
+		}
 		default:
 			return NT_STATUS_INVALID_INFO_CLASS;
 	}
