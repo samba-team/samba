@@ -442,6 +442,7 @@ clean::
 	@-rm -f heimdal/lib/krb5/k524_err.{c,h}
 	@-rm -f heimdal/lib/krb5/krb5_err.{c,h}
 	@-rm -f bin/compile_et bin/asn1_compile
+	@-rm -f heimdal/lib/krb5/des/hcrypto
 
 #######################
 # Start SUBSYSTEM HEIMDAL

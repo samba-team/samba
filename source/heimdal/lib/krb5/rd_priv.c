@@ -33,7 +33,7 @@
 
 #include <krb5_locl.h>
 
-RCSID("$Id: rd_priv.c,v 1.31 2004/05/25 21:39:13 lha Exp $");
+RCSID("$Id: rd_priv.c,v 1.32 2006/03/18 22:15:57 lha Exp $");
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_rd_priv(krb5_context context,
@@ -49,6 +49,9 @@ krb5_rd_priv(krb5_context context,
     krb5_data plain;
     krb5_keyblock *key;
     krb5_crypto crypto;
+
+    if (outdata)
+	krb5_data_zero(outdata);
 
     if ((auth_context->flags & 
 	 (KRB5_AUTH_CONTEXT_RET_TIME | KRB5_AUTH_CONTEXT_RET_SEQUENCE)) &&
@@ -158,7 +161,7 @@ krb5_rd_priv(krb5_context context,
 	 (KRB5_AUTH_CONTEXT_RET_TIME | KRB5_AUTH_CONTEXT_RET_SEQUENCE))) {
 	/* if these fields are not present in the priv-part, silently
            return zero */
-	memset(outdata, 0, sizeof(*outdata));
+	krb5_data_zero(outdata);
 	if(part.timestamp)
 	    outdata->timestamp = *part.timestamp;
 	if(part.usec)
