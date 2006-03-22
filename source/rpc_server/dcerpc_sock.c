@@ -31,6 +31,7 @@
 #include "lib/messaging/irpc.h"
 #include "system/network.h"
 #include "netif/netif.h"
+#include "auth/auth.h"
 
 struct dcesrv_socket_context {
 	const struct dcesrv_endpoint *endpoint;
@@ -97,10 +98,20 @@ static void dcesrv_sock_accept(struct stream_connection *srv_conn)
 	struct dcesrv_socket_context *dcesrv_sock = 
 		talloc_get_type(srv_conn->private, struct dcesrv_socket_context);
 	struct dcesrv_connection *dcesrv_conn = NULL;
+	struct auth_session_info *session_info = NULL;
+
+	status = auth_anonymous_session_info(srv_conn, &session_info);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("dcesrv_sock_accept: auth_anonymous_session_info failed: %s\n", 
+			nt_errstr(status)));
+		stream_terminate_connection(srv_conn, nt_errstr(status));
+		return;
+	}
 
 	status = dcesrv_endpoint_connect(dcesrv_sock->dcesrv_ctx,
 					 srv_conn,
 					 dcesrv_sock->endpoint,
+					 session_info,
 					 srv_conn->event.ctx,
 					 DCESRV_CALL_STATE_FLAG_MAY_ASYNC,
 					 &dcesrv_conn);
