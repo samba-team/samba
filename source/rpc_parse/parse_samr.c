@@ -2307,6 +2307,69 @@ BOOL samr_io_group_info4(const char *desc, GROUP_INFO4 * gr4,
 }
 
 /*******************************************************************
+inits a GROUP_INFO5 structure.
+********************************************************************/
+
+void init_samr_group_info5(GROUP_INFO5 * gr5,
+			   char *acct_name, char *acct_desc,
+			   uint32 num_members)
+{
+	DEBUG(5, ("init_samr_group_info5\n"));
+
+	gr5->group_attr = (SE_GROUP_MANDATORY|SE_GROUP_ENABLED_BY_DEFAULT); /* why not | SE_GROUP_ENABLED ? */
+	gr5->num_members = num_members;
+
+	init_unistr2(&gr5->uni_acct_name, acct_name, UNI_FLAGS_NONE);
+	init_uni_hdr(&gr5->hdr_acct_name, &gr5->uni_acct_name);
+	init_unistr2(&gr5->uni_acct_desc, acct_desc, UNI_FLAGS_NONE);
+	init_uni_hdr(&gr5->hdr_acct_desc, &gr5->uni_acct_desc);
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+
+BOOL samr_io_group_info5(const char *desc, GROUP_INFO5 * gr5,
+			 prs_struct *ps, int depth)
+{
+	uint16 dummy = 1;
+
+	if (gr5 == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "samr_io_group_info5");
+	depth++;
+
+	if(!prs_uint16("level", ps, depth, &dummy))
+		return False;
+
+	if(!prs_align(ps))
+		return False;
+
+	if(!smb_io_unihdr("hdr_acct_name", &gr5->hdr_acct_name, ps, depth))
+		return False;
+
+	if(!prs_uint32("group_attr", ps, depth, &gr5->group_attr))
+		return False;
+	if(!prs_uint32("num_members", ps, depth, &gr5->num_members))
+		return False;
+
+	if(!smb_io_unihdr("hdr_acct_desc", &gr5->hdr_acct_desc, ps, depth))
+		return False;
+
+	if(!smb_io_unistr2("uni_acct_name", &gr5->uni_acct_name,
+			   gr5->hdr_acct_name.buffer, ps, depth))
+		return False;
+
+	if(!smb_io_unistr2("uni_acct_desc", &gr5->uni_acct_desc,
+			   gr5->hdr_acct_desc.buffer, ps, depth))
+		return False;
+
+	return True;
+}
+
+
+/*******************************************************************
 reads or writes a structure.
 ********************************************************************/
 
@@ -2340,6 +2403,10 @@ static BOOL samr_group_info_ctr(const char *desc, GROUP_INFO_CTR **ctr,
 		break;
 	case 4:
 		if(!samr_io_group_info4("group_info4", &(*ctr)->group.info4, ps, depth))
+			return False;
+		break;
+	case 5:
+		if(!samr_io_group_info5("group_info5", &(*ctr)->group.info5, ps, depth))
 			return False;
 		break;
 	default:
