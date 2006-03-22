@@ -552,10 +552,21 @@ find_server(SMBCCTX *context,
 						   workgroup, username);
 
 	if (!auth_called && !srv && (!username[0] || !password[0])) {
-		context->callbacks.auth_fn(server, share,
-                                           workgroup, sizeof(fstring),
-                                           username, sizeof(fstring),
-                                           password, sizeof(fstring));
+                if (context->internal->_auth_fn_with_context != NULL) {
+                         context->internal->_auth_fn_with_context(
+                                context,
+                                server, share,
+                                workgroup, sizeof(fstring),
+                                username, sizeof(fstring),
+                                password, sizeof(fstring));
+                } else {
+                        context->callbacks.auth_fn(
+                                server, share,
+                                workgroup, sizeof(fstring),
+                                username, sizeof(fstring),
+                                password, sizeof(fstring));
+                }
+
 		/*
                  * However, smbc_auth_fn may have picked up info relating to
                  * an existing connection, so try for an existing connection
@@ -657,10 +668,20 @@ smbc_server(SMBCCTX *context,
                  */
                 if (srv->cli.cnum == (uint16) -1) {
                         /* Ensure we have accurate auth info */
-                        context->callbacks.auth_fn(server, share,
-                                                   workgroup, sizeof(fstring),
-                                                   username, sizeof(fstring),
-                                                   password, sizeof(fstring));
+                        if (context->internal->_auth_fn_with_context != NULL) {
+                                context->internal->_auth_fn_with_context(
+                                        context,
+                                        server, share,
+                                        workgroup, sizeof(fstring),
+                                        username, sizeof(fstring),
+                                        password, sizeof(fstring));
+                        } else {
+                                context->callbacks.auth_fn(
+                                        server, share,
+                                        workgroup, sizeof(fstring),
+                                        username, sizeof(fstring),
+                                        password, sizeof(fstring));
+                        }
 
                         if (! cli_send_tconX(&srv->cli, share, "?????",
                                              password, strlen(password)+1)) {
@@ -901,10 +922,20 @@ smbc_attr_server(SMBCCTX *context,
                 /* We didn't find a cached connection.  Get the password */
                 if (*password == '\0') {
                         /* ... then retrieve it now. */
-                        context->callbacks.auth_fn(server, share,
-                                                   workgroup, sizeof(fstring),
-                                                   username, sizeof(fstring),
-                                                   password, sizeof(fstring));
+                        if (context->internal->_auth_fn_with_context != NULL) {
+                                context->internal->_auth_fn_with_context(
+                                        context,
+                                        server, share,
+                                        workgroup, sizeof(fstring),
+                                        username, sizeof(fstring),
+                                        password, sizeof(fstring));
+                        } else {
+                                context->callbacks.auth_fn(
+                                        server, share,
+                                        workgroup, sizeof(fstring),
+                                        username, sizeof(fstring),
+                                        password, sizeof(fstring));
+                        }
                 }
         
                 zero_ip(&ip);
@@ -5976,8 +6007,51 @@ smbc_option_set(SMBCCTX *context,
                 /*
                  * Log to standard error instead of standard output.
                  */
-                context->internal->_debug_stderr = True;
+                context->internal->_debug_stderr =
+                        (option_value == NULL ? False : True);
+        } else if (strcmp(option_name, "auth_function") == 0) {
+                /*
+                 * Use the new-style authentication function which includes
+                 * the context.
+                 */
+                context->internal->_auth_fn_with_context = option_value;
+        } else if (strcmp(option_name, "user_data") == 0) {
+                /*
+                 * Save a user data handle which may be retrieved by the user
+                 * with smbc_option_get()
+                 */
+                context->internal->_user_data = option_value;
         }
+}
+
+
+/*
+ * Retrieve the current value of an option
+ */
+void *
+smbc_option_get(SMBCCTX *context,
+                char *option_name)
+{
+        if (strcmp(option_name, "debug_stderr") == 0) {
+                /*
+                 * Log to standard error instead of standard output.
+                 */
+                return (void *) context->internal->_debug_stderr;
+        } else if (strcmp(option_name, "auth_function") == 0) {
+                /*
+                 * Use the new-style authentication function which includes
+                 * the context.
+                 */
+                return (void *) context->internal->_auth_fn_with_context;
+        } else if (strcmp(option_name, "user_data") == 0) {
+                /*
+                 * Save a user data handle which may be retrieved by the user
+                 * with smbc_option_get()
+                 */
+                return context->internal->_user_data;
+        }
+
+        return NULL;
 }
 
 
@@ -6006,7 +6080,8 @@ smbc_init_context(SMBCCTX *context)
                 return 0;
         }
 
-        if (!context->callbacks.auth_fn ||
+        if ((!context->callbacks.auth_fn &&
+             !context->internal->_auth_fn_with_context) ||
             context->debug < 0 ||
             context->debug > 100) {
 
