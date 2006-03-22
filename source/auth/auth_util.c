@@ -834,7 +834,7 @@ static struct nt_user_token *create_local_nt_token(TALLOC_CTX *mem_ctx,
 		/* We can only create a mapping if winbind is running 
 		   and the nested group functionality has been enabled */
 		   
-		if ( lp_winbind_nested_groups() ) {
+		if ( lp_winbind_nested_groups() && winbind_ping() ) {
 			become_root();
 			status = create_builtin_administrators( );
 			if ( !NT_STATUS_IS_OK(status) ) {
@@ -860,7 +860,7 @@ static struct nt_user_token *create_local_nt_token(TALLOC_CTX *mem_ctx,
 		/* We can only create a mapping if winbind is running 
 		   and the nested group functionality has been enabled */
 		   
-		if ( lp_winbind_nested_groups() ) {
+		if ( lp_winbind_nested_groups() && winbind_ping() ) {
 			become_root();
 			status = create_builtin_users( );
 			if ( !NT_STATUS_IS_OK(status) ) {

@@ -3554,6 +3554,28 @@ BOOL samr_io_alias_info3(const char *desc, ALIAS_INFO3 *al3,
 reads or writes a structure.
 ********************************************************************/
 
+BOOL samr_io_alias_info2(const char *desc, ALIAS_INFO2 *al2,
+			 prs_struct *ps, int depth)
+{
+	if (al2 == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "samr_io_alias_info2");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+
+	if (!prs_unistr4("name", ps, depth, &al2->name))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+
 BOOL samr_alias_info_ctr(const char *desc, prs_struct *ps, int depth, ALIAS_INFO_CTR * ctr)
 {
 	if ( !ctr )
@@ -3570,6 +3592,10 @@ BOOL samr_alias_info_ctr(const char *desc, prs_struct *ps, int depth, ALIAS_INFO
 	switch (ctr->level) {
 	case 1: 
 		if(!samr_io_alias_info1("alias_info1", &ctr->alias.info1, ps, depth))
+			return False;
+		break;
+	case 2: 
+		if(!samr_io_alias_info2("alias_info2", &ctr->alias.info2, ps, depth))
 			return False;
 		break;
 	case 3: 
@@ -4472,6 +4498,9 @@ BOOL samr_io_r_delete_dom_alias(const char *desc, SAMR_R_DELETE_DOM_ALIAS * r_u,
 	depth++;
 
 	if(!prs_align(ps))
+		return False;
+
+	if(!smb_io_pol_hnd("pol", &r_u->pol, ps, depth))
 		return False;
 
 	if(!prs_ntstatus("status", ps, depth, &r_u->status))
