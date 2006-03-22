@@ -192,11 +192,11 @@ BOOL is_anonymous_token(struct security_token *token)
 	return False;
 }
 
-BOOL is_authenticated_token(struct security_token *token) 
+BOOL is_authenticated_token(struct security_token *token)
 {
 	TALLOC_CTX *mem_ctx = talloc_new(token);
 	int i;
-	struct dom_sid *authenticated = dom_sid_parse_talloc(mem_ctx, SID_NT_ANONYMOUS);
+	struct dom_sid *authenticated = dom_sid_parse_talloc(mem_ctx, SID_NT_AUTHENTICATED_USERS);
 	for (i = 0; i < token->num_sids; i++) {
 		if (dom_sid_equal(token->sids[i], authenticated)) {
 			talloc_free(mem_ctx);
