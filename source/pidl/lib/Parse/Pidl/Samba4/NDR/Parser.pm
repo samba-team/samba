@@ -2314,6 +2314,10 @@ sub ParseInterface($$)
 	if ($needed->{"compression"}) {
 		pidl choose_header("librpc/ndr/ndr_compression.h", "ndr/compression.h");
 	}
+
+	if ($needed->{"obfuscate"}) {
+		pidl "#include \"ndr_obfuscate.h\"";
+	}
 	
 	HeaderInterface($interface);
 
@@ -2431,6 +2435,9 @@ sub NeededTypedef($$)
 			$e->{PARENT} = $t->{DATA};
 			if (has_property($e, "compression")) { 
 				$needed->{"compression"} = 1;
+			}
+			if (has_property($e, "obfuscation")) {
+				$needed->{"obfuscate"} = 1;
 			}
 			if ($needed->{"pull_$t->{NAME}"} and
 				not defined($needed->{"pull_$e->{TYPE}"})) {
