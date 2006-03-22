@@ -155,7 +155,7 @@ OBJ_FILES = \
 REQUIRED_SUBSYSTEMS = \
 		LIBREPLACE LIBTALLOC 
 MANPAGE = man/ldb.3
-PUBLIC_HEADERS = include/ldb.h
+PUBLIC_HEADERS = include/ldb.h include/ldb_errors.h
 #
 # End SUBSYSTEM ldb
 ################################################
