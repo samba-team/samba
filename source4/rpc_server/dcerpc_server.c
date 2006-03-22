@@ -289,14 +289,24 @@ static int dcesrv_endpoint_destructor(void *ptr)
 NTSTATUS dcesrv_endpoint_connect(struct dcesrv_context *dce_ctx,
 				 TALLOC_CTX *mem_ctx,
 				 const struct dcesrv_endpoint *ep,
+				 struct auth_session_info *session_info,
 				 struct event_context *event_ctx,
 				 uint32_t state_flags,
 				 struct dcesrv_connection **_p)
 {
 	struct dcesrv_connection *p;
 
+	if (!session_info) {
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
 	p = talloc(mem_ctx, struct dcesrv_connection);
 	NT_STATUS_HAVE_NO_MEMORY(p);
+
+	if (!talloc_reference(p, session_info)) {
+		talloc_free(p);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	p->dce_ctx = dce_ctx;
 	p->endpoint = ep;
@@ -307,7 +317,7 @@ NTSTATUS dcesrv_endpoint_connect(struct dcesrv_context *dce_ctx,
 	p->partial_input = data_blob(NULL, 0);
 	p->auth_state.auth_info = NULL;
 	p->auth_state.gensec_security = NULL;
-	p->auth_state.session_info = NULL;
+	p->auth_state.session_info = session_info;
 	p->auth_state.session_key = dcesrv_generic_session_key;
 	p->event_ctx = event_ctx;
 	p->processing = False;
@@ -340,12 +350,9 @@ NTSTATUS dcesrv_endpoint_search_connect(struct dcesrv_context *dce_ctx,
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 
-	status = dcesrv_endpoint_connect(dce_ctx, mem_ctx, ep, event_ctx, state_flags, dce_conn_p);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
+	status = dcesrv_endpoint_connect(dce_ctx, mem_ctx, ep, session_info, event_ctx, state_flags, dce_conn_p);
+	NT_STATUS_NOT_OK_RETURN(status);
 
-	(*dce_conn_p)->auth_state.session_info = talloc_reference((*dce_conn_p), session_info);
 	(*dce_conn_p)->auth_state.session_key = dcesrv_inherited_session_key;
 
 	/* TODO: check security descriptor of the endpoint here 
