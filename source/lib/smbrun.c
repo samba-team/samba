@@ -62,9 +62,10 @@ int smbrun(const char *cmd, int *outfd)
 	gid_t gid = current_user.ut.gid;
 	
 	/*
-	 * Lose any kernel oplock capabilities we may have.
+	 * Lose any elevated privileges.
 	 */
 	drop_effective_capability(KERNEL_OPLOCK_CAPABILITY);
+	drop_effective_capability(DMAPI_ACCESS_CAPABILITY);
 
 	/* point our stdout at the file we want output to go into */
 
@@ -194,9 +195,10 @@ int smbrunsecret(const char *cmd, const char *secret)
 	int ifd[2];
 	
 	/*
-	 * Lose any kernel oplock capabilities we may have.
+	 * Lose any elevated privileges.
 	 */
 	drop_effective_capability(KERNEL_OPLOCK_CAPABILITY);
+	drop_effective_capability(DMAPI_ACCESS_CAPABILITY);
 
 	/* build up an input pipe */
 	if(pipe(ifd)) {
