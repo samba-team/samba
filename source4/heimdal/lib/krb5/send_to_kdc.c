@@ -33,7 +33,7 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id: send_to_kdc.c,v 1.56 2005/06/17 04:33:11 lha Exp $");
+RCSID("$Id: send_to_kdc.c,v 1.57 2006/03/07 19:39:59 lha Exp $");
 
 struct send_and_recv {
 	krb5_send_and_recv_func_t func;
@@ -102,7 +102,7 @@ recv_loop (int fd,
 		 krb5_data_free (rep);
 		 return -1;
 	     }
-	     if(nbytes == 0)
+	     if(nbytes <= 0)
 		 return 0;
 
 	     if (limit)

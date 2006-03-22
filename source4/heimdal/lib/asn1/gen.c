@@ -33,7 +33,7 @@
 
 #include "gen_locl.h"
 
-RCSID("$Id: gen.c,v 1.64 2005/12/06 19:59:13 lha Exp $");
+RCSID("$Id: gen.c,v 1.65 2006/03/08 12:29:34 lha Exp $");
 
 FILE *headerfile, *codefile, *logfile;
 
@@ -97,9 +97,6 @@ init_generate (const char *filename, const char *base)
     fprintf (headerfile, 
 	     "#include <stddef.h>\n"
 	     "#include <time.h>\n\n");
-#ifndef HAVE_TIMEGM
-    fprintf (headerfile, "time_t timegm (struct tm*);\n\n");
-#endif
     fprintf (headerfile,
 	     "#ifndef __asn1_common_definitions__\n"
 	     "#define __asn1_common_definitions__\n\n");
