@@ -3212,7 +3212,7 @@ static BOOL handle_idmap_uid(int snum, const char *pszParmValue, char **ptr)
 {
 	uint32 low, high;
 
-	if (sscanf(pszParmValue, "%u-%u", &low, &high) != 2 || high < low)
+	if (sscanf(pszParmValue, "%u - %u", &low, &high) != 2 || high < low)
 		return False;
 
 	/* Parse OK */
@@ -3229,7 +3229,7 @@ static BOOL handle_idmap_gid(int snum, const char *pszParmValue, char **ptr)
 {
 	uint32 low, high;
 
-	if (sscanf(pszParmValue, "%u-%u", &low, &high) != 2 || high < low)
+	if (sscanf(pszParmValue, "%u - %u", &low, &high) != 2 || high < low)
 		return False;
 
 	/* Parse OK */

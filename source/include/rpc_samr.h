@@ -1204,6 +1204,10 @@ typedef struct {
 } ALIAS_INFO1;
 
 typedef struct {
+	UNISTR4 name;
+} ALIAS_INFO2;
+
+typedef struct {
 	UNISTR4 description;
 } ALIAS_INFO3;
 
@@ -1216,6 +1220,7 @@ typedef struct {
 	uint16 level;
 	union {
 		ALIAS_INFO1 info1;
+		ALIAS_INFO2 info2;
 		ALIAS_INFO3 info3;
 	} alias;
 } ALIAS_INFO_CTR;

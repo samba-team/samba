@@ -1382,19 +1382,12 @@ static NTSTATUS tdbsam_rename_sam_account(struct pdb_methods *my_methods,
 	BOOL             interim_account = False;
 	int              rename_ret;
 
-	/* make sure we have an open handle to the tdb.  Should have happened 
-	   at module  initialization time */
-	   
-	if ( !tdbsam ) {
-		DEBUG(0,("tdbsam_getsampwrid: tdbsam not open!\n"));
-		return NT_STATUS_NO_SUCH_USER;
-	}
-	
 	/* can't do anything without an external script */
 	
 	pstrcpy(rename_script, lp_renameuser_script() );
-	if ( ! *rename_script )
+	if ( ! *rename_script ) {
 		return NT_STATUS_ACCESS_DENIED;
+	}
 
 	/* invalidate the existing TDB iterator if it is open */
 	
@@ -1421,8 +1414,7 @@ static NTSTATUS tdbsam_rename_sam_account(struct pdb_methods *my_methods,
 
 	/* add the new account and lock it */
 	
-	if ( !tdb_update_samacct_only(new_acct, TDB_INSERT) ) 
-	{
+	if ( !tdb_update_samacct_only(new_acct, TDB_INSERT) ) {
 		goto done;
 	}
 	
@@ -1441,13 +1433,15 @@ static NTSTATUS tdbsam_rename_sam_account(struct pdb_methods *my_methods,
 
 	DEBUG(rename_ret ? 0 : 3,("Running the command `%s' gave %d\n", rename_script, rename_ret));
 
-	if (rename_ret) 
+	if (rename_ret) {
 		goto done; 
+	}
 
 	/* rewrite the rid->username record */
 	
-	if ( !tdb_update_ridrec_only( new_acct, TDB_MODIFY) )
+	if ( !tdb_update_ridrec_only( new_acct, TDB_MODIFY) ) {
 		goto done;
+	}
 	interim_account = False;
 	tdb_unlock_bystring( tdbsam, newname );
 

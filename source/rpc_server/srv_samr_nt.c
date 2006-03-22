@@ -3464,9 +3464,14 @@ NTSTATUS _samr_set_userinfo2(pipes_struct *p, SAMR_Q_SET_USERINFO2 *q_u, SAMR_R_
 	if (!get_lsa_policy_samr_sid(p, pol, &sid, &acc_granted, &disp_info))
 		return NT_STATUS_INVALID_HANDLE;
 
-	/* observed when joining XP client to Samba domain */
 		
+#if 0 	/* this really should be applied on a per info level basis   --jerry */
+
+	/* observed when joining XP client to Samba domain */
 	acc_required = SA_RIGHT_USER_SET_PASSWORD | SA_RIGHT_USER_SET_ATTRIBUTES | SA_RIGHT_USER_ACCT_FLAGS_EXPIRY;
+#else
+	acc_required = SA_RIGHT_USER_SET_ATTRIBUTES;
+#endif
 	
 	if (!NT_STATUS_IS_OK(r_u->status = access_check_samr_function(acc_granted, acc_required, "_samr_set_userinfo2"))) {
 		return r_u->status;
@@ -4093,11 +4098,21 @@ NTSTATUS _samr_delete_dom_alias(pipes_struct *p, SAMR_Q_DELETE_DOM_ALIAS *q_u, S
 	if (!get_lsa_policy_samr_sid(p, &q_u->alias_pol, &alias_sid, &acc_granted, &disp_info)) 
 		return NT_STATUS_INVALID_HANDLE;
 	
+	/* copy the handle to the outgoing reply */
+
+	memcpy( &r_u->pol, &q_u->alias_pol, sizeof(r_u->pol) );
+
 	if (!NT_STATUS_IS_OK(r_u->status = access_check_samr_function(acc_granted, STD_RIGHT_DELETE_ACCESS, "_samr_delete_dom_alias"))) {
 		return r_u->status;
 	}
 
 	DEBUG(10, ("sid is %s\n", sid_string_static(&alias_sid)));
+
+	/* Don't let Windows delete builtin groups */
+
+	if ( sid_check_is_in_builtin( &alias_sid ) ) {
+		return NT_STATUS_SPECIAL_ACCOUNT;
+	}
 
 	if (!sid_check_is_in_our_domain(&alias_sid))
 		return NT_STATUS_NO_SUCH_ALIAS;
@@ -4453,7 +4468,30 @@ NTSTATUS _samr_set_aliasinfo(pipes_struct *p, SAMR_Q_SET_ALIASINFO *q_u, SAMR_R_
 		
 	ctr=&q_u->ctr;
 
+	/* get the current group information */
+
+	if ( !pdb_get_aliasinfo( &group_sid, &info ) ) {
+		return NT_STATUS_NO_SUCH_ALIAS;
+	}
+
 	switch (ctr->level) {
+		case 2:
+			/* We currently do not support renaming groups in the
+			   the BUILTIN domain.  Refer to util_builtin.c to understand 
+			   why.  The eventually needs to be fixed to be like Windows
+			   where you can rename builtin groups, just not delete them */
+
+			if ( sid_check_is_in_builtin( &group_sid ) ) {
+				return NT_STATUS_SPECIAL_ACCOUNT;
+			}
+
+			if ( ctr->alias.info2.name.string ) {
+				unistr2_to_ascii( info.acct_name, ctr->alias.info2.name.string, 
+					sizeof(info.acct_name)-1 );
+			}
+			else
+				fstrcpy( info.acct_name, "" );
+			break;
 		case 3:
 			if ( ctr->alias.info3.description.string ) {
 				unistr2_to_ascii( info.acct_desc, 
