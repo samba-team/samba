@@ -661,7 +661,7 @@ BOOL smb_io_rpc_hdr_fault(const char *desc, RPC_HDR_FAULT *rpc, prs_struct *ps, 
 	prs_debug(ps, depth, desc, "smb_io_rpc_hdr_fault");
 	depth++;
 
-	if(!prs_ntstatus("status  ", ps, depth, &rpc->status))
+	if(!prs_dcerpc_status("status  ", ps, depth, &rpc->status))
 		return False;
 	if(!prs_uint32("reserved", ps, depth, &rpc->reserved))
 		return False;
