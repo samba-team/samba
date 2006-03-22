@@ -5,7 +5,7 @@ Samba 3 and Samba 4.
 
 ========================================
 Changes in Samba4-TP2
-Release date: 16 March 2006
+Release date: 22 March 2006
 ========================================
 
  * Make ldb async internally (idra)
