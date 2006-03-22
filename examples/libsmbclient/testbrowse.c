@@ -24,6 +24,16 @@ static void browse(char * path,
                    int indent);
 
 
+static void
+get_auth_data_with_context_fn(SMBCCTX * context,
+                              const char * pServer,
+                              const char * pShare,
+                              char * pWorkgroup,
+                              int maxLenWorkgroup,
+                              char * pUsername,
+                              int maxLenUsername,
+                              char * pPassword,
+                              int maxLenPassword);
 
 int
 main(int argc, char * argv[])
@@ -31,6 +41,7 @@ main(int argc, char * argv[])
     int                         debug = 0;
     int                         debug_stderr = 0;
     int                         no_auth = 0;
+    int                         context_auth = 0;
     int                         scan = 0;
     int                         iterations = -1;
     int                         again;
@@ -64,6 +75,10 @@ main(int argc, char * argv[])
                 0, "Do not request authentication data", "integer"
             },
             {
+                "contextauth", 'C', POPT_ARG_NONE, &context_auth,
+                0, "Use new authentication function with context", "integer"
+            },
+            {
                 NULL
             }
         };
@@ -94,12 +109,21 @@ main(int argc, char * argv[])
 
     /* Set mandatory options (is that a contradiction in terms?) */
     context->debug = debug;
-    context->callbacks.auth_fn = (no_auth ? no_auth_data_fn : get_auth_data_fn);
+    if (context_auth) {
+        context->callbacks.auth_fn = NULL;
+        smbc_option_set(context,
+                        "auth_function",
+                        (void *) get_auth_data_with_context_fn);
+        smbc_option_set(context, "user_data", "hello world");
+    } else {
+        context->callbacks.auth_fn =
+            (no_auth ? no_auth_data_fn : get_auth_data_fn);
+    }
 
     /* If we've been asked to log to stderr instead of stdout... */
     if (debug_stderr) {
         /* ... then set the option to do so */
-        smbc_option_set(context, "debug_stderr");
+        smbc_option_set(context, "debug_stderr", (void *) 1);
     }
 	
     /* Initialize the context using the previously specified options */
@@ -159,6 +183,29 @@ no_auth_data_fn(const char * pServer,
                 int maxLenPassword)
 {
     return;
+}
+
+
+static void
+get_auth_data_with_context_fn(SMBCCTX * context,
+                              const char * pServer,
+                              const char * pShare,
+                              char * pWorkgroup,
+                              int maxLenWorkgroup,
+                              char * pUsername,
+                              int maxLenUsername,
+                              char * pPassword,
+                              int maxLenPassword)
+{
+    printf("Authenticating with context 0x%lx", context);
+    if (context != NULL) {
+        char *user_data = smbc_option_get(context, "user_data");
+        printf(" with user data %s", user_data);
+    }
+    printf("\n");
+
+    get_auth_data_fn(pServer, pShare, pWorkgroup, maxLenWorkgroup,
+                     pUsername, maxLenUsername, pPassword, maxLenPassword);
 }
 
 static void browse(char * path, int scan, int indent)
