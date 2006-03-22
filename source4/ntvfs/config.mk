@@ -80,7 +80,7 @@ OBJ_FILES = \
 		common/opendb.o \
 		common/notify.o \
 		common/sidmap.o
-REQUIRED_SUBSYSTEMS = NDR_OPENDB
+REQUIRED_SUBSYSTEMS = NDR_OPENDB NDR_NOTIFY
 #
 # End SUBSYSTEM NTVFS
 ################################################
