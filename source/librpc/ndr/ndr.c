@@ -310,9 +310,9 @@ _PUBLIC_ void ndr_set_flags(uint32_t *pflags, uint32_t new_flags)
 	(*pflags) |= new_flags;
 }
 
-static NTSTATUS ndr_map_error(enum ndr_err_code err)
+static NTSTATUS ndr_map_error(enum ndr_err_code ndr_err)
 {
-	switch (err) {
+	switch (ndr_err) {
 	case NDR_ERR_BUFSIZE:
 		return NT_STATUS_BUFFER_TOO_SMALL;
 	case NDR_ERR_TOKEN:
@@ -332,8 +332,9 @@ static NTSTATUS ndr_map_error(enum ndr_err_code err)
 /*
   return and possibly log an NDR error
 */
-_PUBLIC_ NTSTATUS ndr_pull_error(struct ndr_pull *ndr, 
-			enum ndr_err_code err, const char *format, ...) _PRINTF_ATTRIBUTE(3,4)
+_PUBLIC_ NTSTATUS ndr_pull_error(struct ndr_pull *ndr,
+				 enum ndr_err_code ndr_err,
+				 const char *format, ...) _PRINTF_ATTRIBUTE(3,4)
 {
 	char *s=NULL;
 	va_list ap;
@@ -342,17 +343,19 @@ _PUBLIC_ NTSTATUS ndr_pull_error(struct ndr_pull *ndr,
 	vasprintf(&s, format, ap);
 	va_end(ap);
 
-	DEBUG(3,("ndr_pull_error(%u): %s\n", err, s));
+	DEBUG(3,("ndr_pull_error(%u): %s\n", ndr_err, s));
 
 	free(s);
 
-	return ndr_map_error(err);
+	return ndr_map_error(ndr_err);
 }
 
 /*
   return and possibly log an NDR error
 */
-_PUBLIC_ NTSTATUS ndr_push_error(struct ndr_push *ndr, enum ndr_err_code err, const char *format, ...)  _PRINTF_ATTRIBUTE(3,4)
+_PUBLIC_ NTSTATUS ndr_push_error(struct ndr_push *ndr,
+				 enum ndr_err_code ndr_err,
+				 const char *format, ...)  _PRINTF_ATTRIBUTE(3,4)
 {
 	char *s=NULL;
 	va_list ap;
@@ -361,11 +364,11 @@ _PUBLIC_ NTSTATUS ndr_push_error(struct ndr_push *ndr, enum ndr_err_code err, co
 	vasprintf(&s, format, ap);
 	va_end(ap);
 
-	DEBUG(3,("ndr_push_error(%u): %s\n", err, s));
+	DEBUG(3,("ndr_push_error(%u): %s\n", ndr_err, s));
 
 	free(s);
 
-	return ndr_map_error(err);
+	return ndr_map_error(ndr_err);
 }
 
 /*
