@@ -158,7 +158,6 @@ sub _prepare_mk_files($)
 	my $self = shift;
 	my @tmp = ();
 
-	
 	foreach (@smb_build::config_mk::parsed_files) {
 		s/ .*$//g;
 		push (@tmp, $_);
