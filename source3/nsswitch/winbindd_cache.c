@@ -800,9 +800,18 @@ NTSTATUS wcache_cached_creds_exist(struct winbindd_domain *domain, const DOM_SID
 	struct winbind_cache *cache = get_cache(domain);
 	TDB_DATA data;
 	fstring key_str;
+	uint32 rid;
 
 	if (!cache->tdb) {
 		return NT_STATUS_INTERNAL_DB_ERROR;
+	}
+
+	if (is_null_sid(sid)) {
+		return NT_STATUS_INVALID_SID;
+	}
+
+	if (!(sid_peek_rid(sid, &rid)) || (rid == 0)) {
+		return NT_STATUS_INVALID_SID;
 	}
 
 	fstr_sprintf(key_str, "CRED/%s", sid_string_static(sid));
@@ -825,9 +834,18 @@ NTSTATUS wcache_get_creds(struct winbindd_domain *domain,
 	struct cache_entry *centry = NULL;
 	NTSTATUS status;
 	time_t t;
+	uint32 rid;
 
 	if (!cache->tdb) {
 		return NT_STATUS_INTERNAL_DB_ERROR;
+	}
+
+	if (is_null_sid(sid)) {
+		return NT_STATUS_INVALID_SID;
+	}
+
+	if (!(sid_peek_rid(sid, &rid)) || (rid == 0)) {
+		return NT_STATUS_INVALID_SID;
 	}
 
 	centry = wcache_fetch(cache, domain, "CRED/%s", sid_string_static(sid));
@@ -860,9 +878,17 @@ NTSTATUS wcache_save_creds(struct winbindd_domain *domain,
 {
 	struct cache_entry *centry;
 	fstring sid_string;
-	NTSTATUS status = NT_STATUS_OK; /* ??? */
+	uint32 rid;
 
-	centry = centry_start(domain, status);
+	if (is_null_sid(sid)) {
+		return NT_STATUS_INVALID_SID;
+	}
+
+	if (!(sid_peek_rid(sid, &rid)) || (rid == 0)) {
+		return NT_STATUS_INVALID_SID;
+	}
+
+	centry = centry_start(domain, NT_STATUS_OK);
 	if (!centry) {
 		return NT_STATUS_INTERNAL_DB_ERROR;
 	}
