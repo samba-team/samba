@@ -63,7 +63,7 @@ gss_init(void *app_data)
 #ifdef KRB5
     return !use_kerberos;
 #else
-    return 0
+    return 0;
 #endif /* KRB5 */
 #endif /* FTP_SERVER */
 }
