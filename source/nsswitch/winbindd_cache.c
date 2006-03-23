@@ -841,7 +841,9 @@ NTSTATUS wcache_get_creds(struct winbindd_domain *domain,
 	t = centry_time(centry);
 	*cached_nt_pass = (const uint8 *)centry_string(centry, mem_ctx);
 
-	dump_data(10, (const char *)cached_nt_pass, NT_HASH_LEN);
+#if DEBUG_PASSWORD
+	dump_data(100, (const char *)cached_nt_pass, NT_HASH_LEN);
+#endif
 	status = centry->status;
 
 	DEBUG(10,("wcache_get_creds: [Cached] - cached creds for user %s status %s\n",
@@ -865,7 +867,9 @@ NTSTATUS wcache_save_creds(struct winbindd_domain *domain,
 		return NT_STATUS_INTERNAL_DB_ERROR;
 	}
 
+#if DEBUG_PASSWORD
 	dump_data(100, (const char *)nt_pass, NT_HASH_LEN);
+#endif
 
 	centry_put_time(centry, time(NULL));
 	centry_put_string(centry, (const char *)nt_pass);
