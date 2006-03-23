@@ -117,7 +117,9 @@ NTSTATUS winbindd_store_creds(struct winbindd_domain *domain,
 
 		E_md4hash(pass, nt_pass);
 
+#if DEBUG_PASSWORD
 		dump_data(100, (const char *)nt_pass, NT_HASH_LEN);
+#endif
 
 		status = wcache_save_creds(domain, mem_ctx, &cred_sid, nt_pass);
 		if (!NT_STATUS_IS_OK(status)) {
