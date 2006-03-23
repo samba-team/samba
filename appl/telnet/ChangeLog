@@ -1,5 +1,9 @@
-2005-12-01  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-03-23  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* libtelnet/encrypt.c: Spelling.
+
+2005-12-01  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* telnetd/telnetd.c: Initialize the slc mapping table before its
 	used.  Based on bug report from Russell Sanford
 	<rrs@clyde.dcccd.edu>
