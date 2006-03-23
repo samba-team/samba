@@ -424,7 +424,6 @@ static void ldapsrv_accept(struct stream_connection *c)
 		= cli_credentials_init(conn);
 	if (!server_credentials) {
 		stream_terminate_connection(c, "Failed to init server credentials\n");
-		talloc_free(conn);
 		return;
 	}
 	
@@ -432,7 +431,6 @@ static void ldapsrv_accept(struct stream_connection *c)
 	status = cli_credentials_set_machine_account(server_credentials);
 	if (!NT_STATUS_IS_OK(status)) {
 		stream_terminate_connection(c, talloc_asprintf(conn, "Failed to obtain server credentials, perhaps a standalone server?: %s\n", nt_errstr(status)));
-		talloc_free(conn);
 		return;
 	}
 	conn->server_credentials = server_credentials;
