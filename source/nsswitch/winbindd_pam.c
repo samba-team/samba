@@ -716,8 +716,10 @@ NTSTATUS winbindd_dual_pam_auth_cached(struct winbindd_domain *domain,
 
 	E_md4hash(state->request.data.auth.pass, new_nt_pass);
 
+#if DEBUG_PASSWORD
 	dump_data(100, (const char *)new_nt_pass, NT_HASH_LEN);
 	dump_data(100, (const char *)cached_nt_pass, NT_HASH_LEN);
+#endif
 
 	if (!memcmp(cached_nt_pass, new_nt_pass, NT_HASH_LEN)) {
 
