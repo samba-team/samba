@@ -636,7 +636,7 @@ encrypt_reply(unsigned char *data, int cnt)
 }
 
 /*
- * Called when a ENCRYPT START command is received.
+ * Called when ENCRYPT START is received.
  */
 void
 encrypt_start(unsigned char *data, int cnt)
