@@ -35,8 +35,6 @@ tests="$tests RAW-EAS RAW-STREAMS RAW-ACLS"
 soon="BASE-CHARSET RAW-OPLOCK RAW-NOTIFY BASE-DELAYWRITE"
 #echo "WARNING: Skipping tests $soon"
 
-#testit "my first samba3 test" $SRCDIR/bin/smbclient $CONFIGURATION -L 127.0.0.1 -N -p 139 || failed=`expr $failed + 1`
-
 tests="BASE-FDPASS BASE-VUID BASE-UNLINK BASE-ATTR BASE-DIR2 BASE-TCON BASE-OPEN BASE-CHKPATH"
 
 failed=0
