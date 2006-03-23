@@ -26,7 +26,8 @@ fi
 ## setup the various environment variables we need
 ##
 
-SERVER=localhost
+SERVER=localhost2
+SERVER_IP=127.0.0.2
 USERNAME=`whoami`
 PASSWORD=test
 
@@ -35,7 +36,8 @@ SCRIPTDIR=$SRCDIR/script/tests
 SHRDIR=$PREFIX_ABS/tmp
 LIBDIR=$PREFIX_ABS/lib
 PIDDIR=$PREFIX_ABS/pid
-CONFFILE=$LIBDIR/smb.conf
+CONFFILE=$LIBDIR/client.conf
+SERVERCONFFILE=$LIBDIR/server.conf
 COMMONCONFFILE=$LIBDIR/common.conf
 PRIVATEDIR=$PREFIX_ABS/private
 LOCKDIR=$PREFIX_ABS/lockdir
@@ -44,10 +46,11 @@ SOCKET_WRAPPER_DIR=$PREFIX/sw
 CONFIGURATION="-s $CONFFILE"
 
 export PREFIX_ABS CONFIGURATION CONFFILE PATH SOCKET_WRAPPER_DIR DOMAIN
-export PRIVATEDIR LIBDIR PIDDIR LOCKDIR LOGDIR
+export PRIVATEDIR LIBDIR PIDDIR LOCKDIR LOGDIR SERVERCONFFILE
 export SRCDIR SCRIPTDIR
 export USERNAME PASSWORD
 export SMBTORTURE4
+export SERVER SERVER_IP
 
 PATH=bin:$PATH
 export PATH
@@ -78,7 +81,6 @@ chmod 777 $PREFIX_ABS/tmp
 ##
 
 cat >$COMMONCONFFILE<<EOF
-	netbios name = LOCALHOST
 	workgroup = SAMBA-TEST
 
 	private dir = $PRIVATEDIR
@@ -91,14 +93,21 @@ cat >$COMMONCONFFILE<<EOF
 
 	name resolve order = bcast
 
-	interfaces = 127.0.0.1/8
-	bind interfaces only = yes
-
 	panic action = $SCRIPTDIR/gdb_backtrace %d
 EOF
 
 cat >$CONFFILE<<EOF
 [global]
+	netbios name = TORTURE26
+	interfaces = 127.0.0.26/8
+	include = $COMMONCONFFILE
+EOF
+
+cat >$SERVERCONFFILE<<EOF
+[global]
+	netbios name = $SERVER
+	interfaces = $SERVER_IP/8
+	bind interfaces only = yes
 	include = $COMMONCONFFILE
 
 [tmp]
@@ -133,7 +142,7 @@ export failed
 
 . $SCRIPTDIR/test_functions.sh
 
-SOCKET_WRAPPER_DEFAULT_IFACE=1
+SOCKET_WRAPPER_DEFAULT_IFACE=2
 export SOCKET_WRAPPER_DEFAULT_IFACE
 samba3_check_or_start
 
@@ -156,12 +165,18 @@ fi
 START=`date`
 (
  # give time for nbt server to register its names
- echo delaying for nbt name registration
+ echo "delaying for nbt name registration"
  sleep 4
  # This will return quickly when things are up, but be slow if we need to wait for (eg) SSL init 
- bin/nmblookup $CONFIGURATION -U $SERVER $SERVER
- bin/nmblookup $CONFIGURATION -U $SERVER $SERVER
- bin/nmblookup $CONFIGURATION -U $SERVER $SERVER
+ bin/nmblookup $CONFIGURATION -U $SERVER_IP __SAMBA__
+ bin/nmblookup $CONFIGURATION __SAMBA__
+ bin/nmblookup $CONFIGURATION -U 127.255.255.255 __SAMBA__
+ bin/nmblookup $CONFIGURATION -U $SERVER_IP $SERVER
+ bin/nmblookup $CONFIGURATION $SERVER
+ # make sure smbd is also up set
+ echo "wait for smbd"
+ bin/smbclient $CONFIGURATION -L $SERVER_IP -N -p 139 | head -2
+ bin/smbclient $CONFIGURATION -L $SERVER_IP -N -p 139 | head -2
 
  failed=0
 
