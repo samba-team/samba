@@ -1719,7 +1719,9 @@ static NTSTATUS fetch_database_to_ldif(struct rpc_pipe_client *pipe_hnd,
 {
 	char *suffix;
 	const char *builtin_sid = "S-1-5-32";
-	char *ldif_file;
+	char *ldif_file, *add_ldif, *mod_ldif;
+	const char *add_template = "/tmp/add.ldif.XXXXXX";
+	const char *mod_template = "/tmp/mod.ldif.XXXXXX";
 	fstring sid, domainname;
 	uint32 sync_context = 0;
 	NTSTATUS ret = NT_STATUS_OK, result;
@@ -1728,7 +1730,6 @@ static NTSTATUS fetch_database_to_ldif(struct rpc_pipe_client *pipe_hnd,
 	SAM_DELTA_HDR *hdr_deltas;
 	SAM_DELTA_CTR *deltas;
 	uint32 num_deltas;
-	const char *add_ldif = "/tmp/add.ldif", *mod_ldif = "/tmp/mod.ldif";
 	FILE *add_fd = NULL, *mod_fd = NULL, *ldif_fd = NULL;
 	char sys_cmd[1024];
 	int num_alloced = 0, g_index = 0, a_index = 0, sys_cmd_result;
@@ -1751,18 +1752,20 @@ static NTSTATUS fetch_database_to_ldif(struct rpc_pipe_client *pipe_hnd,
 	else
 		ldif_file = talloc_strdup(mem_ctx, "/tmp/tmp.ldif");
 	
-	if (ldif_file == NULL) {
+	add_ldif = talloc_strdup(mem_ctx, add_template);
+	mod_ldif = talloc_strdup(mem_ctx, mod_template);
+ 	if (!ldif_file || !add_ldif || !mod_ldif) {
 		ret = NT_STATUS_NO_MEMORY;
 		goto done;
 	}
 
 	/* Open the add and mod ldif files */
-	if (!(add_fd = fopen(add_ldif, "a"))) {
+	if (!(add_fd = fdopen(smb_mkstemp(add_ldif),"w"))) {
 		DEBUG(1, ("Could not open %s\n", add_ldif));
 		ret = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
-	if (!(mod_fd = fopen(mod_ldif, "a"))) {
+	if (!(mod_fd = fdopen(smb_mkstemp(mod_ldif),"w"))) {
 		DEBUG(1, ("Could not open %s\n", mod_ldif));
 		ret = NT_STATUS_UNSUCCESSFUL;
 		goto done;
@@ -1993,20 +1996,22 @@ static NTSTATUS fetch_database_to_ldif(struct rpc_pipe_client *pipe_hnd,
 		goto done;
 	}
 
-	/* Delete the temporary ldif files */
-	if (unlink(add_ldif))
-		d_fprintf(stderr, "unlink(%s) failed, error was (%s)\n",
-			  add_ldif, strerror(errno));
-	if (unlink(mod_ldif))
-		d_fprintf(stderr, "unlink(%s) failed, error was (%s)\n",
-			  mod_ldif, strerror(errno));
-
   done:
-	/* Close the ldif files */
+	/* Close and delete the ldif files */
 	if (add_fd)
 		fclose(add_fd);
+	if (strcmp(add_ldif, add_template) && (unlink(add_ldif))) {
+		DEBUG(1,("unlink(%s) failed, error was (%s)\n",
+			 add_ldif, strerror(errno)));
+	}
+
 	if (mod_fd)
 		fclose(mod_fd);
+	if (strcmp(mod_ldif, mod_template) && (unlink(mod_ldif))) {
+		DEBUG(1,("unlink(%s) failed, error was (%s)\n",
+			 mod_ldif, strerror(errno)));
+	}
+	
 	if (ldif_fd)
 		fclose(ldif_fd);
 
