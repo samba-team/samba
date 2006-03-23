@@ -1719,7 +1719,7 @@ static NTSTATUS fetch_database_to_ldif(struct rpc_pipe_client *pipe_hnd,
 {
 	char *suffix;
 	const char *builtin_sid = "S-1-5-32";
-	char *ldif_file, *add_ldif, *mod_ldif;
+	char *add_name = NULL, *mod_name = NULL;
 	const char *add_template = "/tmp/add.ldif.XXXXXX";
 	const char *mod_template = "/tmp/mod.ldif.XXXXXX";
 	fstring sid, domainname;
@@ -1730,9 +1730,8 @@ static NTSTATUS fetch_database_to_ldif(struct rpc_pipe_client *pipe_hnd,
 	SAM_DELTA_HDR *hdr_deltas;
 	SAM_DELTA_CTR *deltas;
 	uint32 num_deltas;
-	FILE *add_fd = NULL, *mod_fd = NULL, *ldif_fd = NULL;
-	char sys_cmd[1024];
-	int num_alloced = 0, g_index = 0, a_index = 0, sys_cmd_result;
+	FILE *add_file = NULL, *mod_file = NULL, *ldif_file = NULL;
+	int num_alloced = 0, g_index = 0, a_index = 0;
 
 	/* Set up array for mapping accounts to groups */
 	/* Array element is the group rid */
@@ -1748,36 +1747,35 @@ static NTSTATUS fetch_database_to_ldif(struct rpc_pipe_client *pipe_hnd,
 
 	/* Ensure we have an output file */
 	if (user_file)
-		ldif_file = talloc_strdup(mem_ctx, user_file);
+		ldif_file = fopen(user_file, "a");
 	else
-		ldif_file = talloc_strdup(mem_ctx, "/tmp/tmp.ldif");
-	
-	add_ldif = talloc_strdup(mem_ctx, add_template);
-	mod_ldif = talloc_strdup(mem_ctx, mod_template);
- 	if (!ldif_file || !add_ldif || !mod_ldif) {
+		ldif_file = stdout;
+
+	if (!ldif_file) {
+		fprintf(stderr, "Could not open %s\n", user_file);
+		DEBUG(1, ("Could not open %s\n", user_file));
+		ret = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+
+	add_name = talloc_strdup(mem_ctx, add_template);
+	mod_name = talloc_strdup(mem_ctx, mod_template);
+ 	if (!add_name || !mod_name) {
 		ret = NT_STATUS_NO_MEMORY;
 		goto done;
 	}
 
 	/* Open the add and mod ldif files */
-	if (!(add_fd = fdopen(smb_mkstemp(add_ldif),"w"))) {
-		DEBUG(1, ("Could not open %s\n", add_ldif));
+	if (!(add_file = fdopen(smb_mkstemp(add_name),"w"))) {
+		DEBUG(1, ("Could not open %s\n", add_name));
 		ret = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
-	if (!(mod_fd = fdopen(smb_mkstemp(mod_ldif),"w"))) {
-		DEBUG(1, ("Could not open %s\n", mod_ldif));
+	if (!(mod_file = fdopen(smb_mkstemp(mod_name),"w"))) {
+		DEBUG(1, ("Could not open %s\n", mod_name));
 		ret = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	} 
-
-	/* Open the user's ldif file */
-	ldif_fd = fopen(ldif_file, "a");
-	if (ldif_fd == NULL) {
-		DEBUG(1, ("Could not open %s\n", ldif_file));
-		ret = NT_STATUS_UNSUCCESSFUL;
-		goto done;
-	}
 
 	/* Get the sid */
 	sid_to_string(sid, &dom_sid);
@@ -1813,7 +1811,7 @@ static NTSTATUS fetch_database_to_ldif(struct rpc_pipe_client *pipe_hnd,
 		num_alloced = 8;
 
 		/* Initial database population */
-		populate_ldap_for_ldif(sid, suffix, builtin_sid, add_fd);
+		populate_ldap_for_ldif(sid, suffix, builtin_sid, add_file);
 		map_populate_groups(groupmap, accountmap, sid, suffix,
 			    builtin_sid);
 
@@ -1824,16 +1822,18 @@ static NTSTATUS fetch_database_to_ldif(struct rpc_pipe_client *pipe_hnd,
 	/* Announce what we are doing */
 	switch( db_type ) {
 		case SAM_DATABASE_DOMAIN:
-			d_printf("Fetching DOMAIN database\n");
+			d_fprintf(stderr, "Fetching DOMAIN database\n");
 			break;
 		case SAM_DATABASE_BUILTIN:
-			d_printf("Fetching BUILTIN database\n");
+			d_fprintf(stderr, "Fetching BUILTIN database\n");
 			break;
 		case SAM_DATABASE_PRIVS:
-			d_printf("Fetching PRIVS databases\n");
+			d_fprintf(stderr, "Fetching PRIVS databases\n");
 			break;
 		default:
-			d_printf("Fetching unknown database type %u\n", db_type );
+			d_fprintf(stderr, 
+				  "Fetching unknown database type %u\n", 
+				  db_type );
 			break;
 	}
 
@@ -1881,14 +1881,14 @@ static NTSTATUS fetch_database_to_ldif(struct rpc_pipe_client *pipe_hnd,
 				case SAM_DELTA_GROUP_INFO:
 					fetch_group_info_to_ldif(
 						&deltas[k], &groupmap[g_index],
-						add_fd, sid, suffix);
+						add_file, sid, suffix);
 					g_index++;
 					break;
 
 				case SAM_DELTA_ACCOUNT_INFO:
 					fetch_account_info_to_ldif(
 						&deltas[k], groupmap, 
-						&accountmap[a_index], add_fd,
+						&accountmap[a_index], add_file,
 						sid, suffix, num_alloced);
 					a_index++;
 					break;
@@ -1896,7 +1896,7 @@ static NTSTATUS fetch_database_to_ldif(struct rpc_pipe_client *pipe_hnd,
 				case SAM_DELTA_ALIAS_INFO:
 					fetch_alias_info_to_ldif(
 						&deltas[k], &groupmap[g_index],
-						add_fd, sid, suffix, db_type);
+						add_file, sid, suffix, db_type);
 					g_index++;
 					break;
 
@@ -1904,7 +1904,7 @@ static NTSTATUS fetch_database_to_ldif(struct rpc_pipe_client *pipe_hnd,
 					fetch_groupmem_info_to_ldif(
 						&deltas[k], &hdr_deltas[k], 
 						groupmap, accountmap, 
-						mod_fd, num_alloced);
+						mod_file, num_alloced);
 					break;
 
 				case SAM_DELTA_ALIAS_MEM:
@@ -1946,74 +1946,58 @@ static NTSTATUS fetch_database_to_ldif(struct rpc_pipe_client *pipe_hnd,
 
 	} while (NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES));
 
-	/* Close the ldif files */
-	fclose(add_fd);
-	add_fd = NULL;
-	fclose(mod_fd);
-	mod_fd = NULL;
-
 	/* Write ldif data to the user's file */
 	if (db_type == SAM_DATABASE_DOMAIN) {
-		fprintf(ldif_fd,
+		fprintf(ldif_file,
 			"# SAM_DATABASE_DOMAIN: ADD ENTITIES\n");
-		fprintf(ldif_fd,
+		fprintf(ldif_file,
 			"# =================================\n\n");
-		fflush(ldif_fd);
+		fflush(ldif_file);
 	} else if (db_type == SAM_DATABASE_BUILTIN) {
-		fprintf(ldif_fd,
+		fprintf(ldif_file,
 			"# SAM_DATABASE_BUILTIN: ADD ENTITIES\n");
-		fprintf(ldif_fd,
+		fprintf(ldif_file,
 			"# ==================================\n\n");
-		fflush(ldif_fd);
+		fflush(ldif_file);
 	}
-	pstr_sprintf(sys_cmd, "cat %s >> %s", add_ldif, ldif_file);
-	sys_cmd_result = system(sys_cmd);
-	if (sys_cmd_result) {
-		d_fprintf(stderr, "%s failed.  Error was (%s)\n",
-			sys_cmd, strerror(errno));
-		ret = NT_STATUS_UNSUCCESSFUL;
-		goto done;
-	}
+	fseek(add_file, 0, SEEK_SET);
+	transfer_file(fileno(add_file), fileno(ldif_file), (size_t) -1);
+
 	if (db_type == SAM_DATABASE_DOMAIN) {
-		fprintf(ldif_fd,
+		fprintf(ldif_file,
 			"# SAM_DATABASE_DOMAIN: MODIFY ENTITIES\n");
-		fprintf(ldif_fd,
+		fprintf(ldif_file,
 			"# ====================================\n\n");
-		fflush(ldif_fd);
+		fflush(ldif_file);
 	} else if (db_type == SAM_DATABASE_BUILTIN) {
-		fprintf(ldif_fd,
+		fprintf(ldif_file,
 			"# SAM_DATABASE_BUILTIN: MODIFY ENTITIES\n");
-		fprintf(ldif_fd,
+		fprintf(ldif_file,
 			"# =====================================\n\n");
-		fflush(ldif_fd);
+		fflush(ldif_file);
 	}
-	pstr_sprintf(sys_cmd, "cat %s >> %s", mod_ldif, ldif_file);
-	sys_cmd_result = system(sys_cmd);
-	if (sys_cmd_result) {
-		d_fprintf(stderr, "%s failed.  Error was (%s)\n",
-			sys_cmd, strerror(errno));
-		ret = NT_STATUS_UNSUCCESSFUL;
-		goto done;
-	}
+	fseek(mod_file, 0, SEEK_SET);
+	transfer_file(fileno(mod_file), fileno(ldif_file), (size_t) -1);
+
 
   done:
 	/* Close and delete the ldif files */
-	if (add_fd)
-		fclose(add_fd);
-	if (strcmp(add_ldif, add_template) && (unlink(add_ldif))) {
+	if (add_file)
+		fclose(add_file);
+	if (strcmp(add_name, add_template) && (unlink(add_name))) {
 		DEBUG(1,("unlink(%s) failed, error was (%s)\n",
-			 add_ldif, strerror(errno)));
+			 add_name, strerror(errno)));
 	}
 
-	if (mod_fd)
-		fclose(mod_fd);
-	if (strcmp(mod_ldif, mod_template) && (unlink(mod_ldif))) {
+	if (mod_file)
+		fclose(mod_file);
+	if (strcmp(mod_name, mod_template) && (unlink(mod_name))) {
 		DEBUG(1,("unlink(%s) failed, error was (%s)\n",
-			 mod_ldif, strerror(errno)));
+			 mod_name, strerror(errno)));
 	}
 	
-	if (ldif_fd)
-		fclose(ldif_fd);
+	if (ldif_file && (ldif_file != stdout))
+		fclose(ldif_file);
 
 	/* Deallocate memory for the mapping arrays */
 	SAFE_FREE(groupmap);
