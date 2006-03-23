@@ -860,22 +860,6 @@ pch: proto_exists
 	rm -f $(srcdir)/include/includes.h.gch
 	$(CC) -I. -I$(srcdir) $(FLAGS) @PIE_CFLAGS@ -c $(srcdir)/include/includes.h -o $(srcdir)/include/includes.h.gch
 
-##
-## Targets for 'make test'
-##
-test: all torture bin/timelimit
-	@echo Running Test suite
-	@sh ./script/tests/selftest.sh ${selftest_prefix}/st all "${smbtorture4_path}"
-
-# Check for PAM module problems.  Specifically, check that every module we
-# built can actually be loaded by a minimal PAM-aware application.
-test_pam_modules: pam_modules
-	@echo "Testing $(PAM_MODULES) "
-	@for module in $(PAM_MODULES); do \
-		./script/tests/dlopen.sh -lpam -ldl bin/$${module}.@SHLIBEXT@ \
-			|| exit 1; \
-	done
-
 # These dependencies are only approximately correct: we want to make
 # sure Samba's paths are updated if ./configure is re-run.  Really it
 # would be nice if "make prefix=/opt/samba all" also rebuilt things,
@@ -1761,28 +1745,25 @@ Makefile: $(srcdir)/Makefile.in config.status
 ######################################################################
 # Samba Testing Framework
 
-# FIXME: LD_LIBRARY_PATH is not portable, but in the absence of
-# libtool I don't know a better way to do it.  Perhaps we should fix
-# libbigballofmud to link statically?
-##
-## not working...to be replaced by 'make test' --jerry
-##
-#check: check-programs
-#	LD_LIBRARY_PATH="`pwd`/bin:$$LD_LIBRARY_PATH" \
-#	PATH="`pwd`/bin:$$PATH" \
-#	python stf/standardcheck.py; \
-#	if test -n "$(PYTHON)"; then \
-#		python stf/pythoncheck.py; \
-#	fi
+# Check for PAM module problems.  Specifically, check that every module we
+# built can actually be loaded by a minimal PAM-aware application.
+test_pam_modules: pam_modules
+	@echo "Testing $(PAM_MODULES) "
+	@for module in $(PAM_MODULES); do \
+		./script/tests/dlopen.sh -lpam -ldl bin/$${module}.@SHLIBEXT@ \
+			|| exit 1; \
+	done
 
-# These are called by the test suite and need to be built before
-# running it.  For the time being we don't build all of BIN_PROGS,
-# because they're not all needed.
-# check-programs: bin/t_strcmp bin/t_strstr bin/t_push_ucs2 bin/smbcontrol bin/t_snprintf bin/t_asn1
+##
+## Targets for 'make test'
+##
+test: all torture bin/timelimit
+	@echo Running Test suite
+	@sh ./script/tests/selftest.sh ${selftest_prefix}/st all "${smbtorture4_path}"
 
-#test: all
-#	@if test -z "$(SMB4TORTURE)"; then \
-#		echo "Please set the SMB4TORTURE environment variable"; \
-#		exit 1; \
-#	fi
-#	./script/smb4torture.sh `pwd`/prefix-test $(SMB4TORTURE)
+valgrindtest: all torture bin/timelimit
+	@echo Running Test suite with valgrind
+	@NMBD_VALGRIND="xterm -n smbd -e valgrind -q --db-attach=yes --num-callers=30" \
+	 SMBD_VALGRIND="xterm -n smbd -e valgrind -q --db-attach=yes --num-callers=30" \
+	 VALGRIND="valgrind -q --num-callers=30 --log-file=${selftest_prefix}/st/valgrind.log" \
+	 ./script/tests/selftest.sh ${selftest_prefix}/st all "${smbtorture4_path}"
