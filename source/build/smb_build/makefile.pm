@@ -210,14 +210,14 @@ sub SharedLibrary($$)
 		push (@{$self->{shared_modules}}, "$ctx->{TARGET}");
 		push (@{$self->{plugins}}, "$installdir/$ctx->{LIBRARY_REALNAME}");
 
-		$self->{install_plugins} .= "\t\@echo Installing $installdir/$ctx->{LIBRARY_REALNAME} as \$(DESTDIR)\$(MODULESDIR)/$ctx->{SUBSYSTEM}/$ctx->{LIBRARY_REALNAME}.\$(SHLIBEXT)\n";
+		$self->{install_plugins} .= "\t\@echo Installing $installdir/$ctx->{LIBRARY_REALNAME} as \$(DESTDIR)\$(MODULESDIR)/$ctx->{SUBSYSTEM}/$ctx->{LIBRARY_REALNAME}\n";
 		$self->{install_plugins} .= "\t\@mkdir -p \$(DESTDIR)\$(MODULESDIR)/$ctx->{SUBSYSTEM}/\n";
-		$self->{install_plugins} .= "\t\@cp $installdir/$ctx->{LIBRARY_REALNAME} \$(DESTDIR)\$(MODULESDIR)/$ctx->{SUBSYSTEM}/$ctx->{LIBRARY_REALNAME}.\$(SHLIBEXT)\n";
-		$self->{uninstall_plugins} .= "\t\@echo Uninstalling \$(DESTDIR)\$(MODULESDIR)/$ctx->{SUBSYSTEM}/$ctx->{LIBRARY_REALNAME}.\$(SHLIBEXT)\n";
-		$self->{uninstall_plugins} .= "\t\@-rm \$(DESTDIR)\$(MODULESDIR)/$ctx->{SUBSYSTEM}/$ctx->{LIBRARY_REALNAME}.\$(SHLIBEXT)\n";
+		$self->{install_plugins} .= "\t\@cp $installdir/$ctx->{LIBRARY_REALNAME} \$(DESTDIR)\$(MODULESDIR)/$ctx->{SUBSYSTEM}/$ctx->{LIBRARY_REALNAME}\n";
+		$self->{uninstall_plugins} .= "\t\@echo Uninstalling \$(DESTDIR)\$(MODULESDIR)/$ctx->{SUBSYSTEM}/$ctx->{LIBRARY_REALNAME}\n";
+		$self->{uninstall_plugins} .= "\t\@-rm \$(DESTDIR)\$(MODULESDIR)/$ctx->{SUBSYSTEM}/$ctx->{LIBRARY_REALNAME}\n";
 		if (defined($ctx->{ALIASES})) {
 			foreach (@{$ctx->{ALIASES}}) {
-				$self->{install_plugins} .= "\t\@ln -fs $ctx->{LIBRARY_REALNAME}.\$(SHLIBEXT) \$(DESTDIR)\$(MODULESDIR)/$ctx->{SUBSYSTEM}/$_.\$(SHLIBEXT)\n";
+				$self->{install_plugins} .= "\t\@ln -fs $ctx->{LIBRARY_REALNAME} \$(DESTDIR)\$(MODULESDIR)/$ctx->{SUBSYSTEM}/$_.\$(SHLIBEXT)\n";
 				$self->{uninstall_plugins} .= "\t\@-rm \$(DESTDIR)\$(MODULESDIR)/$ctx->{SUBSYSTEM}/$_.\$(SHLIBEXT)\n";
 			}
 		}
@@ -272,7 +272,7 @@ __EOD__
 );
 		if (defined($ctx->{ALIASES})) {
 			foreach (@{$ctx->{ALIASES}}) {
-				$self->output("\t\@ln -fs $ctx->{LIBRARY_REALNAME}.\$(SHLIBEXT) $ctx->{DEBUGDIR}/$_.\$(SHLIBEXT)\n");
+				$self->output("\t\@ln -fs $ctx->{LIBRARY_REALNAME} $ctx->{DEBUGDIR}/$_.\$(SHLIBEXT)\n");
 			}
 		}
 
