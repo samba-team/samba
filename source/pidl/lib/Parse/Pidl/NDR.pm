@@ -317,8 +317,10 @@ sub find_largest_alignment($)
 
 		if ($e->{POINTERS}) {
 			$a = 4; 
-		} elsif (has_property($e, "subcontext")){ 
+		} elsif (has_property($e, "subcontext")) { 
 			$a = 1;
+		} elsif (has_property($e, "represent_as")) {
+			$a = align_type($e->{PROPERTIES}->{represent_as});
 		} else {
 			$a = align_type($e->{TYPE}); 
 		}
@@ -792,6 +794,8 @@ my %property_list = (
 	"nodiscriminant"	=> ["TYPEDEF"],
 	"case"			=> ["ELEMENT"],
 	"default"		=> ["ELEMENT"],
+
+	"represent_as"		=> ["ELEMENT"],
 
 	# subcontext
 	"subcontext"		=> ["ELEMENT"],
