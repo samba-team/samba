@@ -399,10 +399,10 @@ NTSTATUS ads_verify_ticket(TALLOC_CTX *mem_ctx,
 		DEBUG(3,("ads_verify_ticket: krb5_rd_req with auth failed (%s)\n", 
 			 error_message(ret)));
 		goto out;
-	} else {
-		authtime = get_authtime_from_tkt(tkt);
-		client_principal = get_principal_from_tkt(tkt);
-	}
+	} 
+	
+	authtime = get_authtime_from_tkt(tkt);
+	client_principal = get_principal_from_tkt(tkt);
 
 	ret = krb5_mk_rep(context, auth_context, &packet);
 	if (ret) {
@@ -459,8 +459,7 @@ NTSTATUS ads_verify_ticket(TALLOC_CTX *mem_ctx,
 #endif
 #endif
 
-	if ((ret = krb5_unparse_name(context, get_principal_from_tkt(tkt),
-				     principal))) {
+	if ((ret = krb5_unparse_name(context, client_principal, principal))) {
 		DEBUG(3,("ads_verify_ticket: krb5_unparse_name failed (%s)\n", 
 			 error_message(ret)));
 		sret = NT_STATUS_LOGON_FAILURE;
