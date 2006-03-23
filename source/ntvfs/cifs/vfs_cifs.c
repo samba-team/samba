@@ -184,6 +184,14 @@ static NTSTATUS cvfs_connect(struct ntvfs_module_context *ntvfs,
 static NTSTATUS cvfs_disconnect(struct ntvfs_module_context *ntvfs)
 {
 	struct cvfs_private *private = ntvfs->private_data;
+	struct async_info *a, *an;
+
+	/* first cleanup pending requests */
+	for (a=private->pending; a; a = an) {
+		an = a->next;
+		smbcli_request_destroy(a->c_req);
+		talloc_free(a);
+	}
 
 	talloc_free(private);
 	ntvfs->private_data = NULL;
@@ -211,6 +219,7 @@ static void async_simple(struct smbcli_request *c_req)
 	struct async_info *async = c_req->async.private;
 	struct ntvfs_request *req = async->req;
 	req->async_states->status = smbcli_request_simple_recv(c_req);
+	talloc_free(async);
 	req->async_states->send_fn(req);
 }
 
@@ -268,6 +277,7 @@ static void async_ioctl(struct smbcli_request *c_req)
 	struct async_info *async = c_req->async.private;
 	struct ntvfs_request *req = async->req;
 	req->async_states->status = smb_raw_ioctl_recv(c_req, req, async->parms);
+	talloc_free(async);
 	req->async_states->send_fn(req);
 }
 
@@ -321,6 +331,7 @@ static void async_qpathinfo(struct smbcli_request *c_req)
 	struct async_info *async = c_req->async.private;
 	struct ntvfs_request *req = async->req;
 	req->async_states->status = smb_raw_pathinfo_recv(c_req, req, async->parms);
+	talloc_free(async);
 	req->async_states->send_fn(req);
 }
 
@@ -352,6 +363,7 @@ static void async_qfileinfo(struct smbcli_request *c_req)
 	struct async_info *async = c_req->async.private;
 	struct ntvfs_request *req = async->req;
 	req->async_states->status = smb_raw_fileinfo_recv(c_req, req, async->parms);
+	talloc_free(async);
 	req->async_states->send_fn(req);
 }
 
@@ -405,6 +417,7 @@ static void async_open(struct smbcli_request *c_req)
 	struct async_info *async = c_req->async.private;
 	struct ntvfs_request *req = async->req;
 	req->async_states->status = smb_raw_open_recv(c_req, req, async->parms);
+	talloc_free(async);
 	req->async_states->send_fn(req);
 }
 
@@ -509,6 +522,7 @@ static void async_read(struct smbcli_request *c_req)
 	struct async_info *async = c_req->async.private;
 	struct ntvfs_request *req = async->req;
 	req->async_states->status = smb_raw_read_recv(c_req, async->parms);
+	talloc_free(async);
 	req->async_states->send_fn(req);
 }
 
@@ -545,6 +559,7 @@ static void async_write(struct smbcli_request *c_req)
 	struct async_info *async = c_req->async.private;
 	struct ntvfs_request *req = async->req;
 	req->async_states->status = smb_raw_write_recv(c_req, async->parms);
+	talloc_free(async);
 	req->async_states->send_fn(req);
 }
 
@@ -581,6 +596,7 @@ static void async_seek(struct smbcli_request *c_req)
 	struct async_info *async = c_req->async.private;
 	struct ntvfs_request *req = async->req;
 	req->async_states->status = smb_raw_seek_recv(c_req, async->parms);
+	talloc_free(async);
 	req->async_states->send_fn(req);
 }
 
@@ -767,6 +783,7 @@ static void async_fsinfo(struct smbcli_request *c_req)
 	struct async_info *async = c_req->async.private;
 	struct ntvfs_request *req = async->req;
 	req->async_states->status = smb_raw_fsinfo_recv(c_req, req, async->parms);
+	talloc_free(async);
 	req->async_states->send_fn(req);
 }
 
@@ -846,6 +863,7 @@ static void async_trans2(struct smbcli_request *c_req)
 	struct async_info *async = c_req->async.private;
 	struct ntvfs_request *req = async->req;
 	req->async_states->status = smb_raw_trans2_recv(c_req, req, async->parms);
+	talloc_free(async);
 	req->async_states->send_fn(req);
 }
 
@@ -885,6 +903,7 @@ static void async_changenotify(struct smbcli_request *c_req)
 	struct async_info *async = c_req->async.private;
 	struct ntvfs_request *req = async->req;
 	req->async_states->status = smb_raw_changenotify_recv(c_req, req, async->parms);
+	talloc_free(async);
 	req->async_states->send_fn(req);
 }
 
