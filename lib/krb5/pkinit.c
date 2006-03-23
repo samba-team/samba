@@ -1821,7 +1821,7 @@ _krb5_pk_rd_pa_reply(krb5_context context,
 		return ret;
 	    }
 	    ret = pk_rd_pa_reply_enckey(context, COMPAT_WIN2K, &ci, ctx,
-					etype, hi, nonce, NULL, pa, key);
+					etype, hi, nonce, req_buffer, pa, key);
 	    free_ContentInfo(&ci);
 	    break;
 	default:
