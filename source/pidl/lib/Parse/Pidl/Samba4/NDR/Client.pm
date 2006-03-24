@@ -1,6 +1,7 @@
 ###################################################
 # client calls generator
 # Copyright tridge@samba.org 2003
+# Copyright jelmer@samba.org 2005-2006
 # released under the GNU GPL
 
 package Parse::Pidl::Samba4::NDR::Client;

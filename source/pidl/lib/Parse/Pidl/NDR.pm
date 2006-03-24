@@ -2,7 +2,7 @@
 # Samba4 NDR info tree generator
 # Copyright tridge@samba.org 2000-2003
 # Copyright tpot@samba.org 2001
-# Copyright jelmer@samba.org 2004-2005
+# Copyright jelmer@samba.org 2004-2006
 # released under the GNU GPL
 
 =pod
@@ -258,6 +258,8 @@ sub GetElementLevelTable($)
 
 	push (@$order, {
 		TYPE => "DATA",
+		CONVERT_TO => has_property($e, ""),
+		CONVERT_FROM => has_property($e, ""),
 		DATA_TYPE => $e->{TYPE},
 		IS_DEFERRED => $is_deferred,
 		CONTAINS_DEFERRED => can_contain_deferred($e),
@@ -319,8 +321,8 @@ sub find_largest_alignment($)
 			$a = 4; 
 		} elsif (has_property($e, "subcontext")) { 
 			$a = 1;
-		} elsif (has_property($e, "represent_as")) {
-			$a = align_type($e->{PROPERTIES}->{represent_as});
+		} elsif (has_property($e, "transmit_as")) {
+			$a = align_type($e->{PROPERTIES}->{transmit_as});
 		} else {
 			$a = align_type($e->{TYPE}); 
 		}
@@ -368,6 +370,7 @@ sub ParseElement($)
 		TYPE => $e->{TYPE},
 		PROPERTIES => $e->{PROPERTIES},
 		LEVELS => GetElementLevelTable($e),
+		REPRESENTATION_TYPE => $e->{PROPERTIES}->{represent_as},
 		ALIGN => align_type($e->{TYPE}),
 		ORIGINAL => $e
 	};
@@ -796,6 +799,7 @@ my %property_list = (
 	"default"		=> ["ELEMENT"],
 
 	"represent_as"		=> ["ELEMENT"],
+	"transmit_as"		=> ["ELEMENT"],
 
 	# subcontext
 	"subcontext"		=> ["ELEMENT"],
@@ -898,6 +902,19 @@ sub ValidElement($)
 				nonfatal($e, el_name($e) . ": switch_is() is of type $e2->{TYPE} ($t2), while discriminator type for union $type->{NAME} is $discriminator_type ($t1)");
 			}
 		}
+	}
+
+
+	if (has_property($e, "subcontext") and has_property($e, "represent_as")) {
+		fatal($e, el_name($e) . " : subcontext() and represent_as() can not be used on the same element");
+	}
+
+	if (has_property($e, "subcontext") and has_property($e, "transmit_as")) {
+		fatal($e, el_name($e) . " : subcontext() and transmit_as() can not be used on the same element");
+	}
+
+	if (has_property($e, "represent_as") and has_property($e, "transmit_as")) {
+		fatal($e, el_name($e) . " : represent_as() and transmit_as() can not be used on the same element");
 	}
 
 	if (defined (has_property($e, "subcontext_size")) and not defined(has_property($e, "subcontext"))) {

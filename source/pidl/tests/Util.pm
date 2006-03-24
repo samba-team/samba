@@ -1,5 +1,5 @@
 # Some simple utility functions for pidl tests
-# Copyright (C) 2005 Jelmer Vernooij
+# Copyright (C) 2005-2006 Jelmer Vernooij
 # Published under the GNU General Public License
 
 package Util;
@@ -18,9 +18,9 @@ use Parse::Pidl::Samba4::Header;
 
 # Generate a Samba4 parser for an IDL fragment and run it with a specified 
 # piece of code to check whether the parser works as expected
-sub test_samba4_ndr($$$)
+sub test_samba4_ndr
 {
-	my ($name,$idl,$c) = @_;
+	my ($name,$idl,$c,$extra) = @_;
 	my $pidl = Parse::Pidl::IDL::parse_string("interface echo { $idl }; ", "<$name>");
 	
 	ok(defined($pidl), "($name) parse idl");
@@ -58,6 +58,7 @@ SKIP: {
 	print CC $header;
 	print CC $ndrheader;
 	print CC $ndrparser;
+	print CC $extra if ($extra);
 	print CC "int main(int argc, const char **argv)
 {
 	TALLOC_CTX *mem_ctx = talloc_init(NULL);

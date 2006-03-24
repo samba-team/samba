@@ -2,7 +2,7 @@
 # Samba4 NDR parser generator for IDL structures
 # Copyright tridge@samba.org 2000-2003
 # Copyright tpot@samba.org 2001
-# Copyright jelmer@samba.org 2004-2005
+# Copyright jelmer@samba.org 2004-2006
 # released under the GNU GPL
 
 package Parse::Pidl::Samba4::NDR::Parser;
@@ -674,6 +674,12 @@ sub ParseElementPush($$$$$$)
 
 	return unless $primitives or ($deferred and ContainsDeferred($e, $e->{LEVELS}[0]));
 
+	# Representation type is different from transmit_as
+	if ($e->{REPRESENTATION_TYPE}) {
+		pidl "/* FIXME: Convert from $e->{REPRESENTATION_TYPE} to $e->{TYPE} */";
+		pidl "NDR_CHECK(ndr_$e->{REPRESENTATION_TYPE}_to_$e->{TYPE}(FIXME, FIXME));";
+	}
+
 	start_flags($e);
 
 	if (my $value = has_property($e, "value")) {
@@ -683,6 +689,7 @@ sub ParseElementPush($$$$$$)
 	ParseElementPushLevel($e, $e->{LEVELS}[0], $ndr, $var_name, $env, $primitives, $deferred);
 
 	end_flags($e);
+
 }
 
 #####################################################################
@@ -1067,6 +1074,12 @@ sub ParseElementPull($$$$$$)
 	ParseElementPullLevel($e,$e->{LEVELS}[0],$ndr,$var_name,$env,$primitives,$deferred);
 
 	end_flags($e);
+
+	# Representation type is different from transmit_as
+	if ($e->{REPRESENTATION_TYPE}) {
+		pidl "/* FIXME: Convert from $e->{TYPE} to $e->{REPRESENTATION_TYPE} */";
+		pidl "NDR_CHECK(ndr_$e->{TYPE}_to_$e->{REPRESENTATION_TYPE}(FIXME, FIXME));";
+	}
 }
 
 #####################################################################
