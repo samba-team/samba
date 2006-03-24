@@ -279,7 +279,8 @@ Datagram support (ncadg_*)
 
 in, out, ref, length_is, switch_is, size_is, uuid, case, default, string, 
 unique, ptr, pointer_default, v1_enum, object, helpstring, range, local, 
-call_as, endpoint, switch_type, progid, coclass, iid_is, represent_as.
+call_as, endpoint, switch_type, progid, coclass, iid_is, represent_as, 
+transmit_as.
 
 =head2 PIDL Specific properties
 
@@ -357,7 +358,7 @@ helpstringdll, hidden, idl_module, idl_quote, id, immediatebind, importlib,
 import, include, includelib, last_is, lcid, licensed, max_is, module, 
 ms_union, no_injected_text, nonbrowsable, noncreatable, nonextensible, odl, 
 oleautomation, optional, pragma, propget, propputref, propput, readonly, 
-requestedit, restricted, retval, source, transmit_as, uidefault, 
+requestedit, restricted, retval, source, uidefault, 
 usesgetlasterror, vararg, vi_progid, wire_marshal. 
 
 =head1 EXAMPLES
