@@ -676,8 +676,12 @@ sub ParseElementPush($$$$$$)
 
 	# Representation type is different from transmit_as
 	if ($e->{REPRESENTATION_TYPE}) {
-		pidl "/* FIXME: Convert from $e->{REPRESENTATION_TYPE} to $e->{TYPE} */";
-		pidl "NDR_CHECK(ndr_$e->{REPRESENTATION_TYPE}_to_$e->{TYPE}(FIXME, FIXME));";
+		pidl "{";
+		indent;
+		my $transmit_name = "_transmit_$e->{NAME}";
+		pidl mapType($e->{TYPE}) ." $transmit_name;";
+		pidl "NDR_CHECK(ndr_$e->{REPRESENTATION_TYPE}_to_$e->{TYPE}($var_name, $transmit_name));";
+		$var_name = $transmit_name;
 	}
 
 	start_flags($e);
@@ -690,6 +694,10 @@ sub ParseElementPush($$$$$$)
 
 	end_flags($e);
 
+	if ($e->{REPRESENTATION_TYPE}) {
+		deindent;
+		pidl "}";
+	}
 }
 
 #####################################################################
@@ -1064,10 +1072,19 @@ sub ParseElementPull($$$$$$)
 	my($e,$ndr,$var_prefix,$env,$primitives,$deferred) = @_;
 
 	my $var_name = $var_prefix.$e->{NAME};
-
-	$var_name = append_prefix($e, $var_name);
+	my $represent_name;
 
 	return unless $primitives or ($deferred and ContainsDeferred($e, $e->{LEVELS}[0]));
+
+	if ($e->{REPRESENTATION_TYPE}) {
+		pidl "{";
+		indent;
+		$represent_name = $var_name;
+		$var_name = "_transmit_$e->{NAME}";
+		pidl mapType($e->{TYPE})." $var_name;";
+	}
+
+	$var_name = append_prefix($e, $var_name);
 
 	start_flags($e);
 
@@ -1077,8 +1094,9 @@ sub ParseElementPull($$$$$$)
 
 	# Representation type is different from transmit_as
 	if ($e->{REPRESENTATION_TYPE}) {
-		pidl "/* FIXME: Convert from $e->{TYPE} to $e->{REPRESENTATION_TYPE} */";
-		pidl "NDR_CHECK(ndr_$e->{TYPE}_to_$e->{REPRESENTATION_TYPE}(FIXME, FIXME));";
+		pidl "NDR_CHECK(ndr_$e->{TYPE}_to_$e->{REPRESENTATION_TYPE}($var_name, $represent_name));";
+		deindent;
+		pidl "}";
 	}
 }
 

@@ -57,8 +57,8 @@ SKIP: {
 	print CC "#include <stdarg.h>\n";
 	print CC $header;
 	print CC $ndrheader;
-	print CC $ndrparser;
 	print CC $extra if ($extra);
+	print CC $ndrparser;
 	print CC "int main(int argc, const char **argv)
 {
 	TALLOC_CTX *mem_ctx = talloc_init(NULL);
