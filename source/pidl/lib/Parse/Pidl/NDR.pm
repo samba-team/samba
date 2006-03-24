@@ -232,7 +232,6 @@ sub GetElementLevelTable($)
 			SUBCONTEXT_SIZE => $subsize,
 			IS_DEFERRED => $is_deferred,
 			COMPRESSION => has_property($e, "compression"),
-			OBFUSCATION => has_property($e, "obfuscation")
 		});
 	}
 
@@ -805,7 +804,6 @@ my %property_list = (
 	"subcontext"		=> ["ELEMENT"],
 	"subcontext_size"	=> ["ELEMENT"],
 	"compression"		=> ["ELEMENT"],
-	"obfuscation"		=> ["ELEMENT"],
 
 	# enum
 	"enum8bit"		=> ["TYPEDEF"],
@@ -927,10 +925,6 @@ sub ValidElement($)
 
 	if (defined (has_property($e, "compression")) and not defined(has_property($e, "subcontext"))) {
 		fatal($e, el_name($e) . " : compression() on non-subcontext element");
-	}
-
-	if (defined (has_property($e, "obfuscation")) and not defined(has_property($e, "subcontext"))) {
-		fatal($e, el_name($e) . " : obfuscation() on non-subcontext element");
 	}
 
 	if (!$e->{POINTERS} && (

@@ -464,42 +464,6 @@ sub ParseCompressionPullEnd($$$$)
 	pidl "}";
 }
 
-sub ParseObfuscationPushStart($$)
-{
-	my ($e,$ndr) = @_;
-	my $obfuscation = has_property($e, "obfuscation");
-
-	pidl "NDR_CHECK(ndr_push_obfuscation_start($ndr, $obfuscation));";
-
-	return $ndr;
-}
-
-sub ParseObfuscationPushEnd($$)
-{
-	my ($e,$ndr) = @_;
-	my $obfuscation = has_property($e, "obfuscation");
-
-	pidl "NDR_CHECK(ndr_push_obfuscation_end($ndr, $obfuscation));";
-}
-
-sub ParseObfuscationPullStart($$)
-{
-	my ($e,$ndr) = @_;
-	my $obfuscation = has_property($e, "obfuscation");
-
-	pidl "NDR_CHECK(ndr_pull_obfuscation_start($ndr, $obfuscation));";
-
-	return $ndr;
-}
-
-sub ParseObfuscationPullEnd($$)
-{
-	my ($e,$ndr) = @_;
-	my $obfuscation = has_property($e, "obfuscation");
-
-	pidl "NDR_CHECK(ndr_pull_obfuscation_end($ndr, $obfuscation));";
-}
-
 sub ParseSubcontextPushStart($$$$)
 {
 	my ($e,$l,$ndr,$env) = @_;
@@ -515,10 +479,6 @@ sub ParseSubcontextPushStart($$$$)
 		$subndr = ParseCompressionPushStart($e, $l, $subndr, $env);
 	}
 
-	if (defined $l->{OBFUSCATION}) {
-		$subndr = ParseObfuscationPushStart($e, $subndr);
-	}
-
 	return $subndr;
 }
 
@@ -530,10 +490,6 @@ sub ParseSubcontextPushEnd($$$$)
 
 	if (defined $l->{COMPRESSION}) {
 		ParseCompressionPushEnd($e, $l, $subndr, $env);
-	}
-
-	if (defined $l->{OBFUSCATION}) {
-		ParseObfuscationPushEnd($e, $subndr);
 	}
 
 	pidl "NDR_CHECK(ndr_push_subcontext_end($ndr, $subndr, $l->{HEADER_SIZE}, $subcontext_size));";
@@ -556,10 +512,6 @@ sub ParseSubcontextPullStart($$$$)
 		$subndr = ParseCompressionPullStart($e, $l, $subndr, $env);
 	}
 
-	if (defined $l->{OBFUSCATION}) {
-		$subndr = ParseObfuscationPullStart($e, $subndr);
-	}
-	
 	return $subndr;
 }
 
@@ -571,10 +523,6 @@ sub ParseSubcontextPullEnd($$$$)
 
 	if (defined $l->{COMPRESSION}) {
 		ParseCompressionPullEnd($e, $l, $subndr, $env);
-	}
-
-	if (defined $l->{OBFUSCATION}) {
-		ParseObfuscationPullEnd($e, $subndr);
 	}
 
 	pidl "NDR_CHECK(ndr_pull_subcontext_end($ndr, $subndr, $l->{HEADER_SIZE}, $subcontext_size));";
@@ -2351,10 +2299,6 @@ sub ParseInterface($$)
 		pidl choose_header("librpc/ndr/ndr_compression.h", "ndr/compression.h");
 	}
 
-	if ($needed->{"obfuscate"}) {
-		pidl "#include \"ndr_obfuscate.h\"";
-	}
-	
 	HeaderInterface($interface);
 
 	# Typedefs
@@ -2471,9 +2415,6 @@ sub NeededTypedef($$)
 			$e->{PARENT} = $t->{DATA};
 			if (has_property($e, "compression")) { 
 				$needed->{"compression"} = 1;
-			}
-			if (has_property($e, "obfuscation")) {
-				$needed->{"obfuscate"} = 1;
 			}
 			if ($needed->{"pull_$t->{NAME}"} and
 				not defined($needed->{"pull_$e->{TYPE}"})) {
