@@ -12,6 +12,9 @@
 - auto-alloc [ref] pointers for Samba4 during pull if they were NULL
  
 - replace subcontext() with represent_as()
+ - NTSTATUS FROM_to_TO (const FROM *f, TO **t); /* FIXME: t needs to be allocated using talloc */
+ - NTSTATUS TO_to_FROM (const TO *t, FROM **f); /* FIXME: f needs to be allocated using talloc */
+ - `
 
 - --explain-ndr option that dumps out parse tree ?
 
