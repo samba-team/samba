@@ -113,26 +113,24 @@ test_samba4_ndr('noalignflag-uint8-uint16',
 		return 2;
 ');
 
-SKIP: {
-
-skip "align-blob-align2 is known to fail", 8;
-
 test_samba4_ndr('align-blob-align2', 
 '
 	typedef [public] struct { 
 		uint8 x;
 		[flag(LIBNDR_FLAG_ALIGN2)] DATA_BLOB data;
+		uint8 y;
 	} bla;
 ',
 '
 	struct ndr_push *ndr = ndr_push_init();
 	struct bla r;
 	uint8_t data[] = { 0x01, 0x02 };
-	uint8_t expected[] = { 0x0D, 0x00, 0x01, 0x02 };
-	DATA_BLOB expected_blob = { expected, 4 };
+	uint8_t expected[] = { 0x0D, 0x00, 0x0E };
+	DATA_BLOB expected_blob = { expected, 3 };
 	DATA_BLOB result_blob;
 
 	r.x = 13;
+	r.y = 14;
 	r.data.data = data;
 	r.data.length = 2;
 
@@ -141,9 +139,6 @@ test_samba4_ndr('align-blob-align2',
 
 	result_blob = ndr_push_blob(ndr);
 
-	printf("%02x%02x%02x%02x\n", result_blob.data[0], result_blob.data[1], result_blob.data[2], result_blob.data[3]);
-
 	if (!data_blob_equal(&result_blob, &expected_blob)) 
 		return 2;
 ');
-}
