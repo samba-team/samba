@@ -55,19 +55,23 @@ sub HeaderElement($)
 	my($element) = shift;
 
 	pidl tabs();
-	HeaderType($element, $element->{TYPE}, "");
-	pidl " ";
-	my $numstar = $element->{POINTERS};
-	if ($numstar >= 1) {
-		$numstar-- if Parse::Pidl::Typelist::scalar_is_reference($element->{TYPE});
+	if (has_property($element, "represent_as")) {
+		pidl mapType($element->{PROPERTIES}->{represent_as})." ";
+	} else {
+		HeaderType($element, $element->{TYPE}, "");
+		pidl " ";
+		my $numstar = $element->{POINTERS};
+		if ($numstar >= 1) {
+			$numstar-- if Parse::Pidl::Typelist::scalar_is_reference($element->{TYPE});
+		}
+		foreach (@{$element->{ARRAY_LEN}})
+		{
+			next if is_constant($_) and 
+				not has_property($element, "charset");
+			$numstar++;
+		}
+		pidl "*" foreach (1..$numstar);
 	}
-	foreach (@{$element->{ARRAY_LEN}})
-	{
-		next if is_constant($_) and 
-			not has_property($element, "charset");
-		$numstar++;
-	}
-	pidl "*" foreach (1..$numstar);
 	pidl $element->{NAME};
 	foreach (@{$element->{ARRAY_LEN}}) {
 		next unless (is_constant($_) and 
@@ -91,8 +95,8 @@ sub HeaderStruct($$)
     $tab_depth++;
     my $el_count=0;
     if (defined $struct->{ELEMENTS}) {
-		foreach my $e (@{$struct->{ELEMENTS}}) {
-		    HeaderElement($e);
+		foreach (@{$struct->{ELEMENTS}}) {
+		    HeaderElement($_);
 		    $el_count++;
 		}
     }
@@ -237,10 +241,8 @@ sub HeaderFunctionInOut($$)
 {
     my($fn,$prop) = @_;
 
-    foreach my $e (@{$fn->{ELEMENTS}}) {
-	    if (has_property($e, $prop)) {
-		    HeaderElement($e);
-	    }
+    foreach (@{$fn->{ELEMENTS}}) {
+		HeaderElement($_) if (has_property($_, $prop));
     }
 }
 
