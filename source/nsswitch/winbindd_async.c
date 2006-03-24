@@ -956,6 +956,7 @@ struct gettoken_state {
 	TALLOC_CTX *mem_ctx;
 	DOM_SID user_sid;
 	struct winbindd_domain *alias_domain;
+	struct winbindd_domain *local_alias_domain;
 	struct winbindd_domain *builtin_domain;
 	DOM_SID *sids;
 	size_t num_sids;
@@ -990,6 +991,7 @@ void winbindd_gettoken_async(TALLOC_CTX *mem_ctx, const DOM_SID *user_sid,
 	state->mem_ctx = mem_ctx;
 	sid_copy(&state->user_sid, user_sid);
 	state->alias_domain = find_our_domain();
+	state->local_alias_domain = find_domain_from_name( get_global_sam_name() );
 	state->builtin_domain = find_builtin_domain();
 	state->cont = cont;
 	state->private_data = private_data;
@@ -1081,9 +1083,19 @@ static void gettoken_recvaliases(void *private_data, BOOL success,
 		add_sid_to_array(state->mem_ctx, &aliases[i],
 				 &state->sids, &state->num_sids);
 
+	if (state->local_alias_domain != NULL) {
+		struct winbindd_domain *local_domain = state->local_alias_domain;
+		DEBUG(10, ("Expanding our own local groups\n"));
+		state->local_alias_domain = NULL;
+		winbindd_getsidaliases_async(local_domain, state->mem_ctx,
+					     state->sids, state->num_sids,
+					     gettoken_recvaliases, state);
+		return;
+	}
+
 	if (state->builtin_domain != NULL) {
 		struct winbindd_domain *builtin_domain = state->builtin_domain;
-		DEBUG(10, ("Expanding our own local groups\n"));
+		DEBUG(10, ("Expanding our own BUILTIN groups\n"));
 		state->builtin_domain = NULL;
 		winbindd_getsidaliases_async(builtin_domain, state->mem_ctx,
 					     state->sids, state->num_sids,
