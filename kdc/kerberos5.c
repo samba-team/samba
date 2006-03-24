@@ -209,6 +209,47 @@ log_timestamp(krb5_context context,
 	    type, authtime_str, starttime_str, endtime_str, renewtime_str);
 }
 
+static void
+log_patypes(krb5_context context, 
+	    krb5_kdc_configuration *config,
+	    METHOD_DATA *padata)
+{
+    struct rk_strpool *p = NULL;
+    char *str;
+    int i;
+	    
+    for (i = 0; i < padata->len; i++) {
+	switch(padata->val[i].padata_type) {
+	case KRB5_PADATA_PK_AS_REQ:
+	    p = rk_strpoolprintf(p, "PK-INIT(ietf)");
+	    break;
+	case KRB5_PADATA_PK_AS_REQ_WIN:
+	    p = rk_strpoolprintf(p, "PK-INIT(win2k)");
+	    break;
+	case KRB5_PADATA_ENC_TIMESTAMP:
+	    p = rk_strpoolprintf(p, "encrypted-timestamp");
+	    break;
+	default:
+	    p = rk_strpoolprintf(p, "%d", padata->val[i].padata_type);
+	    break;
+	}
+	if (p && i + 1 < padata->len)
+	    p = rk_strpoolprintf(p, ", ");
+	if (p == NULL) {
+	    kdc_log(context, config, 0, "out of memory");
+	    return;
+	}
+    }
+    str = rk_strpoolcollect(p);
+    kdc_log(context, config, 0, "Client sent patypes: %s", str);
+    free(str);
+}
+
+/*
+ *
+ */
+
+
 static krb5_error_code
 encode_reply(krb5_context context,
 	     krb5_kdc_configuration *config,
@@ -861,9 +902,11 @@ _kdc_as_rep(krb5_context context,
     memset(&ek, 0, sizeof(ek));
 
     if(req->padata){
-	int i = 0;
+	int i;
 	PA_DATA *pa;
 	int found_pa = 0;
+
+	log_patypes(context, config, req->padata);
 
 #ifdef PKINIT
 	kdc_log(context, config, 5, 
@@ -1142,7 +1185,7 @@ _kdc_as_rep(krb5_context context,
 	    if (p && i + 1 < b->etype.len)
 		p = rk_strpoolprintf(p, ", ");
 	    if (p == NULL) {
-		kdc_log(context, config, 0, "out of meory");
+		kdc_log(context, config, 0, "out of memory");
 		goto out;
 	    }
 	}
