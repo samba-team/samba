@@ -729,8 +729,14 @@ sub ParseElementPrint($$$)
 {
 	my($e,$var_name,$env) = @_;
 
-	$var_name = append_prefix($e, $var_name);
 	return if (has_property($e, "noprint"));
+
+	if ($e->{REPRESENTATION_TYPE}) {
+		pidl "ndr_print_$e->{REPRESENTATION_TYPE}(ndr, \"$e->{NAME}\", $var_name);";
+		return;
+	}
+
+	$var_name = append_prefix($e, $var_name);
 
 	if (my $value = has_property($e, "value")) {
 		$var_name = "(ndr->flags & LIBNDR_PRINT_SET_VALUES)?" . ParseExpr($value,$env) . ":$var_name";
@@ -1411,18 +1417,15 @@ sub ParseStructPrint($$)
 
 	EnvSubstituteValue($env, $struct);
 
-	foreach my $e (@{$struct->{ELEMENTS}}) {
-		DeclareArrayVariables($e);
-	}
+	DeclareArrayVariables($_) foreach (@{$struct->{ELEMENTS}});
 
 	pidl "ndr_print_struct(ndr, name, \"$name\");";
 
 	start_flags($struct);
 
 	pidl "ndr->depth++;";
-	foreach my $e (@{$struct->{ELEMENTS}}) {
-		ParseElementPrint($e, "r->$e->{NAME}", $env);
-	}
+	
+	ParseElementPrint($_, "r->$_->{NAME}", $env) foreach (@{$struct->{ELEMENTS}});
 	pidl "ndr->depth--;";
 
 	end_flags($struct);
