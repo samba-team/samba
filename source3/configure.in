@@ -829,7 +829,7 @@ AC_CHECK_HEADERS(sys/termio.h sys/statfs.h sys/dustat.h sys/statvfs.h stdarg.h s
 AC_CHECK_HEADERS(sys/sysmacros.h security/_pam_macros.h dlfcn.h)
 AC_CHECK_HEADERS(sys/syslog.h syslog.h execinfo.h)
 AC_CHECK_HEADERS(langinfo.h locale.h)
-AC_CHECK_HEADERS(sys/dmi.h xfs/dmapi.h)
+AC_CHECK_HEADERS(sys/dmi.h xfs/dmapi.h sys/jfsdmapi.h sys/dmapi.h)
 
 AC_CHECK_HEADERS(rpcsvc/yp_prot.h,,,[[
 #if HAVE_RPC_RPC_H
@@ -2339,14 +2339,30 @@ if test x"$samba_cv_HAVE_LIBFAM" = x"yes" ; then
 fi
 
 #################################################
-# Check for DMAPI interfaces in libdm.
+# Check for DMAPI interfaces in libdm/libjfsdm/libxsdm
 
 AC_CHECK_LIB(dm, dm_get_eventlist,
 	[samba_cv_HAVE_LIBDM=yes; samba_dmapi_libs="-ldm"],
 	[samba_cv_HAVE_LIBDM=no])
 
 if test x"$samba_cv_HAVE_LIBDM" = x"yes" ; then
-    AC_DEFINE(HAVE_LIBDM, 1, [Whether libdm is available])
+	AC_DEFINE(HAVE_LIBDM, 1, [Whether dmapi libdm is available])
+fi
+
+AC_CHECK_LIB(jfsdm, dm_get_eventlist,
+	[samba_cv_HAVE_LIBJFSDM=yes; samba_dmapi_libs="-ljfsdm"],
+	[samba_cv_HAVE_LIBJFSDM=no])
+
+if test x"$samba_cv_HAVE_LIBJFSDM" = x"yes" ; then
+	AC_DEFINE(HAVE_LIBJFSDM, 1, [Whether dmapi libjfsdm is available])
+fi
+
+AC_CHECK_LIB(xdsm, dm_get_eventlist,
+	[samba_cv_HAVE_LIBXDSM=yes; samba_dmapi_libs="-lxdsm"],
+	[samba_cv_HAVE_LIBXDSM=no])
+
+if test x"$samba_cv_HAVE_LIBXDSM" = x"yes" ; then
+	AC_DEFINE(HAVE_LIBXDSM, 1, [Whether dmapi libxdsm is available])
 fi
 
 AC_CACHE_CHECK([for kernel share modes],samba_cv_HAVE_KERNEL_SHARE_MODES,[
