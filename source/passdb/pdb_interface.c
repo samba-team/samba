@@ -40,7 +40,6 @@ static void lazy_initialize_passdb(void)
 	initialized = True;
 }
 
-static struct pdb_init_function_entry *pdb_find_backend_entry(const char *name);
 static BOOL lookup_global_sam_rid(TALLOC_CTX *mem_ctx, uint32 rid,
 				  const char **name,
 				  enum SID_NAME_USE *psid_name_use,
@@ -116,7 +115,7 @@ NTSTATUS smb_register_passdb(int version, const char *name, pdb_init_function in
 	return NT_STATUS_OK;
 }
 
-static struct pdb_init_function_entry *pdb_find_backend_entry(const char *name)
+struct pdb_init_function_entry *pdb_find_backend_entry(const char *name)
 {
 	struct pdb_init_function_entry *entry = backends;
 
@@ -1314,7 +1313,6 @@ static NTSTATUS pdb_default_getsampwsid(struct pdb_methods *my_methods, struct s
 
 static NTSTATUS pdb_default_add_sam_account (struct pdb_methods *methods, struct samu *newpwd)
 {
-	DEBUG(0,("this backend (%s) should not be listed as the first passdb backend! You can't add users to it.\n", methods->name));
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
