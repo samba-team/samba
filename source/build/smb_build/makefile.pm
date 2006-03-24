@@ -48,8 +48,6 @@ sub new($$$)
 
 	if (!$self->{automatic_deps}) {
 		$self->output("ALL_PREDEP = proto\n");
-	} else {
-		$self->output("CFLAGS += -MD\n");
 	}
 
 	return $self;
