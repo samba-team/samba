@@ -29,7 +29,16 @@ test_samba4_ndr('represent_as-simple',
 		return 2;
 ',
 '
-NTSTATUS ndr_uint8_to_foo(uint8 from, foo *to)
+#include <core/nterr.h>
+typedef int foo;
+
+NTSTATUS ndr_uint8_to_foo(uint8_t from, foo *to)
+{
+	*to = from;
+	return NT_STATUS_OK;
+}
+
+NTSTATUS ndr_foo_to_uint8(foo from, uint8_t *to)
 {
 	*to = from;
 	return NT_STATUS_OK;
