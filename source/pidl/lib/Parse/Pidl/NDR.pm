@@ -917,6 +917,10 @@ sub ValidElement($)
 		fatal($e, el_name($e) . " : represent_as() and transmit_as() can not be used on the same element");
 	}
 
+	if (has_property($e, "represent_as") and has_property($e, "value")) {
+		fatal($e, el_name($e) . " : represent_as() and value() can not be used on the same element");
+	}
+
 	if (defined (has_property($e, "subcontext_size")) and not defined(has_property($e, "subcontext"))) {
 		fatal($e, el_name($e) . " : subcontext_size() on non-subcontext element");
 	}
