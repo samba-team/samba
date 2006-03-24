@@ -41,14 +41,16 @@ sub new($$$)
 	$self->output("################################################\n");
 	$self->output("\n");
 
-	if (!$self->{automatic_deps}) {
-		$self->output("ALL_PREDEP = proto\n");
-	}
-
 	$self->output("default: all\n\n");
 
 	$self->_prepare_path_vars();
 	$self->_prepare_compiler_linker();
+
+	if (!$self->{automatic_deps}) {
+		$self->output("ALL_PREDEP = proto\n");
+	} else {
+		$self->output("CFLAGS += -MD\n");
+	}
 
 	return $self;
 }
