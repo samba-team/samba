@@ -533,10 +533,24 @@ static int net_sam_addmem(int argc, const char **argv)
 		return -1;
 	}
 
+	/* check to see if the member to be added is a name or a SID */
+
 	if (!lookup_name(tmp_talloc_ctx(), argv[1], LOOKUP_NAME_ISOLATED,
-			 &memberdomain, &membername, &member, &membertype)) {
-		d_fprintf(stderr, "Could not find member %s\n", argv[1]);
-		return -1;
+			 &memberdomain, &membername, &member, &membertype))
+	{
+		/* try it as a SID */
+
+		if ( !string_to_sid( &member, argv[1] ) ) {
+			d_fprintf(stderr, "Could not find member %s\n", argv[1]);
+			return -1;
+		}
+
+		if ( !lookup_sid(tmp_talloc_ctx(), &member, &memberdomain, 
+			&membername, &membertype) ) 
+		{
+			d_fprintf(stderr, "Could not resolve SID %s\n", argv[1]);
+			return -1;
+		}
 	}
 
 	if ((grouptype == SID_NAME_ALIAS) || (grouptype == SID_NAME_WKN_GRP)) {
@@ -562,8 +576,8 @@ static int net_sam_addmem(int argc, const char **argv)
 		return -1;
 	}
 
-	d_printf("Added %s\\%s to %s\\%s\n",
-		 memberdomain, membername, groupdomain, groupname);
+	d_printf("Added %s\\%s to %s\\%s\n", memberdomain, membername, 
+		groupdomain, groupname);
 
 	return 0;
 }
