@@ -24,8 +24,8 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_DMAPI
 
-#if defined(HAVE_LIBDM)
-#if (defined(HAVE_XFS_DMAPI_H) || defined(HAVE_SYS_DMI_H))
+#if defined(HAVE_LIBDM) || defined(HAVE_LIBJFSDM) || defined(HAVE_LIBXDSM)
+#if defined(HAVE_XFS_DMAPI_H) || defined(HAVE_SYS_DMI_H) || defined(HAVE_SYS_JFSDMAPI_H) || defined(HAVE_SYS_DMAPI_H)
 #define USE_DMAPI 1
 #endif
 #endif
@@ -40,10 +40,12 @@ BOOL dmapi_have_session(void) { return False; }
 
 #ifdef HAVE_XFS_DMAPI_H
 #include <xfs/dmapi.h>
-#endif
-
-#ifdef HAVE_SYS_DMI_H
+#elif defined(HAVE_SYS_DMI_H)
 #include <sys/dmi.h>
+#elif defined(HAVE_SYS_JFSDMAPI_H)
+#include <sys/jfsdmapi.h>
+#elif defined(HAVE_SYS_DMAPI_H)
+#include <sys/dmapi.h>
 #endif
 
 #define DMAPI_SESSION_NAME "samba"
