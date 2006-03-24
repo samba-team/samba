@@ -670,8 +670,6 @@ sub ParseElementPush($$$$$$)
 
 	my $var_name = $var_prefix.$e->{NAME};
 
-	$var_name = append_prefix($e, $var_name);
-
 	return unless $primitives or ($deferred and ContainsDeferred($e, $e->{LEVELS}[0]));
 
 	# Representation type is different from transmit_as
@@ -680,9 +678,11 @@ sub ParseElementPush($$$$$$)
 		indent;
 		my $transmit_name = "_transmit_$e->{NAME}";
 		pidl mapType($e->{TYPE}) ." $transmit_name;";
-		pidl "NDR_CHECK(ndr_$e->{REPRESENTATION_TYPE}_to_$e->{TYPE}($var_name, $transmit_name));";
+		pidl "NDR_CHECK(ndr_$e->{REPRESENTATION_TYPE}_to_$e->{TYPE}($var_name, " . get_pointer_to($transmit_name) . "));";
 		$var_name = $transmit_name;
 	}
+
+	$var_name = append_prefix($e, $var_name);
 
 	start_flags($e);
 
@@ -1073,6 +1073,7 @@ sub ParseElementPull($$$$$$)
 
 	my $var_name = $var_prefix.$e->{NAME};
 	my $represent_name;
+	my $transmit_name;
 
 	return unless $primitives or ($deferred and ContainsDeferred($e, $e->{LEVELS}[0]));
 
@@ -1080,7 +1081,8 @@ sub ParseElementPull($$$$$$)
 		pidl "{";
 		indent;
 		$represent_name = $var_name;
-		$var_name = "_transmit_$e->{NAME}";
+		$transmit_name = "_transmit_$e->{NAME}";
+		$var_name = $transmit_name;
 		pidl mapType($e->{TYPE})." $var_name;";
 	}
 
@@ -1094,7 +1096,7 @@ sub ParseElementPull($$$$$$)
 
 	# Representation type is different from transmit_as
 	if ($e->{REPRESENTATION_TYPE}) {
-		pidl "NDR_CHECK(ndr_$e->{TYPE}_to_$e->{REPRESENTATION_TYPE}($var_name, $represent_name));";
+		pidl "NDR_CHECK(ndr_$e->{TYPE}_to_$e->{REPRESENTATION_TYPE}($transmit_name, ".get_pointer_to($represent_name)."));";
 		deindent;
 		pidl "}";
 	}
