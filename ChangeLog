@@ -1,5 +1,28 @@
-2006-03-07  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-03-24  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kdc/kerberos5.c (log_patypes): log the patypes requested by the
+	client
+	
+2006-03-23  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/pkinit.c (_krb5_pk_rd_pa_reply): pass down the
+	req_buffer in the w2k case too. From Douglas E. Engert.
+	
+2006-03-19  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/mk_req_ext.c (_krb5_mk_req_internal): on failure, goto
+	error handling.  Fixes Coverity NetBSD CID 2591 by catching a
+	failing krb5_copy_keyblock()
+	
+2006-03-17  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/addr_families.c (krb5_free_addresses): reset val,len in
+	address when free-ing.  Fixes Coverity NetBSD bug #2605
+	(krb5_parse_address): reset val,len before possibly return errors
+	Fixes Coverity NetBSD bug #2605
+	
+2006-03-07  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* lib/krb5/send_to_kdc.c (recv_loop): it should never happen, but
 	make sure nbytes > 0
 
