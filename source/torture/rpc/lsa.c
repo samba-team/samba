@@ -1812,7 +1812,7 @@ BOOL test_lsa_Close(struct dcerpc_pipe *p,
 	return True;
 }
 
-BOOL torture_rpc_lsa(void)
+BOOL torture_rpc_lsa(struct torture_context *torture)
 {
         NTSTATUS status;
         struct dcerpc_pipe *p;

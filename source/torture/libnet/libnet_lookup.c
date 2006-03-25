@@ -23,9 +23,10 @@
 #include "lib/cmdline/popt_common.h"
 #include "libnet/libnet.h"
 #include "librpc/gen_ndr/nbt.h"
+#include "torture/torture.h"
 
 
-BOOL torture_lookup(void)
+BOOL torture_lookup(struct torture_context *torture)
 {
 	BOOL ret;
 	NTSTATUS status;
@@ -62,7 +63,7 @@ done:
 }
 
 
-BOOL torture_lookup_host(void)
+BOOL torture_lookup_host(struct torture_context *torture)
 {
 	BOOL ret;
 	NTSTATUS status;
@@ -98,7 +99,7 @@ done:
 }
 
 
-BOOL torture_lookup_pdc(void)
+BOOL torture_lookup_pdc(struct torture_context *torture)
 {
 	BOOL ret;
 	NTSTATUS status;

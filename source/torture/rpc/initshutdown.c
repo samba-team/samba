@@ -113,7 +113,7 @@ static BOOL test_Abort(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	return True;
 }
 
-BOOL torture_rpc_initshutdown(void)
+BOOL torture_rpc_initshutdown(struct torture_context *torture)
 {
     NTSTATUS status;
     struct dcerpc_pipe *p;

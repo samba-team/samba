@@ -25,6 +25,7 @@
 #include "libcli/smb2/smb2_calls.h"
 #include "lib/cmdline/popt_common.h"
 #include "lib/events/events.h"
+#include "torture/torture.h"
 
 #include "torture/smb2/proto.h"
 
@@ -35,7 +36,7 @@
 /* 
    scan for valid SMB2 getinfo levels
 */
-BOOL torture_smb2_getinfo_scan(void)
+BOOL torture_smb2_getinfo_scan(struct torture_context *torture)
 {
 	TALLOC_CTX *mem_ctx = talloc_new(NULL);
 	struct smb2_tree *tree;
@@ -103,7 +104,7 @@ BOOL torture_smb2_getinfo_scan(void)
 /* 
    scan for valid SMB2 setinfo levels
 */
-BOOL torture_smb2_setinfo_scan(void)
+BOOL torture_smb2_setinfo_scan(struct torture_context *torture)
 {
 	TALLOC_CTX *mem_ctx = talloc_new(NULL);
 	struct smb2_tree *tree;
@@ -150,7 +151,7 @@ BOOL torture_smb2_setinfo_scan(void)
 /* 
    scan for valid SMB2 scan levels
 */
-BOOL torture_smb2_find_scan(void)
+BOOL torture_smb2_find_scan(struct torture_context *torture)
 {
 	TALLOC_CTX *mem_ctx = talloc_new(NULL);
 	struct smb2_tree *tree;
@@ -197,7 +198,7 @@ BOOL torture_smb2_find_scan(void)
 /* 
    scan for valid SMB2 opcodes
 */
-BOOL torture_smb2_scan(void)
+BOOL torture_smb2_scan(struct torture_context *torture)
 {
 	TALLOC_CTX *mem_ctx = talloc_new(NULL);
 	struct smb2_tree *tree;

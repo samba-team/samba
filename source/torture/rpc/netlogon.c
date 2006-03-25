@@ -1501,7 +1501,7 @@ static BOOL test_ManyGetDCName(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 }
 
 
-BOOL torture_rpc_netlogon(void)
+BOOL torture_rpc_netlogon(struct torture_context *torture)
 {
         NTSTATUS status;
         struct dcerpc_pipe *p;

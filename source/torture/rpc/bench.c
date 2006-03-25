@@ -93,7 +93,7 @@ static BOOL bench_NetShareEnumAll(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 }
 
 
-BOOL torture_bench_rpc(void)
+BOOL torture_bench_rpc(struct torture_context *torture)
 {
         NTSTATUS status;
         struct dcerpc_pipe *p;

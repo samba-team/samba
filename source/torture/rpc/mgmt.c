@@ -174,7 +174,7 @@ static BOOL test_stop_server_listening(struct dcerpc_pipe *p,
 }
 
 
-BOOL torture_rpc_mgmt(void)
+BOOL torture_rpc_mgmt(struct torture_context *torture)
 {
         NTSTATUS status;
         struct dcerpc_pipe *p;

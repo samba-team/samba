@@ -625,7 +625,7 @@ static BOOL test_finfo_after_write(struct smbcli_state *cli, TALLOC_CTX *mem_ctx
 /* 
    testing of delayed update of write_time
 */
-BOOL torture_delay_write(void)
+BOOL torture_delay_write(struct torture_context *torture)
 {
 	struct smbcli_state *cli;
 	BOOL ret = True;

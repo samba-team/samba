@@ -1393,7 +1393,7 @@ static BOOL test_raw_open_multi(void)
 
 /* basic testing of all RAW_OPEN_* calls 
 */
-BOOL torture_raw_open(void)
+BOOL torture_raw_open(struct torture_context *torture)
 {
 	struct smbcli_state *cli;
 	BOOL ret = True;

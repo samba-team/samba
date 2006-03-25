@@ -26,7 +26,7 @@
 #include "torture/util.h"
 #include "pstring.h"
 
-BOOL torture_utable(void)
+BOOL torture_utable(struct torture_context *torture)
 {
 	struct smbcli_state *cli;
 	fstring fname;
@@ -121,7 +121,7 @@ static char *form_name(int c)
 	return fname;
 }
 
-BOOL torture_casetable(void)
+BOOL torture_casetable(struct torture_context *torture)
 {
 	static struct smbcli_state *cli;
 	char *fname;

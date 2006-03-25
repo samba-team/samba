@@ -76,7 +76,7 @@ static BOOL run_test(const char *name)
 					 
 			} else {
 				struct timeval tv = timeval_current();
-				if (!o->fn()) {
+				if (!o->fn(NULL)) {
 					ret = False;
 					printf("TEST %s FAILED!\n", o->name);
 				}

@@ -222,7 +222,7 @@ static BOOL test_OpenEventLog(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	return True;
 }
 
-BOOL torture_rpc_eventlog(void)
+BOOL torture_rpc_eventlog(struct torture_context *torture)
 {
 	NTSTATUS status;
 	struct dcerpc_pipe *p;

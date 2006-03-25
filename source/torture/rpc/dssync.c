@@ -26,6 +26,7 @@
 #include "librpc/gen_ndr/ndr_drsuapi_c.h"
 #include "libcli/cldap/cldap.h"
 #include "libcli/ldap/ldap_client.h"
+#include "torture/torture.h"
 #include "torture/ldap/proto.h"
 
 struct DsSyncBindInfo {
@@ -547,7 +548,7 @@ static BOOL test_FetchData(struct DsSyncTest *ctx)
 	return ret;
 }
 
-BOOL torture_rpc_dssync(void)
+BOOL torture_rpc_dssync(struct torture_context *torture)
 {
 	BOOL ret = True;
 	TALLOC_CTX *mem_ctx;

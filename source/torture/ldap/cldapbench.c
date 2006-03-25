@@ -101,7 +101,7 @@ static BOOL bench_cldap(TALLOC_CTX *mem_ctx, const char *address)
   benchmark how fast a CLDAP server can respond to a series of parallel
   requests 
 */
-BOOL torture_bench_cldap(void)
+BOOL torture_bench_cldap(struct torture_context *torture)
 {
 	const char *address;
 	struct nbt_name name;

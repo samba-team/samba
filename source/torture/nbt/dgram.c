@@ -348,7 +348,7 @@ failed:
 /*
   test nbt dgram operations
 */
-BOOL torture_nbt_dgram(void)
+BOOL torture_nbt_dgram(struct torture_context *torture)
 {
 	const char *address;
 	struct nbt_name name;

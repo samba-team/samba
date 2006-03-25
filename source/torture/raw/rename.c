@@ -419,7 +419,7 @@ done:
 /* 
    basic testing of rename calls
 */
-BOOL torture_raw_rename(void)
+BOOL torture_raw_rename(struct torture_context *torture)
 {
 	struct smbcli_state *cli;
 	BOOL ret = True;

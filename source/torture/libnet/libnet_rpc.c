@@ -25,6 +25,7 @@
 #include "librpc/gen_ndr/ndr_lsa.h"
 #include "librpc/gen_ndr/ndr_samr.h"
 #include "librpc/rpc/dcerpc.h"
+#include "torture/torture.h"
 
 
 static BOOL test_lsa_connect(struct libnet_context *ctx)
@@ -70,7 +71,7 @@ static BOOL test_samr_connect(struct libnet_context *ctx)
 	return True;
 }
 
-BOOL torture_rpc_connect(void)
+BOOL torture_rpc_connect(struct torture_context *torture)
 {
 	struct libnet_context *ctx;
 	

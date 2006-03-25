@@ -215,7 +215,7 @@ static int test_ServerAlive2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	return 1;
 }
 
-BOOL torture_rpc_oxidresolve(void)
+BOOL torture_rpc_oxidresolve(struct torture_context *torture)
 {
         NTSTATUS status;
        struct dcerpc_pipe *p, *premact;

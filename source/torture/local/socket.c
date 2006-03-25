@@ -256,7 +256,7 @@ done:
 	return ret;
 }
 
-BOOL torture_local_socket(void) 
+BOOL torture_local_socket(struct torture_context *torture) 
 {
 	BOOL ret = True;
 	TALLOC_CTX *mem_ctx = talloc_new(NULL);

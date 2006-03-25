@@ -714,7 +714,7 @@ done:
 /* 
    basic testing of read calls
 */
-BOOL torture_raw_read(void)
+BOOL torture_raw_read(struct torture_context *torture)
 {
 	struct smbcli_state *cli;
 	BOOL ret = True;

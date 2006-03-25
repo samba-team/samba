@@ -23,6 +23,7 @@
 #include "includes.h"
 #include "lib/events/events.h"
 #include "lib/messaging/irpc.h"
+#include "torture/torture.h"
 
 enum {MY_PING=1000, MY_PONG, MY_EXIT};
 
@@ -144,7 +145,7 @@ static BOOL test_ping_speed(TALLOC_CTX *mem_ctx)
 	return ret;
 }
 
-BOOL torture_local_messaging(void) 
+BOOL torture_local_messaging(struct torture_context *torture) 
 {
 	TALLOC_CTX *mem_ctx = talloc_init("torture_local_messaging");
 	BOOL ret = True;

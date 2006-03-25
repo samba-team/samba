@@ -23,6 +23,7 @@
 #include "lib/cmdline/popt_common.h"
 #include "libnet/libnet.h"
 #include "librpc/gen_ndr/ndr_samr_c.h"
+#include "torture/torture.h"
 
 
 #define TEST_USERNAME  "libnetusertest"
@@ -93,7 +94,7 @@ static BOOL test_cleanup(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 }
 
 
-BOOL torture_createuser(void)
+BOOL torture_createuser(struct torture_context *torture)
 {
 	NTSTATUS status;
 	const char *binding;

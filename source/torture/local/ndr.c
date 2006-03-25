@@ -83,7 +83,7 @@ BOOL test_check_string_terminator(TALLOC_CTX *mem_ctx)
 	return True;
 }
 
-BOOL torture_local_ndr(void)
+BOOL torture_local_ndr(struct torture_context *torture)
 {
 	TALLOC_CTX *mem_ctx;
 	BOOL ret = True;

@@ -29,6 +29,7 @@
 #include "system/network.h"
 #include "netif/netif.h"
 #include "librpc/gen_ndr/ndr_nbt.h"
+#include "torture/torture.h"
 
 #define CHECK_STATUS(status, correct) do { \
 	if (!NT_STATUS_EQUAL(status, correct)) { \
@@ -9625,7 +9626,7 @@ static void test_conflict_owned_active_vs_replica_handler(struct nbt_name_socket
 /*
   test simple WINS replication operations
 */
-BOOL torture_nbt_winsreplication_simple(void)
+BOOL torture_nbt_winsreplication_simple(struct torture_context *torture)
 {
 	const char *address;
 	struct nbt_name name;
@@ -9657,7 +9658,7 @@ BOOL torture_nbt_winsreplication_simple(void)
 /*
   test WINS replication replica conflicts operations
 */
-BOOL torture_nbt_winsreplication_replica(void)
+BOOL torture_nbt_winsreplication_replica(struct torture_context *torture)
 {
 	const char *address;
 	struct nbt_name name;
@@ -9691,7 +9692,7 @@ BOOL torture_nbt_winsreplication_replica(void)
 /*
   test WINS replication owned conflicts operations
 */
-BOOL torture_nbt_winsreplication_owned(void)
+BOOL torture_nbt_winsreplication_owned(struct torture_context *torture)
 {
 	const char *address;
 	struct nbt_name name;

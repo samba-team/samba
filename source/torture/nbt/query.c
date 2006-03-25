@@ -23,6 +23,7 @@
 #include "includes.h"
 #include "lib/events/events.h"
 #include "libcli/resolve/resolve.h"
+#include "torture/torture.h"
 
 struct result_struct {
 	int num_pass;
@@ -101,7 +102,7 @@ failed:
 /*
   benchmark how fast a server can respond to name queries
 */
-BOOL torture_bench_nbt(void)
+BOOL torture_bench_nbt(struct torture_context *torture)
 {
 	const char *address;
 	struct nbt_name name;

@@ -64,7 +64,7 @@ static BOOL test_getpwuid(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	return NT_STATUS_IS_OK(result);
 }
 
-BOOL torture_rpc_unixinfo(void)
+BOOL torture_rpc_unixinfo(struct torture_context *torture)
 {
         NTSTATUS status;
         struct dcerpc_pipe *p;

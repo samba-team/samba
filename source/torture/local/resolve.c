@@ -23,6 +23,7 @@
 #include "includes.h"
 #include "lib/events/events.h"
 #include "libcli/resolve/resolve.h"
+#include "torture/torture.h"
 
 static BOOL test_async_resolve(TALLOC_CTX *mem_ctx)
 {
@@ -73,7 +74,7 @@ static BOOL test_sync_resolve(TALLOC_CTX *mem_ctx)
 }
 
 
-BOOL torture_local_resolve(void) 
+BOOL torture_local_resolve(struct torture_context *torture) 
 {
 	TALLOC_CTX *mem_ctx = talloc_init("torture_local_irpc");
 	BOOL ret = True;

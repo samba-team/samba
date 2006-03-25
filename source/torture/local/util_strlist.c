@@ -21,6 +21,7 @@
 */
 
 #include "includes.h"
+#include "torture/torture.h"
 
 static const char *test_lists_shell_strings[] = {
 	"",
@@ -69,7 +70,7 @@ static BOOL test_lists_shell(TALLOC_CTX *mem_ctx)
 	return True;
 }
 
-BOOL torture_local_util_strlist(void) 
+BOOL torture_local_util_strlist(struct torture_context *torture) 
 {
 	BOOL ret = True;
 	TALLOC_CTX *mem_ctx = talloc_init("test_util_strlist");

@@ -7,7 +7,7 @@
 #define TORTURE_NETBIOS_NAME "smbtorturejoin"
 
 
-BOOL torture_rpc_join(void)
+BOOL torture_rpc_join(struct torture_context *torture)
 {  
 	struct test_join *tj;
 	struct cli_credentials *machine_account;

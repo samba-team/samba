@@ -69,7 +69,7 @@ static BOOL test_cleanup(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 }
 
 
-BOOL torture_domainopen(void)
+BOOL torture_domainopen(struct torture_context *torture)
 {
 	NTSTATUS status;
 	const char *binding;

@@ -401,7 +401,7 @@ done:
 /* 
    basic testing of unlink calls
 */
-BOOL torture_raw_unlink(void)
+BOOL torture_raw_unlink(struct torture_context *torture)
 {
 	struct smbcli_state *cli;
 	BOOL ret = True;

@@ -56,7 +56,7 @@ static BOOL try_failed_login(struct smbcli_state *cli)
 	return True;
 }
 
-BOOL torture_sec_leak(void)
+BOOL torture_sec_leak(struct torture_context *torture)
 {
 	struct smbcli_state *cli;
 	time_t t1 = time(NULL);

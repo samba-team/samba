@@ -445,7 +445,7 @@ done:
 /* 
    basic testing of EA calls
 */
-BOOL torture_raw_eas(void)
+BOOL torture_raw_eas(struct torture_context *torture)
 {
 	struct smbcli_state *cli;
 	BOOL ret = True;
@@ -474,7 +474,7 @@ BOOL torture_raw_eas(void)
 /* 
    test max EA size
 */
-BOOL torture_max_eas(void)
+BOOL torture_max_eas(struct torture_context *torture)
 {
 	struct smbcli_state *cli;
 	BOOL ret = True;

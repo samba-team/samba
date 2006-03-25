@@ -27,7 +27,7 @@
 #include "torture/rpc/rpc.h"
 
 
-BOOL torture_rpc_countcalls(void)
+BOOL torture_rpc_countcalls(struct torture_context *torture)
 {
 	const struct dcerpc_interface_table *iface;
 	NTSTATUS status;

@@ -298,7 +298,7 @@ static BOOL test_usermod(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 }
 
 
-BOOL torture_useradd(void)
+BOOL torture_useradd(struct torture_context *torture)
 {
 	NTSTATUS status;
 	const char *binding;
@@ -357,7 +357,7 @@ done:
 }
 
 
-BOOL torture_userdel(void)
+BOOL torture_userdel(struct torture_context *torture)
 {
 	NTSTATUS status;
 	const char *binding;
@@ -401,7 +401,7 @@ done:
 }
 
 
-BOOL torture_usermod(void)
+BOOL torture_usermod(struct torture_context *torture)
 {
 	NTSTATUS status;
 	const char *binding;

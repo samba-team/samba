@@ -38,7 +38,7 @@
 
 */
 
-BOOL torture_multi_bind(void) 
+BOOL torture_multi_bind(struct torture_context *torture) 
 {
 	struct dcerpc_pipe *p;
 	struct dcerpc_binding *binding;

@@ -1427,7 +1427,7 @@ done:
 /* 
    basic testing of security descriptor calls
 */
-BOOL torture_raw_acls(void)
+BOOL torture_raw_acls(struct torture_context *torture)
 {
 	struct smbcli_state *cli;
 	BOOL ret = True;
