@@ -250,7 +250,7 @@ clean:: clean_pch
 	@echo Removing proto headers
 	@-rm -f $(PROTO_HEADERS)
 
-distclean: clean clean_deps
+distclean: clean
 	-rm -f include/config.h include/smb_build.h
 	-rm -f Makefile 
 	-rm -f config.status
@@ -319,11 +319,11 @@ unused_macros:
 
 .c.d:
 	@echo "Generating dependencies for $<"
-	@$(CC) -M -MG -MT $(<:.c=.o) `script/cflags.pl $@` $(CFLAGS) $< -o $@
+	@$(CC) -M -MG -MP -MT $(<:.c=.o) `script/cflags.pl $@` $(CFLAGS) $< -o $@
 
 .c.hd:
 	@echo "Generating dependencies for $<"
-	@$(CC) -M -MG -MT $(<:.c=.ho) `script/cflags.pl $@` $(CFLAGS) $< -o $@
+	@$(CC) -M -MG -MP -MT $(<:.c=.ho) `script/cflags.pl $@` $(CFLAGS) $< -o $@
 
 include/includes.d: include/includes.h
 	@echo "Generating dependencies for $<"
@@ -369,6 +369,6 @@ DOCBOOK_MANPAGE_URL = http://docbook.sourceforge.net/release/xsl/current/manpage
 DEP_FILES = $(patsubst %.ho,%.hd,$(patsubst %.o,%.d,$(ALL_OBJS))) \
 		   include/includes.d
 
-clean_deps:
+clean::
 	@echo Removing dependency files
 	@rm -f $(DEP_FILES)
