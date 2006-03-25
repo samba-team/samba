@@ -77,6 +77,7 @@ gsskrb5_is_cfx(gss_ctx_id_t context_handle, int *is_cfx)
 {
     krb5_keyblock *key;
     int acceptor = (context_handle->more_flags & LOCAL) == 0;
+    *is_cfx = 0;
 
     if (acceptor) {
 	if (context_handle->auth_context->local_subkey)
