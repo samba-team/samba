@@ -433,7 +433,9 @@ static NTSTATUS dcesrv_bind_nak(struct dcesrv_call_state *call, uint32_t reason)
 	pkt.ptype = DCERPC_PKT_BIND_NAK;
 	pkt.pfc_flags = DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST;
 	pkt.u.bind_nak.reject_reason = reason;
-	pkt.u.bind_nak.num_versions = 0;
+	if (pkt.u.bind_nak.reject_reason == DECRPC_BIND_PROTOCOL_VERSION_NOT_SUPPORTED) {
+		pkt.u.bind_nak.versions.v.num_versions = 0;
+	}
 
 	rep = talloc(call, struct data_blob_list_item);
 	if (!rep) {
@@ -527,8 +529,7 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 
 	/* handle any authentication that is being requested */
 	if (!dcesrv_auth_bind(call)) {
-		/* TODO: work out the right reject code */
-		return dcesrv_bind_nak(call, 0);
+		return dcesrv_bind_nak(call, DCERPC_BIND_REASON_INVALID_AUTH_TYPE);
 	}
 
 	/* setup a bind_ack */
