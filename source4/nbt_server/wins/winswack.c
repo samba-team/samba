@@ -49,7 +49,7 @@ static void wins_challenge_handler(struct nbt_name_request *req)
 
 			state->query.in.dest_addr = state->io->in.addresses[state->current_address];
 			
-			iface = nbtd_find_interface(state->io->in.nbtd_server, state->query.in.dest_addr);
+			iface = nbtd_find_request_iface(state->io->in.nbtd_server, state->query.in.dest_addr, True);
 			if (!iface) {
 				composite_error(ctx, NT_STATUS_INTERNAL_ERROR);
 				return;
@@ -111,7 +111,7 @@ struct composite_context *wins_challenge_send(TALLOC_CTX *mem_ctx, struct wins_c
 	state->query.in.retries     = 2;
 	ZERO_STRUCT(state->query.out);
 
-	iface = nbtd_find_interface(state->io->in.nbtd_server, state->query.in.dest_addr);
+	iface = nbtd_find_request_iface(state->io->in.nbtd_server, state->query.in.dest_addr, True);
 	if (!iface) {
 		goto failed;
 	}
@@ -165,7 +165,7 @@ static void wins_release_demand_handler(struct nbt_name_request *req)
 			state->release.in.timeout   = (state->addresses_left > 1 ? 2 : 1);
 			state->release.in.retries   = (state->addresses_left > 1 ? 0 : 2);
 
-			iface = nbtd_find_interface(state->io->in.nbtd_server, state->release.in.dest_addr);
+			iface = nbtd_find_request_iface(state->io->in.nbtd_server, state->release.in.dest_addr, True);
 			if (!iface) {
 				composite_error(ctx, NT_STATUS_INTERNAL_ERROR);
 				return;
@@ -226,7 +226,7 @@ static struct composite_context *wins_release_demand_send(TALLOC_CTX *mem_ctx, s
 	state->release.in.retries     = (state->addresses_left > 1 ? 0 : 2);
 	ZERO_STRUCT(state->release.out);
 
-	iface = nbtd_find_interface(state->io->in.nbtd_server, state->release.in.dest_addr);
+	iface = nbtd_find_request_iface(state->io->in.nbtd_server, state->release.in.dest_addr, True);
 	if (!iface) {
 		goto failed;
 	}
