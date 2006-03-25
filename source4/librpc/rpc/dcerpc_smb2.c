@@ -332,6 +332,16 @@ static const char *smb2_peer_name(struct dcerpc_connection *c)
 }
 
 /*
+  return remote name we make the actual connection (good for kerberos) 
+*/
+static const char *smb2_target_hostname(struct dcerpc_connection *c)
+{
+	struct smb2_private *smb = talloc_get_type(c->transport.private, 
+						   struct smb2_private);
+	return smb->tree->session->transport->socket->hostname;
+}
+
+/*
   fetch the user session key 
 */
 static NTSTATUS smb2_session_key(struct dcerpc_connection *c, DATA_BLOB *session_key)
@@ -432,6 +442,7 @@ static void pipe_open_recv(struct smb2_request *req)
 	c->transport.private = NULL;
 	c->transport.shutdown_pipe = smb2_shutdown_pipe;
 	c->transport.peer_name = smb2_peer_name;
+	c->transport.target_hostname = smb2_target_hostname;
 
 	c->transport.send_request = smb2_send_request;
 	c->transport.send_read = send_read_request;

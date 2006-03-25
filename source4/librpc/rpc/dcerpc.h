@@ -65,6 +65,8 @@ struct dcerpc_connection {
 
 		const char *(*peer_name)(struct dcerpc_connection *);
 
+		const char *(*target_hostname)(struct dcerpc_connection *);
+
 		/* send a request to the server */
 		NTSTATUS (*send_request)(struct dcerpc_connection *, DATA_BLOB *, BOOL trigger_read);
 
