@@ -11,7 +11,7 @@ OBJ_FILES = \
 		ndr/ndr_basic.o \
 		ndr/ndr_string.o \
 		ndr/ndr_misc.o
-REQUIRED_SUBSYSTEMS = LIBCLI_UTILS LIBTALLOC LIBSAMBA-UTIL
+REQUIRED_SUBSYSTEMS = LIBSAMBA-ERRORS LIBTALLOC LIBSAMBA-UTIL
 # End SUBSYSTEM LIBNDR
 ################################################
 

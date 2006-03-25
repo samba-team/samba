@@ -33,7 +33,6 @@
  */
 
 struct substitute_context;
-struct asn1_data;
 struct smbsrv_tcon;
 
 extern const char *logfile;
