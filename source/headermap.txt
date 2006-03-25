@@ -81,3 +81,5 @@ dsdb/samdb/samdb.h: samdb.h
 dsdb/samdb/samdb_proto.h: samdb/proto.h
 libcli/util/asn_1.h: samba/asn1.h
 libcli/util/asn1_proto.h: samba/asn1/proto.h
+libcli/util/error.h: core/error.h
+libcli/util/proto.h: core/error_proto.h

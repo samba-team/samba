@@ -85,7 +85,7 @@ static BOOL test_readwrite(TALLOC_CTX *mem_ctx, const char *host)
 	return True;
 }
 
-BOOL torture_com_simple(void)
+BOOL torture_com_simple(struct torture_context *torture)
 {
 	BOOL ret = True;
 	TALLOC_CTX *mem_ctx = talloc_init("torture_dcom_simple");
