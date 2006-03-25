@@ -623,7 +623,7 @@ BOOL test_DsUnbind(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	return ret;
 }
 
-BOOL torture_rpc_drsuapi(void)
+BOOL torture_rpc_drsuapi(struct torture_context *torture)
 {
         NTSTATUS status;
         struct dcerpc_pipe *p;

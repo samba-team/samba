@@ -167,7 +167,7 @@ done:
 
 
 /* run a test that simulates an approximate netbench client load */
-BOOL torture_nbench(void)
+BOOL torture_nbench(struct torture_context *torture)
 {
 	BOOL correct = True;
 	extern int torture_nprocs;

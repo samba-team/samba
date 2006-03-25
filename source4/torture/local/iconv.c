@@ -312,7 +312,7 @@ static int test_codepoint(unsigned int codepoint)
 	return 1;
 }
 
-BOOL torture_local_iconv(void) 
+BOOL torture_local_iconv(struct torture_context *torture) 
 {
 	size_t size;
 	unsigned char inbuf[1000];
@@ -382,7 +382,7 @@ BOOL torture_local_iconv(void)
 
 #else
 
-BOOL torture_local_iconv(void) 
+BOOL torture_local_iconv(struct torture_context *torture) 
 {
 	printf("No native iconv library - can't run iconv test\n");
 	return True;

@@ -22,6 +22,7 @@
 
 #include "includes.h"
 #include "system/filesys.h"
+#include "torture/torture.h"
 
 #define TEST_FILENAME "utilfile.test"
 #define TEST_LINE1 "This is list line 1..."
@@ -87,7 +88,7 @@ static BOOL test_afdgets(TALLOC_CTX *mem_ctx)
 	return True;
 }
 
-BOOL torture_local_util_file(void) 
+BOOL torture_local_util_file(struct torture_context *torture) 
 {
 	BOOL ret = True;
 	TALLOC_CTX *mem_ctx = talloc_init("test_util_file");

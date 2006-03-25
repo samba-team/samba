@@ -25,6 +25,7 @@
 #include "libcli/ldap/ldap_client.h"
 #include "lib/cmdline/popt_common.h"
 
+#include "torture/torture.h"
 #include "torture/ldap/proto.h"
 
 static BOOL test_bind_simple(struct ldap_connection *conn, const char *userdn, const char *password)
@@ -187,7 +188,7 @@ static BOOL test_compare_sasl(struct ldap_connection *conn, const char *basedn)
 }
 
 
-BOOL torture_ldap_basic(void)
+BOOL torture_ldap_basic(struct torture_context *torture)
 {
         NTSTATUS status;
         struct ldap_connection *conn;

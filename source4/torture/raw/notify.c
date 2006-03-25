@@ -492,7 +492,7 @@ done:
 /* 
    basic testing of change notify
 */
-BOOL torture_raw_notify(void)
+BOOL torture_raw_notify(struct torture_context *torture)
 {
 	struct smbcli_state *cli;
 	BOOL ret = True;

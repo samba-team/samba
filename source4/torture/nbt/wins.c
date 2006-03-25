@@ -26,6 +26,7 @@
 #include "system/network.h"
 #include "netif/netif.h"
 #include "librpc/gen_ndr/ndr_nbt.h"
+#include "torture/torture.h"
 
 #define CHECK_VALUE(v, correct) do { \
 	if ((v) != (correct)) { \
@@ -368,7 +369,7 @@ static BOOL nbt_test_wins(TALLOC_CTX *mem_ctx, const char *address)
 /*
   test WINS operations
 */
-BOOL torture_nbt_wins(void)
+BOOL torture_nbt_wins(struct torture_context *torture)
 {
 	const char *address;
 	struct nbt_name name;

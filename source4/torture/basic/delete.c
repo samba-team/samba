@@ -1622,7 +1622,7 @@ static BOOL deltest21(struct smbcli_state **ppcli1, struct smbcli_state **ppcli2
 /*
   Test delete on close semantics.
  */
-BOOL torture_test_delete(void)
+BOOL torture_test_delete(struct torture_context *torture)
 {
 	struct smbcli_state *cli1 = NULL;
 	struct smbcli_state *cli2 = NULL;

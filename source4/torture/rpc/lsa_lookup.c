@@ -219,7 +219,7 @@ static BOOL get_downleveltrust(TALLOC_CTX *mem_ctx, struct dcerpc_pipe *p,
 
 #define NUM_SIDS 8
 
-BOOL torture_rpc_lsa_lookup(void)
+BOOL torture_rpc_lsa_lookup(struct torture_context *torture)
 {
         NTSTATUS status;
         struct dcerpc_pipe *p;

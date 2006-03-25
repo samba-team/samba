@@ -21,6 +21,7 @@
 
 #include "includes.h"
 #include "libcli/libcli.h"
+#include "torture/torture.h"
 #include "torture/util.h"
 #include "libcli/rap/rap.h"
 #include "libcli/raw/libcliraw.h"
@@ -427,7 +428,7 @@ static BOOL test_rap(struct smbcli_state *cli)
 	return res;
 }
 
-BOOL torture_raw_rap(void)
+BOOL torture_raw_rap(struct torture_context *torture)
 {
 	struct smbcli_state *cli;
 	BOOL ret = True;
@@ -449,7 +450,7 @@ BOOL torture_raw_rap(void)
 	return ret;
 }
 
-BOOL torture_rap_scan(void)
+BOOL torture_rap_scan(struct torture_context *torture)
 {
 	TALLOC_CTX *mem_ctx;
 	struct smbcli_state *cli;

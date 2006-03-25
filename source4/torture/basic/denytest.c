@@ -1410,7 +1410,7 @@ static void progress_bar(uint_t i, uint_t total)
 /*
   this produces a matrix of deny mode behaviour for 1 connection
  */
-BOOL torture_denytest1(void)
+BOOL torture_denytest1(struct torture_context *torture)
 {
 	static struct smbcli_state *cli1;
 	int fnum1, fnum2;
@@ -1509,7 +1509,7 @@ failed:
 /*
   this produces a matrix of deny mode behaviour with 2 connections
  */
-BOOL torture_denytest2(void)
+BOOL torture_denytest2(struct torture_context *torture)
 {
 	static struct smbcli_state *cli1, *cli2;
 	int fnum1, fnum2;
@@ -1610,7 +1610,7 @@ failed:
 /*
    simple test harness for playing with deny modes
  */
-BOOL torture_denytest3(void)
+BOOL torture_denytest3(struct torture_context *torture)
 {
 	struct smbcli_state *cli1, *cli2;
 	int fnum1, fnum2;
@@ -1938,7 +1938,7 @@ BOOL torture_ntdenytest1(struct smbcli_state *cli, int client)
 /*
   a denytest for ntcreatex
  */
-BOOL torture_ntdenytest2(void)
+BOOL torture_ntdenytest2(struct torture_context *torture)
 {
 	struct smbcli_state *cli1, *cli2;
 	BOOL ret;
@@ -1980,7 +1980,7 @@ BOOL torture_ntdenytest2(void)
 /*
   test sharing of handles with DENY_DOS on a single connection
 */
-BOOL torture_denydos_sharing(void)
+BOOL torture_denydos_sharing(struct torture_context *torture)
 {
 	struct smbcli_state *cli;
 	union smb_open io;

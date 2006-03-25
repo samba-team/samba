@@ -166,7 +166,7 @@ static BOOL test_Add(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 }
 #endif
 
-BOOL torture_rpc_dfs(void)
+BOOL torture_rpc_dfs(struct torture_context *torture)
 {
         NTSTATUS status;
         struct dcerpc_pipe *p;

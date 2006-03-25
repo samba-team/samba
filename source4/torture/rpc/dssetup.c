@@ -57,7 +57,7 @@ BOOL test_DsRoleGetPrimaryDomainInformation(struct dcerpc_pipe *p, TALLOC_CTX *m
 	return ret;
 }
 
-BOOL torture_rpc_dssetup(void)
+BOOL torture_rpc_dssetup(struct torture_context *torture)
 {
         NTSTATUS status;
         struct dcerpc_pipe *p;

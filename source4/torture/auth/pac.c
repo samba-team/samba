@@ -29,6 +29,7 @@
 #include "samba3/samba3.h"
 #include "libcli/security/proto.h"
 #include "librpc/gen_ndr/ndr_security.h"
+#include "torture/torture.h"
 
 static BOOL torture_pac_self_check(void) 
 {
@@ -693,7 +694,7 @@ static BOOL torture_pac_saved_check(void)
 	return True;
 }
 
-BOOL torture_pac(void) 
+BOOL torture_pac(struct torture_context *torture) 
 {
 	BOOL ret = True;
 	ret &= torture_pac_self_check();

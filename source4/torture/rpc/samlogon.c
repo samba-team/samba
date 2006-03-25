@@ -1469,7 +1469,7 @@ BOOL test_InteractiveLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 
 
-BOOL torture_rpc_samlogon(void)
+BOOL torture_rpc_samlogon(struct torture_context *torture)
 {
         NTSTATUS status;
         struct dcerpc_pipe *p;

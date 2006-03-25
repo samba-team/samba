@@ -214,7 +214,7 @@ done:
 /* 
    basic testing of streams calls
 */
-BOOL torture_raw_streams(void)
+BOOL torture_raw_streams(struct torture_context *torture)
 {
 	struct smbcli_state *cli;
 	BOOL ret = True;

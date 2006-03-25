@@ -161,7 +161,7 @@ static BOOL test_CreateSecret_basic(struct dcerpc_pipe *p,
 
 /* TEST session key correctness by pushing and pulling secrets */
 
-BOOL torture_rpc_lsa_secrets(void) 
+BOOL torture_rpc_lsa_secrets(struct torture_context *torture) 
 {
         NTSTATUS status;
         struct dcerpc_pipe *p;

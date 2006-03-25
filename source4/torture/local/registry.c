@@ -23,6 +23,7 @@
 #include "includes.h"
 #include "lib/registry/registry.h"
 #include "lib/cmdline/popt_common.h"
+#include "torture/torture.h"
 
 static BOOL test_hive(TALLOC_CTX *mem_ctx, const char *backend, const char *location)
 {
@@ -80,7 +81,7 @@ static BOOL test_hive(TALLOC_CTX *mem_ctx, const char *backend, const char *loca
 	return True;
 }
 
-BOOL torture_registry(void) 
+BOOL torture_registry(struct torture_context *torture) 
 {
 	BOOL ret = True;
 	TALLOC_CTX *mem_ctx = talloc_init("torture_registry");

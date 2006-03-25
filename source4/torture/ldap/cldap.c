@@ -24,6 +24,7 @@
 #include "includes.h"
 #include "libcli/cldap/cldap.h"
 #include "librpc/gen_ndr/ndr_nbt.h"
+#include "torture/torture.h"
 
 #define CHECK_STATUS(status, correct) do { \
 	if (!NT_STATUS_EQUAL(status, correct)) { \
@@ -164,7 +165,7 @@ done:
 	return ret;	
 }
 
-BOOL torture_cldap(void)
+BOOL torture_cldap(struct torture_context *torture)
 {
 	TALLOC_CTX *mem_ctx;
 	BOOL ret = True;

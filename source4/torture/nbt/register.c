@@ -25,6 +25,7 @@
 #include "libcli/resolve/resolve.h"
 #include "system/network.h"
 #include "netif/netif.h"
+#include "torture/torture.h"
 
 #define CHECK_VALUE(v, correct) do { \
 	if ((v) != (correct)) { \
@@ -175,7 +176,7 @@ static BOOL nbt_refresh_own(TALLOC_CTX *mem_ctx, struct nbt_name *name,
 /*
   test name registration to a server
 */
-BOOL torture_nbt_register(void)
+BOOL torture_nbt_register(struct torture_context *torture)
 {
 	const char *address;
 	struct nbt_name name;

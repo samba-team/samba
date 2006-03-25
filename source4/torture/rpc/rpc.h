@@ -22,6 +22,7 @@
 #ifndef __TORTURE_RPC_H__
 #define __TORTURE_RPC_H__
 
+#include "torture/torture.h"
 #include "auth/credentials/credentials.h"
 #include "torture/rpc/drsuapi.h"
 #include "libnet/libnet_join.h"

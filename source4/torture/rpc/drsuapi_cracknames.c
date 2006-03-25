@@ -773,7 +773,7 @@ BOOL test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	return ret;
 }
 
-BOOL torture_rpc_drsuapi_cracknames(void)
+BOOL torture_rpc_drsuapi_cracknames(struct torture_context *torture)
 {
         NTSTATUS status;
         struct dcerpc_pipe *p;

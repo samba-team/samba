@@ -1401,7 +1401,7 @@ static BOOL test_DatabaseSync2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 
 
-BOOL torture_rpc_samsync(void)
+BOOL torture_rpc_samsync(struct torture_context *torture)
 {
         NTSTATUS status;
 	TALLOC_CTX *mem_ctx;

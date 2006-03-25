@@ -2050,7 +2050,7 @@ static BOOL test_EnumPrinterDrivers_old(struct dcerpc_pipe *p, TALLOC_CTX *mem_c
 	return ret;
 }
 
-BOOL torture_rpc_spoolss(void)
+BOOL torture_rpc_spoolss(struct torture_context *torture)
 {
         NTSTATUS status;
         struct dcerpc_pipe *p;
