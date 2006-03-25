@@ -59,6 +59,8 @@ interface dcerpc
 
 	const int DCERPC_BIND_PROVIDER_REJECT = 2;
 	const int DCERPC_BIND_REASON_ASYNTAX  = 1;
+	const int DECRPC_BIND_PROTOCOL_VERSION_NOT_SUPPORTED = 4;
+	const int DCERPC_BIND_REASON_INVALID_AUTH_TYPE = 8;
 
 	typedef struct {
 		uint16 result;
@@ -78,9 +80,18 @@ interface dcerpc
 	} dcerpc_bind_ack;
 
 	typedef struct {
-		uint16 reject_reason;
 		uint32 num_versions;
 		uint32 versions[num_versions];
+	} dcerpc_bind_nak_versions;
+	
+	typedef [nodiscriminant] union {
+		[case(DECRPC_BIND_PROTOCOL_VERSION_NOT_SUPPORTED)] dcerpc_bind_nak_versions v;
+		[default] ;
+	} dcerpc_bind_nak_versions_ctr;
+
+	typedef struct {
+		uint16 reject_reason;
+		[switch_is(reject_reason)] dcerpc_bind_nak_versions_ctr versions;
 	} dcerpc_bind_nak;
 
 	const uint8 DCERPC_RESPONSE_LENGTH = 24;
