@@ -6,7 +6,8 @@ VERSION = 0.0.1
 PUBLIC_HEADERS = torture.h
 PUBLIC_PROTO_HEADER = proto.h
 OBJ_FILES = \
-		torture.o
+		torture.o \
+		ui.o
 REQUIRED_SUBSYSTEMS = \
 		TORTURE_UTIL \
 		TORTURE_RAW \
