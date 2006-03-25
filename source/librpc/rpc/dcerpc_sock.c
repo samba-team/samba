@@ -187,7 +187,16 @@ static NTSTATUS sock_shutdown_pipe(struct dcerpc_connection *p)
 */
 static const char *sock_peer_name(struct dcerpc_connection *p)
 {
-	struct sock_private *sock = p->transport.private;
+	struct sock_private *sock = talloc_get_type(p->transport.private, struct sock_private);
+	return sock->server_name;
+}
+
+/*
+  return remote name we make the actual connection (good for kerberos) 
+*/
+static const char *sock_target_hostname(struct dcerpc_connection *p)
+{
+	struct sock_private *sock = talloc_get_type(p->transport.private, struct sock_private);
 	return sock->server_name;
 }
 
@@ -226,15 +235,16 @@ static void continue_socket_connect(struct composite_context *ctx)
 	/*
 	  fill in the transport methods
 	*/
-	conn->transport.transport     = s->transport;
-	conn->transport.private       = NULL;
+	conn->transport.transport       = s->transport;
+	conn->transport.private         = NULL;
 
-	conn->transport.send_request  = sock_send_request;
-	conn->transport.send_read     = sock_send_read;
-	conn->transport.recv_data     = NULL;
+	conn->transport.send_request    = sock_send_request;
+	conn->transport.send_read       = sock_send_read;
+	conn->transport.recv_data       = NULL;
 
-	conn->transport.shutdown_pipe = sock_shutdown_pipe;
-	conn->transport.peer_name     = sock_peer_name;
+	conn->transport.shutdown_pipe   = sock_shutdown_pipe;
+	conn->transport.peer_name       = sock_peer_name;
+	conn->transport.target_hostname = sock_target_hostname;
 
 	sock->sock          = s->socket_ctx;
 	sock->pending_reads = 0;

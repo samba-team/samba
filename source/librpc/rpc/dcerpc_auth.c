@@ -228,7 +228,7 @@ struct composite_context *dcerpc_bind_auth_send(TALLOC_CTX *mem_ctx,
 	}
 
 	c->status = gensec_set_target_hostname(
-		sec->generic_state, p->conn->transport.peer_name(p->conn));
+		sec->generic_state, p->conn->transport.target_hostname(p->conn));
 	if (!NT_STATUS_IS_OK(c->status)) {
 		DEBUG(1, ("Failed to set GENSEC target hostname: %s\n", 
 			  nt_errstr(c->status)));
