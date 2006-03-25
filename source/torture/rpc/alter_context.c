@@ -27,7 +27,7 @@
 #include "librpc/rpc/dcerpc.h"
 #include "torture/rpc/rpc.h"
 
-BOOL torture_rpc_alter_context(void)
+BOOL torture_rpc_alter_context(struct torture_context *torture)
 {
         NTSTATUS status;
         struct dcerpc_pipe *p, *p2;

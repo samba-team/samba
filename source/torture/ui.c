@@ -48,7 +48,7 @@ struct torture_test *torture_subtest(struct torture_test *parent, const char *na
 	return NULL;
 }
 
-void torture_comment(struct torture_test *test, const char *comment, ...)
+void torture_comment(struct torture_test *test, const char *comment, ...) _PRINTF_ATTRIBUTE(2,3)
 {
 	va_list ap;
 	char *tmp;

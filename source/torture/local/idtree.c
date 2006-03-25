@@ -21,8 +21,9 @@
 */
 
 #include "includes.h"
+#include "torture/torture.h"
 
-BOOL torture_local_idtree(void) 
+BOOL torture_local_idtree(struct torture_context *torture) 
 {
 	struct idr_context *idr;
 	int i;

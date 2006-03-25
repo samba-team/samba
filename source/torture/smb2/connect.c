@@ -25,6 +25,7 @@
 #include "librpc/gen_ndr/security.h"
 #include "libcli/smb2/smb2.h"
 #include "libcli/smb2/smb2_calls.h"
+#include "torture/torture.h"
 #include "torture/smb2/proto.h"
 
 /*
@@ -187,7 +188,7 @@ static struct smb2_handle torture_smb2_create(struct smb2_tree *tree,
 /* 
    basic testing of SMB2 connection calls
 */
-BOOL torture_smb2_connect(void)
+BOOL torture_smb2_connect(struct torture_context *torture)
 {
 	TALLOC_CTX *mem_ctx = talloc_new(NULL);
 	struct smb2_tree *tree;

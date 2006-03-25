@@ -23,6 +23,7 @@
 #include "includes.h"
 #include "librpc/gen_ndr/ndr_security.h"
 #include "libcli/security/proto.h"
+#include "torture/torture.h"
 
 
 /*
@@ -94,7 +95,7 @@ static const char *examples[] = {
 };
 
 /* test a set of example SDDL strings */
-BOOL torture_local_sddl(void) 
+BOOL torture_local_sddl(struct torture_context *torture) 
 {
 	int i;
 	BOOL ret = True;

@@ -151,7 +151,7 @@ static union smb_fileinfo *fname_find(const char *name)
    for each call we test that it succeeds, and where possible test 
    for consistency between the calls. 
 */
-BOOL torture_raw_qfileinfo(void)
+BOOL torture_raw_qfileinfo(struct torture_context *torture)
 {
 	struct smbcli_state *cli;
 	int i;

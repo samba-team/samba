@@ -23,6 +23,7 @@
 #include "includes.h"
 #include "librpc/gen_ndr/epmapper.h"
 #include "librpc/rpc/dcerpc.h"
+#include "torture/torture.h"
 
 static BOOL test_BindingString(TALLOC_CTX *mem_ctx, const char *binding)
 {
@@ -116,7 +117,7 @@ static const char *test_strings[] = {
 	"ncacn_unix_stream:[/tmp/epmapper,sign]",
 };
 
-BOOL torture_local_binding_string(void) 
+BOOL torture_local_binding_string(struct torture_context *torture) 
 {
 	BOOL ret = True;
 	TALLOC_CTX *mem_ctx = talloc_init("test_BindingString");

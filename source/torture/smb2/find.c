@@ -24,6 +24,7 @@
 #include "libcli/smb2/smb2.h"
 #include "libcli/smb2/smb2_calls.h"
 
+#include "torture/torture.h"
 #include "torture/smb2/proto.h"
 
 static struct {
@@ -204,7 +205,7 @@ static BOOL torture_smb2_find_levels(struct smb2_tree *tree)
 
 /* basic testing of all SMB2 find levels
 */
-BOOL torture_smb2_find(void)
+BOOL torture_smb2_find(struct torture_context *torture)
 {
 	TALLOC_CTX *mem_ctx = talloc_new(NULL);
 	struct smb2_tree *tree;

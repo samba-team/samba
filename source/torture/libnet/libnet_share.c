@@ -109,7 +109,7 @@ static void test_displayshares(struct libnet_ListShares s)
 }
 
 
-BOOL torture_listshares(void)
+BOOL torture_listshares(struct torture_context *torture)
 {
 	struct libnet_ListShares share;
 	NTSTATUS  status;
@@ -194,7 +194,7 @@ static BOOL test_addshare(struct dcerpc_pipe *pipe, TALLOC_CTX *mem_ctx, const c
 }
 
 
-BOOL torture_delshare(void)
+BOOL torture_delshare(struct torture_context *torture)
 {
 	struct dcerpc_pipe *p;
 	struct dcerpc_binding *bind;

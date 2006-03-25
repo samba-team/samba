@@ -24,6 +24,7 @@
 #include "lib/events/events.h"
 #include "lib/messaging/irpc.h"
 #include "librpc/gen_ndr/ndr_echo.h"
+#include "torture/torture.h"
 
 const uint32_t MSG_ID1 = 1, MSG_ID2 = 2;
 
@@ -214,7 +215,7 @@ static BOOL test_speed(TALLOC_CTX *mem_ctx,
 }
 
 
-BOOL torture_local_irpc(void) 
+BOOL torture_local_irpc(struct torture_context *torture) 
 {
 	TALLOC_CTX *mem_ctx = talloc_init("torture_local_irpc");
 	BOOL ret = True;

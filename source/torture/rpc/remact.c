@@ -96,7 +96,7 @@ static int test_RemoteActivation(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	return 1;
 }
 
-BOOL torture_rpc_remact(void)
+BOOL torture_rpc_remact(struct torture_context *torture)
 {
 	NTSTATUS status;
 	struct dcerpc_pipe *p;

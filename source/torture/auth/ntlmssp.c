@@ -22,8 +22,9 @@
 #include "auth/auth.h"
 #include "auth/ntlmssp/ntlmssp.h"
 #include "lib/cmdline/popt_common.h"
+#include "torture/torture.h"
 
-BOOL torture_ntlmssp_self_check(void) 
+BOOL torture_ntlmssp_self_check(struct torture_context *torture) 
 {
 	struct gensec_security *gensec_security;
 	struct gensec_ntlmssp_state *gensec_ntlmssp_state;

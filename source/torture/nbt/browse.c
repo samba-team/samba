@@ -23,11 +23,12 @@
 #include "includes.h"
 #include "librpc/gen_ndr/nbt.h"
 #include "libcli/resolve/resolve.h"
+#include "torture/torture.h"
 
 /*
   test nbt dgram operations
 */
-BOOL torture_nbt_browse(void)
+BOOL torture_nbt_browse(struct torture_context *torture)
 {
 	const char *address;
 	struct nbt_name name;

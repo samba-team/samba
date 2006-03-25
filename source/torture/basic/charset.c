@@ -229,7 +229,7 @@ static BOOL test_widea(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	return True;
 }
 
-BOOL torture_charset(void)
+BOOL torture_charset(struct torture_context *torture)
 {
 	static struct smbcli_state *cli;
 	BOOL ret = True;

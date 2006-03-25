@@ -676,7 +676,7 @@ done:
 /* 
    basic testing of write calls
 */
-BOOL torture_raw_write(void)
+BOOL torture_raw_write(struct torture_context *torture)
 {
 	struct smbcli_state *cli;
 	BOOL ret = True;

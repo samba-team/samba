@@ -214,7 +214,7 @@ done:
 /* 
    basic testing of chkpath calls 
 */
-BOOL torture_raw_chkpath(void)
+BOOL torture_raw_chkpath(struct torture_context *torture)
 {
 	struct smbcli_state *cli;
 	BOOL ret = True;

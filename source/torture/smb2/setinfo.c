@@ -25,6 +25,7 @@
 #include "libcli/smb2/smb2.h"
 #include "libcli/smb2/smb2_calls.h"
 
+#include "torture/torture.h"
 #include "torture/smb2/proto.h"
 
 #define BASEDIR ""
@@ -33,7 +34,7 @@
    for each call we test that it succeeds, and where possible test 
    for consistency between the calls. 
 */
-BOOL torture_smb2_setinfo(void)
+BOOL torture_smb2_setinfo(struct torture_context *torture)
 {
 	struct smb2_tree *tree;
 	BOOL ret = True;

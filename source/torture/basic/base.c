@@ -116,7 +116,7 @@ static BOOL tcon_devtest(struct smbcli_state *cli,
 test whether fnums and tids open on one VC are available on another (a major
 security hole)
 */
-static BOOL run_fdpasstest(void)
+static BOOL run_fdpasstest(struct torture_context *torture)
 {
 	struct smbcli_state *cli1, *cli2;
 	const char *fname = "\\fdpass.tst";
@@ -174,7 +174,7 @@ static BOOL run_fdpasstest(void)
 /**
   This checks how the getatr calls works
 */
-static BOOL run_attrtest(void)
+static BOOL run_attrtest(struct torture_context *torture)
 {
 	struct smbcli_state *cli;
 	int fnum;
@@ -244,7 +244,7 @@ static BOOL run_attrtest(void)
 /**
   This checks a couple of trans2 calls
 */
-static BOOL run_trans2test(void)
+static BOOL run_trans2test(struct torture_context *torture)
 {
 	struct smbcli_state *cli;
 	int fnum;
@@ -378,7 +378,7 @@ static BOOL run_trans2test(void)
 }
 
 /* send smb negprot commands, not reading the response */
-static BOOL run_negprot_nowait(void)
+static BOOL run_negprot_nowait(struct torture_context *torture)
 {
 	int i;
 	struct smbcli_state *cli, *cli2;
@@ -431,7 +431,7 @@ static BOOL run_negprot_nowait(void)
   this checks to see if a secondary tconx can use open files from an
   earlier tconx
  */
-static BOOL run_tcon_test(void)
+static BOOL run_tcon_test(struct torture_context *torture)
 {
 	struct smbcli_state *cli;
 	const char *fname = "\\tcontest.tmp";
@@ -544,7 +544,7 @@ static BOOL run_tcon_test(void)
 /**
  checks for correct tconX support
  */
-static BOOL run_tcon_devtype_test(void)
+static BOOL run_tcon_devtype_test(struct torture_context *torture)
 {
 	struct smbcli_state *cli1 = NULL;
 	NTSTATUS status;
@@ -685,7 +685,7 @@ static BOOL rw_torture2(struct smbcli_state *c1, struct smbcli_state *c2)
 
 #define BOOLSTR(b) ((b) ? "Yes" : "No")
 
-static BOOL run_readwritetest(void)
+static BOOL run_readwritetest(struct torture_context *torture)
 {
 	struct smbcli_state *cli1, *cli2;
 	BOOL test1, test2 = True;
@@ -794,7 +794,7 @@ static BOOL run_deferopen(struct smbcli_state *cli, int dummy)
   Try with a wrong vuid and check error message.
  */
 
-static BOOL run_vuidtest(void)
+static BOOL run_vuidtest(struct torture_context *torture)
 {
 	struct smbcli_state *cli;
 	const char *fname = "\\vuid.tst";
@@ -861,7 +861,7 @@ static BOOL run_vuidtest(void)
 /*
   Test open mode returns on read-only files.
  */
- static BOOL run_opentest(void)
+ static BOOL run_opentest(struct torture_context *torture)
 {
 	static struct smbcli_state *cli1;
 	static struct smbcli_state *cli2;
@@ -1397,7 +1397,7 @@ error_test80:
 /**
   Test ntcreate calls made by xcopy
  */
-static BOOL run_xcopy(void)
+static BOOL run_xcopy(struct torture_context *torture)
 {
 	struct smbcli_state *cli1;
 	const char *fname = "\\test.txt";
@@ -1441,7 +1441,7 @@ static BOOL run_xcopy(void)
 /**
   tries variants of chkpath
  */
-static BOOL torture_chkpath_test(void)
+static BOOL torture_chkpath_test(struct torture_context *torture)
 {
 	struct smbcli_state *cli;
 	int fnum;

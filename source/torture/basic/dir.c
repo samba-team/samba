@@ -34,7 +34,7 @@ static void list_fn(struct clilist_file_info *finfo, const char *name, void *sta
 /*
   test directory listing speed
  */
-BOOL torture_dirtest1(void)
+BOOL torture_dirtest1(struct torture_context *torture)
 {
 	int i;
 	struct smbcli_state *cli;
@@ -89,7 +89,7 @@ BOOL torture_dirtest1(void)
 	return correct;
 }
 
-BOOL torture_dirtest2(void)
+BOOL torture_dirtest2(struct torture_context *torture)
 {
 	int i;
 	struct smbcli_state *cli;

@@ -265,7 +265,7 @@ static BOOL test_userinfo_async(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 }
 
 
-BOOL torture_userinfo(void)
+BOOL torture_userinfo(struct torture_context *torture)
 {
 	NTSTATUS status;
 	const char *binding;

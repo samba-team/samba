@@ -393,7 +393,7 @@ static BOOL test_fsinfo(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 /* 
    basic testing of libcli composite calls
 */
-BOOL torture_raw_composite(void)
+BOOL torture_raw_composite(struct torture_context *torture)
 {
 	struct smbcli_state *cli;
 	BOOL ret = True;

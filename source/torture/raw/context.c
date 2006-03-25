@@ -747,7 +747,7 @@ static BOOL torture_raw_context_int(void)
 /* 
    basic testing of session/tree context calls
 */
-BOOL torture_raw_context(void)
+BOOL torture_raw_context(struct torture_context *torture)
 {
 	BOOL ret = True;
 	if (lp_use_spnego()) {

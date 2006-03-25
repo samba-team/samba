@@ -449,7 +449,7 @@ failed:
 /*
   a schannel test suite
  */
-BOOL torture_rpc_schannel(void)
+BOOL torture_rpc_schannel(struct torture_context *torture)
 {
 	TALLOC_CTX *mem_ctx;
 	BOOL ret = True;

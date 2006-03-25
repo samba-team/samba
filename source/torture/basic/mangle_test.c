@@ -154,7 +154,7 @@ static void gen_name(char *name)
 }
 
 
-BOOL torture_mangle(void)
+BOOL torture_mangle(struct torture_context *torture)
 {
 	extern int torture_numops;
 	static struct smbcli_state *cli;

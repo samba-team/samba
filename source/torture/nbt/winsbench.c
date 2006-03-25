@@ -26,6 +26,7 @@
 #include "libcli/resolve/resolve.h"
 #include "system/network.h"
 #include "netif/netif.h"
+#include "torture/torture.h"
 
 struct wins_state {
 	int num_names;
@@ -273,7 +274,7 @@ static BOOL bench_wins(TALLOC_CTX *mem_ctx, struct nbt_name *name, const char *a
   benchmark how fast a WINS server can respond to a mixture of
   registration/refresh/release and name query requests
 */
-BOOL torture_bench_wins(void)
+BOOL torture_bench_wins(struct torture_context *torture)
 {
 	const char *address;
 	struct nbt_name name;

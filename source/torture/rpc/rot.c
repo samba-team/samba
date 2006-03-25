@@ -24,7 +24,7 @@
 #include "librpc/gen_ndr/ndr_rot.h"
 #include "torture/rpc/rpc.h"
 
-BOOL torture_rpc_rot(void)
+BOOL torture_rpc_rot(struct torture_context *torture)
 {
 	NTSTATUS status;
 	struct dcerpc_pipe *p;

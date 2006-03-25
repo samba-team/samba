@@ -33,6 +33,7 @@
 #include "auth/credentials/credentials.h"
 #include "libcli/ldap/ldap_client.h"
 #include "librpc/gen_ndr/ndr_nbt.h"
+#include "torture/torture.h"
 
 #include "torture/raw/proto.h"
 #include "libcli/smb2/smb2.h"
@@ -45,7 +46,6 @@
 #include "torture/com/proto.h"
 #include "torture/nbt/proto.h"
 #include "torture/libnet/proto.h"
-#include "torture/torture.h"
 #include "torture/util.h"
 #include "build.h"
 #include "dlinklist.h"
@@ -165,7 +165,7 @@ static BOOL rw_torture(struct smbcli_state *c)
 
 static BOOL run_torture(struct smbcli_state *cli, int dummy)
 {
-        BOOL ret;
+    BOOL ret;
 
 	ret = rw_torture(cli);
 	
@@ -180,7 +180,7 @@ static BOOL run_torture(struct smbcli_state *cli, int dummy)
 /*
   see how many RPC pipes we can open at once
 */
-static BOOL run_pipe_number(void)
+static BOOL run_pipe_number(struct torture_context *torture)
 {
 	struct smbcli_state *cli1;
 	const char *pipe_name = "\\WKSSVC";
@@ -218,7 +218,7 @@ static BOOL run_pipe_number(void)
   used for testing performance when there are N idle users
   already connected
  */
- static BOOL torture_holdcon(void)
+ static BOOL torture_holdcon(struct torture_context *torture)
 {
 	int i;
 	struct smbcli_state **cli;
@@ -367,7 +367,7 @@ static BOOL run_maxfidtest(struct smbcli_state *cli, int dummy)
 /*
   sees what IOCTLs are supported
  */
-static BOOL torture_ioctl_test(void)
+static BOOL torture_ioctl_test(struct torture_context *torture)
 {
 	struct smbcli_state *cli;
 	uint16_t device, function;
@@ -577,7 +577,7 @@ double torture_create_procs(BOOL (*fn)(struct smbcli_state *, int), BOOL *result
 
 static struct {
 	const char *name;
-	BOOL (*fn)(void);
+	BOOL (*fn)(struct torture_context *);
 	BOOL (*multi_fn)(struct smbcli_state *, int );
 } builtin_torture_ops[] = {
 	/* benchmarking tests */
@@ -676,7 +676,7 @@ static void register_builtin_ops(void)
 
 struct torture_op *torture_ops = NULL;
 
-_PUBLIC_ NTSTATUS register_torture_op(const char *name, BOOL (*fn)(void), BOOL (*multi_fn)(struct smbcli_state *, int ))
+_PUBLIC_ NTSTATUS register_torture_op(const char *name, BOOL (*fn)(struct torture_context *), BOOL (*multi_fn)(struct smbcli_state *, int ))
 {
 	struct torture_op *op, *p;
 	

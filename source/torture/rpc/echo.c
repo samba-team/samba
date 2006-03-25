@@ -482,7 +482,7 @@ failed:
 }
 
 
-BOOL torture_rpc_echo(void)
+BOOL torture_rpc_echo(struct torture_context *torture)
 {
 	NTSTATUS status;
 	struct dcerpc_pipe *p;

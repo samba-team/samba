@@ -48,6 +48,8 @@
 #define BOOL int
 #endif
 
+struct torture_context;
+
 static struct timeval timeval_current(void)
 {
 	struct timeval tv;
@@ -842,7 +844,7 @@ BOOL test_lifeless(void)
 }
 
 
-BOOL torture_local_talloc(void) 
+BOOL torture_local_talloc(struct torture_context *torture) 
 {
 	BOOL ret = True;
 
@@ -871,8 +873,8 @@ BOOL torture_local_talloc(void)
 #if !defined(_SAMBA_BUILD_) || ((SAMBA_VERSION_MAJOR==3)&&(SAMBA_VERSION_MINOR<9))
  int main(void)
 {
-	if (!torture_local_talloc()) {
-		printf("ERROR: TESTSUIE FAILED\n");
+	if (!torture_local_talloc(NULL)) {
+		printf("ERROR: TESTSUITE FAILED\n");
 		return -1;
 	}
 	return 0;

@@ -23,9 +23,10 @@
 #define __TORTURE_H__
 
 struct smbcli_state;
+struct torture_context;
 struct torture_op {
 	const char *name;
-	BOOL (*fn)(void);
+	BOOL (*fn)(struct torture_context *);
 	BOOL (*multi_fn)(struct smbcli_state *, int );
 	struct torture_op *prev, *next;
 };
@@ -41,7 +42,6 @@ extern int torture_numops;
 extern int torture_failures;
 extern BOOL use_level_II_oplocks;
 
-struct torture_context;
 struct torture_test;
 
 #include "torture/proto.h"
