@@ -1873,7 +1873,7 @@ BOOL fcntl_lock(int fd, int op, SMB_OFF_T offset, SMB_OFF_T count, int type)
 	if (ret == -1 && errno != 0)
 		DEBUG(3,("fcntl_lock: fcntl lock gave errno %d (%s)\n",errno,strerror(errno)));
 
-	/* a lock query */
+	/* a lock query - return True if this region is locked, False if not locked. */
 	if (op == SMB_F_GETLK) {
 		if ((ret != -1) &&
 				(lock.l_type != F_UNLCK) && 

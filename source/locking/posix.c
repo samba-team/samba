@@ -644,14 +644,18 @@ static BOOL posix_lock_in_range(SMB_OFF_T *offset_out, SMB_OFF_T *count_out,
 
 /****************************************************************************
  Actual function that does POSIX locks. Copes with 64 -> 32 bit cruft and
- broken NFS implementations.
+ broken NFS implementations. Returns True if we got the lock or the region
+ is unlocked in the F_GETLK case, False otherwise.
 ****************************************************************************/
 
 static BOOL posix_fcntl_lock(files_struct *fsp, int op, SMB_OFF_T offset, SMB_OFF_T count, int type)
 {
-	int ret;
+	BOOL ret;
 
 	DEBUG(8,("posix_fcntl_lock %d %d %.0f %.0f %d\n",fsp->fh->fd,op,(double)offset,(double)count,type));
+
+	/* In the F_GETLK case this returns True if the region 
+	   was locked, False if unlocked. */
 
 	ret = SMB_VFS_LOCK(fsp,fsp->fh->fd,op,offset,count,type);
 
