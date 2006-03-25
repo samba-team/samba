@@ -2966,19 +2966,24 @@ static int process_stdin(struct smbclient_context *ctx)
 return a connection to a server
 *******************************************************/
 static struct smbclient_context *do_connect(TALLOC_CTX *mem_ctx, 
-				       const char *server, const char *share, struct cli_credentials *cred)
+				       const char *specified_server, const char *specified_share, struct cli_credentials *cred)
 {
 	NTSTATUS status;
 	struct smbclient_context *ctx = talloc_zero(mem_ctx, struct smbclient_context);
+	char *server, *share;
+
 	if (!ctx) {
 		return NULL;
 	}
 
 	rl_ctx = ctx; /* Ugly hack */
 
-	if (strncmp(share, "\\\\", 2) == 0 ||
-	    strncmp(share, "//", 2) == 0) {
-		smbcli_parse_unc(share, ctx, &server, &share);
+	if (strncmp(specified_share, "\\\\", 2) == 0 ||
+	    strncmp(specified_share, "//", 2) == 0) {
+		smbcli_parse_unc(specified_share, ctx, &server, &share);
+	} else {
+		share = talloc_strdup(ctx, specified_share);
+		server = talloc_strdup(ctx, specified_server);
 	}
 
 	ctx->remote_cur_dir = talloc_strdup(ctx, "\\");

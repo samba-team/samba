@@ -25,6 +25,7 @@
 #include "lib/events/events.h"
 #include "system/network.h"
 #include "netif/netif.h"
+#include "torture/torture.h"
 
 #define CHECK_STATUS(status, correct) do { \
 	if (!NT_STATUS_EQUAL(status, correct)) { \
