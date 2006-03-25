@@ -250,6 +250,7 @@ struct ldap_message {
 struct event_context;
 struct cli_credentials;
 struct dom_sid;
+struct asn1_data;
 
 #include "libcli/ldap/ldap_proto.h"
 

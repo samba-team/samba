@@ -104,12 +104,10 @@ _PUBLIC_ void smb_panic(const char *why) NORETURN_ATTRIBUTE;
 #include "charset/charset.h"
 #include "util/util.h"
 #include "param/param.h"
-#include "libcli/util/nterr.h"
-#include "libcli/util/doserr.h"
 #include "librpc/gen_ndr/misc.h"
 
 struct smbcli_tree;
-#include "libcli/util/proto.h"
+#include "libcli/util/error.h"
 
 /* String routines */
 #include "util/safe_string.h"

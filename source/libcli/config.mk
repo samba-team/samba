@@ -2,15 +2,18 @@ include auth/config.mk
 include ldap/config.mk
 include security/config.mk
 
-[SUBSYSTEM::LIBCLI_UTILS]
-PRIVATE_PROTO_HEADER = util/proto.h
-PUBLIC_HEADERS = util/nterr.h util/doserr.h util/nt_status.h
-OBJ_FILES = util/asn1.o \
-		util/doserr.o \
+[SUBSYSTEM::LIBSAMBA-ERRORS]
+PUBLIC_PROTO_HEADER = util/proto.h
+PUBLIC_HEADERS = util/error.h util/nterr.h util/doserr.h util/nt_status.h
+OBJ_FILES = util/doserr.o \
 		util/errormap.o \
 		util/clierror.o \
 		util/nterr.o \
-		util/smbdes.o
+
+[SUBSYSTEM::ASN1_UTIL]
+PUBLIC_PROTO_HEADER = util/asn1_proto.h
+PUBLIC_HEADERS = util/asn_1.h
+OBJ_FILES = util/asn1.o
 
 [SUBSYSTEM::LIBCLI_LSA]
 PRIVATE_PROTO_HEADER = util/clilsa.h
@@ -100,7 +103,7 @@ PUBLIC_HEADERS = libcli.h
 VERSION = 0.0.1
 SO_VERSION = 0
 DESCRIPTION = SMB/CIFS client library
-REQUIRED_SUBSYSTEMS = LIBCLI_RAW LIBCLI_UTILS LIBCLI_AUTH \
+REQUIRED_SUBSYSTEMS = LIBCLI_RAW LIBSAMBA-ERRORS LIBCLI_AUTH \
 	LIBCLI_SMB_COMPOSITE LIBCLI_NBT LIB_SECURITY LIBCLI_RESOLVE \
 	LIBCLI_DGRAM LIBCLI_SMB2 LIBCLI_FINDDCS
 

@@ -77,3 +77,7 @@ include/dlinklist.h: dlinklist.h
 version.h: samba/version.h
 param/proto.h: param/proto.h
 param/param.h: param.h
+dsdb/samdb/samdb.h: samdb.h
+dsdb/samdb/samdb_proto.h: samdb/proto.h
+libcli/util/asn_1.h: samba/asn1.h
+libcli/util/asn1_proto.h: samba/asn1/proto.h

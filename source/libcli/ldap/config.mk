@@ -10,7 +10,7 @@ OBJ_FILES = ldap.o \
 		ldap_ndr.o \
 		ldap_ildap.o \
 		ldap_controls.o
-REQUIRED_SUBSYSTEMS = LIBCLI_UTILS LIBEVENTS gensec SOCKET NDR_SAMR LIBTLS \
-					  LIBPACKET
+REQUIRED_SUBSYSTEMS = LIBSAMBA-ERRORS LIBEVENTS gensec SOCKET NDR_SAMR LIBTLS \
+					  LIBPACKET ASN1_UTIL
 # End SUBSYSTEM LIBCLI_LDAP
 #################################
