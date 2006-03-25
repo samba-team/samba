@@ -120,7 +120,7 @@ static NTSTATUS nbtd_getdcname(struct irpc_message *msg,
 {
 	struct nbtd_server *server =
 		talloc_get_type(msg->private, struct nbtd_server);
-	struct nbtd_interface *iface = nbtd_find_interface(server, req->in.ip_address);
+	struct nbtd_interface *iface = nbtd_find_request_iface(server, req->in.ip_address, True);
 	struct getdc_state *s;
 	struct nbt_ntlogon_packet p;
 	struct nbt_ntlogon_sam_logon *r;

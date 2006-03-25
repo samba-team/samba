@@ -193,7 +193,6 @@ static NTSTATUS nbtd_add_socket(struct nbtd_server *nbtsrv,
 	return NT_STATUS_OK;
 }
 
-
 /*
   setup a socket for talking to our WINS servers
 */
@@ -312,22 +311,39 @@ const char **nbtd_address_list(struct nbtd_interface *iface, TALLOC_CTX *mem_ctx
 /*
   find the interface to use for sending a outgoing request
 */
-struct nbtd_interface *nbtd_find_interface(struct nbtd_server *nbtd_server,
-					   const char *address)
+struct nbtd_interface *nbtd_find_request_iface(struct nbtd_server *nbtd_server,
+					       const char *address, BOOL allow_bcast_iface)
 {
-	struct nbtd_interface *iface;
+	struct nbtd_interface *cur;
+
 	/* try to find a exact match */
-	for (iface=nbtd_server->interfaces;iface;iface=iface->next) {
-		if (iface_same_net(address, iface->ip_address, iface->netmask)) {
-			return iface;
+	for (cur=nbtd_server->interfaces;cur;cur=cur->next) {
+		if (iface_same_net(address, cur->ip_address, cur->netmask)) {
+			return cur;
 		}
 	}
 
 	/* no exact match, if we have the broadcast interface, use that */
-	if (nbtd_server->bcast_interface) {
+	if (allow_bcast_iface && nbtd_server->bcast_interface) {
 		return nbtd_server->bcast_interface;
 	}
 
 	/* fallback to first interface */
 	return nbtd_server->interfaces;
+}
+
+/*
+ * find the interface to use for sending a outgoing reply
+ */
+struct nbtd_interface *nbtd_find_reply_iface(struct nbtd_interface *iface,
+					     const char *address, BOOL allow_bcast_iface)
+{
+	struct nbtd_server *nbtd_server = iface->nbtsrv;
+
+	/* first try to use the given interfacel when it's not the broadcast one */
+	if (iface != nbtd_server->bcast_interface) {
+		return iface;
+	}
+
+	return nbtd_find_request_iface(nbtd_server, address, allow_bcast_iface);
 }
