@@ -25,6 +25,7 @@
 #include "system/time.h"
 #include "auth/auth.h"
 #include "lib/crypto/crypto.h"
+#include "libcli/auth/libcli_auth.h"
 
 /*
   initialise the credentials state for old-style 64 bit session keys
