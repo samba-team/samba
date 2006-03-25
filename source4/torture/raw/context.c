@@ -362,11 +362,12 @@ done:
 	return ret;
 }
 
-
 /*
   test pid ops
+  this test demonstrates that exit() only sees the PID
+  used for the open() calls
 */
-static BOOL test_pid(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+static BOOL test_pid_exit_only_sees_open(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 {
 	NTSTATUS status;
 	BOOL ret = True;
@@ -378,20 +379,16 @@ static BOOL test_pid(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	uint8_t c = 1;
 	uint16_t pid1, pid2;
 
-	printf("TESTING PID HANDLING\n");
+	printf("TESTING PID HANDLING exit() only cares about open() PID\n");
 
 	if (!torture_setup_dir(cli, BASEDIR)) {
 		return False;
 	}
 
-	printf("create a second pid\n");
-	pid1 = cli->session->pid;
-	pid2 = pid1+1;
-
 	printf("pid1=%d pid2=%d\n", pid1, pid2);
 
-	printf("create a file using the new pid\n");
-	cli->session->pid = pid2;
+	printf("create a file using pid1\n");
+	cli->session->pid = pid1;
 	io.generic.level = RAW_OPEN_NTCREATEX;
 	io.ntcreatex.in.root_fid = 0;
 	io.ntcreatex.in.flags = 0;
@@ -408,7 +405,7 @@ static BOOL test_pid(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_STATUS(status, NT_STATUS_OK);
 	fnum = io.ntcreatex.out.file.fnum;
 
-	printf("write using the old pid\n");
+	printf("write using pid2\n");
 	cli->session->pid = pid1;
 	wr.generic.level = RAW_WRITE_WRITEX;
 	wr.writex.in.file.fnum = fnum;
@@ -417,39 +414,51 @@ static BOOL test_pid(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	wr.writex.in.remaining = 0;
 	wr.writex.in.count = 1;
 	wr.writex.in.data = &c;
-
 	status = smb_raw_write(cli->tree, &wr);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_VALUE(wr.writex.out.nwritten, 1);
 
-	printf("write with the new pid\n");
+	printf("exit pid2\n");
+	cli->session->pid = pid2;
+	status = smb_raw_exit(cli->session);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	printf("the fnum should still be accessible via pid2\n");
 	cli->session->pid = pid2;
 	status = smb_raw_write(cli->tree, &wr);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_VALUE(wr.writex.out.nwritten, 1);
 
-	printf("exit the old pid\n");
-	cli->session->pid = pid1;
-	status = smb_raw_exit(cli->session);
-	CHECK_STATUS(status, NT_STATUS_OK);
-
-	printf("the fnum should still be accessible\n");
-	cli->session->pid = pid1;
-	status = smb_raw_write(cli->tree, &wr);
-	CHECK_STATUS(status, NT_STATUS_OK);
-	CHECK_VALUE(wr.writex.out.nwritten, 1);
-
-	printf("exit the new pid\n");
+	printf("exit pid2\n");
 	cli->session->pid = pid2;
 	status = smb_raw_exit(cli->session);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
-	printf("the fnum should not now be accessible\n");
+	printf("the fnum should still be accessible via pid1 and pid2\n");
 	cli->session->pid = pid1;
+	status = smb_raw_write(cli->tree, &wr);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_VALUE(wr.writex.out.nwritten, 1);
+	cli->session->pid = pid2;
+	status = smb_raw_write(cli->tree, &wr);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_VALUE(wr.writex.out.nwritten, 1);
+
+	printf("exit pid1\n");
+	cli->session->pid = pid1;
+	status = smb_raw_exit(cli->session);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	printf("the fnum should not now be accessible via pid1 or pid2\n");
+	cli->session->pid = pid1;
+	status = smb_raw_write(cli->tree, &wr);
+	CHECK_STATUS(status, NT_STATUS_INVALID_HANDLE);
+	cli->session->pid = pid2;
 	status = smb_raw_write(cli->tree, &wr);
 	CHECK_STATUS(status, NT_STATUS_INVALID_HANDLE);
 
 	printf("the fnum should have been auto-closed\n");
+	cli->session->pid = pid1;
 	cl.close.level = RAW_CLOSE_CLOSE;
 	cl.close.in.file.fnum = fnum;
 	cl.close.in.write_time = 0;
@@ -723,7 +732,7 @@ static BOOL torture_raw_context_int(void)
 
 	ret &= test_session(cli, mem_ctx);
 	ret &= test_tree(cli, mem_ctx);
-	ret &= test_pid(cli, mem_ctx);
+	ret &= test_pid_exit_only_sees_open(cli, mem_ctx);
 	ret &= test_pid_2sess(cli, mem_ctx);
 	ret &= test_pid_2tcon(cli, mem_ctx);
 
