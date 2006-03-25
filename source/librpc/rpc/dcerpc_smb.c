@@ -350,12 +350,21 @@ static NTSTATUS smb_shutdown_pipe(struct dcerpc_connection *c)
 }
 
 /*
-  return SMB server name
+  return SMB server name (called name)
 */
 static const char *smb_peer_name(struct dcerpc_connection *c)
 {
 	struct smb_private *smb = c->transport.private;
 	return smb->server_name;
+}
+
+/*
+  return remote name we make the actual connection (good for kerberos) 
+*/
+static const char *smb_target_hostname(struct dcerpc_connection *c)
+{
+	struct smb_private *smb = talloc_get_type(c->transport.private, struct smb_private);
+	return smb->tree->session->transport->socket->hostname;
 }
 
 /*
@@ -462,14 +471,15 @@ static void pipe_open_recv(struct smbcli_request *req)
 	/*
 	  fill in the transport methods
 	*/
-	c->transport.transport = NCACN_NP;
-	c->transport.private = NULL;
-	c->transport.shutdown_pipe = smb_shutdown_pipe;
-	c->transport.peer_name = smb_peer_name;
+	c->transport.transport       = NCACN_NP;
+	c->transport.private         = NULL;
+	c->transport.shutdown_pipe   = smb_shutdown_pipe;
+	c->transport.peer_name       = smb_peer_name;
+	c->transport.target_hostname = smb_target_hostname;
 
-	c->transport.send_request = smb_send_request;
-	c->transport.send_read = send_read_request;
-	c->transport.recv_data = NULL;
+	c->transport.send_request    = smb_send_request;
+	c->transport.send_read       = send_read_request;
+	c->transport.recv_data       = NULL;
 	
 	/* Over-ride the default session key with the SMB session key */
 	c->security_state.session_key = smb_session_key;
