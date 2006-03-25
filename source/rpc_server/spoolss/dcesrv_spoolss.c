@@ -145,6 +145,8 @@ static WERROR spoolss_check_server_name(struct dcesrv_call_state *dce_call,
 {
 	BOOL ret;
 	struct socket_address *myaddr;
+	const char **aliases;
+	int i;
 
 	/* NULL is ok */
 	if (!server_name) return WERR_OK;
@@ -168,6 +170,14 @@ static WERROR spoolss_check_server_name(struct dcesrv_call_state *dce_call,
 	/* NETBIOS NAME is ok */
 	ret = strequal(lp_netbios_name(), server_name);
 	if (ret) return WERR_OK;
+
+	aliases = lp_netbios_aliases();
+
+	for (i=0; aliases && aliases[i]; i++) {
+		if (strequal(aliases[i], server_name)) {
+			return WERR_OK;
+		}
+	}
 
 	/* DNS NAME is ok
 	 * TODO: we need to check if aliases are also ok
