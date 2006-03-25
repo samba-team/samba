@@ -136,16 +136,14 @@ static NTSTATUS libnet_JoinADSDomain(struct libnet_context *ctx, struct libnet_J
 		if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
 			r->out.error_string
 				= talloc_asprintf(r,
-						  "dcerpc_drsuapi_DsBind for [%s\\%s] failed - %s\n", 
-						  r->in.domain_name, r->in.account_name, 
+						  "dcerpc_drsuapi_DsBind failed - %s\n", 
 						  dcerpc_errstr(tmp_ctx, drsuapi_pipe->last_fault_code));
 			talloc_free(tmp_ctx);
 			return status;
 		} else {
 			r->out.error_string
 				= talloc_asprintf(r,
-						  "dcerpc_drsuapi_DsBind for [%s\\%s] failed - %s\n", 
-						  r->in.domain_name, r->in.account_name, 
+						  "dcerpc_drsuapi_DsBind failed - %s\n", 
 						  nt_errstr(status));
 			talloc_free(tmp_ctx);
 			return status;
