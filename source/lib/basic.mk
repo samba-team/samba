@@ -55,7 +55,8 @@ OBJ_FILES = \
 		gencache/gencache.o \
 
 [SUBSYSTEM::DB_WRAP]
-PRIVATE_PROTO_HEADER = db_wrap_proto.h
+PUBLIC_PROTO_HEADER = db_wrap_proto.h
+PUBLIC_HEADERS = db_wrap.h
 OBJ_FILES = db_wrap.o \
 		gendb.o
 REQUIRED_SUBSYSTEMS = ldb LIBTDB LDBSAMBA
