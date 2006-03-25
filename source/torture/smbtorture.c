@@ -21,20 +21,15 @@
 
 #include "includes.h"
 #include "lib/cmdline/popt_common.h"
-#include "libcli/raw/libcliraw.h"
 #include "system/time.h"
 #include "system/wait.h"
 #include "system/filesys.h"
-#include "libcli/raw/ioctl.h"
 #include "libcli/libcli.h"
 #include "lib/ldb/include/ldb.h"
 #include "lib/events/events.h"
-#include "libcli/resolve/resolve.h"
-#include "auth/credentials/credentials.h"
-#include "libcli/ldap/ldap_client.h"
-#include "librpc/gen_ndr/ndr_nbt.h"
 
 #include "torture/torture.h"
+#include "torture/ui.h"
 #include "build.h"
 #include "dlinklist.h"
 #include "librpc/rpc/dcerpc.h"
@@ -44,7 +39,7 @@
 /****************************************************************************
 run a specified test or "ALL"
 ****************************************************************************/
-static BOOL run_test(const char *name)
+static BOOL run_test(struct torture_context *torture, const char *name)
 {
 	BOOL ret = True;
 	struct torture_op *o;
@@ -52,7 +47,7 @@ static BOOL run_test(const char *name)
 
 	if (strequal(name,"ALL")) {
 		for (o = torture_ops; o; o = o->next) {
-			if (!run_test(o->name)) {
+			if (!run_test(torture, o->name)) {
 				ret = False;
 			}
 		}
@@ -76,7 +71,7 @@ static BOOL run_test(const char *name)
 					 
 			} else {
 				struct timeval tv = timeval_current();
-				if (!o->fn(NULL)) {
+				if (!o->fn(torture)) {
 					ret = False;
 					printf("TEST %s FAILED!\n", o->name);
 				}
@@ -220,6 +215,27 @@ static void max_runtime_handler(int sig)
 	exit(1);
 }
 
+static void simple_test_start (struct torture_test *test)
+{
+	printf("Testing %s...\n", test->name);
+}
+
+static void simple_test_result (struct torture_test *test, enum torture_result res)
+{
+	printf("\t %d\n",res);
+}
+
+static void simple_comment (struct torture_test *test, const char *comment)
+{
+	printf("# %s\n", comment);
+}
+
+const static struct torture_ui_ops std_ui_ops = {
+	.comment = simple_comment,
+	.test_start = simple_test_start,
+	.test_result = simple_test_result
+};
+
 /****************************************************************************
   main program
 ****************************************************************************/
@@ -230,6 +246,7 @@ static void max_runtime_handler(int sig)
 	BOOL correct = True;
 	int max_runtime=0;
 	int argc_new;
+	struct torture_context *torture;
 	char **argv_new;
 	poptContext pc;
 	enum {OPT_LOADFILE=1000,OPT_UNCLIST,OPT_TIMELIMIT,OPT_DNS,
@@ -357,15 +374,20 @@ static void max_runtime_handler(int sig)
 		lp_set_cmdline("torture:binding", binding);
 	}
 
+	torture = talloc_zero(NULL, struct torture_context);
+	torture->ui_ops = &std_ui_ops;
+
 	if (argc_new == 0) {
 		printf("You must specify a test to run, or 'ALL'\n");
 	} else {
 		for (i=2;i<argc_new;i++) {
-			if (!run_test(argv_new[i])) {
+			if (!run_test(torture, argv_new[i])) {
 				correct = False;
 			}
 		}
 	}
+
+	talloc_free(torture);
 
 	if (correct) {
 		return(0);
