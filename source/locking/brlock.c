@@ -1038,6 +1038,7 @@ BOOL brl_unlock(struct byte_range_lock *br_lck,
 
 /****************************************************************************
  Test if we could add a lock if we wanted to.
+ Returns True if the region required is currently unlocked, False if locked.
 ****************************************************************************/
 
 BOOL brl_locktest(struct byte_range_lock *br_lck,
@@ -1085,6 +1086,9 @@ BOOL brl_locktest(struct byte_range_lock *br_lck,
 		DEBUG(10,("brl_locktest: posix start=%.0f len=%.0f %s for fnum %d file %s\n",
 			(double)start, (double)size, ret ? "locked" : "unlocked",
 			fsp->fnum, fsp->fsp_name ));
+
+		/* We need to return the inverse of is_posix_locked. */
+		ret = !ret;
         }
 
 	/* no conflicts - we could have added it */
