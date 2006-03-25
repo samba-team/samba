@@ -8,6 +8,7 @@ PASSWORD=penguin
 SRCDIR=`pwd`
 ROOT=$USER
 SERVER=localhost
+NETBIOSNAME=localtest
 if test -z "$ROOT"; then
     ROOT=$LOGNAME
 fi
@@ -101,7 +102,8 @@ EOF
 
 cat >$CONFFILE<<EOF
 [global]
-	netbios name = $SERVER
+	netbios name = $NETBIOSNAME
+        netbios aliases = $SERVER
 	workgroup = $DOMAIN
 	realm = $REALM
 	private dir = $PRIVATEDIR
@@ -157,7 +159,7 @@ export KRB5_CONFIG
 
 echo -n "PROVISIONING..."
 
-./setup/provision $CONFIGURATION --host-name=$SERVER --host-ip=127.0.0.1 \
+./setup/provision $CONFIGURATION --host-name=$NETBIOSNAME --host-ip=127.0.0.1 \
     --quiet --domain $DOMAIN --realm $REALM \
     --adminpass $PASSWORD --root=$ROOT || exit 1
 
@@ -186,6 +188,9 @@ START=`date`
  echo delaying for nbt name registration
  sleep 4
  # This will return quickly when things are up, but be slow if we need to wait for (eg) SSL init 
+ bin/nmblookup $CONFIGURATION -U $SERVER $SERVER
+ bin/nmblookup $CONFIGURATION -U $SERVER $SERVER
+ bin/nmblookup $CONFIGURATION -U $SERVER $SERVER
  bin/nmblookup $CONFIGURATION -U $SERVER $SERVER
  bin/nmblookup $CONFIGURATION -U $SERVER $SERVER
  bin/nmblookup $CONFIGURATION -U $SERVER $SERVER
