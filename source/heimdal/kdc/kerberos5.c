@@ -1045,9 +1045,16 @@ _kdc_as_rep(krb5_context context,
 	    free_PA_ENC_TS_ENC(&p);
 	    if (abs(kdc_time - p.patimestamp) > context->max_skew) {
 		ret = KRB5KRB_AP_ERR_SKEW;
-		e_text = "Too large time skew";
 		kdc_log(context, config, 0,
 			"Too large time skew -- %s", client_name);
+		/* 
+		 * the following is needed to make windows clients
+		 * to retry using the timestamp in the error message
+		 *
+		 * this is maybe a bug in windows to not trying when e_text
+		 * is present...
+		 */
+		e_text = NULL;
 		goto out;
 	    }
 	    et.flags.pre_authent = 1;
