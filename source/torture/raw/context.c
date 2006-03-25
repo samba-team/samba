@@ -363,6 +363,156 @@ done:
 }
 
 /*
+  test tree with ulogoff
+  this demonstrates that a tcon isn't autoclosed by a ulogoff
+  the tcon can be reused using any other valid session later
+*/
+static BOOL test_tree_ulogoff(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+{
+	NTSTATUS status;
+	BOOL ret = True;
+	const char *share, *host;
+	struct smbcli_session *session1;
+	struct smbcli_session *session2;
+	struct smb_composite_sesssetup setup;
+	struct smbcli_tree *tree;
+	union smb_tcon tcon;
+	union smb_open io;
+	union smb_write wr;
+	int fnum1, fnum2;
+	const char *fname1 = BASEDIR "\\test1.txt";
+	const char *fname2 = BASEDIR "\\test2.txt";
+	uint8_t c = 1;
+
+	printf("TESTING TREE with ulogoff\n");
+
+	if (!torture_setup_dir(cli, BASEDIR)) {
+		return False;
+	}
+
+	share = lp_parm_string(-1, "torture", "share");
+	host  = lp_parm_string(-1, "torture", "host");
+
+	printf("create the first new sessions\n");
+	session1 = smbcli_session_init(cli->transport, mem_ctx, False);
+	setup.in.sesskey = cli->transport->negotiate.sesskey;
+	setup.in.capabilities = cli->transport->negotiate.capabilities;
+	setup.in.workgroup = lp_workgroup();
+	setup.in.credentials = cmdline_credentials;
+	status = smb_composite_sesssetup(session1, &setup);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	session1->vuid = setup.out.vuid;
+	printf("vuid1=%d\n", session1->vuid);
+
+	printf("create a tree context on the with vuid1\n");
+	tree = smbcli_tree_init(session1, mem_ctx, False);
+	tcon.generic.level = RAW_TCON_TCONX;
+	tcon.tconx.in.flags = 0;
+	tcon.tconx.in.password = data_blob(NULL, 0);
+	tcon.tconx.in.path = talloc_asprintf(mem_ctx, "\\\\%s\\%s", host, share);
+	tcon.tconx.in.device = "A:";
+	status = smb_raw_tcon(tree, mem_ctx, &tcon);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	tree->tid = tcon.tconx.out.tid;
+	printf("tid=%d\n", tree->tid);
+
+	printf("create a file using vuid1\n");
+	io.generic.level = RAW_OPEN_NTCREATEX;
+	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.flags = 0;
+	io.ntcreatex.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
+	io.ntcreatex.in.create_options = 0;
+	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
+	io.ntcreatex.in.share_access = NTCREATEX_SHARE_ACCESS_READ | NTCREATEX_SHARE_ACCESS_WRITE;
+	io.ntcreatex.in.alloc_size = 0;
+	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_CREATE;
+	io.ntcreatex.in.impersonation = NTCREATEX_IMPERSONATION_ANONYMOUS;
+	io.ntcreatex.in.security_flags = 0;
+	io.ntcreatex.in.fname = fname1;
+	status = smb_raw_open(tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	fnum1 = io.ntcreatex.out.file.fnum;
+
+	printf("write using vuid1\n");
+	wr.generic.level = RAW_WRITE_WRITEX;
+	wr.writex.in.file.fnum = fnum1;
+	wr.writex.in.offset = 0;
+	wr.writex.in.wmode = 0;
+	wr.writex.in.remaining = 0;
+	wr.writex.in.count = 1;
+	wr.writex.in.data = &c;
+	status = smb_raw_write(tree, &wr);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_VALUE(wr.writex.out.nwritten, 1);
+
+	printf("ulogoff the vuid1\n");
+	status = smb_raw_ulogoff(session1);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	printf("create the second new sessions\n");
+	session2 = smbcli_session_init(cli->transport, mem_ctx, False);
+	setup.in.sesskey = cli->transport->negotiate.sesskey;
+	setup.in.capabilities = cli->transport->negotiate.capabilities;
+	setup.in.workgroup = lp_workgroup();
+	setup.in.credentials = cmdline_credentials;
+	status = smb_composite_sesssetup(session2, &setup);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	session2->vuid = setup.out.vuid;
+	printf("vuid2=%d\n", session2->vuid);
+
+	printf("use the existing tree with vuid2\n");
+	tree->session = session2;
+
+	printf("create a file using vuid2\n");
+	io.generic.level = RAW_OPEN_NTCREATEX;
+	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.flags = 0;
+	io.ntcreatex.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
+	io.ntcreatex.in.create_options = 0;
+	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
+	io.ntcreatex.in.share_access = NTCREATEX_SHARE_ACCESS_READ | NTCREATEX_SHARE_ACCESS_WRITE;
+	io.ntcreatex.in.alloc_size = 0;
+	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_CREATE;
+	io.ntcreatex.in.impersonation = NTCREATEX_IMPERSONATION_ANONYMOUS;
+	io.ntcreatex.in.security_flags = 0;
+	io.ntcreatex.in.fname = fname2;
+	status = smb_raw_open(tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	fnum2 = io.ntcreatex.out.file.fnum;
+
+	printf("write using vuid2\n");
+	wr.generic.level = RAW_WRITE_WRITEX;
+	wr.writex.in.file.fnum = fnum2;
+	wr.writex.in.offset = 0;
+	wr.writex.in.wmode = 0;
+	wr.writex.in.remaining = 0;
+	wr.writex.in.count = 1;
+	wr.writex.in.data = &c;
+	status = smb_raw_write(tree, &wr);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_VALUE(wr.writex.out.nwritten, 1);
+
+	printf("ulogoff the vuid2\n");
+	status = smb_raw_ulogoff(session2);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	/* this also demonstrates that SMBtdis doesn't need a valid vuid */
+	printf("disconnect the existing tree connection\n");
+	status = smb_tree_disconnect(tree);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	printf("disconnect the existing tree connection\n");
+	status = smb_tree_disconnect(tree);
+	CHECK_STATUS(status, NT_STATUS_DOS(ERRSRV,ERRinvnid));
+
+	/* close down the new tree */
+	talloc_free(tree);
+	
+done:
+	return ret;
+}
+
+/*
   test pid ops
   this test demonstrates that exit() only sees the PID
   used for the open() calls
@@ -732,6 +882,7 @@ static BOOL torture_raw_context_int(void)
 
 	ret &= test_session(cli, mem_ctx);
 	ret &= test_tree(cli, mem_ctx);
+	ret &= test_tree_ulogoff(cli, mem_ctx);
 	ret &= test_pid_exit_only_sees_open(cli, mem_ctx);
 	ret &= test_pid_2sess(cli, mem_ctx);
 	ret &= test_pid_2tcon(cli, mem_ctx);
