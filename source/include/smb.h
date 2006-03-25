@@ -488,6 +488,36 @@ typedef struct {
 	BOOL is_wild;
 } name_compare_entry;
 
+struct trans_state {
+	struct trans_state *next, *prev;
+	uint16 vuid;
+	uint16 mid;
+
+	uint32 max_param_return;
+	uint32 max_data_return;
+	uint32 max_setup_return;
+
+	uint8 cmd;		/* SMBtrans or SMBtrans2 */
+
+	fstring name;		/* for trans requests */
+	uint16 call;		/* for trans2 and nttrans requests */
+
+	BOOL close_on_completion;
+	BOOL one_way;
+
+	unsigned int setup_count;
+	uint16 *setup;
+
+	size_t received_data;
+	size_t received_param;
+
+	size_t total_param;
+	char *param;
+
+	size_t total_data;
+	char *data;
+};
+
 /* Include VFS stuff */
 
 #include "smb_acls.h"
@@ -552,6 +582,7 @@ typedef struct connection_struct {
 	name_compare_entry *veto_oplock_list; /* Per-share list of files to refuse oplocks on. */       
 	name_compare_entry *aio_write_behind_list; /* Per-share list of files to use aio write behind on. */       
 	struct dfree_cached_info *dfree_info;
+	struct trans_state *pending_trans;
 } connection_struct;
 
 struct current_user {
