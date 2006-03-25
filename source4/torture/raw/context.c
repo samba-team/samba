@@ -406,7 +406,7 @@ static BOOL test_pid_exit_only_sees_open(struct smbcli_state *cli, TALLOC_CTX *m
 	fnum = io.ntcreatex.out.file.fnum;
 
 	printf("write using pid2\n");
-	cli->session->pid = pid1;
+	cli->session->pid = pid2;
 	wr.generic.level = RAW_WRITE_WRITEX;
 	wr.writex.in.file.fnum = fnum;
 	wr.writex.in.offset = 0;
