@@ -1119,14 +1119,20 @@ NTSTATUS brl_lockquery(struct byte_range_lock *br_lck,
 
 	/* Make sure existing locks don't conflict */
 	for (i=0; i < br_lck->num_locks; i++) {
-		/*
-		 * Our own locks don't conflict.
-		 */
-		if (brl_conflict_other(&locks[i], &lock)) {
-			*psmbpid = locks[i].context.smbpid;
-        		*pstart = locks[i].start;
-		        *psize = locks[i].size;
-        		*plock_type = locks[i].lock_type = *plock_type;
+		struct lock_struct *exlock = &locks[i];
+		BOOL conflict = False;
+
+		if (exlock->lock_flav == WINDOWS_LOCK) {
+			conflict = brl_conflict(exlock, &lock);
+		} else {	
+			conflict = brl_conflict_posix(exlock, &lock);
+		}
+
+		if (conflict) {
+			*psmbpid = exlock->context.smbpid;
+        		*pstart = exlock->start;
+		        *psize = exlock->size;
+        		*plock_type = exlock->lock_type;
 			return NT_STATUS_LOCK_NOT_GRANTED;
 		}
 	}
