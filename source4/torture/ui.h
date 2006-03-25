@@ -49,4 +49,9 @@ struct torture_context
 {
 	const struct torture_ui_ops *ui_ops;
 	void *ui_data;
+
+	int skipped;
+	int todo;
+	int success;
+	int failed;
 };
