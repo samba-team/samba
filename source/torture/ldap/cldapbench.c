@@ -24,6 +24,7 @@
 #include "lib/events/events.h"
 #include "libcli/cldap/cldap.h"
 #include "libcli/resolve/resolve.h"
+#include "torture/torture.h"
 
 struct bench_state {
 	int pass_count, fail_count;
