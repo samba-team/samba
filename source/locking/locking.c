@@ -104,7 +104,7 @@ BOOL is_locked(files_struct *fsp,
 			if (!br_lck) {
 				return False;
 			}
-			ret = !brl_locktest(br_lck,
+			ret = brl_locktest(br_lck,
 					global_smbpid,
 					procid_self(),
 					offset,
@@ -118,7 +118,7 @@ BOOL is_locked(files_struct *fsp,
 		if (!br_lck) {
 			return False;
 		}
-		ret = !brl_locktest(br_lck,
+		ret = brl_locktest(br_lck,
 				global_smbpid,
 				procid_self(),
 				offset,
