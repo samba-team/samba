@@ -441,11 +441,11 @@ static NTSTATUS gensec_gssapi_update(struct gensec_security *gensec_security,
 				gensec_gssapi_state->sasl_state = STAGE_DONE;
 
 				if (gensec_have_feature(gensec_security, GENSEC_FEATURE_SEAL)) {
-					DEBUG(3, ("GSSAPI Connection will be cryptographicly sealed\n"));
+					DEBUG(5, ("GSSAPI Connection will be cryptographicly sealed\n"));
 				} else if (gensec_have_feature(gensec_security, GENSEC_FEATURE_SIGN)) {
-					DEBUG(3, ("GSSAPI Connection will be cryptographicly signed\n"));
+					DEBUG(5, ("GSSAPI Connection will be cryptographicly signed\n"));
 				} else {
-					DEBUG(3, ("GSSAPI Connection will have no cryptographicly protection\n"));
+					DEBUG(5, ("GSSAPI Connection will have no cryptographic protection\n"));
 				}
 
 				return NT_STATUS_OK;
@@ -678,11 +678,11 @@ static NTSTATUS gensec_gssapi_update(struct gensec_security *gensec_security,
 		/* quirk:  This changes the value that gensec_have_feature returns, to be that after SASL negotiation */
 		gensec_gssapi_state->sasl_state = STAGE_DONE;
 		if (gensec_have_feature(gensec_security, GENSEC_FEATURE_SEAL)) {
-			DEBUG(3, ("SASL/GSSAPI Connection from client will be cryptographicly sealed\n"));
+			DEBUG(5, ("SASL/GSSAPI Connection from client will be cryptographicly sealed\n"));
 		} else if (gensec_have_feature(gensec_security, GENSEC_FEATURE_SIGN)) {
-			DEBUG(3, ("SASL/GSSAPI Connection from client will be cryptographicly signed\n"));
+			DEBUG(5, ("SASL/GSSAPI Connection from client will be cryptographicly signed\n"));
 		} else {
-			DEBUG(3, ("SASL/GSSAPI Connection from client will have no cryptographicly protection\n"));
+			DEBUG(5, ("SASL/GSSAPI Connection from client will have no cryptographic protection\n"));
 		}
 
 		*out = data_blob(NULL, 0);
