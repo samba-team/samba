@@ -287,7 +287,7 @@ static const struct smb_message_struct
 /* 0x6e */ { NULL, NULL, 0 },
 /* 0x6f */ { NULL, NULL, 0 },
 /* 0x70 */ { "SMBtcon",		smbsrv_reply_tcon,		NEED_SESS },
-/* 0x71 */ { "SMBtdis",		smbsrv_reply_tdis,		NEED_SESS },
+/* 0x71 */ { "SMBtdis",		smbsrv_reply_tdis,		NEED_TCON },
 /* 0x72 */ { "SMBnegprot",	smbsrv_reply_negprot,		0 },
 /* 0x73 */ { "SMBsesssetupX",	smbsrv_reply_sesssetup,		0 },
 /* 0x74 */ { "SMBulogoffX",	smbsrv_reply_ulogoffX,		NEED_SESS }, /* ulogoff doesn't give a valid TID */
@@ -530,6 +530,7 @@ static void switch_message(int type, struct smbsrv_request *req)
 		switch (type) {
 			case SMBntcreateX:
 			case SMBntcancel:
+			case SMBtdis:
 				status = NT_STATUS_DOS(ERRSRV, ERRinvnid);
 				break;
 			default:
