@@ -179,12 +179,12 @@ BOOL torture_rpc_lsa_secrets(void)
 		return False;
 	}
 
-	if (!test_lsa_OpenPolicy2(p, mem_ctx, &handle)) {
-		ret = False;
-	}
-
-	if (!test_CreateSecret_basic(p, mem_ctx, handle)) {
-		ret = False;
+	if (test_lsa_OpenPolicy2(p, mem_ctx, &handle)) {
+		if (!test_CreateSecret_basic(p, mem_ctx, handle)) {
+			ret = False;
+		}
+	} else {
+		return False;
 	}
 
 	talloc_free(mem_ctx);
