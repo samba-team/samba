@@ -144,6 +144,7 @@ NTSTATUS cli_credentials_get_ntlm_response(struct cli_credentials *cred, TALLOC_
 		/* LM Key is incompatible... */
 		*flags &= ~CLI_CRED_LANMAN_AUTH;
 	} else {
+		uint8_t lm_hash[16];
 		nt_response = data_blob_talloc(mem_ctx, NULL, 24);
 		SMBOWFencrypt(nt_hash->hash, challenge.data,
 			      nt_response.data);
@@ -160,7 +161,6 @@ NTSTATUS cli_credentials_get_ntlm_response(struct cli_credentials *cred, TALLOC_
 			if (!password) {
 				lm_response = nt_response;
 			} else {
-				uint8_t lm_hash[16];
 				lm_response = data_blob_talloc(mem_ctx, NULL, 24);
 				if (!SMBencrypt(password,challenge.data,
 						lm_response.data)) {
@@ -188,6 +188,15 @@ NTSTATUS cli_credentials_get_ntlm_response(struct cli_credentials *cred, TALLOC_
 			/* LM Key is incompatible... */
 			lm_response = nt_response;
 			*flags &= ~CLI_CRED_LANMAN_AUTH;
+
+			const char *password;
+			password = cli_credentials_get_password(cred);
+			if (password) {
+				E_deshash(password, lm_hash);
+				lm_session_key = data_blob_talloc(mem_ctx, NULL, 16);
+				memcpy(lm_session_key.data, lm_hash, 8);
+				memset(&lm_session_key.data[8], '\0', 8);
+			}
 		}
 	}
 	if (_lm_response) {
