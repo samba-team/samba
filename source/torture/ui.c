@@ -63,14 +63,17 @@ void torture_comment(struct torture_test *test, const char *comment, ...) _PRINT
 void torture_ok(struct torture_test *test)
 {
 	test->context->ui_ops->test_result(test, TORTURE_OK);
+	test->context->success++;
 }
 
 void torture_fail(struct torture_test *test)
 {
 	test->context->ui_ops->test_result(test, TORTURE_FAIL);
+	test->context->failed++;
 }
 
 void torture_skip(struct torture_test *test)
 {
 	test->context->ui_ops->test_result(test, TORTURE_SKIP);
+	test->context->skipped++;
 }
