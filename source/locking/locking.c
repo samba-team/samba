@@ -137,6 +137,45 @@ BOOL is_locked(files_struct *fsp,
 }
 
 /****************************************************************************
+ Find out if a lock could be granted - return who is blocking us if we can't.
+****************************************************************************/
+
+NTSTATUS query_lock(files_struct *fsp,
+			uint16 *psmbpid,
+			SMB_BIG_UINT *pcount,
+			SMB_BIG_UINT *poffset,
+			enum brl_type *plock_type,
+			enum brl_flavour lock_flav)
+{
+	struct byte_range_lock *br_lck = NULL;
+	NTSTATUS status = NT_STATUS_LOCK_NOT_GRANTED;
+
+	if (!OPEN_FSP(fsp) || !fsp->can_lock) {
+		return NT_STATUS_INVALID_HANDLE;
+	}
+
+	if (!lp_locking(SNUM(fsp->conn))) {
+		return NT_STATUS_OK;
+	}
+
+	br_lck = brl_get_locks(NULL, fsp);
+	if (!br_lck) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	status = brl_lockquery(br_lck,
+			psmbpid,
+			procid_self(),
+			poffset,
+			pcount,
+			plock_type,
+			lock_flav);
+
+	TALLOC_FREE(br_lck);
+	return status;
+}
+
+/****************************************************************************
  Utility function called by locking requests.
 ****************************************************************************/
 
@@ -151,6 +190,10 @@ NTSTATUS do_lock(files_struct *fsp,
 	struct byte_range_lock *br_lck = NULL;
 	NTSTATUS status = NT_STATUS_LOCK_NOT_GRANTED;
 
+	if (!OPEN_FSP(fsp) || !fsp->can_lock) {
+		return NT_STATUS_INVALID_HANDLE;
+	}
+
 	if (!lp_locking(SNUM(fsp->conn))) {
 		return NT_STATUS_OK;
 	}
@@ -160,10 +203,6 @@ NTSTATUS do_lock(files_struct *fsp,
 	DEBUG(10,("do_lock: lock flavour %s lock type %s start=%.0f len=%.0f requested for fnum %d file %s\n",
 		lock_flav_name(lock_flav), lock_type_name(lock_type),
 		(double)offset, (double)count, fsp->fnum, fsp->fsp_name ));
-
-	if (!OPEN_FSP(fsp) || !fsp->can_lock) {
-		return status;
-	}
 
 	br_lck = brl_get_locks(NULL, fsp);
 	if (!br_lck) {
@@ -242,28 +281,6 @@ NTSTATUS do_lock_spin(files_struct *fsp,
 	return ret;
 }
 
-/* Struct passed to brl_unlock. */
-struct posix_unlock_data_struct {
-	files_struct *fsp;
-	SMB_BIG_UINT offset;
-	SMB_BIG_UINT count;
-};
-
-#if 0
-/****************************************************************************
- Function passed to brl_unlock to allow POSIX unlock to be done first.
-****************************************************************************/
-
-static void posix_unlock(void *pre_data)
-{
-	struct posix_unlock_data_struct *pdata = (struct posix_unlock_data_struct *)pre_data;
-
-	if (lp_posix_locking(SNUM(pdata->fsp->conn))) {
-		release_posix_lock(pdata->fsp, pdata->offset, pdata->count);
-	}
-}
-#endif
-
 /****************************************************************************
  Utility function called by unlocking requests.
 ****************************************************************************/
@@ -275,9 +292,6 @@ NTSTATUS do_unlock(files_struct *fsp,
 			enum brl_flavour lock_flav)
 {
 	BOOL ok = False;
-#if 0
-	struct posix_unlock_data_struct posix_data;
-#endif
 	struct byte_range_lock *br_lck = NULL;
 	
 	if (!lp_locking(SNUM(fsp->conn))) {
@@ -290,12 +304,6 @@ NTSTATUS do_unlock(files_struct *fsp,
 	
 	DEBUG(10,("do_unlock: unlock start=%.0f len=%.0f requested for fnum %d file %s\n",
 		  (double)offset, (double)count, fsp->fnum, fsp->fsp_name ));
-
-#if 0
-	posix_data.fsp = fsp;
-	posix_data.offset = offset;
-	posix_data.count = count;
-#endif
 
 	br_lck = brl_get_locks(NULL, fsp);
 	if (!br_lck) {

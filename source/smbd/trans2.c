@@ -3546,28 +3546,36 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 			count = (SMB_BIG_UINT)IVAL(pdata,POSIX_LOCK_LEN_OFFSET);
 #endif /* HAVE_LONGLONG */
 
-#if 0
-			/* We need a vfs change to get data on already locked regions... */
-			status = do_lock(fsp,
-					lock_pid,
-					count,
-					offset,
-					lock_type,
-					POSIX_LOCK,
-					&my_lock_ctx);
-#endif
+			status = query_lock(fsp,
+					&lock_pid,
+					&count,
+					&offset,
+					&lock_type,
+					POSIX_LOCK);
 
 			if (ERROR_WAS_LOCK_DENIED(status)) {
 				/* Here we need to report who has it locked... */
 				data_size = POSIX_LOCK_DATA_SIZE;
-				/* FIXME - Coverity tmp fix. */
-				memset(pdata, '\0', POSIX_LOCK_DATA_SIZE);
+
+				SSVAL(pdata, POSIX_LOCK_TYPE_OFFSET, lock_type);
+				SSVAL(pdata, POSIX_LOCK_FLAGS_OFFSET, 0);
+				SIVAL(pdata, POSIX_LOCK_PID_OFFSET, lock_pid);
+#if defined(HAVE_LONGLONG)
+				SIVAL(pdata, POSIX_LOCK_START_OFFSET, (uint32)(offset & 0xFFFFFFFF));
+				SIVAL(pdata, POSIX_LOCK_START_OFFSET + 4, (uint32)((offset >> 32) & 0xFFFFFFFF));
+				SIVAL(pdata, POSIX_LOCK_LEN_OFFSET, (uint32)(count & 0xFFFFFFFF));
+				SIVAL(pdata, POSIX_LOCK_LEN_OFFSET + 4, (uint32)((count >> 32) & 0xFFFFFFFF));
+#else /* HAVE_LONGLONG */
+				SIVAL(pdata, POSIX_LOCK_START_OFFSET, offset);
+				SIVAL(pdata, POSIX_LOCK_LEN_OFFSET, count);
+#endif /* HAVE_LONGLONG */
+
 			} else if (NT_STATUS_IS_OK(status)) {
 				/* For success we just return a copy of what we sent
 				   with the lock type set to POSIX_LOCK_TYPE_UNLOCK. */
 				data_size = POSIX_LOCK_DATA_SIZE;
 				memcpy(pdata, lock_data, POSIX_LOCK_DATA_SIZE);
-				SSVAL(pdata, POSIX_LOCK_TYPE_OFFSET,POSIX_LOCK_TYPE_UNLOCK);
+				SSVAL(pdata, POSIX_LOCK_TYPE_OFFSET, POSIX_LOCK_TYPE_UNLOCK);
 			} else {
 				return ERROR_NT(status);
 			}

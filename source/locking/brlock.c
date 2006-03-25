@@ -1080,7 +1080,7 @@ BOOL brl_locktest(struct byte_range_lock *br_lck,
 	 */
 
 	if(lp_posix_locking(fsp->conn->cnum) && (lock_flav == WINDOWS_LOCK)) {
-		ret = is_posix_locked(fsp, start, size, lock_type, WINDOWS_LOCK);
+		ret = is_posix_locked(fsp, &start, &size, &lock_type, WINDOWS_LOCK);
 
 		DEBUG(10,("brl_locktest: posix start=%.0f len=%.0f %s for fnum %d file %s\n",
 			(double)start, (double)size, ret ? "locked" : "unlocked",
@@ -1090,6 +1090,69 @@ BOOL brl_locktest(struct byte_range_lock *br_lck,
 	/* no conflicts - we could have added it */
 	return ret;
 }
+
+/****************************************************************************
+ Query for existing locks.
+****************************************************************************/
+
+NTSTATUS brl_lockquery(struct byte_range_lock *br_lck,
+		uint16 *psmbpid,
+		struct process_id pid,
+		br_off *pstart,
+		br_off *psize, 
+		enum brl_type *plock_type,
+		enum brl_flavour lock_flav)
+{
+	unsigned int i;
+	struct lock_struct lock;
+	struct lock_struct *locks = (struct lock_struct *)br_lck->lock_data;
+	files_struct *fsp = br_lck->fsp;
+
+	lock.context.smbpid = *psmbpid;
+	lock.context.pid = pid;
+	lock.context.tid = br_lck->fsp->conn->cnum;
+	lock.start = *pstart;
+	lock.size = *psize;
+	lock.fnum = fsp->fnum;
+	lock.lock_type = *plock_type;
+	lock.lock_flav = lock_flav;
+
+	/* Make sure existing locks don't conflict */
+	for (i=0; i < br_lck->num_locks; i++) {
+		/*
+		 * Our own locks don't conflict.
+		 */
+		if (brl_conflict_other(&locks[i], &lock)) {
+			*psmbpid = locks[i].context.smbpid;
+        		*pstart = locks[i].start;
+		        *psize = locks[i].size;
+        		*plock_type = locks[i].lock_type = *plock_type;
+			return NT_STATUS_LOCK_NOT_GRANTED;
+		}
+	}
+
+	/*
+	 * There is no lock held by an SMB daemon, check to
+	 * see if there is a POSIX lock from a UNIX or NFS process.
+	 */
+
+	if(lp_posix_locking(fsp->conn->cnum)) {
+		BOOL ret = is_posix_locked(fsp, pstart, psize, plock_type, POSIX_LOCK);
+
+		DEBUG(10,("brl_lockquery: posix start=%.0f len=%.0f %s for fnum %d file %s\n",
+			(double)*pstart, (double)*psize, ret ? "locked" : "unlocked",
+			fsp->fnum, fsp->fsp_name ));
+
+		if (ret) {
+			/* Hmmm. No clue what to set smbpid to - use -1. */
+			*psmbpid = 0xFFFF;
+			return NT_STATUS_LOCK_NOT_GRANTED;
+		}
+        }
+
+	return NT_STATUS_OK;
+}
+
 
 /****************************************************************************
  Remove a particular pending lock.

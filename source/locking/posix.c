@@ -737,24 +737,24 @@ static BOOL posix_fcntl_getlock(files_struct *fsp, SMB_OFF_T *poffset, SMB_OFF_T
 ****************************************************************************/
 
 BOOL is_posix_locked(files_struct *fsp,
-			SMB_BIG_UINT u_offset,
-			SMB_BIG_UINT u_count,
-			enum brl_type lock_type,
+			SMB_BIG_UINT *pu_offset,
+			SMB_BIG_UINT *pu_count,
+			enum brl_type *plock_type,
 			enum brl_flavour lock_flav)
 {
 	SMB_OFF_T offset;
 	SMB_OFF_T count;
-	int posix_lock_type = map_posix_lock_type(fsp,lock_type);
+	int posix_lock_type = map_posix_lock_type(fsp,*plock_type);
 
 	DEBUG(10,("is_posix_locked: File %s, offset = %.0f, count = %.0f, type = %s\n",
-			fsp->fsp_name, (double)u_offset, (double)u_count, posix_lock_type_name(lock_type) ));
+		fsp->fsp_name, (double)*pu_offset, (double)*pu_count, posix_lock_type_name(*plock_type) ));
 
 	/*
 	 * If the requested lock won't fit in the POSIX range, we will
 	 * never set it, so presume it is not locked.
 	 */
 
-	if(!posix_lock_in_range(&offset, &count, u_offset, u_count)) {
+	if(!posix_lock_in_range(&offset, &count, *pu_offset, *pu_count)) {
 		return False;
 	}
 
@@ -762,7 +762,17 @@ BOOL is_posix_locked(files_struct *fsp,
 		return False;
 	}
 
-	return (posix_lock_type == F_UNLCK ? False : True);
+	if (posix_lock_type == F_UNLCK) {
+		return False;
+	}
+
+	if (lock_flav == POSIX_LOCK) {
+		/* Only POSIX lock queries need to know the details. */
+		*pu_offset = (SMB_BIG_UINT)offset;
+		*pu_count = (SMB_BIG_UINT)count;
+		*plock_type = (posix_lock_type == F_RDLCK) ? READ_LOCK : WRITE_LOCK;
+	}
+	return True;
 }
 
 /*
