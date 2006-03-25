@@ -1,7 +1,7 @@
 /* 
    Unix SMB/CIFS implementation.
-   SMB torture tester
-   Copyright (C) Andrew Tridgell 1997-2003
+   SMB torture UI functions
+
    Copyright (C) Jelmer Vernooij 2006
    
    This program is free software; you can redistribute it and/or modify
@@ -19,31 +19,34 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#ifndef __TORTURE_H__
-#define __TORTURE_H__
-
-struct smbcli_state;
-struct torture_op {
-	const char *name;
-	BOOL (*fn)(void);
-	BOOL (*multi_fn)(struct smbcli_state *, int );
-	struct torture_op *prev, *next;
-};
-
-extern struct torture_op * torture_ops;
-
-extern BOOL use_oplocks;
-extern BOOL torture_showall;
-extern int torture_entries;
-extern int torture_nprocs;
-extern int torture_seed;
-extern int torture_numops;
-extern int torture_failures;
-extern BOOL use_level_II_oplocks;
-
-struct torture_context;
 struct torture_test;
 
-#include "torture/proto.h"
+enum torture_result { 
+	TORTURE_OK=0, 
+	TORTURE_FAIL=1, 
+	TORTURE_TODO=2, 
+	TORTURE_SKIP=3
+};
 
-#endif /* __TORTURE_H__ */
+struct torture_ui_ops
+{
+	void (*comment) (struct torture_test *, const char *);
+	void (*test_start) (struct torture_test *);
+	void (*test_result) (struct torture_test *, enum torture_result);
+};
+
+struct torture_test
+{
+	char *name;
+	char *description;
+
+	void *ui_data;
+
+	struct torture_context *context;
+};
+
+struct torture_context
+{
+	const struct torture_ui_ops *ui_ops;
+	void *ui_data;
+};
