@@ -84,4 +84,4 @@ libcli/util/asn1_proto.h: samba/asn1/proto.h
 libcli/util/error.h: core/error.h
 libcli/util/proto.h: core/error_proto.h
 lib/db_wrap.h: db_wrap.h
-lib/db_wrap_proto.h: db_wrap/proto.h 
+lib/db_wrap_proto.h: db_wrap/proto.h
