@@ -72,6 +72,11 @@ struct dcerpc_connection *dcerpc_connection_init(TALLOC_CTX *mem_ctx,
 	}
 
 	c->event_ctx = ev;
+	
+	if (!talloc_reference(c, ev)) {
+		talloc_free(c);
+		return NULL;
+	}
 	c->call_id = 1;
 	c->security_state.auth_info = NULL;
 	c->security_state.session_key = dcerpc_generic_session_key;
@@ -478,6 +483,8 @@ static NTSTATUS dcerpc_map_reason(uint16_t reason)
 	switch (reason) {
 	case DCERPC_BIND_REASON_ASYNTAX:
 		return NT_STATUS_RPC_UNSUPPORTED_NAME_SYNTAX;
+	case DCERPC_BIND_REASON_INVALID_AUTH_TYPE:
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 	return NT_STATUS_UNSUCCESSFUL;
 }
