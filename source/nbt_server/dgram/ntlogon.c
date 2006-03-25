@@ -29,11 +29,13 @@
   reply to a SAM LOGON request
  */
 static void nbtd_ntlogon_sam_logon(struct dgram_mailslot_handler *dgmslot, 
+				   struct nbtd_interface *iface,
 				   struct nbt_dgram_packet *packet,
 				   const struct socket_address *src,
 				   struct nbt_ntlogon_packet *ntlogon)
 {
 	struct nbt_name *name = &packet->data.msg.dest_name;
+	struct nbtd_interface *reply_iface = nbtd_find_reply_iface(iface, src->addr, False);
 	struct nbt_ntlogon_packet reply;
 	struct nbt_ntlogon_sam_logon_reply *logon;
 
@@ -56,7 +58,7 @@ static void nbtd_ntlogon_sam_logon(struct dgram_mailslot_handler *dgmslot,
 
 	packet->data.msg.dest_name.type = 0;
 
-	dgram_mailslot_ntlogon_reply(dgmslot->dgmsock, 
+	dgram_mailslot_ntlogon_reply(reply_iface->dgmsock, 
 				     packet, 
 				     ntlogon->req.logon.mailslot_name,
 				     &reply);
@@ -97,7 +99,7 @@ void nbtd_mailslot_ntlogon_handler(struct dgram_mailslot_handler *dgmslot,
 
 	switch (ntlogon->command) {
 	case NTLOGON_SAM_LOGON:
-		nbtd_ntlogon_sam_logon(dgmslot, packet, src, ntlogon);
+		nbtd_ntlogon_sam_logon(dgmslot, iface, packet, src, ntlogon);
 		break;
 	default:
 		DEBUG(2,("unknown ntlogon op %d from %s:%d\n", 

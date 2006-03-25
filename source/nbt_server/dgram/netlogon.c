@@ -33,11 +33,13 @@
   reply to a GETDC request
  */
 static void nbtd_netlogon_getdc(struct dgram_mailslot_handler *dgmslot, 
+				struct nbtd_interface *iface,
 				struct nbt_dgram_packet *packet, 
 				const struct socket_address *src,
 				struct nbt_netlogon_packet *netlogon)
 {
 	struct nbt_name *name = &packet->data.msg.dest_name;
+	struct nbtd_interface *reply_iface = nbtd_find_reply_iface(iface, src->addr, False);
 	struct nbt_netlogon_packet reply;
 	struct nbt_netlogon_response_from_pdc *pdc;
 	const char *ref_attrs[] = {"nETBIOSName", NULL};
@@ -80,7 +82,7 @@ static void nbtd_netlogon_getdc(struct dgram_mailslot_handler *dgmslot,
 
 	packet->data.msg.dest_name.type = 0;
 
-	dgram_mailslot_netlogon_reply(dgmslot->dgmsock, 
+	dgram_mailslot_netlogon_reply(reply_iface->dgmsock, 
 				      packet, 
 				      netlogon->req.pdc.mailslot_name,
 				      &reply);
@@ -90,12 +92,14 @@ static void nbtd_netlogon_getdc(struct dgram_mailslot_handler *dgmslot,
 /*
   reply to a ADS style GETDC request
  */
-static void nbtd_netlogon_getdc2(struct dgram_mailslot_handler *dgmslot, 
+static void nbtd_netlogon_getdc2(struct dgram_mailslot_handler *dgmslot,
+				 struct nbtd_interface *iface,
 				 struct nbt_dgram_packet *packet, 
 				 const struct socket_address *src,
 				 struct nbt_netlogon_packet *netlogon)
 {
 	struct nbt_name *name = &packet->data.msg.dest_name;
+	struct nbtd_interface *reply_iface = nbtd_find_reply_iface(iface, src->addr, False);
 	struct nbt_netlogon_packet reply;
 	struct nbt_netlogon_response_from_pdc2 *pdc;
 	struct ldb_context *samctx;
@@ -104,7 +108,7 @@ static void nbtd_netlogon_getdc2(struct dgram_mailslot_handler *dgmslot,
 	struct ldb_message **ref_res, **dom_res;
 	int ret;
 	const char **services = lp_server_services();
-	struct socket_address *my_ip = socket_get_my_addr(dgmslot->dgmsock->sock, packet);
+	const char *my_ip = reply_iface->ip_address; 
 	if (!my_ip) {
 		DEBUG(0, ("Could not obtain own IP address for datagram socket\n"));
 		return;
@@ -188,14 +192,14 @@ static void nbtd_netlogon_getdc2(struct dgram_mailslot_handler *dgmslot,
 	pdc->site_name2       = "Default-First-Site-Name";
 	pdc->unknown          = 0x10; /* what is this? */
 	pdc->unknown2         = 2; /* and this ... */
-	pdc->pdc_ip           = my_ip->addr;
+	pdc->pdc_ip           = my_ip;
 	pdc->nt_version       = 13;
 	pdc->lmnt_token       = 0xFFFF;
 	pdc->lm20_token       = 0xFFFF;
 
 	packet->data.msg.dest_name.type = 0;
 
-	dgram_mailslot_netlogon_reply(dgmslot->dgmsock, 
+	dgram_mailslot_netlogon_reply(reply_iface->dgmsock, 
 				      packet, 
 				      netlogon->req.pdc2.mailslot_name,
 				      &reply);
@@ -235,10 +239,10 @@ void nbtd_mailslot_netlogon_handler(struct dgram_mailslot_handler *dgmslot,
 
 	switch (netlogon->command) {
 	case NETLOGON_QUERY_FOR_PDC:
-		nbtd_netlogon_getdc(dgmslot, packet, src, netlogon);
+		nbtd_netlogon_getdc(dgmslot, iface, packet, src, netlogon);
 		break;
 	case NETLOGON_QUERY_FOR_PDC2:
-		nbtd_netlogon_getdc2(dgmslot, packet, src, netlogon);
+		nbtd_netlogon_getdc2(dgmslot, iface, packet, src, netlogon);
 		break;
 	default:
 		DEBUG(2,("unknown netlogon op %d from %s:%d\n", 
