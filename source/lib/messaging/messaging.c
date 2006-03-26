@@ -507,7 +507,7 @@ NTSTATUS irpc_register(struct messaging_context *msg_ctx,
 	irpc->callnum = callnum;
 	irpc->fn      = fn;
 	irpc->private = private;
-	irpc->uuid = irpc->table->uuid;
+	irpc->uuid = irpc->table->syntax_id.uuid;
 
 	return NT_STATUS_OK;
 }
@@ -585,7 +585,7 @@ static void irpc_handler_request(struct messaging_context *msg_ctx,
 
 	for (i=msg_ctx->irpc; i; i=i->next) {
 		if (GUID_equal(&i->uuid, &m->header.uuid) &&
-		    i->table->if_version == m->header.if_version &&
+		    i->table->syntax_id.if_version == m->header.if_version &&
 		    i->callnum == m->header.callnum) {
 			break;
 		}
@@ -717,9 +717,9 @@ struct irpc_request *irpc_call_send(struct messaging_context *msg_ctx,
 	talloc_set_destructor(irpc, irpc_destructor);
 
 	/* setup the header */
-	header.uuid = table->uuid;
+	header.uuid = table->syntax_id.uuid;
 
-	header.if_version = table->if_version;
+	header.if_version = table->syntax_id.if_version;
 	header.callid     = irpc->callid;
 	header.callnum    = callnum;
 	header.flags      = 0;

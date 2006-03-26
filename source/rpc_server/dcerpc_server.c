@@ -88,8 +88,8 @@ static struct dcesrv_connection_context *dcesrv_find_context(struct dcesrv_conne
 static BOOL interface_match(const struct dcesrv_interface *if1,
 							const struct dcesrv_interface *if2)
 {
-	return (if1->if_version == if2->if_version && 
-			GUID_equal(&if1->uuid, &if2->uuid));
+	return (if1->syntax_id.if_version == if2->syntax_id.if_version && 
+			GUID_equal(&if1->syntax_id.uuid, &if2->syntax_id.uuid));
 }
 
 /*
@@ -113,7 +113,8 @@ static const struct dcesrv_interface *find_interface(const struct dcesrv_endpoin
 static BOOL interface_match_by_uuid(const struct dcesrv_interface *iface,
 				    const struct GUID *uuid, uint32_t if_version)
 {
-	return (iface->if_version == if_version && GUID_equal(&iface->uuid, uuid));
+	return (iface->syntax_id.if_version == if_version && 
+			GUID_equal(&iface->syntax_id.uuid, uuid));
 }
 
 /*

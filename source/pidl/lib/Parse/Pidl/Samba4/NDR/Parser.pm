@@ -2200,8 +2200,10 @@ sub FunctionTable($)
 
 	pidl "\nconst struct dcerpc_interface_table dcerpc_table_$interface->{NAME} = {";
 	pidl "\t.name\t\t= \"$interface->{NAME}\",";
-	pidl "\t.uuid\t\t= ". print_uuid($interface->{UUID}) .",";
-	pidl "\t.if_version\t= DCERPC_$uname\_VERSION,";
+	pidl "\t.syntax_id\t= {";
+	pidl "\t\t" . print_uuid($interface->{UUID}) .",";
+	pidl "\t\tDCERPC_$uname\_VERSION";
+	pidl "\t},";
 	pidl "\t.helpstring\t= DCERPC_$uname\_HELPSTRING,";
 	pidl "\t.num_calls\t= $count,";
 	pidl "\t.calls\t\t= $interface->{NAME}\_calls,";

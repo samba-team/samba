@@ -65,8 +65,7 @@ static uint32_t build_ep_list(TALLOC_CTX *mem_ctx,
 			(*eps)[total].name = iface->iface.name;
 
 			description = d->ep_description;
-			description->object = iface->iface.uuid;
-			description->object_version = iface->iface.if_version;
+			description->object = iface->iface.syntax_id;
 
 			status = dcerpc_binding_build_tower(mem_ctx, description, &(*eps)[total].ep);
 			if (NT_STATUS_IS_ERR(status)) {
@@ -175,8 +174,7 @@ static error_status_t epm_Map(struct dcesrv_call_state *dce_call, TALLOC_CTX *me
 	struct dcesrv_ep_iface *eps;
 	struct epm_floor *floors;
 	enum dcerpc_transport_t transport;
-	struct GUID ndr_uuid;
-	uint16_t ndr_version;
+	struct dcerpc_syntax_id ndr_syntax;
 
 	count = build_ep_list(mem_ctx, dce_call->conn->dce_ctx->endpoint_list, &eps);
 
@@ -198,11 +196,11 @@ static error_status_t epm_Map(struct dcesrv_call_state *dce_call, TALLOC_CTX *me
 
 	floors = r->in.map_tower->tower.floors;
 
-	dcerpc_floor_get_lhs_data(&r->in.map_tower->tower.floors[1], &ndr_uuid, &ndr_version);
+	dcerpc_floor_get_lhs_data(&r->in.map_tower->tower.floors[1], &ndr_syntax);
 
 	if (floors[1].lhs.protocol != EPM_PROTOCOL_UUID ||
-		!GUID_equal(&ndr_uuid, &ndr_transfer_syntax.uuid) ||
-	    ndr_version != ndr_transfer_syntax.if_version) {
+		!GUID_equal(&ndr_syntax.uuid, &ndr_transfer_syntax.uuid) ||
+	    ndr_syntax.if_version != ndr_transfer_syntax.if_version) {
 		goto failed;
 	}
 

@@ -178,8 +178,7 @@ struct dcerpc_authservice_list {
 
 struct dcerpc_interface_table {
 	const char *name;
-	struct GUID uuid;
-	uint32_t if_version;
+	struct dcerpc_syntax_id syntax_id;
 	const char *helpstring;
 	uint32_t num_calls;
 	const struct dcerpc_interface_call *calls;
@@ -195,8 +194,7 @@ struct dcerpc_interface_list {
 /* this describes a binding to a particular transport/pipe */
 struct dcerpc_binding {
 	enum dcerpc_transport_t transport;
-	struct GUID object;
-	uint16_t object_version;
+	struct dcerpc_syntax_id object;
 	const char *host;
 	const char *endpoint;
 	const char **options;

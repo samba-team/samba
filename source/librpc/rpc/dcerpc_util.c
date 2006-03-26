@@ -151,28 +151,27 @@ static const struct {
 
 const char *epm_floor_string(TALLOC_CTX *mem_ctx, struct epm_floor *epm_floor)
 {
-	struct GUID uuid;
-	uint16_t if_version;
+	struct dcerpc_syntax_id syntax;
 	NTSTATUS status;
 
 	switch(epm_floor->lhs.protocol) {
 		case EPM_PROTOCOL_UUID:
-			status = dcerpc_floor_get_lhs_data(epm_floor, &uuid, &if_version);
+			status = dcerpc_floor_get_lhs_data(epm_floor, &syntax);
 			if (NT_STATUS_IS_OK(status)) {
 				/* lhs is used: UUID */
 				char *uuidstr;
 
-				if (GUID_equal(&uuid, &ndr_transfer_syntax.uuid)) {
+				if (GUID_equal(&syntax.uuid, &ndr_transfer_syntax.uuid)) {
 					return "NDR";
 				} 
 
-				if (GUID_equal(&uuid, &ndr64_transfer_syntax.uuid)) {
+				if (GUID_equal(&syntax.uuid, &ndr64_transfer_syntax.uuid)) {
 					return "NDR64";
 				} 
 
-				uuidstr = GUID_string(mem_ctx, &uuid);
+				uuidstr = GUID_string(mem_ctx, &syntax.uuid);
 
-				return talloc_asprintf(mem_ctx, " uuid %s/0x%02x", uuidstr, if_version);
+				return talloc_asprintf(mem_ctx, " uuid %s/0x%02x", uuidstr, syntax.if_version);
 			} else { /* IPX */
 				return talloc_asprintf(mem_ctx, "IPX:%s", 
 						data_blob_hex_string(mem_ctx, &epm_floor->rhs.uuid.unknown));
@@ -247,9 +246,9 @@ const char *dcerpc_binding_string(TALLOC_CTX *mem_ctx, const struct dcerpc_bindi
 		return NULL;
 	}
 
-	if (!GUID_all_zero(&b->object)) { 
+	if (!GUID_all_zero(&b->object.uuid)) { 
 		s = talloc_asprintf(s, "%s@",
-				    GUID_string(mem_ctx, &b->object));
+				    GUID_string(mem_ctx, &b->object.uuid));
 	}
 
 	s = talloc_asprintf_append(s, "%s:", t_name);
@@ -309,7 +308,7 @@ NTSTATUS dcerpc_parse_binding(TALLOC_CTX *mem_ctx, const char *s, struct dcerpc_
 	if (p && PTR_DIFF(p, s) == 36) { /* 36 is the length of a UUID */
 		NTSTATUS status;
 
-		status = GUID_from_string(s, &b->object);
+		status = GUID_from_string(s, &b->object.uuid);
 
 		if (NT_STATUS_IS_ERR(status)) {
 			DEBUG(0, ("Failed parsing UUID\n"));
@@ -321,7 +320,7 @@ NTSTATUS dcerpc_parse_binding(TALLOC_CTX *mem_ctx, const char *s, struct dcerpc_
 		ZERO_STRUCT(b->object);
 	}
 
-	b->object_version = 0;
+	b->object.if_version = 0;
 
 	p = strchr(s, ':');
 	if (!p) {
@@ -421,7 +420,7 @@ NTSTATUS dcerpc_parse_binding(TALLOC_CTX *mem_ctx, const char *s, struct dcerpc_
 	return NT_STATUS_OK;
 }
 
-NTSTATUS dcerpc_floor_get_lhs_data(struct epm_floor *epm_floor, struct GUID *uuid, uint16_t *if_version)
+NTSTATUS dcerpc_floor_get_lhs_data(struct epm_floor *epm_floor, struct dcerpc_syntax_id *syntax)
 {
 	TALLOC_CTX *mem_ctx = talloc_init("floor_get_lhs_data");
 	struct ndr_pull *ndr = ndr_pull_init_blob(&epm_floor->lhs.lhs_data, mem_ctx);
@@ -429,27 +428,27 @@ NTSTATUS dcerpc_floor_get_lhs_data(struct epm_floor *epm_floor, struct GUID *uui
 	
 	ndr->flags |= LIBNDR_FLAG_NOALIGN;
 
-	status = ndr_pull_GUID(ndr, NDR_SCALARS | NDR_BUFFERS, uuid);
+	status = ndr_pull_GUID(ndr, NDR_SCALARS | NDR_BUFFERS, &syntax->uuid);
 	if (NT_STATUS_IS_ERR(status)) {
 		talloc_free(mem_ctx);
 		return status;
 	}
 
-	status = ndr_pull_uint16(ndr, NDR_SCALARS, if_version);
+	status = ndr_pull_uint16(ndr, NDR_SCALARS, &syntax->if_version);
 
 	talloc_free(mem_ctx);
 
 	return status;
 }
 
-static DATA_BLOB dcerpc_floor_pack_lhs_data(TALLOC_CTX *mem_ctx, const struct GUID *uuid, uint32_t if_version)
+static DATA_BLOB dcerpc_floor_pack_lhs_data(TALLOC_CTX *mem_ctx, const struct dcerpc_syntax_id *syntax)
 {
 	struct ndr_push *ndr = ndr_push_init_ctx(mem_ctx);
 
 	ndr->flags |= LIBNDR_FLAG_NOALIGN;
 
-	ndr_push_GUID(ndr, NDR_SCALARS | NDR_BUFFERS, uuid);
-	ndr_push_uint16(ndr, NDR_SCALARS, if_version);
+	ndr_push_GUID(ndr, NDR_SCALARS | NDR_BUFFERS, &syntax->uuid);
+	ndr_push_uint16(ndr, NDR_SCALARS, syntax->if_version);
 
 	return ndr_push_blob(ndr);
 }
@@ -658,7 +657,7 @@ NTSTATUS dcerpc_binding_from_tower(TALLOC_CTX *mem_ctx, struct epm_tower *tower,
 	}
 
 	/* Set object uuid */
-	status = dcerpc_floor_get_lhs_data(&tower->floors[0], &binding->object, &binding->object_version);
+	status = dcerpc_floor_get_lhs_data(&tower->floors[0], &binding->object);
 	
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("Error pulling object uuid and version: %s", nt_errstr(status)));	
@@ -710,7 +709,7 @@ NTSTATUS dcerpc_binding_build_tower(TALLOC_CTX *mem_ctx, struct dcerpc_binding *
 	/* Floor 0 */
 	tower->floors[0].lhs.protocol = EPM_PROTOCOL_UUID;
 
-	tower->floors[0].lhs.lhs_data = dcerpc_floor_pack_lhs_data(mem_ctx, &binding->object, binding->object_version);
+	tower->floors[0].lhs.lhs_data = dcerpc_floor_pack_lhs_data(mem_ctx, &binding->object);
 
 	tower->floors[0].rhs.uuid.unknown = data_blob_talloc_zero(mem_ctx, 2);
 	
@@ -718,8 +717,7 @@ NTSTATUS dcerpc_binding_build_tower(TALLOC_CTX *mem_ctx, struct dcerpc_binding *
 	tower->floors[1].lhs.protocol = EPM_PROTOCOL_UUID;
 
 	tower->floors[1].lhs.lhs_data = dcerpc_floor_pack_lhs_data(mem_ctx, 
-								&ndr_transfer_syntax.uuid, 
-								ndr_transfer_syntax.if_version);
+								&ndr_transfer_syntax);
 	
 	tower->floors[1].rhs.uuid.unknown = data_blob_talloc_zero(mem_ctx, 2);
 	
@@ -796,8 +794,7 @@ static void continue_epm_recv_binding(struct composite_context *ctx)
 	if (!composite_is_ok(c)) return;
 
 	/* prepare requested binding parameters */
-	s->binding->object         = s->table->uuid;
-	s->binding->object_version = s->table->if_version;
+	s->binding->object         = s->table->syntax_id;
 
 	c->status = dcerpc_binding_build_tower(s->pipe, s->binding, &s->twr.tower);
 	if (!composite_is_ok(c)) return;
@@ -1147,7 +1144,7 @@ NTSTATUS dcerpc_pipe_auth_recv(struct composite_context *c)
 						    struct pipe_auth_state);
 	status = composite_wait(c);
 	if (!NT_STATUS_IS_OK(status)) {
-		char *uuid_str = GUID_string(s->pipe, &s->table->uuid);
+		char *uuid_str = GUID_string(s->pipe, &s->table->syntax_id.uuid);
 		DEBUG(0, ("Failed to bind to uuid %s - %s\n", uuid_str, nt_errstr(status)));
 		talloc_free(uuid_str);
 	}
@@ -1247,8 +1244,7 @@ NTSTATUS dcerpc_secondary_context(struct dcerpc_pipe *p,
 
 	p2->context_id = ++p->conn->next_context_id;
 
-	p2->syntax.uuid = table->uuid;
-	p2->syntax.if_version = table->if_version;
+	p2->syntax = table->syntax_id;
 
 	p2->transfer_syntax = ndr_transfer_syntax;
 
