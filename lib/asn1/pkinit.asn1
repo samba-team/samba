@@ -17,7 +17,7 @@ id-pkrkeydata  OBJECT IDENTIFIER  ::= { id-pkinit 3 }
 id-pkekuoid    OBJECT IDENTIFIER  ::= { id-pkinit 4 }
 id-pkkdcekuoid OBJECT IDENTIFIER  ::= { id-pkinit 5 }
 
-id-pksan	OBJECT IDENTIFIER ::=
+id-pkinit-san	OBJECT IDENTIFIER ::=
   { iso(1) org(3) dod(6) internet(1) security(5) kerberosv5(2)
     x509-sanan(2) }
 
