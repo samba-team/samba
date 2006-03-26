@@ -84,6 +84,8 @@ struct smbsrv_session {
 		struct timeval connect_time;
 		/* the time when the session setup was finished */
 		struct timeval auth_time;
+		/* the time when the last request comes in */
+		struct timeval last_request_time;
 	} statistics;
 };
 
@@ -124,7 +126,10 @@ struct smbsrv_tcon {
 
 	/* some statictics for the management tools */
 	struct {
+		/* the time when the tree connect started */
 		struct timeval connect_time;
+		/* the time when the last request comes in */
+		struct timeval last_request_time;
 	} statistics;
 };
 
@@ -297,6 +302,14 @@ struct smbsrv_connection {
 		enum security_types security;
 		BOOL nt_status_support;
 	} config;
+
+	/* some statictics for the management tools */
+	struct {
+		/* the time when the client connects */
+		struct timeval connect_time;
+		/* the time when the last request comes in */
+		struct timeval last_request_time;
+	} statistics;
 };
 
 #include "smb_server/smb_server_proto.h"

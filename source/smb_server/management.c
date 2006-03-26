@@ -63,6 +63,7 @@ static NTSTATUS smbsrv_session_information(struct irpc_message *msg,
 		
 		info->connect_time = timeval_to_nttime(&sess->statistics.connect_time);
 		info->auth_time    = timeval_to_nttime(&sess->statistics.auth_time);
+		info->last_use_time= timeval_to_nttime(&sess->statistics.last_request_time);
 		i++;
 	}	
 
@@ -102,6 +103,7 @@ static NTSTATUS smbsrv_tcon_information(struct irpc_message *msg,
 		info->tid          = tcon->tid;
 		info->share_name   = tcon->share_name;
 		info->connect_time = timeval_to_nttime(&tcon->statistics.connect_time);
+		info->last_use_time= timeval_to_nttime(&tcon->statistics.last_request_time);
 		i++;
 	}
 

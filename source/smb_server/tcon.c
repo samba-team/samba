@@ -58,7 +58,8 @@ NTSTATUS smbsrv_smb2_init_tcons(struct smbsrv_session *smb_sess)
 /****************************************************************************
 find a tcon given a tid for SMB
 ****************************************************************************/
-static struct smbsrv_tcon *smbsrv_tcon_find(struct smbsrv_tcons_context *tcons_ctx, uint32_t tid)
+static struct smbsrv_tcon *smbsrv_tcon_find(struct smbsrv_tcons_context *tcons_ctx,
+					    uint32_t tid, struct timeval request_time)
 {
 	void *p;
 	struct smbsrv_tcon *tcon;
@@ -71,19 +72,24 @@ static struct smbsrv_tcon *smbsrv_tcon_find(struct smbsrv_tcons_context *tcons_c
 	if (!p) return NULL;
 
 	tcon = talloc_get_type(p, struct smbsrv_tcon);
+	if (!tcon) return NULL;
+
+	tcon->statistics.last_request_time = request_time;
 
 	return tcon;
 }
 
-struct smbsrv_tcon *smbsrv_smb_tcon_find(struct smbsrv_connection *smb_conn, uint32_t tid)
+struct smbsrv_tcon *smbsrv_smb_tcon_find(struct smbsrv_connection *smb_conn,
+					 uint32_t tid, struct timeval request_time)
 {
-	return smbsrv_tcon_find(&smb_conn->smb_tcons, tid);
+	return smbsrv_tcon_find(&smb_conn->smb_tcons, tid, request_time);
 }
 
-struct smbsrv_tcon *smbsrv_smb2_tcon_find(struct smbsrv_session *smb_sess, uint32_t tid)
+struct smbsrv_tcon *smbsrv_smb2_tcon_find(struct smbsrv_session *smb_sess,
+					  uint32_t tid, struct timeval request_time)
 {
 	if (!smb_sess) return NULL;
-	return smbsrv_tcon_find(&smb_sess->smb2_tcons, tid);
+	return smbsrv_tcon_find(&smb_sess->smb2_tcons, tid, request_time);
 }
 
 /*

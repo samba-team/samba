@@ -71,7 +71,10 @@ NTSTATUS smbsrv_recv_smb_request(void *private, DATA_BLOB blob)
 {
 	struct smbsrv_connection *smb_conn = talloc_get_type(private, struct smbsrv_connection);
 	struct smbsrv_request *req;
+	struct timeval cur_time = timeval_current();
 	uint8_t command;
+
+	smb_conn->statistics.last_request_time = cur_time;
 
 	/* see if its a special NBT packet */
 	if (CVAL(blob.data, 0) != 0) {
@@ -82,7 +85,7 @@ NTSTATUS smbsrv_recv_smb_request(void *private, DATA_BLOB blob)
 
 		req->in.buffer = talloc_steal(req, blob.data);
 		req->in.size = blob.length;
-		req->request_time = timeval_current();
+		req->request_time = cur_time;
 
 		smbsrv_reply_special(req);
 		return NT_STATUS_OK;
@@ -107,7 +110,7 @@ NTSTATUS smbsrv_recv_smb_request(void *private, DATA_BLOB blob)
 
 	req->in.buffer = talloc_steal(req, blob.data);
 	req->in.size = blob.length;
-	req->request_time = timeval_current();
+	req->request_time = cur_time;
 	req->chained_fnum = -1;
 	req->in.allocated = req->in.size;
 	req->in.hdr = req->in.buffer + NBT_HDR_SIZE;
@@ -471,7 +474,7 @@ static void switch_message(int type, struct smbsrv_request *req)
 
 	flags = smb_messages[type].flags;
 
-	req->tcon = smbsrv_smb_tcon_find(smb_conn, SVAL(req->in.hdr,HDR_TID));
+	req->tcon = smbsrv_smb_tcon_find(smb_conn, SVAL(req->in.hdr,HDR_TID), req->request_time);
 
 	if (!req->session) {
 		/* setup the user context for this request if it
@@ -484,7 +487,7 @@ static void switch_message(int type, struct smbsrv_request *req)
 				req->session = req->tcon->sec_share.session;
 			}
  		} else {
-			req->session = smbsrv_session_find(req->smb_conn, SVAL(req->in.hdr,HDR_UID));
+			req->session = smbsrv_session_find(req->smb_conn, SVAL(req->in.hdr,HDR_UID), req->request_time);
 		}
 	}
 
