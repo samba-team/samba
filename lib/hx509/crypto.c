@@ -945,16 +945,20 @@ _hx509_private_key_assign_key_file(hx509_private_key key,
 
     pw = _hx509_lock_get_passwords(lock);
 
-    for (i = 0; i < pw->len; i++) {
+    for (i = 0; i < pw->len + 1; i++) {
 #if HAVE_OPENSSL
 	EVP_PKEY *private_key;
+	const char *password = NULL;
 	FILE *f;
+
+	if (i < pw->len)
+	    password = pw->val[i];
 
 	f = fopen(fn, "r");
 	if (f == NULL)
 	    return ENOMEM;
 	
-	private_key = PEM_read_PrivateKey(f, NULL, NULL, pw->val[i]);
+	private_key = PEM_read_PrivateKey(f, NULL, NULL, rk_UNCONST(password));
 	fclose(f);
 	if (private_key == NULL)
 	    continue;
