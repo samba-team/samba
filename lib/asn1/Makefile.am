@@ -243,6 +243,7 @@ gen_files_pkinit =					\
 	asn1_id_pkrkeydata.x				\
 	asn1_id_pkekuoid.x				\
 	asn1_id_pkkdcekuoid.x				\
+	asn1_id_pkinit_san.x				\
 	asn1_DHNonce.x					\
 	asn1_TrustedCA.x				\
 	asn1_ExternalPrincipalIdentifier.x		\
