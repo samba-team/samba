@@ -20,7 +20,7 @@
 */
 
 #include "includes.h"
-#include "smb_server/smb_server.h"
+#include "smbd/process_model.h"
 #include "build.h"
 
 /*

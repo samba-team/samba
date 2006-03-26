@@ -19,6 +19,8 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+#include "libcli/raw/interfaces.h"
+
 /* modules can use the following to determine if the interface has changed */
 /* version 1 -> 0 - make module stacking easier -- metze */
 #define NTVFS_INTERFACE_VERSION 0

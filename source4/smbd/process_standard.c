@@ -25,8 +25,8 @@
 #include "includes.h"
 #include "lib/events/events.h"
 #include "lib/tdb/include/tdb.h"
-#include "smb_server/smb_server.h"
 #include "lib/socket/socket.h"
+#include "smbd/process_model.h"
 
 /* For specifiying event context to GSSAPI below */
 #include "system/kerberos.h"

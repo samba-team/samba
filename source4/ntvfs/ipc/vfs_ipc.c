@@ -27,7 +27,6 @@
 
 #include "includes.h"
 #include "dlinklist.h"
-#include "smb_server/smb_server.h"
 #include "ntvfs/ntvfs.h"
 #include "libcli/rap/rap.h"
 #include "ntvfs/ipc/proto.h"

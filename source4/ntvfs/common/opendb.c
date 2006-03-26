@@ -44,9 +44,9 @@
 #include "messaging/messaging.h"
 #include "librpc/gen_ndr/ndr_security.h"
 #include "db_wrap.h"
-#include "smb_server/smb_server.h"
 #include "lib/messaging/irpc.h"
 #include "librpc/gen_ndr/ndr_opendb.h"
+#include "smb.h"
 
 struct odb_context {
 	struct tdb_wrap *w;
