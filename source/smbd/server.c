@@ -32,8 +32,6 @@
 #include "build.h"
 #include "ldb/include/ldb.h"
 #include "registry/registry.h"
-#include "smb.h"
-#include "smb_server/smb_server.h"
 #include "ntvfs/ntvfs.h"
 #include "ntptr/ntptr.h"
 #include "auth/gensec/gensec.h"

@@ -28,7 +28,6 @@
 #include "svfs.h"
 #include "system/time.h"
 #include "system/dir.h"
-#include "smb_server/smb_server.h"
 #include "ntvfs/ntvfs.h"
 
 /*

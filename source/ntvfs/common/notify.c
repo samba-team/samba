@@ -30,7 +30,6 @@
 #include "lib/tdb/include/tdbutil.h"
 #include "messaging/messaging.h"
 #include "db_wrap.h"
-#include "smb_server/smb_server.h"
 #include "lib/messaging/irpc.h"
 #include "librpc/gen_ndr/ndr_notify.h"
 #include "dlinklist.h"

@@ -28,8 +28,6 @@
 #include "includes.h"
 #include "libcli/raw/libcliraw.h"
 #include "libcli/smb_composite/smb_composite.h"
-#include "smb_server/smb_server.h"
-#include "smbd/service_stream.h"
 #include "auth/auth.h"
 #include "ntvfs/ntvfs.h"
 #include "include/dlinklist.h"
