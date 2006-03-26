@@ -43,8 +43,7 @@ static BOOL test_num_calls(const struct dcerpc_interface_table *iface,
 	/* FIXME: This should be fixed when torture_rpc_connection 
 	 * takes a dcerpc_syntax_id */
 	tbl.name = iface->name;
-	tbl.uuid = id->uuid;
-	tbl.if_version = id->if_version;
+	tbl.syntax_id = *id;
 
 	status = torture_rpc_connection(mem_ctx, &p, iface);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -177,7 +176,7 @@ BOOL torture_rpc_scanner(struct torture_context *torture)
 			status = dcerpc_epm_map_binding(mem_ctx, b, l->table, NULL);
 			if (!NT_STATUS_IS_OK(status)) {
 				printf("Failed to map port for uuid %s\n", 
-					   GUID_string(loop_ctx, &l->table->uuid));
+					   GUID_string(loop_ctx, &l->table->syntax_id.uuid));
 				talloc_free(loop_ctx);
 				continue;
 			}

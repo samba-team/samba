@@ -46,8 +46,8 @@ static BOOL test_readwrite(TALLOC_CTX *mem_ctx, const char *host)
 	com_init_ctx(&ctx, NULL);
 	dcom_client_init(ctx, cmdline_credentials);
 
-	IID[0] = dcerpc_table_IStream.uuid;
-	IID[1] = dcerpc_table_IUnknown.uuid;
+	IID[0] = dcerpc_table_IStream.syntax_id.uuid;
+	IID[1] = dcerpc_table_IUnknown.syntax_id.uuid;
 	GUID_from_string(CLSID_SIMPLE, &clsid);
 
 	if (host) {
