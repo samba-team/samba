@@ -258,6 +258,8 @@ __EOD__
 		}
 	}
 
+	my $singlesoarg = "";
+	
 	if ($self->{duplicate_build}) {
 		$self->output(<< "__EOD__"
 #
@@ -277,6 +279,13 @@ __EOD__
 		}
 
 		$self->output("\n");
+	} else {
+		if ($self->{config}->{SONAMEFLAG} ne "" and 
+			defined($ctx->{LIBRARY_SONAME}) and 
+			$ctx->{LIBRARY_REALNAME} ne $ctx->{LIBRARY_SONAME}) {
+			$singlesoarg = "\n\t\@ln -fs $ctx->{LIBRARY_REALNAME} $installdir/$ctx->{LIBRARY_SONAME}";
+		}
+
 	}
 
 	$self->output(<< "__EOD__"
@@ -285,9 +294,9 @@ __EOD__
 $installdir/$ctx->{LIBRARY_REALNAME}: \$($ctx->{TYPE}_$ctx->{NAME}_DEPEND_LIST) \$($ctx->{TYPE}_$ctx->{NAME}_OBJ_LIST) $init_obj
 	\@echo Linking \$\@
 	\@mkdir -p $installdir
-	\@\$(SHLD) \$(SHLD_FLAGS) -o \$\@ \\
+	\@\$(SHLD) \$(SHLD_FLAGS) -o \$\@ \$(INSTALL_LINK_FLAGS) \\
 		\$($ctx->{TYPE}_$ctx->{NAME}_LINK_FLAGS) $soarg \\
-		$init_obj \$($ctx->{TYPE}_$ctx->{NAME}_LINK_LIST)
+		$init_obj \$($ctx->{TYPE}_$ctx->{NAME}_LINK_LIST)$singlesoarg
 
 __EOD__
 );
