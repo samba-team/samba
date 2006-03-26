@@ -92,6 +92,7 @@
 		astring client_ip;
 		NTTIME  connect_time;
 		NTTIME  auth_time;
+		NTTIME  last_use_time;
 	} smbsrv_session_info;
 
 	typedef struct {
@@ -104,6 +105,7 @@
 		astring share_name;
 		astring client_ip;
 		NTTIME  connect_time;
+		NTTIME  last_use_time;
 	} smbsrv_tcon_info;
 
 	typedef struct {
