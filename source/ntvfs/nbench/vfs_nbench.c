@@ -26,7 +26,6 @@
 
 #include "includes.h"
 #include "system/filesys.h"
-#include "smb_server/smb_server.h"
 #include "ntvfs/ntvfs.h"
 
 /* this is stored in ntvfs_private */

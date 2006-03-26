@@ -23,7 +23,7 @@
 */
 
 #include "includes.h"
-#include "smb_server/smb_server.h"
+#include "smbd/process_model.h"
 
 /* For sepecifiying event context to GSSAPI below */
 #include "system/kerberos.h"

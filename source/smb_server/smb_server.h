@@ -21,8 +21,9 @@
 */
 
 #include "libcli/raw/request.h"
-#include "smbd/process_model.h"
 #include "libcli/raw/interfaces.h"
+#include "lib/events/events.h"
+#include "lib/socket/socket.h"
 
 /*
   this header declares the core context structures associated with smb

@@ -32,7 +32,6 @@
 #include "svfs.h"
 #include "system/time.h"
 #include "dlinklist.h"
-#include "smb_server/smb_server.h"
 #include "ntvfs/ntvfs.h"
 #include "ntvfs/simple/proto.h"
 

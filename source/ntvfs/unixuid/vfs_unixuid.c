@@ -25,7 +25,6 @@
 #include "system/filesys.h"
 #include "system/passwd.h"
 #include "auth/auth.h"
-#include "smb_server/smb_server.h"
 #include "ntvfs/ntvfs.h"
 
 struct unixuid_private {

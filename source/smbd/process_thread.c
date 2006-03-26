@@ -32,8 +32,8 @@
 #include "system/filesys.h"
 #include "lib/events/events.h"
 #include "dlinklist.h"
-#include "smb_server/smb_server.h"
 #include "lib/util/mutex.h"
+#include "smbd/process_model.h"
 
 /* For specifying event context to GSSAPI below */
 #include "system/kerberos.h"

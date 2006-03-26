@@ -25,7 +25,6 @@
 
 #include "includes.h"
 #include "dlinklist.h"
-#include "smb_server/smb_server.h"
 #include "build.h"
 #include "ntvfs/ntvfs.h"
 

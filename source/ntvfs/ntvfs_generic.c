@@ -32,7 +32,6 @@
 */
 
 #include "includes.h"
-#include "smb_server/smb_server.h"
 #include "librpc/gen_ndr/ndr_security.h"
 #include "ntvfs/ntvfs.h"
 
