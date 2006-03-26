@@ -188,12 +188,12 @@ START=`date`
  echo delaying for nbt name registration
  sleep 4
  # This will return quickly when things are up, but be slow if we need to wait for (eg) SSL init 
+ bin/nmblookup $CONFIGURATION $SERVER
  bin/nmblookup $CONFIGURATION -U $SERVER $SERVER
- bin/nmblookup $CONFIGURATION -U $SERVER $SERVER
- bin/nmblookup $CONFIGURATION -U $SERVER $SERVER
- bin/nmblookup $CONFIGURATION -U $SERVER $SERVER
- bin/nmblookup $CONFIGURATION -U $SERVER $SERVER
- bin/nmblookup $CONFIGURATION -U $SERVER $SERVER
+ bin/nmblookup $CONFIGURATION $SERVER
+ bin/nmblookup $CONFIGURATION -U $SERVER $NETBIOSNAME
+ bin/nmblookup $CONFIGURATION $NETBIOSNAME
+ bin/nmblookup $CONFIGURATION -U $SERVER $NETBIOSNAME
 
  failed=0
 
