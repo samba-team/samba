@@ -257,7 +257,8 @@ hx509_verify_init_ctx(hx509_context context, hx509_verify_ctx *ctx)
 void
 hx509_verify_destroy_ctx(hx509_verify_ctx ctx)
 {
-    memset(ctx, 0, sizeof(*ctx));
+    if (ctx)
+	memset(ctx, 0, sizeof(*ctx));
     free(ctx);
 }
 
@@ -567,7 +568,7 @@ certificate_is_anchor(hx509_context context,
     q.match = HX509_QUERY_MATCH_CERTIFICATE;
     q.certificate = _hx509_get_cert(cert);
 
-    ret = _hx509_certs_find(context, ctx->trust_anchors, &q, &c);
+    ret = hx509_certs_find(context, ctx->trust_anchors, &q, &c);
     if (ret == 0)
 	hx509_cert_free(c);
     return ret == 0;
@@ -599,10 +600,10 @@ find_parent(hx509_context context,
     q.subject = _hx509_get_cert(current);
     q.path = path;
 
-    ret = _hx509_certs_find(context, chain, &q, &c);
+    ret = hx509_certs_find(context, chain, &q, &c);
     if (ret == 0)
 	return c;
-    ret = _hx509_certs_find(context, ctx->trust_anchors, &q, &c);
+    ret = hx509_certs_find(context, ctx->trust_anchors, &q, &c);
     if (ret == 0)
 	return c;
     return NULL;
@@ -1213,6 +1214,26 @@ hx509_verify_path(hx509_context context,
 	}
     }
 
+#if 0
+    for (i = path.len - 1; i >= 0; i--) {
+	hx509_name name;
+	char *subject_name;
+	
+	ret = hx509_cert_get_subject(path.val[i], &name);
+	if (ret)
+	    abort();
+	
+	ret = hx509_name_to_string(name, &subject_name);
+	hx509_name_free(&name);
+	if (ret)
+	    abort();
+
+	printf("name %d: %s\n", i, subject_name);
+
+	free(subject_name);
+    }
+#endif
+
     /*
      * Verify signatures, do this backward so public key working
      * parameter is passed up from the anchor up though the chain.
@@ -1359,6 +1380,42 @@ void
 _hx509_query_clear(hx509_query *q)
 {
     memset(q, 0, sizeof(*q));
+}
+
+int
+hx509_query_alloc(hx509_context context, hx509_query **q)
+{
+    *q = calloc(1, sizeof(*q));
+    if (*q == NULL)
+	return ENOMEM;
+    return 0;
+}
+
+void
+hx509_query_match_option(hx509_query *q, hx509_query_option option)
+{
+    switch(option) {
+    case HX509_QUERY_OPTION_PRIVATE_KEY:
+	q->match |= HX509_QUERY_PRIVATE_KEY;
+	break;
+    case HX509_QUERY_OPTION_KU_ENCIPHERMENT:
+	q->match |= HX509_QUERY_KU_ENCIPHERMENT;
+	break;
+    case HX509_QUERY_OPTION_KU_DIGITALSIGNATURE:
+	q->match |= HX509_QUERY_KU_DIGITALSIGNATURE;
+	break;
+    case HX509_QUERY_OPTION_END:
+    default:
+	break;
+    }
+}
+
+void
+hx509_query_free(hx509_context context, hx509_query *q)
+{
+    if (q)
+	memset(q, 0, sizeof(*q));
+    free(q);
 }
 
 int
