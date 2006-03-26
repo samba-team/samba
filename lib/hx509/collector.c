@@ -156,7 +156,7 @@ match_localkeyid(hx509_context context,
     
     q.local_key_id = &value->localKeyId;
     
-    ret = _hx509_certs_find(context, certs, &q, &cert);
+    ret = hx509_certs_find(context, certs, &q, &cert);
     if (ret == 0) {
 	
 	if (value->private_key) {

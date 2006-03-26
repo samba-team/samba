@@ -104,7 +104,7 @@ verify_crl(hx509_context context,
     q.match = HX509_QUERY_MATCH_SUBJECT_NAME;
     q.subject_name = &crl->tbsCertList.issuer;
 	
-    ret = _hx509_certs_find(context, certs, &q, &signer);
+    ret = hx509_certs_find(context, certs, &q, &signer);
     if (ret)
 	return ret;
 

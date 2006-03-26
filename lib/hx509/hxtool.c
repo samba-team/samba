@@ -215,7 +215,7 @@ cms_create_sd(struct cms_create_sd_options *opt, int argc, char **argv)
 	q.friendlyname = opt->signer_string;
     }
 
-    ret = _hx509_certs_find(context, store, &q, &cert);
+    ret = hx509_certs_find(context, store, &q, &cert);
     if (ret)
 	errx(1, "hx509_certs_find: %d", ret);
 
@@ -371,7 +371,7 @@ cms_create_enveloped(struct cms_envelope_options *opt, int argc, char **argv)
 
     _hx509_query_clear(&q);
     q.match |= HX509_QUERY_KU_ENCIPHERMENT;
-    ret = _hx509_certs_find(context, certs, &q, &cert);
+    ret = hx509_certs_find(context, certs, &q, &cert);
     if (ret)
 	errx(1, "hx509_certs_find: %d", ret);
 
@@ -661,9 +661,9 @@ query(struct query_options *opt, int argc, char **argv)
 	q.match |= HX509_QUERY_PRIVATE_KEY;
 
 
-    ret = _hx509_certs_find(context, certs, &q, &c);
+    ret = hx509_certs_find(context, certs, &q, &c);
     if (ret)
-	warnx("_hx509_certs_find: %d", ret);
+	warnx("hx509_certs_find: %d", ret);
     else
 	printf("match found\n");
 

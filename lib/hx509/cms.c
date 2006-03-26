@@ -113,7 +113,7 @@ find_CMSIdentifier(hx509_context context,
 
     q.match |= match;
 
-    ret = _hx509_certs_find(context, certs, &q, &cert);
+    ret = hx509_certs_find(context, certs, &q, &cert);
     if (ret)
 	return ret;
 
