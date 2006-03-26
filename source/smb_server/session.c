@@ -47,7 +47,8 @@ NTSTATUS smbsrv_init_sessions(struct smbsrv_connection *smb_conn, uint64_t limit
  * Find the session structure assoicated with a VUID
  * (not one from an in-progress session setup)
  */
-struct smbsrv_session *smbsrv_session_find(struct smbsrv_connection *smb_conn, uint64_t vuid)
+struct smbsrv_session *smbsrv_session_find(struct smbsrv_connection *smb_conn,
+					   uint64_t vuid, struct timeval request_time)
 {
 	void *p;
 	struct smbsrv_session *sess;
@@ -62,6 +63,7 @@ struct smbsrv_session *smbsrv_session_find(struct smbsrv_connection *smb_conn, u
 	/* only return a finished session */
 	sess = talloc_get_type(p, struct smbsrv_session);
 	if (sess && sess->session_info) {
+		sess->statistics.last_request_time = request_time;
 		return sess;
 	}
 

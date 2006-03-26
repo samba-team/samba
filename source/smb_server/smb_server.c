@@ -151,6 +151,8 @@ static void smbsrv_accept(struct stream_connection *conn)
 
 	irpc_add_name(conn->msg_ctx, "smb_server");
 
+	smb_conn->statistics.connect_time = timeval_current();
+
 	smbsrv_management_init(smb_conn);
 }
 

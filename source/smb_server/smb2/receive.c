@@ -128,8 +128,8 @@ static NTSTATUS smb2srv_reply(struct smb2srv_request *req)
 	tid		= IVAL(req->in.hdr, SMB2_HDR_TID);
 	uid		= BVAL(req->in.hdr, SMB2_HDR_UID);
 
-	req->session	= smbsrv_session_find(req->smb_conn, uid);
-	req->tcon	= smbsrv_smb2_tcon_find(req->session, tid);
+	req->session	= smbsrv_session_find(req->smb_conn, uid, req->request_time);
+	req->tcon	= smbsrv_smb2_tcon_find(req->session, tid, req->request_time);
 
 	errno = 0;
 
@@ -241,9 +241,12 @@ NTSTATUS smbsrv_recv_smb2_request(void *private, DATA_BLOB blob)
 {
 	struct smbsrv_connection *smb_conn = talloc_get_type(private, struct smbsrv_connection);
 	struct smb2srv_request *req;
+	struct timeval cur_time = timeval_current();
 	uint32_t protocol_version;
 	uint16_t buffer_code;
 	uint32_t dynamic_size;
+
+	smb_conn->statistics.last_request_time = cur_time;
 
 	/* see if its a special NBT packet */
 	if (CVAL(blob.data,0) != 0) {
@@ -271,7 +274,7 @@ NTSTATUS smbsrv_recv_smb2_request(void *private, DATA_BLOB blob)
 
 	req->in.buffer		= talloc_steal(req, blob.data);
 	req->in.size		= blob.length;
-	req->request_time	= timeval_current();
+	req->request_time	= cur_time;
 	req->in.allocated	= req->in.size;
 
 	req->in.hdr		= req->in.buffer+ NBT_HDR_SIZE;
