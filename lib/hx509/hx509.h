@@ -44,6 +44,7 @@ typedef struct hx509_private_key *hx509_private_key;
 typedef struct hx509_validate_ctx_data *hx509_validate_ctx;
 typedef struct hx509_verify_ctx_data *hx509_verify_ctx;
 typedef struct hx509_revoke_ctx_data *hx509_revoke_ctx;
+typedef struct hx509_query_data hx509_query;
 typedef void * hx509_cursor;
 
 typedef void (*hx509_vprint_func)(void *, const char *, va_list);
@@ -77,5 +78,15 @@ typedef struct hx509_octet_string_list {
     size_t len;
     heim_octet_string *val;
 } hx509_octet_string_list;
+
+/*
+ * Options passed to hx509_query_match_option.
+ */
+typedef enum {
+    HX509_QUERY_OPTION_PRIVATE_KEY = 1,
+    HX509_QUERY_OPTION_KU_ENCIPHERMENT = 2,
+    HX509_QUERY_OPTION_KU_DIGITALSIGNATURE = 3,
+    HX509_QUERY_OPTION_END = 0xffff
+} hx509_query_option;
 
 #include <hx509-protos.h>
