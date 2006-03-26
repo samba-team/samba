@@ -118,16 +118,17 @@ hx509_certs_init(hx509_context context,
 void
 hx509_certs_free(hx509_certs *certs)
 {
-    (*(*certs)->ops->free)(*certs, (*certs)->ops_data);
-
-    free(*certs);
-    *certs = NULL;
+    if (*certs) {
+	(*(*certs)->ops->free)(*certs, (*certs)->ops_data);
+	free(*certs);
+	*certs = NULL;
+    }
 }
 
 int
 hx509_certs_start_seq(hx509_context context,
 		      hx509_certs certs,
-		      hx509_cursor cursor)
+		      hx509_cursor *cursor)
 {
     int ret;
 
@@ -221,10 +222,10 @@ hx509_certs_add(hx509_context context, hx509_certs certs, hx509_cert cert)
 }
 
 int
-_hx509_certs_find(hx509_context context,
-		  hx509_certs certs, 
-		  const hx509_query *q,
-		  hx509_cert *r)
+hx509_certs_find(hx509_context context,
+		 hx509_certs certs, 
+		 const hx509_query *q,
+		 hx509_cert *r)
 {
     hx509_cursor cursor;
     hx509_cert c;
@@ -289,4 +290,24 @@ hx509_certs_append(hx509_context context,
     ret = hx509_certs_merge(context, to, s);
     hx509_certs_free(&s);
     return ret;
+}
+
+int
+hx509_get_one_cert(hx509_context context, hx509_certs certs, hx509_cert *c)
+{
+    hx509_cursor cursor;
+    int ret;
+
+    *c = NULL;
+
+    ret = hx509_certs_start_seq(context, certs, &cursor);
+    if (ret)
+	return ret;
+
+    ret = hx509_certs_next_cert(context, certs, cursor, c);
+    if (ret)
+	return ret;
+
+    hx509_certs_end_seq(context, certs, cursor);
+    return 0;
 }
