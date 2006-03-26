@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003 - 2005 Kungliga Tekniska Högskolan
+ * Copyright (c) 2003 - 2006 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -45,71 +45,33 @@ struct krb5_dh_moduli {
 
 #ifdef PKINIT
 
-#include <openssl/evp.h>
-#include <openssl/x509.h>
-#include <openssl/pem.h>
-#include <openssl/err.h>
-#include <openssl/dh.h>
-#include <openssl/bn.h>
-#include <openssl/engine.h>
-#include <openssl/ui.h>
+#include <heim_asn1.h>
+#include <rfc2459_asn1.h>
+#include <cms_asn1.h>
+#include <pkcs8_asn1.h>
+#include <pkcs9_asn1.h>
+#include <pkcs12_asn1.h>
+#include <pkinit_asn1.h>
+#include <asn1_err.h>
 
-#ifdef HAVE_DIRENT_H
-#include <dirent.h>
-#endif
+#include <der.h>
 
-#include "heim_asn1.h"
-#include "rfc2459_asn1.h"
-#include "cms_asn1.h"
-#include "pkinit_asn1.h"
+#include <hx509.h>
 
 enum {
     COMPAT_WIN2K = 1,
     COMPAT_IETF = 2
 };
 
-#define OPENSSL_ASN1_MALLOC_ENCODE(T, B, BL, S, R)			\
-{									\
-  unsigned char *p;							\
-  (BL) = i2d_##T((S), NULL);						\
-  if ((BL) <= 0) {							\
-     (R) = EINVAL;							\
-  } else {								\
-    (B) = malloc((BL));							\
-    if ((B) == NULL) {							\
-       (R) = ENOMEM;							\
-    } else {								\
-        p = (B);							\
-        (R) = 0;							\
-        (BL) = i2d_##T((S), &p);					\
-        if ((BL) <= 0) {						\
-           free((B));                                          		\
-           (R) = ASN1_OVERRUN;						\
-        }								\
-    }									\
-  }									\
-}
-
-/* ENGING_load_private_key requires a UI_METHOD and data  
- * if to be usable from PAM 
- */
-
-struct krb5_ui_data {
-    krb5_context context;
-    krb5_prompter_fct prompter;
-    void * prompter_data;
-};
-
 struct krb5_pk_identity {
-    EVP_PKEY *private_key;
-    STACK_OF(X509) *cert;
-    STACK_OF(X509) *trusted_certs;
-    STACK_OF(X509_CRL) *crls;
-    ENGINE *engine;
+    hx509_context hx509ctx;
+    hx509_verify_ctx verify_ctx;
+    hx509_certs certs;
+    hx509_certs anchors;
 };
 
 struct krb5_pk_cert {
-    X509 *cert;
+    hx509_cert cert;
 };
 
 struct krb5_pk_init_ctx_data {
@@ -123,8 +85,9 @@ struct krb5_pk_init_ctx_data {
 void KRB5_LIB_FUNCTION
 _krb5_pk_cert_free(struct krb5_pk_cert *cert)
 {
-    if (cert->cert)
-	X509_free(cert->cert);
+    if (cert->cert) {
+	hx509_cert_free(cert->cert);
+    }
     free(cert);
 }
 
@@ -156,107 +119,6 @@ integer_to_BN(krb5_context context, const char *field, const heim_integer *f)
     return bn;
 }
 
-/*
- * UI ex_data has the callback_data as passed to Engine. This is far
- * from being complete, we will only process one prompt
- */
-
-static int
-krb5_ui_method_read_string(UI *ui, UI_STRING *uis)
-{
-    char *buffer;
-    size_t length;
-    krb5_error_code ret;
-    krb5_prompt prompt;
-    krb5_data password_data;
-    struct krb5_ui_data *ui_data;
-  
-    ui_data = (struct krb5_ui_data *)UI_get_app_data(ui);
-
-    switch (UI_get_string_type(uis)) {
-    case UIT_INFO:
-    case UIT_ERROR:
-	/* looks like the RedHat pam_prompter might handle 
-	 * INFO and ERROR, Will see what happens */
-    case UIT_VERIFY:
-    case UIT_PROMPT:
-	length = UI_get_result_maxsize(uis);
-	buffer = malloc(length);
-	if (buffer == NULL) {
-	    krb5_set_error_string(ui_data->context, "malloc: out of memory");
-	    return 0;
-	}
-	password_data.data = buffer;
-	password_data.length = length;
-
-	prompt.prompt = UI_get0_output_string(uis);
-	prompt.hidden = !(UI_get_input_flags(uis) & UI_INPUT_FLAG_ECHO);
-	prompt.reply  = &password_data;
-	prompt.type   = KRB5_PROMPT_TYPE_PASSWORD;
-  
-	ret = (*ui_data->prompter)(ui_data->context, 
-				   ui_data->prompter_data, 
-				   NULL, NULL, 1, &prompt);
-	if (ret == 0) {
-	    buffer[length - 1] = '\0';
-	    UI_set_result(ui, uis, password_data.data);
-
-	    /*
-	     * RedHat pam_krb5 pam_prompter does a strdup but others
-	     * may copy into buffer. XXX should we just leak the
-	     * memory instead ?
-	     */
-
-	    if (buffer != password_data.data)
-		free(password_data.data);
-	    memset (buffer, 0, length);
-	    free(buffer);
-	    return 1;
-	}
-	memset (buffer, 0, length);
-	free(buffer);
-	break;
-    case UIT_NONE:
-    case UIT_BOOLEAN:
-	/* XXX for now do not handle */
-	break;
-
-    }
-    return 0;
-}
-
-
-static krb5_error_code
-set_digest_alg(DigestAlgorithmIdentifier *id,
-	       const heim_oid *oid,
-	       void *param, size_t length)
-{
-    krb5_error_code ret;
-    if (param) {
-	id->parameters = malloc(sizeof(*id->parameters));
-	if (id->parameters == NULL)
-	    return ENOMEM;
-	id->parameters->data = malloc(length);
-	if (id->parameters->data == NULL) {
-	    free(id->parameters);
-	    id->parameters = NULL;
-	    return ENOMEM;
-	}
-	memcpy(id->parameters->data, param, length);
-	id->parameters->length = length;
-    } else
-	id->parameters = NULL;
-    ret = copy_oid(oid, &id->algorithm);
-    if (ret) {
-	if (id->parameters) {
-	    free(id->parameters->data);
-	    free(id->parameters);
-	    id->parameters = NULL;
-	}
-	return ret;
-    }
-    return 0;
-}
 
 krb5_error_code KRB5_LIB_FUNCTION
 _krb5_pk_create_sign(krb5_context context,
@@ -265,202 +127,30 @@ _krb5_pk_create_sign(krb5_context context,
 		     struct krb5_pk_identity *id,
 		     krb5_data *sd_data)
 {
-    SignerInfo *signer_info;
-    X509 *user_cert;
-    heim_integer *serial;
-    krb5_error_code ret;
-    krb5_data buf;
-    SignedData sd;
-    EVP_MD_CTX md;
-    int i;
-    unsigned len;
-    size_t size;
-    
-    X509_NAME *issuer_name;
+    hx509_cert cert;
+    hx509_query *q;
+    int ret;
 
-    memset(&sd, 0, sizeof(sd));
+    ret = hx509_query_alloc(id->hx509ctx, &q);
+    if (ret)
+	return ret;
 
-    if (id == NULL)
-	return HEIM_PKINIT_NO_CERTIFICATE;
-    if (id->cert == NULL)
-	return HEIM_PKINIT_NO_CERTIFICATE;
-    if (id->private_key == NULL)
-	return HEIM_PKINIT_NO_PRIVATE_KEY;
+    hx509_query_match_option(q, HX509_QUERY_OPTION_PRIVATE_KEY);
+    hx509_query_match_option(q, HX509_QUERY_OPTION_KU_DIGITALSIGNATURE);
 
-    if (sk_X509_num(id->cert) == 0)
-	return HEIM_PKINIT_NO_CERTIFICATE;
+    ret = hx509_certs_find(id->hx509ctx, id->certs, q, &cert);
+    hx509_query_free(id->hx509ctx, q);
+    if (ret)
+	return ret;
 
-    sd.version = 3;
-
-    sd.digestAlgorithms.len = 0;
-    sd.digestAlgorithms.val = NULL;
-    copy_oid(eContentType, &sd.encapContentInfo.eContentType);
-    ALLOC(sd.encapContentInfo.eContent, 1);
-    if (sd.encapContentInfo.eContent == NULL) {
-	krb5_clear_error_string(context);
-	ret = ENOMEM;
-	goto out;
-    }
-
-    ret = krb5_data_copy(&buf, eContent->data, eContent->length);
-    if (ret) {
-	krb5_clear_error_string(context);
-	ret = ENOMEM;
-	goto out;
-    }
-
-    sd.encapContentInfo.eContent->data = buf.data;
-    sd.encapContentInfo.eContent->length = buf.length;
-
-    ALLOC_SEQ(&sd.signerInfos, 1);
-    if (sd.signerInfos.val == NULL) {
-	krb5_set_error_string(context, "malloc: out of memory");
-	ret = ENOMEM;
-	goto out;
-    }
-
-    signer_info = &sd.signerInfos.val[0];
-
-    user_cert = sk_X509_value(id->cert, 0);
-    if (user_cert == NULL) {
-	krb5_set_error_string(context, "pkinit: no user certificate");
-	ret = HEIM_PKINIT_NO_CERTIFICATE;
-	goto out;
-    }
-
-    signer_info->version = 1;
-
-    issuer_name = X509_get_issuer_name(user_cert);
-
-    OPENSSL_ASN1_MALLOC_ENCODE(X509_NAME, 
-			       buf.data,
-			       buf.length,
-			       issuer_name,
-			       ret);
-    if (ret) {
-	krb5_set_error_string(context, "pkinit: failed encoding name");
-	goto out;
-    }
-    ret = decode_Name(buf.data, buf.length,
-		      &signer_info->sid.u.issuerAndSerialNumber.issuer,
-		      NULL);
-    free(buf.data);
-    if (ret) {
-	krb5_set_error_string(context, "pkinit: failed to parse Name");
-	goto out;
-    }
-    signer_info->sid.element = choice_CMSIdentifier_issuerAndSerialNumber;
-
-    serial = &signer_info->sid.u.issuerAndSerialNumber.serialNumber;
-    {
-	ASN1_INTEGER *isn = X509_get_serialNumber(user_cert);
-	BIGNUM *bn = ASN1_INTEGER_to_BN(isn, NULL);
-	if (bn == NULL) {
-	    ret = ENOMEM;
-	    krb5_set_error_string(context, "pkinit: failed allocating "
-				  "serial number");
-	    goto out;
-	}
-	ret = BN_to_integer(context, bn, serial);
-	BN_free(bn);
-	if (ret) {
-	    krb5_set_error_string(context, "pkinit: failed encoding "
-				  "serial number");
-	    goto out;
-	}
-    }
-
-    ret = set_digest_alg(&signer_info->digestAlgorithm,
-			 oid_id_secsig_sha_1(), "\x05\x00", 2);
-    if (ret) {
-	krb5_set_error_string(context, "malloc: out of memory");
-	goto out;
-    }
-
-    signer_info->signedAttrs = NULL;
-    signer_info->unsignedAttrs = NULL;
-
-    copy_oid(oid_id_pkcs1_rsaEncryption(),
-	     &signer_info->signatureAlgorithm.algorithm);
-    signer_info->signatureAlgorithm.parameters = NULL;
-
-    buf.data = malloc(EVP_PKEY_size(id->private_key));
-    if (buf.data == NULL) {
-	krb5_set_error_string(context, "malloc: out of memory");
-	ret = ENOMEM;
-	goto out;
-    }
-
-    EVP_SignInit(&md, EVP_sha1());
-    EVP_SignUpdate(&md,
-		   sd.encapContentInfo.eContent->data,
-		   sd.encapContentInfo.eContent->length);
-    ret = EVP_SignFinal(&md, buf.data, &len, id->private_key);
-    if (ret != 1) {
-	free(buf.data);
-	krb5_set_error_string(context, "PKINIT: failed to sign with "
-			      "private key: %s",
-			      ERR_error_string(ERR_get_error(), NULL));
-	ret = EINVAL;
-	goto out;
-    }
-
-    signer_info->signature.data = buf.data;
-    signer_info->signature.length = len;
-
-    ALLOC_SEQ(&sd.digestAlgorithms, 1);
-    if (sd.digestAlgorithms.val == NULL) {
-	krb5_clear_error_string(context);
-	ret = ENOMEM;
-	goto out;
-    }
-
-    ret = set_digest_alg(&sd.digestAlgorithms.val[0],
-			 oid_id_secsig_sha_1(), "\x05\x00", 2);
-    if (ret) {
-	krb5_set_error_string(context, "malloc: out of memory");
-	goto out;
-    }
-
-    ALLOC(sd.certificates, 1);
-    if (sd.certificates == NULL) {
-	krb5_clear_error_string(context);
-	ret = ENOMEM;
-	goto out;
-    }
-
-    i = sk_X509_num(id->cert);
-    sd.certificates->val = malloc(sizeof(sd.certificates->val[0]) * i);
-    if (sd.certificates->val == NULL) {
-	krb5_clear_error_string(context);
-	ret = ENOMEM;
-	goto out;
-    }
-    sd.certificates->len = i;
-
-    for (i = 0; i < sk_X509_num(id->cert); i++) {
-	OPENSSL_ASN1_MALLOC_ENCODE(X509, 
-				   sd.certificates->val[i].data,
-				   sd.certificates->val[i].length,
-				   sk_X509_value(id->cert, i),
-				   ret);
-	if (ret) {
-	    krb5_clear_error_string(context);
-	    goto out;
-	}
-    }
-
-    ASN1_MALLOC_ENCODE(SignedData, sd_data->data, sd_data->length, 
-		       &sd, &size, ret);
-    if (ret) {
-	krb5_set_error_string(context, "SignedData failed %d", ret);
-	goto out;
-    }
-    if (sd_data->length != size)
-	krb5_abortx(context, "internal ASN1 encoder error");
-
- out:
-    free_SignedData(&sd);
+    ret = hx509_cms_create_signed_1(id->hx509ctx,
+				    eContentType,
+				    eContent->data,
+				    eContent->length,
+				    NULL,
+				    cert,
+				    sd_data);
+    hx509_cert_free(cert);
 
     return ret;
 }
@@ -816,229 +506,6 @@ _krb5_pk_mk_padata(krb5_context context,
     return pk_mk_padata(context, type, ctx, req_body, nonce, md);
 }
 
-static krb5_boolean
-pk_peer_compare(krb5_context context,
-		const SignerIdentifier *peer1, 
-		X509 *peer2)
-{
-    switch (peer1->element) {
-    case choice_CMSIdentifier_issuerAndSerialNumber: {
-	ASN1_INTEGER *i;
-	const heim_integer *serial;
-	X509_NAME *name;
-	unsigned char *p;
-	size_t len;
-
-	i = X509_get_serialNumber(peer2);
-	serial = &peer1->u.issuerAndSerialNumber.serialNumber;
-
-	if (i->length != serial->length ||
-	    memcmp(i->data, serial->data, i->length) != 0)
-	    return FALSE;
-
-	p = peer1->u.issuerAndSerialNumber.issuer._save.data;
-	len = peer1->u.issuerAndSerialNumber.issuer._save.length;
-	name = d2i_X509_NAME(NULL, &p, len);
-	if (name == NULL)
-	    return FALSE;
-	
-	if (X509_NAME_cmp(name, X509_get_issuer_name(peer2)) != 0) {
-	    X509_NAME_free(name);
-	    return FALSE;
-	}
-	X509_NAME_free(name);
-	break;
-    }
-    case choice_CMSIdentifier_subjectKeyIdentifier:
-	return FALSE;
-    default:
-	return FALSE;
-    }
-    return TRUE;
-}
-
-static krb5_error_code
-pk_decrypt_key(krb5_context context,
-	       heim_octet_string *encrypted_key,
-	       EVP_PKEY *priv_key,
-	       krb5_keyblock *key)
-{
-    int ret;
-    unsigned char *buf;
-
-    buf = malloc(EVP_PKEY_size(priv_key));
-    if (buf == NULL) {
-	krb5_set_error_string(context, "malloc: out of memory");
-	return ENOMEM;
-    }
-    ret = EVP_PKEY_decrypt(buf,
-			   encrypted_key->data,
-			   encrypted_key->length,
-			   priv_key);
-    if (ret <= 0) {
-	free(buf);
-	krb5_set_error_string(context, "Can't decrypt key: %s",
-			      ERR_error_string(ERR_get_error(), NULL));
-	return ENOMEM;
-    }
-
-    key->keytype = 0;
-    key->keyvalue.length = ret;
-    key->keyvalue.data = malloc(ret);
-    if (key->keyvalue.data == NULL) {
-	free(buf);
-	krb5_set_error_string(context, "malloc: out of memory");
-	return ENOMEM;
-    }
-    memcpy(key->keyvalue.data, buf, ret);
-    free(buf);
-    return 0;
-}
-
-
-static krb5_error_code 
-pk_verify_chain_standard(krb5_context context,
-			 struct krb5_pk_identity *id,
-			 const SignerIdentifier *client,
-			 STACK_OF(X509) *chain,
-			 X509 **client_cert)
-{
-    X509_STORE *cert_store = NULL;
-    X509_STORE_CTX *store_ctx = NULL;
-    X509 *cert = NULL;
-    int i;
-    int ret;
-
-    ret = KRB5_KDC_ERR_CLIENT_NAME_MISMATCH;
-    for (i = 0; i < sk_X509_num(chain); i++) {
-	cert = sk_X509_value(chain, i);
-	if (pk_peer_compare(context, client, cert) == TRUE) {
-	    ret = 0;
-	    break;
-	}
-    }
-    if (ret) {
-	krb5_set_error_string(context, "PKINIT: verify chain failed "
-			      "to find client in chain");
-	return ret;
-    }
-
-    cert_store = X509_STORE_new();
-    if (cert_store == NULL) {
-	ret = ENOMEM;
-	krb5_set_error_string(context, "PKINIT: can't create X509 store: %s",
-			      ERR_error_string(ERR_get_error(), NULL));
-    }
-
-    store_ctx = X509_STORE_CTX_new();
-    if (store_ctx == NULL) {
-	ret = ENOMEM;
-	krb5_set_error_string(context,
-			      "PKINIT: can't create X509 store ctx: %s",
-			      ERR_error_string(ERR_get_error(), NULL));
-	goto end;
-    }
-   
-    X509_STORE_CTX_init(store_ctx, cert_store, cert, chain);
-    X509_STORE_CTX_trusted_stack(store_ctx, id->trusted_certs);
-    X509_verify_cert(store_ctx);
-    /* the last checked certificate is in store_ctx->current_cert */
-    krb5_clear_error_string(context);
-    switch(store_ctx->error) {
-    case X509_V_OK:
-	ret = 0;
-	break;
-    case X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT_LOCALLY:
-	ret = KRB5_KDC_ERR_CANT_VERIFY_CERTIFICATE;
-	krb5_set_error_string(context, "PKINIT: failed to verify "
-			      "certificate: %s ",
-			      X509_verify_cert_error_string(store_ctx->error));
-	break;
-    case X509_V_ERR_UNABLE_TO_DECODE_ISSUER_PUBLIC_KEY:
-    case X509_V_ERR_CERT_SIGNATURE_FAILURE:
-    case X509_V_ERR_ERROR_IN_CERT_NOT_BEFORE_FIELD:
-    case X509_V_ERR_CERT_NOT_YET_VALID:
-    case X509_V_ERR_ERROR_IN_CERT_NOT_AFTER_FIELD:
-    case X509_V_ERR_CERT_HAS_EXPIRED:
-	ret = KRB5_KDC_ERR_INVALID_CERTIFICATE;
-	krb5_set_error_string(context, "PKINIT: invalid certificate: %s ",
-			      X509_verify_cert_error_string(store_ctx->error));
-	break;
-    case X509_V_ERR_DEPTH_ZERO_SELF_SIGNED_CERT:
-    case X509_V_ERR_SELF_SIGNED_CERT_IN_CHAIN:
-    case X509_V_ERR_UNABLE_TO_VERIFY_LEAF_SIGNATURE:
-    case X509_V_ERR_CERT_CHAIN_TOO_LONG:
-    case X509_V_ERR_PATH_LENGTH_EXCEEDED:
-    case X509_V_ERR_INVALID_CA:
-	ret = KRB5_KDC_ERR_INVALID_CERTIFICATE;
-	krb5_set_error_string(context, "PKINIT: unknown CA or can't "
-			      "verify certificate: %s",
-			      X509_verify_cert_error_string(store_ctx->error));
-	break;
-    default:
-	ret = KRB5_KDC_ERR_INVALID_CERTIFICATE; /* XXX */
-	krb5_set_error_string(context, "PKINIT: failed to verify "
-			      "certificate: %s (%ld) ",
-			      X509_verify_cert_error_string(store_ctx->error),
-			      (long)store_ctx->error);
-	break;
-    }
-    if (ret)
-	goto end;
-
-    /* 
-     * Since X509_verify_cert() doesn't do CRL checking at all, we have to
-     * perform own verification against CRLs
-     */
-    /*
-     * XXX add crl checking
-     */
-
-    if (client_cert && cert)
-	*client_cert = X509_dup(cert);
-
- end:
-    if (cert_store)
-	X509_STORE_free(cert_store);
-    if (store_ctx)
-	X509_STORE_CTX_free(store_ctx);
-    return ret;
-}
-
-static int
-cert_to_X509(krb5_context context, CertificateSet *set,
-	     STACK_OF(X509_CRL) **certs)
-{
-    krb5_error_code ret;
-    int i;
-
-    *certs = sk_X509_new_null();
-
-    if (set == NULL)
-	return 0;
-
-    ret = 0;
-    for (i = 0; i < set->len; i++) {
-	unsigned char *p;
-	X509 *cert;
-
-	p = set->val[i].data;
-	cert = d2i_X509(NULL, &p, set->val[i].length);
-	if (cert == NULL) {
-	    ret = ASN1_BAD_FORMAT;
-	    break;
-	}
-	sk_X509_insert(*certs, cert, i);
-    }
-    if (ret) {
-	krb5_set_error_string(context,
-			      "PKINIT: Failed to decode certificate chain");
-	sk_X509_free(*certs);
-	*certs = NULL;
-    }
-    return ret;
-}
-
 krb5_error_code KRB5_LIB_FUNCTION
 _krb5_pk_verify_sign(krb5_context context,
 		     const void *data,
@@ -1048,144 +515,58 @@ _krb5_pk_verify_sign(krb5_context context,
 		     krb5_data *content,
 		     struct krb5_pk_cert **signer)
 {
-    STACK_OF(X509) *certificates;
-    SignerInfo *signer_info;
-    const EVP_MD *evp_type;
-    EVP_PKEY *public_key;
-    krb5_error_code ret;
-    EVP_MD_CTX md;
-    X509 *cert = NULL;
-    SignedData sd;
-    size_t size;
-    
-    *signer = NULL;
-    krb5_data_zero(content);
-    contentType->length = 0;
-    contentType->components = NULL;
+    hx509_certs signer_certs;
+    int ret;
 
-    memset(&sd, 0, sizeof(sd));
-
-    ret = decode_SignedData(data, length, &sd, &size);
-    if (ret) {
-	krb5_set_error_string(context, 
-			      "PKINIT: decoding failed SignedData: %d",
-			      ret);
-	goto out;
-    }
-
-    if (sd.encapContentInfo.eContent == NULL) {
-	krb5_set_error_string(context, 
-			      "PKINIT: signature missing encapContent");
-	ret = KRB5KRB_AP_ERR_MSG_TYPE;
-	goto out;
-    }
-
-    /* XXX Check CMS version */
-
-    if (sd.signerInfos.len < 1) {
-	krb5_set_error_string(context,
-			      "PKINIT: signature information missing from "
-			      "pkinit response");
-	ret = KRB5_KDC_ERR_INVALID_SIG;
-	goto out;
-    }
-
-    signer_info = &sd.signerInfos.val[0];
-  
-    {
-	CertificateSet set;
-	set.val = sd.certificates->val;
-	set.len = sd.certificates->len;
-
-	ret = cert_to_X509(context, &set, &certificates);
-    }
-    if (ret) {
-	krb5_set_error_string(context,
-			      "PKINIT: failed to decode Certificates");
-	goto out;
-    }
-
-    ret = pk_verify_chain_standard(context, id,
-				   &signer_info->sid,
-				   certificates,
-				   &cert);
-    sk_X509_free(certificates);
+    ret = hx509_cms_verify_signed(id->hx509ctx,
+				  id->verify_ctx,
+				  data,
+				  length,
+				  id->certs,
+				  contentType,
+				  content,
+				  &signer_certs);
     if (ret)
-	goto out;
-  
-    if (signer_info->signature.length == 0) {
-	free_SignedData(&sd);
-	X509_free(cert);
-	krb5_set_error_string(context, "PKINIT: signature missing from"
-			      "pkinit response");
-	return KRB5_KDC_ERR_INVALID_SIG; 
-    }
+	return ret;
 
-    public_key = X509_get_pubkey(cert);
-
-    /* verify signature */
-    if (heim_oid_cmp(&signer_info->digestAlgorithm.algorithm,
-		oid_id_pkcs1_sha1WithRSAEncryption()) == 0)
-	evp_type = EVP_sha1();
-    else if (heim_oid_cmp(&signer_info->digestAlgorithm.algorithm,
-			  oid_id_pkcs1_md5WithRSAEncryption()) == 0) 
-	evp_type = EVP_md5();
-    else if (heim_oid_cmp(&signer_info->digestAlgorithm.algorithm, 
-			  oid_id_secsig_sha_1()) == 0)
-	evp_type = EVP_sha1();
-    else {
-	X509_free(cert);
-	krb5_set_error_string(context, "PKINIT: The requested digest "
-			      "algorithm is not supported");
-	ret = KRB5_KDC_ERR_INVALID_SIG;
-	goto out;
-    }
-
-    EVP_VerifyInit(&md, evp_type);
-    EVP_VerifyUpdate(&md,
-		     sd.encapContentInfo.eContent->data,
-		     sd.encapContentInfo.eContent->length);
-    ret = EVP_VerifyFinal(&md,
-			  signer_info->signature.data,
-			  signer_info->signature.length,
-			  public_key);
-    if (ret != 1) {
-	X509_free(cert);
-	krb5_set_error_string(context, "PKINIT: signature didn't verify: %s",
-			      ERR_error_string(ERR_get_error(), NULL));
-	ret = KRB5_KDC_ERR_INVALID_SIG;
-	goto out;
-    }
-
-    ret = copy_oid(&sd.encapContentInfo.eContentType, contentType);
-    if (ret) {
-	krb5_clear_error_string(context);
-	goto out;
-    }
-
-    content->data = malloc(sd.encapContentInfo.eContent->length);
-    if (content->data == NULL) {
-	krb5_clear_error_string(context);
-	ret = ENOMEM;
-	goto out;
-    }
-    content->length = sd.encapContentInfo.eContent->length;
-    memcpy(content->data,sd.encapContentInfo.eContent->data,content->length);
-
-    *signer = malloc(sizeof(**signer));
+    *signer = calloc(1, sizeof(**signer));
     if (*signer == NULL) {
 	krb5_clear_error_string(context);
 	ret = ENOMEM;
 	goto out;
     }
-    (*signer)->cert = cert;
+	
+    /* XXX */
+    {
+	hx509_cursor cursor;
 
- out:
-    free_SignedData(&sd);
-    if (ret) {
-	free_oid(contentType);
-	krb5_data_free(content);
+	ret = hx509_certs_start_seq(id->hx509ctx,
+				    signer_certs,
+				    &cursor);
+	if (ret) {
+	    krb5_clear_error_string(context);
+	    goto out;
+	}
+	ret = hx509_certs_next_cert(id->hx509ctx,
+				    signer_certs,
+				    cursor,
+				    &(*signer)->cert);
+	if (ret) {
+	    krb5_clear_error_string(context);
+	    goto out;
+	}
+	ret = hx509_certs_end_seq(id->hx509ctx,
+				  signer_certs,
+				  cursor);
+	if (ret) {
+	    krb5_clear_error_string(context);
+	    goto out;
+	}
     }
+
+out:
+    hx509_certs_free(&signer_certs);
+
     return ret;
 }
 
@@ -1316,33 +697,12 @@ pk_rd_pa_reply_enckey(krb5_context context,
 	       	      krb5_keyblock **key) 
 {
     krb5_error_code ret;
-    EnvelopedData ed;
-    krb5_keyblock tmp_key;
-    krb5_crypto crypto;
-    krb5_data plain;
-    KeyTransRecipientInfo *ri;
-    int length;
+    struct krb5_pk_cert *host = NULL;
     size_t size;
-    X509 *user_cert;
+    int length;
     void *p;
-    krb5_boolean bret;
     krb5_data content;
     heim_oid contentType = { 0, NULL };
-    struct krb5_pk_cert *host = NULL;
-    heim_octet_string encryptedContent;
-    heim_octet_string *any;
-    krb5_data ivec;
-    krb5_data params;
-
-
-    memset(&tmp_key, 0, sizeof(tmp_key));
-    memset(&ed, 0, sizeof(ed));
-    krb5_data_zero(&plain);
-    krb5_data_zero(&content);
-    krb5_data_zero(&encryptedContent);
-    krb5_data_zero(&ivec);
-
-    user_cert = sk_X509_value(ctx->id->cert, 0);
 
     if (heim_oid_cmp(oid_id_pkcs7_envelopedData(), &rep->contentType)) {
 	krb5_set_error_string(context, "PKINIT: Invalid content type");
@@ -1354,106 +714,17 @@ pk_rd_pa_reply_enckey(krb5_context context,
 	return EINVAL;
     }
 
-    ret = decode_EnvelopedData(rep->content->data,
+    ret = hx509_cms_unenvelope(ctx->id->hx509ctx,
+			       ctx->id->certs,
+			       rep->content->data,
 			       rep->content->length,
-			       &ed,
-			       &size);
-    if (ret) {
-	free_EnvelopedData(&ed);
+			       &contentType,
+			       &content);
+    if (ret)
 	return ret;
-    }
 
-    if (ed.recipientInfos.len != 1) {
-	free_EnvelopedData(&ed);
-	krb5_set_error_string(context, "pkinit: Number of recipient infos "
-			      "not one (%d)",
-			      ed.recipientInfos.len);
-	return EINVAL; /* XXX */
-    }
-
-    ri = &ed.recipientInfos.val[0];
-
-    /* XXX make SignerIdentifier and RecipientIdentifier the same */
-    bret = pk_peer_compare(context, (SignerIdentifier *)&ri->rid, user_cert);
-    if (bret == FALSE) {
-	ret = KRB5KRB_AP_ERR_BADMATCH; /* XXX */
-	goto out;
-    }
-
-    if (heim_oid_cmp(oid_id_pkcs1_rsaEncryption(),
-		     &ri->keyEncryptionAlgorithm.algorithm)) {
-	krb5_set_error_string(context, "PKINIT: invalid content type");
-	return EINVAL;
-    }
-    
-    ret = pk_decrypt_key(context, &ri->encryptedKey,
-			 ctx->id->private_key, &tmp_key);
-    if (ret)
-	goto out;
-
-  
-    /* 
-     * Try to verify content type. We can't do this for W2K case
-     * because W2K/W2K3 sends id-pkcs7-data, but Windows Vista sends
-     * id-pkcs7-signedData to all versions, even W2K clients.
-     */
-
-    if (type != COMPAT_WIN2K) {
-	if (heim_oid_cmp(&ed.encryptedContentInfo.contentType, oid_id_pkcs7_signedData())) {
-	    ret = KRB5KRB_AP_ERR_MSG_TYPE;
-	    goto out;
-	}
-    }
-
-    if (ed.encryptedContentInfo.encryptedContent == NULL) {
-	krb5_set_error_string(context, "PKINIT: OPTIONAL encryptedContent "
-			      "field not filled in in KDC reply");
-	ret = KRB5_BADMSGTYPE;
-	goto out;
-    }
-
-    any = ed.encryptedContentInfo.encryptedContent;
-    ret = der_get_octet_string(any->data, any->length,
-			       &encryptedContent, NULL);
-    if (ret) {
-	krb5_set_error_string(context,
-			      "PKINIT: encryptedContent content invalid");
-	goto out;
-    }
-
-    if (ed.encryptedContentInfo.contentEncryptionAlgorithm.parameters == NULL){
-	krb5_set_error_string(context,
-			      "PKINIT: encryptedContent parameter missing");
-	ret = KRB5_BADMSGTYPE;
-	goto out;
-    }
-
-    params.data = ed.encryptedContentInfo.contentEncryptionAlgorithm.parameters->data;
-    params.length = ed.encryptedContentInfo.contentEncryptionAlgorithm.parameters->length;
-
-    ret = _krb5_oid_to_enctype(context,
-			       &ed.encryptedContentInfo.contentEncryptionAlgorithm.algorithm,
-			       &tmp_key.keytype);
-    if (ret)
-	goto out;
-
-    ret = krb5_crypto_init(context, &tmp_key, 0, &crypto);
-    if (ret)
-	goto out;
-
-    ret = krb5_crypto_get_params(context, crypto, &params, &ivec);
-    if (ret)
-	goto out;
-
-    ret = krb5_decrypt_ivec(context, crypto,
-			    0,
-			    encryptedContent.data,
-			    encryptedContent.length,
-			    &plain,
-			    ivec.data);
-
-    p = plain.data;
-    length = plain.length;
+    p = content.data;
+    length = content.length;
 
     /* win2k uses ContentInfo */
     if (type == COMPAT_WIN2K) {
@@ -1472,6 +743,13 @@ pk_rd_pa_reply_enckey(krb5_context context,
 	    krb5_set_error_string(context, "PKINIT: Invalid content type");
 	    goto out;
 	}
+	if (ci.content == NULL) {
+	    ret = EINVAL; /* XXX */
+	    krb5_set_error_string(context, "PKINIT: Invalid content type");
+	    goto out;
+	}
+	krb5_data_free(&content);
+	content = *ci.content;
 	p = ci.content->data;
 	length = ci.content->length;
     }
@@ -1528,11 +806,7 @@ pk_rd_pa_reply_enckey(krb5_context context,
     if (host)
 	_krb5_pk_cert_free(host);
     free_oid(&contentType);
-    free_octet_string(&encryptedContent);
     krb5_data_free(&content);
-    krb5_free_keyblock_contents(context, &tmp_key);
-    krb5_data_free(&plain);
-    krb5_data_free(&ivec);
 
     return ret;
 }
@@ -1837,598 +1111,117 @@ _krb5_pk_rd_pa_reply(krb5_context context,
     return ret;
 }
 
-static int
-ssl_pass_cb(char *buf, int size, int rwflag, void *u)
+struct prompter {
+    krb5_context context;
+    krb5_prompter_fct prompter;
+    void *prompter_data;
+};
+
+static int 
+hx_pass_prompter(void *data, const hx509_prompt *prompter)
 {
     krb5_error_code ret;
     krb5_prompt prompt;
     krb5_data password_data;
-    krb5_prompter_fct prompter = u;
+    struct prompter *p = data;
    
-    password_data.data   = buf;
-    password_data.length = size;
+    password_data.data   = prompter->reply->data;
+    password_data.length = prompter->reply->length;
     prompt.prompt = "Enter your private key passphrase: ";
     prompt.hidden = 1;
     prompt.reply  = &password_data;
-    prompt.type   = KRB5_PROMPT_TYPE_PASSWORD;
+    if (prompter->hidden)
+	prompt.type   = KRB5_PROMPT_TYPE_PASSWORD;
+    else
+	prompt.type   = KRB5_PROMPT_TYPE_PREAUTH; /* XXX */
    
-    ret = (*prompter)(NULL, NULL, NULL, NULL, 1, &prompt);
+    ret = (*p->prompter)(p->context, p->prompter_data, NULL, NULL, 1, &prompt);
     if (ret) {
-	memset (buf, 0, size);
+	memset (prompter->reply->data, 0, prompter->reply->length);
 	return 0;
     }
-    return strlen(buf);
-}
-
-static krb5_error_code
-load_openssl_cert(krb5_context context,
-		  const char *file,
-		  STACK_OF(X509) **c)
-{
-    STACK_OF(X509) *certificate;
-    krb5_error_code ret;
-    FILE *f;
-
-    f = fopen(file, "r");
-    if (f == NULL) {
-	ret = errno;
-	krb5_set_error_string(context, "PKINIT: open failed %s: %s", 
-			      file, strerror(ret));
-	return ret;
-    }
-
-    certificate = sk_X509_new_null();
-    while (1) {
-	/* see http://www.openssl.org/docs/crypto/pem.html section BUGS */
-	X509 *cert;
-	cert = PEM_read_X509(f, NULL, NULL, NULL);
-	if (cert == NULL) {
-	    if (ERR_GET_REASON(ERR_peek_error()) == PEM_R_NO_START_LINE) {
-		/* End of file reached. no error */
-		ERR_clear_error();
-		break;
-	    }
-	    krb5_set_error_string(context, "PKINIT: Can't read certificate");
-	    fclose(f);
-	    return HEIM_PKINIT_CERTIFICATE_INVALID;
-	}
-	sk_X509_insert(certificate, cert, sk_X509_num(certificate));
-    }
-    fclose(f);
-    if (sk_X509_num(certificate) == 0) {
-	krb5_set_error_string(context, "PKINIT: No certificate found");
-	return HEIM_PKINIT_NO_CERTIFICATE;
-    }
-    *c = certificate;
-    return 0;
-}
-
-static krb5_error_code
-load_openssl_file(krb5_context context,
-		  char *password,
-		  krb5_prompter_fct prompter,
-		  void *prompter_data,
-		  const char *user_id,
-		  struct krb5_pk_identity *id)
-{
-    krb5_error_code ret;
-    STACK_OF(X509) *certificate = NULL;
-    char *cert_file = NULL, *key_file;
-    EVP_PKEY *private_key = NULL;
-    FILE *f;
-
-    cert_file = strdup(user_id);
-    if (cert_file == NULL) {
-	krb5_set_error_string(context, "malloc: out of memory");
-	return ENOMEM;
-    }
-    key_file = strchr(cert_file, ',');
-    if (key_file == NULL) {
-	krb5_set_error_string(context, "PKINIT: key file missing");
-	ret = HEIM_PKINIT_NO_PRIVATE_KEY;
-	goto out;
-    }
-    *key_file++ = '\0';
-
-    ret = load_openssl_cert(context, cert_file, &certificate);
-    if (ret)
-	goto out;
-
-    /* load private key */
-    f = fopen(key_file, "r");
-    if (f == NULL) {
-	ret = errno;
-	krb5_set_error_string(context, "PKINIT: open %s: %s",
-			      key_file, strerror(ret));
-	goto out;
-    }
-    if (password == NULL || password[0] == '\0') {
-	if (prompter == NULL)
-	    prompter = krb5_prompter_posix;
-	private_key = PEM_read_PrivateKey(f, NULL, ssl_pass_cb, prompter);
-    } else
-	private_key = PEM_read_PrivateKey(f, NULL, NULL, password);
-    fclose(f);
-    if (private_key == NULL) {
-	krb5_set_error_string(context, "PKINIT: Can't read private key");
-	ret = HEIM_PKINIT_PRIVATE_KEY_INVALID;
-	goto out;
-    }
-    ret = X509_check_private_key(sk_X509_value(certificate, 0), private_key);
-    if (ret != 1) {
-	ret = HEIM_PKINIT_PRIVATE_KEY_INVALID;
-	krb5_set_error_string(context,
-			      "PKINIT: The private key doesn't match "
-			      "the public key certificate");
-	goto out;
-    }
-
-    id->private_key = private_key;
-    id->cert = certificate;
-
-    return 0;
- out:
-    if (cert_file)
-	free(cert_file);
-    if (certificate)
-	sk_X509_pop_free(certificate, X509_free);
-    if (private_key)
-	EVP_PKEY_free(private_key);
-
-    return ret;
-}
-
-static int
-add_pair(krb5_context context, char *str, char ***cmds, int *num)
-{
-    char **c;
-    char *p;
-    int i;
-
-    p = strchr(str, ':');
-    if (p) {
-	*p = '\0';
-	p++;
-    }
-
-    /* filter out dup keys */
-    for (i = 0; i < *num; i++)
-	if (strcmp((*cmds)[i * 2], str) == 0)
-	    return 0;
-
-    c = realloc(*cmds, sizeof(*c) * ((*num + 1) * 2));
-    if (c == NULL) {
-	krb5_set_error_string(context, "malloc: out of memory");
-	return ENOMEM;
-    }
-
-    c[(*num * 2)] = str;
-    c[(*num * 2) + 1] = p;
-    *num += 1;
-    *cmds = c;
-    return 0;
-}
-
-static krb5_error_code
-eval_pairs(krb5_context context, ENGINE *e, const char *name,
-	   const char *type, char **cmds, int num)
-{
-    int i;
-
-    for (i = 0; i < num; i++) {
-	char *a1 = cmds[i * 2], *a2 = cmds[(i * 2) + 1];
-	if(!ENGINE_ctrl_cmd_string(e, a1, a2, 0)) {
-	    krb5_set_error_string(context,
-				  "PKINIT: Failed %scommand (%s - %s:%s): %s", 
-				  type, name, a1, a2 ? a2 : "(NULL)",
-				  ERR_error_string(ERR_get_error(), NULL));
-	    return HEIM_PKINIT_NO_PRIVATE_KEY;
-	}
-    }
-    return 0;
-}
-
-struct engine_context {
-    char **pre_cmds;
-    char **post_cmds;
-    int num_pre;
-    int num_post;
-    char *engine_name;
-    char *cert_file;
-    char *key_id;
-};
-
-static krb5_error_code
-parse_openssl_engine_conf(krb5_context context, 
-			  struct engine_context *ctx,
-			  char *line)
-{
-    krb5_error_code ret;
-    char *last, *p, *q;
-
-    for (p = strtok_r(line, ",", &last);
-	 p != NULL;
-	 p = strtok_r(NULL, ",", &last)) {
-
-	q = strchr(p, '=');
-	if (q == NULL) {
-	    krb5_set_error_string(context, 
-				  "PKINIT: openssl engine configuration "
-				  "key %s missing = and thus value", p);
-	    return HEIM_PKINIT_NO_PRIVATE_KEY;
-	}
-	*q = '\0';
-	q++;
-	if (strcasecmp("PRE", p) == 0) {
-	    ret = add_pair(context, q, &ctx->pre_cmds, &ctx->num_pre);
-	    if (ret)
-		return ret;
-	} else if (strcasecmp("POST", p) == 0) {
-	    ret = add_pair(context, q, &ctx->post_cmds, &ctx->num_post);
-	    if (ret)
-		return ret;
-	} else if (strcasecmp("KEY", p) == 0) {
-	    ctx->key_id = q;
-	} else if (strcasecmp("CERT", p) == 0) {
-	    ctx->cert_file = q;
-	} else if (strcasecmp("ENGINE", p) == 0) {
-	    ctx->engine_name = q;
-	} else {
-	    krb5_set_error_string(context, 
-				  "PKINIT: openssl engine configuration "
-				  "key %s is unknown", p);
-	    return HEIM_PKINIT_NO_PRIVATE_KEY;
-	}
-    }
-    return 0;
-}
-
-
-static krb5_error_code
-load_openssl_engine(krb5_context context,
-		    char *password,
-		    krb5_prompter_fct prompter,
-		    void *prompter_data,
-		    const char *string,
-		    struct krb5_pk_identity *id)
-{
-    struct engine_context ctx;
-    krb5_error_code ret;
-    const char *f;
-    char *file_conf = NULL, *user_conf = NULL;
-    ENGINE *e = NULL;
-
-    memset(&ctx, 0, sizeof(ctx));
-
-    ENGINE_load_builtin_engines();
-
-    user_conf = strdup(string);
-    if (user_conf == NULL) {
-	krb5_set_error_string(context, "malloc: out of memory");
-	return ENOMEM;
-    }
-
-    ret = parse_openssl_engine_conf(context, &ctx, user_conf);
-    if (ret)
-	goto out;
-
-    f = krb5_config_get_string_default(context, NULL, NULL,
-				       "libdefaults", 
-				       "pkinit-openssl-engine", 
-				       NULL);
-    if (f) {
-	file_conf = strdup(f);
-	if (file_conf) {
-	    ret = parse_openssl_engine_conf(context, &ctx, file_conf);
-	    if (ret)
-		goto out;
-	}
-    }
-
-    if (ctx.cert_file == NULL) {
-	krb5_set_error_string(context, 
-			      "PKINIT: openssl engine missing certificate");
-	ret = HEIM_PKINIT_NO_CERTIFICATE;
-	goto out;
-    }
-    if (ctx.key_id == NULL) {
-	krb5_set_error_string(context,
-			      "PKINIT: openssl engine missing key id");
-	ret = HEIM_PKINIT_NO_PRIVATE_KEY;
-	goto out;
-    }
-    if (ctx.engine_name == NULL) {
-	krb5_set_error_string(context,
-			      "PKINIT: openssl engine missing engine name");
-	ret = HEIM_PKINIT_NO_PRIVATE_KEY;
-	goto out;
-    }
-
-    e = ENGINE_by_id(ctx.engine_name);
-    if (e == NULL) {
-	krb5_set_error_string(context, 
-			      "PKINIT: failed getting openssl engine %s: %s", 
-			      ctx.engine_name,
-			      ERR_error_string(ERR_get_error(), NULL));
-	ret = HEIM_PKINIT_NO_PRIVATE_KEY;
-	goto out;
-    }
-
-    ret = eval_pairs(context, e, ctx.engine_name, "pre", 
-		     ctx.pre_cmds, ctx.num_pre);
-    if (ret)
-	goto out;
-
-    if(!ENGINE_init(e)) {
-	ret = HEIM_PKINIT_NO_PRIVATE_KEY;
-	krb5_set_error_string(context,
-			      "PKINIT: openssl engine init %s failed: %s", 
-			      ctx.engine_name,
-			      ERR_error_string(ERR_get_error(), NULL));
-	ENGINE_free(e);
-	goto out;
-    }
-
-    ret = eval_pairs(context, e, ctx.engine_name, "post", 
-		     ctx.post_cmds, ctx.num_post);
-    if (ret)
-	goto out;
-
-    /*
-     * If the engine supports a LOAD_CERT_CTRL function, lets try
-     * it. OpenSC support this function. Eventially this should be
-     * a ENGINE_load_cert function if it failes, treat it like a
-     * non fatal error.
-     */
-    {
-	struct {
-	    const char * cert_id;
-	    X509 * cert;
-	} parms;
-
-	parms.cert_id = ctx.cert_file;
-	parms.cert = NULL;
-	ENGINE_ctrl_cmd(e, "LOAD_CERT_CTRL", 0, &parms, NULL, 1); 
-	if (parms.cert) {
-	    id->cert = sk_X509_new_null();
-	    sk_X509_insert(id->cert, parms.cert, 0);	
-	}  
-    }
-
-    if (id->cert == NULL) {
-	ret = load_openssl_cert(context, ctx.cert_file, &id->cert);
-	if (ret)
-	    goto out;
-    }
-
-    {
-	UI_METHOD * krb5_ui_method = NULL;
-	struct krb5_ui_data ui_data;
-
-	krb5_ui_method = UI_create_method("Krb5 ui method");
-	if (krb5_ui_method == NULL) {
-	    krb5_set_error_string(context,
-				  "PKINIT: failed to setup prompter "
-				  "function: %s",
-				  ERR_error_string(ERR_get_error(), NULL));
-	    ret = HEIM_PKINIT_NO_PRIVATE_KEY;
-	    goto out;
-	}
-	UI_method_set_reader(krb5_ui_method, krb5_ui_method_read_string);
-
-	ui_data.context = context;
-	ui_data.prompter = prompter;
-	if (prompter == NULL)
-	    ui_data.prompter = krb5_prompter_posix;
-	ui_data.prompter_data = prompter_data;
-
-    	id->private_key = ENGINE_load_private_key(e,
-						  ctx.key_id, 
-						  krb5_ui_method,
-						  (void*) &ui_data);
-	UI_destroy_method(krb5_ui_method);
-    }
-	
-    if (id->private_key == NULL) {
-	krb5_set_error_string(context,
-			      "PKINIT: failed to load private key: %s",
-			      ERR_error_string(ERR_get_error(), NULL));
-	ret = HEIM_PKINIT_NO_PRIVATE_KEY;
-	goto out;
-    }
-
-    ret = X509_check_private_key(sk_X509_value(id->cert, 0), id->private_key);
-    if (ret != 1) {
-	ret = HEIM_PKINIT_PRIVATE_KEY_INVALID;
-	krb5_set_error_string(context,
-			      "PKINIT: The private key doesn't match "
-			      "the public key certificate");
-	goto out;
-    }
-
-    if (user_conf)
-	free(user_conf);
-    if (file_conf)
-	free(file_conf);
-
-    id->engine = e;
-
-    return 0;
-
- out:
-    if (user_conf)
-	free(user_conf);
-    if (file_conf)
-	free(file_conf);
-    if (e) {
-	ENGINE_finish(e); /* make sure all shared libs are unloaded */
-	ENGINE_free(e);
-    }
-	
-    return ret;
+    return strlen(prompter->reply->data);
 }
 
 krb5_error_code KRB5_LIB_FUNCTION
 _krb5_pk_load_openssl_id(krb5_context context,
 			 struct krb5_pk_identity **ret_id,
 			 const char *user_id,
-			 const char *x509_anchors,
+			 const char *anchor_id,
 			 krb5_prompter_fct prompter,
 			 void *prompter_data,
 			 char *password)
 {
-    STACK_OF(X509) *trusted_certs = NULL;
     struct krb5_pk_identity *id = NULL;
-    krb5_error_code ret;
-    struct dirent *file;
-    char *dirname = NULL;
-    DIR *dir;
-    FILE *f;
-    krb5_error_code (*load_pair)(krb5_context, 
-				 char *, 
-				 krb5_prompter_fct,
-				 void *,
-				 const char *,
-				 struct krb5_pk_identity *) = NULL;
-
+    hx509_lock lock = NULL;
+    struct prompter p;
+    int ret;
 
     *ret_id = NULL;
 
-    if (x509_anchors == NULL) {
-	krb5_set_error_string(context, "PKINIT: No root ca directory given");
+    if (anchor_id == NULL) {
+	krb5_set_error_string(context, "PKINIT: No anchor given");
 	return HEIM_PKINIT_NO_VALID_CA;
     }
 
     if (user_id == NULL) {
 	krb5_set_error_string(context,
-			      "PKINIT: No user X509 source given given");
+			      "PKINIT: No user certificate given");
 	return HEIM_PKINIT_NO_PRIVATE_KEY;
     }
 
-    /* 
-     *
-     */
+    /* load cert */
 
-    if (strncasecmp(user_id, "FILE:", 5) == 0) {
-	load_pair = load_openssl_file;
-	user_id += 5;
-    } else if (strncasecmp(user_id, "ENGINE:", 7) == 0) {
-	load_pair = load_openssl_engine;
-	user_id += 7;
-    } else {
-	krb5_set_error_string(context, "PKINIT: user identity not FILE");
-	return HEIM_PKINIT_NO_CERTIFICATE;
-    }
-    if (strncasecmp(x509_anchors, "OPENSSL-ANCHOR-DIR:", 19) != 0) {
-	krb5_set_error_string(context, "PKINIT: anchor OPENSSL-ANCHOR-DIR");
-	return HEIM_PKINIT_NO_VALID_CA;
-    }
-    x509_anchors += 19;
-
-    id = malloc(sizeof(*id));
+    id = calloc(1, sizeof(*id));
     if (id == NULL) {
 	krb5_set_error_string(context, "malloc: out of memory");
 	ret = ENOMEM;
 	goto out;
     }	
-    memset(id, 0, sizeof(*id));
 
-    OpenSSL_add_all_algorithms();
-    ERR_load_crypto_strings();
-
-    
-    ret = (*load_pair)(context, password, prompter, prompter_data, user_id, id);
+    ret = hx509_context_init(&id->hx509ctx);
     if (ret)
 	goto out;
 
-    /* load anchors */
+    ret = hx509_lock_init(id->hx509ctx, &lock);
+    if (password)
+	hx509_lock_add_password(lock, password);
 
-    dirname = strdup(x509_anchors);
-    if (dirname == NULL) {
-	krb5_set_error_string(context, "malloc: out of memory");
-	ret = ENOMEM;
+    if (prompter) {
+	p.context = context;
+	p.prompter = prompter;
+	p.prompter_data = prompter_data;
+
+	ret = hx509_lock_set_prompter(lock, hx_pass_prompter, &p);
+	if (ret)
+	    goto out;
+    }
+
+    ret = hx509_certs_init(id->hx509ctx, user_id, 0, NULL, &id->certs);
+    if (ret)
 	goto out;
-    }
 
-    {
-	size_t len;
-	len = strlen(dirname);
-	if (dirname[len - 1] == '/')
-	    dirname[len - 1] = '\0';
-    }
-
-    /* read ca certificates */
-    dir = opendir(dirname);
-    if (dir == NULL) {
-	ret = errno;
-	krb5_set_error_string(context, "PKINIT: open directory %s: %s",
-			      dirname, strerror(ret));
+    ret = hx509_certs_init(id->hx509ctx, anchor_id, 0, NULL, &id->anchors);
+    if (ret)
 	goto out;
-    }
 
-    trusted_certs = sk_X509_new_null();
-    while ((file = readdir(dir)) != NULL) {
-	X509 *cert;
-	char *filename;
-
-	/*
-	 * Assume the certificate filenames constist of hashed subject
-	 * name followed by suffix ".0"
-	 */
-
-	if (strlen(file->d_name) == 10 && strcmp(&file->d_name[8],".0") == 0) {
-	    asprintf(&filename, "%s/%s", dirname, file->d_name);
-	    if (filename == NULL) {
-		ret = ENOMEM;
-		krb5_set_error_string(context, "malloc: out or memory");
-		goto out;
-	    }
-	    f = fopen(filename, "r");
-	    if (f == NULL) {
-		ret = errno;
-		krb5_set_error_string(context, "PKINIT: open %s: %s",
-				      filename, strerror(ret));
-		free(filename);
-		closedir(dir);
-		goto out;
-	    }
-	    cert = PEM_read_X509(f, NULL, NULL, NULL);
-	    fclose(f);
-	    if (cert != NULL) {
-		/* order of the certs is not important */
-		sk_X509_push(trusted_certs, cert);
-	    }
-	    free(filename);
-	}
-    }
-    closedir(dir);
-
-    if (sk_X509_num(trusted_certs) == 0) {
-	krb5_set_error_string(context,
-			      "PKINIT: No CA certificate(s) found in %s",
-			      dirname);
-	ret = HEIM_PKINIT_NO_VALID_CA;
+    ret = hx509_verify_init_ctx(id->hx509ctx, &id->verify_ctx);
+    if (ret)
 	goto out;
-    }
 
-    id->trusted_certs = trusted_certs;
+    hx509_verify_attach_anchors(id->verify_ctx, id->anchors);
 
-    *ret_id = id;
-
-    return 0;
-
- out:
-    if (dirname)
-	free(dirname);
-    if (trusted_certs)
-	sk_X509_pop_free(trusted_certs, X509_free);
-    if (id) {
-	if (id->cert)
-	    sk_X509_pop_free(id->cert, X509_free);
-	if (id->private_key)
-	    EVP_PKEY_free(id->private_key);
+out:
+    if (ret) {
+	hx509_verify_destroy_ctx(id->verify_ctx);
+	hx509_certs_free(&id->certs);
+	hx509_certs_free(&id->anchors);
+	hx509_context_free(&id->hx509ctx);
 	free(id);
-    }
+    } else
+	*ret_id = id;
+
+    hx509_lock_free(lock);
 
     return ret;
 }
@@ -2704,17 +1497,11 @@ _krb5_get_init_creds_opt_free_pkinit(krb5_get_init_creds_opt *opt)
 	DH_free(ctx->dh);
 	ctx->dh = NULL;
     if (ctx->id) {
-	if (ctx->id->cert)
-	    sk_X509_pop_free(ctx->id->cert, X509_free);
-	if (ctx->id->trusted_certs)
-	    sk_X509_pop_free(ctx->id->trusted_certs, X509_free);
-	if (ctx->id->private_key)
-	    EVP_PKEY_free(ctx->id->private_key);
-	if (ctx->id->engine) {
-		ENGINE_finish(ctx->id->engine); /* unload shared libs etc */
-	    ENGINE_free(ctx->id->engine);
-		ctx->id->engine = NULL;
-	}
+	hx509_verify_destroy_ctx(ctx->id->verify_ctx);
+	hx509_certs_free(&ctx->id->certs);
+	hx509_certs_free(&ctx->id->anchors);
+	hx509_context_free(&ctx->id->hx509ctx);
+
 	if (ctx->clientDHNonce) {
 	    krb5_free_data(NULL, ctx->clientDHNonce);
 	    ctx->clientDHNonce = NULL;

@@ -42,25 +42,15 @@ RCSID("$Id$");
 #include <cms_asn1.h>
 #include <pkinit_asn1.h>
 
-#include <openssl/evp.h>
-#include <openssl/x509.h>
-#include <openssl/x509v3.h>
-#include <openssl/bn.h>
-#include <openssl/asn1.h>
-#include <openssl/err.h>
+#include <hx509.h>
+#include "crypto-headers.h"
 
 /* XXX copied from lib/krb5/pkinit.c */
 struct krb5_pk_identity {
-    EVP_PKEY *private_key;
-    STACK_OF(X509) *cert;
-    STACK_OF(X509) *trusted_certs;
-    STACK_OF(X509_CRL) *crls;
-    ENGINE *engine;
-};
-
-/* XXX copied from lib/krb5/pkinit.c */
-struct krb5_pk_cert {
-    X509 *cert;
+    hx509_context hx509ctx;
+    hx509_verify_ctx verify_ctx;
+    hx509_certs certs;
+    hx509_certs anchors;
 };
 
 enum pkinit_type {
@@ -71,7 +61,7 @@ enum pkinit_type {
 struct pk_client_params {
     enum pkinit_type type;
     BIGNUM *dh_public_key;
-    struct krb5_pk_cert *certificate;
+    hx509_cert cert;
     unsigned nonce;
     DH *dh;
     EncryptionKey reply_key;
@@ -85,29 +75,6 @@ struct pk_principal_mapping {
 	char *subject;
     } *val;
 };
-
-/* XXX copied from lib/krb5/pkinit.c */
-#define OPENSSL_ASN1_MALLOC_ENCODE(T, B, BL, S, R)			\
-{									\
-  unsigned char *p;							\
-  (BL) = i2d_##T((S), NULL);						\
-  if ((BL) <= 0) {							\
-     (R) = EINVAL;							\
-  } else {								\
-    (B) = malloc((BL));							\
-    if ((B) == NULL) {							\
-       (R) = ENOMEM;							\
-    } else {								\
-        p = (B);							\
-        (R) = 0;							\
-        (BL) = i2d_##T((S), &p);					\
-        if ((BL) <= 0) {						\
-           free((B));                                          		\
-           (R) = ASN1_OVERRUN;						\
-        }								\
-    }									\
-  }									\
-}
 
 static struct krb5_pk_identity *kdc_identity;
 static struct pk_principal_mapping principal_mappings;
@@ -185,59 +152,19 @@ pk_check_pkauthenticator(krb5_context context,
 	krb5_clear_error_string(context);
 	ret = KRB5KRB_ERR_GENERIC;
     }
+
 out:
     free_Checksum(&checksum);
 
     return ret;
 }
 
-static krb5_error_code
-pk_encrypt_key(krb5_context context,
-      	       krb5_keyblock *key,
-               EVP_PKEY *public_key,
-	       krb5_data *encrypted_key,
-	       const heim_oid **oid)
-{
-    krb5_error_code ret;
-
-    encrypted_key->length = EVP_PKEY_size(public_key);
-
-    if (encrypted_key->length < key->keyvalue.length + 11) { /* XXX */
-	krb5_set_error_string(context, "pkinit: encrypted key too long");
-	return KRB5KRB_ERR_GENERIC;
-    }
-
-    encrypted_key->data = malloc(encrypted_key->length);
-    if (encrypted_key->data == NULL) {
-	krb5_set_error_string(context, "malloc: out of memory");
-	return ENOMEM;
-    }
-
-    ret = EVP_PKEY_encrypt(encrypted_key->data, 
-			   key->keyvalue.data,
-			   key->keyvalue.length,
-			   public_key);
-    if (ret < 0) {
-	free(encrypted_key->data);
-	krb5_set_error_string(context, "Can't encrypt key: %s",
-			      ERR_error_string(ERR_get_error(), NULL));
-	return KRB5KRB_ERR_GENERIC;
-    }
-    if (encrypted_key->length != ret)
-	krb5_abortx(context, "size of EVP_PKEY_size is not the "
-		    "size of the output");
-
-    *oid = oid_id_pkcs1_rsaEncryption();
-
-    return 0;
-}
-
 void
 _kdc_pk_free_client_param(krb5_context context, 
 			  pk_client_params *client_params)
 {
-    if (client_params->certificate)
-	_krb5_pk_cert_free(client_params->certificate);
+    if (client_params->cert)
+	hx509_cert_free(client_params->cert);
     if (client_params->dh)
 	DH_free(client_params->dh);
     if (client_params->dh_public_key)
@@ -631,24 +558,33 @@ _kdc_pk_rd_padata(krb5_context context,
 	goto out;
     }
 
-    ret = _krb5_pk_verify_sign(context,
-			       signed_content.data,
-			       signed_content.length,
-			       kdc_identity,
-			       &eContentType,
-			       &eContent,
-			       &client_params->certificate);
-    if (ret)
-	goto out;
+    {
+	hx509_certs signer_certs;
 
-#if 0
+	ret = hx509_cms_verify_signed(kdc_identity->hx509ctx,
+				      kdc_identity->verify_ctx,
+				      signed_content.data,
+				      signed_content.length,
+				      kdc_identity->certs,
+				      &eContentType,
+				      &eContent,
+				      &signer_certs);
+	if (ret)
+	    goto out;
+
+	ret = hx509_get_one_cert(kdc_identity->hx509ctx, signer_certs,
+				 &client_params->cert);
+	hx509_certs_free(&signer_certs);
+	if (ret)
+	    goto out;
+    }
+
     /* Signature is correct, now verify the signed message */
     if (heim_oid_cmp(&eContentType, pa_contentType)) {
 	krb5_set_error_string(context, "got wrong oid for pkauthdata");
 	ret = KRB5_BADMSGTYPE;
 	goto out;
     }
-#endif
 
     if (pa->padata_type == KRB5_PADATA_PK_AS_REQ_WIN) {
 	AuthPack_Win2k ap;
@@ -762,78 +698,11 @@ pk_mk_pa_reply_enckey(krb5_context context,
 		      krb5_keyblock *reply_key,
 		      ContentInfo *content_info)
 {
-    KeyTransRecipientInfo *ri;
-    EnvelopedData ed;
     krb5_error_code ret;
-    krb5_crypto crypto = NULL;
-    krb5_data buf, sd_data, enc_sd_data, iv, params;
-    krb5_keyblock tmp_key;
-    krb5_enctype enveloped_enctype;
-    X509_NAME *issuer_name;
-    heim_integer *serial;
+    krb5_data buf, o;
     size_t size;
-    AlgorithmIdentifier *enc_alg;
-    int i;
 
-    krb5_data_zero(&enc_sd_data);
-    krb5_data_zero(&sd_data);
-    krb5_data_zero(&iv);
-
-    memset(&tmp_key, 0, sizeof(tmp_key));
-    memset(&ed, 0, sizeof(ed));
-
-    /* default to DES3 if client doesn't tell us */
-    enveloped_enctype = ETYPE_DES3_CBC_NONE_CMS;
-
-    for (i = 0; i < req->req_body.etype.len; i++) {
-	switch(req->req_body.etype.val[i]) {
-	case 15: /* des-ede3-cbc-Env-OID */
-	    enveloped_enctype = ETYPE_DES3_CBC_NONE_CMS;
-	    break;
-	default:
-	    break;
-	}
-    }
-
-    ret = krb5_generate_random_keyblock(context, enveloped_enctype, &tmp_key);
-    if (ret)
-	goto out;
-
-    ret = krb5_crypto_init(context, &tmp_key, 0, &crypto);
-    if (ret)
-	goto out;
-
-
-    ret = krb5_crypto_getblocksize(context, crypto, &iv.length);
-    if (ret)
-	goto out;
-
-    ret = krb5_data_alloc(&iv, iv.length);
-    if (ret) {
-	krb5_set_error_string(context, "malloc out of memory");
-	goto out;
-    }
-
-    krb5_generate_random_block(iv.data, iv.length);
-
-    enc_alg = &ed.encryptedContentInfo.contentEncryptionAlgorithm;
-
-    ret = krb5_enctype_to_oid(context, enveloped_enctype, &enc_alg->algorithm);
-    if (ret)
-	goto out;
-
-    ret = krb5_crypto_set_params(context, crypto, &iv, &params);
-    if (ret)
-	goto out;
-
-    ALLOC(enc_alg->parameters);
-    if (enc_alg->parameters == NULL) {
-	krb5_data_free(&params);
-	krb5_set_error_string(context, "malloc out of memory");
-	return ENOMEM;
-    }
-    enc_alg->parameters->data = params.data;
-    enc_alg->parameters->length = params.length;
+    krb5_data_zero(&buf);
 
     switch (client_params->type) {
     case PKINIT_COMPAT_WIN2K: {
@@ -897,139 +766,21 @@ pk_mk_pa_reply_enckey(krb5_context context,
     if (buf.length != size)
 	krb5_abortx(context, "Internal ASN.1 encoder error");
 
-    /* 
-     * CRL's are not transfered -- should be ?
-     */
-
-    ret = _krb5_pk_create_sign(context,
-			       oid_id_pkrkeydata(),
-			       &buf,
-			       kdc_identity,
-			       &sd_data);
-    krb5_data_free(&buf);
-    if (ret) 
+    ret = hx509_cms_envelope_1(kdc_identity->hx509ctx,
+			       client_params->cert,
+			       buf.data, buf.length, NULL,
+			       oid_id_pkcs7_signedData(), &o);
+    if (ret)
 	goto out;
-
-    ret = krb5_encrypt_ivec(context, crypto, 0, 
-			    sd_data.data, sd_data.length,
-			    &enc_sd_data,
-			    iv.data);
-
-    ALLOC_SEQ(&ed.recipientInfos, 1);
-    if (ed.recipientInfos.val == NULL) {
-	krb5_clear_error_string(context);
-	ret = ENOMEM;
-	goto out;
-    }
-
-    ri = &ed.recipientInfos.val[0];
-
-    ri->version = 0;
-    ri->rid.element = choice_CMSIdentifier_issuerAndSerialNumber;
-	
-    issuer_name = X509_get_issuer_name(client_params->certificate->cert);
-    OPENSSL_ASN1_MALLOC_ENCODE(X509_NAME, buf.data, buf.length,
-			       issuer_name, ret);
-    if (ret) {
-	krb5_clear_error_string(context);
-	goto out;
-    }
-    ret = decode_Name(buf.data, buf.length,
-		      &ri->rid.u.issuerAndSerialNumber.issuer,
-		      NULL);
-    free(buf.data);
-    if (ret) {
-	krb5_set_error_string(context, "pkinit: failed to parse Name");
-	goto out;
-    }
-
-    serial = &ri->rid.u.issuerAndSerialNumber.serialNumber;
-    {
-	ASN1_INTEGER *isn;
-	BIGNUM *bn;
-
-	isn = X509_get_serialNumber(client_params->certificate->cert);
-	bn = ASN1_INTEGER_to_BN(isn, NULL);
-	if (bn == NULL) {
-	    ret = ENOMEM;
-	    krb5_clear_error_string(context);
-	    goto out;
-	}
-	ret = BN_to_integer(context, bn, serial);
-	BN_free(bn);
-	if (ret) {
-	    krb5_clear_error_string(context);
-	    goto out;
-	}
-    }
-
-    {
-	const heim_oid *pk_enc_key_oid;
-	krb5_data enc_tmp_key;
-
-	ret = pk_encrypt_key(context, &tmp_key,
-			     X509_get_pubkey(client_params->certificate->cert),
-			     &enc_tmp_key,
-			     &pk_enc_key_oid);
-	if (ret)
-	    goto out;
-
-	ri->encryptedKey.length = enc_tmp_key.length;
-	ri->encryptedKey.data = enc_tmp_key.data;
-
-	ret = copy_oid(pk_enc_key_oid, &ri->keyEncryptionAlgorithm.algorithm);
-	if (ret)
-	    goto out;
-    }
-
-    /*
-     *
-     */
-
-    ed.version = 0;
-    ed.originatorInfo = NULL;
-
-    ret = copy_oid(oid_id_pkcs7_signedData(), &ed.encryptedContentInfo.contentType);
-    if (ret) {
-	krb5_clear_error_string(context);
-	goto out;
-    }
-
-    ALLOC(ed.encryptedContentInfo.encryptedContent);
-    if (ed.encryptedContentInfo.encryptedContent == NULL) {
-	krb5_clear_error_string(context);
-	ret = ENOMEM;
-	goto out;
-    }
-
-    ed.encryptedContentInfo.encryptedContent->data = enc_sd_data.data;
-    ed.encryptedContentInfo.encryptedContent->length = enc_sd_data.length;
-    krb5_data_zero(&enc_sd_data);
-
-    ed.unprotectedAttrs = NULL;
-
-    ASN1_MALLOC_ENCODE(EnvelopedData, buf.data, buf.length, &ed, &size, ret);
-    if (ret) {
-	krb5_set_error_string(context, 
-			      "ASN.1 encoding of EnvelopedData failed (%d)",
-			      ret);
-	goto out;
-    }
-  
+    
     ret = _krb5_pk_mk_ContentInfo(context,
-				  &buf,
+				  &o,
 				  oid_id_pkcs7_envelopedData(),
 				  content_info);
-    krb5_data_free(&buf);
+    free_octet_string(&o);
 
  out:
-    if (crypto)
-	krb5_crypto_destroy(context, crypto);
-    krb5_free_keyblock_contents(context, &tmp_key);
-    krb5_data_free(&enc_sd_data);
-    krb5_data_free(&iv);
-    free_EnvelopedData(&ed);
-
+    krb5_data_free(&buf);
     return ret;
 }
 
@@ -1044,37 +795,36 @@ pk_mk_pa_reply_dh(krb5_context context,
                   krb5_keyblock *reply_key,
 		  ContentInfo *content_info)
 {
-    ASN1_INTEGER *dh_pub_key = NULL;
-    ContentInfo contentinfo;
     KDCDHKeyInfo dh_info;
+    krb5_data signed_data, buf;
+    ContentInfo contentinfo;
     krb5_error_code ret;
-    SignedData sd;
-    krb5_data buf, signed_data;
     size_t size;
+    heim_integer i;
 
     memset(&contentinfo, 0, sizeof(contentinfo));
     memset(&dh_info, 0, sizeof(dh_info));
-    memset(&sd, 0, sizeof(sd));
     krb5_data_zero(&buf);
     krb5_data_zero(&signed_data);
 
-    dh_pub_key = BN_to_ASN1_INTEGER(kdc_dh->pub_key, NULL);
-    if (dh_pub_key == NULL) {
-	krb5_set_error_string(context, "BN_to_ASN1_INTEGER() failed (%s)",
-			      ERR_error_string(ERR_get_error(), NULL));
-	ret = ENOMEM;
-	goto out;
-    }
+    ret = BN_to_integer(context, kdc_dh->pub_key, &i);
+    if (ret)
+	return ret;
 
-    OPENSSL_ASN1_MALLOC_ENCODE(ASN1_INTEGER, buf.data, buf.length, dh_pub_key,
-			       ret);
-    ASN1_INTEGER_free(dh_pub_key);
-    if (ret) {
-	krb5_set_error_string(context, "Encoding of ASN1_INTEGER failed (%s)",
-			      ERR_error_string(ERR_get_error(), NULL));
-	goto out;
+    buf.length = length_heim_integer(&i);
+    buf.data = malloc(buf.length);
+    if (buf.data == NULL) {
+	krb5_clear_error_string(context);
+	return ENOMEM;
     }
-   
+    ret = der_put_heim_integer(buf.data, buf.length, &i, &size);
+    if (ret) {
+	krb5_clear_error_string(context);
+	return ret;
+    }
+    if (buf.length != size)
+	krb5_abortx(context, "Internal ASN.1 encoder error");
+
     dh_info.subjectPublicKey.length = buf.length * 8;
     dh_info.subjectPublicKey.data = buf.data;
     
@@ -1095,12 +845,34 @@ pk_mk_pa_reply_dh(krb5_context context,
      * filled in above
      */
 
-    ret = _krb5_pk_create_sign(context, 
-			       oid_id_pkdhkeydata(),
-			       &buf,
-			       kdc_identity,
-			       &signed_data);
-    krb5_data_free(&buf);
+    {
+	hx509_cert cert;
+	hx509_query *q;
+	
+	ret = hx509_query_alloc(kdc_identity->hx509ctx, &q);
+	if (ret)
+	    goto out;
+	
+	hx509_query_match_option(q, HX509_QUERY_OPTION_PRIVATE_KEY);
+	hx509_query_match_option(q, HX509_QUERY_OPTION_KU_DIGITALSIGNATURE);
+	
+	ret = hx509_certs_find(kdc_identity->hx509ctx, 
+			       kdc_identity->certs, 
+			       q, 
+			       &cert);
+	hx509_query_free(kdc_identity->hx509ctx, q);
+	if (ret)
+	    goto out;
+	
+	ret = hx509_cms_create_signed_1(kdc_identity->hx509ctx,
+					oid_id_pkdhkeydata(),
+					buf.data,
+					buf.length,
+					NULL,
+					cert,
+					&signed_data);
+	hx509_cert_free(cert);
+    }
     if (ret)
 	goto out;
 
@@ -1112,6 +884,7 @@ pk_mk_pa_reply_dh(krb5_context context,
 	goto out;
 
  out:
+    krb5_data_free(&buf);
     krb5_data_free(&signed_data);
     free_KDCDHKeyInfo(&dh_info);
 
@@ -1322,62 +1095,59 @@ _kdc_pk_mk_pa_reply(krb5_context context,
 static int
 pk_principal_from_X509(krb5_context context, 
 		       krb5_kdc_configuration *config,
-		       struct krb5_pk_cert *client_cert, 
-		       krb5_principal *principal)
+		       hx509_cert client_cert, 
+		       krb5_const_principal match)
 {
-    krb5_error_code ret;
-    GENERAL_NAMES *gens;
-    GENERAL_NAME *gen;
-    ASN1_OBJECT *obj;
-    int i;
+    hx509_octet_string_list list;
+    int ret, i, found = 0;
 
-    *principal = NULL;
+    memset(&list, 0 , sizeof(list));
 
-    obj = OBJ_txt2obj("1.3.6.1.5.2.2",1);
-	
-    gens = X509_get_ext_d2i(client_cert->cert, NID_subject_alt_name, 
-			    NULL, NULL);
-    if (gens == NULL)
-	return 1;
+    ret = hx509_cert_find_subjectAltName_otherName(client_cert,
+						   oid_id_pkinit_san(),
+						   &list);
+    if (ret)
+	goto out;
 
-    for (i = 0; i < sk_GENERAL_NAME_num(gens); i++) {
+    for (i = 0; !found && i < list.len; i++) {
+	krb5_principal_data principal;
 	KRB5PrincipalName kn;
-	size_t len, size;
-	void *p;
+	size_t size;
 
-	gen = sk_GENERAL_NAME_value(gens, i);
-	if (gen->type != GEN_OTHERNAME)
-	    continue;
-
-	if(OBJ_cmp(obj, gen->d.otherName->type_id) != 0) 
-	    continue;
-	
-	p = ASN1_STRING_data(gen->d.otherName->value->value.sequence);
-	len = ASN1_STRING_length(gen->d.otherName->value->value.sequence);
-
-	ret = decode_KRB5PrincipalName(p, len, &kn, &size);
+	ret = decode_KRB5PrincipalName(list.val[i].data, 
+				       list.val[i].length,
+				       &kn, &size);
 	if (ret) {
 	    kdc_log(context, config, 0,
 		    "Decoding kerberos name in certificate failed: %s",
 		    krb5_get_err_text(context, ret));
-	    continue;
+	    break;
+	}
+	if (size != list.val[i].length) {
+	    kdc_log(context, config, 0,
+		    "Decoding kerberos name have extra bits on the end");
+	    return KRB5_KDC_ERR_CLIENT_NAME_MISMATCH;
 	}
 
-	*principal = malloc(sizeof(**principal));
-	if (*principal == NULL) {
-	    free_KRB5PrincipalName(&kn);
-	    return 1;
-	}
+	principal.name = kn.principalName;
+	principal.realm = kn.realm;
 
-	(*principal)->name = kn.principalName;
-	(*principal)->realm = kn.realm;
-	return 0;
+	if (krb5_principal_compare(context, &principal, match) == TRUE)
+	    found = 1;
+	free_KRB5PrincipalName(&kn);
     }
-    return 1;
+
+out:
+    hx509_free_octet_string_list(&list);    
+    if (ret)
+	return ret;
+
+    if (!found)
+	return KRB5_KDC_ERR_CLIENT_NAME_MISMATCH;
+
+    return 0;
 }
 
-
-/* XXX match with issuer too ? */
 
 krb5_error_code
 _kdc_pk_check_client(krb5_context context,
@@ -1387,45 +1157,30 @@ _kdc_pk_check_client(krb5_context context,
 		     pk_client_params *client_params,
 		     char **subject_name)
 {
-    struct krb5_pk_cert *client_cert = client_params->certificate;
-    krb5_principal cert_princ;
-    X509_NAME *name;
-    char *subject = NULL;
     krb5_error_code ret;
-    krb5_boolean b;
+    hx509_name name;
     int i;
-
-    *subject_name = NULL;
-
-    name = X509_get_subject_name(client_cert->cert);
-    if (name == NULL) {
-	krb5_set_error_string(context, "PKINIT can't get subject name");
-	return ENOMEM;
-    }
-    subject = X509_NAME_oneline(name, NULL, 0);
-    if (subject == NULL) {
-	krb5_set_error_string(context, "PKINIT can't get subject name");
-	return ENOMEM;
-    }
-    *subject_name = strdup(subject);
-    if (*subject_name == NULL) {
-	krb5_set_error_string(context, "out of memory");
-	return ENOMEM;
-    }
-    OPENSSL_free(subject);
 
     if (config->enable_pkinit_princ_in_cert) {
 	ret = pk_principal_from_X509(context, config, 
-				     client_cert, &cert_princ);
-	if (ret == 0) {
-	    b = krb5_principal_compare(context, client_princ, cert_princ);
-	    krb5_free_principal(context, cert_princ);
-	    if (b == TRUE)
-		return 0;
-	}
+				     client_params->cert,
+				     client_princ);
+	if (ret == 0)
+	    return 0;
     }
 
+    ret = hx509_cert_get_subject(client_params->cert, &name);
+    if (ret)
+	return ret;
+
+    ret = hx509_name_to_string(name, subject_name);
+    hx509_name_free(&name);
+    if (ret)
+	return ret;
+
     for (i = 0; i < principal_mappings.len; i++) {
+	krb5_boolean b;
+
 	b = krb5_principal_compare(context,
 				   client_princ,
 				   principal_mappings.val[i].principal);
@@ -1436,6 +1191,7 @@ _kdc_pk_check_client(krb5_context context,
 	return 0;
     }
     free(*subject_name);
+
     *subject_name = NULL;
     krb5_set_error_string(context, "PKINIT no matching principals");
     return KRB5_KDC_ERR_CLIENT_NAME_MISMATCH;
