@@ -48,8 +48,7 @@ static BOOL test_Map(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	struct GUID uuid;
 	struct policy_handle handle;
 	int i;
-	struct GUID if_uuid;
-	uint16_t if_version;
+	struct dcerpc_syntax_id syntax;
 
 	ZERO_STRUCT(uuid);
 	ZERO_STRUCT(handle);
@@ -60,10 +59,10 @@ static BOOL test_Map(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	r.out.entry_handle = &handle;
 	r.in.max_towers = 100;
 
-	dcerpc_floor_get_lhs_data(&twr->tower.floors[0], &if_uuid, &if_version);
+	dcerpc_floor_get_lhs_data(&twr->tower.floors[0], &syntax);
 
 	printf("epm_Map results for '%s':\n", 
-	       idl_pipe_name(&if_uuid, if_version));
+	       idl_pipe_name(&syntax.uuid, syntax.if_version));
 
 	twr->tower.floors[2].lhs.protocol = EPM_PROTOCOL_NCACN;
 	twr->tower.floors[2].lhs.lhs_data = data_blob(NULL, 0);
@@ -261,7 +260,7 @@ static BOOL test_InqObject(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	struct epm_InqObject r;
 
 	r.in.epm_object = talloc(mem_ctx, struct GUID);
-	*r.in.epm_object = dcerpc_table_epmapper.uuid;
+	*r.in.epm_object = dcerpc_table_epmapper.syntax_id.uuid;
 
 	status = dcerpc_epm_InqObject(p, mem_ctx, &r);
 	if (NT_STATUS_IS_ERR(status)) {

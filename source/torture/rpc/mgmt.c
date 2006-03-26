@@ -214,7 +214,7 @@ BOOL torture_rpc_mgmt(struct torture_context *torture)
 			status = dcerpc_epm_map_binding(loop_ctx, b, l->table, NULL);
 			if (!NT_STATUS_IS_OK(status)) {
 				printf("Failed to map port for uuid %s\n", 
-					   GUID_string(loop_ctx, &l->table->uuid));
+					   GUID_string(loop_ctx, &l->table->syntax_id.uuid));
 				talloc_free(loop_ctx);
 				continue;
 			}

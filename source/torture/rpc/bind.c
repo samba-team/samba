@@ -67,7 +67,7 @@ BOOL torture_multi_bind(struct torture_context *torture)
 
 	if (NT_STATUS_IS_OK(status)) {
 		printf("(incorrectly) allowed re-bind to uuid %s - %s\n", 
-			GUID_string(mem_ctx, &dcerpc_table_lsarpc.uuid), nt_errstr(status));
+			GUID_string(mem_ctx, &dcerpc_table_lsarpc.syntax_id.uuid), nt_errstr(status));
 		ret = False;
 	} else {
 		printf("\n");

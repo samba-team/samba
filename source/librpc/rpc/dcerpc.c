@@ -780,8 +780,8 @@ NTSTATUS dcerpc_init_syntaxes(const struct dcerpc_interface_table *table,
 			      struct dcerpc_syntax_id *syntax,
 			      struct dcerpc_syntax_id *transfer_syntax)
 {
-	syntax->uuid = table->uuid;
-	syntax->if_version = table->if_version;
+	syntax->uuid = table->syntax_id.uuid;
+	syntax->if_version = table->syntax_id.if_version;
 
 	*transfer_syntax = ndr_transfer_syntax;
 

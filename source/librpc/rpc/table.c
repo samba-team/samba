@@ -36,7 +36,7 @@ NTSTATUS librpc_register_interface(const struct dcerpc_interface_table *interfac
 	struct dcerpc_interface_list *l;
 
 	for (l = dcerpc_pipes; l; l = l->next) {
-		if (GUID_equal(&interface->uuid, &l->table->uuid)) {
+		if (GUID_equal(&interface->syntax_id.uuid, &l->table->syntax_id.uuid)) {
 			DEBUG(0, ("Attempt to register interface %s which has the "
 					  "same UUID as already registered interface %s\n", 
 					  interface->name, l->table->name));
@@ -59,8 +59,8 @@ const char *idl_pipe_name(const struct GUID *uuid, uint32_t if_version)
 {
 	const struct dcerpc_interface_list *l;
 	for (l=librpc_dcerpc_pipes();l;l=l->next) {
-		if (GUID_equal(&l->table->uuid, uuid) &&
-		    l->table->if_version == if_version) {
+		if (GUID_equal(&l->table->syntax_id.uuid, uuid) &&
+		    l->table->syntax_id.if_version == if_version) {
 			return l->table->name;
 		}
 	}
@@ -74,8 +74,8 @@ int idl_num_calls(const struct GUID *uuid, uint32_t if_version)
 {
 	const struct dcerpc_interface_list *l;
 	for (l=librpc_dcerpc_pipes();l;l=l->next){
-		if (GUID_equal(&l->table->uuid, uuid) &&
-		    l->table->if_version == if_version) {
+		if (GUID_equal(&l->table->syntax_id.uuid, uuid) &&
+		    l->table->syntax_id.if_version == if_version) {
 			return l->table->num_calls;
 		}
 	}
@@ -104,7 +104,7 @@ const struct dcerpc_interface_table *idl_iface_by_uuid(const struct GUID *uuid)
 {
 	const struct dcerpc_interface_list *l;
 	for (l=librpc_dcerpc_pipes();l;l=l->next) {
-		if (GUID_equal(&l->table->uuid, uuid)) {
+		if (GUID_equal(&l->table->syntax_id.uuid, uuid)) {
 			return l->table;
 		}
 	}

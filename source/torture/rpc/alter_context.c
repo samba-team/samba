@@ -60,7 +60,7 @@ BOOL torture_rpc_alter_context(struct torture_context *torture)
 	}
 
 	tmptbl = dcerpc_table_dssetup;
-	tmptbl.if_version += 100;
+	tmptbl.syntax_id.if_version += 100;
 	printf("Opening bad secondary connection\n");
 	status = dcerpc_secondary_context(p, &p2, &tmptbl);
 	if (NT_STATUS_IS_OK(status)) {
