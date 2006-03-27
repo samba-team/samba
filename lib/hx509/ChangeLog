@@ -1,3 +1,17 @@
+2006-03-27  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* crypto.c: Add REQUIRE_SIGNER
+
+	* cert.c (hx509_cert_free): ok to free NULL
+
+	* hx509_err.et: Add new error code SIGNATURE_WITHOUT_SIGNER.
+
+	* name.c (_hx509_name_ds_cmp): make DirectoryString case
+	insenstive
+	(hx509_name_to_string): less spacing
+
+	* cms.c: Check for signature error, check consitency of error
+	
 2006-03-26  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* collector.c (_hx509_collector_alloc): handle errors
