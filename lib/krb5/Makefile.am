@@ -39,7 +39,12 @@ LDADD = libkrb5.la \
 	$(top_builddir)/lib/asn1/libasn1.la \
 	$(LIB_roken)
 
+if PKINIT
+LIB_pkinit = ../hx509/libhx509.la
+endif
+
 libkrb5_la_LIBADD = \
+	$(LIB_pkinit) \
 	$(LIB_com_err) \
 	$(LIB_des) \
 	$(top_builddir)/lib/asn1/libasn1.la \
@@ -168,8 +173,6 @@ $(srcdir)/krb5-private.h:
 
 CHECK_SYMBOLS = -lib krb5 -com_err -version \
 	krb5_ _krb5_ __heimdal krb524_ krb4_fkt_ops heim_ pkcs7_
-
-#libkrb5_la_LIBADD = ../com_err/error.lo ../com_err/com_err.lo
 
 man_MANS =					\
 	kerberos.8				\
