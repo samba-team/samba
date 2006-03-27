@@ -218,7 +218,36 @@ make_cred_from_ccred(krb5_context context,
 	}
     }
     
-    cred->flags.b = int2TicketFlags(incred->ticket_flags); /* XXX */
+    cred->flags.i = 0;
+    if (incred->ticket_flags & KRB5_CCAPI_TKT_FLG_FORWARDABLE)
+	cred->flags.b.forwardable = 1;
+    if (incred->ticket_flags & KRB5_CCAPI_TKT_FLG_FORWARDED)
+	cred->flags.b.forwarded = 1;
+    if (incred->ticket_flags & KRB5_CCAPI_TKT_FLG_PROXIABLE)
+	cred->flags.b.proxiable = 1;
+    if (incred->ticket_flags & KRB5_CCAPI_TKT_FLG_PROXY)
+	cred->flags.b.proxy = 1;
+    if (incred->ticket_flags & KRB5_CCAPI_TKT_FLG_MAY_POSTDATE)
+	cred->flags.b.may_postdate = 1;
+    if (incred->ticket_flags & KRB5_CCAPI_TKT_FLG_POSTDATED)
+	cred->flags.b.postdated = 1;
+    if (incred->ticket_flags & KRB5_CCAPI_TKT_FLG_INVALID)
+	cred->flags.b.invalid = 1;
+    if (incred->ticket_flags & KRB5_CCAPI_TKT_FLG_RENEWABLE)
+	cred->flags.b.renewable = 1;
+    if (incred->ticket_flags & KRB5_CCAPI_TKT_FLG_INITIAL)
+	cred->flags.b.initial = 1;
+    if (incred->ticket_flags & KRB5_CCAPI_TKT_FLG_PRE_AUTH)
+	cred->flags.b.pre_authent = 1;
+    if (incred->ticket_flags & KRB5_CCAPI_TKT_FLG_HW_AUTH)
+	cred->flags.b.hw_authent = 1;
+    if (incred->ticket_flags & KRB5_CCAPI_TKT_FLG_TRANSIT_POLICY_CHECKED)
+	cred->flags.b.transited_policy_checked = 1;
+    if (incred->ticket_flags & KRB5_CCAPI_TKT_FLG_OK_AS_DELEGATE)
+	cred->flags.b.ok_as_delegate = 1;
+    if (incred->ticket_flags & KRB5_CCAPI_TKT_FLG_ANONYMOUS)
+	cred->flags.b.anonymous = 1;
+
     return 0;
     
 nomem:
@@ -310,7 +339,36 @@ make_ccred_from_cred(krb5_context context,
     }
     cred->addresses[i] = NULL;
 
-    cred->ticket_flags = TicketFlags2int(incred->flags.b); /* XXX */
+    cred->ticket_flags = 0;
+    if (incred->flags.b.forwardable)
+	cred->ticket_flags |= KRB5_CCAPI_TKT_FLG_FORWARDABLE;
+    if (incred->flags.b.forwarded)
+	cred->ticket_flags |= KRB5_CCAPI_TKT_FLG_FORWARDED;
+    if (incred->flags.b.proxiable)
+	cred->ticket_flags |= KRB5_CCAPI_TKT_FLG_PROXIABLE;
+    if (incred->flags.b.proxy)
+	cred->ticket_flags |= KRB5_CCAPI_TKT_FLG_PROXY;
+    if (incred->flags.b.may_postdate)
+	cred->ticket_flags |= KRB5_CCAPI_TKT_FLG_MAY_POSTDATE;
+    if (incred->flags.b.postdated)
+	cred->ticket_flags |= KRB5_CCAPI_TKT_FLG_POSTDATED;
+    if (incred->flags.b.invalid)
+	cred->ticket_flags |= KRB5_CCAPI_TKT_FLG_INVALID;
+    if (incred->flags.b.renewable)
+	cred->ticket_flags |= KRB5_CCAPI_TKT_FLG_RENEWABLE;
+    if (incred->flags.b.initial)
+	cred->ticket_flags |= KRB5_CCAPI_TKT_FLG_INITIAL;
+    if (incred->flags.b.pre_authent)
+	cred->ticket_flags |= KRB5_CCAPI_TKT_FLG_PRE_AUTH;
+    if (incred->flags.b.hw_authent)
+	cred->ticket_flags |= KRB5_CCAPI_TKT_FLG_HW_AUTH;
+    if (incred->flags.b.transited_policy_checked)
+	cred->ticket_flags |= KRB5_CCAPI_TKT_FLG_TRANSIT_POLICY_CHECKED;
+    if (incred->flags.b.ok_as_delegate)
+	cred->ticket_flags |= KRB5_CCAPI_TKT_FLG_OK_AS_DELEGATE;
+    if (incred->flags.b.anonymous)
+	cred->ticket_flags |= KRB5_CCAPI_TKT_FLG_ANONYMOUS;
+
     return 0;
 
 fail:    
