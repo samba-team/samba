@@ -1385,7 +1385,7 @@ _hx509_query_clear(hx509_query *q)
 int
 hx509_query_alloc(hx509_context context, hx509_query **q)
 {
-    *q = calloc(1, sizeof(*q));
+    *q = calloc(1, sizeof(**q));
     if (*q == NULL)
 	return ENOMEM;
     return 0;
