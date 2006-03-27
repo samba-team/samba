@@ -226,6 +226,9 @@ log_patypes(krb5_context context,
 	case KRB5_PADATA_PK_AS_REQ_WIN:
 	    p = rk_strpoolprintf(p, "PK-INIT(win2k)");
 	    break;
+	case KRB5_PADATA_PA_PK_OCSP_RESPONSE:
+	    p = rk_strpoolprintf(p, "OCSP");
+	    break;
 	case KRB5_PADATA_ENC_TIMESTAMP:
 	    p = rk_strpoolprintf(p, "encrypted-timestamp");
 	    break;
