@@ -1,5 +1,10 @@
 2006-03-26  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* collector.c (_hx509_collector_alloc): handle errors
+
+	* cert.c (hx509_query_alloc): allocate slight more more then a
+	sizeof(pointer)
+
 	* crypto.c (_hx509_private_key_assign_key_file): ask for password
 	if nothing matches.
 
