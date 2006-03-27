@@ -70,6 +70,8 @@ AC_ARG_ENABLE(pk-init,
 if test "$enable_pk_init" = yes ;then
 	AC_DEFINE([PKINIT], 1, [Define to enable PKINIT.])
 fi
+AM_CONDITIONAL(PKINIT, test "$enable_pk_init" = yes)
+
 
 rk_TEST_PACKAGE(krb4,[#include <krb.h>],-lkrb,-ldes,/usr/athena, KRB4, krb4-config)
 
