@@ -1,3 +1,9 @@
+2006-03-27  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* tools/krb5-config.in: Add hx509 when using PK-INIT.
+
+	* tools/Makefile.am: Add hx509 when using PK-INIT.
+	
 2006-03-26  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/acache.c: Use ticket flags definition, might fix Mac OS
