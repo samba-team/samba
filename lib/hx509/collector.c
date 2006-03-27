@@ -175,7 +175,6 @@ match_localkeyid(hx509_context context,
 	    _hx509_cert_assign_key(cert, value->private_key);
 	    value->private_key = NULL;
 	}
-	hx509_certs_add(context, certs, cert);
 	hx509_cert_free(cert);
     }
     return ret;
