@@ -1686,7 +1686,7 @@ const char *readdirname(SMB_STRUCT_DIR *p)
 		return(NULL);
 #endif
 
-#ifdef HAVE_BROKEN_READDIR
+#ifdef HAVE_BROKEN_READDIR_NAME
 	/* using /usr/ucb/cc is BAD */
 	dname = dname - 2;
 #endif
