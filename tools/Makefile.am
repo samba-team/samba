@@ -10,7 +10,7 @@ bin_SCRIPTS = krb5-config
 
 man_MANS = krb5-config.1
 
-ifdef PKINT
+if PKINIT
 LIB_pkinit = -lhx509
 endif
 
