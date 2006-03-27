@@ -99,7 +99,8 @@ if test "$do_libs" = "yes"; then
 	lib_flags="$lib_flags -lkadm5srv @LIB_dbopen@"
 	;;
     esac
-    lib_flags="$lib_flags -lkrb5 -lasn1 -lcom_err @LIB_des_appl@ -lroken"
+    lib_flags="$lib_flags -lkrb5 @LIB_pkinit@ -lasn1 -lcom_err"
+    lib_flags="@LIB_des_appl@ -lroken"
     lib_flags="$lib_flags @LIB_crypt@ @LIB_dlopen@"
     lib_flags="$lib_flags @LIB_door_create@ @LIBS@"
     echo $lib_flags
