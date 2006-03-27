@@ -55,16 +55,28 @@ struct hx509_collector *
 _hx509_collector_alloc(hx509_context context, hx509_lock lock)
 {
     struct hx509_collector *c;
+    int ret;
 
     c = calloc(1, sizeof(*c));
     if (c == NULL)
 	return NULL;
     c->lock = lock;
 
-    hx509_certs_init(context, "MEMORY:dummy", 0, NULL, &c->unenvelop_certs);
+    ret = hx509_certs_init(context, "MEMORY:collector-unenvelop-cert",
+			   0,NULL, &c->unenvelop_certs);
+    if (ret) {
+	free(c);
+	return NULL;
+    }
     c->val.data = NULL;
     c->val.len = 0;
-    hx509_certs_init(context, "MEMORY:collector-tmp-store", 0, NULL, &c->certs);
+    ret = hx509_certs_init(context, "MEMORY:collector-tmp-store",
+			   0, NULL, &c->certs);
+    if (ret) {
+	hx509_certs_free(&c->unenvelop_certs);
+	free(c);
+	return NULL;
+    }
 
     return c;
 }
