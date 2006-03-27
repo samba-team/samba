@@ -100,6 +100,7 @@ struct signature_alg {
     heim_oid *digest_oid;
     int flags;
 #define PROVIDE_CONF 1
+#define REQUIRE_SIGNER 2
     int (*verify_signature)(const struct signature_alg *,
 			    const Certificate *,
 			    const AlgorithmIdentifier *,
@@ -197,8 +198,8 @@ rsa_verify_signature(const struct signature_alg *sig_alg,
 	heim_oid_cmp(&di.digestAlgorithm.algorithm,
 		     sig_alg->digest_oid) != 0) 
     {
-	    ret = HX509_CRYPTO_OID_MISMATCH;
-	    goto out;
+	ret = HX509_CRYPTO_OID_MISMATCH;
+	goto out;
     }
 
     ret = _hx509_verify_signature(NULL,
@@ -563,7 +564,7 @@ static struct signature_alg pkcs1_rsa_sha1_alg = {
     &rsaEncryption_oid,
     &rsaEncryption_oid,
     NULL,
-    PROVIDE_CONF,
+    PROVIDE_CONF|REQUIRE_SIGNER,
     rsa_verify_signature,
     rsa_create_signature,
     rsa_parse_private_key
@@ -574,7 +575,7 @@ static struct signature_alg rsa_with_sha1_alg = {
     &sha1WithRSAEncryption_oid,
     &rsaEncryption_oid,
     &id_sha1_oid,
-    PROVIDE_CONF,
+    PROVIDE_CONF|REQUIRE_SIGNER,
     rsa_verify_signature,
     rsa_create_signature,
     rsa_parse_private_key
@@ -585,7 +586,7 @@ static struct signature_alg rsa_with_md5_alg = {
     &md5WithRSAEncryption_oid,
     &rsaEncryption_oid,
     &id_md5_oid,
-    PROVIDE_CONF,
+    PROVIDE_CONF|REQUIRE_SIGNER,
     rsa_verify_signature,
     rsa_create_signature,
     rsa_parse_private_key
@@ -596,7 +597,7 @@ static struct signature_alg rsa_with_md2_alg = {
     &md2WithRSAEncryption_oid,
     &rsaEncryption_oid,
     &id_md2_oid,
-    PROVIDE_CONF,
+    PROVIDE_CONF|REQUIRE_SIGNER,
     rsa_verify_signature,
     rsa_create_signature,
     rsa_parse_private_key
@@ -607,7 +608,7 @@ static struct signature_alg dsa_sha1_alg = {
     &id_dsa_with_sha1_oid,
     &id_dsa_oid, 
     &id_sha1_oid,
-    PROVIDE_CONF,
+    PROVIDE_CONF|REQUIRE_SIGNER,
     dsa_verify_signature,
     /* create_signature */ NULL,
     dsa_parse_private_key
@@ -688,7 +689,9 @@ _hx509_verify_signature(const Certificate *signer,
     }
     if (signer && (md->flags & PROVIDE_CONF) == 0)
 	return HX509_CRYPTO_SIG_NO_CONF;
-    if (md->key_oid) {
+    if (signer == NULL && (md->flags & REQUIRE_SIGNER))
+	return HX509_CRYPTO_SIGNATURE_WITHOUT_SIGNER;
+    if (md->key_oid && signer) {
 	const SubjectPublicKeyInfo *spi;
 	spi = &signer->tbsCertificate.subjectPublicKeyInfo;
 
