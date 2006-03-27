@@ -811,14 +811,10 @@ pk_mk_pa_reply_dh(krb5_context context,
     if (ret)
 	return ret;
 
-    buf.length = length_heim_integer(&i);
-    buf.data = malloc(buf.length);
-    if (buf.data == NULL) {
-	krb5_clear_error_string(context);
-	return ENOMEM;
-    }
-    ret = der_put_heim_integer(buf.data, buf.length, &i, &size);
+    ASN1_MALLOC_ENCODE(DHPublicKey, buf.data, buf.length, &i, &size, ret);
     if (ret) {
+	krb5_set_error_string(context, "ASN.1 encoding of "
+			      "DHPublicKey failed (%d)", ret);
 	krb5_clear_error_string(context);
 	return ret;
     }
