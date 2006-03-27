@@ -49,6 +49,7 @@ error_code SIG_NO_CONF, "Sigature doesn't provide confidentiality"
 error_code SIG_INVALID_FORMAT, "Invalid format on signature"
 error_code OID_MISMATCH, "Mismatch bewteen oids"
 error_code NO_PROMPTER, "No prompter function defined"
+error_code SIGNATURE_WITHOUT_SIGNER, "Signature require signer, but non available"
 
 index 94
 prefix HX509_CRL
