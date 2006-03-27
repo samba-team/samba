@@ -22,17 +22,25 @@ static void usage(void)
 	printf("   SIGTERM - passes SIGTERM to command's process group and exit(0)\n");
 }
 
-static void sig_alrm(int sig)
+static void sig_alrm_kill(int sig)
 {
 	fprintf(stderr, "\nMaximum time expired in timelimit - killing\n");
 	kill(-child_pid, SIGKILL);
 	exit(1);
 }
 
+static void sig_alrm_term(int sig)
+{
+	kill(-child_pid, SIGTERM);
+	alarm(5);
+	signal(SIGALRM, sig_alrm_kill);
+}
+
 static void sig_term(int sig)
 {
 	kill(-child_pid, SIGTERM);
-	exit(0);
+	alarm(1);
+	signal(SIGALRM, sig_alrm_kill);
 }
 
 static void sig_usr1(int sig)
@@ -78,7 +86,7 @@ int main(int argc, char *argv[])
 
 	signal(SIGTERM, sig_term);
 	signal(SIGUSR1, sig_usr1);
-	signal(SIGALRM, sig_alrm);
+	signal(SIGALRM, sig_alrm_term);
 	alarm(maxtime);
 
 	do {
