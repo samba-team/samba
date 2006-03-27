@@ -1,3 +1,13 @@
+2006-03-27  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* k5.asn1 (PADATA-TYPE): Add KRB5-PADATA-PA-PK-OCSP-RESPONSE
+	
+2006-03-26  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* Makefile.am: Add pkinit-san.
+
+	* pkinit.asn1: Rename id-pksan to id-pkinit-san
+	
 2006-03-08  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* gen.c (init_generate): Nothing in the generated files needs
