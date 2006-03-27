@@ -1,3 +1,26 @@
+2006-03-26  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* crypto.c (_hx509_private_key_assign_key_file): ask for password
+	if nothing matches.
+
+	* cert.c: Expose more of the hx509_query interface.
+
+	* collector.c: hx509_certs_find is now exposed.
+
+	* cms.c: hx509_certs_find is now exposed.
+
+	* revoke.c: hx509_certs_find is now exposed.
+
+	* keyset.c (hx509_certs_free): allow free-ing NULL
+	(hx509_certs_find): expose
+	(hx509_get_one_cert): new function
+
+	* hxtool.c: hx509_certs_find is now exposed.
+
+	* hx_locl.h: Remove hx509_query, its exposed now.
+
+	* hx509.h: Add hx509_query.
+	
 2006-02-22  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* cert.c: Add exceptions for null (empty) subjectNames
