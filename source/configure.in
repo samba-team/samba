@@ -1237,6 +1237,7 @@ AC_CHECK_FUNCS(setpriv setgidx setuidx setgroups sysconf mktime rename ftruncate
 AC_CHECK_FUNCS(lstat64 fopen64 atexit grantpt dup2 lseek64 ftruncate64)
 AC_CHECK_FUNCS(fseek64 fseeko64 ftell64 ftello64 setluid getpwanam setlinebuf)
 AC_CHECK_FUNCS(opendir64 readdir64 seekdir64 telldir64 rewinddir64 closedir64)
+AC_CHECK_FUNCS(getdents getdents64)
 AC_CHECK_FUNCS(srandom random srand rand setenv usleep strcasecmp fcvt fcvtl symlink readlink)
 AC_CHECK_FUNCS(syslog vsyslog timegm)
 AC_CHECK_FUNCS(setlocale nl_langinfo)
@@ -1256,7 +1257,7 @@ AC_CHECK_FUNCS(__xstat __fxstat __lxstat)
 AC_CHECK_FUNCS(_stat _lstat _fstat __stat __lstat __fstat)
 AC_CHECK_FUNCS(_acl __acl _facl __facl _open __open _chdir __chdir)
 AC_CHECK_FUNCS(_close __close _fchdir __fchdir _fcntl __fcntl)
-AC_CHECK_FUNCS(getdents _getdents __getdents _lseek __lseek _read __read)
+AC_CHECK_FUNCS(getdents __getdents _lseek __lseek _read __read)
 AC_CHECK_FUNCS(getdirentries _write __write _fork __fork)
 AC_CHECK_FUNCS(_stat64 __stat64 _fstat64 __fstat64 _lstat64 __lstat64)
 AC_CHECK_FUNCS(__sys_llseek llseek _llseek __llseek readdir64 _readdir64 __readdir64)
@@ -1976,15 +1977,15 @@ if test x"$samba_cv_HAVE_C99_VSNPRINTF" = x"yes"; then
     AC_DEFINE(HAVE_C99_VSNPRINTF,1,[Whether there is a C99 compliant vsnprintf])
 fi
 
-AC_CACHE_CHECK([for broken readdir],samba_cv_HAVE_BROKEN_READDIR,[
+AC_CACHE_CHECK([for broken readdir name],samba_cv_HAVE_BROKEN_READDIR_NAME,[
 AC_TRY_RUN([#include <sys/types.h>
 #include <dirent.h>
 main() { struct dirent *di; DIR *d = opendir("."); di = readdir(d);
 if (di && di->d_name[-2] == '.' && di->d_name[-1] == 0 &&
 di->d_name[0] == 0) exit(0); exit(1);} ],
-samba_cv_HAVE_BROKEN_READDIR=yes,samba_cv_HAVE_BROKEN_READDIR=no,samba_cv_HAVE_BROKEN_READDIR=cross)])
-if test x"$samba_cv_HAVE_BROKEN_READDIR" = x"yes"; then
-    AC_DEFINE(HAVE_BROKEN_READDIR,1,[Whether readdir() is broken])
+samba_cv_HAVE_BROKEN_READDIR_NAME=yes,samba_cv_HAVE_BROKEN_READDIR_NAME=no,samba_cv_HAVE_BROKEN_READDIR_NAME=cross)])
+if test x"$samba_cv_HAVE_BROKEN_READDIR_NAME" = x"yes"; then
+    AC_DEFINE(HAVE_BROKEN_READDIR_NAME,1,[Whether readdir() returns the wrong name offset])
 fi
 
 AC_CACHE_CHECK([for utimbuf],samba_cv_HAVE_UTIMBUF,[
@@ -2591,6 +2592,24 @@ samba_cv_HAVE_SECURE_MKSTEMP=no,
 samba_cv_HAVE_SECURE_MKSTEMP=cross)])
 if test x"$samba_cv_HAVE_SECURE_MKSTEMP" = x"yes"; then
     AC_DEFINE(HAVE_SECURE_MKSTEMP,1,[Whether mkstemp is secure])
+fi
+
+AC_CACHE_CHECK([for broken readdir],samba_cv_HAVE_BROKEN_READDIR,[
+	AC_TRY_RUN([#include "${srcdir-.}/tests/os2_delete.c"],
+		[samba_cv_HAVE_BROKEN_READDIR=no],
+			[samba_cv_HAVE_BROKEN_READDIR=yes],
+			[samba_cv_HAVE_BROKEN_READDIR="assuming not"])])
+
+if test x"$samba_cv_HAVE_BROKEN_READDIR" = x"yes"; then
+AC_CACHE_CHECK([for replacing readdir],samba_cv_REPLACE_READDIR,[
+	AC_TRY_RUN([
+#include "${srcdir-.}/lib/repdir.c"
+#include "${srcdir-.}/tests/os2_delete.c"],
+	samba_cv_REPLACE_READDIR=yes,samba_cv_REPLACE_READDIR=no)])
+fi
+
+if test x"$samba_cv_REPLACE_READDIR" = x"yes"; then
+	AC_DEFINE(REPLACE_READDIR,1,[replace readdir])
 fi
 
 AC_CACHE_CHECK([for sysconf(_SC_NGROUPS_MAX)],samba_cv_SYSCONF_SC_NGROUPS_MAX,[
