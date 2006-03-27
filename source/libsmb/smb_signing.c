@@ -343,7 +343,6 @@ static BOOL client_check_incoming_message(char *inbuf, struct smb_sign_info *si,
 {
 	BOOL good;
 	uint32 reply_seq_number;
-	uint32 saved_seq;
 	unsigned char calc_md5_mac[16];
 	unsigned char *server_sent_mac;
 
@@ -377,7 +376,7 @@ static BOOL client_check_incoming_message(char *inbuf, struct smb_sign_info *si,
 				simple_packet_signature(data, (const unsigned char *)inbuf, reply_seq_number+i, calc_md5_mac);
 				if (memcmp(server_sent_mac, calc_md5_mac, 8) == 0) {
 					DEBUG(0,("client_check_incoming_message: out of seq. seq num %u matches. \
-We were expecting seq %u\n", reply_seq_number, saved_seq ));
+We were expecting seq %u\n", reply_seq_number+i, reply_seq_number ));
 					break;
 				}
 			}
@@ -388,7 +387,7 @@ We were expecting seq %u\n", reply_seq_number, saved_seq ));
 		DEBUG(10, ("client_check_incoming_message: seq %u: got good SMB signature of\n", (unsigned int)reply_seq_number));
 		dump_data(10, (const char *)server_sent_mac, 8);
 	}
-	return signing_good(inbuf, si, good, saved_seq, must_be_ok);
+	return signing_good(inbuf, si, good, reply_seq_number, must_be_ok);
 }
 
 /***********************************************************
