@@ -147,7 +147,7 @@ file_init(hx509_context context,
 	  const char *residue, hx509_lock lock)
 {
     char *certfn = NULL, *keyfn, *friendlyname = NULL;
-    hx509_cert cert;
+    hx509_cert cert = NULL;
     int ret;
     struct ks_file *f;
     struct hx509_collector *c;
@@ -199,6 +199,7 @@ file_init(hx509_context context,
     if (ret == 0)
 	*data = f;
 out:
+    hx509_cert_free(cert);
     _hx509_collector_free(c);
     if (certfn)
 	free(certfn);
