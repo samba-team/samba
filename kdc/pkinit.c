@@ -1178,6 +1178,10 @@ _kdc_pk_check_client(krb5_context context,
     if (ret)
 	return ret;
 
+    kdc_log(context, config, 5,
+	    "Trying to authorize subject DN %s", 
+	    *subject_name);
+
     for (i = 0; i < principal_mappings.len; i++) {
 	krb5_boolean b;
 
