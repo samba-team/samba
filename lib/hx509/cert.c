@@ -205,6 +205,9 @@ hx509_cert_free(hx509_cert cert)
 {
     int i;
 
+    if (cert == NULL)
+	return;
+
     if (cert->ref <= 0)
 	_hx509_abort("refcount <= 0");
     if (--cert->ref > 0)
