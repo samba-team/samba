@@ -1462,10 +1462,16 @@ _hx509_pbe_decrypt(hx509_context context,
     pw = _hx509_lock_get_passwords(lock);
 
     ret = HX509_CRYPTO_INTERNAL_ERROR;
-    for (i = 0; i < pw->len; i++) {
+    for (i = 0; i < pw->len + 1; i++) {
 	hx509_crypto crypto;
+	const char *password;
 
-	ret = (*s2k)(context, pw->val[i], ai->parameters, &crypto, 
+	if (i < pw->len)
+	    password = pw->val[i];
+	else
+	    password = "";
+
+	ret = (*s2k)(context, password, ai->parameters, &crypto, 
 		     &key, &iv, enc_oid, md);
 	if (ret) {
 	    goto out;
