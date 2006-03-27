@@ -824,7 +824,6 @@ pk_rd_pa_reply_dh(krb5_context context,
                   krb5_keyblock **key)
 {
     unsigned char *p, *dh_gen_key = NULL;
-    ASN1_INTEGER *dh_pub_key = NULL;
     struct krb5_pk_cert *host = NULL;
     BIGNUM *kdc_dh_pubkey = NULL;
     KDCDHKeyInfo kdc_dh_info;
@@ -897,7 +896,7 @@ pk_rd_pa_reply_dh(krb5_context context,
 	}
     } else {
 	if (k_n) {
-	    krb5_set_error_string(context, "pkinit; got server nonce "
+	    krb5_set_error_string(context, "pkinit: got server nonce "
 				  "without key expiration");
 	    ret = KRB5KRB_ERR_GENERIC;
 	    goto out;
@@ -908,22 +907,24 @@ pk_rd_pa_reply_dh(krb5_context context,
 
     p = kdc_dh_info.subjectPublicKey.data;
     size = (kdc_dh_info.subjectPublicKey.length + 7) / 8;
-    dh_pub_key = d2i_ASN1_INTEGER(NULL, &p, size);
-    if (dh_pub_key == NULL) {
-	krb5_set_error_string(context,
-			      "PKINIT: Can't parse KDC's DH public key");
-	ret = KRB5KRB_ERR_GENERIC;
-	goto out;
-    }
 
-    kdc_dh_pubkey = ASN1_INTEGER_to_BN(dh_pub_key, NULL);
-    if (kdc_dh_pubkey == NULL) {
-	krb5_set_error_string(context,
-			      "PKINIT: Can't convert KDC's DH public key");
-	ret = KRB5KRB_ERR_GENERIC;
-	goto out;
-    }
+    {
+	DHPublicKey k;
+	ret = decode_DHPublicKey(p, size, &k, NULL);
+	if (ret) {
+	    krb5_set_error_string(context, "pkinit: can't decode "
+				  "without key expiration");
+	    goto out;
+	}
 
+	kdc_dh_pubkey = integer_to_BN(context, "DHPublicKey", &k);
+	free_DHPublicKey(&k);
+	if (kdc_dh_pubkey == NULL) {
+	    ret = KRB5KRB_ERR_GENERIC;
+	    goto out;
+	}
+    }
+    
     dh_gen_keylen = DH_size(ctx->dh);
     size = BN_num_bytes(ctx->dh->p);
     if (size < dh_gen_keylen)
@@ -974,8 +975,6 @@ pk_rd_pa_reply_dh(krb5_context context,
 	memset(dh_gen_key, 0, DH_size(ctx->dh));
 	free(dh_gen_key);
     }
-    if (dh_pub_key)
-	ASN1_INTEGER_free(dh_pub_key);
     if (host)
 	_krb5_pk_cert_free(host);
     if (content.data)
@@ -1000,7 +999,7 @@ _krb5_pk_rd_pa_reply(krb5_context context,
     ContentInfo ci;
     size_t size;
 
-    /* Check for PK-INIT -27 */
+    /* Check for IETF PK-INIT first */
     if (pa->padata_type == KRB5_PADATA_PK_AS_REP) {
 	PA_PK_AS_REP rep;
 
@@ -1021,7 +1020,7 @@ _krb5_pk_rd_pa_reply(krb5_context context,
 				     &size);
 	    if (ret) {
 		krb5_set_error_string(context,
-				      "PKINIT: -25 decoding failed DH "
+				      "PKINIT: decoding failed DH "
 				      "ContentInfo: %d", ret);
 
 		free_PA_PK_AS_REP(&rep);
