@@ -1982,22 +1982,27 @@ static NTSTATUS fetch_database_to_ldif(struct rpc_pipe_client *pipe_hnd,
 
   done:
 	/* Close and delete the ldif files */
-	if (add_file)
+	if (add_file) {
 		fclose(add_file);
-	if (strcmp(add_name, add_template) && (unlink(add_name))) {
+	}
+
+	if ((add_name != NULL) && strcmp(add_name, add_template) && (unlink(add_name))) {
 		DEBUG(1,("unlink(%s) failed, error was (%s)\n",
 			 add_name, strerror(errno)));
 	}
 
-	if (mod_file)
+	if (mod_file) {
 		fclose(mod_file);
-	if (strcmp(mod_name, mod_template) && (unlink(mod_name))) {
+	}
+
+	if ((mod_name != NULL) && strcmp(mod_name, mod_template) && (unlink(mod_name))) {
 		DEBUG(1,("unlink(%s) failed, error was (%s)\n",
 			 mod_name, strerror(errno)));
 	}
 	
-	if (ldif_file && (ldif_file != stdout))
+	if (ldif_file && (ldif_file != stdout)) {
 		fclose(ldif_file);
+	}
 
 	/* Deallocate memory for the mapping arrays */
 	SAFE_FREE(groupmap);
