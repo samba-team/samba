@@ -43,7 +43,8 @@ enum {
 };
 
 enum {
-    ccapi_version_3 = 3
+    ccapi_version_3 = 3,
+    ccapi_version_4 = 4
 };
 
 enum {
@@ -108,7 +109,21 @@ struct cc_credentials_v5_t {
     cc_time_t endtime;
     cc_time_t renew_till;
     cc_uint32 is_skey;
-    cc_uint32 ticket_flags; /* XXX ticket flags undefined */
+    cc_uint32 ticket_flags;
+#define	KRB5_CCAPI_TKT_FLG_FORWARDABLE			0x40000000
+#define	KRB5_CCAPI_TKT_FLG_FORWARDED			0x20000000
+#define	KRB5_CCAPI_TKT_FLG_PROXIABLE			0x10000000
+#define	KRB5_CCAPI_TKT_FLG_PROXY			0x08000000
+#define	KRB5_CCAPI_TKT_FLG_MAY_POSTDATE			0x04000000
+#define	KRB5_CCAPI_TKT_FLG_POSTDATED			0x02000000
+#define	KRB5_CCAPI_TKT_FLG_INVALID			0x01000000
+#define	KRB5_CCAPI_TKT_FLG_RENEWABLE			0x00800000
+#define	KRB5_CCAPI_TKT_FLG_INITIAL			0x00400000
+#define	KRB5_CCAPI_TKT_FLG_PRE_AUTH			0x00200000
+#define	KRB5_CCAPI_TKT_FLG_HW_AUTH			0x00100000
+#define	KRB5_CCAPI_TKT_FLG_TRANSIT_POLICY_CHECKED	0x00080000
+#define	KRB5_CCAPI_TKT_FLG_OK_AS_DELEGATE		0x00040000
+#define	KRB5_CCAPI_TKT_FLG_ANONYMOUS			0x00020000
     cc_data **addresses;
     cc_data ticket;
     cc_data second_ticket;
