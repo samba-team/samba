@@ -214,7 +214,7 @@ hx509_name_to_string(const hx509_name name, char **str)
 	}
 
 	if (i > 0)
-	    append_string(str, &total_len, ", ", 2, 0);
+	    append_string(str, &total_len, ",", 1, 0);
     }
     return 0;
 }
@@ -242,7 +242,7 @@ _hx509_name_ds_cmp(const DirectoryString *ds1, const DirectoryString *ds2)
 				  &ds2->u.teletexString);
 	break;
     case choice_DirectoryString_printableString:
-	c = strcmp(ds1->u.printableString, ds2->u.printableString);
+	c = strcasecmp(ds1->u.printableString, ds2->u.printableString);
 	break;
     case choice_DirectoryString_utf8String:
 	c = strcmp(ds1->u.utf8String, ds2->u.utf8String);
