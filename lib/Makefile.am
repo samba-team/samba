@@ -12,5 +12,5 @@ if DCE
 dir_dce = kdfs
 endif
 
-SUBDIRS = @DIR_roken@ vers editline @DIR_com_err@ sl asn1 @DIR_des@ krb5 \
-	kafs hdb kadm5 gssapi auth $(dir_45) $(dir_otp) $(dir_dce)
+SUBDIRS = @DIR_roken@ vers editline @DIR_com_err@ sl asn1 @DIR_des@ hx509 \
+	krb5 kafs gssapi hdb kadm5 auth $(dir_45) $(dir_otp) $(dir_dce)
