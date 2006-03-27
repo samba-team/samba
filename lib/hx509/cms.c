@@ -508,6 +508,8 @@ hx509_cms_verify_signed(hx509_context context,
 					  sd.encapContentInfo.eContent,
 					  &os);
 	    free_octet_string(&os);
+	    if (ret)
+		continue;
 
 	    /* 
 	     * Fetch content oid inside signedAttrs or set it to
@@ -549,6 +551,8 @@ hx509_cms_verify_signed(hx509_context context,
 		free(signed_data);
 		continue;
 	    }
+	    if (size != signed_data->length)
+		_hx509_abort("internal ASN.1 encoder error");
 
 	} else {
 	    signed_data = sd.encapContentInfo.eContent;
