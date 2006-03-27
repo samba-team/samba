@@ -1,5 +1,29 @@
-2006-03-24  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-03-26  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/krb5/acache.c: Use ticket flags definition, might fix Mac OS
+	X Kerberos.app problems.
+
+	* lib/krb5/krb5_ccapi.h: Add ticket flags definitions
+
+	* lib/krb5/pkinit.c: Use less openssl, spell chelling.
+
+	* kdc/pkinit.c (pk_mk_pa_reply_dh): encode the DH public key with
+	asn1 wrapping
+
+	* configure.in (AC_CONFIG_FILES): add lib/hx509/Makefile
+
+	* lib/Makefile.am: Add hx509.
+
+	* lib/krb5/Makefile.am: Add libhx509.la when PKINIT is used.
+
+	* configure.in: define automake PKINIT variable
+
+	* kdc/pkinit.c: Switch to hx509.
+
+	* lib/krb5/pkinit.c: Switch to hx509.
+	
+2006-03-24  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* kdc/kerberos5.c (log_patypes): log the patypes requested by the
 	client
 	
