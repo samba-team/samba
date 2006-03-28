@@ -181,7 +181,7 @@ rsa_verify_signature(const struct signature_alg *sig_alg,
 
     ret = RSA_public_decrypt(sig->length, (unsigned char *)sig->data, 
 			     to, rsa, RSA_PKCS1_PADDING);
-    if (ret < 0) {
+    if (ret == -1) {
 	ret = HX509_CRYPTO_SIG_INVALID_FORMAT;
 	free(to);
 	goto out;
