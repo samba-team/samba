@@ -1554,4 +1554,13 @@ LDAP *ldap_open_with_timeout(const char *server, int port, unsigned int to);
 #define CONST_DISCARD(type, ptr)      ((type) ((void *) (ptr)))
 #define CONST_ADD(type, ptr)          ((type) ((const void *) (ptr)))
 
+#ifndef NORETURN_ATTRIBUTE
+#if (__GNUC__ >= 3)
+#define NORETURN_ATTRIBUTE __attribute__ ((noreturn))
+#else
+#define NORETURN_ATTRIBUTE
+#endif
+#endif
+
+void smb_panic( const char *why ) NORETURN_ATTRIBUTE ;
 #endif /* _INCLUDES_H */
