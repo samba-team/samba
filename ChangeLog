@@ -1,5 +1,16 @@
 2006-03-27  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kdc/config.c: Allow passing in related certificates used to
+	build the chain.
+
+	* kdc/pkinit.c: Allow passing in related certificates used to
+	build the chain.
+
+	* kdc/kerberos5.c (log_patype): Add case for
+	KRB5_PADATA_PA_PK_OCSP_RESPONSE.
+
+	* tools/Makefile.am: Spelling
+
 	* tools/krb5-config.in: Add hx509 when using PK-INIT.
 
 	* tools/Makefile.am: Add hx509 when using PK-INIT.
