@@ -1473,9 +1473,8 @@ _hx509_pbe_decrypt(hx509_context context,
 
 	ret = (*s2k)(context, password, ai->parameters, &crypto, 
 		     &key, &iv, enc_oid, md);
-	if (ret) {
+	if (ret)
 	    goto out;
-	}
 
 	ret = hx509_crypto_decrypt(crypto,
 				   econtent->data,
@@ -1483,7 +1482,7 @@ _hx509_pbe_decrypt(hx509_context context,
 				   &iv,
 				   content);
 	hx509_crypto_destroy(crypto);
-	if (ret)
+	if (ret == 0)
 	    goto out;
 				   
     }
