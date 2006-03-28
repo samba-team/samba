@@ -163,7 +163,8 @@ static BOOL brl_conflict(const struct lock_struct *lck1,
 
 /****************************************************************************
  See if lock2 can be added when lock1 is in place - when both locks are POSIX
- flavour.
+ flavour. POSIX locks ignore fnum - they only care about dev/ino which we
+ know already match.
 ****************************************************************************/
 
 static BOOL brl_conflict_posix(const struct lock_struct *lck1, 
@@ -183,9 +184,8 @@ static BOOL brl_conflict_posix(const struct lock_struct *lck1,
 		return False;
 	}
 
-	/* Locks on the same context on the same fnum con't conflict. */
-	if (brl_same_context(&lck1->context, &lck2->context) &&
-			(lck1->fnum == lck2->fnum)) {
+	/* Locks on the same context con't conflict. Ignore fnum. */
+	if (brl_same_context(&lck1->context, &lck2->context)) {
 		return False;
 	}
 
@@ -226,6 +226,7 @@ static BOOL brl_conflict1(const struct lock_struct *lck1,
 /****************************************************************************
  Check to see if this lock conflicts, but ignore our own locks on the
  same fnum only. This is the read/write lock check code path.
+ This is never used in the POSIX lock case.
 ****************************************************************************/
 
 static BOOL brl_conflict_other(const struct lock_struct *lck1, const struct lock_struct *lck2)
@@ -403,16 +404,15 @@ static unsigned int brlock_posix_split_merge(struct lock_struct *lck_arr,
 {
 	BOOL lock_types_differ = (ex->lock_type != plock->lock_type);
 
-	/* We can't merge non-conflicting locks on different context
-		or not on the same fnum */
+	/* We can't merge non-conflicting locks on different context - ignore fnum. */
 
-	if (!brl_same_context(&ex->context, &plock->context) || (ex->fnum != plock->fnum)) {
+	if (!brl_same_context(&ex->context, &plock->context)) {
 		/* Just copy. */
 		memcpy(&lck_arr[0], ex, sizeof(struct lock_struct));
 		return 1;
 	}
 
-	/* We now know we have the same context and fnum. */
+	/* We now know we have the same context. */
 
 	/* Did we overlap ? */
 
@@ -583,7 +583,8 @@ OR
 
 	/* Never get here. */
 	smb_panic("brlock_posix_split_merge\n");
-	return 0;
+	/* Notreached. */
+	abort();
 }
 
 /****************************************************************************
@@ -766,12 +767,6 @@ static BOOL brl_unlock_windows(struct byte_range_lock *br_lck, const struct lock
 		    lock->start == plock->start &&
 		    lock->size == plock->size) {
 
-#if 0
-			if (pre_unlock_fn) {
-				(*pre_unlock_fn)(pre_unlock_data);
-			}
-#endif
-
 			/* found it - delete it */
 			if (i < br_lck->num_locks - 1) {
 				memmove(&locks[i], &locks[i+1], 
@@ -802,13 +797,6 @@ static BOOL brl_unlock_windows(struct byte_range_lock *br_lck, const struct lock
 		/* we didn't find it */
 		return False;
 	}
-
-#if 0
-	/* Do any POSIX unlocks needed. */
-	if (pre_unlock_fn) {
-		(*pre_unlock_fn)(pre_unlock_data);
-	}
-#endif
 
 	/* Send unlock messages to any pending waiters that overlap. */
 	for (j=0; j < br_lck->num_locks; j++) {
@@ -885,10 +873,9 @@ static BOOL brl_unlock_posix(struct byte_range_lock *br_lck, const struct lock_s
 
 		lock = &locks[i];
 
-		/* Only remove our own locks */
+		/* Only remove our own locks - ignore fnum. */
 		if (!brl_same_context(&lock->context, &plock->context) ||
-					lock->lock_type == PENDING_LOCK ||
-					lock->fnum != plock->fnum ) {
+					lock->lock_type == PENDING_LOCK) {
 			memcpy(&tp[count], lock, sizeof(struct lock_struct));
 			count++;
 			continue;
@@ -955,13 +942,6 @@ static BOOL brl_unlock_posix(struct byte_range_lock *br_lck, const struct lock_s
 		DEBUG(10,("brl_unlock_posix: No overlap - unlocked.\n"));
 		return True;
 	}
-
-#if 0
-	/* Do any POSIX unlocks needed. */
-	if (pre_unlock_fn) {
-		(*pre_unlock_fn)(pre_unlock_data);
-	}
-#endif
 
 	/* Realloc so we don't leak entries per unlock call. */
 	if (count) {
@@ -1186,6 +1166,7 @@ BOOL brl_remove_pending_lock(struct byte_range_lock *br_lck,
 	for (i = 0; i < br_lck->num_locks; i++) {
 		struct lock_struct *lock = &locks[i];
 
+		/* For pending locks we *always* care about the fnum. */
 		if (brl_same_context(&lock->context, &context) &&
 				lock->fnum == br_lck->fsp->fnum &&
 				lock->lock_type == PENDING_LOCK &&
@@ -1225,15 +1206,21 @@ void brl_close_fnum(struct byte_range_lock *br_lck, struct process_id pid)
 	unsigned int i, j, dcount=0;
 	struct lock_struct *locks = (struct lock_struct *)br_lck->lock_data;
 
-	/* Remove any existing locks for this fnum */
+	/* Remove any existing locks for this fnum (or any fnum if they're POSIX). */
 
 	for (i=0; i < br_lck->num_locks; i++) {
 		struct lock_struct *lock = &locks[i];
+		BOOL del_this_lock = False;
 
-		if (lock->context.tid == tid &&
-		    procid_equal(&lock->context.pid, &pid) &&
-		    lock->fnum == fnum) {
+		if (lock->context.tid == tid && procid_equal(&lock->context.pid, &pid)) {
+			if ((lock->lock_flav == WINDOWS_LOCK) && (lock->fnum == fnum)) {
+				del_this_lock = True;
+			} else if (lock->lock_flav == POSIX_LOCK) {
+				del_this_lock = True;
+			}
+		}
 
+		if (del_this_lock) {
 			/* Send unlock messages to any pending waiters that overlap. */
 			for (j=0; j < br_lck->num_locks; j++) {
 				struct lock_struct *pend_lock = &locks[j];
@@ -1243,6 +1230,8 @@ void brl_close_fnum(struct byte_range_lock *br_lck, struct process_id pid)
 					continue;
 				}
 
+				/* Optimisation - don't send to this fnum as we're
+				   closing it. */
 				if (pend_lock->context.tid == tid &&
 				    procid_equal(&pend_lock->context.pid, &pid) &&
 				    pend_lock->fnum == fnum) {
