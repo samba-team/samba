@@ -1,5 +1,15 @@
 2006-03-27  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* print.c (check_altName): Print the othername oid.
+
+	* crypto.c: Manual page claims RSA_public_decrypt will return -1
+	on error, lets check for that
+	
+	* crypto.c (_hx509_pbe_decrypt): also try the empty password
+
+	* collector.c (match_localkeyid): no need to add back the cert to
+	the cert pool, its already there.
+
 	* crypto.c: Add REQUIRE_SIGNER
 
 	* cert.c (hx509_cert_free): ok to free NULL
