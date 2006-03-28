@@ -51,6 +51,7 @@ struct krb5_pk_identity {
     hx509_verify_ctx verify_ctx;
     hx509_certs certs;
     hx509_certs anchors;
+    hx509_certs chain;
 };
 
 enum pkinit_type {
@@ -1233,7 +1234,8 @@ krb5_error_code
 _kdc_pk_initialize(krb5_context context,
 		   krb5_kdc_configuration *config,
 		   const char *user_id,
-		   const char *x509_anchors)
+		   const char *anchors,
+		   char **chain)
 {
     const char *file; 
     krb5_error_code ret;
@@ -1254,7 +1256,8 @@ _kdc_pk_initialize(krb5_context context,
     ret = _krb5_pk_load_openssl_id(context,
 				   &kdc_identity,
 				   user_id,
-				   x509_anchors,
+				   anchors,
+				   chain,
 				   NULL,
 				   NULL,
 				   NULL);

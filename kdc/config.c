@@ -501,7 +501,8 @@ configure(krb5_context context, int argc, char **argv)
 				     "enable-pkinit",
 				     NULL);
     if (config->enable_pkinit) {
-	const char *user_id, *x509_anchors;
+	const char *user_id, *anchors;
+	char **chain;
 
 	user_id = krb5_config_get_string(context, NULL,
 					 "kdc",
@@ -510,14 +511,21 @@ configure(krb5_context context, int argc, char **argv)
 	if (user_id == NULL)
 	    krb5_errx(context, 1, "pkinit enabled but no identity");
 
-	x509_anchors = krb5_config_get_string(context, NULL,
-					      "kdc",
-					      "pki-anchors",
-					      NULL);
-	if (x509_anchors == NULL)
+	anchors = krb5_config_get_string(context, NULL,
+					 "kdc",
+					 "pki-anchors",
+					 NULL);
+	if (anchors == NULL)
 	    krb5_errx(context, 1, "pkinit enabled but no X509 anchors");
 
-	_kdc_pk_initialize(context, config, user_id, x509_anchors);
+	chain = krb5_config_get_strings(context, NULL,
+					"kdc",
+					"pki-chain",
+					NULL);
+
+	_kdc_pk_initialize(context, config, user_id, anchors, chain);
+
+	krb5_config_free_strings(chain);
 
 	config->enable_pkinit_princ_in_cert = 
 	    krb5_config_get_bool_default(context, 
