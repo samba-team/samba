@@ -68,7 +68,7 @@ struct krb5_pk_identity {
     hx509_verify_ctx verify_ctx;
     hx509_certs certs;
     hx509_certs anchors;
-    hx509_certs chain;
+    hx509_certs certpool;
 };
 
 struct krb5_pk_cert {
@@ -523,7 +523,7 @@ _krb5_pk_verify_sign(krb5_context context,
 				  id->verify_ctx,
 				  data,
 				  length,
-				  id->certs,
+				  id->certpool,
 				  contentType,
 				  content,
 				  &signer_certs);
@@ -1207,12 +1207,12 @@ _krb5_pk_load_openssl_id(krb5_context context,
 	goto out;
 
     ret = hx509_certs_init(id->hx509ctx, "MEMORY:pkinit-cert-chain", 
-			   0, NULL, &id->chain);
+			   0, NULL, &id->certpool);
     if (ret)
 	goto out;
 
     while (chain && *chain) {
-	ret = hx509_certs_append(id->hx509ctx, id->chain, NULL, *chain);
+	ret = hx509_certs_append(id->hx509ctx, id->certpool, NULL, *chain);
 	if (ret) {
 	    krb5_set_error_string(context,
 				  "pkinit failed to load chain %s",
@@ -1233,7 +1233,7 @@ out:
 	hx509_verify_destroy_ctx(id->verify_ctx);
 	hx509_certs_free(&id->certs);
 	hx509_certs_free(&id->anchors);
-	hx509_certs_free(&id->chain);
+	hx509_certs_free(&id->certpool);
 	hx509_context_free(&id->hx509ctx);
 	free(id);
     } else
@@ -1518,7 +1518,7 @@ _krb5_get_init_creds_opt_free_pkinit(krb5_get_init_creds_opt *opt)
 	hx509_verify_destroy_ctx(ctx->id->verify_ctx);
 	hx509_certs_free(&ctx->id->certs);
 	hx509_certs_free(&ctx->id->anchors);
-	hx509_certs_free(&ctx->id->chain);
+	hx509_certs_free(&ctx->id->certpool);
 	hx509_context_free(&ctx->id->hx509ctx);
 
 	if (ctx->clientDHNonce) {
@@ -1540,6 +1540,7 @@ krb5_get_init_creds_opt_set_pkinit(krb5_context context,
 				   krb5_principal principal,
 				   const char *user_id,
 				   const char *x509_anchors,
+				   const char **chain,
 				   int flags,
 				   krb5_prompter_fct prompter,
 				   void *prompter_data,
@@ -1568,7 +1569,7 @@ krb5_get_init_creds_opt_set_pkinit(krb5_context context,
 				   &opt->opt_private->pk_init_ctx->id,
 				   user_id,
 				   x509_anchors,
-				   NULL,
+				   chain,
 				   prompter,
 				   prompter_data,
 				   password);

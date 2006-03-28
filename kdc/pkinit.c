@@ -51,7 +51,7 @@ struct krb5_pk_identity {
     hx509_verify_ctx verify_ctx;
     hx509_certs certs;
     hx509_certs anchors;
-    hx509_certs chain;
+    hx509_certs certpool;
 };
 
 enum pkinit_type {
@@ -566,12 +566,15 @@ _kdc_pk_rd_padata(krb5_context context,
 				      kdc_identity->verify_ctx,
 				      signed_content.data,
 				      signed_content.length,
-				      kdc_identity->certs,
+				      kdc_identity->certpool,
 				      &eContentType,
 				      &eContent,
 				      &signer_certs);
-	if (ret)
+	if (ret) {
+	    kdc_log(context, config, 0,
+		    "PK-INIT failed to verify signature %d", ret);
 	    goto out;
+	}
 
 	ret = hx509_get_one_cert(kdc_identity->hx509ctx, signer_certs,
 				 &client_params->cert);
@@ -1235,7 +1238,7 @@ _kdc_pk_initialize(krb5_context context,
 		   krb5_kdc_configuration *config,
 		   const char *user_id,
 		   const char *anchors,
-		   char **chain)
+		   char **pool)
 {
     const char *file; 
     krb5_error_code ret;
@@ -1257,7 +1260,7 @@ _kdc_pk_initialize(krb5_context context,
 				   &kdc_identity,
 				   user_id,
 				   anchors,
-				   chain,
+				   pool,
 				   NULL,
 				   NULL,
 				   NULL);
