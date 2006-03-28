@@ -1,5 +1,9 @@
 2006-03-27  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* Makefile.am: Add id-pkinit-ms-san.
+
+	* pkinit.asn1: Add id-pkinit-ms-san.
+
 	* k5.asn1 (PADATA-TYPE): Add KRB5-PADATA-PA-PK-OCSP-RESPONSE
 	
 2006-03-26  Love Hörnquist Åstrand  <lha@it.su.se>
