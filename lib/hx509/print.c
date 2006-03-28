@@ -194,7 +194,7 @@ check_altName(hx509_validate_ctx ctx,
 {
     GeneralNames gn;
     size_t size;
-    int ret;
+    int ret, i;
 
     check_Null(ctx, cf, e);
 
@@ -211,6 +211,15 @@ check_altName(hx509_validate_ctx ctx,
     if (gn.len == 0) {
 	printf("%sAltName generalName empty, not allowed", name);
 	return 1;
+    }
+
+    for (i = 0; i < gn.len; i++) {
+	if (gn.val[i].element == choice_GeneralName_otherName) {
+	    validate_print(ctx, HX509_VALIDATE_F_VERBOSE, "other name oid: ");
+	    hx509_oid_print(&gn.val[i].u.otherName.type_id,
+			    validate_vprint, ctx);
+	    validate_print(ctx, HX509_VALIDATE_F_VERBOSE, "\n");
+	}
     }
 
     free_GeneralNames(&gn);
