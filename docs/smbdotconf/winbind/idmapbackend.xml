@@ -32,6 +32,6 @@
 
 <value type="default"></value>
 <value type="example">ldap:ldap://ldapslave.example.com</value>
-<value type="example">idmap_rid:BUILTIN=1000-1999,DOMNAME=2000-100000000</value>
+<value type="example">idmap_rid:"BUILTIN=1000-1999,DOMNAME=2000-100000000"</value>
 <value type="example">idmap_ad</value>
 </samba:parameter>
