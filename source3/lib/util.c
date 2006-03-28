@@ -1542,14 +1542,6 @@ gid_t nametogid(const char *name)
 }
 
 /*******************************************************************
- legacy wrapper for smb_panic2()
-********************************************************************/
-void smb_panic( const char *why )
-{
-	smb_panic2( why, True );
-}
-
-/*******************************************************************
  Something really nasty happened - panic !
 ********************************************************************/
 
@@ -1557,7 +1549,7 @@ void smb_panic( const char *why )
 #include <libexc.h>
 #endif
 
-void smb_panic2(const char *why, BOOL decrement_pid_count )
+static void smb_panic2(const char *why, BOOL decrement_pid_count )
 {
 	char *cmd;
 	int result;
@@ -1660,6 +1652,17 @@ void smb_panic2(const char *why, BOOL decrement_pid_count )
 #ifdef SIGABRT
 	CatchSignal(SIGABRT,SIGNAL_CAST SIG_DFL);
 #endif
+	abort();
+}
+
+/*******************************************************************
+ wrapper for smb_panic2()
+********************************************************************/
+
+ void smb_panic( const char *why )
+{
+	smb_panic2( why, True );
+	/* Notreached. */
 	abort();
 }
 
