@@ -581,6 +581,10 @@ static BOOL receive_getdc_response(struct in_addr dc_ip,
 static void dcip_to_name( const char *domainname, const char *realm, 
                           const DOM_SID *sid, struct in_addr ip, fstring name )
 {
+	struct ip_service ip_list;
+
+	ip_list.ip = ip;
+	ip_list.port = 0;
 
 	/* try GETDC requests first */
 	
@@ -588,16 +592,20 @@ static void dcip_to_name( const char *domainname, const char *realm,
 		int i;
 		smb_msleep(100);
 		for (i=0; i<5; i++) {
-			if (receive_getdc_response(ip, domainname, name))
+			if (receive_getdc_response(ip, domainname, name)) {
+				namecache_store(name, 0x20, 1, &ip_list);
 				return;
+			}
 			smb_msleep(500);
 		}
 	}
 
 	/* try node status request */
 
-	if ( name_status_find(domainname, 0x1c, 0x20, ip, name) )
+	if ( name_status_find(domainname, 0x1c, 0x20, ip, name) ) {
+		namecache_store(name, 0x20, 1, &ip_list);
 		return;
+	}
 
 	/* backup in case the netbios stuff fails */
 
@@ -627,6 +635,7 @@ static void dcip_to_name( const char *domainname, const char *realm,
 		}
 
 		fstrcpy(name, ads->config.ldap_server_name);
+		namecache_store(name, 0x20, 1, &ip_list);
 
 		ads_destroy( &ads );
 	}
