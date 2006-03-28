@@ -1,3 +1,8 @@
+2006-03-28  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* crypto.c (_hx509_pbe_decrypt): try all passwords, not just the
+	first one.
+	
 2006-03-27  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* print.c (check_altName): Print the othername oid.
