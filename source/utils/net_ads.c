@@ -69,18 +69,20 @@ int net_ads_usage(int argc, const char **argv)
 static int net_ads_lookup(int argc, const char **argv)
 {
 	ADS_STRUCT *ads;
+	ADS_STATUS status;
 
 	ads = ads_init(NULL, opt_target_workgroup, opt_host);
 	if (ads) {
 		ads->auth.flags |= ADS_AUTH_NO_BIND;
 	}
 
-	ads_connect(ads);
-
-	if (!ads) {
+	status = ads_connect(ads);
+	if (!ADS_ERR_OK(status) || !ads) {
 		d_fprintf(stderr, "Didn't find the cldap server!\n");
 		return -1;
-	} if (!ads->config.realm) {
+	}
+	
+	if (!ads->config.realm) {
 		ads->config.realm = CONST_DISCARD(char *, opt_target_workgroup);
 		ads->ldap_port = 389;
 	}
