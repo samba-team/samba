@@ -83,6 +83,8 @@ static NTSTATUS pvfs_t2mkdir(struct pvfs_state *pvfs,
 		return status;
 	}
 
+	notify_trigger(pvfs->notify_context, NOTIFY_ACTION_ADDED, name->full_name);
+
 	return NT_STATUS_OK;
 }
 
@@ -135,6 +137,8 @@ NTSTATUS pvfs_mkdir(struct ntvfs_module_context *ntvfs,
 		return status;
 	}
 
+	notify_trigger(pvfs->notify_context, NOTIFY_ACTION_ADDED, name->full_name);
+
 	return NT_STATUS_OK;
 }
 
@@ -171,6 +175,8 @@ NTSTATUS pvfs_rmdir(struct ntvfs_module_context *ntvfs,
 	if (rmdir(name->full_name) == -1) {
 		return pvfs_map_errno(pvfs, errno);
 	}
+
+	notify_trigger(pvfs->notify_context, NOTIFY_ACTION_REMOVED, name->full_name);
 
 	return NT_STATUS_OK;
 }
