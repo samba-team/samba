@@ -884,6 +884,10 @@ void init_unistr2(UNISTR2 *str, const char *buf, enum unistr2_term_codes flags)
 void init_unistr4(UNISTR4 *uni4, const char *buf, enum unistr2_term_codes flags)
 {
 	uni4->string = TALLOC_P( get_talloc_ctx(), UNISTR2 );
+	if (!uni4->string) {
+		smb_panic("init_unistr4: talloc fail\n");
+		return;
+	}
 	init_unistr2( uni4->string, buf, flags );
 
 	uni4->length = 2 * (uni4->string->uni_str_len);
@@ -893,6 +897,10 @@ void init_unistr4(UNISTR4 *uni4, const char *buf, enum unistr2_term_codes flags)
 void init_unistr4_w( TALLOC_CTX *ctx, UNISTR4 *uni4, const smb_ucs2_t *buf )
 {
 	uni4->string = TALLOC_P( ctx, UNISTR2 );
+	if (!uni4->string) {
+		smb_panic("init_unistr4_w: talloc fail\n");
+		return;
+	}
 	init_unistr2_w( ctx, uni4->string, buf );
 
 	uni4->length = 2 * (uni4->string->uni_str_len);
@@ -919,7 +927,7 @@ void init_unistr2_w(TALLOC_CTX *ctx, UNISTR2 *str, const smb_ucs2_t *buf)
 
 	str->buffer = TALLOC_ZERO_ARRAY(ctx, uint16, len + 1);
 	if (str->buffer == NULL) {
-		smb_panic("init_unistr2_w: malloc fail\n");
+		smb_panic("init_unistr2_w: talloc fail\n");
 		return;
 	}
 	
