@@ -4303,7 +4303,7 @@ static BOOL ldapsam_search_grouptype(struct pdb_methods *methods,
 	state->scope = LDAP_SCOPE_SUBTREE;
 	state->filter =	talloc_asprintf(search->mem_ctx,
 					"(&(objectclass=sambaGroupMapping)"
-					"(sambaGroupType=%d)(sambaSID=%s)", 
+					"(sambaGroupType=%d)(sambaSID=%s))", 
 					type, sid_string_static(sid));
 	state->attrs = talloc_attrs(search->mem_ctx, "cn", "sambaSid",
 				    "displayName", "description",
