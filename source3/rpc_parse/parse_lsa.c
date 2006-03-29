@@ -3001,6 +3001,9 @@ NTSTATUS init_r_enum_acct_rights( LSA_R_ENUM_ACCT_RIGHTS *out, PRIVILEGE_SET *pr
 
 	if ( num_priv ) {
 		out->rights = TALLOC_P( get_talloc_ctx(), UNISTR4_ARRAY );
+		if (!out->rights) {
+			return NT_STATUS_NO_MEMORY;
+		}
 
 		if ( !init_unistr4_array( out->rights, num_priv, privname_array ) ) 
 			return NT_STATUS_NO_MEMORY;
@@ -3069,6 +3072,10 @@ void init_q_add_acct_rights( LSA_Q_ADD_ACCT_RIGHTS *in, POLICY_HND *hnd,
 	init_dom_sid2(&in->sid, sid);
 	
 	in->rights = TALLOC_P( get_talloc_ctx(), UNISTR4_ARRAY );
+	if (!in->rights) {
+		smb_panic("init_q_add_acct_rights: talloc fail\n");
+		return;
+	}
 	init_unistr4_array( in->rights, count, rights );
 	
 	in->count = count;
@@ -3112,10 +3119,10 @@ BOOL lsa_io_r_add_acct_rights(const char *desc, LSA_R_ADD_ACCT_RIGHTS *out, prs_
 	return True;
 }
 
-
 /*******************************************************************
  Inits an LSA_Q_REMOVE_ACCT_RIGHTS structure.
 ********************************************************************/
+
 void init_q_remove_acct_rights(LSA_Q_REMOVE_ACCT_RIGHTS *in, 
 			       POLICY_HND *hnd, 
 			       DOM_SID *sid,
@@ -3133,13 +3140,17 @@ void init_q_remove_acct_rights(LSA_Q_REMOVE_ACCT_RIGHTS *in,
 	in->count = count;
 
 	in->rights = TALLOC_P( get_talloc_ctx(), UNISTR4_ARRAY );
+	if (!in->rights) {
+		smb_panic("init_q_remove_acct_rights: talloc fail\n");
+		return;
+	}
 	init_unistr4_array( in->rights, count, rights );
 }
-
 
 /*******************************************************************
 reads or writes a LSA_Q_REMOVE_ACCT_RIGHTS structure.
 ********************************************************************/
+
 BOOL lsa_io_q_remove_acct_rights(const char *desc, LSA_Q_REMOVE_ACCT_RIGHTS *in, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "lsa_io_q_remove_acct_rights");
