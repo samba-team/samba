@@ -105,7 +105,9 @@ static void pvfs_wait_timeout(struct event_context *ev,
 static int pvfs_wait_destructor(void *ptr)
 {
 	struct pvfs_wait *pwait = ptr;
-	messaging_deregister(pwait->msg_ctx, pwait->msg_type, pwait);
+	if (pwait->msg_type != -1) {
+		messaging_deregister(pwait->msg_ctx, pwait->msg_type, pwait);
+	}
 	DLIST_REMOVE(pwait->pvfs->wait_list, pwait);
 	return 0;
 }
@@ -116,6 +118,9 @@ static int pvfs_wait_destructor(void *ptr)
 
   the return value is a handle. To stop waiting talloc_free this
   handle.
+
+  if msg_type == -1 then no message is registered, and it is assumed
+  that the caller handles any messaging setup needed
 */
 void *pvfs_wait_message(struct pvfs_state *pvfs, 
 			struct ntvfs_request *req, 
@@ -146,10 +151,12 @@ void *pvfs_wait_message(struct pvfs_state *pvfs,
 
 	/* register with the messaging subsystem for this message
 	   type */
-	messaging_register(pwait->msg_ctx,
-			   pwait,
-			   msg_type,
-			   pvfs_wait_dispatch);
+	if (msg_type != -1) {
+		messaging_register(pwait->msg_ctx,
+				   pwait,
+				   msg_type,
+				   pvfs_wait_dispatch);
+	}
 
 	/* tell the main smb server layer that we will be replying 
 	   asynchronously */
