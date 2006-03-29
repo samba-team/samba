@@ -43,8 +43,6 @@
 
 int regsubkey_ctr_addkey( REGSUBKEY_CTR *ctr, const char *keyname )
 {
-	char **pp;
-
 	if ( !keyname )
 		return ctr->num_subkeys;
 
@@ -55,12 +53,15 @@ int regsubkey_ctr_addkey( REGSUBKEY_CTR *ctr, const char *keyname )
 		
 	/* allocate a space for the char* in the array */
 		
-	if (  ctr->subkeys == 0 )
-		ctr->subkeys = TALLOC_P( ctr, char *);
-	else {
-		pp = TALLOC_REALLOC_ARRAY( ctr, ctr->subkeys, char *, ctr->num_subkeys+1);
-		if ( pp )
-			ctr->subkeys = pp;
+	if (ctr->subkeys == NULL) {
+		ctr->subkeys = TALLOC_P(ctr, char *);
+	} else {
+		ctr->subkeys = TALLOC_REALLOC_ARRAY(ctr, ctr->subkeys, char *, ctr->num_subkeys+1);
+	}
+
+	if (!ctr->subkeys) {
+		ctr->num_subkeys = 0;
+		return 0;
 	}
 
 	/* allocate the string and save it in the array */
