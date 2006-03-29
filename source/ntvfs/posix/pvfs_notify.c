@@ -33,9 +33,12 @@ struct pvfs_notify_buffer {
 	struct notify_changes *changes;
 	uint32_t max_buffer_size;
 	uint32_t current_buffer_size;
-	void *wait_handle;
+	
+	/* these last two are only present when a notify request is
+	   pending */
+	struct ntvfs_request *req;
+	struct smb_notify *info;
 };
-
 
 /*
   destroy a notify buffer. Called when the handle is closed
@@ -48,6 +51,34 @@ static int pvfs_notify_destructor(void *ptr)
 	return 0;
 }
 
+/*
+  send a reply to a pending notify request
+*/
+static void pvfs_notify_send(struct pvfs_notify_buffer *notify_buffer)
+{
+	struct ntvfs_request *req = notify_buffer->req;
+	struct smb_notify *info = notify_buffer->info;
+
+	info->out.num_changes = notify_buffer->num_changes;
+	info->out.changes = talloc_steal(req, notify_buffer->changes);
+	notify_buffer->num_changes = 0;
+	notify_buffer->changes = NULL;
+	notify_buffer->current_buffer_size = 0;
+	
+	notify_buffer->req = NULL;
+	notify_buffer->info = NULL;
+
+	DEBUG(0,("sending %d changes\n", info->out.num_changes));
+
+	if (info->out.num_changes == 0) {
+		req->async_states->status = NT_STATUS_CANCELLED;
+	} else {
+		req->async_states->status = NT_STATUS_OK;
+	}
+	req->async_states->send_fn(req);
+}
+
+
 
 /*
   called when a async notify event comes in
@@ -55,7 +86,17 @@ static int pvfs_notify_destructor(void *ptr)
 static void pvfs_notify_callback(void *private, const struct notify_event *ev)
 {
 	struct pvfs_notify_buffer *n = talloc_get_type(private, struct pvfs_notify_buffer);
-	DEBUG(0,("got notify for '%s'\n", ev->path));
+
+	n->changes = talloc_realloc(n, n->changes, struct notify_changes, n->num_changes+1);
+	n->changes[n->num_changes].action = ev->action;
+	n->changes[n->num_changes].name.s = talloc_strdup(n->changes, ev->path);
+	n->num_changes++;
+
+	DEBUG(0,("got notify for '%s' action=%d\n", ev->path, ev->action));
+
+	if (n->req != NULL) {
+		pvfs_notify_send(n);
+	}
 }
 
 /*
@@ -86,6 +127,22 @@ static NTSTATUS pvfs_notify_setup(struct pvfs_state *pvfs, struct pvfs_file *f,
 	return NT_STATUS_OK;
 }
 
+/*
+  called from the pvfs_wait code when either an event has come in, or
+  the notify request has been cancelled
+*/
+static void pvfs_notify_end(void *private, enum pvfs_wait_notice reason)
+{
+	struct pvfs_notify_buffer *notify_buffer = talloc_get_type(private, struct pvfs_notify_buffer);
+	struct ntvfs_request *req = notify_buffer->req;
+
+	if (req == NULL) {
+		/* nothing to do, nobody is waiting */
+		return;
+	}
+
+	pvfs_notify_send(notify_buffer);
+}
 
 /* change notify request - always async. This request blocks until the
    event buffer is non-empty */
@@ -110,7 +167,7 @@ NTSTATUS pvfs_notify(struct ntvfs_module_context *ntvfs,
 
 	/* its only valid for directories */
 	if (f->handle->fd != -1) {
-		return NT_STATUS_NOT_A_DIRECTORY;
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	/* if the handle doesn't currently have a notify buffer then
@@ -123,19 +180,27 @@ NTSTATUS pvfs_notify(struct ntvfs_module_context *ntvfs,
 		NT_STATUS_NOT_OK_RETURN(status);
 	}
 
+	req->async_states->status = NT_STATUS_OK;
+	
+	if (f->notify_buffer->req != NULL) {
+		DEBUG(0,("Notify already setup\n"));
+		pvfs_notify_send(f->notify_buffer);
+	}
+
+	f->notify_buffer->req = talloc_reference(f->notify_buffer, req);
+	f->notify_buffer->info = info;
+
 	/* if the buffer is empty then start waiting */
 	if (f->notify_buffer->num_changes == 0) {
-		req->async_states->state |= NTVFS_ASYNC_STATE_ASYNC;
+		void *wait_handle =
+			pvfs_wait_message(pvfs, req, -1, timeval_zero(), 
+					  pvfs_notify_end, f->notify_buffer);
+		NT_STATUS_HAVE_NO_MEMORY(wait_handle);
+		talloc_steal(req, wait_handle);
 		return NT_STATUS_OK;
 	}
 
-	/* otherwise if the buffer is not empty then return its
-	   contents immediately */
-	info->out.num_changes = f->notify_buffer->num_changes;
-	info->out.changes = talloc_steal(req, f->notify_buffer->changes);
-	f->notify_buffer->num_changes = 0;
-	f->notify_buffer->changes = NULL;
-	f->notify_buffer->current_buffer_size = 0;
+	pvfs_notify_send(f->notify_buffer);
 
 	return NT_STATUS_OK;
 }

@@ -332,9 +332,6 @@ static BOOL notify_match(struct notify_context *notify, struct notify_entry *e,
 		return False;
 	}
 
-	if (path[len] == 0) {
-		return True;
-	}
 	if (path[len] != '/') {
 		return False;
 	}
@@ -395,7 +392,9 @@ void notify_trigger(struct notify_context *notify,
 	/* this needs to be changed to a log(n) search */
 	for (i=0;i<notify->array->num_entries;i++) {
 		if (notify_match(notify, &notify->array->entries[i], path, action)) {
-			notify_send(notify, &notify->array->entries[i], path, action);
+			notify_send(notify, &notify->array->entries[i], 
+				    path + strlen(notify->array->entries[i].path) + 1, 
+				    action);
 		}
 	}
 }
