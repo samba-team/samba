@@ -217,7 +217,9 @@ static int reply_spnego_kerberos(connection_struct *conn,
 
 	if (pac_data) {
 		logon_info = get_logon_info_from_pac(pac_data);
-		netsamlogon_cache_store( client, &logon_info->info3 );
+		if (logon_info) {
+			netsamlogon_cache_store( client, &logon_info->info3 );
+		}
 	}
 
 	if (!strequal(p+1, lp_realm())) {
