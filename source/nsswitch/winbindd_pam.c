@@ -342,7 +342,7 @@ static const char *generate_krb5_ccache(TALLOC_CTX *mem_ctx,
 	goto done;
 
   memory_ccache:
-  	gen_cc = talloc_strdup(mem_ctx, "MEMORY:winbind_cache");
+  	gen_cc = talloc_strdup(mem_ctx, "MEMORY:winbindd_pam_ccache");
 
   done:
   	if (gen_cc == NULL) {
@@ -495,7 +495,7 @@ static NTSTATUS winbindd_raw_kerberos_login(struct winbindd_domain *domain,
 		DEBUG(1,("winbindd_raw_kerberos_login: kinit failed for '%s' with: %s (%d)\n", 
 			principal_s, error_message(krb5_ret), krb5_ret));
 		result = krb5_to_nt_status(krb5_ret);
-		goto done;
+		goto failed;
 	}
 
 	/* does http_timestring use heimdals libroken strftime?? - Guenther */
@@ -507,7 +507,7 @@ static NTSTATUS winbindd_raw_kerberos_login(struct winbindd_domain *domain,
 	client_princ = talloc_strdup(state->mem_ctx, global_myname());
 	if (client_princ == NULL) {
 		result = NT_STATUS_NO_MEMORY;
-		goto done;
+		goto failed;
 	}
 	strlower_m(client_princ);
 
@@ -515,7 +515,7 @@ static NTSTATUS winbindd_raw_kerberos_login(struct winbindd_domain *domain,
 	if (local_service == NULL) {
 		DEBUG(0,("winbindd_raw_kerberos_login: out of memory\n"));
 		result = NT_STATUS_NO_MEMORY;
-		goto done;
+		goto failed;
 	}
 
 	krb5_ret = cli_krb5_get_ticket(local_service, 
@@ -525,10 +525,10 @@ static NTSTATUS winbindd_raw_kerberos_login(struct winbindd_domain *domain,
 				       0, 
 				       cc);
 	if (krb5_ret) {
-		DEBUG(1,("winbindd_raw_kerberos_login: failed to get ticket for: %s\n", 
-			local_service));
+		DEBUG(1,("winbindd_raw_kerberos_login: failed to get ticket for %s: %s\n", 
+			local_service, error_message(krb5_ret)));
 		result = krb5_to_nt_status(krb5_ret);
-		goto done;
+		goto failed;
 	}
 
 	if (!internal_ccache) {
@@ -547,7 +547,7 @@ static NTSTATUS winbindd_raw_kerberos_login(struct winbindd_domain *domain,
 	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(0,("winbindd_raw_kerberos_login: ads_verify_ticket failed: %s\n", 
 			nt_errstr(result)));
-		goto done;
+		goto failed;
 	}
 
 	DEBUG(10,("winbindd_raw_kerberos_login: winbindd validated ticket of %s\n", 
@@ -556,14 +556,14 @@ static NTSTATUS winbindd_raw_kerberos_login(struct winbindd_domain *domain,
 	if (!pac_data) {
 		DEBUG(3,("winbindd_raw_kerberos_login: no pac data\n"));
 		result = NT_STATUS_INVALID_PARAMETER;
-		goto done;
+		goto failed;
 	}
 			
 	logon_info = get_logon_info_from_pac(pac_data);
 	if (logon_info == NULL) {
 		DEBUG(1,("winbindd_raw_kerberos_login: no logon info\n"));
 		result = NT_STATUS_INVALID_PARAMETER;
-		goto done;
+		goto failed;
 	}
 
 
@@ -598,6 +598,22 @@ static NTSTATUS winbindd_raw_kerberos_login(struct winbindd_domain *domain,
 	}
 
 	result = NT_STATUS_OK;
+
+	goto done;
+
+failed:
+
+	/* we could have created a new credential cache with a valid tgt in it
+	 * but we werent able to get or verify the service ticket for this
+	 * local host and therefor didn't get the PAC, we need to remove that
+	 * cache entirely now */
+
+	krb5_ret = ads_kdestroy(cc);
+	if (krb5_ret) {
+		DEBUG(0,("winbindd_raw_kerberos_login: "
+			 "could not destroy krb5 credential cache: "
+			 "%s\n", error_message(krb5_ret)));
+	}
 
 done:
 	data_blob_free(&session_key);
@@ -1802,11 +1818,7 @@ enum winbindd_result winbindd_dual_pam_logoff(struct winbindd_domain *domain,
 		goto process_result;
 	}
 
-	seteuid(entry->uid);
-
 	ret = ads_kdestroy(entry->ccname);
-
-	seteuid(0);
 
 	if (ret) {
 		DEBUG(0,("winbindd_pam_logoff: failed to destroy user ccache %s with: %s\n", 
