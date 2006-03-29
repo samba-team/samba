@@ -32,9 +32,18 @@ void init_shutdown_q_init(SHUTDOWN_Q_INIT *q_s, const char *msg,
 			uint32 timeout, BOOL do_reboot, BOOL force)
 {
 	q_s->server = TALLOC_P( get_talloc_ctx(), uint16 );
+	if (!q_s->server) {
+		smb_panic("init_shutdown_q_init: talloc fail.\n");
+		return;
+	}
+
 	*q_s->server = 0x1;
 
 	q_s->message = TALLOC_ZERO_P( get_talloc_ctx(), UNISTR4 );
+	if (!q_s->message) {
+		smb_panic("init_shutdown_q_init: talloc fail.\n");
+		return;
+	}
 
 	if ( msg && *msg ) {
 		init_unistr4( q_s->message, msg, UNI_FLAGS_NONE );
@@ -206,6 +215,11 @@ Inits a structure.
 void init_shutdown_q_abort(SHUTDOWN_Q_ABORT *q_s)
 {
 	q_s->server = TALLOC_P( get_talloc_ctx(), uint16 );
+	if (!q_s->server) {
+		smb_panic("init_shutdown_q_abort: talloc fail.\n");
+		return;
+	}
+		
 	*q_s->server = 0x1;
 }
 
