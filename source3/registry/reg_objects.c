@@ -270,8 +270,6 @@ BOOL regval_ctr_key_exists( REGVAL_CTR *ctr, const char *value )
 int regval_ctr_addvalue( REGVAL_CTR *ctr, const char *name, uint16 type, 
                          const char *data_p, size_t size )
 {
-	REGISTRY_VALUE **ppreg;
-	
 	if ( !name )
 		return ctr->num_values;
 
@@ -281,17 +279,24 @@ int regval_ctr_addvalue( REGVAL_CTR *ctr, const char *name, uint16 type,
 
 	/* allocate a slot in the array of pointers */
 		
-	if (  ctr->num_values == 0 )
+	if (  ctr->num_values == 0 ) {
 		ctr->values = TALLOC_P( ctr, REGISTRY_VALUE *);
-	else {
-		ppreg = TALLOC_REALLOC_ARRAY( ctr, ctr->values, REGISTRY_VALUE *, ctr->num_values+1 );
-		if ( ppreg )
-			ctr->values = ppreg;
+	} else {
+		ctr->values = TALLOC_REALLOC_ARRAY( ctr, ctr->values, REGISTRY_VALUE *, ctr->num_values+1 );
+	}
+
+	if (!ctr->values) {
+		ctr->num_values = 0;
+		return 0;
 	}
 
 	/* allocate a new value and store the pointer in the arrya */
 		
 	ctr->values[ctr->num_values] = TALLOC_P( ctr, REGISTRY_VALUE);
+	if (!ctr->values[ctr->num_values]) {
+		ctr->num_values = 0;
+		return 0;
+	}
 
 	/* init the value */
 	
@@ -310,23 +315,27 @@ int regval_ctr_addvalue( REGVAL_CTR *ctr, const char *name, uint16 type,
 
 int regval_ctr_copyvalue( REGVAL_CTR *ctr, REGISTRY_VALUE *val )
 {
-	REGISTRY_VALUE **ppreg;
-	
-	if ( val )
-	{
+	if ( val ) {
 		/* allocate a slot in the array of pointers */
 		
-		if (  ctr->num_values == 0 )
+		if (  ctr->num_values == 0 ) {
 			ctr->values = TALLOC_P( ctr, REGISTRY_VALUE *);
-		else {
-			ppreg = TALLOC_REALLOC_ARRAY( ctr, ctr->values, REGISTRY_VALUE *, ctr->num_values+1 );
-			if ( ppreg )
-				ctr->values = ppreg;
+		} else {
+			ctr->values = TALLOC_REALLOC_ARRAY( ctr, ctr->values, REGISTRY_VALUE *, ctr->num_values+1 );
+		}
+
+		if (!ctr->values) {
+			ctr->num_values = 0;
+			return 0;
 		}
 
 		/* allocate a new value and store the pointer in the arrya */
 		
 		ctr->values[ctr->num_values] = TALLOC_P( ctr, REGISTRY_VALUE);
+		if (!ctr->values[ctr->num_values]) {
+			ctr->num_values = 0;
+			return 0;
+		}
 
 		/* init the value */
 	
@@ -411,4 +420,3 @@ char* regval_sz( REGISTRY_VALUE *val )
 	
 	return data;
 }
-
