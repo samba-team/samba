@@ -201,6 +201,7 @@ typedef struct {
 	int max_xmit;
 	int max_mux;
 	int max_open_files;
+	int open_files_db_hash_size;
 	int pwordlevel;
 	int unamelevel;
 	int deadtime;
@@ -1023,6 +1024,7 @@ static struct parm_struct parm_table[] = {
 	{"max disk size", P_INTEGER, P_GLOBAL, &Globals.maxdisksize, NULL, NULL, FLAG_ADVANCED}, 
 	{"max open files", P_INTEGER, P_GLOBAL, &Globals.max_open_files, NULL, NULL, FLAG_ADVANCED}, 
 	{"min print space", P_INTEGER, P_LOCAL, &sDefault.iMinPrintSpace, NULL, NULL, FLAG_ADVANCED | FLAG_PRINT}, 
+	{"open files database hash size", P_INTEGER, P_GLOBAL, &Globals.open_files_db_hash_size, NULL, NULL, FLAG_ADVANCED}, 
 
 	{"socket options", P_GSTRING, P_GLOBAL, user_socket_options, NULL, NULL, FLAG_ADVANCED}, 
 	{"strict allocate", P_BOOL, P_LOCAL, &sDefault.bStrictAllocate, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE}, 
@@ -1498,6 +1500,7 @@ static void init_globals(BOOL first_time_only)
 	Globals.bLargeReadwrite = True;
 	Globals.max_log_size = 5000;
 	Globals.max_open_files = MAX_OPEN_FILES;
+	Globals.open_files_db_hash_size = SMB_OPEN_DATABASE_TDB_HASH_SIZE;
 	Globals.maxprotocol = PROTOCOL_NT1;
 	Globals.minprotocol = PROTOCOL_CORE;
 	Globals.security = SEC_USER;
@@ -1938,6 +1941,7 @@ FN_GLOBAL_INTEGER(lp_max_wins_ttl, &Globals.max_wins_ttl)
 FN_GLOBAL_INTEGER(lp_min_wins_ttl, &Globals.min_wins_ttl)
 FN_GLOBAL_INTEGER(lp_max_log_size, &Globals.max_log_size)
 FN_GLOBAL_INTEGER(lp_max_open_files, &Globals.max_open_files)
+FN_GLOBAL_INTEGER(lp_open_files_db_hash_size, &Globals.open_files_db_hash_size)
 FN_GLOBAL_INTEGER(lp_maxxmit, &Globals.max_xmit)
 FN_GLOBAL_INTEGER(lp_maxmux, &Globals.max_mux)
 FN_GLOBAL_INTEGER(lp_passwordlevel, &Globals.pwordlevel)
