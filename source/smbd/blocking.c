@@ -36,6 +36,7 @@ typedef struct _blocking_lock_record {
 	SMB_BIG_UINT count;
 	uint16 lock_pid;
 	enum brl_flavour lock_flav;
+	enum brl_type lock_type;
 	char *inbuf;
 	int length;
 } blocking_lock_record;
@@ -54,25 +55,6 @@ static void free_blocking_lock_record(blocking_lock_record *blr)
 }
 
 /****************************************************************************
- Get the files_struct given a particular queued SMB.
-*****************************************************************************/
-
-static files_struct *get_fsp_from_pkt(char *inbuf)
-{
-	switch(CVAL(inbuf,smb_com)) {
-		case SMBlock:
-		case SMBlockread:
-			return file_fsp(inbuf,smb_vwv0);
-		case SMBlockingX:
-			return file_fsp(inbuf,smb_vwv2);
-		default:
-			DEBUG(0,("get_fsp_from_pkt: PANIC - unknown type on blocking lock queue - exiting.!\n"));
-			exit_server("PANIC - unknown type on blocking lock queue");
-	}
-	return NULL; /* Keep compiler happy. */
-}
-
-/****************************************************************************
  Determine if this is a secondary element of a chained SMB.
   **************************************************************************/
 
@@ -88,8 +70,14 @@ static void received_unlock_msg(int msg_type, struct process_id src,
  Function to push a blocking lock request onto the lock queue.
 ****************************************************************************/
 
-BOOL push_blocking_lock_request( char *inbuf, int length, int lock_timeout,
-		int lock_num, uint16 lock_pid, SMB_BIG_UINT offset, SMB_BIG_UINT count)
+BOOL push_blocking_lock_request( char *inbuf, int length,
+		files_struct *fsp,
+		int lock_timeout,
+		int lock_num,
+		uint16 lock_pid,
+		enum brl_type lock_type,
+		enum brl_flavour lock_flav,
+		SMB_BIG_UINT offset, SMB_BIG_UINT count)
 {
 	static BOOL set_lock_msg;
 	blocking_lock_record *blr, *tmp;
@@ -119,11 +107,12 @@ BOOL push_blocking_lock_request( char *inbuf, int length, int lock_timeout,
 	}
 
 	blr->com_type = CVAL(inbuf,smb_com);
-	blr->fsp = get_fsp_from_pkt(inbuf);
+	blr->fsp = fsp;
 	blr->expire_time = (lock_timeout == -1) ? (time_t)-1 : time(NULL) + (time_t)lock_timeout;
 	blr->lock_num = lock_num;
 	blr->lock_pid = lock_pid;
-	blr->lock_flav = WINDOWS_LOCK;
+	blr->lock_flav = lock_flav;
+	blr->lock_type = lock_type;
 	blr->offset = offset;
 	blr->count = count;
 	memcpy(blr->inbuf, inbuf, length);

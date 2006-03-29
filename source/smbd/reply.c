@@ -2412,8 +2412,15 @@ int reply_lockread(connection_struct *conn, char *inbuf,char *outbuf, int length
 			 * this smb into a queued request and push it
 			 * onto the blocking lock queue.
 			 */
-			if(push_blocking_lock_request(inbuf, length, -1, 0, SVAL(inbuf,smb_pid), (SMB_BIG_UINT)startpos,
-								(SMB_BIG_UINT)numtoread)) {
+			if(push_blocking_lock_request(inbuf, length,
+					fsp,
+					-1,
+					0,
+					SVAL(inbuf,smb_pid),
+					WRITE_LOCK,
+					WINDOWS_LOCK,
+					(SMB_BIG_UINT)startpos,
+					(SMB_BIG_UINT)numtoread)) {
 				END_PROFILE(SMBlockread);
 				return -1;
 			}
@@ -3435,7 +3442,14 @@ int reply_lock(connection_struct *conn,
 			 * this smb into a queued request and push it
 			 * onto the blocking lock queue.
 			 */
-			if(push_blocking_lock_request(inbuf, length, -1, 0, SVAL(inbuf,smb_pid), offset, count)) {
+			if(push_blocking_lock_request(inbuf, length,
+				fsp,
+				-1,
+				0,
+				SVAL(inbuf,smb_pid),
+				WRITE_LOCK,
+				WINDOWS_LOCK,
+				offset, count)) {
 				END_PROFILE(SMBlock);
 				return -1;
 			}
@@ -5322,6 +5336,7 @@ int reply_lockingX(connection_struct *conn, char *inbuf, char *outbuf,
 	   of smb_lkrng structs */
 	
 	for(i = 0; i < (int)num_locks; i++) {
+		enum brl_type lock_type = ((locktype & 1) ? READ_LOCK:WRITE_LOCK);
 		lock_pid = get_lock_pid( data, i, large_file_format);
 		count = get_lock_count( data, i, large_file_format);
 		offset = get_lock_offset( data, i, large_file_format, &err);
@@ -5343,7 +5358,7 @@ int reply_lockingX(connection_struct *conn, char *inbuf, char *outbuf,
 					lock_pid,
 					count,
 					offset, 
-					((locktype & 1) ? READ_LOCK:WRITE_LOCK),
+					lock_type,
 					WINDOWS_LOCK,
 					&my_lock_ctx);
 
@@ -5364,8 +5379,13 @@ int reply_lockingX(connection_struct *conn, char *inbuf, char *outbuf,
 				 * onto the blocking lock queue.
 				 */
 				if(push_blocking_lock_request(inbuf, length,
-							      lock_timeout, i,
-							      lock_pid, offset,
+							      fsp,
+							      lock_timeout,
+						 	      i,
+							      lock_pid,
+							      lock_type,
+							      WINDOWS_LOCK,
+							      offset,
 							      count)) {
 					END_PROFILE(SMBlockingX);
 					return -1;

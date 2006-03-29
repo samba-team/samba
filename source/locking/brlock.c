@@ -189,7 +189,7 @@ static BOOL brl_conflict_posix(const struct lock_struct *lck1,
 		return False;
 	}
 
-	/* One is read, the other write, context or fnum are different,
+	/* One is read, the other write, or the context is different,
 	   do they overlap ? */
 	return brl_overlap(lck1, lck2);
 } 
