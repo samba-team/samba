@@ -984,6 +984,10 @@ static void send_notify2_changes( SPOOLSS_NOTIFY_MSG_CTR *ctr, uint32 idx )
 		/* allocate the max entries possible */
 		
 		data = TALLOC_ARRAY( mem_ctx, SPOOL_NOTIFY_INFO_DATA, msg_group->num_msgs);
+		if (!data) {
+			return;
+		}
+
 		ZERO_STRUCTP(data);
 		
 		/* build the array of change notifications */
@@ -1400,6 +1404,9 @@ static DEVICEMODE* dup_devicemode(TALLOC_CTX *ctx, DEVICEMODE *devmode)
 	len = unistrlen(devmode->devicename.buffer);
 	if (len != -1) {
 		d->devicename.buffer = TALLOC_ARRAY(ctx, uint16, len);
+		if (!d->devicename.buffer) {
+			return NULL;
+		}
 		if (unistrcpy(d->devicename.buffer, devmode->devicename.buffer) != len)
 			return NULL;
 	}
@@ -1408,12 +1415,17 @@ static DEVICEMODE* dup_devicemode(TALLOC_CTX *ctx, DEVICEMODE *devmode)
 	len = unistrlen(devmode->formname.buffer);
 	if (len != -1) {
 		d->devicename.buffer = TALLOC_ARRAY(ctx, uint16, len);
+		if (!d->devicename.buffer) {
+			return NULL;
+		}
 		if (unistrcpy(d->formname.buffer, devmode->formname.buffer) != len)
 			return NULL;
 	}
 
 	d->dev_private = TALLOC_MEMDUP(ctx, devmode->dev_private, devmode->driverextra);
-	
+	if (!d->dev_private) {
+		return NULL;
+	}	
 	return d;
 }
 
@@ -5894,6 +5906,10 @@ static WERROR update_printer_sec(POLICY_HND *handle, uint32 level,
 	}
 
 	new_secdesc_ctr = sec_desc_merge(p->mem_ctx, secdesc_ctr, old_secdesc_ctr);
+	if (!new_secdesc_ctr) {
+		result = WERR_NOMEM;
+		goto done;
+	}
 
 	if (sec_desc_equal(new_secdesc_ctr->sec, old_secdesc_ctr->sec)) {
 		result = WERR_OK;
