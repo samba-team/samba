@@ -228,6 +228,10 @@ const DOM_SID *pdb_get_group_sid(struct samu *sampass)
 		TALLOC_CTX *mem_ctx = talloc_init("pdb_get_group_sid");
 		BOOL lookup_ret;
 		
+		if (!mem_ctx) {
+			return NULL;
+		}
+
 		/* Now check that it's actually a domain group and not something else */
 
 		lookup_ret = lookup_sid(mem_ctx, gsid, NULL, NULL, &type);
@@ -1246,6 +1250,10 @@ BOOL pdb_set_plaintext_passwd (struct samu *sampass, const char *plaintext)
 					/* Ensure we have space for the needed history. */
 					uchar *new_history = TALLOC(sampass,
 								pwHistLen*PW_HISTORY_ENTRY_LEN);
+					if (!new_history) {
+						return False;
+					}
+
 					/* And copy it into the new buffer. */
 					if (current_history_len) {
 						memcpy(new_history, pwhistory,
