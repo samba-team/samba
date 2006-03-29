@@ -723,14 +723,21 @@ static void notify_system_time(struct spoolss_notify_msg *msg,
 
 	if (!make_systemtime(&systime, gmtime((time_t *)msg->notify.data))) {
 		DEBUG(5, ("notify_system_time: unable to make systemtime\n"));
+		prs_mem_free(&ps);
 		return;
 	}
 
-	if (!spoolss_io_system_time("", &ps, 0, &systime))
+	if (!spoolss_io_system_time("", &ps, 0, &systime)) {
+		prs_mem_free(&ps);
 		return;
+	}
 
 	data->notify_data.data.length = prs_offset(&ps);
 	data->notify_data.data.string = TALLOC(mem_ctx, prs_offset(&ps));
+	if (!data->notify_data.data.string) {
+		prs_mem_free(&ps);
+		return;
+	}
 
 	prs_copy_all_data_out((char *)data->notify_data.data.string, &ps);
 
