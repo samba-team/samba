@@ -25,6 +25,9 @@
 struct passwd *tcopy_passwd(TALLOC_CTX *mem_ctx, const struct passwd *from) 
 {
 	struct passwd *ret = TALLOC_P(mem_ctx, struct passwd);
+	if (!ret) {
+		return NULL;
+	}
 	ret->pw_name = talloc_strdup(ret, from->pw_name);
 	ret->pw_passwd = talloc_strdup(ret, from->pw_passwd);
 	ret->pw_uid = from->pw_uid;
@@ -99,8 +102,7 @@ struct passwd *getpwnam_alloc(TALLOC_CTX *mem_ctx, const char *name)
 	}
 
 	pwnam_cache[i] = tcopy_passwd(pwnam_cache, temp);
-
-	if (mem_ctx != NULL) {
+	if (pwnam_cache[i]!= NULL && mem_ctx != NULL) {
 		return talloc_reference(mem_ctx, pwnam_cache[i]);
 	}
 
