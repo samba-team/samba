@@ -79,6 +79,9 @@ NTSTATUS rpccli_echo_data(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 
 	if (out_data) {
 		*out_data = TALLOC(mem_ctx, size);
+		if (!*out_data) {
+			return NT_STATUS_NO_MEMORY;
+		}
 		memcpy(*out_data, r.data, size);
 	}
 
