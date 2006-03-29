@@ -301,7 +301,8 @@ BOOL locking_init(int read_only)
 		return True;
 
 	tdb = tdb_open_log(lock_path("locking.tdb"), 
-			SMB_OPEN_DATABASE_TDB_HASH_SIZE, TDB_DEFAULT|(read_only?0x0:TDB_CLEAR_IF_FIRST), 
+			lp_open_files_db_hash_size(),
+			TDB_DEFAULT|(read_only?0x0:TDB_CLEAR_IF_FIRST), 
 			read_only?O_RDONLY:O_RDWR|O_CREAT,
 			0644);
 
