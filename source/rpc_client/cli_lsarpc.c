@@ -221,19 +221,19 @@ NTSTATUS rpccli_lsa_lookup_sids(struct rpc_pipe_client *cli,
 
 	if (!((*domains) = TALLOC_ARRAY(mem_ctx, char *, num_sids))) {
 		DEBUG(0, ("cli_lsa_lookup_sids(): out of memory\n"));
-		result = NT_STATUS_UNSUCCESSFUL;
+		result = NT_STATUS_NO_MEMORY;
 		goto done;
 	}
 
 	if (!((*names) = TALLOC_ARRAY(mem_ctx, char *, num_sids))) {
 		DEBUG(0, ("cli_lsa_lookup_sids(): out of memory\n"));
-		result = NT_STATUS_UNSUCCESSFUL;
+		result = NT_STATUS_NO_MEMORY;
 		goto done;
 	}
 
 	if (!((*types) = TALLOC_ARRAY(mem_ctx, uint32, num_sids))) {
 		DEBUG(0, ("cli_lsa_lookup_sids(): out of memory\n"));
-		result = NT_STATUS_UNSUCCESSFUL;
+		result = NT_STATUS_NO_MEMORY;
 		goto done;
 	}
 		
@@ -323,13 +323,13 @@ NTSTATUS rpccli_lsa_lookup_names(struct rpc_pipe_client *cli,
 
 	if (!((*sids = TALLOC_ARRAY(mem_ctx, DOM_SID, num_names)))) {
 		DEBUG(0, ("cli_lsa_lookup_sids(): out of memory\n"));
-		result = NT_STATUS_UNSUCCESSFUL;
+		result = NT_STATUS_NO_MEMORY;
 		goto done;
 	}
 
 	if (!((*types = TALLOC_ARRAY(mem_ctx, uint32, num_names)))) {
 		DEBUG(0, ("cli_lsa_lookup_sids(): out of memory\n"));
-		result = NT_STATUS_UNSUCCESSFUL;
+		result = NT_STATUS_NO_MEMORY;
 		goto done;
 	}
 
@@ -419,13 +419,17 @@ NTSTATUS rpccli_lsa_query_info_policy(struct rpc_pipe_client *cli,
 			*domain_name = unistr2_tdup(mem_ctx, 
 						   &r.dom.id3.
 						   uni_domain_name);
+			if (!*domain_name) {
+				return NT_STATUS_NO_MEMORY;
+			}
 		}
 
 		if (domain_sid && (r.dom.id3.buffer_dom_sid != 0)) {
 			*domain_sid = TALLOC_P(mem_ctx, DOM_SID);
-			if (*domain_sid) {
-				sid_copy(*domain_sid, &r.dom.id3.dom_sid.sid);
+			if (!*domain_sid) {
+				return NT_STATUS_NO_MEMORY;
 			}
+			sid_copy(*domain_sid, &r.dom.id3.dom_sid.sid);
 		}
 
 		break;
@@ -436,13 +440,17 @@ NTSTATUS rpccli_lsa_query_info_policy(struct rpc_pipe_client *cli,
 			*domain_name = unistr2_tdup(mem_ctx, 
 						   &r.dom.id5.
 						   uni_domain_name);
+			if (!*domain_name) {
+				return NT_STATUS_NO_MEMORY;
+			}
 		}
 			
 		if (domain_sid && (r.dom.id5.buffer_dom_sid != 0)) {
 			*domain_sid = TALLOC_P(mem_ctx, DOM_SID);
-			if (*domain_sid) {
-				sid_copy(*domain_sid, &r.dom.id5.dom_sid.sid);
+			if (!*domain_sid) {
+				return NT_STATUS_NO_MEMORY;
 			}
+			sid_copy(*domain_sid, &r.dom.id5.dom_sid.sid);
 		}
 		break;
 			
@@ -506,20 +514,32 @@ NTSTATUS rpccli_lsa_query_info_policy2(struct rpc_pipe_client *cli,
 		*domain_name = unistr2_tdup(mem_ctx, 
 					    &r.info.dns_dom_info
 					    .uni_nb_dom_name);
+		if (!*domain_name) {
+			return NT_STATUS_NO_MEMORY;
+		}
 	}
 	if (dns_name && r.info.dns_dom_info.hdr_dns_dom_name.buffer) {
 		*dns_name = unistr2_tdup(mem_ctx, 
 					 &r.info.dns_dom_info
 					 .uni_dns_dom_name);
+		if (!*dns_name) {
+			return NT_STATUS_NO_MEMORY;
+		}
 	}
 	if (forest_name && r.info.dns_dom_info.hdr_forest_name.buffer) {
 		*forest_name = unistr2_tdup(mem_ctx, 
 					    &r.info.dns_dom_info
 					    .uni_forest_name);
+		if (!*forest_name) {
+			return NT_STATUS_NO_MEMORY;
+		}
 	}
 	
 	if (domain_guid) {
 		*domain_guid = TALLOC_P(mem_ctx, struct uuid);
+		if (!*domain_guid) {
+			return NT_STATUS_NO_MEMORY;
+		}
 		memcpy(*domain_guid, 
 		       &r.info.dns_dom_info.dom_guid, 
 		       sizeof(struct uuid));
@@ -527,10 +547,11 @@ NTSTATUS rpccli_lsa_query_info_policy2(struct rpc_pipe_client *cli,
 
 	if (domain_sid && r.info.dns_dom_info.ptr_dom_sid != 0) {
 		*domain_sid = TALLOC_P(mem_ctx, DOM_SID);
-		if (*domain_sid) {
-			sid_copy(*domain_sid, 
-				 &r.info.dns_dom_info.dom_sid.sid);
+		if (!*domain_sid) {
+			return NT_STATUS_NO_MEMORY;
 		}
+		sid_copy(*domain_sid, 
+			 &r.info.dns_dom_info.dom_sid.sid);
 	}
 	
  done:
