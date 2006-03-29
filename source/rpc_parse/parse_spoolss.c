@@ -899,6 +899,9 @@ BOOL make_spoolss_q_open_printer_ex(SPOOL_Q_OPEN_PRINTER_EX *q_u,
 	DEBUG(5,("make_spoolss_q_open_printer_ex\n"));
 
 	q_u->printername = TALLOC_P( get_talloc_ctx(), UNISTR2 );
+	if (!q_u->printername) {
+		return False;
+	}
 	init_unistr2(q_u->printername, printername, UNI_STR_TERMINATE);
 
 	q_u->printer_default.datatype_ptr = 0;
@@ -912,6 +915,9 @@ BOOL make_spoolss_q_open_printer_ex(SPOOL_Q_OPEN_PRINTER_EX *q_u,
 	
 	q_u->user_ctr.level                 = 1;
 	q_u->user_ctr.user.user1            = TALLOC_P( get_talloc_ctx(), SPOOL_USER_1 );
+	if (!q_u->user_ctr.user.user1) {
+		return False;
+	}
 	q_u->user_ctr.user.user1->size      = strlen(clientname) + strlen(user_name) + 10;
 	q_u->user_ctr.user.user1->build     = 1381;
 	q_u->user_ctr.user.user1->major     = 2;
@@ -919,7 +925,13 @@ BOOL make_spoolss_q_open_printer_ex(SPOOL_Q_OPEN_PRINTER_EX *q_u,
 	q_u->user_ctr.user.user1->processor = 0;
 
 	q_u->user_ctr.user.user1->client_name = TALLOC_P( get_talloc_ctx(), UNISTR2 );
+	if (!q_u->user_ctr.user.user1->client_name) {
+		return False;
+	}
 	q_u->user_ctr.user.user1->user_name   = TALLOC_P( get_talloc_ctx(), UNISTR2 );
+	if (!q_u->user_ctr.user.user1->user_name) {
+		return False;
+	}
 
 	init_unistr2(q_u->user_ctr.user.user1->client_name, clientname, UNI_STR_TERMINATE);
 	init_unistr2(q_u->user_ctr.user.user1->user_name, user_name, UNI_STR_TERMINATE);
@@ -943,6 +955,9 @@ BOOL make_spoolss_q_addprinterex( TALLOC_CTX *mem_ctx, SPOOL_Q_ADDPRINTEREX *q_u
 	ZERO_STRUCTP(q_u);
 
 	q_u->server_name = TALLOC_P( mem_ctx, UNISTR2 );
+	if (!q_u->server_name) {
+		return False;
+	}
 	init_unistr2(q_u->server_name, srv_name, UNI_FLAGS_NONE);
 
 	q_u->level = level;
@@ -965,14 +980,22 @@ BOOL make_spoolss_q_addprinterex( TALLOC_CTX *mem_ctx, SPOOL_Q_ADDPRINTEREX *q_u
 
 	q_u->user_ctr.level		    = 1;
 	q_u->user_ctr.user.user1            = TALLOC_P( get_talloc_ctx(), SPOOL_USER_1 );
+	if (!q_u->user_ctr.user.user1) {
+		return False;
+	}
 	q_u->user_ctr.user.user1->build     = 1381;
 	q_u->user_ctr.user.user1->major     = 2; 
 	q_u->user_ctr.user.user1->minor     = 0;
 	q_u->user_ctr.user.user1->processor = 0;
 
 	q_u->user_ctr.user.user1->client_name = TALLOC_P( mem_ctx, UNISTR2 );
+	if (!q_u->user_ctr.user.user1->client_name) {
+		return False;
+	}
 	q_u->user_ctr.user.user1->user_name   = TALLOC_P( mem_ctx, UNISTR2 );
-
+	if (!q_u->user_ctr.user.user1->user_name) {
+		return False;
+	}
 	init_unistr2(q_u->user_ctr.user.user1->client_name, clientname, UNI_STR_TERMINATE);
 	init_unistr2(q_u->user_ctr.user.user1->user_name, user_name, UNI_STR_TERMINATE);
 
