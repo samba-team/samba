@@ -236,7 +236,7 @@
 #define MAX_LDAP_REPLICATION_SLEEP_TIME 5000 /* In milliseconds. */
 
 /* tdb hash size for the open database. */
-#define SMB_OPEN_DATABASE_TDB_HASH_SIZE 1049
+#define SMB_OPEN_DATABASE_TDB_HASH_SIZE 10007
 
 /* Characters we disallow in sharenames. */
 #define INVALID_SHARENAME_CHARS "%<>*?|/\\+=;:\","
