@@ -411,6 +411,10 @@ static int read_sock(void *buffer, int count)
 	int result = 0, nread = 0;
 	int total_time = 0, selret;
 
+	if (winbindd_fd == -1) {
+		return -1;
+	}
+
 	/* Read data from socket */
 	while(nread < count) {
 		struct timeval tv;
