@@ -940,9 +940,16 @@ static BOOL init_ldap_from_sam (struct ldapsam_privates *ldap_state,
 	 * took out adding "objectclass: sambaAccount"
 	 * do this on a per-mod basis
 	 */
-	if (need_update(sampass, PDB_USERNAME))
+	if (need_update(sampass, PDB_USERNAME)) {
 		smbldap_make_mod(ldap_state->smbldap_state->ldap_struct, existing, mods, 
 			      "uid", pdb_get_username(sampass));
+		if (ldap_state->is_nds_ldap) {
+			smbldap_make_mod(ldap_state->smbldap_state->ldap_struct, existing, mods, 
+				      "cn", pdb_get_username(sampass));
+			smbldap_make_mod(ldap_state->smbldap_state->ldap_struct, existing, mods, 
+				      "sn", pdb_get_username(sampass));
+		}
+	}
 
 	DEBUG(2, ("init_ldap_from_sam: Setting entry for user: %s\n", pdb_get_username(sampass)));
 
@@ -1525,10 +1532,16 @@ static NTSTATUS ldapsam_modify_entry(struct pdb_methods *my_methods,
 		/* may be password change below however */
 	} else {
 		switch(ldap_op) {
-			case LDAP_MOD_ADD: 
-				smbldap_set_mod(&mods, LDAP_MOD_ADD, 
-						"objectclass", 
-						LDAP_OBJ_ACCOUNT);
+			case LDAP_MOD_ADD:
+				if (ldap_state->is_nds_ldap) {
+					smbldap_set_mod(&mods, LDAP_MOD_ADD, 
+							"objectclass", 
+							"inetOrgPerson");
+				} else {
+					smbldap_set_mod(&mods, LDAP_MOD_ADD, 
+							"objectclass", 
+							LDAP_OBJ_ACCOUNT);
+				}
 				rc = smbldap_add(ldap_state->smbldap_state, 
 						 dn, mods);
 				break;
