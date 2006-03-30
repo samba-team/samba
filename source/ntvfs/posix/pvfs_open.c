@@ -710,7 +710,7 @@ static NTSTATUS pvfs_create_file(struct pvfs_state *pvfs,
 
 	
 	if (pvfs->flags & PVFS_FLAG_FAKE_OPLOCKS) {
-		io->generic.out.oplock_level  = OPLOCK_EXCLUSIVE;
+		io->generic.out.oplock_level  = OPLOCK_BATCH;
 	} else {
 		io->generic.out.oplock_level  = OPLOCK_NONE;
 	}
@@ -1238,7 +1238,7 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 	talloc_free(lck);
 
 	if (pvfs->flags & PVFS_FLAG_FAKE_OPLOCKS) {
-		io->generic.out.oplock_level  = OPLOCK_EXCLUSIVE;
+		io->generic.out.oplock_level  = OPLOCK_BATCH;
 	} else {
 		io->generic.out.oplock_level  = OPLOCK_NONE;
 	}
