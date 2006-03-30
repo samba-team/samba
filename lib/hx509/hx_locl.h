@@ -48,12 +48,15 @@
 #include <base64.h>
 #include <roken.h>
 
+#include <krb5-types.h>
+
 #include <heim_asn1.h>
 #include <rfc2459_asn1.h>
 #include <cms_asn1.h>
 #include <pkcs8_asn1.h>
 #include <pkcs9_asn1.h>
 #include <pkcs12_asn1.h>
+#include <ocsp_asn1.h>
 #include <asn1_err.h>
 
 #include <der.h>
