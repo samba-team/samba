@@ -371,7 +371,7 @@ static NTSTATUS brl_lock_windows(struct byte_range_lock *br_lck,
 	   lock type so it can cope with the difference between
 	   Windows "stacking" locks and POSIX "flat" ones. */
 
-	if (lp_posix_locking(SNUM(fsp->conn))) {
+	if ((plock->lock_type != PENDING_LOCK) && lp_posix_locking(SNUM(fsp->conn))) {
 		if (!set_posix_lock(fsp, plock->start, plock->size, plock->lock_type, WINDOWS_LOCK)) {
 			if (errno == EACCES || errno == EAGAIN) {
 				return NT_STATUS_FILE_LOCK_CONFLICT;
@@ -660,7 +660,7 @@ static NTSTATUS brl_lock_posix(struct byte_range_lock *br_lck,
 	   lock type so it can cope with the difference between
 	   Windows "stacking" locks and POSIX "flat" ones. */
 
-	if (lp_posix_locking(SNUM(fsp->conn))) {
+	if ((plock->lock_type != PENDING_LOCK) && lp_posix_locking(SNUM(fsp->conn))) {
 		if (!set_posix_lock(fsp, plock->start, plock->size, plock->lock_type, POSIX_LOCK)) {
 			if (errno == EACCES || errno == EAGAIN) {
 				SAFE_FREE(tp);
@@ -800,6 +800,11 @@ static BOOL brl_unlock_windows(struct byte_range_lock *br_lck, const struct lock
 		return False;
 	}
 
+	/* Unlock any POSIX regions. */
+	if(lp_posix_locking(br_lck->fsp->conn->cnum)) {
+		release_posix_lock(br_lck->fsp, plock->start, plock->size);
+	}
+
 	/* Send unlock messages to any pending waiters that overlap. */
 	for (j=0; j < br_lck->num_locks; j++) {
 		struct lock_struct *pend_lock = &locks[j];
@@ -876,8 +881,8 @@ static BOOL brl_unlock_posix(struct byte_range_lock *br_lck, const struct lock_s
 		lock = &locks[i];
 
 		/* Only remove our own locks - ignore fnum. */
-		if (!brl_same_context(&lock->context, &plock->context) ||
-					lock->lock_type == PENDING_LOCK) {
+		if (lock->lock_type == PENDING_LOCK ||
+				!brl_same_context(&lock->context, &plock->context)) {
 			memcpy(&tp[count], lock, sizeof(struct lock_struct));
 			count++;
 			continue;
@@ -943,6 +948,11 @@ static BOOL brl_unlock_posix(struct byte_range_lock *br_lck, const struct lock_s
 		SAFE_FREE(tp);
 		DEBUG(10,("brl_unlock_posix: No overlap - unlocked.\n"));
 		return True;
+	}
+
+	/* Unlock any POSIX regions. */
+	if(lp_posix_locking(br_lck->fsp->conn->cnum)) {
+		release_posix_lock(br_lck->fsp, plock->start, plock->size);
 	}
 
 	/* Realloc so we don't leak entries per unlock call. */

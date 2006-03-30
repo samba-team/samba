@@ -100,6 +100,9 @@ BOOL push_blocking_lock_request( char *inbuf, int length,
 		return False;
 	}
 
+	blr->next = NULL;
+	blr->prev = NULL;
+
 	if((blr->inbuf = (char *)SMB_MALLOC(length)) == NULL) {
 		DEBUG(0,("push_blocking_lock_request: Malloc fail (2)!\n" ));
 		SAFE_FREE(blr);
@@ -281,18 +284,28 @@ static void reply_lockingX_error(blocking_lock_record *blr, NTSTATUS status)
 static void blocking_lock_reply_error(blocking_lock_record *blr, NTSTATUS status)
 {
 	switch(blr->com_type) {
+#if 0
+	/* We no longer push blocking lock requests for anything but lockingX and trans2. */
 	case SMBlock:
 	case SMBlockread:
 		generic_blocking_lock_error(blr, status);
 		break;
+#endif
 	case SMBlockingX:
 		reply_lockingX_error(blr, status);
+		break;
+	case SMBtrans2:
+	case SMBtranss2:
+		generic_blocking_lock_error(blr, status);
 		break;
 	default:
 		DEBUG(0,("blocking_lock_reply_error: PANIC - unknown type on blocking lock queue - exiting.!\n"));
 		exit_server("PANIC - unknown type on blocking lock queue");
 	}
 }
+
+#if 0
+/* We no longer push blocking lock requests for anything but lockingX and trans2. */
 
 /****************************************************************************
  Attempt to finish off getting all pending blocking locks for a lockread call.
@@ -431,6 +444,7 @@ static BOOL process_lock(blocking_lock_record *blr)
 	send_blocking_reply(outbuf,outsize);
 	return True;
 }
+#endif
 
 /****************************************************************************
  Attempt to finish off getting all pending blocking locks for a lockingX call.
@@ -524,12 +538,16 @@ Waiting....\n",
 static BOOL blocking_lock_record_process(blocking_lock_record *blr)
 {
 	switch(blr->com_type) {
+#if 0
+		/* We no longer push blocking lock requests for anything but lockingX and trans2. */
 		case SMBlock:
 			return process_lock(blr);
 		case SMBlockread:
 			return process_lockread(blr);
+#endif
 		case SMBlockingX:
 			return process_lockingX(blr);
+		/* TODO - need to add POSIX SMBtrans and SMBtranss switch here. */
 		default:
 			DEBUG(0,("blocking_lock_record_process: PANIC - unknown type on blocking lock queue - exiting.!\n"));
 			exit_server("PANIC - unknown type on blocking lock queue");

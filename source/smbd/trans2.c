@@ -4521,6 +4521,24 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 						&my_lock_ctx);
 
 				/* TODO: Deal with rescheduling blocking lock fail here... */
+				if (lp_blocking_locks(SNUM(conn)) && ERROR_WAS_LOCK_DENIED(status)) {
+					/*
+					 * A blocking lock was requested. Package up
+					 * this smb into a queued request and push it
+					 * onto the blocking lock queue.
+					 */
+					if(push_blocking_lock_request(inbuf, length,
+								fsp,
+								-1, /* infinite timeout. */
+								0,
+								lock_pid,
+								lock_type,
+								POSIX_LOCK,
+								offset,
+								count)) {
+						return -1;
+					}
+				}
 			}
 
 			if (!NT_STATUS_IS_OK(status)) {
