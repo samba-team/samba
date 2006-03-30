@@ -180,6 +180,13 @@ static NTSTATUS pvfs_rename_one(struct pvfs_state *pvfs,
 
 	status = odb_rename(lck, fname2);
 
+	if (NT_STATUS_IS_OK(status)) {
+		notify_trigger(pvfs->notify_context, 
+			       NOTIFY_ACTION_MODIFIED, 
+			       FILE_NOTIFY_CHANGE_FILE_NAME,
+			       name1->full_name);
+	}
+
 failed:
 	talloc_free(mem_ctx);
 	return status;
