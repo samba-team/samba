@@ -296,8 +296,20 @@ static void blocking_lock_reply_error(blocking_lock_record *blr, NTSTATUS status
 		break;
 	case SMBtrans2:
 	case SMBtranss2:
-		generic_blocking_lock_error(blr, status);
-		break;
+		{
+			char *outbuf = get_OutBuffer();
+			char *inbuf = blr->inbuf;
+			construct_reply_common(inbuf, outbuf);
+			/* construct_reply_common has done us the favor to pre-fill the
+			 * command field with SMBtranss2 which is wrong :-)
+			 */
+			SCVAL(outbuf,smb_com,SMBtrans2);
+			ERROR_NT(status);
+			if (!send_smb(smbd_server_fd(),outbuf)) {
+				exit_server("blocking_lock_reply_error: send_smb failed.");
+			}
+			break;
+		}
 	default:
 		DEBUG(0,("blocking_lock_reply_error: PANIC - unknown type on blocking lock queue - exiting.!\n"));
 		exit_server("PANIC - unknown type on blocking lock queue");
@@ -531,6 +543,51 @@ Waiting....\n",
 }
 
 /****************************************************************************
+ Attempt to get the posix lock request from a SMBtrans2 call.
+ Returns True if we want to be removed from the list.
+*****************************************************************************/
+
+static BOOL process_trans2(blocking_lock_record *blr)
+{
+	extern int max_send;
+	char *inbuf = blr->inbuf;
+	char *outbuf;
+	BOOL my_lock_ctx = False;
+	char params[2];
+	NTSTATUS status;
+
+	status = do_lock(blr->fsp,
+			blr->lock_pid,
+			blr->count,
+			blr->offset,
+			blr->lock_type,
+			blr->lock_flav,
+			&my_lock_ctx);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		if (ERROR_WAS_LOCK_DENIED(status)) {
+			/* Still can't get the lock, just keep waiting. */
+			return False;
+		}	
+		/*
+		 * We have other than a "can't get lock"
+		 * error. Send an error and return True so we get dequeued.
+		 */
+		blocking_lock_reply_error(blr, status);
+		return True;
+	}
+
+	/* We finally got the lock, return success. */
+	outbuf = get_OutBuffer();
+	construct_reply_common(inbuf, outbuf);
+	SCVAL(outbuf,smb_com,SMBtrans2);
+	SSVAL(params,0,0);
+	send_trans2_replies(outbuf, max_send, params, 2, NULL, 0);
+	return True;
+}
+
+
+/****************************************************************************
  Process a blocking lock SMB.
  Returns True if we want to be removed from the list.
 *****************************************************************************/
@@ -547,7 +604,9 @@ static BOOL blocking_lock_record_process(blocking_lock_record *blr)
 #endif
 		case SMBlockingX:
 			return process_lockingX(blr);
-		/* TODO - need to add POSIX SMBtrans and SMBtranss switch here. */
+		case SMBtrans2:
+		case SMBtranss2:
+			return process_trans2(blr);
 		default:
 			DEBUG(0,("blocking_lock_record_process: PANIC - unknown type on blocking lock queue - exiting.!\n"));
 			exit_server("PANIC - unknown type on blocking lock queue");

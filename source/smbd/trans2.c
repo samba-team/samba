@@ -563,7 +563,7 @@ static struct ea_list *ea_list_union(struct ea_list *name_list, struct ea_list *
   HACK ! Always assumes smb_setup field is zero.
 ****************************************************************************/
 
-static int send_trans2_replies(char *outbuf,
+int send_trans2_replies(char *outbuf,
 			int bufsize,
 			char *params, 
 			int paramsize,
