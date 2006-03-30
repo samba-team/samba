@@ -8,7 +8,7 @@ dnl
 case "$host_os" in
 	*irix*)
 		# On IRIX, we prefer Freeware or Nekoware Perl, because the
-		# system perl so ancient.
+		# system perl is so ancient.
 		AC_PATH_PROG(PERL, perl, "", "/usr/freeware/bin:/usr/nekoware/bin:$PATH")
 		;;
 	*)
@@ -17,7 +17,7 @@ case "$host_os" in
 esac
 
 if test x"$PERL" = x""; then
-	AC_MSG_WARN([No version of perl was not found!])
+	AC_MSG_WARN([No version of perl was found!])
 	AC_MSG_ERROR([Please install perl from http://www.perl.com/])
 fi
 if test x"$debug" = x"yes";then
