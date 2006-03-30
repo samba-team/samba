@@ -84,6 +84,11 @@ NTSTATUS pvfs_write(struct ntvfs_module_context *ntvfs,
 	
 	wr->writex.out.nwritten = ret;
 	wr->writex.out.remaining = 0; /* should fill this in? */
+
+	notify_trigger(pvfs->notify_context, 
+		       NOTIFY_ACTION_MODIFIED, 
+		       FILE_NOTIFY_CHANGE_SIZE | FILE_NOTIFY_CHANGE_LAST_WRITE,
+		       f->handle->name->full_name);
 	
 	return NT_STATUS_OK;
 }

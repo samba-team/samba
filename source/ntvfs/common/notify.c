@@ -322,11 +322,15 @@ static NTSTATUS notify_remove_all(struct notify_context *notify)
   see if a notify event matches
 */
 static BOOL notify_match(struct notify_context *notify, struct notify_entry *e,
-			 const char *path, uint32_t action)
+			 const char *path, uint32_t filter)
 {
-	size_t len = strlen(e->path);
+	size_t len;
 
-	/* TODO: check action */
+	if (!(filter & e->filter)) {
+		return False;
+	}
+
+	len = strlen(e->path);
 
 	if (strncmp(path, e->path, len) != 0) {
 		return False;
@@ -379,7 +383,7 @@ static void notify_send(struct notify_context *notify, struct notify_entry *e,
   trigger a notify message for anyone waiting on a matching event
 */
 void notify_trigger(struct notify_context *notify,
-		    uint32_t action, const char *path)
+		    uint32_t action, uint32_t filter, const char *path)
 {
 	NTSTATUS status;
 	int i;
@@ -391,7 +395,7 @@ void notify_trigger(struct notify_context *notify,
 
 	/* this needs to be changed to a log(n) search */
 	for (i=0;i<notify->array->num_entries;i++) {
-		if (notify_match(notify, &notify->array->entries[i], path, action)) {
+		if (notify_match(notify, &notify->array->entries[i], path, filter)) {
 			notify_send(notify, &notify->array->entries[i], 
 				    path + strlen(notify->array->entries[i].path) + 1, 
 				    action);

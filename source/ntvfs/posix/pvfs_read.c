@@ -90,5 +90,10 @@ NTSTATUS pvfs_read(struct ntvfs_module_context *ntvfs,
 	rd->readx.out.remaining = 0xFFFF;
 	rd->readx.out.compaction_mode = 0; 
 
+	notify_trigger(pvfs->notify_context, 
+		       NOTIFY_ACTION_MODIFIED, 
+		       FILE_NOTIFY_CHANGE_LAST_ACCESS,
+		       f->handle->name->full_name);
+
 	return NT_STATUS_OK;
 }
