@@ -714,23 +714,3 @@ if test $space = no; then
     AC_DEFINE(STAT_STATFS2_FS_DATA,1,[Whether statfs requires 2 arguments and struct fs_data is available])
   fi
 fi
-
-
-
-#######################################
-# Check for comparison_fn_t
-AC_CACHE_CHECK([for comparison_fn_t],samba_cv_HAVE_COMPARISON_FN_T,[
-AC_TRY_COMPILE([
-#include <stdlib.h>
-int list_find(const void *needle, 
-	      const void *base, size_t nmemb, size_t size, comparison_fn_t comp_fn)
-{
-	return 1;
-}
-],[],
-samba_cv_HAVE_COMPARISON_FN_T=yes,samba_cv_HAVE_COMPARISON_FN_T=no)
-])
-if test x"$samba_cv_HAVE_COMPARISON_FN_T" = x"yes"; then
-	AC_DEFINE(HAVE_COMPARISON_FN_T,1,[Whether or not we have comparison_fn_t])
-fi
-
