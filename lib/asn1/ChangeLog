@@ -1,3 +1,8 @@
+2006-03-30  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* gen.c: Put all the IMPORTed headers into the headerfile to avoid
+	hidden depencies.
+	
 2006-03-27  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* Makefile.am: Add id-pkinit-ms-san.
