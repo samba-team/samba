@@ -346,7 +346,6 @@ static NTSTATUS nttrans_notify_change_send(struct nttrans_op *op)
 	size_t size = 0;
 	int i;
 	NTSTATUS status;
-	uint32_t ofs=0;
 	uint8_t *p;
 #define MAX_BYTES_PER_CHAR 3
 	
@@ -362,14 +361,16 @@ static NTSTATUS nttrans_notify_change_send(struct nttrans_op *op)
 
 	/* construct the changes buffer */
 	for (i=0;i<info->out.num_changes;i++) {
+		uint32_t ofs;
 		ssize_t len;
 
 		SIVAL(p, 4, info->out.changes[i].action);
 		len = push_string(p + 12, info->out.changes[i].name.s, 
-				  op->trans->out.params.length - (ofs+12), STR_UNICODE);
+				  op->trans->out.params.length - 
+				  (p+12 - op->trans->out.params.data), STR_UNICODE);
 		SIVAL(p, 8, len);
 		
-		ofs += len + 12;
+		ofs = len + 12;
 
 		if (ofs & 3) {
 			int pad = 4 - (ofs & 3);
@@ -377,12 +378,16 @@ static NTSTATUS nttrans_notify_change_send(struct nttrans_op *op)
 			ofs += pad;
 		}
 
-		SIVAL(p, 0, ofs);
+		if (i == info->out.num_changes-1) {
+			SIVAL(p, 0, 0);
+		} else {
+			SIVAL(p, 0, ofs);
+		}
 
-		p = op->trans->out.params.data + ofs;
+		p += ofs;
 	}
 
-	op->trans->out.params.length = ofs;
+	op->trans->out.params.length = p - op->trans->out.params.data;
 
 	return NT_STATUS_OK;
 }
