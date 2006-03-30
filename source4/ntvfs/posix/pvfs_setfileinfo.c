@@ -151,6 +151,11 @@ static NTSTATUS pvfs_setfileinfo_rename(struct pvfs_state *pvfs,
 		return pvfs_map_errno(pvfs, errno);
 	}
 
+	notify_trigger(pvfs->notify_context, 
+		       NOTIFY_ACTION_MODIFIED, 
+		       FILE_NOTIFY_CHANGE_FILE_NAME,
+		       name->full_name);
+
 	name->full_name = talloc_steal(name, name2->full_name);
 	name->original_name = talloc_steal(name, name2->original_name);
 
@@ -225,6 +230,11 @@ NTSTATUS pvfs_setfileinfo_ea_set(struct pvfs_state *pvfs,
 		return status;
 	}
 
+	notify_trigger(pvfs->notify_context, 
+		       NOTIFY_ACTION_MODIFIED, 
+		       FILE_NOTIFY_CHANGE_EA,
+		       name->full_name);
+
 	name->dos.ea_size = 4;
 	for (i=0;i<ealist->num_eas;i++) {
 		name->dos.ea_size += 4 + strlen(ealist->eas[i].name)+1 + 
@@ -249,6 +259,7 @@ NTSTATUS pvfs_setfileinfo(struct ntvfs_module_context *ntvfs,
 	struct pvfs_filename newstats;
 	NTSTATUS status;
 	uint32_t access_needed;
+	uint32_t change_mask = 0;
 
 	f = pvfs_find_fd(pvfs, req, info->generic.in.file.fnum);
 	if (!f) {
@@ -287,6 +298,7 @@ NTSTATUS pvfs_setfileinfo(struct ntvfs_module_context *ntvfs,
 	case RAW_SFILEINFO_STANDARD:
 		if (!null_time(info->setattre.in.create_time)) {
 			unix_to_nt_time(&newstats.dos.create_time, info->setattre.in.create_time);
+			change_mask |= FILE_NOTIFY_CHANGE_CREATION;
 		}
 		if (!null_time(info->setattre.in.access_time)) {
 			unix_to_nt_time(&newstats.dos.access_time, info->setattre.in.access_time);
@@ -305,6 +317,7 @@ NTSTATUS pvfs_setfileinfo(struct ntvfs_module_context *ntvfs,
 	case RAW_SFILEINFO_BASIC_INFORMATION:
 		if (!null_nttime(info->basic_info.in.create_time)) {
 			newstats.dos.create_time = info->basic_info.in.create_time;
+			change_mask |= FILE_NOTIFY_CHANGE_CREATION;
 		}
 		if (!null_nttime(info->basic_info.in.access_time)) {
 			newstats.dos.access_time = info->basic_info.in.access_time;
@@ -362,6 +375,10 @@ NTSTATUS pvfs_setfileinfo(struct ntvfs_module_context *ntvfs,
 					       info);
 
 	case RAW_SFILEINFO_SEC_DESC:
+		notify_trigger(pvfs->notify_context, 
+			       NOTIFY_ACTION_MODIFIED, 
+			       FILE_NOTIFY_CHANGE_SECURITY,
+			       h->name->full_name);
 		return pvfs_acl_set(pvfs, req, h->name, h->fd, f->access_mask, info);
 
 	default:
@@ -378,6 +395,8 @@ NTSTATUS pvfs_setfileinfo(struct ntvfs_module_context *ntvfs,
 			if (!NT_STATUS_IS_OK(status)) {
 				return status;
 			}
+			
+			change_mask |= FILE_NOTIFY_CHANGE_STREAM_SIZE;
 		} else {
 			int ret;
 			if (f->access_mask & 
@@ -389,6 +408,7 @@ NTSTATUS pvfs_setfileinfo(struct ntvfs_module_context *ntvfs,
 			if (ret == -1) {
 				return pvfs_map_errno(pvfs, errno);
 			}
+			change_mask |= FILE_NOTIFY_CHANGE_SIZE;
 		}
 	}
 
@@ -396,9 +416,11 @@ NTSTATUS pvfs_setfileinfo(struct ntvfs_module_context *ntvfs,
 	ZERO_STRUCT(unix_times);
 	if (newstats.dos.access_time != h->name->dos.access_time) {
 		unix_times.actime = nt_time_to_unix(newstats.dos.access_time);
+		change_mask |= FILE_NOTIFY_CHANGE_LAST_ACCESS;
 	}
 	if (newstats.dos.write_time != h->name->dos.write_time) {
 		unix_times.modtime = nt_time_to_unix(newstats.dos.write_time);
+		change_mask |= FILE_NOTIFY_CHANGE_LAST_WRITE;
 	}
 	if (unix_times.actime != 0 || unix_times.modtime != 0) {
 		if (utime(h->name->full_name, &unix_times) == -1) {
@@ -414,9 +436,15 @@ NTSTATUS pvfs_setfileinfo(struct ntvfs_module_context *ntvfs,
 				return pvfs_map_errno(pvfs, errno);
 			}
 		}
+		change_mask |= FILE_NOTIFY_CHANGE_ATTRIBUTES;
 	}
 
 	*h->name = newstats;
+
+	notify_trigger(pvfs->notify_context, 
+		       NOTIFY_ACTION_MODIFIED, 
+		       change_mask,
+		       h->name->full_name);
 
 	return pvfs_dosattrib_save(pvfs, h->name, h->fd);
 }
@@ -434,6 +462,7 @@ NTSTATUS pvfs_setpathinfo(struct ntvfs_module_context *ntvfs,
 	NTSTATUS status;
 	struct utimbuf unix_times;
 	uint32_t access_needed;
+	uint32_t change_mask = 0;
 
 	/* resolve the cifs name to a posix name */
 	status = pvfs_resolve_name(pvfs, req, info->generic.in.file.path, 
@@ -471,6 +500,7 @@ NTSTATUS pvfs_setpathinfo(struct ntvfs_module_context *ntvfs,
 	case RAW_SFILEINFO_STANDARD:
 		if (!null_time(info->setattre.in.create_time)) {
 			unix_to_nt_time(&newstats.dos.create_time, info->setattre.in.create_time);
+			change_mask |= FILE_NOTIFY_CHANGE_CREATION;
 		}
 		if (!null_time(info->setattre.in.access_time)) {
 			unix_to_nt_time(&newstats.dos.access_time, info->setattre.in.access_time);
@@ -489,6 +519,7 @@ NTSTATUS pvfs_setpathinfo(struct ntvfs_module_context *ntvfs,
 	case RAW_SFILEINFO_BASIC_INFORMATION:
 		if (!null_nttime(info->basic_info.in.create_time)) {
 			newstats.dos.create_time = info->basic_info.in.create_time;
+			change_mask |= FILE_NOTIFY_CHANGE_CREATION;
 		}
 		if (!null_nttime(info->basic_info.in.access_time)) {
 			newstats.dos.access_time = info->basic_info.in.access_time;
@@ -582,6 +613,11 @@ NTSTATUS pvfs_setpathinfo(struct ntvfs_module_context *ntvfs,
 	}
 
 	*name = newstats;
+
+	notify_trigger(pvfs->notify_context, 
+		       NOTIFY_ACTION_MODIFIED, 
+		       change_mask,
+		       name->full_name);
 
 	return pvfs_dosattrib_save(pvfs, name, -1);
 }
