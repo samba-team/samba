@@ -730,6 +730,8 @@ static NTSTATUS pvfs_create_file(struct pvfs_state *pvfs,
 	/* success - keep the file handle */
 	talloc_steal(pvfs, f);
 
+	notify_trigger(pvfs->notify_context, NOTIFY_ACTION_ADDED, name->full_name);
+
 	return NT_STATUS_OK;
 
 cleanup_delete:
