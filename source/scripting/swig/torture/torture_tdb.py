@@ -1,10 +1,6 @@
 #!/usr/bin/python
 
-import sys, tdb
-from os import *
+import Tdb, os
 
-t = tdb.open('foo.tdb', 0, 0, O_RDWR | O_CREAT, 0600)
-tdb.close(t)
-
-unlink('foo.tdb')
-
+t = Tdb.Tdb('foo.tdb')
+os.unlink('foo.tdb')
