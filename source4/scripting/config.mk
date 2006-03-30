@@ -22,14 +22,15 @@ REQUIRED_SUBSYSTEMS = LIBCLI NDR_MISC LIBSAMBA-UTIL LIBSAMBA-CONFIG RPC_NDR_SAMR
 #######################
 
 # Swig extensions
-swig: scripting/swig/_tdb.so scripting/swig/_ldb.so scripting/swig/_dcerpc.so
+swig: scripting/swig/_tdb.so scripting/swig/_ldb.so
 
 scripting/swig/tdb_wrap.c: scripting/swig/tdb.i
 	swig -python scripting/swig/tdb.i
 
-scripting/swig/_tdb.so: scripting/swig/tdb_wrap.o $(LIBRARY_swig_tdb_DEPEND_LIST)
-	$(SHLD) $(SHLD_FLAGS) -o scripting/swig/_tdb.so scripting/swig/tdb_wrap.o \
-		$(LIBRARY_swig_tdb_LINK_LIST) $(LIBRARY_swig_tdb_LINK_FLAGS)
+scripting/swig/_tdb.so: scripting/swig/tdb_wrap.o bin/subsystems/LIBRARY_LIBTDB.o
+	$(SHLD) $(SHLD_FLAGS) -o scripting/swig/_tdb.so \
+		scripting/swig/tdb_wrap.o \
+		bin/subsystems/LIBRARY_LIBTDB.o
 
 scripting/swig/ldb_wrap.c: scripting/swig/ldb.i
 	swig -python scripting/swig/ldb.i
