@@ -227,6 +227,8 @@ NTSTATUS notify_add(struct notify_context *notify, struct notify_entry *e,
 {
 	NTSTATUS status;
 	struct notify_list *listel;
+	char *path = NULL;
+	size_t len;
 
 	status = notify_load(notify);
 	NT_STATUS_NOT_OK_RETURN(status);
@@ -239,13 +241,28 @@ NTSTATUS notify_add(struct notify_context *notify, struct notify_entry *e,
 		return NT_STATUS_NO_MEMORY;
 	}
 
+	/* cope with /. on the end of the path */
+	len = strlen(e->path);
+	if (len > 1 && e->path[len-1] == '.' && e->path[len-2] == '/') {
+		path = talloc_strndup(notify, e->path, len-2);
+	}
+
 	notify->array->entries[notify->array->num_entries] = *e;
 	notify->array->entries[notify->array->num_entries].private = private;
 	notify->array->entries[notify->array->num_entries].server = notify->server;
+
+	if (path) {
+		notify->array->entries[notify->array->num_entries].path = path;
+	}
+
 	notify->array->num_entries++;
 
 	status = notify_save(notify);
 	NT_STATUS_NOT_OK_RETURN(status);
+
+	if (path) {
+		talloc_free(path);
+	}
 
 	listel = talloc(notify, struct notify_list);
 	NT_STATUS_HAVE_NO_MEMORY(listel);
