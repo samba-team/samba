@@ -1,5 +1,6 @@
 /* run a command with a limited timeout
    tridge@samba.org, June 2005
+   metze@samba.org, March 2006
 
    attempt to be as portable as possible (fighting posix all the way)
 */
@@ -17,9 +18,11 @@ static pid_t child_pid;
 static void usage(void)
 {
 	printf("usage: timelimit <time> <command>\n");
-	printf("   SIGALRM - passes SIGKILL to command's process group and exit(1)\n");
 	printf("   SIGUSR1 - passes SIGTERM to command's process group\n");
-	printf("   SIGTERM - passes SIGTERM to command's process group and exit(0)\n");
+	printf("   SIGALRM - passes SIGTERM to command's process group\n");
+	printf("             after 5s SIGKILL will be passed and exit(1)\n");
+	printf("   SIGTERM - passes SIGTERM to command's process group\n");
+	printf("             after 1s SIGKILL will be passed and exit(1)\n");
 }
 
 static void sig_alrm_kill(int sig)
@@ -67,7 +70,6 @@ static void new_process_group(void)
 int main(int argc, char *argv[])
 {
 	int maxtime, ret=1;
-	pid_t pgid;
 
 	if (argc < 3) {
 		usage();
