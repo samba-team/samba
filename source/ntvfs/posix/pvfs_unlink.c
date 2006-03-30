@@ -104,7 +104,9 @@ static NTSTATUS pvfs_unlink_one(struct pvfs_state *pvfs,
 	}
 
 	if (NT_STATUS_IS_OK(status)) {
-		notify_trigger(pvfs->notify_context, NOTIFY_ACTION_REMOVED, 
+		notify_trigger(pvfs->notify_context, 
+			       NOTIFY_ACTION_REMOVED, 
+			       FILE_NOTIFY_CHANGE_FILE_NAME,
 			       name->full_name);
 	}
 

@@ -378,6 +378,11 @@ static NTSTATUS pvfs_open_directory(struct pvfs_state *pvfs,
 		f->handle->have_opendb_entry = True;
 
 		create_action = NTCREATEX_ACTION_CREATED;
+
+		notify_trigger(pvfs->notify_context, 
+			       NOTIFY_ACTION_REMOVED, 
+			       FILE_NOTIFY_CHANGE_FILE_NAME|FILE_NOTIFY_CHANGE_DIR_NAME,
+			       name->full_name);
 	} else {
 		create_action = NTCREATEX_ACTION_EXISTED;
 	}
@@ -461,6 +466,11 @@ static int pvfs_handle_destructor(void *p)
 		if (unlink(path) != 0) {
 			DEBUG(0,("pvfs_close: failed to delete '%s' - %s\n", 
 				 path, strerror(errno)));
+		} else {
+			notify_trigger(h->pvfs->notify_context, 
+				       NOTIFY_ACTION_REMOVED, 
+				       FILE_NOTIFY_CHANGE_FILE_NAME,
+				       path);
 		}
 	}
 
@@ -730,7 +740,10 @@ static NTSTATUS pvfs_create_file(struct pvfs_state *pvfs,
 	/* success - keep the file handle */
 	talloc_steal(pvfs, f);
 
-	notify_trigger(pvfs->notify_context, NOTIFY_ACTION_ADDED, name->full_name);
+	notify_trigger(pvfs->notify_context, 
+		       NOTIFY_ACTION_ADDED, 
+		       FILE_NOTIFY_CHANGE_FILE_NAME,
+		       name->full_name);
 
 	return NT_STATUS_OK;
 
