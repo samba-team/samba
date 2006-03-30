@@ -535,6 +535,9 @@ static BOOL test_pid_exit_only_sees_open(struct smbcli_state *cli, TALLOC_CTX *m
 		return False;
 	}
 
+	pid1 = cli->session->pid;
+	pid2 = pid1 + 1;
+
 	printf("pid1=%d pid2=%d\n", pid1, pid2);
 
 	printf("create a file using pid1\n");
