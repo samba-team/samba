@@ -109,6 +109,26 @@ struct notify_context *notify_init(TALLOC_CTX *mem_ctx, uint32_t server,
 	return notify;
 }
 
+
+/*
+  lock the notify db
+*/
+static NTSTATUS notify_lock(struct notify_context *notify)
+{
+	if (tdb_lock_bystring(notify->w->tdb, NOTIFY_KEY) != 0) {
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+	return NT_STATUS_OK;
+}
+
+/*
+  unlock the notify db
+*/
+static void notify_unlock(struct notify_context *notify)
+{
+	tdb_unlock_bystring(notify->w->tdb, NOTIFY_KEY);
+}
+
 /*
   load the notify array
 */
@@ -230,14 +250,21 @@ NTSTATUS notify_add(struct notify_context *notify, struct notify_entry *e,
 	char *path = NULL;
 	size_t len;
 
-	status = notify_load(notify);
+	status = notify_lock(notify);
 	NT_STATUS_NOT_OK_RETURN(status);
+
+	status = notify_load(notify);
+	if (!NT_STATUS_IS_OK(status)) {
+		notify_unlock(notify);
+		return status;
+	}
 
 	notify->array->entries = talloc_realloc(notify->array, notify->array->entries, 
 						struct notify_entry,
 						notify->array->num_entries+1);
 
 	if (notify->array->entries == NULL) {
+		notify_unlock(notify);
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -258,6 +285,9 @@ NTSTATUS notify_add(struct notify_context *notify, struct notify_entry *e,
 	notify->array->num_entries++;
 
 	status = notify_save(notify);
+
+	notify_unlock(notify);
+
 	NT_STATUS_NOT_OK_RETURN(status);
 
 	if (path) {
@@ -293,8 +323,14 @@ NTSTATUS notify_remove(struct notify_context *notify, void *private)
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 
-	status = notify_load(notify);
+	status = notify_lock(notify);
 	NT_STATUS_NOT_OK_RETURN(status);
+
+	status = notify_load(notify);
+	if (!NT_STATUS_IS_OK(status)) {
+		notify_unlock(notify);
+		return status;
+	}
 
 	for (i=0;i<notify->array->num_entries;i++) {
 		if (notify->server == notify->array->entries[i].server && 
@@ -303,6 +339,7 @@ NTSTATUS notify_remove(struct notify_context *notify, void *private)
 		}
 	}
 	if (i == notify->array->num_entries) {
+		notify_unlock(notify);
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 
@@ -312,7 +349,11 @@ NTSTATUS notify_remove(struct notify_context *notify, void *private)
 	}
 	notify->array->num_entries--;
 
-	return notify_save(notify);
+	status = notify_save(notify);
+
+	notify_unlock(notify);
+
+	return status;
 }
 
 /*
@@ -327,8 +368,14 @@ static NTSTATUS notify_remove_all(struct notify_context *notify)
 		return NT_STATUS_OK;
 	}
 
-	status = notify_load(notify);
+	status = notify_lock(notify);
 	NT_STATUS_NOT_OK_RETURN(status);
+
+	status = notify_load(notify);
+	if (!NT_STATUS_IS_OK(status)) {
+		notify_unlock(notify);
+		return status;
+	}
 
 	for (i=0;i<notify->array->num_entries;i++) {
 		if (notify->server == notify->array->entries[i].server) {
@@ -342,7 +389,11 @@ static NTSTATUS notify_remove_all(struct notify_context *notify)
 	}
 
 
-	return notify_save(notify);
+	status = notify_save(notify);
+
+	notify_unlock(notify);
+
+	return status;
 }
 
 
