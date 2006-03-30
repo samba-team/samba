@@ -49,3 +49,8 @@ scripting/swig/_dcerpc.so: scripting/swig/dcerpc_wrap.o $(LIBRARY_swig_dcerpc_DE
 
 swig_clean:
 	-rm -f scripting/swig/_tdb.so scripting/swig/tdb.pyc scripting/swig/tdb.py scripting/swig/tdb_wrap.c scripting/swig/tdb_wrap.o
+
+# Swig testing
+
+swigtest: swig
+	./script/tests/test_swig.sh
