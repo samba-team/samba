@@ -46,6 +46,7 @@ extern "C" {
 #define TDB_CONVERT 16 /* convert endian (internal use) */
 #define TDB_BIGENDIAN 32 /* header is big-endian (internal use) */
 #define TDB_NOSYNC   64 /* don't use synchronous transactions */
+#define TDB_SEQNUM   128 /* maintain a sequence number */
 
 #define TDB_ERRCODE(code, ret) ((tdb->ecode = (code)), ret)
 
@@ -109,6 +110,7 @@ int tdb_transaction_start(struct tdb_context *tdb);
 int tdb_transaction_commit(struct tdb_context *tdb);
 int tdb_transaction_cancel(struct tdb_context *tdb);
 int tdb_transaction_recover(struct tdb_context *tdb);
+int tdb_get_seqnum(struct tdb_context *tdb);
 
 /* Low level locking functions: use with care */
 int tdb_chainlock(struct tdb_context *tdb, TDB_DATA key);

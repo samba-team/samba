@@ -892,6 +892,12 @@ int tdb_transaction_commit(struct tdb_context *tdb)
 
 	tdb_brlock_len(tdb, GLOBAL_LOCK, F_UNLCK, F_SETLKW, 0, 1);
 
+	/*
+	  TODO: maybe write to some dummy hdr field, or write to magic
+	  offset without mmap, before the last sync, instead of the
+	  utime() call
+	*/
+
 	/* on some systems (like Linux 2.6.x) changes via mmap/msync
 	   don't change the mtime of the file, this means the file may
 	   not be backed up (as tdb rounding to block sizes means that

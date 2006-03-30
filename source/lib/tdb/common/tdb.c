@@ -30,6 +30,33 @@
 
 TDB_DATA tdb_null;
 
+/*
+  increment the tdb sequence number if the tdb has been opened using
+  the TDB_SEQNUM flag
+*/
+static void tdb_increment_seqnum(struct tdb_context *tdb)
+{
+	tdb_off_t seqnum=0;
+	
+	if (!(tdb->flags & TDB_SEQNUM)) {
+		return;
+	}
+
+	if (tdb_brlock(tdb, TDB_SEQNUM_OFS, F_WRLCK, F_SETLKW, 1) != 0) {
+		return;
+	}
+
+	/* we ignore errors from this, as we have no sane way of
+	   dealing with them.
+	*/
+	tdb_ofs_read(tdb, TDB_SEQNUM_OFS, &seqnum);
+	seqnum++;
+	tdb_ofs_write(tdb, TDB_SEQNUM_OFS, &seqnum);
+
+	tdb_brlock(tdb, TDB_SEQNUM_OFS, F_UNLCK, F_SETLKW, 1);
+}
+
+
 /* Returns 0 on fail.  On success, return offset of record, and fills
    in rec */
 static tdb_off_t tdb_find(struct tdb_context *tdb, TDB_DATA key, u32 hash,
@@ -203,6 +230,11 @@ static int tdb_delete_hash(struct tdb_context *tdb, TDB_DATA key, u32 hash)
 	if (!(rec_ptr = tdb_find_lock_hash(tdb, key, hash, F_WRLCK, &rec)))
 		return -1;
 	ret = tdb_do_delete(tdb, rec_ptr, &rec);
+
+	if (ret == 0) {
+		tdb_increment_seqnum(tdb);
+	}
+
 	if (tdb_unlock(tdb, BUCKET(rec.full_hash), F_WRLCK) != 0)
 		TDB_LOG((tdb, 0, "tdb_delete: WARNING tdb_unlock failed!\n"));
 	return ret;
@@ -295,6 +327,9 @@ int tdb_store(struct tdb_context *tdb, TDB_DATA key, TDB_DATA dbuf, int flag)
 		/* Need to tdb_unallocate() here */
 		goto fail;
 	}
+
+	tdb_increment_seqnum(tdb);
+
  out:
 	SAFE_FREE(p); 
 	tdb_unlock(tdb, BUCKET(hash), F_WRLCK);
@@ -368,4 +403,23 @@ int tdb_fd(struct tdb_context *tdb)
 tdb_log_func tdb_log_fn(struct tdb_context *tdb)
 {
 	return tdb->log_fn;
+}
+
+
+/*
+  get the tdb sequence number. Only makes sense if the writers opened
+  with TDB_SEQNUM set. Note that this sequence number will wrap quite
+  quickly, so it should only be used for a 'has something changed'
+  test, not for code that relies on the count of the number of changes
+  made. If you want a counter then use a tdb record.
+
+  The aim of this sequence number is to allow for a very lightweight
+  test of a possible tdb change.
+*/
+int tdb_get_seqnum(struct tdb_context *tdb)
+{
+	tdb_off_t seqnum=0;
+
+	tdb_ofs_read(tdb, TDB_SEQNUM_OFS, &seqnum);
+	return seqnum;
 }
