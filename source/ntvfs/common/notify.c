@@ -40,6 +40,7 @@ struct notify_context {
 	struct messaging_context *messaging_ctx;
 	struct notify_list *list;
 	struct notify_array *array;
+	int seqnum;
 };
 
 
@@ -84,8 +85,8 @@ struct notify_context *notify_init(TALLOC_CTX *mem_ctx, uint32_t server,
 
 	path = smbd_tmp_path(notify, "notify.tdb");
 	notify->w = tdb_wrap_open(notify, path, 0,  
-			       TDB_DEFAULT,
-			       O_RDWR|O_CREAT, 0600);
+				  TDB_SEQNUM,
+				  O_RDWR|O_CREAT, 0600);
 	talloc_free(path);
 	if (notify->w == NULL) {
 		talloc_free(notify);
@@ -96,6 +97,7 @@ struct notify_context *notify_init(TALLOC_CTX *mem_ctx, uint32_t server,
 	notify->messaging_ctx = messaging_ctx;
 	notify->list = NULL;
 	notify->array = NULL;
+	notify->seqnum = tdb_get_seqnum(notify->w->tdb);
 
 	talloc_set_destructor(notify, notify_destructor);
 
@@ -115,6 +117,15 @@ static NTSTATUS notify_load(struct notify_context *notify)
 	TDB_DATA dbuf;
 	DATA_BLOB blob;
 	NTSTATUS status;
+	int seqnum;
+
+	seqnum = tdb_get_seqnum(notify->w->tdb);
+
+	if (seqnum == notify->seqnum && notify->array != NULL) {
+		return NT_STATUS_OK;
+	}
+
+	notify->seqnum = seqnum;
 
 	talloc_free(notify->array);
 	notify->array = talloc_zero(notify, struct notify_array);
