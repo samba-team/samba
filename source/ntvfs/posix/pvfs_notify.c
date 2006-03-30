@@ -24,6 +24,7 @@
 #include "vfs_posix.h"
 #include "lib/messaging/irpc.h"
 #include "messaging/messaging.h"
+#include "dlinklist.h"
 
 /* pending notifies buffer, hung off struct pvfs_file for open directories
    that have used change notify */
@@ -33,11 +34,13 @@ struct pvfs_notify_buffer {
 	struct notify_changes *changes;
 	uint32_t max_buffer_size;
 	uint32_t current_buffer_size;
-	
-	/* these last two are only present when a notify request is
-	   pending */
-	struct ntvfs_request *req;
-	struct smb_notify *info;
+
+	/* a list of requests waiting for events on this handle */
+	struct notify_pending {
+		struct notify_pending *next, *prev;
+		struct ntvfs_request *req;
+		struct smb_notify *info;
+	} *pending;
 };
 
 /*
@@ -45,17 +48,24 @@ struct pvfs_notify_buffer {
 */
 static void pvfs_notify_send(struct pvfs_notify_buffer *notify_buffer, NTSTATUS status)
 {
-	struct ntvfs_request *req = notify_buffer->req;
-	struct smb_notify *info = notify_buffer->info;
+	struct notify_pending *pending = notify_buffer->pending;
+	struct ntvfs_request *req;
+	struct smb_notify *info;
+
+	if (pending == NULL) return;
+
+	DLIST_REMOVE(notify_buffer->pending, pending);
+
+	req = pending->req;
+	info = pending->info;
 
 	info->out.num_changes = notify_buffer->num_changes;
 	info->out.changes = talloc_steal(req, notify_buffer->changes);
 	notify_buffer->num_changes = 0;
 	notify_buffer->changes = NULL;
 	notify_buffer->current_buffer_size = 0;
-	
-	notify_buffer->req = NULL;
-	notify_buffer->info = NULL;
+
+	talloc_free(pending);
 
 	DEBUG(0,("sending %d changes\n", info->out.num_changes));
 
@@ -75,9 +85,7 @@ static int pvfs_notify_destructor(void *ptr)
 	struct pvfs_notify_buffer *n = talloc_get_type(ptr, struct pvfs_notify_buffer);
 	notify_remove(n->f->pvfs->notify_context, n);
 	n->f->notify_buffer = NULL;
-	if (n->req) {
-		pvfs_notify_send(n, NT_STATUS_OK);
-	}
+	pvfs_notify_send(n, NT_STATUS_OK);
 	return 0;
 }
 
@@ -96,9 +104,7 @@ static void pvfs_notify_callback(void *private, const struct notify_event *ev)
 
 	DEBUG(0,("got notify for '%s' action=%d\n", ev->path, ev->action));
 
-	if (n->req != NULL) {
-		pvfs_notify_send(n, NT_STATUS_OK);
-	}
+	pvfs_notify_send(n, NT_STATUS_OK);
 }
 
 /*
@@ -135,14 +141,8 @@ static NTSTATUS pvfs_notify_setup(struct pvfs_state *pvfs, struct pvfs_file *f,
 */
 static void pvfs_notify_end(void *private, enum pvfs_wait_notice reason)
 {
-	struct pvfs_notify_buffer *notify_buffer = talloc_get_type(private, struct pvfs_notify_buffer);
-	struct ntvfs_request *req = notify_buffer->req;
-
-	if (req == NULL) {
-		/* nothing to do, nobody is waiting */
-		return;
-	}
-
+	struct pvfs_notify_buffer *notify_buffer = talloc_get_type(private, 
+								   struct pvfs_notify_buffer);
 	if (reason == PVFS_WAIT_CANCEL) {
 		pvfs_notify_send(notify_buffer, NT_STATUS_CANCELLED);
 	} else {
@@ -160,6 +160,7 @@ NTSTATUS pvfs_notify(struct ntvfs_module_context *ntvfs,
 						  struct pvfs_state);
 	struct pvfs_file *f;
 	NTSTATUS status;
+	struct notify_pending *pending;
 
 	f = pvfs_find_fd(pvfs, req, info->in.file.fnum);
 	if (!f) {
@@ -186,15 +187,13 @@ NTSTATUS pvfs_notify(struct ntvfs_module_context *ntvfs,
 		NT_STATUS_NOT_OK_RETURN(status);
 	}
 
-	req->async_states->status = NT_STATUS_OK;
-	
-	if (f->notify_buffer->req != NULL) {
-		DEBUG(0,("Notify already setup\n"));
-		pvfs_notify_send(f->notify_buffer, NT_STATUS_CANCELLED);
-	}
+	pending = talloc(f->notify_buffer, struct notify_pending);
+	NT_STATUS_HAVE_NO_MEMORY(pending);
 
-	f->notify_buffer->req = talloc_reference(f->notify_buffer, req);
-	f->notify_buffer->info = info;
+	pending->req = talloc_reference(pending, req);
+	pending->info = info;
+
+	DLIST_ADD_END(f->notify_buffer->pending, pending, struct notify_pending *);
 
 	/* if the buffer is empty then start waiting */
 	if (f->notify_buffer->num_changes == 0) {
