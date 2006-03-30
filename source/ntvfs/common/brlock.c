@@ -48,7 +48,7 @@
 struct lock_context {
 	uint32_t server;
 	uint16_t smbpid;
-	uint16_t tid;
+	int snum;
 };
 
 /* The data in brlock records is an unsorted linear array of these
@@ -66,7 +66,7 @@ struct lock_struct {
 struct brl_context {
 	struct tdb_wrap *w;
 	uint32_t server;
-	uint16_t tid;
+	int snum;
 	struct messaging_context *messaging_ctx;
 	struct lock_struct last_lock;
 };
@@ -77,7 +77,7 @@ struct brl_context {
   talloc_free(). We need the messaging_ctx to allow for
   pending lock notifications.
 */
-struct brl_context *brl_init(TALLOC_CTX *mem_ctx, uint32_t server, uint16_t tid, 
+struct brl_context *brl_init(TALLOC_CTX *mem_ctx, uint32_t server, int snum, 
 			     struct messaging_context *messaging_ctx)
 {
 	char *path;
@@ -98,7 +98,7 @@ struct brl_context *brl_init(TALLOC_CTX *mem_ctx, uint32_t server, uint16_t tid,
 	}
 
 	brl->server = server;
-	brl->tid = tid;
+	brl->snum = snum;
 	brl->messaging_ctx = messaging_ctx;
 	ZERO_STRUCT(brl->last_lock);
 
@@ -113,7 +113,7 @@ static BOOL brl_same_context(struct lock_context *ctx1, struct lock_context *ctx
 {
 	return (ctx1->server == ctx2->server &&
 		ctx1->smbpid == ctx2->smbpid &&
-		ctx1->tid == ctx2->tid);
+		ctx1->snum == ctx2->snum);
 }
 
 /*
@@ -200,7 +200,7 @@ static BOOL brl_conflict_other(struct lock_struct *lck1, struct lock_struct *lck
 static NTSTATUS brl_lock_failed(struct brl_context *brl, struct lock_struct *lock)
 {
 	if (lock->context.server == brl->last_lock.context.server &&
-	    lock->context.tid == brl->last_lock.context.tid &&
+	    lock->context.snum == brl->last_lock.context.snum &&
 	    lock->fnum == brl->last_lock.fnum &&
 	    lock->start == brl->last_lock.start &&
 	    lock->size == brl->last_lock.size) {
@@ -263,7 +263,7 @@ NTSTATUS brl_lock(struct brl_context *brl,
 
 	lock.context.smbpid = smbpid;
 	lock.context.server = brl->server;
-	lock.context.tid = brl->tid;
+	lock.context.snum = brl->snum;
 	lock.start = start;
 	lock.size = size;
 	lock.fnum = fnum;
@@ -398,7 +398,7 @@ NTSTATUS brl_unlock(struct brl_context *brl,
 
 	context.smbpid = smbpid;
 	context.server = brl->server;
-	context.tid = brl->tid;
+	context.snum = brl->snum;
 
 	/* there are existing locks - find a match */
 	locks = (struct lock_struct *)dbuf.dptr;
@@ -548,7 +548,7 @@ NTSTATUS brl_locktest(struct brl_context *brl,
 
 	lock.context.smbpid = smbpid;
 	lock.context.server = brl->server;
-	lock.context.tid = brl->tid;
+	lock.context.snum = brl->snum;
 	lock.start = start;
 	lock.size = size;
 	lock.fnum = fnum;
@@ -601,7 +601,7 @@ NTSTATUS brl_close(struct brl_context *brl,
 	for (i=0; i<count; i++) {
 		struct lock_struct *lock = &locks[i];
 
-		if (lock->context.tid == brl->tid &&
+		if (lock->context.snum == brl->snum &&
 		    lock->context.server == brl->server &&
 		    lock->fnum == fnum) {
 			/* found it - delete it */
