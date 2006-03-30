@@ -94,6 +94,7 @@ typedef u32 tdb_off_t;
 #define TDB_HASHTABLE_SIZE(tdb) ((tdb->header.hash_size+1)*sizeof(tdb_off_t))
 #define TDB_DATA_START(hash_size) TDB_HASH_TOP(hash_size-1)
 #define TDB_RECOVERY_HEAD offsetof(struct tdb_header, recovery_start)
+#define TDB_SEQNUM_OFS    offsetof(struct tdb_header, sequence_number)
 #define TDB_PAD_BYTE 0x42
 #define TDB_PAD_U32  0x42424242
 
@@ -155,7 +156,8 @@ struct tdb_header {
 	u32 hash_size; /* number of hash entries */
 	tdb_off_t rwlocks; /* obsolete - kept to detect old formats */
 	tdb_off_t recovery_start; /* offset of transaction recovery region */
-	tdb_off_t reserved[30];
+	tdb_off_t sequence_number; /* used when TDB_SEQNUM is set */
+	tdb_off_t reserved[29];
 };
 
 struct tdb_lock_type {
