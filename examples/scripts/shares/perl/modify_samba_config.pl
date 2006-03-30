@@ -36,7 +36,7 @@ my $tmp_file_name = undef;
 if ($#ARGV == 1) {
 	$delete_mode = 1;
 }
-elsif ($#ARGV == 3) {
+elsif ($#ARGV == 4) {
 	$add_mode = 1;
 }
 else {
@@ -101,6 +101,7 @@ close (CONFIGFILE);
 if ($add_mode) {
 	$config{$ARGV[1]}{'path'} = $ARGV[2];
 	$config{$ARGV[1]}{'comment'} = $ARGV[3];
+	$config{$ARGV[1]}{'max connections'} = $ARGV[4];
 }
 elsif ($delete_mode) {
 	delete $config{$ARGV[1]};
