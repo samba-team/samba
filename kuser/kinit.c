@@ -70,6 +70,7 @@ int convert_524		= 0;
 int fcache_version;
 char *pk_user_id	= NULL;
 char *pk_x509_anchors	= NULL;
+char **pk_x509_pool	= NULL;
 
 
 static char *krb4_cc_name;
@@ -464,6 +465,7 @@ get_new_tickets(krb5_context context,
 						 principal,
 						 pk_user_id,
 						 pk_x509_anchors,
+						 pk_x509_pool,
 						 0,
 						 NULL,
 						 NULL,
@@ -799,6 +801,12 @@ main (int argc, char **argv)
 	krb5_appdefault_boolean(context, "kinit", 
 				krb5_principal_get_realm(context, principal), 
 				"afslog", TRUE, &do_afslog);
+
+    /* XXX implement krb5_appdefault_strings  */
+    pk_x509_pool = krb5_config_get_strings(context, NULL,
+					   "appdefaults", 
+					   "pkinit-pool", 
+					   NULL);
 
     if (pk_x509_anchors == NULL)
 	krb5_appdefault_string(context, "kinit",
