@@ -1,12 +1,46 @@
+                   ==============================
+                   Release Notes for Samba 3.0.22
+                            Mar 30, 2006
+                   ==============================
+
+This is a security release of Samba. The Samba 3.0.21 release 
+series (including the patch releases a through c) has been 
+discovered to expose the clear text of the server's machine 
+account credentials in the winbind log files when the log 
+level is set to 5 or higher.  This defect has been assigned 
+the CVE number CAN-2006-1059.
+
+Summary
+=======
+
+The machine trust account password is the secret shared
+between a domain controller and a specific member server.
+Access to the member server machine credentials allows
+an attacker to impersonate the server in the domain and 
+gain access to additional information regarding domain 
+users and groups.
+
+The winbindd daemon included in Samba 3.0.21 and subsequent
+patch releases (3.0.21a-c) writes the clear text of server's
+machine credentials to its log file at level 5.  The winbindd
+log files are world readable by default and often log files
+are requested on open mailing lists as tools used to debug
+server misconfigurations.
+
+This affects servers configured to use domain or ads security
+and possibly Samba domain controllers as well (if configured
+to use winbindd).
+
+=======
+
+Release Notes for older release follow:
+
+      --------------------------------------------------
+
                    ===============================
                    Release Notes for Samba 3.0.21c
                               Feb 24, 2006
                    ===============================
-
-This is the latest stable release of Samba. This is the version
-that production Samba servers should be running for all current
-bug-fixes.  Please read the following important changes in this
-release.
 
 Common bugs fixed in 3.0.21c include:
 
@@ -121,9 +155,6 @@ o   Qiao Yang <qyang@stbernard.com>
     * Make sure to refresh the timestamp on entries in the failed 
       connection code in winbindd.
 
-
-
-Release Notes for older release follow:
 
       --------------------------------------------------
                    ===============================
