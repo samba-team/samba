@@ -12,7 +12,7 @@ incdir=`dirname $0`
 
 failed=0
 
-export PYTHONPATH=scripting/swig:$PYTHONPATh
+export PYTHONPATH=scripting/swig:$PYTHONPATH
 
 scripting/swig/torture/torture_tdb.py || failed=`expr $failed + 1`
 
