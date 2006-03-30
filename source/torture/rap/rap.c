@@ -428,7 +428,7 @@ static BOOL test_rap(struct smbcli_state *cli)
 	return res;
 }
 
-BOOL torture_raw_rap(struct torture_context *torture)
+BOOL torture_rap_basic(struct torture_context *torture)
 {
 	struct smbcli_state *cli;
 	BOOL ret = True;
@@ -438,7 +438,7 @@ BOOL torture_raw_rap(struct torture_context *torture)
 		return False;
 	}
 
-	mem_ctx = talloc_init("torture_raw_rap");
+	mem_ctx = talloc_init("torture_rap_basic");
 
 	if (!test_rap(cli)) {
 		ret = False;

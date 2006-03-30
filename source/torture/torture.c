@@ -610,10 +610,8 @@ static struct {
 	{"RAW-RENAME", torture_raw_rename, 0},
 	{"RAW-SEEK", torture_raw_seek, 0},
 	{"RAW-EAS", torture_raw_eas, 0},
-	{"RAW-EAMAX", torture_max_eas, 0},
 	{"RAW-STREAMS", torture_raw_streams, 0},
 	{"RAW-ACLS", torture_raw_acls, 0},
-	{"RAW-RAP", torture_raw_rap, 0},
 	{"RAW-COMPOSITE", torture_raw_composite, 0},
 
 	/* SMB2 tests */
@@ -626,11 +624,15 @@ static struct {
 	{"SMB2-SETINFO", torture_smb2_setinfo, 0},
 	{"SMB2-FIND", torture_smb2_find, 0},
 
+	/* RAP tests */
+	{"RAP-BASIC", torture_rap_basic, 0},
+
 	/* protocol scanners */
 	{"SCAN-MAXFID", NULL, run_maxfidtest},
 	{"SCAN-PIPE_NUMBER", run_pipe_number, 0},
 	{"SCAN-IOCTL",  torture_ioctl_test, 0},
 	{"SCAN-RAP",  torture_rap_scan, 0},
+	{"SCAN-EAMAX", torture_max_eas, 0},
 
 	/* local (no server) testers */
 	{"LOCAL-NTLMSSP", torture_ntlmssp_self_check, 0},
