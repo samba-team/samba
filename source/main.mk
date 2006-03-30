@@ -304,6 +304,9 @@ gdbtest-all: all
 unused_macros:
 	./script/find_unused_macros.pl `find . -name "*.[ch]"` | sort
 
+swigtest: swig
+	./script/tests/test_swig.sh
+
 ###############################################################################
 # File types
 ###############################################################################
