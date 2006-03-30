@@ -52,7 +52,21 @@ static void pvfs_notify_send(struct pvfs_notify_buffer *notify_buffer, NTSTATUS 
 	struct ntvfs_request *req;
 	struct smb_notify *info;
 
-	if (pending == NULL) return;
+	if (notify_buffer->current_buffer_size > notify_buffer->max_buffer_size && 
+	    notify_buffer->num_changes != 0) {
+		/* on buffer overflow return no changes and destroys the notify buffer */
+		notify_buffer->num_changes = 0;
+		while (notify_buffer->pending) {
+			pvfs_notify_send(notify_buffer, NT_STATUS_OK);
+		}
+		talloc_free(notify_buffer);
+		return;
+	}
+
+	/* see if there is anyone waiting */
+	if (notify_buffer->pending == NULL) {
+		return;
+	}
 
 	DLIST_REMOVE(notify_buffer->pending, pending);
 
@@ -66,8 +80,6 @@ static void pvfs_notify_send(struct pvfs_notify_buffer *notify_buffer, NTSTATUS 
 	notify_buffer->current_buffer_size = 0;
 
 	talloc_free(pending);
-
-	DEBUG(0,("sending %d changes\n", info->out.num_changes));
 
 	if (info->out.num_changes != 0) {
 		status = NT_STATUS_OK;
@@ -96,14 +108,23 @@ static int pvfs_notify_destructor(void *ptr)
 static void pvfs_notify_callback(void *private, const struct notify_event *ev)
 {
 	struct pvfs_notify_buffer *n = talloc_get_type(private, struct pvfs_notify_buffer);
+	size_t len;
 
 	n->changes = talloc_realloc(n, n->changes, struct notify_changes, n->num_changes+1);
 	n->changes[n->num_changes].action = ev->action;
 	n->changes[n->num_changes].name.s = talloc_strdup(n->changes, ev->path);
 	n->num_changes++;
 
-	DEBUG(0,("got notify for '%s' action=%d\n", ev->path, ev->action));
+	/*
+	  work out how much room this will take in the buffer
+	*/
+	len = 12 + strlen_m(ev->path)*2;
+	if (len & 3) {
+		len += 4 - (len & 3);
+	}
+	n->current_buffer_size += len;
 
+	/* send what we have */
 	pvfs_notify_send(n, NT_STATUS_OK);
 }
 
@@ -186,6 +207,8 @@ NTSTATUS pvfs_notify(struct ntvfs_module_context *ntvfs,
 					   info->in.recursive);
 		NT_STATUS_NOT_OK_RETURN(status);
 	}
+
+	f->notify_buffer->max_buffer_size = info->in.buffer_size;
 
 	pending = talloc(f->notify_buffer, struct notify_pending);
 	NT_STATUS_HAVE_NO_MEMORY(pending);
