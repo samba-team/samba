@@ -48,7 +48,7 @@ static krb5_error_code LDAP_close(krb5_context context, HDB *);
 
 static krb5_error_code
 LDAP_message2entry(krb5_context context, HDB * db, LDAPMessage * msg,
-		   hdb_entry * ent);
+		   hdb_entry_ex * ent);
 
 static const char *default_structural_object = "account";
 static char *structural_object;
@@ -1676,7 +1676,7 @@ hdb_ldap_common(krb5_context context,
     struct hdbldapdb *h;
     const char *create_base = NULL;
 
-    if (arg == NULL && arg[0] == '\0') {
+    if (search_base == NULL && search_base[0] == '\0') {
 	krb5_set_error_string(context, "ldap search base not configured");
 	return ENOMEM; /* XXX */
     }
@@ -1775,7 +1775,7 @@ krb5_error_code
 hdb_ldapi_create(krb5_context context, HDB ** db, const char *arg)
 {
     const char *p;
-    char *serach_base;
+    char *search_base;
 
     p = arg + strlen("ldapi://");
     search_base = strchr(p, '/');
