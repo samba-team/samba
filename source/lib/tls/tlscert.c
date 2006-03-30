@@ -41,7 +41,7 @@ void tls_cert_generate(TALLOC_CTX *mem_ctx,
 	gnutls_x509_crt cacrt, crt;
 	gnutls_x509_privkey key, cakey;
 	uint32_t serial = (uint32_t)time(NULL);
-	char keyid[100];
+	unsigned char keyid[100];
 	char buf[4096];
 	size_t bufsize;
 	size_t keyidsize = sizeof(keyid);
