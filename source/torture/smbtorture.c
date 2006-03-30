@@ -83,6 +83,7 @@ static BOOL run_test(struct torture_context *torture, const char *name)
 
 	if (!matched) {
 		printf("Unknown torture operation '%s'\n", name);
+		ret = False;
 	}
 
 	return ret;
