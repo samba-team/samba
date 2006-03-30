@@ -62,6 +62,8 @@ add_import (const char *module)
     tmp->module = module;
     tmp->next   = imports;
     imports     = tmp;
+
+    fprintf (headerfile, "#include <%s_asn1.h>\n", module);
 }
 
 const char *
@@ -248,10 +250,6 @@ generate_header_of_codefile(const char *name)
 	     "#include <krb5-types.h>\n",
 	     orig_filename);
 
-    for (i = imports; i != NULL; i = i->next)
-	fprintf (codefile,
-		 "#include <%s_asn1.h>\n",
-		 i->module);
     fprintf (codefile,
 	     "#include <%s.h>\n",
 	     headerbase);
