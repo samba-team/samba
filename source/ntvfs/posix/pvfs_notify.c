@@ -41,20 +41,9 @@ struct pvfs_notify_buffer {
 };
 
 /*
-  destroy a notify buffer. Called when the handle is closed
- */
-static int pvfs_notify_destructor(void *ptr)
-{
-	struct pvfs_notify_buffer *n = talloc_get_type(ptr, struct pvfs_notify_buffer);
-	notify_remove(n->f->pvfs->notify_context, n);
-	n->f->notify_buffer = NULL;
-	return 0;
-}
-
-/*
   send a reply to a pending notify request
 */
-static void pvfs_notify_send(struct pvfs_notify_buffer *notify_buffer)
+static void pvfs_notify_send(struct pvfs_notify_buffer *notify_buffer, NTSTATUS status)
 {
 	struct ntvfs_request *req = notify_buffer->req;
 	struct smb_notify *info = notify_buffer->info;
@@ -70,14 +59,27 @@ static void pvfs_notify_send(struct pvfs_notify_buffer *notify_buffer)
 
 	DEBUG(0,("sending %d changes\n", info->out.num_changes));
 
-	if (info->out.num_changes == 0) {
-		req->async_states->status = NT_STATUS_CANCELLED;
-	} else {
-		req->async_states->status = NT_STATUS_OK;
+	if (info->out.num_changes != 0) {
+		status = NT_STATUS_OK;
 	}
+
+	req->async_states->status = status;
 	req->async_states->send_fn(req);
 }
 
+/*
+  destroy a notify buffer. Called when the handle is closed
+ */
+static int pvfs_notify_destructor(void *ptr)
+{
+	struct pvfs_notify_buffer *n = talloc_get_type(ptr, struct pvfs_notify_buffer);
+	notify_remove(n->f->pvfs->notify_context, n);
+	n->f->notify_buffer = NULL;
+	if (n->req) {
+		pvfs_notify_send(n, NT_STATUS_OK);
+	}
+	return 0;
+}
 
 
 /*
@@ -95,7 +97,7 @@ static void pvfs_notify_callback(void *private, const struct notify_event *ev)
 	DEBUG(0,("got notify for '%s' action=%d\n", ev->path, ev->action));
 
 	if (n->req != NULL) {
-		pvfs_notify_send(n);
+		pvfs_notify_send(n, NT_STATUS_OK);
 	}
 }
 
@@ -141,7 +143,11 @@ static void pvfs_notify_end(void *private, enum pvfs_wait_notice reason)
 		return;
 	}
 
-	pvfs_notify_send(notify_buffer);
+	if (reason == PVFS_WAIT_CANCEL) {
+		pvfs_notify_send(notify_buffer, NT_STATUS_CANCELLED);
+	} else {
+		pvfs_notify_send(notify_buffer, NT_STATUS_OK);
+	}
 }
 
 /* change notify request - always async. This request blocks until the
@@ -184,7 +190,7 @@ NTSTATUS pvfs_notify(struct ntvfs_module_context *ntvfs,
 	
 	if (f->notify_buffer->req != NULL) {
 		DEBUG(0,("Notify already setup\n"));
-		pvfs_notify_send(f->notify_buffer);
+		pvfs_notify_send(f->notify_buffer, NT_STATUS_CANCELLED);
 	}
 
 	f->notify_buffer->req = talloc_reference(f->notify_buffer, req);
@@ -200,7 +206,7 @@ NTSTATUS pvfs_notify(struct ntvfs_module_context *ntvfs,
 		return NT_STATUS_OK;
 	}
 
-	pvfs_notify_send(f->notify_buffer);
+	pvfs_notify_send(f->notify_buffer, NT_STATUS_OK);
 
 	return NT_STATUS_OK;
 }
