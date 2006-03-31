@@ -26,6 +26,7 @@
 #include "librpc/gen_ndr/ndr_unixinfo.h"
 #include "lib/events/events.h"
 #include "ntvfs/ntvfs.h"
+#include "ntvfs/common/proto.h"
 
 #include <sys/types.h>
 #include <pwd.h>
