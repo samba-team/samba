@@ -92,7 +92,8 @@ CLEANFILES = $(BUILT_SOURCES) $(gen_files_ocsp) \
 	ocsp_asn1_files ocsp_asn1.h\
 	$(TESTS) \
 	hxtool-commands.c hxtool-commands.h *.tmp \
-	sd.data sd.data.out 
+	sd.data sd.data.out \
+	ev.data ev.data.out
 
 
 #
