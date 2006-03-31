@@ -145,6 +145,6 @@ struct hx509_context_data {
     struct hx509_keyset_ops **ks_ops;
     int ks_num_ops;
     int flags;
-#define HX509_CTX_CRL_MISSING_OK	1
+#define HX509_CTX_VERIFY_MISSING_OK	1
 };
 
