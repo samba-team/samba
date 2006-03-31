@@ -415,42 +415,6 @@ static BOOL test_NetSessEnum(struct dcerpc_pipe *p,
 /**************************/
 /* srvsvc_NetShare        */
 /**************************/
-static BOOL test_NetShareGetInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
-				 const char *sharename)
-{
-	NTSTATUS status;
-	struct srvsvc_NetShareGetInfo r;
-	uint32_t levels[] = {0, 1, 2, 501, 502, 1005};
-	int i;
-	BOOL ret = True;
-
-	r.in.server_unc = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
-	r.in.share_name = sharename;
-
-	for (i=0;i<ARRAY_SIZE(levels);i++) {
-		ZERO_STRUCT(r.out);
-		r.in.level = levels[i];
-
-		printf("testing NetShareGetInfo level %u on share '%s'\n", 
-		       r.in.level, r.in.share_name);
-
-		status = dcerpc_srvsvc_NetShareGetInfo(p, mem_ctx, &r);
-		if (!NT_STATUS_IS_OK(status)) {
-			printf("NetShareGetInfo level %u on share '%s' failed - %s\n",
-				r.in.level, r.in.share_name, nt_errstr(status));
-			ret = False;
-			continue;
-		}
-		if (!W_ERROR_IS_OK(r.out.result)) {
-			printf("NetShareGetInfo level %u on share '%s' failed - %s\n",
-				r.in.level, r.in.share_name, win_errstr(r.out.result));
-			continue;
-		}
-	}
-
-	return ret;
-}
-
 static BOOL test_NetShareCheck(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			       const char *device_name)
 {
@@ -477,16 +441,85 @@ static BOOL test_NetShareCheck(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	return ret;
 }
 
+static BOOL test_NetShareGetInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+				 const char *sharename, BOOL admin)
+{
+	NTSTATUS status;
+	struct srvsvc_NetShareGetInfo r;
+	struct {
+		uint32_t level;
+		WERROR anon_status;
+		WERROR admin_status;
+	} levels[] = {
+		 { 0,		WERR_OK,		WERR_OK },
+		 { 1,		WERR_OK,		WERR_OK },
+		 { 2,		WERR_ACCESS_DENIED,	WERR_OK },
+		 { 501,		WERR_OK,		WERR_OK },
+		 { 502,		WERR_ACCESS_DENIED,	WERR_OK },
+		 { 1005,	WERR_OK,		WERR_OK },
+	};
+	int i;
+	BOOL ret = True;
+
+	r.in.server_unc = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
+	r.in.share_name = sharename;
+
+	for (i=0;i<ARRAY_SIZE(levels);i++) {
+		WERROR expected;
+
+		r.in.level = levels[i].level;
+		expected = levels[i].anon_status;
+		if (admin) expected = levels[i].admin_status;
+		ZERO_STRUCT(r.out);
+
+		printf("testing NetShareGetInfo level %u on share '%s'\n", 
+		       r.in.level, r.in.share_name);
+
+		status = dcerpc_srvsvc_NetShareGetInfo(p, mem_ctx, &r);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("NetShareGetInfo level %u on share '%s' failed - %s\n",
+				r.in.level, r.in.share_name, nt_errstr(status));
+			ret = False;
+			continue;
+		}
+		if (!W_ERROR_EQUAL(r.out.result, expected)) {
+			printf("NetShareGetInfo level %u on share '%s' failed - %s (expected %s)\n",
+				r.in.level, r.in.share_name, win_errstr(r.out.result),
+				win_errstr(expected));
+			ret = False;
+			continue;
+		}
+
+		if (r.in.level != 2) continue;
+		if (!r.out.info.info2 || !r.out.info.info2->path) continue;
+		if (!test_NetShareCheck(p, mem_ctx, r.out.info.info2->path)) {
+			ret = False;
+		}
+	}
+
+	return ret;
+}
+
 /**************************/
 /* srvsvc_NetShare        */
 /**************************/
 static BOOL test_NetShareEnumAll(struct dcerpc_pipe *p, 
-				 TALLOC_CTX *mem_ctx)
+				 TALLOC_CTX *mem_ctx, BOOL admin)
 {
 	NTSTATUS status;
 	struct srvsvc_NetShareEnumAll r;
 	struct srvsvc_NetShareCtr0 c0;
-	uint32_t levels[] = {0, 1, 2, 501, 502};
+	struct {
+		uint32_t level;
+		WERROR anon_status;
+		WERROR admin_status;
+	} levels[] = {
+		 { 0,	WERR_OK,		WERR_OK },
+		 { 1,	WERR_OK,		WERR_OK },
+		 { 2,	WERR_ACCESS_DENIED,	WERR_OK },
+		 { 501,	WERR_ACCESS_DENIED,	WERR_OK },
+		 { 502,	WERR_ACCESS_DENIED,	WERR_OK },
+	};
 	int i;
 	BOOL ret = True;
 	uint32_t resume_handle;
@@ -501,10 +534,15 @@ static BOOL test_NetShareEnumAll(struct dcerpc_pipe *p,
 
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
 		int j;
+		WERROR expected;
+
+		r.in.level = levels[i].level;
+		expected = levels[i].anon_status;
+		if (admin) expected = levels[i].admin_status;
 
 		ZERO_STRUCT(r.out);
 		resume_handle = 0;
-		r.in.level = levels[i];
+
 		printf("testing NetShareEnumAll level %u\n", r.in.level);
 		status = dcerpc_srvsvc_NetShareEnumAll(p, mem_ctx, &r);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -512,22 +550,19 @@ static BOOL test_NetShareEnumAll(struct dcerpc_pipe *p,
 			ret = False;
 			continue;
 		}
-		if (!W_ERROR_IS_OK(r.out.result)) {
-			printf("NetShareEnumAll level %u failed - %s\n", r.in.level, win_errstr(r.out.result));
+		if (!W_ERROR_EQUAL(r.out.result, expected)) {
+			printf("NetShareEnumAll level %u failed - %s (expected %s)\n",
+				r.in.level, win_errstr(r.out.result),
+				win_errstr(expected));
 			continue;
 		}
 
 		/* call srvsvc_NetShareGetInfo for each returned share */
-		if (r.in.level == 2) {
+		if (r.in.level == 2 && r.out.ctr.ctr2) {
 			for (j=0;j<r.out.ctr.ctr2->count;j++) {
 				const char *name;
-				const char *device;
 				name = r.out.ctr.ctr2->array[j].name;
-				if (!test_NetShareGetInfo(p, mem_ctx, name)) {
-					ret = False;
-				}
-				device = r.out.ctr.ctr2->array[j].path;
-				if (!test_NetShareCheck(p, mem_ctx, device)) {
+				if (!test_NetShareGetInfo(p, mem_ctx, name, admin)) {
 					ret = False;
 				}
 			}
@@ -538,12 +573,22 @@ static BOOL test_NetShareEnumAll(struct dcerpc_pipe *p,
 }
 
 static BOOL test_NetShareEnum(struct dcerpc_pipe *p, 
-			   TALLOC_CTX *mem_ctx)
+			      TALLOC_CTX *mem_ctx, BOOL admin)
 {
 	NTSTATUS status;
 	struct srvsvc_NetShareEnum r;
 	struct srvsvc_NetShareCtr0 c0;
-	uint32_t levels[] = {0, 1, 2, 502};
+	struct {
+		uint32_t level;
+		WERROR anon_status;
+		WERROR admin_status;
+	} levels[] = {
+		 { 0,	WERR_OK,		WERR_OK },
+		 { 1,	WERR_OK,		WERR_OK },
+		 { 2,	WERR_ACCESS_DENIED,	WERR_OK },
+		 { 501,	WERR_UNKNOWN_LEVEL,	WERR_UNKNOWN_LEVEL },
+		 { 502,	WERR_ACCESS_DENIED,	WERR_OK },
+	};
 	int i;
 	BOOL ret = True;
 
@@ -555,8 +600,14 @@ static BOOL test_NetShareEnum(struct dcerpc_pipe *p,
 	r.in.resume_handle = NULL;
 
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
+		WERROR expected;
+
+		r.in.level = levels[i].level;
+		expected = levels[i].anon_status;
+		if (admin) expected = levels[i].admin_status;
+
 		ZERO_STRUCT(r.out);
-		r.in.level = levels[i];
+
 		printf("testing NetShareEnum level %u\n", r.in.level);
 		status = dcerpc_srvsvc_NetShareEnum(p, mem_ctx, &r);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -564,8 +615,10 @@ static BOOL test_NetShareEnum(struct dcerpc_pipe *p,
 			ret = False;
 			continue;
 		}
-		if (!W_ERROR_IS_OK(r.out.result)) {
-			printf("NetShareEnum level %u failed - %s\n", r.in.level, win_errstr(r.out.result));
+		if (!W_ERROR_EQUAL(r.out.result, expected)) {
+			printf("NetShareEnum level %u failed - %s (expected %s)\n",
+				r.in.level, win_errstr(r.out.result),
+				win_errstr(expected));
 			continue;
 		}
 	}
@@ -624,9 +677,9 @@ static BOOL test_NetDiskEnum(struct dcerpc_pipe *p,
 	BOOL ret = True;
 	uint32_t resume_handle=0;
 
+	ZERO_STRUCT(r.in);
 	r.in.server_unc = NULL;
 	r.in.resume_handle = &resume_handle;
-	r.in.disks.discs = NULL;
 
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
 		ZERO_STRUCT(r.out);
@@ -719,6 +772,8 @@ BOOL torture_rpc_srvsvc(struct torture_context *torture)
         struct dcerpc_pipe *p;
 	TALLOC_CTX *mem_ctx;
 	BOOL ret = True;
+	const char *binding = lp_parm_string(-1, "torture", "binding");
+	struct cli_credentials *anon_credentials;
 
 	mem_ctx = talloc_init("torture_rpc_srvsvc");
 
@@ -728,49 +783,41 @@ BOOL torture_rpc_srvsvc(struct torture_context *torture)
 		return False;
 	}
 
-	if (!test_NetCharDevEnum(p, mem_ctx)) {
-		ret = False;
+	ret &= test_NetCharDevEnum(p, mem_ctx);
+	ret &= test_NetCharDevQEnum(p, mem_ctx);
+	ret &= test_NetConnEnum(p, mem_ctx);
+	ret &= test_NetFileEnum(p, mem_ctx);
+	ret &= test_NetSessEnum(p, mem_ctx);
+	ret &= test_NetShareEnumAll(p, mem_ctx, True);
+	ret &= test_NetSrvGetInfo(p, mem_ctx);
+	ret &= test_NetDiskEnum(p, mem_ctx);
+	ret &= test_NetTransportEnum(p, mem_ctx);
+	ret &= test_NetRemoteTOD(p, mem_ctx);
+	ret &= test_NetShareEnum(p, mem_ctx, True);
+	ret &= test_NetShareGetInfo(p, mem_ctx, "ADMIN$", True);
+
+	status = torture_rpc_connection(mem_ctx, &p, &dcerpc_table_srvsvc);
+
+	if (!binding) {
+		printf("You must specify a ncacn binding string\n");
+		return False;
 	}
 
-	if (!test_NetCharDevQEnum(p, mem_ctx)) {
-		ret = False;
+	anon_credentials = cli_credentials_init(mem_ctx);
+	cli_credentials_set_conf(anon_credentials);
+	cli_credentials_set_anonymous(anon_credentials);
+
+	status = dcerpc_pipe_connect(mem_ctx, 
+				     &p, binding, &dcerpc_table_srvsvc,
+				     anon_credentials, NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(mem_ctx);
+		return False;
 	}
 
-	if (!test_NetConnEnum(p, mem_ctx)) {
-		ret = False;
-	}
-
-	if (!test_NetFileEnum(p, mem_ctx)) {
-		ret = False;
-	}
-
-	if (!test_NetSessEnum(p, mem_ctx)) {
-		ret = False;
-	}
-
-	if (!test_NetShareEnumAll(p, mem_ctx)) {
-		ret = False;
-	}
-
-	if (!test_NetSrvGetInfo(p, mem_ctx)) {
-		ret = False;
-	}
-
-	if (!test_NetDiskEnum(p, mem_ctx)) {
-		ret = False;
-	}
-
-	if (!test_NetTransportEnum(p, mem_ctx)) {
-		ret = False;
-	}
-
-	if (!test_NetRemoteTOD(p, mem_ctx)) {
-		ret = False;
-	}
-
-	if (!test_NetShareEnum(p, mem_ctx)) {
-		ret = False;
-	}
+	ret &= test_NetShareEnumAll(p, mem_ctx, False);
+	ret &= test_NetShareEnum(p, mem_ctx, False);
+	ret &= test_NetShareGetInfo(p, mem_ctx, "ADMIN$", False);
 
 	talloc_free(mem_ctx);
 
