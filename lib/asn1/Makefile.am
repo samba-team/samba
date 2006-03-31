@@ -161,6 +161,7 @@ gen_files_rfc2459 =					\
 	asn1_DigestInfo.x				\
 	asn1_DirectoryString.x				\
 	asn1_DomainParameters.x				\
+	asn1_ExtKeyUsage.x				\
 	asn1_Extension.x				\
 	asn1_Extensions.x				\
 	asn1_GeneralName.x				\
