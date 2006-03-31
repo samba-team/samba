@@ -682,7 +682,61 @@ query(struct query_options *opt, int argc, char **argv)
 int
 ocsp_fetch(struct ocsp_fetch_options *opt, int argc, char **argv)
 {
-    printf("write ocsp-fetch\n");
+    hx509_certs reqcerts, pool;
+    heim_octet_string req;
+    hx509_lock lock;
+    int i, ret;
+    char *file;
+    const char *url = "/";
+
+    hx509_lock_init(context, &lock);
+    lock_strings(lock, &opt->pass_strings);
+
+    if (opt->url_path_string)
+	url = opt->url_path_string;
+
+    ret = hx509_certs_init(context, "MEMORY:ocsp-pool", 0, NULL, &pool);
+
+    for (i = 0; i < opt->pool_strings.num_strings; i++) {
+	ret = hx509_certs_append(context, pool, lock, 
+				 opt->pool_strings.strings[i]);
+	if (ret)
+	    errx(1, "hx509_certs_append: pool: %s: %d", 
+		 opt->pool_strings.strings[i], ret);
+    }
+
+    file = argv[0];
+
+    ret = hx509_certs_init(context, "MEMORY:ocsp-req", 0, NULL, &reqcerts);
+
+    for (i = 1; i < argc; i++) {
+	ret = hx509_certs_append(context, reqcerts, lock, argv[i]);
+	if (ret)
+	    errx(1, "hx509_certs_append: req: %s: %d", argv[i], ret);
+    }
+
+    ret = hx509_ocsp_request(context, reqcerts, pool, NULL, NULL, &req);
+    if (ret)
+	errx(1, "hx509_ocsp_request: req: %d", ret);
+	
+    {
+	FILE *f;
+
+	f = fopen(file, "w");
+	if (f == NULL)
+	    abort();
+
+	fprintf(f, 
+		"POST %s HTTP/1.0\r\n"
+		"Content-Type: application/ocsp-request\r\n"
+		"Content-Length: %ld\r\n"
+		"\r\n",
+		url,
+		(unsigned long)req.length);
+	fwrite(req.data, req.length, 1, f);
+	fclose(f);
+    }
+
     return 0;
 }
 
