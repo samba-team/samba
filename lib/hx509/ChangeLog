@@ -1,5 +1,7 @@
 2006-03-31  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* TODO: list of stuff to verify
+
 	* revoke.c: Add code to load OCSPBasicOCSPResponse files, reload
 	crl when its changed on disk.
 

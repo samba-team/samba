@@ -22,11 +22,9 @@ tests
 	cms
 	ocsp
 	crl
+	building path using Subject/Issuer vs SubjKeyID vs AuthKeyID
 	negative tests
 		all checksums
 		conditions/branches
-
-
-
 pkcs#7
 	handle pkcs7 support ?
