@@ -26,11 +26,10 @@
 
 #include "libcli/util/nt_status.h"
 
+typedef int BOOL;
+
 #define False (0)
 #define True (1)
-#define Auto (2)
-
-typedef int BOOL;
 
 /* used to hold an arbitrary blob of data */
 typedef struct datablob {

@@ -52,6 +52,7 @@ getpass
 readline (the library)
 
 Types:
+bool
 socklen_t
 u_int{8,16,32}_t
 uint_t

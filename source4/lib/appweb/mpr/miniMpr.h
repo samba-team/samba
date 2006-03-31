@@ -185,7 +185,9 @@ typedef char*			MprStr;
 
 #ifndef __cplusplus
 typedef unsigned char 	uchar;
+#ifndef __bool_true_false_are_defined
 typedef int 			bool;
+#endif
 #endif
 
 /*

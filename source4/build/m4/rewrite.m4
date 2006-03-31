@@ -58,7 +58,7 @@ AC_CHECK_HEADERS(sys/param.h ctype.h sys/wait.h sys/resource.h sys/ioctl.h sys/i
 AC_CHECK_HEADERS(sys/mman.h sys/filio.h sys/priv.h sys/shm.h string.h strings.h stdlib.h)
 AC_CHECK_HEADERS(sys/vfs.h sys/fs/s5param.h sys/filsys.h termios.h termio.h)
 AC_CHECK_HEADERS(fnmatch.h pwd.h sys/termio.h sys/time.h sys/statfs.h sys/statvfs.h stdarg.h)
-AC_CHECK_HEADERS(stdint.h inttypes.h locale.h shadow.h)
+AC_CHECK_HEADERS(locale.h shadow.h)
 AC_CHECK_HEADERS(nss.h nss_common.h ns_api.h sys/security.h)
 AC_CHECK_HEADERS(sys/capability.h sys/acl.h)
 

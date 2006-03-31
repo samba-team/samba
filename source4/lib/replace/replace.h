@@ -35,6 +35,14 @@
 #define QSORT_CAST (int (*)(const void *, const void *))
 #endif
 
+#ifdef HAVE_STDINT_H
+#include <stdint.h>
+#endif
+
+#ifdef HAVE_INTTYPES_H
+#include <inttypes.h>
+#endif
+
 #ifndef HAVE_STRERROR
 extern char *sys_errlist[];
 #define strerror(i) sys_errlist[i]
@@ -192,6 +200,15 @@ int rep_mkstemp(char *temp);
 
 #ifndef INT32_MAX
 #define INT32_MAX _TYPE_MAXIMUM(int32_t)
+#endif
+
+#ifdef HAVE_STDBOOL_H
+#include <stdbool.h>
+#else
+#define __bool_true_false_are_defined
+typedef bool int;
+#define false (0)
+#define true (1)
 #endif
 
 #endif

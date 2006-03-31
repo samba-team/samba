@@ -195,7 +195,7 @@ void set_arg_val(const char * name, ...)
 			arg->arg_val.nval = va_arg(ap, uint64_t);
 			break;
 		case ARG_BOOL:
-			arg->arg_val.bval = va_arg(ap, BOOL);
+			arg->arg_val.bval = va_arg(ap, int);
 			break;
 		case ARG_PATHNAME:
 			arg->arg_val.pval = va_arg(ap, char *);
