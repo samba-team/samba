@@ -1,5 +1,31 @@
-2006-03-28  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-03-31  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* revoke.c: Add code to load OCSPBasicOCSPResponse files, reload
+	crl when its changed on disk.
+
+	* cert.c: Update for ocsp merge. handle building path w/o
+	subject (using subject key id)
+
+	* ks_p12.c: _hx509_map_file changed prototype.
+
+	* file.c: _hx509_map_file changed prototype, returns struct stat
+	if requested.
+
+	* ks_file.c: _hx509_map_file changed prototype.
+
+	* hxtool.c: Add stub for ocsp-fetch, _hx509_map_file changed
+	prototype, add ocsp parsing to verify command.
+
+	* hx_locl.h: rename HX509_CTX_CRL_MISSING_OK to
+	HX509_CTX_VERIFY_MISSING_OK now that we have OCSP glue
+	
+2006-03-30  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* hx_locl.h: Add <krb5-types.h> to make it compile on Solaris,
+	from Alex V. Labuta.
+	
+2006-03-28  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* crypto.c (_hx509_pbe_decrypt): try all passwords, not just the
 	first one.
 	
