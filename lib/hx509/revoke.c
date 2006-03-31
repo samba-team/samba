@@ -36,15 +36,28 @@ RCSID("$Id$");
 
 struct revoke_crl {
     char *path;
+    time_t last_modfied;
     CRLCertificateList crl;
     int verified;
 };
+
+struct revoke_ocsp {
+    char *path;
+    time_t last_modfied;
+    OCSPBasicOCSPResponse ocsp;
+    int verified;
+};
+
 
 struct hx509_revoke_ctx_data {
     struct {
 	struct revoke_crl *val;
 	size_t len;
     } crls;
+    struct {
+	struct revoke_ocsp *val;
+	size_t len;
+    } ocsps;
 };
 
 int
@@ -56,6 +69,8 @@ hx509_revoke_init(hx509_context context, hx509_revoke_ctx *revoke)
 
     (*revoke)->crls.len = 0;
     (*revoke)->crls.val = NULL;
+    (*revoke)->ocsps.len = 0;
+    (*revoke)->ocsps.val = NULL;
 
     return 0;
 }
@@ -69,12 +84,153 @@ hx509_revoke_free(hx509_revoke_ctx *revoke)
 	free((*revoke)->crls.val[i].path);
 	free_CRLCertificateList(&(*revoke)->crls.val[i].crl);
     }
+    for (i = 0; i < (*revoke)->ocsps.len; i++) {
+	free((*revoke)->ocsps.val[i].path);
+	free_OCSPBasicOCSPResponse(&(*revoke)->ocsps.val[i].ocsp);
+    }
     free((*revoke)->crls.val);
 
     memset(*revoke, 0, sizeof(**revoke));
     free(*revoke);
     *revoke = NULL;
 }
+
+static int
+verify_ocsp(hx509_context context,
+	    OCSPBasicOCSPResponse *ocsp,
+	    time_t time_now,
+	    hx509_certs certs)
+{
+    heim_octet_string os;
+    hx509_cert signer = NULL;
+    hx509_query q;
+    int ret;
+	
+    _hx509_query_clear(&q);
+	
+    switch(ocsp->tbsResponseData.responderID.element) {
+    case choice_OCSPResponderID_byName:
+	q.match = HX509_QUERY_MATCH_SUBJECT_NAME;
+	q.subject_name = &ocsp->tbsResponseData.responderID.u.byName;
+	break;
+    case choice_OCSPResponderID_byKey:
+	ret = EINVAL;
+	goto out;
+    }
+	
+    os.data = ocsp->signature.data;
+    os.length = ocsp->signature.length / 8;
+
+    ret = hx509_certs_find(context, certs, &q, &signer);
+    if (ret)
+	goto out;
+
+    ret = hx509_verify_signature(context,
+				 signer, 
+				 &ocsp->signatureAlgorithm,
+				 &ocsp->tbsResponseData._save,
+				 &os);
+    if (ret)
+	goto out;
+
+    /* XXX verify signer is allowed to be OCSP signer */
+
+out:
+    if (signer)
+	hx509_cert_free(signer);
+
+    return ret;
+}
+
+/*
+ *
+ */
+
+static int
+load_ocsp(const char *path, time_t *t, OCSPBasicOCSPResponse *ocsp)
+{
+    size_t length, size;
+    struct stat sb;
+    void *data;
+    int ret;
+
+    memset(ocsp, 0, sizeof(*ocsp));
+
+    ret = _hx509_map_file(path, &data, &length, &sb);
+    if (ret)
+	return ret;
+
+    *t = sb.st_mtime;
+
+    ret = decode_OCSPBasicOCSPResponse(data, length, ocsp, &size);
+    _hx509_unmap_file(data, length);
+    if (ret)
+	return ret;
+
+    /* check signature is aligned */
+    if (ocsp->signature.length & 7) {
+	free_OCSPBasicOCSPResponse(ocsp);
+	return EINVAL;
+    }
+    return 0;
+}
+
+int
+hx509_revoke_add_ocsp(hx509_context context,
+		      hx509_revoke_ctx revoke,
+		      const char *path)
+{
+    OCSPBasicOCSPResponse ocsp;
+    void *data;
+    int ret;
+    size_t i;
+
+    if (strncmp(path, "FILE:", 5) != 0)
+	return EINVAL;
+
+    path += 5;
+
+    for (i = 0; i < revoke->ocsps.len; i++) {
+	if (strcmp(revoke->ocsps.val[0].path, path) == 0)
+	    return 0;
+    }
+
+    data = realloc(revoke->ocsps.val, 
+		   (revoke->ocsps.len + 1) * sizeof(revoke->ocsps.val[0]));
+    if (data == NULL)
+	return ENOMEM;
+
+    revoke->ocsps.val = data;
+
+    memset(&revoke->ocsps.val[revoke->ocsps.len], 0, 
+	   sizeof(revoke->ocsps.val[0]));
+
+    revoke->ocsps.val[revoke->ocsps.len].path = strdup(path);
+    if (revoke->ocsps.val[revoke->ocsps.len].path == NULL)
+	return ENOMEM;
+
+    ret = load_ocsp(path,
+		   &revoke->ocsps.val[revoke->ocsps.len].last_modfied,
+		   &revoke->ocsps.val[revoke->ocsps.len].ocsp);
+    if (ret) {
+	free(revoke->ocsps.val[revoke->ocsps.len].path);
+	return ret;
+    }
+
+    revoke->ocsps.len++;
+
+
+    if (ret)
+	return ret;
+
+    free_OCSPBasicOCSPResponse(&ocsp);
+
+    return 0;
+}
+
+/*
+ *
+ */
 
 static int
 verify_crl(hx509_context context,
@@ -116,10 +272,44 @@ verify_crl(hx509_context context,
 				 &crl->signatureAlgorithm,
 				 &crl->tbsCertList._save,
 				 &os);
+    if (ret)
+	goto out;
 
+    /* XXX verify signer is allowed to be CRL signer */
+
+out:
     hx509_cert_free(signer);
 
     return ret;
+}
+
+static int
+load_crl(const char *path, time_t *t, CRLCertificateList *crl)
+{
+    size_t length, size;
+    struct stat sb;
+    void *data;
+    int ret;
+
+    memset(crl, 0, sizeof(*crl));
+
+    ret = _hx509_map_file(path, &data, &length, &sb);
+    if (ret)
+	return ret;
+
+    *t = sb.st_mtime;
+
+    ret = decode_CRLCertificateList(data, length, crl, &size);
+    _hx509_unmap_file(data, length);
+    if (ret)
+	return ret;
+
+    /* check signature is aligned */
+    if (crl->signatureValue.length & 7) {
+	free_CRLCertificateList(crl);
+	return EINVAL;
+    }
+    return 0;
 }
 
 int
@@ -127,7 +317,6 @@ hx509_revoke_add_crl(hx509_context context,
 		     hx509_revoke_ctx revoke,
 		     const char *path)
 {
-    size_t length, size;
     void *data;
     size_t i;
     int ret;
@@ -155,27 +344,14 @@ hx509_revoke_add_crl(hx509_context context,
     if (revoke->crls.val[revoke->crls.len].path == NULL)
 	return ENOMEM;
 
-    ret = _hx509_map_file(path, &data, &length);
+    ret = load_crl(path, 
+		   &revoke->crls.val[revoke->crls.len].last_modfied,
+		   &revoke->crls.val[revoke->crls.len].crl);
     if (ret) {
 	free(revoke->crls.val[revoke->crls.len].path);
 	return ret;
     }
 
-    ret = decode_CRLCertificateList(data, length,
-				    &revoke->crls.val[revoke->crls.len].crl,
-				    &size);
-    _hx509_unmap_file(data, length);
-    if (ret) {
-	free(revoke->crls.val[revoke->crls.len].path);
-	return ret;
-    }
-
-    /* check signature is aligned */
-    if (revoke->crls.val[revoke->crls.len].crl.signatureValue.length & 7) {
-	free(revoke->crls.val[revoke->crls.len].path);
-	free_CRLCertificateList(&revoke->crls.val[revoke->crls.len].crl);
-	return EINVAL;
-    }
     revoke->crls.len++;
 
     return ret;
@@ -193,14 +369,102 @@ hx509_revoke_verify(hx509_context context,
     unsigned long i, j, k;
     int ret;
 
+    for (i = 0; i < revoke->ocsps.len; i++) {
+	struct revoke_ocsp *ocsp = &revoke->ocsps.val[i];
+	struct stat sb;
+
+	/* check this ocsp apply to this cert */
+
+	/* check if there is a newer version of the file */
+	ret = stat(ocsp->path, &sb);
+	if (ret == 0 && ocsp->last_modfied != sb.st_mtime) {
+	    OCSPBasicOCSPResponse o;
+
+	    ret = load_ocsp(ocsp->path, &ocsp->last_modfied, &o);
+	    if (ret == 0) {
+		free_OCSPBasicOCSPResponse(&ocsp->ocsp);
+		ocsp->ocsp = o;
+		ocsp->verified = 0;
+	    }
+	}
+
+	/* verify signature in ocsp if not already done */
+	if (ocsp->verified == 0) {
+	    ret = verify_ocsp(context, &ocsp->ocsp, now, certs);
+	    if (ret)
+		continue;
+	    ocsp->verified = 1;
+	}
+
+
+	for (i = 0; i < ocsp->ocsp.tbsResponseData.responses.len; i++) {
+	    heim_octet_string os;
+
+	    ret = heim_integer_cmp(&ocsp->ocsp.tbsResponseData.responses.val[i].certID.serialNumber,
+				   &c->tbsCertificate.serialNumber);
+	    if (ret != 0)
+		continue;
+	    
+	    /* verify issuer hashes hash */
+	    ret = _hx509_verify_signature(NULL,
+					  &ocsp->ocsp.tbsResponseData.responses.val[i].certID.hashAlgorithm,
+					  &c->tbsCertificate.issuer._save,
+					  &ocsp->ocsp.tbsResponseData.responses.val[i].certID.issuerNameHash);
+	    if (ret != 0)
+		continue;
+
+	    os.data = c->tbsCertificate.subjectPublicKeyInfo.subjectPublicKey.data;
+	    os.length = c->tbsCertificate.subjectPublicKeyInfo.subjectPublicKey.length / 8;
+
+	    ret = _hx509_verify_signature(NULL,
+					  &ocsp->ocsp.tbsResponseData.responses.val[i].certID.hashAlgorithm,
+					  &os,
+					  &ocsp->ocsp.tbsResponseData.responses.val[i].certID.issuerKeyHash);
+	    if (ret != 0)
+		continue;
+
+	    switch (ocsp->ocsp.tbsResponseData.responses.val[i].certStatus.element) {
+	    case choice_OCSPCertStatus_good:
+		break;
+	    case choice_OCSPCertStatus_revoked:
+	    case choice_OCSPCertStatus_unknown:
+		continue;
+	    }
+
+	    if (ocsp->ocsp.tbsResponseData.responses.val[i].thisUpdate < now)
+		continue;
+
+	    if (ocsp->ocsp.tbsResponseData.responses.val[i].nextUpdate) {
+		if (*ocsp->ocsp.tbsResponseData.responses.val[i].nextUpdate < now)
+		    continue;
+	    } else
+		/* Should force a refetch, but can we ? */;
+
+	    return 0;
+	}
+    }
+
     for (i = 0; i < revoke->crls.len; i++) {
 	struct revoke_crl *crl = &revoke->crls.val[i];
+	struct stat sb;
 
 	/* check if cert.issuer == crls.val[i].crl.issuer */
 	ret = _hx509_name_cmp(&c->tbsCertificate.issuer, 
 			      &crl->crl.tbsCertList.issuer);
 	if (ret)
 	    continue;
+
+	ret = stat(crl->path, &sb);
+	if (ret == 0 && crl->last_modfied != sb.st_mtime) {
+	    CRLCertificateList c;
+
+	    ret = load_crl(crl->path, &crl->last_modfied, &c);
+	    if (ret == 0) {
+		free_CRLCertificateList(&crl->crl);
+		crl->crl = c;
+		crl->verified = 0;
+	    }
+	}
 
 	/* verify signature in crl if not already done */
 	if (crl->verified == 0) {
@@ -223,25 +487,26 @@ hx509_revoke_verify(hx509_context context,
 	    time_t t;
 
 	    ret = heim_integer_cmp(&crl->crl.tbsCertList.revokedCertificates->val[j].userCertificate,
-		    &c->tbsCertificate.serialNumber);
+				   &c->tbsCertificate.serialNumber);
 	    if (ret != 0)
 		continue;
 
 	    t = _hx509_Time2time_t(&crl->crl.tbsCertList.revokedCertificates->val[j].revocationDate);
 	    if (t > now)
 		continue;
-
-	if (crl->crl.tbsCertList.revokedCertificates->val[j].crlEntryExtensions)
-	    for (k = 0; k < crl->crl.tbsCertList.revokedCertificates->val[j].crlEntryExtensions->len; k++)
-		if (crl->crl.tbsCertList.revokedCertificates->val[j].crlEntryExtensions->val[k].critical)
-		    return HX509_CRL_UNKNOWN_EXTENSION;
-
+	    
+	    if (crl->crl.tbsCertList.revokedCertificates->val[j].crlEntryExtensions)
+		for (k = 0; k < crl->crl.tbsCertList.revokedCertificates->val[j].crlEntryExtensions->len; k++)
+		    if (crl->crl.tbsCertList.revokedCertificates->val[j].crlEntryExtensions->val[k].critical)
+			return HX509_CRL_UNKNOWN_EXTENSION;
+	    
 	    return HX509_CRL_CERT_REVOKED;
 	}
 	return 0;
     }
 
-    if (context->flags & HX509_CTX_CRL_MISSING_OK)
+
+    if (context->flags & HX509_CTX_VERIFY_MISSING_OK)
 	return 0;
     return HX509_CRL_MISSING;
 }
