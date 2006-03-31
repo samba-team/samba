@@ -89,7 +89,7 @@ cms_verify_sd(struct cms_verify_sd_options *opt, int argc, char **argv)
     hx509_lock_init(context, &lock);
     lock_strings(lock, &opt->pass_strings);
 
-    ret = _hx509_map_file(argv[0], &p, &sz);
+    ret = _hx509_map_file(argv[0], &p, &sz, NULL);
     if (ret)
 	err(1, "map_file: %s: %d", argv[0], ret);
 
@@ -219,7 +219,7 @@ cms_create_sd(struct cms_create_sd_options *opt, int argc, char **argv)
     if (ret)
 	errx(1, "hx509_certs_find: %d", ret);
 
-    ret = _hx509_map_file(argv[0], &p, &sz);
+    ret = _hx509_map_file(argv[0], &p, &sz, NULL);
     if (ret)
 	err(1, "map_file: %s: %d", argv[0], ret);
 
@@ -280,7 +280,7 @@ cms_unenvelope(struct cms_unenvelope_options *opt, int argc, char **argv)
     hx509_lock_init(context, &lock);
     lock_strings(lock, &opt->pass_strings);
 
-    ret = _hx509_map_file(argv[0], &p, &sz);
+    ret = _hx509_map_file(argv[0], &p, &sz, NULL);
     if (ret)
 	err(1, "map_file: %s: %d", argv[0], ret);
 
@@ -355,7 +355,7 @@ cms_create_enveloped(struct cms_envelope_options *opt, int argc, char **argv)
     hx509_lock_init(context, &lock);
     lock_strings(lock, &opt->pass_strings);
 
-    ret = _hx509_map_file(argv[0], &p, &sz);
+    ret = _hx509_map_file(argv[0], &p, &sz, NULL);
     if (ret)
 	err(1, "map_file: %s: %d", argv[0], ret);
 
@@ -603,6 +603,13 @@ pcert_verify(struct verify_options *opt, int argc, char **argv)
 	    if (ret)
 		errx(1, "hx509_revoke_add_crl: %s: %d", s, ret);
 
+	} else if (strncmp(s, "ocsp:", 4) == 0) {
+	    s += 5;
+
+	    ret = hx509_revoke_add_ocsp(context, revoke, s);
+	    if (ret)
+		errx(1, "hx509_revoke_add_ocsp: %s: %d", s, ret);
+
 	} else {
 	    errx(1, "unknown option to verify: `%s'\n", s);
 	}
@@ -670,6 +677,13 @@ query(struct query_options *opt, int argc, char **argv)
     hx509_lock_free(lock);
 
     return ret;
+}
+
+int
+ocsp_fetch(struct ocsp_fetch_options *opt, int argc, char **argv)
+{
+    printf("write ocsp-fetch\n");
+    return 0;
 }
 
 int
