@@ -1,3 +1,4 @@
+AC_CHECK_HEADERS([stdint.h inttypes.h])
 AC_CHECK_TYPE(uint_t, unsigned int)
 AC_CHECK_TYPE(int8_t, signed char)
 AC_CHECK_TYPE(uint8_t, unsigned char)
@@ -126,6 +127,8 @@ LIBS="$SAVE_LIBS"
 
 AC_CHECK_FUNCS([syslog memset setnetgrent getnetgrent endnetgrent memcpy],,
 			   [AC_MSG_ERROR([Required function not found])])
+
+AC_CHECK_HEADERS(stdbool.h)
 
 sinclude(lib/replace/readline.m4)
 sinclude(lib/replace/getpass.m4)

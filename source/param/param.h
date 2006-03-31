@@ -41,6 +41,8 @@ struct param_section {
 struct param_context;
 struct smbsrv_connection;
 
+#define Auto (2)
+
 #include "param/proto.h"
 
 #endif /* _PARAM_H */

@@ -15,8 +15,6 @@ AC_C_BIGENDIAN
 
 AC_HEADER_STDC
 
-AC_CHECK_HEADERS(stdbool.h)
-
 AC_CHECK_SIZEOF(short,cross)
 AC_CHECK_SIZEOF(int,cross)
 AC_CHECK_SIZEOF(long,cross)
@@ -27,5 +25,3 @@ fi
 if test $ac_cv_sizeof_long_long -lt 8;then
 	AC_MSG_ERROR([Sorry we need sizeof(long long) >= 8])
 fi
-AC_CHECK_TYPE(_Bool)
-

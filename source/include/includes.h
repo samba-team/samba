@@ -74,14 +74,6 @@ _PUBLIC_ void smb_panic(const char *why) NORETURN_ATTRIBUTE;
 #include <stddef.h>
 #include <sys/time.h>
 
-#ifdef HAVE_STDINT_H
-#include <stdint.h>
-#endif
-
-#ifdef HAVE_INTTYPES_H
-#include <inttypes.h>
-#endif
-
 #ifdef HAVE_STRING_H
 #include <string.h>
 #endif
