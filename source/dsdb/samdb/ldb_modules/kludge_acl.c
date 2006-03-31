@@ -65,19 +65,22 @@ static enum user_is what_is_user(struct ldb_module *module)
 		return ANONYMOUS;
 	}
 	
-	if (is_system_token(session_info->security_token)) {
+	if (security_token_is_system(session_info->security_token)) {
 		return SYSTEM;
 	}
 
-	if (is_administrator_token(session_info->security_token)) {
-		return ADMINISTRATOR;
-	}
-	if (is_authenticated_token(session_info->security_token)) {
-		return USER;
-	}
-	if (is_anonymous_token(session_info->security_token)) {
+	if (security_token_is_anonymous(session_info->security_token)) {
 		return ANONYMOUS;
 	}
+
+	if (security_token_has_builtin_administrators(session_info->security_token)) {
+		return ADMINISTRATOR;
+	}
+
+	if (security_token_has_nt_authenticated_users(session_info->security_token)) {
+		return USER;
+	}
+
 	return ANONYMOUS;
 }
 

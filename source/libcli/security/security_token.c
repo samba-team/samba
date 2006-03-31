@@ -170,55 +170,65 @@ void security_token_debug(int dbg_lev, const struct security_token *token)
 
 /* These really should be cheaper... */
 
-BOOL is_system_token(struct security_token *token) 
+BOOL security_token_is_sid(struct security_token *token, const struct dom_sid *sid)
 {
-	TALLOC_CTX *mem_ctx = talloc_new(token);
-	if (dom_sid_equal(token->user_sid, dom_sid_parse_talloc(mem_ctx, SID_NT_SYSTEM))) {
-		talloc_free(mem_ctx);
+	if (dom_sid_equal(token->user_sid, sid)) {
 		return True;
 	}
-	talloc_free(mem_ctx);
 	return False;
 }
 
-BOOL is_anonymous_token(struct security_token *token) 
+BOOL security_token_is_sid_string(struct security_token *token, const char *sid_string)
 {
-	TALLOC_CTX *mem_ctx = talloc_new(token);
-	if (dom_sid_equal(token->user_sid, dom_sid_parse_talloc(mem_ctx, SID_NT_ANONYMOUS))) {
-		talloc_free(mem_ctx);
-		return True;
-	}
-	talloc_free(mem_ctx);
-	return False;
+	BOOL ret;
+	struct dom_sid *sid = dom_sid_parse_talloc(token, sid_string);
+	if (!sid) return False;
+
+	ret = security_token_is_sid(token, sid);
+
+	talloc_free(sid);
+	return ret;
 }
 
-BOOL is_authenticated_token(struct security_token *token)
+BOOL security_token_is_system(struct security_token *token) 
 {
-	TALLOC_CTX *mem_ctx = talloc_new(token);
+	return security_token_is_sid_string(token, SID_NT_SYSTEM);
+}
+
+BOOL security_token_is_anonymous(struct security_token *token) 
+{
+	return security_token_is_sid_string(token, SID_NT_ANONYMOUS);
+}
+
+BOOL security_token_has_sid(struct security_token *token, struct dom_sid *sid)
+{
 	int i;
-	struct dom_sid *authenticated = dom_sid_parse_talloc(mem_ctx, SID_NT_AUTHENTICATED_USERS);
 	for (i = 0; i < token->num_sids; i++) {
-		if (dom_sid_equal(token->sids[i], authenticated)) {
-			talloc_free(mem_ctx);
+		if (dom_sid_equal(token->sids[i], sid)) {
 			return True;
 		}
 	}
-	talloc_free(mem_ctx);
 	return False;
 }
 
-BOOL is_administrator_token(struct security_token *token) 
+BOOL security_token_has_sid_string(struct security_token *token, const char *sid_string)
 {
-	TALLOC_CTX *mem_ctx = talloc_new(token);
-	int i;
-	struct dom_sid *administrators = dom_sid_parse_talloc(mem_ctx, SID_BUILTIN_ADMINISTRATORS);
-	for (i = 0; i < token->num_sids; i++) {
-		if (dom_sid_equal(token->sids[i], administrators)) {
-			talloc_free(mem_ctx);
-			return True;
-		}
-	}
-	talloc_free(mem_ctx);
-	return False;
+	BOOL ret;
+	struct dom_sid *sid = dom_sid_parse_talloc(token, sid_string);
+	if (!sid) return False;
+
+	ret = security_token_has_sid(token, sid);
+
+	talloc_free(sid);
+	return ret;
 }
 
+BOOL security_token_has_builtin_administrators(struct security_token *token)
+{
+	return security_token_has_sid_string(token, SID_BUILTIN_ADMINISTRATORS);
+}
+
+BOOL security_token_has_nt_authenticated_users(struct security_token *token)
+{
+	return security_token_has_sid_string(token, SID_NT_AUTHENTICATED_USERS);
+}
