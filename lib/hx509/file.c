@@ -35,7 +35,7 @@
 RCSID("$ID$");
 
 int
-_hx509_map_file(const char *fn, void **data, size_t *length)
+_hx509_map_file(const char *fn, void **data, size_t *length, struct stat *rsb)
 {
     struct stat sb;
     size_t len;
@@ -72,6 +72,8 @@ _hx509_map_file(const char *fn, void **data, size_t *length)
 	return EINVAL;
     }
 
+    if (rsb)
+	*rsb = sb;
     *data = d;
     *length = len;
     return 0;
