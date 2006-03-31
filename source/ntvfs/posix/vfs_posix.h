@@ -26,6 +26,7 @@
 #include "librpc/gen_ndr/xattr.h"
 #include "system/filesys.h"
 #include "ntvfs/ntvfs.h"
+#include "ntvfs/common/proto.h"
 
 /* this is the private structure for the posix vfs backend. It is used
    to hold per-connection (per tree connect) state information */

@@ -33,6 +33,7 @@
 #include "ntvfs/ntvfs.h"
 #include "passdb/secrets.h"
 #include "db_wrap.h"
+#include "ntvfs/common/proto.h"
 
 /*
   this type allows us to distinguish handle types
