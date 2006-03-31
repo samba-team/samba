@@ -345,6 +345,9 @@ hx509_cms_envelope_1(hx509_context context,
 		       &ed, &size, ret);
     if (ret)
 	goto out;
+    if (size != content->length)
+	_hx509_abort("internal ASN.1 encoder error");
+
  out:
     if (ret) {
 	free_octet_string(content);
