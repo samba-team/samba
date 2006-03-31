@@ -57,10 +57,10 @@ interface dcerpc
 		[flag(NDR_REMAINING)] DATA_BLOB stub_and_verifier;
 	} dcerpc_request;
 
-	const int DCERPC_BIND_PROVIDER_REJECT = 2;
-	const int DCERPC_BIND_REASON_ASYNTAX  = 1;
+	const int DCERPC_BIND_REASON_ASYNTAX                 = 1;
+	const int DCERPC_BIND_PROVIDER_REJECT                = 2;
 	const int DECRPC_BIND_PROTOCOL_VERSION_NOT_SUPPORTED = 4;
-	const int DCERPC_BIND_REASON_INVALID_AUTH_TYPE = 8;
+	const int DCERPC_BIND_REASON_INVALID_AUTH_TYPE       = 8;
 
 	typedef struct {
 		uint16 result;
