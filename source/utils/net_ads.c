@@ -1045,6 +1045,13 @@ static int net_ads_printer_publish(int argc, const char **argv)
 	asprintf(&prt_dn, "cn=%s-%s,%s", srv_cn[0], printername, srv_dn);
 
 	pipe_hnd = cli_rpc_pipe_open_noauth(cli, PI_SPOOLSS, &nt_status);
+	if (!pipe_hnd) {
+		d_fprintf(stderr, "Unable to open a connnection to the spoolss pipe on %s\n",
+			 servername);
+		ads_destroy(&ads);
+		return -1;
+	}
+
 	get_remote_printer_publishing_data(pipe_hnd, mem_ctx, &mods,
 					   printername);
 
