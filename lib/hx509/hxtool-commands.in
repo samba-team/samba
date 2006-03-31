@@ -218,13 +218,13 @@ command = {
 		help = "certificate use to sign the request"
 	}
 	option = {
-		long = "verbose"
-		short = "c"
-		type = "flag"
-		help = "verbose"
+		long = "pool"
+		type = "strings"
+		argument = "certificate-store"
+		help = "pool to find parent certificate in"
 	}
 	min_args="2"
-	argument="filename certs ..."
+	argument="outfile certs ..."
 	help = "Fetch OCSP responses for the following certs"
 }
 command = {
