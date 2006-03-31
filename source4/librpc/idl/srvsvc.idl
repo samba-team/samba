@@ -1123,7 +1123,7 @@
 /* srvsvc_NetDisk         */
 /**************************/
 	typedef struct {
-		[string,charset(UTF16)] uint16 *disc;
+		[flag(STR_LEN4)] string disc;
 	} srvsvc_NetDiskInfo0;
 
 	typedef struct {
