@@ -1,5 +1,11 @@
 2006-03-30  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/hdb/hdb-ldap.c (LDAP_message2entry): in declaration set
+	variable_name as "hdb_entry_ex"
+	(hdb_ldap_common): change "arg" in condition (if) to "search_base"
+	(hdb_ldapi_create): change "serach_base" to "search_base" From
+	Alex V. Labuta.
+
 	* lib/krb5/pkinit.c (krb5_get_init_creds_opt_set_pkinit); fix
 	prototype
 
