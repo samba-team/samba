@@ -2,7 +2,7 @@
 # Start MODULE ntvfs_common
 [MODULE::ntvfs_common]
 SUBSYSTEM = ntvfs
-PRIVATE_PROTO_HEADER = vfs_common_proto.h
+PRIVATE_PROTO_HEADER = proto.h
 OBJ_FILES = \
 		brlock.o \
 		opendb.o \
