@@ -1,3 +1,11 @@
+2006-03-31  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* Makefile.am: gen_files_rfc2459 += asn1_ExtKeyUsage.x
+	
+	* rfc2459.asn1: Add ExtKeyUsage.
+
+	* gen.c (generate_header_of_codefile): remove unused variable.
+	
 2006-03-30  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* gen.c: Put all the IMPORTed headers into the headerfile to avoid
