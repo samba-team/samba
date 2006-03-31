@@ -113,7 +113,7 @@ parse_file_der(const char *fn, Certificate *t)
     void *data;
     int ret;
 
-    ret = _hx509_map_file(fn, &data, &length);
+    ret = _hx509_map_file(fn, &data, &length, NULL);
     if (ret)
 	return ret;
 

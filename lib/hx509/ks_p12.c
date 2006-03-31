@@ -324,7 +324,7 @@ p12_init(hx509_context context,
 	goto out;
     }
 
-    ret = _hx509_map_file(residue, &buf, &len);
+    ret = _hx509_map_file(residue, &buf, &len, NULL);
     if (ret)
 	goto out;
 
