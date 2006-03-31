@@ -89,6 +89,7 @@ hx509_revoke_free(hx509_revoke_ctx *revoke)
 	free((*revoke)->ocsps.val[i].path);
 	free_OCSPBasicOCSPResponse(&(*revoke)->ocsps.val[i].ocsp);
 	hx509_certs_free(&(*revoke)->ocsps.val[i].certs);
+	hx509_cert_free((*revoke)->ocsps.val[i].signer);
     }
     free((*revoke)->crls.val);
 
