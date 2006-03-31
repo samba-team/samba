@@ -2396,9 +2396,10 @@ static WERROR cmd_spoolss_enum_printerkey( struct rpc_pipe_client *cli,
 		curkey += strlen(subkey) + 1;
 	}
 
-	safe_free(keylist);
-
 done:
+
+	SAFE_FREE(keylist);
+
 	if (got_hnd)
 		rpccli_spoolss_close_printer(cli, mem_ctx, &hnd);
 
