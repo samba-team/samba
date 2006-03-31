@@ -185,11 +185,12 @@ NTSTATUS cli_credentials_get_ntlm_response(struct cli_credentials *cred, TALLOC_
 				}
 			}
 		} else {
+			const char *password;
+
 			/* LM Key is incompatible... */
 			lm_response = nt_response;
 			*flags &= ~CLI_CRED_LANMAN_AUTH;
 
-			const char *password;
 			password = cli_credentials_get_password(cred);
 			if (password) {
 				E_deshash(password, lm_hash);
