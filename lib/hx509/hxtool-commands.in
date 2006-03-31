@@ -218,6 +218,12 @@ command = {
 		help = "certificate use to sign the request"
 	}
 	option = {
+		long = "url-path"
+		type = "string"
+		argument = "url"
+		help = "part after host in url to put in the request"
+	}
+	option = {
 		long = "pool"
 		type = "strings"
 		argument = "certificate-store"
