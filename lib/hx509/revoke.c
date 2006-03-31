@@ -45,8 +45,8 @@ struct revoke_ocsp {
     char *path;
     time_t last_modfied;
     OCSPBasicOCSPResponse ocsp;
-    int verified;
     hx509_certs certs;
+    hx509_cert signer;
 };
 
 
@@ -101,9 +101,9 @@ static int
 verify_ocsp(hx509_context context,
 	    struct revoke_ocsp *ocsp,
 	    time_t time_now,
-	    hx509_certs certs)
+	    hx509_certs certs,
+	    hx509_cert parent)
 {
-    heim_octet_string os;
     hx509_cert signer = NULL;
     hx509_query q;
     int ret;
@@ -120,25 +120,49 @@ verify_ocsp(hx509_context context,
 	goto out;
     }
 	
-    os.data = ocsp->ocsp.signature.data;
-    os.length = ocsp->ocsp.signature.length / 8;
-
     ret = hx509_certs_find(context, certs, &q, &signer);
-    if (ret)
-	ret = hx509_certs_find(context, ocsp->ocsp.certs, &q, &signer);
-    if (ret)
-	goto out;
-
-    ret = hx509_verify_signature(context,
-				 signer, 
-				 &ocsp->ocsp.signatureAlgorithm,
-				 &ocsp->ocsp.tbsResponseData._save,
-				 &os);
+    if (ret && ocsp->certs)
+	ret = hx509_certs_find(context, ocsp->certs, &q, &signer);
     if (ret)
 	goto out;
 
-    /* XXX verify signer is allowed to be OCSP signer */
+    /*
+     * If signer certificate isn't the CA certificate, lets check the
+     * its the CA that signed the signer certificate and the OCSP EKU
+     * is set.
+     */
+    if (hx509_cert_cmp(signer, parent) != 0) {
+	Certificate *p = _hx509_get_cert(parent);
+	Certificate *s = _hx509_get_cert(signer);
 
+	ret = _hx509_cert_is_parent_cmp(s, p, 0);
+	if (ret != 0) {
+	    ret = EINVAL;
+	    goto out;
+	}
+
+	ret = _hx509_verify_signature_bitstring(p,
+						&s->signatureAlgorithm,
+						&s->tbsCertificate._save,
+						&s->signatureValue);
+	if (ret)
+	    goto out;
+
+	ret = hx509_cert_check_eku(context, signer, 
+				   oid_id_kp_OCSPSigning(), 0);
+	if (ret)
+	    goto out;
+    }
+
+    ret = _hx509_verify_signature_bitstring(_hx509_get_cert(signer), 
+					    &ocsp->ocsp.signatureAlgorithm,
+					    &ocsp->ocsp.tbsResponseData._save,
+					    &ocsp->ocsp.signature);
+    if (ret)
+	goto out;
+
+    ocsp->signer = signer;
+    signer = NULL;
 out:
     if (signer)
 	hx509_cert_free(signer);
@@ -153,6 +177,7 @@ out:
 static int
 load_ocsp(const char *path, time_t *t, OCSPBasicOCSPResponse *ocsp)
 {
+    OCSPResponse resp;
     size_t length, size;
     struct stat sb;
     void *data;
@@ -166,16 +191,43 @@ load_ocsp(const char *path, time_t *t, OCSPBasicOCSPResponse *ocsp)
 
     *t = sb.st_mtime;
 
-    ret = decode_OCSPBasicOCSPResponse(data, length, ocsp, &size);
+    ret = decode_OCSPResponse(data, length, &resp, &size);
     _hx509_unmap_file(data, length);
     if (ret)
 	return ret;
 
-    /* check signature is aligned */
-    if (ocsp->signature.length & 7) {
+    switch (resp.responseStatus) {
+    case successful:
+	break;
+    default:
+	free_OCSPResponse(&resp);
+	return EINVAL;
+    }
+
+    /*
+     * XXX find BasicReponse and act on it
+     */
+    
+    if (resp.responseBytes == NULL) {
+	free_OCSPResponse(&resp);
+	return EINVAL;
+    }
+
+    ret = decode_OCSPBasicOCSPResponse(resp.responseBytes->response.data,
+				       resp.responseBytes->response.length,
+				       ocsp,
+				       &size);
+    if (ret) {
+	free_OCSPResponse(&resp);
+	return ret;
+    }
+    if (size != resp.responseBytes->response.length) {
+	free_OCSPResponse(&resp);
 	free_OCSPBasicOCSPResponse(ocsp);
 	return EINVAL;
     }
+    free_OCSPResponse(&resp);
+
     return 0;
 }
 
@@ -184,7 +236,6 @@ hx509_revoke_add_ocsp(hx509_context context,
 		      hx509_revoke_ctx revoke,
 		      const char *path)
 {
-    OCSPBasicOCSPResponse ocsp;
     void *data;
     int ret;
     size_t i;
@@ -214,22 +265,38 @@ hx509_revoke_add_ocsp(hx509_context context,
 	return ENOMEM;
 
     ret = load_ocsp(path,
-		   &revoke->ocsps.val[revoke->ocsps.len].last_modfied,
-		   &revoke->ocsps.val[revoke->ocsps.len].ocsp);
+		    &revoke->ocsps.val[revoke->ocsps.len].last_modfied,
+		    &revoke->ocsps.val[revoke->ocsps.len].ocsp);
     if (ret) {
 	free(revoke->ocsps.val[revoke->ocsps.len].path);
 	return ret;
     }
+    if (revoke->ocsps.val[revoke->ocsps.len].ocsp.certs) {
+	struct revoke_ocsp *ocsp = &revoke->ocsps.val[revoke->ocsps.len];
+	int j;
+
+	hx509_certs_free(&ocsp->certs);
+
+	ret = hx509_certs_init(context, "MEMORY:ocsp-certs", 0, 
+			       NULL, &ocsp->certs);
+	if (ret == 0) {
+	    for (j = 0; j < ocsp->ocsp.certs->len; j++) {
+		hx509_cert c;
+			
+		ret = hx509_cert_init(context, &ocsp->ocsp.certs->val[j], &c);
+		if (ret)
+		    continue;
+
+		ret = hx509_certs_add(context, ocsp->certs, c);
+		if (ret)
+		    continue;
+	    }
+	}
+    }
 
     revoke->ocsps.len++;
 
-
-    if (ret)
-	return ret;
-
-    free_OCSPBasicOCSPResponse(&ocsp);
-
-    return 0;
+    return ret;
 }
 
 /*
@@ -240,9 +307,9 @@ static int
 verify_crl(hx509_context context,
 	   CRLCertificateList *crl,
 	   time_t time_now,
-	   hx509_certs certs)
+	   hx509_certs certs,
+	   hx509_cert parent)
 {
-    heim_octet_string os;
     hx509_cert signer;
     hx509_query q;
     time_t t;
@@ -268,18 +335,35 @@ verify_crl(hx509_context context,
     if (ret)
 	return ret;
 
-    os.data = crl->signatureValue.data;
-    os.length = crl->signatureValue.length / 8;
+    /* verify is parent or CRLsigner */
+    if (hx509_cert_cmp(signer, parent) != 0) {
+	Certificate *p = _hx509_get_cert(parent);
+	Certificate *s = _hx509_get_cert(signer);
 
-    ret = hx509_verify_signature(context,
-				 signer, 
-				 &crl->signatureAlgorithm,
-				 &crl->tbsCertList._save,
-				 &os);
+	ret = _hx509_cert_is_parent_cmp(s, p, 0);
+	if (ret != 0) {
+	    ret = EINVAL;
+	    goto out;
+	}
+
+	ret = _hx509_verify_signature_bitstring(p,
+						&s->signatureAlgorithm,
+						&s->tbsCertificate._save,
+						&s->signatureValue);
+	if (ret)
+	    goto out;
+
+	ret = _hx509_check_key_usage(signer, 1 << 6, TRUE); /* crl */
+	if (ret != 0)
+	    goto out;
+    }
+
+    ret = _hx509_verify_signature_bitstring(_hx509_get_cert(signer), 
+					    &crl->signatureAlgorithm,
+					    &crl->tbsCertList._save,
+					    &crl->signatureValue);
     if (ret)
 	goto out;
-
-    /* XXX verify signer is allowed to be CRL signer */
 
 out:
     hx509_cert_free(signer);
@@ -367,9 +451,11 @@ hx509_revoke_verify(hx509_context context,
 		    hx509_revoke_ctx revoke,
 		    hx509_certs certs,
 		    time_t now,
-		    hx509_cert cert)
+		    hx509_cert cert,
+		    hx509_cert parent_cert)
 {
     const Certificate *c = _hx509_get_cert(cert);
+    const Certificate *p = _hx509_get_cert(parent_cert);
     unsigned long i, j, k;
     int ret;
 
@@ -388,7 +474,8 @@ hx509_revoke_verify(hx509_context context,
 	    if (ret == 0) {
 		free_OCSPBasicOCSPResponse(&ocsp->ocsp);
 		ocsp->ocsp = o;
-		ocsp->verified = 0;
+		hx509_cert_free(ocsp->signer);
+		ocsp->signer = NULL;
 	    }
 
 	    if (ocsp->ocsp.certs) {
@@ -416,13 +503,11 @@ hx509_revoke_verify(hx509_context context,
 
 
 	/* verify signature in ocsp if not already done */
-	if (ocsp->verified == 0) {
-	    ret = verify_ocsp(context, ocsp, now, certs);
+	if (ocsp->signer == NULL) {
+	    ret = verify_ocsp(context, ocsp, now, certs, parent_cert);
 	    if (ret)
 		continue;
-	    ocsp->verified = 1;
 	}
-
 
 	for (i = 0; i < ocsp->ocsp.tbsResponseData.responses.len; i++) {
 	    heim_octet_string os;
@@ -440,8 +525,8 @@ hx509_revoke_verify(hx509_context context,
 	    if (ret != 0)
 		continue;
 
-	    os.data = c->tbsCertificate.subjectPublicKeyInfo.subjectPublicKey.data;
-	    os.length = c->tbsCertificate.subjectPublicKeyInfo.subjectPublicKey.length / 8;
+	    os.data = p->tbsCertificate.subjectPublicKeyInfo.subjectPublicKey.data;
+	    os.length = p->tbsCertificate.subjectPublicKeyInfo.subjectPublicKey.length / 8;
 
 	    ret = _hx509_verify_signature(NULL,
 					  &ocsp->ocsp.tbsResponseData.responses.val[i].certID.hashAlgorithm,
@@ -458,9 +543,12 @@ hx509_revoke_verify(hx509_context context,
 		continue;
 	    }
 
-	    if (ocsp->ocsp.tbsResponseData.responses.val[i].thisUpdate < now)
+	    /* don't allow the update to be in the future */
+	    if (ocsp->ocsp.tbsResponseData.responses.val[i].thisUpdate > 
+		now + context->ocsp_time_diff)
 		continue;
 
+	    /* don't allow the next updte to be in the past */
 	    if (ocsp->ocsp.tbsResponseData.responses.val[i].nextUpdate) {
 		if (*ocsp->ocsp.tbsResponseData.responses.val[i].nextUpdate < now)
 		    continue;
@@ -495,7 +583,7 @@ hx509_revoke_verify(hx509_context context,
 
 	/* verify signature in crl if not already done */
 	if (crl->verified == 0) {
-	    ret = verify_crl(context, &crl->crl, now, certs);
+	    ret = verify_crl(context, &crl->crl, now, certs, parent_cert);
 	    if (ret)
 		return ret;
 	    crl->verified = 1;
@@ -536,4 +624,133 @@ hx509_revoke_verify(hx509_context context,
     if (context->flags & HX509_CTX_VERIFY_MISSING_OK)
 	return 0;
     return HX509_CRL_MISSING;
+}
+
+struct ocsp_add_ctx {
+    OCSPTBSRequest *req;
+    hx509_certs certs;
+    const AlgorithmIdentifier *digest;
+    hx509_cert parent;
+};
+
+static int
+add_to_req(hx509_context context, void *ptr, hx509_cert cert)
+{
+    struct ocsp_add_ctx *ctx = ptr;
+    OCSPInnerRequest *one;
+    hx509_cert parent = NULL;
+    Certificate *p, *c = _hx509_get_cert(cert);
+    heim_octet_string os;
+    int ret;
+    hx509_query q;
+    void *d;
+
+    d = realloc(ctx->req->requestList.val, 
+		sizeof(ctx->req->requestList.val[0]) * (ctx->req->requestList.len + 1));
+    if (d == NULL)
+	return ENOMEM;
+    ctx->req->requestList.val = d;
+    
+    one = &ctx->req->requestList.val[ctx->req->requestList.len];
+    memset(one, 0, sizeof(*one));
+
+    _hx509_query_clear(&q);
+
+    q.match |= HX509_QUERY_FIND_ISSUER_CERT;
+    q.subject = c;
+
+    ret = hx509_certs_find(context, ctx->certs, &q, &parent);
+    if (ret)
+	goto out;
+
+    if (ctx->parent) {
+	if (hx509_cert_cmp(ctx->parent, parent) != 0) {
+	    ret = EINVAL;
+	    goto out;
+	}
+    } else
+	ctx->parent = hx509_cert_ref(parent);
+
+    p = _hx509_get_cert(parent);
+
+    ret = copy_AlgorithmIdentifier(ctx->digest, &one->reqCert.hashAlgorithm);
+    if (ret)
+	goto out;
+
+    ret = _hx509_create_signature(NULL,
+				  &one->reqCert.hashAlgorithm,
+				  &c->tbsCertificate.issuer._save,
+				  NULL,
+				  &one->reqCert.issuerNameHash);
+    if (ret)
+	goto out;
+
+    os.data = p->tbsCertificate.subjectPublicKeyInfo.subjectPublicKey.data;
+    os.length = p->tbsCertificate.subjectPublicKeyInfo.subjectPublicKey.length / 8;
+
+    ret = _hx509_create_signature(NULL,
+				  &one->reqCert.hashAlgorithm,
+				  &os,
+				  NULL,
+				  &one->reqCert.issuerKeyHash);
+    if (ret)
+	goto out;
+
+    ret = copy_CertificateSerialNumber(&c->tbsCertificate.serialNumber,
+				       &one->reqCert.serialNumber);
+    if (ret)
+	goto out;
+
+    ctx->req->requestList.len++;
+out:
+    hx509_cert_free(parent);
+    if (ret) {
+	free_OCSPInnerRequest(one);
+	memset(one, 0, sizeof(*one));
+    }
+
+    return ret;
+}
+
+
+int
+hx509_ocsp_request(hx509_context context,
+		   hx509_certs reqcerts,
+		   hx509_certs pool,
+		   hx509_cert signer,
+		   const AlgorithmIdentifier *digest,
+		   heim_octet_string *request)
+{
+    OCSPRequest req;
+    size_t size;
+    int ret;
+    struct ocsp_add_ctx ctx;
+
+    memset(&req, 0, sizeof(req));
+
+    if (digest == NULL)
+	digest = hx509_signature_sha1();
+
+    ctx.req = &req.tbsRequest;
+    ctx.certs = pool;
+    ctx.digest = digest;
+    ctx.parent = NULL;
+
+    ret = hx509_certs_iter(context, reqcerts, add_to_req, &ctx);
+    hx509_cert_free(ctx.parent);
+    if (ret) {
+	free_OCSPRequest(&req);
+	return ret;
+    }
+    
+    ASN1_MALLOC_ENCODE(OCSPRequest, request->data, request->length,
+		       &req, &size, ret);
+    free_OCSPRequest(&req);
+    if (ret)
+	return ret;
+    if (size != request->length)
+	_hx509_abort("internal ASN.1 encoder error");
+
+
+    return 0;
 }
