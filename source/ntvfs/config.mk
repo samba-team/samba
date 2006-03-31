@@ -1,5 +1,6 @@
 # NTVFS Server subsystem
 include posix/config.mk
+include common/config.mk
 include unixuid/config.mk
 
 ################################################
@@ -75,11 +76,7 @@ OBJ_FILES = \
 		ntvfs_base.o \
 		ntvfs_generic.o \
 		ntvfs_interface.o \
-		ntvfs_util.o \
-		common/brlock.o \
-		common/opendb.o \
-		common/notify.o \
-		common/sidmap.o
+		ntvfs_util.o
 REQUIRED_SUBSYSTEMS = NDR_OPENDB NDR_NOTIFY
 #
 # End SUBSYSTEM NTVFS
