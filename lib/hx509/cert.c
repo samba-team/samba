@@ -103,6 +103,8 @@ hx509_context_init(hx509_context *context)
 
     ENGINE_add_conf_module();
 
+    (*context)->ocsp_time_diff = 5 * 60;
+
     return 0;
 }
 
@@ -403,6 +405,24 @@ find_extension_subject_alt_name(const Certificate *cert, int *i,
     return decode_GeneralNames(e->extnValue.data, 
 			       e->extnValue.length,
 			       sa, &size);
+}
+
+static int
+find_extension_eku(const Certificate *cert, ExtKeyUsage *eku)
+{
+    const Extension *e;
+    size_t size;
+    int i = 0;
+
+    memset(eku, 0, sizeof(*eku));
+
+    e = find_extension(cert, oid_id_x509_ce_extKeyUsage(), &i);
+    if (e == NULL)
+	return HX509_EXTENSION_NOT_FOUND;
+    
+    return decode_ExtKeyUsage(e->extnValue.data, 
+			      e->extnValue.length,
+			      eku, &size);
 }
 
 static int
@@ -1254,22 +1274,41 @@ hx509_verify_path(hx509_context context,
      */
 
     if (ctx->revoke_ctx) {
-	hx509_certs cacerts;
+	hx509_certs certs;
 
-	ret = hx509_certs_init(context, "MEMORY:cacerts", 0, NULL, &cacerts);
-
-	for (i = 0; i < path.len; i++)
-	    hx509_certs_add(context, cacerts, path.val[i]);
+	ret = hx509_certs_init(context, "MEMORY:revoke-certs", 0,
+			       NULL, &certs);
+	if (ret)
+	    goto out;
 
 	for (i = 0; i < path.len; i++) {
+	    ret = hx509_certs_add(context, certs, path.val[i]);
+	    if (ret) {
+		hx509_certs_free(&certs);
+		goto out;
+	    }
+	}
+	ret = hx509_certs_merge(context, certs, chain);
+	if (ret) {
+	    hx509_certs_free(&certs);
+	    goto out;
+	}
+
+	for (i = 0; i < path.len - 1; i++) {
+	    int parent = (i < path.len - 1) ? i + 1 : i;
+
 	    ret = hx509_revoke_verify(context,
 				      ctx->revoke_ctx, 
-				      cacerts,
+				      certs,
 				      ctx->time_now,
-				      path.val[i]);
-	    if (ret)
+				      path.val[i],
+				      path.val[parent]);
+	    if (ret) {
+		hx509_certs_free(&certs);
 		goto out;
+	    }
 	}
+	hx509_certs_free(&certs);
     }
 
 #if 0
@@ -1285,24 +1324,16 @@ hx509_verify_path(hx509_context context,
 
     for (i = path.len - 1; i >= 0; i--) {
 	Certificate *signer, *c;
-	heim_octet_string os;
 
 	c = _hx509_get_cert(path.val[i]);
 	/* is last in chain and thus the self-signed */
 	signer = path.val[i == path.len - 1 ? i : i + 1]->data;
 
-	if (c->signatureValue.length & 7) {
-	    ret = EINVAL;
-	    break;
-	}
-	os.data = c->signatureValue.data;
-	os.length = c->signatureValue.length / 8;
-
 	/* verify signatureValue */
-	ret = _hx509_verify_signature(signer, 
-				      &c->signatureAlgorithm,
-				      &c->tbsCertificate._save,
-				      &os);
+	ret = _hx509_verify_signature_bitstring(signer,
+						&c->signatureAlgorithm,
+						&c->tbsCertificate._save,
+						&c->signatureValue);
 	if (ret) {
 	    break;
 	}
@@ -1562,4 +1593,33 @@ _hx509_query_match_cert(const hx509_query *q, hx509_cert cert)
 	return 0;
 
     return 1;
+}
+
+int
+hx509_cert_check_eku(hx509_context context, hx509_cert cert,
+		     const heim_oid *eku, int allow_any_eku)
+{
+    ExtKeyUsage e;
+    int ret, i;
+
+    ret = find_extension_eku(_hx509_get_cert(cert), &e);
+    if (ret)
+	return ret;
+
+    for (i = 0; i < e.len; i++) {
+	if (heim_oid_cmp(eku, &e.val[i]) == 0) {
+	    free_ExtKeyUsage(&e);
+	    return 0;
+	}
+	if (allow_any_eku) {
+#if 0
+	    if (heim_oid_cmp(id_any_eku, &e.val[i]) == 0) {
+		free_ExtKeyUsage(&e);
+		return 0;
+	    }
+#endif
+	}
+    }
+    free_ExtKeyUsage(&e);
+    return -1;
 }
