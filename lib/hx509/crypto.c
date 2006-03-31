@@ -702,6 +702,23 @@ _hx509_verify_signature(const Certificate *signer,
 }
 
 int
+_hx509_verify_signature_bitstring(const Certificate *signer,
+				  const AlgorithmIdentifier *alg,
+				  const heim_octet_string *data,
+				  const heim_bit_string *sig)
+{
+    heim_octet_string os;
+
+    if (sig->length & 7)
+	return EINVAL;
+
+    os.data = sig->data;
+    os.length = sig->length / 8;
+    
+    return _hx509_verify_signature(signer, alg, data, &os);
+}
+
+int
 _hx509_create_signature(const hx509_private_key signer,
 			const AlgorithmIdentifier *alg,
 			const heim_octet_string *data,
