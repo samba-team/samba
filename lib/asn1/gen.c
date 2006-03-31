@@ -225,7 +225,6 @@ gen_compare_defval(const char *var, struct value *val)
 static void
 generate_header_of_codefile(const char *name)
 {
-    struct import *i;
     char *filename;
 
     if (codefile != NULL)
