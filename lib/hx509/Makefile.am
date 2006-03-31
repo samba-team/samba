@@ -5,7 +5,29 @@ include $(top_srcdir)/Makefile.am.common
 lib_LTLIBRARIES = libhx509.la
 libhx509_la_LDFLAGS = -version-info 1:0:0
 
-BUILT_SOURCES = hx509_err.c hx509_err.h
+BUILT_SOURCES =				\
+	$(gen_files_ocsp:.x=.c)		\
+	hx509_err.c			\
+	hx509_err.h
+
+gen_files_ocsp = 			\
+	asn1_OCSPBasicOCSPResponse.x	\
+	asn1_OCSPCertID.x		\
+	asn1_OCSPCertStatus.x		\
+	asn1_OCSPInnerRequest.x		\
+	asn1_OCSPKeyHash.x		\
+	asn1_OCSPRequest.x		\
+	asn1_OCSPResponderID.x		\
+	asn1_OCSPResponse.x		\
+	asn1_OCSPResponseBytes.x	\
+	asn1_OCSPResponseData.x		\
+	asn1_OCSPResponseStatus.x	\
+	asn1_OCSPSignature.x		\
+	asn1_OCSPSingleResponse.x	\
+	asn1_OCSPTBSRequest.x		\
+	asn1_OCSPVersion.x
+
+
 
 libhx509_la_LIBADD = $(LIB_des) ../asn1/libasn1.la
 
@@ -18,8 +40,6 @@ libhx509_la_SOURCES = \
 	crypto.c \
 	file.c \
 	hx509.h \
-	hx509_err.c \
-	hx509_err.h \
 	keyset.c \
 	ks_dir.c \
 	ks_file.c \
@@ -30,7 +50,14 @@ libhx509_la_SOURCES = \
 	lock.c \
 	name.c \
 	print.c \
-	revoke.c
+	revoke.c \
+	$(BUILT_SOURCES)
+
+
+$(gen_files_ocsp) ocsp_asn1.h: ocsp_asn1_files
+
+ocsp_asn1_files: $(srcdir)/ocsp.asn1
+	../asn1/asn1_compile$(EXEEXT) --preserve-binary=OCSPTBSRequest --preserve-binary=OCSPResponseData $(srcdir)/ocsp.asn1 ocsp_asn1 || (rm -f ocsp_asn1_files ; exit 1)
 
 $(libhx509_la_OBJECTS): $(srcdir)/hx509-protos.h $(srcdir)/hx509-private.h
 
@@ -61,9 +88,11 @@ hxtool_LDFLAGS = -pthread
 
 EXTRA_DIST = hx509_err.et
 
-CLEANFILES = hx509_err.c hx509_err.h $(TESTS) \
+CLEANFILES = $(BUILT_SOURCES) $(gen_files_ocsp) \
+	ocsp_asn1_files ocsp_asn1.h\
+	$(TESTS) \
 	hxtool-commands.c hxtool-commands.h *.tmp \
-	sd.data sd.data.out
+	sd.data sd.data.out 
 
 
 #
