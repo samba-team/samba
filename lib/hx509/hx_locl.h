@@ -146,5 +146,7 @@ struct hx509_context_data {
     int ks_num_ops;
     int flags;
 #define HX509_CTX_VERIFY_MISSING_OK	1
+    int ocsp_time_diff;
+#define HX509_DEFAULT_OCSP_TIME_DIFF	(5*60)
 };
 
