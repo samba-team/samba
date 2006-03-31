@@ -103,7 +103,7 @@ hx509_context_init(hx509_context *context)
 
     ENGINE_add_conf_module();
 
-    (*context)->ocsp_time_diff = 5 * 60;
+    (*context)->ocsp_time_diff = HX509_DEFAULT_OCSP_TIME_DIFF;
 
     return 0;
 }
