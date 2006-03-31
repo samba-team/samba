@@ -46,6 +46,7 @@ struct revoke_ocsp {
     time_t last_modfied;
     OCSPBasicOCSPResponse ocsp;
     int verified;
+    hx509_certs certs;
 };
 
 
@@ -87,6 +88,7 @@ hx509_revoke_free(hx509_revoke_ctx *revoke)
     for (i = 0; i < (*revoke)->ocsps.len; i++) {
 	free((*revoke)->ocsps.val[i].path);
 	free_OCSPBasicOCSPResponse(&(*revoke)->ocsps.val[i].ocsp);
+	hx509_certs_free(&(*revoke)->ocsps.val[i].certs);
     }
     free((*revoke)->crls.val);
 
@@ -97,7 +99,7 @@ hx509_revoke_free(hx509_revoke_ctx *revoke)
 
 static int
 verify_ocsp(hx509_context context,
-	    OCSPBasicOCSPResponse *ocsp,
+	    struct revoke_ocsp *ocsp,
 	    time_t time_now,
 	    hx509_certs certs)
 {
@@ -108,27 +110,29 @@ verify_ocsp(hx509_context context,
 	
     _hx509_query_clear(&q);
 	
-    switch(ocsp->tbsResponseData.responderID.element) {
+    switch(ocsp->ocsp.tbsResponseData.responderID.element) {
     case choice_OCSPResponderID_byName:
 	q.match = HX509_QUERY_MATCH_SUBJECT_NAME;
-	q.subject_name = &ocsp->tbsResponseData.responderID.u.byName;
+	q.subject_name = &ocsp->ocsp.tbsResponseData.responderID.u.byName;
 	break;
     case choice_OCSPResponderID_byKey:
-	ret = EINVAL;
+	ret = EINVAL; /* XXX */
 	goto out;
     }
 	
-    os.data = ocsp->signature.data;
-    os.length = ocsp->signature.length / 8;
+    os.data = ocsp->ocsp.signature.data;
+    os.length = ocsp->ocsp.signature.length / 8;
 
     ret = hx509_certs_find(context, certs, &q, &signer);
+    if (ret)
+	ret = hx509_certs_find(context, ocsp->ocsp.certs, &q, &signer);
     if (ret)
 	goto out;
 
     ret = hx509_verify_signature(context,
 				 signer, 
-				 &ocsp->signatureAlgorithm,
-				 &ocsp->tbsResponseData._save,
+				 &ocsp->ocsp.signatureAlgorithm,
+				 &ocsp->ocsp.tbsResponseData._save,
 				 &os);
     if (ret)
 	goto out;
@@ -386,11 +390,34 @@ hx509_revoke_verify(hx509_context context,
 		ocsp->ocsp = o;
 		ocsp->verified = 0;
 	    }
+
+	    if (ocsp->ocsp.certs) {
+		int j;
+
+		hx509_certs_free(&ocsp->certs);
+
+		ret = hx509_certs_init(context, "MEMORY:ocsp-certs", 0, 
+				       NULL, &ocsp->certs);
+		if (ret == 0) {
+		    for (j = 0; j < ocsp->ocsp.certs->len; j++) {
+			hx509_cert c;
+			
+			ret = hx509_cert_init(context, &ocsp->ocsp.certs->val[j], &c);
+			if (ret)
+			    continue;
+
+			ret = hx509_certs_add(context, ocsp->certs, c);
+			if (ret)
+			    continue;
+		    }
+		}
+	    }
 	}
+
 
 	/* verify signature in ocsp if not already done */
 	if (ocsp->verified == 0) {
-	    ret = verify_ocsp(context, &ocsp->ocsp, now, certs);
+	    ret = verify_ocsp(context, ocsp, now, certs);
 	    if (ret)
 		continue;
 	    ocsp->verified = 1;
