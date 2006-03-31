@@ -110,9 +110,9 @@ void
 hx509_context_set_missing_crl(hx509_context context, int flag)
 {
     if (flag)
-	context->flags |= HX509_CTX_CRL_MISSING_OK;
+	context->flags |= HX509_CTX_VERIFY_MISSING_OK;
     else
-	context->flags &= ~HX509_CTX_CRL_MISSING_OK;
+	context->flags &= ~HX509_CTX_VERIFY_MISSING_OK;
 }
 
 void
@@ -137,6 +137,37 @@ _hx509_get_cert(hx509_cert cert)
 {
     return cert->data;
 }
+
+#if 0
+/*
+ *
+ */
+
+static void
+print_cert_subject(hx509_cert cert)
+{
+    char *subject_name;
+    hx509_name name;
+    int ret;
+
+    ret = hx509_cert_get_subject(cert, &name);
+    if (ret)
+	abort();
+	
+    ret = hx509_name_to_string(name, &subject_name);
+    hx509_name_free(&name);
+    if (ret)
+	abort();
+
+    printf("name: %s\n", subject_name);
+
+    free(subject_name);
+}
+#endif
+
+/*
+ *
+ */
 
 int
 _hx509_cert_get_version(const Certificate *t)
@@ -583,6 +614,17 @@ certificate_is_self_signed(const Certificate *cert)
     return _hx509_cert_is_parent_cmp(cert, cert, 1) == 0;
 }
 
+/*
+ * The subjectName is "null" when its empty set of relative DBs.
+ */
+
+static int
+subject_null_p(const Certificate *c)
+{
+    return c->tbsCertificate.subject.u.rdnSequence.len == 0;
+}
+
+
 static hx509_cert
 find_parent(hx509_context context,
 	    hx509_verify_ctx ctx,
@@ -590,25 +632,48 @@ find_parent(hx509_context context,
 	    hx509_certs chain, 
 	    hx509_cert current)
 {
+    AuthorityKeyIdentifier ai;
     hx509_query q;
     hx509_cert c;
     int ret;
 
+    memset(&ai, 0, sizeof(ai));
+    
     _hx509_query_clear(&q);
 
-    q.match = 
-	HX509_QUERY_FIND_ISSUER_CERT | 
-	HX509_QUERY_NO_MATCH_PATH |
-	HX509_QUERY_KU_KEYCERTSIGN;
-    q.subject = _hx509_get_cert(current);
+    if (!subject_null_p(current->data)) {
+	q.match |= HX509_QUERY_FIND_ISSUER_CERT;
+	q.subject = _hx509_get_cert(current);
+    } else {
+	ret = find_extension_auth_key_id(current->data, &ai);
+	if (ret)
+	    return NULL;
+
+	if (ai.keyIdentifier == NULL) {
+	    free_AuthorityKeyIdentifier(&ai);
+	    return NULL;
+	}
+
+	q.subject_id = ai.keyIdentifier;
+	q.match = HX509_QUERY_MATCH_SUBJECT_KEY_ID;
+    }
+
     q.path = path;
+    q.match |= HX509_QUERY_NO_MATCH_PATH | HX509_QUERY_KU_KEYCERTSIGN;
 
     ret = hx509_certs_find(context, chain, &q, &c);
-    if (ret == 0)
+    if (ret == 0) {
+	free_AuthorityKeyIdentifier(&ai);
 	return c;
+    }
+
     ret = hx509_certs_find(context, ctx->trust_anchors, &q, &c);
-    if (ret == 0)
+    if (ret == 0) {
+	free_AuthorityKeyIdentifier(&ai);
 	return c;
+    }
+
+    free_AuthorityKeyIdentifier(&ai);
     return NULL;
 }
 
@@ -970,16 +1035,6 @@ match_general_name(const GeneralName *c, const GeneralName *n, int *match)
     }
 }
 
-/*
- * The subjectName is "null" when its empty set of relative DBs.
- */
-
-static int
-subject_null_p(const Certificate *c)
-{
-    return c->tbsCertificate.subject.u.rdnSequence.len == 0;
-}
-
 static int
 match_alt_name(const GeneralName *n, const Certificate *c, 
 	       int *same, int *match)
@@ -1219,21 +1274,7 @@ hx509_verify_path(hx509_context context,
 
 #if 0
     for (i = path.len - 1; i >= 0; i--) {
-	hx509_name name;
-	char *subject_name;
-	
-	ret = hx509_cert_get_subject(path.val[i], &name);
-	if (ret)
-	    abort();
-	
-	ret = hx509_name_to_string(name, &subject_name);
-	hx509_name_free(&name);
-	if (ret)
-	    abort();
-
-	printf("name %d: %s\n", i, subject_name);
-
-	free(subject_name);
+	print_cert_subject(path.val[i]);
     }
 #endif
 
