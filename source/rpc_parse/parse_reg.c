@@ -1117,7 +1117,7 @@ void init_reg_q_enum_val(REG_Q_ENUM_VALUE *q_u, POLICY_HND *pol,
 	q_u->value->buf_max_len = max_buf_len;
 
 	q_u->buffer_len = TALLOC_P( get_talloc_ctx(), uint32 );
-	if (q_u->buffer_len) {
+	if (!q_u->buffer_len) {
 		smb_panic("init_reg_q_enum_val: talloc fail\n");
 		return;
 	}
