@@ -204,6 +204,30 @@ command = {
 	help = "Validate content of certificates"
 }
 command = {
+	name = "ocsp-fetch"
+	option = {
+		long = "pass"
+		type = "strings"
+		argument = "password"
+		help = "password, prompter, or environment"
+	}
+	option = {
+		long = "sign"
+		type = "string"
+		argument = "certificate"
+		help = "certificate use to sign the request"
+	}
+	option = {
+		long = "verbose"
+		short = "c"
+		type = "flag"
+		help = "verbose"
+	}
+	min_args="2"
+	argument="filename certs ..."
+	help = "Fetch OCSP responses for the following certs"
+}
+command = {
 	name = "query"
 	option = {
 		long = "exact"
