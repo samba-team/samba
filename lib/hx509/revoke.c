@@ -623,7 +623,7 @@ hx509_revoke_verify(hx509_context context,
 
     if (context->flags & HX509_CTX_VERIFY_MISSING_OK)
 	return 0;
-    return HX509_CRL_MISSING;
+    return HX509_REVOKE_STATUS_MISSING;
 }
 
 struct ocsp_add_ctx {
