@@ -8,6 +8,7 @@ id "$Id$"
 error_table hx
 prefix HX509
 
+# path validateion and construction related errors
 error_code BAD_TIMEFORMAT,	"ASN.1 failed call to system time library"
 error_code EXTENSION_NOT_FOUND,	"Extension not found"
 error_code NO_PATH,		"Certification path not found"
@@ -28,6 +29,7 @@ error_code KU_CERT_MISSING, "Required keyusage for this certificate is missing"
 error_code CERT_NOT_FOUND, "Certificate not found"
 error_code UNKNOWN_LOCK_COMMAND, "Unknown lock command"
 
+# cms related errors
 index 32
 prefix HX509_CMS
 error_code FAILED_CREATE_SIGATURE, "Failed to create signature"
@@ -39,6 +41,7 @@ error_code PADDING_ERROR, "Padding in the message invalid"
 error_code NO_RECIPIENT_CERTIFICATE, "Couldn't find recipient certificate"
 error_code DATA_OID_MISMATCH, "Mismatch bewteen signed type and unsigned type"
 
+# crypto related errors
 index 64
 prefix HX509_CRYPTO
 error_code INTERNAL_ERROR, "Internal error in the crypto engine"
@@ -51,14 +54,15 @@ error_code OID_MISMATCH, "Mismatch bewteen oids"
 error_code NO_PROMPTER, "No prompter function defined"
 error_code SIGNATURE_WITHOUT_SIGNER, "Signature require signer, but non available"
 
+# revoke related errors
 index 94
-prefix HX509_CRL
-error_code USED_BEFORE_TIME, "CRL used before it became valid"
-error_code USED_AFTER_TIME, "CRL used after it became invalid"
-error_code INVALID_FORMAT, "CRL have invalid format"
-error_code CERT_REVOKED, "Certificate is included in CRL"
-error_code MISSING, "No CRL found for certificates CA"
-error_code UNKNOWN_EXTENSION, "Unknown extension"
+prefix HX509
+error_code CRL_USED_BEFORE_TIME, "CRL used before it became valid"
+error_code CRL_USED_AFTER_TIME, "CRL used after it became invalid"
+error_code CRL_INVALID_FORMAT, "CRL have invalid format"
+error_code CRL_CERT_REVOKED, "Certificate is included in CRL"
+error_code REVOKE_STATUS_MISSING, "No revoke status found for certificates"
+error_code CRL_UNKNOWN_EXTENSION, "Unknown extension"
 
 
 end
