@@ -249,7 +249,11 @@ id-x509-ce-subjectAltName OBJECT IDENTIFIER ::=  { id-x509-ce 17 }
 id-x509-ce-issuerAltName OBJECT IDENTIFIER ::=  { id-x509-ce 18 }
 id-x509-ce-subjectDirectoryAttributes OBJECT IDENTIFIER ::=  { id-x509-ce 9 }
 id-x509-ce-policyConstraints OBJECT IDENTIFIER ::=  { id-x509-ce 36 }
+
 id-x509-ce-extKeyUsage OBJECT IDENTIFIER ::= { id-x509-ce 37}
+
+ExtKeyUsage ::= SEQUENCE OF OBJECT IDENTIFIER
+
 id-x509-ce-cRLDistributionPoints OBJECT IDENTIFIER ::=  { id-x509-ce 31 }
 id-x509-ce-deltaCRLIndicator OBJECT IDENTIFIER ::= { id-x509-ce 27 }
 id-x509-ce-issuingDistributionPoint OBJECT IDENTIFIER ::= { id-x509-ce 28 }
