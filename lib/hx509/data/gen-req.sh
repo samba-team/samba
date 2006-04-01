@@ -177,3 +177,15 @@ openssl ocsp \
     -reqin ocsp-req2.der \
     -noverify \
     -respout ocsp-resp2.der
+
+openssl ca \
+    -gencrl \
+    -name usr \
+    -crldays 3600 \
+    -keyfile ca.key \
+    -cert ca.crt \
+    -crl_reason superseded \
+    -out crl1.crl \
+    -config openssl.cnf 
+
+openssl crl -in crl1.crl -outform der -out crl1.der
