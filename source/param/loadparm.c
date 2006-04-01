@@ -128,9 +128,9 @@ typedef struct
 	char *ntptr_providor;
 	char *szWinbindSeparator;
 	char *szWinbinddSocketDirectory;
-	BOOL bWinbindSealedPipes;
+	int bWinbindSealedPipes;
 	char *swat_directory;
-	BOOL tls_enabled;
+	int tls_enabled;
 	char *tls_keyfile;
 	char *tls_certfile;
 	char *tls_cafile;
@@ -142,7 +142,7 @@ typedef struct
 	int minprotocol;
 	int security;
 	char **AuthMethods;
-	BOOL paranoid_server_security;
+	int paranoid_server_security;
 	int max_wins_ttl;
 	int min_wins_ttl;
 	int announce_as;	/* This is initialised in init_globals */
@@ -153,35 +153,35 @@ typedef struct
 	int kpasswd_port;
 	int web_port;
 	char *socket_options;
-	BOOL bWINSsupport;
-	BOOL bWINSdnsProxy;
+	int bWINSsupport;
+	int bWINSdnsProxy;
 	char *szWINSHook; 
-	BOOL bLocalMaster;
-	BOOL bPreferredMaster;
-	BOOL bEncryptPasswords;
-	BOOL bNullPasswords;
-	BOOL bObeyPamRestrictions;
-	BOOL bLargeReadwrite;
-	BOOL bReadRaw;
-	BOOL bWriteRaw;
-	BOOL bTimeServer;
-	BOOL bBindInterfacesOnly;
-	BOOL bNTSmbSupport;
-	BOOL bNTStatusSupport;
-	BOOL bLanmanAuth;
-	BOOL bNTLMAuth;
-	BOOL bUseSpnego;
+	int bLocalMaster;
+	int bPreferredMaster;
+	int bEncryptPasswords;
+	int bNullPasswords;
+	int bObeyPamRestrictions;
+	int bLargeReadwrite;
+	int bReadRaw;
+	int bWriteRaw;
+	int bTimeServer;
+	int bBindInterfacesOnly;
+	int bNTSmbSupport;
+	int bNTStatusSupport;
+	int bLanmanAuth;
+	int bNTLMAuth;
+	int bUseSpnego;
 	int  server_signing;
 	int  client_signing;
-	BOOL bClientPlaintextAuth;
-	BOOL bClientLanManAuth;
-	BOOL bClientNTLMv2Auth;
-	BOOL client_use_spnego_principal;
-	BOOL bHostMSDfs;
-	BOOL bUnicode;
-	BOOL bUnixExtensions;
-	BOOL bDisableNetbios;
-	BOOL bRpcBigEndian;
+	int bClientPlaintextAuth;
+	int bClientLanManAuth;
+	int bClientNTLMv2Auth;
+	int client_use_spnego_principal;
+	int bHostMSDfs;
+	int bUnicode;
+	int bUnixExtensions;
+	int bDisableNetbios;
+	int bRpcBigEndian;
 	struct param_opt *param_opt;
 }
 global;
@@ -193,7 +193,7 @@ static global Globals;
  */
 typedef struct
 {
-	BOOL valid;
+	int valid;
 	char *szService;
 	char *szPath;
 	char *szCopy;
@@ -208,18 +208,18 @@ typedef struct
 	int iMaxPrintJobs;
 	int iMaxConnections;
 	int iCSCPolicy;
-	BOOL bAvailable;
-	BOOL bBrowseable;
-	BOOL bRead_only;
-	BOOL bPrint_ok;
-	BOOL bMap_system;
-	BOOL bMap_hidden;
-	BOOL bMap_archive;
-	BOOL bStrictLocking;
-	BOOL *copymap;
-	BOOL bMSDfsRoot;
-	BOOL bStrictSync;
-	BOOL bCIFileSystem;
+	int bAvailable;
+	int bBrowseable;
+	int bRead_only;
+	int bPrint_ok;
+	int bMap_system;
+	int bMap_hidden;
+	int bMap_archive;
+	int bStrictLocking;
+	int *copymap;
+	int bMSDfsRoot;
+	int bStrictSync;
+	int bCIFileSystem;
 	struct param_opt *param_opt;
 
 	char dummy[3];		/* for alignment */
@@ -918,7 +918,7 @@ static int map_parameter(const char *pszParmName);
 static int getservicebyname(const char *pszServiceName,
 			    service * pserviceDest);
 static void copy_service(service * pserviceDest,
-			 service * pserviceSource, BOOL *pcopymapDest);
+			 service * pserviceSource, int *pcopymapDest);
 static BOOL service_ok(int iService);
 static BOOL do_section(const char *pszSectionName, void *);
 static void init_copymap(service * pservice);
@@ -1399,7 +1399,7 @@ static int getservicebyname(const char *pszServiceName, service * pserviceDest)
  If pcopymapDest is NULL then copy all fields
 ***************************************************************************/
 
-static void copy_service(service * pserviceDest, service * pserviceSource, BOOL *pcopymapDest)
+static void copy_service(service * pserviceDest, service * pserviceSource, int *pcopymapDest)
 {
 	int i;
 	BOOL bcopyall = (pcopymapDest == NULL);
@@ -1451,7 +1451,7 @@ static void copy_service(service * pserviceDest, service * pserviceSource, BOOL 
 		if (pserviceSource->copymap)
 			memcpy((void *)pserviceDest->copymap,
 			       (void *)pserviceSource->copymap,
-			       sizeof(BOOL) * NUMPARAMETERS);
+			       sizeof(int) * NUMPARAMETERS);
 	}
 	
 	data = pserviceSource->param_opt;
@@ -1667,7 +1667,7 @@ static void init_copymap(service * pservice)
 {
 	int i;
 	SAFE_FREE(pservice->copymap);
-	pservice->copymap = malloc_array_p(BOOL, NUMPARAMETERS);
+	pservice->copymap = malloc_array_p(int, NUMPARAMETERS);
 	if (!pservice->copymap)
 		DEBUG(0,
 		      ("Couldn't allocate copymap!! (size %d)\n",
