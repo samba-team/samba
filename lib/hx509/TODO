@@ -1,8 +1,8 @@
 $Id$
 
-nist tests
-	name constrains
-	policy mappings
+x501 name
+	parsing
+	comparing
 
 DSA support
 DSA2 support
@@ -12,6 +12,10 @@ x509 policy mappings support
 path validation
 
 tests
+	nist tests
+		name constrains
+		policy mappings
+
 	building path using Subject/Issuer vs SubjKeyID vs AuthKeyID
 	negative tests
 		all checksums
@@ -21,3 +25,8 @@ pkcs7
 	handle pkcs7 support in CMS ?
 
 pkcs10
+	generate request
+		pk-init KDC/client
+		web server/client
+		jabber server/client 
+		email
