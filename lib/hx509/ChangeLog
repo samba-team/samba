@@ -1,5 +1,7 @@
 2006-04-01  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* test_chain.in: Added crl tests
+	
 	* data/nist-data: rename missing-crl to missing-revoke
 
 	* data: make ca use openssl ca command so we can add ocsp tests,
