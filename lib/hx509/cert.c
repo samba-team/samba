@@ -109,7 +109,7 @@ hx509_context_init(hx509_context *context)
 }
 
 void
-hx509_context_set_missing_crl(hx509_context context, int flag)
+hx509_context_set_missing_revoke(hx509_context context, int flag)
 {
     if (flag)
 	context->flags |= HX509_CTX_VERIFY_MISSING_OK;

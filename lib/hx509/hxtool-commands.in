@@ -86,9 +86,9 @@ command = {
 		help = "password, prompter, or environment"
 	}
 	option = {
-		long = "missing-crl"
+		long = "missing-revoke"
 		type = "flag"
-		help = "missing crl is ok"
+		help = "missing CRL/OCSP is ok"
 	}
 	option = {
 		long = "content-info"
@@ -159,9 +159,9 @@ command = {
 		help = "password, prompter, or environment"
 	}
 	option = {
-		long = "missing-crl"
+		long = "missing-revoke"
 		type = "flag"
-		help = "missing crl is ok"
+		help = "missing CRL/OCSP is ok"
 	}
 	option = {
 		long = "verbose"

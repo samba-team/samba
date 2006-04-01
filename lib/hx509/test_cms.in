@@ -45,14 +45,14 @@ echo "create signed data"
 
 echo "verify signed data"
 ./hxtool cms-verify-sd \
-	--missing-crl \
+	--missing-revoke \
 	--anchors=FILE:$srcdir/data/ca.crt \
 	sd.data sd.data.out || exit 1
 cmp "$srcdir/test_chain.in" sd.data.out || exit 1
 
 echo "verify signed data"
 ./hxtool cms-verify-sd \
-	--missing-crl \
+	--missing-revoke \
 	--anchors=FILE:$srcdir/data/test.crt \
 	sd.data sd.data.out && exit 1
 cmp "$srcdir/test_chain.in" sd.data.out || exit 1
@@ -67,7 +67,7 @@ echo "create signed data  (content info)"
 
 echo "verify signed data (content info)"
 ./hxtool cms-verify-sd \
-	--missing-crl \
+	--missing-revoke \
 	--anchors=FILE:$srcdir/data/ca.crt \
 	--content-info \
 	sd.data sd.data.out || exit 1
@@ -83,7 +83,7 @@ echo "create signed data"
 
 echo "verify signed data"
 ./hxtool cms-verify-sd \
-	--missing-crl \
+	--missing-revoke \
 	--anchors=FILE:$srcdir/data/ca.crt \
 	--content-info \
 	"$srcdir/data/test-signed-data" sd.data.out || exit 1
@@ -91,7 +91,7 @@ cmp "$srcdir/data/static-file" sd.data.out || exit 1
 
 echo "verify signed data (no attr)"
 ./hxtool cms-verify-sd \
-	--missing-crl \
+	--missing-revoke \
 	--anchors=FILE:$srcdir/data/ca.crt \
 	--content-info \
 	"$srcdir/data/test-signed-data-noattr" sd.data.out || exit 1
@@ -99,14 +99,14 @@ cmp "$srcdir/data/static-file" sd.data.out || exit 1
 
 echo "verify failure signed data (no attr, no certs)"
 ./hxtool cms-verify-sd \
-	--missing-crl \
+	--missing-revoke \
 	--anchors=FILE:$srcdir/data/ca.crt \
 	--content-info \
 	"$srcdir/data/test-signed-data-noattr-nocerts" sd.data.out && exit 1
 
 echo "verify signed data (no attr, no certs)"
 ./hxtool cms-verify-sd \
-	--missing-crl \
+	--missing-revoke \
 	--anchors=FILE:$srcdir/data/ca.crt \
 	--certificate=FILE:$srcdir/data/test.crt \
 	--content-info \
