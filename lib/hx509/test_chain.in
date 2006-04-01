@@ -112,6 +112,13 @@ echo "ocsp no-ca responder, missing cert, in pool"
     ocsp:FILE:$srcdir/data/ocsp-resp1-ocsp-no-cert.der \
     chain:FILE:$srcdir/data/ocsp-responder.crt > /dev/null || exit 1
 
+echo "ocsp no-ca responder, keyHash"
+./hxtool verify \
+    cert:FILE:$srcdir/data/test.crt \
+    anchor:FILE:$srcdir/data/ca.crt \
+    ocsp:FILE:$srcdir/data/ocsp-resp1-keyhash.der || exit 1
+
+
 echo "ocsp revoked cert"
 ./hxtool verify \
     cert:FILE:$srcdir/data/revoke.crt \
