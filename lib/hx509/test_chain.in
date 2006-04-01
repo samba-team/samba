@@ -87,31 +87,48 @@ echo "sub-cert -> sub-ca -> root"
 	chain:FILE:$srcdir/data/sub-ca.crt \
 	anchor:FILE:$srcdir/data/ca.crt > /dev/null || exit 1
 
+echo "ocsp non-ca responder"
 ./hxtool verify \
     cert:FILE:$srcdir/data/test.crt \
     anchor:FILE:$srcdir/data/ca.crt \
-    ocsp:FILE:$srcdir/data/ocsp-resp1-ocsp.der || exit 1
+    ocsp:FILE:$srcdir/data/ocsp-resp1-ocsp.der > /dev/null || exit 1
 
+echo "ocsp ca responder"
 ./hxtool verify \
     cert:FILE:$srcdir/data/test.crt \
     anchor:FILE:$srcdir/data/ca.crt \
-    ocsp:FILE:$srcdir/data/ocsp-resp1-ca.der || exit 1
+    ocsp:FILE:$srcdir/data/ocsp-resp1-ca.der > /dev/null || exit 1
 
+echo "ocsp no-ca responder, missing cert"
 ./hxtool verify \
     cert:FILE:$srcdir/data/test.crt \
     anchor:FILE:$srcdir/data/ca.crt \
-    ocsp:FILE:$srcdir/data/ocsp-resp1-ocsp-no-cert.der && exit 1
+    ocsp:FILE:$srcdir/data/ocsp-resp1-ocsp-no-cert.der > /dev/null && exit 1
 
+echo "ocsp no-ca responder, missing cert, in pool"
 ./hxtool verify \
     cert:FILE:$srcdir/data/test.crt \
     anchor:FILE:$srcdir/data/ca.crt \
     ocsp:FILE:$srcdir/data/ocsp-resp1-ocsp-no-cert.der \
-    chain:FILE:$srcdir/data/ocsp-responder.crt || exit 1
+    chain:FILE:$srcdir/data/ocsp-responder.crt > /dev/null || exit 1
 
+echo "ocsp revoked cert"
 ./hxtool verify \
     cert:FILE:$srcdir/data/revoke.crt \
     anchor:FILE:$srcdir/data/ca.crt \
-    ocsp:FILE:$srcdir/data/ocsp-resp2.der && exit 1
+    ocsp:FILE:$srcdir/data/ocsp-resp2.der > /dev/null && exit 1
+
+echo "crl non-revoked cert"
+./hxtool verify \
+    cert:FILE:$srcdir/data/test.crt \
+    anchor:FILE:$srcdir/data/ca.crt \
+    crl:FILE:$srcdir/data/crl1.der > /dev/null || exit 1
+
+echo "crl revoked cert"
+./hxtool verify \
+    cert:FILE:$srcdir/data/revoke.crt \
+    anchor:FILE:$srcdir/data/ca.crt \
+    crl:FILE:$srcdir/data/crl1.der > /dev/null && exit 1
 
 
 exit 0
