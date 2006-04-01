@@ -208,11 +208,14 @@ load_ocsp(hx509_context context, struct revoke_ocsp *ocsp)
 	return EINVAL;
     }
 
-    /*
-     * XXX find BasicReponse and act on it
-     */
-    
     if (resp.responseBytes == NULL) {
+	free_OCSPResponse(&resp);
+	return EINVAL;
+    }
+
+    ret = heim_oid_cmp(&resp.responseBytes->responseType, 
+		       oid_id_pkix_ocsp_basic());
+    if (ret != 0) {
 	free_OCSPResponse(&resp);
 	return EINVAL;
     }
