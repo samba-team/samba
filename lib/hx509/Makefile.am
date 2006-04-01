@@ -7,6 +7,7 @@ libhx509_la_LDFLAGS = -version-info 1:0:0
 
 BUILT_SOURCES =				\
 	$(gen_files_ocsp:.x=.c)		\
+	$(gen_files_pkcs10:.x=.c)	\
 	hx509_err.c			\
 	hx509_err.h
 
@@ -30,6 +31,10 @@ gen_files_ocsp = 			\
 	asn1_id_pkix_ocsp.x		\
 	asn1_id_pkix_ocsp_basic.x	\
 	asn1_id_pkix_ocsp_nonce.x
+
+gen_files_pkcs10 = 			\
+	asn1_CertificationRequestInfo.x	\
+	asn1_CertificationRequest.x
 
 libhx509_la_LIBADD = $(LIB_des) ../asn1/libasn1.la
 
@@ -57,9 +62,14 @@ libhx509_la_SOURCES = \
 
 
 $(gen_files_ocsp) ocsp_asn1.h: ocsp_asn1_files
+$(gen_files_pkcs10) pkcs10_asn1.h: pkcs10_asn1_files
 
 ocsp_asn1_files: $(srcdir)/ocsp.asn1
 	../asn1/asn1_compile$(EXEEXT) --preserve-binary=OCSPTBSRequest --preserve-binary=OCSPResponseData $(srcdir)/ocsp.asn1 ocsp_asn1 || (rm -f ocsp_asn1_files ; exit 1)
+
+pkcs10_asn1_files: $(srcdir)/pkcs10.asn1
+	../asn1/asn1_compile$(EXEEXT) --preserve-binary=CertificationRequestInfo $(srcdir)/pkcs10.asn1 pkcs10_asn1 || (rm -f pkcs10_asn1_files ; exit 1)
+
 
 $(libhx509_la_OBJECTS): $(srcdir)/hx509-protos.h $(srcdir)/hx509-private.h
 
@@ -90,8 +100,9 @@ hxtool_LDFLAGS = -pthread
 
 EXTRA_DIST = hx509_err.et
 
-CLEANFILES = $(BUILT_SOURCES) $(gen_files_ocsp) \
-	ocsp_asn1_files ocsp_asn1.h\
+CLEANFILES = $(BUILT_SOURCES) \
+	$(gen_files_ocsp) ocsp_asn1_files ocsp_asn1.h\
+	$(gen_files_pkcs10) pkcs10_asn1_files pkcs10_asn1.h\
 	$(TESTS) \
 	hxtool-commands.c hxtool-commands.h *.tmp \
 	sd.data sd.data.out \
