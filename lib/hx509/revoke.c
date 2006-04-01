@@ -176,26 +176,28 @@ out:
  */
 
 static int
-load_ocsp(const char *path, time_t *t, OCSPBasicOCSPResponse *ocsp)
+load_ocsp(hx509_context context, struct revoke_ocsp *ocsp)
 {
     OCSPResponse resp;
+    OCSPBasicOCSPResponse basic;
+    hx509_certs certs = NULL;
     size_t length, size;
     struct stat sb;
     void *data;
     int ret;
 
-    memset(ocsp, 0, sizeof(*ocsp));
-
-    ret = _hx509_map_file(path, &data, &length, &sb);
+    ret = _hx509_map_file(ocsp->path, &data, &length, &sb);
     if (ret)
 	return ret;
-
-    *t = sb.st_mtime;
 
     ret = decode_OCSPResponse(data, length, &resp, &size);
     _hx509_unmap_file(data, length);
     if (ret)
 	return ret;
+    if (length != size) {
+	free_OCSPResponse(&resp);
+	return EINVAL;
+    }
 
     switch (resp.responseStatus) {
     case successful:
@@ -216,7 +218,7 @@ load_ocsp(const char *path, time_t *t, OCSPBasicOCSPResponse *ocsp)
 
     ret = decode_OCSPBasicOCSPResponse(resp.responseBytes->response.data,
 				       resp.responseBytes->response.length,
-				       ocsp,
+				       &basic,
 				       &size);
     if (ret) {
 	free_OCSPResponse(&resp);
@@ -224,10 +226,43 @@ load_ocsp(const char *path, time_t *t, OCSPBasicOCSPResponse *ocsp)
     }
     if (size != resp.responseBytes->response.length) {
 	free_OCSPResponse(&resp);
-	free_OCSPBasicOCSPResponse(ocsp);
+	free_OCSPBasicOCSPResponse(&basic);
 	return EINVAL;
     }
     free_OCSPResponse(&resp);
+
+    if (basic.certs) {
+	int i;
+
+	ret = hx509_certs_init(context, "MEMORY:ocsp-certs", 0, 
+			       NULL, &certs);
+	if (ret) {
+	    free_OCSPBasicOCSPResponse(&basic);
+	    return ret;
+	}
+
+	for (i = 0; i < basic.certs->len; i++) {
+	    hx509_cert c;
+	    
+	    ret = hx509_cert_init(context, &basic.certs->val[i], &c);
+	    if (ret)
+		continue;
+	    
+	    ret = hx509_certs_add(context, certs, c);
+	    if (ret)
+		continue;
+	}
+    }
+
+    ocsp->last_modfied = sb.st_mtime;
+
+    free_OCSPBasicOCSPResponse(&ocsp->ocsp);
+    hx509_certs_free(&ocsp->certs);
+    hx509_cert_free(ocsp->signer);
+
+    ocsp->ocsp = basic;
+    ocsp->certs = certs;
+    ocsp->signer = NULL;
 
     return 0;
 }
@@ -265,36 +300,11 @@ hx509_revoke_add_ocsp(hx509_context context,
     if (revoke->ocsps.val[revoke->ocsps.len].path == NULL)
 	return ENOMEM;
 
-    ret = load_ocsp(path,
-		    &revoke->ocsps.val[revoke->ocsps.len].last_modfied,
-		    &revoke->ocsps.val[revoke->ocsps.len].ocsp);
+    ret = load_ocsp(context, &revoke->ocsps.val[revoke->ocsps.len]);
     if (ret) {
 	free(revoke->ocsps.val[revoke->ocsps.len].path);
 	return ret;
     }
-    if (revoke->ocsps.val[revoke->ocsps.len].ocsp.certs) {
-	struct revoke_ocsp *ocsp = &revoke->ocsps.val[revoke->ocsps.len];
-	int j;
-
-	hx509_certs_free(&ocsp->certs);
-
-	ret = hx509_certs_init(context, "MEMORY:ocsp-certs", 0, 
-			       NULL, &ocsp->certs);
-	if (ret == 0) {
-	    for (j = 0; j < ocsp->ocsp.certs->len; j++) {
-		hx509_cert c;
-			
-		ret = hx509_cert_init(context, &ocsp->ocsp.certs->val[j], &c);
-		if (ret)
-		    continue;
-
-		ret = hx509_certs_add(context, ocsp->certs, c);
-		if (ret)
-		    continue;
-	    }
-	}
-    }
-
     revoke->ocsps.len++;
 
     return ret;
@@ -469,39 +479,10 @@ hx509_revoke_verify(hx509_context context,
 	/* check if there is a newer version of the file */
 	ret = stat(ocsp->path, &sb);
 	if (ret == 0 && ocsp->last_modfied != sb.st_mtime) {
-	    OCSPBasicOCSPResponse o;
-
-	    ret = load_ocsp(ocsp->path, &ocsp->last_modfied, &o);
-	    if (ret == 0) {
-		free_OCSPBasicOCSPResponse(&ocsp->ocsp);
-		ocsp->ocsp = o;
-		hx509_cert_free(ocsp->signer);
-		ocsp->signer = NULL;
-	    }
-
-	    if (ocsp->ocsp.certs) {
-		int j;
-
-		hx509_certs_free(&ocsp->certs);
-
-		ret = hx509_certs_init(context, "MEMORY:ocsp-certs", 0, 
-				       NULL, &ocsp->certs);
-		if (ret == 0) {
-		    for (j = 0; j < ocsp->ocsp.certs->len; j++) {
-			hx509_cert c;
-			
-			ret = hx509_cert_init(context, &ocsp->ocsp.certs->val[j], &c);
-			if (ret)
-			    continue;
-
-			ret = hx509_certs_add(context, ocsp->certs, c);
-			if (ret)
-			    continue;
-		    }
-		}
-	    }
+	    ret = load_ocsp(context, ocsp);
+	    if (ret)
+		continue;
 	}
-
 
 	/* verify signature in ocsp if not already done */
 	if (ocsp->signer == NULL) {
