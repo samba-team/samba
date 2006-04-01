@@ -117,8 +117,9 @@ verify_ocsp(hx509_context context,
 	q.subject_name = &ocsp->ocsp.tbsResponseData.responderID.u.byName;
 	break;
     case choice_OCSPResponderID_byKey:
-	ret = EINVAL; /* XXX */
-	goto out;
+	q.match = HX509_QUERY_MATCH_KEY_HASH_SHA1;
+	q.keyhash_sha1 = &ocsp->ocsp.tbsResponseData.responderID.u.byKey;
+	break;
     }
 	
     ret = hx509_certs_find(context, certs, &q, &signer);
@@ -628,7 +629,8 @@ add_to_req(hx509_context context, void *ptr, hx509_cert cert)
     void *d;
 
     d = realloc(ctx->req->requestList.val, 
-		sizeof(ctx->req->requestList.val[0]) * (ctx->req->requestList.len + 1));
+		sizeof(ctx->req->requestList.val[0]) *
+		(ctx->req->requestList.len + 1));
     if (d == NULL)
 	return ENOMEM;
     ctx->req->requestList.val = d;
@@ -668,7 +670,8 @@ add_to_req(hx509_context context, void *ptr, hx509_cert cert)
 	goto out;
 
     os.data = p->tbsCertificate.subjectPublicKeyInfo.subjectPublicKey.data;
-    os.length = p->tbsCertificate.subjectPublicKeyInfo.subjectPublicKey.length / 8;
+    os.length = 
+	p->tbsCertificate.subjectPublicKeyInfo.subjectPublicKey.length / 8;
 
     ret = _hx509_create_signature(NULL,
 				  &one->reqCert.hashAlgorithm,
