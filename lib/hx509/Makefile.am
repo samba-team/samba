@@ -26,7 +26,10 @@ gen_files_ocsp = 			\
 	asn1_OCSPSingleResponse.x	\
 	asn1_OCSPTBSRequest.x		\
 	asn1_OCSPVersion.x		\
-	asn1_id_kp_OCSPSigning.x
+	asn1_id_kp_OCSPSigning.x	\
+	asn1_id_pkix_ocsp.x		\
+	asn1_id_pkix_ocsp_basic.x	\
+	asn1_id_pkix_ocsp_nonce.x
 
 libhx509_la_LIBADD = $(LIB_des) ../asn1/libasn1.la
 
