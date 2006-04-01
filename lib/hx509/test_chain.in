@@ -106,6 +106,12 @@ echo "sub-cert -> sub-ca -> root"
     cert:FILE:$srcdir/data/test.crt \
     anchor:FILE:$srcdir/data/ca.crt \
     ocsp:FILE:$srcdir/data/ocsp-resp1-ocsp-no-cert.der \
-    chain:FILE:$srcdir/data/ocsp-responder.crt || exit 
+    chain:FILE:$srcdir/data/ocsp-responder.crt || exit 1
+
+./hxtool verify \
+    cert:FILE:$srcdir/data/revoke.crt \
+    anchor:FILE:$srcdir/data/ca.crt \
+    ocsp:FILE:$srcdir/data/ocsp-resp2.der && exit 1
+
 
 exit 0
