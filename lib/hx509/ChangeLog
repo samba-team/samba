@@ -1,4 +1,57 @@
+2006-04-01  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* data/nist-data: rename missing-crl to missing-revoke
+
+	* data: make ca use openssl ca command so we can add ocsp tests,
+	and regen certs
+
+	* test_chain.in: Add revoked ocsp cert test
+
+	* cert.c: rename missing-crl to missing-revoke
+
+	* revoke.c: refactor code, fix a un-init-ed variable
+	
+	* test_chain.in: rename missing-crl to missing-revoke add ocsp
+	tests
+
+	* test_cms.in: rename missing-crl to missing-revoke
+
+	* hxtool.c: rename missing-crl to missing-revoke
+
+	* hxtool-commands.in: rename missing-crl to missing-revoke
+	
+	* revoke.c: Plug one memory leak.
+
+	* revoke.c: Renamed generic CRL related errors.
+	
+	* hx509_err.et: Comments and renamed generic CRL related errors
+	
+	* revoke.c: Add ocsp checker.
+
+	* ocsp.asn1: Add id-kp-OCSPSigning
+
+	* hxtool-commands.in: add url-path argument to ocsp-fetch
+
+	* hxtool.c: implement ocsp-fetch
+
+	* cert.c: Use HX509_DEFAULT_OCSP_TIME_DIFF.
+	
+	* hx_locl.h: Add ocsp_time_diff to hx509_context
+
+	* crypto.c (_hx509_verify_signature_bitstring): new function,
+	commonly use when checking certificates
+
+	* cms.c (hx509_cms_envelope_1): check for internal ASN.1 encoder
+	error
+
+	* cert.c: Add ocsp glue, use new
+	_hx509_verify_signature_bitstring, add eku checking function.
+	
 2006-03-31  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* Makefile.am: add id_kp_OCSPSigning.x
+
+	* revoke.c: Pick out certs in ocsp response
 
 	* TODO: list of stuff to verify
 
