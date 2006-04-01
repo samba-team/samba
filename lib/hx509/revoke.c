@@ -701,12 +701,14 @@ hx509_ocsp_request(hx509_context context,
 		   hx509_certs pool,
 		   hx509_cert signer,
 		   const AlgorithmIdentifier *digest,
-		   heim_octet_string *request)
+		   heim_octet_string *request,
+		   heim_octet_string *nonce)
 {
     OCSPRequest req;
     size_t size;
     int ret;
     struct ocsp_add_ctx ctx;
+    Extensions *es;
 
     memset(&req, 0, sizeof(req));
 
@@ -725,6 +727,39 @@ hx509_ocsp_request(hx509_context context,
 	return ret;
     }
     
+    if (nonce) {
+
+	req.tbsRequest.requestExtensions = 
+	    calloc(1, sizeof(*req.tbsRequest.requestExtensions));
+	if (req.tbsRequest.requestExtensions == NULL) {
+	    free_OCSPRequest(&req);
+	    return ENOMEM;
+	}
+
+	es = req.tbsRequest.requestExtensions;
+	
+	es->len = 1;
+	es->val = calloc(es->len, sizeof(es->val[0]));
+	
+	ret = copy_oid(oid_id_pkix_ocsp_nonce(), &es->val[0].extnID);
+	if (ret)
+	    abort();
+	
+	es->val[0].extnValue.data = malloc(10);
+	if (es->val[0].extnValue.data == NULL) {
+	    free_OCSPRequest(&req);
+	    return ENOMEM;
+	}
+	es->val[0].extnValue.length = 10;
+	
+	ret = RAND_bytes(es->val[0].extnValue.data,
+			 es->val[0].extnValue.length);
+	if (ret != 1) {
+	    free_OCSPRequest(&req);
+	    return HX509_CRYPTO_INTERNAL_ERROR;
+	}
+    }
+
     ASN1_MALLOC_ENCODE(OCSPRequest, request->data, request->length,
 		       &req, &size, ret);
     free_OCSPRequest(&req);
