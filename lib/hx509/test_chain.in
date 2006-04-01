@@ -37,54 +37,75 @@
 srcdir="@srcdir@"
 
 echo "cert -> root"
-./hxtool verify --missing-crl \
+./hxtool verify --missing-revoke \
 	cert:FILE:$srcdir/data/test.crt \
 	chain:FILE:$srcdir/data/test.crt \
 	chain:FILE:$srcdir/data/ca.crt \
 	anchor:FILE:$srcdir/data/ca.crt > /dev/null || exit 1
 
 echo "cert -> root"
-./hxtool verify --missing-crl \
+./hxtool verify --missing-revoke \
 	cert:FILE:$srcdir/data/test.crt \
 	chain:FILE:$srcdir/data/ca.crt \
 	anchor:FILE:$srcdir/data/ca.crt > /dev/null || exit 1
 
 echo "cert -> root"
-./hxtool verify --missing-crl \
+./hxtool verify --missing-revoke \
 	cert:FILE:$srcdir/data/test.crt \
 	anchor:FILE:$srcdir/data/ca.crt > /dev/null || exit 1
 
 echo "sub-cert -> root"
-./hxtool verify --missing-crl \
+./hxtool verify --missing-revoke \
 	cert:FILE:$srcdir/data/sub-cert.crt \
 	chain:FILE:$srcdir/data/ca.crt \
 	anchor:FILE:$srcdir/data/ca.crt > /dev/null && exit 1
 
 echo "sub-cert -> sub-ca -> root"
-./hxtool verify --missing-crl \
+./hxtool verify --missing-revoke \
 	cert:FILE:$srcdir/data/sub-cert.crt \
 	chain:FILE:$srcdir/data/sub-ca.crt \
 	chain:FILE:$srcdir/data/ca.crt \
 	anchor:FILE:$srcdir/data/ca.crt > /dev/null || exit 1
 
 echo "sub-cert -> sub-ca -> root"
-./hxtool verify --missing-crl \
+./hxtool verify --missing-revoke \
 	cert:FILE:$srcdir/data/sub-cert.crt \
 	chain:FILE:$srcdir/data/sub-ca.crt \
 	chain:FILE:$srcdir/data/ca.crt \
 	anchor:FILE:$srcdir/data/ca.crt > /dev/null || exit 1
 
 echo "sub-cert -> sub-ca -> root"
-./hxtool verify --missing-crl \
+./hxtool verify --missing-revoke \
 	cert:FILE:$srcdir/data/sub-cert.crt \
 	chain:FILE:$srcdir/data/ca.crt \
 	chain:FILE:$srcdir/data/sub-ca.crt \
 	anchor:FILE:$srcdir/data/ca.crt > /dev/null || exit 1
 
 echo "sub-cert -> sub-ca -> root"
-./hxtool verify --missing-crl \
+./hxtool verify --missing-revoke \
 	cert:FILE:$srcdir/data/sub-cert.crt \
 	chain:FILE:$srcdir/data/sub-ca.crt \
 	anchor:FILE:$srcdir/data/ca.crt > /dev/null || exit 1
+
+./hxtool verify \
+    cert:FILE:$srcdir/data/test.crt \
+    anchor:FILE:$srcdir/data/ca.crt \
+    ocsp:FILE:$srcdir/data/ocsp-resp1-ocsp.der || exit 1
+
+./hxtool verify \
+    cert:FILE:$srcdir/data/test.crt \
+    anchor:FILE:$srcdir/data/ca.crt \
+    ocsp:FILE:$srcdir/data/ocsp-resp1-ca.der || exit 1
+
+./hxtool verify \
+    cert:FILE:$srcdir/data/test.crt \
+    anchor:FILE:$srcdir/data/ca.crt \
+    ocsp:FILE:$srcdir/data/ocsp-resp1-ocsp-no-cert.der && exit 1
+
+./hxtool verify \
+    cert:FILE:$srcdir/data/test.crt \
+    anchor:FILE:$srcdir/data/ca.crt \
+    ocsp:FILE:$srcdir/data/ocsp-resp1-ocsp-no-cert.der \
+    chain:FILE:$srcdir/data/ocsp-responder.crt || exit 
 
 exit 0
