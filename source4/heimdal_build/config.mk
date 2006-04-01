@@ -428,6 +428,10 @@ include perl_path_wrapper.sh et_deps.pl heimdal/lib/krb5/heim_err.et|
 include perl_path_wrapper.sh et_deps.pl heimdal/lib/krb5/k524_err.et|
 include perl_path_wrapper.sh et_deps.pl heimdal/lib/krb5/krb5_err.et|
 
+.SUFFIXES: .hin 
+.hin.h:
+	@cp $< $@
+
 $(patsubst heimdal/lib/des/%.h,heimdal/lib/des/hcrypto/%.h,$(wildcard heimdal/lib/des/*.h)): heimdal/lib/des/hcrypto
 
 heimdal/lib/des/hcrypto: 
