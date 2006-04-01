@@ -234,6 +234,17 @@ command = {
 	help = "Fetch OCSP responses for the following certs"
 }
 command = {
+	name = "pkcs10-print"
+	option = {
+		long = "verbose"
+		type = "flag"
+		help = "verbose printing"
+	}
+	min_args="1"
+	argument="requests ..."
+	help = "Print PKCS10 requests"
+}
+command = {
 	name = "query"
 	option = {
 		long = "exact"
