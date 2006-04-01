@@ -715,7 +715,7 @@ ocsp_fetch(struct ocsp_fetch_options *opt, int argc, char **argv)
 	    errx(1, "hx509_certs_append: req: %s: %d", argv[i], ret);
     }
 
-    ret = hx509_ocsp_request(context, reqcerts, pool, NULL, NULL, &req);
+    ret = hx509_ocsp_request(context, reqcerts, pool, NULL, NULL, &req, NULL);
     if (ret)
 	errx(1, "hx509_ocsp_request: req: %d", ret);
 	
