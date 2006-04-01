@@ -570,10 +570,14 @@ BOOL reload_services(BOOL test)
 
 
 #if DUMP_CORE
+
+static void dump_core(void) NORETURN_ATTRIBUTE ;
+
 /*******************************************************************
 prepare to dump a core file - carefully!
 ********************************************************************/
-static BOOL dump_core(void)
+
+static void dump_core(void)
 {
 	char *p;
 	pstring dname;
@@ -584,7 +588,9 @@ static BOOL dump_core(void)
 	mkdir(dname,0700);
 	sys_chown(dname,getuid(),getgid());
 	chmod(dname,0700);
-	if (chdir(dname)) return(False);
+	if (chdir(dname)) {
+		abort();
+	}
 	umask(~(0700));
 
 #ifdef HAVE_GETRLIMIT
@@ -608,7 +614,6 @@ static BOOL dump_core(void)
 	CatchSignal(SIGABRT,SIGNAL_CAST SIG_DFL);
 #endif
 	abort();
-	return(True);
 }
 #endif
 
@@ -616,7 +621,7 @@ static BOOL dump_core(void)
  Exit the server.
 ****************************************************************************/
 
-void exit_server(const char *reason)
+ void exit_server(const char *reason)
 {
 	static int firsttime=1;
 
@@ -659,7 +664,7 @@ void exit_server(const char *reason)
 		DEBUGLEVEL = oldlevel;
 		DEBUG(0,("===============================================================\n"));
 #if DUMP_CORE
-		if (dump_core()) return;
+		dump_core();
 #endif
 	}    
 
