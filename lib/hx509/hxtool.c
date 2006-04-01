@@ -741,6 +741,66 @@ ocsp_fetch(struct ocsp_fetch_options *opt, int argc, char **argv)
 }
 
 int
+pkcs10_print(struct pkcs10_print_options *opt, int argc, char **argv)
+{
+    size_t size, length;
+    int ret, i;
+    void *p;
+
+    printf("pkcs10 print\n");
+
+    for (i = 0; i < argc; i++) {
+	CertificationRequest req;
+	CertificationRequestInfo *info;
+
+	ret = _hx509_map_file(argv[i], &p, &length, NULL);
+	if (ret)
+	    err(1, "map_file: %s: %d", argv[i], ret);
+
+	ret = decode_CertificationRequest(p, length, &req, &size);
+	_hx509_unmap_file(p, length);
+	if (ret)
+	    errx(1, "failed to parse file %s: %d", argv[i], ret);
+
+	info = &req.certificationRequestInfo;
+
+	{
+	    char *subject;
+	    hx509_name n;
+
+	    ret = _hx509_name_from_Name(&info->subject, &n);
+	    if (ret)
+		abort();
+	    
+	    ret = hx509_name_to_string(n, &subject);
+	    hx509_name_free(&n);
+	    if (ret)
+		abort();
+	    
+	    printf("name: %s\n", subject);
+	    free(subject);
+	}
+
+	if (info->attributes && info->attributes->len) {
+	    int i;
+
+	    printf("Attributes:\n");
+
+	    for (i = 0; i < info->attributes->len; i++) {
+		char *str;
+		hx509_oid_sprint(&info->attributes->val[i].type, &str);
+		printf("\toid: %s\n", str);
+		free(str);
+	    }
+	}
+
+	free_CertificationRequest(&req);
+    }
+
+    return 0;
+}
+
+int
 help(void *opt, int argc, char **argv)
 {
     if(argc == 0) {
