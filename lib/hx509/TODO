@@ -4,27 +4,20 @@ nist tests
 	name constrains
 	policy mappings
 
-OCSP verfier
-	check that signer is allowed to sign OCSP
-
-CRL verfier
-	check that signer is allowed to sign CRL
-
 DSA support
 DSA2 support
 SHA2 support
 
 x509 policy mappings support
-
 path validation
 
 tests
-	cms
-	ocsp
-	crl
 	building path using Subject/Issuer vs SubjKeyID vs AuthKeyID
 	negative tests
 		all checksums
 		conditions/branches
-pkcs#7
-	handle pkcs7 support ?
+
+pkcs7
+	handle pkcs7 support in CMS ?
+
+pkcs10

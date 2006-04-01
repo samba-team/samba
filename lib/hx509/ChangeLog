@@ -1,5 +1,9 @@
 2006-04-01  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* revoke.c (hx509_ocsp_request): Add nonce to ocsp request.
+
+	* hxtool.c: Add nonce to ocsp request.
+
 	* test_chain.in: Added crl tests
 	
 	* data/nist-data: rename missing-crl to missing-revoke
