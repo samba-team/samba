@@ -1,0 +1,7 @@
+V	160329003917Z		01	unknown	/C=SE/CN=OCSP responder
+V	160329003917Z		02	unknown	/C=SE/CN=Test cert
+R	160329003917Z	060401003919Z	03	unknown	/C=SE/CN=Revoke cert
+V	160329003918Z		04	unknown	/C=SE/CN=Test cert KeyEncipherment
+V	160329003918Z		05	unknown	/C=SE/CN=Test cert DigitalSignature
+V	160329003918Z		06	unknown	/C=SE/CN=Sub CA
+V	160329003919Z		07	unknown	/C=SE/CN=Test sub cert
