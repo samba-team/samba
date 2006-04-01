@@ -509,7 +509,7 @@ int reply_trans(connection_struct *conn, char *inbuf,char *outbuf, int size, int
 				goto bad_param;
 			if (pdisp > tpscnt)
 				goto bad_param;
-			if ((smb_base(inbuf) + poff + pcnt >= inbuf + bufsize) ||
+			if ((smb_base(inbuf) + poff + pcnt > inbuf + bufsize) ||
 					(smb_base(inbuf) + poff + pcnt < smb_base(inbuf)))
 				goto bad_param;
 			if (params + pdisp < params)
@@ -525,7 +525,7 @@ int reply_trans(connection_struct *conn, char *inbuf,char *outbuf, int size, int
 				goto bad_param;
 			if (ddisp > tdscnt)
 				goto bad_param;
-			if ((smb_base(inbuf) + doff + dcnt >= inbuf + bufsize) ||
+			if ((smb_base(inbuf) + doff + dcnt > inbuf + bufsize) ||
 					(smb_base(inbuf) + doff + dcnt < smb_base(inbuf)))
 				goto bad_param;
 			if (data + ddisp < data)
