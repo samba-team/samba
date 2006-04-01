@@ -1,5 +1,21 @@
 2006-04-01  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* test_chain.in: test ocsp keyhash
+
+	* data: generate ocsp keyhash version too
+
+	* revoke.c (load_ocsp): test that we got back a BasicReponse
+
+	* ocsp.asn1: Add asn1_id_pkix_ocsp*.
+
+	* Makefile.am: Add asn1_id_pkix_ocsp*.
+
+	* cert.c: Add HX509_QUERY_MATCH_KEY_HASH_SHA1
+
+	* hx_locl.h: Add HX509_QUERY_MATCH_KEY_HASH_SHA1
+
+	* revoke.c: Support OCSPResponderID.byKey, indent.
+
 	* revoke.c (hx509_ocsp_request): Add nonce to ocsp request.
 
 	* hxtool.c: Add nonce to ocsp request.
