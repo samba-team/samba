@@ -3029,7 +3029,7 @@ int reply_nttranss(connection_struct *conn,  char *inbuf,char *outbuf,
 			goto bad_param;
 		if (pdisp > state->total_param)
 			goto bad_param;
-		if ((smb_base(inbuf) + poff + pcnt >= inbuf + size) ||
+		if ((smb_base(inbuf) + poff + pcnt > inbuf + size) ||
 		    (smb_base(inbuf) + poff + pcnt < smb_base(inbuf)))
 			goto bad_param;
 		if (state->param + pdisp < state->param)
@@ -3046,7 +3046,7 @@ int reply_nttranss(connection_struct *conn,  char *inbuf,char *outbuf,
 			goto bad_param;
 		if (ddisp > state->total_data)
 			goto bad_param;
-		if ((smb_base(inbuf) + doff + dcnt >= inbuf + size) ||
+		if ((smb_base(inbuf) + doff + dcnt > inbuf + size) ||
 		    (smb_base(inbuf) + doff + dcnt < smb_base(inbuf)))
 			goto bad_param;
 		if (state->data + ddisp < state->data)
