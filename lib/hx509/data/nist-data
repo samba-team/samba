@@ -26,15 +26,15 @@
 # 4.4 CRtests
 #
 4.4.1   f InvalidMissingCRLTest1EE.crt NoCRLCACert.crt
-4.4.1i  p InvalidMissingCRLTest1EE.crt --missing-crl NoCRLCACert.crt
+4.4.1i  p InvalidMissingCRLTest1EE.crt --missing-revoke NoCRLCACert.crt
 4.4.2   f InvalidRevokedEETest3EE.crt GoodCACert.crt InvalidRevokedCATest2EE.crt GoodCACRL.crl RevokedsubCACRL.crl
-4.4.2i  p InvalidRevokedEETest3EE.crt --missing-crl GoodCACert.crt InvalidRevokedCATest2EE.crt
+4.4.2i  p InvalidRevokedEETest3EE.crt --missing-revoke GoodCACert.crt InvalidRevokedCATest2EE.crt
 4.4.3   f InvalidRevokedEETest3EE.crt GoodCACert.crt GoodCACRL.crl
-4.4.3i  p InvalidRevokedEETest3EE.crt --missing-crl GoodCACert.crt
+4.4.3i  p InvalidRevokedEETest3EE.crt --missing-revoke GoodCACert.crt
 4.4.4   f InvalidBadCRLSignatureTest4EE.crt BadCRLSignatureCACert.crt BadCRLSignatureCACRL.crl
-4.4.4i  p InvalidBadCRLSignatureTest4EE.crt --missing-crl BadCRLSignatureCACert.crt
+4.4.4i  p InvalidBadCRLSignatureTest4EE.crt --missing-revoke BadCRLSignatureCACert.crt
 4.4.5   f InvalidBadCRLIssuerNameTest5EE.crt BadCRLIssuerNameCACert.crt BadCRLIssuerNameCACRL.crl
-4.4.5i  p InvalidBadCRLIssuerNameTest5EE.crt --missing-crl BadCRLIssuerNameCACert.crt
+4.4.5i  p InvalidBadCRLIssuerNameTest5EE.crt --missing-revoke BadCRLIssuerNameCACert.crt
 4.4.6   f InvalidWrongCRLTest6EE.crt WrongCRLCACert.crt WrongCRLCACRL.crl
 4.4.7   p ValidTwoCRLsTest7EE.crt TwoCRLsCACert.crt TwoCRLsCAGoodCRL.crl TwoCRLsCABadCRL.crl
 4.4.8   f InvalidUnknownCRLEntryExtensionTest8EE.crt UnknownCRLEntryExtensionCACert.crt UnknownCRLEntryExtensionCACRL.crl
