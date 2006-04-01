@@ -308,10 +308,7 @@ unused_macros:
 # File types
 ###############################################################################
 
-.SUFFIXES: .x .c .et .y .l .d .o .h .h.gch .a .so .1 .1.xml .3 .3.xml .5 .5.xml .7 .7.xml .8 .8.xml .ho .hin .idl .hd
-
-.hin.h:
-	@cp $< $@
+.SUFFIXES: .x .c .et .y .l .d .o .h .h.gch .a .so .1 .1.xml .3 .3.xml .5 .5.xml .7 .7.xml .8 .8.xml .ho .idl .hd
 
 .c.ho:
 	@echo "Compiling $< with host compiler"
