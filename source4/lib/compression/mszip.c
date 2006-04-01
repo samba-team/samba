@@ -341,7 +341,7 @@ static int32_t Zipinflate_codes(struct decomp_state *decomp_state,
         ZIPNEEDBITS(e)
       } while ((e = (t = t->v.t + ((uint32_t)b & Zipmask[e]))->e) > 16);
     ZIPDUMPBITS(t->b)
-    if (w >= 32768) break;
+    if (w >= CAB_BLOCKMAX) break;
     if (e == 16)                /* then it's a literal */
       CAB(outbuf)[w++] = (uint8_t)t->v.n;
     else                        /* it's an EOB or a length */
