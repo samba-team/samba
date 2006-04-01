@@ -165,6 +165,16 @@ openssl ocsp \
     -respout ocsp-resp1-ocsp-no-cert.der
 
 openssl ocsp \
+    -index index.txt \
+    -rsigner ocsp-responder.crt \
+    -rkey ocsp-responder.key \
+    -CA ca.crt \
+    -reqin ocsp-req1.der \
+    -resp_key_id \
+    -noverify \
+    -respout ocsp-resp1-keyhash.der
+
+openssl ocsp \
     -issuer ca.crt \
     -cert revoke.crt \
     -reqout ocsp-req2.der
