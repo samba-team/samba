@@ -1589,6 +1589,23 @@ _hx509_query_match_cert(const hx509_query *q, hx509_cert cert)
 	    return 0;
     }
 
+    if (q->match & HX509_QUERY_MATCH_KEY_HASH_SHA1) {
+	heim_octet_string os;
+	int ret;
+
+	os.data = c->tbsCertificate.subjectPublicKeyInfo.subjectPublicKey.data;
+	os.length = 
+	    c->tbsCertificate.subjectPublicKeyInfo.subjectPublicKey.length / 8;
+
+	ret = _hx509_verify_signature(NULL,
+				      hx509_signature_sha1(),
+				      &os,
+				      q->keyhash_sha1);
+	if (ret != 0)
+	    return 0;
+    }
+
+
     if (q->match & ~HX509_QUERY_MASK)
 	return 0;
 
