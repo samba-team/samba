@@ -114,6 +114,7 @@ krb5_copy_data(krb5_context context,
     if(ret) {
 	krb5_clear_error_string (context);
 	free(*outdata);
+	*outdata = NULL;
     }
     return ret;
 }
