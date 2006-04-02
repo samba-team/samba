@@ -1,6 +1,10 @@
 2006-04-02  Love Hörnquist Åstrand  <lha@it.su.se>
 
-	* wrap.c (wrap*): Reset output_buffer on error.
+	* get_mic.c (get_mic*)_: make sure message_token is cleaned on
+	error, found by IBM checker.
+
+	* wrap.c (wrap*): Reset output_buffer on error, found by IBM
+	checker.
 	
 2006-02-15  Love Hörnquist Åstrand  <lha@it.su.se>
 	
