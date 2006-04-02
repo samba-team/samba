@@ -76,7 +76,7 @@ hdb_resolve(krb5_context context, const char *name, krb5_keytab id)
 	if((mkey - db) == 0) {
 	    d->dbname = NULL;
 	} else {
-	    d->dbname = malloc(mkey - db);
+	    d->dbname = malloc(mkey - db + 1);
 	    if(d->dbname == NULL) {
 		free(d);
 		krb5_set_error_string(context, "malloc: out of memory");
@@ -218,8 +218,7 @@ hdb_get_entry(krb5_context context,
 	(*db->hdb_destroy)(context, db);
 	return ret;
     }
-    ent.entry.principal = rk_UNCONST(principal);
-    ret = (*db->hdb_fetch)(context, db, HDB_F_DECRYPT, &ent);
+    ret = (*db->hdb_fetch)(context, db, principal, HDB_F_DECRYPT, &ent);
     (*db->hdb_close)(context, db);
     (*db->hdb_destroy)(context, db);
 
