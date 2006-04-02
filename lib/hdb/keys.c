@@ -298,6 +298,7 @@ hdb_generate_key_set(krb5_context context, krb5_principal principal,
 			    &enctypes, &num_enctypes, &salt, principal);
 	if (ret) {
 	    krb5_warnx(context, "bad value for default_keys `%s'", *kp);
+	    ret = 0;
 	    continue;
 	}
 
@@ -334,6 +335,8 @@ hdb_generate_key_set(krb5_context context, krb5_principal principal,
 	krb5_free_salt(context, salt);
     }
     
+    *ret_key_set = key_set;
+
  out:
     if (ret) {
 	krb5_warn(context, ret, 
@@ -347,8 +350,6 @@ hdb_generate_key_set(krb5_context context, krb5_principal principal,
 		   "failed to parse any of the [kadmin]default_keys values");
 	ret = EINVAL; /* XXX */
     }
-
-    *ret_key_set = key_set;
 
     return ret;
 }
