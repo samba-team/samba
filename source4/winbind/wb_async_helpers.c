@@ -28,7 +28,7 @@
 #include "lib/messaging/irpc.h"
 #include "librpc/gen_ndr/irpc.h"
 #include "libcli/auth/credentials.h"
-#include "libcli/security/proto.h"
+#include "libcli/security/security.h"
 #include "libcli/auth/libcli_auth.h"
 #include "librpc/gen_ndr/ndr_netlogon_c.h"
 #include "librpc/gen_ndr/ndr_lsa_c.h"

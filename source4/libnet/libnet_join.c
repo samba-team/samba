@@ -28,7 +28,7 @@
 #include "passdb/secrets.h"
 #include "dsdb/samdb/samdb.h"
 #include "db_wrap.h"
-#include "libcli/security/proto.h"
+#include "libcli/security/security.h"
 #include "auth/credentials/credentials.h"
 #include "librpc/gen_ndr/ndr_samr_c.h"
 #include "librpc/gen_ndr/ndr_security.h"

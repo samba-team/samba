@@ -28,7 +28,7 @@
 #include "smb.h"
 #include "lib/crypto/crypto.h"
 #include "libcli/auth/libcli_auth.h"
-#include "libcli/security/proto.h"
+#include "libcli/security/security.h"
 #include "torture/rpc/rpc.h"
 
 #define TEST_ACCOUNT_NAME "samrtorturetest"

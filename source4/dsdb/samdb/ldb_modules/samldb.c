@@ -38,7 +38,7 @@
 #include "lib/ldb/include/ldb_errors.h"
 #include "lib/ldb/include/ldb_private.h"
 #include "dsdb/samdb/samdb.h"
-#include "libcli/security/proto.h"
+#include "libcli/security/security.h"
 #include "librpc/gen_ndr/ndr_security.h"
 #include "db_wrap.h"
 

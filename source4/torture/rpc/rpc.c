@@ -48,7 +48,7 @@ _PUBLIC_ NTSTATUS torture_rpc_connection(TALLOC_CTX *parent_ctx,
 		printf("Failed to connect to remote server: %s %s\n", binding, nt_errstr(status));
 	}
 
-    return status;
+	return status;
 }
 
 /* open a rpc connection to a specific transport */

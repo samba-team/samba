@@ -26,7 +26,7 @@
 #include "libcli/libcli.h"
 #include "librpc/gen_ndr/lsa.h"
 #include "libcli/util/clilsa.h"
-#include "libcli/security/proto.h"
+#include "libcli/security/security.h"
 #include "librpc/gen_ndr/ndr_security.h"
 #include "torture/util.h"
 

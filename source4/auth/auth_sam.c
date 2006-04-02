@@ -25,7 +25,7 @@
 #include "auth/auth.h"
 #include "db_wrap.h"
 #include "dsdb/samdb/samdb.h"
-#include "libcli/security/proto.h"
+#include "libcli/security/security.h"
 #include "libcli/ldap/ldap.h"
 #include "librpc/gen_ndr/ndr_security.h"
 

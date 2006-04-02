@@ -22,8 +22,7 @@
 
 #include "includes.h"
 #include "libcli/composite/composite.h"
-#include "librpc/gen_ndr/security.h"
-#include "libcli/security/proto.h"
+#include "libcli/security/security.h"
 #include "winbind/wb_server.h"
 #include "winbind/wb_helper.h"
 #include "smbd/service_task.h"

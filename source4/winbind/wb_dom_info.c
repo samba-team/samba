@@ -24,7 +24,7 @@
 #include "includes.h"
 #include "libcli/composite/composite.h"
 #include "libcli/resolve/resolve.h"
-#include "libcli/security/proto.h"
+#include "libcli/security/security.h"
 #include "winbind/wb_server.h"
 #include "smbd/service_task.h"
 #include "librpc/gen_ndr/ndr_irpc.h"

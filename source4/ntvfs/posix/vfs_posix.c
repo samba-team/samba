@@ -29,7 +29,7 @@
 #include "librpc/gen_ndr/security.h"
 #include "lib/tdb/include/tdb.h"
 #include "db_wrap.h"
-#include "libcli/security/proto.h"
+#include "libcli/security/security.h"
 
 
 /*

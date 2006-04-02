@@ -24,7 +24,7 @@
 #include "lib/samba3/samba3.h"
 #include "lib/tdb/include/tdbutil.h"
 #include "system/filesys.h"
-#include "libcli/security/proto.h"
+#include "libcli/security/security.h"
 
 #define DATABASE_VERSION_V1 1 /* native byte format. */
 #define DATABASE_VERSION_V2 2 /* le format. */

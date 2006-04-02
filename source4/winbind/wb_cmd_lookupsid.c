@@ -25,7 +25,7 @@
 #include "winbind/wb_server.h"
 #include "winbind/wb_helper.h"
 #include "smbd/service_task.h"
-#include "libcli/security/proto.h"
+#include "libcli/security/security.h"
 
 struct cmd_lookupsid_state {
 	struct composite_context *ctx;

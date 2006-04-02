@@ -26,7 +26,7 @@
 #include "torture/rpc/rpc.h"
 #include "librpc/gen_ndr/ndr_lsa_c.h"
 #include "librpc/gen_ndr/ndr_security.h"
-#include "libcli/security/proto.h"
+#include "libcli/security/security.h"
 
 static BOOL open_policy(TALLOC_CTX *mem_ctx, struct dcerpc_pipe *p,
 			struct policy_handle **handle)
