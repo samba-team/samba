@@ -1,5 +1,9 @@
-2006-02-15  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-04-02  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* wrap.c (wrap*): Reset output_buffer on error.
+	
+2006-02-15  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* import_name.c: Accept both GSS_C_NT_HOSTBASED_SERVICE and
 	GSS_C_NT_HOSTBASED_SERVICE_X as nametype for hostbased names.
 	
