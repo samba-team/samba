@@ -241,8 +241,9 @@ _krb5_krbhost_info_move(krb5_context context,
 			krb5_krbhst_info *from,
 			krb5_krbhst_info **to)
 {
+    size_t hostnamelen = strlen(from->hostname);
     /* trailing NUL is included in structure */
-    *to = calloc(1, sizeof(**to) + strlen(from->hostname)); 
+    *to = calloc(1, sizeof(**to) + hostnamelen); 
     if(*to == NULL) {
 	krb5_set_error_string(context, "malloc - out of memory");
 	return ENOMEM;
@@ -254,7 +255,7 @@ _krb5_krbhost_info_move(krb5_context context,
     (*to)->ai = from->ai;
     from->ai = NULL;
     (*to)->next = NULL;
-    strcpy((*to)->hostname, from->hostname);
+    memmcpy((*to)->hostname, from->hostname, hostnamelen + 1);
     return 0;
 }
 
