@@ -741,6 +741,12 @@ ocsp_fetch(struct ocsp_fetch_options *opt, int argc, char **argv)
 }
 
 int
+pkcs10_create(struct pkcs10_create_options *opt, int argc, char **argv)
+{
+    return 0;
+}
+
+int
 pkcs10_print(struct pkcs10_print_options *opt, int argc, char **argv)
 {
     size_t size, length;
