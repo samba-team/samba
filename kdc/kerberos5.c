@@ -686,11 +686,13 @@ get_pa_etype_info2(krb5_context context,
 krb5_error_code
 _kdc_check_flags(krb5_context context, 
 		 krb5_kdc_configuration *config,
-		 hdb_entry *client, const char *client_name,
-		 hdb_entry *server, const char *server_name,
+		 hdb_entry_ex *client_ex, const char *client_name,
+		 hdb_entry_ex *server_ex, const char *server_name,
 		 krb5_boolean is_as_req)
 {
-    if(client != NULL) {
+    if(client_ex != NULL) {
+	hdb_entry *client = &client_ex->entry;
+
 	/* check client */
 	if (client->flags.invalid) {
 	    kdc_log(context, config, 0, 
@@ -724,8 +726,8 @@ _kdc_check_flags(krb5_context context,
 	    return KRB5KDC_ERR_NAME_EXP;
 	}
 	
-	if (client->pw_end && *client->pw_end < kdc_time
-	    && !server->flags.change_pw) {
+	if (client->pw_end && *client->pw_end < kdc_time 
+	    && (server_ex == NULL || !server_ex->entry.flags.change_pw)) {
 	    char pwend_str[100];
 	    krb5_format_time(context, *client->pw_end, 
 			     pwend_str, sizeof(pwend_str), TRUE); 
@@ -738,7 +740,9 @@ _kdc_check_flags(krb5_context context,
 
     /* check server */
     
-    if (server != NULL) {
+    if (server_ex != NULL) {
+	hdb_entry *server = &server_ex->entry;
+
 	if (server->flags.invalid) {
 	    kdc_log(context, config, 0,
 		    "Server has invalid flag set -- %s", server_name);
@@ -804,6 +808,7 @@ check_addresses(krb5_context context,
     krb5_error_code ret;
     krb5_address addr;
     krb5_boolean result;
+    int i;
     
     if(config->check_ticket_addresses == 0)
 	return TRUE;
@@ -895,8 +900,8 @@ _kdc_as_rep(krb5_context context,
     }
 
     ret = _kdc_check_flags(context, config, 
-			   &client->entry, client_name,
-			   &server->entry, server_name,
+			   client, client_name,
+			   server, server_name,
 			   TRUE);
     if(ret)
 	goto out;
@@ -2396,8 +2401,8 @@ tgs_rep2(krb5_context context,
 	}
 
 	ret = _kdc_check_flags(context, config, 
-			       &client->entry, cpn,
-			       &server->entry, spn,
+			       client, cpn,
+			       server, spn,
 			       FALSE);
 	if(ret)
 	    goto out;
