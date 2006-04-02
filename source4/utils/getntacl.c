@@ -65,12 +65,12 @@ static NTSTATUS get_ntacl(char *filename, struct xattr_NTACL **ntacl,
 	}
 
 	blob.data = talloc_size(*ntacl, size);
-	blob.length = getxattr(filename, XATTR_NTACL_NAME, blob.data, size);
-
-	if (blob.length < 0) {
+	size = getxattr(filename, XATTR_NTACL_NAME, blob.data, size);
+	if (size < 0) {
 		fprintf(stderr, "get_ntacl: %s\n", strerror(errno));
 		return NT_STATUS_INTERNAL_ERROR;
 	}
+	blob.length = size;
 
 	ndr = ndr_pull_init_blob(&blob, NULL);
 

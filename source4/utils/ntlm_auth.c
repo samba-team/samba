@@ -455,7 +455,8 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 		char *grouplist = NULL;
 		struct auth_session_info *session_info;
 
-		if (!NT_STATUS_IS_OK(gensec_session_info(state->gensec_state, &session_info))) { 
+		nt_status = gensec_session_info(state->gensec_state, &session_info); 
+		if (!NT_STATUS_IS_OK(nt_status)) {
 			DEBUG(1, ("gensec_session_info failed: %s\n", nt_errstr(nt_status)));
 			mux_printf(mux_id, "BH %s\n", nt_errstr(nt_status));
 			data_blob_free(&in);
@@ -759,7 +760,7 @@ static void manage_squid_request(enum stdio_helper_mode helper_mode,
 				 stdio_helper_function fn, void **private2) 
 {
 	char buf[SQUID_BUFFER_SIZE+1];
-	unsigned int mux_id;
+	unsigned int mux_id = 0;
 	int length;
 	char *c;
 	static BOOL err;
