@@ -120,14 +120,19 @@ static int getgrouplist_internals(const char *user, gid_t gid, gid_t *groups,
 static int sys_getgrouplist(const char *user, gid_t gid, gid_t *groups, int *grpcnt)
 {
 	int retval;
+	char *winbindd_env;
 
 	DEBUG(10,("sys_getgrouplist: user [%s]\n", user));
+
+	/* Save the winbindd state and not just blindly turn it back on */
+
+	winbindd_env = getenv(WINBINDD_DONT_ENV);
 	
 	/* This is only ever called for Unix users, remote memberships are
 	 * always determined by the info3 coming back from auth3 or the
 	 * PAC. */
 
-	if ( !winbind_off() ) {
+	if ( !winbind_putenv("0") ) {
 		DEBUG(0,("sys_getgroup_list: Insufficient environment space "
 			 "for %s\n", WINBINDD_DONT_ENV));
 	} else {
@@ -144,7 +149,8 @@ static int sys_getgrouplist(const char *user, gid_t gid, gid_t *groups, int *grp
 #endif
 
 	/* allow winbindd lookups */
-	winbind_on();
+
+	winbind_putenv( winbindd_env ? winbindd_env : "1" );
 	
 	return retval;
 }

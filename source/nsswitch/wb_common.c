@@ -618,16 +618,15 @@ NSS_STATUS winbindd_request_response(int req_type,
 /* Use putenv() instead of setenv() in these functions as not all
    environments have the latter. */
 
-BOOL winbind_off( void )
+BOOL winbind_putenv( const char *s )
 {
-	static char *s = CONST_DISCARD(char *, WINBINDD_DONT_ENV "=1");
+	fstring env;
 
-	return putenv(s) != -1;
-}
+	if ( !s ) {
+		return False;
+	}
 
-BOOL winbind_on( void )
-{
-	static char *s = CONST_DISCARD(char *, WINBINDD_DONT_ENV "=0");
+	snprintf( env, sizeof(env), "%s=%s", WINBINDD_DONT_ENV, s );
 
-	return putenv(s) != -1;
+	return putenv(env) != -1;
 }
