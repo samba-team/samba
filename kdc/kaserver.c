@@ -451,8 +451,8 @@ do_authenticate (krb5_context context,
     }
 
     ret = _kdc_check_flags (context, config,
-			    &client_entry->entry, client_name,
-			    &server_entry->entry, server_name,
+			    client_entry, client_name,
+			    server_entry, server_name,
 			    TRUE);
     if (ret) {
 	make_error_reply (hdr, KAPWEXPIRED, reply);
@@ -747,8 +747,8 @@ do_getticket (krb5_context context,
     }
 
     ret = _kdc_check_flags (context, config, 
-			    &client_entry->entry, client_name,
-			    &server_entry->entry, server_name,
+			    client_entry, client_name,
+			    server_entry, server_name,
 			    FALSE);
     if (ret) {
 	make_error_reply (hdr, KAPWEXPIRED, reply);
