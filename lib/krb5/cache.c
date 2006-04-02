@@ -316,7 +316,7 @@ _krb5_expand_default_cc_name(krb5_context context, const char *str, char **res)
 	}
 	if (append == NULL) {
 	    free(*res);
-	    res = NULL;
+	    *res = NULL;
 	    krb5_set_error_string(context, "malloc - out of memory");
 	    return ENOMEM;
 	}
