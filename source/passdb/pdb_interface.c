@@ -1501,16 +1501,20 @@ static BOOL get_memberuids(TALLOC_CTX *mem_ctx, gid_t gid, uid_t **pp_uids, size
 	struct group *grp;
 	char **gr;
 	struct passwd *pwd;
+	char *winbindd_env;
  
 	*pp_uids = NULL;
 	*p_num = 0;
 
 	/* We only look at our own sam, so don't care about imported stuff */
 
-	winbind_off();
+	winbindd_env = getenv(WINBINDD_DONT_ENV);
+	winbind_putenv("0");
 
 	if ((grp = getgrgid(gid)) == NULL) {
-		winbind_on();
+		/* allow winbindd lookups */
+		winbind_putenv( winbindd_env ? winbindd_env : "1" );
+
 		return False;
 	}
 
@@ -1535,7 +1539,8 @@ static BOOL get_memberuids(TALLOC_CTX *mem_ctx, gid_t gid, uid_t **pp_uids, size
 		add_uid_to_array_unique(mem_ctx, pw->pw_uid, pp_uids, p_num);
 	}
 
-	winbind_on();
+	/* allow winbindd lookups */
+	winbind_putenv( winbindd_env ? winbindd_env : "1" );
 
 	return True;
 }
@@ -1595,15 +1600,9 @@ NTSTATUS pdb_default_enum_group_memberships(struct pdb_methods *methods,
 	const char *username = pdb_get_username(user);
 	
 
-#if 0
 	/* Ignore the primary group SID.  Honor the real Unix primary group.
 	   The primary group SID is only of real use to Windows clients */
 	   
-	if (!sid_to_gid(pdb_get_group_sid(user), &gid)) {
-		DEBUG(10, ("sid_to_gid failed\n"));
-		return NT_STATUS_NO_SUCH_USER;
-	}
-#else
 	if ( !(pw = getpwnam_alloc(mem_ctx, username)) ) {
 		return NT_STATUS_NO_SUCH_USER;
 	}
@@ -1611,7 +1610,6 @@ NTSTATUS pdb_default_enum_group_memberships(struct pdb_methods *methods,
 	gid = pw->pw_gid;
 	
 	TALLOC_FREE( pw );
-#endif
 
 	if (!getgroups_unix_user(mem_ctx, username, gid, pp_gids, p_num_groups)) {
 		return NT_STATUS_NO_SUCH_USER;

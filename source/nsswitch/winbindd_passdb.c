@@ -301,7 +301,28 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 				  const DOM_SID *user_sid,
 				  uint32 *num_groups, DOM_SID **user_gids)
 {
-	return NT_STATUS_NO_SUCH_USER;
+	NTSTATUS result;
+	DOM_SID *groups = NULL;
+	gid_t *gids = NULL;
+	size_t ngroups = 0;
+	struct samu *user;
+
+	if ( (user = samu_new(mem_ctx)) == NULL ) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	if ( !pdb_getsampwsid( user, user_sid ) ) {
+		return NT_STATUS_NO_SUCH_USER;
+	}
+
+	result = pdb_enum_group_memberships( mem_ctx, user, &groups, &gids, &ngroups );
+
+	TALLOC_FREE( user );
+
+	*num_groups = (uint32)ngroups;
+	*user_gids = groups;
+
+	return result;
 }
 
 static NTSTATUS lookup_useraliases(struct winbindd_domain *domain,
