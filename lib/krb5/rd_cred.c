@@ -304,6 +304,7 @@ krb5_rd_cred(krb5_context context,
 	for(i = 0; (*ret_creds)[i]; i++)
 	    krb5_free_creds(context, (*ret_creds)[i]);
 	free(*ret_creds);
+	*ret_creds = NULL;
     }
     return ret;
 }
