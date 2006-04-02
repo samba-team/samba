@@ -75,7 +75,7 @@ _krb5_get_init_creds_opt_copy(krb5_context context,
     krb5_get_init_creds_opt *opt;
 
     *out = NULL;
-    opt = malloc(sizeof(*opt));
+    opt = calloc(1, sizeof(*opt));
     if (opt == NULL) {
 	krb5_set_error_string(context, "out of memory");
 	return ENOMEM;
