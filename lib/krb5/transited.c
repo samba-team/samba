@@ -166,10 +166,13 @@ expand_realms(krb5_context context,
     for(r = realms; r; r = r->next){
 	if(r->trailing_dot){
 	    char *tmp;
-	    size_t len = strlen(r->realm) + strlen(prev_realm) + 1;
+	    size_t len;
 
 	    if(prev_realm == NULL)
 		prev_realm = client_realm;
+
+	    len = strlen(r->realm) + strlen(prev_realm) + 1;
+
 	    tmp = realloc(r->realm, len);
 	    if(tmp == NULL){
 		free_realms(realms);
