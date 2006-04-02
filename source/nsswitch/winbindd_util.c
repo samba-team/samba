@@ -504,18 +504,14 @@ BOOL init_domain_list(void)
 	extern struct winbindd_methods cache_methods;
 	extern struct winbindd_methods passdb_methods;
 	struct winbindd_domain *domain;
+	int role = lp_server_role();
 
 	/* Free existing list */
 	free_domain_list();
 
 	/* Add ourselves as the first entry. */
 
-	if (IS_DC) {
-		domain = add_trusted_domain(get_global_sam_name(), NULL,
-					    &passdb_methods,
-					    get_global_sam_sid());
-	} else {
-
+	if ( role == ROLE_DOMAIN_MEMBER ) {
 		DOM_SID our_sid;
 
 		if (!secrets_fetch_domain_sid(lp_workgroup(), &our_sid)) {
@@ -525,23 +521,24 @@ BOOL init_domain_list(void)
 	
 		domain = add_trusted_domain( lp_workgroup(), lp_realm(),
 					     &cache_methods, &our_sid);
+		domain->primary = True;
+		setup_domain_child(domain, &domain->child, NULL);
 	}
 
-	domain->primary = True;
+	/* Local SAM */
+
+	domain = add_trusted_domain(get_global_sam_name(), NULL,
+				    &passdb_methods, get_global_sam_sid());
+	if ( role != ROLE_DOMAIN_MEMBER ) {
+		domain->primary = True;
+	}
 	setup_domain_child(domain, &domain->child, NULL);
 
-	/* Add our local SAM domains */
+	/* BUILTIN domain */
 
 	domain = add_trusted_domain("BUILTIN", NULL, &passdb_methods,
 				    &global_sid_Builtin);
 	setup_domain_child(domain, &domain->child, NULL);
-
-	if (!IS_DC) {
-		domain = add_trusted_domain(get_global_sam_name(), NULL,
-					    &passdb_methods,
-					    get_global_sam_sid());
-		setup_domain_child(domain, &domain->child, NULL);
-	}
 
 	return True;
 }

@@ -2250,18 +2250,20 @@ static BOOL current_user_in_group(gid_t gid)
 }
 
 /****************************************************************************
- Should we override a deny ?
+ Should we override a deny ?  Check deprecated 'acl group control'
+ and 'dos filemode'
 ****************************************************************************/
 
 static BOOL acl_group_override(connection_struct *conn, gid_t prim_gid)
 {
-	if ((errno == EACCES || errno == EPERM) &&
-			lp_acl_group_control(SNUM(conn)) &&
-			current_user_in_group(prim_gid)) {
+	if ( (errno == EACCES || errno == EPERM) 
+		&& (lp_acl_group_control(SNUM(conn) || lp_dos_filemode(SNUM(conn)))) 
+		&& current_user_in_group(prim_gid) ) 
+	{
 		return True;
-	} else {
-		return False;
-	}
+	} 
+
+	return False;
 }
 
 /****************************************************************************
