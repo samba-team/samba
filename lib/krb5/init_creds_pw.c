@@ -547,23 +547,14 @@ init_creds_init_as_req (krb5_context context,
 	krb5_set_error_string(context, "malloc: out of memory");
 	goto fail;
     }
-    if (creds->client) {
-	ret = _krb5_principal2principalname (a->req_body.cname, creds->client);
-	if (ret)
-	    goto fail;
-	ret = copy_Realm(&creds->client->realm, &a->req_body.realm);
-	if (ret)
-	    goto fail;
-    } else {
-       krb5_realm realm;
 
-	a->req_body.cname = NULL;
-	ret = krb5_get_default_realm(context, &realm);
-	if (ret)
-	    goto fail;
-	ret = copy_Realm(&realm, &a->req_body.realm);
-	free(realm);
-    }
+    ret = _krb5_principal2principalname (a->req_body.cname, creds->client);
+    if (ret)
+	goto fail;
+    ret = copy_Realm(&creds->client->realm, &a->req_body.realm);
+    if (ret)
+	goto fail;
+
     ret = _krb5_principal2principalname (a->req_body.sname, creds->server);
     if (ret)
 	goto fail;
