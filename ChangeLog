@@ -1,5 +1,11 @@
 2006-04-02  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/krb5/cache.c (_krb5_expand_default_cc_name): avoid return
+	pointer to freed memory in the error case. Found by IBM checker.
+
+	* lib/hdb/keytab.c (hdb_resolve): off by one, found by IBM
+	checker.
+
 	* lib/hdb/keys.c (hdb_generate_key_set): set ret_key_set before
 	going into the error clause and freeing key_set. Found by IBM
 	checker.  Make sure ret == 0 after of parse error, we catch the
