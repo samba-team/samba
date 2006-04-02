@@ -945,7 +945,7 @@ int main(int argc, char **argv)
 	/* Set environment variable so we don't recursively call ourselves.
 	   This may also be useful interactively. */
 
-	if ( !winbind_putenv("0") ) {
+	if ( !winbind_off() ) {
 		DEBUG(0,("Failed to disable recusive winbindd calls.  Exiting.\n"));
 		exit(1);
 	}
