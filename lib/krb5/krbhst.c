@@ -255,7 +255,7 @@ _krb5_krbhost_info_move(krb5_context context,
     (*to)->ai = from->ai;
     from->ai = NULL;
     (*to)->next = NULL;
-    memmcpy((*to)->hostname, from->hostname, hostnamelen + 1);
+    memcpy((*to)->hostname, from->hostname, hostnamelen + 1);
     return 0;
 }
 
