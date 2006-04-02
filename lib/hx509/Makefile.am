@@ -57,6 +57,7 @@ libhx509_la_SOURCES = \
 	lock.c \
 	name.c \
 	print.c \
+	req.c \
 	revoke.c \
 	$(BUILT_SOURCES)
 
