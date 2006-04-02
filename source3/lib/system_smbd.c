@@ -132,13 +132,7 @@ static int sys_getgrouplist(const char *user, gid_t gid, gid_t *groups, int *grp
 	 * always determined by the info3 coming back from auth3 or the
 	 * PAC. */
 
-	if ( !winbind_putenv("0") ) {
-		DEBUG(0,("sys_getgroup_list: Insufficient environment space "
-			 "for %s\n", WINBINDD_DONT_ENV));
-	} else {
-		DEBUG(10,("sys_getgrouplist(): disabled winbindd for group "
-			  "lookup [user == %s]\n", user));
-	}
+	winbind_off() ;
 
 #ifdef HAVE_GETGROUPLIST
 	retval = getgrouplist(user, gid, groups, grpcnt);
@@ -148,10 +142,12 @@ static int sys_getgrouplist(const char *user, gid_t gid, gid_t *groups, int *grp
 	unbecome_root();
 #endif
 
-	/* allow winbindd lookups */
+	/* allow winbindd lookups , but only if they were not already disabled */
 
-	winbind_putenv( winbindd_env ? winbindd_env : "1" );
-	
+	if ( !(winbindd_env && strequal(winbindd_env, "1")) ) {
+		winbind_on();
+	}
+
 	return retval;
 }
 
