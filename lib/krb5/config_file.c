@@ -574,7 +574,7 @@ krb5_config_vget_strings(krb5_context context,
     }
     if(nstr){
 	char **tmp = realloc(strings, (nstr + 1) * sizeof(*strings));
-	if(strings == NULL)
+	if(tmp == NULL)
 	    goto cleanup;
 	strings = tmp;
 	strings[nstr] = NULL;
