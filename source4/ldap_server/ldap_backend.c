@@ -123,8 +123,8 @@ static NTSTATUS ldapsrv_SearchRequest(struct ldapsrv_call *call)
 	const char **attrs = NULL;
 	const char *errstr = NULL;
 	int success_limit = 1;
-	int result = LDAP_SUCCESS;
-	int ldb_ret;
+	int result = -1;
+	int ldb_ret = -1;
 	int i, j;
 
 	DEBUG(10, ("SearchRequest"));
@@ -227,7 +227,8 @@ reply:
 	done->dn = NULL;
 	done->referral = NULL;
 
-	if (ldb_ret == LDB_SUCCESS) {
+	if (result != -1) {
+	} else if (ldb_ret == LDB_SUCCESS) {
 		if (res->count >= success_limit) {
 			DEBUG(10,("SearchRequest: results: [%d]\n", res->count));
 			result = LDAP_SUCCESS;
