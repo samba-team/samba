@@ -31,7 +31,7 @@
 #include "smbd/service_stream.h"
 #include "smbd/service.h"
 #include "system/filesys.h"
-#include "libcli/security/proto.h"
+#include "libcli/security/security.h"
 #include "build.h"
 
 /*

@@ -37,7 +37,7 @@
 
 #include "libcli/auth/libcli_auth.h"
 #include "torture/rpc/rpc.h"
-#include "libcli/security/proto.h"
+#include "libcli/security/security.h"
 
 struct test_join {
 	struct dcerpc_pipe *p;

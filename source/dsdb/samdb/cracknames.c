@@ -29,7 +29,7 @@
 #include "system/kerberos.h"
 #include "auth/kerberos/kerberos.h"
 #include "libcli/ldap/ldap.h"
-#include "libcli/security/proto.h"
+#include "libcli/security/security.h"
 #include "auth/auth.h"
 #include "db_wrap.h"
 #include "dsdb/samdb/samdb.h"

@@ -23,7 +23,7 @@
 #include "torture/rpc/rpc.h"
 #include "libnet/libnet.h"
 #include "libnet/userinfo.h"
-#include "libcli/security/proto.h"
+#include "libcli/security/security.h"
 #include "librpc/gen_ndr/ndr_samr_c.h"
 #include "librpc/gen_ndr/ndr_security.h"
 

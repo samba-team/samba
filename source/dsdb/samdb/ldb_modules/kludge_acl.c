@@ -36,7 +36,7 @@
 #include "ldb/include/ldb_errors.h"
 #include "ldb/include/ldb_private.h"
 #include "auth/auth.h"
-#include "libcli/security/proto.h"
+#include "libcli/security/security.h"
 
 /* Kludge ACL rules:
  *

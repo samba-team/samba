@@ -36,7 +36,7 @@
 #include "auth/gensec/gensec.h"
 #include "system/time.h" /* needed by some systems for asctime() */
 #include "libcli/resolve/resolve.h"
-#include "libcli/security/proto.h"
+#include "libcli/security/security.h"
 #include "lib/replace/readline.h"
 #include "librpc/gen_ndr/ndr_nbt.h"
 #include "librpc/gen_ndr/ndr_security.h"

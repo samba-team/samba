@@ -30,7 +30,7 @@
 #include "auth/auth.h"
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "db_wrap.h"
-#include "libcli/security/proto.h"
+#include "libcli/security/security.h"
 #include "librpc/gen_ndr/ndr_security.h"
 #include "librpc/rpc/dcerpc.h"
 
