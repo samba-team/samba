@@ -161,7 +161,10 @@ testit() {
 		return 1
 	fi
 	
-	( $cmdline > $TEST_LOG 2>&1 )
+	if [ -z "$TORTURE_MAXTIME" ];then
+		TORTURE_MAXTIME=300
+	fi
+	( timelimit $TORTURE_MAXTIME $cmdline > $TEST_LOG 2>&1 )
 	status=$?
 	if [ x"$status" != x"0" ]; then
 		echo "TEST OUTPUT:"
