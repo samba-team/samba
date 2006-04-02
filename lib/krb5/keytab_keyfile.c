@@ -94,6 +94,7 @@ get_cell_and_realm (krb5_context context,
     f = fopen (AFS_SERVERMAGICKRBCONF, "r");
     if (f != NULL) {
 	if (fgets (buf, sizeof(buf), f) == NULL) {
+	    free (d->cell);
 	    fclose (f);
 	    krb5_set_error_string (context, "no realm in %s",
 				   AFS_SERVERMAGICKRBCONF);
