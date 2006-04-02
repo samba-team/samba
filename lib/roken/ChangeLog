@@ -3,7 +3,7 @@
 	* resolve.c: Plug memory leak found by IBM checker (and try to
 	please it).
 	
-2006-02-06 Love Hörnquist Åstrand <lha@it.su.se>
+2006-02-06  Love Hörnquist Åstrand  <lha@it.su.se>
 	
 	* resolve.c: Spelling, from Alexey Dobriyan, via Jason McIntyre
 	
