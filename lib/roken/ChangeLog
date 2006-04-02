@@ -1,5 +1,8 @@
 2006-04-02  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* roken_gethostby.c (roken_gethostby): make addr_list one larger
+	to avoid a off-by-one error. Found by IBM checker.
+
 	* resolve.c: Plug memory leak found by IBM checker (and try to
 	please it).
 	
