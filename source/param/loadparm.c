@@ -3880,13 +3880,31 @@ BOOL dump_a_parameter(int snum, char *parm_name, FILE * f, BOOL isGlobal)
 	int i, result = False;
 	parm_class p_class;
 	unsigned flag = 0;
+	fstring local_parm_name;
+	char *parm_opt;
 
+	/* check for parametrical option */
+	fstrcpy( local_parm_name, parm_name);
+	parm_opt = strchr( local_parm_name, ':');
+
+	if (parm_opt) {
+		*parm_opt = '\0';
+		parm_opt++;
+		if (strlen(parm_opt)) {
+			printf( "%s\n", lp_parm_const_string( snum,
+				local_parm_name, parm_opt, ""));
+			result = True;
+		}
+		return result;
+	}
+
+	/* check for a key and print the value */
 	if (isGlobal) {
 		p_class = P_GLOBAL;
 		flag = FLAG_GLOBAL;
 	} else
 		p_class = P_LOCAL;
-	
+
 	for (i = 0; parm_table[i].label; i++) {
 		if (strwicmp(parm_table[i].label, parm_name) == 0 &&
 		    (parm_table[i].p_class == p_class || parm_table[i].flags & flag) &&
