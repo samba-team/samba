@@ -324,6 +324,7 @@ _krb5_expand_default_cc_name(krb5_context context, const char *str, char **res)
 	tlen = strlen(append);
 	tmp = realloc(*res, len + tlen + 1);
 	if (tmp == NULL) {
+	    free(append);
 	    free(*res);
 	    *res = NULL;
 	    krb5_set_error_string(context, "malloc - out of memory");
