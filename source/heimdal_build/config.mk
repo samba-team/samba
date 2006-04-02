@@ -403,6 +403,10 @@ OBJ_FILES = \
 #######################
 # Start BINARY compile_et
 [BINARY::compile_et]
+EXTRA_CFLAGS = \
+	-Iheimdal_build -Iheimdal/lib/com_err \
+	-Iheimdal/kdc -Iheimdal/lib/des \
+	-Iheimdal/lib/roken -DNO_PRINTF_ATTRIBUTE
 OBJ_FILES = ../heimdal/lib/vers/print_version.ho \
 	../heimdal/lib/com_err/lex.ho \
 	../heimdal/lib/com_err/parse.ho \
