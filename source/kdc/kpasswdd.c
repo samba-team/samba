@@ -124,7 +124,7 @@ static BOOL kpasswd_make_pwchange_reply(struct kdc_server *kdc,
 						"Not permitted to change password",
 						error_blob);
 	}
-	if (NT_STATUS_EQUAL(status, NT_STATUS_PASSWORD_RESTRICTION)) {
+	if (dominfo && NT_STATUS_EQUAL(status, NT_STATUS_PASSWORD_RESTRICTION)) {
 		const char *reject_string;
 		switch (reject_reason) {
 		case SAMR_REJECT_TOO_SHORT:
@@ -233,8 +233,8 @@ static BOOL kpasswd_process_request(struct kdc_server *kdc,
 	case KRB5_KPASSWD_VERS_SETPW:
 	{
 		NTSTATUS status;
-		enum samr_RejectReason reject_reason;
-		struct samr_DomInfo1 *dominfo;
+		enum samr_RejectReason reject_reason = SAMR_REJECT_OTHER;
+		struct samr_DomInfo1 *dominfo = NULL;
 		struct ldb_context *samdb;
 		struct ldb_message *msg;
 		krb5_context context = kdc->smb_krb5_context->krb5_context;
@@ -321,8 +321,8 @@ static BOOL kpasswd_process_request(struct kdc_server *kdc,
 			status = NT_STATUS_TRANSACTION_ABORTED;
 			return kpasswd_make_pwchange_reply(kdc, mem_ctx, 
 							   status,
-							   reject_reason, 
-							   dominfo, 
+							   SAMR_REJECT_OTHER, 
+							   NULL, 
 							   reply);
 		}
 
@@ -334,8 +334,8 @@ static BOOL kpasswd_process_request(struct kdc_server *kdc,
 			ldb_transaction_cancel(samdb);
 			return kpasswd_make_pwchange_reply(kdc, mem_ctx, 
 							   status,
-							   reject_reason, 
-							   dominfo, 
+							   SAMR_REJECT_OTHER, 
+							   NULL, 
 							   reply);
 		}
 
@@ -412,7 +412,9 @@ BOOL kpasswdd_process(struct kdc_server *kdc,
 	uint16_t krb_priv_len;
 	uint16_t version;
 	NTSTATUS nt_status;
-	DATA_BLOB ap_req, krb_priv_req, krb_priv_rep, ap_rep;
+	DATA_BLOB ap_req, krb_priv_req;
+	DATA_BLOB krb_priv_rep = data_blob(NULL, 0);
+	DATA_BLOB ap_rep = data_blob(NULL, 0);
 	DATA_BLOB kpasswd_req, kpasswd_rep;
 	struct cli_credentials *server_credentials;
 	struct gensec_security *gensec_security;
