@@ -79,8 +79,10 @@ default_s2k_func(krb5_context context, krb5_enctype type,
 	return ENOMEM;
     ret = krb5_string_to_key_data_salt_opaque(context, type, password,
 					      salt, opaque, *key);
-    if (ret)
+    if (ret) {
 	free(*key);
+	*key = NULL;
+    }
     return ret;
 }
 
