@@ -22,24 +22,86 @@
 
 import tdb, os, UserDict
 
+# Open flags
+
+DEFAULT        = tdb.TDB_DEFAULT
+CLEAR_IF_FIRST = tdb.TDB_CLEAR_IF_FIRST
+INTERNAL       = tdb.TDB_INTERNAL
+NOLOCK         = tdb.TDB_NOLOCK
+NOMMAP         = tdb.TDB_NOMMAP
+
+# Class representing a TDB file
+
 class Tdb:
 
-    def __init__(self, name, hash_size = 0, tdb_flags = tdb.TDB_DEFAULT,
-                 open_flags = os.O_RDWR | os.O_CREAT, mode = 0600):
+    # Create and destroy Tdb objects
 
-        self.tdb = tdb.open(name, hash_size, tdb_flags, open_flags, mode)
+    def __init__(self, name, hash_size = 0, flags = tdb.TDB_DEFAULT,
+                 open_flags = os.O_RDWR | os.O_CREAT, mode = 0600):
+        self.tdb = tdb.open(name, hash_size, flags, open_flags, mode)
 
     def __del__(self):
-        tdb.close(self.tdb)
+        if hasattr(self, 'tdb'):
+            tdb.close(self.tdb)
+
+    # Random access to keys, values
 
     def __getitem__(self, key):
-        pass
+        result = tdb.fetch(self.tdb, key)
+        if result is None:
+            raise KeyError, key
+        return result
 
     def __setitem__(self, key, item):
-        pass
+        tdb.store(self.tdb, key, item)
 
     def __delitem__(self, key):
-        pass
+        if not tdb.exists(self.tdb, key):
+            raise KeyError, key
+        tdb.delete(self.tdb, key)
+
+    def has_key(self, key):
+        return tdb.exists(self.tdb, key)
+
+    # Tdb iterator
+
+    class TdbIterator:
+        def __init__(self, tdb):
+            self.tdb = tdb
+            self.key = None
+
+        def __iter__(self):
+            return self
+            
+        def next(self):
+            if self.key is None:
+                self.key = tdb.firstkey(self.tdb)
+                if self.key is None:
+                    raise StopIteration
+                return self.key
+            else:
+                self.key = tdb.nextkey(self.tdb, self.key)
+                if self.key is None:
+                    raise StopIteration
+                return self.key
+
+    def __iter__(self):
+        return Tdb.TdbIterator(self.tdb)
+
+    # Implement other dict functions using TdbIterator
 
     def keys(self):
-        pass
+        return [k for k in iter(self)]
+
+    def values(self):
+        return [self[k] for k in iter(self)]
+
+    def items(self):
+        return [(k, self[k]) for k in iter(self)]
+
+    def __len__(self):
+        return len(self.keys())
+
+    def clear(self):
+        for k in iter(self):
+            del(self[k])
