@@ -191,6 +191,7 @@ sub run_config_mk($$$)
 
 		$input->{$name}{NAME} = $name;
 		$input->{$name}{TYPE} = $type;
+		$input->{$name}{MK_FILE} = $srcdir."/".$filename;
 		$input->{$name}{BASEDIR} = dirname($filename);
 
 		foreach my $key (values %{$result->{$section}}) {

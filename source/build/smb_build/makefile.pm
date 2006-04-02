@@ -493,7 +493,7 @@ sub ProtoHeader($$)
 		$ctx->{PUBLIC_PROTO_HEADER} = $ctx->{PRIVATE_PROTO_HEADER};
 	}	
 
-	$self->output("$dir/$ctx->{PUBLIC_PROTO_HEADER}: \$($ctx->{TYPE}_$ctx->{NAME}_OBJ_LIST:.o=.c)\n");
+	$self->output("$dir/$ctx->{PUBLIC_PROTO_HEADER}: $ctx->{MK_FILE} \$($ctx->{TYPE}_$ctx->{NAME}_OBJ_LIST:.o=.c)\n");
 	$self->output("\t\@echo \"$comment\"\n");
 
 	$self->output("\t\@\$(PERL) \$(srcdir)/script/mkproto.pl --private=$dir/$ctx->{PRIVATE_PROTO_HEADER} --public=$dir/$ctx->{PUBLIC_PROTO_HEADER} \$($ctx->{TYPE}_$ctx->{NAME}_OBJ_LIST)\n\n");
