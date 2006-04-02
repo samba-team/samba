@@ -46,6 +46,8 @@ typedef struct hx509_verify_ctx_data *hx509_verify_ctx;
 typedef struct hx509_revoke_ctx_data *hx509_revoke_ctx;
 typedef struct hx509_query_data hx509_query;
 typedef void * hx509_cursor;
+typedef struct hx509_request_data *hx509_request;
+
 
 typedef void (*hx509_vprint_func)(void *, const char *, va_list);
 
