@@ -423,7 +423,7 @@ loop:
 	}
     }
     if(start) *start = pos;
-    if(end) *end = *start + 4 + len;
+    if(end) *end = pos + 4 + len;
  out:
     krb5_storage_seek(cursor->sp, pos + 4 + len, SEEK_SET);
     return ret;
