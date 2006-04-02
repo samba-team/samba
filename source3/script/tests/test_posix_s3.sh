@@ -34,7 +34,7 @@ raw="$raw RAW-SFILEINFO RAW-SFILEINFO-BUG RAW-STREAMS RAW-UNLINK RAW-WRITE"
 
 tests="$base"
 
-skipped="BASE-CHARSET BASE-DELAYWRITE BASE-DELETE BASE-DENY1 BASE-OPENATTR BASE-TCONDEV"
+skipped="BASE-CHARSET BASE-DEFER_OPEN BASE-DELAYWRITE BASE-DELETE BASE-DENY1 BASE-DENY2 BASE-DENY3 BASE-OPENATTR BASE-TCONDEV"
 
 echo "WARNING: Skipping tests $skipped"
 
@@ -55,7 +55,7 @@ for t in $tests; do
     fi
     start=""
     name="$t"
-    testit "$name" $VALGRIND $SMBTORTURE4 $TORTURE_OPTIONS $ADDARGS $unc -U"$username"%"$password" $t || failed=`expr $failed + 1`
+    testit "$name" $VALGRIND $SMBTORTURE4 $TORTURE4_OPTIONS $ADDARGS $unc -U"$username"%"$password" $t || failed=`expr $failed + 1`
 done
 
 testok $0 $failed
