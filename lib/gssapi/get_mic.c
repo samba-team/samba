@@ -59,6 +59,7 @@ mic_des
   message_token->length = total_len;
   message_token->value  = malloc (total_len);
   if (message_token->value == NULL) {
+    message_token->length = 0;
     *minor_status = ENOMEM;
     return GSS_S_FAILURE;
   }
@@ -150,6 +151,7 @@ mic_des3
   message_token->length = total_len;
   message_token->value  = malloc (total_len);
   if (message_token->value == NULL) {
+      message_token->length = 0;
       *minor_status = ENOMEM;
       return GSS_S_FAILURE;
   }
@@ -179,6 +181,8 @@ mic_des3
   kret = krb5_crypto_init(gssapi_krb5_context, key, 0, &crypto);
   if (kret) {
       free (message_token->value);
+      message_token->value = NULL;
+      message_token->length = 0;
       free (tmp);
       gssapi_krb5_set_error_string ();
       *minor_status = kret;
@@ -196,6 +200,8 @@ mic_des3
   krb5_crypto_destroy (gssapi_krb5_context, crypto);
   if (kret) {
       free (message_token->value);
+      message_token->value = NULL;
+      message_token->length = 0;
       gssapi_krb5_set_error_string ();
       *minor_status = kret;
       return GSS_S_FAILURE;
@@ -221,6 +227,8 @@ mic_des3
 			  ETYPE_DES3_CBC_NONE, &crypto);
   if (kret) {
       free (message_token->value);
+      message_token->value = NULL;
+      message_token->length = 0;
       gssapi_krb5_set_error_string ();
       *minor_status = kret;
       return GSS_S_FAILURE;
@@ -238,6 +246,8 @@ mic_des3
   krb5_crypto_destroy (gssapi_krb5_context, crypto);
   if (kret) {
       free (message_token->value);
+      message_token->value = NULL;
+      message_token->length = 0;
       gssapi_krb5_set_error_string ();
       *minor_status = kret;
       return GSS_S_FAILURE;
