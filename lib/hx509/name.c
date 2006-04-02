@@ -319,6 +319,24 @@ hx509_der_parse_name(const void *data, size_t length, hx509_name *name)
     return _hx509_name_from_Name(&n, name);
 }
 
+int
+hx509_name_copy(hx509_context context, const hx509_name from, hx509_name *to)
+{
+    int ret;
+
+    *to = calloc(1, sizeof(**to));
+    if (*to == NULL)
+	return ENOMEM;
+    ret = copy_Name(&(*to)->der_name, &from->der_name);
+    if (ret) {
+	free(*to);
+	*to = NULL;
+	return ENOMEM;
+    }
+    return 0;
+}
+
+
 void
 hx509_name_free(hx509_name *name)
 {
