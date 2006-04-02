@@ -21,6 +21,7 @@ cd $OLD_PWD
 if [ -z "$TORTURE_MAXTIME" ]; then
     TORTURE_MAXTIME=300
 fi
+export TORTURE_MAXTIME
 
 ##
 ## setup the various environment variables we need
