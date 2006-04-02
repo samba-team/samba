@@ -174,6 +174,7 @@ wrap_des
   output_message_buffer->length = total_len;
   output_message_buffer->value  = malloc (total_len);
   if (output_message_buffer->value == NULL) {
+    output_message_buffer->length = 0;
     *minor_status = ENOMEM;
     return GSS_S_FAILURE;
   }
@@ -298,6 +299,7 @@ wrap_des3
   output_message_buffer->length = total_len;
   output_message_buffer->value  = malloc (total_len);
   if (output_message_buffer->value == NULL) {
+    output_message_buffer->length = 0;
     *minor_status = ENOMEM;
     return GSS_S_FAILURE;
   }
@@ -332,6 +334,8 @@ wrap_des3
   if (ret) {
       gssapi_krb5_set_error_string ();
       free (output_message_buffer->value);
+      output_message_buffer->length = 0;
+      output_message_buffer->value = NULL;
       *minor_status = ret;
       return GSS_S_FAILURE;
   }
@@ -347,6 +351,8 @@ wrap_des3
   if (ret) {
       gssapi_krb5_set_error_string ();
       free (output_message_buffer->value);
+      output_message_buffer->length = 0;
+      output_message_buffer->value = NULL;
       *minor_status = ret;
       return GSS_S_FAILURE;
   }
@@ -376,6 +382,8 @@ wrap_des3
 			 &crypto);
   if (ret) {
       free (output_message_buffer->value);
+      output_message_buffer->length = 0;
+      output_message_buffer->value = NULL;
       *minor_status = ret;
       return GSS_S_FAILURE;
   }
@@ -394,6 +402,8 @@ wrap_des3
   if (ret) {
       gssapi_krb5_set_error_string ();
       free (output_message_buffer->value);
+      output_message_buffer->length = 0;
+      output_message_buffer->value = NULL;
       *minor_status = ret;
       return GSS_S_FAILURE;
   }
@@ -419,6 +429,8 @@ wrap_des3
       if (ret) {
 	  gssapi_krb5_set_error_string ();
 	  free (output_message_buffer->value);
+	  output_message_buffer->length = 0;
+	  output_message_buffer->value = NULL;
 	  *minor_status = ret;
 	  return GSS_S_FAILURE;
       }
@@ -428,6 +440,8 @@ wrap_des3
       if (ret) {
 	  gssapi_krb5_set_error_string ();
 	  free (output_message_buffer->value);
+	  output_message_buffer->length = 0;
+	  output_message_buffer->value = NULL;
 	  *minor_status = ret;
 	  return GSS_S_FAILURE;
       }
