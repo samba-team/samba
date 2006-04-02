@@ -1,5 +1,53 @@
 2006-04-02  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kdc/kerberos5.c (check_addresses): treat netbios as no addresses
+	
+	* kdc/{kerberos4,kaserver}.c: _kdc_check_flags takes hdb_entry_ex
+
+	* kdc/kerberos5.c (_kdc_check_flags): make it take hdb_entry_ex to
+	avoid ?:'s at callers
+
+	* lib/krb5/v4_glue.c: Avoid using free memory, found by IBM
+	checker.
+
+	* lib/krb5/transited.c (expand_realm): avoid passing NULL to
+	strlen, found by IBM checker.
+
+	* lib/krb5/rd_cred.c (krb5_rd_cred): avoid a memory leak on malloc
+	failure, found by IBM checker.
+
+	* lib/krb5/krbhst.c (_krb5_krbhost_info_move): replace a strcpy
+	with a memcpy
+
+	* lib/krb5/keytab_keyfile.c (get_cell_and_realm): plug a memory
+	leak, found by IBM checker.
+
+	* lib/krb5/keytab_file.c (fkt_next_entry_int): remove a
+	dereferencing NULL pointer, found by IBM checker.
+
+	* lib/krb5/init_creds_pw.c (init_creds_init_as_req): in AS-REQ the
+	cname must always be given, don't avoid that fact and remove a
+	cname == NULL case. Plugs a memory leak found by IBM checker.
+
+	* lib/krb5/init_creds_pw.c (default_s2k_func): avoid exposing
+	free-ed memory on error. Found by IBM checker.
+
+	* lib/krb5/init_creds.c (_krb5_get_init_creds_opt_copy): use
+	calloc to avoid uninitialized memory problem.
+
+	* lib/krb5/data.c (krb5_copy_data): avoid exposing free-ed memory
+	on error. Found by IBM checker.
+
+	* lib/krb5/fcache.c (fcc_gen_new): fix a use after free, found by
+	IBM checker.
+
+	* lib/krb5/config_file.c (krb5_config_vget_strings): IBM checker
+	thought it found a memory leak, it didn't, but there was another
+	error in the code, lets fix that instead.
+
+	* lib/krb5/cache.c (_krb5_expand_default_cc_name): plug memory
+	leak. Found by IBM checker.
+
 	* lib/krb5/cache.c (_krb5_expand_default_cc_name): avoid return
 	pointer to freed memory in the error case. Found by IBM checker.
 
