@@ -11,6 +11,9 @@ SHA2 support
 x509 policy mappings support
 path validation
 
+crypto
+	make signing alg depend on signer if not given
+
 tests
 	nist tests
 		name constrains
@@ -30,3 +33,4 @@ pkcs10
 		web server/client
 		jabber server/client 
 		email
+		from existing cert
