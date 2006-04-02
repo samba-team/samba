@@ -1509,11 +1509,13 @@ static BOOL get_memberuids(TALLOC_CTX *mem_ctx, gid_t gid, uid_t **pp_uids, size
 	/* We only look at our own sam, so don't care about imported stuff */
 
 	winbindd_env = getenv(WINBINDD_DONT_ENV);
-	winbind_putenv("0");
+	winbind_off();
 
 	if ((grp = getgrgid(gid)) == NULL) {
-		/* allow winbindd lookups */
-		winbind_putenv( winbindd_env ? winbindd_env : "1" );
+		/* allow winbindd lookups, but only if they weren't already disabled */
+		if ( !(winbindd_env && strequal(winbindd_env, "1")) ) {
+			winbind_on();
+		}
 
 		return False;
 	}
@@ -1539,8 +1541,11 @@ static BOOL get_memberuids(TALLOC_CTX *mem_ctx, gid_t gid, uid_t **pp_uids, size
 		add_uid_to_array_unique(mem_ctx, pw->pw_uid, pp_uids, p_num);
 	}
 
-	/* allow winbindd lookups */
-	winbind_putenv( winbindd_env ? winbindd_env : "1" );
+	/* allow winbindd lookups, but only if they weren't already disabled */
+
+	if ( !(winbindd_env && strequal(winbindd_env, "1")) ) {
+		winbind_on();
+	}
 
 	return True;
 }
