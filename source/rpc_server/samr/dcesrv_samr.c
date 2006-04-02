@@ -33,7 +33,7 @@
 #include "ads.h"
 #include "dsdb/samdb/samdb.h"
 #include "libcli/ldap/ldap.h"
-#include "libcli/security/proto.h"
+#include "libcli/security/security.h"
 #include "rpc_server/samr/proto.h"
 #include "db_wrap.h"
 

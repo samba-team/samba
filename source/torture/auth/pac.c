@@ -27,7 +27,7 @@
 #include "auth/kerberos/kerberos.h"
 #include "librpc/gen_ndr/ndr_krb5pac.h"
 #include "samba3/samba3.h"
-#include "libcli/security/proto.h"
+#include "libcli/security/security.h"
 #include "librpc/gen_ndr/ndr_security.h"
 #include "torture/torture.h"
 

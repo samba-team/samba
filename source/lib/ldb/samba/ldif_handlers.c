@@ -28,7 +28,7 @@
 #include "librpc/gen_ndr/ndr_security.h"
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "dsdb/samdb/samdb.h"
-#include "libcli/security/proto.h"
+#include "libcli/security/security.h"
 
 /*
   convert a ldif formatted objectSid to a NDR formatted blob

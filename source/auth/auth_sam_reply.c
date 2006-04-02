@@ -23,7 +23,7 @@
 
 #include "includes.h"
 #include "auth/auth.h"
-#include "libcli/security/proto.h"
+#include "libcli/security/security.h"
 
 NTSTATUS auth_convert_server_info_sambaseinfo(TALLOC_CTX *mem_ctx, 
 					      struct auth_serversupplied_info *server_info, 

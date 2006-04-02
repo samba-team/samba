@@ -31,7 +31,7 @@
 #include "torture/rpc/rpc.h"
 #include "auth/gensec/schannel_proto.h"
 #include "libcli/auth/libcli_auth.h"
-#include "libcli/security/proto.h"
+#include "libcli/security/security.h"
 #include "librpc/gen_ndr/ndr_netlogon.h"
 #include "librpc/gen_ndr/ndr_netlogon_c.h"
 #include "librpc/gen_ndr/ndr_lsa_c.h"

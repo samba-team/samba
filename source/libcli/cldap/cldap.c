@@ -38,7 +38,7 @@
 #include "libcli/ldap/ldap.h"
 #include "libcli/cldap/cldap.h"
 #include "lib/socket/socket.h"
-#include "libcli/security/proto.h"
+#include "libcli/security/security.h"
 #include "librpc/gen_ndr/ndr_nbt.h"
 
 /*
