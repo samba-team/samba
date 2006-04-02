@@ -1,5 +1,15 @@
-2006-03-30  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-04-02  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/hdb/keys.c (hdb_generate_key_set): set ret_key_set before
+	going into the error clause and freeing key_set. Found by IBM
+	checker.  Make sure ret == 0 after of parse error, we catch the
+	"no entries parsed" case later.
+
+	* lib/krb5/log.c (krb5_addlog_dest): make string length match
+	strings in strcasecmp.  Found by IBM checker.
+	
+2006-03-30  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* lib/hdb/hdb-ldap.c (LDAP_message2entry): in declaration set
 	variable_name as "hdb_entry_ex"
 	(hdb_ldap_common): change "arg" in condition (if) to "search_base"
