@@ -1,4 +1,31 @@
+2006-04-02  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* hxtool-commands.in: Add pkcs10-create command.
+
+	* hx509.h: Add hx509_request.
+
+	* TODO: more stuff
+
+	* Makefile.am: Add req.c
+
+	* req.c: Create certificate requests, prototype converts the
+	request in a pkcs10 packet.
+
+	* hxtool.c: Add pkcs10_create
+
+	* name.c (hx509_name_copy): new function.
+	
 2006-04-01  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* TODO: fill out what do
+
+	* hxtool-commands.in: add pkcs10-print
+
+	* hx_locl.h: Include <pkcs10_asn1.h>.
+
+	* pkcs10.asn1: PKCS#10
+
+	* hxtool.c (pkcs10_print): new function.
 
 	* test_chain.in: test ocsp keyhash
 

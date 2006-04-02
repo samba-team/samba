@@ -1,5 +1,19 @@
 2006-04-02  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/hdb/keytab.c: Remove a delta from last revision that should
+	have gone in later.
+	
+	* lib/krb5/krbhst.c: fix spelling
+
+	* lib/krb5/send_to_kdc.c (send_and_recv_http): don't expose freed
+	pointer, found by IBM checker.
+
+	* lib/krb5/rd_cred.c (krb5_rd_cred): don't expose freed pointer,
+	found by IBM checker.
+
+	* lib/krb5/addr_families.c (krb5_make_addrport): clear return
+	value on error, found by IBM checker.
+
 	* kdc/kerberos5.c (check_addresses): treat netbios as no addresses
 	
 	* kdc/{kerberos4,kaserver}.c: _kdc_check_flags takes hdb_entry_ex
