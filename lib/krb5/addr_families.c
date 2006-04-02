@@ -1136,6 +1136,7 @@ krb5_make_addrport (krb5_context context,
     if (ret) {
 	krb5_set_error_string(context, "malloc: out of memory");
 	free (*res);
+	*res = NULL;
 	return ret;
     }
     p = (*res)->address.data;
