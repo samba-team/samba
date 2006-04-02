@@ -257,8 +257,10 @@ krb5_rd_cred(krb5_context context,
 
 	ASN1_MALLOC_ENCODE(Ticket, creds->ticket.data, creds->ticket.length, 
 			   &cred.tickets.val[i], &len, ret);
-	if (ret)
+	if (ret) {
+	    free(creds);
 	    goto out;
+	}
 	if(creds->ticket.length != len)
 	    krb5_abortx(context, "internal error in ASN.1 encoder");
 	copy_EncryptionKey (&kci->key, &creds->session);
