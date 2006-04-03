@@ -3,7 +3,7 @@
 
    Swig interface to ldb.
 
-   Copyright (C) 2005 Tim Potter <tpot@samba.org>
+   Copyright (C) 2005,2006 Tim Potter <tpot@samba.org>
    Copyright (C) 2006 Simo Sorce <idra@samba.org>
 
      ** NOTE! The following LGPL license applies to the ldb
@@ -29,38 +29,28 @@
 
 %{
 
-/* This symbol is used in both includes.h and Python.h which causes an
-   annoying compiler warning. */
+/* Some typedefs to help swig along */
 
-#ifdef HAVE_FSTAT
-#undef HAVE_FSTAT
-#endif
-
-#if (__GNUC__ >= 3)
-/** Use gcc attribute to check printf fns.  a1 is the 1-based index of
- * the parameter containing the format, and a2 the index of the first
- * argument. Note that some gcc 2.x versions don't handle this
- * properly **/
-#define PRINTF_ATTRIBUTE(a1, a2) __attribute__ ((format (__printf__, a1, a2)))
-#else
-#define PRINTF_ATTRIBUTE(a1, a2)
-#endif
-
-/* Include ldb headers */
-
-/* Treat a uint8_t as an unsigned character */
 typedef unsigned char uint8_t;
 typedef unsigned long long uint64_t;
 typedef long long int64_t;
+
+/* Include headers */
 
 #include "lib/ldb/include/ldb.h"
 #include "lib/talloc/talloc.h"
 
 %}
 
-/* The ldb functions will crash if a NULL ldb is passed */
+%include "carrays.i"
+%include "exception.i"
 
-%include exception.i
+/* 
+ * Wrap struct ldb_context
+ */
+
+/* The ldb functions will crash if a NULL ldb context is passed so
+   catch this before it happens. */
 
 %typemap(check) struct ldb_context* {
 	if ($1 == NULL)
@@ -68,14 +58,19 @@ typedef long long int64_t;
 			"ldb context must be non-NULL");
 }
 
+/* 
+ * Wrap TALLOC_CTX
+ */
+
 /* Use talloc_init() to create a parameter to pass to ldb_init().  Don't
    forget to free it using talloc_free() afterwards. */
 
 TALLOC_CTX *talloc_init(char *name);
 int talloc_free(TALLOC_CTX *ptr);
 
-/* In and out typemaps for struct ldb_val.  This is converted to and from
-   the Python string datatype. */
+/*
+ * Wrap struct ldb_val
+ */
 
 %typemap(in) struct ldb_val {
 	if (!PyString_Check($input)) {
@@ -99,7 +94,9 @@ enum ldb_scope {LDB_SCOPE_DEFAULT=-1,
 		LDB_SCOPE_ONELEVEL=1,
 		LDB_SCOPE_SUBTREE=2};
 
-/* Typemap for passing a struct ldb_result by reference */
+/*
+ * Wrap struct ldb_result
+ */
 
 %typemap(in, numinputs=0) struct ldb_result **OUT (struct ldb_result *temp_ldb_result) {
 	$1 = &temp_ldb_result;
@@ -119,9 +116,19 @@ enum ldb_scope {LDB_SCOPE_DEFAULT=-1,
 
 %types(struct ldb_result *);
 
+/*
+ * Wrap struct ldb_dn
+ */
+
 %typemap(out) struct ldb_dn * {
 	$result = PyString_FromString(ldb_dn_linearize($1, $1));
 }
+
+/*
+ * Wrap struct ldb_message_element
+ */
+
+%array_functions(struct ldb_val, ldb_val_array);
 
 struct ldb_message_element {
 	unsigned int flags;
@@ -130,6 +137,12 @@ struct ldb_message_element {
 	struct ldb_val *values;
 };
 
+/*
+ * Wrap struct ldb_message
+ */
+
+%array_functions(struct ldb_message_element, ldb_message_element_array);
+
 struct ldb_message {
 	struct ldb_dn *dn;
 	unsigned int num_elements;
@@ -137,7 +150,9 @@ struct ldb_message {
 	void *private_data; /* private to the backend */
 };
 
-/* Wrap ldb functions */
+/*
+ * Wrap ldb functions 
+ */
 
 %rename ldb_init init;
 struct ldb_context *ldb_init(TALLOC_CTX *mem_ctx);
