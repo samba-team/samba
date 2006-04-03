@@ -915,7 +915,8 @@ _hx509_parse_private_key(const heim_oid *key_oid,
     ret = (*md->parse_private_key)(md, data, len, *private_key);
     if (ret)
 	_hx509_free_private_key(private_key);
-    (*private_key)->md = md;
+    else
+	(*private_key)->md = md;
 
     return ret;
 }
