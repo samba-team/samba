@@ -1,5 +1,23 @@
 2006-04-03  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* data/key.der: needed for cert request test
+
+	* test_req.in: adapt to rename of pkcs10-create to request-create
+
+	* hxtool.c: adapt to rename of pkcs10-create to request-create
+
+	* hxtool-commands.in: Rename pkcs10-create to request-create
+
+	* crypto.c: (_hx509_parse_private_key): Avoid crashing on bad input.
+
+	* hxtool.c (pkcs10_create): use opt->subject_string
+
+	* hxtool-commands.in: Add pkcs10-create --subject
+
+	* Makefile.am: Add test_req to tests.
+	
+	* test_req.in: Test for pkcs10 commands.
+
 	* name.c (hx509_parse_name): new function.
 
 	* hxtool.c (pkcs10_create): implement
