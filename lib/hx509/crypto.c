@@ -82,7 +82,10 @@ private_oid(private_rc2_40, 1);
 
 struct hx509_crypto;
 
+struct signature_alg;
+
 struct hx509_private_key {
+    const struct signature_alg *md;
     const heim_oid *signature_alg;
     struct {
 	RSA *rsa;
@@ -116,6 +119,8 @@ struct signature_alg {
 			     const void *data,
 			     size_t len,
 			     hx509_private_key private_key);
+    int (*private_key2SPKI)(hx509_private_key private_key,
+			    SubjectPublicKeyInfo *spki);
 };
 
 /*
@@ -358,6 +363,43 @@ rsa_parse_private_key(const struct signature_alg *sig_alg,
     return 0;
 }
 
+int
+rsa_private_key2SPKI(hx509_private_key private_key,
+		     SubjectPublicKeyInfo *spki)
+{
+    int len, ret;
+
+    memset(spki, 0, sizeof(*spki));
+
+    len = i2d_RSAPublicKey(private_key->private_key.rsa, NULL);
+
+    spki->subjectPublicKey.data = malloc(len);
+    if (spki->subjectPublicKey.data == NULL)
+	return ENOMEM;
+    spki->subjectPublicKey.length = len * 8;
+
+    ret = _hx509_set_digest_alg(&spki->algorithm,
+				oid_id_pkcs1_rsaEncryption(), 
+				"\x05\x00", 2);
+    if (ret) {
+	free(spki->subjectPublicKey.data);
+	spki->subjectPublicKey.data = NULL;
+	spki->subjectPublicKey.length = 0;
+	return ret;
+    }
+
+    {
+	unsigned char *pp = spki->subjectPublicKey.data;
+	i2d_RSAPublicKey(private_key->private_key.rsa, &pp);
+    }
+
+    return 0;
+}
+
+
+/*
+ *
+ */
 
 static int
 dsa_verify_signature(const struct signature_alg *sig_alg,
@@ -567,7 +609,8 @@ static struct signature_alg pkcs1_rsa_sha1_alg = {
     PROVIDE_CONF|REQUIRE_SIGNER,
     rsa_verify_signature,
     rsa_create_signature,
-    rsa_parse_private_key
+    rsa_parse_private_key,
+    rsa_private_key2SPKI
 };
 
 static struct signature_alg rsa_with_sha1_alg = {
@@ -578,7 +621,8 @@ static struct signature_alg rsa_with_sha1_alg = {
     PROVIDE_CONF|REQUIRE_SIGNER,
     rsa_verify_signature,
     rsa_create_signature,
-    rsa_parse_private_key
+    rsa_parse_private_key,
+    rsa_private_key2SPKI
 };
 
 static struct signature_alg rsa_with_md5_alg = {
@@ -589,7 +633,8 @@ static struct signature_alg rsa_with_md5_alg = {
     PROVIDE_CONF|REQUIRE_SIGNER,
     rsa_verify_signature,
     rsa_create_signature,
-    rsa_parse_private_key
+    rsa_parse_private_key,
+    rsa_private_key2SPKI
 };
 
 static struct signature_alg rsa_with_md2_alg = {
@@ -600,7 +645,8 @@ static struct signature_alg rsa_with_md2_alg = {
     PROVIDE_CONF|REQUIRE_SIGNER,
     rsa_verify_signature,
     rsa_create_signature,
-    rsa_parse_private_key
+    rsa_parse_private_key,
+    rsa_private_key2SPKI
 };
 
 static struct signature_alg dsa_sha1_alg = {
@@ -869,9 +915,26 @@ _hx509_parse_private_key(const heim_oid *key_oid,
     ret = (*md->parse_private_key)(md, data, len, *private_key);
     if (ret)
 	_hx509_free_private_key(private_key);
+    (*private_key)->md = md;
 
     return ret;
 }
+
+/*
+ *
+ */
+
+int
+_hx509_private_key2SPKI(hx509_context context,
+			hx509_private_key private_key,
+			SubjectPublicKeyInfo *spki)
+{
+    const struct signature_alg *md = private_key->md;
+    if (md->private_key2SPKI == NULL)
+	return EINVAL;
+    return (*md->private_key2SPKI)(private_key, spki);
+}
+
 
 /*
  *
@@ -988,6 +1051,8 @@ _hx509_private_key_assign_key_file(hx509_private_key key,
 	if (key->private_key.rsa == NULL)
 	    return EINVAL;
 
+	key->md = &pkcs1_rsa_sha1_alg;
+
 	return 0;
 #endif
     }
@@ -1001,6 +1066,7 @@ _hx509_private_key_assign_rsa(hx509_private_key key, void *ptr)
     if (key->private_key.rsa)
 	RSA_free(key->private_key.rsa);
     key->private_key.rsa = ptr;
+    key->md = &pkcs1_rsa_sha1_alg;
 }
 
 
