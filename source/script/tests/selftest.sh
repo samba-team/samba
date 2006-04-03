@@ -114,6 +114,7 @@ cat >$SERVERCONFFILE<<EOF
 [tmp]
 	path = $PREFIX_ABS/tmp
 	read only = no
+	smbd:sharedelay = 100000
 EOF
 
 
