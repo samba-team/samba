@@ -113,11 +113,22 @@ enum ldb_scope {LDB_SCOPE_DEFAULT=-1,
 	resultobj = PyList_New((*$1)->count);
 
 	for (i = 0; i < (*$1)->count; i++) {
-		PyList_SetItem(resultobj, i, SWIG_NewPointerObj(*$1, SWIGTYPE_p_ldb_message, 0));
+		PyList_SetItem(resultobj, i, SWIG_NewPointerObj((*$1)->msgs[i], SWIGTYPE_p_ldb_message, 0));
 	}
 }	
 
 %types(struct ldb_result *);
+
+%typemap(out) struct ldb_dn * {
+	$result = PyString_FromString(ldb_dn_linearize($1, $1));
+}
+
+struct ldb_message_element {
+	unsigned int flags;
+	const char *name;
+	unsigned int num_values;
+	struct ldb_val *values;
+};
 
 struct ldb_message {
 	struct ldb_dn *dn;
