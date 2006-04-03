@@ -236,6 +236,11 @@ command = {
 command = {
 	name = "pkcs10-create"
 	option = {
+		long = "subject"
+		type = "string"
+		help = "Subject DN"
+	}
+	option = {
 		long = "verbose"
 		type = "flag"
 		help = "verbose status"
