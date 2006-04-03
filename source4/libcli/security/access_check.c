@@ -25,22 +25,6 @@
 
 
 /*
-  check if a sid is in the supplied token
-*/
-static BOOL sid_active_in_token(const struct dom_sid *sid, 
-				const struct security_token *token)
-{
-	int i;
-	for (i=0;i<token->num_sids;i++) {
-		if (dom_sid_equal(sid, token->sids[i])) {
-			return True;
-		}
-	}
-	return False;
-}
-
-
-/*
   perform a SEC_FLAG_MAXIMUM_ALLOWED access check
 */
 static uint32_t access_check_max_allowed(const struct security_descriptor *sd, 
@@ -49,9 +33,9 @@ static uint32_t access_check_max_allowed(const struct security_descriptor *sd,
 	uint32_t denied = 0, granted = 0;
 	unsigned i;
 	
-	if (sid_active_in_token(sd->owner_sid, token)) {
+	if (security_token_has_sid(token, sd->owner_sid)) {
 		granted |= SEC_STD_WRITE_DAC | SEC_STD_READ_CONTROL | SEC_STD_DELETE;
-	} else if (sec_privilege_check(token, SEC_PRIV_RESTORE)) {
+	} else if (security_token_has_privilege(token, SEC_PRIV_RESTORE)) {
 		granted |= SEC_STD_DELETE;
 	}
 
@@ -62,7 +46,7 @@ static uint32_t access_check_max_allowed(const struct security_descriptor *sd,
 			continue;
 		}
 
-		if (!sid_active_in_token(&ace->trustee, token)) {
+		if (!security_token_has_sid(token, &ace->trustee)) {
 			continue;
 		}
 
@@ -105,7 +89,7 @@ NTSTATUS sec_access_check(const struct security_descriptor *sd,
 	}
 
 	if (access_desired & SEC_FLAG_SYSTEM_SECURITY) {
-		if (sec_privilege_check(token, SEC_PRIV_SECURITY)) {
+		if (security_token_has_privilege(token, SEC_PRIV_SECURITY)) {
 			bits_remaining &= ~SEC_FLAG_SYSTEM_SECURITY;
 		} else {
 			return NT_STATUS_ACCESS_DENIED;
@@ -125,11 +109,11 @@ NTSTATUS sec_access_check(const struct security_descriptor *sd,
 
 	/* the owner always gets SEC_STD_WRITE_DAC, SEC_STD_READ_CONTROL and SEC_STD_DELETE */
 	if ((bits_remaining & (SEC_STD_WRITE_DAC|SEC_STD_READ_CONTROL|SEC_STD_DELETE)) &&
-	    sid_active_in_token(sd->owner_sid, token)) {
+	    security_token_has_sid(token, sd->owner_sid)) {
 		bits_remaining &= ~(SEC_STD_WRITE_DAC|SEC_STD_READ_CONTROL|SEC_STD_DELETE);
 	}
 	if ((bits_remaining & SEC_STD_DELETE) &&
-	    sec_privilege_check(token, SEC_PRIV_RESTORE)) {
+	    security_token_has_privilege(token, SEC_PRIV_RESTORE)) {
 		bits_remaining &= ~SEC_STD_DELETE;
 	}
 
@@ -141,7 +125,7 @@ NTSTATUS sec_access_check(const struct security_descriptor *sd,
 			continue;
 		}
 
-		if (!sid_active_in_token(&ace->trustee, token)) {
+		if (!security_token_has_sid(token, &ace->trustee)) {
 			continue;
 		}
 
