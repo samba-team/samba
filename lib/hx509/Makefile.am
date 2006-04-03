@@ -120,6 +120,7 @@ TESTS = 			\
 	test_nist		\
 	test_nist_cert		\
 	test_nist_pkcs12	\
+	test_req		\
 	test_query
 
 do_subst = sed -e 's,[@]srcdir[@],$(srcdir),g'
@@ -148,6 +149,11 @@ test_nist_pkcs12: test_nist_pkcs12.in Makefile
 	$(do_subst) < $(srcdir)/test_nist_pkcs12.in > test_nist_pkcs12.tmp
 	chmod +x test_nist_pkcs12.tmp
 	mv test_nist_pkcs12.tmp test_nist_pkcs12
+
+test_req: test_req.in Makefile
+	$(do_subst) < $(srcdir)/test_req.in > test_req.tmp
+	chmod +x test_req.tmp
+	mv test_req.tmp test_req
 
 test_query: test_query.in Makefile
 	$(do_subst) < $(srcdir)/test_query.in > test_query.tmp
