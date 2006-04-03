@@ -743,6 +743,60 @@ ocsp_fetch(struct ocsp_fetch_options *opt, int argc, char **argv)
 int
 pkcs10_create(struct pkcs10_create_options *opt, int argc, char **argv)
 {
+    heim_octet_string request;
+    hx509_request req;
+    hx509_name name = NULL;
+    int ret;
+    void *data;
+    size_t len;
+    hx509_private_key signer;
+    SubjectPublicKeyInfo key;
+
+    memset(&key, 0, sizeof(key));
+
+    ret = _hx509_map_file(argv[0], &data, &len, NULL);
+    if (ret)
+	err(1, "map_file: %s: %d", argv[0], ret);
+
+    ret = _hx509_parse_private_key(oid_id_pkcs1_rsaEncryption(),
+				   data,
+				   len,
+				   &signer);
+    _hx509_unmap_file(data, len);
+    if (ret)
+	errx(1, "_hx509_parse_private_key: %d", ret);
+
+    _hx509_request_init(context, &req);
+
+    hx509_parse_name("CN=Love,DC=it,DC=su,DC=se", &name);
+
+    _hx509_request_set_name(context, req, name);
+
+    if (opt->verbose_flag) {
+	char *s;
+	hx509_name_to_string(name, &s);
+	printf("%s\n", s);
+    }
+
+    ret = _hx509_private_key2SPKI(context, signer, &key);
+
+    ret = _hx509_request_set_SubjectPublicKeyInfo(context,
+						  req,
+						  &key);
+    if (ret)
+	errx(1, "_hx509_request_set_SubjectPublicKeyInfo: %d", ret);
+
+    ret = _hx509_request_to_pkcs10(context,
+				   req,
+				   signer,
+				   &request);
+
+    _hx509_request_free(&req);
+
+    if (ret == 0)
+	rk_dumpdata(argv[1], request.data, request.length);
+    free_octet_string(&request);
+
     return 0;
 }
 
