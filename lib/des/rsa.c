@@ -301,6 +301,20 @@ heim_int2BN(const heim_integer *i)
     return bn;
 }
 
+static krb5_error_code
+bn2heim_int(BIGNUM *bn, heim_integer *integer)
+{
+    integer->length = BN_num_bytes(bn);
+    integer->data = malloc(integer->length);
+    if (integer->data == NULL) {
+	integer->length = 0;
+	return ENOMEM;
+    }
+    BN_bn2bin(bn, integer->data);
+    integer->negative = BN_is_negative(bn);
+    return 0;
+}
+
 
 RSA *
 d2i_RSAPrivateKey(RSA *rsa, const unsigned char **pp, size_t len)
@@ -334,4 +348,35 @@ d2i_RSAPrivateKey(RSA *rsa, const unsigned char **pp, size_t len)
 
     free_RSAPrivateKey(&data);
     return k;
+}
+
+int
+i2d_RSAPublicKey(RSA *rsa, const unsigned char **pp)
+{
+    size_t size;
+    int ret;
+
+    ret = bn2heim_int(rsa->n, &data.modulus);
+    ret = bn2heim_int(rsa->n, &data.e);
+
+    if (pp == NULL) {
+	size = length_RSAPublicKey(&data);
+    } else {
+	RSAPublicKey data;
+	void *p;
+	size_t len;
+
+	ASN1_MALLOC_ENCODE(RSAPublicKey, p, len, &data, &size, ret);
+	free_RSAPublicKey(&data);
+	if (ret)
+	    return -1;
+	if (len != size)
+	    abort();
+    
+	memcpy(*pp, p, size);
+    
+	*pp += size;
+    }
+    
+    return size;
 }
