@@ -85,7 +85,7 @@ static void smbw_dir_add(struct file_info *finfo, const char *mask,
 	if (cur_dir->malloced == cur_dir->count) {
 		cdl = (struct file_info *)Realloc(cur_dir->list, 
 							    sizeof(cur_dir->list[0])*
-							    (cur_dir->count+100));
+							    (cur_dir->count+100), True);
 		if (!cdl) {
 			/* oops */
 			return;
