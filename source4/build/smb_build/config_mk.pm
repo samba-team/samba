@@ -74,6 +74,7 @@ my $section_types = {
 	"LIBRARY" => {
 		"VERSION"		=> "string",
 		"SO_VERSION"		=> "string",
+		"LIBRARY_REALNAME" => "string",
 		
 		"INIT_FUNCTION_TYPE"	=> "string",
 

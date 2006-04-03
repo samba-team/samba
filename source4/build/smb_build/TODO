@@ -1,3 +1,5 @@
+- make --enable-dso the default
+- per-subsystem CFLAGS (which are inherited)
 - pregenerate more stuff (IDL, manpages, lex/yacc?)
 - saner names for:
 	libcli.so.0.0.1 (rename to libsmb?)
