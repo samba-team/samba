@@ -683,14 +683,20 @@ int
 ocsp_fetch(struct ocsp_fetch_options *opt, int argc, char **argv)
 {
     hx509_certs reqcerts, pool;
-    heim_octet_string req;
+    heim_octet_string req, nonce_data, *nonce = &nonce_data;
     hx509_lock lock;
     int i, ret;
     char *file;
     const char *url = "/";
 
+    memset(&nonce, 0, sizeof(nonce));
+
     hx509_lock_init(context, &lock);
     lock_strings(lock, &opt->pass_strings);
+
+    /* no nonce */
+    if (!opt->nonce_flag)
+	nonce = NULL;
 
     if (opt->url_path_string)
 	url = opt->url_path_string;
@@ -715,7 +721,7 @@ ocsp_fetch(struct ocsp_fetch_options *opt, int argc, char **argv)
 	    errx(1, "hx509_certs_append: req: %s: %d", argv[i], ret);
     }
 
-    ret = hx509_ocsp_request(context, reqcerts, pool, NULL, NULL, &req, NULL);
+    ret = hx509_ocsp_request(context, reqcerts, pool, NULL, NULL, &req, nonce);
     if (ret)
 	errx(1, "hx509_ocsp_request: req: %d", ret);
 	
@@ -736,6 +742,9 @@ ocsp_fetch(struct ocsp_fetch_options *opt, int argc, char **argv)
 	fwrite(req.data, req.length, 1, f);
 	fclose(f);
     }
+
+    if (nonce)
+	free_octet_string(nonce);
 
     return 0;
 }
