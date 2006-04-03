@@ -63,7 +63,7 @@ static NTSTATUS samdb_privilege_setup_sid(void *samctx, TALLOC_CTX *mem_ctx,
 				 priv_str));
 			continue;
 		}
-		sec_privilege_set(token, privilege);
+		security_token_set_privilege(token, privilege);
 	}
 
 	return NT_STATUS_OK;

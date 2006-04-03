@@ -194,7 +194,7 @@ static uint64_t sec_privilege_mask(enum sec_privilege privilege)
 /*
   return True if a security_token has a particular privilege bit set
 */
-BOOL sec_privilege_check(const struct security_token *token, enum sec_privilege privilege)
+BOOL security_token_has_privilege(const struct security_token *token, enum sec_privilege privilege)
 {
 	uint64_t mask;
 
@@ -212,7 +212,7 @@ BOOL sec_privilege_check(const struct security_token *token, enum sec_privilege 
 /*
   set a bit in the privilege mask
 */
-void sec_privilege_set(struct security_token *token, enum sec_privilege privilege)
+void security_token_set_privilege(struct security_token *token, enum sec_privilege privilege)
 {
 	if (privilege < 1 || privilege > 64) {
 		return;
@@ -220,7 +220,7 @@ void sec_privilege_set(struct security_token *token, enum sec_privilege privileg
 	token->privilege_mask |= sec_privilege_mask(privilege);
 }
 
-void sec_privilege_debug(int dbg_lev, const struct security_token *token)
+void security_token_debug_privileges(int dbg_lev, const struct security_token *token)
 {
 	DEBUGADD(dbg_lev, (" Privileges (0x%16llX):\n",
 			    (unsigned long long) token->privilege_mask));
