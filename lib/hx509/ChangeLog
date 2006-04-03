@@ -1,5 +1,28 @@
 2006-04-03  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* TODO: split certificate request into pkcs10 and CRMF
+
+	* hxtool-commands.in: Add nonce flag to ocsp-fetch
+
+	* hxtool.c: control sending nonce
+
+	* hxtool.c (request_create): store the request in a file, no in
+	bitbucket.
+
+	* cert.c: expose print_cert_subject internally
+
+	* hxtool.c: Add ocsp_print.
+
+	* hxtool-commands.in: New command "ocsp-print".
+
+	* hx_locl.h: Include <hex.h>.
+
+	* revoke.c (verify_ocsp): require issuer to match too.
+	(free_ocsp): new function
+	(hx509_revoke_ocsp_print): new function, print ocsp reply
+
+	* Makefile.am: build CRMF files
+
 	* data/key.der: needed for cert request test
 
 	* test_req.in: adapt to rename of pkcs10-create to request-create
