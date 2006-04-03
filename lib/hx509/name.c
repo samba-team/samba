@@ -320,6 +320,107 @@ hx509_der_parse_name(const void *data, size_t length, hx509_name *name)
 }
 
 int
+hx509_parse_name(const char *str, hx509_name *name)
+{
+    const char *p, *q;
+    char *r;
+    size_t len;
+    hx509_name n;
+    void *ptr;
+
+    *name = NULL;
+
+    n = calloc(1, sizeof(*n));
+    if (n == NULL)
+	return ENOMEM;
+
+    n->der_name.element = choice_Name_rdnSequence;
+
+    p = str;
+
+    while (p != NULL && *p != '\0') {
+	heim_oid *oid;
+	int last;
+
+	q = strchr(p, ',');
+	if (q) {
+	    len = (q - p);
+	    last = 1;
+	} else {
+	    len = strlen(p);
+	    last = 0;
+	}
+
+	q = strchr(p, '=');
+	if (q == NULL)
+	    _hx509_abort("missing = in %s", p);
+	
+	if ((q - p) > len)
+	    _hx509_abort(" = after , in %s", p);
+
+	if (strncasecmp(p, "DC=", 3) == 0) {
+	    oid = &dc_oid;
+	} else if (strncasecmp(p, "CN=", 3) == 0) {
+	    oid = &commonName_oid;
+	} else {
+	    _hx509_abort("unknown type: %.*s", (int)(q - p) - 1, p);
+	    exit(1);
+	}
+	
+	ptr = realloc(n->der_name.u.rdnSequence.val, 
+		      sizeof(n->der_name.u.rdnSequence.val[0]) *
+		      (n->der_name.u.rdnSequence.len + 1));
+	if (ptr == NULL)
+	    _hx509_abort("realloc");
+	n->der_name.u.rdnSequence.val = ptr;
+
+	memmove(&n->der_name.u.rdnSequence.val[1],
+		&n->der_name.u.rdnSequence.val[0],
+		n->der_name.u.rdnSequence.len * 
+		sizeof(n->der_name.u.rdnSequence.val[0]));
+	
+	RelativeDistinguishedName *rdn = 
+	    &n->der_name.u.rdnSequence.val[0];
+
+	rdn->val = malloc(sizeof(rdn->val[0]));
+	if (rdn->val == NULL)
+	    _hx509_abort("foo");
+	rdn->len = 1;
+
+
+	if (copy_oid(oid, &rdn->val[0].type) != 0)
+	    _hx509_abort("copy_oid");
+
+	{
+	    size_t strlen = len - (q - p) - 1;
+	    const char *str = p + (q - p) + 1;
+#if 0
+	    printf("%s == %.*s\n", 
+		   oidtostring(oid), 
+		   (int)strlen,
+		   str);
+#endif
+	    
+	    r = malloc(strlen + 1);
+	    if (r == NULL)
+		_hx509_abort("malloc");
+	    memcpy(r, str, strlen);
+	    r[strlen] = '\0';
+	    
+	    rdn->val[0].value.element = choice_DirectoryString_printableString;
+	    rdn->val[0].value.u.printableString = r;
+	}
+
+	p += len + last;
+	n->der_name.u.rdnSequence.len += 1;
+    }
+
+    *name = n;
+
+    return 0;
+}
+
+int
 hx509_name_copy(hx509_context context, const hx509_name from, hx509_name *to)
 {
     int ret;
@@ -327,7 +428,7 @@ hx509_name_copy(hx509_context context, const hx509_name from, hx509_name *to)
     *to = calloc(1, sizeof(**to));
     if (*to == NULL)
 	return ENOMEM;
-    ret = copy_Name(&(*to)->der_name, &from->der_name);
+    ret = copy_Name(&from->der_name, &(*to)->der_name);
     if (ret) {
 	free(*to);
 	*to = NULL;
