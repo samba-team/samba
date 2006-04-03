@@ -294,7 +294,7 @@ static NTSTATUS cm_prepare_connection(const struct winbindd_domain *domain,
 
 		DEBUG(5, ("connecting to %s from %s with username "
 			  "[%s]\\[%s]\n",  controller, global_myname(),
-			  machine_account, machine_password));
+			  lp_workgroup(), machine_account));
 
 		ads_status = cli_session_setup_spnego(*cli,
 						      machine_account, 
