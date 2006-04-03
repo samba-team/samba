@@ -768,9 +768,10 @@ pkcs10_create(struct pkcs10_create_options *opt, int argc, char **argv)
 
     _hx509_request_init(context, &req);
 
-    hx509_parse_name("CN=Love,DC=it,DC=su,DC=se", &name);
-
-    _hx509_request_set_name(context, req, name);
+    if (opt->subject_string) {
+	hx509_parse_name(opt->subject_string, &name);
+	_hx509_request_set_name(context, req, name);
+    }
 
     if (opt->verbose_flag) {
 	char *s;
