@@ -27,17 +27,20 @@ swig: scripting/swig/_tdb.so scripting/swig/_ldb.so
 scripting/swig/tdb_wrap.c: scripting/swig/tdb.i
 	swig -python scripting/swig/tdb.i
 
-scripting/swig/_tdb.so: scripting/swig/tdb_wrap.o bin/subsystems/LIBRARY_LIBTDB.o
-	$(SHLD) $(SHLD_FLAGS) -o scripting/swig/_tdb.so \
-		scripting/swig/tdb_wrap.o \
-		bin/subsystems/LIBRARY_LIBTDB.o
+scripting/swig/_tdb.so: scripting/swig/tdb_wrap.o
+	$(SHLD) $(SHLD_FLAGS) -o scripting/swig/_tdb.so $(LOCAL_LINK_FLAGS) \
+		bin/libtdb.$(SHLIBEXT).0.0.1 \
+		scripting/swig/tdb_wrap.o
 
 scripting/swig/ldb_wrap.c: scripting/swig/ldb.i
 	swig -python scripting/swig/ldb.i
 
-scripting/swig/_ldb.so: scripting/swig/ldb_wrap.o $(LIBRARY_swig_ldb_DEPEND_LIST)
-	$(SHLD) $(SHLD_FLAGS) -o scripting/swig/_ldb.so scripting/swig/ldb_wrap.o \
-		$(LIBRARY_swig_ldb_LINK_LIST) $(LIBRARY_swig_ldb_LINK_FLAGS)
+scripting/swig/_ldb.so: scripting/swig/ldb_wrap.o $(LIBRARY_DYNCONFIG_OBJ_LIST)
+	$(SHLD) $(SHLD_FLAGS) -o scripting/swig/_ldb.so $(LOCAL_LINK_FLAGS) \
+		$(LIBRARY_DYNCONFIG_LINK_LIST) \
+		bin/libtdb.$(SHLIBEXT).0.0.1 \
+		bin/libldb.$(SHLIBEXT).0.0.1 \
+		scripting/swig/ldb_wrap.o
 
 SWIG_INCLUDES = librpc/gen_ndr/samr.i librpc/gen_ndr/lsa.i librpc/gen_ndr/spoolss.i
 
