@@ -76,6 +76,15 @@ hx509_revoke_init(hx509_context context, hx509_revoke_ctx *revoke)
     return 0;
 }
 
+static void
+free_ocsp(struct revoke_ocsp *ocsp)
+{
+    free(ocsp->path);
+    free_OCSPBasicOCSPResponse(&ocsp->ocsp);
+    hx509_certs_free(&ocsp->certs);
+    hx509_cert_free(ocsp->signer);
+}
+
 void
 hx509_revoke_free(hx509_revoke_ctx *revoke)
 {
@@ -85,12 +94,10 @@ hx509_revoke_free(hx509_revoke_ctx *revoke)
 	free((*revoke)->crls.val[i].path);
 	free_CRLCertificateList(&(*revoke)->crls.val[i].crl);
     }
-    for (i = 0; i < (*revoke)->ocsps.len; i++) {
-	free((*revoke)->ocsps.val[i].path);
-	free_OCSPBasicOCSPResponse(&(*revoke)->ocsps.val[i].ocsp);
-	hx509_certs_free(&(*revoke)->ocsps.val[i].certs);
-	hx509_cert_free((*revoke)->ocsps.val[i].signer);
-    }
+
+    for (i = 0; i < (*revoke)->ocsps.len; i++)
+	free_ocsp(&(*revoke)->ocsps.val[i]);
+
     free((*revoke)->crls.val);
 
     memset(*revoke, 0, sizeof(**revoke));
@@ -121,6 +128,8 @@ verify_ocsp(hx509_context context,
 	q.keyhash_sha1 = &ocsp->ocsp.tbsResponseData.responderID.u.byKey;
 	break;
     }
+    q.match =|HX509_QUERY_MATCH_ISSUER_NAME;
+    q.issuer_name = &_hx509_get_cert(parent)->tbsCertificate.issuer;
 	
     ret = hx509_certs_find(context, certs, &q, &signer);
     if (ret && ocsp->certs)
@@ -776,4 +785,81 @@ hx509_ocsp_request(hx509_context context,
 
 
     return 0;
+}
+
+int
+hx509_revoke_ocsp_print(hx509_context context, const char *path, FILE *out)
+{
+    struct revoke_ocsp ocsp;
+    int ret, i;
+    
+    if (out == NULL)
+	out = stdout;
+
+    memset(&ocsp, 0, sizeof(ocsp));
+
+    ocsp.path = strdup(path);
+    if (ocsp.path == NULL)
+	return ENOMEM;
+
+    ret = load_ocsp(context, &ocsp);
+    if (ret) {
+	free_ocsp(&ocsp);
+	return ret;
+    }
+
+    fprintf(out, "signer: ");
+
+    switch(ocsp.ocsp.tbsResponseData.responderID.element) {
+    case choice_OCSPResponderID_byName: {
+	hx509_name n;
+	char *s;
+	_hx509_name_from_Name(&ocsp.ocsp.tbsResponseData.responderID.u.byName, &n);
+	hx509_name_to_string(n, &s);
+	hx509_name_free(&n);
+	fprintf(out, " byName: %s\n", s);
+	free(s);
+	break;
+    }
+    case choice_OCSPResponderID_byKey: {
+	char *s;
+	hex_encode(ocsp.ocsp.tbsResponseData.responderID.u.byKey.data,
+		   ocsp.ocsp.tbsResponseData.responderID.u.byKey.length,
+		   &s);
+	fprintf(out, " byKey: %s\n", s);
+	free(s);
+	break;
+    }
+    default:
+	_hx509_abort("choice_OCSPResponderID unknown");
+	break;
+    }
+
+
+    fprintf(out, "replies: %d\n", ocsp.ocsp.tbsResponseData.responses.len);
+
+    for (i = 0; i < ocsp.ocsp.tbsResponseData.responses.len; i++) {
+	char *status;
+	switch (ocsp.ocsp.tbsResponseData.responses.val[i].certStatus.element) {
+	case choice_OCSPCertStatus_good:
+	    status = "good";
+	    break;
+	case choice_OCSPCertStatus_revoked:
+	    status = "revoked";
+	    break;
+	case choice_OCSPCertStatus_unknown:
+	    status = "unknown";
+	    break;
+	default:
+	    status = "element unknown";
+	}
+	fprintf(out, "\t%d. status: %s\n", i, status);
+    }
+
+    fprintf(out, "appended certs:\n");
+    if (ocsp.certs)
+	ret = hx509_certs_iter(context, ocsp.certs, hx509_ci_print_names, out);
+
+    free_ocsp(&ocsp);
+    return ret;
 }
