@@ -741,6 +741,14 @@ ocsp_fetch(struct ocsp_fetch_options *opt, int argc, char **argv)
 }
 
 int
+ocsp_print(struct ocsp_print_options *opt, int argc, char **argv)
+{
+    hx509_revoke_ocsp_print(context, argv[0], stdout);
+    return 0;
+}
+
+
+int
 request_create(struct request_create_options *opt, int argc, char **argv)
 {
     heim_octet_string request;
