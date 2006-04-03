@@ -46,6 +46,7 @@
 #include <err.h>
 #include <getarg.h>
 #include <base64.h>
+#include <hex.h>
 #include <roken.h>
 
 #include <krb5-types.h>
