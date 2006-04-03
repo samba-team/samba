@@ -33,6 +33,7 @@
 #include "lib/messaging/irpc.h"
 #include "librpc/gen_ndr/ndr_notify.h"
 #include "dlinklist.h"
+#include "ntvfs/sysdep/sys_notify.h"
 
 struct notify_context {
 	struct tdb_wrap *w;
@@ -41,6 +42,7 @@ struct notify_context {
 	struct notify_list *list;
 	struct notify_array *array;
 	int seqnum;
+	struct sys_notify_context *sys_notify_ctx;
 };
 
 
@@ -48,6 +50,7 @@ struct notify_list {
 	struct notify_list *next, *prev;
 	void *private;
 	void (*callback)(void *, const struct notify_event *);
+	void *sys_notify_handle;
 };
 
 #define NOTIFY_KEY "notify array"
@@ -73,7 +76,8 @@ static int notify_destructor(void *p)
   via internal messages
 */
 struct notify_context *notify_init(TALLOC_CTX *mem_ctx, uint32_t server, 
-				   struct messaging_context *messaging_ctx)
+				   struct messaging_context *messaging_ctx,
+				   struct event_context *ev)
 {
 	char *path;
 	struct notify_context *notify;
@@ -105,6 +109,8 @@ struct notify_context *notify_init(TALLOC_CTX *mem_ctx, uint32_t server,
 	   message type */
 	messaging_register(notify->messaging_ctx, notify, 
 			   MSG_PVFS_NOTIFY, notify_handler);
+
+	notify->sys_notify_ctx = sys_notify_init(-1, notify, ev);
 
 	return notify;
 }
@@ -166,6 +172,14 @@ static NTSTATUS notify_load(struct notify_context *notify)
 	return status;
 }
 
+/*
+  compare notify entries for sorting
+*/
+static int notify_compare(const void *p1, const void *p2)
+{
+	const struct notify_entry *e1 = p1, *e2 = p2;
+	return strcmp(e1->path, e2->path);
+}
 
 /*
   save the notify array
@@ -184,6 +198,11 @@ static NTSTATUS notify_save(struct notify_context *notify)
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;
 		}
 		return NT_STATUS_OK;
+	}
+
+	if (notify->array->num_entries > 1) {
+		qsort(notify->array->entries, notify->array->num_entries, 
+		      sizeof(struct notify_entry), notify_compare);
 	}
 
 	tmp_ctx = talloc_new(notify);
@@ -238,6 +257,17 @@ static void notify_handler(struct messaging_context *msg_ctx, void *private,
 }
 
 /*
+  callback from sys_notify telling us about changes from the OS
+*/
+static void sys_notify_callback(struct sys_notify_context *ctx, 
+				void *ptr, struct notify_event *ev)
+{
+	struct notify_list *listel = talloc_get_type(ptr, struct notify_list);
+	ev->private = listel;
+	listel->callback(listel->private, ev);
+}
+
+/*
   add a notify watch. This is called when a notify is first setup on a open
   directory handle.
 */
@@ -274,32 +304,41 @@ NTSTATUS notify_add(struct notify_context *notify, struct notify_entry *e,
 		path = talloc_strndup(notify, e->path, len-2);
 	}
 
-	notify->array->entries[notify->array->num_entries] = *e;
-	notify->array->entries[notify->array->num_entries].private = private;
-	notify->array->entries[notify->array->num_entries].server = notify->server;
-
-	if (path) {
-		notify->array->entries[notify->array->num_entries].path = path;
-	}
-
-	notify->array->num_entries++;
-
-	status = notify_save(notify);
-
-	notify_unlock(notify);
-
-	NT_STATUS_NOT_OK_RETURN(status);
-
-	if (path) {
-		talloc_free(path);
-	}
-
-	listel = talloc(notify, struct notify_list);
+	listel = talloc_zero(notify, struct notify_list);
 	NT_STATUS_HAVE_NO_MEMORY(listel);
 
 	listel->private = private;
 	listel->callback = callback;
 	DLIST_ADD(notify->list, listel);
+
+	/* ignore failures from sys_notify */
+	status = sys_notify_watch(notify->sys_notify_ctx, e->path, e->filter, 
+				  sys_notify_callback, listel, 
+				  &listel->sys_notify_handle);
+	if (NT_STATUS_IS_OK(status)) {
+		talloc_steal(listel, listel->sys_notify_handle);
+		notify_unlock(notify);
+	} else {
+		notify->array->entries[notify->array->num_entries] = *e;
+		notify->array->entries[notify->array->num_entries].private = private;
+		notify->array->entries[notify->array->num_entries].server = notify->server;
+
+		if (path) {
+			notify->array->entries[notify->array->num_entries].path = path;
+		}
+
+		notify->array->num_entries++;
+
+		status = notify_save(notify);
+
+		notify_unlock(notify);
+
+		NT_STATUS_NOT_OK_RETURN(status);
+	}
+
+	if (path) {
+		talloc_free(path);
+	}
 
 	return status;
 }
@@ -322,6 +361,8 @@ NTSTATUS notify_remove(struct notify_context *notify, void *private)
 	if (listel == NULL) {
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
+
+	talloc_free(listel);
 
 	status = notify_lock(notify);
 	NT_STATUS_NOT_OK_RETURN(status);
@@ -398,6 +439,35 @@ static NTSTATUS notify_remove_all(struct notify_context *notify)
 
 
 /*
+  send a notify message to another messaging server
+*/
+static void notify_send(struct notify_context *notify, struct notify_entry *e,
+			const char *path, uint32_t action)
+{
+	struct notify_event ev;
+	DATA_BLOB data;
+	NTSTATUS status;
+	TALLOC_CTX *tmp_ctx;
+
+	ev.action = action;
+	ev.path = path;
+	ev.private = e->private;
+
+	tmp_ctx = talloc_new(notify);
+
+	status = ndr_push_struct_blob(&data, tmp_ctx, &ev, 
+				      (ndr_push_flags_fn_t)ndr_push_notify_event);
+	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(tmp_ctx);
+		return;
+	}
+
+	status = messaging_send(notify->messaging_ctx, e->server, 
+				MSG_PVFS_NOTIFY, &data);
+	talloc_free(tmp_ctx);
+}
+
+/*
   see if a notify event matches
 */
 static BOOL notify_match(struct notify_context *notify, struct notify_entry *e,
@@ -430,35 +500,6 @@ static BOOL notify_match(struct notify_context *notify, struct notify_entry *e,
 
 
 /*
-  send a notify message to another messaging server
-*/
-static void notify_send(struct notify_context *notify, struct notify_entry *e,
-			const char *path, uint32_t action)
-{
-	struct notify_event ev;
-	DATA_BLOB data;
-	NTSTATUS status;
-	TALLOC_CTX *tmp_ctx;
-
-	ev.action = action;
-	ev.path = path;
-	ev.private = e->private;
-
-	tmp_ctx = talloc_new(notify);
-
-	status = ndr_push_struct_blob(&data, tmp_ctx, &ev, 
-				      (ndr_push_flags_fn_t)ndr_push_notify_event);
-	if (!NT_STATUS_IS_OK(status)) {
-		talloc_free(tmp_ctx);
-		return;
-	}
-
-	status = messaging_send(notify->messaging_ctx, e->server, 
-				MSG_PVFS_NOTIFY, &data);
-	talloc_free(tmp_ctx);
-}
-
-/*
   trigger a notify message for anyone waiting on a matching event
 */
 void notify_trigger(struct notify_context *notify,
@@ -472,7 +513,7 @@ void notify_trigger(struct notify_context *notify,
 		return;
 	}
 
-	/* this needs to be changed to a log(n) search */
+	/* TODO: this needs to be changed to a log(n) search */
 	for (i=0;i<notify->array->num_entries;i++) {
 		if (notify_match(notify, &notify->array->entries[i], path, filter)) {
 			notify_send(notify, &notify->array->entries[i], 
