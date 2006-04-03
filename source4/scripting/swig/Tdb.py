@@ -20,7 +20,7 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 
-import tdb, os, UserDict
+import tdb, os
 
 # Open flags
 
