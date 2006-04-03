@@ -15,5 +15,6 @@ failed=0
 export PYTHONPATH=scripting/swig:$PYTHONPATH
 
 scripting/swig/torture/torture_tdb.py || failed=`expr $failed + 1`
+scripting/swig/torture/torture_ldb.py || failed=`expr $failed + 1`
 
 testok $0 $failed
