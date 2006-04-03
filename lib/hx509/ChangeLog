@@ -1,5 +1,16 @@
-2006-04-02  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-04-03  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* name.c (hx509_parse_name): new function.
+
+	* hxtool.c (pkcs10_create): implement
+
+	* hxtool-commands.in (pkcs10-create): Add arguments
+
+	* crypto.c: Add _hx509_private_key2SPKI and support
+	functions (only support RSA for now).
+	
+2006-04-02  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* hxtool-commands.in: Add pkcs10-create command.
 
 	* hx509.h: Add hx509_request.
