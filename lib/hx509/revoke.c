@@ -118,18 +118,25 @@ verify_ocsp(hx509_context context,
 	
     _hx509_query_clear(&q);
 	
+    /*
+     * Need to match on issuer too in case there are two CA that have
+     * issued the same name to a certificate. One example of this is
+     * the www.openvalidation.org test's ocsp validator.
+     */
+
+    q.match = HX509_QUERY_MATCH_ISSUER_NAME;
+    q.issuer_name = &_hx509_get_cert(parent)->tbsCertificate.issuer;
+
     switch(ocsp->ocsp.tbsResponseData.responderID.element) {
     case choice_OCSPResponderID_byName:
-	q.match = HX509_QUERY_MATCH_SUBJECT_NAME;
+	q.match |= HX509_QUERY_MATCH_SUBJECT_NAME;
 	q.subject_name = &ocsp->ocsp.tbsResponseData.responderID.u.byName;
 	break;
     case choice_OCSPResponderID_byKey:
-	q.match = HX509_QUERY_MATCH_KEY_HASH_SHA1;
+	q.match |= HX509_QUERY_MATCH_KEY_HASH_SHA1;
 	q.keyhash_sha1 = &ocsp->ocsp.tbsResponseData.responderID.u.byKey;
 	break;
     }
-    q.match |= HX509_QUERY_MATCH_ISSUER_NAME;
-    q.issuer_name = &_hx509_get_cert(parent)->tbsCertificate.issuer;
 	
     ret = hx509_certs_find(context, certs, &q, &signer);
     if (ret && ocsp->certs)
@@ -787,6 +794,15 @@ hx509_ocsp_request(hx509_context context,
     return 0;
 }
 
+static char *
+printable_time(time_t t)
+{
+    static char s[128];
+    strlcpy(s, ctime(&t)+ 4, sizeof(s));
+    s[20] = 0;
+    return s;
+}
+
 int
 hx509_revoke_ocsp_print(hx509_context context, const char *path, FILE *out)
 {
@@ -835,6 +851,8 @@ hx509_revoke_ocsp_print(hx509_context context, const char *path, FILE *out)
 	break;
     }
 
+    fprintf(out, "producedAt: %s\n", 
+	    printable_time(ocsp.ocsp.tbsResponseData.producedAt));
 
     fprintf(out, "replies: %d\n", ocsp.ocsp.tbsResponseData.responses.len);
 
@@ -853,7 +871,15 @@ hx509_revoke_ocsp_print(hx509_context context, const char *path, FILE *out)
 	default:
 	    status = "element unknown";
 	}
+
 	fprintf(out, "\t%d. status: %s\n", i, status);
+
+	fprintf(out, "\tthisUpdate: %s\n", 
+		printable_time(ocsp.ocsp.tbsResponseData.responses.val[i].thisUpdate));
+	if (ocsp.ocsp.tbsResponseData.responses.val[i].nextUpdate)
+	    fprintf(out, "\tproducedAt: %s\n", 
+		    printable_time(ocsp.ocsp.tbsResponseData.responses.val[i].thisUpdate));
+
     }
 
     fprintf(out, "appended certs:\n");
