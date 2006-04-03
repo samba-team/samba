@@ -1338,6 +1338,9 @@ const struct unix_error_map unix_nt_errmap[] = {
 #ifdef ENODEV
 	{ ENODEV,	NT_STATUS_NO_SUCH_DEVICE },
 #endif
+#ifdef ENOSYS
+	{ ENOSYS,	NT_STATUS_INVALID_SYSTEM_SERVICE },
+#endif
 	{ 0, NT_STATUS_UNSUCCESSFUL }
 };
 
