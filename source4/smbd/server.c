@@ -172,13 +172,17 @@ static int binary_smbd_main(const char *binary_name, int argc, const char *argv[
 	NTSTATUS status;
 	const char *model = "standard";
 	int max_runtime = 0;
+	enum {
+		OPT_INTERACTIVE		= 1000,
+		OPT_PROCESS_MODEL
+	};
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
-		{"interactive", 'i', POPT_ARG_VAL, &interactive, True, 
+		{"interactive",	'i', POPT_ARG_NONE, NULL, OPT_INTERACTIVE,
 		 "Run interactive (not a daemon)", NULL},
-		{"model", 'M', POPT_ARG_STRING, &model, True, 
+		{"model", 'M', POPT_ARG_STRING,	NULL, OPT_PROCESS_MODEL, 
 		 "Select process model", "MODEL"},
-		{"maximum-runtime", 0, POPT_ARG_INT, &max_runtime, True, 
+		{"maximum-runtime",0, POPT_ARG_INT, &max_runtime, 0, 
 		 "set maximum runtime of the server process, till autotermination", "seconds"},
 		POPT_COMMON_SAMBA
 		POPT_COMMON_VERSION
@@ -187,8 +191,16 @@ static int binary_smbd_main(const char *binary_name, int argc, const char *argv[
 
 	pc = poptGetContext(binary_name, argc, argv, long_options, 0);
 	
-	while((opt = poptGetNextOpt(pc)) != -1) /* noop */ ;
-
+	while((opt = poptGetNextOpt(pc)) != -1) {
+		switch(opt) {
+		case OPT_INTERACTIVE:
+			interactive = True;
+			break;
+		case OPT_PROCESS_MODEL:
+			model = poptGetOptArg(pc);
+			break;
+		}
+	}
 	poptFreeContext(pc);
 
 	setup_logging(binary_name, interactive?DEBUG_STDOUT:DEBUG_FILE);
