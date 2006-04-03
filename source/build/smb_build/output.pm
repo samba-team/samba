@@ -58,16 +58,22 @@ sub generate_shared_library($)
 		$lib_name = "lib$link_name";
 	}
 
-	if ($lib->{TYPE} eq "MODULE") {
-		$lib->{DEBUGDIR} = "bin/modules/$lib->{SUBSYSTEM}";
-		$lib->{RELEASEDIR} = "bin/install/modules/$lib->{SUBSYSTEM}";
-		$lib->{LIBRARY_REALNAME} = $link_name;
-		$lib->{LIBRARY_REALNAME} =~ s/^$lib->{SUBSYSTEM}_//g;
-		$lib->{LIBRARY_REALNAME}.= ".\$(SHLIBEXT)";
+	if (defined($lib->{LIBRARY_REALNAME})) {
+		$lib->{BASEDIR} =~ s/^\.\///g;
+		$lib->{LIBRARY_REALNAME} = "$lib->{LIBRARY_REALNAME}";
+		$lib->{DEBUGDIR} = $lib->{RELEASEDIR} = $lib->{BASEDIR};
 	} else {
-		$lib->{DEBUGDIR} = "bin";
-		$lib->{RELEASEDIR} = "bin/install";
-		$lib->{LIBRARY_REALNAME} = "$lib_name.\$(SHLIBEXT)";
+		if ($lib->{TYPE} eq "MODULE") {
+			$lib->{DEBUGDIR} = "bin/modules/$lib->{SUBSYSTEM}";
+			$lib->{RELEASEDIR} = "bin/install/modules/$lib->{SUBSYSTEM}";
+			$lib->{LIBRARY_REALNAME} = $link_name;
+			$lib->{LIBRARY_REALNAME} =~ s/^$lib->{SUBSYSTEM}_//g;
+			$lib->{LIBRARY_REALNAME}.= ".\$(SHLIBEXT)";
+		} else {
+			$lib->{DEBUGDIR} = "bin";
+			$lib->{RELEASEDIR} = "bin/install";
+			$lib->{LIBRARY_REALNAME} = "$lib_name.\$(SHLIBEXT)";
+		}
 	}
 
 	if (defined($lib->{VERSION})) {
