@@ -363,7 +363,7 @@ rsa_parse_private_key(const struct signature_alg *sig_alg,
     return 0;
 }
 
-int
+static int
 rsa_private_key2SPKI(hx509_private_key private_key,
 		     SubjectPublicKeyInfo *spki)
 {
