@@ -234,21 +234,41 @@ command = {
 	help = "Fetch OCSP responses for the following certs"
 }
 command = {
-	name = "pkcs10-create"
+	name = "request-create"
 	option = {
 		long = "subject"
 		type = "string"
 		help = "Subject DN"
 	}
 	option = {
+		long = "email"
+		type = "strings"
+		help = "Email address in SubjectAltName"
+	}
+	option = {
+		long = "dnsname"
+		type = "strings"
+		help = "Hostname or domainname in SubjectAltName"
+	}
+	option = {
+		long = "type"
+		type = "string"
+		help = "Type of request CRMF or PKCS10, defaults to PKCS10"
+	}
+	option = {
+		long = "key"
+		type = "string"
+		help = "Key-pair"
+	}
+	option = {
 		long = "verbose"
 		type = "flag"
 		help = "verbose status"
 	}
-	min_args="2"
-	max_args="2"
-	argument="keyfile output-file"
-	help = "Create a PKCS10 request"
+	min_args="1"
+	max_args="1"
+	argument="output-file"
+	help = "Create a CRMF or PKCS10 request"
 }
 command = {
 	name = "pkcs10-print"
