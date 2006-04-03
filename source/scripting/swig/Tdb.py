@@ -39,25 +39,33 @@ class Tdb:
     def __init__(self, name, hash_size = 0, flags = tdb.TDB_DEFAULT,
                  open_flags = os.O_RDWR | os.O_CREAT, mode = 0600):
         self.tdb = tdb.open(name, hash_size, flags, open_flags, mode)
-
+        if self.tdb is None:
+            raise IOError, tdb.errorstr(self.tdb)
+        
     def __del__(self):
-        if hasattr(self, 'tdb'):
-            tdb.close(self.tdb)
+        self.close()
+
+    def close(self):
+        if hasattr(self, 'tdb') and self.tdb is not None:
+            if tdb.close(self.tdb) == -1:
+                raise IOError, tdb.errorstr(self.tdb)
+            self.tdb = None
 
     # Random access to keys, values
 
     def __getitem__(self, key):
         result = tdb.fetch(self.tdb, key)
         if result is None:
-            raise KeyError, key
+            raise KeyError, '%s: %s' % (key, tdb.errorstr(self.tdb))
         return result
 
     def __setitem__(self, key, item):
-        tdb.store(self.tdb, key, item)
+        if tdb.store(self.tdb, key, item) == -1:
+            raise IOError, tdb.errorstr(self.tdb)
 
     def __delitem__(self, key):
         if not tdb.exists(self.tdb, key):
-            raise KeyError, key
+            raise KeyError, '%s: %s' % (key, tdb.errorstr(self.tdb))
         tdb.delete(self.tdb, key)
 
     def has_key(self, key):
