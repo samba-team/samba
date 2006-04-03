@@ -111,7 +111,7 @@ char *smbw_getshared(const char *name)
 	if (fstat(shared_fd, &st)) goto failed;
 
 	if (st.st_size != shared_size) {
-		var = (char *)Realloc(variables, st.st_size);
+		var = (char *)Realloc(variables, st.st_size, True);
 		if (!var) goto failed;
 		else variables = var;
 		shared_size = st.st_size;
@@ -167,7 +167,7 @@ void smbw_setshared(const char *name, const char *val)
 	l1 = strlen(name)+1;
 	l2 = strlen(val)+1;
 
-	var = (char *)Realloc(variables, shared_size + l1+l2+4);
+	var = (char *)Realloc(variables, shared_size + l1+l2+4, True);
 
 	if (!var) {
 		DEBUG(0,("out of memory in smbw_setshared\n"));
