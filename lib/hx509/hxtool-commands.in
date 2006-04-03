@@ -240,8 +240,10 @@ command = {
 		type = "flag"
 		help = "verbose status"
 	}
-	min_args="0"
-	help = "Create PKCS10 requests"
+	min_args="2"
+	max_args="2"
+	argument="keyfile output-file"
+	help = "Create a PKCS10 request"
 }
 command = {
 	name = "pkcs10-print"
