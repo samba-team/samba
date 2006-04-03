@@ -130,7 +130,7 @@ static const struct {
 /*
   map a privilege id to the wire string constant
 */
-const char *sec_privilege_name(unsigned int privilege)
+const char *sec_privilege_name(enum sec_privilege privilege)
 {
 	int i;
 	for (i=0;i<ARRAY_SIZE(privilege_names);i++) {
@@ -146,9 +146,12 @@ const char *sec_privilege_name(unsigned int privilege)
   
   TODO: this should use language mappings
 */
-const char *sec_privilege_display_name(int privilege, uint16_t *language)
+const char *sec_privilege_display_name(enum sec_privilege privilege, uint16_t *language)
 {
 	int i;
+	if (privilege < 1 || privilege > 64) {
+		return NULL;
+	}
 	for (i=0;i<ARRAY_SIZE(privilege_names);i++) {
 		if (privilege_names[i].privilege == privilege) {
 			return privilege_names[i].display_name;
@@ -160,12 +163,12 @@ const char *sec_privilege_display_name(int privilege, uint16_t *language)
 /*
   map a privilege name to a privilege id. Return -1 if not found
 */
-int sec_privilege_id(const char *name)
+enum sec_privilege sec_privilege_id(const char *name)
 {
 	int i;
 	for (i=0;i<ARRAY_SIZE(privilege_names);i++) {
 		if (strcasecmp(privilege_names[i].name, name) == 0) {
-			return (int)privilege_names[i].privilege;
+			return privilege_names[i].privilege;
 		}
 	}
 	return -1;
@@ -175,9 +178,14 @@ int sec_privilege_id(const char *name)
 /*
   return a privilege mask given a privilege id
 */
-uint64_t sec_privilege_mask(unsigned int privilege)
+static uint64_t sec_privilege_mask(enum sec_privilege privilege)
 {
 	uint64_t mask = 1;
+
+	if (privilege < 1 || privilege > 64) {
+		return 0;
+	}
+
 	mask <<= (privilege-1);
 	return mask;
 }
@@ -186,9 +194,15 @@ uint64_t sec_privilege_mask(unsigned int privilege)
 /*
   return True if a security_token has a particular privilege bit set
 */
-BOOL sec_privilege_check(const struct security_token *token, unsigned int privilege)
+BOOL sec_privilege_check(const struct security_token *token, enum sec_privilege privilege)
 {
-	uint64_t mask = sec_privilege_mask(privilege);
+	uint64_t mask;
+
+	if (privilege < 1 || privilege > 64) {
+		return False;
+	}
+
+	mask = sec_privilege_mask(privilege);
 	if (token->privilege_mask & mask) {
 		return True;
 	}
@@ -198,7 +212,30 @@ BOOL sec_privilege_check(const struct security_token *token, unsigned int privil
 /*
   set a bit in the privilege mask
 */
-void sec_privilege_set(struct security_token *token, unsigned int privilege)
+void sec_privilege_set(struct security_token *token, enum sec_privilege privilege)
 {
+	if (privilege < 1 || privilege > 64) {
+		return;
+	}
 	token->privilege_mask |= sec_privilege_mask(privilege);
+}
+
+void sec_privilege_debug(int dbg_lev, const struct security_token *token)
+{
+	DEBUGADD(dbg_lev, (" Privileges (0x%16llX):\n",
+			    (unsigned long long) token->privilege_mask));
+
+	if (token->privilege_mask) {
+		int i = 0;
+		uint_t privilege;
+
+		for (privilege = 1; privilege <= 64; privilege++) {
+			uint64_t mask = sec_privilege_mask(privilege);
+
+			if (token->privilege_mask & mask) {
+				DEBUGADD(dbg_lev, ("  Privilege[%3lu]: %s\n", (unsigned long)i++, 
+					sec_privilege_name(privilege)));
+			}
+		}
+	}
 }

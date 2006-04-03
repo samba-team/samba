@@ -31,16 +31,14 @@
   add privilege bits for one sid to a security_token
 */
 static NTSTATUS samdb_privilege_setup_sid(void *samctx, TALLOC_CTX *mem_ctx,
-					  const struct dom_sid *sid, 
-					  uint64_t *mask)
+					  struct security_token *token,
+					  const struct dom_sid *sid)
 {
 	const char * const attrs[] = { "privilege", NULL };
 	struct ldb_message **res = NULL;
 	struct ldb_message_element *el;
 	int ret, i;
 	char *sidstr;
-	
-	*mask = 0;
 
 	sidstr = ldap_encode_ndr_dom_sid(mem_ctx, sid);
 	NT_STATUS_HAVE_NO_MEMORY(sidstr);
@@ -59,13 +57,13 @@ static NTSTATUS samdb_privilege_setup_sid(void *samctx, TALLOC_CTX *mem_ctx,
 
 	for (i=0;i<el->num_values;i++) {
 		const char *priv_str = (const char *)el->values[i].data;
-		int privilege = sec_privilege_id(priv_str);
+		enum sec_privilege privilege = sec_privilege_id(priv_str);
 		if (privilege == -1) {
 			DEBUG(1,("Unknown privilege '%s' in samdb\n",
 				 priv_str));
 			continue;
 		}
-		*mask |= sec_privilege_mask(privilege);
+		sec_privilege_set(token, privilege);
 	}
 
 	return NT_STATUS_OK;
@@ -103,14 +101,12 @@ _PUBLIC_ NTSTATUS samdb_privilege_setup(struct security_token *token)
 	token->privilege_mask = 0;
 	
 	for (i=0;i<token->num_sids;i++) {
-		uint64_t mask;
-		status = samdb_privilege_setup_sid(samctx, mem_ctx, 
-						   token->sids[i], &mask);
+		status = samdb_privilege_setup_sid(samctx, mem_ctx,
+						   token, token->sids[i]);
 		if (!NT_STATUS_IS_OK(status)) {
 			talloc_free(mem_ctx);
 			return status;
 		}
-		token->privilege_mask |= mask;
 	}
 
 	talloc_free(mem_ctx);
