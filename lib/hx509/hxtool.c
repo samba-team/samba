@@ -741,43 +741,60 @@ ocsp_fetch(struct ocsp_fetch_options *opt, int argc, char **argv)
 }
 
 int
-pkcs10_create(struct pkcs10_create_options *opt, int argc, char **argv)
+request_create(struct request_create_options *opt, int argc, char **argv)
 {
     heim_octet_string request;
     hx509_request req;
-    hx509_name name = NULL;
-    int ret;
-    void *data;
-    size_t len;
+    int ret, i;
     hx509_private_key signer;
     SubjectPublicKeyInfo key;
 
     memset(&key, 0, sizeof(key));
 
-    ret = _hx509_map_file(argv[0], &data, &len, NULL);
-    if (ret)
-	err(1, "map_file: %s: %d", argv[0], ret);
+    if (opt->key_string) {
+	void *data;
+	size_t len;
 
-    ret = _hx509_parse_private_key(oid_id_pkcs1_rsaEncryption(),
-				   data,
-				   len,
-				   &signer);
-    _hx509_unmap_file(data, len);
-    if (ret)
-	errx(1, "_hx509_parse_private_key: %d", ret);
+	ret = _hx509_map_file(opt->key_string, &data, &len, NULL);
+	if (ret)
+	    err(1, "map_file: %s: %d", opt->key_string, ret);
+	
+	ret = _hx509_parse_private_key(oid_id_pkcs1_rsaEncryption(),
+				       data,
+				       len,
+				       &signer);
+	_hx509_unmap_file(data, len);
+	if (ret)
+	    errx(1, "_hx509_parse_private_key: %d", ret);
 
+    } else
+	errx(1, "key generation code not written yet");
+    
     _hx509_request_init(context, &req);
 
     if (opt->subject_string) {
+	hx509_name name = NULL;
+
 	hx509_parse_name(opt->subject_string, &name);
 	_hx509_request_set_name(context, req, name);
+
+	if (opt->verbose_flag) {
+	    char *s;
+	    hx509_name_to_string(name, &s);
+	    printf("%s\n", s);
+	}
     }
 
-    if (opt->verbose_flag) {
-	char *s;
-	hx509_name_to_string(name, &s);
-	printf("%s\n", s);
+    for (i = 0; i < opt->email_strings.num_strings; i++) {
+	ret = _hx509_request_add_email(context, req, 
+				       opt->email_strings.strings[i]);
     }
+
+    for (i = 0; i < opt->dnsname_strings.num_strings; i++) {
+	ret = _hx509_request_add_dns_name(context, req, 
+					  opt->dnsname_strings.strings[i]);
+    }
+
 
     ret = _hx509_private_key2SPKI(context, signer, &key);
 
