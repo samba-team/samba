@@ -51,7 +51,7 @@
 
 %}
 
-/* The tdb functions will crash if a NULL tdb is passed */
+/* The tdb functions will crash if a NULL tdb context is passed */
 
 %include exception.i
 
