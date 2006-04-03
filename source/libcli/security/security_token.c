@@ -128,7 +128,6 @@ void security_token_debug(int dbg_lev, const struct security_token *token)
 {
 	TALLOC_CTX *mem_ctx;
 	int i;
-	uint_t privilege;
 
 	if (!token) {
 		DEBUG(dbg_lev, ("Security token: (NULL)\n"));
@@ -149,21 +148,7 @@ void security_token_debug(int dbg_lev, const struct security_token *token)
 			   dom_sid_string(mem_ctx, token->sids[i])));
 	}
 
-	DEBUGADD(dbg_lev, (" Privileges (0x%08X%08X):\n",
-			    (uint32_t)((token->privilege_mask & 0xFFFFFFFF00000000LL) >> 32),
-			    (uint32_t)(token->privilege_mask & 0x00000000FFFFFFFFLL)));
-
-	if (token->privilege_mask) {
-		i = 0;
-		for (privilege = 0; privilege < 64; privilege++) {
-			uint64_t mask = sec_privilege_mask(privilege);
-
-			if (token->privilege_mask & mask) {
-				DEBUGADD(dbg_lev, ("  Privilege[%3lu]: %s\n", (unsigned long)i++, 
-					sec_privilege_name(privilege)));
-			}
-		}
-	}
+	sec_privilege_debug(dbg_lev, token);
 
 	talloc_free(mem_ctx);
 }
