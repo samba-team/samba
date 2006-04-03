@@ -200,15 +200,19 @@ hx509_ci_print_names(hx509_context context, void *ctx, hx509_cert c)
 {
     Certificate *cert;
     hx509_name n;
-    char *str;
+    char *s, *i;
 
     cert = _hx509_get_cert(c);
 
     _hx509_name_from_Name(&cert->tbsCertificate.subject, &n);
-    hx509_name_to_string(n, &str);
+    hx509_name_to_string(n, &s);
     hx509_name_free(&n);
-    fprintf(ctx, "%s\n", str);
-    free(str);
+    _hx509_name_from_Name(&cert->tbsCertificate.issuer, &n);
+    hx509_name_to_string(n, &i);
+    hx509_name_free(&n);
+    fprintf(ctx, "subject: %s\nissuer: %s\n", s, i);
+    free(s);
+    free(i);
     return 0;
 }
 
