@@ -234,6 +234,17 @@ command = {
 	help = "Fetch OCSP responses for the following certs"
 }
 command = {
+	name = "ocsp-print"
+	option = {
+		long = "verbose"
+		type = "flag"
+		help = "verbose"
+	}
+	min_args="1"
+	argument="ocsp-response-file ..."
+	help = "Print the OCSP responses"
+}
+command = {
 	name = "request-create"
 	option = {
 		long = "subject"
