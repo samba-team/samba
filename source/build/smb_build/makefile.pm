@@ -204,7 +204,7 @@ sub SharedLibrary($$)
 	}
 
 	if ($ctx->{TYPE} eq "LIBRARY") {
-		push (@{$self->{shared_libs}}, "$ctx->{DEBUGDIR}/$ctx->{LIBRARY_REALNAME}");
+		push (@{$self->{shared_libs}}, "$ctx->{DEBUGDIR}/$ctx->{LIBRARY_REALNAME}") if (defined($ctx->{SO_VERSION}));
 		push (@{$self->{installable_shared_libs}}, "$installdir/$ctx->{LIBRARY_REALNAME}") if (defined($ctx->{SO_VERSION}));
 	} elsif ($ctx->{TYPE} eq "MODULE") {
 		push (@{$self->{shared_modules}}, "$ctx->{TARGET}");
@@ -260,7 +260,7 @@ __EOD__
 
 	my $singlesoarg = "";
 	
-	if ($self->{duplicate_build}) {
+	if ($ctx->{DEBUGDIR} ne $installdir) {
 		$self->output(<< "__EOD__"
 #
 
