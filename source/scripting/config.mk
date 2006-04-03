@@ -3,55 +3,44 @@ include ejs/config.mk
 #######################
 # Start LIBRARY swig_tdb
 [LIBRARY::swig_tdb]
-REQUIRED_SUBSYSTEMS = LIBTDB
+LIBRARY_REALNAME = swig/_tdb.$(SHLIBEXT)
+OBJ_FILES = swig/tdb_wrap.o
+REQUIRED_SUBSYSTEMS = LIBTDB DYNCONFIG
 # End LIBRARY swig_tdb
 #######################
 
 #######################
 # Start LIBRARY swig_ldb
 [LIBRARY::swig_ldb]
-REQUIRED_SUBSYSTEMS = ldb
+REQUIRED_SUBSYSTEMS = ldb DYNCONFIG
+LIBRARY_REALNAME = swig/_ldb.$(SHLIBEXT)
+OBJ_FILES = swig/ldb_wrap.o
 # End LIBRARY swig_ldb
 #######################
 
 #######################
 # Start LIBRARY swig_dcerpc
 [LIBRARY::swig_dcerpc]
-REQUIRED_SUBSYSTEMS = LIBCLI NDR_MISC LIBSAMBA-UTIL LIBSAMBA-CONFIG RPC_NDR_SAMR RPC_NDR_LSA
+LIBRARY_REALNAME = swig/_dcerpc.$(SHLIBEXT)
+REQUIRED_SUBSYSTEMS = LIBCLI NDR_MISC LIBSAMBA-UTIL LIBSAMBA-CONFIG RPC_NDR_SAMR RPC_NDR_LSA DYNCONFIG
+OBJ_FILES = swig/dcerpc_wrap.o
 # End LIBRARY swig_dcerpc
 #######################
 
 # Swig extensions
-swig: scripting/swig/_tdb.so scripting/swig/_ldb.so
+swig: scripting/swig/_tdb.$(SHLIBEXT) scripting/swig/_ldb.$(SHLIBEXT)
 
-scripting/swig/tdb_wrap.c: scripting/swig/tdb.i
-	swig -python scripting/swig/tdb.i
+.SUFFIXES: _wrap.c .i
 
-scripting/swig/_tdb.so: scripting/swig/tdb_wrap.o
-	$(SHLD) $(SHLD_FLAGS) -o scripting/swig/_tdb.so $(LOCAL_LINK_FLAGS) \
-		bin/libtdb.$(SHLIBEXT).0.0.1 \
-		scripting/swig/tdb_wrap.o
-
-scripting/swig/ldb_wrap.c: scripting/swig/ldb.i
-	swig -python scripting/swig/ldb.i
-
-scripting/swig/_ldb.so: scripting/swig/ldb_wrap.o $(LIBRARY_DYNCONFIG_OBJ_LIST)
-	$(SHLD) $(SHLD_FLAGS) -o scripting/swig/_ldb.so $(LOCAL_LINK_FLAGS) \
-		$(LIBRARY_DYNCONFIG_LINK_LIST) \
-		bin/libtdb.$(SHLIBEXT).0.0.1 \
-		bin/libldb.$(SHLIBEXT).0.0.1 \
-		scripting/swig/ldb_wrap.o
+.i_wrap.c:
+	swig -python $<
 
 SWIG_INCLUDES = librpc/gen_ndr/samr.i librpc/gen_ndr/lsa.i librpc/gen_ndr/spoolss.i
 
 scripting/swig/dcerpc_wrap.c: scripting/swig/dcerpc.i scripting/swig/samba.i scripting/swig/status_codes.i $(SWIG_INCLUDES)
-	swig -python scripting/swig/dcerpc.i
 
-scripting/swig/_dcerpc.so: scripting/swig/dcerpc_wrap.o $(LIBRARY_swig_dcerpc_DEPEND_LIST)
-	$(SHLD) $(SHLD_FLAGS) -o scripting/swig/_dcerpc.so scripting/swig/dcerpc_wrap.o $(LIBRARY_swig_dcerpc_LINK_LIST) $(LIBRARY_swig_dcerpc_LINK_FLAGS)
-
-swig_clean:
-	-rm -f scripting/swig/_tdb.so scripting/swig/tdb.pyc scripting/swig/tdb.py scripting/swig/tdb_wrap.c scripting/swig/tdb_wrap.o
+clean::
+	-rm -f scripting/swig/tdb.pyc scripting/swig/tdb.py
 
 # Swig testing
 
