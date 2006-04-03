@@ -128,7 +128,7 @@ verify_ocsp(hx509_context context,
 	q.keyhash_sha1 = &ocsp->ocsp.tbsResponseData.responderID.u.byKey;
 	break;
     }
-    q.match =|HX509_QUERY_MATCH_ISSUER_NAME;
+    q.match |= HX509_QUERY_MATCH_ISSUER_NAME;
     q.issuer_name = &_hx509_get_cert(parent)->tbsCertificate.issuer;
 	
     ret = hx509_certs_find(context, certs, &q, &signer);
