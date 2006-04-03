@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# Copyright (c) 2004 - 2005 Kungliga Tekniska Högskolan
+# Copyright (c) 2004 - 2006 Kungliga Tekniska Högskolan
 # (Royal Institute of Technology, Stockholm, Sweden). 
 # All rights reserved. 
 #
@@ -118,12 +118,17 @@ echo "ocsp no-ca responder, keyHash"
     anchor:FILE:$srcdir/data/ca.crt \
     ocsp:FILE:$srcdir/data/ocsp-resp1-keyhash.der || exit 1
 
-
 echo "ocsp revoked cert"
 ./hxtool verify \
     cert:FILE:$srcdir/data/revoke.crt \
     anchor:FILE:$srcdir/data/ca.crt \
     ocsp:FILE:$srcdir/data/ocsp-resp2.der > /dev/null && exit 1
+
+for a in resp1-ocsp-no-cert resp1-ca resp1-keyhash resp2 ; do
+	echo "ocsp print reply $a"
+	./hxtool ocsp-print \
+	    $srcdir/data/ocsp-resp2.der > /dev/null || exit 1
+done
 
 echo "crl non-revoked cert"
 ./hxtool verify \
