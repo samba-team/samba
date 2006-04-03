@@ -27,10 +27,11 @@ tests
 pkcs7
 	handle pkcs7 support in CMS ?
 
-pkcs10
-	generate request
+certificate request
+	generate pkcs10 request
+		from existing cert
+	generate CRMF request
 		pk-init KDC/client
 		web server/client
 		jabber server/client 
 		email
-		from existing cert
