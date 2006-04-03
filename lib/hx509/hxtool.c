@@ -756,6 +756,7 @@ request_create(struct request_create_options *opt, int argc, char **argv)
     int ret, i;
     hx509_private_key signer;
     SubjectPublicKeyInfo key;
+    const char *outfile = argv[0];
 
     memset(&key, 0, sizeof(key));
 
@@ -820,7 +821,7 @@ request_create(struct request_create_options *opt, int argc, char **argv)
     _hx509_request_free(&req);
 
     if (ret == 0)
-	rk_dumpdata(argv[1], request.data, request.length);
+	rk_dumpdata(outfile, request.data, request.length);
     free_octet_string(&request);
 
     return 0;
