@@ -23,4 +23,17 @@
 import ldb
 
 class Ldb:
-    pass
+
+    def __init__(self):
+        self.mem_ctx = ldb.talloc_init('python ldb')
+        self.ldb_ctx = ldb.init(self.mem_ctx)
+        
+    def __del__(self):
+        ldb.talloc_free(self.mem_ctx)
+
+    def connect(self, url, flags = 0):
+        ldb.connect(self.ldb_ctx, url, flags, None)
+
+    def search(self, expression):
+        return ldb.search(self.ldb_ctx, None, ldb.LDB_SCOPE_DEFAULT,
+                          expression, None);

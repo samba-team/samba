@@ -54,10 +54,11 @@ typedef unsigned long long uint64_t;
 typedef long long int64_t;
 
 #include "lib/ldb/include/ldb.h"
+#include "lib/talloc/talloc.h"
 
 %}
 
-/* The ldb functions will crash if a NULL tdb is passed */
+/* The ldb functions will crash if a NULL ldb is passed */
 
 %include exception.i
 
@@ -67,22 +68,71 @@ typedef long long int64_t;
 			"ldb context must be non-NULL");
 }
 
-/* Throw an IOError exception if tdb_open() or tdb_open_ex() returns NULL */
+/* Use talloc_init() to create a parameter to pass to ldb_init().  Don't
+   forget to free it using talloc_free() afterwards. */
 
-%exception {
-	$action
-	if (result == NULL) {
-		PyErr_SetFromErrno(PyExc_IOError);
-		SWIG_fail;
+TALLOC_CTX *talloc_init(char *name);
+int talloc_free(TALLOC_CTX *ptr);
+
+/* In and out typemaps for struct ldb_val.  This is converted to and from
+   the Python string datatype. */
+
+%typemap(in) struct ldb_val {
+	if (!PyString_Check($input)) {
+		PyErr_SetString(PyExc_TypeError, "string arg expected");
+		return NULL;
+	}
+	$1.length = PyString_Size($input);
+	$1.data = PyString_AsString($input);
+}
+
+%typemap(out) struct ldb_val {
+	if ($1.data == NULL && $1.length == 0) {
+		$result = Py_None;
+	} else {
+		$result = PyString_FromStringAndSize($1.data, $1.length);
 	}
 }
 
+enum ldb_scope {LDB_SCOPE_DEFAULT=-1, 
+		LDB_SCOPE_BASE=0, 
+		LDB_SCOPE_ONELEVEL=1,
+		LDB_SCOPE_SUBTREE=2};
+
+/* Typemap for passing a struct ldb_result by reference */
+
+%typemap(in, numinputs=0) struct ldb_result **OUT (struct ldb_result *temp_ldb_result) {
+	$1 = &temp_ldb_result;
+}
+
+%typemap(argout) struct ldb_result ** {
+	unsigned int i;
+
+	/* XXX: Handle resultobj by throwing an exception if required */
+
+	resultobj = PyList_New((*$1)->count);
+
+	for (i = 0; i < (*$1)->count; i++) {
+		PyList_SetItem(resultobj, i, SWIG_NewPointerObj(*$1, SWIGTYPE_p_ldb_message, 0));
+	}
+}	
+
+%types(struct ldb_result *);
+
+struct ldb_message {
+	struct ldb_dn *dn;
+	unsigned int num_elements;
+	struct ldb_message_element *elements;
+	void *private_data; /* private to the backend */
+};
+
+/* Wrap ldb functions */
 
 %rename ldb_init init;
-struct ldb_context *ldb_init(void *mem_ctx);
+struct ldb_context *ldb_init(TALLOC_CTX *mem_ctx);
 
 %rename ldb_connect connect;
 int ldb_connect(struct ldb_context *ldb, const char *url, unsigned int flags, const char *options[]);
 
-%rename ldb_request request;
-int ldb_request(struct ldb_context *ldb, struct ldb_request *request);
+%rename ldb_search search;
+int ldb_search(struct ldb_context *ldb, const struct ldb_dn *base, enum ldb_scope scope, const char *expression, const char * const *attrs, struct ldb_result **OUT);
