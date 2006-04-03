@@ -2,6 +2,7 @@
 include posix/config.mk
 include common/config.mk
 include unixuid/config.mk
+include sysdep/config.mk
 
 ################################################
 # Start MODULE ntvfs_cifs
