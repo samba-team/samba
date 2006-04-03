@@ -1440,6 +1440,13 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 			    lp_defer_sharing_violations()) {
 				struct timeval timeout;
 				struct deferred_open_record state;
+				int timeout_usecs;
+
+				/* this is a hack to speed up torture tests
+				   in 'make test' */
+				timeout_usecs = lp_parm_int(conn->service,
+							    "smbd","sharedelay",
+							    SHARING_VIOLATION_USEC_WAIT);
 
 				/* This is a relative time, added to the absolute
 				   request_time value to get the absolute timeout time.
@@ -1449,7 +1456,7 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 				   time this request mid was processed. This is what allows
 				   the request to eventually time out. */
 
-				timeout = timeval_set(0, SHARING_VIOLATION_USEC_WAIT);
+				timeout = timeval_set(0, timeout_usecs);
 
 				/* Nothing actually uses state.delayed_for_oplocks
 				   but it's handy to differentiate in debug messages
