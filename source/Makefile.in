@@ -849,9 +849,12 @@ MAKEDIR = || exec false; \
 .c.o:
 	@if (: >> $@ || : > $@) >/dev/null 2>&1; then rm -f $@; else \
 	 dir=`echo $@ | sed 's,/[^/]*$$,,;s,^$$,.,'` $(MAKEDIR); fi
+	@if test -n "$(CC_CHECKER)"; then \
+	  echo "Checking  $*.c with '$(CC_CHECKER)'";\
+	  $(CC_CHECKER) -I. -I$(srcdir) $(FLAGS) @PIE_CFLAGS@ -c $< -o $@;\
+	 fi
 	@echo Compiling $*.c
-	@$(CC) -I. -I$(srcdir) $(FLAGS) @PIE_CFLAGS@ -c $< \
-	  -o $@ 
+	@$(CC) -I. -I$(srcdir) $(FLAGS) @PIE_CFLAGS@ -c $< -o $@ 
 @BROKEN_CC@	-mv `echo $@ | sed 's%^.*/%%g'` $@
 
 # this adds support for precompiled headers. To use it, install a snapshot
@@ -899,6 +902,10 @@ smbd/build_options.c: include/config.h.in script/mkbuildoptions.awk
 .c.@PICSUFFIX@:
 	@if (: >> $@ || : > $@) >/dev/null 2>&1; then rm -f $@; else \
 	  dir=`echo $@ | sed 's,/[^/]*$$,,;s,^$$,.,'` $(MAKEDIR); fi
+	@if test -n "$(CC_CHECKER)"; then \
+	  echo "Checking  $*.c with '$(CC_CHECKER)' and @PICFLAGS@";\
+	  $(CC_CHECKER) -I. -I$(srcdir) $(FLAGS) @PICFLAGS@ -c $< -o $*.@PICSUFFIX@;\
+	 fi
 	@echo Compiling $*.c with @PICFLAGS@
 	@$(CC) -I. -I$(srcdir) $(FLAGS) @PICFLAGS@ -c $< -o $*.@PICSUFFIX@
 @BROKEN_CC@	-mv `echo $@ | sed -e 's%^.*/%%g' -e 's%\.@PICSUFFIX@$$%.o%'` $@
