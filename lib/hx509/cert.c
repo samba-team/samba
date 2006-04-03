@@ -140,13 +140,13 @@ _hx509_get_cert(hx509_cert cert)
     return cert->data;
 }
 
-#if 0
 /*
  *
  */
 
-static void
-print_cert_subject(hx509_cert cert)
+#if 0
+void
+_hx509_print_cert_subject(hx509_cert cert)
 {
     char *subject_name;
     hx509_name name;
@@ -1313,7 +1313,7 @@ hx509_verify_path(hx509_context context,
 
 #if 0
     for (i = path.len - 1; i >= 0; i--) {
-	print_cert_subject(path.val[i]);
+	_hx509_print_cert_subject(path.val[i]);
     }
 #endif
 
