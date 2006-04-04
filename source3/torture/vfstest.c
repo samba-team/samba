@@ -410,6 +410,11 @@ void exit_server(const char *reason)
 	exit(0);
 }
 
+void exit_server_cleanly(void)
+{
+	exit_server("normal exit");
+}
+
 static int server_fd = -1;
 int last_message = -1;
 
