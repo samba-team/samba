@@ -51,11 +51,7 @@ gen_files_crmf = 			\
 	asn1_ProofOfPossession.x	\
 	asn1_SubsequentMessage.x	
 
-libhx509_la_LIBADD = $(LIB_des) ../asn1/libasn1.la
-
-libhx509_la_CPPFLAGS = -I$(srcdir)/ref $(INCLUDE_des)
-
-libhx509_la_SOURCES = \
+libhx509_la_files = \
 	cert.c \
 	cms.c \
 	collector.c \
@@ -73,9 +69,11 @@ libhx509_la_SOURCES = \
 	name.c \
 	print.c \
 	req.c \
-	revoke.c \
-	$(BUILT_SOURCES)
+	revoke.c
 
+libhx509_la_LIBADD = $(LIB_des) ../asn1/libasn1.la
+libhx509_la_CPPFLAGS = -I$(srcdir)/ref $(INCLUDE_des)
+libhx509_la_SOURCES = $(libhx509_la_files) $(BUILT_SOURCES)
 
 $(gen_files_ocsp) ocsp_asn1.h: ocsp_asn1_files
 $(gen_files_pkcs10) pkcs10_asn1.h: pkcs10_asn1_files
@@ -94,10 +92,10 @@ crmf_asn1_files: $(srcdir)/crmf.asn1
 $(libhx509_la_OBJECTS): $(srcdir)/hx509-protos.h $(srcdir)/hx509-private.h
 
 $(srcdir)/hx509-protos.h:
-	cd $(srcdir) && perl ../../cf/make-proto.pl -E HX509_LIB_FUNCTION -q -P comment -o hx509-protos.h $(libhx509_la_SOURCES) || rm -f hx509-protos.h
+	cd $(srcdir) && perl ../../cf/make-proto.pl -E HX509_LIB_FUNCTION -q -P comment -o hx509-protos.h $(libhx509_la_files) || rm -f hx509-protos.h
 
 $(srcdir)/hx509-private.h:
-	cd $(srcdir) && perl ../../cf/make-proto.pl -q -P comment -p hx509-private.h $(libhx509_la_SOURCES) || rm -f hx509-private.h
+	cd $(srcdir) && perl ../../cf/make-proto.pl -q -P comment -p hx509-private.h $(libhx509_la_files) || rm -f hx509-private.h
 
 include_HEADERS = hx509.h hx509-protos.h hx509_err.h
 
