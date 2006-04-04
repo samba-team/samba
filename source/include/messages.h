@@ -69,6 +69,7 @@
 #define MSG_SMB_OPEN_RETRY   3009
 #define MSG_SMB_KERNEL_BREAK 3010
 #define MSG_SMB_FILE_RENAME  3011
+#define MSG_SMB_INJECT_FAULT 3012
 
 /* winbind messages */
 #define MSG_WINBIND_FINISHED     4001

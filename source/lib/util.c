@@ -1545,19 +1545,10 @@ gid_t nametogid(const char *name)
  Something really nasty happened - panic !
 ********************************************************************/
 
-#ifdef HAVE_LIBEXC_H
-#include <libexc.h>
-#endif
-
-static void smb_panic2(const char *why, BOOL decrement_pid_count )
+void smb_panic(const char *const why)
 {
 	char *cmd;
 	int result;
-#ifdef HAVE_BACKTRACE_SYMBOLS
-	void *backtrace_stack[BACKTRACE_STACK_SIZE];
-	size_t backtrace_size;
-	char **backtrace_strings;
-#endif
 
 #ifdef DEVELOPER
 	{
@@ -1570,9 +1561,12 @@ static void smb_panic2(const char *why, BOOL decrement_pid_count )
 	}
 #endif
 
+	DEBUG(0,("PANIC (pid %llu): %s\n",
+		    (unsigned long long)sys_getpid(), why));
+	log_stack_trace();
+
 	/* only smbd needs to decrement the smbd counter in connections.tdb */
-	if ( decrement_pid_count )
-		decrement_smbd_process_count();
+	decrement_smbd_process_count();
 
 	cmd = lp_panic_action();
 	if (cmd && *cmd) {
@@ -1586,9 +1580,27 @@ static void smb_panic2(const char *why, BOOL decrement_pid_count )
 			DEBUG(0, ("smb_panic(): action returned status %d\n",
 					  WEXITSTATUS(result)));
 	}
-	DEBUG(0,("PANIC: %s\n", why));
 
+	dump_core();
+}
+
+/*******************************************************************
+ Print a backtrace of the stack to the debug log. This function
+ DELIBERATELY LEAKS MEMORY. The expectation is that you should
+ exit shortly after calling it.
+********************************************************************/
+
+#ifdef HAVE_LIBEXC_H
+#include <libexc.h>
+#endif
+
+void log_stack_trace(void)
+{
 #ifdef HAVE_BACKTRACE_SYMBOLS
+	void *backtrace_stack[BACKTRACE_STACK_SIZE];
+	size_t backtrace_size;
+	char **backtrace_strings;
+
 	/* get the backtrace (stack frames) */
 	backtrace_size = backtrace(backtrace_stack,BACKTRACE_STACK_SIZE);
 	backtrace_strings = backtrace_symbols(backtrace_stack, backtrace_size);
@@ -1607,16 +1619,14 @@ static void smb_panic2(const char *why, BOOL decrement_pid_count )
 
 #elif HAVE_LIBEXC
 
-#define NAMESIZE 32 /* Arbitrary */
-
 	/* The IRIX libexc library provides an API for unwinding the stack. See
 	 * libexc(3) for details. Apparantly trace_back_stack leaks memory, but
 	 * since we are about to abort anyway, it hardly matters.
-	 *
-	 * Note that if we paniced due to a SIGSEGV or SIGBUS (or similar) this
-	 * will fail with a nasty message upon failing to open the /proc entry.
 	 */
 	{
+
+#define NAMESIZE 32 /* Arbitrary */
+
 		__uint64_t	addrs[BACKTRACE_STACK_SIZE];
 		char *      	names[BACKTRACE_STACK_SIZE];
 		char		namebuf[BACKTRACE_STACK_SIZE * NAMESIZE];
@@ -1646,24 +1656,9 @@ static void smb_panic2(const char *why, BOOL decrement_pid_count )
 		}
      }
 #undef NAMESIZE
+#else
+	DEBUG(0, ("unable to produce a stack trace on this platform\n"));
 #endif
-
-	dbgflush();
-#ifdef SIGABRT
-	CatchSignal(SIGABRT,SIGNAL_CAST SIG_DFL);
-#endif
-	abort();
-}
-
-/*******************************************************************
- wrapper for smb_panic2()
-********************************************************************/
-
- void smb_panic( const char *why )
-{
-	smb_panic2( why, True );
-	/* Notreached. */
-	abort();
 }
 
 /*******************************************************************
