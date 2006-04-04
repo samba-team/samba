@@ -98,6 +98,7 @@ typedef struct
 	char *ncalrpc_dir;
 	char *display_charset;
 	char *szLockDir;
+	char *szModulesDir;
 	char *szPidDir;
 	char *szSetupDir;
 	char *szServerString;
@@ -528,6 +529,7 @@ static struct parm_struct parm_table[] = {
 	{"auto services", P_STRING, P_GLOBAL, &Globals.szAutoServices, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"lock dir", P_STRING, P_GLOBAL, &Globals.szLockDir, NULL, NULL, FLAG_HIDE}, 
 	{"lock directory", P_STRING, P_GLOBAL, &Globals.szLockDir, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
+	{"modules dir", P_STRING, P_GLOBAL, &Globals.szModulesDir, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"pid directory", P_STRING, P_GLOBAL, &Globals.szPidDir, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER}, 
 	{"js include", P_LIST, P_GLOBAL, &Globals.jsInclude, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"setup directory", P_STRING, P_GLOBAL, &Globals.szSetupDir, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
@@ -629,6 +631,7 @@ static void init_globals(void)
 
 	do_parameter("pid directory", dyn_PIDDIR, NULL);
 	do_parameter("lock dir", dyn_LOCKDIR, NULL);
+	do_parameter("modules dir", dyn_MODULESDIR, NULL);
 	do_parameter("ncalrpc dir", dyn_NCALRPCDIR, NULL);
 
 	do_parameter("socket address", "0.0.0.0", NULL);
@@ -828,6 +831,7 @@ _PUBLIC_ FN_GLOBAL_BOOL(lp_winbind_sealed_pipes, &Globals.bWinbindSealedPipes)
 _PUBLIC_ FN_GLOBAL_STRING(lp_private_dir, &Globals.szPrivateDir)
 _PUBLIC_ FN_GLOBAL_STRING(lp_serverstring, &Globals.szServerString)
 _PUBLIC_ FN_GLOBAL_STRING(lp_lockdir, &Globals.szLockDir)
+_PUBLIC_ FN_GLOBAL_STRING(lp_modulesdir, &Globals.szModulesDir)
 _PUBLIC_ FN_GLOBAL_STRING(lp_setupdir, &Globals.szSetupDir)
 _PUBLIC_ FN_GLOBAL_STRING(lp_ncalrpc_dir, &Globals.ncalrpc_dir)
 _PUBLIC_ FN_GLOBAL_STRING(lp_piddir, &Globals.szPidDir)
