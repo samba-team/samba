@@ -1,5 +1,10 @@
-2006-04-02  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-04-04  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kpasswd/kpasswd-generator.c (read_words): catch empty file case,
+	will cause PBE (division by zero) later. From Tobias Stoeckmann.
+	
+2006-04-02  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* lib/hdb/keytab.c: Remove a delta from last revision that should
 	have gone in later.
 	
