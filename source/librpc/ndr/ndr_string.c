@@ -315,7 +315,7 @@ _PUBLIC_ NTSTATUS ndr_push_string(struct ndr_push *ndr, int ndr_flags, const cha
 		flags &= ~LIBNDR_FLAG_STR_UTF8;
 	}
 
-	flags &= ~(LIBNDR_FLAG_STR_CONFORMANT | LIBNDR_FLAG_STR_CHARLEN);
+	flags &= ~LIBNDR_FLAG_STR_CONFORMANT;
 
 	if (!(flags & LIBNDR_FLAG_STR_NOTERM)) {
 		s_len++;
@@ -329,6 +329,9 @@ _PUBLIC_ NTSTATUS ndr_push_string(struct ndr_push *ndr, int ndr_flags, const cha
 	if (flags & LIBNDR_FLAG_STR_BYTESIZE) {
 		c_len = d_len;
 		flags &= ~LIBNDR_FLAG_STR_BYTESIZE;
+	} else if (flags & LIBNDR_FLAG_STR_CHARLEN) {
+		c_len = (d_len / byte_mul)-1;
+		flags &= ~LIBNDR_FLAG_STR_CHARLEN;
 	} else {
 		c_len = d_len / byte_mul;
 	}
