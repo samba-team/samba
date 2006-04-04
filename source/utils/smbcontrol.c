@@ -143,7 +143,7 @@ static BOOL do_inject_fault(const struct process_id pid,
 	}
 
 #ifndef DEVELOPER
-	fprintf(stderr, "Fault injection is only available in"
+	fprintf(stderr, "Fault injection is only available in "
 		"developer builds\n");
 	return False;
 #else /* DEVELOPER */
