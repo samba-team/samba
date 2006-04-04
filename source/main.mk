@@ -28,7 +28,8 @@ include torture/config.mk
 include librpc/config.mk
 include client/config.mk
 include libcli/config.mk
-include scripting/config.mk
+include scripting/ejs/config.mk
+include scripting/swig/config.mk
 include kdc/config.mk
 include passdb/config.mk
 
@@ -246,7 +247,6 @@ clean:: clean_pch
 	@echo Removing generated files
 	@-rm -f bin/*_init_module.c
 	@-rm -rf librpc/gen_* 
-	@-rm -f lib/registry/regf.h lib/registry/tdr_regf*
 	@echo Removing proto headers
 	@-rm -f $(PROTO_HEADERS)
 
@@ -255,7 +255,6 @@ distclean: clean
 	-rm -f Makefile 
 	-rm -f config.status
 	-rm -f config.log config.cache
-	-rm -f samba4-deps.dot
 	-rm -f config.pm config.mk
 	-rm -f $(PC_FILES)
 

@@ -21,6 +21,9 @@ lib/registry/tdr_regf.c: lib/registry/regf.idl
 		--header --outputdir=lib/registry \
 		--tdr-parser -- lib/registry/regf.idl
 
+clean::
+	@-rm -f lib/registry/regf.h lib/registry/tdr_regf*
+
 ################################################
 # Start MODULE registry_w95
 [MODULE::registry_w95]
