@@ -67,7 +67,7 @@ sub _prepare_path_vars($)
 	$self->output(<< "__EOD__"
 prefix = $self->{config}->{prefix}
 exec_prefix = $self->{config}->{exec_prefix}
-selftest_prefix = ./st
+selftest_prefix = $self->{config}->{selftest_prefix}
 VPATH = $self->{config}->{srcdir}:heimdal/lib/asn1:heimdal/lib/krb5:heimdal/lib/gssapi:heimdal/lib/hdb:heimdal/lib/roken:heimdal/lib/des
 srcdir = $self->{config}->{srcdir}
 builddir = $self->{config}->{builddir}
