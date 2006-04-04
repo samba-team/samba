@@ -44,14 +44,20 @@ class LdbElement:
 class LdbMessage:
     """A class representing a ldb message as a dict of ldb elements."""
     
-    def __init__(self, msg):
-        self.dn = msg.dn
-        self.private_data = msg.private_data
-        eltlist = \
-            [LdbElement(ldb.ldb_message_element_array_getitem(msg.elements, x))
-             for x in range(msg.num_elements)]
-        self.elements = \
-            dict([(x.name, x) for x in eltlist])
+    def __init__(self, msg = None):
+
+        self.dn = None
+        self.private_data = None
+        self.elements = []
+
+        if msg is not None:
+            self.dn = msg.dn
+            self.private_data = msg.private_data
+            eltlist = \
+                [LdbElement(ldb.ldb_message_element_array_getitem(
+                            msg.elements, x))
+                 for x in range(msg.num_elements)]
+            self.elements = dict([(x.name, x) for x in eltlist])
 
     def __repr__(self):
         return '<%s(dn=%s) instance at 0x%x>' % (self.__class__.__name__,

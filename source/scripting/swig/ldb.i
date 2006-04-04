@@ -156,6 +156,30 @@ struct ldb_message {
 	void *private_data; /* private to the backend */
 };
 
+%typemap(in) struct ldb_message * {
+	PyObject *obj, *key, *value;
+	int pos;
+
+	$1 = ldb_msg_new(NULL);
+
+	obj = PyObject_GetAttrString($input, "dn");
+	$1->dn = ldb_dn_explode(NULL, PyString_AsString(obj));
+
+	obj = PyObject_GetAttrString($input, "private_data");
+	$1->private_data = PyString_AsString(obj);
+
+	obj = PyObject_GetAttrString($input, "elements");
+
+	pos = 0;
+	while (PyDict_Next(obj, &pos, &key, &value)) {
+		struct ldb_val v;
+
+		v.data = PyString_AsString(value);
+		v.length = PyString_Size(value);
+		ldb_msg_add_value($1, PyString_AsString(key), &v);
+	}
+}
+
 /*
  * Wrap struct ldb_result
  */
