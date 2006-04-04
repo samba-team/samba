@@ -44,10 +44,6 @@ struct sys_notify_context *sys_notify_init(int snum,
 	const char *bname;
 	struct sys_notify_backend *b;
 
-	if (backends == NULL) {
-		return NULL;
-	}
-
 	if (ev == NULL) {
 		ev = event_context_find(mem_ctx);
 	}
@@ -60,16 +56,25 @@ struct sys_notify_context *sys_notify_init(int snum,
 	ctx->ev = ev;
 
 	bname = lp_parm_string(snum, "notify", "backend");
-	if (bname == NULL) {
-		bname = backends->name;
+	if (!bname) {
+		if (backends) {
+			bname = backends->name;
+		} else {
+			bname = "__unknown__";
+		}
 	}
 
 	for (b=backends;b;b=b->next) {
-		if (strcasecmp(b->name, bname) == 0) break;
+		if (strcasecmp(b->name, bname) == 0) {
+			bname = b->name;
+			break;
+		}
 	}
 
+	ctx->name = bname;
+	ctx->notify_watch = NULL;
+
 	if (b != NULL) {
-		ctx->name = b->name;
 		ctx->notify_watch = b->notify_watch;
 	}
 
@@ -83,6 +88,9 @@ NTSTATUS sys_notify_watch(struct sys_notify_context *ctx, const char *dirpath,
 			  uint32_t filter, sys_notify_callback_t callback,
 			  void *private, void **handle)
 {
+	if (!ctx->notify_watch) {
+		return NT_STATUS_NOT_IMPLEMENTED;
+	}
 	return ctx->notify_watch(ctx, dirpath, filter, callback, private, handle);
 }
 
