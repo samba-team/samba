@@ -168,7 +168,7 @@ _PUBLIC_ ssize_t convert_string(charset_t from, charset_t to,
 		switch(errno) {
 			case EINVAL:
 				reason="Incomplete multibyte sequence";
-				break;
+				return -1;
 			case E2BIG:
 				reason="No more room"; 
 				if (from == CH_UNIX) {
@@ -181,10 +181,10 @@ _PUBLIC_ ssize_t convert_string(charset_t from, charset_t to,
 						 charset_name(from), charset_name(to),
 						 (int)srclen, (int)destlen));
 				}
-		               break;
+			       return -1;
 			case EILSEQ:
 			       reason="Illegal multibyte sequence";
-			       break;
+			       return -1;
 		}
 		/* smb_panic(reason); */
 	}
