@@ -57,6 +57,8 @@ read_words (const char *filename, char ***ret_w)
 	w[n++] = estrdup (buf);
     }
     *ret_w = w;
+    if (n == 0)
+	errx(1, "%s is an empty file, no words to try", filename);
     return n;
 }
 
