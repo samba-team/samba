@@ -347,7 +347,8 @@ REQUIRED_SUBSYSTEMS = LIBNDR NDR_NBT
 
 librpc/gen_ndr/tables.c: $(IDL_NDR_HEADER_FILES)
 	@echo Generating librpc/gen_ndr/tables.c
-	@$(PERL) $(srcdir)/librpc/tables.pl --output=librpc/gen_ndr/tables.c $(IDL_NDR_HEADER_FILES) > librpc/gen_ndr/tables.c
+	@$(PERL) $(srcdir)/librpc/tables.pl --output=librpc/gen_ndr/tables.c $(IDL_NDR_HEADER_FILES) > librpc/gen_ndr/tables.x
+	mv librpc/gen_ndr/tables.x librpc/gen_ndr/tables.c
 
 [SUBSYSTEM::NDR_IFACE_TABLE]
 OBJ_FILES = gen_ndr/tables.o
