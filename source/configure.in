@@ -1470,6 +1470,8 @@ AC_LIBTESTFUNC(sec, bigcrypt)
 AC_LIBTESTFUNC(security, getprpwnam)
 AC_LIBTESTFUNC(sec, getprpwnam)
 
+AC_CHECK_FUNCS(strsignal)
+
 ############################################
 # Check if we have libattr
 case "$host_os" in

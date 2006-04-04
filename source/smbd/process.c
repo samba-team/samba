@@ -303,7 +303,7 @@ static void async_processing(fd_set *pfds)
 	process_aio_queue();
 
 	if (got_sig_term) {
-		exit_server("Caught TERM signal");
+		exit_server_cleanly();
 	}
 
 	/* check for async change notify events */
