@@ -270,35 +270,35 @@ realdistclean: distclean removebackup
 test: $(DEFAULT_TEST_TARGET)
 
 test-swrap: all
-	./script/tests/selftest.sh ${selftest_prefix}/st all SOCKET_WRAPPER
+	./script/tests/selftest.sh ${selftest_prefix} all SOCKET_WRAPPER
 
 test-noswrap: all
-	./script/tests/selftest.sh ${selftest_prefix}/st all
+	./script/tests/selftest.sh ${selftest_prefix} all
 
 quicktest: all
-	./script/tests/selftest.sh ${selftest_prefix}/st quick SOCKET_WRAPPER
+	./script/tests/selftest.sh ${selftest_prefix} quick SOCKET_WRAPPER
 
 valgrindtest: valgrindtest-quick
 
 valgrindtest-quick: all
 	SMBD_VALGRIND="xterm -n smbd -e valgrind -q --db-attach=yes --num-callers=30" \
-	VALGRIND="valgrind -q --num-callers=30 --log-file=${selftest_prefix}/st/valgrind.log" \
-	./script/tests/selftest.sh ${selftest_prefix}/st quick SOCKET_WRAPPER
+	VALGRIND="valgrind -q --num-callers=30 --log-file=${selftest_prefix}/valgrind.log" \
+	./script/tests/selftest.sh ${selftest_prefix} quick SOCKET_WRAPPER
 
 valgrindtest-all: all
 	SMBD_VALGRIND="xterm -n smbd -e valgrind -q --db-attach=yes --num-callers=30" \
-	VALGRIND="valgrind -q --num-callers=30 --log-file=${selftest_prefix}/st/valgrind.log" \
-	./script/tests/selftest.sh ${selftest_prefix}/st all SOCKET_WRAPPER
+	VALGRIND="valgrind -q --num-callers=30 --log-file=${selftest_prefix}/valgrind.log" \
+	./script/tests/selftest.sh ${selftest_prefix} all SOCKET_WRAPPER
 
 gdbtest: gdbtest-quick
 
 gdbtest-quick: all
 	SMBD_VALGRIND="xterm -n smbd -e gdb --args " \
-	./script/tests/selftest.sh ${selftest_prefix}/st quick SOCKET_WRAPPER
+	./script/tests/selftest.sh ${selftest_prefix} quick SOCKET_WRAPPER
 
 gdbtest-all: all
 	SMBD_VALGRIND="xterm -n smbd -e gdb --args " \
-	./script/tests/selftest.sh ${selftest_prefix}/st all SOCKET_WRAPPER
+	./script/tests/selftest.sh ${selftest_prefix} all SOCKET_WRAPPER
 
 unused_macros:
 	./script/find_unused_macros.pl `find . -name "*.[ch]"` | sort
