@@ -1,10 +1,8 @@
-include ejs/config.mk
-
 #######################
 # Start LIBRARY swig_tdb
 [LIBRARY::swig_tdb]
-LIBRARY_REALNAME = swig/_tdb.$(SHLIBEXT)
-OBJ_FILES = swig/tdb_wrap.o
+LIBRARY_REALNAME = _tdb.$(SHLIBEXT)
+OBJ_FILES = tdb_wrap.o
 REQUIRED_SUBSYSTEMS = LIBTDB DYNCONFIG
 # End LIBRARY swig_tdb
 #######################
@@ -13,17 +11,17 @@ REQUIRED_SUBSYSTEMS = LIBTDB DYNCONFIG
 # Start LIBRARY swig_ldb
 [LIBRARY::swig_ldb]
 REQUIRED_SUBSYSTEMS = ldb DYNCONFIG
-LIBRARY_REALNAME = swig/_ldb.$(SHLIBEXT)
-OBJ_FILES = swig/ldb_wrap.o
+LIBRARY_REALNAME = _ldb.$(SHLIBEXT)
+OBJ_FILES = ldb_wrap.o
 # End LIBRARY swig_ldb
 #######################
 
 #######################
 # Start LIBRARY swig_dcerpc
 [LIBRARY::swig_dcerpc]
-LIBRARY_REALNAME = swig/_dcerpc.$(SHLIBEXT)
+LIBRARY_REALNAME = _dcerpc.$(SHLIBEXT)
 REQUIRED_SUBSYSTEMS = LIBCLI NDR_MISC LIBSAMBA-UTIL LIBSAMBA-CONFIG RPC_NDR_SAMR RPC_NDR_LSA DYNCONFIG
-OBJ_FILES = swig/dcerpc_wrap.o
+OBJ_FILES = dcerpc_wrap.o
 # End LIBRARY swig_dcerpc
 #######################
 
