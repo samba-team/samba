@@ -22,10 +22,6 @@
 
 #include "includes.h"
 
-#ifdef HAVE_SYS_PRCTL_H
-#include <sys/prctl.h>
-#endif
-
 static int am_parent = 1;
 
 /* the last message the was processed */
@@ -156,8 +152,40 @@ static BOOL open_sockets_inetd(void)
 static void msg_exit_server(int msg_type, struct process_id src,
 			    void *buf, size_t len)
 {
-	exit_server("Got a SHUTDOWN message");
+	DEBUG(3, ("got a SHUTDOWN message\n"));
+	exit_server_cleanly();
 }
+
+#ifdef DEVELOPER
+static void msg_inject_fault(int msg_type, struct process_id src,
+			    void *buf, size_t len)
+{
+	int sig;
+
+	if (len != sizeof(int)) {
+		
+		DEBUG(0, ("Process %llu sent bogus signal injection request\n",
+			(unsigned long long)src.pid));
+		return;
+	}
+
+	sig = *(int *)buf;
+	if (sig == -1) {
+		exit_server("internal error injected");
+		return;
+	}
+
+#if HAVE_STRSIGNAL
+	DEBUG(0, ("Process %llu requested injection of signal %d (%s)\n",
+		    (unsigned long long)src.pid, sig, strsignal(sig)));
+#else
+	DEBUG(0, ("Process %llu requested injection of signal %d\n",
+		    (unsigned long long)src.pid, sig));
+#endif
+
+	kill(sys_getpid(), sig);
+}
+#endif /* DEVELOPER */
 
 
 /****************************************************************************
@@ -345,6 +373,10 @@ static BOOL open_sockets_smbd(BOOL is_daemon, BOOL interactive, const char *smb_
         message_register(MSG_SMB_FILE_RENAME, msg_file_was_renamed);
 	message_register(MSG_SMB_CONF_UPDATED, smb_conf_updated); 
 
+#ifdef DEVELOPER
+	message_register(MSG_SMB_INJECT_FAULT, msg_inject_fault); 
+#endif
+
 	/* now accept incoming connections - forking a new process
 	   for each incoming connection */
 	DEBUG(2,("waiting for a connection\n"));
@@ -365,7 +397,7 @@ static BOOL open_sockets_smbd(BOOL is_daemon, BOOL interactive, const char *smb_
 		
 		if (num == -1 && errno == EINTR) {
 			if (got_sig_term) {
-				exit_server("Caught TERM signal");
+				exit_server_cleanly();
 			}
 
 			/* check for sighup processing */
@@ -568,60 +600,18 @@ BOOL reload_services(BOOL test)
 	return(ret);
 }
 
-
-#if DUMP_CORE
-
-static void dump_core(void) NORETURN_ATTRIBUTE ;
-
-/*******************************************************************
-prepare to dump a core file - carefully!
-********************************************************************/
-
-static void dump_core(void)
-{
-	char *p;
-	pstring dname;
-	
-	pstrcpy(dname,lp_logfile());
-	if ((p=strrchr_m(dname,'/'))) *p=0;
-	pstrcat(dname,"/corefiles");
-	mkdir(dname,0700);
-	sys_chown(dname,getuid(),getgid());
-	chmod(dname,0700);
-	if (chdir(dname)) {
-		abort();
-	}
-	umask(~(0700));
-
-#ifdef HAVE_GETRLIMIT
-#ifdef RLIMIT_CORE
-	{
-		struct rlimit rlp;
-		getrlimit(RLIMIT_CORE, &rlp);
-		rlp.rlim_cur = MAX(4*1024*1024,rlp.rlim_cur);
-		setrlimit(RLIMIT_CORE, &rlp);
-		getrlimit(RLIMIT_CORE, &rlp);
-		DEBUG(3,("Core limits now %d %d\n",
-			 (int)rlp.rlim_cur,(int)rlp.rlim_max));
-	}
-#endif
-#endif
-
-
-	DEBUG(0,("Dumping core in %s\n", dname));
-	/* Ensure we don't have a signal handler for abort. */
-#ifdef SIGABRT
-	CatchSignal(SIGABRT,SIGNAL_CAST SIG_DFL);
-#endif
-	abort();
-}
-#endif
-
 /****************************************************************************
  Exit the server.
 ****************************************************************************/
 
- void exit_server(const char *reason)
+/* Reasons for shutting down a server process. */
+enum server_exit_reason { SERVER_EXIT_NORMAL, SERVER_EXIT_ABNORMAL };
+
+static void exit_server_common(enum server_exit_reason how,
+	const char *const reason) NORETURN_ATTRIBUTE;
+
+static void exit_server_common(enum server_exit_reason how,
+	const char *const reason)
 {
 	static int firsttime=1;
 
@@ -630,7 +620,6 @@ static void dump_core(void)
 	firsttime = 0;
 
 	change_to_root_user();
-	DEBUG(2,("Closing connections\n"));
 
 	if (negprot_global_auth_context) {
 		(negprot_global_auth_context->free)(&negprot_global_auth_context);
@@ -654,25 +643,52 @@ static void dump_core(void)
 	}
 #endif
 
-	if (!reason) {   
-		int oldlevel = DEBUGLEVEL;
-		char *last_inbuf = get_InBuffer();
-		DEBUGLEVEL = 10;
-		DEBUG(0,("Last message was %s\n",smb_fn_name(last_message)));
-		if (last_inbuf)
-			show_msg(last_inbuf);
-		DEBUGLEVEL = oldlevel;
-		DEBUG(0,("===============================================================\n"));
-#if DUMP_CORE
-		dump_core();
-#endif
-	}    
-
 	locking_end();
 	printing_end();
 
-	DEBUG(3,("Server exit (%s)\n", (reason ? reason : "")));
+	if (how != SERVER_EXIT_NORMAL) {
+		int oldlevel = DEBUGLEVEL;
+		char *last_inbuf = get_InBuffer();
+
+		DEBUGLEVEL = 10;
+
+		DEBUGSEP(0);
+		DEBUG(0,("Abnormal server exit: %s\n",
+			reason ? reason : "no explanation provided"));
+		DEBUGSEP(0);
+
+		log_stack_trace();
+		if (last_inbuf) {
+			DEBUG(0,("Last message was %s\n", LAST_MESSAGE()));
+			show_msg(last_inbuf);
+		}
+
+		DEBUGLEVEL = oldlevel;
+#if DUMP_CORE
+		dump_core();
+#endif
+
+	} else {    
+		DEBUG(3,("Server exit (%s)\n",
+			(reason ? reason : "normal exit")));
+	}
+
 	exit(0);
+}
+
+void exit_server(const char *const explanation)
+{
+	exit_server_common(SERVER_EXIT_ABNORMAL, explanation);
+}
+
+void exit_server_cleanly(void)
+{
+	exit_server_common(SERVER_EXIT_NORMAL, NULL);
+}
+
+void exit_server_fault(void)
+{
+	exit_server("critical server fault");
 }
 
 /****************************************************************************
@@ -795,7 +811,9 @@ void build_options(BOOL screen);
 	gain_root_privilege();
 	gain_root_group_privilege();
 
-	fault_setup((void (*)(void *))exit_server);
+	fault_setup((void (*)(void *))exit_server_fault);
+	dump_core_setup("smbd");
+
 	CatchSignal(SIGTERM , SIGNAL_CAST sig_term);
 	CatchSignal(SIGHUP,SIGNAL_CAST sig_hup);
 	
@@ -948,14 +966,6 @@ void build_options(BOOL screen);
 	 * everything after this point is run after the fork()
 	 */ 
 
-#if defined(HAVE_PRCTL) && defined(PR_SET_DUMPABLE)
-	/* On Linux we lose the ability to dump core when we change our user
-	 * ID. We know how to dump core safely, so let's make sure we have our
-	 * dumpable flag set.
-	 */
-	prctl(PR_SET_DUMPABLE, 1);
-#endif
-
 	/* Initialise the password backed before the global_sam_sid
 	   to ensure that we fetch from ldap before we make a domain sid up */
 
@@ -1002,9 +1012,9 @@ void build_options(BOOL screen);
 	message_register(MSG_SMB_FORCE_TDIS, msg_force_tdis);
 
 	smbd_process();
-	
+
 	namecache_shutdown();
 
-	exit_server("normal exit");
+	exit_server_cleanly();
 	return(0);
 }

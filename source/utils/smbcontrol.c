@@ -131,6 +131,47 @@ static BOOL do_debug(const struct process_id pid,
 		pid, MSG_DEBUG, argv[1], strlen(argv[1]) + 1, False);
 }
 
+/* Inject a fault (fata signal) into a running smbd */
+
+static BOOL do_inject_fault(const struct process_id pid,
+		       const int argc, const char **argv)
+{
+	if (argc != 2) {
+		fprintf(stderr, "Usage: smbcontrol <dest> inject "
+			"<bus|hup|term|internal|segv>\n");
+		return False;
+	}
+
+#ifndef DEVELOPER
+	fprintf(stderr, "Fault injection is only available in"
+		"developer builds\n")
+	return False;
+#else /* DEVELOPER */
+	{
+		int sig = 0;
+
+		if (strcmp(argv[1], "bus") == 0) {
+			sig = SIGBUS;
+		} else if (strcmp(argv[1], "hup") == 0) {
+			sig = SIGHUP;
+		} else if (strcmp(argv[1], "term") == 0) {
+			sig = SIGTERM;
+		} else if (strcmp(argv[1], "segv") == 0) {
+			sig = SIGSEGV;
+		} else if (strcmp(argv[1], "internal") == 0) {
+			/* Force an internal error, ie. an unclean exit. */
+			sig = -1;
+		} else {
+			fprintf(stderr, "Unknown signal name '%s'\n", argv[1]);
+			return False;
+		}
+
+		return send_message(pid, MSG_SMB_INJECT_FAULT,
+				    &sig, sizeof(int), False);
+	}
+#endif /* DEVELOPER */
+}
+
 /* Force a browser election */
 
 static BOOL do_election(const struct process_id pid,
@@ -756,6 +797,8 @@ static const struct {
 	  "Force a browse election" },
 	{ "ping", do_ping, "Elicit a response" },
 	{ "profile", do_profile, "" },
+	{ "inject", do_inject_fault,
+	    "Inject a fatal signal into a running smbd"},
 	{ "profilelevel", do_profilelevel, "" },
 	{ "debuglevel", do_debuglevel, "Display current debuglevels" },
 	{ "printnotify", do_printnotify, "Send a print notify message" },

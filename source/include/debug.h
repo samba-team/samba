@@ -208,4 +208,8 @@ extern BOOL *DEBUGLEVEL_CLASS_ISSET;
             DEBUGLEVEL_CLASS[ DBGC_ALL   ] >= (level))  ) \
        && (dbgtext body) )
 
+/* Print a separator to the debug log. */
+#define DEBUGSEP(level)\
+	DEBUG((level),("===============================================================\n"))
+
 #endif

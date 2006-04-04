@@ -106,46 +106,6 @@ static void sig_hup(int sig)
 	sys_select_signal(SIGHUP);
 }
 
-#if DUMP_CORE
-/**************************************************************************** **
- Prepare to dump a core file - carefully!
- **************************************************************************** */
-
-static BOOL dump_core(void)
-{
-	char *p;
-	pstring dname;
-	pstrcpy( dname, lp_logfile() );
-	if ((p=strrchr_m(dname,'/')))
-		*p=0;
-	pstrcat( dname, "/corefiles" );
-	mkdir( dname, 0700 );
-	sys_chown( dname, getuid(), getgid() );
-	chmod( dname, 0700 );
-	if ( chdir(dname) )
-		return( False );
-	umask( ~(0700) );
-
-#ifdef HAVE_GETRLIMIT
-#ifdef RLIMIT_CORE
-	{
-		struct rlimit rlp;
-		getrlimit( RLIMIT_CORE, &rlp );
-		rlp.rlim_cur = MAX( 4*1024*1024, rlp.rlim_cur );
-		setrlimit( RLIMIT_CORE, &rlp );
-		getrlimit( RLIMIT_CORE, &rlp );
-		DEBUG( 3, ( "Core limits now %d %d\n", (int)rlp.rlim_cur, (int)rlp.rlim_max ) );
-	}
-#endif
-#endif
-
-
-	DEBUG(0,("Dumping core in %s\n",dname));
-	abort();
-	return( True );
-}
-#endif
-
 /**************************************************************************** **
  Possibly continue after a fault.
  **************************************************************************** */
@@ -692,6 +652,7 @@ static BOOL open_sockets(BOOL isdaemon, int port)
 	}
 	
 	fault_setup((void (*)(void *))fault_continue );
+	dump_core_setup("nmbd");
 	
 	/* POSIX demands that signals are inherited. If the invoking process has
 	 * these signals masked, we will have problems, as we won't receive them. */
