@@ -122,21 +122,6 @@ AC_SUBST(sbindir)
 AC_SUBST(winbindd_socket_dir)
 AC_SUBST(modulesdir)
 
-#################################################
-# set prefix for 'make test'
-selftest_prefix="./"
-AC_SUBST(selftest_prefix)
-AC_ARG_WITH(selftest-prefix,
-[  --with-selftest-prefix=DIR    The prefix where make test will be runned (\$selftest_prefix)],
-[ case "$withval" in
-  yes|no)
-    AC_MSG_WARN([--with-selftest-prefix called without argument - will use default])
-  ;;
-  * )
-    selftest_prefix="$withval"
-    ;;
-  esac])
-
 debug=no
 AC_ARG_ENABLE(debug,
 [  --enable-debug          Turn on compiler debugging information (default=no)],
@@ -153,13 +138,6 @@ AC_ARG_ENABLE(developer,
         developer=yes
     fi])
 
-experimental=no
-AC_ARG_ENABLE(experimental,
-[  --enable-experimental   Turn on experimental features (default=no)],
-    [if test x$enable_experimental = xyes; then
-        experimental=yes
-    fi])
-
 dnl disable these external libs 
 AC_ARG_WITH(disable-ext-lib,
 [  --with-disable-ext-lib=LIB Comma-seperated list of external libraries],
@@ -167,35 +145,5 @@ AC_ARG_WITH(disable-ext-lib,
 	for i in `echo $withval | sed -e's/,/ /g'`
 	do
 		eval SMB_EXT_LIB_$i=NO
-	done
-fi ])
-
-dnl exclude these modules 
-AC_ARG_WITH(exclude-modules,
-[  --with-exclude-modules=MODULES Comma-seperated list of names of modules to exclude from build],
-[ if test $withval; then
-	for i in `echo $withval | sed -e's/,/ /g'`
-	do
-		eval SMB_MODULE_$i=NOT
-	done
-fi ])
-
-dnl Always built these modules shared
-AC_ARG_WITH(shared-modules,
-[  --with-shared-modules=MODULES  Comma-seperated list of names of modules to build shared],
-[ if test $withval; then
-	for i in `echo $withval | sed -e's/,/ /g'`
-	do
-		eval SMB_MODULE_$i=SHARED
-	done
-fi ])
-
-dnl Always built these modules static
-AC_ARG_WITH(static-modules,
-[  --with-static-modules=MODULES  Comma-seperated list of names of modules to statically link in],
-[ if test $withval; then
-	for i in `echo $withval | sed -e's/,/ /g'`
-	do
-		eval SMB_MODULE_$i=STATIC
 	done
 fi ])
