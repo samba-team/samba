@@ -103,15 +103,10 @@ enum ldb_scope {LDB_SCOPE_DEFAULT=-1,
 }
 
 %typemap(argout) struct ldb_result ** {
-	unsigned int i;
 
-	/* XXX: Handle resultobj by throwing an exception if required */
+	/* XXX: Check result for error and throw exception if necessary */
 
-	resultobj = PyList_New((*$1)->count);
-
-	for (i = 0; i < (*$1)->count; i++) {
-		PyList_SetItem(resultobj, i, SWIG_NewPointerObj((*$1)->msgs[i], SWIGTYPE_p_ldb_message, 0));
-	}
+	resultobj = SWIG_NewPointerObj(*$1, SWIGTYPE_p_ldb_result, 0);
 }	
 
 %types(struct ldb_result *);
@@ -119,6 +114,17 @@ enum ldb_scope {LDB_SCOPE_DEFAULT=-1,
 /*
  * Wrap struct ldb_dn
  */
+
+%typemap(in) struct ldb_dn * {
+	if ($input == Py_None) {
+		$1 = NULL;
+	} else if (!PyString_Check($input)) {
+		PyErr_SetString(PyExc_TypeError, "string arg expected");
+		return NULL;
+	} else {
+		$1 = ldb_dn_explode(NULL, PyString_AsString($input));
+	}
+}
 
 %typemap(out) struct ldb_dn * {
 	$result = PyString_FromString(ldb_dn_linearize($1, $1));
@@ -151,14 +157,39 @@ struct ldb_message {
 };
 
 /*
+ * Wrap struct ldb_result
+ */
+
+%array_functions(struct ldb_message *, ldb_message_ptr_array);
+
+struct ldb_result {
+	unsigned int count;
+	struct ldb_message **msgs;
+	char **refs;
+	struct ldb_control **controls;
+};
+
+/*
  * Wrap ldb functions 
  */
 
 %rename ldb_init init;
 struct ldb_context *ldb_init(TALLOC_CTX *mem_ctx);
 
+%rename ldb_errstring errstring;
+const char *ldb_errstring(struct ldb_context *ldb);
+
 %rename ldb_connect connect;
 int ldb_connect(struct ldb_context *ldb, const char *url, unsigned int flags, const char *options[]);
 
 %rename ldb_search search;
 int ldb_search(struct ldb_context *ldb, const struct ldb_dn *base, enum ldb_scope scope, const char *expression, const char * const *attrs, struct ldb_result **OUT);
+
+%rename ldb_delete delete;
+int ldb_delete(struct ldb_context *ldb, const struct ldb_dn *dn);
+
+%rename ldb_rename rename;
+int ldb_rename(struct ldb_context *ldb, const struct ldb_dn *olddn, const struct ldb_dn *newdn);
+
+%rename ldb_add add;
+int ldb_add(struct ldb_context *ldb, const struct ldb_message *message);
