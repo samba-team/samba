@@ -184,7 +184,6 @@ _PUBLIC_ init_module_fn *load_samba_modules(TALLOC_CTX *mem_ctx, const char *sub
 	char *path = modules_path(mem_ctx, subsystem);
 	init_module_fn *ret;
 
-	printf("MODULESDIR: %s\n", path);
 	ret = load_modules(mem_ctx, path);
 
 	talloc_free(path);
