@@ -147,17 +147,11 @@ static NTSTATUS pvfs_setfileinfo_rename(struct pvfs_state *pvfs,
 		return status;
 	}
 
-	if (rename(name->full_name, name2->full_name) == -1) {
-		return pvfs_map_errno(pvfs, errno);
+	status = pvfs_do_rename(pvfs, name->full_name, name2->full_name);
+	if (NT_STATUS_IS_OK(status)) {
+		name->full_name = talloc_steal(name, name2->full_name);
+		name->original_name = talloc_steal(name, name2->original_name);
 	}
-
-	notify_trigger(pvfs->notify_context, 
-		       NOTIFY_ACTION_MODIFIED, 
-		       FILE_NOTIFY_CHANGE_FILE_NAME,
-		       name->full_name);
-
-	name->full_name = talloc_steal(name, name2->full_name);
-	name->original_name = talloc_steal(name, name2->original_name);
 
 	return NT_STATUS_OK;
 }
