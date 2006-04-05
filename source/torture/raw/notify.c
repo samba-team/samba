@@ -250,6 +250,120 @@ done:
 	return ret;
 }
 
+
+/* 
+   testing of recursive change notify
+*/
+static BOOL test_notify_recursive(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+{
+	BOOL ret = True;
+	NTSTATUS status;
+	struct smb_notify notify;
+	union smb_open io;
+	int fnum;
+	struct smbcli_request *req1, *req2;
+
+	printf("TESTING CHANGE NOTIFY WITH RECURSION\n");
+		
+	/*
+	  get a handle on the directory
+	*/
+	io.generic.level = RAW_OPEN_NTCREATEX;
+	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.flags = 0;
+	io.ntcreatex.in.access_mask = SEC_FILE_ALL;
+	io.ntcreatex.in.create_options = NTCREATEX_OPTIONS_DIRECTORY;
+	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
+	io.ntcreatex.in.share_access = NTCREATEX_SHARE_ACCESS_READ | NTCREATEX_SHARE_ACCESS_WRITE;
+	io.ntcreatex.in.alloc_size = 0;
+	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_OPEN;
+	io.ntcreatex.in.impersonation = NTCREATEX_IMPERSONATION_ANONYMOUS;
+	io.ntcreatex.in.security_flags = 0;
+	io.ntcreatex.in.fname = BASEDIR;
+
+	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	fnum = io.ntcreatex.out.file.fnum;
+
+	/* ask for a change notify, on file or directory name
+	   changes. Setup both with and without recursion */
+	notify.in.buffer_size = 1000;
+	notify.in.completion_filter = FILE_NOTIFY_CHANGE_NAME;
+	notify.in.file.fnum = fnum;
+
+	notify.in.recursive = True;
+	req1 = smb_raw_changenotify_send(cli->tree, &notify);
+
+	notify.in.recursive = False;
+	req2 = smb_raw_changenotify_send(cli->tree, &notify);
+
+	/* cancel initial requests so the buffer is setup */
+	smb_raw_ntcancel(req1);
+	status = smb_raw_changenotify_recv(req1, mem_ctx, &notify);
+	CHECK_STATUS(status, NT_STATUS_CANCELLED);
+
+	smb_raw_ntcancel(req2);
+	status = smb_raw_changenotify_recv(req2, mem_ctx, &notify);
+	CHECK_STATUS(status, NT_STATUS_CANCELLED);
+
+	smbcli_mkdir(cli->tree, BASEDIR "\\subdir-name");
+	smbcli_mkdir(cli->tree, BASEDIR "\\subdir-name\\subname1");
+	smbcli_mkdir(cli->tree, BASEDIR "\\subdir-name\\subname2");
+	smbcli_rename(cli->tree, BASEDIR "\\subdir-name\\subname1", BASEDIR "\\subdir-name\\subname1-r");
+	smbcli_rename(cli->tree, BASEDIR "\\subdir-name\\subname2", BASEDIR "\\subname2-r");
+	smbcli_rename(cli->tree, BASEDIR "\\subname2-r", BASEDIR "\\subname3-r");
+
+	notify.in.recursive = True;
+	req1 = smb_raw_changenotify_send(cli->tree, &notify);
+
+	smbcli_rmdir(cli->tree, BASEDIR "\\subdir-name\\subname1-r");
+	smbcli_rmdir(cli->tree, BASEDIR "\\subdir-name");
+	smbcli_rmdir(cli->tree, BASEDIR "\\subname3-r");
+
+	notify.in.recursive = False;
+	req2 = smb_raw_changenotify_send(cli->tree, &notify);
+
+	status = smb_raw_changenotify_recv(req1, mem_ctx, &notify);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	CHECK_VAL(notify.out.num_changes, 9);
+	CHECK_VAL(notify.out.changes[0].action, NOTIFY_ACTION_ADDED);
+	CHECK_WSTR(notify.out.changes[0].name, "subdir-name", STR_UNICODE);
+	CHECK_VAL(notify.out.changes[1].action, NOTIFY_ACTION_ADDED);
+	CHECK_WSTR(notify.out.changes[1].name, "subdir-name\\subname1", STR_UNICODE);
+	CHECK_VAL(notify.out.changes[2].action, NOTIFY_ACTION_ADDED);
+	CHECK_WSTR(notify.out.changes[2].name, "subdir-name\\subname2", STR_UNICODE);
+	CHECK_VAL(notify.out.changes[3].action, NOTIFY_ACTION_OLD_NAME);
+	CHECK_WSTR(notify.out.changes[3].name, "subdir-name\\subname1", STR_UNICODE);
+	CHECK_VAL(notify.out.changes[4].action, NOTIFY_ACTION_NEW_NAME);
+	CHECK_WSTR(notify.out.changes[4].name, "subdir-name\\subname1-r", STR_UNICODE);
+
+	CHECK_VAL(notify.out.changes[5].action, NOTIFY_ACTION_REMOVED);
+	CHECK_WSTR(notify.out.changes[5].name, "subdir-name\\subname2", STR_UNICODE);
+	CHECK_VAL(notify.out.changes[6].action, NOTIFY_ACTION_ADDED);
+	CHECK_WSTR(notify.out.changes[6].name, "subname2-r", STR_UNICODE);
+
+	CHECK_VAL(notify.out.changes[7].action, NOTIFY_ACTION_OLD_NAME);
+	CHECK_WSTR(notify.out.changes[7].name, "subname2-r", STR_UNICODE);
+	CHECK_VAL(notify.out.changes[8].action, NOTIFY_ACTION_NEW_NAME);
+	CHECK_WSTR(notify.out.changes[8].name, "subname3-r", STR_UNICODE);
+
+	status = smb_raw_changenotify_recv(req2, mem_ctx, &notify);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	CHECK_VAL(notify.out.num_changes, 3);
+	CHECK_VAL(notify.out.changes[0].action, NOTIFY_ACTION_REMOVED);
+	CHECK_WSTR(notify.out.changes[0].name, "subdir-name\\subname1-r", STR_UNICODE);
+	CHECK_VAL(notify.out.changes[1].action, NOTIFY_ACTION_REMOVED);
+	CHECK_WSTR(notify.out.changes[1].name, "subdir-name", STR_UNICODE);
+	CHECK_VAL(notify.out.changes[2].action, NOTIFY_ACTION_REMOVED);
+	CHECK_WSTR(notify.out.changes[2].name, "subname3-r", STR_UNICODE);
+
+done:
+	smb_raw_exit(cli->session);
+	return ret;
+}
+
 /*
   basic testing of change notify on files
 */
@@ -548,7 +662,6 @@ static BOOL test_notify_double(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_VAL(notify.out.num_changes, 1);
 	CHECK_WSTR(notify.out.changes[0].name, "subdir-name2", STR_UNICODE);
 
-
 done:
 	smb_raw_exit(cli->session);
 	return ret;
@@ -574,6 +687,7 @@ BOOL torture_raw_notify(struct torture_context *torture)
 	}
 
 	ret &= test_notify_dir(cli, mem_ctx);
+	ret &= test_notify_recursive(cli, mem_ctx);
 	ret &= test_notify_file(cli, mem_ctx);
 	ret &= test_notify_tdis(mem_ctx);
 	ret &= test_notify_exit(mem_ctx);
