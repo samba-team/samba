@@ -145,7 +145,11 @@ static NTSTATUS pvfs_notify_setup(struct pvfs_state *pvfs, struct pvfs_file *f,
 
 	e.filter    = filter;
 	e.path      = f->handle->name->full_name;
-	e.recursive = recursive;
+	if (recursive) {
+		e.subdir_filter = filter;
+	} else {
+		e.subdir_filter = 0;
+	}
 
 	status = notify_add(pvfs->notify_context, &e, 
 			    pvfs_notify_callback, f->notify_buffer);

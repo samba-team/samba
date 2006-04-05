@@ -25,28 +25,27 @@ struct sys_notify_context;
 typedef void (*sys_notify_callback_t)(struct sys_notify_context *, 
 				      void *, struct notify_event *ev);
 
+typedef NTSTATUS (*notify_watch_t)(struct sys_notify_context *ctx, 
+				   struct notify_event *e,
+				   sys_notify_callback_t callback, void *private, 
+				   void **handle);
+
 struct sys_notify_context {
 	struct event_context *ev;
 	void *private; /* for use of backend */
-	NTSTATUS (*notify_watch)(struct sys_notify_context *ctx, const char *dirpath,
-				 uint32_t filter, sys_notify_callback_t callback,
-				 void *private, void **handle);
 	const char *name;
+	notify_watch_t notify_watch;
 };
 
 struct sys_notify_backend {
-	struct sys_notify_backend *next, *prev;
 	const char *name;
-	NTSTATUS (*notify_watch)(struct sys_notify_context *ctx, const char *dirpath,
-				 uint32_t filter, sys_notify_callback_t callback,
-				 void *private, void **handle);
+	notify_watch_t notify_watch;
 };
 
 NTSTATUS sys_notify_register(struct sys_notify_backend *backend);
 struct sys_notify_context *sys_notify_init(int snum,
 					   TALLOC_CTX *mem_ctx, 
 					   struct event_context *ev);
-NTSTATUS sys_notify_watch(struct sys_notify_context *ctx, const char *dirpath,
-			  uint32_t filter, sys_notify_callback_t callback,
-			  void *private, void **handle);
-
+NTSTATUS sys_notify_watch(struct sys_notify_context *ctx, struct notify_entry *e,
+			  sys_notify_callback_t callback, void *private, 
+			  void **handle);
