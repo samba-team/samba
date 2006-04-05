@@ -97,7 +97,7 @@ NTSTATUS sys_notify_watch(struct sys_notify_context *ctx, struct notify_entry *e
 			  sys_notify_callback_t callback, void *private, void **handle)
 {
 	if (!ctx->notify_watch) {
-		return NT_STATUS_NOT_IMPLEMENTED;
+		return NT_STATUS_INVALID_SYSTEM_SERVICE;
 	}
 	return ctx->notify_watch(ctx, e, callback, private, handle);
 }
