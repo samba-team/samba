@@ -317,7 +317,10 @@ _PUBLIC_ NTSTATUS ndr_push_string(struct ndr_push *ndr, int ndr_flags, const cha
 
 	flags &= ~LIBNDR_FLAG_STR_CONFORMANT;
 
-	if (!(flags & LIBNDR_FLAG_STR_NOTERM)) {
+	if (!(flags & 
+	      (LIBNDR_FLAG_STR_NOTERM |
+	       LIBNDR_FLAG_STR_FIXLEN15 |
+	       LIBNDR_FLAG_STR_FIXLEN32))) {
 		s_len++;
 	}
 	d_len = convert_string_talloc(ndr, CH_UNIX, chset, s, s_len, (void **)&dest);
