@@ -3883,6 +3883,7 @@ BOOL dump_a_parameter(int snum, char *parm_name, FILE * f, BOOL isGlobal)
 	unsigned flag = 0;
 	fstring local_parm_name;
 	char *parm_opt;
+	const char *parm_opt_value;
 
 	/* check for parametrical option */
 	fstrcpy( local_parm_name, parm_name);
@@ -3892,9 +3893,12 @@ BOOL dump_a_parameter(int snum, char *parm_name, FILE * f, BOOL isGlobal)
 		*parm_opt = '\0';
 		parm_opt++;
 		if (strlen(parm_opt)) {
-			printf( "%s\n", lp_parm_const_string( snum,
-				local_parm_name, parm_opt, ""));
-			result = True;
+			parm_opt_value = lp_parm_const_string( snum,
+				local_parm_name, parm_opt, NULL);
+			if (parm_opt_value) {
+				printf( "%s\n", parm_opt_value);
+				result = True;
+			}
 		}
 		return result;
 	}
