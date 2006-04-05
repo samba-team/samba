@@ -290,10 +290,11 @@ static NTSTATUS notify_add_array(struct notify_context *notify, struct notify_en
   add a notify watch. This is called when a notify is first setup on a open
   directory handle.
 */
-NTSTATUS notify_add(struct notify_context *notify, struct notify_entry *e,
+NTSTATUS notify_add(struct notify_context *notify, struct notify_entry *e0,
 		    void (*callback)(void *, const struct notify_event *), 
 		    void *private)
 {
+	struct notify_entry e = *e0;
 	NTSTATUS status;
 	struct notify_list *listel;
 	char *path = NULL;
@@ -304,8 +305,7 @@ NTSTATUS notify_add(struct notify_context *notify, struct notify_entry *e,
 
 	status = notify_load(notify);
 	if (!NT_STATUS_IS_OK(status)) {
-		notify_unlock(notify);
-		return status;
+		goto done;
 	}
 
 	notify->array->entries = talloc_realloc(notify->array, notify->array->entries, 
@@ -313,18 +313,25 @@ NTSTATUS notify_add(struct notify_context *notify, struct notify_entry *e,
 						notify->array->num_entries+1);
 
 	if (notify->array->entries == NULL) {
-		notify_unlock(notify);
-		return NT_STATUS_NO_MEMORY;
+		status = NT_STATUS_NO_MEMORY;
+		goto done;
 	}
 
 	/* cope with /. on the end of the path */
-	len = strlen(e->path);
-	if (len > 1 && e->path[len-1] == '.' && e->path[len-2] == '/') {
-		path = talloc_strndup(notify, e->path, len-2);
+	len = strlen(e.path);
+	if (len > 1 && e.path[len-1] == '.' && e.path[len-2] == '/') {
+		e.path = talloc_strndup(notify, e.path, len-2);
+		if (e.path == NULL) {
+			status = NT_STATUS_NO_MEMORY;
+			goto done;
+		}
 	}
 
 	listel = talloc_zero(notify, struct notify_list);
-	NT_STATUS_HAVE_NO_MEMORY(listel);
+	if (listel == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
 
 	listel->private = private;
 	listel->callback = callback;
@@ -332,22 +339,31 @@ NTSTATUS notify_add(struct notify_context *notify, struct notify_entry *e,
 
 	/* ignore failures from sys_notify */
 	if (notify->sys_notify_ctx != NULL) {
-		status = sys_notify_watch(notify->sys_notify_ctx, e->path, e->filter, 
+		/*
+		  this call will modify e.filter and e.subdir_filter
+		  to remove bits handled by the backend
+		*/
+		status = sys_notify_watch(notify->sys_notify_ctx, &e,
 					  sys_notify_callback, listel, 
 					  &listel->sys_notify_handle);
 		if (NT_STATUS_IS_OK(status)) {
-			/* if the kernel handler has said it can handle this notify then
-			   we don't need to add it to the array */
 			talloc_steal(listel, listel->sys_notify_handle);
-			goto done;
 		}
 	}
 
-	status = notify_add_array(notify, e, path, private);
+	/* if the system notify handler couldn't handle some of the
+	   filter bits, or couldn't handle a request for recursion
+	   then we need to install it in the array used for the
+	   intra-samba notify handling */
+	if (e.filter != 0 || e.subdir_filter != 0) {
+		status = notify_add_array(notify, &e, path, private);
+	}
 
 done:
 	notify_unlock(notify);
-	talloc_free(path);
+	if (e.path != e0->path) {
+		talloc_free(e.path);
+	}
 
 	return status;
 }
@@ -483,8 +499,9 @@ static BOOL notify_match(struct notify_context *notify, struct notify_entry *e,
 			 const char *path, uint32_t filter)
 {
 	size_t len;
+	BOOL subdir;
 
-	if (!(filter & e->filter)) {
+	if (!(filter & e->filter) && !(filter & e->subdir_filter)) {
 		return False;
 	}
 
@@ -498,13 +515,15 @@ static BOOL notify_match(struct notify_context *notify, struct notify_entry *e,
 		return False;
 	}
 
-	if (!e->recursive) {
-		if (strchr(&path[len+1], '/') != NULL) {
-			return False;
-		}
+	/* the filter and subdir_filter are handled separately, allowing a backend
+	   to flexibly choose what it can handle */
+	subdir = (strchr(&path[len+1], '/') != NULL);
+
+	if (subdir) {
+		return (filter & e->subdir_filter) != 0;
 	}
 
-	return True;
+	return (filter & e->filter) != 0;
 }
 
 
