@@ -24,6 +24,50 @@
 #include "vfs_posix.h"
 #include "librpc/gen_ndr/security.h"
 
+
+/*
+  do a file rename, and send any notify triggers
+*/
+NTSTATUS pvfs_do_rename(struct pvfs_state *pvfs, const char *name1, const char *name2)
+{
+	const char *r1, *r2;
+
+	if (rename(name1, name2) == -1) {
+		return pvfs_map_errno(pvfs, errno);
+	}
+
+	/* 
+	   renames to the same directory cause a OLD_NAME->NEW_NAME notify.
+	   renames to a different directory are considered a remove/add 
+	*/
+	r1 = strrchr_m(name1, '/');
+	r2 = strrchr_m(name2, '/');
+
+	if ((r1-name1) != (r2-name2) ||
+	    strncmp(name1, name2, r1-name1) != 0) {
+		notify_trigger(pvfs->notify_context, 
+			       NOTIFY_ACTION_REMOVED, 
+			       FILE_NOTIFY_CHANGE_FILE_NAME,
+			       name1);
+		notify_trigger(pvfs->notify_context, 
+			       NOTIFY_ACTION_ADDED, 
+			       FILE_NOTIFY_CHANGE_FILE_NAME,
+			       name2);
+	} else {
+		notify_trigger(pvfs->notify_context, 
+			       NOTIFY_ACTION_OLD_NAME, 
+			       FILE_NOTIFY_CHANGE_FILE_NAME,
+			       name1);
+		notify_trigger(pvfs->notify_context, 
+			       NOTIFY_ACTION_NEW_NAME, 
+			       FILE_NOTIFY_CHANGE_FILE_NAME,
+			       name2);
+	}
+	
+	return NT_STATUS_OK;
+}
+
+
 /*
   resolve a wildcard rename pattern. This works on one component of the name
 */
@@ -173,18 +217,10 @@ static NTSTATUS pvfs_rename_one(struct pvfs_state *pvfs,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	if (rename(name1->full_name, fname2) == -1) {
-		talloc_free(mem_ctx);
-		return pvfs_map_errno(pvfs, errno);
-	}
-
-	status = odb_rename(lck, fname2);
+	status = pvfs_do_rename(pvfs, name1->full_name, fname2);
 
 	if (NT_STATUS_IS_OK(status)) {
-		notify_trigger(pvfs->notify_context, 
-			       NOTIFY_ACTION_MODIFIED, 
-			       FILE_NOTIFY_CHANGE_FILE_NAME,
-			       name1->full_name);
+		status = odb_rename(lck, fname2);
 	}
 
 failed:
@@ -302,11 +338,10 @@ static NTSTATUS pvfs_rename_mv(struct ntvfs_module_context *ntvfs,
 		return status;
 	}
 
-	if (rename(name1->full_name, name2->full_name) == -1) {
-		return pvfs_map_errno(pvfs, errno);
+	status = pvfs_do_rename(pvfs, name1->full_name, name2->full_name);
+	if (NT_STATUS_IS_OK(status)) {
+		status = odb_rename(lck, name2->full_name);
 	}
-
-	status = odb_rename(lck, name2->full_name);
 	
 	return NT_STATUS_OK;
 }
@@ -375,19 +410,14 @@ static NTSTATUS pvfs_rename_nt(struct ntvfs_module_context *ntvfs,
 	switch (ren->ntrename.in.flags) {
 	case RENAME_FLAG_RENAME:
 		status = pvfs_access_check_parent(pvfs, req, name2, SEC_DIR_ADD_FILE);
-		if (!NT_STATUS_IS_OK(status)) {
-			return status;
-		}
-		if (rename(name1->full_name, name2->full_name) == -1) {
-			return pvfs_map_errno(pvfs, errno);
-		}
+		NT_STATUS_NOT_OK_RETURN(status);
+		status = pvfs_do_rename(pvfs, name1->full_name, name2->full_name);
+		NT_STATUS_NOT_OK_RETURN(status);
 		break;
 
 	case RENAME_FLAG_HARD_LINK:
 		status = pvfs_access_check_parent(pvfs, req, name2, SEC_DIR_ADD_FILE);
-		if (!NT_STATUS_IS_OK(status)) {
-			return status;
-		}
+		NT_STATUS_NOT_OK_RETURN(status);
 		if (link(name1->full_name, name2->full_name) == -1) {
 			return pvfs_map_errno(pvfs, errno);
 		}
@@ -395,9 +425,7 @@ static NTSTATUS pvfs_rename_nt(struct ntvfs_module_context *ntvfs,
 
 	case RENAME_FLAG_COPY:
 		status = pvfs_access_check_parent(pvfs, req, name2, SEC_DIR_ADD_FILE);
-		if (!NT_STATUS_IS_OK(status)) {
-			return status;
-		}
+		NT_STATUS_NOT_OK_RETURN(status);
 		return pvfs_copy_file(pvfs, name1, name2);
 
 	case RENAME_FLAG_MOVE_CLUSTER_INFORMATION:
