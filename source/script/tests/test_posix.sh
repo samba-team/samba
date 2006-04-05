@@ -20,7 +20,12 @@ ADDARGS="$*"
 incdir=`dirname $0`
 . $incdir/test_functions.sh
 
-base="BASE-ATTR BASE-CHARSET BASE-CHKPATH BASE-DELAYWRITE BASE-DELETE"
+#
+# please don't remove tests here, when you want them to be skipped!
+# just add them to the skipped line below
+# this should be the complete list smbtorture offers as BASE-* tests
+#
+base="BASE-ATTR BASE-CHARSET BASE-CHKPATH BASE-DEFER_OPEN BASE-DELAYWRITE BASE-DELETE"
 base="$base BASE-DENY1 BASE-DENY2 BASE-DENY3 BASE-DENYDOS BASE-DIR1 BASE-DIR2"
 base="$base BASE-DISCONNECT BASE-FDPASS BASE-LOCK1 BASE-LOCK2 BASE-LOCK3 BASE-LOCK4"
 base="$base BASE-LOCK5 BASE-LOCK6 BASE-LOCK7 BASE-MANGLE BASE-NEGNOWAIT BASE-NTDENY1"
@@ -28,6 +33,11 @@ base="$base BASE-NTDENY2 BASE-OPEN BASE-OPENATTR BASE-PROPERTIES BASE-RENAME BAS
 base="$base BASE-SECLEAK BASE-TCON BASE-TCONDEV BASE-TRANS2 BASE-UNLINK BASE-VUID"
 base="$base BASE-XCOPY"
 
+#
+# please don't remove tests here, when you want them to be skipped!
+# just add them to the skipped line below
+# this should be the complete list smbtorture offers as RAW-* tests
+#
 raw="RAW-ACLS RAW-CHKPATH RAW-CLOSE RAW-COMPOSITE RAW-CONTEXT RAW-EAS"
 raw="$raw RAW-IOCTL RAW-LOCK RAW-MKDIR RAW-MUX RAW-NOTIFY RAW-OPEN RAW-OPLOCK"
 raw="$raw RAW-QFILEINFO RAW-QFSINFO RAW-READ RAW-RENAME RAW-SEARCH RAW-SEEK"
@@ -35,7 +45,10 @@ raw="$raw RAW-SFILEINFO RAW-SFILEINFO-BUG RAW-STREAMS RAW-UNLINK RAW-WRITE"
 
 tests="$base $raw"
 
-skipped="BASE-CHARSET BASE-DELAYWRITE RAW-COMPOSITE RAW-OPLOCK BASE-DEFER_OPEN"
+#
+# please add tests you want to be skipped here!
+#
+skipped="BASE-CHARSET BASE-DEFER_OPEN BASE-DELAYWRITE RAW-COMPOSITE RAW-OPLOCK"
 
 echo "WARNING: Skipping tests $skipped"
 
