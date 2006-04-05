@@ -31,7 +31,7 @@
 
 /* list of registered backends */
 static struct sys_notify_backend *backends;
-
+static uint32_t num_backends;
 
 /*
   initialise a system change notify backend
@@ -43,8 +43,9 @@ struct sys_notify_context *sys_notify_init(int snum,
 	struct sys_notify_context *ctx;
 	const char *bname;
 	struct sys_notify_backend *b;
+	int i;
 
-	if (backends == NULL) {
+	if (num_backends == 0) {
 		return NULL;
 	}
 
@@ -61,16 +62,16 @@ struct sys_notify_context *sys_notify_init(int snum,
 
 	bname = lp_parm_string(snum, "notify", "backend");
 	if (!bname) {
-		if (backends) {
-			bname = backends->name;
+		if (num_backends) {
+			bname = backends[0].name;
 		} else {
 			bname = "__unknown__";
 		}
 	}
 
-	for (b=backends;b;b=b->next) {
-		if (strcasecmp(b->name, bname) == 0) {
-			bname = b->name;
+	for (i=0;i<num_backends;i++) {
+		if (strcasecmp(backends[i].name, bname) == 0) {
+			bname = backends[i].name;
 			break;
 		}
 	}
@@ -78,8 +79,8 @@ struct sys_notify_context *sys_notify_init(int snum,
 	ctx->name = bname;
 	ctx->notify_watch = NULL;
 
-	if (b != NULL) {
-		ctx->notify_watch = b->notify_watch;
+	if (i < num_backends) {
+		ctx->notify_watch = backends[i].notify_watch;
 	}
 
 	return ctx;
@@ -87,15 +88,18 @@ struct sys_notify_context *sys_notify_init(int snum,
 
 /*
   add a watch
+
+  note that this call must modify the e->filter and e->subdir_filter
+  bits to remove ones handled by this backend. Any remaining bits will
+  be handled by the generic notify layer
 */
-NTSTATUS sys_notify_watch(struct sys_notify_context *ctx, const char *dirpath,
-			  uint32_t filter, sys_notify_callback_t callback,
-			  void *private, void **handle)
+NTSTATUS sys_notify_watch(struct sys_notify_context *ctx, struct notify_entry *e,
+			  sys_notify_callback_t callback, void *private, void **handle)
 {
 	if (!ctx->notify_watch) {
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
-	return ctx->notify_watch(ctx, dirpath, filter, callback, private, handle);
+	return ctx->notify_watch(ctx, e, callback, private, handle);
 }
 
 /*
@@ -103,6 +107,12 @@ NTSTATUS sys_notify_watch(struct sys_notify_context *ctx, const char *dirpath,
 */
 NTSTATUS sys_notify_register(struct sys_notify_backend *backend)
 {
-	DLIST_ADD(backends, backend);
+	struct sys_notify_backend *b;
+	b = talloc_realloc(talloc_autofree_context(), backends, 
+			   struct sys_notify_backend, num_backends+1);
+	NT_STATUS_HAVE_NO_MEMORY(b);
+	backends = b;
+	backends[num_backends] = *backend;
+	num_backends++;
 	return NT_STATUS_OK;
 }
