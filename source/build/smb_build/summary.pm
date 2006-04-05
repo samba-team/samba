@@ -7,6 +7,13 @@
 package summary;
 use strict;
 
+sub enabled($)
+{
+    my ($val) = @_;
+
+    return (defined($val) && $val =~ m/yes|true/i);
+}
+
 sub showitem($$$)
 {
 	my ($output,$desc,$items) = @_;
@@ -14,7 +21,7 @@ sub showitem($$$)
 	my @need = ();
 
 	foreach (@$items) {
-		if ($output->{"EXT_LIB_$_"}->{ENABLE} ne "YES") {
+		if (!enabled($output->{"EXT_LIB_$_"}->{ENABLE})) {
 			push (@need, $_);
 		}
 	}
@@ -40,24 +47,19 @@ sub show($$)
 	showitem($output, "using extended attributes", ["XATTR"]);
 	showitem($output, "using libblkid", ["BLKID"]);
 	showitem($output, "using pam", ["PAM"]);
-	print "Using external popt: ".lc($output->{EXT_LIB_POPT}->{ENABLE})."\n";
-	print "Developer mode: ".lc($config->{developer})."\n";
-	print "Automatic dependencies: ";
+	print "Using external popt: ".
+	    (enabled($output->{EXT_LIB_POPT}->{ENABLE})?"yes":"no")."\n";
+	print "Developer mode: ".(enabled($config->{developer})?"yes":"no")."\n";
+	print "Automatic dependencies: ".
+	    (enabled($config->{automatic_dependencies})
+		    ? "yes" : "no (install GNU make >= 3.81)") .
+	     "\n";
 	
-	if ($config->{automatic_dependencies} eq "yes") {
-		print "yes\n";
-	} else {
-		print "no (install GNU make >= 3.81)\n";
-	}
-	
-	print "Using shared libraries internally (experimental): ";
+	print "Using shared libraries internally (experimental): " .
+	    (enabled($config->{BLDSHARED})
+		    ? "yes" : "no (try --enable-dso)") .
+	    "\n";
 
-	if ($config->{BLDSHARED} eq "true") {
-		print "yes\n";
-	} else {
-		print "no (try --enable-dso)\n";
-
-	}
 	print "\n";
 }
 
