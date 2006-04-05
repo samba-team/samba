@@ -3877,7 +3877,8 @@ static void dump_a_service(service * pService, FILE * f)
 BOOL dump_a_parameter(int snum, char *parm_name, FILE * f, BOOL isGlobal)
 {
 	service * pService = ServicePtrs[snum];
-	int i, result = False;
+	int i;
+	BOOL result = False;
 	parm_class p_class;
 	unsigned flag = 0;
 	fstring local_parm_name;
