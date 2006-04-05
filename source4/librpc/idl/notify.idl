@@ -16,8 +16,8 @@ interface notify
 	/* structure used in the notify database */
 	typedef [public] struct {
 		uint32 server;
-		uint32 filter;
-		boolean32 recursive;
+		uint32 filter; /* filter to apply in this directory */
+		uint32 subdir_filter; /* filter to apply in child directories */
 		utf8string path;
 		pointer private;
 	} notify_entry;
