@@ -213,6 +213,8 @@ NTSTATUS pvfs_notify(struct ntvfs_module_context *ntvfs,
 		NT_STATUS_NOT_OK_RETURN(status);
 	}
 
+	/* we update the max_buffer_size on each call, but we do not
+	   update the recursive flag or filter */
 	f->notify_buffer->max_buffer_size = info->in.buffer_size;
 
 	pending = talloc(f->notify_buffer, struct notify_pending);
