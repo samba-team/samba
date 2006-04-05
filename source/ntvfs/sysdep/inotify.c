@@ -239,7 +239,7 @@ static int watch_destructor(void *ptr)
 
 /*
   add a watch. The watch is removed when the caller calls
-  talloc_free() on handle
+  talloc_free() on *handle
 */
 static NTSTATUS inotify_watch(struct sys_notify_context *ctx, const char *dirpath,
 			      uint32_t filter, sys_notify_callback_t callback,

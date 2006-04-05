@@ -268,6 +268,25 @@ static void sys_notify_callback(struct sys_notify_context *ctx,
 }
 
 /*
+  add an entry to the notify array
+*/
+static NTSTATUS notify_add_array(struct notify_context *notify, struct notify_entry *e,
+				 const char *path, void *private)
+{
+	notify->array->entries[notify->array->num_entries] = *e;
+	notify->array->entries[notify->array->num_entries].private = private;
+	notify->array->entries[notify->array->num_entries].server = notify->server;
+	
+	if (path) {
+		notify->array->entries[notify->array->num_entries].path = path;
+	}
+
+	notify->array->num_entries++;
+	
+	return notify_save(notify);
+}
+
+/*
   add a notify watch. This is called when a notify is first setup on a open
   directory handle.
 */
@@ -312,33 +331,23 @@ NTSTATUS notify_add(struct notify_context *notify, struct notify_entry *e,
 	DLIST_ADD(notify->list, listel);
 
 	/* ignore failures from sys_notify */
-	status = sys_notify_watch(notify->sys_notify_ctx, e->path, e->filter, 
-				  sys_notify_callback, listel, 
-				  &listel->sys_notify_handle);
-	if (NT_STATUS_IS_OK(status)) {
-		talloc_steal(listel, listel->sys_notify_handle);
-		notify_unlock(notify);
-	} else {
-		notify->array->entries[notify->array->num_entries] = *e;
-		notify->array->entries[notify->array->num_entries].private = private;
-		notify->array->entries[notify->array->num_entries].server = notify->server;
-
-		if (path) {
-			notify->array->entries[notify->array->num_entries].path = path;
+	if (notify->sys_notify_ctx != NULL) {
+		status = sys_notify_watch(notify->sys_notify_ctx, e->path, e->filter, 
+					  sys_notify_callback, listel, 
+					  &listel->sys_notify_handle);
+		if (NT_STATUS_IS_OK(status)) {
+			/* if the kernel handler has said it can handle this notify then
+			   we don't need to add it to the array */
+			talloc_steal(listel, listel->sys_notify_handle);
+			goto done;
 		}
-
-		notify->array->num_entries++;
-
-		status = notify_save(notify);
-
-		notify_unlock(notify);
-
-		NT_STATUS_NOT_OK_RETURN(status);
 	}
 
-	if (path) {
-		talloc_free(path);
-	}
+	status = notify_add_array(notify, e, path, private);
+
+done:
+	notify_unlock(notify);
+	talloc_free(path);
 
 	return status;
 }
