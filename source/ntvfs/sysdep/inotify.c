@@ -90,8 +90,13 @@ static int inotify_destructor(void *ptr)
 
 /*
   dispatch one inotify event
+  
+  the cookies are used to correctly handle renames
 */
-static void inotify_dispatch(struct inotify_private *in, struct inotify_event *e)
+static void inotify_dispatch(struct inotify_private *in, 
+			     struct inotify_event *e, 
+			     uint32_t prev_cookie,
+			     uint32_t next_cookie)
 {
 	struct watch_context *w;
 	struct notify_event ne;
@@ -101,11 +106,24 @@ static void inotify_dispatch(struct inotify_private *in, struct inotify_event *e
 		return;
 	}
 
-	/* map the inotify mask to a action */
+	/* map the inotify mask to a action. This gets complicated for
+	   renames */
 	if (e->mask & IN_CREATE) {
 		ne.action = NOTIFY_ACTION_ADDED;
 	} else if (e->mask & IN_DELETE) {
 		ne.action = NOTIFY_ACTION_REMOVED;
+	} else if (e->mask & IN_MOVED_FROM) {
+		if (e->cookie == next_cookie) {
+			ne.action = NOTIFY_ACTION_OLD_NAME;
+		} else {
+			ne.action = NOTIFY_ACTION_REMOVED;
+		}
+	} else if (e->mask & IN_MOVED_TO) {
+		if (e->cookie == prev_cookie) {
+			ne.action = NOTIFY_ACTION_NEW_NAME;
+		} else {
+			ne.action = NOTIFY_ACTION_ADDED;
+		}
 	} else {
 		ne.action = NOTIFY_ACTION_MODIFIED;
 	}
@@ -129,6 +147,7 @@ static void inotify_handler(struct event_context *ev, struct fd_event *fde,
 	struct inotify_private *in = talloc_get_type(private, struct inotify_private);
 	int bufsize = 0;
 	struct inotify_event *e0, *e;
+	uint32_t prev_cookie=0;
 
 	/*
 	  we must use FIONREAD as we cannot predict the length of the
@@ -152,9 +171,14 @@ static void inotify_handler(struct event_context *ev, struct fd_event *fde,
 
 	/* we can get more than one event in the buffer */
 	while (bufsize >= sizeof(*e)) {
-		inotify_dispatch(in, e);
+		struct inotify_event *e2 = NULL;
 		bufsize -= e->len + sizeof(*e);
-		e = (struct inotify_event *)(e->len + sizeof(*e) + (char *)e);
+		if (bufsize >= sizeof(*e)) {
+			e2 = (struct inotify_event *)(e->len + sizeof(*e) + (char *)e);
+		}
+		inotify_dispatch(in, e, prev_cookie, e2?e2->cookie:0);
+		prev_cookie = e->cookie;
+		e = e2;
 	}
 
 	talloc_free(e0);
