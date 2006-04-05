@@ -313,6 +313,7 @@ static BOOL test_notify_recursive(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	smbcli_rename(cli->tree, BASEDIR "\\subdir-name\\subname2", BASEDIR "\\subname2-r");
 	smbcli_rename(cli->tree, BASEDIR "\\subname2-r", BASEDIR "\\subname3-r");
 
+	notify.in.completion_filter = 0;
 	notify.in.recursive = True;
 	req1 = smb_raw_changenotify_send(cli->tree, &notify);
 
