@@ -44,6 +44,10 @@ struct sys_notify_context *sys_notify_init(int snum,
 	const char *bname;
 	struct sys_notify_backend *b;
 
+	if (backends == NULL) {
+		return NULL;
+	}
+
 	if (ev == NULL) {
 		ev = event_context_find(mem_ctx);
 	}
