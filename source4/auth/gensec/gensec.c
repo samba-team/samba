@@ -1131,10 +1131,12 @@ NTSTATUS gensec_init(void)
 	static BOOL initialized = False;
 
 	init_module_fn static_init[] = STATIC_gensec_MODULES;
-	init_module_fn *shared_init = load_samba_modules(NULL, "gensec");
+	init_module_fn *shared_init;
 
 	if (initialized) return NT_STATUS_OK;
 	initialized = True;
+	
+	shared_init = load_samba_modules(NULL, "gensec");
 
 	run_init_functions(static_init);
 	run_init_functions(shared_init);
