@@ -278,6 +278,11 @@ void smbsrv_send_reply_nosign(struct smbsrv_request *req)
 	DATA_BLOB blob;
 	NTSTATUS status;
 
+	if (req->smb_conn->connection->event.fde == NULL) {
+		/* we are in the process of shutting down this connection */
+		return;
+	}
+
 	if (req->out.size > NBT_HDR_SIZE) {
 		_smb_setlen(req->out.buffer, req->out.size - NBT_HDR_SIZE);
 	}
