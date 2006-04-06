@@ -7,7 +7,7 @@ dnl AC_PREREQ(2.53)
 AC_INIT([samba],[],[samba-technical@samba.org])
 
 AC_CONFIG_SRCDIR([include/includes.h])
-AC_CONFIG_HEADER(include/config.h)
+AC_CONFIG_HEADER(include/config_tmp.h)
 
 # Configuration rules.
 sinclude(build/m4/env.m4)
@@ -109,6 +109,12 @@ $SMB_INFO_EXT_LIBS
 $SMB_INFO_SUBSYSTEMS
 $SMB_INFO_LIBRARIES
 CEOF
+
+cmp include/config_tmp.h include/config.h >/dev/null 2>&1
+CMP_RET=$?
+if [ $CMP_RET != 0 ];then
+	cp include/config_tmp.h include/config.h
+fi
 
 AC_OUTPUT_COMMANDS(
 [$PERL -I${builddir} -I${srcdir} -I${srcdir}/build ${srcdir}/build/smb_build/main.pl || exit $?],[
