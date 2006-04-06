@@ -251,7 +251,7 @@ clean:: clean_pch
 	@-rm -f $(PROTO_HEADERS)
 
 distclean: clean
-	-rm -f include/config.h include/smb_build.h
+	-rm -f include/config.h include/config_tmp.h include/build.h
 	-rm -f Makefile 
 	-rm -f config.status
 	-rm -f config.log config.cache
@@ -262,7 +262,7 @@ removebackup:
 	-rm -f *.bak *~ */*.bak */*~ */*/*.bak */*/*~ */*/*/*.bak */*/*/*~
 
 realdistclean: distclean removebackup
-	-rm -f include/config.h.in
+	-rm -f include/config_tmp.h.in
 	-rm -f include/version.h
 	-rm -f configure
 	-rm -f $(MANPAGES)
