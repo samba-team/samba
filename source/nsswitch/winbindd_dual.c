@@ -629,7 +629,7 @@ static BOOL fork_domain_child(struct winbindd_child *child)
 	close(fdpair[1]);
 
 	/* tdb needs special fork handling */
-	if (tdb_reopen_all() == -1) {
+	if (tdb_reopen_all(1) == -1) {
 		DEBUG(0,("tdb_reopen_all failed.\n"));
 		_exit(0);
 	}
