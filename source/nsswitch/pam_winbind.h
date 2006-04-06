@@ -87,7 +87,6 @@ do {                             \
 #define WINBIND_KRB5_AUTH (1<<7)
 #define WINBIND_KRB5_CCACHE_TYPE (1<<8)
 #define WINBIND_CACHED_LOGIN (1<<9)
-#define WINBIND_CREATE_HOMEDIR (1<<10)
 
 /*
  * here is the string to inform the user that the new passwords they

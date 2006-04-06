@@ -67,9 +67,6 @@ static int _pam_parse(int argc, const char **argv)
 	    (lp_parm_const_string(-1, "pam_winbind", "require_membership_of", NULL) != NULL)) { 
 		ctrl |= WINBIND_REQUIRED_MEMBERSHIP;
 	}
-	if (lp_parm_bool(-1, "pam_winbind", "create_homedir", False)) {
-		ctrl |= WINBIND_CREATE_HOMEDIR;
-	}
 
 	/* step through arguments */
 	for (; argc-- > 0; ++argv) {
@@ -96,8 +93,6 @@ static int _pam_parse(int argc, const char **argv)
 			ctrl |= WINBIND_KRB5_CCACHE_TYPE;
 		else if (strequal(*argv, "cached_login"))
 			ctrl |= WINBIND_CACHED_LOGIN;
-		else if (strequal(*argv, "create_homedir"))
-			ctrl |= WINBIND_CREATE_HOMEDIR;
 		else {
 			_pam_log(LOG_ERR, "pam_parse: unknown option; %s", *argv);
 		}
@@ -982,59 +977,6 @@ int pam_sm_open_session(pam_handle_t *pamh, int flags,
 	}
 
 	_pam_log_debug(ctrl, LOG_DEBUG,"pam_winbind: pam_sm_open_session handler");
-
-
-	if (ctrl & WINBIND_CREATE_HOMEDIR) {
-
-		struct passwd *pwd = NULL;
-		const char *username;
-		int ret;
-		fstring tok;
-		fstring create_dir;
-		SMB_STRUCT_STAT sbuf;
-
-		/* Get the username */
-		ret = pam_get_user(pamh, &username, NULL);
-		if ((ret != PAM_SUCCESS) || (!username)) {
-			_pam_log_debug(ctrl, LOG_DEBUG, "can not get the username");
-			return PAM_SERVICE_ERR;
-		}
-
-		pwd = getpwnam(username);
-		if (pwd == NULL) {
-			_pam_log_debug(ctrl, LOG_DEBUG, "can not get the username");
-			return PAM_SERVICE_ERR;
-		}
-
-		_pam_log_debug(ctrl, LOG_DEBUG, "homedir is: %s", pwd->pw_dir);
-
-		if (directory_exist(pwd->pw_dir, &sbuf)) {
-			return PAM_SUCCESS;
-		}
-
-		fstrcpy(create_dir, "/");
-		while (next_token((const char **)&pwd->pw_dir, tok, "/", sizeof(tok))) {
-			
-			mode_t mode = 0755;
-
-			fstrcat(create_dir, tok);
-			fstrcat(create_dir, "/");
-
-			if (!directory_exist(create_dir, &sbuf)) {
-				if (mkdir(create_dir, mode) != 0) {
-					_pam_log(LOG_ERR, "could not create dir: %s (%s)", 
-						 create_dir, strerror(errno));
-					return PAM_SERVICE_ERR;
-				}
-			} 
-		}
-
-		if (sys_chown(create_dir, pwd->pw_uid, pwd->pw_gid) != 0) {
-			_pam_log(LOG_ERR, "failed to chown user homedir: %s (%s)", 
-				 create_dir, strerror(errno));
-			return PAM_SERVICE_ERR;
-		}
-	}
 
 	return PAM_SUCCESS;
 }
