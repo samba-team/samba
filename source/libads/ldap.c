@@ -1083,7 +1083,8 @@ ADS_STATUS ads_del_dn(ADS_STRUCT *ads, char *del_dn)
 /**
  * Build an org unit string
  *  if org unit is Computers or blank then assume a container, otherwise
- *  assume a \ separated list of organisational units
+ *  assume a / separated list of organisational units.
+ * jmcd: '\' is now used for escapes so certain chars can be in the ou (e.g. #)
  * @param ads connection to ads server
  * @param org_unit Organizational unit
  * @return org unit string - caller must free
@@ -1104,7 +1105,10 @@ char *ads_ou_string(ADS_STRUCT *ads, const char *org_unit)
 		return SMB_STRDUP("cn=Computers");
 	}
 
-	return ads_build_path(org_unit, "\\/", "ou=", 1);
+	/* jmcd: removed "\\" from the separation chars, because it is
+	   needed as an escape for chars like '#' which are valid in an
+	   OU name */
+	return ads_build_path(org_unit, "/", "ou=", 1);
 }
 
 /**
