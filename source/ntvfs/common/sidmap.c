@@ -43,7 +43,7 @@
   private context for sid mapping routines
 */
 struct sidmap_context {
-	void *samctx;
+	struct ldb_wrap *samctx;
 };
 
 /*
