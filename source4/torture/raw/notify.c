@@ -365,6 +365,189 @@ done:
 	return ret;
 }
 
+
+/* 
+   testing of mask bits for change notify
+*/
+static BOOL test_notify_mask(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+{
+	BOOL ret = True;
+	NTSTATUS status;
+	struct smb_notify notify;
+	union smb_open io;
+	int fnum, fnum2;
+	uint32_t mask;
+	int i;
+	char c = 1;
+
+	printf("TESTING CHANGE NOTIFY COMPLETION FILTERS\n");
+		
+	/*
+	  get a handle on the directory
+	*/
+	io.generic.level = RAW_OPEN_NTCREATEX;
+	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.flags = 0;
+	io.ntcreatex.in.access_mask = SEC_FILE_ALL;
+	io.ntcreatex.in.create_options = NTCREATEX_OPTIONS_DIRECTORY;
+	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
+	io.ntcreatex.in.share_access = NTCREATEX_SHARE_ACCESS_READ | NTCREATEX_SHARE_ACCESS_WRITE;
+	io.ntcreatex.in.alloc_size = 0;
+	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_OPEN;
+	io.ntcreatex.in.impersonation = NTCREATEX_IMPERSONATION_ANONYMOUS;
+	io.ntcreatex.in.security_flags = 0;
+	io.ntcreatex.in.fname = BASEDIR;
+
+	notify.in.buffer_size = 1000;
+	notify.in.recursive = True;
+
+#define NOTIFY_MASK_TEST(setup, op, cleanup, Action, expected, nchanges) \
+	do { for (mask=i=0;i<32;i++) { \
+		struct smbcli_request *req; \
+		status = smb_raw_open(cli->tree, mem_ctx, &io); \
+		CHECK_STATUS(status, NT_STATUS_OK); \
+		fnum = io.ntcreatex.out.file.fnum; \
+		setup \
+		notify.in.file.fnum = fnum;	\
+		notify.in.completion_filter = (1<<i); \
+		req = smb_raw_changenotify_send(cli->tree, &notify); \
+		op \
+		msleep(10); smb_raw_ntcancel(req); \
+		status = smb_raw_changenotify_recv(req, mem_ctx, &notify); \
+		cleanup \
+		if (NT_STATUS_EQUAL(status, NT_STATUS_CANCELLED)) continue; \
+		CHECK_STATUS(status, NT_STATUS_OK); \
+		if (nchanges != notify.out.num_changes || \
+		    notify.out.changes[0].action != Action || \
+		    strcmp(notify.out.changes[0].name.s, "tname1") != 0) { \
+			printf("nchanges=%d action=%d filter=0x%08x\n", \
+			       notify.out.num_changes, \
+			       notify.out.changes[0].action, \
+			       notify.in.completion_filter); \
+			ret = False; \
+		} \
+		mask |= (1<<i); \
+		smbcli_close(cli->tree, fnum); \
+	} \
+	CHECK_VAL(mask, expected); \
+	} while (0)
+
+	printf("testing mkdir\n");
+	NOTIFY_MASK_TEST(;,
+			 smbcli_mkdir(cli->tree, BASEDIR "\\tname1");,
+			 smbcli_rmdir(cli->tree, BASEDIR "\\tname1");,
+			 NOTIFY_ACTION_ADDED,
+			 FILE_NOTIFY_CHANGE_DIR_NAME, 1);
+
+	printf("testing create file\n");
+	NOTIFY_MASK_TEST(;,
+			 smbcli_close(cli->tree, smbcli_open(cli->tree, BASEDIR "\\tname1", O_CREAT, 0));,
+			 smbcli_unlink(cli->tree, BASEDIR "\\tname1");,
+			 NOTIFY_ACTION_ADDED,
+			 FILE_NOTIFY_CHANGE_FILE_NAME, 1);
+
+	printf("testing unlink\n");
+	NOTIFY_MASK_TEST(
+			 smbcli_close(cli->tree, smbcli_open(cli->tree, BASEDIR "\\tname1", O_CREAT, 0));,
+			 smbcli_unlink(cli->tree, BASEDIR "\\tname1");,
+			 ;,
+			 NOTIFY_ACTION_REMOVED,
+			 FILE_NOTIFY_CHANGE_FILE_NAME, 1);
+
+	printf("testing rmdir\n");
+	NOTIFY_MASK_TEST(
+			 smbcli_mkdir(cli->tree, BASEDIR "\\tname1");,
+			 smbcli_rmdir(cli->tree, BASEDIR "\\tname1");,
+			 ;,
+			 NOTIFY_ACTION_REMOVED,
+			 FILE_NOTIFY_CHANGE_DIR_NAME, 1);
+
+	printf("testing rename file\n");
+	NOTIFY_MASK_TEST(
+			 smbcli_close(cli->tree, smbcli_open(cli->tree, BASEDIR "\\tname1", O_CREAT, 0));,
+			 smbcli_rename(cli->tree, BASEDIR "\\tname1", BASEDIR "\\tname2");,
+			 smbcli_unlink(cli->tree, BASEDIR "\\tname2");,
+			 NOTIFY_ACTION_OLD_NAME,
+			 FILE_NOTIFY_CHANGE_FILE_NAME|FILE_NOTIFY_CHANGE_ATTRIBUTES|FILE_NOTIFY_CHANGE_CREATION, 2);
+
+	printf("testing rename dir\n");
+	NOTIFY_MASK_TEST(
+		smbcli_mkdir(cli->tree, BASEDIR "\\tname1");,
+		smbcli_rename(cli->tree, BASEDIR "\\tname1", BASEDIR "\\tname2");,
+		smbcli_rmdir(cli->tree, BASEDIR "\\tname2");,
+		NOTIFY_ACTION_OLD_NAME,
+		FILE_NOTIFY_CHANGE_DIR_NAME, 2);
+
+	printf("testing set path attribute\n");
+	NOTIFY_MASK_TEST(
+		smbcli_close(cli->tree, smbcli_open(cli->tree, BASEDIR "\\tname1", O_CREAT, 0));,
+		smbcli_setatr(cli->tree, BASEDIR "\\tname1", FILE_ATTRIBUTE_HIDDEN, 0);,
+		smbcli_unlink(cli->tree, BASEDIR "\\tname1");,
+		NOTIFY_ACTION_MODIFIED,
+		FILE_NOTIFY_CHANGE_ATTRIBUTES, 1);
+
+	printf("testing set path write time\n");
+	NOTIFY_MASK_TEST(
+		smbcli_close(cli->tree, smbcli_open(cli->tree, BASEDIR "\\tname1", O_CREAT, 0));,
+		smbcli_setatr(cli->tree, BASEDIR "\\tname1", FILE_ATTRIBUTE_NORMAL, 1000);,
+		smbcli_unlink(cli->tree, BASEDIR "\\tname1");,
+		NOTIFY_ACTION_MODIFIED,
+		FILE_NOTIFY_CHANGE_LAST_WRITE, 1);
+
+	printf("testing set file attribute\n");
+	NOTIFY_MASK_TEST(
+		fnum2 = create_complex_file(cli, mem_ctx, BASEDIR "\\tname1");,
+		smbcli_fsetatr(cli->tree, fnum2, FILE_ATTRIBUTE_HIDDEN, 0, 0, 0, 0);,
+		(smbcli_close(cli->tree, fnum2), smbcli_unlink(cli->tree, BASEDIR "\\tname1"));,
+		NOTIFY_ACTION_MODIFIED,
+		FILE_NOTIFY_CHANGE_ATTRIBUTES, 1);
+
+	printf("testing set file create time\n");
+	NOTIFY_MASK_TEST(
+		fnum2 = create_complex_file(cli, mem_ctx, BASEDIR "\\tname1");,
+		smbcli_fsetatr(cli->tree, fnum2, 0, 1000*1000, 0, 0, 0);,
+		(smbcli_close(cli->tree, fnum2), smbcli_unlink(cli->tree, BASEDIR "\\tname1"));,
+		NOTIFY_ACTION_MODIFIED,
+		FILE_NOTIFY_CHANGE_CREATION, 1);
+
+	printf("testing set file access time\n");
+	NOTIFY_MASK_TEST(
+		fnum2 = create_complex_file(cli, mem_ctx, BASEDIR "\\tname1");,
+		smbcli_fsetatr(cli->tree, fnum2, 0, 0, 1000*1000, 0, 0);,
+		(smbcli_close(cli->tree, fnum2), smbcli_unlink(cli->tree, BASEDIR "\\tname1"));,
+		NOTIFY_ACTION_MODIFIED,
+		FILE_NOTIFY_CHANGE_LAST_ACCESS, 1);
+
+	printf("testing set file write time\n");
+	NOTIFY_MASK_TEST(
+		fnum2 = create_complex_file(cli, mem_ctx, BASEDIR "\\tname1");,
+		smbcli_fsetatr(cli->tree, fnum2, 0, 0, 0, 1000*1000, 0);,
+		(smbcli_close(cli->tree, fnum2), smbcli_unlink(cli->tree, BASEDIR "\\tname1"));,
+		NOTIFY_ACTION_MODIFIED,
+		FILE_NOTIFY_CHANGE_LAST_WRITE, 1);
+
+	printf("testing set file change time\n");
+	NOTIFY_MASK_TEST(
+		fnum2 = create_complex_file(cli, mem_ctx, BASEDIR "\\tname1");,
+		smbcli_fsetatr(cli->tree, fnum2, 0, 0, 0, 0, 1000*1000);,
+		(smbcli_close(cli->tree, fnum2), smbcli_unlink(cli->tree, BASEDIR "\\tname1"));,
+		NOTIFY_ACTION_MODIFIED,
+		0, 1);
+
+
+	printf("testing write\n");
+	NOTIFY_MASK_TEST(
+		fnum2 = create_complex_file(cli, mem_ctx, BASEDIR "\\tname1");,
+		smbcli_write(cli->tree, fnum2, 1, &c, 10000, 1);,
+		(smbcli_close(cli->tree, fnum2), smbcli_unlink(cli->tree, BASEDIR "\\tname1"));,
+		NOTIFY_ACTION_MODIFIED,
+		0, 1);
+
+done:
+	smb_raw_exit(cli->session);
+	return ret;
+}
+
 /*
   basic testing of change notify on files
 */
@@ -687,7 +870,9 @@ BOOL torture_raw_notify(struct torture_context *torture)
 		return False;
 	}
 
+
 	ret &= test_notify_dir(cli, mem_ctx);
+	ret &= test_notify_mask(cli, mem_ctx);
 	ret &= test_notify_recursive(cli, mem_ctx);
 	ret &= test_notify_file(cli, mem_ctx);
 	ret &= test_notify_tdis(mem_ctx);
