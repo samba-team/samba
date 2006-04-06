@@ -147,7 +147,7 @@ static NTSTATUS pvfs_setfileinfo_rename(struct pvfs_state *pvfs,
 		return status;
 	}
 
-	status = pvfs_do_rename(pvfs, name->full_name, name2->full_name);
+	status = pvfs_do_rename(pvfs, name, name2->full_name);
 	if (NT_STATUS_IS_OK(status)) {
 		name->full_name = talloc_steal(name, name2->full_name);
 		name->original_name = talloc_steal(name, name2->original_name);
@@ -292,7 +292,6 @@ NTSTATUS pvfs_setfileinfo(struct ntvfs_module_context *ntvfs,
 	case RAW_SFILEINFO_STANDARD:
 		if (!null_time(info->setattre.in.create_time)) {
 			unix_to_nt_time(&newstats.dos.create_time, info->setattre.in.create_time);
-			change_mask |= FILE_NOTIFY_CHANGE_CREATION;
 		}
 		if (!null_time(info->setattre.in.access_time)) {
 			unix_to_nt_time(&newstats.dos.access_time, info->setattre.in.access_time);
@@ -311,7 +310,6 @@ NTSTATUS pvfs_setfileinfo(struct ntvfs_module_context *ntvfs,
 	case RAW_SFILEINFO_BASIC_INFORMATION:
 		if (!null_nttime(info->basic_info.in.create_time)) {
 			newstats.dos.create_time = info->basic_info.in.create_time;
-			change_mask |= FILE_NOTIFY_CHANGE_CREATION;
 		}
 		if (!null_nttime(info->basic_info.in.access_time)) {
 			newstats.dos.access_time = info->basic_info.in.access_time;
@@ -408,6 +406,9 @@ NTSTATUS pvfs_setfileinfo(struct ntvfs_module_context *ntvfs,
 
 	/* possibly change the file timestamps */
 	ZERO_STRUCT(unix_times);
+	if (newstats.dos.create_time != h->name->dos.create_time) {
+		change_mask |= FILE_NOTIFY_CHANGE_CREATION;
+	}
 	if (newstats.dos.access_time != h->name->dos.access_time) {
 		unix_times.actime = nt_time_to_unix(newstats.dos.access_time);
 		change_mask |= FILE_NOTIFY_CHANGE_LAST_ACCESS;
@@ -494,7 +495,6 @@ NTSTATUS pvfs_setpathinfo(struct ntvfs_module_context *ntvfs,
 	case RAW_SFILEINFO_STANDARD:
 		if (!null_time(info->setattre.in.create_time)) {
 			unix_to_nt_time(&newstats.dos.create_time, info->setattre.in.create_time);
-			change_mask |= FILE_NOTIFY_CHANGE_CREATION;
 		}
 		if (!null_time(info->setattre.in.access_time)) {
 			unix_to_nt_time(&newstats.dos.access_time, info->setattre.in.access_time);
@@ -513,7 +513,6 @@ NTSTATUS pvfs_setpathinfo(struct ntvfs_module_context *ntvfs,
 	case RAW_SFILEINFO_BASIC_INFORMATION:
 		if (!null_nttime(info->basic_info.in.create_time)) {
 			newstats.dos.create_time = info->basic_info.in.create_time;
-			change_mask |= FILE_NOTIFY_CHANGE_CREATION;
 		}
 		if (!null_nttime(info->basic_info.in.access_time)) {
 			newstats.dos.access_time = info->basic_info.in.access_time;
@@ -585,11 +584,16 @@ NTSTATUS pvfs_setpathinfo(struct ntvfs_module_context *ntvfs,
 
 	/* possibly change the file timestamps */
 	ZERO_STRUCT(unix_times);
+	if (newstats.dos.create_time != name->dos.create_time) {
+		change_mask |= FILE_NOTIFY_CHANGE_CREATION;
+	}
 	if (newstats.dos.access_time != name->dos.access_time) {
 		unix_times.actime = nt_time_to_unix(newstats.dos.access_time);
+		change_mask |= FILE_NOTIFY_CHANGE_LAST_ACCESS;
 	}
 	if (newstats.dos.write_time != name->dos.write_time) {
 		unix_times.modtime = nt_time_to_unix(newstats.dos.write_time);
+		change_mask |= FILE_NOTIFY_CHANGE_LAST_WRITE;
 	}
 	if (unix_times.actime != 0 || unix_times.modtime != 0) {
 		if (utime(name->full_name, &unix_times) == -1) {
@@ -604,6 +608,7 @@ NTSTATUS pvfs_setpathinfo(struct ntvfs_module_context *ntvfs,
 		if (chmod(name->full_name, mode) == -1) {
 			return pvfs_map_errno(pvfs, errno);
 		}
+		change_mask |= FILE_NOTIFY_CHANGE_ATTRIBUTES;
 	}
 
 	*name = newstats;
