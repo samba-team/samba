@@ -41,7 +41,7 @@ NTSTATUS pvfs_do_rename(struct pvfs_state *pvfs, const struct pvfs_filename *nam
 	if (name1->dos.attrib & FILE_ATTRIBUTE_DIRECTORY) {
 		mask = FILE_NOTIFY_CHANGE_DIR_NAME;
 	} else {
-		mask = FILE_NOTIFY_CHANGE_FILE_NAME|FILE_NOTIFY_CHANGE_ATTRIBUTES|FILE_NOTIFY_CHANGE_CREATION;
+		mask = FILE_NOTIFY_CHANGE_FILE_NAME;
 	}
 	/* 
 	   renames to the same directory cause a OLD_NAME->NEW_NAME notify.
@@ -68,6 +68,16 @@ NTSTATUS pvfs_do_rename(struct pvfs_state *pvfs, const struct pvfs_filename *nam
 		notify_trigger(pvfs->notify_context, 
 			       NOTIFY_ACTION_NEW_NAME, 
 			       mask,
+			       name2);
+	}
+
+	/* this is a strange one. w2k3 gives an additional event for CHANGE_ATTRIBUTES
+	   and CHANGE_CREATION on the new file when renming files, but not 
+	   directories */
+	if ((name1->dos.attrib & FILE_ATTRIBUTE_DIRECTORY) == 0) {
+		notify_trigger(pvfs->notify_context, 
+			       NOTIFY_ACTION_MODIFIED, 
+			       FILE_NOTIFY_CHANGE_ATTRIBUTES|FILE_NOTIFY_CHANGE_CREATION,
 			       name2);
 	}
 	
