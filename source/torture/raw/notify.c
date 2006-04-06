@@ -315,6 +315,7 @@ static BOOL test_notify_recursive(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	notify.in.completion_filter = 0;
 	notify.in.recursive = True;
+	msleep(10);
 	req1 = smb_raw_changenotify_send(cli->tree, &notify);
 
 	smbcli_rmdir(cli->tree, BASEDIR "\\subdir-name\\subname1-r");
@@ -869,7 +870,6 @@ BOOL torture_raw_notify(struct torture_context *torture)
 	if (!torture_setup_dir(cli, BASEDIR)) {
 		return False;
 	}
-
 
 	ret &= test_notify_dir(cli, mem_ctx);
 	ret &= test_notify_mask(cli, mem_ctx);
