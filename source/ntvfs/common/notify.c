@@ -271,16 +271,12 @@ static void sys_notify_callback(struct sys_notify_context *ctx,
   add an entry to the notify array
 */
 static NTSTATUS notify_add_array(struct notify_context *notify, struct notify_entry *e,
-				 const char *path, void *private)
+				 void *private)
 {
 	notify->array->entries[notify->array->num_entries] = *e;
 	notify->array->entries[notify->array->num_entries].private = private;
 	notify->array->entries[notify->array->num_entries].server = notify->server;
 	
-	if (path) {
-		notify->array->entries[notify->array->num_entries].path = path;
-	}
-
 	notify->array->num_entries++;
 	
 	return notify_save(notify);
@@ -296,8 +292,8 @@ NTSTATUS notify_add(struct notify_context *notify, struct notify_entry *e0,
 {
 	struct notify_entry e = *e0;
 	NTSTATUS status;
+	char *tmp_path = NULL;
 	struct notify_list *listel;
-	char *path = NULL;
 	size_t len;
 
 	status = notify_lock(notify);
@@ -320,11 +316,12 @@ NTSTATUS notify_add(struct notify_context *notify, struct notify_entry *e0,
 	/* cope with /. on the end of the path */
 	len = strlen(e.path);
 	if (len > 1 && e.path[len-1] == '.' && e.path[len-2] == '/') {
-		e.path = talloc_strndup(notify, e.path, len-2);
-		if (e.path == NULL) {
+		tmp_path = talloc_strndup(notify, e.path, len-2);
+		if (tmp_path == NULL) {
 			status = NT_STATUS_NO_MEMORY;
 			goto done;
 		}
+		e.path = tmp_path;
 	}
 
 	listel = talloc_zero(notify, struct notify_list);
@@ -356,14 +353,12 @@ NTSTATUS notify_add(struct notify_context *notify, struct notify_entry *e0,
 	   then we need to install it in the array used for the
 	   intra-samba notify handling */
 	if (e.filter != 0 || e.subdir_filter != 0) {
-		status = notify_add_array(notify, &e, path, private);
+		status = notify_add_array(notify, &e, private);
 	}
 
 done:
 	notify_unlock(notify);
-	if (e.path != e0->path) {
-		talloc_free(e.path);
-	}
+	talloc_free(tmp_path);
 
 	return status;
 }
