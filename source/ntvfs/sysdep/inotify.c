@@ -116,6 +116,10 @@ static BOOL filter_match(struct watch_context *w, struct inotify_event *e)
 				  FILE_NOTIFY_CHANGE_SECURITY))) {
 			return True;
 		}
+		if ((e->mask & IN_MODIFY) && 
+		    (w->filter & FILE_NOTIFY_CHANGE_ATTRIBUTES)) {
+			return True;
+		}
 		if ((w->filter & FILE_NOTIFY_CHANGE_FILE_NAME) == 0) {
 			return False;
 		}
@@ -281,8 +285,7 @@ static const struct {
 } inotify_mapping[] = {
 	{FILE_NOTIFY_CHANGE_FILE_NAME,   IN_CREATE|IN_DELETE|IN_MOVED_FROM|IN_MOVED_TO},
 	{FILE_NOTIFY_CHANGE_DIR_NAME,    IN_CREATE|IN_DELETE|IN_MOVED_FROM|IN_MOVED_TO},
-	{FILE_NOTIFY_CHANGE_ATTRIBUTES,  IN_ATTRIB | IN_MOVED_TO | IN_MOVED_FROM},
-	{FILE_NOTIFY_CHANGE_SIZE,        IN_MODIFY},
+	{FILE_NOTIFY_CHANGE_ATTRIBUTES,  IN_ATTRIB|IN_MOVED_TO|IN_MOVED_FROM|IN_MODIFY},
 	{FILE_NOTIFY_CHANGE_LAST_WRITE,  IN_ATTRIB},
 	{FILE_NOTIFY_CHANGE_LAST_ACCESS, IN_ATTRIB},
 	{FILE_NOTIFY_CHANGE_EA,          IN_ATTRIB},
