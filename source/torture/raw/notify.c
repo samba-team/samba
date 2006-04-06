@@ -288,7 +288,7 @@ static BOOL test_notify_recursive(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	/* ask for a change notify, on file or directory name
 	   changes. Setup both with and without recursion */
 	notify.in.buffer_size = 1000;
-	notify.in.completion_filter = FILE_NOTIFY_CHANGE_NAME;
+	notify.in.completion_filter = FILE_NOTIFY_CHANGE_NAME | FILE_NOTIFY_CHANGE_ATTRIBUTES | FILE_NOTIFY_CHANGE_CREATION;
 	notify.in.file.fnum = fnum;
 
 	notify.in.recursive = True;
@@ -308,7 +308,8 @@ static BOOL test_notify_recursive(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	smbcli_mkdir(cli->tree, BASEDIR "\\subdir-name");
 	smbcli_mkdir(cli->tree, BASEDIR "\\subdir-name\\subname1");
-	smbcli_mkdir(cli->tree, BASEDIR "\\subdir-name\\subname2");
+	smbcli_close(cli->tree, 
+		     smbcli_open(cli->tree, BASEDIR "\\subdir-name\\subname2", O_CREAT, 0));
 	smbcli_rename(cli->tree, BASEDIR "\\subdir-name\\subname1", BASEDIR "\\subdir-name\\subname1-r");
 	smbcli_rename(cli->tree, BASEDIR "\\subdir-name\\subname2", BASEDIR "\\subname2-r");
 	smbcli_rename(cli->tree, BASEDIR "\\subname2-r", BASEDIR "\\subname3-r");
@@ -320,7 +321,7 @@ static BOOL test_notify_recursive(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	smbcli_rmdir(cli->tree, BASEDIR "\\subdir-name\\subname1-r");
 	smbcli_rmdir(cli->tree, BASEDIR "\\subdir-name");
-	smbcli_rmdir(cli->tree, BASEDIR "\\subname3-r");
+	smbcli_unlink(cli->tree, BASEDIR "\\subname3-r");
 
 	notify.in.recursive = False;
 	req2 = smb_raw_changenotify_send(cli->tree, &notify);
@@ -328,7 +329,7 @@ static BOOL test_notify_recursive(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	status = smb_raw_changenotify_recv(req1, mem_ctx, &notify);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
-	CHECK_VAL(notify.out.num_changes, 9);
+	CHECK_VAL(notify.out.num_changes, 11);
 	CHECK_VAL(notify.out.changes[0].action, NOTIFY_ACTION_ADDED);
 	CHECK_WSTR(notify.out.changes[0].name, "subdir-name", STR_UNICODE);
 	CHECK_VAL(notify.out.changes[1].action, NOTIFY_ACTION_ADDED);
@@ -340,15 +341,28 @@ static BOOL test_notify_recursive(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_VAL(notify.out.changes[4].action, NOTIFY_ACTION_NEW_NAME);
 	CHECK_WSTR(notify.out.changes[4].name, "subdir-name\\subname1-r", STR_UNICODE);
 
-	CHECK_VAL(notify.out.changes[5].action, NOTIFY_ACTION_REMOVED);
-	CHECK_WSTR(notify.out.changes[5].name, "subdir-name\\subname2", STR_UNICODE);
-	CHECK_VAL(notify.out.changes[6].action, NOTIFY_ACTION_ADDED);
-	CHECK_WSTR(notify.out.changes[6].name, "subname2-r", STR_UNICODE);
+	/* the remove/add between directories is acceptable in either order */
+	if (notify.out.changes[5].action == NOTIFY_ACTION_ADDED) {
+		CHECK_VAL(notify.out.changes[6].action, NOTIFY_ACTION_REMOVED);
+		CHECK_WSTR(notify.out.changes[6].name, "subdir-name\\subname2", STR_UNICODE);
+		CHECK_VAL(notify.out.changes[5].action, NOTIFY_ACTION_ADDED);
+		CHECK_WSTR(notify.out.changes[5].name, "subname2-r", STR_UNICODE);
+	} else {
+		CHECK_VAL(notify.out.changes[5].action, NOTIFY_ACTION_REMOVED);
+		CHECK_WSTR(notify.out.changes[5].name, "subdir-name\\subname2", STR_UNICODE);
+		CHECK_VAL(notify.out.changes[6].action, NOTIFY_ACTION_ADDED);
+		CHECK_WSTR(notify.out.changes[6].name, "subname2-r", STR_UNICODE);
+	}
 
-	CHECK_VAL(notify.out.changes[7].action, NOTIFY_ACTION_OLD_NAME);
+	CHECK_VAL(notify.out.changes[7].action, NOTIFY_ACTION_MODIFIED);
 	CHECK_WSTR(notify.out.changes[7].name, "subname2-r", STR_UNICODE);
-	CHECK_VAL(notify.out.changes[8].action, NOTIFY_ACTION_NEW_NAME);
-	CHECK_WSTR(notify.out.changes[8].name, "subname3-r", STR_UNICODE);
+
+	CHECK_VAL(notify.out.changes[8].action, NOTIFY_ACTION_OLD_NAME);
+	CHECK_WSTR(notify.out.changes[8].name, "subname2-r", STR_UNICODE);
+	CHECK_VAL(notify.out.changes[9].action, NOTIFY_ACTION_NEW_NAME);
+	CHECK_WSTR(notify.out.changes[9].name, "subname3-r", STR_UNICODE);
+	CHECK_VAL(notify.out.changes[10].action, NOTIFY_ACTION_MODIFIED);
+	CHECK_WSTR(notify.out.changes[10].name, "subname3-r", STR_UNICODE);
 
 	status = smb_raw_changenotify_recv(req2, mem_ctx, &notify);
 	CHECK_STATUS(status, NT_STATUS_OK);
@@ -380,8 +394,13 @@ static BOOL test_notify_mask(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	uint32_t mask;
 	int i;
 	char c = 1;
+	struct timeval tv;
+	NTTIME t;
 
 	printf("TESTING CHANGE NOTIFY COMPLETION FILTERS\n");
+
+	tv = timeval_current_ofs(1000, 0);
+	t = timeval_to_nttime(&tv);
 		
 	/*
 	  get a handle on the directory
@@ -416,21 +435,36 @@ static BOOL test_notify_mask(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 		msleep(10); smb_raw_ntcancel(req); \
 		status = smb_raw_changenotify_recv(req, mem_ctx, &notify); \
 		cleanup \
+		smbcli_close(cli->tree, fnum); \
 		if (NT_STATUS_EQUAL(status, NT_STATUS_CANCELLED)) continue; \
 		CHECK_STATUS(status, NT_STATUS_OK); \
-		if (nchanges != notify.out.num_changes || \
+		/* special case to cope with file rename behaviour */ \
+		if (nchanges == 2 && notify.out.num_changes == 1 && \
+		    notify.out.changes[0].action == NOTIFY_ACTION_MODIFIED && \
+		    ((expected) & FILE_NOTIFY_CHANGE_ATTRIBUTES) && \
+		    Action == NOTIFY_ACTION_OLD_NAME) { \
+			printf("(rename file special handling OK)\n"); \
+		} else if (nchanges != notify.out.num_changes || \
 		    notify.out.changes[0].action != Action || \
 		    strcmp(notify.out.changes[0].name.s, "tname1") != 0) { \
-			printf("nchanges=%d action=%d filter=0x%08x\n", \
+			printf("ERROR: nchanges=%d action=%d filter=0x%08x\n", \
 			       notify.out.num_changes, \
 			       notify.out.changes[0].action, \
 			       notify.in.completion_filter); \
 			ret = False; \
 		} \
 		mask |= (1<<i); \
-		smbcli_close(cli->tree, fnum); \
 	} \
-	CHECK_VAL(mask, expected); \
+	if ((expected) != mask) { \
+		if (((expected) & ~mask) != 0) { \
+			printf("ERROR: trigger on too few bits. mask=0x%08x expected=0x%08x\n", \
+			       mask, expected); \
+			ret = False; \
+		} else { \
+			printf("WARNING: trigger on too many bits. mask=0x%08x expected=0x%08x\n", \
+			       mask, expected); \
+		} \
+	} \
 	} while (0)
 
 	printf("testing mkdir\n");
@@ -506,7 +540,7 @@ static BOOL test_notify_mask(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	printf("testing set file create time\n");
 	NOTIFY_MASK_TEST(
 		fnum2 = create_complex_file(cli, mem_ctx, BASEDIR "\\tname1");,
-		smbcli_fsetatr(cli->tree, fnum2, 0, 1000*1000, 0, 0, 0);,
+		smbcli_fsetatr(cli->tree, fnum2, 0, t, 0, 0, 0);,
 		(smbcli_close(cli->tree, fnum2), smbcli_unlink(cli->tree, BASEDIR "\\tname1"));,
 		NOTIFY_ACTION_MODIFIED,
 		FILE_NOTIFY_CHANGE_CREATION, 1);
@@ -514,7 +548,7 @@ static BOOL test_notify_mask(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	printf("testing set file access time\n");
 	NOTIFY_MASK_TEST(
 		fnum2 = create_complex_file(cli, mem_ctx, BASEDIR "\\tname1");,
-		smbcli_fsetatr(cli->tree, fnum2, 0, 0, 1000*1000, 0, 0);,
+		smbcli_fsetatr(cli->tree, fnum2, 0, 0, t, 0, 0);,
 		(smbcli_close(cli->tree, fnum2), smbcli_unlink(cli->tree, BASEDIR "\\tname1"));,
 		NOTIFY_ACTION_MODIFIED,
 		FILE_NOTIFY_CHANGE_LAST_ACCESS, 1);
@@ -522,7 +556,7 @@ static BOOL test_notify_mask(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	printf("testing set file write time\n");
 	NOTIFY_MASK_TEST(
 		fnum2 = create_complex_file(cli, mem_ctx, BASEDIR "\\tname1");,
-		smbcli_fsetatr(cli->tree, fnum2, 0, 0, 0, 1000*1000, 0);,
+		smbcli_fsetatr(cli->tree, fnum2, 0, 0, 0, t, 0);,
 		(smbcli_close(cli->tree, fnum2), smbcli_unlink(cli->tree, BASEDIR "\\tname1"));,
 		NOTIFY_ACTION_MODIFIED,
 		FILE_NOTIFY_CHANGE_LAST_WRITE, 1);
@@ -530,7 +564,7 @@ static BOOL test_notify_mask(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	printf("testing set file change time\n");
 	NOTIFY_MASK_TEST(
 		fnum2 = create_complex_file(cli, mem_ctx, BASEDIR "\\tname1");,
-		smbcli_fsetatr(cli->tree, fnum2, 0, 0, 0, 0, 1000*1000);,
+		smbcli_fsetatr(cli->tree, fnum2, 0, 0, 0, 0, t);,
 		(smbcli_close(cli->tree, fnum2), smbcli_unlink(cli->tree, BASEDIR "\\tname1"));,
 		NOTIFY_ACTION_MODIFIED,
 		0, 1);
