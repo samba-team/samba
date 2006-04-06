@@ -125,8 +125,10 @@ static void pvfs_notify_callback(void *private, const struct notify_event *ev)
 	}
 	n->current_buffer_size += len;
 
-	/* send what we have */
-	pvfs_notify_send(n, NT_STATUS_OK);
+	/* send what we have, unless its the first part of a rename */
+	if (ev->action != NOTIFY_ACTION_OLD_NAME) {
+		pvfs_notify_send(n, NT_STATUS_OK);
+	}
 }
 
 /*
