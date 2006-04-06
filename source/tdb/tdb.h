@@ -128,7 +128,7 @@ TDB_CONTEXT *tdb_open_ex(const char *name, int hash_size, int tdb_flags,
 			 tdb_hash_func hash_fn);
 
 int tdb_reopen(TDB_CONTEXT *tdb);
-int tdb_reopen_all(void);
+int tdb_reopen_all(int);
 void tdb_logging_function(TDB_CONTEXT *tdb, tdb_log_func);
 enum TDB_ERROR tdb_error(TDB_CONTEXT *tdb);
 const char *tdb_errorstr(TDB_CONTEXT *tdb);

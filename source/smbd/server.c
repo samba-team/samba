@@ -474,7 +474,7 @@ static BOOL open_sockets_smbd(BOOL is_daemon, BOOL interactive, const char *smb_
 
 				set_need_random_reseed();
 				/* tdb needs special fork handling - remove CLEAR_IF_FIRST flags */
-				if (tdb_reopen_all() == -1) {
+				if (tdb_reopen_all(1) == -1) {
 					DEBUG(0,("tdb_reopen_all failed.\n"));
 					smb_panic("tdb_reopen_all failed.");
 				}
