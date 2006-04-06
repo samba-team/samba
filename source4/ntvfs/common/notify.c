@@ -77,7 +77,7 @@ static int notify_destructor(void *p)
 */
 struct notify_context *notify_init(TALLOC_CTX *mem_ctx, uint32_t server, 
 				   struct messaging_context *messaging_ctx,
-				   struct event_context *ev)
+				   struct event_context *ev, int snum)
 {
 	char *path;
 	struct notify_context *notify;
@@ -110,7 +110,7 @@ struct notify_context *notify_init(TALLOC_CTX *mem_ctx, uint32_t server,
 	messaging_register(notify->messaging_ctx, notify, 
 			   MSG_PVFS_NOTIFY, notify_handler);
 
-	notify->sys_notify_ctx = sys_notify_init(-1, notify, ev);
+	notify->sys_notify_ctx = sys_notify_init(snum, notify, ev);
 
 	return notify;
 }
