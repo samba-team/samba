@@ -73,7 +73,9 @@ struct watch_context {
 	int wd;
 	sys_notify_callback_t callback;
 	void *private;
-	uint32_t mask;
+	uint32_t mask; /* the inotify mask */
+	uint32_t filter; /* the windows completion filter */
+	const char *path;
 };
 
 
@@ -89,6 +91,42 @@ static int inotify_destructor(void *ptr)
 
 
 /*
+  see if a particular event from inotify really does match a requested
+  notify event in SMB
+*/
+static BOOL filter_match(struct watch_context *w, struct inotify_event *e)
+{
+	if ((e->mask & w->mask) == 0) {
+		/* this happens because inotify_add_watch() coalesces watches on the same
+		   path, oring their masks together */
+		return False;
+	}
+
+	/* SMB separates the filters for files and directories */
+	if (e->mask & IN_ISDIR) {
+		if ((w->filter & FILE_NOTIFY_CHANGE_DIR_NAME) == 0) {
+			return False;
+		}
+	} else {
+		if ((e->mask & IN_ATTRIB) &&
+		    (w->filter & (FILE_NOTIFY_CHANGE_ATTRIBUTES|
+				  FILE_NOTIFY_CHANGE_LAST_WRITE|
+				  FILE_NOTIFY_CHANGE_LAST_ACCESS|
+				  FILE_NOTIFY_CHANGE_EA|
+				  FILE_NOTIFY_CHANGE_SECURITY))) {
+			return True;
+		}
+		if ((w->filter & FILE_NOTIFY_CHANGE_FILE_NAME) == 0) {
+			return False;
+		}
+	}
+
+	return True;
+}
+	
+
+
+/*
   dispatch one inotify event
   
   the cookies are used to correctly handle renames
@@ -96,13 +134,14 @@ static int inotify_destructor(void *ptr)
 static void inotify_dispatch(struct inotify_private *in, 
 			     struct inotify_event *e, 
 			     uint32_t prev_cookie,
-			     uint32_t next_cookie)
+			     struct inotify_event *e2)
 {
-	struct watch_context *w;
+	struct watch_context *w, *next;
 	struct notify_event ne;
 
 	/* ignore extraneous events, such as unmount and IN_IGNORED events */
-	if ((e->mask & (IN_CREATE|IN_DELETE|IN_MOVED_FROM|IN_MOVED_TO)) == 0) {
+	if ((e->mask & (IN_ATTRIB|IN_MODIFY|IN_CREATE|IN_DELETE|
+			IN_MOVED_FROM|IN_MOVED_TO)) == 0) {
 		return;
 	}
 
@@ -113,7 +152,7 @@ static void inotify_dispatch(struct inotify_private *in,
 	} else if (e->mask & IN_DELETE) {
 		ne.action = NOTIFY_ACTION_REMOVED;
 	} else if (e->mask & IN_MOVED_FROM) {
-		if (e->cookie == next_cookie) {
+		if (e2 != NULL && e2->cookie == e->cookie) {
 			ne.action = NOTIFY_ACTION_OLD_NAME;
 		} else {
 			ne.action = NOTIFY_ACTION_REMOVED;
@@ -130,9 +169,28 @@ static void inotify_dispatch(struct inotify_private *in,
 	ne.path = e->name;
 
 	/* find any watches that have this watch descriptor */
-	for (w=in->watches;w;w=w->next) {
-		/* checking the mask copes with multiple watches */
-		if (w->wd == e->wd && (e->mask & w->mask) != 0) {
+	for (w=in->watches;w;w=next) {
+		next = w->next;
+		if (w->wd == e->wd && filter_match(w, e)) {
+			w->callback(in->ctx, w->private, &ne);
+		}
+	}
+
+	/* SMB expects a file rename to generate three events, two for
+	   the rename and the other for a modify of the
+	   destination. Strange! */
+	if (ne.action != NOTIFY_ACTION_NEW_NAME ||
+	    (e->mask & IN_ISDIR) != 0) {
+		return;
+	}
+
+	ne.action = NOTIFY_ACTION_MODIFIED;
+	e->mask = IN_ATTRIB;
+	
+	for (w=in->watches;w;w=next) {
+		next = w->next;
+		if (w->wd == e->wd && filter_match(w, e) &&
+		    !(w->filter & FILE_NOTIFY_CHANGE_CREATION)) {
 			w->callback(in->ctx, w->private, &ne);
 		}
 	}
@@ -176,7 +234,7 @@ static void inotify_handler(struct event_context *ev, struct fd_event *fde,
 		if (bufsize >= sizeof(*e)) {
 			e2 = (struct inotify_event *)(e->len + sizeof(*e) + (char *)e);
 		}
-		inotify_dispatch(in, e, prev_cookie, e2?e2->cookie:0);
+		inotify_dispatch(in, e, prev_cookie, e2);
 		prev_cookie = e->cookie;
 		e = e2;
 	}
@@ -221,13 +279,14 @@ static const struct {
 	uint32_t notify_mask;
 	uint32_t inotify_mask;
 } inotify_mapping[] = {
-	{FILE_NOTIFY_CHANGE_FILE_NAME,  IN_CREATE|IN_DELETE|IN_MOVED_FROM|IN_MOVED_TO},
-	{FILE_NOTIFY_CHANGE_DIR_NAME,   IN_CREATE|IN_DELETE|IN_MOVED_FROM|IN_MOVED_TO},
-	{FILE_NOTIFY_CHANGE_ATTRIBUTES, IN_ATTRIB},
-	{FILE_NOTIFY_CHANGE_SIZE,       IN_MODIFY},
-	{FILE_NOTIFY_CHANGE_LAST_WRITE, IN_ATTRIB},
-	{FILE_NOTIFY_CHANGE_EA,         IN_ATTRIB},
-	{FILE_NOTIFY_CHANGE_SECURITY,   IN_ATTRIB}
+	{FILE_NOTIFY_CHANGE_FILE_NAME,   IN_CREATE|IN_DELETE|IN_MOVED_FROM|IN_MOVED_TO},
+	{FILE_NOTIFY_CHANGE_DIR_NAME,    IN_CREATE|IN_DELETE|IN_MOVED_FROM|IN_MOVED_TO},
+	{FILE_NOTIFY_CHANGE_ATTRIBUTES,  IN_ATTRIB | IN_MOVED_TO | IN_MOVED_FROM},
+	{FILE_NOTIFY_CHANGE_SIZE,        IN_MODIFY},
+	{FILE_NOTIFY_CHANGE_LAST_WRITE,  IN_ATTRIB},
+	{FILE_NOTIFY_CHANGE_LAST_ACCESS, IN_ATTRIB},
+	{FILE_NOTIFY_CHANGE_EA,          IN_ATTRIB},
+	{FILE_NOTIFY_CHANGE_SECURITY,    IN_ATTRIB}
 };
 
 static uint32_t inotify_map(struct notify_entry *e)
@@ -316,6 +375,13 @@ static NTSTATUS inotify_watch(struct sys_notify_context *ctx, struct notify_entr
 	w->callback = callback;
 	w->private = private;
 	w->mask = mask;
+	w->filter = filter;
+	w->path = talloc_strdup(w, e->path);
+	if (w->path == NULL) {
+		inotify_rm_watch(in->fd, wd);
+		e->filter = filter;
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	(*handle) = w;
 
