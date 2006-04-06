@@ -205,7 +205,7 @@ static BOOL test_notify_dir(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	status = smbcli_unlink(cli->tree, BASEDIR "\\test*.txt");
 	CHECK_STATUS(status, NT_STATUS_OK);
 
-	/* recev the 3rd notify */
+	/* receive the 3rd notify */
 	status = smb_raw_changenotify_recv(req, mem_ctx, &notify);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_VAL(notify.out.num_changes, 1);
@@ -214,6 +214,7 @@ static BOOL test_notify_dir(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	/* and we now see the rest of the unlink calls on both directory handles */
 	notify.in.file.fnum = fnum;
+	msleep(10);
 	req = smb_raw_changenotify_send(cli->tree, &notify);
 	status = smb_raw_changenotify_recv(req, mem_ctx, &notify);
 	CHECK_STATUS(status, NT_STATUS_OK);
@@ -577,6 +578,14 @@ static BOOL test_notify_mask(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 		(smbcli_close(cli->tree, fnum2), smbcli_unlink(cli->tree, BASEDIR "\\tname1"));,
 		NOTIFY_ACTION_MODIFIED,
 		0, 1);
+
+	printf("testing truncate\n");
+	NOTIFY_MASK_TEST(
+		fnum2 = create_complex_file(cli, mem_ctx, BASEDIR "\\tname1");,
+		smbcli_ftruncate(cli->tree, fnum2, 10000);,
+		(smbcli_close(cli->tree, fnum2), smbcli_unlink(cli->tree, BASEDIR "\\tname1"));,
+		NOTIFY_ACTION_MODIFIED,
+		FILE_NOTIFY_CHANGE_SIZE | FILE_NOTIFY_CHANGE_ATTRIBUTES, 1);
 
 done:
 	smb_raw_exit(cli->session);
