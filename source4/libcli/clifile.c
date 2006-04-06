@@ -576,16 +576,13 @@ NTSTATUS smbcli_setatr(struct smbcli_tree *tree, const char *fname, uint16_t mod
 		    time_t t)
 {
 	union smb_setfileinfo parms;
-	NTSTATUS status;
 
 	parms.setattr.level = RAW_SFILEINFO_SETATTR;
 	parms.setattr.in.file.path = fname;
 	parms.setattr.in.attrib = mode;
 	parms.setattr.in.write_time = t;
 	
-	status = smb_raw_setpathinfo(tree, &parms);
-
-	return status;
+	return smb_raw_setpathinfo(tree, &parms);
 }
 
 /****************************************************************************
@@ -596,7 +593,6 @@ NTSTATUS smbcli_fsetatr(struct smbcli_tree *tree, int fnum, uint16_t mode,
 			NTTIME write_time, NTTIME change_time)
 {
 	union smb_setfileinfo parms;
-	NTSTATUS status;
 
 	parms.basic_info.level = RAW_SFILEINFO_BASIC_INFO;
 	parms.basic_info.in.file.fnum = fnum;
@@ -606,9 +602,22 @@ NTSTATUS smbcli_fsetatr(struct smbcli_tree *tree, int fnum, uint16_t mode,
 	parms.basic_info.in.write_time = write_time;
 	parms.basic_info.in.change_time = change_time;
 	
-	status = smb_raw_setfileinfo(tree, &parms);
+	return smb_raw_setfileinfo(tree, &parms);
+}
 
-	return status;
+
+/****************************************************************************
+ truncate a file to a given size
+****************************************************************************/
+NTSTATUS smbcli_ftruncate(struct smbcli_tree *tree, int fnum, uint64_t size)
+{
+	union smb_setfileinfo parms;
+
+	parms.end_of_file_info.level = RAW_SFILEINFO_END_OF_FILE_INFO;
+	parms.end_of_file_info.in.file.fnum = fnum;
+	parms.end_of_file_info.in.size = size;
+	
+	return smb_raw_setfileinfo(tree, &parms);
 }
 
 
