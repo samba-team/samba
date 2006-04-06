@@ -588,6 +588,29 @@ NTSTATUS smbcli_setatr(struct smbcli_tree *tree, const char *fname, uint16_t mod
 	return status;
 }
 
+/****************************************************************************
+ Do a setfileinfo basic_info call.
+****************************************************************************/
+NTSTATUS smbcli_fsetatr(struct smbcli_tree *tree, int fnum, uint16_t mode, 
+			NTTIME create_time, NTTIME access_time, 
+			NTTIME write_time, NTTIME change_time)
+{
+	union smb_setfileinfo parms;
+	NTSTATUS status;
+
+	parms.basic_info.level = RAW_SFILEINFO_BASIC_INFO;
+	parms.basic_info.in.file.fnum = fnum;
+	parms.basic_info.in.attrib = mode;
+	parms.basic_info.in.create_time = create_time;
+	parms.basic_info.in.access_time = access_time;
+	parms.basic_info.in.write_time = write_time;
+	parms.basic_info.in.change_time = change_time;
+	
+	status = smb_raw_setfileinfo(tree, &parms);
+
+	return status;
+}
+
 
 /****************************************************************************
  Check for existence of a dir.
