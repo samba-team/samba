@@ -111,7 +111,7 @@ $SMB_INFO_LIBRARIES
 CEOF
 
 AC_OUTPUT_COMMANDS(
-[$PERL -I${builddir} -I${srcdir} -I${srcdir}/build ${srcdir}/build/smb_build/main.pl],[
+[$PERL -I${builddir} -I${srcdir} -I${srcdir}/build ${srcdir}/build/smb_build/main.pl || exit $?],[
 PERL="$PERL";export PERL;export srcdir; export builddir;
 ])
 AC_OUTPUT
