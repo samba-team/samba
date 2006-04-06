@@ -400,7 +400,7 @@ NTSTATUS pvfs_setfileinfo(struct ntvfs_module_context *ntvfs,
 			if (ret == -1) {
 				return pvfs_map_errno(pvfs, errno);
 			}
-			change_mask |= FILE_NOTIFY_CHANGE_SIZE;
+			change_mask |= FILE_NOTIFY_CHANGE_SIZE | FILE_NOTIFY_CHANGE_ATTRIBUTES;
 		}
 	}
 
@@ -580,6 +580,7 @@ NTSTATUS pvfs_setpathinfo(struct ntvfs_module_context *ntvfs,
 		} else if (truncate(name->full_name, newstats.st.st_size) == -1) {
 			return pvfs_map_errno(pvfs, errno);
 		}
+		change_mask |= FILE_NOTIFY_CHANGE_SIZE | FILE_NOTIFY_CHANGE_ATTRIBUTES;
 	}
 
 	/* possibly change the file timestamps */
@@ -613,10 +614,12 @@ NTSTATUS pvfs_setpathinfo(struct ntvfs_module_context *ntvfs,
 
 	*name = newstats;
 
-	notify_trigger(pvfs->notify_context, 
-		       NOTIFY_ACTION_MODIFIED, 
-		       change_mask,
-		       name->full_name);
+	if (change_mask != 0) {
+		notify_trigger(pvfs->notify_context, 
+			       NOTIFY_ACTION_MODIFIED, 
+			       change_mask,
+			       name->full_name);
+	}
 
 	return pvfs_dosattrib_save(pvfs, name, -1);
 }
