@@ -111,7 +111,7 @@ static int pvfs_state_destructor(void *ptr)
 	struct pvfs_search_state *s, *sn;
 
 	/* 
-	 * make sure we cleanup files and searches before anythingelse
+	 * make sure we cleanup files and searches before anything else
 	 * because there destructors need to acess the pvfs_state struct
 	 */
 	for (f=pvfs->files.list; f; f=fn) {

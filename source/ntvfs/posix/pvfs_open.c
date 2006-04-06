@@ -380,8 +380,8 @@ static NTSTATUS pvfs_open_directory(struct pvfs_state *pvfs,
 		create_action = NTCREATEX_ACTION_CREATED;
 
 		notify_trigger(pvfs->notify_context, 
-			       NOTIFY_ACTION_REMOVED, 
-			       FILE_NOTIFY_CHANGE_FILE_NAME|FILE_NOTIFY_CHANGE_DIR_NAME,
+			       NOTIFY_ACTION_ADDED, 
+			       FILE_NOTIFY_CHANGE_DIR_NAME,
 			       name->full_name);
 	} else {
 		create_action = NTCREATEX_ACTION_EXISTED;
