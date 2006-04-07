@@ -895,6 +895,120 @@ done:
 	return ret;
 }
 
+
+/* 
+   test multiple change notifies at different depths and with/without recursion
+*/
+static BOOL test_notify_tree(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+{
+	BOOL ret = True;
+	struct smb_notify notify;
+	union smb_open io;
+	struct smbcli_request *req;
+	struct {
+		const char *path;
+		BOOL recursive;
+		uint32_t filter;
+		int expected;
+		int fnum;
+	} dirs[] = {
+		{BASEDIR "\\abc",               True, FILE_NOTIFY_CHANGE_NAME, 30 },
+		{BASEDIR "\\zqy",               True, FILE_NOTIFY_CHANGE_NAME, 8 },
+		{BASEDIR "\\atsy",              True, FILE_NOTIFY_CHANGE_NAME, 4 },
+		{BASEDIR "\\abc\\foo",          True,  FILE_NOTIFY_CHANGE_NAME, 2 },
+		{BASEDIR "\\abc\\blah",         True,  FILE_NOTIFY_CHANGE_NAME, 13 },
+		{BASEDIR "\\abc\\blah",         False, FILE_NOTIFY_CHANGE_NAME, 7 },
+		{BASEDIR "\\abc\\blah\\a",      True, FILE_NOTIFY_CHANGE_NAME, 2 },
+		{BASEDIR "\\abc\\blah\\b",      True, FILE_NOTIFY_CHANGE_NAME, 2 },
+		{BASEDIR "\\abc\\blah\\c",      True, FILE_NOTIFY_CHANGE_NAME, 2 },
+		{BASEDIR "\\abc\\fooblah",      True, FILE_NOTIFY_CHANGE_NAME, 2 },
+		{BASEDIR "\\zqy\\xx",           True, FILE_NOTIFY_CHANGE_NAME, 2 },
+		{BASEDIR "\\zqy\\yyy",          True, FILE_NOTIFY_CHANGE_NAME, 2 },
+		{BASEDIR "\\zqy\\..",           True, FILE_NOTIFY_CHANGE_NAME, 40 },
+		{BASEDIR,                       True, FILE_NOTIFY_CHANGE_NAME, 40 },
+		{BASEDIR,                       False,FILE_NOTIFY_CHANGE_NAME, 6 },
+		{BASEDIR "\\atsy",              False,FILE_NOTIFY_CHANGE_NAME, 4 },
+		{BASEDIR "\\abc",               True, FILE_NOTIFY_CHANGE_NAME, 24 },
+		{BASEDIR "\\abc",               False,FILE_NOTIFY_CHANGE_FILE_NAME, 0 },
+		{BASEDIR "\\abc",               True, FILE_NOTIFY_CHANGE_FILE_NAME, 0 },
+		{BASEDIR "\\abc",               True, FILE_NOTIFY_CHANGE_NAME, 24 },
+	};
+	int i;
+	NTSTATUS status;
+
+	printf("TESTING CHANGE NOTIFY FOR DIFFERENT DEPTHS\n");
+
+	io.generic.level = RAW_OPEN_NTCREATEX;
+	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.flags = 0;
+	io.ntcreatex.in.access_mask = SEC_FILE_ALL;
+	io.ntcreatex.in.create_options = NTCREATEX_OPTIONS_DIRECTORY;
+	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
+	io.ntcreatex.in.share_access = NTCREATEX_SHARE_ACCESS_READ | NTCREATEX_SHARE_ACCESS_WRITE;
+	io.ntcreatex.in.alloc_size = 0;
+	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_OPEN_IF;
+	io.ntcreatex.in.impersonation = NTCREATEX_IMPERSONATION_ANONYMOUS;
+	io.ntcreatex.in.security_flags = 0;
+
+	notify.in.buffer_size = 20000;
+
+	/*
+	  setup the directory tree, and the notify buffer on each directory
+	*/
+	for (i=0;i<ARRAY_SIZE(dirs);i++) {
+		io.ntcreatex.in.fname = dirs[i].path;
+		status = smb_raw_open(cli->tree, mem_ctx, &io);
+		CHECK_STATUS(status, NT_STATUS_OK);
+		dirs[i].fnum = io.ntcreatex.out.file.fnum;
+
+		notify.in.completion_filter = dirs[i].filter;
+		notify.in.file.fnum = dirs[i].fnum;
+		notify.in.recursive = dirs[i].recursive;
+		req = smb_raw_changenotify_send(cli->tree, &notify);
+		smb_raw_ntcancel(req);
+		status = smb_raw_changenotify_recv(req, mem_ctx, &notify);
+		CHECK_STATUS(status, NT_STATUS_CANCELLED);
+	}
+
+	/* trigger 2 events in each dir */
+	for (i=0;i<ARRAY_SIZE(dirs);i++) {
+		char *path = talloc_asprintf(mem_ctx, "%s\\test.dir", dirs[i].path);
+		smbcli_mkdir(cli->tree, path);
+		smbcli_rmdir(cli->tree, path);
+		talloc_free(path);
+	}
+
+	/* give a bit of time for all the events to propogate */
+	sleep(2);
+
+	/* count events that have happened in each dir */
+	for (i=0;i<ARRAY_SIZE(dirs);i++) {
+		notify.in.file.fnum = dirs[i].fnum;
+		req = smb_raw_changenotify_send(cli->tree, &notify);
+		smb_raw_ntcancel(req);
+		notify.out.num_changes = 0;
+		status = smb_raw_changenotify_recv(req, mem_ctx, &notify);
+		if (notify.out.num_changes != dirs[i].expected) {
+			printf("ERROR: i=%d expected %d got %d for '%s'\n",
+			       i, dirs[i].expected, notify.out.num_changes,
+			       dirs[i].path);
+			ret = False;
+		}
+	}
+
+	/*
+	  run from the back, closing and deleting
+	*/
+	for (i=ARRAY_SIZE(dirs)-1;i>=0;i--) {
+		smbcli_close(cli->tree, dirs[i].fnum);
+		smbcli_rmdir(cli->tree, dirs[i].path);
+	}
+
+done:
+	smb_raw_exit(cli->session);
+	return ret;
+}
+
 /* 
    basic testing of change notify
 */
@@ -922,6 +1036,7 @@ BOOL torture_raw_notify(struct torture_context *torture)
 	ret &= test_notify_exit(mem_ctx);
 	ret &= test_notify_ulogoff(mem_ctx);
 	ret &= test_notify_double(cli, mem_ctx);
+	ret &= test_notify_tree(cli, mem_ctx);
 
 	smb_raw_exit(cli->session);
 	smbcli_deltree(cli->tree, BASEDIR);
