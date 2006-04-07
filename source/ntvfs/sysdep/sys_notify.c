@@ -37,9 +37,9 @@ static uint32_t num_backends;
 /*
   initialise a system change notify backend
 */
-struct sys_notify_context *sys_notify_context_create(int snum,
-						     TALLOC_CTX *mem_ctx, 
-						     struct event_context *ev)
+_PUBLIC_ struct sys_notify_context *sys_notify_context_create(int snum,
+							      TALLOC_CTX *mem_ctx, 
+							      struct event_context *ev)
 {
 	struct sys_notify_context *ctx;
 	const char *bname;
@@ -93,8 +93,8 @@ struct sys_notify_context *sys_notify_context_create(int snum,
   bits to remove ones handled by this backend. Any remaining bits will
   be handled by the generic notify layer
 */
-NTSTATUS sys_notify_watch(struct sys_notify_context *ctx, struct notify_entry *e,
-			  sys_notify_callback_t callback, void *private, void **handle)
+_PUBLIC_ NTSTATUS sys_notify_watch(struct sys_notify_context *ctx, struct notify_entry *e,
+				   sys_notify_callback_t callback, void *private, void **handle)
 {
 	if (!ctx->notify_watch) {
 		return NT_STATUS_INVALID_SYSTEM_SERVICE;
@@ -105,7 +105,7 @@ NTSTATUS sys_notify_watch(struct sys_notify_context *ctx, struct notify_entry *e
 /*
   register a notify backend
 */
-NTSTATUS sys_notify_register(struct sys_notify_backend *backend)
+_PUBLIC_ NTSTATUS sys_notify_register(struct sys_notify_backend *backend)
 {
 	struct sys_notify_backend *b;
 	b = talloc_realloc(talloc_autofree_context(), backends, 
@@ -117,7 +117,7 @@ NTSTATUS sys_notify_register(struct sys_notify_backend *backend)
 	return NT_STATUS_OK;
 }
 
-NTSTATUS sys_notify_init(void)
+_PUBLIC_ NTSTATUS sys_notify_init(void)
 {
 	static BOOL initialized = False;
 
