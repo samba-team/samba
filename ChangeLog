@@ -1,4 +1,20 @@
+2006-04-08  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kdc/524.c (_kdc_do_524): Handle memory allocation failure
+	Coverity, NetBSD CID#2752
+	
 2006-04-07  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/keytab_file.c (krb5_kt_ret_principal): plug a memory
+	leak Coverity NetBSD CID#1890
+
+	* kdc/hprop.c (main): make sure type doesn't need to be set
+
+	* kdc/mit_dump.c (mit_prop_dump): close fd when done processing
+	Coverity NetBSD CID#1955
+
+	* kdc/string2key.c (tokey): catch warnings, free memory after use.
+	Based on Coverity NetBSD CID#1894
 
 	* kdc/hprop.c (main): remove dead code.  Coverity NetBSD CID#633
 	

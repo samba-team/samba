@@ -1,3 +1,8 @@
+2006-04-08  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* hash.c (hashtabnew): check for NULL before setting structure.
+	Coverity, NetBSD CID#4
+	
 2006-03-31  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* Makefile.am: gen_files_rfc2459 += asn1_ExtKeyUsage.x
