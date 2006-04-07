@@ -83,6 +83,10 @@ struct notify_context *notify_init(TALLOC_CTX *mem_ctx, uint32_t server,
 	char *path;
 	struct notify_context *notify;
 
+	if (lp_parm_bool(snum, "notify", "enable", True) != True) {
+		return NULL;
+	}
+
 	notify = talloc(mem_ctx, struct notify_context);
 	if (notify == NULL) {
 		return NULL;
@@ -339,6 +343,11 @@ NTSTATUS notify_add(struct notify_context *notify, struct notify_entry *e0,
 	size_t len;
 	int depth;
 
+	/* see if change notify is enabled at all */
+	if (notify == NULL) {
+		return NT_STATUS_NOT_IMPLEMENTED;
+	}
+
 	status = notify_lock(notify);
 	NT_STATUS_NOT_OK_RETURN(status);
 
@@ -409,6 +418,11 @@ NTSTATUS notify_remove(struct notify_context *notify, void *private)
 	struct notify_list *listel;
 	int i, depth;
 	struct notify_depth *d;
+
+	/* see if change notify is enabled at all */
+	if (notify == NULL) {
+		return NT_STATUS_NOT_IMPLEMENTED;
+	}
 
 	for (listel=notify->list;listel;listel=listel->next) {
 		if (listel->private == private) {
@@ -551,6 +565,11 @@ void notify_trigger(struct notify_context *notify,
 	NTSTATUS status;
 	int depth;
 	const char *p, *next_p;
+
+	/* see if change notify is enabled at all */
+	if (notify == NULL) {
+		return;
+	}
 
 	status = notify_load(notify);
 	if (!NT_STATUS_IS_OK(status)) {
