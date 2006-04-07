@@ -762,7 +762,7 @@ main (int argc, char **argv)
 	    setenv("KRB5CCNAME", s, 1);
 	    if (get_v4_tgt) {
 		int fd;
-		if (asprintf(&krb4_cc_name, "%s_XXXXXXXXXXX", TKT_ROOT) < 0)
+		if (asprintf(&krb4_cc_name, "%s_XXXXXX", TKT_ROOT) < 0)
 		    krb5_errx(context, 1, "out of memory");
 		if((fd = mkstemp(krb4_cc_name)) >= 0) {
 		    close(fd);
