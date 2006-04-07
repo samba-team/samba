@@ -1,20 +1,22 @@
 ################################################
-# Start MODULE ntvfs_sys_notify
-[MODULE::ntvfs_sys_notify]
-SUBSYSTEM = ntvfs
-OBJ_FILES = \
-		sys_notify.o
-# End MODULE ntvfs_sys_notify
-################################################
-
-
-################################################
-# Start MODULE ntvfs_inotify
-[MODULE::ntvfs_inotify]
-SUBSYSTEM = ntvfs
-INIT_FUNCTION = ntvfs_inotify_init
+# Start MODULE sys_notify_inotify
+[MODULE::sys_notify_inotify]
+SUBSYSTEM = sys_notify
+INIT_FUNCTION = sys_notify_inotify_init
 OBJ_FILES = \
 		inotify.o
-# End MODULE ntvfs_inotify
+# End MODULE sys_notify_inotify
 ################################################
 
+################################################
+# Start SUBSYSTEM sys_notify
+[LIBRARY::sys_notify]
+PUBLIC_HEADERS = sys_notify.h
+VERSION = 0.0.1
+SO_VERSION = 0
+DESCRIPTION = File System Notify Abstraction Layer
+OBJ_FILES = \
+		sys_notify.o
+REQUIRED_SUBSYSTEMS = 
+# End SUBSYSTEM sys_notify
+################################################

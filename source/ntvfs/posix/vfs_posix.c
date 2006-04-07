@@ -332,11 +332,19 @@ NTSTATUS ntvfs_posix_init(void)
 	ops.name = "default";
 	ret = ntvfs_register(&ops);
 
+	if (!NT_STATUS_IS_OK(ret)) {
+		DEBUG(0,("Failed to register POSIX backend as '%s'!\n", ops.name));
+	}
+
 	ops.name = "posix";
 	ret = ntvfs_register(&ops);
 
 	if (!NT_STATUS_IS_OK(ret)) {
-		DEBUG(0,("Failed to register POSIX backend!\n"));
+		DEBUG(0,("Failed to register POSIX backend as '%s'!\n", ops.name));
+	}
+
+	if (NT_STATUS_IS_OK(ret)) {
+		ret = ntvfs_common_init();
 	}
 
 	return ret;

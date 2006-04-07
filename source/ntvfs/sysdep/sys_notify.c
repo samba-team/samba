@@ -28,6 +28,7 @@
 #include "ntvfs/sysdep/sys_notify.h"
 #include "lib/events/events.h"
 #include "dlinklist.h"
+#include "build.h"
 
 /* list of registered backends */
 static struct sys_notify_backend *backends;
@@ -36,9 +37,9 @@ static uint32_t num_backends;
 /*
   initialise a system change notify backend
 */
-struct sys_notify_context *sys_notify_init(int snum,
-					   TALLOC_CTX *mem_ctx, 
-					   struct event_context *ev)
+struct sys_notify_context *sys_notify_context_create(int snum,
+						     TALLOC_CTX *mem_ctx, 
+						     struct event_context *ev)
 {
 	struct sys_notify_context *ctx;
 	const char *bname;
@@ -113,5 +114,25 @@ NTSTATUS sys_notify_register(struct sys_notify_backend *backend)
 	backends = b;
 	backends[num_backends] = *backend;
 	num_backends++;
+	return NT_STATUS_OK;
+}
+
+NTSTATUS sys_notify_init(void)
+{
+	static BOOL initialized = False;
+
+	init_module_fn static_init[] = STATIC_sys_notify_MODULES;
+	init_module_fn *shared_init;
+
+	if (initialized) return NT_STATUS_OK;
+	initialized = True;
+
+	shared_init = load_samba_modules(NULL, "sys_notify");
+
+	run_init_functions(static_init);
+	run_init_functions(shared_init);
+
+	talloc_free(shared_init);
+	
 	return NT_STATUS_OK;
 }

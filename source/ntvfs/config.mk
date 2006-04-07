@@ -48,10 +48,9 @@ OBJ_FILES = \
 		ipc/vfs_ipc.o \
 		ipc/ipc_rap.o \
 		ipc/rap_server.o
-REQUIRED_SUBSYSTEMS = DCERPC_COMMON dcerpc_server
+REQUIRED_SUBSYSTEMS = dcerpc_server
 # End MODULE ntvfs_ipc
 ################################################
-
 
 
 ################################################
@@ -78,7 +77,7 @@ OBJ_FILES = \
 		ntvfs_generic.o \
 		ntvfs_interface.o \
 		ntvfs_util.o
-REQUIRED_SUBSYSTEMS = NDR_OPENDB NDR_NOTIFY
+REQUIRED_SUBSYSTEMS =
 #
 # End SUBSYSTEM NTVFS
 ################################################

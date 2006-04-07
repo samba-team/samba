@@ -405,7 +405,7 @@ static struct sys_notify_backend inotify = {
 /*
   initialialise the inotify module
  */
-NTSTATUS ntvfs_inotify_init(void)
+NTSTATUS sys_notify_inotify_init(void)
 {
 	/* register ourselves as a system inotify module */
 	return sys_notify_register(&inotify);

@@ -49,7 +49,7 @@ struct sidmap_context {
 /*
   open a sidmap context - use talloc_free to close
 */
-struct sidmap_context *sidmap_open(TALLOC_CTX *mem_ctx)
+_PUBLIC_ struct sidmap_context *sidmap_open(TALLOC_CTX *mem_ctx)
 {
 	struct sidmap_context *sidmap;
 	sidmap = talloc(mem_ctx, struct sidmap_context);
@@ -124,8 +124,8 @@ static NTSTATUS sidmap_primary_domain_sid(struct sidmap_context *sidmap,
 /*
   map a sid to a unix uid
 */
-NTSTATUS sidmap_sid_to_unixuid(struct sidmap_context *sidmap, 
-			       struct dom_sid *sid, uid_t *uid)
+_PUBLIC_ NTSTATUS sidmap_sid_to_unixuid(struct sidmap_context *sidmap, 
+					struct dom_sid *sid, uid_t *uid)
 {
 	const char *attrs[] = { "sAMAccountName", "unixID", 
 				"unixName", "sAMAccountType", NULL };
@@ -220,8 +220,8 @@ allocated_sid:
 /*
   map a sid to a unix gid
 */
-NTSTATUS sidmap_sid_to_unixgid(struct sidmap_context *sidmap,
-			       struct dom_sid *sid, gid_t *gid)
+_PUBLIC_ NTSTATUS sidmap_sid_to_unixgid(struct sidmap_context *sidmap,
+					struct dom_sid *sid, gid_t *gid)
 {
 	const char *attrs[] = { "sAMAccountName", "unixID", 
 				"unixName", "sAMAccountType", NULL };
@@ -313,9 +313,9 @@ allocated_sid:
   map a unix uid to a dom_sid
   the returned sid is allocated in the supplied mem_ctx
 */
-NTSTATUS sidmap_uid_to_sid(struct sidmap_context *sidmap,
-			   TALLOC_CTX *mem_ctx,
-			   uid_t uid, struct dom_sid **sid)
+_PUBLIC_ NTSTATUS sidmap_uid_to_sid(struct sidmap_context *sidmap,
+				    TALLOC_CTX *mem_ctx,
+				    uid_t uid, struct dom_sid **sid)
 {
 	const char *attrs[] = { "sAMAccountName", "objectSid", "sAMAccountType", NULL };
 	int ret, i;
@@ -411,9 +411,9 @@ allocate_sid:
   map a unix gid to a dom_sid
   the returned sid is allocated in the supplied mem_ctx
 */
-NTSTATUS sidmap_gid_to_sid(struct sidmap_context *sidmap,
-			   TALLOC_CTX *mem_ctx,
-			   gid_t gid, struct dom_sid **sid)
+_PUBLIC_ NTSTATUS sidmap_gid_to_sid(struct sidmap_context *sidmap,
+				    TALLOC_CTX *mem_ctx,
+				    gid_t gid, struct dom_sid **sid)
 {
 	const char *attrs[] = { "sAMAccountName", "objectSid", "sAMAccountType", NULL };
 	int ret, i;
@@ -508,11 +508,11 @@ allocate_sid:
   check if a sid is in the range of auto-allocated SIDs from our primary domain,
   and if it is, then return the name and atype
 */
-NTSTATUS sidmap_allocated_sid_lookup(struct sidmap_context *sidmap, 
-				     TALLOC_CTX *mem_ctx, 
-				     const struct dom_sid *sid,
-				     const char **name,
-				     uint32_t *atype)
+_PUBLIC_ NTSTATUS sidmap_allocated_sid_lookup(struct sidmap_context *sidmap, 
+					      TALLOC_CTX *mem_ctx, 
+					      const struct dom_sid *sid,
+					      const char **name,
+					      uint32_t *atype)
 {
 	NTSTATUS status;
 	struct dom_sid *domain_sid;

@@ -5,5 +5,6 @@ INIT_FUNCTION = ntvfs_unixuid_init
 SUBSYSTEM = ntvfs
 OBJ_FILES = \
 		vfs_unixuid.o
+REQUIRED_SUBSYSTEMS = SAMDB
 # End MODULE ntvfs_unixuid
 ################################################

@@ -115,7 +115,7 @@ struct notify_context *notify_init(TALLOC_CTX *mem_ctx, uint32_t server,
 	messaging_register(notify->messaging_ctx, notify, 
 			   MSG_PVFS_NOTIFY, notify_handler);
 
-	notify->sys_notify_ctx = sys_notify_init(snum, notify, ev);
+	notify->sys_notify_ctx = sys_notify_context_create(snum, notify, ev);
 
 	return notify;
 }
