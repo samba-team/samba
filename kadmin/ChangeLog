@@ -1,3 +1,8 @@
+2006-04-07  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* random_password.c (generate_password): memory leak in error
+	condition case From Coverity NetBSD CID#1887
+	
 2006-02-19  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* cpw.c (cpw_entry): make sure ret have a defined value
