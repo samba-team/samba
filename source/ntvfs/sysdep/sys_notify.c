@@ -42,7 +42,6 @@ struct sys_notify_context *sys_notify_init(int snum,
 {
 	struct sys_notify_context *ctx;
 	const char *bname;
-	struct sys_notify_backend *b;
 	int i;
 
 	if (num_backends == 0) {

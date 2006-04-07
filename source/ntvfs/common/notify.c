@@ -51,6 +51,7 @@ struct notify_list {
 	void *private;
 	void (*callback)(void *, const struct notify_event *);
 	void *sys_notify_handle;
+	int depth;
 };
 
 #define NOTIFY_KEY "notify array"
@@ -192,17 +193,19 @@ static NTSTATUS notify_save(struct notify_context *notify)
 	int ret;
 	TALLOC_CTX *tmp_ctx;
 
-	if (notify->array->num_entries == 0) {
+	/* if possible, remove some depth arrays */
+	while (notify->array->num_depths > 0 &&
+	       notify->array->depth[notify->array->num_depths-1].num_entries == 0) {
+		notify->array->num_depths--;
+	}
+
+	/* we might just be able to delete the record */
+	if (notify->array->num_depths == 0) {
 		ret = tdb_delete_bystring(notify->w->tdb, NOTIFY_KEY);
 		if (ret != 0) {
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;
 		}
 		return NT_STATUS_OK;
-	}
-
-	if (notify->array->num_entries > 1) {
-		qsort(notify->array->entries, notify->array->num_entries, 
-		      sizeof(struct notify_entry), notify_compare);
 	}
 
 	tmp_ctx = talloc_new(notify);
@@ -271,14 +274,53 @@ static void sys_notify_callback(struct sys_notify_context *ctx,
   add an entry to the notify array
 */
 static NTSTATUS notify_add_array(struct notify_context *notify, struct notify_entry *e,
-				 void *private)
+				 void *private, int depth)
 {
-	notify->array->entries[notify->array->num_entries] = *e;
-	notify->array->entries[notify->array->num_entries].private = private;
-	notify->array->entries[notify->array->num_entries].server = notify->server;
-	
-	notify->array->num_entries++;
-	
+	int i;
+	struct notify_depth *d;
+	struct notify_entry *ee;
+
+	/* possibly expand the depths array */
+	if (depth >= notify->array->num_depths) {
+		d = talloc_realloc(notify->array, notify->array->depth, 
+				   struct notify_depth, depth+1);
+		NT_STATUS_HAVE_NO_MEMORY(d);
+		for (i=notify->array->num_depths;i<=depth;i++) {
+			ZERO_STRUCT(d[i]);
+		}
+		notify->array->depth = d;
+		notify->array->num_depths = depth+1;
+	}
+	d = &notify->array->depth[depth];
+
+	/* expand the entries array */
+	ee = talloc_realloc(notify->array->depth, d->entries, struct notify_entry,
+			    d->num_entries+1);
+	NT_STATUS_HAVE_NO_MEMORY(ee);
+	d->entries = ee;
+
+	d->entries[d->num_entries] = *e;
+	d->entries[d->num_entries].private = private;
+	d->entries[d->num_entries].server = notify->server;
+	d->entries[d->num_entries].path_len = strlen(e->path);
+	d->num_entries++;
+
+	d->max_mask |= e->filter;
+	d->max_mask_subdir |= e->subdir_filter;
+
+	if (d->num_entries > 1) {
+		qsort(d->entries, d->num_entries, sizeof(d->entries[0]), notify_compare);
+	}
+
+	/* recalculate the maximum masks */
+	d->max_mask = 0;
+	d->max_mask_subdir = 0;
+
+	for (i=0;i<d->num_entries;i++) {
+		d->max_mask |= d->entries[i].filter;
+		d->max_mask_subdir |= d->entries[i].subdir_filter;
+	}
+
 	return notify_save(notify);
 }
 
@@ -295,21 +337,13 @@ NTSTATUS notify_add(struct notify_context *notify, struct notify_entry *e0,
 	char *tmp_path = NULL;
 	struct notify_list *listel;
 	size_t len;
+	int depth;
 
 	status = notify_lock(notify);
 	NT_STATUS_NOT_OK_RETURN(status);
 
 	status = notify_load(notify);
 	if (!NT_STATUS_IS_OK(status)) {
-		goto done;
-	}
-
-	notify->array->entries = talloc_realloc(notify->array, notify->array->entries, 
-						struct notify_entry,
-						notify->array->num_entries+1);
-
-	if (notify->array->entries == NULL) {
-		status = NT_STATUS_NO_MEMORY;
 		goto done;
 	}
 
@@ -324,6 +358,8 @@ NTSTATUS notify_add(struct notify_context *notify, struct notify_entry *e0,
 		e.path = tmp_path;
 	}
 
+	depth = count_chars(e.path, '/');
+
 	listel = talloc_zero(notify, struct notify_list);
 	if (listel == NULL) {
 		status = NT_STATUS_NO_MEMORY;
@@ -332,6 +368,7 @@ NTSTATUS notify_add(struct notify_context *notify, struct notify_entry *e0,
 
 	listel->private = private;
 	listel->callback = callback;
+	listel->depth = depth;
 	DLIST_ADD(notify->list, listel);
 
 	/* ignore failures from sys_notify */
@@ -353,7 +390,7 @@ NTSTATUS notify_add(struct notify_context *notify, struct notify_entry *e0,
 	   then we need to install it in the array used for the
 	   intra-samba notify handling */
 	if (e.filter != 0 || e.subdir_filter != 0) {
-		status = notify_add_array(notify, &e, private);
+		status = notify_add_array(notify, &e, private, depth);
 	}
 
 done:
@@ -370,7 +407,8 @@ NTSTATUS notify_remove(struct notify_context *notify, void *private)
 {
 	NTSTATUS status;
 	struct notify_list *listel;
-	int i;
+	int i, depth;
+	struct notify_depth *d;
 
 	for (listel=notify->list;listel;listel=listel->next) {
 		if (listel->private == private) {
@@ -381,6 +419,8 @@ NTSTATUS notify_remove(struct notify_context *notify, void *private)
 	if (listel == NULL) {
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
+
+	depth = listel->depth;
 
 	talloc_free(listel);
 
@@ -393,22 +433,25 @@ NTSTATUS notify_remove(struct notify_context *notify, void *private)
 		return status;
 	}
 
-	for (i=0;i<notify->array->num_entries;i++) {
-		if (notify->server == notify->array->entries[i].server && 
-		    private == notify->array->entries[i].private) {
+	/* we only have to search at the depth of this element */
+	d = &notify->array->depth[depth];
+
+	for (i=0;i<d->num_entries;i++) {
+		if (private == d->entries[i].private &&
+		    notify->server == d->entries[i].server) {
 			break;
 		}
 	}
-	if (i == notify->array->num_entries) {
+	if (i == d->num_entries) {
 		notify_unlock(notify);
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 
-	if (i < notify->array->num_entries-1) {
-		memmove(&notify->array->entries[i], &notify->array->entries[i+1], 
-			sizeof(notify->array->entries[i])*(notify->array->num_entries-(i+1)));
+	if (i < d->num_entries-1) {
+		memmove(&d->entries[i], &d->entries[i+1], 
+			sizeof(d->entries[i])*(d->num_entries-(i+1)));
 	}
-	notify->array->num_entries--;
+	d->num_entries--;
 
 	status = notify_save(notify);
 
@@ -423,7 +466,7 @@ NTSTATUS notify_remove(struct notify_context *notify, void *private)
 static NTSTATUS notify_remove_all(struct notify_context *notify)
 {
 	NTSTATUS status;
-	int i;
+	int i, depth, del_count=0;
 
 	if (notify->list == NULL) {
 		return NT_STATUS_OK;
@@ -438,19 +481,26 @@ static NTSTATUS notify_remove_all(struct notify_context *notify)
 		return status;
 	}
 
-	for (i=0;i<notify->array->num_entries;i++) {
-		if (notify->server == notify->array->entries[i].server) {
-			if (i < notify->array->num_entries-1) {
-				memmove(&notify->array->entries[i], &notify->array->entries[i+1], 
-					sizeof(notify->array->entries[i])*(notify->array->num_entries-(i+1)));
+	/* we have to search for all entries across all depths, looking for matches
+	   for our server id */
+	for (depth=0;depth<notify->array->num_depths;depth++) {
+		struct notify_depth *d = &notify->array->depth[depth];
+		for (i=0;i<d->num_entries;i++) {
+			if (notify->server == d->entries[i].server) {
+				if (i < d->num_entries-1) {
+					memmove(&d->entries[i], &d->entries[i+1], 
+						sizeof(d->entries[i])*(d->num_entries-(i+1)));
+				}
+				i--;
+				d->num_entries--;
+				del_count++;
 			}
-			i--;
-			notify->array->num_entries--;
 		}
 	}
 
-
-	status = notify_save(notify);
+	if (del_count > 0) {
+		status = notify_save(notify);
+	}
 
 	notify_unlock(notify);
 
@@ -487,61 +537,95 @@ static void notify_send(struct notify_context *notify, struct notify_entry *e,
 	talloc_free(tmp_ctx);
 }
 
-/*
-  see if a notify event matches
-*/
-static BOOL notify_match(struct notify_context *notify, struct notify_entry *e,
-			 const char *path, uint32_t filter)
-{
-	size_t len;
-	BOOL subdir;
-
-	if (!(filter & e->filter) && !(filter & e->subdir_filter)) {
-		return False;
-	}
-
-	len = strlen(e->path);
-
-	if (strncmp(path, e->path, len) != 0) {
-		return False;
-	}
-
-	if (path[len] != '/') {
-		return False;
-	}
-
-	/* the filter and subdir_filter are handled separately, allowing a backend
-	   to flexibly choose what it can handle */
-	subdir = (strchr(&path[len+1], '/') != NULL);
-
-	if (subdir) {
-		return (filter & e->subdir_filter) != 0;
-	}
-
-	return (filter & e->filter) != 0;
-}
-
 
 /*
   trigger a notify message for anyone waiting on a matching event
+
+  This function is called a lot, and needs to be very fast. The unusual data structure
+  and traversal is designed to be fast in the average case, even for large numbers of
+  notifies
 */
 void notify_trigger(struct notify_context *notify,
 		    uint32_t action, uint32_t filter, const char *path)
 {
 	NTSTATUS status;
-	int i;
+	int depth;
+	const char *p, *next_p;
 
 	status = notify_load(notify);
 	if (!NT_STATUS_IS_OK(status)) {
 		return;
 	}
 
-	/* TODO: this needs to be changed to a log(n) search */
-	for (i=0;i<notify->array->num_entries;i++) {
-		if (notify_match(notify, &notify->array->entries[i], path, filter)) {
-			notify_send(notify, &notify->array->entries[i], 
-				    path + strlen(notify->array->entries[i].path) + 1, 
-				    action);
+	/* loop along the given path, working with each directory depth separately */
+	for (depth=0,p=path;
+	     p && depth < notify->array->num_depths;
+	     p=next_p,depth++) {
+		int p_len = p - path;
+		int min_i, max_i, i;
+		struct notify_depth *d = &notify->array->depth[depth];
+		next_p = strchr(p+1, '/');
+
+		/* see if there are any entries at this depth */
+		if (d->num_entries == 0) continue;
+		
+		/* try to skip based on the maximum mask. If next_p is
+		 NULL then we know it will be a 'this directory'
+		 match, otherwise it must be a subdir match */
+		if (next_p != NULL) {
+			if (0 == (filter & d->max_mask_subdir)) {
+				continue;
+			}
+		} else {
+			if (0 == (filter & d->max_mask)) {
+				continue;
+			}
+		}
+
+		/* we know there is an entry here worth looking
+		 for. Use a bisection search to find the first entry
+		 with a matching path */
+		min_i = 0;
+		max_i = d->num_entries-1;
+
+		while (min_i < max_i) {
+			struct notify_entry *e;
+			i = (min_i+max_i)/2;
+			e = &d->entries[i];
+			int cmp = strncmp(path, e->path, p_len);
+			if (cmp == 0) {
+				if (p_len == e->path_len) {
+					max_i = i;
+				} else {
+					max_i = i-1;
+				}
+			} else if (cmp < 0) {
+				max_i = i-1;
+			} else {
+				min_i = i+1;
+			}
+		}
+
+		if (min_i != max_i) {
+			/* none match */
+			continue;
+		}
+
+		/* we now know that the entries start at min_i */
+		for (i=min_i;i<d->num_entries;i++) {
+			struct notify_entry *e = &d->entries[i];
+			if (p_len != e->path_len ||
+			    strncmp(path, e->path, p_len) != 0) break;
+			if (next_p != NULL) {
+				if (0 == (filter & e->subdir_filter)) {
+					continue;
+				}
+			} else {
+				if (0 == (filter & e->filter)) {
+					continue;
+				}
+			}
+			notify_send(notify, e, path + e->path_len + 1, action);
 		}
 	}
 }
