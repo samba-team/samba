@@ -717,7 +717,7 @@ main(int argc, char **argv)
     HDB *db = NULL;
     int optidx = 0;
 
-    int type = 0;
+    int type;
 
     setprogname(argv[0]);
 
@@ -758,8 +758,6 @@ main(int argc, char **argv)
 		  "only one of `--encrypt' and `--decrypt' is meaningful");
 
     if(source_type != NULL) {
-	if(type != 0)
-	    krb5_errx(context, 1, "more than one database type specified");
 	type = parse_source_type(source_type);
 	if(type == 0)
 	    krb5_errx(context, 1, "unknown source type `%s'", source_type);
