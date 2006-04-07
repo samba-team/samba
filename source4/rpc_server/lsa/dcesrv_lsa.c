@@ -30,10 +30,8 @@
 #include "libcli/security/security.h"
 #include "libcli/auth/libcli_auth.h"
 #include "librpc/gen_ndr/ndr_security.h"
-#include "ntvfs/ntvfs.h"
 #include "passdb/secrets.h"
 #include "db_wrap.h"
-#include "ntvfs/common/proto.h"
 
 /*
   this type allows us to distinguish handle types
