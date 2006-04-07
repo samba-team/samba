@@ -281,8 +281,6 @@ const static struct torture_ui_ops std_ui_ops = {
 	setbuffer(stdout, NULL, 0);
 #endif
 
-	torture_init();
-
 	/* we are never interested in SIGPIPE */
 	BlockSignals(True,SIGPIPE);
 
@@ -314,6 +312,7 @@ const static struct torture_ui_ops std_ui_ops = {
 		default:
 			d_printf("Invalid option %s: %s\n", 
 				 poptBadOption(pc, 0), poptStrerror(opt));
+			torture_init();
 			usage(pc);
 			exit(1);
 		}
@@ -329,6 +328,7 @@ const static struct torture_ui_ops std_ui_ops = {
 		alarm(max_runtime);
 	}
 
+	torture_init();
 	ldb_global_init();
 
 	if (torture_seed == 0) {
