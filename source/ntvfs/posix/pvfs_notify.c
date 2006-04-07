@@ -109,11 +109,13 @@ static void pvfs_notify_callback(void *private, const struct notify_event *ev)
 {
 	struct pvfs_notify_buffer *n = talloc_get_type(private, struct pvfs_notify_buffer);
 	size_t len;
+	char *new_path;
 
 	n->changes = talloc_realloc(n, n->changes, struct notify_changes, n->num_changes+1);
 	n->changes[n->num_changes].action = ev->action;
-	n->changes[n->num_changes].name.s = talloc_strdup(n->changes, ev->path);
-	string_replace(n->changes[n->num_changes].name.s, '/', '\\');
+	new_path = talloc_strdup(n->changes, ev->path);
+	string_replace(new_path, '/', '\\');
+	n->changes[n->num_changes].name.s = new_path;
 	n->num_changes++;
 
 	/*
