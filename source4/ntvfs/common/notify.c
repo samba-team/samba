@@ -609,9 +609,10 @@ void notify_trigger(struct notify_context *notify,
 
 		while (min_i < max_i) {
 			struct notify_entry *e;
+			int cmp;
 			i = (min_i+max_i)/2;
 			e = &d->entries[i];
-			int cmp = strncmp(path, e->path, p_len);
+			cmp = strncmp(path, e->path, p_len);
 			if (cmp == 0) {
 				if (p_len == e->path_len) {
 					max_i = i;
