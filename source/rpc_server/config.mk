@@ -97,6 +97,7 @@ OBJ_FILES = \
 		unixinfo/dcesrv_unixinfo.o
 REQUIRED_SUBSYSTEMS = \
 		DCERPC_COMMON \
+		SAMDB \
 		NDR_UNIXINFO
 # End MODULE dcerpc_unixinfo
 ################################################
