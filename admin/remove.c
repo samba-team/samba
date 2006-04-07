@@ -69,11 +69,14 @@ kt_remove(struct remove_options *opt, int argc, char **argv)
 	krb5_warnx(context, 
 		   "You must give at least one of "
 		   "principal, enctype or kvno.");
-	return 1;
+	ret = EINVAL;
+	goto out;
     }
 
-    if((keytab = ktutil_open_keytab()) == NULL)
-	return 1;
+    if((keytab = ktutil_open_keytab()) == NULL) {
+	ret = 1;
+	goto out;
+    }
 
     entry.principal = principal;
     entry.keyblock.keytype = enctype;
@@ -82,6 +85,7 @@ kt_remove(struct remove_options *opt, int argc, char **argv)
     krb5_kt_close(context, keytab);
     if(ret)
 	krb5_warn(context, ret, "remove");
+ out:
     if(principal)
 	krb5_free_principal(context, principal);
     return ret != 0;
