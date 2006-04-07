@@ -564,6 +564,10 @@ _PUBLIC_ NTSTATUS ndr_pull_charset(struct ndr_pull *ndr, int ndr_flags, const ch
 		return NT_STATUS_OK;
 	}
 
+	if (NDR_BE(ndr) && chset == CH_UTF16) {
+		chset = CH_UTF16BE;
+	}
+
 	NDR_PULL_NEED_BYTES(ndr, length*byte_mul);
 
 	ret = convert_string_talloc(ndr->current_mem_ctx,
@@ -583,6 +587,10 @@ _PUBLIC_ NTSTATUS ndr_pull_charset(struct ndr_pull *ndr, int ndr_flags, const ch
 _PUBLIC_ NTSTATUS ndr_push_charset(struct ndr_push *ndr, int ndr_flags, const char *var, uint32_t length, uint8_t byte_mul, int chset)
 {
 	ssize_t ret, required;
+
+	if (NDR_BE(ndr) && chset == CH_UTF16) {
+		chset = CH_UTF16BE;
+	}
 
 	required = byte_mul * length;
 	
