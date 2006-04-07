@@ -49,7 +49,7 @@ rename_entry(void *opt, int argc, char **argv)
     }
     ret = krb5_parse_name(context, argv[1], &princ2);
     if(ret){
-	krb5_free_principal(context, princ2);
+	krb5_free_principal(context, princ1);
 	krb5_warn(context, ret, "krb5_parse_name(%s)", argv[1]);
 	return ret != 0;
     }
