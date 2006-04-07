@@ -192,6 +192,7 @@ kadmind_dispatch(void *kadm_handle, krb5_boolean initial,
 					   princ);
 	if(ret){
 	    krb5_free_principal(context->context, princ);
+	    krb5_free_principal(context->context, princ2);
 	    goto fail;
 	}
 	ret = kadm5_rename_principal(kadm_handle, princ, princ2);
