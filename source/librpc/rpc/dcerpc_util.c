@@ -425,7 +425,8 @@ NTSTATUS dcerpc_floor_get_lhs_data(struct epm_floor *epm_floor, struct dcerpc_sy
 	TALLOC_CTX *mem_ctx = talloc_init("floor_get_lhs_data");
 	struct ndr_pull *ndr = ndr_pull_init_blob(&epm_floor->lhs.lhs_data, mem_ctx);
 	NTSTATUS status;
-	
+	uint16_t if_version=0;
+
 	ndr->flags |= LIBNDR_FLAG_NOALIGN;
 
 	status = ndr_pull_GUID(ndr, NDR_SCALARS | NDR_BUFFERS, &syntax->uuid);
@@ -434,7 +435,8 @@ NTSTATUS dcerpc_floor_get_lhs_data(struct epm_floor *epm_floor, struct dcerpc_sy
 		return status;
 	}
 
-	status = ndr_pull_uint16(ndr, NDR_SCALARS, &syntax->if_version);
+	status = ndr_pull_uint16(ndr, NDR_SCALARS, &if_version);
+	syntax->if_version = if_version;
 
 	talloc_free(mem_ctx);
 
