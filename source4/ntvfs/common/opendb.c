@@ -68,8 +68,8 @@ struct odb_lock {
   talloc_free(). We need the messaging_ctx to allow for pending open
   notifications.
 */
-struct odb_context *odb_init(TALLOC_CTX *mem_ctx, uint32_t server, 
-			     struct messaging_context *messaging_ctx)
+_PUBLIC_ struct odb_context *odb_init(TALLOC_CTX *mem_ctx, uint32_t server, 
+				      struct messaging_context *messaging_ctx)
 {
 	char *path;
 	struct odb_context *odb;
@@ -109,8 +109,8 @@ static int odb_lock_destructor(void *ptr)
   get a lock on a entry in the odb. This call returns a lock handle,
   which the caller should unlock using talloc_free().
 */
-struct odb_lock *odb_lock(TALLOC_CTX *mem_ctx,
-			  struct odb_context *odb, DATA_BLOB *file_key)
+_PUBLIC_ struct odb_lock *odb_lock(TALLOC_CTX *mem_ctx,
+				   struct odb_context *odb, DATA_BLOB *file_key)
 {
 	struct odb_lock *lck;
 
@@ -257,10 +257,10 @@ static NTSTATUS odb_push_record(struct odb_lock *lck, struct opendb_file *file)
   Note that the path is only used by the delete on close logic, not
   for comparing with other filenames
 */
-NTSTATUS odb_open_file(struct odb_lock *lck, void *file_handle,
-		       uint32_t stream_id, uint32_t share_access, 
-		       uint32_t access_mask, BOOL delete_on_close,
-		       const char *path)
+_PUBLIC_ NTSTATUS odb_open_file(struct odb_lock *lck, void *file_handle,
+				uint32_t stream_id, uint32_t share_access, 
+				uint32_t access_mask, BOOL delete_on_close,
+				const char *path)
 {
 	struct odb_context *odb = lck->odb;
 	struct opendb_entry e;
@@ -312,7 +312,7 @@ NTSTATUS odb_open_file(struct odb_lock *lck, void *file_handle,
 /*
   register a pending open file in the open files database
 */
-NTSTATUS odb_open_file_pending(struct odb_lock *lck, void *private)
+_PUBLIC_ NTSTATUS odb_open_file_pending(struct odb_lock *lck, void *private)
 {
 	struct odb_context *odb = lck->odb;
 	struct opendb_file file;
@@ -337,7 +337,7 @@ NTSTATUS odb_open_file_pending(struct odb_lock *lck, void *private)
 /*
   remove a opendb entry
 */
-NTSTATUS odb_close_file(struct odb_lock *lck, void *file_handle)
+_PUBLIC_ NTSTATUS odb_close_file(struct odb_lock *lck, void *file_handle)
 {
 	struct odb_context *odb = lck->odb;
 	struct opendb_file file;
@@ -384,7 +384,7 @@ NTSTATUS odb_close_file(struct odb_lock *lck, void *file_handle)
 /*
   remove a pending opendb entry
 */
-NTSTATUS odb_remove_pending(struct odb_lock *lck, void *private)
+_PUBLIC_ NTSTATUS odb_remove_pending(struct odb_lock *lck, void *private)
 {
 	struct odb_context *odb = lck->odb;
 	int i;
@@ -420,7 +420,7 @@ NTSTATUS odb_remove_pending(struct odb_lock *lck, void *private)
 /*
   rename the path in a open file
 */
-NTSTATUS odb_rename(struct odb_lock *lck, const char *path)
+_PUBLIC_ NTSTATUS odb_rename(struct odb_lock *lck, const char *path)
 {
 	struct opendb_file file;
 	NTSTATUS status;
@@ -439,7 +439,7 @@ NTSTATUS odb_rename(struct odb_lock *lck, const char *path)
 /*
   update delete on close flag on an open file
 */
-NTSTATUS odb_set_delete_on_close(struct odb_lock *lck, BOOL del_on_close)
+_PUBLIC_ NTSTATUS odb_set_delete_on_close(struct odb_lock *lck, BOOL del_on_close)
 {
 	NTSTATUS status;
 	struct opendb_file file;
@@ -456,9 +456,9 @@ NTSTATUS odb_set_delete_on_close(struct odb_lock *lck, BOOL del_on_close)
   return the current value of the delete_on_close bit, and how many
   people still have the file open
 */
-NTSTATUS odb_get_delete_on_close(struct odb_context *odb, 
-				 DATA_BLOB *key, BOOL *del_on_close, 
-				 int *open_count, char **path)
+_PUBLIC_ NTSTATUS odb_get_delete_on_close(struct odb_context *odb, 
+					  DATA_BLOB *key, BOOL *del_on_close, 
+					  int *open_count, char **path)
 {
 	NTSTATUS status;
 	struct opendb_file file;
@@ -500,9 +500,9 @@ NTSTATUS odb_get_delete_on_close(struct odb_context *odb,
   determine if a file can be opened with the given share_access,
   create_options and access_mask
 */
-NTSTATUS odb_can_open(struct odb_lock *lck,
-		      uint32_t share_access, uint32_t create_options, 
-		      uint32_t access_mask)
+_PUBLIC_ NTSTATUS odb_can_open(struct odb_lock *lck,
+			       uint32_t share_access, uint32_t create_options, 
+			       uint32_t access_mask)
 {
 	struct odb_context *odb = lck->odb;
 	NTSTATUS status;
