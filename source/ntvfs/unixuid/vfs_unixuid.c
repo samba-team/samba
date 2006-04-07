@@ -26,7 +26,7 @@
 #include "system/passwd.h"
 #include "auth/auth.h"
 #include "ntvfs/ntvfs.h"
-#include "ntvfs/common/proto.h"
+#include "dsdb/samdb/samdb.h"
 
 struct unixuid_private {
 	struct sidmap_context *sidmap;

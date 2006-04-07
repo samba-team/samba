@@ -27,6 +27,7 @@
 #include "system/filesys.h"
 #include "ntvfs/ntvfs.h"
 #include "ntvfs/common/proto.h"
+#include "dsdb/samdb/samdb.h"
 
 /* this is the private structure for the posix vfs backend. It is used
    to hold per-connection (per tree connect) state information */
