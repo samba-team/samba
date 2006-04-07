@@ -761,7 +761,7 @@ main(int argc, char **argv)
 	type = parse_source_type(source_type);
 	if(type == 0)
 	    krb5_errx(context, 1, "unknown source type `%s'", source_type);
-    } else if(type == 0)
+    } else
 	type = HPROP_HEIMDAL;
 
     if(!to_stdout)
