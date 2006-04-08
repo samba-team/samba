@@ -4865,6 +4865,56 @@ int load_usershare_shares(void)
 	return lp_numservices();
 }
 
+/********************************************************
+ Destroy global resources allocated in this file
+********************************************************/
+
+void gfree_loadparm(void)
+{
+	struct file_lists *f;
+	struct file_lists *next;
+	int i;
+
+	lp_TALLOC_FREE();
+
+	/* Free the file lists */
+
+	f = file_lists;
+	while( f ) {
+		next = f->next;
+		SAFE_FREE( f->name );
+		SAFE_FREE( f->subfname );
+		SAFE_FREE( f );
+		f = next;
+	}
+
+	/* Free resources allocated to services */
+
+	for ( i = 0; i < iNumServices; i++ ) {
+		if ( VALID(i) ) {
+			free_service_byindex(i);
+		}
+	}
+
+	SAFE_FREE( ServicePtrs );
+	iNumServices = 0;
+
+	/* Now release all resources allocated to global
+	   parameters and the default service */
+
+	for (i = 0; parm_table[i].label; i++) 
+	{
+		if ( parm_table[i].type == P_STRING 
+			|| parm_table[i].type == P_USTRING ) 
+		{
+			string_free( (char**)parm_table[i].ptr );
+		}
+		else if (parm_table[i].type == P_LIST) {
+			str_list_free( (char***)parm_table[i].ptr );
+		}
+	}
+}
+
 /***************************************************************************
  Load the services array from the services file. Return True on success, 
  False on failure.

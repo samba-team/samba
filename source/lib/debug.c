@@ -177,6 +177,27 @@ static char **classname_table = NULL;
  * Functions...
  */
 
+/***************************************************************************
+ Free memory pointed to by global pointers.
+****************************************************************************/
+
+void gfree_debugsyms(void)
+{
+	int i;
+
+	if ( classname_table ) {
+		for ( i = 0; i < debug_num_classes; i++ ) {
+			SAFE_FREE( classname_table[i] );
+		}
+		SAFE_FREE( classname_table );
+	}
+
+	if ( DEBUGLEVEL_CLASS != &debug_all_class_hack )
+		SAFE_FREE( DEBUGLEVEL_CLASS );
+
+	if ( DEBUGLEVEL_CLASS_ISSET != &debug_all_class_isset_hack )
+		SAFE_FREE( DEBUGLEVEL_CLASS_ISSET );
+}
 
 /****************************************************************************
 utility lists registered debug class names's
@@ -510,7 +531,7 @@ void debug_init(void)
 
 	if (initialised)
 		return;
-	
+
 	initialised = True;
 
 	message_register(MSG_DEBUG, debug_message);
