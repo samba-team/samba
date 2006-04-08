@@ -299,26 +299,6 @@ if test $ac_cv_shlib_works = no; then
 fi
 fi
 
-AC_CACHE_CHECK([if gettimeofday takes tz argument],samba_cv_HAVE_GETTIMEOFDAY_TZ,[
-AC_TRY_RUN([
-#include <sys/time.h>
-#include <unistd.h>
-main() { struct timeval tv; exit(gettimeofday(&tv, NULL));}],
-           samba_cv_HAVE_GETTIMEOFDAY_TZ=yes,samba_cv_HAVE_GETTIMEOFDAY_TZ=no,samba_cv_HAVE_GETTIMEOFDAY_TZ=cross)])
-if test x"$samba_cv_HAVE_GETTIMEOFDAY_TZ" = x"yes"; then
-    AC_DEFINE(HAVE_GETTIMEOFDAY_TZ,1,[Whether gettimeofday() is available])
-fi
-
-
-AC_CACHE_CHECK([for utimbuf],samba_cv_HAVE_UTIMBUF,[
-AC_TRY_COMPILE([#include <sys/types.h>
-#include <utime.h>],
-[struct utimbuf tbuf;  tbuf.actime = 0; tbuf.modtime = 1; exit(utime("foo.c",&tbuf));],
-samba_cv_HAVE_UTIMBUF=yes,samba_cv_HAVE_UTIMBUF=no,samba_cv_HAVE_UTIMBUF=cross)])
-if test x"$samba_cv_HAVE_UTIMBUF" = x"yes"; then
-    AC_DEFINE(HAVE_UTIMBUF,1,[Whether struct utimbuf is available])
-fi
-
 AC_CACHE_CHECK([for Linux kernel oplocks],samba_cv_HAVE_KERNEL_OPLOCKS_LINUX,[
 AC_TRY_RUN([
 #include <sys/types.h>
@@ -402,26 +382,6 @@ AC_TRY_RUN([#include "${srcdir-.}/build/tests/shared_mmap.c"],
            samba_cv_HAVE_MMAP=yes,samba_cv_HAVE_MMAP=no,samba_cv_HAVE_MMAP=cross)])
 if test x"$samba_cv_HAVE_MMAP" = x"yes"; then
     AC_DEFINE(HAVE_MMAP,1,[Whether mmap works])
-fi
-
-AC_CACHE_CHECK([for st_blocks in struct stat],samba_cv_HAVE_STAT_ST_BLOCKS,[
-AC_TRY_COMPILE([#include <sys/types.h>
-#include <sys/stat.h>
-#include <unistd.h>],
-[struct stat st;  st.st_blocks = 0;],
-samba_cv_HAVE_STAT_ST_BLOCKS=yes,samba_cv_HAVE_STAT_ST_BLOCKS=no,samba_cv_HAVE_STAT_ST_BLOCKS=cross)])
-if test x"$samba_cv_HAVE_STAT_ST_BLOCKS" = x"yes"; then
-    AC_DEFINE(HAVE_STAT_ST_BLOCKS,1,[Whether the stat struct has a st_block property])
-fi 
-
-AC_CACHE_CHECK([for st_blksize in struct stat],samba_cv_HAVE_STAT_ST_BLKSIZE,[
-AC_TRY_COMPILE([#include <sys/types.h>
-#include <sys/stat.h>
-#include <unistd.h>],
-[struct stat st;  st.st_blksize = 0;],
-samba_cv_HAVE_STAT_ST_BLKSIZE=yes,samba_cv_HAVE_STAT_ST_BLKSIZE=no,samba_cv_HAVE_STAT_ST_BLKSIZE=cross)])
-if test x"$samba_cv_HAVE_STAT_ST_BLKSIZE" = x"yes"; then
-    AC_DEFINE(HAVE_STAT_ST_BLKSIZE,1,[Whether the stat struct has a st_blksize property])
 fi
 
 case "$host_os" in
