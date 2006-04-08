@@ -365,6 +365,11 @@ DOCBOOK_MANPAGE_URL = http://docbook.sourceforge.net/release/xsl/current/manpage
 DEP_FILES = $(patsubst %.ho,%.hd,$(patsubst %.o,%.d,$(ALL_OBJS))) \
 		   include/includes.d
 
+dist:: distclean idl_full manpages configure
+
+configure: 
+	./autogen.sh
+
 clean::
 	@echo Removing dependency files
 	@rm -f $(DEP_FILES)
