@@ -209,4 +209,8 @@ typedef bool int;
 #define true (1)
 #endif
 
+#ifndef HAVE_FUNCTION_MACRO
+#define __FUNCTION__ ("")
+#endif
+
 #endif

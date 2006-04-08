@@ -23,14 +23,6 @@
  * @brief Debugging macros
  */
 
-/* If we have these macros, we can add additional info to the header. */
-
-#ifdef HAVE_FUNCTION_MACRO
-#define FUNCTION_MACRO  (__FUNCTION__)
-#else
-#define FUNCTION_MACRO  ("")
-#endif
-
 /* the debug operations structure - contains function pointers to 
    various debug implementations of each operation */
 struct debug_ops {
@@ -54,7 +46,7 @@ extern int DEBUGLEVEL;
 #define _DEBUG(level, body, header) do { \
 	if (DEBUGLVL(level)) { \
 		if (header) { \
-			do_debug_header(level, __location__, FUNCTION_MACRO); \
+			do_debug_header(level, __location__, __FUNCTION__); \
 		} \
 		do_debug body; \
 	} \
