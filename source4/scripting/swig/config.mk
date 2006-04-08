@@ -1,22 +1,4 @@
 #######################
-# Start LIBRARY swig_tdb
-[LIBRARY::swig_tdb]
-LIBRARY_REALNAME = _tdb.$(SHLIBEXT)
-OBJ_FILES = tdb_wrap.o
-REQUIRED_SUBSYSTEMS = LIBTDB DYNCONFIG
-# End LIBRARY swig_tdb
-#######################
-
-#######################
-# Start LIBRARY swig_ldb
-[LIBRARY::swig_ldb]
-REQUIRED_SUBSYSTEMS = ldb DYNCONFIG
-LIBRARY_REALNAME = _ldb.$(SHLIBEXT)
-OBJ_FILES = ldb_wrap.o
-# End LIBRARY swig_ldb
-#######################
-
-#######################
 # Start LIBRARY swig_dcerpc
 [LIBRARY::swig_dcerpc]
 LIBRARY_REALNAME = _dcerpc.$(SHLIBEXT)
@@ -26,7 +8,7 @@ OBJ_FILES = dcerpc_wrap.o
 #######################
 
 # Swig extensions
-swig: scripting/swig/_tdb.$(SHLIBEXT) scripting/swig/_ldb.$(SHLIBEXT)
+swig: lib/tdb/swig/_tdb.$(SHLIBEXT) lib/ldb/swig/_ldb.$(SHLIBEXT)
 
 .SUFFIXES: _wrap.c .i
 
