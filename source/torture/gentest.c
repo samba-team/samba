@@ -656,6 +656,8 @@ static struct ea_struct gen_ea_struct(void)
 			       "ASOMEWHATLONGERATTRIBUTEVALUE"};
 	int i;
 
+	ZERO_STRUCT(ea);
+
 	do {
 		i = gen_int_range(0, ARRAY_SIZE(names)-1);
 	} while (ignore_pattern(names[i]));
@@ -725,7 +727,6 @@ static void oplock_handler_close_recv(struct smbcli_request *req)
 static BOOL oplock_handler(struct smbcli_transport *transport, uint16_t tid, uint16_t fnum, uint8_t level, void *private)
 {
 	union smb_close io;
-	NTSTATUS status;
 	int i, j;
 	BOOL do_close;
 	struct smbcli_tree *tree = NULL;
@@ -766,8 +767,7 @@ static BOOL oplock_handler(struct smbcli_transport *transport, uint16_t tid, uin
 	req = smb_raw_close_send(tree, &io);
 
 	if (req == NULL) {
-		printf("WARNING: close failed in oplock_handler_close - %s\n", 
-		       nt_errstr(status));
+		printf("WARNING: close failed in oplock_handler_close\n");
 		return False;
 	}
 
@@ -1823,6 +1823,7 @@ static BOOL handler_notify(int instance)
 	struct smb_notify parm[NSERVERS];
 	int n;
 
+	ZERO_STRUCT(parm[0]);
 	parm[0].in.buffer_size = gen_io_count();
 	parm[0].in.completion_filter = gen_bits_mask(0xFF);
 	parm[0].in.file.fnum = gen_fnum(instance);
