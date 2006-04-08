@@ -73,13 +73,13 @@ static struct smbcli_request *smb_raw_ntioctl_send(struct smbcli_tree *tree,
 						union smb_ioctl *parms)
 {
 	struct smb_nttrans nt;
-	uint16_t setup[4];
+	uint8_t setup[8];
 
 	nt.in.max_setup = 0;
 	nt.in.max_param = 0;
 	nt.in.max_data = 0;
 	nt.in.setup_count = 4;
-	nt.in.setup = setup;
+	nt.in.setup = (uint16_t *)setup;
 	SIVAL(setup, 0, parms->ntioctl.in.function);
 	SSVAL(setup, 4, parms->ntioctl.in.file.fnum);
 	SCVAL(setup, 6, parms->ntioctl.in.fsctl);
