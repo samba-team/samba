@@ -99,9 +99,35 @@ static char *stdin_load(TALLOC_CTX *mem_ctx, size_t *size)
 	return result;
 }
 
- int main(int argc, const char *argv[])
+const struct dcerpc_interface_table *load_iface_from_plugin(const char *plugin, const char *pipe_name)
 {
 	const struct dcerpc_interface_table *p;
+	void *handle;
+	char *symbol;
+
+	handle = dlopen(plugin, RTLD_NOW);
+	if (handle == NULL) {
+		printf("%s: Unable to open: %s\n", plugin, dlerror());
+		return NULL;
+	}
+
+	symbol = talloc_asprintf(NULL, "dcerpc_table_%s", pipe_name);
+	p = dlsym(handle, symbol);
+
+	if (!p) {
+		printf("%s: Unable to find DCE/RPC interface table for '%s': %s\n", plugin, pipe_name, dlerror());
+		talloc_free(symbol);
+		return NULL;
+	}
+
+	talloc_free(symbol);
+	
+	return p;
+}
+
+ int main(int argc, const char *argv[])
+{
+	const struct dcerpc_interface_table *p = NULL;
 	const struct dcerpc_interface_call *f;
 	const char *pipe_name, *function, *inout, *filename;
 	uint8_t *data;
@@ -116,6 +142,7 @@ static char *stdin_load(TALLOC_CTX *mem_ctx, size_t *size)
 	void *st;
 	void *v_st;
 	const char *ctx_filename = NULL;
+	const char *plugin = NULL;
 	BOOL validate = False;
 	BOOL dumpdata = False;
 	int opt;
@@ -123,6 +150,7 @@ static char *stdin_load(TALLOC_CTX *mem_ctx, size_t *size)
 		{"context-file", 'c', POPT_ARG_STRING, &ctx_filename, 0, "In-filename to parse first", "CTX-FILE" },
 		{"validate", 0, POPT_ARG_NONE, &validate, 0, "try to validate the data", NULL },	
 		{"dump-data", 0, POPT_ARG_NONE, &dumpdata, 0, "dump the hex data", NULL },	
+		{"load-dso", 'l', POPT_ARG_STRING, &plugin, 0, "load from shared object file", NULL },
 		POPT_COMMON_SAMBA
 		POPT_AUTOHELP
 		POPT_TABLEEND
@@ -146,7 +174,13 @@ static char *stdin_load(TALLOC_CTX *mem_ctx, size_t *size)
 		exit(1);
 	}
 
-	p = idl_iface_by_name(pipe_name);
+	if (plugin != NULL) {
+		p = load_iface_from_plugin(plugin, pipe_name);
+	}
+
+	if (!p) {
+		p = idl_iface_by_name(pipe_name);
+	}
 
 	if (!p) {
 		struct GUID uuid;
@@ -156,11 +190,11 @@ static char *stdin_load(TALLOC_CTX *mem_ctx, size_t *size)
 		if (NT_STATUS_IS_OK(status)) {
 			p = idl_iface_by_uuid(&uuid);
 		}
+	}
 
-		if (!p) {
-			printf("Unknown pipe or UUID '%s'\n", pipe_name);
-			exit(1);
-		}
+	if (!p) {
+		printf("Unknown pipe or UUID '%s'\n", pipe_name);
+		exit(1);
 	}
 
 	function = poptGetArg(pc);
