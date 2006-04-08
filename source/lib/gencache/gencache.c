@@ -26,6 +26,7 @@
 #include "system/time.h"
 #include "system/filesys.h"
 #include "db_wrap.h"
+#include "lib/gencache/gencache.h"
 
 #define TIMEOUT_LEN 12
 #define CACHE_DATA_FMT	"%12u/%s"
