@@ -152,4 +152,10 @@ if test x"$samba_cv_HAVE___VA_COPY" = x"yes"; then
 fi
 fi
 
-
+dnl __FUNCTION__ macro
+AC_CACHE_CHECK([for __FUNCTION__ macro],samba_cv_HAVE_FUNCTION_MACRO,[
+AC_TRY_COMPILE([#include <stdio.h>], [printf("%s\n", __FUNCTION__);],
+samba_cv_HAVE_FUNCTION_MACRO=yes,samba_cv_HAVE_FUNCTION_MACRO=no)])
+if test x"$samba_cv_HAVE_FUNCTION_MACRO" = x"yes"; then
+    AC_DEFINE(HAVE_FUNCTION_MACRO,1,[Whether there is a __FUNCTION__ macro])
+fi

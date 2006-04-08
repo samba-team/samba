@@ -9,3 +9,9 @@ fi
 SMB_EXT_LIB(PAM, $PAM_LIBS)
 # end SMB_EXT_LIB_PAM
 ###############################
+
+################################################
+# test for where we get crypt() from
+AC_CHECK_LIB_EXT(crypt, CRYPT_LIBS, crypt)
+SMB_EXT_LIB_ENABLE(CRYPT,YES)
+SMB_EXT_LIB(CRYPT, $CRYPT_LIBS)

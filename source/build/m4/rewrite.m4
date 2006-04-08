@@ -172,10 +172,6 @@ case "$host_os" in
 		AC_DEFINE(STAT_ST_BLOCKSIZE,512,[The size of a block])
 		;;
 	*irix*) AC_DEFINE(IRIX,1,[Whether the host os is irix])
-		case "$host_os" in
-		*irix6*) AC_DEFINE(IRIX6,1,[Whether the host os is irix6])
-		;;
-		esac
 		ATTEMPT_WRAP32_BUILD=yes
 		BLDSHARED="true"
 		LDSHFLAGS="-set_version sgi1.0 -shared"
@@ -303,13 +299,6 @@ if test $ac_cv_shlib_works = no; then
 fi
 fi
 
-AC_CACHE_CHECK([for __FUNCTION__ macro],samba_cv_HAVE_FUNCTION_MACRO,[
-AC_TRY_COMPILE([#include <stdio.h>], [printf("%s\n", __FUNCTION__);],
-samba_cv_HAVE_FUNCTION_MACRO=yes,samba_cv_HAVE_FUNCTION_MACRO=no)])
-if test x"$samba_cv_HAVE_FUNCTION_MACRO" = x"yes"; then
-    AC_DEFINE(HAVE_FUNCTION_MACRO,1,[Whether there is a __FUNCTION__ macro])
-fi
-
 AC_CACHE_CHECK([if gettimeofday takes tz argument],samba_cv_HAVE_GETTIMEOFDAY_TZ,[
 AC_TRY_RUN([
 #include <sys/time.h>
@@ -392,37 +381,12 @@ if test x"$samba_cv_HAVE_KERNEL_OPLOCKS_IRIX" = x"yes"; then
     AC_DEFINE(HAVE_KERNEL_OPLOCKS_IRIX,1,[Whether IRIX kernel oplock type definitions are available])
 fi
 
-AC_CACHE_CHECK([for irix specific capabilities],samba_cv_HAVE_IRIX_SPECIFIC_CAPABILITIES,[
-AC_TRY_RUN([#include <sys/types.h>
-#include <sys/capability.h>
-main() {
- cap_t cap;
- if ((cap = cap_get_proc()) == NULL)
-   exit(1);
- cap->cap_effective |= CAP_NETWORK_MGT;
- cap->cap_inheritable |= CAP_NETWORK_MGT;
- cap_set_proc(cap);
- exit(0);
-}
-],
-samba_cv_HAVE_IRIX_SPECIFIC_CAPABILITIES=yes,samba_cv_HAVE_IRIX_SPECIFIC_CAPABILITIES=no,samba_cv_HAVE_IRIX_SPECIFIC_CAPABILITIES=cross)])
-if test x"$samba_cv_HAVE_IRIX_SPECIFIC_CAPABILITIES" = x"yes"; then
-    AC_DEFINE(HAVE_IRIX_SPECIFIC_CAPABILITIES,1,[Whether IRIX specific capabilities are available])
-fi
-
 
 AC_CACHE_CHECK([for ftruncate extend],samba_cv_HAVE_FTRUNCATE_EXTEND,[
 AC_TRY_RUN([#include "${srcdir-.}/build/tests/ftruncate.c"],
            samba_cv_HAVE_FTRUNCATE_EXTEND=yes,samba_cv_HAVE_FTRUNCATE_EXTEND=no,samba_cv_HAVE_FTRUNCATE_EXTEND=cross)])
 if test x"$samba_cv_HAVE_FTRUNCATE_EXTEND" = x"yes"; then
     AC_DEFINE(HAVE_FTRUNCATE_EXTEND,1,[Truncate extend])
-fi
-
-AC_CACHE_CHECK([for broken getgroups],samba_cv_HAVE_BROKEN_GETGROUPS,[
-AC_TRY_RUN([#include "${srcdir-.}/build/tests/getgroups.c"],
-           samba_cv_HAVE_BROKEN_GETGROUPS=yes,samba_cv_HAVE_BROKEN_GETGROUPS=no,samba_cv_HAVE_BROKEN_GETGROUPS=cross)])
-if test x"$samba_cv_HAVE_BROKEN_GETGROUPS" = x"yes"; then
-    AC_DEFINE(HAVE_BROKEN_GETGROUPS,1,[Whether getgroups is broken])
 fi
 
 AC_CACHE_CHECK([for sysconf(_SC_NGROUPS_MAX)],samba_cv_SYSCONF_SC_NGROUPS_MAX,[
@@ -489,9 +453,3 @@ samba_cv_HAVE_OPEN_O_DIRECT=yes,samba_cv_HAVE_OPEN_O_DIRECT=no)])
 if test x"$samba_cv_HAVE_OPEN_O_DIRECT" = x"yes"; then
     AC_DEFINE(HAVE_OPEN_O_DIRECT,1,[Whether the open(2) accepts O_DIRECT])
 fi 
-
-###############################################
-# test for where we get crypt() from
-AC_CHECK_LIB_EXT(crypt, CRYPT_LIBS, crypt)
-SMB_EXT_LIB_ENABLE(CRYPT,YES)
-SMB_EXT_LIB(CRYPT, $CRYPT_LIBS)

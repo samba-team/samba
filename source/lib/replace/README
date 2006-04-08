@@ -65,6 +65,10 @@ UINT16_MAX
 UINT32_MAX
 UINT64_MAX
 
+Macros:
+va_copy
+__FUNCTION__
+
 Prerequisites:
 memset (for bzero)
 syslog (for vsyslog)
