@@ -816,6 +816,7 @@ BOOL cli_close(struct cli_state *cli, int fnum)
  send a lock with a specified locktype 
  this is used for testing LOCKING_ANDX_CANCEL_LOCK
 ****************************************************************************/
+
 NTSTATUS cli_locktype(struct cli_state *cli, int fnum, 
 		      uint32 offset, uint32 len, int timeout, unsigned char locktype)
 {
@@ -863,11 +864,11 @@ NTSTATUS cli_locktype(struct cli_state *cli, int fnum,
 	return cli_nt_error(cli);
 }
 
-
 /****************************************************************************
  Lock a file.
  note that timeout is in units of 2 milliseconds
 ****************************************************************************/
+
 BOOL cli_lock(struct cli_state *cli, int fnum, 
 	      uint32 offset, uint32 len, int timeout, enum brl_type lock_type)
 {
@@ -1068,6 +1069,108 @@ BOOL cli_unlock64(struct cli_state *cli, int fnum, SMB_BIG_UINT offset, SMB_BIG_
 	return True;
 }
 
+/****************************************************************************
+ Get/unlock a POSIX lock on a file - internal function.
+****************************************************************************/
+
+static BOOL cli_posix_lock_internal(struct cli_state *cli, int fnum, 
+		SMB_BIG_UINT offset, SMB_BIG_UINT len, BOOL wait_lock, enum brl_type lock_type)
+{
+	unsigned int param_len = 4;
+	unsigned int data_len = POSIX_LOCK_DATA_SIZE;
+	uint16 setup = TRANSACT2_SETFILEINFO;
+	char param[4];
+	unsigned char data[POSIX_LOCK_DATA_SIZE];
+	char *rparam=NULL, *rdata=NULL;
+	int saved_timeout = cli->timeout;
+
+	SSVAL(param,0,fnum);
+	SSVAL(param,2,SMB_SET_POSIX_LOCK);
+
+	switch (lock_type) {
+		case READ_LOCK:
+			SSVAL(data, POSIX_LOCK_TYPE_OFFSET, POSIX_LOCK_TYPE_READ);
+			break;
+		case WRITE_LOCK:
+			SSVAL(data, POSIX_LOCK_TYPE_OFFSET, POSIX_LOCK_TYPE_WRITE);
+			break;
+		case UNLOCK_LOCK:
+			SSVAL(data, POSIX_LOCK_TYPE_OFFSET, POSIX_LOCK_TYPE_UNLOCK);
+			break;
+		default:
+			return False;
+	}
+
+	if (wait_lock) {
+		SSVAL(data, POSIX_LOCK_FLAGS_OFFSET, POSIX_LOCK_FLAG_WAIT);
+		cli->timeout = 0x7FFFFFFF;
+	} else {
+		SSVAL(data, POSIX_LOCK_FLAGS_OFFSET, POSIX_LOCK_FLAG_NOWAIT);
+	}
+
+	SIVAL(data, POSIX_LOCK_PID_OFFSET, cli->pid);
+	SOFF_T(data, POSIX_LOCK_START_OFFSET, offset);
+	SOFF_T(data, POSIX_LOCK_LEN_OFFSET, len);
+
+	if (!cli_send_trans(cli, SMBtrans2,
+				NULL,                        /* name */
+				-1, 0,                          /* fid, flags */
+				&setup, 1, 0,                   /* setup, length, max */
+				param, param_len, 2,            /* param, length, max */
+				(char *)&data,  data_len, cli->max_xmit /* data, length, max */
+				)) {
+		cli->timeout = saved_timeout;
+		return False;
+	}
+
+	if (!cli_receive_trans(cli, SMBtrans2,
+				&rparam, &param_len,
+				&rdata, &data_len)) {
+		cli->timeout = saved_timeout;
+		SAFE_FREE(rdata);
+		SAFE_FREE(rparam);
+		return False;
+	}
+
+	cli->timeout = saved_timeout;
+
+	SAFE_FREE(rdata);
+	SAFE_FREE(rparam);
+
+	return True;
+}
+
+/****************************************************************************
+ POSIX Lock a file.
+****************************************************************************/
+
+BOOL cli_posix_lock(struct cli_state *cli, int fnum,
+			SMB_BIG_UINT offset, SMB_BIG_UINT len,
+			BOOL wait_lock, enum brl_type lock_type)
+{
+	if (lock_type != READ_LOCK || lock_type != WRITE_LOCK) {
+		return False;
+	}
+	return cli_posix_lock_internal(cli, fnum, offset, len, wait_lock, lock_type);
+}
+
+/****************************************************************************
+ POSIX Unlock a file.
+****************************************************************************/
+
+BOOL cli_posix_unlock(struct cli_state *cli, int fnum, SMB_BIG_UINT offset, SMB_BIG_UINT len)
+{
+	return cli_posix_lock_internal(cli, fnum, offset, len, False, UNLOCK_LOCK);
+}
+
+/****************************************************************************
+ POSIX Get any lock covering a file.
+****************************************************************************/
+
+BOOL cli_posix_getlock(struct cli_state *cli, int fnum, SMB_BIG_UINT *poffset, SMB_BIG_UINT *plen)
+{
+	return True;
+}
 
 /****************************************************************************
  Do a SMBgetattrE call.
