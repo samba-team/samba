@@ -645,6 +645,15 @@ BOOL dptr_SearchDir(struct dptr_struct *dptr, const char *name, long *poffset, S
 }
 
 /****************************************************************************
+ Add the name we're returning into the underlying cache.
+****************************************************************************/
+
+void dptr_DirCacheAdd(struct dptr_struct *dptr, const char *name, long offset)
+{
+	DirCacheAdd(dptr->dir_hnd, name, offset);
+}
+
+/****************************************************************************
  Fill the 5 byte server reserved dptr field.
 ****************************************************************************/
 
@@ -812,6 +821,8 @@ BOOL get_dir_entry(connection_struct *conn,char *mask,uint32 dirtype, pstring fn
 			DEBUG(3,("get_dir_entry mask=[%s] found %s fname=%s\n",mask, pathreal,fname));
 
 			found = True;
+
+			DirCacheAdd(conn->dirptr->dir_hnd, dname, curoff);
 		}
 	}
 
@@ -1109,21 +1120,15 @@ const char *ReadDirName(struct smb_Dir *dirp, long *poffset)
 	}
 
 	while ((n = vfs_readdirname(conn, dirp->dir))) {
-		struct name_cache_entry *e;
 		/* Ignore . and .. - we've already returned them. */
 		if (*n == '.') {
 			if ((n[1] == '\0') || (n[1] == '.' && n[2] == '\0')) {
 				continue;
 			}
 		}
-		dirp->offset = SMB_VFS_TELLDIR(conn, dirp->dir);
-		dirp->name_cache_index = (dirp->name_cache_index+1) % NAME_CACHE_SIZE;
-		e = &dirp->name_cache[dirp->name_cache_index];
-		SAFE_FREE(e->name);
-		e->name = SMB_STRDUP(n);
-		*poffset = e->offset= dirp->offset;
+		*poffset = dirp->offset = SMB_VFS_TELLDIR(conn, dirp->dir);
 		dirp->file_number++;
-		return e->name;
+		return n;
 	}
 	*poffset = dirp->offset = END_OF_DIRECTORY_OFFSET;
 	return NULL;
@@ -1181,6 +1186,21 @@ void SeekDir(struct smb_Dir *dirp, long offset)
 long TellDir(struct smb_Dir *dirp)
 {
 	return(dirp->offset);
+}
+
+/*******************************************************************
+ Add an entry into the dcache.
+********************************************************************/
+
+void DirCacheAdd(struct smb_Dir *dirp, const char *name, long offset)
+{
+	struct name_cache_entry *e;
+
+	dirp->name_cache_index = (dirp->name_cache_index+1) % NAME_CACHE_SIZE;
+	e = &dirp->name_cache[dirp->name_cache_index];
+	SAFE_FREE(e->name);
+	e->name = SMB_STRDUP(name);
+	e->offset = offset;
 }
 
 /*******************************************************************
