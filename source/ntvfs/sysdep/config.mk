@@ -10,11 +10,7 @@ OBJ_FILES = \
 
 ################################################
 # Start SUBSYSTEM sys_notify
-[LIBRARY::sys_notify]
-PUBLIC_HEADERS = sys_notify.h
-VERSION = 0.0.1
-SO_VERSION = 0
-DESCRIPTION = File System Notify Abstraction Layer
+[SUBSYSTEM::sys_notify]
 OBJ_FILES = \
 		sys_notify.o
 REQUIRED_SUBSYSTEMS = 
