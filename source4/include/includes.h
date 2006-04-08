@@ -64,6 +64,8 @@
 #endif
 #endif
 
+#define _GNU_SOURCE /* Use GNU extensions */
+
 /* mark smb_panic() as noreturn, so static analysers know that it is
    used like abort */
 _PUBLIC_ void smb_panic(const char *why) NORETURN_ATTRIBUTE;

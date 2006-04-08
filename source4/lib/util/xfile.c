@@ -202,7 +202,7 @@ size_t x_fwrite(const void *p, size_t size, size_t nmemb, XFILE *f)
 	int len, ret;
 	va_list ap2;
 
-	VA_COPY(ap2, ap);
+	va_copy(ap2, ap);
 
 	len = vasprintf(&p, format, ap2);
 	if (len <= 0) return len;

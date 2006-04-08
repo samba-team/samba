@@ -371,7 +371,7 @@ _PUBLIC_ int vfdprintf(int fd, const char *format, va_list ap) _PRINTF_ATTRIBUTE
 	int len, ret;
 	va_list ap2;
 
-	VA_COPY(ap2, ap);
+	va_copy(ap2, ap);
 
 	len = vasprintf(&p, format, ap2);
 	if (len <= 0) return len;
