@@ -214,7 +214,7 @@ static BOOL test_notify_dir(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	/* and we now see the rest of the unlink calls on both directory handles */
 	notify.in.file.fnum = fnum;
-	msleep(10);
+	sleep(1);
 	req = smb_raw_changenotify_send(cli->tree, &notify);
 	status = smb_raw_changenotify_recv(req, mem_ctx, &notify);
 	CHECK_STATUS(status, NT_STATUS_OK);
