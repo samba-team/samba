@@ -475,3 +475,6 @@ REQUIRED_SUBSYSTEMS = \
 REQUIRED_SUBSYSTEMS = HEIMDAL
 # End SUBSYSTEM KERBEROS_LIB
 #######################
+
+dist:: heimdal/lib/asn1/lex.c heimdal/lib/com_err/lex.c \
+	heimdal/lib/asn1/parse.c heimdal/lib/com_err/parse.c
