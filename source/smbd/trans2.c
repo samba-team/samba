@@ -1163,6 +1163,8 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 			DEBUG(5,("get_lanman2_dir_entry found %s fname=%s\n",pathreal,fname));
 	  
 			found = True;
+
+			dptr_DirCacheAdd(conn->dirptr, dname, curr_dirpos);
 		}
 	}
 
