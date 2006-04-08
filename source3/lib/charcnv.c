@@ -102,6 +102,23 @@ void lazy_initialize_conv(void)
 }
 
 /**
+ * Destroy global objects allocated by init_iconv()
+ **/
+void gfree_charcnv(void)
+{
+	int c1, c2;
+
+	for (c1=0;c1<NUM_CHARSETS;c1++) {
+		for (c2=0;c2<NUM_CHARSETS;c2++) {
+			if ( conv_handles[c1][c2] ) {
+				smb_iconv_close( conv_handles[c1][c2] );
+				conv_handles[c1][c2] = 0;
+			}
+		}
+	}
+}
+
+/**
  * Initialize iconv conversion descriptors.
  *
  * This is called the first time it is needed, and also called again

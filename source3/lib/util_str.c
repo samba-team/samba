@@ -853,7 +853,7 @@ BOOL in_list(const char *s, const char *list, BOOL casesensitive)
 }
 
 /* this is used to prevent lots of mallocs of size 1 */
-static char *null_string = NULL;
+static const char *null_string = "";
 
 /**
  Set a string value, allocing the space for the string
@@ -862,20 +862,14 @@ static char *null_string = NULL;
 static BOOL string_init(char **dest,const char *src)
 {
 	size_t l;
+
 	if (!src)     
 		src = "";
 
 	l = strlen(src);
 
 	if (l == 0) {
-		if (!null_string) {
-			if((null_string = (char *)SMB_MALLOC(1)) == NULL) {
-				DEBUG(0,("string_init: malloc fail for null_string.\n"));
-				return False;
-			}
-			*null_string = 0;
-		}
-		*dest = null_string;
+		*dest = CONST_DISCARD(char*, null_string);
 	} else {
 		(*dest) = SMB_STRDUP(src);
 		if ((*dest) == NULL) {

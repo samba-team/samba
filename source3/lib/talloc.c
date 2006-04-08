@@ -883,6 +883,16 @@ static void talloc_report_null_full(void)
 }
 
 /*
+ free allocated global memory
+*/
+
+void talloc_nc_free(void)
+{
+	if ( null_context )
+		talloc_free( (void*)null_context ); 
+}
+
+/*
   enable tracking of the NULL context
 */
 void talloc_enable_null_tracking(void)
