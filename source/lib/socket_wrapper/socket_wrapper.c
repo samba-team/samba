@@ -672,11 +672,7 @@ _PUBLIC_ int swrap_setsockopt(int s, int  level,  int  optname,  const  void  *o
 	case AF_UNIX:
 		return real_setsockopt(s, level, optname, optval, optlen);
 	case AF_INET:
-		/* Silence some warnings */
-#ifdef TCP_NODELAY
-		if (optname == TCP_NODELAY) 
-			return 0;
-#endif
+		return 0;
 	default:
 		errno = ENOPROTOOPT;
 		return -1;

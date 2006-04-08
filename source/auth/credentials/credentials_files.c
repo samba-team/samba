@@ -52,6 +52,7 @@ BOOL cli_credentials_parse_password_fd(struct cli_credentials *credentials,
 				*++p = '\0'; /* advance p, and null-terminate pass */
 				break;
 			}
+			/* fall through */
 		case 0:
 			if (p - pass) {
 				*p = '\0'; /* null-terminate it, just in case... */
