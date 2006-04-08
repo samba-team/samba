@@ -182,6 +182,8 @@ static void testpair(struct smbcli_state *cli, char *mask, char *file)
 	smbcli_unlink(cli->tree, file);
 
 	if (count % 100 == 0) DEBUG(0,("%d\n", count));
+
+	resultp = NULL;
 }
 
 static void test_mask(int argc, char *argv[], 
