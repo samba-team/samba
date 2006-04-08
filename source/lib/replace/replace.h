@@ -134,18 +134,16 @@ int asprintf(char **,const char *, ...) PRINTF_ATTRIBUTE(2,3);
 #define slprintf snprintf
 
 
-#ifdef HAVE_VA_COPY
-#define VA_COPY(dest, src) va_copy(dest, src)
-#elif defined(HAVE___VA_COPY)
-#define VA_COPY(dest, src) __va_copy(dest, src)
+#ifndef HAVE_VA_COPY
+#ifdef HAVE___VA_COPY
+#define va_copy(dest, src) __va_copy(dest, src)
 #else
-#define VA_COPY(dest, src) (dest) = (src)
+#define va_copy(dest, src) (dest) = (src)
+#endif
 #endif
 
-#if defined(HAVE_VOLATILE)
-#define VOLATILE volatile
-#else
-#define VOLATILE
+#ifndef HAVE_VOLATILE
+#define volatile
 #endif
 
 #ifndef HAVE_COMPARISON_FN_T

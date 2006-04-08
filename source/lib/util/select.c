@@ -32,7 +32,7 @@
 
 static pid_t initialised;
 static int select_pipe[2];
-static VOLATILE unsigned pipe_written, pipe_read;
+static volatile unsigned pipe_written, pipe_read;
 
 /*******************************************************************
  Call this from all Samba signal handlers if you want to avoid a 

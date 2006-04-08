@@ -999,13 +999,11 @@ char *talloc_strndup(const void *t, const char *p, size_t n)
 	return ret;
 }
 
-#ifndef VA_COPY
-#ifdef HAVE_VA_COPY
-#define VA_COPY(dest, src) va_copy(dest, src)
-#elif defined(HAVE___VA_COPY)
-#define VA_COPY(dest, src) __va_copy(dest, src)
+#ifndef HAVE_VA_COPY
+#ifdef HAVE___VA_COPY
+#define va_copy(dest, src) __va_copy(dest, src)
 #else
-#define VA_COPY(dest, src) (dest) = (src)
+#define va_copy(dest, src) (dest) = (src)
 #endif
 #endif
 
@@ -1016,7 +1014,7 @@ char *talloc_vasprintf(const void *t, const char *fmt, va_list ap)
 	va_list ap2;
 	char c;
 	
-	VA_COPY(ap2, ap);
+	va_copy(ap2, ap);
 
 	/* this call looks strange, but it makes it work on older solaris boxes */
 	if ((len = vsnprintf(&c, 1, fmt, ap2)) < 0) {
@@ -1025,7 +1023,7 @@ char *talloc_vasprintf(const void *t, const char *fmt, va_list ap)
 
 	ret = _talloc(t, len+1);
 	if (ret) {
-		VA_COPY(ap2, ap);
+		va_copy(ap2, ap);
 		vsnprintf(ret, len+1, fmt, ap2);
 		talloc_set_name_const(ret, ret);
 	}
@@ -1067,7 +1065,7 @@ char *talloc_vasprintf_append(char *s, const char *fmt, va_list ap)
 
 	tc = talloc_chunk_from_ptr(s);
 
-	VA_COPY(ap2, ap);
+	va_copy(ap2, ap);
 
 	s_len = tc->size - 1;
 	if ((len = vsnprintf(NULL, 0, fmt, ap2)) <= 0) {
@@ -1083,7 +1081,7 @@ char *talloc_vasprintf_append(char *s, const char *fmt, va_list ap)
 	s = talloc_realloc(NULL, s, char, s_len + len+1);
 	if (!s) return NULL;
 
-	VA_COPY(ap2, ap);
+	va_copy(ap2, ap);
 
 	vsnprintf(s+s_len, len+1, fmt, ap2);
 	talloc_set_name_const(s, s);

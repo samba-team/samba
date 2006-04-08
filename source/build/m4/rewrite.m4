@@ -8,7 +8,6 @@ AC_SUBST(LDSHFLAGS)
 AC_SUBST(SONAMEFLAG)
 AC_SUBST(PICFLAG)
 
-AC_DEFINE([_GNU_SOURCE],[],[Pull in GNU extensions])
 AC_SYS_LARGEFILE
 
 #
@@ -53,7 +52,7 @@ AC_HEADER_DIRENT
 AC_HEADER_TIME
 AC_HEADER_SYS_WAIT
 AC_CHECK_HEADERS(sys/select.h fcntl.h sys/fcntl.h sys/time.h stdarg.h)
-AC_CHECK_HEADERS(utime.h grp.h sys/id.h limits.h memory.h compat.h math.h)
+AC_CHECK_HEADERS(utime.h grp.h sys/id.h limits.h compat.h math.h)
 AC_CHECK_HEADERS(sys/param.h ctype.h sys/wait.h sys/resource.h sys/ioctl.h sys/ipc.h sys/mode.h)
 AC_CHECK_HEADERS(sys/mman.h sys/filio.h sys/priv.h sys/shm.h string.h strings.h stdlib.h)
 AC_CHECK_HEADERS(sys/vfs.h sys/fs/s5param.h sys/filsys.h termios.h termio.h)
@@ -496,21 +495,3 @@ fi
 AC_CHECK_LIB_EXT(crypt, CRYPT_LIBS, crypt)
 SMB_EXT_LIB_ENABLE(CRYPT,YES)
 SMB_EXT_LIB(CRYPT, $CRYPT_LIBS)
-
-##
-## moved after the check for -lcrypt in order to
-## ensure that the necessary libraries are included
-## check checking for truncated salt.  Wrapped by the
-## $with_pam_for_crypt variable as above   --jerry
-##
-if test x"$with_pam_for_crypt" != x"yes"; then
-AC_CACHE_CHECK([for a crypt that needs truncated salt],samba_cv_HAVE_TRUNCATED_SALT,[
-crypt_LIBS="$LIBS"
-LIBS="$AUTHLIBS $LIBS"
-AC_TRY_RUN([#include "${srcdir-.}/build/tests/crypttest.c"],
-	samba_cv_HAVE_TRUNCATED_SALT=no,samba_cv_HAVE_TRUNCATED_SALT=yes,samba_cv_HAVE_TRUNCATED_SALT=cross)
-LIBS="$crypt_LIBS"])
-if test x"$samba_cv_HAVE_TRUNCATED_SALT" = x"yes"; then
-	AC_DEFINE(HAVE_TRUNCATED_SALT,1,[Whether crypt needs truncated salt])
-fi
-fi
