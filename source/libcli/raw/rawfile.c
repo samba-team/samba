@@ -396,7 +396,7 @@ static struct smbcli_request *smb_raw_t2open_send(struct smbcli_tree *tree,
 ****************************************************************************/
 static NTSTATUS smb_raw_t2open_recv(struct smbcli_request *req, TALLOC_CTX *mem_ctx, union smb_open *parms)
 {
-	struct smbcli_transport *transport = req?req->transport:NULL;
+	struct smbcli_transport *transport = req->transport;
 	struct smb_trans2 t2;
 	NTSTATUS status;
 
