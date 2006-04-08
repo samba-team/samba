@@ -17,7 +17,7 @@ INIT_FUNCTION = server_service_smb_init
 OUTPUT_TYPE = MERGEDOBJ
 SUBSYSTEM = service
 REQUIRED_SUBSYSTEMS = \
-		SMB
+		SMB_SERVER
 # End MODULE server_smb
 ################################################
 

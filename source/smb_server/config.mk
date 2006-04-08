@@ -2,7 +2,7 @@
 
 #######################
 # Start SUBSYSTEM SMB
-[SUBSYSTEM::SMB]
+[SUBSYSTEM::SMB_SERVER]
 OBJ_FILES = \
 		smb_server.o \
 		tcon.o \

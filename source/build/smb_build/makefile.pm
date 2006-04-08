@@ -133,7 +133,7 @@ LD=$self->{config}->{LD}
 LDFLAGS=$self->{config}->{LDFLAGS} -L\$(builddir)/bin
 
 STLD=$self->{config}->{AR}
-STLD_FLAGS=-rc -L\$(builddir)/bin
+STLD_FLAGS=-rc
 
 SHLD=$self->{config}->{CC}
 SHLD_FLAGS=$self->{config}->{LDSHFLAGS} -L\$(builddir)/bin
@@ -342,7 +342,7 @@ sub StaticLibrary($$)
 {
 	my ($self,$ctx) = @_;
 
-	push (@{$self->{static_libs}}, $ctx->{OUTPUT});
+	push (@{$self->{static_libs}}, $ctx->{TARGET});
 
 	$self->_prepare_list($ctx, "OBJ_LIST");
 	$self->_prepare_list($ctx, "CFLAGS");
@@ -355,10 +355,10 @@ sub StaticLibrary($$)
 		
 	$self->output(<< "__EOD__"
 #
-$ctx->{TARGET}: \$($ctx->{TYPE}_$ctx->{NAME}_DEPEND_LIST) \$($ctx->{TYPE}_$ctx->{NAME}_OBJ_LIST) 
+$ctx->{TARGET}: \$($ctx->{TYPE}_$ctx->{NAME}_OBJ_LIST) 
 	\@echo Linking \$@
 	\@\$(STLD) \$(STLD_FLAGS) \$@ \\
-		\$($ctx->{TYPE}_$ctx->{NAME}_LINK_LIST)
+		\$($ctx->{TYPE}_$ctx->{NAME}_OBJ_LIST)
 
 __EOD__
 );
