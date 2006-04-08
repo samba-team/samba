@@ -173,7 +173,7 @@ static void tdb_next_hash_chain(struct tdb_context *tdb, u32 *chain)
 			}
 		}
 	} else {
-		u32 off;
+		u32 off=0;
 		for (;h < tdb->header.hash_size;h++) {
 			if (tdb_ofs_read(tdb, TDB_HASH_TOP(h), &off) != 0 || off != 0) {
 				break;
