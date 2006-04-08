@@ -48,6 +48,7 @@ sub new($$$)
 
 	if (!$self->{automatic_deps}) {
 		$self->output("ALL_PREDEP = proto\n");
+		$self->output(".NOTPARALLEL:\n");
 	}
 
 	return $self;
