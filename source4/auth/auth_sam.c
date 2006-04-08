@@ -110,7 +110,7 @@ static NTSTATUS authsam_password_ok(struct auth_context *auth_context,
 		}
 		user_info = user_info_temp;
 
-		/* NO break */
+		/*fall through*/
 	}
 	case AUTH_PASSWORD_HASH:
 		*lm_sess_key = data_blob(NULL, 0);
