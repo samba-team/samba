@@ -26,18 +26,17 @@
 #include "includes.h"
 #include "system/dir.h"
 
-static void *load_module(TALLOC_CTX *mem_ctx, const char *dir, const char *name)
+/**
+ * Obtain the init function from a shared library file
+ */
+_PUBLIC_ init_module_fn load_module(TALLOC_CTX *mem_ctx, const char *path)
 {
-	char *path;
 	void *handle;
 	void *init_fn;
-
-	path = talloc_asprintf(mem_ctx, "%s/%s", dir, name);
 
 	handle = dlopen(path, RTLD_NOW);
 	if (handle == NULL) {
 		DEBUG(0, ("Unable to open %s: %s\n", path, dlerror()));
-		talloc_free(path);
 		return NULL;
 	}
 
@@ -47,13 +46,10 @@ static void *load_module(TALLOC_CTX *mem_ctx, const char *dir, const char *name)
 		DEBUG(0, ("Unable to find init_module() in %s: %s\n", path, dlerror()));
 		DEBUG(1, ("Loading module '%s' failed\n", path));
 		dlclose(handle);
-		talloc_free(path);
 		return NULL;
 	}
 
-	talloc_free(path);
-
-	return init_fn;
+	return (init_module_fn)init_fn;
 }
 
 /**
@@ -64,6 +60,7 @@ _PUBLIC_ init_module_fn *load_modules(TALLOC_CTX *mem_ctx, const char *path)
 {
 	DIR *dir;
 	struct dirent *entry;
+	char *filename;
 	int success = 0;
 	init_module_fn *ret = talloc_array(mem_ctx, init_module_fn, 2);
 
@@ -79,12 +76,16 @@ _PUBLIC_ init_module_fn *load_modules(TALLOC_CTX *mem_ctx, const char *path)
 		if (!strcmp(entry->d_name, ".") || !strcmp(entry->d_name, ".."))
 			continue;
 
-		ret[success] = load_module(mem_ctx, path, entry->d_name);
+		filename = talloc_asprintf(mem_ctx, "%s/%s", path, entry->d_name);
+
+		ret[success] = load_module(mem_ctx, filename);
 		if (ret[success]) {
 			ret = talloc_realloc(mem_ctx, ret, init_module_fn, success+2);
 			success++;
 			ret[success] = NULL;
 		}
+
+		talloc_free(filename);
 	}
 
 	closedir(dir);
