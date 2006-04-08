@@ -42,7 +42,7 @@ static void print_tree(int l, struct registry_key *p, int fullpath, int novals)
 	} else {
 		if(!p->name) printf("<No Name>\n");
 		if(fullpath) printf("%s\n", p->path);
-		else printf("%s\n", p->name);
+		else printf("%s\n", p->name?p->name:"(NULL)");
 	}
 
 	mem_ctx = talloc_init("print_tree");
