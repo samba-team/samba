@@ -222,7 +222,7 @@ static BOOL get_ea_dos_attribute(connection_struct *conn, const char *path,SMB_S
 	sizeret = SMB_VFS_GETXATTR(conn, path, SAMBA_XATTR_DOS_ATTRIB, attrstr, sizeof(attrstr));
 	if (sizeret == -1) {
 #if defined(ENOTSUP) && defined(ENOATTR)
-		if ((errno != ENOTSUP) && (errno != ENOATTR) && (errno != EACCES)) {
+		if ((errno != ENOTSUP) && (errno != ENOATTR) && (errno != EACCES) && (errno != EPERM)) {
 			DEBUG(1,("get_ea_dos_attributes: Cannot get attribute from EA on file %s: Error = %s\n",
 				path, strerror(errno) ));
 			set_store_dos_attributes(SNUM(conn), False);
