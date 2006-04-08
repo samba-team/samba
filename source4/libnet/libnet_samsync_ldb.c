@@ -239,7 +239,7 @@ static NTSTATUS samsync_ldb_handle_user(TALLOC_CTX *mem_ctx,
 	const struct dom_sid *user_sid;
 	struct ldb_message *msg;
 	struct ldb_message **msgs;
-	struct ldb_message **remote_msgs;
+	struct ldb_message **remote_msgs = NULL;
 	int ret, i;
 	uint32_t acb;
 	BOOL add = False;
