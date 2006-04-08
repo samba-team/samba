@@ -2,7 +2,6 @@
  - fix module loading for selftest during non-developer builds
 - per-subsystem CFLAGS (which are inherited)
 - clearer distinction between dcerpc and ndr. seperate interface tables?
-- pregenerate more stuff (IDL, manpages, lex/yacc?)
 - saner names for:
 	libcli.so.0.0.1 (rename to libsmb?)
 	libcli_cldap.so.0.0.1 (rename to libcldap?)
