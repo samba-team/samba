@@ -441,6 +441,26 @@ char *file_load(const char *fname, size_t *size, size_t maxsize)
 }
 
 /*******************************************************************
+ unmap or free memory
+*******************************************************************/
+
+BOOL unmap_file(void* start, size_t size)
+{
+#ifdef HAVE_MMAP
+	if ( munmap( start, size ) != 0 ) {
+		DEBUG( 1, ("map_file: Failed to unmap address %X "
+			"of size %d - %s\n", 
+			start, size, strerror(errno) ));
+		return False;
+	}
+	return True;
+#else
+	SAFE_FREE( start );
+	return True;
+#endif
+}
+
+/*******************************************************************
  mmap (if possible) or read a file.
 ********************************************************************/
 

@@ -179,6 +179,31 @@ static BOOL set_my_netbios_names(const char *name, int i)
 	return True;
 }
 
+/***********************************************************************
+ Free memory allocated to global objects
+***********************************************************************/
+
+void gfree_names(void)
+{
+	SAFE_FREE( smb_myname );
+	SAFE_FREE( smb_myworkgroup );
+	SAFE_FREE( smb_scope );
+	free_netbios_names_array();
+}
+
+void gfree_all( void )
+{
+	gfree_names();	
+	gfree_loadparm();
+	gfree_case_tables();
+	gfree_debugsyms();
+	gfree_charcnv();
+	gfree_messsges();
+
+	/* release the talloc null_context memory last */
+	talloc_nc_free();
+}
+
 const char *my_netbios_names(int i)
 {
 	return smb_my_netbios_names[i];

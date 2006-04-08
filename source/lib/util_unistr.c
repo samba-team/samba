@@ -31,6 +31,9 @@
 static smb_ucs2_t *upcase_table;
 static smb_ucs2_t *lowcase_table;
 static uint8 *valid_table;
+static BOOL upcase_table_use_unmap;
+static BOOL lowcase_table_use_unmap;
+static BOOL valid_table_use_unmap;
 
 /**
  * This table says which Unicode characters are valid dos
@@ -40,6 +43,32 @@ static uint8 *valid_table;
  **/
 static uint8 doschar_table[8192]; /* 65536 characters / 8 bits/byte */
 
+/**
+ * Destroy global objects allocated by load_case_tables()
+ **/
+void gfree_case_tables(void)
+{
+	if ( upcase_table ) {
+		if ( upcase_table_use_unmap )
+			unmap_file(upcase_table, 0x20000);
+		else
+			SAFE_FREE(upcase_table);
+	}
+
+	if ( lowcase_table ) {
+		if ( lowcase_table_use_unmap )
+			unmap_file(lowcase_table, 0x20000);
+		else
+			SAFE_FREE(lowcase_table);
+	}
+
+	if ( valid_table ) {
+		if ( valid_table_use_unmap )
+			unmap_file(valid_table, 0x10000);
+		else
+			SAFE_FREE(valid_table);
+	}
+}
 
 /**
  * Load or generate the case handling tables.
@@ -60,7 +89,10 @@ void load_case_tables(void)
 	initialised = 1;
 
 	upcase_table = map_file(lib_path("upcase.dat"), 0x20000);
+	upcase_table_use_unmap = ( upcase_table != NULL );
+
 	lowcase_table = map_file(lib_path("lowcase.dat"), 0x20000);
+	lowcase_table_use_unmap = ( lowcase_table != NULL );
 
 #ifdef HAVE_SETLOCALE
 	/* Get the name of the current locale.  */
@@ -196,6 +228,7 @@ void init_valid_table(void)
 	if (valid_file) {
 		valid_table = valid_file;
 		mapped_file = 1;
+		valid_table_use_unmap = True;
 		return;
 	}
 
@@ -203,7 +236,11 @@ void init_valid_table(void)
 	 * It might need to be regenerated if the code page changed.
 	 * We know that we're not using a mapped file, so we can
 	 * free() the old one. */
-	if (valid_table) free(valid_table);
+	if (valid_table) 
+		SAFE_FREE(valid_table);
+
+	/* use free rather than unmap */
+	valid_table_use_unmap = False;
 
 	DEBUG(2,("creating default valid table\n"));
 	valid_table = SMB_MALLOC(0x10000);

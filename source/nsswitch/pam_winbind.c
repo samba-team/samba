@@ -17,6 +17,16 @@
 
 #define MAX_PASSWD_TRIES	3
 
+/******************************************************************* 
+ Need this destructor to free global memory when the shared library 
+ is unloaded 
+*******************************************************************/
+
+void __attribute__ ((destructor)) _fini_pam_winbind(void)
+{
+	gfree_all();
+}
+
 /* some syslogging */
 static void _pam_log(int err, const char *format, ...)
 {
