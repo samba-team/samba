@@ -82,6 +82,7 @@ _PUBLIC_ char *fgets_slash(char *s2,int maxlen,XFILE *f)
 	case ' ':
 	  if (start_of_line)
 	    break;
+	  /* fall through */
 	default:
 	  start_of_line = False;
 	  s[len++] = c;
