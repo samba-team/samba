@@ -408,11 +408,13 @@ static void init_do_list_queue(void)
 
 static void adjust_do_list_queue(void)
 {
+	if (do_list_queue == NULL) return;
+
 	/*
 	 * If the starting point of the queue is more than half way through,
 	 * move everything toward the beginning.
 	 */
-	if (do_list_queue && (do_list_queue_start == do_list_queue_end))
+	if (do_list_queue_start == do_list_queue_end)
 	{
 		DEBUG(4,("do_list_queue is empty\n"));
 		do_list_queue_start = do_list_queue_end = 0;
