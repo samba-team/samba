@@ -27,7 +27,6 @@ sinclude(lib/ldb/sqlite3.m4)
 sinclude(lib/ldb/config.m4)
 sinclude(lib/tls/config.m4)
 sinclude(lib/events/config.m4)
-sinclude(lib/cmdline/config.m4)
 
 dnl disabled until we support external heimdal again
 dnl sinclude(auth/kerberos/config.m4)
