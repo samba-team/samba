@@ -418,6 +418,7 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 			if (!in.length) {
 				first = True;
 			}
+			/* fall through */
 		case SQUID_2_5_NTLMSSP:
 			nt_status = gensec_start_mech_by_oid(state->gensec_state, GENSEC_OID_NTLMSSP);
 			break;
