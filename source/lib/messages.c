@@ -70,6 +70,24 @@ static struct dispatch_fns {
 } *dispatch_fns;
 
 /****************************************************************************
+ Free global objects.
+****************************************************************************/
+
+void gfree_messsges(void)
+{
+	struct dispatch_fns *dfn, *next;
+
+	/* delete the dispatch_fns list */
+	dfn = dispatch_fns;
+	while( dfn ) {
+		next = dfn->next;
+		DLIST_REMOVE(dispatch_fns, dfn);
+		SAFE_FREE(dfn);
+		dfn = next;
+	}
+}
+
+/****************************************************************************
  Notifications come in as signals.
 ****************************************************************************/
 
