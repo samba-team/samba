@@ -114,4 +114,3 @@ _PUBLIC_ void oplock_set_capability(BOOL this_process, BOOL inherit)
 	set_inherited_process_capability(KERNEL_OPLOCK_CAPABILITY,inherit);
 #endif
 }
-
