@@ -87,6 +87,8 @@ RC2_set_key(RC2_KEY *key, int len, const unsigned char *data, int bits)
     unsigned char k[128];
     int j, T8, TM;
 
+    if (len <= 0)
+	abort();
     if (len > 128)
 	len = 128;
     if (bits <= 0 || bits > 1024)
