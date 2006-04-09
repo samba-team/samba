@@ -1,3 +1,7 @@
+2006-04-09  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* rsa.c: Make compile again.
+	
 2006-04-03  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* rsa.c: Implement i2d_RSAPublicKey
