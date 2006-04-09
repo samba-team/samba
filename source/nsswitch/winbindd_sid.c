@@ -124,6 +124,34 @@ static void lookupname_recv(void *private_data, BOOL success,
 	return;
 }
 
+void winbindd_lookuprids(struct winbindd_cli_state *state)
+{
+	struct winbindd_domain *domain;
+	DOM_SID domain_sid;
+	
+	/* Ensure null termination */
+	state->request.data.sid[sizeof(state->request.data.sid)-1]='\0';
+
+	DEBUG(10, ("lookup_rids: %s\n", state->request.data.sid));
+
+	if (!string_to_sid(&domain_sid, state->request.data.sid)) {
+		DEBUG(5, ("Could not convert %s to SID\n",
+			  state->request.data.sid));
+		request_error(state);
+		return;
+	}
+
+	domain = find_lookup_domain_from_sid(&domain_sid);
+	if (domain == NULL) {
+		DEBUG(10, ("Could not find domain for name %s\n",
+			   state->request.domain_name));
+		request_error(state);
+		return;
+	}
+
+	sendto_domain(state, domain);
+}
+
 static struct winbindd_child static_idmap_child;
 
 void init_idmap_child(void)

@@ -241,6 +241,15 @@ struct winbindd_methods {
 				char **name,
 				enum SID_NAME_USE *type);
 
+	NTSTATUS (*rids_to_names)(struct winbindd_domain *domain,
+				  TALLOC_CTX *mem_ctx,
+				  const DOM_SID *domain_sid,
+				  uint32 *rids,
+				  size_t num_rids,
+				  char **domain_name,
+				  char ***names,
+				  enum SID_NAME_USE **types);
+
 	/* lookup user info for a given SID */
 	NTSTATUS (*query_user)(struct winbindd_domain *domain, 
 			       TALLOC_CTX *mem_ctx, 

@@ -34,7 +34,7 @@
 
 /* Update this when you change the interface.  */
 
-#define WINBIND_INTERFACE_VERSION 14
+#define WINBIND_INTERFACE_VERSION 15
 
 /* Socket commands */
 
@@ -76,6 +76,7 @@ enum winbindd_cmd {
 
 	WINBINDD_LOOKUPSID,
 	WINBINDD_LOOKUPNAME,
+	WINBINDD_LOOKUPRIDS,
 
 	/* Lookup functions */
 

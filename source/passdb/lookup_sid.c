@@ -314,34 +314,38 @@ BOOL lookup_name(TALLOC_CTX *mem_ctx,
 	return True;
 }
 
-static BOOL winbind_lookup_rids(TALLOC_CTX *mem_ctx,
-				const DOM_SID *domain_sid,
-				int num_rids, uint32 *rids,
-				const char **domain_name,
-				const char **names, uint32 *types)
+static BOOL wb_lookup_rids(TALLOC_CTX *mem_ctx,
+			   const DOM_SID *domain_sid,
+			   int num_rids, uint32 *rids,
+			   const char **domain_name,
+			   const char **names, uint32 *types)
 {
-	/* Unless the winbind interface is upgraded, fall back to ask for
-	 * individual sids. I imagine introducing a lookuprids operation that
-	 * directly proxies to lsa_lookupsids to the correct DC. -- vl */
-
 	int i;
-	for (i=0; i<num_rids; i++) {
-		DOM_SID sid;
+	const char **my_names;
+	uint32 *my_types;
 
-		sid_copy(&sid, domain_sid);
-		sid_append_rid(&sid, rids[i]);
-
-		if (winbind_lookup_sid(mem_ctx, &sid,
-				       *domain_name == NULL ?
-				       domain_name : NULL,
-				       &names[i], &types[i])) {
-			if ((names[i] == NULL) || ((*domain_name) == NULL)) {
-				return False;
-			}
-		} else {
+	if (!winbind_lookup_rids(mem_ctx, domain_sid, num_rids, rids,
+				 domain_name, &my_names, &my_types)) {
+		for (i=0; i<num_rids; i++) {
 			types[i] = SID_NAME_UNKNOWN;
 		}
+		return True;
 	}
+
+	/*
+	 * winbind_lookup_rids allocates its own array. We've been given the
+	 * array, so copy it over
+	 */
+
+	for (i=0; i<num_rids; i++) {
+		if (my_names[i] == NULL) {
+			return False;
+		}
+		names[i] = talloc_steal(names, my_names[i]);
+		types[i] = my_types[i];
+	}
+	TALLOC_FREE(my_names);
+	TALLOC_FREE(my_types);
 	return True;
 }
 
@@ -450,8 +454,8 @@ static BOOL lookup_rids(TALLOC_CTX *mem_ctx, const DOM_SID *domain_sid,
 		return True;
 	}
 
-	return winbind_lookup_rids(mem_ctx, domain_sid, num_rids, rids,
-				   domain_name, *names, *types);
+	return wb_lookup_rids(mem_ctx, domain_sid, num_rids, rids,
+			      domain_name, *names, *types);
 }
 
 /*

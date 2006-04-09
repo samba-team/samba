@@ -1309,6 +1309,128 @@ do_query:
 	return status;
 }
 
+static NTSTATUS rids_to_names(struct winbindd_domain *domain,
+			      TALLOC_CTX *mem_ctx,
+			      const DOM_SID *domain_sid,
+			      uint32 *rids,
+			      size_t num_rids,
+			      char **domain_name,
+			      char ***names,
+			      enum SID_NAME_USE **types)
+{
+	struct winbind_cache *cache = get_cache(domain);
+	size_t i;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	BOOL have_mapped;
+	BOOL have_unmapped;
+
+	*domain_name = NULL;
+	*names = NULL;
+	*types = NULL;
+
+	if (!cache->tdb) {
+		goto do_query;
+	}
+
+	if (num_rids == 0) {
+		return NT_STATUS_OK;
+	}
+
+	*names = TALLOC_ARRAY(mem_ctx, char *, num_rids);
+	*types = TALLOC_ARRAY(mem_ctx, enum SID_NAME_USE, num_rids);
+
+	if ((*names == NULL) || (*types == NULL)) {
+		result = NT_STATUS_NO_MEMORY;
+		goto error;
+	}
+
+	have_mapped = have_unmapped = False;
+
+	for (i=0; i<num_rids; i++) {
+		DOM_SID sid;
+		struct cache_entry *centry;
+
+		if (!sid_compose(&sid, domain_sid, rids[i])) {
+			result = NT_STATUS_INTERNAL_ERROR;
+			goto error;
+		}
+
+		centry = wcache_fetch(cache, domain, "SN/%s",
+				      sid_string_static(&sid));
+		if (!centry) {
+			goto do_query;
+		}
+
+		(*types)[i] = SID_NAME_UNKNOWN;
+		(*names)[i] = talloc_strdup(*names, "");
+
+		if (NT_STATUS_IS_OK(centry->status)) {
+			char *dom;
+			have_mapped = True;
+			(*types)[i] = (enum SID_NAME_USE)centry_uint32(centry);
+			dom = centry_string(centry, mem_ctx);
+			if (*domain_name == NULL) {
+				*domain_name = dom;
+			} else {
+				talloc_free(dom);
+			}
+			(*names)[i] = centry_string(centry, *names);
+		} else {
+			have_unmapped = True;
+		}
+
+		centry_free(centry);
+	}
+
+	if (!have_mapped) {
+		return NT_STATUS_NONE_MAPPED;
+	}
+	if (!have_unmapped) {
+		return NT_STATUS_OK;
+	}
+	return STATUS_SOME_UNMAPPED;
+
+ do_query:
+
+	TALLOC_FREE(*names);
+	TALLOC_FREE(*types);
+
+	result = domain->backend->rids_to_names(domain, mem_ctx, domain_sid,
+						rids, num_rids, domain_name,
+						names, types);
+
+	if (!NT_STATUS_IS_OK(result) &&
+	    !NT_STATUS_EQUAL(result, STATUS_SOME_UNMAPPED)) {
+		return result;
+	}
+
+	refresh_sequence_number(domain, False);
+
+	for (i=0; i<num_rids; i++) {
+		DOM_SID sid;
+		NTSTATUS status;
+
+		if (!sid_compose(&sid, domain_sid, rids[i])) {
+			result = NT_STATUS_INTERNAL_ERROR;
+			goto error;
+		}
+
+		status = (*types)[i] == SID_NAME_UNKNOWN ?
+			NT_STATUS_NONE_MAPPED : NT_STATUS_OK;
+
+		wcache_save_sid_to_name(domain, status, &sid, *domain_name,
+					(*names)[i], (*types)[i]);
+	}
+
+	return result;
+
+ error:
+	
+	TALLOC_FREE(*names);
+	TALLOC_FREE(*types);
+	return result;
+}
+
 /* Lookup user information from a rid */
 static NTSTATUS query_user(struct winbindd_domain *domain, 
 			   TALLOC_CTX *mem_ctx, 
@@ -2359,6 +2481,7 @@ struct winbindd_methods cache_methods = {
 	enum_local_groups,
 	name_to_sid,
 	sid_to_name,
+	rids_to_names,
 	query_user,
 	lookup_usergroups,
 	lookup_useraliases,

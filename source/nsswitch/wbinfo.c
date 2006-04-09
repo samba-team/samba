@@ -565,6 +565,64 @@ static BOOL wbinfo_lookupsid(char *sid)
 	return True;
 }
 
+/* Lookup a list of RIDs */
+
+static BOOL wbinfo_lookuprids(char *domain_sid, char *arg)
+{
+	size_t i;
+	DOM_SID sid;
+	int num_rids;
+	uint32 *rids;
+	const char *p;
+	char ridstr[32];
+	const char **names;
+	enum SID_NAME_USE *types;
+	const char *domain_name;
+	TALLOC_CTX *mem_ctx;
+
+	if (!string_to_sid(&sid, domain_sid)) {
+		d_printf("Could not convert %s to sid\n", domain_sid);
+		return False;
+	}
+
+	mem_ctx = talloc_new(NULL);
+	if (mem_ctx == NULL) {
+		d_printf("talloc_new failed\n");
+		return False;
+	}
+
+	num_rids = 0;
+	rids = NULL;
+	p = arg;
+
+	while (next_token(&p, ridstr, " ,\n", sizeof(ridstr))) {
+		uint32 rid = strtoul(ridstr, NULL, 10);
+		ADD_TO_ARRAY(mem_ctx, uint32, rid, &rids, &num_rids);
+	}
+
+	if (rids == NULL) {
+		TALLOC_FREE(mem_ctx);
+		return False;
+	}
+
+	if (!winbind_lookup_rids(mem_ctx, &sid, num_rids, rids,
+				 &domain_name, &names, &types)) {
+		d_printf("winbind_lookup_rids failed\n");
+		TALLOC_FREE(mem_ctx);
+		return False;
+	}
+
+	d_printf("Domain: %s\n", domain_name);
+
+	for (i=0; i<num_rids; i++) {
+		d_printf("%8d: %s (%s)\n", rids[i], names[i],
+			 sid_type_lookup(types[i]));
+	}
+
+	TALLOC_FREE(mem_ctx);
+	return True;
+}
+
 /* Convert string to sid */
 
 static BOOL wbinfo_lookupname(char *name)
@@ -1073,6 +1131,7 @@ int main(int argc, char **argv)
 		{ "WINS-by-ip", 'I', POPT_ARG_STRING, &string_arg, 'I', "Converts IP address to NetBIOS name", "IP" },
 		{ "name-to-sid", 'n', POPT_ARG_STRING, &string_arg, 'n', "Converts name to sid", "NAME" },
 		{ "sid-to-name", 's', POPT_ARG_STRING, &string_arg, 's', "Converts sid to name", "SID" },
+		{ "lookup-rids", 'R', POPT_ARG_STRING, &string_arg, 'R', "Converts RIDs to names", "RIDs" },
 		{ "uid-to-sid", 'U', POPT_ARG_INT, &int_arg, 'U', "Converts uid to sid" , "UID" },
 		{ "gid-to-sid", 'G', POPT_ARG_INT, &int_arg, 'G', "Converts gid to sid", "GID" },
 		{ "sid-to-uid", 'S', POPT_ARG_STRING, &string_arg, 'S', "Converts sid to uid", "SID" },
@@ -1161,6 +1220,12 @@ int main(int argc, char **argv)
 		case 's':
 			if (!wbinfo_lookupsid(string_arg)) {
 				d_fprintf(stderr, "Could not lookup sid %s\n", string_arg);
+				goto done;
+			}
+			break;
+		case 'R':
+			if (!wbinfo_lookuprids(opt_domain_name, string_arg)) {
+				d_fprintf(stderr, "Could not lookup RIDs %s\n", string_arg);
 				goto done;
 			}
 			break;

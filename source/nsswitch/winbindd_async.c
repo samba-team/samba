@@ -740,8 +740,8 @@ BOOL print_sidlist(TALLOC_CTX *mem_ctx, const DOM_SID *sids,
 	return True;
 }
 
-BOOL parse_sidlist(TALLOC_CTX *mem_ctx, char *sidstr,
-		   DOM_SID **sids, size_t *num_sids)
+static BOOL parse_sidlist(TALLOC_CTX *mem_ctx, char *sidstr,
+			  DOM_SID **sids, size_t *num_sids)
 {
 	char *p, *q;
 
@@ -768,28 +768,8 @@ BOOL parse_sidlist(TALLOC_CTX *mem_ctx, char *sidstr,
 	return True;
 }
 
-BOOL print_ridlist(TALLOC_CTX *mem_ctx, uint32 *rids, size_t num_rids,
-		   char **result, ssize_t *len)
-{
-	size_t i;
-	size_t buflen = 0;
-
-	*len = 0;
-	*result = NULL;
-	for (i=0; i<num_rids; i++) {
-		sprintf_append(mem_ctx, result, len, &buflen,
-			       "%ld\n", rids[i]);
-	}
-
-	if ((num_rids != 0) && (*result == NULL)) {
-		return False;
-	}
-
-	return True;
-}
-
-BOOL parse_ridlist(TALLOC_CTX *mem_ctx, char *ridstr,
-		   uint32 **sids, size_t *num_rids)
+static BOOL parse_ridlist(TALLOC_CTX *mem_ctx, char *ridstr,
+			  uint32 **rids, size_t *num_rids)
 {
 	char *p;
 
@@ -806,9 +786,66 @@ BOOL parse_ridlist(TALLOC_CTX *mem_ctx, char *ridstr,
 			return False;
 		}
 		p = q+1;
-		ADD_TO_ARRAY(mem_ctx, uint32, rid, sids, num_rids);
+		ADD_TO_ARRAY(mem_ctx, uint32, rid, rids, num_rids);
 	}
 	return True;
+}
+
+enum winbindd_result winbindd_dual_lookuprids(struct winbindd_domain *domain,
+					      struct winbindd_cli_state *state)
+{
+	uint32 *rids = NULL;
+	size_t i, len, buflen, num_rids = 0;
+	DOM_SID domain_sid;
+	char *domain_name;
+	char **names;
+	enum SID_NAME_USE *types;
+	NTSTATUS status;
+	char *result;
+
+	DEBUG(10, ("Looking up RIDs for domain %s (%s)\n",
+		   state->request.domain_name,
+		   state->request.data.sid));
+
+	if (!parse_ridlist(state->mem_ctx, state->request.extra_data,
+			   &rids, &num_rids)) {
+		DEBUG(5, ("Could not parse ridlist\n"));
+		return WINBINDD_ERROR;
+	}
+
+	if (!string_to_sid(&domain_sid, state->request.data.sid)) {
+		DEBUG(5, ("Could not parse domain sid %s\n",
+			  state->request.data.sid));
+		return WINBINDD_ERROR;
+	}
+
+	status = domain->methods->rids_to_names(domain, state->mem_ctx,
+						&domain_sid, rids, num_rids,
+						&domain_name,
+						&names, &types);
+
+	if (!NT_STATUS_IS_OK(status) &&
+	    !NT_STATUS_EQUAL(status, STATUS_SOME_UNMAPPED)) {
+		return WINBINDD_ERROR;
+	}
+
+	len = 0;
+	buflen = 0;
+	result = NULL;
+
+	for (i=0; i<num_rids; i++) {
+		sprintf_append(state->mem_ctx, &result, &len, &buflen,
+			       "%d %s\n", types[i], names[i]);
+	}
+
+	fstrcpy(state->response.data.domain_name, domain_name);
+
+	if (result != NULL) {
+		state->response.extra_data = SMB_STRDUP(result);
+		state->response.length += len+1;
+	}
+
+	return WINBINDD_OK;
 }
 
 static void getsidaliases_recv(TALLOC_CTX *mem_ctx, BOOL success,

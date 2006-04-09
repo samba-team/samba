@@ -318,6 +318,58 @@ NTSTATUS msrpc_sid_to_name(struct winbindd_domain *domain,
 	return NT_STATUS_OK;
 }
 
+NTSTATUS msrpc_rids_to_names(struct winbindd_domain *domain,
+			     TALLOC_CTX *mem_ctx,
+			     const DOM_SID *sid,
+			     uint32 *rids,
+			     size_t num_rids,
+			     char **domain_name,
+			     char ***names,
+			     enum SID_NAME_USE **types)
+{
+	char **domains;
+	NTSTATUS result;
+	struct rpc_pipe_client *cli;
+	POLICY_HND lsa_policy;
+	DOM_SID *sids;
+	size_t i;
+
+	DEBUG(3, ("rids_to_names [rpc] for domain %s\n", domain->name ));
+
+	sids = TALLOC_ARRAY(mem_ctx, DOM_SID, num_rids);
+	if (sids == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	for (i=0; i<num_rids; i++) {
+		if (!sid_compose(&sids[i], sid, rids[i])) {
+			return NT_STATUS_INTERNAL_ERROR;
+		}
+	}
+
+	result = cm_connect_lsa(domain, mem_ctx, &cli, &lsa_policy);
+	if (!NT_STATUS_IS_OK(result)) {
+		return result;
+	}
+
+	result = rpccli_lsa_lookup_sids(cli, mem_ctx, &lsa_policy,
+					num_rids, sids, &domains,
+					names, types);
+	if (!NT_STATUS_IS_OK(result) &&
+	    !NT_STATUS_EQUAL(result, STATUS_SOME_UNMAPPED)) {
+		return result;
+	}
+
+	for (i=0; i<num_rids; i++) {
+		if ((*types)[i] != SID_NAME_UNKNOWN) {
+			*domain_name = domains[i];
+			break;
+		}
+	}
+
+	return result;
+}
+
 /* Lookup user information from a rid or username. */
 static NTSTATUS query_user(struct winbindd_domain *domain, 
 			   TALLOC_CTX *mem_ctx, 
@@ -956,6 +1008,7 @@ struct winbindd_methods msrpc_methods = {
 	enum_local_groups,
 	msrpc_name_to_sid,
 	msrpc_sid_to_name,
+	msrpc_rids_to_names,
 	query_user,
 	lookup_usergroups,
 	msrpc_lookup_useraliases,
