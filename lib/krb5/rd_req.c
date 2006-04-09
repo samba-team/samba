@@ -340,6 +340,9 @@ krb5_verify_ap_req2(krb5_context context,
     krb5_error_code ret;
     EtypeList etypes;
     
+    if (ticket)
+	*ticket = NULL;
+
     if (auth_context && *auth_context) {
 	ac = *auth_context;
     } else {
@@ -348,13 +351,12 @@ krb5_verify_ap_req2(krb5_context context,
 	    return ret;
     }
 
-    t = malloc(sizeof(*t));
+    t = calloc(1, sizeof(*t));
     if (t == NULL) {
 	ret = ENOMEM;
 	krb5_clear_error_string (context);
 	goto out;
     }
-    memset(t, 0, sizeof(*t));
 
     if (ap_req->ap_options.use_session_key && ac->keyblock){
 	ret = krb5_decrypt_ticket(context, &ap_req->ticket, 
@@ -372,14 +374,17 @@ krb5_verify_ap_req2(krb5_context context,
     if(ret)
 	goto out;
 
-    _krb5_principalname2krb5_principal(&t->server, ap_req->ticket.sname, 
-				       ap_req->ticket.realm);
-    _krb5_principalname2krb5_principal(&t->client, t->ticket.cname, 
-				       t->ticket.crealm);
+    ret = _krb5_principalname2krb5_principal(&t->server, ap_req->ticket.sname, 
+					     ap_req->ticket.realm);
+    if (ret) goto out;
+    ret = _krb5_principalname2krb5_principal(&t->client, t->ticket.cname, 
+					     t->ticket.crealm);
+    if (ret) goto out;
 
     /* save key */
 
-    krb5_copy_keyblock(context, &t->ticket.key, &ac->keyblock);
+    ret = krb5_copy_keyblock(context, &t->ticket.key, &ac->keyblock);
+    if (ret) goto out;
 
     ret = decrypt_authenticator (context,
 				 &t->ticket.key,
