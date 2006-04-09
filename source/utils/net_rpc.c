@@ -430,6 +430,7 @@ NTSTATUS rpc_info_internals(const DOM_SID *domain_sid,
 	result = rpccli_samr_connect(pipe_hnd, mem_ctx, MAXIMUM_ALLOWED_ACCESS, 
 				  &connect_pol);
 	if (!NT_STATUS_IS_OK(result)) {
+		d_fprintf(stderr, "Could not connect to SAM: %s\n", nt_errstr(result));
 		goto done;
 	}
 	
@@ -438,6 +439,7 @@ NTSTATUS rpc_info_internals(const DOM_SID *domain_sid,
 				      MAXIMUM_ALLOWED_ACCESS,
 				      domain_sid, &domain_pol);
 	if (!NT_STATUS_IS_OK(result)) {
+		d_fprintf(stderr, "Could not open domain: %s\n", nt_errstr(result));
 		goto done;
 	}
 
@@ -468,7 +470,7 @@ NTSTATUS rpc_info_internals(const DOM_SID *domain_sid,
 
 int net_rpc_info(int argc, const char **argv) 
 {
-	return run_rpc_command(NULL, PI_SAMR, NET_FLAGS_ANONYMOUS | NET_FLAGS_PDC, 
+	return run_rpc_command(NULL, PI_SAMR, NET_FLAGS_PDC, 
 			       rpc_info_internals,
 			       argc, argv);
 }
