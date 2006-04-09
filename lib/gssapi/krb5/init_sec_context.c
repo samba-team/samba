@@ -334,8 +334,9 @@ init_auth
     /* 
      * If the credential doesn't have ok-as-delegate, check what local
      * policy say about ok-as-delegate, default is FALSE that makes
-     * code ignore all this, but if its TRUE, strip of the
-     * GSS_C_DELEG_FLAG.
+     * code ignore the KDC setting and follow what the application
+     * requested. If its TRUE, strip of the GSS_C_DELEG_FLAG if the
+     * KDC doesn't set ok-as-delegate.
      */
     if (!cred->flags.b.ok_as_delegate) {
 	krb5_boolean delegate;
