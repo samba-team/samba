@@ -1767,6 +1767,9 @@ NTSTATUS pdb_default_lookup_rids(struct pdb_methods *methods,
 
 		if (lookup_global_sam_rid(names, rids[i], &name, &attrs[i],
 					  NULL)) {
+			if (name == NULL) {
+				return NT_STATUS_NO_MEMORY;
+			}
 			names[i] = name;
 			DEBUG(5,("lookup_rids: %s:%d\n", names[i], attrs[i]));
 			have_mapped = True;
