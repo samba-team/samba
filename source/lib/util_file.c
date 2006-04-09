@@ -448,9 +448,9 @@ BOOL unmap_file(void* start, size_t size)
 {
 #ifdef HAVE_MMAP
 	if ( munmap( start, size ) != 0 ) {
-		DEBUG( 1, ("map_file: Failed to unmap address %X "
-			"of size %d - %s\n", 
-			start, size, strerror(errno) ));
+		DEBUG( 1, ("map_file: Failed to unmap address %p "
+			"of size %u - %s\n", 
+			start, (unsigned int)size, strerror(errno) ));
 		return False;
 	}
 	return True;
