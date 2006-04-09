@@ -75,7 +75,7 @@ static struct smbw_dir *cur_dir;
 /***************************************************** 
 add a entry to a directory listing
 *******************************************************/
-static void smbw_dir_add(struct file_info *finfo, const char *mask, 
+static void smbw_dir_add(const char *mntpnt, struct file_info *finfo, const char *mask, 
 			 void *state)
 {
 	struct file_info *cdl;
@@ -113,7 +113,7 @@ static void smbw_share_add(const char *share, uint32 type,
 	pstrcpy(finfo.name, share);
 	finfo.mode = aRONLY | aDIR;	
 
-	smbw_dir_add(&finfo, NULL, NULL);
+	smbw_dir_add("\\", &finfo, NULL, NULL);
 }
 
 
@@ -130,7 +130,7 @@ static void smbw_server_add(const char *name, uint32 type,
 	pstrcpy(finfo.name, name);
 	finfo.mode = aRONLY | aDIR;	
 
-	smbw_dir_add(&finfo, NULL, NULL);
+	smbw_dir_add("\\", &finfo, NULL, NULL);
 }
 
 
@@ -152,7 +152,7 @@ static void smbw_printjob_add(struct print_job_info *job)
 	finfo.mode = aRONLY;
 	finfo.size = job->size;
 
-	smbw_dir_add(&finfo, NULL, NULL);
+	smbw_dir_add("\\", &finfo, NULL, NULL);
 }
 
 
