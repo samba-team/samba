@@ -64,6 +64,11 @@ OM_uint32 gss_add_cred (
 	return GSS_S_NO_CRED;
     }
 
+    if (cred == GSS_C_NO_CREDENTIAL) { /* XXX standard conformance failure */
+	*minor_status = 0;
+	return GSS_S_NO_CRED;
+    }
+
     /* check if requested output usage is compatible with output usage */ 
     if (output_cred_handle != NULL) {
 	HEIMDAL_MUTEX_lock(&cred->cred_id_mutex);
