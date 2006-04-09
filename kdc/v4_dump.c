@@ -138,5 +138,6 @@ v4_prop_dump(void *arg, const char *file)
 	v4_prop(arg, &pr);
 	memset(&pr, 0, sizeof(pr));
     }
+    fclose(f);
     return 0;
 }
