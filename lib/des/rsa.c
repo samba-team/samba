@@ -301,7 +301,7 @@ heim_int2BN(const heim_integer *i)
     return bn;
 }
 
-static krb5_error_code
+static int
 bn2heim_int(BIGNUM *bn, heim_integer *integer)
 {
     integer->length = BN_num_bytes(bn);
@@ -353,16 +353,16 @@ d2i_RSAPrivateKey(RSA *rsa, const unsigned char **pp, size_t len)
 int
 i2d_RSAPublicKey(RSA *rsa, const unsigned char **pp)
 {
+    RSAPublicKey data;
     size_t size;
     int ret;
 
     ret = bn2heim_int(rsa->n, &data.modulus);
-    ret = bn2heim_int(rsa->n, &data.e);
+    ret = bn2heim_int(rsa->e, &data.publicExponent);
 
     if (pp == NULL) {
 	size = length_RSAPublicKey(&data);
     } else {
-	RSAPublicKey data;
 	void *p;
 	size_t len;
 
