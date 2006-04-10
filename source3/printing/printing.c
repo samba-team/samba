@@ -1400,7 +1400,7 @@ void start_background_queue(void)
 			/* check for some essential signals first */
 			
                         if (got_sig_term) {
-                                exit_server_cleanly();
+                                exit_server_cleanly(NULL);
                         }
 
                         if (reload_after_sighup) {
