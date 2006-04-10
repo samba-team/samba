@@ -139,7 +139,7 @@ krb4_kt_start_seq_get_int (krb5_context context,
 	return ret;
     }
     c->sp = krb5_storage_from_fd(c->fd);
-    if(sp == NULL) {
+    if(c->sp == NULL) {
 	close(c->fd);
 	free(ed);
 	return ENOMEM;
@@ -321,8 +321,8 @@ krb4_kt_add_entry (krb5_context context,
 
 static krb5_error_code
 krb4_kt_remove_entry(krb5_context context,
-		 krb5_keytab id,
-		 krb5_keytab_entry *entry)
+		     krb5_keytab id,
+		     krb5_keytab_entry *entry)
 {
     struct krb4_kt_data *d = id->data;
     krb5_error_code ret;
