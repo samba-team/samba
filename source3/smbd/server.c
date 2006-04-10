@@ -153,7 +153,7 @@ static void msg_exit_server(int msg_type, struct process_id src,
 			    void *buf, size_t len)
 {
 	DEBUG(3, ("got a SHUTDOWN message\n"));
-	exit_server_cleanly();
+	exit_server_cleanly(NULL);
 }
 
 #ifdef DEVELOPER
@@ -397,7 +397,7 @@ static BOOL open_sockets_smbd(BOOL is_daemon, BOOL interactive, const char *smb_
 		
 		if (num == -1 && errno == EINTR) {
 			if (got_sig_term) {
-				exit_server_cleanly();
+				exit_server_cleanly(NULL);
 			}
 
 			/* check for sighup processing */
@@ -681,9 +681,9 @@ void exit_server(const char *const explanation)
 	exit_server_common(SERVER_EXIT_ABNORMAL, explanation);
 }
 
-void exit_server_cleanly(void)
+void exit_server_cleanly(const char *const explanation)
 {
-	exit_server_common(SERVER_EXIT_NORMAL, NULL);
+	exit_server_common(SERVER_EXIT_NORMAL, explanation);
 }
 
 void exit_server_fault(void)
@@ -1014,6 +1014,6 @@ void build_options(BOOL screen);
 
 	namecache_shutdown();
 
-	exit_server_cleanly();
+	exit_server_cleanly(NULL);
 	return(0);
 }
