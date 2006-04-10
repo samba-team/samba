@@ -601,7 +601,6 @@ static NTSTATUS brl_lock_posix(struct byte_range_lock *br_lck,
 	unsigned int i, count;
 	struct lock_struct *locks = (struct lock_struct *)br_lck->lock_data;
 	struct lock_struct *tp;
-	files_struct *fsp = br_lck->fsp;
 	BOOL lock_was_added = False;
 
 	/* No zero-zero locks for POSIX. */
@@ -664,7 +663,7 @@ static NTSTATUS brl_lock_posix(struct byte_range_lock *br_lck,
 	/* FIXME - this call doesn't work correctly yet for POSIX locks... */
 
 	if ((plock->lock_type != PENDING_LOCK) && lp_posix_locking(SNUM(fsp->conn))) {
-
+		files_struct *fsp = br_lck->fsp;
 
 		if (!set_posix_lock(fsp, plock->start, plock->size, plock->lock_type, POSIX_LOCK)) {
 			if (errno == EACCES || errno == EAGAIN) {
