@@ -303,7 +303,7 @@ static void async_processing(fd_set *pfds)
 	process_aio_queue();
 
 	if (got_sig_term) {
-		exit_server_cleanly();
+		exit_server_cleanly("termination signal");
 	}
 
 	/* check for async change notify events */
@@ -886,7 +886,7 @@ static int switch_message(int type,char *inbuf,char *outbuf,int size,int bufsize
 	/* Make sure this is an SMB packet. smb_size contains NetBIOS header so subtract 4 from it. */
 	if ((strncmp(smb_base(inbuf),"\377SMB",4) != 0) || (size < (smb_size - 4))) {
 		DEBUG(2,("Non-SMB packet of length %d. Terminating server\n",smb_len(inbuf)));
-		exit_server("Non-SMB packet");
+		exit_server_cleanly("Non-SMB packet");
 		return(-1);
 	}
 
@@ -1100,7 +1100,7 @@ static void process_smb(char *inbuf, char *outbuf)
 			static unsigned char buf[5] = {0x83, 0, 0, 1, 0x81};
 			DEBUG( 1, ( "Connection denied from %s\n", client_addr() ) );
 			(void)send_smb(smbd_server_fd(),(char *)buf);
-			exit_server("connection denied");
+			exit_server_cleanly("connection denied");
 		}
 	}
 
@@ -1122,7 +1122,7 @@ static void process_smb(char *inbuf, char *outbuf)
 			DEBUG(0,("ERROR: Invalid message response size! %d %d\n",
 				nread, smb_len(outbuf)));
 		} else if (!send_smb(smbd_server_fd(),outbuf)) {
-			exit_server("process_smb: send_smb failed.");
+			exit_server_cleanly("process_smb: send_smb failed.");
 		}
 	}
 	trans_num++;
