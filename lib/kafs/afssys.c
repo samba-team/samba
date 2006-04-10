@@ -55,6 +55,7 @@ struct devdata {
     unsigned long retval;
 };
 #define VIOC_SYSCALL_DEV _IOWR('C', 2, struct devdata)
+#define VIOC_SYSCALL_DEV_OPENAFS _IOWR('C', 1, struct devdata)
 
 
 int _kafs_debug; /* this should be done in a better way */
@@ -72,6 +73,7 @@ int _kafs_debug; /* this should be done in a better way */
 static int afs_entry_point = UNKNOWN_ENTRY_POINT;
 static int afs_syscalls[2];
 static char *afs_ioctlpath;
+static unsigned long afs_ioctlnum;
 
 /* Magic to get AIX syscalls to work */
 #ifdef _AIX
@@ -162,14 +164,42 @@ map_syscall_name_to_number (const char *str, int *res)
 #endif
 
 static int 
-try_ioctlpath(const char *path, int entrypoint)
+try_ioctlpath(const char *path, unsigned long ioctlnum, int entrypoint)
 {
-    int fd;
+    int fd, ret, saved_errno;
+
     fd = open(path, O_RDWR);
     if (fd < 0)
 	return 1;
+    switch (entrypoint) {
+    case LINUX_PROC_POINT: {
+	struct procdata data = { 0, 0, 0, 0, AFSCALL_PIOCTL };
+	data.param2 = (unsigned long)VIOCGETTOK;
+	ret = ioctl(fd, ioctlnum, &data);
+	break;
+    }
+    case MACOS_DEV_POINT: {
+	struct devdata data = { AFSCALL_PIOCTL, 0, 0, 0, 0, 0, 0, 0 };
+	data.param2 = (unsigned long)VIOCGETTOK;
+	ret = ioctl(fd, ioctlnum, &data);
+	break;
+    }
+    default:
+	abort();
+    }
+    saved_errno = errno;
     close(fd);
+    /* 
+     * Be quite liberal in what error are ok, the first is the one
+     * that should trigger given that params is NULL.
+     */
+    if (ret && 
+	(saved_errno != EFAULT &&
+	 saved_errno != EDOM && 
+	 saved_errno != ENOTCONN))
+	return 1;
     afs_ioctlpath = strdup(path);
+    afs_ioctlnum = ioctlnum;
     if (afs_ioctlpath == NULL)
 	return 1;
     afs_entry_point = entrypoint;
@@ -378,7 +408,7 @@ k_hasafs(void)
 #if !defined(NO_AFS) && defined(SIGSYS)
     RETSIGTYPE (*saved_func)(int);
 #endif
-    int saved_errno;
+    int saved_errno, ret;
     char *env = NULL;
 
     if (!issuid())
@@ -402,45 +432,36 @@ k_hasafs(void)
 #ifdef SIGSYS
     saved_func = signal(SIGSYS, SIGSYS_handler);
 #endif
+    if (env && strstr(env, "..") == NULL) {
 
-    if (env && (strncmp("/dev/", env, 5) == 0 || strncmp("/proc/", env, 6) == 0)) {
-	if (try_ioctlpath(env, LINUX_PROC_POINT) == 0)
-	    goto done;
-	if (try_ioctlpath(env, MACOS_DEV_POINT) == 0)
-	    goto done;
+	if (strncmp("/proc/", env, 6) == 0) {
+	    if (try_ioctlpath(env, VIOC_SYSCALL_PROC, LINUX_PROC_POINT) == 0)
+		goto done;
+	}
+	if (strncmp("/dev/", env, 5) == 0) {
+	    if (try_ioctlpath(env, VIOC_SYSCALL_DEV, MACOS_DEV_POINT) == 0)
+		goto done;
+	    if (try_ioctlpath(env,VIOC_SYSCALL_DEV_OPENAFS,MACOS_DEV_POINT) ==0)
+		goto done;
+	}
     }
 
-#ifdef __APPLE__
-    /*
-     * Darwin needs runtime check if we want to use the syscall
-     */
-    do {
-	int version;
-	int mib[2];
-	size_t len;
-	char *kernelVersion;
+    ret = try_ioctlpath("/proc/fs/openafs/afs_ioctl",
+			VIOC_SYSCALL_PROC, LINUX_PROC_POINT);
+    if (ret == 0)
+	goto done;
+    ret = try_ioctlpath("/proc/fs/nnpfs/afs_ioctl", 
+			VIOC_SYSCALL_PROC, LINUX_PROC_POINT);
+    if (ret == 0)
+	goto done;
 
-	mib[0] = CTL_KERN;
-	mib[1] = KERN_OSRELEASE;
-
-	if (sysctl(mib, 2, NULL, &len, NULL, 0))
-	    break;
-	kernelVersion = malloc(len);
-	if (kernelVersion == NULL)
-	    break;
-	if (sysctl(mib, 2, kernelVersion, &len, NULL, 0)) {
-	    free(kernelVersion);
-	    break;
-	}
-
-	version = atoi(kernelVersion);
-	free(kernelVersion);
-	if (version >= 8)
-	    goto skip_syscall;
-
-    } while(0);
-#endif
-
+    ret = try_ioctlpath("/dev/openafs_ioctl", 
+			VIOC_SYSCALL_DEV_OPENAFS, MACOS_DEV_POINT);
+    if (ret == 0)
+	goto done;
+    ret = try_ioctlpath("/dev/nnpfs_ioctl", VIOC_SYSCALL_DEV, MACOS_DEV_POINT);
+    if (ret == 0)
+	goto done;
 
 #if defined(AFS_SYSCALL) || defined(AFS_SYSCALL2) || defined(AFS_SYSCALL3)
     {
@@ -523,19 +544,6 @@ k_hasafs(void)
 	goto done;
 #endif
 
-#ifdef __APPLE__
- skip_syscall:
-#endif
-
-    if (try_ioctlpath("/proc/fs/openafs/afs_ioctl", LINUX_PROC_POINT) == 0)
-	goto done;
-    if (try_ioctlpath("/proc/fs/nnpfs/afs_ioctl", LINUX_PROC_POINT) == 0)
-	goto done;
-
-    if (try_ioctlpath("/dev/openafs_ioctl", MACOS_DEV_POINT) == 0)
-	goto done;
-    if (try_ioctlpath("/dev/nnpfs_ioctl", MACOS_DEV_POINT) == 0)
-	goto done;
 
 done:
 #ifdef SIGSYS
