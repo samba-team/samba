@@ -1,3 +1,13 @@
+2006-04-10  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* afssys.c: Try harder to get the pioctl to work via the /proc or
+	/dev interface, OpenAFS choose to reuse the same ioctl number,
+	while Arla didn't.  Also, try new ioctl before the the old
+	syscalls.
+
+	* afskrb5.c (afslog_uid_int): use the simpler
+	krb5_principal_get_realm function.
+	
 2005-12-21  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* Makefile.am: Remove dependency on config.h, breaks IRIX build,
