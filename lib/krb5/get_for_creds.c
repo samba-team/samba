@@ -176,10 +176,7 @@ krb5_get_forwarded_creds (krb5_context	    context,
     krb5_creds *ticket;
     char *realm;
 
-    if (in_creds->client && in_creds->client->realm)
-	realm = in_creds->client->realm;
-    else
-	realm = in_creds->server->realm;
+    realm = in_creds->client->realm;
 
     addrs.len = 0;
     addrs.val = NULL;
