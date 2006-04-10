@@ -24,6 +24,7 @@
 #include "libcli/raw/libcliraw.h"
 #include "libcli/libcli.h"
 #include "torture/util.h"
+#include "lib/events/events.h"
 
 #define CHECK_VAL(v, correct) do { \
 	if ((v) != (correct)) { \
@@ -47,6 +48,8 @@ static struct {
 	int count;
 	int failures;
 } break_info;
+
+#define BASEDIR "\\test_notify"
 
 /*
   a handler function for oplock break requests
@@ -86,8 +89,6 @@ static BOOL oplock_handler_close(struct smbcli_transport *transport, uint16_t ti
 	break_info.level = level;
 	break_info.count++;
 
-	printf("Closing in oplock handler\n");
-
 	io.close.level = RAW_CLOSE_CLOSE;
 	io.close.in.file.fnum = fnum;
 	io.close.in.write_time = 0;
@@ -108,7 +109,7 @@ static BOOL oplock_handler_close(struct smbcli_transport *transport, uint16_t ti
 */
 static BOOL test_oplock(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 {
-	const char *fname = "\\test_oplock.dat";
+	const char *fname = BASEDIR "\\test_oplock.dat";
 	NTSTATUS status;
 	BOOL ret = True;
 	union smb_open io;
@@ -478,21 +479,100 @@ done:
 */
 BOOL torture_raw_oplock(struct torture_context *torture)
 {
-	struct smbcli_state *cli1;
+	struct smbcli_state *cli;
 	BOOL ret = True;
 	TALLOC_CTX *mem_ctx;
 
-	if (!torture_open_connection(&cli1)) {
+	if (!torture_open_connection(&cli)) {
+		return False;
+	}
+
+	if (!torture_setup_dir(cli, BASEDIR)) {
 		return False;
 	}
 
 	mem_ctx = talloc_init("torture_raw_oplock");
 
-	if (!test_oplock(cli1, mem_ctx)) {
+	if (!test_oplock(cli, mem_ctx)) {
 		ret = False;
 	}
 
-	torture_close_connection(cli1);
+	smb_raw_exit(cli->session);
+	smbcli_deltree(cli->tree, BASEDIR);
+	torture_close_connection(cli);
+	talloc_free(mem_ctx);
+	return ret;
+}
+
+
+/* 
+   stress testing of oplocks
+*/
+BOOL torture_bench_oplock(struct torture_context *torture)
+{
+	struct smbcli_state **cli;
+	BOOL ret = True;
+	TALLOC_CTX *mem_ctx = talloc_new(torture);
+	extern int torture_nprocs;
+	int i, count=0;
+	int timelimit = lp_parm_int(-1, "torture", "timelimit", 10);
+	union smb_open io;
+	struct timeval tv;
+	struct event_context *ev = event_context_find(mem_ctx);
+
+	cli = talloc_array(mem_ctx, struct smbcli_state *, torture_nprocs);
+
+	printf("Opening %d connections\n", torture_nprocs);
+	for (i=0;i<torture_nprocs;i++) {
+		if (!torture_open_connection_ev(&cli[i], ev)) {
+			return False;
+		}
+		talloc_steal(mem_ctx, cli[i]);
+		smbcli_oplock_handler(cli[i]->transport, oplock_handler_close, 
+				      cli[i]->tree);
+	}
+
+	if (!torture_setup_dir(cli[0], BASEDIR)) {
+		ret = False;
+		goto done;
+	}
+
+	io.ntcreatex.level = RAW_OPEN_NTCREATEX;
+	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.access_mask = SEC_RIGHTS_FILE_ALL;
+	io.ntcreatex.in.alloc_size = 0;
+	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
+	io.ntcreatex.in.share_access = NTCREATEX_SHARE_ACCESS_NONE;
+	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_OPEN_IF;
+	io.ntcreatex.in.create_options = 0;
+	io.ntcreatex.in.impersonation = NTCREATEX_IMPERSONATION_ANONYMOUS;
+	io.ntcreatex.in.security_flags = 0;
+	io.ntcreatex.in.fname = BASEDIR "\\test.dat";
+	io.ntcreatex.in.flags = NTCREATEX_FLAGS_EXTENDED | 
+		NTCREATEX_FLAGS_REQUEST_OPLOCK | 
+		NTCREATEX_FLAGS_REQUEST_BATCH_OPLOCK;
+
+	tv = timeval_current();	
+		
+	printf("Running for %d seconds\n", timelimit);
+	while (timeval_elapsed(&tv) < timelimit) {
+		for (i=0;i<torture_nprocs;i++) {
+			NTSTATUS status;
+
+			status = smb_raw_open(cli[i]->tree, mem_ctx, &io);
+			CHECK_STATUS(status, NT_STATUS_OK);
+			count++;
+		}
+		printf("%.2f ops/second\r", count/timeval_elapsed(&tv));
+	}
+
+	printf("%.2f ops/second\n", count/timeval_elapsed(&tv));
+
+	smb_raw_exit(cli[torture_nprocs-1]->session);
+	
+done:
+	smb_raw_exit(cli[0]->session);
+	smbcli_deltree(cli[0]->tree, BASEDIR);
 	talloc_free(mem_ctx);
 	return ret;
 }

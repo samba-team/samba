@@ -493,6 +493,15 @@ _PUBLIC_ BOOL torture_open_connection(struct smbcli_state **c)
 	return torture_open_connection_share(NULL, c, host, share, NULL);
 }
 
+_PUBLIC_ BOOL torture_open_connection_ev(struct smbcli_state **c, 
+					 struct event_context *ev)
+{
+	const char *host = lp_parm_string(-1, "torture", "host");
+	const char *share = lp_parm_string(-1, "torture", "share");
+
+	return torture_open_connection_share(NULL, c, host, share, ev);
+}
+
 
 
 _PUBLIC_ BOOL torture_close_connection(struct smbcli_state *c)
