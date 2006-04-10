@@ -91,7 +91,7 @@ krb5_rc_resolve_full(krb5_context context,
 	return ret;
     ret = krb5_rc_resolve(context, *id, string_name + 5);
     if (ret) {
-	krb5_rc_close(id);
+	krb5_rc_close(context, *id);
 	*id = NULL;
     }
     return ret;
