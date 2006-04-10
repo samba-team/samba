@@ -898,9 +898,8 @@ void build_options(BOOL screen);
 	 * If we're interactive we want to set our own process group for
 	 * signal management.
 	 */
-	if (interactive && !no_process_group) {
+	if (interactive && !no_process_group)
 		setpgid( (pid_t)0, (pid_t)0);
-	}
 #endif
 
 	if (!directory_exist(lp_lockdir(), NULL))

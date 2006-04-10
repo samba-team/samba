@@ -269,10 +269,13 @@ NTSTATUS check_path_syntax_wcard(pstring destname, const pstring srcname, BOOL *
 			switch(next_mb_char_size(s)) {
 				case 4:
 					*d++ = *s++;
+					/*fall through*/
 				case 3:
 					*d++ = *s++;
+					/*fall through*/
 				case 2:
 					*d++ = *s++;
+					/*fall through*/
 				case 1:
 					*d++ = *s++;
 					break;
@@ -374,10 +377,13 @@ NTSTATUS check_path_syntax_posix(pstring destname, const pstring srcname)
 			switch(next_mb_char_size(s)) {
 				case 4:
 					*d++ = *s++;
+					/*fall through*/
 				case 3:
 					*d++ = *s++;
+					/*fall through*/
 				case 2:
 					*d++ = *s++;
+					/*fall through*/
 				case 1:
 					*d++ = *s++;
 					break;
@@ -2319,7 +2325,7 @@ int reply_readbraw(connection_struct *conn, char *inbuf, char *outbuf, int dum_s
 	/* ensure we don't overrun the packet size */
 	maxcount = MIN(65535,maxcount);
 
-	if (!is_locked(fsp,conn,(SMB_BIG_UINT)maxcount,(SMB_BIG_UINT)startpos, READ_LOCK)) {
+	if (!is_locked(fsp,(SMB_BIG_UINT)maxcount,(SMB_BIG_UINT)startpos, READ_LOCK)) {
 		SMB_STRUCT_STAT st;
 		SMB_OFF_T size = 0;
   
@@ -2390,8 +2396,13 @@ int reply_lockread(connection_struct *conn, char *inbuf,char *outbuf, int length
 	 * Note that the requested lock size is unaffected by max_recv.
 	 */
 	
-	status = do_lock_spin(fsp, conn, SVAL(inbuf,smb_pid), 
-			 (SMB_BIG_UINT)numtoread, (SMB_BIG_UINT)startpos, WRITE_LOCK, &my_lock_ctx);
+	status = do_lock_spin(fsp,
+				SVAL(inbuf,smb_pid), 
+				(SMB_BIG_UINT)numtoread,
+				(SMB_BIG_UINT)startpos,
+				WRITE_LOCK,
+				WINDOWS_LOCK,
+				&my_lock_ctx);
 
 	if (NT_STATUS_V(status)) {
 #if 0
@@ -2407,8 +2418,15 @@ int reply_lockread(connection_struct *conn, char *inbuf,char *outbuf, int length
 			 * this smb into a queued request and push it
 			 * onto the blocking lock queue.
 			 */
-			if(push_blocking_lock_request(inbuf, length, -1, 0, SVAL(inbuf,smb_pid), (SMB_BIG_UINT)startpos,
-								(SMB_BIG_UINT)numtoread)) {
+			if(push_blocking_lock_request(inbuf, length,
+					fsp,
+					-1,
+					0,
+					SVAL(inbuf,smb_pid),
+					WRITE_LOCK,
+					WINDOWS_LOCK,
+					(SMB_BIG_UINT)startpos,
+					(SMB_BIG_UINT)numtoread)) {
 				END_PROFILE(SMBlockread);
 				return -1;
 			}
@@ -2486,7 +2504,7 @@ Returning short read of maximum allowed for compatibility with Windows 2000.\n",
 
 	data = smb_buf(outbuf) + 3;
   
-	if (is_locked(fsp,conn,(SMB_BIG_UINT)numtoread,(SMB_BIG_UINT)startpos, READ_LOCK)) {
+	if (is_locked(fsp,(SMB_BIG_UINT)numtoread,(SMB_BIG_UINT)startpos, READ_LOCK)) {
 		END_PROFILE(SMBread);
 		return ERROR_DOS(ERRDOS,ERRlock);
 	}
@@ -2694,7 +2712,7 @@ int reply_read_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 
 	}
 
-	if (is_locked(fsp,conn,(SMB_BIG_UINT)smb_maxcnt,(SMB_BIG_UINT)startpos, READ_LOCK)) {
+	if (is_locked(fsp,(SMB_BIG_UINT)smb_maxcnt,(SMB_BIG_UINT)startpos, READ_LOCK)) {
 		END_PROFILE(SMBreadX);
 		return ERROR_DOS(ERRDOS,ERRlock);
 	}
@@ -2757,7 +2775,7 @@ int reply_writebraw(connection_struct *conn, char *inbuf,char *outbuf, int size,
 	SCVAL(inbuf,smb_com,SMBwritec);
 	SCVAL(outbuf,smb_com,SMBwritec);
 
-	if (is_locked(fsp,conn,(SMB_BIG_UINT)tcount,(SMB_BIG_UINT)startpos, WRITE_LOCK)) {
+	if (is_locked(fsp,(SMB_BIG_UINT)tcount,(SMB_BIG_UINT)startpos, WRITE_LOCK)) {
 		END_PROFILE(SMBwritebraw);
 		return(ERROR_DOS(ERRDOS,ERRlock));
 	}
@@ -2878,7 +2896,7 @@ int reply_writeunlock(connection_struct *conn, char *inbuf,char *outbuf,
 	startpos = IVAL_TO_SMB_OFF_T(inbuf,smb_vwv2);
 	data = smb_buf(inbuf) + 3;
   
-	if (numtowrite && is_locked(fsp,conn,(SMB_BIG_UINT)numtowrite,(SMB_BIG_UINT)startpos, WRITE_LOCK)) {
+	if (numtowrite && is_locked(fsp,(SMB_BIG_UINT)numtowrite,(SMB_BIG_UINT)startpos, WRITE_LOCK)) {
 		END_PROFILE(SMBwriteunlock);
 		return ERROR_DOS(ERRDOS,ERRlock);
 	}
@@ -2900,8 +2918,12 @@ int reply_writeunlock(connection_struct *conn, char *inbuf,char *outbuf,
 	}
 
 	if (numtowrite) {
-		status = do_unlock(fsp, conn, SVAL(inbuf,smb_pid), (SMB_BIG_UINT)numtowrite, 
-				   (SMB_BIG_UINT)startpos);
+		status = do_unlock(fsp,
+				SVAL(inbuf,smb_pid),
+				(SMB_BIG_UINT)numtowrite, 
+				(SMB_BIG_UINT)startpos,
+				WINDOWS_LOCK);
+
 		if (NT_STATUS_V(status)) {
 			END_PROFILE(SMBwriteunlock);
 			return ERROR_NT(status);
@@ -2951,7 +2973,7 @@ int reply_write(connection_struct *conn, char *inbuf,char *outbuf,int size,int d
 	startpos = IVAL_TO_SMB_OFF_T(inbuf,smb_vwv2);
 	data = smb_buf(inbuf) + 3;
   
-	if (is_locked(fsp,conn,(SMB_BIG_UINT)numtowrite,(SMB_BIG_UINT)startpos, WRITE_LOCK)) {
+	if (is_locked(fsp,(SMB_BIG_UINT)numtowrite,(SMB_BIG_UINT)startpos, WRITE_LOCK)) {
 		END_PROFILE(SMBwrite);
 		return ERROR_DOS(ERRDOS,ERRlock);
 	}
@@ -3066,7 +3088,7 @@ int reply_write_and_X(connection_struct *conn, char *inbuf,char *outbuf,int leng
 #endif /* LARGE_SMB_OFF_T */
 	}
 
-	if (is_locked(fsp,conn,(SMB_BIG_UINT)numtowrite,(SMB_BIG_UINT)startpos, WRITE_LOCK)) {
+	if (is_locked(fsp,(SMB_BIG_UINT)numtowrite,(SMB_BIG_UINT)startpos, WRITE_LOCK)) {
 		END_PROFILE(SMBwriteX);
 		return ERROR_DOS(ERRDOS,ERRlock);
 	}
@@ -3340,7 +3362,7 @@ int reply_writeclose(connection_struct *conn,
 	mtime = srv_make_unix_date3(inbuf+smb_vwv4);
 	data = smb_buf(inbuf) + 1;
   
-	if (numtowrite && is_locked(fsp,conn,(SMB_BIG_UINT)numtowrite,(SMB_BIG_UINT)startpos, WRITE_LOCK)) {
+	if (numtowrite && is_locked(fsp,(SMB_BIG_UINT)numtowrite,(SMB_BIG_UINT)startpos, WRITE_LOCK)) {
 		END_PROFILE(SMBwriteclose);
 		return ERROR_DOS(ERRDOS,ERRlock);
 	}
@@ -3410,7 +3432,13 @@ int reply_lock(connection_struct *conn,
 	DEBUG(3,("lock fd=%d fnum=%d offset=%.0f count=%.0f\n",
 		 fsp->fh->fd, fsp->fnum, (double)offset, (double)count));
 
-	status = do_lock_spin(fsp, conn, SVAL(inbuf,smb_pid), count, offset, WRITE_LOCK, &my_lock_ctx);
+	status = do_lock_spin(fsp,
+				SVAL(inbuf,smb_pid),
+				count,
+				offset,
+				WRITE_LOCK,
+				WINDOWS_LOCK,
+				&my_lock_ctx);
 	if (NT_STATUS_V(status)) {
 #if 0
 		/* Tests using Samba4 against W2K show this call never creates a blocking lock. */
@@ -3420,7 +3448,14 @@ int reply_lock(connection_struct *conn,
 			 * this smb into a queued request and push it
 			 * onto the blocking lock queue.
 			 */
-			if(push_blocking_lock_request(inbuf, length, -1, 0, SVAL(inbuf,smb_pid), offset, count)) {
+			if(push_blocking_lock_request(inbuf, length,
+				fsp,
+				-1,
+				0,
+				SVAL(inbuf,smb_pid),
+				WRITE_LOCK,
+				WINDOWS_LOCK,
+				offset, count)) {
 				END_PROFILE(SMBlock);
 				return -1;
 			}
@@ -3452,7 +3487,12 @@ int reply_unlock(connection_struct *conn, char *inbuf,char *outbuf, int size,
 	count = (SMB_BIG_UINT)IVAL(inbuf,smb_vwv1);
 	offset = (SMB_BIG_UINT)IVAL(inbuf,smb_vwv3);
 	
-	status = do_unlock(fsp, conn, SVAL(inbuf,smb_pid), count, offset);
+	status = do_unlock(fsp,
+			SVAL(inbuf,smb_pid),
+			count,
+			offset,
+			WINDOWS_LOCK);
+
 	if (NT_STATUS_V(status)) {
 		END_PROFILE(SMBunlock);
 		return ERROR_NT(status);
@@ -5279,7 +5319,12 @@ int reply_lockingX(connection_struct *conn, char *inbuf, char *outbuf,
 			  "pid %u, file %s\n", (double)offset, (double)count,
 			  (unsigned int)lock_pid, fsp->fsp_name ));
 		
-		status = do_unlock(fsp,conn,lock_pid,count,offset);
+		status = do_unlock(fsp,
+				lock_pid,
+				count,
+				offset,
+				WINDOWS_LOCK);
+
 		if (NT_STATUS_V(status)) {
 			END_PROFILE(SMBlockingX);
 			return ERROR_NT(status);
@@ -5297,6 +5342,7 @@ int reply_lockingX(connection_struct *conn, char *inbuf, char *outbuf,
 	   of smb_lkrng structs */
 	
 	for(i = 0; i < (int)num_locks; i++) {
+		enum brl_type lock_type = ((locktype & 1) ? READ_LOCK:WRITE_LOCK);
 		lock_pid = get_lock_pid( data, i, large_file_format);
 		count = get_lock_count( data, i, large_file_format);
 		offset = get_lock_offset( data, i, large_file_format, &err);
@@ -5314,9 +5360,14 @@ int reply_lockingX(connection_struct *conn, char *inbuf, char *outbuf,
 			  (double)count, (unsigned int)lock_pid,
 			  fsp->fsp_name, (int)lock_timeout ));
 		
-		status = do_lock_spin(fsp,conn,lock_pid, count,offset, 
-				      ((locktype & 1) ? READ_LOCK:WRITE_LOCK),
-				      &my_lock_ctx);
+		status = do_lock_spin(fsp,
+					lock_pid,
+					count,
+					offset, 
+					lock_type,
+					WINDOWS_LOCK,
+					&my_lock_ctx);
+
 		if (NT_STATUS_V(status)) {
 			/*
 			 * Interesting fact found by IFSTEST /t
@@ -5334,8 +5385,13 @@ int reply_lockingX(connection_struct *conn, char *inbuf, char *outbuf,
 				 * onto the blocking lock queue.
 				 */
 				if(push_blocking_lock_request(inbuf, length,
-							      lock_timeout, i,
-							      lock_pid, offset,
+							      fsp,
+							      lock_timeout,
+						 	      i,
+							      lock_pid,
+							      lock_type,
+							      WINDOWS_LOCK,
+							      offset,
 							      count)) {
 					END_PROFILE(SMBlockingX);
 					return -1;
@@ -5368,7 +5424,11 @@ int reply_lockingX(connection_struct *conn, char *inbuf, char *outbuf,
 				return ERROR_DOS(ERRDOS,ERRnoaccess);
 			}
 			
-			do_unlock(fsp,conn,lock_pid,count,offset);
+			do_unlock(fsp,
+				lock_pid,
+				count,
+				offset,
+				WINDOWS_LOCK);
 		}
 		END_PROFILE(SMBlockingX);
 		return ERROR_NT(status);
@@ -5430,7 +5490,7 @@ int reply_readbmpx(connection_struct *conn, char *inbuf,char *outbuf,int length,
 	tcount = maxcount;
 	total_read = 0;
 
-	if (is_locked(fsp,conn,(SMB_BIG_UINT)maxcount,(SMB_BIG_UINT)startpos, READ_LOCK)) {
+	if (is_locked(fsp,(SMB_BIG_UINT)maxcount,(SMB_BIG_UINT)startpos, READ_LOCK)) {
 		END_PROFILE(SMBreadBmpx);
 		return ERROR_DOS(ERRDOS,ERRlock);
 	}
@@ -5562,7 +5622,7 @@ int reply_writebmpx(connection_struct *conn, char *inbuf,char *outbuf, int size,
 		not an SMBwritebmpx - set this up now so we don't forget */
 	SCVAL(outbuf,smb_com,SMBwritec);
 
-	if (is_locked(fsp,conn,(SMB_BIG_UINT)tcount,(SMB_BIG_UINT)startpos,WRITE_LOCK)) {
+	if (is_locked(fsp,(SMB_BIG_UINT)tcount,(SMB_BIG_UINT)startpos,WRITE_LOCK)) {
 		END_PROFILE(SMBwriteBmpx);
 		return(ERROR_DOS(ERRDOS,ERRlock));
 	}

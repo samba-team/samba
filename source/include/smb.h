@@ -486,6 +486,36 @@ typedef struct {
 	BOOL is_wild;
 } name_compare_entry;
 
+struct trans_state {
+	struct trans_state *next, *prev;
+	uint16 vuid;
+	uint16 mid;
+
+	uint32 max_param_return;
+	uint32 max_data_return;
+	uint32 max_setup_return;
+
+	uint8 cmd;		/* SMBtrans or SMBtrans2 */
+
+	fstring name;		/* for trans requests */
+	uint16 call;		/* for trans2 and nttrans requests */
+
+	BOOL close_on_completion;
+	BOOL one_way;
+
+	unsigned int setup_count;
+	uint16 *setup;
+
+	size_t received_data;
+	size_t received_param;
+
+	size_t total_param;
+	char *param;
+
+	size_t total_data;
+	char *data;
+};
+
 /* Include VFS stuff */
 
 #include "smb_acls.h"
@@ -550,6 +580,7 @@ typedef struct connection_struct {
 	name_compare_entry *veto_oplock_list; /* Per-share list of files to refuse oplocks on. */       
 	name_compare_entry *aio_write_behind_list; /* Per-share list of files to use aio write behind on. */       
 	struct dfree_cached_info *dfree_info;
+	struct trans_state *pending_trans;
 } connection_struct;
 
 struct current_user {
@@ -799,17 +830,29 @@ struct parm_struct {
 #define FLAG_HIDE  	0x2000 /* options that should be hidden in SWAT */
 #define FLAG_DOS_STRING 0x4000 /* convert from UNIX to DOS codepage when reading this string. */
 
-/* passed to br lock code */
-enum brl_type {READ_LOCK, WRITE_LOCK, PENDING_LOCK};
+/* passed to br lock code - the UNLOCK_LOCK should never be stored into the tdb
+   and is used in calculating POSIX unlock ranges only. */
+
+enum brl_type {READ_LOCK, WRITE_LOCK, PENDING_LOCK, UNLOCK_LOCK};
+enum brl_flavour {WINDOWS_LOCK = 0, POSIX_LOCK = 1};
+
+struct byte_range_lock {
+	files_struct *fsp;
+	unsigned int num_locks;
+	BOOL modified;
+	void *lock_data;
+};
 
 #define BRLOCK_FN_CAST() \
 	void (*)(SMB_DEV_T dev, SMB_INO_T ino, struct process_id pid, \
 				 enum brl_type lock_type, \
+				 enum brl_flavour lock_flav, \
 				 br_off start, br_off size)
 
 #define BRLOCK_FN(fn) \
 	void (*fn)(SMB_DEV_T dev, SMB_INO_T ino, struct process_id pid, \
 				 enum brl_type lock_type, \
+				 enum brl_flavour lock_flav, \
 				 br_off start, br_off size)
 
 struct bitmap {

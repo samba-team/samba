@@ -110,6 +110,8 @@ struct profile_stats {
 	unsigned syscall_ftruncate_time;
 	unsigned syscall_fcntl_lock_count;
 	unsigned syscall_fcntl_lock_time;
+	unsigned syscall_fcntl_getlock_count;
+	unsigned syscall_fcntl_getlock_time;
 	unsigned syscall_readlink_count;
 	unsigned syscall_readlink_time;
 	unsigned syscall_symlink_count;
