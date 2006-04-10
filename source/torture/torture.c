@@ -587,6 +587,7 @@ static struct {
 	{"BENCH-NBT",     torture_bench_nbt, 0},
 	{"BENCH-WINS",    torture_bench_wins, 0},
 	{"BENCH-CLDAP",   torture_bench_cldap, 0},
+	{"BENCH-OPLOCK",   torture_bench_oplock, 0},
 
 	/* RAW smb tests */
 	{"RAW-QFSINFO", torture_raw_qfsinfo, 0},
