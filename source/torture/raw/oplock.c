@@ -146,7 +146,13 @@ static BOOL test_oplock(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	fnum = io.ntcreatex.out.file.fnum;
 	CHECK_VAL(io.ntcreatex.out.oplock_level, EXCLUSIVE_OPLOCK_RETURN);
 
-	printf("unlink it - should be no break\n");
+	printf("a 2nd open should not cause a break\n");
+	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_SHARING_VIOLATION);
+	CHECK_VAL(break_info.count, 0);
+	CHECK_VAL(break_info.failures, 0);
+
+	printf("unlink it - should also be no break\n");
 	unl.unlink.in.pattern = fname;
 	unl.unlink.in.attrib = 0;
 	status = smb_raw_unlink(cli->tree, &unl);
