@@ -1,3 +1,8 @@
+2006-03-23  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* ftp/ftp.1: Add undocument flags and spelling, from Ted Percival
+	<Ted.Percival@quest.com>
+	
 2006-02-27  Johan Danielsson  <joda@pdc.kth.se>
 
 	* ftpd/ftpd.8: fix grammar in --no-insecure-oob option (partly

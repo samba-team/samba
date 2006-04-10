@@ -1,5 +1,8 @@
 2006-04-09  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* rc2.c (RC2_set_key): abort on erroneous input (len <= 0) size
+	that will case out out bound indexing, and its invalid input.
+
 	* rsa.c: Make compile again.
 	
 2006-04-03  Love Hörnquist Åstrand  <lha@it.su.se>
