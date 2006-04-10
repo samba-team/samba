@@ -369,43 +369,53 @@ kadm5_log_rename (kadm5_server_context *context,
     krb5_data value;
     kadm5_log_context *log_context = &context->log_context;
 
+    krb5_data_zero(&value);
+
     sp = krb5_storage_emem();
     ret = hdb_entry2value (context->context, ent, &value);
-    if (ret) {
-	krb5_storage_free(sp);
-	return ret;
-    }
+    if (ret)
+	goto failed;
+
     ret = kadm5_log_preamble (context, sp, kadm_rename);
-    if (ret) {
-	krb5_storage_free(sp);
-	krb5_data_free (&value);
-	return ret;
-    }
-    krb5_store_int32 (sp, 0);
+    if (ret)
+	goto failed;
+
+    ret = krb5_store_int32 (sp, 0);
+    if (ret)
+	goto failed;
     off = krb5_storage_seek (sp, 0, SEEK_CUR);
-    krb5_store_principal (sp, source);
+    ret = krb5_store_principal (sp, source);
+    if (ret)
+	goto failed;
+
     krb5_storage_write(sp, value.data, value.length);
-    krb5_data_free (&value);
     len = krb5_storage_seek (sp, 0, SEEK_CUR) - off;
 
     krb5_storage_seek(sp, -(len + 4), SEEK_CUR);
-    krb5_store_int32 (sp, len);
-    krb5_storage_seek(sp, len, SEEK_CUR);
-    krb5_store_int32 (sp, len);
-    if (ret) {
-	krb5_storage_free (sp);
-	return ret;
-    }
-    ret = kadm5_log_postamble (log_context, sp);
-    if (ret) {
-	krb5_storage_free (sp);
-	return ret;
-    }
-    ret = kadm5_log_flush (log_context, sp);
-    krb5_storage_free (sp);
+    ret = krb5_store_int32 (sp, len);
     if (ret)
-	return ret;
-    ret = kadm5_log_end (context);
+	goto failed;
+
+    krb5_storage_seek(sp, len, SEEK_CUR);
+    ret = krb5_store_int32 (sp, len);
+    if (ret)
+	goto failed;
+
+    ret = kadm5_log_postamble (log_context, sp);
+    if (ret)
+	goto failed;
+
+    ret = kadm5_log_flush (log_context, sp);
+    if (ret)
+	goto failed;
+    krb5_storage_free (sp);
+    krb5_data_free (&value);
+
+    return kadm5_log_end (context);
+
+failed:
+    krb5_data_free(&value);
+    krb5_storage_free(sp);
     return ret;
 }
 
@@ -539,7 +549,7 @@ kadm5_log_replay_modify (kadm5_server_context *context,
     memset(&ent, 0, sizeof(ent));
     ent.entry.principal = log_ent.entry.principal;
     log_ent.entry.principal = NULL;
-    ret = context->db->hdb_fetch(context->context, context->db, 
+    ret = context->db->hdb_fetch(context->context, context->db,
 				 HDB_F_DECRYPT, &ent);
     if (ret)
 	goto out;
