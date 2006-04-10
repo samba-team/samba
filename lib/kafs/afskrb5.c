@@ -197,7 +197,7 @@ afslog_uid_int(struct kafs_data *data, const char *cell, const char *rh,
     krb5_error_code ret;
     struct kafs_token kt;
     krb5_principal princ;
-    krb5_realm *trealm; /* ticket realm */
+    const char *trealm; /* ticket realm */
     struct krb5_kafs_data *d = data->data;
     
     if (cell == 0 || cell[0] == 0)
@@ -207,10 +207,10 @@ afslog_uid_int(struct kafs_data *data, const char *cell, const char *rh,
     if (ret)
 	return ret;
 
-    trealm = krb5_princ_realm (d->context, princ);
+    trealm = krb5_principal_get_realm (d->context, princ);
 
     kt.ticket = NULL;
-    ret = _kafs_get_cred(data, cell, d->realm, *trealm, uid, &kt);
+    ret = _kafs_get_cred(data, cell, d->realm, trealm, uid, &kt);
     krb5_free_principal (d->context, princ);
     
     if(ret == 0) {
