@@ -1876,6 +1876,7 @@ void free_namearray(name_compare_entry *name_array)
 /****************************************************************************
  Simple routine to do POSIX file locking. Cruft in NFS and 64->32 bit mapping
  is dealt with in posix.c
+ Returns True if the lock was granted, False otherwise.
 ****************************************************************************/
 
 BOOL fcntl_lock(int fd, int op, SMB_OFF_T offset, SMB_OFF_T count, int type)
@@ -1893,34 +1894,54 @@ BOOL fcntl_lock(int fd, int op, SMB_OFF_T offset, SMB_OFF_T count, int type)
 
 	ret = sys_fcntl_ptr(fd,op,&lock);
 
-	if (ret == -1 && errno != 0)
-		DEBUG(3,("fcntl_lock: fcntl lock gave errno %d (%s)\n",errno,strerror(errno)));
-
-	/* a lock query - return True if this region is locked, False if not locked. */
-	if (op == SMB_F_GETLK) {
-		if ((ret != -1) &&
-				(lock.l_type != F_UNLCK) && 
-				(lock.l_pid != 0) && 
-				(lock.l_pid != sys_getpid())) {
-			DEBUG(3,("fcntl_lock: fd %d is locked by pid %d\n",fd,(int)lock.l_pid));
-			return(True);
-		}
-
-		/* it must be not locked or locked by me */
-		return(False);
-	}
-
-	/* a lock set or unset */
 	if (ret == -1) {
 		DEBUG(3,("fcntl_lock: lock failed at offset %.0f count %.0f op %d type %d (%s)\n",
 			(double)offset,(double)count,op,type,strerror(errno)));
-		return(False);
+		return False;
 	}
 
 	/* everything went OK */
 	DEBUG(8,("fcntl_lock: Lock call successful\n"));
 
-	return(True);
+	return True;
+}
+
+/****************************************************************************
+ Simple routine to query existing file locks. Cruft in NFS and 64->32 bit mapping
+ is dealt with in posix.c
+ Returns True if we have information regarding this lock region (and returns
+ F_UNLCK in *ptype if the region is unlocked). False if the call failed.
+****************************************************************************/
+
+BOOL fcntl_getlock(int fd, SMB_OFF_T *poffset, SMB_OFF_T *pcount, int *ptype, pid_t *ppid)
+{
+	SMB_STRUCT_FLOCK lock;
+	int ret;
+
+	DEBUG(8,("fcntl_getlock %d %.0f %.0f %d\n",fd,(double)*poffset,(double)*pcount,*ptype));
+
+	lock.l_type = *ptype;
+	lock.l_whence = SEEK_SET;
+	lock.l_start = *poffset;
+	lock.l_len = *pcount;
+	lock.l_pid = 0;
+
+	ret = sys_fcntl_ptr(fd,SMB_F_GETLK,&lock);
+
+	if (ret == -1) {
+		DEBUG(3,("fcntl_getlock: lock request failed at offset %.0f count %.0f type %d (%s)\n",
+			(double)*poffset,(double)*pcount,*ptype,strerror(errno)));
+		return False;
+	}
+
+	*ptype = lock.l_type;
+	*poffset = lock.l_start;
+	*pcount = lock.l_len;
+	*ppid = lock.l_pid;
+	
+	DEBUG(3,("fcntl_getlock: fd %d is returned info %d pid %u\n",
+			fd, (int)lock.l_type, (unsigned int)lock.l_pid));
+	return True;
 }
 
 #undef DBGC_CLASS

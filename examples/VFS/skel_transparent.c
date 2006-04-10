@@ -225,6 +225,11 @@ static BOOL skel_lock(vfs_handle_struct *handle, files_struct *fsp, int fd, int 
 	return SMB_VFS_NEXT_LOCK(handle, fsp, fd, op, offset, count, type);
 }
 
+static BOOL skel_getlock(vfs_handle_struct *handle, files_struct *fsp, int fd, SMB_OFF_T *poffset, SMB_OFF_T *pcount, int *ptype, pid_t *ppid)
+{
+	return SMB_VFS_NEXT_GETLOCK(handle, fsp, fd, poffset, pcount, ptype, ppid);
+}
+
 static int skel_symlink(vfs_handle_struct *handle, connection_struct *conn, const char *oldpath, const char *newpath)
 {
 	return SMB_VFS_NEXT_SYMLINK(handle, conn, oldpath, newpath);
@@ -543,6 +548,7 @@ static vfs_op_tuple skel_op_tuples[] = {
 	{SMB_VFS_OP(skel_utime),			SMB_VFS_OP_UTIME,		SMB_VFS_LAYER_TRANSPARENT},
 	{SMB_VFS_OP(skel_ftruncate),			SMB_VFS_OP_FTRUNCATE,		SMB_VFS_LAYER_TRANSPARENT},
 	{SMB_VFS_OP(skel_lock),				SMB_VFS_OP_LOCK,		SMB_VFS_LAYER_TRANSPARENT},
+	{SMB_VFS_OP(skel_getlock),			SMB_VFS_OP_GETLOCK,		SMB_VFS_LAYER_TRANSPARENT},
 	{SMB_VFS_OP(skel_symlink),			SMB_VFS_OP_SYMLINK,		SMB_VFS_LAYER_TRANSPARENT},
 	{SMB_VFS_OP(skel_readlink),			SMB_VFS_OP_READLINK,		SMB_VFS_LAYER_TRANSPARENT},
 	{SMB_VFS_OP(skel_link),				SMB_VFS_OP_LINK,		SMB_VFS_LAYER_TRANSPARENT},

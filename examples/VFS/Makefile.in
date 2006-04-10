@@ -7,7 +7,7 @@ INSTALLCMD	= @INSTALL@
 SAMBA_SOURCE	= @SAMBA_SOURCE@
 SHLIBEXT	= @SHLIBEXT@
 OBJEXT		= @OBJEXT@ 
-FLAGS		=  $(CFLAGS) -Iinclude -I$(SAMBA_SOURCE)/include -I$(SAMBA_SOURCE)/popt -I$(SAMBA_SOURCE)/ubiqx -I$(SAMBA_SOURCE)/smbwrapper  -I. $(CPPFLAGS) -I$(SAMBA_SOURCE) -fPIC
+FLAGS		=  $(CFLAGS) -Iinclude -I$(SAMBA_SOURCE)/include -I$(SAMBA_SOURCE)/popt -I$(SAMBA_SOURCE)/smbwrapper  -I. $(CPPFLAGS) -I$(SAMBA_SOURCE) -fPIC
 
 
 prefix		= @prefix@

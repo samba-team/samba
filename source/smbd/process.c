@@ -505,22 +505,27 @@ static BOOL receive_message_or_smb(char *buffer, int buffer_len, int timeout)
 	return receive_smb(smbd_server_fd(), buffer, 0);
 }
 
-/****************************************************************************
-Get the next SMB packet, doing the local message processing automatically.
-****************************************************************************/
+/*
+ * Only allow 5 outstanding trans requests. We're allocating memory, so
+ * prevent a DoS.
+ */
 
-BOOL receive_next_smb(char *inbuf, int bufsize, int timeout)
+NTSTATUS allow_new_trans(struct trans_state *list, int mid)
 {
-	BOOL got_keepalive;
-	BOOL ret;
+	int count = 0;
+	for (; list != NULL; list = list->next) {
 
-	do {
-		ret = receive_message_or_smb(inbuf,bufsize,timeout);
-		
-		got_keepalive = (ret && (CVAL(inbuf,0) == SMBkeepalive));
-	} while (ret && got_keepalive);
+		if (list->mid == mid) {
+			return NT_STATUS_INVALID_PARAMETER;
+		}
 
-	return ret;
+		count += 1;
+	}
+	if (count > 5) {
+		return NT_STATUS_INSUFFICIENT_RESOURCES;
+	}
+
+	return NT_STATUS_OK;
 }
 
 /****************************************************************************
@@ -611,7 +616,7 @@ static const struct smb_message_struct {
 /* 0x23 */ { "SMBgetattrE",reply_getattrE,AS_USER },
 /* 0x24 */ { "SMBlockingX",reply_lockingX,AS_USER },
 /* 0x25 */ { "SMBtrans",reply_trans,AS_USER | CAN_IPC },
-/* 0x26 */ { "SMBtranss",NULL,AS_USER | CAN_IPC},
+/* 0x26 */ { "SMBtranss",reply_transs,AS_USER | CAN_IPC},
 /* 0x27 */ { "SMBioctl",reply_ioctl,0},
 /* 0x28 */ { "SMBioctls",NULL,AS_USER},
 /* 0x29 */ { "SMBcopy",reply_copy,AS_USER | NEED_WRITE },
