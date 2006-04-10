@@ -601,7 +601,6 @@ static NTSTATUS brl_lock_posix(struct byte_range_lock *br_lck,
 	unsigned int i, count;
 	struct lock_struct *locks = (struct lock_struct *)br_lck->lock_data;
 	struct lock_struct *tp;
-	files_struct *fsp = br_lck->fsp;
 	BOOL lock_was_added = False;
 
 	/* No zero-zero locks for POSIX. */
@@ -660,7 +659,12 @@ static NTSTATUS brl_lock_posix(struct byte_range_lock *br_lck,
 	   lock type so it can cope with the difference between
 	   Windows "stacking" locks and POSIX "flat" ones. */
 
+#if 0
+	/* FIXME - this call doesn't work correctly yet for POSIX locks... */
+
 	if ((plock->lock_type != PENDING_LOCK) && lp_posix_locking(SNUM(fsp->conn))) {
+		files_struct *fsp = br_lck->fsp;
+
 		if (!set_posix_lock(fsp, plock->start, plock->size, plock->lock_type, POSIX_LOCK)) {
 			if (errno == EACCES || errno == EAGAIN) {
 				SAFE_FREE(tp);
@@ -671,6 +675,7 @@ static NTSTATUS brl_lock_posix(struct byte_range_lock *br_lck,
 			}
 		}
 	}
+#endif
 
 	if (!lock_was_added) {
 		memcpy(&tp[count], plock, sizeof(struct lock_struct));
@@ -950,10 +955,14 @@ static BOOL brl_unlock_posix(struct byte_range_lock *br_lck, const struct lock_s
 		return True;
 	}
 
+#if 0
+	/* FIXME - this call doesn't work correctly yet for POSIX locks... */
+
 	/* Unlock any POSIX regions. */
 	if(lp_posix_locking(br_lck->fsp->conn->cnum)) {
 		release_posix_lock(br_lck->fsp, plock->start, plock->size);
 	}
+#endif
 
 	/* Realloc so we don't leak entries per unlock call. */
 	if (count) {
