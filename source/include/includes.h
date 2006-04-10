@@ -1565,7 +1565,7 @@ LDAP *ldap_open_with_timeout(const char *server, int port, unsigned int to);
 void smb_panic( const char *why ) NORETURN_ATTRIBUTE ;
 void dump_core(void) NORETURN_ATTRIBUTE ;
 void exit_server(const char *const reason) NORETURN_ATTRIBUTE ;
-void exit_server_cleanly(void) NORETURN_ATTRIBUTE ;
+void exit_server_cleanly(const char *const reason) NORETURN_ATTRIBUTE ;
 void exit_server_fault(void) NORETURN_ATTRIBUTE ;
 
 #endif /* _INCLUDES_H */
