@@ -1,3 +1,56 @@
+2006-04-10  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/replay.c (krb5_rc_resolve_full): make compile again.
+
+	* lib/krb5/keytab_krb4.c (krb4_kt_start_seq_get_int): make compile
+	again.
+
+	* lib/krb5/transited.c (make_path): make sure we return allocated
+	memory Coverity, NetBSD CID#1892
+
+	* lib/krb5/transited.c (make_path): make sure we return allocated
+	memory Coverity, NetBSD CID#1892
+
+	* lib/krb5/rd_req.c (krb5_verify_authenticator_checksum): on
+	protocol failure, avoid leaking memory Coverity, NetBSD CID#1900
+
+	* lib/krb5/principal.c (krb5_parse_name): remember to free realm
+	in case of error Coverity, NetBSD CID#1883
+
+	* lib/krb5/principal.c (krb5_425_conv_principal_ext2): remove
+	memory leak in case of weird formated dns replys.
+	Coverity, NetBSD CID#1885
+	
+	* lib/krb5/replay.c (krb5_rc_resolve_full): don't return pointer
+	to a allocated krb5_rcache in case of error.
+
+	* lib/krb5/log.c (krb5_addlog_dest): free fn in case of error
+	Coverity, NetBSD CID#1882
+	
+	* lib/krb5/keytab_krb4.c: Fix deref before NULL check, fix error
+	handling.  Coverity, NetBSD CID#2369
+
+	* lib/krb5/get_for_creds.c (krb5_get_forwarded_creds):
+	in_creds->client should always be set, assume so.
+
+	* lib/krb5/keytab_any.c (any_next_entry): restructure to make it
+	easier to read Fixes Coverity, NetBSD CID#625
+
+	* lib/krb5/crypto.c (krb5_string_to_key_derived): deref after NULL
+	check.  Coverity NetBSD CID#2367
+
+	* lib/krb5/build_auth.c (krb5_build_authenticator): use
+	calloc. removed check that was never really used. Coverity NetBSD
+	CID#2370
+	
+2006-04-09  Love Hörnquist Åstrand  <lha@it.su.se>
+	
+	* lib/krb5/rd_req.c (krb5_verify_ap_req2): make sure `ticket´
+	points to NULL in case of error, add error handling, use calloc.
+
+	* kpasswd/kpasswdd.c (doit): when done, close all fd in the
+	sockets array and free it.  Coverity NetBSD CID#1916
+	
 2006-04-08  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/store.c (krb5_ret_principal): fix memory leak Coverity,

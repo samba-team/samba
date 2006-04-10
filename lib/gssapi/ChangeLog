@@ -1,5 +1,10 @@
-2006-04-02  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-04-09  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* add_cred.c: Check that cred != GSS_C_NO_CREDENTIAL, this is a
+	standard conformance failure, but much better then a crash.
+	
+2006-04-02  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* get_mic.c (get_mic*)_: make sure message_token is cleaned on
 	error, found by IBM checker.
 

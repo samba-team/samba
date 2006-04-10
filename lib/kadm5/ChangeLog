@@ -1,6 +1,23 @@
-2006-02-02  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-04-10  Love Hörnquist Åstrand  <lha@it.su.se>
 
-	* kadm5_err.et: (PASS_REUSE): Spelling, from Václav H?la <ax@natur.cuni.cz>
+	* log.c: (kadm5_log_rename): handle errors better
+	Fixes Coverity, NetBSD CID#628
+
+	* log.c (kadm5_log_delete): add error handling Coverity, NetBSD
+	CID#626
+	(kadm5_log_modify): add error handling Coverity, NetBSD CID#627
+
+	* init_c.c (_kadm5_c_get_cred_cache): handle ccache case better in
+	case no client name was passed in. Coverity, NetBSD CID#919
+	
+	* init_c.c (_kadm5_c_get_cred_cache): Free client principal in
+	case of error. Coverity NetBSD CID#1908
+	
+2006-02-02  Love Hörnquist Åstrand  <lha@it.su.se>
+	
+	* kadm5_err.et: (PASS_REUSE): Spelling, 
+	from Václav H?la <ax@natur.cuni.cz>
+	
 2006-01-25  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* send_recv.c: Clear error-string when introducing new errors.
