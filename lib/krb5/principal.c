@@ -750,16 +750,21 @@ krb5_425_conv_principal_ext2(krb5_context context,
 	struct dns_reply *r;
 
 	r = dns_lookup(instance, "aaaa");
-	if (r && r->head && r->head->type == T_AAAA) {
-	    inst = strdup(r->head->domain);
-	    dns_free_data(r);
-	    passed = TRUE;
-	} else {
-	    r = dns_lookup(instance, "a");
-	    if(r && r->head && r->head->type == T_A) {
+	if (r) {
+	    if (r->head && r->head->type == T_AAAA) {
 		inst = strdup(r->head->domain);
 		dns_free_data(r);
 		passed = TRUE;
+	    }
+	    dns_free_data(r);
+	} else {
+	    r = dns_lookup(instance, "a");
+	    if (r) {
+		if(r->head && r->head->type == T_A) {
+		    inst = strdup(r->head->domain);
+		    passed = TRUE;
+		}
+		dns_free_data(r);
 	    }
 	}
 #else
