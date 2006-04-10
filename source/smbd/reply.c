@@ -269,10 +269,13 @@ NTSTATUS check_path_syntax_wcard(pstring destname, const pstring srcname, BOOL *
 			switch(next_mb_char_size(s)) {
 				case 4:
 					*d++ = *s++;
+					/*fall through*/
 				case 3:
 					*d++ = *s++;
+					/*fall through*/
 				case 2:
 					*d++ = *s++;
+					/*fall through*/
 				case 1:
 					*d++ = *s++;
 					break;
@@ -374,10 +377,13 @@ NTSTATUS check_path_syntax_posix(pstring destname, const pstring srcname)
 			switch(next_mb_char_size(s)) {
 				case 4:
 					*d++ = *s++;
+					/*fall through*/
 				case 3:
 					*d++ = *s++;
+					/*fall through*/
 				case 2:
 					*d++ = *s++;
+					/*fall through*/
 				case 1:
 					*d++ = *s++;
 					break;
@@ -5241,7 +5247,14 @@ int reply_lockingX(connection_struct *conn, char *inbuf, char *outbuf,
 		 */
 		
 		if (fsp->oplock_type == 0) {
-			DEBUG(0,("reply_lockingX: Error : oplock break from "
+
+			/* The Samba4 nbench simulator doesn't understand
+			   the difference between break to level2 and break
+			   to none from level2 - it sends oplock break
+			   replies in both cases. Don't keep logging an error
+			   message here - just ignore it. JRA. */
+
+			DEBUG(5,("reply_lockingX: Error : oplock break from "
 				 "client for fnum = %d (oplock=%d) and no "
 				 "oplock granted on this file (%s).\n",
 				 fsp->fnum, fsp->oplock_type, fsp->fsp_name));
