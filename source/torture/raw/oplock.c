@@ -553,7 +553,16 @@ BOOL torture_bench_oplock(struct torture_context *torture)
 		NTCREATEX_FLAGS_REQUEST_BATCH_OPLOCK;
 
 	tv = timeval_current();	
-		
+
+	/*
+	  we open the same file with SHARE_ACCESS_NONE from all the
+	  connections in a round robin fashion. Each open causes an
+	  oplock break on the previous connection, which is answered
+	  by the oplock_handler_close() to close the file.
+
+	  This measures how fast we can pass on oplocks, and stresses
+	  the oplock handling code
+	*/
 	printf("Running for %d seconds\n", timelimit);
 	while (timeval_elapsed(&tv) < timelimit) {
 		for (i=0;i<torture_nprocs;i++) {
