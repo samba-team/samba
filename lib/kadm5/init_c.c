@@ -270,6 +270,8 @@ _kadm5_c_get_cred_cache(krb5_context context,
 					      name, "admin", NULL);
 		    if(ret != 0) {
 			krb5_free_principal(context, default_client);
+			if (client)
+			    krb5_free_principal(context, client);
 			krb5_cc_close(context, id);
 			return ret;
 		    }
