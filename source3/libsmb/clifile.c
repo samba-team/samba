@@ -1148,7 +1148,7 @@ BOOL cli_posix_lock(struct cli_state *cli, int fnum,
 			SMB_BIG_UINT offset, SMB_BIG_UINT len,
 			BOOL wait_lock, enum brl_type lock_type)
 {
-	if (lock_type != READ_LOCK || lock_type != WRITE_LOCK) {
+	if (lock_type != READ_LOCK && lock_type != WRITE_LOCK) {
 		return False;
 	}
 	return cli_posix_lock_internal(cli, fnum, offset, len, wait_lock, lock_type);
