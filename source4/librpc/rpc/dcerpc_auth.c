@@ -27,13 +27,13 @@
 #include "auth/gensec/gensec.h"
 #include "librpc/rpc/dcerpc.h"
 
-/*
-  do a non-athenticated dcerpc bind
-*/
 
+/*
+  Send request to do a non-authenticated dcerpc bind
+*/
 struct composite_context *dcerpc_bind_auth_none_send(TALLOC_CTX *mem_ctx,
 						     struct dcerpc_pipe *p,
-							 const struct dcerpc_interface_table *table)
+						     const struct dcerpc_interface_table *table)
 {
 	struct dcerpc_syntax_id syntax;
 	struct dcerpc_syntax_id transfer_syntax;
@@ -58,18 +58,28 @@ struct composite_context *dcerpc_bind_auth_none_send(TALLOC_CTX *mem_ctx,
 	return dcerpc_bind_send(p, mem_ctx, &syntax, &transfer_syntax);
 }
 
+
+/*
+  Receive result of a non-authenticated dcerpc bind
+*/
 NTSTATUS dcerpc_bind_auth_none_recv(struct composite_context *ctx)
 {
 	return dcerpc_bind_recv(ctx);
 }
 
+
+/*
+  Perform sync non-authenticated dcerpc bind
+*/
 NTSTATUS dcerpc_bind_auth_none(struct dcerpc_pipe *p,
 			       const struct dcerpc_interface_table *table)
 {
 	struct composite_context *ctx;
+
 	ctx = dcerpc_bind_auth_none_send(p, p, table);
 	return dcerpc_bind_auth_none_recv(ctx);
 }
+
 
 struct bind_auth_state {
 	struct dcerpc_pipe *pipe;
@@ -82,11 +92,13 @@ static void bind_auth_recv_alter(struct composite_context *creq);
 
 static void bind_auth_next_step(struct composite_context *c)
 {
-	struct bind_auth_state *state =
-		talloc_get_type(c->private_data, struct bind_auth_state);
-	struct dcerpc_security *sec = &state->pipe->conn->security_state;
+	struct bind_auth_state *state;
+	struct dcerpc_security *sec;
 	struct composite_context *creq;
 	BOOL more_processing = False;
+
+	state = talloc_get_type(c->private_data, struct bind_auth_state);
+	sec = &state->pipe->conn->security_state;
 
 	/* The status value here, from GENSEC is vital to the security
 	 * of the system.  Even if the other end accepts, if GENSEC
@@ -120,6 +132,7 @@ static void bind_auth_next_step(struct composite_context *c)
 		/* NO reply expected, so just send it */
 		c->status = dcerpc_auth3(state->pipe->conn, state);
 		if (!composite_is_ok(c)) return;
+
 		composite_done(c);
 		return;
 	}
@@ -129,14 +142,16 @@ static void bind_auth_next_step(struct composite_context *c)
 	creq = dcerpc_alter_context_send(state->pipe, state,
 					 &state->pipe->syntax,
 					 &state->pipe->transfer_syntax);
+	if (composite_nomem(creq, c)) return;
+
 	composite_continue(c, creq, bind_auth_recv_alter, c);
 }
 
+
 static void bind_auth_recv_alter(struct composite_context *creq)
 {
-	struct composite_context *c =
-		talloc_get_type(creq->async.private_data,
-				struct composite_context);
+	struct composite_context *c = talloc_get_type(creq->async.private_data,
+						      struct composite_context);
 
 	c->status = dcerpc_alter_context_recv(creq);
 	if (!composite_is_ok(c)) return;
@@ -144,13 +159,13 @@ static void bind_auth_recv_alter(struct composite_context *creq)
 	bind_auth_next_step(c);
 }
 
+
 static void bind_auth_recv_bindreply(struct composite_context *creq)
 {
-	struct composite_context *c =
-		talloc_get_type(creq->async.private_data,
-				struct composite_context);
-	struct bind_auth_state *state =
-		talloc_get_type(c->private_data, struct bind_auth_state);
+	struct composite_context *c = talloc_get_type(creq->async.private_data,
+						      struct composite_context);
+	struct bind_auth_state *state =	talloc_get_type(c->private_data,
+							struct bind_auth_state);
 
 	c->status = dcerpc_bind_recv(creq);
 	if (!composite_is_ok(c)) return;
@@ -165,8 +180,9 @@ static void bind_auth_recv_bindreply(struct composite_context *creq)
 	bind_auth_next_step(c);
 }
 
+
 /**
-   Bind to a DCE/RPC pipe, async
+   Bind to a DCE/RPC pipe, send async request
    @param mem_ctx TALLOC_CTX for the allocation of the composite_context
    @param p The dcerpc_pipe to bind (must already be connected)
    @param table The interface table to use (the DCE/RPC bind both selects and interface and authenticates)
@@ -190,14 +206,12 @@ struct composite_context *dcerpc_bind_auth_send(TALLOC_CTX *mem_ctx,
 
 	struct dcerpc_syntax_id syntax, transfer_syntax;
 
+	/* composite context allocation and setup */
 	c = talloc_zero(mem_ctx, struct composite_context);
 	if (c == NULL) return NULL;
 
 	state = talloc(c, struct bind_auth_state);
-	if (state == NULL) {
-		c->status = NT_STATUS_NO_MEMORY;
-		goto failed;
-	}
+	if (composite_nomem(state, c)) return c;
 
 	c->state = COMPOSITE_STATE_IN_PROGRESS;
 	c->private_data = state;
@@ -255,10 +269,7 @@ struct composite_context *dcerpc_bind_auth_send(TALLOC_CTX *mem_ctx,
 	}
 
 	sec->auth_info = talloc(p, struct dcerpc_auth);
-	if (sec->auth_info == NULL) {
-		c->status = NT_STATUS_NO_MEMORY;
-		goto failed;
-	}
+	if (composite_nomem(sec->auth_info, c)) return c;
 
 	sec->auth_info->auth_type = auth_type;
 	sec->auth_info->auth_level = auth_level,
@@ -298,24 +309,28 @@ struct composite_context *dcerpc_bind_auth_send(TALLOC_CTX *mem_ctx,
 	/* The first request always is a dcerpc_bind. The subsequent ones
 	 * depend on gensec results */
 	creq = dcerpc_bind_send(p, state, &syntax, &transfer_syntax);
-	if (creq == NULL) {
-		c->status = NT_STATUS_NO_MEMORY;
-		goto failed;
-	}
+	if (composite_nomem(creq, c)) return c;
 
-	creq->async.fn = bind_auth_recv_bindreply;
-	creq->async.private_data = c;
+	composite_continue(c, creq, bind_auth_recv_bindreply, c);
 	return c;
-
- failed:
+	
+failed:
 	composite_error(c, c->status);
 	return c;
 }
 
+
+/**
+   Bind to a DCE/RPC pipe, receive result
+   @param creq A composite context describing state of async call
+   @retval NTSTATUS code
+*/
+
 NTSTATUS dcerpc_bind_auth_recv(struct composite_context *creq)
 {
 	NTSTATUS result = composite_wait(creq);
-	struct bind_auth_state *state = talloc_get_type(creq->private_data, struct bind_auth_state);
+	struct bind_auth_state *state = talloc_get_type(creq->private_data,
+							struct bind_auth_state);
 
 	if (NT_STATUS_IS_OK(result)) {
 		/*
@@ -329,6 +344,7 @@ NTSTATUS dcerpc_bind_auth_recv(struct composite_context *creq)
 	return result;
 }
 
+
 /**
    Perform a GENSEC authenticated bind to a DCE/RPC pipe, sync
    @param p The dcerpc_pipe to bind (must already be connected)
@@ -339,6 +355,7 @@ NTSTATUS dcerpc_bind_auth_recv(struct composite_context *creq)
    @param service The service (used by Kerberos to select the service principal to contact)
    @retval NTSTATUS status code
 */
+
 NTSTATUS dcerpc_bind_auth(struct dcerpc_pipe *p,
 			  const struct dcerpc_interface_table *table,
 			  struct cli_credentials *credentials,
