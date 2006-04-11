@@ -116,7 +116,7 @@ LIBSMBSHAREMODES_MAJOR=0
 LIBSMBSHAREMODES_MINOR=2
 
 FLAGS1 = $(CFLAGS) @FLAGS1@ -Iinclude -I$(srcdir)/include -I$(srcdir)/tdb @SMBWRAP_INC@ -I. $(CPPFLAGS) -I$(srcdir) -D_SAMBA_BUILD_
-FLAGS2 = -I$(srcdir)/iniparser/src 
+FLAGS2 =
 FLAGS3 = 
 FLAGS4 = 
 FLAGS5 = $(FLAGS1) $(FLAGS2) $(FLAGS3) $(FLAGS4)
@@ -512,7 +512,7 @@ RPCCLIENT_OBJ = $(RPCCLIENT_OBJ1) \
 	     $(SMBLDAP_OBJ) $(DCUTIL_OBJ)
 
 PAM_WINBIND_OBJ = nsswitch/pam_winbind.o $(WBCOMMON_OBJ) \
-		  lib/replace1.o $(SNPRINTF_OBJ) $(INIPARSER_OBJ)
+		  lib/replace1.o $(SNPRINTF_OBJ)
 
 PAM_WINBIND_PICOBJ = $(PAM_WINBIND_OBJ:.o=.@PICSUFFIX@)
 
@@ -1209,10 +1209,10 @@ bin/winbindd@EXEEXT@: $(WINBINDD_OBJ) @BUILD_POPT@ bin/.dummy
 		$(LDAP_LIBS) $(KRB5LIBS) \
 		@SONAMEFLAG@`basename $@`@NSSSONAMEVERSIONSUFFIX@
 
-bin/pam_winbind.@SHLIBEXT@: $(PAM_WINBIND_PICOBJ) bin/.dummy
+bin/pam_winbind.@SHLIBEXT@: $(PAM_WINBIND_PICOBJ) @BUILD_INIPARSER@ bin/.dummy
 	@echo "Linking shared library $@"
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(PAM_WINBIND_PICOBJ) \
-		@SONAMEFLAG@`basename $@` $(LIBS) -lpam
+		@SONAMEFLAG@`basename $@` $(LIBS) @INIPARSERLIBS@ -lpam
 
 bin/rhosts.@SHLIBEXT@: $(AUTH_RHOSTS_OBJ:.o=.@PICSUFFIX@)
 	@echo "Building plugin $@"
