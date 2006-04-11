@@ -674,15 +674,89 @@ BOOL lsa_io_r_enum_trust_dom(const char *desc, LSA_R_ENUM_TRUST_DOM *out,
 }
 
 /*******************************************************************
-reads or writes a dom query structure.
+reads or writes a structure.
 ********************************************************************/
 
-static BOOL lsa_io_dom_query(const char *desc, DOM_QUERY *d_q, prs_struct *ps, int depth)
+static BOOL lsa_io_dom_query_1(const char *desc, DOM_QUERY_1 *d_q, prs_struct *ps, int depth)
 {
 	if (d_q == NULL)
 		return False;
 
-	prs_debug(ps, depth, desc, "lsa_io_dom_query");
+	prs_debug(ps, depth, desc, "lsa_io_dom_query_1");
+	depth++;
+
+	if (!prs_align(ps))
+		return False;
+
+	if (!prs_uint32("percent_full", ps, depth, &d_q->percent_full))
+		return False;
+	if (!prs_uint32("log_size", ps, depth, &d_q->log_size))
+		return False;
+	if (!smb_io_nttime("retention_time", ps, depth, &d_q->retention_time))
+		return False;
+	if (!prs_uint8("shutdown_in_progress", ps, depth, &d_q->shutdown_in_progress))
+		return False;
+	if (!smb_io_nttime("time_to_shutdown", ps, depth, &d_q->time_to_shutdown))
+		return False;
+	if (!prs_uint32("next_audit_record", ps, depth, &d_q->next_audit_record))
+		return False;
+	if (!prs_uint32("unknown", ps, depth, &d_q->unknown))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+
+static BOOL lsa_io_dom_query_2(const char *desc, DOM_QUERY_2 *d_q, prs_struct *ps, int depth)
+{
+	if (d_q == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "lsa_io_dom_query_2");
+	depth++;
+
+	if (!prs_align(ps))
+		return False;
+
+	if (!prs_uint32("auditing_enabled", ps, depth, &d_q->auditing_enabled))
+		return False;
+	if (!prs_uint32("ptr   ", ps, depth, &d_q->ptr))
+		return False;
+	if (!prs_uint32("count1", ps, depth, &d_q->count1))
+		return False;
+
+	if (d_q->ptr) {
+
+		if (!prs_uint32("count2", ps, depth, &d_q->count2))
+			return False;
+
+		if (d_q->count1 != d_q->count2)
+			return False;
+
+		if (UNMARSHALLING(ps)) {
+			d_q->auditsettings = TALLOC_ZERO_ARRAY(ps->mem_ctx, uint32, d_q->count2);
+		}
+
+		if (!prs_uint32s(False, "auditsettings", ps, depth, d_q->auditsettings, d_q->count2))
+			return False;
+	}
+
+	return True;
+}
+
+/*******************************************************************
+reads or writes a dom query structure.
+********************************************************************/
+
+static BOOL lsa_io_dom_query_3(const char *desc, DOM_QUERY_3 *d_q, prs_struct *ps, int depth)
+{
+	if (d_q == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "lsa_io_dom_query_3");
 	depth++;
 
 	if(!prs_align(ps))
@@ -715,62 +789,12 @@ static BOOL lsa_io_dom_query(const char *desc, DOM_QUERY *d_q, prs_struct *ps, i
 }
 
 /*******************************************************************
-reads or writes a structure.
-********************************************************************/
-
-static BOOL lsa_io_dom_query_2(const char *desc, DOM_QUERY_2 *d_q, prs_struct *ps, int depth)
-{
-	uint32 ptr = 1;
-
-	if (d_q == NULL)
-		return False;
-
-	prs_debug(ps, depth, desc, "lsa_io_dom_query_2");
-	depth++;
-
-	if (!prs_align(ps))
-		return False;
-
-	if (!prs_uint32("auditing_enabled", ps, depth, &d_q->auditing_enabled))
-		return False;
-	if (!prs_uint32("ptr   ", ps, depth, &ptr))
-		return False;
-	if (!prs_uint32("count1", ps, depth, &d_q->count1))
-		return False;
-	if (!prs_uint32("count2", ps, depth, &d_q->count2))
-		return False;
-
-	if (UNMARSHALLING(ps)) {
-		d_q->auditsettings = TALLOC_ZERO_ARRAY(ps->mem_ctx, uint32, d_q->count2);
-	}
-
-	if (d_q->auditsettings == NULL) {
-		DEBUG(1, ("lsa_io_dom_query_2: NULL auditsettings!\n"));
-		return False;
-	}
-
-	if (!prs_uint32s(False, "auditsettings", ps, depth, d_q->auditsettings, d_q->count2))
-		return False;
-
-    return True;
-}
-
-/*******************************************************************
- Reads or writes a dom query structure.
-********************************************************************/
-
-static BOOL lsa_io_dom_query_3(const char *desc, DOM_QUERY_3 *d_q, prs_struct *ps, int depth)
-{
-	return lsa_io_dom_query("", d_q, ps, depth);
-}
-
-/*******************************************************************
  Reads or writes a dom query structure.
 ********************************************************************/
 
 static BOOL lsa_io_dom_query_5(const char *desc, DOM_QUERY_5 *d_q, prs_struct *ps, int depth)
 {
-	return lsa_io_dom_query("", d_q, ps, depth);
+	return lsa_io_dom_query_3("", d_q, ps, depth);
 }
 
 /*******************************************************************
@@ -792,46 +816,275 @@ static BOOL lsa_io_dom_query_6(const char *desc, DOM_QUERY_6 *d_q, prs_struct *p
 }
 
 /*******************************************************************
+ Reads or writes a dom query structure.
+********************************************************************/
+
+static BOOL lsa_io_dom_query_10(const char *desc, DOM_QUERY_10 *d_q, prs_struct *ps, int depth)
+{
+	if (d_q == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "lsa_io_dom_query_10");
+	depth++;
+
+	if (!prs_uint8("shutdown_on_full", ps, depth, &d_q->shutdown_on_full))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+ Reads or writes a dom query structure.
+********************************************************************/
+
+static BOOL lsa_io_dom_query_11(const char *desc, DOM_QUERY_11 *d_q, prs_struct *ps, int depth)
+{
+	if (d_q == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "lsa_io_dom_query_11");
+	depth++;
+
+	if (!prs_uint16("unknown", ps, depth, &d_q->unknown))
+		return False;
+	if (!prs_uint8("shutdown_on_full", ps, depth, &d_q->shutdown_on_full))
+		return False;
+	if (!prs_uint8("log_is_full", ps, depth, &d_q->log_is_full))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+ Reads or writes an LSA_DNS_DOM_INFO structure.
+********************************************************************/
+
+BOOL lsa_io_dom_query_12(const char *desc, DOM_QUERY_12 *info, prs_struct *ps, int depth)
+{
+	prs_debug(ps, depth, desc, "lsa_io_dom_query_12");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+	if(!smb_io_unihdr("nb_name", &info->hdr_nb_dom_name, ps, depth))
+		return False;
+	if(!smb_io_unihdr("dns_name", &info->hdr_dns_dom_name, ps, depth))
+		return False;
+	if(!smb_io_unihdr("forest", &info->hdr_forest_name, ps, depth))
+		return False;
+
+	if(!prs_align(ps))
+		return False;
+	if ( !smb_io_uuid("dom_guid", &info->dom_guid, ps, depth) )
+		return False;
+
+	if(!prs_align(ps))
+		return False;
+	if(!prs_uint32("dom_sid", ps, depth, &info->ptr_dom_sid))
+		return False;
+
+	if(!smb_io_unistr2("nb_name", &info->uni_nb_dom_name,
+			   info->hdr_nb_dom_name.buffer, ps, depth))
+		return False;
+	if(!smb_io_unistr2("dns_name", &info->uni_dns_dom_name, 
+			   info->hdr_dns_dom_name.buffer, ps, depth))
+		return False;
+	if(!smb_io_unistr2("forest", &info->uni_forest_name, 
+			   info->hdr_forest_name.buffer, ps, depth))
+		return False;
+
+	if(!smb_io_dom_sid2("dom_sid", &info->dom_sid, ps, depth))
+		return False;
+
+	return True;
+	
+}
+
+/*******************************************************************
+ Inits an LSA_Q_QUERY_INFO structure.
+********************************************************************/
+
+void init_q_set(LSA_Q_SET_INFO *in, POLICY_HND *hnd, uint16 info_class, LSA_INFO_CTR ctr)
+{
+	DEBUG(5,("init_q_set\n"));
+
+	in->info_class = info_class;
+
+	in->pol = *hnd;
+
+	in->ctr = ctr;
+	in->ctr.info_class = info_class;
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+
+static BOOL lsa_io_query_info_ctr2(const char *desc, prs_struct *ps, int depth, LSA_INFO_CTR2 *ctr)
+{
+	prs_debug(ps, depth, desc, "lsa_io_query_info_ctr2");
+	depth++;
+
+	if(!prs_uint16("info_class", ps, depth, &ctr->info_class))
+		return False;
+
+	switch (ctr->info_class) {
+	case 1:
+		if(!lsa_io_dom_query_1("", &ctr->info.id1, ps, depth))
+			return False;
+		break;
+	case 2:
+		if(!lsa_io_dom_query_2("", &ctr->info.id2, ps, depth))
+			return False;
+		break;
+	case 3:
+		if(!lsa_io_dom_query_3("", &ctr->info.id3, ps, depth))
+			return False;
+		break;
+	case 5:
+		if(!lsa_io_dom_query_5("", &ctr->info.id5, ps, depth))
+			return False;
+		break;
+	case 6:
+		if(!lsa_io_dom_query_6("", &ctr->info.id6, ps, depth))
+			return False;
+		break;
+	case 10:
+		if(!lsa_io_dom_query_10("", &ctr->info.id10, ps, depth))
+			return False;
+		break;
+	case 11:
+		if(!lsa_io_dom_query_11("", &ctr->info.id11, ps, depth))
+			return False;
+		break;
+	case 12:
+		if(!lsa_io_dom_query_12("", &ctr->info.id12, ps, depth))
+			return False;
+		break;
+	default:
+		DEBUG(0,("invalid info_class: %d\n", ctr->info_class));
+		return False;
+		break;
+	}
+
+	return True;
+}
+
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+
+static BOOL lsa_io_query_info_ctr(const char *desc, prs_struct *ps, int depth, LSA_INFO_CTR *ctr)
+{
+	prs_debug(ps, depth, desc, "lsa_io_query_info_ctr");
+	depth++;
+
+	if(!prs_uint16("info_class", ps, depth, &ctr->info_class))
+		return False;
+
+	switch (ctr->info_class) {
+	case 1:
+		if(!lsa_io_dom_query_1("", &ctr->info.id1, ps, depth))
+			return False;
+		break;
+	case 2:
+		if(!lsa_io_dom_query_2("", &ctr->info.id2, ps, depth))
+			return False;
+		break;
+	case 3:
+		if(!lsa_io_dom_query_3("", &ctr->info.id3, ps, depth))
+			return False;
+		break;
+	case 5:
+		if(!lsa_io_dom_query_5("", &ctr->info.id5, ps, depth))
+			return False;
+		break;
+	case 6:
+		if(!lsa_io_dom_query_6("", &ctr->info.id6, ps, depth))
+			return False;
+		break;
+	case 10:
+		if(!lsa_io_dom_query_10("", &ctr->info.id10, ps, depth))
+			return False;
+		break;
+	case 11:
+		if(!lsa_io_dom_query_11("", &ctr->info.id11, ps, depth))
+			return False;
+		break;
+	default:
+		DEBUG(0,("invalid info_class: %d\n", ctr->info_class));
+		return False;
+		break;
+	}
+
+	return True;
+}
+
+/*******************************************************************
  Reads or writes an LSA_R_QUERY_INFO structure.
 ********************************************************************/
 
 BOOL lsa_io_r_query(const char *desc, LSA_R_QUERY_INFO *out, prs_struct *ps, int depth)
 {
+
 	prs_debug(ps, depth, desc, "lsa_io_r_query");
 	depth++;
 
-	if(!prs_uint32("undoc_buffer", ps, depth, &out->undoc_buffer))
+	if(!prs_align(ps))
 		return False;
 
-	if (out->undoc_buffer != 0) {
-		if(!prs_uint16("info_class", ps, depth, &out->info_class))
-			return False;
+	if(!prs_uint32("dom_ptr", ps, depth, &out->dom_ptr))
+		return False;
 
-		if(!prs_align(ps))
-			return False;
+	if (out->dom_ptr) {
 
-		switch (out->info_class) {
-		case 2:
-			if(!lsa_io_dom_query_2("", &out->dom.id2, ps, depth))
-				return False;
-			break;
-		case 3:
-			if(!lsa_io_dom_query_3("", &out->dom.id3, ps, depth))
-				return False;
-			break;
-		case 5:
-			if(!lsa_io_dom_query_5("", &out->dom.id5, ps, depth))
-				return False;
-			break;
-		case 6:
-			if(!lsa_io_dom_query_6("", &out->dom.id6, ps, depth))
-				return False;
-			break;
-		default:
-			/* PANIC! */
-			break;
-		}
+		if(!lsa_io_query_info_ctr("", ps, depth, &out->ctr))
+			return False;
 	}
+
+	if(!prs_align(ps))
+		return False;
+
+	if(!prs_ntstatus("status", ps, depth, &out->status))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+ Reads or writes an LSA_Q_SET_INFO structure.
+********************************************************************/
+
+BOOL lsa_io_q_set(const char *desc, LSA_Q_SET_INFO *in, prs_struct *ps, 
+		  int depth)
+{
+	prs_debug(ps, depth, desc, "lsa_io_q_set");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+
+	if(!smb_io_pol_hnd("", &in->pol, ps, depth))
+		return False;
+
+	if(!prs_uint16("info_class", ps, depth, &in->info_class))
+		return False;
+
+	if(!lsa_io_query_info_ctr("", ps, depth, &in->ctr))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+ Reads or writes an LSA_R_SET_INFO structure.
+********************************************************************/
+
+BOOL lsa_io_r_set(const char *desc, LSA_R_SET_INFO *out, prs_struct *ps, int depth)
+{
+	prs_debug(ps, depth, desc, "lsa_io_r_set");
+	depth++;
 
 	if(!prs_align(ps))
 		return False;
@@ -2852,52 +3105,6 @@ BOOL policy_handle_is_valid(const POLICY_HND *hnd)
 }
 
 /*******************************************************************
- Reads or writes an LSA_DNS_DOM_INFO structure.
-********************************************************************/
-
-BOOL lsa_io_dns_dom_info(const char *desc, LSA_DNS_DOM_INFO *info,
-			 prs_struct *ps, int depth)
-{
-	prs_debug(ps, depth, desc, "lsa_io_dns_dom_info");
-	depth++;
-
-	if(!prs_align(ps))
-		return False;
-	if(!smb_io_unihdr("nb_name", &info->hdr_nb_dom_name, ps, depth))
-		return False;
-	if(!smb_io_unihdr("dns_name", &info->hdr_dns_dom_name, ps, depth))
-		return False;
-	if(!smb_io_unihdr("forest", &info->hdr_forest_name, ps, depth))
-		return False;
-
-	if(!prs_align(ps))
-		return False;
-	if ( !smb_io_uuid("dom_guid", &info->dom_guid, ps, depth) )
-		return False;
-
-	if(!prs_align(ps))
-		return False;
-	if(!prs_uint32("dom_sid", ps, depth, &info->ptr_dom_sid))
-		return False;
-
-	if(!smb_io_unistr2("nb_name", &info->uni_nb_dom_name,
-			   info->hdr_nb_dom_name.buffer, ps, depth))
-		return False;
-	if(!smb_io_unistr2("dns_name", &info->uni_dns_dom_name, 
-			   info->hdr_dns_dom_name.buffer, ps, depth))
-		return False;
-	if(!smb_io_unistr2("forest", &info->uni_forest_name, 
-			   info->hdr_forest_name.buffer, ps, depth))
-		return False;
-
-	if(!smb_io_dom_sid2("dom_sid", &info->dom_sid, ps, depth))
-		return False;
-
-	return True;
-	
-}
-
-/*******************************************************************
  Inits an LSA_Q_QUERY_INFO2 structure.
 ********************************************************************/
 
@@ -2944,20 +3151,13 @@ BOOL lsa_io_r_query_info2(const char *desc, LSA_R_QUERY_INFO2 *out,
 	if(!prs_align(ps))
 		return False;
 
-	if(!prs_uint32("ptr", ps, depth, &out->ptr))
+	if(!prs_uint32("dom_ptr", ps, depth, &out->dom_ptr))
 		return False;
-	if(!prs_uint16("info_class", ps, depth, &out->info_class))
-		return False;
-	switch(out->info_class) {
-	case 0x000c:
-		if (!lsa_io_dns_dom_info("info12", &out->info.dns_dom_info,
-					 ps, depth))
+
+	if (out->dom_ptr) {
+
+		if(!lsa_io_query_info_ctr2("", ps, depth, &out->ctr))
 			return False;
-		break;
-	default:
-		DEBUG(0,("lsa_io_r_query_info2: unknown info class %d\n",
-			 out->info_class));
-		return False;
 	}
 
 	if(!prs_align(ps))
