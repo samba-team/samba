@@ -148,7 +148,7 @@ installmisc: installdirs
 	@$(SHELL) $(srcdir)/script/installmisc.sh $(srcdir) $(DESTDIR)$(JSDIR) $(DESTDIR)$(SETUPDIR) $(DESTDIR)$(BINDIR)
 
 installpc: installdirs
-	@$(SHELL) $(srcdir)/script/installpc.sh $(srcdir) $(DESTDIR)$(PKGCONFIGDIR) $(PC_FILES)
+	@$(SHELL) $(srcdir)/script/installpc.sh $(builddir) $(DESTDIR)$(PKGCONFIGDIR) $(PC_FILES)
 
 uninstall: uninstallbin uninstallman uninstallmisc uninstalllib uninstallheader \
 	uninstallplugins
@@ -204,16 +204,16 @@ $(IDL_HEADER_FILES) $(IDL_NDR_HEADER_FILES) $(IDL_NDR_PARSE_C_FILES) \
 	$(IDL_NDR_EJS_H_FILES): idl
 
 idl_full: pidl/lib/Parse/Pidl/IDL.pm
-	@CPP="$(CPP)" PERL="$(PERL)" script/build_idl.sh FULL $(PIDL_ARGS)
+	@CPP="$(CPP)" PERL="$(PERL)" srcdir=$(srcdir) $(srcdir)/script/build_idl.sh FULL $(PIDL_ARGS)
 
 idl: pidl/lib/Parse/Pidl/IDL.pm
-	@CPP="$(CPP)" PERL="$(PERL)" script/build_idl.sh PARTIAL $(PIDL_ARGS)
+	@CPP="$(CPP)" PERL="$(PERL)" srcdir=$(srcdir) $(srcdir)/script/build_idl.sh PARTIAL $(PIDL_ARGS)
 
 pidl/lib/Parse/Pidl/IDL.pm: pidl/idl.yp
 	-$(YAPP) -s -m 'Parse::Pidl::IDL' -o pidl/lib/Parse/Pidl/IDL.pm pidl/idl.yp 
 
 smb_interfaces: pidl/smb_interfaces.pm
-	$(PERL) -Ipidl script/build_smb_interfaces.pl \
+	$(PERL) -Ipidl $(srcdir)/script/build_smb_interfaces.pl \
 		include/smb_interfaces.h
 
 pidl/smb_interfaces.pm: pidl/smb_interfaces.yp
@@ -270,38 +270,38 @@ realdistclean: distclean removebackup
 test: $(DEFAULT_TEST_TARGET)
 
 test-swrap: all
-	./script/tests/selftest.sh ${selftest_prefix} all SOCKET_WRAPPER
+	$(srcdir)/script/tests/selftest.sh ${selftest_prefix} all SOCKET_WRAPPER
 
 test-noswrap: all
-	./script/tests/selftest.sh ${selftest_prefix} all
+	$(srcdir)/script/tests/selftest.sh ${selftest_prefix} all
 
 quicktest: all
-	./script/tests/selftest.sh ${selftest_prefix} quick SOCKET_WRAPPER
+	$(srcdir)/script/tests/selftest.sh ${selftest_prefix} quick SOCKET_WRAPPER
 
 valgrindtest: valgrindtest-quick
 
 valgrindtest-quick: all
 	SMBD_VALGRIND="xterm -n smbd -e valgrind -q --db-attach=yes --num-callers=30" \
 	VALGRIND="valgrind -q --num-callers=30 --log-file=${selftest_prefix}/valgrind.log" \
-	./script/tests/selftest.sh ${selftest_prefix} quick SOCKET_WRAPPER
+	$(srcdir)/script/tests/selftest.sh ${selftest_prefix} quick SOCKET_WRAPPER
 
 valgrindtest-all: all
 	SMBD_VALGRIND="xterm -n smbd -e valgrind -q --db-attach=yes --num-callers=30" \
 	VALGRIND="valgrind -q --num-callers=30 --log-file=${selftest_prefix}/valgrind.log" \
-	./script/tests/selftest.sh ${selftest_prefix} all SOCKET_WRAPPER
+	$(srcdir)/script/tests/selftest.sh ${selftest_prefix} all SOCKET_WRAPPER
 
 gdbtest: gdbtest-quick
 
 gdbtest-quick: all
 	SMBD_VALGRIND="xterm -n smbd -e gdb --args " \
-	./script/tests/selftest.sh ${selftest_prefix} quick SOCKET_WRAPPER
+	$(srcdir)/script/tests/selftest.sh ${selftest_prefix} quick SOCKET_WRAPPER
 
 gdbtest-all: all
 	SMBD_VALGRIND="xterm -n smbd -e gdb --args " \
-	./script/tests/selftest.sh ${selftest_prefix} all SOCKET_WRAPPER
+	$(srcdir)/script/tests/selftest.sh ${selftest_prefix} all SOCKET_WRAPPER
 
 unused_macros:
-	./script/find_unused_macros.pl `find . -name "*.[ch]"` | sort
+	$(srcdir)/script/find_unused_macros.pl `find . -name "*.[ch]"` | sort
 
 ###############################################################################
 # File types
@@ -311,15 +311,15 @@ unused_macros:
 
 .c.ho:
 	@echo "Compiling $< with host compiler"
-	@$(HOSTCC) `script/cflags.pl $@` $(CFLAGS) -c $< -o $@
+	@$(HOSTCC) `$(srcdir)/script/cflags.pl $@` $(CFLAGS) -c $< -o $@
 
 .c.d:
 	@echo "Generating dependencies for $<"
-	@$(CC) -M -MG -MP -MT $(<:.c=.o) `script/cflags.pl $@` $(CFLAGS) $< -o $@
+	@$(CC) -M -MG -MP -MT $(<:.c=.o) `$(srcdir)/script/cflags.pl $@` $(CFLAGS) $< -o $@
 
 .c.hd:
 	@echo "Generating dependencies for $<"
-	@$(CC) -M -MG -MP -MT $(<:.c=.ho) `script/cflags.pl $@` $(CFLAGS) $< -o $@
+	@$(CC) -M -MG -MP -MT $(<:.c=.ho) `$(srcdir)/script/cflags.pl $@` $(CFLAGS) $< -o $@
 
 include/includes.d: include/includes.h
 	@echo "Generating dependencies for $<"
@@ -328,14 +328,14 @@ include/includes.d: include/includes.h
 .c.o:
 	@if test -n "$(CC_CHECKER)"; then \
 		echo "Checking  $< with '$(CC_CHECKER)'"; \
-		$(CC_CHECKER) `script/cflags.pl $@` $(CFLAGS) $(PICFLAG) -c $< -o $@; \
+		$(CC_CHECKER) `$(srcdir)/script/cflags.pl $@` $(CFLAGS) $(PICFLAG) -c $< -o $@; \
 	fi
 	@echo "Compiling $<"
-	@$(CC) `script/cflags.pl $@` $(CFLAGS) $(PICFLAG) -c $< -o $@
+	@$(CC) `$(srcdir)/script/cflags.pl $@` $(CFLAGS) $(PICFLAG) -c $< -o $@
 
 .h.h.gch:
 	@echo "Precompiling $<"
-	@$(CC) `script/cflags.pl $@` $(CFLAGS) $(PICFLAG) -c $< -o $@
+	@$(CC) `$(srcdir)/script/cflags.pl $@` $(CFLAGS) $(PICFLAG) -c $< -o $@
 
 .y.c:
 	@echo "Building $< with $(YACC)"

@@ -15,11 +15,14 @@ REQUIRED_SUBSYSTEMS = TDR_REGF
 REQUIRED_SUBSYSTEMS = TDR 
 OBJ_FILES = tdr_regf.o
 
-lib/registry/reg_backend_nt4.c: lib/registry/tdr_regf.c
-lib/registry/tdr_regf.c: lib/registry/regf.idl
-	@CPP="$(CPP)" $(PERL) pidl/pidl $(PIDL_ARGS) \
+# Special support for external builddirs
+lib/registry/reg_backend_nt4.c: $(srcdir)/lib/registry/reg_backend_nt4.c
+$(srcdir)/lib/registry/reg_backend_nt4.c: lib/registry/tdr_regf.c
+lib/registry/tdr_regf.h: lib/registry/tdr_regf.c
+lib/registry/tdr_regf.c: $(srcdir)/lib/registry/regf.idl
+	@CPP="$(CPP)" $(PERL) $(srcdir)/pidl/pidl $(PIDL_ARGS) \
 		--header --outputdir=lib/registry \
-		--tdr-parser -- lib/registry/regf.idl
+		--tdr-parser -- $^
 
 clean::
 	@-rm -f lib/registry/regf.h lib/registry/tdr_regf*

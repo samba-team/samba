@@ -9,6 +9,8 @@ use strict;
 # use warnings;
 
 use Getopt::Long;
+use File::Basename;
+use File::Path;
 
 #####################################################################
 # read a file into a string
@@ -21,6 +23,8 @@ my $_public = "";
 my $_private = "";
 my $public_data = \$_public;
 my $private_data = \$_private;
+my $builddir = undef;
+my $srcdir = undef;
 
 sub public($)
 {
@@ -57,7 +61,9 @@ GetOptions(
 	},
 	'public-define=s' => \$public_define,
 	'private-define=s' => \$private_define,
-	'help' => \&usage
+	'help' => \&usage,
+	'builddir=s' => sub { my ($f,$v) = @_; $builddir = $v; },
+	'srcdir=s' => sub { my ($f,$v) = @_; $srcdir = $v; }
 ) or exit(1);
 
 if (not defined($public_define) and defined($public_file)) {
@@ -143,7 +149,9 @@ sub process_file($$$)
 
 	$filename =~ s/\.o$/\.c/g;
 
-	open(FH, "< $filename") || die "Failed to open $filename";
+	if (!open(FH, "< $builddir/$filename")) {
+	    open(FH, "< $srcdir/$filename") || die "Failed to open $filename";
+	}
 
 	$private_file->("\n/* The following definitions come from $filename  */\n\n");
 
@@ -198,6 +206,7 @@ sub process_file($$$)
 	close(FH);
 }
 
+
 print_header(\&public, $public_define);
 if ($public_file ne $private_file) {
 	print_header(\&private, $private_define);
@@ -232,6 +241,7 @@ my $old_private_data = file_load($private_file);
 
 if (not defined($old_public_data) or ($old_public_data ne $$public_data))
 {
+	mkpath(dirname($public_file), 0, 0755);
 	open(PUBLIC, ">$public_file") or die("Can't open `$public_file': $!"); 
 	print PUBLIC "$$public_data";
 	close(PUBLIC);
@@ -240,6 +250,7 @@ if (not defined($old_public_data) or ($old_public_data ne $$public_data))
 if (($public_file ne $private_file) and (
 	not defined($old_private_data) or ($old_private_data ne $$private_data))) {
 
+	mkpath(dirname($private_file), 0, 0755);
 	open(PRIVATE, ">$private_file") or die("Can't open `$private_file': $!"); 
 	print PRIVATE "$$private_data";
 	close(PRIVATE);

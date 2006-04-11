@@ -8,6 +8,8 @@
 
 package smb_build::env;
 use smb_build::input;
+use File::Path;
+use File::Basename;
 
 use strict;
 
@@ -61,6 +63,7 @@ sub PkgConfig($$$$$$$$)
 		$cflags .= " -DHAVE_IMMEDIATE_STRUCTURES=1";
 	}
 
+	mkpath(dirname($path),0,0755);
 	open(OUT, ">$path") or die("Can't open $path: $!");
 
 	print OUT <<"__EOF__";
