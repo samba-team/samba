@@ -86,8 +86,54 @@
 /* XXXX these are here to get a compile! */
 #define LSA_LOOKUPRIDS      0xFD
 
+#define LSA_AUDIT_NUM_CATEGORIES_NT4	7
+#define LSA_AUDIT_NUM_CATEGORIES_WIN2K	9
+
+#define LSA_AUDIT_NUM_CATEGORIES LSA_AUDIT_NUM_CATEGORIES_NT4
+
+#define LSA_AUDIT_POLICY_NONE		0x00
+#define LSA_AUDIT_POLICY_SUCCESS	0x01
+#define LSA_AUDIT_POLICY_FAILURE	0x02
+#define LSA_AUDIT_POLICY_ALL		(LSA_AUDIT_POLICY_SUCCESS|LSA_AUDIT_POLICY_FAILURE)
+#define LSA_AUDIT_POLICY_CLEAR		0x04
+
+enum lsa_audit_categories {
+	LSA_AUDIT_CATEGORY_SYSTEM = 0,
+	LSA_AUDIT_CATEGORY_LOGON = 1,
+	LSA_AUDIT_CATEGORY_FILE_AND_OBJECT_ACCESS,
+	LSA_AUDIT_CATEGORY_USE_OF_USER_RIGHTS,
+	LSA_AUDIT_CATEGORY_PROCCESS_TRACKING,
+	LSA_AUDIT_CATEGORY_SECURITY_POLICY_CHANGES,
+	LSA_AUDIT_CATEGORY_ACCOUNT_MANAGEMENT,
+	LSA_AUDIT_CATEGORY_DIRECTORY_SERVICE_ACCESS,	/* only in win2k/2k3 */
+	LSA_AUDIT_CATEGORY_ACCOUNT_LOGON		/* only in win2k/2k3 */
+};
+
+/* level 1 is auditing settings */
+typedef struct dom_query_1
+{
+	uint32 percent_full;
+	uint32 log_size;
+	NTTIME retention_time;
+	uint8 shutdown_in_progress;
+	NTTIME time_to_shutdown;
+	uint32 next_audit_record;
+	uint32 unknown;
+} DOM_QUERY_1;
+
+
+/* level 2 is auditing settings */
+typedef struct dom_query_2
+{
+	uint32 auditing_enabled;
+	uint32 count1; /* usualy 7, at least on nt4sp4 */
+	uint32 count2; /* the same */
+	uint32 ptr;
+	uint32 *auditsettings;
+} DOM_QUERY_2;
+
 /* DOM_QUERY - info class 3 and 5 LSA Query response */
-typedef struct dom_query_info
+typedef struct dom_query_info_3
 {
 	uint16 uni_dom_max_len; /* domain name string length * 2 */
 	uint16 uni_dom_str_len; /* domain name string length * 2 */
@@ -96,26 +142,47 @@ typedef struct dom_query_info
 	UNISTR2 uni_domain_name; /* domain name (unicode string) */
 	DOM_SID2 dom_sid; /* domain SID */
 
-} DOM_QUERY;
+} DOM_QUERY_3;
 
 /* level 5 is same as level 3. */
-typedef DOM_QUERY DOM_QUERY_3;
-typedef DOM_QUERY DOM_QUERY_5;
-
-/* level 2 is auditing settings */
-typedef struct dom_query_2
-{
-	uint32 auditing_enabled;
-	uint32 count1; /* usualy 7, at least on nt4sp4 */
-	uint32 count2; /* the same */
-	uint32 *auditsettings;
-} DOM_QUERY_2;
+typedef DOM_QUERY_3 DOM_QUERY_5;
 
 /* level 6 is server role information */
 typedef struct dom_query_6
 {
 	uint16 server_role; /* 2=backup, 3=primary */
 } DOM_QUERY_6;
+
+/* level 10 is audit full set info */
+typedef struct dom_query_10
+{
+        uint8 shutdown_on_full;
+} DOM_QUERY_10;
+
+/* level 11 is audit full query info */
+typedef struct dom_query_11
+{
+	uint16 unknown;
+	uint8 shutdown_on_full;
+	uint8 log_is_full;
+} DOM_QUERY_11;
+
+/* level 12 is DNS domain info */
+typedef struct lsa_dns_dom_info
+{
+	UNIHDR  hdr_nb_dom_name; /* netbios domain name */
+	UNIHDR  hdr_dns_dom_name;
+	UNIHDR  hdr_forest_name;
+
+	struct uuid dom_guid; /* domain GUID */
+
+	UNISTR2 uni_nb_dom_name;
+	UNISTR2 uni_dns_dom_name;
+	UNISTR2 uni_forest_name;
+
+	uint32 ptr_dom_sid;
+	DOM_SID2   dom_sid; /* domain SID */
+} DOM_QUERY_12;
 
 typedef struct seq_qos_info
 {
@@ -245,67 +312,56 @@ typedef struct r_lsa_query_sec_obj_info
 typedef struct lsa_query_info
 {
 	POLICY_HND pol; /* policy handle */
-    uint16 info_class; /* info class */
+	uint16 info_class; /* info class */
 
 } LSA_Q_QUERY_INFO;
 
-/* LSA_INFO_UNION */
-typedef union lsa_info_union
+/* LSA_INFO_CTR */
+typedef struct lsa_info_ctr
 {
-	DOM_QUERY_2 id2;
-	DOM_QUERY_3 id3;
-	DOM_QUERY_5 id5;
-	DOM_QUERY_6 id6;
-} LSA_INFO_UNION;
+	uint16 info_class;
+	union {
+		DOM_QUERY_1 id1;
+		DOM_QUERY_2 id2;
+		DOM_QUERY_3 id3;
+		DOM_QUERY_5 id5;
+		DOM_QUERY_6 id6;
+		DOM_QUERY_10 id10;
+		DOM_QUERY_11 id11;
+		DOM_QUERY_12 id12;
+	} info;
+
+} LSA_INFO_CTR;
+
+typedef LSA_INFO_CTR LSA_INFO_CTR2;
+
+/* LSA_Q_SET_INFO - LSA set info policy */
+typedef struct lsa_set_info
+{
+	POLICY_HND pol; /* policy handle */
+	uint16 info_class; /* info class */
+	LSA_INFO_CTR ctr;
+
+} LSA_Q_SET_INFO;
+
+/* LSA_R_SET_INFO - response to LSA set info policy */
+typedef struct lsa_r_set_info
+{
+	NTSTATUS status; /* return code */
+
+} LSA_R_SET_INFO;
 
 /* LSA_R_QUERY_INFO - response to LSA query info policy */
 typedef struct lsa_r_query_info
 {
-    uint32 undoc_buffer; /* undocumented buffer pointer */
-    uint16 info_class; /* info class (same as info class in request) */
-   
-	LSA_INFO_UNION dom; 
-
+	uint32 dom_ptr; /* undocumented buffer pointer */
+	LSA_INFO_CTR ctr; 
 	NTSTATUS status; /* return code */
 
 } LSA_R_QUERY_INFO;
 
-/* LSA_DNS_DOM_INFO - DNS domain info - info class 12*/
-typedef struct lsa_dns_dom_info
-{
-	UNIHDR  hdr_nb_dom_name; /* netbios domain name */
-	UNIHDR  hdr_dns_dom_name;
-	UNIHDR  hdr_forest_name;
-
-	struct uuid dom_guid; /* domain GUID */
-
-	UNISTR2 uni_nb_dom_name;
-	UNISTR2 uni_dns_dom_name;
-	UNISTR2 uni_forest_name;
-
-	uint32 ptr_dom_sid;
-	DOM_SID2   dom_sid; /* domain SID */
-} LSA_DNS_DOM_INFO;
-
-typedef union lsa_info2_union
-{
-	LSA_DNS_DOM_INFO dns_dom_info;
-} LSA_INFO2_UNION;
-
-/* LSA_Q_QUERY_INFO2 - LSA query info */
-typedef struct lsa_q_query_info2
-{
-	POLICY_HND pol;    /* policy handle */
-	uint16 info_class; /* info class */
-} LSA_Q_QUERY_INFO2;
-
-typedef struct lsa_r_query_info2
-{
-	uint32 ptr;    /* pointer to info struct */
-	uint16 info_class;
-	LSA_INFO2_UNION info; /* so far the only one */
-	NTSTATUS status;
-} LSA_R_QUERY_INFO2;
+typedef LSA_Q_QUERY_INFO LSA_Q_QUERY_INFO2;
+typedef LSA_R_QUERY_INFO LSA_R_QUERY_INFO2;
 
 /*******************************************************/
 
