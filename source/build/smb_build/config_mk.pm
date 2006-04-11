@@ -109,19 +109,30 @@ use vars qw(@parsed_files);
 #
 # $filename -	the path of the config.mk file
 #		which should be parsed
-sub run_config_mk($$$)
+sub run_config_mk($$$$)
 {
-	sub run_config_mk($$$);
-	my ($input, $srcdir, $filename) = @_;
+	sub run_config_mk($$$$);
+	my ($input, $srcdir, $builddir, $filename) = @_;
 	my $result;
 	my $linenum = -1;
 	my $infragment = 0;
 	my $section = "GLOBAL";
 	my $makefile = "";
 
-	push (@parsed_files, $srcdir."/".$filename);
+	my $parsing_file = $builddir."/".$filename;
+
+	$ENV{samba_builddir} = $builddir;
+	$ENV{samba_srcdir} = $srcdir;
 	
-	open(CONFIG_MK, $srcdir."/".$filename) or die("Can't open `$srcdir/$filename'\n");
+	if (!open(CONFIG_MK, $parsing_file)) { 
+		$parsing_file = $srcdir."/".$filename;
+		open(CONFIG_MK, $parsing_file) or 
+		    die("Can't open neither `$builddir."/".$filename' nor `$srcdir/$filename'\n");
+	}
+	
+	push (@parsed_files, $parsing_file);
+	
+	
 	my @lines = <CONFIG_MK>;
 	close(CONFIG_MK);
 
@@ -151,7 +162,7 @@ sub run_config_mk($$$)
 
 		# include
 		if ($line =~ /^include (.*)$/) {
-			$makefile .= run_config_mk($input, $srcdir, dirname($filename)."/$1");
+			$makefile .= run_config_mk($input, $srcdir, $builddir, dirname($filename)."/$1");
 			next;
 		}
 
