@@ -551,6 +551,11 @@
 #define BATCH_OPLOCK_RETURN 2
 #define LEVEL_II_OPLOCK_RETURN 3
 
+/* oplock levels sent in oplock break */
+#define OPLOCK_BREAK_TO_NONE     0
+#define OPLOCK_BREAK_TO_LEVEL_II 1
+
+
 #define CMD_REPLY 0x8000
 
 /* The maximum length of a trust account password.
