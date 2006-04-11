@@ -848,7 +848,7 @@ int reply_chkpth(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 		return(UNIXERROR(ERRDOS,ERRbadpath));
 	}
 
-	outsize = set_message(outbuf,0,0,True);
+	outsize = set_message(outbuf,0,0,False);
 	DEBUG(3,("chkpth %s mode=%d\n", name, (int)SVAL(inbuf,smb_vwv0)));
 
 	END_PROFILE(SMBchkpth);
@@ -994,7 +994,7 @@ int reply_setatr(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 		return set_bad_path_error(errno, bad_path, outbuf, ERRDOS, ERRnoaccess);
 	}
  
-	outsize = set_message(outbuf,0,0,True);
+	outsize = set_message(outbuf,0,0,False);
   
 	DEBUG( 3, ( "setatr name=%s mode=%d\n", fname, mode ) );
   
@@ -2113,7 +2113,7 @@ int reply_unlink(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 	 */
 	process_pending_change_notify_queue((time_t)0);
 	
-	outsize = set_message(outbuf,0,0,True);
+	outsize = set_message(outbuf,0,0,False);
   
 	END_PROFILE(SMBunlink);
 	return outsize;
@@ -3214,7 +3214,7 @@ int reply_lseek(connection_struct *conn, char *inbuf,char *outbuf, int size, int
 
 int reply_flush(connection_struct *conn, char *inbuf,char *outbuf, int size, int dum_buffsize)
 {
-	int outsize = set_message(outbuf,0,0,True);
+	int outsize = set_message(outbuf,0,0,False);
 	uint16 fnum = SVAL(inbuf,smb_vwv0);
 	files_struct *fsp = file_fsp(inbuf,smb_vwv0);
 	START_PROFILE(SMBflush);
@@ -3245,7 +3245,7 @@ int reply_exit(connection_struct *conn,
 
 	file_close_pid(SVAL(inbuf,smb_pid),SVAL(inbuf,smb_uid));
 
-	outsize = set_message(outbuf,0,0,True);
+	outsize = set_message(outbuf,0,0,False);
 
 	DEBUG(3,("exit\n"));
 
@@ -3266,7 +3266,7 @@ int reply_close(connection_struct *conn, char *inbuf,char *outbuf, int size,
 	files_struct *fsp = NULL;
 	START_PROFILE(SMBclose);
 
-	outsize = set_message(outbuf,0,0,True);
+	outsize = set_message(outbuf,0,0,False);
 
 	/* If it's an IPC, pass off to the pipe handler. */
 	if (IS_IPC(conn)) {
@@ -3414,7 +3414,7 @@ int reply_writeclose(connection_struct *conn,
 int reply_lock(connection_struct *conn,
 	       char *inbuf,char *outbuf, int length, int dum_buffsize)
 {
-	int outsize = set_message(outbuf,0,0,True);
+	int outsize = set_message(outbuf,0,0,False);
 	SMB_BIG_UINT count,offset;
 	NTSTATUS status;
 	files_struct *fsp = file_fsp(inbuf,smb_vwv0);
@@ -3476,7 +3476,7 @@ int reply_lock(connection_struct *conn,
 int reply_unlock(connection_struct *conn, char *inbuf,char *outbuf, int size, 
 		 int dum_buffsize)
 {
-	int outsize = set_message(outbuf,0,0,True);
+	int outsize = set_message(outbuf,0,0,False);
 	SMB_BIG_UINT count,offset;
 	NTSTATUS status;
 	files_struct *fsp = file_fsp(inbuf,smb_vwv0);
@@ -3515,7 +3515,7 @@ int reply_unlock(connection_struct *conn, char *inbuf,char *outbuf, int size,
 int reply_tdis(connection_struct *conn, 
 	       char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 {
-	int outsize = set_message(outbuf,0,0,True);
+	int outsize = set_message(outbuf,0,0,False);
 	uint16 vuid;
 	START_PROFILE(SMBtdis);
 
@@ -3622,7 +3622,7 @@ int reply_printopen(connection_struct *conn,
 int reply_printclose(connection_struct *conn,
 		     char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 {
-	int outsize = set_message(outbuf,0,0,True);
+	int outsize = set_message(outbuf,0,0,False);
 	files_struct *fsp = file_fsp(inbuf,smb_vwv0);
 	int close_err = 0;
 	START_PROFILE(SMBsplclose);
@@ -3727,7 +3727,7 @@ int reply_printqueue(connection_struct *conn,
 int reply_printwrite(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 {
 	int numtowrite;
-	int outsize = set_message(outbuf,0,0,True);
+	int outsize = set_message(outbuf,0,0,False);
 	char *data;
 	files_struct *fsp = file_fsp(inbuf,smb_vwv0);
 
@@ -3852,7 +3852,7 @@ int reply_mkdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 		change_owner_to_parent(conn, NULL, directory, &sbuf);
 	}
 
-	outsize = set_message(outbuf,0,0,True);
+	outsize = set_message(outbuf,0,0,False);
 
 	DEBUG( 3, ( "mkdir %s ret=%d\n", directory, outsize ) );
 
@@ -4040,7 +4040,7 @@ int reply_rmdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 		return set_bad_path_error(errno, bad_path, outbuf, ERRDOS, ERRbadpath);
 	}
  
-	outsize = set_message(outbuf,0,0,True);
+	outsize = set_message(outbuf,0,0,False);
   
 	DEBUG( 3, ( "rmdir %s\n", directory ) );
   
@@ -4712,7 +4712,7 @@ int reply_mv(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 	 * update after a rename..
 	 */	
 	process_pending_change_notify_queue((time_t)0);
-	outsize = set_message(outbuf,0,0,True);
+	outsize = set_message(outbuf,0,0,False);
   
 	END_PROFILE(SMBmv);
 	return(outsize);
@@ -5043,7 +5043,7 @@ int reply_setdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 		return ERROR_DOS(ERRDOS,ERRbadpath);
 	}
   
-	outsize = set_message(outbuf,0,0,True);
+	outsize = set_message(outbuf,0,0,False);
 	SCVAL(outbuf,smb_reh,CVAL(inbuf,smb_reh));
   
 	DEBUG(3,("setdir %s\n", newdir));
@@ -5542,7 +5542,7 @@ int reply_setattrE(connection_struct *conn, char *inbuf,char *outbuf, int size, 
 	files_struct *fsp = file_fsp(inbuf,smb_vwv0);
 	START_PROFILE(SMBsetattrE);
 
-	outsize = set_message(outbuf,0,0,True);
+	outsize = set_message(outbuf,0,0,False);
 
 	if(!fsp || (fsp->conn != conn)) {
 		END_PROFILE(SMBsetattrE);

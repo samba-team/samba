@@ -1160,20 +1160,16 @@ void remove_from_common_flags2(uint32 v)
 
 void construct_reply_common(char *inbuf,char *outbuf)
 {
-	memset(outbuf,'\0',smb_size);
-
-	set_message(outbuf,0,0,True);
-	SCVAL(outbuf,smb_com,CVAL(inbuf,smb_com));
+	set_message(outbuf,0,0,False);
 	
-	memcpy(outbuf+4,inbuf+4,4);
-	SCVAL(outbuf,smb_rcls,SMB_SUCCESS);
-	SCVAL(outbuf,smb_reh,0);
+	SCVAL(outbuf,smb_com,CVAL(inbuf,smb_com));
+	SIVAL(outbuf,smb_rcls,0);
 	SCVAL(outbuf,smb_flg, FLAG_REPLY | (CVAL(inbuf,smb_flg) & FLAG_CASELESS_PATHNAMES)); 
 	SSVAL(outbuf,smb_flg2,
 		(SVAL(inbuf,smb_flg2) & FLAGS2_UNICODE_STRINGS) |
 		common_flags2);
+	memset(outbuf+smb_pidhigh,'\0',(smb_tid-smb_pidhigh));
 
-	SSVAL(outbuf,smb_err,SMB_SUCCESS);
 	SSVAL(outbuf,smb_tid,SVAL(inbuf,smb_tid));
 	SSVAL(outbuf,smb_pid,SVAL(inbuf,smb_pid));
 	SSVAL(outbuf,smb_uid,SVAL(inbuf,smb_uid));

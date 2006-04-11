@@ -1805,7 +1805,7 @@ int reply_ntrename(connection_struct *conn,
 	 * update after a rename..
 	 */	
 	process_pending_change_notify_queue((time_t)0);
-	outsize = set_message(outbuf,0,0,True);
+	outsize = set_message(outbuf,0,0,False);
   
 	END_PROFILE(SMBntrename);
 	return(outsize);
@@ -2956,7 +2956,7 @@ int reply_nttrans(connection_struct *conn,
 
 	/* We need to send an interim response then receive the rest
 	   of the parameter/data bytes */
-	outsize = set_message(outbuf,0,0,True);
+	outsize = set_message(outbuf,0,0,False);
 	show_msg(outbuf);
 	END_PROFILE(SMBnttrans);
 	return outsize;
