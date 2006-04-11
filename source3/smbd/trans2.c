@@ -2407,12 +2407,15 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 			SSVAL(pdata,0,CIFS_UNIX_MAJOR_VERSION);
 			SSVAL(pdata,2,CIFS_UNIX_MINOR_VERSION);
 			/* We have POSIX ACLs, pathname and locking capability. */
+#if defined(DEVELOPER) /* Not quite finished yet... */
 			SBIG_UINT(pdata,4,((SMB_BIG_UINT)(
 					CIFS_UNIX_POSIX_ACLS_CAP|
 					CIFS_UNIX_POSIX_PATHNAMES_CAP|
-#if defined(DEVELOPER) /* Not quite finished yet... */
 					CIFS_UNIX_FCNTL_LOCKS_CAP)));
 #else
+			SBIG_UINT(pdata,4,((SMB_BIG_UINT)(
+					CIFS_UNIX_POSIX_ACLS_CAP|
+					CIFS_UNIX_POSIX_PATHNAMES_CAP|
 					0)));
 #endif
 			break;
