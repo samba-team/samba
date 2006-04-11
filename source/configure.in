@@ -5314,6 +5314,43 @@ AC_SUBST(POPTLIBS)
 AC_SUBST(FLAGS1)
 
 #################################################
+# Check to see if we should use the included iniparser 
+
+AC_ARG_WITH(included-iniparser,
+[  --with-included-iniparser    use bundled iniparser library, not from system],
+[ 
+  case "$withval" in
+	yes)
+		INCLUDED_INIPARSER=yes
+		;;
+        no)
+		INCLUDED_INIPARSER=no
+                ;;
+  esac ],
+)
+if test x"$INCLUDED_INIPARSER" != x"yes"; then
+    AC_CHECK_LIB(iniparser, iniparser_load,
+	         INCLUDED_INIPARSER=no, INCLUDED_INIPARSER=yes)
+fi
+
+AC_MSG_CHECKING(whether to use included iniparser)
+if test x"$INCLUDED_INIPARSER" = x"yes"; then
+    AC_MSG_RESULT(yes)
+    BUILD_INIPARSER='$(INIPARSER_OBJ)'
+	INIPARSERLIBS='$(INIPARSER_OBJ)'
+    FLAGS1="$FLAGS1 -I$srcdir/iniparser/src"
+else
+    AC_MSG_RESULT(no)
+	BUILD_INIPARSER=""
+    INIPARSERLIBS="-liniparser"
+fi
+AC_SUBST(BUILD_INIPARSER)
+AC_SUBST(INIPARSERLIBS)
+AC_SUBST(FLAGS1)
+
+
+
+#################################################
 # Check if the user wants Python
 
 # At the moment, you can use this to set which Python binary to link
