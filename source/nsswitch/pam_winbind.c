@@ -1031,7 +1031,7 @@ int pam_sm_close_session(pam_handle_t *pamh, int flags,
 			 int argc, const char **argv)
 {
 	dictionary *d;
-	int retval;
+	int retval = PAM_SUCCESS;
 
 	/* parse arguments */
 	int ctrl = _pam_parse(argc, argv, &d);
