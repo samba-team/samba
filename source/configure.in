@@ -3126,42 +3126,52 @@ FOUND_KRB5=no
 KRB5_LIBS=""
 
 if test x"$with_ldap_support" != x"yes"; then
+
     if test x"$with_ads_support" = x"yes"; then
 	AC_MSG_ERROR(Active Directory Support requires LDAP support)
-    elif test x"$with_ads_support" != x"no"; then
-	AC_MSG_WARN(Active Directory Support requires LDAP support)
+    elif test x"$with_ads_support" = x"auto"; then
+	AC_MSG_WARN(Disabling Active Directory support (requires LDAP support))
+	with_ads_support=no
     fi
-    with_ads_support=no
-fi
 
-AC_CHECK_FUNC_EXT(ldap_initialize,$LDAP_LIBS)
+else
 
-if test x"$ac_cv_func_ext_ldap_initialize" != x"yes"; then
-    if test x"$with_ads_support" = x"yes"; then
-        AC_MSG_ERROR(Active Directory Support requires ldap_initialize)
+    # Check to see whether there is enough LDAP functionality to be able
+    # to build AD support.
+
+    AC_CHECK_FUNC_EXT(ldap_initialize,$LDAP_LIBS)
+
+    if test x"$ac_cv_func_ext_ldap_initialize" != x"yes"; then
+	if test x"$with_ads_support" = x"yes"; then
+	    AC_MSG_ERROR(Active Directory support requires ldap_initialize)
+	elif test x"$with_ads_support" = x"auto"; then
+	    AC_MSG_WARN(Disabling Active Directory support (requires ldap_initialize))
+	    with_ads_support=no
+	fi
     fi
-    AC_MSG_WARN(Active Directory Support requires ldap_initialize)
-    with_ads_support=no
-fi
 
-AC_CHECK_FUNC_EXT(ldap_domain2hostlist,$LDAP_LIBS)
+    AC_CHECK_FUNC_EXT(ldap_domain2hostlist,$LDAP_LIBS)
 
-if test x"$ac_cv_func_ext_ldap_domain2hostlist" != x"yes"; then
-    if test x"$with_ads_support" = x"yes"; then
-        AC_MSG_ERROR(Active Directory Support requires ldap_domain2hostlist)
+    if test x"$ac_cv_func_ext_ldap_domain2hostlist" != x"yes"; then
+	if test x"$with_ads_support" = x"yes"; then
+	    AC_MSG_ERROR(Active Directory support requires ldap_domain2hostlist)
+	elif test x"$with_ads_support" = x"auto"; then
+	    AC_MSG_WARN(Disabling Active Directory support (requires ldap_domain2hostlist))
+	    with_ads_support=no
+	fi
     fi
-    AC_MSG_WARN(Active Directory Support requires ldap_domain2hostlist)
-    with_ads_support=no
-fi
 
-AC_CHECK_FUNC_EXT(ldap_add_result_entry,$LDAP_LIBS)
+    AC_CHECK_FUNC_EXT(ldap_add_result_entry,$LDAP_LIBS)
 
-if test x"$ac_cv_func_ext_ldap_add_result_entry" != x"yes"; then
-    if test x"$with_ads_support" = x"yes"; then
-        AC_MSG_ERROR(Active Directory Support requires ldap_add_result_entry)
+    if test x"$ac_cv_func_ext_ldap_add_result_entry" != x"yes"; then
+	if test x"$with_ads_support" = x"yes"; then
+	    AC_MSG_ERROR(Active Directory support requires ldap_add_result_entry)
+	elif test x"$with_ads_support" = x"auto"; then
+	    AC_MSG_WARN(Disabling Active Directory support (requires ldap_add_result_entry))
+	    with_ads_support=no
+	fi
     fi
-    AC_MSG_WARN(Active Directory Support requires ldap_add_result_entry)
-    with_ads_support=no
+
 fi
 
 if test x"$with_ads_support" != x"no"; then
