@@ -198,8 +198,8 @@ try_ioctlpath(const char *path, unsigned long ioctlnum, int entrypoint)
 	 saved_errno != EDOM && 
 	 saved_errno != ENOTCONN))
 	return 1;
-    afs_ioctlpath = strdup(path);
     afs_ioctlnum = ioctlnum;
+    afs_ioctlpath = strdup(path);
     if (afs_ioctlpath == NULL)
 	return 1;
     afs_entry_point = entrypoint;
@@ -207,7 +207,7 @@ try_ioctlpath(const char *path, unsigned long ioctlnum, int entrypoint)
 }
 
 static int
-do_ioctl(void *data, unsigned long cmd)
+do_ioctl(void *data)
 {
     int fd, ret, saved_errno;
     fd = open(afs_ioctlpath, O_RDWR);
@@ -215,7 +215,7 @@ do_ioctl(void *data, unsigned long cmd)
 	errno = EINVAL;
 	return -1;
     }
-    ret = ioctl(fd, cmd, data);
+    ret = ioctl(fd, afs_ioctlnum, data);
     saved_errno = errno;
     close(fd);
     errno = saved_errno;
@@ -248,7 +248,7 @@ k_pioctl(char *a_path,
 	data.param2 = (unsigned long)o_opcode;
 	data.param3 = (unsigned long)a_paramsP;
 	data.param4 = (unsigned long)a_followSymlinks;
-	return do_ioctl(&data, VIOC_SYSCALL_PROC);
+	return do_ioctl(&data);
     }
     case MACOS_DEV_POINT: {
 	struct devdata data = { AFSCALL_PIOCTL, 0, 0, 0, 0, 0, 0, 0 };
@@ -259,7 +259,7 @@ k_pioctl(char *a_path,
 	data.param3 = (unsigned long)a_paramsP;
 	data.param4 = (unsigned long)a_followSymlinks;
 	
-	ret = do_ioctl(&data, VIOC_SYSCALL_DEV);
+	ret = do_ioctl(&data);
 	if (ret)
 	    return ret;
 	
@@ -314,11 +314,11 @@ k_setpag(void)
 #endif
     case LINUX_PROC_POINT: {
 	struct procdata data = { 0, 0, 0, 0, AFSCALL_SETPAG };
-	return do_ioctl(&data, VIOC_SYSCALL_PROC);
+	return do_ioctl(&data);
     }
     case MACOS_DEV_POINT: {
 	struct devdata data = { AFSCALL_SETPAG, 0, 0, 0, 0, 0, 0, 0 };
-	int ret = do_ioctl(&data, VIOC_SYSCALL_DEV);
+	int ret = do_ioctl(&data);
 	if (ret)
 	    return ret;
 	return data.retval;
