@@ -26,6 +26,10 @@
 #define PAM_SM_ACCOUNT
 #define PAM_SM_PASSWORD
 
+#ifndef PAM_WINBIND_CONFIG_FILE
+#define PAM_WINBIND_CONFIG_FILE "/etc/security/pam_winbind.conf"
+#endif
+
 #include <iniparser.h>
 
 #if defined(SUNOS5) || defined(SUNOS4) || defined(HPUX) || defined(FREEBSD) || defined(AIX)
@@ -109,8 +113,6 @@ do {                             \
 #define DAYS_TO_WARN_BEFORE_PWD_EXPIRES 5
 
 #include "winbind_client.h"
-
-#include <dynconfig.h>
 
 #define PAM_WB_REMARK_DIRECT(h,x)\
 {\

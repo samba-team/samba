@@ -61,7 +61,7 @@ static int _pam_parse(int argc, const char **argv, dictionary **d)
 	}
 
 	if (config_file == NULL) {
-		config_file = dyn_CONFIGFILE;
+		config_file = PAM_WINBIND_CONFIG_FILE;
 	}
 
 	*d = iniparser_load(CONST_DISCARD(char *, config_file));
@@ -69,24 +69,24 @@ static int _pam_parse(int argc, const char **argv, dictionary **d)
 		return -1;
 	}
 
-	if (iniparser_getboolean(*d, CONST_DISCARD(char *, "global:pam_winbind:debug"), False)) {
+	if (iniparser_getboolean(*d, CONST_DISCARD(char *, "global:debug"), False)) {
 		ctrl |= WINBIND_DEBUG_ARG;
 	}
 
-	if (iniparser_getboolean(*d, CONST_DISCARD(char *, "global:pam_winbind:cached_login"), False)) {
+	if (iniparser_getboolean(*d, CONST_DISCARD(char *, "global:cached_login"), False)) {
 		ctrl |= WINBIND_CACHED_LOGIN;
 	}
 
-	if (iniparser_getboolean(*d, CONST_DISCARD(char *, "global:pam_winbind:krb5_auth"), False) == True) {
+	if (iniparser_getboolean(*d, CONST_DISCARD(char *, "global:krb5_auth"), False)) {
 		ctrl |= WINBIND_KRB5_AUTH;
 	}
 
-	if (iniparser_getstr(*d, CONST_DISCARD(char *,"global:pam_winbind:krb5_ccache_type")) != NULL) {
+	if (iniparser_getstr(*d, CONST_DISCARD(char *,"global:krb5_ccache_type")) != NULL) {
 		ctrl |= WINBIND_KRB5_CCACHE_TYPE;
 	}
 	
-	if ((iniparser_getstr(*d, CONST_DISCARD(char *, "global:pam_winbind:require-membership-of")) != NULL) ||
-	    (iniparser_getstr(*d, CONST_DISCARD(char *, "global:pam_winbind:require_membership_of")) != NULL)) {
+	if ((iniparser_getstr(*d, CONST_DISCARD(char *, "global:require-membership-of")) != NULL) ||
+	    (iniparser_getstr(*d, CONST_DISCARD(char *, "global:require_membership_of")) != NULL)) {
 		ctrl |= WINBIND_REQUIRED_MEMBERSHIP;
 	}
 
@@ -794,7 +794,7 @@ const char *get_conf_item_string(int argc,
 
 	if (d != NULL) {
 
-		if (!asprintf(&key, "global:pam_winbind:%s", item)) {
+		if (!asprintf(&key, "global:%s", item)) {
 			goto out;
 		}
 
