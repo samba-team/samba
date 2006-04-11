@@ -410,7 +410,7 @@ void exit_server(const char *reason)
 	exit(0);
 }
 
-void exit_server_cleanly(void)
+void exit_server_cleanly(const char *const reason)
 {
 	exit_server("normal exit");
 }
