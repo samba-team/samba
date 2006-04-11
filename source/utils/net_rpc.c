@@ -6649,6 +6649,7 @@ int net_rpc_help(int argc, const char **argv)
 int net_rpc(int argc, const char **argv)
 {
 	struct functable func[] = {
+		{"audit", net_rpc_audit},
 		{"info", net_rpc_info},
 		{"join", net_rpc_join},
 		{"oldjoin", net_rpc_oldjoin},

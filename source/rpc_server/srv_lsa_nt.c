@@ -62,7 +62,7 @@ static void free_lsa_info(void *ptr)
 Init dom_query
  ***************************************************************************/
 
-static void init_dom_query(DOM_QUERY *d_q, const char *dom_name, DOM_SID *dom_sid)
+static void init_dom_query_3(DOM_QUERY_3 *d_q, const char *dom_name, DOM_SID *dom_sid)
 {
 	d_q->buffer_dom_name = (dom_name != NULL) ? 1 : 0; /* domain buffer pointer */
 	d_q->buffer_dom_sid = (dom_sid != NULL) ? 1 : 0;  /* domain sid pointer */
@@ -91,6 +91,15 @@ static void init_dom_query(DOM_QUERY *d_q, const char *dom_name, DOM_SID *dom_si
 
 	if (dom_sid != NULL)
 		init_dom_sid2(&d_q->dom_sid, dom_sid);
+}
+
+/***************************************************************************
+Init dom_query
+ ***************************************************************************/
+
+static void init_dom_query_5(DOM_QUERY_5 *d_q, const char *dom_name, DOM_SID *dom_sid)
+{
+	return init_dom_query_3(d_q, dom_name, dom_sid);
 }
 
 /***************************************************************************
@@ -678,7 +687,7 @@ NTSTATUS _lsa_enum_trust_dom(pipes_struct *p, LSA_Q_ENUM_TRUST_DOM *q_u,
 NTSTATUS _lsa_query_info(pipes_struct *p, LSA_Q_QUERY_INFO *q_u, LSA_R_QUERY_INFO *r_u)
 {
 	struct lsa_info *handle;
-	LSA_INFO_UNION *info = &r_u->dom;
+	LSA_INFO_CTR *ctr = &r_u->ctr;
 	DOM_SID domain_sid;
 	const char *name;
 	DOM_SID *sid = NULL;
@@ -691,19 +700,31 @@ NTSTATUS _lsa_query_info(pipes_struct *p, LSA_Q_QUERY_INFO *q_u, LSA_R_QUERY_INF
 	switch (q_u->info_class) {
 	case 0x02:
 		{
-		unsigned int i;
+
+		uint32 policy_def = LSA_AUDIT_POLICY_ALL;
+		
 		/* check if the user have enough rights */
-		if (!(handle->access & POLICY_VIEW_AUDIT_INFORMATION))
+		if (!(handle->access & POLICY_VIEW_AUDIT_INFORMATION)) {
+			DEBUG(10,("_lsa_query_info: insufficient access rights\n"));
 			return NT_STATUS_ACCESS_DENIED;
+		}
 
 		/* fake info: We audit everything. ;) */
-		info->id2.auditing_enabled = 1;
-		info->id2.count1 = 7;
-		info->id2.count2 = 7;
-		if ((info->id2.auditsettings = TALLOC_ARRAY(p->mem_ctx,uint32, 7)) == NULL)
+		ctr->info.id2.ptr = 1;
+		ctr->info.id2.auditing_enabled = True;
+		ctr->info.id2.count1 = ctr->info.id2.count2 = LSA_AUDIT_NUM_CATEGORIES;
+
+		if ((ctr->info.id2.auditsettings = TALLOC_ZERO_ARRAY(p->mem_ctx, uint32, LSA_AUDIT_NUM_CATEGORIES)) == NULL)
 			return NT_STATUS_NO_MEMORY;
-		for (i = 0; i < 7; i++)
-			info->id2.auditsettings[i] = 3;
+
+		ctr->info.id2.auditsettings[LSA_AUDIT_CATEGORY_ACCOUNT_MANAGEMENT] = policy_def;
+		ctr->info.id2.auditsettings[LSA_AUDIT_CATEGORY_FILE_AND_OBJECT_ACCESS] = policy_def; 
+		ctr->info.id2.auditsettings[LSA_AUDIT_CATEGORY_LOGON] = policy_def; 
+		ctr->info.id2.auditsettings[LSA_AUDIT_CATEGORY_PROCCESS_TRACKING] = policy_def; 
+		ctr->info.id2.auditsettings[LSA_AUDIT_CATEGORY_SECURITY_POLICY_CHANGES] = policy_def;
+		ctr->info.id2.auditsettings[LSA_AUDIT_CATEGORY_SYSTEM] = policy_def;
+		ctr->info.id2.auditsettings[LSA_AUDIT_CATEGORY_USE_OF_USER_RIGHTS] = policy_def; 
+
 		break;
 		}
 	case 0x03:
@@ -733,7 +754,7 @@ NTSTATUS _lsa_query_info(pipes_struct *p, LSA_Q_QUERY_INFO *q_u, LSA_R_QUERY_INF
 			default:
 				return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 		}
-		init_dom_query(&r_u->dom.id3, name, sid);
+		init_dom_query_3(&r_u->ctr.info.id3, name, sid);
 		break;
 	case 0x05:
 		/* check if the user have enough rights */
@@ -743,7 +764,7 @@ NTSTATUS _lsa_query_info(pipes_struct *p, LSA_Q_QUERY_INFO *q_u, LSA_R_QUERY_INF
 		/* Request PolicyAccountDomainInformation. */
 		name = get_global_sam_name();
 		sid = get_global_sam_sid();
-		init_dom_query(&r_u->dom.id5, name, sid);
+		init_dom_query_5(&r_u->ctr.info.id5, name, sid);
 		break;
 	case 0x06:
 		/* check if the user have enough rights */
@@ -756,14 +777,14 @@ NTSTATUS _lsa_query_info(pipes_struct *p, LSA_Q_QUERY_INFO *q_u, LSA_R_QUERY_INF
 				 * only a BDC is a backup controller
 				 * of the domain, it controls.
 				 */
-				info->id6.server_role = 2;
+				ctr->info.id6.server_role = 2;
 				break;
 			default:
 				/*
 				 * any other role is a primary
 				 * of the domain, it controls.
 				 */
-				info->id6.server_role = 3;
+				ctr->info.id6.server_role = 3;
 				break; 
 		}
 		break;
@@ -774,8 +795,8 @@ NTSTATUS _lsa_query_info(pipes_struct *p, LSA_Q_QUERY_INFO *q_u, LSA_R_QUERY_INF
 	}
 
 	if (NT_STATUS_IS_OK(r_u->status)) {
-		r_u->undoc_buffer = 0x22000000; /* bizarre */
-		r_u->info_class = q_u->info_class;
+		r_u->dom_ptr = 0x22000000; /* bizarre */
+		ctr->info_class = q_u->info_class;
 	}
 
 	return r_u->status;
