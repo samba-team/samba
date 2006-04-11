@@ -2410,7 +2410,11 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 			SBIG_UINT(pdata,4,((SMB_BIG_UINT)(
 					CIFS_UNIX_POSIX_ACLS_CAP|
 					CIFS_UNIX_POSIX_PATHNAMES_CAP|
+#if defined(DEVELOPER) /* Not quite finished yet... */
 					CIFS_UNIX_FCNTL_LOCKS_CAP)));
+#else
+					0)));
+#endif
 			break;
 
 		case SMB_QUERY_POSIX_FS_INFO:
@@ -2526,9 +2530,11 @@ cap_low = 0x%x, cap_high = 0x%x\n",
 					lp_set_posix_pathnames();
 					mangle_change_to_posix();
 				}
+#if defined(DEVELOPER)
 				if (client_unix_cap_low & CIFS_UNIX_FCNTL_LOCKS_CAP) {
 					lp_set_posix_cifsx_locktype(POSIX_LOCK);
 				}
+#endif
 				break;
 			}
 		case SMB_FS_QUOTA_INFORMATION:
@@ -2961,6 +2967,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 			}
 			break;
 		}
+#if defined(DEVELOPER)
 		case SMB_QUERY_POSIX_LOCK:
 		{
 			if (fsp == NULL || fsp->fh->fd == -1) {
@@ -2982,6 +2989,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 				return ERROR_NT(NT_STATUS_NO_MEMORY);
 			}
 		}
+#endif
 		default:
 			break;
 	}
@@ -3511,6 +3519,8 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 			}
 #endif
 
+
+#if defined(DEVELOPER)
 		case SMB_QUERY_POSIX_LOCK:
 		{
 			NTSTATUS status = NT_STATUS_INVALID_LEVEL;
@@ -3583,6 +3593,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 			}
 			break;
 		}
+#endif
 
 		default:
 			return ERROR_NT(NT_STATUS_INVALID_LEVEL);
@@ -4453,6 +4464,7 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 		}
 #endif
 
+#if defined(DEVELOPER)
 		case SMB_SET_POSIX_LOCK:
 		{
 			SMB_BIG_UINT count;
@@ -4551,6 +4563,7 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 			send_trans2_replies(outbuf, bufsize, params, 2, *ppdata, 0);
 			return(-1);
 		}
+#endif
 
 		default:
 			return ERROR_NT(NT_STATUS_INVALID_LEVEL);
@@ -4947,7 +4960,7 @@ int reply_findclose(connection_struct *conn,
 
 	dptr_close(&dptr_num);
 
-	outsize = set_message(outbuf,0,0,True);
+	outsize = set_message(outbuf,0,0,False);
 
 	DEBUG(3,("SMBfindclose dptr_num = %d\n", dptr_num));
 
@@ -4974,7 +4987,7 @@ int reply_findnclose(connection_struct *conn,
 	   findnotifyfirst - so any dptr_num is ok here. 
 	   Just ignore it. */
 
-	outsize = set_message(outbuf,0,0,True);
+	outsize = set_message(outbuf,0,0,False);
 
 	DEBUG(3,("SMB_findnclose dptr_num = %d\n", dptr_num));
 
@@ -5261,7 +5274,7 @@ int reply_trans2(connection_struct *conn, char *inbuf,char *outbuf,
 
 	/* We need to send an interim response then receive the rest
 	   of the parameter/data bytes */
-	outsize = set_message(outbuf,0,0,True);
+	outsize = set_message(outbuf,0,0,False);
 	show_msg(outbuf);
 	END_PROFILE(SMBtrans2);
 	return outsize;
