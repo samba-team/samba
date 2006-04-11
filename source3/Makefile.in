@@ -512,8 +512,7 @@ RPCCLIENT_OBJ = $(RPCCLIENT_OBJ1) \
 	     $(SMBLDAP_OBJ) $(DCUTIL_OBJ)
 
 PAM_WINBIND_OBJ = nsswitch/pam_winbind.o $(WBCOMMON_OBJ) \
-		  lib/replace1.o $(SNPRINTF_OBJ) $(INIPARSER_OBJ) \
-		  dynconfig.o
+		  lib/replace1.o $(SNPRINTF_OBJ) $(INIPARSER_OBJ)
 
 PAM_WINBIND_PICOBJ = $(PAM_WINBIND_OBJ:.o=.@PICSUFFIX@)
 
