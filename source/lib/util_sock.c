@@ -662,8 +662,6 @@ BOOL receive_smb_raw(int fd, char *buffer, unsigned int timeout)
 
 	smb_read_error = 0;
 
-	memset(buffer,'\0',smb_size + 100);
-
 	len = read_smb_length_return_keepalive(fd,buffer,timeout);
 	if (len < 0) {
 		DEBUG(10,("receive_smb_raw: length < 0!\n"));
@@ -708,8 +706,9 @@ BOOL receive_smb_raw(int fd, char *buffer, unsigned int timeout)
 		}
 
 		if (ret != len) {
-			if (smb_read_error == 0)
+			if (smb_read_error == 0) {
 				smb_read_error = READ_ERROR;
+			}
 			return False;
 		}
 		
