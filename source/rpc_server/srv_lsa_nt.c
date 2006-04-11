@@ -99,7 +99,7 @@ Init dom_query
 
 static void init_dom_query_5(DOM_QUERY_5 *d_q, const char *dom_name, DOM_SID *dom_sid)
 {
-	return init_dom_query_3(d_q, dom_name, dom_sid);
+	init_dom_query_3(d_q, dom_name, dom_sid);
 }
 
 /***************************************************************************
