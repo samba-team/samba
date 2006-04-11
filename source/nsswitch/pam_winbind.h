@@ -26,6 +26,8 @@
 #define PAM_SM_ACCOUNT
 #define PAM_SM_PASSWORD
 
+#include <iniparser.h>
+
 #if defined(SUNOS5) || defined(SUNOS4) || defined(HPUX) || defined(FREEBSD) || defined(AIX)
 
 /* Solaris always uses dynamic pam modules */
@@ -87,6 +89,7 @@ do {                             \
 #define WINBIND_KRB5_AUTH (1<<7)
 #define WINBIND_KRB5_CCACHE_TYPE (1<<8)
 #define WINBIND_CACHED_LOGIN (1<<9)
+#define WINBIND_CONFIG_FILE (1<<10)
 
 /*
  * here is the string to inform the user that the new passwords they
@@ -106,6 +109,8 @@ do {                             \
 #define DAYS_TO_WARN_BEFORE_PWD_EXPIRES 5
 
 #include "winbind_client.h"
+
+#include <dynconfig.h>
 
 #define PAM_WB_REMARK_DIRECT(h,x)\
 {\
@@ -134,7 +139,7 @@ do {                             \
 {\
 	const char *ntstatus = x.data.auth.nt_status_string; \
 	const char *error_string = NULL; \
-	if (strequal(ntstatus,y)) {\
+	if (!strcasecmp(ntstatus,y)) {\
 		error_string = _get_ntstatus_error_string(y);\
 		if (error_string != NULL) {\
 			_make_remark(h, PAM_ERROR_MSG, error_string);\
@@ -148,3 +153,18 @@ do {                             \
 		return ret;\
 	};\
 };
+
+/* from include/rpc_samr.h */
+#define DOMAIN_PASSWORD_COMPLEX            0x00000001
+
+#define REJECT_REASON_OTHER		0x00000000
+#define REJECT_REASON_TOO_SHORT		0x00000001
+#define REJECT_REASON_IN_HISTORY	0x00000002
+#define REJECT_REASON_NOT_COMPLEX	0x00000005
+
+/* from include/smb.h */
+#define ACB_PWNOEXP			0x00000200
+
+/* from include/rpc_netlogon.h */
+#define LOGON_CACHED_ACCOUNT		0x00000004
+
