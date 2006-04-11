@@ -222,7 +222,7 @@ LIB_OBJ = $(VERSION_OBJ) lib/charcnv.o lib/debug.o lib/fault.o \
 	  lib/adt_tree.o lib/gencache.o $(TDB_OBJ) \
 	  lib/module.o lib/events.o lib/ldap_escape.o @CHARSET_STATIC@ \
 	  lib/secdesc.o lib/util_seaccess.o lib/secace.o lib/secacl.o @SOCKWRAP@ \
-	  libads/krb5_errs.o lib/system_smbd.o
+	  libads/krb5_errs.o lib/system_smbd.o lib/audit.o
 
 LIB_DUMMY_OBJ = lib/dummysmbd.o lib/dummyroot.o
 LIB_NONSMBD_OBJ = $(LIB_OBJ) $(LIB_DUMMY_OBJ)
@@ -581,7 +581,7 @@ NET_OBJ1 = utils/net.o utils/net_ads.o utils/net_ads_cldap.o utils/net_help.o \
 	   utils/net_status.o utils/net_rpc_printer.o utils/net_rpc_rights.o \
 	   utils/net_rpc_service.o utils/net_rpc_registry.o utils/net_usershare.o \
 	   utils/netlookup.o utils/net_sam.o utils/net_rpc_shell.o \
-	   utils/net_util.o utils/net_rpc_sh_acct.o
+	   utils/net_util.o utils/net_rpc_sh_acct.o utils/net_rpc_audit.o 
 
 NET_OBJ = $(NET_OBJ1) $(PARAM_OBJ) $(SECRETS_OBJ) $(LIBSMB_OBJ) \
 	  $(RPC_PARSE_OBJ) $(PASSDB_OBJ) $(GROUPDB_OBJ) \
