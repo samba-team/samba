@@ -122,7 +122,7 @@ CPP=$self->{config}->{CPP}
 CPPFLAGS=$self->{config}->{CPPFLAGS}
 
 CC=$self->{config}->{CC}
-CFLAGS=-I\$(srcdir)/include -I\$(srcdir) -I\$(srcdir)/lib -D_SAMBA_BUILD_ -DHAVE_CONFIG_H $self->{config}->{CFLAGS} \$(CPPFLAGS)
+CFLAGS=-I\$(builddir)/include -I\$(builddir) -I\$(builddir)/lib -I\$(srcdir)/include -I\$(srcdir) -I\$(srcdir)/lib -D_SAMBA_BUILD_ -DHAVE_CONFIG_H $self->{config}->{CFLAGS} \$(CPPFLAGS)
 PICFLAG=$self->{config}->{PICFLAG}
 HOSTCC=$self->{config}->{HOSTCC}
 
@@ -368,8 +368,12 @@ sub Header($$)
 {
 	my ($self,$ctx) = @_;
 
+	my $dir = $ctx->{BASEDIR};
+
+	$dir =~ s/^\.\///g;
+
 	foreach (@{$ctx->{PUBLIC_HEADERS}}) {
-		push (@{$self->{headers}}, "$ctx->{BASEDIR}/$_");
+		push (@{$self->{headers}}, "$dir/$_");
 	}
 }
 
@@ -497,7 +501,7 @@ sub ProtoHeader($$)
 	$self->output("$dir/$ctx->{PUBLIC_PROTO_HEADER}: $ctx->{MK_FILE} \$($ctx->{TYPE}_$ctx->{NAME}_OBJ_LIST:.o=.c)\n");
 	$self->output("\t\@echo \"$comment\"\n");
 
-	$self->output("\t\@\$(PERL) \$(srcdir)/script/mkproto.pl --private=$dir/$ctx->{PRIVATE_PROTO_HEADER} --public=$dir/$ctx->{PUBLIC_PROTO_HEADER} \$($ctx->{TYPE}_$ctx->{NAME}_OBJ_LIST)\n\n");
+	$self->output("\t\@\$(PERL) \$(srcdir)/script/mkproto.pl --srcdir=\$(srcdir) --builddir=\$(builddir) --private=$dir/$ctx->{PRIVATE_PROTO_HEADER} --public=$dir/$ctx->{PUBLIC_PROTO_HEADER} \$($ctx->{TYPE}_$ctx->{NAME}_OBJ_LIST)\n\n");
 }
 
 sub write($$)
@@ -542,7 +546,7 @@ endif
 endif
 ");
 	} else {
-		$self->output("include static_deps.mk\n");
+		$self->output("include \$(srcdir)/static_deps.mk\n");
 	}
 
 	open(MAKEFILE,">$file") || die ("Can't open $file\n");

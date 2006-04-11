@@ -2,16 +2,18 @@
 # Copyright (C) 2006 Jelmer Vernooij
 use strict;
 use File::Basename;
+use Cwd 'abs_path';
 
 my $includedir = shift;
-
+my $builddir = abs_path($ENV{samba_builddir});
+my $srcdir = abs_path($ENV{samba_srcdir});
 
 sub read_headermap($)
 {
 	my ($fn) = @_;
 	my %map = ();
 	my $ln = 0;
-	open(MAP, "<headermap.txt");
+	open(MAP, "<$fn");
 	while(<MAP>) {
 		$ln++;
 		s/#.*$//g;
@@ -28,14 +30,19 @@ sub read_headermap($)
 	return %map;
 }
 
-my %map = read_headermap("headermap.txt");
+my %map = read_headermap("$srcdir/headermap.txt");
 
 sub findmap($)
 {
 	$_ = shift;
 	s/^\.\///g;
+	s/$builddir\///g;
+	s/$srcdir\///g;
 
 	if (! -f $_ && -f "lib/$_") { $_ = "lib/$_"; }
+	if ($srcdir !~ $builddir) {
+	 if (! -f "$srcdir/$_" && -f "$srcdir/lib/$_") { $_ = "lib/$_"; }
+	}
 	
 	return $map{$_};
 }
@@ -55,7 +62,7 @@ sub install_header($$)
 
 	my $lineno = 0;
 
-	open(IN, "<$src");
+	open(IN, "<$src") || open(IN, "<$srcdir/$src");
 	open(OUT, ">$dst");
 
 	while (<IN>) {
@@ -75,8 +82,8 @@ foreach my $p (@ARGV)
 {
 	my $p2 = findmap($p);
 	unless ($p2) {
-		warn("Unable to map $p");
-		next;
+	    warn("Unable to map $p");
+	    next;
 	}
  	print "Installing $p as $includedir/$p2\n";
 
