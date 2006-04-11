@@ -116,7 +116,7 @@ LIBSMBSHAREMODES_MAJOR=0
 LIBSMBSHAREMODES_MINOR=2
 
 FLAGS1 = $(CFLAGS) @FLAGS1@ -Iinclude -I$(srcdir)/include -I$(srcdir)/tdb @SMBWRAP_INC@ -I. $(CPPFLAGS) -I$(srcdir) -D_SAMBA_BUILD_
-FLAGS2 = 
+FLAGS2 = -I$(srcdir)/iniparser/src 
 FLAGS3 = 
 FLAGS4 = 
 FLAGS5 = $(FLAGS1) $(FLAGS2) $(FLAGS3) $(FLAGS4)
@@ -520,9 +520,9 @@ RPCCLIENT_OBJ = $(RPCCLIENT_OBJ1) \
 	     $(LIBADS_OBJ) $(SECRETS_OBJ) $(POPT_LIB_OBJ) \
 	     $(SMBLDAP_OBJ) $(DCUTIL_OBJ)
 
-PAM_WINBIND_OBJ = nsswitch/pam_winbind.o \
-		  $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) $(RPC_PARSE_OBJ1) \
-		  $(LIBSAMBA_OBJ) $(DOSERR_OBJ) $(SECRETS_OBJ)
+PAM_WINBIND_OBJ = nsswitch/pam_winbind.o $(WBCOMMON_OBJ) \
+		  lib/replace1.o $(SNPRINTF_OBJ) $(INIPARSER_OBJ) \
+		  dynconfig.o
 
 PAM_WINBIND_PICOBJ = $(PAM_WINBIND_OBJ:.o=.@PICSUFFIX@)
 
@@ -756,6 +756,9 @@ WINBIND_NSS_PICOBJS = $(WINBIND_NSS_OBJ:.o=.@PICSUFFIX@) lib/snprintf.@PICSUFFIX
 
 POPT_OBJS=popt/findme.o popt/popt.o popt/poptconfig.o \
           popt/popthelp.o popt/poptparse.o
+
+INIPARSER_OBJ = iniparser/src/iniparser.o iniparser/src/dictionary.o \
+		iniparser/src/strlib.o
 
 TDBBACKUP_OBJ = tdb/tdbbackup.o tdb/tdbback.o $(SNPRINTF_OBJ) $(TDBBASE_OBJ)
 
