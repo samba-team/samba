@@ -52,18 +52,36 @@ static struct {
 #define BASEDIR "\\test_notify"
 
 /*
-  a handler function for oplock break requests
+  a handler function for oplock break requests. Ack it as a break to level II if possible
 */
-static BOOL oplock_handler_ack(struct smbcli_transport *transport, uint16_t tid, uint16_t fnum, uint8_t level, void *private)
+static BOOL oplock_handler_ack_to_levelII(struct smbcli_transport *transport, uint16_t tid, 
+			       uint16_t fnum, uint8_t level, void *private)
 {
 	struct smbcli_tree *tree = private;
 	break_info.fnum = fnum;
 	break_info.level = level;
 	break_info.count++;
 
-	printf("Acking in oplock handler\n");
+	printf("Acking to level II in oplock handler\n");
 
 	return smbcli_oplock_ack(tree, fnum, level);
+}
+
+/*
+  a handler function for oplock break requests. Ack it as a break to none
+*/
+static BOOL oplock_handler_ack_to_none(struct smbcli_transport *transport, uint16_t tid, 
+				    uint16_t fnum, uint8_t level, 
+				    void *private)
+{
+	struct smbcli_tree *tree = private;
+	break_info.fnum = fnum;
+	break_info.level = level;
+	break_info.count++;
+
+	printf("Acking to none in oplock handler\n");
+
+	return smbcli_oplock_ack(tree, fnum, OPLOCK_BREAK_TO_NONE);
 }
 
 static void oplock_handler_close_recv(struct smbcli_request *req)
@@ -79,7 +97,8 @@ static void oplock_handler_close_recv(struct smbcli_request *req)
 /*
   a handler function for oplock break requests - close the file
 */
-static BOOL oplock_handler_close(struct smbcli_transport *transport, uint16_t tid, uint16_t fnum, uint8_t level, void *private)
+static BOOL oplock_handler_close(struct smbcli_transport *transport, uint16_t tid, 
+				 uint16_t fnum, uint8_t level, void *private)
 {
 	union smb_close io;
 	struct smbcli_tree *tree = private;
@@ -116,11 +135,12 @@ static BOOL test_oplock(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	union smb_unlink unl;
 	union smb_read rd;
 	uint16_t fnum=0, fnum2=0;
+	char c = 0;
 
 	/* cleanup */
 	smbcli_unlink(cli->tree, fname);
 
-	smbcli_oplock_handler(cli->transport, oplock_handler_ack, cli->tree);
+	smbcli_oplock_handler(cli->transport, oplock_handler_ack_to_levelII, cli->tree);
 
 	/*
 	  base ntcreatex parms
@@ -181,10 +201,66 @@ static BOOL test_oplock(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	status = smb_raw_unlink(cli->tree, &unl);
 	CHECK_STATUS(status, NT_STATUS_SHARING_VIOLATION);
 
-	CHECK_VAL(break_info.fnum, fnum);
-	CHECK_VAL(break_info.level, 1);
 	CHECK_VAL(break_info.count, 1);
+	CHECK_VAL(break_info.fnum, fnum);
+	CHECK_VAL(break_info.level, OPLOCK_BREAK_TO_LEVEL_II);
 	CHECK_VAL(break_info.failures, 0);
+
+	printf("2nd unlink should not generate a break\n");
+	ZERO_STRUCT(break_info);
+	status = smb_raw_unlink(cli->tree, &unl);
+	CHECK_STATUS(status, NT_STATUS_SHARING_VIOLATION);
+
+	CHECK_VAL(break_info.count, 0);
+
+	printf("writing should generate a self break to none\n");
+	smbcli_write(cli->tree, fnum, 0, &c, 0, 1);
+	msleep(100);
+	smbcli_write(cli->tree, fnum, 0, &c, 1, 1);
+
+	CHECK_VAL(break_info.count, 1);
+	CHECK_VAL(break_info.fnum, fnum);
+	CHECK_VAL(break_info.level, OPLOCK_BREAK_TO_NONE);
+	CHECK_VAL(break_info.failures, 0);
+
+	smbcli_close(cli->tree, fnum);
+
+
+	printf("open with batch oplock\n");
+	ZERO_STRUCT(break_info);
+	io.ntcreatex.in.flags = NTCREATEX_FLAGS_EXTENDED | 
+		NTCREATEX_FLAGS_REQUEST_OPLOCK | 
+		NTCREATEX_FLAGS_REQUEST_BATCH_OPLOCK;
+	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	fnum = io.ntcreatex.out.file.fnum;
+	CHECK_VAL(io.ntcreatex.out.oplock_level, BATCH_OPLOCK_RETURN);
+
+	printf("unlink should generate a break, which we ack as break to none\n");
+	smbcli_oplock_handler(cli->transport, oplock_handler_ack_to_none, cli->tree);
+	unl.unlink.in.pattern = fname;
+	unl.unlink.in.attrib = 0;
+	status = smb_raw_unlink(cli->tree, &unl);
+	CHECK_STATUS(status, NT_STATUS_SHARING_VIOLATION);
+
+	CHECK_VAL(break_info.count, 1);
+	CHECK_VAL(break_info.fnum, fnum);
+	CHECK_VAL(break_info.level, OPLOCK_BREAK_TO_LEVEL_II);
+	CHECK_VAL(break_info.failures, 0);
+
+	printf("2nd unlink should not generate a break\n");
+	ZERO_STRUCT(break_info);
+	status = smb_raw_unlink(cli->tree, &unl);
+	CHECK_STATUS(status, NT_STATUS_SHARING_VIOLATION);
+
+	CHECK_VAL(break_info.count, 0);
+
+	printf("writing should not generate a break\n");
+	smbcli_write(cli->tree, fnum, 0, &c, 0, 1);
+	msleep(100);
+	smbcli_write(cli->tree, fnum, 0, &c, 1, 1);
+
+	CHECK_VAL(break_info.count, 0);
 
 	smbcli_close(cli->tree, fnum);
 
@@ -205,15 +281,15 @@ static BOOL test_oplock(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	status = smb_raw_unlink(cli->tree, &unl);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
+	CHECK_VAL(break_info.count, 1);
 	CHECK_VAL(break_info.fnum, fnum);
 	CHECK_VAL(break_info.level, 1);
-	CHECK_VAL(break_info.count, 1);
 	CHECK_VAL(break_info.failures, 0);
 
 	printf("a self read should not cause a break\n");
 	ZERO_STRUCT(break_info);
 	smbcli_close(cli->tree, fnum);
-	smbcli_oplock_handler(cli->transport, oplock_handler_ack, cli->tree);
+	smbcli_oplock_handler(cli->transport, oplock_handler_ack_to_levelII, cli->tree);
 
 	io.ntcreatex.in.flags = NTCREATEX_FLAGS_EXTENDED | 
 		NTCREATEX_FLAGS_REQUEST_OPLOCK | 
@@ -236,7 +312,7 @@ static BOOL test_oplock(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	printf("a 2nd open should give a break\n");
 	ZERO_STRUCT(break_info);
 	smbcli_close(cli->tree, fnum);
-	smbcli_oplock_handler(cli->transport, oplock_handler_ack, cli->tree);
+	smbcli_oplock_handler(cli->transport, oplock_handler_ack_to_levelII, cli->tree);
 
 	io.ntcreatex.in.flags = NTCREATEX_FLAGS_EXTENDED | 
 		NTCREATEX_FLAGS_REQUEST_OPLOCK | 
@@ -257,11 +333,52 @@ static BOOL test_oplock(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_VAL(break_info.level, 1);
 	CHECK_VAL(break_info.failures, 0);
 
+
+	printf("a 2nd open should give a break to level II if the first open allowed shared read\n");
+	ZERO_STRUCT(break_info);
+	smbcli_close(cli->tree, fnum);
+	smbcli_oplock_handler(cli->transport, oplock_handler_ack_to_levelII, cli->tree);
+
+	io.ntcreatex.in.access_mask = SEC_RIGHTS_FILE_READ | SEC_RIGHTS_FILE_WRITE;
+	io.ntcreatex.in.share_access = NTCREATEX_SHARE_ACCESS_READ | NTCREATEX_SHARE_ACCESS_WRITE;
+	io.ntcreatex.in.flags = NTCREATEX_FLAGS_EXTENDED | 
+		NTCREATEX_FLAGS_REQUEST_OPLOCK | 
+		NTCREATEX_FLAGS_REQUEST_BATCH_OPLOCK;
+	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	fnum = io.ntcreatex.out.file.fnum;
+	CHECK_VAL(io.ntcreatex.out.oplock_level, BATCH_OPLOCK_RETURN);
+
+	ZERO_STRUCT(break_info);
+
+	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_VAL(io.ntcreatex.out.oplock_level, LEVEL_II_OPLOCK_RETURN);
+
+	CHECK_VAL(break_info.count, 1);
+	CHECK_VAL(break_info.fnum, fnum);
+	CHECK_VAL(break_info.level, 1);
+	CHECK_VAL(break_info.failures, 0);
+	ZERO_STRUCT(break_info);
+
+	printf("write should trigger a break to none on both\n");
+	smbcli_write(cli->tree, fnum, 0, &c, 0, 1);
+	msleep(100);
+	smbcli_write(cli->tree, fnum, 0, &c, 1, 1);
+
+	CHECK_VAL(break_info.count, 2);
+	CHECK_VAL(break_info.level, 0);
+	CHECK_VAL(break_info.failures, 0);
+
+	smb_raw_exit(cli->session);
+
 	printf("a 2nd open should get an oplock when we close instead of ack\n");
 	ZERO_STRUCT(break_info);
 	smbcli_close(cli->tree, fnum);
 	smbcli_oplock_handler(cli->transport, oplock_handler_close, cli->tree);
 
+	io.ntcreatex.in.access_mask = SEC_RIGHTS_FILE_ALL;
+	io.ntcreatex.in.share_access = NTCREATEX_SHARE_ACCESS_NONE;
 	io.ntcreatex.in.flags = NTCREATEX_FLAGS_EXTENDED | 
 		NTCREATEX_FLAGS_REQUEST_OPLOCK | 
 		NTCREATEX_FLAGS_REQUEST_BATCH_OPLOCK;
@@ -289,7 +406,7 @@ static BOOL test_oplock(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	printf("open with batch oplock\n");
 	ZERO_STRUCT(break_info);
-	smbcli_oplock_handler(cli->transport, oplock_handler_ack, cli->tree);
+	smbcli_oplock_handler(cli->transport, oplock_handler_ack_to_levelII, cli->tree);
 
 	io.ntcreatex.in.flags = NTCREATEX_FLAGS_EXTENDED | 
 		NTCREATEX_FLAGS_REQUEST_OPLOCK | 
@@ -311,8 +428,6 @@ static BOOL test_oplock(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	fnum2 = io.ntcreatex.out.file.fnum;
 	CHECK_VAL(io.ntcreatex.out.oplock_level, NO_OPLOCK_RETURN);
 	CHECK_VAL(break_info.count, 0);
-	CHECK_VAL(break_info.fnum, 0);
-	CHECK_VAL(break_info.level, 0);
 	CHECK_VAL(break_info.failures, 0);
 
 	smbcli_close(cli->tree, fnum);
@@ -333,7 +448,7 @@ static BOOL test_oplock(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	printf("Subsequent normal open should break oplock on attribute only open to level II\n");
 
 	ZERO_STRUCT(break_info);
-	smbcli_oplock_handler(cli->transport, oplock_handler_ack, cli->tree);
+	smbcli_oplock_handler(cli->transport, oplock_handler_ack_to_levelII, cli->tree);
 
 	io.ntcreatex.in.flags = NTCREATEX_FLAGS_EXTENDED | 
 		NTCREATEX_FLAGS_REQUEST_OPLOCK | 
@@ -346,12 +461,13 @@ static BOOL test_oplock(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_VAL(break_info.count, 1);
 	CHECK_VAL(break_info.fnum, fnum);
 	CHECK_VAL(break_info.failures, 0);
+	CHECK_VAL(break_info.level, OPLOCK_BREAK_TO_LEVEL_II);
 	CHECK_VAL(io.ntcreatex.out.oplock_level, LEVEL_II_OPLOCK_RETURN);
 	smbcli_close(cli->tree, fnum2);
 
 	printf("third oplocked open should grant level2 without break\n");
 	ZERO_STRUCT(break_info);
-	smbcli_oplock_handler(cli->transport, oplock_handler_ack, cli->tree);
+	smbcli_oplock_handler(cli->transport, oplock_handler_ack_to_levelII, cli->tree);
 	io.ntcreatex.in.flags = NTCREATEX_FLAGS_EXTENDED | 
 		NTCREATEX_FLAGS_REQUEST_OPLOCK | 
 		NTCREATEX_FLAGS_REQUEST_BATCH_OPLOCK;
@@ -367,34 +483,13 @@ static BOOL test_oplock(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	ZERO_STRUCT(break_info);
 
 	printf("write should trigger a break to none on both\n");
-	{
-		union smb_write wr;
-		wr.write.level = RAW_WRITE_WRITE;
-		wr.write.in.file.fnum = fnum2;
-		wr.write.in.count = 1;
-		wr.write.in.offset = 0;
-		wr.write.in.remaining = 0;
-		wr.write.in.data = (const uint8_t *)"x";
-		status = smb_raw_write(cli->tree, &wr);
-		CHECK_STATUS(status, NT_STATUS_OK);
-	}
+	smbcli_write(cli->tree, fnum2, 0, &c, 0, 1);
 
 	/* Now the oplock break request comes in. But right now we can't
 	 * answer it. Do another write */
 
 	msleep(100);
-	
-	{
-		union smb_write wr;
-		wr.write.level = RAW_WRITE_WRITE;
-		wr.write.in.file.fnum = fnum2;
-		wr.write.in.count = 1;
-		wr.write.in.offset = 0;
-		wr.write.in.remaining = 0;
-		wr.write.in.data = (const uint8_t *)"x";
-		status = smb_raw_write(cli->tree, &wr);
-		CHECK_STATUS(status, NT_STATUS_OK);
-	}
+	smbcli_write(cli->tree, fnum2, 0, &c, 1, 1);
 
 	CHECK_VAL(break_info.count, 2);
 	CHECK_VAL(break_info.level, 0);
@@ -404,7 +499,7 @@ static BOOL test_oplock(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	smbcli_close(cli->tree, fnum2);
 
 	ZERO_STRUCT(break_info);
-	smbcli_oplock_handler(cli->transport, oplock_handler_ack, cli->tree);
+	smbcli_oplock_handler(cli->transport, oplock_handler_ack_to_levelII, cli->tree);
 
 	printf("Open with oplock after a on-oplock open should grant level2\n");
 	io.ntcreatex.in.flags = NTCREATEX_FLAGS_EXTENDED;
@@ -417,7 +512,6 @@ static BOOL test_oplock(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_STATUS(status, NT_STATUS_OK);
 	fnum = io.ntcreatex.out.file.fnum;
 	CHECK_VAL(break_info.count, 0);
-	CHECK_VAL(break_info.fnum, 0);
 	CHECK_VAL(break_info.failures, 0);
 	CHECK_VAL(io.ntcreatex.out.oplock_level, 0);
 
@@ -433,7 +527,6 @@ static BOOL test_oplock(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_STATUS(status, NT_STATUS_OK);
 	fnum2 = io.ntcreatex.out.file.fnum;
 	CHECK_VAL(break_info.count, 0);
-	CHECK_VAL(break_info.fnum, 0);
 	CHECK_VAL(break_info.failures, 0);
 	CHECK_VAL(io.ntcreatex.out.oplock_level, LEVEL_II_OPLOCK_RETURN);
 
