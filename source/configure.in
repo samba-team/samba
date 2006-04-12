@@ -827,7 +827,7 @@ AC_CHECK_HEADERS(sys/un.h)
 AC_CHECK_HEADERS(sys/mount.h sys/vfs.h sys/fs/s5param.h sys/filsys.h termios.h termio.h)
 AC_CHECK_HEADERS(sys/termio.h sys/statfs.h sys/dustat.h sys/statvfs.h stdarg.h sys/sockio.h)
 AC_CHECK_HEADERS(sys/sysmacros.h security/_pam_macros.h dlfcn.h)
-AC_CHECK_HEADERS(sys/syslog.h syslog.h execinfo.h)
+AC_CHECK_HEADERS(sys/syslog.h syslog.h)
 AC_CHECK_HEADERS(langinfo.h locale.h)
 AC_CHECK_HEADERS(sys/dmi.h xfs/dmapi.h sys/jfsdmapi.h sys/dmapi.h)
 
@@ -1243,9 +1243,47 @@ AC_CHECK_FUNCS(syslog vsyslog timegm)
 AC_CHECK_FUNCS(setlocale nl_langinfo)
 AC_CHECK_FUNCS(nanosleep)
 # setbuffer, shmget, shm_open are needed for smbtorture
-AC_CHECK_FUNCS(setbuffer shmget shm_open backtrace_symbols)
-AC_CHECK_HEADERS(libexc.h)
+AC_CHECK_FUNCS(setbuffer shmget shm_open)
+
+# Find a method of generating a stack trace
+AC_CHECK_HEADERS(execinfo.h libexc.h libunwind.h)
+AC_CHECK_FUNCS(backtrace_symbols)
 AC_CHECK_LIB(exc, trace_back_stack)
+
+# Note that all the libunwind symbols in the API are defined to internal
+# platform-specific version, so we must include libunwind.h before checking
+# any of them.
+AC_MSG_CHECKING([for libunwind])
+save_LIBS=$LIBS
+if test x"$UNAME_P" != xunknown ; then
+    # This probably won't link without the platform-specific libunwind.
+    LIBS="$LIBS -lunwind"
+else
+    # Add the platform-specific libunwind module. uname -p seems the most
+    # plausible option and works for ia64, where libunwind is most useful.
+    LIBS="$LIBS -lunwind -lunwind-$UNAME_P"
+fi
+
+AC_TRY_LINK(
+    [
+#ifdef HAVE_LIBUNWIND_H
+#include <libunwind.h>
+#endif
+    ],
+    [
+	unw_context_t ctx; unw_cursor_t cur;
+	char buf[256]; unw_word_t off; 
+	unw_getcontext(&ctx); unw_init_local(&cur, &ctx);
+	unw_get_proc_name(&cur, buf, sizeof(buf), &off);
+    ],
+    [
+	AC_MSG_RESULT(yes)
+	AC_DEFINE(HAVE_LIBUNWIND, 1, [Whether libunwind is available])
+    ],
+    [
+	AC_MSG_RESULT(no)
+	LIBS=$save_LIBS
+    ])
 
 # syscall() is needed for smbwrapper.
 AC_CHECK_FUNCS(syscall)
