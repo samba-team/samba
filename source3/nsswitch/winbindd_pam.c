@@ -97,13 +97,13 @@ static NTSTATUS append_info3_as_ndr(TALLOC_CTX *mem_ctx,
 	}
 
 	size = prs_data_size(&ps);
-	state->response.extra_data = SMB_MALLOC(size);
-	if (!state->response.extra_data) {
+	state->response.extra_data.data = SMB_MALLOC(size);
+	if (!state->response.extra_data.data) {
 		prs_mem_free(&ps);
 		return NT_STATUS_NO_MEMORY;
 	}
-	memset( state->response.extra_data, '\0', size );
-	prs_copy_all_data_out(state->response.extra_data, &ps);
+	memset( state->response.extra_data.data, '\0', size );
+	prs_copy_all_data_out(state->response.extra_data.data, &ps);
 	state->response.length += size;
 	prs_mem_free(&ps);
 	return NT_STATUS_OK;
@@ -1311,12 +1311,12 @@ done:
 		cell += 1;
 
 		/* Append an AFS token string */
-		state->response.extra_data =
+		state->response.extra_data.data =
 			afs_createtoken_str(afsname, cell);
 
-		if (state->response.extra_data != NULL)
+		if (state->response.extra_data.data != NULL)
 			state->response.length +=
-				strlen(state->response.extra_data)+1;
+				strlen(state->response.extra_data.data)+1;
 
 	no_token:
 		TALLOC_FREE(afsname);
@@ -1560,12 +1560,12 @@ enum winbindd_result winbindd_dual_pam_auth_crap(struct winbindd_domain *domain,
 
 			DEBUG(5, ("Setting unix username to [%s]\n", username_out));
 
-			state->response.extra_data = SMB_STRDUP(username_out);
-			if (!state->response.extra_data) {
+			state->response.extra_data.data = SMB_STRDUP(username_out);
+			if (!state->response.extra_data.data) {
 				result = NT_STATUS_NO_MEMORY;
 				goto done;
 			}
-			state->response.length +=  strlen(state->response.extra_data)+1;
+			state->response.length +=  strlen(state->response.extra_data.data)+1;
 		}
 		
 		if (state->request.flags & WBFLAG_PAM_USER_SESSION_KEY) {

@@ -265,7 +265,7 @@ static void process_request(struct winbindd_cli_state *state)
 	/* Free response data - we may be interrupted and receive another
 	   command before being able to send this data off. */
 
-	SAFE_FREE(state->response.extra_data);  
+	SAFE_FREE(state->response.extra_data.data);  
 
 	ZERO_STRUCT(state->response);
 
@@ -435,8 +435,8 @@ static void response_extra_sent(void *private_data, BOOL success)
 		return;
 	}
 
-	SAFE_FREE(state->request.extra_data);
-	SAFE_FREE(state->response.extra_data);
+	SAFE_FREE(state->request.extra_data.data);
+	SAFE_FREE(state->response.extra_data.data);
 
 	setup_async_read(&state->fd_event, &state->request, sizeof(uint32),
 			 request_len_recv, state);
@@ -463,7 +463,7 @@ static void response_main_sent(void *private_data, BOOL success)
 		return;
 	}
 
-	setup_async_write(&state->fd_event, state->response.extra_data,
+	setup_async_write(&state->fd_event, state->response.extra_data.data,
 			  state->response.length - sizeof(state->response),
 			  response_extra_sent, state);
 }
@@ -532,7 +532,7 @@ static void request_main_recv(void *private_data, BOOL success)
 	}
 
 	if (state->request.extra_len == 0) {
-		state->request.extra_data = NULL;
+		state->request.extra_data.data = NULL;
 		request_recv(state, True);
 		return;
 	}
@@ -541,24 +541,24 @@ static void request_main_recv(void *private_data, BOOL success)
 	    (state->request.extra_len > WINBINDD_MAX_EXTRA_DATA)) {
 		DEBUG(3, ("Got request with %d bytes extra data on "
 			  "unprivileged socket\n", (int)state->request.extra_len));
-		state->request.extra_data = NULL;
+		state->request.extra_data.data = NULL;
 		state->finished = True;
 		return;
 	}
 
-	state->request.extra_data =
+	state->request.extra_data.data =
 		SMB_MALLOC_ARRAY(char, state->request.extra_len + 1);
 
-	if (state->request.extra_data == NULL) {
+	if (state->request.extra_data.data == NULL) {
 		DEBUG(0, ("malloc failed\n"));
 		state->finished = True;
 		return;
 	}
 
 	/* Ensure null termination */
-	state->request.extra_data[state->request.extra_len] = '\0';
+	state->request.extra_data.data[state->request.extra_len] = '\0';
 
-	setup_async_read(&state->fd_event, state->request.extra_data,
+	setup_async_read(&state->fd_event, state->request.extra_data.data,
 			 state->request.extra_len, request_recv, state);
 }
 
@@ -640,7 +640,7 @@ static void remove_client(struct winbindd_cli_state *state)
 		/* We may have some extra data that was not freed if the
 		   client was killed unexpectedly */
 
-		SAFE_FREE(state->response.extra_data);
+		SAFE_FREE(state->response.extra_data.data);
 
 		if (state->mem_ctx != NULL) {
 			talloc_destroy(state->mem_ctx);

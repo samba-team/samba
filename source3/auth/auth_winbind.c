@@ -32,7 +32,7 @@ static NTSTATUS get_info3_from_ndr(TALLOC_CTX *mem_ctx, struct winbindd_response
 	size_t len = response->length - sizeof(struct winbindd_response);
 	prs_struct ps;
 	if (len > 0) {
-		info3_ndr = response->extra_data;
+		info3_ndr = response->extra_data.data;
 		if (!prs_init(&ps, len, mem_ctx, UNMARSHALL)) {
 			return NT_STATUS_NO_MEMORY;
 		}
@@ -124,7 +124,7 @@ static NTSTATUS check_winbind_security(const struct auth_context *auth_context,
 
 	nt_status = NT_STATUS(response.data.auth.nt_status);
 
-	if (result == NSS_STATUS_SUCCESS && response.extra_data) {
+	if (result == NSS_STATUS_SUCCESS && response.extra_data.data) {
 		if (NT_STATUS_IS_OK(nt_status)) {
 			if (NT_STATUS_IS_OK(nt_status = get_info3_from_ndr(mem_ctx, &response, &info3))) { 
 				nt_status = make_server_info_info3(mem_ctx, 
@@ -138,7 +138,7 @@ static NTSTATUS check_winbind_security(const struct auth_context *auth_context,
 		nt_status = NT_STATUS_NO_LOGON_SERVERS;
 	}
 
-	SAFE_FREE(response.extra_data);
+	SAFE_FREE(response.extra_data.data);
         return nt_status;
 }
 

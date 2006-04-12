@@ -370,7 +370,7 @@ _nss_winbind_getpwent_r(struct passwd *result, char *buffer,
 
 	return_result:
 
-		pw_cache = getpwent_response.extra_data;
+		pw_cache = getpwent_response.extra_data.data;
 
 		/* Check data is valid */
 
@@ -613,7 +613,7 @@ winbind_getgrent(enum winbindd_cmd cmd,
 
 	return_result:
 
-		gr_cache = getgrent_response.extra_data;
+		gr_cache = getgrent_response.extra_data.data;
 
 		/* Check data is valid */
 
@@ -629,7 +629,7 @@ winbind_getgrent(enum winbindd_cmd cmd,
 			num_gr_cache * sizeof(struct winbindd_gr);
 
 		ret = fill_grent(result, &gr_cache[ndx_gr_cache],
-				 ((char *)getgrent_response.extra_data)+mem_ofs,
+				 ((char *)getgrent_response.extra_data.data)+mem_ofs,
 				 &buffer, &buflen);
 		
 		/* Out of memory - try again */
@@ -704,7 +704,7 @@ _nss_winbind_getgrnam_r(const char *name,
 
 		if (ret == NSS_STATUS_SUCCESS) {
 			ret = fill_grent(result, &response.data.gr, 
-					 response.extra_data,
+					 response.extra_data.data,
 					 &buffer, &buflen);
 
 			if (ret == NSS_STATUS_TRYAGAIN) {
@@ -719,7 +719,7 @@ _nss_winbind_getgrnam_r(const char *name,
 		/* We've been called again */
 		
 		ret = fill_grent(result, &response.data.gr, 
-				 response.extra_data, &buffer, &buflen);
+				 response.extra_data.data, &buffer, &buflen);
 		
 		if (ret == NSS_STATUS_TRYAGAIN) {
 			keep_response = True;
@@ -767,7 +767,7 @@ _nss_winbind_getgrgid_r(gid_t gid,
 		if (ret == NSS_STATUS_SUCCESS) {
 
 			ret = fill_grent(result, &response.data.gr, 
-					 response.extra_data, 
+					 response.extra_data.data, 
 					 &buffer, &buflen);
 
 			if (ret == NSS_STATUS_TRYAGAIN) {
@@ -782,7 +782,7 @@ _nss_winbind_getgrgid_r(gid_t gid,
 		/* We've been called again */
 
 		ret = fill_grent(result, &response.data.gr, 
-				 response.extra_data, &buffer, &buflen);
+				 response.extra_data.data, &buffer, &buflen);
 
 		if (ret == NSS_STATUS_TRYAGAIN) {
 			keep_response = True;
@@ -825,7 +825,7 @@ _nss_winbind_initgroups_dyn(char *user, gid_t group, long int *start,
 
 	if (ret == NSS_STATUS_SUCCESS) {
 		int num_gids = response.data.num_entries;
-		gid_t *gid_list = (gid_t *)response.extra_data;
+		gid_t *gid_list = (gid_t *)response.extra_data.data;
 
 		/* Copy group list to client */
 
@@ -911,7 +911,7 @@ _nss_winbind_getusersids(const char *user_sid, char **group_sids,
 
 	*num_groups = response.data.num_entries;
 	*group_sids = buffer;
-	memcpy(buffer, response.extra_data, response.length - sizeof(response));
+	memcpy(buffer, response.extra_data.data, response.length - sizeof(response));
 	errno = *errnop = 0;
 	
  done:

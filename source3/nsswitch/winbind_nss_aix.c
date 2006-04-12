@@ -284,7 +284,7 @@ static struct group *wb_aix_getgrgid(gid_t gid)
 
 	HANDLE_ERRORS(ret);
 
-	grp = fill_grent(&response.data.gr, response.extra_data);
+	grp = fill_grent(&response.data.gr, response.extra_data.data);
 
 	free_response(&response);
 
@@ -314,7 +314,7 @@ static struct group *wb_aix_getgrnam(const char *name)
 	
 	HANDLE_ERRORS(ret);
 
-	grp = fill_grent(&response.data.gr, response.extra_data);
+	grp = fill_grent(&response.data.gr, response.extra_data.data);
 
 	free_response(&response);
 
@@ -371,7 +371,7 @@ static char *wb_aix_getgrset(char *user)
 	HANDLE_ERRORS(ret);
 
 	num_gids = response.data.num_entries;
-	gid_list = (gid_t *)response.extra_data;
+	gid_list = (gid_t *)response.extra_data.data;
 		
 	/* allocate a space large enough to contruct the string */
 	tmpbuf = malloc(num_gids*12);
@@ -477,7 +477,7 @@ static int wb_aix_lsuser(char *attributes[], attrval_t results[], int size)
 		return -1;
 	}
 
-	len = strlen(response.extra_data);
+	len = strlen(response.extra_data.data);
 
 	s = malloc(len+2);
 	if (!s) {
@@ -486,7 +486,7 @@ static int wb_aix_lsuser(char *attributes[], attrval_t results[], int size)
 		return -1;
 	}
 	
-	memcpy(s, response.extra_data, len+1);
+	memcpy(s, response.extra_data.data, len+1);
 
 	replace_commas(s);
 
@@ -525,7 +525,7 @@ static int wb_aix_lsgroup(char *attributes[], attrval_t results[], int size)
 		return -1;
 	}
 
-	len = strlen(response.extra_data);
+	len = strlen(response.extra_data.data);
 
 	s = malloc(len+2);
 	if (!s) {
@@ -534,7 +534,7 @@ static int wb_aix_lsgroup(char *attributes[], attrval_t results[], int size)
 		return -1;
 	}
 	
-	memcpy(s, response.extra_data, len+1);
+	memcpy(s, response.extra_data.data, len+1);
 
 	replace_commas(s);
 

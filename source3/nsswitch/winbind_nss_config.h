@@ -119,6 +119,19 @@ typedef int BOOL;
 #define uint8 unsigned char
 #endif
 
+/*
+ * check for 8 byte long long
+ */
+
+#if !defined(uint64)
+#if (SIZEOF_LONG == 8)
+#define uint64 unsigned long
+#elif (SIZEOF_LONG_LONG == 8)
+#define uint64 unsigned long long
+#endif  /* don't lie.  If we don't have it, then don't use it */
+#endif
+
+
 /* zero a structure */
 #ifndef ZERO_STRUCT
 #define ZERO_STRUCT(x) memset((char *)&(x), 0, sizeof(x))
