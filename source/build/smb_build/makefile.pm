@@ -10,6 +10,7 @@ use smb_build::env;
 use strict;
 
 use base 'smb_build::env';
+use Cwd 'abs_path';
 
 sub new($$$)
 {
@@ -103,6 +104,7 @@ sub _prepare_compiler_linker($)
 
 	my $devld_local = "";
 	my $devld_install = "";
+	my $builddir_headers = "";
 
 	$self->{duplicate_build} = 0;
 	if ($self->{config}->{LIBRARY_OUTPUT_TYPE} eq "SHARED_LIBRARY") {
@@ -111,6 +113,10 @@ sub _prepare_compiler_linker($)
 			$devld_local = " -Wl,-rpath,\$(builddir)/bin";
 		}
 		$devld_install = " -Wl,-rpath-link,\$(builddir)/bin";
+	}
+	
+	if (!(abs_path($self->{config}->{srcdir}) eq abs_path($self->{config}->{builddir}))) {
+	    $builddir_headers= "-I\$(builddir)/include -I\$(builddir) -I\$(builddir)/lib ";
 	}
 
 	$self->output(<< "__EOD__"
@@ -122,7 +128,7 @@ CPP=$self->{config}->{CPP}
 CPPFLAGS=$self->{config}->{CPPFLAGS}
 
 CC=$self->{config}->{CC}
-CFLAGS=-I\$(builddir)/include -I\$(builddir) -I\$(builddir)/lib -I\$(srcdir)/include -I\$(srcdir) -I\$(srcdir)/lib -D_SAMBA_BUILD_ -DHAVE_CONFIG_H $self->{config}->{CFLAGS} \$(CPPFLAGS)
+CFLAGS=$builddir_headers-I\$(srcdir)/include -I\$(srcdir) -I\$(srcdir)/lib -D_SAMBA_BUILD_ -DHAVE_CONFIG_H $self->{config}->{CFLAGS} \$(CPPFLAGS)
 PICFLAG=$self->{config}->{PICFLAG}
 HOSTCC=$self->{config}->{HOSTCC}
 
