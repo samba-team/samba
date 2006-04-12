@@ -358,10 +358,6 @@
 #include <poll.h>
 #endif
 
-#ifdef HAVE_EXECINFO_H
-#include <execinfo.h>
-#endif
-
 #if defined(HAVE_RPC_RPC_H)
 /*
  * Check for AUTH_ERROR define conflict with rpc/rpc.h in prot.h.
