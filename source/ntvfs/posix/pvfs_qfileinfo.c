@@ -28,11 +28,11 @@
 /*
   determine what access bits are needed for a call
 */
-static uint32_t pvfs_fileinfo_access(enum smb_fileinfo_level level)
+static uint32_t pvfs_fileinfo_access(union smb_fileinfo *info)
 {
 	uint32_t needed;
 
-	switch (level) {
+	switch (info->generic.level) {
 	case RAW_FILEINFO_EA_LIST:
 	case RAW_FILEINFO_ALL_EAS:
 		needed = SEC_FILE_READ_EA;
@@ -43,14 +43,24 @@ static uint32_t pvfs_fileinfo_access(enum smb_fileinfo_level level)
 		break;
 
 	case RAW_FILEINFO_SEC_DESC:
-		needed = SEC_STD_READ_CONTROL;
+		needed = 0;
+		if (info->query_secdesc.in.secinfo_flags & (SECINFO_OWNER|SECINFO_GROUP)) {
+			needed |= SEC_STD_READ_CONTROL;
+		}
+		if (info->query_secdesc.in.secinfo_flags & SECINFO_DACL) {
+			needed |= SEC_STD_READ_CONTROL;
+		}
+		if (info->query_secdesc.in.secinfo_flags & SECINFO_SACL) {
+			needed |= SEC_FLAG_SYSTEM_SECURITY;
+		}
 		break;
 
 	default:
 		needed = SEC_FILE_READ_ATTRIBUTE;
 		break;
 	}
-	return needed;	
+
+	return needed;
 }
 
 /*
@@ -304,7 +314,7 @@ NTSTATUS pvfs_qpathinfo(struct ntvfs_module_context *ntvfs,
 	}
 
 	status = pvfs_access_check_simple(pvfs, req, name, 
-					  pvfs_fileinfo_access(info->generic.level));
+					  pvfs_fileinfo_access(info));
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -332,7 +342,7 @@ NTSTATUS pvfs_qfileinfo(struct ntvfs_module_context *ntvfs,
 	}
 	h = f->handle;
 
-	access_needed = pvfs_fileinfo_access(info->generic.level);
+	access_needed = pvfs_fileinfo_access(info);
 	if ((f->access_mask & access_needed) != access_needed) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
