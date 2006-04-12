@@ -52,6 +52,7 @@ struct krb5_pk_identity {
     hx509_certs certs;
     hx509_certs anchors;
     hx509_certs certpool;
+    hx509_revoke_ctx revoke;
 };
 
 enum pkinit_type {
@@ -1238,7 +1239,8 @@ _kdc_pk_initialize(krb5_context context,
 		   krb5_kdc_configuration *config,
 		   const char *user_id,
 		   const char *anchors,
-		   char **pool)
+		   char **pool,
+		   char **revoke)
 {
     const char *file; 
     krb5_error_code ret;
@@ -1256,14 +1258,15 @@ _kdc_pk_initialize(krb5_context context,
     principal_mappings.len = 0;
     principal_mappings.val = NULL;
 
-    ret = _krb5_pk_load_openssl_id(context,
-				   &kdc_identity,
-				   user_id,
-				   anchors,
-				   pool,
-				   NULL,
-				   NULL,
-				   NULL);
+    ret = _krb5_pk_load_id(context,
+			   &kdc_identity,
+			   user_id,
+			   anchors,
+			   pool,
+			   revoke,
+			   NULL,
+			   NULL,
+			   NULL);
     if (ret) {
 	krb5_warn(context, ret, "PKINIT: failed to load");
 	config->enable_pkinit = 0;

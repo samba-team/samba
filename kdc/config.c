@@ -502,7 +502,7 @@ configure(krb5_context context, int argc, char **argv)
 				     NULL);
     if (config->enable_pkinit) {
 	const char *user_id, *anchors;
-	char **chain;
+	char **chain, **revoke;
 
 	user_id = krb5_config_get_string(context, NULL,
 					 "kdc",
@@ -523,7 +523,12 @@ configure(krb5_context context, int argc, char **argv)
 					"pki-chain",
 					NULL);
 
-	_kdc_pk_initialize(context, config, user_id, anchors, chain);
+	revoke = krb5_config_get_strings(context, NULL,
+					"kdc",
+					"pki-revoke",
+					NULL);
+
+	_kdc_pk_initialize(context, config, user_id, anchors, chain, revoke);
 
 	krb5_config_free_strings(chain);
 

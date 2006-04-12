@@ -71,6 +71,7 @@ int fcache_version;
 char *pk_user_id	= NULL;
 char *pk_x509_anchors	= NULL;
 char **pk_x509_pool	= NULL;
+char **pk_x509_revoke	= NULL;
 
 
 static char *krb4_cc_name;
@@ -466,6 +467,7 @@ get_new_tickets(krb5_context context,
 						 pk_user_id,
 						 pk_x509_anchors,
 						 pk_x509_pool,
+						 pk_x509_revoke,
 						 0,
 						 NULL,
 						 NULL,
@@ -807,6 +809,12 @@ main (int argc, char **argv)
 					   "appdefaults", 
 					   "pkinit-pool", 
 					   NULL);
+
+    pk_x509_revoke = krb5_config_get_strings(context, NULL,
+					     "appdefaults", 
+					     "pkinit-revoke", 
+					     NULL);
+
 
     if (pk_x509_anchors == NULL)
 	krb5_appdefault_string(context, "kinit",
