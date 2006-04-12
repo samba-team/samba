@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003 Kungliga Tekniska Högskolan
+ * Copyright (c) 2003 - 2006 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -46,6 +46,32 @@ struct gss_msg_order {
     OM_uint32 elem[1];
 };
 
+
+/*
+ *
+ */
+
+static OM_uint32
+msg_order_alloc(OM_uint32 *minor_status,
+		struct gss_msg_order **o,
+		OM_uint32 jitter_window)
+{
+    size_t len;
+    
+    len = jitter_window * sizeof((*o)->elem[0]);
+    len += sizeof(**o);
+    len -= sizeof((*o)->elem[0]);
+    
+    *o = calloc(1, len);
+    if (*o == NULL) {
+	*minor_status = ENOMEM;
+	return GSS_S_FAILURE;
+    }	
+    
+    *minor_status = 0;
+    return GSS_S_COMPLETE;    
+}
+
 /*
  *
  */
@@ -58,21 +84,15 @@ _gssapi_msg_order_create(OM_uint32 *minor_status,
 			 OM_uint32 jitter_window,
 			 int use_64)
 {
-    size_t len;
+    OM_uint32 ret;
 
     if (jitter_window == 0)
 	jitter_window = DEFAULT_JITTER_WINDOW;
 
-    len = jitter_window * sizeof((*o)->elem[0]);
-    len += sizeof(**o);
-    len -= sizeof((*o)->elem[0]);
-    
-    *o = malloc(len);
-    if (*o == NULL) {
-	*minor_status = ENOMEM;
-	return GSS_S_FAILURE;
-    }	
-    memset(*o, 0, len);
+    ret = msg_order_alloc(minor_status, o, jitter_window);
+    if(ret != GSS_S_COMPLETE)
+        return ret;
+
     (*o)->flags = flags;
     (*o)->length = 0;
     (*o)->first_seq = seq_num;
@@ -186,4 +206,89 @@ OM_uint32
 _gssapi_msg_order_f(OM_uint32 flags)
 {
     return flags & (GSS_C_SEQUENCE_FLAG|GSS_C_REPLAY_FLAG);
+}
+
+/*
+ * Translate `o` into inter-process format and export in to `sp'.
+ */
+
+krb5_error_code
+_gssapi_msg_order_export(krb5_storage *sp, struct gss_msg_order *o)
+{
+    krb5_error_code kret;
+    OM_uint32 i;
+    
+    kret = krb5_store_int32(sp, o->flags);
+    if (kret)
+        return kret;
+    kret = krb5_store_int32(sp, o->start);
+    if (kret)
+        return kret;
+    kret = krb5_store_int32(sp, o->length);
+    if (kret)
+        return kret;
+    kret = krb5_store_int32(sp, o->jitter_window);
+    if (kret)
+        return kret;
+    kret = krb5_store_int32(sp, o->first_seq);
+    if (kret)
+        return kret;
+    
+    for (i = 0; i < o->jitter_window; i++) {
+        kret = krb5_store_int32(sp, o->elem[i]);
+	if (kret)
+	    return kret;
+    }
+    
+    return 0;
+}
+
+OM_uint32
+_gssapi_msg_order_import(OM_uint32 *minor_status,
+			 krb5_storage *sp, 
+			 struct gss_msg_order **o)
+{
+    OM_uint32 ret;
+    krb5_error_code kret;
+    int32_t i, flags, start, length, jitter_window, first_seq;
+    
+    kret = krb5_ret_int32(sp, &flags);
+    if (kret)
+	goto failed;
+    ret = krb5_ret_int32(sp, &start);
+    if (kret)
+	goto failed;
+    ret = krb5_ret_int32(sp, &length);
+    if (kret)
+	goto failed;
+    ret = krb5_ret_int32(sp, &jitter_window);
+    if (kret)
+	goto failed;
+    ret = krb5_ret_int32(sp, &first_seq);
+    if (kret)
+	goto failed;
+    
+    ret = msg_order_alloc(minor_status, o, jitter_window);
+    if (ret != GSS_S_COMPLETE)
+        return ret;
+    
+    (*o)->flags = flags;
+    (*o)->start = start;
+    (*o)->length = length;
+    (*o)->jitter_window = jitter_window;
+    (*o)->first_seq = first_seq;
+    
+    for( i = 0; i < jitter_window; i++ ) {
+        kret = krb5_ret_int32(sp, (int32_t*)&((*o)->elem[i]));
+	if (kret)
+	    goto failed;
+    }
+
+    *minor_status = 0;
+    return GSS_S_COMPLETE;
+
+failed:
+    _gssapi_msg_order_destroy(o);
+    *minor_status = kret;
+    return GSS_S_FAILURE;
 }

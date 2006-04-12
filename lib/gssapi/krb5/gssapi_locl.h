@@ -274,6 +274,14 @@ _gssapi_msg_order_check(struct gss_msg_order *, OM_uint32);
 OM_uint32
 _gssapi_msg_order_f(OM_uint32);
 
+OM_uint32
+_gssapi_msg_order_import(OM_uint32 *, krb5_storage *, 
+			 struct gss_msg_order **);
+
+krb5_error_code
+_gssapi_msg_order_export(krb5_storage *, struct gss_msg_order *);
+
+
 /* 8003 */
 
 krb5_error_code
