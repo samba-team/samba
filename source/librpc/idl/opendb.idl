@@ -21,6 +21,7 @@ interface opendb
 		/* we need a per-entry delete on close, as well as a per-file
 		   one, to cope with strange semantics on open */
 		bool8 delete_on_close;
+		uint32 oplock_level;
 	} opendb_entry;
 
 	typedef struct {
