@@ -141,9 +141,9 @@ static BOOL wbinfo_get_usergroups(char *user)
 		return False;
 
 	for (i = 0; i < response.data.num_entries; i++)
-		d_printf("%d\n", (int)((gid_t *)response.extra_data)[i]);
+		d_printf("%d\n", (int)((gid_t *)response.extra_data.data)[i]);
 
-	SAFE_FREE(response.extra_data);
+	SAFE_FREE(response.extra_data.data);
 
 	return True;
 }
@@ -169,13 +169,13 @@ static BOOL wbinfo_get_usersids(char *user_sid)
 	if (result != NSS_STATUS_SUCCESS)
 		return False;
 
-	s = response.extra_data;
+	s = response.extra_data.data;
 	for (i = 0; i < response.data.num_entries; i++) {
 		d_printf("%s\n", s);
 		s += strlen(s) + 1;
 	}
 
-	SAFE_FREE(response.extra_data);
+	SAFE_FREE(response.extra_data.data);
 
 	return True;
 }
@@ -199,9 +199,9 @@ static BOOL wbinfo_get_userdomgroups(const char *user_sid)
 		return False;
 
 	if (response.data.num_entries != 0)
-		printf("%s", (char *)response.extra_data);
+		printf("%s", (char *)response.extra_data.data);
 	
-	SAFE_FREE(response.extra_data);
+	SAFE_FREE(response.extra_data.data);
 
 	return True;
 }
@@ -278,8 +278,8 @@ static BOOL wbinfo_list_domains(BOOL list_all_domains)
 
 	/* Display response */
 
-	if (response.extra_data) {
-		const char *extra_data = (char *)response.extra_data;
+	if (response.extra_data.data) {
+		const char *extra_data = (char *)response.extra_data.data;
 		fstring name;
 		char *p;
 
@@ -294,7 +294,7 @@ static BOOL wbinfo_list_domains(BOOL list_all_domains)
 			d_printf("%s\n", name);
 		}
 
-		SAFE_FREE(response.extra_data);
+		SAFE_FREE(response.extra_data.data);
 	}
 
 	return True;
@@ -321,10 +321,10 @@ static BOOL wbinfo_show_sequence(const char *domain)
 
 	/* Display response */
 
-	if (response.extra_data) {
-		char *extra_data = (char *)response.extra_data;
+	if (response.extra_data.data) {
+		char *extra_data = (char *)response.extra_data.data;
 		d_printf("%s", extra_data);
-		SAFE_FREE(response.extra_data);
+		SAFE_FREE(response.extra_data.data);
 	}
 
 	return True;
@@ -894,12 +894,12 @@ static BOOL wbinfo_klog(char *username)
 	if (result != NSS_STATUS_SUCCESS)
 		return False;
 
-	if (response.extra_data == NULL) {
+	if (response.extra_data.data == NULL) {
 		d_fprintf(stderr, "Did not get token data\n");
 		return False;
 	}
 
-	if (!afs_settoken_str((char *)response.extra_data)) {
+	if (!afs_settoken_str((char *)response.extra_data.data)) {
 		d_fprintf(stderr, "Could not set token\n");
 		return False;
 	}
@@ -936,15 +936,15 @@ static BOOL print_domain_users(const char *domain)
 
 	/* Look through extra data */
 
-	if (!response.extra_data)
+	if (!response.extra_data.data)
 		return False;
 
-	extra_data = (const char *)response.extra_data;
+	extra_data = (const char *)response.extra_data.data;
 
 	while(next_token(&extra_data, name, ",", sizeof(fstring)))
 		d_printf("%s\n", name);
 	
-	SAFE_FREE(response.extra_data);
+	SAFE_FREE(response.extra_data.data);
 
 	return True;
 }
@@ -974,15 +974,15 @@ static BOOL print_domain_groups(const char *domain)
 
 	/* Look through extra data */
 
-	if (!response.extra_data)
+	if (!response.extra_data.data)
 		return False;
 
-	extra_data = (const char *)response.extra_data;
+	extra_data = (const char *)response.extra_data.data;
 
 	while(next_token(&extra_data, name, ",", sizeof(fstring)))
 		d_printf("%s\n", name);
 
-	SAFE_FREE(response.extra_data);
+	SAFE_FREE(response.extra_data.data);
 	
 	return True;
 }

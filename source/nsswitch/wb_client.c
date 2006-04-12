@@ -151,7 +151,7 @@ BOOL winbind_lookup_rids(TALLOC_CTX *mem_ctx,
 		return False;
 	}
 
-	request.extra_data = ridlist;
+	request.extra_data.data = ridlist;
 	request.extra_len = strlen(ridlist)+1;
 
 	result = winbindd_request_response(WINBINDD_LOOKUPRIDS,
@@ -172,14 +172,14 @@ BOOL winbind_lookup_rids(TALLOC_CTX *mem_ctx,
 		goto fail;
 	}
 
-	p = response.extra_data;
+	p = response.extra_data.data;
 
 	for (i=0; i<num_rids; i++) {
 		char *q;
 
 		if (*p == '\0') {
 			DEBUG(10, ("Got invalid reply: %s\n",
-				   (char *)response.extra_data));
+				   (char *)response.extra_data.data));
 			goto fail;
 		}
 			
@@ -187,7 +187,7 @@ BOOL winbind_lookup_rids(TALLOC_CTX *mem_ctx,
 
 		if (*q != ' ') {
 			DEBUG(10, ("Got invalid reply: %s\n",
-				   (char *)response.extra_data));
+				   (char *)response.extra_data.data));
 			goto fail;
 		}
 
@@ -196,7 +196,7 @@ BOOL winbind_lookup_rids(TALLOC_CTX *mem_ctx,
 		q = strchr(p, '\n');
 		if (q == NULL) {
 			DEBUG(10, ("Got invalid reply: %s\n",
-				   (char *)response.extra_data));
+				   (char *)response.extra_data.data));
 			goto fail;
 		}
 
@@ -209,11 +209,11 @@ BOOL winbind_lookup_rids(TALLOC_CTX *mem_ctx,
 
 	if (*p != '\0') {
 		DEBUG(10, ("Got invalid reply: %s\n",
-			   (char *)response.extra_data));
+			   (char *)response.extra_data.data));
 		goto fail;
 	}
 
-	SAFE_FREE(response.extra_data);
+	SAFE_FREE(response.extra_data.data);
 
 	return True;
 
@@ -430,7 +430,7 @@ static int wb_getgroups(const char *user, gid_t **groups)
 		/* Return group list.  Don't forget to free the group list
 		   when finished. */
 
-		*groups = (gid_t *)response.extra_data;
+		*groups = (gid_t *)response.extra_data.data;
 		return response.data.num_entries;
 	}
 

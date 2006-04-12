@@ -2043,7 +2043,7 @@ void cache_store_response(pid_t pid, struct winbindd_response *response)
 
 	fstr_sprintf(key_str, "DE/%d", pid);
 	if (tdb_store(wcache->tdb, string_tdb_data(key_str),
-		      make_tdb_data(response->extra_data,
+		      make_tdb_data(response->extra_data.data,
 				    response->length - sizeof(*response)),
 		      TDB_REPLACE) == 0)
 		return;
@@ -2080,7 +2080,7 @@ BOOL cache_retrieve_response(pid_t pid, struct winbindd_response * response)
 	SAFE_FREE(data.dptr);
 
 	if (response->length == sizeof(*response)) {
-		response->extra_data = NULL;
+		response->extra_data.data = NULL;
 		return True;
 	}
 
@@ -2105,7 +2105,7 @@ BOOL cache_retrieve_response(pid_t pid, struct winbindd_response * response)
 
 	dump_data(11, data.dptr, data.dsize);
 
-	response->extra_data = data.dptr;
+	response->extra_data.data = data.dptr;
 	return True;
 }
 

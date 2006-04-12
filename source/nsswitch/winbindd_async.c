@@ -807,7 +807,7 @@ enum winbindd_result winbindd_dual_lookuprids(struct winbindd_domain *domain,
 		   state->request.domain_name,
 		   state->request.data.sid));
 
-	if (!parse_ridlist(state->mem_ctx, state->request.extra_data,
+	if (!parse_ridlist(state->mem_ctx, state->request.extra_data.data,
 			   &rids, &num_rids)) {
 		DEBUG(5, ("Could not parse ridlist\n"));
 		return WINBINDD_ERROR;
@@ -841,7 +841,7 @@ enum winbindd_result winbindd_dual_lookuprids(struct winbindd_domain *domain,
 	fstrcpy(state->response.data.domain_name, domain_name);
 
 	if (result != NULL) {
-		state->response.extra_data = SMB_STRDUP(result);
+		state->response.extra_data.data = SMB_STRDUP(result);
 		state->response.length += len+1;
 	}
 
@@ -870,7 +870,7 @@ static void getsidaliases_recv(TALLOC_CTX *mem_ctx, BOOL success,
 		return;
 	}
 
-	aliases_str = response->extra_data;
+	aliases_str = response->extra_data.data;
 
 	if (aliases_str == NULL) {
 		DEBUG(10, ("getsidaliases return 0 SIDs\n"));
@@ -884,7 +884,7 @@ static void getsidaliases_recv(TALLOC_CTX *mem_ctx, BOOL success,
 		return;
 	}
 
-	SAFE_FREE(response->extra_data);
+	SAFE_FREE(response->extra_data.data);
 
 	cont(private_data, True, sids, num_sids);
 }
@@ -915,7 +915,7 @@ void winbindd_getsidaliases_async(struct winbindd_domain *domain,
 	ZERO_STRUCT(request);
 	request.cmd = WINBINDD_DUAL_GETSIDALIASES;
 	request.extra_len = len;
-	request.extra_data = sidstr;
+	request.extra_data.data = sidstr;
 
 	do_async_domain(mem_ctx, domain, &request, getsidaliases_recv,
 			cont, private_data);
@@ -935,7 +935,7 @@ enum winbindd_result winbindd_dual_getsidaliases(struct winbindd_domain *domain,
 
 	DEBUG(3, ("[%5lu]: getsidaliases\n", (unsigned long)state->pid));
 
-	sidstr = state->request.extra_data;
+	sidstr = state->request.extra_data.data;
 	if (sidstr == NULL)
 		sidstr = talloc_strdup(state->mem_ctx, "\n"); /* No SID */
 
@@ -975,14 +975,14 @@ enum winbindd_result winbindd_dual_getsidaliases(struct winbindd_domain *domain,
 	}
 
 	if (!print_sidlist(NULL, sids, num_sids,
-			   (char **)&state->response.extra_data, &len)) {
+			   (char **)&state->response.extra_data.data, &len)) {
 		DEBUG(0, ("Could not print_sidlist\n"));
 		return WINBINDD_ERROR;
 	}
 
-	if (state->response.extra_data != NULL) {
+	if (state->response.extra_data.data != NULL) {
 		DEBUG(10, ("aliases_list: %s\n",
-			   (char *)state->response.extra_data));
+			   (char *)state->response.extra_data.data));
 		state->response.length += len+1;
 	}
 	
@@ -1063,7 +1063,7 @@ static void gettoken_recvdomgroups(TALLOC_CTX *mem_ctx, BOOL success,
 		return;
 	}
 
-	sids_str = response->extra_data;
+	sids_str = response->extra_data.data;
 
 	if (sids_str == NULL) {
 		/* This could be normal if we are dealing with a
@@ -1089,7 +1089,7 @@ static void gettoken_recvdomgroups(TALLOC_CTX *mem_ctx, BOOL success,
 		return;
 	}
 
-	SAFE_FREE(response->extra_data);
+	SAFE_FREE(response->extra_data.data);
 
 	if (state->alias_domain == NULL) {
 		DEBUG(10, ("Don't expand domain local groups\n"));

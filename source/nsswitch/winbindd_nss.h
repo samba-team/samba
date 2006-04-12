@@ -156,8 +156,8 @@ typedef struct winbindd_gr {
 	fstring gr_name;
 	fstring gr_passwd;
 	gid_t gr_gid;
-	size_t num_gr_mem;
-	size_t gr_mem_ofs;   /* offset to group membership */
+	uint32 num_gr_mem;
+	uint32 gr_mem_ofs;   /* offset to group membership */
 	char **gr_mem;
 } WINBINDD_GR;
 
@@ -258,8 +258,13 @@ struct winbindd_request {
 		} dual_idmapset;
 		BOOL list_all_domains;
 	} data;
-	char *extra_data;
-	size_t extra_len;
+	union {
+#if defined(uint64)
+		uint64 z;
+#endif
+		char *data;
+	} extra_data;
+	uint32 extra_len;
 	char null_term;
 };
 
@@ -377,7 +382,12 @@ struct winbindd_response {
 
 	/* Variable length return data */
 
-	void *extra_data;               /* getgrnam, getgrgid, getgrent */
+	union {
+#if defined(uint64)
+		uint64 z;
+#endif
+		void *data;
+	} extra_data;
 };
 
 struct WINBINDD_CCACHE_ENTRY {

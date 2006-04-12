@@ -161,7 +161,7 @@ enum winbindd_result winbindd_dual_list_trusted_domains(struct winbindd_domain *
 	extra_data_len = strlen(extra_data);
 
 	if (extra_data_len > 0) {
-		state->response.extra_data = SMB_STRDUP(extra_data);
+		state->response.extra_data.data = SMB_STRDUP(extra_data);
 		state->response.length += extra_data_len+1;
 	}
 
@@ -319,7 +319,7 @@ static void sequence_recv(void *private_data, BOOL success)
 		cli_state->response.length =
 			sizeof(cli_state->response) +
 			strlen(state->extra_data) + 1;
-		cli_state->response.extra_data =
+		cli_state->response.extra_data.data =
 			SMB_STRDUP(state->extra_data);
 		request_ok(cli_state);
 		return;
@@ -503,8 +503,8 @@ void winbindd_priv_pipe_dir(struct winbindd_cli_state *state)
 	DEBUG(3, ("[%5lu]: request location of privileged pipe\n",
 		  (unsigned long)state->pid));
 	
-	state->response.extra_data = SMB_STRDUP(get_winbind_priv_pipe_dir());
-	if (!state->response.extra_data) {
+	state->response.extra_data.data = SMB_STRDUP(get_winbind_priv_pipe_dir());
+	if (!state->response.extra_data.data) {
 		DEBUG(0, ("malloc failed\n"));
 		request_error(state);
 		return;
@@ -512,7 +512,7 @@ void winbindd_priv_pipe_dir(struct winbindd_cli_state *state)
 
 	/* must add one to length to copy the 0 for string termination */
 	state->response.length +=
-		strlen((char *)state->response.extra_data) + 1;
+		strlen((char *)state->response.extra_data.data) + 1;
 
 	request_ok(state);
 }

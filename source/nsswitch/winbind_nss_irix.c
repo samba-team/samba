@@ -216,8 +216,8 @@ winbind_callback(nsd_file_t **rqp, int fd)
 		break;
 	    case WINBINDD_GETGRNAM:
 	    case WINBINDD_GETGRGID:
-		if (gr->num_gr_mem && response.extra_data)
-			members = response.extra_data;
+		if (gr->num_gr_mem && response.extra_data.data)
+			members = response.extra_data.data;
 		else
 			members = "";
 		snprintf(result,maxlen,"%s:%s:%d:%s\n",
@@ -234,13 +234,13 @@ winbind_callback(nsd_file_t **rqp, int fd)
 			"callback (winbind) - %d GETGRENT responses\n",
 			response.data.num_entries);
 		if (response.data.num_entries) {
-		    gr = (struct winbindd_gr *)response.extra_data;
+		    gr = (struct winbindd_gr *)response.extra_data.data;
 		    if (! gr ) {
-			nsd_logprintf(NSD_LOG_MIN, "     no extra_data\n");
+			nsd_logprintf(NSD_LOG_MIN, "     no extra_data.data\n");
 			free_response(&response);
 			return NSD_ERROR;
 		    }
-		    members = (char *)response.extra_data + 
+		    members = (char *)response.extra_data.data + 
 				(response.data.num_entries * sizeof(struct winbindd_gr));
 		    for (i = 0; i < response.data.num_entries; i++) {
 			snprintf(result,maxlen,"%s:%s:%d:%s\n",
@@ -262,7 +262,7 @@ winbind_callback(nsd_file_t **rqp, int fd)
 			"callback (winbind) - %d GETPWENT responses\n",
 			response.data.num_entries);
 		if (response.data.num_entries) {
-		    pw = (struct winbindd_pw *)response.extra_data;
+		    pw = (struct winbindd_pw *)response.extra_data.data;
 		    if (! pw ) {
 			nsd_logprintf(NSD_LOG_MIN, "     no extra_data\n");
 			free_response(&response);
