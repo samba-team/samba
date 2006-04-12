@@ -50,16 +50,14 @@ NTSTATUS pvfs_write(struct ntvfs_module_context *ntvfs,
 	}
 
 	if (!(f->access_mask & (SEC_FILE_WRITE_DATA | SEC_FILE_APPEND_DATA))) {
-		return NT_STATUS_ACCESS_VIOLATION;
+		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	status = pvfs_check_lock(pvfs, f, req->smbpid, 
 				 wr->writex.in.offset,
 				 wr->writex.in.count,
 				 WRITE_LOCK);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
+	NT_STATUS_NOT_OK_RETURN(status);
 	
 	if (f->handle->name->stream_name) {
 		ret = pvfs_stream_write(pvfs,
