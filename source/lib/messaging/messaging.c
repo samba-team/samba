@@ -299,8 +299,7 @@ NTSTATUS messaging_register(struct messaging_context *msg, void *private,
 		msg->num_types = msg_type+1;
 	}
 
-
-	d = talloc(msg->dispatch, struct dispatch_fn);
+	d = talloc_zero(msg->dispatch, struct dispatch_fn);
 	NT_STATUS_HAVE_NO_MEMORY(d);
 	d->msg_type = msg_type;
 	d->private = private;
@@ -343,36 +342,24 @@ NTSTATUS messaging_register_tmp(struct messaging_context *msg, void *private,
 */
 void messaging_deregister(struct messaging_context *msg, uint32_t msg_type, void *private)
 {
-	struct dispatch_fn *d, *list, *next;
+	struct dispatch_fn *d, *next;
 
 	if (msg_type >= msg->num_types) {
-		list = idr_find(msg->dispatch_tree, msg_type);
-	} else {
-		list = msg->dispatch[msg_type];
-	}
-
-	if (list == NULL) {
+		d = idr_find(msg->dispatch_tree, msg_type);
+		if (!d) return;
+		idr_remove(msg->dispatch_tree, msg_type);
+		talloc_free(d);
 		return;
 	}
 
-	for (d = list; d; d = next) {
+	for (d = msg->dispatch[msg_type]; d; d = next) {
 		next = d->next;
 		if (d->private == private) {
-			DLIST_REMOVE(list, d);
+			DLIST_REMOVE(msg->dispatch[msg_type], d);
 			talloc_free(d);
 		}
-	}	
-
-	/* the list base possibly changed */
-	if (msg_type >= msg->num_types) {
-		if (list == NULL) {
-			idr_remove(msg->dispatch_tree, msg_type);
-		}
-	} else {
-		msg->dispatch[msg_type] = list;
 	}
 }
-
 
 /*
   Send a message to a particular server
