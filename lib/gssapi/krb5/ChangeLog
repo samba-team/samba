@@ -1,5 +1,19 @@
-2006-04-09  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-04-12  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* export_sec_context.c: Export sequence order element. From Wynn
+	Wilkes <wynn.wilkes@quest.com>.
+
+	* import_sec_context.c: Import sequence order element. From Wynn
+	Wilkes <wynn.wilkes@quest.com>.
+
+	* sequence.c (_gssapi_msg_order_import,_gssapi_msg_order_export):
+	New functions, used by {import,export}_sec_context.  From Wynn
+	Wilkes <wynn.wilkes@quest.com>.
+
+	* test_sequence.c: Add test for import/export sequence.
+	
+2006-04-09  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* add_cred.c: Check that cred != GSS_C_NO_CREDENTIAL, this is a
 	standard conformance failure, but much better then a crash.
 	
