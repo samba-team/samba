@@ -838,10 +838,18 @@ struct parm_struct {
 enum brl_type {READ_LOCK, WRITE_LOCK, PENDING_LOCK, UNLOCK_LOCK};
 enum brl_flavour {WINDOWS_LOCK = 0, POSIX_LOCK = 1};
 
+/* The key used in the brlock database. */
+
+struct lock_key {
+	SMB_DEV_T device;
+	SMB_INO_T inode;
+};
+
 struct byte_range_lock {
 	files_struct *fsp;
 	unsigned int num_locks;
 	BOOL modified;
+	struct lock_key key;
 	void *lock_data;
 };
 
