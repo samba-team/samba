@@ -32,5 +32,6 @@ struct messaging_context;
 #define MSG_PVFS_RETRY_OPEN	5
 #define MSG_IRPC                6
 #define MSG_PVFS_NOTIFY		7
+#define MSG_NTVFS_OPLOCK_BREAK	8
 
 #endif

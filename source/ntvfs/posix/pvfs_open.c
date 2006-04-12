@@ -313,7 +313,8 @@ static NTSTATUS pvfs_open_directory(struct pvfs_state *pvfs,
 		
 		/* see if we are allowed to open at the same time as existing opens */
 		status = odb_open_file(lck, f->handle, f->handle->name->stream_id,
-				       share_access, access_mask, del_on_close, name->full_name);
+				       share_access, access_mask, del_on_close, 
+				       name->full_name, OPLOCK_NONE, NULL);
 
 		if (!NT_STATUS_IS_OK(status)) {
 			idr_remove(pvfs->files.idtree, f->fnum);
@@ -369,7 +370,8 @@ static NTSTATUS pvfs_open_directory(struct pvfs_state *pvfs,
 		}
 
 		status = odb_open_file(lck, f->handle, f->handle->name->stream_id,
-				       share_access, access_mask, del_on_close, name->full_name);
+				       share_access, access_mask, del_on_close, 
+				       name->full_name, OPLOCK_NONE, NULL);
 
 		if (!NT_STATUS_IS_OK(status)) {
 			goto cleanup_delete;
@@ -563,6 +565,7 @@ static NTSTATUS pvfs_create_file(struct pvfs_state *pvfs,
 	uint32_t attrib;
 	BOOL del_on_close;
 	struct pvfs_filename *parent;
+	uint32_t oplock_level = OPLOCK_NONE, oplock_granted;
 
 	if ((io->ntcreatex.in.file_attr & FILE_ATTRIBUTE_READONLY) &&
 	    (create_options & NTCREATEX_OPTIONS_DELETE_ON_CLOSE)) {
@@ -678,8 +681,17 @@ static NTSTATUS pvfs_create_file(struct pvfs_state *pvfs,
 		del_on_close = False;
 	}
 
+	if (pvfs->flags & PVFS_FLAG_FAKE_OPLOCKS) {
+		oplock_level = OPLOCK_NONE;
+	} else if (io->ntcreatex.in.flags & NTCREATEX_FLAGS_REQUEST_BATCH_OPLOCK) {
+		oplock_level = OPLOCK_BATCH;
+	} else if (io->ntcreatex.in.flags & NTCREATEX_FLAGS_REQUEST_OPLOCK) {
+		oplock_level = OPLOCK_EXCLUSIVE;
+	}
+
 	status = odb_open_file(lck, f->handle, name->stream_id,
-			       share_access, access_mask, del_on_close, name->full_name);
+			       share_access, access_mask, del_on_close, 
+			       name->full_name, oplock_level, &oplock_granted);
 	talloc_free(lck);
 	if (!NT_STATUS_IS_OK(status)) {
 		/* bad news, we must have hit a race - we don't delete the file
@@ -688,6 +700,10 @@ static NTSTATUS pvfs_create_file(struct pvfs_state *pvfs,
 		idr_remove(pvfs->files.idtree, fnum);
 		close(fd);
 		return status;
+	}
+
+	if (pvfs->flags & PVFS_FLAG_FAKE_OPLOCKS) {
+		oplock_granted = OPLOCK_BATCH;
 	}
 
 	f->fnum              = fnum;
@@ -718,12 +734,7 @@ static NTSTATUS pvfs_create_file(struct pvfs_state *pvfs,
 	talloc_set_destructor(f, pvfs_fnum_destructor);
 	talloc_set_destructor(f->handle, pvfs_handle_destructor);
 
-	
-	if (pvfs->flags & PVFS_FLAG_FAKE_OPLOCKS) {
-		io->generic.out.oplock_level  = OPLOCK_BATCH;
-	} else {
-		io->generic.out.oplock_level  = OPLOCK_NONE;
-	}
+	io->generic.out.oplock_level  = oplock_granted;
 	io->generic.out.file.fnum     = f->fnum;
 	io->generic.out.create_action = NTCREATEX_ACTION_CREATED;
 	io->generic.out.create_time   = name->dos.create_time;
@@ -994,6 +1005,7 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 	uint32_t share_access;
 	uint32_t access_mask;
 	BOOL stream_existed, stream_truncate=False;
+	uint32_t oplock_level = OPLOCK_NONE, oplock_granted;
 
 	/* use the generic mapping code to avoid implementing all the
 	   different open calls. */
@@ -1174,9 +1186,18 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 	talloc_set_destructor(f, pvfs_fnum_destructor);
 	talloc_set_destructor(f->handle, pvfs_handle_destructor);
 
+	if (pvfs->flags & PVFS_FLAG_FAKE_OPLOCKS) {
+		oplock_level = OPLOCK_NONE;
+	} else if (io->ntcreatex.in.flags & NTCREATEX_FLAGS_REQUEST_BATCH_OPLOCK) {
+		oplock_level = OPLOCK_BATCH;
+	} else if (io->ntcreatex.in.flags & NTCREATEX_FLAGS_REQUEST_OPLOCK) {
+		oplock_level = OPLOCK_EXCLUSIVE;
+	}
+
 	/* see if we are allowed to open at the same time as existing opens */
 	status = odb_open_file(lck, f->handle, f->handle->name->stream_id,
-			       share_access, access_mask, False, name->full_name);
+			       share_access, access_mask, False, name->full_name,
+			       oplock_level, &oplock_granted);
 
 	/* on a sharing violation we need to retry when the file is closed by 
 	   the other user, or after 1 second */
@@ -1188,6 +1209,10 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(lck);
 		return status;
+	}
+
+	if (pvfs->flags & PVFS_FLAG_FAKE_OPLOCKS) {
+		oplock_granted = OPLOCK_BATCH;
 	}
 
 	f->handle->have_opendb_entry = True;
@@ -1252,11 +1277,7 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 	    
 	talloc_free(lck);
 
-	if (pvfs->flags & PVFS_FLAG_FAKE_OPLOCKS) {
-		io->generic.out.oplock_level  = OPLOCK_BATCH;
-	} else {
-		io->generic.out.oplock_level  = OPLOCK_NONE;
-	}
+	io->generic.out.oplock_level  = oplock_granted;
 	io->generic.out.file.fnum     = f->fnum;
 	io->generic.out.create_action = stream_existed?
 		NTCREATEX_ACTION_EXISTED:NTCREATEX_ACTION_CREATED;
