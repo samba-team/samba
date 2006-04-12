@@ -72,6 +72,8 @@ read_words (const char *filename, char ***ret_w)
 	w[n++] = wptr;
 	wptr += len + 1;
     }
+    if (n == 0)
+	errx(1, "%s is an empty file, no words to try", filename);
     *ret_w = w;
     return n;
 }
