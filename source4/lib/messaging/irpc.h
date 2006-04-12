@@ -76,14 +76,18 @@ struct irpc_request {
 	} async;
 };
 
+typedef void (*msg_callback_t)(struct messaging_context *msg, void *private, 
+			       uint32_t msg_type, uint32_t server_id, DATA_BLOB *data);
 
 struct messaging_context *messaging_init(TALLOC_CTX *mem_ctx, uint32_t server_id, 
 					 struct event_context *ev);
 NTSTATUS messaging_send(struct messaging_context *msg, uint32_t server, 
 			uint32_t msg_type, DATA_BLOB *data);
-void messaging_register(struct messaging_context *msg, void *private,
-			uint32_t msg_type, 
-			void (*fn)(struct messaging_context *, void *, uint32_t, uint32_t, DATA_BLOB *));
+NTSTATUS messaging_register(struct messaging_context *msg, void *private,
+			    uint32_t msg_type, 
+			    msg_callback_t fn);
+NTSTATUS messaging_register_tmp(struct messaging_context *msg, void *private,
+				msg_callback_t fn, uint32_t *msg_type);
 struct messaging_context *messaging_init(TALLOC_CTX *mem_ctx, uint32_t server_id, 
 					 struct event_context *ev);
 struct messaging_context *messaging_client_init(TALLOC_CTX *mem_ctx, 
