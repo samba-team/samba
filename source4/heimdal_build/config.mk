@@ -434,7 +434,6 @@ include perl_path_wrapper.sh et_deps.pl heimdal/lib/krb5/krb5_err.et|
 
 .SUFFIXES: .hin 
 .hin.h:
-	@mkdir -p $(dir $@)
 	@cp $< $@
 
 $(patsubst heimdal/lib/des/%.h,heimdal/lib/des/hcrypto/%.h,$(wildcard heimdal/lib/des/*.h)): heimdal/lib/des/hcrypto
