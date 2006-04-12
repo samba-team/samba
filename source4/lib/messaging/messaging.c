@@ -364,12 +364,12 @@ void messaging_deregister(struct messaging_context *msg, uint32_t msg_type, void
 	}	
 
 	/* the list base possibly changed */
-	if (list == NULL) {
-		if (msg_type >= msg->num_types) {
+	if (msg_type >= msg->num_types) {
+		if (list == NULL) {
 			idr_remove(msg->dispatch_tree, msg_type);
-		} else {
-			msg->dispatch[msg_type] = NULL;
 		}
+	} else {
+		msg->dispatch[msg_type] = list;
 	}
 }
 
