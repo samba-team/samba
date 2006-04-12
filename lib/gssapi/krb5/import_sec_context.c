@@ -54,7 +54,6 @@ gss_import_sec_context (
     int32_t tmp;
     int32_t flags;
     OM_uint32 minor;
-    int is_cfx = 0;
 
     GSSAPI_KRB5_INIT ();
 
@@ -190,20 +189,14 @@ gss_import_sec_context (
     if (krb5_ret_int32 (sp, &tmp))
 	goto failure;
     (*context_handle)->more_flags = tmp;
-    if (krb5_ret_int32 (sp, &tmp) == 0)
-	(*context_handle)->lifetime = tmp;
-    else
-	(*context_handle)->lifetime = GSS_C_INDEFINITE;
-
-    gsskrb5_is_cfx(*context_handle, &is_cfx);
-
-    ret = _gssapi_msg_order_create(minor_status,
-				   &(*context_handle)->order,
-				   _gssapi_msg_order_f((*context_handle)->flags),
-				   0, 0, is_cfx);
-    if (ret)
+    if (krb5_ret_int32 (sp, &tmp))
 	goto failure;
+    (*context_handle)->lifetime = tmp;
 
+    ret = _gssapi_msg_order_import(minor_status, sp, &(*context_handle)->order);
+    if (ret)
+        goto failure;    
+    
     krb5_storage_free (sp);
     return GSS_S_COMPLETE;
 
