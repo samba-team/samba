@@ -25,13 +25,14 @@
 #include "lib/messaging/irpc.h"
 #include "torture/torture.h"
 
-enum {MY_PING=1000, MY_PONG, MY_EXIT};
+
+static uint32_t msg_pong;
 
 static void ping_message(struct messaging_context *msg, void *private, 
 			 uint32_t msg_type, uint32_t src, DATA_BLOB *data)
 {
 	NTSTATUS status;
-	status = messaging_send(msg, src, MY_PONG, data);
+	status = messaging_send(msg, src, msg_pong, data);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("pong failed - %s\n", nt_errstr(status));
 	}
@@ -64,6 +65,7 @@ static BOOL test_ping_speed(TALLOC_CTX *mem_ctx)
 	BOOL ret = True;
 	struct timeval tv;
 	int timelimit = lp_parm_int(-1, "torture", "timelimit", 10);
+	uint32_t msg_ping, msg_exit;
 
 	lp_set_cmdline("lock dir", "lockdir.tmp");
 
@@ -77,8 +79,8 @@ static BOOL test_ping_speed(TALLOC_CTX *mem_ctx)
 		return False;
 	}
 		
-	messaging_register(msg_server_ctx, NULL, MY_PING, ping_message);
-	messaging_register(msg_server_ctx, mem_ctx, MY_EXIT, exit_message);
+	messaging_register_tmp(msg_server_ctx, NULL, ping_message, &msg_ping);
+	messaging_register_tmp(msg_server_ctx, mem_ctx, exit_message, &msg_exit);
 
 	msg_client_ctx = messaging_init(mem_ctx, 2, ev);
 
@@ -87,7 +89,7 @@ static BOOL test_ping_speed(TALLOC_CTX *mem_ctx)
 		return False;
 	}
 
-	messaging_register(msg_client_ctx, &pong_count, MY_PONG, pong_message);
+	messaging_register_tmp(msg_client_ctx, &pong_count, pong_message, &msg_pong);
 
 	tv = timeval_current();
 
@@ -99,8 +101,8 @@ static BOOL test_ping_speed(TALLOC_CTX *mem_ctx)
 		data.data = discard_const_p(uint8_t, "testing");
 		data.length = strlen((const char *)data.data);
 
-		status1 = messaging_send(msg_client_ctx, 1, MY_PING, &data);
-		status2 = messaging_send(msg_client_ctx, 1, MY_PING, NULL);
+		status1 = messaging_send(msg_client_ctx, 1, msg_ping, &data);
+		status2 = messaging_send(msg_client_ctx, 1, msg_ping, NULL);
 
 		if (!NT_STATUS_IS_OK(status1)) {
 			printf("msg1 failed - %s\n", nt_errstr(status1));
@@ -126,7 +128,7 @@ static BOOL test_ping_speed(TALLOC_CTX *mem_ctx)
 	}
 
 	printf("sending exit\n");
-	messaging_send(msg_client_ctx, 1, MY_EXIT, NULL);
+	messaging_send(msg_client_ctx, 1, msg_exit, NULL);
 
 	if (ping_count != pong_count) {
 		printf("ping test failed! received %d, sent %d\n", 

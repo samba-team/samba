@@ -34,4 +34,7 @@ struct messaging_context;
 #define MSG_PVFS_NOTIFY		7
 #define MSG_NTVFS_OPLOCK_BREAK	8
 
+/* temporary messaging endpoints are allocated above this line */
+#define MSG_TMP_BASE		1000
+
 #endif
