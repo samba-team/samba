@@ -69,6 +69,7 @@ struct krb5_pk_identity {
     hx509_certs certs;
     hx509_certs anchors;
     hx509_certs certpool;
+    hx509_revoke_ctx revoke;
 };
 
 struct krb5_pk_cert {
@@ -1144,14 +1145,15 @@ hx_pass_prompter(void *data, const hx509_prompt *prompter)
 }
 
 krb5_error_code KRB5_LIB_FUNCTION
-_krb5_pk_load_openssl_id(krb5_context context,
-			 struct krb5_pk_identity **ret_id,
-			 const char *user_id,
-			 const char *anchor_id,
-			 const char **chain,
-			 krb5_prompter_fct prompter,
-			 void *prompter_data,
-			 char *password)
+_krb5_pk_load_id(krb5_context context,
+		 struct krb5_pk_identity **ret_id,
+		 const char *user_id,
+		 const char *anchor_id,
+		 char * const *chain,
+		 char * const *revoke,
+		 krb5_prompter_fct prompter,
+		 void *prompter_data,
+		 char *password)
 {
     struct krb5_pk_identity *id = NULL;
     hx509_lock lock = NULL;
@@ -1222,11 +1224,32 @@ _krb5_pk_load_openssl_id(krb5_context context,
 	chain++;
     }
 
+    if (revoke) {
+	ret = hx509_revoke_init(id->hx509ctx, &id->revoke);
+	if (ret) {
+	    krb5_set_error_string(context, "revoke failed to init");
+	    goto out;
+	}
+
+	while (*revoke) {
+	    ret = hx509_revoke_add_crl(id->hx509ctx, id->revoke, *revoke);
+	    if (ret) {
+		krb5_set_error_string(context,
+				      "pkinit failed to load revoke %s",
+				      *revoke);
+		goto out;
+	    }
+	    revoke++;
+	}
+    } else
+	hx509_context_set_missing_revoke(id->hx509ctx, 1);
+
     ret = hx509_verify_init_ctx(id->hx509ctx, &id->verify_ctx);
     if (ret)
 	goto out;
 
     hx509_verify_attach_anchors(id->verify_ctx, id->anchors);
+    hx509_verify_attach_revoke(id->verify_ctx, id->revoke);
 
 out:
     if (ret) {
@@ -1234,6 +1257,7 @@ out:
 	hx509_certs_free(&id->certs);
 	hx509_certs_free(&id->anchors);
 	hx509_certs_free(&id->certpool);
+	hx509_revoke_free(&id->revoke);
 	hx509_context_free(&id->hx509ctx);
 	free(id);
     } else
@@ -1541,6 +1565,7 @@ krb5_get_init_creds_opt_set_pkinit(krb5_context context,
 				   const char *user_id,
 				   const char *x509_anchors,
 				   char * const * chain,
+				   char * const * revoke,
 				   int flags,
 				   krb5_prompter_fct prompter,
 				   void *prompter_data,
@@ -1565,14 +1590,15 @@ krb5_get_init_creds_opt_set_pkinit(krb5_context context,
     opt->opt_private->pk_init_ctx->clientDHNonce = NULL;
     opt->opt_private->pk_init_ctx->require_binding = 0;
 
-    ret = _krb5_pk_load_openssl_id(context,
-				   &opt->opt_private->pk_init_ctx->id,
-				   user_id,
-				   x509_anchors,
-				   chain,
-				   prompter,
-				   prompter_data,
-				   password);
+    ret = _krb5_pk_load_id(context,
+			   &opt->opt_private->pk_init_ctx->id,
+			   user_id,
+			   x509_anchors,
+			   chain,
+			   revoke,
+			   prompter,
+			   prompter_data,
+			   password);
     if (ret) {
 	free(opt->opt_private->pk_init_ctx);
 	opt->opt_private->pk_init_ctx = NULL;
