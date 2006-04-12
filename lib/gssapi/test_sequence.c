@@ -82,23 +82,63 @@ OM_uint32 pattern8[] = {
 
 static int
 test_seq(int t, OM_uint32 flags, OM_uint32 start_seq,
-	 OM_uint32 *pattern, int pattern_len)
+	 OM_uint32 *pattern, int pattern_len, OM_uint32 expected_error)
 {
     struct gss_msg_order *o;
     OM_uint32 maj_stat, min_stat;
+    krb5_storage *sp;
     int i;
 
     maj_stat = _gssapi_msg_order_create(&min_stat, &o, flags, 
 					start_seq, 20, 0);
     if (maj_stat)
-	err(1, "create: %d %d", maj_stat, min_stat);
+	errx(1, "create: %d %d", maj_stat, min_stat);
+
+    sp = krb5_storage_emem();
+    if (sp == NULL)
+	errx(1, "krb5_storage_from_emem");
+
+    _gssapi_msg_order_export(sp, o);
 
     for (i = 0; i < pattern_len; i++) {
 	maj_stat = _gssapi_msg_order_check(o, pattern[i]);
 	if (maj_stat)
-	    return maj_stat;
+	    break;
     }
+    if (maj_stat != expected_error) {
+	printf("test pattern %d failed with %d (should have been %d)\n",
+	       t, maj_stat, expected_error);
+	krb5_storage_free(sp);
+	_gssapi_msg_order_destroy(&o);
+	return 1;
+    }
+
+
     _gssapi_msg_order_destroy(&o);
+
+    /* try again, now with export/imported blob */
+    krb5_storage_seek(sp, 0, SEEK_SET);
+
+    maj_stat = _gssapi_msg_order_import(&min_stat, sp, &o);
+    if (maj_stat)
+	errx(1, "import: %d %d", maj_stat, min_stat);
+
+    for (i = 0; i < pattern_len; i++) {
+	maj_stat = _gssapi_msg_order_check(o, pattern[i]);
+	if (maj_stat)
+	    break;
+    }
+    if (maj_stat != expected_error) {
+	printf("import/export test pattern %d failed "
+	       "with %d (should have been %d)\n",
+	       t, maj_stat, expected_error);
+	_gssapi_msg_order_destroy(&o);
+	krb5_storage_free(sp);
+	return 1;
+    }
+
+    _gssapi_msg_order_destroy(&o);
+    krb5_storage_free(sp);
 
     return 0;
 }
@@ -312,20 +352,16 @@ struct {
 int
 main(int argc, char **argv)
 {
-    OM_uint32 maj_stat;
     int i, failed = 0;
 
     for (i = 0; i < sizeof(pl)/sizeof(pl[0]); i++) {
-	maj_stat = test_seq(i,
-			    pl[i].flags,
-			    pl[i].start_seq,
-			    pl[i].pattern,
-			    pl[i].pattern_len);
-	if (maj_stat != pl[i].error_code) {
-	    printf("test pattern %d failed with %d (should have been %d)\n",
-		   i, maj_stat, pl[i].error_code);
+	if (test_seq(i,
+		     pl[i].flags,
+		     pl[i].start_seq,
+		     pl[i].pattern,
+		     pl[i].pattern_len,
+		     pl[i].error_code))
 	    failed++;
-	}
     }
     if (failed)
 	printf("FAILED %d tests\n", failed);
