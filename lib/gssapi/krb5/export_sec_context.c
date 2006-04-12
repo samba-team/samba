@@ -207,6 +207,11 @@ gss_export_sec_context (
 	*minor_status = kret;
 	goto failure;
     }
+    kret = _gssapi_msg_order_export(sp, (*context_handle)->order);
+    if (kret ) {
+        *minor_status = kret;
+        goto failure;
+    }
 
     kret = krb5_storage_to_data (sp, &data);
     krb5_storage_free (sp);
