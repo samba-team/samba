@@ -47,11 +47,12 @@
 #include "lib/messaging/irpc.h"
 #include "librpc/gen_ndr/ndr_opendb.h"
 #include "smb.h"
+#include "ntvfs/ntvfs.h"
 
 struct odb_context {
 	struct tdb_wrap *w;
-	uint32_t server;
-	struct messaging_context *messaging_ctx;
+	struct ntvfs_context *ntvfs_ctx;
+	BOOL oplocks;
 };
 
 /*
@@ -68,8 +69,8 @@ struct odb_lock {
   talloc_free(). We need the messaging_ctx to allow for pending open
   notifications.
 */
-_PUBLIC_ struct odb_context *odb_init(TALLOC_CTX *mem_ctx, uint32_t server, 
-				      struct messaging_context *messaging_ctx)
+_PUBLIC_ struct odb_context *odb_init(TALLOC_CTX *mem_ctx, 
+				      struct ntvfs_context *ntvfs_ctx)
 {
 	char *path;
 	struct odb_context *odb;
@@ -89,8 +90,10 @@ _PUBLIC_ struct odb_context *odb_init(TALLOC_CTX *mem_ctx, uint32_t server,
 		return NULL;
 	}
 
-	odb->server = server;
-	odb->messaging_ctx = messaging_ctx;
+	odb->ntvfs_ctx = ntvfs_ctx;
+
+	/* leave oplocks disabled by default until the code is working */
+	odb->oplocks = lp_parm_bool(-1, "opendb", "oplocks", False);
 
 	return odb;
 }
@@ -249,6 +252,16 @@ static NTSTATUS odb_push_record(struct odb_lock *lck, struct opendb_file *file)
 	return NT_STATUS_OK;
 }
 
+/*
+  send an oplock break to a client
+*/
+static NTSTATUS odb_oplock_break_send(struct odb_context *odb, struct opendb_entry *e)
+{
+	/* tell the server handling this open file about the need to send the client
+	   a break */
+	return messaging_send_ptr(odb->ntvfs_ctx->msg_ctx, e->server, 
+				  MSG_NTVFS_OPLOCK_BREAK, e->file_handle);
+}
 
 /*
   register an open file in the open files database. This implements the share_access
@@ -260,13 +273,18 @@ static NTSTATUS odb_push_record(struct odb_lock *lck, struct opendb_file *file)
 _PUBLIC_ NTSTATUS odb_open_file(struct odb_lock *lck, void *file_handle,
 				uint32_t stream_id, uint32_t share_access, 
 				uint32_t access_mask, BOOL delete_on_close,
-				const char *path)
+				const char *path, 
+				uint32_t oplock_level, uint32_t *oplock_granted)
 {
 	struct odb_context *odb = lck->odb;
 	struct opendb_entry e;
 	int i;
 	struct opendb_file file;
 	NTSTATUS status;
+
+	if (odb->oplocks == False) {
+		oplock_level = OPLOCK_NONE;
+	}
 
 	status = odb_pull_record(lck, &file);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
@@ -277,6 +295,29 @@ _PUBLIC_ NTSTATUS odb_open_file(struct odb_lock *lck, void *file_handle,
 		NT_STATUS_NOT_OK_RETURN(status);
 	}
 
+	/* see if it conflicts */
+	e.server          = odb->ntvfs_ctx->server_id;
+	e.file_handle     = file_handle;
+	e.stream_id       = stream_id;
+	e.share_access    = share_access;
+	e.access_mask     = access_mask;
+	e.delete_on_close = delete_on_close;
+	e.oplock_level    = OPLOCK_NONE;
+		
+	/* see if anyone has an oplock, which we need to break */
+	for (i=0;i<file.num_entries;i++) {
+		if (file.entries[i].oplock_level == OPLOCK_BATCH) {
+			/* a batch oplock caches close calls, which
+			   means the client application might have
+			   already closed the file. We have to allow
+			   this close to propogate by sending a oplock
+			   break request and suspending this call
+			   until the break is acknowledged or the file
+			   is closed */
+			odb_oplock_break_send(odb, &file.entries[i]);
+			return NT_STATUS_OPLOCK_NOT_GRANTED;
+		}
+	}
 
 	if (file.delete_on_close || 
 	    (file.num_entries != 0 && delete_on_close)) {
@@ -284,20 +325,40 @@ _PUBLIC_ NTSTATUS odb_open_file(struct odb_lock *lck, void *file_handle,
 		return NT_STATUS_DELETE_PENDING;
 	}
 
-	/* see if it conflicts */
-	e.server          = odb->server;
-	e.file_handle     = file_handle;
-	e.stream_id       = stream_id;
-	e.share_access    = share_access;
-	e.access_mask     = access_mask;
-	e.delete_on_close = delete_on_close;
-		
+	/* check for sharing violations */
 	for (i=0;i<file.num_entries;i++) {
 		status = share_conflict(&file.entries[i], &e);
 		NT_STATUS_NOT_OK_RETURN(status);
 	}
 
-	/* it doesn't, so add it to the end */
+	/* we now know the open could succeed, but we need to check
+	   for any exclusive oplocks. We can't grant a second open
+	   till these are broken. Note that we check for batch oplocks
+	   before checking for sharing violations, and check for
+	   exclusive oplocks afterwards. */
+	for (i=0;i<file.num_entries;i++) {
+		if (file.entries[i].oplock_level == OPLOCK_EXCLUSIVE) {
+			odb_oplock_break_send(odb, &file.entries[i]);
+			return NT_STATUS_OPLOCK_NOT_GRANTED;
+		}
+	}
+
+	/*
+	  possibly grant an exclusive or batch oplock if this is the only client
+	  with the file open. We don't yet grant levelII oplocks.
+	*/
+	if (oplock_granted != NULL) {
+		if ((oplock_level == OPLOCK_BATCH ||
+		     oplock_level == OPLOCK_EXCLUSIVE) &&
+		    file.num_entries == 0) {
+			(*oplock_granted) = oplock_level;
+		} else {
+			(*oplock_granted) = OPLOCK_NONE;
+		}
+		e.oplock_level = (*oplock_granted);
+	}
+
+	/* it doesn't conflict, so add it to the end */
 	file.entries = talloc_realloc(lck, file.entries, struct opendb_entry, 
 				      file.num_entries+1);
 	NT_STATUS_HAVE_NO_MEMORY(file.entries);
@@ -325,7 +386,7 @@ _PUBLIC_ NTSTATUS odb_open_file_pending(struct odb_lock *lck, void *private)
 				      file.num_pending+1);
 	NT_STATUS_HAVE_NO_MEMORY(file.pending);
 
-	file.pending[file.num_pending].server = odb->server;
+	file.pending[file.num_pending].server = odb->ntvfs_ctx->server_id;
 	file.pending[file.num_pending].notify_ptr = private;
 
 	file.num_pending++;
@@ -350,7 +411,7 @@ _PUBLIC_ NTSTATUS odb_close_file(struct odb_lock *lck, void *file_handle)
 	/* find the entry, and delete it */
 	for (i=0;i<file.num_entries;i++) {
 		if (file_handle == file.entries[i].file_handle &&
-		    odb->server == file.entries[i].server) {
+		    odb->ntvfs_ctx->server_id == file.entries[i].server) {
 			if (file.entries[i].delete_on_close) {
 				file.delete_on_close = True;
 			}
@@ -369,7 +430,7 @@ _PUBLIC_ NTSTATUS odb_close_file(struct odb_lock *lck, void *file_handle)
 
 	/* send any pending notifications, removing them once sent */
 	for (i=0;i<file.num_pending;i++) {
-		messaging_send_ptr(odb->messaging_ctx, file.pending[i].server, 
+		messaging_send_ptr(odb->ntvfs_ctx->msg_ctx, file.pending[i].server, 
 				   MSG_PVFS_RETRY_OPEN, 
 				   file.pending[i].notify_ptr);
 	}
@@ -397,7 +458,7 @@ _PUBLIC_ NTSTATUS odb_remove_pending(struct odb_lock *lck, void *private)
 	/* find the entry, and delete it */
 	for (i=0;i<file.num_pending;i++) {
 		if (private == file.pending[i].notify_ptr &&
-		    odb->server == file.pending[i].server) {
+		    odb->ntvfs_ctx->server_id == file.pending[i].server) {
 			if (i < file.num_pending-1) {
 				memmove(file.pending+i, file.pending+i+1, 
 					(file.num_pending - (i+1)) * 
@@ -525,7 +586,7 @@ _PUBLIC_ NTSTATUS odb_can_open(struct odb_lock *lck,
 		return NT_STATUS_DELETE_PENDING;
 	}
 
-	e.server       = odb->server;
+	e.server       = odb->ntvfs_ctx->server_id;
 	e.file_handle  = NULL;
 	e.stream_id    = 0;
 	e.share_access = share_access;
@@ -536,7 +597,7 @@ _PUBLIC_ NTSTATUS odb_can_open(struct odb_lock *lck,
 		if (!NT_STATUS_IS_OK(status)) {
 			/* note that we discard the error code
 			   here. We do this as unless we are actually
-			   doing an open (which comes via a sdifferent
+			   doing an open (which comes via a different
 			   function), we need to return a sharing
 			   violation */
 			return NT_STATUS_SHARING_VIOLATION;
