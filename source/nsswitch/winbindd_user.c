@@ -632,15 +632,15 @@ void winbindd_getpwent(struct winbindd_cli_state *state)
 
 	num_users = MIN(MAX_GETPWENT_USERS, state->request.data.num_entries);
 	
-	if ((state->response.extra_data = SMB_MALLOC_ARRAY(struct winbindd_pw, num_users)) == NULL) {
+	if ((state->response.extra_data.data = SMB_MALLOC_ARRAY(struct winbindd_pw, num_users)) == NULL) {
 		request_error(state);
 		return;
 	}
 
-	memset(state->response.extra_data, 0, num_users * 
+	memset(state->response.extra_data.data, 0, num_users * 
 	       sizeof(struct winbindd_pw));
 
-	user_list = (struct winbindd_pw *)state->response.extra_data;
+	user_list = (struct winbindd_pw *)state->response.extra_data.data;
 
 	if (!state->getpwent_initialized)
 		winbindd_setpwent_internal(state);
@@ -795,7 +795,7 @@ void winbindd_list_users(struct winbindd_cli_state *state)
 
 	if (extra_data) {
 		extra_data[extra_data_len - 1] = '\0';
-		state->response.extra_data = extra_data;
+		state->response.extra_data.data = extra_data;
 		state->response.length += extra_data_len;
 	}
 

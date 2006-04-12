@@ -37,7 +37,7 @@ void free_response(struct winbindd_response *response)
 	/* Free any allocated extra_data */
 
 	if (response)
-		SAFE_FREE(response->extra_data);
+		SAFE_FREE(response->extra_data.data);
 }
 
 /* Initialise a request structure */
@@ -324,13 +324,13 @@ static int winbind_open_pipe_sock(int recursing)
 	request.flags = WBFLAG_RECURSE;
 	if (winbindd_request_response(WINBINDD_PRIV_PIPE_DIR, &request, &response) == NSS_STATUS_SUCCESS) {
 		int fd;
-		if ((fd = winbind_named_pipe_sock(response.extra_data)) != -1) {
+		if ((fd = winbind_named_pipe_sock(response.extra_data.data)) != -1) {
 			close(winbindd_fd);
 			winbindd_fd = fd;
 		}
 	}
 
-	SAFE_FREE(response.extra_data);
+	SAFE_FREE(response.extra_data.data);
 
 	return winbindd_fd;
 #else
@@ -492,7 +492,7 @@ int read_reply(struct winbindd_response *response)
 	   the server.  This has no meaning in the client's address space
 	   so we clear it out. */
 
-	response->extra_data = NULL;
+	response->extra_data.data = NULL;
 
 	/* Read variable length response */
 	
@@ -502,11 +502,11 @@ int read_reply(struct winbindd_response *response)
 		
 		/* Mallocate memory for extra data */
 		
-		if (!(response->extra_data = malloc(extra_data_len))) {
+		if (!(response->extra_data.data = malloc(extra_data_len))) {
 			return -1;
 		}
 		
-		if ((result2 = read_sock(response->extra_data, extra_data_len))
+		if ((result2 = read_sock(response->extra_data.data, extra_data_len))
 		    == -1) {
 			free_response(response);
 			return -1;
@@ -550,7 +550,7 @@ NSS_STATUS winbindd_send_request(int req_type, struct winbindd_request *request)
 	}
 
 	if ((request->extra_len != 0) &&
-	    (write_sock(request->extra_data, request->extra_len, request->flags & WBFLAG_RECURSE) == -1)) {
+	    (write_sock(request->extra_data.data, request->extra_len, request->flags & WBFLAG_RECURSE) == -1)) {
 		return NSS_STATUS_UNAVAIL;
 	}
 	

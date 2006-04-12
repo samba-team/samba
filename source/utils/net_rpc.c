@@ -4212,7 +4212,7 @@ static BOOL get_user_sids(const char *domain, const char *user, NT_USER_TOKEN *t
 	}
 
 	for (i = 0; i < response.data.num_entries; i++) {
-		gid_t gid = ((gid_t *)response.extra_data)[i];
+		gid_t gid = ((gid_t *)response.extra_data.data)[i];
 		DOM_SID sid;
 
 		struct winbindd_request sidrequest;
@@ -4238,7 +4238,7 @@ static BOOL get_user_sids(const char *domain, const char *user, NT_USER_TOKEN *t
 		add_sid_to_token(token, &sid);
 	}
 
-	SAFE_FREE(response.extra_data);
+	SAFE_FREE(response.extra_data.data);
 
 	return True;
 }
@@ -4274,10 +4274,10 @@ static BOOL get_user_tokens(int *num_tokens, struct user_token **user_tokens)
 
 	/* Look through extra data */
 
-	if (!response.extra_data)
+	if (!response.extra_data.data)
 		return False;
 
-	extra_data = (const char *)response.extra_data;
+	extra_data = (const char *)response.extra_data.data;
 	*num_tokens = 0;
 
 	while(next_token(&extra_data, name, ",", sizeof(fstring))) {
@@ -4291,7 +4291,7 @@ static BOOL get_user_tokens(int *num_tokens, struct user_token **user_tokens)
 		return False;
 	}
 
-	extra_data = (const char *)response.extra_data;
+	extra_data = (const char *)response.extra_data.data;
 	i=0;
 
 	while(next_token(&extra_data, name, ",", sizeof(fstring))) {
@@ -4319,7 +4319,7 @@ static BOOL get_user_tokens(int *num_tokens, struct user_token **user_tokens)
 		i+=1;
 	}
 	
-	SAFE_FREE(response.extra_data);
+	SAFE_FREE(response.extra_data.data);
 
 	*user_tokens = result;
 

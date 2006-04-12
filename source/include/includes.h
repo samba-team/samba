@@ -639,6 +639,19 @@ typedef int socklen_t;
 #endif
 
 /*
+ * check for 8 byte long long
+ */
+
+#if !defined(uint64)
+#if (SIZEOF_LONG == 8)
+#define uint64 unsigned long
+#elif (SIZEOF_LONG_LONG == 8)
+#define uint64 unsigned long long
+#endif	/* don't lie.  If we don't have it, then don't use it */
+#endif
+
+
+/*
  * Types for devices, inodes and offsets.
  */
 
