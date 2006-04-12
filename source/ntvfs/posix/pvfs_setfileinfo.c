@@ -53,8 +53,14 @@ static uint32_t pvfs_setfileinfo_access(union smb_setfileinfo *info)
 
 	case RAW_SFILEINFO_SEC_DESC:
 		needed = 0;
-		if (info->set_secdesc.in.secinfo_flags & (SECINFO_DACL|SECINFO_SACL)) {
+		if (info->set_secdesc.in.secinfo_flags & (SECINFO_OWNER|SECINFO_GROUP)) {
+			needed |= SEC_STD_WRITE_OWNER;
+		}
+		if (info->set_secdesc.in.secinfo_flags & SECINFO_DACL) {
 			needed |= SEC_STD_WRITE_DAC;
+		}
+		if (info->set_secdesc.in.secinfo_flags & SECINFO_SACL) {
+			needed |= SEC_FLAG_SYSTEM_SECURITY;
 		}
 		break;
 
@@ -62,7 +68,8 @@ static uint32_t pvfs_setfileinfo_access(union smb_setfileinfo *info)
 		needed = SEC_FILE_WRITE_ATTRIBUTE;
 		break;
 	}
-	return needed;	
+
+	return needed;
 }
 
 /*
