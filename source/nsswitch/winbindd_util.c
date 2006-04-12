@@ -236,7 +236,7 @@ static void trustdom_recv(void *private_data, BOOL success)
 		return;
 	}
 
-	p = response->extra_data;
+	p = response->extra_data.data;
 
 	while ((p != NULL) && (*p != '\0')) {
 		char *q, *sidstr, *alt_name;
@@ -288,7 +288,7 @@ static void trustdom_recv(void *private_data, BOOL success)
 			p += 1;
 	}
 
-	SAFE_FREE(response->extra_data);
+	SAFE_FREE(response->extra_data.data);
 	talloc_destroy(state->mem_ctx);
 }
 

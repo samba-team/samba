@@ -320,7 +320,7 @@ static int wb_getgroups(const char *user, gid_t **groups)
 		/* Return group list.  Don't forget to free the group list
 		   when finished. */
 
-		*groups = (gid_t *)response.extra_data;
+		*groups = (gid_t *)response.extra_data.data;
 		return response.data.num_entries;
 	}
 

@@ -52,25 +52,25 @@ static void child_read_request(struct winbindd_cli_state *state)
 	}
 
 	if (state->request.extra_len == 0) {
-		state->request.extra_data = NULL;
+		state->request.extra_data.data = NULL;
 		return;
 	}
 
 	DEBUG(10, ("Need to read %d extra bytes\n", (int)state->request.extra_len));
 
-	state->request.extra_data =
+	state->request.extra_data.data =
 		SMB_MALLOC_ARRAY(char, state->request.extra_len + 1);
 
-	if (state->request.extra_data == NULL) {
+	if (state->request.extra_data.data == NULL) {
 		DEBUG(0, ("malloc failed\n"));
 		state->finished = True;
 		return;
 	}
 
 	/* Ensure null termination */
-	state->request.extra_data[state->request.extra_len] = '\0';
+	state->request.extra_data.data[state->request.extra_len] = '\0';
 
-	len = read_data(state->sock, state->request.extra_data,
+	len = read_data(state->sock, state->request.extra_data.data,
 			state->request.extra_len);
 
 	if (len != state->request.extra_len) {
@@ -153,7 +153,7 @@ static void async_main_request_sent(void *private_data, BOOL success)
 		return;
 	}
 
-	setup_async_write(&state->child->event, state->request->extra_data,
+	setup_async_write(&state->child->event, state->request->extra_data.data,
 			  state->request->extra_len,
 			  async_request_sent, state);
 }
@@ -728,11 +728,11 @@ static BOOL fork_domain_child(struct winbindd_child *child)
 		state.request.null_term = '\0';
 		child_process_request(child->domain, &state);
 
-		SAFE_FREE(state.request.extra_data);
+		SAFE_FREE(state.request.extra_data.data);
 
 		cache_store_response(sys_getpid(), &state.response);
 
-		SAFE_FREE(state.response.extra_data);
+		SAFE_FREE(state.response.extra_data.data);
 
 		/* We just send the result code back, the result
 		 * structure needs to be fetched via the
