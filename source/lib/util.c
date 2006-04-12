@@ -5,7 +5,8 @@
    Copyright (C) Jeremy Allison 2001-2002
    Copyright (C) Simo Sorce 2001
    Copyright (C) Jim McDonough <jmcd@us.ibm.com> 2003
-   
+   Copyright (C) James Peach 2006
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 2 of the License, or
@@ -1616,13 +1617,76 @@ void smb_panic(const char *const why)
  exit shortly after calling it.
 ********************************************************************/
 
+#ifdef HAVE_LIBUNWIND_H
+#include <libunwind.h>
+#endif
+
+#ifdef HAVE_EXECINFO_H
+#include <execinfo.h>
+#endif
+
 #ifdef HAVE_LIBEXC_H
 #include <libexc.h>
 #endif
 
 void log_stack_trace(void)
 {
-#ifdef HAVE_BACKTRACE_SYMBOLS
+#ifdef HAVE_LIBUNWIND
+	/* Try to use libunwind before any other technique since on ia64
+	 * libunwind correctly walks the stack in more circumstances than
+	 * backtrace.
+	 */ 
+	unw_cursor_t cursor;
+	unw_context_t uc;
+	unsigned i = 0;
+
+	char procname[256];
+	unw_word_t ip, sp, off;
+
+	procname[sizeof(procname) - 1] = '\0';
+
+	if (unw_getcontext(&uc) != 0) {
+		goto libunwind_failed;
+	}
+
+	if (unw_init_local(&cursor, &uc) != 0) {
+		goto libunwind_failed;
+	}
+
+	DEBUG(0, ("BACKTRACE:\n"));
+
+	do {
+	    ip = sp = 0;
+	    unw_get_reg(&cursor, UNW_REG_IP, &ip);
+	    unw_get_reg(&cursor, UNW_REG_SP, &sp);
+
+	    switch (unw_get_proc_name(&cursor,
+			procname, sizeof(procname) - 1, &off) ) {
+	    case 0:
+		    /* Name found. */
+	    case -UNW_ENOMEM:
+		    /* Name truncated. */
+		    DEBUGADD(0, (" #%u %s + %#llx [ip=%#llx] [sp=%#llx]\n",
+			    i, procname, (long long)off,
+			    (long long)ip, (long long) sp));
+		    break;
+	    default:
+	    /* case -UNW_ENOINFO: */
+	    /* case -UNW_EUNSPEC: */
+		    /* No symbol name found. */
+		    DEBUGADD(0, (" #%u %s [ip=%#llx] [sp=%#llx]\n",
+			    i, "<unknown symbol>",
+			    (long long)ip, (long long) sp));
+	    }
+	    ++i;
+	} while (unw_step(&cursor) > 0);
+
+	return;
+
+libunwind_failed:
+	DEBUG(0, ("unable to produce a stack trace with libunwind\n"));
+
+#elif HAVE_BACKTRACE_SYMBOLS
 	void *backtrace_stack[BACKTRACE_STACK_SIZE];
 	size_t backtrace_size;
 	char **backtrace_strings;
@@ -1649,39 +1713,38 @@ void log_stack_trace(void)
 	 * libexc(3) for details. Apparantly trace_back_stack leaks memory, but
 	 * since we are about to abort anyway, it hardly matters.
 	 */
-	{
 
 #define NAMESIZE 32 /* Arbitrary */
 
-		__uint64_t	addrs[BACKTRACE_STACK_SIZE];
-		char *      	names[BACKTRACE_STACK_SIZE];
-		char		namebuf[BACKTRACE_STACK_SIZE * NAMESIZE];
+	__uint64_t	addrs[BACKTRACE_STACK_SIZE];
+	char *      	names[BACKTRACE_STACK_SIZE];
+	char		namebuf[BACKTRACE_STACK_SIZE * NAMESIZE];
 
-		int		i;
-		int		levels;
+	int		i;
+	int		levels;
 
-		ZERO_ARRAY(addrs);
-		ZERO_ARRAY(names);
-		ZERO_ARRAY(namebuf);
+	ZERO_ARRAY(addrs);
+	ZERO_ARRAY(names);
+	ZERO_ARRAY(namebuf);
 
-		/* We need to be root so we can open our /proc entry to walk
-		 * our stack. It also helps when we want to dump core.
-		 */
-		become_root();
+	/* We need to be root so we can open our /proc entry to walk
+	 * our stack. It also helps when we want to dump core.
+	 */
+	become_root();
 
-		for (i = 0; i < BACKTRACE_STACK_SIZE; i++) {
-			names[i] = namebuf + (i * NAMESIZE);
-		}
+	for (i = 0; i < BACKTRACE_STACK_SIZE; i++) {
+		names[i] = namebuf + (i * NAMESIZE);
+	}
 
-		levels = trace_back_stack(0, addrs, names,
-				BACKTRACE_STACK_SIZE, NAMESIZE - 1);
+	levels = trace_back_stack(0, addrs, names,
+			BACKTRACE_STACK_SIZE, NAMESIZE - 1);
 
-		DEBUG(0, ("BACKTRACE: %d stack frames:\n", levels));
-		for (i = 0; i < levels; i++) {
-			DEBUGADD(0, (" #%d 0x%llx %s\n", i, addrs[i], names[i]));
-		}
-     }
+	DEBUG(0, ("BACKTRACE: %d stack frames:\n", levels));
+	for (i = 0; i < levels; i++) {
+		DEBUGADD(0, (" #%d 0x%llx %s\n", i, addrs[i], names[i]));
+	}
 #undef NAMESIZE
+
 #else
 	DEBUG(0, ("unable to produce a stack trace on this platform\n"));
 #endif
