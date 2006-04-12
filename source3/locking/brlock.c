@@ -55,13 +55,6 @@ struct lock_struct {
 	enum brl_flavour lock_flav;
 };
 
-/* The key used in the brlock database. */
-
-struct lock_key {
-	SMB_DEV_T device;
-	SMB_INO_T inode;
-};
-
 /* The open brlock.tdb database. */
 
 static TDB_CONTEXT *tdb;
@@ -84,23 +77,6 @@ static void print_lock_struct(unsigned int i, struct lock_struct *pls)
 		pls->fnum,
 		lock_type_name(pls->lock_type),
 		lock_flav_name(pls->lock_flav) ));
-}
-
-/****************************************************************************
- Create a locking key - ensuring zero filled for pad purposes.
-****************************************************************************/
-
-static TDB_DATA locking_key(SMB_DEV_T dev, SMB_INO_T inode)
-{
-        static struct lock_key key;
-        TDB_DATA kbuf;
-
-        memset(&key, '\0', sizeof(key));
-        key.device = dev;
-        key.inode = inode;
-        kbuf.dptr = (char *)&key;
-        kbuf.dsize = sizeof(key);
-        return kbuf;
 }
 
 /****************************************************************************
@@ -1332,7 +1308,10 @@ static int byte_range_lock_destructor(void *p)
 {
 	struct byte_range_lock *br_lck =
 		talloc_get_type_abort(p, struct byte_range_lock);
-	TDB_DATA key = locking_key(br_lck->fsp->dev, br_lck->fsp->inode);
+	TDB_DATA key;
+
+	key.dptr = (char *)&br_lck->key;
+	key.dsize = sizeof(struct lock_key);
 
 	if (!br_lck->modified) {
 		goto done;
@@ -1355,8 +1334,8 @@ static int byte_range_lock_destructor(void *p)
 
  done:
 
-	SAFE_FREE(br_lck->lock_data);
 	tdb_chainunlock(tdb, key);
+	SAFE_FREE(br_lck->lock_data);
 	return 0;
 }
 
@@ -1368,11 +1347,10 @@ static int byte_range_lock_destructor(void *p)
 struct byte_range_lock *brl_get_locks(TALLOC_CTX *mem_ctx,
 					files_struct *fsp)
 {
-	TDB_DATA key = locking_key(fsp->dev, fsp->inode);
+	TDB_DATA key;
 	TDB_DATA data;
-	struct byte_range_lock *br_lck;
+	struct byte_range_lock *br_lck = TALLOC_P(mem_ctx, struct byte_range_lock);
 
-	br_lck = TALLOC_P(mem_ctx, struct byte_range_lock);
 	if (br_lck == NULL) {
 		return NULL;
 	}
@@ -1380,6 +1358,12 @@ struct byte_range_lock *brl_get_locks(TALLOC_CTX *mem_ctx,
 	br_lck->fsp = fsp;
 	br_lck->num_locks = 0;
 	br_lck->modified = False;
+	memset(&br_lck->key, '\0', sizeof(struct lock_key));
+	br_lck->key.device = fsp->dev;
+	br_lck->key.inode = fsp->inode;
+
+	key.dptr = (char *)&br_lck->key;
+	key.dsize = sizeof(struct lock_key);
 
 	if (tdb_chainlock(tdb, key) != 0) {
 		DEBUG(3, ("Could not lock byte range lock entry\n"));
