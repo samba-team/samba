@@ -50,8 +50,8 @@ krb5_rd_priv(krb5_context context,
     krb5_keyblock *key;
     krb5_crypto crypto;
 
-    if (outdata)
-	krb5_data_zero(outdata);
+    if (outbuf)
+	krb5_data_zero(outbuf);
 
     if ((auth_context->flags & 
 	 (KRB5_AUTH_CONTEXT_RET_TIME | KRB5_AUTH_CONTEXT_RET_SEQUENCE)) &&
@@ -161,7 +161,7 @@ krb5_rd_priv(krb5_context context,
 	 (KRB5_AUTH_CONTEXT_RET_TIME | KRB5_AUTH_CONTEXT_RET_SEQUENCE))) {
 	/* if these fields are not present in the priv-part, silently
            return zero */
-	krb5_data_zero(outdata);
+	memset(outdata, 0, sizeof(*outdata));
 	if(part.timestamp)
 	    outdata->timestamp = *part.timestamp;
 	if(part.usec)
