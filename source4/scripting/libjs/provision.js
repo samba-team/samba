@@ -308,6 +308,7 @@ function setup_name_mappings(info, subobj, session_info, credentials)
 	setup_name_mapping(info, ldb, "S-1-5-18", subobj.ROOT);
 	setup_name_mapping(info, ldb, "S-1-5-11", subobj.USERS);
 	setup_name_mapping(info, ldb, "S-1-5-32-544", subobj.WHEEL);
+	setup_name_mapping(info, ldb, "S-1-5-32-545", subobj.USERS);
 	setup_name_mapping(info, ldb, "S-1-5-32-546", subobj.NOGROUP);
 	setup_name_mapping(info, ldb, "S-1-5-32-551", subobj.BACKUP);
 
