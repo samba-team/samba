@@ -52,6 +52,8 @@ static void pvfs_translate_generic_bits(struct security_acl *acl)
 {
 	unsigned i;
 
+	if (!acl) return;
+
 	for (i=0;i<acl->num_aces;i++) {
 		struct security_ace *ace = &acl->aces[i];
 		ace->access_mask = pvfs_translate_mask(ace->access_mask);
@@ -236,6 +238,9 @@ NTSTATUS pvfs_acl_set(struct pvfs_state *pvfs,
 	}
 	if ((secinfo_flags & SECINFO_GROUP) &&
 	    !dom_sid_equal(sd->group_sid, new_sd->group_sid)) {
+		if (!(access_mask & SEC_STD_WRITE_OWNER)) {
+			return NT_STATUS_ACCESS_DENIED;
+		}
 		sd->group_sid = new_sd->group_sid;
 		status = sidmap_sid_to_unixgid(pvfs->sidmap, sd->owner_sid, &gid);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -243,14 +248,17 @@ NTSTATUS pvfs_acl_set(struct pvfs_state *pvfs,
 		}
 	}
 	if (secinfo_flags & SECINFO_DACL) {
+		if (!(access_mask & SEC_STD_WRITE_DAC)) {
+			return NT_STATUS_ACCESS_DENIED;
+		}
 		sd->dacl = new_sd->dacl;
 		pvfs_translate_generic_bits(sd->dacl);
 	}
 	if (secinfo_flags & SECINFO_SACL) {
-		sd->sacl = new_sd->sacl;
 		if (!(access_mask & SEC_FLAG_SYSTEM_SECURITY)) {
 			return NT_STATUS_ACCESS_DENIED;
 		}
+		sd->sacl = new_sd->sacl;
 		pvfs_translate_generic_bits(sd->sacl);
 	}
 
