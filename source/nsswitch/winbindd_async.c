@@ -795,7 +795,8 @@ enum winbindd_result winbindd_dual_lookuprids(struct winbindd_domain *domain,
 					      struct winbindd_cli_state *state)
 {
 	uint32 *rids = NULL;
-	size_t i, len, buflen, num_rids = 0;
+	size_t i, buflen, num_rids = 0;
+	ssize_t len;
 	DOM_SID domain_sid;
 	char *domain_name;
 	char **names;
