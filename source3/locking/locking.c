@@ -100,7 +100,7 @@ BOOL is_locked(files_struct *fsp,
 			DEBUG(10,("is_locked: optimisation - level II oplock on file %s\n", fsp->fsp_name ));
 			ret = False;
 		} else {
-			struct byte_range_lock *br_lck = brl_get_locks(NULL, fsp);
+			struct byte_range_lock *br_lck = brl_get_locks(fsp);
 			if (!br_lck) {
 				return False;
 			}
@@ -111,10 +111,10 @@ BOOL is_locked(files_struct *fsp,
 					count,
 					lock_type,
 					lock_flav);
-			TALLOC_FREE(br_lck);
+			byte_range_lock_destructor(br_lck);
 		}
 	} else {
-		struct byte_range_lock *br_lck = brl_get_locks(NULL, fsp);
+		struct byte_range_lock *br_lck = brl_get_locks(fsp);
 		if (!br_lck) {
 			return False;
 		}
@@ -125,7 +125,7 @@ BOOL is_locked(files_struct *fsp,
 				count,
 				lock_type,
 				lock_flav);
-		TALLOC_FREE(br_lck);
+		byte_range_lock_destructor(br_lck);
 	}
 
 	DEBUG(10,("is_locked: flavour = %s brl start=%.0f len=%.0f %s for fnum %d file %s\n",
@@ -158,7 +158,7 @@ NTSTATUS query_lock(files_struct *fsp,
 		return NT_STATUS_OK;
 	}
 
-	br_lck = brl_get_locks(NULL, fsp);
+	br_lck = brl_get_locks(fsp);
 	if (!br_lck) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -171,7 +171,7 @@ NTSTATUS query_lock(files_struct *fsp,
 			plock_type,
 			lock_flav);
 
-	TALLOC_FREE(br_lck);
+	byte_range_lock_destructor(br_lck);
 	return status;
 }
 
@@ -204,7 +204,7 @@ NTSTATUS do_lock(files_struct *fsp,
 		lock_flav_name(lock_flav), lock_type_name(lock_type),
 		(double)offset, (double)count, fsp->fnum, fsp->fsp_name ));
 
-	br_lck = brl_get_locks(NULL, fsp);
+	br_lck = brl_get_locks(fsp);
 	if (!br_lck) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -218,7 +218,7 @@ NTSTATUS do_lock(files_struct *fsp,
 			lock_flav,
 			my_lock_ctx);
 
-	TALLOC_FREE(br_lck);
+	byte_range_lock_destructor(br_lck);
 	return status;
 }
 
@@ -305,7 +305,7 @@ NTSTATUS do_unlock(files_struct *fsp,
 	DEBUG(10,("do_unlock: unlock start=%.0f len=%.0f requested for fnum %d file %s\n",
 		  (double)offset, (double)count, fsp->fnum, fsp->fsp_name ));
 
-	br_lck = brl_get_locks(NULL, fsp);
+	br_lck = brl_get_locks(fsp);
 	if (!br_lck) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -317,7 +317,7 @@ NTSTATUS do_unlock(files_struct *fsp,
 			count,
 			lock_flav);
    
-	TALLOC_FREE(br_lck);
+	byte_range_lock_destructor(br_lck);
 
 	if (!ok) {
 		DEBUG(10,("do_unlock: returning ERRlock.\n" ));
@@ -343,10 +343,10 @@ void locking_close_file(files_struct *fsp)
 	 * Just release all the brl locks, no need to release individually.
 	 */
 
-	br_lck = brl_get_locks(NULL,fsp);
+	br_lck = brl_get_locks(fsp);
 	if (br_lck) {
 		brl_close_fnum(br_lck, pid);
-		TALLOC_FREE(br_lck);
+		byte_range_lock_destructor(br_lck);
 	}
 
 	if(lp_posix_locking(SNUM(fsp->conn))) {

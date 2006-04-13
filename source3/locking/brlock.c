@@ -1304,10 +1304,8 @@ int brl_forall(BRLOCK_FN(fn))
  Unlock the record.
 ********************************************************************/
 
-static int byte_range_lock_destructor(void *p)
+int byte_range_lock_destructor(struct byte_range_lock *br_lck)
 {
-	struct byte_range_lock *br_lck =
-		talloc_get_type_abort(p, struct byte_range_lock);
 	TDB_DATA key;
 
 	key.dptr = (char *)&br_lck->key;
@@ -1336,6 +1334,7 @@ static int byte_range_lock_destructor(void *p)
 
 	tdb_chainunlock(tdb, key);
 	SAFE_FREE(br_lck->lock_data);
+	SAFE_FREE(br_lck);
 	return 0;
 }
 
@@ -1344,12 +1343,11 @@ static int byte_range_lock_destructor(void *p)
  Leave the record locked.
 ********************************************************************/
 
-struct byte_range_lock *brl_get_locks(TALLOC_CTX *mem_ctx,
-					files_struct *fsp)
+struct byte_range_lock *brl_get_locks(files_struct *fsp)
 {
 	TDB_DATA key;
 	TDB_DATA data;
-	struct byte_range_lock *br_lck = TALLOC_P(mem_ctx, struct byte_range_lock);
+	struct byte_range_lock *br_lck = SMB_MALLOC_P(struct byte_range_lock);
 
 	if (br_lck == NULL) {
 		return NULL;
@@ -1367,11 +1365,9 @@ struct byte_range_lock *brl_get_locks(TALLOC_CTX *mem_ctx,
 
 	if (tdb_chainlock(tdb, key) != 0) {
 		DEBUG(3, ("Could not lock byte range lock entry\n"));
-		TALLOC_FREE(br_lck);
+		SAFE_FREE(br_lck);
 		return NULL;
 	}
-
-	talloc_set_destructor(br_lck, byte_range_lock_destructor);
 
 	data = tdb_fetch(tdb, key);
 	br_lck->lock_data = (void *)data.dptr;
