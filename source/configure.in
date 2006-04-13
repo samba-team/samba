@@ -2472,9 +2472,6 @@ main() {
 if test x"$samba_cv_HAVE_POSIX_CAPABILITIES" = x"yes"; then
     AC_DEFINE(HAVE_POSIX_CAPABILITIES, 1,
 	    [Whether POSIX capabilities are available])
-    LIBS=$ac_save_LIBS
-    CAP_LIBS="-lcap"
-    AC_SUBST(CAP_LIBS)
 else
     LIBS=$ac_save_LIBS
 fi
@@ -5389,7 +5386,7 @@ AC_MSG_CHECKING(whether to use included iniparser)
 if test x"$INCLUDED_INIPARSER" = x"yes"; then
     AC_MSG_RESULT(yes)
     BUILD_INIPARSER='$(INIPARSER_OBJ)'
-	INIPARSERLIBS='$(INIPARSER_OBJ)'
+	INIPARSERLIBS=""
     FLAGS1="$FLAGS1 -I$srcdir/iniparser/src"
 else
     AC_MSG_RESULT(no)
