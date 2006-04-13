@@ -157,7 +157,6 @@ typedef struct winbindd_gr {
 	gid_t gr_gid;
 	uint32 num_gr_mem;
 	uint32 gr_mem_ofs;   /* offset to group membership */
-	char **gr_mem;
 } WINBINDD_GR;
 
 
@@ -331,17 +330,17 @@ struct winbindd_response {
 				uint16 min_length_password;
 				uint16 password_history;
 				uint32 password_properties;
-				time_t expire;
-				time_t min_passwordage;
+				uint32 expire;
+				uint32 min_passwordage;
 			} policy;
 			uint32 reject_reason;
 			struct info3_text {
-				time_t logon_time;
-				time_t logoff_time;
-				time_t kickoff_time;
-				time_t pass_last_set_time;
-				time_t pass_can_change_time;
-				time_t pass_must_change_time;
+				uint32 logon_time;
+				uint32 logoff_time;
+				uint32 kickoff_time;
+				uint32 pass_last_set_time;
+				uint32 pass_can_change_time;
+				uint32 pass_must_change_time;
 				uint16 logon_count;
 				uint16 bad_pw_count;
 				uint32 user_rid;
