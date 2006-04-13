@@ -1513,6 +1513,214 @@ done:
 	return ret;
 }
 
+#define CHECK_STATUS_FOR_BIT_ACTION(status, bits, action) do { \
+	if (!(bits & desired_64)) {\
+		CHECK_STATUS(status, NT_STATUS_ACCESS_DENIED); \
+		action; \
+	} else { \
+		CHECK_STATUS(status, NT_STATUS_OK); \
+	} \
+} while (0)
+
+#define CHECK_STATUS_FOR_BIT(status, bits, access) do { \
+	if (NT_STATUS_IS_OK(status)) { \
+		if (!(granted & access)) {\
+			printf("(%s) %s but flags 0x%08X are not granted! granted[0x%08X] desired[0x%08X]\n", \
+			       __location__, nt_errstr(status), access, granted, desired); \
+			ret = False; \
+			goto done; \
+		} \
+	} else { \
+		if (granted & access) {\
+			printf("(%s) %s but flags 0x%08X are granted! granted[0x%08X] desired[0x%08X]\n", \
+			       __location__, nt_errstr(status), access, granted, desired); \
+			ret = False; \
+			goto done; \
+		} \
+	} \
+	CHECK_STATUS_FOR_BIT_ACTION(status, bits, do {} while (0)); \
+} while (0)
+
+/* test what access mask is needed for getting and setting security_descriptors */
+static BOOL test_sd_get_set(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+{
+	NTSTATUS status;
+	BOOL ret = True;
+	union smb_open io;
+	union smb_fileinfo fi;
+	union smb_setfileinfo si;
+	struct security_descriptor *sd;
+	struct security_descriptor *sd_owner = NULL;
+	struct security_descriptor *sd_group = NULL;
+	struct security_descriptor *sd_dacl = NULL;
+	struct security_descriptor *sd_sacl = NULL;
+	int fnum;
+	const char *fname = BASEDIR "\\sd_get_set.txt";
+	uint64_t desired_64;
+	uint32_t desired = 0, granted;
+	int i = 0;
+	uint64_t open_bits =
+		SEC_MASK_GENERIC |
+		SEC_FLAG_SYSTEM_SECURITY |
+		SEC_FLAG_MAXIMUM_ALLOWED |
+		SEC_STD_ALL |
+		SEC_FILE_ALL;
+	uint64_t get_owner_bits = SEC_MASK_GENERIC | SEC_FLAG_MAXIMUM_ALLOWED | SEC_STD_READ_CONTROL;
+	uint64_t set_owner_bits = SEC_GENERIC_ALL  | SEC_FLAG_MAXIMUM_ALLOWED | SEC_STD_WRITE_OWNER;
+	uint64_t get_group_bits = SEC_MASK_GENERIC | SEC_FLAG_MAXIMUM_ALLOWED | SEC_STD_READ_CONTROL;
+	uint64_t set_group_bits = SEC_GENERIC_ALL  | SEC_FLAG_MAXIMUM_ALLOWED | SEC_STD_WRITE_OWNER;
+	uint64_t get_dacl_bits  = SEC_MASK_GENERIC | SEC_FLAG_MAXIMUM_ALLOWED | SEC_STD_READ_CONTROL;
+	uint64_t set_dacl_bits  = SEC_GENERIC_ALL  | SEC_FLAG_MAXIMUM_ALLOWED | SEC_STD_WRITE_DAC;
+	uint64_t get_sacl_bits  = SEC_FLAG_SYSTEM_SECURITY;
+	uint64_t set_sacl_bits  = SEC_FLAG_SYSTEM_SECURITY;
+
+	printf("TESTING ACCESS MASKS FOR SD GET/SET\n");
+
+	/* first create a file with full access for everyone */
+	sd = security_descriptor_create(mem_ctx,
+					SID_NT_ANONYMOUS, SID_BUILTIN_USERS,
+					SID_WORLD,
+					SEC_ACE_TYPE_ACCESS_ALLOWED,
+					SEC_GENERIC_ALL,
+					0,
+					NULL);
+	sd->type |= SEC_DESC_SACL_PRESENT;
+	sd->sacl = NULL;
+	io.ntcreatex.level = RAW_OPEN_NTTRANS_CREATE;
+	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.flags = 0;
+	io.ntcreatex.in.access_mask = SEC_GENERIC_ALL;
+	io.ntcreatex.in.create_options = 0;
+	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
+	io.ntcreatex.in.share_access = NTCREATEX_SHARE_ACCESS_READ | NTCREATEX_SHARE_ACCESS_WRITE;
+	io.ntcreatex.in.alloc_size = 0;
+	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_OVERWRITE_IF;
+	io.ntcreatex.in.impersonation = NTCREATEX_IMPERSONATION_ANONYMOUS;
+	io.ntcreatex.in.security_flags = 0;
+	io.ntcreatex.in.fname = fname;
+	io.ntcreatex.in.sec_desc = sd;
+	io.ntcreatex.in.ea_list = NULL;
+	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	fnum = io.ntcreatex.out.file.fnum;
+
+	status = smbcli_close(cli->tree, fnum);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	/* 
+	 * now try each access_mask bit and no bit at all in a loop
+	 * and see what's allowed
+	 * NOTE: if i == 32 it means access_mask = 0
+	 */
+	for (i=0; i <= 32; i++) {
+		desired_64 = 1 << i;
+		desired = (uint32_t)desired_64;
+
+		/* first open the file with the desired access */
+		io.ntcreatex.level = RAW_OPEN_NTCREATEX;
+		io.ntcreatex.in.access_mask = desired;
+		io.ntcreatex.in.open_disposition = NTCREATEX_DISP_OPEN;
+		status = smb_raw_open(cli->tree, mem_ctx, &io);
+		CHECK_STATUS_FOR_BIT_ACTION(status, open_bits, goto next);
+		fnum = io.ntcreatex.out.file.fnum;
+
+		/* then check what access was granted */
+		fi.access_information.level		= RAW_FILEINFO_ACCESS_INFORMATION;
+		fi.access_information.in.file.fnum	= fnum;
+		status = smb_raw_fileinfo(cli->tree, mem_ctx, &fi);
+		CHECK_STATUS(status, NT_STATUS_OK);
+		granted = fi.access_information.out.access_flags;
+
+		/* test the owner */
+		ZERO_STRUCT(fi);
+		fi.query_secdesc.level			= RAW_FILEINFO_SEC_DESC;
+		fi.query_secdesc.in.file.fnum		= fnum;
+		fi.query_secdesc.in.secinfo_flags	= SECINFO_OWNER;
+		status = smb_raw_fileinfo(cli->tree, mem_ctx, &fi);
+		CHECK_STATUS_FOR_BIT(status, get_owner_bits, SEC_STD_READ_CONTROL);
+		if (fi.query_secdesc.out.sd) {
+			sd_owner = fi.query_secdesc.out.sd;
+		} else if (!sd_owner) {
+			sd_owner = sd;
+		}
+		si.set_secdesc.level			= RAW_SFILEINFO_SEC_DESC;
+		si.set_secdesc.in.file.fnum		= fnum;
+		si.set_secdesc.in.secinfo_flags		= SECINFO_OWNER;
+		si.set_secdesc.in.sd			= sd_owner;
+		status = smb_raw_setfileinfo(cli->tree, &si);
+		CHECK_STATUS_FOR_BIT(status, set_owner_bits, SEC_STD_WRITE_OWNER);
+
+		/* test the group */
+		ZERO_STRUCT(fi);
+		fi.query_secdesc.level			= RAW_FILEINFO_SEC_DESC;
+		fi.query_secdesc.in.file.fnum		= fnum;
+		fi.query_secdesc.in.secinfo_flags	= SECINFO_GROUP;
+		status = smb_raw_fileinfo(cli->tree, mem_ctx, &fi);
+		CHECK_STATUS_FOR_BIT(status, get_group_bits, SEC_STD_READ_CONTROL);
+		if (fi.query_secdesc.out.sd) {
+			sd_group = fi.query_secdesc.out.sd;
+		} else if (!sd_group) {
+			sd_group = sd;
+		}
+		si.set_secdesc.level			= RAW_SFILEINFO_SEC_DESC;
+		si.set_secdesc.in.file.fnum		= fnum;
+		si.set_secdesc.in.secinfo_flags		= SECINFO_GROUP;
+		si.set_secdesc.in.sd			= sd_group;
+		status = smb_raw_setfileinfo(cli->tree, &si);
+		CHECK_STATUS_FOR_BIT(status, set_group_bits, SEC_STD_WRITE_OWNER);
+
+		/* test the DACL */
+		ZERO_STRUCT(fi);
+		fi.query_secdesc.level			= RAW_FILEINFO_SEC_DESC;
+		fi.query_secdesc.in.file.fnum		= fnum;
+		fi.query_secdesc.in.secinfo_flags	= SECINFO_DACL;
+		status = smb_raw_fileinfo(cli->tree, mem_ctx, &fi);
+		CHECK_STATUS_FOR_BIT(status, get_dacl_bits, SEC_STD_READ_CONTROL);
+		if (fi.query_secdesc.out.sd) {
+			sd_dacl = fi.query_secdesc.out.sd;
+		} else if (!sd_dacl) {
+			sd_dacl = sd;
+		}
+		si.set_secdesc.level			= RAW_SFILEINFO_SEC_DESC;
+		si.set_secdesc.in.file.fnum		= fnum;
+		si.set_secdesc.in.secinfo_flags		= SECINFO_DACL;
+		si.set_secdesc.in.sd			= sd_dacl;
+		status = smb_raw_setfileinfo(cli->tree, &si);
+		CHECK_STATUS_FOR_BIT(status, set_dacl_bits, SEC_STD_WRITE_DAC);
+
+		/* test the SACL */
+		ZERO_STRUCT(fi);
+		fi.query_secdesc.level			= RAW_FILEINFO_SEC_DESC;
+		fi.query_secdesc.in.file.fnum		= fnum;
+		fi.query_secdesc.in.secinfo_flags	= SECINFO_SACL;
+		status = smb_raw_fileinfo(cli->tree, mem_ctx, &fi);
+		CHECK_STATUS_FOR_BIT(status, get_sacl_bits, SEC_FLAG_SYSTEM_SECURITY);
+		if (fi.query_secdesc.out.sd) {
+			sd_sacl = fi.query_secdesc.out.sd;
+		} else if (!sd_sacl) {
+			sd_sacl = sd;
+		}
+		si.set_secdesc.level			= RAW_SFILEINFO_SEC_DESC;
+		si.set_secdesc.in.file.fnum		= fnum;
+		si.set_secdesc.in.secinfo_flags		= SECINFO_SACL;
+		si.set_secdesc.in.sd			= sd_sacl;
+		status = smb_raw_setfileinfo(cli->tree, &si);
+		CHECK_STATUS_FOR_BIT(status, set_sacl_bits, SEC_FLAG_SYSTEM_SECURITY);
+
+		/* close the handle */
+		status = smbcli_close(cli->tree, fnum);
+		CHECK_STATUS(status, NT_STATUS_OK);
+next:
+		continue;
+	}
+
+done:
+	smbcli_close(cli->tree, fnum);
+	smbcli_unlink(cli->tree, fname);
+
+	return ret;
+}
+
 
 /* 
    basic testing of security descriptor calls
@@ -1540,6 +1748,7 @@ BOOL torture_raw_acls(struct torture_context *torture)
 	ret &= test_owner_bits(cli, mem_ctx);
 	ret &= test_inheritance(cli, mem_ctx);
 	ret &= test_inheritance_dynamic(cli, mem_ctx);
+	ret &= test_sd_get_set(cli, mem_ctx);
 
 	smb_raw_exit(cli->session);
 	smbcli_deltree(cli->tree, BASEDIR);
