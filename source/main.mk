@@ -311,15 +311,15 @@ unused_macros:
 
 .c.ho:
 	@echo "Compiling $< with host compiler"
-	@$(HOSTCC) `$(srcdir)/script/cflags.pl $@` $(CFLAGS) -c $< -o $@
+	@$(HOSTCC) `$(PERL) $(srcdir)/script/cflags.pl $@` $(CFLAGS) -c $< -o $@
 
 .c.d:
 	@echo "Generating dependencies for $<"
-	@$(CC) -M -MG -MP -MT $(<:.c=.o) `$(srcdir)/script/cflags.pl $@` $(CFLAGS) $< -o $@
+	@$(CC) -M -MG -MP -MT $(<:.c=.o) `$(PERL) $(srcdir)/script/cflags.pl $@` $(CFLAGS) $< -o $@
 
 .c.hd:
 	@echo "Generating dependencies for $<"
-	@$(CC) -M -MG -MP -MT $(<:.c=.ho) `$(srcdir)/script/cflags.pl $@` $(CFLAGS) $< -o $@
+	@$(CC) -M -MG -MP -MT $(<:.c=.ho) `$(PERL) $(srcdir)/script/cflags.pl $@` $(CFLAGS) $< -o $@
 
 include/includes.d: include/includes.h
 	@echo "Generating dependencies for $<"
@@ -328,14 +328,14 @@ include/includes.d: include/includes.h
 .c.o:
 	@if test -n "$(CC_CHECKER)"; then \
 		echo "Checking  $< with '$(CC_CHECKER)'"; \
-		$(CC_CHECKER) `$(srcdir)/script/cflags.pl $@` $(CFLAGS) $(PICFLAG) -c $< -o $@; \
+		$(CC_CHECKER) `$(PERL) $(srcdir)/script/cflags.pl $@` $(CFLAGS) $(PICFLAG) -c $< -o $@; \
 	fi
 	@echo "Compiling $<"
-	@$(CC) `$(srcdir)/script/cflags.pl $@` $(CFLAGS) $(PICFLAG) -c $< -o $@
+	@$(CC) `$(PERL) $(srcdir)/script/cflags.pl $@` $(CFLAGS) $(PICFLAG) -c $< -o $@
 
 .h.h.gch:
 	@echo "Precompiling $<"
-	@$(CC) `$(srcdir)/script/cflags.pl $@` $(CFLAGS) $(PICFLAG) -c $< -o $@
+	@$(CC) `$(PERL) $(srcdir)/script/cflags.pl $@` $(CFLAGS) $(PICFLAG) -c $< -o $@
 
 .y.c:
 	@echo "Building $< with $(YACC)"
