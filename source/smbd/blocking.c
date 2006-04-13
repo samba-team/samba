@@ -121,7 +121,7 @@ BOOL push_blocking_lock_request( char *inbuf, int length,
 	memcpy(blr->inbuf, inbuf, length);
 	blr->length = length;
 
-	br_lck = brl_get_locks(NULL, blr->fsp);
+	br_lck = brl_get_locks(blr->fsp);
 	if (!br_lck) {
 		free_blocking_lock_record(blr);
 		return False;
@@ -136,7 +136,7 @@ BOOL push_blocking_lock_request( char *inbuf, int length,
 			PENDING_LOCK,
 			blr->lock_flav,
 			&my_lock_ctx);
-	TALLOC_FREE(br_lck);
+	byte_range_lock_destructor(br_lck);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("push_blocking_lock_request: failed to add PENDING_LOCK record.\n"));
@@ -625,7 +625,7 @@ void remove_pending_lock_requests_by_fid(files_struct *fsp)
 	for(blr = blocking_lock_queue; blr; blr = next) {
 		next = blr->next;
 		if(blr->fsp->fnum == fsp->fnum) {
-			struct byte_range_lock *br_lck = brl_get_locks(NULL, fsp);
+			struct byte_range_lock *br_lck = brl_get_locks(fsp);
 
 			if (br_lck) {
 				DEBUG(10,("remove_pending_lock_requests_by_fid - removing request type %d for \
@@ -637,7 +637,7 @@ file %s fnum = %d\n", blr->com_type, fsp->fsp_name, fsp->fnum ));
 					blr->offset,
 					blr->count,
 					blr->lock_flav);
-				TALLOC_FREE(br_lck);
+				byte_range_lock_destructor(br_lck);
 
 			}
 
@@ -658,7 +658,7 @@ void remove_pending_lock_requests_by_mid(int mid)
 		next = blr->next;
 		if(SVAL(blr->inbuf,smb_mid) == mid) {
 			files_struct *fsp = blr->fsp;
-			struct byte_range_lock *br_lck = brl_get_locks(NULL, fsp);
+			struct byte_range_lock *br_lck = brl_get_locks(fsp);
 
 			if (br_lck) {
 				DEBUG(10,("remove_pending_lock_requests_by_mid - removing request type %d for \
@@ -670,7 +670,7 @@ file %s fnum = %d\n", blr->com_type, fsp->fsp_name, fsp->fnum ));
 					blr->offset,
 					blr->count,
 					blr->lock_flav);
-				TALLOC_FREE(br_lck);
+				byte_range_lock_destructor(br_lck);
 			}
 
 			blocking_lock_reply_error(blr,NT_STATUS_FILE_LOCK_CONFLICT);
@@ -754,7 +754,7 @@ void process_blocking_lock_queue(time_t t)
 			fsp->fnum, fsp->fsp_name ));
 
 		if((blr->expire_time != -1) && (blr->expire_time <= t)) {
-			struct byte_range_lock *br_lck = brl_get_locks(NULL, fsp);
+			struct byte_range_lock *br_lck = brl_get_locks(fsp);
 
 			/*
 			 * Lock expired - throw away all previously
@@ -771,7 +771,7 @@ void process_blocking_lock_queue(time_t t)
 					blr->offset,
 					blr->count,
 					blr->lock_flav);
-				TALLOC_FREE(br_lck);
+				byte_range_lock_destructor(br_lck);
 			}
 
 			blocking_lock_reply_error(blr,NT_STATUS_FILE_LOCK_CONFLICT);
@@ -780,7 +780,7 @@ void process_blocking_lock_queue(time_t t)
 		}
 
 		if(!change_to_user(conn,vuid)) {
-			struct byte_range_lock *br_lck = brl_get_locks(NULL, fsp);
+			struct byte_range_lock *br_lck = brl_get_locks(fsp);
 
 			/*
 			 * Remove the entry and return an error to the client.
@@ -793,7 +793,7 @@ void process_blocking_lock_queue(time_t t)
 					blr->offset,
 					blr->count,
 					blr->lock_flav);
-				TALLOC_FREE(br_lck);
+				byte_range_lock_destructor(br_lck);
 			}
 
 			DEBUG(0,("process_blocking_lock_queue: Unable to become user vuid=%d.\n",
@@ -804,7 +804,7 @@ void process_blocking_lock_queue(time_t t)
 		}
 
 		if(!set_current_service(conn,SVAL(blr->inbuf,smb_flg),True)) {
-			struct byte_range_lock *br_lck = brl_get_locks(NULL, fsp);
+			struct byte_range_lock *br_lck = brl_get_locks(fsp);
 
 			/*
 			 * Remove the entry and return an error to the client.
@@ -817,7 +817,7 @@ void process_blocking_lock_queue(time_t t)
 					blr->offset,
 					blr->count,
 					blr->lock_flav);
-				TALLOC_FREE(br_lck);
+				byte_range_lock_destructor(br_lck);
 			}
 
 			DEBUG(0,("process_blocking_lock_queue: Unable to become service Error was %s.\n", strerror(errno) ));
@@ -834,7 +834,7 @@ void process_blocking_lock_queue(time_t t)
 		 */
 
 		if(blocking_lock_record_process(blr)) {
-			struct byte_range_lock *br_lck = brl_get_locks(NULL, fsp);
+			struct byte_range_lock *br_lck = brl_get_locks(fsp);
 
 			if (br_lck) {
 				brl_remove_pending_lock(br_lck,
@@ -843,7 +843,7 @@ void process_blocking_lock_queue(time_t t)
 					blr->offset,
 					blr->count,
 					blr->lock_flav);
-				TALLOC_FREE(br_lck);
+				byte_range_lock_destructor(br_lck);
 			}
 
 			free_blocking_lock_record(blr);
