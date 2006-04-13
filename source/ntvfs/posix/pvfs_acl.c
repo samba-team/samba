@@ -242,7 +242,7 @@ NTSTATUS pvfs_acl_set(struct pvfs_state *pvfs,
 			return NT_STATUS_ACCESS_DENIED;
 		}
 		sd->group_sid = new_sd->group_sid;
-		status = sidmap_sid_to_unixgid(pvfs->sidmap, sd->owner_sid, &gid);
+		status = sidmap_sid_to_unixgid(pvfs->sidmap, sd->group_sid, &gid);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
