@@ -143,7 +143,7 @@ static NTSTATUS pvfs_open_setup_eas_acl(struct pvfs_state *pvfs,
 	/* setup an initial sec_desc if requested */
 	if (io->ntcreatex.in.sec_desc) {
 		union smb_setfileinfo set;
-
+/* TODO: set the full ACL! */
 		set.set_secdesc.in.file.fnum = fnum;
 		set.set_secdesc.in.secinfo_flags = SECINFO_DACL;
 		set.set_secdesc.in.sd = io->ntcreatex.in.sec_desc;
