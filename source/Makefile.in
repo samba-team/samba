@@ -1054,10 +1054,6 @@ bin/sharesec@EXEEXT@: $(SHARESEC_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) @PIE_LDFLAGS@ -o $@ $(SHARESEC_OBJ) $(DYNEXP) $(LDFLAGS) $(LIBS) @POPTLIBS@ 
 
-bin/smbprint@EXEEXT@: $(SMBPRINT_OBJ) @BUILD_POPT@ bin/.dummy
-	@echo Linking $@
-	@$(CC) $(FLAGS) @PIE_LDFLAGS@ -o $@ $(SMBPRINT_OBJ) $(DYNEXP) $(LDFLAGS) $(LIBS) @POPTLIBS@ $(KRB5LIBS) $(LDAP_LIBS)
-
 bin/locktest@EXEEXT@: $(LOCKTEST_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) @PIE_LDFLAGS@ -o $@ $(LOCKTEST_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) $(KRB5LIBS) $(LDAP_LIBS)
