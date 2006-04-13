@@ -669,7 +669,10 @@ static BOOL test_generic_bits(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	io.generic.level = RAW_OPEN_NTCREATEX;
 	io.ntcreatex.in.root_fid = 0;
 	io.ntcreatex.in.flags = 0;
-	io.ntcreatex.in.access_mask = SEC_STD_READ_CONTROL | SEC_STD_WRITE_DAC;
+	io.ntcreatex.in.access_mask = 
+		SEC_STD_READ_CONTROL | 
+		SEC_STD_WRITE_DAC | 
+		SEC_STD_WRITE_OWNER;
 	io.ntcreatex.in.create_options = NTCREATEX_OPTIONS_DIRECTORY;
 	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_DIRECTORY;
 	io.ntcreatex.in.share_access = 
@@ -694,6 +697,23 @@ static BOOL test_generic_bits(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	owner_sid = dom_sid_string(mem_ctx, sd_orig->owner_sid);
 
+	status = smblsa_sid_check_privilege(cli, 
+					    owner_sid, 
+					    sec_privilege_name(SEC_PRIV_RESTORE));
+	has_restore_privilege = NT_STATUS_IS_OK(status);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("smblsa_sid_check_privilege - %s\n", nt_errstr(status));
+	}
+	printf("SEC_PRIV_RESTORE - %s\n", has_restore_privilege?"Yes":"No");
+
+	status = smblsa_sid_check_privilege(cli, 
+					    owner_sid, 
+					    sec_privilege_name(SEC_PRIV_TAKE_OWNERSHIP));
+	has_take_ownership_privilege = NT_STATUS_IS_OK(status);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("smblsa_sid_check_privilege - %s\n", nt_errstr(status));
+	}
+	printf("SEC_PRIV_TAKE_OWNERSHIP - %s\n", has_take_ownership_privilege?"Yes":"No");
 
 	for (i=0;i<ARRAY_SIZE(dir_mappings);i++) {
 		uint32_t expected_mask = 
@@ -701,11 +721,16 @@ static BOOL test_generic_bits(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 			SEC_STD_READ_CONTROL | 
 			SEC_FILE_READ_ATTRIBUTE |
 			SEC_STD_DELETE;
+		uint32_t expected_mask_anon = SEC_FILE_READ_ATTRIBUTE;
+
+		if (has_restore_privilege) {
+			expected_mask_anon |= SEC_STD_DELETE;
+		}
 
 		printf("testing generic bits 0x%08x\n", 
 		       file_mappings[i].gen_bits);
 		sd = security_descriptor_create(mem_ctx,
-						NULL, NULL,
+						owner_sid, NULL,
 						owner_sid,
 						SEC_ACE_TYPE_ACCESS_ALLOWED,
 						dir_mappings[i].gen_bits,
@@ -714,7 +739,7 @@ static BOOL test_generic_bits(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 		set.set_secdesc.level = RAW_SFILEINFO_SEC_DESC;
 		set.set_secdesc.in.file.fnum = fnum;
-		set.set_secdesc.in.secinfo_flags = SECINFO_DACL;
+		set.set_secdesc.in.secinfo_flags = SECINFO_DACL | SECINFO_OWNER;
 		set.set_secdesc.in.sd = sd;
 
 		status = smb_raw_setfileinfo(cli->tree, &set);
@@ -744,6 +769,54 @@ static BOOL test_generic_bits(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 		CHECK_STATUS(status, NT_STATUS_OK);
 		CHECK_ACCESS_FLAGS(io.ntcreatex.out.file.fnum, 
 				   expected_mask | dir_mappings[i].specific_bits);
+		smbcli_close(cli->tree, io.ntcreatex.out.file.fnum);
+
+		if (!has_take_ownership_privilege) {
+			continue;
+		}
+
+		printf("testing generic bits 0x%08x (anonymous)\n", 
+		       file_mappings[i].gen_bits);
+		sd = security_descriptor_create(mem_ctx,
+						SID_NT_ANONYMOUS, NULL,
+						owner_sid,
+						SEC_ACE_TYPE_ACCESS_ALLOWED,
+						file_mappings[i].gen_bits,
+						0,
+						NULL);
+
+		set.set_secdesc.level = RAW_SFILEINFO_SEC_DESC;
+		set.set_secdesc.in.file.fnum = fnum;
+		set.set_secdesc.in.secinfo_flags = SECINFO_DACL | SECINFO_OWNER;
+		set.set_secdesc.in.sd = sd;
+
+		status = smb_raw_setfileinfo(cli->tree, &set);
+		CHECK_STATUS(status, NT_STATUS_OK);
+
+		sd2 = security_descriptor_create(mem_ctx,
+						 SID_NT_ANONYMOUS, NULL,
+						 owner_sid,
+						 SEC_ACE_TYPE_ACCESS_ALLOWED,
+						 file_mappings[i].specific_bits,
+						 0,
+						 NULL);
+
+		status = smb_raw_fileinfo(cli->tree, mem_ctx, &q);
+		CHECK_STATUS(status, NT_STATUS_OK);
+		if (!security_descriptor_equal(q.query_secdesc.out.sd, sd2)) {
+			printf("%s: security descriptors don't match!\n", __location__);
+			printf("got:\n");
+			NDR_PRINT_DEBUG(security_descriptor, q.query_secdesc.out.sd);
+			printf("expected:\n");
+			NDR_PRINT_DEBUG(security_descriptor, sd2);
+			ret = False;
+		}
+
+		io.ntcreatex.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
+		status = smb_raw_open(cli->tree, mem_ctx, &io);
+		CHECK_STATUS(status, NT_STATUS_OK);
+		CHECK_ACCESS_FLAGS(io.ntcreatex.out.file.fnum, 
+				   expected_mask_anon | dir_mappings[i].specific_bits);
 		smbcli_close(cli->tree, io.ntcreatex.out.file.fnum);
 	}
 
@@ -892,7 +965,7 @@ static BOOL test_inheritance(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	int fnum, fnum2, i;
 	union smb_fileinfo q;
 	union smb_setfileinfo set;
-	struct security_descriptor *sd, *sd_orig, *sd_def;
+	struct security_descriptor *sd, *sd2, *sd_orig, *sd_def;
 	const char *owner_sid;
 	const struct dom_sid *creator_owner;
 	const struct {
@@ -1217,6 +1290,22 @@ static BOOL test_inheritance(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_STATUS(status, NT_STATUS_OK);
 	smbcli_close(cli->tree, fnum2);
 
+	sd2 = security_descriptor_create(mem_ctx,
+					 owner_sid, NULL,
+					 owner_sid,
+					 SEC_ACE_TYPE_ACCESS_ALLOWED,
+					 SEC_FILE_WRITE_DATA | SEC_STD_WRITE_DAC,
+					 0,
+					 NULL);
+	if (!security_descriptor_equal(q.query_secdesc.out.sd, sd2)) {
+		printf("%s: security descriptors don't match!\n", __location__);
+		printf("got:\n");
+		NDR_PRINT_DEBUG(security_descriptor, q.query_secdesc.out.sd);
+		printf("expected:\n");
+		NDR_PRINT_DEBUG(security_descriptor, sd2);
+		ret = False;
+	}
+
 	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_OPEN;
 	io.ntcreatex.in.access_mask = SEC_RIGHTS_FILE_ALL;
 	status = smb_raw_open(cli->tree, mem_ctx, &io);
@@ -1224,6 +1313,7 @@ static BOOL test_inheritance(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 		printf("failed: w2k3 ACL bug (allowed open when ACL should deny)\n");
 		ret = False;
 		fnum2 = io.ntcreatex.out.file.fnum;
+		CHECK_ACCESS_FLAGS(fnum2, SEC_RIGHTS_FILE_ALL);
 		smbcli_close(cli->tree, fnum2);
 	} else {
 		CHECK_STATUS(status, NT_STATUS_ACCESS_DENIED);
