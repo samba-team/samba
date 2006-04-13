@@ -445,7 +445,7 @@ static NTSTATUS sequence_number(struct winbindd_domain *domain, uint32 *seq)
 
 static NTSTATUS lockout_policy(struct winbindd_domain *domain,
 			       TALLOC_CTX *mem_ctx,
-			       SAM_UNK_INFO_12 *lockout_policy)
+			       SAM_UNK_INFO_12 *policy)
 {
 	/* actually we have that */
 	return NT_STATUS_NOT_IMPLEMENTED;
@@ -453,7 +453,7 @@ static NTSTATUS lockout_policy(struct winbindd_domain *domain,
 
 static NTSTATUS password_policy(struct winbindd_domain *domain,
 				TALLOC_CTX *mem_ctx,
-				SAM_UNK_INFO_1 *password_policy)
+				SAM_UNK_INFO_1 *policy)
 {
 	/* actually we have that */
 	return NT_STATUS_NOT_IMPLEMENTED;
