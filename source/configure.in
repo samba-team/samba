@@ -2472,6 +2472,9 @@ main() {
 if test x"$samba_cv_HAVE_POSIX_CAPABILITIES" = x"yes"; then
     AC_DEFINE(HAVE_POSIX_CAPABILITIES, 1,
 	    [Whether POSIX capabilities are available])
+    LIBS=$ac_save_LIBS
+    CAP_LIBS="-lcap"
+    AC_SUBST(CAP_LIBS)
 else
     LIBS=$ac_save_LIBS
 fi
