@@ -24,6 +24,12 @@
 #ifndef _WINBIND_NSS_CONFIG_H
 #define _WINBIND_NSS_CONFIG_H
 
+/* shutup the compiler warnings due to krb5.h on i
+   64-bit sles9 */
+#ifdef SIZEOF_LONG
+#undef SIZEOF_LONG
+#endif
+
 /* Include header files from data in config.h file */
 
 #ifndef NO_CONFIG_H

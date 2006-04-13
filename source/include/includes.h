@@ -21,6 +21,11 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+/* work around broken krb5.h on sles9 */
+#ifdef SIZEOF_LONG
+#undef SIZEOF_LONG
+#endif
+
 #ifndef NO_CONFIG_H /* for some tests */
 #include "config.h"
 #endif
