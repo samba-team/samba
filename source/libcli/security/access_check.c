@@ -92,7 +92,7 @@ NTSTATUS sec_access_check(const struct security_descriptor *sd,
 		if (security_token_has_privilege(token, SEC_PRIV_SECURITY)) {
 			bits_remaining &= ~SEC_FLAG_SYSTEM_SECURITY;
 		} else {
-			return NT_STATUS_ACCESS_DENIED;
+			return NT_STATUS_PRIVILEGE_NOT_HELD;
 		}
 	}
 
