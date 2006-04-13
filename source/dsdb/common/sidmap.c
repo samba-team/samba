@@ -264,7 +264,7 @@ _PUBLIC_ NTSTATUS sidmap_sid_to_unixgid(struct sidmap_context *sidmap,
 			DEBUG(0,("unixName '%s' for sid %s does not exist as a local group\n", 
 				 s, dom_sid_string(tmp_ctx, sid)));
 			talloc_free(tmp_ctx);
-			return NT_STATUS_NO_SUCH_USER;
+			return NT_STATUS_NO_SUCH_GROUP;
 		}
 		*gid = grp->gr_gid;
 		talloc_free(tmp_ctx);
@@ -278,7 +278,7 @@ _PUBLIC_ NTSTATUS sidmap_sid_to_unixgid(struct sidmap_context *sidmap,
 		if (!grp) {
 			DEBUG(0,("sAMAccountName '%s' for sid %s does not exist as a local group\n", s, dom_sid_string(tmp_ctx, sid)));
 			talloc_free(tmp_ctx);
-			return NT_STATUS_NO_SUCH_USER;
+			return NT_STATUS_NO_SUCH_GROUP;
 		}
 		*gid = grp->gr_gid;
 		talloc_free(tmp_ctx);
