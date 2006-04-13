@@ -156,6 +156,8 @@ GCOV=$self->{config}->{GCOV}
 
 DEFAULT_TEST_TARGET=$self->{config}->{DEFAULT_TEST_TARGET}
 
+# For BSD make
+.PATH: \$(VPATH)
 __EOD__
 );
 }
