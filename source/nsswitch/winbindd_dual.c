@@ -685,9 +685,10 @@ static BOOL fork_domain_child(struct winbindd_child *child)
 
 		GetTimeOfDay(&now);
 
-		tp = get_timed_events_timeout(&t, (time_t)-1);
+		tp = get_timed_events_timeout(&t);
 		if (tp) {
-			DEBUG(11,("select will use timeout of %d seconds\n", (int)tp->tv_sec));
+			DEBUG(11,("select will use timeout of %u.%u seconds\n",
+				(unsigned int)tp->tv_sec, (unsigned int)tp->tv_usec ));
 		}
 
 		/* Handle messages */
