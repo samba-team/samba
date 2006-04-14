@@ -1071,33 +1071,222 @@ _hx509_private_key_assign_rsa(hx509_private_key key, void *ptr)
 }
 
 
+struct hx509cipher {
+    const heim_oid *(*oid_func)(void);
+    const EVP_CIPHER *(*evp_func)(void);
+    int (*get_params)(hx509_context, const hx509_crypto,
+		      const heim_octet_string *, heim_octet_string *);
+    int (*set_params)(hx509_context, const heim_octet_string *, 
+		      hx509_crypto, heim_octet_string *);
+};
+
 struct hx509_crypto_data {
     char *name;
+    const struct hx509cipher *cipher;
     const EVP_CIPHER *c;
     heim_octet_string key;
     heim_oid oid;
+    void *param;
 };
 
-static const EVP_CIPHER *
+/*
+ *
+ */
+
+static const heim_oid *
+oid_private_rc2_40(void)
+{
+    return &private_rc2_40_oid;
+}
+
+
+/*
+ *
+ */
+
+static int
+CMSCBCParam_get(hx509_context context, const hx509_crypto crypto,
+		 const heim_octet_string *ivec, heim_octet_string *param)
+{
+    size_t size;
+    int ret;
+
+    assert(crypto->param == NULL);
+    if (ivec == NULL)
+	return 0;
+
+    ASN1_MALLOC_ENCODE(CMSCBCParameter, param->data, param->length,
+		       ivec, &size, ret);
+    if (ret == 0 && size != param->length)
+	_hx509_abort("Internal asn1 encoder failure");
+    return ret;
+}
+
+static int
+CMSCBCParam_set(hx509_context context, const heim_octet_string *param,
+		hx509_crypto crypto, heim_octet_string *ivec)
+{
+    if (ivec == NULL)
+	return 0;
+
+    return decode_CMSCBCParameter(param->data, param->length, ivec, NULL);
+}
+
+struct _RC2_params {
+    int maximum_effective_key;
+};
+
+static int
+CMSRC2CBCParam_get(hx509_context context, const hx509_crypto crypto,
+		   const heim_octet_string *ivec, heim_octet_string *param)
+{
+    CMSRC2CBCParameter rc2params;
+    const struct _RC2_params *p = crypto->param;
+    int maximum_effective_key = 128;
+    size_t size;
+    int ret;
+
+    memset(&rc2params, 0, sizeof(rc2params));
+
+    if (p)
+	maximum_effective_key = p->maximum_effective_key;
+
+    switch(maximum_effective_key) {
+    case 40:
+	rc2params.rc2ParameterVersion = 160;
+	break;
+    case 64:
+	rc2params.rc2ParameterVersion = 120;
+	break;
+    case 128:
+	rc2params.rc2ParameterVersion = 58;
+	break;
+    }
+    rc2params.iv = *ivec;
+
+    ASN1_MALLOC_ENCODE(CMSRC2CBCParameter, param->data, param->length,
+		       &rc2params, &size, ret);
+    if (ret == 0 && size != param->length)
+	_hx509_abort("Internal asn1 encoder failure");
+
+    return ret;
+}
+
+static int
+CMSRC2CBCParam_set(hx509_context context, const heim_octet_string *param,
+		   hx509_crypto crypto, heim_octet_string *ivec)
+{
+    CMSRC2CBCParameter rc2param;
+    struct _RC2_params *p;
+    size_t size;
+    int ret;
+
+    ret = decode_CMSRC2CBCParameter(param->data, param->length,
+				    &rc2param, &size);
+    if (ret)
+	return ret;
+
+    p = calloc(1, sizeof(*p));
+    if (p == NULL) {
+	free_CMSRC2CBCParameter(&rc2param);
+	return ENOMEM;
+    }
+    switch(rc2param.rc2ParameterVersion) {
+    case 160:
+	crypto->c = EVP_rc2_40_cbc();
+	p->maximum_effective_key = 40;
+	break;
+    case 120:
+	crypto->c = EVP_rc2_64_cbc();
+	p->maximum_effective_key = 64;
+	break;
+    case 58:
+	crypto->c = EVP_rc2_cbc();
+	p->maximum_effective_key = 128;
+	break;
+    default:
+	free_CMSRC2CBCParameter(&rc2param);
+	return HX509_CRYPTO_SIG_INVALID_FORMAT;
+    }
+    if (ivec)
+	ret = copy_octet_string(&rc2param.iv, ivec);
+    free_CMSRC2CBCParameter(&rc2param);
+    if (ret == 0)
+	crypto->param = p;
+
+    return ret;
+}
+
+/*
+ *
+ */
+
+static const struct hx509cipher ciphers[] = {
+    {
+	oid_id_pkcs3_rc2_cbc,
+	EVP_rc2_cbc,
+	CMSRC2CBCParam_get,
+	CMSRC2CBCParam_set
+    },
+    {
+	oid_id_rsadsi_rc2_cbc,
+	EVP_rc2_cbc,
+	CMSRC2CBCParam_get,
+	CMSRC2CBCParam_set
+    },
+    {
+	oid_private_rc2_40,
+	EVP_rc2_40_cbc,
+	CMSRC2CBCParam_get,
+	CMSRC2CBCParam_set
+    },
+    {
+	oid_id_pkcs3_rc2_cbc,
+	EVP_rc2_cbc,
+	CMSRC2CBCParam_get,
+	CMSRC2CBCParam_set
+    },
+    {
+	oid_id_pkcs3_des_ede3_cbc,
+	EVP_des_ede3_cbc,
+	CMSCBCParam_get,
+	CMSCBCParam_set
+    },
+    {
+	oid_id_rsadsi_des_ede3_cbc,
+	EVP_des_ede3_cbc,
+	CMSCBCParam_get,
+	CMSCBCParam_set
+    },
+    {
+	oid_id_aes_128_cbc,
+	EVP_aes_128_cbc,
+	CMSCBCParam_get,
+	CMSCBCParam_set
+    },
+    {
+	oid_id_aes_192_cbc,
+	EVP_aes_192_cbc,
+	CMSCBCParam_get,
+	CMSCBCParam_set
+    },
+    {
+	oid_id_aes_256_cbc,
+	EVP_aes_256_cbc,
+	CMSCBCParam_get,
+	CMSCBCParam_set
+    }
+};
+
+static const struct hx509cipher *
 find_cipher(const heim_oid *oid)
 {
-    if (heim_oid_cmp(oid, oid_id_pkcs3_rc2_cbc()) == 0) {
-	return EVP_rc2_cbc();
-    } else if (heim_oid_cmp(oid, oid_id_rsadsi_rc2_cbc()) == 0) {
-	return EVP_rc2_cbc();
-    } else if (heim_oid_cmp(oid, &private_rc2_40_oid) == 0) {
-	return EVP_rc2_40_cbc();
-    } else if (heim_oid_cmp(oid, oid_id_pkcs3_des_ede3_cbc()) == 0) {
-	return EVP_des_ede3_cbc();
-    } else if (heim_oid_cmp(oid, oid_id_rsadsi_des_ede3_cbc()) == 0) {
-	return EVP_des_ede3_cbc();
-    } else if (heim_oid_cmp(oid, oid_id_aes_128_cbc()) == 0) {
-	return EVP_aes_128_cbc();
-    } else if (heim_oid_cmp(oid, oid_id_aes_192_cbc()) == 0) {
-	return EVP_aes_192_cbc();
-    } else if (heim_oid_cmp(oid, oid_id_aes_256_cbc()) == 0) {
-	return EVP_aes_256_cbc();
-    }
+    int i;
+
+    for (i = 0; i < sizeof(ciphers)/sizeof(ciphers[0]); i++)
+	if (heim_oid_cmp(oid, (*ciphers[i].oid_func)()) == 0)
+	    return &ciphers[i];
+
     return NULL;
 }
 
@@ -1107,19 +1296,20 @@ hx509_crypto_init(hx509_context context,
 		  const heim_oid *enctype,
 		  hx509_crypto *crypto)
 {
-    const EVP_CIPHER *c;
+    const struct hx509cipher *cipher;
 
     *crypto = NULL;
 
-    c = find_cipher(enctype);
-    if (c == NULL)
+    cipher = find_cipher(enctype);
+    if (cipher == NULL)
 	return HX509_ALG_NOT_SUPP;
 
     *crypto = calloc(1, sizeof(**crypto));
     if (*crypto == NULL)
 	return ENOMEM;
 
-    (*crypto)->c = c;
+    (*crypto)->cipher = cipher;
+    (*crypto)->c = (*cipher->evp_func)();
 
     if (copy_oid(enctype, &(*crypto)->oid)) {
 	hx509_crypto_destroy(*crypto);
@@ -1197,36 +1387,22 @@ hx509_crypto_set_random_key(hx509_crypto crypto, heim_octet_string *key)
 }
 
 int
-hx509_crypto_set_params(hx509_crypto crypto, 
+hx509_crypto_set_params(hx509_context context,
+			hx509_crypto crypto, 
 			const heim_octet_string *param,
 			heim_octet_string *ivec)
 {
-    if (ivec == NULL)
-	return 0;
-    return decode_CMSCBCParameter(param->data, param->length, ivec, NULL);
+    return (*crypto->cipher->set_params)(context, param, crypto, ivec);
 }
 
 int
-hx509_crypto_get_params(hx509_crypto crypto, 
+hx509_crypto_get_params(hx509_context context,
+			hx509_crypto crypto, 
 			const heim_octet_string *ivec,
 			heim_octet_string *param)
 {
-    int ret;
-    size_t size;
-
-    ASN1_MALLOC_ENCODE(CMSCBCParameter,
-		       param->data,
-		       param->length,
-		       ivec,
-		       &size,
-		       ret);
-    if (ret)
-	return ret;
-    if (param->length != size)
-	_hx509_abort("internal ASN.1 encoder error");
-    return 0;
+    return (*crypto->cipher->get_params)(context, crypto, ivec, param);
 }
-
 
 int
 hx509_crypto_encrypt(hx509_crypto crypto,
@@ -1486,6 +1662,7 @@ find_string2key(const heim_oid *oid,
 	*md = EVP_sha1();
 	*s2k = PBE_string2key;
 	return oid_id_pkcs3_rc2_cbc();
+#if 0
     } else if (heim_oid_cmp(oid, oid_id_pbeWithSHAAnd40BitRC4()) == 0) {
 	*c = EVP_rc4_40();
 	*md = EVP_sha1();
@@ -1496,6 +1673,7 @@ find_string2key(const heim_oid *oid,
 	*md = EVP_sha1();
 	*s2k = PBE_string2key;
 	return oid_id_pkcs3_rc4();
+#endif
     } else if (heim_oid_cmp(oid, oid_id_pbeWithSHAAnd3_KeyTripleDES_CBC()) == 0) {
 	*c = EVP_des_ede3_cbc();
 	*md = EVP_sha1();
