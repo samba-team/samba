@@ -1438,6 +1438,92 @@ static BOOL run_xcopy(struct torture_context *torture)
 	return correct;
 }
 
+static BOOL run_iometer(struct torture_context *torture)
+{
+	struct smbcli_state *cli;
+	const char *fname = "\\iobw.tst";
+	int fnum;
+	size_t filesize;
+	NTSTATUS status;
+	char buf[2048];
+	int ops;
+	BOOL result = False;
+
+	printf("Starting iometer test\n");
+
+	memset(buf, 0, sizeof(buf));
+
+	if (!torture_open_connection(&cli)) {
+		return False;
+	}
+
+	status = smbcli_getatr(cli->tree, fname, NULL, &filesize, NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("smbcli_getatr failed: %s\n", nt_errstr(status));
+		goto done;
+	}
+
+	printf("size: %d\n", filesize);
+
+	filesize -= (sizeof(buf) - 1);
+
+	fnum = smbcli_nt_create_full(cli->tree, fname, 0x16,
+				     0x2019f, 0, 0x3, 3, 0x42, 0x3);
+	if (fnum == -1) {
+		printf("open failed: %s\n", smbcli_errstr(cli->tree));
+		goto done;
+	}
+
+	ops = 0;
+
+	while (True) {
+		int i, num_reads, num_writes;
+
+		num_reads = random() % 10;
+		num_writes = random() % 3;
+
+		for (i=0; i<num_reads; i++) {
+			ssize_t res;
+			if (ops++ > torture_numops) {
+				result = True;
+				goto done;
+			}
+			res = smbcli_read(cli->tree, fnum, buf,
+					  random() % filesize, sizeof(buf));
+			if (res != sizeof(buf)) {
+				printf("read failed: %s\n",
+				       smbcli_errstr(cli->tree));
+				goto done;
+			}
+		}
+		for (i=0; i<num_writes; i++) {
+			ssize_t res;
+			if (ops++ > torture_numops) {
+				result = True;
+				goto done;
+			}
+			res = smbcli_write(cli->tree, fnum, 0, buf,
+					  random() % filesize, sizeof(buf));
+			if (res != sizeof(buf)) {
+				printf("read failed: %s\n",
+				       smbcli_errstr(cli->tree));
+				goto done;
+			}
+		}
+	}
+
+	result = True;
+ done:
+
+	if (!torture_close_connection(cli)) {
+		printf("close_connection failed: %s\n",
+		       smbcli_errstr(cli->tree));
+		return False;
+	}
+
+	return result;
+}
+
 /**
   tries variants of chkpath
  */
@@ -1554,6 +1640,7 @@ NTSTATUS torture_base_init(void)
 	register_torture_op("BASE-OPEN", run_opentest, 0);
 	register_torture_op("BASE-DEFER_OPEN", NULL, run_deferopen);
 	register_torture_op("BASE-XCOPY", run_xcopy, 0);
+	register_torture_op("BASE-IOMETER", run_iometer, 0);
 	register_torture_op("BASE-RENAME", torture_test_rename, 0);
 	register_torture_op("BASE-DELETE", torture_test_delete, 0);
 	register_torture_op("BASE-PROPERTIES", torture_test_properties, 0);
