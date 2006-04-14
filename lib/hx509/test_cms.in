@@ -143,13 +143,16 @@ echo "unenvelope data"
 	FILE:$srcdir/data/test.crt,$srcdir/data/test.key || exit 1
 cmp "$srcdir/data/static-file" ev.data.out || exit 1
 
-echo "unenvelope data (aes-128)"
-./hxtool cms-unenvelope \
+for a in rc2-40 rc2-64 rc2-128 aes-128; do
+    echo "unenvelope data ($a)"
+
+    rm -f ev.data.out
+    ./hxtool cms-unenvelope \
 	--pass=PASS:foobar \
 	--certificate=FILE:$srcdir/data/test.crt,$srcdir/data/test.key \
 	--content-info \
-	"$srcdir/data/test-enveloped-aes-128" ev.data.out || exit 1
-cmp "$srcdir/data/static-file" ev.data.out || exit 1
-
+	"$srcdir/data/test-enveloped-$a" ev.data.out || exit 1
+    cmp "$srcdir/data/static-file" ev.data.out || exit 1
+done
 
 exit 0
