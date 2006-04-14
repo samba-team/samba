@@ -137,12 +137,14 @@ hx509_cms_unenvelope(hx509_context context,
     AlgorithmIdentifier *ai;
     heim_octet_string *enccontent;
     heim_octet_string *params, params_data;
+    heim_octet_string ivec;
     size_t size;
     int ret, i;
 
 
     memset(&key, 0, sizeof(key));
     memset(&ed, 0, sizeof(ed));
+    memset(&ivec, 0, sizeof(ivec));
     memset(content, 0, sizeof(*content));
     memset(contentType, 0, sizeof(*contentType));
 
@@ -204,33 +206,33 @@ hx509_cms_unenvelope(hx509_context context,
 
     {
 	hx509_crypto crypto;
-	heim_octet_string *ivec = NULL, ivec_data;
 
 	ret = hx509_crypto_init(context, NULL, &ai->algorithm, &crypto);
 	if (ret)
 	    goto out;
 	
+	if (params) {
+	    ret = hx509_crypto_set_params(context, crypto, params, &ivec);
+	    if (ret)
+		goto out;
+	}
+
 	ret = hx509_crypto_set_key_data(crypto, key.data, key.length);
 	if (ret)
 	    goto out;
 	
-	if (params) {
-	    ret = hx509_crypto_set_params(crypto, params, &ivec_data);
-	    ivec = &ivec_data;
-	}
-
 	ret = hx509_crypto_decrypt(crypto, 
 				   enccontent->data,
 				   enccontent->length,
-				   ivec,
+				   ivec.length ? &ivec : NULL,
 				   content);
-	if (ivec)
-	    free_octet_string(&ivec_data);
     }
 
  out:
 
     free_octet_string(&key);
+    if (ivec.length)
+	free_octet_string(&ivec);
     if (ret) {
 	free_oid(contentType);
 	free_octet_string(content);
@@ -301,7 +303,8 @@ hx509_cms_envelope_1(hx509_context context,
 	    goto out;
 	}
 
-	ret = hx509_crypto_get_params(crypto,
+	ret = hx509_crypto_get_params(context,
+				      crypto,
 				      &ivec,
 				      enc_alg->parameters);
     }
