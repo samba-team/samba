@@ -103,16 +103,12 @@ void run_events(void)
 	return;
 }
 
-struct timeval *get_timed_events_timeout(struct timeval *to_ret, time_t default_to)
+struct timeval *get_timed_events_timeout(struct timeval *to_ret)
 {
 	struct timeval now;
 
 	if (timed_events == NULL) {
-		if (default_to == (time_t)-1) {
-			return NULL;
-		}
-		*to_ret = timeval_set(default_to, 0);
-		return to_ret;
+		return NULL;
 	}
 
 	now = timeval_current();
