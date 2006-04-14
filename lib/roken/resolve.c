@@ -647,8 +647,7 @@ dns_srv_order(struct dns_reply *r)
 	/* find the last record with the same priority and count the
            sum of all weights */
 	for(sum = 0, tt = ss; tt < srvs + num_srv; tt++) {
-	    if(*tt == NULL)
-		continue;
+	    assert(*tt != NULL);
 	    if((*tt)->u.srv->priority != (*ss)->u.srv->priority)
 		break;
 	    sum += (*tt)->u.srv->weight;
