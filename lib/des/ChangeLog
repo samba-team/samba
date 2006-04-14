@@ -1,3 +1,8 @@
+2006-04-14  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* des.c (DES_cfb64_encrypt): add asserts that the *num pointers is
+	>= 0, because if it is, its a programmer error.
+	
 2006-04-09  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* rc2.c (RC2_set_key): abort on erroneous input (len <= 0) size
