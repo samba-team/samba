@@ -1,3 +1,10 @@
+2006-04-14  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* resolve.c (dns_srv_order): change a if (ptr == NULL) continue
+	into a assert(ptr != NULL) since it could never happen, found by
+	the IBM code checker (beam).  Thanks to Florian Krohm for
+	explaining it.
+	
 2006-04-02  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* roken_gethostby.c (roken_gethostby): make addr_list one larger
