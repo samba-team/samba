@@ -357,7 +357,7 @@ static BOOL receive_message_or_smb(char *buffer, int buffer_len, int timeout)
 {
 	fd_set fds;
 	int selrtn;
-	struct timeval to = timeval_set(SMBD_SELECT_TIMEOUT, 0);
+	struct timeval to;
 	int maxfd = 0;
 
 	smb_read_error = 0;
@@ -367,6 +367,9 @@ static BOOL receive_message_or_smb(char *buffer, int buffer_len, int timeout)
 	if (timeout >= 0) {
 		to.tv_sec = timeout / 1000;
 		to.tv_usec = (timeout % 1000) * 1000;
+	} else {
+		to.tv_sec = SMBD_SELECT_TIMEOUT;
+		to.tv_usec = 0;
 	}
 
 	/*
@@ -441,14 +444,20 @@ static BOOL receive_message_or_smb(char *buffer, int buffer_len, int timeout)
 		goto again;
 	}
 
+	/*
+	 * Are there any timed events waiting ? If so, ensure we don't
+	 * select for longer than it would take to wait for them.
+	 */
+
 	{
 		struct timeval tmp;
-		struct timeval *tp = get_timed_events_timeout(&tmp,SMBD_SELECT_TIMEOUT);
+		struct timeval *tp = get_timed_events_timeout(&tmp);
 
 		if (tp) {
 			to = timeval_min(&to, tp);
 			if (timeval_is_zero(&to)) {
-				return True;
+				/* Process a timed event now... */
+				run_events();
 			}
 		}
 	}
