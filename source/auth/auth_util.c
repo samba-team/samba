@@ -1469,9 +1469,12 @@ struct passwd *smb_getpwnam( TALLOC_CTX *mem_ctx, char *domuser,
 	
 	pw = Get_Pwnam_alloc(mem_ctx, username);
 		
-	/* Create local user if requested. */
+	/* Create local user if requested but only if winbindd
+	   is not running.  We need to protect against cases
+	   where winbindd is failing and then prematurely
+	   creating users in /etc/passwd */
 	
-	if ( !pw && create ) {
+	if ( !pw && create && !winbind_ping() ) {
 		/* Don't add a machine account. */
 		if (username[strlen(username)-1] == '$')
 			return NULL;
