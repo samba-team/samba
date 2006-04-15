@@ -134,8 +134,8 @@ static PyObject *py_enum_domain_users(PyObject *self, PyObject *args)
 
 	result = PyList_New(0);
 
-	if (response.extra_data) {
-		const char *extra_data = response.extra_data;
+	if (response.extra_data.data) {
+		const char *extra_data = response.extra_data.data;
 		fstring name;
 
 		while (next_token(&extra_data, name, ",", sizeof(fstring)))
@@ -165,8 +165,8 @@ static PyObject *py_enum_domain_groups(PyObject *self, PyObject *args)
 
 	result = PyList_New(0);
 
-	if (response.extra_data) {
-		const char *extra_data = response.extra_data;
+	if (response.extra_data.data) {
+		const char *extra_data = response.extra_data.data;
 		fstring name;
 
 		while (next_token(&extra_data, name, ",", sizeof(fstring)))
@@ -200,8 +200,8 @@ static PyObject *py_enum_trust_dom(PyObject *self, PyObject *args)
 
 	result = PyList_New(0);
 
-	if (response.extra_data) {
-		const char *extra_data = response.extra_data;
+	if (response.extra_data.data) {
+		const char *extra_data = response.extra_data.data;
 		fstring name;
 
 		while (next_token(&extra_data, name, ",", sizeof(fstring)))
