@@ -103,6 +103,7 @@ libhcrypto_la_SOURCES =	\
 	rsa.h		\
 	sha.c		\
 	sha.h		\
+	sha256.c	\
 	ui.c		\
 	ui.h
 
