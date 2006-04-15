@@ -1,3 +1,25 @@
+2006-04-15  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* crypto.c: Add SHA256 support, and symbols for the other new
+	SHA-2 types.
+	
+2006-04-14  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* test_cms.in: test rc2-40 rc2-64 rc2-128 enveloped data
+	
+	* data/test-enveloped-rc2-{40,64,128}: add tests cases for rc2
+
+	* cms.c: Update prototypes changes for hx509_crypto_[gs]et_params.
+
+	* crypto.c: Break out the parameter handling code for encrypting
+	data to handle RC2.  Needed for Windows 2k pk-init support.
+	
+2006-04-04  Love Hörnquist Åstrand <lha@it.su.se>
+
+	* Makefile.am: Split libhx509_la_SOURCES into build file and
+	distributed files so we can avoid building prototypes for
+	build-files.
+	
 2006-04-03  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* TODO: split certificate request into pkcs10 and CRMF
