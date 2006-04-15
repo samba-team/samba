@@ -569,6 +569,7 @@ typedef struct connection_struct {
 	NT_USER_TOKEN *nt_user_token;
 	
 	time_t lastused;
+	time_t lastused_count;
 	BOOL used;
 	int num_files_open;
 	unsigned int num_smb_operations; /* Count of smb operations on this tree. */
