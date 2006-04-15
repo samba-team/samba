@@ -27,7 +27,6 @@ static int32 exclusive_oplocks_open = 0;
 static int32 level_II_oplocks_open = 0;
 BOOL global_client_failed_oplock_break = False;
 
-extern struct timeval smb_last_time;
 extern uint32 global_client_caps;
 extern int smb_read_error;
 
@@ -277,21 +276,10 @@ static char *new_break_smb_message(TALLOC_CTX *mem_ctx,
 
 static void wait_before_sending_break(void)
 {
-	struct timeval cur_tv;
-	long wait_left = (long)lp_oplock_break_wait_time();
+	long wait_time = (long)lp_oplock_break_wait_time();
 
-	if (wait_left == 0) {
-		return;
-	}
-
-	GetTimeOfDay(&cur_tv);
-
-	wait_left -= ((cur_tv.tv_sec - smb_last_time.tv_sec)*1000) +
-                ((cur_tv.tv_usec - smb_last_time.tv_usec)/1000);
-
-	if(wait_left > 0) {
-		wait_left = MIN(wait_left, 1000);
-		sys_usleep(wait_left * 1000);
+	if (wait_time) {
+		smb_msleep(wait_time);
 	}
 }
 

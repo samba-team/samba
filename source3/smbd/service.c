@@ -20,7 +20,6 @@
 
 #include "includes.h"
 
-extern struct timeval smb_last_time;
 extern userdom_struct current_user_info;
 
 /****************************************************************************
@@ -140,7 +139,7 @@ BOOL set_current_service(connection_struct *conn, uint16 flags, BOOL do_chdir)
 		return(False);
 	}
 
-	conn->lastused = smb_last_time.tv_sec;
+	conn->lastused_count++;
 
 	snum = SNUM(conn);
   
@@ -601,7 +600,7 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 	safe_strcpy(conn->client_address, client_addr(), 
 		    sizeof(conn->client_address)-1);
 	conn->num_files_open = 0;
-	conn->lastused = time(NULL);
+	conn->lastused = conn->lastused_count = time(NULL);
 	conn->service = snum;
 	conn->used = True;
 	conn->printer = (strncmp(dev,"LPT",3) == 0);
