@@ -23,8 +23,6 @@
 
 #include "includes.h"
 
-extern struct timeval smb_last_time;
-
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_AUTH
 
@@ -87,7 +85,7 @@ static BOOL logon_hours_ok(struct samu *sampass)
 		return True;
 	}
 
-	lasttime = (time_t)smb_last_time.tv_sec;
+	lasttime = time(NULL);
 	utctime = gmtime(&lasttime);
 
 	/* find the corresponding byte and bit */
