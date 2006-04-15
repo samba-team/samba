@@ -22,6 +22,10 @@
 
 import ldb
 
+class LdbError(Exception):
+    """An exception raised when a ldb error occurs."""
+    pass
+
 class LdbElement:
     """A class representing a ldb element as an array of values."""
     
@@ -84,19 +88,22 @@ class Ldb:
 
     def search(self, expression):
 
-        result = ldb.search(self.ldb_ctx, None, ldb.LDB_SCOPE_DEFAULT,
-                            expression, None);
+        self._ldb_call(ldb.search, self.ldb_ctx, None, ldb.LDB_SCOPE_DEFAULT,
+                       expression, None);
 
         return [LdbMessage(ldb.ldb_message_ptr_array_getitem(result.msgs, ndx))
                 for ndx in range(result.count)]
 
+    def _ldb_call(self, fn, *args):
+        result = fn(*args)
+        if result != ldb.LDB_SUCCESS:
+            raise LdbError, (result, ldb.strerror(result))
+
     def delete(self, dn):
-        if ldb.delete(self.ldb_ctx, dn) != 0:
-            raise IOError, ldb.errstring(self.ldb_ctx)
+        self._ldb_call(ldb.delete, self.ldb_ctx, dn)
 
     def rename(self, olddn, newdn):
-        if ldb.rename(self.ldb_ctx, olddn, newdn) != 0:
-            raise IOError, ldb.errstring(self.ldb_ctx)
+        self._ldb_call(ldb.rename, self.ldb_ctx, olddn, newdn)
 
     def add(self, msg):
-        ldb.add(self.ldb_ctx, msg)
+        self._ldb_call(ldb.add, self.ldb_ctx, msg)
