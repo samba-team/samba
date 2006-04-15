@@ -198,6 +198,9 @@ gen_files_rfc2459 =					\
 	asn1_id_pkcs1_md5WithRSAEncryption.x		\
 	asn1_id_pkcs1_rsaEncryption.x			\
 	asn1_id_pkcs1_sha1WithRSAEncryption.x		\
+	asn1_id_pkcs1_sha256WithRSAEncryption.x		\
+	asn1_id_pkcs1_sha384WithRSAEncryption.x		\
+	asn1_id_pkcs1_sha512WithRSAEncryption.x		\
 	asn1_id_pkcs2_md2.x				\
 	asn1_id_pkcs2_md4.x				\
 	asn1_id_pkcs2_md5.x				\
