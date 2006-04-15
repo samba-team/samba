@@ -142,7 +142,7 @@ EnvelopedData ::= SEQUENCE {
 -- Data ::= OCTET STRING
 
 CMSRC2CBCParameter ::= SEQUENCE {
-	rc2ParameterVersion	INTEGER,
+	rc2ParameterVersion	INTEGER (0..4294967295),
 	iv			OCTET STRING -- exactly 8 octets
 }
 
