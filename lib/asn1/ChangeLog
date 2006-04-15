@@ -1,5 +1,9 @@
 2006-04-15  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* Makefile.am: Add id-pkcs1-sha256WithRSAEncryption and friends
+
+	* rfc2459.asn1: Add id-pkcs1-sha256WithRSAEncryption and friends
+
 	* CMS.asn1: Turn CMSRC2CBCParameter.rc2ParameterVersion into a
 	constrained integer
 	
