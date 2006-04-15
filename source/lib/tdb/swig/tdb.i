@@ -113,11 +113,9 @@ typedef int mode_t;
 	}
 }
 
-%rename tdb_open open;
 TDB_CONTEXT *tdb_open(const char *name, int hash_size, int tdb_flags,
 		      int open_flags, mode_t mode);
 
-%rename tdb_open_ex open_ex;
 TDB_CONTEXT *tdb_open_ex(const char *name, int hash_size, int tdb_flags,
 			 int open_flags, mode_t mode,
 			 tdb_log_func log_fn,
@@ -125,66 +123,46 @@ TDB_CONTEXT *tdb_open_ex(const char *name, int hash_size, int tdb_flags,
 
 %exception;
 
-%rename tdb_reopen reopen;
 int tdb_reopen(TDB_CONTEXT *tdb);
 
-%rename tdb_reopen_all reopen_all;
 int tdb_reopen_all(void);
 
-%rename tdb_logging_function logging_function;
 void tdb_logging_function(TDB_CONTEXT *tdb, tdb_log_func);
 
-%rename tdb_error error;
 enum TDB_ERROR tdb_error(TDB_CONTEXT *tdb);
 
-%rename tdb_errorstr errorstr;
 const char *tdb_errorstr(TDB_CONTEXT *tdb);
 
-%rename tdb_fetch fetch;
 TDB_DATA tdb_fetch(TDB_CONTEXT *tdb, TDB_DATA key);
 
-%rename tdb_delete delete;
 int tdb_delete(TDB_CONTEXT *tdb, TDB_DATA key);
 
-%rename tdb_store store;
 int tdb_store(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf, int flag = TDB_REPLACE);
 
-%rename tdb_append append;
 int tdb_append(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA new_dbuf);
 
-%rename tdb_close close;
 int tdb_close(TDB_CONTEXT *tdb);
 
-%rename tdb_firstkey firstkey;
 TDB_DATA tdb_firstkey(TDB_CONTEXT *tdb);
 
-%rename tdb_nextkey nextkey;
 TDB_DATA tdb_nextkey(TDB_CONTEXT *tdb, TDB_DATA key);
 
-%rename tdb_traverse traverse;
 int tdb_traverse(TDB_CONTEXT *tdb, tdb_traverse_func fn, void *state);
 
-%rename tdb_exists exists;
 int tdb_exists(TDB_CONTEXT *tdb, TDB_DATA key);
 
-%rename tdb_lockall lockall;
 int tdb_lockall(TDB_CONTEXT *tdb);
 
-%rename tdb_unlockall unlockall;
 void tdb_unlockall(TDB_CONTEXT *tdb);
 
 /* Low level locking functions: use with care */
 
-%rename tdb_chainlock chainlock;
 int tdb_chainlock(TDB_CONTEXT *tdb, TDB_DATA key);
 
-%rename tdb_chainunlock chainunlock;
 int tdb_chainunlock(TDB_CONTEXT *tdb, TDB_DATA key);
 
 /* Debug functions. Not used in production. */
 
-%rename tdb_dump_all dump_all;
 void tdb_dump_all(TDB_CONTEXT *tdb);
 
-%rename tdb_printfreelist printfreelist;
 int tdb_printfreelist(TDB_CONTEXT *tdb);
