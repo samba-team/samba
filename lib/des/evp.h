@@ -84,6 +84,7 @@
 #define EVP_rc4_40 hc_EVP_rc4_40
 #define EVP_sha hc_EVP_sha
 #define EVP_sha1 hc_EVP_sha1
+#define EVP_sha256 hc_EVP_sha256
 #define PKCS5_PBKDF2_HMAC_SHA1 hc_PKCS5_PBKDF2_HMAC_SHA1
 
 /*
@@ -161,6 +162,7 @@ const EVP_MD *EVP_md4(void);
 const EVP_MD *EVP_md5(void);
 const EVP_MD *EVP_sha(void);
 const EVP_MD *EVP_sha1(void);
+const EVP_MD *EVP_sha256(void);
 
 const EVP_CIPHER * EVP_aes_128_cbc(void);
 const EVP_CIPHER * EVP_aes_192_cbc(void);
