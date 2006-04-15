@@ -1,3 +1,8 @@
+2006-04-15  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* CMS.asn1: Turn CMSRC2CBCParameter.rc2ParameterVersion into a
+	constrained integer
+	
 2006-04-08  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* hash.c (hashtabnew): check for NULL before setting structure.
