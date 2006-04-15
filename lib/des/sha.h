@@ -40,9 +40,12 @@
 #define SHA1_Init hc_SHA1_Init
 #define SHA1_Update hc_SHA1_Update
 #define SHA1_Final hc_SHA1_Final
+#define SHA256_Init hc_SHA256_Init
+#define SHA256_Update hc_SHA256_Update
+#define SHA256_Final hc_SHA256_Final
 
 /*
- *
+ * SHA-1
  */
 
 #define SHA_DIGEST_LENGTH 20
@@ -58,5 +61,23 @@ typedef struct sha SHA_CTX;
 void SHA1_Init (struct sha *m);
 void SHA1_Update (struct sha *m, const void *v, size_t len);
 void SHA1_Final (void *res, struct sha *m);
+
+/*
+ * SHA-2 256
+ */
+
+#define SHA256_DIGEST_LENGTH 32
+
+struct hc_sha256state {
+  unsigned int sz[2];
+  u_int32_t counter[8];
+  unsigned char save[64];
+};
+
+typedef struct hc_sha256state SHA256_CTX;
+
+void SHA256_Init (SHA256_CTX *);
+void SHA256_Update (SHA256_CTX *, const void *, size_t);
+void SHA256_Final (void *, SHA256_CTX *);
 
 #endif /* HEIM_SHA_H */
