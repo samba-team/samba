@@ -26,8 +26,6 @@ extern int keepalive;
 extern struct auth_context *negprot_global_auth_context;
 extern int smb_echo_count;
 
-struct timeval smb_last_time;
-
 static char *InBuffer = NULL;
 static char *OutBuffer = NULL;
 static char *current_inbuf = NULL;
@@ -1010,8 +1008,6 @@ static int construct_reply(char *inbuf,char *outbuf,int size,int bufsize)
 	int type = CVAL(inbuf,smb_com);
 	int outsize = 0;
 	int msg_type = CVAL(inbuf,0);
-
-	GetTimeOfDay(&smb_last_time);
 
 	chain_size = 0;
 	file_chain_reset();
