@@ -1,4 +1,16 @@
-2006-04-14  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-04-15  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* evp.h: Add SHA-256 symbols.
+
+	* evp.c: Add SHA-256.
+
+	* sha.h: Add SHA-256 symbols.
+
+	* mdtest.c: Test SHA-256.
+
+	* sha256.c: Inital (naive) SHA-256 implementation.
+	
+2006-04-14 Love Hörnquist Åstrand <lha@it.su.se>
 
 	* des.c (DES_cfb64_encrypt): add asserts that the *num pointers is
 	>= 0, because if it is, its a programmer error.
