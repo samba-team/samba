@@ -151,6 +151,22 @@ EVP_Digest(const void *data, size_t dsize, void *hash, unsigned int *hsize,
  *
  */
 
+static const struct hc_evp_md sha256 = {
+    32,
+    64,
+    sizeof(SHA256_CTX),
+    (void *)SHA256_Init,
+    (void *)SHA256_Update,
+    (void *)SHA256_Final,
+    NULL
+};
+
+const EVP_MD *
+EVP_sha256(void)
+{
+    return &sha256;
+}
+
 static const struct hc_evp_md sha1 = {
     20,
     64,
