@@ -559,6 +559,27 @@ EVP_rc2_40_cbc(void)
     return &rc2_40_cbc;
 }
 
+const EVP_CIPHER *
+EVP_rc2_64_cbc(void)
+{
+    static const EVP_CIPHER rc2_64_cbc = {
+	0,
+	RC2_BLOCK_SIZE,
+	8,
+	RC2_BLOCK_SIZE,
+	EVP_CIPH_CBC_MODE,
+	rc2_init,
+	rc2_do_cipher,
+	rc2_cleanup,
+	sizeof(struct rc2_cbc),
+	NULL,
+	NULL,
+	NULL,
+	NULL
+    };
+    return &rc2_64_cbc;
+}
+
 /*
  *
  */
