@@ -125,6 +125,36 @@ openssl smime \
     -binary \
     -in static-file \
     -outform DER \
+    -out test-enveloped-rc2-40 \
+    -rc2-40 \
+    test.crt
+
+openssl smime \
+    -encrypt \
+    -nodetach \
+    -binary \
+    -in static-file \
+    -outform DER \
+    -out test-enveloped-rc2-64 \
+    -rc2-64 \
+    test.crt
+
+openssl smime \
+    -encrypt \
+    -nodetach \
+    -binary \
+    -in static-file \
+    -outform DER \
+    -out test-enveloped-rc2-128 \
+    -rc2-128 \
+    test.crt
+
+openssl smime \
+    -encrypt \
+    -nodetach \
+    -binary \
+    -in static-file \
+    -outform DER \
     -out test-enveloped-aes-128 \
     -aes128 \
     test.crt
