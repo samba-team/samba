@@ -42,6 +42,9 @@ pkcs1(rsaEncryption, 1);
 pkcs1(md2WithRSAEncryption, 2);
 pkcs1(md5WithRSAEncryption, 4);
 pkcs1(sha1WithRSAEncryption, 5);
+pkcs1(sha256WithRSAEncryption, 11);
+pkcs1(sha384WithRSAEncryption, 12);
+pkcs1(sha512WithRSAEncryption, 13);
 
 #undef pkcs1
 
@@ -61,6 +64,17 @@ static heim_oid name##_oid = { 6, name##_oid_data }
 oiw_secsig_alg(id_sha1, 26);
 
 #undef oiw_secsig_alg
+
+#define nistAlgorithm(name, number) \
+static unsigned name##_oid_data[] = { 2, 16, 840, 1, 101, 3, 4, number }; \
+static heim_oid name##_oid = { 8, name##_oid_data }
+
+nistAlgorithm(id_sha224, 4);
+nistAlgorithm(id_sha256, 1);
+nistAlgorithm(id_sha384, 2);
+nistAlgorithm(id_sha512, 3);
+
+#undef nistAlgorithm
 
 #define rsadsi_digest(name, number) \
 static unsigned name##_oid_data[] = { 1, 2, 840, 113549, 2, number }; \
@@ -237,7 +251,9 @@ rsa_create_signature(const struct signature_alg *sig_alg,
     else
 	sig_oid = signer->signature_alg;
 
-    if (heim_oid_cmp(sig_oid, oid_id_pkcs1_sha1WithRSAEncryption()) == 0) {
+    if (heim_oid_cmp(sig_oid, oid_id_pkcs1_sha256WithRSAEncryption()) == 0) {
+	digest_alg = hx509_signature_sha256();
+    } else if (heim_oid_cmp(sig_oid, oid_id_pkcs1_sha1WithRSAEncryption()) == 0) {
 	digest_alg = hx509_signature_sha1();
     } else if (heim_oid_cmp(sig_oid, oid_id_pkcs1_md5WithRSAEncryption()) == 0) {
 	digest_alg = hx509_signature_md5();
@@ -521,6 +537,64 @@ sha1_verify_signature(const struct signature_alg *sig_alg,
 }
 
 static int
+sha256_create_signature(const struct signature_alg *sig_alg,
+			const hx509_private_key signer,
+			const AlgorithmIdentifier *alg,
+			const heim_octet_string *data,
+			AlgorithmIdentifier *signatureAlgorithm,
+			heim_octet_string *sig)
+{
+    SHA_CTX m;
+    
+    memset(sig, 0, sizeof(*sig));
+
+    if (signatureAlgorithm) {
+	int ret;
+	ret = _hx509_set_digest_alg(signatureAlgorithm,
+				    sig_alg->sig_oid, "\x05\x00", 2);
+	if (ret)
+	    return ret;
+    }
+	    
+
+    sig->data = malloc(SHA_DIGEST_LENGTH);
+    if (sig->data == NULL) {
+	sig->length = 0;
+	return ENOMEM;
+    }
+    sig->length = SHA_DIGEST_LENGTH;
+
+    SHA256_Init(&m);
+    SHA256_Update(&m, data->data, data->length);
+    SHA256_Final (sig->data, &m);
+
+    return 0;
+}
+
+static int
+sha256_verify_signature(const struct signature_alg *sig_alg,
+			const Certificate *signer,
+			const AlgorithmIdentifier *alg,
+			const heim_octet_string *data,
+			const heim_octet_string *sig)
+{
+    unsigned char digest[SHA_DIGEST_LENGTH];
+    SHA_CTX m;
+    
+    if (sig->length != SHA_DIGEST_LENGTH)
+	return HX509_CRYPTO_SIG_INVALID_FORMAT;
+
+    SHA256_Init(&m);
+    SHA256_Update(&m, data->data, data->length);
+    SHA256_Final (digest, &m);
+	
+    if (memcmp(digest, sig->data, SHA_DIGEST_LENGTH) != 0)
+	return HX509_CRYPTO_BAD_SIGNATURE;
+
+    return 0;
+}
+
+static int
 sha1_create_signature(const struct signature_alg *sig_alg,
 		      const hx509_private_key signer,
 		      const AlgorithmIdentifier *alg,
@@ -614,6 +688,18 @@ static struct signature_alg pkcs1_rsa_sha1_alg = {
 };
 
 static struct signature_alg rsa_with_sha1_alg = {
+    "rsa-with-sha256",
+    &sha256WithRSAEncryption_oid,
+    &rsaEncryption_oid,
+    &id_sha256_oid,
+    PROVIDE_CONF|REQUIRE_SIGNER,
+    rsa_verify_signature,
+    rsa_create_signature,
+    rsa_parse_private_key,
+    rsa_private_key2SPKI
+};
+
+static struct signature_alg rsa_with_sha1_alg = {
     "rsa-with-sha1",
     &sha1WithRSAEncryption_oid,
     &rsaEncryption_oid,
@@ -660,6 +746,16 @@ static struct signature_alg dsa_sha1_alg = {
     dsa_parse_private_key
 };
 
+static struct signature_alg sha256_alg = {
+    "sha-256",
+    &id_sha256_oid,
+    NULL,
+    NULL,
+    0,
+    sha256_verify_signature,
+    sha256_create_signature
+};
+
 static struct signature_alg sha1_alg = {
     "sha1",
     &id_sha1_oid,
@@ -694,6 +790,7 @@ static struct signature_alg *sig_algs[] = {
     &rsa_with_md5_alg,
     &rsa_with_md2_alg,
     &dsa_sha1_alg,
+    &sha256_alg,
     &sha1_alg,
     &md5_alg,
     &md2_alg,
@@ -943,6 +1040,21 @@ _hx509_private_key2SPKI(hx509_context context,
 
 static const heim_octet_string null_entry_oid = { 2, "\x05\x00" };
 
+static const unsigned sha512_oid_tree[] = { 2, 16, 840, 1, 101, 3, 4, 3 };
+const AlgorithmIdentifier _hx509_signature_sha512_data = { 
+    { 8, rk_UNCONST(sha512_oid_tree) }, rk_UNCONST(&null_entry_oid)
+};
+
+static const unsigned sha384_oid_tree[] = { 2, 16, 840, 1, 101, 3, 4, 2 };
+const AlgorithmIdentifier _hx509_signature_sha384_data = { 
+    { 8, rk_UNCONST(sha384_oid_tree) }, rk_UNCONST(&null_entry_oid)
+};
+
+static const unsigned sha256_oid_tree[] = { 2, 16, 840, 1, 101, 3, 4, 1 };
+const AlgorithmIdentifier _hx509_signature_sha256_data = { 
+    { 8, rk_UNCONST(sha256_oid_tree) }, rk_UNCONST(&null_entry_oid)
+};
+
 static const unsigned sha1_oid_tree[] = { 1, 3, 14, 3, 2, 26 };
 const AlgorithmIdentifier _hx509_signature_sha1_data = { 
     { 6, rk_UNCONST(sha1_oid_tree) }, rk_UNCONST(&null_entry_oid)
@@ -958,35 +1070,47 @@ const AlgorithmIdentifier _hx509_signature_md2_data = {
     { 6, rk_UNCONST(md2_oid_tree) }, rk_UNCONST(&null_entry_oid)
 };
 
+static const unsigned rsa_with_sha512_oid[] ={ 1, 2, 840, 113549, 1, 1, 13 };
+const AlgorithmIdentifier _hx509_signature_rsa_with_sha512_data = { 
+    { 7, rk_UNCONST(rsa_with_sha512_oid) }, NULL
+};
+
+static const unsigned rsa_with_sha384_oid[] ={ 1, 2, 840, 113549, 1, 1, 12 };
+const AlgorithmIdentifier _hx509_signature_rsa_with_sha384_data = { 
+    { 7, rk_UNCONST(rsa_with_sha384_oid) }, NULL
+};
+
+static const unsigned rsa_with_sha256_oid[] ={ 1, 2, 840, 113549, 1, 1, 11 };
+const AlgorithmIdentifier _hx509_signature_rsa_with_sha256_data = { 
+    { 7, rk_UNCONST(rsa_with_sha256_oid) }, NULL
+};
+
 static const unsigned rsa_with_sha1_oid[] ={ 1, 2, 840, 113549, 1, 1, 5 };
 const AlgorithmIdentifier _hx509_signature_rsa_with_sha1_data = { 
     { 7, rk_UNCONST(rsa_with_sha1_oid) }, NULL
 };
 
 
-const AlgorithmIdentifier *
-hx509_signature_sha1(void)
-{
-    return &_hx509_signature_sha1_data;
-}
-
-const AlgorithmIdentifier *
-hx509_signature_md5(void)
-{
-    return &_hx509_signature_md5_data;
-}
-
-const AlgorithmIdentifier *
-hx509_signature_md2(void)
-{
-    return &_hx509_signature_md2_data;
-}
-
-const AlgorithmIdentifier *
-hx509_signature_rsa_with_sha1(void)
-{
-    return &_hx509_signature_rsa_with_sha1_data;
-}
+const AlgorithmIdentifier *hx509_signature_sha512(void)
+{ return &_hx509_signature_sha512_data; }
+const AlgorithmIdentifier *hx509_signature_sha384(void)
+{ return &_hx509_signature_sha384_data; }
+const AlgorithmIdentifier *hx509_signature_sha256(void)
+{ return &_hx509_signature_sha256_data; }
+const AlgorithmIdentifier *hx509_signature_sha1(void)
+{ return &_hx509_signature_sha1_data; }
+const AlgorithmIdentifier *hx509_signature_md5(void)
+{ return &_hx509_signature_md5_data; }
+const AlgorithmIdentifier *hx509_signature_md2(void)
+{ return &_hx509_signature_md2_data; }
+const AlgorithmIdentifier *hx509_signature_rsa_with_sha512(void)
+{ return &_hx509_signature_rsa_with_sha512_data; }
+const AlgorithmIdentifier *hx509_signature_rsa_with_sha384(void)
+{ return &_hx509_signature_rsa_with_sha384_data; }
+const AlgorithmIdentifier *hx509_signature_rsa_with_sha256(void)
+{ return &_hx509_signature_rsa_with_sha256_data; }
+const AlgorithmIdentifier *hx509_signature_rsa_with_sha1(void)
+{ return &_hx509_signature_rsa_with_sha1_data; }
 
 int
 _hx509_new_private_key(hx509_private_key *key)
