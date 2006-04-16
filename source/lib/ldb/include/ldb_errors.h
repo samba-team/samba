@@ -206,7 +206,7 @@
 */
 #define LDB_ERR_INVALID_DN_SYNTAX		34
 
-/* 53 RESERVED */
+/* 35 RESERVED */
 
 /**
    The function required dereferencing of an alias, and something went
