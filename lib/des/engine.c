@@ -224,7 +224,7 @@ ENGINE_by_dso(const char *path, const char *id)
 
     handle = dlopen(path, RTLD_NOW);
     if (handle == NULL) {
-	printf("error: %s\n", dlerror());
+	/* printf("error: %s\n", dlerror()); */
 	free(engine);
 	return NULL;
     }
