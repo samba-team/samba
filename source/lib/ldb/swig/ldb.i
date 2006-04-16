@@ -49,6 +49,53 @@ typedef long long int64_t;
  * Constants
  */
 
+#define LDB_SUCCESS				0
+#define LDB_ERR_OPERATIONS_ERROR		1
+#define LDB_ERR_PROTOCOL_ERROR			2
+#define LDB_ERR_TIME_LIMIT_EXCEEDED		3
+#define LDB_ERR_SIZE_LIMIT_EXCEEDED		4
+#define LDB_ERR_COMPARE_FALSE			5
+#define LDB_ERR_COMPARE_TRUE			6
+#define LDB_ERR_AUTH_METHOD_NOT_SUPPORTED	7
+#define LDB_ERR_STRONG_AUTH_REQUIRED		8
+/* 9 RESERVED */
+#define LDB_ERR_REFERRAL			10
+#define LDB_ERR_ADMIN_LIMIT_EXCEEDED		11
+#define LDB_ERR_UNSUPPORTED_CRITICAL_EXTENSION	12
+#define LDB_ERR_CONFIDENTIALITY_REQUIRED	13
+#define LDB_ERR_SASL_BIND_IN_PROGRESS		14
+#define LDB_ERR_NO_SUCH_ATTRIBUTE		16
+#define LDB_ERR_UNDEFINED_ATTRIBUTE_TYPE	17
+#define LDB_ERR_INAPPROPRIATE_MATCHING		18
+#define LDB_ERR_CONSTRAINT_VIOLATION		19
+#define LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS	20
+#define LDB_ERR_INVALID_ATTRIBUTE_SYNTAX	21
+/* 22-31 unused */
+#define LDB_ERR_NO_SUCH_OBJECT			32
+#define LDB_ERR_ALIAS_PROBLEM			33
+#define LDB_ERR_INVALID_DN_SYNTAX		34
+/* 35 RESERVED */
+#define LDB_ERR_ALIAS_DEREFERENCING_PROBLEM	36
+/* 37-47 unused */
+#define LDB_ERR_INAPPROPRIATE_AUTHENTICATION	48
+#define LDB_ERR_INVALID_CREDENTIALS		49
+#define LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS	50
+#define LDB_ERR_BUSY				51
+#define LDB_ERR_UNAVAILABLE			52
+#define LDB_ERR_UNWILLING_TO_PERFORM		53
+#define LDB_ERR_LOOP_DETECT			54
+/* 55-63 unused */
+#define LDB_ERR_NAMING_VIOLATION		64
+#define LDB_ERR_OBJECT_CLASS_VIOLATION		65
+#define LDB_ERR_NOT_ALLOWED_ON_NON_LEAF		66
+#define LDB_ERR_NOT_ALLOWED_ON_RDN		67
+#define LDB_ERR_ENTRY_ALREADY_EXISTS		68
+#define LDB_ERR_OBJECT_CLASS_MODS_PROHIBITED	69
+/* 70 RESERVED FOR CLDAP */
+#define LDB_ERR_AFFECTS_MULTIPLE_DSAS		71
+/* 72-79 unused */
+#define LDB_ERR_OTHER				80
+
 enum ldb_scope {LDB_SCOPE_DEFAULT=-1, 
 		LDB_SCOPE_BASE=0, 
 		LDB_SCOPE_ONELEVEL=1,
@@ -169,3 +216,6 @@ int ldb_add(struct ldb_context *ldb, const struct ldb_message *message);
 struct ldb_message *ldb_msg_new(void *mem_ctx);
 struct ldb_message_element *ldb_msg_find_element(const struct ldb_message *msg, const char *attr_name);
 int ldb_msg_add_value(struct ldb_message *msg, const char *attr_name, const struct ldb_val *INPUT);
+
+struct ldb_dn *ldb_dn_explode(void *mem_ctx, const char *dn);
+char *ldb_dn_linearize(void *mem_ctx, const struct ldb_dn *dn);
