@@ -45,6 +45,15 @@ typedef long long int64_t;
 %include "carrays.i"
 %include "exception.i"
 
+/*
+ * Constants
+ */
+
+enum ldb_scope {LDB_SCOPE_DEFAULT=-1, 
+		LDB_SCOPE_BASE=0, 
+		LDB_SCOPE_ONELEVEL=1,
+		LDB_SCOPE_SUBTREE=2};
+
 /* 
  * Wrap struct ldb_context
  */
@@ -72,7 +81,7 @@ int talloc_free(TALLOC_CTX *ptr);
  * Wrap struct ldb_val
  */
 
-%typemap(in) struct ldb_val * (struct ldb_val temp) {
+%typemap(in) struct ldb_val *INPUT (struct ldb_val temp) {
 	$1 = &temp;
 	if (!PyString_Check($input)) {
 		PyErr_SetString(PyExc_TypeError, "string arg expected");
@@ -82,19 +91,9 @@ int talloc_free(TALLOC_CTX *ptr);
 	$1->data = PyString_AsString($input);
 }
 
-%typemap(out) struct ldb_val * {
-	if ($1->data == NULL && $1->length == 0) {
-		Py_INCREF(Py_None);
-		$result = Py_None;
-	} else {
-		$result = PyString_FromStringAndSize($1->data, $1->length);
-	}
+%typemap(out) struct ldb_val {
+	$result = PyString_FromStringAndSize($1.data, $1.length);
 }
-
-enum ldb_scope {LDB_SCOPE_DEFAULT=-1, 
-		LDB_SCOPE_BASE=0, 
-		LDB_SCOPE_ONELEVEL=1,
-		LDB_SCOPE_SUBTREE=2};
 
 /*
  * Wrap struct ldb_result
@@ -169,4 +168,4 @@ int ldb_add(struct ldb_context *ldb, const struct ldb_message *message);
 
 struct ldb_message *ldb_msg_new(void *mem_ctx);
 struct ldb_message_element *ldb_msg_find_element(const struct ldb_message *msg, const char *attr_name);
-int ldb_msg_add_value(struct ldb_message *msg, const char *attr_name, const struct ldb_val *val);
+int ldb_msg_add_value(struct ldb_message *msg, const char *attr_name, const struct ldb_val *INPUT);
