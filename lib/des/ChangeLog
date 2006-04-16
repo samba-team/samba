@@ -1,5 +1,7 @@
 2006-04-16  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* engine.c (ENGINE_by_dso): less printf
+
 	* rsa.h (i2d_RSAPublicKey): fix prototype
 
 	* rsa.c (i2d_RSAPublicKey): fix prototype
