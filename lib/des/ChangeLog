@@ -1,4 +1,14 @@
+2006-04-16  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* rsa.h (i2d_RSAPublicKey): fix prototype
+
+	* rsa.c (i2d_RSAPublicKey): fix prototype
+	
 2006-04-15  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* evp.h: Add EVP_rc2_64_cbc
+
+	* evp.c: Add EVP_rc2_64_cbc
 
 	* evp.h: Add SHA-256 symbols.
 
