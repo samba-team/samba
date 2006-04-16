@@ -351,7 +351,7 @@ d2i_RSAPrivateKey(RSA *rsa, const unsigned char **pp, size_t len)
 }
 
 int
-i2d_RSAPublicKey(RSA *rsa, const unsigned char **pp)
+i2d_RSAPublicKey(RSA *rsa, unsigned char **pp)
 {
     RSAPublicKey data;
     size_t size;

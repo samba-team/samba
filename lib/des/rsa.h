@@ -161,6 +161,6 @@ int RSA_verify(int, const unsigned char *, unsigned int,
 	       unsigned char *, unsigned int, RSA *);
 
 RSA *	d2i_RSAPrivateKey(RSA *, const unsigned char **, size_t);
-int	i2d_RSAPublicKey(RSA *, const unsigned char **);
+int	i2d_RSAPublicKey(RSA *, unsigned char **);
 
 #endif /* _HEIM_RSA_H */
