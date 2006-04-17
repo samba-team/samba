@@ -66,7 +66,7 @@ void winbindd_check_cache_size(time_t t)
 		return;
 	}
 
-	if (fstat(wcache->tdb->fd, &st) == -1) {
+	if (fstat(tdb_fd(wcache->tdb), &st) == -1) {
 		DEBUG(0, ("Unable to check size of tdb cache %s!\n", strerror(errno) ));
 		return;
 	}
@@ -2431,7 +2431,7 @@ BOOL set_global_winbindd_state_offline(void)
 		return True;
 	}
 
-	wcache->tdb->ecode = 0;
+/*	wcache->tdb->ecode = 0; */
 
 	data = tdb_fetch_bystring( wcache->tdb, "WINBINDD_OFFLINE" );
 

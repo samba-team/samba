@@ -174,7 +174,8 @@ MODULES = $(VFS_MODULES) $(PDB_MODULES) $(RPC_MODULES) $(IDMAP_MODULES) $(CHARSE
 # object file lists
 ######################################################################
 
-TDBBASE_OBJ = tdb/tdb.o tdb/spinlock.o
+TDBBASE_OBJ = tdb/tdb.o tdb/dump.o tdb/error.o tdb/freelist.o tdb/io.o \
+	tdb/lock.o tdb/open.o tdb/transaction.o tdb/traverse.o
 
 TDB_OBJ = $(TDBBASE_OBJ) tdb/tdbutil.o tdb/tdbback.o
 
@@ -550,7 +551,7 @@ CAC_OBJ = $(LIBSMBCLIENT_OBJ) \
 			 libmsrpc/cac_lsarpc.o libmsrpc/cac_winreg.o libmsrpc/cac_samr.o \
 			 libmsrpc/cac_svcctl.o
 
-LIBSMBSHAREMODES_OBJ = libsmb/smb_share_modes.o tdb/tdb.o tdb/spinlock.o
+LIBSMBSHAREMODES_OBJ = libsmb/smb_share_modes.o tdb/tdb.o
 
 # This shared library is intended for linking with unit test programs
 # to test Samba internals.  It's called libbigballofmud.so to

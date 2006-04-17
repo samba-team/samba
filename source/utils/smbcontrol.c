@@ -707,7 +707,7 @@ static BOOL do_winbind_offline(const struct process_id pid,
 		ret = send_message(pid, MSG_WINBIND_OFFLINE, NULL, 0, False);
 
 		/* Check that the entry "WINBINDD_OFFLINE" still exists. */
-		tdb->ecode = 0;
+		/* tdb->ecode = 0; */
 		d = tdb_fetch_bystring( tdb, "WINBINDD_OFFLINE" );
 
 		/* As this is a key with no data we don't need to free, we

@@ -861,6 +861,11 @@ struct timespec {
 #define MAX(a,b) ((a)>(b)?(a):(b))
 #endif
 
+#ifndef _BOOL
+typedef int BOOL;
+#define _BOOL       /* So we don't typedef BOOL again in vfs.h */
+#endif
+
 #ifndef HAVE_STRERROR
 extern char *sys_errlist[];
 #define strerror(i) sys_errlist[i]
@@ -893,7 +898,6 @@ extern int errno;
 #include "intl.h"
 #include "dlinklist.h"
 #include "tdb/tdb.h"
-#include "tdb/spinlock.h"
 #include "tdb/tdbutil.h"
 
 #include "talloc.h"

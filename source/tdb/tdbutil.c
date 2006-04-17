@@ -19,8 +19,20 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#include "includes.h"
+#include "tdb_private.h"
 #include <fnmatch.h>
+
+/***************************************************************
+ Allow a caller to set a "alarm" flag that tdb can check to abort
+ a blocking lock on SIGALRM.
+***************************************************************/
+
+static sig_atomic_t *palarm_fired;
+
+static void tdb_set_lock_alarm(sig_atomic_t *palarm)
+{
+	palarm_fired = palarm;
+}
 
 /* these are little tdb utility functions that are meant to make
    dealing with a tdb database a little less cumbersome in Samba */
@@ -789,29 +801,20 @@ static void tdb_log(TDB_CONTEXT *tdb, int level, const char *format, ...)
  the samba DEBUG() system.
 ****************************************************************************/
 
-TDB_CONTEXT *tdb_open_log(const char *name, int hash_size, int tdb_flags,
+TDB_CONTEXT *tdb_open_log(const char *name, int hash_size, int tdbflags,
 			  int open_flags, mode_t mode)
 {
 	TDB_CONTEXT *tdb;
 
 	if (!lp_use_mmap())
-		tdb_flags |= TDB_NOMMAP;
+		tdbflags |= TDB_NOMMAP;
 
-	tdb = tdb_open_ex(name, hash_size, tdb_flags, 
+	tdb = tdb_open_ex(name, hash_size, tdbflags, 
 				    open_flags, mode, tdb_log, NULL);
 	if (!tdb)
 		return NULL;
 
 	return tdb;
-}
-
-/****************************************************************************
-  return the name of the current tdb file useful for external logging
-  functions
-****************************************************************************/
-const char *tdb_name(struct tdb_context *tdb)
-{
-	return tdb->name;
 }
 
 /****************************************************************************
@@ -893,3 +896,14 @@ void tdb_search_list_free(TDB_LIST_NODE* node)
 		node = next_node;
 	};
 }
+
+size_t tdb_map_size(struct tdb_context *tdb)
+{
+	return tdb->map_size;
+}
+
+int tdb_flags(struct tdb_context *tdb)
+{
+	return tdb->flags;
+}
+

@@ -52,11 +52,6 @@
 #define Auto (2)
 #define Required (3)
 
-#ifndef _BOOL
-typedef int BOOL;
-#define _BOOL       /* So we don't typedef BOOL again in vfs.h */
-#endif
-
 #define SIZEOFWORD 2
 
 #ifndef DEF_CREATE_MASK
