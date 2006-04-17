@@ -673,7 +673,7 @@ uint32 update_c_setprinter(BOOL initialize)
 	int32 c_setprinter;
 	int32 printer_count = 0;
  
-	tdb_lock_bystring(tdb_printers, GLOBAL_C_SETPRINTER, 0);
+	tdb_lock_bystring(tdb_printers, GLOBAL_C_SETPRINTER);
  
 	/* Traverse the tdb, counting the printers */
 	tdb_traverse(tdb_printers, traverse_counting_printers, (void *)&printer_count);

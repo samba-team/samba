@@ -269,7 +269,7 @@ BOOL init_account_policy(void)
 	}
 
 	/* handle a Samba upgrade */
-	tdb_lock_bystring(tdb, vstring,0);
+	tdb_lock_bystring(tdb, vstring);
 	if (!tdb_fetch_uint32(tdb, vstring, &version) || version != DATABASE_VERSION) {
 
 		tdb_store_uint32(tdb, vstring, DATABASE_VERSION);

@@ -163,7 +163,7 @@ BOOL make_way_for_eventlogs( TDB_CONTEXT * the_tdb, int32 needed,
 	if ( mem_ctx == NULL )
 		return False;	/* can't allocate memory indicates bigger problems */
 	/* lock */
-	tdb_lock_bystring( the_tdb, EVT_NEXT_RECORD, 1 );
+	tdb_lock_bystring_with_timeout( the_tdb, EVT_NEXT_RECORD, 1 );
 	/* read */
 	end_record = tdb_fetch_int32( the_tdb, EVT_NEXT_RECORD );
 	start_record = tdb_fetch_int32( the_tdb, EVT_OLDEST_ENTRY );
@@ -489,7 +489,7 @@ int write_eventlog_tdb( TDB_CONTEXT * the_tdb, Eventlog_entry * ee )
 	/* need to read the record number and insert it into the entry here */
 
 	/* lock */
-	tdb_lock_bystring( the_tdb, EVT_NEXT_RECORD, 1 );
+	tdb_lock_bystring_with_timeout( the_tdb, EVT_NEXT_RECORD, 1 );
 	/* read */
 	next_record = tdb_fetch_int32( the_tdb, EVT_NEXT_RECORD );
 
