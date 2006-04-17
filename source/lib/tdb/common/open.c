@@ -424,11 +424,27 @@ fail:
 }
 
 /* reopen all tdb's */
-int tdb_reopen_all(void)
+int tdb_reopen_all(int parent_longlived)
 {
 	struct tdb_context *tdb;
 
 	for (tdb=tdbs; tdb; tdb = tdb->next) {
+		/*
+		 * If the parent is longlived (ie. a
+		 * parent daemon architecture), we know
+		 * it will keep it's active lock on a
+		 * tdb opened with CLEAR_IF_FIRST. Thus
+		 * for child processes we don't have to
+		 * add an active lock. This is essential
+		 * to improve performance on systems that
+		 * keep POSIX locks as a non-scalable data
+		 * structure in the kernel.
+		 */
+		if (parent_longlived) {
+			/* Ensure no clear-if-first. */
+			tdb->flags &= ~TDB_CLEAR_IF_FIRST;
+		}
+
 		if (tdb_reopen(tdb) != 0)
 			return -1;
 	}

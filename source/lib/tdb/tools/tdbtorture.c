@@ -149,7 +149,7 @@ static void addrec_db(void)
 
 #if REOPEN_PROB
 	if (in_transaction == 0 && random() % REOPEN_PROB == 0) {
-		tdb_reopen_all();
+		tdb_reopen_all(0);
 		goto next;
 	} 
 #endif
