@@ -45,6 +45,7 @@
 #define ENGINE_finish hc_ENGINE_finish
 #define ENGINE_get_DH hc_ENGINE_get_DH
 #define ENGINE_get_RSA hc_ENGINE_get_RSA
+#define ENGINE_get_RAND hc_ENGINE_get_RAND
 #define ENGINE_get_id hc_ENGINE_get_id
 #define ENGINE_get_name hc_ENGINE_get_name
 #define ENGINE_load_builtin_engines hc_ENGINE_load_builtin_engines
@@ -64,6 +65,7 @@ typedef struct hc_engine ENGINE;
 #include <hcrypto/rsa.h>
 #include <hcrypto/dsa.h>
 #include <hcrypto/dh.h>
+#include <hcrypto/rand.h>
 
 #define OPENSSL_DYNAMIC_VERSION		(unsigned long)0x00020000
 
@@ -86,6 +88,7 @@ const char *		ENGINE_get_id(const ENGINE *);
 const char *		ENGINE_get_name(const ENGINE *);
 const RSA_METHOD *	ENGINE_get_RSA(const ENGINE *);
 const DH_METHOD *	ENGINE_get_DH(const ENGINE *);
+const RAND_METHOD *	ENGINE_get_RAND(const ENGINE *);
 
 int		ENGINE_set_default_RSA(ENGINE *);
 ENGINE *	ENGINE_get_default_RSA(void);

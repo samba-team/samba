@@ -57,6 +57,7 @@ struct hc_engine {
     void (*destroy)(ENGINE *);
     const RSA_METHOD *rsa;
     const DH_METHOD *dh;
+    const RAND_METHOD *rand;
 };
 
 int
@@ -148,6 +149,12 @@ const DH_METHOD *
 ENGINE_get_DH(const ENGINE *engine)
 {
     return engine->dh;
+}
+
+const RAND_METHOD *
+ENGINE_get_RAND(const ENGINE *engine)
+{
+    return engine->rand;
 }
 
 /*
