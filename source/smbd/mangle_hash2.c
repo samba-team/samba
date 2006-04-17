@@ -101,7 +101,7 @@ static unsigned mangle_prefix;
    hashing the resulting cache entry to match the known hash
 */
 static char **prefix_cache;
-static u32 *prefix_cache_hashes;
+static uint32 *prefix_cache_hashes;
 
 /* these are the characters we use in the 8.3 hash. Must be 36 chars long */
 static const char *basechars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -119,10 +119,10 @@ static const char *reserved_names[] =
 
    this hash needs to be fast with a low collision rate (what hash doesn't?)
 */
-static u32 mangle_hash(const char *key, unsigned int length)
+static uint32 mangle_hash(const char *key, unsigned int length)
 {
-	u32 value;
-	u32   i;
+	uint32 value;
+	uint32   i;
 	fstring str;
 
 	/* we have to uppercase here to ensure that the mangled name
@@ -139,8 +139,8 @@ static u32 mangle_hash(const char *key, unsigned int length)
 
 	/* Set the initial value from the key size. */
 	for (value = FNV1_INIT, i=0; i < length; i++) {
-                value *= (u32)FNV1_PRIME;
-                value ^= (u32)(str[i]);
+                value *= (uint32)FNV1_PRIME;
+                value ^= (uint32)(str[i]);
         }
 
 	/* note that we force it to a 31 bit hash, to keep within the limits
@@ -162,7 +162,7 @@ static BOOL cache_init(void)
 		return False;
 	}
 
-	prefix_cache_hashes = SMB_CALLOC_ARRAY(u32, MANGLE_CACHE_SIZE);
+	prefix_cache_hashes = SMB_CALLOC_ARRAY(uint32, MANGLE_CACHE_SIZE);
 	if (!prefix_cache_hashes) {
 		return False;
 	}
@@ -173,7 +173,7 @@ static BOOL cache_init(void)
 /*
   insert an entry into the prefix cache. The string might not be null
   terminated */
-static void cache_insert(const char *prefix, int length, u32 hash)
+static void cache_insert(const char *prefix, int length, uint32 hash)
 {
 	int i = hash % MANGLE_CACHE_SIZE;
 
@@ -188,7 +188,7 @@ static void cache_insert(const char *prefix, int length, u32 hash)
 /*
   lookup an entry in the prefix cache. Return NULL if not found.
 */
-static const char *cache_lookup(u32 hash)
+static const char *cache_lookup(uint32 hash)
 {
 	int i = hash % MANGLE_CACHE_SIZE;
 
@@ -372,7 +372,7 @@ static void mangle_reset(void)
 */
 static BOOL check_cache(char *name, size_t maxlen, int snum)
 {
-	u32 hash, multiplier;
+	uint32 hash, multiplier;
 	unsigned int i;
 	const char *prefix;
 	char extension[4];
@@ -386,7 +386,7 @@ static BOOL check_cache(char *name, size_t maxlen, int snum)
 	/* we need to extract the hash from the 8.3 name */
 	hash = base_reverse[(unsigned char)name[7]];
 	for (multiplier=36, i=5;i>=mangle_prefix;i--) {
-		u32 v = base_reverse[(unsigned char)name[i]];
+		uint32 v = base_reverse[(unsigned char)name[i]];
 		hash += multiplier * v;
 		multiplier *= 36;
 	}
@@ -517,7 +517,7 @@ static void name_map(fstring name, BOOL need83, BOOL cache83, int default_case, 
 	char extension[4];
 	unsigned int extension_length, i;
 	unsigned int prefix_len;
-	u32 hash, v;
+	uint32 hash, v;
 	char new_name[13];
 
 	/* reserved names are handled specially */
