@@ -805,6 +805,14 @@ TDB_CONTEXT *tdb_open_log(const char *name, int hash_size, int tdb_flags,
 	return tdb;
 }
 
+/****************************************************************************
+  return the name of the current tdb file useful for external logging
+  functions
+****************************************************************************/
+const char *tdb_name(struct tdb_context *tdb)
+{
+	return tdb->name;
+}
 
 /****************************************************************************
  Allow tdb_delete to be used as a tdb_traversal_fn.
