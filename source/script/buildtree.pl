@@ -1,5 +1,5 @@
-#! /usr/bin/perl -w
-    eval 'exec /usr/bin/perl -S $0 ${1+"$@"}'
+#! /usr/bin/env perl -w
+    eval 'exec /usr/bin/env perl -S $0 ${1+"$@"}'
         if 0; #$running_under_some_shell
 
 use strict;
