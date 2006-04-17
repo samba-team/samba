@@ -208,6 +208,7 @@ void winbindd_getgrnam(struct winbindd_cli_state *state)
 	fstring name_domain, name_group;
 	char *tmp, *gr_mem;
 	size_t gr_mem_len;
+	size_t num_gr_mem;
 	gid_t gid;
 	union unid_t id;
 	NTSTATUS status;
@@ -311,11 +312,13 @@ void winbindd_getgrnam(struct winbindd_cli_state *state)
 	if (!fill_grent(&state->response.data.gr, name_domain,
 			name_group, gid) ||
 	    !fill_grent_mem(domain, &group_sid, name_type,
-			    &state->response.data.gr.num_gr_mem,
+			    &num_gr_mem,
 			    &gr_mem, &gr_mem_len)) {
 		request_error(state);
 		return;
 	}
+
+	state->response.data.gr.num_gr_mem = (uint32)num_gr_mem;
 
 	/* Group membership lives at start of extra data */
 
@@ -336,6 +339,7 @@ void winbindd_getgrgid(struct winbindd_cli_state *state)
 	fstring dom_name;
 	fstring group_name;
 	size_t gr_mem_len;
+	size_t num_gr_mem;
 	char *gr_mem;
 	NTSTATUS status;
 
@@ -405,11 +409,13 @@ void winbindd_getgrgid(struct winbindd_cli_state *state)
 	if (!fill_grent(&state->response.data.gr, dom_name, group_name, 
 			state->request.data.gid) ||
 	    !fill_grent_mem(domain, &group_sid, name_type,
-			    &state->response.data.gr.num_gr_mem,
+			    &num_gr_mem,
 			    &gr_mem, &gr_mem_len)) {
 		request_error(state);
 		return;
 	}
+
+	state->response.data.gr.num_gr_mem = (uint32)num_gr_mem;
 
 	/* Group membership lives at start of extra data */
 
@@ -756,6 +762,7 @@ void winbindd_getgrent(struct winbindd_cli_state *state)
 		/* Fill in group membership entry */
 
 		if (result) {
+			size_t num_gr_mem = 0;
 			DOM_SID member_sid;
 			group_list[group_list_ndx].num_gr_mem = 0;
 			gr_mem = NULL;
@@ -771,8 +778,10 @@ void winbindd_getgrent(struct winbindd_cli_state *state)
 					domain,
 					&member_sid,
 					SID_NAME_DOM_GRP,
-					&group_list[group_list_ndx].num_gr_mem, 
+					&num_gr_mem,
 					&gr_mem, &gr_mem_len);
+
+				group_list[group_list_ndx].num_gr_mem = (uint32)num_gr_mem;
 			}
 		}
 
