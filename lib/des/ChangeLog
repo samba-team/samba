@@ -1,3 +1,21 @@
+2006-04-17  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* rand.h: Add more RAND functions.
+
+	* rand.c: Split out unix /dev/random to a RAND_METHOD
+
+	* engine.h: add RAND support
+
+	* engine.c: add RAND support
+
+	* evp.h: s/rc4_64/rc2_64/
+
+	* rand.c: Add RAND_METHOD and some associated functions.
+
+	* rand.h: Add RAND_METHOD and some associated functions.
+
+	* test_bn.c: Test BN_rand
+	
 2006-04-16  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* engine.c (ENGINE_by_dso): less printf
