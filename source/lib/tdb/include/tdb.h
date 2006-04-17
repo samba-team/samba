@@ -87,7 +87,7 @@ struct tdb_context *tdb_open_ex(const char *name, int hash_size, int tdb_flags,
 			 tdb_hash_func hash_fn);
 
 int tdb_reopen(struct tdb_context *tdb);
-int tdb_reopen_all(void);
+int tdb_reopen_all(int parent_longlived);
 void tdb_logging_function(struct tdb_context *tdb, tdb_log_func);
 enum TDB_ERROR tdb_error(struct tdb_context *tdb);
 const char *tdb_errorstr(struct tdb_context *tdb);

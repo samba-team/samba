@@ -105,7 +105,7 @@ static void standard_accept_connection(struct event_context *ev,
 	socket_dup(sock2);
 			
 	/* tdb needs special fork handling */
-	if (tdb_reopen_all() == -1) {
+	if (tdb_reopen_all(1) == -1) {
 		DEBUG(0,("standard_accept_connection: tdb_reopen_all failed.\n"));
 	}
 
@@ -169,7 +169,7 @@ static void standard_new_task(struct event_context *ev,
 	talloc_free(ev);
 
 	/* tdb needs special fork handling */
-	if (tdb_reopen_all() == -1) {
+	if (tdb_reopen_all(1) == -1) {
 		DEBUG(0,("standard_accept_connection: tdb_reopen_all failed.\n"));
 	}
 
