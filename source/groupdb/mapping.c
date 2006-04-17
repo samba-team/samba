@@ -63,7 +63,7 @@ static BOOL init_group_mapping(void)
 	}
 
 	/* handle a Samba upgrade */
-	tdb_lock_bystring(tdb, vstring, 0);
+	tdb_lock_bystring(tdb, vstring);
 
 	/* Cope with byte-reversed older versions of the db. */
 	vers_id = tdb_fetch_int32(tdb, vstring);

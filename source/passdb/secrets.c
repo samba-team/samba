@@ -245,7 +245,7 @@ BOOL secrets_lock_trust_account_password(const char *domain, BOOL dolock)
 		return False;
 
 	if (dolock)
-		return (tdb_lock_bystring(tdb, trust_keystr(domain),0) == 0);
+		return (tdb_lock_bystring(tdb, trust_keystr(domain)) == 0);
 	else
 		tdb_unlock_bystring(tdb, trust_keystr(domain));
 	return True;
@@ -774,7 +774,7 @@ BOOL secrets_named_mutex(const char *name, unsigned int timeout)
 	if (!secrets_init())
 		return False;
 
-	ret = tdb_lock_bystring(tdb, name, timeout);
+	ret = tdb_lock_bystring_with_timeout(tdb, name, timeout);
 	if (ret == 0)
 		DEBUG(10,("secrets_named_mutex: got mutex for %s\n", name ));
 

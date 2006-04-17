@@ -55,7 +55,7 @@ BOOL share_info_db_init(void)
 	}
  
 	/* handle a Samba upgrade */
-	tdb_lock_bystring(share_tdb, vstring, 0);
+	tdb_lock_bystring(share_tdb, vstring);
 
 	/* Cope with byte-reversed older versions of the db. */
 	vers_id = tdb_fetch_int32(share_tdb, vstring);
