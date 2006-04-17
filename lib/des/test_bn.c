@@ -322,6 +322,21 @@ test_BN_cmp(void)
     return 0;
 }
 
+static int
+test_BN_rand(void)
+{
+    BIGNUM *bn;
+
+    bn = BN_new();
+    if (bn == NULL)
+	return 1;
+
+    if (!BN_rand(bn, 1024, 0, 0))
+	return 1;
+
+    BN_free(bn);
+    return 0;
+}
 
 int
 main(int argc, char **argv)
@@ -333,6 +348,7 @@ main(int argc, char **argv)
     ret += test_BN_import_export();
     ret += test_BN_uadd();
     ret += test_BN_cmp();
+    ret += test_BN_rand();
 
     return ret;
 }
