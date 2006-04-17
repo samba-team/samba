@@ -22,7 +22,7 @@ lib/registry/tdr_regf.h: lib/registry/tdr_regf.c
 lib/registry/tdr_regf.c: $(srcdir)/lib/registry/regf.idl
 	@CPP="$(CPP)" $(PERL) $(srcdir)/pidl/pidl $(PIDL_ARGS) \
 		--header --outputdir=lib/registry \
-		--tdr-parser -- $^
+		--tdr-parser -- $(srcdir)/lib/registry/regf.idl
 
 clean::
 	@-rm -f lib/registry/regf.h lib/registry/tdr_regf*
