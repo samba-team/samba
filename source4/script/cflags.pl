@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 
 # This is a hack to allow per target cflags. It isn't very elegant, but it
 # is the most portable idea we have come up with yet
