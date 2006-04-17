@@ -20,73 +20,71 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 
-import ldb
+from ldb import *
+
+ldb_global_init()
 
 class LdbError(Exception):
     """An exception raised when a ldb error occurs."""
     pass
 
-class LdbElement:
-    """A class representing a ldb element as an array of values."""
-    
-    def __init__(self, elt):
-        self.name = elt.name
-        self.flags = elt.flags
-        self.values = [ldb.ldb_val_array_getitem(elt.values, x)
-                       for x in range(elt.num_values)]
-
-    def __repr__(self):
-        return '<%s(name=%s) instance at 0x%x' % (self.__class__.__name__,
-                                                  `self.name`, id(self))
-
-    def __len__(self):
-        return self.values.len()
-
-    def __getitem__(self, key):
-        return self.values[key]
-
 class LdbMessage:
-    """A class representing a ldb message as a dict of ldb elements."""
+    """A class representing a ldb message as a Python dictionary."""
     
     def __init__(self, msg = None):
 
-        self.dn = None
-        self.private_data = None
-        self.elements = []
+        self._msg = msg
+        if self._msg is None:
+            self._msg = ldb_msg_new(None)
 
-        if msg is not None:
-            self.dn = msg.dn
-            self.private_data = msg.private_data
-            eltlist = \
-                [LdbElement(ldb.ldb_message_element_array_getitem(
-                            msg.elements, x))
-                 for x in range(msg.num_elements)]
-            self.elements = dict([(x.name, x) for x in eltlist])
+    def __del__(self):
+        talloc_free(self._msg)
 
-    def __repr__(self):
-        return '<%s(dn=%s) instance at 0x%x>' % (self.__class__.__name__,
-                                               `self.dn`, id(self))
+    def len(self):
+        return self._msg.num_elements
 
     def __getitem__(self, key):
-        return self.elements[key]
+        elt = ldb_msg_find_element(self._msg, key)
+        if elt is None:
+            raise KeyError, "No such attribute '%s'" % key
+        return [ldb_val_array_getitem(elt.values, i)
+                for i in range(elt.num_values)]
 
-    def keys(self):
-        return self.elements.keys()
-
+    def __setitem__(self, key, value):
+        result = ldb_msg_add_value(self._msg, key, str(value))
+        if result != LDB_SUCCESS:
+            raise LdbError, (result, ldb.strerror(result))
+    
 class Ldb:
     """A class representing a binding to a ldb file."""
 
-    def __init__(self):
-        self.mem_ctx = ldb.talloc_init('python ldb')
-        self.ldb_ctx = ldb.init(self.mem_ctx)
+    def __init__(self, url, flags = 0):
+        """Initialise underlying ldb."""
+    
+        self.mem_ctx = talloc_init('mem_ctx for ldb 0x%x' % id(self))
+        self.ldb_ctx = ldb_init(self.mem_ctx)
+
+        result =  ldb_connect(self.ldb_ctx, url, flags, None)
+
+        if result != LDB_SUCCESS:
+            raise ldbError, (result, ldb.strerror(result))
         
     def __del__(self):
         ldb.talloc_free(self.mem_ctx)
+        self.mem_ctx = None
+        self.ldb_ctx = None
 
-    def connect(self, url, flags = 0):
-        ldb.connect(self.ldb_ctx, url, flags, None)
+    def _ldb_call(self, fn, *args):
+        """Call a ldb function with args.  Raise a LdbError exception
+        if the function returns a non-zero return value."""
+        
+        result = fn(*args)
+
+        if result != ldb.LDB_SUCCESS:
+            raise LdbError, (result, ldb.strerror(result))
 
     def search(self, expression):
+        """Search a ldb for a given expression."""
 
         self._ldb_call(ldb.search, self.ldb_ctx, None, ldb.LDB_SCOPE_DEFAULT,
                        expression, None);
@@ -94,16 +92,20 @@ class Ldb:
         return [LdbMessage(ldb.ldb_message_ptr_array_getitem(result.msgs, ndx))
                 for ndx in range(result.count)]
 
-    def _ldb_call(self, fn, *args):
-        result = fn(*args)
-        if result != ldb.LDB_SUCCESS:
-            raise LdbError, (result, ldb.strerror(result))
-
     def delete(self, dn):
-        self._ldb_call(ldb.delete, self.ldb_ctx, dn)
+        """Delete a dn."""
+
+        _dn = ldb_dn_explode(self.ldb_ctx, dn)
+
+        self._ldb_call(ldb.delete, self.ldb_ctx, _dn)
 
     def rename(self, olddn, newdn):
-        self._ldb_call(ldb.rename, self.ldb_ctx, olddn, newdn)
+        """Rename a dn."""
+        
+        _olddn = ldb_dn_explode(self.ldb_ctx, olddn)
+        _newdn = ldb_dn_explode(self.ldb_ctx, newdn)
+        
+        self._ldb_call(ldb.rename, self.ldb_ctx, _olddn, _newdn)
 
     def add(self, msg):
         self._ldb_call(ldb.add, self.ldb_ctx, msg)
