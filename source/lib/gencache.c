@@ -372,7 +372,7 @@ int gencache_lock_entry( const char *key )
 	if (!gencache_init())
 		return -1;
 	
-	return tdb_lock_bystring(cache, key, 0);
+	return tdb_lock_bystring(cache, key);
 }
 
 /********************************************************************

@@ -197,7 +197,7 @@ BOOL print_backend_init(void)
 		pdb = get_print_db_byname(lp_const_servicename(snum));
 		if (!pdb)
 			continue;
-		if (tdb_lock_bystring(pdb->tdb, sversion, 0) == -1) {
+		if (tdb_lock_bystring(pdb->tdb, sversion) == -1) {
 			DEBUG(0,("print_backend_init: Failed to open printer %s database\n", lp_const_servicename(snum) ));
 			release_print_db(pdb);
 			return False;
@@ -1291,7 +1291,7 @@ static void print_queue_update_with_lock( const char *sharename,
 
 	slprintf(keystr, sizeof(keystr) - 1, "LOCK/%s", sharename);
 	/* Only wait 10 seconds for this. */
-	if (tdb_lock_bystring(pdb->tdb, keystr, 10) == -1) {
+	if (tdb_lock_bystring_with_timeout(pdb->tdb, keystr, 10) == -1) {
 		DEBUG(0,("print_queue_update_with_lock: Failed to lock printer %s database\n", sharename));
 		release_print_db(pdb);
 		return;
@@ -1563,7 +1563,7 @@ BOOL print_notify_register_pid(int snum)
 		tdb = pdb->tdb;
 	}
 
-	if (tdb_lock_bystring(tdb, NOTIFY_PID_LIST_KEY, 10) == -1) {
+	if (tdb_lock_bystring_with_timeout(tdb, NOTIFY_PID_LIST_KEY, 10) == -1) {
 		DEBUG(0,("print_notify_register_pid: Failed to lock printer %s\n",
 					printername));
 		if (pdb)
@@ -1653,7 +1653,7 @@ BOOL print_notify_deregister_pid(int snum)
 		tdb = pdb->tdb;
 	}
 
-	if (tdb_lock_bystring(tdb, NOTIFY_PID_LIST_KEY, 10) == -1) {
+	if (tdb_lock_bystring_with_timeout(tdb, NOTIFY_PID_LIST_KEY, 10) == -1) {
 		DEBUG(0,("print_notify_register_pid: Failed to lock \
 printer %s database\n", printername));
 		if (pdb)
@@ -2205,7 +2205,7 @@ static BOOL allocate_print_jobid(struct tdb_print_db *pdb, int snum, const char 
 
 	for (i = 0; i < 3; i++) {
 		/* Lock the database - only wait 20 seconds. */
-		if (tdb_lock_bystring(pdb->tdb, "INFO/nextjob", 20) == -1) {
+		if (tdb_lock_bystring_with_timeout(pdb->tdb, "INFO/nextjob", 20) == -1) {
 			DEBUG(0,("allocate_print_jobid: failed to lock printing database %s\n", sharename));
 			return False;
 		}

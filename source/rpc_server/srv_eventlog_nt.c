@@ -146,7 +146,7 @@ static BOOL get_num_records_hook( EVENTLOG_INFO * info )
 
 	/* lock the tdb since we have to get 2 records */
 
-	tdb_lock_bystring( ELOG_TDB_CTX(info->etdb), EVT_NEXT_RECORD, 1 );
+	tdb_lock_bystring_with_timeout( ELOG_TDB_CTX(info->etdb), EVT_NEXT_RECORD, 1 );
 	next_record = tdb_fetch_int32( ELOG_TDB_CTX(info->etdb), EVT_NEXT_RECORD);
 	oldest_record = tdb_fetch_int32( ELOG_TDB_CTX(info->etdb), EVT_OLDEST_ENTRY);
 	tdb_unlock_bystring( ELOG_TDB_CTX(info->etdb), EVT_NEXT_RECORD);

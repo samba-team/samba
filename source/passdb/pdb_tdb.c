@@ -694,7 +694,7 @@ static BOOL tdbsam_convert(int32 from)
 	BOOL 		ret;
 
 	/* handle a Samba upgrade */
-	tdb_lock_bystring(tdbsam, vstring, 0);
+	tdb_lock_bystring(tdbsam, vstring);
 	
 	/* Enumerate all records and convert them */
 	key = tdb_firstkey(tdbsam);
@@ -1420,7 +1420,7 @@ static NTSTATUS tdbsam_rename_sam_account(struct pdb_methods *my_methods,
 	
 	interim_account = True;
 
-	if ( tdb_lock_bystring(tdbsam, newname, 30) == -1 ) {
+	if ( tdb_lock_bystring_with_timeout(tdbsam, newname, 30) == -1 ) {
 		goto done;
 	}
 
@@ -1492,7 +1492,7 @@ static BOOL init_idmap_tdb(TDB_CONTEXT *tdb)
 {
 	int32 version;
 
-	if (tdb_lock_bystring(tdb, "IDMAP_VERSION", 0) != 0) {
+	if (tdb_lock_bystring(tdb, "IDMAP_VERSION") != 0) {
 		DEBUG(0, ("Could not lock IDMAP_VERSION\n"));
 		return False;
 	}
