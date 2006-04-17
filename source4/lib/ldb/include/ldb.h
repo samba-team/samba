@@ -827,6 +827,11 @@ int ldb_transaction_cancel(struct ldb_context *ldb);
 const char *ldb_errstring(struct ldb_context *ldb);
 
 /**
+  return a string explaining what a ldb error constant meancs
+*/
+const char *ldb_strerror(int ldb_err);
+
+/**
   setup the default utf8 functions
   FIXME: these functions do not yet handle utf8
 */
