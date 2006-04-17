@@ -1,3 +1,4 @@
+
 /*
  * Copyright (c) 2006 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
@@ -39,16 +40,53 @@
 #define _HEIM_RAND_H 1
 
 #include <hcrypto/bn.h>
+#include <hcrypto/engine.h>
 
 /* symbol renaming */
 #define RAND_bytes hc_RAND_bytes
 #define RAND_pseudo_bytes hc_RAND_pseudo_bytes
+#define RAND_seed hc_RAND_seed
+#define RAND_set_rand_method hc_RAND_set_rand_method
+#define RAND_get_rand_method hc_RAND_get_rand_method
+#define RAND_set_rand_engine hc_RAND_set_rand_engine
+#define RAND_load_file hc_RAND_load_file
+#define RAND_write_file hc_RAND_write_file
+#define RAND_status hc_RAND_status
+#define RAND_egd hc_RAND_egd
 
 /*
  *
  */
 
-int  RAND_bytes(void *, size_t num);
-int  RAND_pseudo_bytes(void *, size_t);
+typedef struct RAND_METHOD RAND_METHOD;
+
+struct RAND_METHOD
+{
+    void (*seed)(const void *, int);
+    int (*bytes)(unsigned char *, int);
+    void (*cleanup)(void);
+    void (*add)(const void *, int, double);
+    int (*pseudorand)(unsigned char *, int);
+    int (*status)(void);
+};
+
+/*
+ *
+ */
+
+int	RAND_bytes(void *, size_t num);
+int	RAND_pseudo_bytes(void *, size_t);
+void	RAND_seed(const void *, size_t);
+
+int	RAND_set_rand_method(const RAND_METHOD *);
+const RAND_METHOD *
+	RAND_get_rand_method(void);
+int	RAND_set_rand_engine(ENGINE *);
+
+int	RAND_load_file(const char *, size_t);
+int	RAND_write_file(const char *);
+int	RAND_status(void);
+int	RAND_egd(const char *);
+
 
 #endif /* _HEIM_RAND_H */

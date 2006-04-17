@@ -43,8 +43,10 @@ RCSID("$Id$");
 
 #include <roken.h>
 
-int
-RAND_bytes(void *outdata, size_t size)
+const RAND_METHOD *default_meth;
+
+static int
+get_device_fd(void)
 {
     static const char *rnd_devices[] = {
 	"/dev/random",
@@ -57,15 +59,28 @@ RAND_bytes(void *outdata, size_t size)
 
     for(p = rnd_devices; *p; p++) {
 	int fd = open(*p, O_RDONLY | O_NDELAY);
-      
-	if(fd >= 0 && read(fd, outdata, size) == size) {
-	    close(fd);
-	    return 1;
-	}
-	close(fd);
+	if(fd >= 0)
+	    return fd;
     }
+    return -1;
+}
 
-    return 0;
+int
+RAND_bytes(void *outdata, size_t size)
+{
+    ssize_t ret;
+    int fd;
+
+    fd = get_device_fd();
+    if (fd < 0)
+	return 0;
+
+    ret = read(fd, outdata, size);
+    close(fd);
+    if (size != ret)
+	return 0;
+
+    return 1;
 }
 
 int
@@ -74,3 +89,56 @@ RAND_pseudo_bytes(void *outdata, size_t num)
     return RAND_bytes(outdata, num);
 }
 
+void
+RAND_seed(const void *indata, size_t size)
+{
+    int fd = get_device_fd();
+    if (fd < 0)
+	return;
+
+    write(fd, indata, size);
+    close(fd);
+}
+
+int
+RAND_set_rand_method(const RAND_METHOD *meth)
+{
+    default_meth = meth;
+    return 1;
+}
+
+const RAND_METHOD *
+RAND_get_rand_method(void)
+{
+    return default_meth;
+}
+
+int
+RAND_set_rand_engine(ENGINE *engine)
+{
+    return 1;
+}
+
+int
+RAND_load_file(const char *filename, size_t size)
+{
+    return 1;
+}
+
+int
+RAND_write_file(const char *filename)
+{
+    return 1;
+}
+
+int
+RAND_status(void)
+{
+    return 1;
+}
+
+int
+RAND_egd(const char *filename)
+{
+    return 1;
+}
