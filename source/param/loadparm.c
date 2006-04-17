@@ -551,7 +551,7 @@ static service sDefault = {
 	False,			/* bStoreDosAttributes */
 	False,			/* bDmapiSupport */
 	True,			/* bLocking */
-	True,			/* iStrictLocking */
+	Auto,			/* iStrictLocking */
 	True,			/* bPosixLocking */
 	True,			/* bShareModes */
 	True,			/* bOpLocks */
