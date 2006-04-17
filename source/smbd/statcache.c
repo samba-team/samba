@@ -291,12 +291,12 @@ BOOL stat_cache_lookup(connection_struct *conn, pstring name, pstring dirpath,
  JRA. Use a djb-algorithm hash for speed.
 ***************************************************************/
                                                                                                      
-u32 fast_string_hash(TDB_DATA *key)
+uint32 fast_string_hash(TDB_DATA *key)
 {
-        u32 n = 0;
+        uint32 n = 0;
         const char *p;
         for (p = key->dptr; *p != '\0'; p++) {
-                n = ((n << 5) + n) ^ (u32)(*p);
+                n = ((n << 5) + n) ^ (uint32)(*p);
         }
         return n;
 }
