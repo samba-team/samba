@@ -907,3 +907,32 @@ int tdb_flags(struct tdb_context *tdb)
 	return tdb->flags;
 }
 
+/****************************************************************************
+ tdb_store, wrapped in a transaction. This way we make sure that a process
+ that dies within writing does not leave a corrupt tdb behind.
+****************************************************************************/
+
+int tdb_trans_store(struct tdb_context *tdb, TDB_DATA key, TDB_DATA dbuf,
+		    int flag)
+{
+	int res;
+
+	if ((res = tdb_transaction_start(tdb)) != 0) {
+		DEBUG(5, ("tdb_transaction_start failed\n"));
+		return res;
+	}
+
+	if ((res = tdb_store(tdb, key, dbuf, flag)) != 0) {
+		DEBUG(10, ("tdb_store failed\n"));
+		if (tdb_transaction_cancel(tdb) != 0) {
+			smb_panic("Cancelling transaction failed\n");
+		}
+		return res;
+	}
+
+	if ((res = tdb_transaction_commit(tdb)) != 0) {
+		DEBUG(5, ("tdb_transaction_commit failed\n"));
+	}
+
+	return res;
+}

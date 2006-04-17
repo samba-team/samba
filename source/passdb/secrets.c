@@ -104,8 +104,8 @@ BOOL secrets_store(const char *key, const void *data, size_t size)
 	secrets_init();
 	if (!tdb)
 		return False;
-	return tdb_store(tdb, string_tdb_data(key), make_tdb_data(data, size),
-			 TDB_REPLACE) == 0;
+	return tdb_trans_store(tdb, string_tdb_data(key),
+			       make_tdb_data(data, size), TDB_REPLACE) == 0;
 }
 
 
