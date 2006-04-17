@@ -199,6 +199,8 @@ struct ldb_result {
  * Wrap ldb functions 
  */
 
+int ldb_global_init(void);
+
 struct ldb_context *ldb_init(TALLOC_CTX *mem_ctx);
 
 const char *ldb_errstring(struct ldb_context *ldb);
