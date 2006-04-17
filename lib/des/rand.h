@@ -39,6 +39,8 @@
 #ifndef _HEIM_RAND_H
 #define _HEIM_RAND_H 1
 
+typedef struct RAND_METHOD RAND_METHOD;
+
 #include <hcrypto/bn.h>
 #include <hcrypto/engine.h>
 
@@ -46,6 +48,8 @@
 #define RAND_bytes hc_RAND_bytes
 #define RAND_pseudo_bytes hc_RAND_pseudo_bytes
 #define RAND_seed hc_RAND_seed
+#define RAND_cleanup hc_RAND_cleanup
+#define RAND_add hc_RAND_add
 #define RAND_set_rand_method hc_RAND_set_rand_method
 #define RAND_get_rand_method hc_RAND_get_rand_method
 #define RAND_set_rand_engine hc_RAND_set_rand_engine
@@ -57,8 +61,6 @@
 /*
  *
  */
-
-typedef struct RAND_METHOD RAND_METHOD;
 
 struct RAND_METHOD
 {
@@ -77,6 +79,8 @@ struct RAND_METHOD
 int	RAND_bytes(void *, size_t num);
 int	RAND_pseudo_bytes(void *, size_t);
 void	RAND_seed(const void *, size_t);
+void	RAND_cleanup(void);
+void	RAND_add(const void *, size_t, double);
 
 int	RAND_set_rand_method(const RAND_METHOD *);
 const RAND_METHOD *
