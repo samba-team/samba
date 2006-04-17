@@ -172,7 +172,7 @@ static uint32 _reg_perfcount_multi_sz_from_tdb(TDB_CONTEXT *tdb,
 		/* If a key isn't there, just bypass it -- this really shouldn't 
 		   happen unless someone's mucking around with the tdb */
 		DEBUG(3, ("_reg_perfcount_multi_sz_from_tdb: failed to find key [%s] in [%s].\n",
-			  temp, tdb->name));
+			  temp, tdb_name(tdb)));
 		return buffer_size;
 	}
 	/* First encode the name_index */
