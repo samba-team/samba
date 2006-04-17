@@ -46,7 +46,7 @@ RCSID("$Id$");
 const RAND_METHOD *default_meth;
 
 static int
-get_device_fd(void)
+get_device_fd(int flags)
 {
     static const char *rnd_devices[] = {
 	"/dev/random",
@@ -58,7 +58,7 @@ get_device_fd(void)
     const char **p;
 
     for(p = rnd_devices; *p; p++) {
-	int fd = open(*p, O_RDONLY | O_NDELAY);
+	int fd = open(*p, flags | O_NDELAY);
 	if(fd >= 0)
 	    return fd;
     }
@@ -71,7 +71,7 @@ RAND_bytes(void *outdata, size_t size)
     ssize_t ret;
     int fd;
 
-    fd = get_device_fd();
+    fd = get_device_fd(O_RDONLY);
     if (fd < 0)
 	return 0;
 
@@ -92,7 +92,7 @@ RAND_pseudo_bytes(void *outdata, size_t num)
 void
 RAND_seed(const void *indata, size_t size)
 {
-    int fd = get_device_fd();
+    int fd = get_device_fd(O_WRONLY);
     if (fd < 0)
 	return;
 
