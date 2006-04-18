@@ -363,9 +363,6 @@ static void ntlmssp_handle_neg_flags(struct ntlmssp_state *ntlmssp_state,
 
 	if (!(neg_flags & NTLMSSP_NEGOTIATE_128)) {
 		ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_128;
-		if (neg_flags & NTLMSSP_NEGOTIATE_56) {
-			ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_56;
-		}
 	}
 
 	if (!(neg_flags & NTLMSSP_NEGOTIATE_56)) {
@@ -376,10 +373,23 @@ static void ntlmssp_handle_neg_flags(struct ntlmssp_state *ntlmssp_state,
 		ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_KEY_EXCH;
 	}
 
+	if (!(neg_flags & NTLMSSP_NEGOTIATE_SIGN)) {
+		ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_SIGN;
+	}
+
+	if (!(neg_flags & NTLMSSP_NEGOTIATE_SEAL)) {
+		ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_SEAL;
+	}
+
+	/* Woop Woop - unknown flag for Windows compatibility...
+	   What does this really do ? JRA. */
+	if (!(neg_flags & NTLMSSP_UNKNOWN_02000000)) {
+		ntlmssp_state->neg_flags &= ~NTLMSSP_UNKNOWN_02000000;
+	}
+
 	if ((neg_flags & NTLMSSP_REQUEST_TARGET)) {
 		ntlmssp_state->neg_flags |= NTLMSSP_REQUEST_TARGET;
 	}
-	
 }
 
 /**
@@ -840,6 +850,8 @@ NTSTATUS ntlmssp_server_start(NTLMSSP_STATE **ntlmssp_state)
 
 	(*ntlmssp_state)->neg_flags = 
 		NTLMSSP_NEGOTIATE_128 |
+		NTLMSSP_NEGOTIATE_56 |
+		NTLMSSP_UNKNOWN_02000000 |
 		NTLMSSP_NEGOTIATE_NTLM |
 		NTLMSSP_NEGOTIATE_NTLM2 |
 		NTLMSSP_NEGOTIATE_KEY_EXCH |

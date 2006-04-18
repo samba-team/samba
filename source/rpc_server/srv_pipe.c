@@ -606,7 +606,7 @@ static BOOL pipe_ntlmssp_verify_final(pipes_struct *p, DATA_BLOB *p_resp_blob)
 	NTSTATUS status;
 	AUTH_NTLMSSP_STATE *a = p->auth.a_u.auth_ntlmssp_state;
 
-	DEBUG(5,("pipe_ntlmssp_verify_final: checking user details\n"));
+	DEBUG(5,("pipe_ntlmssp_verify_final: pipe %s checking user details\n", p->name));
 
 	ZERO_STRUCT(reply);
 
@@ -629,6 +629,27 @@ static BOOL pipe_ntlmssp_verify_final(pipes_struct *p, DATA_BLOB *p_resp_blob)
 		return False;
 	}
 
+	/* Finally - if the pipe negotiated integrity (sign) or privacy (seal)
+	   ensure the underlying NTLMSSP flags are also set. If not we should
+	   refuse the bind. */
+
+	if (p->auth.auth_level == PIPE_AUTH_LEVEL_INTEGRITY) {
+		if (!(a->ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_SIGN)) {
+			DEBUG(0,("pipe_ntlmssp_verify_final: pipe %s : packet integrity requested "
+				"but client declined signing.\n",
+					p->name ));
+			return False;
+		}
+	}
+	if (p->auth.auth_level == PIPE_AUTH_LEVEL_PRIVACY) {
+		if (!(a->ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_SEAL)) {
+			DEBUG(0,("pipe_ntlmssp_verify_final: pipe %s : packet privacy requested "
+				"but client declined sealing.\n",
+					p->name ));
+			return False;
+		}
+	}
+	
 	fstrcpy(p->user_name, a->ntlmssp_state->user);
 	fstrcpy(p->pipe_user_name, a->server_info->unix_name);
 	fstrcpy(p->domain, a->ntlmssp_state->domain);
