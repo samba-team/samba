@@ -389,6 +389,12 @@ static int rpc_join_usage(int argc, const char **argv)
 
 int net_rpc_join(int argc, const char **argv) 
 {
+	if ((lp_server_role() != ROLE_DOMAIN_MEMBER) || 
+	    (lp_server_role() != ROLE_DOMAIN_BDC)) {
+		d_printf("can only join as domain member or as BDC\n");
+		return -1;
+	}
+
 	if ((net_rpc_perform_oldjoin(argc, argv) == 0))
 		return 0;
 	
