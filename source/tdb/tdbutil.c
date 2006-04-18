@@ -653,129 +653,6 @@ int tdb_unpack(char *buf, int bufsize, const char *fmt, ...)
 }
 
 
-/**
- * Pack SID passed by pointer
- *
- * @param pack_buf pointer to buffer which is to be filled with packed data
- * @param bufsize size of packing buffer
- * @param sid pointer to sid to be packed
- *
- * @return length of the packed representation of the whole structure
- **/
-size_t tdb_sid_pack(char* pack_buf, int bufsize, DOM_SID* sid)
-{
-	int idx;
-	size_t len = 0;
-	
-	if (!sid || !pack_buf) return -1;
-	
-	len += tdb_pack(pack_buf + len, bufsize - len, "bb", sid->sid_rev_num,
-	                sid->num_auths);
-	
-	for (idx = 0; idx < 6; idx++) {
-		len += tdb_pack(pack_buf + len, bufsize - len, "b", sid->id_auth[idx]);
-	}
-	
-	for (idx = 0; idx < MAXSUBAUTHS; idx++) {
-		len += tdb_pack(pack_buf + len, bufsize - len, "d", sid->sub_auths[idx]);
-	}
-	
-	return len;
-}
-
-
-/**
- * Unpack SID into a pointer
- *
- * @param pack_buf pointer to buffer with packed representation
- * @param bufsize size of the buffer
- * @param sid pointer to sid structure to be filled with unpacked data
- *
- * @return size of structure unpacked from buffer
- **/
-size_t tdb_sid_unpack(char* pack_buf, int bufsize, DOM_SID* sid)
-{
-	int idx, len = 0;
-	
-	if (!sid || !pack_buf) return -1;
-
-	len += tdb_unpack(pack_buf + len, bufsize - len, "bb",
-	                  &sid->sid_rev_num, &sid->num_auths);
-			  
-	for (idx = 0; idx < 6; idx++) {
-		len += tdb_unpack(pack_buf + len, bufsize - len, "b", &sid->id_auth[idx]);
-	}
-	
-	for (idx = 0; idx < MAXSUBAUTHS; idx++) {
-		len += tdb_unpack(pack_buf + len, bufsize - len, "d", &sid->sub_auths[idx]);
-	}
-	
-	return len;
-}
-
-
-/**
- * Pack TRUSTED_DOM_PASS passed by pointer
- *
- * @param pack_buf pointer to buffer which is to be filled with packed data
- * @param bufsize size of the buffer
- * @param pass pointer to trusted domain password to be packed
- *
- * @return length of the packed representation of the whole structure
- **/
-size_t tdb_trusted_dom_pass_pack(char* pack_buf, int bufsize, TRUSTED_DOM_PASS* pass)
-{
-	int idx, len = 0;
-	
-	if (!pack_buf || !pass) return -1;
-	
-	/* packing unicode domain name and password */
-	len += tdb_pack(pack_buf + len, bufsize - len, "d", pass->uni_name_len);
-	
-	for (idx = 0; idx < 32; idx++)
-		len +=  tdb_pack(pack_buf + len, bufsize - len, "w", pass->uni_name[idx]);
-	
-	len += tdb_pack(pack_buf + len, bufsize - len, "dPd", pass->pass_len,
-	                     pass->pass, pass->mod_time);
-
-	/* packing SID structure */
-	len += tdb_sid_pack(pack_buf + len, bufsize - len, &pass->domain_sid);
-
-	return len;
-}
-
-
-/**
- * Unpack TRUSTED_DOM_PASS passed by pointer
- *
- * @param pack_buf pointer to buffer with packed representation
- * @param bufsize size of the buffer
- * @param pass pointer to trusted domain password to be filled with unpacked data
- *
- * @return size of structure unpacked from buffer
- **/
-size_t tdb_trusted_dom_pass_unpack(char* pack_buf, int bufsize, TRUSTED_DOM_PASS* pass)
-{
-	int idx, len = 0;
-	
-	if (!pack_buf || !pass) return -1;
-
-	/* unpack unicode domain name and plaintext password */
-	len += tdb_unpack(pack_buf, bufsize - len, "d", &pass->uni_name_len);
-	
-	for (idx = 0; idx < 32; idx++)
-		len +=  tdb_unpack(pack_buf + len, bufsize - len, "w", &pass->uni_name[idx]);
-
-	len += tdb_unpack(pack_buf + len, bufsize - len, "dPd", &pass->pass_len, &pass->pass,
-	                  &pass->mod_time);
-	
-	/* unpack domain sid */
-	len += tdb_sid_unpack(pack_buf + len, bufsize - len, &pass->domain_sid);
-	
-	return len;	
-}
-
-
 /****************************************************************************
  Log tdb messages via DEBUG().
 ****************************************************************************/
@@ -801,15 +678,15 @@ static void tdb_log(TDB_CONTEXT *tdb, int level, const char *format, ...)
  the samba DEBUG() system.
 ****************************************************************************/
 
-TDB_CONTEXT *tdb_open_log(const char *name, int hash_size, int tdbflags,
+TDB_CONTEXT *tdb_open_log(const char *name, int hash_size, int tdb_flags,
 			  int open_flags, mode_t mode)
 {
 	TDB_CONTEXT *tdb;
 
 	if (!lp_use_mmap())
-		tdbflags |= TDB_NOMMAP;
+		tdb_flags |= TDB_NOMMAP;
 
-	tdb = tdb_open_ex(name, hash_size, tdbflags, 
+	tdb = tdb_open_ex(name, hash_size, tdb_flags, 
 				    open_flags, mode, tdb_log, NULL);
 	if (!tdb)
 		return NULL;
@@ -902,7 +779,7 @@ size_t tdb_map_size(struct tdb_context *tdb)
 	return tdb->map_size;
 }
 
-int tdb_flags(struct tdb_context *tdb)
+int tdb_get_flags(struct tdb_context *tdb)
 {
 	return tdb->flags;
 }

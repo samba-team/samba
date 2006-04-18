@@ -899,6 +899,7 @@ extern int errno;
 #include "dlinklist.h"
 #include "tdb/tdb.h"
 #include "tdb/tdbutil.h"
+#include "tdb/tdbback.h"
 
 #include "talloc.h"
 /* And a little extension. Abort on type mismatch */

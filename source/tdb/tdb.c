@@ -186,7 +186,7 @@ int tdb_exists(struct tdb_context *tdb, TDB_DATA key)
 }
 
 /* actually delete an entry in the database given the offset */
- int tdb_do_delete(struct tdb_context *tdb, tdb_off_t rec_ptr, struct list_struct*rec)
+int tdb_do_delete(struct tdb_context *tdb, tdb_off_t rec_ptr, struct list_struct*rec)
 {
 	tdb_off_t last_ptr, i;
 	struct list_struct lastrec;

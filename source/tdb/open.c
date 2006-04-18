@@ -116,10 +116,10 @@ static int tdb_already_open(dev_t device,
    try to call tdb_error or tdb_errname, just do strerror(errno).
 
    @param name may be NULL for internal databases. */
-struct tdb_context *tdb_open(const char *name, int hash_size, int tdbflags,
+struct tdb_context *tdb_open(const char *name, int hash_size, int tdb_flags,
 		      int open_flags, mode_t mode)
 {
-	return tdb_open_ex(name, hash_size, tdbflags, open_flags, mode, NULL, NULL);
+	return tdb_open_ex(name, hash_size, tdb_flags, open_flags, mode, NULL, NULL);
 }
 
 /* a default logging function */
@@ -128,7 +128,7 @@ static void null_log_fn(struct tdb_context *tdb, int level, const char *fmt, ...
 }
 
 
-struct tdb_context *tdb_open_ex(const char *name, int hash_size, int tdbflags,
+struct tdb_context *tdb_open_ex(const char *name, int hash_size, int tdb_flags,
 			 int open_flags, mode_t mode,
 			 tdb_log_func log_fn,
 			 tdb_hash_func hash_fn)
@@ -148,7 +148,7 @@ struct tdb_context *tdb_open_ex(const char *name, int hash_size, int tdbflags,
 	tdb->fd = -1;
 	tdb->name = NULL;
 	tdb->map_ptr = NULL;
-	tdb->flags = tdbflags;
+	tdb->flags = tdb_flags;
 	tdb->open_flags = open_flags;
 	tdb->log_fn = log_fn?log_fn:null_log_fn;
 	tdb->hash_fn = hash_fn ? hash_fn : default_tdb_hash;
@@ -200,7 +200,7 @@ struct tdb_context *tdb_open_ex(const char *name, int hash_size, int tdbflags,
 	}
 
 	/* we need to zero database if we are the only one with it open */
-	if ((tdbflags & TDB_CLEAR_IF_FIRST) &&
+	if ((tdb_flags & TDB_CLEAR_IF_FIRST) &&
 	    (locked = (tdb->methods->tdb_brlock(tdb, ACTIVE_LOCK, F_WRLCK, F_SETLK, 0) == 0))) {
 		open_flags |= O_CREAT;
 		if (ftruncate(tdb->fd, 0) == -1) {
@@ -280,7 +280,7 @@ struct tdb_context *tdb_open_ex(const char *name, int hash_size, int tdbflags,
 	   we didn't get the initial exclusive lock as we need to let all other
 	   users know we're using it. */
 
-	if (tdbflags & TDB_CLEAR_IF_FIRST) {
+	if (tdb_flags & TDB_CLEAR_IF_FIRST) {
 		/* leave this lock in place to indicate it's in use */
 		if (tdb->methods->tdb_brlock(tdb, ACTIVE_LOCK, F_RDLCK, F_SETLKW, 0) == -1)
 			goto fail;

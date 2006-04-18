@@ -92,7 +92,7 @@ static int update_tailer(struct tdb_context *tdb, tdb_off_t offset,
 
 /* Add an element into the freelist. Merge adjacent records if
    neccessary. */
- int tdb_free(struct tdb_context *tdb, tdb_off_t offset, struct list_struct *rec)
+int tdb_free(struct tdb_context *tdb, tdb_off_t offset, struct list_struct *rec)
 {
 	tdb_off_t right, left;
 

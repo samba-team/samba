@@ -122,7 +122,7 @@ static int tdb_write(struct tdb_context *tdb, tdb_off_t off,
 }
 
 /* Endian conversion: we only ever deal with 4 byte quantities */
- void *tdb_convert(void *buf, u32 size)
+void *tdb_convert(void *buf, u32 size)
 {
 	u32 i, *p = buf;
 	for (i = 0; i < size / 4; i++)
@@ -184,7 +184,7 @@ static void tdb_next_hash_chain(struct tdb_context *tdb, u32 *chain)
 }
 
 
- int tdb_munmap(struct tdb_context *tdb)
+int tdb_munmap(struct tdb_context *tdb)
 {
 	if (tdb->flags & TDB_INTERNAL)
 		return 0;
@@ -200,7 +200,7 @@ static void tdb_next_hash_chain(struct tdb_context *tdb, u32 *chain)
 	return 0;
 }
 
- void tdb_mmap(struct tdb_context *tdb)
+void tdb_mmap(struct tdb_context *tdb)
 {
 	if (tdb->flags & TDB_INTERNAL)
 		return;
@@ -269,7 +269,7 @@ static int tdb_expand_file(struct tdb_context *tdb, tdb_off_t size, tdb_off_t ad
 
 /* expand the database at least size bytes by expanding the underlying
    file and doing the mmap again if necessary */
- int tdb_expand(struct tdb_context *tdb, tdb_off_t size)
+int tdb_expand(struct tdb_context *tdb, tdb_off_t size)
 {
 	struct list_struct rec;
 	tdb_off_t offset;
@@ -338,12 +338,12 @@ static int tdb_expand_file(struct tdb_context *tdb, tdb_off_t size, tdb_off_t ad
 }
 
 /* read/write a tdb_off_t */
- int tdb_ofs_read(struct tdb_context *tdb, tdb_off_t offset, tdb_off_t *d)
+int tdb_ofs_read(struct tdb_context *tdb, tdb_off_t offset, tdb_off_t *d)
 {
 	return tdb->methods->tdb_read(tdb, offset, (char*)d, sizeof(*d), DOCONV());
 }
 
- int tdb_ofs_write(struct tdb_context *tdb, tdb_off_t offset, tdb_off_t *d)
+int tdb_ofs_write(struct tdb_context *tdb, tdb_off_t offset, tdb_off_t *d)
 {
 	tdb_off_t off = *d;
 	return tdb->methods->tdb_write(tdb, offset, CONVERT(off), sizeof(*d));
@@ -351,7 +351,7 @@ static int tdb_expand_file(struct tdb_context *tdb, tdb_off_t size, tdb_off_t ad
 
 
 /* read a lump of data, allocating the space for it */
- char *tdb_alloc_read(struct tdb_context *tdb, tdb_off_t offset, tdb_len_t len)
+char *tdb_alloc_read(struct tdb_context *tdb, tdb_off_t offset, tdb_len_t len)
 {
 	char *buf;
 
@@ -375,7 +375,7 @@ static int tdb_expand_file(struct tdb_context *tdb, tdb_off_t size, tdb_off_t ad
 }
 
 /* read/write a record */
- int tdb_rec_read(struct tdb_context *tdb, tdb_off_t offset, struct list_struct *rec)
+int tdb_rec_read(struct tdb_context *tdb, tdb_off_t offset, struct list_struct *rec)
 {
 	if (tdb->methods->tdb_read(tdb, offset, rec, sizeof(*rec),DOCONV()) == -1)
 		return -1;
@@ -388,7 +388,7 @@ static int tdb_expand_file(struct tdb_context *tdb, tdb_off_t size, tdb_off_t ad
 	return tdb->methods->tdb_oob(tdb, rec->next+sizeof(*rec), 0);
 }
 
- int tdb_rec_write(struct tdb_context *tdb, tdb_off_t offset, struct list_struct *rec)
+int tdb_rec_write(struct tdb_context *tdb, tdb_off_t offset, struct list_struct *rec)
 {
 	struct list_struct r = *rec;
 	return tdb->methods->tdb_write(tdb, offset, CONVERT(r), sizeof(r));

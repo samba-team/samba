@@ -36,7 +36,7 @@
 
    note that a len of zero means lock to end of file
 */
- int tdb_brlock_len(struct tdb_context *tdb, tdb_off_t offset, 
+int tdb_brlock_len(struct tdb_context *tdb, tdb_off_t offset, 
 		   int rw_type, int lck_type, int probe, size_t len)
 {
 	struct flock fl;
@@ -83,7 +83,7 @@
   deadlock detection and claim a deadlock when progress can be
   made. For those OSes we may loop for a while.  
 */
- int tdb_brlock_upgrade(struct tdb_context *tdb, tdb_off_t offset, size_t len)
+int tdb_brlock_upgrade(struct tdb_context *tdb, tdb_off_t offset, size_t len)
 {
 	int count = 1000;
 	while (count--) {
@@ -109,7 +109,7 @@
 
    On error, errno is also set so that errors are passed back properly
    through tdb_open(). */
- int tdb_brlock(struct tdb_context *tdb, tdb_off_t offset, 
+int tdb_brlock(struct tdb_context *tdb, tdb_off_t offset, 
 	       int rw_type, int lck_type, int probe)
 {
 	return tdb_brlock_len(tdb, offset, rw_type, lck_type, probe, 1);
@@ -233,7 +233,7 @@ int tdb_chainunlock_read(struct tdb_context *tdb, TDB_DATA key)
 
 
 /* record lock stops delete underneath */
- int tdb_lock_record(struct tdb_context *tdb, tdb_off_t off)
+int tdb_lock_record(struct tdb_context *tdb, tdb_off_t off)
 {
 	return off ? tdb->methods->tdb_brlock(tdb, off, F_RDLCK, F_SETLKW, 0) : 0;
 }
@@ -243,7 +243,7 @@ int tdb_chainunlock_read(struct tdb_context *tdb, TDB_DATA key)
   Note this is meant to be F_SETLK, *not* F_SETLKW, as it's not
   an error to fail to get the lock here.
 */
- int tdb_write_lock_record(struct tdb_context *tdb, tdb_off_t off)
+int tdb_write_lock_record(struct tdb_context *tdb, tdb_off_t off)
 {
 	struct tdb_traverse_lock *i;
 	for (i = &tdb->travlocks; i; i = i->next)
@@ -256,13 +256,13 @@ int tdb_chainunlock_read(struct tdb_context *tdb, TDB_DATA key)
   Note this is meant to be F_SETLK, *not* F_SETLKW, as it's not
   an error to fail to get the lock here.
 */
- int tdb_write_unlock_record(struct tdb_context *tdb, tdb_off_t off)
+int tdb_write_unlock_record(struct tdb_context *tdb, tdb_off_t off)
 {
 	return tdb->methods->tdb_brlock(tdb, off, F_UNLCK, F_SETLK, 0);
 }
 
 /* fcntl locks don't stack: avoid unlocking someone else's */
- int tdb_unlock_record(struct tdb_context *tdb, tdb_off_t off)
+int tdb_unlock_record(struct tdb_context *tdb, tdb_off_t off)
 {
 	struct tdb_traverse_lock *i;
 	u32 count = 0;
