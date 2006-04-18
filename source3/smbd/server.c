@@ -912,6 +912,28 @@ void build_options(BOOL screen);
 	if (!message_init())
 		exit(1);
 
+	/* Initialize our global sam sid first -- quite a lot of the other
+	 * initialization routines further down depend on it.
+	 */
+
+	/* Initialise the password backed before the global_sam_sid
+	   to ensure that we fetch from ldap before we make a domain sid up */
+
+	if(!initialize_password_db(False))
+		exit(1);
+
+	/* Fail gracefully if we can't open secrets.tdb */
+
+	if (!secrets_init()) {
+		DEBUG(0, ("ERROR: smbd can not open secrets.tdb\n"));
+		exit(1);
+	}
+
+	if(!get_global_sam_sid()) {
+		DEBUG(0,("ERROR: Samba cannot create a SAM SID.\n"));
+		exit(1);
+	}
+
 	if (!session_init())
 		exit(1);
 
@@ -964,17 +986,6 @@ void build_options(BOOL screen);
 	/*
 	 * everything after this point is run after the fork()
 	 */ 
-
-	/* Initialise the password backed before the global_sam_sid
-	   to ensure that we fetch from ldap before we make a domain sid up */
-
-	if(!initialize_password_db(False))
-		exit(1);
-
-	if(!get_global_sam_sid()) {
-		DEBUG(0,("ERROR: Samba cannot create a SAM SID.\n"));
-		exit(1);
-	}
 
 	static_init_rpc;
 
