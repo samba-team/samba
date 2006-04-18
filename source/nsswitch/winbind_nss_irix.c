@@ -335,11 +335,11 @@ send_next_request(nsd_file_t *rq, struct winbindd_request *request)
         switch (rq->f_index) {
                 case LOOKUP:
                         timeout = nsd_attr_fetch_long(rq->f_attrs,
-                                        "lookup_timeout", 10, 10 * 1000);
+                                        "lookup_timeout", 10, 10);
                         break;
                 case LIST:
                         timeout = nsd_attr_fetch_long(rq->f_attrs,
-                                        "list_timeout", 10, 10 * 1000);
+                                        "list_timeout", 10, 10);
                         break;
                 default:
 	                nsd_logprintf(NSD_LOG_OPER,
@@ -366,9 +366,11 @@ send_next_request(nsd_file_t *rq, struct winbindd_request *request)
 	/*
 	 * Set up callback and timeouts
 	 */
-	nsd_logprintf(NSD_LOG_MIN, "send_next_request (winbind) fd = %d\n",winbindd_fd);
-	nsd_callback_new(winbindd_fd,winbind_callback,NSD_READ);
-	nsd_timeout_new(rq,timeout,winbind_timeout,(void *)0);
+	nsd_logprintf(NSD_LOG_MIN, "send_next_request (winbind) fd = %d\n",
+		winbindd_fd);
+
+	nsd_callback_new(winbindd_fd, winbind_callback, NSD_READ);
+	nsd_timeout_new(rq, timeout * 1000, winbind_timeout, NULL);
 	return NSD_CONTINUE;
 }
 
