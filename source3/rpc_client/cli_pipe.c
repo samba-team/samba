@@ -2141,6 +2141,24 @@ static NTSTATUS rpc_pipe_bind(struct rpc_pipe_client *cli,
 			return NT_STATUS_INVALID_INFO_CLASS;
 	}
 
+	/* For NTLMSSP ensure the server gave us the auth_level we wanted. */
+	if (auth_type == PIPE_AUTH_TYPE_NTLMSSP || auth_type == PIPE_AUTH_TYPE_SPNEGO_NTLMSSP) {
+		if (auth_level == PIPE_AUTH_LEVEL_INTEGRITY) {
+			if (!(cli->auth.a_u.ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_SIGN)) {
+				DEBUG(0,("cli_finish_bind_auth: requested NTLMSSSP signing and server refused.\n"));
+				prs_mem_free(&rbuf);
+				return NT_STATUS_INVALID_PARAMETER;
+			}
+		}
+		if (auth_level == PIPE_AUTH_LEVEL_INTEGRITY) {
+			if (!(cli->auth.a_u.ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_SEAL)) {
+				DEBUG(0,("cli_finish_bind_auth: requested NTLMSSSP sealing and server refused.\n"));
+				prs_mem_free(&rbuf);
+				return NT_STATUS_INVALID_PARAMETER;
+			}
+		}
+	}
+
 	/* Pipe is bound - set up auth_type and auth_level data. */
 
 	cli->auth.auth_type = auth_type;
