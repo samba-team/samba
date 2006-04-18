@@ -194,8 +194,10 @@ NTSTATUS pvfs_acl_set(struct pvfs_state *pvfs,
 	uint32_t secinfo_flags = info->set_secdesc.in.secinfo_flags;
 	struct security_descriptor *new_sd, *sd, orig_sd;
 	NTSTATUS status;
-	uid_t uid = -1;
-	gid_t gid = -1;
+	uid_t old_uid = -1;
+	gid_t old_gid = -1;
+	uid_t new_uid = -1;
+	gid_t new_gid = -1;
 
 	acl = talloc(req, struct xattr_NTACL);
 	if (acl == NULL) {
@@ -221,31 +223,29 @@ NTSTATUS pvfs_acl_set(struct pvfs_state *pvfs,
 	new_sd = info->set_secdesc.in.sd;
 	orig_sd = *sd;
 
-	uid = name->st.st_uid;
-	gid = name->st.st_gid;
+	old_uid = name->st.st_uid;
+	old_gid = name->st.st_gid;
 
 	/* only set the elements that have been specified */
-	if ((secinfo_flags & SECINFO_OWNER) && 
-	    !dom_sid_equal(sd->owner_sid, new_sd->owner_sid)) {
+	if (secinfo_flags & SECINFO_OWNER) {
 		if (!(access_mask & SEC_STD_WRITE_OWNER)) {
 			return NT_STATUS_ACCESS_DENIED;
+		}
+		if (!dom_sid_equal(sd->owner_sid, new_sd->owner_sid)) {
+			status = sidmap_sid_to_unixuid(pvfs->sidmap, new_sd->owner_sid, &new_uid);
+			NT_STATUS_NOT_OK_RETURN(status);
 		}
 		sd->owner_sid = new_sd->owner_sid;
-		status = sidmap_sid_to_unixuid(pvfs->sidmap, sd->owner_sid, &uid);
-		if (!NT_STATUS_IS_OK(status)) {
-			return status;
-		}
 	}
-	if ((secinfo_flags & SECINFO_GROUP) &&
-	    !dom_sid_equal(sd->group_sid, new_sd->group_sid)) {
+	if (secinfo_flags & SECINFO_GROUP) {
 		if (!(access_mask & SEC_STD_WRITE_OWNER)) {
 			return NT_STATUS_ACCESS_DENIED;
 		}
-		sd->group_sid = new_sd->group_sid;
-		status = sidmap_sid_to_unixgid(pvfs->sidmap, sd->group_sid, &gid);
-		if (!NT_STATUS_IS_OK(status)) {
-			return status;
+		if (!dom_sid_equal(sd->group_sid, new_sd->group_sid)) {
+			status = sidmap_sid_to_unixgid(pvfs->sidmap, new_sd->group_sid, &new_gid);
+			NT_STATUS_NOT_OK_RETURN(status);
 		}
+		sd->group_sid = new_sd->group_sid;
 	}
 	if (secinfo_flags & SECINFO_DACL) {
 		if (!(access_mask & SEC_STD_WRITE_DAC)) {
@@ -262,12 +262,21 @@ NTSTATUS pvfs_acl_set(struct pvfs_state *pvfs,
 		pvfs_translate_generic_bits(sd->sacl);
 	}
 
-	if (uid != -1 || gid != -1) {
+	if (new_uid == old_uid) {
+		new_uid = -1;
+	}
+
+	if (new_gid == old_gid) {
+		new_gid = -1;
+	}
+
+	/* if there's something to change try it */
+	if (new_uid != -1 || new_gid != -1) {
 		int ret;
 		if (fd == -1) {
-			ret = chown(name->full_name, uid, gid);
+			ret = chown(name->full_name, new_uid, new_gid);
 		} else {
-			ret = fchown(fd, uid, gid);
+			ret = fchown(fd, new_uid, new_gid);
 		}
 		if (ret == -1) {
 			return pvfs_map_errno(pvfs, errno);
