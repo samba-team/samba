@@ -95,21 +95,25 @@ static BOOL reply_sesssetup_blob(connection_struct *conn, char *outbuf,
 {
 	char *p;
 
-	set_message(outbuf,4,0,True);
+	if (!NT_STATUS_IS_OK(nt_status) && !NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+		ERROR_NT(nt_status);
+	} else {
+		set_message(outbuf,4,0,True);
 
-	nt_status = nt_status_squash(nt_status);
-	SIVAL(outbuf, smb_rcls, NT_STATUS_V(nt_status));
-	SSVAL(outbuf, smb_vwv0, 0xFF); /* no chaining possible */
-	SSVAL(outbuf, smb_vwv3, blob.length);
-	p = smb_buf(outbuf);
+		nt_status = nt_status_squash(nt_status);
+		SIVAL(outbuf, smb_rcls, NT_STATUS_V(nt_status));
+		SSVAL(outbuf, smb_vwv0, 0xFF); /* no chaining possible */
+		SSVAL(outbuf, smb_vwv3, blob.length);
+		p = smb_buf(outbuf);
 
-	/* should we cap this? */
-	memcpy(p, blob.data, blob.length);
-	p += blob.length;
+		/* should we cap this? */
+		memcpy(p, blob.data, blob.length);
+		p += blob.length;
 
-	p += add_signature( outbuf, p );
+		p += add_signature( outbuf, p );
 
-	set_message_end(outbuf,p);
+		set_message_end(outbuf,p);
+	}
 
 	show_msg(outbuf);
 	return send_smb(smbd_server_fd(),outbuf);
