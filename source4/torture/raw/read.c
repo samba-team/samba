@@ -710,6 +710,160 @@ done:
 	return ret;
 }
 
+/*
+  test read for execute
+*/
+static BOOL test_read_for_execute(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+{
+	union smb_open op;
+	union smb_write wr;
+	union smb_read rd;
+	NTSTATUS status;
+	BOOL ret = True;
+	int fnum;
+	uint8_t *buf;
+	const int maxsize = 900;
+	const char *fname = BASEDIR "\\test.txt";
+	const uint8_t data[] = "TEST DATA";
+
+	buf = talloc_zero_size(mem_ctx, maxsize);
+
+	if (!torture_setup_dir(cli, BASEDIR)) {
+		return False;
+	}
+
+	printf("Testing RAW_READ_READX with read_for_execute\n");
+
+	op.generic.level = RAW_OPEN_NTCREATEX;
+	op.ntcreatex.in.root_fid = 0;
+	op.ntcreatex.in.flags = 0;
+	op.ntcreatex.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
+	op.ntcreatex.in.create_options = 0;
+	op.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
+	op.ntcreatex.in.share_access = NTCREATEX_SHARE_ACCESS_READ | NTCREATEX_SHARE_ACCESS_WRITE;
+	op.ntcreatex.in.alloc_size = 0;
+	op.ntcreatex.in.open_disposition = NTCREATEX_DISP_CREATE;
+	op.ntcreatex.in.impersonation = NTCREATEX_IMPERSONATION_ANONYMOUS;
+	op.ntcreatex.in.security_flags = 0;
+	op.ntcreatex.in.fname = fname;
+	status = smb_raw_open(cli->tree, mem_ctx, &op);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	fnum = op.ntcreatex.out.file.fnum;
+
+	wr.generic.level = RAW_WRITE_WRITEX;
+	wr.writex.in.file.fnum = fnum;
+	wr.writex.in.offset = 0;
+	wr.writex.in.wmode = 0;
+	wr.writex.in.remaining = 0;
+	wr.writex.in.count = ARRAY_SIZE(data);
+	wr.writex.in.data = data;
+	status = smb_raw_write(cli->tree, &wr);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_VALUE(wr.writex.out.nwritten, ARRAY_SIZE(data));
+
+	status = smbcli_close(cli->tree, fnum);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	printf("open file with SEC_FILE_EXECUTE\n");
+	op.generic.level = RAW_OPEN_NTCREATEX;
+	op.ntcreatex.in.root_fid = 0;
+	op.ntcreatex.in.flags = 0;
+	op.ntcreatex.in.access_mask = SEC_FILE_EXECUTE;
+	op.ntcreatex.in.create_options = 0;
+	op.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
+	op.ntcreatex.in.share_access = NTCREATEX_SHARE_ACCESS_READ | NTCREATEX_SHARE_ACCESS_WRITE;
+	op.ntcreatex.in.alloc_size = 0;
+	op.ntcreatex.in.open_disposition = NTCREATEX_DISP_OPEN;
+	op.ntcreatex.in.impersonation = NTCREATEX_IMPERSONATION_ANONYMOUS;
+	op.ntcreatex.in.security_flags = 0;
+	op.ntcreatex.in.fname = fname;
+	status = smb_raw_open(cli->tree, mem_ctx, &op);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	fnum = op.ntcreatex.out.file.fnum;
+
+	printf("read with FLAGS2_READ_PERMIT_EXECUTE\n");
+	rd.generic.level = RAW_READ_READX;
+	rd.readx.in.file.fnum = fnum;
+	rd.readx.in.mincnt = 0;
+	rd.readx.in.maxcnt = maxsize;
+	rd.readx.in.offset = 0;
+	rd.readx.in.remaining = 0;
+	rd.readx.in.read_for_execute = True;
+	rd.readx.out.data = buf;
+	status = smb_raw_read(cli->tree, &rd);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_VALUE(rd.readx.out.nread, ARRAY_SIZE(data));
+	CHECK_VALUE(rd.readx.out.remaining, 0xFFFF);
+	CHECK_VALUE(rd.readx.out.compaction_mode, 0);
+
+	printf("read without FLAGS2_READ_PERMIT_EXECUTE (should fail)\n");
+	rd.generic.level = RAW_READ_READX;
+	rd.readx.in.file.fnum = fnum;
+	rd.readx.in.mincnt = 0;
+	rd.readx.in.maxcnt = maxsize;
+	rd.readx.in.offset = 0;
+	rd.readx.in.remaining = 0;
+	rd.readx.in.read_for_execute = False;
+	rd.readx.out.data = buf;
+	status = smb_raw_read(cli->tree, &rd);
+	CHECK_STATUS(status, NT_STATUS_ACCESS_DENIED);
+
+	status = smbcli_close(cli->tree, fnum);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	printf("open file with SEC_FILE_READ_DATA\n");
+	op.generic.level = RAW_OPEN_NTCREATEX;
+	op.ntcreatex.in.root_fid = 0;
+	op.ntcreatex.in.flags = 0;
+	op.ntcreatex.in.access_mask = SEC_FILE_READ_DATA;
+	op.ntcreatex.in.create_options = 0;
+	op.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
+	op.ntcreatex.in.share_access = NTCREATEX_SHARE_ACCESS_READ | NTCREATEX_SHARE_ACCESS_WRITE;
+	op.ntcreatex.in.alloc_size = 0;
+	op.ntcreatex.in.open_disposition = NTCREATEX_DISP_OPEN;
+	op.ntcreatex.in.impersonation = NTCREATEX_IMPERSONATION_ANONYMOUS;
+	op.ntcreatex.in.security_flags = 0;
+	op.ntcreatex.in.fname = fname;
+	status = smb_raw_open(cli->tree, mem_ctx, &op);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	fnum = op.ntcreatex.out.file.fnum;
+
+	printf("read with FLAGS2_READ_PERMIT_EXECUTE\n");
+	rd.generic.level = RAW_READ_READX;
+	rd.readx.in.file.fnum = fnum;
+	rd.readx.in.mincnt = 0;
+	rd.readx.in.maxcnt = maxsize;
+	rd.readx.in.offset = 0;
+	rd.readx.in.remaining = 0;
+	rd.readx.in.read_for_execute = True;
+	rd.readx.out.data = buf;
+	status = smb_raw_read(cli->tree, &rd);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_VALUE(rd.readx.out.nread, ARRAY_SIZE(data));
+	CHECK_VALUE(rd.readx.out.remaining, 0xFFFF);
+	CHECK_VALUE(rd.readx.out.compaction_mode, 0);
+
+	printf("read without FLAGS2_READ_PERMIT_EXECUTE\n");
+	rd.generic.level = RAW_READ_READX;
+	rd.readx.in.file.fnum = fnum;
+	rd.readx.in.mincnt = 0;
+	rd.readx.in.maxcnt = maxsize;
+	rd.readx.in.offset = 0;
+	rd.readx.in.remaining = 0;
+	rd.readx.in.read_for_execute = False;
+	rd.readx.out.data = buf;
+	status = smb_raw_read(cli->tree, &rd);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_VALUE(rd.readx.out.nread, ARRAY_SIZE(data));
+	CHECK_VALUE(rd.readx.out.remaining, 0xFFFF);
+	CHECK_VALUE(rd.readx.out.compaction_mode, 0);
+
+done:
+	smbcli_close(cli->tree, fnum);
+	smbcli_deltree(cli->tree, BASEDIR);
+	return ret;
+}
+
 
 /* 
    basic testing of read calls
@@ -726,21 +880,11 @@ BOOL torture_raw_read(struct torture_context *torture)
 
 	mem_ctx = talloc_init("torture_raw_read");
 
-	if (!test_read(cli, mem_ctx)) {
-		ret = False;
-	}
-
-	if (!test_readx(cli, mem_ctx)) {
-		ret = False;
-	}
-
-	if (!test_lockread(cli, mem_ctx)) {
-		ret = False;
-	}
-
-	if (!test_readbraw(cli, mem_ctx)) {
-		ret = False;
-	}
+	ret &= test_read(cli, mem_ctx);
+	ret &= test_readx(cli, mem_ctx);
+	ret &= test_lockread(cli, mem_ctx);
+	ret &= test_readbraw(cli, mem_ctx);
+	ret &= test_read_for_execute(cli, mem_ctx);
 
 	torture_close_connection(cli);
 	talloc_free(mem_ctx);
