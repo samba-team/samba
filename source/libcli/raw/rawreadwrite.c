@@ -85,7 +85,9 @@ struct smbcli_request *smb_raw_read_send(struct smbcli_tree *tree, union smb_rea
 			SIVAL(req->out.vwv, VWV(10),parms->readx.in.offset>>32);
 		}
 		if (parms->readx.in.read_for_execute) {
-			req->flags2 |= FLAGS2_READ_PERMIT_EXECUTE;
+			uint16_t flags2 = SVAL(req->out.hdr, HDR_FLG2);
+			flags2 |= FLAGS2_READ_PERMIT_EXECUTE;
+			SSVAL(req->out.hdr, HDR_FLG2, flags2);
 		}
 		break;
 	}
