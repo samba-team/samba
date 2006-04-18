@@ -137,7 +137,7 @@ static int tdb_next_lock(struct tdb_context *tdb, struct tdb_traverse_lock *tloc
    a non-zero return value from fn() indicates that the traversal should stop
   */
 static int tdb_traverse_internal(struct tdb_context *tdb, 
-				 tdb_traverse_func fn, void *private,
+				 tdb_traverse_func fn, void *private_data,
 				 struct tdb_traverse_lock *tl)
 {
 	TDB_DATA key, dbuf;
@@ -176,7 +176,7 @@ static int tdb_traverse_internal(struct tdb_context *tdb,
 			SAFE_FREE(key.dptr);
 			goto out;
 		}
-		if (fn && fn(tdb, key, dbuf, private)) {
+		if (fn && fn(tdb, key, dbuf, private_data)) {
 			/* They want us to terminate traversal */
 			ret = count;
 			if (tdb_unlock_record(tdb, tl->off) != 0) {
@@ -201,7 +201,7 @@ out:
   a write style traverse - temporarily marks the db read only
 */
 int tdb_traverse_read(struct tdb_context *tdb, 
-		      tdb_traverse_func fn, void *private)
+		      tdb_traverse_func fn, void *private_data)
 {
 	struct tdb_traverse_lock tl = { NULL, 0, 0, F_RDLCK };
 	int ret;
@@ -215,7 +215,7 @@ int tdb_traverse_read(struct tdb_context *tdb,
 	}
 
 	tdb->traverse_read++;
-	ret = tdb_traverse_internal(tdb, fn, private, &tl);
+	ret = tdb_traverse_internal(tdb, fn, private_data, &tl);
 	tdb->traverse_read--;
 
 	tdb->methods->tdb_brlock(tdb, TRANSACTION_LOCK, F_UNLCK, F_SETLKW, 0);
@@ -228,13 +228,13 @@ int tdb_traverse_read(struct tdb_context *tdb,
   prevent deadlocks
 */
 int tdb_traverse(struct tdb_context *tdb, 
-		 tdb_traverse_func fn, void *private)
+		 tdb_traverse_func fn, void *private_data)
 {
 	struct tdb_traverse_lock tl = { NULL, 0, 0, F_WRLCK };
 	int ret;
 
 	if (tdb->read_only || tdb->traverse_read) {
-		return tdb_traverse_read(tdb, fn, private);
+		return tdb_traverse_read(tdb, fn, private_data);
 	}
 	
 	if (tdb->methods->tdb_brlock(tdb, TRANSACTION_LOCK, F_WRLCK, F_SETLKW, 0) == -1) {
@@ -243,7 +243,7 @@ int tdb_traverse(struct tdb_context *tdb,
 		return -1;
 	}
 
-	ret = tdb_traverse_internal(tdb, fn, private, &tl);
+	ret = tdb_traverse_internal(tdb, fn, private_data, &tl);
 
 	tdb->methods->tdb_brlock(tdb, TRANSACTION_LOCK, F_UNLCK, F_SETLKW, 0);
 
