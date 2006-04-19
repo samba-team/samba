@@ -74,7 +74,7 @@ static tdb_off_t tdb_find(struct tdb_context *tdb, TDB_DATA key, u32 hash,
 			return 0;
 
 		if (!TDB_DEAD(r) && hash==r->full_hash && key.dsize==r->key_len) {
-			char *k;
+			void *k;
 			/* a very likely hit - read the key */
 			k = tdb_alloc_read(tdb, rec_ptr + sizeof(*r), 
 					   r->key_len);
