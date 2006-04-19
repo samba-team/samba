@@ -1,3 +1,336 @@
+                   ==================================
+                   Release Notes for Samba 3.0.23pre1
+                               Apr 20, 2006
+                   ==================================
+
+This is a preview release of the Samba 3.0.23 code base and
+is provided for testing only.  This release is *not* intended
+for production servers.  There has been a substantial amount
+of development since the 3.0.21 series of stable releases.
+We would like to ask the Samba community for help in testing
+these changes as we work towards the next significant production
+upgrade Samba 3.0 release.
+
+There has been a substantial amount of cleanup work done 
+during this development cycle.  Two weeks of development time
+was dedicated to fixing bugs reported by the Coverity source 
+code scans.  Details can be found at in the following two 
+articles:
+
+	http://news.samba.org/#coverity_zero_bugs 
+	http://news.samba.org/#zdnet_quick_response
+
+
+
+Common bugs fixed in 3.0.23pre1 include:
+
+New features introduced in 3.0.23pre1 include:
+
+
+######################################################################
+Changes
+#######
+
+Changes since 3.0.21/22
+-----------------------
+
+smb.conf changes
+----------------
+
+    Parameter Name                      Action
+    --------------                      ------
+    acl group control			Deprecated
+    add port command			New
+    dos filemode			Modified behavior
+    enable asu support			New default (no)
+    enable privileges			New default (yes)
+    host msdfs				New default (yes)
+    msdfs root				New default (yes)
+    open files database hash size	New
+    strict locking			New default (auto)
+    winbind enum users			New default (no)
+    winbind enum groups			New default (no)
+    winbind nested groups		New default (yes)
+    winbind max idle children		Removed
+
+
+commits
+-------
+o   Jeremy Allison <jra@samba.org>
+    * BUG 3467: Fix delete on close semantics needed by WinXP Media 
+      Center Ed. for simultaneous recording and playback (thanks to 
+      Jason Qian for the debugging assistance).
+    * BUG 3347: Save the Unix user token used to set the 
+      delete-on-close flag.
+    * Fix parsing of SAMR_Q_CONNECT_ANON.
+    * Add in support for userinfo26 structure and re-enable 
+      userinfo25 
+    * Schannel server fixes.  Fix the credentials chaining across 
+      \netlogon pipe disconnects.
+    * Replace ubqix code in nmbd with an internal tdb.
+    * Fix struct timespec checks in configure.in.
+    * Add in server support for the NetSamLogonEx().
+    * Add support for LsaLookupSids2() and LsaLookupSids3().
+    * Add LsaLookupNames[2-4]().
+    * Add support for 'net usershare'.
+    * BUG 3522: Fix error code return on SMBmkdir(foo) when foo 
+      already exists (thanks to Sandeep Tamhankar).
+    * BUG 3510: Fix 'net rpc join' against a server when 
+      schannel is disabled.
+    * Get rid of poor errno mapping table. Bounce through NTSTATUS 
+      instead.
+    * Check for SeMachineAccountPrivilege when deleting machine 
+      accounts.
+    * Fix a logic bug with multiple oplock contention.
+    * Add the replacements for opendir/readdir etc from SAMBA_4_0.
+      Attempt to fix the broken directory handling in the *BSD.
+    * Allow run time tuning of the locking tdb hash size for
+      very busy servers.
+    * BUG 3642: Ensure we don't call FD_SET on read with 
+      fd == -1.
+    * BUG 3569: Work around linear posix locking issue on AIX
+      which was causing high loads due to the tdb CLEAR_IF_FIRST
+      flag (based on work from William JoJo).
+    * Fix OS/2 directory delete bug found by kukks.
+    * Match the Windows 2003 NTLMSSP signature.
+    * Performance tuning work in core read & write file serving 
+      paths.
+    * Change default to 'strict locking' to better reflect 
+      real world clients.
+    * Fix error return on session setup. Ensure no data blob is 
+      added if the logon call failed so that Windows clients 
+      interpret the NT_STATUS code correctly.
+
+
+
+o   Alexander Bokovoy <ab@samba.org>
+    * Fix 'smbcontrol shutdown' messages for nmbd and winbindd.
+
+
+o   Max N. Boyarov <m.boyarov@sam-solutions.net>
+    * Fix crash bug in perfmon daemon example code.
+
+
+o   Gerald (Jerry) Carter <jerry@samba.org>
+    * Rewrite of tdbsam file descriptor handling.
+    * Add server affinity support when selecting a remote 
+      domain controller.
+    * Remove chaining of passdb modules.
+    * Generate a local users primary group SID based on his 
+      or her primary Unix group rather than storing the attribute 
+      in the passdb entry.
+    * Default primary group SID to 'Domain Users' if the real Unix 
+      primary group maps to the S-1-22-2 domain.
+    * Refactor memory management in passdb user objects.
+    * RHEL and Fedora packaging fixes.
+    * Implement XcvDataPort() spooler call and supporting 'add 
+      port command'.
+    * BUG 3534: Ignore lines in the username map file with no right 
+      hand list.
+    * Add support for the experimental %(DomainSID) smb.conf 
+      variable.
+    * Add support for parsing SIDs in smb.conf value lists.
+    * Fix vuid allocation in Kerberos SMBsessetup reply. 
+    * Ensure that local group membership is included in the 
+      getgroups() NSS reply.
+    * Automatically create a BUILTIN\{Administrators,Users} if
+      winbindd is running.
+    * Automatically grant all privileges to members of the local 
+      Administrators group.
+    * Protect against NULL cli_state* pointers in 
+      cli_rpc_pipe_open().
+    * Add a SUBSTR matching rule the the Samba LDAP schema 
+      file for the sambaSID attribute.  This will allow for 
+      Searching group mapping entries within a given domain
+      without reorganizing the directory namespace.  Also 
+      requires 'index sambaSID sub' in slapd.conf.
+    * Fix parsing of 'idmap uid/gid' values that broke when
+      the range included any whitespace.
+    * Support renaming local groups (protect against renaming 
+      BUILTIN groups).
+    * Do not allow the root account to be deleted via MS-RPC.
+    * Fix RID allocation to skip over RIDs that resolve in our
+      own domain (work around upgraded users and groups).
+    * Store the name/ip address combination when we do a reverse 
+      look up in case future forward lookups would fail.
+      Fixes cases where a DC name could not be resolved via 
+      NetBIOS queries,
+    * Allow winbindd to run on standalone servers in order to
+      provide support for local groups.
+    * Deprecate 'acl group control' and replace it with added 
+      functionality to 'dos filemode'.
+    * Ensure that all global memory is freed from pam_winbind 
+      when unloading the shared library (based on work from Arkady 
+      Glabek).
+    * Fix 32-bit/64-bit portability issues between PAM & NSS winbind 
+      libraries and winbindd.
+    * Add defensive checks about create local accounts (i.e. calling
+      'add user script') on domain member servers when winbindd
+      is running but having problems.
+
+
+o   Guenther Deschner <gd@samba.org>
+    * Enhancements to various commands in rpcclient 
+    * Don't force 'Administrator' to change an expired password on 
+      logon.
+    * Add support for offline mode in winbindd.
+    * Provide support in pam_winbind for initializing a user's 
+      ticket cache.
+    * Implement samr_chgpasswd_user3 server-side.
+    * Make pam_winbind more robust when detecting domain users.
+    * Add client side support for SAMR_GET_USRDOM_PWINFO.
+    * Re-enable strict checking on C++ reserved keywords since Heimdal 
+      0.7.2 has been released.
+    * Allow renaming of machine accounts in a Samba domain.
+    * BUG 3539: Let winbindd try to obtain the gecos field from 
+      the msSFU30Gecos attribute when "winbind nss info = sfu" is 
+      set. 
+    * Correctly handle acb_info/acct_flags as uint32 not as uint16.
+    * Return the real ACB-flags in the SamLogon() reply.
+    * Some client side cleanup for the samr set security object 
+      functions.
+    * Make sure we always reset the userAccountControl bits when 
+      re-joining (net ads join) with an existing account.
+    * Document some more MSV1_0 bits and their behavior.
+    * Only set the last rebind timestamp when we did rebind 
+      after a update LDAP operation to avoid the ldap replication 
+      sleep period.
+    * Fix incorrect error checking in winbindd for domains with 
+      no trusts.
+    * Consolidate the parsing of the Krb5 PAC and NET_USER_INFO3 
+      structure.
+    * Work around crash bug in MIT krb5 libs when reading a 
+      keytab file.  Stop trying to decrypt a ticket as soon as 
+      we have a clear indication that the ticket is bad.
+    * Merge DCERPC_FAULT constants from the SAMBA_4_0 tree.
+    * Adding client side samr querygroup infolevels 2 & 5.
+    * Make smbpasswd -a root work for eDirectory where there 
+      is no "account" structural objectclass.
+    * Make sure we only send out a CLDAP request (net ads) to 
+      an connected AD server.
+    * Fix a broken LDAP search filter when looking for groups.
+    * Add in-tree version of iniparser library from 
+      http://ndevilla.free.fr/iniparser/ for use by pam_winbind
+      (rather than linking in loadparm.c).  Settings are now stored
+      in /etc/security/pam_winbind.conf.
+
+
+
+o   Mathias Dietz <MDIETZ@de.ibm.com>
+    * EPERM can be a valid return from getting an xattr. 
+      Don't disable if we get it.
+
+
+o   Aleksey Fedoseev <aleksey@fedoseev.net>
+    * Fix crash bug in the file locking code.
+
+
+o   Arek Glabek <aglabek@centeris.com>
+    *  Fix parsing error on input parameters in eventlogadm.
+
+
+o   Bjoern Jacke <bjacke@sernet.de>.
+    * Fix EA support on AIX platforms.
+    * Automatically disable file shares with no explicit path set.
+    * Remove the local hack to set the RO bit on directories in 
+      user profiles when profile acls = yes.  Rely on EAs instead.
+    * Compile fixes for Solaris LDAP client libs.
+    * Add DMAPI/XDSM support for AIX.
+    * Find JFS DMAPI libs on Linux when only they are available.
+
+
+o   William JoJo <jojowil@hvcc.edu>
+    * Fix VFS builds on AIX platforms.
+
+
+o   Volker Lendecke <vl@samba.org>
+    * Dynamically compute the maximum password age based no the 
+      last change time rather than reading the must change time 
+      from the passdb record.
+    * Rewrite mechanisms for handling lookup_{name,sid} resolution.
+    * Assign unmapped users to the S-1-22-1 domain and unmapped 
+      groups to the S-1-22-2 domain
+    * Disable algorithmic mapping for RIDs in tdbsam & ldapsam
+    * Remove sql passdb backends.
+    * Implement rpccli_samr_set_domain_info()
+    * Add initial support for 'net sam' command.
+    * BUG 2413: Remove anonymous connections in 'net rpc info'.
+    * Implement asynchronous support for trans2 calls.
+    * Make smbclient -L use RPC to list shares, fall back to RAP.
+    * Merge tdb code (including transactional support) from 
+      the SAMBA_4_0 tree.
+    * Unsure that the global SAM SID is initialized before any
+      dependent routines are called.
+
+
+o   Derrell Lipman <derrell@samba.org>
+    [libsmbclient]
+    * Fix bug causing previous settings to be re-initialized 
+      when parsing new configuration files.
+    * BUG 3446: Don't ignore the authentication domain when parsing 
+      the SMB URI.
+    * Fix cli_setpathinfo() to actually do what it's supposed to.
+    * Fix libsmbclient to make correct use of the new "one connection
+      per server feature".
+
+
+o   Jason Mader <jason@ncac.gwu.edu>
+    * Compiler warning fixes.
+
+
+o   Jim McDonough <jmcd@us.ibm.com>
+    * Prevent machines and users with no home directory from 
+      getting the previous entries home path when migrating via 
+      'net rpc vampire' (based on a patch from Richard Renard).
+    * Remove hard-coded LDIF names when dumping a migrated 
+      domain's users and groups.
+    * BUG 1374: Can't join an OU with name that contains '#'.
+
+
+o   Stefan Metzmacher <metze@samba.org>
+    * Add improved support for 'make test' including making 
+      use of smbtorture from SAMBA_4_0.
+    * Add --no-process-group to all server programs 
+      (e.g. timelimit 20000 bin/nmbd -F -S --no-process-group).
+    * Add configure tests --with-selftest-prefix=/tmp/samba-test
+
+
+o   Lars Müller <lmuelle@samba.org>
+    * Add -k switch to tdbdump for accessing a single key.
+    * Debian packaging fixes.
+    * Add -t|--password-from-stdin option to pdbedit as we had 
+      with Samba 2.2.
+    * Various minor fixes to install scripts used by 'make install'.
+
+
+o   James Peach <jpeach@sgi.com>
+    * Add support for FAM for file change notification.
+    * Disable sendfile if the 'write cache;' has been enabled.
+    * Refactor capability interface from being IRIX-specific to 
+      using only the POSIX interface.
+    * Consolidate core dumping code to aid in debugging.
+    * Add support for libunwind to generating a backtrace.
+    * BUG 3490: Don't test for ldap or krb5 libs if --without-ldap
+      and --without-ads are specified.
+    * Allow the user to set winbind nss timeouts in seconds on IRIX.
+
+
+o   Simo Sorce <idra@samba.org>
+    * Ensure that sid -> group conversion are done as root.
+    * BUG 3413: Sanity check for existence of 'ldap admin 
+      dn' before setting a password in secrets.tdb (based on
+      work by William Jojo).
+    * New revision of the snprintf replace code.
+
+
+o   ISHIKAWA Tomonori <toishika@fsi.co.jp>
+    * BUG 2715: Fix nmbd datagram comment buffer size for multibyte 
+      character strings
+
+
+Release Notes for older release follow:
+
+      --------------------------------------------------
                    ==============================
                    Release Notes for Samba 3.0.22
                             Mar 30, 2006
@@ -32,8 +365,6 @@ and possibly Samba domain controllers as well (if configured
 to use winbindd).
 
 =======
-
-Release Notes for older release follow:
 
       --------------------------------------------------
 
@@ -372,7 +703,7 @@ o   Makr Proehl <m.proehl@science-computing.de>
 o   Simo Sorce <idra@samba.org>
     * Crackcheck utility enhancement based on patch sent by 
       Tom Geissler.
-    * BUG 3405: Fix segv ni vfs_recycle module on platforms wither 
+    * BUG 3405: Fix segv in vfs_recycle module on platforms wither 
       mode_t is not 32-bits.
 
 
@@ -747,7 +1078,7 @@ o   Jim McDonough <jmcd@us.ibm.com>
 o   Stefan Metzmacher <metze@samba.org>
     * Fix setting of quotas on linux kernel with the struct 
       if_dqblk interface
-    * Enable sysquota interfact on Linux by default
+    * Enable sysquota interface on Linux by default
     * Use lp_socket_address() when binding to port 138/udp in nmbd.
 
 
