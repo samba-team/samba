@@ -608,7 +608,7 @@ static BOOL is_delete_request(files_struct *fsp) {
  * 3) Only level2 around: Grant level2 and do nothing else.
  */
 
-static BOOL delay_for_oplocks(struct share_mode_lock *lck, files_struct *fsp)
+static BOOL delay_for_oplocks(struct share_mode_lock *lck, files_struct *fsp, int pass_number)
 {
 	int i;
 	struct share_mode_entry *exclusive = NULL;
@@ -630,9 +630,16 @@ static BOOL delay_for_oplocks(struct share_mode_lock *lck, files_struct *fsp)
 		/* At least one entry is not an invalid or deferred entry. */
 		valid_entry = True;
 
-		if (EXCLUSIVE_OPLOCK_TYPE(lck->share_modes[i].op_type)) {
-			SMB_ASSERT(exclusive == NULL);			
-			exclusive = &lck->share_modes[i];
+		if (pass_number == 1) {
+			if (BATCH_OPLOCK_TYPE(lck->share_modes[i].op_type)) {
+				SMB_ASSERT(exclusive == NULL);			
+				exclusive = &lck->share_modes[i];
+			}
+		} else {
+			if (EXCLUSIVE_OPLOCK_TYPE(lck->share_modes[i].op_type)) {
+				SMB_ASSERT(exclusive == NULL);			
+				exclusive = &lck->share_modes[i];
+			}
 		}
 
 		if (lck->share_modes[i].op_type == LEVEL_II_OPLOCK) {
@@ -1024,6 +1031,42 @@ BOOL map_open_params_to_ntcreate(const char *fname, int deny_mode, int open_func
 
 }
 
+static void schedule_defer_open(struct share_mode_lock *lck, struct timeval request_time)
+{
+	struct deferred_open_record state;
+
+	/* This is a relative time, added to the absolute
+	   request_time value to get the absolute timeout time.
+	   Note that if this is the second or greater time we enter
+	   this codepath for this particular request mid then
+	   request_time is left as the absolute time of the *first*
+	   time this request mid was processed. This is what allows
+	   the request to eventually time out. */
+
+	struct timeval timeout;
+
+	/* Normally the smbd we asked should respond within
+	 * OPLOCK_BREAK_TIMEOUT seconds regardless of whether
+	 * the client did, give twice the timeout as a safety
+	 * measure here in case the other smbd is stuck
+	 * somewhere else. */
+
+	timeout = timeval_set(OPLOCK_BREAK_TIMEOUT*2, 0);
+
+	/* Nothing actually uses state.delayed_for_oplocks
+	   but it's handy to differentiate in debug messages
+	   between a 30 second delay due to oplock break, and
+	   a 1 second delay for share mode conflicts. */
+
+	state.delayed_for_oplocks = True;
+	state.dev = lck->dev;
+	state.inode = lck->ino;
+
+	if (!request_timed_out(request_time, timeout)) {
+		defer_open(lck, request_time, timeout, &state);
+	}
+}
+
 /****************************************************************************
  Open a file with a share mode.
 ****************************************************************************/
@@ -1310,7 +1353,6 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 	}
 
 	if (file_existed) {
-
 		dev = psbuf->st_dev;
 		inode = psbuf->st_ino;
 
@@ -1324,41 +1366,9 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 			return NULL;
 		}
 
-		if (delay_for_oplocks(lck, fsp)) {
-			struct deferred_open_record state;
-
-			/* This is a relative time, added to the absolute
-			   request_time value to get the absolute timeout time.
-			   Note that if this is the second or greater time we enter
-			   this codepath for this particular request mid then
-			   request_time is left as the absolute time of the *first*
-			   time this request mid was processed. This is what allows
-			   the request to eventually time out. */
-
-			struct timeval timeout;
-
-			/* Normally the smbd we asked should respond within
-			 * OPLOCK_BREAK_TIMEOUT seconds regardless of whether
-			 * the client did, give twice the timeout as a safety
-			 * measure here in case the other smbd is stuck
-			 * somewhere else. */
-
-			timeout = timeval_set(OPLOCK_BREAK_TIMEOUT*2, 0);
-
-			/* Nothing actually uses state.delayed_for_oplocks
-			   but it's handy to differentiate in debug messages
-			   between a 30 second delay due to oplock break, and
-			   a 1 second delay for share mode conflicts. */
-
-			state.delayed_for_oplocks = True;
-			state.dev = dev;
-			state.inode = inode;
-
-			if (!request_timed_out(request_time, timeout)) {
-				defer_open(lck, request_time, timeout,
-					   &state);
-			}
-
+		/* First pass - send break only on batch oplocks. */
+		if (delay_for_oplocks(lck, fsp, 1)) {
+			schedule_defer_open(lck, request_time);
 			TALLOC_FREE(lck);
 			return NULL;
 		}
@@ -1366,6 +1376,16 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 		status = open_mode_check(conn, fname, lck,
 					 access_mask, share_access,
 					 create_options, &file_existed);
+
+		if (NT_STATUS_IS_OK(status)) {
+			/* We might be going to allow this open. Check oplock status again. */
+			/* Second pass - send break for both batch or exclusive oplocks. */
+			if (delay_for_oplocks(lck, fsp, 2)) {
+				schedule_defer_open(lck, request_time);
+				TALLOC_FREE(lck);
+				return NULL;
+			}
+		}
 
 		if (NT_STATUS_EQUAL(status, NT_STATUS_DELETE_PENDING)) {
 			/* DELETE_PENDING is not deferred for a second */
