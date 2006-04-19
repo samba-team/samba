@@ -132,6 +132,7 @@ static void parse_dns(const char *dns)
 static void usage(poptContext pc)
 {
 	struct torture_op *o;
+	char last_prefix[64];
 	int i;
 
 	poptPrintUsage(pc, stdout, 0);
@@ -177,23 +178,36 @@ static void usage(poptContext pc)
 	printf("    ncacn_ip_tcp:myserver[1024]\n");
 	printf("    ncacn_ip_tcp:myserver[1024,sign,seal]\n\n");
 
-	printf("The unc format is:\n\n");
+	printf("The UNC format is:\n\n");
 
-	printf("    //server/share\n\n");
+	printf("  //server/share\n\n");
 
-	printf("tests are:\n");
+	printf("Tests are:");
 
 	i = 0;
+	last_prefix[0] = '\0';
 	for (o = torture_ops; o; o = o->next) {
-		if (i + strlen(o->name) >= MAX_COLS) {
-			printf("\n");
+		const char * sep;
+
+		if ((sep = strchr(o->name, '-'))) {
+			if (strncmp(o->name, last_prefix, sep - o->name) != 0) {
+				strncpy(last_prefix, o->name,
+					MIN(sizeof(last_prefix),
+					    sep - o->name));
+				printf("\n\n  ");
+				i = 0;
+			}
+		}
+
+		if (i + strlen(o->name) >= (MAX_COLS - 2)) {
+			printf("\n  ");
 			i = 0;
 		}
 		i+=printf("%s ", o->name);
 	}
 	printf("\n\n");
 
-	printf("default test is ALL\n");
+	printf("The default test is ALL.\n");
 
 	exit(1);
 }
