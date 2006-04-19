@@ -223,14 +223,14 @@ static NTSTATUS sequence_number(struct winbindd_domain *domain, uint32 *seq)
 /* find the lockout policy of a domain */
 static NTSTATUS lockout_policy(struct winbindd_domain *domain, 
 			       TALLOC_CTX *mem_ctx,
-			       SAM_UNK_INFO_12 *lockout_policy)
+			       SAM_UNK_INFO_12 *policy)
 {
 	NTSTATUS result;
 
-	result = msrpc_methods.lockout_policy(domain, mem_ctx, lockout_policy);
+	result = msrpc_methods.lockout_policy(domain, mem_ctx, policy);
 
 	if (NT_STATUS_EQUAL(result, NT_STATUS_UNSUCCESSFUL))
-		result = msrpc_methods.lockout_policy(domain, mem_ctx, lockout_policy);
+		result = msrpc_methods.lockout_policy(domain, mem_ctx, policy);
 
 	return result;
 }
@@ -238,14 +238,14 @@ static NTSTATUS lockout_policy(struct winbindd_domain *domain,
 /* find the password policy of a domain */
 static NTSTATUS password_policy(struct winbindd_domain *domain, 
 				TALLOC_CTX *mem_ctx,
-				SAM_UNK_INFO_1 *password_policy)
+				SAM_UNK_INFO_1 *policy)
 {
  	NTSTATUS result;
  
-	result = msrpc_methods.password_policy(domain, mem_ctx, password_policy);
+	result = msrpc_methods.password_policy(domain, mem_ctx, policy);
 
 	if (NT_STATUS_EQUAL(result, NT_STATUS_UNSUCCESSFUL))
-		result = msrpc_methods.password_policy(domain, mem_ctx, password_policy);
+		result = msrpc_methods.password_policy(domain, mem_ctx, policy);
 	
 	return result;
 }
