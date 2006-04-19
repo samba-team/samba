@@ -82,6 +82,16 @@ enum RPC_PKT_TYPE {
 #define RPC_PIPE_AUTH_SEAL_LEVEL 0x6
 #endif
 
+#define DCERPC_FAULT_OP_RNG_ERROR	0x1c010002
+#define DCERPC_FAULT_UNK_IF		0x1c010003
+#define DCERPC_FAULT_INVALID_TAG	0x1c000006
+#define DCERPC_FAULT_CONTEXT_MISMATCH	0x1c00001a
+#define DCERPC_FAULT_OTHER		0x00000001
+#define DCERPC_FAULT_ACCESS_DENIED	0x00000005
+#define DCERPC_FAULT_CANT_PERFORM	0x000006d8
+#define DCERPC_FAULT_NDR		0x000006f7
+
+
 /* Netlogon schannel auth type and level */
 #define SCHANNEL_SIGN_SIGNATURE { 0x77, 0x00, 0xff, 0xff, 0xff, 0xff, 0x00, 0x00 }
 #define SCHANNEL_SEAL_SIGNATURE { 0x77, 0x00, 0x7a, 0x00, 0xff, 0xff, 0x00, 0x00 }
@@ -90,12 +100,17 @@ enum RPC_PKT_TYPE {
 #define RPC_AUTH_SCHANNEL_SIGN_ONLY_CHK_LEN 	0x18
 
 
+#define NETLOGON_NEG_ARCFOUR			0x00000004
+#define NETLOGON_NEG_128BIT			0x00004000
+#define NETLOGON_NEG_SCHANNEL			0x40000000
+
 /* The 7 here seems to be required to get Win2k not to downgrade us
    to NT4.  Actually, anything other than 1ff would seem to do... */
 #define NETLOGON_NEG_AUTH2_FLAGS 0x000701ff
- 
-#define NETLOGON_NEG_SCHANNEL    		0x40000000
 #define NETLOGON_NEG_DOMAIN_TRUST_ACCOUNT	0x2010b000
+ 
+/* these are the flags that ADS clients use */
+#define NETLOGON_NEG_AUTH2_ADS_FLAGS (0x200fbffb | NETLOGON_NEG_ARCFOUR | NETLOGON_NEG_128BIT | NETLOGON_NEG_SCHANNEL)
 
 enum schannel_direction {
 	SENDER_IS_INITIATOR,

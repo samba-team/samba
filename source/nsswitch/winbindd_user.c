@@ -97,7 +97,7 @@ static BOOL winbindd_fill_pwent(char *dom_name, char *user_name,
 
 	/* Username */
 
-	fill_domain_username(output_username, dom_name, user_name); 
+	fill_domain_username(output_username, dom_name, user_name, True); 
 
 	safe_strcpy(pw->pw_name, output_username, sizeof(pw->pw_name) - 1);
 	
@@ -122,10 +122,10 @@ static BOOL winbindd_fill_pwent(char *dom_name, char *user_name,
 			     pw->pw_uid, pw->pw_gid, shell, pw->pw_shell))
 		return False;
 
-	/* Password - set to "x" as we can't generate anything useful here.
+	/* Password - set to "*" as we can't generate anything useful here.
 	   Authentication can be done using the pam_winbind module. */
 
-	safe_strcpy(pw->pw_passwd, "x", sizeof(pw->pw_passwd) - 1);
+	safe_strcpy(pw->pw_passwd, "*", sizeof(pw->pw_passwd) - 1);
 
 	return True;
 }
@@ -289,7 +289,7 @@ static void getpwsid_sid2gid_recv(void *private_data, BOOL success, gid_t gid)
 	pw = &s->state->response.data.pw;
 	pw->pw_uid = s->uid;
 	pw->pw_gid = s->gid;
-	fill_domain_username(output_username, s->domain->name, s->username); 
+	fill_domain_username(output_username, s->domain->name, s->username, True); 
 	safe_strcpy(pw->pw_name, output_username, sizeof(pw->pw_name) - 1);
 	safe_strcpy(pw->pw_gecos, s->fullname, sizeof(pw->pw_gecos) - 1);
 
@@ -307,10 +307,10 @@ static void getpwsid_sid2gid_recv(void *private_data, BOOL success, gid_t gid)
 		goto failed;
 	}
 
-	/* Password - set to "x" as we can't generate anything useful here.
+	/* Password - set to "*" as we can't generate anything useful here.
 	   Authentication can be done using the pam_winbind module. */
 
-	safe_strcpy(pw->pw_passwd, "x", sizeof(pw->pw_passwd) - 1);
+	safe_strcpy(pw->pw_passwd, "*", sizeof(pw->pw_passwd) - 1);
 
 	request_ok(s->state);
 	return;
@@ -337,7 +337,7 @@ void winbindd_getpwnam(struct winbindd_cli_state *state)
 
 	if (!parse_domain_user(state->request.data.username, domname,
 			       username)) {
-		DEBUG(0, ("Could not parse domain user: %s\n",
+		DEBUG(5, ("Could not parse domain user: %s\n",
 			  state->request.data.username));
 		request_error(state);
 		return;
@@ -553,16 +553,12 @@ static BOOL get_sam_user_entries(struct getent_state *ent, TALLOC_CTX *mem_ctx)
 					  &info);
 		
 	if (num_entries) {
-		struct getpwent_user *tnl;
+		name_list = SMB_REALLOC_ARRAY(name_list, struct getpwent_user, ent->num_sam_entries + num_entries);
 		
-		tnl = SMB_REALLOC_ARRAY(name_list, struct getpwent_user, ent->num_sam_entries + num_entries);
-		
-		if (!tnl) {
+		if (!name_list) {
 			DEBUG(0,("get_sam_user_entries realloc failed.\n"));
-			SAFE_FREE(name_list);
 			goto done;
-		} else
-			name_list = tnl;
+		}
 	}
 
 	for (i = 0; i < num_entries; i++) {
@@ -636,15 +632,15 @@ void winbindd_getpwent(struct winbindd_cli_state *state)
 
 	num_users = MIN(MAX_GETPWENT_USERS, state->request.data.num_entries);
 	
-	if ((state->response.extra_data = SMB_MALLOC_ARRAY(struct winbindd_pw, num_users)) == NULL) {
+	if ((state->response.extra_data.data = SMB_MALLOC_ARRAY(struct winbindd_pw, num_users)) == NULL) {
 		request_error(state);
 		return;
 	}
 
-	memset(state->response.extra_data, 0, num_users * 
+	memset(state->response.extra_data.data, 0, num_users * 
 	       sizeof(struct winbindd_pw));
 
-	user_list = (struct winbindd_pw *)state->response.extra_data;
+	user_list = (struct winbindd_pw *)state->response.extra_data.data;
 
 	if (!state->getpwent_initialized)
 		winbindd_setpwent_internal(state);
@@ -731,7 +727,7 @@ void winbindd_list_users(struct winbindd_cli_state *state)
 	WINBIND_USERINFO *info;
 	const char *which_domain;
 	uint32 num_entries = 0, total_entries = 0;
-	char *ted, *extra_data = NULL;
+	char *extra_data = NULL;
 	int extra_data_len = 0;
 	enum winbindd_result rv = WINBINDD_ERROR;
 
@@ -767,15 +763,13 @@ void winbindd_list_users(struct winbindd_cli_state *state)
 		/* Allocate some memory for extra data */
 		total_entries += num_entries;
 			
-		ted = SMB_REALLOC(extra_data, sizeof(fstring) * total_entries);
+		extra_data = SMB_REALLOC(extra_data, sizeof(fstring) * total_entries);
 			
-		if (!ted) {
+		if (!extra_data) {
 			DEBUG(0,("failed to enlarge buffer!\n"));
-			SAFE_FREE(extra_data);
 			goto done;
-		} else 
-			extra_data = ted;
-			
+		}
+
 		/* Pack user list into extra data fields */
 			
 		for (i = 0; i < num_entries; i++) {
@@ -787,7 +781,7 @@ void winbindd_list_users(struct winbindd_cli_state *state)
 				fstrcpy(acct_name, info[i].acct_name);
 			}
 			
-			fill_domain_username(name, domain->name, acct_name);
+			fill_domain_username(name, domain->name, acct_name, True);
 			
 				/* Append to extra data */
 			memcpy(&extra_data[extra_data_len], name, 
@@ -801,7 +795,7 @@ void winbindd_list_users(struct winbindd_cli_state *state)
 
 	if (extra_data) {
 		extra_data[extra_data_len - 1] = '\0';
-		state->response.extra_data = extra_data;
+		state->response.extra_data.data = extra_data;
 		state->response.length += extra_data_len;
 	}
 

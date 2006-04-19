@@ -216,8 +216,8 @@ winbind_callback(nsd_file_t **rqp, int fd)
 		break;
 	    case WINBINDD_GETGRNAM:
 	    case WINBINDD_GETGRGID:
-		if (gr->num_gr_mem && response.extra_data)
-			members = response.extra_data;
+		if (gr->num_gr_mem && response.extra_data.data)
+			members = response.extra_data.data;
 		else
 			members = "";
 		snprintf(result,maxlen,"%s:%s:%d:%s\n",
@@ -234,13 +234,13 @@ winbind_callback(nsd_file_t **rqp, int fd)
 			"callback (winbind) - %d GETGRENT responses\n",
 			response.data.num_entries);
 		if (response.data.num_entries) {
-		    gr = (struct winbindd_gr *)response.extra_data;
+		    gr = (struct winbindd_gr *)response.extra_data.data;
 		    if (! gr ) {
-			nsd_logprintf(NSD_LOG_MIN, "     no extra_data\n");
+			nsd_logprintf(NSD_LOG_MIN, "     no extra_data.data\n");
 			free_response(&response);
 			return NSD_ERROR;
 		    }
-		    members = (char *)response.extra_data + 
+		    members = (char *)response.extra_data.data + 
 				(response.data.num_entries * sizeof(struct winbindd_gr));
 		    for (i = 0; i < response.data.num_entries; i++) {
 			snprintf(result,maxlen,"%s:%s:%d:%s\n",
@@ -262,7 +262,7 @@ winbind_callback(nsd_file_t **rqp, int fd)
 			"callback (winbind) - %d GETPWENT responses\n",
 			response.data.num_entries);
 		if (response.data.num_entries) {
-		    pw = (struct winbindd_pw *)response.extra_data;
+		    pw = (struct winbindd_pw *)response.extra_data.data;
 		    if (! pw ) {
 			nsd_logprintf(NSD_LOG_MIN, "     no extra_data\n");
 			free_response(&response);
@@ -335,11 +335,11 @@ send_next_request(nsd_file_t *rq, struct winbindd_request *request)
         switch (rq->f_index) {
                 case LOOKUP:
                         timeout = nsd_attr_fetch_long(rq->f_attrs,
-                                        "lookup_timeout", 10, 10 * 1000);
+                                        "lookup_timeout", 10, 10);
                         break;
                 case LIST:
                         timeout = nsd_attr_fetch_long(rq->f_attrs,
-                                        "list_timeout", 10, 10 * 1000);
+                                        "list_timeout", 10, 10);
                         break;
                 default:
 	                nsd_logprintf(NSD_LOG_OPER,
@@ -366,9 +366,11 @@ send_next_request(nsd_file_t *rq, struct winbindd_request *request)
 	/*
 	 * Set up callback and timeouts
 	 */
-	nsd_logprintf(NSD_LOG_MIN, "send_next_request (winbind) fd = %d\n",winbindd_fd);
-	nsd_callback_new(winbindd_fd,winbind_callback,NSD_READ);
-	nsd_timeout_new(rq,timeout,winbind_timeout,(void *)0);
+	nsd_logprintf(NSD_LOG_MIN, "send_next_request (winbind) fd = %d\n",
+		winbindd_fd);
+
+	nsd_callback_new(winbindd_fd, winbind_callback, NSD_READ);
+	nsd_timeout_new(rq, timeout * 1000, winbind_timeout, NULL);
 	return NSD_CONTINUE;
 }
 

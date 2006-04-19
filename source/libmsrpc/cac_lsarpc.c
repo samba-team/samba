@@ -59,7 +59,13 @@ int cac_LsaOpenPolicy(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct LsaOpenP
       hnd->_internal.pipes[PI_LSARPC] = True;
    }
 
-   policy = SMB_MALLOC_P(POLICY_HND);
+   pipe_hnd = cac_GetPipe(hnd, PI_LSARPC);
+   if(!pipe_hnd) {
+      hnd->status = NT_STATUS_INVALID_HANDLE;
+      return CAC_FAILURE;
+   }
+
+   policy = TALLOC_P(mem_ctx, POLICY_HND);
    if(!policy) {
       errno = ENOMEM;
       hnd->status = NT_STATUS_NO_MEMORY;
@@ -89,7 +95,6 @@ int cac_LsaOpenPolicy(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct LsaOpenP
    }
 
    if(!NT_STATUS_IS_OK(hnd->status)) {
-      SAFE_FREE(policy);
       return CAC_FAILURE;
    }
 
@@ -119,13 +124,12 @@ int cac_LsaClosePolicy(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, POLICY_HND *po
       return CAC_FAILURE;
    }
 
-
    hnd->status = rpccli_lsa_close(pipe_hnd, mem_ctx, pol);
+
+   TALLOC_FREE(pol);
 
    if(!NT_STATUS_IS_OK(hnd->status))
       return CAC_FAILURE;
-
-   SAFE_FREE(pol);
 
    return CAC_SUCCESS;
 }
@@ -298,7 +302,7 @@ int cac_LsaGetSidsFromNames(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct Ls
 
    /*now actually lookup the names*/
    hnd->status = rpccli_lsa_lookup_names( pipe_hnd, mem_ctx, op->in.pol, num_names,
-                                          (const char **)op->in.names, &sids, &types);
+                                          (const char **)op->in.names, NULL, &sids, &types);
 
    if(NT_STATUS_IS_OK(hnd->status)) {
       /*this is the easy part, just make the out.sids array*/
@@ -424,7 +428,7 @@ int cac_LsaFetchSid(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct LsaFetchSi
       op->out.local_sid->domain = dom_name;
       
       sid_copy(&op->out.local_sid->sid, local_sid);
-      talloc_free(local_sid);
+      TALLOC_FREE(local_sid);
    }
 
 domain:
@@ -436,7 +440,7 @@ domain:
       hnd->status = rpccli_lsa_query_info_policy( pipe_hnd, mem_ctx, op->in.pol, CAC_DOMAIN_INFO, &dom_name, &domain_sid);
       if(!NT_STATUS_IS_OK(hnd->status)) {
          /*if we succeeded above, report partial success*/
-         result = (result == CAC_SUCCESS) ? CAC_PARTIAL_SUCCESS : CAC_FAILURE;
+         result = CAC_FAILURE;
          goto done;
       }
       else if(result == CAC_FAILURE) {
@@ -453,7 +457,7 @@ domain:
 
       op->out.domain_sid->domain = dom_name;
       sid_copy(&op->out.domain_sid->sid, domain_sid);
-      talloc_free(domain_sid);
+      TALLOC_FREE(domain_sid);
    }
    
 done:
@@ -477,7 +481,7 @@ int cac_LsaQueryInfoPolicy(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct Lsa
       return CAC_FAILURE;
    }
 
-   if(!op->in.pol) {
+   if(!op || !op->in.pol) {
       hnd->status = NT_STATUS_INVALID_PARAMETER;
       return CAC_FAILURE;
    }
@@ -521,6 +525,7 @@ int cac_LsaEnumSids(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct LsaEnumSid
 
    if(!op || !op->in.pol) {
       hnd->status = NT_STATUS_INVALID_PARAMETER;
+      return CAC_FAILURE;
    }
 
    pipe_hnd = cac_GetPipe(hnd, PI_LSARPC);
@@ -577,7 +582,7 @@ int cac_LsaEnumAccountRights(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct L
       uint32 *type;
 
       /*lookup the SID*/
-      hnd->status = rpccli_lsa_lookup_names( pipe_hnd, mem_ctx, op->in.pol, 1, (const char **)&(op->in.name), &user_sid, &type);
+      hnd->status = rpccli_lsa_lookup_names( pipe_hnd, mem_ctx, op->in.pol, 1, (const char **)&(op->in.name), NULL, &user_sid, &type);
 
       if(!NT_STATUS_IS_OK(hnd->status))
          return CAC_FAILURE;
@@ -792,6 +797,11 @@ int cac_LsaOpenAccount(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct LsaOpen
       return CAC_FAILURE;
    }
 
+   pipe_hnd = cac_GetPipe(hnd, PI_LSARPC);
+   if(!pipe_hnd) {
+      hnd->status = NT_STATUS_INVALID_HANDLE;
+      return CAC_FAILURE;
+   }
 
    /*look up the user's SID if we have to*/
    if(op->in.name && !op->in.sid) {
@@ -799,7 +809,7 @@ int cac_LsaOpenAccount(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct LsaOpen
       uint32 *type;
 
       /*lookup the SID*/
-      hnd->status = rpccli_lsa_lookup_names( pipe_hnd, mem_ctx, op->in.pol, 1, (const char **)&(op->in.name), &user_sid, &type);
+      hnd->status = rpccli_lsa_lookup_names( pipe_hnd, mem_ctx, op->in.pol, 1, (const char **)&(op->in.name), NULL, &user_sid, &type);
 
       if(!NT_STATUS_IS_OK(hnd->status))
          return CAC_FAILURE;
@@ -816,7 +826,7 @@ int cac_LsaOpenAccount(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct LsaOpen
    hnd->status = rpccli_lsa_open_account(pipe_hnd, mem_ctx, op->in.pol, op->in.sid, op->in.access, user_pol);
 
    if(!NT_STATUS_IS_OK(hnd->status)) {
-      talloc_free(user_pol);
+      TALLOC_FREE(user_pol);
       return CAC_FAILURE;
    }
 
@@ -859,7 +869,7 @@ int cac_LsaAddPrivileges(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct LsaAd
 
    if(op->in.name && !op->in.sid) {
       /*lookup the SID*/
-      hnd->status = rpccli_lsa_lookup_names( pipe_hnd, mem_ctx, op->in.pol, 1, (const char **)&(op->in.name), &user_sid, &type);
+      hnd->status = rpccli_lsa_lookup_names( pipe_hnd, mem_ctx, op->in.pol, 1, (const char **)&(op->in.name), NULL, &user_sid, &type);
 
       if(!NT_STATUS_IS_OK(hnd->status))
          return CAC_FAILURE;
@@ -909,7 +919,7 @@ int cac_LsaRemovePrivileges(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct Ls
 
    if(op->in.name && !op->in.sid) {
       /*lookup the SID*/
-      hnd->status = rpccli_lsa_lookup_names( pipe_hnd, mem_ctx, op->in.pol, 1, (const char **)&(op->in.name), &user_sid, &type);
+      hnd->status = rpccli_lsa_lookup_names( pipe_hnd, mem_ctx, op->in.pol, 1, (const char **)&(op->in.name), NULL, &user_sid, &type);
 
       if(!NT_STATUS_IS_OK(hnd->status))
          return CAC_FAILURE;
@@ -959,7 +969,7 @@ int cac_LsaClearPrivileges(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct Lsa
 
    if(op->in.name && !op->in.sid) {
       /*lookup the SID*/
-      hnd->status = rpccli_lsa_lookup_names( pipe_hnd, mem_ctx, op->in.pol, 1, (const char **)&(op->in.name), &user_sid, &type);
+      hnd->status = rpccli_lsa_lookup_names( pipe_hnd, mem_ctx, op->in.pol, 1, (const char **)&(op->in.name), NULL, &user_sid, &type);
 
       if(!NT_STATUS_IS_OK(hnd->status))
          return CAC_FAILURE;
@@ -1008,7 +1018,7 @@ int cac_LsaSetPrivileges(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct LsaAd
 
    if(op->in.name && !op->in.sid) {
       /*lookup the SID*/
-      hnd->status = rpccli_lsa_lookup_names( pipe_hnd, mem_ctx, op->in.pol, 1, (const char **)&(op->in.name), &user_sid, &type);
+      hnd->status = rpccli_lsa_lookup_names( pipe_hnd, mem_ctx, op->in.pol, 1, (const char **)&(op->in.name), NULL, &user_sid, &type);
 
       if(!NT_STATUS_IS_OK(hnd->status))
          return CAC_FAILURE;

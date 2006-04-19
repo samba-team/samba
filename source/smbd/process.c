@@ -26,8 +26,6 @@ extern int keepalive;
 extern struct auth_context *negprot_global_auth_context;
 extern int smb_echo_count;
 
-struct timeval smb_last_time;
-
 static char *InBuffer = NULL;
 static char *OutBuffer = NULL;
 static char *current_inbuf = NULL;
@@ -91,7 +89,7 @@ static BOOL push_queued_message(char *buf, int msg_len,
 	msg->buf = data_blob_talloc(msg, buf, msg_len);
 	if(msg->buf.data == NULL) {
 		DEBUG(0,("push_message: malloc fail (2)\n"));
-		talloc_free(msg);
+		TALLOC_FREE(msg);
 		return False;
 	}
 
@@ -103,7 +101,7 @@ static BOOL push_queued_message(char *buf, int msg_len,
 						     private_len);
 		if (msg->private_data.data == NULL) {
 			DEBUG(0,("push_message: malloc fail (3)\n"));
-			talloc_free(msg);
+			TALLOC_FREE(msg);
 			return False;
 		}
 	}
@@ -131,7 +129,7 @@ void remove_deferred_open_smb_message(uint16 mid)
 				  (unsigned int)mid,
 				  (unsigned int)pml->buf.length ));
 			DLIST_REMOVE(deferred_open_queue, pml);
-			talloc_free(pml);
+			TALLOC_FREE(pml);
 			return;
 		}
 	}
@@ -223,115 +221,6 @@ BOOL push_deferred_smb_message(uint16 mid,
 				   private_data, priv_len);
 }
 
-static struct timed_event *timed_events;
-
-struct timed_event {
-	struct timed_event *next, *prev;
-	struct timeval when;
-	const char *event_name;
-	void (*handler)(struct timed_event *te,
-			const struct timeval *now,
-			void *private_data);
-	void *private_data;
-};
-
-static int timed_event_destructor(void *p)
-{
-	struct timed_event *te = talloc_get_type_abort(p, struct timed_event);
-	DEBUG(10, ("Destroying timed event %lx \"%s\"\n", (unsigned long)te,
-		   te->event_name));
-	DLIST_REMOVE(timed_events, te);
-	return 0;
-}
-
-/****************************************************************************
- Schedule a function for future calling, cancel with talloc_free().
- It's the responsibility of the handler to call talloc_free() on the event 
- handed to it.
-****************************************************************************/
-
-struct timed_event *add_timed_event(TALLOC_CTX *mem_ctx,
-				    struct timeval when,
-				    const char *event_name,
-				    void (*handler)(struct timed_event *te,
-						    const struct timeval *now,
-						    void *private_data),
-				    void *private_data)
-{
-	struct timed_event *te, *last_te, *cur_te;
-
-	te = TALLOC_P(mem_ctx, struct timed_event);
-	if (te == NULL) {
-		DEBUG(0, ("talloc failed\n"));
-		return NULL;
-	}
-
-	te->when = when;
-	te->event_name = event_name;
-	te->handler = handler;
-	te->private_data = private_data;
-
-	/* keep the list ordered */
-	last_te = NULL;
-	for (cur_te = timed_events; cur_te; cur_te = cur_te->next) {
-		/* if the new event comes before the current one break */
-		if (!timeval_is_zero(&cur_te->when) &&
-		    timeval_compare(&te->when, &cur_te->when) < 0) {
-			break;
-		}
-		last_te = cur_te;
-	}
-
-	DLIST_ADD_AFTER(timed_events, te, last_te);
-	talloc_set_destructor(te, timed_event_destructor);
-
-	DEBUG(10, ("Added timed event \"%s\": %lx\n", event_name,
-		   (unsigned long)te));
-	return te;
-}
-
-static void run_events(void)
-{
-	struct timeval now;
-
-	if (timed_events == NULL) {
-		/* No syscall if there are no events */
-		DEBUG(10, ("run_events: No events\n"));
-		return;
-	}
-
-	GetTimeOfDay(&now);
-
-	if (timeval_compare(&now, &timed_events->when) < 0) {
-		/* Nothing to do yet */
-		DEBUG(10, ("run_events: Nothing to do\n"));
-		return;
-	}
-
-	DEBUG(10, ("Running event \"%s\" %lx\n", timed_events->event_name,
-		   (unsigned long)timed_events));
-
-	timed_events->handler(timed_events, &now, timed_events->private_data);
-	return;
-}
-
-struct timeval timed_events_timeout(void)
-{
-	struct timeval now, timeout;
-
-	if (timed_events == NULL) {
-		return timeval_set(SMBD_SELECT_TIMEOUT, 0);
-	}
-
-	now = timeval_current();
-	timeout = timeval_until(&now, &timed_events->when);
-
-	DEBUG(10, ("timed_events_timeout: %d/%d\n", (int)timeout.tv_sec,
-		   (int)timeout.tv_usec));
-
-	return timeout;
-}
-
 struct idle_event {
 	struct timed_event *te;
 	struct timeval interval;
@@ -346,11 +235,11 @@ static void idle_event_handler(struct timed_event *te,
 	struct idle_event *event =
 		talloc_get_type_abort(private_data, struct idle_event);
 
-	talloc_free(event->te);
+	TALLOC_FREE(event->te);
 
 	if (!event->handler(now, event->private_data)) {
 		/* Don't repeat, delete ourselves */
-		talloc_free(event);
+		TALLOC_FREE(event);
 		return;
 	}
 
@@ -386,13 +275,13 @@ struct idle_event *add_idle_event(TALLOC_CTX *mem_ctx,
 				     idle_event_handler, result);
 	if (result->te == NULL) {
 		DEBUG(0, ("add_timed_event failed\n"));
-		talloc_free(result);
+		TALLOC_FREE(result);
 		return NULL;
 	}
 
 	return result;
 }
-	
+
 /****************************************************************************
  Do all async processing in here. This includes kernel oplock messages, change
  notify events etc.
@@ -412,7 +301,7 @@ static void async_processing(fd_set *pfds)
 	process_aio_queue();
 
 	if (got_sig_term) {
-		exit_server("Caught TERM signal");
+		exit_server_cleanly("termination signal");
 	}
 
 	/* check for async change notify events */
@@ -425,6 +314,20 @@ static void async_processing(fd_set *pfds)
 		reload_services(False);
 		reload_after_sighup = 0;
 	}
+}
+
+/****************************************************************************
+ Add a fd to the set we will be select(2)ing on.
+****************************************************************************/
+
+static int select_on_fd(int fd, int maxfd, fd_set *fds)
+{
+	if (fd != -1) {
+		FD_SET(fd, fds);
+		maxfd = MAX(maxfd, fd);
+	}
+
+	return maxfd;
 }
 
 /****************************************************************************
@@ -452,8 +355,8 @@ static BOOL receive_message_or_smb(char *buffer, int buffer_len, int timeout)
 {
 	fd_set fds;
 	int selrtn;
-	struct timeval to = timeval_set(SMBD_SELECT_TIMEOUT, 0);
-	int maxfd;
+	struct timeval to;
+	int maxfd = 0;
 
 	smb_read_error = 0;
 
@@ -462,6 +365,9 @@ static BOOL receive_message_or_smb(char *buffer, int buffer_len, int timeout)
 	if (timeout >= 0) {
 		to.tv_sec = timeout / 1000;
 		to.tv_usec = (timeout % 1000) * 1000;
+	} else {
+		to.tv_sec = SMBD_SELECT_TIMEOUT;
+		to.tv_usec = 0;
 	}
 
 	/*
@@ -536,18 +442,29 @@ static BOOL receive_message_or_smb(char *buffer, int buffer_len, int timeout)
 		goto again;
 	}
 
+	/*
+	 * Are there any timed events waiting ? If so, ensure we don't
+	 * select for longer than it would take to wait for them.
+	 */
+
 	{
-		struct timeval tmp = timed_events_timeout();
-		to = timeval_min(&to, &tmp);
-		if (timeval_is_zero(&to)) {
-			return True;
+		struct timeval tmp;
+		struct timeval *tp = get_timed_events_timeout(&tmp);
+
+		if (tp) {
+			to = timeval_min(&to, tp);
+			if (timeval_is_zero(&to)) {
+				/* Process a timed event now... */
+				run_events();
+			}
 		}
 	}
 	
-	FD_SET(smbd_server_fd(),&fds);
-	maxfd = setup_oplock_select_set(&fds);
+	maxfd = select_on_fd(smbd_server_fd(), maxfd, &fds);
+	maxfd = select_on_fd(change_notify_fd(), maxfd, &fds);
+	maxfd = select_on_fd(oplock_notify_fd(), maxfd, &fds);
 
-	selrtn = sys_select(MAX(maxfd,smbd_server_fd())+1,&fds,NULL,NULL,&to);
+	selrtn = sys_select(maxfd+1,&fds,NULL,NULL,&to);
 
 	/* if we get EINTR then maybe we have received an oplock
 	   signal - treat this as select returning 1. This is ugly, but
@@ -595,22 +512,27 @@ static BOOL receive_message_or_smb(char *buffer, int buffer_len, int timeout)
 	return receive_smb(smbd_server_fd(), buffer, 0);
 }
 
-/****************************************************************************
-Get the next SMB packet, doing the local message processing automatically.
-****************************************************************************/
+/*
+ * Only allow 5 outstanding trans requests. We're allocating memory, so
+ * prevent a DoS.
+ */
 
-BOOL receive_next_smb(char *inbuf, int bufsize, int timeout)
+NTSTATUS allow_new_trans(struct trans_state *list, int mid)
 {
-	BOOL got_keepalive;
-	BOOL ret;
+	int count = 0;
+	for (; list != NULL; list = list->next) {
 
-	do {
-		ret = receive_message_or_smb(inbuf,bufsize,timeout);
-		
-		got_keepalive = (ret && (CVAL(inbuf,0) == SMBkeepalive));
-	} while (ret && got_keepalive);
+		if (list->mid == mid) {
+			return NT_STATUS_INVALID_PARAMETER;
+		}
 
-	return ret;
+		count += 1;
+	}
+	if (count > 5) {
+		return NT_STATUS_INSUFFICIENT_RESOURCES;
+	}
+
+	return NT_STATUS_OK;
 }
 
 /****************************************************************************
@@ -701,7 +623,7 @@ static const struct smb_message_struct {
 /* 0x23 */ { "SMBgetattrE",reply_getattrE,AS_USER },
 /* 0x24 */ { "SMBlockingX",reply_lockingX,AS_USER },
 /* 0x25 */ { "SMBtrans",reply_trans,AS_USER | CAN_IPC },
-/* 0x26 */ { "SMBtranss",NULL,AS_USER | CAN_IPC},
+/* 0x26 */ { "SMBtranss",reply_transs,AS_USER | CAN_IPC},
 /* 0x27 */ { "SMBioctl",reply_ioctl,0},
 /* 0x28 */ { "SMBioctls",NULL,AS_USER},
 /* 0x29 */ { "SMBcopy",reply_copy,AS_USER | NEED_WRITE },
@@ -971,7 +893,7 @@ static int switch_message(int type,char *inbuf,char *outbuf,int size,int bufsize
 	/* Make sure this is an SMB packet. smb_size contains NetBIOS header so subtract 4 from it. */
 	if ((strncmp(smb_base(inbuf),"\377SMB",4) != 0) || (size < (smb_size - 4))) {
 		DEBUG(2,("Non-SMB packet of length %d. Terminating server\n",smb_len(inbuf)));
-		exit_server("Non-SMB packet");
+		exit_server_cleanly("Non-SMB packet");
 		return(-1);
 	}
 
@@ -1087,8 +1009,6 @@ static int construct_reply(char *inbuf,char *outbuf,int size,int bufsize)
 	int outsize = 0;
 	int msg_type = CVAL(inbuf,0);
 
-	GetTimeOfDay(&smb_last_time);
-
 	chain_size = 0;
 	file_chain_reset();
 	reset_chain_p();
@@ -1162,11 +1082,10 @@ set. Ignoring max smbd restriction.\n"));
 }
 
 /****************************************************************************
- Process an smb from the client - split out from the smbd_process() code so
- it can be used by the oplock break code.
+ Process an smb from the client
 ****************************************************************************/
 
-void process_smb(char *inbuf, char *outbuf)
+static void process_smb(char *inbuf, char *outbuf)
 {
 	static int trans_num;
 	int msg_type = CVAL(inbuf,0);
@@ -1186,7 +1105,7 @@ void process_smb(char *inbuf, char *outbuf)
 			static unsigned char buf[5] = {0x83, 0, 0, 1, 0x81};
 			DEBUG( 1, ( "Connection denied from %s\n", client_addr() ) );
 			(void)send_smb(smbd_server_fd(),(char *)buf);
-			exit_server("connection denied");
+			exit_server_cleanly("connection denied");
 		}
 	}
 
@@ -1208,7 +1127,7 @@ void process_smb(char *inbuf, char *outbuf)
 			DEBUG(0,("ERROR: Invalid message response size! %d %d\n",
 				nread, smb_len(outbuf)));
 		} else if (!send_smb(smbd_server_fd(),outbuf)) {
-			exit_server("process_smb: send_smb failed.");
+			exit_server_cleanly("process_smb: send_smb failed.");
 		}
 	}
 	trans_num++;
@@ -1246,20 +1165,16 @@ void remove_from_common_flags2(uint32 v)
 
 void construct_reply_common(char *inbuf,char *outbuf)
 {
-	memset(outbuf,'\0',smb_size);
-
-	set_message(outbuf,0,0,True);
-	SCVAL(outbuf,smb_com,CVAL(inbuf,smb_com));
+	set_message(outbuf,0,0,False);
 	
-	memcpy(outbuf+4,inbuf+4,4);
-	SCVAL(outbuf,smb_rcls,SMB_SUCCESS);
-	SCVAL(outbuf,smb_reh,0);
+	SCVAL(outbuf,smb_com,CVAL(inbuf,smb_com));
+	SIVAL(outbuf,smb_rcls,0);
 	SCVAL(outbuf,smb_flg, FLAG_REPLY | (CVAL(inbuf,smb_flg) & FLAG_CASELESS_PATHNAMES)); 
 	SSVAL(outbuf,smb_flg2,
 		(SVAL(inbuf,smb_flg2) & FLAGS2_UNICODE_STRINGS) |
 		common_flags2);
+	memset(outbuf+smb_pidhigh,'\0',(smb_tid-smb_pidhigh));
 
-	SSVAL(outbuf,smb_err,SMB_SUCCESS);
 	SSVAL(outbuf,smb_tid,SVAL(inbuf,smb_tid));
 	SSVAL(outbuf,smb_pid,SVAL(inbuf,smb_pid));
 	SSVAL(outbuf,smb_uid,SVAL(inbuf,smb_uid));
@@ -1715,8 +1630,8 @@ void smbd_process(void)
 		errno = 0;      
 		
 		/* free up temporary memory */
-		lp_talloc_free();
-		main_loop_talloc_free();
+		lp_TALLOC_FREE();
+		main_loop_TALLOC_FREE();
 
 		/* Did someone ask for immediate checks on things like blocking locks ? */
 		if (select_timeout == 0) {

@@ -22,6 +22,10 @@
 
 #include "includes.h"
 
+#ifdef HAVE_SYS_PRCTL_H
+#include <sys/prctl.h>
+#endif
+
 /*
    The idea is that this file will eventually have wrappers around all
    important system calls in samba. The aims are:
@@ -624,85 +628,125 @@ struct hostent *sys_gethostbyname(const char *name)
 }
 
 
-#if defined(HAVE_IRIX_SPECIFIC_CAPABILITIES)
+#if defined(HAVE_POSIX_CAPABILITIES)
+
+#ifdef HAVE_SYS_CAPABILITY_H
+
+#if defined(BROKEN_REDHAT_7_SYSTEM_HEADERS) && !defined(_I386_STATFS_H) && !defined(_PPC_STATFS_H)
+#define _I386_STATFS_H
+#define _PPC_STATFS_H
+#define BROKEN_REDHAT_7_STATFS_WORKAROUND
+#endif
+
+#include <sys/capability.h>
+
+#ifdef BROKEN_REDHAT_7_STATFS_WORKAROUND
+#undef _I386_STATFS_H
+#undef _PPC_STATFS_H
+#undef BROKEN_REDHAT_7_STATFS_WORKAROUND
+#endif
+
+#endif /* HAVE_SYS_CAPABILITY_H */
+
 /**************************************************************************
  Try and abstract process capabilities (for systems that have them).
 ****************************************************************************/
-static BOOL set_process_capability( uint32 cap_flag, BOOL enable )
+
+/* Set the POSIX capabilities needed for the given purpose into the effective
+ * capability set of the current process. Make sure they are always removed
+ * from the inheritable set, because there is no circumstance in which our
+ * children should inherit our elevated privileges.
+ */
+static BOOL set_process_capability(enum smbd_capability capability,
+				   BOOL	enable)
 {
-	if(cap_flag == KERNEL_OPLOCK_CAPABILITY) {
-		cap_t cap = cap_get_proc();
+	cap_value_t cap_vals[2] = {0};
+	int num_cap_vals = 0;
 
-		if (cap == NULL) {
-			DEBUG(0,("set_process_capability: cap_get_proc failed. Error was %s\n",
-				strerror(errno)));
-			return False;
-		}
+	cap_t cap;
 
-		if(enable)
-			cap->cap_effective |= CAP_NETWORK_MGT;
-		else
-			cap->cap_effective &= ~CAP_NETWORK_MGT;
-
-		if (cap_set_proc(cap) == -1) {
-			DEBUG(0,("set_process_capability: cap_set_proc failed. Error was %s\n",
-				strerror(errno)));
-			cap_free(cap);
-			return False;
-		}
-
-		cap_free(cap);
-
-		DEBUG(10,("set_process_capability: Set KERNEL_OPLOCK_CAPABILITY.\n"));
+#if defined(HAVE_PRCTL) && defined(PR_GET_KEEPCAPS) && defined(PR_SET_KEEPCAPS)
+	/* On Linux, make sure that any capabilities we grab are sticky
+	 * across UID changes. We expect that this would allow us to keep both
+	 * the effective and permitted capability sets, but as of circa 2.6.16,
+	 * only the permitted set is kept. It is a bug (which we work around)
+	 * that the effective set is lost, but we still require the effective
+	 * set to be kept.
+	 */
+	if (!prctl(PR_GET_KEEPCAPS)) {
+		prctl(PR_SET_KEEPCAPS, 1);
 	}
-	return True;
-}
-
-/**************************************************************************
- Try and abstract inherited process capabilities (for systems that have them).
-****************************************************************************/
-
-static BOOL set_inherited_process_capability( uint32 cap_flag, BOOL enable )
-{
-	if(cap_flag == KERNEL_OPLOCK_CAPABILITY) {
-		cap_t cap = cap_get_proc();
-
-		if (cap == NULL) {
-			DEBUG(0,("set_inherited_process_capability: cap_get_proc failed. Error was %s\n",
-				strerror(errno)));
-			return False;
-		}
-
-		if(enable)
-			cap->cap_inheritable |= CAP_NETWORK_MGT;
-		else
-			cap->cap_inheritable &= ~CAP_NETWORK_MGT;
-
-		if (cap_set_proc(cap) == -1) {
-			DEBUG(0,("set_inherited_process_capability: cap_set_proc failed. Error was %s\n", 
-				strerror(errno)));
-			cap_free(cap);
-			return False;
-		}
-
-		cap_free(cap);
-
-		DEBUG(10,("set_inherited_process_capability: Set KERNEL_OPLOCK_CAPABILITY.\n"));
-	}
-	return True;
-}
 #endif
+
+	cap = cap_get_proc();
+	if (cap == NULL) {
+		DEBUG(0,("set_process_capability: cap_get_proc failed: %s\n",
+			strerror(errno)));
+		return False;
+	}
+
+	switch (capability) {
+		case KERNEL_OPLOCK_CAPABILITY:
+#ifdef CAP_NETWORK_MGT
+			/* IRIX has CAP_NETWORK_MGT for oplocks. */
+			cap_vals[num_cap_vals++] = CAP_NETWORK_MGT;
+#endif
+			break;
+		case DMAPI_ACCESS_CAPABILITY:
+#ifdef CAP_DEVICE_MGT
+			/* IRIX has CAP_DEVICE_MGT for DMAPI access. */
+			cap_vals[num_cap_vals++] = CAP_DEVICE_MGT;
+#elif CAP_MKNOD
+			/* Linux has CAP_MKNOD for DMAPI access. */
+			cap_vals[num_cap_vals++] = CAP_MKNOD;
+#endif
+			break;
+	}
+
+	SMB_ASSERT(num_cap_vals <= ARRAY_SIZE(cap_vals));
+
+	if (num_cap_vals == 0) {
+		cap_free(cap);
+		return True;
+	}
+
+	cap_set_flag(cap, CAP_EFFECTIVE, num_cap_vals, cap_vals,
+		enable ? CAP_SET : CAP_CLEAR);
+
+	/* We never want to pass capabilities down to our children, so make
+	 * sure they are not inherited.
+	 */
+	cap_set_flag(cap, CAP_INHERITABLE, num_cap_vals, cap_vals, CAP_CLEAR);
+
+	if (cap_set_proc(cap) == -1) {
+		DEBUG(0, ("set_process_capability: cap_set_proc failed: %s\n",
+			strerror(errno)));
+		cap_free(cap);
+		return False;
+	}
+
+	cap_free(cap);
+	return True;
+}
+
+#endif /* HAVE_POSIX_CAPABILITIES */
 
 /****************************************************************************
  Gain the oplock capability from the kernel if possible.
 ****************************************************************************/
 
-void oplock_set_capability(BOOL this_process, BOOL inherit)
+void set_effective_capability(enum smbd_capability capability)
 {
-#if HAVE_KERNEL_OPLOCKS_IRIX
-	set_process_capability(KERNEL_OPLOCK_CAPABILITY,this_process);
-	set_inherited_process_capability(KERNEL_OPLOCK_CAPABILITY,inherit);
-#endif
+#if defined(HAVE_POSIX_CAPABILITIES)
+	set_process_capability(capability, True);
+#endif /* HAVE_POSIX_CAPABILITIES */
+}
+
+void drop_effective_capability(enum smbd_capability capability)
+{
+#if defined(HAVE_POSIX_CAPABILITIES)
+	set_process_capability(capability, False);
+#endif /* HAVE_POSIX_CAPABILITIES */
 }
 
 /**************************************************************************
@@ -1374,6 +1418,8 @@ ssize_t sys_getxattr (const char *path, const char *name, void *value, size_t si
 {
 #if defined(HAVE_GETXATTR)
 	return getxattr(path, name, value, size);
+#elif defined(HAVE_GETEA)
+	return getea(path, name, value, size);
 #elif defined(HAVE_EXTATTR_GET_FILE)
 	char *s;
 	ssize_t retval;
@@ -1416,6 +1462,8 @@ ssize_t sys_lgetxattr (const char *path, const char *name, void *value, size_t s
 {
 #if defined(HAVE_LGETXATTR)
 	return lgetxattr(path, name, value, size);
+#elif defined(HAVE_LGETEA)
+	return lgetea(path, name, value, size);
 #elif defined(HAVE_EXTATTR_GET_LINK)
 	char *s;
 	ssize_t retval;
@@ -1454,6 +1502,8 @@ ssize_t sys_fgetxattr (int filedes, const char *name, void *value, size_t size)
 {
 #if defined(HAVE_FGETXATTR)
 	return fgetxattr(filedes, name, value, size);
+#elif defined(HAVE_FGETEA)
+	return fgetea(filedes, name, value, size);
 #elif defined(HAVE_EXTATTR_GET_FD)
 	char *s;
 	ssize_t retval;
@@ -1653,6 +1703,8 @@ ssize_t sys_listxattr (const char *path, char *list, size_t size)
 {
 #if defined(HAVE_LISTXATTR)
 	return listxattr(path, list, size);
+#elif defined(HAVE_LISTEA)
+	return listea(path, list, size);
 #elif defined(HAVE_EXTATTR_LIST_FILE)
 	extattr_arg arg;
 	arg.path = path;
@@ -1669,6 +1721,8 @@ ssize_t sys_llistxattr (const char *path, char *list, size_t size)
 {
 #if defined(HAVE_LLISTXATTR)
 	return llistxattr(path, list, size);
+#elif defined(HAVE_LLISTEA)
+	return llistea(path, list, size);
 #elif defined(HAVE_EXTATTR_LIST_LINK)
 	extattr_arg arg;
 	arg.path = path;
@@ -1685,6 +1739,8 @@ ssize_t sys_flistxattr (int filedes, char *list, size_t size)
 {
 #if defined(HAVE_FLISTXATTR)
 	return flistxattr(filedes, list, size);
+#elif defined(HAVE_FLISTEA)
+	return flistea(filedes, list, size);
 #elif defined(HAVE_EXTATTR_LIST_FD)
 	extattr_arg arg;
 	arg.filedes = filedes;
@@ -1701,6 +1757,8 @@ int sys_removexattr (const char *path, const char *name)
 {
 #if defined(HAVE_REMOVEXATTR)
 	return removexattr(path, name);
+#elif defined(HAVE_REMOVEEA)
+	return removeea(path, name);
 #elif defined(HAVE_EXTATTR_DELETE_FILE)
 	char *s;
 	int attrnamespace = (strncmp(name, "system", 6) == 0) ? 
@@ -1725,6 +1783,8 @@ int sys_lremovexattr (const char *path, const char *name)
 {
 #if defined(HAVE_LREMOVEXATTR)
 	return lremovexattr(path, name);
+#elif defined(HAVE_LREMOVEEA)
+	return lremoveea(path, name);
 #elif defined(HAVE_EXTATTR_DELETE_LINK)
 	char *s;
 	int attrnamespace = (strncmp(name, "system", 6) == 0) ? 
@@ -1749,6 +1809,8 @@ int sys_fremovexattr (int filedes, const char *name)
 {
 #if defined(HAVE_FREMOVEXATTR)
 	return fremovexattr(filedes, name);
+#elif defined(HAVE_FREMOVEEA)
+	return fremoveea(filedes, name);
 #elif defined(HAVE_EXTATTR_DELETE_FD)
 	char *s;
 	int attrnamespace = (strncmp(name, "system", 6) == 0) ? 
@@ -1778,6 +1840,8 @@ int sys_setxattr (const char *path, const char *name, const void *value, size_t 
 {
 #if defined(HAVE_SETXATTR)
 	return setxattr(path, name, value, size, flags);
+#elif defined(HAVE_SETEA)
+	return setea(path, name, value, size, flags);
 #elif defined(HAVE_EXTATTR_SET_FILE)
 	char *s;
 	int retval = 0;
@@ -1824,6 +1888,8 @@ int sys_lsetxattr (const char *path, const char *name, const void *value, size_t
 {
 #if defined(HAVE_LSETXATTR)
 	return lsetxattr(path, name, value, size, flags);
+#elif defined(LSETEA)
+	return lsetea(path, name, value, size, flags);
 #elif defined(HAVE_EXTATTR_SET_LINK)
 	char *s;
 	int retval = 0;
@@ -1871,6 +1937,8 @@ int sys_fsetxattr (int filedes, const char *name, const void *value, size_t size
 {
 #if defined(HAVE_FSETXATTR)
 	return fsetxattr(filedes, name, value, size, flags);
+#elif defined(HAVE_FSETEA)
+	return fsetea(filedes, name, value, size, flags);
 #elif defined(HAVE_EXTATTR_SET_FD)
 	char *s;
 	int retval = 0;

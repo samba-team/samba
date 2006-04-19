@@ -3,9 +3,10 @@
    Password and authentication handling
    Copyright (C) Jeremy Allison 		1996-2001
    Copyright (C) Luke Kenneth Casson Leighton 	1996-1998
-   Copyright (C) Gerald (Jerry) Carter		2000-2001
+   Copyright (C) Gerald (Jerry) Carter		2000-2006
    Copyright (C) Andrew Bartlett		2001-2002
    Copyright (C) Simo Sorce			2003
+   Copyright (C) Volker Lendecke 		2006
       
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -35,7 +36,7 @@
  standalone box will map to WKS\user.
 ******************************************************************/
 
-const char *get_default_sam_name(void)
+const char *my_sam_name(void)
 {
 	/* standalone servers can only use the local netbios name */
 	if ( lp_server_role() == ROLE_STANDALONE )
@@ -46,410 +47,204 @@ const char *get_default_sam_name(void)
 	return lp_workgroup();
 }
 
-/************************************************************
- Fill the SAM_ACCOUNT with default values.
- ***********************************************************/
+/**********************************************************************
+***********************************************************************/
 
-void pdb_fill_default_sam(SAM_ACCOUNT *user)
+static int samu_destroy(void *p) 
 {
-	ZERO_STRUCT(user->private_u); /* Don't touch the talloc context */
+	struct samu *user = p;
 
+	data_blob_clear_free( &user->lm_pw );
+	data_blob_clear_free( &user->nt_pw );
+
+	if ( user->plaintext_pw )
+		memset( user->plaintext_pw, 0x0, strlen(user->plaintext_pw) );
+
+	return 0;
+}
+
+/**********************************************************************
+ generate a new struct samuser
+***********************************************************************/
+
+struct samu* samu_new( TALLOC_CTX *ctx )
+{
+	struct samu *user;
+	
+	if ( !(user = TALLOC_ZERO_P( ctx, struct samu )) ) {
+		DEBUG(0,("samuser_new: Talloc failed!\n"));
+		return NULL;
+	}
+	
+	talloc_set_destructor( user, samu_destroy );
+	
 	/* no initial methods */
+	
 	user->methods = NULL;
 
         /* Don't change these timestamp settings without a good reason.
            They are important for NT member server compatibility. */
 
-	user->private_u.logon_time            = (time_t)0;
-	user->private_u.pass_last_set_time    = (time_t)0;
-	user->private_u.pass_can_change_time  = (time_t)0;
-	user->private_u.logoff_time           = 
-	user->private_u.kickoff_time          = 
-	user->private_u.pass_must_change_time = get_time_t_max();
-	user->private_u.fields_present        = 0x00ffffff;
-	user->private_u.logon_divs = 168; 	/* hours per week */
-	user->private_u.hours_len = 21; 		/* 21 times 8 bits = 168 */
-	memset(user->private_u.hours, 0xff, user->private_u.hours_len); /* available at all hours */
-	user->private_u.bad_password_count = 0;
-	user->private_u.logon_count = 0;
-	user->private_u.unknown_6 = 0x000004ec; /* don't know */
+	user->logon_time            = (time_t)0;
+	user->pass_last_set_time    = (time_t)0;
+	user->pass_can_change_time  = (time_t)0;
+	user->logoff_time           = get_time_t_max();
+	user->kickoff_time          = get_time_t_max();
+	user->pass_must_change_time = get_time_t_max();
+	user->fields_present        = 0x00ffffff;
+	user->logon_divs = 168; 	/* hours per week */
+	user->hours_len = 21; 		/* 21 times 8 bits = 168 */
+	memset(user->hours, 0xff, user->hours_len); /* available at all hours */
+	user->bad_password_count = 0;
+	user->logon_count = 0;
+	user->unknown_6 = 0x000004ec; /* don't know */
 
 	/* Some parts of samba strlen their pdb_get...() returns, 
 	   so this keeps the interface unchanged for now. */
 	   
-	user->private_u.username = "";
-	user->private_u.domain = "";
-	user->private_u.nt_username = "";
-	user->private_u.full_name = "";
-	user->private_u.home_dir = "";
-	user->private_u.logon_script = "";
-	user->private_u.profile_path = "";
-	user->private_u.acct_desc = "";
-	user->private_u.workstations = "";
-	user->private_u.unknown_str = "";
-	user->private_u.munged_dial = "";
+	user->username = "";
+	user->domain = "";
+	user->nt_username = "";
+	user->full_name = "";
+	user->home_dir = "";
+	user->logon_script = "";
+	user->profile_path = "";
+	user->acct_desc = "";
+	user->workstations = "";
+	user->unknown_str = "";
+	user->munged_dial = "";
 
-	user->private_u.plaintext_pw = NULL;
+	user->plaintext_pw = NULL;
 
-	/* 
-	   Unless we know otherwise have a Account Control Bit
+	/* Unless we know otherwise have a Account Control Bit
 	   value of 'normal user'.  This helps User Manager, which
-	   asks for a filtered list of users.
-	*/
+	   asks for a filtered list of users. */
 
-	user->private_u.acct_ctrl = ACB_NORMAL;
-}	
-
-static void destroy_pdb_talloc(SAM_ACCOUNT **user) 
-{
-	if (*user) {
-		data_blob_clear_free(&((*user)->private_u.lm_pw));
-		data_blob_clear_free(&((*user)->private_u.nt_pw));
-
-		if((*user)->private_u.plaintext_pw!=NULL)
-			memset((*user)->private_u.plaintext_pw,'\0',strlen((*user)->private_u.plaintext_pw));
-		talloc_destroy((*user)->mem_ctx);
-		*user = NULL;
-	}
+	user->acct_ctrl = ACB_NORMAL;
+	
+	
+	return user;
 }
 
+/*********************************************************************
+ Initialize a struct samu from a struct passwd including the user 
+ and group SIDs.  The *user structure is filled out with the Unix
+ attributes and a user SID.
+*********************************************************************/
 
-/**********************************************************************
- Allocates memory and initialises a struct sam_passwd on supplied mem_ctx.
-***********************************************************************/
-
-NTSTATUS pdb_init_sam_talloc(TALLOC_CTX *mem_ctx, SAM_ACCOUNT **user)
-{
-	if (*user != NULL) {
-		DEBUG(0,("pdb_init_sam_talloc: SAM_ACCOUNT was non NULL\n"));
-#if 0
-		smb_panic("non-NULL pointer passed to pdb_init_sam\n");
-#endif
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
-	if (!mem_ctx) {
-		DEBUG(0,("pdb_init_sam_talloc: mem_ctx was NULL!\n"));
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
-	*user=TALLOC_P(mem_ctx, SAM_ACCOUNT);
-
-	if (*user==NULL) {
-		DEBUG(0,("pdb_init_sam_talloc: error while allocating memory\n"));
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	(*user)->mem_ctx = mem_ctx;
-
-	(*user)->free_fn = NULL;
-
-	pdb_fill_default_sam(*user);
-	
-	return NT_STATUS_OK;
-}
-
-
-/*************************************************************
- Allocates memory and initialises a struct sam_passwd.
- ************************************************************/
-
-NTSTATUS pdb_init_sam(SAM_ACCOUNT **user)
-{
-	TALLOC_CTX *mem_ctx;
-	NTSTATUS nt_status;
-	
-	mem_ctx = talloc_init("passdb internal SAM_ACCOUNT allocation");
-
-	if (!mem_ctx) {
-		DEBUG(0,("pdb_init_sam: error while doing talloc_init()\n"));
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	if (!NT_STATUS_IS_OK(nt_status = pdb_init_sam_talloc(mem_ctx, user))) {
-		talloc_destroy(mem_ctx);
-		return nt_status;
-	}
-	
-	(*user)->free_fn = destroy_pdb_talloc;
-
-	return NT_STATUS_OK;
-}
-
-/**************************************************************************
- * This function will take care of all the steps needed to correctly
- * allocate and set the user SID, please do use this function to create new
- * users, messing with SIDs is not good.
- *
- * account_data must be provided initialized, pwd may be null.
- * 									SSS
- ***************************************************************************/
-
-static NTSTATUS pdb_set_sam_sids(SAM_ACCOUNT *account_data, const struct passwd *pwd)
+static NTSTATUS samu_set_unix_internal(struct samu *user, const struct passwd *pwd, BOOL create)
 {
 	const char *guest_account = lp_guestaccount();
-	GROUP_MAP map;
-	BOOL ret;
-	
-	if (!account_data || !pwd) {
-		return NT_STATUS_INVALID_PARAMETER;
+	const char *domain = global_myname();
+	uint32 urid;
+
+	if ( !pwd ) {
+		return NT_STATUS_NO_SUCH_USER;
 	}
 
-	/* this is a hack this thing should not be set
-	   this way --SSS */
-	if (!(guest_account && *guest_account)) {
-		DEBUG(1, ("NULL guest account!?!?\n"));
-		return NT_STATUS_UNSUCCESSFUL;
-	} else {
-		/* Ensure this *must* be set right */
-		if (strcmp(pwd->pw_name, guest_account) == 0) {
-			if (!pdb_set_user_sid_from_rid(account_data, DOMAIN_USER_RID_GUEST, PDB_DEFAULT)) {
-				return NT_STATUS_UNSUCCESSFUL;
-			}
-			if (!pdb_set_group_sid_from_rid(account_data, DOMAIN_GROUP_RID_GUESTS, PDB_DEFAULT)) {
-				return NT_STATUS_UNSUCCESSFUL;
-			}
-			return NT_STATUS_OK;
-		}
-	}
+	/* Basic properties based upon the Unix account information */
+	
+	pdb_set_username(user, pwd->pw_name, PDB_SET);
+	pdb_set_fullname(user, pwd->pw_gecos, PDB_SET);
+	pdb_set_domain (user, get_global_sam_name(), PDB_DEFAULT);
+	
+	/* save the password structure for later use */
+	
+	user->unix_pw = tcopy_passwd( user, pwd );
 
-	if (!pdb_set_user_sid_from_rid(account_data, algorithmic_pdb_uid_to_user_rid(pwd->pw_uid), PDB_SET)) {
-		DEBUG(0,("Can't set User SID from RID!\n"));
-		return NT_STATUS_INVALID_PARAMETER;
+	/* Special case for the guest account which must have a RID of 501 */
+	
+	if ( strequal( pwd->pw_name, guest_account ) ) {
+		if ( !pdb_set_user_sid_from_rid(user, DOMAIN_USER_RID_GUEST, PDB_DEFAULT)) {
+			return NT_STATUS_NO_SUCH_USER;
+		}
+		return NT_STATUS_OK;
 	}
 	
-	/* call the mapping code here */
-	become_root();
-	ret = pdb_getgrgid(&map, pwd->pw_gid);
-	unbecome_root();
-	
-	if( ret ) {
-		if (!pdb_set_group_sid(account_data, &map.sid, PDB_SET)){
-			DEBUG(0,("Can't set Group SID!\n"));
-			return NT_STATUS_INVALID_PARAMETER;
-		}
+	/* Non-guest accounts...Check for a workstation or user account */
+
+	if (pwd->pw_name[strlen(pwd->pw_name)-1] == '$') {
+		/* workstation */
+		
+		if (!pdb_set_acct_ctrl(user, ACB_WSTRUST, PDB_DEFAULT)) {
+			DEBUG(1, ("Failed to set 'workstation account' flags for user %s.\n", 
+				pwd->pw_name));
+			return NT_STATUS_INVALID_COMPUTER_NAME;
+		}	
 	} 
 	else {
-		if (!pdb_set_group_sid_from_rid(account_data, pdb_gid_to_group_rid(pwd->pw_gid), PDB_SET)) {
-			DEBUG(0,("Can't set Group SID\n"));
-			return NT_STATUS_INVALID_PARAMETER;
-		}
-	}
-
-	return NT_STATUS_OK;
-}
-
-/*************************************************************
- Initialises a struct sam_passwd with sane values.
- ************************************************************/
-
-NTSTATUS pdb_fill_sam_pw(SAM_ACCOUNT *sam_account, const struct passwd *pwd)
-{
-	NTSTATUS ret;
-
-	if (!pwd) {
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
-	pdb_fill_default_sam(sam_account);
-
-	pdb_set_username(sam_account, pwd->pw_name, PDB_SET);
-	pdb_set_fullname(sam_account, pwd->pw_gecos, PDB_SET);
-
-	pdb_set_unix_homedir(sam_account, pwd->pw_dir, PDB_SET);
-
-	pdb_set_domain (sam_account, get_global_sam_name(), PDB_DEFAULT);
-	
-	/* When we get a proper uid -> SID and SID -> uid allocation
-	   mechinism, we should call it here.  
-	   
-	   We can't just set this to 0 or allow it only to be filled
-	   in when added to the backend, because the user's SID 
-	   may already be in security descriptors etc.
-	   
-	   -- abartlet 11-May-02
-	*/
-
-	ret = pdb_set_sam_sids(sam_account, pwd);
-	if (!NT_STATUS_IS_OK(ret)) return ret;
-
-	/* check if this is a user account or a machine account */
-	if (pwd->pw_name[strlen(pwd->pw_name)-1] != '$')
-	{
-		pdb_set_profile_path(sam_account, 
-				     talloc_sub_specified((sam_account)->mem_ctx, 
-							    lp_logon_path(), 
-							    pwd->pw_name, global_myname(), 
-							    pwd->pw_uid, pwd->pw_gid), 
-				     PDB_DEFAULT);
+		/* user */
 		
-		pdb_set_homedir(sam_account, 
-				talloc_sub_specified((sam_account)->mem_ctx, 
-						       lp_logon_home(),
-						       pwd->pw_name, global_myname(), 
-						       pwd->pw_uid, pwd->pw_gid),
-				PDB_DEFAULT);
-		
-		pdb_set_dir_drive(sam_account, 
-				  talloc_sub_specified((sam_account)->mem_ctx, 
-							 lp_logon_drive(),
-							 pwd->pw_name, global_myname(), 
-							 pwd->pw_uid, pwd->pw_gid),
-				  PDB_DEFAULT);
-		
-		pdb_set_logon_script(sam_account, 
-				     talloc_sub_specified((sam_account)->mem_ctx, 
-							    lp_logon_script(),
-							    pwd->pw_name, global_myname(), 
-							    pwd->pw_uid, pwd->pw_gid), 
-				     PDB_DEFAULT);
-		if (!pdb_set_acct_ctrl(sam_account, ACB_NORMAL, PDB_DEFAULT)) {
-			DEBUG(1, ("Failed to set 'normal account' flags for user %s.\n", pwd->pw_name));
-			return NT_STATUS_UNSUCCESSFUL;
+		if (!pdb_set_acct_ctrl(user, ACB_NORMAL, PDB_DEFAULT)) {
+			DEBUG(1, ("Failed to set 'normal account' flags for user %s.\n", 
+				pwd->pw_name));
+			return NT_STATUS_INVALID_ACCOUNT_NAME;
 		}
-	} else {
-		if (!pdb_set_acct_ctrl(sam_account, ACB_WSTRUST, PDB_DEFAULT)) {
-			DEBUG(1, ("Failed to set 'trusted workstation account' flags for user %s.\n", pwd->pw_name));
-			return NT_STATUS_UNSUCCESSFUL;
+		
+		/* set some basic attributes */
+	
+		pdb_set_profile_path(user, talloc_sub_specified(user, 
+			lp_logon_path(), pwd->pw_name, domain, pwd->pw_uid, pwd->pw_gid), 
+			PDB_DEFAULT);		
+		pdb_set_homedir(user, talloc_sub_specified(user, 
+			lp_logon_home(), pwd->pw_name, domain, pwd->pw_uid, pwd->pw_gid),
+			PDB_DEFAULT);
+		pdb_set_dir_drive(user, talloc_sub_specified(user, 
+			lp_logon_drive(), pwd->pw_name, domain, pwd->pw_uid, pwd->pw_gid),
+			PDB_DEFAULT);
+		pdb_set_logon_script(user, talloc_sub_specified(user, 
+			lp_logon_script(), pwd->pw_name, domain, pwd->pw_uid, pwd->pw_gid), 
+			PDB_DEFAULT);
+	}
+	
+	/* Now deal with the user SID.  If we have a backend that can generate 
+	   RIDs, then do so.  But sometimes the caller just wanted a structure 
+	   initialized and will fill in these fields later (such as from a 
+	   NET_USER_INFO_3 structure) */
+
+	if ( create && !pdb_rid_algorithm() ) {
+		uint32 user_rid;
+		DOM_SID user_sid;
+		
+		if ( !pdb_new_rid( &user_rid ) ) {
+			DEBUG(3, ("Could not allocate a new RID\n"));
+			return NT_STATUS_ACCESS_DENIED;
 		}
+
+		sid_copy( &user_sid, get_global_sam_sid() );
+		sid_append_rid( &user_sid, user_rid );
+
+		if ( !pdb_set_user_sid(user, &user_sid, PDB_SET) ) {
+			DEBUG(3, ("pdb_set_user_sid failed\n"));
+			return NT_STATUS_INTERNAL_ERROR;
+		}
+		
+		return NT_STATUS_OK;
 	}
+
+	/* generate a SID for the user with the RID algorithm */
+	
+	urid = algorithmic_pdb_uid_to_user_rid( user->unix_pw->pw_uid );
+		
+	if ( !pdb_set_user_sid_from_rid( user, urid, PDB_SET) ) {
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+	
 	return NT_STATUS_OK;
 }
 
+/********************************************************************
+ Set the Unix user attributes
+********************************************************************/
 
-/*************************************************************
- Initialises a struct sam_passwd with sane values.
- ************************************************************/
-
-NTSTATUS pdb_init_sam_pw(SAM_ACCOUNT **new_sam_acct, const struct passwd *pwd)
+NTSTATUS samu_set_unix(struct samu *user, const struct passwd *pwd)
 {
-	NTSTATUS nt_status;
-
-	if (!pwd) {
-		new_sam_acct = NULL;
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	if (!NT_STATUS_IS_OK(nt_status = pdb_init_sam(new_sam_acct))) {
-		new_sam_acct = NULL;
-		return nt_status;
-	}
-
-	if (!NT_STATUS_IS_OK(nt_status = pdb_fill_sam_pw(*new_sam_acct, pwd))) {
-		pdb_free_sam(new_sam_acct);
-		new_sam_acct = NULL;
-		return nt_status;
-	}
-
-	return NT_STATUS_OK;
+	return samu_set_unix_internal( user, pwd, False );
 }
 
-
-/*************************************************************
- Initialises a SAM_ACCOUNT ready to add a new account, based
- on the UNIX user.  Pass in a RID if you have one
- ************************************************************/
-
-NTSTATUS pdb_init_sam_new(SAM_ACCOUNT **new_sam_acct, const char *username,
-                          uint32 rid)
+NTSTATUS samu_alloc_rid_unix(struct samu *user, const struct passwd *pwd)
 {
-	NTSTATUS 	nt_status = NT_STATUS_NO_MEMORY;
-	struct passwd 	*pwd;
-	BOOL		ret;
-	
-	pwd = Get_Pwnam(username);
-
-	if (!pwd) 
-		return NT_STATUS_NO_SUCH_USER;
-	
-	if (!NT_STATUS_IS_OK(nt_status = pdb_init_sam_pw(new_sam_acct, pwd))) {
-		*new_sam_acct = NULL;
-		return nt_status;
-	}
-	
-	/* see if we need to generate a new rid using the 2.2 algorithm */
-	if ( rid == 0 && lp_enable_rid_algorithm() ) {
-		DEBUG(10,("pdb_init_sam_new: no RID specified.  Generating one via old algorithm\n"));
-		rid = algorithmic_pdb_uid_to_user_rid(pwd->pw_uid);
-	}
-	
-	/* set the new SID */
-	
-	ret = pdb_set_user_sid_from_rid( *new_sam_acct, rid, PDB_SET );
-	 
-	return (ret ? NT_STATUS_OK : NT_STATUS_NO_SUCH_USER);
-}
-
-
-/**
- * Free the contets of the SAM_ACCOUNT, but not the structure.
- *
- * Also wipes the LM and NT hashes and plaintext password from 
- * memory.
- *
- * @param user SAM_ACCOUNT to free members of.
- **/
-
-static void pdb_free_sam_contents(SAM_ACCOUNT *user)
-{
-
-	/* Kill off sensitive data.  Free()ed by the
-	   talloc mechinism */
-
-	data_blob_clear_free(&(user->private_u.lm_pw));
-	data_blob_clear_free(&(user->private_u.nt_pw));
-	if (user->private_u.plaintext_pw!=NULL)
-		memset(user->private_u.plaintext_pw,'\0',strlen(user->private_u.plaintext_pw));
-
-	if (user->private_u.backend_private_data && user->private_u.backend_private_data_free_fn) {
-		user->private_u.backend_private_data_free_fn(&user->private_u.backend_private_data);
-	}
-}
-
-
-/************************************************************
- Reset the SAM_ACCOUNT and free the NT/LM hashes.
- ***********************************************************/
-
-NTSTATUS pdb_reset_sam(SAM_ACCOUNT *user)
-{
-	if (user == NULL) {
-		DEBUG(0,("pdb_reset_sam: SAM_ACCOUNT was NULL\n"));
-#if 0
-		smb_panic("NULL pointer passed to pdb_free_sam\n");
-#endif
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-	
-	pdb_free_sam_contents(user);
-
-	pdb_fill_default_sam(user);
-
-	return NT_STATUS_OK;
-}
-
-
-/************************************************************
- Free the SAM_ACCOUNT and the member pointers.
- ***********************************************************/
-
-NTSTATUS pdb_free_sam(SAM_ACCOUNT **user)
-{
-	if (*user == NULL) {
-		DEBUG(0,("pdb_free_sam: SAM_ACCOUNT was NULL\n"));
-#if 0
-		smb_panic("NULL pointer passed to pdb_free_sam\n");
-#endif
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
-	pdb_free_sam_contents(*user);
-	
-	if ((*user)->free_fn) {
-		(*user)->free_fn(user);
-	}
-
-	return NT_STATUS_OK;	
+	return samu_set_unix_internal( user, pwd, True );
 }
 
 /**********************************************************
@@ -458,7 +253,7 @@ NTSTATUS pdb_free_sam(SAM_ACCOUNT **user)
  null). length *MUST BE MORE THAN 2* !
  **********************************************************/
 
-char *pdb_encode_acct_ctrl(uint16 acct_ctrl, size_t length)
+char *pdb_encode_acct_ctrl(uint32 acct_ctrl, size_t length)
 {
 	static fstring acct_str;
 
@@ -494,9 +289,9 @@ char *pdb_encode_acct_ctrl(uint16 acct_ctrl, size_t length)
  Decode the account control bits from a string.
  **********************************************************/
 
-uint16 pdb_decode_acct_ctrl(const char *p)
+uint32 pdb_decode_acct_ctrl(const char *p)
 {
-	uint16 acct_ctrl = 0;
+	uint32 acct_ctrl = 0;
 	BOOL finished = False;
 
 	/*
@@ -536,7 +331,7 @@ uint16 pdb_decode_acct_ctrl(const char *p)
  Routine to set 32 hex password characters from a 16 byte array.
 **************************************************************/
 
-void pdb_sethexpwd(char *p, const unsigned char *pwd, uint16 acct_ctrl)
+void pdb_sethexpwd(char *p, const unsigned char *pwd, uint32 acct_ctrl)
 {
 	if (pwd != NULL) {
 		int i;
@@ -634,6 +429,9 @@ BOOL pdb_gethexhours(const char *p, unsigned char *hours)
 	return (True);
 }
 
+/********************************************************************
+********************************************************************/
+
 int algorithmic_rid_base(void)
 {
 	static int rid_offset = 0;
@@ -666,6 +464,11 @@ uid_t algorithmic_pdb_user_rid_to_uid(uint32 user_rid)
 	return (uid_t)(((user_rid & (~USER_RID_TYPE)) - rid_offset)/RID_MULTIPLIER);
 }
 
+uid_t max_algorithmic_uid(void)
+{
+	return algorithmic_pdb_user_rid_to_uid(0xfffffffe);
+}
+
 /*******************************************************************
  converts UNIX uid to an NT User RID.
  ********************************************************************/
@@ -686,6 +489,11 @@ gid_t pdb_group_rid_to_gid(uint32 group_rid)
 	return (gid_t)(((group_rid & (~GROUP_RID_TYPE))- rid_offset)/RID_MULTIPLIER);
 }
 
+gid_t max_algorithmic_gid(void)
+{
+	return pdb_group_rid_to_gid(0xffffffff);
+}
+
 /*******************************************************************
  converts NT Group RID to a UNIX uid.
  
@@ -704,7 +512,7 @@ uint32 pdb_gid_to_group_rid(gid_t gid)
  Decides if a RID is a well known RID.
  ********************************************************************/
 
-static BOOL pdb_rid_is_well_known(uint32 rid)
+static BOOL rid_is_well_known(uint32 rid)
 {
 	/* Not using rid_offset here, because this is the actual
 	   NT fixed value (1000) */
@@ -718,7 +526,7 @@ static BOOL pdb_rid_is_well_known(uint32 rid)
 
 BOOL algorithmic_pdb_rid_is_user(uint32 rid)
 {
-	if(pdb_rid_is_well_known(rid)) {
+	if ( rid_is_well_known(rid) ) {
 		/*
 		 * The only well known user RIDs are DOMAIN_USER_RID_ADMIN
 		 * and DOMAIN_USER_RID_GUEST.
@@ -732,215 +540,85 @@ BOOL algorithmic_pdb_rid_is_user(uint32 rid)
 }
 
 /*******************************************************************
- Look up a rid in the SAM we're responsible for (i.e. passdb)
- ********************************************************************/
-
-BOOL lookup_global_sam_rid(uint32 rid, fstring name,
-			   enum SID_NAME_USE *psid_name_use)
-{
-	SAM_ACCOUNT *sam_account = NULL;
-	GROUP_MAP map;
-	BOOL ret;
-	DOM_SID sid;
-
-	*psid_name_use = SID_NAME_UNKNOWN;
-	
-	DEBUG(5,("lookup_global_sam_rid: looking up RID %u.\n",
-		 (unsigned int)rid));
-
-	sid_copy(&sid, get_global_sam_sid());
-	sid_append_rid(&sid, rid);
-	
-	/* see if the passdb can help us with the name of the user */
-	if (!NT_STATUS_IS_OK(pdb_init_sam(&sam_account))) {
-		return False;
-	}
-
-	/* BEING ROOT BLLOCK */
-	become_root();
-	if (pdb_getsampwsid(sam_account, &sid)) {
-		unbecome_root();		/* -----> EXIT BECOME_ROOT() */
-		fstrcpy(name, pdb_get_username(sam_account));
-		*psid_name_use = SID_NAME_USER;
-
-		pdb_free_sam(&sam_account);
-			
-		return True;
-	}
-	pdb_free_sam(&sam_account);
-	
-	ret = pdb_getgrsid(&map, sid);
-	unbecome_root();
-	/* END BECOME_ROOT BLOCK */
-	
-	if ( ret ) {
-		if (map.gid!=(gid_t)-1) {
-			DEBUG(5,("lookup_global_sam_rid: mapped group %s to "
-				 "gid %u\n", map.nt_name,
-				 (unsigned int)map.gid));
-		} else {
-			DEBUG(5,("lookup_global_sam_rid: mapped group %s to "
-				 "no unix gid.  Returning name.\n",
-				 map.nt_name));
-		}
-
-		fstrcpy(name, map.nt_name);
-		*psid_name_use = map.sid_name_use;
-		return True;
-	}
-
-	if (rid == DOMAIN_USER_RID_ADMIN) {
-		*psid_name_use = SID_NAME_USER;
-		fstrcpy(name, "Administrator");
-		return True;
-	}
-
-	if (algorithmic_pdb_rid_is_user(rid)) {
-		uid_t uid;
-		struct passwd *pw = NULL;
-
-		DEBUG(5, ("assuming RID %u is a user\n", (unsigned)rid));
-
-       		uid = algorithmic_pdb_user_rid_to_uid(rid);
-		pw = sys_getpwuid( uid );
-		
-		DEBUG(5,("lookup_global_sam_rid: looking up uid %u %s\n",
-			 (unsigned int)uid, pw ? "succeeded" : "failed" ));
-			 
-		if ( !pw )
-			fstr_sprintf(name, "unix_user.%u", (unsigned int)uid);
-		else 
-			fstrcpy( name, pw->pw_name );
-			
-		DEBUG(5,("lookup_global_sam_rid: found user %s for rid %u\n",
-			 name, (unsigned int)rid ));
-			 
-		*psid_name_use = SID_NAME_USER;
-		
-		return ( pw != NULL );
-	} else {
-		gid_t gid;
-		struct group *gr; 
-			
-		DEBUG(5, ("assuming RID %u is a group\n", (unsigned)rid));
-
-		gid = pdb_group_rid_to_gid(rid);
-		gr = getgrgid(gid);
-			
-		DEBUG(5,("lookup_global_sam_rid: looking up gid %u %s\n",
-			 (unsigned int)gid, gr ? "succeeded" : "failed" ));
-			
-		if( !gr )
-			fstr_sprintf(name, "unix_group.%u", (unsigned int)gid);
-		else
-			fstrcpy( name, gr->gr_name);
-			
-		DEBUG(5,("lookup_global_sam_rid: found group %s for rid %u\n",
-			 name, (unsigned int)rid ));
-		
-		/* assume algorithmic groups are domain global groups */
-		
-		*psid_name_use = SID_NAME_DOM_GRP;
-		
-		return ( gr != NULL );
-	}
-}
-
-/*******************************************************************
  Convert a name into a SID. Used in the lookup name rpc.
  ********************************************************************/
 
-BOOL local_lookup_name(const char *c_user, DOM_SID *psid, enum SID_NAME_USE *psid_name_use)
+BOOL lookup_global_sam_name(const char *user, int flags, uint32_t *rid,
+			    enum SID_NAME_USE *type)
 {
-	DOM_SID local_sid;
-	DOM_SID sid;
-	fstring user;
-	SAM_ACCOUNT *sam_account = NULL;
-	struct group *grp;
 	GROUP_MAP map;
-
-	*psid_name_use = SID_NAME_UNKNOWN;
-
-	/*
-	 * user may be quoted a const string, and map_username and
-	 * friends can modify it. Make a modifiable copy. JRA.
-	 */
-
-	fstrcpy(user, c_user);
-
-	sid_copy(&local_sid, get_global_sam_sid());
-
-	if (map_name_to_wellknown_sid(&sid, psid_name_use, user)){
-		fstring sid_str;
-		sid_copy( psid, &sid);
-		sid_to_string(sid_str, &sid);
-		DEBUG(10,("lookup_name: name %s = SID %s, type = %u\n", user, sid_str,
-			(unsigned int)*psid_name_use ));
+	BOOL ret;
+	
+	/* Windows treats "MACHINE\None" as a special name for 
+	   rid 513 on non-DCs.  You cannot create a user or group
+	   name "None" on Windows.  You will get an error that 
+	   the group already exists. */
+	   
+	if ( strequal( user, "None" ) ) {
+		*rid = DOMAIN_GROUP_RID_USERS;
+		*type = SID_NAME_DOM_GRP;
+		
 		return True;
 	}
 
-	(void)map_username(user);
+	/* LOOKUP_NAME_GROUP is a hack to allow valid users = @foo to work
+	 * correctly in the case where foo also exists as a user. If the flag
+	 * is set, don't look for users at all. */
 
-	if (!NT_STATUS_IS_OK(pdb_init_sam(&sam_account))) {
+	if ((flags & LOOKUP_NAME_GROUP) == 0) {
+		struct samu *sam_account = NULL;
+		DOM_SID user_sid;
+
+		if ( !(sam_account = samu_new( NULL )) ) {
+			return False;
+		}
+	
+		become_root();
+		ret =  pdb_getsampwnam(sam_account, user);
+		unbecome_root();
+
+		if (ret) {
+			sid_copy(&user_sid, pdb_get_user_sid(sam_account));
+		}
+		
+		TALLOC_FREE(sam_account);
+
+		if (ret) {
+			if (!sid_check_is_in_our_domain(&user_sid)) {
+				DEBUG(0, ("User %s with invalid SID %s in passdb\n",
+					  user, sid_string_static(&user_sid)));
+				return False;
+			}
+
+			sid_peek_rid(&user_sid, rid);
+			*type = SID_NAME_USER;
+			return True;
+		}
+	}
+
+	/*
+	 * Maybe it is a group ?
+	 */
+
+	become_root();
+	ret = pdb_getgrnam(&map, user);
+	unbecome_root();
+
+ 	if (!ret) {
 		return False;
 	}
-	
-	/* BEGIN ROOT BLOCK */
-	
-	become_root();
-	if (pdb_getsampwnam(sam_account, user)) {
-		unbecome_root();
-		sid_copy(psid, pdb_get_user_sid(sam_account));
-		*psid_name_use = SID_NAME_USER;
-		
-		pdb_free_sam(&sam_account);
-		return True;
+
+	/* BUILTIN groups are looked up elsewhere */
+	if (!sid_check_is_in_our_domain(&map.sid)) {
+		DEBUG(10, ("Found group %s (%s) not in our domain -- "
+			   "ignoring.", user,
+			   sid_string_static(&map.sid)));
+		return False;
 	}
 
-	pdb_free_sam(&sam_account);
-
-	/*
-	 * Maybe it was a group ?
-	 */
-
-	/* check if it's a mapped group */
-	if (pdb_getgrnam(&map, user)) {
-		/* yes it's a mapped group */
-		sid_copy(&local_sid, &map.sid);
-		*psid_name_use = map.sid_name_use;
-	} else {
-		/* it's not a mapped group */
-		grp = getgrnam(user);
-		if(!grp) {
-			unbecome_root();		/* ---> exit form block */	
-			return False;
-		}
-		
-		/* 
-		 *check if it's mapped, if it is reply it doesn't exist
-		 *
-		 * that's to prevent this case:
-		 *
-		 * unix group ug is mapped to nt group ng
-		 * someone does a lookup on ug
-		 * we must not reply as it doesn't "exist" anymore
-		 * for NT. For NT only ng exists.
-		 * JFM, 30/11/2001
-		 */
-		
-		if (pdb_getgrgid(&map, grp->gr_gid)){
-			unbecome_root();		/* ---> exit form block */
-			return False;
-		}
-		
-		sid_append_rid( &local_sid, pdb_gid_to_group_rid(grp->gr_gid));
-		*psid_name_use = SID_NAME_ALIAS;
-	}
-	unbecome_root();
-	/* END ROOT BLOCK */
-
-	sid_copy( psid, &local_sid);
-
+	/* yes it's a mapped group */
+	sid_peek_rid(&map.sid, rid);
+	*type = map.sid_name_use;
 	return True;
 }
 
@@ -948,34 +626,67 @@ BOOL local_lookup_name(const char *c_user, DOM_SID *psid, enum SID_NAME_USE *psi
  Change a password entry in the local smbpasswd file.
  *************************************************************/
 
-BOOL local_password_change(const char *user_name, int local_flags,
+NTSTATUS local_password_change(const char *user_name, int local_flags,
 			   const char *new_passwd, 
 			   char *err_str, size_t err_str_len,
 			   char *msg_str, size_t msg_str_len)
 {
-	SAM_ACCOUNT 	*sam_pass=NULL;
-	uint16 other_acb;
+	struct samu 	*sam_pass=NULL;
+	uint32 other_acb;
+	NTSTATUS result;
 
 	*err_str = '\0';
 	*msg_str = '\0';
 
 	/* Get the smb passwd entry for this user */
-	pdb_init_sam(&sam_pass);
+
+	if ( !(sam_pass = samu_new( NULL )) ) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	become_root();
 	if(!pdb_getsampwnam(sam_pass, user_name)) {
 		unbecome_root();
-		pdb_free_sam(&sam_pass);
+		TALLOC_FREE(sam_pass);
 		
 		if ((local_flags & LOCAL_ADD_USER) || (local_flags & LOCAL_DELETE_USER)) {
-			/* Might not exist in /etc/passwd.  Use rid algorithm here */
-			if (!NT_STATUS_IS_OK(pdb_init_sam_new(&sam_pass, user_name, 0))) {
-				slprintf(err_str, err_str_len-1, "Failed to initialise SAM_ACCOUNT for user %s. Does this user exist in the UNIX password database ?\n", user_name);
-				return False;
+			int tmp_debug = DEBUGLEVEL;
+			struct passwd *pwd;
+
+			/* Might not exist in /etc/passwd. */
+
+			if (tmp_debug < 1) {
+				DEBUGLEVEL = 1;
+			}
+
+			if ( !(pwd = getpwnam_alloc( NULL, user_name)) ) {
+				return NT_STATUS_NO_SUCH_USER;
+			}
+
+			/* create the struct samu and initialize the basic Unix properties */
+
+			if ( !(sam_pass = samu_new( NULL )) ) {
+				return NT_STATUS_NO_MEMORY;
+			}
+
+			result = samu_set_unix( sam_pass, pwd );
+
+			DEBUGLEVEL = tmp_debug;
+
+			TALLOC_FREE( pwd );
+
+			if (NT_STATUS_EQUAL(result, NT_STATUS_INVALID_PRIMARY_GROUP)) {
+				return result;
+			}
+
+			if (!NT_STATUS_IS_OK(result)) {
+				slprintf(err_str, err_str_len-1, "Failed to " "initialize account for user %s: %s\n",
+					user_name, nt_errstr(result));
+				return result;
 			}
 		} else {
 			slprintf(err_str, err_str_len-1,"Failed to find entry for user %s.\n", user_name);
-			return False;
+			return NT_STATUS_NO_SUCH_USER;
 		}
 	} else {
 		unbecome_root();
@@ -988,20 +699,20 @@ BOOL local_password_change(const char *user_name, int local_flags,
 	if (local_flags & LOCAL_TRUST_ACCOUNT) {
 		if (!pdb_set_acct_ctrl(sam_pass, ACB_WSTRUST | other_acb, PDB_CHANGED) ) {
 			slprintf(err_str, err_str_len - 1, "Failed to set 'trusted workstation account' flags for user %s.\n", user_name);
-			pdb_free_sam(&sam_pass);
-			return False;
+			TALLOC_FREE(sam_pass);
+			return NT_STATUS_UNSUCCESSFUL;
 		}
 	} else if (local_flags & LOCAL_INTERDOM_ACCOUNT) {
 		if (!pdb_set_acct_ctrl(sam_pass, ACB_DOMTRUST | other_acb, PDB_CHANGED)) {
 			slprintf(err_str, err_str_len - 1, "Failed to set 'domain trust account' flags for user %s.\n", user_name);
-			pdb_free_sam(&sam_pass);
-			return False;
+			TALLOC_FREE(sam_pass);
+			return NT_STATUS_UNSUCCESSFUL;
 		}
 	} else {
 		if (!pdb_set_acct_ctrl(sam_pass, ACB_NORMAL | other_acb, PDB_CHANGED)) {
 			slprintf(err_str, err_str_len - 1, "Failed to set 'normal account' flags for user %s.\n", user_name);
-			pdb_free_sam(&sam_pass);
-			return False;
+			TALLOC_FREE(sam_pass);
+			return NT_STATUS_UNSUCCESSFUL;
 		}
 	}
 
@@ -1013,22 +724,22 @@ BOOL local_password_change(const char *user_name, int local_flags,
 	if (local_flags & LOCAL_DISABLE_USER) {
 		if (!pdb_set_acct_ctrl (sam_pass, pdb_get_acct_ctrl(sam_pass)|ACB_DISABLED, PDB_CHANGED)) {
 			slprintf(err_str, err_str_len-1, "Failed to set 'disabled' flag for user %s.\n", user_name);
-			pdb_free_sam(&sam_pass);
-			return False;
+			TALLOC_FREE(sam_pass);
+			return NT_STATUS_UNSUCCESSFUL;
 		}
 	} else if (local_flags & LOCAL_ENABLE_USER) {
 		if (!pdb_set_acct_ctrl (sam_pass, pdb_get_acct_ctrl(sam_pass)&(~ACB_DISABLED), PDB_CHANGED)) {
 			slprintf(err_str, err_str_len-1, "Failed to unset 'disabled' flag for user %s.\n", user_name);
-			pdb_free_sam(&sam_pass);
-			return False;
+			TALLOC_FREE(sam_pass);
+			return NT_STATUS_UNSUCCESSFUL;
 		}
 	}
 	
 	if (local_flags & LOCAL_SET_NO_PASSWORD) {
 		if (!pdb_set_acct_ctrl (sam_pass, pdb_get_acct_ctrl(sam_pass)|ACB_PWNOTREQ, PDB_CHANGED)) {
 			slprintf(err_str, err_str_len-1, "Failed to set 'no password required' flag for user %s.\n", user_name);
-			pdb_free_sam(&sam_pass);
-			return False;
+			TALLOC_FREE(sam_pass);
+			return NT_STATUS_UNSUCCESSFUL;
 		}
 	} else if (local_flags & LOCAL_SET_PASSWORD) {
 		/*
@@ -1043,45 +754,46 @@ BOOL local_password_change(const char *user_name, int local_flags,
 		if ((pdb_get_lanman_passwd(sam_pass)==NULL) && (pdb_get_acct_ctrl(sam_pass)&ACB_DISABLED)) {
 			if (!pdb_set_acct_ctrl (sam_pass, pdb_get_acct_ctrl(sam_pass)&(~ACB_DISABLED), PDB_CHANGED)) {
 				slprintf(err_str, err_str_len-1, "Failed to unset 'disabled' flag for user %s.\n", user_name);
-				pdb_free_sam(&sam_pass);
-				return False;
+				TALLOC_FREE(sam_pass);
+				return NT_STATUS_UNSUCCESSFUL;
 			}
 		}
 		if (!pdb_set_acct_ctrl (sam_pass, pdb_get_acct_ctrl(sam_pass)&(~ACB_PWNOTREQ), PDB_CHANGED)) {
 			slprintf(err_str, err_str_len-1, "Failed to unset 'no password required' flag for user %s.\n", user_name);
-			pdb_free_sam(&sam_pass);
-			return False;
+			TALLOC_FREE(sam_pass);
+			return NT_STATUS_UNSUCCESSFUL;
 		}
 		
 		if (!pdb_set_plaintext_passwd (sam_pass, new_passwd)) {
 			slprintf(err_str, err_str_len-1, "Failed to set password for user %s.\n", user_name);
-			pdb_free_sam(&sam_pass);
-			return False;
+			TALLOC_FREE(sam_pass);
+			return NT_STATUS_UNSUCCESSFUL;
 		}
 	}	
 
 	if (local_flags & LOCAL_ADD_USER) {
-		if (pdb_add_sam_account(sam_pass)) {
+		if (NT_STATUS_IS_OK(pdb_add_sam_account(sam_pass))) {
 			slprintf(msg_str, msg_str_len-1, "Added user %s.\n", user_name);
-			pdb_free_sam(&sam_pass);
-			return True;
+			TALLOC_FREE(sam_pass);
+			return NT_STATUS_OK;
 		} else {
 			slprintf(err_str, err_str_len-1, "Failed to add entry for user %s.\n", user_name);
-			pdb_free_sam(&sam_pass);
-			return False;
+			TALLOC_FREE(sam_pass);
+			return NT_STATUS_UNSUCCESSFUL;
 		}
 	} else if (local_flags & LOCAL_DELETE_USER) {
-		if (!pdb_delete_sam_account(sam_pass)) {
+		if (!NT_STATUS_IS_OK(pdb_delete_sam_account(sam_pass))) {
 			slprintf(err_str,err_str_len-1, "Failed to delete entry for user %s.\n", user_name);
-			pdb_free_sam(&sam_pass);
-			return False;
+			TALLOC_FREE(sam_pass);
+			return NT_STATUS_UNSUCCESSFUL;
 		}
 		slprintf(msg_str, msg_str_len-1, "Deleted user %s.\n", user_name);
 	} else {
-		if(!pdb_update_sam_account(sam_pass)) {
+		result = pdb_update_sam_account(sam_pass);
+		if(!NT_STATUS_IS_OK(result)) {
 			slprintf(err_str, err_str_len-1, "Failed to modify entry for user %s.\n", user_name);
-			pdb_free_sam(&sam_pass);
-			return False;
+			TALLOC_FREE(sam_pass);
+			return result;
 		}
 		if(local_flags & LOCAL_DISABLE_USER)
 			slprintf(msg_str, msg_str_len-1, "Disabled user %s.\n", user_name);
@@ -1091,441 +803,20 @@ BOOL local_password_change(const char *user_name, int local_flags,
 			slprintf(msg_str, msg_str_len-1, "User %s password set to none.\n", user_name);
 	}
 
-	pdb_free_sam(&sam_pass);
-	return True;
-}
-
-/****************************************************************************
- Convert a uid to SID - algorithmic.
-****************************************************************************/
-
-DOM_SID *algorithmic_uid_to_sid(DOM_SID *psid, uid_t uid)
-{
-	if ( !lp_enable_rid_algorithm() )
-		return NULL;
-
-	DEBUG(8,("algorithmic_uid_to_sid: falling back to RID algorithm\n"));
-	sid_copy( psid, get_global_sam_sid() );
-	sid_append_rid( psid, algorithmic_pdb_uid_to_user_rid(uid) );
-	DEBUG(10,("algorithmic_uid_to_sid:  uid (%d) -> SID %s.\n",
-		(unsigned int)uid, sid_string_static(psid) ));
-
-	return psid;
-}
-
-/****************************************************************************
- Convert a uid to SID - locally.
-****************************************************************************/
-
-DOM_SID *local_uid_to_sid(DOM_SID *psid, uid_t uid)
-{
-	SAM_ACCOUNT *sampw = NULL;
-	struct passwd *unix_pw;
-	BOOL ret;
-	
-	unix_pw = sys_getpwuid( uid );
-
-	if ( !unix_pw ) {
-		DEBUG(4,("local_uid_to_sid: host has no idea of uid %lu\n", (unsigned long)uid));
-		return algorithmic_uid_to_sid( psid, uid);
-	}
-	
-	if ( !NT_STATUS_IS_OK(pdb_init_sam(&sampw)) ) {
-		DEBUG(0,("local_uid_to_sid: failed to allocate SAM_ACCOUNT object\n"));
-		return NULL;
-	}
-	
-	become_root();
-	ret = pdb_getsampwnam( sampw, unix_pw->pw_name );
-	unbecome_root();
-	
-	if ( ret )
-		sid_copy( psid, pdb_get_user_sid(sampw) );
-	else {
-		DEBUG(4,("local_uid_to_sid: User %s [uid == %lu] has no samba account\n",
-			unix_pw->pw_name, (unsigned long)uid));
-
-		algorithmic_uid_to_sid( psid, uid);
-	}
-
-	pdb_free_sam(&sampw);
-
-	DEBUG(10,("local_uid_to_sid:  uid (%d) -> SID %s (%s).\n", 
-		(unsigned int)uid, sid_string_static(psid), unix_pw->pw_name));
-	
-	return psid;
-}
-
-/****************************************************************************
- Convert a SID to uid - locally.
-****************************************************************************/
-
-BOOL local_sid_to_uid(uid_t *puid, const DOM_SID *psid, enum SID_NAME_USE *name_type)
-{
-	SAM_ACCOUNT *sampw = NULL;	
-	struct passwd *unix_pw;
-	const char *user_name;
-
-	*name_type = SID_NAME_UNKNOWN;
-
-	/*
-	 * We can only convert to a uid if this is our local
-	 * Domain SID (ie. we are the controling authority).
-	 */
-	if (!sid_check_is_in_our_domain(psid) ) {
-		DEBUG(5,("local_sid_to_uid: this SID (%s) is not from our domain\n", sid_string_static(psid)));
-		return False;
-	}
-
-	/* lookup the user account */
-	
-	if ( !NT_STATUS_IS_OK(pdb_init_sam(&sampw)) ) {
-		DEBUG(0,("local_sid_to_uid: Failed to allocate memory for SAM_ACCOUNT object\n"));
-		return False;
-	}
-		
-	become_root();
-	if ( !pdb_getsampwsid(sampw, psid) ) {
-		unbecome_root();
-		pdb_free_sam(&sampw);
-		DEBUG(8,("local_sid_to_uid: Could not find SID %s in passdb\n",
-			sid_string_static(psid)));
-		return False;
-	}
-	unbecome_root();
-	
-	user_name = pdb_get_username(sampw);
-
-	unix_pw = sys_getpwnam( user_name );
-
-	if ( !unix_pw ) {
-		DEBUG(0,("local_sid_to_uid: %s found in passdb but getpwnam() return NULL!\n",
-			user_name));
-		pdb_free_sam( &sampw );
-		return False;
-	}
-		
-	*puid = unix_pw->pw_uid;
-	
-	DEBUG(10,("local_sid_to_uid: SID %s -> uid (%u) (%s).\n", sid_string_static(psid),
-		(unsigned int)*puid, user_name ));
-
-	*name_type = SID_NAME_USER;
-	pdb_free_sam( &sampw );
-	return True;
-}
-
-/****************************************************************************
- Convert a gid to SID - locally.
-****************************************************************************/
-
-DOM_SID *local_gid_to_sid(DOM_SID *psid, gid_t gid)
-{
-	GROUP_MAP group;
-	BOOL ret;
-	
-	/* we don't need to disable winbindd since the gid is stored in 
-	   the GROUP_MAP object */
-	   
-	/* done as root since ldap backend requires root to open a connection */
-
-	become_root();
-	ret = pdb_getgrgid( &group, gid );
-	unbecome_root();
-	
-	if ( !ret ) {
-
-		/* fallback to rid mapping if enabled */
-
-		if ( lp_enable_rid_algorithm() ) {
-			sid_copy(psid, get_global_sam_sid());
-			sid_append_rid(psid, pdb_gid_to_group_rid(gid));
-
-			DEBUG(10,("local_gid_to_sid: Fall back to algorithmic mapping: %u -> %s\n", 
-				(unsigned int)gid, sid_string_static(psid)));
-				
-			return psid;
-		}
-		else
-			return NULL;
-	}
-	
-	sid_copy( psid, &group.sid );
-	
-	DEBUG(10,("local_gid_to_sid:  gid (%d) -> SID %s.\n", 
-		(unsigned int)gid, sid_string_static(psid)));	
-	
-	return psid;
-}
-
-/****************************************************************************
- Convert a SID to gid - locally.
-****************************************************************************/
-
-BOOL local_sid_to_gid(gid_t *pgid, const DOM_SID *psid, enum SID_NAME_USE *name_type)
-{
-	uint32 rid;
-	GROUP_MAP group;
-	BOOL ret;
-
-	*name_type = SID_NAME_UNKNOWN;
-
-	/* This call can enumerate group mappings for foreign sids as well.
-	   So don't check for a match against our domain SID */
-
-	/* we don't need to disable winbindd since the gid is stored in 
-	   the GROUP_MAP object */
-	   
-	become_root();
-	ret = pdb_getgrsid(&group, *psid);
-	unbecome_root();
-	
-	if ( !ret ) {
-
-		/* Fallback to algorithmic rid mapping if enabled */
-
-		if ( lp_enable_rid_algorithm() ) {
-
-			if (!sid_check_is_in_our_domain(psid) ) {
-				DEBUG(5,("local_sid_to_gid: RID algorithm only supported for our domain (%s is not)\n", sid_string_static(psid)));
-				return False;
-			}
-
-			if (!sid_peek_rid(psid, &rid)) {
-				DEBUG(10,("local_sid_to_gid: invalid SID!\n"));
-					return False;
-			}
-
-			DEBUG(10,("local_sid_to_gid: Fall back to algorithmic mapping\n"));
-
-			if (algorithmic_pdb_rid_is_user(rid)) {
-				DEBUG(3, ("local_sid_to_gid: SID %s is *NOT* a group\n", sid_string_static(psid)));
-				return False;
-			} else {
-				*pgid = pdb_group_rid_to_gid(rid);
-				DEBUG(10,("local_sid_to_gid: mapping: %s -> %u\n", sid_string_static(psid), (unsigned int)(*pgid)));
-				return True;
-			}
-		}
-		
-		return False;
-	}
-
-	*pgid = group.gid;
-	*name_type = group.sid_name_use;
-
-	DEBUG(10,("local_sid_to_gid: SID %s -> gid (%u)\n", sid_string_static(psid),
-		(unsigned int)*pgid));
-
-	return True;
+	TALLOC_FREE(sam_pass);
+	return NT_STATUS_OK;
 }
 
 /**********************************************************************
- Marshall/unmarshall SAM_ACCOUNT structs.
+ Marshall/unmarshall struct samu structs.
  *********************************************************************/
 
-#define TDB_FORMAT_STRING_V0       "ddddddBBBBBBBBBBBBddBBwdwdBwwd"
-#define TDB_FORMAT_STRING_V1       "dddddddBBBBBBBBBBBBddBBwdwdBwwd"
-#define TDB_FORMAT_STRING_V2       "dddddddBBBBBBBBBBBBddBBBwwdBwwd"
+#define TDB_FORMAT_STRING_V3       "dddddddBBBBBBBBBBBBddBBBdwdBwwd"
 
-/**********************************************************************
- Intialize a SAM_ACCOUNT struct from a BYTE buffer of size len
- *********************************************************************/
+/*********************************************************************
+*********************************************************************/
 
-BOOL init_sam_from_buffer(SAM_ACCOUNT *sampass, uint8 *buf, uint32 buflen)
-{
-	return(init_sam_from_buffer_v2(sampass, buf, buflen));
-}
-
-/**********************************************************************
- Intialize a BYTE buffer from a SAM_ACCOUNT struct
- *********************************************************************/
-
-uint32 init_buffer_from_sam (uint8 **buf, const SAM_ACCOUNT *sampass, BOOL size_only)
-{
-	return(init_buffer_from_sam_v2(buf, sampass, size_only));
-}
-
-
-BOOL init_sam_from_buffer_v0(SAM_ACCOUNT *sampass, uint8 *buf, uint32 buflen)
-{
-
-	/* times are stored as 32bit integer
-	   take care on system with 64bit wide time_t
-	   --SSS */
-	uint32	logon_time,
-		logoff_time,
-		kickoff_time,
-		pass_last_set_time,
-		pass_can_change_time,
-		pass_must_change_time;
-	char *username = NULL;
-	char *domain = NULL;
-	char *nt_username = NULL;
-	char *dir_drive = NULL;
-	char *unknown_str = NULL;
-	char *munged_dial = NULL;
-	char *fullname = NULL;
-	char *homedir = NULL;
-	char *logon_script = NULL;
-	char *profile_path = NULL;
-	char *acct_desc = NULL;
-	char *workstations = NULL;
-	uint32	username_len, domain_len, nt_username_len,
-		dir_drive_len, unknown_str_len, munged_dial_len,
-		fullname_len, homedir_len, logon_script_len,
-		profile_path_len, acct_desc_len, workstations_len;
-		
-	uint32	user_rid, group_rid, remove_me, hours_len, unknown_6;
-	uint16	acct_ctrl, logon_divs;
-	uint16	bad_password_count, logon_count;
-	uint8	*hours = NULL;
-	uint8	*lm_pw_ptr = NULL, *nt_pw_ptr = NULL;
-	uint32		len = 0;
-	uint32		lm_pw_len, nt_pw_len, hourslen;
-	BOOL ret = True;
-	
-	if(sampass == NULL || buf == NULL) {
-		DEBUG(0, ("init_sam_from_buffer_v0: NULL parameters found!\n"));
-		return False;
-	}
-
-/* TDB_FORMAT_STRING_V0       "ddddddBBBBBBBBBBBBddBBwdwdBwwd" */
-
-	/* unpack the buffer into variables */
-	len = tdb_unpack ((char *)buf, buflen, TDB_FORMAT_STRING_V0,
-		&logon_time,						/* d */
-		&logoff_time,						/* d */
-		&kickoff_time,						/* d */
-		&pass_last_set_time,					/* d */
-		&pass_can_change_time,					/* d */
-		&pass_must_change_time,					/* d */
-		&username_len, &username,				/* B */
-		&domain_len, &domain,					/* B */
-		&nt_username_len, &nt_username,				/* B */
-		&fullname_len, &fullname,				/* B */
-		&homedir_len, &homedir,					/* B */
-		&dir_drive_len, &dir_drive,				/* B */
-		&logon_script_len, &logon_script,			/* B */
-		&profile_path_len, &profile_path,			/* B */
-		&acct_desc_len, &acct_desc,				/* B */
-		&workstations_len, &workstations,			/* B */
-		&unknown_str_len, &unknown_str,				/* B */
-		&munged_dial_len, &munged_dial,				/* B */
-		&user_rid,						/* d */
-		&group_rid,						/* d */
-		&lm_pw_len, &lm_pw_ptr,					/* B */
-		&nt_pw_len, &nt_pw_ptr,					/* B */
-		&acct_ctrl,						/* w */
-		&remove_me, /* remove on the next TDB_FORMAT upgarde */	/* d */
-		&logon_divs,						/* w */
-		&hours_len,						/* d */
-		&hourslen, &hours,					/* B */
-		&bad_password_count,					/* w */
-		&logon_count,						/* w */
-		&unknown_6);						/* d */
-		
-	if (len == (uint32) -1)  {
-		ret = False;
-		goto done;
-	}
-
-	pdb_set_logon_time(sampass, logon_time, PDB_SET);
-	pdb_set_logoff_time(sampass, logoff_time, PDB_SET);
-	pdb_set_kickoff_time(sampass, kickoff_time, PDB_SET);
-	pdb_set_pass_can_change_time(sampass, pass_can_change_time, PDB_SET);
-	pdb_set_pass_must_change_time(sampass, pass_must_change_time, PDB_SET);
-	pdb_set_pass_last_set_time(sampass, pass_last_set_time, PDB_SET);
-
-	pdb_set_username(sampass, username, PDB_SET); 
-	pdb_set_domain(sampass, domain, PDB_SET);
-	pdb_set_nt_username(sampass, nt_username, PDB_SET);
-	pdb_set_fullname(sampass, fullname, PDB_SET);
-
-	if (homedir) {
-		pdb_set_homedir(sampass, homedir, PDB_SET);
-	}
-	else {
-		pdb_set_homedir(sampass, 
-			talloc_sub_basic(sampass->mem_ctx, username, lp_logon_home()),
-			PDB_DEFAULT);
-	}
-
-	if (dir_drive) 	
-		pdb_set_dir_drive(sampass, dir_drive, PDB_SET);
-	else {
-		pdb_set_dir_drive(sampass, 
-			talloc_sub_basic(sampass->mem_ctx,  username, lp_logon_drive()),
-			PDB_DEFAULT);
-	}
-
-	if (logon_script) 
-		pdb_set_logon_script(sampass, logon_script, PDB_SET);
-	else {
-		pdb_set_logon_script(sampass, 
-			talloc_sub_basic(sampass->mem_ctx, username, lp_logon_script()),
-			PDB_DEFAULT);
-	}
-	
-	if (profile_path) {	
-		pdb_set_profile_path(sampass, profile_path, PDB_SET);
-	} else {
-		pdb_set_profile_path(sampass, 
-			talloc_sub_basic(sampass->mem_ctx, username, lp_logon_path()),
-			PDB_DEFAULT);
-	}
-
-	pdb_set_acct_desc(sampass, acct_desc, PDB_SET);
-	pdb_set_workstations(sampass, workstations, PDB_SET);
-	pdb_set_munged_dial(sampass, munged_dial, PDB_SET);
-
-	if (lm_pw_ptr && lm_pw_len == LM_HASH_LEN) {
-		if (!pdb_set_lanman_passwd(sampass, lm_pw_ptr, PDB_SET)) {
-			ret = False;
-			goto done;
-		}
-	}
-
-	if (nt_pw_ptr && nt_pw_len == NT_HASH_LEN) {
-		if (!pdb_set_nt_passwd(sampass, nt_pw_ptr, PDB_SET)) {
-			ret = False;
-			goto done;
-		}
-	}
-
-	pdb_set_pw_history(sampass, NULL, 0, PDB_SET);
-	pdb_set_user_sid_from_rid(sampass, user_rid, PDB_SET);
-	pdb_set_group_sid_from_rid(sampass, group_rid, PDB_SET);
-	pdb_set_hours_len(sampass, hours_len, PDB_SET);
-	pdb_set_bad_password_count(sampass, bad_password_count, PDB_SET);
-	pdb_set_logon_count(sampass, logon_count, PDB_SET);
-	pdb_set_unknown_6(sampass, unknown_6, PDB_SET);
-	pdb_set_acct_ctrl(sampass, acct_ctrl, PDB_SET);
-	pdb_set_logon_divs(sampass, logon_divs, PDB_SET);
-	pdb_set_hours(sampass, hours, PDB_SET);
-
-done:
-
-	SAFE_FREE(username);
-	SAFE_FREE(domain);
-	SAFE_FREE(nt_username);
-	SAFE_FREE(fullname);
-	SAFE_FREE(homedir);
-	SAFE_FREE(dir_drive);
-	SAFE_FREE(logon_script);
-	SAFE_FREE(profile_path);
-	SAFE_FREE(acct_desc);
-	SAFE_FREE(workstations);
-	SAFE_FREE(munged_dial);
-	SAFE_FREE(unknown_str);
-	SAFE_FREE(lm_pw_ptr);
-	SAFE_FREE(nt_pw_ptr);
-	SAFE_FREE(hours);
-
-	return ret;
-}
-
-BOOL init_sam_from_buffer_v1(SAM_ACCOUNT *sampass, uint8 *buf, uint32 buflen)
+BOOL init_sam_from_buffer_v3(struct samu *sampass, uint8 *buf, uint32 buflen)
 {
 
 	/* times are stored as 32bit integer
@@ -1555,194 +846,8 @@ BOOL init_sam_from_buffer_v1(SAM_ACCOUNT *sampass, uint8 *buf, uint32 buflen)
 		fullname_len, homedir_len, logon_script_len,
 		profile_path_len, acct_desc_len, workstations_len;
 		
-	uint32	user_rid, group_rid, remove_me, hours_len, unknown_6;
-	uint16	acct_ctrl, logon_divs;
-	uint16	bad_password_count, logon_count;
-	uint8	*hours = NULL;
-	uint8	*lm_pw_ptr = NULL, *nt_pw_ptr = NULL;
-	uint32		len = 0;
-	uint32		lm_pw_len, nt_pw_len, hourslen;
-	BOOL ret = True;
-	
-	if(sampass == NULL || buf == NULL) {
-		DEBUG(0, ("init_sam_from_buffer_v1: NULL parameters found!\n"));
-		return False;
-	}
-
-/* TDB_FORMAT_STRING_V1       "dddddddBBBBBBBBBBBBddBBwdwdBwwd" */
-
-	/* unpack the buffer into variables */
-	len = tdb_unpack ((char *)buf, buflen, TDB_FORMAT_STRING_V1,
-		&logon_time,						/* d */
-		&logoff_time,						/* d */
-		&kickoff_time,						/* d */
-		/* Change from V0 is addition of bad_password_time field. */
-		&bad_password_time,					/* d */
-		&pass_last_set_time,					/* d */
-		&pass_can_change_time,					/* d */
-		&pass_must_change_time,					/* d */
-		&username_len, &username,				/* B */
-		&domain_len, &domain,					/* B */
-		&nt_username_len, &nt_username,				/* B */
-		&fullname_len, &fullname,				/* B */
-		&homedir_len, &homedir,					/* B */
-		&dir_drive_len, &dir_drive,				/* B */
-		&logon_script_len, &logon_script,			/* B */
-		&profile_path_len, &profile_path,			/* B */
-		&acct_desc_len, &acct_desc,				/* B */
-		&workstations_len, &workstations,			/* B */
-		&unknown_str_len, &unknown_str,				/* B */
-		&munged_dial_len, &munged_dial,				/* B */
-		&user_rid,						/* d */
-		&group_rid,						/* d */
-		&lm_pw_len, &lm_pw_ptr,					/* B */
-		&nt_pw_len, &nt_pw_ptr,					/* B */
-		&acct_ctrl,						/* w */
-		&remove_me,						/* d */
-		&logon_divs,						/* w */
-		&hours_len,						/* d */
-		&hourslen, &hours,					/* B */
-		&bad_password_count,					/* w */
-		&logon_count,						/* w */
-		&unknown_6);						/* d */
-		
-	if (len == (uint32) -1)  {
-		ret = False;
-		goto done;
-	}
-
-	pdb_set_logon_time(sampass, logon_time, PDB_SET);
-	pdb_set_logoff_time(sampass, logoff_time, PDB_SET);
-	pdb_set_kickoff_time(sampass, kickoff_time, PDB_SET);
-
-	/* Change from V0 is addition of bad_password_time field. */
-	pdb_set_bad_password_time(sampass, bad_password_time, PDB_SET);
-	pdb_set_pass_can_change_time(sampass, pass_can_change_time, PDB_SET);
-	pdb_set_pass_must_change_time(sampass, pass_must_change_time, PDB_SET);
-	pdb_set_pass_last_set_time(sampass, pass_last_set_time, PDB_SET);
-
-	pdb_set_username(sampass, username, PDB_SET); 
-	pdb_set_domain(sampass, domain, PDB_SET);
-	pdb_set_nt_username(sampass, nt_username, PDB_SET);
-	pdb_set_fullname(sampass, fullname, PDB_SET);
-
-	if (homedir) {
-		pdb_set_homedir(sampass, homedir, PDB_SET);
-	}
-	else {
-		pdb_set_homedir(sampass, 
-			talloc_sub_basic(sampass->mem_ctx, username, lp_logon_home()),
-			PDB_DEFAULT);
-	}
-
-	if (dir_drive) 	
-		pdb_set_dir_drive(sampass, dir_drive, PDB_SET);
-	else {
-		pdb_set_dir_drive(sampass, 
-			talloc_sub_basic(sampass->mem_ctx,  username, lp_logon_drive()),
-			PDB_DEFAULT);
-	}
-
-	if (logon_script) 
-		pdb_set_logon_script(sampass, logon_script, PDB_SET);
-	else {
-		pdb_set_logon_script(sampass, 
-			talloc_sub_basic(sampass->mem_ctx, username, lp_logon_script()),
-			PDB_DEFAULT);
-	}
-	
-	if (profile_path) {	
-		pdb_set_profile_path(sampass, profile_path, PDB_SET);
-	} else {
-		pdb_set_profile_path(sampass, 
-			talloc_sub_basic(sampass->mem_ctx, username, lp_logon_path()),
-			PDB_DEFAULT);
-	}
-
-	pdb_set_acct_desc(sampass, acct_desc, PDB_SET);
-	pdb_set_workstations(sampass, workstations, PDB_SET);
-	pdb_set_munged_dial(sampass, munged_dial, PDB_SET);
-
-	if (lm_pw_ptr && lm_pw_len == LM_HASH_LEN) {
-		if (!pdb_set_lanman_passwd(sampass, lm_pw_ptr, PDB_SET)) {
-			ret = False;
-			goto done;
-		}
-	}
-
-	if (nt_pw_ptr && nt_pw_len == NT_HASH_LEN) {
-		if (!pdb_set_nt_passwd(sampass, nt_pw_ptr, PDB_SET)) {
-			ret = False;
-			goto done;
-		}
-	}
-
-	pdb_set_pw_history(sampass, NULL, 0, PDB_SET);
-
-	pdb_set_user_sid_from_rid(sampass, user_rid, PDB_SET);
-	pdb_set_group_sid_from_rid(sampass, group_rid, PDB_SET);
-	pdb_set_hours_len(sampass, hours_len, PDB_SET);
-	pdb_set_bad_password_count(sampass, bad_password_count, PDB_SET);
-	pdb_set_logon_count(sampass, logon_count, PDB_SET);
-	pdb_set_unknown_6(sampass, unknown_6, PDB_SET);
-	pdb_set_acct_ctrl(sampass, acct_ctrl, PDB_SET);
-	pdb_set_logon_divs(sampass, logon_divs, PDB_SET);
-	pdb_set_hours(sampass, hours, PDB_SET);
-
-done:
-
-	SAFE_FREE(username);
-	SAFE_FREE(domain);
-	SAFE_FREE(nt_username);
-	SAFE_FREE(fullname);
-	SAFE_FREE(homedir);
-	SAFE_FREE(dir_drive);
-	SAFE_FREE(logon_script);
-	SAFE_FREE(profile_path);
-	SAFE_FREE(acct_desc);
-	SAFE_FREE(workstations);
-	SAFE_FREE(munged_dial);
-	SAFE_FREE(unknown_str);
-	SAFE_FREE(lm_pw_ptr);
-	SAFE_FREE(nt_pw_ptr);
-	SAFE_FREE(hours);
-
-	return ret;
-}
-
-
-BOOL init_sam_from_buffer_v2(SAM_ACCOUNT *sampass, uint8 *buf, uint32 buflen)
-{
-
-	/* times are stored as 32bit integer
-	   take care on system with 64bit wide time_t
-	   --SSS */
-	uint32	logon_time,
-		logoff_time,
-		kickoff_time,
-		bad_password_time,
-		pass_last_set_time,
-		pass_can_change_time,
-		pass_must_change_time;
-	char *username = NULL;
-	char *domain = NULL;
-	char *nt_username = NULL;
-	char *dir_drive = NULL;
-	char *unknown_str = NULL;
-	char *munged_dial = NULL;
-	char *fullname = NULL;
-	char *homedir = NULL;
-	char *logon_script = NULL;
-	char *profile_path = NULL;
-	char *acct_desc = NULL;
-	char *workstations = NULL;
-	uint32	username_len, domain_len, nt_username_len,
-		dir_drive_len, unknown_str_len, munged_dial_len,
-		fullname_len, homedir_len, logon_script_len,
-		profile_path_len, acct_desc_len, workstations_len;
-		
-	uint32	user_rid, group_rid, hours_len, unknown_6;
-	uint16	acct_ctrl, logon_divs;
+	uint32	user_rid, group_rid, hours_len, unknown_6, acct_ctrl;
+	uint16  logon_divs;
 	uint16	bad_password_count, logon_count;
 	uint8	*hours = NULL;
 	uint8	*lm_pw_ptr = NULL, *nt_pw_ptr = NULL, *nt_pw_hist_ptr = NULL;
@@ -1754,14 +859,14 @@ BOOL init_sam_from_buffer_v2(SAM_ACCOUNT *sampass, uint8 *buf, uint32 buflen)
 	BOOL expand_explicit = lp_passdb_expand_explicit();
 	
 	if(sampass == NULL || buf == NULL) {
-		DEBUG(0, ("init_sam_from_buffer_v2: NULL parameters found!\n"));
+		DEBUG(0, ("init_sam_from_buffer_v3: NULL parameters found!\n"));
 		return False;
 	}
 									
-/* TDB_FORMAT_STRING_V2       "dddddddBBBBBBBBBBBBddBBBwwdBwwd" */
+/* TDB_FORMAT_STRING_V3       "dddddddBBBBBBBBBBBBddBBBdwdBwwd" */
 
 	/* unpack the buffer into variables */
-	len = tdb_unpack ((char *)buf, buflen, TDB_FORMAT_STRING_V2,
+	len = tdb_unpack ((char *)buf, buflen, TDB_FORMAT_STRING_V3,
 		&logon_time,						/* d */
 		&logoff_time,						/* d */
 		&kickoff_time,						/* d */
@@ -1787,7 +892,8 @@ BOOL init_sam_from_buffer_v2(SAM_ACCOUNT *sampass, uint8 *buf, uint32 buflen)
 		&nt_pw_len, &nt_pw_ptr,					/* B */
 		/* Change from V1 is addition of password history field. */
 		&nt_pw_hist_len, &nt_pw_hist_ptr,			/* B */
-		&acct_ctrl,						/* w */
+		/* Change from V2 is the uint32 acb_mask */
+		&acct_ctrl,						/* d */
 		/* Also "remove_me" field was removed. */
 		&logon_divs,						/* w */
 		&hours_len,						/* d */
@@ -1824,7 +930,7 @@ BOOL init_sam_from_buffer_v2(SAM_ACCOUNT *sampass, uint8 *buf, uint32 buflen)
 	}
 	else {
 		pdb_set_homedir(sampass, 
-			talloc_sub_basic(sampass->mem_ctx, username, lp_logon_home()),
+			talloc_sub_basic(sampass, username, lp_logon_home()),
 			PDB_DEFAULT);
 	}
 
@@ -1843,7 +949,7 @@ BOOL init_sam_from_buffer_v2(SAM_ACCOUNT *sampass, uint8 *buf, uint32 buflen)
 	}
 	else {
 		pdb_set_logon_script(sampass, 
-			talloc_sub_basic(sampass->mem_ctx, username, lp_logon_script()),
+			talloc_sub_basic(sampass, username, lp_logon_script()),
 			PDB_DEFAULT);
 	}
 	
@@ -1857,7 +963,7 @@ BOOL init_sam_from_buffer_v2(SAM_ACCOUNT *sampass, uint8 *buf, uint32 buflen)
 	} 
 	else {
 		pdb_set_profile_path(sampass, 
-			talloc_sub_basic(sampass->mem_ctx, username, lp_logon_path()),
+			talloc_sub_basic(sampass, username, lp_logon_path()),
 			PDB_DEFAULT);
 	}
 
@@ -1879,7 +985,6 @@ BOOL init_sam_from_buffer_v2(SAM_ACCOUNT *sampass, uint8 *buf, uint32 buflen)
 		}
 	}
 
-	/* Change from V1 is addition of password history field. */
 	pdb_get_account_policy(AP_PASSWORD_HISTORY, &pwHistLen);
 	if (pwHistLen) {
 		uint8 *pw_hist = SMB_MALLOC(pwHistLen * PW_HISTORY_ENTRY_LEN);
@@ -1909,11 +1014,11 @@ BOOL init_sam_from_buffer_v2(SAM_ACCOUNT *sampass, uint8 *buf, uint32 buflen)
 	}
 
 	pdb_set_user_sid_from_rid(sampass, user_rid, PDB_SET);
-	pdb_set_group_sid_from_rid(sampass, group_rid, PDB_SET);
 	pdb_set_hours_len(sampass, hours_len, PDB_SET);
 	pdb_set_bad_password_count(sampass, bad_password_count, PDB_SET);
 	pdb_set_logon_count(sampass, logon_count, PDB_SET);
 	pdb_set_unknown_6(sampass, unknown_6, PDB_SET);
+	/* Change from V2 is the uint32 acct_ctrl */
 	pdb_set_acct_ctrl(sampass, acct_ctrl, PDB_SET);
 	pdb_set_logon_divs(sampass, logon_divs, PDB_SET);
 	pdb_set_hours(sampass, hours, PDB_SET);
@@ -1940,7 +1045,10 @@ done:
 	return ret;
 }
 
-uint32 init_buffer_from_sam_v2 (uint8 **buf, const SAM_ACCOUNT *sampass, BOOL size_only)
+/*********************************************************************
+*********************************************************************/
+
+uint32 init_buffer_from_sam_v3 (uint8 **buf, struct samu *sampass, BOOL size_only)
 {
 	size_t len, buflen;
 
@@ -1982,9 +1090,9 @@ uint32 init_buffer_from_sam_v2 (uint8 **buf, const SAM_ACCOUNT *sampass, BOOL si
 	uint32  nt_pw_hist_len;
 	uint32 pwHistLen = 0;
 
-	/* do we have a valid SAM_ACCOUNT pointer? */
+	/* do we have a valid struct samu pointer? */
 	if (sampass == NULL) {
-		DEBUG(0, ("init_buffer_from_sam: SAM_ACCOUNT is NULL!\n"));
+		DEBUG(0, ("init_buffer_from_sam: struct samu is NULL!\n"));
 		return -1;
 	}
 	
@@ -2120,10 +1228,10 @@ uint32 init_buffer_from_sam_v2 (uint8 **buf, const SAM_ACCOUNT *sampass, BOOL si
 		munged_dial_len = 0;	
 	}
 
-/* TDB_FORMAT_STRING_V2       "dddddddBBBBBBBBBBBBddBBBwwdBwwd" */
+/* TDB_FORMAT_STRING_V3       "dddddddBBBBBBBBBBBBddBBBdwdBwwd" */
 
 	/* one time to get the size needed */
-	len = tdb_pack(NULL, 0,  TDB_FORMAT_STRING_V2,
+	len = tdb_pack(NULL, 0,  TDB_FORMAT_STRING_V3,
 		logon_time,				/* d */
 		logoff_time,				/* d */
 		kickoff_time,				/* d */
@@ -2148,7 +1256,7 @@ uint32 init_buffer_from_sam_v2 (uint8 **buf, const SAM_ACCOUNT *sampass, BOOL si
 		lm_pw_len, lm_pw,			/* B */
 		nt_pw_len, nt_pw,			/* B */
 		nt_pw_hist_len, nt_pw_hist,		/* B */
-		pdb_get_acct_ctrl(sampass),		/* w */
+		pdb_get_acct_ctrl(sampass),		/* d */
 		pdb_get_logon_divs(sampass),		/* w */
 		pdb_get_hours_len(sampass),		/* d */
 		MAX_HOURS_LEN, pdb_get_hours(sampass),	/* B */
@@ -2162,12 +1270,12 @@ uint32 init_buffer_from_sam_v2 (uint8 **buf, const SAM_ACCOUNT *sampass, BOOL si
 
 	/* malloc the space needed */
 	if ( (*buf=(uint8*)SMB_MALLOC(len)) == NULL) {
-		DEBUG(0,("init_buffer_from_sam_v2: Unable to malloc() memory for buffer!\n"));
+		DEBUG(0,("init_buffer_from_sam_v3: Unable to malloc() memory for buffer!\n"));
 		return (-1);
 	}
 	
 	/* now for the real call to tdb_pack() */
-	buflen = tdb_pack((char *)*buf, len,  TDB_FORMAT_STRING_V2,
+	buflen = tdb_pack((char *)*buf, len,  TDB_FORMAT_STRING_V3,
 		logon_time,				/* d */
 		logoff_time,				/* d */
 		kickoff_time,				/* d */
@@ -2192,7 +1300,7 @@ uint32 init_buffer_from_sam_v2 (uint8 **buf, const SAM_ACCOUNT *sampass, BOOL si
 		lm_pw_len, lm_pw,			/* B */
 		nt_pw_len, nt_pw,			/* B */
 		nt_pw_hist_len, nt_pw_hist,		/* B */
-		pdb_get_acct_ctrl(sampass),		/* w */
+		pdb_get_acct_ctrl(sampass),		/* d */
 		pdb_get_logon_divs(sampass),		/* w */
 		pdb_get_hours_len(sampass),		/* d */
 		MAX_HOURS_LEN, pdb_get_hours(sampass),	/* B */
@@ -2202,7 +1310,7 @@ uint32 init_buffer_from_sam_v2 (uint8 **buf, const SAM_ACCOUNT *sampass, BOOL si
 	
 	/* check to make sure we got it correct */
 	if (buflen != len) {
-		DEBUG(0, ("init_buffer_from_sam_v2: somthing odd is going on here: bufflen (%lu) != len (%lu) in tdb_pack operations!\n", 
+		DEBUG(0, ("init_buffer_from_sam_v3: somthing odd is going on here: bufflen (%lu) != len (%lu) in tdb_pack operations!\n", 
 			  (unsigned long)buflen, (unsigned long)len));  
 		/* error */
 		SAFE_FREE (*buf);
@@ -2212,78 +1320,40 @@ uint32 init_buffer_from_sam_v2 (uint8 **buf, const SAM_ACCOUNT *sampass, BOOL si
 	return (buflen);
 }
 
-BOOL pdb_copy_sam_account(const SAM_ACCOUNT *src, SAM_ACCOUNT **dst)
+
+/*********************************************************************
+*********************************************************************/
+
+BOOL pdb_copy_sam_account(struct samu *dst, struct samu *src )
 {
 	BOOL result;
 	uint8 *buf;
 	int len;
 
-	if ((*dst == NULL) && (!NT_STATUS_IS_OK(pdb_init_sam(dst))))
+	if ( !dst )
 		return False;
 
-	len = init_buffer_from_sam_v2(&buf, src, False);
+	len = init_buffer_from_sam_v3(&buf, src, False);
 
 	if (len == -1)
 		return False;
 
-	result = init_sam_from_buffer_v2(*dst, buf, len);
-	(*dst)->methods = src->methods;
+	result = init_sam_from_buffer_v3( dst, buf, len );
+	dst->methods = src->methods;
+	
+	if ( src->unix_pw )
+		dst->unix_pw = tcopy_passwd( dst, src->unix_pw );
 
 	free(buf);
 
 	return result;
 }
 
-/**********************************************************************
-**********************************************************************/
-
-static BOOL get_free_ugid_range(uint32 *low, uint32 *high)
-{
-	uid_t u_low, u_high;
-	gid_t g_low, g_high;
-
-	if (!lp_idmap_uid(&u_low, &u_high) || !lp_idmap_gid(&g_low, &g_high)) {
-		return False;
-	}
-	
-	*low  = (u_low < g_low)   ? u_low  : g_low;
-	*high = (u_high < g_high) ? u_high : g_high;
-	
-	return True;
-}
-
-/******************************************************************
- Get the the non-algorithmic RID range if idmap range are defined
-******************************************************************/
-
-BOOL get_free_rid_range(uint32 *low, uint32 *high)
-{
-	uint32 id_low, id_high;
-
-	if (!lp_enable_rid_algorithm()) {
-		*low = BASE_RID;
-		*high = (uint32)-1;
-	}
-
-	if (!get_free_ugid_range(&id_low, &id_high)) {
-		return False;
-	}
-
-	*low = algorithmic_pdb_uid_to_user_rid(id_low);
-	if (algorithmic_pdb_user_rid_to_uid((uint32)-1) < id_high) {
-		*high = (uint32)-1;
-	} else {
-		*high = algorithmic_pdb_uid_to_user_rid(id_high);
-	}
-
-	return True;
-}
-
 /*********************************************************************
  Update the bad password count checking the AP_RESET_COUNT_TIME 
 *********************************************************************/
 
-BOOL pdb_update_bad_password_count(SAM_ACCOUNT *sampass, BOOL *updated)
+BOOL pdb_update_bad_password_count(struct samu *sampass, BOOL *updated)
 {
 	time_t LastBadPassword;
 	uint16 BadPasswordCount;
@@ -2326,7 +1396,7 @@ BOOL pdb_update_bad_password_count(SAM_ACCOUNT *sampass, BOOL *updated)
  Update the ACB_AUTOLOCK flag checking the AP_LOCK_ACCOUNT_DURATION 
 *********************************************************************/
 
-BOOL pdb_update_autolock_flag(SAM_ACCOUNT *sampass, BOOL *updated)
+BOOL pdb_update_autolock_flag(struct samu *sampass, BOOL *updated)
 {
 	uint32 duration;
 	time_t LastBadPassword;
@@ -2379,7 +1449,7 @@ bad password time. Leaving locked out.\n",
  Increment the bad_password_count 
 *********************************************************************/
 
-BOOL pdb_increment_bad_password_count(SAM_ACCOUNT *sampass)
+BOOL pdb_increment_bad_password_count(struct samu *sampass)
 {
 	uint32 account_policy_lockout;
 	BOOL autolock_updated = False, badpw_updated = False;

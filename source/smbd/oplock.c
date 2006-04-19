@@ -27,7 +27,6 @@ static int32 exclusive_oplocks_open = 0;
 static int32 level_II_oplocks_open = 0;
 BOOL global_client_failed_oplock_break = False;
 
-extern struct timeval smb_last_time;
 extern uint32 global_client_caps;
 extern int smb_read_error;
 
@@ -197,7 +196,7 @@ BOOL remove_oplock(files_struct *fsp)
 			 (double)inode));
 	}
 	release_file_oplock(fsp);
-	talloc_free(lck);
+	TALLOC_FREE(lck);
 	return ret;
 }
 
@@ -226,26 +225,21 @@ BOOL downgrade_oplock(files_struct *fsp)
 	}
 
 	downgrade_file_oplock(fsp);
-	talloc_free(lck);
+	TALLOC_FREE(lck);
 	return ret;
 }
 
 /****************************************************************************
- Setup the listening set of file descriptors for an oplock break
- message either from the UDP socket or from the kernel. Returns the maximum
- fd used.
+ Return the fd (if any) used for receiving oplock notifications.
 ****************************************************************************/
 
-int setup_oplock_select_set( fd_set *fds)
+int oplock_notify_fd(void)
 {
-	int maxfd = 0;
-
-	if (koplocks && koplocks->notification_fd != -1) {
-		FD_SET(koplocks->notification_fd, fds);
-		maxfd = MAX(maxfd, koplocks->notification_fd);
+	if (koplocks) {
+		return koplocks->notification_fd;
 	}
 
-	return maxfd;
+	return -1;
 }
 
 /****************************************************************************
@@ -282,21 +276,10 @@ static char *new_break_smb_message(TALLOC_CTX *mem_ctx,
 
 static void wait_before_sending_break(void)
 {
-	struct timeval cur_tv;
-	long wait_left = (long)lp_oplock_break_wait_time();
+	long wait_time = (long)lp_oplock_break_wait_time();
 
-	if (wait_left == 0) {
-		return;
-	}
-
-	GetTimeOfDay(&cur_tv);
-
-	wait_left -= ((cur_tv.tv_sec - smb_last_time.tv_sec)*1000) +
-                ((cur_tv.tv_usec - smb_last_time.tv_usec)/1000);
-
-	if(wait_left > 0) {
-		wait_left = MIN(wait_left, 1000);
-		sys_usleep(wait_left * 1000);
+	if (wait_time) {
+		smb_msleep(wait_time);
 	}
 }
 
@@ -475,7 +458,7 @@ static void process_oplock_async_level2_break_message(int msg_type, struct proce
 	/* Restore the sign state to what it was. */
 	srv_oplock_set_signing(sign_state);
 
-	talloc_free(break_msg);
+	TALLOC_FREE(break_msg);
 
 	/* Async level2 request, don't send a reply, just remove the oplock. */
 	remove_oplock(fsp);
@@ -583,7 +566,7 @@ static void process_oplock_break_message(int msg_type, struct process_id src,
 	/* Restore the sign state to what it was. */
 	srv_oplock_set_signing(sign_state);
 
-	talloc_free(break_msg);
+	TALLOC_FREE(break_msg);
 
 	fsp->sent_oplock_break = break_to_level2 ? LEVEL_II_BREAK_SENT:BREAK_TO_NONE_SENT;
 
@@ -659,7 +642,7 @@ static void process_kernel_oplock_break(int msg_type, struct process_id src,
 	/* Restore the sign state to what it was. */
 	srv_oplock_set_signing(sign_state);
 
-	talloc_free(break_msg);
+	TALLOC_FREE(break_msg);
 
 	fsp->sent_oplock_break = BREAK_TO_NONE_SENT;
 
@@ -686,7 +669,7 @@ void reply_to_oplock_break_requests(files_struct *fsp)
 	fsp->num_pending_break_messages = 0;
 	if (fsp->oplock_timeout != NULL) {
 		/* Remove the timed event handler. */
-		talloc_free(fsp->oplock_timeout);
+		TALLOC_FREE(fsp->oplock_timeout);
 		fsp->oplock_timeout = NULL;
 	}
 	return;
@@ -769,6 +752,7 @@ void release_level_2_oplocks_on_change(files_struct *fsp)
 	if (lck == NULL) {
 		DEBUG(0,("release_level_2_oplocks_on_change: failed to lock "
 			 "share mode entry for file %s.\n", fsp->fsp_name ));
+		return;
 	}
 
 	DEBUG(10,("release_level_2_oplocks_on_change: num_share_modes = %d\n", 
@@ -806,7 +790,7 @@ void release_level_2_oplocks_on_change(files_struct *fsp)
 			DEBUG(0,("release_level_2_oplocks_on_change: PANIC. "
 				 "share mode entry %d is an exlusive "
 				 "oplock !\n", i ));
-			talloc_free(lck);
+			TALLOC_FREE(lck);
 			abort();
 		}
 
@@ -821,7 +805,7 @@ void release_level_2_oplocks_on_change(files_struct *fsp)
 	/* We let the message receivers handle removing the oplock state
 	   in the share mode lock db. */
 
-	talloc_free(lck);
+	TALLOC_FREE(lck);
 }
 
 /****************************************************************************

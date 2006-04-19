@@ -285,8 +285,7 @@ void run_dns_queue(void)
 queue a DNS query
   ****************************************************************************/
 
-BOOL queue_dns_query(struct packet_struct *p,struct nmb_name *question,
-		     struct name_record **n)
+BOOL queue_dns_query(struct packet_struct *p,struct nmb_name *question)
 {
 	if (in_dns || fd_in == -1)
 		return False;
@@ -318,14 +317,13 @@ BOOL queue_dns_query(struct packet_struct *p,struct nmb_name *question,
   we use this when we can't do async DNS lookups
   ****************************************************************************/
 
-BOOL queue_dns_query(struct packet_struct *p,struct nmb_name *question,
-		     struct name_record **n)
+BOOL queue_dns_query(struct packet_struct *p,struct nmb_name *question)
 {
 	struct name_record *namerec = NULL;
 	struct in_addr dns_ip;
 	unstring qname;
 
-	pull_ascii_nstring(qname, question->name);
+	pull_ascii_nstring(qname, sizeof(qname), question->name);
 
 	DEBUG(3,("DNS search for %s - ", nmb_namestr(question)));
 

@@ -132,6 +132,29 @@ int net_run_function(int argc, const char **argv, struct functable *table,
 	return usage_fn(argc, argv);
 }
 
+/*
+ * run a function from a function table.
+ */
+int net_run_function2(int argc, const char **argv, const char *whoami,
+		      struct functable2 *table)
+{
+	int i;
+
+	if (argc != 0) {
+		for (i=0; table[i].funcname; i++) {
+			if (StrCaseCmp(argv[0], table[i].funcname) == 0)
+				return table[i].fn(argc-1, argv+1);
+		}
+	}
+
+	for (i=0; table[i].funcname != NULL; i++) {
+		d_printf("%s %-15s %s\n", whoami, table[i].funcname,
+			 table[i].helptext);
+	}
+
+	return -1;
+}
+
 /****************************************************************************
 connect to \\server\service 
 ****************************************************************************/
@@ -226,12 +249,21 @@ NTSTATUS connect_dst_pipe(struct cli_state **cli_dst, struct rpc_pipe_client **p
 	struct cli_state *cli_tmp = NULL;
 	struct rpc_pipe_client *pipe_hnd = NULL;
 
-	if (opt_destination)
-		server_name = SMB_STRDUP(opt_destination);
+	if (server_name == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (opt_destination) {
+		SAFE_FREE(server_name);
+		if ((server_name = SMB_STRDUP(opt_destination)) == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+	}
 
 	/* make a connection to a named pipe */
 	nt_status = connect_to_ipc(&cli_tmp, NULL, server_name);
 	if (!NT_STATUS_IS_OK(nt_status)) {
+		SAFE_FREE(server_name);
 		return nt_status;
 	}
 
@@ -239,11 +271,13 @@ NTSTATUS connect_dst_pipe(struct cli_state **cli_dst, struct rpc_pipe_client **p
 	if (!pipe_hnd) {
 		DEBUG(0, ("couldn't not initialize pipe\n"));
 		cli_shutdown(cli_tmp);
+		SAFE_FREE(server_name);
 		return nt_status;
 	}
 
 	*cli_dst = cli_tmp;
 	*pp_pipe_hnd = pipe_hnd;
+	SAFE_FREE(server_name);
 
 	return nt_status;
 }
@@ -372,10 +406,17 @@ struct cli_state *net_make_ipc_connection(unsigned flags)
 		nt_status = connect_to_ipc(&cli, &server_ip, server_name);
 	}
 
+	/* store the server in the affinity cache if it was a PDC */
+
+	if ( (flags & NET_FLAGS_PDC) && NT_STATUS_IS_OK(nt_status) )
+		saf_store( cli->server_domain, cli->desthost );
+
 	SAFE_FREE(server_name);
 	if (NT_STATUS_IS_OK(nt_status)) {
 		return cli;
 	} else {
+		d_fprintf(stderr, "Connection failed: %s\n",
+			  nt_errstr(nt_status));
 		return NULL;
 	}
 }
@@ -705,6 +746,7 @@ static struct functable net_func[] = {
 	{"USER", net_user},
 	{"GROUP", net_group},
 	{"GROUPMAP", net_groupmap},
+	{"SAM", net_sam},
 	{"VALIDATE", net_rap_validate},
 	{"GROUPMEMBER", net_rap_groupmember},
 	{"ADMIN", net_rap_admin},
@@ -722,6 +764,7 @@ static struct functable net_func[] = {
 	{"MAXRID", net_maxrid},
 	{"IDMAP", net_idmap},
 	{"STATUS", net_status},
+	{"USERSHARE", net_usershare},
 	{"USERSIDLIST", net_usersidlist},
 #ifdef WITH_FAKE_KASERVER
 	{"AFS", net_afs},
@@ -825,7 +868,7 @@ static struct functable net_func[] = {
 	 * set by cmdline arg or remain default (0)
 	 */
 	AllowDebugChange = False;
-	lp_load(dyn_CONFIGFILE,True,False,False);
+	lp_load(dyn_CONFIGFILE,True,False,False,True);
 	
  	argv_new = (const char **)poptGetArgs(pc);
 

@@ -64,39 +64,53 @@ BOOL winbind_lookup_name(const char *dom_name, const char *name, DOM_SID *sid,
 
 /* Call winbindd to convert sid to name */
 
-BOOL winbind_lookup_sid(const DOM_SID *sid, 
-			fstring dom_name, fstring name, 
+BOOL winbind_lookup_sid(TALLOC_CTX *mem_ctx, const DOM_SID *sid, 
+			const char **domain, const char **name,
                         enum SID_NAME_USE *name_type)
 {
 	struct winbindd_request request;
 	struct winbindd_response response;
 	NSS_STATUS result;
-	fstring sid_str;
 	
 	/* Initialise request */
 
 	ZERO_STRUCT(request);
 	ZERO_STRUCT(response);
 
-	sid_to_string(sid_str, sid);
-	fstrcpy(request.data.sid, sid_str);
+	fstrcpy(request.data.sid, sid_string_static(sid));
 	
 	/* Make request */
 
-	result = winbindd_request_response(WINBINDD_LOOKUPSID, &request, &response);
+	result = winbindd_request_response(WINBINDD_LOOKUPSID, &request,
+					   &response);
+
+	if (result != NSS_STATUS_SUCCESS) {
+		return False;
+	}
 
 	/* Copy out result */
 
-	if (result == NSS_STATUS_SUCCESS) {
-		fstrcpy(dom_name, response.data.name.dom_name);
-		fstrcpy(name, response.data.name.name);
-		*name_type = (enum SID_NAME_USE)response.data.name.type;
-
-		DEBUG(10, ("winbind_lookup_sid: SUCCESS: SID %s -> %s %s\n", 
-                           sid_str, dom_name, name));
+	if (domain != NULL) {
+		*domain = talloc_strdup(mem_ctx, response.data.name.dom_name);
+		if (*domain == NULL) {
+			DEBUG(0, ("talloc failed\n"));
+			return False;
+		}
+	}
+	if (name != NULL) {
+		*name = talloc_strdup(mem_ctx, response.data.name.name);
+		if (*name == NULL) {
+			DEBUG(0, ("talloc failed\n"));
+			return False;
+		}
 	}
 
-	return (result == NSS_STATUS_SUCCESS);
+	*name_type = (enum SID_NAME_USE)response.data.name.type;
+
+	DEBUG(10, ("winbind_lookup_sid: SUCCESS: SID %s -> %s %s\n", 
+		   sid_string_static(sid), response.data.name.dom_name,
+		   response.data.name.name));
+	return True;
 }
 
 /* Call winbindd to convert SID to uid */
@@ -233,7 +247,7 @@ BOOL winbind_gid_to_sid(DOM_SID *sid, gid_t gid)
 	return (result == NSS_STATUS_SUCCESS);
 }
 
-BOOL winbind_allocate_rid(uint32 *rid)
+BOOL winbind_allocate_uid(uid_t *uid)
 {
 	struct winbindd_request request;
 	struct winbindd_response response;
@@ -246,18 +260,19 @@ BOOL winbind_allocate_rid(uint32 *rid)
 
 	/* Make request */
 
-	result = winbindd_request_response(WINBINDD_ALLOCATE_RID, &request, &response);
+	result = winbindd_request_response(WINBINDD_ALLOCATE_UID,
+					   &request, &response);
 
 	if (result != NSS_STATUS_SUCCESS)
 		return False;
 
 	/* Copy out result */
-	*rid = response.data.rid;
+	*uid = response.data.uid;
 
 	return True;
 }
 
-BOOL winbind_allocate_rid_and_gid(uint32 *rid, gid_t *gid)
+BOOL winbind_allocate_gid(gid_t *gid)
 {
 	struct winbindd_request request;
 	struct winbindd_response response;
@@ -270,15 +285,14 @@ BOOL winbind_allocate_rid_and_gid(uint32 *rid, gid_t *gid)
 
 	/* Make request */
 
-	result = winbindd_request_response(WINBINDD_ALLOCATE_RID_AND_GID, &request,
-				  &response);
+	result = winbindd_request_response(WINBINDD_ALLOCATE_GID,
+					   &request, &response);
 
 	if (result != NSS_STATUS_SUCCESS)
 		return False;
 
 	/* Copy out result */
-	*rid = response.data.rid_and_gid.rid;
-	*gid = response.data.rid_and_gid.gid;
+	*gid = response.data.gid;
 
 	return True;
 }
@@ -306,7 +320,7 @@ static int wb_getgroups(const char *user, gid_t **groups)
 		/* Return group list.  Don't forget to free the group list
 		   when finished. */
 
-		*groups = (gid_t *)response.extra_data;
+		*groups = (gid_t *)response.extra_data.data;
 		return response.data.num_entries;
 	}
 
@@ -321,7 +335,7 @@ static int wb_getgroups(const char *user, gid_t **groups)
 
 int winbind_initgroups(char *user, gid_t gid)
 {
-	gid_t *tgr, *groups = NULL;
+	gid_t *groups = NULL;
 	int result;
 
 	/* Call normal initgroups if we are a local user */
@@ -350,14 +364,12 @@ int winbind_initgroups(char *user, gid_t gid)
 		/* Add group to list if necessary */
 
 		if (!is_member) {
-			tgr = SMB_REALLOC_ARRAY(groups, gid_t, ngroups + 1);
-			
-			if (!tgr) {
+			groups = SMB_REALLOC_ARRAY(groups, gid_t, ngroups + 1);
+			if (!groups) {
 				errno = ENOMEM;
 				result = -1;
 				goto done;
 			}
-			else groups = tgr;
 
 			groups[ngroups] = gid;
 			ngroups++;

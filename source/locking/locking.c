@@ -2,7 +2,7 @@
    Unix SMB/CIFS implementation.
    Locking functions
    Copyright (C) Andrew Tridgell 1992-2000
-   Copyright (C) Jeremy Allison 1992-2000
+   Copyright (C) Jeremy Allison 1992-2006
    Copyright (C) Volker Lendecke 2005
    
    This program is free software; you can redistribute it and/or modify
@@ -33,6 +33,7 @@
    rewrtten completely to use new tdb code. Tridge, Dec '99
 
    Added POSIX locking support. Jeremy Allison (jeremy@valinux.com), Apr. 2000.
+   Added Unix Extensions POSIX locking support. Jeremy Allison Mar 2006.
 */
 
 #include "includes.h"
@@ -44,135 +45,180 @@ uint16 global_smbpid;
 /* the locking database handle */
 static TDB_CONTEXT *tdb;
 
-struct locking_data {
-        union {
-		struct {
-			int num_share_mode_entries;
-			BOOL delete_on_close;
-		} s;
-                struct share_mode_entry dummy; /* Needed for alignment. */
-        } u;
-        /* the following two entries are implicit
-           struct share_mode_entry modes[num_share_mode_entries];
-           char file_name[];
-        */
-};
-
 /****************************************************************************
- Debugging aid :-).
+ Debugging aids :-).
 ****************************************************************************/
 
-static const char *lock_type_name(enum brl_type lock_type)
+const char *lock_type_name(enum brl_type lock_type)
 {
-	return (lock_type == READ_LOCK) ? "READ" : "WRITE";
+	switch (lock_type) {
+		case READ_LOCK:
+			return "READ";
+		case WRITE_LOCK:
+			return "WRITE";
+		case PENDING_LOCK:
+			return "PENDING";
+		default:
+			return "other";
+	}
+}
+
+const char *lock_flav_name(enum brl_flavour lock_flav)
+{
+	return (lock_flav == WINDOWS_LOCK) ? "WINDOWS_LOCK" : "POSIX_LOCK";
 }
 
 /****************************************************************************
  Utility function called to see if a file region is locked.
+ Called in the read/write codepath.
 ****************************************************************************/
 
-BOOL is_locked(files_struct *fsp,connection_struct *conn,
-	       SMB_BIG_UINT count,SMB_BIG_UINT offset, 
-	       enum brl_type lock_type)
+BOOL is_locked(files_struct *fsp,
+		SMB_BIG_UINT count,
+		SMB_BIG_UINT offset, 
+		enum brl_type lock_type)
 {
-	int snum = SNUM(conn);
+	int snum = SNUM(fsp->conn);
 	int strict_locking = lp_strict_locking(snum);
-	BOOL ret;
+	enum brl_flavour lock_flav = lp_posix_cifsu_locktype();
+	BOOL ret = True;
 	
-	if (count == 0)
-		return(False);
+	if (count == 0) {
+		return False;
+	}
 
-	if (!lp_locking(snum) || !strict_locking)
-		return(False);
+	if (!lp_locking(snum) || !strict_locking) {
+		return False;
+	}
 
 	if (strict_locking == Auto) {
 		if  (EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type) && (lock_type == READ_LOCK || lock_type == WRITE_LOCK)) {
 			DEBUG(10,("is_locked: optimisation - exclusive oplock on file %s\n", fsp->fsp_name ));
-			ret = 0;
+			ret = False;
 		} else if ((fsp->oplock_type == LEVEL_II_OPLOCK) &&
 			   (lock_type == READ_LOCK)) {
 			DEBUG(10,("is_locked: optimisation - level II oplock on file %s\n", fsp->fsp_name ));
-			ret = 0;
+			ret = False;
 		} else {
-			ret = !brl_locktest(fsp->dev, fsp->inode, fsp->fnum,
-				     global_smbpid, procid_self(), conn->cnum, 
-				     offset, count, lock_type);
+			struct byte_range_lock *br_lck = brl_get_locks(fsp);
+			if (!br_lck) {
+				return False;
+			}
+			ret = !brl_locktest(br_lck,
+					global_smbpid,
+					procid_self(),
+					offset,
+					count,
+					lock_type,
+					lock_flav);
+			byte_range_lock_destructor(br_lck);
 		}
 	} else {
-		ret = !brl_locktest(fsp->dev, fsp->inode, fsp->fnum,
-				global_smbpid, procid_self(), conn->cnum,
-				offset, count, lock_type);
+		struct byte_range_lock *br_lck = brl_get_locks(fsp);
+		if (!br_lck) {
+			return False;
+		}
+		ret = !brl_locktest(br_lck,
+				global_smbpid,
+				procid_self(),
+				offset,
+				count,
+				lock_type,
+				lock_flav);
+		byte_range_lock_destructor(br_lck);
 	}
 
-	DEBUG(10,("is_locked: brl start=%.0f len=%.0f %s for file %s\n",
+	DEBUG(10,("is_locked: flavour = %s brl start=%.0f len=%.0f %s for fnum %d file %s\n",
+			lock_flav_name(lock_flav),
 			(double)offset, (double)count, ret ? "locked" : "unlocked",
-			fsp->fsp_name ));
-
-	/*
-	 * There is no lock held by an SMB daemon, check to
-	 * see if there is a POSIX lock from a UNIX or NFS process.
-	 */
-
-	if(!ret && lp_posix_locking(snum)) {
-		ret = is_posix_locked(fsp, offset, count, lock_type);
-
-		DEBUG(10,("is_locked: posix start=%.0f len=%.0f %s for file %s\n",
-				(double)offset, (double)count, ret ? "locked" : "unlocked",
-				fsp->fsp_name ));
-	}
+			fsp->fnum, fsp->fsp_name ));
 
 	return ret;
+}
+
+/****************************************************************************
+ Find out if a lock could be granted - return who is blocking us if we can't.
+****************************************************************************/
+
+NTSTATUS query_lock(files_struct *fsp,
+			uint16 *psmbpid,
+			SMB_BIG_UINT *pcount,
+			SMB_BIG_UINT *poffset,
+			enum brl_type *plock_type,
+			enum brl_flavour lock_flav)
+{
+	struct byte_range_lock *br_lck = NULL;
+	NTSTATUS status = NT_STATUS_LOCK_NOT_GRANTED;
+
+	if (!OPEN_FSP(fsp) || !fsp->can_lock) {
+		return NT_STATUS_INVALID_HANDLE;
+	}
+
+	if (!lp_locking(SNUM(fsp->conn))) {
+		return NT_STATUS_OK;
+	}
+
+	br_lck = brl_get_locks(fsp);
+	if (!br_lck) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	status = brl_lockquery(br_lck,
+			psmbpid,
+			procid_self(),
+			poffset,
+			pcount,
+			plock_type,
+			lock_flav);
+
+	byte_range_lock_destructor(br_lck);
+	return status;
 }
 
 /****************************************************************************
  Utility function called by locking requests.
 ****************************************************************************/
 
-static NTSTATUS do_lock(files_struct *fsp,connection_struct *conn, uint16 lock_pid,
-		 SMB_BIG_UINT count,SMB_BIG_UINT offset,enum brl_type lock_type, BOOL *my_lock_ctx)
+NTSTATUS do_lock(files_struct *fsp,
+			uint16 lock_pid,
+			SMB_BIG_UINT count,
+			SMB_BIG_UINT offset,
+			enum brl_type lock_type,
+			enum brl_flavour lock_flav,
+			BOOL *my_lock_ctx)
 {
+	struct byte_range_lock *br_lck = NULL;
 	NTSTATUS status = NT_STATUS_LOCK_NOT_GRANTED;
 
-	if (!lp_locking(SNUM(conn)))
+	if (!OPEN_FSP(fsp) || !fsp->can_lock) {
+		return NT_STATUS_INVALID_HANDLE;
+	}
+
+	if (!lp_locking(SNUM(fsp->conn))) {
 		return NT_STATUS_OK;
+	}
 
 	/* NOTE! 0 byte long ranges ARE allowed and should be stored  */
 
-	DEBUG(10,("do_lock: lock type %s start=%.0f len=%.0f requested for file %s\n",
-		  lock_type_name(lock_type), (double)offset, (double)count, fsp->fsp_name ));
+	DEBUG(10,("do_lock: lock flavour %s lock type %s start=%.0f len=%.0f requested for fnum %d file %s\n",
+		lock_flav_name(lock_flav), lock_type_name(lock_type),
+		(double)offset, (double)count, fsp->fnum, fsp->fsp_name ));
 
-	if (OPEN_FSP(fsp) && fsp->can_lock && (fsp->conn == conn)) {
-		status = brl_lock(fsp->dev, fsp->inode, fsp->fnum,
-				  lock_pid, procid_self(), conn->cnum, 
-				  offset, count, 
-				  lock_type, my_lock_ctx);
-
-		if (NT_STATUS_IS_OK(status) && lp_posix_locking(SNUM(conn))) {
-
-			/*
-			 * Try and get a POSIX lock on this range.
-			 * Note that this is ok if it is a read lock
-			 * overlapping on a different fd. JRA.
-			 */
-
-			if (!set_posix_lock(fsp, offset, count, lock_type)) {
-				if (errno == EACCES || errno == EAGAIN)
-					status = NT_STATUS_FILE_LOCK_CONFLICT;
-				else
-					status = map_nt_error_from_unix(errno);
-
-				/*
-				 * We failed to map - we must now remove the brl
-				 * lock entry.
-				 */
-				(void)brl_unlock(fsp->dev, fsp->inode, fsp->fnum,
-								lock_pid, procid_self(), conn->cnum, 
-								offset, count, False,
-								NULL, NULL);
-			}
-		}
+	br_lck = brl_get_locks(fsp);
+	if (!br_lck) {
+		return NT_STATUS_NO_MEMORY;
 	}
 
+	status = brl_lock(br_lck,
+			lock_pid,
+			procid_self(),
+			offset,
+			count, 
+			lock_type,
+			lock_flav,
+			my_lock_ctx);
+
+	byte_range_lock_destructor(br_lck);
 	return status;
 }
 
@@ -183,20 +229,33 @@ static NTSTATUS do_lock(files_struct *fsp,connection_struct *conn, uint16 lock_p
  it, we need this. JRA.
 ****************************************************************************/
 
-NTSTATUS do_lock_spin(files_struct *fsp,connection_struct *conn, uint16 lock_pid,
-		 SMB_BIG_UINT count,SMB_BIG_UINT offset,enum brl_type lock_type, BOOL *my_lock_ctx)
+NTSTATUS do_lock_spin(files_struct *fsp,
+			uint16 lock_pid,
+			SMB_BIG_UINT count,
+			SMB_BIG_UINT offset,
+			enum brl_type lock_type,
+			enum brl_flavour lock_flav,
+			BOOL *my_lock_ctx)
 {
 	int j, maxj = lp_lock_spin_count();
 	int sleeptime = lp_lock_sleep_time();
 	NTSTATUS status, ret;
 
-	if (maxj <= 0)
+	if (maxj <= 0) {
 		maxj = 1;
+	}
 
 	ret = NT_STATUS_OK; /* to keep dumb compilers happy */
 
 	for (j = 0; j < maxj; j++) {
-		status = do_lock(fsp, conn, lock_pid, count, offset, lock_type, my_lock_ctx);
+		status = do_lock(fsp,
+				lock_pid,
+				count,
+				offset,
+				lock_type,
+				lock_flav,
+				my_lock_ctx);
+
 		if (!NT_STATUS_EQUAL(status, NT_STATUS_LOCK_NOT_GRANTED) &&
 		    !NT_STATUS_EQUAL(status, NT_STATUS_FILE_LOCK_CONFLICT)) {
 			return status;
@@ -205,72 +264,66 @@ NTSTATUS do_lock_spin(files_struct *fsp,connection_struct *conn, uint16 lock_pid
 		if (j == 0) {
 			ret = status;
 			/* Don't spin if we blocked ourselves. */
-			if (*my_lock_ctx)
+			if (*my_lock_ctx) {
 				return ret;
+			}
+
+			/* Only spin for Windows locks. */
+			if (lock_flav == POSIX_LOCK) {
+				return ret;
+			}
 		}
-		if (sleeptime)
+
+		if (sleeptime) {
 			sys_usleep(sleeptime);
+		}
 	}
 	return ret;
-}
-
-/* Struct passed to brl_unlock. */
-struct posix_unlock_data_struct {
-	files_struct *fsp;
-	SMB_BIG_UINT offset;
-	SMB_BIG_UINT count;
-};
-
-/****************************************************************************
- Function passed to brl_unlock to allow POSIX unlock to be done first.
-****************************************************************************/
-
-static void posix_unlock(void *pre_data)
-{
-	struct posix_unlock_data_struct *pdata = (struct posix_unlock_data_struct *)pre_data;
-
-	if (lp_posix_locking(SNUM(pdata->fsp->conn)))
-		release_posix_lock(pdata->fsp, pdata->offset, pdata->count);
 }
 
 /****************************************************************************
  Utility function called by unlocking requests.
 ****************************************************************************/
 
-NTSTATUS do_unlock(files_struct *fsp,connection_struct *conn, uint16 lock_pid,
-		   SMB_BIG_UINT count,SMB_BIG_UINT offset)
+NTSTATUS do_unlock(files_struct *fsp,
+			uint16 lock_pid,
+			SMB_BIG_UINT count,
+			SMB_BIG_UINT offset,
+			enum brl_flavour lock_flav)
 {
 	BOOL ok = False;
-	struct posix_unlock_data_struct posix_data;
+	struct byte_range_lock *br_lck = NULL;
 	
-	if (!lp_locking(SNUM(conn)))
+	if (!lp_locking(SNUM(fsp->conn))) {
 		return NT_STATUS_OK;
+	}
 	
-	if (!OPEN_FSP(fsp) || !fsp->can_lock || (fsp->conn != conn)) {
+	if (!OPEN_FSP(fsp) || !fsp->can_lock) {
 		return NT_STATUS_INVALID_HANDLE;
 	}
 	
-	DEBUG(10,("do_unlock: unlock start=%.0f len=%.0f requested for file %s\n",
-		  (double)offset, (double)count, fsp->fsp_name ));
+	DEBUG(10,("do_unlock: unlock start=%.0f len=%.0f requested for fnum %d file %s\n",
+		  (double)offset, (double)count, fsp->fnum, fsp->fsp_name ));
 
-	/*
-	 * Remove the existing lock record from the tdb lockdb
-	 * before looking at POSIX locks. If this record doesn't
-	 * match then don't bother looking to remove POSIX locks.
-	 */
+	br_lck = brl_get_locks(fsp);
+	if (!br_lck) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
-	posix_data.fsp = fsp;
-	posix_data.offset = offset;
-	posix_data.count = count;
-
-	ok = brl_unlock(fsp->dev, fsp->inode, fsp->fnum,
-			lock_pid, procid_self(), conn->cnum, offset, count,
-			False, posix_unlock, (void *)&posix_data);
+	ok = brl_unlock(br_lck,
+			lock_pid,
+			procid_self(),
+			offset,
+			count,
+			lock_flav);
    
+	byte_range_lock_destructor(br_lck);
+
 	if (!ok) {
 		DEBUG(10,("do_unlock: returning ERRlock.\n" ));
 		return NT_STATUS_RANGE_NOT_LOCKED;
 	}
+
 	return NT_STATUS_OK;
 }
 
@@ -280,6 +333,7 @@ NTSTATUS do_unlock(files_struct *fsp,connection_struct *conn, uint16 lock_pid,
 
 void locking_close_file(files_struct *fsp)
 {
+	struct byte_range_lock *br_lck;
 	struct process_id pid = procid_self();
 
 	if (!lp_locking(SNUM(fsp->conn)))
@@ -289,13 +343,14 @@ void locking_close_file(files_struct *fsp)
 	 * Just release all the brl locks, no need to release individually.
 	 */
 
-	brl_close(fsp->dev, fsp->inode, pid, fsp->conn->cnum, fsp->fnum);
+	br_lck = brl_get_locks(fsp);
+	if (br_lck) {
+		brl_close_fnum(br_lck, pid);
+		byte_range_lock_destructor(br_lck);
+	}
 
 	if(lp_posix_locking(SNUM(fsp->conn))) {
-
-	 	/* 
-		 * Release all the POSIX locks.
-		 */
+	 	/* Release all the POSIX locks.*/
 		posix_locking_close_file(fsp);
 
 	}
@@ -315,7 +370,8 @@ BOOL locking_init(int read_only)
 		return True;
 
 	tdb = tdb_open_log(lock_path("locking.tdb"), 
-			SMB_OPEN_DATABASE_TDB_HASH_SIZE, TDB_DEFAULT|(read_only?0x0:TDB_CLEAR_IF_FIRST), 
+			lp_open_files_db_hash_size(),
+			TDB_DEFAULT|(read_only?0x0:TDB_CLEAR_IF_FIRST), 
 			read_only?O_RDONLY:O_RDWR|O_CREAT,
 			0644);
 
@@ -428,34 +484,36 @@ static BOOL parse_share_modes(TDB_DATA dbuf, struct share_mode_lock *lck)
 	int i;
 
 	if (dbuf.dsize < sizeof(struct locking_data)) {
-		DEBUG(0, ("parse_share_modes: buffer too short\n"));
-		return False;
+		smb_panic("PANIC: parse_share_modes: buffer too short.\n");
 	}
 
 	data = (struct locking_data *)dbuf.dptr;
 
 	lck->delete_on_close = data->u.s.delete_on_close;
+	lck->initial_delete_on_close = data->u.s.initial_delete_on_close;
 	lck->num_share_modes = data->u.s.num_share_mode_entries;
 
 	DEBUG(10, ("parse_share_modes: delete_on_close: %d, "
-		   "num_share_modes: %d\n", lck->delete_on_close,
-		   lck->num_share_modes));
+		   "initial_delete_on_close: %d, "
+		   "num_share_modes: %d\n",
+		lck->delete_on_close,
+		lck->initial_delete_on_close,
+		lck->num_share_modes));
 
 	if ((lck->num_share_modes < 0) || (lck->num_share_modes > 1000000)) {
 		DEBUG(0, ("invalid number of share modes: %d\n",
 			  lck->num_share_modes));
-		return False;
+		smb_panic("PANIC: invalid number of share modes");
 	}
 
 	lck->share_modes = NULL;
-
+	
 	if (lck->num_share_modes != 0) {
 
 		if (dbuf.dsize < (sizeof(struct locking_data) +
 				  (lck->num_share_modes *
 				   sizeof(struct share_mode_entry)))) {
-			DEBUG(0, ("parse_share_modes: buffer too short\n"));
-			return False;
+			smb_panic("PANIC: parse_share_modes: buffer too short.\n");
 		}
 				  
 		lck->share_modes = talloc_memdup(lck, dbuf.dptr+sizeof(*data),
@@ -463,20 +521,68 @@ static BOOL parse_share_modes(TDB_DATA dbuf, struct share_mode_lock *lck)
 						 sizeof(struct share_mode_entry));
 
 		if (lck->share_modes == NULL) {
-			DEBUG(0, ("talloc failed\n"));
-			return False;
+			smb_panic("talloc failed\n");
 		}
+	}
+
+	/* Get any delete token. */
+	if (data->u.s.delete_token_size) {
+		char *p = dbuf.dptr + sizeof(*data) +
+				(lck->num_share_modes *
+				sizeof(struct share_mode_entry));
+
+		if ((data->u.s.delete_token_size < sizeof(uid_t) + sizeof(gid_t)) ||
+				((data->u.s.delete_token_size - sizeof(uid_t)) % sizeof(gid_t)) != 0) {
+			DEBUG(0, ("parse_share_modes: invalid token size %d\n",
+				data->u.s.delete_token_size));
+			smb_panic("parse_share_modes: invalid token size\n");
+		}
+
+		lck->delete_token = TALLOC_P(lck, UNIX_USER_TOKEN);
+		if (!lck->delete_token) {
+			smb_panic("talloc failed\n");
+		}
+
+		/* Copy out the uid and gid. */
+		memcpy(&lck->delete_token->uid, p, sizeof(uid_t));
+		p += sizeof(uid_t);
+		memcpy(&lck->delete_token->gid, p, sizeof(gid_t));
+		p += sizeof(gid_t);
+
+		/* Any supplementary groups ? */
+		lck->delete_token->ngroups = (data->u.s.delete_token_size > (sizeof(uid_t) + sizeof(gid_t))) ?
+					((data->u.s.delete_token_size -
+						(sizeof(uid_t) + sizeof(gid_t)))/sizeof(gid_t)) : 0;
+
+		if (lck->delete_token->ngroups) {
+			/* Make this a talloc child of lck->delete_token. */
+			lck->delete_token->groups = TALLOC_ARRAY(lck->delete_token, gid_t,
+							lck->delete_token->ngroups);
+			if (!lck->delete_token) {
+				smb_panic("talloc failed\n");
+			}
+
+			for (i = 0; i < lck->delete_token->ngroups; i++) {
+				memcpy(&lck->delete_token->groups[i], p, sizeof(gid_t));
+				p += sizeof(gid_t);
+			}
+		}
+
+	} else {
+		lck->delete_token = NULL;
 	}
 
 	/* Save off the associated service path and filename. */
 	lck->servicepath = talloc_strdup(lck, dbuf.dptr + sizeof(*data) +
-				      (lck->num_share_modes *
-				      sizeof(struct share_mode_entry)));
+					(lck->num_share_modes *
+					sizeof(struct share_mode_entry)) +
+					data->u.s.delete_token_size );
 
 	lck->filename = talloc_strdup(lck, dbuf.dptr + sizeof(*data) +
-				      (lck->num_share_modes *
-				      sizeof(struct share_mode_entry)) +
-				      strlen(lck->servicepath) + 1 );
+					(lck->num_share_modes *
+					sizeof(struct share_mode_entry)) +
+					data->u.s.delete_token_size +
+					strlen(lck->servicepath) + 1 );
 
 	/*
 	 * Ensure that each entry has a real process attached.
@@ -505,6 +611,7 @@ static TDB_DATA unparse_share_modes(struct share_mode_lock *lck)
 	struct locking_data *data;
 	ssize_t offset;
 	ssize_t sp_len;
+	uint32 delete_token_size;
 
 	result.dptr = NULL;
 	result.dsize = 0;
@@ -520,9 +627,12 @@ static TDB_DATA unparse_share_modes(struct share_mode_lock *lck)
 	}
 
 	sp_len = strlen(lck->servicepath);
+	delete_token_size = (lck->delete_token ?
+			(sizeof(uid_t) + sizeof(gid_t) + (lck->delete_token->ngroups*sizeof(gid_t))) : 0);
 
 	result.dsize = sizeof(*data) +
 		lck->num_share_modes * sizeof(struct share_mode_entry) +
+		delete_token_size +
 		sp_len + 1 +
 		strlen(lck->filename) + 1;
 	result.dptr = talloc_size(lck, result.dsize);
@@ -535,13 +645,34 @@ static TDB_DATA unparse_share_modes(struct share_mode_lock *lck)
 	ZERO_STRUCTP(data);
 	data->u.s.num_share_mode_entries = lck->num_share_modes;
 	data->u.s.delete_on_close = lck->delete_on_close;
-	DEBUG(10, ("unparse_share_modes: del: %d, num: %d\n",
-		   data->u.s.delete_on_close,
-		   data->u.s.num_share_mode_entries));
+	data->u.s.initial_delete_on_close = lck->initial_delete_on_close;
+	data->u.s.delete_token_size = delete_token_size;
+	DEBUG(10, ("unparse_share_modes: del: %d, initial del %d, tok = %u, num: %d\n",
+		data->u.s.delete_on_close,
+		data->u.s.initial_delete_on_close,
+		(unsigned int)data->u.s.delete_token_size,
+		data->u.s.num_share_mode_entries));
 	memcpy(result.dptr + sizeof(*data), lck->share_modes,
 	       sizeof(struct share_mode_entry)*lck->num_share_modes);
 	offset = sizeof(*data) +
 		sizeof(struct share_mode_entry)*lck->num_share_modes;
+
+	/* Store any delete on close token. */
+	if (lck->delete_token) {
+		char *p = result.dptr + offset;
+
+		memcpy(p, &lck->delete_token->uid, sizeof(uid_t));
+		p += sizeof(uid_t);
+
+		memcpy(p, &lck->delete_token->gid, sizeof(gid_t));
+
+		for (i = 0; i < lck->delete_token->ngroups; i++) {
+			memcpy(p, &lck->delete_token->groups[i], sizeof(gid_t));
+			p += sizeof(gid_t);
+		}
+		offset = p - result.dptr;
+	}
+
 	safe_strcpy(result.dptr + offset, lck->servicepath,
 		    result.dsize - offset - 1);
 	offset += sp_len + 1;
@@ -589,9 +720,9 @@ static int share_mode_lock_destructor(void *p)
 }
 
 struct share_mode_lock *get_share_mode_lock(TALLOC_CTX *mem_ctx,
-					    SMB_DEV_T dev, SMB_INO_T ino,
+						SMB_DEV_T dev, SMB_INO_T ino,
 						const char *servicepath,
-					    const char *fname)
+						const char *fname)
 {
 	struct share_mode_lock *lck;
 	TDB_DATA key = locking_key(dev, ino);
@@ -612,13 +743,15 @@ struct share_mode_lock *get_share_mode_lock(TALLOC_CTX *mem_ctx,
 	lck->ino = ino;
 	lck->num_share_modes = 0;
 	lck->share_modes = NULL;
+	lck->delete_token = NULL;
 	lck->delete_on_close = False;
+	lck->initial_delete_on_close = False;
 	lck->fresh = False;
 	lck->modified = False;
 
 	if (tdb_chainlock(tdb, key) != 0) {
 		DEBUG(3, ("Could not lock share entry\n"));
-		talloc_free(lck);
+		TALLOC_FREE(lck);
 		return NULL;
 	}
 
@@ -634,20 +767,20 @@ struct share_mode_lock *get_share_mode_lock(TALLOC_CTX *mem_ctx,
 	if (lck->fresh) {
 
 		if (fname == NULL || servicepath == NULL) {
-			talloc_free(lck);
+			TALLOC_FREE(lck);
 			return NULL;
 		}
 		lck->filename = talloc_strdup(lck, fname);
 		lck->servicepath = talloc_strdup(lck, servicepath);
 		if (lck->filename == NULL || lck->servicepath == NULL) {
 			DEBUG(0, ("talloc failed\n"));
-			talloc_free(lck);
+			TALLOC_FREE(lck);
 			return NULL;
 		}
 	} else {
 		if (!parse_share_modes(data, lck)) {
 			DEBUG(0, ("Could not parse share modes\n"));
-			talloc_free(lck);
+			TALLOC_FREE(lck);
 			SAFE_FREE(data.dptr);
 			return NULL;
 		}
@@ -658,8 +791,92 @@ struct share_mode_lock *get_share_mode_lock(TALLOC_CTX *mem_ctx,
 	return lck;
 }
 
-BOOL get_delete_on_close_flag(SMB_DEV_T dev, SMB_INO_T inode,
-			      const char *fname)
+/*******************************************************************
+ Sets the service name and filename for rename.
+ At this point we emit "file renamed" messages to all
+ process id's that have this file open.
+ Based on an initial code idea from SATOH Fumiyasu <fumiya@samba.gr.jp>
+********************************************************************/
+
+BOOL rename_share_filename(struct share_mode_lock *lck,
+			const char *servicepath,
+			const char *newname)
+{
+	size_t sp_len;
+	size_t fn_len;
+	size_t msg_len;
+	char *frm = NULL;
+	int i;
+
+	if (!lck) {
+		return False;
+	}
+
+	DEBUG(10, ("rename_share_filename: servicepath %s newname %s\n",
+		servicepath, newname));
+
+	/*
+	 * rename_internal_fsp() and rename_internals() add './' to
+	 * head of newname if newname does not contain a '/'.
+	 */
+	while (newname[0] && newname[1] && newname[0] == '.' && newname[1] == '/') {
+		newname += 2;
+	}
+
+	lck->servicepath = talloc_strdup(lck, servicepath);
+	lck->filename = talloc_strdup(lck, newname);
+	if (lck->filename == NULL || lck->servicepath == NULL) {
+		DEBUG(0, ("rename_share_filename: talloc failed\n"));
+		return False;
+	}
+	lck->modified = True;
+
+	sp_len = strlen(lck->servicepath);
+	fn_len = strlen(lck->filename);
+
+	msg_len = MSG_FILE_RENAMED_MIN_SIZE + sp_len + 1 + fn_len + 1;
+
+	/* Set up the name changed message. */
+	frm = TALLOC(lck, msg_len);
+	if (!frm) {
+		return False;
+	}
+
+	SDEV_T_VAL(frm,0,lck->dev);
+	SINO_T_VAL(frm,8,lck->ino);
+
+	DEBUG(10,("rename_share_filename: msg_len = %d\n", msg_len ));
+
+	safe_strcpy(&frm[16], lck->servicepath, sp_len);
+	safe_strcpy(&frm[16 + sp_len + 1], lck->filename, fn_len);
+
+	/* Send the messages. */
+	for (i=0; i<lck->num_share_modes; i++) {
+		struct share_mode_entry *se = &lck->share_modes[i];
+		if (!is_valid_share_mode_entry(se)) {
+			continue;
+		}
+		/* But not to ourselves... */
+		if (procid_is_me(&se->pid)) {
+			continue;
+		}
+
+		DEBUG(10,("rename_share_filename: sending rename message to pid %u "
+			"dev %x, inode  %.0f sharepath %s newname %s\n",
+			(unsigned int)procid_to_pid(&se->pid),
+			(unsigned int)lck->dev, (double)lck->ino,
+			lck->servicepath, lck->filename ));
+
+		become_root();
+		message_send_pid(se->pid, MSG_SMB_FILE_RENAME,
+				frm, msg_len, True);
+		unbecome_root();
+	}
+
+	return True;
+}
+
+BOOL get_delete_on_close_flag(SMB_DEV_T dev, SMB_INO_T inode)
 {
 	BOOL result;
 	struct share_mode_lock *lck = get_share_mode_lock(NULL, dev, inode, NULL, NULL);
@@ -667,7 +884,7 @@ BOOL get_delete_on_close_flag(SMB_DEV_T dev, SMB_INO_T inode,
 		return False;
 	}
 	result = lck->delete_on_close;
-	talloc_free(lck);
+	TALLOC_FREE(lck);
 	return result;
 }
 
@@ -835,7 +1052,7 @@ BOOL del_share_mode(struct share_mode_lock *lck, files_struct *fsp)
 {
 	struct share_mode_entry entry, *e;
 
-	fill_share_mode_entry(&entry, fsp, 0, 0);
+	fill_share_mode_entry(&entry, fsp, 0, NO_OPLOCK);
 
 	e = find_share_mode_entry(lck, &entry);
 	if (e == NULL) {
@@ -871,7 +1088,7 @@ BOOL remove_share_oplock(struct share_mode_lock *lck, files_struct *fsp)
 {
 	struct share_mode_entry entry, *e;
 
-	fill_share_mode_entry(&entry, fsp, 0, 0);
+	fill_share_mode_entry(&entry, fsp, 0, NO_OPLOCK);
 
 	e = find_share_mode_entry(lck, &entry);
 	if (e == NULL) {
@@ -892,7 +1109,7 @@ BOOL downgrade_share_oplock(struct share_mode_lock *lck, files_struct *fsp)
 {
 	struct share_mode_entry entry, *e;
 
-	fill_share_mode_entry(&entry, fsp, 0, 0);
+	fill_share_mode_entry(&entry, fsp, 0, NO_OPLOCK);
 
 	e = find_share_mode_entry(lck, &entry);
 	if (e == NULL) {
@@ -955,6 +1172,55 @@ NTSTATUS can_set_delete_on_close(files_struct *fsp, BOOL delete_on_close,
 	return NT_STATUS_OK;
 }
 
+/*************************************************************************
+ Return a talloced copy of a UNIX_USER_TOKEN. NULL on fail.
+ (Should this be in locking.c.... ?).
+*************************************************************************/
+
+static UNIX_USER_TOKEN *copy_unix_token(TALLOC_CTX *ctx, UNIX_USER_TOKEN *tok)
+{
+	UNIX_USER_TOKEN *cpy;
+
+	if (tok == NULL) {
+		return NULL;
+	}
+
+	cpy = TALLOC_P(ctx, UNIX_USER_TOKEN);
+	if (!cpy) {
+		return NULL;
+	}
+
+	cpy->uid = tok->uid;
+	cpy->gid = tok->gid;
+	cpy->ngroups = tok->ngroups;
+	if (tok->ngroups) {
+		/* Make this a talloc child of cpy. */
+		cpy->groups = TALLOC_ARRAY(cpy, gid_t, tok->ngroups);
+		if (!cpy->groups) {
+			return NULL;
+		}
+		memcpy(cpy->groups, tok->groups, tok->ngroups * sizeof(gid_t));
+	}
+	return cpy;
+}
+
+/****************************************************************************
+ Replace the delete on close token.
+****************************************************************************/
+
+void set_delete_on_close_token(struct share_mode_lock *lck, UNIX_USER_TOKEN *tok)
+{
+	/* Ensure there's no token. */
+	if (lck->delete_token) {
+		TALLOC_FREE(lck->delete_token); /* Also deletes groups... */
+		lck->delete_token = NULL;
+	}
+
+	/* Copy the new token (can be NULL). */
+	lck->delete_token = copy_unix_token(lck, tok);
+	lck->modified = True;
+}
+
 /****************************************************************************
  Sets the delete on close flag over all share modes on this file.
  Modify the share mode entry for all files open
@@ -962,9 +1228,12 @@ NTSTATUS can_set_delete_on_close(files_struct *fsp, BOOL delete_on_close,
  changed the delete on close flag. This will be noticed
  in the close code, the last closer will delete the file
  if flag is set.
+ Note that setting this to any value clears the initial_delete_on_close flag.
+ If delete_on_close is True this makes a copy of any UNIX_USER_TOKEN into the
+ lck entry.
 ****************************************************************************/
 
-BOOL set_delete_on_close(files_struct *fsp, BOOL delete_on_close)
+BOOL set_delete_on_close(files_struct *fsp, BOOL delete_on_close, UNIX_USER_TOKEN *tok)
 {
 	struct share_mode_lock *lck;
 	
@@ -981,12 +1250,22 @@ BOOL set_delete_on_close(files_struct *fsp, BOOL delete_on_close)
 	if (lck == NULL) {
 		return False;
 	}
+
 	if (lck->delete_on_close != delete_on_close) {
+		set_delete_on_close_token(lck, tok);
 		lck->delete_on_close = delete_on_close;
+		if (delete_on_close) {
+			SMB_ASSERT(lck->delete_token != NULL);
+		}
 		lck->modified = True;
 	}
 
-	talloc_free(lck);
+	if (lck->initial_delete_on_close) {
+		lck->initial_delete_on_close = False;
+		lck->modified = True;
+	}
+
+	TALLOC_FREE(lck);
 	return True;
 }
 
@@ -1007,9 +1286,11 @@ static int traverse_fn(TDB_CONTEXT *the_tdb, TDB_DATA kbuf, TDB_DATA dbuf,
 	data = (struct locking_data *)dbuf.dptr;
 	shares = (struct share_mode_entry *)(dbuf.dptr + sizeof(*data));
 	sharepath = dbuf.dptr + sizeof(*data) +
-		data->u.s.num_share_mode_entries*sizeof(*shares);
+		data->u.s.num_share_mode_entries*sizeof(*shares) +
+		data->u.s.delete_token_size;
 	fname = dbuf.dptr + sizeof(*data) +
 		data->u.s.num_share_mode_entries*sizeof(*shares) +
+		data->u.s.delete_token_size +
 		strlen(sharepath) + 1;
 
 	for (i=0;i<data->u.s.num_share_mode_entries;i++) {

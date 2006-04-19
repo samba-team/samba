@@ -75,30 +75,9 @@ static BOOL rpc_dc_name(const char *domain, fstring srv_name, struct in_addr *ip
 	struct ip_service *ip_list = NULL;
 	struct in_addr dc_ip, exclude_ip;
 	int count, i;
-	BOOL use_pdc_only;
 	NTSTATUS result;
 	
 	zero_ip(&exclude_ip);
-
-	use_pdc_only = must_use_pdc(domain);
-	
-	/* Lookup domain controller name */
-	   
-	if ( use_pdc_only && get_pdc_ip(domain, &dc_ip) ) 
-	{
-		DEBUG(10,("rpc_dc_name: Atempting to lookup PDC to avoid sam sync delays\n"));
-		
-		/* check the connection cache and perform the node status 
-		   lookup only if the IP is not found to be bad */
-
-		if (name_status_find(domain, 0x1b, 0x20, dc_ip, srv_name) ) {
-			result = check_negative_conn_cache( domain, srv_name );
-			if ( NT_STATUS_IS_OK(result) )
-				goto done;
-		}
-		/* Didn't get name, remember not to talk to this DC. */
-		exclude_ip = dc_ip;
-	}
 
 	/* get a list of all domain controllers */
 	
@@ -108,13 +87,6 @@ static BOOL rpc_dc_name(const char *domain, fstring srv_name, struct in_addr *ip
 	}
 
 	/* Remove the entry we've already failed with (should be the PDC). */
-
-	if ( use_pdc_only ) {
-		for (i = 0; i < count; i++) {	
-			if (ip_equal( exclude_ip, ip_list[i].ip))
-				zero_ip(&ip_list[i].ip);
-		}
-	}
 
 	for (i = 0; i < count; i++) {
 		if (is_zero_ip(ip_list[i].ip))

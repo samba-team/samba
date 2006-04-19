@@ -380,7 +380,7 @@ NTSTATUS contact_winbind_auth_crap(const char *username,
 	}
 
 	if (flags & WBFLAG_PAM_UNIX_NAME) {
-		*unix_name = SMB_STRDUP((char *)response.extra_data);
+		*unix_name = SMB_STRDUP((char *)response.extra_data.data);
 		if (!*unix_name) {
 			free_response(&response);
 			return NT_STATUS_NO_MEMORY;
@@ -698,6 +698,7 @@ static void manage_client_ntlmssp_request(enum stdio_helper_mode stdio_helper_mo
 	} else if (NT_STATUS_IS_OK(nt_status)) {
 		char *reply_base64 = base64_encode_data_blob(reply);
 		x_fprintf(x_stdout, "AF %s\n", reply_base64);
+		SAFE_FREE(reply_base64);
 		DEBUG(10, ("NTLMSSP OK!\n"));
 		if (ntlmssp_state)
 			ntlmssp_end(&ntlmssp_state);
@@ -1173,7 +1174,7 @@ static BOOL manage_client_krb5_init(SPNEGO_DATA spnego)
 	       spnego.negTokenInit.mechListMIC.length);
 	principal[spnego.negTokenInit.mechListMIC.length] = '\0';
 
-	retval = cli_krb5_get_ticket(principal, 0, &tkt, &session_key_krb5, 0);
+	retval = cli_krb5_get_ticket(principal, 0, &tkt, &session_key_krb5, 0, NULL);
 
 	if (retval) {
 
@@ -1190,13 +1191,12 @@ static BOOL manage_client_krb5_init(SPNEGO_DATA spnego)
 
 		pstr_sprintf(user, "%s@%s", opt_username, opt_domain);
 
-		if ((retval = kerberos_kinit_password(user, opt_password, 
-						      0, NULL, NULL))) {
+		if ((retval = kerberos_kinit_password(user, opt_password, 0, NULL))) {
 			DEBUG(10, ("Requesting TGT failed: %s\n", error_message(retval)));
 			return False;
 		}
 
-		retval = cli_krb5_get_ticket(principal, 0, &tkt, &session_key_krb5, 0);
+		retval = cli_krb5_get_ticket(principal, 0, &tkt, &session_key_krb5, 0, NULL);
 
 		if (retval) {
 			DEBUG(10, ("Kinit suceeded, but getting a ticket failed: %s\n", error_message(retval)));
@@ -1481,7 +1481,7 @@ static void manage_ntlm_server_1_request(enum stdio_helper_mode stdio_helper_mod
 								(const unsigned char *)lm_key,
 								sizeof(lm_key));
 					x_fprintf(x_stdout, "LANMAN-Session-Key: %s\n", hex_lm_key);
-					talloc_free(hex_lm_key);
+					TALLOC_FREE(hex_lm_key);
 				}
 
 				if (ntlm_server_1_user_session_key 
@@ -1491,7 +1491,7 @@ static void manage_ntlm_server_1_request(enum stdio_helper_mode stdio_helper_mod
 									  (const unsigned char *)user_session_key, 
 									  sizeof(user_session_key));
 					x_fprintf(x_stdout, "User-Session-Key: %s\n", hex_user_session_key);
-					talloc_free(hex_user_session_key);
+					TALLOC_FREE(hex_user_session_key);
 				}
 			}
 		}
@@ -1682,7 +1682,7 @@ static BOOL check_auth_crap(void)
 		hex_lm_key = hex_encode(NULL, (const unsigned char *)lm_key,
 					sizeof(lm_key));
 		x_fprintf(x_stdout, "LM_KEY: %s\n", hex_lm_key);
-		talloc_free(hex_lm_key);
+		TALLOC_FREE(hex_lm_key);
 	}
 	if (request_user_session_key 
 	    && (memcmp(zeros, user_session_key, 
@@ -1690,7 +1690,7 @@ static BOOL check_auth_crap(void)
 		hex_user_session_key = hex_encode(NULL, (const unsigned char *)user_session_key, 
 						  sizeof(user_session_key));
 		x_fprintf(x_stdout, "NT_KEY: %s\n", hex_user_session_key);
-		talloc_free(hex_user_session_key);
+		TALLOC_FREE(hex_user_session_key);
 	}
 
         return True;
@@ -1758,7 +1758,7 @@ enum {
 	
 	/* Samba client initialisation */
 
-	if (!lp_load(dyn_CONFIGFILE, True, False, False)) {
+	if (!lp_load(dyn_CONFIGFILE, True, False, False, True)) {
 		d_fprintf(stderr, "ntlm_auth: error opening config file %s. Error was %s\n",
 			dyn_CONFIGFILE, strerror(errno));
 		exit(1);

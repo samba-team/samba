@@ -71,7 +71,7 @@ static BOOL create_next_pdu_ntlmssp(pipes_struct *p)
 	 */
 
 	if(p->fault_state) {
-		setup_fault_pdu(p, NT_STATUS(0x1c010002));
+		setup_fault_pdu(p, NT_STATUS(DCERPC_FAULT_OP_RNG_ERROR));
 		return True;
 	}
 
@@ -284,7 +284,7 @@ static BOOL create_next_pdu_schannel(pipes_struct *p)
 	 */
 
 	if(p->fault_state) {
-		setup_fault_pdu(p, NT_STATUS(0x1c010002));
+		setup_fault_pdu(p, NT_STATUS(DCERPC_FAULT_OP_RNG_ERROR));
 		return True;
 	}
 
@@ -460,7 +460,7 @@ static BOOL create_next_pdu_noauth(pipes_struct *p)
 	 */
 
 	if(p->fault_state) {
-		setup_fault_pdu(p, NT_STATUS(0x1c010002));
+		setup_fault_pdu(p, NT_STATUS(DCERPC_FAULT_OP_RNG_ERROR));
 		return True;
 	}
 
@@ -606,7 +606,7 @@ static BOOL pipe_ntlmssp_verify_final(pipes_struct *p, DATA_BLOB *p_resp_blob)
 	NTSTATUS status;
 	AUTH_NTLMSSP_STATE *a = p->auth.a_u.auth_ntlmssp_state;
 
-	DEBUG(5,("pipe_ntlmssp_verify_final: checking user details\n"));
+	DEBUG(5,("pipe_ntlmssp_verify_final: pipe %s checking user details\n", p->name));
 
 	ZERO_STRUCT(reply);
 
@@ -616,9 +616,9 @@ static BOOL pipe_ntlmssp_verify_final(pipes_struct *p, DATA_BLOB *p_resp_blob)
 	memset(p->wks, '\0', sizeof(p->wks));
 
 	/* Set up for non-authenticated user. */
-	delete_nt_token(&p->pipe_user.nt_user_token);
-	p->pipe_user.ngroups = 0;
-	SAFE_FREE( p->pipe_user.groups);
+	TALLOC_FREE(p->pipe_user.nt_user_token);
+	p->pipe_user.ut.ngroups = 0;
+	SAFE_FREE( p->pipe_user.ut.groups);
 
 	status = auth_ntlmssp_update(a, *p_resp_blob, &reply);
 
@@ -629,6 +629,27 @@ static BOOL pipe_ntlmssp_verify_final(pipes_struct *p, DATA_BLOB *p_resp_blob)
 		return False;
 	}
 
+	/* Finally - if the pipe negotiated integrity (sign) or privacy (seal)
+	   ensure the underlying NTLMSSP flags are also set. If not we should
+	   refuse the bind. */
+
+	if (p->auth.auth_level == PIPE_AUTH_LEVEL_INTEGRITY) {
+		if (!(a->ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_SIGN)) {
+			DEBUG(0,("pipe_ntlmssp_verify_final: pipe %s : packet integrity requested "
+				"but client declined signing.\n",
+					p->name ));
+			return False;
+		}
+	}
+	if (p->auth.auth_level == PIPE_AUTH_LEVEL_PRIVACY) {
+		if (!(a->ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_SEAL)) {
+			DEBUG(0,("pipe_ntlmssp_verify_final: pipe %s : packet privacy requested "
+				"but client declined sealing.\n",
+					p->name ));
+			return False;
+		}
+	}
+	
 	fstrcpy(p->user_name, a->ntlmssp_state->user);
 	fstrcpy(p->pipe_user_name, a->server_info->unix_name);
 	fstrcpy(p->domain, a->ntlmssp_state->domain);
@@ -641,8 +662,8 @@ static BOOL pipe_ntlmssp_verify_final(pipes_struct *p, DATA_BLOB *p_resp_blob)
 	 * Store the UNIX credential data (uid/gid pair) in the pipe structure.
 	 */
 
-	p->pipe_user.uid = a->server_info->uid;
-	p->pipe_user.gid = a->server_info->gid;
+	p->pipe_user.ut.uid = a->server_info->uid;
+	p->pipe_user.ut.gid = a->server_info->gid;
 	
 	/*
 	 * Copy the session key from the ntlmssp state.
@@ -654,16 +675,18 @@ static BOOL pipe_ntlmssp_verify_final(pipes_struct *p, DATA_BLOB *p_resp_blob)
 		return False;
 	}
 
-	p->pipe_user.ngroups = a->server_info->n_groups;
-	if (p->pipe_user.ngroups) {
-		if (!(p->pipe_user.groups = memdup(a->server_info->groups, sizeof(gid_t) * p->pipe_user.ngroups))) {
+	p->pipe_user.ut.ngroups = a->server_info->n_groups;
+	if (p->pipe_user.ut.ngroups) {
+		if (!(p->pipe_user.ut.groups = memdup(a->server_info->groups,
+						sizeof(gid_t) * p->pipe_user.ut.ngroups))) {
 			DEBUG(0,("failed to memdup group list to p->pipe_user.groups\n"));
 			return False;
 		}
 	}
 
 	if (a->server_info->ptok) {
-		p->pipe_user.nt_user_token = dup_nt_token(a->server_info->ptok);
+		p->pipe_user.nt_user_token =
+			dup_nt_token(NULL, a->server_info->ptok);
 	} else {
 		DEBUG(1,("Error: Authmodule failed to provide nt_user_token\n"));
 		p->pipe_user.nt_user_token = NULL;
@@ -1030,7 +1053,7 @@ NTSTATUS rpc_pipe_register_commands(int version, const char *clnt, const char *s
            rpc_lookup will still be valid afterwards.  It could then succeed if
            called again later */
 	rpc_lookup_size++;
-        rpc_entry = SMB_REALLOC_ARRAY(rpc_lookup, struct rpc_table, rpc_lookup_size);
+        rpc_entry = SMB_REALLOC_ARRAY_KEEP_OLD_ON_ERROR(rpc_lookup, struct rpc_table, rpc_lookup_size);
         if (NULL == rpc_entry) {
                 rpc_lookup_size--;
                 DEBUG(0, ("rpc_pipe_register_commands: memory allocation failed\n"));
@@ -1044,6 +1067,9 @@ NTSTATUS rpc_pipe_register_commands(int version, const char *clnt, const char *s
         rpc_entry->pipe.clnt = SMB_STRDUP(clnt);
         rpc_entry->pipe.srv = SMB_STRDUP(srv);
         rpc_entry->cmds = SMB_REALLOC_ARRAY(rpc_entry->cmds, struct api_struct, rpc_entry->n_cmds + size);
+	if (!rpc_entry->cmds) {
+		return NT_STATUS_NO_MEMORY;
+	}
         memcpy(rpc_entry->cmds + rpc_entry->n_cmds, cmds, size * sizeof(struct api_struct));
         rpc_entry->n_cmds += size;
         
@@ -1282,7 +1308,7 @@ static BOOL pipe_schannel_auth_bind(pipes_struct *p, prs_struct *rpc_in_p,
 	RPC_AUTH_SCHANNEL_NEG neg;
 	RPC_AUTH_VERIFIER auth_verifier;
 	BOOL ret;
-	struct dcinfo stored_dcinfo;
+	struct dcinfo *pdcinfo;
 	uint32 flags;
 
 	if (!smb_io_rpc_auth_schannel_neg("", &neg, rpc_in_p, 0)) {
@@ -1290,10 +1316,14 @@ static BOOL pipe_schannel_auth_bind(pipes_struct *p, prs_struct *rpc_in_p,
 		return False;
 	}
 
-	ZERO_STRUCT(stored_dcinfo);
+	/*
+	 * The neg.myname key here must match the remote computer name
+	 * given in the DOM_CLNT_SRV.uni_comp_name used on all netlogon pipe
+	 * operations that use credentials.
+	 */
 
 	become_root();
-	ret = secrets_restore_schannel_session_info(p->mem_ctx, neg.myname, &stored_dcinfo);
+	ret = secrets_restore_schannel_session_info(p->mem_ctx, neg.myname, &pdcinfo);
 	unbecome_root();
 
 	if (!ret) {
@@ -1303,28 +1333,23 @@ static BOOL pipe_schannel_auth_bind(pipes_struct *p, prs_struct *rpc_in_p,
 
 	p->auth.a_u.schannel_auth = TALLOC_P(p->pipe_state_mem_ctx, struct schannel_auth_struct);
 	if (!p->auth.a_u.schannel_auth) {
+		TALLOC_FREE(pdcinfo);
 		return False;
 	}
 
 	memset(p->auth.a_u.schannel_auth->sess_key, 0, sizeof(p->auth.a_u.schannel_auth->sess_key));
-	memcpy(p->auth.a_u.schannel_auth->sess_key, stored_dcinfo.sess_key, sizeof(stored_dcinfo.sess_key));
+	memcpy(p->auth.a_u.schannel_auth->sess_key, pdcinfo->sess_key,
+			sizeof(pdcinfo->sess_key));
+
+	TALLOC_FREE(pdcinfo);
 
 	p->auth.a_u.schannel_auth->seq_num = 0;
 
 	/*
 	 * JRA. Should we also copy the schannel session key into the pipe session key p->session_key
-	 * here ? We do that for NTLMSPP, but the session key is already set up from the vuser
+	 * here ? We do that for NTLMSSP, but the session key is already set up from the vuser
 	 * struct of the person who opened the pipe. I need to test this further. JRA.
 	 */
-
-	/* The client opens a second RPC NETLOGON pipe without
-		doing a auth2. The credentials for the schannel are
-		re-used from the auth2 the client did before. */
-	p->dc = TALLOC_ZERO_P(p->pipe_state_mem_ctx, struct dcinfo);
-	if (!p->dc) {
-		return False;
-	}
-	*p->dc = stored_dcinfo;
 
 	init_rpc_hdr_auth(&auth_info, RPC_SCHANNEL_AUTH_TYPE, pauth_info->auth_level, RPC_HDR_AUTH_LEN, 1);
 	if(!smb_io_rpc_hdr_auth("", &auth_info, pout_auth, 0)) {
@@ -2246,7 +2271,7 @@ BOOL api_rpcTNP(pipes_struct *p, const char *rpc_name,
 		 * and not put the pipe into fault state. JRA.
 		 */
 		DEBUG(4, ("unknown\n"));
-		setup_fault_pdu(p, NT_STATUS(0x1c010002));
+		setup_fault_pdu(p, NT_STATUS(DCERPC_FAULT_OP_RNG_ERROR));
 		return True;
 	}
 
@@ -2264,7 +2289,7 @@ BOOL api_rpcTNP(pipes_struct *p, const char *rpc_name,
 	if (p->bad_handle_fault_state) {
 		DEBUG(4,("api_rpcTNP: bad handle fault return.\n"));
 		p->bad_handle_fault_state = False;
-		setup_fault_pdu(p, NT_STATUS(0x1C00001A));
+		setup_fault_pdu(p, NT_STATUS(DCERPC_FAULT_CONTEXT_MISMATCH));
 		return True;
 	}
 

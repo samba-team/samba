@@ -344,7 +344,7 @@ void init_samr_r_get_usrdom_pwinfo(SAMR_R_GET_USRDOM_PWINFO *r_u, NTSTATUS statu
 {
 	DEBUG(5, ("init_samr_r_get_usrdom_pwinfo\n"));
 	
-	r_u->unknown_0 = 0x0000;
+	r_u->min_pwd_length = 0x0000;
 
 	/*
 	 * used to be 	
@@ -354,7 +354,7 @@ void init_samr_r_get_usrdom_pwinfo(SAMR_R_GET_USRDOM_PWINFO *r_u, NTSTATUS statu
 	r_u->unknown_1 = 0x01D1;
 	r_u->unknown_1 = 0x0015;
 
-	r_u->unknown_2 = 0x00000000;
+	r_u->password_properties = 0x00000000;
 
 	r_u->status = status;
 }
@@ -375,12 +375,13 @@ BOOL samr_io_r_get_usrdom_pwinfo(const char *desc, SAMR_R_GET_USRDOM_PWINFO * r_
 	if(!prs_align(ps))
 		return False;
 
-	if(!prs_uint16("unknown_0", ps, depth, &r_u->unknown_0))
+	if(!prs_uint16("min_pwd_length", ps, depth, &r_u->min_pwd_length))
 		return False;
 	if(!prs_uint16("unknown_1", ps, depth, &r_u->unknown_1))
 		return False;
-	if(!prs_uint32("unknown_2", ps, depth, &r_u->unknown_2))
+	if(!prs_uint32("password_properties", ps, depth, &r_u->password_properties))
 		return False;
+
 	if(!prs_ntstatus("status   ", ps, depth, &r_u->status))
 		return False;
 
@@ -918,6 +919,21 @@ BOOL samr_io_r_query_dom_info(const char *desc, SAMR_R_QUERY_DOMAIN_INFO * r_u,
 }
 
 /*******************************************************************
+reads or writes a structure.
+********************************************************************/
+
+void init_samr_q_set_sec_obj(SAMR_Q_SET_SEC_OBJ * q_u,
+			     POLICY_HND *pol, uint32 sec_info, SEC_DESC_BUF *buf)
+{
+	DEBUG(5, ("samr_init_samr_q_set_sec_obj\n"));
+
+	q_u->pol = *pol;
+	q_u->sec_info = sec_info;
+	q_u->buf = buf;
+}
+
+
+/*******************************************************************
 reads or writes a SAMR_R_SET_SEC_OBJ structure.
 ********************************************************************/
 
@@ -1003,7 +1019,7 @@ inits a SAM_ENTRY1 structure.
 static void init_sam_entry1(SAM_ENTRY1 *sam, uint32 user_idx,
 			    UNISTR2 *sam_name, UNISTR2 *sam_full,
 			    UNISTR2 *sam_desc, uint32 rid_user,
-			    uint16 acb_info)
+			    uint32 acb_info)
 {
 	DEBUG(5, ("init_sam_entry1\n"));
 
@@ -1039,10 +1055,7 @@ static BOOL sam_io_sam_entry1(const char *desc, SAM_ENTRY1 * sam,
 
 	if(!prs_uint32("rid_user ", ps, depth, &sam->rid_user))
 		return False;
-	if(!prs_uint16("acb_info ", ps, depth, &sam->acb_info))
-		return False;
-
-	if(!prs_align(ps))
+	if(!prs_uint32("acb_info ", ps, depth, &sam->acb_info))
 		return False;
 
 	if (!smb_io_unihdr("hdr_acct_name", &sam->hdr_acct_name, ps, depth))
@@ -1084,7 +1097,7 @@ inits a SAM_ENTRY2 structure.
 ********************************************************************/
 static void init_sam_entry2(SAM_ENTRY2 * sam, uint32 user_idx,
 			    UNISTR2 *sam_name, UNISTR2 *sam_desc,
-			    uint32 rid_user, uint16 acb_info)
+			    uint32 rid_user, uint32 acb_info)
 {
 	DEBUG(5, ("init_sam_entry2\n"));
 
@@ -1117,10 +1130,7 @@ static BOOL sam_io_sam_entry2(const char *desc, SAM_ENTRY2 * sam,
 
 	if(!prs_uint32("rid_user ", ps, depth, &sam->rid_user))
 		return False;
-	if(!prs_uint16("acb_info ", ps, depth, &sam->acb_info))
-		return False;
-
-	if(!prs_align(ps))
+	if(!prs_uint32("acb_info ", ps, depth, &sam->acb_info))
 		return False;
 
 	if(!smb_io_unihdr("unihdr", &sam->hdr_srv_name, ps, depth))	/* account name unicode string header */
@@ -1321,7 +1331,7 @@ inits a SAMR_Q_ENUM_DOM_USERS structure.
 
 void init_samr_q_enum_dom_users(SAMR_Q_ENUM_DOM_USERS * q_e, POLICY_HND *pol,
 				uint32 start_idx,
-				uint16 acb_mask, uint16 unk_1, uint32 size)
+				uint32 acb_mask, uint32 size)
 {
 	DEBUG(5, ("init_samr_q_enum_dom_users\n"));
 
@@ -1329,7 +1339,6 @@ void init_samr_q_enum_dom_users(SAMR_Q_ENUM_DOM_USERS * q_e, POLICY_HND *pol,
 
 	q_e->start_idx = start_idx;	/* zero indicates lots */
 	q_e->acb_mask = acb_mask;
-	q_e->unknown_1 = unk_1;
 	q_e->max_size = size;
 }
 
@@ -1354,9 +1363,7 @@ BOOL samr_io_q_enum_dom_users(const char *desc, SAMR_Q_ENUM_DOM_USERS * q_e,
 
 	if(!prs_uint32("start_idx", ps, depth, &q_e->start_idx))
 		return False;
-	if(!prs_uint16("acb_mask ", ps, depth, &q_e->acb_mask))
-		return False;
-	if(!prs_uint16("unknown_1", ps, depth, &q_e->unknown_1))
+	if(!prs_uint32("acb_mask ", ps, depth, &q_e->acb_mask))
 		return False;
 
 	if(!prs_uint32("max_size ", ps, depth, &q_e->max_size))
@@ -2300,6 +2307,69 @@ BOOL samr_io_group_info4(const char *desc, GROUP_INFO4 * gr4,
 }
 
 /*******************************************************************
+inits a GROUP_INFO5 structure.
+********************************************************************/
+
+void init_samr_group_info5(GROUP_INFO5 * gr5,
+			   char *acct_name, char *acct_desc,
+			   uint32 num_members)
+{
+	DEBUG(5, ("init_samr_group_info5\n"));
+
+	gr5->group_attr = (SE_GROUP_MANDATORY|SE_GROUP_ENABLED_BY_DEFAULT); /* why not | SE_GROUP_ENABLED ? */
+	gr5->num_members = num_members;
+
+	init_unistr2(&gr5->uni_acct_name, acct_name, UNI_FLAGS_NONE);
+	init_uni_hdr(&gr5->hdr_acct_name, &gr5->uni_acct_name);
+	init_unistr2(&gr5->uni_acct_desc, acct_desc, UNI_FLAGS_NONE);
+	init_uni_hdr(&gr5->hdr_acct_desc, &gr5->uni_acct_desc);
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+
+BOOL samr_io_group_info5(const char *desc, GROUP_INFO5 * gr5,
+			 prs_struct *ps, int depth)
+{
+	uint16 dummy = 1;
+
+	if (gr5 == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "samr_io_group_info5");
+	depth++;
+
+	if(!prs_uint16("level", ps, depth, &dummy))
+		return False;
+
+	if(!prs_align(ps))
+		return False;
+
+	if(!smb_io_unihdr("hdr_acct_name", &gr5->hdr_acct_name, ps, depth))
+		return False;
+
+	if(!prs_uint32("group_attr", ps, depth, &gr5->group_attr))
+		return False;
+	if(!prs_uint32("num_members", ps, depth, &gr5->num_members))
+		return False;
+
+	if(!smb_io_unihdr("hdr_acct_desc", &gr5->hdr_acct_desc, ps, depth))
+		return False;
+
+	if(!smb_io_unistr2("uni_acct_name", &gr5->uni_acct_name,
+			   gr5->hdr_acct_name.buffer, ps, depth))
+		return False;
+
+	if(!smb_io_unistr2("uni_acct_desc", &gr5->uni_acct_desc,
+			   gr5->hdr_acct_desc.buffer, ps, depth))
+		return False;
+
+	return True;
+}
+
+
+/*******************************************************************
 reads or writes a structure.
 ********************************************************************/
 
@@ -2333,6 +2403,10 @@ static BOOL samr_group_info_ctr(const char *desc, GROUP_INFO_CTR **ctr,
 		break;
 	case 4:
 		if(!samr_io_group_info4("group_info4", &(*ctr)->group.info4, ps, depth))
+			return False;
+		break;
+	case 5:
+		if(!samr_io_group_info5("group_info5", &(*ctr)->group.info5, ps, depth))
 			return False;
 		break;
 	default:
@@ -3547,6 +3621,28 @@ BOOL samr_io_alias_info3(const char *desc, ALIAS_INFO3 *al3,
 reads or writes a structure.
 ********************************************************************/
 
+BOOL samr_io_alias_info2(const char *desc, ALIAS_INFO2 *al2,
+			 prs_struct *ps, int depth)
+{
+	if (al2 == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "samr_io_alias_info2");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+
+	if (!prs_unistr4("name", ps, depth, &al2->name))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+
 BOOL samr_alias_info_ctr(const char *desc, prs_struct *ps, int depth, ALIAS_INFO_CTR * ctr)
 {
 	if ( !ctr )
@@ -3563,6 +3659,10 @@ BOOL samr_alias_info_ctr(const char *desc, prs_struct *ps, int depth, ALIAS_INFO
 	switch (ctr->level) {
 	case 1: 
 		if(!samr_io_alias_info1("alias_info1", &ctr->alias.info1, ps, depth))
+			return False;
+		break;
+	case 2: 
+		if(!samr_io_alias_info2("alias_info2", &ctr->alias.info2, ps, depth))
 			return False;
 		break;
 	case 3: 
@@ -4467,6 +4567,9 @@ BOOL samr_io_r_delete_dom_alias(const char *desc, SAMR_R_DELETE_DOM_ALIAS * r_u,
 	if(!prs_align(ps))
 		return False;
 
+	if(!smb_io_pol_hnd("pol", &r_u->pol, ps, depth))
+		return False;
+
 	if(!prs_ntstatus("status", ps, depth, &r_u->status))
 		return False;
 
@@ -5031,7 +5134,7 @@ inits a SAMR_Q_QUERY_USERINFO structure.
 ********************************************************************/
 
 void init_samr_q_query_userinfo(SAMR_Q_QUERY_USERINFO * q_u,
-				POLICY_HND *hnd, uint16 switch_value)
+				const POLICY_HND *hnd, uint16 switch_value)
 {
 	DEBUG(5, ("init_samr_q_query_userinfo\n"));
 
@@ -5404,12 +5507,40 @@ static BOOL sam_io_user_info24(const char *desc, SAM_USER_INFO_24 * usr,
 	if (MARSHALLING(ps) && (usr->pw_len != 0)) {
 		if (!prs_uint16("pw_len", ps, depth, &usr->pw_len))
 			return False;
+	} else if (UNMARSHALLING(ps)) {
+		if (!prs_uint16("pw_len", ps, depth, &usr->pw_len))
+			return False;
 	}
+
+	return True;
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+
+static BOOL sam_io_user_info26(const char *desc, SAM_USER_INFO_26 * usr,
+			       prs_struct *ps, int depth)
+{
+	if (usr == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "sam_io_user_info26");
+	depth++;
+
 	if(!prs_align(ps))
+		return False;
+
+	if(!prs_uint8s(False, "password", ps, depth, usr->pass, 
+		       sizeof(usr->pass)))
+		return False;
+	
+	if (!prs_uint8("pw_len", ps, depth, &usr->pw_len))
 		return False;
 
 	return True;
 }
+
 
 /*************************************************************************
  init_sam_user_info23
@@ -5506,7 +5637,11 @@ void init_sam_user_info23W(SAM_USER_INFO_23 * usr, NTTIME * logon_time,	/* all z
 	copy_unistr2(&usr->uni_munged_dial, mung_dial);
 	init_uni_hdr(&usr->hdr_munged_dial, &usr->uni_munged_dial);
 
-	memcpy(&usr->logon_hrs, hrs, sizeof(usr->logon_hrs));
+	if (hrs) {
+		memcpy(&usr->logon_hrs, hrs, sizeof(usr->logon_hrs));
+	} else {
+		ZERO_STRUCT(usr->logon_hrs);
+	}
 }
 
 /*************************************************************************
@@ -5598,7 +5733,11 @@ void init_sam_user_info23A(SAM_USER_INFO_23 * usr, NTTIME * logon_time,	/* all z
 
 	data_blob_free(&blob);
 	
-	memcpy(&usr->logon_hrs, hrs, sizeof(usr->logon_hrs));
+	if (hrs) {
+		memcpy(&usr->logon_hrs, hrs, sizeof(usr->logon_hrs));
+	} else {
+		ZERO_STRUCT(usr->logon_hrs);
+	}
 }
 
 /*******************************************************************
@@ -5937,7 +6076,11 @@ void init_sam_user_info21W(SAM_USER_INFO_21 * usr,
 	copy_unistr2(&usr->uni_munged_dial, mung_dial);
 	init_uni_hdr(&usr->hdr_munged_dial, &usr->uni_munged_dial);
 
-	memcpy(&usr->logon_hrs, hrs, sizeof(usr->logon_hrs));
+	if (hrs) {
+		memcpy(&usr->logon_hrs, hrs, sizeof(usr->logon_hrs));
+	} else {
+		ZERO_STRUCT(usr->logon_hrs);
+	}
 }
 
 /*************************************************************************
@@ -5947,7 +6090,7 @@ void init_sam_user_info21W(SAM_USER_INFO_21 * usr,
 
  *************************************************************************/
 
-NTSTATUS init_sam_user_info21A(SAM_USER_INFO_21 *usr, SAM_ACCOUNT *pw, DOM_SID *domain_sid)
+NTSTATUS init_sam_user_info21A(SAM_USER_INFO_21 *usr, struct samu *pw, DOM_SID *domain_sid)
 {
 	NTTIME 		logon_time, logoff_time, kickoff_time,
 			pass_last_set_time, pass_can_change_time,
@@ -6213,7 +6356,7 @@ static BOOL sam_io_user_info21(const char *desc, SAM_USER_INFO_21 * usr,
 	return True;
 }
 
-void init_sam_user_info20A(SAM_USER_INFO_20 *usr, SAM_ACCOUNT *pw)
+void init_sam_user_info20A(SAM_USER_INFO_20 *usr, struct samu *pw)
 {
 	const char *munged_dial = pdb_get_munged_dial(pw);
 	DATA_BLOB blob = base64_decode_data_blob(munged_dial);
@@ -6475,6 +6618,16 @@ static BOOL samr_io_userinfo_ctr(const char *desc, SAM_USERINFO_CTR **ppctr,
 		}
 		ret = sam_io_user_info25("", ctr->info.id25, ps, depth);
 		break;
+	case 26:
+		if (UNMARSHALLING(ps))
+			ctr->info.id26 = PRS_ALLOC_MEM(ps,SAM_USER_INFO_26,1);
+
+		if (ctr->info.id26 == NULL) {
+			DEBUG(2,("samr_io_userinfo_ctr: info pointer not initialised\n"));
+			return False;
+		}
+		ret = sam_io_user_info26("", ctr->info.id26, ps,  depth);
+		break;
 	default:
 		DEBUG(2, ("samr_io_userinfo_ctr: unknown switch level 0x%x\n", ctr->switch_value));
 		ret = False;
@@ -6541,7 +6694,7 @@ inits a SAMR_Q_SET_USERINFO structure.
 ********************************************************************/
 
 void init_samr_q_set_userinfo(SAMR_Q_SET_USERINFO * q_u,
-			      POLICY_HND *hnd, DATA_BLOB *sess_key,
+			      const POLICY_HND *hnd, DATA_BLOB *sess_key,
 			      uint16 switch_value, void *info)
 {
 	DEBUG(5, ("init_samr_q_set_userinfo\n"));
@@ -6615,7 +6768,7 @@ inits a SAMR_Q_SET_USERINFO2 structure.
 ********************************************************************/
 
 void init_samr_q_set_userinfo2(SAMR_Q_SET_USERINFO2 * q_u,
-			       POLICY_HND *hnd, DATA_BLOB *sess_key,
+			       const POLICY_HND *hnd, DATA_BLOB *sess_key,
 			       uint16 switch_value, SAM_USERINFO_CTR * ctr)
 {
 	DEBUG(5, ("init_samr_q_set_userinfo2\n"));
@@ -6965,8 +7118,7 @@ void init_samr_q_connect_anon(SAMR_Q_CONNECT_ANON * q_u)
 
 	q_u->ptr = 1;
 	q_u->unknown_0 = 0x5c;	/* server name (?!!) */
-	q_u->unknown_1 = 0x01;
-	q_u->access_mask = 0x20;
+	q_u->access_mask = MAXIMUM_ALLOWED_ACCESS;
 }
 
 /*******************************************************************
@@ -6987,9 +7139,11 @@ BOOL samr_io_q_connect_anon(const char *desc, SAMR_Q_CONNECT_ANON * q_u,
 
 	if(!prs_uint32("ptr      ", ps, depth, &q_u->ptr))
 		return False;
-	if(!prs_uint16("unknown_0", ps, depth, &q_u->unknown_0))
-		return False;
-	if(!prs_uint16("unknown_1", ps, depth, &q_u->unknown_1))
+	if (q_u->ptr) {
+		if(!prs_uint16("unknown_0", ps, depth, &q_u->unknown_0))
+			return False;
+	}
+	if(!prs_align(ps))
 		return False;
 	if(!prs_uint32("access_mask", ps, depth, &q_u->access_mask))
 		return False;
@@ -7260,7 +7414,7 @@ inits a SAMR_R_CHGPASSWD_USER structure.
 
 void init_samr_r_chgpasswd_user(SAMR_R_CHGPASSWD_USER * r_u, NTSTATUS status)
 {
-	DEBUG(5, ("init_r_chgpasswd_user\n"));
+	DEBUG(5, ("init_samr_r_chgpasswd_user\n"));
 
 	r_u->status = status;
 }
@@ -7291,14 +7445,14 @@ BOOL samr_io_r_chgpasswd_user(const char *desc, SAMR_R_CHGPASSWD_USER * r_u,
 inits a SAMR_Q_CHGPASSWD3 structure.
 ********************************************************************/
 
-void init_samr_q_chgpasswd3(SAMR_Q_CHGPASSWD3 * q_u,
-			    const char *dest_host, const char *user_name,
-			    const uchar nt_newpass[516],
-			    const uchar nt_oldhash[16],
-			    const uchar lm_newpass[516],
-			    const uchar lm_oldhash[16])
+void init_samr_q_chgpasswd_user3(SAMR_Q_CHGPASSWD_USER3 * q_u,
+				 const char *dest_host, const char *user_name,
+				 const uchar nt_newpass[516],
+				 const uchar nt_oldhash[16],
+				 const uchar lm_newpass[516],
+				 const uchar lm_oldhash[16])
 {
-	DEBUG(5, ("init_samr_q_chgpasswd3\n"));
+	DEBUG(5, ("init_samr_q_chgpasswd_user3\n"));
 
 	q_u->ptr_0 = 1;
 	init_unistr2(&q_u->uni_dest_host, dest_host, UNI_FLAGS_NONE);
@@ -7322,13 +7476,13 @@ void init_samr_q_chgpasswd3(SAMR_Q_CHGPASSWD3 * q_u,
 reads or writes a structure.
 ********************************************************************/
 
-BOOL samr_io_q_chgpasswd3(const char *desc, SAMR_Q_CHGPASSWD3 * q_u,
-			  prs_struct *ps, int depth)
+BOOL samr_io_q_chgpasswd_user3(const char *desc, SAMR_Q_CHGPASSWD_USER3 * q_u,
+			       prs_struct *ps, int depth)
 {
 	if (q_u == NULL)
 		return False;
 
-	prs_debug(ps, depth, desc, "samr_io_q_chgpasswd3");
+	prs_debug(ps, depth, desc, "samr_io_q_chgpasswd_user3");
 	depth++;
 
 	if(!prs_align(ps))
@@ -7369,14 +7523,28 @@ BOOL samr_io_q_chgpasswd3(const char *desc, SAMR_Q_CHGPASSWD3 * q_u,
 }
 
 /*******************************************************************
-inits a SAMR_R_CHGPASSWD3 structure.
+inits a SAMR_R_CHGPASSWD_USER3 structure.
 ********************************************************************/
 
-void init_samr_r_chgpasswd3(SAMR_R_CHGPASSWD3 * r_u, NTSTATUS status)
+void init_samr_r_chgpasswd_user3(SAMR_R_CHGPASSWD_USER3 *r_u, NTSTATUS status, 
+				 SAMR_CHANGE_REJECT *reject, SAM_UNK_INFO_1 *info)
 {
-	DEBUG(5, ("init_r_chgpasswd3\n"));
+	DEBUG(5, ("init_samr_r_chgpasswd_user3\n"));
 
 	r_u->status = status;
+	r_u->info = 0;
+	r_u->ptr_info = 0;
+	r_u->reject = 0;
+	r_u->ptr_reject = 0;
+
+	if (info) {
+		r_u->info = info;
+		r_u->ptr_info = 1;
+	}
+	if (reject && (reject->reject_reason != Undefined)) {
+		r_u->reject = reject;
+		r_u->ptr_reject = 1;
+	}
 }
 
 /*******************************************************************
@@ -7413,41 +7581,37 @@ BOOL samr_io_change_reject(const char *desc, SAMR_CHANGE_REJECT *reject, prs_str
 reads or writes a structure.
 ********************************************************************/
 
-BOOL samr_io_r_chgpasswd3(const char *desc, SAMR_R_CHGPASSWD3 * r_u,
-			  prs_struct *ps, int depth)
+BOOL samr_io_r_chgpasswd_user3(const char *desc, SAMR_R_CHGPASSWD_USER3 *r_u,
+			       prs_struct *ps, int depth)
 {
-	uint32 ptr_info, ptr_reject;
-	
 	if (r_u == NULL)
 		return False;
 
-	prs_debug(ps, depth, desc, "samr_io_r_chgpasswd3");
+	prs_debug(ps, depth, desc, "samr_io_r_chgpasswd_user3");
 	depth++;
 
-	if(!prs_align(ps))
+	if (!prs_align(ps))
 		return False;
 
-	if(!prs_uint32("ptr_info", ps, depth, &ptr_info))
+	if (!prs_uint32("ptr_info", ps, depth, &r_u->ptr_info))
 		return False;
 
-	if (ptr_info) {
-
+	if (r_u->ptr_info && r_u->info != NULL) {
 		/* SAM_UNK_INFO_1 */
-		if(!sam_io_unk_info1("info", &r_u->info, ps, depth))
+		if (!sam_io_unk_info1("info", r_u->info, ps, depth))
 			return False;
 	}
 
-	if(!prs_uint32("ptr_reject", ps, depth, &ptr_reject))
+	if (!prs_uint32("ptr_reject", ps, depth, &r_u->ptr_reject))
 		return False;
 			     
-	if (ptr_reject) {
-
+	if (r_u->ptr_reject && r_u->reject != NULL) {
 		/* SAMR_CHANGE_REJECT */
-		if(!samr_io_change_reject("reject", &r_u->reject, ps, depth))
+		if (!samr_io_change_reject("reject", r_u->reject, ps, depth))
 			return False;
 	}
 
-	if(!prs_ntstatus("status", ps, depth, &r_u->status))
+	if (!prs_ntstatus("status", ps, depth, &r_u->status))
 		return False;
 
 	return True;
@@ -7629,8 +7793,10 @@ BOOL samr_io_q_set_domain_info(const char *desc, SAMR_Q_SET_DOMAIN_INFO *q_u,
 	if(!prs_align(ps))
 		return False;
 
-	if ((q_u->ctr = PRS_ALLOC_MEM(ps, SAM_UNK_CTR, 1)) == NULL)
-		return False;
+	if (UNMARSHALLING(ps)) {
+		if ((q_u->ctr = PRS_ALLOC_MEM(ps, SAM_UNK_CTR, 1)) == NULL)
+			return False;
+	}
 	
 	switch (q_u->switch_value) {
 

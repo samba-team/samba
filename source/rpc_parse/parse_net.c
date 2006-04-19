@@ -1295,7 +1295,7 @@ static BOOL net_io_id_info_ctr(const char *desc, NET_ID_INFO_CTR **pp_ctr, prs_s
 {
 	NET_ID_INFO_CTR *ctr = *pp_ctr;
 
-	prs_debug(ps, depth, desc, "smb_io_sam_info");
+	prs_debug(ps, depth, desc, "smb_io_sam_info_ctr");
 	depth++;
 
 	if (UNMARSHALLING(ps)) {
@@ -1323,7 +1323,7 @@ static BOOL net_io_id_info_ctr(const char *desc, NET_ID_INFO_CTR **pp_ctr, prs_s
 		break;
 	default:
 		/* PANIC! */
-		DEBUG(4,("smb_io_sam_info: unknown switch_value!\n"));
+		DEBUG(4,("smb_io_sam_info_ctr: unknown switch_value!\n"));
 		break;
 	}
 
@@ -1350,7 +1350,38 @@ static BOOL smb_io_sam_info(const char *desc, DOM_SAM_INFO *sam, prs_struct *ps,
 
 	if(!prs_uint32("ptr_rtn_cred ", ps, depth, &sam->ptr_rtn_cred))
 		return False;
-	if(!smb_io_cred("", &sam->rtn_cred, ps, depth))
+	if (sam->ptr_rtn_cred) {
+		if(!smb_io_cred("", &sam->rtn_cred, ps, depth))
+			return False;
+	}
+
+	if(!prs_uint16("logon_level  ", ps, depth, &sam->logon_level))
+		return False;
+
+	if (sam->logon_level != 0) {
+		if(!net_io_id_info_ctr("logon_info", &sam->ctr, ps, depth))
+			return False;
+	}
+
+	return True;
+}
+
+/*******************************************************************
+ Reads or writes a DOM_SAM_INFO_EX structure.
+ ********************************************************************/
+
+static BOOL smb_io_sam_info_ex(const char *desc, DOM_SAM_INFO_EX *sam, prs_struct *ps, int depth)
+{
+	if (sam == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "smb_io_sam_info_ex");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+	
+	if(!smb_io_clnt_srv("", &sam->client, ps, depth))
 		return False;
 
 	if(!prs_uint16("logon_level  ", ps, depth, &sam->logon_level))
@@ -1393,10 +1424,11 @@ void init_net_user_info3(TALLOC_CTX *ctx, NET_USER_INFO_3 *usr,
 			 
 			 uint16 logon_count, uint16 bad_pw_count,
  		 	 uint32 num_groups, const DOM_GID *gids,
-			 uint32 user_flgs, uchar user_session_key[16],
+			 uint32 user_flgs, uint32 acct_flags,
+			 uchar user_session_key[16],
 			 uchar lm_session_key[16],
  			 const char *logon_srv, const char *logon_dom,
-			 const DOM_SID *dom_sid, const char *other_sids)
+			 const DOM_SID *dom_sid)
 {
 	/* only cope with one "other" sid, right now. */
 	/* need to count the number of space-delimited sids */
@@ -1435,6 +1467,7 @@ void init_net_user_info3(TALLOC_CTX *ctx, NET_USER_INFO_3 *usr,
 
 	usr->buffer_groups = 1; /* indicates fill in groups, below, even if there are none */
 	usr->user_flgs = user_flgs;
+	usr->acct_flags = acct_flags;
 
 	if (user_session_key != NULL)
 		memcpy(usr->user_sess_key, user_session_key, sizeof(usr->user_sess_key));
@@ -1444,7 +1477,6 @@ void init_net_user_info3(TALLOC_CTX *ctx, NET_USER_INFO_3 *usr,
 	usr->buffer_dom_id = dom_sid ? 1 : 0; /* yes, we're bothering to put a domain SID in */
 
 	memset((char *)usr->lm_sess_key, '\0', sizeof(usr->lm_sess_key));
-	memset(&usr->acct_flags, '\0', sizeof(usr->acct_flags));
 
 	for (i=0; i<7; i++) {
 		memset(&usr->unknown[i], '\0', sizeof(usr->unknown));
@@ -1454,7 +1486,7 @@ void init_net_user_info3(TALLOC_CTX *ctx, NET_USER_INFO_3 *usr,
 		memcpy(usr->lm_sess_key, lm_session_key, sizeof(usr->lm_sess_key));
 	}
 
-	num_other_sids = init_dom_sid2s(ctx, other_sids, &usr->other_sids);
+	num_other_sids = init_dom_sid2s(ctx, NULL, &usr->other_sids);
 
 	usr->num_other_sids = num_other_sids;
 	usr->buffer_other_sids = (num_other_sids != 0) ? 1 : 0; 
@@ -1488,6 +1520,59 @@ void init_net_user_info3(TALLOC_CTX *ctx, NET_USER_INFO_3 *usr,
 
 	init_dom_sid2(&usr->dom_sid, dom_sid);
 	/* "other" sids are set up above */
+}
+
+ void dump_acct_flags(uint32 acct_flags) {
+
+	int lvl = 10;
+	DEBUG(lvl,("dump_acct_flags\n"));
+	if (acct_flags & ACB_NORMAL) {
+		DEBUGADD(lvl,("\taccount has ACB_NORMAL\n"));
+	}
+	if (acct_flags & ACB_PWNOEXP) {
+		DEBUGADD(lvl,("\taccount has ACB_PWNOEXP\n"));
+	}
+	if (acct_flags & ACB_ENC_TXT_PWD_ALLOWED) {
+		DEBUGADD(lvl,("\taccount has ACB_ENC_TXT_PWD_ALLOWED\n"));
+	}
+	if (acct_flags & ACB_NOT_DELEGATED) {
+		DEBUGADD(lvl,("\taccount has ACB_NOT_DELEGATED\n"));
+	}
+	if (acct_flags & ACB_USE_DES_KEY_ONLY) {
+		DEBUGADD(lvl,("\taccount has ACB_USE_DES_KEY_ONLY set, sig verify wont work\n"));
+	}
+	if (acct_flags & ACB_NO_AUTH_DATA_REQD) {
+		DEBUGADD(lvl,("\taccount has ACB_NO_AUTH_DATA_REQD set\n"));
+	}
+	if (acct_flags & ACB_PWEXPIRED) {
+		DEBUGADD(lvl,("\taccount has ACB_PWEXPIRED set\n"));
+	}
+}
+
+ void dump_user_flgs(uint32 user_flags) {
+
+	int lvl = 10;
+	DEBUG(lvl,("dump_user_flgs\n"));
+	if (user_flags & LOGON_EXTRA_SIDS) {
+		DEBUGADD(lvl,("\taccount has LOGON_EXTRA_SIDS\n"));
+	}
+	if (user_flags & LOGON_RESOURCE_GROUPS) {
+		DEBUGADD(lvl,("\taccount has LOGON_RESOURCE_GROUPS\n"));
+	}
+	if (user_flags & LOGON_NTLMV2_ENABLED) {
+		DEBUGADD(lvl,("\taccount has LOGON_NTLMV2_ENABLED\n"));
+	}
+	if (user_flags & LOGON_CACHED_ACCOUNT) {
+		DEBUGADD(lvl,("\taccount has LOGON_CACHED_ACCOUNT\n"));
+	}
+	if (user_flags & LOGON_PROFILE_PATH_RETURNED) {
+		DEBUGADD(lvl,("\taccount has LOGON_PROFILE_PATH_RETURNED\n"));
+	}
+	if (user_flags & LOGON_SERVER_TRUST_ACCOUNT) {
+		DEBUGADD(lvl,("\taccount has LOGON_SERVER_TRUST_ACCOUNT\n"));
+	}
+
+
 }
 
 /*******************************************************************
@@ -1562,7 +1647,7 @@ BOOL net_io_user_info3(const char *desc, NET_USER_INFO_3 *usr, prs_struct *ps,
 		return False;
 	if(!prs_uint32("user_flgs     ", ps, depth, &usr->user_flgs))     /* user flags */
 		return False;
-
+	dump_user_flgs(usr->user_flgs);
 	if(!prs_uint8s(False, "user_sess_key", ps, depth, usr->user_sess_key, 16)) /* user session key */
 		return False;
 
@@ -1579,7 +1664,7 @@ BOOL net_io_user_info3(const char *desc, NET_USER_INFO_3 *usr, prs_struct *ps,
 
 	if(!prs_uint32("acct_flags ", ps, depth, &usr->acct_flags)) /* Account flags  */
 		return False;
-
+	dump_acct_flags(usr->acct_flags);
 	for (i = 0; i < 7; i++)
 	{
 		if (!prs_uint32("unkown", ps, depth, &usr->unknown[i])) /* unknown */
@@ -1659,7 +1744,7 @@ BOOL net_io_user_info3(const char *desc, NET_USER_INFO_3 *usr, prs_struct *ps,
 	if(!smb_io_dom_sid2("", &usr->dom_sid, ps, depth))           /* domain SID */
 		return False;
 
-	if (usr->buffer_other_sids) {
+	if (validation_level == 3 && usr->buffer_other_sids) {
 
 		uint32 num_other_sids = usr->num_other_sids;
 
@@ -1735,7 +1820,7 @@ BOOL net_io_q_sam_logon(const char *desc, NET_Q_SAM_LOGON *q_l, prs_struct *ps, 
 
 	if(!prs_align_uint16(ps))
 		return False;
-	
+
 	if(!prs_uint16("validation_level", ps, depth, &q_l->validation_level))
 		return False;
 
@@ -1787,6 +1872,79 @@ BOOL net_io_r_sam_logon(const char *desc, NET_R_SAM_LOGON *r_l, prs_struct *ps, 
 
 	return True;
 }
+
+/*******************************************************************
+ Reads or writes a structure.
+********************************************************************/
+
+BOOL net_io_q_sam_logon_ex(const char *desc, NET_Q_SAM_LOGON_EX *q_l, prs_struct *ps, int depth)
+{
+	if (q_l == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "net_io_q_sam_logon_ex");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+	
+	if(!smb_io_sam_info_ex("", &q_l->sam_id, ps, depth))
+		return False;
+
+	if(!prs_align_uint16(ps))
+		return False;
+
+	if(!prs_uint16("validation_level", ps, depth, &q_l->validation_level))
+		return False;
+
+	if(!prs_uint32("flags  ", ps, depth, &q_l->flags))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+ Reads or writes a structure.
+********************************************************************/
+
+BOOL net_io_r_sam_logon_ex(const char *desc, NET_R_SAM_LOGON_EX *r_l, prs_struct *ps, int depth)
+{
+	if (r_l == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "net_io_r_sam_logon_ex");
+	depth++;
+
+	if(!prs_uint16("switch_value", ps, depth, &r_l->switch_value))
+		return False;
+	if(!prs_align(ps))
+		return False;
+
+#if 1 /* W2k always needs this - even for bad passwd. JRA */
+	if(!net_io_user_info3("", r_l->user, ps, depth, r_l->switch_value, False))
+		return False;
+#else
+	if (r_l->switch_value != 0) {
+		if(!net_io_user_info3("", r_l->user, ps, depth, r_l->switch_value, False))
+			return False;
+	}
+#endif
+
+	if(!prs_uint32("auth_resp   ", ps, depth, &r_l->auth_resp)) /* 1 - Authoritative response; 0 - Non-Auth? */
+		return False;
+
+	if(!prs_uint32("flags   ", ps, depth, &r_l->flags))
+		return False;
+
+	if(!prs_ntstatus("status      ", ps, depth, &r_l->status))
+		return False;
+
+	if(!prs_align(ps))
+		return False;
+
+	return True;
+}
+
 
 /*******************************************************************
  Reads or writes a structure.
@@ -2086,86 +2244,6 @@ static BOOL net_io_sam_passwd_info(const char *desc, SAM_PWD * pwd,
                 return False;
 	if (!smb_io_unihdr("", &pwd->hdr_empty_nt, ps, depth))
                 return False;
-
-	return True;
-}
-
-/*******************************************************************
-makes a SAM_ACCOUNT_INFO structure.
-********************************************************************/
-BOOL make_sam_account_info(SAM_ACCOUNT_INFO * info,
-			   const UNISTR2 *user_name,
-			   const UNISTR2 *full_name,
-			   uint32 user_rid, uint32 group_rid,
-			   const UNISTR2 *home_dir,
-			   const UNISTR2 *dir_drive,
-			   const UNISTR2 *log_scr,
-			   const UNISTR2 *desc,
-			   uint32 acb_info,
-			   const UNISTR2 *prof_path,
-			   const UNISTR2 *wkstas,
-			   const UNISTR2 *unk_str, const UNISTR2 *mung_dial)
-{
-	int len_user_name = user_name != NULL ? user_name->uni_str_len : 0;
-	int len_full_name = full_name != NULL ? full_name->uni_str_len : 0;
-	int len_home_dir = home_dir != NULL ? home_dir->uni_str_len : 0;
-	int len_dir_drive = dir_drive != NULL ? dir_drive->uni_str_len : 0;
-	int len_logon_script = log_scr != NULL ? log_scr->uni_str_len : 0;
-	int len_profile_path = prof_path != NULL ? prof_path->uni_str_len : 0;
-	int len_description = desc != NULL ? desc->uni_str_len : 0;
-	int len_workstations = wkstas != NULL ? wkstas->uni_str_len : 0;
-	int len_unknown_str = unk_str != NULL ? unk_str->uni_str_len : 0;
-	int len_munged_dial = mung_dial != NULL ? mung_dial->uni_str_len : 0;
-
-	DEBUG(5, ("make_sam_account_info\n"));
-
-	make_uni_hdr(&info->hdr_acct_name, len_user_name);
-	make_uni_hdr(&info->hdr_full_name, len_full_name);
-	make_uni_hdr(&info->hdr_home_dir, len_home_dir);
-	make_uni_hdr(&info->hdr_dir_drive, len_dir_drive);
-	make_uni_hdr(&info->hdr_logon_script, len_logon_script);
-	make_uni_hdr(&info->hdr_profile, len_profile_path);
-	make_uni_hdr(&info->hdr_acct_desc, len_description);
-	make_uni_hdr(&info->hdr_workstations, len_workstations);
-	make_uni_hdr(&info->hdr_comment, len_unknown_str);
-	make_uni_hdr(&info->hdr_parameters, len_munged_dial);
-
-	/* not present */
-	make_bufhdr2(&info->hdr_sec_desc, 0, 0, 0);
-
-	info->user_rid = user_rid;
-	info->group_rid = group_rid;
-
-	init_nt_time(&info->logon_time);
-	init_nt_time(&info->logoff_time);
-	init_nt_time(&info->pwd_last_set_time);
-	init_nt_time(&info->acct_expiry_time);
-
-	info->logon_divs = 0xA8;
-	info->ptr_logon_hrs = 0;	/* Don't care right now */
-
-	info->bad_pwd_count = 0;
-	info->logon_count = 0;
-	info->acb_info = acb_info;
-	info->nt_pwd_present = 0;
-	info->lm_pwd_present = 0;
-	info->pwd_expired = 0;
-	info->country = 0;
-	info->codepage = 0;
-
-	info->unknown1 = 0x4EC;
-	info->unknown2 = 0;
-
-	copy_unistr2(&info->uni_acct_name, user_name);
-	copy_unistr2(&info->uni_full_name, full_name);
-	copy_unistr2(&info->uni_home_dir, home_dir);
-	copy_unistr2(&info->uni_dir_drive, dir_drive);
-	copy_unistr2(&info->uni_logon_script, log_scr);
-	copy_unistr2(&info->uni_profile, prof_path);
-	copy_unistr2(&info->uni_acct_desc, desc);
-	copy_unistr2(&info->uni_workstations, wkstas);
-	copy_unistr2(&info->uni_comment, unk_str);
-	copy_unistr2(&info->uni_parameters, mung_dial);
 
 	return True;
 }

@@ -741,7 +741,7 @@ int pdb_nds_set_password(
 *********************************************************************/
 
 static NTSTATUS pdb_nds_update_login_attempts(struct pdb_methods *methods,
-					SAM_ACCOUNT *sam_acct, BOOL success)
+					struct samu *sam_acct, BOOL success)
 {
 	struct ldapsam_privates *ldap_state;
 
@@ -771,13 +771,16 @@ static NTSTATUS pdb_nds_update_login_attempts(struct pdb_methods *methods,
 
 		result = pdb_get_backend_private_data(sam_acct, methods);
 		if (!result) {
-			attr_list = get_userattr_list(ldap_state->schema_ver);
+			attr_list = get_userattr_list(NULL,
+						      ldap_state->schema_ver);
 			rc = ldapsam_search_suffix_by_name(ldap_state, username, &result, attr_list );
-			free_attr_list( attr_list );
+			TALLOC_FREE( attr_list );
 			if (rc != LDAP_SUCCESS) {
 				return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 			}
-			pdb_set_backend_private_data(sam_acct, result, private_data_free_fn, methods, PDB_CHANGED);
+			pdb_set_backend_private_data(sam_acct, result, NULL,
+						     methods, PDB_CHANGED);
+			talloc_autofree_ldapmsg(sam_acct, result);
 		}
 
 		if (ldap_count_entries(ldap_state->smbldap_state->ldap_struct, result) == 0) {
@@ -816,7 +819,7 @@ static NTSTATUS pdb_nds_update_login_attempts(struct pdb_methods *methods,
 			rc = ldap_simple_bind_s(ld, dn, clear_text_pw);
 			if (rc == LDAP_SUCCESS) {
 				DEBUG(5,("pdb_nds_update_login_attempts: ldap_simple_bind_s Successful for %s\n", username));
-				ldap_unbind_ext(ld, NULL, NULL);
+				ldap_unbind(ld);
 			} else {
 				NTSTATUS nt_status = NT_STATUS_ACCOUNT_RESTRICTION;
 				DEBUG(5,("pdb_nds_update_login_attempts: ldap_simple_bind_s Failed for %s\n", username));
@@ -845,10 +848,11 @@ static NTSTATUS pdb_nds_update_login_attempts(struct pdb_methods *methods,
 }
 
 /**********************************************************************
- Intitalise the parts of the pdb_context that are common to NDS_ldapsam modes
+ Intitalise the parts of the pdb_methods structuire that are common 
+ to NDS_ldapsam modes
  *********************************************************************/
 
-static NTSTATUS pdb_init_NDS_ldapsam_common(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, const char *location)
+static NTSTATUS pdb_init_NDS_ldapsam_common(struct pdb_methods **pdb_method, const char *location)
 {
 	struct ldapsam_privates *ldap_state = (*pdb_method)->private_data;
 
@@ -869,13 +873,13 @@ static NTSTATUS pdb_init_NDS_ldapsam_common(PDB_CONTEXT *pdb_context, PDB_METHOD
  Initialise the 'nds compat' mode for pdb_ldap
  *********************************************************************/
 
-static NTSTATUS pdb_init_NDS_ldapsam_compat(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, const char *location)
+static NTSTATUS pdb_init_NDS_ldapsam_compat(struct pdb_methods **pdb_method, const char *location)
 {
-	NTSTATUS nt_status = pdb_init_ldapsam_compat(pdb_context, pdb_method, location);
+	NTSTATUS nt_status = pdb_init_ldapsam_compat(pdb_method, location);
 
 	(*pdb_method)->name = "NDS_ldapsam_compat";
 
-	pdb_init_NDS_ldapsam_common(pdb_context, pdb_method, location);
+	pdb_init_NDS_ldapsam_common(pdb_method, location);
 
 	return nt_status;
 }
@@ -885,13 +889,13 @@ static NTSTATUS pdb_init_NDS_ldapsam_compat(PDB_CONTEXT *pdb_context, PDB_METHOD
  Initialise the 'nds' normal mode for pdb_ldap
  *********************************************************************/
 
-static NTSTATUS pdb_init_NDS_ldapsam(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, const char *location)
+static NTSTATUS pdb_init_NDS_ldapsam(struct pdb_methods **pdb_method, const char *location)
 {
-	NTSTATUS nt_status = pdb_init_ldapsam(pdb_context, pdb_method, location);
+	NTSTATUS nt_status = pdb_init_ldapsam(pdb_method, location);
 
 	(*pdb_method)->name = "NDS_ldapsam";
 
-	pdb_init_NDS_ldapsam_common(pdb_context, pdb_method, location);
+	pdb_init_NDS_ldapsam_common(pdb_method, location);
 
 	return nt_status;
 }

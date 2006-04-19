@@ -22,6 +22,7 @@
 
 #include "includes.h"
 
+extern struct generic_mapping file_generic_mapping;
 extern struct current_user current_user;
 extern userdom_struct current_user_info;
 extern uint16 global_smbpid;
@@ -611,22 +612,12 @@ static BOOL delay_for_oplocks(struct share_mode_lock *lck, files_struct *fsp)
 {
 	int i;
 	struct share_mode_entry *exclusive = NULL;
+	BOOL valid_entry = False;
 	BOOL delay_it = False;
 	BOOL have_level2 = False;
 
 	if (is_stat_open(fsp->access_mask)) {
 		fsp->oplock_type = NO_OPLOCK;
-		return False;
-	}
-
-	if (lck->num_share_modes == 0) {
-		/* No files open at all: Directly grant whatever the client
-		 * wants. */
-
-		if (fsp->oplock_type == NO_OPLOCK) {
-			/* Store a level2 oplock, but don't tell the client */
-			fsp->oplock_type = FAKE_LEVEL_II_OPLOCK;
-		}
 		return False;
 	}
 
@@ -636,14 +627,28 @@ static BOOL delay_for_oplocks(struct share_mode_lock *lck, files_struct *fsp)
 			continue;
 		}
 
+		/* At least one entry is not an invalid or deferred entry. */
+		valid_entry = True;
+
 		if (EXCLUSIVE_OPLOCK_TYPE(lck->share_modes[i].op_type)) {
 			SMB_ASSERT(exclusive == NULL);			
 			exclusive = &lck->share_modes[i];
 		}
 
 		if (lck->share_modes[i].op_type == LEVEL_II_OPLOCK) {
+			SMB_ASSERT(exclusive == NULL);			
 			have_level2 = True;
 		}
+	}
+
+	if (!valid_entry) {
+		/* All entries are placeholders or deferred.
+		 * Directly grant whatever the client wants. */
+		if (fsp->oplock_type == NO_OPLOCK) {
+			/* Store a level2 oplock, but don't tell the client */
+			fsp->oplock_type = FAKE_LEVEL_II_OPLOCK;
+		}
+		return False;
 	}
 
 	if (exclusive != NULL) { /* Found an exclusive oplock */
@@ -653,7 +658,8 @@ static BOOL delay_for_oplocks(struct share_mode_lock *lck, files_struct *fsp)
 	}
 
 	if (EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type)) {
-		/* We can at most grant level2 */
+		/* We can at most grant level2 as there are other
+		 * level2 or NO_OPLOCK entries. */
 		fsp->oplock_type = LEVEL_II_OPLOCK;
 	}
 
@@ -718,7 +724,7 @@ static void defer_open(struct share_mode_lock *lck,
 		if (procid_is_me(&e->pid) && (e->op_mid == mid)) {
 			DEBUG(0, ("Trying to defer an already deferred "
 				  "request: mid=%d, exiting\n", mid));
-			exit_server("exiting");
+			exit_server("attempt to defer a deferred request");
 		}
 	}
 
@@ -732,7 +738,7 @@ static void defer_open(struct share_mode_lock *lck,
 
 	if (!push_deferred_smb_message(mid, request_time, timeout,
 				       (char *)state, sizeof(*state))) {
-		exit_server("push_deferred_smb_message failed\n");
+		exit_server("push_deferred_smb_message failed");
 	}
 	add_deferred_open(lck, mid, request_time, state->dev, state->inode);
 
@@ -1018,15 +1024,6 @@ BOOL map_open_params_to_ntcreate(const char *fname, int deny_mode, int open_func
 
 }
 
-/* Map generic permissions to file object specific permissions */
-                                                                                                               
-struct generic_mapping file_generic_mapping = {
-	FILE_GENERIC_READ,
-	FILE_GENERIC_WRITE,
-	FILE_GENERIC_EXECUTE,
-	FILE_GENERIC_ALL
-};
-
 /****************************************************************************
  Open a file with a share mode.
 ****************************************************************************/
@@ -1099,26 +1096,20 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 		struct deferred_open_record *state =
 			(struct deferred_open_record *)pml->private_data.data;
 
+		/* Remember the absolute time of the original
+		   request with this mid. We'll use it later to
+		   see if this has timed out. */
+
 		request_time = pml->request_time;
 		delayed_for_oplocks = state->delayed_for_oplocks;
 
-		/* There could be a race condition where the dev/inode pair
-		   has changed since we deferred the message. If so, just
-		   remove the deferred open entry and return sharing
-		   violation. */
-
-		/* If the timeout value is non-zero, we need to just return
-		   sharing violation. Don't retry the open as we were not
-		   notified of a close and we don't want to trigger another
-		   spurious oplock break. */
-
-		/* Now remove the deferred open entry under lock. */
+		/* Remove the deferred open entry under lock. */
 		lck = get_share_mode_lock(NULL, state->dev, state->inode, NULL, NULL);
 		if (lck == NULL) {
 			DEBUG(0, ("could not get share mode lock\n"));
 		} else {
 			del_deferred_open_entry(lck, mid);
-			talloc_destroy(lck);
+			TALLOC_FREE(lck);
 		}
 
 		/* Ensure we don't reprocess this message. */
@@ -1335,21 +1326,29 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 
 		if (delay_for_oplocks(lck, fsp)) {
 			struct deferred_open_record state;
+
+			/* This is a relative time, added to the absolute
+			   request_time value to get the absolute timeout time.
+			   Note that if this is the second or greater time we enter
+			   this codepath for this particular request mid then
+			   request_time is left as the absolute time of the *first*
+			   time this request mid was processed. This is what allows
+			   the request to eventually time out. */
+
 			struct timeval timeout;
-
-			if (delayed_for_oplocks) {
-				DEBUG(0, ("Trying to delay for oplocks "
-					  "twice\n"));
-				exit_server("exiting");
-			}
-
-			timeout = timeval_set(OPLOCK_BREAK_TIMEOUT*2, 0);
 
 			/* Normally the smbd we asked should respond within
 			 * OPLOCK_BREAK_TIMEOUT seconds regardless of whether
 			 * the client did, give twice the timeout as a safety
 			 * measure here in case the other smbd is stuck
 			 * somewhere else. */
+
+			timeout = timeval_set(OPLOCK_BREAK_TIMEOUT*2, 0);
+
+			/* Nothing actually uses state.delayed_for_oplocks
+			   but it's handy to differentiate in debug messages
+			   between a 30 second delay due to oplock break, and
+			   a 1 second delay for share mode conflicts. */
 
 			state.delayed_for_oplocks = True;
 			state.dev = dev;
@@ -1360,7 +1359,7 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 					   &state);
 			}
 
-			talloc_free(lck);
+			TALLOC_FREE(lck);
 			return NULL;
 		}
 
@@ -1371,7 +1370,7 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 		if (NT_STATUS_EQUAL(status, NT_STATUS_DELETE_PENDING)) {
 			/* DELETE_PENDING is not deferred for a second */
 			set_saved_ntstatus(status);
-			talloc_free(lck);
+			TALLOC_FREE(lck);
 			file_free(fsp);
 			return NULL;
 		}
@@ -1392,7 +1391,7 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 							  create_options);
 
 				if (fsp_dup) {
-					talloc_free(lck);
+					TALLOC_FREE(lck);
 					file_free(fsp);
 					if (pinfo) {
 						*pinfo = FILE_WAS_OPENED;
@@ -1441,8 +1440,28 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 			    lp_defer_sharing_violations()) {
 				struct timeval timeout;
 				struct deferred_open_record state;
+				int timeout_usecs;
 
-				timeout = timeval_set(0, SHARING_VIOLATION_USEC_WAIT);
+				/* this is a hack to speed up torture tests
+				   in 'make test' */
+				timeout_usecs = lp_parm_int(conn->service,
+							    "smbd","sharedelay",
+							    SHARING_VIOLATION_USEC_WAIT);
+
+				/* This is a relative time, added to the absolute
+				   request_time value to get the absolute timeout time.
+				   Note that if this is the second or greater time we enter
+				   this codepath for this particular request mid then
+				   request_time is left as the absolute time of the *first*
+				   time this request mid was processed. This is what allows
+				   the request to eventually time out. */
+
+				timeout = timeval_set(0, timeout_usecs);
+
+				/* Nothing actually uses state.delayed_for_oplocks
+				   but it's handy to differentiate in debug messages
+				   between a 30 second delay due to oplock break, and
+				   a 1 second delay for share mode conflicts. */
 
 				state.delayed_for_oplocks = False;
 				state.dev = dev;
@@ -1455,7 +1474,7 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 				}
 			}
 
-			talloc_free(lck);
+			TALLOC_FREE(lck);
 			if (fsp_open) {
 				fd_close(conn, fsp);
 				/*
@@ -1498,7 +1517,7 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 
 	if (!fsp_open) {
 		if (lck != NULL) {
-			talloc_free(lck);
+			TALLOC_FREE(lck);
 		}
 		file_free(fsp);
 		return NULL;
@@ -1559,7 +1578,7 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 
 			defer_open(lck, request_time, timeval_zero(),
 				   &state);
-			talloc_free(lck);
+			TALLOC_FREE(lck);
 			return NULL;
 		}
 
@@ -1596,7 +1615,7 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 		 */
 		if ((SMB_VFS_FTRUNCATE(fsp,fsp->fh->fd,0) == -1) ||
 		    (SMB_VFS_FSTAT(fsp,fsp->fh->fd,psbuf)==-1)) {
-			talloc_free(lck);
+			TALLOC_FREE(lck);
 			fd_close(conn,fsp);
 			file_free(fsp);
 			return NULL;
@@ -1641,32 +1660,29 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 	}
 	set_share_mode(lck, fsp, 0, fsp->oplock_type);
 
-	if (create_options & FILE_DELETE_ON_CLOSE) {
-		uint32 dosattr= existing_dos_attributes;
-		NTSTATUS result;
-
-		if (info == FILE_WAS_OVERWRITTEN || info == FILE_WAS_CREATED ||
-				info == FILE_WAS_SUPERSEDED) {
-			dosattr = new_dos_attributes;
-		}
-
-		result = can_set_delete_on_close(fsp, True, dosattr);
-
-		if (!NT_STATUS_IS_OK(result)) {
-			/* Remember to delete the mode we just added. */
-			del_share_mode(lck, fsp);
-			talloc_free(lck);
-			fd_close(conn,fsp);
-			file_free(fsp);
-			set_saved_ntstatus(result);
-			return NULL;
-		}
-		lck->delete_on_close = True;
-		lck->modified = True;
-	}
-	
 	if (info == FILE_WAS_OVERWRITTEN || info == FILE_WAS_CREATED ||
 				info == FILE_WAS_SUPERSEDED) {
+
+		/* Handle strange delete on close create semantics. */
+		if (create_options & FILE_DELETE_ON_CLOSE) {
+			NTSTATUS result = can_set_delete_on_close(fsp, True, new_dos_attributes);
+
+			if (!NT_STATUS_IS_OK(result)) {
+				/* Remember to delete the mode we just added. */
+				del_share_mode(lck, fsp);
+				TALLOC_FREE(lck);
+				fd_close(conn,fsp);
+				file_free(fsp);
+				set_saved_ntstatus(result);
+				return NULL;
+			}
+			/* Note that here we set the *inital* delete on close flag,
+			   not the regular one. */
+			set_delete_on_close_token(lck, &current_user.ut);
+			lck->initial_delete_on_close = True;
+			lck->modified = True;
+		}
+	
 		/* Files should be initially set as archive */
 		if (lp_map_archive(SNUM(conn)) ||
 		    lp_store_dos_attributes(SNUM(conn))) {
@@ -1723,7 +1739,7 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 	/* If this is a successful open, we must remove any deferred open
 	 * records. */
 	del_deferred_open_entry(lck, mid);
-	talloc_free(lck);
+	TALLOC_FREE(lck);
 
 	conn->num_files_open++;
 
@@ -1944,27 +1960,30 @@ files_struct *open_directory(connection_struct *conn,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		set_saved_ntstatus(status);
-		talloc_free(lck);
+		TALLOC_FREE(lck);
 		file_free(fsp);
 		return NULL;
 	}
 
 	set_share_mode(lck, fsp, 0, NO_OPLOCK);
 
+	/* For directories the delete on close bit at open time seems
+	   always to be honored on close... See test 19 in Samba4 BASE-DELETE. */
 	if (create_options & FILE_DELETE_ON_CLOSE) {
 		status = can_set_delete_on_close(fsp, True, 0);
 		if (!NT_STATUS_IS_OK(status)) {
 			set_saved_ntstatus(status);
-			talloc_free(lck);
+			TALLOC_FREE(lck);
 			file_free(fsp);
 			return NULL;
 		}
 
-		lck->delete_on_close = True;
+		set_delete_on_close_token(lck, &current_user.ut);
+		lck->initial_delete_on_close = True;
 		lck->modified = True;
 	}
 
-	talloc_free(lck);
+	TALLOC_FREE(lck);
 
 	/* Change the owner if required. */
 	if ((info == FILE_WAS_CREATED) && lp_inherit_owner(SNUM(conn))) {
@@ -2025,4 +2044,56 @@ files_struct *open_file_stat(connection_struct *conn, char *fname,
 	conn->num_files_open++;
 
 	return fsp;
+}
+
+/****************************************************************************
+ Receive notification that one of our open files has been renamed by another
+ smbd process.
+****************************************************************************/
+
+void msg_file_was_renamed(int msg_type, struct process_id src, void *buf, size_t len)
+{
+	files_struct *fsp;
+	char *frm = (char *)buf;
+	SMB_DEV_T dev;
+	SMB_INO_T inode;
+	const char *sharepath;
+	const char *newname;
+	size_t sp_len;
+
+	if (buf == NULL || len < MSG_FILE_RENAMED_MIN_SIZE + 2) {
+                DEBUG(0, ("msg_file_was_renamed: Got invalid msg len %d\n", (int)len));
+                return;
+        }
+
+	/* Unpack the message. */
+	dev = DEV_T_VAL(frm,0);
+	inode = INO_T_VAL(frm,8);
+	sharepath = &frm[16];
+	newname = sharepath + strlen(sharepath) + 1;
+	sp_len = strlen(sharepath);
+
+	DEBUG(10,("msg_file_was_renamed: Got rename message for sharepath %s, new name %s, "
+		"dev %x, inode  %.0f\n",
+		sharepath, newname, (unsigned int)dev, (double)inode ));
+
+	for(fsp = file_find_di_first(dev, inode); fsp; fsp = file_find_di_next(fsp)) {
+		if (memcmp(fsp->conn->connectpath, sharepath, sp_len) == 0) {
+	                DEBUG(10,("msg_file_was_renamed: renaming file fnum %d from %s -> %s\n",
+				fsp->fnum, fsp->fsp_name, newname ));
+			string_set(&fsp->fsp_name, newname);
+		} else {
+			/* TODO. JRA. */
+			/* Now we have the complete path we can work out if this is
+			   actually within this share and adjust newname accordingly. */
+	                DEBUG(10,("msg_file_was_renamed: share mismatch (sharepath %s "
+				"not sharepath %s) "
+				"fnum %d from %s -> %s\n",
+				fsp->conn->connectpath,
+				sharepath,
+				fsp->fnum,
+				fsp->fsp_name,
+				newname ));
+		}
+        }
 }

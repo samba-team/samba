@@ -2,7 +2,7 @@
  *  Unix SMB/CIFS implementation.
  *  RPC Pipe client / server routines
  *  Copyright (C) Andrew Tridgell              1992-2000,
- *  Copyright (C) Jean FranÃ§ois Micouleau      1998-2001.
+ *  Copyright (C) Jean François Micouleau      1998-2001.
  *  Copyright (C) Gerald Carter                2003,
  *  Copyright (C) Volker Lendecke              2004
  *
@@ -93,6 +93,7 @@ static void print_map_entry ( GROUP_MAP map, BOOL long_list )
 	else {
 		d_printf("%s\n", map.nt_name);
 		d_printf("\tSID       : %s\n", sid_string_static(&map.sid));
+		d_printf("\tUnix gid  : %d\n", map.gid);
 		d_printf("\tUnix group: %s\n", gidtoname(map.gid));
 		d_printf("\tGroup type: %s\n",
 			 sid_type_lookup(map.sid_name_use));
@@ -162,7 +163,7 @@ static int net_groupmap_list(int argc, const char **argv)
 	else {
 		GROUP_MAP *map=NULL;
 		/* enumerate all group mappings */
-		if (!pdb_enum_group_mapping(SID_NAME_UNKNOWN, &map, &entries, ENUM_ALL_MAPPED))
+		if (!pdb_enum_group_mapping(NULL, SID_NAME_UNKNOWN, &map, &entries, ENUM_ALL_MAPPED))
 			return -1;
 	
 		for (i=0; i<entries; i++) {
@@ -261,10 +262,26 @@ static int net_groupmap_add(int argc, const char **argv)
 		d_fprintf(stderr, "Can't lookup UNIX group %s\n", unixgrp);
 		return -1;
 	}
+
+	{
+		GROUP_MAP map;
+		if (pdb_getgrgid(&map, gid)) {
+			d_printf("Unix group %s already mapped to SID %s\n",
+				 unixgrp, sid_string_static(&map.sid));
+			return -1;
+		}
+	}
 	
 	if ( (rid == 0) && (string_sid[0] == '\0') ) {
-		d_printf("No rid or sid specified, choosing algorithmic mapping\n");
-		rid = pdb_gid_to_group_rid(gid);
+		d_printf("No rid or sid specified, choosing a RID\n");
+		if (pdb_rid_algorithm()) {
+			rid = pdb_gid_to_group_rid(gid);
+		} else {
+			if (!pdb_new_rid(&rid)) {
+				d_printf("Could not get new RID\n");
+			}
+		}
+		d_printf("Got RID %d\n", rid);
 	}
 
 	/* append the rid to our own domain/machine SID if we don't have a full SID */
@@ -295,7 +312,7 @@ static int net_groupmap_add(int argc, const char **argv)
 		fstrcpy( ntgroup, unixgrp );
 		
 	
-	if (!add_initial_entry(gid, string_sid, sid_type, ntgroup, ntcomment)) {
+	if (!NT_STATUS_IS_OK(add_initial_entry(gid, string_sid, sid_type, ntgroup, ntcomment))) {
 		d_fprintf(stderr, "adding entry for group %s failed!\n", ntgroup);
 		return -1;
 	}
@@ -423,7 +440,7 @@ static int net_groupmap_modify(int argc, const char **argv)
 		map.gid = gid;
 	}
 
-	if ( !pdb_update_group_mapping_entry(&map) ) {
+	if ( !NT_STATUS_IS_OK(pdb_update_group_mapping_entry(&map)) ) {
 		d_fprintf(stderr, "Could not update group database\n");
 		return -1;
 	}
@@ -477,7 +494,7 @@ static int net_groupmap_delete(int argc, const char **argv)
 		return -1;
 	}
 
-	if ( !pdb_delete_group_mapping_entry(sid) ) {
+	if ( !NT_STATUS_IS_OK(pdb_delete_group_mapping_entry(sid)) ) {
 		d_fprintf(stderr, "Failed to removing group %s from the mapping db!\n", ntgroup);
 		return -1;
 	}
@@ -548,7 +565,7 @@ static int net_groupmap_set(int argc, const char **argv)
 		fstrcpy(map.nt_name, ntgroup);
 		fstrcpy(map.comment, "");
 
-		if (!pdb_add_group_mapping_entry(&map)) {
+		if (!NT_STATUS_IS_OK(pdb_add_group_mapping_entry(&map))) {
 			d_fprintf(stderr, "Could not add mapping entry for %s\n",
 				 ntgroup);
 			return -1;
@@ -582,7 +599,7 @@ static int net_groupmap_set(int argc, const char **argv)
 	if (grp != NULL)
 		map.gid = grp->gr_gid;
 
-	if (!pdb_update_group_mapping_entry(&map)) {
+	if (!NT_STATUS_IS_OK(pdb_update_group_mapping_entry(&map))) {
 		d_fprintf(stderr, "Could not update group mapping for %s\n", ntgroup);
 		return -1;
 	}
@@ -595,16 +612,13 @@ static int net_groupmap_cleanup(int argc, const char **argv)
 	GROUP_MAP *map = NULL;
 	size_t i, entries;
 
-	if (!pdb_enum_group_mapping(SID_NAME_UNKNOWN, &map, &entries,
+	if (!pdb_enum_group_mapping(NULL, SID_NAME_UNKNOWN, &map, &entries,
 				    ENUM_ALL_MAPPED)) {
 		d_fprintf(stderr, "Could not list group mappings\n");
 		return -1;
 	}
 
 	for (i=0; i<entries; i++) {
-
-		if (map[i].sid_name_use == SID_NAME_WKN_GRP)
-			continue;
 
 		if (map[i].gid == -1)
 			printf("Group %s is not mapped\n", map[i].nt_name);
@@ -633,7 +647,7 @@ static int net_groupmap_addmem(int argc, const char **argv)
 		return -1;
 	}
 
-	if (!pdb_add_aliasmem(&alias, &member)) {
+	if (!NT_STATUS_IS_OK(pdb_add_aliasmem(&alias, &member))) {
 		d_fprintf(stderr, "Could not add sid %s to alias %s\n",
 			 argv[1], argv[0]);
 		return -1;
@@ -653,7 +667,7 @@ static int net_groupmap_delmem(int argc, const char **argv)
 		return -1;
 	}
 
-	if (!pdb_del_aliasmem(&alias, &member)) {
+	if (!NT_STATUS_IS_OK(pdb_del_aliasmem(&alias, &member))) {
 		d_fprintf(stderr, "Could not delete sid %s from alias %s\n",
 			 argv[1], argv[0]);
 		return -1;
@@ -677,7 +691,7 @@ static int net_groupmap_listmem(int argc, const char **argv)
 	members = NULL;
 	num = 0;
 
-	if (!pdb_enum_aliasmem(&alias, &members, &num)) {
+	if (!NT_STATUS_IS_OK(pdb_enum_aliasmem(&alias, &members, &num))) {
 		d_fprintf(stderr, "Could not list members for sid %s\n", argv[0]);
 		return -1;
 	}
@@ -701,8 +715,9 @@ static BOOL print_alias_memberships(TALLOC_CTX *mem_ctx,
 	alias_rids = NULL;
 	num_alias_rids = 0;
 
-	if (!pdb_enum_alias_memberships(mem_ctx, domain_sid, member, 1,
-					&alias_rids, &num_alias_rids)) {
+	if (!NT_STATUS_IS_OK(pdb_enum_alias_memberships(
+				     mem_ctx, domain_sid, member, 1,
+				     &alias_rids, &num_alias_rids))) {
 		d_fprintf(stderr, "Could not list memberships for sid %s\n",
 			 sid_string_static(member));
 		return False;
@@ -800,7 +815,7 @@ int net_groupmap(int argc, const char **argv)
 
 	/* we shouldn't have silly checks like this */
 	if (getuid() != 0) {
-		d_fprintf(stderr, "You must be root to edit group mappings.\nExiting...\n");
+		d_fprintf(stderr, "You must be root to edit group mappings.\n");
 		return -1;
 	}
 	

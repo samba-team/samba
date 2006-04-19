@@ -24,9 +24,17 @@
 #ifdef HAVE_KRB5
 
 #define DEFAULT_KPASSWD_PORT	464
+
 #define KRB5_KPASSWD_VERS_CHANGEPW		1
+
 #define KRB5_KPASSWD_VERS_SETPW			0xff80
 #define KRB5_KPASSWD_VERS_SETPW_ALT		2
+
+#define KRB5_KPASSWD_SUCCESS			0
+#define KRB5_KPASSWD_MALFORMED			1
+#define KRB5_KPASSWD_HARDERROR			2
+#define KRB5_KPASSWD_AUTHERROR			3
+#define KRB5_KPASSWD_SOFTERROR			4
 #define KRB5_KPASSWD_ACCESSDENIED		5
 #define KRB5_KPASSWD_BAD_VERSION		6
 #define KRB5_KPASSWD_INITIAL_FLAG_NEEDED	7
@@ -57,19 +65,22 @@ static DATA_BLOB encode_krb5_setpw(const char *principal, const char *password)
 	princ = SMB_STRDUP(principal);
 
 	if ((c = strchr_m(princ, '/')) == NULL) {
-	    c = princ; 
+		c = princ; 
 	} else {
-	    *c = '\0';
-	    c++;
-	    princ_part1 = princ;
+		*c = '\0';
+		c++;
+		princ_part1 = princ;
 	}
 
 	princ_part2 = c;
 
 	if ((c = strchr_m(c, '@')) != NULL) {
-	    *c = '\0';
-	    c++;
-	    realm = c;
+		*c = '\0';
+		c++;
+		realm = c;
+	} else {
+		/* We must have a realm component. */
+		return data_blob(NULL, 0);
 	}
 
 	memset(&req, 0, sizeof(req));
@@ -89,8 +100,9 @@ static DATA_BLOB encode_krb5_setpw(const char *principal, const char *password)
 	asn1_push_tag(&req, ASN1_CONTEXT(1));
 	asn1_push_tag(&req, ASN1_SEQUENCE(0));
 
-	if (princ_part1) 
-	    asn1_write_GeneralString(&req, princ_part1);
+	if (princ_part1) {
+		asn1_write_GeneralString(&req, princ_part1);
+	}
 	
 	asn1_write_GeneralString(&req, princ_part2);
 	asn1_pop_tag(&req);
@@ -142,6 +154,10 @@ static krb5_error_code build_kpasswd_request(uint16 pversion,
 		setpw = encode_krb5_setpw(princ, passwd);
 	else
 		return EINVAL;
+
+	if (setpw.data == NULL || setpw.length == 0) {
+		return EINVAL;
+	}
 
 	encoded_setpw.data = (char *)setpw.data;
 	encoded_setpw.length = setpw.length;
@@ -213,6 +229,25 @@ static krb5_error_code setpw_result_code_string(krb5_context context,
         return (0);
 }
 
+ krb5_error_code kpasswd_err_to_krb5_err(krb5_error_code res_code) 
+{
+	switch(res_code) {
+		case KRB5_KPASSWD_ACCESSDENIED:
+			return KRB5KDC_ERR_BADOPTION;
+		case KRB5_KPASSWD_INITIAL_FLAG_NEEDED:
+			return KRB5KDC_ERR_BADOPTION;
+			/* return KV5M_ALT_METHOD; MIT-only define */
+		case KRB5_KPASSWD_ETYPE_NOSUPP:
+			return KRB5KDC_ERR_ETYPE_NOSUPP;
+		case KRB5_KPASSWD_BAD_PRINCIPAL:
+			return KRB5KDC_ERR_C_PRINCIPAL_UNKNOWN;
+		case KRB5_KPASSWD_POLICY_REJECT:
+		case KRB5_KPASSWD_SOFTERROR:
+			return KRB5KDC_ERR_POLICY;
+		default:
+			return KRB5KRB_ERR_GENERIC;
+	}
+}
 static krb5_error_code parse_setpw_reply(krb5_context context, 
 					 krb5_auth_context auth_context,
 					 krb5_data *packet)
@@ -312,23 +347,9 @@ static krb5_error_code parse_setpw_reply(krb5_context context,
 	else {
 		const char *errstr;
 		setpw_result_code_string(context, res_code, &errstr);
-		DEBUG(1, ("Error changing password: %s\n", errstr));
+		DEBUG(1, ("Error changing password: %s (%d)\n", errstr, res_code));
 
-		switch(res_code) {
-			case KRB5_KPASSWD_ACCESSDENIED:
-				return KRB5KDC_ERR_BADOPTION;
-			case KRB5_KPASSWD_INITIAL_FLAG_NEEDED:
-				return KRB5KDC_ERR_BADOPTION;
-				/* return KV5M_ALT_METHOD; MIT-only define */
-			case KRB5_KPASSWD_ETYPE_NOSUPP:
-				return KRB5KDC_ERR_ETYPE_NOSUPP;
-			case KRB5_KPASSWD_BAD_PRINCIPAL:
-				return KRB5KDC_ERR_C_PRINCIPAL_UNKNOWN;
-			case KRB5_KPASSWD_POLICY_REJECT:
-				return KRB5KDC_ERR_POLICY;
-			default:
-				return KRB5KRB_ERR_GENERIC;
-		}
+		return kpasswd_err_to_krb5_err(res_code);
 	}
 }
 
@@ -664,7 +685,7 @@ ADS_STATUS kerberos_set_password(const char *kpasswd_server,
 {
     int ret;
 
-    if ((ret = kerberos_kinit_password(auth_principal, auth_password, time_offset, NULL, NULL))) {
+    if ((ret = kerberos_kinit_password(auth_principal, auth_password, time_offset, NULL))) {
 	DEBUG(1,("Failed kinit for principal %s (%s)\n", auth_principal, error_message(ret)));
 	return ADS_ERROR_KRB5(ret);
     }

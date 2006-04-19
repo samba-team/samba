@@ -41,6 +41,7 @@
 #define NET_DSR_GETDCNAME	0x14
 #define NET_AUTH3		0x1a
 #define NET_DSR_GETSITENAME	0x1c
+#define NET_SAMLOGON_EX		0x27
 
 /* Secure Channel types.  used in NetrServerAuthenticate negotiation */
 #define SEC_CHAN_WKSTA   2
@@ -86,8 +87,17 @@
 #define NL_CTRL_REPL_IN_PROGRESS 0x0002
 #define NL_CTRL_FULL_SYNC        0x0004
 
-#define LOGON_EXTRA_SIDS             0x0020
-#define LOGON_RESOURCE_GROUPS        0x0200 
+#define LOGON_GUEST			0x00000001
+#define LOGON_NOENCRYPTION		0x00000002
+#define LOGON_CACHED_ACCOUNT		0x00000004
+#define LOGON_USED_LM_PASSWORD		0x00000008
+#define LOGON_EXTRA_SIDS		0x00000020
+#define LOGON_SUBAUTH_SESSION_KEY	0x00000040
+#define LOGON_SERVER_TRUST_ACCOUNT	0x00000080
+#define LOGON_NTLMV2_ENABLED		0x00000100
+#define LOGON_RESOURCE_GROUPS		0x00000200
+#define LOGON_PROFILE_PATH_RETURNED	0x00000400
+#define LOGON_GRACE_LOGON		0x01000000
 
 #define SE_GROUP_MANDATORY		0x00000001
 #define SE_GROUP_ENABLED_BY_DEFAULT	0x00000002
@@ -98,8 +108,20 @@
 #define SE_GROUP_RESOURCE 		0x20000000
 
 /* Flags for controlling the behaviour of a particular logon */
-#define MSV1_0_ALLOW_SERVER_TRUST_ACCOUNT	( 0x020 )
-#define MSV1_0_ALLOW_WORKSTATION_TRUST_ACCOUNT	( 0x800 )
+
+/* sets LOGON_SERVER_TRUST_ACCOUNT user_flag */
+#define MSV1_0_ALLOW_SERVER_TRUST_ACCOUNT	0x00000020
+#define MSV1_0_ALLOW_WORKSTATION_TRUST_ACCOUNT	0x00000800
+
+/* updates the "logon time" on network logon */
+#define MSV1_0_UPDATE_LOGON_STATISTICS		0x00000004
+
+/* returns the user parameters in the driveletter */
+#define MSV1_0_RETURN_USER_PARAMETERS		0x00000008
+
+/* returns the profilepath in the driveletter and 
+ * sets LOGON_PROFILE_PATH_RETURNED user_flag */
+#define MSV1_0_RETURN_PROFILE_PATH		0x00000200
 
 #if 0
 /* I think this is correct - it's what gets parsed on the wire. JRA. */
@@ -159,6 +181,57 @@ typedef struct net_user_info_2 {
 
 } NET_USER_INFO_2;
 #endif
+
+/* NET_USER_INFO_2 */
+typedef struct net_user_info_2 {
+	uint32 ptr_user_info;
+
+	NTTIME logon_time;            /* logon time */
+	NTTIME logoff_time;           /* logoff time */
+	NTTIME kickoff_time;          /* kickoff time */
+	NTTIME pass_last_set_time;    /* password last set time */
+	NTTIME pass_can_change_time;  /* password can change time */
+	NTTIME pass_must_change_time; /* password must change time */
+
+	UNIHDR hdr_user_name;    /* username unicode string header */
+	UNIHDR hdr_full_name;    /* user's full name unicode string header */
+	UNIHDR hdr_logon_script; /* logon script unicode string header */
+	UNIHDR hdr_profile_path; /* profile path unicode string header */
+	UNIHDR hdr_home_dir;     /* home directory unicode string header */
+	UNIHDR hdr_dir_drive;    /* home directory drive unicode string header */
+
+	uint16 logon_count;  /* logon count */
+	uint16 bad_pw_count; /* bad password count */
+
+	uint32 user_rid;       /* User RID */
+	uint32 group_rid;      /* Group RID */
+
+	uint32 num_groups;    /* num groups */
+	uint32 buffer_groups; /* undocumented buffer pointer to groups. */
+	uint32 user_flgs;     /* user flags */
+
+	uint8 user_sess_key[16]; /* user session key */
+
+	UNIHDR hdr_logon_srv; /* logon server unicode string header */
+	UNIHDR hdr_logon_dom; /* logon domain unicode string header */
+
+	uint32 buffer_dom_id; /* undocumented logon domain id pointer */
+	uint8 lm_sess_key[8];	/* lm session key */
+	uint32 acct_flags;	/* account flags */
+	uint32 unknown[7];	/* unknown */
+
+	UNISTR2 uni_user_name;    /* username unicode string */
+	UNISTR2 uni_full_name;    /* user's full name unicode string */
+	UNISTR2 uni_logon_script; /* logon script unicode string */
+	UNISTR2 uni_profile_path; /* profile path unicode string */
+	UNISTR2 uni_home_dir;     /* home directory unicode string */
+	UNISTR2 uni_dir_drive;    /* home directory drive unicode string */
+
+	UNISTR2 uni_logon_srv; /* logon server unicode string */
+	UNISTR2 uni_logon_dom; /* logon domain unicode string */
+
+	DOM_SID2 dom_sid;           /* domain SID */
+} NET_USER_INFO_2;
 
 /* NET_USER_INFO_3 */
 typedef struct net_user_info_3 {
@@ -511,11 +584,25 @@ typedef struct sam_info {
 	NET_ID_INFO_CTR *ctr;
 } DOM_SAM_INFO;
 
+/* SAM_INFO - sam logon/off id structure - no creds */
+typedef struct sam_info_ex {
+	DOM_CLNT_SRV	client;
+	uint16          logon_level;
+	NET_ID_INFO_CTR *ctr;
+} DOM_SAM_INFO_EX;
+
 /* NET_Q_SAM_LOGON */
 typedef struct net_q_sam_logon_info {
 	DOM_SAM_INFO sam_id;
 	uint16          validation_level;
 } NET_Q_SAM_LOGON;
+
+/* NET_Q_SAM_LOGON_EX */
+typedef struct net_q_sam_logon_info_ex {
+	DOM_SAM_INFO_EX sam_id;
+	uint16          validation_level;
+	uint32 flags;
+} NET_Q_SAM_LOGON_EX;
 
 /* NET_R_SAM_LOGON */
 typedef struct net_r_sam_logon_info {
@@ -529,6 +616,17 @@ typedef struct net_r_sam_logon_info {
 
 	NTSTATUS status; /* return code */
 } NET_R_SAM_LOGON;
+
+/* NET_R_SAM_LOGON_EX */
+typedef struct net_r_sam_logon_info_ex {
+	uint16 switch_value; /* 3 - indicates type of USER INFO */
+	NET_USER_INFO_3 *user;
+
+	uint32 auth_resp; /* 1 - Authoritative response; 0 - Non-Auth? */
+	uint32 flags;
+
+	NTSTATUS status; /* return code */
+} NET_R_SAM_LOGON_EX;
 
 
 /* NET_Q_SAM_LOGOFF */

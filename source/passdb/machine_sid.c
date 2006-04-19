@@ -35,13 +35,14 @@ static DOM_SID *global_sam_sid=NULL;
  Read a SID from a file. This is for compatibility with the old MACHINE.SID
  style of SID storage
 ****************************************************************************/
+
 static BOOL read_sid_from_file(const char *fname, DOM_SID *sid)
 {
 	char **lines;
 	int numlines;
 	BOOL ret;
 
-	lines = file_lines_load(fname, &numlines);
+	lines = file_lines_load(fname, &numlines,0);
 	
 	if (!lines || numlines < 1) {
 		if (lines) file_lines_free(lines);
@@ -197,4 +198,28 @@ DOM_SID *get_global_sam_sid(void)
 void reset_global_sam_sid(void) 
 {
 	SAFE_FREE(global_sam_sid);
+}
+
+/*****************************************************************
+ Check if the SID is our domain SID (S-1-5-21-x-y-z).
+*****************************************************************/  
+
+BOOL sid_check_is_domain(const DOM_SID *sid)
+{
+	return sid_equal(sid, get_global_sam_sid());
+}
+
+/*****************************************************************
+ Check if the SID is our domain SID (S-1-5-21-x-y-z).
+*****************************************************************/  
+
+BOOL sid_check_is_in_our_domain(const DOM_SID *sid)
+{
+	DOM_SID dom_sid;
+	uint32 rid;
+
+	sid_copy(&dom_sid, sid);
+	sid_split_rid(&dom_sid, &rid);
+	
+	return sid_equal(&dom_sid, get_global_sam_sid());
 }

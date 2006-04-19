@@ -17,6 +17,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <errno.h>
+#include <time.h>
 
 #include <config.h>
 
@@ -25,7 +26,13 @@
 #define PAM_SM_ACCOUNT
 #define PAM_SM_PASSWORD
 
-#if defined(SUNOS5) || defined(SUNOS4) || defined(HPUX) || defined(FREEBSD)
+#ifndef PAM_WINBIND_CONFIG_FILE
+#define PAM_WINBIND_CONFIG_FILE "/etc/security/pam_winbind.conf"
+#endif
+
+#include <iniparser.h>
+
+#if defined(SUNOS5) || defined(SUNOS4) || defined(HPUX) || defined(FREEBSD) || defined(AIX)
 
 /* Solaris always uses dynamic pam modules */
 #define PAM_EXTERN extern
@@ -83,8 +90,10 @@ do {                             \
 #define WINBIND_USE_FIRST_PASS_ARG (1<<4)
 #define WINBIND__OLD_PASSWORD (1<<5)
 #define WINBIND_REQUIRED_MEMBERSHIP (1<<6)
-
-#define PAM_WINBIND_NEW_AUTHTOK_REQD "PAM_WINBIND_NEW_AUTHTOK_REQD"
+#define WINBIND_KRB5_AUTH (1<<7)
+#define WINBIND_KRB5_CCACHE_TYPE (1<<8)
+#define WINBIND_CACHED_LOGIN (1<<9)
+#define WINBIND_CONFIG_FILE (1<<10)
 
 /*
  * here is the string to inform the user that the new passwords they
@@ -96,4 +105,68 @@ do {                             \
 #define on(x, y) (x & y)
 #define off(x, y) (!(x & y))
 
+#define PAM_WINBIND_NEW_AUTHTOK_REQD "PAM_WINBIND_NEW_AUTHTOK_REQD"
+#define PAM_WINBIND_HOMEDIR "PAM_WINBIND_HOMEDIR"
+
+#define SECONDS_PER_DAY 86400
+
+#define DAYS_TO_WARN_BEFORE_PWD_EXPIRES 5
+
 #include "winbind_client.h"
+
+#define PAM_WB_REMARK_DIRECT(h,x)\
+{\
+	const char *error_string = NULL; \
+	error_string = _get_ntstatus_error_string(x);\
+	if (error_string != NULL) {\
+		_make_remark(h, PAM_ERROR_MSG, error_string);\
+	} else {\
+		_make_remark(h, PAM_ERROR_MSG, x);\
+	};\
+};
+
+#define PAM_WB_REMARK_DIRECT_RET(h,x)\
+{\
+	const char *error_string = NULL; \
+	error_string = _get_ntstatus_error_string(x);\
+	if (error_string != NULL) {\
+		_make_remark(h, PAM_ERROR_MSG, error_string);\
+		return ret;\
+	};\
+	_make_remark(h, PAM_ERROR_MSG, x);\
+	return ret;\
+};
+	
+#define PAM_WB_REMARK_CHECK_RESPONSE_RET(h,x,y)\
+{\
+	const char *ntstatus = x.data.auth.nt_status_string; \
+	const char *error_string = NULL; \
+	if (!strcasecmp(ntstatus,y)) {\
+		error_string = _get_ntstatus_error_string(y);\
+		if (error_string != NULL) {\
+			_make_remark(h, PAM_ERROR_MSG, error_string);\
+			return ret;\
+		};\
+		if (x.data.auth.error_string[0] != '\0') {\
+			_make_remark(h, PAM_ERROR_MSG, x.data.auth.error_string);\
+			return ret;\
+		};\
+		_make_remark(h, PAM_ERROR_MSG, y);\
+		return ret;\
+	};\
+};
+
+/* from include/rpc_samr.h */
+#define DOMAIN_PASSWORD_COMPLEX            0x00000001
+
+#define REJECT_REASON_OTHER		0x00000000
+#define REJECT_REASON_TOO_SHORT		0x00000001
+#define REJECT_REASON_IN_HISTORY	0x00000002
+#define REJECT_REASON_NOT_COMPLEX	0x00000005
+
+/* from include/smb.h */
+#define ACB_PWNOEXP			0x00000200
+
+/* from include/rpc_netlogon.h */
+#define LOGON_CACHED_ACCOUNT		0x00000004
+

@@ -191,16 +191,6 @@ interface/version dce/rpc pipe identification
 	}, 0x00				    \
 }
 
-#define SYNT_UNIXINFO_V0                    \
-{                                           \
-	{                                   \
-		0x9c54e310, 0xa955, 0x4885, \
-		{ 0xbd, 0x31 },		    \
-                { 0x78, 0x78,               \
-                  0x71, 0x47, 0xdf, 0xa6 }  \
-	}, 0x00                             \
-}
-
 #define SYNT_NTSVCS_V1                      \
 {                                           \
 	{                                   \
@@ -671,7 +661,7 @@ BOOL smb_io_rpc_hdr_fault(const char *desc, RPC_HDR_FAULT *rpc, prs_struct *ps, 
 	prs_debug(ps, depth, desc, "smb_io_rpc_hdr_fault");
 	depth++;
 
-	if(!prs_ntstatus("status  ", ps, depth, &rpc->status))
+	if(!prs_dcerpc_status("status  ", ps, depth, &rpc->status))
 		return False;
 	if(!prs_uint32("reserved", ps, depth, &rpc->reserved))
 		return False;
@@ -858,4 +848,3 @@ BOOL smb_io_rpc_auth_schannel_chk(const char *desc, int auth_len,
 
 	return True;
 }
-

@@ -29,7 +29,7 @@ if {$output != ""} {
 # Run load-dl.c
 
 set output [util_start "$srcdir/$subdir/pam_winbind_syms" \
-        "nsswitch/pam_winbind.so"]
+        "bin/pam_winbind.so"]
 
 if {[regexp "FAIL:" $output]} {
     fail "run pam_winbind_syms"

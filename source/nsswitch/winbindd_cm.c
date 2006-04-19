@@ -358,6 +358,10 @@ static NTSTATUS cm_prepare_connection(const struct winbindd_domain *domain,
 
  session_setup_done:
 
+	/* cache the server name for later connections */
+
+	saf_store( domain->name, (*cli)->desthost );
+
 	if (!cli_send_tconX(*cli, "IPC$", "IPC", "", 0)) {
 
 		result = cli_nt_error(*cli);
@@ -577,6 +581,10 @@ static BOOL receive_getdc_response(struct in_addr dc_ip,
 static void dcip_to_name( const char *domainname, const char *realm, 
                           const DOM_SID *sid, struct in_addr ip, fstring name )
 {
+	struct ip_service ip_list;
+
+	ip_list.ip = ip;
+	ip_list.port = 0;
 
 	/* try GETDC requests first */
 	
@@ -584,16 +592,20 @@ static void dcip_to_name( const char *domainname, const char *realm,
 		int i;
 		smb_msleep(100);
 		for (i=0; i<5; i++) {
-			if (receive_getdc_response(ip, domainname, name))
+			if (receive_getdc_response(ip, domainname, name)) {
+				namecache_store(name, 0x20, 1, &ip_list);
 				return;
+			}
 			smb_msleep(500);
 		}
 	}
 
 	/* try node status request */
 
-	if ( name_status_find(domainname, 0x1c, 0x20, ip, name) )
+	if ( name_status_find(domainname, 0x1c, 0x20, ip, name) ) {
+		namecache_store(name, 0x20, 1, &ip_list);
 		return;
+	}
 
 	/* backup in case the netbios stuff fails */
 
@@ -623,6 +635,7 @@ static void dcip_to_name( const char *domainname, const char *realm,
 		}
 
 		fstrcpy(name, ads->config.ldap_server_name);
+		namecache_store(name, 0x20, 1, &ip_list);
 
 		ads_destroy( &ads );
 	}
@@ -656,14 +669,6 @@ static BOOL get_dcs(TALLOC_CTX *mem_ctx, const struct winbindd_domain *domain,
 		DEBUG(10, ("Retrieved DC %s at %s via netlogon\n",
 			   dcname, inet_ntoa(ip)));
 		return True;
-	}
-
-	if ( is_our_domain 
-		&& must_use_pdc(domain->name) 
-		&& get_pdc_ip(domain->name, &ip)) 
-	{
-		if (add_one_dc_unique(mem_ctx, domain->name, inet_ntoa(ip), ip, dcs, num_dcs)) 
-			return True;
 	}
 
 	/* try standard netbios queries first */
@@ -752,11 +757,34 @@ static NTSTATUS cm_open_connection(struct winbindd_domain *domain,
 {
 	TALLOC_CTX *mem_ctx;
 	NTSTATUS result;
-
+	char *saf_servername = saf_fetch( domain->name );
 	int retries;
 
 	if ((mem_ctx = talloc_init("cm_open_connection")) == NULL)
 		return NT_STATUS_NO_MEMORY;
+
+	/* we have to check the server affinity cache here since 
+	   later we selecte a DC based on response time and not preference */
+	   
+	if ( saf_servername ) 
+	{
+		/* convert an ip address to a name */
+		if ( is_ipaddress( saf_servername ) )
+		{
+			fstring saf_name;
+			struct in_addr ip;
+
+			ip = *interpret_addr2( saf_servername );
+			dcip_to_name( domain->name, domain->alt_name, &domain->sid, ip, saf_name );
+			fstrcpy( domain->dcname, saf_name );
+		} 
+		else 
+		{
+			fstrcpy( domain->dcname, saf_servername );
+		}
+
+		SAFE_FREE( saf_servername );
+	}
 
 	for (retries = 0; retries < 3; retries++) {
 
@@ -765,27 +793,34 @@ static NTSTATUS cm_open_connection(struct winbindd_domain *domain,
 
 		result = NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
 
-		if ((strlen(domain->dcname) > 0) &&
-		    NT_STATUS_IS_OK(check_negative_conn_cache(
-					    domain->name, domain->dcname)) &&
-		    (resolve_name(domain->dcname, &domain->dcaddr.sin_addr,
-				  0x20))) {
-			int dummy;
-			struct sockaddr_in addrs[2];
-			addrs[0] = domain->dcaddr;
-			addrs[0].sin_port = htons(445);
-			addrs[1] = domain->dcaddr;
-			addrs[1].sin_port = htons(139);
-			if (!open_any_socket_out(addrs, 2, 10000,
-						 &dummy, &fd)) {
+		if ((strlen(domain->dcname) > 0)
+			&& NT_STATUS_IS_OK(check_negative_conn_cache( domain->name, domain->dcname))
+			&& (resolve_name(domain->dcname, &domain->dcaddr.sin_addr, 0x20)))
+		{
+			struct sockaddr_in *addrs = NULL;
+			int num_addrs = 0;
+			int dummy = 0;
+
+			add_sockaddr_to_array(mem_ctx, domain->dcaddr.sin_addr, 445, &addrs, &num_addrs);
+			add_sockaddr_to_array(mem_ctx, domain->dcaddr.sin_addr, 139, &addrs, &num_addrs);
+
+			if (!open_any_socket_out(addrs, num_addrs, 10000, &dummy, &fd)) {
+				domain->online = False;
 				fd = -1;
 			}
 		}
 
-		if ((fd == -1) &&
-		    !find_new_dc(mem_ctx, domain, domain->dcname,
-				 &domain->dcaddr, &fd))
+		if ((fd == -1) 
+			&& !find_new_dc(mem_ctx, domain, domain->dcname, &domain->dcaddr, &fd))
+		{
+			/* This is the one place where we will
+			   set the global winbindd offline state
+			   to true, if a "WINBINDD_OFFLINE" entry
+			   is found in the winbindd cache. */
+			set_global_winbindd_state_offline();
+			domain->online = False;
 			break;
+		}
 
 		new_conn->cli = NULL;
 
@@ -796,11 +831,19 @@ static NTSTATUS cm_open_connection(struct winbindd_domain *domain,
 			break;
 	}
 
+	if (NT_STATUS_IS_OK(result)) {
+		if (domain->online == False) {
+			/* We're changing state from offline to online. */
+			set_global_winbindd_state_online();
+		}
+		domain->online = True;
+	}
+
 	talloc_destroy(mem_ctx);
 	return result;
 }
 
-/* Return true if a connection is still alive */
+/* Close down all open pipes on a connection. */
 
 void invalidate_cm_connection(struct winbindd_cm_conn *conn)
 {
@@ -1239,7 +1282,7 @@ NTSTATUS cm_connect_lsa(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 	/* Fall back to schannel if it's a W2K pre-SP1 box. */
 
 	if (!cm_get_schannel_dcinfo(domain, &p_dcinfo)) {
-		DEBUG(10, ("cm_connect_sam: Could not get schannel auth info "
+		DEBUG(10, ("cm_connect_lsa: Could not get schannel auth info "
 			   "for domain %s, trying anon\n", conn->cli->domain));
 		goto anonymous;
 	}
@@ -1404,7 +1447,9 @@ NTSTATUS cm_connect_netlogon(struct winbindd_domain *domain,
 	if (conn->netlogon_pipe == NULL) {
 		DEBUG(3, ("Could not open schannel'ed NETLOGON pipe. Error "
 			  "was %s\n", nt_errstr(result)));
-		return result;
+			  
+		/* make sure we return something besides OK */
+		return !NT_STATUS_IS_OK(result) ? result : NT_STATUS_PIPE_NOT_AVAILABLE;
 	}
 
 	*cli = conn->netlogon_pipe;

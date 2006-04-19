@@ -247,7 +247,7 @@ int main(int argc,char *argv[])
 	  exit(1);
   }
 
-  if (!lp_load(dyn_CONFIGFILE,True,False,False)) {
+  if (!lp_load(dyn_CONFIGFILE,True,False,False,True)) {
 	  fprintf(stderr, "Can't load %s - run testparm to debug it\n", dyn_CONFIGFILE);
   }
 

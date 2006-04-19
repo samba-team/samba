@@ -40,8 +40,8 @@ static int fake_perms_stat(vfs_handle_struct *handle, connection_struct *conn, c
 		} else {
 			sbuf->st_mode = S_IRWXU;
 		}
-		sbuf->st_uid = current_user.uid;
-		sbuf->st_gid = current_user.gid;
+		sbuf->st_uid = current_user.ut.uid;
+		sbuf->st_gid = current_user.ut.gid;
 	}
 
 	return ret;
@@ -58,8 +58,8 @@ static int fake_perms_fstat(vfs_handle_struct *handle, files_struct *fsp, int fd
 		} else {
 			sbuf->st_mode = S_IRWXU;
 		}
-		sbuf->st_uid = current_user.uid;
-		sbuf->st_gid = current_user.gid;
+		sbuf->st_uid = current_user.ut.uid;
+		sbuf->st_gid = current_user.ut.gid;
 	}
 	return ret;
 }

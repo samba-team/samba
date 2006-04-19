@@ -523,6 +523,8 @@ static BOOL ensurepath(char *fname)
 
 	if ((partpath == NULL) || (ffname == NULL)){
 		DEBUG(0, ("Out of memory in ensurepath: %s\n", fname));
+		SAFE_FREE(partpath);
+		SAFE_FREE(ffname);
 		return(False);
 	}
 
@@ -1077,6 +1079,7 @@ static char *get_longfilename(file_info2 finfo)
 	while (left > 0) {
 		if (next_block(tarbuf, &buffer_p, tbufsiz) <= 0) {
 			DEBUG(0, ("Empty file, short tar file, or read error: %s\n", strerror(errno)));
+			SAFE_FREE(longname);
 			return(NULL);
 		}
 
@@ -1109,6 +1112,7 @@ static void do_tarput(void)
 		/* Get us to the next block, or the first block first time around */
 		if (next_block(tarbuf, &buffer_p, tbufsiz) <= 0) {
 			DEBUG(0, ("Empty file, short tar file, or read error: %s\n", strerror(errno)));
+			SAFE_FREE(longfilename);
 			return;
 		}
 
@@ -1180,6 +1184,7 @@ static void do_tarput(void)
 				}
 				break;
 			case 'L':
+				SAFE_FREE(longfilename);
 				longfilename = get_longfilename(finfo);
 				if (!longfilename) {
 					DEBUG(0, ("abandoning restore\n"));
@@ -1510,16 +1515,13 @@ static int read_inclusion_file(char *filename)
 		}
     
 		if ((strlen(buf) + 1 + inclusion_buffer_sofar) >= inclusion_buffer_size) {
-			char *ib;
 			inclusion_buffer_size *= 2;
-			ib = SMB_REALLOC(inclusion_buffer,inclusion_buffer_size);
-			if (! ib) {
+			inclusion_buffer = SMB_REALLOC(inclusion_buffer,inclusion_buffer_size);
+			if (!inclusion_buffer) {
 				DEBUG(0,("failure enlarging inclusion buffer to %d bytes\n",
 						inclusion_buffer_size));
 				error = 1;
 				break;
-			} else {
-				inclusion_buffer = ib;
 			}
 		}
     
@@ -1722,6 +1724,7 @@ int tar_parseargs(int argc, char *argv[], const char *Optarg, int Optind)
 
 			if ((tmpstr = (char *)SMB_MALLOC(strlen(cliplist[clipcount])+1)) == NULL) {
 				DEBUG(0, ("Could not allocate space for a cliplist item, # %i\n", clipcount));
+				SAFE_FREE(tmplist);
 				return 0;
 			}
 

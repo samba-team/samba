@@ -100,7 +100,7 @@ void invalidate_vuid(uint16 vuid)
 	session_yield(vuser);
 	SAFE_FREE(vuser->session_keystr);
 
-	free_server_info(&vuser->server_info);
+	TALLOC_FREE(vuser->server_info);
 
 	data_blob_free(&vuser->session_key);
 
@@ -111,7 +111,7 @@ void invalidate_vuid(uint16 vuid)
 	conn_clear_vuid_cache(vuid);
 
 	SAFE_FREE(vuser->groups);
-	delete_nt_token(&vuser->nt_user_token);
+	TALLOC_FREE(vuser->nt_user_token);
 	SAFE_FREE(vuser);
 	num_validated_vuids--;
 }
@@ -136,9 +136,11 @@ void invalidate_all_vuids(void)
  *  @param server_info The token returned from the authentication process. 
  *   (now 'owned' by register_vuid)
  *
- *  @param session_key The User session key for the login session (now also 'owned' by register_vuid)
+ *  @param session_key The User session key for the login session (now also
+ *  'owned' by register_vuid)
  *
- *  @param respose_blob The NT challenge-response, if available.  (May be freed after this call)
+ *  @param respose_blob The NT challenge-response, if available.  (May be
+ *  freed after this call)
  *
  *  @param smb_name The untranslated name of the user
  *
@@ -147,7 +149,9 @@ void invalidate_all_vuids(void)
  *
  */
 
-int register_vuid(auth_serversupplied_info *server_info, DATA_BLOB session_key, DATA_BLOB response_blob, const char *smb_name)
+int register_vuid(auth_serversupplied_info *server_info,
+		  DATA_BLOB session_key, DATA_BLOB response_blob,
+		  const char *smb_name)
 {
 	user_struct *vuser = NULL;
 
@@ -179,7 +183,8 @@ int register_vuid(auth_serversupplied_info *server_info, DATA_BLOB session_key, 
 			next_vuid = VUID_OFFSET;
 	}
 
-	DEBUG(10,("register_vuid: allocated vuid = %u\n", (unsigned int)next_vuid ));
+	DEBUG(10,("register_vuid: allocated vuid = %u\n",
+		  (unsigned int)next_vuid ));
 
 	vuser->vuid = next_vuid;
 
@@ -203,11 +208,14 @@ int register_vuid(auth_serversupplied_info *server_info, DATA_BLOB session_key, 
 	
 	vuser->n_groups = server_info->n_groups;
 	if (vuser->n_groups) {
-		if (!(vuser->groups = (gid_t *)memdup(server_info->groups, sizeof(gid_t) * vuser->n_groups))) {
-			DEBUG(0,("register_vuid: failed to memdup vuser->groups\n"));
+		if (!(vuser->groups = (gid_t *)memdup(server_info->groups,
+						      sizeof(gid_t) *
+						      vuser->n_groups))) {
+			DEBUG(0,("register_vuid: failed to memdup "
+				 "vuser->groups\n"));
 			data_blob_free(&session_key);
 			free(vuser);
-			free_server_info(&server_info);
+			TALLOC_FREE(server_info);
 			return UID_FIELD_INVALID;
 		}
 	}
@@ -216,26 +224,35 @@ int register_vuid(auth_serversupplied_info *server_info, DATA_BLOB session_key, 
 	fstrcpy(vuser->user.unix_name, server_info->unix_name); 
 
 	/* This is a potentially untrusted username */
-	alpha_strcpy(vuser->user.smb_name, smb_name, ". _-$", sizeof(vuser->user.smb_name));
+	alpha_strcpy(vuser->user.smb_name, smb_name, ". _-$",
+		     sizeof(vuser->user.smb_name));
 
 	fstrcpy(vuser->user.domain, pdb_get_domain(server_info->sam_account));
-	fstrcpy(vuser->user.full_name, pdb_get_fullname(server_info->sam_account));
+	fstrcpy(vuser->user.full_name,
+		pdb_get_fullname(server_info->sam_account));
 
 	{
 		/* Keep the homedir handy */
-		const char *homedir = pdb_get_homedir(server_info->sam_account);
-		const char *logon_script = pdb_get_logon_script(server_info->sam_account);
+		const char *homedir =
+			pdb_get_homedir(server_info->sam_account);
+		const char *logon_script =
+			pdb_get_logon_script(server_info->sam_account);
 
-		if (!IS_SAM_DEFAULT(server_info->sam_account, PDB_UNIXHOMEDIR)) {
-			const char *unix_homedir = pdb_get_unix_homedir(server_info->sam_account);
+		if (!IS_SAM_DEFAULT(server_info->sam_account,
+				    PDB_UNIXHOMEDIR)) {
+			const char *unix_homedir =
+				pdb_get_unix_homedir(server_info->sam_account);
 			if (unix_homedir) {
-				vuser->unix_homedir = smb_xstrdup(unix_homedir);
+				vuser->unix_homedir =
+					smb_xstrdup(unix_homedir);
 			}
 		} else {
-			struct passwd *passwd = getpwnam_alloc(vuser->user.unix_name);
+			struct passwd *passwd =
+				getpwnam_alloc(NULL, vuser->user.unix_name);
 			if (passwd) {
-				vuser->unix_homedir = smb_xstrdup(passwd->pw_dir);
-				passwd_free(&passwd);
+				vuser->unix_homedir =
+					smb_xstrdup(passwd->pw_dir);
+				TALLOC_FREE(passwd);
 			}
 		}
 		
@@ -252,15 +269,18 @@ int register_vuid(auth_serversupplied_info *server_info, DATA_BLOB session_key, 
 	DEBUG(10,("register_vuid: (%u,%u) %s %s %s guest=%d\n", 
 		  (unsigned int)vuser->uid, 
 		  (unsigned int)vuser->gid,
-		  vuser->user.unix_name, vuser->user.smb_name, vuser->user.domain, vuser->guest ));
+		  vuser->user.unix_name, vuser->user.smb_name,
+		  vuser->user.domain, vuser->guest ));
 
-	DEBUG(3, ("User name: %s\tReal name: %s\n",vuser->user.unix_name,vuser->user.full_name));	
+	DEBUG(3, ("User name: %s\tReal name: %s\n", vuser->user.unix_name,
+		  vuser->user.full_name));	
 
  	if (server_info->ptok) {
-		vuser->nt_user_token = dup_nt_token(server_info->ptok);
+		vuser->nt_user_token = dup_nt_token(NULL, server_info->ptok);
 	} else {
-		DEBUG(1, ("server_info does not contain a user_token - cannot continue\n"));
-		free_server_info(&server_info);
+		DEBUG(1, ("server_info does not contain a user_token - "
+			  "cannot continue\n"));
+		TALLOC_FREE(server_info);
 		data_blob_free(&session_key);
 		SAFE_FREE(vuser->homedir);
 		SAFE_FREE(vuser->unix_homedir);
@@ -273,7 +293,8 @@ int register_vuid(auth_serversupplied_info *server_info, DATA_BLOB session_key, 
 	/* use this to keep tabs on all our info from the authentication */
 	vuser->server_info = server_info;
 
-	DEBUG(3,("UNIX uid %d is UNIX user %s, and will be vuid %u\n",(int)vuser->uid,vuser->user.unix_name, vuser->vuid));
+	DEBUG(3,("UNIX uid %d is UNIX user %s, and will be vuid %u\n",
+		 (int)vuser->uid,vuser->user.unix_name, vuser->vuid));
 
 	next_vuid++;
 	num_validated_vuids++;
@@ -281,9 +302,10 @@ int register_vuid(auth_serversupplied_info *server_info, DATA_BLOB session_key, 
 	DLIST_ADD(validated_users, vuser);
 
 	if (!session_claim(vuser)) {
-		DEBUG(1,("Failed to claim session for vuid=%d\n", vuser->vuid));
+		DEBUG(1, ("Failed to claim session for vuid=%d\n",
+			  vuser->vuid));
 		invalidate_vuid(vuser->vuid);
-		return -1;
+		return UID_FIELD_INVALID;
 	}
 
 	/* Register a home dir service for this user iff
@@ -301,19 +323,26 @@ int register_vuid(auth_serversupplied_info *server_info, DATA_BLOB session_key, 
 		int servicenumber = lp_servicenumber(vuser->user.unix_name);
 
 		if ( servicenumber == -1 ) {
-			DEBUG(3, ("Adding homes service for user '%s' using home directory: '%s'\n", 
+			DEBUG(3, ("Adding homes service for user '%s' using "
+				  "home directory: '%s'\n", 
 				vuser->user.unix_name, vuser->unix_homedir));
-			vuser->homes_snum = add_home_service(vuser->user.unix_name, 
-						vuser->user.unix_name, vuser->unix_homedir);
+			vuser->homes_snum =
+				add_home_service(vuser->user.unix_name, 
+						 vuser->user.unix_name,
+						 vuser->unix_homedir);
 		} else {
-			DEBUG(3, ("Using static (or previously created) service for user '%s'; path = '%s'\n", 
-				vuser->user.unix_name, lp_pathname(servicenumber) ));
+			DEBUG(3, ("Using static (or previously created) "
+				  "service for user '%s'; path = '%s'\n", 
+				  vuser->user.unix_name,
+				  lp_pathname(servicenumber) ));
 			vuser->homes_snum = servicenumber;
 		}
 	} 
 	
-	if (srv_is_signing_negotiated() && !vuser->guest && !srv_signing_started()) {
-		/* Try and turn on server signing on the first non-guest sessionsetup. */
+	if (srv_is_signing_negotiated() && !vuser->guest &&
+	    !srv_signing_started()) {
+		/* Try and turn on server signing on the first non-guest
+		 * sessionsetup. */
 		srv_set_signing(vuser->session_key, response_blob);
 	}
 	
@@ -344,14 +373,19 @@ void add_session_user(const char *user)
 	if( session_userlist && in_list(suser,session_userlist,False) )
 		return;
 
-	if( !session_userlist || (strlen(suser) + strlen(session_userlist) + 2 >= len_session_userlist) ) {
+	if( !session_userlist ||
+	    (strlen(suser) + strlen(session_userlist) + 2 >=
+	     len_session_userlist) ) {
 		char *newlist;
 
 		if (len_session_userlist > 128 * PSTRING_LEN) {
-			DEBUG(3,("add_session_user: session userlist already too large.\n"));
+			DEBUG(3,("add_session_user: session userlist already "
+				 "too large.\n"));
 			return;
 		}
-		newlist = (char *)SMB_REALLOC( session_userlist, len_session_userlist + PSTRING_LEN );
+		newlist = (char *)SMB_REALLOC_KEEP_OLD_ON_ERROR(
+			session_userlist,
+			len_session_userlist + PSTRING_LEN );
 		if( newlist == NULL ) {
 			DEBUG(1,("Unable to resize session_userlist\n"));
 			return;
@@ -368,10 +402,139 @@ void add_session_user(const char *user)
 }
 
 /****************************************************************************
+ Check if a user is in a netgroup user list. If at first we don't succeed,
+ try lower case.
+****************************************************************************/
+
+BOOL user_in_netgroup(const char *user, const char *ngname)
+{
+#ifdef HAVE_NETGROUP
+	static char *mydomain = NULL;
+	fstring lowercase_user;
+
+	if (mydomain == NULL)
+		yp_get_default_domain(&mydomain);
+
+	if(mydomain == NULL) {
+		DEBUG(5,("Unable to get default yp domain\n"));
+		return False;
+	}
+
+	DEBUG(5,("looking for user %s of domain %s in netgroup %s\n",
+		user, mydomain, ngname));
+
+	if (innetgr(ngname, NULL, user, mydomain)) {
+		DEBUG(5,("user_in_netgroup: Found\n"));
+		return (True);
+	} else {
+
+		/*
+		 * Ok, innetgr is case sensitive. Try once more with lowercase
+		 * just in case. Attempt to fix #703. JRA.
+		 */
+
+		fstrcpy(lowercase_user, user);
+		strlower_m(lowercase_user);
+	
+		DEBUG(5,("looking for user %s of domain %s in netgroup %s\n",
+			lowercase_user, mydomain, ngname));
+
+		if (innetgr(ngname, NULL, lowercase_user, mydomain)) {
+			DEBUG(5,("user_in_netgroup: Found\n"));
+			return (True);
+		}
+	}
+#endif /* HAVE_NETGROUP */
+	return False;
+}
+
+/****************************************************************************
+ Check if a user is in a user list - can check combinations of UNIX
+ and netgroup lists.
+****************************************************************************/
+
+BOOL user_in_list(const char *user,const char **list)
+{
+	if (!list || !*list)
+		return False;
+
+	DEBUG(10,("user_in_list: checking user %s in list\n", user));
+
+	while (*list) {
+
+		DEBUG(10,("user_in_list: checking user |%s| against |%s|\n",
+			  user, *list));
+
+		/*
+		 * Check raw username.
+		 */
+		if (strequal(user, *list))
+			return(True);
+
+		/*
+		 * Now check to see if any combination
+		 * of UNIX and netgroups has been specified.
+		 */
+
+		if(**list == '@') {
+			/*
+			 * Old behaviour. Check netgroup list
+			 * followed by UNIX list.
+			 */
+			if(user_in_netgroup(user, *list +1))
+				return True;
+			if(user_in_group(user, *list +1))
+				return True;
+		} else if (**list == '+') {
+
+			if((*(*list +1)) == '&') {
+				/*
+				 * Search UNIX list followed by netgroup.
+				 */
+				if(user_in_group(user, *list +2))
+					return True;
+				if(user_in_netgroup(user, *list +2))
+					return True;
+
+			} else {
+
+				/*
+				 * Just search UNIX list.
+				 */
+
+				if(user_in_group(user, *list +1))
+					return True;
+			}
+
+		} else if (**list == '&') {
+
+			if(*(*list +1) == '+') {
+				/*
+				 * Search netgroup list followed by UNIX list.
+				 */
+				if(user_in_netgroup(user, *list +2))
+					return True;
+				if(user_in_group(user, *list +2))
+					return True;
+			} else {
+				/*
+				 * Just search netgroup list.
+				 */
+				if(user_in_netgroup(user, *list +1))
+					return True;
+			}
+		}
+    
+		list++;
+	}
+	return(False);
+}
+
+/****************************************************************************
  Check if a username is valid.
 ****************************************************************************/
 
-BOOL user_ok(const char *user,int snum, gid_t *groups, size_t n_groups)
+static BOOL user_ok(const char *user, int snum)
 {
 	char **valid, **invalid;
 	BOOL ret;
@@ -387,8 +550,7 @@ BOOL user_ok(const char *user,int snum, gid_t *groups, size_t n_groups)
 			     str_list_sub_basic(invalid,
 						current_user_info.smb_name) ) {
 				ret = !user_in_list(user,
-						    (const char **)invalid,
-						    groups, n_groups);
+						    (const char **)invalid);
 			}
 		}
 	}
@@ -402,8 +564,7 @@ BOOL user_ok(const char *user,int snum, gid_t *groups, size_t n_groups)
 			if ( valid &&
 			     str_list_sub_basic(valid,
 						current_user_info.smb_name) ) {
-				ret = user_in_list(user, (const char **)valid,
-						   groups, n_groups);
+				ret = user_in_list(user, (const char **)valid);
 			}
 		}
 	}
@@ -415,8 +576,7 @@ BOOL user_ok(const char *user,int snum, gid_t *groups, size_t n_groups)
 		if (user_list &&
 		    str_list_substitute(user_list, "%S",
 					lp_servicename(snum))) {
-			ret = user_in_list(user, (const char **)user_list,
-					   groups, n_groups);
+			ret = user_in_list(user, (const char **)user_list);
 		}
 		if (user_list) str_list_free (&user_list);
 	}
@@ -436,7 +596,7 @@ static char *validate_group(char *group, DATA_BLOB password,int snum)
 		setnetgrent(group);
 		while (getnetgrent(&host, &user, &domain)) {
 			if (user) {
-				if (user_ok(user, snum, NULL, 0) && 
+				if (user_ok(user, snum) && 
 				    password_ok(user,password)) {
 					endnetgrent();
 					return(user);
@@ -472,12 +632,15 @@ static char *validate_group(char *group, DATA_BLOB password,int snum)
 			member = member_list;
 
 			for(i = 0; gptr->gr_mem && gptr->gr_mem[i]; i++) {
-				size_t member_len = strlen(gptr->gr_mem[i]) + 1;
-				if( copied_len + member_len < sizeof(pstring)) { 
+				size_t member_len = strlen(gptr->gr_mem[i])+1;
+				if(copied_len+member_len < sizeof(pstring)) { 
 
-					DEBUG(10,("validate_group: = gr_mem = %s\n", gptr->gr_mem[i]));
+					DEBUG(10,("validate_group: = gr_mem = "
+						  "%s\n", gptr->gr_mem[i]));
 
-					safe_strcpy(member, gptr->gr_mem[i], sizeof(pstring) - copied_len - 1);
+					safe_strcpy(member, gptr->gr_mem[i],
+						    sizeof(pstring) -
+						    copied_len - 1);
 					copied_len += member_len;
 					member += copied_len;
 				} else {
@@ -491,13 +654,14 @@ static char *validate_group(char *group, DATA_BLOB password,int snum)
 			while (*member) {
 				static fstring name;
 				fstrcpy(name,member);
-				if (user_ok(name,snum, NULL, 0) &&
+				if (user_ok(name,snum) &&
 				    password_ok(name,password)) {
 					endgrent();
 					return(&name[0]);
 				}
 
-				DEBUG(10,("validate_group = member = %s\n", member));
+				DEBUG(10,("validate_group = member = %s\n",
+					  member));
 
 				member += strlen(member) + 1;
 			}
@@ -558,7 +722,7 @@ BOOL authorise_login(int snum, fstring user, DATA_BLOB password,
 		     auser = strtok(NULL,LIST_SEP)) {
 			fstring user2;
 			fstrcpy(user2,auser);
-			if (!user_ok(user2,snum, NULL, 0))
+			if (!user_ok(user2,snum))
 				continue;
 			
 			if (password_ok(user2,password)) {
@@ -595,7 +759,7 @@ BOOL authorise_login(int snum, fstring user, DATA_BLOB password,
 			} else {
 				fstring user2;
 				fstrcpy(user2,auser);
-				if (user_ok(user2,snum, NULL, 0) &&
+				if (user_ok(user2,snum) &&
 				    password_ok(user2,password)) {
 					ok = True;
 					fstrcpy(user,user2);
@@ -624,7 +788,7 @@ BOOL authorise_login(int snum, fstring user, DATA_BLOB password,
 		*guest = True;
 	}
 
-	if (ok && !user_ok(user, snum, NULL, 0)) {
+	if (ok && !user_ok(user, snum)) {
 		DEBUG(0,("authorise_login: rejected invalid user %s\n",user));
 		ok = False;
 	}

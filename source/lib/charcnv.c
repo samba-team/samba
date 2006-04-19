@@ -84,15 +84,6 @@ static const char *charset_name(charset_t ch)
 		}
 		ret = ln;
 	}
-#ifdef HAVE_SETLOCALE
-	/* We set back the locale to C to get ASCII-compatible toupper/lower functions.
-	   For now we do not need any other POSIX localisations anyway. When we should
-	   really need localized string functions one day we need to write our own
-	   ascii_tolower etc.
-	*/
-	setlocale(LC_ALL, "C");
- #endif
-
 #endif
 
 	if (!ret || !*ret) ret = "ASCII";
@@ -107,6 +98,23 @@ void lazy_initialize_conv(void)
 		initialized = True;
 		load_case_tables();
 		init_iconv();
+	}
+}
+
+/**
+ * Destroy global objects allocated by init_iconv()
+ **/
+void gfree_charcnv(void)
+{
+	int c1, c2;
+
+	for (c1=0;c1<NUM_CHARSETS;c1++) {
+		for (c2=0;c2<NUM_CHARSETS;c2++) {
+			if ( conv_handles[c1][c2] ) {
+				smb_iconv_close( conv_handles[c1][c2] );
+				conv_handles[c1][c2] = 0;
+			}
+		}
 	}
 }
 
@@ -546,19 +554,17 @@ size_t convert_string_allocate(TALLOC_CTX *ctx, charset_t from, charset_t to,
 		destlen = destlen * 2;
 	}
 
-	if (ctx)
+	if (ctx) {
 		ob = (char *)TALLOC_REALLOC(ctx, ob, destlen);
-	else
+	} else {
 		ob = (char *)SMB_REALLOC(ob, destlen);
+	}
 
 	if (!ob) {
 		DEBUG(0, ("convert_string_allocate: realloc failed!\n"));
-		if (!ctx)
-			SAFE_FREE(outbuf);
 		return (size_t)-1;
-	} else {
-		outbuf = ob;
 	}
+	outbuf = ob;
 	i_len = srclen;
 	o_len = destlen;
 
@@ -596,17 +602,18 @@ size_t convert_string_allocate(TALLOC_CTX *ctx, charset_t from, charset_t to,
   out:
 
 	destlen = destlen - o_len;
-	if (ctx)
-		*dest = (char *)TALLOC_REALLOC(ctx,ob,destlen);
-	else
-		*dest = (char *)SMB_REALLOC(ob,destlen);
-	if (destlen && !*dest) {
+	if (ctx) {
+		ob = (char *)TALLOC_REALLOC(ctx,ob,destlen);
+	} else {
+		ob = (char *)SMB_REALLOC(ob,destlen);
+	}
+
+	if (destlen && !ob) {
 		DEBUG(0, ("convert_string_allocate: out of memory!\n"));
-		if (!ctx)
-			SAFE_FREE(ob);
 		return (size_t)-1;
 	}
 
+	*dest = ob;
 	return destlen;
 
  use_as_is:

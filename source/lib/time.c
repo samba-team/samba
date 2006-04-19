@@ -231,7 +231,7 @@ time_t nt_time_to_unix(NTTIME *nt)
  if the NTTIME was 5 seconds, the time_t is 5 seconds. JFM
 ****************************************************************************/
 
-time_t nt_time_to_unix_abs(NTTIME *nt)
+time_t nt_time_to_unix_abs(const NTTIME *nt)
 {
 	double d;
 	time_t ret;
@@ -239,6 +239,7 @@ time_t nt_time_to_unix_abs(NTTIME *nt)
 	   broken SCO compiler. JRA. */
 	time_t l_time_min = TIME_T_MIN;
 	time_t l_time_max = TIME_T_MAX;
+	NTTIME neg_nt;
 
 	if (nt->high == 0) {
 		return(0);
@@ -250,11 +251,11 @@ time_t nt_time_to_unix_abs(NTTIME *nt)
 
 	/* reverse the time */
 	/* it's a negative value, turn it to positive */
-	nt->high=~nt->high;
-	nt->low=~nt->low;
+	neg_nt.high=~nt->high;
+	neg_nt.low=~nt->low;
 
-	d = ((double)nt->high)*4.0*(double)(1<<30);
-	d += (nt->low&0xFFF00000);
+	d = ((double)neg_nt.high)*4.0*(double)(1<<30);
+	d += (neg_nt.low&0xFFF00000);
 	d *= 1.0e-7;
   
 	if (!(l_time_min <= d && d <= l_time_max)) {
@@ -728,11 +729,24 @@ void init_nt_time(NTTIME *nt)
 	nt->low = 0xFFFFFFFF;
 }
 
+BOOL nt_time_is_set(const NTTIME *nt)
+{
+	if ((nt->high == 0x7FFFFFFF) && (nt->low == 0xFFFFFFFF)) {
+		return False;
+	}
+
+	if ((nt->high == 0x80000000) && (nt->low == 0)) {
+		return False;
+	}
+
+	return True;
+}
+
 /****************************************************************************
  Check if NTTIME is 0.
 ****************************************************************************/
 
-BOOL nt_time_is_zero(NTTIME *nt)
+BOOL nt_time_is_zero(const NTTIME *nt)
 {
 	if(nt->high==0) {
 		return True;
@@ -744,7 +758,7 @@ BOOL nt_time_is_zero(NTTIME *nt)
  Check if two NTTIMEs are the same.
 ****************************************************************************/
 
-BOOL nt_time_equals(NTTIME *nt1, NTTIME *nt2)
+BOOL nt_time_equals(const NTTIME *nt1, const NTTIME *nt2)
 {
 	return (nt1->high == nt2->high && nt1->low == nt2->low);
 }
@@ -941,3 +955,105 @@ time_t generalized_to_unix_time(const char *str)
 
 	return timegm(&tm);
 }
+
+/****************************************************************************
+ Return all the possible time fields from a stat struct as a timespec.
+****************************************************************************/
+
+struct timespec get_atimespec(SMB_STRUCT_STAT *pst)
+{
+#if !defined(HAVE_STAT_HIRES_TIMESTAMPS)
+	struct timespec ret;
+
+	/* Old system - no ns timestamp. */
+	ret.tv_sec = pst->st_atime;
+	ret.tv_nsec = 0;
+	return ret;
+#else
+#if defined(HAVE_STAT_ST_ATIM)
+	return pst->st_atim;
+#elif defined(HAVE_STAT_ST_ATIMENSEC)
+	struct timespec ret;
+	ret.tv_sec = pst->st_atime;
+	ret.tv_nsec = pst->st_atimensec;
+	return ret;
+#else
+#error	CONFIGURE_ERROR_IN_DETECTING_TIMESPEC_IN_STAT 
+#endif
+#endif
+}
+
+struct timespec get_mtimespec(SMB_STRUCT_STAT *pst)
+{
+#if !defined(HAVE_STAT_HIRES_TIMESTAMPS)
+	struct timespec ret;
+
+	/* Old system - no ns timestamp. */
+	ret.tv_sec = pst->st_mtime;
+	ret.tv_nsec = 0;
+	return ret;
+#else
+#if defined(HAVE_STAT_ST_MTIM)
+	return pst->st_mtim;
+#elif defined(HAVE_STAT_ST_MTIMENSEC)
+	struct timespec ret;
+	ret.tv_sec = pst->st_mtime;
+	ret.tv_nsec = pst->st_mtimensec;
+	return ret;
+#else
+#error	CONFIGURE_ERROR_IN_DETECTING_TIMESPEC_IN_STAT 
+#endif
+#endif
+}
+
+struct timespec get_ctimespec(SMB_STRUCT_STAT *pst)
+{
+#if !defined(HAVE_STAT_HIRES_TIMESTAMPS)
+	struct timespec ret;
+
+	/* Old system - no ns timestamp. */
+	ret.tv_sec = pst->st_ctime;
+	ret.tv_nsec = 0;
+	return ret;
+#else
+#if defined(HAVE_STAT_ST_CTIM)
+	return pst->st_ctim;
+#elif defined(HAVE_STAT_ST_CTIMENSEC)
+	struct timespec ret;
+	ret.tv_sec = pst->st_ctime;
+	ret.tv_nsec = pst->st_ctimensec;
+	return ret;
+#else
+#error	CONFIGURE_ERROR_IN_DETECTING_TIMESPEC_IN_STAT 
+#endif
+#endif
+}
+
+#if 0
+/****************************************************************************
+ Return the best approximation to a 'create time' under UNIX from a stat
+ structure.
+****************************************************************************/
+
+struct timespec get_create_timespec(SMB_STRUCT_STAT *st,BOOL fake_dirs)
+{
+	time_t ret, ret1;
+
+	if(S_ISDIR(st->st_mode) && fake_dirs) {
+		return (time_t)315493200L;          /* 1/1/1980 */
+	}
+    
+	ret = MIN(st->st_ctime, st->st_mtime);
+	ret1 = MIN(ret, st->st_atime);
+
+	if(ret1 != (time_t)0) {
+		return ret1;
+	}
+
+	/*
+	 * One of ctime, mtime or atime was zero (probably atime).
+	 * Just return MIN(ctime, mtime).
+	 */
+	return ret;
+}
+#endif

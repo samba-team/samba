@@ -463,19 +463,17 @@ static void adjust_do_list_queue(void)
 
 static void add_to_do_list_queue(const char* entry)
 {
-	char *dlq;
 	long new_end = do_list_queue_end + ((long)strlen(entry)) + 1;
 	while (new_end > do_list_queue_size) {
 		do_list_queue_size *= 2;
 		DEBUG(4,("enlarging do_list_queue to %d\n",
 			 (int)do_list_queue_size));
-		dlq = SMB_REALLOC(do_list_queue, do_list_queue_size);
-		if (! dlq) {
+		do_list_queue = SMB_REALLOC(do_list_queue, do_list_queue_size);
+		if (! do_list_queue) {
 			d_printf("failure enlarging do_list_queue to %d bytes\n",
 				 (int)do_list_queue_size);
 			reset_do_list_queue();
 		} else {
-			do_list_queue = dlq;
 			memset(do_list_queue + do_list_queue_size / 2,
 			       0, do_list_queue_size / 2);
 		}
@@ -1338,15 +1336,15 @@ static struct file_list {
  Free a file_list structure.
 ****************************************************************************/
 
-static void free_file_list (struct file_list * list)
+static void free_file_list (struct file_list *list_head)
 {
-	struct file_list *tmp;
+	struct file_list *list, *next;
 	
-	while (list) {
-		tmp = list;
-		DLIST_REMOVE(list, list);
-		SAFE_FREE(tmp->file_path);
-		SAFE_FREE(tmp);
+	for (list = list_head; list; list = next) {
+		next = list->next;
+		DLIST_REMOVE(list_head, list);
+		SAFE_FREE(list->file_path);
+		SAFE_FREE(list);
 	}
 }
 
@@ -2512,7 +2510,7 @@ static void browse_fn(const char *name, uint32 m,
 
         *typestr=0;
 
-        switch (m)
+        switch (m & 7)
         {
           case STYPE_DISKTREE:
             fstrcpy(typestr,"Disk"); break;
@@ -2534,6 +2532,57 @@ static void browse_fn(const char *name, uint32 m,
 	}
 }
 
+static BOOL browse_host_rpc(BOOL sort)
+{
+	NTSTATUS status;
+	struct rpc_pipe_client *pipe_hnd;
+	TALLOC_CTX *mem_ctx;
+	ENUM_HND enum_hnd;
+	WERROR werr;
+	SRV_SHARE_INFO_CTR ctr;
+	int i;
+
+	mem_ctx = talloc_new(NULL);
+	if (mem_ctx == NULL) {
+		DEBUG(0, ("talloc_new failed\n"));
+		return False;
+	}
+
+	init_enum_hnd(&enum_hnd, 0);
+
+	pipe_hnd = cli_rpc_pipe_open_noauth(cli, PI_SRVSVC, &status);
+
+	if (pipe_hnd == NULL) {
+		DEBUG(10, ("Could not connect to srvsvc pipe: %s\n",
+			   nt_errstr(status)));
+		TALLOC_FREE(mem_ctx);
+		return False;
+	}
+
+	werr = rpccli_srvsvc_net_share_enum(pipe_hnd, mem_ctx, 1, &ctr,
+					    0xffffffff, &enum_hnd);
+
+	if (!W_ERROR_IS_OK(werr)) {
+		TALLOC_FREE(mem_ctx);
+		cli_rpc_pipe_close(pipe_hnd);
+		return False;
+	}
+
+	for (i=0; i<ctr.num_entries; i++) {
+		SRV_SHARE_INFO_1 *info = &ctr.share.info1[i];
+		char *name, *comment;
+		name = rpcstr_pull_unistr2_talloc(
+			mem_ctx, &info->info_1_str.uni_netname);
+		comment = rpcstr_pull_unistr2_talloc(
+			mem_ctx, &info->info_1_str.uni_remark);
+		browse_fn(name, info->info_1.type, comment, NULL);
+	}
+
+	TALLOC_FREE(mem_ctx);
+	cli_rpc_pipe_close(pipe_hnd);
+	return True;
+}
+
 /****************************************************************************
  Try and browse available connections on a host.
 ****************************************************************************/
@@ -2544,6 +2593,10 @@ static BOOL browse_host(BOOL sort)
 	if (!grepable) {
 	        d_printf("\n\tSharename       Type      Comment\n");
 	        d_printf("\t---------       ----      -------\n");
+	}
+
+	if (browse_host_rpc(sort)) {
+		return True;
 	}
 
 	if((ret = cli_RNetShareEnum(cli, browse_fn, NULL)) == -1)
@@ -2921,16 +2974,22 @@ static char **remote_completion(const char *text, int len)
 	info.text = text;
 	info.len = len;
 		
-	if (len >= PATH_MAX)
+	if (len >= MIN(PATH_MAX,sizeof(pstring))) {
 		return(NULL);
+	}
 
 	info.matches = SMB_MALLOC_ARRAY(char *,MAX_COMPLETIONS);
-	if (!info.matches) return NULL;
+	if (!info.matches) {
+		return NULL;
+	}
 	info.matches[0] = NULL;
 
-	for (i = len-1; i >= 0; i--)
-		if ((text[i] == '/') || (text[i] == '\\'))
+	for (i = len-1; i >= 0; i--) {
+		if ((text[i] == '/') || (text[i] == '\\')) {
 			break;
+		}
+	}
+
 	info.text = text+i+1;
 	info.samelen = info.len = len-i-1;
 
@@ -2938,8 +2997,9 @@ static char **remote_completion(const char *text, int len)
 		strncpy(info.dirmask, text, i+1);
 		info.dirmask[i+1] = 0;
 		pstr_sprintf(dirmask, "%s%*s*", cur_dir, i-1, text);
-	} else
+	} else {
 		pstr_sprintf(dirmask, "%s*", cur_dir);
+	}
 
 	if (cli_list(cli, dirmask, aDIR | aSYSTEM | aHIDDEN, completion_remote_filter, &info) < 0)
 		goto cleanup;
@@ -3449,7 +3509,7 @@ static int do_message_op(void)
 	if ( override_logfile )
 		setup_logging( lp_logfile(), False );
 	
-	if (!lp_load(dyn_CONFIGFILE,True,False,False)) {
+	if (!lp_load(dyn_CONFIGFILE,True,False,False,True)) {
 		fprintf(stderr, "%s: Can't load %s - run testparm to debug it\n",
 			argv[0], dyn_CONFIGFILE);
 	}

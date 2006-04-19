@@ -1397,6 +1397,7 @@ int tdb_traverse(TDB_CONTEXT *tdb, tdb_traverse_func fn, void *private_val)
 		/* Drop chain lock, call out */
 		if (tdb_unlock(tdb, tl.hash, F_WRLCK) != 0) {
 			ret = -1;
+			SAFE_FREE(key.dptr);
 			goto out;
 		}
 		if (fn && fn(tdb, key, dbuf, private_val)) {
@@ -1406,9 +1407,8 @@ int tdb_traverse(TDB_CONTEXT *tdb, tdb_traverse_func fn, void *private_val)
 				TDB_LOG((tdb, 0, "tdb_traverse: unlock_record failed!\n"));;
 				ret = -1;
 			}
-			tdb->travlocks.next = tl.next;
 			SAFE_FREE(key.dptr);
-			return count;
+			goto out;
 		}
 		SAFE_FREE(key.dptr);
 	}
@@ -1458,10 +1458,14 @@ TDB_DATA tdb_nextkey(TDB_CONTEXT *tdb, TDB_DATA oldkey)
 					    rec.key_len))
 		    || memcmp(k, oldkey.dptr, oldkey.dsize) != 0) {
 			/* No, it wasn't: unlock it and start from scratch */
-			if (unlock_record(tdb, tdb->travlocks.off) != 0)
+			if (unlock_record(tdb, tdb->travlocks.off) != 0) {
+				SAFE_FREE(k);
 				return tdb_null;
-			if (tdb_unlock(tdb, tdb->travlocks.hash, F_WRLCK) != 0)
+			}
+			if (tdb_unlock(tdb, tdb->travlocks.hash, F_WRLCK) != 0) {
+				SAFE_FREE(k);
 				return tdb_null;
+			}
 			tdb->travlocks.off = 0;
 		}
 
@@ -2094,11 +2098,27 @@ fail:
 }
 
 /* reopen all tdb's */
-int tdb_reopen_all(void)
+int tdb_reopen_all(int parent_longlived)
 {
 	TDB_CONTEXT *tdb;
 
 	for (tdb=tdbs; tdb; tdb = tdb->next) {
+		/*
+		 * If the parent is longlived (ie. a
+		 * parent daemon architecture), we know
+		 * it will keep it's active lock on a
+		 * tdb opened with CLEAR_IF_FIRST. Thus
+		 * for child processes we don't have to
+		 * add an active lock. This is essential
+		 * to improve performance on systems that
+		 * keep POSIX locks as a non-scalable data
+		 * structure in the kernel.
+		 */
+		if (parent_longlived) {
+			/* Ensure no clear-if-first. */
+			tdb->flags &= ~TDB_CLEAR_IF_FIRST;
+		}
+
 		if (tdb_reopen(tdb) != 0)
 			return -1;
 	}

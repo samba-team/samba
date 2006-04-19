@@ -348,6 +348,28 @@ typedef struct
 #define SAMBA_PRINTER_PORT_NAME "Samba Printer Port"
 #endif
 
+
+/*
+ * Structures for the XcvDataPort() calls
+ */
+
+#define PORT_PROTOCOL_DIRECT	1
+#define PORT_PROTOCOL_LPR	2
+
+typedef struct {
+	fstring name;
+	uint32 version;
+	uint32 protocol;
+	fstring hostaddr;
+	fstring snmpcommunity;
+	fstring queue;
+	uint32 dblspool;
+	fstring ipaddr;
+	uint32 port;
+	BOOL enable_snmp;
+	uint32 snmp_index;
+} NT_PORT_DATA_1;
+
 /* DOS header format */
 #define DOS_HEADER_SIZE                 64
 #define DOS_HEADER_MAGIC_OFFSET         0
@@ -421,8 +443,10 @@ typedef struct {
 	SPOOLSS_NOTIFY_MSG_GROUP	*msg_groups;
 } SPOOLSS_NOTIFY_MSG_CTR;
 
-#define PRINTER_HANDLE_IS_PRINTER	0
-#define PRINTER_HANDLE_IS_PRINTSERVER	1
+#define SPLHND_PRINTER		1
+#define SPLHND_SERVER	 	2
+#define SPLHND_PORTMON_TCP	3
+#define SPLHND_PORTMON_LOCAL	4
 
 /* structure to store the printer handles */
 /* and a reference to what it's pointing to */

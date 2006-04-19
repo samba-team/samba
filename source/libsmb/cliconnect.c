@@ -756,7 +756,7 @@ ADS_STATUS cli_session_setup_spnego(struct cli_state *cli, const char *user,
 			int ret;
 			
 			use_in_memory_ccache();
-			ret = kerberos_kinit_password(user, pass, 0 /* no time correction for now */, NULL, NULL);
+			ret = kerberos_kinit_password(user, pass, 0 /* no time correction for now */, NULL);
 			
 			if (ret){
 				SAFE_FREE(principal);
@@ -865,14 +865,16 @@ BOOL cli_session_setup(struct cli_state *cli,
 			DEBUG(3, ("SPNEGO login failed: %s\n", ads_errstr(status)));
 			return False;
 		}
-		return True;
+	} else {
+		/* otherwise do a NT1 style session setup */
+		if ( !cli_session_setup_nt1(cli, user, pass, passlen, ntpass, ntpasslen, workgroup) ) {
+			DEBUG(3,("cli_session_setup: NT1 session setup failed!\n"));
+			return False;
+		}
 	}
 
-	/* otherwise do a NT1 style session setup */
+	return True;
 
-	return cli_session_setup_nt1(cli, user, 
-				     pass, passlen, ntpass, ntpasslen,
-				     workgroup);	
 }
 
 /****************************************************************************
@@ -1392,7 +1394,11 @@ again:
 		DEBUG(1,("cli_start_connection: failed to connect to %s (%s)\n",
 			 nmb_namestr(&called), inet_ntoa(ip)));
 		cli_shutdown(cli);
-		return NT_STATUS_UNSUCCESSFUL;
+		if (is_zero_ip(ip)) {
+			return NT_STATUS_BAD_NETWORK_NAME;
+		} else {
+			return NT_STATUS_CONNECTION_REFUSED;
+		}
 	}
 
 	if (retry)
@@ -1410,7 +1416,7 @@ again:
 			make_nmb_name(&called , "*SMBSERVER", 0x20);
 			goto again;
 		}
-		return NT_STATUS_UNSUCCESSFUL;
+		return NT_STATUS_BAD_NETWORK_NAME;
 	}
 
 	cli_setup_signing_state(cli, signing_state);
@@ -1422,7 +1428,10 @@ again:
 
 	if (!cli_negprot(cli)) {
 		DEBUG(1,("failed negprot\n"));
-		nt_status = NT_STATUS_UNSUCCESSFUL;
+		nt_status = cli_nt_error(cli);
+		if (NT_STATUS_IS_OK(nt_status)) {
+			nt_status = NT_STATUS_UNSUCCESSFUL;
+		}
 		cli_shutdown(cli);
 		return nt_status;
 	}

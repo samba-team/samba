@@ -197,7 +197,7 @@ BOOL print_backend_init(void)
 		pdb = get_print_db_byname(lp_const_servicename(snum));
 		if (!pdb)
 			continue;
-		if (tdb_lock_bystring(pdb->tdb, sversion, 0) == -1) {
+		if (tdb_lock_bystring(pdb->tdb, sversion) == -1) {
 			DEBUG(0,("print_backend_init: Failed to open printer %s database\n", lp_const_servicename(snum) ));
 			release_print_db(pdb);
 			return False;
@@ -541,15 +541,11 @@ static BOOL pjob_store(const char* sharename, uint32 jobid, struct printjob *pjo
 		len += pack_devicemode(pjob->nt_devmode, buf+len, buflen-len);
 	
 		if (buflen != len) {
-			char *tb;
-
-			tb = (char *)SMB_REALLOC(buf, len);
-			if (!tb) {
+			buf = (char *)SMB_REALLOC(buf, len);
+			if (!buf) {
 				DEBUG(0,("pjob_store: failed to enlarge buffer!\n"));
 				goto done;
 			}
-			else 
-				buf = tb;
 			newlen = len;
 		}
 	} while ( buflen != len );
@@ -1295,7 +1291,7 @@ static void print_queue_update_with_lock( const char *sharename,
 
 	slprintf(keystr, sizeof(keystr) - 1, "LOCK/%s", sharename);
 	/* Only wait 10 seconds for this. */
-	if (tdb_lock_bystring(pdb->tdb, keystr, 10) == -1) {
+	if (tdb_lock_bystring_with_timeout(pdb->tdb, keystr, 10) == -1) {
 		DEBUG(0,("print_queue_update_with_lock: Failed to lock printer %s database\n", sharename));
 		release_print_db(pdb);
 		return;
@@ -1404,7 +1400,7 @@ void start_background_queue(void)
 			/* check for some essential signals first */
 			
                         if (got_sig_term) {
-                                exit_server("Caught TERM signal");
+                                exit_server_cleanly(NULL);
                         }
 
                         if (reload_after_sighup) {
@@ -1447,11 +1443,13 @@ static void print_queue_update(int snum, BOOL force)
 	/* don't strip out characters like '$' from the printername */
 	
 	pstrcpy( lpqcommand, lp_lpqcommand(snum));
-	string_sub2( lpqcommand, "%p", PRINTERNAME(snum), sizeof(lpqcommand), False, False );
+	string_sub2( lpqcommand, "%p", PRINTERNAME(snum), sizeof(lpqcommand), 
+		     False, False, False );
 	standard_sub_snum( snum, lpqcommand, sizeof(lpqcommand) );
 	
 	pstrcpy( lprmcommand, lp_lprmcommand(snum));
-	string_sub2( lprmcommand, "%p", PRINTERNAME(snum), sizeof(lprmcommand), False, False );
+	string_sub2( lprmcommand, "%p", PRINTERNAME(snum), sizeof(lprmcommand), 
+		     False, False, False );
 	standard_sub_snum( snum, lprmcommand, sizeof(lprmcommand) );
 	
 	/* 
@@ -1565,7 +1563,7 @@ BOOL print_notify_register_pid(int snum)
 		tdb = pdb->tdb;
 	}
 
-	if (tdb_lock_bystring(tdb, NOTIFY_PID_LIST_KEY, 10) == -1) {
+	if (tdb_lock_bystring_with_timeout(tdb, NOTIFY_PID_LIST_KEY, 10) == -1) {
 		DEBUG(0,("print_notify_register_pid: Failed to lock printer %s\n",
 					printername));
 		if (pdb)
@@ -1655,7 +1653,7 @@ BOOL print_notify_deregister_pid(int snum)
 		tdb = pdb->tdb;
 	}
 
-	if (tdb_lock_bystring(tdb, NOTIFY_PID_LIST_KEY, 10) == -1) {
+	if (tdb_lock_bystring_with_timeout(tdb, NOTIFY_PID_LIST_KEY, 10) == -1) {
 		DEBUG(0,("print_notify_register_pid: Failed to lock \
 printer %s database\n", printername));
 		if (pdb)
@@ -1932,7 +1930,7 @@ static BOOL is_owner(struct current_user *user, int snum, uint32 jobid)
 	if ((vuser = get_valid_user_struct(user->vuid)) != NULL) {
 		return strequal(pjob->user, vuser->user.smb_name);
 	} else {
-		return strequal(pjob->user, uidtoname(user->uid));
+		return strequal(pjob->user, uidtoname(user->ut.uid));
 	}
 }
 
@@ -1963,7 +1961,7 @@ BOOL print_job_delete(struct current_user *user, int snum, uint32 jobid, WERROR 
 		sys_adminlog( LOG_ERR, 
 			      "Permission denied-- user not allowed to delete, \
 pause, or resume print job. User name: %s. Printer name: %s.",
-			      uidtoname(user->uid), PRINTERNAME(snum) );
+			      uidtoname(user->ut.uid), PRINTERNAME(snum) );
 		/* END_ADMIN_LOG */
 
 		return False;
@@ -2030,7 +2028,7 @@ BOOL print_job_pause(struct current_user *user, int snum, uint32 jobid, WERROR *
 		sys_adminlog( LOG_ERR, 
 			"Permission denied-- user not allowed to delete, \
 pause, or resume print job. User name: %s. Printer name: %s.",
-				uidtoname(user->uid), PRINTERNAME(snum) );
+				uidtoname(user->ut.uid), PRINTERNAME(snum) );
 		/* END_ADMIN_LOG */
 
 		*errcode = WERR_ACCESS_DENIED;
@@ -2085,7 +2083,7 @@ BOOL print_job_resume(struct current_user *user, int snum, uint32 jobid, WERROR 
 		sys_adminlog( LOG_ERR, 
 			 "Permission denied-- user not allowed to delete, \
 pause, or resume print job. User name: %s. Printer name: %s.",
-			uidtoname(user->uid), PRINTERNAME(snum) );
+			uidtoname(user->ut.uid), PRINTERNAME(snum) );
 		/* END_ADMIN_LOG */
 		return False;
 	}
@@ -2207,7 +2205,7 @@ static BOOL allocate_print_jobid(struct tdb_print_db *pdb, int snum, const char 
 
 	for (i = 0; i < 3; i++) {
 		/* Lock the database - only wait 20 seconds. */
-		if (tdb_lock_bystring(pdb->tdb, "INFO/nextjob", 20) == -1) {
+		if (tdb_lock_bystring_with_timeout(pdb->tdb, "INFO/nextjob", 20) == -1) {
 			DEBUG(0,("allocate_print_jobid: failed to lock printing database %s\n", sharename));
 			return False;
 		}
@@ -2366,7 +2364,7 @@ uint32 print_job_start(struct current_user *user, int snum, char *jobname, NT_DE
 	if ((vuser = get_valid_user_struct(user->vuid)) != NULL) {
 		fstrcpy(pjob.user, vuser->user.smb_name);
 	} else {
-		fstrcpy(pjob.user, uidtoname(user->uid));
+		fstrcpy(pjob.user, uidtoname(user->ut.uid));
 	}
 
 	fstrcpy(pjob.queuename, lp_const_servicename(snum));
@@ -2437,7 +2435,7 @@ void print_job_endpage(int snum, uint32 jobid)
  error.
 ****************************************************************************/
 
-BOOL print_job_end(int snum, uint32 jobid, BOOL normal_close)
+BOOL print_job_end(int snum, uint32 jobid, enum file_close_type close_type)
 {
 	const char* sharename = lp_const_servicename(snum);
 	struct printjob *pjob;
@@ -2453,7 +2451,8 @@ BOOL print_job_end(int snum, uint32 jobid, BOOL normal_close)
 	if (pjob->spooled || pjob->pid != sys_getpid())
 		return False;
 
-	if (normal_close && (sys_fstat(pjob->fd, &sbuf) == 0)) {
+	if ((close_type == NORMAL_CLOSE || close_type == SHUTDOWN_CLOSE) &&
+				(sys_fstat(pjob->fd, &sbuf) == 0)) {
 		pjob->size = sbuf.st_size;
 		close(pjob->fd);
 		pjob->fd = -1;

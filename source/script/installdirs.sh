@@ -1,19 +1,18 @@
 #!/bin/sh
 
-while ( test -n "$1" ); do
+INSTALLPERMS=$1
+DESTDIR=`echo $2 | sed 's/\/\//\//g'`
+shift
+shift
 
-	DIRNAME=`echo $1 | sed 's/\/\//\//g'`
-	if [ ! -d $DIRNAME ]; then
-		mkdir -p $DIRNAME
+for dir in $@; do
+	DIRNAME=`echo $dir | sed 's/\/\//\//g'`
+	if [ ! -d $DESTDIR/$DIRNAME ]; then
+		mkdir -m $INSTALLPERMS -p $DESTDIR/$DIRNAME
 	fi
 
-	if [ ! -d $DIRNAME ]; then
-		echo Failed to make directory $1
+	if [ ! -d $DESTDIR/$DIRNAME ]; then
+		echo "Failed to make directory $DESTDIR/$DIRNAME "
 		exit 1
 	fi
-
-	shift;
 done
-
-
-

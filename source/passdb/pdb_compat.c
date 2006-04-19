@@ -1,6 +1,6 @@
 /* 
    Unix SMB/CIFS implementation.
-   SAM_ACCOUNT access routines
+   struct samu access routines
    Copyright (C) Jeremy Allison 		1996-2001
    Copyright (C) Luke Kenneth Casson Leighton 	1996-1998
    Copyright (C) Gerald (Jerry) Carter		2000-2001
@@ -27,7 +27,7 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_PASSDB
 
-uint32 pdb_get_user_rid (const SAM_ACCOUNT *sampass)
+uint32 pdb_get_user_rid (const struct samu *sampass)
 {
 	uint32 u_rid;
 
@@ -38,7 +38,7 @@ uint32 pdb_get_user_rid (const SAM_ACCOUNT *sampass)
 	return (0);
 }
 
-uint32 pdb_get_group_rid (const SAM_ACCOUNT *sampass)
+uint32 pdb_get_group_rid (struct samu *sampass)
 {
 	uint32 g_rid;
 
@@ -48,7 +48,7 @@ uint32 pdb_get_group_rid (const SAM_ACCOUNT *sampass)
 	return (0);
 }
 
-BOOL pdb_set_user_sid_from_rid (SAM_ACCOUNT *sampass, uint32 rid, enum pdb_value_state flag)
+BOOL pdb_set_user_sid_from_rid (struct samu *sampass, uint32 rid, enum pdb_value_state flag)
 {
 	DOM_SID u_sid;
 	const DOM_SID *global_sam_sid;
@@ -75,7 +75,7 @@ BOOL pdb_set_user_sid_from_rid (SAM_ACCOUNT *sampass, uint32 rid, enum pdb_value
 	return True;
 }
 
-BOOL pdb_set_group_sid_from_rid (SAM_ACCOUNT *sampass, uint32 grid, enum pdb_value_state flag)
+BOOL pdb_set_group_sid_from_rid (struct samu *sampass, uint32 grid, enum pdb_value_state flag)
 {
 	DOM_SID g_sid;
 	const DOM_SID *global_sam_sid;

@@ -116,7 +116,7 @@ static BOOL StringToSid(DOM_SID *sid, const char *str)
 
 	if (!cli_open_policy_hnd() ||
 	    !NT_STATUS_IS_OK(rpccli_lsa_lookup_names(global_pipe_hnd, cli_ipc->mem_ctx, 
-						  &pol, 1, &str, &sids, 
+						  &pol, 1, &str, NULL, &sids, 
 						  &types))) {
 		result = False;
 		goto done;
@@ -435,7 +435,7 @@ FSQFLAGS:QUOTA_ENABLED/DENY_DISK/LOG_SOFTLIMIT/LOG_HARD_LIMIT", "SETSTRING" },
 
 	fault_setup(NULL);
 
-	lp_load(dyn_CONFIGFILE,True,False,False);
+	lp_load(dyn_CONFIGFILE,True,False,False,True);
 	load_interfaces();
 
 	pc = poptGetContext("smbcquotas", argc, argv, long_options, 0);

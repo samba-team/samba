@@ -221,19 +221,19 @@ NTSTATUS rpccli_lsa_lookup_sids(struct rpc_pipe_client *cli,
 
 	if (!((*domains) = TALLOC_ARRAY(mem_ctx, char *, num_sids))) {
 		DEBUG(0, ("cli_lsa_lookup_sids(): out of memory\n"));
-		result = NT_STATUS_UNSUCCESSFUL;
+		result = NT_STATUS_NO_MEMORY;
 		goto done;
 	}
 
 	if (!((*names) = TALLOC_ARRAY(mem_ctx, char *, num_sids))) {
 		DEBUG(0, ("cli_lsa_lookup_sids(): out of memory\n"));
-		result = NT_STATUS_UNSUCCESSFUL;
+		result = NT_STATUS_NO_MEMORY;
 		goto done;
 	}
 
 	if (!((*types) = TALLOC_ARRAY(mem_ctx, uint32, num_sids))) {
 		DEBUG(0, ("cli_lsa_lookup_sids(): out of memory\n"));
-		result = NT_STATUS_UNSUCCESSFUL;
+		result = NT_STATUS_NO_MEMORY;
 		goto done;
 	}
 		
@@ -277,7 +277,9 @@ NTSTATUS rpccli_lsa_lookup_sids(struct rpc_pipe_client *cli,
 NTSTATUS rpccli_lsa_lookup_names(struct rpc_pipe_client *cli,
 				 TALLOC_CTX *mem_ctx,
 				 POLICY_HND *pol, int num_names, 
-				 const char **names, DOM_SID **sids, 
+				 const char **names,
+				 const char ***dom_names,
+				 DOM_SID **sids,
 				 uint32 **types)
 {
 	prs_struct qbuf, rbuf;
@@ -321,43 +323,130 @@ NTSTATUS rpccli_lsa_lookup_names(struct rpc_pipe_client *cli,
 
 	if (!((*sids = TALLOC_ARRAY(mem_ctx, DOM_SID, num_names)))) {
 		DEBUG(0, ("cli_lsa_lookup_sids(): out of memory\n"));
-		result = NT_STATUS_UNSUCCESSFUL;
+		result = NT_STATUS_NO_MEMORY;
 		goto done;
 	}
 
 	if (!((*types = TALLOC_ARRAY(mem_ctx, uint32, num_names)))) {
 		DEBUG(0, ("cli_lsa_lookup_sids(): out of memory\n"));
-		result = NT_STATUS_UNSUCCESSFUL;
+		result = NT_STATUS_NO_MEMORY;
 		goto done;
 	}
 
+	if (dom_names != NULL) {
+		*dom_names = TALLOC_ARRAY(mem_ctx, const char *, num_names);
+		if (*dom_names == NULL) {
+			DEBUG(0, ("cli_lsa_lookup_sids(): out of memory\n"));
+			result = NT_STATUS_NO_MEMORY;
+			goto done;
+		}
+	}
+
 	for (i = 0; i < num_names; i++) {
-		DOM_RID2 *t_rids = r.dom_rid;
+		DOM_RID *t_rids = r.dom_rid;
 		uint32 dom_idx = t_rids[i].rid_idx;
 		uint32 dom_rid = t_rids[i].rid;
 		DOM_SID *sid = &(*sids)[i];
 
 		/* Translate optimised sid through domain index array */
 
-		if (dom_idx != 0xffffffff) {
-
-			sid_copy(sid, &ref.ref_dom[dom_idx].ref_dom.sid);
-
-			if (dom_rid != 0xffffffff) {
-				sid_append_rid(sid, dom_rid);
-			}
-
-			(*types)[i] = t_rids[i].type;
-		} else {
+		if (dom_idx == 0xffffffff) {
+			/* Nothing to do, this is unknown */
 			ZERO_STRUCTP(sid);
 			(*types)[i] = SID_NAME_UNKNOWN;
+			continue;
 		}
+
+		sid_copy(sid, &ref.ref_dom[dom_idx].ref_dom.sid);
+
+		if (dom_rid != 0xffffffff) {
+			sid_append_rid(sid, dom_rid);
+		}
+
+		(*types)[i] = t_rids[i].type;
+
+		if (dom_names == NULL) {
+			continue;
+		}
+
+		(*dom_names)[i] = rpcstr_pull_unistr2_talloc(
+			*dom_names, &ref.ref_dom[dom_idx].uni_dom_name);
 	}
 
  done:
 
 	return result;
 }
+
+NTSTATUS rpccli_lsa_query_info_policy_new(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
+					  POLICY_HND *pol, uint16 info_class,
+					  LSA_INFO_CTR *ctr) 
+{
+	prs_struct qbuf, rbuf;
+	LSA_Q_QUERY_INFO q;
+	LSA_R_QUERY_INFO r;
+	NTSTATUS result;
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	init_q_query(&q, pol, info_class);
+
+	CLI_DO_RPC(cli, mem_ctx, PI_LSARPC, LSA_QUERYINFOPOLICY,
+		q, r,
+		qbuf, rbuf,
+		lsa_io_q_query,
+		lsa_io_r_query,
+		NT_STATUS_UNSUCCESSFUL);
+
+	result = r.status;
+
+	if (!NT_STATUS_IS_OK(result)) {
+		goto done;
+	}
+
+ done:
+
+	*ctr = r.ctr;
+	
+	return result;
+}
+
+NTSTATUS rpccli_lsa_query_info_policy2_new(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
+					  POLICY_HND *pol, uint16 info_class,
+					  LSA_INFO_CTR2 *ctr) 
+{
+	prs_struct qbuf, rbuf;
+	LSA_Q_QUERY_INFO2 q;
+	LSA_R_QUERY_INFO2 r;
+	NTSTATUS result;
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	init_q_query2(&q, pol, info_class);
+
+	CLI_DO_RPC(cli, mem_ctx, PI_LSARPC, LSA_QUERYINFO2,
+		q, r,
+		qbuf, rbuf,
+		lsa_io_q_query_info2,
+		lsa_io_r_query_info2,
+		NT_STATUS_UNSUCCESSFUL);
+
+	result = r.status;
+
+	if (!NT_STATUS_IS_OK(result)) {
+		goto done;
+	}
+
+ done:
+
+	*ctr = r.ctr;
+	
+	return result;
+}
+
+
 
 /** Query info policy
  *
@@ -396,34 +485,42 @@ NTSTATUS rpccli_lsa_query_info_policy(struct rpc_pipe_client *cli,
 	switch (info_class) {
 
 	case 3:
-		if (domain_name && (r.dom.id3.buffer_dom_name != 0)) {
+		if (domain_name && (r.ctr.info.id3.buffer_dom_name != 0)) {
 			*domain_name = unistr2_tdup(mem_ctx, 
-						   &r.dom.id3.
+						   &r.ctr.info.id3.
 						   uni_domain_name);
+			if (!*domain_name) {
+				return NT_STATUS_NO_MEMORY;
+			}
 		}
 
-		if (domain_sid && (r.dom.id3.buffer_dom_sid != 0)) {
+		if (domain_sid && (r.ctr.info.id3.buffer_dom_sid != 0)) {
 			*domain_sid = TALLOC_P(mem_ctx, DOM_SID);
-			if (*domain_sid) {
-				sid_copy(*domain_sid, &r.dom.id3.dom_sid.sid);
+			if (!*domain_sid) {
+				return NT_STATUS_NO_MEMORY;
 			}
+			sid_copy(*domain_sid, &r.ctr.info.id3.dom_sid.sid);
 		}
 
 		break;
 
 	case 5:
 		
-		if (domain_name && (r.dom.id5.buffer_dom_name != 0)) {
+		if (domain_name && (r.ctr.info.id5.buffer_dom_name != 0)) {
 			*domain_name = unistr2_tdup(mem_ctx, 
-						   &r.dom.id5.
+						   &r.ctr.info.id5.
 						   uni_domain_name);
+			if (!*domain_name) {
+				return NT_STATUS_NO_MEMORY;
+			}
 		}
 			
-		if (domain_sid && (r.dom.id5.buffer_dom_sid != 0)) {
+		if (domain_sid && (r.ctr.info.id5.buffer_dom_sid != 0)) {
 			*domain_sid = TALLOC_P(mem_ctx, DOM_SID);
-			if (*domain_sid) {
-				sid_copy(*domain_sid, &r.dom.id5.dom_sid.sid);
+			if (!*domain_sid) {
+				return NT_STATUS_NO_MEMORY;
 			}
+			sid_copy(*domain_sid, &r.ctr.info.id5.dom_sid.sid);
 		}
 		break;
 			
@@ -483,41 +580,89 @@ NTSTATUS rpccli_lsa_query_info_policy2(struct rpc_pipe_client *cli,
 
 	ZERO_STRUCTP(domain_guid);
 
-	if (domain_name && r.info.dns_dom_info.hdr_nb_dom_name.buffer) {
+	if (domain_name && r.ctr.info.id12.hdr_nb_dom_name.buffer) {
 		*domain_name = unistr2_tdup(mem_ctx, 
-					    &r.info.dns_dom_info
+					    &r.ctr.info.id12
 					    .uni_nb_dom_name);
+		if (!*domain_name) {
+			return NT_STATUS_NO_MEMORY;
+		}
 	}
-	if (dns_name && r.info.dns_dom_info.hdr_dns_dom_name.buffer) {
+	if (dns_name && r.ctr.info.id12.hdr_dns_dom_name.buffer) {
 		*dns_name = unistr2_tdup(mem_ctx, 
-					 &r.info.dns_dom_info
+					 &r.ctr.info.id12
 					 .uni_dns_dom_name);
+		if (!*dns_name) {
+			return NT_STATUS_NO_MEMORY;
+		}
 	}
-	if (forest_name && r.info.dns_dom_info.hdr_forest_name.buffer) {
+	if (forest_name && r.ctr.info.id12.hdr_forest_name.buffer) {
 		*forest_name = unistr2_tdup(mem_ctx, 
-					    &r.info.dns_dom_info
+					    &r.ctr.info.id12
 					    .uni_forest_name);
+		if (!*forest_name) {
+			return NT_STATUS_NO_MEMORY;
+		}
 	}
 	
 	if (domain_guid) {
 		*domain_guid = TALLOC_P(mem_ctx, struct uuid);
+		if (!*domain_guid) {
+			return NT_STATUS_NO_MEMORY;
+		}
 		memcpy(*domain_guid, 
-		       &r.info.dns_dom_info.dom_guid, 
+		       &r.ctr.info.id12.dom_guid, 
 		       sizeof(struct uuid));
 	}
 
-	if (domain_sid && r.info.dns_dom_info.ptr_dom_sid != 0) {
+	if (domain_sid && r.ctr.info.id12.ptr_dom_sid != 0) {
 		*domain_sid = TALLOC_P(mem_ctx, DOM_SID);
-		if (*domain_sid) {
-			sid_copy(*domain_sid, 
-				 &r.info.dns_dom_info.dom_sid.sid);
+		if (!*domain_sid) {
+			return NT_STATUS_NO_MEMORY;
 		}
+		sid_copy(*domain_sid, 
+			 &r.ctr.info.id12.dom_sid.sid);
 	}
 	
  done:
 
 	return result;
 }
+
+NTSTATUS rpccli_lsa_set_info_policy(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
+				    POLICY_HND *pol, uint16 info_class,
+				    LSA_INFO_CTR ctr) 
+{
+	prs_struct qbuf, rbuf;
+	LSA_Q_SET_INFO q;
+	LSA_R_SET_INFO r;
+	NTSTATUS result;
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	init_q_set(&q, pol, info_class, ctr);
+
+	CLI_DO_RPC(cli, mem_ctx, PI_LSARPC, LSA_SETINFOPOLICY,
+		q, r,
+		qbuf, rbuf,
+		lsa_io_q_set,
+		lsa_io_r_set,
+		NT_STATUS_UNSUCCESSFUL);
+
+	result = r.status;
+
+	if (!NT_STATUS_IS_OK(result)) {
+		goto done;
+	}
+
+	/* Return output parameters */
+
+ done:
+
+	return result;
+}
+
 
 /**
  * Enumerate list of trusted domains
@@ -1298,6 +1443,42 @@ done:
 	return result;
 }
 
+NTSTATUS rpccli_lsa_open_trusted_domain_by_name(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
+						POLICY_HND *pol, const char *name, uint32 access_mask,
+						POLICY_HND *trustdom_pol)
+{
+	prs_struct qbuf, rbuf;
+	LSA_Q_OPEN_TRUSTED_DOMAIN_BY_NAME q;
+	LSA_R_OPEN_TRUSTED_DOMAIN_BY_NAME r;
+	NTSTATUS result;
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise input parameters */
+
+	init_lsa_q_open_trusted_domain_by_name(&q, pol, name, access_mask);
+
+	/* Marshall data and send request */
+
+	CLI_DO_RPC( cli, mem_ctx, PI_LSARPC, LSA_OPENTRUSTDOMBYNAME,
+		q, r,
+		qbuf, rbuf,
+		lsa_io_q_open_trusted_domain_by_name,
+		lsa_io_r_open_trusted_domain_by_name,
+		NT_STATUS_UNSUCCESSFUL);
+
+	/* Return output parameters */
+	
+	result = r.status;
+
+	if (NT_STATUS_IS_OK(result)) {
+		*trustdom_pol = r.handle;
+	}
+
+	return result;
+}
+
 
 NTSTATUS rpccli_lsa_query_trusted_domain_info_by_sid(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 						  POLICY_HND *pol, 
@@ -1372,3 +1553,39 @@ done:
 	
 	return result;
 }
+
+NTSTATUS cli_lsa_query_domain_info_policy(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
+					  POLICY_HND *pol, 
+					  uint16 info_class, LSA_DOM_INFO_UNION **info)
+{
+	prs_struct qbuf, rbuf;
+	LSA_Q_QUERY_DOM_INFO_POLICY q;
+	LSA_R_QUERY_DOM_INFO_POLICY r;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Marshall data and send request */
+
+	init_q_query_dom_info(&q, pol, info_class); 
+
+	CLI_DO_RPC( cli, mem_ctx, PI_LSARPC, LSA_QUERYDOMINFOPOL, 
+		q, r,
+		qbuf, rbuf,
+		lsa_io_q_query_dom_info,
+		lsa_io_r_query_dom_info,
+		NT_STATUS_UNSUCCESSFUL);
+
+	result = r.status;
+
+	if (!NT_STATUS_IS_OK(result)) {
+		goto done;
+	}
+
+	*info = r.info;
+
+done:
+	return result;
+}
+

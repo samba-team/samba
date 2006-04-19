@@ -214,7 +214,7 @@ static int		smb_print(struct cli_state *, char *, FILE *);
 
   in_client = True;   /* Make sure that we tell lp_load we are */
 
-  if (!lp_load(dyn_CONFIGFILE, True, False, False))
+  if (!lp_load(dyn_CONFIGFILE, True, False, False, True))
   {
     fprintf(stderr, "ERROR: Can't load %s - run testparm to debug it\n", dyn_CONFIGFILE);
     return (1);
@@ -299,15 +299,15 @@ list_devices(void)
 static
 char * get_ticket_cache( uid_t uid )
 {
+  char *ticket_file = NULL;
   SMB_STRUCT_DIR *tcdir;                  /* directory where ticket caches are stored */
   SMB_STRUCT_DIRENT *dirent;   /* directory entry */
   char *filename = NULL;       /* holds file names on the tmp directory */
   SMB_STRUCT_STAT buf;        
   char user_cache_prefix[CC_MAX_FILE_LEN];
   char file_path[CC_MAX_FILE_PATH_LEN];
-  char *ticket_file = NULL;
   time_t t = 0;
-  
+
   snprintf(user_cache_prefix, CC_MAX_FILE_LEN, "%s%d", CC_PREFIX, uid );
   tcdir = sys_opendir( TICKET_CC_DIR );
   if ( tcdir == NULL ) 
@@ -375,9 +375,14 @@ static struct cli_state
     return NULL;      
   }
     
-    
+  /* We pretty much guarentee password must be valid or a pointer
+     to a 0 char. */
+  if (!password) {
+    return NULL;
+  }
+  
   if ( (username) && (*username) && 
-      ((!password) || ((password) && (strlen(password) == 0 ))) && 
+      (strlen(password) == 0 ) && 
        (cli->use_kerberos) ) 
   {
     /* Use kerberos authentication */

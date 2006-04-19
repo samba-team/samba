@@ -235,7 +235,7 @@ static NTSTATUS check_smbserver_security(const struct auth_context *auth_context
 	 * password file.
 	 */
 
-	if(is_myname(user_info->domain.str)) {
+	if(is_myname(user_info->domain)) {
 		DEBUG(3,("check_smbserver_security: Requested domain was for this machine.\n"));
 		return nt_status;
 	}
@@ -296,7 +296,7 @@ static NTSTATUS check_smbserver_security(const struct auth_context *auth_context
 
 	if ((!tested_password_server) && (lp_paranoid_server_security())) {
 		if (cli_session_setup(cli, baduser, (char *)badpass, sizeof(badpass), 
-					(char *)badpass, sizeof(badpass), user_info->domain.str)) {
+					(char *)badpass, sizeof(badpass), user_info->domain)) {
 
 			/*
 			 * We connected to the password server so we
@@ -342,11 +342,11 @@ use this machine as the password server.\n"));
 
 	if (!user_info->encrypted) {
 		/* Plaintext available */
-		if (!cli_session_setup(cli, user_info->smb_name.str, 
+		if (!cli_session_setup(cli, user_info->smb_name, 
 				       (char *)user_info->plaintext_password.data, 
 				       user_info->plaintext_password.length, 
 				       NULL, 0,
-				       user_info->domain.str)) {
+				       user_info->domain)) {
 			DEBUG(1,("password server %s rejected the password\n", cli->desthost));
 			/* Make this cli_nt_error() when the conversion is in */
 			nt_status = cli_nt_error(cli);
@@ -354,12 +354,12 @@ use this machine as the password server.\n"));
 			nt_status = NT_STATUS_OK;
 		}
 	} else {
-		if (!cli_session_setup(cli, user_info->smb_name.str, 
+		if (!cli_session_setup(cli, user_info->smb_name, 
 				       (char *)user_info->lm_resp.data, 
 				       user_info->lm_resp.length, 
 				       (char *)user_info->nt_resp.data, 
 				       user_info->nt_resp.length, 
-				       user_info->domain.str)) {
+				       user_info->domain)) {
 			DEBUG(1,("password server %s rejected the password\n", cli->desthost));
 			/* Make this cli_nt_error() when the conversion is in */
 			nt_status = cli_nt_error(cli);
@@ -380,11 +380,11 @@ use this machine as the password server.\n"));
 		fstring real_username;
 		struct passwd *pass;
 
-		if ( (pass = smb_getpwnam( user_info->internal_username.str, 
+		if ( (pass = smb_getpwnam( NULL, user_info->internal_username, 
 			real_username, True )) != NULL ) 
 		{
 			nt_status = make_server_info_pw(server_info, pass->pw_name, pass);
-			passwd_free(&pass);
+			TALLOC_FREE(pass);
 		}
 		else
 		{

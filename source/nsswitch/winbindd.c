@@ -47,7 +47,7 @@ static BOOL reload_services_file(void)
 	}
 
 	reopen_logs();
-	ret = lp_load(dyn_CONFIGFILE,False,False,True);
+	ret = lp_load(dyn_CONFIGFILE,False,False,True,True);
 
 	reopen_logs();
 	load_interfaces();
@@ -55,46 +55,6 @@ static BOOL reload_services_file(void)
 	return(ret);
 }
 
-
-#if DUMP_CORE
-
-/**************************************************************************** **
- Prepare to dump a core file - carefully!
- **************************************************************************** */
-
-static BOOL dump_core(void)
-{
-	char *p;
-	pstring dname;
-	pstrcpy( dname, lp_logfile() );
-	if ((p=strrchr(dname,'/')))
-		*p=0;
-	pstrcat( dname, "/corefiles" );
-	mkdir( dname, 0700 );
-	sys_chown( dname, getuid(), getgid() );
-	chmod( dname, 0700 );
-	if ( chdir(dname) )
-		return( False );
-	umask( ~(0700) );
- 
-#ifdef HAVE_GETRLIMIT
-#ifdef RLIMIT_CORE
-	{
-		struct rlimit rlp;
-		getrlimit( RLIMIT_CORE, &rlp );
-		rlp.rlim_cur = MAX( 4*1024*1024, rlp.rlim_cur );
-		setrlimit( RLIMIT_CORE, &rlp );
-		getrlimit( RLIMIT_CORE, &rlp );
-		DEBUG( 3, ( "Core limits now %d %d\n", (int)rlp.rlim_cur, (int)rlp.rlim_max ) );
-	}
-#endif
-#endif
- 
-	DEBUG(0,("Dumping core in %s\n",dname));
-	abort();
-	return( True );
-} /* dump_core */
-#endif
 
 /**************************************************************************** **
  Handle a fault..
@@ -120,7 +80,7 @@ static void winbindd_status(void)
 	if (DEBUGLEVEL >= 2 && winbindd_num_clients()) {
 		DEBUG(2, ("\tclient list:\n"));
 		for(tmp = winbindd_client_list(); tmp; tmp = tmp->next) {
-			DEBUG(2, ("\t\tpid %lu, sock %d\n",
+			DEBUGADD(2, ("\t\tpid %lu, sock %d\n",
 				  (unsigned long)tmp->pid, tmp->sock));
 		}
 	}
@@ -250,6 +210,7 @@ static struct winbindd_dispatch_table {
 	{ WINBINDD_PAM_AUTH, winbindd_pam_auth, "PAM_AUTH" },
 	{ WINBINDD_PAM_AUTH_CRAP, winbindd_pam_auth_crap, "AUTH_CRAP" },
 	{ WINBINDD_PAM_CHAUTHTOK, winbindd_pam_chauthtok, "CHAUTHTOK" },
+	{ WINBINDD_PAM_LOGOFF, winbindd_pam_logoff, "PAM_LOGOFF" },
 
 	/* Enumeration functions */
 
@@ -270,9 +231,8 @@ static struct winbindd_dispatch_table {
 	{ WINBINDD_SID_TO_GID, winbindd_sid_to_gid, "SID_TO_GID" },
 	{ WINBINDD_UID_TO_SID, winbindd_uid_to_sid, "UID_TO_SID" },
 	{ WINBINDD_GID_TO_SID, winbindd_gid_to_sid, "GID_TO_SID" },
-	{ WINBINDD_ALLOCATE_RID, winbindd_allocate_rid, "ALLOCATE_RID" },
-	{ WINBINDD_ALLOCATE_RID_AND_GID, winbindd_allocate_rid_and_gid,
-	  "ALLOCATE_RID_AND_GID" },
+	{ WINBINDD_ALLOCATE_UID, winbindd_allocate_uid, "ALLOCATE_UID" },
+	{ WINBINDD_ALLOCATE_GID, winbindd_allocate_uid, "ALLOCATE_GID" },
 
 	/* Miscellaneous */
 
@@ -305,7 +265,7 @@ static void process_request(struct winbindd_cli_state *state)
 	/* Free response data - we may be interrupted and receive another
 	   command before being able to send this data off. */
 
-	SAFE_FREE(state->response.extra_data);  
+	SAFE_FREE(state->response.extra_data.data);  
 
 	ZERO_STRUCT(state->response);
 
@@ -475,8 +435,8 @@ static void response_extra_sent(void *private_data, BOOL success)
 		return;
 	}
 
-	SAFE_FREE(state->request.extra_data);
-	SAFE_FREE(state->response.extra_data);
+	SAFE_FREE(state->request.extra_data.data);
+	SAFE_FREE(state->response.extra_data.data);
 
 	setup_async_read(&state->fd_event, &state->request, sizeof(uint32),
 			 request_len_recv, state);
@@ -503,7 +463,7 @@ static void response_main_sent(void *private_data, BOOL success)
 		return;
 	}
 
-	setup_async_write(&state->fd_event, state->response.extra_data,
+	setup_async_write(&state->fd_event, state->response.extra_data.data,
 			  state->response.length - sizeof(state->response),
 			  response_extra_sent, state);
 }
@@ -572,7 +532,7 @@ static void request_main_recv(void *private_data, BOOL success)
 	}
 
 	if (state->request.extra_len == 0) {
-		state->request.extra_data = NULL;
+		state->request.extra_data.data = NULL;
 		request_recv(state, True);
 		return;
 	}
@@ -581,24 +541,24 @@ static void request_main_recv(void *private_data, BOOL success)
 	    (state->request.extra_len > WINBINDD_MAX_EXTRA_DATA)) {
 		DEBUG(3, ("Got request with %d bytes extra data on "
 			  "unprivileged socket\n", (int)state->request.extra_len));
-		state->request.extra_data = NULL;
+		state->request.extra_data.data = NULL;
 		state->finished = True;
 		return;
 	}
 
-	state->request.extra_data =
+	state->request.extra_data.data =
 		SMB_MALLOC_ARRAY(char, state->request.extra_len + 1);
 
-	if (state->request.extra_data == NULL) {
+	if (state->request.extra_data.data == NULL) {
 		DEBUG(0, ("malloc failed\n"));
 		state->finished = True;
 		return;
 	}
 
 	/* Ensure null termination */
-	state->request.extra_data[state->request.extra_len] = '\0';
+	state->request.extra_data.data[state->request.extra_len] = '\0';
 
-	setup_async_read(&state->fd_event, state->request.extra_data,
+	setup_async_read(&state->fd_event, state->request.extra_data.data,
 			 state->request.extra_len, request_recv, state);
 }
 
@@ -680,7 +640,7 @@ static void remove_client(struct winbindd_cli_state *state)
 		/* We may have some extra data that was not freed if the
 		   client was killed unexpectedly */
 
-		SAFE_FREE(state->response.extra_data);
+		SAFE_FREE(state->response.extra_data.data);
 
 		if (state->mem_ctx != NULL) {
 			talloc_destroy(state->mem_ctx);
@@ -692,7 +652,7 @@ static void remove_client(struct winbindd_cli_state *state)
 		/* Remove from list and free */
 		
 		winbindd_remove_client(state);
-		talloc_free(state);
+		TALLOC_FREE(state);
 	}
 }
 
@@ -751,8 +711,8 @@ static void process_loop(void)
 
 	/* Free up temporary memory */
 
-	lp_talloc_free();
-	main_loop_talloc_free();
+	lp_TALLOC_FREE();
+	main_loop_TALLOC_FREE();
 
 	/* Initialise fd lists for select() */
 
@@ -912,10 +872,12 @@ int main(int argc, char **argv)
 	pstring logfile;
 	static BOOL Fork = True;
 	static BOOL log_stdout = False;
+	static BOOL no_process_group = False;
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
 		{ "stdout", 'S', POPT_ARG_VAL, &log_stdout, True, "Log to stdout" },
 		{ "foreground", 'F', POPT_ARG_VAL, &Fork, False, "Daemon in foreground mode" },
+		{ "no-process-group", 0, POPT_ARG_VAL, &no_process_group, True, "Don't create a new process group" },
 		{ "interactive", 'i', POPT_ARG_NONE, NULL, 'i', "Interactive mode" },
 		{ "no-caching", 'n', POPT_ARG_VAL, &opt_nocache, True, "Disable caching" },
 		POPT_COMMON_SAMBA
@@ -931,6 +893,7 @@ int main(int argc, char **argv)
  	CatchSignal(SIGUSR2, SIG_IGN);
 
 	fault_setup((void (*)(void *))fault_quit );
+	dump_core_setup("winbindd");
 
 	load_case_tables();
 
@@ -943,7 +906,10 @@ int main(int argc, char **argv)
 	/* Set environment variable so we don't recursively call ourselves.
 	   This may also be useful interactively. */
 
-	setenv(WINBINDD_DONT_ENV, "1", 1);
+	if ( !winbind_off() ) {
+		DEBUG(0,("Failed to disable recusive winbindd calls.  Exiting.\n"));
+		exit(1);
+	}
 
 	/* Initialise samba/rpc client stuff */
 
@@ -1036,7 +1002,7 @@ int main(int argc, char **argv)
 	CatchSignal(SIGHUP, sighup_handler);
 
 	if (!interactive)
-		become_daemon(Fork);
+		become_daemon(Fork, no_process_group);
 
 	pidfile_create("winbindd");
 
@@ -1045,7 +1011,7 @@ int main(int argc, char **argv)
 	 * If we're interactive we want to set our own process group for
 	 * signal management.
 	 */
-	if (interactive)
+	if (interactive && !no_process_group)
 		setpgid( (pid_t)0, (pid_t)0);
 #endif
 
@@ -1054,7 +1020,7 @@ int main(int argc, char **argv)
 	/* Initialise messaging system */
 
 	if (!message_init()) {
-		DEBUG(0, ("unable to initialise messaging system\n"));
+		DEBUG(0, ("unable to initialize messaging system\n"));
 		exit(1);
 	}
 	
@@ -1062,14 +1028,23 @@ int main(int argc, char **argv)
 	   as to SIGHUP signal */
 	message_register(MSG_SMB_CONF_UPDATED, msg_reload_services);
 	message_register(MSG_SHUTDOWN, msg_shutdown);
-	
+
+	/* Handle online/offline messages. */
+	message_register(MSG_WINBIND_OFFLINE,winbind_msg_offline);
+	message_register(MSG_WINBIND_ONLINE,winbind_msg_online);
+
 	poptFreeContext(pc);
 
 	netsamlogon_cache_init(); /* Non-critical */
 	
-	init_domain_list();
+	if (!init_domain_list()) {
+		DEBUG(0,("unable to initalize domain list\n"));
+		exit(1);
+	}
 
 	init_idmap_child();
+
+	winbindd_flush_nscd_cache();
 
 	/* Loop waiting for requests */
 

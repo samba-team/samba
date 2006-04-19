@@ -407,7 +407,7 @@ static const struct {
 	{ERRHRD,	ERRgeneral,	NT_STATUS_APP_INIT_FAILURE},
 	{ERRHRD,	ERRgeneral,	NT_STATUS_PAGEFILE_CREATE_FAILED},
 	{ERRHRD,	ERRgeneral,	NT_STATUS_NO_PAGEFILE},
-	{ERRDOS,	124,	NT_STATUS_INVALID_LEVEL},
+	{ERRDOS,	ERRunknownlevel,	NT_STATUS_INVALID_LEVEL},
 	{ERRDOS,	86,	NT_STATUS_WRONG_PASSWORD_CORE},
 	{ERRHRD,	ERRgeneral,	NT_STATUS_ILLEGAL_FLOAT_CONTEXT},
 	{ERRDOS,	109,	NT_STATUS_PIPE_BROKEN},
@@ -680,7 +680,7 @@ static const struct {
 	{ERRDOS,	121,	NT_STATUS_IO_TIMEOUT},
 	{ERRDOS,	122,	NT_STATUS_BUFFER_TOO_SMALL},
 	{ERRDOS,	ERRinvalidname,	NT_STATUS_OBJECT_NAME_INVALID},
-	{ERRDOS,	124,	NT_STATUS_INVALID_LEVEL},
+	{ERRDOS,	ERRunknownlevel,	NT_STATUS_INVALID_LEVEL},
 	{ERRDOS,	126,	NT_STATUS_DLL_NOT_FOUND},
 	{ERRDOS,	127,	NT_STATUS_PROCEDURE_NOT_FOUND},
 	{ERRDOS,	145,	NT_STATUS_DIRECTORY_NOT_EMPTY},
@@ -1411,6 +1411,13 @@ static const struct {
 	{NT_STATUS(0x80000289), W_ERROR(0x48e)},
 	{NT_STATUS_OK, WERR_OK}};
 
+static const struct {
+	WERROR werror;
+	NTSTATUS ntstatus;
+} werror_to_ntstatus_map[] = {
+	{ W_ERROR(0x5), NT_STATUS_ACCESS_DENIED },
+	{ WERR_OK, NT_STATUS_OK }
+};
 
 /*****************************************************************************
 convert a dos eclas/ecode to a NT status32 code
@@ -1460,6 +1467,14 @@ NTSTATUS werror_to_ntstatus(WERROR error)
 {
 	int i;
 	if (W_ERROR_IS_OK(error)) return NT_STATUS_OK;
+
+	for (i=0; !W_ERROR_IS_OK(werror_to_ntstatus_map[i].werror); i++) {
+		if (W_ERROR_V(error) == 
+		    W_ERROR_V(werror_to_ntstatus_map[i].werror)) {
+			return werror_to_ntstatus_map[i].ntstatus;
+		}
+	}
+
 	for (i=0; NT_STATUS_V(ntstatus_to_werror_map[i].ntstatus); i++) {
 		if (W_ERROR_V(error) == 
 		    W_ERROR_V(ntstatus_to_werror_map[i].werror)) {

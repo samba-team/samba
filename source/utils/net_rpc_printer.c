@@ -43,136 +43,6 @@ static const struct table_node archi_table[]= {
 
 
 /**
- * The display-functions for Security-Descriptors were taken from rpcclient
- * 
- * They reside here for debugging purpose and should 
- * possibly be removed later on
- *
- **/
-
-/****************************************************************************
- Convert a security permissions into a string.
-****************************************************************************/
-
-char *get_sec_mask_str(uint32 type)
-{
-	static fstring typestr="";
-
-	typestr[0] = 0;
-
-	if (type & GENERIC_ALL_ACCESS)
-		fstrcat(typestr, "Generic all access ");
-	if (type & GENERIC_EXECUTE_ACCESS)
-		fstrcat(typestr, "Generic execute access ");
-	if (type & GENERIC_WRITE_ACCESS)
-		fstrcat(typestr, "Generic write access ");
-	if (type & GENERIC_READ_ACCESS)
-		fstrcat(typestr, "Generic read access ");
-	if (type & MAXIMUM_ALLOWED_ACCESS)
-		fstrcat(typestr, "MAXIMUM_ALLOWED_ACCESS ");
-	if (type & SYSTEM_SECURITY_ACCESS)
-		fstrcat(typestr, "SYSTEM_SECURITY_ACCESS ");
-	if (type & SYNCHRONIZE_ACCESS)
-		fstrcat(typestr, "SYNCHRONIZE_ACCESS ");
-	if (type & WRITE_OWNER_ACCESS)
-		fstrcat(typestr, "WRITE_OWNER_ACCESS ");
-	if (type & WRITE_DAC_ACCESS)
-		fstrcat(typestr, "WRITE_DAC_ACCESS ");
-	if (type & READ_CONTROL_ACCESS)
-		fstrcat(typestr, "READ_CONTROL_ACCESS ");
-	if (type & DELETE_ACCESS)
-		fstrcat(typestr, "DELETE_ACCESS ");
-
-	printf("\t\tSpecific bits: 0x%lx\n", (unsigned long)type&SPECIFIC_RIGHTS_MASK);
-
-	return typestr;
-}
-
-/****************************************************************************
- Display sec_ace structure.
- ****************************************************************************/
-
-void display_sec_ace(SEC_ACE *ace)
-{
-	fstring sid_str;
-
-	printf("\tACE\n\t\ttype: ");
-	switch (ace->type) {
-		case SEC_ACE_TYPE_ACCESS_ALLOWED:
-			printf("ACCESS ALLOWED");
-			break;
-		case SEC_ACE_TYPE_ACCESS_DENIED:
-			printf("ACCESS DENIED");
-			break;
-		case SEC_ACE_TYPE_SYSTEM_AUDIT:
-			printf("SYSTEM AUDIT");
-			break;
-		case SEC_ACE_TYPE_SYSTEM_ALARM:
-			printf("SYSTEM ALARM");
-			break;
-		default:
-			printf("????");
-			break;
-	}
-	printf(" (%d) flags: %d\n", ace->type, ace->flags);
-	printf("\t\tPermissions: 0x%x: %s\n", ace->info.mask, get_sec_mask_str(ace->info.mask));
-
-	sid_to_string(sid_str, &ace->trustee);
-	printf("\t\tSID: %s\n\n", sid_str);
-}
-
-/****************************************************************************
- Display sec_acl structure.
- ****************************************************************************/
-
-void display_sec_acl(SEC_ACL *sec_acl)
-{
-	int i;
-
-	printf("\tACL\tNum ACEs:\t%d\trevision:\t%x\n",
-			 sec_acl->num_aces, sec_acl->revision); 
-	printf("\t---\n");
-
-	if (sec_acl->size != 0 && sec_acl->num_aces != 0)
-		for (i = 0; i < sec_acl->num_aces; i++)
-			display_sec_ace(&sec_acl->ace[i]);
-				
-}
-
-/****************************************************************************
- Display sec_desc structure.
- ****************************************************************************/
-
-void display_sec_desc(SEC_DESC *sec)
-{
-	fstring sid_str;
-
-	if (sec == NULL)
-		return;
-
-	if (sec->sacl) {
-		printf("SACL\n");
-		display_sec_acl(sec->sacl);
-	}
-
-	if (sec->dacl) {
-		printf("DACL\n");
-		display_sec_acl(sec->dacl);
-	}
-
-	if (sec->owner_sid) {
-		sid_to_string(sid_str, sec->owner_sid);
-		printf("\tOwner SID:\t%s\n", sid_str);
-	}
-
-	if (sec->grp_sid) {
-		sid_to_string(sid_str, sec->grp_sid);
-		printf("\tParent SID:\t%s\n", sid_str);
-	}
-}
-
-
-/**
  * This display-printdriver-functions was borrowed from rpcclient/cmd_spoolss.c.
  * It is here for debugging purpose and should be removed later on.
  **/
@@ -2052,7 +1922,6 @@ NTSTATUS rpc_printer_migrate_printers_internals(const DOM_SID *domain_sid,
 	if (!NT_STATUS_IS_OK(nt_status))
 		return nt_status;
 
-
 	/* enum printers */
 	if (!get_printer_info(pipe_hnd, mem_ctx, level, argc, argv, &num_printers, &ctr_enum)) {
 		nt_status = NT_STATUS_UNSUCCESSFUL;
@@ -2081,7 +1950,6 @@ NTSTATUS rpc_printer_migrate_printers_internals(const DOM_SID *domain_sid,
 		d_printf("migrating printer queue for:    [%s] / [%s]\n", 
 			printername, sharename);
 
-
 		/* open dst printer handle */
 		if (!net_spoolss_open_printer_ex(pipe_hnd_dst, mem_ctx, sharename, 
 			PRINTER_ALL_ACCESS, cli->user_name, &hnd_dst)) {
@@ -2091,25 +1959,18 @@ NTSTATUS rpc_printer_migrate_printers_internals(const DOM_SID *domain_sid,
 			got_hnd_dst = True;
 		}
 
-
 		/* check for existing dst printer */
 		if (!net_spoolss_getprinter(pipe_hnd_dst, mem_ctx, &hnd_dst, level, &ctr_dst)) {
 			printf ("could not get printer, creating printer.\n");
 		} else {
 			DEBUG(1,("printer already exists: %s\n", sharename));
-			/* close printer handles here */
-			if (got_hnd_src) {
-				rpccli_spoolss_close_printer(pipe_hnd, mem_ctx, &hnd_src);
-				got_hnd_src = False;
-			}
-
+			/* close printer handle here - dst only, not got src yet. */
 			if (got_hnd_dst) {
 				rpccli_spoolss_close_printer(pipe_hnd_dst, mem_ctx, &hnd_dst);
 				got_hnd_dst = False;
 			}
 			continue;
 		}
-
 
 		/* now get again src printer ctr via getprinter, 
 		   we first need a handle for that */
@@ -2124,7 +1985,6 @@ NTSTATUS rpc_printer_migrate_printers_internals(const DOM_SID *domain_sid,
 		/* getprinter on the src server */
 		if (!net_spoolss_getprinter(pipe_hnd, mem_ctx, &hnd_src, level, &ctr_src)) 
 			goto done;
-
 
 		/* copy each src printer to a dst printer 1:1, 
 		   maybe some values have to be changed though */

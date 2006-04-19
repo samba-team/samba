@@ -100,7 +100,6 @@ RPC_DATA_BLOB *cac_MakeRpcDataBlob(TALLOC_CTX *mem_ctx, uint32 data_type, REG_VA
    RPC_DATA_BLOB *blob = NULL;
    int i;
    uint32 size = 0;
-   uint32 len  = 0;
    uint8 *multi = NULL;
    uint32 multi_idx = 0;
 
@@ -149,7 +148,7 @@ RPC_DATA_BLOB *cac_MakeRpcDataBlob(TALLOC_CTX *mem_ctx, uint32 data_type, REG_VA
          /*do it using rpcstr_push()*/
          multi_idx = 0;
          for(i = 0; i < data.reg_multi_sz.num_strings; i++) {
-            len = strlen(data.reg_multi_sz.strings[i]) + 1;
+            size_t len = strlen(data.reg_multi_sz.strings[i]) + 1;
 
             rpcstr_push((multi + multi_idx), data.reg_multi_sz.strings[i], len * 2, STR_TERMINATE);
 
@@ -163,12 +162,13 @@ RPC_DATA_BLOB *cac_MakeRpcDataBlob(TALLOC_CTX *mem_ctx, uint32 data_type, REG_VA
          break;
 
       default:
-         talloc_free(blob);
+         TALLOC_FREE(blob);
          blob = NULL;
+         return NULL;
    }
 
    if(!(blob->buffer)) {
-      talloc_free(blob);
+      TALLOC_FREE(blob);
       return NULL;
    }
 
@@ -226,7 +226,7 @@ REG_VALUE_DATA *cac_MakeRegValueData(TALLOC_CTX *mem_ctx, uint32 data_type, REGV
       case REG_SZ:
          data->reg_sz = cac_unistr_to_str(mem_ctx, buf.buffer, buf.buf_len);
          if(!data->reg_sz) {
-            talloc_free(data);
+            TALLOC_FREE(data);
             errno = ENOMEM;
             data = NULL;
          }
@@ -237,7 +237,7 @@ REG_VALUE_DATA *cac_MakeRegValueData(TALLOC_CTX *mem_ctx, uint32 data_type, REGV
          data->reg_expand_sz = cac_unistr_to_str(mem_ctx, buf.buffer, buf.buf_len);
 
          if(!data->reg_expand_sz) {
-            talloc_free(data);
+            TALLOC_FREE(data);
             errno = ENOMEM;
             data = NULL;
          }
@@ -251,7 +251,7 @@ REG_VALUE_DATA *cac_MakeRegValueData(TALLOC_CTX *mem_ctx, uint32 data_type, REGV
 
          data->reg_binary.data = talloc_memdup(mem_ctx, buf.buffer, size);
          if(!data->reg_binary.data) {
-            talloc_free(data);
+            TALLOC_FREE(data);
             errno = ENOMEM;
             data = NULL;
          }
@@ -281,7 +281,7 @@ REG_VALUE_DATA *cac_MakeRegValueData(TALLOC_CTX *mem_ctx, uint32 data_type, REGV
          strings = talloc_array(mem_ctx, char *, num_strings);
          if(!strings) {
             errno = ENOMEM;
-            talloc_free(data);
+            TALLOC_FREE(data);
             break;
          }
 
@@ -313,7 +313,7 @@ REG_VALUE_DATA *cac_MakeRegValueData(TALLOC_CTX *mem_ctx, uint32 data_type, REGV
          break;
 
       default:
-         talloc_free(data);
+         TALLOC_FREE(data);
          data = NULL;
    }
 

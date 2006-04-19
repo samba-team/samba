@@ -858,7 +858,6 @@ static int key_driver_fetch_keys( const char *key, REGSUBKEY_CTR *subkeys )
 static void fill_in_driver_values( NT_PRINTER_DRIVER_INFO_LEVEL_3 *info3, REGVAL_CTR *values )
 {
 	char *buffer = NULL;
-	char *buffer2 = NULL;
 	int buffer_size = 0;
 	int i, length;
 	char *filename;
@@ -903,10 +902,10 @@ static void fill_in_driver_values( NT_PRINTER_DRIVER_INFO_LEVEL_3 *info3, REGVAL
 			
 			length = strlen(filename);
 		
-			buffer2 = SMB_REALLOC( buffer, buffer_size + (length + 1)*sizeof(uint16) );
-			if ( !buffer2 )
+			buffer = SMB_REALLOC( buffer, buffer_size + (length + 1)*sizeof(uint16) );
+			if ( !buffer ) {
 				break;
-			buffer = buffer2;
+			}
 			
 			init_unistr2( &data, filename, UNI_STR_TERMINATE);
 			memcpy( buffer+buffer_size, (char*)data.buffer, data.uni_str_len*sizeof(uint16) );
@@ -916,12 +915,10 @@ static void fill_in_driver_values( NT_PRINTER_DRIVER_INFO_LEVEL_3 *info3, REGVAL
 		
 		/* terminated by double NULL.  Add the final one here */
 		
-		buffer2 = SMB_REALLOC( buffer, buffer_size + 2 );
-		if ( !buffer2 ) {
-			SAFE_FREE( buffer );
+		buffer = SMB_REALLOC( buffer, buffer_size + 2 );
+		if ( !buffer ) {
 			buffer_size = 0;
 		} else {
-			buffer = buffer2;
 			buffer[buffer_size++] = '\0';
 			buffer[buffer_size++] = '\0';
 		}

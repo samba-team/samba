@@ -673,7 +673,7 @@ uint32 update_c_setprinter(BOOL initialize)
 	int32 c_setprinter;
 	int32 printer_count = 0;
  
-	tdb_lock_bystring(tdb_printers, GLOBAL_C_SETPRINTER, 0);
+	tdb_lock_bystring(tdb_printers, GLOBAL_C_SETPRINTER);
  
 	/* Traverse the tdb, counting the printers */
 	tdb_traverse(tdb_printers, traverse_counting_printers, (void *)&printer_count);
@@ -743,16 +743,18 @@ BOOL get_a_builtin_ntform(UNISTR2 *uni_formname,nt_forms_struct *form)
 }
 
 /****************************************************************************
-get a form struct list
+ get a form struct list.
 ****************************************************************************/
+
 int get_ntforms(nt_forms_struct **list)
 {
 	TDB_DATA kbuf, newkey, dbuf;
-	nt_forms_struct *tl;
 	nt_forms_struct form;
 	int ret;
 	int i;
 	int n = 0;
+
+	*list = NULL;
 
 	for (kbuf = tdb_firstkey(tdb_forms);
 	     kbuf.dptr;
@@ -773,12 +775,11 @@ int get_ntforms(nt_forms_struct **list)
 		if (ret != dbuf.dsize) 
 			continue;
 
-		tl = SMB_REALLOC_ARRAY(*list, nt_forms_struct, n+1);
-		if (!tl) {
+		*list = SMB_REALLOC_ARRAY(*list, nt_forms_struct, n+1);
+		if (!*list) {
 			DEBUG(0,("get_ntforms: Realloc fail.\n"));
 			return 0;
 		}
-		*list = tl;
 		(*list)[n] = form;
 		n++;
 	}
@@ -823,7 +824,6 @@ BOOL add_a_form(nt_forms_struct **list, const FORM *form, int *count)
 	int n=0;
 	BOOL update;
 	fstring form_name;
-	nt_forms_struct *tl;
 
 	/*
 	 * NT tries to add forms even when
@@ -842,11 +842,10 @@ BOOL add_a_form(nt_forms_struct **list, const FORM *form, int *count)
 	}
 
 	if (update==False) {
-		if((tl=SMB_REALLOC_ARRAY(*list, nt_forms_struct, n+1)) == NULL) {
+		if((*list=SMB_REALLOC_ARRAY(*list, nt_forms_struct, n+1)) == NULL) {
 			DEBUG(0,("add_a_form: failed to enlarge forms list!\n"));
 			return False;
 		}
-		*list = tl;
 		unistr2_to_ascii((*list)[n].name, &form->name, sizeof((*list)[n].name)-1);
 		(*count)++;
 	}
@@ -940,7 +939,6 @@ int get_ntdrivers(fstring **list, const char *architecture, uint32 version)
 {
 	int total=0;
 	const char *short_archi;
-	fstring *fl;
 	pstring key;
 	TDB_DATA kbuf, newkey;
 
@@ -954,11 +952,10 @@ int get_ntdrivers(fstring **list, const char *architecture, uint32 version)
 		if (strncmp(kbuf.dptr, key, strlen(key)) != 0)
 			continue;
 		
-		if((fl = SMB_REALLOC_ARRAY(*list, fstring, total+1)) == NULL) {
+		if((*list = SMB_REALLOC_ARRAY(*list, fstring, total+1)) == NULL) {
 			DEBUG(0,("get_ntdrivers: failed to enlarge list!\n"));
 			return -1;
 		}
-		else *list = fl;
 
 		fstrcpy((*list)[total], kbuf.dptr+strlen(key));
 		total++;
@@ -1296,7 +1293,7 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file, fstr
 			DEBUGADD(6,("file_version_is_newer: mod time = %ld sec\n", old_create_time));
 		}
 	}
-	close_file(fsp, True);
+	close_file(fsp, NORMAL_CLOSE);
 
 	/* Get file version info (if available) for new file */
 	pstrcpy(filepath, new_file);
@@ -1332,7 +1329,7 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file, fstr
 			DEBUGADD(6,("file_version_is_newer: mod time = %ld sec\n", new_create_time));
 		}
 	}
-	close_file(fsp, True);
+	close_file(fsp, NORMAL_CLOSE);
 
 	if (use_version && (new_major != old_major || new_minor != old_minor)) {
 		/* Compare versions and choose the larger version number */
@@ -1361,7 +1358,7 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file, fstr
 
 	error_exit:
 		if(fsp)
-			close_file(fsp, True);
+			close_file(fsp, NORMAL_CLOSE);
 		return -1;
 }
 
@@ -1486,7 +1483,7 @@ static uint32 get_correct_cversion(const char *architecture, fstring driverpath_
 	DEBUG(10,("get_correct_cversion: Driver file [%s] cversion = %d\n",
 		driverpath, cversion));
 
-	close_file(fsp, True);
+	close_file(fsp, NORMAL_CLOSE);
 	close_cnum(conn, user->vuid);
 	unbecome_user();
 	*perr = WERR_OK;
@@ -1496,7 +1493,7 @@ static uint32 get_correct_cversion(const char *architecture, fstring driverpath_
   error_exit:
 
 	if(fsp)
-		close_file(fsp, True);
+		close_file(fsp, NORMAL_CLOSE);
 
 	close_cnum(conn, user->vuid);
 	unbecome_user();
@@ -1973,15 +1970,12 @@ static uint32 add_a_printer_driver_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 *driver)
 	}
 
 	if (len != buflen) {
-		char *tb;
-
-		tb = (char *)SMB_REALLOC(buf, len);
-		if (!tb) {
+		buf = (char *)SMB_REALLOC(buf, len);
+		if (!buf) {
 			DEBUG(0,("add_a_printer_driver_3: failed to enlarge buffer\n!"));
 			ret = -1;
 			goto done;
 		}
-		else buf = tb;
 		buflen = len;
 		goto again;
 	}
@@ -2098,15 +2092,11 @@ static WERROR get_a_printer_driver_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 **info_ptr, 
 
 	i=0;
 	while (len < dbuf.dsize) {
-		fstring *tddfs;
-
-		tddfs = SMB_REALLOC_ARRAY(driver.dependentfiles, fstring, i+2);
-		if ( !tddfs ) {
+		driver.dependentfiles = SMB_REALLOC_ARRAY(driver.dependentfiles, fstring, i+2);
+		if ( !driver.dependentfiles ) {
 			DEBUG(0,("get_a_printer_driver_3: failed to enlarge buffer!\n"));
 			break;
 		}
-		else 
-			driver.dependentfiles = tddfs;
 
 		len += tdb_unpack(dbuf.dptr+len, dbuf.dsize-len, "f",
 				  &driver.dependentfiles[i]);
@@ -2406,15 +2396,12 @@ static WERROR update_a_printer_2(NT_PRINTER_INFO_LEVEL_2 *info)
 	len += pack_values( info->data, buf+len, buflen-len );
 
 	if (buflen != len) {
-		char *tb;
-
-		tb = (char *)SMB_REALLOC(buf, len);
-		if (!tb) {
+		buf = (char *)SMB_REALLOC(buf, len);
+		if (!buf) {
 			DEBUG(0,("update_a_printer_2: failed to enlarge buffer!\n"));
 			ret = WERR_NOMEM;
 			goto done;
 		}
-		else buf = tb;
 		buflen = len;
 		goto again;
 	}
@@ -2744,7 +2731,7 @@ int get_printer_subkeys( NT_PRINTER_DATA *data, const char* key, fstring **subke
 	int	key_len;
 	int	num_subkeys = 0;
 	char	*p;
-	fstring	*ptr, *subkeys_ptr = NULL;
+	fstring	*subkeys_ptr = NULL;
 	fstring subkeyname;
 	
 	if ( !data )
@@ -2760,14 +2747,12 @@ int get_printer_subkeys( NT_PRINTER_DATA *data, const char* key, fstring **subke
 		
 			/* found a match, so allocate space and copy the name */
 			
-			if ( !(ptr = SMB_REALLOC_ARRAY( subkeys_ptr, fstring, num_subkeys+2)) ) {
+			if ( !(subkeys_ptr = SMB_REALLOC_ARRAY( subkeys_ptr, fstring, num_subkeys+2)) ) {
 				DEBUG(0,("get_printer_subkeys: Realloc failed for [%d] entries!\n", 
 					num_subkeys+1));
-				SAFE_FREE( subkeys );
 				return -1;
 			}
 			
-			subkeys_ptr = ptr;
 			fstrcpy( subkeys_ptr[num_subkeys], data->keys[i].name );
 			num_subkeys++;
 		}
@@ -2807,14 +2792,12 @@ int get_printer_subkeys( NT_PRINTER_DATA *data, const char* key, fstring **subke
 
 			/* found a match, so allocate space and copy the name */
 			
-			if ( !(ptr = SMB_REALLOC_ARRAY( subkeys_ptr, fstring, num_subkeys+2)) ) {
+			if ( !(subkeys_ptr = SMB_REALLOC_ARRAY( subkeys_ptr, fstring, num_subkeys+2)) ) {
 				DEBUG(0,("get_printer_subkeys: Realloc failed for [%d] entries!\n", 
 					num_subkeys+1));
-				SAFE_FREE( subkeys );
 				return 0;
 			}
 			
-			subkeys_ptr = ptr;
 			fstrcpy( subkeys_ptr[num_subkeys], subkeyname );
 			num_subkeys++;
 		}
@@ -2823,8 +2806,10 @@ int get_printer_subkeys( NT_PRINTER_DATA *data, const char* key, fstring **subke
 	
 	/* return error if the key was not found */
 	
-	if ( i == data->num_keys )
+	if ( i == data->num_keys ) {
+		SAFE_FREE(subkeys_ptr);
 		return -1;
+	}
 	
 done:
 	/* tag off the end */
@@ -3545,9 +3530,10 @@ static void map_to_os2_driver(fstring drivername)
 		return;
 	}
 
-	lines = file_lines_load(mapfile, &numlines);
-	if (numlines == 0) {
+	lines = file_lines_load(mapfile, &numlines,0);
+	if (numlines == 0 || lines == NULL) {
 		DEBUG(0,("No entries in OS/2 driver map %s\n",mapfile));
+		SAFE_FREE(lines);
 		return;
 	}
 
@@ -4076,16 +4062,12 @@ static uint32 update_driver_init_2(NT_PRINTER_INFO_LEVEL_2 *info)
 	len += pack_values( info->data, buf+len, buflen-len );
 
 	if (buflen < len) {
-		char *tb;
-
-		tb = (char *)SMB_REALLOC(buf, len);
-		if (!tb) {
+		buf = (char *)SMB_REALLOC(buf, len);
+		if (!buf) {
 			DEBUG(0, ("update_driver_init_2: failed to enlarge buffer!\n"));
 			ret = -1;
 			goto done;
 		}
-		else
-			buf = tb;
 		buflen = len;
 		goto again;
 	}
@@ -5280,7 +5262,7 @@ BOOL print_access_check(struct current_user *user, int snum, int access_type)
 
 	/* Always allow root or SE_PRINT_OPERATROR to do anything */
 
-	if ( user->uid == 0 || user_has_privileges(user->nt_user_token, &se_printop ) ) {
+	if ( user->ut.uid == 0 || user_has_privileges(user->nt_user_token, &se_printop ) ) {
 		return True;
 	}
 
@@ -5331,9 +5313,11 @@ BOOL print_access_check(struct current_user *user, int snum, int access_type)
 
         /* see if we need to try the printer admin list */
 
-        if ( access_granted == 0 ) {
-                if ( user_in_list(uidtoname(user->uid), lp_printer_admin(snum), user->groups, user->ngroups) )
-                        return True;
+        if ((access_granted == 0) &&
+	    (token_contains_name_in_list(uidtoname(user->ut.uid), NULL,
+					 user->nt_user_token,
+					 lp_printer_admin(snum)))) {
+		return True;
         }
 
 	talloc_destroy(mem_ctx);

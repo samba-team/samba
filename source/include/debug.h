@@ -102,6 +102,7 @@ extern int DEBUGLEVEL;
 #define DBGC_ACLS		15
 #define DBGC_LOCKING		16
 #define DBGC_MSDFS		17
+#define DBGC_DMAPI		18
 
 /* So you can define DBGC_CLASS before including debug.h */
 #ifndef DBGC_CLASS
@@ -206,5 +207,9 @@ extern BOOL *DEBUGLEVEL_CLASS_ISSET;
            (!DEBUGLEVEL_CLASS_ISSET[ dbgc_class ] && \
             DEBUGLEVEL_CLASS[ DBGC_ALL   ] >= (level))  ) \
        && (dbgtext body) )
+
+/* Print a separator to the debug log. */
+#define DEBUGSEP(level)\
+	DEBUG((level),("===============================================================\n"))
 
 #endif

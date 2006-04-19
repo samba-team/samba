@@ -360,7 +360,8 @@ NTSTATUS rpccli_samr_del_groupmem(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 
 NTSTATUS rpccli_samr_query_userinfo(struct rpc_pipe_client *cli,
 				    TALLOC_CTX *mem_ctx,
-				    POLICY_HND *user_pol, uint16 switch_value, 
+				    const POLICY_HND *user_pol,
+				    uint16 switch_value, 
 				    SAM_USERINFO_CTR **ctr)
 {
 	prs_struct qbuf, rbuf;
@@ -639,7 +640,7 @@ NTSTATUS rpccli_samr_query_groupmem(struct rpc_pipe_client *cli,
  **/
 
 NTSTATUS rpccli_samr_enum_dom_users(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
-                                 POLICY_HND *pol, uint32 *start_idx, uint16 acb_mask,
+                                 POLICY_HND *pol, uint32 *start_idx, uint32 acb_mask,
                                  uint32 size, char ***dom_users, uint32 **rids,
                                  uint32 *num_dom_users)
 {
@@ -660,7 +661,7 @@ NTSTATUS rpccli_samr_enum_dom_users(struct rpc_pipe_client *cli, TALLOC_CTX *mem
 	
 	/* Fill query structure with parameters */
 
-	init_samr_q_enum_dom_users(&q, pol, *start_idx, acb_mask, 0, size);
+	init_samr_q_enum_dom_users(&q, pol, *start_idx, acb_mask, size);
 	
 	CLI_DO_RPC(cli, mem_ctx, PI_SAMR, SAMR_ENUM_DOM_USERS,
 		q, r,
@@ -1123,6 +1124,46 @@ NTSTATUS rpccli_samr_query_dom_info(struct rpc_pipe_client *cli,
 	return result;
 }
 
+/* Set domain info */
+
+NTSTATUS rpccli_samr_set_domain_info(struct rpc_pipe_client *cli,
+				     TALLOC_CTX *mem_ctx, 
+				     POLICY_HND *domain_pol,
+				     uint16 switch_value,
+				     SAM_UNK_CTR *ctr)
+{
+	prs_struct qbuf, rbuf;
+	SAMR_Q_SET_DOMAIN_INFO q;
+	SAMR_R_SET_DOMAIN_INFO r;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+
+	DEBUG(10,("cli_samr_set_domain_info\n"));
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Marshall data and send request */
+
+	init_samr_q_set_domain_info(&q, domain_pol, switch_value, ctr);
+
+	CLI_DO_RPC(cli, mem_ctx, PI_SAMR, SAMR_SET_DOMAIN_INFO,
+		q, r,
+		qbuf, rbuf,
+		samr_io_q_set_domain_info,
+		samr_io_r_set_domain_info,
+		NT_STATUS_UNSUCCESSFUL); 
+
+	/* Return output parameters */
+
+	if (!NT_STATUS_IS_OK(result = r.status)) {
+		goto done;
+	}
+
+ done:
+
+	return result;
+}
+
 /* User change password */
 
 NTSTATUS rpccli_samr_chgpasswd_user(struct rpc_pipe_client *cli,
@@ -1212,13 +1253,12 @@ NTSTATUS rpccli_samr_chgpasswd3(struct rpc_pipe_client *cli,
 				const char *username, 
 				const char *newpassword, 
 				const char *oldpassword,
-				SAM_UNK_INFO_1 **info,
-				SAMR_CHANGE_REJECT **reject)
+				SAM_UNK_INFO_1 *info,
+				SAMR_CHANGE_REJECT *reject)
 {
 	prs_struct qbuf, rbuf;
-	SAMR_Q_CHGPASSWD3 q;
-	SAMR_R_CHGPASSWD3 r;
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	SAMR_Q_CHGPASSWD_USER3 q;
+	SAMR_R_CHGPASSWD_USER3 r;
 
 	uchar new_nt_password[516];
 	uchar new_lm_password[516];
@@ -1232,13 +1272,10 @@ NTSTATUS rpccli_samr_chgpasswd3(struct rpc_pipe_client *cli,
 
 	char *srv_name_slash = talloc_asprintf(mem_ctx, "\\\\%s", cli->cli->desthost);
 
-	DEBUG(10,("rpccli_samr_chgpasswd3\n"));
+	DEBUG(10,("rpccli_samr_chgpasswd_user3\n"));
 
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
-
-	*info = NULL;
-	*reject = NULL;
 
 	/* Calculate the MD4 hash (NT compatible) of the password */
 	E_md4hash(oldpassword, old_nt_hash);
@@ -1268,30 +1305,24 @@ NTSTATUS rpccli_samr_chgpasswd3(struct rpc_pipe_client *cli,
 
 	/* Marshall data and send request */
 
-	init_samr_q_chgpasswd3(&q, srv_name_slash, username, 
-			       new_nt_password, 
-			       old_nt_hash_enc, 
-			       new_lm_password,
-			       old_lanman_hash_enc);
+	init_samr_q_chgpasswd_user3(&q, srv_name_slash, username, 
+				    new_nt_password, 
+				    old_nt_hash_enc, 
+				    new_lm_password,
+				    old_lanman_hash_enc);
+	r.info = info;
+	r.reject = reject;
 
-	CLI_DO_RPC(cli, mem_ctx, PI_SAMR, SAMR_CHGPASSWD3,
+	CLI_DO_RPC(cli, mem_ctx, PI_SAMR, SAMR_CHGPASSWD_USER3,
 		q, r,
 		qbuf, rbuf,
-		samr_io_q_chgpasswd3,
-		samr_io_r_chgpasswd3,
+		samr_io_q_chgpasswd_user3,
+		samr_io_r_chgpasswd_user3,
 		NT_STATUS_UNSUCCESSFUL); 
 
 	/* Return output parameters */
 
-	if (!NT_STATUS_IS_OK(result = r.status)) {
-		*info = &r.info;
-		*reject = &r.reject;
-		goto done;
-	}
-
- done:
-
-	return result;
+	return r.status;
 }
 
 /* This function returns the bizzare set of (max_entries, max_size) required
@@ -1549,7 +1580,7 @@ NTSTATUS rpccli_samr_create_dom_user(struct rpc_pipe_client *cli, TALLOC_CTX *me
 /* Set userinfo */
 
 NTSTATUS rpccli_samr_set_userinfo(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
-                               POLICY_HND *user_pol, uint16 switch_value,
+                               const POLICY_HND *user_pol, uint16 switch_value,
                                DATA_BLOB *sess_key, SAM_USERINFO_CTR *ctr)
 {
 	prs_struct qbuf, rbuf;
@@ -1600,7 +1631,7 @@ NTSTATUS rpccli_samr_set_userinfo(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 /* Set userinfo2 */
 
 NTSTATUS rpccli_samr_set_userinfo2(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
-                                POLICY_HND *user_pol, uint16 switch_value,
+				   const POLICY_HND *user_pol, uint16 switch_value,
                                 DATA_BLOB *sess_key, SAM_USERINFO_CTR *ctr)
 {
 	prs_struct qbuf, rbuf;
@@ -1777,7 +1808,7 @@ NTSTATUS rpccli_samr_remove_sid_foreign_domain(struct rpc_pipe_client *cli,
 /* Query user security object */
 
 NTSTATUS rpccli_samr_query_sec_obj(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
-                                 POLICY_HND *user_pol, uint16 switch_value, 
+                                 POLICY_HND *user_pol, uint32 sec_info, 
                                  TALLOC_CTX *ctx, SEC_DESC_BUF **sec_desc_buf)
 {
 	prs_struct qbuf, rbuf;
@@ -1792,7 +1823,7 @@ NTSTATUS rpccli_samr_query_sec_obj(struct rpc_pipe_client *cli, TALLOC_CTX *mem_
 
 	/* Marshall data and send request */
 
-	init_samr_q_query_sec_obj(&q, user_pol, switch_value);
+	init_samr_q_query_sec_obj(&q, user_pol, sec_info);
 
 	CLI_DO_RPC(cli, mem_ctx, PI_SAMR, SAMR_QUERY_SEC_OBJECT,
 		q, r,
@@ -1808,6 +1839,41 @@ NTSTATUS rpccli_samr_query_sec_obj(struct rpc_pipe_client *cli, TALLOC_CTX *mem_
 
 	return result;
 }
+
+/* Set user security object */
+
+NTSTATUS rpccli_samr_set_sec_obj(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
+                                 POLICY_HND *user_pol, uint32 sec_info, 
+                                 SEC_DESC_BUF *sec_desc_buf)
+{
+	prs_struct qbuf, rbuf;
+	SAMR_Q_SET_SEC_OBJ q;
+	SAMR_R_SET_SEC_OBJ r;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+
+	DEBUG(10,("cli_samr_set_sec_obj\n"));
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Marshall data and send request */
+
+	init_samr_q_set_sec_obj(&q, user_pol, sec_info, sec_desc_buf);
+
+	CLI_DO_RPC(cli, mem_ctx, PI_SAMR, SAMR_SET_SEC_OBJECT,
+		q, r,
+		qbuf, rbuf,
+		samr_io_q_set_sec_obj,
+		samr_io_r_set_sec_obj,
+		NT_STATUS_UNSUCCESSFUL); 
+
+	/* Return output parameters */
+
+	result = r.status;
+
+	return result;
+}
+
 
 /* Get domain password info */
 
@@ -1848,6 +1914,50 @@ NTSTATUS rpccli_samr_get_dom_pwinfo(struct rpc_pipe_client *cli, TALLOC_CTX *mem
 
 	return result;
 }
+
+/* Get domain password info */
+
+NTSTATUS rpccli_samr_get_usrdom_pwinfo(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
+				       POLICY_HND *pol, uint16 *min_pwd_length, 
+				       uint32 *password_properties, uint32 *unknown1)
+{
+	prs_struct qbuf, rbuf;
+	SAMR_Q_GET_USRDOM_PWINFO q;
+	SAMR_R_GET_USRDOM_PWINFO r;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+
+	DEBUG(10,("cli_samr_get_usrdom_pwinfo\n"));
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Marshall data and send request */
+
+	init_samr_q_get_usrdom_pwinfo(&q, pol);
+
+	CLI_DO_RPC(cli, mem_ctx, PI_SAMR, SAMR_GET_USRDOM_PWINFO,
+		   q, r,
+		   qbuf, rbuf,
+		   samr_io_q_get_usrdom_pwinfo,
+		   samr_io_r_get_usrdom_pwinfo,
+		   NT_STATUS_UNSUCCESSFUL); 
+
+	/* Return output parameters */
+
+	result = r.status;
+
+	if (NT_STATUS_IS_OK(result)) {
+		if (min_pwd_length)
+			*min_pwd_length = r.min_pwd_length;
+		if (password_properties)
+			*password_properties = r.password_properties;
+		if (unknown1)
+			*unknown1 = r.unknown_1;
+	}
+
+	return result;
+}
+
 
 /* Lookup Domain Name */
 

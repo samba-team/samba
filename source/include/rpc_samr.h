@@ -143,7 +143,7 @@ SamrTestPrivateFunctionsUser
 #define SAMR_CONNECT           0x39
 #define SAMR_SET_USERINFO      0x3A
 #define SAMR_CONNECT4          0x3E
-#define SAMR_CHGPASSWD3        0x3F
+#define SAMR_CHGPASSWD_USER3   0x3F
 #define SAMR_CONNECT5          0x40
 
 typedef struct logon_hours_info
@@ -276,6 +276,13 @@ typedef struct sam_user_info_25
 	UNISTR2 uni_unknown_str ; /* don't know what this is, yet. */
 	UNISTR2 uni_munged_dial ; /* munged path name and dial-back tel no */
 } SAM_USER_INFO_25;
+
+/* SAM_USER_INFO_26 */
+typedef struct sam_user_info_26
+{
+	uint8 pass[532];
+	uint8 pw_len;
+} SAM_USER_INFO_26;
 
 
 /* SAM_USER_INFO_21 */
@@ -461,9 +468,9 @@ SAMR_R_GET_USRDOM_PWINFO - a "set user info" occurs just after this
 /* SAMR_R_GET_USRDOM_PWINFO */
 typedef struct r_samr_usrdom_pwinfo_info
 {
-	uint16 unknown_0; /* 0000 */
+	uint16 min_pwd_length;
 	uint16 unknown_1; /* 0x0016 or 0x0015 */
-	uint32 unknown_2; /* 0x0000 0000 */
+	uint32 password_properties;
 	NTSTATUS status; 
 
 } SAMR_R_GET_USRDOM_PWINFO;
@@ -736,8 +743,7 @@ typedef struct q_samr_enum_dom_users_info
 	POLICY_HND pol;          /* policy handle */
 
 	uint32 start_idx;   /* number of values (0 indicates unlimited?) */
-	uint16 acb_mask;          /* 0x0000 indicates all */
-	uint16 unknown_1;         /* 0x0000 */
+	uint32 acb_mask;          /* 0x0000 indicates all */
 
 	uint32 max_size;              /* 0x0000 ffff */
 
@@ -840,7 +846,7 @@ typedef struct samr_entry_info1
 	uint32 user_idx;
 
 	uint32 rid_user;
-	uint16 acb_info;
+	uint32 acb_info;
 
 	UNIHDR hdr_acct_name;
 	UNIHDR hdr_user_name;
@@ -871,7 +877,7 @@ typedef struct samr_entry_info2
 	uint32 user_idx;
 
 	uint32 rid_user;
-	uint16 acb_info;
+	uint32 acb_info;
 
 	UNIHDR hdr_srv_name;
 	UNIHDR hdr_srv_desc;
@@ -1106,6 +1112,21 @@ typedef struct samr_group_info4
 
 } GROUP_INFO4;
 
+typedef struct samr_group_info5
+{
+	UNIHDR hdr_acct_name;
+
+	uint32 group_attr; /* 0x0000 0003 - group attribute */
+	uint32 num_members; /* 0x0000 0001 - number of group members? */
+
+	UNIHDR hdr_acct_desc;
+
+	UNISTR2 uni_acct_name;
+	UNISTR2 uni_acct_desc;
+
+} GROUP_INFO5;
+
+
 /* GROUP_INFO_CTR */
 typedef struct group_info_ctr
 {
@@ -1117,7 +1138,7 @@ typedef struct group_info_ctr
 		GROUP_INFO2 info2;
 		GROUP_INFO3 info3;
 		GROUP_INFO4 info4;
-
+		GROUP_INFO5 info5;
 	} group;
 
 } GROUP_INFO_CTR;
@@ -1198,6 +1219,10 @@ typedef struct {
 } ALIAS_INFO1;
 
 typedef struct {
+	UNISTR4 name;
+} ALIAS_INFO2;
+
+typedef struct {
 	UNISTR4 description;
 } ALIAS_INFO3;
 
@@ -1210,6 +1235,7 @@ typedef struct {
 	uint16 level;
 	union {
 		ALIAS_INFO1 info1;
+		ALIAS_INFO2 info2;
 		ALIAS_INFO3 info3;
 	} alias;
 } ALIAS_INFO_CTR;
@@ -1272,6 +1298,7 @@ typedef struct sam_userinfo_ctr_info
 		SAM_USER_INFO_23 *id23;
 		SAM_USER_INFO_24 *id24;
 		SAM_USER_INFO_25 *id25;
+		SAM_USER_INFO_26 *id26;
 		void* id; /* to make typecasting easy */
 
 	} info;
@@ -1677,13 +1704,10 @@ typedef struct r_samr_open_alias_info
 
 
 /* SAMR_Q_CONNECT_ANON - probably an open */
-typedef struct q_samr_connect_anon_info
-{
+typedef struct q_samr_connect_anon_info {
 	uint32 ptr;                  /* ptr? */
-	uint16 unknown_0;            /* 0x005c */
-	uint16 unknown_1;            /* 0x0001 */
+	uint16 unknown_0;	     /* Only pushed if ptr is non-zero. */
 	uint32 access_mask;
-
 } SAMR_Q_CONNECT_ANON;
 
 /* SAMR_R_CONNECT_ANON - probably an open */
@@ -1821,7 +1845,7 @@ typedef struct r_samr_chgpasswd_user_info
 } SAMR_R_CHGPASSWD_USER;
 
 /* SAMR_Q_CHGPASSWD3 */
-typedef struct q_samr_chgpasswd3
+typedef struct q_samr_chgpasswd_user3
 {
 	uint32 ptr_0;
 
@@ -1841,7 +1865,12 @@ typedef struct q_samr_chgpasswd3
 
 	SAMR_ENC_PASSWD password3;
 
-} SAMR_Q_CHGPASSWD3;
+} SAMR_Q_CHGPASSWD_USER3;
+
+#define REJECT_REASON_OTHER		0x00000000
+#define REJECT_REASON_TOO_SHORT		0x00000001
+#define REJECT_REASON_IN_HISTORY	0x00000002
+#define REJECT_REASON_NOT_COMPLEX	0x00000005
 
 /* SAMR_CHANGE_REJECT */
 typedef struct samr_change_reject
@@ -1853,13 +1882,15 @@ typedef struct samr_change_reject
 } SAMR_CHANGE_REJECT;
 
 /* SAMR_R_CHGPASSWD3 */
-typedef struct r_samr_chgpasswd3
+typedef struct r_samr_chgpasswd_user3
 {
-	SAM_UNK_INFO_1 info;
-	SAMR_CHANGE_REJECT reject;
+	uint32 ptr_info;
+	uint32 ptr_reject;
+	SAM_UNK_INFO_1 *info;
+	SAMR_CHANGE_REJECT *reject;
 	NTSTATUS status; /* 0 == OK, C000006A (NT_STATUS_WRONG_PASSWORD) */
 
-} SAMR_R_CHGPASSWD3;
+} SAMR_R_CHGPASSWD_USER3;
 
 
 

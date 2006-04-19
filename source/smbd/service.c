@@ -20,8 +20,109 @@
 
 #include "includes.h"
 
-extern struct timeval smb_last_time;
 extern userdom_struct current_user_info;
+
+/****************************************************************************
+ Ensure when setting connectpath it is a canonicalized (no ./ // or ../)
+ absolute path stating in / and not ending in /.
+ Observent people will notice a similarity between this and check_path_syntax :-).
+****************************************************************************/
+
+void set_conn_connectpath(connection_struct *conn, const pstring connectpath)
+{
+	pstring destname;
+	char *d = destname;
+	const char *s = connectpath;
+        BOOL start_of_name_component = True;
+
+	*d++ = '/'; /* Always start with root. */
+
+	while (*s) {
+		if (*s == '/') {
+			/* Eat multiple '/' */
+			while (*s == '/') {
+                                s++;
+                        }
+			if ((d > destname + 1) && (*s != '\0')) {
+				*d++ = '/';
+			}
+			start_of_name_component = True;
+			continue;
+		}
+
+		if (start_of_name_component) {
+			if ((s[0] == '.') && (s[1] == '.') && (s[2] == '/' || s[2] == '\0')) {
+				/* Uh oh - "/../" or "/..\0" ! */
+
+				/* Go past the ../ or .. */
+				if (s[2] == '/') {
+					s += 3;
+				} else {
+					s += 2; /* Go past the .. */
+				}
+
+				/* If  we just added a '/' - delete it */
+				if ((d > destname) && (*(d-1) == '/')) {
+					*(d-1) = '\0';
+					d--;
+				}
+
+				/* Are we at the start ? Can't go back further if so. */
+				if (d <= destname) {
+					*d++ = '/'; /* Can't delete root */
+					continue;
+				}
+				/* Go back one level... */
+				/* Decrement d first as d points to the *next* char to write into. */
+				for (d--; d > destname; d--) {
+					if (*d == '/') {
+						break;
+					}
+				}
+				/* We're still at the start of a name component, just the previous one. */
+				continue;
+			} else if ((s[0] == '.') && ((s[1] == '\0') || s[1] == '/')) {
+				/* Component of pathname can't be "." only - skip the '.' . */
+				if (s[1] == '/') {
+					s += 2;
+				} else {
+					s++;
+				}
+				continue;
+			}
+		}
+
+		if (!(*s & 0x80)) {
+			*d++ = *s++;
+		} else {
+			switch(next_mb_char_size(s)) {
+				case 4:
+					*d++ = *s++;
+				case 3:
+					*d++ = *s++;
+				case 2:
+					*d++ = *s++;
+				case 1:
+					*d++ = *s++;
+					break;
+				default:
+					break;
+			}
+		}
+		start_of_name_component = False;
+	}
+	*d = '\0';
+
+	/* And must not end in '/' */
+	if (d > destname + 1 && (*(d-1) == '/')) {
+		*(d-1) = '\0';
+	}
+
+	DEBUG(10,("set_conn_connectpath: service %s, connectpath = %s\n",
+		lp_servicename(SNUM(conn)), destname ));
+
+	string_set(&conn->connectpath, destname);
+}
 
 /****************************************************************************
  Load parameters specific to a connection/service.
@@ -38,7 +139,7 @@ BOOL set_current_service(connection_struct *conn, uint16 flags, BOOL do_chdir)
 		return(False);
 	}
 
-	conn->lastused = smb_last_time.tv_sec;
+	conn->lastused_count++;
 
 	snum = SNUM(conn);
   
@@ -197,6 +298,13 @@ int find_service(fstring service)
 		}
 	}
 
+	/* Is it a usershare service ? */
+	if (iService < 0 && *lp_usershare_path()) {
+		/* Ensure the name is canonicalized. */
+		strlower_m(service);
+		iService = load_usershare_service(service);
+	}
+
 	if (iService >= 0) {
 		if (!VALID_SNUM(iService)) {
 			DEBUG(0,("Invalid snum %d for %s\n",iService, service));
@@ -257,6 +365,131 @@ static NTSTATUS share_sanity_checks(int snum, fstring dev)
 	return NT_STATUS_OK;
 }
 
+static NTSTATUS find_forced_user(int snum, BOOL vuser_is_guest,
+				 uid_t *uid, gid_t *gid, fstring username,
+				 struct nt_user_token **token)
+{
+	TALLOC_CTX *mem_ctx;
+	char *fuser, *found_username;
+	NTSTATUS result;
+
+	mem_ctx = talloc_new(NULL);
+	if (mem_ctx == NULL) {
+		DEBUG(0, ("talloc_new failed\n"));
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	fuser = talloc_string_sub(mem_ctx, lp_force_user(snum), "%S",
+				  lp_servicename(snum));
+	if (fuser == NULL) {
+		result = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
+	result = create_token_from_username(mem_ctx, fuser, vuser_is_guest,
+					    uid, gid, &found_username,
+					    token);
+	if (!NT_STATUS_IS_OK(result)) {
+		goto done;
+	}
+
+	talloc_steal(NULL, *token);
+	fstrcpy(username, found_username);
+
+	result = NT_STATUS_OK;
+ done:
+	TALLOC_FREE(mem_ctx);
+	return result;
+}
+
+/*
+ * Go through lookup_name etc to find the force'd group.  
+ *
+ * Create a new token from src_token, replacing the primary group sid with the
+ * one found.
+ */
+
+static NTSTATUS find_forced_group(BOOL force_user,
+				  int snum, const char *username,
+				  DOM_SID *pgroup_sid,
+				  gid_t *pgid)
+{
+	NTSTATUS result = NT_STATUS_NO_SUCH_GROUP;
+	TALLOC_CTX *mem_ctx;
+	DOM_SID group_sid;
+	enum SID_NAME_USE type;
+	char *groupname;
+	BOOL user_must_be_member = False;
+	gid_t gid;
+
+	mem_ctx = talloc_new(NULL);
+	if (mem_ctx == NULL) {
+		DEBUG(0, ("talloc_new failed\n"));
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	groupname = talloc_strdup(mem_ctx, lp_force_group(snum));
+	if (groupname == NULL) {
+		DEBUG(1, ("talloc_strdup failed\n"));
+		result = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
+	if (groupname[0] == '+') {
+		user_must_be_member = True;
+		groupname += 1;
+	}
+
+	groupname = talloc_string_sub(mem_ctx, groupname,
+				      "%S", lp_servicename(snum));
+
+	if (!lookup_name(mem_ctx, groupname,
+			 LOOKUP_NAME_ALL|LOOKUP_NAME_GROUP,
+			 NULL, NULL, &group_sid, &type)) {
+		DEBUG(10, ("lookup_name(%s) failed\n",
+			   groupname));
+		goto done;
+	}
+
+	if ((type != SID_NAME_DOM_GRP) && (type != SID_NAME_ALIAS) &&
+	    (type != SID_NAME_WKN_GRP)) {
+		DEBUG(10, ("%s is a %s, not a group\n", groupname,
+			   sid_type_lookup(type)));
+		goto done;
+	}
+
+	if (!sid_to_gid(&group_sid, &gid)) {
+		DEBUG(10, ("sid_to_gid(%s) for %s failed\n",
+			   sid_string_static(&group_sid), groupname));
+		goto done;
+	}
+
+	/*
+	 * If the user has been forced and the forced group starts with a '+',
+	 * then we only set the group to be the forced group if the forced
+	 * user is a member of that group.  Otherwise, the meaning of the '+'
+	 * would be ignored.
+	 */
+
+	if (force_user && user_must_be_member) {
+		if (user_in_group_sid(username, &group_sid)) {
+			sid_copy(pgroup_sid, &group_sid);
+			*pgid = gid;
+			DEBUG(3,("Forced group %s for member %s\n",
+				 groupname, username));
+		}
+	} else {
+		sid_copy(pgroup_sid, &group_sid);
+		*pgid = gid;
+		DEBUG(3,("Forced group %s\n", groupname));
+	}
+
+	result = NT_STATUS_OK;
+ done:
+	TALLOC_FREE(mem_ctx);
+	return result;
+}
+
 /****************************************************************************
   Make a connection, given the snum to connect to, and the vuser of the
   connecting user if appropriate.
@@ -293,7 +526,7 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 	if (lp_guest_only(snum)) {
 		const char *guestname = lp_guestaccount();
 		guest = True;
-		pass = getpwnam_alloc(guestname);
+		pass = getpwnam_alloc(NULL, guestname);
 		if (!pass) {
 			DEBUG(0,("make_connection_snum: Invalid guest "
 				 "account %s??\n",guestname));
@@ -306,7 +539,7 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 		conn->uid = pass->pw_uid;
 		conn->gid = pass->pw_gid;
 		string_set(&conn->user,pass->pw_name);
-		passwd_free(&pass);
+		TALLOC_FREE(pass);
 		DEBUG(3,("Guest only user %s\n",user));
 	} else if (vuser) {
 		if (vuser->guest) {
@@ -319,8 +552,8 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 				      return NULL;
 			}
 		} else {
-			if (!user_ok(vuser->user.unix_name, snum,
-				     vuser->groups, vuser->n_groups)) {
+			if (!user_ok_token(vuser->user.unix_name,
+					   vuser->nt_user_token, snum)) {
 				DEBUG(2, ("user '%s' (from session setup) not "
 					  "permitted to access this share "
 					  "(%s)\n", vuser->user.unix_name,
@@ -367,7 +600,7 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 	safe_strcpy(conn->client_address, client_addr(), 
 		    sizeof(conn->client_address)-1);
 	conn->num_files_open = 0;
-	conn->lastused = time(NULL);
+	conn->lastused = conn->lastused_count = time(NULL);
 	conn->service = snum;
 	conn->used = True;
 	conn->printer = (strncmp(dev,"LPT",3) == 0);
@@ -399,109 +632,106 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 	conn->admin_user = False;
 
 	/*
-	 * If force user is true, then store the
-	 * given userid and also the groups
-	 * of the user we're forcing.
+	 * If force user is true, then store the given userid and the gid of
+	 * the user we're forcing.
+	 * For auxiliary groups see below.
 	 */
 	
 	if (*lp_force_user(snum)) {
-		struct passwd *pass2;
-		pstring fuser;
-		pstrcpy(fuser,lp_force_user(snum));
+		NTSTATUS status2;
 
-		/* Allow %S to be used by force user. */
-		pstring_sub(fuser,"%S",lp_servicename(snum));
-
-		pass2 = (struct passwd *)Get_Pwnam(fuser);
-		if (pass2) {
-			conn->uid = pass2->pw_uid;
-			conn->gid = pass2->pw_gid;
-			string_set(&conn->user,pass2->pw_name);
-			fstrcpy(user,pass2->pw_name);
-			conn->force_user = True;
-			DEBUG(3,("Forced user %s\n",user));	  
-		} else {
-			DEBUG(1,("Couldn't find user %s\n",fuser));
+		status2 = find_forced_user(snum,
+					   (vuser != NULL) && vuser->guest,
+					   &conn->uid, &conn->gid, user,
+					   &conn->nt_user_token);
+		if (!NT_STATUS_IS_OK(status2)) {
 			conn_free(conn);
-			*status = NT_STATUS_NO_SUCH_USER;
+			*status = status2;
 			return NULL;
 		}
+		string_set(&conn->user,user);
+		conn->force_user = True;
+		DEBUG(3,("Forced user %s\n",user));	  
 	}
 
-#ifdef HAVE_GETGRNAM 
 	/*
 	 * If force group is true, then override
 	 * any groupid stored for the connecting user.
 	 */
 	
 	if (*lp_force_group(snum)) {
-		gid_t gid;
-		pstring gname;
-		pstring tmp_gname;
-		BOOL user_must_be_member = False;
-		
-		pstrcpy(tmp_gname,lp_force_group(snum));
-		
-		if (tmp_gname[0] == '+') {
-			user_must_be_member = True;
-			/* even now, tmp_gname is null terminated */
-			pstrcpy(gname,&tmp_gname[1]);
-		} else {
-			pstrcpy(gname,tmp_gname);
-		}
-		/* default service may be a group name 		*/
-		pstring_sub(gname,"%S",lp_servicename(snum));
-		gid = nametogid(gname);
-		
-		if (gid == (gid_t)-1) {
-			DEBUG(1,("Couldn't find group %s\n",gname));
+		NTSTATUS status2;
+		DOM_SID group_sid;
+
+		status2 = find_forced_group(conn->force_user,
+					    snum, user,
+					    &group_sid, &conn->gid);
+		if (!NT_STATUS_IS_OK(status2)) {
 			conn_free(conn);
-			*status = NT_STATUS_NO_SUCH_GROUP;
+			*status = status2;
 			return NULL;
 		}
 
-			/*
-			 * If the user has been forced and the forced group starts
-			 * with a '+', then we only set the group to be the forced
-			 * group if the forced user is a member of that group.
-			 * Otherwise, the meaning of the '+' would be ignored.
-			 */
-			if (conn->force_user && user_must_be_member) {
-				if (user_in_group_list( user, gname, NULL, 0)) {
-						conn->gid = gid;
-				DEBUG(3,("Forced group %s for member %s\n",
-					 gname,user));
-				}
-			} else {
-				conn->gid = gid;
-				DEBUG(3,("Forced group %s\n",gname));
+		if ((conn->nt_user_token == NULL) && (vuser != NULL)) {
+
+			/* Not force user and not security=share, but force
+			 * group. vuser has a token to copy */
+			
+			conn->nt_user_token = dup_nt_token(
+				NULL, vuser->nt_user_token);
+			if (conn->nt_user_token == NULL) {
+				DEBUG(0, ("dup_nt_token failed\n"));
+				conn_free(conn);
+				*status = NT_STATUS_NO_MEMORY;
+				return NULL;
 			}
-			conn->force_group = True;
+		}
+
+		/* If conn->nt_user_token is still NULL, we have
+		 * security=share. This means ignore the SID, as we had no
+		 * vuser to copy from */
+
+		if (conn->nt_user_token != NULL) {
+			/* Overwrite the primary group sid */
+			sid_copy(&conn->nt_user_token->user_sids[1],
+				 &group_sid);
+
+		}
+		conn->force_group = True;
 	}
-#endif /* HAVE_GETGRNAM */
+
+	if (conn->nt_user_token != NULL) {
+		size_t i;
+
+		/* We have a share-specific token from force [user|group].
+		 * This means we have to create the list of unix groups from
+		 * the list of sids. */
+
+		conn->ngroups = 0;
+		conn->groups = NULL;
+
+		for (i=0; i<conn->nt_user_token->num_sids; i++) {
+			gid_t gid;
+			DOM_SID *sid = &conn->nt_user_token->user_sids[i];
+
+			if (!sid_to_gid(sid, &gid)) {
+				DEBUG(10, ("Could not convert SID %s to gid, "
+					   "ignoring it\n",
+					   sid_string_static(sid)));
+				continue;
+			}
+			add_gid_to_array_unique(NULL, gid, &conn->groups,
+						&conn->ngroups);
+		}
+	}
 
 	{
 		pstring s;
 		pstrcpy(s,lp_pathname(snum));
 		standard_sub_conn(conn,s,sizeof(s));
-		string_set(&conn->connectpath,s);
-		DEBUG(3,("Connect path is '%s' for service [%s]\n",s, lp_servicename(snum)));
-	}
-
-	if (conn->force_user || conn->force_group) {
-
-		/* groups stuff added by ih */
-		conn->ngroups = 0;
-		conn->groups = NULL;
-		
-		/* Find all the groups this uid is in and
-		   store them. Used by change_to_user() */
-		initialise_groups(conn->user, conn->uid, conn->gid); 
-		get_current_groups(conn->gid, &conn->ngroups,&conn->groups);
-		
-		conn->nt_user_token = create_nt_token(conn->uid, conn->gid, 
-						      conn->ngroups, conn->groups,
-						      guest);
+		set_conn_connectpath(conn,s);
+		DEBUG(3,("Connect path is '%s' for service [%s]\n",s,
+			 lp_servicename(snum)));
 	}
 
 	/*
@@ -552,7 +782,7 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 		pstring s;
 		pstrcpy(s,conn->connectpath);
 		canonicalize_path(conn, s);
-		string_set(&conn->connectpath,s);
+		set_conn_connectpath(conn,s);
 	}
 
 /* ROOT Activities: */	
@@ -601,7 +831,7 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 	
 	/* Preexecs are done here as they might make the dir we are to ChDir
 	 * to below */
-	
+
 	/* execute any "preexec = " line */
 	if (*lp_preexec(snum)) {
 		pstring cmd;
@@ -679,7 +909,7 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 		pstring s;
 		pstrcpy(s,conn->connectpath);
 		vfs_GetWd(conn,s);
-		string_set(&conn->connectpath,s);
+		set_conn_connectpath(conn,s);
 		vfs_ChDir(conn,conn->connectpath);
 	}
 #endif

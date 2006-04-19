@@ -912,7 +912,7 @@ static void parse_mount_smb(int argc, char **argv)
 		pstrcpy(username,getenv("LOGNAME"));
 	}
 
-	if (!lp_load(dyn_CONFIGFILE,True,False,False)) {
+	if (!lp_load(dyn_CONFIGFILE,True,False,False,True)) {
 		fprintf(stderr, "Can't load %s - run testparm to debug it\n", 
 			dyn_CONFIGFILE);
 	}

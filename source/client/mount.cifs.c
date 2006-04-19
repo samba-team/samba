@@ -43,14 +43,25 @@
 #define MOUNT_CIFS_VERSION_MINOR "10"
 
 #ifndef MOUNT_CIFS_VENDOR_SUFFIX
-#define MOUNT_CIFS_VENDOR_SUFFIX ""
-#endif
+ #ifdef _SAMBA_BUILD_
+  #include "include/version.h"
+  #ifdef SAMBA_VERSION_VENDOR_SUFFIX
+   #define MOUNT_CIFS_VENDOR_SUFFIX "-"SAMBA_VERSION_OFFICIAL_STRING"-"SAMBA_VERSION_VENDOR_SUFFIX
+  #else
+   #define MOUNT_CIFS_VENDOR_SUFFIX "-"SAMBA_VERSION_OFFICIAL_STRING
+  #endif /* SAMBA_VERSION_OFFICIAL_STRING and SAMBA_VERSION_VENDOR_SUFFIX */
+ #else
+   #define MOUNT_CIFS_VENDOR_SUFFIX ""
+ #endif /* _SAMBA_BUILD_ */
+#endif /* MOUNT_CIFS_VENDOR_SUFFIX */
 
 #ifndef MS_MOVE 
 #define MS_MOVE 8192 
 #endif 
 
-char * thisprogram;
+#define CONST_DISCARD(type, ptr)      ((type) ((void *) (ptr)))
+
+const char *thisprogram;
 int verboseflag = 0;
 static int got_password = 0;
 static int got_user = 0;
@@ -292,7 +303,7 @@ static int get_password_from_file(int file_descript, char * filename)
 
 static int parse_options(char ** optionsp, int * filesys_flags)
 {
-	char * data;
+	const char * data;
 	char * percent_char = NULL;
 	char * value = NULL;
 	char * next_keyword = NULL;
@@ -745,7 +756,7 @@ static char * parse_server(char ** punc_name)
 
 	if(length < 3) {
 		/* BB add code to find DFS root here */
-		printf("\nMounting the DFS root for domain not implemented yet");
+		printf("\nMounting the DFS root for domain not implemented yet\n");
 		return NULL;
 	} else {
 		if(strncmp(unc_name,"//",2) && strncmp(unc_name,"\\\\",2)) {
@@ -852,7 +863,7 @@ int main(int argc, char ** argv)
 	char * share_name = NULL;
 	char * ipaddr = NULL;
 	char * uuid = NULL;
-	char * mountpoint;
+	char * mountpoint = NULL;
 	char * options;
 	char * resolved_path;
 	char * temp;
@@ -876,7 +887,11 @@ int main(int argc, char ** argv)
 
 	if(argc && argv) {
 		thisprogram = argv[0];
+	} else {
+		mount_cifs_usage();
+		exit(1);
 	}
+
 	if(thisprogram == NULL)
 		thisprogram = "mount.cifs";
 
@@ -886,9 +901,10 @@ int main(int argc, char ** argv)
 /* #ifdef _GNU_SOURCE
 	printf(" node: %s machine: %s sysname %s domain %s\n", sysinfo.nodename,sysinfo.machine,sysinfo.sysname,sysinfo.domainname);
 #endif */
-
-	share_name = argv[1];
-	mountpoint = argv[2];
+	if(argc > 2) {
+		share_name = argv[1];
+		mountpoint = argv[2];
+	}
 
 	/* add sharename in opts string as unc= parm */
 
@@ -1017,8 +1033,10 @@ int main(int argc, char ** argv)
 		}
 	}
 
-	if(argc < 3)
+	if((argc < 3) || (share_name == NULL) || (mountpoint == NULL)) {
 		mount_cifs_usage();
+		exit(1);
+	}
 
 	if (getenv("PASSWD")) {
 		if(mountpassword == NULL)
@@ -1099,6 +1117,8 @@ mount_retry:
 		optlen += strlen(share_name) + 4;
 	else {
 		printf("No server share name specified\n");
+		printf("\nMounting the DFS root for server not implemented yet\n");
+                exit(1);
 	}
 	if(user_name)
 		optlen += strlen(user_name) + 6;
@@ -1197,7 +1217,7 @@ mount_retry:
 		if(pmntfile) {
 			mountent.mnt_fsname = share_name;
 			mountent.mnt_dir = mountpoint; 
-			mountent.mnt_type = "cifs"; 
+			mountent.mnt_type = CONST_DISCARD(char *,"cifs"); 
 			mountent.mnt_opts = malloc(220);
 			if(mountent.mnt_opts) {
 				char * mount_user = getusername();

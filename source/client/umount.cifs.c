@@ -34,14 +34,22 @@
 #include <errno.h>
 #include <string.h>
 #include <mntent.h>
-#include <fstab.h>
 
 #define UNMOUNT_CIFS_VERSION_MAJOR "0"
 #define UNMOUNT_CIFS_VERSION_MINOR "5"
 
 #ifndef UNMOUNT_CIFS_VENDOR_SUFFIX
-#define UNMOUNT_CIFS_VENDOR_SUFFIX ""
-#endif
+ #ifdef _SAMBA_BUILD_
+  #include "include/version.h"
+  #ifdef SAMBA_VERSION_VENDOR_SUFFIX
+   #define UNMOUNT_CIFS_VENDOR_SUFFIX "-"SAMBA_VERSION_OFFICIAL_STRING"-"SAMBA_VERSION_VENDOR_SUFFIX
+  #else
+   #define UNMOUNT_CIFS_VENDOR_SUFFIX "-"SAMBA_VERSION_OFFICIAL_STRING
+  #endif /* SAMBA_VERSION_OFFICIAL_STRING and SAMBA_VERSION_VENDOR_SUFFIX */
+ #else
+  #define UNMOUNT_CIFS_VENDOR_SUFFIX ""
+ #endif /* _SAMBA_BUILD_ */
+#endif /* UNMOUNT_CIFS_VENDOR_SUFFIX */
 
 #ifndef MNT_DETACH
 #define MNT_DETACH 0x02
@@ -75,7 +83,7 @@ static struct option longopts[] = {
 	{ NULL, 0, NULL, 0 }
 };
 
-char * thisprogram;
+const char * thisprogram;
 int verboseflg = 0;
 
 static void umount_cifs_usage(void)

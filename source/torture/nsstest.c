@@ -174,6 +174,9 @@ again:
 	if (status == NSS_STATUS_TRYAGAIN) {
 		buflen *= 2;
 		buf = SMB_REALLOC(buf, buflen);
+		if (!buf) {
+			return NULL;
+		}
 		goto again;
 	}
 	if (status == NSS_STATUS_NOTFOUND) {
@@ -205,6 +208,9 @@ again:
 	if (status == NSS_STATUS_TRYAGAIN) {
 		buflen *= 2;
 		buf = SMB_REALLOC(buf, buflen);
+		if (!buf) {
+			return NULL;
+		}
 		goto again;
 	}
 	if (status == NSS_STATUS_NOTFOUND) {
@@ -237,6 +243,9 @@ again:
 	if (status == NSS_STATUS_TRYAGAIN) {
 		buflen *= 2;
 		buf = SMB_REALLOC(buf, buflen);
+		if (!buf) {
+			return NULL;
+		}
 		goto again;
 	}
 	if (status == NSS_STATUS_NOTFOUND) {

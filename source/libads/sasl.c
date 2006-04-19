@@ -294,16 +294,28 @@ static ADS_STATUS ads_sasl_gssapi_bind(ADS_STRUCT *ads)
 	/* we need to fetch a service ticket as the ldap user in the
 	   servers realm, regardless of our realm */
 	asprintf(&sname, "ldap/%s@%s", ads->config.ldap_server_name, ads->config.realm);
-	krb5_init_context(&ctx);
-	krb5_set_default_tgs_ktypes(ctx, enc_types);
-	krb5_parse_name(ctx, sname, &principal);
+
+	initialize_krb5_error_table();
+	status = ADS_ERROR_KRB5(krb5_init_context(&ctx));
+	if (!ADS_ERR_OK(status)) {
+		return status;
+	}
+	status = ADS_ERROR_KRB5(krb5_set_default_tgs_ktypes(ctx, enc_types));
+	if (!ADS_ERR_OK(status)) {
+		return status;
+	}
+	status = ADS_ERROR_KRB5(krb5_parse_name(ctx, sname, &principal));
+	if (!ADS_ERR_OK(status)) {
+		return status;
+	}
+
 	free(sname);
 	krb5_free_context(ctx);	
 
 	input_name.value = &principal;
 	input_name.length = sizeof(principal);
 
-	gss_rc = gss_import_name(&minor_status,&input_name,&nt_principal, &serv_name);
+	gss_rc = gss_import_name(&minor_status, &input_name, &nt_principal, &serv_name);
 	if (gss_rc) {
 		return ADS_ERROR_GSS(gss_rc, minor_status);
 	}
@@ -375,8 +387,9 @@ static ADS_STATUS ads_sasl_gssapi_bind(ADS_STRUCT *ads)
 
 	p = (uint8 *)output_token.value;
 
+#if 0
 	file_save("sasl_gssapi.dat", output_token.value, output_token.length);
-
+#endif
 	max_msg_size = (p[1]<<16) | (p[2]<<8) | p[3];
 	sec_layer = *p;
 
@@ -419,7 +432,7 @@ failed:
 		ber_bvfree(scred);
 	return status;
 }
-#endif
+#endif /* HAVE_GGSAPI */
 
 /* mapping between SASL mechanisms and functions */
 static struct {
@@ -466,5 +479,5 @@ ADS_STATUS ads_sasl_bind(ADS_STRUCT *ads)
 	return ADS_ERROR(LDAP_AUTH_METHOD_NOT_SUPPORTED);
 }
 
-#endif
+#endif /* HAVE_LDAP */
 

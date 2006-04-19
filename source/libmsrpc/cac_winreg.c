@@ -56,6 +56,12 @@ int cac_RegConnect(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct RegConnect 
       hnd->_internal.pipes[PI_WINREG] = True;
    }
 
+   pipe_hnd = cac_GetPipe(hnd, PI_WINREG);
+   if(!pipe_hnd) {
+      hnd->status = NT_STATUS_INVALID_HANDLE;
+      return CAC_FAILURE;
+   }
+
    key = talloc(mem_ctx, POLICY_HND);
    if(!key) {
       hnd->status = NT_STATUS_NO_MEMORY;
@@ -244,15 +250,15 @@ int cac_RegEnumKeys(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct RegEnumKey
    class_names_out = TALLOC_ARRAY(mem_ctx, char *, op->in.max_keys);
    if(!class_names_out) {
       hnd->status = NT_STATUS_NO_MEMORY;
-      talloc_free(key_names_out);
+      TALLOC_FREE(key_names_out);
       return CAC_FAILURE;
    }
 
    mod_times_out = TALLOC_ARRAY(mem_ctx, time_t, op->in.max_keys);
    if(!mod_times_out) {
       hnd->status = NT_STATUS_NO_MEMORY;
-      talloc_free(key_names_out);
-      talloc_free(class_names_out);
+      TALLOC_FREE(key_names_out);
+      TALLOC_FREE(class_names_out);
 
       return CAC_FAILURE;
    }
@@ -495,6 +501,11 @@ int cac_RegDeleteValue(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct RegDele
    return CAC_SUCCESS;
 }
 
+#if 0
+/* JRA - disabled until fix. */
+/* This code is currently broken so disable it - it needs to handle the ERROR_MORE_DATA
+   cleanly and resubmit the query. */
+
 int cac_RegQueryKeyInfo(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct RegQueryKeyInfo *op) {
    struct rpc_pipe_client *pipe_hnd = NULL;
    WERROR err;
@@ -577,6 +588,7 @@ int cac_RegQueryKeyInfo(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct RegQue
 
    return CAC_FAILURE;
 }
+#endif
 
 int cac_RegQueryValue(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct RegQueryValue *op) {
    struct rpc_pipe_client *pipe_hnd = NULL;
@@ -675,15 +687,15 @@ int cac_RegEnumValues(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct RegEnumV
 
    values_out = talloc_array(mem_ctx, REG_VALUE_DATA *, op->in.max_values);
    if(!values_out) {
-      talloc_free(types_out);
+      TALLOC_FREE(types_out);
       hnd->status = NT_STATUS_NO_MEMORY;
       return CAC_FAILURE;
    }
 
    val_names_out = talloc_array(mem_ctx, char *, op->in.max_values);
    if(!val_names_out) {
-      talloc_free(types_out);
-      talloc_free(values_out);
+      TALLOC_FREE(types_out);
+      TALLOC_FREE(values_out);
       hnd->status = NT_STATUS_NO_MEMORY;
       return CAC_FAILURE;
    }
@@ -817,7 +829,9 @@ int cac_RegGetKeySecurity(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct RegG
    WERROR err;
 
    uint32 buf_size;
-   SEC_DESC_BUF *buf = NULL;
+   SEC_DESC_BUF buf;
+
+   ZERO_STRUCT(buf);
 
    if(!hnd) 
       return CAC_FAILURE;
@@ -838,7 +852,7 @@ int cac_RegGetKeySecurity(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct RegG
       return CAC_FAILURE;
    }
 
-   err = rpccli_reg_get_key_sec(pipe_hnd, mem_ctx, op->in.key, op->in.info_type, &buf_size, buf);
+   err = rpccli_reg_get_key_sec(pipe_hnd, mem_ctx, op->in.key, op->in.info_type, &buf_size, &buf);
    hnd->status = werror_to_ntstatus(err);
 
 
@@ -846,8 +860,12 @@ int cac_RegGetKeySecurity(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct RegG
       return CAC_FAILURE;
    }
 
-   op->out.size = buf->len;
-   op->out.descriptor = buf->sec;
+   op->out.size = buf.len;
+   op->out.descriptor = dup_sec_desc(mem_ctx, buf.sec);
+
+   if (op->out.descriptor == NULL) {
+	   return CAC_FAILURE;
+   }
 
    return CAC_SUCCESS;
 }
@@ -952,6 +970,12 @@ int cac_Shutdown(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct Shutdown *op)
       }
 
       hnd->_internal.pipes[PI_SHUTDOWN] = True;
+   }
+
+   pipe_hnd = cac_GetPipe(hnd, PI_SHUTDOWN);
+   if(!pipe_hnd) {
+      hnd->status = NT_STATUS_INVALID_HANDLE;
+      return CAC_FAILURE;
    }
 
    msg = (op->in.message != NULL) ? op->in.message : talloc_strdup(mem_ctx, "");

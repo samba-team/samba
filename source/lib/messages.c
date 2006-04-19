@@ -70,6 +70,24 @@ static struct dispatch_fns {
 } *dispatch_fns;
 
 /****************************************************************************
+ Free global objects.
+****************************************************************************/
+
+void gfree_messsges(void)
+{
+	struct dispatch_fns *dfn, *next;
+
+	/* delete the dispatch_fns list */
+	dfn = dispatch_fns;
+	while( dfn ) {
+		next = dfn->next;
+		DLIST_REMOVE(dispatch_fns, dfn);
+		SAFE_FREE(dfn);
+		dfn = next;
+	}
+}
+
+/****************************************************************************
  Notifications come in as signals.
 ****************************************************************************/
 
@@ -603,5 +621,20 @@ BOOL message_send_all(TDB_CONTEXT *conn_tdb, int msg_type,
 	if (n_sent)
 		*n_sent = msg_all.n_sent;
 	return True;
+}
+
+/*
+ * Block and unblock receiving of messages. Allows removal of race conditions
+ * when doing a fork and changing message disposition.
+ */
+
+void message_block(void)
+{
+	BlockSignals(True, SIGUSR1);
+}
+
+void message_unblock(void)
+{
+	BlockSignals(False, SIGUSR1);
 }
 /** @} **/

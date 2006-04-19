@@ -26,7 +26,7 @@ extern BOOL strequal(const char *, const char *);
 extern struct smb_passwd *
 _my_get_smbpwnam(FILE *, const char *, BOOL *, BOOL *, long *);
 
-extern int _smb_verify_password( pam_handle_t *pamh , SAM_ACCOUNT *sampass, 
+extern int _smb_verify_password( pam_handle_t *pamh , struct samu *sampass, 
 	const char *p, unsigned int ctrl );
 
 /*
@@ -39,7 +39,7 @@ extern int _smb_get_user(pam_handle_t *, unsigned int,
 
 /* _smb_blankpasswd() is a quick check for a blank password */
 
-extern int _smb_blankpasswd(unsigned int, SAM_ACCOUNT *);
+extern int _smb_blankpasswd(unsigned int, struct samu *);
 
 
 /* obtain a password from the user */

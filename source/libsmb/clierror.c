@@ -230,42 +230,6 @@ void cli_dos_error(struct cli_state *cli, uint8 *eclass, uint32 *ecode)
 	if (ecode) *ecode    = code;
 }
 
-/****************************************************************************
- The following mappings need tidying up and moving into libsmb/errormap.c...
-****************************************************************************/
-
-/* Return a UNIX errno from a dos error class, error number tuple */
-
-static int cli_errno_from_dos(uint8 eclass, uint32 num)
-{
-	if (eclass == ERRDOS) {
-		switch (num) {
-		case ERRbadfile: return ENOENT;
-		case ERRbadpath: return ENOTDIR;
-		case ERRnoaccess: return EACCES;
-		case ERRfilexists: return EEXIST;
-		case ERRrename: return EEXIST;
-		case ERRbadshare: return EBUSY;
-		case ERRlock: return EBUSY;
-		case ERRinvalidname: return ENOENT;
-		case ERRnosuchshare: return ENODEV;
-		}
-	}
-
-	if (eclass == ERRSRV) {
-		switch (num) {
-		case ERRbadpw: return EPERM;
-		case ERRaccess: return EACCES;
-		case ERRnoresource: return ENOMEM;
-		case ERRinvdevice: return ENODEV;
-		case ERRinvnetname: return ENODEV;
-		}
-	}
-
-	/* for other cases */
-	return EINVAL;
-}
-
 /* Return a UNIX errno from a NT status code */
 static struct {
 	NTSTATUS status;
@@ -405,9 +369,11 @@ static int cli_errno_from_nt(NTSTATUS status)
 
 int cli_errno(struct cli_state *cli)
 {
+	NTSTATUS status;
+
 	if (cli_is_nt_error(cli)) {
-        	NTSTATUS status = cli_nt_error(cli);
-	        return cli_errno_from_nt(status);
+		status = cli_nt_error(cli);
+		return cli_errno_from_nt(status);
 	}
 
         if (cli_is_dos_error(cli)) {
@@ -415,7 +381,8 @@ int cli_errno(struct cli_state *cli)
                 uint32 ecode;
 
                 cli_dos_error(cli, &eclass, &ecode);
-                return cli_errno_from_dos(eclass, ecode);
+		status = dos_to_ntstatus(eclass, ecode);
+		return cli_errno_from_nt(status);
         }
 
 	/* for other cases */

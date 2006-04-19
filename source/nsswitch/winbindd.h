@@ -29,6 +29,10 @@
 
 #include "winbindd_nss.h"
 
+#ifdef HAVE_LIBNSCD
+#include "libnscd.h"
+#endif
+
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
 
@@ -143,7 +147,9 @@ struct winbindd_child {
 	struct winbindd_domain *domain;
 	pstring logfilename;
 
+	TALLOC_CTX *mem_ctx;
 	struct fd_event event;
+	struct timed_event *lockout_policy_event;
 	struct winbindd_async_request *requests;
 };
 
@@ -157,7 +163,8 @@ struct winbindd_domain {
 	BOOL native_mode;                      /* is this a win2k domain in native mode ? */
 	BOOL active_directory;                 /* is this a win2k active directory ? */
 	BOOL primary;                          /* is this our primary domain ? */
-	BOOL internal;		/* BUILTIN and member SAM */
+	BOOL internal;                         /* BUILTIN and member SAM */
+	BOOL online;			       /* is this domain available ? */
 
 	/* Lookup methods for this domain (LDAP or RPC) */
 	struct winbindd_methods *methods;
@@ -268,6 +275,16 @@ struct winbindd_methods {
 	/* return the current global sequence number */
 	NTSTATUS (*sequence_number)(struct winbindd_domain *domain, uint32 *seq);
 
+	/* return the lockout policy */
+	NTSTATUS (*lockout_policy)(struct winbindd_domain *domain, 
+ 				   TALLOC_CTX *mem_ctx,
+				   SAM_UNK_INFO_12 *lockout_policy);
+ 
+	/* return the lockout policy */
+	NTSTATUS (*password_policy)(struct winbindd_domain *domain, 
+				    TALLOC_CTX *mem_ctx,
+				    SAM_UNK_INFO_1 *password_policy);
+ 
 	/* enumerate trusted domains */
 	NTSTATUS (*trusted_domains)(struct winbindd_domain *domain,
 				    TALLOC_CTX *mem_ctx,
@@ -305,7 +322,7 @@ struct winbindd_idmap_methods {
 
 #define WINBINDD_ESTABLISH_LOOP 30
 #define WINBINDD_RESCAN_FREQ 300
-
+#define WINBINDD_PAM_AUTH_KRB5_RENEW_TIME 2592000 /* one month */
 #define DOM_SEQUENCE_NONE ((uint32)-1)
 
 #endif /* _WINBINDD_H */

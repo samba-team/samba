@@ -47,7 +47,7 @@ BOOL prs_rpcbuffer(const char *desc, prs_struct *ps, int depth, RPC_BUFFER *buff
 {
 	prs_debug(ps, depth, desc, "prs_rpcbuffer");
 	depth++;
-		
+
 	/* reading */
 	if (UNMARSHALLING(ps)) {
 		buffer->size=0;
@@ -115,10 +115,15 @@ BOOL prs_rpcbuffer_p(const char *desc, prs_struct *ps, int depth, RPC_BUFFER **b
 
 	if ( !data_p )
 		return True;
-		
+
 	if ( UNMARSHALLING(ps) ) {
 		if ( !(*buffer = PRS_ALLOC_MEM(ps, RPC_BUFFER, 1)) )
 			return False;
+	} else {
+		/* Marshalling case. - coverity paranoia - should already be ok if data_p != 0 */
+		if (!*buffer) {
+			return True;
+		}
 	}
 
 	return prs_rpcbuffer( desc, ps, depth, *buffer);
@@ -138,7 +143,11 @@ BOOL rpcbuf_alloc_size(RPC_BUFFER *buffer, uint32 buffer_size)
 	
 	if ( buffer_size == 0x0 )
 		return True;
-	
+
+	if (!buffer) {
+		return False;
+	}
+
 	ps= &buffer->prs;
 
 	/* damn, I'm doing the reverse operation of prs_grow() :) */
@@ -371,19 +380,14 @@ BOOL smb_io_relarraystr(const char *desc, RPC_BUFFER *buffer, int depth, uint16 
 			/* we're going to add two more bytes here in case this
 			   is the last string in the array and we need to add 
 			   an extra NULL for termination */
-			if (l_chaine > 0)
-			{
-				uint16 *tc2;
-			
+			if (l_chaine > 0) {
 				realloc_size = (l_chaine2+l_chaine+2)*sizeof(uint16);
 
 				/* Yes this should be realloc - it's freed below. JRA */
 
-				if((tc2=(uint16 *)SMB_REALLOC(chaine2, realloc_size)) == NULL) {
-					SAFE_FREE(chaine2);
+				if((chaine2=(uint16 *)SMB_REALLOC(chaine2, realloc_size)) == NULL) {
 					return False;
 				}
-				else chaine2 = tc2;
 				memcpy(chaine2+l_chaine2, chaine.buffer, (l_chaine+1)*sizeof(uint16));
 				l_chaine2+=l_chaine+1;
 			}

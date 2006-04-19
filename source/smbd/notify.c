@@ -206,15 +206,30 @@ BOOL change_notify_set(char *inbuf, files_struct *fsp, connection_struct *conn, 
 	return True;
 }
 
+int change_notify_fd(void)
+{
+	if (cnotify) {
+		return cnotify->notification_fd;
+	}
+
+	return -1;
+}
+
 /****************************************************************************
  Initialise the change notify subsystem.
 ****************************************************************************/
 
 BOOL init_change_notify(void)
 {
+	cnotify = NULL;
+
 #if HAVE_KERNEL_CHANGE_NOTIFY
-	if (lp_kernel_change_notify())
+	if (cnotify == NULL && lp_kernel_change_notify())
 		cnotify = kernel_notify_init();
+#endif
+#if HAVE_FAM_CHANGE_NOTIFY
+	if (cnotify == NULL && lp_fam_change_notify())
+		cnotify = fam_notify_init();
 #endif
 	if (!cnotify) cnotify = hash_notify_init();
 	

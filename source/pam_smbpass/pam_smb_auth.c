@@ -47,7 +47,7 @@ do {								\
 } while (0)
 
 static int _smb_add_user(pam_handle_t *pamh, unsigned int ctrl,
-                         const char *name, SAM_ACCOUNT *sampass, BOOL exist);
+                         const char *name, struct samu *sampass, BOOL exist);
 
 
 /*
@@ -64,7 +64,7 @@ int pam_sm_authenticate(pam_handle_t *pamh, int flags,
 {
     unsigned int ctrl;
     int retval, *ret_data = NULL;
-    SAM_ACCOUNT *sampass = NULL;
+    struct samu *sampass = NULL;
     extern BOOL in_client;
     const char *name;
     void (*oldsig_handler)(int) = NULL;
@@ -75,6 +75,7 @@ int pam_sm_authenticate(pam_handle_t *pamh, int flags,
 
 
     /* Samba initialization. */
+    load_case_tables();
     setup_logging("pam_smbpass",False);
     in_client = True;
 
@@ -107,20 +108,20 @@ int pam_sm_authenticate(pam_handle_t *pamh, int flags,
         AUTH_RETURN;
     }
 
-    pdb_init_sam(&sampass);
+    sampass = samu_new( NULL );
     
     found = pdb_getsampwnam( sampass, name );
 
     if (on( SMB_MIGRATE, ctrl )) {
 	retval = _smb_add_user(pamh, ctrl, name, sampass, found);
-	pdb_free_sam(&sampass);
+	TALLOC_FREE(sampass);
 	AUTH_RETURN;
     }
 
     if (!found) {
         _log_err(LOG_ALERT, "Failed to find entry for user %s.", name);
         retval = PAM_USER_UNKNOWN;
-	pdb_free_sam(&sampass);
+	TALLOC_FREE(sampass);
 	sampass = NULL;
         AUTH_RETURN;
     }
@@ -128,7 +129,7 @@ int pam_sm_authenticate(pam_handle_t *pamh, int flags,
     /* if this user does not have a password... */
 
     if (_smb_blankpasswd( ctrl, sampass )) {
-        pdb_free_sam(&sampass);
+        TALLOC_FREE(sampass);
         retval = PAM_SUCCESS;
         AUTH_RETURN;
     }
@@ -139,14 +140,14 @@ int pam_sm_authenticate(pam_handle_t *pamh, int flags,
     if (retval != PAM_SUCCESS ) {
 	_log_err(LOG_CRIT, "auth: no password provided for [%s]"
 		 , name);
-        pdb_free_sam(&sampass);
+        TALLOC_FREE(sampass);
         AUTH_RETURN;
     }
 
     /* verify the password of this user */
 
     retval = _smb_verify_password( pamh, sampass, p, ctrl );
-    pdb_free_sam(&sampass);
+    TALLOC_FREE(sampass);
     p = NULL;
     AUTH_RETURN;
 }
@@ -176,7 +177,7 @@ int pam_sm_setcred(pam_handle_t *pamh, int flags,
 
 /* Helper function for adding a user to the db. */
 static int _smb_add_user(pam_handle_t *pamh, unsigned int ctrl,
-                         const char *name, SAM_ACCOUNT *sampass, BOOL exist)
+                         const char *name, struct samu *sampass, BOOL exist)
 {
     pstring err_str;
     pstring msg_str;
@@ -199,10 +200,10 @@ static int _smb_add_user(pam_handle_t *pamh, unsigned int ctrl,
 
     /* Add the user to the db if they aren't already there. */
    if (!exist) {
-	retval = local_password_change( name, LOCAL_ADD_USER|LOCAL_SET_PASSWORD,
+	retval = NT_STATUS_IS_OK(local_password_change( name, LOCAL_ADD_USER|LOCAL_SET_PASSWORD,
 	                                 pass, err_str,
 	                                 sizeof(err_str),
-	                                 msg_str, sizeof(msg_str) );
+	                                 msg_str, sizeof(msg_str) ));
 	if (!retval && *err_str)
 	{
 	    err_str[PSTRING_LEN-1] = '\0';
@@ -221,8 +222,8 @@ static int _smb_add_user(pam_handle_t *pamh, unsigned int ctrl,
     /* mimick 'update encrypted' as long as the 'no pw req' flag is not set */
     if ( pdb_get_acct_ctrl(sampass) & ~ACB_PWNOTREQ )
     {
-	retval = local_password_change( name, LOCAL_SET_PASSWORD, pass, err_str, sizeof(err_str),
-	                                 msg_str, sizeof(msg_str) );
+	retval = NT_STATUS_IS_OK(local_password_change( name, LOCAL_SET_PASSWORD, pass, err_str, sizeof(err_str),
+	                                 msg_str, sizeof(msg_str) ));
 	if (!retval && *err_str)
 	{
 	    err_str[PSTRING_LEN-1] = '\0';

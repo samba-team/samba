@@ -23,6 +23,15 @@
 
 #include "includes.h"
 
+/* Map generic permissions to file object specific permissions */
+
+struct generic_mapping file_generic_mapping = {
+	FILE_GENERIC_READ,
+	FILE_GENERIC_WRITE,
+	FILE_GENERIC_EXECUTE,
+	FILE_GENERIC_ALL
+};
+
 /*******************************************************************
  Works out the linearization size of a SEC_DESC.
 ********************************************************************/
@@ -62,6 +71,10 @@ BOOL sec_desc_equal(SEC_DESC *s1, SEC_DESC *s2)
 
 	if (!s1 && !s2) {
 		goto done;
+	}
+
+	if (!s1 || !s2) {
+		return False;
 	}
 
 	/* Check top level stuff */
@@ -323,10 +336,10 @@ NTSTATUS sec_desc_add_sid(TALLOC_CTX *ctx, SEC_DESC **psd, DOM_SID *sid, uint32 
 	SEC_ACE  *ace  = 0;
 	NTSTATUS  status;
 
-	*sd_size = 0;
-
 	if (!ctx || !psd || !sid || !sd_size)
 		return NT_STATUS_INVALID_PARAMETER;
+
+	*sd_size = 0;
 
 	status = sec_ace_add_sid(ctx, &ace, psd[0]->dacl->ace, &psd[0]->dacl->num_aces, sid, mask);
 	
@@ -375,11 +388,11 @@ NTSTATUS sec_desc_del_sid(TALLOC_CTX *ctx, SEC_DESC **psd, DOM_SID *sid, size_t 
 	SEC_ACE  *ace  = 0;
 	NTSTATUS  status;
 
-	*sd_size = 0;
-	
 	if (!ctx || !psd[0] || !sid || !sd_size)
 		return NT_STATUS_INVALID_PARAMETER;
 
+	*sd_size = 0;
+	
 	status = sec_ace_del_sid(ctx, &ace, psd[0]->dacl->ace, &psd[0]->dacl->num_aces, sid);
 
 	if (!NT_STATUS_IS_OK(status))
@@ -420,7 +433,7 @@ SEC_DESC_BUF *se_create_child_secdesc(TALLOC_CTX *ctx, SEC_DESC *parent_ctr,
 	if (!(new_ace_list = TALLOC_ARRAY(ctx, SEC_ACE, the_acl->num_aces))) 
 		return NULL;
 
-	for (i = 0; the_acl && i < the_acl->num_aces; i++) {
+	for (i = 0; i < the_acl->num_aces; i++) {
 		SEC_ACE *ace = &the_acl->ace[i];
 		SEC_ACE *new_ace = &new_ace_list[new_ace_list_ndx];
 		uint8 new_flags = 0;
@@ -519,4 +532,5 @@ void init_sec_access(SEC_ACCESS *t, uint32 mask)
 {
 	t->mask = mask;
 }
+
 

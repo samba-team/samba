@@ -853,7 +853,7 @@ BOOL in_list(const char *s, const char *list, BOOL casesensitive)
 }
 
 /* this is used to prevent lots of mallocs of size 1 */
-static char *null_string = NULL;
+static const char *null_string = "";
 
 /**
  Set a string value, allocing the space for the string
@@ -862,20 +862,14 @@ static char *null_string = NULL;
 static BOOL string_init(char **dest,const char *src)
 {
 	size_t l;
+
 	if (!src)     
 		src = "";
 
 	l = strlen(src);
 
 	if (l == 0) {
-		if (!null_string) {
-			if((null_string = (char *)SMB_MALLOC(1)) == NULL) {
-				DEBUG(0,("string_init: malloc fail for null_string.\n"));
-				return False;
-			}
-			*null_string = 0;
-		}
-		*dest = null_string;
+		*dest = CONST_DISCARD(char*, null_string);
 	} else {
 		(*dest) = SMB_STRDUP(src);
 		if ((*dest) == NULL) {
@@ -923,7 +917,7 @@ BOOL string_set(char **dest,const char *src)
 **/
 
 void string_sub2(char *s,const char *pattern, const char *insert, size_t len, 
-		 BOOL remove_unsafe_characters, BOOL replace_once)
+		 BOOL remove_unsafe_characters, BOOL replace_once, BOOL allow_trailing_dollar)
 {
 	char *p;
 	ssize_t ls,lp,li, i;
@@ -955,6 +949,11 @@ void string_sub2(char *s,const char *pattern, const char *insert, size_t len,
 			case '\'':
 			case ';':
 			case '$':
+				/* allow a trailing $ (as in machine accounts) */
+				if (allow_trailing_dollar && (i == li - 1 )) {
+					p[i] = insert[i];
+					break;
+				}
 			case '%':
 			case '\r':
 			case '\n':
@@ -978,12 +977,12 @@ void string_sub2(char *s,const char *pattern, const char *insert, size_t len,
 
 void string_sub_once(char *s, const char *pattern, const char *insert, size_t len)
 {
-	string_sub2( s, pattern, insert, len, True, True );
+	string_sub2( s, pattern, insert, len, True, True, False );
 }
 
 void string_sub(char *s,const char *pattern, const char *insert, size_t len)
 {
-	string_sub2( s, pattern, insert, len, True, False );
+	string_sub2( s, pattern, insert, len, True, False, False );
 }
 
 void fstring_sub(char *s,const char *pattern,const char *insert)
@@ -1044,14 +1043,13 @@ char *realloc_string_sub(char *string, const char *pattern,
 	while ((p = strstr_m(s,pattern))) {
 		if (ld > 0) {
 			int offset = PTR_DIFF(s,string);
-			char *t = SMB_REALLOC(string, ls + ld + 1);
-			if (!t) {
+			string = SMB_REALLOC(string, ls + ld + 1);
+			if (!string) {
 				DEBUG(0, ("realloc_string_sub: out of memory!\n"));
 				SAFE_FREE(in);
 				return NULL;
 			}
-			string = t;
-			p = t + offset + (p - s);
+			p = string + offset + (p - s);
 		}
 		if (li != lp) {
 			memmove(p+li,p+lp,strlen(p+lp)+1);
@@ -1114,15 +1112,14 @@ char *talloc_string_sub(TALLOC_CTX *mem_ctx, const char *src,
 	while ((p = strstr_m(s,pattern))) {
 		if (ld > 0) {
 			int offset = PTR_DIFF(s,string);
-			char *t = TALLOC_REALLOC(mem_ctx, string, ls + ld + 1);
-			if (!t) {
+			string = TALLOC_REALLOC(mem_ctx, string, ls + ld + 1);
+			if (!string) {
 				DEBUG(0, ("talloc_string_sub: out of "
 					  "memory!\n"));
 				SAFE_FREE(in);
 				return NULL;
 			}
-			string = t;
-			p = t + offset + (p - s);
+			p = string + offset + (p - s);
 		}
 		if (li != lp) {
 			memmove(p+li,p+lp,strlen(p+lp)+1);
@@ -1667,7 +1664,7 @@ int fstr_sprintf(fstring s, const char *fmt, ...)
 
 #define S_LIST_ABS 16 /* List Allocation Block Size */
 
-char **str_list_make(const char *string, const char *sep)
+static char **str_list_make_internal(TALLOC_CTX *mem_ctx, const char *string, const char *sep)
 {
 	char **list, **rlist;
 	const char *str;
@@ -1677,7 +1674,11 @@ char **str_list_make(const char *string, const char *sep)
 	
 	if (!string || !*string)
 		return NULL;
-	s = SMB_STRDUP(string);
+	if (mem_ctx) {
+		s = talloc_strdup(mem_ctx, string);
+	} else {
+		s = SMB_STRDUP(string);
+	}
 	if (!s) {
 		DEBUG(0,("str_list_make: Unable to allocate memory"));
 		return NULL;
@@ -1691,30 +1692,65 @@ char **str_list_make(const char *string, const char *sep)
 	while (next_token(&str, tok, sep, sizeof(tok))) {		
 		if (num == lsize) {
 			lsize += S_LIST_ABS;
-			rlist = SMB_REALLOC_ARRAY(list, char *, lsize +1);
+			if (mem_ctx) {
+				rlist = TALLOC_REALLOC_ARRAY(mem_ctx, list, char *, lsize +1);
+			} else {
+				/* We need to keep the old list on error so we can free the elements
+				   if the realloc fails. */
+				rlist = SMB_REALLOC_ARRAY_KEEP_OLD_ON_ERROR(list, char *, lsize +1);
+			}
 			if (!rlist) {
 				DEBUG(0,("str_list_make: Unable to allocate memory"));
 				str_list_free(&list);
-				SAFE_FREE(s);
+				if (mem_ctx) {
+					TALLOC_FREE(s);
+				} else {
+					SAFE_FREE(s);
+				}
 				return NULL;
-			} else
+			} else {
 				list = rlist;
+			}
 			memset (&list[num], 0, ((sizeof(char**)) * (S_LIST_ABS +1)));
 		}
+
+		if (mem_ctx) {
+			list[num] = talloc_strdup(mem_ctx, tok);
+		} else {
+			list[num] = SMB_STRDUP(tok);
+		}
 		
-		list[num] = SMB_STRDUP(tok);
 		if (!list[num]) {
 			DEBUG(0,("str_list_make: Unable to allocate memory"));
 			str_list_free(&list);
-			SAFE_FREE(s);
+			if (mem_ctx) {
+				TALLOC_FREE(s);
+			} else {
+				SAFE_FREE(s);
+			}
 			return NULL;
 		}
 	
 		num++;	
 	}
-	
-	SAFE_FREE(s);
+
+	if (mem_ctx) {
+		TALLOC_FREE(s);
+	} else {
+		SAFE_FREE(s);
+	}
+
 	return list;
+}
+
+char **str_list_make_talloc(TALLOC_CTX *mem_ctx, const char *string, const char *sep)
+{
+	return str_list_make_internal(mem_ctx, string, sep);
+}
+
+char **str_list_make(const char *string, const char *sep)
+{
+	return str_list_make_internal(NULL, string, sep);
 }
 
 BOOL str_list_copy(char ***dest, const char **src)
@@ -1732,13 +1768,14 @@ BOOL str_list_copy(char ***dest, const char **src)
 	while (src[num]) {
 		if (num == lsize) {
 			lsize += S_LIST_ABS;
-			rlist = SMB_REALLOC_ARRAY(list, char *, lsize +1);
+			rlist = SMB_REALLOC_ARRAY_KEEP_OLD_ON_ERROR(list, char *, lsize +1);
 			if (!rlist) {
 				DEBUG(0,("str_list_copy: Unable to re-allocate memory"));
 				str_list_free(&list);
 				return False;
-			} else
+			} else {
 				list = rlist;
+			}
 			memset (&list[num], 0, ((sizeof(char **)) * (S_LIST_ABS +1)));
 		}
 		
@@ -1778,16 +1815,35 @@ BOOL str_list_compare(char **list1, char **list2)
 	return True;
 }
 
-void str_list_free(char ***list)
+static void str_list_free_internal(TALLOC_CTX *mem_ctx, char ***list)
 {
 	char **tlist;
 	
 	if (!list || !*list)
 		return;
 	tlist = *list;
-	for(; *tlist; tlist++)
-		SAFE_FREE(*tlist);
-	SAFE_FREE(*list);
+	for(; *tlist; tlist++) {
+		if (mem_ctx) {
+			TALLOC_FREE(*tlist);
+		} else {
+			SAFE_FREE(*tlist);
+		}
+	}
+	if (mem_ctx) {
+		TALLOC_FREE(*tlist);
+	} else {
+		SAFE_FREE(*list);
+	}
+}
+
+void str_list_free_talloc(TALLOC_CTX *mem_ctx, char ***list)
+{
+	str_list_free_internal(mem_ctx, list);
+}
+
+void str_list_free(char ***list)
+{
+	str_list_free_internal(NULL, list);
 }
 
 /******************************************************************************
@@ -2206,8 +2262,9 @@ void string_append(char **left, const char *right)
 		*left = SMB_REALLOC(*left, new_len);
 	}
 
-	if (*left == NULL)
+	if (*left == NULL) {
 		return;
+	}
 
 	safe_strcat(*left, right, new_len-1);
 }
@@ -2274,14 +2331,16 @@ void sprintf_append(TALLOC_CTX *mem_ctx, char **string, ssize_t *len,
 	}
 
 	if (increased) {
-		if (mem_ctx != NULL)
+		if (mem_ctx != NULL) {
 			*string = TALLOC_REALLOC_ARRAY(mem_ctx, *string, char,
 						       *bufsize);
-		else
+		} else {
 			*string = SMB_REALLOC_ARRAY(*string, char, *bufsize);
+		}
 
-		if (*string == NULL)
+		if (*string == NULL) {
 			goto error;
+		}
 	}
 
 	StrnCpy((*string)+(*len), newstr, ret);
@@ -2320,3 +2379,23 @@ char *sstring_sub(const char *src, char front, char back)
 	temp3[len-1] = '\0';
 	return temp3;
 }
+
+/********************************************************************
+ Check a string for any occurrences of a specified list of invalid
+ characters.
+********************************************************************/
+
+BOOL validate_net_name( const char *name, const char *invalid_chars, int max_len )
+{
+	int i;
+
+	for ( i=0; i<max_len && name[i]; i++ ) {
+		/* fail if strchr_m() finds one of the invalid characters */
+		if ( name[i] && strchr_m( invalid_chars, name[i] ) ) {
+			return False;
+		}
+	}
+
+	return True;
+}
+

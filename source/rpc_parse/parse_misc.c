@@ -49,7 +49,7 @@ static TALLOC_CTX *main_loop_talloc = NULL;
 free up temporary memory - called from the main loop
 ********************************************************************/
 
-void main_loop_talloc_free(void)
+void main_loop_TALLOC_FREE(void)
 {
     if (!main_loop_talloc)
         return;
@@ -597,7 +597,7 @@ void init_rpc_blob_str(RPC_DATA_BLOB *str, const char *buf, int len)
 
 	/* set up string lengths. */
 	str->buf_len = create_rpc_blob(str, len*2);
-	rpcstr_push(str->buffer, buf, str->buf_len, STR_TERMINATE);
+	rpcstr_push(str->buffer, buf, (size_t)str->buf_len, STR_TERMINATE);
 	
 }
 
@@ -762,6 +762,11 @@ void init_string2(STRING2 *str, const char *buf, size_t max_len, size_t str_len)
 	/* set up string lengths. */
 	SMB_ASSERT(max_len >= str_len);
 
+	/* Ensure buf is valid if str_len was set. Coverity check. */
+	if (str_len && !buf) {
+		return;
+	}
+
 	str->str_max_len = max_len;
 	str->offset = 0;
 	str->str_str_len = str_len;
@@ -879,6 +884,10 @@ void init_unistr2(UNISTR2 *str, const char *buf, enum unistr2_term_codes flags)
 void init_unistr4(UNISTR4 *uni4, const char *buf, enum unistr2_term_codes flags)
 {
 	uni4->string = TALLOC_P( get_talloc_ctx(), UNISTR2 );
+	if (!uni4->string) {
+		smb_panic("init_unistr4: talloc fail\n");
+		return;
+	}
 	init_unistr2( uni4->string, buf, flags );
 
 	uni4->length = 2 * (uni4->string->uni_str_len);
@@ -888,6 +897,10 @@ void init_unistr4(UNISTR4 *uni4, const char *buf, enum unistr2_term_codes flags)
 void init_unistr4_w( TALLOC_CTX *ctx, UNISTR4 *uni4, const smb_ucs2_t *buf )
 {
 	uni4->string = TALLOC_P( ctx, UNISTR2 );
+	if (!uni4->string) {
+		smb_panic("init_unistr4_w: talloc fail\n");
+		return;
+	}
 	init_unistr2_w( ctx, uni4->string, buf );
 
 	uni4->length = 2 * (uni4->string->uni_str_len);
@@ -903,7 +916,7 @@ void init_unistr4_w( TALLOC_CTX *ctx, UNISTR4 *uni4, const smb_ucs2_t *buf )
 
 void init_unistr2_w(TALLOC_CTX *ctx, UNISTR2 *str, const smb_ucs2_t *buf)
 {
-	uint32 len = strlen_w(buf);
+	uint32 len = buf ? strlen_w(buf) : 0;
 
 	ZERO_STRUCTP(str);
 
@@ -914,7 +927,7 @@ void init_unistr2_w(TALLOC_CTX *ctx, UNISTR2 *str, const smb_ucs2_t *buf)
 
 	str->buffer = TALLOC_ZERO_ARRAY(ctx, uint16, len + 1);
 	if (str->buffer == NULL) {
-		smb_panic("init_unistr2_w: malloc fail\n");
+		smb_panic("init_unistr2_w: talloc fail\n");
 		return;
 	}
 	
@@ -1251,23 +1264,50 @@ BOOL smb_io_account_lockout_str(const char *desc, LOCKOUT_STRING *account_lockou
 }
 
 /*******************************************************************
- Inits a DOM_RID2 structure.
+ Inits a DOM_RID structure.
 ********************************************************************/
 
-void init_dom_rid2(DOM_RID2 *rid2, uint32 rid, uint8 type, uint32 idx)
+void init_dom_rid(DOM_RID *prid, uint32 rid, uint16 type, uint32 idx)
 {
-	rid2->type    = type;
-	rid2->rid     = rid;
-	rid2->rid_idx = idx;
+	prid->type    = type;
+	prid->rid     = rid;
+	prid->rid_idx = idx;
+}
+
+/*******************************************************************
+ Reads or writes a DOM_RID structure.
+********************************************************************/
+
+BOOL smb_io_dom_rid(const char *desc, DOM_RID *rid, prs_struct *ps, int depth)
+{
+	if (rid == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "smb_io_dom_rid");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+   
+	if(!prs_uint16("type   ", ps, depth, &rid->type))
+		return False;
+	if(!prs_align(ps))
+		return False;
+	if(!prs_uint32("rid    ", ps, depth, &rid->rid))
+		return False;
+	if(!prs_uint32("rid_idx", ps, depth, &rid->rid_idx))
+		return False;
+
+	return True;
 }
 
 /*******************************************************************
  Reads or writes a DOM_RID2 structure.
 ********************************************************************/
 
-BOOL smb_io_dom_rid2(const char *desc, DOM_RID2 *rid2, prs_struct *ps, int depth)
+BOOL smb_io_dom_rid2(const char *desc, DOM_RID2 *rid, prs_struct *ps, int depth)
 {
-	if (rid2 == NULL)
+	if (rid == NULL)
 		return False;
 
 	prs_debug(ps, depth, desc, "smb_io_dom_rid2");
@@ -1276,17 +1316,20 @@ BOOL smb_io_dom_rid2(const char *desc, DOM_RID2 *rid2, prs_struct *ps, int depth
 	if(!prs_align(ps))
 		return False;
    
-	if(!prs_uint8("type   ", ps, depth, &rid2->type))
+	if(!prs_uint16("type   ", ps, depth, &rid->type))
 		return False;
 	if(!prs_align(ps))
 		return False;
-	if(!prs_uint32("rid    ", ps, depth, &rid2->rid))
+	if(!prs_uint32("rid    ", ps, depth, &rid->rid))
 		return False;
-	if(!prs_uint32("rid_idx", ps, depth, &rid2->rid_idx))
+	if(!prs_uint32("rid_idx", ps, depth, &rid->rid_idx))
+		return False;
+	if(!prs_uint32("unknown", ps, depth, &rid->unknown))
 		return False;
 
 	return True;
 }
+
 
 /*******************************************************************
 creates a DOM_RID3 structure.
@@ -1368,7 +1411,7 @@ static void init_clnt_srv(DOM_CLNT_SRV *logcln, const char *logon_srv, const cha
  Inits or writes a DOM_CLNT_SRV structure.
 ********************************************************************/
 
-static BOOL smb_io_clnt_srv(const char *desc, DOM_CLNT_SRV *logcln, prs_struct *ps, int depth)
+BOOL smb_io_clnt_srv(const char *desc, DOM_CLNT_SRV *logcln, prs_struct *ps, int depth)
 {
 	if (logcln == NULL)
 		return False;

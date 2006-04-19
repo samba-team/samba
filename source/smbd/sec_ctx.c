@@ -23,10 +23,7 @@
 extern struct current_user current_user;
 
 struct sec_ctx {
-	uid_t uid;
-	uid_t gid;
-	int ngroups;
-	gid_t *groups;
+	UNIX_USER_TOKEN ut;
 	NT_USER_TOKEN *token;
 };
 
@@ -132,7 +129,7 @@ static void gain_root(void)
  Get the list of current groups.
 ****************************************************************************/
 
-int get_current_groups(gid_t gid, int *p_ngroups, gid_t **p_groups)
+static int get_current_groups(gid_t gid, int *p_ngroups, gid_t **p_groups)
 {
 	int i;
 	gid_t grp;
@@ -183,51 +180,6 @@ fail:
 }
 
 /****************************************************************************
- Initialize the groups a user belongs to.
-****************************************************************************/
-
-BOOL initialise_groups(char *user, uid_t uid, gid_t gid)
-{
-	struct sec_ctx *prev_ctx_p;
-	BOOL result = True;
-
-	if (non_root_mode()) {
-		return True;
-	}
-
-	become_root();
-
-	/* Call initgroups() to get user groups */
-
-	if (winbind_initgroups(user,gid) == -1) {
-		DEBUG(0,("Unable to initgroups. Error was %s\n", strerror(errno) ));
-		if (getuid() == 0) {
-			if (gid < 0 || gid > 32767 || uid < 0 || uid > 32767) {
-				DEBUG(0,("This is probably a problem with the account %s\n", user));
-			}
-		}
-		result = False;
-		goto done;
-	}
-
-	/* Store groups in previous user's security context.  This will
-	   always work as the become_root() call increments the stack
-	   pointer. */
-
-	prev_ctx_p = &sec_ctx_stack[sec_ctx_stack_ndx - 1];
-
-	SAFE_FREE(prev_ctx_p->groups);
-	prev_ctx_p->ngroups = 0;
-
-	get_current_groups(gid, &prev_ctx_p->ngroups, &prev_ctx_p->groups);
-
- done:
-	unbecome_root();
-
-	return result;
-}
-
-/****************************************************************************
  Create a new security context on the stack.  It is the same as the old
  one.  User changes are done using the set_sec_ctx() function.
 ****************************************************************************/
@@ -249,26 +201,27 @@ BOOL push_sec_ctx(void)
 
 	ctx_p = &sec_ctx_stack[sec_ctx_stack_ndx];
 
-	ctx_p->uid = geteuid();
-	ctx_p->gid = getegid();
+	ctx_p->ut.uid = geteuid();
+	ctx_p->ut.gid = getegid();
 
  	DEBUG(3, ("push_sec_ctx(%u, %u) : sec_ctx_stack_ndx = %d\n", 
- 		  (unsigned int)ctx_p->uid, (unsigned int)ctx_p->gid, sec_ctx_stack_ndx ));
+ 		  (unsigned int)ctx_p->ut.uid, (unsigned int)ctx_p->ut.gid, sec_ctx_stack_ndx ));
 
-	ctx_p->token = dup_nt_token(sec_ctx_stack[sec_ctx_stack_ndx-1].token);
+	ctx_p->token = dup_nt_token(NULL,
+				    sec_ctx_stack[sec_ctx_stack_ndx-1].token);
 
-	ctx_p->ngroups = sys_getgroups(0, NULL);
+	ctx_p->ut.ngroups = sys_getgroups(0, NULL);
 
-	if (ctx_p->ngroups != 0) {
-		if (!(ctx_p->groups = SMB_MALLOC_ARRAY(gid_t, ctx_p->ngroups))) {
+	if (ctx_p->ut.ngroups != 0) {
+		if (!(ctx_p->ut.groups = SMB_MALLOC_ARRAY(gid_t, ctx_p->ut.ngroups))) {
 			DEBUG(0, ("Out of memory in push_sec_ctx()\n"));
-			delete_nt_token(&ctx_p->token);
+			TALLOC_FREE(ctx_p->token);
 			return False;
 		}
 
-		sys_getgroups(ctx_p->ngroups, ctx_p->groups);
+		sys_getgroups(ctx_p->ut.ngroups, ctx_p->ut.groups);
 	} else {
-		ctx_p->groups = NULL;
+		ctx_p->ut.groups = NULL;
 	}
 
 	return True;
@@ -296,28 +249,28 @@ void set_sec_ctx(uid_t uid, gid_t gid, int ngroups, gid_t *groups, NT_USER_TOKEN
 	sys_setgroups(ngroups, groups);
 #endif
 
-	ctx_p->ngroups = ngroups;
+	ctx_p->ut.ngroups = ngroups;
 
-	SAFE_FREE(ctx_p->groups);
+	SAFE_FREE(ctx_p->ut.groups);
 	if (token && (token == ctx_p->token))
 		smb_panic("DUPLICATE_TOKEN");
 
-	delete_nt_token(&ctx_p->token);
+	TALLOC_FREE(ctx_p->token);
 	
-	ctx_p->groups = memdup(groups, sizeof(gid_t) * ngroups);
-	ctx_p->token = dup_nt_token(token);
+	ctx_p->ut.groups = memdup(groups, sizeof(gid_t) * ngroups);
+	ctx_p->token = dup_nt_token(NULL, token);
 
 	become_id(uid, gid);
 
-	ctx_p->uid = uid;
-	ctx_p->gid = gid;
+	ctx_p->ut.uid = uid;
+	ctx_p->ut.gid = gid;
 
 	/* Update current_user stuff */
 
-	current_user.uid = uid;
-	current_user.gid = gid;
-	current_user.ngroups = ngroups;
-	current_user.groups = groups;
+	current_user.ut.uid = uid;
+	current_user.ut.gid = gid;
+	current_user.ut.ngroups = ngroups;
+	current_user.ut.groups = groups;
 	current_user.nt_user_token = ctx_p->token;
 }
 
@@ -352,13 +305,13 @@ BOOL pop_sec_ctx(void)
 
 	/* Clear previous user info */
 
-	ctx_p->uid = (uid_t)-1;
-	ctx_p->gid = (gid_t)-1;
+	ctx_p->ut.uid = (uid_t)-1;
+	ctx_p->ut.gid = (gid_t)-1;
 
-	SAFE_FREE(ctx_p->groups);
-	ctx_p->ngroups = 0;
+	SAFE_FREE(ctx_p->ut.groups);
+	ctx_p->ut.ngroups = 0;
 
-	delete_nt_token(&ctx_p->token);
+	TALLOC_FREE(ctx_p->token);
 
 	/* Pop back previous user */
 
@@ -369,17 +322,17 @@ BOOL pop_sec_ctx(void)
 	prev_ctx_p = &sec_ctx_stack[sec_ctx_stack_ndx];
 
 #ifdef HAVE_SETGROUPS
-	sys_setgroups(prev_ctx_p->ngroups, prev_ctx_p->groups);
+	sys_setgroups(prev_ctx_p->ut.ngroups, prev_ctx_p->ut.groups);
 #endif
 
-	become_id(prev_ctx_p->uid, prev_ctx_p->gid);
+	become_id(prev_ctx_p->ut.uid, prev_ctx_p->ut.gid);
 
 	/* Update current_user stuff */
 
-	current_user.uid = prev_ctx_p->uid;
-	current_user.gid = prev_ctx_p->gid;
-	current_user.ngroups = prev_ctx_p->ngroups;
-	current_user.groups = prev_ctx_p->groups;
+	current_user.ut.uid = prev_ctx_p->ut.uid;
+	current_user.ut.gid = prev_ctx_p->ut.gid;
+	current_user.ut.ngroups = prev_ctx_p->ut.ngroups;
+	current_user.ut.groups = prev_ctx_p->ut.groups;
 	current_user.nt_user_token = prev_ctx_p->token;
 
 	DEBUG(3, ("pop_sec_ctx (%u, %u) - sec_ctx_stack_ndx = %d\n", 
@@ -400,26 +353,26 @@ void init_sec_ctx(void)
 	memset(sec_ctx_stack, 0, sizeof(struct sec_ctx) * MAX_SEC_CTX_DEPTH);
 
 	for (i = 0; i < MAX_SEC_CTX_DEPTH; i++) {
-		sec_ctx_stack[i].uid = (uid_t)-1;
-		sec_ctx_stack[i].gid = (gid_t)-1;
+		sec_ctx_stack[i].ut.uid = (uid_t)-1;
+		sec_ctx_stack[i].ut.gid = (gid_t)-1;
 	}
 
 	/* Initialise first level of stack.  It is the current context */
 	ctx_p = &sec_ctx_stack[0];
 
-	ctx_p->uid = geteuid();
-	ctx_p->gid = getegid();
+	ctx_p->ut.uid = geteuid();
+	ctx_p->ut.gid = getegid();
 
-	get_current_groups(ctx_p->gid, &ctx_p->ngroups, &ctx_p->groups);
+	get_current_groups(ctx_p->ut.gid, &ctx_p->ut.ngroups, &ctx_p->ut.groups);
 
 	ctx_p->token = NULL; /* Maps to guest user. */
 
 	/* Initialise current_user global */
 
-	current_user.uid = ctx_p->uid;
-	current_user.gid = ctx_p->gid;
-	current_user.ngroups = ctx_p->ngroups;
-	current_user.groups = ctx_p->groups;
+	current_user.ut.uid = ctx_p->ut.uid;
+	current_user.ut.gid = ctx_p->ut.gid;
+	current_user.ut.ngroups = ctx_p->ut.ngroups;
+	current_user.ut.groups = ctx_p->ut.groups;
 
 	/* The conn and vuid are usually taken care of by other modules.
 	   We initialise them here. */

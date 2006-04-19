@@ -29,6 +29,7 @@
 #define DBGC_CLASS DBGC_RPC_PARSE
 
 static BOOL lsa_io_trans_names(const char *desc, LSA_TRANS_NAME_ENUM *trn, prs_struct *ps, int depth);
+static BOOL lsa_io_trans_names2(const char *desc, LSA_TRANS_NAME_ENUM2 *trn, prs_struct *ps, int depth);
 
 /*******************************************************************
  Inits a LSA_TRANS_NAME structure.
@@ -64,6 +65,48 @@ static BOOL lsa_io_trans_name(const char *desc, LSA_TRANS_NAME *trn, prs_struct 
 	if(!smb_io_unihdr ("hdr_name", &trn->hdr_name, ps, depth))
 		return False;
 	if(!prs_uint32("domain_idx  ", ps, depth, &trn->domain_idx))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+ Inits a LSA_TRANS_NAME2 structure.
+********************************************************************/
+
+void init_lsa_trans_name2(LSA_TRANS_NAME2 *trn, UNISTR2 *uni_name,
+			 uint16 sid_name_use, const char *name, uint32 idx)
+{
+	trn->sid_name_use = sid_name_use;
+	init_unistr2(uni_name, name, UNI_FLAGS_NONE);
+	init_uni_hdr(&trn->hdr_name, uni_name);
+	trn->domain_idx = idx;
+	trn->unknown = 0;
+}
+
+/*******************************************************************
+ Reads or writes a LSA_TRANS_NAME2 structure.
+********************************************************************/
+
+static BOOL lsa_io_trans_name2(const char *desc, LSA_TRANS_NAME2 *trn, prs_struct *ps, 
+			      int depth)
+{
+	prs_debug(ps, depth, desc, "lsa_io_trans_name2");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+	
+	if(!prs_uint16("sid_name_use", ps, depth, &trn->sid_name_use))
+		return False;
+	if(!prs_align(ps))
+		return False;
+	
+	if(!smb_io_unihdr ("hdr_name", &trn->hdr_name, ps, depth))
+		return False;
+	if(!prs_uint32("domain_idx  ", ps, depth, &trn->domain_idx))
+		return False;
+	if(!prs_uint32("unknown  ", ps, depth, &trn->unknown))
 		return False;
 
 	return True;
@@ -508,8 +551,9 @@ BOOL lsa_io_q_enum_trust_dom(const char *desc, LSA_Q_ENUM_TRUST_DOM *q_e,
  Inits an LSA_R_ENUM_TRUST_DOM structure.
 ********************************************************************/
 
-void init_r_enum_trust_dom(TALLOC_CTX *ctx, LSA_R_ENUM_TRUST_DOM *out, uint32 enum_context,
-			   uint32 req_num_domains, uint32 num_domains, TRUSTDOM **td)
+void init_r_enum_trust_dom(TALLOC_CTX *ctx, LSA_R_ENUM_TRUST_DOM *out,
+			   uint32 enum_context, uint32 num_domains,
+			   struct trustdom_info **td)
 {
 	unsigned int i;
 
@@ -523,9 +567,16 @@ void init_r_enum_trust_dom(TALLOC_CTX *ctx, LSA_R_ENUM_TRUST_DOM *out, uint32 en
 		/* allocate container memory */
 		
 		out->domlist = TALLOC_P( ctx, DOMAIN_LIST );
-		out->domlist->domains = TALLOC_ARRAY( ctx, DOMAIN_INFO, out->count );
+
+		if ( !out->domlist ) {
+			out->status = NT_STATUS_NO_MEMORY;
+			return;
+		}
+
+		out->domlist->domains = TALLOC_ARRAY( ctx, DOMAIN_INFO,
+						      out->count );
 		
-		if ( !out->domlist || !out->domlist->domains ) {
+		if ( !out->domlist->domains ) {
 			out->status = NT_STATUS_NO_MEMORY;
 			return;
 		}
@@ -535,13 +586,21 @@ void init_r_enum_trust_dom(TALLOC_CTX *ctx, LSA_R_ENUM_TRUST_DOM *out, uint32 en
 		/* initialize the list of domains and their sid */
 		
 		for (i = 0; i < num_domains; i++) {	
-			if ( !(out->domlist->domains[i].sid = TALLOC_P(ctx, DOM_SID2)) ) {
+			smb_ucs2_t *name;
+			if ( !(out->domlist->domains[i].sid =
+			       TALLOC_P(ctx, DOM_SID2)) ) {
 				out->status = NT_STATUS_NO_MEMORY;
 				return;
 			}
 				
-			init_dom_sid2(out->domlist->domains[i].sid, &(td[i])->sid);
-			init_unistr4_w(ctx, &out->domlist->domains[i].name, (td[i])->name);	
+			init_dom_sid2(out->domlist->domains[i].sid,
+				      &(td[i])->sid);
+			if (push_ucs2_talloc(ctx, &name, (td[i])->name) < 0){
+				out->status = NT_STATUS_NO_MEMORY;
+				return;
+			}
+			init_unistr4_w(ctx, &out->domlist->domains[i].name,
+				       name);
 		}
 	}
 
@@ -615,15 +674,89 @@ BOOL lsa_io_r_enum_trust_dom(const char *desc, LSA_R_ENUM_TRUST_DOM *out,
 }
 
 /*******************************************************************
-reads or writes a dom query structure.
+reads or writes a structure.
 ********************************************************************/
 
-static BOOL lsa_io_dom_query(const char *desc, DOM_QUERY *d_q, prs_struct *ps, int depth)
+static BOOL lsa_io_dom_query_1(const char *desc, DOM_QUERY_1 *d_q, prs_struct *ps, int depth)
 {
 	if (d_q == NULL)
 		return False;
 
-	prs_debug(ps, depth, desc, "lsa_io_dom_query");
+	prs_debug(ps, depth, desc, "lsa_io_dom_query_1");
+	depth++;
+
+	if (!prs_align(ps))
+		return False;
+
+	if (!prs_uint32("percent_full", ps, depth, &d_q->percent_full))
+		return False;
+	if (!prs_uint32("log_size", ps, depth, &d_q->log_size))
+		return False;
+	if (!smb_io_nttime("retention_time", ps, depth, &d_q->retention_time))
+		return False;
+	if (!prs_uint8("shutdown_in_progress", ps, depth, &d_q->shutdown_in_progress))
+		return False;
+	if (!smb_io_nttime("time_to_shutdown", ps, depth, &d_q->time_to_shutdown))
+		return False;
+	if (!prs_uint32("next_audit_record", ps, depth, &d_q->next_audit_record))
+		return False;
+	if (!prs_uint32("unknown", ps, depth, &d_q->unknown))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+
+static BOOL lsa_io_dom_query_2(const char *desc, DOM_QUERY_2 *d_q, prs_struct *ps, int depth)
+{
+	if (d_q == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "lsa_io_dom_query_2");
+	depth++;
+
+	if (!prs_align(ps))
+		return False;
+
+	if (!prs_uint32("auditing_enabled", ps, depth, &d_q->auditing_enabled))
+		return False;
+	if (!prs_uint32("ptr   ", ps, depth, &d_q->ptr))
+		return False;
+	if (!prs_uint32("count1", ps, depth, &d_q->count1))
+		return False;
+
+	if (d_q->ptr) {
+
+		if (!prs_uint32("count2", ps, depth, &d_q->count2))
+			return False;
+
+		if (d_q->count1 != d_q->count2)
+			return False;
+
+		if (UNMARSHALLING(ps)) {
+			d_q->auditsettings = TALLOC_ZERO_ARRAY(ps->mem_ctx, uint32, d_q->count2);
+		}
+
+		if (!prs_uint32s(False, "auditsettings", ps, depth, d_q->auditsettings, d_q->count2))
+			return False;
+	}
+
+	return True;
+}
+
+/*******************************************************************
+reads or writes a dom query structure.
+********************************************************************/
+
+static BOOL lsa_io_dom_query_3(const char *desc, DOM_QUERY_3 *d_q, prs_struct *ps, int depth)
+{
+	if (d_q == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "lsa_io_dom_query_3");
 	depth++;
 
 	if(!prs_align(ps))
@@ -656,62 +789,12 @@ static BOOL lsa_io_dom_query(const char *desc, DOM_QUERY *d_q, prs_struct *ps, i
 }
 
 /*******************************************************************
-reads or writes a structure.
-********************************************************************/
-
-static BOOL lsa_io_dom_query_2(const char *desc, DOM_QUERY_2 *d_q, prs_struct *ps, int depth)
-{
-	uint32 ptr = 1;
-
-	if (d_q == NULL)
-		return False;
-
-	prs_debug(ps, depth, desc, "lsa_io_dom_query_2");
-	depth++;
-
-	if (!prs_align(ps))
-		return False;
-
-	if (!prs_uint32("auditing_enabled", ps, depth, &d_q->auditing_enabled))
-		return False;
-	if (!prs_uint32("ptr   ", ps, depth, &ptr))
-		return False;
-	if (!prs_uint32("count1", ps, depth, &d_q->count1))
-		return False;
-	if (!prs_uint32("count2", ps, depth, &d_q->count2))
-		return False;
-
-	if (UNMARSHALLING(ps)) {
-		d_q->auditsettings = TALLOC_ZERO_ARRAY(ps->mem_ctx, uint32, d_q->count2);
-	}
-
-	if (d_q->auditsettings == NULL) {
-		DEBUG(1, ("lsa_io_dom_query_2: NULL auditsettings!\n"));
-		return False;
-	}
-
-	if (!prs_uint32s(False, "auditsettings", ps, depth, d_q->auditsettings, d_q->count2))
-		return False;
-
-    return True;
-}
-
-/*******************************************************************
- Reads or writes a dom query structure.
-********************************************************************/
-
-static BOOL lsa_io_dom_query_3(const char *desc, DOM_QUERY_3 *d_q, prs_struct *ps, int depth)
-{
-	return lsa_io_dom_query("", d_q, ps, depth);
-}
-
-/*******************************************************************
  Reads or writes a dom query structure.
 ********************************************************************/
 
 static BOOL lsa_io_dom_query_5(const char *desc, DOM_QUERY_5 *d_q, prs_struct *ps, int depth)
 {
-	return lsa_io_dom_query("", d_q, ps, depth);
+	return lsa_io_dom_query_3("", d_q, ps, depth);
 }
 
 /*******************************************************************
@@ -733,46 +816,275 @@ static BOOL lsa_io_dom_query_6(const char *desc, DOM_QUERY_6 *d_q, prs_struct *p
 }
 
 /*******************************************************************
+ Reads or writes a dom query structure.
+********************************************************************/
+
+static BOOL lsa_io_dom_query_10(const char *desc, DOM_QUERY_10 *d_q, prs_struct *ps, int depth)
+{
+	if (d_q == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "lsa_io_dom_query_10");
+	depth++;
+
+	if (!prs_uint8("shutdown_on_full", ps, depth, &d_q->shutdown_on_full))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+ Reads or writes a dom query structure.
+********************************************************************/
+
+static BOOL lsa_io_dom_query_11(const char *desc, DOM_QUERY_11 *d_q, prs_struct *ps, int depth)
+{
+	if (d_q == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "lsa_io_dom_query_11");
+	depth++;
+
+	if (!prs_uint16("unknown", ps, depth, &d_q->unknown))
+		return False;
+	if (!prs_uint8("shutdown_on_full", ps, depth, &d_q->shutdown_on_full))
+		return False;
+	if (!prs_uint8("log_is_full", ps, depth, &d_q->log_is_full))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+ Reads or writes an LSA_DNS_DOM_INFO structure.
+********************************************************************/
+
+BOOL lsa_io_dom_query_12(const char *desc, DOM_QUERY_12 *info, prs_struct *ps, int depth)
+{
+	prs_debug(ps, depth, desc, "lsa_io_dom_query_12");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+	if(!smb_io_unihdr("nb_name", &info->hdr_nb_dom_name, ps, depth))
+		return False;
+	if(!smb_io_unihdr("dns_name", &info->hdr_dns_dom_name, ps, depth))
+		return False;
+	if(!smb_io_unihdr("forest", &info->hdr_forest_name, ps, depth))
+		return False;
+
+	if(!prs_align(ps))
+		return False;
+	if ( !smb_io_uuid("dom_guid", &info->dom_guid, ps, depth) )
+		return False;
+
+	if(!prs_align(ps))
+		return False;
+	if(!prs_uint32("dom_sid", ps, depth, &info->ptr_dom_sid))
+		return False;
+
+	if(!smb_io_unistr2("nb_name", &info->uni_nb_dom_name,
+			   info->hdr_nb_dom_name.buffer, ps, depth))
+		return False;
+	if(!smb_io_unistr2("dns_name", &info->uni_dns_dom_name, 
+			   info->hdr_dns_dom_name.buffer, ps, depth))
+		return False;
+	if(!smb_io_unistr2("forest", &info->uni_forest_name, 
+			   info->hdr_forest_name.buffer, ps, depth))
+		return False;
+
+	if(!smb_io_dom_sid2("dom_sid", &info->dom_sid, ps, depth))
+		return False;
+
+	return True;
+	
+}
+
+/*******************************************************************
+ Inits an LSA_Q_QUERY_INFO structure.
+********************************************************************/
+
+void init_q_set(LSA_Q_SET_INFO *in, POLICY_HND *hnd, uint16 info_class, LSA_INFO_CTR ctr)
+{
+	DEBUG(5,("init_q_set\n"));
+
+	in->info_class = info_class;
+
+	in->pol = *hnd;
+
+	in->ctr = ctr;
+	in->ctr.info_class = info_class;
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+
+static BOOL lsa_io_query_info_ctr2(const char *desc, prs_struct *ps, int depth, LSA_INFO_CTR2 *ctr)
+{
+	prs_debug(ps, depth, desc, "lsa_io_query_info_ctr2");
+	depth++;
+
+	if(!prs_uint16("info_class", ps, depth, &ctr->info_class))
+		return False;
+
+	switch (ctr->info_class) {
+	case 1:
+		if(!lsa_io_dom_query_1("", &ctr->info.id1, ps, depth))
+			return False;
+		break;
+	case 2:
+		if(!lsa_io_dom_query_2("", &ctr->info.id2, ps, depth))
+			return False;
+		break;
+	case 3:
+		if(!lsa_io_dom_query_3("", &ctr->info.id3, ps, depth))
+			return False;
+		break;
+	case 5:
+		if(!lsa_io_dom_query_5("", &ctr->info.id5, ps, depth))
+			return False;
+		break;
+	case 6:
+		if(!lsa_io_dom_query_6("", &ctr->info.id6, ps, depth))
+			return False;
+		break;
+	case 10:
+		if(!lsa_io_dom_query_10("", &ctr->info.id10, ps, depth))
+			return False;
+		break;
+	case 11:
+		if(!lsa_io_dom_query_11("", &ctr->info.id11, ps, depth))
+			return False;
+		break;
+	case 12:
+		if(!lsa_io_dom_query_12("", &ctr->info.id12, ps, depth))
+			return False;
+		break;
+	default:
+		DEBUG(0,("invalid info_class: %d\n", ctr->info_class));
+		return False;
+		break;
+	}
+
+	return True;
+}
+
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+
+static BOOL lsa_io_query_info_ctr(const char *desc, prs_struct *ps, int depth, LSA_INFO_CTR *ctr)
+{
+	prs_debug(ps, depth, desc, "lsa_io_query_info_ctr");
+	depth++;
+
+	if(!prs_uint16("info_class", ps, depth, &ctr->info_class))
+		return False;
+
+	switch (ctr->info_class) {
+	case 1:
+		if(!lsa_io_dom_query_1("", &ctr->info.id1, ps, depth))
+			return False;
+		break;
+	case 2:
+		if(!lsa_io_dom_query_2("", &ctr->info.id2, ps, depth))
+			return False;
+		break;
+	case 3:
+		if(!lsa_io_dom_query_3("", &ctr->info.id3, ps, depth))
+			return False;
+		break;
+	case 5:
+		if(!lsa_io_dom_query_5("", &ctr->info.id5, ps, depth))
+			return False;
+		break;
+	case 6:
+		if(!lsa_io_dom_query_6("", &ctr->info.id6, ps, depth))
+			return False;
+		break;
+	case 10:
+		if(!lsa_io_dom_query_10("", &ctr->info.id10, ps, depth))
+			return False;
+		break;
+	case 11:
+		if(!lsa_io_dom_query_11("", &ctr->info.id11, ps, depth))
+			return False;
+		break;
+	default:
+		DEBUG(0,("invalid info_class: %d\n", ctr->info_class));
+		return False;
+		break;
+	}
+
+	return True;
+}
+
+/*******************************************************************
  Reads or writes an LSA_R_QUERY_INFO structure.
 ********************************************************************/
 
 BOOL lsa_io_r_query(const char *desc, LSA_R_QUERY_INFO *out, prs_struct *ps, int depth)
 {
+
 	prs_debug(ps, depth, desc, "lsa_io_r_query");
 	depth++;
 
-	if(!prs_uint32("undoc_buffer", ps, depth, &out->undoc_buffer))
+	if(!prs_align(ps))
 		return False;
 
-	if (out->undoc_buffer != 0) {
-		if(!prs_uint16("info_class", ps, depth, &out->info_class))
-			return False;
+	if(!prs_uint32("dom_ptr", ps, depth, &out->dom_ptr))
+		return False;
 
-		if(!prs_align(ps))
-			return False;
+	if (out->dom_ptr) {
 
-		switch (out->info_class) {
-		case 2:
-			if(!lsa_io_dom_query_2("", &out->dom.id2, ps, depth))
-				return False;
-			break;
-		case 3:
-			if(!lsa_io_dom_query_3("", &out->dom.id3, ps, depth))
-				return False;
-			break;
-		case 5:
-			if(!lsa_io_dom_query_5("", &out->dom.id5, ps, depth))
-				return False;
-			break;
-		case 6:
-			if(!lsa_io_dom_query_6("", &out->dom.id6, ps, depth))
-				return False;
-			break;
-		default:
-			/* PANIC! */
-			break;
-		}
+		if(!lsa_io_query_info_ctr("", ps, depth, &out->ctr))
+			return False;
 	}
+
+	if(!prs_align(ps))
+		return False;
+
+	if(!prs_ntstatus("status", ps, depth, &out->status))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+ Reads or writes an LSA_Q_SET_INFO structure.
+********************************************************************/
+
+BOOL lsa_io_q_set(const char *desc, LSA_Q_SET_INFO *in, prs_struct *ps, 
+		  int depth)
+{
+	prs_debug(ps, depth, desc, "lsa_io_q_set");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+
+	if(!smb_io_pol_hnd("", &in->pol, ps, depth))
+		return False;
+
+	if(!prs_uint16("info_class", ps, depth, &in->info_class))
+		return False;
+
+	if(!lsa_io_query_info_ctr("", ps, depth, &in->ctr))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+ Reads or writes an LSA_R_SET_INFO structure.
+********************************************************************/
+
+BOOL lsa_io_r_set(const char *desc, LSA_R_SET_INFO *out, prs_struct *ps, int depth)
+{
+	prs_debug(ps, depth, desc, "lsa_io_r_set");
+	depth++;
 
 	if(!prs_align(ps))
 		return False;
@@ -938,6 +1250,75 @@ BOOL lsa_io_q_lookup_sids(const char *desc, LSA_Q_LOOKUP_SIDS *q_s, prs_struct *
 }
 
 /*******************************************************************
+ Reads or writes a LSA_Q_LOOKUP_SIDS2 structure.
+********************************************************************/
+
+BOOL lsa_io_q_lookup_sids2(const char *desc, LSA_Q_LOOKUP_SIDS2 *q_s, prs_struct *ps,
+			  int depth)
+{
+	prs_debug(ps, depth, desc, "lsa_io_q_lookup_sids2");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+	
+	if(!smb_io_pol_hnd("pol_hnd", &q_s->pol, ps, depth)) /* policy handle */
+		return False;
+	if(!lsa_io_sid_enum("sids   ", &q_s->sids, ps, depth)) /* sids to be looked up */
+		return False;
+	if(!lsa_io_trans_names2("names  ", &q_s->names, ps, depth)) /* translated names */
+		return False;
+
+	if(!prs_uint16("level", ps, depth, &q_s->level)) /* lookup level */
+		return False;
+	if(!prs_align(ps))
+		return False;
+
+	if(!prs_uint32("mapped_count", ps, depth, &q_s->mapped_count))
+		return False;
+	if(!prs_uint32("unknown1", ps, depth, &q_s->unknown1))
+		return False;
+	if(!prs_uint32("unknown2", ps, depth, &q_s->unknown2))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+ Reads or writes a LSA_Q_LOOKUP_SIDS3 structure.
+********************************************************************/
+
+BOOL lsa_io_q_lookup_sids3(const char *desc, LSA_Q_LOOKUP_SIDS3 *q_s, prs_struct *ps,
+			  int depth)
+{
+	prs_debug(ps, depth, desc, "lsa_io_q_lookup_sids3");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+	
+	if(!lsa_io_sid_enum("sids   ", &q_s->sids, ps, depth)) /* sids to be looked up */
+		return False;
+	if(!lsa_io_trans_names2("names  ", &q_s->names, ps, depth)) /* translated names */
+		return False;
+
+	if(!prs_uint16("level", ps, depth, &q_s->level)) /* lookup level */
+		return False;
+	if(!prs_align(ps))
+		return False;
+
+	if(!prs_uint32("mapped_count", ps, depth, &q_s->mapped_count))
+		return False;
+	if(!prs_uint32("unknown1", ps, depth, &q_s->unknown1))
+		return False;
+	if(!prs_uint32("unknown2", ps, depth, &q_s->unknown2))
+		return False;
+
+	return True;
+}
+
+
+/*******************************************************************
  Reads or writes a structure.
 ********************************************************************/
 
@@ -998,6 +1379,64 @@ static BOOL lsa_io_trans_names(const char *desc, LSA_TRANS_NAME_ENUM *trn,
  Reads or writes a structure.
 ********************************************************************/
 
+static BOOL lsa_io_trans_names2(const char *desc, LSA_TRANS_NAME_ENUM2 *trn,
+                prs_struct *ps, int depth)
+{
+	unsigned int i;
+
+	prs_debug(ps, depth, desc, "lsa_io_trans_names2");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+   
+	if(!prs_uint32("num_entries    ", ps, depth, &trn->num_entries))
+		return False;
+	if(!prs_uint32("ptr_trans_names", ps, depth, &trn->ptr_trans_names))
+		return False;
+
+	if (trn->ptr_trans_names != 0) {
+		if(!prs_uint32("num_entries2   ", ps, depth, 
+			       &trn->num_entries2))
+			return False;
+
+		if (UNMARSHALLING(ps)) {
+			if ((trn->name = PRS_ALLOC_MEM(ps, LSA_TRANS_NAME2, trn->num_entries)) == NULL) {
+				return False;
+			}
+
+			if ((trn->uni_name = PRS_ALLOC_MEM(ps, UNISTR2, trn->num_entries)) == NULL) {
+				return False;
+			}
+		}
+
+		for (i = 0; i < trn->num_entries2; i++) {
+			fstring t;
+			slprintf(t, sizeof(t) - 1, "name[%d] ", i);
+
+			if(!lsa_io_trans_name2(t, &trn->name[i], ps, depth)) /* translated name */
+				return False;
+		}
+
+		for (i = 0; i < trn->num_entries2; i++) {
+			fstring t;
+			slprintf(t, sizeof(t) - 1, "name[%d] ", i);
+
+			if(!smb_io_unistr2(t, &trn->uni_name[i], trn->name[i].hdr_name.buffer, ps, depth))
+				return False;
+			if(!prs_align(ps))
+				return False;
+		}
+	}
+
+	return True;
+}
+
+
+/*******************************************************************
+ Reads or writes a structure.
+********************************************************************/
+
 BOOL lsa_io_r_lookup_sids(const char *desc, LSA_R_LOOKUP_SIDS *r_s, 
 			  prs_struct *ps, int depth)
 {
@@ -1015,6 +1454,77 @@ BOOL lsa_io_r_lookup_sids(const char *desc, LSA_R_LOOKUP_SIDS *r_s,
 			return False;
 
 	if(!lsa_io_trans_names("names  ", r_s->names, ps, depth)) /* translated names */
+		return False;
+
+	if(!prs_align(ps))
+		return False;
+
+	if(!prs_uint32("mapped_count", ps, depth, &r_s->mapped_count))
+		return False;
+
+	if(!prs_ntstatus("status      ", ps, depth, &r_s->status))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+ Reads or writes a structure.
+********************************************************************/
+
+BOOL lsa_io_r_lookup_sids2(const char *desc, LSA_R_LOOKUP_SIDS2 *r_s, 
+			  prs_struct *ps, int depth)
+{
+	prs_debug(ps, depth, desc, "lsa_io_r_lookup_sids2");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+	
+	if(!prs_uint32("ptr_dom_ref", ps, depth, &r_s->ptr_dom_ref))
+		return False;
+
+	if (r_s->ptr_dom_ref != 0)
+		if(!lsa_io_dom_r_ref ("dom_ref", r_s->dom_ref, ps, depth)) /* domain reference info */
+			return False;
+
+	if(!lsa_io_trans_names2("names  ", r_s->names, ps, depth)) /* translated names */
+		return False;
+
+	if(!prs_align(ps))
+		return False;
+
+	if(!prs_uint32("mapped_count", ps, depth, &r_s->mapped_count))
+		return False;
+
+	if(!prs_ntstatus("status      ", ps, depth, &r_s->status))
+		return False;
+
+	return True;
+}
+
+
+/*******************************************************************
+ Reads or writes a structure.
+********************************************************************/
+
+BOOL lsa_io_r_lookup_sids3(const char *desc, LSA_R_LOOKUP_SIDS3 *r_s, 
+			  prs_struct *ps, int depth)
+{
+	prs_debug(ps, depth, desc, "lsa_io_r_lookup_sids3");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+	
+	if(!prs_uint32("ptr_dom_ref", ps, depth, &r_s->ptr_dom_ref))
+		return False;
+
+	if (r_s->ptr_dom_ref != 0)
+		if(!lsa_io_dom_r_ref ("dom_ref", r_s->dom_ref, ps, depth)) /* domain reference info */
+			return False;
+
+	if(!lsa_io_trans_names2("names  ", r_s->names, ps, depth)) /* translated names */
 		return False;
 
 	if(!prs_align(ps))
@@ -1117,7 +1627,9 @@ BOOL lsa_io_q_lookup_names(const char *desc, LSA_Q_LOOKUP_NAMES *q_r,
 		return False;
 	if(!prs_uint32("ptr_trans_sids ", ps, depth, &q_r->ptr_trans_sids))
 		return False;
-	if(!prs_uint32("lookup_level   ", ps, depth, &q_r->lookup_level))
+	if(!prs_uint16("lookup_level   ", ps, depth, &q_r->lookup_level))
+		return False;
+	if(!prs_align(ps))
 		return False;
 	if(!prs_uint32("mapped_count   ", ps, depth, &q_r->mapped_count))
 		return False;
@@ -1161,9 +1673,134 @@ BOOL lsa_io_r_lookup_names(const char *desc, LSA_R_LOOKUP_NAMES *out, prs_struct
 		}
 
 		if (UNMARSHALLING(ps)) {
-			if ((out->dom_rid = PRS_ALLOC_MEM(ps, DOM_RID2, out->num_entries2))
+			if ((out->dom_rid = PRS_ALLOC_MEM(ps, DOM_RID, out->num_entries2))
 			    == NULL) {
 				DEBUG(3, ("lsa_io_r_lookup_names(): out of memory\n"));
+				return False;
+			}
+		}
+
+		for (i = 0; i < out->num_entries2; i++)
+			if(!smb_io_dom_rid("", &out->dom_rid[i], ps, depth)) /* domain RIDs being looked up */
+				return False;
+	}
+
+	if(!prs_uint32("mapped_count", ps, depth, &out->mapped_count))
+		return False;
+
+	if(!prs_ntstatus("status      ", ps, depth, &out->status))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+
+BOOL lsa_io_q_lookup_names2(const char *desc, LSA_Q_LOOKUP_NAMES2 *q_r, 
+			   prs_struct *ps, int depth)
+{
+	unsigned int i;
+
+	prs_debug(ps, depth, desc, "lsa_io_q_lookup_names2");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+
+	if(!smb_io_pol_hnd("", &q_r->pol, ps, depth)) /* policy handle */
+		return False;
+
+	if(!prs_align(ps))
+		return False;
+	if(!prs_uint32("num_entries    ", ps, depth, &q_r->num_entries))
+		return False;
+	if(!prs_uint32("num_entries2   ", ps, depth, &q_r->num_entries2))
+		return False;
+
+	if (UNMARSHALLING(ps)) {
+		if (q_r->num_entries) {
+			if ((q_r->hdr_name = PRS_ALLOC_MEM(ps, UNIHDR, q_r->num_entries)) == NULL)
+				return False;
+			if ((q_r->uni_name = PRS_ALLOC_MEM(ps, UNISTR2, q_r->num_entries)) == NULL)
+				return False;
+		}
+	}
+
+	for (i = 0; i < q_r->num_entries; i++) {
+		if(!prs_align(ps))
+			return False;
+		if(!smb_io_unihdr("hdr_name", &q_r->hdr_name[i], ps, depth)) /* pointer names */
+			return False;
+	}
+
+	for (i = 0; i < q_r->num_entries; i++) {
+		if(!prs_align(ps))
+			return False;
+		if(!smb_io_unistr2("dom_name", &q_r->uni_name[i], q_r->hdr_name[i].buffer, ps, depth)) /* names to be looked up */
+			return False;
+	}
+
+	if(!prs_align(ps))
+		return False;
+	if(!prs_uint32("num_trans_entries ", ps, depth, &q_r->num_trans_entries))
+		return False;
+	if(!prs_uint32("ptr_trans_sids ", ps, depth, &q_r->ptr_trans_sids))
+		return False;
+	if(!prs_uint16("lookup_level   ", ps, depth, &q_r->lookup_level))
+		return False;
+	if(!prs_align(ps))
+		return False;
+	if(!prs_uint32("mapped_count   ", ps, depth, &q_r->mapped_count))
+		return False;
+	if(!prs_uint32("unknown1   ", ps, depth, &q_r->unknown1))
+		return False;
+	if(!prs_uint32("unknown2   ", ps, depth, &q_r->unknown2))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+
+BOOL lsa_io_r_lookup_names2(const char *desc, LSA_R_LOOKUP_NAMES2 *out, prs_struct *ps, int depth)
+{
+	unsigned int i;
+
+	prs_debug(ps, depth, desc, "lsa_io_r_lookup_names2");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+
+	if(!prs_uint32("ptr_dom_ref", ps, depth, &out->ptr_dom_ref))
+		return False;
+
+	if (out->ptr_dom_ref != 0)
+		if(!lsa_io_dom_r_ref("", out->dom_ref, ps, depth))
+			return False;
+
+	if(!prs_uint32("num_entries", ps, depth, &out->num_entries))
+		return False;
+	if(!prs_uint32("ptr_entries", ps, depth, &out->ptr_entries))
+		return False;
+
+	if (out->ptr_entries != 0) {
+		if(!prs_uint32("num_entries2", ps, depth, &out->num_entries2))
+			return False;
+
+		if (out->num_entries2 != out->num_entries) {
+			/* RPC fault */
+			return False;
+		}
+
+		if (UNMARSHALLING(ps)) {
+			if ((out->dom_rid = PRS_ALLOC_MEM(ps, DOM_RID2, out->num_entries2))
+			    == NULL) {
+				DEBUG(3, ("lsa_io_r_lookup_names2(): out of memory\n"));
 				return False;
 			}
 		}
@@ -1182,6 +1819,297 @@ BOOL lsa_io_r_lookup_names(const char *desc, LSA_R_LOOKUP_NAMES *out, prs_struct
 	return True;
 }
 
+/*******************************************************************
+ Internal lsa data type io.
+ Following pass must read DOM_SID2 types.
+********************************************************************/
+
+BOOL smb_io_lsa_translated_sids3(const char *desc, LSA_TRANSLATED_SID3 *q_r, 
+			   prs_struct *ps, int depth)
+{
+	prs_debug(ps, depth, desc, "smb_io_lsa_translated_sids3");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+	if(!prs_uint8 ("sid_type ", ps, depth, &q_r->sid_type ))
+		return False;
+	if(!prs_align(ps))
+		return False;
+	/* Second pass will read/write these. */
+	if (!smb_io_dom_sid2_p("sid_header", ps, depth, &q_r->sid2))
+		return False;
+	if(!prs_uint32("sid_idx ", ps, depth, &q_r->sid_idx ))
+		return False;
+	if(!prs_uint32("unknown ", ps, depth, &q_r->unknown ))
+		return False;
+	
+	return True;
+}
+
+/*******************************************************************
+ Identical to lsa_io_q_lookup_names2.
+********************************************************************/
+
+BOOL lsa_io_q_lookup_names3(const char *desc, LSA_Q_LOOKUP_NAMES3 *q_r, 
+			   prs_struct *ps, int depth)
+{
+	unsigned int i;
+
+	prs_debug(ps, depth, desc, "lsa_io_q_lookup_names3");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+
+	if(!smb_io_pol_hnd("", &q_r->pol, ps, depth)) /* policy handle */
+		return False;
+
+	if(!prs_align(ps))
+		return False;
+	if(!prs_uint32("num_entries    ", ps, depth, &q_r->num_entries))
+		return False;
+	if(!prs_uint32("num_entries2   ", ps, depth, &q_r->num_entries2))
+		return False;
+
+	if (UNMARSHALLING(ps)) {
+		if (q_r->num_entries) {
+			if ((q_r->hdr_name = PRS_ALLOC_MEM(ps, UNIHDR, q_r->num_entries)) == NULL)
+				return False;
+			if ((q_r->uni_name = PRS_ALLOC_MEM(ps, UNISTR2, q_r->num_entries)) == NULL)
+				return False;
+		}
+	}
+
+	for (i = 0; i < q_r->num_entries; i++) {
+		if(!prs_align(ps))
+			return False;
+		if(!smb_io_unihdr("hdr_name", &q_r->hdr_name[i], ps, depth)) /* pointer names */
+			return False;
+	}
+
+	for (i = 0; i < q_r->num_entries; i++) {
+		if(!prs_align(ps))
+			return False;
+		if(!smb_io_unistr2("dom_name", &q_r->uni_name[i], q_r->hdr_name[i].buffer, ps, depth)) /* names to be looked up */
+			return False;
+	}
+
+	if(!prs_align(ps))
+		return False;
+	if(!prs_uint32("num_trans_entries ", ps, depth, &q_r->num_trans_entries))
+		return False;
+	if(!prs_uint32("ptr_trans_sids ", ps, depth, &q_r->ptr_trans_sids))
+		return False;
+	if(!prs_uint16("lookup_level   ", ps, depth, &q_r->lookup_level))
+		return False;
+	if(!prs_align(ps))
+		return False;
+	if(!prs_uint32("mapped_count   ", ps, depth, &q_r->mapped_count))
+		return False;
+	if(!prs_uint32("unknown1   ", ps, depth, &q_r->unknown1))
+		return False;
+	if(!prs_uint32("unknown2   ", ps, depth, &q_r->unknown2))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+
+BOOL lsa_io_r_lookup_names3(const char *desc, LSA_R_LOOKUP_NAMES3 *out, prs_struct *ps, int depth)
+{
+	unsigned int i;
+
+	prs_debug(ps, depth, desc, "lsa_io_r_lookup_names3");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+
+	if(!prs_uint32("ptr_dom_ref", ps, depth, &out->ptr_dom_ref))
+		return False;
+
+	if (out->ptr_dom_ref != 0)
+		if(!lsa_io_dom_r_ref("", out->dom_ref, ps, depth))
+			return False;
+
+	if(!prs_uint32("num_entries", ps, depth, &out->num_entries))
+		return False;
+	if(!prs_uint32("ptr_entries", ps, depth, &out->ptr_entries))
+		return False;
+
+	if (out->ptr_entries != 0) {
+		if(!prs_uint32("num_entries2", ps, depth, &out->num_entries2))
+			return False;
+
+		if (out->num_entries2 != out->num_entries) {
+			/* RPC fault */
+			return False;
+		}
+
+		if (UNMARSHALLING(ps)) {
+			if ((out->trans_sids = PRS_ALLOC_MEM(ps, LSA_TRANSLATED_SID3, out->num_entries2))
+			    == NULL) {
+				DEBUG(3, ("lsa_io_r_lookup_names3(): out of memory\n"));
+				return False;
+			}
+		}
+
+		for (i = 0; i < out->num_entries2; i++) {
+			if(!smb_io_lsa_translated_sids3("", &out->trans_sids[i], ps, depth)) {
+				return False;
+			}
+		}
+		/* Now process the DOM_SID2 entries. */
+		for (i = 0; i < out->num_entries2; i++) {
+			if (out->trans_sids[i].sid2) {
+				if( !smb_io_dom_sid2("sid2", out->trans_sids[i].sid2, ps, depth) ) {
+					return False;
+				}
+			}
+		}
+	}
+
+	if(!prs_uint32("mapped_count", ps, depth, &out->mapped_count))
+		return False;
+
+	if(!prs_ntstatus("status      ", ps, depth, &out->status))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+********************************************************************/
+
+BOOL lsa_io_q_lookup_names4(const char *desc, LSA_Q_LOOKUP_NAMES4 *q_r, 
+			   prs_struct *ps, int depth)
+{
+	unsigned int i;
+
+	prs_debug(ps, depth, desc, "lsa_io_q_lookup_names4");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+
+	if(!prs_uint32("num_entries    ", ps, depth, &q_r->num_entries))
+		return False;
+	if(!prs_uint32("num_entries2   ", ps, depth, &q_r->num_entries2))
+		return False;
+
+	if (UNMARSHALLING(ps)) {
+		if (q_r->num_entries) {
+			if ((q_r->hdr_name = PRS_ALLOC_MEM(ps, UNIHDR, q_r->num_entries)) == NULL)
+				return False;
+			if ((q_r->uni_name = PRS_ALLOC_MEM(ps, UNISTR2, q_r->num_entries)) == NULL)
+				return False;
+		}
+	}
+
+	for (i = 0; i < q_r->num_entries; i++) {
+		if(!prs_align(ps))
+			return False;
+		if(!smb_io_unihdr("hdr_name", &q_r->hdr_name[i], ps, depth)) /* pointer names */
+			return False;
+	}
+
+	for (i = 0; i < q_r->num_entries; i++) {
+		if(!prs_align(ps))
+			return False;
+		if(!smb_io_unistr2("dom_name", &q_r->uni_name[i], q_r->hdr_name[i].buffer, ps, depth)) /* names to be looked up */
+			return False;
+	}
+
+	if(!prs_align(ps))
+		return False;
+	if(!prs_uint32("num_trans_entries ", ps, depth, &q_r->num_trans_entries))
+		return False;
+	if(!prs_uint32("ptr_trans_sids ", ps, depth, &q_r->ptr_trans_sids))
+		return False;
+	if(!prs_uint16("lookup_level   ", ps, depth, &q_r->lookup_level))
+		return False;
+	if(!prs_align(ps))
+		return False;
+	if(!prs_uint32("mapped_count   ", ps, depth, &q_r->mapped_count))
+		return False;
+	if(!prs_uint32("unknown1   ", ps, depth, &q_r->unknown1))
+		return False;
+	if(!prs_uint32("unknown2   ", ps, depth, &q_r->unknown2))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+ Identical to lsa_io_r_lookup_names3.
+********************************************************************/
+
+BOOL lsa_io_r_lookup_names4(const char *desc, LSA_R_LOOKUP_NAMES4 *out, prs_struct *ps, int depth)
+{
+	unsigned int i;
+
+	prs_debug(ps, depth, desc, "lsa_io_r_lookup_names4");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+
+	if(!prs_uint32("ptr_dom_ref", ps, depth, &out->ptr_dom_ref))
+		return False;
+
+	if (out->ptr_dom_ref != 0)
+		if(!lsa_io_dom_r_ref("", out->dom_ref, ps, depth))
+			return False;
+
+	if(!prs_uint32("num_entries", ps, depth, &out->num_entries))
+		return False;
+	if(!prs_uint32("ptr_entries", ps, depth, &out->ptr_entries))
+		return False;
+
+	if (out->ptr_entries != 0) {
+		if(!prs_uint32("num_entries2", ps, depth, &out->num_entries2))
+			return False;
+
+		if (out->num_entries2 != out->num_entries) {
+			/* RPC fault */
+			return False;
+		}
+
+		if (UNMARSHALLING(ps)) {
+			if ((out->trans_sids = PRS_ALLOC_MEM(ps, LSA_TRANSLATED_SID3, out->num_entries2))
+			    == NULL) {
+				DEBUG(3, ("lsa_io_r_lookup_names4(): out of memory\n"));
+				return False;
+			}
+		}
+
+		for (i = 0; i < out->num_entries2; i++) {
+			if(!smb_io_lsa_translated_sids3("", &out->trans_sids[i], ps, depth)) {
+				return False;
+			}
+		}
+		/* Now process the DOM_SID2 entries. */
+		for (i = 0; i < out->num_entries2; i++) {
+			if (out->trans_sids[i].sid2) {
+				if( !smb_io_dom_sid2("sid2", out->trans_sids[i].sid2, ps, depth) ) {
+					return False;
+				}
+			}
+		}
+	}
+
+	if(!prs_uint32("mapped_count", ps, depth, &out->mapped_count))
+		return False;
+
+	if(!prs_ntstatus("status      ", ps, depth, &out->status))
+		return False;
+
+	return True;
+}
 
 /*******************************************************************
  Inits an LSA_Q_CLOSE structure.
@@ -2177,52 +3105,6 @@ BOOL policy_handle_is_valid(const POLICY_HND *hnd)
 }
 
 /*******************************************************************
- Reads or writes an LSA_DNS_DOM_INFO structure.
-********************************************************************/
-
-BOOL lsa_io_dns_dom_info(const char *desc, LSA_DNS_DOM_INFO *info,
-			 prs_struct *ps, int depth)
-{
-	prs_debug(ps, depth, desc, "lsa_io_dns_dom_info");
-	depth++;
-
-	if(!prs_align(ps))
-		return False;
-	if(!smb_io_unihdr("nb_name", &info->hdr_nb_dom_name, ps, depth))
-		return False;
-	if(!smb_io_unihdr("dns_name", &info->hdr_dns_dom_name, ps, depth))
-		return False;
-	if(!smb_io_unihdr("forest", &info->hdr_forest_name, ps, depth))
-		return False;
-
-	if(!prs_align(ps))
-		return False;
-	if ( !smb_io_uuid("dom_guid", &info->dom_guid, ps, depth) )
-		return False;
-
-	if(!prs_align(ps))
-		return False;
-	if(!prs_uint32("dom_sid", ps, depth, &info->ptr_dom_sid))
-		return False;
-
-	if(!smb_io_unistr2("nb_name", &info->uni_nb_dom_name,
-			   info->hdr_nb_dom_name.buffer, ps, depth))
-		return False;
-	if(!smb_io_unistr2("dns_name", &info->uni_dns_dom_name, 
-			   info->hdr_dns_dom_name.buffer, ps, depth))
-		return False;
-	if(!smb_io_unistr2("forest", &info->uni_forest_name, 
-			   info->hdr_forest_name.buffer, ps, depth))
-		return False;
-
-	if(!smb_io_dom_sid2("dom_sid", &info->dom_sid, ps, depth))
-		return False;
-
-	return True;
-	
-}
-
-/*******************************************************************
  Inits an LSA_Q_QUERY_INFO2 structure.
 ********************************************************************/
 
@@ -2269,20 +3151,13 @@ BOOL lsa_io_r_query_info2(const char *desc, LSA_R_QUERY_INFO2 *out,
 	if(!prs_align(ps))
 		return False;
 
-	if(!prs_uint32("ptr", ps, depth, &out->ptr))
+	if(!prs_uint32("dom_ptr", ps, depth, &out->dom_ptr))
 		return False;
-	if(!prs_uint16("info_class", ps, depth, &out->info_class))
-		return False;
-	switch(out->info_class) {
-	case 0x000c:
-		if (!lsa_io_dns_dom_info("info12", &out->info.dns_dom_info,
-					 ps, depth))
+
+	if (out->dom_ptr) {
+
+		if(!lsa_io_query_info_ctr2("", ps, depth, &out->ctr))
 			return False;
-		break;
-	default:
-		DEBUG(0,("lsa_io_r_query_info2: unknown info class %d\n",
-			 out->info_class));
-		return False;
 	}
 
 	if(!prs_align(ps))
@@ -2326,6 +3201,9 @@ NTSTATUS init_r_enum_acct_rights( LSA_R_ENUM_ACCT_RIGHTS *out, PRIVILEGE_SET *pr
 
 	if ( num_priv ) {
 		out->rights = TALLOC_P( get_talloc_ctx(), UNISTR4_ARRAY );
+		if (!out->rights) {
+			return NT_STATUS_NO_MEMORY;
+		}
 
 		if ( !init_unistr4_array( out->rights, num_priv, privname_array ) ) 
 			return NT_STATUS_NO_MEMORY;
@@ -2394,6 +3272,10 @@ void init_q_add_acct_rights( LSA_Q_ADD_ACCT_RIGHTS *in, POLICY_HND *hnd,
 	init_dom_sid2(&in->sid, sid);
 	
 	in->rights = TALLOC_P( get_talloc_ctx(), UNISTR4_ARRAY );
+	if (!in->rights) {
+		smb_panic("init_q_add_acct_rights: talloc fail\n");
+		return;
+	}
 	init_unistr4_array( in->rights, count, rights );
 	
 	in->count = count;
@@ -2437,10 +3319,10 @@ BOOL lsa_io_r_add_acct_rights(const char *desc, LSA_R_ADD_ACCT_RIGHTS *out, prs_
 	return True;
 }
 
-
 /*******************************************************************
  Inits an LSA_Q_REMOVE_ACCT_RIGHTS structure.
 ********************************************************************/
+
 void init_q_remove_acct_rights(LSA_Q_REMOVE_ACCT_RIGHTS *in, 
 			       POLICY_HND *hnd, 
 			       DOM_SID *sid,
@@ -2458,13 +3340,17 @@ void init_q_remove_acct_rights(LSA_Q_REMOVE_ACCT_RIGHTS *in,
 	in->count = count;
 
 	in->rights = TALLOC_P( get_talloc_ctx(), UNISTR4_ARRAY );
+	if (!in->rights) {
+		smb_panic("init_q_remove_acct_rights: talloc fail\n");
+		return;
+	}
 	init_unistr4_array( in->rights, count, rights );
 }
-
 
 /*******************************************************************
 reads or writes a LSA_Q_REMOVE_ACCT_RIGHTS structure.
 ********************************************************************/
+
 BOOL lsa_io_q_remove_acct_rights(const char *desc, LSA_Q_REMOVE_ACCT_RIGHTS *in, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "lsa_io_q_remove_acct_rights");
@@ -2539,8 +3425,78 @@ BOOL lsa_io_q_open_trusted_domain(const char *desc, LSA_Q_OPEN_TRUSTED_DOMAIN *i
 }
 #endif
 
+
 /*******************************************************************
- Reads or writes an LSA_Q_OPEN_TRUSTED_DOMAIN structure.
+ Inits an LSA_Q_OPEN_TRUSTED_DOMAIN_BY_NAME structure.
+********************************************************************/
+
+void init_lsa_q_open_trusted_domain_by_name(LSA_Q_OPEN_TRUSTED_DOMAIN_BY_NAME *q, 
+					    POLICY_HND *hnd, 
+					    const char *name, 
+					    uint32 desired_access)
+{
+	memcpy(&q->pol, hnd, sizeof(q->pol));
+
+	init_lsa_string(&q->name, name);
+	q->access_mask = desired_access;
+}
+
+/*******************************************************************
+********************************************************************/
+
+
+/*******************************************************************
+ Reads or writes an LSA_Q_OPEN_TRUSTED_DOMAIN_BY_NAME structure.
+********************************************************************/
+
+BOOL lsa_io_q_open_trusted_domain_by_name(const char *desc, LSA_Q_OPEN_TRUSTED_DOMAIN_BY_NAME *q_o, prs_struct *ps, int depth)
+{
+	prs_debug(ps, depth, desc, "lsa_io_q_open_trusted_domain_by_name");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+ 
+	if(!smb_io_pol_hnd("pol", &q_o->pol, ps, depth))
+		return False;
+
+	if(!prs_align(ps))
+		return False;
+
+	if(!smb_io_lsa_string("name", &q_o->name, ps, depth))
+		return False;
+
+	if(!prs_align(ps))
+		return False;
+
+ 	if(!prs_uint32("access", ps, depth, &q_o->access_mask))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+ Reads or writes an LSA_R_OPEN_TRUSTED_DOMAIN_BY_NAME structure.
+********************************************************************/
+
+BOOL lsa_io_r_open_trusted_domain_by_name(const char *desc, LSA_R_OPEN_TRUSTED_DOMAIN_BY_NAME *out, prs_struct *ps, int depth)
+{
+	prs_debug(ps, depth, desc, "lsa_io_r_open_trusted_domain_by_name");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+
+	if (!smb_io_pol_hnd("handle", &out->handle, ps, depth))
+		return False;
+
+	if(!prs_ntstatus("status", ps, depth, &out->status))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
 ********************************************************************/
 
 BOOL lsa_io_q_open_trusted_domain(const char *desc, LSA_Q_OPEN_TRUSTED_DOMAIN *q_o, prs_struct *ps, int depth)
@@ -3111,3 +4067,128 @@ BOOL lsa_io_r_query_trusted_domain_info(const char *desc,
 	return True;
 }
 
+/*******************************************************************
+ Inits an LSA_Q_QUERY_DOM_INFO_POLICY structure.
+********************************************************************/
+
+void init_q_query_dom_info(LSA_Q_QUERY_DOM_INFO_POLICY *in, POLICY_HND *hnd, uint16 info_class)
+{
+	DEBUG(5, ("init_q_query_dom_info\n"));
+
+	memcpy(&in->pol, hnd, sizeof(in->pol));
+
+	in->info_class = info_class;
+}
+
+/*******************************************************************
+ Reads or writes an LSA_Q_QUERY_DOM_INFO_POLICY structure.
+********************************************************************/
+
+BOOL lsa_io_q_query_dom_info(const char *desc, LSA_Q_QUERY_DOM_INFO_POLICY *in, prs_struct *ps, int depth)
+{
+	prs_debug(ps, depth, desc, "lsa_io_q_query_dom_info");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+ 
+	if(!smb_io_pol_hnd("pol", &in->pol, ps, depth))
+		return False;
+	
+	if(!prs_uint16("info_class", ps, depth, &in->info_class))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+ Reads or writes an LSA_R_QUERY_DOM_INFO_POLICY structure.
+********************************************************************/
+
+static BOOL lsa_io_dominfo_query_3(const char *desc, LSA_DOM_INFO_POLICY_KERBEROS *krb_policy, 
+				   prs_struct *ps, int depth)
+{
+	if (!prs_align_uint64(ps))
+		return False;
+
+	if (!prs_align(ps))
+		return False;
+
+	if (!prs_uint32("enforce_restrictions", ps, depth, &krb_policy->enforce_restrictions))
+		return False;
+
+	if (!prs_align_uint64(ps))
+		return False;
+
+	if (!smb_io_nttime("service_tkt_lifetime", ps, depth, &krb_policy->service_tkt_lifetime))
+		return False;
+
+	if (!prs_align_uint64(ps))
+		return False;
+	
+	if (!smb_io_nttime("user_tkt_lifetime", ps, depth, &krb_policy->user_tkt_lifetime))
+		return False;
+
+	if (!prs_align_uint64(ps))
+		return False;
+	
+	if (!smb_io_nttime("user_tkt_renewaltime", ps, depth, &krb_policy->user_tkt_renewaltime))
+		return False;
+
+	if (!prs_align_uint64(ps))
+		return False;
+	
+	if (!smb_io_nttime("clock_skew", ps, depth, &krb_policy->clock_skew))
+		return False;
+
+	if (!prs_align_uint64(ps))
+		return False;
+	
+	if (!smb_io_nttime("unknown6", ps, depth, &krb_policy->unknown6))
+		return False;
+
+	return True;
+}
+
+static BOOL lsa_io_dom_info_query(const char *desc, prs_struct *ps, int depth, LSA_DOM_INFO_UNION *info)
+{
+	prs_debug(ps, depth, desc, "lsa_io_dom_info_query");
+	depth++;
+
+	if(!prs_align_uint16(ps))
+		return False;
+
+	if(!prs_uint16("info_class", ps, depth, &info->info_class))
+		return False;
+
+	switch (info->info_class) {
+	case 3: 
+		if (!lsa_io_dominfo_query_3("krb_policy", &info->krb_policy, ps, depth))
+			return False;
+		break;
+	default:
+		DEBUG(0,("unsupported info-level: %d\n", info->info_class));
+		return False;
+		break;
+	}
+
+	return True;
+}
+
+
+BOOL lsa_io_r_query_dom_info(const char *desc, LSA_R_QUERY_DOM_INFO_POLICY *out,
+			     prs_struct *ps, int depth)
+{
+	prs_debug(ps, depth, desc, "lsa_io_r_query_dom_info");
+	depth++;
+
+	if (!prs_pointer("dominfo", ps, depth, (void**)&out->info, 
+			 sizeof(LSA_DOM_INFO_UNION), 
+			 (PRS_POINTER_CAST)lsa_io_dom_info_query) )
+		return False;
+	
+	if(!prs_ntstatus("status", ps, depth, &out->status))
+		return False;
+
+	return True;
+}

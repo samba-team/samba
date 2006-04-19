@@ -232,6 +232,7 @@ struct cnotify_fns *kernel_notify_init(void)
 	cnotify.check_notify = kernel_check_notify;
 	cnotify.remove_notify = kernel_remove_notify;
 	cnotify.select_time = -1;
+	cnotify.notification_fd = -1;
 
 	/* the signal can start off blocked due to a bug in bash */
 	BlockSignals(False, RT_SIGNAL_NOTIFY);

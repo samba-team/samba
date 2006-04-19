@@ -75,7 +75,8 @@ static NTSTATUS name_to_sid(struct rpc_pipe_client *pipe_hnd,
 	if ( !NT_STATUS_IS_OK(result) )
 		return result;
 
-	result = rpccli_lsa_lookup_names(pipe_hnd, mem_ctx, &pol, 1, &name, &sids, &sid_types);
+	result = rpccli_lsa_lookup_names(pipe_hnd, mem_ctx, &pol, 1, &name,
+					 NULL, &sids, &sid_types);
 	
 	if ( NT_STATUS_IS_OK(result) )
 		sid_copy( sid, &sids[0] );
@@ -488,7 +489,7 @@ static NTSTATUS rpc_rights_revoke_internal(const DOM_SID *domain_sid,
 
 done:
 	if ( !NT_STATUS_IS_OK(result) ) {
-		d_fprintf(stderr, "Failed to revoke privileges for %s (%s)", 
+		d_fprintf(stderr, "Failed to revoke privileges for %s (%s)\n", 
 			argv[0], nt_errstr(result));
 	}
 	
@@ -560,3 +561,53 @@ int net_rpc_rights(int argc, const char **argv)
 		
 	return net_help_rights( argc, argv );
 }
+
+static NTSTATUS rpc_sh_rights_list(TALLOC_CTX *mem_ctx, struct rpc_sh_ctx *ctx,
+				   struct rpc_pipe_client *pipe_hnd,
+				   int argc, const char **argv)
+{
+	return rpc_rights_list_internal(ctx->domain_sid, ctx->domain_name,
+					ctx->cli, pipe_hnd, mem_ctx,
+					argc, argv);
+}
+
+static NTSTATUS rpc_sh_rights_grant(TALLOC_CTX *mem_ctx,
+				    struct rpc_sh_ctx *ctx,
+				    struct rpc_pipe_client *pipe_hnd,
+				    int argc, const char **argv)
+{
+	return rpc_rights_grant_internal(ctx->domain_sid, ctx->domain_name,
+					 ctx->cli, pipe_hnd, mem_ctx,
+					 argc, argv);
+}
+
+static NTSTATUS rpc_sh_rights_revoke(TALLOC_CTX *mem_ctx,
+				     struct rpc_sh_ctx *ctx,
+				     struct rpc_pipe_client *pipe_hnd,
+				     int argc, const char **argv)
+{
+	return rpc_rights_revoke_internal(ctx->domain_sid, ctx->domain_name,
+					  ctx->cli, pipe_hnd, mem_ctx,
+					  argc, argv);
+}
+
+struct rpc_sh_cmd *net_rpc_rights_cmds(TALLOC_CTX *mem_ctx,
+				       struct rpc_sh_ctx *ctx)
+{
+	static struct rpc_sh_cmd cmds[] = {
+
+	{ "list", NULL, PI_LSARPC, rpc_sh_rights_list,
+	  "View available or assigned privileges" },
+
+	{ "grant", NULL, PI_LSARPC, rpc_sh_rights_grant,
+	  "Assign privilege[s]" },
+
+	{ "revoke", NULL, PI_LSARPC, rpc_sh_rights_revoke,
+	  "Revoke privilege[s]" },
+
+	{ NULL, NULL, 0, NULL, NULL }
+	};
+
+	return cmds;
+};
+

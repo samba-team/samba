@@ -2,25 +2,27 @@
 #4 July 96 Dan.Shearer@UniSA.edu.au   
 
 INSTALLPERMS=$1
-BASEDIR=`echo $2 | sed 's/\/\//\//g'`
-LIBDIR=`echo $3 | sed 's/\/\//\//g'`
+DESTDIR=$2
+prefix=`echo $3 | sed 's/\/\//\//g'`
+LIBDIR=`echo $4 | sed 's/\/\//\//g'`
+shift
 shift
 shift
 shift
 
-if [ ! -d $LIBDIR ]; then
-  echo Directory $LIBDIR does not exist!
-  echo Do a "make installmodules" or "make install" first.
+if [ ! -d $DESTDIR/$LIBDIR ]; then
+  echo "Directory $DESTDIR/$LIBDIR does not exist! "
+  echo "Do a "make installmodules" or "make install" first. "
   exit 1
 fi
 
 for p in $*; do
   p2=`basename $p`
-  if [ -f $LIBDIR/$p2 ]; then
-    echo Removing $LIBDIR/$p2
-    rm -f $LIBDIR/$p2
-    if [ -f $LIBDIR/$p2 ]; then
-      echo Cannot remove $LIBDIR/$p2 ... does $USER have privileges?
+  if [ -f $DESTDIR/$LIBDIR/$p2 ]; then
+    echo "Removing $DESTDIR/$LIBDIR/$p2 "
+    rm -f $DESTDIR/$LIBDIR/$p2
+    if [ -f $DESTDIR/$LIBDIR/$p2 ]; then
+      echo "Cannot remove $DESTDIR/$LIBDIR/$p2 ... does $USER have privileges? "
     fi
   fi
 done

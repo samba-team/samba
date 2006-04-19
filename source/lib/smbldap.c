@@ -230,7 +230,7 @@ ATTRIB_MAP_ENTRY sidmap_attr_list[] = {
  Return the list of attribute names from a mapping table
  **********************************************************************/
 
- const char** get_attr_list( ATTRIB_MAP_ENTRY table[] )
+ const char** get_attr_list( TALLOC_CTX *mem_ctx, ATTRIB_MAP_ENTRY table[] )
 {
 	const char **names;
 	int i = 0;
@@ -239,7 +239,7 @@ ATTRIB_MAP_ENTRY sidmap_attr_list[] = {
 		i++;
 	i++;
 
-	names = SMB_MALLOC_ARRAY( const char*, i );
+	names = TALLOC_ARRAY( mem_ctx, const char*, i );
 	if ( !names ) {
 		DEBUG(0,("get_attr_list: out of memory\n"));
 		return NULL;
@@ -247,35 +247,12 @@ ATTRIB_MAP_ENTRY sidmap_attr_list[] = {
 
 	i = 0;
 	while ( table[i].attrib != LDAP_ATTR_LIST_END ) {
-		names[i] = SMB_STRDUP( table[i].name );
+		names[i] = talloc_strdup( names, table[i].name );
 		i++;
 	}
 	names[i] = NULL;
 	
 	return names;
-}
-
-/*********************************************************************
- Cleanup 
- ********************************************************************/
-
- void free_attr_list( const char **list )
-{
-	int i = 0;
-
-	if ( !list )
-		return; 
-
-	while ( list[i] ) {
-		/* SAFE_FREE generates a warning here that can't be gotten rid
-		 * of with CONST_DISCARD */
-		if (list[i] != NULL) {
-			free(CONST_DISCARD(char *, list[i]));
-		}
-		i+=1;
-	}
-
-	SAFE_FREE( list );
 }
 
 /*******************************************************************
@@ -321,6 +298,88 @@ ATTRIB_MAP_ENTRY sidmap_attr_list[] = {
 					    sizeof(pstring));
 }
 
+ char * smbldap_talloc_single_attribute(LDAP *ldap_struct, LDAPMessage *entry,
+					const char *attribute,
+					TALLOC_CTX *mem_ctx)
+{
+	char **values;
+	char *result;
+
+	if (attribute == NULL) {
+		return NULL;
+	}
+
+	values = ldap_get_values(ldap_struct, entry, attribute);
+
+	if (values == NULL) {
+		DEBUG(10, ("attribute %s does not exist\n", attribute));
+		return NULL;
+	}
+
+	if (ldap_count_values(values) != 1) {
+		DEBUG(10, ("attribute %s has %d values, expected only one\n",
+			   attribute, ldap_count_values(values)));
+		ldap_value_free(values);
+		return NULL;
+	}
+
+	if (pull_utf8_talloc(mem_ctx, &result, values[0]) < 0) {
+		DEBUG(10, ("pull_utf8_talloc failed\n"));
+		ldap_value_free(values);
+		return NULL;
+	}
+
+	ldap_value_free(values);
+
+#ifdef DEBUG_PASSWORDS
+	DEBUG (100, ("smbldap_get_single_attribute: [%s] = [%s]\n",
+		     attribute, result));
+#endif	
+	return result;
+}
+
+ static int ldapmsg_destructor(void *p) {
+	LDAPMessage **result = talloc_get_type_abort(p, LDAPMessage *);
+	ldap_msgfree(*result);
+	return 0;
+}
+
+ void talloc_autofree_ldapmsg(TALLOC_CTX *mem_ctx, LDAPMessage *result)
+{
+	LDAPMessage **handle;
+
+	if (result == NULL) {
+		return;
+	}
+
+	handle = TALLOC_P(mem_ctx, LDAPMessage *);
+	SMB_ASSERT(handle != NULL);
+
+	*handle = result;
+	talloc_set_destructor(handle, ldapmsg_destructor);
+}
+
+ static int ldapmod_destructor(void *p) {
+	LDAPMod ***result = talloc_get_type_abort(p, LDAPMod **);
+	ldap_mods_free(*result, True);
+	return 0;
+}
+
+ void talloc_autofree_ldapmod(TALLOC_CTX *mem_ctx, LDAPMod **mod)
+{
+	LDAPMod ***handle;
+
+	if (mod == NULL) {
+		return;
+	}
+
+	handle = TALLOC_P(mem_ctx, LDAPMod **);
+	SMB_ASSERT(handle != NULL);
+
+	*handle = mod;
+	talloc_set_destructor(handle, ldapmod_destructor);
+}
+
 /************************************************************************
  Routine to manage the LDAPMod structure array
  manage memory used by the array, by each struct, and values
@@ -349,8 +408,9 @@ ATTRIB_MAP_ENTRY sidmap_attr_list[] = {
 	if (mods == NULL) {
 		mods = SMB_MALLOC_P(LDAPMod *);
 		if (mods == NULL) {
-			DEBUG(0, ("make_a_mod: out of memory!\n"));
-			return;
+			smb_panic("smbldap_set_mod: out of memory!\n");
+			/* notreached. */
+			abort();
 		}
 		mods[0] = NULL;
 	}
@@ -363,13 +423,15 @@ ATTRIB_MAP_ENTRY sidmap_attr_list[] = {
 	if (mods[i] == NULL) {
 		mods = SMB_REALLOC_ARRAY (mods, LDAPMod *, i + 2);
 		if (mods == NULL) {
-			DEBUG(0, ("make_a_mod: out of memory!\n"));
-			return;
+			smb_panic("smbldap_set_mod: out of memory!\n");
+			/* notreached. */
+			abort();
 		}
 		mods[i] = SMB_MALLOC_P(LDAPMod);
 		if (mods[i] == NULL) {
-			DEBUG(0, ("make_a_mod: out of memory!\n"));
-			return;
+			smb_panic("smbldap_set_mod: out of memory!\n");
+			/* notreached. */
+			abort();
 		}
 		mods[i]->mod_op = modop;
 		mods[i]->mod_values = NULL;
@@ -387,13 +449,15 @@ ATTRIB_MAP_ENTRY sidmap_attr_list[] = {
 		mods[i]->mod_values = SMB_REALLOC_ARRAY(mods[i]->mod_values, char *, j + 2);
 					       
 		if (mods[i]->mod_values == NULL) {
-			DEBUG (0, ("make_a_mod: Memory allocation failure!\n"));
-			return;
+			smb_panic("smbldap_set_mod: out of memory!\n");
+			/* notreached. */
+			abort();
 		}
 
 		if (push_utf8_allocate(&utf8_value, value) == (size_t)-1) {
-			DEBUG (0, ("make_a_mod: String conversion failure!\n"));
-			return;
+			smb_panic("smbldap_set_mod: String conversion failure!\n");
+			/* notreached. */
+			abort();
 		}
 
 		mods[i]->mod_values[j] = utf8_value;
@@ -794,8 +858,27 @@ static int rebindproc_connect_with_state (LDAP *ldap_struct,
 	    username and password to? */
 
 	rc = ldap_simple_bind_s(ldap_struct, ldap_state->bind_dn, ldap_state->bind_secret);
-	
-	GetTimeOfDay(&ldap_state->last_rebind);
+
+	/* only set the last rebind timestamp when we did rebind after a
+	 * non-read LDAP operation. That way we avoid the replication sleep
+	 * after a simple redirected search operation - Guenther */
+
+	switch (request) {
+
+		case LDAP_REQ_MODIFY:
+		case LDAP_REQ_ADD:
+		case LDAP_REQ_DELETE:
+		case LDAP_REQ_MODDN:
+		case LDAP_REQ_EXTENDED:
+			DEBUG(10,("rebindproc_connect_with_state: "
+				"setting last_rebind timestamp "
+				"(req: 0x%02x)\n", (unsigned int)request));
+			GetTimeOfDay(&ldap_state->last_rebind);
+			break;
+		default:
+			ZERO_STRUCT(ldap_state->last_rebind);
+			break;
+	}
 
 	return rc;
 }
@@ -940,7 +1023,7 @@ static int smbldap_open(struct smbldap_state *ldap_state)
 #endif
 		if (reopen) {
 		    	/* the other end has died. reopen. */
-		    	ldap_unbind_ext(ldap_state->ldap_struct, NULL, NULL);
+		    	ldap_unbind(ldap_state->ldap_struct);
 		    	ldap_state->ldap_struct = NULL;
 		    	ldap_state->last_ping = (time_t)0;
 		} else {
@@ -958,7 +1041,7 @@ static int smbldap_open(struct smbldap_state *ldap_state)
 	}
 
 	if ((rc = smbldap_connect_system(ldap_state, ldap_state->ldap_struct))) {
-		ldap_unbind_ext(ldap_state->ldap_struct, NULL, NULL);
+		ldap_unbind(ldap_state->ldap_struct);
 		ldap_state->ldap_struct = NULL;
 		return rc;
 	}
@@ -980,7 +1063,7 @@ static NTSTATUS smbldap_close(struct smbldap_state *ldap_state)
 		return NT_STATUS_INVALID_PARAMETER;
 		
 	if (ldap_state->ldap_struct != NULL) {
-		ldap_unbind_ext(ldap_state->ldap_struct, NULL, NULL);
+		ldap_unbind(ldap_state->ldap_struct);
 		ldap_state->ldap_struct = NULL;
 	}
 
@@ -1039,6 +1122,14 @@ static int another_ldap_try(struct smbldap_state *ldap_state, int *rc,
 		if (open_rc == LDAP_SUCCESS) {
 			ldap_state->last_use = now;
 			return True;
+		}
+
+		if (open_rc == LDAP_INSUFFICIENT_ACCESS) {
+			/* The fact that we are non-root or any other
+			 * access-denied condition will not change in the next
+			 * round of trying */
+			*rc = open_rc;
+			break;
 		}
 
 		if (got_alarm) {
@@ -1123,12 +1214,22 @@ static int smbldap_search_ext(struct smbldap_state *ldap_state,
 	alarm(lp_ldap_timeout());
 	/* End setup timeout. */
 
-	while (another_ldap_try(ldap_state, &rc, &attempts, endtime))
+	while (another_ldap_try(ldap_state, &rc, &attempts, endtime)) {
 		rc = ldap_search_ext_s(ldap_state->ldap_struct, base, scope, 
 				       utf8_filter,
 				       CONST_DISCARD(char **, attrs),
 				       attrsonly, sctrls, cctrls, &timeout,
 				       sizelimit, res);
+		if (rc != LDAP_SUCCESS) {
+			char *ld_error = NULL;
+			ldap_get_option(ldap_state->ldap_struct,
+					LDAP_OPT_ERROR_STRING, &ld_error);
+			DEBUG(10,("Failed search for base: %s, error: %s "
+				  "(%s)\n", base, ldap_err2string(rc),
+				  ld_error ? ld_error : "unknown"));
+			SAFE_FREE(ld_error);
+		}
+	}
 
 	SAFE_FREE(utf8_filter);
 
@@ -1257,8 +1358,18 @@ int smbldap_modify(struct smbldap_state *ldap_state, const char *dn, LDAPMod *at
 		return LDAP_NO_MEMORY;
 	}
 
-	while (another_ldap_try(ldap_state, &rc, &attempts, endtime))
+	while (another_ldap_try(ldap_state, &rc, &attempts, endtime)) {
 		rc = ldap_modify_s(ldap_state->ldap_struct, utf8_dn, attrs);
+		if (rc != LDAP_SUCCESS) {
+			char *ld_error = NULL;
+			ldap_get_option(ldap_state->ldap_struct,
+					LDAP_OPT_ERROR_STRING, &ld_error);
+			DEBUG(10,("Failed to modify dn: %s, error: %s "
+				  "(%s)\n", dn, ldap_err2string(rc),
+				  ld_error ? ld_error : "unknown"));
+			SAFE_FREE(ld_error);
+		}
+	}
 		
 	SAFE_FREE(utf8_dn);
 	return rc;
@@ -1279,8 +1390,18 @@ int smbldap_add(struct smbldap_state *ldap_state, const char *dn, LDAPMod *attrs
 		return LDAP_NO_MEMORY;
 	}
 
-	while (another_ldap_try(ldap_state, &rc, &attempts, endtime))
+	while (another_ldap_try(ldap_state, &rc, &attempts, endtime)) {
 		rc = ldap_add_s(ldap_state->ldap_struct, utf8_dn, attrs);
+		if (rc != LDAP_SUCCESS) {
+			char *ld_error = NULL;
+			ldap_get_option(ldap_state->ldap_struct,
+					LDAP_OPT_ERROR_STRING, &ld_error);
+			DEBUG(10,("Failed to add dn: %s, error: %s "
+				  "(%s)\n", dn, ldap_err2string(rc),
+				  ld_error ? ld_error : "unknown"));
+			SAFE_FREE(ld_error);
+		}
+	}
 	
 	SAFE_FREE(utf8_dn);
 	return rc;
@@ -1301,8 +1422,18 @@ int smbldap_delete(struct smbldap_state *ldap_state, const char *dn)
 		return LDAP_NO_MEMORY;
 	}
 
-	while (another_ldap_try(ldap_state, &rc, &attempts, endtime))
+	while (another_ldap_try(ldap_state, &rc, &attempts, endtime)) {
 		rc = ldap_delete_s(ldap_state->ldap_struct, utf8_dn);
+		if (rc != LDAP_SUCCESS) {
+			char *ld_error = NULL;
+			ldap_get_option(ldap_state->ldap_struct,
+					LDAP_OPT_ERROR_STRING, &ld_error);
+			DEBUG(10,("Failed to delete dn: %s, error: %s "
+				  "(%s)\n", dn, ldap_err2string(rc),
+				  ld_error ? ld_error : "unknown"));
+			SAFE_FREE(ld_error);
+		}
+	}
 	
 	SAFE_FREE(utf8_dn);
 	return rc;
@@ -1320,34 +1451,33 @@ int smbldap_extended_operation(struct smbldap_state *ldap_state,
 	if (!ldap_state)
 		return (-1);
 
-	while (another_ldap_try(ldap_state, &rc, &attempts, endtime))
+	while (another_ldap_try(ldap_state, &rc, &attempts, endtime)) {
 		rc = ldap_extended_operation_s(ldap_state->ldap_struct, reqoid,
 					       reqdata, serverctrls,
 					       clientctrls, retoidp, retdatap);
+		if (rc != LDAP_SUCCESS) {
+			char *ld_error = NULL;
+			ldap_get_option(ldap_state->ldap_struct,
+					LDAP_OPT_ERROR_STRING, &ld_error);
+			DEBUG(10,("Extended operation failed with error: %s "
+				  "(%s)\n", ldap_err2string(rc),
+				  ld_error ? ld_error : "unknown"));
+			SAFE_FREE(ld_error);
+		}
+	}
+		
 	return rc;
 }
 
 /*******************************************************************
  run the search by name.
 ******************************************************************/
-int smbldap_search_suffix (struct smbldap_state *ldap_state, const char *filter, 
-			   const char **search_attr, LDAPMessage ** result)
+int smbldap_search_suffix (struct smbldap_state *ldap_state,
+			   const char *filter, const char **search_attr,
+			   LDAPMessage ** result)
 {
-	int scope = LDAP_SCOPE_SUBTREE;
-	int rc;
-
-	rc = smbldap_search(ldap_state, lp_ldap_suffix(), scope, filter, search_attr, 0, result);
-
-	if (rc != LDAP_SUCCESS)	{
-		char *ld_error = NULL;
-		ldap_get_option(ldap_state->ldap_struct, LDAP_OPT_ERROR_STRING,
-				&ld_error);
-		DEBUG(0,("smbldap_search_suffix: Problem during the LDAP search: %s (%s)\n", 
-			ld_error?ld_error:"(unknown)", ldap_err2string (rc)));
-		SAFE_FREE(ld_error);
-	}
-	
-	return rc;
+	return smbldap_search(ldap_state, lp_ldap_suffix(), LDAP_SCOPE_SUBTREE,
+			      filter, search_attr, 0, result);
 }
 
 static void smbldap_idle_fn(void **data, time_t *interval, time_t now)
@@ -1436,6 +1566,25 @@ char *smbldap_get_dn(LDAP *ld, LDAPMessage *entry)
 	}
 	if (pull_utf8_allocate(&unix_dn, utf8_dn) == (size_t)-1) {
 		DEBUG (0, ("smbldap_get_dn: String conversion failure utf8 [%s]\n", utf8_dn));
+		return NULL;
+	}
+	ldap_memfree(utf8_dn);
+	return unix_dn;
+}
+
+ const char *smbldap_talloc_dn(TALLOC_CTX *mem_ctx, LDAP *ld,
+			       LDAPMessage *entry)
+{
+	char *utf8_dn, *unix_dn;
+
+	utf8_dn = ldap_get_dn(ld, entry);
+	if (!utf8_dn) {
+		DEBUG (5, ("smbldap_get_dn: ldap_get_dn failed\n"));
+		return NULL;
+	}
+	if (pull_utf8_talloc(mem_ctx, &unix_dn, utf8_dn) == (size_t)-1) {
+		DEBUG (0, ("smbldap_get_dn: String conversion failure utf8 "
+			   "[%s]\n", utf8_dn));
 		return NULL;
 	}
 	ldap_memfree(utf8_dn);

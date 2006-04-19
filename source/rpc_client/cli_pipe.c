@@ -619,7 +619,7 @@ static NTSTATUS cli_pipe_validate_current_pdu(struct rpc_pipe_client *cli, RPC_H
 
 			DEBUG(1, ("cli_pipe_validate_current_pdu: RPC fault code %s received from remote machine %s "
 				"pipe %s fnum 0x%x!\n",
-				nt_errstr(fault_resp.status),
+				dcerpc_errstr(NT_STATUS_V(fault_resp.status)),
 				cli->cli->desthost,
 				cli->pipe_name,
 				(unsigned int)cli->fnum));
@@ -744,8 +744,8 @@ static NTSTATUS rpc_api_pipe(struct rpc_pipe_client *cli,
 	char *rparam = NULL;
 	uint32 rparam_len = 0;
 	uint16 setup[2];
-	char *pdata = data ? prs_data_p(data) : NULL;
-	uint32 data_len = data ? prs_offset(data) : 0;
+	char *pdata = prs_data_p(data);
+	uint32 data_len = prs_offset(data);
 	char *prdata = NULL;
 	uint32 rdata_len = 0;
 	uint32 max_data = cli->max_xmit_frag ? cli->max_xmit_frag : RPC_MAX_PDU_FRAG_LEN;
@@ -927,7 +927,7 @@ static NTSTATUS create_krb5_auth_bind_req( struct rpc_pipe_client *cli,
 	/* Create the ticket for the service principal and return it in a gss-api wrapped blob. */
 
 	ret = cli_krb5_get_ticket(a->service_principal, 0, &tkt,
-			&a->session_key, (uint32)AP_OPTS_MUTUAL_REQUIRED);
+			&a->session_key, (uint32)AP_OPTS_MUTUAL_REQUIRED, NULL);
 
 	if (ret) {
 		DEBUG(1,("create_krb5_auth_bind_req: cli_krb5_get_ticket for principal %s "
@@ -1090,7 +1090,7 @@ static NTSTATUS create_schannel_auth_rpc_bind_req( struct rpc_pipe_client *cli,
  Creates the internals of a DCE/RPC bind request or alter context PDU.
  ********************************************************************/
 
-static NTSTATUS create_bind_or_alt_ctx_internal(uint8 pkt_type,
+static NTSTATUS create_bind_or_alt_ctx_internal(enum RPC_PKT_TYPE pkt_type,
 						prs_struct *rpc_out, 
 						uint32 rpc_call_id,
 						RPC_IFACE *abstract,
@@ -2141,6 +2141,24 @@ static NTSTATUS rpc_pipe_bind(struct rpc_pipe_client *cli,
 			return NT_STATUS_INVALID_INFO_CLASS;
 	}
 
+	/* For NTLMSSP ensure the server gave us the auth_level we wanted. */
+	if (auth_type == PIPE_AUTH_TYPE_NTLMSSP || auth_type == PIPE_AUTH_TYPE_SPNEGO_NTLMSSP) {
+		if (auth_level == PIPE_AUTH_LEVEL_INTEGRITY) {
+			if (!(cli->auth.a_u.ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_SIGN)) {
+				DEBUG(0,("cli_finish_bind_auth: requested NTLMSSSP signing and server refused.\n"));
+				prs_mem_free(&rbuf);
+				return NT_STATUS_INVALID_PARAMETER;
+			}
+		}
+		if (auth_level == PIPE_AUTH_LEVEL_INTEGRITY) {
+			if (!(cli->auth.a_u.ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_SEAL)) {
+				DEBUG(0,("cli_finish_bind_auth: requested NTLMSSSP sealing and server refused.\n"));
+				prs_mem_free(&rbuf);
+				return NT_STATUS_INVALID_PARAMETER;
+			}
+		}
+	}
+
 	/* Pipe is bound - set up auth_type and auth_level data. */
 
 	cli->auth.auth_type = auth_type;
@@ -2170,6 +2188,13 @@ static struct rpc_pipe_client *cli_rpc_pipe_open(struct cli_state *cli, int pipe
 	int fnum;
 
 	*perr = NT_STATUS_NO_MEMORY;
+
+	/* sanity check to protect against crashes */
+
+	if ( !cli ) {
+		*perr = NT_STATUS_INVALID_HANDLE;
+		return NULL;
+	}
 
 	/* The pipe name index must fall within our array */
 	SMB_ASSERT((pipe_idx >= 0) && (pipe_idx < PI_MAX_PIPES));
@@ -2703,7 +2728,7 @@ struct rpc_pipe_client *cli_rpc_pipe_open_krb5(struct cli_state *cli,
 
 	/* Only get a new TGT if username/password are given. */
 	if (username && password) {
-		int ret = kerberos_kinit_password(username, password, 0, NULL, NULL);
+		int ret = kerberos_kinit_password(username, password, 0, NULL);
 		if (ret) {
 			cli_rpc_pipe_close(result);
 			return NULL;
@@ -2741,7 +2766,7 @@ struct rpc_pipe_client *cli_rpc_pipe_open_krb5(struct cli_state *cli,
  Close an open named pipe over SMB. Free any authentication data.
  ****************************************************************************/
 
-void cli_rpc_pipe_close(struct rpc_pipe_client *cli)
+ void cli_rpc_pipe_close(struct rpc_pipe_client *cli)
 {
 	if (!cli_close(cli->cli, cli->fnum)) {
 		DEBUG(0,("cli_rpc_pipe_close: cli_close failed on pipe %s "

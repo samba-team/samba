@@ -167,7 +167,7 @@ int set_ctrl( int flags, int argc, const char **argv )
 
     /* Read some options from the Samba config. Can be overridden by
        the PAM config. */
-    if(lp_load(service_file,True,False,False) == False) {
+    if(lp_load(service_file,True,False,False,True) == False) {
 	_log_err( LOG_ERR, "Error loading service file %s", service_file );
     }
 
@@ -305,7 +305,7 @@ void _cleanup_failures( pam_handle_t * pamh, void *fl, int err )
     }
 }
 
-int _smb_verify_password( pam_handle_t * pamh, SAM_ACCOUNT *sampass,
+int _smb_verify_password( pam_handle_t * pamh, struct samu *sampass,
 			  const char *p, unsigned int ctrl )
 {
     uchar lm_pw[16];
@@ -398,7 +398,7 @@ int _smb_verify_password( pam_handle_t * pamh, SAM_ACCOUNT *sampass,
                       service ? service : "**unknown**", name);
                     newauth->count = 1;
                 }
-		if (!NT_STATUS_IS_OK(sid_to_uid(pdb_get_user_sid(sampass), &(newauth->id)))) {
+		if (!sid_to_uid(pdb_get_user_sid(sampass), &(newauth->id))) {
                     _log_err(LOG_NOTICE,
                       "failed auth request by %s for service %s as %s",
                       uidtoname(getuid()),
@@ -437,7 +437,7 @@ int _smb_verify_password( pam_handle_t * pamh, SAM_ACCOUNT *sampass,
  * - to avoid prompting for one in such cases (CG)
  */
 
-int _smb_blankpasswd( unsigned int ctrl, SAM_ACCOUNT *sampass )
+int _smb_blankpasswd( unsigned int ctrl, struct samu *sampass )
 {
 	int retval;
 

@@ -41,8 +41,8 @@ static NTSTATUS check_guest_security(const struct auth_context *auth_context,
 	/* mark this as 'not for me' */
 	NTSTATUS nt_status = NT_STATUS_NOT_IMPLEMENTED;
 
-	if (!(user_info->internal_username.str 
-	      && *user_info->internal_username.str)) {
+	if (!(user_info->internal_username 
+	      && *user_info->internal_username)) {
 		nt_status = make_server_info_guest(server_info);
 	}
 
@@ -84,7 +84,7 @@ static NTSTATUS check_name_to_ntstatus_security(const struct auth_context *auth_
 	NTSTATUS nt_status;
 	fstring user;
 	long error_num;
-	fstrcpy(user, user_info->smb_name.str);
+	fstrcpy(user, user_info->smb_name);
 	
 	if (strnequal("NT_STATUS", user, strlen("NT_STATUS"))) {
 		strupper_m(user);

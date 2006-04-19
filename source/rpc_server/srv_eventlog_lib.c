@@ -163,7 +163,7 @@ BOOL make_way_for_eventlogs( TDB_CONTEXT * the_tdb, int32 needed,
 	if ( mem_ctx == NULL )
 		return False;	/* can't allocate memory indicates bigger problems */
 	/* lock */
-	tdb_lock_bystring( the_tdb, EVT_NEXT_RECORD, 1 );
+	tdb_lock_bystring_with_timeout( the_tdb, EVT_NEXT_RECORD, 1 );
 	/* read */
 	end_record = tdb_fetch_int32( the_tdb, EVT_NEXT_RECORD );
 	start_record = tdb_fetch_int32( the_tdb, EVT_OLDEST_ENTRY );
@@ -489,7 +489,7 @@ int write_eventlog_tdb( TDB_CONTEXT * the_tdb, Eventlog_entry * ee )
 	/* need to read the record number and insert it into the entry here */
 
 	/* lock */
-	tdb_lock_bystring( the_tdb, EVT_NEXT_RECORD, 1 );
+	tdb_lock_bystring_with_timeout( the_tdb, EVT_NEXT_RECORD, 1 );
 	/* read */
 	next_record = tdb_fetch_int32( the_tdb, EVT_NEXT_RECORD );
 
@@ -707,16 +707,13 @@ BOOL parse_logentry( char *line, Eventlog_entry * entry, BOOL * eor )
 		memset( temp, 0, sizeof( temp ) );
 		strncpy( temp, stop, temp_len );
 		rpcstr_push( ( void * ) ( entry->data_record.strings +
-					  entry->data_record.strings_len ),
+					  ( entry->data_record.strings_len / 2 ) ),
 			     temp,
 			     sizeof( entry->data_record.strings ) -
-			     entry->data_record.strings_len, STR_TERMINATE );
-		entry->data_record.strings_len += temp_len + 1;
+			     ( entry->data_record.strings_len / 2 ), STR_TERMINATE );
+		entry->data_record.strings_len += ( temp_len * 2 ) + 2;
 		entry->record.num_strings++;
 	} else if ( 0 == strncmp( start, "DAT", stop - start ) ) {
-		/* Now that we're done processing the STR data, adjust the length to account for
-		   unicode, then proceed with the DAT data. */
-		entry->data_record.strings_len *= 2;
 		/* skip past initial ":" */
 		stop++;
 		/* now skip any other leading whitespace */

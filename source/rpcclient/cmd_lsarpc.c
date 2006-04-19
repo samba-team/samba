@@ -47,7 +47,7 @@ static NTSTATUS name_to_sid(struct rpc_pipe_client *cli,
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
-	result = rpccli_lsa_lookup_names(cli, mem_ctx, &pol, 1, &name, &sids, &sid_types);
+	result = rpccli_lsa_lookup_names(cli, mem_ctx, &pol, 1, &name, NULL, &sids, &sid_types);
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
@@ -59,8 +59,109 @@ done:
 	return result;
 }
 
+static void display_query_info_1(DOM_QUERY_1 d)
+{
+	d_printf("percent_full:\t%d\n", d.percent_full);
+	d_printf("log_size:\t%d\n", d.log_size);
+	d_printf("retention_time:\t%08x %08x\n", d.retention_time.high, d.retention_time.low);
+	d_printf("shutdown_in_progress:\t%d\n", d.shutdown_in_progress);
+	d_printf("time_to_shutdown:\t%08x %08x\n", d.time_to_shutdown.high, d.time_to_shutdown.low);
+	d_printf("next_audit_record:\t%d\n", d.next_audit_record);
+	d_printf("unknown:\t%d\n", d.unknown);
+}
 
-/* Look up domain related information on a remote host */
+static void display_query_info_2(DOM_QUERY_2 d, TALLOC_CTX *mem_ctx)
+{
+	int i;
+	d_printf("Auditing enabled:\t%d\n", d.auditing_enabled);
+	d_printf("Auditing categories:\t%d\n", d.count1);
+	d_printf("Auditsettings:\n");
+	for (i=0; i<d.count1; i++) {
+		const char *val = audit_policy_str(mem_ctx, d.auditsettings[i]);
+		const char *policy = audit_description_str(i);
+		d_printf("%s:\t%s\n", policy, val);
+	}
+}
+
+static void display_query_info_3(DOM_QUERY_3 d)
+{
+	fstring name;
+
+	unistr2_to_ascii(name, &d.uni_domain_name, d.uni_dom_max_len);
+
+	d_printf("Domain Name: %s\n", name);
+	d_printf("Domain Sid: %s\n", sid_string_static(&d.dom_sid.sid));
+}
+
+static void display_query_info_5(DOM_QUERY_5 d)
+{
+	fstring name;
+
+	unistr2_to_ascii(name, &d.uni_domain_name, d.uni_dom_max_len);
+
+	d_printf("Domain Name: %s\n", name);
+	d_printf("Domain Sid: %s\n", sid_string_static(&d.dom_sid.sid));
+}
+
+static void display_query_info_10(DOM_QUERY_10 d)
+{
+	d_printf("Shutdown on full: %d\n", d.shutdown_on_full);
+}
+
+static void display_query_info_11(DOM_QUERY_11 d)
+{
+	d_printf("Shutdown on full: %d\n", d.shutdown_on_full);
+	d_printf("Log is full: %d\n", d.log_is_full);
+	d_printf("Unknown: %d\n", d.unknown);
+}
+
+static void display_query_info_12(DOM_QUERY_12 d)
+{
+	fstring dom_name, dns_dom_name, forest_name;
+
+	unistr2_to_ascii(dom_name, &d.uni_nb_dom_name, d.hdr_nb_dom_name.uni_max_len);
+	unistr2_to_ascii(dns_dom_name, &d.uni_dns_dom_name, d.hdr_dns_dom_name.uni_max_len);
+	unistr2_to_ascii(forest_name, &d.uni_forest_name, d.hdr_forest_name.uni_max_len);
+
+	d_printf("Domain NetBios Name: %s\n", dom_name);
+	d_printf("Domain DNS Name: %s\n", dns_dom_name);
+	d_printf("Domain Forest Name: %s\n", forest_name);
+	d_printf("Domain Sid: %s\n", sid_string_static(&d.dom_sid.sid));
+	d_printf("Domain GUID: %s\n", smb_uuid_string_static(d.dom_guid));
+
+}
+
+
+
+static void display_lsa_query_info(LSA_INFO_CTR *dom, TALLOC_CTX *mem_ctx)
+{
+	switch (dom->info_class) {
+		case 1:
+			display_query_info_1(dom->info.id1);
+			break;
+		case 2:
+			display_query_info_2(dom->info.id2, mem_ctx);
+			break;
+		case 3:
+			display_query_info_3(dom->info.id3);
+			break;
+		case 5:
+			display_query_info_5(dom->info.id5);
+			break;
+		case 10:
+			display_query_info_10(dom->info.id10);
+			break;
+		case 11:
+			display_query_info_11(dom->info.id11);
+			break;
+		case 12:
+			display_query_info_12(dom->info.id12);
+			break;
+		default:
+			printf("can't display info level: %d\n", dom->info_class);
+			break;
+	}
+}
 
 static NTSTATUS cmd_lsa_query_info_policy(struct rpc_pipe_client *cli, 
                                           TALLOC_CTX *mem_ctx, int argc, 
@@ -68,11 +169,7 @@ static NTSTATUS cmd_lsa_query_info_policy(struct rpc_pipe_client *cli,
 {
 	POLICY_HND pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	DOM_SID *dom_sid = NULL;
-	struct uuid *dom_guid;
-	char *domain_name = NULL;
-	char *dns_name = NULL;
-	char *forest_name = NULL;
+	LSA_INFO_CTR dom;
 
 	uint32 info_class = 3;
 
@@ -83,56 +180,33 @@ static NTSTATUS cmd_lsa_query_info_policy(struct rpc_pipe_client *cli,
 
 	if (argc == 2)
 		info_class = atoi(argv[1]);
-	
-	/* Lookup info policy */
+
 	switch (info_class) {
 	case 12:
 		result = rpccli_lsa_open_policy2(cli, mem_ctx, True, 
-					     SEC_RIGHTS_MAXIMUM_ALLOWED,
-					     &pol);
+						 SEC_RIGHTS_MAXIMUM_ALLOWED,
+						 &pol);
 
 		if (!NT_STATUS_IS_OK(result))
 			goto done;
-		result = rpccli_lsa_query_info_policy2(cli, mem_ctx, &pol,
-						    info_class, &domain_name,
-						    &dns_name, &forest_name,
-						    &dom_guid, &dom_sid);
+			
+		result = rpccli_lsa_query_info_policy2_new(cli, mem_ctx, &pol,
+							   info_class, &dom);
 		break;
 	default:
 		result = rpccli_lsa_open_policy(cli, mem_ctx, True, 
-				     SEC_RIGHTS_MAXIMUM_ALLOWED,
-				     &pol);
+						SEC_RIGHTS_MAXIMUM_ALLOWED,
+						&pol);
 
 		if (!NT_STATUS_IS_OK(result))
 			goto done;
-		result = rpccli_lsa_query_info_policy(cli, mem_ctx, &pol, 
-						   info_class, &domain_name, 
-						   &dom_sid);
+		
+		result = rpccli_lsa_query_info_policy_new(cli, mem_ctx, &pol, 
+							  info_class, &dom);
 	}
 
-	if (!NT_STATUS_IS_OK(result))
-		goto done;
-	
-	if (domain_name) {
-		if (dom_sid == NULL) {
-			printf("got no sid for domain %s\n", domain_name);
-		} else {
-			printf("domain %s has sid %s\n", domain_name,
-			       sid_string_static(dom_sid));
-		}
-	} else {
-		printf("could not query info for level %d\n", info_class);
-	}
 
-	if (dns_name)
-		printf("domain dns name is %s\n", dns_name);
-	if (forest_name)
-		printf("forest name is %s\n", forest_name);
-
-	if (info_class == 12) {
-		printf("domain GUID is %s\n", 
-		smb_uuid_string_static(*dom_guid));
-	}
+	display_lsa_query_info(&dom, mem_ctx);
 
 	rpccli_lsa_close(cli, mem_ctx, &pol);
 
@@ -165,7 +239,7 @@ static NTSTATUS cmd_lsa_lookup_names(struct rpc_pipe_client *cli,
 		goto done;
 
 	result = rpccli_lsa_lookup_names(cli, mem_ctx, &pol, argc - 1, 
-				      (const char**)(argv + 1), &sids, &types);
+				      (const char**)(argv + 1), NULL, &sids, &types);
 
 	if (!NT_STATUS_IS_OK(result) && NT_STATUS_V(result) != 
 	    NT_STATUS_V(STATUS_SOME_UNMAPPED))
@@ -736,16 +810,19 @@ static NTSTATUS cmd_lsa_query_secobj(struct rpc_pipe_client *cli,
 	POLICY_HND pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	SEC_DESC_BUF *sdb;
-	uint32 sec_info = 0x00000004; /* ??? */
+	uint32 sec_info = DACL_SECURITY_INFORMATION;
 
-	if (argc != 1 ) {
-		printf("Usage: %s\n", argv[0]);
+	if (argc < 1 || argc > 2) {
+		printf("Usage: %s [sec_info]\n", argv[0]);
 		return NT_STATUS_OK;
 	}
 
 	result = rpccli_lsa_open_policy2(cli, mem_ctx, True, 
 				      SEC_RIGHTS_MAXIMUM_ALLOWED,
 				      &pol);
+
+	if (argc == 2) 
+		sscanf(argv[1], "%x", &sec_info);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;

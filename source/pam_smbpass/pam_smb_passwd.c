@@ -47,9 +47,9 @@ int smb_update_db( pam_handle_t *pamh, int ctrl, const char *user,  const char *
 	err_str[0] = '\0';
 	msg_str[0] = '\0';
 
-	retval = local_password_change( user, LOCAL_SET_PASSWORD, pass_new,
+	retval = NT_STATUS_IS_OK(local_password_change( user, LOCAL_SET_PASSWORD, pass_new,
 	                                err_str, sizeof(err_str),
-	                                msg_str, sizeof(msg_str) );
+	                                msg_str, sizeof(msg_str) ));
 
 	if (!retval) {
 		if (*err_str) {
@@ -96,15 +96,14 @@ int pam_sm_chauthtok(pam_handle_t *pamh, int flags,
 
     extern BOOL in_client;
 
-    SAM_ACCOUNT *sampass = NULL;
+    struct samu *sampass = NULL;
     void (*oldsig_handler)(int);
     const char *user;
     char *pass_old;
     char *pass_new;
 
-    NTSTATUS nt_status;
-
     /* Samba initialization. */
+    load_case_tables();
     setup_logging( "pam_smbpass", False );
     in_client = True;
 
@@ -130,22 +129,25 @@ int pam_sm_chauthtok(pam_handle_t *pamh, int flags,
        from a SIGPIPE it's not expecting */
     oldsig_handler = CatchSignal(SIGPIPE, SIGNAL_CAST SIG_IGN);
 
-    if (!initialize_password_db(True)) {
+    if (!initialize_password_db(False)) {
         _log_err( LOG_ALERT, "Cannot access samba password database" );
         CatchSignal(SIGPIPE, SIGNAL_CAST oldsig_handler);
         return PAM_AUTHINFO_UNAVAIL;
     }
 
     /* obtain user record */
-    if (!NT_STATUS_IS_OK(nt_status = pdb_init_sam(&sampass))) {
+    if ( !(sampass = samu_new( NULL )) ) {
         CatchSignal(SIGPIPE, SIGNAL_CAST oldsig_handler);
-        return nt_status_to_pam(nt_status);
+        return nt_status_to_pam(NT_STATUS_NO_MEMORY);
     }
 
     if (!pdb_getsampwnam(sampass,user)) {
         _log_err( LOG_ALERT, "Failed to find entry for user %s.", user );
         CatchSignal(SIGPIPE, SIGNAL_CAST oldsig_handler);
         return PAM_USER_UNKNOWN;
+    }
+    if (on( SMB_DEBUG, ctrl )) {
+        _log_err( LOG_DEBUG, "Located account for %s", user );
     }
 
     if (flags & PAM_PRELIM_CHECK) {
@@ -158,7 +160,7 @@ int pam_sm_chauthtok(pam_handle_t *pamh, int flags,
 
         if (_smb_blankpasswd( ctrl, sampass )) {
 
-            pdb_free_sam(&sampass);
+            TALLOC_FREE(sampass);
             CatchSignal(SIGPIPE, SIGNAL_CAST oldsig_handler);
             return PAM_SUCCESS;
         }
@@ -172,7 +174,7 @@ int pam_sm_chauthtok(pam_handle_t *pamh, int flags,
             Announce = SMB_MALLOC_ARRAY(char, sizeof(greeting)+strlen(user));
             if (Announce == NULL) {
                 _log_err(LOG_CRIT, "password: out of memory");
-                pdb_free_sam(&sampass);
+                TALLOC_FREE(sampass);
                 CatchSignal(SIGPIPE, SIGNAL_CAST oldsig_handler);
                 return PAM_BUF_ERR;
             }
@@ -188,7 +190,7 @@ int pam_sm_chauthtok(pam_handle_t *pamh, int flags,
             if (retval != PAM_SUCCESS) {
                 _log_err( LOG_NOTICE
                           , "password - (old) token not obtained" );
-                pdb_free_sam(&sampass);
+                TALLOC_FREE(sampass);
                 CatchSignal(SIGPIPE, SIGNAL_CAST oldsig_handler);
                 return retval;
             }
@@ -203,7 +205,7 @@ int pam_sm_chauthtok(pam_handle_t *pamh, int flags,
         }
 
         pass_old = NULL;
-        pdb_free_sam(&sampass);
+        TALLOC_FREE(sampass);
         CatchSignal(SIGPIPE, SIGNAL_CAST oldsig_handler);
         return retval;
 
@@ -233,7 +235,7 @@ int pam_sm_chauthtok(pam_handle_t *pamh, int flags,
 
         if (retval != PAM_SUCCESS) {
             _log_err( LOG_NOTICE, "password: user not authenticated" );
-            pdb_free_sam(&sampass);
+            TALLOC_FREE(sampass);
             CatchSignal(SIGPIPE, SIGNAL_CAST oldsig_handler);
             return retval;
         }
@@ -261,7 +263,7 @@ int pam_sm_chauthtok(pam_handle_t *pamh, int flags,
                           , "password: new password not obtained" );
             }
             pass_old = NULL;                               /* tidy up */
-            pdb_free_sam(&sampass);
+            TALLOC_FREE(sampass);
             CatchSignal(SIGPIPE, SIGNAL_CAST oldsig_handler);
             return retval;
         }
@@ -281,7 +283,7 @@ int pam_sm_chauthtok(pam_handle_t *pamh, int flags,
         if (retval != PAM_SUCCESS) {
             _log_err(LOG_NOTICE, "new password not acceptable");
             pass_new = pass_old = NULL;               /* tidy up */
-            pdb_free_sam(&sampass);
+            TALLOC_FREE(sampass);
             CatchSignal(SIGPIPE, SIGNAL_CAST oldsig_handler);
             return retval;
         }
@@ -298,7 +300,7 @@ int pam_sm_chauthtok(pam_handle_t *pamh, int flags,
 	    uid_t uid;
 	    
             /* password updated */
-		if (!NT_STATUS_IS_OK(sid_to_uid(pdb_get_user_sid(sampass), &uid))) {
+		if (!sid_to_uid(pdb_get_user_sid(sampass), &uid)) {
 			_log_err( LOG_NOTICE, "Unable to get uid for user %s",
 				pdb_get_username(sampass));
 			_log_err( LOG_NOTICE, "password for (%s) changed by (%s/%d)",
@@ -313,7 +315,7 @@ int pam_sm_chauthtok(pam_handle_t *pamh, int flags,
 
         pass_old = pass_new = NULL;
 	if (sampass) {
-		pdb_free_sam(&sampass);
+		TALLOC_FREE(sampass);
 		sampass = NULL;
 	}
 
@@ -325,11 +327,11 @@ int pam_sm_chauthtok(pam_handle_t *pamh, int flags,
     }
     
     if (sampass) {
-    	pdb_free_sam(&sampass);
+    	TALLOC_FREE(sampass);
 	sampass = NULL;
     }
 
-    pdb_free_sam(&sampass);
+    TALLOC_FREE(sampass);
     CatchSignal(SIGPIPE, SIGNAL_CAST oldsig_handler);
     return retval;
 }

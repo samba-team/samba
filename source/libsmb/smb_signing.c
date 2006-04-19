@@ -28,17 +28,9 @@ struct outstanding_packet_lookup {
 	struct outstanding_packet_lookup *prev, *next;
 };
 
-/* Store the data for an ongoing trans/trans2/nttrans operation. */
-struct trans_info_context {
-	uint16 mid;
-	uint32 send_seq_num;
-	uint32 reply_seq_num;
-};
-
 struct smb_basic_signing_context {
 	DATA_BLOB mac_key;
 	uint32 send_seq_num;
-	struct trans_info_context *trans_info;
 	struct outstanding_packet_lookup *outstanding_packet_list;
 };
 
@@ -315,7 +307,6 @@ static void client_sign_outgoing_message(char *outbuf, struct smb_sign_info *si)
 {
 	unsigned char calc_md5_mac[16];
 	struct smb_basic_signing_context *data = si->signing_context;
-	uint32 send_seq_num;
 
 	if (!si->doing_signing)
 		return;
@@ -330,12 +321,8 @@ static void client_sign_outgoing_message(char *outbuf, struct smb_sign_info *si)
 	/* mark the packet as signed - BEFORE we sign it...*/
 	mark_packet_signed(outbuf);
 
-	if (data->trans_info)
-		send_seq_num = data->trans_info->send_seq_num;
-	else
-		send_seq_num = data->send_seq_num;
-
-	simple_packet_signature(data, (const unsigned char *)outbuf, send_seq_num, calc_md5_mac);
+	simple_packet_signature(data, (const unsigned char *)outbuf,
+				data->send_seq_num, calc_md5_mac);
 
 	DEBUG(10, ("client_sign_outgoing_message: sent SMB signature of\n"));
 	dump_data(10, (const char *)calc_md5_mac, 8);
@@ -345,13 +332,7 @@ static void client_sign_outgoing_message(char *outbuf, struct smb_sign_info *si)
 /*	cli->outbuf[smb_ss_field+2]=0; 
 	Uncomment this to test if the remote server actually verifies signatures...*/
 
-	if (data->trans_info)
-		return;
-
-	data->send_seq_num++;
-	store_sequence_for_reply(&data->outstanding_packet_list, 
-				 SVAL(outbuf,smb_mid), data->send_seq_num);
-	data->send_seq_num++;
+	data->send_seq_num += 2;
 }
 
 /***********************************************************
@@ -362,7 +343,6 @@ static BOOL client_check_incoming_message(char *inbuf, struct smb_sign_info *si,
 {
 	BOOL good;
 	uint32 reply_seq_number;
-	uint32 saved_seq;
 	unsigned char calc_md5_mac[16];
 	unsigned char *server_sent_mac;
 
@@ -376,17 +356,9 @@ static BOOL client_check_incoming_message(char *inbuf, struct smb_sign_info *si,
 		return False;
 	}
 
-	if (data->trans_info) {
-		reply_seq_number = data->trans_info->reply_seq_num;
-	} else if (!get_sequence_for_reply(&data->outstanding_packet_list, 
-				    SVAL(inbuf, smb_mid), &reply_seq_number)) {
-		DEBUG(1, ("client_check_incoming_message: failed to get sequence number %u for reply.\n",
-					(unsigned int) SVAL(inbuf, smb_mid) ));
-		return False;
-	}
-
-	saved_seq = reply_seq_number;
-	simple_packet_signature(data, (const unsigned char *)inbuf, reply_seq_number, calc_md5_mac);
+	reply_seq_number = data->send_seq_num - 1;
+	simple_packet_signature(data, (const unsigned char *)inbuf,
+				reply_seq_number, calc_md5_mac);
 
 	server_sent_mac = (unsigned char *)&inbuf[smb_ss_field];
 	good = (memcmp(server_sent_mac, calc_md5_mac, 8) == 0);
@@ -400,12 +372,11 @@ static BOOL client_check_incoming_message(char *inbuf, struct smb_sign_info *si,
 #if 1 /* JRATEST */
 		{
 			int i;
-			reply_seq_number -= 5;
-			for (i = 0; i < 10; i++, reply_seq_number++) {
-				simple_packet_signature(data, (const unsigned char *)inbuf, reply_seq_number, calc_md5_mac);
+			for (i = -5; i < 5; i++) {
+				simple_packet_signature(data, (const unsigned char *)inbuf, reply_seq_number+i, calc_md5_mac);
 				if (memcmp(server_sent_mac, calc_md5_mac, 8) == 0) {
 					DEBUG(0,("client_check_incoming_message: out of seq. seq num %u matches. \
-We were expecting seq %u\n", reply_seq_number, saved_seq ));
+We were expecting seq %u\n", reply_seq_number+i, reply_seq_number ));
 					break;
 				}
 			}
@@ -416,7 +387,7 @@ We were expecting seq %u\n", reply_seq_number, saved_seq ));
 		DEBUG(10, ("client_check_incoming_message: seq %u: got good SMB signature of\n", (unsigned int)reply_seq_number));
 		dump_data(10, (const char *)server_sent_mac, 8);
 	}
-	return signing_good(inbuf, si, good, saved_seq, must_be_ok);
+	return signing_good(inbuf, si, good, reply_seq_number, must_be_ok);
 }
 
 /***********************************************************
@@ -426,18 +397,16 @@ We were expecting seq %u\n", reply_seq_number, saved_seq ));
 static void simple_free_signing_context(struct smb_sign_info *si)
 {
 	struct smb_basic_signing_context *data = si->signing_context;
-	struct outstanding_packet_lookup *list = data->outstanding_packet_list;
+	struct outstanding_packet_lookup *list;
+	struct outstanding_packet_lookup *next;
 	
-	while (list) {
-		struct outstanding_packet_lookup *old_head = list;
-		DLIST_REMOVE(list, list);
-		SAFE_FREE(old_head);
+	for (list = data->outstanding_packet_list; list; list = next) {
+		next = list->next;
+		DLIST_REMOVE(data->outstanding_packet_list, list);
+		SAFE_FREE(list);
 	}
 
 	data_blob_free(&data->mac_key);
-
-	if (data->trans_info)
-		SAFE_FREE(data->trans_info);
 
 	SAFE_FREE(si->signing_context);
 
@@ -498,65 +467,6 @@ BOOL cli_simple_set_signing(struct cli_state *cli,
 	cli->sign_info.free_signing_context = simple_free_signing_context;
 
 	return True;
-}
-
-/***********************************************************
- Tell client code we are in a multiple trans reply state.
- We call this after the last outgoing trans2 packet (which
- has incremented the sequence numbers), so we must save the
- current mid and sequence number -2.
-************************************************************/
-
-void cli_signing_trans_start(struct cli_state *cli, uint16 mid)
-{
-	struct smb_basic_signing_context *data = cli->sign_info.signing_context;
-	uint32 reply_seq_num;
-
-	if (!cli->sign_info.doing_signing || !data)
-		return;
-
-	data->trans_info = SMB_XMALLOC_P(struct trans_info_context);
-	ZERO_STRUCTP(data->trans_info);
-
-	/* This ensures the sequence is pulled off the outstanding packet list */
-	if (!get_sequence_for_reply(&data->outstanding_packet_list, 
-				    mid, &reply_seq_num)) {
-		DEBUG(1, ("get_sequence_for_reply failed - did we enter the trans signing state without sending a packet?\n")); 
-	    return;
-	}
-
-	data->trans_info->send_seq_num = reply_seq_num - 1;
-	data->trans_info->mid = mid;
-	data->trans_info->reply_seq_num = reply_seq_num;
-
-	DEBUG(10,("cli_signing_trans_start: storing mid = %u, reply_seq_num = %u, send_seq_num = %u \
-data->send_seq_num = %u\n",
-			(unsigned int)data->trans_info->mid,
-			(unsigned int)data->trans_info->reply_seq_num,
-			(unsigned int)data->trans_info->send_seq_num,
-			(unsigned int)data->send_seq_num ));
-}
-
-/***********************************************************
- Tell client code we are out of a multiple trans reply state.
-************************************************************/
-
-void cli_signing_trans_stop(struct cli_state *cli)
-{
-	struct smb_basic_signing_context *data = cli->sign_info.signing_context;
-
-	if (!cli->sign_info.doing_signing || !data)
-		return;
-
-	DEBUG(10,("cli_signing_trans_stop: freeing mid = %u, reply_seq_num = %u, send_seq_num = %u \
-data->send_seq_num = %u\n",
-			(unsigned int)data->trans_info->mid,
-			(unsigned int)data->trans_info->reply_seq_num,
-			(unsigned int)data->trans_info->send_seq_num,
-			(unsigned int)data->send_seq_num ));
-
-	SAFE_FREE(data->trans_info);
-	data->trans_info = NULL;
 }
 
 /***********************************************************
@@ -657,8 +567,7 @@ static void srv_sign_outgoing_message(char *outbuf, struct smb_sign_info *si)
 {
 	unsigned char calc_md5_mac[16];
 	struct smb_basic_signing_context *data = si->signing_context;
-	uint32 send_seq_number = data->send_seq_num;
-	BOOL was_deferred_packet = False;
+	uint32 send_seq_number = data->send_seq_num-1;
 	uint16 mid;
 
 	if (!si->doing_signing) {
@@ -678,13 +587,7 @@ static void srv_sign_outgoing_message(char *outbuf, struct smb_sign_info *si)
 	mid = SVAL(outbuf, smb_mid);
 
 	/* See if this is a reply for a deferred packet. */
-	was_deferred_packet = get_sequence_for_reply(&data->outstanding_packet_list, mid, &send_seq_number);
-
-	if (data->trans_info && (data->trans_info->mid == mid)) {
-		/* This is a reply in a trans stream. Use the sequence
-		 * number associated with the stream mid. */
-		send_seq_number = data->trans_info->send_seq_num;
-	}
+	get_sequence_for_reply(&data->outstanding_packet_list, mid, &send_seq_number);
 
 	simple_packet_signature(data, (const unsigned char *)outbuf, send_seq_number, calc_md5_mac);
 
@@ -695,36 +598,6 @@ static void srv_sign_outgoing_message(char *outbuf, struct smb_sign_info *si)
 
 /*	cli->outbuf[smb_ss_field+2]=0; 
 	Uncomment this to test if the remote client actually verifies signatures...*/
-
-	/* Don't mess with the sequence number for a deferred packet. */
-	if (was_deferred_packet) {
-		return;
-	}
-
-	if (!data->trans_info) {
-		/* Always increment if not in a trans stream. */
-		data->send_seq_num++;
-	} else if ((data->trans_info->send_seq_num == data->send_seq_num) || (data->trans_info->mid != mid)) {
-		/* Increment if this is the first reply in a trans stream or a
-		 * packet that doesn't belong to this stream (different mid). */
-		data->send_seq_num++;
-	}
-}
-
-/***********************************************************
- Is an incoming packet an oplock break reply ?
-************************************************************/
-
-static BOOL is_oplock_break(char *inbuf)
-{
-	if (CVAL(inbuf,smb_com) != SMBlockingX)
-		return False;
-
-	if (!(CVAL(inbuf,smb_vwv3) & LOCKING_ANDX_OPLOCK_RELEASE))
-		return False;
-
-	DEBUG(10,("is_oplock_break: Packet is oplock break\n"));
-	return True;
 }
 
 /***********************************************************
@@ -751,23 +624,8 @@ static BOOL srv_check_incoming_message(char *inbuf, struct smb_sign_info *si, BO
 
 	mid = SVAL(inbuf, smb_mid);
 
-	/* Is this part of a trans stream ? */
-	if (data->trans_info && (data->trans_info->mid == mid)) {
-		/* If so we don't increment the sequence. */
-		reply_seq_number = data->trans_info->reply_seq_num;
-	} else {
-		/* We always increment the sequence number. */
-		data->send_seq_num++;
-
-		/* If we get an asynchronous oplock break reply and there
-		 * isn't a reply pending we need to re-sync the sequence
-		 * number.
-		 */
-		if (is_oplock_break(inbuf)) {
-			DEBUG(10,("srv_check_incoming_message: oplock break at seq num %u\n", data->send_seq_num));
-			data->send_seq_num++;
-		}
-	}
+	/* We always increment the sequence number. */
+	data->send_seq_num += 2;
 
 	saved_seq = reply_seq_number;
 	simple_packet_signature(data, (const unsigned char *)inbuf, reply_seq_number, calc_md5_mac);
@@ -883,9 +741,8 @@ void srv_defer_sign_response(uint16 mid)
 	 * Ensure we only store this mid reply once...
 	 */
 
-	if (store_sequence_for_reply(&data->outstanding_packet_list, mid, data->send_seq_num)) {
-		data->send_seq_num++;
-	}
+	store_sequence_for_reply(&data->outstanding_packet_list, mid,
+				 data->send_seq_num-1);
 }
 
 /***********************************************************
@@ -970,63 +827,6 @@ BOOL srv_signing_started(void)
 	}
 
 	return True;
-}
-
-
-/***********************************************************
- Tell server code we are in a multiple trans reply state.
-************************************************************/
-
-void srv_signing_trans_start(uint16 mid)
-{
-	struct smb_basic_signing_context *data;
-
-	if (!srv_sign_info.doing_signing)
-		return;
-
-	data = (struct smb_basic_signing_context *)srv_sign_info.signing_context;
-	if (!data)
-		return;
-
-	data->trans_info = SMB_XMALLOC_P(struct trans_info_context);
-	ZERO_STRUCTP(data->trans_info);
-
-	data->trans_info->reply_seq_num = data->send_seq_num-1;
-	data->trans_info->mid = mid;
-	data->trans_info->send_seq_num = data->send_seq_num;
-
-	DEBUG(10,("srv_signing_trans_start: storing mid = %u, reply_seq_num = %u, send_seq_num = %u \
-data->send_seq_num = %u\n",
-			(unsigned int)mid,
-			(unsigned int)data->trans_info->reply_seq_num,
-			(unsigned int)data->trans_info->send_seq_num,
-			(unsigned int)data->send_seq_num ));
-}
-
-/***********************************************************
- Tell server code we are out of a multiple trans reply state.
-************************************************************/
-
-void srv_signing_trans_stop(void)
-{
-	struct smb_basic_signing_context *data;
-
-	if (!srv_sign_info.doing_signing)
-		return;
-
-	data = (struct smb_basic_signing_context *)srv_sign_info.signing_context;
-	if (!data || !data->trans_info)
-		return;
-
-	DEBUG(10,("srv_signing_trans_stop: removing mid = %u, reply_seq_num = %u, send_seq_num = %u \
-data->send_seq_num = %u\n",
-			(unsigned int)data->trans_info->mid,
-			(unsigned int)data->trans_info->reply_seq_num,
-			(unsigned int)data->trans_info->send_seq_num,
-			(unsigned int)data->send_seq_num ));
-
-	SAFE_FREE(data->trans_info);
-	data->trans_info = NULL;
 }
 
 /***********************************************************

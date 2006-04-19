@@ -422,7 +422,7 @@ static void show_parameters(int snum, int allparameters, unsigned int parm_filte
 static BOOL load_config(BOOL save_def)
 {
 	lp_resetnumservices();
-	return lp_load(dyn_CONFIGFILE,False,save_def,False);
+	return lp_load(dyn_CONFIGFILE,False,save_def,False,True);
 }
 
 /****************************************************************************
@@ -986,7 +986,7 @@ static BOOL change_password(const char *remote_machine, const char *user_name,
 			    const char *old_passwd, const char *new_passwd, 
 				int local_flags)
 {
-	BOOL ret = False;
+	NTSTATUS ret;
 	pstring err_str;
 	pstring msg_str;
 
@@ -1000,7 +1000,7 @@ static BOOL change_password(const char *remote_machine, const char *user_name,
 									 new_passwd, err_str, sizeof(err_str));
 		if(*err_str)
 			printf("%s\n<p>", err_str);
-		return ret;
+		return NT_STATUS_IS_OK(ret);
 	}
 
 	if(!initialize_password_db(True)) {
@@ -1016,7 +1016,7 @@ static BOOL change_password(const char *remote_machine, const char *user_name,
 	if(*err_str)
 		printf("%s\n<p>", err_str);
 
-	return ret;
+	return NT_STATUS_IS_OK(ret);
 }
 
 /****************************************************************************

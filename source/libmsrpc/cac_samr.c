@@ -300,7 +300,7 @@ int cac_SamOpenUser(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SamOpenUse
          return CAC_FAILURE;
       }
 
-      talloc_free(rid_types);
+      TALLOC_FREE(rid_types);
 
    }
    else {
@@ -518,8 +518,8 @@ int cac_SamGetNamesFromRids(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct Sa
       map_out[i].rid = op->in.rids[i];
    }
 
-   talloc_free(names_out);
-   talloc_free(name_types_out);
+   TALLOC_FREE(names_out);
+   TALLOC_FREE(name_types_out);
    
    op->out.num_names = num_names_out;
    op->out.map       = map_out;
@@ -602,8 +602,8 @@ int cac_SamGetRidsFromNames(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct Sa
    op->out.num_rids = num_rids_out;
    op->out.map      = map_out;
 
-   talloc_free(rids_out);
-   talloc_free(rid_types_out);
+   TALLOC_FREE(rids_out);
+   TALLOC_FREE(rid_types_out);
    
    if(NT_STATUS_EQUAL(hnd->status, STATUS_SOME_UNMAPPED))
       return CAC_PARTIAL_SUCCESS;
@@ -665,7 +665,7 @@ int cac_SamGetGroupsForUser(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct Sa
       attr_out[i] = groups[i].attr;
    }
 
-   talloc_free(groups);
+   TALLOC_FREE(groups);
 
    op->out.num_groups = num_groups_out;
    op->out.rids = rids_out;
@@ -941,7 +941,7 @@ int cac_SamClearGroupMembers(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, POLICY_H
          result = CAC_FAILURE;
    }
 
-   talloc_free(attr);
+   TALLOC_FREE(attr);
 
    return result;
 }
@@ -1040,24 +1040,24 @@ int cac_SamEnumGroups(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SamEnumG
    names_out = talloc_array(mem_ctx, char *, num_groups_out);
    if(!names_out) {
       hnd->status = NT_STATUS_NO_MEMORY;
-      talloc_free(acct_buf);
+      TALLOC_FREE(acct_buf);
       return CAC_FAILURE;
    }
 
    desc_out = talloc_array(mem_ctx, char *, num_groups_out);
    if(!desc_out) {
       hnd->status = NT_STATUS_NO_MEMORY;
-      talloc_free(acct_buf);
-      talloc_free(names_out);
+      TALLOC_FREE(acct_buf);
+      TALLOC_FREE(names_out);
       return CAC_FAILURE;
    }
 
    rids_out = talloc_array(mem_ctx, uint32, num_groups_out);
    if(!rids_out) {
       hnd->status = NT_STATUS_NO_MEMORY;
-      talloc_free(acct_buf);
-      talloc_free(names_out);
-      talloc_free(desc_out);
+      TALLOC_FREE(acct_buf);
+      TALLOC_FREE(names_out);
+      TALLOC_FREE(desc_out);
       return CAC_FAILURE;
    }
 
@@ -1135,24 +1135,24 @@ int cac_SamEnumAliases(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SamEnum
    names_out = talloc_array(mem_ctx, char *, num_als_out);
    if(!names_out) {
       hnd->status = NT_STATUS_NO_MEMORY;
-      talloc_free(acct_buf);
+      TALLOC_FREE(acct_buf);
       return CAC_FAILURE;
    }
 
    desc_out = talloc_array(mem_ctx, char *, num_als_out);
    if(!desc_out) {
       hnd->status = NT_STATUS_NO_MEMORY;
-      talloc_free(acct_buf);
-      talloc_free(names_out);
+      TALLOC_FREE(acct_buf);
+      TALLOC_FREE(names_out);
       return CAC_FAILURE;
    }
 
    rids_out = talloc_array(mem_ctx, uint32, num_als_out);
    if(!rids_out) {
       hnd->status = NT_STATUS_NO_MEMORY;
-      talloc_free(acct_buf);
-      talloc_free(names_out);
-      talloc_free(desc_out);
+      TALLOC_FREE(acct_buf);
+      TALLOC_FREE(names_out);
+      TALLOC_FREE(desc_out);
       return CAC_FAILURE;
    }
 
@@ -1438,7 +1438,7 @@ int cac_SamClearAliasMembers(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, POLICY_H
          result = CAC_FAILURE;
    }
 
-   talloc_free(sid);
+   TALLOC_FREE(sid);
    return result;
 }
 
@@ -2343,7 +2343,7 @@ int cac_SamGetSecurityObject(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct S
    struct rpc_pipe_client *pipe_hnd = NULL;
 
    /*this number taken from rpcclient/cmd_samr.c, I think it is the only supported level*/
-   uint16 info_level = 4;
+   uint32 sec_info = DACL_SECURITY_INFORMATION;
 
    SEC_DESC_BUF *sec_out = NULL;
 
@@ -2366,7 +2366,7 @@ int cac_SamGetSecurityObject(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct S
       return CAC_FAILURE;
    }
 
-   hnd->status = rpccli_samr_query_sec_obj(pipe_hnd, mem_ctx, op->in.pol, info_level, mem_ctx, &sec_out);
+   hnd->status = rpccli_samr_query_sec_obj(pipe_hnd, mem_ctx, op->in.pol, sec_info, mem_ctx, &sec_out);
 
    if(!NT_STATUS_IS_OK(hnd->status))
       return CAC_FAILURE;
@@ -2405,7 +2405,7 @@ int cac_SamFlush(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SamFlush *op)
    /*this function does not use an output parameter to make it as convenient as possible to use*/
    *op->in.dom_hnd = *od.out.dom_hnd;
 
-   talloc_free(od.out.dom_hnd);
+   TALLOC_FREE(od.out.dom_hnd);
 
    return CAC_SUCCESS;
 }

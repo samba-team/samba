@@ -22,12 +22,14 @@ fi
 # ones...
 AC_PREFIX_DEFAULT(/usr/local/samba)
 
+rootsbindir="\${SBINDIR}"
 lockdir="\${VARDIR}/locks"
 piddir="\${VARDIR}/locks"
-mandir="\${prefix}/man"
+test "${mandir}" || mandir="\${prefix}/man"
 logfilebase="\${VARDIR}"
 privatedir="\${prefix}/private"
-libdir="\${prefix}/lib"
+test "${libdir}" || libdir="\${prefix}/lib"
+pammodulesdir="\${LIBDIR}/security"
 configdir="\${LIBDIR}"
 swatdir="\${prefix}/swat"
 
@@ -59,6 +61,22 @@ AC_ARG_WITH(privatedir,
   ;;
   * )
     privatedir="$withval"
+    ;;
+  esac])
+
+#################################################
+# set root sbin directory location
+AC_ARG_WITH(rootsbindir,
+[  --with-rootsbindir=DIR  Which directory to use for root sbin ($ac_default_prefix/sbin)],
+[ case "$withval" in
+  yes|no)
+  #
+  # Just in case anybody calls it without argument
+  #
+    AC_MSG_WARN([--with-rootsbindir called without argument - will use default])
+  ;;
+  * )
+    rootsbindir="$withval"
     ;;
   esac])
 
@@ -159,7 +177,23 @@ AC_ARG_WITH(libdir,
   esac])
 
 #################################################
-# set lib directory location
+# set PAM modules directory location
+AC_ARG_WITH(pammodulesdir,
+[  --with-pammodulesdir=DIR  Which directory to use for PAM modules ($ac_default_prefix/$libdir/security)],
+[ case "$withval" in
+  yes|no)
+  #
+  # Just in case anybody calls it without argument
+  #
+    AC_MSG_WARN([--with-pammodulesdir called without argument - will use default])
+  ;;
+  * )
+    pammodulesdir="$withval"
+    ;;
+  esac])
+
+#################################################
+# set man directory location
 AC_ARG_WITH(mandir,
 [  --with-mandir=DIR       Where to put man pages ($mandir)],
 [ case "$withval" in
@@ -201,12 +235,14 @@ AC_SUBST(privatedir)
 AC_SUBST(swatdir)
 AC_SUBST(bindir)
 AC_SUBST(sbindir)
+AC_SUBST(rootsbindir)
+AC_SUBST(pammodulesdir)
 
 dnl Unique-to-Samba variables we'll be playing with.
 AC_SUBST(SHELL)
 AC_SUBST(LDSHFLAGS)
 AC_SUBST(SONAMEFLAG)
-AC_SUBST(SONAMEVERSIONSUFFIX)
+AC_SUBST(NSSSONAMEVERSIONSUFFIX)
 AC_SUBST(SHLD)
 AC_SUBST(HOST_OS)
 AC_SUBST(PICFLAGS)
@@ -217,10 +253,14 @@ AC_SUBST(PIE_LDFLAGS)
 AC_SUBST(SHLIBEXT)
 AC_SUBST(INSTALLLIBCMD_SH)
 AC_SUBST(INSTALLLIBCMD_A)
+AC_SUBST(UNINSTALLLIBCMD_SH)
+AC_SUBST(UNINSTALLLIBCMD_A)
 AC_SUBST(INSTALL_LIBMSRPC)
+AC_SUBST(UNINSTALL_LIBMSRPC)
 AC_SUBST(LIBMSRPC_SHARED)
 AC_SUBST(LIBMSRPC)
 AC_SUBST(INSTALL_LIBSMBCLIENT)
+AC_SUBST(UNINSTALL_LIBSMBCLIENT)
 AC_SUBST(LIBSMBCLIENT_SHARED)
 AC_SUBST(LIBSMBCLIENT)
 AC_SUBST(INSTALL_LIBSMBSHAREMODES)
@@ -234,13 +274,20 @@ AC_SUBST(IDMAP_LIBS)
 AC_SUBST(KRB5_LIBS)
 AC_SUBST(LDAP_LIBS)
 AC_SUBST(SHLIB_PROGS)
+AC_SUBST(PAM_MODULES)
+AC_SUBST(INSTALL_PAM_MODULES)
+AC_SUBST(UNINSTALL_PAM_MODULES)
 AC_SUBST(SMBWRAPPER)
 AC_SUBST(SMBWRAP_OBJS)
 AC_SUBST(SMBWRAP_INC)
 AC_SUBST(EXTRA_BIN_PROGS)
+AC_SUBST(CIFSMOUNT_PROGS)
+AC_SUBST(INSTALL_CIFSMOUNT)
+AC_SUBST(UNINSTALL_CIFSMOUNT)
 AC_SUBST(EXTRA_SBIN_PROGS)
 AC_SUBST(EXTRA_ALL_TARGETS)
 AC_SUBST(CONFIG_LIBS)
+AC_SUBST(NSCD_LIBS)
 
 # Set defaults
 PIE_CFLAGS=""
@@ -280,6 +327,41 @@ AC_ARG_ENABLE(socket-wrapper,
         AC_DEFINE(SOCKET_WRAPPER,1,[Use socket wrapper library])
 	SOCKWRAP="\$(SOCKET_WRAPPER_OBJ)"
     fi])
+
+#################################################
+# set prefix for 'make test'
+selftest_prefix="./"
+AC_SUBST(selftest_prefix)
+AC_ARG_WITH(selftest-prefix,
+[  --with-selftest-prefix=DIR    The prefix where make test will be runned ($selftest_prefix)],
+[ case "$withval" in
+  yes|no)
+    AC_MSG_WARN([--with-selftest-prefix called without argument - will use default])
+  ;;
+  * )
+    selftest_prefix="$withval"
+    ;;
+  esac
+])
+
+#################################################
+# set path of samba4's smbtorture
+smbtorture4_path=""
+AC_SUBST(smbtorture4_path)
+AC_ARG_WITH(smbtorture4_path,
+[  --with-smbtorture4-path=PATH    The path to a samba4 smbtorture for make test (none)],
+[ case "$withval" in
+  yes|no)
+    AC_MSG_ERROR([--with-smbtorture4-path should take a path])
+  ;;
+  * )
+    smbtorture4_path="$withval"
+    if test -z "$smbtorture4_path" -a ! -f $smbtorture4_path; then
+    	AC_MSG_ERROR(['$smbtorture_path' does not  exist!]) 
+    fi
+  ;;
+ esac
+])
 
 # compile with optimization and without debugging by default, but
 # allow people to set their own preference.
@@ -463,7 +545,7 @@ DYNEXP=
 
 dnl Add modules that have to be built by default here
 dnl These have to be built static:
-default_static_modules="pdb_smbpasswd pdb_tdbsam rpc_lsa rpc_samr rpc_reg rpc_lsa_ds rpc_wks rpc_svcctl rpc_ntsvcs rpc_net rpc_dfs rpc_srv rpc_spoolss rpc_eventlog auth_rhosts auth_sam auth_unix auth_winbind auth_server auth_domain auth_builtin"
+default_static_modules="pdb_smbpasswd pdb_tdbsam rpc_lsa rpc_samr rpc_reg rpc_lsa_ds rpc_wks rpc_svcctl rpc_ntsvcs rpc_net rpc_netdfs rpc_srv rpc_spoolss rpc_eventlog auth_rhosts auth_sam auth_unix auth_winbind auth_server auth_domain auth_builtin"
 
 dnl These are preferably build shared, and static if dlopen() is not available
 default_shared_modules="vfs_recycle vfs_audit vfs_extd_audit vfs_full_audit vfs_netatalk vfs_fake_perms vfs_default_quota vfs_readonly vfs_cap vfs_expand_msdfs vfs_shadow_copy charset_CP850 charset_CP437 auth_script"
@@ -745,8 +827,9 @@ AC_CHECK_HEADERS(sys/un.h)
 AC_CHECK_HEADERS(sys/mount.h sys/vfs.h sys/fs/s5param.h sys/filsys.h termios.h termio.h)
 AC_CHECK_HEADERS(sys/termio.h sys/statfs.h sys/dustat.h sys/statvfs.h stdarg.h sys/sockio.h)
 AC_CHECK_HEADERS(sys/sysmacros.h security/_pam_macros.h dlfcn.h)
-AC_CHECK_HEADERS(sys/syslog.h syslog.h execinfo.h)
+AC_CHECK_HEADERS(sys/syslog.h syslog.h)
 AC_CHECK_HEADERS(langinfo.h locale.h)
+AC_CHECK_HEADERS(sys/dmi.h xfs/dmapi.h sys/jfsdmapi.h sys/dmapi.h)
 
 AC_CHECK_HEADERS(rpcsvc/yp_prot.h,,,[[
 #if HAVE_RPC_RPC_H
@@ -795,8 +878,11 @@ esac
 AC_CHECK_HEADERS(shadow.h netinet/tcp.h netinet/in_systm.h netinet/in_ip.h)
 AC_CHECK_HEADERS(nss.h nss_common.h nsswitch.h ns_api.h sys/security.h security/pam_appl.h)
 AC_CHECK_HEADERS(stropts.h poll.h)
-AC_CHECK_HEADERS(sys/capability.h syscall.h sys/syscall.h)
-AC_CHECK_HEADERS(sys/acl.h sys/attributes.h attr/xattr.h sys/xattr.h sys/extattr.h sys/uio.h sys/proplist.h)
+AC_CHECK_HEADERS(syscall.h sys/syscall.h)
+
+AC_CHECK_HEADERS(sys/acl.h sys/attributes.h attr/xattr.h sys/xattr.h sys/extattr.h sys/uio.h)
+AC_CHECK_HEADERS(sys/ea.h sys/proplist.h)
+
 AC_CHECK_HEADERS(sys/cdefs.h glob.h)
 
 AC_CHECK_HEADERS(netinet/ip.h,,,[[
@@ -828,6 +914,7 @@ AC_CHECK_HEADERS(utmp.h utmpx.h lastlog.h)
  
 AC_CHECK_SIZEOF(int,cross)
 AC_CHECK_SIZEOF(long,cross)
+AC_CHECK_SIZEOF(long long,cross)
 AC_CHECK_SIZEOF(short,cross)
 
 AC_C_CONST
@@ -1151,14 +1238,53 @@ AC_CHECK_FUNCS(setpriv setgidx setuidx setgroups sysconf mktime rename ftruncate
 AC_CHECK_FUNCS(lstat64 fopen64 atexit grantpt dup2 lseek64 ftruncate64)
 AC_CHECK_FUNCS(fseek64 fseeko64 ftell64 ftello64 setluid getpwanam setlinebuf)
 AC_CHECK_FUNCS(opendir64 readdir64 seekdir64 telldir64 rewinddir64 closedir64)
+AC_CHECK_FUNCS(getdents getdents64)
 AC_CHECK_FUNCS(srandom random srand rand setenv usleep strcasecmp fcvt fcvtl symlink readlink)
 AC_CHECK_FUNCS(syslog vsyslog timegm)
 AC_CHECK_FUNCS(setlocale nl_langinfo)
 AC_CHECK_FUNCS(nanosleep)
 # setbuffer, shmget, shm_open are needed for smbtorture
-AC_CHECK_FUNCS(setbuffer shmget shm_open backtrace_symbols)
-AC_CHECK_HEADERS(libexc.h)
+AC_CHECK_FUNCS(setbuffer shmget shm_open)
+
+# Find a method of generating a stack trace
+AC_CHECK_HEADERS(execinfo.h libexc.h libunwind.h)
+AC_CHECK_FUNCS(backtrace_symbols)
 AC_CHECK_LIB(exc, trace_back_stack)
+
+# Note that all the libunwind symbols in the API are defined to internal
+# platform-specific version, so we must include libunwind.h before checking
+# any of them.
+AC_MSG_CHECKING([for libunwind])
+save_LIBS=$LIBS
+if test x"$UNAME_P" != xunknown ; then
+    # This probably won't link without the platform-specific libunwind.
+    LIBS="$LIBS -lunwind"
+else
+    # Add the platform-specific libunwind module. uname -p seems the most
+    # plausible option and works for ia64, where libunwind is most useful.
+    LIBS="$LIBS -lunwind -lunwind-$UNAME_P"
+fi
+
+AC_TRY_LINK(
+    [
+#ifdef HAVE_LIBUNWIND_H
+#include <libunwind.h>
+#endif
+    ],
+    [
+	unw_context_t ctx; unw_cursor_t cur;
+	char buf[256]; unw_word_t off; 
+	unw_getcontext(&ctx); unw_init_local(&cur, &ctx);
+	unw_get_proc_name(&cur, buf, sizeof(buf), &off);
+    ],
+    [
+	AC_MSG_RESULT(yes)
+	AC_DEFINE(HAVE_LIBUNWIND, 1, [Whether libunwind is available])
+    ],
+    [
+	AC_MSG_RESULT(no)
+	LIBS=$save_LIBS
+    ])
 
 # syscall() is needed for smbwrapper.
 AC_CHECK_FUNCS(syscall)
@@ -1170,7 +1296,7 @@ AC_CHECK_FUNCS(__xstat __fxstat __lxstat)
 AC_CHECK_FUNCS(_stat _lstat _fstat __stat __lstat __fstat)
 AC_CHECK_FUNCS(_acl __acl _facl __facl _open __open _chdir __chdir)
 AC_CHECK_FUNCS(_close __close _fchdir __fchdir _fcntl __fcntl)
-AC_CHECK_FUNCS(getdents _getdents __getdents _lseek __lseek _read __read)
+AC_CHECK_FUNCS(getdents __getdents _lseek __lseek _read __read)
 AC_CHECK_FUNCS(getdirentries _write __write _fork __fork)
 AC_CHECK_FUNCS(_stat64 __stat64 _fstat64 __fstat64 _lstat64 __lstat64)
 AC_CHECK_FUNCS(__sys_llseek llseek _llseek __llseek readdir64 _readdir64 __readdir64)
@@ -1316,6 +1442,45 @@ if test x"$samba_stat_hires" = x"yes" ; then
 	    [whether struct stat has sub-second timestamps])
 fi
 
+AC_CACHE_CHECK([whether struct stat has sub-second timestamps without struct timespec], samba_stat_hires_notimespec,
+    [
+	AC_TRY_COMPILE(
+	    [
+#if TIME_WITH_SYS_TIME
+# include <sys/time.h>
+# include <time.h>
+#else
+# if HAVE_SYS_TIME_H
+#  include <sys/time.h>
+# else
+#  include <time.h>
+# endif
+#endif
+#ifdef HAVE_SYS_STAT_H
+#include <sys/stat.h>
+#endif
+	    ],
+	    [
+		struct timespec t;
+		struct stat s = {0};
+		t.tv_sec = s.st_mtime;
+		t.tv_nsec = s.st_mtimensec;
+		t.tv_sec = s.st_ctime;
+		t.tv_nsec = s.st_ctimensec;
+		t.tv_sec = s.st_atime;
+		t.tv_nsec = s.st_atimensec;
+	    ],
+	    samba_stat_hires=yes, samba_stat_hires=no)
+    ])
+
+if test x"$samba_stat_hires_notimespec" = x"yes" ; then
+    AC_DEFINE(HAVE_STAT_ST_MTIMENSEC, 1, [whether struct stat contains st_mtimensec])
+    AC_DEFINE(HAVE_STAT_ST_ATIMENSEC, 1, [whether struct stat contains st_atimensec])
+    AC_DEFINE(HAVE_STAT_ST_CTIMENSEC, 1, [whether struct stat contains st_ctimensec])
+    AC_DEFINE(HAVE_STAT_HIRES_TIMESTAMPS, 1,
+	    [whether struct stat has sub-second timestamps without struct timespec])
+fi
+
 #####################################
 # we might need the resolv library on some systems
 AC_CHECK_LIB(resolv, dn_expand)
@@ -1344,6 +1509,8 @@ AC_LIBTESTFUNC(sec, bigcrypt)
 AC_LIBTESTFUNC(security, getprpwnam)
 AC_LIBTESTFUNC(sec, getprpwnam)
 
+AC_CHECK_FUNCS(strsignal)
+
 ############################################
 # Check if we have libattr
 case "$host_os" in
@@ -1356,6 +1523,8 @@ case "$host_os" in
   *)
 	AC_SEARCH_LIBS(getxattr, [attr])
 	AC_CHECK_FUNCS(getxattr lgetxattr fgetxattr listxattr llistxattr)
+	AC_CHECK_FUNCS(getea fgetea lgetea listea flistea llistea)
+	AC_CHECK_FUNCS(removeea fremoveea lremoveea setea fsetea lsetea)
 	AC_CHECK_FUNCS(flistxattr removexattr lremovexattr fremovexattr)
 	AC_CHECK_FUNCS(setxattr lsetxattr fsetxattr)
 	AC_CHECK_FUNCS(attr_get attr_list attr_set attr_remove)
@@ -1383,7 +1552,7 @@ BLDSHARED="false"
 HOST_OS="$host_os"
 LDSHFLAGS="-shared"
 SONAMEFLAG="#"
-SONAMEVERSIONSUFFIX=""
+NSSSONAMEVERSIONSUFFIX=""
 SHLD="\${CC} \${CFLAGS}"
 PICFLAGS=""
 PICSUFFIX="po"
@@ -1408,7 +1577,7 @@ if test "$enable_shared" = "yes"; then
 			DYNEXP="-Wl,--export-dynamic"
 			PICFLAGS="-fPIC"
 			SONAMEFLAG="-Wl,-soname="
-			SONAMEVERSIONSUFFIX=".2"
+			NSSSONAMEVERSIONSUFFIX=".2"
 			AC_DEFINE(STAT_ST_BLOCKSIZE,512)
 			;;
 		*solaris*) AC_DEFINE(SUNOS5,1,[Whether the host os is solaris])
@@ -1417,6 +1586,8 @@ if test "$enable_shared" = "yes"; then
 			SONAMEFLAG="-h "
 			if test "${GCC}" = "yes"; then
 				PICFLAGS="-fPIC"
+				SONAMEFLAG="-Wl,-soname="
+				NSSSONAMEVERSIONSUFFIX=".1"
 				if test "${ac_cv_prog_gnu_ld}" = "yes"; then
 					DYNEXP="-Wl,-E"
 				fi
@@ -1473,7 +1644,7 @@ if test "$enable_shared" = "yes"; then
 			;;
 		*aix*) AC_DEFINE(AIX,1,[Whether the host os is aix])
 			BLDSHARED="true"
-			LDSHFLAGS="-Wl,-bexpall,-bM:SRE,-bnoentry,-berok"
+			LDSHFLAGS="-Wl,-G,-bexpall"
 			DYNEXP="-Wl,-brtl,-bexpall,-bbigtoc"
 			PICFLAGS="-O2"
 			if test "${GCC}" != "yes"; then
@@ -1847,15 +2018,15 @@ if test x"$samba_cv_HAVE_C99_VSNPRINTF" = x"yes"; then
     AC_DEFINE(HAVE_C99_VSNPRINTF,1,[Whether there is a C99 compliant vsnprintf])
 fi
 
-AC_CACHE_CHECK([for broken readdir],samba_cv_HAVE_BROKEN_READDIR,[
+AC_CACHE_CHECK([for broken readdir name],samba_cv_HAVE_BROKEN_READDIR_NAME,[
 AC_TRY_RUN([#include <sys/types.h>
 #include <dirent.h>
 main() { struct dirent *di; DIR *d = opendir("."); di = readdir(d);
 if (di && di->d_name[-2] == '.' && di->d_name[-1] == 0 &&
 di->d_name[0] == 0) exit(0); exit(1);} ],
-samba_cv_HAVE_BROKEN_READDIR=yes,samba_cv_HAVE_BROKEN_READDIR=no,samba_cv_HAVE_BROKEN_READDIR=cross)])
-if test x"$samba_cv_HAVE_BROKEN_READDIR" = x"yes"; then
-    AC_DEFINE(HAVE_BROKEN_READDIR,1,[Whether readdir() is broken])
+samba_cv_HAVE_BROKEN_READDIR_NAME=yes,samba_cv_HAVE_BROKEN_READDIR_NAME=no,samba_cv_HAVE_BROKEN_READDIR_NAME=cross)])
+if test x"$samba_cv_HAVE_BROKEN_READDIR_NAME" = x"yes"; then
+    AC_DEFINE(HAVE_BROKEN_READDIR_NAME,1,[Whether readdir() returns the wrong name offset])
 fi
 
 AC_CACHE_CHECK([for utimbuf],samba_cv_HAVE_UTIMBUF,[
@@ -2177,6 +2348,65 @@ if test x"$samba_cv_HAVE_KERNEL_CHANGE_NOTIFY" = x"yes"; then
     AC_DEFINE(HAVE_KERNEL_CHANGE_NOTIFY,1,[Whether kernel notifies changes])
 fi
 
+#################################################
+# Check if FAM notifications are available. For FAM info, see
+#	http://oss.sgi.com/projects/fam/
+#	http://savannah.nongnu.org/projects/fam/
+
+AC_CHECK_HEADERS(fam.h, [samba_cv_HAVE_FAM_H=yes], [samba_cv_HAVE_FAM_H=no])
+if test x"$samba_cv_HAVE_FAM_H" = x"yes"; then
+    # On IRIX, libfam requires libC, but other FAM implementations might not
+    # need it.
+    AC_CHECK_LIB(fam, FAMOpen2,
+	    [samba_cv_HAVE_LIBFAM=yes; samba_fam_libs="-lfam"],
+	    [samba_cv_HAVE_LIBFAM=no])
+
+    if test x"$samba_cv_HAVE_LIBFAM" = x"no" ; then
+	samba_fam_xtra=-lC
+	AC_CHECK_LIB_EXT(fam, samba_fam_xtra, FAMOpen2,
+		[samba_cv_HAVE_LIBFAM=yes; samba_fam_libs="-lfam -lC"],
+		[samba_cv_HAVE_LIBFAM=no])
+	unset samba_fam_xtra
+    fi
+fi
+
+if test x"$samba_cv_HAVE_LIBFAM" = x"yes" ; then
+    AC_DEFINE(HAVE_FAM_CHANGE_NOTIFY, 1,
+	    [Whether FAM is file notifications are available])
+    AC_TRY_COMPILE([#include <fam.h>],
+		[FAMCodes code = FAMChanged;],
+		AC_DEFINE(HAVE_FAM_H_FAMCODES_TYPEDEF, 1,
+		    [Whether fam.h contains a typedef for enum FAMCodes]),
+		[])
+fi
+
+#################################################
+# Check for DMAPI interfaces in libdm/libjfsdm/libxsdm
+
+AC_CHECK_LIB(dm, dm_get_eventlist,
+	[samba_cv_HAVE_LIBDM=yes; samba_dmapi_libs="-ldm"],
+	[samba_cv_HAVE_LIBDM=no])
+
+if test x"$samba_cv_HAVE_LIBDM" = x"yes" ; then
+	AC_DEFINE(HAVE_LIBDM, 1, [Whether dmapi libdm is available])
+fi
+
+AC_CHECK_LIB(jfsdm, dm_get_eventlist,
+	[samba_cv_HAVE_LIBJFSDM=yes; samba_dmapi_libs="-ljfsdm"],
+	[samba_cv_HAVE_LIBJFSDM=no])
+
+if test x"$samba_cv_HAVE_LIBJFSDM" = x"yes" ; then
+	AC_DEFINE(HAVE_LIBJFSDM, 1, [Whether dmapi libjfsdm is available])
+fi
+
+AC_CHECK_LIB(xdsm, dm_get_eventlist,
+	[samba_cv_HAVE_LIBXDSM=yes; samba_dmapi_libs="-lxdsm"],
+	[samba_cv_HAVE_LIBXDSM=no])
+
+if test x"$samba_cv_HAVE_LIBXDSM" = x"yes" ; then
+	AC_DEFINE(HAVE_LIBXDSM, 1, [Whether dmapi libxdsm is available])
+fi
+
 AC_CACHE_CHECK([for kernel share modes],samba_cv_HAVE_KERNEL_SHARE_MODES,[
 AC_TRY_RUN([
 #include <sys/types.h>
@@ -2197,8 +2427,6 @@ if test x"$samba_cv_HAVE_KERNEL_SHARE_MODES" = x"yes"; then
 fi
 
 
-
-
 AC_CACHE_CHECK([for IRIX kernel oplock type definitions],samba_cv_HAVE_KERNEL_OPLOCKS_IRIX,[
 AC_TRY_COMPILE([#include <sys/types.h>
 #include <fcntl.h>],
@@ -2208,22 +2436,46 @@ if test x"$samba_cv_HAVE_KERNEL_OPLOCKS_IRIX" = x"yes"; then
     AC_DEFINE(HAVE_KERNEL_OPLOCKS_IRIX,1,[Whether IRIX kernel oplock type definitions are available])
 fi
 
-AC_CACHE_CHECK([for irix specific capabilities],samba_cv_HAVE_IRIX_SPECIFIC_CAPABILITIES,[
-AC_TRY_RUN([#include <sys/types.h>
+#################################################
+# Check for POSIX capability support
+
+AC_CHECK_HEADER(sys/capability.h, [samba_cv_HAVE_SYS_CAPABILITY_H=yes;
+    AC_DEFINE(HAVE_SYS_CAPABILITY_H, 1, Whether sys/capability.h is present)],
+    [], [])
+
+if test x"$samba_cv_HAVE_SYS_CAPABILITY_H" = x"yes"; then
+
+    ac_save_LIBS=$LIBS
+    AC_LIBTESTFUNC(cap, cap_get_proc)
+
+    AC_CACHE_CHECK([for POSIX capabilities],
+	    samba_cv_HAVE_POSIX_CAPABILITIES,
+	    [
+		AC_TRY_RUN([
+#include <sys/types.h>
 #include <sys/capability.h>
 main() {
  cap_t cap;
- if ((cap = cap_get_proc()) == NULL)
+ cap_value_t vals[1];
+ if (!(cap = cap_get_proc()))
    exit(1);
- cap->cap_effective |= CAP_NETWORK_MGT;
- cap->cap_inheritable |= CAP_NETWORK_MGT;
+ vals[0] = CAP_CHOWN;
+ cap_set_flag(cap, CAP_INHERITABLE, 1, vals, CAP_CLEAR);
  cap_set_proc(cap);
  exit(0);
-}
-],
-samba_cv_HAVE_IRIX_SPECIFIC_CAPABILITIES=yes,samba_cv_HAVE_IRIX_SPECIFIC_CAPABILITIES=no,samba_cv_HAVE_IRIX_SPECIFIC_CAPABILITIES=cross)])
-if test x"$samba_cv_HAVE_IRIX_SPECIFIC_CAPABILITIES" = x"yes"; then
-    AC_DEFINE(HAVE_IRIX_SPECIFIC_CAPABILITIES,1,[Whether IRIX specific capabilities are available])
+}],
+		samba_cv_HAVE_POSIX_CAPABILITIES=yes,
+		samba_cv_HAVE_POSIX_CAPABILITIES=no,
+		samba_cv_HAVE_POSIX_CAPABILITIES=cross)
+	    ])
+
+if test x"$samba_cv_HAVE_POSIX_CAPABILITIES" = x"yes"; then
+    AC_DEFINE(HAVE_POSIX_CAPABILITIES, 1,
+	    [Whether POSIX capabilities are available])
+else
+    LIBS=$ac_save_LIBS
+fi
+
 fi
 
 #
@@ -2381,6 +2633,24 @@ samba_cv_HAVE_SECURE_MKSTEMP=no,
 samba_cv_HAVE_SECURE_MKSTEMP=cross)])
 if test x"$samba_cv_HAVE_SECURE_MKSTEMP" = x"yes"; then
     AC_DEFINE(HAVE_SECURE_MKSTEMP,1,[Whether mkstemp is secure])
+fi
+
+AC_CACHE_CHECK([for broken readdir],samba_cv_HAVE_BROKEN_READDIR,[
+	AC_TRY_RUN([#include "${srcdir-.}/tests/os2_delete.c"],
+		[samba_cv_HAVE_BROKEN_READDIR=no],
+			[samba_cv_HAVE_BROKEN_READDIR=yes],
+			[samba_cv_HAVE_BROKEN_READDIR="assuming not"])])
+
+if test x"$samba_cv_HAVE_BROKEN_READDIR" = x"yes"; then
+AC_CACHE_CHECK([for replacing readdir],samba_cv_REPLACE_READDIR,[
+	AC_TRY_RUN([
+#include "${srcdir-.}/lib/repdir.c"
+#include "${srcdir-.}/tests/os2_delete.c"],
+	samba_cv_REPLACE_READDIR=yes,samba_cv_REPLACE_READDIR=no)])
+fi
+
+if test x"$samba_cv_REPLACE_READDIR" = x"yes"; then
+	AC_DEFINE(REPLACE_READDIR,1,[replace readdir])
 fi
 
 AC_CACHE_CHECK([for sysconf(_SC_NGROUPS_MAX)],samba_cv_SYSCONF_SC_NGROUPS_MAX,[
@@ -2849,6 +3119,8 @@ if test x"$with_ldap_support" != x"no"; then
   
   AC_DEFINE_UNQUOTED(LDAP_SET_REBIND_PROC_ARGS, $smb_ldap_cv_ldap_set_rebind_proc, [Number of arguments to ldap_set_rebind_proc])
 
+  AC_CHECK_FUNC_EXT(ldap_dn2ad_canonical,$LDAP_LIBS)	
+  
   if test x"$ac_cv_lib_ext_ldap_ldap_init" = x"yes"; then
     AC_DEFINE(HAVE_LDAP,1,[Whether ldap is available])
     CPPFLAGS="$CPPFLAGS -DLDAP_DEPRECATED"
@@ -2893,42 +3165,52 @@ FOUND_KRB5=no
 KRB5_LIBS=""
 
 if test x"$with_ldap_support" != x"yes"; then
+
     if test x"$with_ads_support" = x"yes"; then
 	AC_MSG_ERROR(Active Directory Support requires LDAP support)
-    elif test x"$with_ads_support" != x"no"; then
-	AC_MSG_WARN(Active Directory Support requires LDAP support)
+    elif test x"$with_ads_support" = x"auto"; then
+	AC_MSG_WARN(Disabling Active Directory support (requires LDAP support))
+	with_ads_support=no
     fi
-    with_ads_support=no
-fi
 
-AC_CHECK_FUNC_EXT(ldap_initialize,$LDAP_LIBS)
+else
 
-if test x"$ac_cv_func_ext_ldap_initialize" != x"yes"; then
-    if test x"$with_ads_support" = x"yes"; then
-        AC_MSG_ERROR(Active Directory Support requires ldap_initialize)
+    # Check to see whether there is enough LDAP functionality to be able
+    # to build AD support.
+
+    AC_CHECK_FUNC_EXT(ldap_initialize,$LDAP_LIBS)
+
+    if test x"$ac_cv_func_ext_ldap_initialize" != x"yes"; then
+	if test x"$with_ads_support" = x"yes"; then
+	    AC_MSG_ERROR(Active Directory support requires ldap_initialize)
+	elif test x"$with_ads_support" = x"auto"; then
+	    AC_MSG_WARN(Disabling Active Directory support (requires ldap_initialize))
+	    with_ads_support=no
+	fi
     fi
-    AC_MSG_WARN(Active Directory Support requires ldap_initialize)
-    with_ads_support=no
-fi
 
-AC_CHECK_FUNC_EXT(ldap_domain2hostlist,$LDAP_LIBS)
+    AC_CHECK_FUNC_EXT(ldap_domain2hostlist,$LDAP_LIBS)
 
-if test x"$ac_cv_func_ext_ldap_domain2hostlist" != x"yes"; then
-    if test x"$with_ads_support" = x"yes"; then
-        AC_MSG_ERROR(Active Directory Support requires ldap_domain2hostlist)
+    if test x"$ac_cv_func_ext_ldap_domain2hostlist" != x"yes"; then
+	if test x"$with_ads_support" = x"yes"; then
+	    AC_MSG_ERROR(Active Directory support requires ldap_domain2hostlist)
+	elif test x"$with_ads_support" = x"auto"; then
+	    AC_MSG_WARN(Disabling Active Directory support (requires ldap_domain2hostlist))
+	    with_ads_support=no
+	fi
     fi
-    AC_MSG_WARN(Active Directory Support requires ldap_domain2hostlist)
-    with_ads_support=no
-fi
 
-AC_CHECK_FUNC_EXT(ldap_add_result_entry,$LDAP_LIBS)
+    AC_CHECK_FUNC_EXT(ldap_add_result_entry,$LDAP_LIBS)
 
-if test x"$ac_cv_func_ext_ldap_add_result_entry" != x"yes"; then
-    if test x"$with_ads_support" = x"yes"; then
-        AC_MSG_ERROR(Active Directory Support requires ldap_add_result_entry)
+    if test x"$ac_cv_func_ext_ldap_add_result_entry" != x"yes"; then
+	if test x"$with_ads_support" = x"yes"; then
+	    AC_MSG_ERROR(Active Directory support requires ldap_add_result_entry)
+	elif test x"$with_ads_support" = x"auto"; then
+	    AC_MSG_WARN(Disabling Active Directory support (requires ldap_add_result_entry))
+	    with_ads_support=no
+	fi
     fi
-    AC_MSG_WARN(Active Directory Support requires ldap_add_result_entry)
-    with_ads_support=no
+
 fi
 
 if test x"$with_ads_support" != x"no"; then
@@ -3122,6 +3404,9 @@ if test x"$with_ads_support" != x"no"; then
   AC_CHECK_FUNC_EXT(krb5_principal_compare_any_realm, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(krb5_parse_name_norealm, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(krb5_princ_size, $KRB5_LIBS)
+  AC_CHECK_FUNC_EXT(krb5_get_init_creds_opt_set_pac_request, $KRB5_LIBS)
+  AC_CHECK_FUNC_EXT(krb5_get_renewed_creds, $KRB5_LIBS)
+  AC_CHECK_FUNC_EXT(krb5_get_kdc_cred, $KRB5_LIBS)
 
   LIBS="$KRB5_LIBS $LIBS"
 
@@ -3423,47 +3708,7 @@ if test x"$with_ads_support" != x"no"; then
 LIBS="$ac_save_LIBS"
 fi
 
-########################################################
-# Compile experimental passdb backends?
-# (pdb_xml, pdb_mysql, pdb_pgsql)
-AC_MSG_CHECKING(whether to build experimental passdb libraries)
-AC_ARG_WITH(expsam,
-[  --with-expsam=<list>    Include experimental passdb libraries (default=no)]
-[                          Valid choices include (comma separated list): ]
-[                              xml, mysql & pgsql],
-[ expsam_pdb_modules=`echo "$withval" | sed 's/,/ /g'`
-  if test "z$expsam_pdb_modules" = "zyes"; then
-    expsam_pdb_modules="xml mysql pgsql"
-  fi
-  AC_MSG_RESULT($expsam_pdb_modules)
-  for i in $expsam_pdb_modules
-  do 
-    case "$i" in
-    xml|all|yes)
-      ## pdb_xml
-	  AM_PATH_XML2([2.0.0],[default_shared_modules="$default_shared_modules pdb_xml"],[AC_MSG_ERROR([Can't find XML libraries while XML support is requested])])
-      CFLAGS="$CFLAGS $XML_CFLAGS"
-      ;;
-    mysql|all|yes)
-      ## pdb_mysql
-	  AM_PATH_MYSQL([default_shared_modules="$default_shared_modules pdb_mysql"],[AC_MSG_ERROR([Can't find MySQL libraries while MySQL support is requested])])
-      CFLAGS="$CFLAGS $MYSQL_CFLAGS"
-      ;;
-     pgsql|all|yes)
-      ## pdb_pgsql
-      AM_PATH_PGSQL([default_shared_modules="$default_shared_modules pdb_pgsql"],[])
-      CFLAGS="$CFLAGS $PGSQL_CFLAGS"
-      ;;
-    no)
-      ;;
-    *)
-      echo "Unknown module name \"$i\"!  Exiting..."
-      exit 1
-      ;;
-    esac
-  done ],
-  AC_MSG_RESULT(no)
-)
+AC_CHECK_LIB_EXT(nscd, NSCD_LIBS, nscd_flush_cache)
 
 #################################################
 # check for automount support
@@ -3507,6 +3752,46 @@ AC_ARG_WITH(smbmount,
   AC_MSG_RESULT(no)
 )
 
+#################################################
+# check for mount- and umount.cifs support
+CIFSMOUNT_PROGS=""
+INSTALL_CIFSMOUNT=""
+UNINSTALL_CIFSMOUNT=""
+AC_MSG_CHECKING(whether to build mount.cifs and umount.cifs)
+AC_ARG_WITH(cifsmount,
+[  --with-cifsmount        Include mount.cifs and umount.cifs (Linux only) support (default=yes)],
+[ case "$withval" in
+  no)
+	AC_MSG_RESULT(no)
+	;;
+  *)
+	case "$host_os" in
+	*linux*)
+		AC_MSG_RESULT(yes)
+		AC_DEFINE(WITH_CIFSMOUNT,1,[Whether to build mount.cifs and umount.cifs])
+		CIFSMOUNT_PROGS="bin/mount.cifs bin/umount.cifs"
+		INSTALL_CIFSMOUNT="installcifsmount"
+		UNINSTALL_CIFSMOUNT="uninstallcifsmount"
+		;;
+	*)
+		AC_MSG_ERROR(not on a linux system!)
+		;;
+	esac
+    ;;
+  esac ],
+[ case "$host_os" in
+  *linux*)
+	AC_MSG_RESULT(yes)
+	AC_DEFINE(WITH_CIFSMOUNT,1,[Whether to build mount.cifs and umount.cifs])
+	CIFSMOUNT_PROGS="bin/mount.cifs bin/umount.cifs"
+	INSTALL_CIFSMOUNT="installcifsmount"
+	UNINSTALL_CIFSMOUNT="uninstallcifsmount"
+	;;
+  *)
+	AC_MSG_RESULT(no)
+	;;
+  esac ]
+)
 
 
 #################################################
@@ -3541,6 +3826,9 @@ AC_CHECK_LIB(pam, pam_get_data, [AC_DEFINE(HAVE_LIBPAM,1,[Whether libpam is avai
 
 #################################################
 # check for pam_smbpass support
+PAM_MODULES=""
+INSTALL_PAM_MODULES=""
+UNINSTALL_PAM_MODULES=""
 AC_MSG_CHECKING(whether to use pam_smbpass)
 AC_ARG_WITH(pam_smbpass,
 [  --with-pam_smbpass      Build PAM module for authenticating against passdb backends (default=no)],
@@ -3558,7 +3846,9 @@ AC_ARG_WITH(pam_smbpass,
           AC_MSG_ERROR([No libpam found])
        else
 	  AUTH_LIBS="$AUTH_LIBS -lpam"
-          SHLIB_PROGS="$SHLIB_PROGS bin/pam_smbpass.$SHLIBEXT"
+          PAM_MODULES="pam_smbpass"
+          INSTALL_PAM_MODULES="installpammodules"
+          UNINSTALL_PAM_MODULES="uninstallpammodules"
        fi
     ;;
   *)
@@ -4025,17 +4315,22 @@ fi
 
 INSTALLLIBCMD_SH=:
 INSTALLLIBCMD_A=:
+UNINSTALLLIBCMD_SH=:
+UNINSTALLLIBCMD_A=:
 
 if test $BLDSHARED = true; then
 	INSTALLLIBCMD_SH="\$(INSTALLCMD)"
+	UNINSTALLLIBCMD_SH="rm -f"
 fi
 if test $enable_static = yes; then
 	INSTALLLIBCMD_A="\$(INSTALLCMD)"
+	UNINSTALLLIBCMD_A="rm -f"
 fi
 
 #################################################
 # should we build libmsrpc?
 INSTALL_LIBMSRPC=
+UNINSTALL_LIBMSRPC=
 LIBMSRPC_SHARED=
 LIBMSRPC=
 AC_MSG_CHECKING(whether to build the libmsrpc shared library)
@@ -4058,6 +4353,7 @@ AC_ARG_WITH(libmsrpc,
         LIBMSRPC=libmsrpc
      fi
      INSTALL_LIBMSRPC=installlibmsrpc
+     UNINSTALL_LIBMSRPC=uninstalllibmsrpc
      ;;
   esac ],
 [
@@ -4074,11 +4370,13 @@ AC_ARG_WITH(libmsrpc,
      LIBMSRPC=libmsrpc
   fi]
   INSTALL_LIBMSRPC=installlibmsrpc
+  UNINSTALL_LIBMSRPC=uninstalllibmsrpc
 )
 
 #################################################
 # should we build libsmbclient?
 INSTALL_LIBSMBCLIENT=
+UNINSTALL_LIBSMBCLIENT=
 LIBSMBCLIENT_SHARED=
 LIBSMBCLIENT=
 AC_MSG_CHECKING(whether to build the libsmbclient shared library)
@@ -4101,6 +4399,7 @@ AC_ARG_WITH(libsmbclient,
         LIBSMBCLIENT=libsmbclient
      fi
      INSTALL_LIBSMBCLIENT=installclientlib
+     UNINSTALL_LIBSMBCLIENT=uninstallclientlib
      ;;
   esac ],
 [
@@ -4117,6 +4416,7 @@ AC_ARG_WITH(libsmbclient,
      LIBSMBCLIENT=libsmbclient
   fi]
   INSTALL_LIBSMBCLIENT=installclientlib
+  UNINSTALL_LIBSMBCLIENT=uninstallclientlib
 )
 
 INSTALL_LIBSMBSHAREMODES=
@@ -4994,7 +5294,9 @@ if test x"$HAVE_WINBIND" = x"yes"; then
 		SHLIB_PROGS="$SHLIB_PROGS $WINBIND_NSS $WINBIND_WINS_NSS"
 
 		if test x"$with_pam" = x"yes"; then
-			SHLIB_PROGS="$SHLIB_PROGS nsswitch/pam_winbind.$SHLIBEXT"
+			PAM_MODULES="$PAM_MODULES pam_winbind"
+			INSTALL_PAM_MODULES="installpammodules"
+			UNINSTALL_PAM_MODULES="uninstallpammodules"
 		fi
 	fi
 else
@@ -5061,6 +5363,43 @@ AC_SUBST(POPTLIBS)
 AC_SUBST(FLAGS1)
 
 #################################################
+# Check to see if we should use the included iniparser 
+
+AC_ARG_WITH(included-iniparser,
+[  --with-included-iniparser    use bundled iniparser library, not from system],
+[ 
+  case "$withval" in
+	yes)
+		INCLUDED_INIPARSER=yes
+		;;
+        no)
+		INCLUDED_INIPARSER=no
+                ;;
+  esac ],
+)
+if test x"$INCLUDED_INIPARSER" != x"yes"; then
+    AC_CHECK_LIB(iniparser, iniparser_load,
+	         INCLUDED_INIPARSER=no, INCLUDED_INIPARSER=yes)
+fi
+
+AC_MSG_CHECKING(whether to use included iniparser)
+if test x"$INCLUDED_INIPARSER" = x"yes"; then
+    AC_MSG_RESULT(yes)
+    BUILD_INIPARSER='$(INIPARSER_OBJ)'
+	INIPARSERLIBS=""
+    FLAGS1="$FLAGS1 -I$srcdir/iniparser/src"
+else
+    AC_MSG_RESULT(no)
+	BUILD_INIPARSER=""
+    INIPARSERLIBS="-liniparser"
+fi
+AC_SUBST(BUILD_INIPARSER)
+AC_SUBST(INIPARSERLIBS)
+AC_SUBST(FLAGS1)
+
+
+
+#################################################
 # Check if the user wants Python
 
 # At the moment, you can use this to set which Python binary to link
@@ -5104,7 +5443,6 @@ do
 done
 
 dnl Always built these modules static
-MODULE_pdb_guest=STATIC
 MODULE_rpc_spoolss=STATIC
 MODULE_rpc_srv=STATIC
 MODULE_idmap_tdb=STATIC
@@ -5127,24 +5465,10 @@ AC_ARG_WITH(shared-modules,
 	done
 fi ])
 
-###########################################################################
-## contributed pdb_modules
-
-SMB_MODULE(pdb_xml, passdb/pdb_xml.o, "bin/xml.$SHLIBEXT", PDB,
-		  [ PASSDB_LIBS="$PASSDB_LIBS $XML_LIBS" ] )
-SMB_MODULE(pdb_mysql, passdb/pdb_mysql.o, "bin/mysql.$SHLIBEXT", PDB, 
-		   [ PASSDB_LIBS="$PASSDB_LIBS $MYSQL_LIBS" ]	)
-SMB_MODULE(pdb_pgsql, passdb/pdb_pgsql.o, "bin/pgsql.$SHLIBEXT", PDB, 
-		   [ PASSDB_LIBS="$PASSDB_LIBS $PGSQL_LIBS" ]	)
-
-## end of contributed pdb_modules
-###########################################################################
-
 SMB_MODULE(pdb_ldap, passdb/pdb_ldap.o passdb/pdb_nds.o, "bin/ldapsam.$SHLIBEXT", PDB, 
 		   [ PASSDB_LIBS="$PASSDB_LIBS $LDAP_LIBS" ] )
 SMB_MODULE(pdb_smbpasswd, passdb/pdb_smbpasswd.o, "bin/smbpasswd.$SHLIBEXT", PDB)
 SMB_MODULE(pdb_tdbsam, passdb/pdb_tdb.o, "bin/tdbsam.$SHLIBEXT", PDB)
-SMB_MODULE(pdb_guest, passdb/pdb_guest.o, "bin/guest.$SHLIBEXT", PDB)
 SMB_SUBSYSTEM(PDB,passdb/pdb_interface.o)
 
 
@@ -5155,7 +5479,7 @@ SMB_MODULE(rpc_wks, \$(RPC_WKS_OBJ), "bin/librpc_wkssvc.$SHLIBEXT", RPC)
 SMB_MODULE(rpc_svcctl, \$(RPC_SVCCTL_OBJ), "bin/librpc_svcctl.$SHLIBEXT", RPC)
 SMB_MODULE(rpc_ntsvcs, \$(RPC_NTSVCS_OBJ), "bin/librpc_ntsvcs.$SHLIBEXT", RPC)
 SMB_MODULE(rpc_net, \$(RPC_NETLOG_OBJ), "bin/librpc_NETLOGON.$SHLIBEXT", RPC)
-SMB_MODULE(rpc_dfs, \$(RPC_DFS_OBJ), "bin/librpc_netdfs.$SHLIBEXT", RPC)
+SMB_MODULE(rpc_netdfs, \$(RPC_DFS_OBJ), "bin/librpc_netdfs.$SHLIBEXT", RPC)
 SMB_MODULE(rpc_srv, \$(RPC_SVC_OBJ), "bin/librpc_srvsvc.$SHLIBEXT", RPC)
 SMB_MODULE(rpc_spoolss, \$(RPC_SPOOLSS_OBJ), "bin/librpc_spoolss.$SHLIBEXT", RPC)
 SMB_MODULE(rpc_eventlog, \$(RPC_EVENTLOG_OBJ), "bin/librpc_eventlog.$SHLIBEXT", RPC)
@@ -5234,6 +5558,11 @@ AC_TRY_RUN([#include "${srcdir-.}/tests/summary.c"],
 builddir=`pwd`
 AC_SUBST(builddir)
 
+# Stuff the smbd-only libraries at the end of the smbd link
+# path (if we have them).
+SMBD_LIBS="$samba_fam_libs $samba_dmapi_libs"
+AC_SUBST(SMBD_LIBS)
+
 dnl Remove -L/usr/lib/? from LDFLAGS and LIBS
 LIB_REMOVE_USR_LIB(LDFLAGS)
 LIB_REMOVE_USR_LIB(LIBS)
@@ -5242,7 +5571,7 @@ dnl Remove -I/usr/include/? from CFLAGS and CPPFLAGS
 CFLAGS_REMOVE_USR_INCLUDE(CFLAGS)
 CFLAGS_REMOVE_USR_INCLUDE(CPPFLAGS)
 
-AC_OUTPUT(include/stamp-h Makefile script/findsmb smbadduser script/gen-8bit-gap.sh)
+AC_OUTPUT(include/stamp-h Makefile script/findsmb smbadduser script/gen-8bit-gap.sh script/installbin.sh script/uninstallbin.sh)
 
 #################################################
 # Print very concise instructions on building/use

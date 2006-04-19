@@ -145,7 +145,7 @@ static BOOL StringToSid(DOM_SID *sid, const char *str)
 
 	if (!cacls_open_policy_hnd() ||
 	    !NT_STATUS_IS_OK(rpccli_lsa_lookup_names(global_pipe_hnd, global_hack_cli->mem_ctx, 
-						  &pol, 1, &str, &sids, 
+						  &pol, 1, &str, NULL, &sids, 
 						  &types))) {
 		result = False;
 		goto done;
@@ -378,7 +378,7 @@ static SEC_DESC *sec_desc_parse(char *str)
 {
 	const char *p = str;
 	fstring tok;
-	SEC_DESC *ret;
+	SEC_DESC *ret = NULL;
 	size_t sd_size;
 	DOM_SID *grp_sid=NULL, *owner_sid=NULL;
 	SEC_ACL *dacl=NULL;
@@ -392,21 +392,29 @@ static SEC_DESC *sec_desc_parse(char *str)
 		}
 
 		if (strncmp(tok,"OWNER:", 6) == 0) {
+			if (owner_sid) {
+				printf("Only specify owner once\n");
+				goto done;
+			}
 			owner_sid = SMB_CALLOC_ARRAY(DOM_SID, 1);
 			if (!owner_sid ||
 			    !StringToSid(owner_sid, tok+6)) {
 				printf("Failed to parse owner sid\n");
-				return NULL;
+				goto done;
 			}
 			continue;
 		}
 
 		if (strncmp(tok,"GROUP:", 6) == 0) {
+			if (grp_sid) {
+				printf("Only specify group once\n");
+				goto done;
+			}
 			grp_sid = SMB_CALLOC_ARRAY(DOM_SID, 1);
 			if (!grp_sid ||
 			    !StringToSid(grp_sid, tok+6)) {
 				printf("Failed to parse group sid\n");
-				return NULL;
+				goto done;
 			}
 			continue;
 		}
@@ -414,22 +422,23 @@ static SEC_DESC *sec_desc_parse(char *str)
 		if (strncmp(tok,"ACL:", 4) == 0) {
 			SEC_ACE ace;
 			if (!parse_ace(&ace, tok+4)) {
-				return NULL;
+				goto done;
 			}
 			if(!add_ace(&dacl, &ace)) {
 				printf("Failed to add ACL %s\n", tok);
-				return NULL;
+				goto done;
 			}
 			continue;
 		}
 
 		printf("Failed to parse token '%s' in security descriptor,\n", tok);
-		return NULL;
+		goto done;
 	}
 
 	ret = make_sec_desc(ctx,revision, SEC_DESC_SELF_RELATIVE, owner_sid, grp_sid, 
 			    NULL, dacl, &sd_size);
 
+  done:
 	SAFE_FREE(grp_sid);
 	SAFE_FREE(owner_sid);
 
@@ -830,7 +839,7 @@ static struct cli_state *connect_one(const char *share)
 
 	setlinebuf(stdout);
 
-	lp_load(dyn_CONFIGFILE,True,False,False);
+	lp_load(dyn_CONFIGFILE,True,False,False,True);
 	load_interfaces();
 
 	pc = poptGetContext("smbcacls", argc, argv, long_options, 0);

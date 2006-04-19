@@ -24,6 +24,94 @@
 /* nmbd.c sets this to True. */
 BOOL global_in_nmbd = False;
 
+
+/****************************
+ * SERVER AFFINITY ROUTINES *
+ ****************************/
+ 
+ /* Server affinity is the concept of preferring the last domain 
+    controller with whom you had a successful conversation */
+ 
+/****************************************************************************
+****************************************************************************/
+#define SAFKEY_FMT	"SAF/DOMAIN/%s"
+#define SAF_TTL		900
+
+static char *saf_key(const char *domain)
+{
+	char *keystr;
+	
+	asprintf( &keystr, SAFKEY_FMT, strupper_static(domain) );
+
+	return keystr;
+}
+
+/****************************************************************************
+****************************************************************************/
+
+BOOL saf_store( const char *domain, const char *servername )
+{
+	char *key;
+	time_t expire;
+	BOOL ret = False;
+	
+	if ( !domain || !servername ) {
+		DEBUG(2,("saf_store: Refusing to store empty domain or servername!\n"));
+		return False;
+	}
+	
+	if ( !gencache_init() ) 
+		return False;
+	
+	key = saf_key( domain );
+	expire = time( NULL ) + SAF_TTL;
+	
+	
+	DEBUG(10,("saf_store: domain = [%s], server = [%s], expire = [%u]\n",
+		domain, servername, (unsigned int)expire ));
+		
+	ret = gencache_set( key, servername, expire );
+	
+	SAFE_FREE( key );
+	
+	return ret;
+}
+
+/****************************************************************************
+****************************************************************************/
+
+char *saf_fetch( const char *domain )
+{
+	char *server = NULL;
+	time_t timeout;
+	BOOL ret = False;
+	char *key = NULL;
+
+	if ( !domain ) {
+		DEBUG(2,("saf_fetch: Empty domain name!\n"));
+		return NULL;
+	}
+	
+	if ( !gencache_init() ) 
+		return False;
+	
+	key = saf_key( domain );
+	
+	ret = gencache_get( key, &server, &timeout );
+	
+	SAFE_FREE( key );
+	
+	if ( !ret ) {
+		DEBUG(5,("saf_fetch: failed to find server for \"%s\" domain\n", domain ));
+	} else {
+		DEBUG(5,("saf_fetch: Returning \"%s\" for \"%s\" domain\n", 
+			server, domain ));
+	}
+		
+	return server;
+}
+
+
 /****************************************************************************
  Generate a random trn_id.
 ****************************************************************************/
@@ -413,7 +501,6 @@ struct in_addr *name_query(int fd,const char *name,int name_type,
 	
 	while (1) {
 		struct timeval tval2;
-		struct in_addr *tmp_ip_list;
 		
 		GetTimeOfDay(&tval2);
 		if (TvalDiff(&tval,&tval2) > retry_time) {
@@ -478,25 +565,22 @@ struct in_addr *name_query(int fd,const char *name,int name_type,
 				continue;
 			}
 			
-			tmp_ip_list = SMB_REALLOC_ARRAY( ip_list, struct in_addr,
+			ip_list = SMB_REALLOC_ARRAY( ip_list, struct in_addr,
 						(*count) + nmb2->answers->rdlength/6 );
 			
-			if (!tmp_ip_list) {
+			if (!ip_list) {
 				DEBUG(0,("name_query: Realloc failed.\n"));
-				SAFE_FREE(ip_list);
+				free_packet(p2);
+				return( NULL );
 			}
 			
-			ip_list = tmp_ip_list;
-			
-			if (ip_list) {
-				DEBUG(2,("Got a positive name query response from %s ( ", inet_ntoa(p2->ip)));
-				for (i=0;i<nmb2->answers->rdlength/6;i++) {
-					putip((char *)&ip_list[(*count)],&nmb2->answers->rdata[2+i*6]);
-					DEBUGADD(2,("%s ",inet_ntoa(ip_list[(*count)])));
-					(*count)++;
-				}
-				DEBUGADD(2,(")\n"));
+			DEBUG(2,("Got a positive name query response from %s ( ", inet_ntoa(p2->ip)));
+			for (i=0;i<nmb2->answers->rdlength/6;i++) {
+				putip((char *)&ip_list[(*count)],&nmb2->answers->rdata[2+i*6]);
+				DEBUGADD(2,("%s ",inet_ntoa(ip_list[(*count)])));
+				(*count)++;
 			}
+			DEBUGADD(2,(")\n"));
 			
 			found=True;
 			retries=0;
@@ -872,6 +956,7 @@ static BOOL resolve_lmhosts(const char *name, int name_type,
 					(*return_count)+1);
 
 		if ((*return_iplist) == NULL) {
+			endlmhosts(fp);
 			DEBUG(3,("resolve_lmhosts: malloc fail !\n"));
 			return False;
 		}
@@ -1041,6 +1126,7 @@ BOOL internal_resolve_name(const char *name, int name_type,
 			/* if it's in the form of an IP address then get the lib to interpret it */
 			if (((*return_iplist)->ip.s_addr = inet_addr(name)) == 0xFFFFFFFF ){
 				DEBUG(1,("internal_resolve_name: inet_addr failed on %s\n", name));
+				SAFE_FREE(*return_iplist);
 				return False;
 			}
 		} else {
@@ -1261,6 +1347,18 @@ static BOOL get_dc_list(const char *domain, struct ip_service **ip_list,
                  int *count, BOOL ads_only, int *ordered)
 {
 	fstring resolve_order;
+	char *saf_servername;
+	pstring pserver;
+	const char *p;
+	char *port_str;
+	int port;
+	fstring name;
+	int num_addresses = 0;
+	int  local_count, i, j;
+	struct ip_service *return_iplist = NULL;
+	struct ip_service *auto_ip_list = NULL;
+	BOOL done_auto_lookup = False;
+	int auto_count = 0;
 
 	/* if we are restricted to solely using DNS for looking
 	   up a domain controller, make sure that host lookups
@@ -1277,148 +1375,145 @@ static BOOL get_dc_list(const char *domain, struct ip_service **ip_list,
 			fstrcpy( resolve_order, "NULL" );
 	}
 
-	
 	*ordered = False;
-		
-	/* If it's our domain then use the 'password server' parameter. */
-
+	
+	/* fetch the server we have affinity for.  Add the 
+	   'password server' list to a search for our domain controllers */
+	
+	saf_servername = saf_fetch( domain );
+	
 	if ( strequal(domain, lp_workgroup()) || strequal(domain, lp_realm()) ) {
-		const char *p;
-		char *pserver = lp_passwordserver(); /* UNIX charset. */
-		char *port_str;
-		int port;
-		fstring name;
-		int num_addresses = 0;
-		int  local_count, i, j;
-		struct ip_service *return_iplist = NULL;
-		struct ip_service *auto_ip_list = NULL;
-		BOOL done_auto_lookup = False;
-		int auto_count = 0;
-		
+		pstr_sprintf( pserver, "%s, %s", 
+			saf_servername ? saf_servername : "",
+			lp_passwordserver() );
+	} else {
+		pstr_sprintf( pserver, "%s, *", 
+			saf_servername ? saf_servername : "" );
+	}
 
-		if (!*pserver)
-			return internal_resolve_name(domain, 0x1C, ip_list, count, resolve_order);
+	SAFE_FREE( saf_servername );
 
-		p = pserver;
+	/* if we are starting from scratch, just lookup DOMAIN<0x1c> */
 
-		/*
-		 * if '*' appears in the "password server" list then add
-		 * an auto lookup to the list of manually configured
-		 * DC's.  If any DC is listed by name, then the list should be 
-		 * considered to be ordered 
-		 */
-		 
-		while (next_token(&p,name,LIST_SEP,sizeof(name))) {
-			if (strequal(name, "*")) {
-				if ( internal_resolve_name(domain, 0x1C, &auto_ip_list, &auto_count, resolve_order) )
-					num_addresses += auto_count;
-				done_auto_lookup = True;
-				DEBUG(8,("Adding %d DC's from auto lookup\n", auto_count));
-			} else  {
-				num_addresses++;
-			}
+	if ( !*pserver ) {
+		DEBUG(10,("get_dc_list: no preferred domain controllers.\n"));
+		return internal_resolve_name(domain, 0x1C, ip_list, count, resolve_order);
+	}
+
+	DEBUG(3,("get_dc_list: preferred server list: \"%s\"\n", pserver ));
+	
+	/*
+	 * if '*' appears in the "password server" list then add
+	 * an auto lookup to the list of manually configured
+	 * DC's.  If any DC is listed by name, then the list should be 
+	 * considered to be ordered 
+	 */
+
+	p = pserver;
+	while (next_token(&p,name,LIST_SEP,sizeof(name))) {
+		if (strequal(name, "*")) {
+			if ( internal_resolve_name(domain, 0x1C, &auto_ip_list, &auto_count, resolve_order) )
+				num_addresses += auto_count;
+			done_auto_lookup = True;
+			DEBUG(8,("Adding %d DC's from auto lookup\n", auto_count));
+		} else  {
+			num_addresses++;
 		}
+	}
 
-		/* if we have no addresses and haven't done the auto lookup, then
-		   just return the list of DC's */
+	/* if we have no addresses and haven't done the auto lookup, then
+	   just return the list of DC's.  Or maybe we just failed. */
 		   
-		if ( (num_addresses == 0) && !done_auto_lookup ) {
+	if ( (num_addresses == 0) ) {
+		if ( !done_auto_lookup ) {
 			return internal_resolve_name(domain, 0x1C, ip_list, count, resolve_order);
-		}
-
-		/* maybe we just failed? */
-		
-		if ( num_addresses == 0 ) {
-			DEBUG(4,("get_dc_list: no servers found\n"));
+		} else {
+			DEBUG(4,("get_dc_list: no servers found\n")); 
 			return False;
 		}
-		
-		if ( (return_iplist = SMB_MALLOC_ARRAY(struct ip_service, num_addresses)) == NULL ) {
-			DEBUG(3,("get_dc_list: malloc fail !\n"));
-			return False;
-		}
+	}
 
-		p = pserver;
-		local_count = 0;
+	if ( (return_iplist = SMB_MALLOC_ARRAY(struct ip_service, num_addresses)) == NULL ) {
+		DEBUG(3,("get_dc_list: malloc fail !\n"));
+		return False;
+	}
 
-		/* fill in the return list now with real IP's */
+	p = pserver;
+	local_count = 0;
+
+	/* fill in the return list now with real IP's */
 				
-		while ( (local_count<num_addresses) && next_token(&p,name,LIST_SEP,sizeof(name)) ) {
-			struct in_addr name_ip;
+	while ( (local_count<num_addresses) && next_token(&p,name,LIST_SEP,sizeof(name)) ) {
+		struct in_addr name_ip;
 			
-			/* copy any addersses from the auto lookup */
+		/* copy any addersses from the auto lookup */
 			
-			if ( strequal(name, "*") ) {
-				for ( j=0; j<auto_count; j++ ) {
-					/* Check for and don't copy any known bad DC IP's. */
-					if(!NT_STATUS_IS_OK(check_negative_conn_cache(domain, 
-							inet_ntoa(auto_ip_list[j].ip)))) {
-						DEBUG(5,("get_dc_list: negative entry %s removed from DC list\n",
-							inet_ntoa(auto_ip_list[j].ip) ));
-						continue;
-					}
-					return_iplist[local_count].ip   = auto_ip_list[j].ip;
-					return_iplist[local_count].port = auto_ip_list[j].port;
-					local_count++;
-				}
-				continue;
-			}
-			
-			
-			/* added support for address:port syntax for ads (not that I think 
-			   anyone will ever run the LDAP server in an AD domain on something 
-			   other than port 389 */
-			
-			port = (lp_security() == SEC_ADS) ? LDAP_PORT : PORT_NONE;
-			if ( (port_str=strchr(name, ':')) != NULL ) {
-				*port_str = '\0';
-				port_str++;
-				port = atoi( port_str );
-			}
-
-			/* explicit lookup; resolve_name() will handle names & IP addresses */
-			if ( resolve_name( name, &name_ip, 0x20 ) ) {
-
+		if ( strequal(name, "*") ) {
+			for ( j=0; j<auto_count; j++ ) {
 				/* Check for and don't copy any known bad DC IP's. */
-				if( !NT_STATUS_IS_OK(check_negative_conn_cache(domain, inet_ntoa(name_ip))) ) {
-					DEBUG(5,("get_dc_list: negative entry %s removed from DC list\n",name ));
+				if(!NT_STATUS_IS_OK(check_negative_conn_cache(domain, 
+						inet_ntoa(auto_ip_list[j].ip)))) {
+					DEBUG(5,("get_dc_list: negative entry %s removed from DC list\n",
+						inet_ntoa(auto_ip_list[j].ip) ));
 					continue;
 				}
-
-				return_iplist[local_count].ip 	= name_ip;
-				return_iplist[local_count].port = port;
+				return_iplist[local_count].ip   = auto_ip_list[j].ip;
+				return_iplist[local_count].port = auto_ip_list[j].port;
 				local_count++;
-				*ordered = True;
 			}
-		}
-				
-		SAFE_FREE(auto_ip_list);
-
-		/* need to remove duplicates in the list if we have any 
-		   explicit password servers */
-		   
-		if ( local_count ) {
-			local_count = remove_duplicate_addrs2( return_iplist, local_count );
-		}
-		
-		if ( DEBUGLEVEL >= 4 ) {
-			DEBUG(4,("get_dc_list: returning %d ip addresses in an %sordered list\n", local_count, 
-				*ordered ? "":"un"));
-			DEBUG(4,("get_dc_list: "));
-			for ( i=0; i<local_count; i++ )
-				DEBUGADD(4,("%s:%d ", inet_ntoa(return_iplist[i].ip), return_iplist[i].port ));
-			DEBUGADD(4,("\n"));
+			continue;
 		}
 			
-		*ip_list = return_iplist;
-		*count = local_count;
+			
+		/* added support for address:port syntax for ads (not that I think 
+		   anyone will ever run the LDAP server in an AD domain on something 
+		   other than port 389 */
+			
+		port = (lp_security() == SEC_ADS) ? LDAP_PORT : PORT_NONE;
+		if ( (port_str=strchr(name, ':')) != NULL ) {
+			*port_str = '\0';
+			port_str++;
+			port = atoi( port_str );
+		}
 
-		return (*count != 0);
+		/* explicit lookup; resolve_name() will handle names & IP addresses */
+		if ( resolve_name( name, &name_ip, 0x20 ) ) {
+
+			/* Check for and don't copy any known bad DC IP's. */
+			if( !NT_STATUS_IS_OK(check_negative_conn_cache(domain, inet_ntoa(name_ip))) ) {
+				DEBUG(5,("get_dc_list: negative entry %s removed from DC list\n",name ));
+				continue;
+			}
+
+			return_iplist[local_count].ip 	= name_ip;
+			return_iplist[local_count].port = port;
+			local_count++;
+			*ordered = True;
+		}
 	}
-	
-	DEBUG(10,("get_dc_list: defaulting to internal auto lookup for domain %s\n", domain));
-	
-	return internal_resolve_name(domain, 0x1C, ip_list, count, resolve_order);
+				
+	SAFE_FREE(auto_ip_list);
+
+	/* need to remove duplicates in the list if we have any 
+	   explicit password servers */
+	   
+	if ( local_count ) {
+		local_count = remove_duplicate_addrs2( return_iplist, local_count );
+	}
+		
+	if ( DEBUGLEVEL >= 4 ) {
+		DEBUG(4,("get_dc_list: returning %d ip addresses in an %sordered list\n", local_count, 
+			*ordered ? "":"un"));
+		DEBUG(4,("get_dc_list: "));
+		for ( i=0; i<local_count; i++ )
+			DEBUGADD(4,("%s:%d ", inet_ntoa(return_iplist[i].ip), return_iplist[i].port ));
+		DEBUGADD(4,("\n"));
+	}
+			
+	*ip_list = return_iplist;
+	*count = local_count;
+
+	return (*count != 0);
 }
 
 /*********************************************************************

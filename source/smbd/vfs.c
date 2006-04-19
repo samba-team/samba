@@ -95,6 +95,7 @@ static struct vfs_ops default_vfs = {
 		vfswrap_utime,
 		vfswrap_ftruncate,
 		vfswrap_lock,
+		vfswrap_getlock,
 		vfswrap_symlink,
 		vfswrap_readlink,
 		vfswrap_link,
@@ -712,7 +713,7 @@ char *vfs_readdirname(connection_struct *conn, void *p)
 		return(NULL);
 #endif
 
-#ifdef HAVE_BROKEN_READDIR
+#ifdef HAVE_BROKEN_READDIR_NAME
 	/* using /usr/ucb/cc is BAD */
 	dname = dname - 2;
 #endif

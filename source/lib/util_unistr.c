@@ -31,6 +31,9 @@
 static smb_ucs2_t *upcase_table;
 static smb_ucs2_t *lowcase_table;
 static uint8 *valid_table;
+static BOOL upcase_table_use_unmap;
+static BOOL lowcase_table_use_unmap;
+static BOOL valid_table_use_unmap;
 
 /**
  * This table says which Unicode characters are valid dos
@@ -40,6 +43,32 @@ static uint8 *valid_table;
  **/
 static uint8 doschar_table[8192]; /* 65536 characters / 8 bits/byte */
 
+/**
+ * Destroy global objects allocated by load_case_tables()
+ **/
+void gfree_case_tables(void)
+{
+	if ( upcase_table ) {
+		if ( upcase_table_use_unmap )
+			unmap_file(upcase_table, 0x20000);
+		else
+			SAFE_FREE(upcase_table);
+	}
+
+	if ( lowcase_table ) {
+		if ( lowcase_table_use_unmap )
+			unmap_file(lowcase_table, 0x20000);
+		else
+			SAFE_FREE(lowcase_table);
+	}
+
+	if ( valid_table ) {
+		if ( valid_table_use_unmap )
+			unmap_file(valid_table, 0x10000);
+		else
+			SAFE_FREE(valid_table);
+	}
+}
 
 /**
  * Load or generate the case handling tables.
@@ -51,6 +80,7 @@ static uint8 doschar_table[8192]; /* 65536 characters / 8 bits/byte */
 void load_case_tables(void)
 {
 	static int initialised;
+	char *old_locale = NULL, *saved_locale = NULL;
 	int i;
 
 	if (initialised) {
@@ -59,7 +89,21 @@ void load_case_tables(void)
 	initialised = 1;
 
 	upcase_table = map_file(lib_path("upcase.dat"), 0x20000);
+	upcase_table_use_unmap = ( upcase_table != NULL );
+
 	lowcase_table = map_file(lib_path("lowcase.dat"), 0x20000);
+	lowcase_table_use_unmap = ( lowcase_table != NULL );
+
+#ifdef HAVE_SETLOCALE
+	/* Get the name of the current locale.  */
+	old_locale = setlocale(LC_ALL, NULL);
+
+	/* Save it as it is in static storage. */
+	saved_locale = SMB_STRDUP(old_locale);
+
+	/* We set back the locale to C to get ASCII-compatible toupper/lower functions. */
+	setlocale(LC_ALL, "C");
+#endif
 
 	/* we would like Samba to limp along even if these tables are
 	   not available */
@@ -92,6 +136,12 @@ void load_case_tables(void)
 			lowcase_table[v] = UCS2_CHAR(isupper(i)?tolower(i):i);
 		}
 	}
+
+#ifdef HAVE_SETLOCALE
+	/* Restore the old locale. */
+	setlocale (LC_ALL, saved_locale);
+	SAFE_FREE(saved_locale);
+#endif
 }
 
 /*
@@ -178,6 +228,7 @@ void init_valid_table(void)
 	if (valid_file) {
 		valid_table = valid_file;
 		mapped_file = 1;
+		valid_table_use_unmap = True;
 		return;
 	}
 
@@ -185,7 +236,11 @@ void init_valid_table(void)
 	 * It might need to be regenerated if the code page changed.
 	 * We know that we're not using a mapped file, so we can
 	 * free() the old one. */
-	if (valid_table) free(valid_table);
+	if (valid_table) 
+		SAFE_FREE(valid_table);
+
+	/* use free rather than unmap */
+	valid_table_use_unmap = False;
 
 	DEBUG(2,("creating default valid table\n"));
 	valid_table = SMB_MALLOC(0x10000);
@@ -211,7 +266,7 @@ void init_valid_table(void)
  null termination if applied
 ********************************************************************/
 
-size_t dos_PutUniCode(char *dst,const char *src, ssize_t len, BOOL null_terminate)
+size_t dos_PutUniCode(char *dst,const char *src, size_t len, BOOL null_terminate)
 {
 	int flags = null_terminate ? STR_UNICODE|STR_NOALIGN|STR_TERMINATE
 				   : STR_UNICODE|STR_NOALIGN;
@@ -273,30 +328,24 @@ int rpcstr_pull_unistr2_fstring(char *dest, UNISTR2 *src)
  * have been to manually talloc_strdup them in rpc_client/cli_netlogon.c.
  */
 
-size_t rpcstr_pull_unistr2_talloc(TALLOC_CTX *mem_ctx, char **dest,
-				  UNISTR2 *src)
+char *rpcstr_pull_unistr2_talloc(TALLOC_CTX *mem_ctx, const UNISTR2 *src)
 {
 	pstring tmp;
 	size_t result;
 
 	result = pull_ucs2(NULL, tmp, src->buffer, sizeof(tmp),
 			   src->uni_str_len * 2, 0);
-	if (result < 0) {
-		return result;
+	if (result == (size_t)-1) {
+		return NULL;
 	}
 
-	*dest = talloc_strdup(mem_ctx, tmp);
-	if (*dest == NULL) {
-		return -1;
-	}
-
-	return result;
+	return talloc_strdup(mem_ctx, tmp);
 }
 
 /* Converts a string from internal samba format to unicode
  */ 
 
-int rpcstr_push(void* dest, const char *src, int dest_len, int flags)
+int rpcstr_push(void* dest, const char *src, size_t dest_len, int flags)
 {
 	return push_ucs2(NULL, dest, src, dest_len, flags|STR_UNICODE|STR_NOALIGN);
 }
@@ -996,4 +1045,42 @@ UNISTR2* ucs2_to_unistr2(TALLOC_CTX *ctx, UNISTR2* dst, smb_ucs2_t* src)
 	strncpy_w(dst->buffer, src, dst->uni_max_len);
 	
 	return dst;
+}
+
+/*************************************************************
+ ascii only toupper - saves the need for smbd to be in C locale.
+*************************************************************/
+
+int toupper_ascii(int c)
+{
+	smb_ucs2_t uc = toupper_w(UCS2_CHAR(c));
+	return UCS2_TO_CHAR(uc);
+}
+
+/*************************************************************
+ ascii only tolower - saves the need for smbd to be in C locale.
+*************************************************************/
+
+int tolower_ascii(int c)
+{
+	smb_ucs2_t uc = tolower_w(UCS2_CHAR(c));
+	return UCS2_TO_CHAR(uc);
+}
+
+/*************************************************************
+ ascii only isupper - saves the need for smbd to be in C locale.
+*************************************************************/
+
+int isupper_ascii(int c)
+{
+	return isupper_w(UCS2_CHAR(c));
+}
+
+/*************************************************************
+ ascii only islower - saves the need for smbd to be in C locale.
+*************************************************************/
+
+int islower_ascii(int c)
+{
+	return islower_w(UCS2_CHAR(c));
 }

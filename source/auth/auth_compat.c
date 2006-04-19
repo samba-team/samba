@@ -84,7 +84,7 @@ static NTSTATUS pass_check_smb(const char *smb_name,
 	} else {
 		nt_status = check_plaintext_password(smb_name, plaintext_password, &server_info);
 	}		
-	free_server_info(&server_info);
+	TALLOC_FREE(server_info);
 	return nt_status;
 }
 

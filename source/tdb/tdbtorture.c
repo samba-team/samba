@@ -103,7 +103,7 @@ static void addrec_db(void)
 
 #if REOPEN_PROB
 	if (random() % REOPEN_PROB == 0) {
-		tdb_reopen_all();
+		tdb_reopen_all(1);
 		goto next;
 	} 
 #endif
@@ -192,7 +192,7 @@ int main(int argc, char *argv[])
 	for (i=0;i<NPROC;i++) {
 		pids[i] = fork();
 		if (pids[i] == 0) {
-			tdb_reopen_all();
+			tdb_reopen_all(1);
 
 			tdb_logging_function(db, tdb_log);
 

@@ -4,6 +4,7 @@
    Copyright (C) Andrew Tridgell 2001
    Copyright (C) Remus Koos 2001
    Copyright (C) Jim McDonough <jmcd@us.ibm.com> 2002
+   Copyright (C) Guenther Deschner 2005
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -136,6 +137,10 @@ BOOL ads_try_connect(ADS_STRUCT *ads, const char *server, unsigned port)
 	ads->ldap_port = port;
 	ads->ldap_ip = *interpret_addr2(srv);
 	free(srv);
+	
+	/* cache the successful connection */
+	
+	saf_store( ads->server.workgroup, server );
 
 	return True;
 }
@@ -804,6 +809,37 @@ char *ads_get_dn(ADS_STRUCT *ads, void *msg)
 }
 
 /**
+ * Get a canonical dn from search results
+ * @param ads connection to ads server
+ * @param msg Search result
+ * @return dn string
+ **/
+char *ads_get_dn_canonical(ADS_STRUCT *ads, void *msg)
+{
+#ifdef HAVE_LDAP_DN2AD_CANONICAL
+	return ldap_dn2ad_canonical(ads_get_dn(ads, msg));
+#else
+	return NULL;
+#endif
+}
+
+/**
+ * Get the parent from a dn
+ * @param dn the dn to return the parent from
+ * @return parent dn string
+ **/
+char *ads_parent_dn(const char *dn)
+{
+	char *p = strchr(dn, ',');
+
+	if (p == NULL) {
+		return NULL;
+	}
+
+	return p+1;
+}
+
+/**
  * Find a machine account given a hostname
  * @param ads connection to ads server
  * @param res ** which will contain results - free res* with ads_msgfree()
@@ -1047,7 +1083,8 @@ ADS_STATUS ads_del_dn(ADS_STRUCT *ads, char *del_dn)
 /**
  * Build an org unit string
  *  if org unit is Computers or blank then assume a container, otherwise
- *  assume a \ separated list of organisational units
+ *  assume a / separated list of organisational units.
+ * jmcd: '\' is now used for escapes so certain chars can be in the ou (e.g. #)
  * @param ads connection to ads server
  * @param org_unit Organizational unit
  * @return org unit string - caller must free
@@ -1068,7 +1105,10 @@ char *ads_ou_string(ADS_STRUCT *ads, const char *org_unit)
 		return SMB_STRDUP("cn=Computers");
 	}
 
-	return ads_build_path(org_unit, "\\/", "ou=", 1);
+	/* jmcd: removed "\\" from the separation chars, because it is
+	   needed as an escape for chars like '#' which are valid in an
+	   OU name */
+	return ads_build_path(org_unit, "/", "ou=", 1);
 }
 
 /**
@@ -1490,9 +1530,9 @@ static ADS_STATUS ads_add_machine_acct(ADS_STRUCT *ads, const char *machine_name
 	if (!exists) {
 		ads_mod_str(ctx, &mods, "cn", machine_name);
 		ads_mod_str(ctx, &mods, "sAMAccountName", samAccountName);
-		ads_mod_str(ctx, &mods, "userAccountControl", controlstr);
 		ads_mod_strlist(ctx, &mods, "objectClass", objectClass);
 	}
+	ads_mod_str(ctx, &mods, "userAccountControl", controlstr);
 	ads_mod_str(ctx, &mods, "dNSHostName", my_fqdn);
 	ads_mod_str(ctx, &mods, "userPrincipalName", host_upn);
 	ads_mod_strlist(ctx, &mods, "servicePrincipalName", servicePrincipalName);
@@ -1620,6 +1660,7 @@ static BOOL ads_dump_field(char *field, void **values, void *data_area)
 		void (*handler)(const char *, struct berval **);
 	} handlers[] = {
 		{"objectGUID", False, dump_guid},
+		{"netbootGUID", False, dump_guid},
 		{"nTSecurityDescriptor", False, dump_sd},
 		{"dnsRecord", False, dump_binary},
 		{"objectSid", False, dump_sid},
@@ -1877,7 +1918,10 @@ ADS_STATUS ads_set_machine_sd(ADS_STRUCT *ads, const char *hostname, char *dn)
 	 * we have to bail out before prs_init */
 	ps_wire.is_dynamic = False;
 
-	if (!ads) return ADS_ERROR(LDAP_SERVER_DOWN);
+	if (!ads) {
+		SAFE_FREE(escaped_hostname);
+		return ADS_ERROR(LDAP_SERVER_DOWN);
+	}
 
 	ret = ADS_ERROR(LDAP_SUCCESS);
 
@@ -1894,6 +1938,8 @@ ADS_STATUS ads_set_machine_sd(ADS_STRUCT *ads, const char *hostname, char *dn)
 	SAFE_FREE(escaped_hostname);
 
 	ret = ads_search(ads, (void *) &res, expr, attrs);
+
+	SAFE_FREE(expr);
 
 	if (!ADS_ERR_OK(ret)) return ret;
 
@@ -2655,7 +2701,7 @@ ADS_STATUS ads_workgroup_name(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, const char *
 	asprintf(&expr, "(&(objectclass=computer)(dnshostname=%s.%s))", 
 		 ads->config.ldap_server_name, ads->config.realm);
 	if (expr == NULL) {
-		ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
+		return ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
 	}
 
 	rc = ads_search(ads, &res, expr, attrs);
@@ -2699,6 +2745,169 @@ ADS_STATUS ads_workgroup_name(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, const char *
 	}
 	
 	return ADS_SUCCESS;
+}
+
+/**
+ * find our site name 
+ * @param ads connection to ads server
+ * @param mem_ctx Pointer to talloc context
+ * @param site_name Pointer to the sitename
+ * @return status of search
+ **/
+ADS_STATUS ads_site_dn(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, const char **site_name)
+{
+	ADS_STATUS status;
+	void *res;
+	const char *dn, *service_name;
+	const char *attrs[] = { "dsServiceName", NULL };
+
+	status = ads_do_search(ads, "", LDAP_SCOPE_BASE, "(objectclass=*)", attrs, &res);
+	if (!ADS_ERR_OK(status)) {
+		return status;
+	}
+
+	service_name = ads_pull_string(ads, mem_ctx, res, "dsServiceName");
+	if (service_name == NULL) {
+		return ADS_ERROR(LDAP_NO_RESULTS_RETURNED);
+	}
+
+	/* go up three levels */
+	dn = ads_parent_dn(ads_parent_dn(ads_parent_dn(service_name)));
+	if (dn == NULL) {
+		return ADS_ERROR(LDAP_NO_MEMORY);
+	}
+
+	*site_name = talloc_strdup(mem_ctx, dn);
+	if (*site_name == NULL) {
+		return ADS_ERROR(LDAP_NO_MEMORY);
+	}
+
+	ads_msgfree(ads, res);
+
+	return status;
+	/*
+	dsServiceName: CN=NTDS Settings,CN=W2K3DC,CN=Servers,CN=Default-First-Site-Name,CN=Sites,CN=Configuration,DC=ber,DC=suse,DC=de
+	*/						 
+}
+
+/**
+ * find the site dn where a machine resides
+ * @param ads connection to ads server
+ * @param mem_ctx Pointer to talloc context
+ * @param computer_name name of the machine
+ * @param site_name Pointer to the sitename
+ * @return status of search
+ **/
+ADS_STATUS ads_site_dn_for_machine(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, const char *computer_name, const char **site_dn)
+{
+	ADS_STATUS status;
+	void *res;
+	const char *parent, *config_context, *filter;
+	const char *attrs[] = { "configurationNamingContext", NULL };
+	char *dn;
+
+	/* shortcut a query */
+	if (strequal(computer_name, ads->config.ldap_server_name)) {
+		return ads_site_dn(ads, mem_ctx, site_dn);
+	}
+
+	status = ads_do_search(ads, "", LDAP_SCOPE_BASE, "(objectclass=*)", attrs, &res);
+	if (!ADS_ERR_OK(status)) {
+		return status;
+	}
+
+	config_context = ads_pull_string(ads, mem_ctx, res, "configurationNamingContext");
+	if (config_context == NULL) {
+		return ADS_ERROR(LDAP_NO_MEMORY);
+	}
+
+	filter = talloc_asprintf(mem_ctx, "(cn=%s)", computer_name);
+	if (filter == NULL) {
+		return ADS_ERROR(LDAP_NO_MEMORY);
+	}
+
+	status = ads_do_search(ads, config_context, LDAP_SCOPE_SUBTREE, filter, NULL, &res);
+	if (!ADS_ERR_OK(status)) {
+		return status;
+	}
+
+	if (ads_count_replies(ads, res) != 1) {
+		return ADS_ERROR(LDAP_NO_SUCH_OBJECT);
+	}
+
+	dn = ads_get_dn(ads, res);
+	if (dn == NULL) {
+		return ADS_ERROR(LDAP_NO_MEMORY);
+	}
+
+	/* go up three levels */
+	parent = ads_parent_dn(ads_parent_dn(ads_parent_dn(dn)));
+	if (parent == NULL) {
+		ads_memfree(ads, dn);
+		return ADS_ERROR(LDAP_NO_MEMORY);
+	}
+
+	*site_dn = talloc_strdup(mem_ctx, parent);
+	if (*site_dn == NULL) {
+		ads_memfree(ads, dn);
+		ADS_ERROR(LDAP_NO_MEMORY);
+	}
+
+	ads_memfree(ads, dn);
+	ads_msgfree(ads, res);
+
+	return status;
+}
+
+/**
+ * get the upn suffixes for a domain
+ * @param ads connection to ads server
+ * @param mem_ctx Pointer to talloc context
+ * @param suffixes Pointer to an array of suffixes
+ * @param site_name Pointer to the number of suffixes
+ * @return status of search
+ **/
+ADS_STATUS ads_upn_suffixes(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, char **suffixes, size_t *num_suffixes)
+{
+	ADS_STATUS status;
+	void *res;
+	const char *config_context, *base;
+	const char *attrs[] = { "configurationNamingContext", NULL };
+	const char *attrs2[] = { "uPNSuffixes", NULL };
+
+	status = ads_do_search(ads, "", LDAP_SCOPE_BASE, "(objectclass=*)", attrs, &res);
+	if (!ADS_ERR_OK(status)) {
+		return status;
+	}
+
+	config_context = ads_pull_string(ads, mem_ctx, res, "configurationNamingContext");
+	if (config_context == NULL) {
+		return ADS_ERROR(LDAP_NO_MEMORY);
+	}
+
+	base = talloc_asprintf(mem_ctx, "cn=Partitions,%s", config_context);
+	if (base == NULL) {
+		return ADS_ERROR(LDAP_NO_MEMORY);
+	}
+
+	status = ads_search_dn(ads, &res, base, attrs2); 
+	if (!ADS_ERR_OK(status)) {
+		return status;
+	}
+
+	if (ads_count_replies(ads, res) != 1) {
+		return ADS_ERROR(LDAP_NO_SUCH_OBJECT);
+	}
+
+	suffixes = ads_pull_strings(ads, mem_ctx, &res, "uPNSuffixes", num_suffixes);
+	if (suffixes == NULL) {
+		ads_msgfree(ads, res);
+		return ADS_ERROR(LDAP_NO_MEMORY);
+	}
+
+	ads_msgfree(ads, res);
+
+	return status;
 }
 
 #endif

@@ -159,9 +159,13 @@ static void print_share_mode(const struct share_mode_entry *e, const char *share
 	}
 }
 
-static void print_brl(SMB_DEV_T dev, SMB_INO_T ino, struct process_id pid, 
-		      enum brl_type lock_type,
-		      br_off start, br_off size)
+static void print_brl(SMB_DEV_T dev,
+			SMB_INO_T ino,
+			struct process_id pid, 
+			enum brl_type lock_type,
+			enum brl_flavour lock_flav,
+			br_off start,
+			br_off size)
 {
 	static int count;
 	if (count==0) {
@@ -653,7 +657,7 @@ static int traverse_sessionid(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf, vo
 		d_printf("using configfile = %s\n", dyn_CONFIGFILE);
 	}
 
-	if (!lp_load(dyn_CONFIGFILE,False,False,False)) {
+	if (!lp_load(dyn_CONFIGFILE,False,False,False,True)) {
 		fprintf(stderr, "Can't load %s - run testparm to debug it\n", dyn_CONFIGFILE);
 		return (-1);
 	}

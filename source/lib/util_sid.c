@@ -75,11 +75,19 @@ const DOM_SID global_sid_Builtin_Backup_Operators =	/* Builtin backup operators 
 const DOM_SID global_sid_Builtin_Replicator =		/* Builtin replicator */
 { 1, 2, {0,0,0,0,0,5}, {32,552,0,0,0,0,0,0,0,0,0,0,0,0,0}};
 
+const DOM_SID global_sid_Unix_Users =			/* Unmapped Unix users */
+{ 1, 1, {0,0,0,0,0,22}, {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0}};
+const DOM_SID global_sid_Unix_Groups =			/* Unmapped Unix groups */
+{ 1, 1, {0,0,0,0,0,22}, {2,0,0,0,0,0,0,0,0,0,0,0,0,0,0}};
+
+/* Unused, left here for documentary purposes */
+#if 0
 #define SECURITY_NULL_SID_AUTHORITY    0
 #define SECURITY_WORLD_SID_AUTHORITY   1
 #define SECURITY_LOCAL_SID_AUTHORITY   2
 #define SECURITY_CREATOR_SID_AUTHORITY 3
 #define SECURITY_NT_AUTHORITY          5
+#endif
 
 /*
  * An NT compatible anonymous token.
@@ -151,59 +159,6 @@ const char *get_global_sam_name(void)
 		return lp_workgroup();
 	}
 	return global_myname();
-}
-
-/**************************************************************************
- Splits a name of format \DOMAIN\name or name into its two components.
- Sets the DOMAIN name to global_myname() if it has not been specified.
-***************************************************************************/
-
-void split_domain_name(const char *fullname, char *domain, char *name)
-{
-	pstring full_name;
-	const char *sep;
-	char *p;
-
-	sep = lp_winbind_separator();
-
-	*domain = *name = '\0';
-
-	if (fullname[0] == sep[0] || fullname[0] == '\\')
-		fullname++;
-
-	pstrcpy(full_name, fullname);
-	p = strchr_m(full_name+1, '\\');
-	if (!p) p = strchr_m(full_name+1, sep[0]);
-
-	if (p != NULL) {
-		*p = 0;
-		fstrcpy(domain, full_name);
-		fstrcpy(name, p+1);
-	} else {
-		fstrcpy(domain, get_global_sam_name());
-		fstrcpy(name, full_name);
-	}
-
-	DEBUG(10,("split_domain_name:name '%s' split into domain :'%s' and user :'%s'\n",
-			fullname, domain, name));
-}
-
-/****************************************************************************
- Test if a SID is wellknown and resolvable.
-****************************************************************************/
-
-BOOL resolvable_wellknown_sid(DOM_SID *sid)
-{
-	uint32 ia = (sid->id_auth[5]) +
-			(sid->id_auth[4] << 8 ) +
-			(sid->id_auth[3] << 16) +
-			(sid->id_auth[2] << 24);
-
-	if (sid->sid_rev_num != SEC_DESC_REVISION || sid->num_auths < 1)
-		return False;
-
-	return (ia == SECURITY_WORLD_SID_AUTHORITY ||
-		ia == SECURITY_CREATOR_SID_AUTHORITY);
 }
 
 /*****************************************************************
@@ -533,30 +488,6 @@ BOOL sid_equal(const DOM_SID *sid1, const DOM_SID *sid2)
 }
 
 /*****************************************************************
- Check if the SID is the builtin SID (S-1-5-32).
-*****************************************************************/  
-
-BOOL sid_check_is_builtin(const DOM_SID *sid)
-{
-	return sid_equal(sid, &global_sid_Builtin);
-}
-
-/*****************************************************************
- Check if the SID is one of the builtin SIDs (S-1-5-32-a).
-*****************************************************************/  
-
-BOOL sid_check_is_in_builtin(const DOM_SID *sid)
-{
-	DOM_SID dom_sid;
-	uint32 rid;
-
-	sid_copy(&dom_sid, sid);
-	sid_split_rid(&dom_sid, &rid);
-	
-	return sid_equal(&dom_sid, &global_sid_Builtin);
-}
-
-/*****************************************************************
  Calculates size of a sid.
 *****************************************************************/  
 
@@ -632,14 +563,16 @@ DOM_SID *sid_dup_talloc(TALLOC_CTX *ctx, const DOM_SID *src)
 void add_sid_to_array(TALLOC_CTX *mem_ctx, const DOM_SID *sid, 
 		      DOM_SID **sids, size_t *num)
 {
-	if (mem_ctx != NULL)
+	if (mem_ctx != NULL) {
 		*sids = TALLOC_REALLOC_ARRAY(mem_ctx, *sids, DOM_SID,
 					     (*num)+1);
-	else
+	} else {
 		*sids = SMB_REALLOC_ARRAY(*sids, DOM_SID, (*num)+1);
+	}
 
-	if (*sids == NULL)
+	if (*sids == NULL) {
 		return;
+	}
 
 	sid_copy(&((*sids)[*num]), sid);
 	*num += 1;

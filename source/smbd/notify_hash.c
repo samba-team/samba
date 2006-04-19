@@ -23,13 +23,8 @@
 
 struct change_data {
 	time_t last_check_time; /* time we last checked this entry */
-#ifdef HAVE_STAT_HIRES_TIMESTAMPS
-	struct timespec modify_time;
-	struct timespec status_time;
-#else
-	time_t modify_time; /* Info from the directory we're monitoring. */ 
-	time_t status_time; /* Info from the directory we're monitoring. */
-#endif
+	struct timespec modify_time; /* Info from the directory we're monitoring. */
+	struct timespec status_time; /* Info from the directory we're monitoring. */
 	time_t total_time; /* Total time of all directory entries - don't care if it wraps. */
 	unsigned int num_entries; /* Zero or the number of files in the directory. */
 	unsigned int mode_sum;
@@ -37,13 +32,8 @@ struct change_data {
 };
 
 
-#ifdef HAVE_STAT_HIRES_TIMESTAMPS
 /* Compare struct timespec. */
 #define TIMESTAMP_NEQ(x, y) (((x).tv_sec != (y).tv_sec) || ((x).tv_nsec != (y).tv_nsec))
-#else
-/* Compare time_t . */
-#define TIMESTAMP_NEQ(x, y) ((x) != (y))
-#endif
 
 /****************************************************************************
  Create the hash we will use to determine if the contents changed.
@@ -66,13 +56,8 @@ static BOOL notify_hash(connection_struct *conn, char *path, uint32 flags,
 	if(SMB_VFS_STAT(conn,path, &st) == -1)
 		return False;
 
-#ifdef HAVE_STAT_HIRES_TIMESTAMPS
-	data->modify_time = st.st_mtim;
-	data->status_time = st.st_ctim;
-#else
-	data->modify_time = st.st_mtime;
-	data->status_time = st.st_ctime;
-#endif
+	data->modify_time = get_mtimespec(&st);
+	data->status_time = get_ctimespec(&st);
 
 	if (old_data) {
 		/*
@@ -245,6 +230,7 @@ struct cnotify_fns *hash_notify_init(void)
 	cnotify.check_notify = hash_check_notify;
 	cnotify.remove_notify = hash_remove_notify;
 	cnotify.select_time = lp_change_notify_timeout();
+	cnotify.notification_fd = -1;
 
 	return &cnotify;
 }

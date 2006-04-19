@@ -102,6 +102,8 @@ static ADS_STRUCT *ads_cached_connection(struct winbindd_domain *domain)
 			ads->auth.realm = SMB_STRDUP( lp_realm() );
 	}
 
+	ads->auth.renewable = WINBINDD_PAM_AUTH_KRB5_RENEW_TIME;
+
 	status = ads_connect(ads);
 	if (!ADS_ERR_OK(status) || !ads->config.realm) {
 		extern struct winbindd_methods msrpc_methods, cache_methods;
@@ -889,8 +891,7 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 	struct ds_domain_trust	*domains = NULL;
 	int			count = 0;
 	int			i;
-				/* i think we only need our forest and downlevel trusted domains */
-	uint32			flags = DS_DOMAIN_IN_FOREST | DS_DOMAIN_DIRECT_OUTBOUND;
+	uint32			flags = DS_DOMAIN_DIRECT_OUTBOUND;
 	struct rpc_pipe_client *cli;
 
 	DEBUG(3,("ads: trusted_domains\n"));
@@ -963,6 +964,8 @@ struct winbindd_methods ads_methods = {
 	msrpc_lookup_useraliases,
 	lookup_groupmem,
 	sequence_number,
+	msrpc_lockout_policy,
+	msrpc_password_policy,
 	trusted_domains,
 };
 

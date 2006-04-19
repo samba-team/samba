@@ -108,6 +108,7 @@ int backup_tdb(const char *old_name, const char *new_name)
 	/* stat the old tdb to find its permissions */
 	if (stat(old_name, &st) != 0) {
 		perror(old_name);
+		free(tmp_name);
 		return 1;
 	}
 
@@ -115,6 +116,7 @@ int backup_tdb(const char *old_name, const char *new_name)
 	tdb = tdb_open(old_name, 0, 0, O_RDWR, 0);
 	if (!tdb) {
 		printf("Failed to open %s\n", old_name);
+		free(tmp_name);
 		return 1;
 	}
 

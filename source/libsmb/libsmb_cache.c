@@ -94,6 +94,7 @@ static int smbc_add_cached_server(SMBCCTX * context, SMBCSRV * newsrv,
 	SAFE_FREE(srvcache->share_name);
 	SAFE_FREE(srvcache->workgroup);
 	SAFE_FREE(srvcache->username);
+	SAFE_FREE(srvcache);
 	
 	return 1;
 }
@@ -155,6 +156,21 @@ static SMBCSRV * smbc_get_cached_server(SMBCCTX * context, const char * server,
                                         context->callbacks.remove_cached_srv_fn(context, srv->server);
                                         continue;
                                 }
+
+                                /*
+                                 * Save the new share name.  We've
+                                 * disconnected from the old share, and are
+                                 * about to connect to the new one.
+                                 */
+                                SAFE_FREE(srv->share_name);
+                                srv->share_name = SMB_STRDUP(share);
+                                if (!srv->share_name) {
+                                        /* Out of memory. */
+                                        cli_shutdown(&srv->server->cli);
+                                        context->callbacks.remove_cached_srv_fn(context, srv->server);
+                                        continue;
+                                }
+
 
                                 return srv->server;
                         }

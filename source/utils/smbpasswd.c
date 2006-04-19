@@ -187,7 +187,7 @@ static int process_options(int argc, char **argv, int local_flags)
 		usage();
 	}
 
-	if (!lp_load(configfile,True,False,False)) {
+	if (!lp_load(configfile,True,False,False,True)) {
 		fprintf(stderr, "Can't load %s - run testparm to debug it\n", 
 			dyn_CONFIGFILE);
 		exit(1);
@@ -228,10 +228,11 @@ static char *prompt_for_new_password(BOOL stdin_get)
  Change a password either locally or remotely.
 *************************************************************/
 
-static BOOL password_change(const char *remote_mach, char *username, 
-			    char *old_passwd, char *new_pw, int local_flags)
+static NTSTATUS password_change(const char *remote_mach, char *username, 
+				char *old_passwd, char *new_pw,
+				int local_flags)
 {
-	BOOL ret;
+	NTSTATUS ret;
 	pstring err_str;
 	pstring msg_str;
 
@@ -239,7 +240,7 @@ static BOOL password_change(const char *remote_mach, char *username,
 		if (local_flags & (LOCAL_ADD_USER|LOCAL_DELETE_USER|LOCAL_DISABLE_USER|LOCAL_ENABLE_USER|
 							LOCAL_TRUST_ACCOUNT|LOCAL_SET_NO_PASSWORD)) {
 			/* these things can't be done remotely yet */
-			return False;
+			return NT_STATUS_UNSUCCESSFUL;
 		}
 		ret = remote_password_change(remote_mach, username, 
 					     old_passwd, new_pw, err_str, sizeof(err_str));
@@ -285,14 +286,20 @@ static int process_root(int local_flags)
 	char *old_passwd = NULL;
 
 	if (local_flags & LOCAL_SET_LDAP_ADMIN_PW) {
-		printf("Setting stored password for \"%s\" in secrets.tdb\n", 
-			lp_ldap_admin_dn());
+		char *ldap_admin_dn = lp_ldap_admin_dn();
+		if ( ! *ldap_admin_dn ) {
+			DEBUG(0,("ERROR: 'ldap admin dn' not defined! Please check your smb.conf\n"));
+			goto done;
+		}
+
+		printf("Setting stored password for \"%s\" in secrets.tdb\n", ldap_admin_dn);
 		if ( ! *ldap_secret ) {
 			new_passwd = prompt_for_new_password(stdin_passwd_get);
 			fstrcpy(ldap_secret, new_passwd);
 		}
-		if (!store_ldap_admin_pw(ldap_secret))
+		if (!store_ldap_admin_pw(ldap_secret)) {
 			DEBUG(0,("ERROR: Failed to store the ldap admin password!\n"));
+		}
 		goto done;
 	}
 
@@ -322,9 +329,9 @@ static int process_root(int local_flags)
 		load_interfaces();
 	}
 
-	if (!user_name[0] && (pwd = getpwuid_alloc(geteuid()))) {
+	if (!user_name[0] && (pwd = getpwuid_alloc(NULL, geteuid()))) {
 		fstrcpy(user_name, pwd->pw_name);
-		passwd_free(&pwd);
+		TALLOC_FREE(pwd);
 	} 
 
 	if (!user_name[0]) {
@@ -394,16 +401,16 @@ static int process_root(int local_flags)
 			 */
 			
 			if(local_flags & LOCAL_ENABLE_USER) {
-				SAM_ACCOUNT *sampass = NULL;
+				struct samu *sampass = NULL;
 				BOOL ret;
 				
-				pdb_init_sam(&sampass);
+				sampass = samu_new( NULL );
 				ret = pdb_getsampwnam(sampass, user_name);
 				if((ret) &&
 				   (pdb_get_lanman_passwd(sampass) == NULL)) {
 					local_flags |= LOCAL_SET_PASSWORD;
 				}
-				pdb_free_sam(&sampass);
+				TALLOC_FREE(sampass);
 			}
 		}
 		
@@ -417,7 +424,9 @@ static int process_root(int local_flags)
 		}
 	}
 
-	if (!password_change(remote_machine, user_name, old_passwd, new_passwd, local_flags)) {
+	if (!NT_STATUS_IS_OK(password_change(remote_machine, user_name,
+					     old_passwd, new_passwd,
+					     local_flags))) {
 		fprintf(stderr,"Failed to modify password entry for user %s\n", user_name);
 		result = 1;
 		goto done;
@@ -426,10 +435,10 @@ static int process_root(int local_flags)
 	if(remote_machine) {
 		printf("Password changed for user %s on %s.\n", user_name, remote_machine );
 	} else if(!(local_flags & (LOCAL_ADD_USER|LOCAL_DISABLE_USER|LOCAL_ENABLE_USER|LOCAL_DELETE_USER|LOCAL_SET_NO_PASSWORD|LOCAL_SET_PASSWORD))) {
-		SAM_ACCOUNT *sampass = NULL;
+		struct samu *sampass = NULL;
 		BOOL ret;
 		
-		pdb_init_sam(&sampass);
+		sampass = samu_new( NULL );
 		ret = pdb_getsampwnam(sampass, user_name);
 
 		printf("Password changed for user %s.", user_name );
@@ -438,7 +447,7 @@ static int process_root(int local_flags)
 		if((ret != False) && (pdb_get_acct_ctrl(sampass) & ACB_PWNOTREQ) )
 			printf(" User has no password flag set.");
 		printf("\n");
-		pdb_free_sam(&sampass);
+		TALLOC_FREE(sampass);
 	}
 
  done:
@@ -464,10 +473,10 @@ static int process_nonroot(int local_flags)
 	}
 
 	if (!user_name[0]) {
-		pwd = getpwuid_alloc(getuid());
+		pwd = getpwuid_alloc(NULL, getuid());
 		if (pwd) {
 			fstrcpy(user_name,pwd->pw_name);
-			passwd_free(&pwd);
+			TALLOC_FREE(pwd);
 		} else {
 			fprintf(stderr, "smbpasswd: cannot lookup user name for uid %u\n", (unsigned int)getuid());
 			exit(1);
@@ -501,7 +510,8 @@ static int process_nonroot(int local_flags)
 		exit(1);
 	}
 
-	if (!password_change(remote_machine, user_name, old_pw, new_pw, 0)) {
+	if (!NT_STATUS_IS_OK(password_change(remote_machine, user_name, old_pw,
+					     new_pw, 0))) {
 		fprintf(stderr,"Failed to change password for %s\n", user_name);
 		result = 1;
 		goto done;

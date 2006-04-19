@@ -4,7 +4,7 @@
    Copyright (C) Andrew Tridgell              1992-2000,
    Copyright (C) Luke Kenneth Casson Leighton 1996-2000,
    Copyright (C) Jean Francois Micouleau      1998-2000.
-   Copyright (C) Gerald Carter                2001-2005.
+   Copyright (C) Gerald Carter                2001-2006.
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -107,7 +107,18 @@
 #define SPOOLSS_DELETEPRINTERDATAEX			0x51
 #define SPOOLSS_DELETEPRINTERKEY			0x52
 #define SPOOLSS_DELETEPRINTERDRIVEREX			0x54
+#define SPOOLSS_XCVDATAPORT				0x58
 #define SPOOLSS_ADDPRINTERDRIVEREX			0x59
+
+/* 
+ * Special strings for the OpenPrinter() call.  See the MSDN DDK
+ * docs on the XcvDataPort() for more details.
+ */
+
+#define SPL_LOCAL_PORT            "Local Port"
+#define SPL_TCPIP_PORT            "Standard TCP/IP Port"
+#define SPL_XCV_MONITOR_LOCALMON  ",XcvMonitor Local Port"
+#define SPL_XCV_MONITOR_TCPMON    ",XcvMonitor Standard TCP/IP Port"
 
 
 #define PRINTER_CONTROL_UNPAUSE		0x00000000
@@ -799,7 +810,7 @@ typedef struct spool_notify_info_data
 	}
 	notify_data;
 	uint32 size;
-	BOOL enc_type;
+	uint32 enc_type;
 } SPOOL_NOTIFY_INFO_DATA;
 
 typedef struct spool_notify_info
@@ -2160,6 +2171,46 @@ typedef struct spool_r_getprintprocessordirectory
 	WERROR status;
 }
 SPOOL_R_GETPRINTPROCESSORDIRECTORY;
+
+/**************************************/
+
+#define MAX_PORTNAME		64
+#define MAX_NETWORK_NAME	49
+#define MAX_SNMP_COMM_NAME	33
+#define	MAX_QUEUE_NAME		33
+#define MAX_IPADDR_STRING	17
+		
+typedef struct {
+	uint16 portname[MAX_PORTNAME];
+	uint32 version;
+	uint32 protocol;
+	uint32 size;
+	uint32 reserved;
+	uint16 hostaddress[MAX_NETWORK_NAME];
+	uint16 snmpcommunity[MAX_SNMP_COMM_NAME];
+	uint32 dblspool;
+	uint16 queue[MAX_QUEUE_NAME];
+	uint16 ipaddress[MAX_IPADDR_STRING];
+	uint32 port;
+	uint32 snmpenabled;
+	uint32 snmpdevindex;
+} SPOOL_PORT_DATA_1;
+
+typedef struct {
+	POLICY_HND handle;
+	UNISTR2 dataname;
+	RPC_BUFFER indata;
+	uint32 indata_len;
+	uint32 offered;
+	uint32 unknown;
+} SPOOL_Q_XCVDATAPORT;
+
+typedef struct {
+	RPC_BUFFER outdata;
+	uint32 needed;
+	uint32 unknown;
+	WERROR status;
+} SPOOL_R_XCVDATAPORT;
 
 #define PRINTER_DRIVER_VERSION 2
 #define PRINTER_DRIVER_ARCHITECTURE "Windows NT x86"

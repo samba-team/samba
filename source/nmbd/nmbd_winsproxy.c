@@ -47,9 +47,14 @@ static void wins_proxy_name_query_request_success( struct subnet_record *subrec,
 	memcpy( (char *)&original_packet, &userdata->data[sizeof(struct subnet_record *)],
 			sizeof(struct packet_struct *) );
 
-	nb_flags = get_nb_flags( rrec->rdata );
+	if (rrec) {
+		nb_flags = get_nb_flags( rrec->rdata );
+		num_ips = rrec->rdlength / 6;
+	} else {
+		nb_flags = 0;
+		num_ips = 0;
+	}
 
-	num_ips = rrec->rdlength / 6;
 	if(num_ips == 0) {
 		DEBUG(0,("wins_proxy_name_query_request_success: Invalid number of IP records (0) \
 returned for name %s.\n", nmb_namestr(nmbname) ));
@@ -66,12 +71,12 @@ returned for name %s.\n", nmb_namestr(nmbname) ));
 
 		for(i = 0; i < num_ips; i++) {
 			putip( (char *)&iplist[i], (char *)&rrec->rdata[ (i*6) + 2]);
-	}
+		}
 	}
 
 	/* Add the queried name to the original subnet as a WINS_PROXY_NAME. */
 
-	if(rrec == PERMANENT_TTL) {
+	if(rrec->ttl == PERMANENT_TTL) {
 		ttl = lp_max_ttl();
 	}
 
@@ -80,6 +85,10 @@ returned for name %s.\n", nmb_namestr(nmbname) ));
 					nmbname->name_type, nb_flags, ttl,
 					WINS_PROXY_NAME, num_ips, iplist );
 
+	if(iplist != &ip) {
+		SAFE_FREE(iplist);
+	}
+
 	namerec = find_name_on_subnet(orig_broadcast_subnet, nmbname, FIND_ANY_NAME);
 	if (!namerec) {
 		DEBUG(0,("wins_proxy_name_query_request_success: failed to add "
@@ -87,10 +96,6 @@ returned for name %s.\n", nmb_namestr(nmbname) ));
 			name,
 			orig_broadcast_subnet->subnet_name ));
 		return;
-	}
-
-	if(iplist != &ip) {
-		SAFE_FREE(iplist);
 	}
 
 	/*

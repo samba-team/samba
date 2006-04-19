@@ -24,14 +24,6 @@
 #ifndef _SMB_MACROS_H
 #define _SMB_MACROS_H
 
-/* no ops to help reduce the diff between the current 3.0 and release branch */
-
-#define toupper_ascii(x)	toupper(x)
-#define tolower_ascii(x)	tolower(x)
-#define isupper_ascii(x)	isupper(x)
-#define islower_ascii(x)	islower(x)
-
-
 /* Misc bit macros */
 #define BOOLSTR(b) ((b) ? "Yes" : "No")
 #define BITSETW(ptr,bit) ((SVAL(ptr,0) & (1<<(bit)))!=0)
@@ -83,6 +75,10 @@
 #define SMB_ASSERT(b) ( (b) ? (void)0 : \
         (DEBUG(0,("PANIC: assert failed at %s(%d)\n", __FILE__, __LINE__))))
 #endif
+
+#define SMB_WARN(condition, message) \
+    ((condition) ? (void)0 : \
+     DEBUG(0, ("WARNING: %s: %s\n", #condition, message)))
 
 #define SMB_ASSERT_ARRAY(a,n) SMB_ASSERT((sizeof(a)/sizeof((a)[0])) >= (n))
 
@@ -279,8 +275,10 @@ copy an IP address from one buffer to another
 *****************************************************************************/
 
 #define SMB_MALLOC_ARRAY(type,count) (type *)malloc_array(sizeof(type),(count))
-#define SMB_REALLOC(p,s) Realloc((p),(s))
-#define SMB_REALLOC_ARRAY(p,type,count) (type *)realloc_array((p),sizeof(type),(count))
+#define SMB_REALLOC(p,s) Realloc((p),(s),True)	/* Always frees p on error or s == 0 */
+#define SMB_REALLOC_KEEP_OLD_ON_ERROR(p,s) Realloc((p),(s),False) /* Never frees p on error or s == 0 */
+#define SMB_REALLOC_ARRAY(p,type,count) (type *)realloc_array((p),sizeof(type),(count),True) /* Always frees p on error or s == 0 */
+#define SMB_REALLOC_ARRAY_KEEP_OLD_ON_ERROR(p,type,count) (type *)realloc_array((p),sizeof(type),(count),False) /* Never frees p on error or s == 0 */
 #define SMB_CALLOC_ARRAY(type,count) (type *)calloc_array(sizeof(type),(count))
 #define SMB_XMALLOC_P(type) (type *)smb_xmalloc_array(sizeof(type),1)
 #define SMB_XMALLOC_ARRAY(type,count) (type *)smb_xmalloc_array(sizeof(type),(count))

@@ -33,7 +33,7 @@ int main(int argc, char *argv[])
 	extern int optind;
 	char *path;
 
-	lp_load(dyn_CONFIGFILE,1,0,0);
+	lp_load(dyn_CONFIGFILE,1,0,0,1);
 	smbw_setup_shared();
 
 	while ((opt = getopt(argc, argv, "W:U:R:d:P:l:hL:")) != EOF) {

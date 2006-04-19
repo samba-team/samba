@@ -113,7 +113,7 @@ static NTSTATUS cmd_conf(struct vfs_state *vfs, TALLOC_CTX *mem_ctx,
 		return NT_STATUS_OK;
 	}
 
-	if (!lp_load(argv[1], False, True, False)) {
+	if (!lp_load(argv[1], False, True, False, True)) {
 		printf("Error loading \"%s\"\n", argv[1]);
 		return NT_STATUS_OK;
 	}
@@ -410,6 +410,11 @@ void exit_server(const char *reason)
 	exit(0);
 }
 
+void exit_server_cleanly(const char *const reason)
+{
+	exit_server("normal exit");
+}
+
 static int server_fd = -1;
 int last_message = -1;
 
@@ -448,7 +453,7 @@ BOOL reload_services(BOOL test)
 
 	lp_killunused(conn_snum_used);
 	
-	ret = lp_load(dyn_CONFIGFILE, False, False, True);
+	ret = lp_load(dyn_CONFIGFILE, False, False, True, True);
 
 	/* perhaps the config filename is now set */
 	if (!test)

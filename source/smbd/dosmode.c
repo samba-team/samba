@@ -2,6 +2,7 @@
    Unix SMB/CIFS implementation.
    dos mode handling functions
    Copyright (C) Andrew Tridgell 1992-1998
+   Copyright (C) James Peach 2006
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -28,6 +29,31 @@ static int set_sparse_flag(const SMB_STRUCT_STAT * const sbuf)
 	}
 #endif
 	return 0;
+}
+
+/****************************************************************************
+ Work out whether this file is offline
+****************************************************************************/
+
+#ifndef ISDOT
+#define ISDOT(p) (*(p) == '.' && *((p) + 1) == '\0')
+#endif /* ISDOT */
+
+#ifndef ISDOTDOT
+#define ISDOTDOT(p) (*(p) == '.' && *((p) + 1) == '.' && *((p) + 2) == '\0')
+#endif /* ISDOTDOT */
+
+static uint32 set_offline_flag(connection_struct *conn, const char *const path)
+{
+	if (ISDOT(path) || ISDOTDOT(path)) {
+		return 0;
+	}
+
+	if (!lp_dmapi_support(SNUM(conn)) || !dmapi_have_session()) {
+		return 0;
+	}
+
+	return dmapi_file_flags(path);
 }
 
 /****************************************************************************
@@ -196,7 +222,7 @@ static BOOL get_ea_dos_attribute(connection_struct *conn, const char *path,SMB_S
 	sizeret = SMB_VFS_GETXATTR(conn, path, SAMBA_XATTR_DOS_ATTRIB, attrstr, sizeof(attrstr));
 	if (sizeret == -1) {
 #if defined(ENOTSUP) && defined(ENOATTR)
-		if ((errno != ENOTSUP) && (errno != ENOATTR) && (errno != EACCES)) {
+		if ((errno != ENOTSUP) && (errno != ENOATTR) && (errno != EACCES) && (errno != EPERM)) {
 			DEBUG(1,("get_ea_dos_attributes: Cannot get attribute from EA on file %s: Error = %s\n",
 				path, strerror(errno) ));
 			set_store_dos_attributes(SNUM(conn), False);
@@ -323,6 +349,10 @@ uint32 dos_mode(connection_struct *conn, const char *path,SMB_STRUCT_STAT *sbuf)
 		result |= set_sparse_flag(sbuf);
 	} else {
 		result |= dos_mode_from_sbuf(conn, path, sbuf);
+	}
+
+	if (S_ISREG(sbuf->st_mode)) {
+		result |= set_offline_flag(conn, path);
 	}
 
 	/* Optimization : Only call is_hidden_path if it's not already

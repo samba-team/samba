@@ -58,13 +58,14 @@ outfd (or discard it if outfd is NULL).
 int smbrun(const char *cmd, int *outfd)
 {
 	pid_t pid;
-	uid_t uid = current_user.uid;
-	gid_t gid = current_user.gid;
+	uid_t uid = current_user.ut.uid;
+	gid_t gid = current_user.ut.gid;
 	
 	/*
-	 * Lose any kernel oplock capabilities we may have.
+	 * Lose any elevated privileges.
 	 */
-	oplock_set_capability(False, False);
+	drop_effective_capability(KERNEL_OPLOCK_CAPABILITY);
+	drop_effective_capability(DMAPI_ACCESS_CAPABILITY);
 
 	/* point our stdout at the file we want output to go into */
 
@@ -189,14 +190,15 @@ sends the provided secret to the child stdin.
 int smbrunsecret(const char *cmd, const char *secret)
 {
 	pid_t pid;
-	uid_t uid = current_user.uid;
-	gid_t gid = current_user.gid;
+	uid_t uid = current_user.ut.uid;
+	gid_t gid = current_user.ut.gid;
 	int ifd[2];
 	
 	/*
-	 * Lose any kernel oplock capabilities we may have.
+	 * Lose any elevated privileges.
 	 */
-	oplock_set_capability(False, False);
+	drop_effective_capability(KERNEL_OPLOCK_CAPABILITY);
+	drop_effective_capability(DMAPI_ACCESS_CAPABILITY);
 
 	/* build up an input pipe */
 	if(pipe(ifd)) {

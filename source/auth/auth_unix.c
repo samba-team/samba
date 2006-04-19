@@ -30,10 +30,12 @@
  **/
 static BOOL update_smbpassword_file(const char *user, const char *password)
 {
-	SAM_ACCOUNT 	*sampass = NULL;
+	struct samu 	*sampass;
 	BOOL            ret;
 	
-	pdb_init_sam(&sampass);
+	if ( !(sampass = samu_new( NULL )) ) {
+		return False;
+	}
 	
 	become_root();
 	ret = pdb_getsampwnam(sampass, user);
@@ -41,7 +43,7 @@ static BOOL update_smbpassword_file(const char *user, const char *password)
 
 	if(ret == False) {
 		DEBUG(0,("pdb_getsampwnam returned NULL\n"));
-		pdb_free_sam(&sampass);
+		TALLOC_FREE(sampass);
 		return False;
 	}
 
@@ -50,19 +52,19 @@ static BOOL update_smbpassword_file(const char *user, const char *password)
 	 * users password from a login.
 	 */
 	if (!pdb_set_acct_ctrl(sampass, pdb_get_acct_ctrl(sampass) & ~ACB_DISABLED, PDB_CHANGED)) {
-		pdb_free_sam(&sampass);
+		TALLOC_FREE(sampass);
 		return False;
 	}
 
 	if (!pdb_set_plaintext_passwd (sampass, password)) {
-		pdb_free_sam(&sampass);
+		TALLOC_FREE(sampass);
 		return False;
 	}
 
 	/* Now write it into the file. */
 	become_root();
 
-	ret = pdb_update_sam_account (sampass);
+	ret = NT_STATUS_IS_OK(pdb_update_sam_account (sampass));
 
 	unbecome_root();
 
@@ -70,7 +72,7 @@ static BOOL update_smbpassword_file(const char *user, const char *password)
 		DEBUG(3,("pdb_update_sam_account returned %d\n",ret));
 	}
 
-	pdb_free_sam(&sampass);
+	TALLOC_FREE(sampass);
 	return ret;
 }
 
@@ -91,13 +93,13 @@ static NTSTATUS check_unix_security(const struct auth_context *auth_context,
 	struct passwd *pass = NULL;
 
 	become_root();
-	pass = Get_Pwnam(user_info->internal_username.str);
+	pass = Get_Pwnam(user_info->internal_username);
 
 	
 	/** @todo This call assumes a ASCII password, no charset transformation is 
 	    done.  We may need to revisit this **/
 	nt_status = pass_check(pass,
-				pass ? pass->pw_name : user_info->internal_username.str, 
+				pass ? pass->pw_name : user_info->internal_username, 
 				(char *)user_info->plaintext_password.data,
 				user_info->plaintext_password.length-1,
 				lp_update_encrypted() ? 

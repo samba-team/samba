@@ -679,6 +679,68 @@ static BOOL api_samr_connect4(pipes_struct *p)
 	return True;
 }
 
+/*******************************************************************
+ api_samr_chgpasswd_user3
+ ********************************************************************/
+
+static BOOL api_samr_chgpasswd_user3(pipes_struct *p)
+{
+	SAMR_Q_CHGPASSWD_USER3 q_u;
+	SAMR_R_CHGPASSWD_USER3 r_u;
+	prs_struct *data = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
+
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
+
+	/* change password request */
+	if (!samr_io_q_chgpasswd_user3("", &q_u, data, 0)) {
+		DEBUG(0,("api_samr_chgpasswd_user3: Failed to unmarshall SAMR_Q_CHGPASSWD_USER3.\n"));
+		return False;
+	}
+
+	r_u.status = _samr_chgpasswd_user3(p, &q_u, &r_u);
+
+	/* store the response in the SMB stream */
+	if(!samr_io_r_chgpasswd_user3("", &r_u, rdata, 0)) {
+		DEBUG(0,("api_samr_chgpasswd_user3: Failed to marshall SAMR_R_CHGPASSWD_USER3.\n" ));
+		return False;
+	}
+
+	return True;
+}
+
+/*******************************************************************
+ api_samr_connect5
+ ********************************************************************/
+
+static BOOL api_samr_connect5(pipes_struct *p)
+{
+	SAMR_Q_CONNECT5 q_u;
+	SAMR_R_CONNECT5 r_u;
+	prs_struct *data = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
+
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
+
+	/* grab the samr open policy */
+	if(!samr_io_q_connect5("", &q_u, data, 0)) {
+		DEBUG(0,("api_samr_connect5: unable to unmarshall SAMR_Q_CONNECT5.\n"));
+		return False;
+	}
+
+	r_u.status = _samr_connect5(p, &q_u, &r_u);
+
+	/* store the response in the SMB stream */
+	if(!samr_io_r_connect5("", &r_u, rdata, 0)) {
+		DEBUG(0,("api_samr_connect5: unable to marshall SAMR_R_CONNECT5.\n"));
+		return False;
+	}
+
+	return True;
+}
+
 /**********************************************************************
  api_samr_lookup_domain
  **********************************************************************/
@@ -787,7 +849,7 @@ static BOOL api_samr_set_userinfo(pipes_struct *p)
 		/* Fix for W2K SP2 */
 		/* what is that status-code ? - gd */
 		if (q_u.switch_value == 0x1a) {
-			setup_fault_pdu(p, NT_STATUS(0x1c000006));
+			setup_fault_pdu(p, NT_STATUS(DCERPC_FAULT_INVALID_TAG));
 			return True;
 		}
 		return False;
@@ -1492,7 +1554,9 @@ static struct api_struct api_samr_cmds [] =
       {"SAMR_GET_USRDOM_PWINFO" , SAMR_GET_USRDOM_PWINFO, api_samr_get_usrdom_pwinfo},
       {"SAMR_QUERY_DOMAIN_INFO2", SAMR_QUERY_DOMAIN_INFO2, api_samr_query_domain_info2},
       {"SAMR_SET_DOMAIN_INFO"   , SAMR_SET_DOMAIN_INFO  , api_samr_set_dom_info     },
-      {"SAMR_CONNECT4"          , SAMR_CONNECT4         , api_samr_connect4         }
+      {"SAMR_CONNECT4"          , SAMR_CONNECT4         , api_samr_connect4         },
+      {"SAMR_CHGPASSWD_USER3"   , SAMR_CHGPASSWD_USER3  , api_samr_chgpasswd_user3  },
+      {"SAMR_CONNECT5"          , SAMR_CONNECT5         , api_samr_connect5         }
 };
 
 void samr_get_pipe_fns( struct api_struct **fns, int *n_fns )

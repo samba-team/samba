@@ -585,11 +585,11 @@ BOOL cli_resolve_path( const char *mountpt, struct cli_state *rootcli, const cha
 	SMB_STRUCT_STAT sbuf;
 	uint32 attributes;
 	
-	*targetcli = NULL;
-	
 	if ( !rootcli || !path || !targetcli )
 		return False;
 		
+	*targetcli = NULL;
+	
 	/* send a trans2_query_path_info to check for a referral */
 	
 	clean_path( cleanpath, 	path );
@@ -682,11 +682,14 @@ BOOL cli_check_msdfs_proxy( struct cli_state *cli, const char *sharename,
 	CLIENT_DFS_REFERRAL *refs = NULL;
 	size_t num_refs;
 	uint16 consumed;
-	struct cli_state *cli_ipc;
 	pstring fullpath;
+	BOOL res;
+	uint16 cnum;
 	
 	if ( !cli || !sharename )
 		return False;
+
+	cnum = cli->cnum;
 
 	/* special case.  never check for a referral on the IPC$ share */
 
@@ -699,12 +702,19 @@ BOOL cli_check_msdfs_proxy( struct cli_state *cli, const char *sharename,
 
 	/* check for the referral */
 
-	if ( !(cli_ipc = cli_cm_open( cli->desthost, "IPC$", False )) )
+	if (!cli_send_tconX(cli, "IPC$", "IPC", NULL, 0)) {
 		return False;
-	
-	if ( !cli_dfs_get_referral(cli_ipc, fullpath, &refs, &num_refs, &consumed) 
-		|| !num_refs )
-	{
+	}
+
+	res = cli_dfs_get_referral(cli, fullpath, &refs, &num_refs, &consumed);
+
+	if (!cli_tdis(cli)) {
+		return False;
+	}
+
+	cli->cnum = cnum;
+		
+	if (!res || !num_refs ) {
 		return False;
 	}
 	

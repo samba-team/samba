@@ -212,17 +212,8 @@ int cac_Connect(CacServerHandle *hnd, const char *srv) {
 
 
 void cac_FreeHandle(CacServerHandle * hnd) {
-   SMBCSRV *srv = NULL;
-
    if(!hnd)
       return;
-
-
-   if(srv) {
-      /*close all pipe sessions*/
-      cli_nt_pipes_close(&(srv->cli));
-   }
-
 
    /*only free the context if we created it*/
    if(!hnd->_internal.user_supplied_ctx) {

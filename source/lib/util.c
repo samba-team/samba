@@ -5,7 +5,8 @@
    Copyright (C) Jeremy Allison 2001-2002
    Copyright (C) Simo Sorce 2001
    Copyright (C) Jim McDonough <jmcd@us.ibm.com> 2003
-   
+   Copyright (C) James Peach 2006
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 2 of the License, or
@@ -179,6 +180,31 @@ static BOOL set_my_netbios_names(const char *name, int i)
 	return True;
 }
 
+/***********************************************************************
+ Free memory allocated to global objects
+***********************************************************************/
+
+void gfree_names(void)
+{
+	SAFE_FREE( smb_myname );
+	SAFE_FREE( smb_myworkgroup );
+	SAFE_FREE( smb_scope );
+	free_netbios_names_array();
+}
+
+void gfree_all( void )
+{
+	gfree_names();	
+	gfree_loadparm();
+	gfree_case_tables();
+	gfree_debugsyms();
+	gfree_charcnv();
+	gfree_messsges();
+
+	/* release the talloc null_context memory last */
+	talloc_nc_free();
+}
+
 const char *my_netbios_names(int i)
 {
 	return smb_my_netbios_names[i];
@@ -291,13 +317,15 @@ void add_gid_to_array_unique(TALLOC_CTX *mem_ctx, gid_t gid,
 			return;
 	}
 
-	if (mem_ctx != NULL)
+	if (mem_ctx != NULL) {
 		*gids = TALLOC_REALLOC_ARRAY(mem_ctx, *gids, gid_t, *num_gids+1);
-	else
+	} else {
 		*gids = SMB_REALLOC_ARRAY(*gids, gid_t, *num_gids+1);
+	}
 
-	if (*gids == NULL)
+	if (*gids == NULL) {
 		return;
+	}
 
 	(*gids)[*num_gids] = gid;
 	*num_gids += 1;
@@ -342,14 +370,10 @@ const char *get_numlist(const char *p, uint32 **num, int *count)
 	(*num  ) = NULL;
 
 	while ((p = Atoic(p, &val, ":,")) != NULL && (*p) != ':') {
-		uint32 *tn;
-		
-		tn = SMB_REALLOC_ARRAY((*num), uint32, (*count)+1);
-		if (tn == NULL) {
-			SAFE_FREE(*num);
+		*num = SMB_REALLOC_ARRAY((*num), uint32, (*count)+1);
+		if (!(*num)) {
 			return NULL;
-		} else
-			(*num) = tn;
+		}
 		(*num)[(*count)] = val;
 		(*count)++;
 		p++;
@@ -506,8 +530,9 @@ void smb_setlen(char *buf,int len)
 
 int set_message(char *buf,int num_words,int num_bytes,BOOL zero)
 {
-	if (zero)
+	if (zero && (num_words || num_bytes)) {
 		memset(buf + smb_size,'\0',num_words*2 + num_bytes);
+	}
 	SCVAL(buf,smb_wct,num_words);
 	SSVAL(buf,smb_vwv + num_words*SIZEOFWORD,num_bytes);  
 	smb_setlen(buf,smb_size + num_words*2 + num_bytes - 4);
@@ -825,7 +850,7 @@ void smb_msleep(unsigned int t)
  Become a daemon, discarding the controlling terminal.
 ****************************************************************************/
 
-void become_daemon(BOOL Fork)
+void become_daemon(BOOL Fork, BOOL no_process_group)
 {
 	if (Fork) {
 		if (sys_fork()) {
@@ -835,9 +860,9 @@ void become_daemon(BOOL Fork)
 
   /* detach from the terminal */
 #ifdef HAVE_SETSID
-	setsid();
+	if (!no_process_group) setsid();
 #elif defined(TIOCNOTTY)
-	{
+	if (!no_process_group) {
 		int i = sys_open("/dev/tty", O_RDWR, 0);
 		if (i != -1) {
 			ioctl(i, (int) TIOCNOTTY, (char *)0);      
@@ -941,32 +966,68 @@ void *calloc_array(size_t size, size_t nmemb)
 
 /****************************************************************************
  Expand a pointer to be a particular size.
+ Note that this version of Realloc has an extra parameter that decides
+ whether to free the passed in storage on allocation failure or if the
+ new size is zero.
+
+ This is designed for use in the typical idiom of :
+
+ p = SMB_REALLOC(p, size)
+ if (!p) {
+    return error;
+ }
+
+ and not to have to keep track of the old 'p' contents to free later, nor
+ to worry if the size parameter was zero. In the case where NULL is returned
+ we guarentee that p has been freed.
+
+ If free later semantics are desired, then pass 'free_old_on_error' as False which
+ guarentees that the old contents are not freed on error, even if size == 0. To use
+ this idiom use :
+
+ tmp = SMB_REALLOC_KEEP_OLD_ON_ERROR(p, size);
+ if (!tmp) {
+    SAFE_FREE(p);
+    return error;
+ } else {
+    p = tmp;
+ }
+
+ Changes were instigated by Coverity error checking. JRA.
 ****************************************************************************/
 
-void *Realloc(void *p,size_t size)
+void *Realloc(void *p, size_t size, BOOL free_old_on_error)
 {
 	void *ret=NULL;
 
 	if (size == 0) {
-		SAFE_FREE(p);
-		DEBUG(5,("Realloc asked for 0 bytes\n"));
+		if (free_old_on_error) {
+			SAFE_FREE(p);
+		}
+		DEBUG(2,("Realloc asked for 0 bytes\n"));
 		return NULL;
 	}
 
 #if defined(PARANOID_MALLOC_CHECKER)
-	if (!p)
+	if (!p) {
 		ret = (void *)malloc_(size);
-	else
+	} else {
 		ret = (void *)realloc_(p,size);
+	}
 #else
-	if (!p)
+	if (!p) {
 		ret = (void *)malloc(size);
-	else
+	} else {
 		ret = (void *)realloc(p,size);
+	}
 #endif
 
-	if (!ret)
+	if (!ret) {
+		if (free_old_on_error && p) {
+			SAFE_FREE(p);
+		}
 		DEBUG(0,("Memory allocation error: failed to expand to %d bytes\n",(int)size));
+	}
 
 	return(ret);
 }
@@ -975,23 +1036,28 @@ void *Realloc(void *p,size_t size)
  Type-safe realloc.
 ****************************************************************************/
 
-void *realloc_array(void *p,size_t el_size, unsigned int count)
+void *realloc_array(void *p, size_t el_size, unsigned int count, BOOL free_old_on_error)
 {
 	if (count >= MAX_ALLOC_SIZE/el_size) {
+		if (free_old_on_error) {
+			SAFE_FREE(p);
+		}
 		return NULL;
 	}
-	return Realloc(p,el_size*count);
+	return Realloc(p, el_size*count, free_old_on_error);
 }
 
 /****************************************************************************
- (Hopefully) efficient array append
+ (Hopefully) efficient array append.
 ****************************************************************************/
+
 void add_to_large_array(TALLOC_CTX *mem_ctx, size_t element_size,
 			void *element, void **array, uint32 *num_elements,
 			ssize_t *array_size)
 {
-	if (*array_size < 0)
+	if (*array_size < 0) {
 		return;
+	}
 
 	if (*array == NULL) {
 		if (*array_size == 0) {
@@ -1002,13 +1068,15 @@ void add_to_large_array(TALLOC_CTX *mem_ctx, size_t element_size,
 			goto error;
 		}
 
-		if (mem_ctx != NULL)
+		if (mem_ctx != NULL) {
 			*array = TALLOC(mem_ctx, element_size * (*array_size));
-		else
+		} else {
 			*array = SMB_MALLOC(element_size * (*array_size));
+		}
 
-		if (*array == NULL)
+		if (*array == NULL) {
 			goto error;
+		}
 	}
 
 	if (*num_elements == *array_size) {
@@ -1018,15 +1086,17 @@ void add_to_large_array(TALLOC_CTX *mem_ctx, size_t element_size,
 			goto error;
 		}
 
-		if (mem_ctx != NULL)
+		if (mem_ctx != NULL) {
 			*array = TALLOC_REALLOC(mem_ctx, *array,
 						element_size * (*array_size));
-		else
+		} else {
 			*array = SMB_REALLOC(*array,
 					     element_size * (*array_size));
+		}
 
-		if (*array == NULL)
+		if (*array == NULL) {
 			goto error;
+		}
 	}
 
 	memcpy((char *)(*array) + element_size*(*num_elements),
@@ -1427,10 +1497,10 @@ const char *uidtoname(uid_t uid)
 	static fstring name;
 	struct passwd *pass;
 
-	pass = getpwuid_alloc(uid);
+	pass = getpwuid_alloc(NULL, uid);
 	if (pass) {
 		fstrcpy(name, pass->pw_name);
-		passwd_free(&pass);
+		TALLOC_FREE(pass);
 	} else {
 		slprintf(name, sizeof(name) - 1, "%ld",(long int)uid);
 	}
@@ -1464,10 +1534,10 @@ uid_t nametouid(const char *name)
 	char *p;
 	uid_t u;
 
-	pass = getpwnam_alloc(name);
+	pass = getpwnam_alloc(NULL, name);
 	if (pass) {
 		u = pass->pw_uid;
-		passwd_free(&pass);
+		TALLOC_FREE(pass);
 		return u;
 	}
 
@@ -1499,30 +1569,13 @@ gid_t nametogid(const char *name)
 }
 
 /*******************************************************************
- legacy wrapper for smb_panic2()
-********************************************************************/
-void smb_panic( const char *why )
-{
-	smb_panic2( why, True );
-}
-
-/*******************************************************************
  Something really nasty happened - panic !
 ********************************************************************/
 
-#ifdef HAVE_LIBEXC_H
-#include <libexc.h>
-#endif
-
-void smb_panic2(const char *why, BOOL decrement_pid_count )
+void smb_panic(const char *const why)
 {
 	char *cmd;
 	int result;
-#ifdef HAVE_BACKTRACE_SYMBOLS
-	void *backtrace_stack[BACKTRACE_STACK_SIZE];
-	size_t backtrace_size;
-	char **backtrace_strings;
-#endif
 
 #ifdef DEVELOPER
 	{
@@ -1535,9 +1588,12 @@ void smb_panic2(const char *why, BOOL decrement_pid_count )
 	}
 #endif
 
+	DEBUG(0,("PANIC (pid %llu): %s\n",
+		    (unsigned long long)sys_getpid(), why));
+	log_stack_trace();
+
 	/* only smbd needs to decrement the smbd counter in connections.tdb */
-	if ( decrement_pid_count )
-		decrement_smbd_process_count();
+	decrement_smbd_process_count();
 
 	cmd = lp_panic_action();
 	if (cmd && *cmd) {
@@ -1551,9 +1607,90 @@ void smb_panic2(const char *why, BOOL decrement_pid_count )
 			DEBUG(0, ("smb_panic(): action returned status %d\n",
 					  WEXITSTATUS(result)));
 	}
-	DEBUG(0,("PANIC: %s\n", why));
 
-#ifdef HAVE_BACKTRACE_SYMBOLS
+	dump_core();
+}
+
+/*******************************************************************
+ Print a backtrace of the stack to the debug log. This function
+ DELIBERATELY LEAKS MEMORY. The expectation is that you should
+ exit shortly after calling it.
+********************************************************************/
+
+#ifdef HAVE_LIBUNWIND_H
+#include <libunwind.h>
+#endif
+
+#ifdef HAVE_EXECINFO_H
+#include <execinfo.h>
+#endif
+
+#ifdef HAVE_LIBEXC_H
+#include <libexc.h>
+#endif
+
+void log_stack_trace(void)
+{
+#ifdef HAVE_LIBUNWIND
+	/* Try to use libunwind before any other technique since on ia64
+	 * libunwind correctly walks the stack in more circumstances than
+	 * backtrace.
+	 */ 
+	unw_cursor_t cursor;
+	unw_context_t uc;
+	unsigned i = 0;
+
+	char procname[256];
+	unw_word_t ip, sp, off;
+
+	procname[sizeof(procname) - 1] = '\0';
+
+	if (unw_getcontext(&uc) != 0) {
+		goto libunwind_failed;
+	}
+
+	if (unw_init_local(&cursor, &uc) != 0) {
+		goto libunwind_failed;
+	}
+
+	DEBUG(0, ("BACKTRACE:\n"));
+
+	do {
+	    ip = sp = 0;
+	    unw_get_reg(&cursor, UNW_REG_IP, &ip);
+	    unw_get_reg(&cursor, UNW_REG_SP, &sp);
+
+	    switch (unw_get_proc_name(&cursor,
+			procname, sizeof(procname) - 1, &off) ) {
+	    case 0:
+		    /* Name found. */
+	    case -UNW_ENOMEM:
+		    /* Name truncated. */
+		    DEBUGADD(0, (" #%u %s + %#llx [ip=%#llx] [sp=%#llx]\n",
+			    i, procname, (long long)off,
+			    (long long)ip, (long long) sp));
+		    break;
+	    default:
+	    /* case -UNW_ENOINFO: */
+	    /* case -UNW_EUNSPEC: */
+		    /* No symbol name found. */
+		    DEBUGADD(0, (" #%u %s [ip=%#llx] [sp=%#llx]\n",
+			    i, "<unknown symbol>",
+			    (long long)ip, (long long) sp));
+	    }
+	    ++i;
+	} while (unw_step(&cursor) > 0);
+
+	return;
+
+libunwind_failed:
+	DEBUG(0, ("unable to produce a stack trace with libunwind\n"));
+
+#elif HAVE_BACKTRACE_SYMBOLS
+	void *backtrace_stack[BACKTRACE_STACK_SIZE];
+	size_t backtrace_size;
+	char **backtrace_strings;
+
 	/* get the backtrace (stack frames) */
 	backtrace_size = backtrace(backtrace_stack,BACKTRACE_STACK_SIZE);
 	backtrace_strings = backtrace_symbols(backtrace_stack, backtrace_size);
@@ -1572,52 +1709,45 @@ void smb_panic2(const char *why, BOOL decrement_pid_count )
 
 #elif HAVE_LIBEXC
 
-#define NAMESIZE 32 /* Arbitrary */
-
 	/* The IRIX libexc library provides an API for unwinding the stack. See
 	 * libexc(3) for details. Apparantly trace_back_stack leaks memory, but
 	 * since we are about to abort anyway, it hardly matters.
-	 *
-	 * Note that if we paniced due to a SIGSEGV or SIGBUS (or similar) this
-	 * will fail with a nasty message upon failing to open the /proc entry.
 	 */
-	{
-		__uint64_t	addrs[BACKTRACE_STACK_SIZE];
-		char *      	names[BACKTRACE_STACK_SIZE];
-		char		namebuf[BACKTRACE_STACK_SIZE * NAMESIZE];
 
-		int		i;
-		int		levels;
+#define NAMESIZE 32 /* Arbitrary */
 
-		ZERO_ARRAY(addrs);
-		ZERO_ARRAY(names);
-		ZERO_ARRAY(namebuf);
+	__uint64_t	addrs[BACKTRACE_STACK_SIZE];
+	char *      	names[BACKTRACE_STACK_SIZE];
+	char		namebuf[BACKTRACE_STACK_SIZE * NAMESIZE];
 
-		/* We need to be root so we can open our /proc entry to walk
-		 * our stack. It also helps when we want to dump core.
-		 */
-		become_root();
+	int		i;
+	int		levels;
 
-		for (i = 0; i < BACKTRACE_STACK_SIZE; i++) {
-			names[i] = namebuf + (i * NAMESIZE);
-		}
+	ZERO_ARRAY(addrs);
+	ZERO_ARRAY(names);
+	ZERO_ARRAY(namebuf);
 
-		levels = trace_back_stack(0, addrs, names,
-				BACKTRACE_STACK_SIZE, NAMESIZE - 1);
+	/* We need to be root so we can open our /proc entry to walk
+	 * our stack. It also helps when we want to dump core.
+	 */
+	become_root();
 
-		DEBUG(0, ("BACKTRACE: %d stack frames:\n", levels));
-		for (i = 0; i < levels; i++) {
-			DEBUGADD(0, (" #%d 0x%llx %s\n", i, addrs[i], names[i]));
-		}
-     }
+	for (i = 0; i < BACKTRACE_STACK_SIZE; i++) {
+		names[i] = namebuf + (i * NAMESIZE);
+	}
+
+	levels = trace_back_stack(0, addrs, names,
+			BACKTRACE_STACK_SIZE, NAMESIZE - 1);
+
+	DEBUG(0, ("BACKTRACE: %d stack frames:\n", levels));
+	for (i = 0; i < levels; i++) {
+		DEBUGADD(0, (" #%d 0x%llx %s\n", i, addrs[i], names[i]));
+	}
 #undef NAMESIZE
-#endif
 
-	dbgflush();
-#ifdef SIGABRT
-	CatchSignal(SIGABRT,SIGNAL_CAST SIG_DFL);
+#else
+	DEBUG(0, ("unable to produce a stack trace on this platform\n"));
 #endif
-	abort();
 }
 
 /*******************************************************************
@@ -1643,7 +1773,7 @@ const char *readdirname(SMB_STRUCT_DIR *p)
 		return(NULL);
 #endif
 
-#ifdef HAVE_BROKEN_READDIR
+#ifdef HAVE_BROKEN_READDIR_NAME
 	/* using /usr/ucb/cc is BAD */
 	dname = dname - 2;
 #endif
@@ -1810,6 +1940,7 @@ void free_namearray(name_compare_entry *name_array)
 /****************************************************************************
  Simple routine to do POSIX file locking. Cruft in NFS and 64->32 bit mapping
  is dealt with in posix.c
+ Returns True if the lock was granted, False otherwise.
 ****************************************************************************/
 
 BOOL fcntl_lock(int fd, int op, SMB_OFF_T offset, SMB_OFF_T count, int type)
@@ -1827,34 +1958,54 @@ BOOL fcntl_lock(int fd, int op, SMB_OFF_T offset, SMB_OFF_T count, int type)
 
 	ret = sys_fcntl_ptr(fd,op,&lock);
 
-	if (ret == -1 && errno != 0)
-		DEBUG(3,("fcntl_lock: fcntl lock gave errno %d (%s)\n",errno,strerror(errno)));
-
-	/* a lock query */
-	if (op == SMB_F_GETLK) {
-		if ((ret != -1) &&
-				(lock.l_type != F_UNLCK) && 
-				(lock.l_pid != 0) && 
-				(lock.l_pid != sys_getpid())) {
-			DEBUG(3,("fcntl_lock: fd %d is locked by pid %d\n",fd,(int)lock.l_pid));
-			return(True);
-		}
-
-		/* it must be not locked or locked by me */
-		return(False);
-	}
-
-	/* a lock set or unset */
 	if (ret == -1) {
 		DEBUG(3,("fcntl_lock: lock failed at offset %.0f count %.0f op %d type %d (%s)\n",
 			(double)offset,(double)count,op,type,strerror(errno)));
-		return(False);
+		return False;
 	}
 
 	/* everything went OK */
 	DEBUG(8,("fcntl_lock: Lock call successful\n"));
 
-	return(True);
+	return True;
+}
+
+/****************************************************************************
+ Simple routine to query existing file locks. Cruft in NFS and 64->32 bit mapping
+ is dealt with in posix.c
+ Returns True if we have information regarding this lock region (and returns
+ F_UNLCK in *ptype if the region is unlocked). False if the call failed.
+****************************************************************************/
+
+BOOL fcntl_getlock(int fd, SMB_OFF_T *poffset, SMB_OFF_T *pcount, int *ptype, pid_t *ppid)
+{
+	SMB_STRUCT_FLOCK lock;
+	int ret;
+
+	DEBUG(8,("fcntl_getlock %d %.0f %.0f %d\n",fd,(double)*poffset,(double)*pcount,*ptype));
+
+	lock.l_type = *ptype;
+	lock.l_whence = SEEK_SET;
+	lock.l_start = *poffset;
+	lock.l_len = *pcount;
+	lock.l_pid = 0;
+
+	ret = sys_fcntl_ptr(fd,SMB_F_GETLK,&lock);
+
+	if (ret == -1) {
+		DEBUG(3,("fcntl_getlock: lock request failed at offset %.0f count %.0f type %d (%s)\n",
+			(double)*poffset,(double)*pcount,*ptype,strerror(errno)));
+		return False;
+	}
+
+	*ptype = lock.l_type;
+	*poffset = lock.l_start;
+	*pcount = lock.l_len;
+	*ppid = lock.l_pid;
+	
+	DEBUG(3,("fcntl_getlock: fd %d is returned info %d pid %u\n",
+			fd, (int)lock.l_type, (unsigned int)lock.l_pid));
+	return True;
 }
 
 #undef DBGC_CLASS

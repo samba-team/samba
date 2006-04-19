@@ -154,8 +154,9 @@ find_again:
 }
 
 /****************************************************************************
-close all conn structures
+ Close all conn structures.
 ****************************************************************************/
+
 void conn_close_all(void)
 {
 	connection_struct *conn, *next;
@@ -178,13 +179,20 @@ BOOL conn_idle_all(time_t t, int deadtime)
 
 	for (conn=Connections;conn;conn=next) {
 		next=conn->next;
-		/* close dirptrs on connections that are idle */
-		if ((t-conn->lastused) > DPTR_IDLE_TIMEOUT)
-			dptr_idlecnum(conn);
 
-		if (conn->num_files_open > 0 || 
-		    (t-conn->lastused)<deadtime)
+		/* Update if connection wasn't idle. */
+		if (conn->lastused != conn->lastused_count) {
+			conn->lastused = t;
+		}
+
+		/* close dirptrs on connections that are idle */
+		if ((t-conn->lastused) > DPTR_IDLE_TIMEOUT) {
+			dptr_idlecnum(conn);
+		}
+
+		if (conn->num_files_open > 0 || (t-conn->lastused)<deadtime) {
 			allidle = False;
+		}
 	}
 
 	/*
@@ -249,7 +257,7 @@ void conn_free_internal(connection_struct *conn)
 	}
 
 	if (conn->nt_user_token) {
-		delete_nt_token(&(conn->nt_user_token));
+		TALLOC_FREE(conn->nt_user_token);
 	}
 
 	free_namearray(conn->veto_list);

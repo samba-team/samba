@@ -69,10 +69,13 @@
 #define MSG_SMB_OPEN_RETRY   3009
 #define MSG_SMB_KERNEL_BREAK 3010
 #define MSG_SMB_FILE_RENAME  3011
+#define MSG_SMB_INJECT_FAULT 3012
 
 /* winbind messages */
 #define MSG_WINBIND_FINISHED     4001
 #define MSG_WINBIND_FORGET_STATE 4002
+#define MSG_WINBIND_ONLINE       4003
+#define MSG_WINBIND_OFFLINE      4004
 
 /* Flags to classify messages - used in message_send_all() */
 /* Sender will filter by flag. */

@@ -21,14 +21,18 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+/* work around broken krb5.h on sles9 */
+#ifdef SIZEOF_LONG
+#undef SIZEOF_LONG
+#endif
+
 #ifndef NO_CONFIG_H /* for some tests */
 #include "config.h"
 #endif
 
 #ifndef __cplusplus
 #define class #error DONT_USE_CPLUSPLUS_RESERVED_NAMES
-/* allow to build with newer heimdal releases */
-/* #define private #error DONT_USE_CPLUSPLUS_RESERVED_NAMES */
+#define private #error DONT_USE_CPLUSPLUS_RESERVED_NAMES
 #define public #error DONT_USE_CPLUSPLUS_RESERVED_NAMES
 #define protected #error DONT_USE_CPLUSPLUS_RESERVED_NAMES
 #define template #error DONT_USE_CPLUSPLUS_RESERVED_NAMES
@@ -359,28 +363,6 @@
 #include <poll.h>
 #endif
 
-#ifdef HAVE_EXECINFO_H
-#include <execinfo.h>
-#endif
-
-#ifdef HAVE_SYS_CAPABILITY_H
-
-#if defined(BROKEN_REDHAT_7_SYSTEM_HEADERS) && !defined(_I386_STATFS_H) && !defined(_PPC_STATFS_H)
-#define _I386_STATFS_H
-#define _PPC_STATFS_H
-#define BROKEN_REDHAT_7_STATFS_WORKAROUND
-#endif
-
-#include <sys/capability.h>
-
-#ifdef BROKEN_REDHAT_7_STATFS_WORKAROUND
-#undef _I386_STATFS_H
-#undef _PPC_STATFS_H
-#undef BROKEN_REDHAT_7_STATFS_WORKAROUND
-#endif
-
-#endif
-
 #if defined(HAVE_RPC_RPC_H)
 /*
  * Check for AUTH_ERROR define conflict with rpc/rpc.h in prot.h.
@@ -471,6 +453,16 @@
 #ifndef LDAP_OPT_SUCCESS
 #define LDAP_OPT_SUCCESS 0
 #endif
+/* Solaris 8 and maybe other LDAP implementations spell this "..._INPROGRESS": */
+#if defined(LDAP_SASL_BIND_INPROGRESS) && !defined(LDAP_SASL_BIND_IN_PROGRESS)
+#define LDAP_SASL_BIND_IN_PROGRESS LDAP_SASL_BIND_INPROGRESS
+#endif
+/* Solaris 8 defines SSL_LDAP_PORT, not LDAPS_PORT and it only does so if
+   LDAP_SSL is defined - but SSL is not working. We just want the
+   port number! Let's just define LDAPS_PORT correct. */
+#if !defined(LDAPS_PORT)
+#define LDAPS_PORT 636
+#endif
 #else
 #undef HAVE_LDAP
 #endif
@@ -496,6 +488,10 @@
 #include <attr/xattr.h>
 #elif HAVE_SYS_XATTR_H
 #include <sys/xattr.h>
+#endif
+
+#ifdef HAVE_SYS_EA_H
+#include <sys/ea.h>
 #endif
 
 #ifdef HAVE_SYS_EXTATTR_H
@@ -646,6 +642,19 @@ typedef int socklen_t;
 #define uint32 unsigned
 #endif
 #endif
+
+/*
+ * check for 8 byte long long
+ */
+
+#if !defined(uint64)
+#if (SIZEOF_LONG == 8)
+#define uint64 unsigned long
+#elif (SIZEOF_LONG_LONG == 8)
+#define uint64 unsigned long long
+#endif	/* don't lie.  If we don't have it, then don't use it */
+#endif
+
 
 /*
  * Types for devices, inodes and offsets.
@@ -882,8 +891,6 @@ extern int errno;
 /* Lists, trees, caching, database... */
 #include "xfile.h"
 #include "intl.h"
-#include "ubi_sLinkList.h"
-#include "ubi_dLinkList.h"
 #include "dlinklist.h"
 #include "tdb/tdb.h"
 #include "tdb/spinlock.h"
@@ -905,10 +912,6 @@ extern int errno;
 #include "dynconfig.h"
 
 #include "util_getent.h"
-
-#ifndef UBI_BINTREE_H
-#include "ubi_Cache.h"
-#endif /* UBI_BINTREE_H */
 
 #include "debugparse.h"
 
@@ -997,6 +1000,8 @@ extern int errno;
 
 #include "rpc_client.h"
 
+#include "event.h"
+
 /*
  * Type for wide character dirent structure.
  * Only d_name is defined by POSIX.
@@ -1026,6 +1031,11 @@ struct functable {
 	int (*fn)(int argc, const char **argv);
 };
 
+struct functable2 {
+	const char *funcname;
+	int (*fn)(int argc, const char **argv);
+	const char *helptext;
+};
 
 /* Defines for wisXXX functions. */
 #define UNI_UPPER    0x1
@@ -1516,8 +1526,12 @@ BOOL smb_krb5_principal_compare_any_realm(krb5_context context,
 					  krb5_const_principal princ1, 
 					  krb5_const_principal princ2);
 int cli_krb5_get_ticket(const char *principal, time_t time_offset, 
-			DATA_BLOB *ticket, DATA_BLOB *session_key_krb5, uint32 extra_ap_opts);
+			DATA_BLOB *ticket, DATA_BLOB *session_key_krb5, uint32 extra_ap_opts, const char *ccname);
 PAC_LOGON_INFO *get_logon_info_from_pac(PAC_DATA *pac_data);
+krb5_error_code smb_krb5_renew_ticket(const char *ccache_string, const char *client_string, const char *service_string, time_t *new_start_time);
+krb5_error_code kpasswd_err_to_krb5_err(krb5_error_code res_code);
+NTSTATUS krb5_to_nt_status(krb5_error_code kerberos_error);
+krb5_error_code nt_status_to_krb5(NTSTATUS nt_status);
 #endif /* HAVE_KRB5 */
 
 
@@ -1552,5 +1566,19 @@ LDAP *ldap_open_with_timeout(const char *server, int port, unsigned int to);
 
 #define CONST_DISCARD(type, ptr)      ((type) ((void *) (ptr)))
 #define CONST_ADD(type, ptr)          ((type) ((const void *) (ptr)))
+
+#ifndef NORETURN_ATTRIBUTE
+#if (__GNUC__ >= 3)
+#define NORETURN_ATTRIBUTE __attribute__ ((noreturn))
+#else
+#define NORETURN_ATTRIBUTE
+#endif
+#endif
+
+void smb_panic( const char *why ) NORETURN_ATTRIBUTE ;
+void dump_core(void) NORETURN_ATTRIBUTE ;
+void exit_server(const char *const reason) NORETURN_ATTRIBUTE ;
+void exit_server_cleanly(const char *const reason) NORETURN_ATTRIBUTE ;
+void exit_server_fault(void) NORETURN_ATTRIBUTE ;
 
 #endif /* _INCLUDES_H */

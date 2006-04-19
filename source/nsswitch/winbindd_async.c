@@ -4,6 +4,7 @@
    Async helpers for blocking functions
 
    Copyright (C) Volker Lendecke 2005
+   Copyright (C) Volker Lendecke 2006
    
    The helpers always consist of three functions: 
 
@@ -364,6 +365,10 @@ void idmap_sid2gid_async(TALLOC_CTX *mem_ctx, const DOM_SID *sid, BOOL alloc,
 	ZERO_STRUCT(request);
 	request.cmd = WINBINDD_DUAL_SID2GID;
 	sid_to_string(request.data.dual_sid2id.sid, sid);
+
+	DEBUG(7,("idmap_sid2gid_async: Resolving %s to a gid\n", 
+		request.data.dual_sid2id.sid));
+
 	request.data.dual_sid2id.alloc = alloc;
 	do_async(mem_ctx, idmap_child(), &request, idmap_sid2gid_recv,
 		 cont, private_data);
@@ -390,6 +395,15 @@ enum winbindd_result winbindd_dual_sid2gid(struct winbindd_domain *domain,
 	result = idmap_sid_to_gid(&sid, &(state->response.data.gid),
 				  state->request.data.dual_sid2id.alloc ?
 				  0 : ID_QUERY_ONLY);
+
+	/* If the lookup failed, the perhaps we need to look 
+	   at the passdb for local groups */
+
+	if ( !NT_STATUS_IS_OK(result) ) {
+		if ( sid_to_gid( &sid, &(state->response.data.gid) ) ) {
+			result = NT_STATUS_OK;
+		}
+	}
 
 	return NT_STATUS_IS_OK(result) ? WINBINDD_OK : WINBINDD_ERROR;
 }
@@ -819,7 +833,7 @@ static void getsidaliases_recv(TALLOC_CTX *mem_ctx, BOOL success,
 		return;
 	}
 
-	aliases_str = response->extra_data;
+	aliases_str = response->extra_data.data;
 
 	if (aliases_str == NULL) {
 		DEBUG(10, ("getsidaliases return 0 SIDs\n"));
@@ -833,7 +847,7 @@ static void getsidaliases_recv(TALLOC_CTX *mem_ctx, BOOL success,
 		return;
 	}
 
-	SAFE_FREE(response->extra_data);
+	SAFE_FREE(response->extra_data.data);
 
 	cont(private_data, True, sids, num_sids);
 }
@@ -864,7 +878,7 @@ void winbindd_getsidaliases_async(struct winbindd_domain *domain,
 	ZERO_STRUCT(request);
 	request.cmd = WINBINDD_DUAL_GETSIDALIASES;
 	request.extra_len = len;
-	request.extra_data = sidstr;
+	request.extra_data.data = sidstr;
 
 	do_async_domain(mem_ctx, domain, &request, getsidaliases_recv,
 			cont, private_data);
@@ -884,7 +898,7 @@ enum winbindd_result winbindd_dual_getsidaliases(struct winbindd_domain *domain,
 
 	DEBUG(3, ("[%5lu]: getsidaliases\n", (unsigned long)state->pid));
 
-	sidstr = state->request.extra_data;
+	sidstr = state->request.extra_data.data;
 	if (sidstr == NULL)
 		sidstr = talloc_strdup(state->mem_ctx, "\n"); /* No SID */
 
@@ -924,14 +938,14 @@ enum winbindd_result winbindd_dual_getsidaliases(struct winbindd_domain *domain,
 	}
 
 	if (!print_sidlist(NULL, sids, num_sids,
-			   (char **)&state->response.extra_data, &len)) {
+			   (char **)&state->response.extra_data.data, &len)) {
 		DEBUG(0, ("Could not print_sidlist\n"));
 		return WINBINDD_ERROR;
 	}
 
-	if (state->response.extra_data != NULL) {
+	if (state->response.extra_data.data != NULL) {
 		DEBUG(10, ("aliases_list: %s\n",
-			   (char *)state->response.extra_data));
+			   (char *)state->response.extra_data.data));
 		state->response.length += len+1;
 	}
 	
@@ -942,6 +956,7 @@ struct gettoken_state {
 	TALLOC_CTX *mem_ctx;
 	DOM_SID user_sid;
 	struct winbindd_domain *alias_domain;
+	struct winbindd_domain *local_alias_domain;
 	struct winbindd_domain *builtin_domain;
 	DOM_SID *sids;
 	size_t num_sids;
@@ -976,6 +991,7 @@ void winbindd_gettoken_async(TALLOC_CTX *mem_ctx, const DOM_SID *user_sid,
 	state->mem_ctx = mem_ctx;
 	sid_copy(&state->user_sid, user_sid);
 	state->alias_domain = find_our_domain();
+	state->local_alias_domain = find_domain_from_name( get_global_sam_name() );
 	state->builtin_domain = find_builtin_domain();
 	state->cont = cont;
 	state->private_data = private_data;
@@ -1010,12 +1026,17 @@ static void gettoken_recvdomgroups(TALLOC_CTX *mem_ctx, BOOL success,
 		return;
 	}
 
-	sids_str = response->extra_data;
+	sids_str = response->extra_data.data;
 
 	if (sids_str == NULL) {
-		DEBUG(10, ("Received no domain groups\n"));
-		state->cont(state->private_data, True, NULL, 0);
-		return;
+		/* This could be normal if we are dealing with a
+		   local user and local groups */
+
+		if ( !sid_check_is_in_our_domain( &state->user_sid ) ) {
+			DEBUG(10, ("Received no domain groups\n"));
+			state->cont(state->private_data, True, NULL, 0);
+			return;
+		}
 	}
 
 	state->sids = NULL;
@@ -1024,14 +1045,14 @@ static void gettoken_recvdomgroups(TALLOC_CTX *mem_ctx, BOOL success,
 	add_sid_to_array(mem_ctx, &state->user_sid, &state->sids,
 			 &state->num_sids);
 
-	if (!parse_sidlist(mem_ctx, sids_str, &state->sids,
+	if (sids_str && !parse_sidlist(mem_ctx, sids_str, &state->sids,
 			   &state->num_sids)) {
 		DEBUG(0, ("Could not parse sids\n"));
 		state->cont(state->private_data, False, NULL, 0);
 		return;
 	}
 
-	SAFE_FREE(response->extra_data);
+	SAFE_FREE(response->extra_data.data);
 
 	if (state->alias_domain == NULL) {
 		DEBUG(10, ("Don't expand domain local groups\n"));
@@ -1062,9 +1083,19 @@ static void gettoken_recvaliases(void *private_data, BOOL success,
 		add_sid_to_array(state->mem_ctx, &aliases[i],
 				 &state->sids, &state->num_sids);
 
+	if (state->local_alias_domain != NULL) {
+		struct winbindd_domain *local_domain = state->local_alias_domain;
+		DEBUG(10, ("Expanding our own local groups\n"));
+		state->local_alias_domain = NULL;
+		winbindd_getsidaliases_async(local_domain, state->mem_ctx,
+					     state->sids, state->num_sids,
+					     gettoken_recvaliases, state);
+		return;
+	}
+
 	if (state->builtin_domain != NULL) {
 		struct winbindd_domain *builtin_domain = state->builtin_domain;
-		DEBUG(10, ("Expanding our own local groups\n"));
+		DEBUG(10, ("Expanding our own BUILTIN groups\n"));
 		state->builtin_domain = NULL;
 		winbindd_getsidaliases_async(builtin_domain, state->mem_ctx,
 					     state->sids, state->num_sids,

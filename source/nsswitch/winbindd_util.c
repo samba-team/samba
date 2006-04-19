@@ -61,8 +61,9 @@ struct winbindd_domain *domain_list(void)
 {
 	/* Initialise list */
 
-	if (!_domain_list) 
-		init_domain_list();
+	if ((!_domain_list) && (!init_domain_list())) {
+		smb_panic("Init_domain_list failed\n");
+	}
 
 	return _domain_list;
 }
@@ -161,6 +162,7 @@ static struct winbindd_domain *add_trusted_domain(const char *domain_name, const
 	domain->sequence_number = DOM_SEQUENCE_NONE;
 	domain->last_seq_check = 0;
 	domain->initialized = False;
+	domain->online = False;
 	if (sid) {
 		sid_copy(&domain->sid, sid);
 	}
@@ -234,7 +236,7 @@ static void trustdom_recv(void *private_data, BOOL success)
 		return;
 	}
 
-	p = response->extra_data;
+	p = response->extra_data.data;
 
 	while ((p != NULL) && (*p != '\0')) {
 		char *q, *sidstr, *alt_name;
@@ -286,7 +288,7 @@ static void trustdom_recv(void *private_data, BOOL success)
 			p += 1;
 	}
 
-	SAFE_FREE(response->extra_data);
+	SAFE_FREE(response->extra_data.data);
 	talloc_destroy(state->mem_ctx);
 }
 
@@ -334,6 +336,7 @@ enum winbindd_result init_child_connection(struct winbindd_domain *domain,
 	struct winbindd_request *request;
 	struct winbindd_response *response;
 	struct init_child_state *state;
+	struct winbindd_domain *request_domain;
 
 	mem_ctx = talloc_init("init_child_connection");
 	if (mem_ctx == NULL) {
@@ -366,7 +369,6 @@ enum winbindd_result init_child_connection(struct winbindd_domain *domain,
 		fstrcpy(request->domain_name, domain->name);
 		request->data.init_conn.is_primary = True;
 		fstrcpy(request->data.init_conn.dcname, "");
-
 		async_request(mem_ctx, &domain->child, request, response,
 			      init_child_recv, state);
 		return WINBINDD_PENDING;
@@ -378,7 +380,11 @@ enum winbindd_result init_child_connection(struct winbindd_domain *domain,
 	request->cmd = WINBINDD_GETDCNAME;
 	fstrcpy(request->domain_name, domain->name);
 
-	async_domain_request(mem_ctx, find_our_domain(), request, response,
+	/* save online flag */
+	request_domain = find_our_domain();
+	request_domain->online = domain->online;
+	
+	async_domain_request(mem_ctx, request_domain, request, response,
 			     init_child_getdc_recv, state);
 	return WINBINDD_PENDING;
 }
@@ -493,48 +499,48 @@ enum winbindd_result winbindd_dual_init_connection(struct winbindd_domain *domai
 }
 
 /* Look up global info for the winbind daemon */
-void init_domain_list(void)
+BOOL init_domain_list(void)
 {
 	extern struct winbindd_methods cache_methods;
 	extern struct winbindd_methods passdb_methods;
 	struct winbindd_domain *domain;
+	int role = lp_server_role();
 
 	/* Free existing list */
 	free_domain_list();
 
 	/* Add ourselves as the first entry. */
 
-	if (IS_DC) {
-		domain = add_trusted_domain(get_global_sam_name(), NULL,
-					    &passdb_methods,
-					    get_global_sam_sid());
-	} else {
-
+	if ( role == ROLE_DOMAIN_MEMBER ) {
 		DOM_SID our_sid;
 
 		if (!secrets_fetch_domain_sid(lp_workgroup(), &our_sid)) {
-			smb_panic("Could not fetch our SID - did we join?\n");
+			DEBUG(0, ("Could not fetch our SID - did we join?\n"));
+			return False;
 		}
 	
 		domain = add_trusted_domain( lp_workgroup(), lp_realm(),
 					     &cache_methods, &our_sid);
+		domain->primary = True;
+		setup_domain_child(domain, &domain->child, NULL);
 	}
 
-	domain->primary = True;
+	/* Local SAM */
+
+	domain = add_trusted_domain(get_global_sam_name(), NULL,
+				    &passdb_methods, get_global_sam_sid());
+	if ( role != ROLE_DOMAIN_MEMBER ) {
+		domain->primary = True;
+	}
 	setup_domain_child(domain, &domain->child, NULL);
 
-	/* Add our local SAM domains */
+	/* BUILTIN domain */
 
 	domain = add_trusted_domain("BUILTIN", NULL, &passdb_methods,
 				    &global_sid_Builtin);
 	setup_domain_child(domain, &domain->child, NULL);
 
-	if (!IS_DC) {
-		domain = add_trusted_domain(get_global_sam_name(), NULL,
-					    &passdb_methods,
-					    get_global_sam_sid());
-		setup_domain_child(domain, &domain->child, NULL);
-	}
+	return True;
 }
 
 /** 
@@ -830,10 +836,9 @@ BOOL parse_domain_user(const char *domuser, fstring domain, fstring user)
 		if ( assume_domain(lp_workgroup())) {
 			fstrcpy(domain, lp_workgroup());
 		} else {
-			fstrcpy( domain, get_global_sam_name() ); 
+			return False;
 		}
-	} 
-	else {
+	} else {
 		fstrcpy(user, p+1);
 		fstrcpy(domain, domuser);
 		domain[PTR_DIFF(p, domuser)] = 0;
@@ -848,7 +853,9 @@ BOOL parse_domain_user_talloc(TALLOC_CTX *mem_ctx, const char *domuser,
 			      char **domain, char **user)
 {
 	fstring fstr_domain, fstr_user;
-	parse_domain_user(domuser, fstr_domain, fstr_user);
+	if (!parse_domain_user(domuser, fstr_domain, fstr_user)) {
+		return False;
+	}
 	*domain = talloc_strdup(mem_ctx, fstr_domain);
 	*user = talloc_strdup(mem_ctx, fstr_user);
 	return ((*domain != NULL) && (*user != NULL));
@@ -867,14 +874,14 @@ BOOL parse_domain_user_talloc(TALLOC_CTX *mem_ctx, const char *domuser,
     username is then unqualified in unix
 	 
 */
-void fill_domain_username(fstring name, const char *domain, const char *user)
+void fill_domain_username(fstring name, const char *domain, const char *user, BOOL can_assume)
 {
 	fstring tmp_user;
 
 	fstrcpy(tmp_user, user);
 	strlower_m(tmp_user);
 
-	if (assume_domain(domain)) {
+	if (can_assume && assume_domain(domain)) {
 		strlcpy(name, user, sizeof(fstring));
 	} else {
 		slprintf(name, sizeof(fstring) - 1, "%s%c%s",
@@ -1079,10 +1086,6 @@ static int convert_fn(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA data, void *state
 #define HWM_GROUP  "GROUP HWM"
 #define HWM_USER   "USER HWM"
 
-/* idmap version determines auto-conversion */
-#define IDMAP_VERSION 2
-
-
 /*****************************************************************************
  Convert the idmap database from an older version.
 *****************************************************************************/
@@ -1207,3 +1210,25 @@ BOOL winbindd_upgrade_idmap(void)
 
 	return idmap_convert(idmap_name);
 }
+
+void winbindd_flush_nscd_cache(void)
+{
+#ifdef HAVE_NSCD_FLUSH_CACHE
+
+	/* Flush nscd caches to get accurate new information */
+	int ret = nscd_flush_cache("passwd");
+	if (ret) {
+		DEBUG(5,("failed to flush nscd cache for 'passwd' service: %s\n",
+			strerror(ret)));
+	}
+
+	ret = nscd_flush_cache("group");
+	if (ret) {
+		DEBUG(5,("failed to flush nscd cache for 'group' service: %s\n",
+			strerror(ret)));
+	}
+#else
+	return;
+#endif
+}
+

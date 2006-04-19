@@ -69,18 +69,20 @@ int net_ads_usage(int argc, const char **argv)
 static int net_ads_lookup(int argc, const char **argv)
 {
 	ADS_STRUCT *ads;
+	ADS_STATUS status;
 
 	ads = ads_init(NULL, opt_target_workgroup, opt_host);
 	if (ads) {
 		ads->auth.flags |= ADS_AUTH_NO_BIND;
 	}
 
-	ads_connect(ads);
-
-	if (!ads) {
+	status = ads_connect(ads);
+	if (!ADS_ERR_OK(status) || !ads) {
 		d_fprintf(stderr, "Didn't find the cldap server!\n");
 		return -1;
-	} if (!ads->config.realm) {
+	}
+	
+	if (!ads->config.realm) {
 		ads->config.realm = CONST_DISCARD(char *, opt_target_workgroup);
 		ads->ldap_port = 389;
 	}
@@ -367,15 +369,15 @@ static int ads_user_info(int argc, const char **argv)
 	}
 
 	escaped_user = escape_ldap_string_alloc(argv[0]);
-	
-	if (!(ads = ads_startup())) {
-		return -1;
-	}
 
 	if (!escaped_user) {
 		d_fprintf(stderr, "ads_user_info: failed to escape user %s\n", argv[0]);
-		ads_destroy(&ads);
-	 	return -1;
+		return -1;
+	}
+
+	if (!(ads = ads_startup())) {
+		SAFE_FREE(escaped_user);
+		return -1;
 	}
 
 	asprintf(&searchstring, "(sAMAccountName=%s)", escaped_user);
@@ -385,6 +387,7 @@ static int ads_user_info(int argc, const char **argv)
 	if (!ADS_ERR_OK(rc)) {
 		d_fprintf(stderr, "ads_search: %s\n", ads_errstr(rc));
 		ads_destroy(&ads);
+		SAFE_FREE(escaped_user);
 		return -1;
 	}
 	
@@ -403,6 +406,7 @@ static int ads_user_info(int argc, const char **argv)
 	
 	ads_msgfree(ads, res);
 	ads_destroy(&ads);
+	SAFE_FREE(escaped_user);
 	return 0;
 }
 
@@ -716,6 +720,13 @@ int net_ads_join(int argc, const char **argv)
 	uint32 account_type = UF_WORKSTATION_TRUST_ACCOUNT;
 	const char *short_domain_name = NULL;
 	TALLOC_CTX *ctx = NULL;
+
+	if ((lp_server_role() != ROLE_DOMAIN_MEMBER) || 
+	    (lp_server_role() != ROLE_DOMAIN_BDC)) {
+		d_printf("can only join as domain member or as BDC\n");
+		return -1;
+	}
+
 
 	if (argc > 0) {
 		org_unit = argv[0];
@@ -1041,6 +1052,13 @@ static int net_ads_printer_publish(int argc, const char **argv)
 	asprintf(&prt_dn, "cn=%s-%s,%s", srv_cn[0], printername, srv_dn);
 
 	pipe_hnd = cli_rpc_pipe_open_noauth(cli, PI_SPOOLSS, &nt_status);
+	if (!pipe_hnd) {
+		d_fprintf(stderr, "Unable to open a connnection to the spoolss pipe on %s\n",
+			 servername);
+		ads_destroy(&ads);
+		return -1;
+	}
+
 	get_remote_printer_publishing_data(pipe_hnd, mem_ctx, &mods,
 					   printername);
 

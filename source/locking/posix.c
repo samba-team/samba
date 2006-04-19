@@ -99,20 +99,17 @@ static BOOL add_fd_to_close_entry(files_struct *fsp)
 {
 	TDB_DATA kbuf = locking_key_fsp(fsp);
 	TDB_DATA dbuf;
-	char *tp;
 
 	dbuf.dptr = NULL;
 	dbuf.dsize = 0;
 
 	dbuf = tdb_fetch(posix_pending_close_tdb, kbuf);
 
-	tp = SMB_REALLOC(dbuf.dptr, dbuf.dsize + sizeof(int));
-	if (!tp) {
+	dbuf.dptr = SMB_REALLOC(dbuf.dptr, dbuf.dsize + sizeof(int));
+	if (!dbuf.dptr) {
 		DEBUG(0,("add_fd_to_close_entry: Realloc fail !\n"));
-		SAFE_FREE(dbuf.dptr);
 		return False;
-	} else
-		dbuf.dptr = tp;
+	}
 
 	memcpy(dbuf.dptr + dbuf.dsize, &fsp->fh->fd, sizeof(int));
 	dbuf.dsize += sizeof(int);
@@ -358,7 +355,6 @@ static BOOL add_posix_lock_entry(files_struct *fsp, SMB_OFF_T start, SMB_OFF_T s
 	TDB_DATA kbuf = locking_key_fsp(fsp);
 	TDB_DATA dbuf;
 	struct posix_lock pl;
-	char *tp;
 
 	dbuf.dptr = NULL;
 	dbuf.dsize = 0;
@@ -376,12 +372,11 @@ static BOOL add_posix_lock_entry(files_struct *fsp, SMB_OFF_T start, SMB_OFF_T s
 	pl.size = size;
 	pl.lock_type = lock_type;
 
-	tp = SMB_REALLOC(dbuf.dptr, dbuf.dsize + sizeof(struct posix_lock));
-	if (!tp) {
+	dbuf.dptr = SMB_REALLOC(dbuf.dptr, dbuf.dsize + sizeof(struct posix_lock));
+	if (!dbuf.dptr) {
 		DEBUG(0,("add_posix_lock_entry: Realloc fail !\n"));
 		goto fail;
-	} else
-		dbuf.dptr = tp;
+	}
 
 	memcpy(dbuf.dptr + dbuf.dsize, &pl, sizeof(struct posix_lock));
 	dbuf.dsize += sizeof(struct posix_lock);
@@ -654,7 +649,7 @@ static BOOL posix_lock_in_range(SMB_OFF_T *offset_out, SMB_OFF_T *count_out,
 
 static BOOL posix_fcntl_lock(files_struct *fsp, int op, SMB_OFF_T offset, SMB_OFF_T count, int type)
 {
-	int ret;
+	BOOL ret;
 
 	DEBUG(8,("posix_fcntl_lock %d %d %.0f %.0f %d\n",fsp->fh->fd,op,(double)offset,(double)count,type));
 
@@ -687,39 +682,97 @@ static BOOL posix_fcntl_lock(files_struct *fsp, int op, SMB_OFF_T offset, SMB_OF
 	}
 
 	DEBUG(8,("posix_fcntl_lock: Lock call %s\n", ret ? "successful" : "failed"));
-
 	return ret;
 }
+
+/****************************************************************************
+ Actual function that gets POSIX locks. Copes with 64 -> 32 bit cruft and
+ broken NFS implementations.
+****************************************************************************/
+
+static BOOL posix_fcntl_getlock(files_struct *fsp, SMB_OFF_T *poffset, SMB_OFF_T *pcount, int *ptype)
+{
+	pid_t pid;
+	BOOL ret;
+
+	DEBUG(8,("posix_fcntl_getlock %d %.0f %.0f %d\n",
+		fsp->fh->fd,(double)*poffset,(double)*pcount,*ptype));
+
+	ret = SMB_VFS_GETLOCK(fsp,fsp->fh->fd,poffset,pcount,ptype,&pid);
+
+	if (!ret && ((errno == EFBIG) || (errno == ENOLCK) || (errno ==  EINVAL))) {
+
+		DEBUG(0,("posix_fcntl_getlock: WARNING: lock request at offset %.0f, length %.0f returned\n",
+					(double)*poffset,(double)*pcount));
+		DEBUG(0,("an %s error. This can happen when using 64 bit lock offsets\n", strerror(errno)));
+		DEBUG(0,("on 32 bit NFS mounted file systems.\n"));
+
+		/*
+		 * If the offset is > 0x7FFFFFFF then this will cause problems on
+		 * 32 bit NFS mounted filesystems. Just ignore it.
+		 */
+
+		if (*poffset & ~((SMB_OFF_T)0x7fffffff)) {
+			DEBUG(0,("Offset greater than 31 bits. Returning success.\n"));
+			return True;
+		}
+
+		if (*pcount & ~((SMB_OFF_T)0x7fffffff)) {
+			/* 32 bit NFS file system, retry with smaller offset */
+			DEBUG(0,("Count greater than 31 bits - retrying with 31 bit truncated length.\n"));
+			errno = 0;
+			*pcount &= 0x7fffffff;
+			ret = SMB_VFS_GETLOCK(fsp,fsp->fh->fd,poffset,pcount,ptype,&pid);
+		}
+	}
+
+	DEBUG(8,("posix_fcntl_getlock: Lock query call %s\n", ret ? "successful" : "failed"));
+	return ret;
+}
+
 
 /****************************************************************************
  POSIX function to see if a file region is locked. Returns True if the
  region is locked, False otherwise.
 ****************************************************************************/
 
-BOOL is_posix_locked(files_struct *fsp, SMB_BIG_UINT u_offset, SMB_BIG_UINT u_count, enum brl_type lock_type)
+BOOL is_posix_locked(files_struct *fsp,
+			SMB_BIG_UINT *pu_offset,
+			SMB_BIG_UINT *pu_count,
+			enum brl_type *plock_type,
+			enum brl_flavour lock_flav)
 {
 	SMB_OFF_T offset;
 	SMB_OFF_T count;
-	int posix_lock_type = map_posix_lock_type(fsp,lock_type);
+	int posix_lock_type = map_posix_lock_type(fsp,*plock_type);
 
 	DEBUG(10,("is_posix_locked: File %s, offset = %.0f, count = %.0f, type = %s\n",
-			fsp->fsp_name, (double)u_offset, (double)u_count, posix_lock_type_name(lock_type) ));
+		fsp->fsp_name, (double)*pu_offset, (double)*pu_count, posix_lock_type_name(*plock_type) ));
 
 	/*
 	 * If the requested lock won't fit in the POSIX range, we will
 	 * never set it, so presume it is not locked.
 	 */
 
-	if(!posix_lock_in_range(&offset, &count, u_offset, u_count))
+	if(!posix_lock_in_range(&offset, &count, *pu_offset, *pu_count)) {
 		return False;
+	}
 
-	/*
-	 * Note that most UNIX's can *test* for a write lock on
-	 * a read-only fd, just not *set* a write lock on a read-only
-	 * fd. So we don't need to use map_lock_type here.
-	 */ 
+	if (!posix_fcntl_getlock(fsp,&offset,&count,&posix_lock_type)) {
+		return False;
+	}
 
-	return posix_fcntl_lock(fsp,SMB_F_GETLK,offset,count,posix_lock_type);
+	if (posix_lock_type == F_UNLCK) {
+		return False;
+	}
+
+	if (lock_flav == POSIX_LOCK) {
+		/* Only POSIX lock queries need to know the details. */
+		*pu_offset = (SMB_BIG_UINT)offset;
+		*pu_count = (SMB_BIG_UINT)count;
+		*plock_type = (posix_lock_type == F_RDLCK) ? READ_LOCK : WRITE_LOCK;
+	}
+	return True;
 }
 
 /*
@@ -959,9 +1012,14 @@ lock: start = %.0f, size = %.0f\n", (double)l_curr->start, (double)l_curr->size,
 /****************************************************************************
  POSIX function to acquire a lock. Returns True if the
  lock could be granted, False if not.
+ TODO -- Fix POSIX lock flavour semantics.
 ****************************************************************************/
 
-BOOL set_posix_lock(files_struct *fsp, SMB_BIG_UINT u_offset, SMB_BIG_UINT u_count, enum brl_type lock_type)
+BOOL set_posix_lock(files_struct *fsp,
+			SMB_BIG_UINT u_offset,
+			SMB_BIG_UINT u_count,
+			enum brl_type lock_type,
+			enum brl_flavour lock_flav)
 {
 	SMB_OFF_T offset;
 	SMB_OFF_T count;

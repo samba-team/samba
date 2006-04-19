@@ -31,9 +31,6 @@
 #define HWM_GROUP  "GROUP HWM"
 #define HWM_USER   "USER HWM"
 
-/* idmap version determines auto-conversion */
-#define IDMAP_VERSION 2
-
 /* Globals */
 static TDB_CONTEXT *idmap_tdb;
 
@@ -44,41 +41,6 @@ static struct idmap_state {
 	uid_t uid_low, uid_high;               /* Range of uids to allocate */
 	gid_t gid_low, gid_high;               /* Range of gids to allocate */
 } idmap_state;
-
-/**********************************************************************
- allocate a new RID; We don't care if is a user or group
-**********************************************************************/
-
-static NTSTATUS db_allocate_rid(uint32 *rid, int rid_type)
-{
-	uint32 lowrid, highrid;
-	uint32 tmp_rid;
-
-	/* can't handle group rids right now.  This is such a mess.... */
-
-	if ( rid_type == GROUP_RID_TYPE )
-		return NT_STATUS_UNSUCCESSFUL;
-	
-	/* cannot fail since idmap is only called winbindd */
-	
-	get_free_rid_range( &lowrid, &highrid );
-	
-	tmp_rid = lowrid;
-	
-	if ( !tdb_change_uint32_atomic(idmap_tdb, "RID_COUNTER", &tmp_rid, RID_MULTIPLIER) ) {
-		DEBUG(3,("db_allocate_rid: Failed to locate next rid record in idmap db\n"));
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-	
-	if ( tmp_rid > highrid ) {
-		DEBUG(0, ("db_allocate_rid: no RIDs available!\n"));
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-	
-	*rid = tmp_rid;
-
-	return NT_STATUS_OK;
-}
 
 /**********************************************************************
  Allocate either a user or group id from the pool 
@@ -660,7 +622,6 @@ TDB_CONTEXT *idmap_tdb_handle( void )
 static struct idmap_methods db_methods = {
 
 	db_idmap_init,
-	db_allocate_rid,
 	db_allocate_id,
 	db_get_sid_from_id,
 	db_get_id_from_sid,

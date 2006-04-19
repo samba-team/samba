@@ -58,7 +58,7 @@ static void terminate(void)
 	DEBUG(0,("Got SIGTERM: going down...\n"));
   
 	/* Write out wins.dat file if samba is a WINS server */
-	wins_write_database(False);
+	wins_write_database(0,False);
   
 	/* Remove all SELF registered names from WINS */
 	release_wins_names();
@@ -105,46 +105,6 @@ static void sig_hup(int sig)
 	reload_after_sighup = 1;
 	sys_select_signal(SIGHUP);
 }
-
-#if DUMP_CORE
-/**************************************************************************** **
- Prepare to dump a core file - carefully!
- **************************************************************************** */
-
-static BOOL dump_core(void)
-{
-	char *p;
-	pstring dname;
-	pstrcpy( dname, lp_logfile() );
-	if ((p=strrchr_m(dname,'/')))
-		*p=0;
-	pstrcat( dname, "/corefiles" );
-	mkdir( dname, 0700 );
-	sys_chown( dname, getuid(), getgid() );
-	chmod( dname, 0700 );
-	if ( chdir(dname) )
-		return( False );
-	umask( ~(0700) );
-
-#ifdef HAVE_GETRLIMIT
-#ifdef RLIMIT_CORE
-	{
-		struct rlimit rlp;
-		getrlimit( RLIMIT_CORE, &rlp );
-		rlp.rlim_cur = MAX( 4*1024*1024, rlp.rlim_cur );
-		setrlimit( RLIMIT_CORE, &rlp );
-		getrlimit( RLIMIT_CORE, &rlp );
-		DEBUG( 3, ( "Core limits now %d %d\n", (int)rlp.rlim_cur, (int)rlp.rlim_max ) );
-	}
-#endif
-#endif
-
-
-	DEBUG(0,("Dumping core in %s\n",dname));
-	abort();
-	return( True );
-}
-#endif
 
 /**************************************************************************** **
  Possibly continue after a fault.
@@ -291,7 +251,7 @@ static BOOL reload_nmbd_services(BOOL test)
 	if ( test && !lp_file_list_changed() )
 		return(True);
 
-	ret = lp_load( dyn_CONFIGFILE, True , False, False);
+	ret = lp_load( dyn_CONFIGFILE, True , False, False, True);
 
 	/* perhaps the config filename is now set */
 	if ( !test ) {
@@ -607,7 +567,7 @@ static void process(void)
 			return;
 
 		/* free up temp memory */
-			lp_talloc_free();
+			lp_TALLOC_FREE();
 	}
 }
 
@@ -658,11 +618,13 @@ static BOOL open_sockets(BOOL isdaemon, int port)
 	static BOOL opt_interactive;
 	poptContext pc;
 	static char *p_lmhosts = dyn_LMHOSTSFILE;
+	static BOOL no_process_group = False;
 	struct poptOption long_options[] = {
 	POPT_AUTOHELP
 	{"daemon", 'D', POPT_ARG_VAL, &is_daemon, True, "Become a daemon(default)" },
 	{"interactive", 'i', POPT_ARG_VAL, &opt_interactive, True, "Run interactive (not a daemon)" },
 	{"foreground", 'F', POPT_ARG_VAL, &Fork, False, "Run daemon in foreground (for daemontools & etc)" },
+	{"no-process-group", 0, POPT_ARG_VAL, &no_process_group, True, "Don't create a new process group" },
 	{"log-stdout", 'S', POPT_ARG_VAL, &log_stdout, True, "Log to stdout" },
 	{"hosts", 'H', POPT_ARG_STRING, &p_lmhosts, 'H', "Load a netbios hosts file"},
 	{"port", 'p', POPT_ARG_INT, &global_nmb_port, NMB_PORT, "Listen on the specified port" },
@@ -690,6 +652,7 @@ static BOOL open_sockets(BOOL isdaemon, int port)
 	}
 	
 	fault_setup((void (*)(void *))fault_continue );
+	dump_core_setup("nmbd");
 	
 	/* POSIX demands that signals are inherited. If the invoking process has
 	 * these signals masked, we will have problems, as we won't receive them. */
@@ -749,7 +712,7 @@ static BOOL open_sockets(BOOL isdaemon, int port)
   
 	if (is_daemon && !opt_interactive) {
 		DEBUG( 2, ( "Becoming a daemon.\n" ) );
-		become_daemon(Fork);
+		become_daemon(Fork, no_process_group);
 	}
 
 #if HAVE_SETPGID
@@ -757,7 +720,7 @@ static BOOL open_sockets(BOOL isdaemon, int port)
 	 * If we're interactive we want to set our own process group for 
 	 * signal management.
 	 */
-	if (opt_interactive)
+	if (opt_interactive && !no_process_group)
 		setpgid( (pid_t)0, (pid_t)0 );
 #endif
 

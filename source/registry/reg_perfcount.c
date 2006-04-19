@@ -158,7 +158,7 @@ static uint32 _reg_perfcount_multi_sz_from_tdb(TDB_CONTEXT *tdb,
 {
 	TDB_DATA kbuf, dbuf;
 	char temp[256];
-	char *buf1 = *retbuf, *buf2 = NULL;
+	char *buf1 = *retbuf;
 	uint32 working_size = 0;
 	UNISTR2 name_index, name;
 
@@ -172,32 +172,26 @@ static uint32 _reg_perfcount_multi_sz_from_tdb(TDB_CONTEXT *tdb,
 		/* If a key isn't there, just bypass it -- this really shouldn't 
 		   happen unless someone's mucking around with the tdb */
 		DEBUG(3, ("_reg_perfcount_multi_sz_from_tdb: failed to find key [%s] in [%s].\n",
-			  temp, tdb->name));
+			  temp, tdb_name(tdb)));
 		return buffer_size;
 	}
 	/* First encode the name_index */
 	working_size = (kbuf.dsize + 1)*sizeof(uint16);
-	buf2 = SMB_REALLOC(buf1, buffer_size + working_size);
-	if(!buf2)
-	{
-		SAFE_FREE(buf1);
+	buf1 = SMB_REALLOC(buf1, buffer_size + working_size);
+	if(!buf1) {
 		buffer_size = 0;
 		return buffer_size;
 	}
-	buf1 = buf2;
 	init_unistr2(&name_index, kbuf.dptr, UNI_STR_TERMINATE);
 	memcpy(buf1+buffer_size, (char *)name_index.buffer, working_size);
 	buffer_size += working_size;
 	/* Now encode the actual name */
 	working_size = (dbuf.dsize + 1)*sizeof(uint16);
-	buf2 = SMB_REALLOC(buf1, buffer_size + working_size);
-	if(!buf2)
-	{
-		SAFE_FREE(buf1);
+	buf1 = SMB_REALLOC(buf1, buffer_size + working_size);
+	if(!buf1) {
 		buffer_size = 0;
 		return buffer_size;
 	}
-	buf1 = buf2;
 	memset(temp, 0, sizeof(temp));
 	memcpy(temp, dbuf.dptr, dbuf.dsize);
 	SAFE_FREE(dbuf.dptr);
@@ -215,7 +209,7 @@ static uint32 _reg_perfcount_multi_sz_from_tdb(TDB_CONTEXT *tdb,
 
 uint32 reg_perfcount_get_counter_help(uint32 base_index, char **retbuf)
 {
-	char *buf1 = NULL, *buf2 = NULL;
+	char *buf1 = NULL;
 	uint32 buffer_size = 0;
 	TDB_CONTEXT *names;
 	const char *fname = counters_directory( NAMES_DB );
@@ -240,15 +234,10 @@ uint32 reg_perfcount_get_counter_help(uint32 base_index, char **retbuf)
 
 	/* Now terminate the MULTI_SZ with a double unicode NULL */
 	buf1 = *retbuf;
-	buf2 = SMB_REALLOC(buf1, buffer_size + 2);
-	if(!buf2)
-	{
-		SAFE_FREE(buf1);
+	buf1 = SMB_REALLOC(buf1, buffer_size + 2);
+	if(!buf1) {
 		buffer_size = 0;
-	}
-	else
-	{
-		buf1 = buf2;
+	} else {
 		buf1[buffer_size++] = '\0';
 		buf1[buffer_size++] = '\0';
 	}
@@ -263,7 +252,7 @@ uint32 reg_perfcount_get_counter_help(uint32 base_index, char **retbuf)
 
 uint32 reg_perfcount_get_counter_names(uint32 base_index, char **retbuf)
 {
-	char *buf1 = NULL, *buf2 = NULL;
+	char *buf1 = NULL;
 	uint32 buffer_size = 0;
 	TDB_CONTEXT *names;
 	const char *fname = counters_directory( NAMES_DB );
@@ -290,15 +279,10 @@ uint32 reg_perfcount_get_counter_names(uint32 base_index, char **retbuf)
 
 	/* Now terminate the MULTI_SZ with a double unicode NULL */
 	buf1 = *retbuf;
-	buf2 = SMB_REALLOC(buf1, buffer_size + 2);
-	if(!buf2)
-	{
-		SAFE_FREE(buf1);
+	buf1 = SMB_REALLOC(buf1, buffer_size + 2);
+	if(!buf1) {
 		buffer_size = 0;
-	}
-	else
-	{
-		buf1 = buf2;
+	} else {
 		buf1[buffer_size++] = '\0';
 		buf1[buffer_size++] = '\0';
 	}
@@ -515,7 +499,7 @@ static BOOL _reg_perfcount_get_counter_info(PERF_DATA_BLOCK *block,
 	obj->counters[obj->NumCounters].CounterType = atoi(buf);
 	DEBUG(10, ("_reg_perfcount_get_counter_info: Got type [%d] for counter [%d].\n",
 		   obj->counters[obj->NumCounters].CounterType, CounterIndex));
-	free(data.dptr);
+	SAFE_FREE(data.dptr);
 
 	/* Fetch the actual data */
 	_reg_perfcount_make_key(&key, buf, PERFCOUNT_MAX_LEN, CounterIndex, "");
@@ -560,7 +544,7 @@ static BOOL _reg_perfcount_get_counter_info(PERF_DATA_BLOCK *block,
 		memset(buf, 0, PERFCOUNT_MAX_LEN);
 		memcpy(buf, data.dptr, data.dsize);
 	}
-	free(data.dptr);
+	SAFE_FREE(data.dptr);
 
 	obj->counter_data.ByteLength += dsize + padding;
 	obj->counter_data.data = TALLOC_REALLOC_ARRAY(ps->mem_ctx,
@@ -710,7 +694,7 @@ BOOL _reg_perfcount_get_instance_info(PERF_INSTANCE_DEFINITION *inst,
 		return False;
 	memset(inst->counter_data.data, 0, data.dsize);
 	memcpy(inst->counter_data.data, data.dptr, data.dsize);
-	free(data.dptr);
+	SAFE_FREE(data.dptr);
 
 	/* Fetch instance name */
 	memset(temp, 0, PERFCOUNT_MAX_LEN);
@@ -735,7 +719,7 @@ BOOL _reg_perfcount_get_instance_info(PERF_INSTANCE_DEFINITION *inst,
 						  uint8,
 						  inst->NameLength);
 		memcpy(inst->data, name, inst->NameLength);
-		free(data.dptr);
+		SAFE_FREE(data.dptr);
 	}
 
 	inst->ParentObjectTitleIndex = 0;
@@ -823,7 +807,7 @@ static int _reg_perfcount_assemble_global(PERF_DATA_BLOCK *block,
 				DEBUG(3, ("_reg_perfcount_assemble_global: Failed to add new relationship for counter [%d].\n", j));
 				retval = -1;
 			}
-			free(data.dptr);
+			SAFE_FREE(data.dptr);
 		}
 		else
 			DEBUG(3, ("NULL relationship for counter [%d] using key [%s].\n", j, keybuf));
@@ -853,7 +837,7 @@ static BOOL _reg_perfcount_get_64(SMB_BIG_UINT *retval,
 
 	memset(buf, 0, PERFCOUNT_MAX_LEN);
 	memcpy(buf, data.dptr, data.dsize);
-	free(data.dptr);
+	SAFE_FREE(data.dptr);
 
 	*retval = atof(buf);
 

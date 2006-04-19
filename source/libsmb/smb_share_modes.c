@@ -2,7 +2,7 @@
    Samba share mode database library external interface library.
    Used by non-Samba products needing access to the Samba share mode db.
                                                                                                                                   
-   Copyright (C) Jeremy Allison 2005.
+   Copyright (C) Jeremy Allison 2005 - 2006
 
    sharemodes_procid functions (C) Copyright (C) Volker Lendecke 2005
 
@@ -115,28 +115,12 @@ int smb_unlock_share_mode_entry(struct smbdb_ctx *db_ctx,
 	return tdb_chainunlock(db_ctx->smb_tdb, get_locking_key(dev, ino));
 }
 
-/* Internal structure of Samba share mode db. */
-/* FIXME ! This should be moved into a Samba include file. */
-
-struct locking_data {
-	union {
-		struct {
-			int num_share_mode_entries;
-			BOOL delete_on_close;
-		} s;
-		struct share_mode_entry dummy; /* Needed for alignment. */
-	} u;
-	/* the following two entries are implicit
-	   struct share_mode_entry modes[num_share_mode_entries];
-	   char file_name[];
-	*/
-};
-
 /*
  * Check if an external smb_share_mode_entry and an internal share_mode entry match.
  */
 
-static int share_mode_entry_equal(const struct smb_share_mode_entry *e_entry, const struct share_mode_entry *entry)
+static int share_mode_entry_equal(const struct smb_share_mode_entry *e_entry,
+				const struct share_mode_entry *entry)
 {
 	return (sharemodes_procid_equal(&e_entry->pid, &entry->pid) &&
 		e_entry->file_id == (uint32_t)entry->share_file_id &&
@@ -152,7 +136,8 @@ static int share_mode_entry_equal(const struct smb_share_mode_entry *e_entry, co
  * Create an internal Samba share_mode entry from an external smb_share_mode_entry.
  */
 
-static void create_share_mode_entry(struct share_mode_entry *out, const struct smb_share_mode_entry *in)
+static void create_share_mode_entry(struct share_mode_entry *out,
+				const struct smb_share_mode_entry *in)
 {
 	memset(out, '\0', sizeof(struct share_mode_entry));
 
@@ -280,8 +265,11 @@ int smb_create_share_mode_entry_ex(struct smbdb_ctx *db_ctx,
 			return -1;
 		}
 		ld = (struct locking_data *)db_data.dptr;
+		memset(ld, '\0', sizeof(struct locking_data));
 		ld->u.s.num_share_mode_entries = 1;
 		ld->u.s.delete_on_close = 0;
+		ld->u.s.initial_delete_on_close = 0;
+		ld->u.s.delete_token_size = 0;
 		shares = (struct share_mode_entry *)(db_data.dptr + sizeof(struct share_mode_entry));
 		create_share_mode_entry(shares, new_entry);
 
@@ -326,7 +314,7 @@ int smb_create_share_mode_entry_ex(struct smbdb_ctx *db_ctx,
 	ld = (struct locking_data *)new_data_p;
 	ld->u.s.num_share_mode_entries++;
 
-	/* Append the original filename */
+	/* Append the original delete_token and filenames. */
 	memcpy(new_data_p + ((ld->u.s.num_share_mode_entries+1)*sizeof(struct share_mode_entry)),
 		db_data.dptr + ((orig_num_share_modes+1)*sizeof(struct share_mode_entry)),
 		db_data.dsize - ((orig_num_share_modes+1) * sizeof(struct share_mode_entry)));
@@ -376,9 +364,9 @@ int smb_delete_share_mode_entry(struct smbdb_ctx *db_ctx,
 	struct locking_data *ld = NULL; /* internal samba db state. */
 	struct share_mode_entry *shares = NULL;
 	char *new_data_p = NULL;
-	size_t filename_size = 0;
+	size_t remaining_size = 0;
 	size_t i, num_share_modes;
-	const char *fname_ptr = NULL;
+	const char *remaining_ptr = NULL;
 
 	db_data = tdb_fetch(db_ctx->smb_tdb, locking_key);
 	if (!db_data.dptr) {
@@ -438,13 +426,13 @@ int smb_delete_share_mode_entry(struct smbdb_ctx *db_ctx,
 		return tdb_delete(db_ctx->smb_tdb, locking_key);
 	}
 
-	/* Copy the terminating filename. */
-	fname_ptr = db_data.dptr + ((orig_num_share_modes+1) * sizeof(struct share_mode_entry));
-	filename_size = db_data.dsize - (fname_ptr - db_data.dptr);
+	/* Copy any delete token plus the terminating filenames. */
+	remaining_ptr = db_data.dptr + ((orig_num_share_modes+1) * sizeof(struct share_mode_entry));
+	remaining_size = db_data.dsize - (remaining_ptr - db_data.dptr);
 
 	memcpy(new_data_p + ((num_share_modes+1)*sizeof(struct share_mode_entry)),
-		fname_ptr,
-		filename_size);
+		remaining_ptr,
+		remaining_size);
 
 	free(db_data.dptr);
 
@@ -454,7 +442,7 @@ int smb_delete_share_mode_entry(struct smbdb_ctx *db_ctx,
 	ld = (struct locking_data *)db_data.dptr;
 	ld->u.s.num_share_mode_entries = num_share_modes;
 
-	db_data.dsize = ((num_share_modes+1)*sizeof(struct share_mode_entry)) + filename_size;
+	db_data.dsize = ((num_share_modes+1)*sizeof(struct share_mode_entry)) + remaining_size;
 
 	if (tdb_store(db_ctx->smb_tdb, locking_key, db_data, TDB_REPLACE) == -1) {
 		free(db_data.dptr);

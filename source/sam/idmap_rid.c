@@ -287,7 +287,13 @@ static NTSTATUS rid_idmap_get_domains(uint32 *num_domains, fstring **domain_name
 	*num_domains = trusted_num_domains + own_domains;
 	*domain_names = SMB_REALLOC_ARRAY(*domain_names, fstring,
 					  *num_domains);
+	if (!*domain_names) {
+		goto out;
+	}
 	*domain_sids = SMB_REALLOC_ARRAY(*domain_sids, DOM_SID, *num_domains);
+	if (!*domain_sids) {
+		goto out;
+	}
 
 	/* first add mydomain */
 	fstrcpy((*domain_names)[0], domain_name);
@@ -527,11 +533,6 @@ static NTSTATUS rid_idmap_close(void)
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS rid_idmap_allocate_rid(uint32 *rid, int rid_type)
-{
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
 static NTSTATUS rid_idmap_allocate_id(unid_t *id, int id_type)
 {
 	return NT_STATUS_NOT_IMPLEMENTED;
@@ -544,7 +545,6 @@ static void rid_idmap_status(void)
 
 static struct idmap_methods rid_methods = {
 	rid_idmap_init,
-	rid_idmap_allocate_rid,
 	rid_idmap_allocate_id,
 	rid_idmap_get_sid_from_id,
 	rid_idmap_get_id_from_sid,

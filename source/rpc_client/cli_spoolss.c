@@ -338,7 +338,7 @@ static BOOL decode_jobs_1(TALLOC_CTX *mem_ctx, RPC_BUFFER *buffer,
 	uint32 i;
 
 	*jobs = TALLOC_ARRAY(mem_ctx, JOB_INFO_1, num_jobs);
-	if (!jobs) {
+	if (*jobs == NULL) {
 		return False;
 	}
 	prs_set_offset(&buffer->prs,0);
@@ -361,7 +361,7 @@ static BOOL decode_jobs_2(TALLOC_CTX *mem_ctx, RPC_BUFFER *buffer,
 	uint32 i;
 
 	*jobs = TALLOC_ARRAY(mem_ctx, JOB_INFO_2, num_jobs);
-	if (!jobs) {
+	if (*jobs == NULL) {
 		return False;
 	}
 	prs_set_offset(&buffer->prs,0);
@@ -384,7 +384,7 @@ static BOOL decode_forms_1(TALLOC_CTX *mem_ctx, RPC_BUFFER *buffer,
 	int i;
 
 	*forms = TALLOC_ARRAY(mem_ctx, FORM_1, num_forms);
-	if (!forms) {
+	if (*forms == NULL) {
 		return False;
 	}
 	prs_set_offset(&buffer->prs,0);

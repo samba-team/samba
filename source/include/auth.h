@@ -20,12 +20,6 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-/* AUTH_STR - string */
-typedef struct normal_string {
-	int len;
-	char *str;
-} AUTH_STR;
-
 typedef struct auth_usersupplied_info {
  	DATA_BLOB lm_resp;
 	DATA_BLOB nt_resp;
@@ -35,24 +29,23 @@ typedef struct auth_usersupplied_info {
 	
 	BOOL encrypted;
 	
-	AUTH_STR           client_domain;          /* domain name string */
-	AUTH_STR           domain;               /* domain name after mapping */
-	AUTH_STR           internal_username;    /* username after mapping */
-	AUTH_STR           smb_name;        /* username before mapping */
-	AUTH_STR           wksta_name;           /* workstation name (netbios calling name) unicode string */
+	char *client_domain;          /* domain name string */
+	char *domain;                 /* domain name after mapping */
+	char *internal_username;      /* username after mapping */
+	char *smb_name;               /* username before mapping */
+	char *wksta_name;             /* workstation name (netbios calling
+				       * name) unicode string */
 	
 	uint32 logon_parameters;
 
 } auth_usersupplied_info;
 
-#define SAM_FILL_NAME  0x01
-#define SAM_FILL_INFO3 0x02
-#define SAM_FILL_SAM   0x04
-#define SAM_FILL_UNIX  0x08
-#define SAM_FILL_ALL (SAM_FILL_NAME | SAM_FILL_INFO3 | SAM_FILL_SAM | SAM_FILL_UNIX)
-
 typedef struct auth_serversupplied_info {
 	BOOL guest;
+
+	DOM_SID *sids; 	/* These SIDs are preliminary between
+			   check_ntlm_password and the token creation. */
+	size_t num_sids;
 
 	uid_t uid;
 	gid_t gid;
@@ -70,9 +63,7 @@ typedef struct auth_serversupplied_info {
 
         char *login_server; /* which server authorized the login? */
 	
-	uint32 sam_fill_level;  /* How far is this structure filled? */
-	
-	SAM_ACCOUNT *sam_account;
+	struct samu *sam_account;
 	
 	void *pam_handle;
 

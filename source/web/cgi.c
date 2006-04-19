@@ -59,7 +59,7 @@ static char *grab_line(FILE *f, int *cl)
 			char *ret2;
 			if (len == 0) len = 1024;
 			else len *= 2;
-			ret2 = (char *)SMB_REALLOC(ret, len);
+			ret2 = (char *)SMB_REALLOC_KEEP_OLD_ON_ERROR(ret, len);
 			if (!ret2) return ret;
 			ret = ret2;
 		}
@@ -293,7 +293,7 @@ static void cgi_web_auth(void)
 		exit(0);
 	}
 
-	pwd = getpwnam_alloc(user);
+	pwd = getpwnam_alloc(NULL, user);
 	if (!pwd) {
 		printf("%sCannot find user %s<br>%s\n", head, user, tail);
 		exit(0);
@@ -306,7 +306,7 @@ static void cgi_web_auth(void)
 		       head, user, (int)geteuid(), (int)getuid(), tail);
 		exit(0);
 	}
-	passwd_free(&pwd);
+	TALLOC_FREE(pwd);
 }
 
 
@@ -346,7 +346,7 @@ static BOOL cgi_handle_authorization(char *line)
 	 * Try and get the user from the UNIX password file.
 	 */
 	
-	pass = getpwnam_alloc(user);
+	pass = getpwnam_alloc(NULL, user);
 	
 	/*
 	 * Validate the password they have given.
@@ -367,7 +367,7 @@ static BOOL cgi_handle_authorization(char *line)
 			
 			/* Save the users name */
 			C_user = SMB_STRDUP(user);
-			passwd_free(&pass);
+			TALLOC_FREE(pass);
 			return True;
 		}
 	}
@@ -377,7 +377,7 @@ err:
 			"WWW-Authenticate: Basic realm=\"SWAT\"\r\n",
 			"username or password incorrect");
 
-	passwd_free(&pass);
+	TALLOC_FREE(pass);
 	return False;
 }
 

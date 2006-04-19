@@ -161,6 +161,8 @@ static int smb_full_audit_ftruncate(vfs_handle_struct *handle, files_struct *fsp
 			   int fd, SMB_OFF_T len);
 static BOOL smb_full_audit_lock(vfs_handle_struct *handle, files_struct *fsp, int fd,
 		       int op, SMB_OFF_T offset, SMB_OFF_T count, int type);
+static BOOL smb_full_audit_getlock(vfs_handle_struct *handle, files_struct *fsp, int fd,
+		       SMB_OFF_T *poffset, SMB_OFF_T *pcount, int *ptype, pid_t *ppid);
 static int smb_full_audit_symlink(vfs_handle_struct *handle, connection_struct *conn,
 			 const char *oldpath, const char *newpath);
 static int smb_full_audit_readlink(vfs_handle_struct *handle, connection_struct *conn,
@@ -399,6 +401,8 @@ static vfs_op_tuple audit_op_tuples[] = {
 	 SMB_VFS_LAYER_LOGGER},
 	{SMB_VFS_OP(smb_full_audit_lock),	SMB_VFS_OP_LOCK,
 	 SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(smb_full_audit_getlock),	SMB_VFS_OP_GETLOCK,
+	 SMB_VFS_LAYER_LOGGER},
 	{SMB_VFS_OP(smb_full_audit_symlink),	SMB_VFS_OP_SYMLINK,
 	 SMB_VFS_LAYER_LOGGER},
 	{SMB_VFS_OP(smb_full_audit_readlink),	SMB_VFS_OP_READLINK,
@@ -564,6 +568,7 @@ static struct {
 	{ SMB_VFS_OP_UTIME,	"utime" },
 	{ SMB_VFS_OP_FTRUNCATE,	"ftruncate" },
 	{ SMB_VFS_OP_LOCK,	"lock" },
+	{ SMB_VFS_OP_GETLOCK,	"getlock" },
 	{ SMB_VFS_OP_SYMLINK,	"symlink" },
 	{ SMB_VFS_OP_READLINK,	"readlink" },
 	{ SMB_VFS_OP_LINK,	"link" },
@@ -815,6 +820,10 @@ static int smb_full_audit_connect(vfs_handle_struct *handle, connection_struct *
 	struct vfs_full_audit_private_data *pd = NULL;
 	const char *none[] = { NULL };
 	const char *all [] = { "all" };
+
+	if (!handle) {
+		return -1;
+	}
 
 	pd = SMB_MALLOC_P(struct vfs_full_audit_private_data);
 	if (!pd) {
@@ -1305,6 +1314,18 @@ static BOOL smb_full_audit_lock(vfs_handle_struct *handle, files_struct *fsp, in
 	result = SMB_VFS_NEXT_LOCK(handle, fsp, fd, op, offset, count, type);
 
 	do_log(SMB_VFS_OP_LOCK, (result >= 0), handle, "%s", fsp->fsp_name);
+
+	return result;
+}
+
+static BOOL smb_full_audit_getlock(vfs_handle_struct *handle, files_struct *fsp, int fd,
+		       SMB_OFF_T *poffset, SMB_OFF_T *pcount, int *ptype, pid_t *ppid)
+{
+	BOOL result;
+
+	result = SMB_VFS_NEXT_GETLOCK(handle, fsp, fd, poffset, pcount, ptype, ppid);
+
+	do_log(SMB_VFS_OP_GETLOCK, (result >= 0), handle, "%s", fsp->fsp_name);
 
 	return result;
 }

@@ -58,35 +58,43 @@ static char **completion_fn(const char *text, int start, int end)
 #endif
 
 	/* make sure we have a list of valid commands */
-	if (!commands) 
+	if (!commands) {
 		return NULL;
+	}
 
 	matches = SMB_MALLOC_ARRAY(char *, MAX_COMPLETIONS);
-	if (!matches) return NULL;
+	if (!matches) {
+		return NULL;
+	}
 
 	matches[count++] = SMB_STRDUP(text);
-	if (!matches[0]) return NULL;
+	if (!matches[0]) {
+		SAFE_FREE(matches);
+		return NULL;
+	}
 
-	while (commands && count < MAX_COMPLETIONS-1) 
-	{
-		if (!commands->cmd_set)
+	while (commands && count < MAX_COMPLETIONS-1) {
+		if (!commands->cmd_set) {
 			break;
+		}
 		
-		for (i=0; commands->cmd_set[i].name; i++)
-		{
+		for (i=0; commands->cmd_set[i].name; i++) {
 			if ((strncmp(text, commands->cmd_set[i].name, strlen(text)) == 0) &&
 				(( commands->cmd_set[i].returntype == RPC_RTYPE_NTSTATUS &&
                         commands->cmd_set[i].ntfn ) || 
                       ( commands->cmd_set[i].returntype == RPC_RTYPE_WERROR &&
-                        commands->cmd_set[i].wfn)))
-			{
+                        commands->cmd_set[i].wfn))) {
 				matches[count] = SMB_STRDUP(commands->cmd_set[i].name);
-				if (!matches[count]) 
+				if (!matches[count]) {
+					for (i = 0; i < count; i++) {
+						SAFE_FREE(matches[count]);
+					}
+					SAFE_FREE(matches);
 					return NULL;
+				}
 				count++;
 			}
 		}
-		
 		commands = commands->next;
 		
 	}
@@ -663,13 +671,11 @@ out_free:
 	}
 */
 
-	if (argv) {
-		/* NOTE: popt allocates the whole argv, including the
-		 * strings, as a single block.  So a single free is
-		 * enough to release it -- we don't free the
-		 * individual strings.  rtfm. */
-		free(argv);
-	}
+	/* NOTE: popt allocates the whole argv, including the
+	 * strings, as a single block.  So a single free is
+	 * enough to release it -- we don't free the
+	 * individual strings.  rtfm. */
+	free(argv);
 	
 	return result;
 }
@@ -679,7 +685,6 @@ out_free:
 
  int main(int argc, char *argv[])
 {
-	BOOL 			interactive = True;
 	int 			opt;
 	static char		*cmdstr = NULL;
 	const char *server;
@@ -713,9 +718,7 @@ out_free:
 
 	/* the following functions are part of the Samba debugging
 	   facilities.  See lib/debug.c */
-	setup_logging("rpcclient", interactive);
-	if (!interactive) 
-		reopen_logs();
+	setup_logging("rpcclient", True);
 	
 	/* Parse options */
 
@@ -766,7 +769,7 @@ out_free:
 
 	/* Load smb.conf file */
 
-	if (!lp_load(dyn_CONFIGFILE,True,False,False))
+	if (!lp_load(dyn_CONFIGFILE,True,False,False,True))
 		fprintf(stderr, "Can't load %s\n", dyn_CONFIGFILE);
 
 	if ( strlen(new_workgroup) != 0 )

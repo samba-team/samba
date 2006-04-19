@@ -28,14 +28,14 @@
 /***********************************************************************
  the rfc 2104 version of hmac_md5 initialisation.
 ***********************************************************************/
-void hmac_md5_init_rfc2104(uchar*  key, int key_len, HMACMD5Context *ctx)
+
+void hmac_md5_init_rfc2104(const unsigned char *key, int key_len, HMACMD5Context *ctx)
 {
         int i;
+	unsigned char tk[16];
 
         /* if key is longer than 64 bytes reset it to key=MD5(key) */
-        if (key_len > 64)
-	{
-		uchar tk[16];
+        if (key_len > 64) {
                 struct MD5Context tctx;
 
                 MD5Init(&tctx);
@@ -53,8 +53,7 @@ void hmac_md5_init_rfc2104(uchar*  key, int key_len, HMACMD5Context *ctx)
         memcpy( ctx->k_opad, key, key_len);
 
         /* XOR key with ipad and opad values */
-        for (i=0; i<64; i++)
-	{
+        for (i=0; i<64; i++) {
                 ctx->k_ipad[i] ^= 0x36;
                 ctx->k_opad[i] ^= 0x5c;
         }
@@ -66,14 +65,14 @@ void hmac_md5_init_rfc2104(uchar*  key, int key_len, HMACMD5Context *ctx)
 /***********************************************************************
  the microsoft version of hmac_md5 initialisation.
 ***********************************************************************/
-void hmac_md5_init_limK_to_64(const uchar* key, int key_len,
+
+void hmac_md5_init_limK_to_64(const unsigned char* key, int key_len,
 			HMACMD5Context *ctx)
 {
         int i;
 
         /* if key is longer than 64 bytes truncate it */
-        if (key_len > 64)
-	{
+        if (key_len > 64) {
                 key_len = 64;
         }
 
@@ -96,7 +95,8 @@ void hmac_md5_init_limK_to_64(const uchar* key, int key_len,
 /***********************************************************************
  update hmac_md5 "inner" buffer
 ***********************************************************************/
-void hmac_md5_update(const uchar* text, int text_len, HMACMD5Context *ctx)
+
+void hmac_md5_update(const unsigned char *text, int text_len, HMACMD5Context *ctx)
 {
         MD5Update(&ctx->ctx, text, text_len); /* then text of datagram */
 }
@@ -104,7 +104,7 @@ void hmac_md5_update(const uchar* text, int text_len, HMACMD5Context *ctx)
 /***********************************************************************
  finish off hmac_md5 "inner" buffer and generate outer one.
 ***********************************************************************/
-void hmac_md5_final(uchar *digest, HMACMD5Context *ctx)
+void hmac_md5_final(unsigned char *digest, HMACMD5Context *ctx)
 
 {
         struct MD5Context ctx_o;
@@ -121,7 +121,8 @@ void hmac_md5_final(uchar *digest, HMACMD5Context *ctx)
  single function to calculate an HMAC MD5 digest from data.
  use the microsoft hmacmd5 init method because the key is 16 bytes.
 ************************************************************/
-void hmac_md5( uchar key[16], uchar* data, int data_len, uchar* digest)
+
+void hmac_md5( unsigned char key[16], unsigned char *data, int data_len, unsigned char *digest)
 {
 	HMACMD5Context ctx;
 	hmac_md5_init_limK_to_64(key, 16, &ctx);

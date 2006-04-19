@@ -322,16 +322,11 @@ char *fgets_slash(char *s2,int maxlen,XFILE *f)
 		}
 
 		if (!s2 && len > maxlen-3) {
-			char *t;
-	  
 			maxlen *= 2;
-			t = (char *)SMB_REALLOC(s,maxlen);
-			if (!t) {
+			s = (char *)SMB_REALLOC(s,maxlen);
+			if (!s) {
 				DEBUG(0,("fgets_slash: failed to expand buffer!\n"));
-				SAFE_FREE(s);
 				return(NULL);
-			} else {
-				s = t;
 			}
 		}
 	}
@@ -345,7 +340,7 @@ char *fgets_slash(char *s2,int maxlen,XFILE *f)
 char *file_pload(char *syscmd, size_t *size)
 {
 	int fd, n;
-	char *p, *tp;
+	char *p;
 	pstring buf;
 	size_t total;
 	
@@ -358,19 +353,19 @@ char *file_pload(char *syscmd, size_t *size)
 	total = 0;
 
 	while ((n = read(fd, buf, sizeof(buf))) > 0) {
-		tp = SMB_REALLOC(p, total + n + 1);
-		if (!tp) {
+		p = SMB_REALLOC(p, total + n + 1);
+		if (!p) {
 		        DEBUG(0,("file_pload: failed to expand buffer!\n"));
 			close(fd);
-			SAFE_FREE(p);
 			return NULL;
-		} else {
-			p = tp;
 		}
 		memcpy(p+total, buf, n);
 		total += n;
 	}
-	if (p) p[total] = 0;
+
+	if (p) {
+		p[total] = 0;
+	}
 
 	/* FIXME: Perhaps ought to check that the command completed
 	 * successfully (returned 0); if not the data may be
@@ -386,30 +381,37 @@ char *file_pload(char *syscmd, size_t *size)
 
 /****************************************************************************
  Load a file into memory from a fd.
+ Truncate at maxsize. If maxsize == 0 - no limit.
 ****************************************************************************/ 
 
-char *fd_load(int fd, size_t *size)
+char *fd_load(int fd, size_t *psize, size_t maxsize)
 {
 	SMB_STRUCT_STAT sbuf;
+	size_t size;
 	char *p;
 
 	if (sys_fstat(fd, &sbuf) != 0) {
 		return NULL;
 	}
 
-	p = (char *)SMB_MALLOC(sbuf.st_size+1);
+	size = sbuf.st_size;
+	if (maxsize) {
+		size = MIN(size, maxsize);
+	}
+
+	p = (char *)SMB_MALLOC(size+1);
 	if (!p) {
 		return NULL;
 	}
 
-	if (read(fd, p, sbuf.st_size) != sbuf.st_size) {
+	if (read(fd, p, size) != size) {
 		SAFE_FREE(p);
 		return NULL;
 	}
-	p[sbuf.st_size] = 0;
+	p[size] = 0;
 
-	if (size) {
-		*size = sbuf.st_size;
+	if (psize) {
+		*psize = size;
 	}
 
 	return p;
@@ -419,7 +421,7 @@ char *fd_load(int fd, size_t *size)
  Load a file into memory.
 ****************************************************************************/
 
-char *file_load(const char *fname, size_t *size)
+char *file_load(const char *fname, size_t *size, size_t maxsize)
 {
 	int fd;
 	char *p;
@@ -433,9 +435,29 @@ char *file_load(const char *fname, size_t *size)
 		return NULL;
 	}
 
-	p = fd_load(fd, size);
+	p = fd_load(fd, size, maxsize);
 	close(fd);
 	return p;
+}
+
+/*******************************************************************
+ unmap or free memory
+*******************************************************************/
+
+BOOL unmap_file(void* start, size_t size)
+{
+#ifdef HAVE_MMAP
+	if ( munmap( start, size ) != 0 ) {
+		DEBUG( 1, ("map_file: Failed to unmap address %p "
+			"of size %u - %s\n", 
+			start, (unsigned int)size, strerror(errno) ));
+		return False;
+	}
+	return True;
+#else
+	SAFE_FREE( start );
+	return True;
+#endif
 }
 
 /*******************************************************************
@@ -461,7 +483,7 @@ void *map_file(char *fname, size_t size)
 	}
 #endif
 	if (!p) {
-		p = file_load(fname, &s2);
+		p = file_load(fname, &s2, 0);
 		if (!p) {
 			return NULL;
 		}
@@ -522,12 +544,12 @@ static char **file_lines_parse(char *p, size_t size, int *numlines)
  must be freed with file_lines_free(). 
 ****************************************************************************/
 
-char **file_lines_load(const char *fname, int *numlines)
+char **file_lines_load(const char *fname, int *numlines, size_t maxsize)
 {
 	char *p;
 	size_t size = 0;
 
-	p = file_load(fname, &size);
+	p = file_load(fname, &size, maxsize);
 	if (!p) {
 		return NULL;
 	}
@@ -541,12 +563,12 @@ char **file_lines_load(const char *fname, int *numlines)
  the list.
 ****************************************************************************/
 
-char **fd_lines_load(int fd, int *numlines)
+char **fd_lines_load(int fd, int *numlines, size_t maxsize)
 {
 	char *p;
 	size_t size;
 
-	p = fd_load(fd, &size);
+	p = fd_load(fd, &size, maxsize);
 	if (!p) {
 		return NULL;
 	}

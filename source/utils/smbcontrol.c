@@ -131,6 +131,47 @@ static BOOL do_debug(const struct process_id pid,
 		pid, MSG_DEBUG, argv[1], strlen(argv[1]) + 1, False);
 }
 
+/* Inject a fault (fata signal) into a running smbd */
+
+static BOOL do_inject_fault(const struct process_id pid,
+		       const int argc, const char **argv)
+{
+	if (argc != 2) {
+		fprintf(stderr, "Usage: smbcontrol <dest> inject "
+			"<bus|hup|term|internal|segv>\n");
+		return False;
+	}
+
+#ifndef DEVELOPER
+	fprintf(stderr, "Fault injection is only available in "
+		"developer builds\n");
+	return False;
+#else /* DEVELOPER */
+	{
+		int sig = 0;
+
+		if (strcmp(argv[1], "bus") == 0) {
+			sig = SIGBUS;
+		} else if (strcmp(argv[1], "hup") == 0) {
+			sig = SIGHUP;
+		} else if (strcmp(argv[1], "term") == 0) {
+			sig = SIGTERM;
+		} else if (strcmp(argv[1], "segv") == 0) {
+			sig = SIGSEGV;
+		} else if (strcmp(argv[1], "internal") == 0) {
+			/* Force an internal error, ie. an unclean exit. */
+			sig = -1;
+		} else {
+			fprintf(stderr, "Unknown signal name '%s'\n", argv[1]);
+			return False;
+		}
+
+		return send_message(pid, MSG_SMB_INJECT_FAULT,
+				    &sig, sizeof(int), False);
+	}
+#endif /* DEVELOPER */
+}
+
 /* Force a browser election */
 
 static BOOL do_election(const struct process_id pid,
@@ -151,7 +192,7 @@ static void pong_cb(int msg_type, struct process_id pid, void *buf, size_t len)
 {
 	char *src_string = procid_str(NULL, &pid);
 	printf("PONG from pid %s\n", src_string);
-	talloc_free(src_string);
+	TALLOC_FREE(src_string);
 	num_replies++;
 }
 
@@ -584,6 +625,107 @@ static BOOL do_drvupgrade(const struct process_id pid,
 		pid, MSG_DEBUG, argv[1], strlen(argv[1]) + 1, False);
 }
 
+static BOOL do_winbind_online(const struct process_id pid,
+			     const int argc, const char **argv)
+{
+	TDB_CONTEXT *tdb;
+
+	if (argc != 1) {
+		fprintf(stderr, "Usage: smbcontrol winbindd online\n");
+		return False;
+	}
+
+	if (!lp_winbind_offline_logon()) {
+		fprintf(stderr, "The parameter \"winbind offline logon\" must "
+			"be set in the [global] section of smb.conf for this "
+			"command to be allowed.\n");
+		return False;
+	}
+
+	/* Remove the entry in the winbindd_cache tdb to tell a later
+	   starting winbindd that we're online. */
+
+	tdb = tdb_open_log(lock_path("winbindd_cache.tdb"), 0, TDB_DEFAULT, O_RDWR, 0600);
+	if (!tdb) {
+		fprintf(stderr, "Cannot open the tdb %s for writing.\n",
+			lock_path("winbindd_cache.tdb"));
+		return False;
+	}
+
+	tdb_delete_bystring(tdb, "WINBINDD_OFFLINE");
+	tdb_close(tdb);
+
+	return send_message(pid, MSG_WINBIND_ONLINE, NULL, 0, False);
+}
+
+static BOOL do_winbind_offline(const struct process_id pid,
+			     const int argc, const char **argv)
+{
+	TDB_CONTEXT *tdb;
+	BOOL ret = False;
+	int retry = 0;
+
+	if (argc != 1) {
+		fprintf(stderr, "Usage: smbcontrol winbindd offline\n");
+		return False;
+	}
+
+	if (!lp_winbind_offline_logon()) {
+		fprintf(stderr, "The parameter \"winbind offline logon\" must "
+			"be set in the [global] section of smb.conf for this "
+			"command to be allowed.\n");
+		return False;
+	}
+
+	/* Create an entry in the winbindd_cache tdb to tell a later
+	   starting winbindd that we're offline. We may actually create
+	   it here... */
+
+	tdb = tdb_open_log(lock_path("winbindd_cache.tdb"),
+				WINBINDD_CACHE_TDB_DEFAULT_HASH_SIZE,
+				TDB_DEFAULT /* TDB_CLEAR_IF_FIRST */, O_RDWR|O_CREAT, 0600);
+
+	if (!tdb) {
+		fprintf(stderr, "Cannot open the tdb %s for writing.\n",
+			lock_path("winbindd_cache.tdb"));
+		return False;
+	}
+
+	/* There's a potential race condition that if a child
+	   winbindd detects a domain is online at the same time
+	   we're trying to tell it to go offline that it might 
+	   delete the record we add between us adding it and
+	   sending the message. Minimize this by retrying up to
+	   5 times. */
+
+	for (retry = 0; retry < 5; retry++) {
+		int err;
+		TDB_DATA d;
+		ZERO_STRUCT(d);
+		tdb_store_bystring(tdb, "WINBINDD_OFFLINE", d, TDB_INSERT);
+
+		ret = send_message(pid, MSG_WINBIND_OFFLINE, NULL, 0, False);
+
+		/* Check that the entry "WINBINDD_OFFLINE" still exists. */
+		tdb->ecode = 0;
+		d = tdb_fetch_bystring( tdb, "WINBINDD_OFFLINE" );
+
+		/* As this is a key with no data we don't need to free, we
+		   check for existence by looking at tdb_err. */
+
+		err = tdb_error(tdb);
+
+		if (err == TDB_ERR_NOEXIST) {
+			DEBUG(10,("do_winbind_offline: offline state not set - retrying.\n"));
+		} else {
+			break;
+		}
+	}
+
+	tdb_close(tdb);
+	return ret;
+}
+
 static BOOL do_reload_config(const struct process_id pid,
 			     const int argc, const char **argv)
 {
@@ -655,6 +797,8 @@ static const struct {
 	  "Force a browse election" },
 	{ "ping", do_ping, "Elicit a response" },
 	{ "profile", do_profile, "" },
+	{ "inject", do_inject_fault,
+	    "Inject a fatal signal into a running smbd"},
 	{ "profilelevel", do_profilelevel, "" },
 	{ "debuglevel", do_debuglevel, "Display current debuglevels" },
 	{ "printnotify", do_printnotify, "Send a print notify message" },
@@ -668,6 +812,8 @@ static const struct {
 	{ "drvupgrade", do_drvupgrade, "Notify a printer driver has changed" },
 	{ "reload-config", do_reload_config, "Force smbd or winbindd to reload config file"},
 	{ "nodestatus", do_nodestatus, "Ask nmbd to do a node status request"},
+	{ "online", do_winbind_online, "Ask winbind to go into online state"},
+	{ "offline", do_winbind_offline, "Ask winbind to go into offline state"},
 	{ "noop", do_noop, "Do nothing" },
 	{ NULL }
 };
@@ -681,7 +827,7 @@ static void usage(poptContext *pc)
 	poptPrintHelp(*pc, stderr, 0);
 
 	fprintf(stderr, "\n");
-	fprintf(stderr, "<destination> is one of \"nmbd\", \"smbd\" or a "
+	fprintf(stderr, "<destination> is one of \"nmbd\", \"smbd\", \"winbindd\" or a "
 		"process ID\n");
 
 	fprintf(stderr, "\n");
@@ -715,11 +861,21 @@ static struct process_id parse_dest(const char *dest)
 		return pid_to_procid(sys_getpid());
 	}
 
-	/* Check for numeric pid number */
+	/* Fix winbind typo. */
+	if (strequal(dest, "winbind")) {
+		dest = "winbindd";
+	}
 
-	result = interpret_pid(dest);
-	if (procid_valid(&result)) {
-		return result;
+	
+	if (!(strequal(dest, "winbindd") || strequal(dest, "nmbd"))) {
+		/* Check for numeric pid number */
+
+		result = interpret_pid(dest);
+
+		/* Zero isn't valid if not smbd. */
+		if (result.pid && procid_valid(&result)) {
+			return result;
+		}
 	}
 
 	/* Look up other destinations in pidfile directory */
@@ -827,7 +983,7 @@ int main(int argc, const char **argv)
 	if (argc == 1)
 		usage(&pc);
 
-	lp_load(dyn_CONFIGFILE,False,False,False);
+	lp_load(dyn_CONFIGFILE,False,False,False,True);
 
 	/* Need to invert sense of return code -- samba
          * routines mostly return True==1 for success, but

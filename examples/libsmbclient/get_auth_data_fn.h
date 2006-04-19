@@ -7,7 +7,6 @@ get_auth_data_fn(const char * pServer,
                  int maxLenUsername,
                  char * pPassword,
                  int maxLenPassword)
-    
 {
     char temp[128];
     

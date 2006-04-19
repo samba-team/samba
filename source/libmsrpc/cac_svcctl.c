@@ -154,7 +154,7 @@ int cac_SvcEnumServices(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SvcEnu
       return CAC_FAILURE;
    }
 
-   talloc_free(svc_buf);
+   TALLOC_FREE(svc_buf);
 
    op->out.num_services = num_svc_out;
 

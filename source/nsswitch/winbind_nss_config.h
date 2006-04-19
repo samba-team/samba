@@ -24,6 +24,12 @@
 #ifndef _WINBIND_NSS_CONFIG_H
 #define _WINBIND_NSS_CONFIG_H
 
+/* shutup the compiler warnings due to krb5.h on i
+   64-bit sles9 */
+#ifdef SIZEOF_LONG
+#undef SIZEOF_LONG
+#endif
+
 /* Include header files from data in config.h file */
 
 #ifndef NO_CONFIG_H
@@ -118,6 +124,19 @@ typedef int BOOL;
 #ifndef uint8
 #define uint8 unsigned char
 #endif
+
+/*
+ * check for 8 byte long long
+ */
+
+#if !defined(uint64)
+#if (SIZEOF_LONG == 8)
+#define uint64 unsigned long
+#elif (SIZEOF_LONG_LONG == 8)
+#define uint64 unsigned long long
+#endif  /* don't lie.  If we don't have it, then don't use it */
+#endif
+
 
 /* zero a structure */
 #ifndef ZERO_STRUCT

@@ -899,6 +899,9 @@ BOOL make_spoolss_q_open_printer_ex(SPOOL_Q_OPEN_PRINTER_EX *q_u,
 	DEBUG(5,("make_spoolss_q_open_printer_ex\n"));
 
 	q_u->printername = TALLOC_P( get_talloc_ctx(), UNISTR2 );
+	if (!q_u->printername) {
+		return False;
+	}
 	init_unistr2(q_u->printername, printername, UNI_STR_TERMINATE);
 
 	q_u->printer_default.datatype_ptr = 0;
@@ -912,6 +915,9 @@ BOOL make_spoolss_q_open_printer_ex(SPOOL_Q_OPEN_PRINTER_EX *q_u,
 	
 	q_u->user_ctr.level                 = 1;
 	q_u->user_ctr.user.user1            = TALLOC_P( get_talloc_ctx(), SPOOL_USER_1 );
+	if (!q_u->user_ctr.user.user1) {
+		return False;
+	}
 	q_u->user_ctr.user.user1->size      = strlen(clientname) + strlen(user_name) + 10;
 	q_u->user_ctr.user.user1->build     = 1381;
 	q_u->user_ctr.user.user1->major     = 2;
@@ -919,7 +925,13 @@ BOOL make_spoolss_q_open_printer_ex(SPOOL_Q_OPEN_PRINTER_EX *q_u,
 	q_u->user_ctr.user.user1->processor = 0;
 
 	q_u->user_ctr.user.user1->client_name = TALLOC_P( get_talloc_ctx(), UNISTR2 );
+	if (!q_u->user_ctr.user.user1->client_name) {
+		return False;
+	}
 	q_u->user_ctr.user.user1->user_name   = TALLOC_P( get_talloc_ctx(), UNISTR2 );
+	if (!q_u->user_ctr.user.user1->user_name) {
+		return False;
+	}
 
 	init_unistr2(q_u->user_ctr.user.user1->client_name, clientname, UNI_STR_TERMINATE);
 	init_unistr2(q_u->user_ctr.user.user1->user_name, user_name, UNI_STR_TERMINATE);
@@ -937,12 +949,15 @@ BOOL make_spoolss_q_addprinterex( TALLOC_CTX *mem_ctx, SPOOL_Q_ADDPRINTEREX *q_u
 {
 	DEBUG(5,("make_spoolss_q_addprinterex\n"));
 	
-	if (!ctr) 
+	if (!ctr || !ctr->printers_2) 
 		return False;
 
 	ZERO_STRUCTP(q_u);
 
 	q_u->server_name = TALLOC_P( mem_ctx, UNISTR2 );
+	if (!q_u->server_name) {
+		return False;
+	}
 	init_unistr2(q_u->server_name, srv_name, UNI_FLAGS_NONE);
 
 	q_u->level = level;
@@ -965,14 +980,22 @@ BOOL make_spoolss_q_addprinterex( TALLOC_CTX *mem_ctx, SPOOL_Q_ADDPRINTEREX *q_u
 
 	q_u->user_ctr.level		    = 1;
 	q_u->user_ctr.user.user1            = TALLOC_P( get_talloc_ctx(), SPOOL_USER_1 );
+	if (!q_u->user_ctr.user.user1) {
+		return False;
+	}
 	q_u->user_ctr.user.user1->build     = 1381;
 	q_u->user_ctr.user.user1->major     = 2; 
 	q_u->user_ctr.user.user1->minor     = 0;
 	q_u->user_ctr.user.user1->processor = 0;
 
 	q_u->user_ctr.user.user1->client_name = TALLOC_P( mem_ctx, UNISTR2 );
+	if (!q_u->user_ctr.user.user1->client_name) {
+		return False;
+	}
 	q_u->user_ctr.user.user1->user_name   = TALLOC_P( mem_ctx, UNISTR2 );
-
+	if (!q_u->user_ctr.user.user1->user_name) {
+		return False;
+	}
 	init_unistr2(q_u->user_ctr.user.user1->client_name, clientname, UNI_STR_TERMINATE);
 	init_unistr2(q_u->user_ctr.user.user1->user_name, user_name, UNI_STR_TERMINATE);
 
@@ -3733,14 +3756,14 @@ BOOL make_spoolss_q_setprinter(TALLOC_CTX *mem_ctx, SPOOL_Q_SETPRINTER *q_u,
 	SEC_DESC *secdesc;
 	DEVICEMODE *devmode;
 
-	if (q_u == NULL)
+	if (!q_u || !info)
 		return False;
 	
 	memcpy(&q_u->handle, hnd, sizeof(q_u->handle));
 
 	q_u->level = level;
 	q_u->info.level = level;
-	q_u->info.info_ptr = (info != NULL) ? 1 : 0;
+	q_u->info.info_ptr = 1;	/* Info is != NULL, see above */
 	switch (level) {
 
 	  /* There's no such thing as a setprinter level 1 */
@@ -4968,7 +4991,7 @@ BOOL spool_io_printer_driver_info_level_6(const char *desc, SPOOL_PRINTER_DRIVER
 ********************************************************************/  
 static BOOL uniarray_2_dosarray(BUFFER5 *buf5, fstring **ar)
 {
-	fstring f, *tar;
+	fstring f;
 	int n = 0;
 	char *src;
 
@@ -4981,11 +5004,9 @@ static BOOL uniarray_2_dosarray(BUFFER5 *buf5, fstring **ar)
 	while (src < ((char *)buf5->buffer) + buf5->buf_len*2) {
 		rpcstr_pull(f, src, sizeof(f)-1, -1, STR_TERMINATE);
 		src = skip_unibuf(src, 2*buf5->buf_len - PTR_DIFF(src,buf5->buffer));
-		tar = SMB_REALLOC_ARRAY(*ar, fstring, n+2);
-		if (!tar)
+		*ar = SMB_REALLOC_ARRAY(*ar, fstring, n+2);
+		if (!*ar)
 			return False;
-		else
-			*ar = tar;
 		fstrcpy((*ar)[n], f);
 		n++;
 	}
@@ -5063,13 +5084,17 @@ BOOL make_spoolss_q_addprinterdriver(TALLOC_CTX *mem_ctx,
 {
 	DEBUG(5,("make_spoolss_q_addprinterdriver\n"));
 	
-	q_u->server_name_ptr = (srv_name!=NULL)?1:0;
+	if (!srv_name || !info) {
+		return False;
+	}
+
+	q_u->server_name_ptr = 1; /* srv_name is != NULL, see above */
 	init_unistr2(&q_u->server_name, srv_name, UNI_STR_TERMINATE);
 	
 	q_u->level = level;
 	
 	q_u->info.level = level;
-	q_u->info.ptr = (info!=NULL)?1:0;
+	q_u->info.ptr = 1;	/* Info is != NULL, see above */
 	switch (level)
 	{
 	/* info level 3 is supported by Windows 95/98, WinNT and Win2k */
@@ -7406,3 +7431,174 @@ BOOL make_spoolss_q_rffpcnex(SPOOL_Q_RFFPCNEX *q_u, POLICY_HND *handle,
 
 	return True;
 }
+
+
+/*******************************************************************
+ ********************************************************************/  
+
+BOOL spoolss_io_q_xcvdataport(const char *desc, SPOOL_Q_XCVDATAPORT *q_u, prs_struct *ps, int depth)
+{
+	prs_debug(ps, depth, desc, "spoolss_io_q_xcvdataport");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;	
+
+	if(!smb_io_pol_hnd("printer handle", &q_u->handle, ps, depth))
+		return False;
+		
+	if(!smb_io_unistr2("", &q_u->dataname, True, ps, depth))
+		return False;
+
+	if (!prs_align(ps))
+		return False;
+
+	if(!prs_rpcbuffer("", ps, depth, &q_u->indata))
+		return False;
+		
+	if (!prs_align(ps))
+		return False;
+
+	if (!prs_uint32("indata_len", ps, depth, &q_u->indata_len))
+		return False;
+	if (!prs_uint32("offered", ps, depth, &q_u->offered))
+		return False;
+	if (!prs_uint32("unknown", ps, depth, &q_u->unknown))
+		return False;
+	
+	return True;
+}
+
+/*******************************************************************
+ ********************************************************************/  
+
+BOOL spoolss_io_r_xcvdataport(const char *desc, SPOOL_R_XCVDATAPORT *r_u, prs_struct *ps, int depth)
+{
+	prs_debug(ps, depth, desc, "spoolss_io_r_xcvdataport");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+	if(!prs_rpcbuffer("", ps, depth, &r_u->outdata))
+		return False;
+		
+	if (!prs_align(ps))
+		return False;
+
+	if (!prs_uint32("needed", ps, depth, &r_u->needed))
+		return False;
+	if (!prs_uint32("unknown", ps, depth, &r_u->unknown))
+		return False;
+
+	if(!prs_werror("status", ps, depth, &r_u->status))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+ ********************************************************************/  
+
+BOOL make_monitorui_buf( RPC_BUFFER *buf, const char *dllname )
+{
+	UNISTR string;
+	
+	if ( !buf )
+		return False;
+
+	init_unistr( &string, dllname );
+
+	if ( !prs_unistr( "ui_dll", &buf->prs, 0, &string ) )
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+ ********************************************************************/  
+ 
+#define PORT_DATA_1_PAD    540
+
+static BOOL smb_io_port_data_1( const char *desc, RPC_BUFFER *buf, int depth, SPOOL_PORT_DATA_1 *p1 )
+{
+	prs_struct *ps = &buf->prs;
+	uint8 padding[PORT_DATA_1_PAD];
+
+	prs_debug(ps, depth, desc, "smb_io_port_data_1");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;	
+
+	if( !prs_uint16s(True, "portname", ps, depth, p1->portname, MAX_PORTNAME))
+		return False;
+
+	if (!prs_uint32("version", ps, depth, &p1->version))
+		return False;
+	if (!prs_uint32("protocol", ps, depth, &p1->protocol))
+		return False;
+	if (!prs_uint32("size", ps, depth, &p1->size))
+		return False;
+	if (!prs_uint32("reserved", ps, depth, &p1->reserved))
+		return False;
+
+	if( !prs_uint16s(True, "hostaddress", ps, depth, p1->hostaddress, MAX_NETWORK_NAME))
+		return False;
+	if( !prs_uint16s(True, "snmpcommunity", ps, depth, p1->snmpcommunity, MAX_SNMP_COMM_NAME))
+		return False;
+
+	if (!prs_uint32("dblspool", ps, depth, &p1->dblspool))
+		return False;
+		
+	if( !prs_uint16s(True, "queue", ps, depth, p1->queue, MAX_QUEUE_NAME))
+		return False;
+	if( !prs_uint16s(True, "ipaddress", ps, depth, p1->ipaddress, MAX_IPADDR_STRING))
+		return False;
+
+	if( !prs_uint8s(False, "", ps, depth, padding, PORT_DATA_1_PAD))
+		return False;
+		
+	if (!prs_uint32("port", ps, depth, &p1->port))
+		return False;
+	if (!prs_uint32("snmpenabled", ps, depth, &p1->snmpenabled))
+		return False;
+	if (!prs_uint32("snmpdevindex", ps, depth, &p1->snmpdevindex))
+		return False;
+		
+	return True;
+}
+
+/*******************************************************************
+ ********************************************************************/  
+
+BOOL convert_port_data_1( NT_PORT_DATA_1 *port1, RPC_BUFFER *buf ) 
+{
+	SPOOL_PORT_DATA_1 spdata_1;
+	
+	ZERO_STRUCT( spdata_1 );
+	
+	if ( !smb_io_port_data_1( "port_data_1", buf, 0, &spdata_1 ) )
+		return False;
+		
+	rpcstr_pull(port1->name, spdata_1.portname, sizeof(port1->name), -1, 0);
+	rpcstr_pull(port1->queue, spdata_1.queue, sizeof(port1->queue), -1, 0);
+	rpcstr_pull(port1->hostaddr, spdata_1.hostaddress, sizeof(port1->hostaddr), -1, 0);
+	
+	port1->port = spdata_1.port;
+	
+	switch ( spdata_1.protocol ) {
+	case 1:
+		port1->protocol = PORT_PROTOCOL_DIRECT;
+		break;
+	case 2:
+		port1->protocol = PORT_PROTOCOL_LPR;
+		break;
+	default:
+		DEBUG(3,("convert_port_data_1: unknown protocol [%d]!\n", 
+			spdata_1.protocol));
+		return False;
+	}
+
+	return True;
+}
+

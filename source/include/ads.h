@@ -30,6 +30,7 @@ typedef struct {
 		unsigned flags;
 		int time_offset;
 		time_t expire;
+		time_t renewable;
 	} auth;
 
 	/* info derived from the servers config */
@@ -92,6 +93,7 @@ typedef void **ADS_MODLIST;
 #define ADS_NO_REFERRALS_OID 	"1.2.840.113556.1.4.1339"
 #define ADS_SERVER_SORT_OID 	"1.2.840.113556.1.4.473"
 #define ADS_PERMIT_MODIFY_OID 	"1.2.840.113556.1.4.1413"
+#define ADS_ASQ_OID		"1.2.840.113556.1.4.1504"
 
 /* ldap attribute oids (Services for Unix) */
 #define ADS_ATTR_SFU_UIDNUMBER_OID 	"1.2.840.113556.1.6.18.1.310"
@@ -133,9 +135,9 @@ typedef void **ADS_MODLIST;
 #define UF_NOT_DELEGATED			0x00100000
 #define UF_USE_DES_KEY_ONLY			0x00200000
 #define UF_DONT_REQUIRE_PREAUTH			0x00400000
-#define UF_UNUSED_5				0x00800000
+#define UF_PASSWORD_EXPIRED			0x00800000
 
-#define UF_UNUSED_6				0x01000000
+#define UF_TRUSTED_TO_AUTHENTICATE_FOR_DELEGATION 0x01000000
 #define UF_NO_AUTH_DATA_REQUIRED		0x02000000
 #define UF_UNUSED_8				0x04000000
 #define UF_UNUSED_9				0x08000000

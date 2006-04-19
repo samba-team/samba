@@ -181,7 +181,8 @@ smbc_urldecode(char *dest, char * src, size_t max_dest_len)
 
         *p = '\0';
 
-        strncpy(dest, temp, max_dest_len);
+        strncpy(dest, temp, max_dest_len - 1);
+        dest[max_dest_len - 1] = '\0';
 
         return err_count;
 }
@@ -268,6 +269,7 @@ static const char *smbc_prefix = "smb:";
 static int
 smbc_parse_path(SMBCCTX *context,
                 const char *fname,
+                char *workgroup, int workgroup_len,
                 char *server, int server_len,
                 char *share, int share_len,
                 char *path, int path_len,
@@ -282,6 +284,16 @@ smbc_parse_path(SMBCCTX *context,
 	int len;
 
 	server[0] = share[0] = path[0] = user[0] = password[0] = (char)0;
+
+        /*
+         * Assume we wont find an authentication domain to parse, so default
+         * to the workgroup in the provided context.
+         */
+        if (workgroup != NULL) {
+                strncpy(workgroup, context->workgroup, workgroup_len - 1);
+                workgroup[workgroup_len - 1] = '\0';
+        }
+
         if (options != NULL && options_len > 0) {
                 options[0] = (char)0;
         }
@@ -328,6 +340,7 @@ smbc_parse_path(SMBCCTX *context,
 			((strlen(context->workgroup) < 16)
                          ? strlen(context->workgroup)
                          : 16));
+                server[server_len - 1] = '\0';
 		return 0;
 		
 	}
@@ -369,11 +382,20 @@ smbc_parse_path(SMBCCTX *context,
 
 		}
 
-		if (username[0])
-			strncpy(user, username, user_len);  /* FIXME, domain */
+                if (domain[0] && workgroup) {
+                        strncpy(workgroup, domain, workgroup_len - 1);
+                        workgroup[workgroup_len - 1] = '\0';
+                }
 
-		if (passwd[0])
-			strncpy(password, passwd, password_len);
+		if (username[0]) {
+			strncpy(user, username, user_len - 1);
+                        user[user_len - 1] = '\0';
+                }
+
+		if (passwd[0]) {
+			strncpy(password, passwd, password_len - 1);
+                        password[password_len - 1] = '\0';
+                }
 
 	}
 
@@ -530,10 +552,21 @@ find_server(SMBCCTX *context,
 						   workgroup, username);
 
 	if (!auth_called && !srv && (!username[0] || !password[0])) {
-		context->callbacks.auth_fn(server, share,
-                                           workgroup, sizeof(fstring),
-                                           username, sizeof(fstring),
-                                           password, sizeof(fstring));
+                if (context->internal->_auth_fn_with_context != NULL) {
+                         context->internal->_auth_fn_with_context(
+                                context,
+                                server, share,
+                                workgroup, sizeof(fstring),
+                                username, sizeof(fstring),
+                                password, sizeof(fstring));
+                } else {
+                        context->callbacks.auth_fn(
+                                server, share,
+                                workgroup, sizeof(fstring),
+                                username, sizeof(fstring),
+                                password, sizeof(fstring));
+                }
+
 		/*
                  * However, smbc_auth_fn may have picked up info relating to
                  * an existing connection, so try for an existing connection
@@ -635,10 +668,20 @@ smbc_server(SMBCCTX *context,
                  */
                 if (srv->cli.cnum == (uint16) -1) {
                         /* Ensure we have accurate auth info */
-                        context->callbacks.auth_fn(server, share,
-                                                   workgroup, sizeof(fstring),
-                                                   username, sizeof(fstring),
-                                                   password, sizeof(fstring));
+                        if (context->internal->_auth_fn_with_context != NULL) {
+                                context->internal->_auth_fn_with_context(
+                                        context,
+                                        server, share,
+                                        workgroup, sizeof(fstring),
+                                        username, sizeof(fstring),
+                                        password, sizeof(fstring));
+                        } else {
+                                context->callbacks.auth_fn(
+                                        server, share,
+                                        workgroup, sizeof(fstring),
+                                        username, sizeof(fstring),
+                                        password, sizeof(fstring));
+                        }
 
                         if (! cli_send_tconX(&srv->cli, share, "?????",
                                              password, strlen(password)+1)) {
@@ -879,10 +922,20 @@ smbc_attr_server(SMBCCTX *context,
                 /* We didn't find a cached connection.  Get the password */
                 if (*password == '\0') {
                         /* ... then retrieve it now. */
-                        context->callbacks.auth_fn(server, share,
-                                                   workgroup, sizeof(fstring),
-                                                   username, sizeof(fstring),
-                                                   password, sizeof(fstring));
+                        if (context->internal->_auth_fn_with_context != NULL) {
+                                context->internal->_auth_fn_with_context(
+                                        context,
+                                        server, share,
+                                        workgroup, sizeof(fstring),
+                                        username, sizeof(fstring),
+                                        password, sizeof(fstring));
+                        } else {
+                                context->callbacks.auth_fn(
+                                        server, share,
+                                        workgroup, sizeof(fstring),
+                                        username, sizeof(fstring),
+                                        password, sizeof(fstring));
+                        }
                 }
         
                 zero_ip(&ip);
@@ -1001,6 +1054,7 @@ smbc_open_ctx(SMBCCTX *context,
 	}
 
 	if (smbc_parse_path(context, fname,
+                            workgroup, sizeof(workgroup),
                             server, sizeof(server),
                             share, sizeof(share),
                             path, sizeof(path),
@@ -1012,8 +1066,6 @@ smbc_open_ctx(SMBCCTX *context,
         }
 
 	if (user[0] == (char)0) fstrcpy(user, context->user);
-
-	fstrcpy(workgroup, context->workgroup);
 
 	srv = smbc_server(context, True,
                           server, share, workgroup, user, password);
@@ -1049,6 +1101,7 @@ smbc_open_ctx(SMBCCTX *context,
 		if (!cli_resolve_path( "", &srv->cli, path, &targetcli, targetpath))
 		{
 			d_printf("Could not resolve %s\n", path);
+			SAFE_FREE(file);
 			return NULL;
 		}
 		/*d_printf(">>>open: resolved %s as %s\n", path, targetpath);*/
@@ -1178,7 +1231,7 @@ smbc_read_ctx(SMBCCTX *context,
          * the call to cli_read() instead of file->offset fixes a problem
          * retrieving data at an offset greater than 4GB.
          */
-        off_t offset = file->offset;
+        off_t offset;
 
 	if (!context || !context->internal ||
 	    !context->internal->_initialized) {
@@ -1197,6 +1250,8 @@ smbc_read_ctx(SMBCCTX *context,
 
 	}
 
+	offset = file->offset;
+
 	/* Check that the buffer exists ... */
 
 	if (buf == NULL) {
@@ -1208,6 +1263,7 @@ smbc_read_ctx(SMBCCTX *context,
 
 	/*d_printf(">>>read: parsing %s\n", file->fname);*/
 	if (smbc_parse_path(context, file->fname,
+                            NULL, 0,
                             server, sizeof(server),
                             share, sizeof(share),
                             path, sizeof(path),
@@ -1260,8 +1316,8 @@ smbc_write_ctx(SMBCCTX *context,
 	pstring path, targetpath;
 	struct cli_state *targetcli;
 
-        offset = file->offset; /* See "offset" comment in smbc_read_ctx() */
-
+	/* First check all pointers before dereferencing them */
+	
 	if (!context || !context->internal ||
 	    !context->internal->_initialized) {
 
@@ -1286,8 +1342,11 @@ smbc_write_ctx(SMBCCTX *context,
 
 	}
 
+        offset = file->offset; /* See "offset" comment in smbc_read_ctx() */
+
 	/*d_printf(">>>write: parsing %s\n", file->fname);*/
 	if (smbc_parse_path(context, file->fname,
+                            NULL, 0,
                             server, sizeof(server),
                             share, sizeof(share),
                             path, sizeof(path),
@@ -1359,6 +1418,7 @@ smbc_close_ctx(SMBCCTX *context,
 
 	/*d_printf(">>>close: parsing %s\n", file->fname);*/
 	if (smbc_parse_path(context, file->fname,
+                            NULL, 0,
                             server, sizeof(server),
                             share, sizeof(share),
                             path, sizeof(path),
@@ -1499,39 +1559,6 @@ smbc_setatr(SMBCCTX * context, SMBCSRV *srv, char *path,
         int ret;
 
         /*
-         * Get the create time of the file (if not provided); we'll need it in
-         * the set call.
-         */
-        if (! srv->no_pathinfo && c_time == 0) {
-                if (! cli_qpathinfo(&srv->cli, path,
-                                    &c_time, NULL, NULL, NULL, NULL)) {
-                        /* qpathinfo not available */
-                        srv->no_pathinfo = True;
-                } else {
-                        /*
-                         * We got a creation time.  Some OS versions don't
-                         * return a valid create time, though.  If we got an
-                         * invalid time, start with the current time instead.
-                         */
-                        if (c_time == 0 || c_time == (time_t) -1) {
-                                c_time = time(NULL);
-                        }
-
-                        /*
-                         * We got a creation time.  For sanity sake, since
-                         * there is no POSIX function to set the create time
-                         * of a file, if the existing create time is greater
-                         * than either of access time or modification time,
-                         * set create time to the smallest of those.  This
-                         * ensure that the create time of a file is never
-                         * greater than its last access or modification time.
-                         */
-                        if (c_time > a_time) c_time = a_time;
-                        if (c_time > m_time) c_time = m_time;
-                }
-        }
-
-        /*
          * First, try setpathinfo (if qpathinfo succeeded), for it is the
          * modern function for "new code" to be using, and it works given a
          * filename rather than requiring that the file be opened to have its
@@ -1645,6 +1672,7 @@ smbc_unlink_ctx(SMBCCTX *context,
 	}
 
 	if (smbc_parse_path(context, fname,
+                            workgroup, sizeof(workgroup),
                             server, sizeof(server),
                             share, sizeof(share),
                             path, sizeof(path),
@@ -1656,8 +1684,6 @@ smbc_unlink_ctx(SMBCCTX *context,
         }
 
 	if (user[0] == (char)0) fstrcpy(user, context->user);
-
-	fstrcpy(workgroup, context->workgroup);
 
 	srv = smbc_server(context, True,
                           server, share, workgroup, user, password);
@@ -1762,6 +1788,7 @@ smbc_rename_ctx(SMBCCTX *ocontext,
 	DEBUG(4, ("smbc_rename(%s,%s)\n", oname, nname));
 
 	smbc_parse_path(ocontext, oname,
+                        workgroup, sizeof(workgroup),
                         server1, sizeof(server1),
                         share1, sizeof(share1),
                         path1, sizeof(path1),
@@ -1772,6 +1799,7 @@ smbc_rename_ctx(SMBCCTX *ocontext,
 	if (user1[0] == (char)0) fstrcpy(user1, ocontext->user);
 
 	smbc_parse_path(ncontext, nname,
+                        NULL, 0,
                         server2, sizeof(server2),
                         share2, sizeof(share2),
                         path2, sizeof(path2),
@@ -1790,8 +1818,6 @@ smbc_rename_ctx(SMBCCTX *ocontext,
 		return -1;
 
 	}
-
-	fstrcpy(workgroup, ocontext->workgroup);
 
 	srv = smbc_server(ocontext, True,
                           server1, share1, workgroup, user1, password1);
@@ -1891,6 +1917,7 @@ smbc_lseek_ctx(SMBCCTX *context,
 	case SEEK_END:
 		/*d_printf(">>>lseek: parsing %s\n", file->fname);*/
 		if (smbc_parse_path(context, file->fname,
+                                    NULL, 0,
                                     server, sizeof(server),
                                     share, sizeof(share),
                                     path, sizeof(path),
@@ -2049,6 +2076,7 @@ smbc_stat_ctx(SMBCCTX *context,
 	DEBUG(4, ("smbc_stat(%s)\n", fname));
 
 	if (smbc_parse_path(context, fname,
+                            workgroup, sizeof(workgroup),
                             server, sizeof(server),
                             share, sizeof(share),
                             path, sizeof(path),
@@ -2060,8 +2088,6 @@ smbc_stat_ctx(SMBCCTX *context,
         }
 
 	if (user[0] == (char)0) fstrcpy(user, context->user);
-
-	fstrcpy(workgroup, context->workgroup);
 
 	srv = smbc_server(context, True,
                           server, share, workgroup, user, password);
@@ -2137,6 +2163,7 @@ smbc_fstat_ctx(SMBCCTX *context,
 
 	/*d_printf(">>>fstat: parsing %s\n", file->fname);*/
 	if (smbc_parse_path(context, file->fname,
+                            NULL, 0,
                             server, sizeof(server),
                             share, sizeof(share),
                             path, sizeof(path),
@@ -2270,8 +2297,12 @@ add_dirent(SMBCFILE *dir,
 	dirent->commentlen = comment_len;
 	dirent->dirlen = size;
   
+        /*
+         * dirent->namelen + 1 includes the null (no null termination needed)
+         * Ditto for dirent->commentlen.
+         * The space for the two null bytes was allocated.
+         */
 	strncpy(dirent->name, (name?name:""), dirent->namelen + 1);
-
 	dirent->comment = (char *)(&dirent->name + dirent->namelen + 1);
 	strncpy(dirent->comment, (comment?comment:""), dirent->commentlen + 1);
 	
@@ -2474,7 +2505,7 @@ done:
         cli_rpc_pipe_close(pipe_hnd);
 
         /* Free all memory which was allocated for this request */
-        talloc_free(mem_ctx);
+        TALLOC_FREE(mem_ctx);
 
         /* Tell 'em if it worked */
         return W_ERROR_IS_OK(result) ? 0 : -1;
@@ -2510,6 +2541,7 @@ smbc_opendir_ctx(SMBCCTX *context,
 	}
 
 	if (smbc_parse_path(context, fname,
+                            workgroup, sizeof(workgroup),
                             server, sizeof(server),
                             share, sizeof(share),
                             path, sizeof(path),
@@ -2533,8 +2565,6 @@ smbc_opendir_ctx(SMBCCTX *context,
         }
 
 	if (user[0] == (char)0) fstrcpy(user, context->user);
-
-	pstrcpy(workgroup, context->workgroup);
 
 	dir = SMB_MALLOC_P(SMBCFILE);
 
@@ -2598,6 +2628,10 @@ smbc_opendir_ctx(SMBCCTX *context,
 
                         if (!find_master_ip(workgroup, &server_addr.ip)) {
 
+				if (dir) {
+					SAFE_FREE(dir->fname);
+					SAFE_FREE(dir);
+				}
                                 errno = ENOENT;
                                 return NULL;
                         }
@@ -2709,6 +2743,10 @@ smbc_opendir_ctx(SMBCCTX *context,
                                         DEBUG(0, ("Could not get name of "
                                                   "local/domain master browser "
                                                   "for server %s\n", server));
+					if (dir) {
+						SAFE_FREE(dir->fname);
+						SAFE_FREE(dir);
+					}
 					errno = EPERM;
 					return NULL;
 
@@ -2832,6 +2870,10 @@ smbc_opendir_ctx(SMBCCTX *context,
                                               &targetcli, targetpath))
 			{
 				d_printf("Could not resolve %s\n", path);
+				if (dir) {
+					SAFE_FREE(dir->fname);
+					SAFE_FREE(dir);
+				}
 				return NULL;
 			}
 			
@@ -2934,14 +2976,8 @@ smbc_readdir_internal(SMBCCTX * context,
                 dest->comment = dest->name + dest->namelen + 1;
 
                 /* Copy the comment */
-                strncpy(dest->comment, src->comment, max_namebuf_len);
-
-                /* Ensure the comment is null terminated */
-                if (max_namebuf_len > src->commentlen) {
-                        dest->comment[src->commentlen] = '\0';
-                } else {
-                        dest->comment[max_namebuf_len - 1] = '\0';
-                }
+                strncpy(dest->comment, src->comment, max_namebuf_len - 1);
+                dest->comment[max_namebuf_len - 1] = '\0';
 
                 /* Save other fields */
                 dest->smbc_type = src->smbc_type;
@@ -3156,6 +3192,7 @@ smbc_mkdir_ctx(SMBCCTX *context,
 	DEBUG(4, ("smbc_mkdir(%s)\n", fname));
 
 	if (smbc_parse_path(context, fname,
+                            workgroup, sizeof(workgroup),
                             server, sizeof(server),
                             share, sizeof(share),
                             path, sizeof(path),
@@ -3167,8 +3204,6 @@ smbc_mkdir_ctx(SMBCCTX *context,
         }
 
 	if (user[0] == (char)0) fstrcpy(user, context->user);
-
-	fstrcpy(workgroup, context->workgroup);
 
 	srv = smbc_server(context, True,
                           server, share, workgroup, user, password);
@@ -3253,6 +3288,7 @@ smbc_rmdir_ctx(SMBCCTX *context,
 	DEBUG(4, ("smbc_rmdir(%s)\n", fname));
 
 	if (smbc_parse_path(context, fname,
+                            workgroup, sizeof(workgroup),
                             server, sizeof(server),
                             share, sizeof(share),
                             path, sizeof(path),
@@ -3265,8 +3301,6 @@ smbc_rmdir_ctx(SMBCCTX *context,
         }
 
 	if (user[0] == (char)0) fstrcpy(user, context->user);
-
-	fstrcpy(workgroup, context->workgroup);
 
 	srv = smbc_server(context, True,
                           server, share, workgroup, user, password);
@@ -3507,6 +3541,7 @@ smbc_chmod_ctx(SMBCCTX *context,
 	DEBUG(4, ("smbc_chmod(%s, 0%3o)\n", fname, newmode));
 
 	if (smbc_parse_path(context, fname,
+                            workgroup, sizeof(workgroup),
                             server, sizeof(server),
                             share, sizeof(share),
                             path, sizeof(path),
@@ -3518,8 +3553,6 @@ smbc_chmod_ctx(SMBCCTX *context,
         }
 
 	if (user[0] == (char)0) fstrcpy(user, context->user);
-
-	fstrcpy(workgroup, context->workgroup);
 
 	srv = smbc_server(context, True,
                           server, share, workgroup, user, password);
@@ -3586,13 +3619,13 @@ smbc_utimes_ctx(SMBCCTX *context,
                 char atimebuf[32];
                 char mtimebuf[32];
 
-                strncpy(atimebuf, ctime(&a_time), sizeof(atimebuf));
+                strncpy(atimebuf, ctime(&a_time), sizeof(atimebuf) - 1);
                 atimebuf[sizeof(atimebuf) - 1] = '\0';
                 if ((p = strchr(atimebuf, '\n')) != NULL) {
                         *p = '\0';
                 }
 
-                strncpy(mtimebuf, ctime(&m_time), sizeof(mtimebuf));
+                strncpy(mtimebuf, ctime(&m_time), sizeof(mtimebuf) - 1);
                 mtimebuf[sizeof(mtimebuf) - 1] = '\0';
                 if ((p = strchr(mtimebuf, '\n')) != NULL) {
                         *p = '\0';
@@ -3603,6 +3636,7 @@ smbc_utimes_ctx(SMBCCTX *context,
         }
 
 	if (smbc_parse_path(context, fname,
+                            workgroup, sizeof(workgroup),
                             server, sizeof(server),
                             share, sizeof(share),
                             path, sizeof(path),
@@ -3614,8 +3648,6 @@ smbc_utimes_ctx(SMBCCTX *context,
         }
 
 	if (user[0] == (char)0) fstrcpy(user, context->user);
-
-	fstrcpy(workgroup, context->workgroup);
 
 	srv = smbc_server(context, True,
                           server, share, workgroup, user, password);
@@ -3750,7 +3782,7 @@ convert_string_to_sid(struct cli_state *ipc_cli,
         }
 
 	if (!NT_STATUS_IS_OK(rpccli_lsa_lookup_names(pipe_hnd, ipc_cli->mem_ctx, 
-						  pol, 1, &str, &sids, 
+						  pol, 1, &str, NULL, &sids, 
 						  &types))) {
 		result = False;
 		goto done;
@@ -3921,7 +3953,7 @@ sec_desc_parse(TALLOC_CTX *ctx,
 {
 	const char *p = str;
 	fstring tok;
-	SEC_DESC *ret;
+	SEC_DESC *ret = NULL;
 	size_t sd_size;
 	DOM_SID *grp_sid=NULL;
         DOM_SID *owner_sid=NULL;
@@ -3936,49 +3968,65 @@ sec_desc_parse(TALLOC_CTX *ctx,
 		}
 
 		if (StrnCaseCmp(tok,"OWNER:", 6) == 0) {
+			if (owner_sid) {
+				DEBUG(5, ("OWNER specified more than once!\n"));
+				goto done;
+			}
 			owner_sid = SMB_CALLOC_ARRAY(DOM_SID, 1);
 			if (!owner_sid ||
 			    !convert_string_to_sid(ipc_cli, pol,
                                                    numeric,
                                                    owner_sid, tok+6)) {
 				DEBUG(5, ("Failed to parse owner sid\n"));
-				return NULL;
+				goto done;
 			}
 			continue;
 		}
 
 		if (StrnCaseCmp(tok,"OWNER+:", 7) == 0) {
+			if (owner_sid) {
+				DEBUG(5, ("OWNER specified more than once!\n"));
+				goto done;
+			}
 			owner_sid = SMB_CALLOC_ARRAY(DOM_SID, 1);
 			if (!owner_sid ||
 			    !convert_string_to_sid(ipc_cli, pol,
                                                    False,
                                                    owner_sid, tok+7)) {
 				DEBUG(5, ("Failed to parse owner sid\n"));
-				return NULL;
+				goto done;
 			}
 			continue;
 		}
 
 		if (StrnCaseCmp(tok,"GROUP:", 6) == 0) {
+			if (grp_sid) {
+				DEBUG(5, ("GROUP specified more than once!\n"));
+				goto done;
+			}
 			grp_sid = SMB_CALLOC_ARRAY(DOM_SID, 1);
 			if (!grp_sid ||
 			    !convert_string_to_sid(ipc_cli, pol,
                                                    numeric,
                                                    grp_sid, tok+6)) {
 				DEBUG(5, ("Failed to parse group sid\n"));
-				return NULL;
+				goto done;
 			}
 			continue;
 		}
 
 		if (StrnCaseCmp(tok,"GROUP+:", 7) == 0) {
+			if (grp_sid) {
+				DEBUG(5, ("GROUP specified more than once!\n"));
+				goto done;
+			}
 			grp_sid = SMB_CALLOC_ARRAY(DOM_SID, 1);
 			if (!grp_sid ||
 			    !convert_string_to_sid(ipc_cli, pol,
                                                    False,
                                                    grp_sid, tok+6)) {
 				DEBUG(5, ("Failed to parse group sid\n"));
-				return NULL;
+				goto done;
 			}
 			continue;
 		}
@@ -3987,11 +4035,11 @@ sec_desc_parse(TALLOC_CTX *ctx,
 			SEC_ACE ace;
 			if (!parse_ace(ipc_cli, pol, &ace, numeric, tok+4)) {
 				DEBUG(5, ("Failed to parse ACL %s\n", tok));
-				return NULL;
+				goto done;
 			}
 			if(!add_ace(&dacl, &ace, ctx)) {
 				DEBUG(5, ("Failed to add ACL %s\n", tok));
-				return NULL;
+				goto done;
 			}
 			continue;
 		}
@@ -4000,22 +4048,23 @@ sec_desc_parse(TALLOC_CTX *ctx,
 			SEC_ACE ace;
 			if (!parse_ace(ipc_cli, pol, &ace, False, tok+5)) {
 				DEBUG(5, ("Failed to parse ACL %s\n", tok));
-				return NULL;
+				goto done;
 			}
 			if(!add_ace(&dacl, &ace, ctx)) {
 				DEBUG(5, ("Failed to add ACL %s\n", tok));
-				return NULL;
+				goto done;
 			}
 			continue;
 		}
 
 		DEBUG(5, ("Failed to parse security descriptor\n"));
-		return NULL;
+		goto done;
 	}
 
 	ret = make_sec_desc(ctx, revision, SEC_DESC_SELF_RELATIVE, 
 			    owner_sid, grp_sid, NULL, dacl, &sd_size);
 
+  done:
 	SAFE_FREE(grp_sid);
 	SAFE_FREE(owner_sid);
 
@@ -4808,10 +4857,18 @@ cacl_set(TALLOC_CTX *ctx,
                                     CONST_DISCARD(char *, the_acl));
 
                 if (!sd) {
-                        errno = EINVAL;
-                        return -1;
+			errno = EINVAL;
+			return -1;
                 }
         }
+
+	/* SMBC_XATTR_MODE_REMOVE_ALL is the only caller
+	   that doesn't deref sd */
+
+	if (!sd && (mode != SMBC_XATTR_MODE_REMOVE_ALL)) {
+		errno = EINVAL;
+		return -1;
+	}
 
 	/* The desired access below is the only one I could find that works
 	   with NT4, W2KP and Samba */
@@ -4999,6 +5056,7 @@ smbc_setxattr_ctx(SMBCCTX *context,
                   fname, name, (int) size, (const char*)value));
 
 	if (smbc_parse_path(context, fname,
+                            workgroup, sizeof(workgroup),
                             server, sizeof(server),
                             share, sizeof(share),
                             path, sizeof(path),
@@ -5010,8 +5068,6 @@ smbc_setxattr_ctx(SMBCCTX *context,
         }
 
 	if (user[0] == (char)0) fstrcpy(user, context->user);
-
-	fstrcpy(workgroup, context->workgroup);
 
 	srv = smbc_server(context, True,
                           server, share, workgroup, user, password);
@@ -5267,6 +5323,7 @@ smbc_getxattr_ctx(SMBCCTX *context,
         DEBUG(4, ("smbc_getxattr(%s, %s)\n", fname, name));
 
         if (smbc_parse_path(context, fname,
+                            workgroup, sizeof(workgroup),
                             server, sizeof(server),
                             share, sizeof(share),
                             path, sizeof(path),
@@ -5278,8 +5335,6 @@ smbc_getxattr_ctx(SMBCCTX *context,
         }
 
         if (user[0] == (char)0) fstrcpy(user, context->user);
-
-        fstrcpy(workgroup, context->workgroup);
 
         srv = smbc_server(context, True,
                           server, share, workgroup, user, password);
@@ -5384,6 +5439,7 @@ smbc_removexattr_ctx(SMBCCTX *context,
         DEBUG(4, ("smbc_removexattr(%s, %s)\n", fname, name));
 
         if (smbc_parse_path(context, fname,
+                            workgroup, sizeof(workgroup),
                             server, sizeof(server),
                             share, sizeof(share),
                             path, sizeof(path),
@@ -5395,8 +5451,6 @@ smbc_removexattr_ctx(SMBCCTX *context,
         }
 
         if (user[0] == (char)0) fstrcpy(user, context->user);
-
-        fstrcpy(workgroup, context->workgroup);
 
         srv = smbc_server(context, True,
                           server, share, workgroup, user, password);
@@ -5539,6 +5593,7 @@ smbc_open_print_job_ctx(SMBCCTX *context,
         DEBUG(4, ("smbc_open_print_job_ctx(%s)\n", fname));
 
         if (smbc_parse_path(context, fname,
+                            NULL, 0,
                             server, sizeof(server),
                             share, sizeof(share),
                             path, sizeof(path),
@@ -5676,6 +5731,7 @@ smbc_list_print_jobs_ctx(SMBCCTX *context,
         DEBUG(4, ("smbc_list_print_jobs(%s)\n", fname));
 
         if (smbc_parse_path(context, fname,
+                            workgroup, sizeof(workgroup),
                             server, sizeof(server),
                             share, sizeof(share),
                             path, sizeof(path),
@@ -5688,8 +5744,6 @@ smbc_list_print_jobs_ctx(SMBCCTX *context,
 
         if (user[0] == (char)0) fstrcpy(user, context->user);
         
-        fstrcpy(workgroup, context->workgroup);
-
         srv = smbc_server(context, True,
                           server, share, workgroup, user, password);
 
@@ -5747,6 +5801,7 @@ smbc_unlink_print_job_ctx(SMBCCTX *context,
         DEBUG(4, ("smbc_unlink_print_job(%s)\n", fname));
 
         if (smbc_parse_path(context, fname,
+                            workgroup, sizeof(workgroup),
                             server, sizeof(server),
                             share, sizeof(share),
                             path, sizeof(path),
@@ -5758,8 +5813,6 @@ smbc_unlink_print_job_ctx(SMBCCTX *context,
         }
 
         if (user[0] == (char)0) fstrcpy(user, context->user);
-
-        fstrcpy(workgroup, context->workgroup);
 
         srv = smbc_server(context, True,
                           server, share, workgroup, user, password);
@@ -5802,6 +5855,7 @@ smbc_new_context(void)
 
         context->internal = SMB_MALLOC_P(struct smbc_internal_data);
         if (!context->internal) {
+		SAFE_FREE(context);
                 errno = ENOMEM;
                 return NULL;
         }
@@ -5947,22 +6001,57 @@ smbc_free_context(SMBCCTX *context,
 void
 smbc_option_set(SMBCCTX *context,
                 char *option_name,
-                ...)
+                void *option_value)
 {
-        va_list args;
-
-        va_start(args, option_name);
-
         if (strcmp(option_name, "debug_stderr") == 0) {
                 /*
                  * Log to standard error instead of standard output.
-                 *
-                 *  optional parameters: none (it can't be turned off once on)
                  */
-                context->internal->_debug_stderr = True;
+                context->internal->_debug_stderr =
+                        (option_value == NULL ? False : True);
+        } else if (strcmp(option_name, "auth_function") == 0) {
+                /*
+                 * Use the new-style authentication function which includes
+                 * the context.
+                 */
+                context->internal->_auth_fn_with_context = option_value;
+        } else if (strcmp(option_name, "user_data") == 0) {
+                /*
+                 * Save a user data handle which may be retrieved by the user
+                 * with smbc_option_get()
+                 */
+                context->internal->_user_data = option_value;
+        }
+}
+
+
+/*
+ * Retrieve the current value of an option
+ */
+void *
+smbc_option_get(SMBCCTX *context,
+                char *option_name)
+{
+        if (strcmp(option_name, "debug_stderr") == 0) {
+                /*
+                 * Log to standard error instead of standard output.
+                 */
+                return (void *) context->internal->_debug_stderr;
+        } else if (strcmp(option_name, "auth_function") == 0) {
+                /*
+                 * Use the new-style authentication function which includes
+                 * the context.
+                 */
+                return (void *) context->internal->_auth_fn_with_context;
+        } else if (strcmp(option_name, "user_data") == 0) {
+                /*
+                 * Save a user data handle which may be retrieved by the user
+                 * with smbc_option_get()
+                 */
+                return context->internal->_user_data;
         }
 
-        va_end(args);
+        return NULL;
 }
 
 
@@ -5991,7 +6080,8 @@ smbc_init_context(SMBCCTX *context)
                 return 0;
         }
 
-        if (!context->callbacks.auth_fn ||
+        if ((!context->callbacks.auth_fn &&
+             !context->internal->_auth_fn_with_context) ||
             context->debug < 0 ||
             context->debug > 100) {
 
@@ -6025,7 +6115,7 @@ smbc_init_context(SMBCCTX *context)
                 home = getenv("HOME");
 		if (home) {
 			slprintf(conf, sizeof(conf), "%s/.smb/smb.conf", home);
-			if (lp_load(conf, True, False, False)) {
+			if (lp_load(conf, True, False, False, True)) {
 				conf_loaded = True;
 			} else {
                                 DEBUG(5, ("Could not load config file: %s\n",
@@ -6041,7 +6131,7 @@ smbc_init_context(SMBCCTX *context)
                          * defaults ...
                          */
 
-                        if (!lp_load(dyn_CONFIGFILE, True, False, False)) {
+                        if (!lp_load(dyn_CONFIGFILE, True, False, False, False)) {
                                 DEBUG(5, ("Could not load config file: %s\n",
                                           dyn_CONFIGFILE));
                         } else if (home) {
@@ -6052,7 +6142,7 @@ smbc_init_context(SMBCCTX *context)
                                  */
                                 slprintf(conf, sizeof(conf),
                                          "%s/.smb/smb.conf.append", home);
-                                if (!lp_load(conf, True, False, False)) {
+                                if (!lp_load(conf, True, False, False, False)) {
                                         DEBUG(10,
                                               ("Could not append config file: "
                                                "%s\n",

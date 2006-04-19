@@ -266,7 +266,7 @@ via the %%o substitution. With encrypted passwords this is not possible.\n", lp_
 
 	fprintf(stderr,"Load smb config files from %s\n",config_file);
 
-	if (!lp_load(config_file,False,True,False)) {
+	if (!lp_load(config_file,False,True,False,True)) {
 		fprintf(stderr,"Error loading services.\n");
 		return(1);
 	}

@@ -131,8 +131,7 @@ NTSTATUS smbldap_init(TALLOC_CTX *mem_ctx,
                       struct smbldap_state **smbldap_state);
 
 const char* get_attr_key2string( ATTRIB_MAP_ENTRY table[], int key );
-const char** get_attr_list( ATTRIB_MAP_ENTRY table[] );
-void free_attr_list( const char **list );
+const char** get_attr_list( TALLOC_CTX *mem_ctx, ATTRIB_MAP_ENTRY table[] );
 void smbldap_set_mod (LDAPMod *** modlist, int modop, const char *attribute, const char *value);
 void smbldap_make_mod(LDAP *ldap_struct, LDAPMessage *existing,
 		      LDAPMod ***mods,
@@ -196,18 +195,23 @@ struct ldapsam_privates {
 };
 
 /* Functions shared between pdb_ldap.c and pdb_nds.c. */
-NTSTATUS pdb_init_ldapsam_compat(PDB_CONTEXT *pdb_context,
-                                 PDB_METHODS **pdb_method,
-                                 const char *location);
+NTSTATUS pdb_init_ldapsam_compat( struct pdb_methods **pdb_method, const char *location);
 void private_data_free_fn(void **result);
 int ldapsam_search_suffix_by_name(struct ldapsam_privates *ldap_state,
                                   const char *user,
                                   LDAPMessage ** result,
                                   const char **attr);
-NTSTATUS pdb_init_ldapsam(PDB_CONTEXT *pdb_context,
-                          PDB_METHODS **pdb_method,
-                          const char *location);
-const char** get_userattr_list( int schema_ver );
+NTSTATUS pdb_init_ldapsam( struct pdb_methods **pdb_method, const char *location);
+const char** get_userattr_list( TALLOC_CTX *mem_ctx, int schema_ver );
+
+char * smbldap_talloc_single_attribute(LDAP *ldap_struct, LDAPMessage *entry,
+				       const char *attribute,
+				       TALLOC_CTX *mem_ctx);
+void talloc_autofree_ldapmsg(TALLOC_CTX *mem_ctx, LDAPMessage *result);
+void talloc_autofree_ldapmod(TALLOC_CTX *mem_ctx, LDAPMod **mod);
+const char *smbldap_talloc_dn(TALLOC_CTX *mem_ctx, LDAP *ld,
+			      LDAPMessage *entry);
+
 
 #endif 	/* HAVE_LDAP */
 

@@ -330,6 +330,8 @@ static void *make_internal_rpc_pipe_p(char *pipe_name,
 		DEBUG(0,("open_rpc_pipe_p: malloc fail for in_data struct.\n"));
 		talloc_destroy(p->mem_ctx);
 		talloc_destroy(p->pipe_state_mem_ctx);
+		close_policy_by_pipe(p);
+		SAFE_FREE(p);
 		return NULL;
 	}
 
@@ -343,13 +345,14 @@ static void *make_internal_rpc_pipe_p(char *pipe_name,
 
 	ZERO_STRUCT(p->pipe_user);
 
-	p->pipe_user.uid = (uid_t)-1;
-	p->pipe_user.gid = (gid_t)-1;
+	p->pipe_user.ut.uid = (uid_t)-1;
+	p->pipe_user.ut.gid = (gid_t)-1;
 	
 	/* Store the session key and NT_TOKEN */
 	if (vuser) {
 		p->session_key = data_blob(vuser->session_key.data, vuser->session_key.length);
-		p->pipe_user.nt_user_token = dup_nt_token(vuser->nt_user_token);
+		p->pipe_user.nt_user_token = dup_nt_token(
+			NULL, vuser->nt_user_token);
 	}
 
 	/*
@@ -696,7 +699,7 @@ static void process_complete_pdu(pipes_struct *p)
 		DEBUG(10,("process_complete_pdu: pipe %s in fault state.\n",
 			p->name ));
 		set_incoming_fault(p);
-		setup_fault_pdu(p, NT_STATUS(0x1c010002));
+		setup_fault_pdu(p, NT_STATUS(DCERPC_FAULT_OP_RNG_ERROR));
 		return;
 	}
 
@@ -823,7 +826,7 @@ static void process_complete_pdu(pipes_struct *p)
 	if (!reply) {
 		DEBUG(3,("process_complete_pdu: DCE/RPC fault sent on pipe %s\n", p->pipe_srv_name));
 		set_incoming_fault(p);
-		setup_fault_pdu(p, NT_STATUS(0x1c010002));
+		setup_fault_pdu(p, NT_STATUS(DCERPC_FAULT_OP_RNG_ERROR));
 		prs_mem_free(&rpc_in);
 	} else {
 		/*
@@ -1222,9 +1225,9 @@ static BOOL close_internal_rpc_pipe_hnd(void *np_conn)
 	/* Free the handles database. */
 	close_policy_by_pipe(p);
 
-	delete_nt_token(&p->pipe_user.nt_user_token);
+	TALLOC_FREE(p->pipe_user.nt_user_token);
 	data_blob_free(&p->session_key);
-	SAFE_FREE(p->pipe_user.groups);
+	SAFE_FREE(p->pipe_user.ut.groups);
 
 	DLIST_REMOVE(InternalPipes, p);
 

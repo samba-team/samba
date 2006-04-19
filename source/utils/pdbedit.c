@@ -28,7 +28,7 @@
 #define BIT_SPSTYLE	0x00000010
 #define BIT_CAN_CHANGE	0x00000020
 #define BIT_MUST_CHANGE	0x00000040
-#define BIT_RESERV_3	0x00000080
+#define BIT_USERSIDS	0x00000080
 #define BIT_FULLNAME	0x00000100
 #define BIT_HOMEDIR	0x00000200
 #define BIT_HDIRDRIVE	0x00000400
@@ -52,44 +52,79 @@
 #define BIT_LOGONHOURS	0x10000000
 
 #define MASK_ALWAYS_GOOD	0x0000001F
-#define MASK_USER_GOOD		0x00405F60
+#define MASK_USER_GOOD		0x00405FE0
 
 /*********************************************************
  Add all currently available users to another db
  ********************************************************/
 
-static int export_database (struct pdb_context *in, struct pdb_context
-			    *out, const char *username) {
-	SAM_ACCOUNT *user = NULL;
+static int export_database (struct pdb_methods *in, 
+                            struct pdb_methods *out, 
+                            const char *username) 
+{
+	struct samu *user = NULL;
+	NTSTATUS status;
 
-	DEBUG(3, ("called with username=\"%s\"\n", username));
+	DEBUG(3, ("export_database: username=\"%s\"\n", username ? username : "(NULL)"));
 
-	if (NT_STATUS_IS_ERR(in->pdb_setsampwent(in, 0, 0))) {
-		fprintf(stderr, "Can't sampwent!\n");
+	status = in->setsampwent(in, 0, 0);
+	if ( NT_STATUS_IS_ERR(status) ) {
+		fprintf(stderr, "Unable to set account database iterator for %s!\n", 
+			in->name);
 		return 1;
 	}
 
-	if (!NT_STATUS_IS_OK(pdb_init_sam(&user))) {
-		fprintf(stderr, "Can't initialize new SAM_ACCOUNT!\n");
+	if ( ( user = samu_new( NULL ) ) == NULL ) {
+		fprintf(stderr, "export_database: Memory allocation failure!\n");
 		return 1;
 	}
 
-	while (NT_STATUS_IS_OK(in->pdb_getsampwent(in, user))) {
-		DEBUG(4, ("Processing account %s\n",
-			  user->private_u.username));
-		if (!username || 
-		    (strcmp(username, user->private_u.username)
-		     == 0)) {
-			out->pdb_add_sam_account(out, user);
-			if (!NT_STATUS_IS_OK(pdb_reset_sam(user))) {
-				fprintf(stderr,
-					"Can't reset SAM_ACCOUNT!\n");
+	while ( NT_STATUS_IS_OK(in->getsampwent(in, user)) ) 
+	{
+		DEBUG(4, ("Processing account %s\n", user->username));
+
+		/* If we don't have a specific user or if we do and 
+		   the login name matches */
+
+		if ( !username || (strcmp(username, user->username) == 0)) {
+			struct samu *account;
+
+			if ( (account = samu_new( NULL )) == NULL ) {
+				fprintf(stderr, "export_database: Memory allocation failure!\n");
+				TALLOC_FREE( user );
+				in->endsampwent( in );
 				return 1;
 			}
+
+			printf("Importing accout for %s...", user->username);
+			if ( !NT_STATUS_IS_OK(out->getsampwnam( out, account, user->username )) ) {
+				status = out->add_sam_account(out, user);
+			} else {
+				status = out->update_sam_account( out, user );
+			}
+
+			if ( NT_STATUS_IS_OK(status) ) {
+				printf( "ok\n");
+			} else {
+				printf( "failed\n");
+			}
+
+			TALLOC_FREE( account );
+		}
+
+		/* clean up and get ready for another run */
+
+		TALLOC_FREE( user );
+
+		if ( ( user = samu_new( NULL ) ) == NULL ) {
+			fprintf(stderr, "export_database: Memory allocation failure!\n");
+			return 1;
 		}
 	}
 
-	in->pdb_endsampwent(in);
+	TALLOC_FREE( user );
+
+	in->endsampwent(in);
 
 	return 0;
 }
@@ -98,22 +133,25 @@ static int export_database (struct pdb_context *in, struct pdb_context
  Add all currently available group mappings to another db
  ********************************************************/
 
-static int export_groups (struct pdb_context *in, struct pdb_context *out) {
+static int export_groups (struct pdb_methods *in, struct pdb_methods *out) 
+{
 	GROUP_MAP *maps = NULL;
 	size_t i, entries = 0;
+	NTSTATUS status;
 
-	if (NT_STATUS_IS_ERR(in->pdb_enum_group_mapping(in, SID_NAME_UNKNOWN,
-							&maps, &entries,
-							False))) {
-		fprintf(stderr, "Can't get group mappings!\n");
+	status = in->enum_group_mapping(in, get_global_sam_sid(), 
+			SID_NAME_DOM_GRP, &maps, &entries, False);
+
+	if ( NT_STATUS_IS_ERR(status) ) {
+		fprintf(stderr, "Unable to enumerate group map entries.\n");
 		return 1;
 	}
 
 	for (i=0; i<entries; i++) {
-		out->pdb_add_group_mapping_entry(out, &(maps[i]));
+		out->add_group_mapping_entry(out, &(maps[i]));
 	}
 
-	SAFE_FREE(maps);
+	SAFE_FREE( maps );
 
 	return 0;
 }
@@ -151,24 +189,31 @@ static int reinit_account_policies (void)
  Add all currently available account policy from tdb to one backend
  ********************************************************/
 
-static int export_account_policies (struct pdb_context *in, struct pdb_context *out) 
+static int export_account_policies (struct pdb_methods *in, struct pdb_methods *out) 
 {
 	int i;
 
 	if (!account_policy_migrated(True)) {
-		fprintf(stderr, "Can't set account policy marker in tdb\n");
+		fprintf(stderr, "Unable to set account policy marker in tdb\n");
 		return -1;
 	}
 
-	for (i=1; decode_account_policy_name(i) != NULL; i++) {
+	for ( i=1; decode_account_policy_name(i) != NULL; i++ ) {
 		uint32 policy_value;
-		if (NT_STATUS_IS_ERR(in->pdb_get_account_policy(in, i, &policy_value))) {
-			fprintf(stderr, "Can't get account policy from tdb\n");
+		NTSTATUS status;
+
+		status = in->get_account_policy(in, i, &policy_value);
+
+		if ( NT_STATUS_IS_ERR(status) ) {
+			fprintf(stderr, "Unable to get account policy from %s\n", in->name);
 			remove_account_policy_migrated();
 			return -1;
 		}
-		if (NT_STATUS_IS_ERR(out->pdb_set_account_policy(out, i, policy_value))) {
-			fprintf(stderr, "Can't set account policy in passdb\n");
+
+		status = out->set_account_policy(out, i, policy_value);
+
+		if ( NT_STATUS_IS_ERR(status) ) {
+			fprintf(stderr, "Unable to migrate account policy to %s\n", out->name);
 			remove_account_policy_migrated();
 			return -1;
 		}
@@ -182,7 +227,7 @@ static int export_account_policies (struct pdb_context *in, struct pdb_context *
  Print info from sam structure
 **********************************************************/
 
-static int print_sam_info (SAM_ACCOUNT *sam_pwent, BOOL verbosity, BOOL smbpwdstyle)
+static int print_sam_info (struct samu *sam_pwent, BOOL verbosity, BOOL smbpwdstyle)
 {
 	uid_t uid;
 	time_t tmp;
@@ -266,25 +311,25 @@ static int print_sam_info (SAM_ACCOUNT *sam_pwent, BOOL verbosity, BOOL smbpwdst
  Get an Print User Info
 **********************************************************/
 
-static int print_user_info (struct pdb_context *in, const char *username, BOOL verbosity, BOOL smbpwdstyle)
+static int print_user_info (struct pdb_methods *in, const char *username, BOOL verbosity, BOOL smbpwdstyle)
 {
-	SAM_ACCOUNT *sam_pwent=NULL;
+	struct samu *sam_pwent=NULL;
 	BOOL ret;
 
-	if (!NT_STATUS_IS_OK(pdb_init_sam (&sam_pwent))) {
+	if ( (sam_pwent = samu_new( NULL )) == NULL ) {
 		return -1;
 	}
 
-	ret = NT_STATUS_IS_OK(in->pdb_getsampwnam (in, sam_pwent, username));
+	ret = NT_STATUS_IS_OK(in->getsampwnam (in, sam_pwent, username));
 
 	if (ret==False) {
 		fprintf (stderr, "Username not found!\n");
-		pdb_free_sam(&sam_pwent);
+		TALLOC_FREE(sam_pwent);
 		return -1;
 	}
 
 	ret=print_sam_info (sam_pwent, verbosity, smbpwdstyle);
-	pdb_free_sam(&sam_pwent);
+	TALLOC_FREE(sam_pwent);
 	
 	return ret;
 }
@@ -292,64 +337,75 @@ static int print_user_info (struct pdb_context *in, const char *username, BOOL v
 /*********************************************************
  List Users
 **********************************************************/
-static int print_users_list (struct pdb_context *in, BOOL verbosity, BOOL smbpwdstyle)
+static int print_users_list (struct pdb_methods *in, BOOL verbosity, BOOL smbpwdstyle)
 {
-	SAM_ACCOUNT *sam_pwent=NULL;
+	struct samu *sam_pwent=NULL;
 	BOOL check;
 	
-	check = NT_STATUS_IS_OK(in->pdb_setsampwent(in, False, 0));
+	check = NT_STATUS_IS_OK(in->setsampwent(in, False, 0));
 	if (!check) {
 		return 1;
 	}
 
 	check = True;
-	if (!(NT_STATUS_IS_OK(pdb_init_sam(&sam_pwent)))) return 1;
+	if ( (sam_pwent = samu_new( NULL )) == NULL ) {
+		return 1;
+	}
 
-	while (check && NT_STATUS_IS_OK(in->pdb_getsampwent (in, sam_pwent))) {
+	while (check && NT_STATUS_IS_OK(in->getsampwent (in, sam_pwent))) {
 		if (verbosity)
 			printf ("---------------\n");
 		print_sam_info (sam_pwent, verbosity, smbpwdstyle);
-		pdb_free_sam(&sam_pwent);
-		check = NT_STATUS_IS_OK(pdb_init_sam(&sam_pwent));
+		TALLOC_FREE(sam_pwent);
+		
+		if ( (sam_pwent = samu_new( NULL )) == NULL ) {
+			check = False;
+		}
 	}
-	if (check) pdb_free_sam(&sam_pwent);
+	if (check) 
+		TALLOC_FREE(sam_pwent);
 	
-	in->pdb_endsampwent(in);
+	in->endsampwent(in);
 	return 0;
 }
 
 /*********************************************************
  Fix a list of Users for uninitialised passwords
 **********************************************************/
-static int fix_users_list (struct pdb_context *in)
+static int fix_users_list (struct pdb_methods *in)
 {
-	SAM_ACCOUNT *sam_pwent=NULL;
+	struct samu *sam_pwent=NULL;
 	BOOL check;
 	
-	check = NT_STATUS_IS_OK(in->pdb_setsampwent(in, False, 0));
+	check = NT_STATUS_IS_OK(in->setsampwent(in, False, 0));
 	if (!check) {
 		return 1;
 	}
 
 	check = True;
-	if (!(NT_STATUS_IS_OK(pdb_init_sam(&sam_pwent)))) return 1;
+	if ( (sam_pwent = samu_new( NULL )) == NULL ) {
+		return 1;
+	}
 
-	while (check && NT_STATUS_IS_OK(in->pdb_getsampwent (in, sam_pwent))) {
+	while (check && NT_STATUS_IS_OK(in->getsampwent (in, sam_pwent))) {
 		printf("Updating record for user %s\n", pdb_get_username(sam_pwent));
 	
-		if (!pdb_update_sam_account(sam_pwent)) {
+		if (!NT_STATUS_IS_OK(pdb_update_sam_account(sam_pwent))) {
 			printf("Update of user %s failed!\n", pdb_get_username(sam_pwent));
 		}
-		pdb_free_sam(&sam_pwent);
-		check = NT_STATUS_IS_OK(pdb_init_sam(&sam_pwent));
+		TALLOC_FREE(sam_pwent);
+		if ( (sam_pwent = samu_new( NULL )) == NULL ) {
+			check = False;
+		}
 		if (!check) {
-			fprintf(stderr, "Failed to initialise new SAM_ACCOUNT structure (out of memory?)\n");
+			fprintf(stderr, "Failed to initialise new struct samu structure (out of memory?)\n");
 		}
 			
 	}
-	if (check) pdb_free_sam(&sam_pwent);
+	if (check) 
+		TALLOC_FREE(sam_pwent);
 	
-	in->pdb_endsampwent(in);
+	in->endsampwent(in);
 	return 0;
 }
 
@@ -357,26 +413,27 @@ static int fix_users_list (struct pdb_context *in)
  Set User Info
 **********************************************************/
 
-static int set_user_info (struct pdb_context *in, const char *username, 
+static int set_user_info (struct pdb_methods *in, const char *username, 
 			  const char *fullname, const char *homedir, 
 			  const char *acct_desc, 
 			  const char *drive, const char *script, 
 			  const char *profile, const char *account_control,
-			  const char *user_sid, const char *group_sid,
-			  const char *user_domain,
+			  const char *user_sid, const char *user_domain,
 			  const BOOL badpw, const BOOL hours,
 			  time_t pwd_can_change, time_t pwd_must_change)
 {
 	BOOL updated_autolock = False, updated_badpw = False;
-	SAM_ACCOUNT *sam_pwent=NULL;
+	struct samu *sam_pwent=NULL;
 	BOOL ret;
 	
-	pdb_init_sam(&sam_pwent);
+	if ( (sam_pwent = samu_new( NULL )) == NULL ) {
+		return 1;
+	}
 	
-	ret = NT_STATUS_IS_OK(in->pdb_getsampwnam (in, sam_pwent, username));
+	ret = NT_STATUS_IS_OK(in->getsampwnam (in, sam_pwent, username));
 	if (ret==False) {
 		fprintf (stderr, "Username not found!\n");
-		pdb_free_sam(&sam_pwent);
+		TALLOC_FREE(sam_pwent);
 		return -1;
 	}
 
@@ -422,14 +479,14 @@ static int set_user_info (struct pdb_context *in, const char *username,
 		pdb_set_domain(sam_pwent, user_domain, PDB_CHANGED);
 
 	if (account_control) {
-		uint16 not_settable = ~(ACB_DISABLED|ACB_HOMDIRREQ|ACB_PWNOTREQ|
+		uint32 not_settable = ~(ACB_DISABLED|ACB_HOMDIRREQ|ACB_PWNOTREQ|
 					ACB_PWNOEXP|ACB_AUTOLOCK);
 
-		uint16 newflag = pdb_decode_acct_ctrl(account_control);
+		uint32 newflag = pdb_decode_acct_ctrl(account_control);
 
 		if (newflag & not_settable) {
 			fprintf(stderr, "Can only set [NDHLX] flags\n");
-			pdb_free_sam(&sam_pwent);
+			TALLOC_FREE(sam_pwent);
 			return -1;
 		}
 
@@ -452,55 +509,51 @@ static int set_user_info (struct pdb_context *in, const char *username,
 		}
 		pdb_set_user_sid (sam_pwent, &u_sid, PDB_CHANGED);
 	}
-	if (group_sid) {
-		DOM_SID g_sid;
-		if (!string_to_sid(&g_sid, group_sid)) {
-			/* not a complete sid, may be a RID, try building a SID */
-			int g_rid;
-			
-			if (sscanf(group_sid, "%d", &g_rid) != 1) {
-				fprintf(stderr, "Error passed string is not a complete group SID or RID!\n");
-				return -1;
-			}
-			sid_copy(&g_sid, get_global_sam_sid());
-			sid_append_rid(&g_sid, g_rid);
-		}
-		pdb_set_group_sid (sam_pwent, &g_sid, PDB_CHANGED);
-	}
 
 	if (badpw) {
 		pdb_set_bad_password_count(sam_pwent, 0, PDB_CHANGED);
 		pdb_set_bad_password_time(sam_pwent, 0, PDB_CHANGED);
 	}
 
-	if (NT_STATUS_IS_OK(in->pdb_update_sam_account (in, sam_pwent)))
+	if (NT_STATUS_IS_OK(in->update_sam_account (in, sam_pwent)))
 		print_user_info (in, username, True, False);
 	else {
 		fprintf (stderr, "Unable to modify entry!\n");
-		pdb_free_sam(&sam_pwent);
+		TALLOC_FREE(sam_pwent);
 		return -1;
 	}
-	pdb_free_sam(&sam_pwent);
+	TALLOC_FREE(sam_pwent);
 	return 0;
 }
 
 /*********************************************************
  Add New User
 **********************************************************/
-static int new_user (struct pdb_context *in, const char *username,
+static int new_user (struct pdb_methods *in, const char *username,
 			const char *fullname, const char *homedir,
 			const char *drive, const char *script,
-			const char *profile, char *user_sid, char *group_sid,
-			BOOL stdin_get)
+			const char *profile, char *user_sid, BOOL stdin_get)
 {
-	SAM_ACCOUNT *sam_pwent=NULL;
-
+	struct samu *sam_pwent;
 	char *password1, *password2;
 	int rc_pwd_cmp;
+	struct passwd *pwd;
 
 	get_global_sam_sid();
 
-	if (!NT_STATUS_IS_OK(pdb_init_sam_new(&sam_pwent, username, 0))) {
+	if ( !(pwd = getpwnam_alloc( NULL, username )) ) {
+		DEBUG(0,("Cannot locate Unix account for %s\n", username));
+		return -1;
+	}
+
+	if ( (sam_pwent = samu_new( NULL )) == NULL ) {
+		DEBUG(0, ("Memory allocation failure!\n"));
+		return -1;
+	}
+
+	if (!NT_STATUS_IS_OK(samu_alloc_rid_unix(sam_pwent, pwd ))) {
+		TALLOC_FREE( sam_pwent );
+		TALLOC_FREE( pwd );
 		DEBUG(0, ("could not create account to add new user %s\n", username));
 		return -1;
 	}
@@ -509,7 +562,7 @@ static int new_user (struct pdb_context *in, const char *username,
 	password2 = get_pass( "retype new password:", stdin_get);
 	if ((rc_pwd_cmp = strcmp (password1, password2))) {
 		fprintf (stderr, "Passwords do not match!\n");
-		pdb_free_sam (&sam_pwent);
+		TALLOC_FREE(sam_pwent);
 	} else {
 		pdb_set_plaintext_passwd(sam_pwent, password1);
 	}
@@ -548,32 +601,17 @@ static int new_user (struct pdb_context *in, const char *username,
 		}
 		pdb_set_user_sid (sam_pwent, &u_sid, PDB_CHANGED);
 	}
-	if (group_sid) {
-		DOM_SID g_sid;
-		if (!string_to_sid(&g_sid, group_sid)) {
-			/* not a complete sid, may be a RID, try building a SID */
-			int g_rid;
-			
-			if (sscanf(group_sid, "%d", &g_rid) != 1) {
-				fprintf(stderr, "Error passed string is not a complete group SID or RID!\n");
-				return -1;
-			}
-			sid_copy(&g_sid, get_global_sam_sid());
-			sid_append_rid(&g_sid, g_rid);
-		}
-		pdb_set_group_sid (sam_pwent, &g_sid, PDB_CHANGED);
-	}
 	
 	pdb_set_acct_ctrl (sam_pwent, ACB_NORMAL, PDB_CHANGED);
 	
-	if (NT_STATUS_IS_OK(in->pdb_add_sam_account (in, sam_pwent))) { 
+	if (NT_STATUS_IS_OK(in->add_sam_account (in, sam_pwent))) { 
 		print_user_info (in, username, True, False);
 	} else {
 		fprintf (stderr, "Unable to add user! (does it already exist?)\n");
-		pdb_free_sam (&sam_pwent);
+		TALLOC_FREE(sam_pwent);
 		return -1;
 	}
-	pdb_free_sam (&sam_pwent);
+	TALLOC_FREE(sam_pwent);
 	return 0;
 }
 
@@ -581,9 +619,9 @@ static int new_user (struct pdb_context *in, const char *username,
  Add New Machine
 **********************************************************/
 
-static int new_machine (struct pdb_context *in, const char *machine_in)
+static int new_machine (struct pdb_methods *in, const char *machine_in)
 {
-	SAM_ACCOUNT *sam_pwent=NULL;
+	struct samu *sam_pwent=NULL;
 	fstring machinename;
 	fstring machineaccount;
 	struct passwd  *pwd = NULL;
@@ -601,36 +639,40 @@ static int new_machine (struct pdb_context *in, const char *machine_in)
 	fstrcpy(machineaccount, machinename);
 	fstrcat(machineaccount, "$");
 
-	if ((pwd = getpwnam_alloc(machineaccount))) {
-		if (!NT_STATUS_IS_OK(pdb_init_sam_pw( &sam_pwent, pwd))) {
-			fprintf(stderr, "Could not init sam from pw\n");
-			passwd_free(&pwd);
+	if ((pwd = getpwnam_alloc(NULL, machineaccount))) {
+
+		if ( (sam_pwent = samu_new( NULL )) == NULL ) {
+			fprintf(stderr, "Memory allocation error!\n");
+			TALLOC_FREE(pwd);
 			return -1;
 		}
-		passwd_free(&pwd);
+
+		if ( !NT_STATUS_IS_OK(samu_set_unix(sam_pwent, pwd )) ) {
+			fprintf(stderr, "Could not init sam from pw\n");
+			TALLOC_FREE(pwd);
+			return -1;
+		}
+
+		TALLOC_FREE(pwd);
 	} else {
-		if (!NT_STATUS_IS_OK(pdb_init_sam (&sam_pwent))) {
+		if ( (sam_pwent = samu_new( NULL )) == NULL ) {
 			fprintf(stderr, "Could not init sam from pw\n");
 			return -1;
 		}
 	}
 
 	pdb_set_plaintext_passwd (sam_pwent, machinename);
-
-	pdb_set_username (sam_pwent, machineaccount, PDB_CHANGED);
-	
+	pdb_set_username (sam_pwent, machineaccount, PDB_CHANGED);	
 	pdb_set_acct_ctrl (sam_pwent, ACB_WSTRUST, PDB_CHANGED);
 	
-	pdb_set_group_sid_from_rid(sam_pwent, DOMAIN_GROUP_RID_COMPUTERS, PDB_CHANGED);
-	
-	if (NT_STATUS_IS_OK(in->pdb_add_sam_account (in, sam_pwent))) {
+	if (NT_STATUS_IS_OK(in->add_sam_account (in, sam_pwent))) {
 		print_user_info (in, machineaccount, True, False);
 	} else {
 		fprintf (stderr, "Unable to add machine! (does it already exist?)\n");
-		pdb_free_sam (&sam_pwent);
+		TALLOC_FREE(sam_pwent);
 		return -1;
 	}
-	pdb_free_sam (&sam_pwent);
+	TALLOC_FREE(sam_pwent);
 	return 0;
 }
 
@@ -638,20 +680,20 @@ static int new_machine (struct pdb_context *in, const char *machine_in)
  Delete user entry
 **********************************************************/
 
-static int delete_user_entry (struct pdb_context *in, const char *username)
+static int delete_user_entry (struct pdb_methods *in, const char *username)
 {
-	SAM_ACCOUNT *samaccount = NULL;
+	struct samu *samaccount = NULL;
 
-	if (!NT_STATUS_IS_OK(pdb_init_sam (&samaccount))) {
+	if ( (samaccount = samu_new( NULL )) == NULL ) {
 		return -1;
 	}
 
-	if (!NT_STATUS_IS_OK(in->pdb_getsampwnam(in, samaccount, username))) {
+	if (!NT_STATUS_IS_OK(in->getsampwnam(in, samaccount, username))) {
 		fprintf (stderr, "user %s does not exist in the passdb\n", username);
 		return -1;
 	}
 
-	if (!NT_STATUS_IS_OK(in->pdb_delete_sam_account (in, samaccount))) {
+	if (!NT_STATUS_IS_OK(in->delete_sam_account (in, samaccount))) {
 		fprintf (stderr, "Unable to delete user %s\n", username);
 		return -1;
 	}
@@ -662,26 +704,26 @@ static int delete_user_entry (struct pdb_context *in, const char *username)
  Delete machine entry
 **********************************************************/
 
-static int delete_machine_entry (struct pdb_context *in, const char *machinename)
+static int delete_machine_entry (struct pdb_methods *in, const char *machinename)
 {
 	fstring name;
-	SAM_ACCOUNT *samaccount = NULL;
+	struct samu *samaccount = NULL;
 	
 	fstrcpy(name, machinename);
 	name[15] = '\0';
 	if (name[strlen(name)-1] != '$')
 		fstrcat (name, "$");
 
-	if (!NT_STATUS_IS_OK(pdb_init_sam (&samaccount))) {
+	if ( (samaccount = samu_new( NULL )) == NULL ) {
 		return -1;
 	}
 
-	if (!NT_STATUS_IS_OK(in->pdb_getsampwnam(in, samaccount, name))) {
+	if (!NT_STATUS_IS_OK(in->getsampwnam(in, samaccount, name))) {
 		fprintf (stderr, "machine %s does not exist in the passdb\n", name);
 		return -1;
 	}
 
-	if (!NT_STATUS_IS_OK(in->pdb_delete_sam_account (in, samaccount))) {
+	if (!NT_STATUS_IS_OK(in->delete_sam_account (in, samaccount))) {
 		fprintf (stderr, "Unable to delete machine %s\n", name);
 		return -1;
 	}
@@ -722,7 +764,6 @@ int main (int argc, char **argv)
 	static char *account_control = NULL;
 	static char *account_policy = NULL;
 	static char *user_sid = NULL;
-	static char *group_sid = NULL;
 	static long int account_policy_value = 0;
 	BOOL account_policy_value_set = False;
 	static BOOL badpw_reset = False;
@@ -731,10 +772,7 @@ int main (int argc, char **argv)
 	static char *pwd_must_change_time = NULL;
 	static char *pwd_time_format = NULL;
 	static BOOL pw_from_stdin = False;
-
-	struct pdb_context *bin;
-	struct pdb_context *bout;
-	struct pdb_context *bdef;
+	struct pdb_methods *bin, *bout, *bdef;
 	poptContext pc;
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
@@ -750,7 +788,6 @@ int main (int argc, char **argv)
 		{"profile",	'p', POPT_ARG_STRING, &profile_path, 0, "set profile path", NULL},
 		{"domain",	'I', POPT_ARG_STRING, &user_domain, 0, "set a users' domain", NULL},
 		{"user SID",	'U', POPT_ARG_STRING, &user_sid, 0, "set user SID or RID", NULL},
-		{"group SID",	'G', POPT_ARG_STRING, &group_sid, 0, "set group SID or RID", NULL},
 		{"create",	'a', POPT_ARG_NONE, &add_user, 0, "create user", NULL},
 		{"modify",	'r', POPT_ARG_NONE, &modify_user, 0, "modify user", NULL},
 		{"machine",	'm', POPT_ARG_NONE, &machine, 0, "account is a machine account", NULL},
@@ -775,6 +812,8 @@ int main (int argc, char **argv)
 		POPT_TABLEEND
 	};
 	
+	bin = bout = bdef = NULL;
+
 	load_case_tables();
 
 	setup_logging("pdbedit", True);
@@ -795,7 +834,7 @@ int main (int argc, char **argv)
 	if (user_name == NULL)
 		user_name = poptGetArg(pc);
 
-	if (!lp_load(dyn_CONFIGFILE,True,False,False)) {
+	if (!lp_load(dyn_CONFIGFILE,True,False,False,True)) {
 		fprintf(stderr, "Can't load %s - run testparm to debug it\n", dyn_CONFIGFILE);
 		exit(1);
 	}
@@ -819,6 +858,7 @@ int main (int argc, char **argv)
 			(user_name ? BIT_USER : 0) +
 			(list_users ? BIT_LIST : 0) +
 			(force_initialised_password ? BIT_FIX_INIT : 0) +
+			(user_sid ? BIT_USERSIDS : 0) +
 			(modify_user ? BIT_MODIFY : 0) +
 			(add_user ? BIT_CREATE : 0) +
 			(delete_user ? BIT_DELETE : 0) +
@@ -833,12 +873,12 @@ int main (int argc, char **argv)
 			(pwd_must_change_time ? BIT_MUST_CHANGE: 0);
 
 	if (setparms & BIT_BACKEND) {
-		if (!NT_STATUS_IS_OK(make_pdb_context_string(&bdef, backend))) {
+		if (!NT_STATUS_IS_OK(make_pdb_method_name( &bdef, backend ))) {
 			fprintf(stderr, "Can't initialize passdb backend.\n");
 			return 1;
 		}
 	} else {
-		if (!NT_STATUS_IS_OK(make_pdb_context_list(&bdef, lp_passdb_backend()))) {
+		if (!NT_STATUS_IS_OK(make_pdb_method_name(&bdef, lp_passdb_backend()))) {
 			fprintf(stderr, "Can't initialize passdb backend.\n");
 			return 1;
 		}
@@ -893,37 +933,46 @@ int main (int argc, char **argv)
 	}
 
 	/* import and export operations */
-	if (((checkparms & BIT_IMPORT) || (checkparms & BIT_EXPORT))
-	    && !(checkparms & ~(BIT_IMPORT +BIT_EXPORT +BIT_USER))) {
+
+	if ( ((checkparms & BIT_IMPORT) 
+		|| (checkparms & BIT_EXPORT))
+		&& !(checkparms & ~(BIT_IMPORT +BIT_EXPORT +BIT_USER)) ) 
+	{
+		NTSTATUS status;
+
+		bin = bout = bdef;
+
 		if (backend_in) {
-			if (!NT_STATUS_IS_OK(make_pdb_context_string(&bin, backend_in))) {
-				fprintf(stderr, "Can't initialize passdb backend.\n");
+			status = make_pdb_method_name(&bin, backend_in);
+
+			if ( !NT_STATUS_IS_OK(status) ) {
+				fprintf(stderr, "Unable to initialize %s.\n", backend_in);
 				return 1;
 			}
-		} else {
-			bin = bdef;
 		}
+
 		if (backend_out) {
-			if (!NT_STATUS_IS_OK(make_pdb_context_string(&bout, backend_out))) {
-				fprintf(stderr, "Can't initialize %s.\n", backend_out);
+			status = make_pdb_method_name(&bout, backend_out);
+
+			if ( !NT_STATUS_IS_OK(status) ) {
+				fprintf(stderr, "Unable to initialize %s.\n", backend_out);
 				return 1;
 			}
-		} else {
-			bout = bdef;
 		}
+
 		if (transfer_account_policies) {
+
 			if (!(checkparms & BIT_USER))
 				return export_account_policies(bin, bout);
+
 		} else 	if (transfer_groups) {
+
 			if (!(checkparms & BIT_USER))
 				return export_groups(bin, bout);
+
 		} else {
-			if (checkparms & BIT_USER)
-				return export_database(bin, bout,
-						       user_name);
-			else
-				return export_database(bin, bout,
-						       NULL);
+				return export_database(bin, bout, 
+					(checkparms & BIT_USER) ? user_name : NULL );
 		}
 	}
 
@@ -978,9 +1027,7 @@ int main (int argc, char **argv)
 				return new_machine (bdef, user_name);
 			} else {
 				return new_user (bdef, user_name, full_name, home_dir, 
-						 home_drive, logon_script, 
-						 profile_path, user_sid, group_sid,
-						 pw_from_stdin);
+					home_drive, logon_script, profile_path, user_sid, pw_from_stdin);
 			}
 		}
 
@@ -1049,16 +1096,10 @@ int main (int argc, char **argv)
 					}
 				}	
 			}
-			return set_user_info (bdef, user_name, full_name,
-					      home_dir,
-					      acct_desc,
-					      home_drive,
-					      logon_script,
-					      profile_path, account_control,
-					      user_sid, group_sid,
-					      user_domain,
-					      badpw_reset, hours_reset,
-					      pwd_can_change, pwd_must_change);
+			return set_user_info (bdef, user_name, full_name, home_dir,
+				acct_desc, home_drive, logon_script, profile_path, account_control,
+				user_sid, user_domain, badpw_reset, hours_reset, pwd_can_change, 
+				pwd_must_change);
 error:
 			fprintf (stderr, "Error parsing the time in pwd-%s-change-time!\n", errstr);
 			return -1;

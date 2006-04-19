@@ -207,16 +207,21 @@ BOOL prs_set_buffer_size(prs_struct *ps, uint32 newsize)
 		return prs_force_grow(ps, newsize - ps->buffer_size);
 
 	if (newsize < ps->buffer_size) {
-		char *new_data_p = SMB_REALLOC(ps->data_p, newsize);
-		/* if newsize is zero, Realloc acts like free() & returns NULL*/
-		if (new_data_p == NULL && newsize != 0) {
-			DEBUG(0,("prs_set_buffer_size: Realloc failure for size %u.\n",
-				(unsigned int)newsize));
-			DEBUG(0,("prs_set_buffer_size: Reason %s\n",strerror(errno)));
-			return False;
-		}
-		ps->data_p = new_data_p;
 		ps->buffer_size = newsize;
+
+		/* newsize == 0 acts as a free and set pointer to NULL */
+		if (newsize == 0) {
+			SAFE_FREE(ps->data_p);
+		} else {
+			ps->data_p = SMB_REALLOC(ps->data_p, newsize);
+
+			if (ps->data_p == NULL) {
+				DEBUG(0,("prs_set_buffer_size: Realloc failure for size %u.\n",
+					(unsigned int)newsize));
+				DEBUG(0,("prs_set_buffer_size: Reason %s\n",strerror(errno)));
+				return False;
+			}
+		}
 	}
 
 	return True;
@@ -230,7 +235,6 @@ BOOL prs_set_buffer_size(prs_struct *ps, uint32 newsize)
 BOOL prs_grow(prs_struct *ps, uint32 extra_space)
 {
 	uint32 new_size;
-	char *new_data;
 
 	ps->grow_size = MAX(ps->grow_size, ps->data_offset + extra_space);
 
@@ -261,11 +265,11 @@ BOOL prs_grow(prs_struct *ps, uint32 extra_space)
 
 		new_size = MAX(RPC_MAX_PDU_FRAG_LEN,extra_space);
 
-		if((new_data = SMB_MALLOC(new_size)) == NULL) {
+		if((ps->data_p = SMB_MALLOC(new_size)) == NULL) {
 			DEBUG(0,("prs_grow: Malloc failure for size %u.\n", (unsigned int)new_size));
 			return False;
 		}
-		memset(new_data, '\0', (size_t)new_size );
+		memset(ps->data_p, '\0', (size_t)new_size );
 	} else {
 		/*
 		 * If the current buffer size is bigger than the space needed, just 
@@ -273,16 +277,15 @@ BOOL prs_grow(prs_struct *ps, uint32 extra_space)
 		 */
 		new_size = MAX(ps->buffer_size*2, ps->buffer_size + extra_space);		
 
-		if ((new_data = SMB_REALLOC(ps->data_p, new_size)) == NULL) {
+		if ((ps->data_p = SMB_REALLOC(ps->data_p, new_size)) == NULL) {
 			DEBUG(0,("prs_grow: Realloc failure for size %u.\n",
 				(unsigned int)new_size));
 			return False;
 		}
 
-		memset(&new_data[ps->buffer_size], '\0', (size_t)(new_size - ps->buffer_size));
+		memset(&ps->data_p[ps->buffer_size], '\0', (size_t)(new_size - ps->buffer_size));
 	}
 	ps->buffer_size = new_size;
-	ps->data_p = new_data;
 
 	return True;
 }
@@ -296,7 +299,6 @@ BOOL prs_grow(prs_struct *ps, uint32 extra_space)
 BOOL prs_force_grow(prs_struct *ps, uint32 extra_space)
 {
 	uint32 new_size = ps->buffer_size + extra_space;
-	char *new_data;
 
 	if(!UNMARSHALLING(ps) || !ps->is_dynamic) {
 		DEBUG(0,("prs_force_grow: Buffer overflow - unable to expand buffer by %u bytes.\n",
@@ -304,16 +306,15 @@ BOOL prs_force_grow(prs_struct *ps, uint32 extra_space)
 		return False;
 	}
 
-	if((new_data = SMB_REALLOC(ps->data_p, new_size)) == NULL) {
+	if((ps->data_p = SMB_REALLOC(ps->data_p, new_size)) == NULL) {
 		DEBUG(0,("prs_force_grow: Realloc failure for size %u.\n",
 			(unsigned int)new_size));
 		return False;
 	}
 
-	memset(&new_data[ps->buffer_size], '\0', (size_t)(new_size - ps->buffer_size));
+	memset(&ps->data_p[ps->buffer_size], '\0', (size_t)(new_size - ps->buffer_size));
 
 	ps->buffer_size = new_size;
-	ps->data_p = new_data;
 
 	return True;
 }
@@ -606,12 +607,12 @@ BOOL prs_uint8(const char *name, prs_struct *ps, int depth, uint8 *data8)
 	if (q == NULL)
 		return False;
 
-    if (UNMARSHALLING(ps))
+	if (UNMARSHALLING(ps))
 		*data8 = CVAL(q,0);
 	else
 		SCVAL(q,0,*data8);
 
-    DEBUG(5,("%s%04x %s: %02x\n", tab_depth(depth), ps->data_offset, name, *data8));
+	DEBUG(5,("%s%04x %s: %02x\n", tab_depth(depth), ps->data_offset, name, *data8));
 
 	ps->data_offset += 1;
 
@@ -765,6 +766,37 @@ BOOL prs_ntstatus(const char *name, prs_struct *ps, int depth, NTSTATUS *status)
 
 	return True;
 }
+
+/*******************************************************************
+ Stream a DCE error code
+ ********************************************************************/
+
+BOOL prs_dcerpc_status(const char *name, prs_struct *ps, int depth, NTSTATUS *status)
+{
+	char *q = prs_mem_get(ps, sizeof(uint32));
+	if (q == NULL)
+		return False;
+
+	if (UNMARSHALLING(ps)) {
+		if (ps->bigendian_data)
+			*status = NT_STATUS(RIVAL(q,0));
+		else
+			*status = NT_STATUS(IVAL(q,0));
+	} else {
+		if (ps->bigendian_data)
+			RSIVAL(q,0,NT_STATUS_V(*status));
+		else
+			SIVAL(q,0,NT_STATUS_V(*status));
+	}
+
+	DEBUG(5,("%s%04x %s: %s\n", tab_depth(depth), ps->data_offset, name, 
+		 dcerpc_errstr(NT_STATUS_V(*status))));
+
+	ps->data_offset += sizeof(uint32);
+
+	return True;
+}
+
 
 /*******************************************************************
  Stream a WERROR
@@ -1300,6 +1332,35 @@ BOOL prs_string(const char *name, prs_struct *ps, int depth, char *str, int max_
 
 	dump_data(5+depth, q, len);
 
+	return True;
+}
+
+BOOL prs_string_alloc(const char *name, prs_struct *ps, int depth, const char **str)
+{
+	size_t len;
+	char *tmp_str;
+
+	if (UNMARSHALLING(ps)) {
+		len = strlen(&ps->data_p[ps->data_offset]);
+	} else {
+		len = strlen(*str);
+	}
+
+	tmp_str = PRS_ALLOC_MEM(ps, char, len+1);
+
+	if (tmp_str == NULL) {
+		return False;
+	}
+
+	if (MARSHALLING(ps)) {
+		strncpy(tmp_str, *str, len);
+	}
+
+	if (!prs_string(name, ps, depth, tmp_str, len+1)) {
+		return False;
+	}
+
+	*str = tmp_str;
 	return True;
 }
 

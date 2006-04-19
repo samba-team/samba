@@ -52,25 +52,25 @@ static void child_read_request(struct winbindd_cli_state *state)
 	}
 
 	if (state->request.extra_len == 0) {
-		state->request.extra_data = NULL;
+		state->request.extra_data.data = NULL;
 		return;
 	}
 
 	DEBUG(10, ("Need to read %d extra bytes\n", (int)state->request.extra_len));
 
-	state->request.extra_data =
+	state->request.extra_data.data =
 		SMB_MALLOC_ARRAY(char, state->request.extra_len + 1);
 
-	if (state->request.extra_data == NULL) {
+	if (state->request.extra_data.data == NULL) {
 		DEBUG(0, ("malloc failed\n"));
 		state->finished = True;
 		return;
 	}
 
 	/* Ensure null termination */
-	state->request.extra_data[state->request.extra_len] = '\0';
+	state->request.extra_data.data[state->request.extra_len] = '\0';
 
-	len = read_data(state->sock, state->request.extra_data,
+	len = read_data(state->sock, state->request.extra_data.data,
 			state->request.extra_len);
 
 	if (len != state->request.extra_len) {
@@ -153,7 +153,7 @@ static void async_main_request_sent(void *private_data, BOOL success)
 		return;
 	}
 
-	setup_async_write(&state->child->event, state->request->extra_data,
+	setup_async_write(&state->child->event, state->request->extra_data.data,
 			  state->request->extra_len,
 			  async_request_sent, state);
 }
@@ -197,6 +197,8 @@ static void async_reply_recv(void *private_data, BOOL success)
 	SMB_ASSERT(cache_retrieve_response(child->pid,
 					   state->response));
 
+	cache_cleanup_response(child->pid);
+	
 	DLIST_REMOVE(child->requests, state);
 
 	schedule_async_request(child);
@@ -233,6 +235,8 @@ static void schedule_async_request(struct winbindd_child *child)
 	setup_async_write(&child->event, request->request,
 			  sizeof(*request->request),
 			  async_main_request_sent, request);
+
+	talloc_destroy(child->mem_ctx);
 	return;
 }
 
@@ -347,6 +351,7 @@ static struct winbindd_child_dispatch_table child_dispatch_table[] = {
 	{ WINBINDD_SHOW_SEQUENCE,        winbindd_dual_show_sequence,         "SHOW_SEQUENCE" },
 	{ WINBINDD_PAM_AUTH,             winbindd_dual_pam_auth,              "PAM_AUTH" },
 	{ WINBINDD_PAM_AUTH_CRAP,        winbindd_dual_pam_auth_crap,         "AUTH_CRAP" },
+	{ WINBINDD_PAM_LOGOFF,           winbindd_dual_pam_logoff,            "PAM_LOGOFF" },
 	{ WINBINDD_CHECK_MACHACC,        winbindd_dual_check_machine_acct,    "CHECK_MACHACC" },
 	{ WINBINDD_DUAL_SID2UID,         winbindd_dual_sid2uid,               "DUAL_SID2UID" },
 	{ WINBINDD_DUAL_SID2GID,         winbindd_dual_sid2gid,               "DUAL_SID2GID" },
@@ -356,8 +361,8 @@ static struct winbindd_child_dispatch_table child_dispatch_table[] = {
 	{ WINBINDD_DUAL_NAME2GID,        winbindd_dual_name2gid,              "DUAL_NAME2GID" },
 	{ WINBINDD_DUAL_IDMAPSET,        winbindd_dual_idmapset,              "DUAL_IDMAPSET" },
 	{ WINBINDD_DUAL_USERINFO,        winbindd_dual_userinfo,              "DUAL_USERINFO" },
-	{ WINBINDD_ALLOCATE_RID,         winbindd_dual_allocate_rid,          "ALLOCATE_RID" },
-	{ WINBINDD_ALLOCATE_RID_AND_GID, winbindd_dual_allocate_rid_and_gid,  "ALLOCATE_RID_AND_GID" },
+	{ WINBINDD_ALLOCATE_UID,         winbindd_dual_allocate_uid,          "ALLOCATE_UID" },
+	{ WINBINDD_ALLOCATE_GID,         winbindd_dual_allocate_gid,          "ALLOCATE_GID" },
 	{ WINBINDD_GETUSERDOMGROUPS,     winbindd_dual_getuserdomgroups,      "GETUSERDOMGROUPS" },
 	{ WINBINDD_DUAL_GETSIDALIASES,   winbindd_dual_getsidaliases,         "GETSIDALIASES" },
 	/* End of list */
@@ -444,6 +449,139 @@ void winbind_child_died(pid_t pid)
 	schedule_async_request(child);
 }
 
+/* Forward the online/offline messages to our children. */
+void winbind_msg_offline(int msg_type, struct process_id src, void *buf, size_t len)
+{
+	struct winbindd_child *child;
+
+	DEBUG(10,("winbind_msg_offline: got offline message.\n"));
+
+	if (!lp_winbind_offline_logon()) {
+		DEBUG(10,("winbind_msg_offline: rejecting offline message.\n"));
+		return;
+	}
+
+	/* Set our global state as offline. */
+	if (!set_global_winbindd_state_offline()) {
+		DEBUG(10,("winbind_msg_offline: offline request failed.\n"));
+		return;
+	}
+
+	for (child = children; child != NULL; child = child->next) {
+		DEBUG(10,("winbind_msg_offline: sending message to pid %u.\n",
+			(unsigned int)child->pid ));
+		message_send_pid(pid_to_procid(child->pid), MSG_WINBIND_OFFLINE, NULL, 0, False);
+	}
+}
+
+/* Forward the online/offline messages to our children. */
+void winbind_msg_online(int msg_type, struct process_id src, void *buf, size_t len)
+{
+	struct winbindd_child *child;
+
+	DEBUG(10,("winbind_msg_online: got online message.\n"));
+
+	if (!lp_winbind_offline_logon()) {
+		DEBUG(10,("winbind_msg_online: rejecting online message.\n"));
+		return;
+	}
+
+	/* Set our global state as online. */
+	set_global_winbindd_state_online();
+
+	for (child = children; child != NULL; child = child->next) {
+		DEBUG(10,("winbind_msg_online: sending message to pid %u.\n",
+			(unsigned int)child->pid ));
+		message_send_pid(pid_to_procid(child->pid), MSG_WINBIND_ONLINE, NULL, 0, False);
+	}
+}
+
+static void account_lockout_policy_handler(struct timed_event *te,
+					   const struct timeval *now,
+					   void *private_data)
+{
+	struct winbindd_child *child = private_data;
+
+	struct winbindd_methods *methods;
+	SAM_UNK_INFO_12 lockout_policy;
+	NTSTATUS result;
+
+	DEBUG(10,("account_lockout_policy_handler called\n"));
+
+	if (child->lockout_policy_event) {
+		TALLOC_FREE(child->lockout_policy_event);
+	}
+
+	methods = child->domain->methods;
+
+	result = methods->lockout_policy(child->domain, child->mem_ctx, &lockout_policy);
+	if (!NT_STATUS_IS_OK(result)) {
+		DEBUG(10,("account_lockout_policy_handler: failed to call lockout_policy\n"));
+		return;
+	}
+
+	child->lockout_policy_event = add_timed_event(child->mem_ctx, 
+						      timeval_current_ofs(3600, 0),
+						      "account_lockout_policy_handler",
+						      account_lockout_policy_handler,
+						      child);
+}
+
+/* Deal with a request to go offline. */
+
+static void child_msg_offline(int msg_type, struct process_id src, void *buf, size_t len)
+{
+	struct winbindd_domain *domain;
+
+	DEBUG(5,("child_msg_offline received.\n"));
+
+	if (!lp_winbind_offline_logon()) {
+		DEBUG(10,("child_msg_offline: rejecting offline message.\n"));
+		return;
+	}
+
+	/* Set our global state as offline. */
+	if (!set_global_winbindd_state_offline()) {
+		DEBUG(10,("child_msg_offline: offline request failed.\n"));
+		return;
+	}
+
+	/* Mark all our domains as offline. */
+
+	for (domain = domain_list(); domain; domain = domain->next) {
+		DEBUG(5,("child_msg_offline: marking %s offline.\n", domain->name));
+		domain->online = False;
+	}
+}
+
+/* Deal with a request to go online. */
+
+static void child_msg_online(int msg_type, struct process_id src, void *buf, size_t len)
+{
+	struct winbindd_domain *domain;
+
+	DEBUG(5,("child_msg_online received.\n"));
+
+	if (!lp_winbind_offline_logon()) {
+		DEBUG(10,("child_msg_online: rejecting online message.\n"));
+		return;
+	}
+
+	/* Set our global state as online. */
+	set_global_winbindd_state_online();
+
+	winbindd_flush_nscd_cache();
+
+	/* Mark everything online - delete any negative cache entries
+	   to force an immediate reconnect. */
+
+	for (domain = domain_list(); domain; domain = domain->next) {
+		DEBUG(5,("child_msg_online: marking %s online.\n", domain->name));
+		domain->online = True;
+		check_negative_conn_cache_timeout(domain->name, domain->dcname, 0);
+	}
+}
+
 static BOOL fork_domain_child(struct winbindd_child *child)
 {
 	int fdpair[2];
@@ -459,10 +597,15 @@ static BOOL fork_domain_child(struct winbindd_child *child)
 	ZERO_STRUCT(state);
 	state.pid = getpid();
 
+	/* Ensure we don't process messages whilst we're
+	   changing the disposition for the child. */
+	message_block();
+
 	child->pid = sys_fork();
 
 	if (child->pid == -1) {
 		DEBUG(0, ("Could not fork: %s\n", strerror(errno)));
+		message_unblock();
 		return False;
 	}
 
@@ -475,6 +618,8 @@ static BOOL fork_domain_child(struct winbindd_child *child)
 		child->event.flags = 0;
 		child->requests = NULL;
 		add_fd_event(&child->event);
+		/* We're ok with online/offline messages now. */
+		message_unblock();
 		return True;
 	}
 
@@ -484,7 +629,7 @@ static BOOL fork_domain_child(struct winbindd_child *child)
 	close(fdpair[1]);
 
 	/* tdb needs special fork handling */
-	if (tdb_reopen_all() == -1) {
+	if (tdb_reopen_all(1) == -1) {
 		DEBUG(0,("tdb_reopen_all failed.\n"));
 		_exit(0);
 	}
@@ -495,11 +640,80 @@ static BOOL fork_domain_child(struct winbindd_child *child)
 		lp_set_logfile(child->logfilename);
 		reopen_logs();
 	}
-	
+
+	/* Don't handle the same messages as our parent. */
+	message_deregister(MSG_SMB_CONF_UPDATED);
+	message_deregister(MSG_SHUTDOWN);
+	message_deregister(MSG_WINBIND_OFFLINE);
+	message_deregister(MSG_WINBIND_ONLINE);
+
+	/* The child is ok with online/offline messages now. */
+	message_unblock();
+
+	child->mem_ctx = talloc_init("child_mem_ctx");
+	if (child->mem_ctx == NULL) {
+		return False;
+	}
+
+	if (child->domain != NULL) {
+		/* We might be in the idmap child...*/
+		child->lockout_policy_event = add_timed_event(
+			child->mem_ctx, timeval_zero(),
+			"account_lockout_policy_handler",
+			account_lockout_policy_handler,
+			child);
+	}
+
+	/* Handle online/offline messages. */
+	message_register(MSG_WINBIND_OFFLINE,child_msg_offline);
+	message_register(MSG_WINBIND_ONLINE,child_msg_online);
+
 	while (1) {
+
+		int ret;
+		fd_set read_fds;
+		struct timeval t;
+		struct timeval *tp;
+		struct timeval now;
+
 		/* free up any talloc memory */
-		lp_talloc_free();
-		main_loop_talloc_free();
+		lp_TALLOC_FREE();
+		main_loop_TALLOC_FREE();
+
+		run_events();
+
+		GetTimeOfDay(&now);
+
+		tp = get_timed_events_timeout(&t);
+		if (tp) {
+			DEBUG(11,("select will use timeout of %u.%u seconds\n",
+				(unsigned int)tp->tv_sec, (unsigned int)tp->tv_usec ));
+		}
+
+		/* Handle messages */
+
+		message_dispatch();
+
+		FD_ZERO(&read_fds);
+		FD_SET(state.sock, &read_fds);
+
+		ret = sys_select(state.sock + 1, &read_fds, NULL, NULL, tp);
+
+		if (ret == 0) {
+			DEBUG(11,("nothing is ready yet, continue\n"));
+			continue;
+		}
+
+		if (ret == -1 && errno == EINTR) {
+			/* We got a signal - continue. */
+			continue;
+		}
+
+		if (ret == -1 && errno != EINTR) {
+			DEBUG(0,("select error occured\n"));
+			perror("select");
+			return False;
+		}
 
 		/* fetch a request from the main daemon */
 		child_read_request(&state);
@@ -515,11 +729,11 @@ static BOOL fork_domain_child(struct winbindd_child *child)
 		state.request.null_term = '\0';
 		child_process_request(child->domain, &state);
 
-		SAFE_FREE(state.request.extra_data);
+		SAFE_FREE(state.request.extra_data.data);
 
 		cache_store_response(sys_getpid(), &state.response);
 
-		SAFE_FREE(state.response.extra_data);
+		SAFE_FREE(state.response.extra_data.data);
 
 		/* We just send the result code back, the result
 		 * structure needs to be fetched via the

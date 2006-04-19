@@ -187,17 +187,21 @@ static int generic_queue_get(const char *printer_name,
 	}
 	
 	numlines = 0;
-	qlines = fd_lines_load(fd, &numlines);
+	qlines = fd_lines_load(fd, &numlines,0);
 	close(fd);
 
 	/* turn the lpq output into a series of job structures */
 	qcount = 0;
 	ZERO_STRUCTP(status);
-	if (numlines)
+	if (numlines) {
 		queue = SMB_MALLOC_ARRAY(print_queue_struct, numlines+1);
-
-	if (queue) {
+		if (!queue) {
+			file_lines_free(qlines);
+			*q = NULL;
+			return 0;
+		}
 		memset(queue, '\0', sizeof(print_queue_struct)*(numlines+1));
+
 		for (i=0; i<numlines; i++) {
 			/* parse the line */
 			if (parse_lpq_entry(printing_type,qlines[i],
@@ -206,8 +210,8 @@ static int generic_queue_get(const char *printer_name,
 			}
 		}		
 	}
-	file_lines_free(qlines);
 
+	file_lines_free(qlines);
         *q = queue;
 	return qcount;
 }

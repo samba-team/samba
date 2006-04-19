@@ -95,21 +95,25 @@ static BOOL reply_sesssetup_blob(connection_struct *conn, char *outbuf,
 {
 	char *p;
 
-	set_message(outbuf,4,0,True);
+	if (!NT_STATUS_IS_OK(nt_status) && !NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+		ERROR_NT(nt_status);
+	} else {
+		set_message(outbuf,4,0,True);
 
-	nt_status = nt_status_squash(nt_status);
-	SIVAL(outbuf, smb_rcls, NT_STATUS_V(nt_status));
-	SSVAL(outbuf, smb_vwv0, 0xFF); /* no chaining possible */
-	SSVAL(outbuf, smb_vwv3, blob.length);
-	p = smb_buf(outbuf);
+		nt_status = nt_status_squash(nt_status);
+		SIVAL(outbuf, smb_rcls, NT_STATUS_V(nt_status));
+		SSVAL(outbuf, smb_vwv0, 0xFF); /* no chaining possible */
+		SSVAL(outbuf, smb_vwv3, blob.length);
+		p = smb_buf(outbuf);
 
-	/* should we cap this? */
-	memcpy(p, blob.data, blob.length);
-	p += blob.length;
+		/* should we cap this? */
+		memcpy(p, blob.data, blob.length);
+		p += blob.length;
 
-	p += add_signature( outbuf, p );
+		p += add_signature( outbuf, p );
 
-	set_message_end(outbuf,p);
+		set_message_end(outbuf,p);
+	}
 
 	show_msg(outbuf);
 	return send_smb(smbd_server_fd(),outbuf);
@@ -217,7 +221,9 @@ static int reply_spnego_kerberos(connection_struct *conn,
 
 	if (pac_data) {
 		logon_info = get_logon_info_from_pac(pac_data);
-		netsamlogon_cache_store( client, &logon_info->info3 );
+		if (logon_info) {
+			netsamlogon_cache_store( client, &logon_info->info3 );
+		}
 	}
 
 	if (!strequal(p+1, lp_realm())) {
@@ -284,7 +290,7 @@ static int reply_spnego_kerberos(connection_struct *conn,
 
 	map_username( user );
 
-	pw = smb_getpwnam( user, real_username, True );
+	pw = smb_getpwnam( mem_ctx, user, real_username, True );
 	if (!pw) {
 
 		/* this was originally the behavior of Samba 2.2, if a user
@@ -294,7 +300,7 @@ static int reply_spnego_kerberos(connection_struct *conn,
 		if (lp_map_to_guest() == MAP_TO_GUEST_ON_BAD_UID){ 
 			map_domainuser_to_guest = True;
 			fstrcpy(user,lp_guestaccount());
-			pw = smb_getpwnam( user, real_username, True );
+			pw = smb_getpwnam( mem_ctx, user, real_username, True );
 		} 
 
 		/* extra sanity check that the guest account is valid */
@@ -316,14 +322,14 @@ static int reply_spnego_kerberos(connection_struct *conn,
 	if ( map_domainuser_to_guest ) {
 		make_server_info_guest(&server_info);
 	} else if (logon_info) {
-		ret = make_server_info_pac(&server_info, real_username, pw, logon_info);
-
+		ret = make_server_info_info3(mem_ctx, real_username, real_username, domain, 
+					     &server_info, &logon_info->info3);
 		if ( !NT_STATUS_IS_OK(ret) ) {
-			DEBUG(1,("make_server_info_pac failed!\n"));
+			DEBUG(1,("make_server_info_info3 failed: %s!\n",
+				 nt_errstr(ret)));
 			SAFE_FREE(client);
 			data_blob_free(&ap_rep);
 			data_blob_free(&session_key);
-			passwd_free(&pw);
 			talloc_destroy(mem_ctx);
 			return ERROR_NT(ret);
 		}
@@ -332,25 +338,38 @@ static int reply_spnego_kerberos(connection_struct *conn,
 		ret = make_server_info_pw(&server_info, real_username, pw);
 
 		if ( !NT_STATUS_IS_OK(ret) ) {
-			DEBUG(1,("make_server_info_from_pw failed!\n"));
+			DEBUG(1,("make_server_info_pw failed: %s!\n",
+				 nt_errstr(ret)));
 			SAFE_FREE(client);
 			data_blob_free(&ap_rep);
 			data_blob_free(&session_key);
-			passwd_free(&pw);
 			talloc_destroy(mem_ctx);
 			return ERROR_NT(ret);
 		}
 
-	        /* make_server_info_pw does not set the domain. Without this we end up
-		 * with the local netbios name in substitutions for %D. */
+	        /* make_server_info_pw does not set the domain. Without this
+		 * we end up with the local netbios name in substitutions for
+		 * %D. */
 
 		if (server_info->sam_account != NULL) {
 			pdb_set_domain(server_info->sam_account, domain, PDB_SET);
 		}
 	}
-
-
-	passwd_free(&pw);
+	
+	/* we need to build the token for the user. make_server_info_guest()
+	   already does this */
+	
+	if ( !server_info->ptok ) {
+		ret = create_local_token( server_info );
+		if ( !NT_STATUS_IS_OK(ret) ) {
+			SAFE_FREE(client);
+			data_blob_free(&ap_rep);
+			data_blob_free(&session_key);
+			TALLOC_FREE( mem_ctx );
+			TALLOC_FREE( server_info );
+			return ERROR_NT(ret);
+		}
+	}
 
 	/* register_vuid keeps the server info */
 	/* register_vuid takes ownership of session_key, no need to free after this.
@@ -359,7 +378,7 @@ static int reply_spnego_kerberos(connection_struct *conn,
 
 	SAFE_FREE(client);
 
-	if (sess_vuid == -1) {
+	if (sess_vuid == UID_FIELD_INVALID ) {
 		ret = NT_STATUS_LOGON_FAILURE;
 	} else {
 		/* current_user_info is changed on new vuid */
@@ -431,7 +450,7 @@ static BOOL reply_spnego_ntlmssp(connection_struct *conn, char *inbuf, char *out
 		sess_vuid = register_vuid(server_info, session_key, nullblob, (*auth_ntlmssp_state)->ntlmssp_state->user);
 		(*auth_ntlmssp_state)->server_info = NULL;
 
-		if (sess_vuid == -1) {
+		if (sess_vuid == UID_FIELD_INVALID ) {
 			nt_status = NT_STATUS_LOGON_FAILURE;
 		} else {
 			
@@ -676,7 +695,7 @@ static int reply_sesssetup_and_X_spnego(connection_struct *conn, char *inbuf,
 	vuser = get_partial_auth_user_struct(vuid);
 	if (!vuser) {
 		vuid = register_vuid(NULL, data_blob(NULL, 0), data_blob(NULL, 0), NULL);
-		if (vuid == -1) {
+		if (vuid == UID_FIELD_INVALID ) {
 			return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 		}
 	
@@ -1031,7 +1050,10 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 	} else {
 		struct auth_context *plaintext_auth_context = NULL;
 		const uint8 *chal;
-		if (NT_STATUS_IS_OK(nt_status = make_auth_context_subsystem(&plaintext_auth_context))) {
+
+		nt_status = make_auth_context_subsystem(&plaintext_auth_context);
+
+		if (NT_STATUS_IS_OK(nt_status)) {
 			chal = plaintext_auth_context->get_ntlm_challenge(plaintext_auth_context);
 			
 			if (!make_user_info_for_reply(&user_info, 
@@ -1057,6 +1079,21 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 	}
 	
 	if (!NT_STATUS_IS_OK(nt_status)) {
+		data_blob_free(&nt_resp);
+		data_blob_free(&lm_resp);
+		data_blob_clear_free(&plaintext_password);
+		return ERROR_NT(nt_status_squash(nt_status));
+	}
+
+	/* Ensure we can't possible take a code path leading to a null defref. */
+	if (!server_info) {
+		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
+	}
+
+	nt_status = create_local_token(server_info);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		DEBUG(10, ("create_local_token failed: %s\n",
+			   nt_errstr(nt_status)));
 		data_blob_free(&nt_resp);
 		data_blob_free(&lm_resp);
 		data_blob_clear_free(&plaintext_password);
@@ -1092,7 +1129,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 	data_blob_free(&nt_resp);
 	data_blob_free(&lm_resp);
 
-	if (sess_vuid == -1) {
+	if (sess_vuid == UID_FIELD_INVALID) {
 		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
 	}
 

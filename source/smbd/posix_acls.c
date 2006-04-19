@@ -516,10 +516,12 @@ static size_t count_canon_ace_list( canon_ace *list_head )
 
 static void free_canon_ace_list( canon_ace *list_head )
 {
-	while (list_head) {
-		canon_ace *old_head = list_head;
-		DLIST_REMOVE(list_head, list_head);
-		SAFE_FREE(old_head);
+	canon_ace *list, *next;
+
+	for (list = list_head; list; list = next) {
+		next = list->next;
+		DLIST_REMOVE(list_head, list);
+		SAFE_FREE(list);
 	}
 }
 
@@ -783,15 +785,15 @@ static void merge_aces( canon_ace **pp_list_head )
 
 static BOOL nt4_compatible_acls(void)
 {
-	const char *compat = lp_acl_compatibility();
+	int compat = lp_acl_compatibility();
 
-	if (*compat == '\0') {
+	if (compat == ACL_COMPAT_AUTO) {
 		enum remote_arch_types ra_type = get_remote_arch();
 
 		/* Automatically adapt to client */
 		return (ra_type <= RA_WINNT);
 	} else
-		return (strequal(compat, "winnt"));
+		return (compat == ACL_COMPAT_WINNT);
 }
 
 
@@ -925,11 +927,11 @@ static BOOL unpack_nt_owners(int snum, SMB_STRUCT_STAT *psbuf, uid_t *puser, gid
 
 	if (security_info_sent & OWNER_SECURITY_INFORMATION) {
 		sid_copy(&owner_sid, psd->owner_sid);
-		if (!NT_STATUS_IS_OK(sid_to_uid(&owner_sid, puser))) {
+		if (!sid_to_uid(&owner_sid, puser)) {
 			if (lp_force_unknown_acl_user(snum)) {
 				/* this allows take ownership to work
 				 * reasonably */
-				*puser = current_user.uid;
+				*puser = current_user.ut.uid;
 			} else {
 				DEBUG(3,("unpack_nt_owners: unable to validate"
 					 " owner sid for %s\n",
@@ -946,11 +948,11 @@ static BOOL unpack_nt_owners(int snum, SMB_STRUCT_STAT *psbuf, uid_t *puser, gid
 
 	if (security_info_sent & GROUP_SECURITY_INFORMATION) {
 		sid_copy(&grp_sid, psd->grp_sid);
-		if (!NT_STATUS_IS_OK(sid_to_gid( &grp_sid, pgrp))) {
+		if (!sid_to_gid( &grp_sid, pgrp)) {
 			if (lp_force_unknown_acl_user(snum)) {
 				/* this allows take group ownership to work
 				 * reasonably */
-				*pgrp = current_user.gid;
+				*pgrp = current_user.ut.gid;
 			} else {
 				DEBUG(3,("unpack_nt_owners: unable to validate"
 					 " group sid.\n"));
@@ -1015,7 +1017,6 @@ static void apply_default_perms(files_struct *fsp, canon_ace *pace, mode_t type)
 static BOOL uid_entry_in_group( canon_ace *uid_ace, canon_ace *group_ace )
 {
 	fstring u_name;
-	fstring g_name;
 
 	/* "Everyone" always matches every uid. */
 
@@ -1024,18 +1025,11 @@ static BOOL uid_entry_in_group( canon_ace *uid_ace, canon_ace *group_ace )
 
 	/* Assume that the current user is in the current group (force group) */
 
-	if (uid_ace->unix_ug.uid == current_user.uid && group_ace->unix_ug.gid == current_user.gid)
+	if (uid_ace->unix_ug.uid == current_user.ut.uid && group_ace->unix_ug.gid == current_user.ut.gid)
 		return True;
 
 	fstrcpy(u_name, uidtoname(uid_ace->unix_ug.uid));
-	fstrcpy(g_name, gidtoname(group_ace->unix_ug.gid));
-
-	/*
-	 * Due to the winbind interfaces we need to do this via names,
-	 * not uids/gids.
-	 */
-
-	return user_in_group_list(u_name, g_name, NULL, 0);
+	return user_in_group_sid(u_name, &group_ace->trustee);
 }
 
 /****************************************************************************
@@ -1390,10 +1384,10 @@ static BOOL create_canon_ace_lists(files_struct *fsp, SMB_STRUCT_STAT *pst,
 			if (nt4_compatible_acls())
 				psa->flags |= SEC_ACE_FLAG_INHERIT_ONLY;
 
-		} else if (NT_STATUS_IS_OK(sid_to_uid( &current_ace->trustee, &current_ace->unix_ug.uid))) {
+		} else if (sid_to_uid( &current_ace->trustee, &current_ace->unix_ug.uid)) {
 			current_ace->owner_type = UID_ACE;
 			current_ace->type = SMB_ACL_USER;
-		} else if (NT_STATUS_IS_OK(sid_to_gid( &current_ace->trustee, &current_ace->unix_ug.gid))) {
+		} else if (sid_to_gid( &current_ace->trustee, &current_ace->unix_ug.gid)) {
 			current_ace->owner_type = GID_ACE;
 			current_ace->type = SMB_ACL_GROUP;
 		} else {
@@ -2246,8 +2240,8 @@ static BOOL current_user_in_group(gid_t gid)
 {
 	int i;
 
-	for (i = 0; i < current_user.ngroups; i++) {
-		if (current_user.groups[i] == gid) {
+	for (i = 0; i < current_user.ut.ngroups; i++) {
+		if (current_user.ut.groups[i] == gid) {
 			return True;
 		}
 	}
@@ -2256,18 +2250,20 @@ static BOOL current_user_in_group(gid_t gid)
 }
 
 /****************************************************************************
- Should we override a deny ?
+ Should we override a deny ?  Check deprecated 'acl group control'
+ and 'dos filemode'
 ****************************************************************************/
 
 static BOOL acl_group_override(connection_struct *conn, gid_t prim_gid)
 {
-	if ((errno == EACCES || errno == EPERM) &&
-			lp_acl_group_control(SNUM(conn)) &&
-			current_user_in_group(prim_gid)) {
+	if ( (errno == EACCES || errno == EPERM) 
+		&& (lp_acl_group_control(SNUM(conn) || lp_dos_filemode(SNUM(conn)))) 
+		&& current_user_in_group(prim_gid) ) 
+	{
 		return True;
-	} else {
-		return False;
-	}
+	} 
+
+	return False;
 }
 
 /****************************************************************************
@@ -3026,7 +3022,7 @@ static int try_chown(connection_struct *conn, const char *fname, uid_t uid, gid_
 						       &se_restore);
 
 		/* Case (2) */
-		if ( ( has_take_ownership_priv && ( uid == current_user.uid ) ) ||
+		if ( ( has_take_ownership_priv && ( uid == current_user.ut.uid ) ) ||
 		/* Case (3) */
 		     ( has_restore_priv ) ) {
 
@@ -3056,7 +3052,7 @@ static int try_chown(connection_struct *conn, const char *fname, uid_t uid, gid_
 	   and also copes with the case where the SID in a take ownership ACL is
 	   a local SID on the users workstation 
 	*/
-	uid = current_user.uid;
+	uid = current_user.ut.uid;
 
 	become_root();
 	/* Keep the current file gid the same. */
@@ -3136,7 +3132,7 @@ BOOL set_nt_acl(files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd)
 	 * the file.
 	 */
 
-	if (need_chown && (user == (uid_t)-1 || user == current_user.uid)) {
+	if (need_chown && (user == (uid_t)-1 || user == current_user.ut.uid)) {
 
 		DEBUG(3,("set_nt_acl: chown %s. uid = %u, gid = %u.\n",
 				fsp->fsp_name, (unsigned int)user, (unsigned int)grp ));
@@ -3842,6 +3838,21 @@ static BOOL remove_posix_acl(connection_struct *conn, files_struct *fsp, const c
 		}
 	}
 
+	/* Set the new empty file ACL. */
+	if (fsp && fsp->fh->fd != -1) {
+		if (SMB_VFS_SYS_ACL_SET_FD(fsp, fsp->fh->fd, new_file_acl) == -1) {
+			DEBUG(5,("remove_posix_acl: acl_set_file failed on %s (%s)\n",
+				fname, strerror(errno) ));
+			goto done;
+		}
+	} else {
+		if (SMB_VFS_SYS_ACL_SET_FILE(conn, fname, SMB_ACL_TYPE_ACCESS, new_file_acl) == -1) {
+			DEBUG(5,("remove_posix_acl: acl_set_file failed on %s (%s)\n",
+				fname, strerror(errno) ));
+			goto done;
+		}
+	}
+
 	ret = True;
 
  done:
@@ -3960,12 +3971,12 @@ refusing write due to mask.\n", fname));
 				break;
 			case SMB_ACL_USER:
 			{
-				/* Check against current_user.uid. */
+				/* Check against current_user.ut.uid. */
 				uid_t *puid = (uid_t *)SMB_VFS_SYS_ACL_GET_QUALIFIER(conn, entry);
 				if (puid == NULL) {
 					goto check_stat;
 				}
-				if (current_user.uid == *puid) {
+				if (current_user.ut.uid == *puid) {
 					/* We have a uid match but we must ensure we have seen the acl mask. */
 					ret = have_write;
 					DEBUG(10,("check_posix_acl_group_write: file %s \
@@ -4130,13 +4141,13 @@ BOOL can_delete_file_in_directory(connection_struct *conn, const char *fname)
 	if (!S_ISDIR(sbuf.st_mode)) {
 		return False;
 	}
-	if (current_user.uid == 0 || conn->admin_user) {
+	if (current_user.ut.uid == 0 || conn->admin_user) {
 		/* I'm sorry sir, I didn't know you were root... */
 		return True;
 	}
 
 	/* Check primary owner write access. */
-	if (current_user.uid == sbuf.st_uid) {
+	if (current_user.ut.uid == sbuf.st_uid) {
 		return (sbuf.st_mode & S_IWUSR) ? True : False;
 	}
 
@@ -4152,7 +4163,7 @@ BOOL can_delete_file_in_directory(connection_struct *conn, const char *fname)
 		 * for bug #3348. Don't assume owning sticky bit
 		 * directory means write access allowed.
 		 */
-		if (current_user.uid != sbuf_file.st_uid) {
+		if (current_user.ut.uid != sbuf_file.st_uid) {
 			return False;
 		}
 	}
@@ -4178,7 +4189,7 @@ BOOL can_write_to_file(connection_struct *conn, const char *fname, SMB_STRUCT_ST
 {
 	int ret;
 
-	if (current_user.uid == 0 || conn->admin_user) {
+	if (current_user.ut.uid == 0 || conn->admin_user) {
 		/* I'm sorry sir, I didn't know you were root... */
 		return True;
 	}
@@ -4191,7 +4202,7 @@ BOOL can_write_to_file(connection_struct *conn, const char *fname, SMB_STRUCT_ST
 	}
 
 	/* Check primary owner write access. */
-	if (current_user.uid == psbuf->st_uid) {
+	if (current_user.ut.uid == psbuf->st_uid) {
 		return (psbuf->st_mode & S_IWUSR) ? True : False;
 	}
 
@@ -4221,7 +4232,7 @@ SEC_DESC* get_nt_acl_no_snum( TALLOC_CTX *ctx, const char *fname)
 	connection_struct conn;
 	files_struct finfo;
 	struct fd_handle fh;
-	fstring path;
+	pstring path;
 	pstring filename;
 	
 	ZERO_STRUCT( conn );
@@ -4232,8 +4243,8 @@ SEC_DESC* get_nt_acl_no_snum( TALLOC_CTX *ctx, const char *fname)
 		return NULL;
 	}
 	
-	fstrcpy( path, "/" );
-	string_set(&conn.connectpath, path);
+	pstrcpy( path, "/" );
+	set_conn_connectpath(&conn, path);
 	
 	if (!smbd_vfs_init(&conn)) {
 		DEBUG(0,("get_nt_acl_no_snum: Unable to create a fake connection struct!\n"));
