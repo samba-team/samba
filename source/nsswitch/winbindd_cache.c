@@ -774,7 +774,7 @@ static void wcache_save_lockout_policy(struct winbindd_domain *domain, NTSTATUS 
 	centry_free(centry);
 }
 
-static void wcache_save_password_policy(struct winbindd_domain *domain, NTSTATUS status, SAM_UNK_INFO_1 *password_policy)
+static void wcache_save_password_policy(struct winbindd_domain *domain, NTSTATUS status, SAM_UNK_INFO_1 *policy)
 {
 	struct cache_entry *centry;
 
@@ -782,11 +782,11 @@ static void wcache_save_password_policy(struct winbindd_domain *domain, NTSTATUS
 	if (!centry)
 		return;
 
-	centry_put_uint16(centry, password_policy->min_length_password);
-	centry_put_uint16(centry, password_policy->password_history);
-	centry_put_uint32(centry, password_policy->password_properties);
-	centry_put_nttime(centry, password_policy->expire);
-	centry_put_nttime(centry, password_policy->min_passwordage);
+	centry_put_uint16(centry, policy->min_length_password);
+	centry_put_uint16(centry, policy->password_history);
+	centry_put_uint32(centry, policy->password_properties);
+	centry_put_nttime(centry, policy->expire);
+	centry_put_nttime(centry, policy->min_passwordage);
 
 	centry_end(centry, "PWD_POL/%s", domain->name);
 	
@@ -1857,7 +1857,7 @@ skip_save:
 /* get lockout policy */
 static NTSTATUS lockout_policy(struct winbindd_domain *domain,
  			       TALLOC_CTX *mem_ctx,
-			       SAM_UNK_INFO_12 *lockout_policy){
+			       SAM_UNK_INFO_12 *policy){
  	struct winbind_cache *cache = get_cache(domain);
  	struct cache_entry *centry = NULL;
  	NTSTATUS status;
@@ -1870,9 +1870,9 @@ static NTSTATUS lockout_policy(struct winbindd_domain *domain,
 	if (!centry)
  		goto do_query;
  
-	lockout_policy->duration = centry_nttime(centry);
-	lockout_policy->reset_count = centry_nttime(centry);
-	lockout_policy->bad_attempt_lockout = centry_uint16(centry);
+	policy->duration = centry_nttime(centry);
+	policy->reset_count = centry_nttime(centry);
+	policy->bad_attempt_lockout = centry_uint16(centry);
  
  	status = centry->status;
  
@@ -1883,7 +1883,7 @@ static NTSTATUS lockout_policy(struct winbindd_domain *domain,
  	return status;
  
 do_query:
-	ZERO_STRUCTP(lockout_policy);
+	ZERO_STRUCTP(policy);
  
 	/* Return status value returned by seq number check */
 
@@ -1893,11 +1893,11 @@ do_query:
 	DEBUG(10,("lockout_policy: [Cached] - doing backend query for info for domain %s\n",
 		domain->name ));
  
-	status = domain->backend->lockout_policy(domain, mem_ctx, lockout_policy); 
+	status = domain->backend->lockout_policy(domain, mem_ctx, policy); 
  
 	/* and save it */
  	refresh_sequence_number(domain, False);
-	wcache_save_lockout_policy(domain, status, lockout_policy);
+	wcache_save_lockout_policy(domain, status, policy);
  
  	return status;
 }
@@ -1905,7 +1905,7 @@ do_query:
 /* get password policy */
 static NTSTATUS password_policy(struct winbindd_domain *domain,
 				TALLOC_CTX *mem_ctx,
-				SAM_UNK_INFO_1 *password_policy)
+				SAM_UNK_INFO_1 *policy)
 {
 	struct winbind_cache *cache = get_cache(domain);
 	struct cache_entry *centry = NULL;
@@ -1919,11 +1919,11 @@ static NTSTATUS password_policy(struct winbindd_domain *domain,
 	if (!centry)
 		goto do_query;
 
-	password_policy->min_length_password = centry_uint16(centry);
-	password_policy->password_history = centry_uint16(centry);
-	password_policy->password_properties = centry_uint32(centry);
-	password_policy->expire = centry_nttime(centry);
-	password_policy->min_passwordage = centry_nttime(centry);
+	policy->min_length_password = centry_uint16(centry);
+	policy->password_history = centry_uint16(centry);
+	policy->password_properties = centry_uint32(centry);
+	policy->expire = centry_nttime(centry);
+	policy->min_passwordage = centry_nttime(centry);
 
 	status = centry->status;
 
@@ -1934,7 +1934,7 @@ static NTSTATUS password_policy(struct winbindd_domain *domain,
 	return status;
 
 do_query:
-	ZERO_STRUCTP(password_policy);
+	ZERO_STRUCTP(policy);
 
 	/* Return status value returned by seq number check */
 
@@ -1944,11 +1944,11 @@ do_query:
 	DEBUG(10,("password_policy: [Cached] - doing backend query for info for domain %s\n",
 		domain->name ));
 
-	status = domain->backend->password_policy(domain, mem_ctx, password_policy); 
+	status = domain->backend->password_policy(domain, mem_ctx, policy); 
 
 	/* and save it */
 	refresh_sequence_number(domain, False);
-	wcache_save_password_policy(domain, status, password_policy);
+	wcache_save_password_policy(domain, status, policy);
 
 	return status;
 }
