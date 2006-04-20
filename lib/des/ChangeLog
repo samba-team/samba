@@ -1,3 +1,7 @@
+2006-04-20  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* dh.h: Add cpp-rename for DH_check_pubkey
+	
 2006-04-17  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* rand.h: Add more RAND functions.

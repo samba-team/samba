@@ -1,4 +1,16 @@
+2006-04-20  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kdc/config.c: unbreak
+
+	* lib/krb5/pkinit.c: Handle diffrences between libhcrypto and
+	libcrypto.
+
+	* kdc/config.c: Rename pki-chain to pki-pool to match rest of
+	code.
+	
 2006-04-12  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/rd_priv.c: Fix argument to krb5_data_zero.
 
 	* kdc/config.c: Added certificate revoke information from
 	configuration file.
