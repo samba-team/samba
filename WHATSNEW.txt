@@ -36,7 +36,17 @@ The user and group internal management routines have been rewritten
 to prevent overlaps of assigned Relative Identifiers (RIDs).  
 Unmapped users are assigned a SID in the S-1-22-1 domain now and
 unmapped groups are assigned a SID in the S-1-22-2 domain.
+This means that it is possible on upgraded Samba domain controllers
+that this could cause problems with the ACLs assigned to files or 
+directories copied from a file share to a local NTFS formatted disk 
+partition.  Upgrading procedures are still under development.
 
+There has also been a minor update the Samba LDAP schema file.
+A substring matching rule has been added to the sambaSID
+attribute definition.  This will require, for example, the addition 
+of 'index sambaSID sub' to an OpenLDAP server's slapd.conf 
+configuration file.  It will be necessary to run slapindex after 
+making this change.
 
 
 ######################################################################
@@ -53,16 +63,27 @@ smb.conf changes
     --------------                      ------
     acl group control			Deprecated
     add port command			New
+    dmapi support			New
     dos filemode			Modified behavior
     enable asu support			New default (no)
     enable privileges			New default (yes)
+    enable rid algorithm		Removed
+    fam change notify			New
     host msdfs				New default (yes)
     msdfs root				New default (yes)
     open files database hash size	New
     strict locking			New default (auto)
+    usershare max shares		New
+    usershare owner only		New
+    usershare path			New
+    usershare prefix allow list		New
+    usershare prefix deny list		New
+    usershare template share		New
     winbind enum users			New default (no)
     winbind enum groups			New default (no)
     winbind nested groups		New default (yes)
+    winbind offline logon		New
+    winbind refesh tickets		New
     winbind max idle children		Removed
 
 
