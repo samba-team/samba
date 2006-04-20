@@ -190,9 +190,7 @@ generate_dh_keyblock(krb5_context context, pk_client_params *client_params,
     memset(&key, 0, sizeof(key));
 
     if (!DH_generate_key(client_params->dh)) {
-	krb5_set_error_string(context, "Can't generate Diffie-Hellman "
-			      "keys (%s)",
-			      ERR_error_string(ERR_get_error(), NULL));
+	krb5_set_error_string(context, "Can't generate Diffie-Hellman keys");
 	ret = KRB5KRB_ERR_GENERIC;
 	goto out;
     }
@@ -219,8 +217,7 @@ generate_dh_keyblock(krb5_context context, pk_client_params *client_params,
 				   client_params->dh_public_key,
 				   client_params->dh);
     if (dh_gen_keylen == -1) {
-	krb5_set_error_string(context, "Can't compute Diffie-Hellman key (%s)",
-			      ERR_error_string(ERR_get_error(), NULL));
+	krb5_set_error_string(context, "Can't compute Diffie-Hellman key");
 	ret = KRB5KRB_ERR_GENERIC;
 	goto out;
     }
@@ -250,7 +247,7 @@ integer_to_BN(krb5_context context, const char *field, heim_integer *f)
 	krb5_set_error_string(context, "PKINIT: parsing BN failed %s", field);
 	return NULL;
     }
-    bn->neg = f->negative;
+    BN_set_negative(bn, f->negative);
     return bn;
 }
 
@@ -305,8 +302,7 @@ get_dh_param(krb5_context context,
 
     dh = DH_new();
     if (dh == NULL) {
-	krb5_set_error_string(context, "Cannot create DH structure (%s)",
-			      ERR_error_string(ERR_get_error(), NULL));
+	krb5_set_error_string(context, "Cannot create DH structure");
 	ret = ENOMEM;
 	goto out;
     }
@@ -342,9 +338,10 @@ get_dh_param(krb5_context context,
 	    goto out;
     }
 
-    if (DH_check(dh, &dhret) != 1) {
-	krb5_set_error_string(context, "PKINIT DH data not ok: %s",
-			      ERR_error_string(ERR_get_error(), NULL));
+
+    if (DH_check_pubkey(dh, client_params->dh_public_key, &dhret) != 1 ||
+	dhret != 0) {
+	krb5_set_error_string(context, "PKINIT DH data not ok");
 	ret = KRB5_KDC_ERR_DH_KEY_PARAMETERS_NOT_ACCEPTED;
 	goto out;
     }
@@ -691,7 +688,7 @@ BN_to_integer(krb5_context context, BIGNUM *bn, heim_integer *integer)
 	return ENOMEM;
     }
     BN_bn2bin(bn, integer->data);
-    integer->negative = bn->neg;
+    integer->negative = BN_is_negative(bn);
     return 0;
 }
 
