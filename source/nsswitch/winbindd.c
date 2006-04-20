@@ -26,6 +26,9 @@
 #include "includes.h"
 #include "winbindd.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_WINBIND
+
 BOOL opt_nocache = False;
 static BOOL interactive = False;
 
