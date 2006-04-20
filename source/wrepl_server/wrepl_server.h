@@ -309,5 +309,6 @@ struct wreplsrv_service {
 };
 
 struct socket_context;
+struct wrepl_name;
 #include "wrepl_server/wrepl_out_helpers.h"
 #include "wrepl_server/wrepl_server_proto.h"

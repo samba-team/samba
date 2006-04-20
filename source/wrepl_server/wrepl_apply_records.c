@@ -1377,24 +1377,25 @@ static NTSTATUS wreplsrv_apply_one_record(struct wreplsrv_partner *partner,
 	return NT_STATUS_INTERNAL_ERROR;
 }
 
-NTSTATUS wreplsrv_apply_records(struct wreplsrv_partner *partner, struct wreplsrv_pull_names_io *names_io)
+NTSTATUS wreplsrv_apply_records(struct wreplsrv_partner *partner,
+				struct wrepl_wins_owner *owner,
+				uint32_t num_names, struct wrepl_name *names)
 {
 	NTSTATUS status;
 	uint32_t i;
 
 	DEBUG(4,("apply records count[%u]:owner[%s]:min[%llu]:max[%llu]:partner[%s]\n",
-		names_io->out.num_names, names_io->in.owner.address,
-		(long long)names_io->in.owner.min_version, 
-		(long long)names_io->in.owner.max_version,
+		num_names, owner->address,
+		(long long)owner->min_version, 
+		(long long)owner->max_version,
 		partner->address));
 
-	for (i=0; i < names_io->out.num_names; i++) {
+	for (i=0; i < num_names; i++) {
 		TALLOC_CTX *tmp_mem = talloc_new(partner);
 		NT_STATUS_HAVE_NO_MEMORY(tmp_mem);
 
 		status = wreplsrv_apply_one_record(partner, tmp_mem,
-						   &names_io->in.owner,
-						   &names_io->out.names[i]);
+						   owner, &names[i]);
 		talloc_free(tmp_mem);
 		NT_STATUS_NOT_OK_RETURN(status);
 	}
@@ -1402,8 +1403,8 @@ NTSTATUS wreplsrv_apply_records(struct wreplsrv_partner *partner, struct wreplsr
 	status = wreplsrv_add_table(partner->service,
 				    partner->service,
 				    &partner->service->table,
-				    names_io->in.owner.address,
-				    names_io->in.owner.max_version);
+				    owner->address,
+				    owner->max_version);
 	NT_STATUS_NOT_OK_RETURN(status);
 
 	return NT_STATUS_OK;
