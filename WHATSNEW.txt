@@ -20,11 +20,23 @@ articles:
 	http://news.samba.org/#coverity_zero_bugs 
 	http://news.samba.org/#zdnet_quick_response
 
-
-
-Common bugs fixed in 3.0.23pre1 include:
-
 New features introduced in 3.0.23pre1 include:
+
+  o New offline mode in winbindd.
+  o New kerberos support for pam_winbind.so.
+  o New handling of unmapped users and groups. 
+  o New non-root share management tools.
+  o Improved support for local and BUILTIN groups.
+
+
+User and Group changes
+======================
+
+The user and group internal management routines have been rewritten
+to prevent overlaps of assigned Relative Identifiers (RIDs).  
+Unmapped users are assigned a SID in the S-1-22-1 domain now and
+unmapped groups are assigned a SID in the S-1-22-2 domain.
+
 
 
 ######################################################################
@@ -100,7 +112,10 @@ o   Jeremy Allison <jra@samba.org>
     * Fix error return on session setup. Ensure no data blob is 
       added if the logon call failed so that Windows clients 
       interpret the NT_STATUS code correctly.
-
+    * Teach Samba the difference between exclusive and batch 
+      oplocks.
+    * BUG 3592: Ignore a file in a smbtar output if the first 
+      read fails (inspired by Justin Best).
 
 
 o   Alexander Bokovoy <ab@samba.org>
@@ -215,7 +230,6 @@ o   Guenther Deschner <gd@samba.org>
       in /etc/security/pam_winbind.conf.
 
 
-
 o   Mathias Dietz <MDIETZ@de.ibm.com>
     * EPERM can be a valid return from getting an xattr. 
       Don't disable if we get it.
@@ -261,6 +275,8 @@ o   Volker Lendecke <vl@samba.org>
       the SAMBA_4_0 tree.
     * Unsure that the global SAM SID is initialized before any
       dependent routines are called.
+    * Enhance consistency checks on local configuration when joining
+      a domain.
 
 
 o   Derrell Lipman <derrell@samba.org>

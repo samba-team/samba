@@ -389,9 +389,16 @@ static int rpc_join_usage(int argc, const char **argv)
 
 int net_rpc_join(int argc, const char **argv) 
 {
-	if ((lp_server_role() != ROLE_DOMAIN_MEMBER) || 
+	if ((lp_server_role() != ROLE_DOMAIN_MEMBER) &&
 	    (lp_server_role() != ROLE_DOMAIN_BDC)) {
 		d_printf("can only join as domain member or as BDC\n");
+		return -1;
+	}
+
+	if (strlen(global_myname()) > 15) {
+		d_printf("Our netbios name can only be 15 chars long, \"%s\""
+			 " is %d chars long\n",
+			 global_myname(), strlen(global_myname()));
 		return -1;
 	}
 
