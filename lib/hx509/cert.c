@@ -1326,8 +1326,18 @@ hx509_verify_path(hx509_context context,
 	Certificate *signer, *c;
 
 	c = _hx509_get_cert(path.val[i]);
-	/* is last in chain and thus the self-signed */
-	signer = path.val[i == path.len - 1 ? i : i + 1]->data;
+
+	/* is last in chain (trust anchor) */
+	if (i == path.len - 1) {
+	    signer = path.val[i]->data;
+
+	    /* if trust anchor is not self signed, don't check sig */
+	    if (!certificate_is_self_signed(signer))
+		continue;
+	} else {
+	    /* take next certificate in chain */
+	    signer = path.val[i + 1]->data;
+	}
 
 	/* verify signatureValue */
 	ret = _hx509_verify_signature_bitstring(signer,
