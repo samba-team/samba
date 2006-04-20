@@ -1,5 +1,9 @@
-2006-04-14  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-04-20  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* fnmatch.hin (fnmatch): CPP rename to rk_fnmatch
+	
+2006-04-14  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* resolve.c (dns_srv_order): change a if (ptr == NULL) continue
 	into a assert(ptr != NULL) since it could never happen, found by
 	the IBM code checker (beam).  Thanks to Florian Krohm for
