@@ -846,7 +846,7 @@ static void usage(poptContext *pc)
 
 static struct process_id parse_dest(const char *dest)
 {
-	struct process_id result;
+	struct process_id result = {-1};
 	pid_t pid;
 
 	/* Zero is a special return value for broadcast smbd */
