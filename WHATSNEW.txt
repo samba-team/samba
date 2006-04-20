@@ -34,19 +34,57 @@ User and Group changes
 
 The user and group internal management routines have been rewritten
 to prevent overlaps of assigned Relative Identifiers (RIDs).  
-Unmapped users are assigned a SID in the S-1-22-1 domain now and
+In the past the has been a potential problem when either manually 
+mapping Unix groups with the 'net groupmap' command or when 
+migrating a Windows domain to a Samba domain using 'net rpc vampire'.
+
+Unmapped users are now assigned a SID in the S-1-22-1 domain and
 unmapped groups are assigned a SID in the S-1-22-2 domain.
-This means that it is possible on upgraded Samba domain controllers
-that this could cause problems with the ACLs assigned to files or 
-directories copied from a file share to a local NTFS formatted disk 
-partition.  Upgrading procedures are still under development.
+Previously they were assign a RID within the SAM on the Samba 
+server.  For a DC this would have been under the authority of 
+the domain SID where as on a member server or standalone host,
+this would have been under the authority of the local SAM 
+(hint: net getlocalsid).
+
+The result is that any unmapped users or groups on an upgraded 
+Samba domain controller may be assigned a new SID.  Because the
+SID rather than a name is stored in Windows security descriptors,
+this can cause a user to no longer have access to a resource
+for example if a file was copied from a Samba file server to
+a local NTFS partition.  Any files stored on the Samba server 
+itself will continue to be accessible because Unix stores the
+Unix gid and not the SID for authorization checks.
+
+A further example will help illustrate the change.  Assume 
+that a group named 'developers' exists with a Unix gid of 
+782 but this user does not exist in Samba's group mapping 
+table. it would be perfectly normal for this group to be 
+appear in an ACL editor.  Prior to 3.0.23, the group SID might 
+appear as S-1-5-21-647511796-4126122067-3123570092-2565.
+With 3.0.23, the group SID would be reported as S-1-22-2-782.
+Any security descriptors associated with files stored on 
+an NTFS disk partition would not allow access based on the 
+group permissions if the user was not a member of the 
+S-1-5-21-647511796-4126122067-3123570092-2565 group.
+Because this group SID not reported in a user's token is 
+S-1-22-2-782, Windows would fail the authorization check 
+even though both SIDs in some respect referred to the same 
+Unix group.
+
+The current workaround is to create a manual domain group 
+mapping entry for the group 'developers' to point at the 
+S-1-5-21-647511796-4126122067-3123570092-2565 SID.
+
+
+LDAP Changes
+============
 
 There has also been a minor update the Samba LDAP schema file.
-A substring matching rule has been added to the sambaSID
-attribute definition.  This will require, for example, the addition 
-of 'index sambaSID sub' to an OpenLDAP server's slapd.conf 
-configuration file.  It will be necessary to run slapindex after 
-making this change.
+A substring matching rule has been added to the sambaSID attribute 
+definition.  For OpenLDAP servers, this will require the addition 
+of 'index sambaSID sub' to the slapd.conf configuration file.  It 
+will be necessary to run slapindex after making this change.
+There has been no change to actual data storage schema.
 
 
 ######################################################################
@@ -59,31 +97,31 @@ Changes since 3.0.21/22
 smb.conf changes
 ----------------
 
-    Parameter Name                      Action
-    --------------                      ------
-    acl group control			Deprecated
-    add port command			New
-    dmapi support			New
-    dos filemode			Modified behavior
-    enable asu support			New default (no)
-    enable privileges			New default (yes)
+    Parameter Name                      Description	  Default
+    --------------                      -----------	  -------
+    acl group control			Deprecated	  No
+    add port command			New		  ""
+    dmapi support			New		  No
+    dos filemode			Modified	  No
+    enable asu support			Changed default	  No
+    enable privileges			Changed default	  Yes
     enable rid algorithm		Removed
-    fam change notify			New
-    host msdfs				New default (yes)
-    msdfs root				New default (yes)
-    open files database hash size	New
-    strict locking			New default (auto)
-    usershare max shares		New
-    usershare owner only		New
-    usershare path			New
-    usershare prefix allow list		New
-    usershare prefix deny list		New
-    usershare template share		New
-    winbind enum users			New default (no)
-    winbind enum groups			New default (no)
-    winbind nested groups		New default (yes)
-    winbind offline logon		New
-    winbind refesh tickets		New
+    fam change notify			New		  Yes
+    host msdfs				Changed default	  Yes
+    msdfs root				Changed default	  Yes
+    open files database hash size	New		  10007
+    strict locking			Changed default	  auto
+    usershare max shares		New		  0
+    usershare owner only		New		  Yes
+    usershare path			New		  ${lockdir}
+    usershare prefix allow list		New		  ""
+    usershare prefix deny list		New		  ""
+    usershare template share		New		  ""
+    winbind enum users			Changed default	  No
+    winbind enum groups			Changed default	  No
+    winbind nested groups		Changed default	  Yes
+    winbind offline logon		New		  No
+    winbind refresh tickets		New		  No
     winbind max idle children		Removed
 
 
@@ -292,9 +330,7 @@ o   Volker Lendecke <vl@samba.org>
     * BUG 2413: Remove anonymous connections in 'net rpc info'.
     * Implement asynchronous support for trans2 calls.
     * Make smbclient -L use RPC to list shares, fall back to RAP.
-    * Merge tdb code (including transactional support) from 
-      the SAMBA_4_0 tree.
-    * Unsure that the global SAM SID is initialized before any
+    * Ensure that the global SAM SID is initialized before any
       dependent routines are called.
     * Enhance consistency checks on local configuration when joining
       a domain.
@@ -350,6 +386,8 @@ o   James Peach <jpeach@sgi.com>
     * BUG 3490: Don't test for ldap or krb5 libs if --without-ldap
       and --without-ads are specified.
     * Allow the user to set winbind nss timeouts in seconds on IRIX.
+    * Set the FILE_STATUS_OFFLINE bit by observing the events 
+      a DMAPI-based HSM is interested in.
 
 
 o   Simo Sorce <idra@samba.org>
