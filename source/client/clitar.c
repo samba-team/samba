@@ -561,15 +561,15 @@ static BOOL ensurepath(char *fname)
 	return True;
 }
 
-static int padit(char *buf, int bufsize, int padsize)
+static int padit(char *buf, SMB_BIG_UINT bufsize, SMB_BIG_UINT padsize)
 {
 	int berr= 0;
 	int bytestowrite;
   
-	DEBUG(5, ("Padding with %d zeros\n", padsize));
-	memset(buf, 0, bufsize);
+	DEBUG(5, ("Padding with %0.f zeros\n", (double)padsize));
+	memset(buf, 0, (size_t)bufsize);
 	while( !berr && padsize > 0 ) {
-		bytestowrite= MIN(bufsize, padsize);
+		bytestowrite= (int)MIN(bufsize, padsize);
 		berr = dotarbuf(tarhandle, buf, bytestowrite) != bytestowrite;
 		padsize -= bytestowrite;
 	}
@@ -682,12 +682,11 @@ static void do_atar(char *rname,char *lname,file_info *finfo1)
 		DEBUG(4, ("skipping %s - hidden bit is set\n", finfo.name));
 		shallitime=0;
 	} else {
+		BOOL wrote_tar_header = False;
+
 		DEBUG(3,("getting file %s of size %.0f bytes as a tar file %s",
 			finfo.name, (double)finfo.size, lname));
       
-		/* write a tar header, don't bother with mode - just set to 100644 */
-		writetarheader(tarhandle, rname, finfo.size, finfo.mtime, "100644 \0", ftype);
-
 		while (nread < finfo.size && !close_done) {
 	      
 			DEBUG(3,("nread=%.0f\n",(double)nread));
@@ -700,6 +699,13 @@ static void do_atar(char *rname,char *lname,file_info *finfo1)
 			}
 	      
 			nread += datalen;
+
+			/* Only if the first read succeeds, write out the tar header. */
+			if (!wrote_tar_header) {
+				/* write a tar header, don't bother with mode - just set to 100644 */
+				writetarheader(tarhandle, rname, finfo.size, finfo.mtime, "100644 \0", ftype);
+				wrote_tar_header = True;
+			}
 
 			/* if file size has increased since we made file size query, truncate
 				read so tar header for this file will be correct.
@@ -727,20 +733,25 @@ static void do_atar(char *rname,char *lname,file_info *finfo1)
 			datalen=0;
 		}
 
-		/* pad tar file with zero's if we couldn't get entire file */
-		if (nread < finfo.size) {
-			DEBUG(0, ("Didn't get entire file. size=%.0f, nread=%d\n",
-						(double)finfo.size, (int)nread));
-			if (padit(data, sizeof(data), finfo.size - nread))
-				DEBUG(0,("Error writing tar file - %s\n", strerror(errno)));
-		}
+		if (wrote_tar_header) {
+			/* pad tar file with zero's if we couldn't get entire file */
+			if (nread < finfo.size) {
+				DEBUG(0, ("Didn't get entire file. size=%.0f, nread=%d\n",
+							(double)finfo.size, (int)nread));
+				if (padit(data, (SMB_BIG_UINT)sizeof(data), finfo.size - nread))
+					DEBUG(0,("Error writing tar file - %s\n", strerror(errno)));
+			}
 
-		/* round tar file to nearest block */
-		if (finfo.size % TBLOCK)
-			dozerobuf(tarhandle, TBLOCK - (finfo.size % TBLOCK));
+			/* round tar file to nearest block */
+			if (finfo.size % TBLOCK)
+				dozerobuf(tarhandle, TBLOCK - (finfo.size % TBLOCK));
       
-		ttarf+=finfo.size + TBLOCK - (finfo.size % TBLOCK);
-		ntarf++;
+			ttarf+=finfo.size + TBLOCK - (finfo.size % TBLOCK);
+			ntarf++;
+		} else {
+			DEBUG(4, ("skipping %s - initial read failed (file was locked ?)\n", finfo.name));
+			shallitime=0;
+		}
 	}
   
 	cli_close(cli, fnum);
