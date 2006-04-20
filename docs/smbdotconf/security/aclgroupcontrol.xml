@@ -30,14 +30,10 @@
 	</para>
 
 	<para>
-	This is a new parameter introduced in Samba 3.0.20.
+	This is parameter has been marked deprecated in Samba 3.0.23.  The same behavior is now
+	implemented by the <parameter moreinfo="none">dos filemode</parameter> option.
 	</para>
 
-	<para>
-	This can be particularly useful to allow groups to manage their own security on a part
-	of the filesystem they have group ownership of, removing the bottleneck of having only
-	the user owner or superuser able to reset permissions.
-	</para>
 </description>
 
 <related>inherit owner</related>
