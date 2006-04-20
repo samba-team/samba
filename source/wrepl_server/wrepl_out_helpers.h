@@ -20,18 +20,6 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-struct wreplsrv_pull_table_io {
-	struct {
-		struct wreplsrv_partner *partner;
-		uint32_t num_owners;
-		struct wrepl_wins_owner *owners;
-	} in;
-	struct {
-		uint32_t num_owners;
-		struct wrepl_wins_owner *owners;
-	} out;
-};
-
 struct wreplsrv_pull_names_io {
 	struct {
 		struct wreplsrv_partner *partner;
