@@ -42,6 +42,8 @@
 #endif
 #endif
 
+#define fnmatch rk_fnmatch
+
 #define	FNM_NOMATCH	1	/* Match failed. */
 
 #define	FNM_NOESCAPE	0x01	/* Disable backslash escaping. */
