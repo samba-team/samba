@@ -561,12 +561,12 @@ sha256_create_signature(const struct signature_alg *sig_alg,
     }
 	    
 
-    sig->data = malloc(SHA_DIGEST_LENGTH);
+    sig->data = malloc(SHA256_DIGEST_LENGTH);
     if (sig->data == NULL) {
 	sig->length = 0;
 	return ENOMEM;
     }
-    sig->length = SHA_DIGEST_LENGTH;
+    sig->length = SHA256_DIGEST_LENGTH;
 
     SHA256_Init(&m);
     SHA256_Update(&m, data->data, data->length);
@@ -582,17 +582,17 @@ sha256_verify_signature(const struct signature_alg *sig_alg,
 			const heim_octet_string *data,
 			const heim_octet_string *sig)
 {
-    unsigned char digest[SHA_DIGEST_LENGTH];
+    unsigned char digest[SHA256_DIGEST_LENGTH];
     SHA256_CTX m;
     
-    if (sig->length != SHA_DIGEST_LENGTH)
+    if (sig->length != SHA256_DIGEST_LENGTH)
 	return HX509_CRYPTO_SIG_INVALID_FORMAT;
 
     SHA256_Init(&m);
     SHA256_Update(&m, data->data, data->length);
     SHA256_Final (digest, &m);
 	
-    if (memcmp(digest, sig->data, SHA_DIGEST_LENGTH) != 0)
+    if (memcmp(digest, sig->data, SHA256_DIGEST_LENGTH) != 0)
 	return HX509_CRYPTO_BAD_SIGNATURE;
 
     return 0;
