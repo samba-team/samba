@@ -16,5 +16,5 @@
 <warning><para>Turning off group enumeration may cause some programs to behave oddly.  </para></warning>
 </description>
 
-<value type="default">yes</value>
+<value type="default">no</value>
 </samba:parameter>
