@@ -103,7 +103,7 @@ BN_to_integer(krb5_context context, BIGNUM *bn, heim_integer *integer)
 	return ENOMEM;
     }
     BN_bn2bin(bn, integer->data);
-    integer->negative = bn->neg;
+    integer->negative = BN_is_negative(bn);
     return 0;
 }
 
@@ -117,7 +117,7 @@ integer_to_BN(krb5_context context, const char *field, const heim_integer *f)
 	krb5_set_error_string(context, "PKINIT: parsing BN failed %s", field);
 	return NULL;
     }
-    bn->neg = f->negative;
+    BN_set_negative(bn, f->negative);
     return bn;
 }
 
@@ -944,8 +944,7 @@ pk_rd_pa_reply_dh(krb5_context context,
 				   kdc_dh_pubkey, ctx->dh);
     if (dh_gen_keylen == -1) {
 	krb5_set_error_string(context, 
-			      "PKINIT: Can't compute Diffie-Hellman key (%s)",
-			      ERR_error_string(ERR_get_error(), NULL));
+			      "PKINIT: Can't compute Diffie-Hellman key");
 	ret = KRB5KRB_ERR_GENERIC;
 	goto out;
     }
