@@ -228,6 +228,18 @@ static NTSTATUS wreplsrv_out_connect_recv(struct composite_context *c, TALLOC_CT
 	
 }
 
+struct wreplsrv_pull_table_io {
+	struct {
+		struct wreplsrv_partner *partner;
+		uint32_t num_owners;
+		struct wrepl_wins_owner *owners;
+	} in;
+	struct {
+		uint32_t num_owners;
+		struct wrepl_wins_owner *owners;
+	} out;
+};
+
 enum wreplsrv_pull_table_stage {
 	WREPLSRV_PULL_TABLE_STAGE_WAIT_CONNECTION,
 	WREPLSRV_PULL_TABLE_STAGE_WAIT_TABLE_REPLY,
@@ -318,7 +330,7 @@ static void wreplsrv_pull_table_handler_req(struct wrepl_request *req)
 	return;
 }
 
-struct composite_context *wreplsrv_pull_table_send(TALLOC_CTX *mem_ctx, struct wreplsrv_pull_table_io *io)
+static struct composite_context *wreplsrv_pull_table_send(TALLOC_CTX *mem_ctx, struct wreplsrv_pull_table_io *io)
 {
 	struct composite_context *c = NULL;
 	struct wreplsrv_service *service = io->in.partner->service;
@@ -357,8 +369,8 @@ failed:
 	return NULL;
 }
 
-NTSTATUS wreplsrv_pull_table_recv(struct composite_context *c, TALLOC_CTX *mem_ctx,
-				  struct wreplsrv_pull_table_io *io)
+static NTSTATUS wreplsrv_pull_table_recv(struct composite_context *c, TALLOC_CTX *mem_ctx,
+					 struct wreplsrv_pull_table_io *io)
 {
 	NTSTATUS status;
 
