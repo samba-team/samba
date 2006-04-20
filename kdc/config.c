@@ -502,7 +502,7 @@ configure(krb5_context context, int argc, char **argv)
 				     NULL);
     if (config->enable_pkinit) {
 	const char *user_id, *anchors;
-	char **chain, **revoke;
+	char **chain, **pool;
 
 	user_id = krb5_config_get_string(context, NULL,
 					 "kdc",
@@ -518,9 +518,9 @@ configure(krb5_context context, int argc, char **argv)
 	if (anchors == NULL)
 	    krb5_errx(context, 1, "pkinit enabled but no X509 anchors");
 
-	chain = krb5_config_get_strings(context, NULL,
+	pool = krb5_config_get_strings(context, NULL,
 					"kdc",
-					"pki-chain",
+					"pki-pool",
 					NULL);
 
 	revoke = krb5_config_get_strings(context, NULL,
@@ -528,9 +528,10 @@ configure(krb5_context context, int argc, char **argv)
 					"pki-revoke",
 					NULL);
 
-	_kdc_pk_initialize(context, config, user_id, anchors, chain, revoke);
+	_kdc_pk_initialize(context, config, user_id, anchors, pool, revoke);
 
-	krb5_config_free_strings(chain);
+	krb5_config_free_strings(pool);
+	krb5_config_free_strings(revoke);
 
 	config->enable_pkinit_princ_in_cert = 
 	    krb5_config_get_bool_default(context, 
