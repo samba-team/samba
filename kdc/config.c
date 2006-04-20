@@ -502,7 +502,7 @@ configure(krb5_context context, int argc, char **argv)
 				     NULL);
     if (config->enable_pkinit) {
 	const char *user_id, *anchors;
-	char **chain, **pool;
+	char **pool, **revoke;
 
 	user_id = krb5_config_get_string(context, NULL,
 					 "kdc",
