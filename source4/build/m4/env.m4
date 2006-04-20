@@ -29,6 +29,8 @@ if test -n "${SAMBA_VERSION_SVN_REVISION}";then
 	echo "BUILD REVISION: ${SAMBA_VERSION_SVN_REVISION}"
 fi
 
+AC_DEFINE([_GNU_SOURCE],[],[Pull in GNU extensions])
+
 sinclude(build/m4/check_path.m4)
 sinclude(build/m4/check_perl.m4)
 sinclude(build/m4/check_cc.m4)
