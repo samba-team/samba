@@ -65,16 +65,14 @@ struct wreplsrv_in_connection {
 };
 
 /*
-  state of an outcoming wrepl connection
+  state of an outgoing wrepl connection
 */
 struct wreplsrv_out_connection {
 	/* our global service context */
 	struct wreplsrv_service *service;
 
 	/*
-	 * the partner that connects us,
-	 * can be NULL, when we got a connection
-	 * from an unknown address
+	 * the partner we connect
 	 */
 	struct wreplsrv_partner *partner;
 
