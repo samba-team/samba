@@ -1,3 +1,12 @@
+2006-04-20  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* cert.c (hx509_verify_path): if trust anchor is not self signed,
+	don't check sig From Douglas Engert.
+
+	* test_chain.in: test "sub-cert -> sub-ca"
+	
+	* crypto.c: Use the right length for the sha256 checksums.
+	
 2006-04-15  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* crypto.c: Fix breakage from sha256 code.
