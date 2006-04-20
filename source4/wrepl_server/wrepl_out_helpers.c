@@ -388,6 +388,18 @@ static NTSTATUS wreplsrv_pull_table_recv(struct composite_context *c, TALLOC_CTX
 	return status;	
 }
 
+struct wreplsrv_pull_names_io {
+	struct {
+		struct wreplsrv_partner *partner;
+		struct wreplsrv_out_connection *wreplconn;
+		struct wrepl_wins_owner owner;
+	} in;
+	struct {
+		uint32_t num_names;
+		struct wrepl_name *names;
+	} out;
+};
+
 enum wreplsrv_pull_names_stage {
 	WREPLSRV_PULL_NAMES_STAGE_WAIT_CONNECTION,
 	WREPLSRV_PULL_NAMES_STAGE_WAIT_SEND_REPLY,
@@ -479,7 +491,7 @@ static void wreplsrv_pull_names_handler_req(struct wrepl_request *req)
 	return;
 }
 
-struct composite_context *wreplsrv_pull_names_send(TALLOC_CTX *mem_ctx, struct wreplsrv_pull_names_io *io)
+static struct composite_context *wreplsrv_pull_names_send(TALLOC_CTX *mem_ctx, struct wreplsrv_pull_names_io *io)
 {
 	struct composite_context *c = NULL;
 	struct wreplsrv_service *service = io->in.partner->service;
@@ -513,8 +525,8 @@ failed:
 	return NULL;
 }
 
-NTSTATUS wreplsrv_pull_names_recv(struct composite_context *c, TALLOC_CTX *mem_ctx,
-				  struct wreplsrv_pull_names_io *io)
+static NTSTATUS wreplsrv_pull_names_recv(struct composite_context *c, TALLOC_CTX *mem_ctx,
+					 struct wreplsrv_pull_names_io *io)
 {
 	NTSTATUS status;
 
@@ -671,7 +683,10 @@ static NTSTATUS wreplsrv_pull_cycle_apply_records(struct wreplsrv_pull_cycle_sta
 {
 	NTSTATUS status;
 
-	status = wreplsrv_apply_records(state->io->in.partner, &state->names_io);
+	status = wreplsrv_apply_records(state->io->in.partner,
+					&state->names_io.in.owner,
+					state->names_io.out.num_names,
+					state->names_io.out.names);
 	NT_STATUS_NOT_OK_RETURN(status);
 
 	talloc_free(state->names_io.out.names);
