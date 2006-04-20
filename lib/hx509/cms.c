@@ -41,21 +41,78 @@ RCSID("$Id$");
 int
 hx509_cms_wrap_ContentInfo(const heim_oid *oid,
 			   const heim_octet_string *buf, 
-			   ContentInfo *content_info)
+			   heim_octet_string *res)
 {
+    ContentInfo ci;
+    size_t size;
     int ret;
 
-    ret = copy_oid(oid, &content_info->contentType);
+    memset(res, 0, sizeof(*res));
+    memset(&ci, 0, sizeof(ci));
+
+    ret = copy_oid(oid, &ci.contentType);
     if (ret)
 	return ret;
-    ALLOC(content_info->content, 1);
-    if (content_info->content == NULL)
+    ALLOC(ci.content, 1);
+    if (ci.content == NULL) {
+	free_ContentInfo(&ci);
 	return ENOMEM;
-    content_info->content->data = malloc(buf->length);
-    if (content_info->content->data == NULL)
+    }
+    ci.content->data = malloc(buf->length);
+    if (ci.content->data == NULL) {
+	free_ContentInfo(&ci);
 	return ENOMEM;
-    memcpy(content_info->content->data, buf->data, buf->length);
-    content_info->content->length = buf->length;
+    }
+    memcpy(ci.content->data, buf->data, buf->length);
+    ci.content->length = buf->length;
+
+    ASN1_MALLOC_ENCODE(ContentInfo, res->data, res->length, &ci, &size, ret);
+    free_ContentInfo(&ci);
+    if (ret)
+	return ret;
+    if (res->length != size)
+	_hx509_abort("internal ASN.1 encoder error");
+
+    return 0;
+}
+
+int
+hx509_cms_unwrap_ContentInfo(const heim_octet_string *in,
+			     heim_oid *oid,
+			     heim_octet_string *out,
+			     int *have_data)
+{
+    ContentInfo ci;
+    size_t size;
+    int ret;
+
+    memset(oid, 0, sizeof(*oid));
+    memset(out, 0, sizeof(*out));
+
+    ret = decode_ContentInfo(in->data, in->length, &ci, &size);
+    if (ret)
+	return ret;
+
+    ret = copy_oid(&ci.contentType, oid);
+    if (ret) {
+	free_ContentInfo(&ci);
+	return ret;
+    }
+    if (ci.content) {
+	ret = copy_octet_string(ci.content, out);
+	if (ret) {
+	    free_oid(oid);
+	    free_ContentInfo(&ci);
+	    return ret;
+	}
+    } else
+	memset(out, 0, sizeof(*out));
+
+    if (have_data)
+	*have_data = (ci.content != NULL) ? 1 : 0;
+
+    free_ContentInfo(&ci);
+
     return 0;
 }
 
@@ -76,7 +133,7 @@ fill_CMSIdentifier(const hx509_cert cert, CMSIdentifier *id)
 	return ret;
 
     ret = hx509_cert_get_serialnumber(cert,
-				  &id->u.issuerAndSerialNumber.serialNumber);
+				      &id->u.issuerAndSerialNumber.serialNumber);
     return ret;
 }
 
@@ -228,7 +285,7 @@ hx509_cms_unenvelope(hx509_context context,
 				   content);
     }
 
- out:
+out:
 
     free_octet_string(&key);
     if (ivec.length)
@@ -351,7 +408,7 @@ hx509_cms_envelope_1(hx509_context context,
     if (size != content->length)
 	_hx509_abort("internal ASN.1 encoder error");
 
- out:
+out:
     if (ret) {
 	free_octet_string(content);
     }
@@ -619,7 +676,7 @@ hx509_cms_verify_signed(hx509_context context,
     content->length = sd.encapContentInfo.eContent->length;
     memcpy(content->data,sd.encapContentInfo.eContent->data,content->length);
 
- out:
+out:
     free_SignedData(&sd);
     if (certs)
 	hx509_certs_free(&certs);
@@ -893,7 +950,7 @@ hx509_cms_create_signed_1(hx509_context context,
     if (signed_data->length != size)
 	_hx509_abort("internal ASN.1 encoder error");
 
- out:
+out:
     free_SignedData(&sd);
 
     return ret;
@@ -944,7 +1001,7 @@ hx509_cms_decrypt_encrypted(hx509_context context,
 
     *content = cont;
 
- out:
+out:
     if (ret) {
 	if (cont.data)
 	    free(cont.data);
