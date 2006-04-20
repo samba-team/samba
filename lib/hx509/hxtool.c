@@ -115,28 +115,22 @@ cms_verify_sd(struct cms_verify_sd_options *opt, int argc, char **argv)
 		 opt->certificate_strings.strings[i], ret);
     }
 
+    co.data = p;
+    co.length = sz;
+
     if (opt->content_info_flag) {
-	ContentInfo ci;
-	size_t size;
+	heim_octet_string uwco;
+	heim_oid oid;
 
-	ret = decode_ContentInfo(p, sz, &ci, &size);
+	ret = hx509_cms_unwrap_ContentInfo(&co, &oid, &uwco, NULL);
 	if (ret)
-	    errx(1, "decode_ContentInfo: %d", ret);
+	    errx(1, "hx509_cms_unwrap_ContentInfo: %d", ret);
 
-	if (heim_oid_cmp(&ci.contentType, oid_id_pkcs7_signedData()) != 0)
+	if (heim_oid_cmp(&oid, oid_id_pkcs7_signedData()) != 0)
 	    errx(1, "Content is not SignedData");
+	free_oid(&oid);
 
-	if (ci.content == NULL)
-	    errx(1, "ContentInfo missing content");
-	ret = copy_octet_string(ci.content, &co);
-	if (ret)
-	    errx(1, "copy_octet_string: %d", ret);
-
-	free_ContentInfo(&ci);
-
-    } else {
-	co.data = p;
-	co.length = sz;
+	co = uwco;
     }
 
     hx509_verify_attach_anchors(ctx, anchors);
@@ -237,26 +231,14 @@ cms_create_sd(struct cms_create_sd_options *opt, int argc, char **argv)
     hx509_lock_free(lock);
 
     if (opt->content_info_flag) {
-	ContentInfo ci;
-	size_t size;
+	heim_octet_string wo;
 
-	ret = hx509_cms_wrap_ContentInfo(oid_id_pkcs7_signedData(),
-					 &o,
-					 &ci);
+	ret = hx509_cms_wrap_ContentInfo(oid_id_pkcs7_signedData(), &o, &wo);
 	if (ret)
 	    errx(1, "hx509_cms_wrap_ContentInfo: %d", ret);
 
 	free_octet_string(&o);
-
-	ASN1_MALLOC_ENCODE(ContentInfo, o.data, o.length, &ci, 
-			   &size, ret);
-	if (ret)
-	    errx(1, "encode ContentInfo");
-	if (o.length != size)
-	    _hx509_abort("internal ASN.1 encoder error");
-
-	free_ContentInfo(&ci);
-
+	o = wo;
     }
 
     ret = _hx509_write_file(argv[1], o.data, o.length);
@@ -284,28 +266,22 @@ cms_unenvelope(struct cms_unenvelope_options *opt, int argc, char **argv)
     if (ret)
 	err(1, "map_file: %s: %d", argv[0], ret);
 
+    co.data = p;
+    co.length = sz;
+
     if (opt->content_info_flag) {
-	ContentInfo ci;
-	size_t size;
+	heim_octet_string uwco;
+	heim_oid oid;
 
-	ret = decode_ContentInfo(p, sz, &ci, &size);
+	ret = hx509_cms_unwrap_ContentInfo(&co, &oid, &uwco, NULL);
 	if (ret)
-	    errx(1, "decode_ContentInfo: %d", ret);
+	    errx(1, "hx509_cms_unwrap_ContentInfo: %d", ret);
 
-	if (heim_oid_cmp(&ci.contentType, oid_id_pkcs7_envelopedData()) != 0)
+	if (heim_oid_cmp(&oid, oid_id_pkcs7_envelopedData()) != 0)
 	    errx(1, "Content is not SignedData");
+	free_oid(&oid);
 
-	if (ci.content == NULL)
-	    errx(1, "ContentInfo missing content");
-	ret = copy_octet_string(ci.content, &co);
-	if (ret)
-	    errx(1, "copy_octet_string: %d", ret);
-
-	free_ContentInfo(&ci);
-
-    } else {
-	co.data = p;
-	co.length = sz;
+	co = uwco;
     }
 
     ret = hx509_certs_init(context, "MEMORY:cert-store", 0, NULL, &certs);
@@ -382,26 +358,14 @@ cms_create_enveloped(struct cms_envelope_options *opt, int argc, char **argv)
     _hx509_unmap_file(p, sz);
 
     if (opt->content_info_flag) {
-	ContentInfo ci;
-	size_t size;
+	heim_octet_string wo;
 
-	ret = hx509_cms_wrap_ContentInfo(oid_id_pkcs7_envelopedData(),
-					 &o,
-					 &ci);
+	ret = hx509_cms_wrap_ContentInfo(oid_id_pkcs7_envelopedData(), &o, &wo);
 	if (ret)
 	    errx(1, "hx509_cms_wrap_ContentInfo: %d", ret);
 
 	free_octet_string(&o);
-
-	ASN1_MALLOC_ENCODE(ContentInfo, o.data, o.length, &ci, 
-			   &size, ret);
-	if (ret)
-	    errx(1, "encode ContentInfo");
-	if (o.length != size)
-	    _hx509_abort("internal ASN.1 encoder error");
-
-	free_ContentInfo(&ci);
-
+	o = wo;
     }
 
     hx509_lock_free(lock);
