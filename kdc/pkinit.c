@@ -424,11 +424,12 @@ _kdc_pk_rd_padata(krb5_context context,
 {
     pk_client_params *client_params;
     krb5_error_code ret;
-    heim_oid eContentType = { 0, NULL };
+    heim_oid eContentType = { 0, NULL }, contentInfoOid = { 0, NULL };
     krb5_data eContent = { 0, NULL };
     krb5_data signed_content = { 0, NULL };
     const char *type = "unknown type";
     const heim_oid *pa_contentType;
+    int have_data;
 
     *ret_params = NULL;
     
@@ -446,7 +447,7 @@ _kdc_pk_rd_padata(krb5_context context,
 
     if (pa->padata_type == KRB5_PADATA_PK_AS_REQ_WIN) {
 	PA_PK_AS_REQ_Win2k r;
-	ContentInfo info;
+	int have_data;
 
 	type = "PK-INIT-Win2k";
 	pa_contentType = oid_id_pkcs7_data();
@@ -461,47 +462,20 @@ _kdc_pk_rd_padata(krb5_context context,
 	    goto out;
 	}
 	
-	ret = decode_ContentInfo(r.signed_auth_pack.data,
-				 r.signed_auth_pack.length, &info, NULL);
+	ret = hx509_cms_unwrap_ContentInfo(&r.signed_auth_pack,
+					   &contentInfoOid,
+					   &signed_content,
+					   &have_data);
 	free_PA_PK_AS_REQ_Win2k(&r);
 	if (ret) {
 	    krb5_set_error_string(context, "Can't decode PK-AS-REQ: %d", ret);
 	    goto out;
 	}
 
-	if (heim_oid_cmp(&info.contentType, oid_id_pkcs7_signedData())) {
-	    krb5_set_error_string(context, "PK-AS-REQ-Win2k invalid content "
-				  "type oid");
-	    free_ContentInfo(&info);
-	    ret = KRB5KRB_ERR_GENERIC;
-	    goto out;
-	}
-	
-	if (info.content == NULL) {
-	    krb5_set_error_string(context,
-				  "PK-AS-REQ-Win2k no signed auth pack");
-	    free_ContentInfo(&info);
-	    ret = KRB5KRB_ERR_GENERIC;
-	    goto out;
-	}
-
-	signed_content.data = malloc(info.content->length);
-	if (signed_content.data == NULL) {
-	    ret = ENOMEM;
-	    free_ContentInfo(&info);
-	    krb5_set_error_string(context, "PK-AS-REQ-Win2k out of memory");
-	    goto out;
-	}
-	signed_content.length = info.content->length;
-	memcpy(signed_content.data, info.content->data, signed_content.length);
-
-	free_ContentInfo(&info);
-
     } else if (pa->padata_type == KRB5_PADATA_PK_AS_REQ) {
 	PA_PK_AS_REQ r;
-	ContentInfo info;
 
-	type = "PK-INIT-27";
+	type = "PK-INIT-IETF";
 	pa_contentType = oid_id_pkauthdata();
 
 	ret = decode_PA_PK_AS_REQ(pa->padata_value.data,
@@ -513,47 +487,36 @@ _kdc_pk_rd_padata(krb5_context context,
 	    goto out;
 	}
 	
-	ret = decode_ContentInfo(r.signedAuthPack.data,
-				 r.signedAuthPack.length, &info, NULL);
-	if (ret) {
-	    krb5_set_error_string(context, "Can't decode PK-AS-REQ: %d", ret);
-	    goto out;
-	}
+	/* XXX look at r.trustedCertifiers and r.kdcPkId */
 
-	if (heim_oid_cmp(&info.contentType, oid_id_pkcs7_signedData())) {
-	    krb5_set_error_string(context, "PK-AS-REQ invalid content "
-				  "type oid");
-	    free_ContentInfo(&info);
-	    free_PA_PK_AS_REQ(&r);
-	    ret = KRB5KRB_ERR_GENERIC;
-	    goto out;
-	}
-	
-	if (info.content == NULL) {
-	    krb5_set_error_string(context, "PK-AS-REQ no signed auth pack");
-	    free_PA_PK_AS_REQ(&r);
-	    free_ContentInfo(&info);
-	    ret = KRB5KRB_ERR_GENERIC;
-	    goto out;
-	}
-
-	signed_content.data = malloc(info.content->length);
-	if (signed_content.data == NULL) {
-	    ret = ENOMEM;
-	    free_ContentInfo(&info);
-	    free_PA_PK_AS_REQ(&r);
-	    krb5_set_error_string(context, "PK-AS-REQ out of memory");
-	    goto out;
-	}
-	signed_content.length = info.content->length;
-	memcpy(signed_content.data, info.content->data, signed_content.length);
-
-	free_ContentInfo(&info);
+	ret = hx509_cms_unwrap_ContentInfo(&r.signedAuthPack,
+					   &contentInfoOid,
+					   &signed_content,
+					   &have_data);
 	free_PA_PK_AS_REQ(&r);
+	if (ret) {
+	    krb5_set_error_string(context, "Can't unwrap ContentInfo: %d", ret);
+	    goto out;
+	}
 
     } else { 
 	krb5_clear_error_string(context);
 	ret = KRB5KDC_ERR_PADATA_TYPE_NOSUPP;
+	goto out;
+    }
+
+    ret = heim_oid_cmp(&contentInfoOid, oid_id_pkcs7_signedData());
+    if (ret != 0) {
+	krb5_set_error_string(context, "PK-AS-REQ-Win2k invalid content "
+			      "type oid");
+	ret = KRB5KRB_ERR_GENERIC;
+	goto out;
+    }
+	
+    if (!have_data) {
+	krb5_set_error_string(context,
+			      "PK-AS-REQ-Win2k no signed auth pack");
+	ret = KRB5KRB_ERR_GENERIC;
 	goto out;
     }
 
@@ -654,19 +617,15 @@ _kdc_pk_rd_padata(krb5_context context,
     } else
 	krb5_abortx(context, "internal pkinit error");
 
-    /* 
-     * Remaining fields (ie kdcCert and encryptionCert) in the request
-     * are ignored for now.
-     */
-
     kdc_log(context, config, 0, "PK-INIT request of type %s", type);
 
- out:
+out:
 
     if (signed_content.data)
 	free(signed_content.data);
     krb5_data_free(&eContent);
     free_oid(&eContentType);
+    free_oid(&contentInfoOid);
     if (ret)
 	_kdc_pk_free_client_param(context, client_params);
     else
