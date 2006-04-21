@@ -193,7 +193,13 @@ gen_files_rfc2459 =					\
 	asn1_id_dhpublicnumber.x			\
 	asn1_id_dsa.x					\
 	asn1_id_dsa_with_sha1.x				\
-	asn1_id_nit_aes_algs.x				\
+	asn1_id_nistAlgorithm.x				\
+	asn1_id_nist_aes_algs.x				\
+	asn1_id_nist_sha_algs.x				\
+	asn1_id_sha224.x				\
+	asn1_id_sha256.x				\
+	asn1_id_sha384.x				\
+	asn1_id_sha512.x				\
 	asn1_id_pkcs1_md2WithRSAEncryption.x		\
 	asn1_id_pkcs1_md5WithRSAEncryption.x		\
 	asn1_id_pkcs1_rsaEncryption.x			\
@@ -210,6 +216,10 @@ gen_files_rfc2459 =					\
 	asn1_id_pkcs_1.x				\
 	asn1_id_pkcs_2.x				\
 	asn1_id_pkcs_3.x				\
+	asn1_id_rsa_digestAlgorithm.x			\
+	asn1_id_rsa_digest_md2.x			\
+	asn1_id_rsa_digest_md4.x			\
+	asn1_id_rsa_digest_md5.x			\
 	asn1_id_rsadsi_des_ede3_cbc.x			\
 	asn1_id_rsadsi_encalg.x				\
 	asn1_id_rsadsi_rc2_cbc.x			\
