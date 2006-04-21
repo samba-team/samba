@@ -134,6 +134,11 @@ parse_rsa_private_key(hx509_context context, struct hx509_collector *c,
     if (enc) {
 	const char *dek;
 	char *type, *iv;
+	ssize_t ssize, size;
+	void *ivdata;
+	const EVP_CIPHER *cipher;
+	void *key = "foobar";
+	size_t keylen = 6;
 	
 	if (strcmp(enc, "4,ENCRYPTED") != 0)
 	    return EINVAL;
@@ -153,8 +158,44 @@ parse_rsa_private_key(hx509_context context, struct hx509_collector *c,
 	/* printf("type: %s iv: %s\n", type, iv); */
 	/* XXX handle use EVP_BytesToKey() and decrypt */
 
+	size = strlen(iv);
+	ivdata = malloc(size);
+	if (ivdata == NULL) {
+	    free(type);
+	    return ENOMEM;
+	}
+
+	cipher = EVP_aes_256_cbc();
+
+#define PKCS5_SALT_LEN 8
+
+	ssize = hex_decode(iv, ivdata, size);
+	if (ssize < 0 || ssize < PKCS5_SALT_LEN || ssize < EVP_CIPHER_iv_length(cipher)) {
+	    free(ivdata);
+	    free(type);
+	    return EINVAL;
+	}
+	
+	ret = EVP_BytesToKey(cipher, EVP_md5(), ivdata, key, keylen,
+			     1, key, NULL);
 	free(type);
-	return EINVAL;
+	if (ret != 1) {
+	    free(ivdata);
+	    return EINVAL;
+	}
+
+	keydata.data = malloc(len);
+	keydata.length = len;
+
+	{
+	    EVP_CIPHER_CTX ctx;
+	    EVP_CIPHER_CTX_init(&ctx);
+	    EVP_CipherInit_ex(&ctx, cipher, NULL, key, ivdata, 0);
+	    EVP_Cipher(&ctx, keydata.data, data, len);
+	    EVP_CIPHER_CTX_cleanup(&ctx);
+	}	
+	free(ivdata);
+
     } else {
 	keydata.data = rk_UNCONST(data);
 	keydata.length = len;
@@ -165,6 +206,9 @@ parse_rsa_private_key(hx509_context context, struct hx509_collector *c,
 					   NULL,
 					   &keydata,
 					   NULL);
+    if (keydata.data != data)
+	free(keydata.data);
+
     return ret;
 }
 
