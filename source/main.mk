@@ -372,4 +372,5 @@ configure:
 
 clean::
 	@echo Removing dependency files
-	@rm -f $(DEP_FILES)
+	@find . -name \*.d -o -name \*.hd | xargs rm -f
+
