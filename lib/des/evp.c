@@ -804,5 +804,6 @@ EVP_BytesToKey(const EVP_CIPHER *type,
 	       void *keydata,
 	       void *ivdata)
 {
+    return -1;
 }
 
