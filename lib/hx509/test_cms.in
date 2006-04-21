@@ -38,7 +38,6 @@ srcdir="@srcdir@"
 
 echo "create signed data"
 ./hxtool cms-create-sd \
-	--pass=PASS:foobar \
 	--certificate=FILE:$srcdir/data/test.crt,$srcdir/data/test.key \
 	"$srcdir/test_chain.in" \
 	sd.data || exit 1
@@ -50,16 +49,30 @@ echo "verify signed data"
 	sd.data sd.data.out || exit 1
 cmp "$srcdir/test_chain.in" sd.data.out || exit 1
 
-echo "verify signed data"
+echo "verify signed data (EE cert as anchor)"
 ./hxtool cms-verify-sd \
 	--missing-revoke \
 	--anchors=FILE:$srcdir/data/test.crt \
 	sd.data sd.data.out || exit 1
 cmp "$srcdir/test_chain.in" sd.data.out || exit 1
 
+
+#echo "create signed data (password)"
+#./hxtool cms-create-sd \
+#	--pass=PASS:foobar \
+#	--certificate=FILE:$srcdir/data/test.crt,$srcdir/data/test-pw.key \
+#	"$srcdir/test_chain.in" \
+#	sd.data || exit 1
+#
+#echo "verify signed data"
+#./hxtool cms-verify-sd \
+#	--missing-revoke \
+#	--anchors=FILE:$srcdir/data/ca.crt \
+#	sd.data sd.data.out || exit 1
+#cmp "$srcdir/test_chain.in" sd.data.out || exit 1
+
 echo "create signed data  (content info)"
 ./hxtool cms-create-sd \
-	--pass=PASS:foobar \
 	--certificate=FILE:$srcdir/data/test.crt,$srcdir/data/test.key \
 	--content-info \
 	"$srcdir/test_chain.in" \
@@ -73,7 +86,7 @@ echo "verify signed data (content info)"
 	sd.data sd.data.out || exit 1
 cmp "$srcdir/test_chain.in" sd.data.out || exit 1
 
-echo "create signed data"
+echo "create signed data (p12)"
 ./hxtool cms-create-sd \
 	--pass=PASS:foobar \
 	--certificate=PKCS12:$srcdir/data/test.p12 \
@@ -122,7 +135,6 @@ echo "envelope data (content-info)"
 
 echo "unenvelope data (content-info)"
 ./hxtool cms-unenvelope \
-	--pass=PASS:foobar \
 	--certificate=FILE:$srcdir/data/test.crt,$srcdir/data/test.key \
 	--content-info \
 	ev.data ev.data.out \
@@ -137,7 +149,6 @@ echo "envelope data"
 
 echo "unenvelope data"
 ./hxtool cms-unenvelope \
-	--pass=PASS:foobar \
 	--certificate=FILE:$srcdir/data/test.crt,$srcdir/data/test.key \
 	ev.data ev.data.out \
 	FILE:$srcdir/data/test.crt,$srcdir/data/test.key || exit 1
@@ -148,7 +159,6 @@ for a in rc2-40 rc2-64 rc2-128 aes-128; do
 
     rm -f ev.data.out
     ./hxtool cms-unenvelope \
-	--pass=PASS:foobar \
 	--certificate=FILE:$srcdir/data/test.crt,$srcdir/data/test.key \
 	--content-info \
 	"$srcdir/data/test-enveloped-$a" ev.data.out || exit 1
