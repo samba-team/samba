@@ -1,4 +1,32 @@
-2006-04-20  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-04-21  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* hx_locl.h: Add <ctype.h>
+
+	* ks_file.c: Add glue code for PEM encrypted password files.
+
+	* test_cms.in: Add commeted out password protected PEM file,
+	remove password for those tests that doesn't need it.
+
+	* test_cms.in: adapt test now that we can use any certificate and
+	trust anchor
+
+	* collector.c: handle PEM RSA PRIVATE KEY files
+
+	* cert.c: Remove unused function.
+
+	* ks_dir.c: move code here from ks_file.c now that its no longer
+	used.
+
+	* ks_file.c: Add support for parsing unencrypted RSA PRIVATE KEY
+
+	* crypto.c: Handle rsa private keys better.
+	
+2006-04-20  Love Hörnquist Åstrand <lha@it.su.se>
+
+	* hxtool.c: Use hx509_cms_{,un}wrap_ContentInfo
+
+	* cms.c: Make hx509_cms_{,un}wrap_ContentInfo usable in asn1
+	un-aware code.
 
 	* cert.c (hx509_verify_path): if trust anchor is not self signed,
 	don't check sig From Douglas Engert.
