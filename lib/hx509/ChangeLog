@@ -1,5 +1,19 @@
 2006-04-21  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* ks_p11.c: Add support for parsing slot-number.
+
+	* crypto.c (oid_private_rc2_40): simply
+
+	* crypto.c: Use oids from asn1 generator.
+
+	* ks_file.c (file_init): reset length when done with a part
+
+	* test_cms.in: check with test.combined.crt.
+
+	* data/gen-req.sh: Create test.combined.crt.
+
+	* test_cms.in: Test signed data using keyfile that is encrypted.
+
 	* ks_file.c: Remove (commented out) debug printf
 
 	* ks_file.c (parse_rsa_private_key): use EVP_get_cipherbyname
