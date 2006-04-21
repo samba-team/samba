@@ -58,6 +58,7 @@ gen_cert "Test sub cert" "sub-ca" "sub-cert" "usr"
 
 cat sub-ca.crt ca.crt > sub-ca-combined.crt
 
+cat test.crt test.key > test.combined.crt
 openssl rsa -in test.key -aes256 -passout pass:foobar -out test-pw.key
 
 openssl ca \
