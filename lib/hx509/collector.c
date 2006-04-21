@@ -140,9 +140,12 @@ _hx509_collector_private_key_add(struct hx509_collector *c,
 	if (ret)
 	    goto out;
     }
-    ret = copy_octet_string(localKeyId, &key->localKeyId);
-    if (ret)
-	goto out;
+    if (localKeyId) {
+	ret = copy_octet_string(localKeyId, &key->localKeyId);
+	if (ret)
+	    goto out;
+    } else
+	memset(&key->localKeyId, 0, sizeof(key->localKeyId));
 
     c->val.data[c->val.len] = key;
     c->val.len++;
@@ -162,6 +165,9 @@ match_localkeyid(hx509_context context,
     hx509_cert cert;
     hx509_query q;
     int ret;
+
+    if (value->localKeyId.length == 0)
+	return EINVAL;
 
     _hx509_query_clear(&q);
     q.match |= HX509_QUERY_MATCH_LOCAL_KEY_ID;
