@@ -36,6 +36,36 @@ RCSID("$Id$");
 #include <dirent.h>
 
 static int
+file_to_cert(hx509_context context, const char *p, hx509_cert *cert)
+{
+    Certificate t;
+    size_t length;
+    void *data;
+    size_t size;
+    int ret;
+
+    *cert = NULL;
+
+    ret = _hx509_map_file(p, &data, &length, NULL);
+    if (ret)
+	return ret;
+
+    ret = decode_Certificate(data, length, &t, &size);
+    _hx509_unmap_file(data, length);
+    if (ret)
+	return ret;
+
+    ret = hx509_cert_init(context, &t, cert);
+    free_Certificate(&t);
+
+    return ret;
+}
+
+/*
+ *
+ */
+
+static int
 dir_init(hx509_context context,
 	 hx509_certs certs, void **data, int flags, 
 	 const char *residue, hx509_lock lock)
@@ -106,7 +136,7 @@ dir_iter(hx509_context context,
 	if (asprintf(&fn, "%s/%s", (char *)data, dir->d_name) == -1)
 	    return ENOMEM;
 	
-	ret = _hx509_file_to_cert(context, fn, cert);
+	ret = file_to_cert(context, fn, cert);
 	free(fn);
     } while(ret != 0);
 
