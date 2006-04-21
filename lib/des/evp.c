@@ -763,3 +763,20 @@ EVP_aes_256_cbc(void)
     };
     return &aes_256_cbc;
 }
+
+/*
+ *
+ */
+
+int
+EVP_BytesToKey(const EVP_CIPHER *type,
+	       const EVP_MD *md, 
+	       const void *salt,
+	       const void *data, size_t datalen,
+	       int count,
+	       const void *key,
+	       const void *iv)
+{
+    return 0;
+}
+
