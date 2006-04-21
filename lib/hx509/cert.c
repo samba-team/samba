@@ -1478,11 +1478,26 @@ hx509_query_match_option(hx509_query *q, hx509_query_option option)
     }
 }
 
+
+int
+hx509_query_match_friendly_name(hx509_query *q, const char *name)
+{
+    if (q->friendlyname)
+	free(q->friendlyname);
+    q->friendlyname = strdup(name);
+    if (q->friendlyname == NULL)
+	return NULL;
+    q->match |= HX509_QUERY_MATCH_FRIENDLY_NAME;
+    return 0;
+}
+
 void
 hx509_query_free(hx509_context context, hx509_query *q)
 {
-    if (q)
+    if (q) {
+	free(q->friendlyname);
 	memset(q, 0, sizeof(*q));
+    }
     free(q);
 }
 
