@@ -1,5 +1,15 @@
 2006-04-21  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* ks_file.c: Remove (commented out) debug printf
+
+	* ks_file.c (parse_rsa_private_key): use EVP_get_cipherbyname
+
+	* ks_file.c (parse_rsa_private_key): make working for one
+	password.
+
+	* ks_file.c (parse_rsa_private_key): Implement enought for
+	testing.
+
 	* hx_locl.h: Add <ctype.h>
 
 	* ks_file.c: Add glue code for PEM encrypted password files.
