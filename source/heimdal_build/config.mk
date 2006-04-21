@@ -443,7 +443,7 @@ heimdal/lib/roken/err.h: heimdal/lib/roken/err.hin
 $(patsubst heimdal/lib/des/%.h,heimdal/lib/des/hcrypto/%.h,$(wildcard heimdal/lib/des/*.h)): heimdal/lib/des/hcrypto
 
 heimdal/lib/des/hcrypto: 
-	ln -sf ./../des $@
+	rm -f $@; ln -s ./../des $@
 
 clean::	
 	@-rm -f heimdal/lib/roken/vis.h heimdal/lib/roken/err.h
