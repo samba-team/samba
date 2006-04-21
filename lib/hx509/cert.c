@@ -205,23 +205,6 @@ hx509_cert_init(hx509_context context, const Certificate *c, hx509_cert *cert)
     return ret;
 }
 
-int
-_hx509_cert_assign_private_key_file(hx509_cert cert, 
-				    hx509_lock lock,
-				    const char *fn)
-{
-    int ret;
-    if (cert->private_key == NULL) {
-	ret = _hx509_new_private_key(&cert->private_key);
-	if (ret)
-	    return ret;
-    }
-    ret = _hx509_private_key_assign_key_file(cert->private_key, lock, fn);
-    if (ret)
-	_hx509_free_private_key(&cert->private_key);
-    return ret;
-}
-
 /* Doesn't make a copy of `private_key'. */
 
 int
