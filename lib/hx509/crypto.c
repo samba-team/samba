@@ -1138,15 +1138,10 @@ struct hx509_crypto_data {
 static const heim_oid *
 oid_private_rc2_40(void)
 {
-#define private_oid(name, number) \
-static unsigned name##_oid_data[] = { 127, number }; \
-static heim_oid name##_oid = { 2, name##_oid_data }
+    static const unsigned oid_data[] = { 127, 1 };
+    static const heim_oid oid = { 2, oid_data };
 
-private_oid(private_rc2_40, 1);
-
-#undef private_oid
-
-    return &private_rc2_40_oid;
+    return &oid;
 }
 
 
