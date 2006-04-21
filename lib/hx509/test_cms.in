@@ -54,7 +54,7 @@ echo "verify signed data"
 ./hxtool cms-verify-sd \
 	--missing-revoke \
 	--anchors=FILE:$srcdir/data/test.crt \
-	sd.data sd.data.out && exit 1
+	sd.data sd.data.out || exit 1
 cmp "$srcdir/test_chain.in" sd.data.out || exit 1
 
 echo "create signed data  (content info)"
