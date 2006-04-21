@@ -799,7 +799,6 @@ static struct signature_alg *sig_algs[] = {
     &sha1_alg,
     &md5_alg,
     &md2_alg,
-    0,
     NULL
 };
 
@@ -817,9 +816,12 @@ static const struct signature_alg *
 find_key_alg(const heim_oid *oid)
 {
     int i;
-    for (i = 0; sig_algs[i]; i++)
+    for (i = 0; sig_algs[i]; i++) {
+	if (sig_algs[i]->key_oid == NULL)
+	    continue;
 	if (heim_oid_cmp(sig_algs[i]->key_oid, oid) == 0)
 	    return sig_algs[i];
+    }
     return NULL;
 }
 
@@ -1095,6 +1097,11 @@ const AlgorithmIdentifier _hx509_signature_rsa_with_sha1_data = {
     { 7, rk_UNCONST(rsa_with_sha1_oid) }, NULL
 };
 
+static const unsigned rsa_oid[] ={ 1, 2, 840, 113549, 1, 1, 1 };
+const AlgorithmIdentifier _hx509_signature_rsa_data = { 
+    { 7, rk_UNCONST(rsa_oid) }, NULL
+};
+
 
 const AlgorithmIdentifier *
 hx509_signature_sha512(void)
@@ -1136,6 +1143,10 @@ const AlgorithmIdentifier *
 hx509_signature_rsa_with_sha1(void)
 { return &_hx509_signature_rsa_with_sha1_data; }
 
+const AlgorithmIdentifier *
+hx509_signature_rsa(void)
+{ return &_hx509_signature_rsa_data; }
+
 int
 _hx509_new_private_key(hx509_private_key *key)
 {
@@ -1154,59 +1165,6 @@ _hx509_free_private_key(hx509_private_key *key)
     free(*key);
     *key = NULL;
     return 0;
-}
-
-int
-_hx509_private_key_assign_key_file(hx509_private_key key,
-				   hx509_lock lock,
-				   const char *fn)
-{
-    const struct _hx509_password *pw;
-    int i;
-
-#ifdef HAVE_OPENSSL
-    OpenSSL_add_all_algorithms();
-    ERR_load_crypto_strings();
-#endif
-
-    if (key->private_key.rsa) {
-	RSA_free(key->private_key.rsa);
-	key->private_key.rsa = NULL;
-    }
-
-
-    pw = _hx509_lock_get_passwords(lock);
-
-    for (i = 0; i < pw->len + 1; i++) {
-#if HAVE_OPENSSL
-	EVP_PKEY *private_key;
-	const char *password = NULL;
-	FILE *f;
-
-	if (i < pw->len)
-	    password = pw->val[i];
-
-	f = fopen(fn, "r");
-	if (f == NULL)
-	    return ENOMEM;
-	
-	private_key = PEM_read_PrivateKey(f, NULL, NULL, rk_UNCONST(password));
-	fclose(f);
-	if (private_key == NULL)
-	    continue;
-
-	key->private_key.rsa = EVP_PKEY_get1_RSA(private_key);
-	EVP_PKEY_free(private_key);
-	if (key->private_key.rsa == NULL)
-	    return EINVAL;
-
-	key->md = &pkcs1_rsa_sha1_alg;
-
-	return 0;
-#endif
-    }
-
-    return EINVAL;
 }
 
 void
@@ -1948,9 +1906,12 @@ _hx509_match_keys(hx509_cert c, hx509_private_key private_key)
     rsa->d = BN_dup(private_key->private_key.rsa->d);
     rsa->p = BN_dup(private_key->private_key.rsa->p);
     rsa->q = BN_dup(private_key->private_key.rsa->q);
+    rsa->dmp1 = BN_dup(private_key->private_key.rsa->dmp1);
+    rsa->dmq1 = BN_dup(private_key->private_key.rsa->dmq1);
 
     if (rsa->n == NULL || rsa->e == NULL || 
-	rsa->d == NULL || rsa->p == NULL|| rsa->q == NULL) {
+	rsa->d == NULL || rsa->p == NULL|| rsa->q == NULL ||
+	rsa->dmp1 == NULL || rsa->dmq1 == NULL) {
 	RSA_free(rsa);
 	return 0;
     }
