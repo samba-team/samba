@@ -137,9 +137,23 @@ parse_rsa_private_key(hx509_context context, struct hx509_collector *c,
 	ssize_t ssize, size;
 	void *ivdata;
 	const EVP_CIPHER *cipher;
-	void *key = "foobar";
-	size_t keylen = 6;
-	
+	const void *password;
+	size_t passwordlen;
+	void *key;
+	const struct _hx509_password *pw;
+	hx509_lock lock;
+
+	lock = _hx509_collector_get_lock(c);
+	if (lock == NULL)
+	    return EINVAL;
+
+	pw = _hx509_lock_get_passwords(lock);
+	if (pw == NULL || pw->len < 1)
+	    return EINVAL;
+
+	password = pw->val[0];
+	passwordlen = strlen(password);
+
 	if (strcmp(enc, "4,ENCRYPTED") != 0)
 	    return EINVAL;
 
@@ -155,8 +169,8 @@ parse_rsa_private_key(hx509_context context, struct hx509_collector *c,
 	if (iv)
 	    *iv++ = '\0';
 
+
 	/* printf("type: %s iv: %s\n", type, iv); */
-	/* XXX handle use EVP_BytesToKey() and decrypt */
 
 	size = strlen(iv);
 	ivdata = malloc(size);
@@ -176,10 +190,19 @@ parse_rsa_private_key(hx509_context context, struct hx509_collector *c,
 	    return EINVAL;
 	}
 	
-	ret = EVP_BytesToKey(cipher, EVP_md5(), ivdata, key, keylen,
+	key = malloc(EVP_CIPHER_key_length(cipher));
+	if (key == NULL) {
+	    free(type);
+	    free(ivdata);
+	    return ENOMEM;
+	}
+
+	ret = EVP_BytesToKey(cipher, EVP_md5(), ivdata,
+			     password, passwordlen,
 			     1, key, NULL);
 	free(type);
-	if (ret != 1) {
+	if (ret <= 0) {
+	    free(key);
 	    free(ivdata);
 	    return EINVAL;
 	}
@@ -195,6 +218,7 @@ parse_rsa_private_key(hx509_context context, struct hx509_collector *c,
 	    EVP_CIPHER_CTX_cleanup(&ctx);
 	}	
 	free(ivdata);
+	free(key);
 
     } else {
 	keydata.data = rk_UNCONST(data);
