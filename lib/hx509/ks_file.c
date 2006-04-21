@@ -349,6 +349,7 @@ parse_pem_file(hx509_context context,
 	    }
 	    free(data);
 	    data = NULL;
+	    len = 0;
 	    free(type);
 	    type = NULL;
 	    where = BEFORE;
