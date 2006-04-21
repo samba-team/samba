@@ -32,7 +32,6 @@
  */
 
 #include "hx_locl.h"
-#
 RCSID("$Id$");
 
 #define ALLOC(X, N) (X) = calloc((N), sizeof(*(X)))
