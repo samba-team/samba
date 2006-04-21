@@ -57,19 +57,19 @@ echo "verify signed data (EE cert as anchor)"
 cmp "$srcdir/test_chain.in" sd.data.out || exit 1
 
 
-#echo "create signed data (password)"
-#./hxtool cms-create-sd \
-#	--pass=PASS:foobar \
-#	--certificate=FILE:$srcdir/data/test.crt,$srcdir/data/test-pw.key \
-#	"$srcdir/test_chain.in" \
-#	sd.data || exit 1
-#
-#echo "verify signed data"
-#./hxtool cms-verify-sd \
-#	--missing-revoke \
-#	--anchors=FILE:$srcdir/data/ca.crt \
-#	sd.data sd.data.out || exit 1
-#cmp "$srcdir/test_chain.in" sd.data.out || exit 1
+echo "create signed data (password)"
+./hxtool cms-create-sd \
+	--pass=PASS:foobar \
+	--certificate=FILE:$srcdir/data/test.crt,$srcdir/data/test-pw.key \
+	"$srcdir/test_chain.in" \
+	sd.data || exit 1
+
+echo "verify signed data"
+./hxtool cms-verify-sd \
+	--missing-revoke \
+	--anchors=FILE:$srcdir/data/ca.crt \
+	sd.data sd.data.out || exit 1
+cmp "$srcdir/test_chain.in" sd.data.out || exit 1
 
 echo "create signed data  (content info)"
 ./hxtool cms-create-sd \
