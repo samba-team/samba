@@ -179,7 +179,12 @@ parse_rsa_private_key(hx509_context context, struct hx509_collector *c,
 	    return ENOMEM;
 	}
 
-	cipher = EVP_aes_256_cbc();
+	cipher = EVP_get_cipherbyname(type);
+	if (cipher == NULL) {
+	    free(type);
+	    free(ivdata);
+	    return EINVAL;
+	}
 
 #define PKCS5_SALT_LEN 8
 
