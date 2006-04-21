@@ -795,6 +795,10 @@ EVP_get_cipherbyname(const char *name)
  *
  */
 
+#ifndef min
+#define min(a,b) (((a)>(b))?(b):(a))
+#endif
+
 int
 EVP_BytesToKey(const EVP_CIPHER *type,
 	       const EVP_MD *md, 
@@ -804,6 +808,71 @@ EVP_BytesToKey(const EVP_CIPHER *type,
 	       void *keydata,
 	       void *ivdata)
 {
-    return -1;
+    int ivlen, keylen, first = 0;
+    unsigned int mds = 0, i;
+    unsigned char *key = keydata;
+    unsigned char *iv = ivdata;
+    unsigned char *buf;
+    EVP_MD_CTX c;
+
+    keylen = EVP_CIPHER_key_length(type);
+    ivlen = EVP_CIPHER_iv_length(type);
+
+    if (data == NULL)
+	return keylen;
+
+    buf = malloc(EVP_MD_size(md));
+    if (buf == NULL)
+	return -1;
+
+    EVP_MD_CTX_init(&c);
+
+    first = 1;
+    while (1) {
+	EVP_DigestInit_ex(&c, md, NULL);
+	if (!first)
+	    EVP_DigestUpdate(&c, buf, mds);
+	first = 0;
+	EVP_DigestUpdate(&c,data,datalen);
+
+#define PKCS5_SALT_LEN 8
+
+	if (salt)
+	    EVP_DigestUpdate(&c, salt, PKCS5_SALT_LEN);
+
+	EVP_DigestFinal_ex(&c, buf, &mds);
+
+	for (i = 1; i < count; i++) {
+	    EVP_DigestInit_ex(&c, md, NULL);
+	    EVP_DigestUpdate(&c, buf, mds);
+	    EVP_DigestFinal_ex(&c, buf, &mds);
+	}
+
+	i = 0;
+	if (keylen) {
+	    size_t sz = min(keylen, mds);
+	    if (key) {
+		memcpy(key, buf, sz);
+		key += sz;
+	    }
+	    keylen -= sz;
+	    i += sz;
+	}
+	if (ivlen && mds > i) {
+	    size_t sz = min(ivlen, (mds - i));
+	    if (iv) {
+		memcpy(iv, &buf[i], sz);
+		iv += sz;
+	    }
+	    ivlen -= sz;
+	}
+	if (keylen == 0 && ivlen == 0)
+	    break;
+    }
+
+    EVP_MD_CTX_cleanup(&c);
+    free(buf);
+
+    return EVP_CIPHER_key_length(type);
 }
 
