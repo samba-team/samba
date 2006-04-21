@@ -1,3 +1,9 @@
+2006-04-21  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* Makefile.am: add sha-1 and sha-2
+
+	* rfc2459.asn1: add sha-1 and sha-2
+	
 2006-04-15  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* Makefile.am: Add id-pkcs1-sha256WithRSAEncryption and friends
