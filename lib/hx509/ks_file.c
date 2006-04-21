@@ -38,8 +38,68 @@ struct ks_file {
     hx509_certs certs;
 };
 
+struct header {
+    char *header;
+    char *value;
+    struct header *next;
+};
+
+static int
+add_headers(struct header **headers, const char *header, const char *value)
+{
+    struct header *h;
+    h = calloc(1, sizeof(*h));
+    if (h == NULL)
+	return ENOMEM;
+    h->header = strdup(header);
+    if (h->header == NULL) {
+	free(h);
+	return ENOMEM;
+    }
+    h->value = strdup(value);
+    if (h->value == NULL) {
+	free(h->header);
+	free(h);
+	return ENOMEM;
+    }
+
+    h->next = *headers;
+    *headers = h;
+
+    return 0;
+}
+
+static void
+free_headers(struct header *headers)
+{
+    struct header *h;
+    while (headers) {
+	h = headers;
+	headers = headers->next;
+	free(h->header);
+	free(h->value);
+	free(h);
+    }
+}
+
+static const char *
+find_header(const struct header *headers, const char *header)
+{
+    while(headers) {
+	if (strcmp(header, headers->header) == 0)
+	    return headers->value;
+	headers = headers->next;
+    }
+    return NULL;
+}
+
+/*
+ *
+ */
+
 static int
 parse_certificate(hx509_context context, struct hx509_collector *c, 
+		  const struct header *headers,
 		  const void *data, size_t len)
 {
     hx509_cert cert;
@@ -63,13 +123,42 @@ parse_certificate(hx509_context context, struct hx509_collector *c,
 
 static int
 parse_rsa_private_key(hx509_context context, struct hx509_collector *c, 
+		      const struct header *headers,
 		      const void *data, size_t len)
 {
     heim_octet_string keydata;
     int ret;
+    const char *enc;
 
-    keydata.data = rk_UNCONST(data);
-    keydata.length = len;
+    enc = find_header(headers, "Proc-Type");
+    if (enc) {
+	const char *dek;
+	char *type, *iv;
+	
+	if (strcmp(enc, "4,ENCRYPTED") != 0)
+	    return EINVAL;
+
+	dek = find_header(headers, "DEK-Info");
+	if (dek == NULL)
+	    return EINVAL;
+
+	type = strdup(dek);
+	if (type == NULL)
+	    return ENOMEM;
+
+	iv = strchr(type, ',');
+	if (iv)
+	    *iv++ = '\0';
+
+	/* printf("type: %s iv: %s\n", type, iv); */
+	/* XXX handle use EVP_BytesToKey() and decrypt */
+
+	free(type);
+	return EINVAL;
+    } else {
+	keydata.data = rk_UNCONST(data);
+	keydata.length = len;
+    }
 
     ret = _hx509_collector_private_key_add(c,
 					   hx509_signature_rsa(),
@@ -82,7 +171,8 @@ parse_rsa_private_key(hx509_context context, struct hx509_collector *c,
 
 struct pem_formats {
     const char *name;
-    int (*func)(hx509_context, struct hx509_collector *, const void *, size_t);
+    int (*func)(hx509_context, struct hx509_collector *, 
+		const struct header *, const void *, size_t);
 } formats[] = {
     { "CERTIFICATE", parse_certificate },
     { "RSA PRIVATE KEY", parse_rsa_private_key }
@@ -95,12 +185,14 @@ parse_pem_file(hx509_context context,
 	       struct hx509_collector *c,
 	       int *found_data)
 {
+    struct header *headers = NULL;
     char *type = NULL;
     void *data = NULL;
     size_t len = 0;
     char buf[1024];
     int i, ret;
     FILE *f;
+
 
     enum { BEFORE, SEARCHHEADER, INHEADER, INDATA, DONE } where;
 
@@ -151,8 +243,10 @@ parse_pem_file(hx509_context context,
 	    }
 	    p = strchr(buf, ':');
 	    if (p) {
-		printf("Add header: %.*s <- %s\n", 
-		       (int)(p - buf) - 1, buf, p + 1);
+		*p++ = '\0';
+		while (isspace((int)*p))
+		    p++;
+		add_headers(&headers, buf, p);
 	    }
 	    break;
 	case INDATA:
@@ -181,17 +275,21 @@ parse_pem_file(hx509_context context,
 	    for (i = 0; i < sizeof(formats)/sizeof(formats[0]); i++) {
 		const char *p = formats[i].name;
 		if (strncmp(type, p, strlen(p)) == 0)
-		    ret = (*formats[i].func)(context, c, data, len);
+		    ret = (*formats[i].func)(context, c, headers, data, len);
 	    }
 	    free(data);
 	    data = NULL;
 	    free(type);
 	    type = NULL;
 	    where = BEFORE;
+	    free_headers(headers);
+	    headers = NULL;
 	    if (ret)
 		break;
 	}
     }
+
+    fclose(f);
 
     if (where != BEFORE)
 	ret = EINVAL;
@@ -199,8 +297,8 @@ parse_pem_file(hx509_context context,
 	free(data);
     if (type)
 	free(type);
-
-    fclose(f);
+    if (headers)
+	free_headers(headers);
 
     return ret;
 }
@@ -260,7 +358,7 @@ file_init(hx509_context context,
 	    if (ret)
 		goto out;
 
-	    ret = parse_certificate(context, c, data, length);
+	    ret = parse_certificate(context, c, NULL, data, length);
 	    _hx509_unmap_file(data, length);
 	    if (ret)
 		goto out;
@@ -270,8 +368,9 @@ file_init(hx509_context context,
     ret = _hx509_collector_collect(context, c, &f->certs);
     if (ret == 0)
 	*data = f;
+    else
+	free(f);
 out:
-    ret = 0;
     free(files);
 
     _hx509_collector_free(c);
