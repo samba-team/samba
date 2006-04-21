@@ -169,9 +169,6 @@ parse_rsa_private_key(hx509_context context, struct hx509_collector *c,
 	if (iv)
 	    *iv++ = '\0';
 
-
-	/* printf("type: %s iv: %s\n", type, iv); */
-
 	size = strlen(iv);
 	ivdata = malloc(size);
 	if (ivdata == NULL) {
