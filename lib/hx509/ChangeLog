@@ -1,5 +1,9 @@
-2006-04-21  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-04-22  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* cert.c (hx509_query_match_friendly_name): New function.
+	
+2006-04-21  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* ks_p11.c: Add support for parsing slot-number.
 
 	* crypto.c (oid_private_rc2_40): simply
