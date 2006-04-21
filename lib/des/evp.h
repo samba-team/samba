@@ -88,6 +88,7 @@
 #define EVP_sha256 hc_EVP_sha256
 #define PKCS5_PBKDF2_HMAC_SHA1 hc_PKCS5_PBKDF2_HMAC_SHA1
 #define EVP_BytesToKey hc_EVP_BytesToKey
+#define EVP_get_cipherbyname hc_EVP_get_cipherbyname
 
 /*
  *
@@ -204,6 +205,9 @@ int	EVP_Digest(const void *, size_t, void *, unsigned int *,
  *
  */
 
+const EVP_CIPHER *
+	EVP_get_cipherbyname(const char *);
+
 size_t	EVP_CIPHER_block_size(const EVP_CIPHER *);
 size_t	EVP_CIPHER_key_length(const EVP_CIPHER *);
 size_t	EVP_CIPHER_iv_length(const EVP_CIPHER *);
@@ -234,7 +238,7 @@ int	PKCS5_PBKDF2_HMAC_SHA1(const void *, size_t, const void *, size_t,
 
 int	EVP_BytesToKey(const EVP_CIPHER *, const EVP_MD *, 
 		       const void *, const void *, size_t,
-		       int, const void *, const void *);
+		       unsigned int, void *, void *);
 
 
 #endif /* HEIM_EVP_H */

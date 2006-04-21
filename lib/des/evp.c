@@ -768,15 +768,41 @@ EVP_aes_256_cbc(void)
  *
  */
 
+static const struct cipher_name {
+    const char *name;
+    const EVP_CIPHER *(*func)(void);
+} cipher_name[] = {
+    { "des-ede3-cbc", EVP_des_ede3_cbc },
+    { "aes-128-cbc", EVP_aes_128_cbc },
+    { "aes-192-cbc", EVP_aes_192_cbc },
+    { "aes-256-cbc", EVP_aes_256_cbc }
+};
+
+
+const EVP_CIPHER *
+EVP_get_cipherbyname(const char *name)
+{
+    int i;
+    for (i = 0; i < sizeof(cipher_name)/sizeof(cipher_name[0]); i++) {
+	if (strcasecmp(cipher_name[i].name, name) == 0)
+	    return (*cipher_name[i].func)();
+    }
+    return NULL;
+}
+
+
+/*
+ *
+ */
+
 int
 EVP_BytesToKey(const EVP_CIPHER *type,
 	       const EVP_MD *md, 
 	       const void *salt,
 	       const void *data, size_t datalen,
-	       int count,
-	       const void *key,
-	       const void *iv)
+	       unsigned int count,
+	       void *keydata,
+	       void *ivdata)
 {
-    return 0;
 }
 
