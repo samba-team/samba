@@ -579,18 +579,39 @@ p11_init(hx509_context context,
 {
     CK_C_GetFunctionList getFuncs;
     struct p11_module *p;
+    char *list, *str;
     int ret;
 
     *data = NULL;
 
-    p = calloc(1, sizeof(*p));
-    if (p == NULL)
+    list = strdup(residue);
+    if (list == NULL)
 	return ENOMEM;
+
+    p = calloc(1, sizeof(*p));
+    if (p == NULL) {
+	free(list);
+	return ENOMEM;
+    }
 
     p->selected_slot = 0;
     p->refcount = 1;
 
-    p->dl_handle = dlopen(residue, RTLD_NOW);
+    str = strchr(list, ',');
+    if (str)
+	*str++ = '\0';
+    while (str) {
+	char *strnext;
+	strnext = strchr(str, ',');
+	if (strnext)
+	    *strnext++ = '\0';
+	if (strncasecmp(str, "slot=", 5) == 0)
+	    p->selected_slot = atoi(str + 5);
+	str = strnext;
+    }
+
+    p->dl_handle = dlopen(list, RTLD_NOW);
+    free(list);
     if (p->dl_handle == NULL) {
 	ret = EINVAL; /* XXX */
 	goto out;
@@ -620,7 +641,7 @@ p11_init(hx509_context context,
 	goto out;
     }
 
-    if (p->selected_slot > p->num_slots) {
+    if (p->selected_slot >= p->num_slots) {
 	ret = EINVAL;
 	goto out;
     }
