@@ -1114,6 +1114,7 @@ _hx509_private_key_assign_rsa(hx509_private_key key, void *ptr)
 
 
 struct hx509cipher {
+    const char *name;
     const heim_oid *(*oid_func)(void);
     const EVP_CIPHER *(*evp_func)(void);
     int (*get_params)(hx509_context, const hx509_crypto,
@@ -1138,7 +1139,7 @@ struct hx509_crypto_data {
 static const heim_oid *
 oid_private_rc2_40(void)
 {
-    static const unsigned oid_data[] = { 127, 1 };
+    static unsigned oid_data[] = { 127, 1 };
     static const heim_oid oid = { 2, oid_data };
 
     return &oid;
@@ -1268,54 +1269,56 @@ CMSRC2CBCParam_set(hx509_context context, const heim_octet_string *param,
 
 static const struct hx509cipher ciphers[] = {
     {
+	"rc2-cbc",
 	oid_id_pkcs3_rc2_cbc,
 	EVP_rc2_cbc,
 	CMSRC2CBCParam_get,
 	CMSRC2CBCParam_set
     },
     {
+	"rc2-cbc",
 	oid_id_rsadsi_rc2_cbc,
 	EVP_rc2_cbc,
 	CMSRC2CBCParam_get,
 	CMSRC2CBCParam_set
     },
     {
+	"rc2-40-cbc",
 	oid_private_rc2_40,
 	EVP_rc2_40_cbc,
 	CMSRC2CBCParam_get,
 	CMSRC2CBCParam_set
     },
     {
-	oid_id_pkcs3_rc2_cbc,
-	EVP_rc2_cbc,
-	CMSRC2CBCParam_get,
-	CMSRC2CBCParam_set
-    },
-    {
+	"des-ede3-cbc",
 	oid_id_pkcs3_des_ede3_cbc,
 	EVP_des_ede3_cbc,
 	CMSCBCParam_get,
 	CMSCBCParam_set
     },
     {
+	"des-ede3-cbc",
 	oid_id_rsadsi_des_ede3_cbc,
 	EVP_des_ede3_cbc,
 	CMSCBCParam_get,
 	CMSCBCParam_set
     },
     {
+	"aes-128-cbc",
 	oid_id_aes_128_cbc,
 	EVP_aes_128_cbc,
 	CMSCBCParam_get,
 	CMSCBCParam_set
     },
     {
+	"aes-192-cbc",
 	oid_id_aes_192_cbc,
 	EVP_aes_192_cbc,
 	CMSCBCParam_get,
 	CMSCBCParam_set
     },
     {
+	"aes-256-cbc",
 	oid_id_aes_256_cbc,
 	EVP_aes_256_cbc,
 	CMSCBCParam_get,
@@ -1324,7 +1327,7 @@ static const struct hx509cipher ciphers[] = {
 };
 
 static const struct hx509cipher *
-find_cipher(const heim_oid *oid)
+find_cipher_by_oid(const heim_oid *oid)
 {
     int i;
 
@@ -1333,6 +1336,30 @@ find_cipher(const heim_oid *oid)
 	    return &ciphers[i];
 
     return NULL;
+}
+
+static const struct hx509cipher *
+find_cipher_by_name(const char *name)
+{
+    int i;
+
+    for (i = 0; i < sizeof(ciphers)/sizeof(ciphers[0]); i++)
+	if (strcasecmp(name, ciphers[i].name) == 0)
+	    return &ciphers[i];
+
+    return NULL;
+}
+
+
+const heim_oid *
+hx509_crypto_enctype_by_name(const char *name)
+{
+    const struct hx509cipher *cipher;
+
+    cipher = find_cipher_by_name(name);
+    if (cipher == NULL)
+	return NULL;
+    return (*cipher->oid_func)();
 }
 
 int
@@ -1345,7 +1372,7 @@ hx509_crypto_init(hx509_context context,
 
     *crypto = NULL;
 
-    cipher = find_cipher(enctype);
+    cipher = find_cipher_by_oid(enctype);
     if (cipher == NULL)
 	return HX509_ALG_NOT_SUPP;
 
