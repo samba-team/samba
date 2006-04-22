@@ -753,14 +753,14 @@ add_one_attribute(Attribute **attr,
     return 0;
 }
 	      
-	      
-
 int
 hx509_cms_create_signed_1(hx509_context context,
 			  const heim_oid *eContentType,
 			  const void *data, size_t length,
 			  const AlgorithmIdentifier *digest_alg,
 			  hx509_cert cert,
+			  hx509_certs trust_anchors,
+			  hx509_certs pool,
 			  heim_octet_string *signed_data)
 {
     hx509_name name;
@@ -769,9 +769,11 @@ hx509_cms_create_signed_1(hx509_context context,
     SignedData sd;
     int ret;
     size_t size;
+    hx509_path path;
     
     memset(&sd, 0, sizeof(sd));
     memset(&name, 0, sizeof(name));
+    memset(&path, 0, sizeof(path));
 
     if (_hx509_cert_private_key(cert) == NULL)
 	return HX509_PRIVATE_KEY_MISSING;
@@ -921,25 +923,47 @@ hx509_cms_create_signed_1(hx509_context context,
 	goto out;
     }
 
-    ALLOC(sd.certificates, 1);
-    if (sd.certificates == NULL) {
-	ret = ENOMEM;
-	goto out;
-    }
-    ALLOC_SEQ(sd.certificates, 1);
-    if (sd.certificates->val == NULL) {
-	ret = ENOMEM;
-	goto out;
-    }
-
-
-    ASN1_MALLOC_ENCODE(Certificate, 
-		       sd.certificates->val[0].data,
-		       sd.certificates->val[0].length,
-		       _hx509_get_cert(cert),
-		       &size, ret);
+    if (trust_anchors) {
+	ret = _hx509_calculate_path(context,
+				    trust_anchors,
+				    0,
+				    cert,
+				    pool,
+				    &path);
+	if (ret) {
+	    _hx509_path_free(&path);
+	    ret = _hx509_path_append(&path, cert);
+	}
+    } else
+	ret = _hx509_path_append(&path, cert);
     if (ret)
 	goto out;
+
+
+    if (path.len) {
+	int i;
+
+	ALLOC(sd.certificates, 1);
+	if (sd.certificates == NULL) {
+	    ret = ENOMEM;
+	    goto out;
+	}
+	ALLOC_SEQ(sd.certificates, path.len);
+	if (sd.certificates->val == NULL) {
+	    ret = ENOMEM;
+	    goto out;
+	}
+
+	for (i = 0; i < path.len; i++) {
+	    ASN1_MALLOC_ENCODE(Certificate, 
+			       sd.certificates->val[i].data,
+			       sd.certificates->val[i].length,
+			       _hx509_get_cert(path.val[i]),
+			       &size, ret);
+	    if (ret)
+		goto out;
+	}
+    }
 
     ASN1_MALLOC_ENCODE(SignedData,
 		       signed_data->data, signed_data->length,
@@ -950,6 +974,7 @@ hx509_cms_create_signed_1(hx509_context context,
 	_hx509_abort("internal ASN.1 encoder error");
 
 out:
+    _hx509_path_free(&path);
     free_SignedData(&sd);
 
     return ret;
