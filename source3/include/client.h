@@ -27,7 +27,8 @@
    overlap on the wire. This size gives us a nice read/write size, which
    will be a multiple of the page size on almost any system */
 #define CLI_BUFFER_SIZE (0xFFFF)
-#define CLI_MAX_LARGE_READX_SIZE (127*1024)
+#define CLI_SAMBA_MAX_LARGE_READX_SIZE (127*1024) /* Works for Samba servers */
+#define CLI_WINDOWS_MAX_LARGE_READX_SIZE ((64*1024)-2) /* Windows servers are broken.... */
 
 /*
  * These definitions depend on smb.h
@@ -143,6 +144,7 @@ struct cli_state {
 	unsigned int bufsize;
 	int initialised;
 	int win95;
+	BOOL is_samba;
 	uint32 capabilities;
 	BOOL dfsroot;
 
