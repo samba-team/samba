@@ -76,7 +76,11 @@ ssize_t cli_read(struct cli_state *cli, int fnum, char *buf, off_t offset, size_
 	 */
 
 	if (cli->capabilities & CAP_LARGE_READX) {
-		readsize = CLI_MAX_LARGE_READX_SIZE;
+		if (cli->is_samba) {
+			readsize = CLI_SAMBA_MAX_LARGE_READX_SIZE;
+		} else {
+			readsize = CLI_WINDOWS_MAX_LARGE_READX_SIZE;
+		}
 	} else {
 		readsize = (cli->max_xmit - (smb_size+32)) & ~1023;
 	}
