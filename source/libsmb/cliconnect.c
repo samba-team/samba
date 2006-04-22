@@ -199,6 +199,10 @@ static BOOL cli_session_setup_guest(struct cli_state *cli)
 	p += clistr_pull(cli, cli->server_type, p, sizeof(fstring), -1, STR_TERMINATE);
 	p += clistr_pull(cli, cli->server_domain, p, sizeof(fstring), -1, STR_TERMINATE);
 
+	if (strstr(cli->server_type, "Samba")) {
+		cli->is_samba = True;
+	}
+
 	fstrcpy(cli->user_name, "");
 
 	return True;
@@ -262,6 +266,10 @@ static BOOL cli_session_setup_plaintext(struct cli_state *cli, const char *user,
 	p += clistr_pull(cli, cli->server_type, p, sizeof(fstring), -1, STR_TERMINATE);
 	p += clistr_pull(cli, cli->server_domain, p, sizeof(fstring), -1, STR_TERMINATE);
 	fstrcpy(cli->user_name, user);
+
+	if (strstr(cli->server_type, "Samba")) {
+		cli->is_samba = True;
+	}
 
 	return True;
 }
@@ -407,6 +415,10 @@ static BOOL cli_session_setup_nt1(struct cli_state *cli, const char *user,
 	p += clistr_pull(cli, cli->server_os, p, sizeof(fstring), -1, STR_TERMINATE);
 	p += clistr_pull(cli, cli->server_type, p, sizeof(fstring), -1, STR_TERMINATE);
 	p += clistr_pull(cli, cli->server_domain, p, sizeof(fstring), -1, STR_TERMINATE);
+
+	if (strstr(cli->server_type, "Samba")) {
+		cli->is_samba = True;
+	}
 
 	fstrcpy(cli->user_name, user);
 
@@ -873,6 +885,10 @@ BOOL cli_session_setup(struct cli_state *cli,
 		}
 	}
 
+	if (strstr(cli->server_type, "Samba")) {
+		cli->is_samba = True;
+	}
+
 	return True;
 
 }
@@ -1159,9 +1175,9 @@ BOOL cli_negprot(struct cli_state *cli)
 		if (cli->capabilities & (CAP_LARGE_READX|CAP_LARGE_WRITEX)) {
 			SAFE_FREE(cli->outbuf);
 			SAFE_FREE(cli->inbuf);
-			cli->outbuf = (char *)SMB_MALLOC(CLI_MAX_LARGE_READX_SIZE+SAFETY_MARGIN);
-			cli->inbuf = (char *)SMB_MALLOC(CLI_MAX_LARGE_READX_SIZE+SAFETY_MARGIN);
-			cli->bufsize = CLI_MAX_LARGE_READX_SIZE;
+			cli->outbuf = (char *)SMB_MALLOC(CLI_SAMBA_MAX_LARGE_READX_SIZE+SAFETY_MARGIN);
+			cli->inbuf = (char *)SMB_MALLOC(CLI_SAMBA_MAX_LARGE_READX_SIZE+SAFETY_MARGIN);
+			cli->bufsize = CLI_SAMBA_MAX_LARGE_READX_SIZE;
 		}
 
 	} else if (cli->protocol >= PROTOCOL_LANMAN1) {
