@@ -158,8 +158,38 @@ openssl smime \
     -binary \
     -in static-file \
     -outform DER \
+    -out test-enveloped-des \
+    -des \
+    test.crt
+
+openssl smime \
+    -encrypt \
+    -nodetach \
+    -binary \
+    -in static-file \
+    -outform DER \
+    -out test-enveloped-des-ede3 \
+    -des3 \
+    test.crt
+
+openssl smime \
+    -encrypt \
+    -nodetach \
+    -binary \
+    -in static-file \
+    -outform DER \
     -out test-enveloped-aes-128 \
     -aes128 \
+    test.crt
+
+openssl smime \
+    -encrypt \
+    -nodetach \
+    -binary \
+    -in static-file \
+    -outform DER \
+    -out test-enveloped-aes-256 \
+    -aes256 \
     test.crt
 
 echo ocsp requests
