@@ -68,6 +68,7 @@
 
 struct hx509_keyset_ops;
 struct hx509_collector;
+typedef struct hx509_path hx509_path;
 
 #include <hx509.h>
 #include <hx509-private.h>
@@ -83,10 +84,10 @@ struct hx509_name_data {
     Name der_name;
 };
 
-typedef struct hx509_path {
+struct hx509_path {
     size_t len;
     hx509_cert *val;
-} hx509_path;
+};
 
 struct hx509_query_data {
     int match;

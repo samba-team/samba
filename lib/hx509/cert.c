@@ -42,7 +42,7 @@ struct hx509_verify_ctx_data {
 #define HX509_VERIFY_CTX_F_TIME_SET			1
 #define HX509_VERIFY_CTX_F_ALLOW_PROXY_CERTIFICATE	2
     time_t time_now;
-    int max_depth;
+    unsigned int max_depth;
 #define HX509_VERIFY_MAX_DEPTH 30
     hx509_revoke_ctx revoke_ctx;
 };
@@ -593,7 +593,7 @@ _hx509_cert_is_parent_cmp(const Certificate *subject,
 
 static int
 certificate_is_anchor(hx509_context context,
-		      hx509_verify_ctx ctx,
+		      hx509_certs trust_anchors,
 		      const hx509_cert cert)
 {
     hx509_query q;
@@ -605,7 +605,7 @@ certificate_is_anchor(hx509_context context,
     q.match = HX509_QUERY_MATCH_CERTIFICATE;
     q.certificate = _hx509_get_cert(cert);
 
-    ret = hx509_certs_find(context, ctx->trust_anchors, &q, &c);
+    ret = hx509_certs_find(context, trust_anchors, &q, &c);
     if (ret == 0)
 	hx509_cert_free(c);
     return ret == 0;
@@ -630,9 +630,9 @@ subject_null_p(const Certificate *c)
 
 static hx509_cert
 find_parent(hx509_context context,
-	    hx509_verify_ctx ctx,
+	    hx509_certs trust_anchors,
 	    hx509_path *path,
-	    hx509_certs chain, 
+	    hx509_certs pool, 
 	    hx509_cert current)
 {
     AuthorityKeyIdentifier ai;
@@ -664,13 +664,15 @@ find_parent(hx509_context context,
     q.path = path;
     q.match |= HX509_QUERY_NO_MATCH_PATH | HX509_QUERY_KU_KEYCERTSIGN;
 
-    ret = hx509_certs_find(context, chain, &q, &c);
-    if (ret == 0) {
-	free_AuthorityKeyIdentifier(&ai);
-	return c;
+    if (pool) {
+	ret = hx509_certs_find(context, pool, &q, &c);
+	if (ret == 0) {
+	    free_AuthorityKeyIdentifier(&ai);
+	    return c;
+	}
     }
 
-    ret = hx509_certs_find(context, ctx->trust_anchors, &q, &c);
+    ret = hx509_certs_find(context, trust_anchors, &q, &c);
     if (ret == 0) {
 	free_AuthorityKeyIdentifier(&ai);
 	return c;
@@ -685,8 +687,8 @@ find_parent(hx509_context context,
  * internal so we can do easy searches.
  */
 
-static int
-path_append(hx509_path *path, hx509_cert cert)
+int
+_hx509_path_append(hx509_path *path, hx509_cert cert)
 {
     hx509_cert *val;
     val = realloc(path->val, (path->len + 1) * sizeof(path->val[0]));
@@ -700,14 +702,16 @@ path_append(hx509_path *path, hx509_cert cert)
     return 0;
 }
 
-static void
-path_free(hx509_path *path)
+void
+_hx509_path_free(hx509_path *path)
 {
     unsigned i;
     
     for (i = 0; i < path->len; i++)
 	hx509_cert_free(path->val[i]);
     free(path->val);
+    path->val = NULL;
+    path->len = 0;
 }
 
 /*
@@ -717,37 +721,44 @@ path_free(hx509_path *path)
  *
  * The path includes a path from the top certificate to the anchor
  * certificate.
+ *
+ * The caller needs to free `path´ both on successful built path and
+ * failure.
  */
 
-static int
-calculate_path(hx509_context context,
-	       hx509_verify_ctx ctx,
-	       hx509_cert cert,
-	       hx509_certs chain,
-	       hx509_path *path)
+int
+_hx509_calculate_path(hx509_context context,
+		      hx509_certs trust_anchors,
+		      unsigned int max_depth,
+		      hx509_cert cert,
+		      hx509_certs pool,
+		      hx509_path *path)
 {
     hx509_cert parent, current;
     int ret;
 
-    ret = path_append(path, cert);
+    if (max_depth == 0)
+	max_depth = HX509_VERIFY_MAX_DEPTH;
+
+    ret = _hx509_path_append(path, cert);
     if (ret)
 	return ret;
 
     current = hx509_cert_ref(cert);
 
-    while (!certificate_is_anchor(context, ctx, current)) {
+    while (!certificate_is_anchor(context, trust_anchors, current)) {
 
-	parent = find_parent(context, ctx, path, chain, current);
+	parent = find_parent(context, trust_anchors, path, pool, current);
 	hx509_cert_free(current);
 	if (parent == NULL)
 	    return HX509_ISSUER_NOT_FOUND;
 
-	ret = path_append(path, parent);
+	ret = _hx509_path_append(path, parent);
 	if (ret)
 	    return ret;
 	current = parent;
 
-	if (path->len > ctx->max_depth)
+	if (path->len > max_depth)
 	    return HX509_PATH_TOO_LONG;
     }
     hx509_cert_free(current);
@@ -1157,7 +1168,7 @@ int
 hx509_verify_path(hx509_context context,
 		  hx509_verify_ctx ctx,
 		  hx509_cert cert,
-		  hx509_certs chain)
+		  hx509_certs pool)
 {
     hx509_name_constraints nc;
     hx509_path path;
@@ -1180,7 +1191,8 @@ hx509_verify_path(hx509_context context,
      * Calculate the path from the certificate user presented to the
      * to an anchor.
      */
-    ret = calculate_path(context, ctx, cert, chain, &path);
+    ret = _hx509_calculate_path(context, ctx->trust_anchors, ctx->max_depth,
+				cert, pool, &path);
     if (ret)
 	goto out;
 
@@ -1271,7 +1283,7 @@ hx509_verify_path(hx509_context context,
 		goto out;
 	    }
 	}
-	ret = hx509_certs_merge(context, certs, chain);
+	ret = hx509_certs_merge(context, certs, pool);
 	if (ret) {
 	    hx509_certs_free(&certs);
 	    goto out;
@@ -1334,7 +1346,7 @@ hx509_verify_path(hx509_context context,
 
  out:
     free_name_constraints(&nc);
-    path_free(&path);
+    _hx509_path_free(&path);
 
     return ret;
 }
