@@ -827,6 +827,8 @@ pk_mk_pa_reply_dh(krb5_context context,
 					buf.length,
 					NULL,
 					cert,
+					kdc_identity->anchors,
+					kdc_identity->certpool,
 					&signed_data);
 	hx509_cert_free(cert);
     }

@@ -122,7 +122,7 @@ integer_to_BN(krb5_context context, const char *field, const heim_integer *f)
 }
 
 
-krb5_error_code KRB5_LIB_FUNCTION
+static krb5_error_code
 _krb5_pk_create_sign(krb5_context context,
 		     const heim_oid *eContentType,
 		     krb5_data *eContent,
@@ -151,6 +151,8 @@ _krb5_pk_create_sign(krb5_context context,
 				    eContent->length,
 				    NULL,
 				    cert,
+				    NULL,
+				    NULL,
 				    sd_data);
     hx509_cert_free(cert);
 
