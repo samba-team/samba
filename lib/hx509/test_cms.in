@@ -169,7 +169,7 @@ echo "unenvelope data"
 	FILE:$srcdir/data/test.crt,$srcdir/data/test.key > /dev/null || exit 1
 cmp "$srcdir/data/static-file" ev.data.out || exit 1
 
-for a in rc2-40 rc2-64 rc2-128 aes-128; do
+for a in rc2-40 rc2-64 rc2-128 des-ede3 aes-128 aes-256; do
     echo "unenvelope data ($a)"
 
     rm -f ev.data.out
