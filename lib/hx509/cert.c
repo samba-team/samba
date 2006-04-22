@@ -1486,7 +1486,7 @@ hx509_query_match_friendly_name(hx509_query *q, const char *name)
 	free(q->friendlyname);
     q->friendlyname = strdup(name);
     if (q->friendlyname == NULL)
-	return NULL;
+	return ENOMEM;
     q->match |= HX509_QUERY_MATCH_FRIENDLY_NAME;
     return 0;
 }
