@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2004 - 2005 Kungliga Tekniska Högskolan
+ * Copyright (c) 2004 - 2006 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -167,7 +167,7 @@ cms_create_sd(struct cms_create_sd_options *opt, int argc, char **argv)
 {
     const heim_oid *contentType;
     heim_octet_string o;
-    hx509_query q;
+    hx509_query *q;
     hx509_lock lock;
     hx509_certs store;
     hx509_cert cert;
@@ -200,16 +200,18 @@ cms_create_sd(struct cms_create_sd_options *opt, int argc, char **argv)
 		 opt->certificate_strings.strings[i], ret);
     }
 
-    _hx509_query_clear(&q);
-    q.match |= HX509_QUERY_PRIVATE_KEY;
-    q.match |= HX509_QUERY_KU_DIGITALSIGNATURE;
+    ret = hx509_query_alloc(context, &q);
+    if (ret)
+	errx(1, "hx509_query_alloc: %d", ret);
 
-    if (opt->signer_string) {
-	q.match |= HX509_QUERY_MATCH_FRIENDLY_NAME;
-	q.friendlyname = opt->signer_string;
-    }
+    hx509_query_match_option(q, HX509_QUERY_OPTION_PRIVATE_KEY);
+    hx509_query_match_option(q, HX509_QUERY_OPTION_KU_DIGITALSIGNATURE);
+			     
+    if (opt->signer_string)
+	hx509_query_match_friendly_name(q, opt->signer_string);
 
-    ret = hx509_certs_find(context, store, &q, &cert);
+    ret = hx509_certs_find(context, store, q, &cert);
+    hx509_query_free(context, q);
     if (ret)
 	errx(1, "hx509_certs_find: %d", ret);
 
@@ -321,7 +323,7 @@ cms_create_enveloped(struct cms_envelope_options *opt, int argc, char **argv)
     heim_octet_string o;
     heim_oid contentType = { 0, NULL };
     const heim_oid *enctype = NULL;
-    hx509_query q;
+    hx509_query *q;
     hx509_certs certs;
     hx509_cert cert;
     int ret, i;
@@ -353,9 +355,14 @@ cms_create_enveloped(struct cms_envelope_options *opt, int argc, char **argv)
 		 opt->encryption_type_string);
     }
 
-    _hx509_query_clear(&q);
-    q.match |= HX509_QUERY_KU_ENCIPHERMENT;
-    ret = hx509_certs_find(context, certs, &q, &cert);
+    ret = hx509_query_alloc(context, &q);
+    if (ret)
+	errx(1, "hx509_query_alloc: %d", ret);
+
+    hx509_query_match_option(q, HX509_QUERY_OPTION_KU_ENCIPHERMENT);
+
+    ret = hx509_certs_find(context, certs, q, &cert);
+    hx509_query_free(context, q);
     if (ret)
 	errx(1, "hx509_certs_find: %d", ret);
 
@@ -609,12 +616,14 @@ int
 query(struct query_options *opt, int argc, char **argv)
 {
     hx509_lock lock;
-    hx509_query q;
+    hx509_query *q;
     hx509_certs certs;
     hx509_cert c;
     int ret;
 
-    _hx509_query_clear(&q);
+    ret = hx509_query_alloc(context, &q);
+    if (ret)
+	errx(1, "hx509_query_alloc: %d", ret);
 
     hx509_lock_init(context, &lock);
     lock_strings(lock, &opt->pass_strings);
@@ -631,16 +640,14 @@ query(struct query_options *opt, int argc, char **argv)
 	argv++;
     }
 
-    if (opt->friendlyname_string) {
-	q.match |= HX509_QUERY_MATCH_FRIENDLY_NAME;
-	q.friendlyname = opt->friendlyname_string;
-    }
+    if (opt->friendlyname_string)
+	hx509_query_match_friendly_name(q, opt->friendlyname_string);
 
     if (opt->private_key_flag)
-	q.match |= HX509_QUERY_PRIVATE_KEY;
+	hx509_query_match_option(q, HX509_QUERY_OPTION_PRIVATE_KEY);
 
-
-    ret = hx509_certs_find(context, certs, &q, &c);
+    ret = hx509_certs_find(context, certs, q, &c);
+    hx509_query_free(context, q);
     if (ret)
 	warnx("hx509_certs_find: %d", ret);
     else
