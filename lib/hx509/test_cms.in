@@ -56,7 +56,6 @@ echo "verify signed data (EE cert as anchor)"
 	sd.data sd.data.out > /dev/null || exit 1
 cmp "$srcdir/test_chain.in" sd.data.out || exit 1
 
-
 echo "create signed data (password)"
 ./hxtool cms-create-sd \
 	--pass=PASS:foobar \
@@ -140,6 +139,41 @@ echo "verify signed data (no attr, no certs)"
 	"$srcdir/data/test-signed-data-noattr-nocerts" \
 	sd.data.out > /dev/null || exit 1
 cmp "$srcdir/data/static-file" sd.data.out || exit 1
+
+echo "create signed data (subcert, no certs)"
+./hxtool cms-create-sd \
+	--certificate=FILE:$srcdir/data/sub-cert.crt,$srcdir/data/sub-cert.key \
+	"$srcdir/test_chain.in" \
+	sd.data > /dev/null || exit 1
+
+echo "verify failure signed data"
+./hxtool cms-verify-sd \
+	--missing-revoke \
+	--anchors=FILE:$srcdir/data/ca.crt \
+	sd.data sd.data.out > /dev/null 2> /dev/null && exit 1
+
+echo "verify success signed data"
+./hxtool cms-verify-sd \
+	--missing-revoke \
+	--certificate=FILE:$srcdir/data/sub-ca.crt \
+	--anchors=FILE:$srcdir/data/ca.crt \
+	sd.data sd.data.out > /dev/null || exit 1
+cmp "$srcdir/test_chain.in" sd.data.out || exit 1
+
+echo "create signed data (subcert, certs)"
+./hxtool cms-create-sd \
+	--certificate=FILE:$srcdir/data/sub-cert.crt,$srcdir/data/sub-cert.key \
+	--pool=FILE:$srcdir/data/sub-ca.crt \
+	--anchors=FILE:$srcdir/data/ca.crt \
+	"$srcdir/test_chain.in" \
+	sd.data > /dev/null || exit 1
+
+echo "verify success signed data"
+./hxtool cms-verify-sd \
+	--missing-revoke \
+	--anchors=FILE:$srcdir/data/ca.crt \
+	sd.data sd.data.out > /dev/null || exit 1
+cmp "$srcdir/test_chain.in" sd.data.out || exit 1
 
 echo "envelope data (content-info)"
 ./hxtool cms-envelope \
