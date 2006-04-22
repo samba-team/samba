@@ -1,4 +1,13 @@
+2006-04-22  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kdc/pkinit.c: Adapt to change in hx509_cms_create_signed_1.
+
+	* lib/krb5/pkinit.c: Adapt to change in hx509_cms_create_signed_1.
+	
 2006-04-20  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kdc/pkinit.c (_kdc_pk_rd_padata): use
+	hx509_cms_unwrap_ContentInfo.
 
 	* kdc/config.c: unbreak
 
