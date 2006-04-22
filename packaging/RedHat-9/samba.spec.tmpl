@@ -5,7 +5,7 @@ Summary: Samba SMB client and server
 Vendor: Samba Team
 Name: samba
 Version: PVERSION
-Release: PRELEASE
+Release: PRELEASEPRPMREV
 License: GNU GPL version 2
 Group: Networking
 Source: http://download.samba.org/samba/ftp/samba-%{version}.tar.bz2
@@ -449,10 +449,8 @@ fi
 %{prefix}/lib/libmsrpc.a
 %{prefix}/lib/libmsrpc.so
 %{prefix}/share/swat/help/*
-%{prefix}/share/swat/images/*.gif
 %{prefix}/share/swat/include/*.html
 %{prefix}/share/swat/lang/*/help/*
-%{prefix}/share/swat/lang/*/images/*.gif
 %config(noreplace) /etc/samba/lmhosts
 %config(noreplace) /etc/samba/smb.conf
 %config(noreplace) /etc/samba/smbusers
