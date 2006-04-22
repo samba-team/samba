@@ -632,19 +632,17 @@ static int wb_aix_user_attrib(const char *key, char *attributes[],
 			results[i].attr_un.au_char = strdup(pwd->pw_passwd);
 		} else if (strcmp(attributes[i], S_HOME) == 0) {
 			results[i].attr_un.au_char = strdup(pwd->pw_dir);
-		} else if (strcmp(attributes[0], S_SHELL) == 0) {
+		} else if (strcmp(attributes[i], S_SHELL) == 0) {
 			results[i].attr_un.au_char = strdup(pwd->pw_shell);
-		} else if (strcmp(attributes[0], S_REGISTRY) == 0) {
+		} else if (strcmp(attributes[i], S_REGISTRY) == 0) {
 			results[i].attr_un.au_char = strdup("WINBIND");
-		} else if (strcmp(attributes[0], S_GECOS) == 0) {
+		} else if (strcmp(attributes[i], S_GECOS) == 0) {
 			results[i].attr_un.au_char = strdup(pwd->pw_gecos);
-		} else if (strcmp(attributes[0], S_PGRP) == 0) {
+		} else if (strcmp(attributes[i], S_PGRP) == 0) {
 			results[i] = pwd_to_group(pwd);
-		} else if (strcmp(attributes[0], S_GECOS) == 0) {
-			results[i].attr_un.au_char = strdup(pwd->pw_gecos);
-		} else if (strcmp(attributes[0], S_GROUPSIDS) == 0) {
+		} else if (strcmp(attributes[i], S_GROUPS) == 0) {
 			results[i] = pwd_to_groupsids(pwd);
-		} else if (strcmp(attributes[0], "SID") == 0) {
+		} else if (strcmp(attributes[i], "SID") == 0) {
 			results[i] = pwd_to_sid(pwd);
 		} else {
 			logit("Unknown user attribute '%s'\n", attributes[i]);
