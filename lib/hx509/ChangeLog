@@ -1,5 +1,36 @@
 2006-04-22  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* hxtool-commands.in: Allow passing in pool and anchor to
+	signedData
+
+	* hxtool.c: Allow passing in pool and anchor to signedData
+
+	* test_cms.in: Test that certs in signed data is picked up.
+
+	* hx_locl.h: Expose the path building function to internal
+	functions.
+
+	* cert.c: Expose the path building function to internal functions.
+
+	* hxtool-commands.in: cms-envelope: Add support for choosing the
+	encryption type
+
+	* hxtool.c (cms_create_enveloped): Add support for choosing the
+	encryption type
+
+	* test_cms.in: Test generating des-ede3 aes-128 aes-256 enveloped
+	data
+
+	* crypto.c: Add names to cipher types.
+
+	* cert.c (hx509_query_match_friendly_name): fix return value
+
+	* data/gen-req.sh: generate tests for enveloped data using
+	des-ede3 and aes256
+
+	* test_cms.in: add tests for enveloped data using des-ede3 and
+	aes256
+
 	* cert.c (hx509_query_match_friendly_name): New function.
 	
 2006-04-21  Love Hörnquist Åstrand  <lha@it.su.se>
