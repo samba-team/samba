@@ -320,6 +320,7 @@ cms_create_enveloped(struct cms_envelope_options *opt, int argc, char **argv)
 {
     heim_octet_string o;
     heim_oid contentType = { 0, NULL };
+    const heim_oid *enctype = NULL;
     hx509_query q;
     hx509_certs certs;
     hx509_cert cert;
@@ -345,15 +346,22 @@ cms_create_enveloped(struct cms_envelope_options *opt, int argc, char **argv)
 		 opt->certificate_strings.strings[i], ret);
     }
 
+    if (opt->encryption_type_string) {
+	enctype = hx509_crypto_enctype_by_name(opt->encryption_type_string);
+	if (enctype == NULL)
+	    errx(1, "encryption type: %s no found", 
+		 opt->encryption_type_string);
+    }
+
     _hx509_query_clear(&q);
     q.match |= HX509_QUERY_KU_ENCIPHERMENT;
     ret = hx509_certs_find(context, certs, &q, &cert);
     if (ret)
 	errx(1, "hx509_certs_find: %d", ret);
 
-    ret = hx509_cms_envelope_1(context, cert, p, sz, NULL, &contentType, &o);
+    ret = hx509_cms_envelope_1(context, cert, p, sz, enctype, &contentType, &o);
     if (ret)
-	errx(1, "hx509_cms_unenvelope: %d", ret);
+	errx(1, "hx509_cms_envelope_1: %d", ret);
 
     _hx509_unmap_file(p, sz);
 
