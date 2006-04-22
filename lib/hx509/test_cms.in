@@ -156,21 +156,25 @@ echo "unenvelope data (content-info)"
 	FILE:$srcdir/data/test.crt,$srcdir/data/test.key > /dev/null || exit 1
 cmp "$srcdir/data/static-file" ev.data.out || exit 1
 
-echo "envelope data"
-./hxtool cms-envelope \
-	--certificate=FILE:$srcdir/data/test.crt \
-	"$srcdir/data/static-file" \
-	ev.data  || exit 1
+for a in des-ede3 aes-128 aes-256; do
 
-echo "unenvelope data"
-./hxtool cms-unenvelope \
-	--certificate=FILE:$srcdir/data/test.crt,$srcdir/data/test.key \
-	ev.data ev.data.out \
-	FILE:$srcdir/data/test.crt,$srcdir/data/test.key > /dev/null || exit 1
-cmp "$srcdir/data/static-file" ev.data.out || exit 1
+	rm -f ev.data ev.data.out
+	echo "envelope data ($a)"
+	./hxtool cms-envelope \
+	        --encryption-type="$a-cbc" \
+		--certificate=FILE:$srcdir/data/test.crt \
+		"$srcdir/data/static-file" \
+		ev.data  || exit 1
+
+	echo "unenvelope data ($a)"
+	./hxtool cms-unenvelope \
+		--certificate=FILE:$srcdir/data/test.crt,$srcdir/data/test.key \
+		ev.data ev.data.out > /dev/null || exit 1
+	cmp "$srcdir/data/static-file" ev.data.out || exit 1
+done
 
 for a in rc2-40 rc2-64 rc2-128 des-ede3 aes-128 aes-256; do
-    echo "unenvelope data ($a)"
+    echo "static unenvelope data ($a)"
 
     rm -f ev.data.out
     ./hxtool cms-unenvelope \
