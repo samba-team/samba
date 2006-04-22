@@ -21,6 +21,7 @@ SRCDIR=`rpm --eval %_sourcedir`
 USERID=`id -u`
 GRPID=`id -g`
 VERSION='PVERSION'
+REVISION='PREVISION'
 SPECFILE="samba.spec"
 RPMVER=`rpm --version | awk '{print $3}'`
 RPM="rpmbuild"
@@ -38,12 +39,29 @@ case $RPMVER in
        ;;
 esac
 
-( cd ../../source; if [ -f Makefile ]; then make distclean; fi )
-( cd ../../.. ; chown -R ${USERID}.${GRPID} samba-${VERSION} )
+pushd .
+cd ../../source
+if [ -f Makefile ]; then 
+	make distclean
+fi
+popd
 
+pushd .
+cd ../../../
+chown -R ${USERID}.${GRPID} samba-${VERSION}${REVISION}
+if [ ! -d samba-${VERSION} ]; then
+	ln -s samba-${VERSION}${REVISION} samba-${VERSION} || exit 1
+fi
 echo -n "Creating samba-${VERSION}.tar.bz2 ... "
-( cd ../../.. ; tar --exclude=.svn -cf - samba-${VERSION}/. | bzip2 > ${SRCDIR}/samba-${VERSION}.tar.bz2 )
+tar --exclude=.svn -cf - samba-${VERSION}/. | bzip2 > ${SRCDIR}/samba-${VERSION}.tar.bz2
 echo "Done."
+if [ $? -ne 0 ]; then
+        echo "Build failed!"
+        exit 1
+fi
+
+popd
+
 
 ##
 ## copy additional source files
