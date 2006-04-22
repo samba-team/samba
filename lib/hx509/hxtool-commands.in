@@ -49,6 +49,18 @@ command = {
 		help = "certificate to sign with"
 	}
 	option = {
+		long = "anchors"
+		type = "strings"
+		argument = "certificate-store"
+		help = "trust anchors"
+	}
+	option = {
+		long = "pool"
+		type = "strings"
+		argument = "certificate-pool"
+		help = "certificate store to pull certificates from"
+	}
+	option = {
 		long = "pass"
 		type = "strings"
 		argument = "password"

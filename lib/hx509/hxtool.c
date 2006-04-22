@@ -169,7 +169,7 @@ cms_create_sd(struct cms_create_sd_options *opt, int argc, char **argv)
     heim_octet_string o;
     hx509_query *q;
     hx509_lock lock;
-    hx509_certs store;
+    hx509_certs store, pool, anchors;
     hx509_cert cert;
     size_t sz;
     void *p;
@@ -191,6 +191,7 @@ cms_create_sd(struct cms_create_sd_options *opt, int argc, char **argv)
     }
 
     ret = hx509_certs_init(context, "MEMORY:cert-store", 0, NULL, &store);
+    ret = hx509_certs_init(context, "MEMORY:cert-pool", 0, NULL, &pool);
 
     for (i = 0; i < opt->certificate_strings.num_strings; i++) {
 	ret = hx509_certs_append(context, store, lock, 
@@ -199,6 +200,28 @@ cms_create_sd(struct cms_create_sd_options *opt, int argc, char **argv)
 	    errx(1, "hx509_certs_append: store: %s: %d", 
 		 opt->certificate_strings.strings[i], ret);
     }
+
+    for (i = 0; i < opt->pool_strings.num_strings; i++) {
+	ret = hx509_certs_append(context, pool, lock, 
+				 opt->pool_strings.strings[i]);
+	if (ret)
+	    errx(1, "hx509_certs_append: pool: %s: %d", 
+		 opt->pool_strings.strings[i], ret);
+    }
+
+    if (opt->anchors_strings.num_strings) {
+	ret = hx509_certs_init(context, "MEMORY:cert-anchors", 0, NULL,
+			       &anchors);
+
+	for (i = 0; i < opt->anchors_strings.num_strings; i++) {
+	    ret = hx509_certs_append(context, anchors, lock, 
+				     opt->anchors_strings.strings[i]);
+	    if (ret)
+		errx(1, "hx509_certs_append: anchor: %s: %d", 
+		     opt->anchors_strings.strings[i], ret);
+	}
+    } else
+	anchors = NULL;
 
     ret = hx509_query_alloc(context, &q);
     if (ret)
@@ -225,10 +248,14 @@ cms_create_sd(struct cms_create_sd_options *opt, int argc, char **argv)
 				    sz, 
 				    NULL,
 				    cert,
+				    anchors,
+				    pool,
 				    &o);
     if (ret)
 	errx(1, "hx509_cms_create_signed: %d", ret);
 
+    hx509_certs_free(&anchors);
+    hx509_certs_free(&pool);
     _hx509_unmap_file(p, sz);
     hx509_lock_free(lock);
 
