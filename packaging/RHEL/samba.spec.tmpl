@@ -27,7 +27,7 @@ Provides: samba = %{version}
 
 Prefix: /usr
 BuildRoot: %{_tmppath}/%{name}-%{version}-root
-BuildRequires: pam-devel, readline-devel, fileutils, libacl-devel, openldap2-devel, krb5-devel, cups-devel
+BuildRequires: pam-devel, readline-devel, fileutils, libacl-devel, openldap-devel, krb5-devel, cups-devel
 
 # Working around perl dependency problem from docs
 %define __perl_requires %{SOURCE998}
