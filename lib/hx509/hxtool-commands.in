@@ -132,13 +132,19 @@ command = {
 		short = "c"
 		type = "strings"
 		argument = "certificate-store"
-		help = "certificate used to encrypt the data"
+		help = "certificates used to receive the data"
 	}
 	option = {
 		long = "pass"
 		type = "strings"
 		argument = "password"
 		help = "password, prompter, or environment"
+	}
+	option = {
+		long = "encryption-type"
+		type = "string"
+		argument = "enctype"
+		help = "enctype"
 	}
 	option = {
 		long = "content-info"
