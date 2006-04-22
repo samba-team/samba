@@ -1,6 +1,6 @@
                    ==================================
                    Release Notes for Samba 3.0.23pre1
-                               Apr 20, 2006
+                               Apr 22, 2006
                    ==================================
 
 This is a preview release of the Samba 3.0.23 code base and
@@ -175,6 +175,8 @@ o   Jeremy Allison <jra@samba.org>
       oplocks.
     * BUG 3592: Ignore a file in a smbtar output if the first 
       read fails (inspired by Justin Best).
+    * BUG 3668: Workaround Windows bug with LARGE_READX where if 
+      you ask for exactly 64k bytes it returns 0.
 
 
 o   Alexander Bokovoy <ab@samba.org>
@@ -312,8 +314,9 @@ o   Bjoern Jacke <bjacke@sernet.de>.
     * Find JFS DMAPI libs on Linux when only they are available.
 
 
-o   William JoJo <jojowil@hvcc.edu>
+o   William Jojo <jojowil@hvcc.edu>
     * Fix VFS builds on AIX platforms.
+    * Fixes for the AIX version of libnss_winbind.so
 
 
 o   Volker Lendecke <vl@samba.org>
