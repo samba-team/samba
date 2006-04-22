@@ -52,6 +52,7 @@ AC_CHECK_HEADERS([\
 	errno.h					\
 	err.h					\
 	fcntl.h					\
+	fnmatch.h				\
 	grp.h					\
 	ifaddrs.h				\
 	netdb.h					\
