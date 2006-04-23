@@ -28,6 +28,7 @@ doing so.  It will make life easier for you and everyone else.
 * Setting up DNS::              
 * Using LDAP to store the database::  
 * Providing Kerberos credentials to servers and programs::  
+* Setting up PK-INIT::
 @end menu
 
 @node  Configuration file, Creating the database, Setting up a realm, Setting up a realm
@@ -986,7 +987,7 @@ Now you can proceed as in @xref{Using LDAP to store the database}.
 Heimdal will pick up the Samba LDAP entries if they are in the same
 search space as the Kerberos entries.
 
-@node Providing Kerberos credentials to servers and programs,  , Using LDAP to store the database, Setting up a realm
+@node Providing Kerberos credentials to servers and programs, Setting up PK-INIT, Using LDAP to store the database, Setting up a realm
 @section Providing Kerberos credentials to servers and programs
 
 Some services require Kerberos credentials when they start to make
@@ -1031,4 +1032,224 @@ service@@host$ kinit --cache=/var/run/service_krb5_cache \
        service-principal@@EXAMPLE.ORG \
        script-to-start-service argument1 argument2
 @end example
+
+
+@node Setting up PK-INIT, , Providing Kerberos credentials to servers and programs, Setting up a realm
+@section Setting up PK-INIT
+
+PK-INIT is levering the existing PKI infrastructure to use
+certificates to get the initial ticket, that is usually the krbtgt.
+
+To use PK-INIT you must first have a PKI, so if you don't have one,
+now its time to create it. Note that you should read the whole chapter
+of the document to see the requirements on the CA sortware.
+
+There needs to exist a mapping between the certificate and what
+principals that certificate is allowed to use. There are several ways
+to do this. The administrator can use a configuration file, storing
+the principal in SubjectAltName in extensions of certificate, or store
+the mapping in the principals entry in the kerberos database.
+
+@section Certificates
+
+This section document the requirements on the KDC and client
+certificates and the format used in the id-pkinit-san OtherName
+extention.
+
+@subsection KDC certificate
+
+The certificate for the KDC have serveral requirements.
+
+First the certificate should have a Extended Key Usage (EKU)
+id-pkkdcekuoid (1.3.6.1.5.2.3.5) set. Second there must be a
+subjectAltName otherName using oid id-pkinit-san (1.3.6.1.5.2.2) in
+the type field and and DER encoded KRB5PrincipalName that matches the
+name of the TGS of the target realm.
+
+Both of these two requirements are not required by the standard to be
+checked by the client if it have external information what the
+certificate the KDC is supposed to be used. So its in the interst of
+minium amount of configuration on the clients they should be included.
+
+Remember that if client would accept any certificate as the KDC's
+certificate, the client could be fooled into trusting something that
+isn't a KDC and thus expose the user to giving away information (like
+password or other private information) that it is supposed to secret.
+
+Also, if the extension certificate have a nameConstraints extention
+with a Generalname with dNSName or iPAdress it must match the hostname
+or adress of the KDC.
+
+@subsection Client certificate
+
+The client certificate may need to have a EKU id-pkekuoid
+(1.3.6.1.5.2.3.4) depending on set on the certifiate on the KDC.
+
+It possible to store the principal (if allowed by the KDC) in the
+certificate and thus delegate responsibility to do the mapping between
+certificates and principals to the CA.
+
+@subsubsection Using KRB5PrincipalName in id-pkinit-san
+
+OtherName extenetion in the GeneralName is used is used to do the
+mapping between certifiate and principal in the certifiate or storing
+the krbtgt principal in the KDC certificate.
+
+The principal is stored in a SubjectAltName in the certificate using
+OtherName. The oid in the type is id-pkinit-san.
+
+@example
+id-pkinit-san OBJECT IDENTIFIER ::= @{ iso (1) org (3) dod (6)
+internet (1) security (5) kerberosv5 (2) 2 @}
+@end example
+
+In the data part of the OtherName is filled with the following DER
+encoded ASN.1 structure:
+
+@example
+KRB5PrincipalName ::= SEQUENCE @{
+	realm [0] Realm,
+	principalName [1] PrincipalName
+@}
+@end example
+
+where Realm and PrincipalName is defined by Kerberos ASN.1 specification.
+
+@section Naming certificate using hx509
+
+hx509 is the X.509 software used in Heimdal to handle
+certificates. hx509 use diffrent syntaxs to specify the diffrent
+format the certificate is stored and in what format they exist in.
+
+There are several format that can be used, PEM, embeded into PKCS12
+files, embeded into PKCS11 devices and raw DER encoded certificates.
+Below is a list of types to use.
+
+
+@table @asis
+
+@item DIR:
+
+@c Create a directory where all the trusted anchors are stored
+@c ca-trusted-anchors and copy all certificate you are going to trust as
+@c anchors into that directory. Make sure there are no other files then
+@c trust anchors in that directory, if there are, it will not work. In
+@c the krb5.conf, this is refear to as DIR:/dir
+
+Syntax is:
+
+@example
+DIR:/path/to/der/files
+@end example
+
+@item FILE:
+
+FILE: is used to have the lib pick up a certificate chain and a
+private key. 
+
+Syntax is:
+
+@example
+FILE:certificate-file.pem,private-key-file.key,other-cert.pem,....
+@end example
+
+@item PKCS11:
+
+PKCS11: is used handle smartcards via PKCS11 drivers
+(soft-token,opensc,muscle) files.
+
+Syntax is:
+
+@example
+PKCS11:shared-object.so:slot=<num>:otherattribute=<value>
+@end example
+
+@item PKCS12:
+
+PKCS12: is used handle PKCS12 (.pfx/.p12) files. 
+
+Syntax is:
+
+@example
+PKCS12:/path/to/file.pfx
+@end example
+
+@end table
+
+@section Configuring the kerberos software
+
+Add configuration options to krb5.conf
+
+kinit
+
+kdc
+
+@section Configuring the client
+
+@example
+[appdefaults]
+	pkinit-anchors = DIR:/dir-to-client-trusted-ca-hashes
+@end example
+
+@section Configuring the KDC
+
+@example
+[kdc]
+	enable-pkinit = yes
+	pki-identity = FILE:/secure/kdc.crt,/secure/kdc.key
+	pki-anchors = FILE:/path/to/trust-anchors.pem
+	pki-pool = PKCS12:/path/to/useful-intermediate-certs.pfx
+	pki-pool = FILE:/path/to/other-useful-intermediate-certs.pem
+@end example
+
+@subsection Using pki-mapping file
+
+@subsection Using Kerberos database
+
+@section Use OpenSSL to create certificates
+
+@subsection Using OpenSSL to create certificate with krb5PrincipalName
+
+To make OpenSSL create certificate with krb5PrincipalName use the following 
+
+@file{openssl.cnf}.
+
+@example
+
+[user_certificate] 
+subjectAltName=otherName:1.3.6.1.5.2.2;SEQUENCE:princ_name 
+
+[princ_name] 
+realm = EXP:0, GeneralString:MY.REALM 
+principal_name = EXP:1, SEQUENCE:principal_seq
+
+[principal_seq] 
+name_type = EXP:0, INTEGER:1 
+name_string = EXP:1, SEQUENCE:principals
+
+[principals] 
+princ1 = GeneralString:userid
+
+@end example
+
+Command usage
+
+@example
+openssl x509 -extensions user_certificate 
+@end example
+
+
+@c --- ms certificate
+@c 
+@c [ new_oids ]
+@c msCertificateTemplateName       = 1.3.6.1.4.1.311.20.2
+@c 
+@c 
+@c [ req_smartcard ]
+@c keyUsage                = digitalSignature, keyEncipherment
+@c extendedKeyUsage        = msSmartcardLogin, clientAuth
+@c msCertificateTemplateName       = ASN1:BMP:SmartcardLogon
+@c subjectAltName          = otherName:msUPN;UTF8:lukeh@dsg.padl.com
+@c #subjectAltName         = email:copy
+
 
