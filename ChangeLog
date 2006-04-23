@@ -1,5 +1,16 @@
 2006-04-23  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/krb5/sendauth.c: reindent
+
+	* doc/Makefile.am: use --no-split to make one large file, mostly
+	for html
+
+	* doc/setup.texi: "document" pkinit_require_eku and
+	pkinit_require_krbtgt_otherName
+
+	* lib/krb5/pkinit.c: Add pkinit_require_eku and
+	pkinit_require_krbtgt_otherName
+
 	* doc/setup.texi: Add text about pk-init
 
 	* tools/kdc-log-analyze.pl: count v5 cross realms too
