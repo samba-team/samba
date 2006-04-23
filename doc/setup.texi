@@ -1188,13 +1188,13 @@ kdc
 
 @example
 [appdefaults]
-	pkinit-anchors = DIR:/dir-to-client-trusted-ca-hashes
+	pkinit-anchors = FILE:/path/to/trust-anchors.pem
 
 [realms]
-        EXAMPLE.COM = {
+        EXAMPLE.COM = @{
 		pkinit_require_eku = true
 		pkinit_require_krbtgt_otherName = true
-	}
+	@}
 
 @end example
 
