@@ -494,7 +494,7 @@ PyObject *py_tdb_hnd_lock_bystring(PyObject *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "s|i", &s, &timeout))
 		return NULL;
 
-	result = tdb_lock_bystring(obj->tdb, s, timeout);
+	result = tdb_lock_bystring_with_timeout(obj->tdb, s, timeout);
 
 	return PyInt_FromLong(result != -1);
 }
