@@ -25,6 +25,7 @@
 #include "includes.h"
 #include "libcli/ldap/ldap.h"
 #include "libcli/ldap/ldap_client.h"
+#include "lib/tls/tls.h"
 #include "auth/auth.h"
 
 static struct ldap_message *new_ldap_simple_bind_msg(struct ldap_connection *conn, 
@@ -173,7 +174,11 @@ NTSTATUS ldap_bind_sasl(struct ldap_connection *conn, struct cli_credentials *cr
 		goto failed;
 	}
 
-	gensec_want_feature(conn->gensec, 0 | GENSEC_FEATURE_SIGN | GENSEC_FEATURE_SEAL);
+	/* require Kerberos SIGN/SEAL only if we don't use SSL
+	 * Windows seem not to like double encryption */
+	if (conn->tls == NULL || (! tls_enabled(conn->tls))) {
+		gensec_want_feature(conn->gensec, 0 | GENSEC_FEATURE_SIGN | GENSEC_FEATURE_SEAL);
+	}
 
 	status = gensec_set_credentials(conn->gensec, creds);
 	if (!NT_STATUS_IS_OK(status)) {
