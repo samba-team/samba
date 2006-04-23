@@ -244,6 +244,10 @@ int ldb_transaction_cancel(struct ldb_context *ldb)
 
 int ldb_async_wait(struct ldb_async_handle *handle, enum ldb_async_wait_type type)
 {
+	if (!handle) {
+		return LDB_SUCCESS;
+	}
+
 	return handle->module->ops->async_wait(handle, type);
 }
 
@@ -308,9 +312,9 @@ int ldb_request(struct ldb_context *ldb, struct ldb_request *req)
 /*
   search the database given a LDAP-like search expression
 
-  return the number of records found, or -1 on error
+  returns an LDB error code
 
-  Use talloc_free to free the ldb_message returned in 'res'
+  Use talloc_free to free the ldb_message returned in 'res', if successful
 
 */
 int ldb_search(struct ldb_context *ldb, 
@@ -346,9 +350,10 @@ int ldb_search(struct ldb_context *ldb,
 	req->controls = NULL;
 
 	ret = ldb_request(ldb, req);
-
-	(*res) = talloc_steal(ldb, req->op.search.res);
-
+	
+	if (ret == LDB_SUCCESS) {
+		(*res) = talloc_steal(ldb, req->op.search.res);
+	}
 	talloc_free(req);
 	return ret;
 }
