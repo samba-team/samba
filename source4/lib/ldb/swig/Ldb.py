@@ -22,7 +22,12 @@
 
 from ldb import *
 
-ldb_global_init()
+# Global initialisation
+
+result = ldb_global_init()
+
+if result != 0:
+    raise LdbError, (result, 'ldb_global_init failed')
 
 class LdbError(Exception):
     """An exception raised when a ldb error occurs."""
@@ -31,29 +36,48 @@ class LdbError(Exception):
 class LdbMessage:
     """A class representing a ldb message as a Python dictionary."""
     
-    def __init__(self, msg = None):
-
-        self._msg = msg
-        if self._msg is None:
-            self._msg = ldb_msg_new(None)
+    def __init__(self):
+        self.mem_ctx = talloc_init(None)
+        self.msg = ldb_msg_new(self.mem_ctx)
 
     def __del__(self):
-        talloc_free(self._msg)
+        self.close()
 
+    def close(self):
+        if self.mem_ctx is not None:
+            talloc_free(self.mem_ctx)
+            self.mem_ctx = None
+            self.msg = None
+
+    def __getattr__(self, attr):
+        if attr == 'dn':
+            return ldb_dn_linearize(None, self.msg.dn)
+        return self.__dict__[attr]
+
+    def __setattr__(self, attr, value):
+        if attr == 'dn':
+            self.msg.dn = ldb_dn_explode(self.msg, value)
+            return
+        self.__dict__[attr] = value
+        
     def len(self):
-        return self._msg.num_elements
+        return self.msg.num_elements
 
     def __getitem__(self, key):
-        elt = ldb_msg_find_element(self._msg, key)
+
+        elt = ldb_msg_find_element(self.msg, key)
+
         if elt is None:
             raise KeyError, "No such attribute '%s'" % key
+
         return [ldb_val_array_getitem(elt.values, i)
                 for i in range(elt.num_values)]
 
     def __setitem__(self, key, value):
-        result = ldb_msg_add_value(self._msg, key, str(value))
-        if result != LDB_SUCCESS:
-            raise LdbError, (result, ldb.strerror(result))
+        if type(value) in (list, tuple):
+            [ldb_msg_add_value(self.msg, key, v) for v in value]
+        else:
+            ldb_msg_add_value(self.msg, key, value)
     
 class Ldb:
     """A class representing a binding to a ldb file."""
@@ -67,12 +91,18 @@ class Ldb:
         result =  ldb_connect(self.ldb_ctx, url, flags, None)
 
         if result != LDB_SUCCESS:
-            raise ldbError, (result, ldb.strerror(result))
+            raise LdbError, (result, ldb_strerror(result))
         
     def __del__(self):
-        ldb.talloc_free(self.mem_ctx)
-        self.mem_ctx = None
-        self.ldb_ctx = None
+        """Called when the object is to be garbage collected."""
+        self.close()
+
+    def close(self):
+        """Close down a ldb."""
+        if self.mem_ctx is not None:
+            talloc_free(self.mem_ctx)
+            self.mem_ctx = None
+            self.ldb_ctx = None
 
     def _ldb_call(self, fn, *args):
         """Call a ldb function with args.  Raise a LdbError exception
@@ -80,16 +110,16 @@ class Ldb:
         
         result = fn(*args)
 
-        if result != ldb.LDB_SUCCESS:
-            raise LdbError, (result, ldb.strerror(result))
+        if result != LDB_SUCCESS:
+            raise LdbError, (result, ldb_strerror(result))
 
     def search(self, expression):
         """Search a ldb for a given expression."""
 
-        self._ldb_call(ldb.search, self.ldb_ctx, None, ldb.LDB_SCOPE_DEFAULT,
+        self._ldb_call(ldb_search, self.ldb_ctx, None, LDB_SCOPE_DEFAULT,
                        expression, None);
 
-        return [LdbMessage(ldb.ldb_message_ptr_array_getitem(result.msgs, ndx))
+        return [LdbMessage(ldb_message_ptr_array_getitem(result.msgs, ndx))
                 for ndx in range(result.count)]
 
     def delete(self, dn):
@@ -97,7 +127,7 @@ class Ldb:
 
         _dn = ldb_dn_explode(self.ldb_ctx, dn)
 
-        self._ldb_call(ldb.delete, self.ldb_ctx, _dn)
+        self._ldb_call(ldb_delete, self.ldb_ctx, _dn)
 
     def rename(self, olddn, newdn):
         """Rename a dn."""
@@ -105,7 +135,7 @@ class Ldb:
         _olddn = ldb_dn_explode(self.ldb_ctx, olddn)
         _newdn = ldb_dn_explode(self.ldb_ctx, newdn)
         
-        self._ldb_call(ldb.rename, self.ldb_ctx, _olddn, _newdn)
+        self._ldb_call(ldb_rename, self.ldb_ctx, _olddn, _newdn)
 
-    def add(self, msg):
-        self._ldb_call(ldb.add, self.ldb_ctx, msg)
+    def add(self, m):
+        self._ldb_call(ldb_add, self.ldb_ctx, m.msg)
