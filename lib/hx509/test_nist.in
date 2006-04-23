@@ -37,6 +37,10 @@
 srcdir="@srcdir@"
 nistdir=/sources/pki/nist/PKITS_data
 
+if ./hxtool info | grep 'rsa: hx509 null RSA' > /dev/null ; then
+    exit 77
+fi
+
 echo "nist tests"
 
 test -d "$nistdir" || exit 77

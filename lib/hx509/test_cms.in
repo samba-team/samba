@@ -36,6 +36,10 @@
 
 srcdir="@srcdir@"
 
+if ./hxtool info | grep 'rsa: hx509 null RSA' > /dev/null ; then
+    exit 77
+fi
+
 echo "create signed data"
 ./hxtool cms-create-sd \
 	--certificate=FILE:$srcdir/data/test.crt,$srcdir/data/test.key \
