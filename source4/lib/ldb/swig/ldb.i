@@ -204,6 +204,7 @@ int ldb_global_init(void);
 struct ldb_context *ldb_init(TALLOC_CTX *mem_ctx);
 
 const char *ldb_errstring(struct ldb_context *ldb);
+const char *ldb_strerror(int ldb_err);
 
 int ldb_connect(struct ldb_context *ldb, const char *url, unsigned int flags, const char *options[]);
 
