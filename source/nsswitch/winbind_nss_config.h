@@ -159,6 +159,7 @@ typedef int BOOL;
 #endif
 
 #ifndef HAVE_SOCKLEN_T_TYPE
+#define HAVE_SOCKLEN_T_TYPE
 typedef int socklen_t;
 #endif
 
