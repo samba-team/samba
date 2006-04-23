@@ -82,6 +82,8 @@ struct krb5_pk_init_ctx_data {
     krb5_data *clientDHNonce;
     struct krb5_dh_moduli **m;
     int require_binding;
+    int require_eku;
+    int require_krbtgt_otherName;
 };
 
 void KRB5_LIB_FUNCTION
@@ -507,6 +509,22 @@ _krb5_pk_mk_padata(krb5_context context,
     } else
 	type = COMPAT_IETF;
 
+    ctx->require_eku = 
+	krb5_config_get_bool_default(context, NULL,
+				     TRUE,
+				     "realms",
+				     req_body->realm,
+				     "pkinit_require_eku",
+				     NULL);
+    ctx->require_krbtgt_otherName = 
+	krb5_config_get_bool_default(context, NULL,
+				     TRUE,
+				     "realms",
+				     req_body->realm,
+				     "pkinit_require_krbtgt_otherName",
+				     NULL);
+
+
     return pk_mk_padata(context, type, ctx, req_body, nonce, md);
 }
 
@@ -521,6 +539,8 @@ _krb5_pk_verify_sign(krb5_context context,
 {
     hx509_certs signer_certs;
     int ret;
+
+    *signer = NULL;
 
     ret = hx509_cms_verify_signed(id->hx509ctx,
 				  id->verify_ctx,
@@ -570,6 +590,13 @@ _krb5_pk_verify_sign(krb5_context context,
 
 out:
     hx509_certs_free(&signer_certs);
+    if (ret) {
+	if (*signer) {
+	    hx509_cert_free((*signer)->cert);
+	    free(*signer);
+	    *signer = NULL;
+	}
+    }
 
     return ret;
 }
@@ -682,9 +709,24 @@ get_reply_key(krb5_context context,
 
 
 static krb5_error_code
-pk_verify_host(krb5_context context, struct krb5_pk_cert *host)
+pk_verify_host(krb5_context context,
+	       struct krb5_pk_init_ctx_data *ctx,
+	       struct krb5_pk_cert *host)
 {
-    /* XXX */
+    krb5_error_code ret;
+
+    if (ctx->require_eku) {
+	ret = hx509_cert_check_eku(ctx->id->hx509ctx, host->cert,
+				   oid_id_pkkdcekuoid(), 0);
+	if (ret) {
+	    krb5_clear_error_string(context);
+	    return ret;
+	}
+    }
+    if (ctx->require_krbtgt_otherName) {
+	/* XXX */
+    }
+
     return 0;
 }
 
@@ -769,7 +811,7 @@ pk_rd_pa_reply_enckey(krb5_context context,
 	goto out;
 
     /* make sure that it is the kdc's certificate */
-    ret = pk_verify_host(context, host);
+    ret = pk_verify_host(context, ctx, host);
     if (ret) {
 	krb5_set_error_string(context, "PKINIT: failed verify host: %d", ret);
 	goto out;
@@ -861,7 +903,7 @@ pk_rd_pa_reply_dh(krb5_context context,
 	goto out;
 
     /* make sure that it is the kdc's certificate */
-    ret = pk_verify_host(context, host);
+    ret = pk_verify_host(context, ctx, host);
     if (ret)
 	goto out;
 
@@ -1590,6 +1632,8 @@ krb5_get_init_creds_opt_set_pkinit(krb5_context context,
     opt->opt_private->pk_init_ctx->id = NULL;
     opt->opt_private->pk_init_ctx->clientDHNonce = NULL;
     opt->opt_private->pk_init_ctx->require_binding = 0;
+    opt->opt_private->pk_init_ctx->require_eku = 1;
+    opt->opt_private->pk_init_ctx->require_krbtgt_otherName = 1;
 
     ret = _krb5_pk_load_id(context,
 			   &opt->opt_private->pk_init_ctx->id,
