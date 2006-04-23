@@ -39,45 +39,45 @@ srcdir="@srcdir@"
 echo "try printing"
 ./hxtool print \
 	--pass=PASS:foobar \
-	PKCS12:$srcdir/data/test.p12 || exit 1
+	PKCS12:$srcdir/data/test.p12 > /dev/null || exit 1
 
 echo "make sure entry is found (friendlyname)"
 ./hxtool query \
 	--pass=PASS:foobar \
 	--friendlyname=friendlyname-test  \
-	PKCS12:$srcdir/data/test.p12 || exit 1
+	PKCS12:$srcdir/data/test.p12 > /dev/null || exit 1
 
 echo "make sure entry is not found  (friendlyname)"
 ./hxtool query \
 	--pass=PASS:foobar \
 	--friendlyname=friendlyname-test-not  \
-	PKCS12:$srcdir/data/test.p12 && exit 1
+	PKCS12:$srcdir/data/test.p12 2>/dev/null && exit 1
 
 echo "check for ca cert (friendlyname)"
 ./hxtool query \
 	--pass=PASS:foobar \
 	--friendlyname=ca  \
-	PKCS12:$srcdir/data/test.p12 || exit 1
+	PKCS12:$srcdir/data/test.p12 > /dev/null || exit 1
 
 echo "make sure entry is not found (friendlyname)"
 ./hxtool query \
 	--pass=PASS:foobar \
 	--friendlyname=friendlyname-test \
-	PKCS12:$srcdir/data/sub-cert.p12 && exit 1
+	PKCS12:$srcdir/data/sub-cert.p12 2>/dev/null && exit 1
 
 echo "make sure entry is found (friendlyname|private key)"
 ./hxtool query \
 	--pass=PASS:foobar \
 	--friendlyname=friendlyname-test  \
 	--private-key \
-	PKCS12:$srcdir/data/test.p12 || exit 1
+	PKCS12:$srcdir/data/test.p12 > /dev/null || exit 1
 
 echo "make sure entry is not found (friendlyname|private key)"
 ./hxtool query \
 	--pass=PASS:foobar \
 	--friendlyname=ca  \
 	--private-key \
-	PKCS12:$srcdir/data/test.p12 && exit 1
+	PKCS12:$srcdir/data/test.p12 2>/dev/null && exit 1
 
 exit 0
 
