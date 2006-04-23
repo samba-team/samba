@@ -1,5 +1,7 @@
 2006-04-23  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* doc/setup.texi: Add text about pk-init
+
 	* tools/kdc-log-analyze.pl: count v5 cross realms too
 	
 2006-04-22  Love Hörnquist Åstrand  <lha@it.su.se>
