@@ -36,6 +36,9 @@
 
 srcdir="@srcdir@"
 
+if ./hxtool info | grep 'rsa: hx509 null RSA' > /dev/null ; then
+    exit 77
+fi
 
 ./hxtool request-create \
 	 --subject="CN=Love,DC=it,DC=su,DC=se" \
