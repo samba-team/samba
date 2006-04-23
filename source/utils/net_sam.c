@@ -462,7 +462,6 @@ static int net_sam_createbuiltingroup(int argc, const char **argv)
 {
 	NTSTATUS status;
 	uint32 rid;
-	TALLOC_CTX *ctx;
 	enum SID_NAME_USE type;
 	fstring groupname;
 	DOM_SID sid;
@@ -478,17 +477,13 @@ static int net_sam_createbuiltingroup(int argc, const char **argv)
 		return -1;
 	}
 
-	if ( (ctx = talloc_init("net_sam_createbuiltingroup")) == NULL ) {
-		d_fprintf( stderr, "Memory allocation error\n");
-		return -1;
-	}
-	
 	/* validate the name and get the group */
 	
 	fstrcpy( groupname, "BUILTIN\\" );
 	fstrcat( groupname, argv[0] );
 	
-	if ( !lookup_name(ctx, groupname, LOOKUP_NAME_ALL, NULL, NULL, &sid, &type)) {
+	if ( !lookup_name(tmp_talloc_ctx(), groupname, LOOKUP_NAME_ALL, NULL,
+			  NULL, &sid, &type)) {
 		d_fprintf(stderr, "%s is not a BUILTIN group\n", argv[0]);
 		return -1;
 	}
