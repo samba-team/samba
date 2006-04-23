@@ -903,6 +903,23 @@ pkcs10_print(struct pkcs10_print_options *opt, int argc, char **argv)
 }
 
 int
+info(void *opt, int argc, char **argv)
+{
+
+    ENGINE_add_conf_module();
+
+    {
+	const RSA_METHOD *rsamethod;
+	rsamethod = RSA_get_default_method();
+	if (rsamethod != NULL)
+	    printf("rsa: %s\n", rsamethod->name);
+    }
+
+    return 0;
+}
+
+
+int
 help(void *opt, int argc, char **argv)
 {
     if(argc == 0) {
