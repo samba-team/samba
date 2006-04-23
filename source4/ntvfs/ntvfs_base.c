@@ -98,19 +98,47 @@ _PUBLIC_ const struct ntvfs_ops *ntvfs_backend_byname(const char *name, enum ntv
   This can be used by backends to either detect compilation errors, or provide
   multiple implementations for different smbd compilation options in one module
 */
-static const struct ntvfs_critical_sizes critical_sizes = {
-	.interface_version		= NTVFS_INTERFACE_VERSION,
-	.sizeof_ntvfs_critical_sizes	= sizeof(struct ntvfs_critical_sizes),
-	.sizeof_ntvfs_context		= sizeof(struct ntvfs_context),
-	.sizeof_ntvfs_module_context	= sizeof(struct ntvfs_module_context),
-	.sizeof_ntvfs_ops		= sizeof(struct ntvfs_ops),
-	.sizeof_ntvfs_async_state	= sizeof(struct ntvfs_async_state),
-	.sizeof_ntvfs_request		= sizeof(struct ntvfs_request),
-};
+
+static const NTVFS_CURRENT_CRITICAL_SIZES(critical_sizes);
 
 _PUBLIC_ const struct ntvfs_critical_sizes *ntvfs_interface_version(void)
 {
 	return &critical_sizes;
+}
+
+_PUBLIC_ BOOL ntvfs_interface_differs(const struct ntvfs_critical_sizes *const iface)
+{
+	/* The comparison would be easier with memcmp, but compiler-interset
+	 * alignment padding is not guaranteed to be zeroed.
+	 */
+
+#define FIELD_DIFFERS(field) (iface->field != critical_sizes.field)
+
+	if (FIELD_DIFFERS(interface_version))
+		return True;
+
+	if (FIELD_DIFFERS(sizeof_ntvfs_critical_sizes))
+		return True;
+
+	if (FIELD_DIFFERS(sizeof_ntvfs_context))
+		return True;
+
+	if (FIELD_DIFFERS(sizeof_ntvfs_module_context))
+		return True;
+
+	if (FIELD_DIFFERS(sizeof_ntvfs_ops))
+		return True;
+
+	if (FIELD_DIFFERS(sizeof_ntvfs_async_state))
+		return True;
+
+	if (FIELD_DIFFERS(sizeof_ntvfs_request))
+		return True;
+
+	/* Versions match. */
+	return False;
+
+#undef FIELD_DIFFERS
 }
 
 
