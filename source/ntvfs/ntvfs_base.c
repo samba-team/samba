@@ -44,10 +44,18 @@ static int num_backends;
 
   The 'type' is used to specify whether this is for a disk, printer or IPC$ share
 */
-_PUBLIC_ NTSTATUS ntvfs_register(const struct ntvfs_ops *ops)
+_PUBLIC_ NTSTATUS ntvfs_register(const struct ntvfs_ops *ops,
+				 const struct ntvfs_critical_sizes *const sizes)
 {
 	struct ntvfs_ops *new_ops;
-	
+
+	if (ntvfs_interface_differs(sizes)) {
+		DEBUG(0, ("NTVFS backend '%s' for type %d "
+			  "failed version check\n",
+			  ops->name, (int)ops->type));
+		return NT_STATUS_BAD_FUNCTION_TABLE;
+	}
+
 	if (ntvfs_backend_byname(ops->name, ops->type) != NULL) {
 		/* its already registered! */
 		DEBUG(0,("NTVFS backend '%s' for type %d already registered\n", 

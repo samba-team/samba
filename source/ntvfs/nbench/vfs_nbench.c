@@ -884,6 +884,7 @@ NTSTATUS ntvfs_nbench_init(void)
 {
 	NTSTATUS ret;
 	struct ntvfs_ops ops;
+	NTVFS_CURRENT_CRITICAL_SIZES(vers);
 
 	ZERO_STRUCT(ops);
 
@@ -928,7 +929,7 @@ NTSTATUS ntvfs_nbench_init(void)
 	ops.trans2 = NULL;
 
 	/* register ourselves with the NTVFS subsystem. */
-	ret = ntvfs_register(&ops);
+	ret = ntvfs_register(&ops, &vers);
 
 	if (!NT_STATUS_IS_OK(ret)) {
 		DEBUG(0,("Failed to register nbench backend!\n"));
