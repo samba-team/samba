@@ -119,6 +119,38 @@ static BOOL parse_wbinfo_domain_user(const char *domuser, fstring domain,
 	return True;
 }
 
+/* pull pwent info for a given user */
+
+static BOOL wbinfo_get_userinfo(char *user)
+{
+	struct winbindd_request request;
+	struct winbindd_response response;
+	NSS_STATUS result;
+	
+	ZERO_STRUCT(request);
+	ZERO_STRUCT(response);
+
+	/* Send request */
+	
+	fstrcpy(request.data.username, user);
+
+	result = winbindd_request_response(WINBINDD_GETPWNAM, &request, &response);
+	
+	if (result != NSS_STATUS_SUCCESS)
+		return False;
+	
+	d_printf( "%s:%s:%d:%d:%s:%s:%s\n",
+			  response.data.pw.pw_name,
+			  response.data.pw.pw_passwd,
+			  response.data.pw.pw_uid,
+			  response.data.pw.pw_gid,
+			  response.data.pw.pw_gecos,
+			  response.data.pw.pw_dir,
+			  response.data.pw.pw_shell );
+	
+	return True;
+}
+
 /* List groups a user is a member of */
 
 static BOOL wbinfo_get_usergroups(char *user)
@@ -1145,6 +1177,7 @@ int main(int argc, char **argv)
 		{ "all-domains", 0, POPT_ARG_NONE, 0, OPT_LIST_ALL_DOMAINS, "List all domains (trusted and own domain)" },
 		{ "sequence", 0, POPT_ARG_NONE, 0, OPT_SEQUENCE, "Show sequence numbers of all domains" },
 		{ "domain-info", 'D', POPT_ARG_STRING, &string_arg, 'D', "Show most of the info we have about the domain" },
+		{ "user-info", 'i', POPT_ARG_STRING, &string_arg, 'i', "Get user info", "USER" },
 		{ "user-groups", 'r', POPT_ARG_STRING, &string_arg, 'r', "Get user groups", "USER" },
 		{ "user-domgroups", 0, POPT_ARG_STRING, &string_arg,
 		  OPT_USERDOMGROUPS, "Get user domain groups", "SID" },
@@ -1307,6 +1340,13 @@ int main(int argc, char **argv)
 		case 'D':
 			if (!wbinfo_domain_info(string_arg)) {
 				d_fprintf(stderr, "Could not get domain info\n");
+				goto done;
+			}
+			break;
+		case 'i':
+			if (!wbinfo_get_userinfo(string_arg)) {
+				d_fprintf(stderr, "Could not get info for user %s\n",
+						  string_arg);
 				goto done;
 			}
 			break;
