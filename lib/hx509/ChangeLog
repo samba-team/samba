@@ -1,5 +1,9 @@
 2006-04-23  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* test_query.in: make quiet
+
+	* test_req.in: SKIP test if there is no RSA support.
+
 	* hxtool.c: print dh method too
 
 	* test_chain.in: SKIP test if there is no RSA support.
