@@ -1,3 +1,13 @@
+2006-04-23  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* hxtool.c: print dh method too
+
+	* test_chain.in: SKIP test if there is no RSA support.
+	
+	* test_cms.in: SKIP test if there is no RSA support.
+
+	* test_nist.in: SKIP test if there is no RSA support.
+	
 2006-04-22  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* hxtool-commands.in: Allow passing in pool and anchor to

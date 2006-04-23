@@ -1,5 +1,20 @@
-2006-04-20  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-04-23  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* rsa.c (RSA_check_key): don't do any checking if there is no
+	private key
+
+	* engine.c (add_engine): reassign engines variable after realloc
+	
+2006-04-21  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* evp.h: Add EVP_get_cipherbyname, unbreak EVP_BytesToKey
+
+	* evp.h: Add prototype for EVP_BytesToKey
+
+	* evp.c: Add stub for EVP_BytesToKey
+	
+2006-04-20  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* dh.h: Add cpp-rename for DH_check_pubkey
 	
 2006-04-17  Love Hörnquist Åstrand  <lha@it.su.se>
