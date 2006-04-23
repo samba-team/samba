@@ -4,6 +4,8 @@ include $(top_srcdir)/Makefile.am.common
 
 AUTOMAKE_OPTIONS = no-texinfo.tex
 
+MAKEINFOFLAGS = --no-split
+
 info_TEXINFOS = heimdal.texi
 heimdal_TEXINFOS = \
 	ack.texi \
