@@ -1,5 +1,9 @@
-2006-04-22  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-04-23  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* tools/kdc-log-analyze.pl: count v5 cross realms too
+	
+2006-04-22  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* kdc/pkinit.c: Adapt to change in hx509_cms_create_signed_1.
 
 	* lib/krb5/pkinit.c: Adapt to change in hx509_cms_create_signed_1.
