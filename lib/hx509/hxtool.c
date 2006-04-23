@@ -909,11 +909,16 @@ info(void *opt, int argc, char **argv)
     ENGINE_add_conf_module();
 
     {
-	const RSA_METHOD *rsamethod;
-	rsamethod = RSA_get_default_method();
-	if (rsamethod != NULL)
-	    printf("rsa: %s\n", rsamethod->name);
+	const RSA_METHOD *m = RSA_get_default_method();
+	if (m != NULL)
+	    printf("rsa: %s\n", m->name);
     }
+    {
+	const DH_METHOD *m = DH_get_default_method();
+	if (m != NULL)
+	    printf("dh: %s\n", m->name);
+    }
+
 
     return 0;
 }
