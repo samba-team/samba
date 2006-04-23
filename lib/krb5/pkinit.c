@@ -713,7 +713,7 @@ pk_verify_host(krb5_context context,
 	       struct krb5_pk_init_ctx_data *ctx,
 	       struct krb5_pk_cert *host)
 {
-    krb5_error_code ret;
+    krb5_error_code ret = 0;
 
     if (ctx->require_eku) {
 	ret = hx509_cert_check_eku(ctx->id->hx509ctx, host->cert,
@@ -724,10 +724,45 @@ pk_verify_host(krb5_context context,
 	}
     }
     if (ctx->require_krbtgt_otherName) {
-	/* XXX */
+	hx509_octet_string_list list;
+	krb5_error_code ret;
+	int i;
+
+	ret = hx509_cert_find_subjectAltName_otherName(host->cert,
+						       oid_id_pkinit_san(),
+						       &list);
+	if (ret) {
+	    krb5_clear_error_string(context);
+	    return ret;
+	}
+
+	for (i = 0; i < list.len; i++) {
+	    KRB5PrincipalName r;
+	    ret = decode_KRB5PrincipalName(list.val[i].data,
+					   list.val[i].length,
+					   &r,
+					   NULL);
+	    if (ret) {
+		krb5_clear_error_string(context);
+		break;
+	    }
+
+#if 0
+	    if (r.principalName.name.len != 2) {
+		krb5_clear_error_string(context);
+		ret = EINVAL;
+	    }
+#endif
+	    /* XXX verify realm */
+
+	    free_KRB5PrincipalName(&r);
+	    if (ret)
+		break;
+	}
+	hx509_free_octet_string_list(&list);
     }
 
-    return 0;
+    return ret;
 }
 
 static krb5_error_code
