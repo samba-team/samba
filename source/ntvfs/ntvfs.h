@@ -266,6 +266,17 @@ struct ntvfs_critical_sizes {
 	int sizeof_ntvfs_request;
 };
 
+#define NTVFS_CURRENT_CRITICAL_SIZES(c) \
+    struct ntvfs_critical_sizes c = { \
+	.interface_version		= NTVFS_INTERFACE_VERSION, \
+	.sizeof_ntvfs_critical_sizes	= sizeof(struct ntvfs_critical_sizes), \
+	.sizeof_ntvfs_context		= sizeof(struct ntvfs_context), \
+	.sizeof_ntvfs_module_context	= sizeof(struct ntvfs_module_context), \
+	.sizeof_ntvfs_ops		= sizeof(struct ntvfs_ops), \
+	.sizeof_ntvfs_async_state	= sizeof(struct ntvfs_async_state), \
+	.sizeof_ntvfs_request		= sizeof(struct ntvfs_request), \
+    }
+
 struct messaging_context;
 #include "librpc/gen_ndr/security.h"
 #include "librpc/gen_ndr/notify.h"
