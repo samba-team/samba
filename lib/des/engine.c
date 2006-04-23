@@ -207,7 +207,8 @@ add_engine(ENGINE *engine)
     d = realloc(engines, (num_engines + 1) * sizeof(*engines));
     if (d == NULL)
 	return 1;
-    d[num_engines++] = engine;
+    engines = d;
+    engines[num_engines++] = engine;
     
     return 1;
 }
