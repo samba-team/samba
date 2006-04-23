@@ -169,6 +169,9 @@ RSA_check_key(const RSA *key)
      * and then decrypt/verify.
      */
 
+    if (rsa->q == NULL || rsa->dmp1 == NULL || rsa->dmq1 == NULL)
+	return 0;
+
     buffer = malloc(RSA_size(rsa));
     if (buffer == NULL)
 	return 0;
