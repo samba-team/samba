@@ -40,34 +40,17 @@ RCSID("$Id$");
  * rfc3280
  */
 
-#define oid_enc(n) { sizeof(n)/sizeof(n[0]), n }
-
-static unsigned country_num[] = { 2, 5, 4, 6 };
-static heim_oid country_oid = oid_enc(country_num);
-static unsigned organizationName_num[] = { 2, 5, 4, 10 };
-static heim_oid organizationName_oid = oid_enc(organizationName_num);
-static unsigned commonName_num[] = { 2, 5, 4, 3 };
-static heim_oid commonName_oid = oid_enc(commonName_num);
-static unsigned localityName_num[] = { 2, 5, 4, 7 };
-static heim_oid localityName_oid = oid_enc(localityName_num);
-static unsigned email_num[] = { 1, 2, 840, 113549, 1, 9, 1 };
-static heim_oid email_oid = oid_enc(email_num);
-static unsigned uid_num[] = { 0, 9, 2342, 19200300, 100, 1, 1 };
-static heim_oid uid_oid = oid_enc(uid_num);
-static unsigned dc_num[] = { 0, 9, 2342, 19200300, 100, 1, 25 };
-static heim_oid dc_oid = oid_enc(dc_num);
-
 static const struct {
     char *n;
-    heim_oid *o;
+    const heim_oid *(*o)(void);
 } no[] = {
-    { "C", &country_oid },
-    { "CN", &commonName_oid },
-    { "O", &organizationName_oid },
-    { "L", &localityName_oid },
-    { "Email", &email_oid },
-    { "UID", &uid_oid },
-    { "DC", &dc_oid }
+    { "C", oid_id_at_countryName },
+    { "CN", oid_id_at_commonName },
+    { "O", oid_id_at_organizationName },
+    { "L", oid_id_at_localityName },
+    { "Email", oid_id_pkcs9_emailAddress },
+    { "UID", oid_id_Userid },
+    { "DC", oid_id_domainComponent }
 };
 
 static char *
@@ -134,7 +117,7 @@ oidtostring(const heim_oid *type)
     size_t i, total_len = 0;
     
     for (i = 0; i < sizeof(no)/sizeof(no[0]); i++) {
-	if (heim_oid_cmp(no[i].o, type) == 0)
+	if (heim_oid_cmp((*no[i].o)(), type) == 0)
 	    return strdup(no[i].n);
     }
 
@@ -147,6 +130,19 @@ oidtostring(const heim_oid *type)
     }
     return s;
 }
+
+static const heim_oid *
+stringtooid(const char *name, size_t len)
+{
+    int i;
+    
+    for (i = 0; i < sizeof(no)/sizeof(no[0]); i++) {
+	if (strncasecmp(no[i].n, name, len) == 0)
+	    return (*no[i].o)();
+    }
+    return NULL;
+}
+
 
 int
 hx509_name_to_string(const hx509_name name, char **str)
@@ -339,7 +335,7 @@ hx509_parse_name(const char *str, hx509_name *name)
     p = str;
 
     while (p != NULL && *p != '\0') {
-	heim_oid *oid;
+	const heim_oid *oid;
 	int last;
 
 	q = strchr(p, ',');
@@ -354,15 +350,14 @@ hx509_parse_name(const char *str, hx509_name *name)
 	q = strchr(p, '=');
 	if (q == NULL)
 	    _hx509_abort("missing = in %s", p);
+	if (q == p)
+	    _hx509_abort("missing name before = in %s", p);
 	
 	if ((q - p) > len)
 	    _hx509_abort(" = after , in %s", p);
 
-	if (strncasecmp(p, "DC=", 3) == 0) {
-	    oid = &dc_oid;
-	} else if (strncasecmp(p, "CN=", 3) == 0) {
-	    oid = &commonName_oid;
-	} else {
+	oid = stringtooid(p, q - p - 1);
+	if (oid == NULL) {
 	    _hx509_abort("unknown type: %.*s", (int)(q - p) - 1, p);
 	    exit(1);
 	}
