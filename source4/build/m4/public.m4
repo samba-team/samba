@@ -80,8 +80,8 @@ AC_DEFUN([SMB_EXT_LIB_FROM_PKGCONFIG],
 					SMB_EXT_LIB_ENABLE($1, YES)
 			    	AC_MSG_RESULT(yes),
 					AC_MSG_RESULT(no),
-    				CFLAGS="$OLD_CFLAGS"
 					AC_MSG_WARN([cannot run when cross-compiling]))
+    			CFLAGS="$OLD_CFLAGS"
 
 
 				SMB_EXT_LIB($1, 
