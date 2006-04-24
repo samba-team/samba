@@ -121,8 +121,7 @@ static struct winbind_cache *get_cache(struct winbindd_domain *domain)
 		if ( !domain->primary )
 			our_domain = find_our_domain();
 
-		if ( (our_domain->active_directory || IS_DC) && domain->active_directory &&
-			(lp_security()==SEC_ADS)) {
+		if ( (our_domain->active_directory || IS_DC) && domain->active_directory ) {
 			DEBUG(5,("get_cache: Setting ADS methods for domain %s\n", domain->name));
 			domain->backend = &ads_methods;
 		} else {
