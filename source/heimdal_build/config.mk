@@ -368,9 +368,21 @@ OBJ_FILES = \
 #######################
 
 #######################
+# Start SUBSYSTEM HEIMDAL_ASN1_COMPILE_LEX
+[SUBSYSTEM::HEIMDAL_ASN1_COMPILE_LEX]
+EXTRA_CFLAGS = -D_GNU_SOURCE \
+	-Iheimdal_build -Iheimdal/lib/asn1 \
+	-Iheimdal/kdc -Iheimdal/lib/des \
+	-Iheimdal/lib/roken -DNO_PRINTF_ATTRIBUTE
+OBJ_FILES = \
+	../heimdal/lib/asn1/lex.ho 
+# End SUBSYSTEM HEIMDAL_ASN1_COMPILE_LEX
+#######################
+
+#######################
 # Start BINARY asn1_compile
 [BINARY::asn1_compile]
-EXTRA_CFLAGS = -D_GNU_SOURCE \
+EXTRA_CFLAGS = \
 	-Iheimdal_build -Iheimdal/lib/asn1 \
 	-Iheimdal/kdc -Iheimdal/lib/des \
 	-Iheimdal/lib/roken -DNO_PRINTF_ATTRIBUTE
@@ -384,7 +396,6 @@ OBJ_FILES = \
 	../heimdal/lib/asn1/gen_glue.ho \
 	../heimdal/lib/asn1/gen_length.ho \
 	../heimdal/lib/asn1/hash.ho \
-	../heimdal/lib/asn1/lex.ho \
 	../heimdal/lib/asn1/parse.ho \
 	../heimdal/lib/roken/emalloc.ho \
 	../heimdal/lib/roken/getarg.ho \
@@ -399,18 +410,30 @@ OBJ_FILES = \
 	../heimdal/lib/vers/print_version.ho \
 	../lib/replace/snprintf.ho \
 	../lib/replace/replace.ho
+REQUIRED_SUBSYSTEMS = HEIMDAL_ASN1_COMPILE_LEX
 # End BINARY asn1_compile
+#######################
+
+#######################
+# Start SUBSYSTEM HEIMDAL_COM_ERR_COMPILE_LEX
+[SUBSYSTEM::HEIMDAL_COM_ERR_COMPILE_LEX]
+EXTRA_CFLAGS = -D_GNU_SOURCE \
+	-Iheimdal_build -Iheimdal/lib/com_err \
+	-Iheimdal/kdc -Iheimdal/lib/des \
+	-Iheimdal/lib/roken -DNO_PRINTF_ATTRIBUTE
+OBJ_FILES = \
+	../heimdal/lib/com_err/lex.ho 
+# End SUBSYSTEM HEIMDAL_COM_ERR_COMPILE_LEX
 #######################
 
 #######################
 # Start BINARY compile_et
 [BINARY::compile_et]
-EXTRA_CFLAGS = -D_GNU_SOURCE \
+EXTRA_CFLAGS = \
 	-Iheimdal_build -Iheimdal/lib/com_err \
 	-Iheimdal/kdc -Iheimdal/lib/des \
 	-Iheimdal/lib/roken -DNO_PRINTF_ATTRIBUTE
 OBJ_FILES = ../heimdal/lib/vers/print_version.ho \
-	../heimdal/lib/com_err/lex.ho \
 	../heimdal/lib/com_err/parse.ho \
 	../heimdal/lib/com_err/compile_et.ho \
 	../heimdal/lib/roken/getarg.ho \
@@ -421,6 +444,7 @@ OBJ_FILES = ../heimdal/lib/vers/print_version.ho \
 	replace.ho \
 	../lib/replace/snprintf.ho \
 	../lib/replace/replace.ho
+REQUIRED_SUBSYSTEMS = HEIMDAL_COM_ERR_COMPILE_LEX
 # End BINARY compile_et
 #######################
 
