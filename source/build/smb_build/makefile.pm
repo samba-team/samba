@@ -142,7 +142,7 @@ STLD=$self->{config}->{AR}
 STLD_FLAGS=-rc
 
 SHLD=$self->{config}->{CC}
-SHLD_FLAGS=$self->{config}->{LDSHFLAGS} -L\$(builddir)/bin
+SHLD_FLAGS=$self->{config}->{LDSHFLAGS} $self->{config}->{LDFLAGS} -L\$(builddir)/bin
 SHLIBEXT=$self->{config}->{SHLIBEXT}
 
 XSLTPROC=$self->{config}->{XSLTPROC}
