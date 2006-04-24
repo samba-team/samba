@@ -218,8 +218,7 @@ const char *pvfs_list_next(struct pvfs_dir *dir, uint_t *ofs)
 	while ((de = readdir(dir->dir))) {
 		const char *dname = de->d_name;
 
-		if (strcmp(dname, ".") == 0 ||
-		    strcmp(dname, "..") == 0) {
+		if (ISDOT(dname) || ISDOT(dname)) {
 			continue;
 		}
 
@@ -269,13 +268,13 @@ NTSTATUS pvfs_list_seek(struct pvfs_dir *dir, const char *name, uint_t *ofs)
 	struct dirent *de;
 	int i;
 
-	if (strcmp(name, ".") == 0) {
+	if (ISDOT(name)) {
 		dir->offset = DIR_OFFSET_DOTDOT;
 		*ofs = dir->offset;
 		return NT_STATUS_OK;
 	}
 
-	if (strcmp(name, "..") == 0) {
+	if (ISDOTDOT(name)) {
 		dir->offset = DIR_OFFSET_BASE;
 		*ofs = dir->offset;
 		return NT_STATUS_OK;
@@ -324,8 +323,7 @@ BOOL pvfs_directory_empty(struct pvfs_state *pvfs, struct pvfs_filename *name)
 	}
 
 	while ((de = readdir(dir))) {
-		if (strcmp(de->d_name, ".") != 0 &&
-		    strcmp(de->d_name, "..") != 0) {
+		if (!ISDOT(de->d_name) && !ISDOTDOT(de->d_name)) {
 			closedir(dir);
 			return False;
 		}

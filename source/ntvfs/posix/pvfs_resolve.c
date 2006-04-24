@@ -372,7 +372,7 @@ static NTSTATUS pvfs_reduce_name(TALLOC_CTX *mem_ctx, const char **fname, uint_t
 		if (strcmp(components[i], "") == 0) {
 			continue;
 		}
-		if (strcmp(components[i], ".") == 0 || err_count) {
+		if (ISDOT(components[i]) || err_count) {
 			err_count++;
 		}
 	}
@@ -394,7 +394,7 @@ static NTSTATUS pvfs_reduce_name(TALLOC_CTX *mem_ctx, const char **fname, uint_t
 			i--;
 			continue;
 		}
-		if (strcmp(components[i], "..") == 0) {
+		if (ISDOTDOT(components[i])) {
 			if (i < 1) return NT_STATUS_OBJECT_PATH_SYNTAX_BAD;
 			memmove(&components[i-1], &components[i+1], 
 				sizeof(char *)*(num_components-(i+1)));

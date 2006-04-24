@@ -88,8 +88,7 @@ static WERROR reg_dir_key_by_index(TALLOC_CTX *mem_ctx, const struct registry_ke
 	if(!d) return WERR_INVALID_PARAM;
 	
 	while((e = readdir(d))) {
-		if( strcmp(e->d_name, ".") &&
-		   strcmp(e->d_name, "..")) {
+		if(!ISDOT(e->d_name) && !ISDOTDOT(e->d_name)) {
 			struct stat stbuf;
 			char *thispath;
 			
