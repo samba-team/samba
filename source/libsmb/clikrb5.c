@@ -47,7 +47,7 @@
  krb5_parse_name that takes a UNIX charset.
 **************************************************************/
 
-krb5_error_code smb_krb5_parse_name(krb5_context context,
+ krb5_error_code smb_krb5_parse_name(krb5_context context,
 				const char *name, /* in unix charset */
 				krb5_principal *principal)
 {
@@ -90,7 +90,7 @@ static krb5_error_code smb_krb5_parse_name_norealm_conv(krb5_context context,
  be freed with normal free() call.
 **************************************************************/
 
-krb5_error_code smb_krb5_unparse_name(krb5_context context,
+ krb5_error_code smb_krb5_unparse_name(krb5_context context,
 					krb5_const_principal principal,
 					char **unix_name)
 {
