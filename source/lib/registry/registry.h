@@ -36,7 +36,7 @@
 #define HKEY_PERFORMANCE_TEXT	 0x80000050
 #define HKEY_PERFORMANCE_NLSTEXT 0x80000060
 
-#define	REG_DELETE								   -1
+#define	REG_DELETE		-1
 
 /*
  * The general idea here is that every backend provides a 'hive'. Combining

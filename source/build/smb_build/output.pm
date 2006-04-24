@@ -169,6 +169,11 @@ sub create_output($$)
 		}
 	}
 
+	foreach $part (values %{$depend}) {
+		$part->{EXTRA_CFLAGS} .= " ".join(" ", @{$part->{CFLAGS}}) if defined($part->{CFLAGS});
+		$part->{EXTRA_CFLAGS} .= " ".join(" ", @{$part->{CPPFLAGS}}) if defined($part->{CPPFLAGS});
+	}
+
 	return $depend;
 }
 
