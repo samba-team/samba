@@ -370,7 +370,7 @@ OBJ_FILES = \
 #######################
 # Start BINARY asn1_compile
 [BINARY::asn1_compile]
-EXTRA_CFLAGS = \
+EXTRA_CFLAGS = -D_GNU_SOURCE \
 	-Iheimdal_build -Iheimdal/lib/asn1 \
 	-Iheimdal/kdc -Iheimdal/lib/des \
 	-Iheimdal/lib/roken -DNO_PRINTF_ATTRIBUTE
@@ -405,7 +405,7 @@ OBJ_FILES = \
 #######################
 # Start BINARY compile_et
 [BINARY::compile_et]
-EXTRA_CFLAGS = \
+EXTRA_CFLAGS = -D_GNU_SOURCE \
 	-Iheimdal_build -Iheimdal/lib/com_err \
 	-Iheimdal/kdc -Iheimdal/lib/des \
 	-Iheimdal/lib/roken -DNO_PRINTF_ATTRIBUTE
