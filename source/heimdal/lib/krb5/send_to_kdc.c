@@ -33,7 +33,7 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id: send_to_kdc.c,v 1.57 2006/03/07 19:39:59 lha Exp $");
+RCSID("$Id: send_to_kdc.c,v 1.58 2006/04/02 02:32:03 lha Exp $");
 
 struct send_and_recv {
 	krb5_send_and_recv_func_t func;
@@ -231,6 +231,7 @@ send_and_recv_http(int fd,
 	s[rep->length] = 0;
 	p = strstr(s, "\r\n\r\n");
 	if(p == NULL) {
+	    krb5_data_zero(rep);
 	    free(s);
 	    return -1;
 	}
@@ -238,12 +239,14 @@ send_and_recv_http(int fd,
 	rep->data = s;
 	rep->length -= p - s;
 	if(rep->length < 4) { /* remove length */
+	    krb5_data_zero(rep);
 	    free(s);
 	    return -1;
 	}
 	rep->length -= 4;
 	_krb5_get_int(p, &rep_len, 4);
 	if (rep_len != rep->length) {
+	    krb5_data_zero(rep);
 	    free(s);
 	    return -1;
 	}

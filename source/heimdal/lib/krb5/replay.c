@@ -34,7 +34,7 @@
 #include "krb5_locl.h"
 #include <vis.h>
 
-RCSID("$Id: replay.c,v 1.10 2004/05/25 21:41:15 lha Exp $");
+RCSID("$Id: replay.c,v 1.12 2006/04/10 17:13:49 lha Exp $");
 
 struct krb5_rcache_data {
     char *name;
@@ -58,6 +58,7 @@ krb5_rc_resolve_type(krb5_context context,
 		     krb5_rcache *id,
 		     const char *type)
 {
+    *id = NULL;
     if(strcmp(type, "FILE")) {
 	krb5_set_error_string (context, "replay cache type %s not supported",
 			       type);
@@ -77,6 +78,9 @@ krb5_rc_resolve_full(krb5_context context,
 		     const char *string_name)
 {
     krb5_error_code ret;
+
+    *id = NULL;
+
     if(strncmp(string_name, "FILE:", 5)) {
 	krb5_set_error_string (context, "replay cache type %s not supported",
 			       string_name);
@@ -86,6 +90,10 @@ krb5_rc_resolve_full(krb5_context context,
     if(ret)
 	return ret;
     ret = krb5_rc_resolve(context, *id, string_name + 5);
+    if (ret) {
+	krb5_rc_close(context, *id);
+	*id = NULL;
+    }
     return ret;
 }
 

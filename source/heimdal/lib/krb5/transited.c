@@ -33,7 +33,7 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id: transited.c,v 1.16 2005/06/17 04:53:35 lha Exp $");
+RCSID("$Id: transited.c,v 1.18 2006/04/10 10:26:35 lha Exp $");
 
 /* this is an attempt at one of the most horrible `compression'
    schemes that has ever been invented; it's so amazingly brain-dead
@@ -100,8 +100,10 @@ make_path(krb5_context context, struct tr_realm *r,
 	p = from + strlen(from);
 	while(1){
 	    while(p >= from && *p != '/') p--;
-	    if(p == from)
+	    if(p == from) {
+		r->next = path; /* XXX */
 		return KRB5KDC_ERR_POLICY;
+	    }
 	    if(strncmp(to, from, p - from) == 0)
 		break;
 	    tmp = calloc(1, sizeof(*tmp));
@@ -166,10 +168,13 @@ expand_realms(krb5_context context,
     for(r = realms; r; r = r->next){
 	if(r->trailing_dot){
 	    char *tmp;
-	    size_t len = strlen(r->realm) + strlen(prev_realm) + 1;
+	    size_t len;
 
 	    if(prev_realm == NULL)
 		prev_realm = client_realm;
+
+	    len = strlen(r->realm) + strlen(prev_realm) + 1;
+
 	    tmp = realloc(r->realm, len);
 	    if(tmp == NULL){
 		free_realms(realms);

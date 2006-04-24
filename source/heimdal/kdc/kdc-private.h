@@ -18,9 +18,9 @@ krb5_error_code
 _kdc_check_flags (
 	krb5_context /*context*/,
 	krb5_kdc_configuration */*config*/,
-	hdb_entry */*client*/,
+	hdb_entry_ex */*client_ex*/,
 	const char */*client_name*/,
-	hdb_entry */*server*/,
+	hdb_entry_ex */*server_ex*/,
 	const char */*server_name*/,
 	krb5_boolean /*is_as_req*/);
 
@@ -118,7 +118,9 @@ _kdc_pk_initialize (
 	krb5_context /*context*/,
 	krb5_kdc_configuration */*config*/,
 	const char */*user_id*/,
-	const char */*x509_anchors*/);
+	const char */*anchors*/,
+	char **/*pool*/,
+	char **/*revoke*/);
 
 krb5_error_code
 _kdc_pk_mk_pa_reply (

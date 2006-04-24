@@ -1,4 +1,4 @@
--- $Id: canthandle.asn1,v 1.5 2005/08/11 14:07:21 lha Exp $ --
+-- $Id: canthandle.asn1,v 1.6 2006/01/18 19:12:33 lha Exp $ --
 
 CANTHANDLE DEFINITIONS ::= BEGIN
 
@@ -30,11 +30,5 @@ Bar ::= SEQUENCE {
 --  Workaround is to define a type that is only an integer and use that
 
 Baz ::= SET OF INTEGER
-
--- Allocation is done on CONTEXT tags.
-
-Alloc ::= SEQUENCE {
-	a heim_any OPTIONAL
-}
 
 END

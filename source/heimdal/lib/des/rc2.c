@@ -33,7 +33,7 @@
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
-RCSID("$Id: rc2.c,v 1.6 2005/06/18 22:47:33 lha Exp $");
+RCSID("$Id: rc2.c,v 1.7 2006/04/09 17:03:21 lha Exp $");
 #endif
 
 #include "rc2.h"
@@ -87,6 +87,8 @@ RC2_set_key(RC2_KEY *key, int len, const unsigned char *data, int bits)
     unsigned char k[128];
     int j, T8, TM;
 
+    if (len <= 0)
+	abort();
     if (len > 128)
 	len = 128;
     if (bits <= 0 || bits > 1024)

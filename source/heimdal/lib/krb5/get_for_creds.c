@@ -33,7 +33,7 @@
 
 #include <krb5_locl.h>
 
-RCSID("$Id: get_for_creds.c,v 1.48 2006/03/07 19:38:09 lha Exp $");
+RCSID("$Id: get_for_creds.c,v 1.49 2006/04/10 09:28:15 lha Exp $");
 
 static krb5_error_code
 add_addrs(krb5_context context,
@@ -180,10 +180,7 @@ krb5_get_forwarded_creds (krb5_context	    context,
     addrs.len = 0;
     addrs.val = NULL;
 
-    if (in_creds->client && in_creds->client->realm)
-	realm = in_creds->client->realm;
-    else
-	realm = in_creds->server->realm;
+    realm = in_creds->client->realm;
 
     krb5_appdefault_boolean(context, NULL, realm, "no-addresses-ever", 
 			    TRUE, &noaddr_ever);

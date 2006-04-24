@@ -35,7 +35,7 @@
 
 #include <krb5-v4compat.h>
 
-RCSID("$Id: kerberos4.c,v 1.56 2005/12/13 19:44:01 lha Exp $");
+RCSID("$Id: kerberos4.c,v 1.57 2006/04/02 01:54:37 lha Exp $");
 
 #ifndef swap32
 static u_int32_t
@@ -201,8 +201,8 @@ _kdc_do_version4(krb5_context context,
 	}
 
 	ret = _kdc_check_flags (context, config, 
-				&client->entry, client_name,
-				&server->entry, server_name,
+				client, client_name,
+				server, server_name,
 				TRUE);
 	if (ret) {
 	    /* good error code? */
@@ -489,8 +489,8 @@ _kdc_do_version4(krb5_context context,
 	}
 
 	ret = _kdc_check_flags (context, config, 
-				&client->entry, client_name,
-				&server->entry, server_name,
+				client, client_name,
+				server, server_name,
 				FALSE);
 	if (ret) {
 	    /* good error code? */

@@ -41,7 +41,7 @@
 #include <fnmatch.h>
 #include "resolve.h"
 
-RCSID("$Id: principal.c,v 1.92 2005/12/11 17:48:13 lha Exp $");
+RCSID("$Id: principal.c,v 1.94 2006/04/10 10:10:01 lha Exp $");
 
 #define princ_num_comp(P) ((P)->name.name_string.len)
 #define princ_type(P) ((P)->name.name_type)
@@ -105,7 +105,7 @@ parse_name(krb5_context context,
 {
     krb5_error_code ret;
     heim_general_string *comp;
-    heim_general_string realm;
+    heim_general_string realm = NULL;
     int ncomp;
 
     const char *p;
@@ -246,6 +246,7 @@ exit:
 	free(comp[--n]);
     }
     free(comp);
+    free(realm);
     free(s);
     return ret;
 }
@@ -825,16 +826,21 @@ krb5_425_conv_principal_ext2(krb5_context context,
 	struct dns_reply *r;
 
 	r = dns_lookup(instance, "aaaa");
-	if (r && r->head && r->head->type == T_AAAA) {
-	    inst = strdup(r->head->domain);
-	    dns_free_data(r);
-	    passed = TRUE;
-	} else {
-	    r = dns_lookup(instance, "a");
-	    if(r && r->head && r->head->type == T_A) {
+	if (r) {
+	    if (r->head && r->head->type == T_AAAA) {
 		inst = strdup(r->head->domain);
 		dns_free_data(r);
 		passed = TRUE;
+	    }
+	    dns_free_data(r);
+	} else {
+	    r = dns_lookup(instance, "a");
+	    if (r) {
+		if(r->head && r->head->type == T_A) {
+		    inst = strdup(r->head->domain);
+		    passed = TRUE;
+		}
+		dns_free_data(r);
 	    }
 	}
 #else

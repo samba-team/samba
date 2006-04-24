@@ -1874,6 +1874,8 @@ krb5_get_init_creds_opt_set_pkinit (
 	krb5_principal /*principal*/,
 	const char */*user_id*/,
 	const char */*x509_anchors*/,
+	char * const * /*chain*/,
+	char * const * /*revoke*/,
 	int /*flags*/,
 	krb5_prompter_fct /*prompter*/,
 	void */*prompter_data*/,

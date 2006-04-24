@@ -31,7 +31,7 @@
  * SUCH DAMAGE. 
  */
 
-/* $Id: gssapi_locl.h,v 1.43 2005/11/02 08:51:17 lha Exp $ */
+/* $Id: gssapi_locl.h,v 1.44 2006/04/12 17:44:05 lha Exp $ */
 
 #ifndef GSSAPI_LOCL_H
 #define GSSAPI_LOCL_H
@@ -289,6 +289,14 @@ _gssapi_msg_order_check(struct gss_msg_order *, OM_uint32);
 
 OM_uint32
 _gssapi_msg_order_f(OM_uint32);
+
+OM_uint32
+_gssapi_msg_order_import(OM_uint32 *, krb5_storage *, 
+			 struct gss_msg_order **);
+
+krb5_error_code
+_gssapi_msg_order_export(krb5_storage *, struct gss_msg_order *);
+
 
 /* 8003 */
 

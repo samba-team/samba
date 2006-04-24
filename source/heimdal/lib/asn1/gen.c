@@ -33,7 +33,7 @@
 
 #include "gen_locl.h"
 
-RCSID("$Id: gen.c,v 1.65 2006/03/08 12:29:34 lha Exp $");
+RCSID("$Id: gen.c,v 1.67 2006/03/31 02:52:21 lha Exp $");
 
 FILE *headerfile, *codefile, *logfile;
 
@@ -62,6 +62,8 @@ add_import (const char *module)
     tmp->module = module;
     tmp->next   = imports;
     imports     = tmp;
+
+    fprintf (headerfile, "#include <%s_asn1.h>\n", module);
 }
 
 const char *
@@ -223,7 +225,6 @@ gen_compare_defval(const char *var, struct value *val)
 static void
 generate_header_of_codefile(const char *name)
 {
-    struct import *i;
     char *filename;
 
     if (codefile != NULL)
@@ -248,10 +249,6 @@ generate_header_of_codefile(const char *name)
 	     "#include <krb5-types.h>\n",
 	     orig_filename);
 
-    for (i = imports; i != NULL; i = i->next)
-	fprintf (codefile,
-		 "#include <%s_asn1.h>\n",
-		 i->module);
     fprintf (codefile,
 	     "#include <%s.h>\n",
 	     headerbase);

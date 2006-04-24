@@ -34,7 +34,7 @@
 #include "krb5_locl.h"
 #include <resolve.h>
 
-RCSID("$Id: krbhst.c,v 1.53 2005/10/08 15:40:50 lha Exp $");
+RCSID("$Id: krbhst.c,v 1.55 2006/04/02 10:32:20 lha Exp $");
 
 static int
 string_to_proto(const char *string)
@@ -241,8 +241,9 @@ _krb5_krbhost_info_move(krb5_context context,
 			krb5_krbhst_info *from,
 			krb5_krbhst_info **to)
 {
+    size_t hostnamelen = strlen(from->hostname);
     /* trailing NUL is included in structure */
-    *to = calloc(1, sizeof(**to) + strlen(from->hostname)); 
+    *to = calloc(1, sizeof(**to) + hostnamelen); 
     if(*to == NULL) {
 	krb5_set_error_string(context, "malloc - out of memory");
 	return ENOMEM;
@@ -254,7 +255,7 @@ _krb5_krbhost_info_move(krb5_context context,
     (*to)->ai = from->ai;
     from->ai = NULL;
     (*to)->next = NULL;
-    strcpy((*to)->hostname, from->hostname);
+    memcpy((*to)->hostname, from->hostname, hostnamelen + 1);
     return 0;
 }
 
