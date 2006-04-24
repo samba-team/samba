@@ -207,6 +207,7 @@ Setting up a realm
 * Setting up DNS::              
 * Using LDAP to store the database::  
 * Providing Kerberos credentials to servers and programs::  
+* Setting up PK-INIT::
 
 Applications
 
