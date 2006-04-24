@@ -395,6 +395,6 @@ hdb_create(krb5_context context, HDB **db, const char *filename)
 	h = find_dynamic_method (context, filename, &residual);
 #endif
     if (h == NULL)
-	krb5_errx(context, 1, "No database support! (hdb_create)");
+	krb5_errx(context, 1, "No database support for %s", filename);
     return (*h->create)(context, db, residual);
 }
