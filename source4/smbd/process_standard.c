@@ -35,10 +35,11 @@
 #include "passdb/secrets.h"
 
 #ifdef HAVE_SETPROCTITLE
+#ifdef HAVE_SETPROCTITLE_H
 #include <setproctitle.h>
-#define SETPROCTITLE(x) setproctitle x
+#endif
 #else
-#define SETPROCTITLE(x)
+#define setproctitle(x)
 #endif
 
 /*
@@ -119,7 +120,7 @@ static void standard_accept_connection(struct event_context *ev,
 	c = socket_get_peer_addr(sock2, ev2);
 	s = socket_get_my_addr(sock2, ev2);
 	if (s && c) {
-		SETPROCTITLE(("conn c[%s:%u] s[%s:%u] server_id[%d]",
+		setproctitle(("conn c[%s:%u] s[%s:%u] server_id[%d]",
 			      c->addr, c->port, s->addr, s->port, pid));
 	}
 	talloc_free(c);
@@ -176,7 +177,7 @@ static void standard_new_task(struct event_context *ev,
 	/* Ensure that the forked children do not expose identical random streams */
 	set_need_random_reseed();
 
-	SETPROCTITLE(("task server_id[%d]", pid));
+	setproctitle(("task server_id[%d]", pid));
 
 	/* setup this new connection */
 	new_task(ev2, pid, private);
@@ -213,9 +214,9 @@ static void standard_terminate(struct event_context *ev, const char *reason)
 static void standard_set_title(struct event_context *ev, const char *title) 
 {
 	if (title) {
-		SETPROCTITLE(("%s", title));
+		setproctitle(("%s", title));
 	} else {
-		SETPROCTITLE((NULL));
+		setproctitle((NULL));
 	}
 }
 
