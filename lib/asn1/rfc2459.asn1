@@ -95,6 +95,8 @@ id-at-initials			OBJECT IDENTIFIER ::= { id-x520-at 43 }
 id-at-generationQualifier	OBJECT IDENTIFIER ::= { id-x520-at 44 }
 id-at-pseudonym			OBJECT IDENTIFIER ::= { id-x520-at 65 }
 -- RFC 2247
+id-Userid		      	OBJECT IDENTIFIER ::=
+                          { 0 9 2342 19200300 100 1 1 }
 id-domainComponent      	OBJECT IDENTIFIER ::=
                           { 0 9 2342 19200300 100 1 25 }
 
