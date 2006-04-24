@@ -224,8 +224,9 @@ include/config.h:
 	@echo "You need to rerun ./autogen.sh and ./configure"
 	@/bin/false
 
-clean_pch: 
-	-rm -f include/includes.h.gch
+clean_pch:
+	@echo "Removing precompiled headers"
+	@-rm -f include/includes.h.gch
 
 pch: clean_pch include/includes.h.gch
 

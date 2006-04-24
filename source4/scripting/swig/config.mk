@@ -20,7 +20,8 @@ SWIG_INCLUDES = librpc/gen_ndr/samr.i librpc/gen_ndr/lsa.i librpc/gen_ndr/spools
 scripting/swig/dcerpc_wrap.c: scripting/swig/dcerpc.i scripting/swig/samba.i scripting/swig/status_codes.i $(SWIG_INCLUDES)
 
 clean::
-	-rm -f scripting/swig/tdb.pyc scripting/swig/tdb.py
+	@echo "Removing SWIG output files"
+	@-rm -f scripting/swig/tdb.pyc scripting/swig/tdb.py
 
 # Swig testing
 
