@@ -202,7 +202,9 @@ int rep_mkstemp(char *temp);
 
 #ifdef HAVE_STDBOOL_H
 #include <stdbool.h>
-#else
+#endif
+
+#ifndef HAVE_BOOL
 #define __bool_true_false_are_defined
 typedef bool int;
 #define false (0)
