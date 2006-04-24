@@ -93,7 +93,7 @@ static const char *rdwr_string(enum rdwr_mode m)
 	CHECK_STATUS(status, NT_STATUS_OK); \
 	t1 = t & ~1; \
 	t2 = nt_time_to_unix(finfo.all_info.out.field) & ~1; \
-	if (ABS(t1-t2) > 2) { \
+	if (abs(t1-t2) > 2) { \
 		printf("(%s) wrong time for field %s  %s - %s\n", \
 		       __location__, #field, \
 		       timestring(mem_ctx, t1), \

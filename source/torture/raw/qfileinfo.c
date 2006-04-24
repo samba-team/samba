@@ -73,7 +73,7 @@ static struct {
 static int dos_nt_time_cmp(time_t t, NTTIME nt)
 {
 	time_t t2 = nt_time_to_unix(nt);
-	if (ABS(t2 - t) <= 2) return 0;
+	if (abs(t2 - t) <= 2) return 0;
 	return t2 - t;
 }
 

@@ -78,7 +78,7 @@ static union smb_fsinfo *find(const char *name)
         ret = False; \
 }} while(0)
 
-#define VAL_APPROX_EQUAL(n1, v1, n2, v2) do {if (ABS((int)(s1->n1.out.v1) - (int)(s2->n2.out.v2)) > 0.1*s1->n1.out.v1) { \
+#define VAL_APPROX_EQUAL(n1, v1, n2, v2) do {if (abs((int)(s1->n1.out.v1) - (int)(s2->n2.out.v2)) > 0.1*s1->n1.out.v1) { \
         printf("%s/%s [%u] != %s/%s [%u] at %s(%d)\n", \
                #n1, #v1, (uint_t)s1->n1.out.v1, \
                #n2, #v2, (uint_t)s2->n2.out.v2, \
@@ -218,7 +218,7 @@ BOOL torture_raw_qfsinfo(struct torture_context *torture)
 			s2->allocation.out.sectors_per_unit *
 			s2->allocation.out.total_alloc_units *
 			s2->allocation.out.bytes_per_sector / scale;
-		if (ABS(size1 - size2) > 1) {
+		if (abs(size1 - size2) > 1) {
 			printf("Inconsistent total size in DSKATTR and ALLOCATION - size1=%.0f size2=%.0f\n", 
 			       size1, size2);
 			ret = False;
@@ -240,7 +240,7 @@ BOOL torture_raw_qfsinfo(struct torture_context *torture)
 			s2->allocation.out.sectors_per_unit *
 			s2->allocation.out.avail_alloc_units *
 			s2->allocation.out.bytes_per_sector / scale;
-		if (ABS(size1 - size2) > 1) {
+		if (abs(size1 - size2) > 1) {
 			printf("Inconsistent avail size in DSKATTR and ALLOCATION - size1=%.0f size2=%.0f\n", 
 			       size1, size2);
 			ret = False;
