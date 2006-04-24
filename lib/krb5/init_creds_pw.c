@@ -1151,6 +1151,7 @@ process_pa_data_to_key(krb5_context context,
 #ifdef PKINIT
 	ret = _krb5_pk_rd_pa_reply(context,
 				   ctx->pk_init_ctx,
+				   a->req_body.realm,
 				   etype,
 				   hi,
 				   ctx->pk_nonce,
