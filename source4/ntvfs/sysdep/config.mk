@@ -13,6 +13,6 @@ OBJ_FILES = \
 [SUBSYSTEM::sys_notify]
 OBJ_FILES = \
 		sys_notify.o
-REQUIRED_SUBSYSTEMS = 
+PUBLIC_DEPENDENCIES = 
 # End SUBSYSTEM sys_notify
 ################################################

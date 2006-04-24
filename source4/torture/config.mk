@@ -8,7 +8,7 @@ PUBLIC_PROTO_HEADER = proto.h
 OBJ_FILES = \
 		torture.o \
 		ui.o
-REQUIRED_SUBSYSTEMS = \
+PUBLIC_DEPENDENCIES = \
 		TORTURE_UTIL \
 		TORTURE_RAW \
 		TORTURE_SMB2 \
@@ -50,7 +50,7 @@ OBJ_FILES = \
 		basic/delaywrite.o \
 		basic/attr.o \
 		basic/properties.o 
-REQUIRED_SUBSYSTEMS = \
+PUBLIC_DEPENDENCIES = \
 		LIBSMB 
 # End SUBSYSTEM TORTURE_BASIC
 #################################
@@ -84,7 +84,7 @@ OBJ_FILES = \
 		raw/acls.o \
 		raw/seek.o \
 		raw/composite.o
-REQUIRED_SUBSYSTEMS = \
+PUBLIC_DEPENDENCIES = \
 		LIBSMB LIBCLI_LSA
 # End SUBSYSTEM TORTURE_RAW
 #################################
@@ -98,7 +98,7 @@ PRIVATE_PROTO_HEADER = \
 		com/proto.h
 OBJ_FILES = \
 		com/simple.o
-REQUIRED_SUBSYSTEMS = \
+PUBLIC_DEPENDENCIES = \
 		com dcom
 
 [MODULE::torture_rpc]
@@ -147,7 +147,7 @@ OBJ_FILES = \
 		rpc/alter_context.o \
 		rpc/bench.o \
 		rpc/rpc.o
-REQUIRED_SUBSYSTEMS = \
+PUBLIC_DEPENDENCIES = \
 		NDR_TABLE RPC_NDR_UNIXINFO RPC_NDR_SAMR RPC_NDR_WINREG RPC_NDR_INITSHUTDOWN \
 		RPC_NDR_OXIDRESOLVER RPC_NDR_EVENTLOG RPC_NDR_ECHO RPC_NDR_SVCCTL \
 		RPC_NDR_MGMT RPC_NDR_NETLOGON RPC_NDR_ATSVC RPC_NDR_DRSUAPI \
@@ -162,7 +162,7 @@ PRIVATE_PROTO_HEADER = \
 		rap/proto.h
 OBJ_FILES = \
 		rap/rap.o
-REQUIRED_SUBSYSTEMS = \
+PUBLIC_DEPENDENCIES = \
 		LIBSMB
 # End SUBSYSTEM TORTURE_RAP
 #################################
@@ -175,7 +175,7 @@ PRIVATE_PROTO_HEADER = \
 OBJ_FILES = \
 		auth/ntlmssp.o \
 		auth/pac.o
-REQUIRED_SUBSYSTEMS = \
+PUBLIC_DEPENDENCIES = \
 		LIBSMB gensec auth
 # End SUBSYSTEM TORTURE_AUTH
 #################################
@@ -203,7 +203,7 @@ OBJ_FILES = \
 		ldap/basic.o \
 		ldap/cldap.o \
 		ldap/cldapbench.o
-REQUIRED_SUBSYSTEMS = \
+PUBLIC_DEPENDENCIES = \
 		LIBCLI_LDAP LIBCLI_CLDAP
 # End SUBSYSTEM TORTURE_LDAP
 #################################
@@ -221,7 +221,7 @@ OBJ_FILES = \
 		nbt/winsreplication.o \
 		nbt/dgram.o \
 		nbt/browse.o
-REQUIRED_SUBSYSTEMS = \
+PUBLIC_DEPENDENCIES = \
 		LIBSMB LIBCLI_NBT LIBCLI_WREPL
 # End SUBSYSTEM TORTURE_NBT
 #################################
@@ -242,7 +242,7 @@ OBJ_FILES = \
 		libnet/libnet_user.o \
 		libnet/libnet_share.o \
 		libnet/libnet_rpc.o
-REQUIRED_SUBSYSTEMS = \
+PUBLIC_DEPENDENCIES = \
 		LIBSAMBA-NET
 # End SUBSYSTEM TORTURE_NET
 #################################
@@ -253,7 +253,7 @@ REQUIRED_SUBSYSTEMS = \
 INSTALLDIR = BINDIR
 OBJ_FILES = \
 		smbtorture.o
-REQUIRED_SUBSYSTEMS = \
+PRIVATE_DEPENDENCIES = \
 		torture \
 		LIBPOPT \
 		POPT_SAMBA \
@@ -268,7 +268,7 @@ MANPAGE = man/smbtorture.1
 INSTALLDIR = BINDIR
 OBJ_FILES = \
 		gentest.o
-REQUIRED_SUBSYSTEMS = \
+PRIVATE_DEPENDENCIES = \
 		LIBSAMBA-CONFIG \
 		LIBSAMBA-UTIL \
 		LIBPOPT \
@@ -285,7 +285,7 @@ MANPAGE = man/gentest.1
 INSTALLDIR = BINDIR
 OBJ_FILES = \
 		masktest.o
-REQUIRED_SUBSYSTEMS = \
+PRIVATE_DEPENDENCIES = \
 		LIBSAMBA-CONFIG \
 		LIBSAMBA-UTIL \
 		LIBPOPT \
@@ -302,7 +302,7 @@ MANPAGE = man/masktest.1
 INSTALLDIR = BINDIR
 OBJ_FILES = \
 		locktest.o
-REQUIRED_SUBSYSTEMS = \
+PRIVATE_DEPENDENCIES = \
 		LIBSMB \
 		LIBSAMBA-CONFIG \
 		LIBSAMBA-UTIL

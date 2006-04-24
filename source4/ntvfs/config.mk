@@ -11,7 +11,7 @@ INIT_FUNCTION = ntvfs_cifs_init
 SUBSYSTEM = ntvfs
 OBJ_FILES = \
 		cifs/vfs_cifs.o
-REQUIRED_SUBSYSTEMS = \
+PUBLIC_DEPENDENCIES = \
 		LIBCLI
 # End MODULE ntvfs_cifs
 ################################################
@@ -48,7 +48,7 @@ OBJ_FILES = \
 		ipc/vfs_ipc.o \
 		ipc/ipc_rap.o \
 		ipc/rap_server.o
-REQUIRED_SUBSYSTEMS = dcerpc_server
+PUBLIC_DEPENDENCIES = dcerpc_server
 # End MODULE ntvfs_ipc
 ################################################
 
@@ -77,7 +77,7 @@ OBJ_FILES = \
 		ntvfs_generic.o \
 		ntvfs_interface.o \
 		ntvfs_util.o
-REQUIRED_SUBSYSTEMS =
+PUBLIC_DEPENDENCIES =
 #
 # End SUBSYSTEM NTVFS
 ################################################

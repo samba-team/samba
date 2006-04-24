@@ -8,7 +8,7 @@ OBJ_FILES = \
 	common/tdb.o common/dump.o common/io.o common/lock.o \
 	common/open.o common/traverse.o common/freelist.o \
 	common/error.o common/transaction.o common/tdbutil.o
-REQUIRED_SUBSYSTEMS = \
+PUBLIC_DEPENDENCIES = \
 		LIBREPLACE
 PUBLIC_HEADERS = include/tdb.h
 #
@@ -22,7 +22,7 @@ INSTALLDIR = BINDIR
 ENABLE = NO
 OBJ_FILES= \
 		tools/tdbtool.o
-REQUIRED_SUBSYSTEMS = \
+PRIVATE_DEPENDENCIES = \
 		LIBTDB
 # End BINARY tdbtool
 ################################################
@@ -33,7 +33,7 @@ REQUIRED_SUBSYSTEMS = \
 INSTALLDIR = BINDIR
 OBJ_FILES= \
 		tools/tdbtorture.o
-REQUIRED_SUBSYSTEMS = \
+PRIVATE_DEPENDENCIES = \
 		LIBTDB
 # End BINARY tdbtorture
 ################################################
@@ -44,7 +44,7 @@ REQUIRED_SUBSYSTEMS = \
 INSTALLDIR = BINDIR
 OBJ_FILES= \
 		tools/tdbdump.o
-REQUIRED_SUBSYSTEMS = \
+PRIVATE_DEPENDENCIES = \
 		LIBTDB
 # End BINARY tdbdump
 ################################################
@@ -56,7 +56,7 @@ INSTALLDIR = BINDIR
 ENABLE = NO
 OBJ_FILES= \
 		tools/tdbbackup.o
-REQUIRED_SUBSYSTEMS = \
+PRIVATE_DEPENDENCIES = \
 		LIBTDB
 # End BINARY tdbbackup
 ################################################
@@ -66,6 +66,6 @@ REQUIRED_SUBSYSTEMS = \
 [LIBRARY::swig_tdb]
 LIBRARY_REALNAME = swig/_tdb.$(SHLIBEXT)
 OBJ_FILES = swig/tdb_wrap.o
-REQUIRED_SUBSYSTEMS = LIBTDB DYNCONFIG
+PUBLIC_DEPENDENCIES = LIBTDB DYNCONFIG
 # End LIBRARY swig_tdb
 #######################

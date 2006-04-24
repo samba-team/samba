@@ -12,7 +12,7 @@ OBJ_FILES = \
 		net_join.o \
 		net_vampire.o \
 		net_user.o
-REQUIRED_SUBSYSTEMS = \
+PRIVATE_DEPENDENCIES = \
 		LIBSAMBA-CONFIG \
 		LIBSAMBA-UTIL \
 		LIBSAMBA-NET \

@@ -5,7 +5,7 @@ SUBSYSTEM = ldb
 INIT_FUNCTION = objectguid_module_init
 OBJ_FILES = \
 		objectguid.o
-REQUIRED_SUBSYSTEMS = \
+PUBLIC_DEPENDENCIES = \
 		LIBNDR NDR_MISC
 # End MODULE ldb_objectguid
 ################################################
@@ -17,7 +17,7 @@ SUBSYSTEM = ldb
 INIT_FUNCTION = samldb_module_init
 OBJ_FILES = \
 		samldb.o
-REQUIRED_SUBSYSTEMS = SAMDB
+PUBLIC_DEPENDENCIES = SAMDB
 #
 # End MODULE ldb_samldb
 ################################################
@@ -64,7 +64,7 @@ SUBSYSTEM = ldb
 INIT_FUNCTION = password_hash_module_init
 OBJ_FILES = \
 		password_hash.o
-REQUIRED_SUBSYSTEMS = \
+PUBLIC_DEPENDENCIES = \
 		HEIMDAL_HDB HEIMDAL_KRB5
 #
 # End MODULE ldb_rootdse
@@ -77,7 +77,7 @@ SUBSYSTEM = ldb
 INIT_FUNCTION = ldb_kludge_acl_init
 OBJ_FILES = \
 		kludge_acl.o
-REQUIRED_SUBSYSTEMS = \
+PUBLIC_DEPENDENCIES = \
 		LIB_SECURITY
 #
 # End MODULE ldb_rootdse

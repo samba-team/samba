@@ -17,7 +17,7 @@ INIT_FUNCTION = process_model_standard_init
 SUBSYSTEM = process_model
 OBJ_FILES = \
 		process_standard.o
-REQUIRED_SUBSYSTEMS = EXT_LIB_SETPROCTITLE
+PUBLIC_DEPENDENCIES = EXT_LIB_SETPROCTITLE
 # End MODULE process_model_standard
 ################################################
 
@@ -28,7 +28,7 @@ INIT_FUNCTION = process_model_thread_init
 SUBSYSTEM = process_model
 OBJ_FILES = \
 		process_thread.o
-REQUIRED_SUBSYSTEMS = EXT_LIB_PTHREAD
+PUBLIC_DEPENDENCIES = EXT_LIB_PTHREAD
 # End MODULE process_model_thread
 ################################################
 

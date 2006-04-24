@@ -11,7 +11,7 @@ OBJ_FILES = \
 		getinfo.o \
 		setinfo.o \
 		find.o
-REQUIRED_SUBSYSTEMS = \
+PUBLIC_DEPENDENCIES = \
 		LIBCLI_SMB2
 # End SUBSYSTEM TORTURE_SMB2
 #################################

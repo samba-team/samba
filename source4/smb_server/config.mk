@@ -9,7 +9,7 @@ OBJ_FILES = \
 		session.o \
 		management.o
 PRIVATE_PROTO_HEADER = smb_server_proto.h
-REQUIRED_SUBSYSTEMS = \
+PUBLIC_DEPENDENCIES = \
 		LIBPACKET \
 		SMB_PROTOCOL \
 		SMB2_PROTOCOL

@@ -25,7 +25,7 @@ INIT_FUNCTION = smb_setup_ejs_nbt
 OBJ_FILES = smbcalls_samba3.o
 SUBSYSTEM = smbcalls
 INIT_FUNCTION = smb_setup_ejs_samba3
-REQUIRED_SUBSYSTEMS = LIBSAMBA3 
+PUBLIC_DEPENDENCIES = LIBSAMBA3 
 
 [MODULE::smbcalls_rand]
 OBJ_FILES = smbcalls_rand.o
@@ -46,7 +46,7 @@ INIT_FUNCTION = smb_setup_ejs_datablob
 OBJ_FILES = smbcalls_auth.o
 SUBSYSTEM = smbcalls
 INIT_FUNCTION = smb_setup_ejs_auth
-REQUIRED_SUBSYSTEMS = auth
+PUBLIC_DEPENDENCIES = auth
 
 [MODULE::smbcalls_string]
 OBJ_FILES = smbcalls_string.o
@@ -73,7 +73,7 @@ OBJ_FILES = \
 		smbcalls_param.o \
 		ejsnet.o \
 		mprutil.o
-REQUIRED_SUBSYSTEMS = \
+PUBLIC_DEPENDENCIES = \
 		EJS LIBSAMBA-UTIL \
 		EJSRPC MESSAGING \
 		LIBSAMBA-NET LIBSMB LIBPOPT \
@@ -89,6 +89,6 @@ REQUIRED_SUBSYSTEMS = \
 INSTALLDIR = BINDIR
 OBJ_FILES = \
 		smbscript.o
-REQUIRED_SUBSYSTEMS = EJS LIBSAMBA-UTIL smbcalls LIBSAMBA-CONFIG 
+PRIVATE_DEPENDENCIES = EJS LIBSAMBA-UTIL smbcalls LIBSAMBA-CONFIG 
 # End BINARY SMBSCRIPT
 #######################

@@ -16,7 +16,7 @@ OBJ_FILES = \
 		ejs/ejsLex.o \
 		ejs/ejsParser.o \
 		ejs/ejsProcs.o
-REQUIRED_SUBSYSTEMS = MPR
+PUBLIC_DEPENDENCIES = MPR
 # End SUBSYSTEM EJS
 #######################
 
@@ -26,6 +26,6 @@ REQUIRED_SUBSYSTEMS = MPR
 OBJ_FILES = \
 		esp/esp.o  \
 		esp/espProcs.o
-REQUIRED_SUBSYSTEMS = EJS
+PUBLIC_DEPENDENCIES = EJS
 # End SUBSYSTEM ESP
 #######################
