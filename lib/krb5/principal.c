@@ -754,7 +754,6 @@ krb5_425_conv_principal_ext2(krb5_context context,
 	if (r) {
 	    if (r->head && r->head->type == T_AAAA) {
 		inst = strdup(r->head->domain);
-		dns_free_data(r);
 		passed = TRUE;
 	    }
 	    dns_free_data(r);
