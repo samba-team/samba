@@ -521,7 +521,7 @@ ADS_STATUS ads_krb5_set_password(const char *kdc_host, const char *princ,
 	realm++;
 
 	asprintf(&princ_name, "kadmin/changepw@%s", realm);
-	ret = krb5_parse_name(context, princ_name, &creds.server);
+	ret = smb_krb5_parse_name(context, princ_name, &creds.server);
 	if (ret) {
 		krb5_cc_close(context, ccache);
                 krb5_free_context(context);
@@ -531,7 +531,7 @@ ADS_STATUS ads_krb5_set_password(const char *kdc_host, const char *princ,
 	free(princ_name);
 
 	/* parse the principal we got as a function argument */
-	ret = krb5_parse_name(context, princ, &principal);
+	ret = smb_krb5_parse_name(context, princ, &principal);
 	if (ret) {
 		krb5_cc_close(context, ccache);
 	        krb5_free_principal(context, creds.server);
@@ -633,7 +633,7 @@ static ADS_STATUS ads_krb5_chg_password(const char *kdc_host,
 	return ADS_ERROR_KRB5(ret);
     }
 
-    if ((ret = krb5_parse_name(context, principal,
+    if ((ret = smb_krb5_parse_name(context, principal,
                                     &princ))) {
 	krb5_free_context(context);
 	DEBUG(1,("Failed to parse %s (%s)\n", principal, error_message(ret)));
