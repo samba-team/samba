@@ -112,11 +112,10 @@ BLDMERGED="true"
 # these are the defaults, good for lots of systems
 HOST_OS="$host_os"
 LDSHFLAGS="-shared"
-SONAMEFLAG="#"
+SONAMEFLAG=""
 SHLD="\${CC}"
 PICFLAG=""
 PICSUFFIX="po"
-POBAD_CC="#"
 SHLIBEXT="so"
 
 AC_MSG_CHECKING([ability to build shared libraries])
@@ -134,7 +133,6 @@ case "$host_os" in
 	*solaris*) AC_DEFINE(SUNOS5,1,[Whether the host os is solaris])
 		BLDSHARED="true"
 		LDSHFLAGS="-G"
-		SONAMEFLAG="-h "
 		if test "${GCC}" = "yes"; then
 			PICFLAG="-fPIC"
 			if test "${ac_cv_prog_gnu_ld}" = "yes"; then
@@ -145,7 +143,6 @@ case "$host_os" in
 			## ${CFLAGS} added for building 64-bit shared 
 			## libs using Sun's Compiler
 			LDSHFLAGS="-G \${CFLAGS}"
-			POBAD_CC=""
 			PICSUFFIX="po.o"
 		fi
 		AC_DEFINE(STAT_ST_BLOCKSIZE,512,[The size of a block])
@@ -153,21 +150,18 @@ case "$host_os" in
 	*sunos*) AC_DEFINE(SUNOS4,1,[Whether the host os is sunos4])
 		BLDSHARED="true"
 		LDSHFLAGS="-G"
-		SONAMEFLAG="-Wl,-h,"
 		PICFLAG="-KPIC"   # Is this correct for SunOS
 		AC_DEFINE(STAT_ST_BLOCKSIZE,512)
 		;;
 	*netbsd* | *freebsd*)  BLDSHARED="true"
 		LDSHFLAGS="-shared"
 		DYNEXP="-Wl,--export-dynamic"
-		SONAMEFLAG="-Wl,-soname,"
 		PICFLAG="-fPIC -DPIC"
 		AC_DEFINE(STAT_ST_BLOCKSIZE,512,[The size of a block])
 		;;
 	*openbsd*)  BLDSHARED="true"
 		LDSHFLAGS="-shared"
 		DYNEXP="-Wl,-Bdynamic"
-		SONAMEFLAG="-Wl,-soname,"
 		PICFLAG="-fPIC"
 		AC_DEFINE(STAT_ST_BLOCKSIZE,512,[The size of a block])
 		;;
