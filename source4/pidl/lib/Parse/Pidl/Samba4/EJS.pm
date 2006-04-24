@@ -154,7 +154,11 @@ sub EjsPullPointer($$$$$)
 	my ($e, $l, $var, $name, $env) = @_;
 	pidl "if (ejs_pull_null(ejs, v, $name)) {";
 	indent;
-	pidl "$var = NULL;";
+	if ($l->{POINTER_TYPE} eq "ref") {
+		pidl "return NT_STATUS_INVALID_PARAMETER_MIX;";
+	} else {
+		pidl "$var = NULL;";
+	}
 	deindent;
 	pidl "} else {";
 	indent;
