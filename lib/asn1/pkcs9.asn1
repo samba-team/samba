@@ -9,6 +9,7 @@ BEGIN
 id-pkcs-9 OBJECT IDENTIFIER ::= { iso(1) member-body(2) us(840)
 	rsadsi(113549) pkcs(1) pkcs-9(9) }
 
+id-pkcs9-email			OBJECT IDENTIFIER ::= {id-pkcs-9 1 }
 id-pkcs9-contentType		OBJECT IDENTIFIER ::= {id-pkcs-9 3 }
 id-pkcs9-messageDigest		OBJECT IDENTIFIER ::= {id-pkcs-9 4 }
 id-pkcs9-signingTime		OBJECT IDENTIFIER ::= {id-pkcs-9 5 }
