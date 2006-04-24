@@ -46,16 +46,16 @@
  */
 #ifndef ISDOT
 #define ISDOT(path) ( \
-			*((const char *)path) == '.' && \
-			*(((const char *)path) + 1) == '\0' \
+			*((const char *)(path)) == '.' && \
+			*(((const char *)(path)) + 1) == '\0' \
 		    )
 #endif
 
 #ifndef ISDOTDOT
 #define ISDOTDOT(path)	( \
-			    *((const char *)path) == '.' && \
-			    *(((const char *)path) + 1) == '.' && \
-			    *(((const char *)path) + 2) == '\0' \
+			    *((const char *)(path)) == '.' && \
+			    *(((const char *)(path)) + 1) == '.' && \
+			    *(((const char *)(path)) + 2) == '\0' \
 			)
 #endif
 
