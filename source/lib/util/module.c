@@ -73,7 +73,7 @@ _PUBLIC_ init_module_fn *load_modules(TALLOC_CTX *mem_ctx, const char *path)
 	}
 
 	while((entry = readdir(dir))) {
-		if (!strcmp(entry->d_name, ".") || !strcmp(entry->d_name, ".."))
+		if (ISDOT(entry->d_name) || ISDOTDOT(entry->d_name))
 			continue;
 
 		filename = talloc_asprintf(mem_ctx, "%s/%s", path, entry->d_name);

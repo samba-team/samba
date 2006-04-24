@@ -286,9 +286,9 @@ BOOL mask_match(struct smbcli_state *c, const char *string, const char *pattern,
 	char *p2, *s2;
 	BOOL ret;
 
-	if (strcmp(string,"..") == 0)
+	if (ISDOTDOT(string))
 		string = ".";
-	if (strcmp(pattern,".") == 0)
+	if (ISDOT(pattern))
 		return False;
 	
 	if (is_case_sensitive)
@@ -497,8 +497,8 @@ static void do_list_helper(struct clilist_file_info *f, const char *mask, void *
 			do_list_fn(ctx, f);
 		}
 		if (do_list_recurse && 
-		    !strequal(f->name,".") && 
-		    !strequal(f->name,"..")) {
+		    !ISDOT(f->name) &&
+		    !ISDOTDOT(f->name)) {
 			char *mask2;
 			char *p;
 
@@ -838,7 +838,7 @@ static void do_mget(struct smbclient_context *ctx, struct clilist_file_info *fin
 	char *mget_mask;
 	char *saved_curdir;
 
-	if (strequal(finfo->name,".") || strequal(finfo->name,".."))
+	if (ISDOT(finfo->name) || ISDOTDOT(finfo->name))
 		return;
 
 	if (finfo->attrib & FILE_ATTRIBUTE_DIRECTORY)
@@ -1327,8 +1327,9 @@ static int file_find(struct smbclient_context *ctx, struct file_list **list, con
 	if (!dir) return -1;
 	
         while ((dname = readdirname(dir))) {
-		if (!strcmp("..", dname)) continue;
-		if (!strcmp(".", dname)) continue;
+		if (ISDOT(dname) || ISDOTDOT(dname)) {
+			continue;
+		}
 		
 		if (asprintf(&path, "%s/%s", directory, dname) <= 0) {
 			continue;
@@ -2725,7 +2726,7 @@ static void completion_remote_filter(struct clilist_file_info *f, const char *ma
 {
 	completion_remote_t *info = (completion_remote_t *)state;
 
-	if ((info->count < MAX_COMPLETIONS - 1) && (strncmp(info->text, f->name, info->len) == 0) && (strcmp(f->name, ".") != 0) && (strcmp(f->name, "..") != 0)) {
+	if ((info->count < MAX_COMPLETIONS - 1) && (strncmp(info->text, f->name, info->len) == 0) && (!ISDOT(f->name)) && (!ISDOTDOT(f->name))) {
 		if ((info->dirmask[0] == 0) && !(f->attrib & FILE_ATTRIBUTE_DIRECTORY))
 			info->matches[info->count] = strdup(f->name);
 		else {

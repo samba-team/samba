@@ -639,7 +639,6 @@ NTSTATUS ntvfs_unixuid_init(void)
 {
 	NTSTATUS ret;
 	struct ntvfs_ops ops;
-	NTVFS_CURRENT_CRITICAL_SIZES(vers);
 
 	ZERO_STRUCT(ops);
 
@@ -680,15 +679,15 @@ NTSTATUS ntvfs_unixuid_init(void)
 
 	/* we register under all 3 backend types, as we are not type specific */
 	ops.type = NTVFS_DISK;	
-	ret = ntvfs_register(&ops, &vers);
+	ret = ntvfs_register(&ops);
 	if (!NT_STATUS_IS_OK(ret)) goto failed;
 
 	ops.type = NTVFS_PRINT;	
-	ret = ntvfs_register(&ops, &vers);
+	ret = ntvfs_register(&ops);
 	if (!NT_STATUS_IS_OK(ret)) goto failed;
 
 	ops.type = NTVFS_IPC;	
-	ret = ntvfs_register(&ops, &vers);
+	ret = ntvfs_register(&ops);
 	if (!NT_STATUS_IS_OK(ret)) goto failed;
 	
 failed:

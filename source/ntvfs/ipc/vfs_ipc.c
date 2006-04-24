@@ -777,7 +777,6 @@ NTSTATUS ntvfs_ipc_init(void)
 {
 	NTSTATUS ret;
 	struct ntvfs_ops ops;
-	NTVFS_CURRENT_CRITICAL_SIZES(vers);
 
 	ZERO_STRUCT(ops);
 	
@@ -818,7 +817,7 @@ NTSTATUS ntvfs_ipc_init(void)
 	ops.cancel = ipc_cancel;
 
 	/* register ourselves with the NTVFS subsystem. */
-	ret = ntvfs_register(&ops, &vers);
+	ret = ntvfs_register(&ops);
 
 	if (!NT_STATUS_IS_OK(ret)) {
 		DEBUG(0,("Failed to register IPC backend!\n"));

@@ -22,6 +22,7 @@
 
 #include "includes.h"
 #include "vfs_posix.h"
+#include "system/dir.h"
 
 
 /*
@@ -164,8 +165,7 @@ NTSTATUS pvfs_unlink(struct ntvfs_module_context *ntvfs,
 	while ((fname = pvfs_list_next(dir, &ofs))) {
 		/* this seems to be a special case */
 		if ((unl->unlink.in.attrib & FILE_ATTRIBUTE_DIRECTORY) &&
-		    (strcmp(fname, ".") == 0 ||
-		     strcmp(fname, "..") == 0)) {
+		    (ISDOT(fname) || ISDOTDOT(fname))) {
 			return NT_STATUS_OBJECT_NAME_INVALID;
 		}
 

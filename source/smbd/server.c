@@ -57,8 +57,7 @@ static void recursive_delete(const char *path)
 		char *fname;
 		struct stat st;
 
-		if (strcmp(de->d_name, ".") == 0 ||
-		    strcmp(de->d_name, "..") == 0) {
+		if (ISDOT(de->d_name) || ISDOTDOT(de->d_name)) {
 			continue;
 		}
 

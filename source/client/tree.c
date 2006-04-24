@@ -239,8 +239,7 @@ static void cb_select_child (GtkWidget *root_tree, GtkWidget *child,
 
 	/* Get stats on the file/dir and see what we have */
 
-	if ((strcmp(dirp->name, ".") != 0) &&
-	    (strcmp(dirp->name, "..") != 0)) {
+	if (!ISDOT(dirp->name) && !ISDOTDOT(dirp->name)) {
 
 	  strncpy(path1, path, sizeof(path1));
 	  strncat(path1, "/", sizeof(path) - strlen(path));
@@ -414,8 +413,8 @@ static void cb_itemsignal( GtkWidget *item,
 
 	if (dirp->smbc_type != SMBC_FILE &&
 	    dirp->smbc_type != SMBC_IPC_SHARE &&
-	    (strcmp(dirp->name, ".") != 0) && 
-	    (strcmp(dirp->name, "..") !=0)){
+	    (!ISDOT(dirp->name)) &&
+	    (!ISDOTDOT(dirp->name))){
 	  
 	  subtree = gtk_tree_new();
 	  gtk_tree_item_set_subtree(GTK_TREE_ITEM(aitem), subtree);

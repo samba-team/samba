@@ -40,3 +40,22 @@
 #ifndef HAVE_MKDIR_MODE
 #define mkdir(dir, mode) mkdir(dir)
 #endif
+
+/* Test whether a file name is the "." or ".." directory entries.
+ * These really should be inline functions.
+ */
+#ifndef ISDOT
+#define ISDOT(path) ( \
+			*((const char *)path) == '.' && \
+			*(((const char *)path) + 1) == '\0' \
+		    )
+#endif
+
+#ifndef ISDOTDOT
+#define ISDOTDOT(path)	( \
+			    *((const char *)path) == '.' && \
+			    *(((const char *)path) + 1) == '.' && \
+			    *(((const char *)path) + 2) == '\0' \
+			)
+#endif
+

@@ -20,6 +20,7 @@
 
 #include "includes.h"
 #include "system/filesys.h"
+#include "system/dir.h"
 #include "libcli/libcli.h"
 #include "libcli/raw/libcliraw.h"
 #include "system/time.h"
@@ -41,9 +42,9 @@ static BOOL reg_match_one(struct smbcli_state *cli, const char *pattern, const c
 	/* oh what a weird world this is */
 	if (old_list && strcmp(pattern, "*.*") == 0) return True;
 
-	if (strcmp(pattern,".") == 0) return False;
+	if (ISDOT(pattern)) return False;
 
-	if (strcmp(file,"..") == 0) file = ".";
+	if (ISDOTDOT(file)) file = ".";
 
 	return ms_fnmatch(pattern, file, cli->transport->negotiate.protocol)==0;
 }
@@ -101,9 +102,9 @@ static BOOL f_info_hit;
 
 static void listfn(struct clilist_file_info *f, const char *s, void *state)
 {
-	if (strcmp(f->name,".") == 0) {
+	if (ISDOT(f->name)) {
 		resultp[0] = '+';
-	} else if (strcmp(f->name,"..") == 0) {
+	} else if (ISDOTDOT(f->name)) {
 		resultp[1] = '+';		
 	} else {
 		resultp[2] = '+';
@@ -227,9 +228,9 @@ static void test_mask(int argc, char *argv[],
 		}
 		file[l+l2] = 0;
 
-		if (strcmp(file+l,".") == 0 || 
-		    strcmp(file+l,"..") == 0 ||
-		    strcmp(mask+l,"..") == 0) continue;
+		if (ISDOT(file+l) || ISDOTDOT(file+l) || ISDOTDOT(mask+l)) {
+			continue;
+		}
 
 		if (strspn(file+l, ".") == strlen(file+l)) continue;
 
