@@ -1,4 +1,18 @@
-2006-04-21  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-04-24  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* rfc2459.asn1: Add id-Userid
+
+	* Makefile.am: Add UID and email
+
+	* pkcs9.asn1: Add id-pkcs9-emailAddress
+	
+	* Makefile.am: Add attribute type oids from X520 and RFC 2247 DC
+	oid
+
+	* rfc2459.asn1: Add attribute type oids from X520 and RFC 2247 DC
+	oid
+	
+2006-04-21  Love Hörnquist Åstrand <lha@it.su.se>
 
 	* Makefile.am: add sha-1 and sha-2
 
