@@ -1130,11 +1130,14 @@ Below is a list of types to use.
 
 @item DIR:
 
-@c Create a directory where all the trusted anchors are stored
-@c ca-trusted-anchors and copy all certificate you are going to trust as
-@c anchors into that directory. Make sure there are no other files then
-@c trust anchors in that directory, if there are, it will not work. In
-@c the krb5.conf, this is refear to as DIR:/dir
+DIR is reading all certificates in a directory that is DER formated.
+If there are any files that are not certificates, DIR will fail
+parsing the directory.
+
+The main feature of DIR is that the directory is read on demand when
+iterating over certificates, that way appliction can for some cases
+avoid storeing all certificates in memory. Its very useful for tests
+that iterates over larger amount of certificates.
 
 Syntax is:
 
@@ -1145,7 +1148,12 @@ DIR:/path/to/der/files
 @item FILE:
 
 FILE: is used to have the lib pick up a certificate chain and a
-private key. 
+private key. The fil can be either a PEM (openssl) file or a raw DER
+encoded certificate. If its a PEM file it can contain several keys and
+certificates and the code will try to match the private key and
+certificate togehter.
+
+Its useful to have one PEM file that contains all the trust anchors.
 
 Syntax is:
 
@@ -1166,7 +1174,7 @@ PKCS11:shared-object.so:slot=<num>:otherattribute=<value>
 
 @item PKCS12:
 
-PKCS12: is used handle PKCS12 (.pfx/.p12) files. 
+PKCS12: is used handle PKCS12 (.pfx/.p12) files.
 
 Syntax is:
 
