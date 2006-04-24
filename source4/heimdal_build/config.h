@@ -11,8 +11,7 @@
 
 #ifdef HAVE_KRB5
 
-#define RCSID(msg) \
-static /**/const char *const rcsid[] = { (const char *)rcsid, "\100(#)" msg }
+#define RCSID(msg)
 
 #ifdef VOID_RETSIGTYPE
 #define SIGRETURN(x) return
