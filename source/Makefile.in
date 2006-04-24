@@ -156,7 +156,7 @@ BIN_PROGS = $(BIN_PROGS1) $(BIN_PROGS2) $(BIN_PROGS3) @EXTRA_BIN_PROGS@
 EVERYTHING_PROGS = bin/debug2html@EXEEXT@ bin/smbfilter@EXEEXT@ bin/talloctort@EXEEXT@ \
 	bin/log2pcap@EXEEXT@
 
-SHLIBS = @SHLIB_PROGS@ @LIBSMBCLIENT@ @LIBSMBSHAREMODES@ cac
+SHLIBS = @SHLIB_PROGS@ @LIBSMBCLIENT@ @LIBSMBSHAREMODES@ @LIBMSRPC@
 
 PAM_MODULES = @PAM_MODULES@
 
@@ -705,7 +705,6 @@ WINBIND_WINS_NSS_PICOBJS = $(WINBIND_WINS_NSS_OBJ:.o=.@PICSUFFIX@)
 PICOBJS = $(SMBWRAPPER_OBJ:.o=.@PICSUFFIX@)
 LIBSMBCLIENT_PICOBJS = $(LIBSMBCLIENT_OBJ:.o=.@PICSUFFIX@)
 LIBSMBSHAREMODES_PICOBJS = $(LIBSMBSHAREMODES_OBJ:.o=.@PICSUFFIX@)
-
 CAC_PICOBJS = $(CAC_OBJ:.o=.@PICSUFFIX@)
 
 
@@ -827,7 +826,7 @@ wins : SHOWFLAGS @WINBIND_WINS_NSS@
 
 modules: SHOWFLAGS proto_exists $(MODULES)
 
-cac: SHOWFLAGS bin/libmsrpc.@SHLIBEXT@ bin/libmsrpc.a
+cac: SHOWFLAGS $(LIBMSRPC)
 
 everything: all libsmbclient debug2html smbfilter talloctort modules torture \
 	$(EVERYTHING_PROGS)
@@ -1151,6 +1150,7 @@ bin/libbigballofmud.@SHLIBEXT@: $(LIBBIGBALLOFMUD_PICOBJS)
 
 libsmbclient: $(LIBSMBCLIENT)
 libsmbsharemodes: $(LIBSMBSHAREMODES)
+libmsrpc: $(LIBMSRPC)
 
 bin/librpc_lsarpc.@SHLIBEXT@: $(RPC_LSA_OBJ)
 	@echo "Linking $@"
