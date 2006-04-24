@@ -799,7 +799,9 @@ request_create(struct request_create_options *opt, int argc, char **argv)
     if (opt->subject_string) {
 	hx509_name name = NULL;
 
-	hx509_parse_name(opt->subject_string, &name);
+	ret = hx509_parse_name(opt->subject_string, &name);
+	if (ret)
+	    errx(1, "hx509_parse_name: %d\n", ret);
 	_hx509_request_set_name(context, req, name);
 
 	if (opt->verbose_flag) {
@@ -821,6 +823,8 @@ request_create(struct request_create_options *opt, int argc, char **argv)
 
 
     ret = _hx509_private_key2SPKI(context, signer, &key);
+    if (ret)
+	errx(1, "_hx509_private_key2SPKI: %d\n", ret);
 
     ret = _hx509_request_set_SubjectPublicKeyInfo(context,
 						  req,
@@ -832,6 +836,8 @@ request_create(struct request_create_options *opt, int argc, char **argv)
 				   req,
 				   signer,
 				   &request);
+    if (ret)
+	errx(1, "_hx509_request_to_pkcs10: %d\n", ret);
 
     _hx509_request_free(&req);
 
