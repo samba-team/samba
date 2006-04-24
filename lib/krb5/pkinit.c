@@ -710,6 +710,8 @@ get_reply_key(krb5_context context,
 
 static krb5_error_code
 pk_verify_host(krb5_context context,
+	       const char *realm,
+	       const krb5_krbhst_info *hi,
 	       struct krb5_pk_init_ctx_data *ctx,
 	       struct krb5_pk_cert *host)
 {
@@ -738,6 +740,7 @@ pk_verify_host(krb5_context context,
 
 	for (i = 0; i < list.len; i++) {
 	    KRB5PrincipalName r;
+
 	    ret = decode_KRB5PrincipalName(list.val[i].data,
 					   list.val[i].length,
 					   &r,
@@ -747,13 +750,14 @@ pk_verify_host(krb5_context context,
 		break;
 	    }
 
-#if 0
-	    if (r.principalName.name.len != 2) {
+	    if (r.principalName.name_string.len != 2 ||
+		strcmp(r.principalName.name_string.val[0], KRB5_TGS_NAME) != 0 ||
+		strcmp(r.principalName.name_string.val[1], realm) != 0 ||
+		strcmp(r.realm, realm) != 0)
+	    {
 		krb5_clear_error_string(context);
 		ret = EINVAL;
 	    }
-#endif
-	    /* XXX verify realm */
 
 	    free_KRB5PrincipalName(&r);
 	    if (ret)
@@ -768,7 +772,8 @@ pk_verify_host(krb5_context context,
 static krb5_error_code
 pk_rd_pa_reply_enckey(krb5_context context,
 		      int type,
-                      ContentInfo *rep,
+                      const ContentInfo *rep,
+		      const char *realm,
 		      krb5_pk_init_ctx ctx,
 		      krb5_enctype etype,
 		      const krb5_krbhst_info *hi,
@@ -846,7 +851,7 @@ pk_rd_pa_reply_enckey(krb5_context context,
 	goto out;
 
     /* make sure that it is the kdc's certificate */
-    ret = pk_verify_host(context, ctx, host);
+    ret = pk_verify_host(context, realm, hi, ctx, host);
     if (ret) {
 	krb5_set_error_string(context, "PKINIT: failed verify host: %d", ret);
 	goto out;
@@ -894,7 +899,8 @@ pk_rd_pa_reply_enckey(krb5_context context,
 
 static krb5_error_code
 pk_rd_pa_reply_dh(krb5_context context,
-                  ContentInfo *rep,
+                  const ContentInfo *rep,
+		  const char *realm,
 		  krb5_pk_init_ctx ctx,
 		  krb5_enctype etype,
 		  const krb5_krbhst_info *hi,
@@ -938,7 +944,7 @@ pk_rd_pa_reply_dh(krb5_context context,
 	goto out;
 
     /* make sure that it is the kdc's certificate */
-    ret = pk_verify_host(context, ctx, host);
+    ret = pk_verify_host(context, realm, hi, ctx, host);
     if (ret)
 	goto out;
 
@@ -1066,6 +1072,7 @@ pk_rd_pa_reply_dh(krb5_context context,
 
 krb5_error_code KRB5_LIB_FUNCTION
 _krb5_pk_rd_pa_reply(krb5_context context,
+		     const char *realm,
 		     void *c,
 		     krb5_enctype etype,
 		     const krb5_krbhst_info *hi,
@@ -1106,7 +1113,7 @@ _krb5_pk_rd_pa_reply(krb5_context context,
 		free_PA_PK_AS_REP(&rep);
 		break;
 	    }
-	    ret = pk_rd_pa_reply_dh(context, &ci, ctx, etype, hi,
+	    ret = pk_rd_pa_reply_dh(context, &ci, realm, ctx, etype, hi,
 				    ctx->clientDHNonce,
 				    rep.u.dhInfo.serverDHNonce,
 				    nonce, pa, key);
@@ -1126,7 +1133,7 @@ _krb5_pk_rd_pa_reply(krb5_context context,
 				      "ContentInfo: %d", ret);
 		break;
 	    }
-	    ret = pk_rd_pa_reply_enckey(context, COMPAT_IETF, &ci, ctx,
+	    ret = pk_rd_pa_reply_enckey(context, COMPAT_IETF, &ci, realm, ctx,
 					etype, hi, nonce, req_buffer, pa, key);
 	    free_ContentInfo(&ci);
 	    return ret;
@@ -1173,7 +1180,7 @@ _krb5_pk_rd_pa_reply(krb5_context context,
 				      ret);
 		return ret;
 	    }
-	    ret = pk_rd_pa_reply_enckey(context, COMPAT_WIN2K, &ci, ctx,
+	    ret = pk_rd_pa_reply_enckey(context, COMPAT_WIN2K, &ci, realm, ctx,
 					etype, hi, nonce, req_buffer, pa, key);
 	    free_ContentInfo(&ci);
 	    break;
