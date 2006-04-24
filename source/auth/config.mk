@@ -14,7 +14,7 @@ INIT_FUNCTION = auth_sam_init
 SUBSYSTEM = auth
 OBJ_FILES = \
 		auth_sam.o
-REQUIRED_SUBSYSTEMS = \
+PUBLIC_DEPENDENCIES = \
 		SAMDB
 # End MODULE auth_sam
 #######################
@@ -36,7 +36,7 @@ INIT_FUNCTION = auth_winbind_init
 SUBSYSTEM = auth
 OBJ_FILES = \
 		auth_winbind.o
-REQUIRED_SUBSYSTEMS = \
+PUBLIC_DEPENDENCIES = \
 		LIBWINBIND-CLIENT \
 		NDR_NETLOGON LIBNDR
 # End MODULE auth_winbind
@@ -59,7 +59,7 @@ INIT_FUNCTION = auth_unix_init
 SUBSYSTEM = auth
 OBJ_FILES = \
 		auth_unix.o
-REQUIRED_SUBSYSTEMS = \
+PUBLIC_DEPENDENCIES = \
 		EXT_LIB_CRYPT EXT_LIB_PAM PAM_ERRORS
 # End MODULE auth_unix
 #######################
@@ -79,6 +79,6 @@ OBJ_FILES = \
 		auth_sam_reply.o \
 		ntlm_check.o \
 		auth_simple.o
-REQUIRED_SUBSYSTEMS = LIB_SECURITY process_model
+PUBLIC_DEPENDENCIES = LIB_SECURITY process_model
 # End SUBSYSTEM auth
 #######################

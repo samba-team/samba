@@ -7,7 +7,7 @@ DESCRIPTION = Generic Security Library
 PUBLIC_HEADERS = gensec.h spnego.h
 PUBLIC_PROTO_HEADER = gensec_proto.h
 OBJ_FILES = gensec.o
-REQUIRED_SUBSYSTEMS = \
+PUBLIC_DEPENDENCIES = \
 		CREDENTIALS LIBSAMBA-UTIL
 # End SUBSYSTEM gensec
 #################################
@@ -18,7 +18,7 @@ REQUIRED_SUBSYSTEMS = \
 SUBSYSTEM = gensec
 INIT_FUNCTION = gensec_krb5_init
 OBJ_FILES = gensec_krb5.o 
-REQUIRED_SUBSYSTEMS = KERBEROS auth auth_sam
+PUBLIC_DEPENDENCIES = KERBEROS auth auth_sam
 # End MODULE gensec_krb5
 ################################################
 
@@ -28,7 +28,7 @@ REQUIRED_SUBSYSTEMS = KERBEROS auth auth_sam
 SUBSYSTEM = gensec
 INIT_FUNCTION = gensec_gssapi_init
 OBJ_FILES = gensec_gssapi.o 
-REQUIRED_SUBSYSTEMS = KERBEROS auth
+PUBLIC_DEPENDENCIES = KERBEROS auth
 # End MODULE gensec_gssapi
 ################################################
 
@@ -51,7 +51,7 @@ PRIVATE_PROTO_HEADER = schannel_proto.h
 INIT_FUNCTION = gensec_schannel_init
 OBJ_FILES = schannel.o \
 			schannel_sign.o
-REQUIRED_SUBSYSTEMS = auth SCHANNELDB NDR_SCHANNEL
+PUBLIC_DEPENDENCIES = auth SCHANNELDB NDR_SCHANNEL
 OUTPUT_TYPE = MERGEDOBJ
 # End MODULE gensec_schannel
 ################################################

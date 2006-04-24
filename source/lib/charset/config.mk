@@ -6,6 +6,6 @@ OBJ_FILES = \
 		charcnv.o
 PUBLIC_HEADERS = charset.h
 PUBLIC_PROTO_HEADER = charset_proto.h
-REQUIRED_SUBSYSTEMS = EXT_LIB_ICONV
+PUBLIC_DEPENDENCIES = EXT_LIB_ICONV
 # End SUBSYSTEM CHARSET
 ################################################

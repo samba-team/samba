@@ -40,7 +40,7 @@ OBJ_FILES = \
 	../heimdal/lib/hdb/asn1_Salt.o \
 	../heimdal/lib/hdb/asn1_hdb_entry.o \
 	../heimdal/lib/hdb/hdb_err.o
-REQUIRED_SUBSYSTEMS = HDB_LDB
+PUBLIC_DEPENDENCIES = HDB_LDB
 # End SUBSYSTEM HEIMDAL_HDB
 #######################
 
@@ -87,7 +87,7 @@ OBJ_FILES = \
 	../heimdal/lib/gssapi/get_mic.o \
 	../heimdal/lib/gssapi/import_name.o \
 	../heimdal/lib/gssapi/init.o
-REQUIRED_SUBSYSTEMS = KERBEROS HEIMDAL_KRB5
+PUBLIC_DEPENDENCIES = KERBEROS HEIMDAL_KRB5
 # End SUBSYSTEM HEIMDAL_GSSAPI
 #######################
 
@@ -338,7 +338,7 @@ OBJ_FILES = \
 	../heimdal/lib/roken/strupr.o \
 	../heimdal/lib/roken/strpool.o \
 	replace.o
-REQUIRED_SUBSYSTEMS = \
+PUBLIC_DEPENDENCIES = \
 			HEIMDAL_ROKEN_ADDRINFO \
 			HEIMDAL_ROKEN_GAI_STRERROR \
 			HEIMDAL_ROKEN_INET_ATON \
@@ -350,7 +350,7 @@ REQUIRED_SUBSYSTEMS = \
 # Start SUBSYSTEM HEIMDAL_GLUE
 [SUBSYSTEM::HEIMDAL_GLUE]
 OBJ_FILES = glue.o
-REQUIRED_SUBSYSTEMS = LIBNETIF
+PUBLIC_DEPENDENCIES = LIBNETIF
 # End SUBSYSTEM HEIMDAL_GLUE
 #######################
 
@@ -466,7 +466,7 @@ EXTRA_CFLAGS = \
 	-Iheimdal/lib/des -Iheimdal/lib/roken \
 	-DNO_PRINTF_ATTRIBUTE
 OBJ_FILES = ../heimdal/lib/vers/print_version.o
-REQUIRED_SUBSYSTEMS = \
+PUBLIC_DEPENDENCIES = \
 		LIBREPLACE HEIMDAL_GSSAPI HEIMDAL_KRB5 KERBEROS \
 		HEIMDAL_ASN1 HEIMDAL_DES HEIMDAL_ROKEN \
 		HEIMDAL_COM_ERR HEIMDAL_GLUE EXT_LIB_RESOLV
@@ -476,8 +476,8 @@ REQUIRED_SUBSYSTEMS = \
 #######################
 # Start SUBSYSTEM KERBEROS_LIB
 [SUBSYSTEM::KERBEROS_LIB]
-#REQUIRED_SUBSYSTEMS = EXT_LIB_KRB5
-REQUIRED_SUBSYSTEMS = HEIMDAL
+#PUBLIC_DEPENDENCIES = EXT_LIB_KRB5
+PUBLIC_DEPENDENCIES = HEIMDAL
 # End SUBSYSTEM KERBEROS_LIB
 #######################
 

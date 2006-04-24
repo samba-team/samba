@@ -31,7 +31,7 @@ OBJ_FILES = xfile.o \
 		mutex.o \
 		idtree.o \
 		module.o
-REQUIRED_SUBSYSTEMS = \
+PUBLIC_DEPENDENCIES = \
 		CHARSET LIBREPLACE LIBCRYPTO EXT_LIB_DL LIBTALLOC \
 		SOCKET_WRAPPER \
 # for the base64 functions

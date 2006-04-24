@@ -6,7 +6,7 @@
 OBJ_FILES = \
 		kdc.o \
 		kpasswdd.o
-REQUIRED_SUBSYSTEMS = \
+PUBLIC_DEPENDENCIES = \
 		ldb KERBEROS_LIB HEIMDAL_KDC HEIMDAL_HDB SAMDB
 # End SUBSYSTEM KDC
 #######################
@@ -17,7 +17,7 @@ REQUIRED_SUBSYSTEMS = \
 OBJ_FILES = \
 		hdb-ldb.o \
 		pac-glue.o 
-REQUIRED_SUBSYSTEMS = \
+PUBLIC_DEPENDENCIES = \
 		ldb KERBEROS_LIB HEIMDAL_HDB auth_sam
 # End SUBSYSTEM KDC
 #######################

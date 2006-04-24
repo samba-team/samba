@@ -74,10 +74,10 @@ sub check_module($$$)
 
 	if ($mod->{OUTPUT_TYPE} eq "SHARED_LIBRARY") {
 		$mod->{INSTALLDIR} = "MODULESDIR/$mod->{SUBSYSTEM}";
-		push (@{$mod->{REQUIRED_SUBSYSTEMS}}, $mod->{SUBSYSTEM}) unless 
+		push (@{$mod->{PRIVATE_DEPENDENCIES}}, $mod->{SUBSYSTEM}) unless 
 			$INPUT->{$mod->{SUBSYSTEM}}->{TYPE} eq "BINARY";
 	} else {
-		push (@{$INPUT->{$mod->{SUBSYSTEM}}{REQUIRED_SUBSYSTEMS}}, $mod->{NAME});
+		push (@{$INPUT->{$mod->{SUBSYSTEM}}{PRIVATE_DEPENDENCIES}}, $mod->{NAME});
 		push (@{$INPUT->{$mod->{SUBSYSTEM}}{INIT_FUNCTIONS}}, $mod->{INIT_FUNCTION}) if defined($mod->{INIT_FUNCTION});
 	}
 }
@@ -197,12 +197,14 @@ sub check($$$$$)
 		# Generate list of dependencies
 		$part->{DEPENDENCIES} = [];
 
-		foreach my $key (@{$part->{REQUIRED_SUBSYSTEMS}}) {
+		foreach my $key (@{$part->{PUBLIC_DEPENDENCIES}},
+				 @{$part->{PRIVATE_DEPENDENCIES}}) {
 			die("$part->{NAME} has undefined dependency $key\n") if not defined($depend{$key});
 			push (@{$part->{DEPENDENCIES}}, \$depend{$key});
 		}
 
-		delete ($part->{REQUIRED_SUBSYSTEMS});
+		delete ($part->{PRIVATE_DEPENDENCIES});
+		delete ($part->{PUBLIC_DEPENDENCIES});
 	}
 
 	foreach my $part (values %depend) {

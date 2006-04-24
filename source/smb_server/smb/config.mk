@@ -14,7 +14,7 @@ OBJ_FILES = \
 		srvtime.o \
 		trans2.o \
 		signing.o
-REQUIRED_SUBSYSTEMS = \
+PUBLIC_DEPENDENCIES = \
 		ntvfs LIBPACKET
 # End SUBSYSTEM SMB_PROTOCOL
 #######################

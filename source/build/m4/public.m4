@@ -30,7 +30,7 @@ SMB_INFO_SUBSYSTEMS="$SMB_INFO_SUBSYSTEMS
 # Start Subsystem $1
 @<:@SUBSYSTEM::$1@:>@
 OBJ_FILES = $2
-REQUIRED_SUBSYSTEMS = $3
+PRIVATE_DEPENDENCIES = $3
 ENABLE = YES
 # End Subsystem $1
 ###################################

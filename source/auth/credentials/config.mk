@@ -7,7 +7,7 @@ OBJ_FILES = credentials.o \
 		credentials_files.o \
 		credentials_krb5.o \
 		credentials_ntlm.o
-REQUIRED_SUBSYSTEMS = \
+PUBLIC_DEPENDENCIES = \
 		HEIMDAL LIBCLI_AUTH ldb SECRETS
 # End SUBSYSTEM CREDENTIALS
 #################################

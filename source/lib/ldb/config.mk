@@ -76,7 +76,7 @@ INIT_FUNCTION = ldb_ildap_init
 ALIASES = ldapi ldaps ldap
 OBJ_FILES = \
 		ldb_ildap/ldb_ildap.o
-REQUIRED_SUBSYSTEMS = \
+PUBLIC_DEPENDENCIES = \
 		LIBCLI_LDAP
 # End MODULE ldb_ildap
 ################################################
@@ -84,7 +84,7 @@ REQUIRED_SUBSYSTEMS = \
 ################################################
 # Start MODULE ldb_map
 [SUBSYSTEM::ldb_map]
-REQUIRED_SUBSYSTEMS = ldb
+PUBLIC_DEPENDENCIES = ldb
 OBJ_FILES = modules/ldb_map.o
 # End MODULE ldb_map
 ################################################
@@ -105,7 +105,7 @@ SUBSYSTEM = ldb
 INIT_FUNCTION = ldb_sqlite3_init
 OBJ_FILES = \
 		ldb_sqlite3/ldb_sqlite3.o
-REQUIRED_SUBSYSTEMS = \
+PUBLIC_DEPENDENCIES = \
 		EXT_LIB_SQLITE3
 # End MODULE ldb_sqlite3
 ################################################
@@ -122,7 +122,7 @@ OBJ_FILES = \
 		ldb_tdb/ldb_index.o \
 		ldb_tdb/ldb_cache.o \
 		ldb_tdb/ldb_tdb_wrap.o
-REQUIRED_SUBSYSTEMS = \
+PUBLIC_DEPENDENCIES = \
 		LIBTDB
 # End MODULE ldb_tdb
 ################################################
@@ -152,7 +152,7 @@ OBJ_FILES = \
 		common/ldb_dn.o \
 		common/ldb_controls.o \
 		common/qsort.o
-REQUIRED_SUBSYSTEMS = \
+PUBLIC_DEPENDENCIES = \
 		LIBREPLACE LIBTALLOC 
 MANPAGE = man/ldb.3
 PUBLIC_HEADERS = include/ldb.h include/ldb_errors.h
@@ -164,7 +164,7 @@ PUBLIC_HEADERS = include/ldb.h include/ldb_errors.h
 # Start SUBSYSTEM LDBSAMBA
 [SUBSYSTEM::LDBSAMBA]
 PRIVATE_PROTO_HEADER = samba/ldif_handlers.h
-REQUIRED_SUBSYSTEMS = LIB_SECURITY SAMDB
+PUBLIC_DEPENDENCIES = LIB_SECURITY SAMDB
 OBJ_FILES = \
 		samba/ldif_handlers.o
 # End SUBSYSTEM LDBSAMBA
@@ -175,7 +175,7 @@ OBJ_FILES = \
 [SUBSYSTEM::LIBLDB_CMDLINE]
 OBJ_FILES= \
 		tools/cmdline.o
-REQUIRED_SUBSYSTEMS = ldb LIBSAMBA-UTIL LIBPOPT POPT_SAMBA POPT_CREDENTIALS
+PUBLIC_DEPENDENCIES = ldb LIBSAMBA-UTIL LIBPOPT POPT_SAMBA POPT_CREDENTIALS
 # End SUBSYSTEM LIBLDB_CMDLINE
 ################################################
 
@@ -185,7 +185,7 @@ REQUIRED_SUBSYSTEMS = ldb LIBSAMBA-UTIL LIBPOPT POPT_SAMBA POPT_CREDENTIALS
 INSTALLDIR = BINDIR
 OBJ_FILES = \
 		tools/ldbadd.o
-REQUIRED_SUBSYSTEMS = \
+PRIVATE_DEPENDENCIES = \
 		LIBLDB_CMDLINE
 MANPAGE = man/ldbadd.1
 # End BINARY ldbadd
@@ -197,7 +197,7 @@ MANPAGE = man/ldbadd.1
 INSTALLDIR = BINDIR
 OBJ_FILES= \
 		tools/ldbdel.o
-REQUIRED_SUBSYSTEMS = \
+PRIVATE_DEPENDENCIES = \
 		LIBLDB_CMDLINE
 MANPAGE = man/ldbdel.1
 # End BINARY ldbdel
@@ -209,7 +209,7 @@ MANPAGE = man/ldbdel.1
 INSTALLDIR = BINDIR
 OBJ_FILES= \
 		tools/ldbmodify.o
-REQUIRED_SUBSYSTEMS = \
+PRIVATE_DEPENDENCIES = \
 		LIBLDB_CMDLINE
 MANPAGE = man/ldbmodify.1
 # End BINARY ldbmodify
@@ -221,7 +221,7 @@ MANPAGE = man/ldbmodify.1
 INSTALLDIR = BINDIR
 OBJ_FILES= \
 		tools/ldbsearch.o
-REQUIRED_SUBSYSTEMS = \
+PRIVATE_DEPENDENCIES = \
 		LIBLDB_CMDLINE 
 MANPAGE = man/ldbsearch.1
 # End BINARY ldbsearch
@@ -233,7 +233,7 @@ MANPAGE = man/ldbsearch.1
 INSTALLDIR = BINDIR
 OBJ_FILES= \
 		tools/ldbedit.o
-REQUIRED_SUBSYSTEMS = \
+PRIVATE_DEPENDENCIES = \
 		LIBLDB_CMDLINE
 MANPAGE = man/ldbedit.1
 # End BINARY ldbedit
@@ -245,7 +245,7 @@ MANPAGE = man/ldbedit.1
 INSTALLDIR = BINDIR
 OBJ_FILES= \
 		tools/ldbrename.o
-REQUIRED_SUBSYSTEMS = \
+PRIVATE_DEPENDENCIES = \
 		LIBLDB_CMDLINE
 MANPAGE = man/ldbrename.1
 # End BINARY ldbrename
@@ -256,7 +256,7 @@ MANPAGE = man/ldbrename.1
 [BINARY::ldbtest]
 OBJ_FILES= \
 		tools/ldbtest.o
-REQUIRED_SUBSYSTEMS = \
+PRIVATE_DEPENDENCIES = \
 		LIBLDB_CMDLINE
 # End BINARY ldbtest
 ################################################
@@ -268,7 +268,7 @@ INSTALLDIR = BINDIR
 MANPAGE = man/oLschema2ldif.1
 OBJ_FILES= \
 		tools/oLschema2ldif.o
-REQUIRED_SUBSYSTEMS = \
+PRIVATE_DEPENDENCIES = \
 		LIBLDB_CMDLINE
 # End BINARY oLschema2ldif
 ################################################
@@ -276,7 +276,7 @@ REQUIRED_SUBSYSTEMS = \
 #######################
 # Start LIBRARY swig_ldb
 [LIBRARY::swig_ldb]
-REQUIRED_SUBSYSTEMS = ldb DYNCONFIG
+PUBLIC_DEPENDENCIES = ldb DYNCONFIG
 LIBRARY_REALNAME = swig/_ldb.$(SHLIBEXT)
 OBJ_FILES = swig/ldb_wrap.o
 # End LIBRARY swig_ldb

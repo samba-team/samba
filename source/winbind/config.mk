@@ -21,7 +21,7 @@ OBJ_FILES = \
 		wb_cmd_usersids.o \
 		wb_cmd_list_trustdom.o \
 		wb_pam_auth.o
-REQUIRED_SUBSYSTEMS = WB_HELPER RPC_NDR_LSA RPC_NDR_SAMR process_model \
+PUBLIC_DEPENDENCIES = WB_HELPER RPC_NDR_LSA RPC_NDR_SAMR process_model \
 					  PAM_ERRORS
 # End SUBSYSTEM WINBIND
 #######################
@@ -32,6 +32,6 @@ REQUIRED_SUBSYSTEMS = WB_HELPER RPC_NDR_LSA RPC_NDR_SAMR process_model \
 PRIVATE_PROTO_HEADER = wb_helper.h
 OBJ_FILES = \
 		wb_async_helpers.o
-REQUIRED_SUBSYSTEMS = RPC_NDR_LSA RPC_NDR_SAMR
+PUBLIC_DEPENDENCIES = RPC_NDR_LSA RPC_NDR_SAMR
 # End SUBSYSTEM WB_HELPER
 ################################################

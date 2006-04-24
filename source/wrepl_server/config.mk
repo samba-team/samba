@@ -14,7 +14,7 @@ OBJ_FILES = \
 		wrepl_out_push.o \
 		wrepl_out_helpers.o
 PRIVATE_PROTO_HEADER = wrepl_server_proto.h
-REQUIRED_SUBSYSTEMS = \
+PUBLIC_DEPENDENCIES = \
 		LIBCLI_WREPL WINSDB process_model
 # End SUBSYSTEM WREPL_SRV
 #######################

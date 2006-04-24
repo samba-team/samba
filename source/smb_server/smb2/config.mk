@@ -9,7 +9,7 @@ OBJ_FILES = \
 		tcon.o \
 		fileio.o \
 		keepalive.o
-REQUIRED_SUBSYSTEMS = \
+PUBLIC_DEPENDENCIES = \
 		ntvfs LIBPACKET LIBCLI_SMB2
 # End SUBSYSTEM SMB2_PROTOCOL
 #######################

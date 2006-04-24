@@ -7,12 +7,12 @@ INIT_FUNCTION = registry_nt4_init
 SUBSYSTEM = registry
 OBJ_FILES = \
 		reg_backend_nt4.o
-REQUIRED_SUBSYSTEMS = TDR_REGF
+PUBLIC_DEPENDENCIES = TDR_REGF
 # End MODULE registry_nt4
 ################################################
 
 [SUBSYSTEM::TDR_REGF]
-REQUIRED_SUBSYSTEMS = TDR 
+PUBLIC_DEPENDENCIES = TDR 
 OBJ_FILES = tdr_regf.o
 
 # Special support for external builddirs
@@ -44,7 +44,7 @@ INIT_FUNCTION = registry_dir_init
 SUBSYSTEM = registry
 OBJ_FILES = \
 		reg_backend_dir.o
-REQUIRED_SUBSYSTEMS = LIBTALLOC
+PUBLIC_DEPENDENCIES = LIBTALLOC
 # End MODULE registry_dir
 ################################################
 
@@ -57,7 +57,7 @@ OUTPUT_TYPE = MERGEDOBJ
 SUBSYSTEM = registry
 OBJ_FILES = \
 		reg_backend_rpc.o
-REQUIRED_SUBSYSTEMS = RPC_NDR_WINREG
+PUBLIC_DEPENDENCIES = RPC_NDR_WINREG
 # End MODULE registry_rpc
 ################################################
 
@@ -70,7 +70,7 @@ INIT_FUNCTION = registry_gconf_init
 SUBSYSTEM = registry
 OBJ_FILES = \
 		reg_backend_gconf.o
-REQUIRED_SUBSYSTEMS = EXT_LIB_gconf
+PUBLIC_DEPENDENCIES = EXT_LIB_gconf
 # End MODULE registry_gconf
 ################################################
 
@@ -81,7 +81,7 @@ INIT_FUNCTION = registry_ldb_init
 SUBSYSTEM = registry
 OBJ_FILES = \
 		reg_backend_ldb.o
-REQUIRED_SUBSYSTEMS = \
+PUBLIC_DEPENDENCIES = \
 		ldb
 # End MODULE registry_ldb
 ################################################
@@ -97,7 +97,7 @@ OBJ_FILES = \
 		common/reg_util.o \
 		reg_samba.o \
 		patchfile.o
-REQUIRED_SUBSYSTEMS = \
+PUBLIC_DEPENDENCIES = \
 		LIBSAMBA-UTIL
 PRIVATE_PROTO_HEADER = registry_proto.h
 PUBLIC_HEADERS = registry.h
@@ -108,9 +108,8 @@ PUBLIC_HEADERS = registry.h
 # Start BINARY regdiff
 [BINARY::regdiff]
 INSTALLDIR = BINDIR
-OBJ_FILES= \
-		tools/regdiff.o
-REQUIRED_SUBSYSTEMS = \
+OBJ_FILES = tools/regdiff.o
+PRIVATE_DEPENDENCIES = \
 		LIBSAMBA-CONFIG registry LIBPOPT POPT_SAMBA POPT_CREDENTIALS
 MANPAGE = man/regdiff.1
 # End BINARY regdiff
@@ -120,9 +119,8 @@ MANPAGE = man/regdiff.1
 # Start BINARY regpatch
 [BINARY::regpatch]
 INSTALLDIR = BINDIR
-OBJ_FILES= \
-		tools/regpatch.o
-REQUIRED_SUBSYSTEMS = \
+OBJ_FILES = tools/regpatch.o
+PRIVATE_DEPENDENCIES = \
 		LIBSAMBA-CONFIG registry LIBPOPT POPT_SAMBA POPT_CREDENTIALS
 MANPAGE = man/regpatch.1
 # End BINARY regpatch
@@ -132,9 +130,8 @@ MANPAGE = man/regpatch.1
 # Start BINARY regshell
 [BINARY::regshell]
 INSTALLDIR = BINDIR
-OBJ_FILES= \
-		tools/regshell.o
-REQUIRED_SUBSYSTEMS = \
+OBJ_FILES = tools/regshell.o
+PRIVATE_DEPENDENCIES = \
 		LIBSAMBA-CONFIG LIBPOPT registry POPT_SAMBA POPT_CREDENTIALS LIBREADLINE
 MANPAGE = man/regshell.1
 # End BINARY regshell
@@ -144,9 +141,8 @@ MANPAGE = man/regshell.1
 # Start BINARY regtree
 [BINARY::regtree]
 INSTALLDIR = BINDIR
-OBJ_FILES= \
-		tools/regtree.o
-REQUIRED_SUBSYSTEMS = \
+OBJ_FILES = tools/regtree.o
+PRIVATE_DEPENDENCIES = \
 		LIBSAMBA-CONFIG LIBPOPT registry POPT_SAMBA POPT_CREDENTIALS
 MANPAGE = man/regtree.1
 # End BINARY regtree

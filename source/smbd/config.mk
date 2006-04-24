@@ -5,7 +5,7 @@
 [MODULE::service_auth]
 INIT_FUNCTION = server_service_auth_init
 SUBSYSTEM = service
-REQUIRED_SUBSYSTEMS = \
+PUBLIC_DEPENDENCIES = \
 		auth
 # End MODULE server_auth
 ################################################
@@ -16,7 +16,7 @@ REQUIRED_SUBSYSTEMS = \
 INIT_FUNCTION = server_service_smb_init
 OUTPUT_TYPE = MERGEDOBJ
 SUBSYSTEM = service
-REQUIRED_SUBSYSTEMS = \
+PUBLIC_DEPENDENCIES = \
 		SMB_SERVER
 # End MODULE server_smb
 ################################################
@@ -27,7 +27,7 @@ REQUIRED_SUBSYSTEMS = \
 INIT_FUNCTION = server_service_rpc_init
 SUBSYSTEM = service
 OUTPUT_TYPE = MERGEDOBJ
-REQUIRED_SUBSYSTEMS = \
+PUBLIC_DEPENDENCIES = \
 		dcerpc_server
 # End MODULE server_rpc
 ################################################
@@ -37,7 +37,7 @@ REQUIRED_SUBSYSTEMS = \
 [MODULE::service_ldap]
 INIT_FUNCTION = server_service_ldap_init
 SUBSYSTEM = service
-REQUIRED_SUBSYSTEMS = \
+PUBLIC_DEPENDENCIES = \
 		LDAP
 # End MODULE server_ldap
 ################################################
@@ -47,7 +47,7 @@ REQUIRED_SUBSYSTEMS = \
 [MODULE::service_nbtd]
 INIT_FUNCTION = server_service_nbtd_init
 SUBSYSTEM = service
-REQUIRED_SUBSYSTEMS = \
+PUBLIC_DEPENDENCIES = \
 		NBTD
 # End MODULE service_nbtd
 ################################################
@@ -57,7 +57,7 @@ REQUIRED_SUBSYSTEMS = \
 [MODULE::service_wrepl]
 INIT_FUNCTION = server_service_wrepl_init
 SUBSYSTEM = service
-REQUIRED_SUBSYSTEMS = \
+PUBLIC_DEPENDENCIES = \
 		WREPL_SRV
 # End MODULE service_wrepl
 ################################################
@@ -67,7 +67,7 @@ REQUIRED_SUBSYSTEMS = \
 [MODULE::service_cldap]
 INIT_FUNCTION = server_service_cldapd_init
 SUBSYSTEM = service
-REQUIRED_SUBSYSTEMS = \
+PUBLIC_DEPENDENCIES = \
 		CLDAPD
 # End MODULE service_cldapd
 ################################################
@@ -77,7 +77,7 @@ REQUIRED_SUBSYSTEMS = \
 [MODULE::service_web]
 INIT_FUNCTION = server_service_web_init
 SUBSYSTEM = service
-REQUIRED_SUBSYSTEMS = \
+PUBLIC_DEPENDENCIES = \
 		WEB
 # End MODULE service_web
 ################################################
@@ -87,7 +87,7 @@ REQUIRED_SUBSYSTEMS = \
 [MODULE::service_kdc]
 INIT_FUNCTION = server_service_kdc_init
 SUBSYSTEM = service
-REQUIRED_SUBSYSTEMS = \
+PUBLIC_DEPENDENCIES = \
 		KDC
 # End MODULE service_web
 ################################################
@@ -97,7 +97,7 @@ REQUIRED_SUBSYSTEMS = \
 [MODULE::service_winbind]
 INIT_FUNCTION = server_service_winbind_init
 SUBSYSTEM = service
-REQUIRED_SUBSYSTEMS = \
+PUBLIC_DEPENDENCIES = \
 		WINBIND
 # End MODULE service_winbind
 ################################################
@@ -110,7 +110,7 @@ OBJ_FILES = \
 		service.o \
 		service_stream.o \
 		service_task.o
-REQUIRED_SUBSYSTEMS = \
+PUBLIC_DEPENDENCIES = \
 		MESSAGING
 # End SUBSYSTEM SERVER
 #######################
@@ -122,7 +122,7 @@ INSTALLDIR = SBINDIR
 MANPAGE = smbd.8
 OBJ_FILES = \
 		server.o
-REQUIRED_SUBSYSTEMS = \
+PRIVATE_DEPENDENCIES = \
 		process_model \
 		service \
 		LIBSAMBA-CONFIG \

@@ -22,7 +22,8 @@ my $section_types = {
 	"SUBSYSTEM" => {
 		"OBJ_FILES"		=> "list",
 
-		"REQUIRED_SUBSYSTEMS"	=> "list",
+		"PRIVATE_DEPENDENCIES"	=> "list",
+		"PUBLIC_DEPENDENCIES"	=> "list",
 
 		"ENABLE"		=> "bool",
 
@@ -42,7 +43,8 @@ my $section_types = {
 		"INIT_FUNCTION"		=> "string",
 		"OBJ_FILES"		=> "list",
 
-		"REQUIRED_SUBSYSTEMS"	=> "list",
+		"PUBLIC_DEPENDENCIES"	=> "list",
+		"PRIVATE_DEPENDENCIES"	=> "list",
 
 		"ALIASES" => "list",
 
@@ -58,7 +60,7 @@ my $section_types = {
 	"BINARY" => {
 		"OBJ_FILES"		=> "list",
 
-		"REQUIRED_SUBSYSTEMS"	=> "list",
+		"PRIVATE_DEPENDENCIES"	=> "list",
 
 		"ENABLE"		=> "bool",
 
@@ -82,7 +84,8 @@ my $section_types = {
 
 		"DESCRIPTION"		=> "string",
 
-		"REQUIRED_SUBSYSTEMS"	=> "list",
+		"PRIVATE_DEPENDENCIES"	=> "list",
+		"PUBLIC_DEPENDENCIES"	=> "list",
 
 		"ENABLE"		=> "bool",
 
