@@ -159,3 +159,5 @@ samba_cv_HAVE_FUNCTION_MACRO=yes,samba_cv_HAVE_FUNCTION_MACRO=no)])
 if test x"$samba_cv_HAVE_FUNCTION_MACRO" = x"yes"; then
     AC_DEFINE(HAVE_FUNCTION_MACRO,1,[Whether there is a __FUNCTION__ macro])
 fi
+
+AC_CHECK_HEADERS([sys/param.h])

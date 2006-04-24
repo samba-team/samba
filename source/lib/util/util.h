@@ -77,20 +77,6 @@ extern const char *panic_action;
 	smb_panic("assert failed"); abort(); }} while (0)
 
 /**
- * determine the lowest of two values
- */
-#ifndef MIN
-#define MIN(a,b) ((a)<(b)?(a):(b))
-#endif
-
-/**
- * determine the highest of two values
- */
-#ifndef MAX
-#define MAX(a,b) ((a)>(b)?(a):(b))
-#endif
-
-/**
  * determine absolute value
  */
 #ifndef ABS
