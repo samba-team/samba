@@ -513,9 +513,10 @@ DES_cfb64_encrypt(const void *in, void *out,
 
     load(*iv, uiv);
 
+    assert(*num >= 0 && *num < DES_CBLOCK_LEN);
+
     if (forward_encrypt) {
 	int i = *num;
-	assert(i >= 0);
 
 	while (length > 0) {
 	    if (i == 0)
@@ -537,7 +538,6 @@ DES_cfb64_encrypt(const void *in, void *out,
     } else {
 	int i = *num;
 	unsigned char c;
-	assert(i >= 0);
 
 	while (length > 0) {
 	    if (i == 0) {
