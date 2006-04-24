@@ -410,7 +410,7 @@ OBJ_FILES = \
 	../heimdal/lib/vers/print_version.ho \
 	../lib/replace/snprintf.ho \
 	../lib/replace/replace.ho
-REQUIRED_SUBSYSTEMS = HEIMDAL_ASN1_COMPILE_LEX
+PRIVATE_DEPENDENCIES = HEIMDAL_ASN1_COMPILE_LEX
 # End BINARY asn1_compile
 #######################
 
@@ -444,7 +444,7 @@ OBJ_FILES = ../heimdal/lib/vers/print_version.ho \
 	replace.ho \
 	../lib/replace/snprintf.ho \
 	../lib/replace/replace.ho
-REQUIRED_SUBSYSTEMS = HEIMDAL_COM_ERR_COMPILE_LEX
+PRIVATE_DEPENDENCIES = HEIMDAL_COM_ERR_COMPILE_LEX
 # End BINARY compile_et
 #######################
 
