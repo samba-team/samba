@@ -263,7 +263,8 @@ gen_files_rfc2459 =					\
 	asn1_id_at_initials.x				\
 	asn1_id_at_generationQualifier.x		\
 	asn1_id_at_pseudonym.x				\
-	asn1_id_domainComponent.x
+	asn1_id_domainComponent.x			\
+	asn1_id_Userid.x
 
 
 gen_files_pkinit =					\
@@ -336,6 +337,7 @@ gen_files_pkcs8 =					\
 gen_files_pkcs9 =					\
 	asn1_id_pkcs_9.x				\
 	asn1_id_pkcs9_contentType.x			\
+	asn1_id_pkcs9_emailAddress.x			\
 	asn1_id_pkcs9_messageDigest.x			\
 	asn1_id_pkcs9_signingTime.x			\
 	asn1_id_pkcs9_countersignature.x		\
