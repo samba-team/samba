@@ -15,7 +15,7 @@ use strict;
 my $section_types = {
 	"EXT_LIB" => {
 		"LIBS"			=> "list",
-		"CFLAGS"		=> "list",
+		"EXTRA_CFLAGS"		=> "string",
 		"CPPFLAGS"		=> "list",
 		"LDFLAGS"		=> "list",
 		},
