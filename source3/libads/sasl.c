@@ -304,7 +304,7 @@ static ADS_STATUS ads_sasl_gssapi_bind(ADS_STRUCT *ads)
 	if (!ADS_ERR_OK(status)) {
 		return status;
 	}
-	status = ADS_ERROR_KRB5(krb5_parse_name(ctx, sname, &principal));
+	status = ADS_ERROR_KRB5(smb_krb5_parse_name(ctx, sname, &principal));
 	if (!ADS_ERR_OK(status)) {
 		return status;
 	}
