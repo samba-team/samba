@@ -130,6 +130,15 @@ AC_CHECK_FUNCS([syslog memset setnetgrent getnetgrent endnetgrent memcpy],,
 
 AC_CHECK_HEADERS(stdbool.h)
 
+AC_CHECK_TYPE(bool, 
+[AC_DEFINE(HAVE_BOOL, 1, [Whether the bool type is available])],,
+[
+AC_INCLUDES_DEFAULT
+#ifdef HAVE_STDBOOL_H
+#include <stdbool.h>
+#endif]
+)
+
 sinclude(lib/replace/readline.m4)
 sinclude(lib/replace/getpass.m4)
 
