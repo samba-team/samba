@@ -21,6 +21,7 @@
 #include "includes.h"
 #include "torture/torture.h"
 #include "system/filesys.h"
+#include "system/dir.h"
 #include "lib/tdb/include/tdbutil.h"
 #include "libcli/libcli.h"
 #include "torture/util.h"
@@ -130,7 +131,7 @@ static void gen_name(char *name)
 
 	p[i] = 0;
 
-	if (strcmp(p, ".") == 0 || strcmp(p, "..") == 0) {
+	if (ISDOT(p) || ISDOTDOT(p)) {
 		p[0] = '_';
 	}
 

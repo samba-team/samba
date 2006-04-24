@@ -21,6 +21,7 @@
 #include "includes.h"
 #include "libcli/raw/libcliraw.h"
 #include "libcli/libcli.h"
+#include "system/dir.h"
 
 struct delete_state {
 	struct smbcli_tree *tree;
@@ -35,8 +36,9 @@ static void delete_fn(struct clilist_file_info *finfo, const char *name, void *s
 {
 	struct delete_state *dstate = state;
 	char *s, *n;
-	if (strcmp(finfo->name, ".") == 0 ||
-	    strcmp(finfo->name, "..") == 0) return;
+	if (ISDOT(finfo->name) || ISDOTDOT(finfo->name)) {
+		return;
+	}
 
 	n = strdup(name);
 	n[strlen(n)-1] = 0;
