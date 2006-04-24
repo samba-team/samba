@@ -2,14 +2,12 @@ $Id$
 
 x501 name
 	parsing
-	comparing
+	comparing (ldap canonlisation rules)
 
 DSA support
 DSA2 support
-SHA2 support
 
 x509 policy mappings support
-path validation
 
 crypto
 	make signing alg depend on signer if not given
@@ -18,6 +16,7 @@ tests
 	nist tests
 		name constrains
 		policy mappings
+		http://csrc.nist.gov/pki/testing/x509paths.html
 
 	building path using Subject/Issuer vs SubjKeyID vs AuthKeyID
 	negative tests
@@ -35,3 +34,12 @@ certificate request
 		web server/client
 		jabber server/client 
 		email
+
+
+x509 issues:
+
+ OtherName is left unspecified, but its used by other
+ specs. creating this hole where a application/CA can't specify
+ policy for SubjectAltName what covers whole space. For example, a
+ CA is trusted to provide authentication but not authorization.
+
