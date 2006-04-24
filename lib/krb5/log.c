@@ -221,8 +221,10 @@ log_file(const char *timestr,
     if(f->fd == NULL)
 	return;
     fprintf(f->fd, "%s %s\n", timestr, msg);
-    if(f->keep_open == 0)
+    if(f->keep_open == 0) {
 	fclose(f->fd);
+	f->fd = NULL;
+    }
 }
 
 static void
