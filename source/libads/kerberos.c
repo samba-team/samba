@@ -90,7 +90,7 @@ int kerberos_kinit_password_ext(const char *principal,
 		return code;
 	}
 	
-	if ((code = krb5_parse_name(ctx, principal, &me))) {
+	if ((code = smb_krb5_parse_name(ctx, principal, &me))) {
 		krb5_free_context(ctx);	
 		return code;
 	}
@@ -260,21 +260,21 @@ krb5_principal kerberos_fetch_salt_princ_for_host_princ(krb5_context context,
 	char *unparsed_name = NULL, *salt_princ_s = NULL;
 	krb5_principal ret_princ = NULL;
 
-	if (krb5_unparse_name(context, host_princ, &unparsed_name) != 0) {
+	if (smb_krb5_unparse_name(context, host_princ, &unparsed_name) != 0) {
 		return (krb5_principal)NULL;
 	}
 
 	if ((salt_princ_s = kerberos_secrets_fetch_salting_principal(unparsed_name, enctype)) == NULL) {
-		krb5_free_unparsed_name(context, unparsed_name);
+		SAFE_FREE(unparsed_name);
 		return (krb5_principal)NULL;
 	}
 
-	if (krb5_parse_name(context, salt_princ_s, &ret_princ) != 0) {
-		krb5_free_unparsed_name(context, unparsed_name);
+	if (smb_krb5_parse_name(context, salt_princ_s, &ret_princ) != 0) {
+		SAFE_FREE(unparsed_name);
 		SAFE_FREE(salt_princ_s);
 		return (krb5_principal)NULL;
 	}
-	krb5_free_unparsed_name(context, unparsed_name);
+	SAFE_FREE(unparsed_name);
 	SAFE_FREE(salt_princ_s);
 	return ret_princ;
 }
@@ -308,11 +308,11 @@ BOOL kerberos_secrets_store_salting_principal(const char *service,
 		asprintf(&princ_s, "%s@%s", service, lp_realm());
 	}
 
-	if (krb5_parse_name(context, princ_s, &princ) != 0) {
+	if (smb_krb5_parse_name(context, princ_s, &princ) != 0) {
 		goto out;
 		
 	}
-	if (krb5_unparse_name(context, princ, &unparsed_name) != 0) {
+	if (smb_krb5_unparse_name(context, princ, &unparsed_name) != 0) {
 		goto out;
 	}
 
@@ -331,10 +331,8 @@ BOOL kerberos_secrets_store_salting_principal(const char *service,
 
 	SAFE_FREE(key);
 	SAFE_FREE(princ_s);
+	SAFE_FREE(unparsed_name);
 
-	if (unparsed_name) {
-		krb5_free_unparsed_name(context, unparsed_name);
-	}
 	if (context) {
 		krb5_free_context(context);
 	}
@@ -396,8 +394,8 @@ static krb5_error_code get_service_ticket(krb5_context ctx,
 		asprintf(&service_s, "%s@%s", service_principal, lp_realm());
 	}
 
-	if ((err = krb5_parse_name(ctx, service_s, &creds.server))) {
-		DEBUG(0,("get_service_ticket: krb5_parse_name %s failed: %s\n", 
+	if ((err = smb_krb5_parse_name(ctx, service_s, &creds.server))) {
+		DEBUG(0,("get_service_ticket: smb_krb5_parse_name %s failed: %s\n", 
 			service_s, error_message(err)));
 		goto out;
 	}
@@ -476,8 +474,8 @@ static BOOL verify_service_password(krb5_context ctx,
 		asprintf(&salting_s, "%s@%s", salting_principal, lp_realm());
 	}
 
-	if ((err = krb5_parse_name(ctx, salting_s, &salting_kprinc))) {
-		DEBUG(0,("verify_service_password: krb5_parse_name %s failed: %s\n", 
+	if ((err = smb_krb5_parse_name(ctx, salting_s, &salting_kprinc))) {
+		DEBUG(0,("verify_service_password: smb_krb5_parse_name %s failed: %s\n", 
 			salting_s, error_message(err)));
 		goto out;
 	}

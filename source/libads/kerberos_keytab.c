@@ -130,9 +130,9 @@ int ads_keytab_add_entry(ADS_STRUCT *ads, const char *srvPrinc)
 	/* Guess at how the KDC is salting keys for this principal. */
 	kerberos_derive_salting_principal(princ_s);
 
-	ret = krb5_parse_name(context, princ_s, &princ);
+	ret = smb_krb5_parse_name(context, princ_s, &princ);
 	if (ret) {
-		DEBUG(1,("ads_keytab_add_entry: krb5_parse_name(%s) failed (%s)\n", princ_s, error_message(ret)));
+		DEBUG(1,("ads_keytab_add_entry: smb_krb5_parse_name(%s) failed (%s)\n", princ_s, error_message(ret)));
 		goto out;
 	}
 
@@ -150,9 +150,10 @@ int ads_keytab_add_entry(ADS_STRUCT *ads, const char *srvPrinc)
 		while(!krb5_kt_next_entry(context, keytab, &kt_entry, &cursor)) {
 			BOOL compare_name_ok = False;
 
-			ret = krb5_unparse_name(context, kt_entry.principal, &ktprinc);
+			ret = smb_krb5_unparse_name(context, kt_entry.principal, &ktprinc);
 			if (ret) {
-				DEBUG(1,("ads_keytab_add_entry: krb5_unparse_name failed (%s)\n", error_message(ret)));
+				DEBUG(1,("ads_keytab_add_entry: smb_krb5_unparse_name failed (%s)\n",
+					error_message(ret)));
 				goto out;
 			}
 
@@ -176,8 +177,7 @@ int ads_keytab_add_entry(ADS_STRUCT *ads, const char *srvPrinc)
 					ktprinc, kt_entry.vno));
 			}
 
-			krb5_free_unparsed_name(context, ktprinc);
-			ktprinc = NULL;
+			SAFE_FREE(ktprinc);
 
 			if (compare_name_ok) {
 				if (kt_entry.vno == kvno - 1) {
@@ -581,9 +581,9 @@ int ads_keytab_create_default(ADS_STRUCT *ads)
 				char *p;
 
 				/* This returns a malloc'ed string in ktprinc. */
-				ret = krb5_unparse_name(context, kt_entry.principal, &ktprinc);
+				ret = smb_krb5_unparse_name(context, kt_entry.principal, &ktprinc);
 				if (ret) {
-					DEBUG(1,("krb5_unparse_name failed (%s)\n", error_message(ret)));
+					DEBUG(1,("smb_krb5_unparse_name failed (%s)\n", error_message(ret)));
 					goto done;
 				}
 				/*
@@ -606,12 +606,12 @@ int ads_keytab_create_default(ADS_STRUCT *ads)
 						break;
 					}
 					if (!strcmp(oldEntries[i], ktprinc)) {
-						krb5_free_unparsed_name(context, ktprinc);
+						SAFE_FREE(ktprinc);
 						break;
 					}
 				}
 				if (i == found) {
-					krb5_free_unparsed_name(context, ktprinc);
+					SAFE_FREE(ktprinc);
 				}
 			}
 			smb_krb5_kt_free_entry(context, &kt_entry);
@@ -620,7 +620,7 @@ int ads_keytab_create_default(ADS_STRUCT *ads)
 		ret = 0;
 		for (i = 0; oldEntries[i]; i++) {
 			ret |= ads_keytab_add_entry(ads, oldEntries[i]);
-			krb5_free_unparsed_name(context, oldEntries[i]);
+			SAFE_FREE(oldEntries[i]);
 		}
 		krb5_kt_end_seq_get(context, keytab, &cursor);
 	}
