@@ -1,3 +1,12 @@
+2006-04-24  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* pkcs5.c: include <krb5-types.h>
+
+	* evp.c: Sprinkel some assertions.
+
+	* des.c: Move assertion and add another restriction, used as hint
+	to beam that its ok
+	
 2006-04-23  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* rsa.c (RSA_check_key): don't do any checking if there is no
