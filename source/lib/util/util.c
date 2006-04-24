@@ -212,7 +212,7 @@ _PUBLIC_ int set_blocking(int fd, BOOL set)
  Sleep for a specified number of milliseconds.
 **/
 
-_PUBLIC_ void msleep(uint_t t)
+_PUBLIC_ void msleep(unsigned int t)
 {
 	struct timeval tval;  
 
@@ -581,7 +581,7 @@ _PUBLIC_ void dump_data_pw(const char *msg, const uint8_t * data, size_t len)
  * see if a range of memory is all zero. A NULL pointer is considered
  * to be all zero 
  */
-_PUBLIC_ BOOL all_zero(const uint8_t *ptr, uint_t size)
+_PUBLIC_ BOOL all_zero(const uint8_t *ptr, size_t size)
 {
 	int i;
 	if (!ptr) return True;

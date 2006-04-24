@@ -32,12 +32,12 @@ struct request_buffer {
 	uint8_t *buffer;
 	
 	/* the size of the raw buffer, including 4 byte header */
-	uint_t size;
+	size_t size;
 	
 	/* how much has been allocated - on reply the buffer is over-allocated to 
 	   prevent too many realloc() calls 
 	*/
-	uint_t allocated;
+	size_t allocated;
 	
 	/* the start of the SMB header - this is always buffer+4 */
 	uint8_t *hdr;
@@ -45,11 +45,11 @@ struct request_buffer {
 	/* the command words and command word count. vwv points
 	   into the raw buffer */
 	uint8_t *vwv;
-	uint_t wct;
+	size_t wct;
 	
 	/* the data buffer and size. data points into the raw buffer */
 	uint8_t *data;
-	uint_t data_size;
+	size_t data_size;
 	
 	/* ptr is used as a moving pointer into the data area
 	 * of the packet. The reason its here and not a local

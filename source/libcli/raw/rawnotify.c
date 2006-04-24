@@ -96,7 +96,7 @@ NTSTATUS smb_raw_changenotify_recv(struct smbcli_request *req,
   we need to do find out to what request the reply belongs
 ****************************************************************************/
 struct smbcli_request *smbcli_handle_ntcancel_reply(struct smbcli_request *req,
-						    uint_t len, const uint8_t *hdr)
+						    size_t len, const uint8_t *hdr)
 {
 	struct smbcli_request *ntcancel;
 

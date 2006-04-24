@@ -75,19 +75,19 @@ struct smb2_request_buffer {
 	uint8_t *buffer;
 	
 	/* the size of the raw buffer, including 4 byte header */
-	uint_t size;
+	size_t size;
 	
 	/* how much has been allocated - on reply the buffer is over-allocated to 
 	   prevent too many realloc() calls 
 	*/
-	uint_t allocated;
+	size_t allocated;
 	
 	/* the start of the SMB2 header - this is always buffer+4 */
 	uint8_t *hdr;
 	
 	/* the packet body */
 	uint8_t *body;
-	uint_t body_size;
+	size_t body_size;
 
 	/* this point to the next dynamic byte that can be used
 	 * this will be moved when some dynamic data is pushed
@@ -183,7 +183,7 @@ struct smb2_request {
   check that a body has the expected size
 */
 #define SMB2_CHECK_PACKET_RECV(req, size, dynamic) do { \
-	uint_t is_size = req->in.body_size; \
+	size_t is_size = req->in.body_size; \
 	uint16_t field_size = SVAL(req->in.body, 0); \
 	uint16_t want_size = ((dynamic)?(size)+1:(size)); \
 	if (is_size < (size)) { \

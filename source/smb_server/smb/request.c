@@ -89,7 +89,7 @@ static void req_setup_chain_reply(struct smbsrv_request *req, uint_t wct, uint_t
   the caller will then fill in the command words and data before calling req_send_reply() to 
   send the reply on its way
 */
-void smbsrv_setup_reply(struct smbsrv_request *req, uint_t wct, uint_t buflen)
+void smbsrv_setup_reply(struct smbsrv_request *req, uint_t wct, size_t buflen)
 {
 	uint16_t flags2;
 
@@ -248,7 +248,7 @@ static void req_grow_allocation(struct smbsrv_request *req, uint_t new_size)
   To cope with this req->out.ptr is supplied. This will be updated to
   point at the same offset into the packet as before this call
 */
-void req_grow_data(struct smbsrv_request *req, uint_t new_size)
+void req_grow_data(struct smbsrv_request *req, size_t new_size)
 {
 	int delta;
 
@@ -364,7 +364,7 @@ void smbsrv_send_error(struct smbsrv_request *req, NTSTATUS status)
 
   if dest_len is -1 then no limit applies
 */
-size_t req_push_str(struct smbsrv_request *req, uint8_t *dest, const char *str, int dest_len, uint_t flags)
+size_t req_push_str(struct smbsrv_request *req, uint8_t *dest, const char *str, int dest_len, size_t flags)
 {
 	size_t len;
 	uint_t grow_size;

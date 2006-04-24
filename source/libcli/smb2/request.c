@@ -168,7 +168,7 @@ BOOL smb2_request_is_ok(struct smb2_request *req)
 /*
   check if a range in the reply body is out of bounds
 */
-BOOL smb2_oob(struct smb2_request_buffer *buf, const uint8_t *ptr, uint_t size)
+BOOL smb2_oob(struct smb2_request_buffer *buf, const uint8_t *ptr, size_t size)
 {
 	/* be careful with wraparound! */
 	if (ptr < buf->body ||

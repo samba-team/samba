@@ -58,7 +58,7 @@ _PUBLIC_ void MD5Init(struct MD5Context *ctx)
  * Update context to reflect the concatenation of another buffer full
  * of bytes.
  */
-_PUBLIC_ void MD5Update(struct MD5Context *ctx, const uint8_t *buf, uint_t len)
+_PUBLIC_ void MD5Update(struct MD5Context *ctx, const uint8_t *buf, size_t len)
 {
     register uint32_t t;
 

@@ -101,7 +101,7 @@ BOOL signing_good(struct smb_signing_context *sign_info,
 	return True;
 }
 
-void sign_outgoing_message(struct request_buffer *out, DATA_BLOB *mac_key, uint_t seq_num) 
+void sign_outgoing_message(struct request_buffer *out, DATA_BLOB *mac_key, unsigned int seq_num) 
 {
 	uint8_t calc_md5_mac[16];
 	struct MD5Context md5_ctx;

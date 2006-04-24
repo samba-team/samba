@@ -40,7 +40,7 @@ _PUBLIC_ pid_t pidfile_pid(const char *name)
 {
 	int fd;
 	char pidstr[20];
-	uint_t ret;
+	pid_t ret;
 	char *pidFile;
 
 	asprintf(&pidFile, "%s/%s.pid", lp_piddir(), name);
@@ -58,9 +58,9 @@ _PUBLIC_ pid_t pidfile_pid(const char *name)
 		goto noproc;
 	}
 
-	ret = atoi(pidstr);
+	ret = (pid_t)atoi(pidstr);
 	
-	if (!process_exists((pid_t)ret)) {
+	if (!process_exists(ret)) {
 		goto noproc;
 	}
 
@@ -71,7 +71,7 @@ _PUBLIC_ pid_t pidfile_pid(const char *name)
 
 	close(fd);
 	SAFE_FREE(pidFile);
-	return (pid_t)ret;
+	return ret;
 
  noproc:
 	close(fd);
@@ -113,7 +113,7 @@ void pidfile_create(const char *name)
 	}
 
 	memset(buf, 0, sizeof(buf));
-	slprintf(buf, sizeof(buf) - 1, "%u\n", (uint_t) getpid());
+	slprintf(buf, sizeof(buf) - 1, "%u\n", (unsigned int) getpid());
 	if (write(fd, buf, strlen(buf)) != (ssize_t)strlen(buf)) {
 		DEBUG(0,("ERROR: can't write to file %s: %s\n", 
 			 pidFile, strerror(errno)));

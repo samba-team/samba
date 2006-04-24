@@ -2186,7 +2186,7 @@ static int cmd_chmod(struct smbclient_context *ctx, const char **args)
 
 	if (NT_STATUS_IS_ERR(smbcli_unix_chmod(ctx->cli->tree, src, mode))) {
 		d_printf("%s chmod file %s 0%o\n",
-			smbcli_errstr(ctx->cli->tree), src, (uint_t)mode);
+			smbcli_errstr(ctx->cli->tree), src, (mode_t)mode);
 		return 1;
 	} 
 

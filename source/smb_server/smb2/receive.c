@@ -40,7 +40,7 @@ static struct smb2srv_request *smb2srv_init_request(struct smbsrv_connection *sm
 	return req;
 }
 
-NTSTATUS smb2srv_setup_reply(struct smb2srv_request *req, uint_t body_fixed_size, uint_t body_dynamic_size)
+NTSTATUS smb2srv_setup_reply(struct smb2srv_request *req, uint_t body_fixed_size, size_t body_dynamic_size)
 {
 	req->out.size		= SMB2_HDR_BODY+NBT_HDR_SIZE+body_fixed_size;
 

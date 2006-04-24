@@ -182,7 +182,7 @@ _PUBLIC_ void setup_logging(const char *prog_name, enum debug_logtype new_logtyp
   return a string constant containing n tabs
   no more than 10 tabs are returned
 */
-_PUBLIC_ const char *do_debug_tab(uint_t n)
+_PUBLIC_ const char *do_debug_tab(int n)
 {
 	const char *tabs[] = {"", "\t", "\t\t", "\t\t\t", "\t\t\t\t", "\t\t\t\t\t", 
 			      "\t\t\t\t\t\t", "\t\t\t\t\t\t\t", "\t\t\t\t\t\t\t\t", 
