@@ -126,7 +126,7 @@ static int ejs_lpGet(MprVarHandle eid, int argc, char **argv)
 		/* its a global parameter */
 		parm = lp_parm_struct(argv[0]);
 		if (parm == NULL) return -1;
-		parm_ptr = parm->ptr;
+		parm_ptr = lp_parm_ptr(-1, parm);
 	}
 
 	if (parm == NULL || parm_ptr == NULL) {
@@ -143,6 +143,7 @@ static int ejs_lpGet(MprVarHandle eid, int argc, char **argv)
 		mpr_Return(eid, mprCreateBoolVar(*(BOOL *)parm_ptr));
 		break;
 	case P_INTEGER:
+	case P_BYTES:
 		mpr_Return(eid, mprCreateIntegerVar(*(int *)parm_ptr));
 		break;
 	case P_ENUM:
