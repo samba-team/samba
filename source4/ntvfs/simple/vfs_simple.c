@@ -969,6 +969,7 @@ NTSTATUS ntvfs_simple_init(void)
 {
 	NTSTATUS ret;
 	struct ntvfs_ops ops;
+	NTVFS_CURRENT_CRITICAL_SIZES(vers);
 
 	ZERO_STRUCT(ops);
 
@@ -1010,7 +1011,7 @@ NTSTATUS ntvfs_simple_init(void)
 
 	ops.type = NTVFS_DISK;
 	ops.name = "simple";
-	ret = ntvfs_register(&ops);
+	ret = ntvfs_register(&ops, &vers);
 
 	if (!NT_STATUS_IS_OK(ret)) {
 		DEBUG(0,("Failed to register simple backend with name: %s!\n",

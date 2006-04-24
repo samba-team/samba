@@ -286,6 +286,7 @@ NTSTATUS ntvfs_posix_init(void)
 {
 	NTSTATUS ret;
 	struct ntvfs_ops ops;
+	NTVFS_CURRENT_CRITICAL_SIZES(vers);
 
 	ZERO_STRUCT(ops);
 
@@ -328,14 +329,14 @@ NTSTATUS ntvfs_posix_init(void)
 	   under the name 'default' as we wish to be the default
 	   backend, and also register as 'posix' */
 	ops.name = "default";
-	ret = ntvfs_register(&ops);
+	ret = ntvfs_register(&ops, &vers);
 
 	if (!NT_STATUS_IS_OK(ret)) {
 		DEBUG(0,("Failed to register POSIX backend as '%s'!\n", ops.name));
 	}
 
 	ops.name = "posix";
-	ret = ntvfs_register(&ops);
+	ret = ntvfs_register(&ops, &vers);
 
 	if (!NT_STATUS_IS_OK(ret)) {
 		DEBUG(0,("Failed to register POSIX backend as '%s'!\n", ops.name));

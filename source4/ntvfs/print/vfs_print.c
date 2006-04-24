@@ -100,6 +100,7 @@ NTSTATUS ntvfs_print_init(void)
 {
 	NTSTATUS ret;
 	struct ntvfs_ops ops;
+	NTVFS_CURRENT_CRITICAL_SIZES(vers);
 
 	ZERO_STRUCT(ops);
 
@@ -115,7 +116,7 @@ NTSTATUS ntvfs_print_init(void)
 
 	/* register ourselves with the NTVFS subsystem. We register under the name 'default'
 	   as we wish to be the default backend */
-	ret = ntvfs_register(&ops);
+	ret = ntvfs_register(&ops, &vers);
 
 	if (!NT_STATUS_IS_OK(ret)) {
 		DEBUG(0,("Failed to register PRINT backend!\n"));
