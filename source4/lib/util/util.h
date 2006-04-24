@@ -76,13 +76,6 @@ extern const char *panic_action;
 	DEBUG(0,("PANIC: assert failed at %s(%d)\n", __FILE__, __LINE__)); \
 	smb_panic("assert failed"); abort(); }} while (0)
 
-/**
- * determine absolute value
- */
-#ifndef ABS
-#define ABS(a) ((a)>0?(a):(-(a)))
-#endif
-
 #ifndef SAFE_FREE /* Oh no this is also defined in tdb.h */
 /**
  * Free memory if the pointer and zero the pointer.
