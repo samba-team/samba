@@ -33,7 +33,7 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id: init_creds_pw.c,v 1.90 2005/10/12 12:45:11 lha Exp $");
+RCSID("$Id: init_creds_pw.c,v 1.92 2006/04/02 01:20:15 lha Exp $");
 
 typedef struct krb5_get_init_creds_ctx {
     krb5_kdc_flags flags;
@@ -79,8 +79,10 @@ default_s2k_func(krb5_context context, krb5_enctype type,
 	return ENOMEM;
     ret = krb5_string_to_key_data_salt_opaque(context, type, password,
 					      salt, opaque, *key);
-    if (ret)
+    if (ret) {
 	free(*key);
+	*key = NULL;
+    }
     return ret;
 }
 
@@ -545,23 +547,14 @@ init_creds_init_as_req (krb5_context context,
 	krb5_set_error_string(context, "malloc: out of memory");
 	goto fail;
     }
-    if (creds->client) {
-	ret = _krb5_principal2principalname (a->req_body.cname, creds->client);
-	if (ret)
-	    goto fail;
-	ret = copy_Realm(&creds->client->realm, &a->req_body.realm);
-	if (ret)
-	    goto fail;
-    } else {
-       krb5_realm realm;
 
-	a->req_body.cname = NULL;
-	ret = krb5_get_default_realm(context, &realm);
-	if (ret)
-	    goto fail;
-	ret = copy_Realm(&realm, &a->req_body.realm);
-	free(realm);
-    }
+    ret = _krb5_principal2principalname (a->req_body.cname, creds->client);
+    if (ret)
+	goto fail;
+    ret = copy_Realm(&creds->client->realm, &a->req_body.realm);
+    if (ret)
+	goto fail;
+
     ret = _krb5_principal2principalname (a->req_body.sname, creds->server);
     if (ret)
 	goto fail;

@@ -32,7 +32,7 @@
  */
 
 #include "krb5_locl.h"
-RCSID("$Id: crypto.c,v 1.133 2006/03/07 19:34:55 lha Exp $");
+RCSID("$Id: crypto.c,v 1.134 2006/04/10 08:58:53 lha Exp $");
 
 #undef CRYPTO_DEBUG
 #ifdef CRYPTO_DEBUG
@@ -4096,7 +4096,7 @@ krb5_string_to_key_derived(krb5_context context,
     struct encryption_type *et = _find_enctype(etype);
     krb5_error_code ret;
     struct key_data kd;
-    size_t keylen = et->keytype->bits / 8;
+    size_t keylen;
     u_char *tmp;
 
     if(et == NULL) {
@@ -4104,6 +4104,8 @@ krb5_string_to_key_derived(krb5_context context,
 			       etype);
 	return KRB5_PROG_ETYPE_NOSUPP;
     }
+    keylen = et->keytype->bits / 8;
+
     ALLOC(kd.key, 1);
     if(kd.key == NULL) {
 	krb5_set_error_string (context, "malloc: out of memory");

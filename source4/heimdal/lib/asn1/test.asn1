@@ -1,8 +1,10 @@
--- $Id: test.asn1,v 1.5 2005/07/21 20:48:27 lha Exp $ --
+-- $Id: test.asn1,v 1.8 2006/01/31 09:42:04 lha Exp $ --
 
 TEST DEFINITIONS ::=
 
 BEGIN
+
+IMPORTS heim_any FROM heim;
 
 TESTLargeTag ::= SEQUENCE {
 	foo[127] INTEGER (-2147483648..2147483647)
@@ -44,5 +46,41 @@ TESTImplicit2 ::= SEQUENCE {
 	ti2[1] IMPLICIT TESTLargeTag,
 	ti3[2] IMPLICIT TESTInteger3
 }
+
+TESTAllocInner ::= SEQUENCE {
+	ai[0] TESTInteger
+}
+
+TESTAlloc ::= SEQUENCE {
+	  tagless TESTAllocInner OPTIONAL,
+	  three [1] INTEGER (-2147483648..2147483647),
+	  tagless2 heim_any OPTIONAL
+}
+
+
+TESTCONTAINING ::= OCTET STRING ( CONTAINING INTEGER )
+TESTENCODEDBY ::= OCTET STRING ( ENCODED BY 
+  { joint-iso-itu-t(2) asn(1) ber-derived(2) distinguished-encoding(1) }
+)
+
+TESTDer OBJECT IDENTIFIER ::= { 
+	joint-iso-itu-t(2) asn(1) ber-derived(2) distinguished-encoding(1)
+}
+
+TESTCONTAININGENCODEDBY ::= OCTET STRING ( CONTAINING INTEGER ENCODED BY 
+  { joint-iso-itu-t(2) asn(1) ber-derived(2) distinguished-encoding(1) }
+)
+
+TESTCONTAININGENCODEDBY2 ::= OCTET STRING ( 
+	CONTAINING INTEGER ENCODED BY TESTDer
+)
+
+
+TESTValue1 INTEGER ::= 1
+
+TESTUSERCONSTRAINED ::= OCTET STRING (CONSTRAINED BY { -- meh -- })
+-- TESTUSERCONSTRAINED2 ::= OCTET STRING (CONSTRAINED BY { TESTInteger })
+-- TESTUSERCONSTRAINED3 ::= OCTET STRING (CONSTRAINED BY { INTEGER })
+-- TESTUSERCONSTRAINED4 ::= OCTET STRING (CONSTRAINED BY { INTEGER : 1 })
 
 END

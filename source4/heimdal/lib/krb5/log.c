@@ -33,7 +33,7 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id: log.c,v 1.36 2005/06/17 04:25:05 lha Exp $");
+RCSID("$Id: log.c,v 1.38 2006/04/10 09:41:26 lha Exp $");
 
 struct facility {
     int min;
@@ -284,7 +284,7 @@ krb5_addlog_dest(krb5_context context, krb5_log_facility *f, const char *orig)
 	ret = open_file(context, f, min, max, NULL, NULL, stderr, 1);
     }else if(strcmp(p, "CONSOLE") == 0){
 	ret = open_file(context, f, min, max, "/dev/console", "w", NULL, 0);
-    }else if(strncmp(p, "FILE:", 4) == 0 && (p[4] == ':' || p[4] == '=')){
+    }else if(strncmp(p, "FILE", 4) == 0 && (p[4] == ':' || p[4] == '=')){
 	char *fn;
 	FILE *file = NULL;
 	int keep_open = 0;
@@ -300,6 +300,7 @@ krb5_addlog_dest(krb5_context context, krb5_log_facility *f, const char *orig)
 		ret = errno;
 		krb5_set_error_string (context, "open(%s): %s", fn,
 				       strerror(ret));
+		free(fn);
 		return ret;
 	    }
 	    file = fdopen(i, "a");
@@ -308,12 +309,13 @@ krb5_addlog_dest(krb5_context context, krb5_log_facility *f, const char *orig)
 		close(i);
 		krb5_set_error_string (context, "fdopen(%s): %s", fn,
 				       strerror(ret));
+		free(fn);
 		return ret;
 	    }
 	    keep_open = 1;
 	}
 	ret = open_file(context, f, min, max, fn, "a", file, keep_open);
-    }else if(strncmp(p, "DEVICE=", 6) == 0){
+    }else if(strncmp(p, "DEVICE", 6) == 0 && (p[6] == ':' || p[6] == '=')){
 	ret = open_file(context, f, min, max, strdup(p + 7), "w", NULL, 0);
     }else if(strncmp(p, "SYSLOG", 6) == 0 && (p[6] == '\0' || p[6] == ':')){
 	char severity[128] = "";

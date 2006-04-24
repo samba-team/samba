@@ -33,7 +33,7 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id: keytab_file.c,v 1.20 2005/07/13 06:08:07 lha Exp $");
+RCSID("$Id: keytab_file.c,v 1.22 2006/04/07 21:57:31 lha Exp $");
 
 #define KRB5_KT_VNO_1 1
 #define KRB5_KT_VNO_2 2
@@ -164,7 +164,7 @@ krb5_kt_ret_principal(krb5_context context,
     int i;
     int ret;
     krb5_principal p;
-    int16_t tmp;
+    int16_t len;
     
     ALLOC(p, 1);
     if(p == NULL) {
@@ -172,25 +172,34 @@ krb5_kt_ret_principal(krb5_context context,
 	return ENOMEM;
     }
 
-    ret = krb5_ret_int16(sp, &tmp);
-    if(ret)
-	return ret;
+    ret = krb5_ret_int16(sp, &len);
+    if(ret) {
+	krb5_set_error_string(context,
+			      "Failed decoding length of keytab principal");
+	goto out;
+    }
     if(krb5_storage_is_flags(sp, KRB5_STORAGE_PRINCIPAL_WRONG_NUM_COMPONENTS))
-	tmp--;
-    p->name.name_string.len = tmp;
+	len--;
+    if (len < 0) {
+	krb5_set_error_string(context, 
+			      "Keytab principal contains invalid length");
+	ret = KRB5_KT_END;
+	goto out;
+    }
     ret = krb5_kt_ret_string(context, sp, &p->realm);
     if(ret)
-	return ret;
-    p->name.name_string.val = calloc(p->name.name_string.len, 
-				     sizeof(*p->name.name_string.val));
+	goto out;
+    p->name.name_string.val = calloc(len, sizeof(*p->name.name_string.val));
     if(p->name.name_string.val == NULL) {
 	krb5_set_error_string (context, "malloc: out of memory");
-	return ENOMEM;
+	ret = ENOMEM;
+	goto out;
     }
+    p->name.name_string.len = len;
     for(i = 0; i < p->name.name_string.len; i++){
 	ret = krb5_kt_ret_string(context, sp, p->name.name_string.val + i);
 	if(ret)
-	    return ret;
+	    goto out;
     }
     if (krb5_storage_is_flags(sp, KRB5_STORAGE_PRINCIPAL_NO_NAME_TYPE))
 	p->name.name_type = KRB5_NT_UNKNOWN;
@@ -199,10 +208,13 @@ krb5_kt_ret_principal(krb5_context context,
 	ret = krb5_ret_int32(sp, &tmp32);
 	p->name.name_type = tmp32;
 	if (ret)
-	    return ret;
+	    goto out;
     }
     *princ = p;
     return 0;
+out:
+    krb5_free_principal(context, p);
+    return ret;
 }
 
 static krb5_error_code
@@ -423,7 +435,7 @@ loop:
 	}
     }
     if(start) *start = pos;
-    if(end) *end = *start + 4 + len;
+    if(end) *end = pos + 4 + len;
  out:
     krb5_storage_seek(cursor->sp, pos + 4 + len, SEEK_SET);
     return ret;

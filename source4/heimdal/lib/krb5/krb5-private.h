@@ -302,19 +302,13 @@ void KRB5_LIB_FUNCTION
 _krb5_pk_cert_free (struct krb5_pk_cert */*cert*/);
 
 krb5_error_code KRB5_LIB_FUNCTION
-_krb5_pk_create_sign (
-	krb5_context /*context*/,
-	const heim_oid */*eContentType*/,
-	krb5_data */*eContent*/,
-	struct krb5_pk_identity */*id*/,
-	krb5_data */*sd_data*/);
-
-krb5_error_code KRB5_LIB_FUNCTION
-_krb5_pk_load_openssl_id (
+_krb5_pk_load_id (
 	krb5_context /*context*/,
 	struct krb5_pk_identity **/*ret_id*/,
 	const char */*user_id*/,
-	const char */*x509_anchors*/,
+	const char */*anchor_id*/,
+	char * const */*chain*/,
+	char * const */*revoke*/,
 	krb5_prompter_fct /*prompter*/,
 	void */*prompter_data*/,
 	char */*password*/);

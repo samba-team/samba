@@ -35,7 +35,7 @@
 
 /* keytab backend for HDB databases */
 
-RCSID("$Id: keytab.c,v 1.8 2005/12/12 12:35:36 lha Exp $");
+RCSID("$Id: keytab.c,v 1.10 2006/04/02 20:20:45 lha Exp $");
 
 struct hdb_data {
     char *dbname;
@@ -76,7 +76,7 @@ hdb_resolve(krb5_context context, const char *name, krb5_keytab id)
 	if((mkey - db) == 0) {
 	    d->dbname = NULL;
 	} else {
-	    d->dbname = malloc(mkey - db);
+	    d->dbname = malloc(mkey - db + 1);
 	    if(d->dbname == NULL) {
 		free(d);
 		krb5_set_error_string(context, "malloc: out of memory");

@@ -33,7 +33,7 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id: addr_families.c,v 1.50 2006/03/17 22:12:13 lha Exp $");
+RCSID("$Id: addr_families.c,v 1.51 2006/04/02 02:17:31 lha Exp $");
 
 struct addr_operations {
     int af;
@@ -1136,6 +1136,7 @@ krb5_make_addrport (krb5_context context,
     if (ret) {
 	krb5_set_error_string(context, "malloc: out of memory");
 	free (*res);
+	*res = NULL;
 	return ret;
     }
     p = (*res)->address.data;

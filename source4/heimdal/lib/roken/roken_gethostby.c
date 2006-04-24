@@ -33,7 +33,7 @@
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
-RCSID("$Id: roken_gethostby.c,v 1.7 2005/04/12 11:29:03 lha Exp $");
+RCSID("$Id: roken_gethostby.c,v 1.8 2006/04/02 00:09:28 lha Exp $");
 #endif
 
 #include <roken.h>
@@ -186,7 +186,7 @@ roken_gethostby(const char *hostname)
 #define MAX_ADDRS 16
 	static struct hostent he;
 	static char addrs[4 * MAX_ADDRS];
-	static char *addr_list[MAX_ADDRS];
+	static char *addr_list[MAX_ADDRS + 1];
 	int num_addrs = 0;
 	
 	he.h_name = p;

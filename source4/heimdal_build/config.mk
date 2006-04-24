@@ -280,6 +280,7 @@ OBJ_FILES = \
 	../heimdal/lib/des/rijndael-alg-fst.o \
 	../heimdal/lib/des/rnd_keys.o \
 	../heimdal/lib/des/sha.o \
+	../heimdal/lib/des/sha256.o \
 	../heimdal/lib/des/ui.o \
 	../heimdal/lib/des/evp.o \
 	../heimdal/lib/des/pkcs5.o \

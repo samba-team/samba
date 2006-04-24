@@ -33,7 +33,7 @@
 
 #include <krb5_locl.h>
 
-RCSID("$Id: build_auth.c,v 1.42 2005/01/05 02:34:53 lukeh Exp $");
+RCSID("$Id: build_auth.c,v 1.43 2006/04/10 08:53:21 lha Exp $");
 
 static krb5_error_code
 make_etypelist(krb5_context context,
@@ -116,13 +116,12 @@ krb5_build_authenticator (krb5_context context,
     krb5_error_code ret;
     krb5_crypto crypto;
 
-    auth = malloc(sizeof(*auth));
+    auth = calloc(1, sizeof(*auth));
     if (auth == NULL) {
 	krb5_set_error_string(context, "malloc: out of memory");
 	return ENOMEM;
     }
 
-    memset (auth, 0, sizeof(*auth));
     auth->authenticator_vno = 5;
     copy_Realm(&cred->client->realm, &auth->crealm);
     copy_PrincipalName(&cred->client->name, &auth->cname);
@@ -161,10 +160,8 @@ krb5_build_authenticator (krb5_context context,
 
     /* XXX - Copy more to auth_context? */
 
-    if (auth_context) {
-	auth_context->authenticator->ctime = auth->ctime;
-	auth_context->authenticator->cusec = auth->cusec;
-    }
+    auth_context->authenticator->ctime = auth->ctime;
+    auth_context->authenticator->cusec = auth->cusec;
 
     ASN1_MALLOC_ENCODE(Authenticator, buf, buf_size, auth, &len, ret);
     if (ret)

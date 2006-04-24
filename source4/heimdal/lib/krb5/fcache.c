@@ -33,7 +33,7 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id: fcache.c,v 1.51 2005/08/12 13:31:19 lha Exp $");
+RCSID("$Id: fcache.c,v 1.52 2006/04/02 01:04:37 lha Exp $");
 
 typedef struct krb5_fcache{
     char *filename;
@@ -269,10 +269,11 @@ fcc_gen_new(krb5_context context, krb5_ccache *id)
     }
     fd = mkstemp(file);
     if(fd < 0) {
+	int ret = errno;
+	krb5_set_error_string(context, "mkstemp %s", file);
 	free(f);
 	free(file);
-	krb5_set_error_string(context, "mkstemp %s", file);
-	return errno;
+	return ret;
     }
     close(fd);
     f->filename = file;
