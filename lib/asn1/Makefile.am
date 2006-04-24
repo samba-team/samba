@@ -248,7 +248,23 @@ gen_files_rfc2459 =					\
 	asn1_id_x509_ce_subjectAltName.x		\
 	asn1_id_x509_ce_subjectDirectoryAttributes.x	\
 	asn1_id_x509_ce_subjectKeyIdentifier.x		\
-	asn1_id_x9_57.x
+	asn1_id_x9_57.x					\
+	asn1_id_x520_at.x				\
+	asn1_id_at_commonName.x				\
+	asn1_id_at_surname.x				\
+	asn1_id_at_serialNumber.x			\
+	asn1_id_at_countryName.x			\
+	asn1_id_at_localityName.x			\
+	asn1_id_at_stateOrProvinceName.x		\
+	asn1_id_at_organizationName.x			\
+	asn1_id_at_organizationalUnitName.x		\
+	asn1_id_at_name.x				\
+	asn1_id_at_givenName.x				\
+	asn1_id_at_initials.x				\
+	asn1_id_at_generationQualifier.x		\
+	asn1_id_at_pseudonym.x				\
+	asn1_id_domainComponent.x
+
 
 gen_files_pkinit =					\
 	asn1_id_pkinit.x				\

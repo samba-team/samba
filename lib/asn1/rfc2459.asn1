@@ -77,6 +77,30 @@ id-x9-57 OBJECT IDENTIFIER ::= {
 id-dsa OBJECT IDENTIFIER ::=		{ id-x9-57 1 }
 id-dsa-with-sha1 OBJECT IDENTIFIER ::=		{ id-x9-57 3 }
 
+-- x.520 names types
+
+id-x520-at 	OBJECT IDENTIFIER ::= { joint-iso-ccitt(2) ds(5) 4 }
+
+id-at-commonName		OBJECT IDENTIFIER ::= { id-x520-at 3 }
+id-at-surname			OBJECT IDENTIFIER ::= { id-x520-at 4 }
+id-at-serialNumber		OBJECT IDENTIFIER ::= { id-x520-at 5 }
+id-at-countryName		OBJECT IDENTIFIER ::= { id-x520-at 6 }
+id-at-localityName		OBJECT IDENTIFIER ::= { id-x520-at 7 }
+id-at-stateOrProvinceName	OBJECT IDENTIFIER ::= { id-x520-at 8 }
+id-at-organizationName		OBJECT IDENTIFIER ::= { id-x520-at 10 }
+id-at-organizationalUnitName	OBJECT IDENTIFIER ::= { id-x520-at 11 }
+id-at-name			OBJECT IDENTIFIER ::= { id-x520-at 41 }
+id-at-givenName			OBJECT IDENTIFIER ::= { id-x520-at 42 }
+id-at-initials			OBJECT IDENTIFIER ::= { id-x520-at 43 }
+id-at-generationQualifier	OBJECT IDENTIFIER ::= { id-x520-at 44 }
+id-at-pseudonym			OBJECT IDENTIFIER ::= { id-x520-at 65 }
+-- RFC 2247
+id-domainComponent      	OBJECT IDENTIFIER ::=
+                          { 0 9 2342 19200300 100 1 25 }
+
+
+-- rfc3280
+
 id-x509-ce OBJECT IDENTIFIER ::= {joint-iso-ccitt(2) ds(5) 29}
 
 AlgorithmIdentifier ::= SEQUENCE {
