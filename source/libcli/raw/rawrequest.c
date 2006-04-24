@@ -64,7 +64,7 @@ NTSTATUS smbcli_request_destroy(struct smbcli_request *req)
   low-level function to setup a request buffer for a non-SMB packet 
   at the transport level
 */
-struct smbcli_request *smbcli_request_setup_nonsmb(struct smbcli_transport *transport, uint_t size)
+struct smbcli_request *smbcli_request_setup_nonsmb(struct smbcli_transport *transport, size_t size)
 {
 	struct smbcli_request *req;
 
@@ -147,7 +147,7 @@ struct smbcli_request *smbcli_request_setup_transport(struct smbcli_transport *t
   way. This interface is used before a session is setup.
 */
 struct smbcli_request *smbcli_request_setup_session(struct smbcli_session *session,
-						    uint8_t command, uint_t wct, uint_t buflen)
+						    uint8_t command, uint_t wct, size_t buflen)
 {
 	struct smbcli_request *req;
 
@@ -254,7 +254,7 @@ static void smbcli_req_grow_data(struct smbcli_request *req, uint_t new_size)
 */
 NTSTATUS smbcli_chained_request_setup(struct smbcli_request *req,
 				      uint8_t command, 
-				      uint_t wct, uint_t buflen)
+				      uint_t wct, size_t buflen)
 {
 	uint_t new_size = 1 + (wct*2) + 2 + buflen;
 

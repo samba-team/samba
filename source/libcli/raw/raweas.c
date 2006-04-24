@@ -26,7 +26,7 @@
   This assumes the names are strict ascii, which should be a
   reasonable assumption
 */
-uint_t ea_list_size(uint_t num_eas, struct ea_struct *eas)
+size_t ea_list_size(uint_t num_eas, struct ea_struct *eas)
 {
 	uint_t total = 4;
 	int i;
@@ -54,7 +54,7 @@ static uint_t ea_name_list_size(uint_t num_names, struct ea_name *eas)
   This assumes the names are strict ascii, which should be a
   reasonable assumption
 */
-uint_t ea_list_size_chained(uint_t num_eas, struct ea_struct *eas)
+size_t ea_list_size_chained(uint_t num_eas, struct ea_struct *eas)
 {
 	uint_t total = 0;
 	int i;
