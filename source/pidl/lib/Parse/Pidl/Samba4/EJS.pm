@@ -450,7 +450,11 @@ sub EjsPushPointer($$$$$)
 	my ($e, $l, $var, $name, $env) = @_;
 	pidl "if (NULL == $var) {";
 	indent;
-	pidl "NDR_CHECK(ejs_push_null(ejs, v, $name));";
+	if ($l->{POINTER_TYPE} eq "ref") {
+		pidl "return NT_STATUS_INVALID_PARAMETER_MIX;";
+	} else {
+		pidl "NDR_CHECK(ejs_push_null(ejs, v, $name));";
+	}
 	deindent;
 	pidl "} else {";
 	indent;
