@@ -719,7 +719,7 @@ struct dptr_struct *dptr_fetch_lanman2(int dptr_num)
 }
 
 /****************************************************************************
- Check a filetype for being valid.
+ Check that a file matches a particular file type.
 ****************************************************************************/
 
 BOOL dir_check_ftype(connection_struct *conn, uint32 mode, uint32 dirtype)
