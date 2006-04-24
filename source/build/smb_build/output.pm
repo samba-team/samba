@@ -136,11 +136,6 @@ sub create_output($$)
 			$part->{OUTPUT_TYPE} = "OBJLIST";
 		}
 
-		if (($part->{STANDARD_VISIBILITY} ne "default") and 
-			($config->{visibility_attribute} eq "yes")) {
-			$part->{EXTRA_CFLAGS} .= " -fvisibility=$part->{STANDARD_VISIBILITY}";
-		}
-
 		generate_binary($part) if $part->{OUTPUT_TYPE} eq "BINARY";
 		generate_mergedobj($part) if $part->{OUTPUT_TYPE} eq "MERGEDOBJ";
 		generate_objlist($part) if $part->{OUTPUT_TYPE} eq "OBJLIST";
@@ -156,22 +151,22 @@ sub create_output($$)
 		foreach my $elem (values %{$part->{UNIQUE_DEPENDENCIES}}) {
 			next if $elem == $part;
 
-			push(@{$part->{CPPFLAGS}}, @{$elem->{CPPFLAGS}}) if defined(@{$elem->{CPPFLAGS}});
-			push(@{$part->{CFLAGS}}, @{$elem->{CFLAGS}}) if defined(@{$elem->{CFLAGS}});
+			push(@{$part->{CFLAGS}}, @{$elem->{CPPFLAGS}}) if defined(@{$elem->{CPPFLAGS}});
+			push(@{$part->{CFLAGS}}, $elem->{EXTRA_CFLAGS}) if defined($elem->{EXTRA_CFLAGS});
 			push(@{$part->{LINK_LIST}}, $elem->{OUTPUT}) if defined($elem->{OUTPUT});
 			push(@{$part->{LINK_FLAGS}}, @{$elem->{LIBS}}) if defined($elem->{LIBS});
 			push(@{$part->{LINK_FLAGS}},@{$elem->{LDFLAGS}}) if defined($elem->{LDFLAGS});
-		    push(@{$part->{DEPEND_LIST}}, $elem->{TARGET}) if defined($elem->{TARGET});
-			push(@{$part->{SUBSYSTEM_INIT_FUNCTIONS}}, $elem->{INIT_FUNCTION}) if 
-				defined($elem->{INIT_FUNCTION}) and 
-				$elem->{TYPE} ne "MODULE" and 
-				$part->{OUTPUT_TYPE} ne "SHARED_LIBRARY";
+		    	push(@{$part->{DEPEND_LIST}}, $elem->{TARGET}) if defined($elem->{TARGET});
 		}
 	}
 
 	foreach $part (values %{$depend}) {
-		$part->{EXTRA_CFLAGS} .= " ".join(" ", @{$part->{CFLAGS}}) if defined($part->{CFLAGS});
-		$part->{EXTRA_CFLAGS} .= " ".join(" ", @{$part->{CPPFLAGS}}) if defined($part->{CPPFLAGS});
+		$part->{EXTRA_CFLAGS} .= " " . join(' ', @{$part->{CFLAGS}}) if defined($part->{CFLAGS});
+		$part->{EXTRA_CFLAGS} .= " " . join(' ', @{$part->{CPPFLAGS}}) if defined($part->{CPPFLAGS});
+		if (($part->{STANDARD_VISIBILITY} ne "default") and 
+			($config->{visibility_attribute} eq "yes")) {
+			$part->{EXTRA_CFLAGS} .=  " -fvisibility=$part->{STANDARD_VISIBILITY}";
+		}
 	}
 
 	return $depend;

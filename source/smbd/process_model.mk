@@ -7,6 +7,7 @@ INIT_FUNCTION = process_model_single_init
 SUBSYSTEM = process_model
 OBJ_FILES = \
 		process_single.o
+PRIVATE_DEPENDENCIES = KERBEROS_LIB
 # End MODULE process_model_single
 ################################################
 
@@ -18,6 +19,7 @@ SUBSYSTEM = process_model
 OBJ_FILES = \
 		process_standard.o
 PUBLIC_DEPENDENCIES = EXT_LIB_SETPROCTITLE
+PRIVATE_DEPENDENCIES = KERBEROS_LIB
 # End MODULE process_model_standard
 ################################################
 
