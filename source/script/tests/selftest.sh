@@ -122,6 +122,7 @@ cat >$CONFFILE<<EOF
 	panic action = $SRCDIR/script/gdb_backtrace %PID% %PROG%
 	wins support = yes
 	server role = pdc
+	max xmit = 32K
 
 [tmp]
 	path = $TMPDIR

@@ -460,7 +460,7 @@ static struct parm_struct parm_table[] = {
 	{"announce version", P_STRING, P_GLOBAL, &Globals.szAnnounceVersion, NULL, NULL, FLAG_DEVELOPER},
 	{"announce as", P_ENUM, P_GLOBAL, &Globals.announce_as, NULL, enum_announce_as, FLAG_DEVELOPER},
 	{"max mux", P_INTEGER, P_GLOBAL, &Globals.max_mux, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"max xmit", P_INTEGER, P_GLOBAL, &Globals.max_xmit, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
+	{"max xmit", P_BYTES, P_GLOBAL, &Globals.max_xmit, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 
 	{"name resolve order", P_LIST, P_GLOBAL, &Globals.szNameResolveOrder, NULL, NULL, FLAG_ADVANCED | FLAG_WIZARD | FLAG_DEVELOPER},
 	{"max wins ttl", P_INTEGER, P_GLOBAL, &Globals.max_wins_ttl, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
@@ -1057,6 +1057,26 @@ int lp_parm_int(int lookup_service, const char *type, const char *option, int de
 	
 	if (value)
 		return lp_int(value);
+
+	return default_v;
+}
+
+/* Return parametric option from a given service. Type is a part of
+ * option before ':'.
+ * Parametric option has following syntax: 'Type: option = value'.
+ */
+
+int lp_parm_bytes(int lookup_service, const char *type, const char *option, int default_v)
+{
+	uint64_t bval;
+
+	const char *value = lp_get_parametric(lookup_service, type, option);
+
+	if (value && conv_str_size(value, &bval)) {
+		if (bval <= INT_MAX) {
+			return (int)bval;
+		}
+	}
 
 	return default_v;
 }
@@ -1829,6 +1849,21 @@ BOOL lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 			*(int *)parm_ptr = atoi(pszParmValue);
 			break;
 
+		case P_BYTES:
+		{
+			uint64_t val;
+			if (conv_str_size(pszParmValue, &val)) {
+				if (val <= INT_MAX) {
+					*(int *)parm_ptr = (int)val;
+					break;
+				}
+			}
+
+			DEBUG(0,("lp_do_parameter(%s): value is not "
+			    "a valid size specifier!\n", pszParmValue));
+			return False;
+		}
+
 		case P_LIST:
 			*(const char ***)parm_ptr = str_list_make(talloc_autofree_context(), 
 								  pszParmValue, NULL);
@@ -2004,6 +2039,7 @@ static void print_parameter(struct parm_struct *p, void *ptr, FILE * f)
 			break;
 
 		case P_INTEGER:
+		case P_BYTES:
 			fprintf(f, "%d", *(int *)ptr);
 			break;
 
@@ -2039,6 +2075,7 @@ static BOOL equal_parameter(parm_type type, void *ptr1, void *ptr2)
 			return (*((BOOL *)ptr1) == *((BOOL *)ptr2));
 
 		case P_INTEGER:
+		case P_BYTES:
 		case P_ENUM:
 			return (*((int *)ptr1) == *((int *)ptr2));
 
@@ -2127,6 +2164,7 @@ static BOOL is_default(int i)
 			return parm_table[i].def.bvalue ==
 				*(BOOL *)parm_table[i].ptr;
 		case P_INTEGER:
+		case P_BYTES:
 		case P_ENUM:
 			return parm_table[i].def.ivalue ==
 				*(int *)parm_table[i].ptr;
