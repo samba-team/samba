@@ -216,11 +216,12 @@ if test "x$GNU_MAKE" = x"yes"; then
 	AC_SUBST(GNU_MAKE_VERSION)
 fi
 
+
 automatic_dependencies=no
 AC_MSG_CHECKING([for GNU make >= 3.81])
 if test x$GNU_MAKE = x"yes"; then
 	if $PERL -e " \$_ = '$GNU_MAKE_VERSION'; s/@<:@^\d\.@:>@.*//g; exit (\$_ < 3.81);"; then
-		automatic_dependencies=yes
+		AX_CXXFLAGS_GCC_OPTION(-MT, [], [automatic_dependencies=yes], [])
 	fi
 fi
 AC_MSG_RESULT($automatic_dependencies)
