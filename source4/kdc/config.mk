@@ -14,11 +14,12 @@ PUBLIC_DEPENDENCIES = \
 #######################
 # Start SUBSYSTEM KDC
 [SUBSYSTEM::HDB_LDB]
+EXTRA_CFLAGS = -Iheimdal/kdc
 OBJ_FILES = \
 		hdb-ldb.o \
 		pac-glue.o 
 PUBLIC_DEPENDENCIES = \
-		ldb KERBEROS_LIB HEIMDAL_HDB auth_sam
+		ldb KERBEROS_LIB HEIMDAL_HDB auth_sam 
 # End SUBSYSTEM KDC
 #######################
 

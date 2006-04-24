@@ -114,7 +114,7 @@ SMB_INFO_EXT_LIBS="$SMB_INFO_EXT_LIBS
 # Start Ext Lib $1
 @<:@EXT_LIB::EXT_LIB_$1@:>@
 LIBS = $2
-CFLAGS = $3
+EXTRA_CFLAGS = $3
 CPPFLAGS = $4
 LDFLAGS = $5
 # End Ext Lib $1

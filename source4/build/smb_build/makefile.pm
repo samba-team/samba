@@ -231,7 +231,6 @@ sub SharedLibrary($$)
 	}
 
 	$self->_prepare_list($ctx, "OBJ_LIST");
-	$self->_prepare_list($ctx, "CFLAGS");
 	$self->_prepare_list($ctx, "DEPEND_LIST");
 	$self->_prepare_list($ctx, "LINK_LIST");
 	$self->_prepare_list($ctx, "LINK_FLAGS");
@@ -316,7 +315,6 @@ sub MergedObj($$)
 	return unless $ctx->{TARGET};
 
 	$self->_prepare_list($ctx, "OBJ_LIST");
-	$self->_prepare_list($ctx, "CFLAGS");
 	$self->_prepare_list($ctx, "DEPEND_LIST");
 
 	push(@{$self->{all_objs}}, "\$($ctx->{TYPE}_$ctx->{NAME}_OBJ_LIST)");
@@ -337,7 +335,6 @@ sub ObjList($$)
 	push(@{$self->{all_objs}}, "\$($ctx->{TYPE}_$ctx->{NAME}_OBJ_LIST)");
 		
 	$self->_prepare_list($ctx, "OBJ_LIST");
-	$self->_prepare_list($ctx, "CFLAGS");
 	$self->_prepare_list($ctx, "DEPEND_LIST");
 	$self->output("$ctx->{TARGET}: ");
 	$self->output("\$($ctx->{TYPE}_$ctx->{NAME}_DEPEND_LIST) \$($ctx->{TYPE}_$ctx->{NAME}_OBJ_LIST)\n");
@@ -351,7 +348,6 @@ sub StaticLibrary($$)
 	push (@{$self->{static_libs}}, $ctx->{TARGET});
 
 	$self->_prepare_list($ctx, "OBJ_LIST");
-	$self->_prepare_list($ctx, "CFLAGS");
 
 	$self->_prepare_list($ctx, "DEPEND_LIST");
 	$self->_prepare_list($ctx, "LINK_LIST");
@@ -407,7 +403,6 @@ sub Binary($$)
 	push (@{$self->{binaries}}, "bin/$ctx->{BINARY}");
 
 	$self->_prepare_list($ctx, "OBJ_LIST");
-	$self->_prepare_list($ctx, "CFLAGS");
 	$self->_prepare_list($ctx, "DEPEND_LIST");
 	$self->_prepare_list($ctx, "LINK_LIST");
 	$self->_prepare_list($ctx, "LINK_FLAGS");

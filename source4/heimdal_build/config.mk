@@ -1,6 +1,7 @@
 #######################
 # Start SUBSYSTEM HEIMDAL_KDC
 [SUBSYSTEM::HEIMDAL_KDC]
+EXTRA_CFLAGS = -Iheimdal_build -Iheimdal/kdc
 OBJ_FILES = \
 	../heimdal/kdc/default_config.o \
 	../heimdal/kdc/kerberos5.o \
@@ -11,12 +12,14 @@ OBJ_FILES = \
 	../heimdal/kdc/kerberos4.o \
 	../heimdal/kdc/kaserver.o \
 	../heimdal/kdc/process.o
+PRIVATE_DEPENDENCIES = HEIMDAL_ROKEN HEIMDAL_KRB5 HEIMDAL_HDB
 # End SUBSYSTEM HEIMDAL_KDC
 #######################
 
 #######################
 # Start SUBSYSTEM HEIMDAL_HDB
 [SUBSYSTEM::HEIMDAL_HDB]
+EXTRA_CFLAGS = -Iheimdal_build -Iheimdal/lib/hdb
 OBJ_FILES = \
 	../heimdal/lib/hdb/db.o \
 	../heimdal/lib/hdb/hdb.o \
@@ -47,6 +50,7 @@ PUBLIC_DEPENDENCIES = HDB_LDB
 #######################
 # Start SUBSYSTEM HEIMDAL_GSSAPI
 [SUBSYSTEM::HEIMDAL_GSSAPI]
+EXTRA_CFLAGS = -Iheimdal_build -Iheimdal/lib/gssapi
 OBJ_FILES = \
 	../heimdal/lib/gssapi/init_sec_context.o \
 	../heimdal/lib/gssapi/inquire_cred.o \
@@ -87,17 +91,15 @@ OBJ_FILES = \
 	../heimdal/lib/gssapi/get_mic.o \
 	../heimdal/lib/gssapi/import_name.o \
 	../heimdal/lib/gssapi/init.o
-PUBLIC_DEPENDENCIES = KERBEROS HEIMDAL_KRB5
+PUBLIC_DEPENDENCIES = KERBEROS HEIMDAL_KRB5 
 # End SUBSYSTEM HEIMDAL_GSSAPI
 #######################
 
 #######################
 # Start SUBSYSTEM HEIMDAL_KRB5
 [SUBSYSTEM::HEIMDAL_KRB5]
-EXTRA_CFLAGS = \
-	-Iheimdal_build -Iheimdal/kdc \
-	-Iheimdal/lib/des -Iheimdal/lib/roken \
-	-DNO_PRINTF_ATTRIBUTE
+EXTRA_CFLAGS = -Iheimdal_build -Iheimdal/lib/krb5 
+PRIVATE_DEPENDENCIES = HEIMDAL_ROKEN HEIMDAL_DES HEIMDAL_ASN1
 OBJ_FILES = \
 	../heimdal/lib/krb5/acache.o \
 	../heimdal/lib/krb5/add_et_list.o \
@@ -187,9 +189,7 @@ OBJ_FILES = \
 # Start SUBSYSTEM HEIMDAL_ASN1
 [SUBSYSTEM::HEIMDAL_ASN1]
 EXTRA_CFLAGS = \
-	-Iheimdal_build -Iheimdal/lib/asn1 \
-	-Iheimdal/kdc -Iheimdal/lib/des \
-	-Iheimdal/lib/roken -DNO_PRINTF_ATTRIBUTE
+	-Iheimdal_build -Iheimdal/lib/asn1
 OBJ_FILES = \
 	../heimdal/lib/asn1/der_get.o \
 	../heimdal/lib/asn1/der_put.o \
@@ -259,16 +259,15 @@ OBJ_FILES = \
 	../heimdal/lib/asn1/asn1_err.o \
 	../heimdal/lib/asn1/asn1_krb5int32.o \
 	../heimdal/lib/asn1/asn1_krb5uint32.o
+PRIVATE_DEPENDENCIES = HEIMDAL_ROKEN HEIMDAL_COM_ERR
 # End SUBSYSTEM HEIMDAL_KRB5
 #######################
 
 #######################
 # Start SUBSYSTEM HEIMDAL_DES
 [SUBSYSTEM::HEIMDAL_DES]
-EXTRA_CFLAGS = \
-	-Iheimdal_build -Iheimdal/kdc \
-	-Iheimdal/lib/des -Iheimdal/lib/roken \
-	-DNO_PRINTF_ATTRIBUTE
+EXTRA_CFLAGS = -Iheimdal_build -Iheimdal/lib/des 
+PRIVATE_DEPENDENCIES = HEIMDAL_ROKEN
 OBJ_FILES = \
 	../heimdal/lib/des/aes.o \
 	../heimdal/lib/des/des.o \
@@ -296,11 +295,13 @@ OBJ_FILES = ../heimdal/lib/roken/gai_strerror.o
 #######################
 # Start SUBSYSTEM HEIMDAL_ROKEN_GAI_STRERROR
 [SUBSYSTEM::HEIMDAL_ROKEN_INET_ATON]
+EXTRA_CFLAGS = -Iheimdal/lib/roken
 OBJ_FILES = ../heimdal/lib/roken/inet_aton.o
 
 #######################
 # Start SUBSYSTEM HEIMDAL_ROKEN_ADDRINFO
 [SUBSYSTEM::HEIMDAL_ROKEN_ADDRINFO]
+EXTRA_CFLAGS = -Iheimdal/lib/roken
 OBJ_FILES = \
 	../heimdal/lib/roken/getaddrinfo.o \
 	../heimdal/lib/roken/freeaddrinfo.o \
@@ -313,9 +314,7 @@ OBJ_FILES = \
 #######################
 # Start SUBSYSTEM HEIMDAL_ROKEN
 [SUBSYSTEM::HEIMDAL_ROKEN]
-EXTRA_CFLAGS = \
-	-Iheimdal_build -Iheimdal/kdc \
-	-Iheimdal/lib/des -Iheimdal/lib/roken -DNO_PRINTF_ATTRIBUTE
+EXTRA_CFLAGS = -Iheimdal/lib/roken -Iheimdal_build 
 OBJ_FILES = \
 	../heimdal/lib/roken/base64.o \
 	../heimdal/lib/roken/hex.o \
@@ -349,6 +348,7 @@ PUBLIC_DEPENDENCIES = \
 #######################
 # Start SUBSYSTEM HEIMDAL_GLUE
 [SUBSYSTEM::HEIMDAL_GLUE]
+EXTRA_CFLAGS = -Iheimdal_build -Iheimdal/lib/krb5 -Iheimdal/lib/asn1 -Iheimdal/lib/com_err
 OBJ_FILES = glue.o
 PUBLIC_DEPENDENCIES = LIBNETIF
 # End SUBSYSTEM HEIMDAL_GLUE
@@ -357,13 +357,11 @@ PUBLIC_DEPENDENCIES = LIBNETIF
 #######################
 # Start SUBSYSTEM HEIMDAL_COM_ERR
 [SUBSYSTEM::HEIMDAL_COM_ERR]
-EXTRA_CFLAGS = \
-	-Iheimdal_build -Iheimdal/lib/com_err \
-	-Iheimdal/kdc -Iheimdal/lib/des \
-	-Iheimdal/lib/roken -DNO_PRINTF_ATTRIBUTE
+EXTRA_CFLAGS = -Iheimdal_build -Iheimdal/lib/com_err
 OBJ_FILES = \
 	../heimdal/lib/com_err/com_err.o \
 	../heimdal/lib/com_err/error.o
+PRIVATE_DEPENDENCIES = HEIMDAL_ROKEN
 # End SUBSYSTEM HEIMDAL_COM_ERR
 #######################
 
@@ -371,9 +369,7 @@ OBJ_FILES = \
 # Start SUBSYSTEM HEIMDAL_ASN1_COMPILE_LEX
 [SUBSYSTEM::HEIMDAL_ASN1_COMPILE_LEX]
 EXTRA_CFLAGS = -D_GNU_SOURCE \
-	-Iheimdal_build -Iheimdal/lib/asn1 \
-	-Iheimdal/kdc -Iheimdal/lib/des \
-	-Iheimdal/lib/roken -DNO_PRINTF_ATTRIBUTE
+	-Iheimdal_build -Iheimdal/lib/asn1
 OBJ_FILES = \
 	../heimdal/lib/asn1/lex.ho 
 # End SUBSYSTEM HEIMDAL_ASN1_COMPILE_LEX
@@ -382,10 +378,7 @@ OBJ_FILES = \
 #######################
 # Start BINARY asn1_compile
 [BINARY::asn1_compile]
-EXTRA_CFLAGS = \
-	-Iheimdal_build -Iheimdal/lib/asn1 \
-	-Iheimdal/kdc -Iheimdal/lib/des \
-	-Iheimdal/lib/roken -DNO_PRINTF_ATTRIBUTE
+EXTRA_CFLAGS = -Iheimdal_build -Iheimdal/lib/roken -Iheimdal/lib/asn1
 OBJ_FILES = \
 	../heimdal/lib/asn1/main.ho \
 	../heimdal/lib/asn1/gen.ho \
@@ -417,10 +410,7 @@ PRIVATE_DEPENDENCIES = HEIMDAL_ASN1_COMPILE_LEX
 #######################
 # Start SUBSYSTEM HEIMDAL_COM_ERR_COMPILE_LEX
 [SUBSYSTEM::HEIMDAL_COM_ERR_COMPILE_LEX]
-EXTRA_CFLAGS = -D_GNU_SOURCE \
-	-Iheimdal_build -Iheimdal/lib/com_err \
-	-Iheimdal/kdc -Iheimdal/lib/des \
-	-Iheimdal/lib/roken -DNO_PRINTF_ATTRIBUTE
+EXTRA_CFLAGS = -D_GNU_SOURCE -Iheimdal_build -Iheimdal/lib/com_err
 OBJ_FILES = \
 	../heimdal/lib/com_err/lex.ho 
 # End SUBSYSTEM HEIMDAL_COM_ERR_COMPILE_LEX
@@ -429,10 +419,7 @@ OBJ_FILES = \
 #######################
 # Start BINARY compile_et
 [BINARY::compile_et]
-EXTRA_CFLAGS = \
-	-Iheimdal_build -Iheimdal/lib/com_err \
-	-Iheimdal/kdc -Iheimdal/lib/des \
-	-Iheimdal/lib/roken -DNO_PRINTF_ATTRIBUTE
+EXTRA_CFLAGS = -Iheimdal_build -Iheimdal/lib/com_err -Iheimdal/lib/roken
 OBJ_FILES = ../heimdal/lib/vers/print_version.ho \
 	../heimdal/lib/com_err/parse.ho \
 	../heimdal/lib/com_err/compile_et.ho \
@@ -485,14 +472,11 @@ clean::
 [LIBRARY::HEIMDAL]
 VERSION = 0.0.1
 SO_VERSION = 0
-EXTRA_CFLAGS = \
-	-Iheimdal_build -Iheimdal/kdc \
-	-Iheimdal/lib/des -Iheimdal/lib/roken \
-	-DNO_PRINTF_ATTRIBUTE
+EXTRA_CFLAGS = -Iheimdal/lib/vers -Iheimdal_build
 OBJ_FILES = ../heimdal/lib/vers/print_version.o
 PUBLIC_DEPENDENCIES = \
 		LIBREPLACE HEIMDAL_GSSAPI HEIMDAL_KRB5 KERBEROS \
-		HEIMDAL_ASN1 HEIMDAL_DES HEIMDAL_ROKEN \
+		HEIMDAL_ASN1 HEIMDAL_ROKEN \
 		HEIMDAL_COM_ERR HEIMDAL_GLUE EXT_LIB_RESOLV
 # End SUBSYSTEM HEIMDAL
 #######################
