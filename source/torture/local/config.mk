@@ -17,7 +17,7 @@ OBJ_FILES = \
 		util_file.o \
 		sddl.o \
 		ndr.o
-REQUIRED_SUBSYSTEMS = \
+PUBLIC_DEPENDENCIES = \
 		RPC_NDR_ECHO \
 		LIBSMB \
 		MESSAGING \
