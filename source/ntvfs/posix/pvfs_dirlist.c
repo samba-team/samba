@@ -218,7 +218,7 @@ const char *pvfs_list_next(struct pvfs_dir *dir, uint_t *ofs)
 	while ((de = readdir(dir->dir))) {
 		const char *dname = de->d_name;
 
-		if (ISDOT(dname) || ISDOT(dname)) {
+		if (ISDOT(dname) || ISDOTDOT(dname)) {
 			continue;
 		}
 
