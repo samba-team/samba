@@ -33,7 +33,7 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id: cache.c,v 1.77 2005/12/13 15:42:36 lha Exp $");
+RCSID("$Id: cache.c,v 1.79 2006/04/02 00:54:48 lha Exp $");
 
 /*
  * Add a new ccache type with operations `ops', overwriting any
@@ -316,7 +316,7 @@ _krb5_expand_default_cc_name(krb5_context context, const char *str, char **res)
 	}
 	if (append == NULL) {
 	    free(*res);
-	    res = NULL;
+	    *res = NULL;
 	    krb5_set_error_string(context, "malloc - out of memory");
 	    return ENOMEM;
 	}
@@ -324,6 +324,7 @@ _krb5_expand_default_cc_name(krb5_context context, const char *str, char **res)
 	tlen = strlen(append);
 	tmp = realloc(*res, len + tlen + 1);
 	if (tmp == NULL) {
+	    free(append);
 	    free(*res);
 	    *res = NULL;
 	    krb5_set_error_string(context, "malloc - out of memory");

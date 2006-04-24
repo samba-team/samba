@@ -33,7 +33,7 @@
 
 #include "kdc_locl.h"
 
-RCSID("$Id: kaserver.c,v 1.31 2005/12/13 19:44:27 lha Exp $");
+RCSID("$Id: kaserver.c,v 1.32 2006/04/02 01:54:37 lha Exp $");
 
 #include <krb5-v4compat.h>
 #include <rx.h>
@@ -453,8 +453,8 @@ do_authenticate (krb5_context context,
     }
 
     ret = _kdc_check_flags (context, config,
-			    &client_entry->entry, client_name,
-			    &server_entry->entry, server_name,
+			    client_entry, client_name,
+			    server_entry, server_name,
 			    TRUE);
     if (ret) {
 	make_error_reply (hdr, KAPWEXPIRED, reply);
@@ -752,8 +752,8 @@ do_getticket (krb5_context context,
     }
 
     ret = _kdc_check_flags (context, config, 
-			    &client_entry->entry, client_name,
-			    &server_entry->entry, server_name,
+			    client_entry, client_name,
+			    server_entry, server_name,
 			    FALSE);
     if (ret) {
 	make_error_reply (hdr, KAPWEXPIRED, reply);

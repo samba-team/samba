@@ -33,7 +33,7 @@
 
 #include <krb5_locl.h>
 
-RCSID("$Id: rd_cred.c,v 1.26 2005/11/02 08:36:42 lha Exp $");
+RCSID("$Id: rd_cred.c,v 1.28 2006/04/02 02:27:33 lha Exp $");
 
 static krb5_error_code
 compare_addrs(krb5_context context,
@@ -257,8 +257,10 @@ krb5_rd_cred(krb5_context context,
 
 	ASN1_MALLOC_ENCODE(Ticket, creds->ticket.data, creds->ticket.length, 
 			   &cred.tickets.val[i], &len, ret);
-	if (ret)
+	if (ret) {
+	    free(creds);
 	    goto out;
+	}
 	if(creds->ticket.length != len)
 	    krb5_abortx(context, "internal error in ASN.1 encoder");
 	copy_EncryptionKey (&kci->key, &creds->session);
@@ -302,6 +304,7 @@ krb5_rd_cred(krb5_context context,
 	for(i = 0; (*ret_creds)[i]; i++)
 	    krb5_free_creds(context, (*ret_creds)[i]);
 	free(*ret_creds);
+	*ret_creds = NULL;
     }
     return ret;
 }

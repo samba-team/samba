@@ -33,7 +33,7 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id: keytab_keyfile.c,v 1.17 2005/09/30 11:20:53 lha Exp $");
+RCSID("$Id: keytab_keyfile.c,v 1.18 2006/04/02 01:24:52 lha Exp $");
 
 /* afs keyfile operations --------------------------------------- */
 
@@ -94,6 +94,7 @@ get_cell_and_realm (krb5_context context,
     f = fopen (AFS_SERVERMAGICKRBCONF, "r");
     if (f != NULL) {
 	if (fgets (buf, sizeof(buf), f) == NULL) {
+	    free (d->cell);
 	    fclose (f);
 	    krb5_set_error_string (context, "no realm in %s",
 				   AFS_SERVERMAGICKRBCONF);

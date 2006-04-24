@@ -32,7 +32,7 @@
  */
 
 /*
- * $Id: rsa.h,v 1.2 2006/01/13 15:26:52 lha Exp $
+ * $Id: rsa.h,v 1.4 2006/04/16 19:38:23 lha Exp $
  */
 
 #ifndef _HEIM_RSA_H
@@ -59,6 +59,7 @@
 #define RSA_sign hc_RSA_sign
 #define RSA_verify hc_RSA_verify
 #define d2i_RSAPrivateKey hc_d2i_RSAPrivateKey
+#define i2d_RSAPublicKey hc_i2d_RSAPublicKey
 
 /*
  *
@@ -160,5 +161,6 @@ int RSA_verify(int, const unsigned char *, unsigned int,
 	       unsigned char *, unsigned int, RSA *);
 
 RSA *	d2i_RSAPrivateKey(RSA *, const unsigned char **, size_t);
+int	i2d_RSAPublicKey(RSA *, unsigned char **);
 
 #endif /* _HEIM_RSA_H */

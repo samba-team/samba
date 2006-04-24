@@ -32,7 +32,7 @@
  */
 
 #include "krb5_locl.h"
-RCSID("$Id: config_file.c,v 1.53 2005/06/16 20:22:53 lha Exp $");
+RCSID("$Id: config_file.c,v 1.54 2006/04/02 00:59:19 lha Exp $");
 
 #ifndef HAVE_NETINFO
 
@@ -574,7 +574,7 @@ krb5_config_vget_strings(krb5_context context,
     }
     if(nstr){
 	char **tmp = realloc(strings, (nstr + 1) * sizeof(*strings));
-	if(strings == NULL)
+	if(tmp == NULL)
 	    goto cleanup;
 	strings = tmp;
 	strings[nstr] = NULL;

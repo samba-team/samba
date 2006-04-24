@@ -151,6 +151,22 @@ EVP_Digest(const void *data, size_t dsize, void *hash, unsigned int *hsize,
  *
  */
 
+static const struct hc_evp_md sha256 = {
+    32,
+    64,
+    sizeof(SHA256_CTX),
+    (void *)SHA256_Init,
+    (void *)SHA256_Update,
+    (void *)SHA256_Final,
+    NULL
+};
+
+const EVP_MD *
+EVP_sha256(void)
+{
+    return &sha256;
+}
+
 static const struct hc_evp_md sha1 = {
     20,
     64,
@@ -543,6 +559,27 @@ EVP_rc2_40_cbc(void)
     return &rc2_40_cbc;
 }
 
+const EVP_CIPHER *
+EVP_rc2_64_cbc(void)
+{
+    static const EVP_CIPHER rc2_64_cbc = {
+	0,
+	RC2_BLOCK_SIZE,
+	8,
+	RC2_BLOCK_SIZE,
+	EVP_CIPH_CBC_MODE,
+	rc2_init,
+	rc2_do_cipher,
+	rc2_cleanup,
+	sizeof(struct rc2_cbc),
+	NULL,
+	NULL,
+	NULL,
+	NULL
+    };
+    return &rc2_64_cbc;
+}
+
 /*
  *
  */
@@ -726,3 +763,116 @@ EVP_aes_256_cbc(void)
     };
     return &aes_256_cbc;
 }
+
+/*
+ *
+ */
+
+static const struct cipher_name {
+    const char *name;
+    const EVP_CIPHER *(*func)(void);
+} cipher_name[] = {
+    { "des-ede3-cbc", EVP_des_ede3_cbc },
+    { "aes-128-cbc", EVP_aes_128_cbc },
+    { "aes-192-cbc", EVP_aes_192_cbc },
+    { "aes-256-cbc", EVP_aes_256_cbc }
+};
+
+
+const EVP_CIPHER *
+EVP_get_cipherbyname(const char *name)
+{
+    int i;
+    for (i = 0; i < sizeof(cipher_name)/sizeof(cipher_name[0]); i++) {
+	if (strcasecmp(cipher_name[i].name, name) == 0)
+	    return (*cipher_name[i].func)();
+    }
+    return NULL;
+}
+
+
+/*
+ *
+ */
+
+#ifndef min
+#define min(a,b) (((a)>(b))?(b):(a))
+#endif
+
+int
+EVP_BytesToKey(const EVP_CIPHER *type,
+	       const EVP_MD *md, 
+	       const void *salt,
+	       const void *data, size_t datalen,
+	       unsigned int count,
+	       void *keydata,
+	       void *ivdata)
+{
+    int ivlen, keylen, first = 0;
+    unsigned int mds = 0, i;
+    unsigned char *key = keydata;
+    unsigned char *iv = ivdata;
+    unsigned char *buf;
+    EVP_MD_CTX c;
+
+    keylen = EVP_CIPHER_key_length(type);
+    ivlen = EVP_CIPHER_iv_length(type);
+
+    if (data == NULL)
+	return keylen;
+
+    buf = malloc(EVP_MD_size(md));
+    if (buf == NULL)
+	return -1;
+
+    EVP_MD_CTX_init(&c);
+
+    first = 1;
+    while (1) {
+	EVP_DigestInit_ex(&c, md, NULL);
+	if (!first)
+	    EVP_DigestUpdate(&c, buf, mds);
+	first = 0;
+	EVP_DigestUpdate(&c,data,datalen);
+
+#define PKCS5_SALT_LEN 8
+
+	if (salt)
+	    EVP_DigestUpdate(&c, salt, PKCS5_SALT_LEN);
+
+	EVP_DigestFinal_ex(&c, buf, &mds);
+
+	for (i = 1; i < count; i++) {
+	    EVP_DigestInit_ex(&c, md, NULL);
+	    EVP_DigestUpdate(&c, buf, mds);
+	    EVP_DigestFinal_ex(&c, buf, &mds);
+	}
+
+	i = 0;
+	if (keylen) {
+	    size_t sz = min(keylen, mds);
+	    if (key) {
+		memcpy(key, buf, sz);
+		key += sz;
+	    }
+	    keylen -= sz;
+	    i += sz;
+	}
+	if (ivlen && mds > i) {
+	    size_t sz = min(ivlen, (mds - i));
+	    if (iv) {
+		memcpy(iv, &buf[i], sz);
+		iv += sz;
+	    }
+	    ivlen -= sz;
+	}
+	if (keylen == 0 && ivlen == 0)
+	    break;
+    }
+
+    EVP_MD_CTX_cleanup(&c);
+    free(buf);
+
+    return EVP_CIPHER_key_length(type);
+}
+

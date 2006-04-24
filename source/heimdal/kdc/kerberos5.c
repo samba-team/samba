@@ -33,7 +33,7 @@
 
 #include "kdc_locl.h"
 
-RCSID("$Id: kerberos5.c,v 1.201 2005/12/14 12:17:58 lha Exp $");
+RCSID("$Id: kerberos5.c,v 1.206 2006/04/02 01:54:37 lha Exp $");
 
 #define MAX_TIME ((time_t)((1U << 31) - 1))
 
@@ -208,6 +208,50 @@ log_timestamp(krb5_context context,
 	    "%s authtime: %s starttime: %s endtime: %s renew till: %s",
 	    type, authtime_str, starttime_str, endtime_str, renewtime_str);
 }
+
+static void
+log_patypes(krb5_context context, 
+	    krb5_kdc_configuration *config,
+	    METHOD_DATA *padata)
+{
+    struct rk_strpool *p = NULL;
+    char *str;
+    int i;
+	    
+    for (i = 0; i < padata->len; i++) {
+	switch(padata->val[i].padata_type) {
+	case KRB5_PADATA_PK_AS_REQ:
+	    p = rk_strpoolprintf(p, "PK-INIT(ietf)");
+	    break;
+	case KRB5_PADATA_PK_AS_REQ_WIN:
+	    p = rk_strpoolprintf(p, "PK-INIT(win2k)");
+	    break;
+	case KRB5_PADATA_PA_PK_OCSP_RESPONSE:
+	    p = rk_strpoolprintf(p, "OCSP");
+	    break;
+	case KRB5_PADATA_ENC_TIMESTAMP:
+	    p = rk_strpoolprintf(p, "encrypted-timestamp");
+	    break;
+	default:
+	    p = rk_strpoolprintf(p, "%d", padata->val[i].padata_type);
+	    break;
+	}
+	if (p && i + 1 < padata->len)
+	    p = rk_strpoolprintf(p, ", ");
+	if (p == NULL) {
+	    kdc_log(context, config, 0, "out of memory");
+	    return;
+	}
+    }
+    str = rk_strpoolcollect(p);
+    kdc_log(context, config, 0, "Client sent patypes: %s", str);
+    free(str);
+}
+
+/*
+ *
+ */
+
 
 static krb5_error_code
 encode_reply(krb5_context context,
@@ -642,11 +686,13 @@ get_pa_etype_info2(krb5_context context,
 krb5_error_code
 _kdc_check_flags(krb5_context context, 
 		 krb5_kdc_configuration *config,
-		 hdb_entry *client, const char *client_name,
-		 hdb_entry *server, const char *server_name,
+		 hdb_entry_ex *client_ex, const char *client_name,
+		 hdb_entry_ex *server_ex, const char *server_name,
 		 krb5_boolean is_as_req)
 {
-    if(client != NULL) {
+    if(client_ex != NULL) {
+	hdb_entry *client = &client_ex->entry;
+
 	/* check client */
 	if (client->flags.invalid) {
 	    kdc_log(context, config, 0, 
@@ -680,8 +726,8 @@ _kdc_check_flags(krb5_context context,
 	    return KRB5KDC_ERR_NAME_EXP;
 	}
 	
-	if (client->pw_end && *client->pw_end < kdc_time
-	    && !server->flags.change_pw) {
+	if (client->pw_end && *client->pw_end < kdc_time 
+	    && (server_ex == NULL || !server_ex->entry.flags.change_pw)) {
 	    char pwend_str[100];
 	    krb5_format_time(context, *client->pw_end, 
 			     pwend_str, sizeof(pwend_str), TRUE); 
@@ -694,7 +740,9 @@ _kdc_check_flags(krb5_context context,
 
     /* check server */
     
-    if (server != NULL) {
+    if (server_ex != NULL) {
+	hdb_entry *server = &server_ex->entry;
+
 	if (server->flags.invalid) {
 	    kdc_log(context, config, 0,
 		    "Server has invalid flag set -- %s", server_name);
@@ -762,27 +810,28 @@ check_addresses(krb5_context context,
     krb5_boolean result;
     krb5_boolean only_netbios = TRUE;
     int i;
-
+    
     if(config->check_ticket_addresses == 0)
 	return TRUE;
 
-    if(addresses == NULL) 
+    if(addresses == NULL)
 	return config->allow_null_ticket_addresses;
-
+    
     for (i = 0; i < addresses->len; ++i) {
-	    if (addresses->val[i].addr_type != KRB5_ADDRESS_NETBIOS) {
-		    only_netbios = FALSE;
-	    }
+	if (addresses->val[i].addr_type != KRB5_ADDRESS_NETBIOS) {
+	    only_netbios = FALSE;
+	}
     }
 
     /* Windows sends it's netbios name, which I can only assume is
-     * used for the 'allowed workstations' check.  This is painful, but
-     * we still want to check IP addresses if they happen to be
-     * present. */
+     * used for the 'allowed workstations' check.  This is painful,
+     * but we still want to check IP addresses if they happen to be
+     * present.
+     */
 
     if(only_netbios)
 	return config->allow_null_ticket_addresses;
-    
+
     ret = krb5_sockaddr2address (context, from, &addr);
     if(ret)
 	return FALSE;
@@ -867,8 +916,8 @@ _kdc_as_rep(krb5_context context,
     }
 
     ret = _kdc_check_flags(context, config, 
-			   &client->entry, client_name,
-			   &server->entry, server_name,
+			   client, client_name,
+			   server, server_name,
 			   TRUE);
     if(ret)
 	goto out;
@@ -884,9 +933,11 @@ _kdc_as_rep(krb5_context context,
     memset(&ek, 0, sizeof(ek));
 
     if(req->padata){
-	int i = 0;
+	int i;
 	PA_DATA *pa;
 	int found_pa = 0;
+
+	log_patypes(context, config, req->padata);
 
 #ifdef PKINIT
 	kdc_log(context, config, 5, 
@@ -1171,7 +1222,7 @@ _kdc_as_rep(krb5_context context,
 	    if (p && i + 1 < b->etype.len)
 		p = rk_strpoolprintf(p, ", ");
 	    if (p == NULL) {
-		kdc_log(context, config, 0, "out of meory");
+		kdc_log(context, config, 0, "out of memory");
 		goto out;
 	    }
 	}
@@ -2410,8 +2461,8 @@ tgs_rep2(krb5_context context,
 	}
 
 	ret = _kdc_check_flags(context, config, 
-			       &client->entry, cpn,
-			       &server->entry, spn,
+			       client, cpn,
+			       server, spn,
 			       FALSE);
 	if(ret)
 	    goto out;

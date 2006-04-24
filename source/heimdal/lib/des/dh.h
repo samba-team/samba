@@ -32,7 +32,7 @@
  */
 
 /*
- * $Id: dh.h,v 1.4 2006/01/18 13:48:30 lha Exp $
+ * $Id: dh.h,v 1.5 2006/04/20 18:16:17 lha Exp $
  */
 
 #ifndef _HEIM_DH_H
@@ -52,7 +52,7 @@
 #define DH_set_ex_data hc_DH_set_ex_data
 #define DH_get_ex_data hc_DH_get_ex_data
 #define DH_generate_parameters_ex hc_DH_generate_parameters_ex
-#define DH_check hc_DH_check
+#define DH_check_pubkey hc_DH_check_pubkey
 #define DH_generate_key hc_DH_generate_key
 #define DH_compute_key hc_DH_compute_key
 

@@ -33,7 +33,7 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id: init_creds.c,v 1.22 2006/02/03 11:42:31 lha Exp $");
+RCSID("$Id: init_creds.c,v 1.23 2006/04/02 01:08:30 lha Exp $");
 
 void KRB5_LIB_FUNCTION
 krb5_get_init_creds_opt_init(krb5_get_init_creds_opt *opt)
@@ -75,7 +75,7 @@ _krb5_get_init_creds_opt_copy(krb5_context context,
     krb5_get_init_creds_opt *opt;
 
     *out = NULL;
-    opt = malloc(sizeof(*opt));
+    opt = calloc(1, sizeof(*opt));
     if (opt == NULL) {
 	krb5_set_error_string(context, "out of memory");
 	return ENOMEM;

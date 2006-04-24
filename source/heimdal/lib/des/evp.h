@@ -31,7 +31,7 @@
  * SUCH DAMAGE.
  */
 
-/* $Id: evp.h,v 1.3 2006/02/28 14:17:25 lha Exp $ */
+/* $Id: evp.h,v 1.8 2006/04/21 15:00:54 lha Exp $ */
 
 #ifndef HEIM_EVP_H
 #define HEIM_EVP_H 1
@@ -79,12 +79,16 @@
 #define EVP_md5 hc_EVP_md5
 #define EVP_md_null hc_EVP_md_null
 #define EVP_rc2_40_cbc hc_EVP_rc2_40_cbc
+#define EVP_rc2_64_cbc hc_EVP_rc2_64_cbc
 #define EVP_rc2_cbc hc_EVP_rc2_cbc
 #define EVP_rc4 hc_EVP_rc4
 #define EVP_rc4_40 hc_EVP_rc4_40
 #define EVP_sha hc_EVP_sha
 #define EVP_sha1 hc_EVP_sha1
+#define EVP_sha256 hc_EVP_sha256
 #define PKCS5_PBKDF2_HMAC_SHA1 hc_PKCS5_PBKDF2_HMAC_SHA1
+#define EVP_BytesToKey hc_EVP_BytesToKey
+#define EVP_get_cipherbyname hc_EVP_get_cipherbyname
 
 /*
  *
@@ -161,6 +165,7 @@ const EVP_MD *EVP_md4(void);
 const EVP_MD *EVP_md5(void);
 const EVP_MD *EVP_sha(void);
 const EVP_MD *EVP_sha1(void);
+const EVP_MD *EVP_sha256(void);
 
 const EVP_CIPHER * EVP_aes_128_cbc(void);
 const EVP_CIPHER * EVP_aes_192_cbc(void);
@@ -168,6 +173,7 @@ const EVP_CIPHER * EVP_aes_256_cbc(void);
 const EVP_CIPHER * EVP_des_ede3_cbc(void);
 const EVP_CIPHER * EVP_enc_null(void);
 const EVP_CIPHER * EVP_rc2_40_cbc(void);
+const EVP_CIPHER * EVP_rc2_64_cbc(void);
 const EVP_CIPHER * EVP_rc2_cbc(void);
 const EVP_CIPHER * EVP_rc4(void);
 const EVP_CIPHER * EVP_rc4_40(void);
@@ -199,6 +205,9 @@ int	EVP_Digest(const void *, size_t, void *, unsigned int *,
  *
  */
 
+const EVP_CIPHER *
+	EVP_get_cipherbyname(const char *);
+
 size_t	EVP_CIPHER_block_size(const EVP_CIPHER *);
 size_t	EVP_CIPHER_key_length(const EVP_CIPHER *);
 size_t	EVP_CIPHER_iv_length(const EVP_CIPHER *);
@@ -226,6 +235,10 @@ int	EVP_Cipher(EVP_CIPHER_CTX *,void *,const void *,size_t);
 
 int	PKCS5_PBKDF2_HMAC_SHA1(const void *, size_t, const void *, size_t,
 			       unsigned long, size_t, void *);
+
+int	EVP_BytesToKey(const EVP_CIPHER *, const EVP_MD *, 
+		       const void *, const void *, size_t,
+		       unsigned int, void *, void *);
 
 
 #endif /* HEIM_EVP_H */
