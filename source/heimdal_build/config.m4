@@ -239,15 +239,25 @@ fi
 # only add gai_strerror if needed
 SMB_ENABLE(HEIMDAL_ROKEN_GAI_STRERROR, NO)
 AC_CHECK_FUNC(gai_strerror)
+
 if test t$ac_cv_func_gai_strerror != tyes; then
-    AC_SEARCH_LIBS_EXT(gai_strerror, [xnet], XNET_LIBS)
-    AC_CHECK_FUNC_EXT(gai_strerror, $XNET_LIBS)
-    if test t$ac_cv_func_ext_gai_strerror != tyes; then
-	SMB_ENABLE(HEIMDAL_ROKEN_GAI_STRERROR, YES)
+    AC_CHECK_LIB_EXT(nsl, GAI_LIBS, gai_strerror)
+    AC_CHECK_LIB_EXT(socket, GAI_LIBS, gai_strerror)
+    AC_CHECK_LIB_EXT(xnet, GAI_LIBS, gai_strerror)
+
+    dnl We can't just call AC_CHECK_FUNCS(gai_strerror) here, because the value
+    dnl has been cached.
+    if test x"$ac_cv_lib_ext_nsl_gai_strerror" = x"yes" ||
+       test x"$ac_cv_lib_ext_socket_gai_strerror" = x"yes" ||
+       test x"$ac_cv_lib_ext_xnet_gai_strerror" = x"yes"; then
+        AC_DEFINE(HAVE_GAI_STRERROR,1,[Whether the system has gai_strerror()])
+	SMB_EXT_LIB_ENABLE(GAI, YES)
     else
-	AC_DEFINE(HAVE_GAI_STRERROR,1,[Whether gai_strerror() is available])
+	SMB_ENABLE(HEIMDAL_ROKEN_GAI_STRERROR, YES)
     fi
+
 else
     AC_DEFINE(HAVE_GAI_STRERROR,1,[Whether gai_strerror() is available])
 fi
-SMB_EXT_LIB(XNET,[${XNET_LIBS}],[${XNET_CFLAGS}],[${XNET_CPPFLAGS}],[${XNET_LDFLAGS}])
+
+SMB_EXT_LIB(GAI,[${GAI_LIBS}],[${GAI_CFLAGS}],[${GAI_CPPFLAGS}],[${GAI_LDFLAGS}])
