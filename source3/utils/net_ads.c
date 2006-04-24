@@ -721,9 +721,8 @@ int net_ads_join(int argc, const char **argv)
 	const char *short_domain_name = NULL;
 	TALLOC_CTX *ctx = NULL;
 
-	if ((lp_server_role() != ROLE_DOMAIN_MEMBER) &&
-	    (lp_server_role() != ROLE_DOMAIN_BDC)) {
-		d_printf("can only join as domain member or as BDC\n");
+	if (lp_server_role() == ROLE_STANDALONE) {
+		d_printf("cannot join as standalone machine\n");
 		return -1;
 	}
 
