@@ -1,7 +1,7 @@
 #include "idl_types.h"
 
 [
-  uuid("1-2-3-4-5"),
+  uuid("12345778-1234-abcd-0001-00000001"),
   version(0.0),
   pointer_default(unique),
   helpstring("Active Directory Replication LDAP Blobs"),
