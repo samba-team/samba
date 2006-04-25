@@ -1,3 +1,41 @@
+2006-04-25  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* configure.in: make tests/kdc/Makefile
+
+	* kdc/kerberos5.c: Catch the case where the client sends no
+	encryption types or no pa-types.
+
+	* lib/hdb/ext.c (hdb_replace_extension): set error message on
+	failure, not success.
+
+	* lib/hdb/keys.c (parse_key_set): handle error case better
+	(hdb_generate_key_set): return better error
+	
+2006-04-24  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/hdb/hdb.c (hdb_create): print out what we don't support
+
+	* lib/krb5/principal.c: Remove a double free introduced in 1.93
+
+	* lib/krb5/log.c (log_file): reset pointer to freed memory
+
+	* lib/krb5/keytab_keyfile.c (get_cell_and_realm): reset d->cell to
+	make sure its not refereced
+
+	* tools/krb5-config.in: libhcrypto might depend on libasn1, switch
+	order
+
+	* lib/krb5/recvauth.c: indent
+
+	* doc/heimdal.texi: Add Setting up PK-INIT to Detailed Node
+	Listing.
+
+	* lib/krb5/pkinit.c: Pass down realm to pk_verify_host so the
+	function can verify the certificate is from the right realm.
+
+	* lib/krb5/init_creds_pw.c: Pass down realm to
+	_krb5_pk_rd_pa_reply
+	
 2006-04-23  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/pkinit.c (pk_verify_host): Add begining of finding

@@ -1,5 +1,7 @@
 2006-04-25  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* {,kdc/,db/}.cvsignore: ignore Makefile.in
+
 	* kdc/check-kdc.in: Try to detect another KDC running.
 
 	* kdc/check-kdc.in: more tests regarding doing AS-REQ and TGS-REQ
