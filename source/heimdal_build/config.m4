@@ -218,7 +218,6 @@ AC_PROG_YACC
 
 # if we ever get to using a host kerberos, we might add conditionals here
 AC_DEFINE(HAVE_KRB5,1,[Whether kerberos is available])
-CFLAGS="${CFLAGS} -Iheimdal_build -Iheimdal/lib/krb5 -Iheimdal/lib/gssapi -Iheimdal/lib/asn1 -Iheimdal/lib/com_err -Iheimdal/lib/hdb -Iheimdal/kdc -Iheimdal/lib/roken -Iheimdal/lib/des"
 HAVE_KRB5=YES
 SMB_ENABLE(KERBEROS_LIB, YES)
 SMB_ENABLE(asn1_compile, YES)
