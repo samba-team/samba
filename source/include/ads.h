@@ -266,3 +266,15 @@ typedef void **ADS_MODLIST;
 
 #define WELL_KNOWN_GUID_COMPUTERS	"AA312825768811D1ADED00C04FD8D5CD" 
 #define WELL_KNOWN_GUID_USERS		"A9D1CA15768811D1ADED00C04FD8D5CD"
+
+#ifndef KRB5_ADDR_NETBIOS
+#define KRB5_ADDR_NETBIOS 0x14
+#endif
+
+typedef struct {
+#if defined(HAVE_MAGIC_IN_KRB5_ADDRESS) && defined(HAVE_ADDRTYPE_IN_KRB5_ADDRESS) /* MIT */
+	krb5_address **addrs;
+#else /* Heimdal has the krb5_addresses type */
+	krb5_addresses *addrs;
+#endif
+} smb_krb5_addresses;

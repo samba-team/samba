@@ -1205,6 +1205,104 @@ done:
     
 }
 
+ krb5_error_code smb_krb5_free_addresses(krb5_context context, smb_krb5_addresses *addr)
+{
+	krb5_error_code ret = 0;
+#if defined(HAVE_MAGIC_IN_KRB5_ADDRESS) && defined(HAVE_ADDRTYPE_IN_KRB5_ADDRESS) /* MIT */
+	krb5_free_addresses(context, addr->addrs);
+#elif defined(HAVE_ADDR_TYPE_IN_KRB5_ADDRESS) /* Heimdal */
+	ret = krb5_free_addresses(context, addr->addrs);
+	SAFE_FREE(addr->addrs);
+#endif
+	SAFE_FREE(addr);
+	addr = NULL;
+	return ret;
+}
+
+ krb5_error_code smb_krb5_gen_netbios_krb5_address(smb_krb5_addresses **kerb_addr)
+{
+	krb5_error_code ret = 0;
+	nstring buf;
+#if defined(HAVE_MAGIC_IN_KRB5_ADDRESS) && defined(HAVE_ADDRTYPE_IN_KRB5_ADDRESS) /* MIT */
+	krb5_address **addrs = NULL;
+#elif defined(HAVE_ADDR_TYPE_IN_KRB5_ADDRESS) /* Heimdal */
+	krb5_addresses *addrs = NULL;
+#endif
+
+	*kerb_addr = (smb_krb5_addresses *)SMB_MALLOC(sizeof(smb_krb5_addresses));
+	if (*kerb_addr == NULL) {
+		return ENOMEM;
+	}
+
+	put_name(buf, global_myname(), ' ', 0x20);
+
+#if defined(HAVE_MAGIC_IN_KRB5_ADDRESS) && defined(HAVE_ADDRTYPE_IN_KRB5_ADDRESS) /* MIT */
+	{
+		int num_addr = 2;
+
+		addrs = (krb5_address **)SMB_MALLOC(sizeof(krb5_address *) * num_addr);
+		if (addrs == NULL) {
+			return ENOMEM;
+		}
+
+		memset(addrs, 0, sizeof(krb5_address *) * num_addr);
+
+		addrs[0] = (krb5_address *)SMB_MALLOC(sizeof(krb5_address));
+		if (addrs[0] == NULL) {
+			SAFE_FREE(addrs);
+			return ENOMEM;
+		}
+
+		addrs[0]->magic = KV5M_ADDRESS;
+		addrs[0]->addrtype = KRB5_ADDR_NETBIOS;
+		addrs[0]->length = MAX_NETBIOSNAME_LEN;
+		addrs[0]->contents = (unsigned char *)SMB_MALLOC(addrs[0]->length);
+		if (addrs[0]->contents == NULL) {
+			SAFE_FREE(addrs[0]);
+			SAFE_FREE(addrs);
+			return ENOMEM;
+		}
+
+		memcpy(addrs[0]->contents, buf, addrs[0]->length);
+
+		addrs[1] = NULL;
+	}
+#elif defined(HAVE_ADDR_TYPE_IN_KRB5_ADDRESS) /* Heimdal */
+	{
+		addrs = (krb5_addresses *)SMB_MALLOC(sizeof(krb5_addresses));
+		if (addrs == NULL) {
+			return ENOMEM;
+		}
+
+		memset(addrs, 0, sizeof(krb5_addresses));
+
+		addrs->len = 1;
+		addrs->val = (krb5_address *)SMB_MALLOC(sizeof(krb5_address));
+		if (addrs->val == NULL) {
+			SAFE_FREE(addrs);
+			return ENOMEM;
+		}
+
+		addrs->val[0].addr_type = KRB5_ADDR_NETBIOS;
+		addrs->val[0].address.length = MAX_NETBIOSNAME_LEN;
+		addrs->val[0].address.data = (unsigned char *)SMB_MALLOC(addrs->val[0].address.length);
+		if (addrs->val[0].address.data == NULL) {
+			SAFE_FREE(addrs->val);
+			SAFE_FREE(addrs);
+			return ENOMEM;
+		}
+
+		memcpy(addrs->val[0].address.data, buf, addrs->val[0].address.length);
+	}
+#else
+#error UNKNOWN_KRB5_ADDRESS_FORMAT
+#endif
+	(*kerb_addr)->addrs = addrs;
+
+	return ret;
+}
+				
+
 #else /* HAVE_KRB5 */
  /* this saves a few linking headaches */
  int cli_krb5_get_ticket(const char *principal, time_t time_offset, 

@@ -265,7 +265,7 @@ static int parse_nmb_name(char *inbuf,int ofs,int length, struct nmb_name *name)
  [15 bytes name + padding][1 byte name type].
 ****************************************************************************/
 
-static void put_name(char *dest, const char *name, int pad, unsigned int name_type)
+void put_name(char *dest, const char *name, int pad, unsigned int name_type)
 {
 	size_t len = strlen(name);
 
