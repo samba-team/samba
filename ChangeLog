@@ -1,5 +1,10 @@
 2006-04-25  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kuser/kinit.1: document option password-file
+
+	* kuser/kinit.c: Add option password-file, read password from the
+	first line of a file.
+
 	* configure.in: make tests/kdc/Makefile
 
 	* kdc/kerberos5.c: Catch the case where the client sends no
