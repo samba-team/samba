@@ -480,7 +480,7 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 	
 	if ( (user = netsamlogon_cache_get( mem_ctx, user_sid )) != NULL )
 	{
-		DEBUG(5,("query_user: Cache lookup succeeded for %s\n", 
+		DEBUG(5,("lookup_usergroups: Cache lookup succeeded for %s\n", 
 			sid_string_static(user_sid)));
 			
 		*num_groups = user->num_groups;
