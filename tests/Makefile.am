@@ -2,4 +2,4 @@
 
 include $(top_srcdir)/Makefile.am.common
 
-SUBDIRS = db
+SUBDIRS = db kdc
