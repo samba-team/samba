@@ -560,6 +560,7 @@ AC_CONFIG_FILES(Makefile 		\
 	appl/dceutils/Makefile		\
 	tests/Makefile			\
 	tests/db/Makefile		\
+	tests/kdc/Makefile		\
 	doc/Makefile			\
 	tools/Makefile			\
 )
