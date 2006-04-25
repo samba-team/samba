@@ -226,7 +226,7 @@ if test x$GNU_MAKE = x"yes"; then
 fi
 AC_MSG_RESULT($new_make)
 automatic_dependencies=no
-AX_CXXFLAGS_GCC_OPTION(-MT, [], [ automatic_dependencies=$new_make ], [])
+AX_CFLAGS_GCC_OPTION(-MT, [], [ automatic_dependencies=$new_make ], [])
 AC_MSG_CHECKING([Whether to use automatic dependencies])
 AC_MSG_RESULT($automatic_dependencies)
 AC_SUBST(automatic_dependencies)
