@@ -70,7 +70,7 @@ struct composite_context *finddcs_send(TALLOC_CTX *mem_ctx,
 	struct finddcs_state *state;
 	struct nbt_name name;
 
-	result = talloc(mem_ctx, struct composite_context);
+	result = talloc_zero(mem_ctx, struct composite_context);
 	if (result == NULL) goto failed;
 	result->state = COMPOSITE_STATE_IN_PROGRESS;
 	result->async.fn = NULL;
