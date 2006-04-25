@@ -967,9 +967,9 @@ int main(int argc, char *argv[])
 {
 	int ret;
 
-	registry_init();
-
 	lp_load();
+
+	registry_init();
 	setup_logging(argv[0], DEBUG_STDERR);
 
 	mem_ctx = talloc_init("gregedit");
