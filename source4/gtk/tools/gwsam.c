@@ -403,6 +403,8 @@ int main(int argc, char **argv)
 	lp_load();
 	setup_logging(argv[0], DEBUG_STDERR);
 
+	dcerpc_init();
+
 	gtk_init(&argc, &argv);
 	mainwin = create_mainwindow();
 	connect_sam();
