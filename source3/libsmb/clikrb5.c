@@ -1208,6 +1208,9 @@ done:
  krb5_error_code smb_krb5_free_addresses(krb5_context context, smb_krb5_addresses *addr)
 {
 	krb5_error_code ret = 0;
+	if (addr == NULL) {
+		return ret;
+	}
 #if defined(HAVE_MAGIC_IN_KRB5_ADDRESS) && defined(HAVE_ADDRTYPE_IN_KRB5_ADDRESS) /* MIT */
 	krb5_free_addresses(context, addr->addrs);
 #elif defined(HAVE_ADDR_TYPE_IN_KRB5_ADDRESS) /* Heimdal */
@@ -1242,6 +1245,7 @@ done:
 
 		addrs = (krb5_address **)SMB_MALLOC(sizeof(krb5_address *) * num_addr);
 		if (addrs == NULL) {
+			SAFE_FREE(kerb_addr);
 			return ENOMEM;
 		}
 
@@ -1250,6 +1254,7 @@ done:
 		addrs[0] = (krb5_address *)SMB_MALLOC(sizeof(krb5_address));
 		if (addrs[0] == NULL) {
 			SAFE_FREE(addrs);
+			SAFE_FREE(kerb_addr);
 			return ENOMEM;
 		}
 
@@ -1260,6 +1265,7 @@ done:
 		if (addrs[0]->contents == NULL) {
 			SAFE_FREE(addrs[0]);
 			SAFE_FREE(addrs);
+			SAFE_FREE(kerb_addr);
 			return ENOMEM;
 		}
 
@@ -1271,6 +1277,7 @@ done:
 	{
 		addrs = (krb5_addresses *)SMB_MALLOC(sizeof(krb5_addresses));
 		if (addrs == NULL) {
+			SAFE_FREE(kerb_addr);
 			return ENOMEM;
 		}
 
@@ -1280,6 +1287,7 @@ done:
 		addrs->val = (krb5_address *)SMB_MALLOC(sizeof(krb5_address));
 		if (addrs->val == NULL) {
 			SAFE_FREE(addrs);
+			SAFE_FREE(kerb_addr);
 			return ENOMEM;
 		}
 
@@ -1289,6 +1297,7 @@ done:
 		if (addrs->val[0].address.data == NULL) {
 			SAFE_FREE(addrs->val);
 			SAFE_FREE(addrs);
+			SAFE_FREE(kerb_addr);
 			return ENOMEM;
 		}
 
