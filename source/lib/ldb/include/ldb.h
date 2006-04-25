@@ -233,6 +233,15 @@ struct ldb_utf8_fns {
 */
 #define LDB_FLG_NOSYNC 2
 
+/**
+   Flag value to specify autoreconnect mode.
+
+   If LDB_FLG_RECONNECT is used in ldb_connect, then the backend will
+   be opened in a way that makes it try to auto reconnect if the
+   connection is dropped (actually make sense only with ldap).
+*/
+#define LDB_FLG_RECONNECT 3
+
 /*! \cond DOXYGEN_IGNORE */
 #ifndef PRINTF_ATTRIBUTE
 #define PRINTF_ATTRIBUTE(a,b)
