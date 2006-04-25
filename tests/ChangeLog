@@ -1,12 +1,23 @@
+2006-04-25  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kdc/check-kdc.in: Test framework for getting and checking
+	tickets, start kdc on localhost:8888.
+
+	* kdc/Makefile.am: Test framework for getting and checking
+	tickets.
+
+	* db/krb5.conf.in: log all message to local file
+
+	* db/Makefile.am: clean messages file
+	
 2006-01-17  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* db/krb5.conf.in: Set [libdefaults] default_realm = EXAMPLE.ORG.
-	
+
 2005-11-30  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* db/loaddump-db.in: Specifify explicitly that the database is in
 	the current directory.
-	
 
 2005-08-11  Love Hörnquist Åstrand  <lha@it.su.se>
 
