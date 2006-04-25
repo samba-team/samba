@@ -12,3 +12,6 @@
 		realm = EXAMPLE.ORG
 		mkey_file = @objdir@/mkey.file
 	}
+
+[logging]
+	default = 0-/FILE:@objdir@/messages.log
