@@ -78,6 +78,8 @@ ${kadmin} delete bar 2> /dev/null && exit 1
 echo "creating sample user"
 ${kadmin} add -r --use-defaults foo  || exit 1
 ${kadmin} get foo > tempfile  || exit 1
+echo checking principal
+grep -e " *Principal: foo@EXAMPLE.ORG$" tempfile > /dev/null || exit 1
 echo checking kvno
 grep -e " *Kvno: 1$" tempfile > /dev/null || exit 1
 echo checking failed login count
@@ -94,5 +96,13 @@ ${kadmin} modify --max-renewable-life=2months foo
 echo checking renew time
 ${kadmin} get foo > tempfile  || exit 1
 grep -e " *Max renewable life: 2 months$" tempfile > /dev/null || exit 1
+
+echo "creating sample server"
+${kadmin} add -r --use-defaults host/datan.example.org  || exit 1
+${kadmin} get host/datan.example.org > tempfile  || exit 1
+echo checking principal
+grep -e " *Principal: host/datan.example.org@EXAMPLE.ORG$" tempfile > /dev/null || exit 1
+echo checking kvno
+grep -e " *Kvno: 1$" tempfile > /dev/null || exit 1
 
 exit 0
