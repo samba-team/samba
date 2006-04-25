@@ -70,7 +70,7 @@ sub _prepare_path_vars($)
 prefix = $self->{config}->{prefix}
 exec_prefix = $self->{config}->{exec_prefix}
 selftest_prefix = $self->{config}->{selftest_prefix}
-VPATH = $self->{config}->{srcdir}:heimdal/lib/asn1:heimdal/lib/krb5:heimdal/lib/gssapi:heimdal/lib/hdb:heimdal/lib/roken:heimdal/lib/des
+VPATH = $self->{config}->{srcdir}:heimdal_build:heimdal/lib/asn1:heimdal/lib/krb5:heimdal/lib/gssapi:heimdal/lib/hdb:heimdal/lib/roken:heimdal/lib/des
 srcdir = $self->{config}->{srcdir}
 builddir = $self->{config}->{builddir}
 
@@ -457,6 +457,25 @@ sub PkgConfig($$)
 
 	push (@{$self->{pc_files}}, $path);
 
+	my $pubs;
+	my $privs;
+
+	if (defined($ctx->{PUBLIC_DEPENDENCIES})) {
+		foreach (@{$ctx->{PUBLIC_DEPENDENCIES}}) {
+#			next unless ($self-> ) {
+
+			$pubs .= "$_ ";
+		}
+	}
+
+	if (defined($ctx->{PRIVATE_DEPENDENCIES})) {
+		foreach (@{$ctx->{PRIVATE_DEPENDENCIES}}) {
+#			next unless ($self-> ) {
+
+			$privs .= "$_ ";
+		}
+	}
+
 	smb_build::env::PkgConfig($self,
 		$path,
 		$link_name,
@@ -464,7 +483,9 @@ sub PkgConfig($$)
 		"",
 		"$ctx->{VERSION}",
 		$ctx->{DESCRIPTION},
-		defined($ctx->{INIT_FUNCTIONS})
+		defined($ctx->{INIT_FUNCTIONS}),
+		$pubs,
+		$privs
 	); 
 }
 
@@ -499,7 +520,7 @@ sub ProtoHeader($$)
 		$ctx->{PUBLIC_PROTO_HEADER} = $ctx->{PRIVATE_PROTO_HEADER};
 	}	
 
-	$self->output("$dir/$ctx->{PUBLIC_PROTO_HEADER}: $ctx->{MK_FILE} \$($ctx->{TYPE}_$ctx->{NAME}_OBJ_LIST:.o=.c)\n");
+	$self->output("$dir/$ctx->{PUBLIC_PROTO_HEADER}: $ctx->{MK_FILE} \$($ctx->{TYPE}_$ctx->{NAME}_OBJ_LIST:.o=.c) \$(srcdir)/script/mkproto.pl\n");
 	$self->output("\t\@echo \"$comment\"\n");
 
 	$self->output("\t\@\$(PERL) \$(srcdir)/script/mkproto.pl --srcdir=\$(srcdir) --builddir=\$(builddir) --private=$dir/$ctx->{PRIVATE_PROTO_HEADER} --public=$dir/$ctx->{PUBLIC_PROTO_HEADER} \$($ctx->{TYPE}_$ctx->{NAME}_OBJ_LIST)\n\n");

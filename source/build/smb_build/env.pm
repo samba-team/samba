@@ -53,9 +53,9 @@ sub _set_config($$)
 	$self->{automatic_deps} = ($self->{config}->{automatic_dependencies} eq "yes");
 }
 
-sub PkgConfig($$$$$$$$)
+sub PkgConfig($$$$$$$$$$)
 {
-	my ($self,$path,$name,$libs,$cflags,$version,$desc,$hasmodules) = @_;
+	my ($self,$path,$name,$libs,$cflags,$version,$desc,$hasmodules,$pubdep,$privdep) = @_;
 
 	print __FILE__.": creating $path\n";
 
@@ -83,6 +83,8 @@ __EOF__
 	if (defined($desc)) {
 		print OUT "Description: $desc\n";
 	}
+	print OUT "Requires: $pubdep\n" if defined($pubdep);
+	print OUT "Requires.private: $privdep\n" if defined($privdep);
 	print OUT "Version: $version\n";
 	print OUT "Libs: -L\${libdir} $libs\n";
 	print OUT "Cflags: -I\${includedir} $cflags\n";
