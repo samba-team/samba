@@ -1105,7 +1105,9 @@ enum winbindd_result winbindd_dual_pam_auth(struct winbindd_domain *domain,
 			DEBUG(10,("winbindd_dual_pam_auth_kerberos failed: %s\n", nt_errstr(result)));
 		}
 
-		if (NT_STATUS_EQUAL(result, NT_STATUS_NO_LOGON_SERVERS)) {
+		if (NT_STATUS_EQUAL(result, NT_STATUS_NO_LOGON_SERVERS) ||
+		    NT_STATUS_EQUAL(result, NT_STATUS_IO_TIMEOUT) ||
+		    NT_STATUS_EQUAL(result, NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND)) {
 			DEBUG(10,("winbindd_dual_pam_auth_kerberos setting domain to offline\n"));
 			domain->online = False;
 		}
