@@ -524,6 +524,12 @@ static struct cache_entry *wcache_fetch(struct winbind_cache *cache,
 	char *kstr;
 	struct cache_entry *centry;
 
+	extern BOOL opt_nocache;
+
+	if (opt_nocache) {
+		return NULL;
+	}
+
 	refresh_sequence_number(domain, False);
 
 	va_start(ap, format);
