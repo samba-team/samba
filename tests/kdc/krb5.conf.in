@@ -1,0 +1,21 @@
+# $Id$
+
+[libdefaults]
+	default_realm = EXAMPLE.ORG
+	no-addresses = TRUE
+
+[realms]
+	EXAMPLE.ORG = {
+		kdc = localhost:8888
+	}
+
+[kdc]
+	database = {
+		dbname = @objdir@/current-db
+		realm = EXAMPLE.ORG
+		mkey_file = @objdir@/mkey.file
+	}
+
+[logging]
+	kdc = 0-/FILE:@objdir@/messages.log
+	default = 0-/FILE:@objdir@/messages.log
