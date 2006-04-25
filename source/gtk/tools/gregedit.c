@@ -968,11 +968,11 @@ int main(int argc, char *argv[])
 	int ret;
 
 	lp_load();
-
-	registry_init();
 	setup_logging(argv[0], DEBUG_STDERR);
 
 	mem_ctx = talloc_init("gregedit");
+
+	registry_init();
 
 	gtk_init(&argc, &argv);
 	mainwin = create_mainwindow();
