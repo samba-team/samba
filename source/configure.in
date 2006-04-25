@@ -3655,6 +3655,18 @@ if test x"$with_ads_support" != x"no"; then
               [Whether krb5_keytab_entry has keyblock member])
   fi
 
+  AC_CACHE_CHECK([for magic in krb5_address],
+                 samba_cv_HAVE_MAGIC_IN_KRB5_ADDRESS,[
+    AC_TRY_COMPILE([#include <krb5.h>],
+      [krb5_address addr; addr.magic = 0;],
+      samba_cv_HAVE_MAGIC_IN_KRB5_ADDRESS=yes,
+      samba_cv_HAVE_MAGIC_IN_KRB5_ADDRESS=no)])
+
+  if test x"$samba_cv_HAVE_MAGIC_IN_KRB5_ADDRESS" = x"yes"; then
+    AC_DEFINE(HAVE_MAGIC_IN_KRB5_ADDRESS,1,
+              [Whether the krb5_address struct has a magic property])
+  fi
+
   if test x"$ac_cv_lib_ext_krb5_krb5_mk_req_extended" = x"yes"; then
     AC_DEFINE(HAVE_KRB5,1,[Whether to have KRB5 support])
     AC_DEFINE(WITH_ADS,1,[Whether to include Active Directory support])
@@ -3703,6 +3715,18 @@ if test x"$with_ads_support" != x"no"; then
   if test x"$samba_cv_KRB5_PRINC_REALM_RETURNS_REALM" = x"yes"; then
     AC_DEFINE(KRB5_PRINC_REALM_RETURNS_REALM,1,
               [Whether krb5_princ_realm returns krb5_realm or krb5_data])
+  fi
+
+  AC_CACHE_CHECK([for krb5_addresses type],
+                samba_cv_HAVE_KRB5_ADDRESSES,[
+    AC_TRY_COMPILE([#include <krb5.h>],
+      [krb5_addresses addr;],
+      samba_cv_HAVE_KRB5_ADDRESSES=yes,
+      samba_cv_HAVE_KRB5_ADDRESSES=no)])
+
+  if test x"$samba_cv_HAVE_KRB5_ADDRESSES" = x"yes"; then
+    AC_DEFINE(HAVE_KRB5_ADDRESSES,1,
+               [Whether the type krb5_addresses type exists])
   fi
 
 LIBS="$ac_save_LIBS"
