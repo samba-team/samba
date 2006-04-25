@@ -9,6 +9,6 @@ OBJ_FILES = kerberos.o \
 			kerberos_pac.o \
 			gssapi_parse.o \
 			krb5_init_context.o
-PUBLIC_DEPENDENCIES = HEIMDAL_KRB5 NDR_KRB5PAC SOCKET
+PUBLIC_DEPENDENCIES = HEIMDAL_KRB5 NDR_KRB5PAC SOCKET HEIMDAL_ROKEN_ADDRINFO
 # End SUBSYSTEM KERBEROS
 #################################
