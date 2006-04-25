@@ -112,23 +112,19 @@ parse_key_set(krb5_context context, const char *key,
 	    if(strcmp(buf[i], "des") == 0) {
 		enctypes = all_etypes;
 		num_enctypes = 3;
-		continue;
 	    } else if(strcmp(buf[i], "des3") == 0) {
 		e = ETYPE_DES3_CBC_SHA1;
 		enctypes = &e;
 		num_enctypes = 1;
-		continue;
 	    } else {
 		ret = krb5_string_to_enctype(context, buf[i], &e);
 		if (ret == 0) {
 		    enctypes = &e;
 		    num_enctypes = 1;
-		    continue;
-		}
+		} else
+		    return ret;
 	    }
-	}
-
-	if(salt->salttype == 0) {
+	} else if(salt->salttype == 0) {
 	    /* interpret string as a salt specifier, if no etype
 	       is set, this sets default values */
 	    /* XXX should perhaps use string_to_salttype, but that
@@ -152,7 +148,7 @@ parse_key_set(krb5_context context, const char *key,
 	       v4 compat, and a cell name for afs compat */
 	    salt->saltvalue.data = strdup(buf[i]);
 	    if (salt->saltvalue.data == NULL) {
-		krb5_set_error_string(context, "malloc out of memory");
+		krb5_set_error_string(context, "out of memory");
 		return ENOMEM;
 	    }
 	    salt->saltvalue.length = strlen(buf[i]);
@@ -297,7 +293,7 @@ hdb_generate_key_set(krb5_context context, krb5_principal principal,
 	ret = parse_key_set(context, p,
 			    &enctypes, &num_enctypes, &salt, principal);
 	if (ret) {
-	    krb5_warnx(context, "bad value for default_keys `%s'", *kp);
+	    krb5_warn(context, ret, "bad value for default_keys `%s'", *kp);
 	    ret = 0;
 	    continue;
 	}
