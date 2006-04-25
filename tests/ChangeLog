@@ -1,5 +1,17 @@
 2006-04-25  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kdc/check-kdc.in: check that the keytab have the right kvno
+
+	* db/add-modify-delete.in: create a server too
+
+	* kdc/check-kdc.in: check kdc too
+
+	* db/Makefile.am: Add add-modify-delete
+
+	* db/add-modify-delete.in: basic kadmin tests
+
+	* Makefile.am: SUBDIRS += kdc
+
 	* kdc/check-kdc.in: Test framework for getting and checking
 	tickets, start kdc on localhost:8888.
 
