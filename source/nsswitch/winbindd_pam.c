@@ -489,6 +489,7 @@ static NTSTATUS winbindd_raw_kerberos_login(struct winbindd_domain *domain,
 					       &renewal_until,
 					       cc, 
 					       True,
+					       True,
 					       WINBINDD_PAM_AUTH_KRB5_RENEW_TIME);
 
 	if (krb5_ret) {

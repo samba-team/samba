@@ -1544,6 +1544,8 @@ int cli_krb5_get_ticket(const char *principal, time_t time_offset,
 PAC_LOGON_INFO *get_logon_info_from_pac(PAC_DATA *pac_data);
 krb5_error_code smb_krb5_renew_ticket(const char *ccache_string, const char *client_string, const char *service_string, time_t *new_start_time);
 krb5_error_code kpasswd_err_to_krb5_err(krb5_error_code res_code);
+krb5_error_code smb_krb5_gen_netbios_krb5_address(smb_krb5_addresses **kerb_addr);
+krb5_error_code smb_krb5_free_addresses(krb5_context context, smb_krb5_addresses *addr);
 NTSTATUS krb5_to_nt_status(krb5_error_code kerberos_error);
 krb5_error_code nt_status_to_krb5(NTSTATUS nt_status);
 #endif /* HAVE_KRB5 */
