@@ -16,6 +16,7 @@ PUBLIC_DEPENDENCIES = TDR
 OBJ_FILES = tdr_regf.o
 
 # Special support for external builddirs
+lib/registry/reg_backend_nt4.c: lib/registry/tdr_regf.c
 $(srcdir)/lib/registry/reg_backend_nt4.c: lib/registry/tdr_regf.c
 lib/registry/tdr_regf.h: lib/registry/tdr_regf.c
 lib/registry/tdr_regf.c: $(srcdir)/lib/registry/regf.idl
