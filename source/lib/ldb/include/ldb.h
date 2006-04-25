@@ -240,7 +240,7 @@ struct ldb_utf8_fns {
    be opened in a way that makes it try to auto reconnect if the
    connection is dropped (actually make sense only with ldap).
 */
-#define LDB_FLG_RECONNECT 3
+#define LDB_FLG_RECONNECT 4
 
 /*! \cond DOXYGEN_IGNORE */
 #ifndef PRINTF_ATTRIBUTE
