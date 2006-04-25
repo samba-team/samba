@@ -43,7 +43,12 @@ port=8888
 
 kadmin="../../kadmin/kadmin -l -r $R"
 kdc="../../kdc/kdc --addresses=localhost -P $port"
-cache="FILE:${objdir}/client-cache"
+
+server=host/datan.example.org
+cache="FILE:${objdir}/cache.krb5"
+keytabfile=${objdir}/server.keytab
+keytab="FILE:${keytabfile}"
+
 kinit="../../kuser/kinit -c $cache --no-afslog"
 klist="../../kuser/klist -c $cache"
 kgetcred="../../kuser/kgetcred -c $cache"
@@ -51,6 +56,7 @@ kgetcred="../../kuser/kgetcred -c $cache"
 KRB5_CONFIG="${objdir}/krb5.conf"
 export KRB5_CONFIG
 
+rm -f ${keytabfile}
 rm -f current-db*
 rm -f out-*
 rm -f mkey.file*
@@ -64,26 +70,33 @@ ${kadmin} \
 
 ${kadmin} add -p foo --use-defaults foo@${R} || exit 1
 ${kadmin} add -p bar --use-defaults bar@${R} || exit 1
-${kadmin} add -p kaka --use-defaults host/datan.example.com@${R} || exit 1
+${kadmin} add -p kaka --use-defaults ${server}@${R} || exit 1
+${kadmin} ext -k ${keytab} ${server}@${R} || exit 1
 
 echo foo > ${objdir}/foopassword
 
-echo Starting kdc
-${kdc} &
-kdcpid=$!
-sleep 2
+#echo Starting kdc
+#${kdc} &
+#kdcpid=$!
+#sleep 2
 
 exitcode=0
 
-echo "Getting initial tickets"
+echo "Getting client initial tickets"
 ${kinit} --password-file=${objdir}/foopassword foo@$R || exitcode=1
 echo "Getting tickets"
-${kgetcred} host/datan.example.com@${R} || exitcode=1
+${kgetcred} ${server}@${R} || exitcode=1
 echo "Listing tickets"
 ${klist} > /dev/null || exitcode=1
 
-echo "killing kdc (${kdcpid})"
-kill $kdcpid || exit 1
+echo "Getting server initial tickets"
+${kinit} --keytab=${keytab} ${server}@$R || exitcode=1
+echo "Listing tickets"
+${klist} | grep "Principal: ${server}" > /dev/null || exitcode=1
+
+
+#echo "killing kdc (${kdcpid})"
+#kill $kdcpid || exit 1
 
 exit $exitcode
 
