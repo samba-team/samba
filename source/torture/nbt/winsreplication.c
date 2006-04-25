@@ -9543,7 +9543,7 @@ static void test_conflict_owned_active_vs_replica_handler_query(struct nbt_name_
 
 	/* make sure we push the reply to the wire */
 	event_loop_once(nbtsock->event_ctx);
-	msleep(500);
+	msleep(1000);
 
 	rec->defend.timeout	= 0;
 	rec->defend.ret		= True;
@@ -9596,7 +9596,7 @@ static void test_conflict_owned_active_vs_replica_handler_release(struct nbt_nam
 
 	/* make sure we push the reply to the wire */
 	event_loop_once(nbtsock->event_ctx);
-	msleep(500);
+	msleep(1000);
 
 	rec->defend.timeout	= 0;
 	rec->defend.ret		= True;
