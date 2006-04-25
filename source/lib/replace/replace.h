@@ -206,7 +206,7 @@ int rep_mkstemp(char *temp);
 
 #ifndef HAVE_BOOL
 #define __bool_true_false_are_defined
-typedef bool int;
+typedef int bool;
 #define false (0)
 #define true (1)
 #endif
