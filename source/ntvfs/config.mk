@@ -25,7 +25,19 @@ PRIVATE_PROTO_HEADER = simple/proto.h
 OBJ_FILES = \
 		simple/vfs_simple.o \
 		simple/svfs_util.o
-# End MODULE ntvfs_cifs
+# End MODULE ntvfs_simple
+################################################
+
+################################################
+# Start MODULE ntvfs_cifs_posix_cli
+[MODULE::ntvfs_cifs_posix]
+INIT_FUNCTION = ntvfs_cifs_posix_init
+SUBSYSTEM = ntvfs
+PRIVATE_PROTO_HEADER = cifs_posix_cli/proto.h
+OBJ_FILES = \
+                cifs_posix_cli/vfs_simple.o \
+                cifs_posix_cli/svfs_util.o
+# End MODULE ntvfs_cifs_posix_cli
 ################################################
 
 ################################################
