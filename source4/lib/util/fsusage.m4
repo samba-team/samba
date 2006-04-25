@@ -1,7 +1,13 @@
 #################################################
 # these tests are taken from the GNU fileutils package
 AC_CHECKING(how to get filesystem space usage)
-AC_CHECK_HEADERS(sys/statfs.h sys/statvfs.h)
+AC_CHECK_HEADERS(sys/statfs.h sys/statvfs.h sys/vfs.h)
+
+AC_CHECK_HEADERS(sys/mount.h, , , [AC_INCLUDES_DEFAULT
+#ifdef HAVE_SYS_PARAM_H
+#include <sys/param.h>
+#endif])
+
 space=no
 
 # Test for statvfs64.
