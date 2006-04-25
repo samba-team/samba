@@ -28,6 +28,39 @@
 #include "lib/tls/tls.h"
 #include "auth/auth.h"
 
+struct ldap_simple_creds {
+	const char *dn;
+	const char *pw;
+};
+
+NTSTATUS ldap_rebind(struct ldap_connection *conn)
+{
+	NTSTATUS status;
+	struct ldap_simple_creds *creds;
+
+	switch (conn->bind.type) {
+	case LDAP_BIND_SASL:
+		status = ldap_bind_sasl(conn, (struct cli_credentials *)conn->bind.creds);
+		break;
+		
+	case LDAP_BIND_SIMPLE:
+		creds = (struct ldap_simple_creds *)conn->bind.creds;
+
+		if (creds == NULL) {
+			return NT_STATUS_UNSUCCESSFUL;
+		}
+
+		status = ldap_bind_simple(conn, creds->dn, creds->pw);
+		break;
+
+	default:
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	return status;
+}
+
+
 static struct ldap_message *new_ldap_simple_bind_msg(struct ldap_connection *conn, 
 						     const char *dn, const char *pw)
 {
@@ -109,6 +142,20 @@ NTSTATUS ldap_bind_simple(struct ldap_connection *conn,
 	status = ldap_check_response(conn, &msg->r.BindResponse.response);
 
 	talloc_free(req);
+
+	if (NT_STATUS_IS_OK(status)) {
+		struct ldap_simple_creds *creds = talloc(conn, struct ldap_simple_creds);
+		if (creds == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		creds->dn = talloc_strdup(creds, dn);
+		creds->pw = talloc_strdup(creds, pw);
+		if (creds->dn == NULL || creds->pw == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		conn->bind.type = LDAP_BIND_SIMPLE;
+		conn->bind.creds = creds;
+	}
 
 	return status;
 }
@@ -325,6 +372,12 @@ NTSTATUS ldap_bind_sasl(struct ldap_connection *conn, struct cli_credentials *cr
 	}
 
 	talloc_free(tmp_ctx);
+
+	if (NT_STATUS_IS_OK(status)) {
+		conn->bind.type = LDAP_BIND_SASL;
+		conn->bind.creds = creds;
+	}
+
 	return status;
 
 failed:
