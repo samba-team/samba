@@ -188,8 +188,7 @@ OBJ_FILES = \
 #######################
 # Start SUBSYSTEM HEIMDAL_ASN1
 [SUBSYSTEM::HEIMDAL_ASN1]
-EXTRA_CFLAGS = \
-	-Iheimdal_build -Iheimdal/lib/asn1
+EXTRA_CFLAGS = -Iheimdal_build -Iheimdal/lib/asn1
 OBJ_FILES = \
 	../heimdal/lib/asn1/der_get.o \
 	../heimdal/lib/asn1/der_put.o \
@@ -295,7 +294,7 @@ OBJ_FILES = ../heimdal/lib/roken/gai_strerror.o
 #######################
 # Start SUBSYSTEM HEIMDAL_ROKEN_GAI_STRERROR
 [SUBSYSTEM::HEIMDAL_ROKEN_INET_ATON]
-EXTRA_CFLAGS = -Iheimdal_build -Iheimdal/lib/roken
+EXTRA_CFLAGS = -Iheimdal_build 
 OBJ_FILES = ../heimdal/lib/roken/inet_aton.o
 
 #######################
@@ -376,7 +375,7 @@ OBJ_FILES = ../heimdal/lib/asn1/lex.ho
 #######################
 # Start BINARY asn1_compile
 [BINARY::asn1_compile]
-EXTRA_CFLAGS = -Iheimdal_build -Iheimdal/lib/roken -Iheimdal/lib/asn1
+EXTRA_CFLAGS = -Iheimdal_build -Iheimdal/lib/roken
 OBJ_FILES = \
 	../heimdal/lib/asn1/main.ho \
 	../heimdal/lib/asn1/gen.ho \
@@ -416,7 +415,7 @@ OBJ_FILES = ../heimdal/lib/com_err/lex.ho
 #######################
 # Start BINARY compile_et
 [BINARY::compile_et]
-EXTRA_CFLAGS = -Iheimdal_build -Iheimdal/lib/com_err -Iheimdal/lib/roken
+EXTRA_CFLAGS = -Iheimdal_build -Iheimdal/lib/roken
 OBJ_FILES = ../heimdal/lib/vers/print_version.ho \
 	../heimdal/lib/com_err/parse.ho \
 	../heimdal/lib/com_err/compile_et.ho \
@@ -469,12 +468,11 @@ clean::
 [LIBRARY::HEIMDAL]
 VERSION = 0.0.1
 SO_VERSION = 0
-EXTRA_CFLAGS = -Iheimdal/lib/vers -Iheimdal_build
+EXTRA_CFLAGS = -Iheimdal_build
 OBJ_FILES = ../heimdal/lib/vers/print_version.o
 PUBLIC_DEPENDENCIES = \
 		LIBREPLACE HEIMDAL_GSSAPI HEIMDAL_KRB5 KERBEROS \
-		HEIMDAL_ASN1 HEIMDAL_ROKEN \
-		HEIMDAL_COM_ERR HEIMDAL_GLUE EXT_LIB_RESOLV
+		HEIMDAL_GLUE EXT_LIB_RESOLV
 # End SUBSYSTEM HEIMDAL
 #######################
 

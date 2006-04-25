@@ -203,8 +203,8 @@ sub check($$$$$)
 			push (@{$part->{DEPENDENCIES}}, \$depend{$key});
 		}
 
-		delete ($part->{PRIVATE_DEPENDENCIES});
-		delete ($part->{PUBLIC_DEPENDENCIES});
+#		delete ($part->{PRIVATE_DEPENDENCIES});
+#		delete ($part->{PUBLIC_DEPENDENCIES});
 	}
 
 	foreach my $part (values %depend) {
