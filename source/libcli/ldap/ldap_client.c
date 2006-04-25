@@ -33,6 +33,7 @@
 #include "libcli/composite/composite.h"
 #include "lib/stream/packet.h"
 #include "auth/gensec/gensec.h"
+#include "system/time.h"
 
 
 /*
@@ -62,9 +63,11 @@ struct ldap_connection *ldap_new_connection(TALLOC_CTX *mem_ctx,
 	/* set a reasonable request timeout */
 	conn->timeout = 60;
 
+	/* explicitly avoid reconnections by default */
+	conn->reconnect.max_retries = 0;
+	
 	return conn;
 }
-
 
 /*
   the connection is dead
@@ -73,6 +76,7 @@ static void ldap_connection_dead(struct ldap_connection *conn)
 {
 	struct ldap_request *req;
 
+	/* return an error for any pending request ... */
 	while (conn->pending) {
 		req = conn->pending;
 		DLIST_REMOVE(req->conn->pending, req);
@@ -84,8 +88,15 @@ static void ldap_connection_dead(struct ldap_connection *conn)
 	}	
 
 	talloc_free(conn->tls);
+	talloc_free(conn->sock); /* this will also free event.fde */
+	talloc_free(conn->packet);
 	conn->tls = NULL;
+	conn->sock = NULL;
+	conn->event.fde = NULL;
+	conn->packet = NULL;
 }
+
+static void ldap_reconnect(struct ldap_connection *conn);
 
 /*
   handle packet errors
@@ -95,6 +106,9 @@ static void ldap_error_handler(void *private_data, NTSTATUS status)
 	struct ldap_connection *conn = talloc_get_type(private_data, 
 						       struct ldap_connection);
 	ldap_connection_dead(conn);
+
+	/* but try to reconnect so that the ldb client can go on */
+	ldap_reconnect(conn);
 }
 
 
@@ -325,6 +339,11 @@ struct composite_context *ldap_connect_send(struct ldap_connection *conn,
 	struct composite_context *result, *ctx;
 	struct ldap_connect_state *state;
 
+	if (conn->reconnect.url == NULL) {
+		conn->reconnect.url = talloc_strdup(conn, url);
+		if (conn->reconnect.url == NULL) goto failed;
+	}
+
 	result = talloc_zero(NULL, struct composite_context);
 	if (result == NULL) goto failed;
 	result->state = COMPOSITE_STATE_IN_PROGRESS;
@@ -419,6 +438,40 @@ NTSTATUS ldap_connect(struct ldap_connection *conn, const char *url)
 	return ldap_connect_recv(ctx);
 }
 
+/* Actually this function is NOT ASYNC safe, FIXME? */
+static void ldap_reconnect(struct ldap_connection *conn)
+{
+	NTSTATUS status;
+	time_t now = time(NULL);
+
+	/* do we have set up reconnect ? */
+	if (conn->reconnect.max_retries == 0) return;
+
+	/* is the retry time expired ? */
+	if (now > conn->reconnect.previous + 30) {
+		conn->reconnect.retries = 0;
+		conn->reconnect.previous = now;
+	}
+
+	/* are we reconnectind too often and too fast? */
+	if (conn->reconnect.retries > conn->reconnect.max_retries) return;
+
+	/* keep track of the number of reconnections */
+	conn->reconnect.retries++;
+
+	/* reconnect */
+	status = ldap_connect(conn, conn->reconnect.url);
+	if ( ! NT_STATUS_IS_OK(status)) {
+		return;
+	}
+
+	/* rebind */
+	status = ldap_rebind(conn);
+	if ( ! NT_STATUS_IS_OK(status)) {
+		ldap_connection_dead(conn);
+	}
+}
+
 /* destroy an open ldap request */
 static int ldap_request_destructor(void *ptr)
 {
@@ -466,14 +519,15 @@ struct ldap_request *ldap_request_send(struct ldap_connection *conn,
 				       struct ldap_message *msg)
 {
 	struct ldap_request *req;
-	NTSTATUS status;
-
-	if (conn->tls == NULL) {
-		return NULL;
-	}
+	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 
 	req = talloc_zero(conn, struct ldap_request);
-	if (req == NULL) goto failed;
+	if (req == NULL) return NULL;
+
+	if (conn->tls == NULL) {
+		status = NT_STATUS_INVALID_CONNECTION;
+		goto failed;
+	}
 
 	req->state       = LDAP_REQUEST_SEND;
 	req->conn        = conn;
@@ -541,8 +595,12 @@ struct ldap_request *ldap_request_send(struct ldap_connection *conn,
 	return req;
 
 failed:
-	talloc_free(req);
-	return NULL;
+	req->status = status;
+	req->state = LDAP_REQUEST_ERROR;
+	event_add_timed(conn->event.event_ctx, req, timeval_zero(),
+			ldap_request_complete, req);
+
+	return req;
 }
 
 
@@ -552,7 +610,7 @@ failed:
 */
 NTSTATUS ldap_request_wait(struct ldap_request *req)
 {
-	while (req->state != LDAP_REQUEST_DONE) {
+	while (req->state <= LDAP_REQUEST_DONE) {
 		if (event_loop_once(req->conn->event.event_ctx) != 0) {
 			req->status = NT_STATUS_UNEXPECTED_NETWORK_ERROR;
 			break;
@@ -665,7 +723,7 @@ NTSTATUS ldap_result_n(struct ldap_request *req, int n, struct ldap_message **ms
 
 	NT_STATUS_HAVE_NO_MEMORY(req);
 
-	while (req->state != LDAP_REQUEST_DONE && n >= req->num_replies) {
+	while (req->state <= LDAP_REQUEST_DONE && n >= req->num_replies) {
 		if (event_loop_once(req->conn->event.event_ctx) != 0) {
 			return NT_STATUS_UNEXPECTED_NETWORK_ERROR;
 		}

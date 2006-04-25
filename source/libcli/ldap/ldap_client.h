@@ -23,7 +23,7 @@
 
 #include "libcli/ldap/ldap.h"
 
-enum ldap_request_state {LDAP_REQUEST_SEND, LDAP_REQUEST_PENDING, LDAP_REQUEST_DONE};
+enum ldap_request_state { LDAP_REQUEST_SEND=1, LDAP_REQUEST_PENDING=2, LDAP_REQUEST_DONE=3, LDAP_REQUEST_ERROR=4 };
 
 /* this is the handle that the caller gets when an async ldap message
    is sent */
@@ -59,6 +59,18 @@ struct ldap_connection {
 
 	const char *auth_dn;
 	const char *simple_pw;
+
+	struct {
+		char *url;
+		int max_retries;
+		int retries;
+		time_t previous;
+	} reconnect;
+
+	struct {
+		enum { LDAP_BIND_SIMPLE, LDAP_BIND_SASL } type;
+		void *creds;
+	} bind;
 
 	/* next message id to assign */
 	unsigned next_messageid;
