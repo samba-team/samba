@@ -1,4 +1,4 @@
-.\" Copyright (c) 1998 - 2003 Kungliga Tekniska Högskolan
+.\" Copyright (c) 1998 - 2003, 2006 Kungliga Tekniska Högskolan
 .\" (Royal Institute of Technology, Stockholm, Sweden). 
 .\" All rights reserved. 
 .\"
@@ -31,7 +31,7 @@
 .\" 
 .\" $Id$
 .\"
-.Dd May 29, 1998
+.Dd April 25, 2006
 .Dt KINIT 1
 .Os HEIMDAL
 .Sh NAME
@@ -81,7 +81,8 @@
 .Fl -extra-addresses= Ns Ar addresses
 .Xc
 .Oc
-.Op Fl -fcache-version= Ns Ar integer
+.Op Fl -password-file= Ns Ar filename
+.Op Fl -fcache-version= Ns Ar version-number
 .Op Fl A | Fl -no-addresses
 .Op Fl -anonymous
 .Op Fl -version
@@ -184,10 +185,15 @@ Try to validate an invalid ticket.
 .Xc
 Request tickets with this particular enctype.
 .It Xo
-.Fl -fcache-version= Ns Ar version
+.Fl -password-file= Ns Ar filename
+.Xc
+read the password from the first line of
+.Ar filename .
+.It Xo
+.Fl -fcache-version= Ns Ar version-number
 .Xc
 Create a credentials cache of version
-.Nm version .
+.Ar version-number .
 .It Xo
 .Fl a ,
 .Fl -extra-addresses= Ns Ar enctypes
