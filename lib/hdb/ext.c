@@ -168,10 +168,10 @@ hdb_replace_extension(krb5_context context,
 
     ret = copy_HDB_extension(ext,
 			     &entry->extensions->val[entry->extensions->len]);
-    if (ret == 0) {
+    if (ret == 0)
 	entry->extensions->len++;
+    else
 	krb5_set_error_string(context, "hdb: failed to copy new extension");
-    }
 
     return ret;
 }
