@@ -271,10 +271,14 @@ typedef void **ADS_MODLIST;
 #define KRB5_ADDR_NETBIOS 0x14
 #endif
 
+#ifdef HAVE_KRB5
 typedef struct {
 #if defined(HAVE_MAGIC_IN_KRB5_ADDRESS) && defined(HAVE_ADDRTYPE_IN_KRB5_ADDRESS) /* MIT */
 	krb5_address **addrs;
-#else /* Heimdal has the krb5_addresses type */
+#elif defined(HAVE_KRB5_ADDRESSES) /* Heimdal */
 	krb5_addresses *addrs;
+#else
+#error UNKNOWN_KRB5_ADDRESS_TYPE
 #endif
 } smb_krb5_addresses;
+#endif
