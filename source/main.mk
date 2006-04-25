@@ -188,15 +188,7 @@ installpidl: pidl/Makefile
 uninstallpidl: pidl/Makefile
 	$(MAKE) -C pidl uninstall
 
-IDL_FILES = $(wildcard librpc/idl/*.idl)
-IDL_HEADER_FILES = $(patsubst librpc/idl/%.idl,librpc/gen_ndr/%.h,$(IDL_FILES))
-IDL_NDR_HEADER_FILES = $(patsubst librpc/idl/%.idl,librpc/gen_ndr/ndr_%.h,$(IDL_FILES))
-IDL_NDR_PARSE_C_FILES = $(patsubst librpc/idl/%.idl,librpc/gen_ndr/ndr_%.c,$(IDL_FILES))
-IDL_NDR_CLIENT_C_FILES = $(patsubst librpc/idl/%.idl,librpc/gen_ndr/ndr_%_c.c,$(IDL_FILES))
-IDL_NDR_CLIENT_HEADER_FILES = $(patsubst librpc/idl/%.idl,librpc/gen_ndr/ndr_%_c.h,$(IDL_FILES))
-IDL_NDR_SERVER_C_FILES = $(patsubst librpc/idl/%.idl,librpc/gen_ndr/ndr_%_s.c,$(IDL_FILES))
-IDL_NDR_EJS_C_FILES = $(patsubst librpc/idl/%.idl,librpc/gen_ndr/ndr_%_ejs.c,$(IDL_FILES))
-IDL_NDR_EJS_H_FILES = $(patsubst librpc/idl/%.idl,librpc/gen_ndr/ndr_%_ejs.h,$(IDL_FILES))
+include librpc/idl-deps.pl librpc/idl/*.idl|
 
 $(IDL_HEADER_FILES) $(IDL_NDR_HEADER_FILES) $(IDL_NDR_PARSE_C_FILES) \
 	$(IDL_NDR_CLIENT_C_FILES) $(IDL_NDR_CLIENT_H_FILES) \
@@ -319,7 +311,7 @@ unused_macros:
 	@$(CC) -M -MG -MP -MT $(<:.c=.o) `$(PERL) $(srcdir)/script/cflags.pl $@` $(CFLAGS) $< -o $@
 
 .c.hd:
-	@echo "Generating dependencies for $<"
+	@echo "Generating host-compiler dependencies for $<"
 	@$(CC) -M -MG -MP -MT $(<:.c=.ho) `$(PERL) $(srcdir)/script/cflags.pl $@` $(CFLAGS) $< -o $@
 
 include/includes.d: include/includes.h
