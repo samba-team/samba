@@ -52,6 +52,7 @@ keytab="FILE:${keytabfile}"
 kinit="../../kuser/kinit -c $cache --no-afslog"
 klist="../../kuser/klist -c $cache"
 kgetcred="../../kuser/kgetcred -c $cache"
+ktutil="../../admin/ktutil"
 
 KRB5_CONFIG="${objdir}/krb5.conf"
 export KRB5_CONFIG
@@ -73,12 +74,16 @@ ${kadmin} add -p bar --use-defaults bar@${R} || exit 1
 ${kadmin} add -p kaka --use-defaults ${server}@${R} || exit 1
 ${kadmin} ext -k ${keytab} ${server}@${R} || exit 1
 
+${ktutil} -k ${keytab} list > tempfile || exit 1
+grep -ve '^FILE:' tempfile | grep -ve '^Vno' | \
+    awk '/1/ !~ $1 { exit 1 }' || exit 1
+
 echo foo > ${objdir}/foopassword
 
-#echo Starting kdc
-#${kdc} &
-#kdcpid=$!
-#sleep 2
+echo Starting kdc
+${kdc} &
+kdcpid=$!
+sleep 2
 
 exitcode=0
 
@@ -95,8 +100,8 @@ echo "Listing tickets"
 ${klist} | grep "Principal: ${server}" > /dev/null || exitcode=1
 
 
-#echo "killing kdc (${kdcpid})"
-#kill $kdcpid || exit 1
+echo "killing kdc (${kdcpid})"
+kill $kdcpid || exit 1
 
 exit $exitcode
 
