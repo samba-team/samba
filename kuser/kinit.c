@@ -68,6 +68,7 @@ int do_afslog		= -1;
 int get_v4_tgt		= -1;
 int convert_524		= 0;
 int fcache_version;
+char *password_file	= NULL;
 char *pk_user_id	= NULL;
 char *pk_x509_anchors	= NULL;
 char **pk_x509_pool	= NULL;
@@ -148,6 +149,9 @@ static struct getargs args[] = {
 
     { "request-pac",	0,   arg_flag,	&pac_flag,
       "request a Windows PAC" },
+
+    { "password-file",	0,   arg_string, &password_file,
+      "read the password from a file" },
 
 #ifdef PKINIT
     {  "pk-user",	'C',	arg_string,	&pk_user_id,
@@ -443,6 +447,20 @@ get_new_tickets(krb5_context context,
     krb5_deltat renew = 0;
     char *renewstr = NULL;
 
+    passwd[0] = '\0';
+
+    if (password_file) {
+	FILE *f;
+
+	f = fopen(password_file, "r");
+	if (fgets(passwd, sizeof(passwd), f) == NULL)
+	    krb5_errx(context, 1, 
+		      "failed to read password from file %s", password_file);
+	fclose(f);
+	passwd[strcspn(passwd, "\n")] = '\0';
+    }
+
+
     memset(&cred, 0, sizeof(cred));
 
     ret = krb5_get_init_creds_opt_alloc (context, &opt);
@@ -543,7 +561,7 @@ get_new_tickets(krb5_context context,
 	ret = krb5_get_init_creds_password (context,
 					    &cred,
 					    principal,
-					    NULL,
+					    passwd,
 					    krb5_prompter_posix,
 					    NULL,
 					    start_time,
@@ -554,18 +572,21 @@ get_new_tickets(krb5_context context,
 	krb5_get_init_creds_opt_free(opt);
 	return 0;
     } else {
-	char *p, *prompt;
 
-	krb5_unparse_name (context, principal, &p);
-	asprintf (&prompt, "%s's Password: ", p);
-	free (p);
-
-	if (UI_UTIL_read_pw_string(passwd, sizeof(passwd)-1, prompt, 0)){
-	    memset(passwd, 0, sizeof(passwd));
-	    exit(1);
+	if (passwd[0] == '\0') {
+	    char *p, *prompt;
+	    
+	    krb5_unparse_name (context, principal, &p);
+	    asprintf (&prompt, "%s's Password: ", p);
+	    free (p);
+	    
+	    if (UI_UTIL_read_pw_string(passwd, sizeof(passwd)-1, prompt, 0)){
+		memset(passwd, 0, sizeof(passwd));
+		exit(1);
+	    }
+	    free (prompt);
 	}
 
-	free (prompt);
 	
 	ret = krb5_get_init_creds_password (context,
 					    &cred,
