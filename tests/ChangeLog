@@ -1,5 +1,7 @@
 2006-04-25  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kdc/krb5.conf.in: krb5.conf template
+
 	* kdc/check-kdc.in: check that the keytab have the right kvno
 
 	* db/add-modify-delete.in: create a server too
