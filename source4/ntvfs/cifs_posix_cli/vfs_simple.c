@@ -819,7 +819,7 @@ static NTSTATUS svfs_search_first(struct ntvfs_module_context *ntvfs,
 		file.both_directory_info.name.s = dir->files[i].name;
 		file.both_directory_info.short_name.s = dir->files[i].name;
 		file.both_directory_info.size = dir->files[i].st.st_size;
-		file.both_directory_info.attrib = svfs_unix_to_dos_attrib(dir->files[i].st.st_mode);
+		file.both_directory_info.attrib = cvfs_unix_to_dos_attrib(dir->files[i].st.st_mode);
 
 		if (!callback(search_private, &file)) {
 			break;
@@ -910,7 +910,7 @@ found:
 		file.both_directory_info.name.s = dir->files[i].name;
 		file.both_directory_info.short_name.s = dir->files[i].name;
 		file.both_directory_info.size = dir->files[i].st.st_size;
-		file.both_directory_info.attrib = svfs_unix_to_dos_attrib(dir->files[i].st.st_mode);
+		file.both_directory_info.attrib = cvfs_unix_to_dos_attrib(dir->files[i].st.st_mode);
 
 		if (!callback(search_private, &file)) {
 			break;
