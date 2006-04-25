@@ -1665,6 +1665,8 @@ static BOOL ads_dump_field(char *field, void **values, void *data_area)
 		{"dnsRecord", False, dump_binary},
 		{"objectSid", False, dump_sid},
 		{"tokenGroups", False, dump_sid},
+		{"tokenGroupsNoGCAcceptable", False, dump_sid},
+		{"tokengroupsGlobalandUniversal", False, dump_sid},
 		{NULL, True, NULL}
 	};
 	int i;
