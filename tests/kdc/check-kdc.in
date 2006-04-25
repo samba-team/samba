@@ -91,6 +91,11 @@ ${kdc} &
 kdcpid=$!
 sleep 2
 
+if tail -1 messages.log | grep "No sockets" ; then
+    echo "The KDC failed to bind to any sockets, another KDC running ?"
+    exit 1
+fi
+
 exitcode=0
 
 echo "Getting client initial tickets"
