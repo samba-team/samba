@@ -438,6 +438,17 @@ NTSTATUS ldap_connect(struct ldap_connection *conn, const char *url)
 	return ldap_connect_recv(ctx);
 }
 
+/* set reconnect parameters */
+
+void ldap_set_reconn_params(struct ldap_connection *conn, int max_retries)
+{
+	if (conn) {
+		conn->reconnect.max_retries = max_retries;
+		conn->reconnect.retries = 0;
+		conn->reconnect.previous = time(NULL);
+	}
+}
+
 /* Actually this function is NOT ASYNC safe, FIXME? */
 static void ldap_reconnect(struct ldap_connection *conn)
 {
