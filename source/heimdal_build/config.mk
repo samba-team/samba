@@ -314,7 +314,7 @@ OBJ_FILES = \
 #######################
 # Start SUBSYSTEM HEIMDAL_ROKEN
 [SUBSYSTEM::HEIMDAL_ROKEN]
-EXTRA_CFLAGS = -Iheimdal/lib/roken -Iheimdal_build 
+EXTRA_CFLAGS =  -Iheimdal_build -Iheimdal/lib/roken
 OBJ_FILES = \
 	../heimdal/lib/roken/base64.o \
 	../heimdal/lib/roken/hex.o \
@@ -368,10 +368,8 @@ PRIVATE_DEPENDENCIES = HEIMDAL_ROKEN
 #######################
 # Start SUBSYSTEM HEIMDAL_ASN1_COMPILE_LEX
 [SUBSYSTEM::HEIMDAL_ASN1_COMPILE_LEX]
-EXTRA_CFLAGS = -D_GNU_SOURCE \
-	-Iheimdal_build -Iheimdal/lib/asn1
-OBJ_FILES = \
-	../heimdal/lib/asn1/lex.ho 
+EXTRA_CFLAGS = -Iheimdal_build -Iheimdal/lib/asn1 -Iheimdal/lib/roken
+OBJ_FILES = ../heimdal/lib/asn1/lex.ho 
 # End SUBSYSTEM HEIMDAL_ASN1_COMPILE_LEX
 #######################
 
@@ -410,9 +408,8 @@ PRIVATE_DEPENDENCIES = HEIMDAL_ASN1_COMPILE_LEX
 #######################
 # Start SUBSYSTEM HEIMDAL_COM_ERR_COMPILE_LEX
 [SUBSYSTEM::HEIMDAL_COM_ERR_COMPILE_LEX]
-EXTRA_CFLAGS = -D_GNU_SOURCE -Iheimdal_build -Iheimdal/lib/com_err
-OBJ_FILES = \
-	../heimdal/lib/com_err/lex.ho 
+EXTRA_CFLAGS = -Iheimdal_build -Iheimdal/lib/com_err -Iheimdal/lib/roken
+OBJ_FILES = ../heimdal/lib/com_err/lex.ho 
 # End SUBSYSTEM HEIMDAL_COM_ERR_COMPILE_LEX
 #######################
 
