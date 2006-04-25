@@ -151,10 +151,9 @@ BOOL netsamlogon_cache_store( const char *username, NET_USER_INFO_3 *user )
 	prs_init( &ps, RPC_MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
 	
 	{
-		uint32 ts;
+		uint32 ts = (uint32)t;
 		if ( !prs_uint32( "timestamp", &ps, 0, &ts ) )
 			return False;
-		t = (time_t)ts;
 	}
 	
 	if ( net_io_user_info3("", user, &ps, 0, 3, 0) ) 
