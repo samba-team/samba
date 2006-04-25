@@ -1011,6 +1011,10 @@ static int ildb_connect(struct ldb_context *ldb, const char *url,
 		goto failed;
 	}
 
+	if (flags == LDB_FLG_RECONNECT) {
+		ldap_set_reconn_params(ildb->ldap, 10);
+	}
+
 	status = ldap_connect(ildb->ldap, url);
 	if (!NT_STATUS_IS_OK(status)) {
 		ldb_debug(ldb, LDB_DEBUG_ERROR, "Failed to connect to ldap URL '%s' - %s\n",
