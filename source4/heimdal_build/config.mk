@@ -300,7 +300,7 @@ OBJ_FILES = ../heimdal/lib/roken/inet_aton.o
 #######################
 # Start SUBSYSTEM HEIMDAL_ROKEN_ADDRINFO
 [SUBSYSTEM::HEIMDAL_ROKEN_ADDRINFO]
-EXTRA_CFLAGS = -Iheimdal/lib/roken
+EXTRA_CFLAGS = -Iheimdal_build -Iheimdal/lib/roken
 OBJ_FILES = \
 	../heimdal/lib/roken/getaddrinfo.o \
 	../heimdal/lib/roken/freeaddrinfo.o \
