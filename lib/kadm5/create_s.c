@@ -120,7 +120,8 @@ kadm5_s_create_principal_with_key(void *server_handle,
     if(ret)
 	goto out;
 
-    ent.entry.kvno = 1;
+    if ((mask & KADM5_KVNO) == 0)
+	ent.entry.kvno = 1;
 
     ret = hdb_seal_keys(context->context, context->db, &ent.entry);
     if (ret)
@@ -158,6 +159,9 @@ kadm5_s_create_principal(void *server_handle,
 			   | KADM5_LAST_FAILED | KADM5_FAIL_AUTH_COUNT);
     if(ret)
 	goto out;
+
+    if ((mask & KADM5_KVNO) == 0)
+	ent.entry.kvno = 1;
 
     ent.entry.keys.len = 0;
     ent.entry.keys.val = NULL;
