@@ -563,6 +563,8 @@ OR
 	smb_panic("brlock_posix_split_merge\n");
 	/* Notreached. */
 	abort();
+	/* Keep some compilers happy. */
+	return 0;
 }
 
 /****************************************************************************
