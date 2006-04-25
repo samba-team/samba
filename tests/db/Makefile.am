@@ -26,4 +26,5 @@ CLEANFILES= \
 	out-text-dump* \
 	out-current-* \
 	mkey.file* \
-	krb5.conf krb5.conf.tmp
+	krb5.conf krb5.conf.tmp \
+	messages.log
