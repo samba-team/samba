@@ -314,6 +314,7 @@ static NTSTATUS nbench_open(struct ntvfs_module_context *ntvfs,
 {
 	NTSTATUS status;
 
+#undef open
 	PASS_THRU_REQ(ntvfs, req, open, io, (ntvfs, req, io));
 
 	return status;
