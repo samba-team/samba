@@ -52,6 +52,7 @@ keytab="FILE:${keytabfile}"
 kinit="../../kuser/kinit -c $cache --no-afslog"
 klist="../../kuser/klist -c $cache"
 kgetcred="../../kuser/kgetcred -c $cache"
+kdestroy="../../kuser/kdestroy -c $cache"
 ktutil="../../admin/ktutil"
 
 KRB5_CONFIG="${objdir}/krb5.conf"
@@ -78,6 +79,11 @@ ${ktutil} -k ${keytab} list > tempfile || exit 1
 grep -ve '^FILE:' tempfile | grep -ve '^Vno' | \
     awk '/1/ !~ $1 { exit 1 }' || exit 1
 
+${kadmin} get foo@${R} > tempfile || exit 1
+enctypes=`grep Keytypes: tempfile | sed 's/(pw-salt)//g' | sed 's/,//g' | sed 's/Keytypes://'`
+
+enctype_sans_aes=`echo $enctypes | sed 's/aes[^ ]*//g'`
+
 echo foo > ${objdir}/foopassword
 
 echo Starting kdc
@@ -93,12 +99,55 @@ echo "Getting tickets"
 ${kgetcred} ${server}@${R} || exitcode=1
 echo "Listing tickets"
 ${klist} > /dev/null || exitcode=1
+${kdestroy}
+
+for a in $enctypes; do
+	echo "Getting client initial tickets ($a)"
+	${kinit} --enctype=$a --password-file=${objdir}/foopassword foo@$R || exitcode=1
+	echo "Getting tickets"
+	${kgetcred} ${server}@${R} || exitcode=1
+	${kdestroy}
+done
+
+
+echo "Getting client initial tickets"
+${kinit} --password-file=${objdir}/foopassword foo@$R || exitcode=1
+for a in $enctypes; do
+	echo "Getting tickets ($a)"
+	${kgetcred} -e $a ${server}@${R} || exitcode=1
+done
+${kdestroy}
+
+echo "try all permutations"
+for a in $enctypes; do
+	echo "Getting client initial tickets ($a)"
+	${kinit} --enctype=$a --password-file=${objdir}/foopassword foo@$R || exitcode=1
+	for b in $enctypes; do
+		echo "Getting tickets ($a ->  $b)"
+		${kgetcred} -e $b ${server}@${R} || exitcode=1
+	done
+	${kdestroy}
+done
 
 echo "Getting server initial tickets"
 ${kinit} --keytab=${keytab} ${server}@$R || exitcode=1
 echo "Listing tickets"
 ${klist} | grep "Principal: ${server}" > /dev/null || exitcode=1
+${kdestroy}
 
+#echo deleting all but aes enctypes on krbtgt
+#${kadmin} del_enctype krbtgt/${R}@${R} ${enctype_sans_aes} || exit 1
+#
+#echo "try all permutations (only aes)"
+#for a in $enctypes; do
+#	echo "Getting client initial tickets ($a)"
+#	${kinit} --enctype=$a --password-file=${objdir}/foopassword foo@$R || exitcode=1
+#	for b in $enctypes; do
+#		echo "Getting tickets ($a ->  $b)"
+#		${kgetcred} -e $b ${server}@${R} || exitcode=1
+#	done
+#	${kdestroy}
+#done
 
 echo "killing kdc (${kdcpid})"
 kill $kdcpid || exit 1
