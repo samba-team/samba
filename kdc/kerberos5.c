@@ -243,6 +243,9 @@ log_patypes(krb5_context context,
 	    return;
 	}
     }
+    if (p == NULL)
+	p = rk_strpoolprintf(p, "none");
+	
     str = rk_strpoolcollect(p);
     kdc_log(context, config, 0, "Client sent patypes: %s", str);
     free(str);
@@ -1213,6 +1216,9 @@ _kdc_as_rep(krb5_context context,
 		goto out;
 	    }
 	}
+	if (p == NULL)
+	    p = rk_strpoolprintf(p, "no encryption types");
+
 	str = rk_strpoolcollect(p);
 	kdc_log(context, config, 0, "Client supported enctypes: %s", str);
 	free(str);
