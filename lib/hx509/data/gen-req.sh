@@ -6,7 +6,7 @@ gen_cert()
 {
 	openssl req \
 		-new \
-		-subj "/CN=$1/C=SE" \
+		-subj "$1" \
 		-config openssl.cnf \
 		-newkey rsa:1024 \
 		-sha1 \
@@ -25,6 +25,23 @@ gen_cert()
 		-out cert.crt
 
 		ln -s ca.crt `openssl x509 -hash -noout -in cert.crt`.0
+
+		name=$3
+
+        elif [ "$3" = "proxy" ] ; then
+
+	    openssl x509 \
+		-req \
+		-in cert.req \
+		-days 3650 \
+		-out cert.crt \
+		-CA $2.crt \
+		-CAkey $2.key \
+		-CAcreateserial \
+		-extfile openssl.cnf \
+		-extensions $4
+
+		name=$5
 	else
 
 	    openssl ca \
@@ -37,53 +54,39 @@ gen_cert()
 		-outdir . \
 		-batch \
 		-config openssl.cnf 
+
+		name=$3
 	fi
 
-	mv cert.crt $3.crt
-	mv out.key $3.key
+	mv cert.crt $name.crt
+	mv out.key $name.key
 }
 
 echo "01" > serial
 > index.txt
 rm -f *.0
 
-gen_cert "hx509 Test Root CA" "root" "ca" "v3_ca"
-gen_cert "OCSP responder" "ca" "ocsp-responder" "ocsp"
-gen_cert "Test cert" "ca" "test" "usr"
-gen_cert "Revoke cert" "ca" "revoke" "usr"
-gen_cert "Test cert KeyEncipherment" "ca" "test-ke-only" "usr_ke"
-gen_cert "Test cert DigitalSignature" "ca" "test-ds-only" "usr_ds"
-gen_cert "Sub CA" "ca" "sub-ca" "subca"
-gen_cert "Test sub cert" "sub-ca" "sub-cert" "usr"
+gen_cert "/CN=hx509 Test Root CA/C=SE" "root" "ca" "v3_ca"
+gen_cert "/CN=OCSP responder/C=SE" "ca" "ocsp-responder" "ocsp"
+gen_cert "/CN=Test cert/C=SE" "ca" "test" "usr"
+gen_cert "/CN=Revoke cert/C=SE" "ca" "revoke" "usr"
+gen_cert "/CN=Test cert KeyEncipherment/C=SE" "ca" "test-ke-only" "usr_ke"
+gen_cert "/CN=Test cert DigitalSignature/C=SE" "ca" "test-ds-only" "usr_ds"
+gen_cert "/CN=Sub CA/C=SE" "ca" "sub-ca" "subca"
+gen_cert "/CN=Test sub cert/C=SE" "sub-ca" "sub-cert" "usr"
+gen_cert "/CN=proxy/CN=Test cert/C=SE" "test" "proxy" "proxy_cert" proxy-test
+gen_cert "/CN=proxy2/CN=Test cert/C=SE" "proxy-test" "proxy" "proxy_cert" proxy-level-test
+gen_cert "/CN=no-proxy/CN=Test cert/C=SE" "test" "proxy" "usr_cert" no-proxy-test
+gen_cert "/CN=proxy10/CN=Test cert/C=SE" "test" "proxy" "proxy10_cert" proxy10-test
+gen_cert "/CN=proxy10-child/CN=Test cert/C=SE" "proxy10-test" "proxy" "proxy_cert" proxy10-child-test
 
+
+# combine
 cat sub-ca.crt ca.crt > sub-ca-combined.crt
-
 cat test.crt test.key > test.combined.crt
+
+# password protected key
 openssl rsa -in test.key -aes256 -passout pass:foobar -out test-pw.key
-
-openssl req -new \
-	-subj "/CN=proxy/CN=Test cert/C=SE" \
-	-newkey rsa:1024 \
-	-sha1 \
-	-nodes \
-	-config openssl.cnf \
-	-out proxy-test.req -keyout proxy-test.key
-
-openssl x509 -req -CAcreateserial -in proxy-test.req -days 7 \
-	  -out proxy-test.crt -CA test.crt -CAkey test.key \
-	  -extfile openssl.cnf -extensions proxy_cert
-
-openssl req -new \
-	-subj "/CN=no-proxy/CN=Test cert/C=SE" \
-	-newkey rsa:1024 \
-	-sha1 \
-	-nodes \
-	-config openssl.cnf \
-	-out no-proxy-test.req -keyout no-proxy-test.key
-
-openssl x509 -req -CAcreateserial -in no-proxy-test.req -days 7 \
-	  -out no-proxy-test.crt -CA test.crt -CAkey test.key \
-	  -extfile openssl.cnf -extensions usr_cert
 
 
 openssl ca \
