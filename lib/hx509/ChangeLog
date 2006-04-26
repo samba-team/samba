@@ -1,5 +1,13 @@
 2006-04-26  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* test_chain.in: tests proxy certificates
+
+	* data: re-gen
+
+	* data/gen-req.sh: build proxy certificates
+	
+	* data/openssl.cnf: add def for proxy10_cert
+
 	* hx509_err.et: Add another proxy certificate error.
 
 	* cert.c (hx509_verify_path): Need to mangle name to remove the CN
