@@ -196,7 +196,7 @@ dnl  This fills in the global LIBS...
 rk_RESOLV
 
 dnl AC_CHECK_LIB_EXT(resolv, RESOLV_LIBS, res_search)
-	SMB_EXT_LIB_ENABLE(RESOLV,YES)
+	SMB_ENABLE(RESOLV,YES)
 
 if test x"$LIBS" != "x"; then
 	RESOLV_LIBS=$LIBS
@@ -240,7 +240,7 @@ fi
 if test x"$ac_cv_func_inet_pton" = x"no"; then
     AC_CHECK_LIB_EXT(nsl_s, NSL_LIBS, inet_pton)
     AC_CHECK_LIB_EXT(nsl, NSL_LIBS, inet_pton)
-    SMB_EXT_LIB_ENABLE(NSL,YES)
+    SMB_ENABLE(NSL,YES)
     if test x"$ac_cv_lib_ext_nsl_s_inet_pton" != x"yes" &&
        test x"$ac_cv_lib_ext_nsl_inet_pton" != x"yes"; then
 	AC_MSG_ERROR([no inet_pton() function available!])
@@ -272,7 +272,7 @@ if test t$ac_cv_func_gai_strerror != tyes; then
        test x"$ac_cv_lib_ext_socket_gai_strerror" = x"yes" ||
        test x"$ac_cv_lib_ext_xnet_gai_strerror" = x"yes"; then
         AC_DEFINE(HAVE_GAI_STRERROR,1,[Whether the system has gai_strerror()])
-	SMB_EXT_LIB_ENABLE(GAI, YES)
+	SMB_ENABLE(GAI, YES)
     else
 	SMB_ENABLE(HEIMDAL_ROKEN_GAI_STRERROR, YES)
     fi

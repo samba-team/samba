@@ -72,7 +72,7 @@ if test x"$with_ldap_support" != x"no"; then
     with_ldap_support=yes
     AC_MSG_CHECKING(whether LDAP support is used)
     AC_MSG_RESULT(yes)
-    SMB_EXT_LIB_ENABLE(LDAP,YES)
+    SMB_ENABLE(LDAP,YES)
   else
     if test x"$with_ldap_support" = x"yes"; then
 	AC_MSG_ERROR(libldap is needed for LDAP support)

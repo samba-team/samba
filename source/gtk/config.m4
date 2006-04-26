@@ -7,7 +7,7 @@ SMB_ENABLE(gwcrontab, NO)
 SMB_ENABLE(gwsam, NO)
 SMB_ENABLE(gepdump, NO)
 
-if test t$SMB_EXT_LIB_ENABLE_gtk = tYES; then
+if test t$SMB_ENABLE_gtk = tYES; then
 	SMB_ENABLE(GTKSMB, YES)
 	SMB_ENABLE(gregedit, YES)
 	SMB_ENABLE(gwcrontab, YES)

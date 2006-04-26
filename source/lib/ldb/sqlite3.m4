@@ -43,7 +43,7 @@ if test x"$with_sqlite3_support" != x"no"; then
     AC_MSG_CHECKING(whether SQLITE3 support is used)
     AC_MSG_RESULT(yes)
     with_sqlite3_support=yes
-    SMB_EXT_LIB_ENABLE(SQLITE3,YES)
+    SMB_ENABLE(SQLITE3,YES)
   else
     if test x"$with_sqlite3_support" = x"yes"; then
 	AC_MSG_ERROR(libsqlite3 is needed for SQLITE3 support)

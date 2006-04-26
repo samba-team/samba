@@ -6,8 +6,6 @@ dnl Published under the GPL
 dnl
 dnl SMB_SUBSYSTEM(name,obj_files,required_subsystems)
 dnl
-dnl SMB_EXT_LIB_ENABLE(name,default_build)
-dnl
 dnl SMB_EXT_LIB_FROM_PKGCONFIG(name,pkg-config name)
 dnl
 dnl SMB_EXT_LIB(name,libs,cflags,cppflags,ldflags)
@@ -37,14 +35,6 @@ ENABLE = YES
 "
 ])
 
-dnl SMB_EXT_LIB_ENABLE(name,default_build)
-AC_DEFUN([SMB_EXT_LIB_ENABLE],
-[
-[SMB_EXT_LIB_ENABLE_][$1]="$2"
-SMB_INFO_ENABLES="$SMB_INFO_ENABLES
-\$enabled{EXT_LIB_$1} = \"$2\";"
-])
-
 dnl SMB_EXT_LIB_FROM_PKGCONFIG(name,pkg-config name)
 AC_DEFUN([SMB_EXT_LIB_FROM_PKGCONFIG], 
 [
@@ -60,13 +50,13 @@ AC_DEFUN([SMB_EXT_LIB_FROM_PKGCONFIG],
     		echo "*** to the full path to pkg-config."
     		echo "*** Or see http://www.freedesktop.org/software/pkgconfig to get pkg-config."
 			SMB_EXT_LIB($1)
-			SMB_EXT_LIB_ENABLE($1, NO)
+			SMB_ENABLE($1, NO)
 	else
 		if $PKG_CONFIG --atleast-pkgconfig-version 0.9.0; then
         		AC_MSG_CHECKING(for $2)
 
-          		if test "$SMB_EXT_LIB_$1"x = "NO"x ; then
-				SMB_EXT_LIB_ENABLE($1, NO)
+          		if test "$SMB_$1"x = "NO"x ; then
+				SMB_ENABLE($1, NO)
 				AC_MSG_RESULT(disabled)		
           		elif $PKG_CONFIG --exists '$2' ; then
             			AC_MSG_RESULT(yes)
@@ -77,7 +67,7 @@ AC_DEFUN([SMB_EXT_LIB_FROM_PKGCONFIG],
 	    		CFLAGS="$CFLAGS $$1_CFLAGS"
 		    	AC_MSG_CHECKING([that the C compiler can use the $1_CFLAGS])
     			AC_TRY_RUN([#include "${srcdir-.}/build/tests/trivial.c"],
-					SMB_EXT_LIB_ENABLE($1, YES)
+					SMB_ENABLE($1, YES)
 			    	AC_MSG_RESULT(yes),
 					AC_MSG_RESULT(no),
 					AC_MSG_WARN([cannot run when cross-compiling]))
@@ -92,7 +82,7 @@ AC_DEFUN([SMB_EXT_LIB_FROM_PKGCONFIG],
 
         		else
 				SMB_EXT_LIB($1)
-				SMB_EXT_LIB_ENABLE($1, NO)
+				SMB_ENABLE($1, NO)
 				AC_MSG_RESULT(no)
             			$PKG_CONFIG --errors-to-stdout --print-errors '$2'
         		fi
@@ -100,7 +90,7 @@ AC_DEFUN([SMB_EXT_LIB_FROM_PKGCONFIG],
         		echo "*** Your version of pkg-config is too old. You need version $PKG_CONFIG_MIN_VERSION or newer."
         			echo "*** See http://www.freedesktop.org/software/pkgconfig"
 				SMB_EXT_LIB($1)
-				SMB_EXT_LIB_ENABLE($1, NO)
+				SMB_ENABLE($1, NO)
      		fi
   	fi
 ])
@@ -112,7 +102,7 @@ AC_DEFUN([SMB_EXT_LIB],
 SMB_INFO_EXT_LIBS="$SMB_INFO_EXT_LIBS
 ###################################
 # Start Ext Lib $1
-@<:@EXT_LIB::EXT_LIB_$1@:>@
+@<:@EXT_LIB::$1@:>@
 LIBS = $2
 CFLAGS = $3
 CPPFLAGS = $4

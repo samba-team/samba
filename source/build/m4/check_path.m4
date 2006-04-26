@@ -162,6 +162,6 @@ AC_ARG_WITH(disable-ext-lib,
 [ if test $withval; then
 	for i in `echo $withval | sed -e's/,/ /g'`
 	do
-		eval SMB_EXT_LIB_$i=NO
+		eval SMB_$i=NO
 	done
 fi ])

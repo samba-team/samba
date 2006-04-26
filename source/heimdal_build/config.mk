@@ -317,7 +317,7 @@ OBJ_FILES = \
 	../heimdal/lib/roken/freehostent.o \
 	../heimdal/lib/roken/copyhostent.o \
 	../heimdal/lib/roken/hostent_find_fqdn.o
-PRIVATE_DEPENDENCIES = EXT_LIB_SOCKET
+PRIVATE_DEPENDENCIES = SOCKET
 
 #######################
 # Start SUBSYSTEM HEIMDAL_ROKEN
@@ -349,8 +349,8 @@ PUBLIC_DEPENDENCIES = \
 			HEIMDAL_ROKEN_GAI_STRERROR \
 			HEIMDAL_ROKEN_INET_ATON \
 			HEIMDAL_ROKEN_GETPROGNAME \
-			EXT_LIB_GAI \
-			EXT_LIB_NSL
+			GAI \
+			NSL
 # End SUBSYSTEM HEIMDAL_ROKEN
 #######################
 
@@ -480,14 +480,14 @@ CFLAGS = -Iheimdal_build
 OBJ_FILES = ../heimdal/lib/vers/print_version.o
 PUBLIC_DEPENDENCIES = \
 		LIBREPLACE HEIMDAL_GSSAPI HEIMDAL_KRB5 KERBEROS \
-		HEIMDAL_GLUE EXT_LIB_RESOLV
+		HEIMDAL_GLUE RESOLV
 # End SUBSYSTEM HEIMDAL
 #######################
 
 #######################
 # Start SUBSYSTEM KERBEROS_LIB
 [SUBSYSTEM::KERBEROS_LIB]
-#PUBLIC_DEPENDENCIES = EXT_LIB_KRB5
+#PUBLIC_DEPENDENCIES = EXT_KRB5
 PUBLIC_DEPENDENCIES = HEIMDAL
 # End SUBSYSTEM KERBEROS_LIB
 #######################

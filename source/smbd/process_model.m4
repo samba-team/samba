@@ -14,7 +14,7 @@ AC_ARG_WITH(pthreads,
 			AC_MSG_ERROR([You cannot enable threads when you don't have pread/pwrite!])
 		fi
 		SMB_ENABLE(process_model_thread,YES)
-		SMB_EXT_LIB_ENABLE(PTHREAD,YES)
+		SMB_ENABLE(PTHREAD,YES)
 	;;
 	*)
 		AC_MSG_RESULT(no)
@@ -40,7 +40,7 @@ AC_ARG_WITH(setproctitle,
 		   \( x"$ac_cv_header_setproctitle_h" = x"yes" -a \
 		    x"$ac_cv_lib_ext_setproctitle_setproctitle" = x"yes" \) ; then
 			AC_MSG_RESULT(yes)
-			SMB_EXT_LIB_ENABLE(SETPROCTITLE, YES)
+			SMB_ENABLE(SETPROCTITLE, YES)
 			AC_DEFINE(HAVE_SETPROCTITLE,1,[Whether setproctitle() is available])
 		else
 			AC_MSG_RESULT(no)

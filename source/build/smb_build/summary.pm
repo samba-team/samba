@@ -21,7 +21,7 @@ sub showitem($$$)
 	my @need = ();
 
 	foreach (@$items) {
-		if (!enabled($output->{"EXT_LIB_$_"}->{ENABLE})) {
+		if (!enabled($output->{$_}->{ENABLE})) {
 			push (@need, $_);
 		}
 	}
@@ -42,13 +42,13 @@ sub show($$)
 	showitem($output, "GTK+ frontends", ["gtk","gconf"]);
 	showitem($output, "SSL in SWAT", ["GNUTLS"]);
 	showitem($output, "threads in smbd (see --with-pthread)", ["PTHREAD"]);
-	showitem($output, "intelligent command line editing", ["READLINE"]);
+	showitem($output, "intelligent command line editing", ["EXT_READLINE"]);
 	showitem($output, "changing process titles (see --with-setproctitle)", ["SETPROCTITLE"]);
 	showitem($output, "using extended attributes", ["XATTR"]);
 	showitem($output, "using libblkid", ["BLKID"]);
 	showitem($output, "using pam", ["PAM"]);
 	print "Using external popt: ".
-	    (enabled($output->{EXT_LIB_POPT}->{ENABLE})?"yes":"no")."\n";
+	    (($output->{LIBPOPT}->{TYPE} eq "EXT_LIB")?"yes":"no")."\n";
 	print "Developer mode: ".(enabled($config->{developer})?"yes":"no")."\n";
 	print "Automatic dependencies: ".
 	    (enabled($config->{automatic_dependencies})

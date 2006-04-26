@@ -106,7 +106,7 @@ INIT_FUNCTION = ldb_sqlite3_init
 OBJ_FILES = \
 		ldb_sqlite3/ldb_sqlite3.o
 PUBLIC_DEPENDENCIES = \
-		EXT_LIB_SQLITE3
+		SQLITE3
 # End MODULE ldb_sqlite3
 ################################################
 
