@@ -15,7 +15,7 @@ use strict;
 my $section_types = {
 	"EXT_LIB" => {
 		"LIBS"			=> "list",
-		"EXTRA_CFLAGS"		=> "string",
+		"CFLAGS"		=> "string",
 		"CPPFLAGS"		=> "list",
 		"LDFLAGS"		=> "list",
 		},
@@ -34,7 +34,7 @@ my $section_types = {
 
 		"PUBLIC_HEADERS"	=> "list",
 
-		"EXTRA_CFLAGS"		=> "string",
+		"CFLAGS"		=> "string",
 		"STANDARD_VISIBILITY"	=> "string"
 		},
 	"MODULE" => {
@@ -55,7 +55,7 @@ my $section_types = {
 		"MANPAGE"		=> "string",
 		"PRIVATE_PROTO_HEADER"	=> "string",
 
-		"EXTRA_CFLAGS"		=> "string"
+		"CFLAGS"		=> "string"
 		},
 	"BINARY" => {
 		"OBJ_FILES"		=> "list",
@@ -70,7 +70,7 @@ my $section_types = {
 		"PUBLIC_PROTO_HEADER"	=> "string",
 		"PUBLIC_HEADERS"	=> "list", 
 
-		"EXTRA_CFLAGS"		=> "string",
+		"CFLAGS"		=> "string",
 		"STANDARD_VISIBILITY"	=> "string"
 		},
 	"LIBRARY" => {
@@ -96,7 +96,7 @@ my $section_types = {
 		"PUBLIC_PROTO_HEADER"	=> "string",
 		"PRIVATE_PROTO_HEADER"	=> "string",
 
-		"EXTRA_CFLAGS"		=> "string",
+		"CFLAGS"		=> "string",
 		"STANDARD_VISIBILITY"	=> "string"
 		}
 };

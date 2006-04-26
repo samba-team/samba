@@ -155,8 +155,8 @@ sub check($$$$$)
 			}
 		}
 
-		unless (defined($part->{EXTRA_CFLAGS})) {
-			$part->{EXTRA_CFLAGS} = "";
+		unless (defined($part->{CFLAGS})) {
+			$part->{CFLAGS} = "";
 		}
 
 		unless (defined($part->{PUBLIC_HEADERS})) {

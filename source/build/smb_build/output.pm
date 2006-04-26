@@ -151,8 +151,8 @@ sub create_output($$)
 		foreach my $elem (values %{$part->{UNIQUE_DEPENDENCIES}}) {
 			next if $elem == $part;
 
-			push(@{$part->{CFLAGS}}, @{$elem->{CPPFLAGS}}) if defined(@{$elem->{CPPFLAGS}});
-			push(@{$part->{CFLAGS}}, $elem->{EXTRA_CFLAGS}) if defined($elem->{EXTRA_CFLAGS});
+			push(@{$part->{PUBLIC_CFLAGS}}, @{$elem->{CPPFLAGS}}) if defined(@{$elem->{CPPFLAGS}});
+			push(@{$part->{PUBLIC_CFLAGS}}, $elem->{CFLAGS}) if defined($elem->{CFLAGS});
 			push(@{$part->{LINK_LIST}}, $elem->{OUTPUT}) if defined($elem->{OUTPUT});
 			push(@{$part->{LINK_FLAGS}}, @{$elem->{LIBS}}) if defined($elem->{LIBS});
 			push(@{$part->{LINK_FLAGS}},@{$elem->{LDFLAGS}}) if defined($elem->{LDFLAGS});
@@ -161,11 +161,11 @@ sub create_output($$)
 	}
 
 	foreach $part (values %{$depend}) {
-		$part->{EXTRA_CFLAGS} .= " " . join(' ', @{$part->{CFLAGS}}) if defined($part->{CFLAGS});
-		$part->{EXTRA_CFLAGS} .= " " . join(' ', @{$part->{CPPFLAGS}}) if defined($part->{CPPFLAGS});
+		$part->{CFLAGS} .= " " . join(' ', @{$part->{PUBLIC_CFLAGS}}) if defined($part->{PUBLIC_CFLAGS});
+		$part->{CFLAGS} .= " " . join(' ', @{$part->{CPPFLAGS}}) if defined($part->{CPPFLAGS});
 		if (($part->{STANDARD_VISIBILITY} ne "default") and 
 			($config->{visibility_attribute} eq "yes")) {
-			$part->{EXTRA_CFLAGS} .=  " -fvisibility=$part->{STANDARD_VISIBILITY}";
+			$part->{CFLAGS} .=  " -fvisibility=$part->{STANDARD_VISIBILITY}";
 		}
 	}
 
