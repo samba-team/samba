@@ -117,6 +117,18 @@ sub get_value_of($)
 }
 
 #####################################################################
+# check that a variable we get from ParseExpr isn't a null pointer
+sub check_null_pointer($)
+{
+	my $size = shift;
+	if ($size =~ /^\*/) {
+		my $size2 = substr($size, 1);
+		pidl "if ($size2 == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;";
+	}
+}
+
+
+#####################################################################
 # work out is a parse function should be declared static or not
 sub fn_declare($$)
 {
@@ -196,6 +208,7 @@ sub EjsPullArray($$$$$)
 		if (!$l->{IS_FIXED}) {
 			pidl "EJS_ALLOC_N(ejs, $var, $size);";
 		}
+		check_null_pointer($length);
 		pidl "ejs_pull_array_uint8(ejs, v, $name, $var, $length);";
 		return;
 	}
@@ -492,6 +505,7 @@ sub EjsPushArray($$$$$)
 	}
 	# uint8 arrays are treated as data blobs
 	if ($nl->{TYPE} eq 'DATA' && $e->{TYPE} eq 'uint8') {
+		check_null_pointer($length);
 		pidl "ejs_push_array_uint8(ejs, v, $name, $var, $length);";
 		return;
 	}
