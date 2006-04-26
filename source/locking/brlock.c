@@ -907,7 +907,7 @@ static BOOL brl_unlock_posix(struct byte_range_lock *br_lck, const struct lock_s
 			/* tmp_count == 3 - (we split a lock range in two). */
 			SMB_ASSERT(tmp_lock[0].lock_type == locks[i].lock_type);
 			SMB_ASSERT(tmp_lock[1].lock_type == UNLOCK_LOCK);
-			SMB_ASSERT(tmp_lock[2].lock_type != locks[i].lock_type);
+			SMB_ASSERT(tmp_lock[2].lock_type == locks[i].lock_type);
 
 			memcpy(&tp[count], &tmp_lock[0], sizeof(struct lock_struct));
 			count++;
