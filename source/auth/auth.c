@@ -23,6 +23,8 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_AUTH
 
+static_decl_auth;
+
 static struct auth_init_function_entry *backends = NULL;
 
 static struct auth_init_function_entry *auth_find_backend_entry(const char *name);
