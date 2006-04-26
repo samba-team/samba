@@ -61,6 +61,31 @@ cat sub-ca.crt ca.crt > sub-ca-combined.crt
 cat test.crt test.key > test.combined.crt
 openssl rsa -in test.key -aes256 -passout pass:foobar -out test-pw.key
 
+openssl req -new \
+	-subj "/CN=proxy/CN=Test cert/C=SE" \
+	-newkey rsa:1024 \
+	-sha1 \
+	-nodes \
+	-config openssl.cnf \
+	-out proxy-test.req -keyout proxy-test.key
+
+openssl x509 -req -CAcreateserial -in proxy-test.req -days 7 \
+	  -out proxy-test.crt -CA test.crt -CAkey test.key \
+	  -extfile openssl.cnf -extensions proxy_cert
+
+openssl req -new \
+	-subj "/CN=no-proxy/CN=Test cert/C=SE" \
+	-newkey rsa:1024 \
+	-sha1 \
+	-nodes \
+	-config openssl.cnf \
+	-out no-proxy-test.req -keyout no-proxy-test.key
+
+openssl x509 -req -CAcreateserial -in no-proxy-test.req -days 7 \
+	  -out no-proxy-test.crt -CA test.crt -CAkey test.key \
+	  -extfile openssl.cnf -extensions usr_cert
+
+
 openssl ca \
     -name usr \
     -cert ca.crt \
