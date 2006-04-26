@@ -506,9 +506,10 @@ _hx509_check_key_usage(hx509_cert cert, unsigned flags, int req_present)
     return check_key_usage(_hx509_get_cert(cert), flags, req_present);
 }
 
+enum certtype { POLICY_CERT, EE_CERT, CA_CERT };
 
 static int
-check_basic_constraints(const Certificate *cert, int ca, int depth)
+check_basic_constraints(const Certificate *cert, enum certtype type, int depth)
 {
     BasicConstraints bc;
     const Extension *e;
@@ -519,19 +520,37 @@ check_basic_constraints(const Certificate *cert, int ca, int depth)
 	return 0;
 
     e = find_extension(cert, oid_id_x509_ce_basicConstraints(), &i);
-    if (e == NULL)
-	return HX509_EXTENSION_NOT_FOUND;
+    if (e == NULL) {
+	switch(type) {
+	case POLICY_CERT:
+	case EE_CERT:
+	    return 0;
+	case CA_CERT:
+	    return HX509_EXTENSION_NOT_FOUND;
+	}
+    }
     
     ret = decode_BasicConstraints(e->extnValue.data, 
 				  e->extnValue.length, &bc,
 				  &size);
     if (ret)
 	return ret;
-    if (ca && (bc.cA == NULL || !*bc.cA))
-	ret = HX509_PARENT_NOT_CA;
-    if (bc.pathLenConstraint)
-	if (depth - 1 > *bc.pathLenConstraint)
-	    ret = HX509_CA_PATH_TOO_DEEP;
+    switch(type) {
+    case POLICY_CERT:
+	if (bc.cA != NULL && *bc.cA)
+	    ret = HX509_PARENT_IS_CA;
+	break;
+    case EE_CERT:
+	ret = 0;
+	break;
+    case CA_CERT:
+	if (bc.cA == NULL || !*bc.cA)
+	    ret = HX509_PARENT_NOT_CA;
+	else if (bc.pathLenConstraint)
+	    if (depth - 1 > *bc.pathLenConstraint)
+		ret = HX509_CA_PATH_TOO_DEEP;
+	break;
+    }
     free_BasicConstraints(&bc);
     return ret;
 }
@@ -1164,6 +1183,32 @@ free_name_constraints(hx509_name_constraints *nc)
     free(nc->val);
 }
 
+static int
+policy_cert_p(const Certificate *cert, ProxyCertInfo *info)
+{
+    const Extension *e;
+    size_t size;
+    int ret, i = 0;
+
+    memset(info, 0, sizeof(*info));
+
+    e = find_extension(cert, oid_id_pe_proxyCertInfo(), &i);
+    if (e == NULL)
+	return 0;
+
+    ret = decode_ProxyCertInfo(e->extnValue.data, 
+			       e->extnValue.length, info,
+			       &size);
+    if (ret)
+	return ret;
+    if (size != e->extnValue.length) {
+	free_ProxyCertInfo(info);
+	return HX509_EXTRA_DATA_AFTER_STRUCTURE;
+    }
+
+    return 0;
+}
+
 int
 hx509_verify_path(hx509_context context,
 		  hx509_verify_ctx ctx,
@@ -1175,7 +1220,8 @@ hx509_verify_path(hx509_context context,
 #if 0
     const AlgorithmIdentifier *alg_id;
 #endif
-    int ret, i;
+    int ret, i, policy_cert_depth;
+    enum certtype type;
 
     ret = init_name_constraints(&nc);
     if (ret)	
@@ -1201,6 +1247,78 @@ hx509_verify_path(hx509_context context,
 #endif
 
     /*
+     * Check CA and policy certificate chain from the top of the
+     * certificate chain. Also check certificate is valid with respect
+     * to the current time.
+     *
+     */
+
+    policy_cert_depth = 0;
+
+    type = POLICY_CERT; /* XXX works for now */
+
+    for (i = 0; i < path.len; i++) {
+	Certificate *c;
+	time_t t;
+
+	c = _hx509_get_cert(path.val[i]);
+	
+	/*
+	 * Lets do some basic check on issuer like
+	 * keyUsage.keyCertSign and basicConstraints.cA bit depending
+	 * on what type of certificate this is.
+	 */
+
+	switch (type) {
+	case CA_CERT:
+	    ret = check_key_usage(c, 1 << 5, TRUE); /* XXX make constants */
+	    if (ret)
+		goto out;
+	    break;
+	case POLICY_CERT: {
+	    ProxyCertInfo info;	    
+
+	    if (policy_cert_p(c, &info)) {
+
+		if (info.pCPathLenConstraint != NULL &&
+		    *info.pCPathLenConstraint > i)
+		{
+		    free_ProxyCertInfo(&info);
+		    ret = HX509_PATH_TOO_LONG;
+		    goto out;
+		}
+		free_ProxyCertInfo(&info);
+		break;
+	    }
+	    type = EE_CERT;
+	    /* FALLTHOUGH */
+	}
+	case EE_CERT:
+	    break;
+	}
+
+	ret = check_basic_constraints(c, type, i - policy_cert_depth);
+	if (ret)
+	    goto out;
+
+	t = _hx509_Time2time_t(&c->tbsCertificate.validity.notBefore);
+	if (t > ctx->time_now) {
+	    ret = HX509_CERT_USED_BEFORE_TIME;
+	    goto out;
+	}
+	t = _hx509_Time2time_t(&c->tbsCertificate.validity.notAfter);
+	if (t < ctx->time_now) {
+	    ret = HX509_CERT_USED_AFTER_TIME;
+	    goto out;
+	}
+
+	if (type == EE_CERT)
+	    type = CA_CERT;
+	else if (type == POLICY_CERT)
+	    policy_cert_depth++;
+    }
+
+    /*
      * Verify constraints, do this backward so path constraints are
      * checked in the right order.
      */
@@ -1219,36 +1337,6 @@ hx509_verify_path(hx509_context context,
 	    goto out;
 	}
 #endif
-
-	/*
-	 * Lets do some basic check on issuer like
-	 * keyUsage.keyCertSign and basicConstraints.cA bit.
-	 */
-	if (i != 0) {
-	    if (check_key_usage(c, 1 << 5, TRUE)) { /* XXX make constants */
-		ret = ENOENT;
-		goto out;
-	    }
-	    if (check_basic_constraints(c, 1, path.len - i - 1)) {
-		ret = ENOENT;
-		goto out;
-	    }
-	}
-
-	{
-	    time_t t;
-
-	    t = _hx509_Time2time_t(&c->tbsCertificate.validity.notBefore);
-	    if (t > ctx->time_now) {
-		ret = HX509_CERT_USED_BEFORE_TIME;
-		goto out;
-	    }
-	    t = _hx509_Time2time_t(&c->tbsCertificate.validity.notAfter);
-	    if (t < ctx->time_now) {
-		ret = HX509_CERT_USED_AFTER_TIME;
-		goto out;
-	    }
-	}
 
 	/* verify name constraints, not for selfsigned and anchor */
 	if (!certificate_is_self_signed(c) || i == path.len - 1) {
@@ -1344,7 +1432,7 @@ hx509_verify_path(hx509_context context,
 	}
     }
 
- out:
+out:
     free_name_constraints(&nc);
     _hx509_path_free(&path);
 
