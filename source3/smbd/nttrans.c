@@ -2827,8 +2827,8 @@ int reply_nttrans(connection_struct *conn,
 		return ERROR_DOS(ERRSRV,ERRaccess);
 	}
 
-	if (!NT_STATUS_IS_OK(allow_new_trans(conn->pending_trans,
-					     SVAL(inbuf, smb_mid)))) {
+	result = allow_new_trans(conn->pending_trans, SVAL(inbuf, smb_mid));
+	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(2, ("Got invalid nttrans request: %s\n", nt_errstr(result)));
 		END_PROFILE(SMBnttrans);
 		return ERROR_NT(result);
