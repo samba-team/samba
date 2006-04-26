@@ -1231,8 +1231,7 @@ hx_pass_prompter(void *data, const hx509_prompt *prompter)
 
 
 void KRB5_LIB_FUNCTION
-_krb5_pk_allow_proxy_certificate(krb5_context context,
-				 struct krb5_pk_identity *id,
+_krb5_pk_allow_proxy_certificate(struct krb5_pk_identity *id,
 				 int boolean)
 {
     hx509_verify_set_proxy_certificate(id->verify_ctx, boolean);
