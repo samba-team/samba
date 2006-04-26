@@ -25,6 +25,8 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_IDMAP
 
+static_decl_idmap;
+
 struct idmap_function_entry {
 	const char *name;
 	struct idmap_methods *methods;

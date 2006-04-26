@@ -51,6 +51,8 @@
  * @sa Samba Developers Guide
  **/
 
+static_decl_charset;
+
 static size_t ascii_pull(void *,const char **, size_t *, char **, size_t *);
 static size_t ascii_push(void *,const char **, size_t *, char **, size_t *);
 static size_t latin1_push(void *,const char **, size_t *, char **, size_t *);
