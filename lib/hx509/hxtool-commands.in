@@ -177,6 +177,11 @@ command = {
 		help = "password, prompter, or environment"
 	}
 	option = {
+		long = "allow-proxy-certificate"
+		type = "flag"
+		help = "allow proxy certificates"
+	}
+	option = {
 		long = "missing-revoke"
 		type = "flag"
 		help = "missing CRL/OCSP is ok"
