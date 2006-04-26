@@ -2913,7 +2913,7 @@ AC_ARG_WITH(smbwrapper,
 
 # Conditions under which smbwrapper should not be built.
 
-	if test x$PICFLAGS = x; then
+	if test x"$PICFLAGS" = x; then
 	   echo No support for PIC code - disabling smbwrapper and smbsh
 	   WRAPPROG=""
 	   WRAP=""
@@ -3862,7 +3862,7 @@ AC_ARG_WITH(pam_smbpass,
 
        # Conditions under which pam_smbpass should not be built.
 
-       if test x$PICFLAGS = x; then
+       if test x"$PICFLAGS" = x; then
           AC_MSG_ERROR([No support for PIC code])
        elif test x"$ac_cv_header_security_pam_appl_h" = x"no"; then
 	  AC_MSG_ERROR([No security/pam_appl.h found])
