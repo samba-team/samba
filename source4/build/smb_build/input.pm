@@ -132,7 +132,7 @@ sub calc_unique_deps($$$$)
 		next if defined($udeps->{$$dep->{NAME}});
 
  		if (defined ($$dep->{OUTPUT_TYPE}) && 
-			($withlibs or ($$dep->{OUTPUT_TYPE} eq "OBJ_LIST") or ($$dep->{OUTPUT_TYPE} eq "MERGEDOBJ"))) {
+			($withlibs or ($$dep->{OUTPUT_TYPE} eq "OBJ_LIST") or ($$dep->{OUTPUT_TYPE} eq "MERGEDOBJ") or ($$dep->{OUTPUT_TYPE} eq "STATIC_LIBRARY"))) {
    			        $udeps->{$$dep->{NAME}} = "BUSY";
 			        calc_unique_deps($$dep->{NAME}, $$dep->{DEPENDENCIES}, $udeps, $withlibs);
 	        }
@@ -203,9 +203,6 @@ sub check($$$$$)
 			die("$part->{NAME} has undefined dependency $key\n") if not defined($depend{$key});
 			push (@{$part->{DEPENDENCIES}}, \$depend{$key});
 		}
-
-#		delete ($part->{PRIVATE_DEPENDENCIES});
-#		delete ($part->{PUBLIC_DEPENDENCIES});
 	}
 
 	foreach my $part (values %depend) {
