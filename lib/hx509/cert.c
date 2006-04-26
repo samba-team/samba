@@ -300,6 +300,15 @@ hx509_verify_set_time(hx509_verify_ctx ctx, time_t t)
     ctx->time_now = t;
 }
 
+void
+hx509_verify_set_proxy_certificate(hx509_verify_ctx ctx, int boolean)
+{
+    if (boolean)
+	ctx->flags |= HX509_VERIFY_CTX_F_ALLOW_PROXY_CERTIFICATE;
+    else
+	ctx->flags &= ~HX509_VERIFY_CTX_F_ALLOW_PROXY_CERTIFICATE;
+}
+
 static const Extension *
 find_extension(const Certificate *cert, const heim_oid *oid, int *idx)
 {
@@ -506,7 +515,7 @@ _hx509_check_key_usage(hx509_cert cert, unsigned flags, int req_present)
     return check_key_usage(_hx509_get_cert(cert), flags, req_present);
 }
 
-enum certtype { POLICY_CERT, EE_CERT, CA_CERT };
+enum certtype { PROXY_CERT, EE_CERT, CA_CERT };
 
 static int
 check_basic_constraints(const Certificate *cert, enum certtype type, int depth)
@@ -522,7 +531,7 @@ check_basic_constraints(const Certificate *cert, enum certtype type, int depth)
     e = find_extension(cert, oid_id_x509_ce_basicConstraints(), &i);
     if (e == NULL) {
 	switch(type) {
-	case POLICY_CERT:
+	case PROXY_CERT:
 	case EE_CERT:
 	    return 0;
 	case CA_CERT:
@@ -536,7 +545,7 @@ check_basic_constraints(const Certificate *cert, enum certtype type, int depth)
     if (ret)
 	return ret;
     switch(type) {
-    case POLICY_CERT:
+    case PROXY_CERT:
 	if (bc.cA != NULL && *bc.cA)
 	    ret = HX509_PARENT_IS_CA;
 	break;
@@ -1184,7 +1193,7 @@ free_name_constraints(hx509_name_constraints *nc)
 }
 
 static int
-policy_cert_p(const Certificate *cert, ProxyCertInfo *info)
+proxy_cert_p(const Certificate *cert, ProxyCertInfo *info)
 {
     const Extension *e;
     size_t size;
@@ -1220,7 +1229,7 @@ hx509_verify_path(hx509_context context,
 #if 0
     const AlgorithmIdentifier *alg_id;
 #endif
-    int ret, i, policy_cert_depth;
+    int ret, i, proxy_cert_depth;
     enum certtype type;
 
     ret = init_name_constraints(&nc);
@@ -1247,15 +1256,18 @@ hx509_verify_path(hx509_context context,
 #endif
 
     /*
-     * Check CA and policy certificate chain from the top of the
+     * Check CA and proxy certificate chain from the top of the
      * certificate chain. Also check certificate is valid with respect
      * to the current time.
      *
      */
 
-    policy_cert_depth = 0;
+    proxy_cert_depth = 0;
 
-    type = POLICY_CERT; /* XXX works for now */
+    if (ctx->flags & HX509_VERIFY_CTX_F_ALLOW_PROXY_CERTIFICATE)
+	type = PROXY_CERT;
+    else
+	type = EE_CERT;
 
     for (i = 0; i < path.len; i++) {
 	Certificate *c;
@@ -1275,10 +1287,10 @@ hx509_verify_path(hx509_context context,
 	    if (ret)
 		goto out;
 	    break;
-	case POLICY_CERT: {
+	case PROXY_CERT: {
 	    ProxyCertInfo info;	    
 
-	    if (policy_cert_p(c, &info)) {
+	    if (proxy_cert_p(c, &info)) {
 
 		if (info.pCPathLenConstraint != NULL &&
 		    *info.pCPathLenConstraint > i)
@@ -1297,7 +1309,7 @@ hx509_verify_path(hx509_context context,
 	    break;
 	}
 
-	ret = check_basic_constraints(c, type, i - policy_cert_depth);
+	ret = check_basic_constraints(c, type, i - proxy_cert_depth);
 	if (ret)
 	    goto out;
 
@@ -1314,8 +1326,8 @@ hx509_verify_path(hx509_context context,
 
 	if (type == EE_CERT)
 	    type = CA_CERT;
-	else if (type == POLICY_CERT)
-	    policy_cert_depth++;
+	else if (type == PROXY_CERT)
+	    proxy_cert_depth++;
     }
 
     /*
