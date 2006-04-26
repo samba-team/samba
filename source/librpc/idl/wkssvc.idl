@@ -292,7 +292,7 @@
 	WERROR WKSSVC_NETRGETJOINABLEOUS ();
 
 	typedef struct {
-		uint8 blob[524];
+		uint8 data[524];
 	} wkssvc_PasswordBuffer;
 
 	typedef [bitmap32bit] bitmap {
@@ -329,7 +329,7 @@
 		[in]         [string,charset(UTF16),ref] uint16 *domain_name,
 		[in]         [string,charset(UTF16)] uint16 *account_name,
 		[in]         [string,charset(UTF16)] uint16 *admin_account,
-		[in]         wkssvc_PasswordBuffer *type_30,
+		[in]         wkssvc_PasswordBuffer *encrypted_password,
 		[in]         wkssvc_joinflags join_flags
 		);
 
@@ -338,7 +338,7 @@
 	WERROR wkssvc_NetrUnjoinDomain2 (
 		[in] [unique] [string,charset(UTF16)] uint16 *server_name,
 		[in] [unique] [string,charset(UTF16)] uint16 *account,
-		[in] [unique] wkssvc_PasswordBuffer *Encrypted_password,
+		[in] [unique] wkssvc_PasswordBuffer *encrypted_password,
 		[in] wkssvc_joinflags unjoin_flags
 		);
 
