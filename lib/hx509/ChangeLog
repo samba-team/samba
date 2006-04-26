@@ -1,5 +1,26 @@
 2006-04-26  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* test_name.c: test to parse and print name and check that they
+	are the same.
+
+	* name.c (hx509_parse_name): fix length argument to printf string
+
+	* name.c (hx509_parse_name): fix length argument to stringtooid, 1
+	too short.
+
+	* cert.c: remove debug printf's
+
+	* name.c (hx509_parse_name): make compile pre c99
+
+	* data/gen-req.sh: OpenSSL have a serious issue of user confusion
+	-subj in -ca takes the arguments in LDAP order. -subj for x509
+	takes it in x509 order.
+
+	* cert.c (hx509_verify_path): handle the case where the where two
+	proxy certs in a chain.
+
+	* test_chain.in: enable two proxy certificates in a chain test
+
 	* test_chain.in: tests proxy certificates
 
 	* data: re-gen
