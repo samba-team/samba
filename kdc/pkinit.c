@@ -1233,6 +1233,14 @@ _kdc_pk_initialize(krb5_context context,
 	return ret;
     }
 
+    ret = krb5_config_get_bool_default(context, 
+				       NULL,
+				       FALSE
+				       "kdc",
+				       "pki-allow-proxy-certificate",
+				       NULL);
+    _krb5_pk_allow_proxy_certificates(kdc_identity, ret);
+
     file = krb5_config_get_string_default(context, 
 					  NULL,
 					  HDB_DB_DIR "/pki-mapping",
