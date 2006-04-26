@@ -1215,6 +1215,7 @@ kdc
 	pki-anchors = FILE:/path/to/trust-anchors.pem
 	pki-pool = PKCS12:/path/to/useful-intermediate-certs.pfx
 	pki-pool = FILE:/path/to/other-useful-intermediate-certs.pem
+	pki-allow-proxy-certificate = false
 @end example
 
 @subsection Using pki-mapping file
