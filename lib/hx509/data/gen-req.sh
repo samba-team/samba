@@ -74,11 +74,11 @@ gen_cert "/CN=Test cert KeyEncipherment/C=SE" "ca" "test-ke-only" "usr_ke"
 gen_cert "/CN=Test cert DigitalSignature/C=SE" "ca" "test-ds-only" "usr_ds"
 gen_cert "/CN=Sub CA/C=SE" "ca" "sub-ca" "subca"
 gen_cert "/CN=Test sub cert/C=SE" "sub-ca" "sub-cert" "usr"
-gen_cert "/CN=proxy/CN=Test cert/C=SE" "test" "proxy" "proxy_cert" proxy-test
-gen_cert "/CN=proxy2/CN=Test cert/C=SE" "proxy-test" "proxy" "proxy_cert" proxy-level-test
-gen_cert "/CN=no-proxy/CN=Test cert/C=SE" "test" "proxy" "usr_cert" no-proxy-test
-gen_cert "/CN=proxy10/CN=Test cert/C=SE" "test" "proxy" "proxy10_cert" proxy10-test
-gen_cert "/CN=proxy10-child/CN=Test cert/C=SE" "proxy10-test" "proxy" "proxy_cert" proxy10-child-test
+gen_cert "/C=SE/CN=Test cert/CN=proxy" "test" "proxy" "proxy_cert" proxy-test
+gen_cert "/C=SE/CN=Test cert/CN=proxy2" "proxy-test" "proxy" "proxy_cert" proxy-level-test
+gen_cert "/C=SE/CN=Test cert/CN=no-proxy" "test" "proxy" "usr_cert" no-proxy-test
+gen_cert "/C=SE/CN=Test cert/CN=proxy10" "test" "proxy" "proxy10_cert" proxy10-test
+gen_cert "/C=SE/CN=Test cert/CN=proxy10-child" "proxy10-test" "proxy" "proxy_cert" proxy10-child-test
 
 
 # combine
