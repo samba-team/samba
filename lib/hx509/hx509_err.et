@@ -28,6 +28,9 @@ error_code PATH_TOO_LONG, "Path is too long, failed to find valid anchor"
 error_code KU_CERT_MISSING, "Required keyusage for this certificate is missing"
 error_code CERT_NOT_FOUND, "Certificate not found"
 error_code UNKNOWN_LOCK_COMMAND, "Unknown lock command"
+error_code PARENT_IS_CA, "Parent certificate is a CA"
+error_code EXTRA_DATA_AFTER_STRUCTURE, "Extra data was found after the structure"
+error_code PROXY_CERT_INVALID, "Proxy certificate is invalid"
 
 # cms related errors
 index 32
