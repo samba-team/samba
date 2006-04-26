@@ -118,29 +118,35 @@ sub check_binary($$)
 	$bin->{OUTPUT_TYPE} = "BINARY";
 }
 
-my $level = "";
-
-sub calc_unique_deps($$$$)
+sub calc_unique_deps($$$$$$)
 {
-	sub calc_unique_deps($$$$);
-	my ($name, $deps, $udeps, $withlibs) = @_;
+	sub calc_unique_deps($$$$$$);
+	my ($name, $INPUT, $deps, $udeps, $withlibs, $busy) = @_;
 
-	print "$level-> $name\n" if ($ENV{SMB_BUILD_VERBOSE});
-	$level.=" ";
+	foreach my $n (@$deps) {
+		if (grep (/^$n$/, @$busy)) {
+			print "($name) BUSY: $n, list: " . join(',', @$busy) . "\n";
+		#	die("Recursive dependency for $dep->{NAME}");
+			next;
+		}
+		next if (grep /^$n$/, @$udeps);
+		my $dep = $INPUT->{$n};
 
-	foreach my $dep (@{$deps}) {
-		next if defined($udeps->{$$dep->{NAME}});
-
- 		if (defined ($$dep->{OUTPUT_TYPE}) && 
-			($withlibs or ($$dep->{OUTPUT_TYPE} eq "OBJ_LIST") or ($$dep->{OUTPUT_TYPE} eq "MERGEDOBJ") or ($$dep->{OUTPUT_TYPE} eq "STATIC_LIBRARY"))) {
-   			        $udeps->{$$dep->{NAME}} = "BUSY";
-			        calc_unique_deps($$dep->{NAME}, $$dep->{DEPENDENCIES}, $udeps, $withlibs);
+ 		if (defined ($dep->{OUTPUT_TYPE}) && 
+			($withlibs or 
+			($dep->{OUTPUT_TYPE} eq "OBJ_LIST") or 
+			($dep->{OUTPUT_TYPE} eq "MERGEDOBJ") or 
+			($dep->{OUTPUT_TYPE} eq "STATIC_LIBRARY"))) {
+				push (@$busy, $dep->{NAME});
+			        calc_unique_deps($dep->{NAME}, $INPUT, $dep->{PUBLIC_DEPENDENCIES}, $udeps, $withlibs, $busy);
+			        calc_unique_deps($dep->{NAME}, $INPUT, $dep->{PRIVATE_DEPENDENCIES}, $udeps, $withlibs, $busy);
+				pop (@$busy);
 	        }
 
-		$udeps->{$$dep->{NAME}} = $$dep;
+		# FIXME: Insert at the right position
+		push (@{$udeps}, $dep->{NAME});
+
 	}
-	
-	$level = substr($level, 1);
 }
 
 sub check($$$$$)
@@ -191,31 +197,19 @@ sub check($$$$$)
 		check_binary($INPUT, $part) if ($part->{TYPE} eq "BINARY");
 	}
 
-	my %depend = %$INPUT;
-
-	foreach my $part (values %depend) {
-		
-		# Generate list of dependencies
-		$part->{DEPENDENCIES} = [];
-
-		foreach my $key (@{$part->{PUBLIC_DEPENDENCIES}},
-				 @{$part->{PRIVATE_DEPENDENCIES}}) {
-			die("$part->{NAME} has undefined dependency $key\n") if not defined($depend{$key});
-			push (@{$part->{DEPENDENCIES}}, \$depend{$key});
-		}
+	foreach my $part (values %$INPUT) {
+		$part->{UNIQUE_DEPENDENCIES} = [];
+		calc_unique_deps($part->{NAME}, $INPUT, $part->{PUBLIC_DEPENDENCIES}, $part->{UNIQUE_DEPENDENCIES}, 0, []);
+		calc_unique_deps($part->{NAME}, $INPUT, $part->{PRIVATE_DEPENDENCIES}, $part->{UNIQUE_DEPENDENCIES}, 0, []);
 	}
 
-	foreach my $part (values %depend) {
-		$part->{UNIQUE_DEPENDENCIES} = {};
-		calc_unique_deps($part->{NAME}, $part->{DEPENDENCIES}, $part->{UNIQUE_DEPENDENCIES}, 0);
+	foreach my $part (values %$INPUT) {
+		$part->{UNIQUE_DEPENDENCIES_ALL} = [];
+		calc_unique_deps($part->{NAME}, $INPUT, $part->{PUBLIC_DEPENDENCIES}, $part->{UNIQUE_DEPENDENCIES_ALL}, 1, []);
+		calc_unique_deps($part->{NAME}, $INPUT, $part->{PRIVATE_DEPENDENCIES}, $part->{UNIQUE_DEPENDENCIES_ALL}, 1, []);
 	}
 
-	foreach my $part (values %depend) {
-		$part->{UNIQUE_DEPENDENCIES_ALL} = {};
-		calc_unique_deps($part->{NAME}, $part->{DEPENDENCIES}, $part->{UNIQUE_DEPENDENCIES_ALL}, 1);
-	}
-
-	return \%depend;
+	return $INPUT;
 }
 
 1;
