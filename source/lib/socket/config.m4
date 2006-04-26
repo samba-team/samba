@@ -22,7 +22,7 @@ if test x"$ac_cv_func_connect" = x"no"; then
     AC_CHECK_LIB_EXT(nsl, SOCKET_LIBS, connect)
     AC_CHECK_LIB_EXT(socket, SOCKET_LIBS, connect)
     AC_CHECK_LIB_EXT(inet, SOCKET_LIBS, connect)
-    SMB_EXT_LIB_ENABLE(SOCKET,YES)
+    SMB_ENABLE(EXT_SOCKET,YES)
     dnl We can't just call AC_CHECK_FUNCS(connect) here, because the value
     dnl has been cached.
     if test x"$ac_cv_lib_ext_nsl_s_connect" = x"yes" ||
@@ -35,7 +35,7 @@ if test x"$ac_cv_func_connect" = x"no"; then
     fi
 fi
 
-SMB_EXT_LIB(SOCKET,[${SOCKET_LIBS}],[${SOCKET_CFLAGS}],[${SOCKET_CPPFLAGS}],[${SOCKET_LDFLAGS}])
+SMB_EXT_LIB(EXT_SOCKET,[${SOCKET_LIBS}],[${SOCKET_CFLAGS}],[${SOCKET_CPPFLAGS}],[${SOCKET_LDFLAGS}])
 
 ############################################
 # check for unix domain sockets

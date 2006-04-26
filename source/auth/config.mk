@@ -60,7 +60,7 @@ SUBSYSTEM = auth
 OBJ_FILES = \
 		auth_unix.o
 PUBLIC_DEPENDENCIES = \
-		EXT_LIB_CRYPT EXT_LIB_PAM PAM_ERRORS
+		CRYPT PAM PAM_ERRORS
 # End MODULE auth_unix
 #######################
 
