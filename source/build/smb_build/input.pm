@@ -120,23 +120,24 @@ sub check_binary($$)
 
 my $level = "";
 
-sub calc_unique_deps($$$)
+sub calc_unique_deps($$$$)
 {
-	sub calc_unique_deps($$$);
-	my ($name, $deps, $udeps) = @_;
+	sub calc_unique_deps($$$$);
+	my ($name, $deps, $udeps, $withlibs) = @_;
 
 	print "$level-> $name\n" if ($ENV{SMB_BUILD_VERBOSE});
 	$level.=" ";
 
 	foreach my $dep (@{$deps}) {
-		if (not defined($udeps->{$$dep->{NAME}})) {
-      		   if (defined ($$dep->{OUTPUT_TYPE}) && (($$dep->{OUTPUT_TYPE} eq "OBJ_LIST")
-			    or ($$dep->{OUTPUT_TYPE} eq "MERGEDOBJ"))) {
+		next if defined($udeps->{$$dep->{NAME}});
+
+ 		if (defined ($$dep->{OUTPUT_TYPE}) && 
+			($withlibs or ($$dep->{OUTPUT_TYPE} eq "OBJ_LIST") or ($$dep->{OUTPUT_TYPE} eq "MERGEDOBJ"))) {
    			        $udeps->{$$dep->{NAME}} = "BUSY";
-			        calc_unique_deps($$dep->{NAME}, $$dep->{DEPENDENCIES}, $udeps);
-		        }
-			$udeps->{$$dep->{NAME}} = $$dep;
-		}
+			        calc_unique_deps($$dep->{NAME}, $$dep->{DEPENDENCIES}, $udeps, $withlibs);
+	        }
+
+		$udeps->{$$dep->{NAME}} = $$dep;
 	}
 	
 	$level = substr($level, 1);
@@ -209,7 +210,12 @@ sub check($$$$$)
 
 	foreach my $part (values %depend) {
 		$part->{UNIQUE_DEPENDENCIES} = {};
-		calc_unique_deps($part->{NAME}, $part->{DEPENDENCIES}, $part->{UNIQUE_DEPENDENCIES});
+		calc_unique_deps($part->{NAME}, $part->{DEPENDENCIES}, $part->{UNIQUE_DEPENDENCIES}, 0);
+	}
+
+	foreach my $part (values %depend) {
+		$part->{UNIQUE_DEPENDENCIES_ALL} = {};
+		calc_unique_deps($part->{NAME}, $part->{DEPENDENCIES}, $part->{UNIQUE_DEPENDENCIES_ALL}, 1);
 	}
 
 	return \%depend;

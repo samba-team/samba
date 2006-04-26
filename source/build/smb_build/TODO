@@ -1,7 +1,4 @@
 - let the build system implement some make functions($(patsubst),$(wildcard),...) and use our own implementations where `make' does not support them
-- fix --enable-dso:
- - loop over all the dependencies of a SUBSYSTEM
-  - include their PUBLIC_CFLAGS
 - make --enable-dso the default
  - fix module loading for selftest during non-developer builds
 - clearer distinction between dcerpc and ndr. seperate interface tables?
