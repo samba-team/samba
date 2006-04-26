@@ -147,7 +147,8 @@ sub create_output($$)
 	foreach $part (values %{$depend}) {
 		next if not defined($part->{OUTPUT_TYPE});
 
-		foreach my $elem (values %{$part->{UNIQUE_DEPENDENCIES_ALL}}) {
+		foreach (@{$part->{UNIQUE_DEPENDENCIES_ALL}}) {
+			my $elem = $depend->{$_};
 			next if $elem == $part;
 
 			push(@{$part->{PUBLIC_CFLAGS}}, @{$elem->{CPPFLAGS}}) if defined(@{$elem->{CPPFLAGS}});
@@ -156,7 +157,8 @@ sub create_output($$)
 
 
 		# Always import the CFLAGS and CPPFLAGS of the unique dependencies
-		foreach my $elem (values %{$part->{UNIQUE_DEPENDENCIES}}) {
+		foreach (@{$part->{UNIQUE_DEPENDENCIES}}) {
+			my $elem = $depend->{$_};
 			next if $elem == $part;
 
 			push(@{$part->{LINK_LIST}}, $elem->{OUTPUT}) if defined($elem->{OUTPUT});
