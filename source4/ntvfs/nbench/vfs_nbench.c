@@ -25,8 +25,8 @@
 */
 
 #include "includes.h"
-#include "system/filesys.h"
 #include "ntvfs/ntvfs.h"
+#include "system/filesys.h"
 
 /* this is stored in ntvfs_private */
 struct nbench_private {
@@ -314,7 +314,7 @@ static NTSTATUS nbench_open(struct ntvfs_module_context *ntvfs,
 {
 	NTSTATUS status;
 
-#undef open
+#undef open /* AIX defines open to be open64 */
 	PASS_THRU_REQ(ntvfs, req, open, io, (ntvfs, req, io));
 
 	return status;
