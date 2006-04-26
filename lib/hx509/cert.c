@@ -58,6 +58,7 @@ struct hx509_cert_data {
     Certificate *data;
     hx509_private_key private_key;
     struct _hx509_cert_attrs attrs;
+    hx509_name basename;
 };
 
 typedef struct hx509_name_constraints {
@@ -190,6 +191,7 @@ hx509_cert_init(hx509_context context, const Certificate *c, hx509_cert *cert)
     (*cert)->attrs.len = 0;
     (*cert)->attrs.val = NULL;
     (*cert)->private_key = NULL;
+    (*cert)->basename = NULL;
 
     (*cert)->data = malloc(sizeof(*(*cert)->data));
     if ((*cert)->data == NULL) {
@@ -242,6 +244,8 @@ hx509_cert_free(hx509_cert cert)
     }
     free(cert->attrs.val);
     free(cert->friendlyname);
+    if (cert->basename)
+	hx509_name_free(&cert->basename);
     memset(cert, 0, sizeof(cert));
     free(cert);
 }
@@ -716,6 +720,41 @@ find_parent(hx509_context context,
 }
 
 /*
+ *
+ */
+
+static int
+is_proxy_cert(const Certificate *cert, ProxyCertInfo *rinfo)
+{
+    ProxyCertInfo info;
+    const Extension *e;
+    size_t size;
+    int ret, i = 0;
+
+    if (rinfo)
+	memset(rinfo, 0, sizeof(*rinfo));
+
+    e = find_extension(cert, oid_id_pe_proxyCertInfo(), &i);
+    if (e == NULL)
+	return HX509_EXTENSION_NOT_FOUND;
+
+    ret = decode_ProxyCertInfo(e->extnValue.data, 
+			       e->extnValue.length, 
+			       &info,
+			       &size);
+    if (ret)
+	return ret;
+    if (size != e->extnValue.length) {
+	free_ProxyCertInfo(&info);
+	return HX509_EXTRA_DATA_AFTER_STRUCTURE; 
+    }
+    if (rinfo)
+	*rinfo = info;
+
+    return 0;
+}
+
+/*
  * Path operations are like MEMORY based keyset, but with exposed
  * internal so we can do easy searches.
  */
@@ -855,6 +894,16 @@ hx509_cert_get_subject(hx509_cert p, hx509_name *name)
 }
 
 int
+hx509_cert_get_base_subject(hx509_context context, hx509_cert c, hx509_name *name)
+{
+    if (c->basename)
+	return hx509_name_copy(context, c->basename, name);
+    if (is_proxy_cert(c->data, NULL))
+	return EINVAL; /* XXX */
+    return _hx509_name_from_Name(&c->data->tbsCertificate.subject, name);
+}
+
+int
 hx509_cert_get_serialnumber(hx509_cert p, heim_integer *i)
 {
     return copy_heim_integer(&p->data->tbsCertificate.serialNumber, i);
@@ -876,7 +925,7 @@ _hx509_cert_private_decrypt(const heim_octet_string *ciphertext,
     cleartext->length = 0;
 
     if (p->private_key == NULL)
-	return EINVAL;
+	return EINVAL; /* XXX */
 
     return _hx509_private_key_private_decrypt(ciphertext,
 					      encryption_oid,
@@ -1197,32 +1246,6 @@ free_name_constraints(hx509_name_constraints *nc)
     free(nc->val);
 }
 
-static int
-is_proxy_cert(const Certificate *cert, ProxyCertInfo *info)
-{
-    const Extension *e;
-    size_t size;
-    int ret, i = 0;
-
-    memset(info, 0, sizeof(*info));
-
-    e = find_extension(cert, oid_id_pe_proxyCertInfo(), &i);
-    if (e == NULL)
-	return HX509_EXTENSION_NOT_FOUND;
-
-    ret = decode_ProxyCertInfo(e->extnValue.data, 
-			       e->extnValue.length, info,
-			       &size);
-    if (ret)
-	return ret;
-    if (size != e->extnValue.length) {
-	free_ProxyCertInfo(info);
-	return HX509_EXTRA_DATA_AFTER_STRUCTURE; 
-    }
-
-    return 0;
-}
-
 int
 hx509_verify_path(hx509_context context,
 		  hx509_verify_ctx ctx,
@@ -1379,6 +1402,12 @@ hx509_verify_path(hx509_context context,
 			ret = HX509_PROXY_CERT_NAME_WRONG;
 			goto out;
 		    }
+		    if (cert->basename)
+			hx509_name_free(&cert->basename);
+
+		    ret = _hx509_name_from_Name(&proxy_issuer, &cert->basename);
+		    if (ret)
+			goto out;
 		}
 	    }
 	    type = EE_CERT;
