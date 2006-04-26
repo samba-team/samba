@@ -164,6 +164,14 @@ echo "proxy cert (negative)"
     chain:FILE:$srcdir/data/test.crt \
     anchor:FILE:$srcdir/data/ca.crt > /dev/null && exit 1
 
+echo "proxy cert (level fail)"
+./hxtool verify --missing-revoke \
+    --allow-proxy-certificate \
+    cert:FILE:$srcdir/data/proxy-level-test.crt \
+    chain:FILE:$srcdir/data/proxy-test.crt \
+    chain:FILE:$srcdir/data/test.crt \
+    anchor:FILE:$srcdir/data/ca.crt > /dev/null && exit 1
+
 echo "not a proxy cert"
 ./hxtool verify --missing-revoke \
     --allow-proxy-certificate \
@@ -171,5 +179,19 @@ echo "not a proxy cert"
     chain:FILE:$srcdir/data/test.crt \
     anchor:FILE:$srcdir/data/ca.crt > /dev/null && exit 1
 
+echo "proxy cert (max level 10)"
+./hxtool verify --missing-revoke \
+    --allow-proxy-certificate \
+    cert:FILE:$srcdir/data/proxy10-test.crt \
+    chain:FILE:$srcdir/data/test.crt \
+    anchor:FILE:$srcdir/data/ca.crt > /dev/null || exit 1
+
+echo "proxy cert (second level) ((should pass))"
+./hxtool verify --missing-revoke \
+    --allow-proxy-certificate \
+    cert:FILE:$srcdir/data/proxy10-child-test.crt \
+    chain:FILE:$srcdir/data/proxy10-test.crt \
+    chain:FILE:$srcdir/data/test.crt \
+    anchor:FILE:$srcdir/data/ca.crt > /dev/null && exit 1
 
 exit 0
