@@ -72,6 +72,12 @@ keyUsage = nonRepudiation, digitalSignature, keyEncipherment
 subjectKeyIdentifier	= hash
 proxyCertInfo=critical,language:id-ppl-anyLanguage,pathlen:1,policy:text:foo
 
+[ proxy10_cert ]
+basicConstraints=CA:FALSE
+keyUsage = nonRepudiation, digitalSignature, keyEncipherment
+subjectKeyIdentifier	= hash
+proxyCertInfo=critical,language:id-ppl-anyLanguage,pathlen:10,policy:text:foo
+
 [ usr_cert_ds ]
 basicConstraints=CA:FALSE
 keyUsage = nonRepudiation, digitalSignature
