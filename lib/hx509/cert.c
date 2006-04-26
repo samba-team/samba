@@ -1320,7 +1320,7 @@ hx509_verify_path(hx509_context context,
 		    goto out;
 		}
 			
-		/* XXX verify issuer name */
+		/* XXX verify subject name is CN=XXX,<proxy issuer> */
 
 		free_ProxyCertInfo(&info);
 		break;
