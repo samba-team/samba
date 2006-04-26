@@ -125,7 +125,7 @@ sub calc_unique_deps($$$$$$)
 
 	foreach my $n (@$deps) {
 		if (grep (/^$n$/, @$busy)) {
-			print "($name) BUSY: $n, list: " . join(',', @$busy) . "\n";
+		#	print "($name) BUSY: $n, list: " . join(',', @$busy) . "\n";
 		#	die("Recursive dependency for $dep->{NAME}");
 			next;
 		}
