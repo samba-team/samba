@@ -690,7 +690,7 @@ find_parent(hx509_context context,
     }
 
     q.path = path;
-    q.match |= HX509_QUERY_NO_MATCH_PATH | HX509_QUERY_KU_KEYCERTSIGN;
+    q.match |= HX509_QUERY_NO_MATCH_PATH;
 
     if (pool) {
 	ret = hx509_certs_find(context, pool, &q, &c);
@@ -700,6 +700,11 @@ find_parent(hx509_context context,
 	}
     }
 
+    /* 
+     * Assume trust anchors isn't proxy certificates, require
+     * KeyUsage.KeyCertSign
+     */
+    q.match |= HX509_QUERY_KU_KEYCERTSIGN;
     ret = hx509_certs_find(context, trust_anchors, &q, &c);
     if (ret == 0) {
 	free_AuthorityKeyIdentifier(&ai);
@@ -1193,7 +1198,7 @@ free_name_constraints(hx509_name_constraints *nc)
 }
 
 static int
-proxy_cert_p(const Certificate *cert, ProxyCertInfo *info)
+is_proxy_cert(const Certificate *cert, ProxyCertInfo *info)
 {
     const Extension *e;
     size_t size;
@@ -1203,7 +1208,7 @@ proxy_cert_p(const Certificate *cert, ProxyCertInfo *info)
 
     e = find_extension(cert, oid_id_pe_proxyCertInfo(), &i);
     if (e == NULL)
-	return 0;
+	return HX509_EXTENSION_NOT_FOUND;
 
     ret = decode_ProxyCertInfo(e->extnValue.data, 
 			       e->extnValue.length, info,
@@ -1212,7 +1217,7 @@ proxy_cert_p(const Certificate *cert, ProxyCertInfo *info)
 	return ret;
     if (size != e->extnValue.length) {
 	free_ProxyCertInfo(info);
-	return HX509_EXTRA_DATA_AFTER_STRUCTURE;
+	return HX509_EXTRA_DATA_AFTER_STRUCTURE; 
     }
 
     return 0;
@@ -1290,17 +1295,16 @@ hx509_verify_path(hx509_context context,
 	case PROXY_CERT: {
 	    ProxyCertInfo info;	    
 
-	    if (proxy_cert_p(c, &info)) {
+	    if (is_proxy_cert(c, &info) == 0) {
 		int j;
 
 		if (info.pCPathLenConstraint != NULL &&
-		    *info.pCPathLenConstraint > i)
+		    *info.pCPathLenConstraint < i + 1)
 		{
 		    free_ProxyCertInfo(&info);
 		    ret = HX509_PATH_TOO_LONG;
 		    goto out;
 		}
-
 		
 		j = 0;
 		if (find_extension(c, oid_id_x509_ce_subjectAltName(), &j)) {
