@@ -151,5 +151,25 @@ echo "crl revoked cert"
     anchor:FILE:$srcdir/data/ca.crt \
     crl:FILE:$srcdir/data/crl1.der > /dev/null && exit 1
 
+echo "proxy cert"
+./hxtool verify --missing-revoke \
+    --allow-proxy-certificate \
+    cert:FILE:$srcdir/data/proxy-test.crt \
+    chain:FILE:$srcdir/data/test.crt \
+    anchor:FILE:$srcdir/data/ca.crt > /dev/null || exit 1
+
+echo "proxy cert (negative)"
+./hxtool verify --missing-revoke \
+    cert:FILE:$srcdir/data/proxy-test.crt \
+    chain:FILE:$srcdir/data/test.crt \
+    anchor:FILE:$srcdir/data/ca.crt > /dev/null && exit 1
+
+echo "not a proxy cert"
+./hxtool verify --missing-revoke \
+    --allow-proxy-certificate \
+    cert:FILE:$srcdir/data/no-proxy-test.crt \
+    chain:FILE:$srcdir/data/test.crt \
+    anchor:FILE:$srcdir/data/ca.crt > /dev/null && exit 1
+
 
 exit 0
