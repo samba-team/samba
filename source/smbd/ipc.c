@@ -433,8 +433,8 @@ int reply_trans(connection_struct *conn, char *inbuf,char *outbuf,
 
 	START_PROFILE(SMBtrans);
 
-	if (!NT_STATUS_IS_OK(allow_new_trans(conn->pending_trans,
-					     SVAL(inbuf, smb_mid)))) {
+	result = allow_new_trans(conn->pending_trans, SVAL(inbuf, smb_mid));
+	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(2, ("Got invalid trans request: %s\n",
 			  nt_errstr(result)));
 		END_PROFILE(SMBtrans);
