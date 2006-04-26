@@ -1291,6 +1291,7 @@ hx509_verify_path(hx509_context context,
 	    ProxyCertInfo info;	    
 
 	    if (proxy_cert_p(c, &info)) {
+		int j;
 
 		if (info.pCPathLenConstraint != NULL &&
 		    *info.pCPathLenConstraint > i)
@@ -1299,6 +1300,24 @@ hx509_verify_path(hx509_context context,
 		    ret = HX509_PATH_TOO_LONG;
 		    goto out;
 		}
+
+		
+		j = 0;
+		if (find_extension(c, oid_id_x509_ce_subjectAltName(), &j)) {
+		    free_ProxyCertInfo(&info);
+		    ret = HX509_PROXY_CERT_INVALID;
+		    goto out;
+		}
+
+		j = 0;
+		if (find_extension(c, oid_id_x509_ce_issuerAltName(), &j)) {
+		    free_ProxyCertInfo(&info);
+		    ret = HX509_PROXY_CERT_INVALID;
+		    goto out;
+		}
+			
+		/* XXX verify issuer name */
+
 		free_ProxyCertInfo(&info);
 		break;
 	    }
