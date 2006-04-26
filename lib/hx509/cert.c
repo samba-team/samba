@@ -1236,6 +1236,9 @@ hx509_verify_path(hx509_context context,
 #endif
     int ret, i, proxy_cert_depth;
     enum certtype type;
+    Name proxy_issuer;
+
+    memset(&proxy_issuer, 0, sizeof(proxy_issuer));
 
     ret = init_name_constraints(&nc);
     if (ret)	
@@ -1296,6 +1299,7 @@ hx509_verify_path(hx509_context context,
 	    ProxyCertInfo info;	    
 
 	    if (is_proxy_cert(c, &info) == 0) {
+		Name name;
 		int j;
 
 		if (info.pCPathLenConstraint != NULL &&
@@ -1320,10 +1324,44 @@ hx509_verify_path(hx509_context context,
 		    goto out;
 		}
 			
-		/* XXX verify subject name is CN=XXX,<proxy issuer> */
+		/* 
+		 * XXX need to mangle name to remove the CN of the
+		 * subject, copying issuer only works for one level
+		 * but is better then doing no checking at all.
+		 *
+		 * The subject name of the proxy certificate should be
+		 * CN=XXX,<proxy issuer>
+		 */
+
+		ret = copy_Name(&c->tbsCertificate.issuer, &name);
+		if (ret) {
+		    free_ProxyCertInfo(&info);
+		    goto out;
+		}
+
+		if (proxy_cert_depth) {
+		    ret = _hx509_name_cmp(&proxy_issuer, &name);
+		    free_Name(&name);
+		    if (ret) {
+			free_ProxyCertInfo(&info);
+			ret = HX509_PROXY_CERT_NAME_WRONG;
+			goto out;
+		    }
+		} else {
+		    proxy_issuer = name;
+		}
 
 		free_ProxyCertInfo(&info);
 		break;
+	    } else {
+		if (proxy_cert_depth) {
+		    ret = _hx509_name_cmp(&proxy_issuer,
+					  &c->tbsCertificate.subject);
+		    if (ret) {
+			ret = HX509_PROXY_CERT_NAME_WRONG;
+			goto out;
+		    }
+		}
 	    }
 	    type = EE_CERT;
 	    /* FALLTHOUGH */
@@ -1468,6 +1506,7 @@ hx509_verify_path(hx509_context context,
     }
 
 out:
+    free_Name(&proxy_issuer);
     free_name_constraints(&nc);
     _hx509_path_free(&path);
 
