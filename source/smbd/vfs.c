@@ -27,6 +27,8 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_VFS
 
+static_decl_vfs;
+
 struct vfs_init_function_entry {
 	char *name;
  	vfs_op_tuple *vfs_op_tuples;

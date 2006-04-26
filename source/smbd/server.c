@@ -22,6 +22,8 @@
 
 #include "includes.h"
 
+static_decl_rpc;
+
 static int am_parent = 1;
 
 /* the last message the was processed */
