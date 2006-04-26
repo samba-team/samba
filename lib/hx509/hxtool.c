@@ -37,7 +37,7 @@ RCSID("$Id$");
 #include <hxtool-commands.h>
 #include <sl.h>
 
-hx509_context context;
+static hx509_context context;
 
 static int version_flag;
 static int help_flag;
@@ -573,6 +573,9 @@ pcert_verify(struct verify_options *opt, int argc, char **argv)
     ret = hx509_certs_init(context, "MEMORY:anchors", 0, NULL, &anchors);
     ret = hx509_certs_init(context, "MEMORY:chain", 0, NULL, &chain);
     ret = hx509_certs_init(context, "MEMORY:certs", 0, NULL, &certs);
+
+    if (opt->allow_proxy_certificate_flag)
+	hx509_verify_set_proxy_certificate(ctx, 1);
 
     ret = hx509_revoke_init(context, &revoke);
     if (ret)
