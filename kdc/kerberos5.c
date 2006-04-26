@@ -1186,10 +1186,8 @@ _kdc_as_rep(krb5_context context,
 		    server, server_name, 
 		    &ckey, &cetype, &skey, &setype,
 		    b->etype.val, b->etype.len);
-    if(ret) {
-	kdc_log(context, config, 0, "Server/client has no support for etypes");
+    if(ret)
 	goto out;
-    }
 	
     {
 	struct rk_strpool *p = NULL;
@@ -1764,10 +1762,8 @@ tgs_make_reply(krb5_context context,
 			NULL, NULL, server, server_name,
 			NULL, NULL, &skey, &etype, 
 			b->etype.val, b->etype.len);
-	if(ret) {
-	    kdc_log(context, config, 0, "Server has no support for etypes");
+	if(ret)
 	    return ret;
-	}
 	ekey = &skey->key;
     }
     
