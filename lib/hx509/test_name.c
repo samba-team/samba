@@ -57,6 +57,17 @@ test_name(const char *name)
     return 0;
 }
 
+static int
+test_name_fail(const char *name)
+{
+    hx509_name n;
+
+    if (hx509_parse_name(name, &n) == HX509_NAME_MALFORMATED)
+	return 0;
+    hx509_name_free(&n);
+    return 1;
+}
+
 int
 main(int argc, char **argv)
 {
@@ -64,6 +75,9 @@ main(int argc, char **argv)
 
     ret += test_name("CN=foo,C=SE");
     ret += test_name("CN=foo,CN=kaka,CN=FOO,DC=ad1,C=SE");
+    ret += test_name_fail("=");
+    ret += test_name_fail("CN=foo,=foo");
+    ret += test_name_fail("CN=foo,really-unknown-type=foo");
 
     return ret;
 }
