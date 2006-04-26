@@ -349,25 +349,33 @@ hx509_parse_name(const char *str, hx509_name *name)
 	}
 
 	q = strchr(p, '=');
-	if (q == NULL)
-	    _hx509_abort("missing = in %s", p);
-	if (q == p)
-	    _hx509_abort("missing name before = in %s", p);
+	if (q == NULL) {
+	    /* _hx509_abort("missing = in %s", p); */
+	    goto out;
+	}
+	if (q == p) {
+	    /* _hx509_abort("missing name before = in %s", p); */
+	    goto out;
+	}
 	
-	if ((q - p) > len)
-	    _hx509_abort(" = after , in %s", p);
+	if ((q - p) > len) {
+	    /* _hx509_abort(" = after , in %s", p); */
+	    goto out;
+	}
 
 	oid = stringtooid(p, q - p);
 	if (oid == NULL) {
-	    _hx509_abort("unknown type: %.*s", (int)(q - p), p);
-	    exit(1);
+	    /* _hx509_abort("unknown type: %.*s", (int)(q - p), p); */
+	    goto out;
 	}
 	
 	ptr = realloc(n->der_name.u.rdnSequence.val, 
 		      sizeof(n->der_name.u.rdnSequence.val[0]) *
 		      (n->der_name.u.rdnSequence.len + 1));
-	if (ptr == NULL)
-	    _hx509_abort("realloc");
+	if (ptr == NULL) {
+	    /* _hx509_abort("realloc"); */
+	    goto out;
+	}
 	n->der_name.u.rdnSequence.val = ptr;
 
 	memmove(&n->der_name.u.rdnSequence.val[1],
@@ -378,27 +386,27 @@ hx509_parse_name(const char *str, hx509_name *name)
 	rdn = &n->der_name.u.rdnSequence.val[0];
 
 	rdn->val = malloc(sizeof(rdn->val[0]));
-	if (rdn->val == NULL)
-	    _hx509_abort("foo");
+	if (rdn->val == NULL) {
+	    /* _hx509_abort("malloc"); */
+	    goto out;
+	}
 	rdn->len = 1;
 
 
-	if (copy_oid(oid, &rdn->val[0].type) != 0)
-	    _hx509_abort("copy_oid");
+	if (copy_oid(oid, &rdn->val[0].type) != 0) {
+	    /* _hx509_abort("copy_oid"); */
+	    goto out;
+	}
 
 	{
 	    size_t strlen = len - (q - p) - 1;
 	    const char *str = p + (q - p) + 1;
-#if 0
-	    printf("%s == %.*s\n", 
-		   oidtostring(oid), 
-		   (int)strlen,
-		   str);
-#endif
 	    
 	    r = malloc(strlen + 1);
-	    if (r == NULL)
-		_hx509_abort("malloc");
+	    if (r == NULL) {
+		/* _hx509_abort("malloc"); */
+		goto out;
+	    }
 	    memcpy(r, str, strlen);
 	    r[strlen] = '\0';
 	    
@@ -413,6 +421,9 @@ hx509_parse_name(const char *str, hx509_name *name)
     *name = n;
 
     return 0;
+out:
+    hx509_name_free(&n);
+    return HX509_NAME_MALFORMATED;
 }
 
 int
