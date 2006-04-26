@@ -1,5 +1,15 @@
 2006-04-26  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* hx509_err.et: Add name malformated error
+
+	* name.c (hx509_parse_name): don't abort on error, rather return
+	error
+
+	* test_name.c: Test failure parsing name.
+
+	* cert.c: When verifying certificates, store subject basename for
+	later consumption.
+
 	* test_name.c: test to parse and print name and check that they
 	are the same.
 
