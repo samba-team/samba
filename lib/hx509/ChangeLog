@@ -1,3 +1,33 @@
+2006-04-26  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* cert.c (hx509_verify_path): Need to mangle name to remove the CN
+	of the subject, copying issuer only works for one level but is
+	better then doing no checking at all.
+
+	* hxtool.c: Add verify --allow-proxy-certificate.
+
+	* hxtool-commands.in: add verify --allow-proxy-certificate
+
+	* hx509_err.et: Add proxy certificate errors.
+
+	* cert.c: Fix comment about subject name of proxy certificate.
+
+	* test_chain.in: tests for proxy certs
+
+	* data/gen-req.sh: gen proxy and non-proxy tests certificates
+
+	* data/openssl.cnf: Add definition for proxy certs
+
+	* data/*proxy-test.*: Add proxy certificates
+
+	* cert.c (hx509_verify_path): verify proxy certificate have no san
+	or ian
+
+	* cert.c (hx509_verify_set_proxy_certificate): Add
+	(*): rename policy cert to proxy cert
+
+	* cert.c: Initial support for proxy certificates.
+	
 2006-04-24  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* hxtool.c: some error checking
