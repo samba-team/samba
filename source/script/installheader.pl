@@ -90,7 +90,7 @@ foreach my $p (@ARGV)
 	my $dirname = dirname($p2);
 
 	if (! -d "$includedir/$dirname") {
-		mkdir("$includedir/$dirname");
+		mkdir("$includedir/$dirname", 0777);
 	}
 
 	if ( -f "$includedir/$p2" ) {
