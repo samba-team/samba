@@ -5,7 +5,7 @@ my %vars = ();
 
 foreach(@ARGV) {
 	push (@{$vars{IDL_FILES}}, $_);
-	my $b = $_; $b =~ s/.*\/(.*?).idl$/\1/;
+	my $b = $_; $b =~ s/.*\/(.*?).idl$/$1/;
 	push (@{$vars{IDL_HEADER_FILES}}, "librpc/gen_ndr/$b.h");
 	push (@{$vars{IDL_NDR_HEADER_FILES}}, "librpc/gen_ndr/ndr_$b.h");
 	push (@{$vars{IDL_NDR_PARSE_FILES}}, "librpc/gen_ndr/ndr_$b.c");

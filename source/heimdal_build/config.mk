@@ -456,7 +456,7 @@ include perl_path_wrapper.sh et_deps.pl heimdal/lib/krb5/krb5_err.et|
 heimdal/lib/roken/vis.h: heimdal/lib/roken/vis.hin
 heimdal/lib/roken/err.h: heimdal/lib/roken/err.hin
 
-include hcrypto-deps.pl heimdal/lib/des/*.h|
+include perl_path_wrapper.sh hcrypto-deps.pl heimdal/lib/des/*.h|
 
 heimdal/lib/des/hcrypto: 
 	rm -f $@; ln -s ./../des $@
