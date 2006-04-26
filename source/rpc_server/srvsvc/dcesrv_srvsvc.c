@@ -24,7 +24,17 @@
 #include "rpc_server/dcerpc_server.h"
 #include "librpc/gen_ndr/ndr_srvsvc.h"
 #include "rpc_server/common/common.h"
+#include "auth/auth.h"
+#include "libcli/security/security.h"
 #include "system/time.h"
+
+#define SRVSVC_CHECK_ADMIN_ACCESS do { \
+	struct security_token *t = dce_call->conn->auth_state.session_info->security_token; \
+	if (!security_token_has_builtin_administrators(t) && \
+	    !security_token_has_sid_string(t, SID_BUILTIN_SERVER_OPERATORS)) { \
+	    	return WERR_ACCESS_DENIED; \
+	} \
+} while (0)
 
 /* 
   srvsvc_NetCharDevEnum 
@@ -547,7 +557,6 @@ static WERROR srvsvc_NetShareEnumAll(struct dcesrv_call_state *dce_call, TALLOC_
 	r->out.resume_handle = NULL;
 
 	/* TODO: - paging of results 
-	 *       - access check
 	 */
 
 	switch (r->in.level) {
@@ -624,6 +633,8 @@ static WERROR srvsvc_NetShareEnumAll(struct dcesrv_call_state *dce_call, TALLOC_
 		int i;
 		struct srvsvc_NetShareCtr2 *ctr2;
 
+		SRVSVC_CHECK_ADMIN_ACCESS;
+
 		ctr2 = talloc(mem_ctx, struct srvsvc_NetShareCtr2);
 		W_ERROR_HAVE_NO_MEMORY(ctr2);
 
@@ -658,6 +669,8 @@ static WERROR srvsvc_NetShareEnumAll(struct dcesrv_call_state *dce_call, TALLOC_
 		int i;
 		struct srvsvc_NetShareCtr501 *ctr501;
 
+		SRVSVC_CHECK_ADMIN_ACCESS;
+
 		ctr501 = talloc(mem_ctx, struct srvsvc_NetShareCtr501);
 		W_ERROR_HAVE_NO_MEMORY(ctr501);
 
@@ -691,6 +704,8 @@ static WERROR srvsvc_NetShareEnumAll(struct dcesrv_call_state *dce_call, TALLOC_
 	{
 		int i;
 		struct srvsvc_NetShareCtr502 *ctr502;
+
+		SRVSVC_CHECK_ADMIN_ACCESS;
 
 		ctr502 = talloc(mem_ctx, struct srvsvc_NetShareCtr502);
 		W_ERROR_HAVE_NO_MEMORY(ctr502);
@@ -789,6 +804,8 @@ static WERROR srvsvc_NetShareGetInfo(struct dcesrv_call_state *dce_call, TALLOC_
 		WERROR status;
 		union srvsvc_NetShareInfo info;
 
+		SRVSVC_CHECK_ADMIN_ACCESS;
+
 		info.info2 = talloc(mem_ctx, struct srvsvc_NetShareInfo2);
 		W_ERROR_HAVE_NO_MEMORY(info.info2);
 
@@ -820,6 +837,8 @@ static WERROR srvsvc_NetShareGetInfo(struct dcesrv_call_state *dce_call, TALLOC_
 	{
 		WERROR status;
 		union srvsvc_NetShareInfo info;
+
+		SRVSVC_CHECK_ADMIN_ACCESS;
 
 		info.info502 = talloc(mem_ctx, struct srvsvc_NetShareInfo502);
 		W_ERROR_HAVE_NO_MEMORY(info.info502);
@@ -1171,7 +1190,190 @@ static WERROR srvsvc_NetPRNameCompare(struct dcesrv_call_state *dce_call, TALLOC
 static WERROR srvsvc_NetShareEnum(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct srvsvc_NetShareEnum *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	struct dcesrv_context *dce_ctx = dce_call->conn->dce_ctx;
+
+	r->out.level = r->in.level;
+	ZERO_STRUCT(r->out.ctr);
+	r->out.totalentries = 0;
+	r->out.resume_handle = NULL;
+
+	/* TODO: - paging of results 
+	 */
+
+	switch (r->in.level) {
+	case 0:
+	{
+		int i, y = 0;
+		int count;
+		struct srvsvc_NetShareCtr0 *ctr0;
+
+		ctr0 = talloc(mem_ctx, struct srvsvc_NetShareCtr0);
+		W_ERROR_HAVE_NO_MEMORY(ctr0);
+
+		count = dcesrv_common_get_count_of_shares(mem_ctx, dce_ctx);
+		ctr0->count = count;
+		ctr0->array = NULL;
+
+		if (ctr0->count == 0) {
+			r->out.ctr.ctr0	= ctr0;
+			return WERR_OK;
+		}
+
+		ctr0->array = talloc_array(mem_ctx, struct srvsvc_NetShareInfo0, count);
+		W_ERROR_HAVE_NO_MEMORY(ctr0->array);
+
+		for (i=0; i < count; i++) {
+			WERROR status;
+			union srvsvc_NetShareInfo info;
+			enum srvsvc_ShareType type = dcesrv_common_get_share_type(mem_ctx, dce_ctx, i);
+
+			if (type & STYPE_HIDDEN) {
+				ctr0->count--;
+				continue;
+			}
+
+			info.info0 = &ctr0->array[y];
+			status = srvsvc_fiel_ShareInfo(dce_call, mem_ctx, i, r->in.level, &info);
+			W_ERROR_NOT_OK_RETURN(status);
+			y++;
+		}
+
+		r->out.ctr.ctr0		= ctr0;
+		r->out.totalentries	= r->out.ctr.ctr0->count;
+		return WERR_OK;
+	}
+	case 1:
+	{
+		int i, y = 0;
+		int count;
+		struct srvsvc_NetShareCtr1 *ctr1;
+
+		ctr1 = talloc(mem_ctx, struct srvsvc_NetShareCtr1);
+		W_ERROR_HAVE_NO_MEMORY(ctr1);
+
+		count = dcesrv_common_get_count_of_shares(mem_ctx, dce_ctx);
+		ctr1->count = count;
+		ctr1->array = NULL;
+
+		if (ctr1->count == 0) {
+			r->out.ctr.ctr1	= ctr1;
+			return WERR_OK;
+		}
+
+		ctr1->array = talloc_array(mem_ctx, struct srvsvc_NetShareInfo1, count);
+		W_ERROR_HAVE_NO_MEMORY(ctr1->array);
+
+		for (i=0; i < count; i++) {
+			WERROR status;
+			union srvsvc_NetShareInfo info;
+			enum srvsvc_ShareType type = dcesrv_common_get_share_type(mem_ctx, dce_ctx, i);
+
+			if (type & STYPE_HIDDEN) {
+				ctr1->count--;
+				continue;
+			}
+
+			info.info1 = &ctr1->array[y];
+			status = srvsvc_fiel_ShareInfo(dce_call, mem_ctx, i, r->in.level, &info);
+			W_ERROR_NOT_OK_RETURN(status);
+			y++;
+		}
+
+		r->out.ctr.ctr1		= ctr1;
+		r->out.totalentries	= r->out.ctr.ctr1->count;
+		return WERR_OK;
+	}
+	case 2:
+	{
+		int i, y = 0;
+		int count;
+		struct srvsvc_NetShareCtr2 *ctr2;
+
+		SRVSVC_CHECK_ADMIN_ACCESS;
+
+		ctr2 = talloc(mem_ctx, struct srvsvc_NetShareCtr2);
+		W_ERROR_HAVE_NO_MEMORY(ctr2);
+
+		count = dcesrv_common_get_count_of_shares(mem_ctx, dce_ctx);
+		ctr2->count = count;
+		ctr2->array = NULL;
+
+		if (ctr2->count == 0) {
+			r->out.ctr.ctr2 = ctr2;
+			return WERR_OK;
+		}
+
+		ctr2->array = talloc_array(mem_ctx, struct srvsvc_NetShareInfo2, count);
+		W_ERROR_HAVE_NO_MEMORY(ctr2->array);
+
+		for (i=0; i < count; i++) {
+			WERROR status;
+			union srvsvc_NetShareInfo info;
+			enum srvsvc_ShareType type = dcesrv_common_get_share_type(mem_ctx, dce_ctx, i);
+
+			if (type & STYPE_HIDDEN) {
+				ctr2->count--;
+				continue;
+			}
+
+			info.info2 = &ctr2->array[y];
+			status = srvsvc_fiel_ShareInfo(dce_call, mem_ctx, i, r->in.level, &info);
+			W_ERROR_NOT_OK_RETURN(status);
+			y++;
+		}
+
+		r->out.ctr.ctr2		= ctr2;
+		r->out.totalentries	= r->out.ctr.ctr2->count;
+		return WERR_OK;
+	}
+	case 502:
+	{
+		int i, y = 0;
+		int count;
+		struct srvsvc_NetShareCtr502 *ctr502;
+
+		SRVSVC_CHECK_ADMIN_ACCESS;
+
+		ctr502 = talloc(mem_ctx, struct srvsvc_NetShareCtr502);
+		W_ERROR_HAVE_NO_MEMORY(ctr502);
+
+		count = dcesrv_common_get_count_of_shares(mem_ctx, dce_ctx);
+		ctr502->count = count;
+		ctr502->array = NULL;
+
+		if (ctr502->count == 0) {
+			r->out.ctr.ctr502 = ctr502;
+			return WERR_OK;
+		}
+
+		ctr502->array = talloc_array(mem_ctx, struct srvsvc_NetShareInfo502, count);
+		W_ERROR_HAVE_NO_MEMORY(ctr502->array);
+
+		for (i=0; i < count; i++) {
+			WERROR status;
+			union srvsvc_NetShareInfo info;
+			enum srvsvc_ShareType type = dcesrv_common_get_share_type(mem_ctx, dce_ctx, i);
+
+			if (type & STYPE_HIDDEN) {
+				ctr502->count--;
+				continue;
+			}
+
+			info.info502 = &ctr502->array[y];
+			status = srvsvc_fiel_ShareInfo(dce_call, mem_ctx, i, r->in.level, &info);
+			W_ERROR_NOT_OK_RETURN(status);
+			y++;
+		}
+
+		r->out.ctr.ctr502	= ctr502;
+		r->out.totalentries	= r->out.ctr.ctr502->count;
+		return WERR_OK;
+	}
+	default:
+		return WERR_UNKNOWN_LEVEL;
+	}
+
+	return WERR_UNKNOWN_LEVEL;
 }
 
 
