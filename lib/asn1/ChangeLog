@@ -1,3 +1,11 @@
+2006-04-26  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* Makefile.am: Add definitions from RFC 3820, Proxy Certificate
+	Profile.
+
+	* rfc2459.asn1: Add definitions from RFC 3820, Proxy Certificate
+	Profile.
+	
 2006-04-24  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* rfc2459.asn1: Add id-Userid
