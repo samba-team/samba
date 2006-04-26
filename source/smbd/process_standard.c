@@ -39,8 +39,9 @@
 #include <setproctitle.h>
 #endif
 #else
-static int setproctitle(const char *fmt, ...) PRINTF_ATTRIBUTE(1, 2);
-static int setproctitle(const char *fmt, ...)
+#define setproctitle none_setproctitle
+static int none_setproctitle(const char *fmt, ...) PRINTF_ATTRIBUTE(1, 2);
+static int none_setproctitle(const char *fmt, ...)
 {
 	return 0;
 }
