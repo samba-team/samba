@@ -13,7 +13,8 @@ sub generate($)
 	my $res = "digraph samba4 {\n";
 
 	foreach my $part (values %{$depend}) {
-		foreach my $elem (@{$part->{REQUIRED_SUBSYSTEMS}}) {
+		foreach my $elem (@{$part->{PUBLIC_DEPENDENCIES}},
+				  @{$part->{PRIVATE_DEPENDENCIES}}) {
 			$res .= "\t\"$part->{NAME}\" -> \"$elem\";\n";
 		}
 	}
