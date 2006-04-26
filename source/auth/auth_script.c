@@ -145,9 +145,10 @@ NTSTATUS auth_script_init(void)
 {
 	return smb_register_auth(AUTH_INTERFACE_VERSION, "script", auth_init_script);
 }
-
+#if 0
 /* Define this to build shared. */
 NTSTATUS init_module(void)
 {
 	return smb_register_auth(AUTH_INTERFACE_VERSION, "script", auth_init_script);
 }
+#endif
