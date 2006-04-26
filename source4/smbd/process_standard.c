@@ -39,7 +39,11 @@
 #include <setproctitle.h>
 #endif
 #else
-#define setproctitle(x)
+static int setproctitle(const char *fmt, ...) PRINTF_ATTRIBUTE(1, 2);
+static int setproctitle(const char *fmt, ...)
+{
+	return 0;
+}
 #endif
 
 /*
@@ -120,8 +124,8 @@ static void standard_accept_connection(struct event_context *ev,
 	c = socket_get_peer_addr(sock2, ev2);
 	s = socket_get_my_addr(sock2, ev2);
 	if (s && c) {
-		setproctitle(("conn c[%s:%u] s[%s:%u] server_id[%d]",
-			      c->addr, c->port, s->addr, s->port, pid));
+		setproctitle("conn c[%s:%u] s[%s:%u] server_id[%d]",
+			     c->addr, c->port, s->addr, s->port, pid);
 	}
 	talloc_free(c);
 	talloc_free(s);
@@ -177,7 +181,7 @@ static void standard_new_task(struct event_context *ev,
 	/* Ensure that the forked children do not expose identical random streams */
 	set_need_random_reseed();
 
-	setproctitle(("task server_id[%d]", pid));
+	setproctitle("task server_id[%d]", pid);
 
 	/* setup this new connection */
 	new_task(ev2, pid, private);
@@ -214,9 +218,9 @@ static void standard_terminate(struct event_context *ev, const char *reason)
 static void standard_set_title(struct event_context *ev, const char *title) 
 {
 	if (title) {
-		setproctitle(("%s", title));
+		setproctitle("%s", title);
 	} else {
-		setproctitle((NULL));
+		setproctitle(NULL);
 	}
 }
 
