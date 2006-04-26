@@ -1376,20 +1376,6 @@ hx509_verify_path(hx509_context context,
 		    ret = _hx509_name_cmp(&proxy_issuer,
 					  &c->tbsCertificate.subject);
 		    if (ret) {
-			char *str;
-			ret = hx509_name_to_string(&proxy_issuer, &str);
-			if (ret)
-			    abort();
-			printf("name: %s\n", str);
-			free(str);
-
-			ret = hx509_name_to_string(&c->tbsCertificate.subject, &str);
-			if (ret)
-			    abort();
-			printf("subject: %s\n", str);
-			free(str);
-
-			printf("name wrong3\n");
 			ret = HX509_PROXY_CERT_NAME_WRONG;
 			goto out;
 		    }
