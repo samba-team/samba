@@ -1,5 +1,25 @@
-2006-04-25  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-04-26  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* doc/setup.texi: document pki-allow-proxy-certificate
+
+	* kdc/pkinit.c: Add option [kdc]pki-allow-proxy-certificate=bool
+	to allow using proxy certificate.
+
+	* lib/krb5/pkinit.c (_krb5_pk_allow_proxy_certificates): expose
+	hx509_verify_set_proxy_certificate
+
+	* kdc/pkinit.c (_kdc_pk_check_client): Use
+	hx509_cert_get_base_subject to get subject name of the
+	certificate, needed for proxy certificates.
+
+	* kdc/kerberos5.c: Now that find_keys speaks for it self, remove
+	extra logging.
+
+	* kdc/kerberos5.c (find_keys): add client_name and server_name
+	argument and use them, and adapt callers.
+	
+2006-04-25  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* kuser/kinit.1: document option password-file
 
 	* kuser/kinit.c: Add option password-file, read password from the
