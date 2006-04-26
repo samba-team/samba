@@ -477,7 +477,7 @@ if test x"$with_krb5_support" != x"no"; then
 	if test x"$ac_cv_lib_ext_krb5_krb5_mk_req_extended" = x"yes"; then
 		AC_DEFINE(HAVE_KRB5,1,[Whether to have KRB5 support])
 		AC_MSG_CHECKING(whether KRB5 support is used)
-		SMB_EXT_LIB_ENABLE(KRB5,YES)
+		SMB_ENABLE(KRB5,YES)
 		AC_MSG_RESULT(yes)
 		echo "KRB5_CFLAGS:   ${KRB5_CFLAGS}"
 		echo "KRB5_CPPFLAGS: ${KRB5_CPPFLAGS}"
@@ -510,7 +510,7 @@ if test x"$with_krb5_support" != x"no"; then
 	if test x"$ac_cv_header_kdc_h" = x"yes"; then
 		if test x"$ac_cv_lib_ext_kdc_krb5_kdc_default_config" = x"yes"; then
 	   		if test x"$ac_cv_lib_ext_hdb_hdb_generate_key_set_password" = x"yes"; then
-				SMB_EXT_LIB_ENABLE(KDC,YES)
+				SMB_ENABLE(KDC,YES)
 				AC_MSG_RESULT(yes)
 				echo "KDC_LIBS:     ${KDC_LIBS}"
 			else

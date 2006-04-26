@@ -9,7 +9,7 @@ OBJ_FILES = common/gtk-smb.o \
 		common/select.o \
 		common/gtk_events.o \
 		common/credentials.o
-PRIVATE_DEPENDENCIES = CHARSET LIBSAMBA-UTIL EXT_LIB_gtk RPC_NDR_SAMR
+PRIVATE_DEPENDENCIES = CHARSET LIBSAMBA-UTIL gtk RPC_NDR_SAMR
 
 [BINARY::gregedit]
 INSTALLDIR = BINDIR

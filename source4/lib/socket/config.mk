@@ -6,7 +6,7 @@ SUBSYSTEM = SOCKET
 OUTPUT_TYPE = MERGEDOBJ
 OBJ_FILES = \
 		socket_ipv4.o
-PUBLIC_DEPENDENCIES = EXT_LIB_SOCKET
+PUBLIC_DEPENDENCIES = EXT_SOCKET
 # End MODULE socket_ipv4
 ################################################
 
@@ -17,7 +17,7 @@ SUBSYSTEM = SOCKET
 OUTPUT_TYPE = MERGEDOBJ
 OBJ_FILES = \
 		socket_ipv6.o
-PUBLIC_DEPENDENCIES = EXT_LIB_SOCKET
+PUBLIC_DEPENDENCIES = EXT_SOCKET
 # End MODULE socket_ipv6
 ################################################
 
@@ -28,7 +28,7 @@ SUBSYSTEM = SOCKET
 OUTPUT_TYPE = MERGEDOBJ
 OBJ_FILES = \
 		socket_unix.o
-PUBLIC_DEPENDENCIES = EXT_LIB_SOCKET
+PUBLIC_DEPENDENCIES = EXT_SOCKET
 # End MODULE socket_unix
 ################################################
 

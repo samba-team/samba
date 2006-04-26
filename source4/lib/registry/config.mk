@@ -70,7 +70,7 @@ INIT_FUNCTION = registry_gconf_init
 SUBSYSTEM = registry
 OBJ_FILES = \
 		reg_backend_gconf.o
-PUBLIC_DEPENDENCIES = EXT_LIB_gconf
+PUBLIC_DEPENDENCIES = gconf
 # End MODULE registry_gconf
 ################################################
 

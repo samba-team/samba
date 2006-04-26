@@ -7,6 +7,6 @@ AC_ARG_ENABLE(reg-gconf,
 [   --enable-reg-gconf     Enable support for GConf registry backend],
 [
 	if test t$enable = tyes; then
-		SMB_ENABLE(registry_gconf, $SMB_EXT_LIB_ENABLE_gconf)
+		SMB_ENABLE(registry_gconf, $SMB_ENABLE_gconf)
 	fi
 ])
