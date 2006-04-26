@@ -212,7 +212,11 @@ typedef int bool;
 #endif
 
 #ifndef HAVE_FUNCTION_MACRO
+#ifdef HAVE_func_MACRO
+#define __FUNCTION__ __func__
+#else
 #define __FUNCTION__ ("")
+#endif
 #endif
 
 #ifdef HAVE_SYS_PARAM_H
