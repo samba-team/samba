@@ -335,6 +335,7 @@ hx509_parse_name(const char *str, hx509_name *name)
     p = str;
 
     while (p != NULL && *p != '\0') {
+	RelativeDistinguishedName *rdn;
 	const heim_oid *oid;
 	int last;
 
@@ -374,8 +375,7 @@ hx509_parse_name(const char *str, hx509_name *name)
 		n->der_name.u.rdnSequence.len * 
 		sizeof(n->der_name.u.rdnSequence.val[0]));
 	
-	RelativeDistinguishedName *rdn = 
-	    &n->der_name.u.rdnSequence.val[0];
+	rdn = &n->der_name.u.rdnSequence.val[0];
 
 	rdn->val = malloc(sizeof(rdn->val[0]));
 	if (rdn->val == NULL)
