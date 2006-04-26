@@ -14,7 +14,7 @@ PUBLIC_DEPENDENCIES = \
 #######################
 # Start SUBSYSTEM KDC
 [SUBSYSTEM::HDB_LDB]
-EXTRA_CFLAGS = -Iheimdal/kdc
+CFLAGS = -Iheimdal/kdc
 OBJ_FILES = \
 		hdb-ldb.o \
 		pac-glue.o 

@@ -1,7 +1,7 @@
 #######################
 # Start SUBSYSTEM HEIMDAL_KDC
 [SUBSYSTEM::HEIMDAL_KDC]
-EXTRA_CFLAGS = -Iheimdal_build -Iheimdal/kdc
+CFLAGS = -Iheimdal_build -Iheimdal/kdc
 OBJ_FILES = \
 	../heimdal/kdc/default_config.o \
 	../heimdal/kdc/kerberos5.o \
@@ -19,7 +19,7 @@ PRIVATE_DEPENDENCIES = HEIMDAL_ROKEN HEIMDAL_KRB5 HEIMDAL_HDB
 #######################
 # Start SUBSYSTEM HEIMDAL_HDB
 [SUBSYSTEM::HEIMDAL_HDB]
-EXTRA_CFLAGS = -Iheimdal_build -Iheimdal/lib/hdb
+CFLAGS = -Iheimdal_build -Iheimdal/lib/hdb
 OBJ_FILES = \
 	../heimdal/lib/hdb/db.o \
 	../heimdal/lib/hdb/hdb.o \
@@ -50,7 +50,7 @@ PUBLIC_DEPENDENCIES = HDB_LDB
 #######################
 # Start SUBSYSTEM HEIMDAL_GSSAPI
 [SUBSYSTEM::HEIMDAL_GSSAPI]
-EXTRA_CFLAGS = -Iheimdal_build -Iheimdal/lib/gssapi
+CFLAGS = -Iheimdal_build -Iheimdal/lib/gssapi
 OBJ_FILES = \
 	../heimdal/lib/gssapi/init_sec_context.o \
 	../heimdal/lib/gssapi/inquire_cred.o \
@@ -98,7 +98,7 @@ PUBLIC_DEPENDENCIES = KERBEROS HEIMDAL_KRB5
 #######################
 # Start SUBSYSTEM HEIMDAL_KRB5
 [SUBSYSTEM::HEIMDAL_KRB5]
-EXTRA_CFLAGS = -Iheimdal_build -Iheimdal/lib/krb5 
+CFLAGS = -Iheimdal_build -Iheimdal/lib/krb5 
 PRIVATE_DEPENDENCIES = HEIMDAL_ROKEN HEIMDAL_DES HEIMDAL_ASN1
 OBJ_FILES = \
 	../heimdal/lib/krb5/acache.o \
@@ -188,7 +188,7 @@ OBJ_FILES = \
 #######################
 # Start SUBSYSTEM HEIMDAL_ASN1
 [SUBSYSTEM::HEIMDAL_ASN1]
-EXTRA_CFLAGS = -Iheimdal_build -Iheimdal/lib/asn1
+CFLAGS = -Iheimdal_build -Iheimdal/lib/asn1
 OBJ_FILES = \
 	../heimdal/lib/asn1/der_get.o \
 	../heimdal/lib/asn1/der_put.o \
@@ -265,7 +265,7 @@ PRIVATE_DEPENDENCIES = HEIMDAL_ROKEN HEIMDAL_COM_ERR
 #######################
 # Start SUBSYSTEM HEIMDAL_DES
 [SUBSYSTEM::HEIMDAL_DES]
-EXTRA_CFLAGS = -Iheimdal_build -Iheimdal/lib/des 
+CFLAGS = -Iheimdal_build -Iheimdal/lib/des 
 PRIVATE_DEPENDENCIES = HEIMDAL_ROKEN
 OBJ_FILES = \
 	../heimdal/lib/des/aes.o \
@@ -294,21 +294,21 @@ OBJ_FILES = ../heimdal/lib/roken/gai_strerror.o
 #######################
 # Start SUBSYSTEM HEIMDAL_ROKEN_GAI_STRERROR
 [SUBSYSTEM::HEIMDAL_ROKEN_INET_ATON]
-EXTRA_CFLAGS = -Iheimdal_build -Iheimdal/lib/roken
+CFLAGS = -Iheimdal_build -Iheimdal/lib/roken
 OBJ_FILES = ../heimdal/lib/roken/inet_aton.o
 
 [SUBSYSTEM::HEIMDAL_ROKEN_GETPROGNAME]
-EXTRA_CFLAGS = -Iheimdal_build -Iheimdal/lib/roken
+CFLAGS = -Iheimdal_build -Iheimdal/lib/roken
 OBJ_FILES = ../heimdal/lib/roken/getprogname.o
 
 [SUBSYSTEM::HEIMDAL_ROKEN_GETPROGNAME_HOST]
-EXTRA_CFLAGS = -Iheimdal_build -Iheimdal/lib/roken
+CFLAGS = -Iheimdal_build -Iheimdal/lib/roken
 OBJ_FILES = ../heimdal/lib/roken/getprogname.ho
 
 #######################
 # Start SUBSYSTEM HEIMDAL_ROKEN_ADDRINFO
 [SUBSYSTEM::HEIMDAL_ROKEN_ADDRINFO]
-EXTRA_CFLAGS = -Iheimdal_build -Iheimdal/lib/roken
+CFLAGS = -Iheimdal_build -Iheimdal/lib/roken
 OBJ_FILES = \
 	../heimdal/lib/roken/getaddrinfo.o \
 	../heimdal/lib/roken/freeaddrinfo.o \
@@ -322,7 +322,7 @@ PRIVATE_DEPENDENCIES = EXT_LIB_SOCKET
 #######################
 # Start SUBSYSTEM HEIMDAL_ROKEN
 [SUBSYSTEM::HEIMDAL_ROKEN]
-EXTRA_CFLAGS =  -Iheimdal_build -Iheimdal/lib/roken
+CFLAGS =  -Iheimdal_build -Iheimdal/lib/roken
 OBJ_FILES = \
 	../heimdal/lib/roken/base64.o \
 	../heimdal/lib/roken/hex.o \
@@ -357,7 +357,7 @@ PUBLIC_DEPENDENCIES = \
 #######################
 # Start SUBSYSTEM HEIMDAL_GLUE
 [SUBSYSTEM::HEIMDAL_GLUE]
-EXTRA_CFLAGS = -Iheimdal_build -Iheimdal/lib/krb5 -Iheimdal/lib/asn1 -Iheimdal/lib/com_err
+CFLAGS = -Iheimdal_build -Iheimdal/lib/krb5 -Iheimdal/lib/asn1 -Iheimdal/lib/com_err
 OBJ_FILES = glue.o
 PUBLIC_DEPENDENCIES = LIBNETIF
 # End SUBSYSTEM HEIMDAL_GLUE
@@ -366,7 +366,7 @@ PUBLIC_DEPENDENCIES = LIBNETIF
 #######################
 # Start SUBSYSTEM HEIMDAL_COM_ERR
 [SUBSYSTEM::HEIMDAL_COM_ERR]
-EXTRA_CFLAGS = -Iheimdal_build -Iheimdal/lib/com_err
+CFLAGS = -Iheimdal_build -Iheimdal/lib/com_err
 OBJ_FILES = \
 	../heimdal/lib/com_err/com_err.o \
 	../heimdal/lib/com_err/error.o
@@ -377,7 +377,7 @@ PRIVATE_DEPENDENCIES = HEIMDAL_ROKEN
 #######################
 # Start SUBSYSTEM HEIMDAL_ASN1_COMPILE_LEX
 [SUBSYSTEM::HEIMDAL_ASN1_COMPILE_LEX]
-EXTRA_CFLAGS = -Iheimdal_build -Iheimdal/lib/asn1 -Iheimdal/lib/roken
+CFLAGS = -Iheimdal_build -Iheimdal/lib/asn1 -Iheimdal/lib/roken
 OBJ_FILES = ../heimdal/lib/asn1/lex.ho 
 # End SUBSYSTEM HEIMDAL_ASN1_COMPILE_LEX
 #######################
@@ -385,7 +385,7 @@ OBJ_FILES = ../heimdal/lib/asn1/lex.ho
 #######################
 # Start BINARY asn1_compile
 [BINARY::asn1_compile]
-EXTRA_CFLAGS = -Iheimdal_build -Iheimdal/lib/roken
+CFLAGS = -Iheimdal_build -Iheimdal/lib/roken
 OBJ_FILES = \
 	../heimdal/lib/asn1/main.ho \
 	../heimdal/lib/asn1/gen.ho \
@@ -416,7 +416,7 @@ PRIVATE_DEPENDENCIES = HEIMDAL_ASN1_COMPILE_LEX HEIMDAL_ROKEN_GETPROGNAME_HOST
 #######################
 # Start SUBSYSTEM HEIMDAL_COM_ERR_COMPILE_LEX
 [SUBSYSTEM::HEIMDAL_COM_ERR_COMPILE_LEX]
-EXTRA_CFLAGS = -Iheimdal_build -Iheimdal/lib/com_err -Iheimdal/lib/roken
+CFLAGS = -Iheimdal_build -Iheimdal/lib/com_err -Iheimdal/lib/roken
 OBJ_FILES = ../heimdal/lib/com_err/lex.ho 
 # End SUBSYSTEM HEIMDAL_COM_ERR_COMPILE_LEX
 #######################
@@ -424,7 +424,7 @@ OBJ_FILES = ../heimdal/lib/com_err/lex.ho
 #######################
 # Start BINARY compile_et
 [BINARY::compile_et]
-EXTRA_CFLAGS = -Iheimdal_build -Iheimdal/lib/roken
+CFLAGS = -Iheimdal_build -Iheimdal/lib/roken
 OBJ_FILES = ../heimdal/lib/vers/print_version.ho \
 	../heimdal/lib/com_err/parse.ho \
 	../heimdal/lib/com_err/compile_et.ho \
@@ -476,7 +476,7 @@ clean::
 [LIBRARY::HEIMDAL]
 VERSION = 0.0.1
 SO_VERSION = 0
-EXTRA_CFLAGS = -Iheimdal_build
+CFLAGS = -Iheimdal_build
 OBJ_FILES = ../heimdal/lib/vers/print_version.o
 PUBLIC_DEPENDENCIES = \
 		LIBREPLACE HEIMDAL_GSSAPI HEIMDAL_KRB5 KERBEROS \
