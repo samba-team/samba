@@ -1325,19 +1325,31 @@ hx509_verify_path(hx509_context context,
 		}
 			
 		/* 
-		 * XXX need to mangle name to remove the CN of the
-		 * subject, copying issuer only works for one level
-		 * but is better then doing no checking at all.
-		 *
 		 * The subject name of the proxy certificate should be
-		 * CN=XXX,<proxy issuer>
+		 * CN=XXX,<proxy issuer>, prune of CN and check if its
+		 * the same over the whole chain of proxy certs and
+		 * then check with the EE cert when we get to it.
 		 */
 
-		ret = copy_Name(&c->tbsCertificate.issuer, &name);
+		ret = copy_Name(&c->tbsCertificate.subject, &name);
 		if (ret) {
 		    free_ProxyCertInfo(&info);
 		    goto out;
 		}
+
+		j = name.u.rdnSequence.len;
+		if (name.u.rdnSequence.len < 2 
+		    || name.u.rdnSequence.val[j - 1].len > 1
+		    || heim_oid_cmp(&name.u.rdnSequence.val[j - 1].val[0].type,
+				    oid_id_at_commonName()))
+		{
+		    free_ProxyCertInfo(&info);
+		    ret = HX509_PROXY_CERT_NAME_WRONG;
+		    goto out;
+		}
+
+		free_RelativeDistinguishedName(&name.u.rdnSequence.val[j - 1]);
+		name.u.rdnSequence.len -= 1;
 
 		if (proxy_cert_depth) {
 		    ret = _hx509_name_cmp(&proxy_issuer, &name);
@@ -1354,10 +1366,30 @@ hx509_verify_path(hx509_context context,
 		free_ProxyCertInfo(&info);
 		break;
 	    } else {
+		/* 
+		 * Now we are done with the proxy certificates, if
+		 * there where any proxy certificates
+		 * (proxy_cert_depth > 0), check that the proxy issuer
+		 * matched proxy certificates subject.
+		 */
 		if (proxy_cert_depth) {
 		    ret = _hx509_name_cmp(&proxy_issuer,
 					  &c->tbsCertificate.subject);
 		    if (ret) {
+			char *str;
+			ret = hx509_name_to_string(&proxy_issuer, &str);
+			if (ret)
+			    abort();
+			printf("name: %s\n", str);
+			free(str);
+
+			ret = hx509_name_to_string(&c->tbsCertificate.subject, &str);
+			if (ret)
+			    abort();
+			printf("subject: %s\n", str);
+			free(str);
+
+			printf("name wrong3\n");
 			ret = HX509_PROXY_CERT_NAME_WRONG;
 			goto out;
 		    }
