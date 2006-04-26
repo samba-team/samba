@@ -32,6 +32,7 @@ error_code PARENT_IS_CA, "Parent certificate is a CA"
 error_code EXTRA_DATA_AFTER_STRUCTURE, "Extra data was found after the structure"
 error_code PROXY_CERT_INVALID, "Proxy certificate is invalid"
 error_code PROXY_CERT_NAME_WRONG, "Proxy certificate is invalid"
+error_code NAME_MALFORMATED, "Name is malformated"
 
 # cms related errors
 index 32
