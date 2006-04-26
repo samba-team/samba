@@ -140,16 +140,14 @@ static NTSTATUS auth_init_script(struct auth_context *auth_context, const char *
 	return NT_STATUS_OK;
 }
 
-#if 0
 /* Define this to build static. */
 NTSTATUS auth_script_init(void)
 {
 	return smb_register_auth(AUTH_INTERFACE_VERSION, "script", auth_init_script);
 }
-#else
+
 /* Define this to build shared. */
 NTSTATUS init_module(void)
 {
 	return smb_register_auth(AUTH_INTERFACE_VERSION, "script", auth_init_script);
 }
-#endif

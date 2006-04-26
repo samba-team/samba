@@ -30,6 +30,8 @@
 
 static struct samu *csamuser = NULL;
 
+static_decl_pdb;
+
 static struct pdb_init_function_entry *backends = NULL;
 
 static void lazy_initialize_passdb(void)
