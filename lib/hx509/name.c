@@ -359,7 +359,7 @@ hx509_parse_name(const char *str, hx509_name *name)
 
 	oid = stringtooid(p, q - p);
 	if (oid == NULL) {
-	    _hx509_abort("unknown type: %.*s", (int)(q - p) - 1, p);
+	    _hx509_abort("unknown type: %.*s", (int)(q - p), p);
 	    exit(1);
 	}
 	
