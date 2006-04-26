@@ -1,5 +1,7 @@
 2006-04-26  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* hx509_err.et: Add another proxy certificate error.
+
 	* cert.c (hx509_verify_path): Need to mangle name to remove the CN
 	of the subject, copying issuer only works for one level but is
 	better then doing no checking at all.
