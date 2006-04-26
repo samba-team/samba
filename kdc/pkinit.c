@@ -1128,7 +1128,9 @@ _kdc_pk_check_client(krb5_context context,
 	    return 0;
     }
 
-    ret = hx509_cert_get_subject(client_params->cert, &name);
+    ret = hx509_cert_get_base_subject(kdc_identity->hx509ctx, 
+				      client_params->cert,
+				      &name);
     if (ret)
 	return ret;
 
