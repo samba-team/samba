@@ -120,7 +120,9 @@ static krb5_error_code
 find_keys(krb5_context context, 
 	  krb5_kdc_configuration *config,
 	  const hdb_entry_ex *client,
-	  const hdb_entry_ex *server, 
+	  const char *client_name,
+	  const hdb_entry_ex *server,
+	  const char *server_name,
 	  Key **ckey,
 	  krb5_enctype *cetype,
 	  Key **skey,
@@ -128,20 +130,14 @@ find_keys(krb5_context context,
 	  krb5_enctype *etypes,
 	  unsigned num_etypes)
 {
-    char unparse_name[] = "krb5_unparse_name failed";
     krb5_error_code ret;
-    char *name;
 
     if(client){
 	/* find client key */
 	ret = find_etype(context, client, etypes, num_etypes, ckey, cetype);
 	if (ret) {
-	    if (krb5_unparse_name(context, client->entry.principal, &name) != 0)
-		name = unparse_name;
 	    kdc_log(context, config, 0, 
-		    "Client (%s) has no support for etypes", name);
-	    if (name != unparse_name)
-		free(name);
+		    "Client (%s) has no support for etypes", client_name);
 	    return ret;
 	}
     }
@@ -150,12 +146,8 @@ find_keys(krb5_context context,
 	/* find server key */
 	ret = find_etype(context, server, etypes, num_etypes, skey, setype);
 	if (ret) {
-	    if (krb5_unparse_name(context, server->entry.principal, &name) != 0)
-		name = unparse_name;
 	    kdc_log(context, config, 0, 
-		    "Server (%s) has no support for etypes", name);
-	    if (name != unparse_name)
-		free(name);
+		    "Server (%s) has no support for etypes", server_name);
 	    return ret;
 	}
     }
@@ -1190,7 +1182,9 @@ _kdc_as_rep(krb5_context context,
     }
     
     ret = find_keys(context, config, 
-		    client, server, &ckey, &cetype, &skey, &setype,
+		    client, client_name, 
+		    server, server_name, 
+		    &ckey, &cetype, &skey, &setype,
 		    b->etype.val, b->etype.len);
     if(ret) {
 	kdc_log(context, config, 0, "Server/client has no support for etypes");
@@ -1737,6 +1731,7 @@ tgs_make_reply(krb5_context context,
 	       EncTicketPart *adtkt, 
 	       AuthorizationData *auth_data,
 	       hdb_entry_ex *server, 
+	       const char *server_name, 
 	       hdb_entry_ex *client, 
 	       krb5_principal client_principal, 
 	       hdb_entry_ex *krbtgt,
@@ -1766,7 +1761,8 @@ tgs_make_reply(krb5_context context,
 	etype = b->etype.val[i];
     }else{
 	ret = find_keys(context, config, 
-			NULL, server, NULL, NULL, &skey, &etype, 
+			NULL, NULL, server, server_name,
+			NULL, NULL, &skey, &etype, 
 			b->etype.val, b->etype.len);
 	if(ret) {
 	    kdc_log(context, config, 0, "Server has no support for etypes");
@@ -2452,6 +2448,7 @@ tgs_rep2(krb5_context context,
 			     b->kdc_options.enc_tkt_in_skey ? &adtkt : NULL, 
 			     auth_data,
 			     server, 
+			     spn,
 			     client, 
 			     cp, 
 			     krbtgt, 
