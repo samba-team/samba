@@ -1,5 +1,7 @@
 2006-04-26  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* data/.cvsignore: ignore leftover from OpenSSL cert generation
+
 	* hx509_err.et: Add name malformated error
 
 	* name.c (hx509_parse_name): don't abort on error, rather return
