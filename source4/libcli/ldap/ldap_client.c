@@ -88,7 +88,7 @@ static void ldap_connection_dead(struct ldap_connection *conn)
 	}	
 
 	talloc_free(conn->tls);
-	talloc_free(conn->sock); /* this will also free event.fde */
+/*	talloc_free(conn->sock);  this will also free event.fde */
 	talloc_free(conn->packet);
 	conn->tls = NULL;
 	conn->sock = NULL;
@@ -621,7 +621,7 @@ failed:
 */
 NTSTATUS ldap_request_wait(struct ldap_request *req)
 {
-	while (req->state <= LDAP_REQUEST_DONE) {
+	while (req->state < LDAP_REQUEST_DONE) {
 		if (event_loop_once(req->conn->event.event_ctx) != 0) {
 			req->status = NT_STATUS_UNEXPECTED_NETWORK_ERROR;
 			break;
@@ -734,7 +734,7 @@ NTSTATUS ldap_result_n(struct ldap_request *req, int n, struct ldap_message **ms
 
 	NT_STATUS_HAVE_NO_MEMORY(req);
 
-	while (req->state <= LDAP_REQUEST_DONE && n >= req->num_replies) {
+	while (req->state < LDAP_REQUEST_DONE && n >= req->num_replies) {
 		if (event_loop_once(req->conn->event.event_ctx) != 0) {
 			return NT_STATUS_UNEXPECTED_NETWORK_ERROR;
 		}
