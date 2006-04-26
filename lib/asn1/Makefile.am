@@ -264,7 +264,11 @@ gen_files_rfc2459 =					\
 	asn1_id_at_generationQualifier.x		\
 	asn1_id_at_pseudonym.x				\
 	asn1_id_domainComponent.x			\
-	asn1_id_Userid.x
+	asn1_id_Userid.x				\
+	asn1_id_pkix_pe.x				\
+	asn1_id_pe_proxyCertInfo.x			\
+	asn1_ProxyCertInfo.x				\
+	asn1_ProxyPolicy.x
 
 
 gen_files_pkinit =					\

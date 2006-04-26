@@ -406,4 +406,21 @@ CRLReason ::= ENUMERATED {
 	aACompromise           (10)
 }
 
+-- RFC 3820 Proxy Certificate Profile
+
+id-pkix-pe OBJECT IDENTIFIER ::= { iso(1) identified-organization(3)
+            dod(6) internet(1) security(5) mechanisms(5) pkix(7) 1 }
+
+id-pe-proxyCertInfo OBJECT IDENTIFIER ::= { id-pkix-pe 14 }
+
+ProxyPolicy ::= SEQUENCE {
+	policyLanguage		OBJECT IDENTIFIER,
+	policy			OCTET STRING OPTIONAL
+}
+
+ProxyCertInfo ::= SEQUENCE {
+	pCPathLenConstraint	INTEGER (0..4294967295) OPTIONAL, -- really MAX
+	proxyPolicy		ProxyPolicy
+}
+
 END
