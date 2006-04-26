@@ -297,6 +297,14 @@ OBJ_FILES = ../heimdal/lib/roken/gai_strerror.o
 EXTRA_CFLAGS = -Iheimdal_build -Iheimdal/lib/roken
 OBJ_FILES = ../heimdal/lib/roken/inet_aton.o
 
+[SUBSYSTEM::HEIMDAL_ROKEN_GETPROGNAME]
+EXTRA_CFLAGS = -Iheimdal_build -Iheimdal/lib/roken
+OBJ_FILES = ../heimdal/lib/roken/getprogname.o
+
+[SUBSYSTEM::HEIMDAL_ROKEN_GETPROGNAME_HOST]
+EXTRA_CFLAGS = -Iheimdal_build -Iheimdal/lib/roken
+OBJ_FILES = ../heimdal/lib/roken/getprogname.ho
+
 #######################
 # Start SUBSYSTEM HEIMDAL_ROKEN_ADDRINFO
 [SUBSYSTEM::HEIMDAL_ROKEN_ADDRINFO]
@@ -309,6 +317,7 @@ OBJ_FILES = \
 	../heimdal/lib/roken/freehostent.o \
 	../heimdal/lib/roken/copyhostent.o \
 	../heimdal/lib/roken/hostent_find_fqdn.o
+PRIVATE_DEPENDENCIES = EXT_LIB_SOCKET
 
 #######################
 # Start SUBSYSTEM HEIMDAL_ROKEN
@@ -319,7 +328,6 @@ OBJ_FILES = \
 	../heimdal/lib/roken/hex.o \
 	../heimdal/lib/roken/bswap.o \
 	../heimdal/lib/roken/get_window_size.o \
-	../heimdal/lib/roken/getprogname.o \
 	../heimdal/lib/roken/h_errno.o \
 	../heimdal/lib/roken/issuid.o \
 	../heimdal/lib/roken/net_read.o \
@@ -340,6 +348,7 @@ PUBLIC_DEPENDENCIES = \
 			HEIMDAL_ROKEN_ADDRINFO \
 			HEIMDAL_ROKEN_GAI_STRERROR \
 			HEIMDAL_ROKEN_INET_ATON \
+			HEIMDAL_ROKEN_GETPROGNAME \
 			EXT_LIB_GAI
 # End SUBSYSTEM HEIMDAL_ROKEN
 #######################
@@ -391,7 +400,6 @@ OBJ_FILES = \
 	../heimdal/lib/roken/getarg.ho \
 	../heimdal/lib/roken/setprogname.ho \
 	../heimdal/lib/roken/strupr.ho \
-	../heimdal/lib/roken/getprogname.ho \
 	../heimdal/lib/roken/get_window_size.ho \
 	../heimdal/lib/roken/estrdup.ho \
 	../heimdal/lib/roken/ecalloc.ho \
@@ -400,7 +408,7 @@ OBJ_FILES = \
 	../heimdal/lib/vers/print_version.ho \
 	../lib/replace/snprintf.ho \
 	../lib/replace/replace.ho
-PRIVATE_DEPENDENCIES = HEIMDAL_ASN1_COMPILE_LEX
+PRIVATE_DEPENDENCIES = HEIMDAL_ASN1_COMPILE_LEX HEIMDAL_ROKEN_GETPROGNAME_HOST
 # End BINARY asn1_compile
 #######################
 
@@ -421,13 +429,12 @@ OBJ_FILES = ../heimdal/lib/vers/print_version.ho \
 	../heimdal/lib/com_err/compile_et.ho \
 	../heimdal/lib/roken/getarg.ho \
 	../heimdal/lib/roken/get_window_size.ho \
-	../heimdal/lib/roken/getprogname.ho \
 	../heimdal/lib/roken/strupr.ho \
 	../heimdal/lib/roken/setprogname.ho \
 	replace.ho \
 	../lib/replace/snprintf.ho \
 	../lib/replace/replace.ho
-PRIVATE_DEPENDENCIES = HEIMDAL_COM_ERR_COMPILE_LEX
+PRIVATE_DEPENDENCIES = HEIMDAL_COM_ERR_COMPILE_LEX HEIMDAL_ROKEN_GETPROGNAME_HOST
 # End BINARY compile_et
 #######################
 

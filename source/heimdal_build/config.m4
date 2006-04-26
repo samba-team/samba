@@ -62,6 +62,7 @@ AC_CHECK_HEADERS([				\
 AC_CHECK_FUNCS([				\
 	atexit					\
 	cgetent					\
+	getprogname				\
 	inet_ntop				\
 	inet_aton				\
 	gethostname				\
@@ -233,6 +234,14 @@ fi
 SMB_ENABLE(HEIMDAL_ROKEN_INET_ATON, NO)
 if test t$ac_cv_func_inet_aton != tyes; then
 	SMB_ENABLE(HEIMDAL_ROKEN_INET_ATON, YES)
+fi
+
+# only add getprogname if needed
+SMB_ENABLE(HEIMDAL_ROKEN_GETPROGNAME, NO)
+SMB_ENABLE(HEIMDAL_ROKEN_GETPROGNAME_HOST, NO)
+if test t$ac_cv_func_getprogname != tyes; then
+	SMB_ENABLE(HEIMDAL_ROKEN_GETPROGNAME, YES)
+	SMB_ENABLE(HEIMDAL_ROKEN_GETPROGNAME_HOST, YES)
 fi
 
 # only add gai_strerror if needed
