@@ -133,9 +133,14 @@ CLEANFILES = $(BUILT_SOURCES) \
 # regression tests
 #
 
+check_PROGRAMS = $(TESTS)
+
+LDADD = libhx509.la
+
 TESTS = 			\
 	test_chain		\
 	test_cms		\
+	test_name		\
 	test_nist		\
 	test_nist_cert		\
 	test_nist_pkcs12	\
