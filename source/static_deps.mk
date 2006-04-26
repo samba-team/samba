@@ -26,8 +26,8 @@ heimdal_basics: \
        heimdal/lib/hdb/hdb_err.h \
        heimdal/lib/krb5/heim_err.h \
        heimdal/lib/krb5/k524_err.h \
-       heimdal/lib/krb5/krb5_err.h
-	rm -f heimdal/lib/des/hcrypto ; ln -s ./../des heimdal/lib/des/hcrypto
+       heimdal/lib/krb5/krb5_err.h \
+       heimdal/lib/des/hcrypto
 
 proto: basics
 basics: include/includes.h \

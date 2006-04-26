@@ -459,7 +459,7 @@ heimdal/lib/roken/err.h: heimdal/lib/roken/err.hin
 include perl_path_wrapper.sh hcrypto-deps.pl heimdal/lib/des/*.h|
 
 heimdal/lib/des/hcrypto: 
-	rm -f $@; ln -s ./../des $@
+	@rm -f $@; ln -s ./../des $@
 
 clean::	
 	@-rm -f heimdal/lib/roken/vis.h heimdal/lib/roken/err.h
