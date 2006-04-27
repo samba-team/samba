@@ -2391,20 +2391,24 @@ tgs_rep2(krb5_context context,
 	if(ret)
 	    kdc_log(context, config, 1, "Client not found in database: %s: %s",
 		    cpn, krb5_get_err_text(context, ret));
-#if 0
-	/* XXX check client only if same realm as krbtgt-instance */
-	if(ret){
-	    kdc_log(context, config, 0,
-		    "Client not found in database: %s: %s",
-		    cpn, krb5_get_err_text(context, ret));
-	    if (ret == HDB_ERR_NOENTRY)
-		ret = KRB5KDC_ERR_C_PRINCIPAL_UNKNOWN;
-	    goto out;
-	}
-#endif
+
+	/*
+	 * If the client belongs to the same realm as our krbtgt, it
+	 * should exist in the local database.
+	 *
+	 * If its not the same, check the "direction" on the krbtgt,
+	 * so its not a backward uni-directional trust.
+	 */
 
 	if(strcmp(krb5_principal_get_realm(context, sp),
-		  krb5_principal_get_comp_string(context, krbtgt->entry.principal, 1)) != 0) {
+		  krb5_principal_get_comp_string(context, 
+						 krbtgt->entry.principal, 1)) == 0) {
+	    if(ret) {
+		if (ret == HDB_ERR_NOENTRY)
+		    ret = KRB5KDC_ERR_C_PRINCIPAL_UNKNOWN;
+		goto out;
+	    }
+	} else {
 	    char *tpn;
 	    ret = krb5_unparse_name(context, krbtgt->entry.principal, &tpn);
 	    kdc_log(context, config, 0,
