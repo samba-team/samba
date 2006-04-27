@@ -315,10 +315,15 @@ PyObject *spoolss_hnd_enumprinterdataex(PyObject *self, PyObject *args, PyObject
 	char *key;
 	WERROR werror;
 	PyObject *result;
-	REGVAL_CTR ctr;
+	REGVAL_CTR *ctr;
 
 	if (!PyArg_ParseTupleAndKeywords(args, kw, "s", kwlist, &key))
 		return NULL;
+
+	if (!(ctr = TALLOC_ZERO_P(hnd->mem_ctx, REGVAL_CTR))) {
+		PyErr_SetObject(spoolss_werror, py_werror_tuple(werror));
+		return NULL;
+	}
 
 	/* Get max buffer sizes for value and data */
 
