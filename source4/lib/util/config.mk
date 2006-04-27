@@ -19,7 +19,6 @@ OBJ_FILES = xfile.o \
 		dprintf.o \
 		util_str.o \
 		util_strlist.o \
-		util_unistr.o \
 		util_file.o \
 		data_blob.o \
 		util.o \
@@ -32,10 +31,8 @@ OBJ_FILES = xfile.o \
 		idtree.o \
 		module.o
 PUBLIC_DEPENDENCIES = \
-		CHARSET LIBREPLACE LIBCRYPTO DL LIBTALLOC \
-		SOCKET_WRAPPER \
-# for the base64 functions
-		ldb 
+		LIBREPLACE LIBCRYPTO DL LIBTALLOC \
+		SOCKET_WRAPPER
 
 [SUBSYSTEM::PIDFILE]
 PRIVATE_PROTO_HEADER = pidfile.h

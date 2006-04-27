@@ -52,7 +52,7 @@ _PUBLIC_ struct hostent *sys_gethostbyname(const char *name)
 
 	/* Does this name have any dots in it? If so, make no change */
 
-	if (strchr_m(name, '.'))
+	if (strchr(name, '.'))
 		return(gethostbyname(name));
 
 	/* Get my hostname, which should have domain name 
@@ -62,7 +62,7 @@ _PUBLIC_ struct hostent *sys_gethostbyname(const char *name)
 
 	gethostname(hostname, sizeof(hostname) - 1);
 	hostname[sizeof(hostname) - 1] = 0;
-	if ((domain = strchr_m(hostname, '.')) == NULL)
+	if ((domain = strchr(hostname, '.')) == NULL)
 		return(gethostbyname(name));
 
 	/* Attach domain name to query and do modified query.

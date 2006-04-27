@@ -42,9 +42,4 @@
 
 #endif /* !_SPLINT_ */
 
-/* replace some string functions with multi-byte
-   versions */
-#define strlower(s) strlower_m(s)
-#define strupper(s) strupper_m(s)
-
 #endif
