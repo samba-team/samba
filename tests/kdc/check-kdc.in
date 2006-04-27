@@ -104,6 +104,7 @@ echo "Getting tickets"
 ${kgetcred} ${server}@${R} || exitcode=1
 echo "Listing tickets"
 ${klist} > /dev/null || exitcode=1
+./ap-req ${server}@${R} ${keytab} ${cache} || exitcode=1
 ${kdestroy}
 
 for a in $enctypes; do
@@ -111,6 +112,7 @@ for a in $enctypes; do
 	${kinit} --enctype=$a --password-file=${objdir}/foopassword foo@$R || exitcode=1
 	echo "Getting tickets"
 	${kgetcred} ${server}@${R} || exitcode=1
+	./ap-req ${server}@${R} ${keytab} ${cache} || exitcode=1
 	${kdestroy}
 done
 
