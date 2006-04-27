@@ -1,4 +1,13 @@
-2006-02-27  Johan Danielsson  <joda@pdc.kth.se>
+2006-04-27  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* Makefile.am: rshd_SOURCES += add limits_conf.c
+
+	* rsh_locl.h: Include "loginpaths.h"
+
+	* rshd.c: Read limits from limits.confon non-root login, patch
+	from Daniel Ahlin
+	
+2006-02-27 Johan Danielsson <joda@pdc.kth.se>
 
 	* rshd.8: grammar (from Thomas Klausner)
 	
