@@ -4,6 +4,10 @@ include $(top_srcdir)/Makefile.am.common
 
 noinst_DATA = krb5.conf
 
+check_PROGRAMS = $(TESTS) ap-req
+
+LDADD = ../../lib/krb5/libkrb5.la
+
 TESTS = check-kdc
 
 do_subst = sed -e 's,[@]srcdir[@],$(srcdir),g' \
