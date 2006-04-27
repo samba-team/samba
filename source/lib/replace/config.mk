@@ -16,7 +16,3 @@ OBJ_FILES = replace.o \
 PUBLIC_DEPENDENCIES = REPLACE_READDIR
 # End SUBSYSTEM LIBREPLACE
 ##############################
-
-[SUBSYSTEM::SMBREADLINE]
-OBJ_FILES = readline.o
-PRIVATE_PROTO_HEADER = readline.h

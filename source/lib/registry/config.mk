@@ -98,7 +98,7 @@ OBJ_FILES = \
 		reg_samba.o \
 		patchfile.o
 PUBLIC_DEPENDENCIES = \
-		LIBSAMBA-UTIL
+		LIBSAMBA-UTIL CHARSET
 PRIVATE_PROTO_HEADER = registry_proto.h
 PUBLIC_HEADERS = registry.h
 # End MODULE registry_ldb
@@ -132,7 +132,8 @@ MANPAGE = man/regpatch.1
 INSTALLDIR = BINDIR
 OBJ_FILES = tools/regshell.o
 PRIVATE_DEPENDENCIES = \
-		LIBSAMBA-CONFIG LIBPOPT registry POPT_SAMBA POPT_CREDENTIALS LIBREADLINE
+		LIBSAMBA-CONFIG LIBPOPT registry POPT_SAMBA POPT_CREDENTIALS \
+		SMBREADLINE
 MANPAGE = man/regshell.1
 # End BINARY regshell
 ################################################

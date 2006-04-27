@@ -23,208 +23,16 @@
 */
 
 #include "includes.h"
-#include "system/iconv.h"
 #include "smb.h"
 #include "pstring.h"
 #include "lib/ldb/include/ldb.h"
+#include "system/iconv.h"
 
 /**
  * @file
  * @brief String utilities.
  **/
 
-/**
- * Get the next token from a string, return False if none found.
- * Handles double-quotes.
- * 
- * Based on a routine by GJC@VILLAGE.COM. 
- * Extensively modified by Andrew.Tridgell@anu.edu.au
- **/
-_PUBLIC_ BOOL next_token(const char **ptr,char *buff, const char *sep, size_t bufsize)
-{
-	const char *s;
-	BOOL quoted;
-	size_t len=1;
-
-	if (!ptr)
-		return(False);
-
-	s = *ptr;
-
-	/* default to simple separators */
-	if (!sep)
-		sep = " \t\n\r";
-
-	/* find the first non sep char */
-	while (*s && strchr_m(sep,*s))
-		s++;
-	
-	/* nothing left? */
-	if (! *s)
-		return(False);
-	
-	/* copy over the token */
-	for (quoted = False; len < bufsize && *s && (quoted || !strchr_m(sep,*s)); s++) {
-		if (*s == '\"') {
-			quoted = !quoted;
-		} else {
-			len++;
-			*buff++ = *s;
-		}
-	}
-	
-	*ptr = (*s) ? s+1 : s;  
-	*buff = 0;
-	
-	return(True);
-}
-
-/**
- Case insensitive string compararison
-**/
-_PUBLIC_ int strcasecmp_m(const char *s1, const char *s2)
-{
-	codepoint_t c1=0, c2=0;
-	size_t size1, size2;
-
-	while (*s1 && *s2) {
-		c1 = next_codepoint(s1, &size1);
-		c2 = next_codepoint(s2, &size2);
-
-		s1 += size1;
-		s2 += size2;
-
-		if (c1 == c2) {
-			continue;
-		}
-
-		if (c1 == INVALID_CODEPOINT ||
-		    c2 == INVALID_CODEPOINT) {
-			/* what else can we do?? */
-			return strcasecmp(s1, s2);
-		}
-
-		if (toupper_w(c1) != toupper_w(c2)) {
-			return c1 - c2;
-		}
-	}
-
-	return *s1 - *s2;
-}
-
-/**
- Case insensitive string compararison, length limited
-**/
-_PUBLIC_ int strncasecmp_m(const char *s1, const char *s2, size_t n)
-{
-	codepoint_t c1=0, c2=0;
-	size_t size1, size2;
-
-	while (*s1 && *s2 && n) {
-		n--;
-
-		c1 = next_codepoint(s1, &size1);
-		c2 = next_codepoint(s2, &size2);
-
-		s1 += size1;
-		s2 += size2;
-
-		if (c1 == c2) {
-			continue;
-		}
-
-		if (c1 == INVALID_CODEPOINT ||
-		    c2 == INVALID_CODEPOINT) {
-			/* what else can we do?? */
-			return strcasecmp(s1, s2);
-		}
-
-		if (toupper_w(c1) != toupper_w(c2)) {
-			return c1 - c2;
-		}
-	}
-
-	if (n == 0) {
-		return 0;
-	}
-
-	return *s1 - *s2;
-}
-
-/**
- * Compare 2 strings.
- *
- * @note The comparison is case-insensitive.
- **/
-_PUBLIC_ BOOL strequal(const char *s1, const char *s2)
-{
-	if (s1 == s2)
-		return(True);
-	if (!s1 || !s2)
-		return(False);
-  
-	return strcasecmp_m(s1,s2) == 0;
-}
-
-/**
- Compare 2 strings (case sensitive).
-**/
-_PUBLIC_ BOOL strcsequal(const char *s1,const char *s2)
-{
-	if (s1 == s2)
-		return(True);
-	if (!s1 || !s2)
-		return(False);
-	
-	return strcmp(s1,s2) == 0;
-}
-
-
-/**
-Do a case-insensitive, whitespace-ignoring string compare.
-**/
-_PUBLIC_ int strwicmp(const char *psz1, const char *psz2)
-{
-	/* if BOTH strings are NULL, return TRUE, if ONE is NULL return */
-	/* appropriate value. */
-	if (psz1 == psz2)
-		return (0);
-	else if (psz1 == NULL)
-		return (-1);
-	else if (psz2 == NULL)
-		return (1);
-
-	/* sync the strings on first non-whitespace */
-	while (1) {
-		while (isspace((int)*psz1))
-			psz1++;
-		while (isspace((int)*psz2))
-			psz2++;
-		if (toupper((unsigned char)*psz1) != toupper((unsigned char)*psz2) 
-		    || *psz1 == '\0'
-		    || *psz2 == '\0')
-			break;
-		psz1++;
-		psz2++;
-	}
-	return (*psz1 - *psz2);
-}
-
-/**
- String replace.
- NOTE: oldc and newc must be 7 bit characters
-**/
-_PUBLIC_ void string_replace(char *s, char oldc, char newc)
-{
-	while (*s) {
-		size_t size;
-		codepoint_t c = next_codepoint(s, &size);
-		if (c == oldc) {
-			*s = newc;
-		}
-		s += size;
-	}
-}
 
 /**
  Trim the specified elements off the front and back of a string.
@@ -364,52 +172,6 @@ _PUBLIC_ char *safe_strcat(char *dest, const char *src, size_t maxlength)
 }
 
 /**
- Paranoid strcpy into a buffer of given length (includes terminating
- zero. Strips out all but 'a-Z0-9' and the character in other_safe_chars
- and replaces with '_'. Deliberately does *NOT* check for multibyte
- characters. Don't change it !
-**/
-
-_PUBLIC_ char *alpha_strcpy(char *dest, const char *src, const char *other_safe_chars, size_t maxlength)
-{
-	size_t len, i;
-
-	if (maxlength == 0) {
-		/* can't fit any bytes at all! */
-		return NULL;
-	}
-
-	if (!dest) {
-		DEBUG(0,("ERROR: NULL dest in alpha_strcpy\n"));
-		return NULL;
-	}
-
-	if (!src) {
-		*dest = 0;
-		return dest;
-	}  
-
-	len = strlen(src);
-	if (len >= maxlength)
-		len = maxlength - 1;
-
-	if (!other_safe_chars)
-		other_safe_chars = "";
-
-	for(i = 0; i < len; i++) {
-		int val = (src[i] & 0xff);
-		if (isupper(val) || islower(val) || isdigit(val) || strchr_m(other_safe_chars, val))
-			dest[i] = src[i];
-		else
-			dest[i] = '_';
-	}
-
-	dest[i] = '\0';
-
-	return dest;
-}
-
-/**
  Like strncpy but always null terminates. Make sure there is room!
  The variable n should always be one less than the available size.
 **/
@@ -454,12 +216,12 @@ _PUBLIC_ size_t strhex_to_str(char *p, size_t len, const char *strhex)
 			continue;
 		}
 
-		if (!(p1 = strchr_m(hexchars, toupper((unsigned char)strhex[i]))))
+		if (!(p1 = strchr(hexchars, toupper((unsigned char)strhex[i]))))
 			break;
 
 		i++; /* next hex digit */
 
-		if (!(p2 = strchr_m(hexchars, toupper((unsigned char)strhex[i]))))
+		if (!(p2 = strchr(hexchars, toupper((unsigned char)strhex[i]))))
 			break;
 
 		/* get the two nybbles */
@@ -662,294 +424,6 @@ _PUBLIC_ void all_string_sub(char *s,const char *pattern,const char *insert, siz
 }
 
 
-/**
- Strchr and strrchr_m are a bit complex on general multi-byte strings. 
-**/
-_PUBLIC_ char *strchr_m(const char *s, char c)
-{
-	/* characters below 0x3F are guaranteed to not appear in
-	   non-initial position in multi-byte charsets */
-	if ((c & 0xC0) == 0) {
-		return strchr(s, c);
-	}
-
-	while (*s) {
-		size_t size;
-		codepoint_t c2 = next_codepoint(s, &size);
-		if (c2 == c) {
-			return discard_const(s);
-		}
-		s += size;
-	}
-
-	return NULL;
-}
-
-/**
- * Multibyte-character version of strrchr
- */
-_PUBLIC_ char *strrchr_m(const char *s, char c)
-{
-	char *ret = NULL;
-
-	/* characters below 0x3F are guaranteed to not appear in
-	   non-initial position in multi-byte charsets */
-	if ((c & 0xC0) == 0) {
-		return strrchr(s, c);
-	}
-
-	while (*s) {
-		size_t size;
-		codepoint_t c2 = next_codepoint(s, &size);
-		if (c2 == c) {
-			ret = discard_const(s);
-		}
-		s += size;
-	}
-
-	return ret;
-}
-
-/**
-  return True if any (multi-byte) character is lower case
-*/
-_PUBLIC_ BOOL strhaslower(const char *string)
-{
-	while (*string) {
-		size_t c_size;
-		codepoint_t s;
-		codepoint_t t;
-
-		s = next_codepoint(string, &c_size);
-		string += c_size;
-
-		t = toupper_w(s);
-
-		if (s != t) {
-			return True; /* that means it has lower case chars */
-		}
-	}
-
-	return False;
-} 
-
-/**
-  return True if any (multi-byte) character is upper case
-*/
-_PUBLIC_ BOOL strhasupper(const char *string)
-{
-	while (*string) {
-		size_t c_size;
-		codepoint_t s;
-		codepoint_t t;
-
-		s = next_codepoint(string, &c_size);
-		string += c_size;
-
-		t = tolower_w(s);
-
-		if (s != t) {
-			return True; /* that means it has upper case chars */
-		}
-	}
-
-	return False;
-} 
-
-/**
- Convert a string to lower case, allocated with talloc
-**/
-_PUBLIC_ char *strlower_talloc(TALLOC_CTX *ctx, const char *src)
-{
-	size_t size=0;
-	char *dest;
-
-	/* this takes advantage of the fact that upper/lower can't
-	   change the length of a character by more than 1 byte */
-	dest = talloc_size(ctx, 2*(strlen(src))+1);
-	if (dest == NULL) {
-		return NULL;
-	}
-
-	while (*src) {
-		size_t c_size;
-		codepoint_t c = next_codepoint(src, &c_size);
-		src += c_size;
-
-		c = tolower_w(c);
-
-		c_size = push_codepoint(dest+size, c);
-		if (c_size == -1) {
-			talloc_free(dest);
-			return NULL;
-		}
-		size += c_size;
-	}
-
-	dest[size] = 0;
-
-	return dest;
-}
-
-/**
- Convert a string to UPPER case, allocated with talloc
-**/
-_PUBLIC_ char *strupper_talloc(TALLOC_CTX *ctx, const char *src)
-{
-	size_t size=0;
-	char *dest;
-	
-	if (!src) {
-		return NULL;
-	}
-
-	/* this takes advantage of the fact that upper/lower can't
-	   change the length of a character by more than 1 byte */
-	dest = talloc_size(ctx, 2*(strlen(src))+1);
-	if (dest == NULL) {
-		return NULL;
-	}
-
-	while (*src) {
-		size_t c_size;
-		codepoint_t c = next_codepoint(src, &c_size);
-		src += c_size;
-
-		c = toupper_w(c);
-
-		c_size = push_codepoint(dest+size, c);
-		if (c_size == -1) {
-			talloc_free(dest);
-			return NULL;
-		}
-		size += c_size;
-	}
-
-	dest[size] = 0;
-
-	return dest;
-}
-
-/**
- Convert a string to lower case.
-**/
-_PUBLIC_ void strlower_m(char *s)
-{
-	char *d;
-
-	/* this is quite a common operation, so we want it to be
-	   fast. We optimise for the ascii case, knowing that all our
-	   supported multi-byte character sets are ascii-compatible
-	   (ie. they match for the first 128 chars) */
-	while (*s && !(((uint8_t)*s) & 0x80)) {
-		*s = tolower((uint8_t)*s);
-		s++;
-	}
-
-	if (!*s)
-		return;
-
-	d = s;
-
-	while (*s) {
-		size_t c_size, c_size2;
-		codepoint_t c = next_codepoint(s, &c_size);
-		c_size2 = push_codepoint(d, tolower_w(c));
-		if (c_size2 > c_size) {
-			DEBUG(0,("FATAL: codepoint 0x%x (0x%x) expanded from %d to %d bytes in strlower_m\n",
-				 c, tolower_w(c), (int)c_size, (int)c_size2));
-			smb_panic("codepoint expansion in strlower_m\n");
-		}
-		s += c_size;
-		d += c_size2;
-	}
-	*d = 0;
-}
-
-/**
- Convert a string to UPPER case.
-**/
-_PUBLIC_ void strupper_m(char *s)
-{
-	char *d;
-
-	/* this is quite a common operation, so we want it to be
-	   fast. We optimise for the ascii case, knowing that all our
-	   supported multi-byte character sets are ascii-compatible
-	   (ie. they match for the first 128 chars) */
-	while (*s && !(((uint8_t)*s) & 0x80)) {
-		*s = toupper((uint8_t)*s);
-		s++;
-	}
-
-	if (!*s)
-		return;
-
-	d = s;
-
-	while (*s) {
-		size_t c_size, c_size2;
-		codepoint_t c = next_codepoint(s, &c_size);
-		c_size2 = push_codepoint(d, toupper_w(c));
-		if (c_size2 > c_size) {
-			DEBUG(0,("FATAL: codepoint 0x%x (0x%x) expanded from %d to %d bytes in strupper_m\n",
-				 c, toupper_w(c), (int)c_size, (int)c_size2));
-			smb_panic("codepoint expansion in strupper_m\n");
-		}
-		s += c_size;
-		d += c_size2;
-	}
-	*d = 0;
-}
-
-/**
- Count the number of UCS2 characters in a string. Normally this will
- be the same as the number of bytes in a string for single byte strings,
- but will be different for multibyte.
-**/
-_PUBLIC_ size_t strlen_m(const char *s)
-{
-	size_t count = 0;
-
-	if (!s) {
-		return 0;
-	}
-
-	while (*s && !(((uint8_t)*s) & 0x80)) {
-		s++;
-		count++;
-	}
-
-	if (!*s) {
-		return count;
-	}
-
-	while (*s) {
-		size_t c_size;
-		codepoint_t c = next_codepoint(s, &c_size);
-		if (c < 0x10000) {
-			count += 1;
-		} else {
-			count += 2;
-		}
-		s += c_size;
-	}
-
-	return count;
-}
-
-/**
-   Work out the number of multibyte chars in a string, including the NULL
-   terminator.
-**/
-_PUBLIC_ size_t strlen_m_term(const char *s)
-{
-	if (!s) {
-		return 0;
-	}
-
-	return strlen_m(s) + 1;
-}
 
 /**
  Unescape a URL encoded string, in place.
@@ -989,32 +463,6 @@ _PUBLIC_ void rfc1738_unescape(char *buf)
 		memmove(p+1, p+3, strlen(p+3)+1);
 		p++;
 	}
-}
-
-/**
- * Decode a base64 string into a DATA_BLOB - simple and slow algorithm
- **/
-_PUBLIC_ DATA_BLOB base64_decode_data_blob(TALLOC_CTX *mem_ctx, const char *s)
-{
-	DATA_BLOB ret = data_blob_talloc(mem_ctx, s, strlen(s)+1);
-	ret.length = ldb_base64_decode((char *)ret.data);
-	return ret;
-}
-
-/**
- * Decode a base64 string in-place - wrapper for the above
- **/
-_PUBLIC_ void base64_decode_inplace(char *s)
-{
-	ldb_base64_decode(s);
-}
-
-/**
- * Encode a base64 string into a talloc()ed string caller to free.
- **/
-_PUBLIC_ char *base64_encode_data_blob(TALLOC_CTX *mem_ctx, DATA_BLOB data)
-{
-	return ldb_base64_encode(mem_ctx, (const char *)data.data, data.length);
 }
 
 #ifdef VALGRIND
@@ -1273,4 +721,98 @@ _PUBLIC_ BOOL conv_str_u64(const char * str, uint64_t * val)
 
 	*val = (uint64_t)lval;
 	return True;
+}
+
+/**
+return the number of bytes occupied by a buffer in CH_UTF16 format
+the result includes the null termination
+**/
+_PUBLIC_ size_t utf16_len(const void *buf)
+{
+	size_t len;
+
+	for (len = 0; SVAL(buf,len); len += 2) ;
+
+	return len + 2;
+}
+
+/**
+return the number of bytes occupied by a buffer in CH_UTF16 format
+the result includes the null termination
+limited by 'n' bytes
+**/
+_PUBLIC_ size_t utf16_len_n(const void *src, size_t n)
+{
+	size_t len;
+
+	for (len = 0; (len+2 < n) && SVAL(src, len); len += 2) ;
+
+	if (len+2 <= n) {
+		len += 2;
+	}
+
+	return len;
+}
+
+_PUBLIC_ size_t ucs2_align(const void *base_ptr, const void *p, int flags)
+{
+	if (flags & (STR_NOALIGN|STR_ASCII))
+		return 0;
+	return PTR_DIFF(p, base_ptr) & 1;
+}
+
+/**
+Do a case-insensitive, whitespace-ignoring string compare.
+**/
+_PUBLIC_ int strwicmp(const char *psz1, const char *psz2)
+{
+	/* if BOTH strings are NULL, return TRUE, if ONE is NULL return */
+	/* appropriate value. */
+	if (psz1 == psz2)
+		return (0);
+	else if (psz1 == NULL)
+		return (-1);
+	else if (psz2 == NULL)
+		return (1);
+
+	/* sync the strings on first non-whitespace */
+	while (1) {
+		while (isspace((int)*psz1))
+			psz1++;
+		while (isspace((int)*psz2))
+			psz2++;
+		if (toupper((unsigned char)*psz1) != toupper((unsigned char)*psz2) 
+		    || *psz1 == '\0'
+		    || *psz2 == '\0')
+			break;
+		psz1++;
+		psz2++;
+	}
+	return (*psz1 - *psz2);
+}
+
+/**
+ String replace.
+**/
+_PUBLIC_ void string_replace(char *s, char oldc, char newc)
+{
+	while (*s) {
+		s++;
+		if (*s == oldc) *s = newc;
+	}
+}
+
+/**
+ * Compare 2 strings.
+ *
+ * @note The comparison is case-insensitive.
+ **/
+_PUBLIC_ BOOL strequal(const char *s1, const char *s2)
+{
+	if (s1 == s2)
+		return(True);
+	if (!s1 || !s2)
+		return(False);
+  
+	return strcasecmp(s1,s2) == 0;
 }

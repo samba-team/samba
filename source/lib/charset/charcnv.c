@@ -43,17 +43,16 @@
  **/
 static const char *charset_name(charset_t ch)
 {
-	const char *ret = NULL;
-
-	if (ch == CH_UTF16) ret = "UTF-16LE";
-	else if (ch == CH_UNIX) ret = lp_unix_charset();
-	else if (ch == CH_DOS) ret = lp_dos_charset();
-	else if (ch == CH_DISPLAY) ret = lp_display_charset();
-	else if (ch == CH_UTF8) ret = "UTF8";
-	else if (ch == CH_UTF16BE) ret = "UTF-16BE";
-
-	if (!ret || !*ret) ret = "ASCII";
-	return ret;
+	switch (ch) {
+	case CH_UTF16: return "UTF-16LE";
+	case CH_UNIX: return lp_unix_charset();
+	case CH_DOS: return lp_dos_charset();
+	case CH_DISPLAY: return lp_display_charset();
+	case CH_UTF8: return "UTF8";
+	case CH_UTF16BE: return "UTF-16BE";
+	default:
+	return "ASCII";
+	}
 }
 
 static smb_iconv_t conv_handles[NUM_CHARSETS][NUM_CHARSETS];

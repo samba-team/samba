@@ -71,6 +71,7 @@ OBJ_FILES = \
 ################################################
 # Start MODULE ldb_ildap
 [MODULE::ldb_ildap]
+ENABLE = NO
 SUBSYSTEM = ldb
 INIT_FUNCTION = ldb_ildap_init
 ALIASES = ldapi ldaps ldap
@@ -164,7 +165,7 @@ PUBLIC_HEADERS = include/ldb.h include/ldb_errors.h
 # Start SUBSYSTEM LDBSAMBA
 [SUBSYSTEM::LDBSAMBA]
 PRIVATE_PROTO_HEADER = samba/ldif_handlers.h
-PUBLIC_DEPENDENCIES = LIB_SECURITY SAMDB
+PUBLIC_DEPENDENCIES = LIBSECURITY SAMDB
 OBJ_FILES = \
 		samba/ldif_handlers.o
 # End SUBSYSTEM LDBSAMBA
@@ -176,6 +177,7 @@ OBJ_FILES = \
 OBJ_FILES= \
 		tools/cmdline.o
 PUBLIC_DEPENDENCIES = ldb LIBSAMBA-UTIL LIBPOPT POPT_SAMBA POPT_CREDENTIALS
+PRIVATE_DEPENDENCIES = gensec
 # End SUBSYSTEM LIBLDB_CMDLINE
 ################################################
 
