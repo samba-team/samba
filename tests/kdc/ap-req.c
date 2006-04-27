@@ -65,17 +65,18 @@ test_ap(krb5_context context,
 	krb5_principal sprincipal,
 	krb5_keytab keytab,
 	krb5_ccache ccache,
-	const krb5_flags flags) 
+	const krb5_flags client_flags) 
 {
     krb5_error_code ret;
     krb5_auth_context client_ac = NULL, server_ac = NULL;
     krb5_data data;
     krb5_flags server_flags;
     krb5_ticket *ticket = NULL;
+    int32_t server_seq, client_seq;
 
     ret = krb5_mk_req_exact(context,
 			    &client_ac,
-			    flags,
+			    client_flags,
 			    sprincipal,
 			    NULL,
 			    ccache,
@@ -99,6 +100,9 @@ test_ap(krb5_context context,
 
 	krb5_data_free(&data);
 
+	if ((client_flags & AP_OPTS_MUTUAL_REQUIRED) == 0)
+	    krb5_errx(context, 1, "client flag missing mutual req");
+
 	ret = krb5_mk_rep (context, server_ac, &data);
 	if (ret)
 	    krb5_err(context, 1, ret, "krb5_mk_rep");
@@ -111,7 +115,20 @@ test_ap(krb5_context context,
 	    krb5_err(context, 1, ret, "krb5_rd_rep");
 
 	krb5_free_ap_rep_enc_part (context, repl);
+    } else {
+	if (client_flags & AP_OPTS_MUTUAL_REQUIRED)
+	    krb5_errx(context, 1, "server flag missing mutual req");
     }
+
+    krb5_auth_getremoteseqnumber(context, server_ac, &server_seq);
+    krb5_auth_getremoteseqnumber(context, client_ac, &client_seq);
+    if (server_seq != client_seq)
+	krb5_errx(context, 1, "seq num differ");
+
+    krb5_auth_con_getlocalseqnumber(context, server_ac, &server_seq);
+    krb5_auth_con_getlocalseqnumber(context, client_ac, &client_seq);
+    if (server_seq != client_seq)
+	krb5_errx(context, 1, "seq num differ");
 
     krb5_data_free(&data);
     krb5_auth_con_free(context, client_ac);
