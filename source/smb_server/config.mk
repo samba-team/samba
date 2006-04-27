@@ -2,7 +2,9 @@
 
 #######################
 # Start SUBSYSTEM SMB
-[SUBSYSTEM::SMB_SERVER]
+[MODULE::SMB_SERVER]
+INIT_FUNCTION = server_service_smb_init
+SUBSYSTEM = service
 OBJ_FILES = \
 		smb_server.o \
 		tcon.o \

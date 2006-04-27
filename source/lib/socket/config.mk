@@ -41,6 +41,7 @@ OBJ_FILES = \
 		access.o \
 		connect_multi.o \
 		connect.o
+LDFLAGS = -lcli_resolve -lcli_nbt -lndr_nbt -lndr_svcctl
 PUBLIC_DEPENDENCIES = LIBTALLOC
 PRIVATE_DEPENDENCIES = SOCKET_WRAPPER LIBCLI_COMPOSITE 
 #LIBCLI_RESOLVE

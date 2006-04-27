@@ -11,5 +11,6 @@ OBJ_FILES = \
 		keepalive.o
 PUBLIC_DEPENDENCIES = \
 		ntvfs LIBPACKET LIBCLI_SMB2
+LDFLAGS = -lsmb_server
 # End SUBSYSTEM SMB2_PROTOCOL
 #######################

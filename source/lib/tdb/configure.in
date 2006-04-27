@@ -1,5 +1,6 @@
 AC_DEFUN([SMB_MODULE_DEFAULT], [echo -n ""])
 AC_DEFUN([SMB_LIBRARY_ENABLE], [echo -n ""])
+AC_DEFUN([SMB_ENABLE], [echo -n ""])
 AC_INIT(include/tdb.h)
 AC_CONFIG_HEADER(include/config.h)
 AC_PROG_CC

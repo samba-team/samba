@@ -2,7 +2,9 @@
 
 #######################
 # Start SUBSYSTEM WREPL_SRV
-[SUBSYSTEM::WREPL_SRV]
+[MODULE::WREPL_SRV]
+INIT_FUNCTION = server_service_wrepl_init
+SUBSYSTEM = service
 OBJ_FILES = \
 		wrepl_server.o \
 		wrepl_in_connection.o \
