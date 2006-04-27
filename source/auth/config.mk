@@ -13,7 +13,8 @@ PRIVATE_PROTO_HEADER = auth_sam.h
 INIT_FUNCTION = auth_sam_init
 SUBSYSTEM = auth
 OBJ_FILES = \
-		auth_sam.o
+		auth_sam.o \
+		auth_sam_reply.o
 PUBLIC_DEPENDENCIES = \
 		SAMDB
 # End MODULE auth_sam
@@ -24,8 +25,7 @@ PUBLIC_DEPENDENCIES = \
 [MODULE::auth_anonymous]
 INIT_FUNCTION = auth_anonymous_init
 SUBSYSTEM = auth
-OBJ_FILES = \
-		auth_anonymous.o
+OBJ_FILES = auth_anonymous.o
 # End MODULE auth_anonymous
 #######################
 
@@ -34,8 +34,7 @@ OBJ_FILES = \
 [MODULE::auth_winbind]
 INIT_FUNCTION = auth_winbind_init
 SUBSYSTEM = auth
-OBJ_FILES = \
-		auth_winbind.o
+OBJ_FILES = auth_winbind.o
 PUBLIC_DEPENDENCIES = \
 		LIBWINBIND-CLIENT \
 		NDR_NETLOGON LIBNDR
@@ -47,8 +46,7 @@ PUBLIC_DEPENDENCIES = \
 [MODULE::auth_developer]
 INIT_FUNCTION = auth_developer_init
 SUBSYSTEM = auth
-OBJ_FILES = \
-		auth_developer.o
+OBJ_FILES = auth_developer.o
 # End MODULE auth_developer
 #######################
 
@@ -57,10 +55,8 @@ OBJ_FILES = \
 [MODULE::auth_unix]
 INIT_FUNCTION = auth_unix_init
 SUBSYSTEM = auth
-OBJ_FILES = \
-		auth_unix.o
-PUBLIC_DEPENDENCIES = \
-		CRYPT PAM PAM_ERRORS
+OBJ_FILES = auth_unix.o
+PUBLIC_DEPENDENCIES = CRYPT PAM PAM_ERRORS
 # End MODULE auth_unix
 #######################
 
@@ -76,9 +72,8 @@ PUBLIC_PROTO_HEADER = auth_proto.h
 OBJ_FILES = \
 		auth.o \
 		auth_util.o \
-		auth_sam_reply.o \
 		ntlm_check.o \
 		auth_simple.o
-PUBLIC_DEPENDENCIES = LIB_SECURITY process_model
+PUBLIC_DEPENDENCIES = LIBSECURITY process_model SAMDB
 # End SUBSYSTEM auth
 #######################

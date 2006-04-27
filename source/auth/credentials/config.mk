@@ -8,7 +8,7 @@ OBJ_FILES = credentials.o \
 		credentials_krb5.o \
 		credentials_ntlm.o
 PUBLIC_DEPENDENCIES = \
-		HEIMDAL LIBCLI_AUTH ldb SECRETS
+		HEIMDAL LIBCLI_AUTH SECRETS
 # End SUBSYSTEM CREDENTIALS
 #################################
 

@@ -26,6 +26,7 @@
 #include "auth/auth.h"
 #include "libcli/security/security.h"
 #include "libcli/auth/libcli_auth.h"
+#include "dsdb/samdb/samdb.h"
 
 /* this default function can be used by mostly all backends
  * which don't want to set a challenge

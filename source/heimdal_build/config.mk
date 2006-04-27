@@ -16,6 +16,14 @@ PRIVATE_DEPENDENCIES = HEIMDAL_ROKEN HEIMDAL_KRB5 HEIMDAL_HDB
 # End SUBSYSTEM HEIMDAL_KDC
 #######################
 
+[SUBSYSTEM::HEIMDAL_HDB_KEYS]
+CFLAGS = -Iheimdal_build -Iheimdal/lib/hdb
+OBJ_FILES = \
+	../heimdal/lib/hdb/keys.o \
+	../heimdal/lib/hdb/asn1_Key.o \
+	../heimdal/lib/hdb/asn1_Salt.o
+PRIVATE_DEPENDENCIES = HEIMDAL_ROKEN HEIMDAL_DES HEIMDAL_KRB5
+
 #######################
 # Start SUBSYSTEM HEIMDAL_HDB
 [SUBSYSTEM::HEIMDAL_HDB]
@@ -24,7 +32,6 @@ OBJ_FILES = \
 	../heimdal/lib/hdb/db.o \
 	../heimdal/lib/hdb/hdb.o \
 	../heimdal/lib/hdb/ext.o \
-	../heimdal/lib/hdb/keys.o \
 	../heimdal/lib/hdb/keytab.o \
 	../heimdal/lib/hdb/mkey.o \
 	../heimdal/lib/hdb/ndbm.o \
@@ -39,11 +46,9 @@ OBJ_FILES = \
 	../heimdal/lib/hdb/asn1_HDB_Ext_Password.o \
 	../heimdal/lib/hdb/asn1_HDB_extension.o \
 	../heimdal/lib/hdb/asn1_HDB_extensions.o \
-	../heimdal/lib/hdb/asn1_Key.o \
-	../heimdal/lib/hdb/asn1_Salt.o \
 	../heimdal/lib/hdb/asn1_hdb_entry.o \
 	../heimdal/lib/hdb/hdb_err.o
-PUBLIC_DEPENDENCIES = HDB_LDB
+PUBLIC_DEPENDENCIES = HDB_LDB HEIMDAL_HDB_KEYS HEIMDAL_ROKEN
 # End SUBSYSTEM HEIMDAL_HDB
 #######################
 
@@ -99,7 +104,7 @@ PUBLIC_DEPENDENCIES = KERBEROS HEIMDAL_KRB5
 # Start SUBSYSTEM HEIMDAL_KRB5
 [SUBSYSTEM::HEIMDAL_KRB5]
 CFLAGS = -Iheimdal_build -Iheimdal/lib/krb5 
-PRIVATE_DEPENDENCIES = HEIMDAL_ROKEN HEIMDAL_DES HEIMDAL_ASN1
+PRIVATE_DEPENDENCIES = HEIMDAL_ROKEN HEIMDAL_DES HEIMDAL_ASN1 HEIMDAL_GLUE 
 OBJ_FILES = \
 	../heimdal/lib/krb5/acache.o \
 	../heimdal/lib/krb5/add_et_list.o \
@@ -480,7 +485,7 @@ CFLAGS = -Iheimdal_build
 OBJ_FILES = ../heimdal/lib/vers/print_version.o
 PUBLIC_DEPENDENCIES = \
 		LIBREPLACE HEIMDAL_GSSAPI HEIMDAL_KRB5 KERBEROS \
-		HEIMDAL_GLUE RESOLV
+		RESOLV
 # End SUBSYSTEM HEIMDAL
 #######################
 
