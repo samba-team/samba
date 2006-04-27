@@ -50,11 +50,11 @@ modify_principal(void *server_handle,
 	return KADM5_UNK_POLICY;
     
     memset(&ent, 0, sizeof(ent));
-    ent.entry.principal = princ->principal;
     ret = context->db->hdb_open(context->context, context->db, O_RDWR, 0);
     if(ret)
 	return ret;
-    ret = context->db->hdb_fetch(context->context, context->db, 0, &ent);
+    ret = context->db->hdb_fetch(context->context, context->db, 
+				 princ->principal, 0, &ent);
     if(ret)
 	goto out;
     ret = _kadm5_setup_entry(context, &ent, mask, princ, mask, NULL, 0);

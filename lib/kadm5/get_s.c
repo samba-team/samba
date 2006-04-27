@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2005 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2006 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -75,11 +75,10 @@ kadm5_s_get_principal(void *server_handle,
     hdb_entry_ex ent;
     
     memset(&ent, 0, sizeof(ent));
-    ent.entry.principal = princ;
     ret = context->db->hdb_open(context->context, context->db, O_RDONLY, 0);
     if(ret)
 	return ret;
-    ret = context->db->hdb_fetch(context->context, context->db, 
+    ret = context->db->hdb_fetch(context->context, context->db, princ,
 				 HDB_F_DECRYPT, &ent);
     context->db->hdb_close(context->context, context->db);
     if(ret)

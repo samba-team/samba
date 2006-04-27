@@ -43,13 +43,12 @@ kadm5_s_delete_principal(void *server_handle, krb5_principal princ)
     hdb_entry_ex ent;
 
     memset(&ent, 0, sizeof(ent));
-    ent.entry.principal = princ;
     ret = context->db->hdb_open(context->context, context->db, O_RDWR, 0);
     if(ret) {
 	krb5_warn(context->context, ret, "opening database");
 	return ret;
     }
-    ret = context->db->hdb_fetch(context->context, context->db, 
+    ret = context->db->hdb_fetch(context->context, context->db, princ,
 				 HDB_F_DECRYPT, &ent);
     if(ret == HDB_ERR_NOENTRY)
 	goto out2;
@@ -64,7 +63,7 @@ kadm5_s_delete_principal(void *server_handle, krb5_principal princ)
 
     kadm5_log_delete (context, princ);
     
-    ret = context->db->hdb_remove(context->context, context->db, &ent);
+    ret = context->db->hdb_remove(context->context, context->db, princ);
 out:
     hdb_free_entry(context->context, &ent);
 out2:

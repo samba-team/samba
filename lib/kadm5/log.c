@@ -347,12 +347,12 @@ kadm5_log_replay_delete (kadm5_server_context *context,
 			 krb5_storage *sp)
 {
     krb5_error_code ret;
-    hdb_entry_ex ent;
+    krb5_principal principal;
 
-    krb5_ret_principal (sp, &ent.entry.principal);
+    krb5_ret_principal (sp, &principal);
 
-    ret = context->db->hdb_remove(context->context, context->db, &ent);
-    krb5_free_principal (context->context, ent.entry.principal);
+    ret = context->db->hdb_remove(context->context, context->db, principal);
+    krb5_free_principal (context->context, principal);
     return ret;
 }
 
@@ -434,7 +434,7 @@ kadm5_log_replay_rename (kadm5_server_context *context,
 {
     krb5_error_code ret;
     krb5_principal source;
-    hdb_entry_ex source_ent, target_ent;
+    hdb_entry_ex target_ent;
     krb5_data value;
     off_t off;
     size_t princ_len, data_len;
@@ -464,8 +464,7 @@ kadm5_log_replay_rename (kadm5_server_context *context,
 	krb5_free_principal (context->context, source);
 	return ret;
     }
-    source_ent.entry.principal = source;
-    ret = context->db->hdb_remove (context->context, context->db, &source_ent);
+    ret = context->db->hdb_remove (context->context, context->db, source);
     krb5_free_principal (context->context, source);
     return ret;
 }
@@ -553,9 +552,8 @@ kadm5_log_replay_modify (kadm5_server_context *context,
 	return ret;
 
     memset(&ent, 0, sizeof(ent));
-    ent.entry.principal = log_ent.entry.principal;
-    log_ent.entry.principal = NULL;
     ret = context->db->hdb_fetch(context->context, context->db,
+				 log_ent.entry.principal,
 				 HDB_F_DECRYPT, &ent);
     if (ret)
 	goto out;
