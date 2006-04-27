@@ -49,11 +49,10 @@ change(void *server_handle,
     int cmp = 1;
 
     memset(&ent, 0, sizeof(ent));
-    ent.entry.principal = princ;
     ret = context->db->hdb_open(context->context, context->db, O_RDWR, 0);
     if(ret)
 	return ret;
-    ret = context->db->hdb_fetch(context->context, context->db, 
+    ret = context->db->hdb_fetch(context->context, context->db, princ,
 				 HDB_F_DECRYPT, &ent);
     if(ret == HDB_ERR_NOENTRY)
 	goto out;
@@ -149,11 +148,10 @@ kadm5_s_chpass_principal_with_key(void *server_handle,
     kadm5_ret_t ret;
 
     memset(&ent, 0, sizeof(ent));
-    ent.entry.principal = princ;
     ret = context->db->hdb_open(context->context, context->db, O_RDWR, 0);
     if(ret)
 	return ret;
-    ret = context->db->hdb_fetch(context->context, context->db, 0, &ent);
+    ret = context->db->hdb_fetch(context->context, context->db, princ, 0, &ent);
     if(ret == HDB_ERR_NOENTRY)
 	goto out;
     ret = _kadm5_set_keys2(context, &ent.entry, n_key_data, key_data);
