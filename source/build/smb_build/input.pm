@@ -124,7 +124,7 @@ sub import_integrated($$)
 		next if($mod->{SUBSYSTEM} ne $lib->{NAME});
 		next if($mod->{ENABLE} ne "YES");
 
-		push (@{$lib->{FULL_OBJ_LIST}}, "\$($mod->{TYPE}_$mod->{NAME}_OBJ_LIST)");
+		push (@{$lib->{FULL_OBJ_LIST}}, "\$($mod->{TYPE}_$mod->{NAME}_FULL_OBJ_LIST)");
 		push (@{$lib->{LINK_FLAGS}}, "\$($mod->{TYPE}_$mod->{NAME}_LINK_FLAGS)");
 		push (@{$lib->{PRIVATE_DEPENDENCIES}}, @{$mod->{PUBLIC_DEPENDENCIES}}) if defined($mod->{PUBLIC_DEPENDENCIES});
 		push (@{$lib->{PRIVATE_DEPENDENCIES}}, @{$mod->{PRIVATE_DEPENDENCIES}}) if defined($mod->{PRIVATE_DEPENDENCIES});
@@ -146,8 +146,6 @@ sub calc_unique_deps($$$$$$)
 
  		if (defined ($dep->{OUTPUT_TYPE}) && 
 			($withlibs or 
-			($dep->{OUTPUT_TYPE} eq "OBJ_LIST") or 
-			($dep->{OUTPUT_TYPE} eq "MERGEDOBJ") or 
 			($dep->{OUTPUT_TYPE} eq "INTEGRATED") or 
 			($dep->{OUTPUT_TYPE} eq "STATIC_LIBRARY"))) {
 				push (@$busy, $dep->{NAME});

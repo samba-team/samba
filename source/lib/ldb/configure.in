@@ -9,7 +9,6 @@ AC_DEFUN([AC_CHECK_FUNC_EXT], [
 ])
 AC_DEFUN([SMB_MODULE_DEFAULT], [echo -n ""])
 AC_DEFUN([SMB_LIBRARY_ENABLE], [echo -n ""])
-AC_DEFUN([SMB_EXT_LIB_ENABLE], [echo -n ""])
 AC_DEFUN([SMB_EXT_LIB], [echo -n ""])
 AC_DEFUN([SMB_ENABLE], [echo -n ""])
 AC_INIT(include/ldb.h)

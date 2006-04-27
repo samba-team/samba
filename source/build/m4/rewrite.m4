@@ -99,10 +99,8 @@ AC_CHECK_FUNCS(setgroups sysconf getpwanam srandom random srand rand usleep)
 AC_CHECK_FUNCS(backtrace setbuffer)
 
 AC_SUBST(BLDSHARED)
-AC_SUBST(BLDMERGED)
 # Assume non-shared by default and override below
 BLDSHARED="false"
-BLDMERGED="true"
 
 # these are the defaults, good for lots of systems
 HOST_OS="$host_os"
@@ -245,13 +243,11 @@ case "$host_os" in
 		AC_DEFINE(STAT_ST_BLOCKSIZE,512)
 		;;
 	*-vms)
-		BLDMERGED="false"
 		BLDSHARED="false"
 		LDSHFLAGS=""
 		;;
 	*vos*) AC_DEFINE(STAT_ST_BLOCKSIZE,4096)
 		BLDSHARED="false"
-		BLDMERGED="false"
 		LDSHFLAGS=""
 		;;
 	*)

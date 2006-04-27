@@ -123,6 +123,7 @@ OBJ_FILES = clireadwrite.o \
 PRIVATE_PROTO_HEADER = raw/raw_proto.h
 PRIVATE_DEPENDENCIES = LIBCLI_COMPOSITE
 PUBLIC_DEPENDENCIES = LIBCLI_RAW_KRB5
+LDFLAGS = -lcli_smb_composite
 OBJ_FILES = raw/rawfile.o \
 		raw/smb_signing.o \
 		raw/clisocket.o \

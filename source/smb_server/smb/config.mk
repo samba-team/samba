@@ -16,5 +16,6 @@ OBJ_FILES = \
 		signing.o
 PUBLIC_DEPENDENCIES = \
 		ntvfs LIBPACKET
+LDFLAGS = -lsmb_server
 # End SUBSYSTEM SMB_PROTOCOL
 #######################

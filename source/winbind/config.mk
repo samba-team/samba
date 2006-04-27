@@ -2,7 +2,9 @@
 
 #######################
 # Start SUBSYSTEM WINBIND
-[SUBSYSTEM::WINBIND]
+[MODULE::WINBIND]
+INIT_FUNCTION = server_service_winbind_init
+SUBSYSTEM = service
 PRIVATE_PROTO_HEADER = wb_proto.h
 OBJ_FILES = \
 		wb_server.o \

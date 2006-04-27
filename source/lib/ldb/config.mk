@@ -177,7 +177,7 @@ OBJ_FILES = \
 OBJ_FILES= \
 		tools/cmdline.o
 PUBLIC_DEPENDENCIES = ldb LIBSAMBA-UTIL LIBPOPT POPT_SAMBA POPT_CREDENTIALS
-PRIVATE_DEPENDENCIES = gensec LIBCLI_RESOLVE
+PRIVATE_DEPENDENCIES = gensec
 # End SUBSYSTEM LIBLDB_CMDLINE
 ################################################
 
@@ -188,7 +188,7 @@ INSTALLDIR = BINDIR
 OBJ_FILES = \
 		tools/ldbadd.o
 PRIVATE_DEPENDENCIES = \
-		LIBLDB_CMDLINE
+		LIBLDB_CMDLINE LIBCLI_RESOLVE
 MANPAGE = man/ldbadd.1
 # End BINARY ldbadd
 ################################################

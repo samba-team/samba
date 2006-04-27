@@ -2,7 +2,9 @@
 
 #######################
 # Start SUBSYSTEM LDAP
-[SUBSYSTEM::LDAP]
+[MODULE::LDAP]
+INIT_FUNCTION = server_service_ldap_init
+SUBSYSTEM = service
 PRIVATE_PROTO_HEADER = proto.h
 OBJ_FILES = \
 		ldap_server.o \

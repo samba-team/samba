@@ -23,10 +23,8 @@ my $subsystem_output_type;
 
 if (defined($ENV{"SUBSYSTEM_OUTPUT_TYPE"})) {
 	$subsystem_output_type = $ENV{SUBSYSTEM_OUTPUT_TYPE};
-} elsif ($config::config{BLDMERGED} eq "true") {
-	$subsystem_output_type = "MERGEDOBJ";
 } else {
-	$subsystem_output_type = "OBJ_LIST";
+	$subsystem_output_type = "STATIC_LIBRARY";
 }
 
 my $library_output_type;
@@ -34,10 +32,8 @@ if (defined($ENV{"LIBRARY_OUTPUT_TYPE"})) {
 	$library_output_type = $ENV{LIBRARY_OUTPUT_TYPE};
 } elsif ($config::config{BLDSHARED} eq "true") {
 	$library_output_type = "SHARED_LIBRARY";
-} elsif ($config::config{BLDMERGED} eq "true") {
-	$library_output_type = "MERGEDOBJ";
 } else {
-	$library_output_type = "OBJ_LIST";
+	$library_output_type = "STATIC_LIBRARY";
 }
 
 my $module_output_type;
@@ -67,8 +63,6 @@ foreach my $key (values %$OUTPUT) {
 foreach my $key (values %$OUTPUT) {
 	next unless defined $key->{OUTPUT_TYPE};
 
-	$mkenv->MergedObj($key) if $key->{OUTPUT_TYPE} eq "MERGEDOBJ";
-	$mkenv->ObjList($key) if $key->{OUTPUT_TYPE} eq "OBJLIST";
 	$mkenv->StaticLibrary($key) if $key->{OUTPUT_TYPE} eq "STATIC_LIBRARY";
 	$mkenv->PkgConfig($key) if ($key->{OUTPUT_TYPE} eq "SHARED_LIBRARY") and
 						defined($key->{VERSION});

@@ -30,6 +30,7 @@ sub _prepare_build_h($)
 	foreach my $key (values %{$depend}) {
 		my $DEFINE = ();
 		next if ($key->{TYPE} ne "LIBRARY" and 
+				 $key->{TYPE} ne "MODULE" and
 				 $key->{TYPE} ne "SUBSYSTEM" and
 			 	 $key->{TYPE} ne "BINARY");
 		next unless defined($key->{INIT_FUNCTIONS});
