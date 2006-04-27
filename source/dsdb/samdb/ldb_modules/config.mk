@@ -17,7 +17,6 @@ SUBSYSTEM = ldb
 INIT_FUNCTION = samldb_module_init
 OBJ_FILES = \
 		samldb.o
-PUBLIC_DEPENDENCIES = SAMDB
 #
 # End MODULE ldb_samldb
 ################################################
@@ -62,10 +61,9 @@ OBJ_FILES = \
 [MODULE::ldb_password_hash]
 SUBSYSTEM = ldb
 INIT_FUNCTION = password_hash_module_init
-OBJ_FILES = \
-		password_hash.o
-PUBLIC_DEPENDENCIES = \
-		HEIMDAL_HDB HEIMDAL_KRB5
+OBJ_FILES = password_hash.o
+PUBLIC_DEPENDENCIES = HEIMDAL_KRB5
+PRIVATE_DEPENDENCIES = HEIMDAL_HDB_KEYS
 #
 # End MODULE ldb_rootdse
 ################################################
@@ -78,7 +76,7 @@ INIT_FUNCTION = ldb_kludge_acl_init
 OBJ_FILES = \
 		kludge_acl.o
 PUBLIC_DEPENDENCIES = \
-		LIB_SECURITY
+		LIBSECURITY
 #
 # End MODULE ldb_rootdse
 ################################################

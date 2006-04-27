@@ -230,7 +230,7 @@ static NTSTATUS gensec_krb5_client_start(struct gensec_security *gensec_security
 		DEBUG(2, ("Cannot do krb5 to an IP address"));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
-	if (strequal(hostname, "localhost")) {
+	if (strcmp(hostname, "localhost") == 0) {
 		DEBUG(2, ("krb5 to 'localhost' does not make sense"));
 		return NT_STATUS_INVALID_PARAMETER;
 	}

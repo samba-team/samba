@@ -252,7 +252,7 @@ static NTSTATUS gensec_gssapi_client_start(struct gensec_security *gensec_securi
 		DEBUG(2, ("Cannot do GSSAPI to an IP address\n"));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
-	if (strequal(hostname, "localhost")) {
+	if (strcmp(hostname, "localhost") == 0) {
 		DEBUG(2, ("GSSAPI to 'localhost' does not make sense\n"));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
