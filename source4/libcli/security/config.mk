@@ -1,6 +1,6 @@
 #################################
-# Start SUBSYSTEM LIB_SECURITY
-[SUBSYSTEM::LIB_SECURITY]
+# Start SUBSYSTEM LIBSECURITY
+[SUBSYSTEM::LIBSECURITY]
 PRIVATE_PROTO_HEADER = proto.h
 OBJ_FILES = security_token.o \
 		security_descriptor.o \
@@ -8,6 +8,6 @@ OBJ_FILES = security_token.o \
 		access_check.o \
 		privilege.o \
 		sddl.o
-PUBLIC_DEPENDENCIES = NDR_SECURITY
-# End SUBSYSTEM LIB_SECURITY
+PUBLIC_DEPENDENCIES = NDR_SECURITY 
+# End SUBSYSTEM LIBSECURITY
 #################################
