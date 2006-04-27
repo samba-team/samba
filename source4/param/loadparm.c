@@ -759,11 +759,11 @@ static const char *lp_string(const char *s)
 	if (!s)
 		*ret = 0;
 	else
-		StrnCpy(ret, s, len);
+		strlcpy(ret, s, len);
 
 	if (trim_string(ret, "\"", "\"")) {
 		if (strchr(ret,'"') != NULL)
-			StrnCpy(ret, s, len);
+			strlcpy(ret, s, len);
 	}
 
 	standard_sub_basic(ret,len+100);
