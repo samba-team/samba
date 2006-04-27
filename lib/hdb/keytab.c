@@ -218,8 +218,7 @@ hdb_get_entry(krb5_context context,
 	(*db->hdb_destroy)(context, db);
 	return ret;
     }
-    ent.entry.principal = rk_UNCONST(principal);
-    ret = (*db->hdb_fetch)(context, db, HDB_F_DECRYPT, &ent);
+    ret = (*db->hdb_fetch)(context, db, principal, HDB_F_DECRYPT, &ent);
     (*db->hdb_close)(context, db);
     (*db->hdb_destroy)(context, db);
 
