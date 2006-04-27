@@ -1,4 +1,4 @@
-.\" Copyright (c) 1997, 1999, 2001, 2004 Kungliga Tekniska Högskolan
+.\" Copyright (c) 1997, 1999, 2001, 2004, 2006 Kungliga Tekniska Högskolan
 .\" (Royal Institute of Technology, Stockholm, Sweden). 
 .\" All rights reserved. 
 .\"
@@ -31,16 +31,17 @@
 .\" 
 .\" $Id$
 .\"
-.Dd December  8, 2004
+.Dd April 27, 2006
 .Dt KDESTROY 1
 .Os HEIMDAL
 .Sh NAME
 .Nm kdestroy
-.Nd destroy the current ticket file
+.Nd remove one credental or destroy the current ticket file
 .Sh SYNOPSIS
 .Nm
 .Bk -words
 .Op Fl c Ar cachefile
+.Op Fl -credential= Ns Ar principal
 .Op Fl -cache= Ns Ar cachefile
 .Op Fl -no-unlog
 .Op Fl -no-delete-v4
@@ -49,10 +50,14 @@
 .Ek
 .Sh DESCRIPTION
 .Nm
-removes the current set of tickets.
+remove one or the current set of tickets.
 .Pp
 Supported options:
 .Bl -tag -width Ds
+.It Fl credential= Ns Ar principal
+remove
+.Fa principal
+from the credential cache if its exists.
 .It Fl c Ar cachefile
 .It Fl cache= Ns Ar cachefile
 The cache file to remove.
