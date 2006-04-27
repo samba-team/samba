@@ -9,6 +9,8 @@ DSA2 support
 
 x509 policy mappings support
 
+CRL delta support
+
 crypto
 	make signing alg depend on signer if not given
 
