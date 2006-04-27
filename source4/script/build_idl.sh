@@ -21,7 +21,7 @@ for f in $srcdir/librpc/idl/*.idl ; do
     ndr="librpc/gen_ndr/ndr_$basename.c"
     # blergh - most shells don't have the -nt function
     if [ -f $ndr ]; then
-	if [ x$srcdir/`find $f -newer $ndr -print` = x$f ]; then
+	if [ x`find $f -newer $ndr -print` = x$f ]; then
 	    list="$list $f"
 	fi
     else 
