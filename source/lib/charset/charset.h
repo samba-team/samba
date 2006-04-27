@@ -73,4 +73,9 @@ typedef struct {
 
 #include "lib/charset/charset_proto.h"
 
+/* replace some string functions with multi-byte
+   versions */
+#define strlower(s) strlower_m(s)
+#define strupper(s) strupper_m(s)
+
 #endif /* __CHARSET_H__ */

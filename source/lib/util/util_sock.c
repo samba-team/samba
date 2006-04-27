@@ -90,7 +90,7 @@ _PUBLIC_ void set_socket_options(int fd, const char *options)
 		char *p;
 		BOOL got_value = False;
 
-		if ((p = strchr_m(tok,'='))) {
+		if ((p = strchr(tok,'='))) {
 			*p = 0;
 			value = atoi(p+1);
 			got_value = True;

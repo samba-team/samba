@@ -26,6 +26,7 @@ PRIVATE_PROTO_HEADER = netif/proto.h
 OBJ_FILES = \
 		netif/interface.o \
 		netif/netif.o
+PRIVATE_DEPENDENCIES = LIBSAMBA-UTIL
 # End SUBSYSTEM LIBNETIF
 ##############################
 
@@ -44,19 +45,17 @@ OBJ_FILES = \
 ################################################
 # Start SUBSYSTEM LIBCOMPRESSION
 [SUBSYSTEM::LIBCOMPRESSION]
-OBJ_FILES = \
-		compression/mszip.o
+OBJ_FILES = compression/mszip.o
 # End SUBSYSTEM LIBCOMPRESION
 ################################################
 
 [SUBSYSTEM::GENCACHE]
 PRIVATE_PROTO_HEADER = gencache/gencache.h
-OBJ_FILES = \
-		gencache/gencache.o \
+OBJ_FILES = gencache/gencache.o \
 
 [SUBSYSTEM::DB_WRAP]
 PUBLIC_PROTO_HEADER = db_wrap_proto.h
 PUBLIC_HEADERS = db_wrap.h
-OBJ_FILES = db_wrap.o \
-		gendb.o
-PUBLIC_DEPENDENCIES = ldb LIBTDB LDBSAMBA
+OBJ_FILES = db_wrap.o gendb.o
+PUBLIC_DEPENDENCIES = LIBTDB ldb
+PRIVATE_DEPENDENCIES = LDBSAMBA

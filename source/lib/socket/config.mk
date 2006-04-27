@@ -7,6 +7,7 @@ OUTPUT_TYPE = MERGEDOBJ
 OBJ_FILES = \
 		socket_ipv4.o
 PUBLIC_DEPENDENCIES = EXT_SOCKET
+PRIVATE_DEPENDENCIES = LIBSAMBA-ERRORS
 # End MODULE socket_ipv4
 ################################################
 
@@ -41,6 +42,6 @@ OBJ_FILES = \
 		connect_multi.o \
 		connect.o
 PUBLIC_DEPENDENCIES = LIBTALLOC
-PRIVATE_DEPENDENCIES = LIBCLI_RESOLVE SOCKET_WRAPPER 
+PRIVATE_DEPENDENCIES = SOCKET_WRAPPER LIBCLI_COMPOSITE
 # End SUBSYSTEM SOCKET
 ################################################

@@ -289,7 +289,7 @@ _PUBLIC_ char* get_myname(void)
 	hostname[host_name_max] = '\0';
 
 	/* split off any parts after an initial . */
-	p = strchr_m(hostname,'.');
+	p = strchr(hostname,'.');
 
 	if (p)
 		*p = 0;
@@ -311,7 +311,7 @@ _PUBLIC_ BOOL is_ipaddress(const char *str)
 			pure_address = False;
 
 	/* Check that a pure number is not misinterpreted as an IP */
-	pure_address = pure_address && (strchr_m(str, '.') != NULL);
+	pure_address = pure_address && (strchr(str, '.') != NULL);
 
 	return pure_address;
 }
