@@ -32,10 +32,14 @@
  */
 
 #include "rsh_locl.h"
+#include "login_locl.h"
 RCSID("$Id$");
 
 int
 login_access( struct passwd *user, char *from);
+int
+read_limits_conf(const char *file, const struct passwd *pwd);
+
 
 enum auth_method auth_method;
 
@@ -823,6 +827,12 @@ doit (void)
     if (setpcred (pwd->pw_name, NULL) == -1)
 	syslog(LOG_ERR, "setpcred() failure: %m");
 #endif /* HAVE_SETPCRED */
+
+    /* Apply limits if not root */
+    if(pwd->pw_uid != 0) {
+	 const char *file = _PATH_LIMITS_CONF;
+	 read_limits_conf(file, pwd);
+    }
 
     if (initgroups (pwd->pw_name, pwd->pw_gid) < 0)
 	fatal (s, "initgroups", "Login incorrect.");
