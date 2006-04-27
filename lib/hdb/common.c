@@ -36,7 +36,7 @@
 RCSID("$Id$");
 
 int
-hdb_principal2key(krb5_context context, krb5_principal p, krb5_data *key)
+hdb_principal2key(krb5_context context, krb5_const_principal p, krb5_data *key)
 {
     Principal new;
     size_t len;
@@ -79,12 +79,13 @@ hdb_value2entry(krb5_context context, krb5_data *value, hdb_entry *ent)
 }
 
 krb5_error_code
-_hdb_fetch(krb5_context context, HDB *db, unsigned flags, hdb_entry_ex *entry)
+_hdb_fetch(krb5_context context, HDB *db, krb5_const_principal principal,
+	   unsigned flags, hdb_entry_ex *entry)
 {
     krb5_data key, value;
     int code;
 
-    hdb_principal2key(context, entry->entry.principal, &key);
+    hdb_principal2key(context, principal, &key);
     code = db->hdb__get(context, db, key, &value);
     krb5_data_free(&key);
     if(code)
@@ -134,12 +135,12 @@ _hdb_store(krb5_context context, HDB *db, unsigned flags, hdb_entry_ex *entry)
 }
 
 krb5_error_code
-_hdb_remove(krb5_context context, HDB *db, hdb_entry_ex *entry)
+_hdb_remove(krb5_context context, HDB *db, krb5_const_principal principal)
 {
     krb5_data key;
     int code;
 
-    hdb_principal2key(context, entry->entry.principal, &key);
+    hdb_principal2key(context, principal, &key);
     code = db->hdb__del(context, db, key);
     krb5_data_free(&key);
     return code;
