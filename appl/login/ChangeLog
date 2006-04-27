@@ -1,4 +1,9 @@
-2006-01-09  Johan Danielsson  <joda@blubb.pdc.kth.se>
+2006-04-27  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* login_locl.h: Include "loginpaths.h"
+* loginpaths.h: Shared paths between login and rshd.
+	
+2006-01-09 Johan Danielsson <joda@blubb.pdc.kth.se>
 
 	* login.c: log successful logins
 	
