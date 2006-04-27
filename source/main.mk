@@ -190,10 +190,11 @@ uninstallpidl: pidl/Makefile
 
 include heimdal_build/perl_path_wrapper.sh ../librpc/idl-deps.pl librpc/idl/*.idl|
 
-$(IDL_HEADER_FILES) $(IDL_NDR_HEADER_FILES) $(IDL_NDR_PARSE_C_FILES) \
+$(IDL_HEADER_FILES) \
+	$(IDL_NDR_PARSE_H_FILES) $(IDL_NDR_PARSE_C_FILES) \
 	$(IDL_NDR_CLIENT_C_FILES) $(IDL_NDR_CLIENT_H_FILES) \
-	$(IDL_NDR_SERVER_C_FILES) $(IDL_NDR_EJS_C_FILES) \
-	$(IDL_NDR_EJS_H_FILES): idl
+	$(IDL_NDR_SERVER_C_FILES) \
+	$(IDL_NDR_EJS_C_FILES) $(IDL_NDR_EJS_H_FILES): idl
 
 idl_full: pidl/lib/Parse/Pidl/IDL.pm
 	@CPP="$(CPP)" PERL="$(PERL)" srcdir=$(srcdir) $(srcdir)/script/build_idl.sh FULL $(PIDL_ARGS)
