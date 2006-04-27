@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997-2001 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2001, 2003-2006 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -54,7 +54,8 @@ kadm5_s_randkey_principal(void *server_handle,
     ret = context->db->hdb_open(context->context, context->db, O_RDWR, 0);
     if(ret)
 	return ret;
-    ret = context->db->hdb_fetch(context->context, context->db, princ, 0, &ent);
+    ret = context->db->hdb_fetch(context->context, context->db, princ, 
+				 HDB_F_GET_ANY, &ent);
     if(ret)
 	goto out;
 

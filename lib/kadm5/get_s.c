@@ -79,7 +79,7 @@ kadm5_s_get_principal(void *server_handle,
     if(ret)
 	return ret;
     ret = context->db->hdb_fetch(context->context, context->db, princ,
-				 HDB_F_DECRYPT, &ent);
+				 HDB_F_DECRYPT|HDB_F_GET_ANY, &ent);
     context->db->hdb_close(context->context, context->db);
     if(ret)
 	return _kadm5_error_code(ret);

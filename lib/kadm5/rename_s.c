@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2001, 2003, 2005 - 2005 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -52,7 +52,7 @@ kadm5_s_rename_principal(void *server_handle,
     if(ret)
 	return ret;
     ret = context->db->hdb_fetch(context->context, context->db, 
-				 source, 0, &ent);
+				 source, HDB_F_GET_ANY, &ent);
     if(ret){
 	context->db->hdb_close(context->context, context->db);
 	goto out;

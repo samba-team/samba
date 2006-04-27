@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2001, 2003, 2005 - 2006 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -49,7 +49,7 @@ kadm5_s_delete_principal(void *server_handle, krb5_principal princ)
 	return ret;
     }
     ret = context->db->hdb_fetch(context->context, context->db, princ,
-				 HDB_F_DECRYPT, &ent);
+				 HDB_F_DECRYPT|HDB_F_GET_ANY, &ent);
     if(ret == HDB_ERR_NOENTRY)
 	goto out2;
     if(ent.entry.flags.immutable) {

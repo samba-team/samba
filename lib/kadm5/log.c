@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2005 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2006 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -554,7 +554,7 @@ kadm5_log_replay_modify (kadm5_server_context *context,
     memset(&ent, 0, sizeof(ent));
     ret = context->db->hdb_fetch(context->context, context->db,
 				 log_ent.entry.principal,
-				 HDB_F_DECRYPT, &ent);
+				 HDB_F_DECRYPT|HDB_F_GET_ANY, &ent);
     if (ret)
 	goto out;
     if (mask & KADM5_PRINC_EXPIRE_TIME) {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997-2005 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2006 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -53,7 +53,7 @@ change(void *server_handle,
     if(ret)
 	return ret;
     ret = context->db->hdb_fetch(context->context, context->db, princ,
-				 HDB_F_DECRYPT, &ent);
+				 HDB_F_DECRYPT|HDB_F_GET_ANY, &ent);
     if(ret == HDB_ERR_NOENTRY)
 	goto out;
 
@@ -151,7 +151,8 @@ kadm5_s_chpass_principal_with_key(void *server_handle,
     ret = context->db->hdb_open(context->context, context->db, O_RDWR, 0);
     if(ret)
 	return ret;
-    ret = context->db->hdb_fetch(context->context, context->db, princ, 0, &ent);
+    ret = context->db->hdb_fetch(context->context, context->db, princ, 
+				 HDB_F_GET_ANY, &ent);
     if(ret == HDB_ERR_NOENTRY)
 	goto out;
     ret = _kadm5_set_keys2(context, &ent.entry, n_key_data, key_data);
