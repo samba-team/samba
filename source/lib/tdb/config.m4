@@ -30,6 +30,7 @@ fi
 if test x"$PYTHON" != "x"; then
 	AC_MSG_RESULT([${withval-python}])
 else
+	SMB_ENABLE(swig_tdb, NO)
 	AC_MSG_RESULT(no)
 fi
 
