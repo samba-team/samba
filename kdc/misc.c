@@ -41,6 +41,7 @@ krb5_error_code
 _kdc_db_fetch(krb5_context context,
 	      krb5_kdc_configuration *config,
 	      krb5_const_principal principal,
+	      unsigned flags,
 	      hdb_entry_ex **h)
 {
     hdb_entry_ex *ent;
@@ -61,7 +62,7 @@ _kdc_db_fetch(krb5_context context,
 	ret = config->db[i]->hdb_fetch(context, 
 				       config->db[i],
 				       principal,
-				       HDB_F_DECRYPT,
+				       flags | HDB_F_DECRYPT,
 				       ent);
 	config->db[i]->hdb_close(context, config->db[i]);
 	if(ret == 0) {

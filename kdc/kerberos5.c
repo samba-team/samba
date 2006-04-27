@@ -894,7 +894,8 @@ _kdc_as_rep(krb5_context context,
     kdc_log(context, config, 0, "AS-REQ %s from %s for %s", 
 	    client_name, from, server_name);
 
-    ret = _kdc_db_fetch(context, config, client_princ, &client);
+    ret = _kdc_db_fetch(context, config, client_princ, 
+			HDB_F_GET_CLIENT, &client);
     if(ret){
 	kdc_log(context, config, 0, "UNKNOWN -- %s: %s", client_name,
 		krb5_get_err_text(context, ret));
@@ -902,7 +903,8 @@ _kdc_as_rep(krb5_context context,
 	goto out;
     }
 
-    ret = _kdc_db_fetch(context, config, server_princ, &server);
+    ret = _kdc_db_fetch(context, config, server_princ,
+			HDB_F_GET_SERVER|HDB_F_GET_KRBTGT, &server);
     if(ret){
 	kdc_log(context, config, 0, "UNKNOWN -- %s: %s", server_name,
 		krb5_get_err_text(context, ret));
@@ -2094,7 +2096,7 @@ tgs_rep2(krb5_context context,
 				       ap_req.ticket.sname,
 				       ap_req.ticket.realm);
     
-    ret = _kdc_db_fetch(context, config, princ, &krbtgt);
+    ret = _kdc_db_fetch(context, config, princ, HDB_F_GET_KRBTGT, &krbtgt);
 
     if(ret) {
 	char *p;
@@ -2294,7 +2296,8 @@ tgs_rep2(krb5_context context,
 		goto out2;
 	    }
 	    _krb5_principalname2krb5_principal(&p, t->sname, t->realm);
-	    ret = _kdc_db_fetch(context, config, p, &uu);
+	    ret = _kdc_db_fetch(context, config, p, 
+				HDB_F_GET_CLIENT|HDB_F_GET_SERVER, &uu);
 	    krb5_free_principal(context, p);
 	    if(ret){
 		if (ret == HDB_ERR_NOENTRY)
@@ -2335,7 +2338,7 @@ tgs_rep2(krb5_context context,
 	    kdc_log(context, config, 0,
 		    "TGS-REQ %s from %s for %s", cpn, from, spn);
     server_lookup:
-	ret = _kdc_db_fetch(context, config, sp, &server);
+	ret = _kdc_db_fetch(context, config, sp, HDB_F_GET_SERVER, &server);
 
 	if(ret){
 	    const char *new_rlm;
@@ -2384,7 +2387,7 @@ tgs_rep2(krb5_context context,
 	    goto out;
 	}
 
-	ret = _kdc_db_fetch(context, config, cp, &client);
+	ret = _kdc_db_fetch(context, config, cp, HDB_F_GET_CLIENT, &client);
 	if(ret)
 	    kdc_log(context, config, 1, "Client not found in database: %s: %s",
 		    cpn, krb5_get_err_text(context, ret));

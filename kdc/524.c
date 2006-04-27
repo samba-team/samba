@@ -66,7 +66,7 @@ fetch_server (krb5_context context,
 		krb5_get_err_text(context, ret));
 	return ret;
     }
-    ret = _kdc_db_fetch(context, config, sprinc, server);
+    ret = _kdc_db_fetch(context, config, sprinc, HDB_F_GET_SERVER, server);
     krb5_free_principal(context, sprinc);
     if (ret) {
 	kdc_log(context, config, 0,

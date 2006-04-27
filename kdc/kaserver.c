@@ -433,7 +433,7 @@ do_authenticate (krb5_context context,
 	    client_name, from, server_name);
 
     ret = _kdc_db_fetch4 (context, config, name, instance, 
-		     config->v4_realm, &client_entry);
+			  config->v4_realm, HDB_F_GET_CLIENT, &client_entry);
     if (ret) {
 	kdc_log(context, config, 0, "Client not found in database: %s: %s",
 		client_name, krb5_get_err_text(context, ret));
@@ -442,7 +442,8 @@ do_authenticate (krb5_context context,
     }
 
     ret = _kdc_db_fetch4 (context, config, "krbtgt", 
-		     config->v4_realm, config->v4_realm, &server_entry);
+			  config->v4_realm, config->v4_realm, 
+			  HDB_F_GET_KRBTGT, &server_entry);
     if (ret) {
 	kdc_log(context, config, 0, "Server not found in database: %s: %s",
 		server_name, krb5_get_err_text(context, ret));
@@ -648,7 +649,7 @@ do_getticket (krb5_context context,
 	      "%s.%s@%s", name, instance, config->v4_realm);
 
     ret = _kdc_db_fetch4 (context, config, name, instance, 
-			  config->v4_realm, &server_entry);
+			  config->v4_realm, HDB_F_GET_SERVER, &server_entry);
     if (ret) {
 	kdc_log(context, config, 0, "Server not found in database: %s: %s",
 		server_name, krb5_get_err_text(context, ret));
@@ -657,7 +658,7 @@ do_getticket (krb5_context context,
     }
 
     ret = _kdc_db_fetch4 (context, config, "krbtgt", 
-		     config->v4_realm, config->v4_realm, &krbtgt_entry);
+		     config->v4_realm, config->v4_realm, HDB_F_GET_KRBTGT, &krbtgt_entry);
     if (ret) {
 	kdc_log(context, config, 0,
 		"Server not found in database: %s.%s@%s: %s",
@@ -730,7 +731,8 @@ do_getticket (krb5_context context,
 	    client_name, from, server_name);
 
     ret = _kdc_db_fetch4 (context, config, 
-		     ad.pname, ad.pinst, ad.prealm, &client_entry);
+			  ad.pname, ad.pinst, ad.prealm, HDB_F_GET_CLIENT,
+			  &client_entry);
     if(ret && ret != HDB_ERR_NOENTRY) {
 	kdc_log(context, config, 0,
 		"Client not found in database: (krb4) %s: %s",
