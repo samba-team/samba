@@ -4,19 +4,23 @@ include kerberos/config.mk
 include ntlmssp/config.mk
 include credentials/config.mk
 
-#######################
-# Start MODULE auth_sam
-[MODULE::auth_sam]
-# gensec_krb5 and gensec_gssapi depend on it
-OUTPUT_TYPE = MERGEDOBJ
+[SUBSYSTEM::auth_sam]
 PRIVATE_PROTO_HEADER = auth_sam.h
-INIT_FUNCTION = auth_sam_init
-SUBSYSTEM = auth
 OBJ_FILES = \
-		auth_sam.o \
+		sam.o \
 		auth_sam_reply.o
 PUBLIC_DEPENDENCIES = \
 		SAMDB
+
+#######################
+# Start MODULE auth_sam
+[MODULE::auth_sam_module]
+# gensec_krb5 and gensec_gssapi depend on it
+INIT_FUNCTION = auth_sam_init
+SUBSYSTEM = auth
+OBJ_FILES = auth_sam.o
+PUBLIC_DEPENDENCIES = \
+		SAMDB auth_sam
 # End MODULE auth_sam
 #######################
 

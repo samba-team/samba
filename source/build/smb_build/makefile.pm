@@ -197,6 +197,14 @@ sub _prepare_list($$$)
 	$self->output("$ctx->{TYPE}\_$ctx->{NAME}_$var =$tmplist\n");
 }
 
+sub Integrated($$)
+{
+	my ($self,$ctx) = @_;
+
+	$self->_prepare_list($ctx, "OBJ_LIST");
+	$self->_prepare_list($ctx, "LINK_FLAGS");
+}
+
 sub SharedLibrary($$)
 {
 	my ($self,$ctx) = @_;
@@ -231,11 +239,11 @@ sub SharedLibrary($$)
 	}
 
 	$self->_prepare_list($ctx, "OBJ_LIST");
+	$self->_prepare_list($ctx, "FULL_OBJ_LIST");
 	$self->_prepare_list($ctx, "DEPEND_LIST");
-	$self->_prepare_list($ctx, "LINK_LIST");
 	$self->_prepare_list($ctx, "LINK_FLAGS");
 
-	push(@{$self->{all_objs}}, "\$($ctx->{TYPE}_$ctx->{NAME}_OBJ_LIST)");
+	push(@{$self->{all_objs}}, "\$($ctx->{TYPE}_$ctx->{NAME}_FULL_OBJ_LIST)");
 
 	if ($ctx->{TYPE} eq "MODULE" and defined($ctx->{INIT_FUNCTION})) {
 		my $init_fn = $ctx->{INIT_FUNCTION_TYPE};
@@ -270,12 +278,12 @@ __EOD__
 		$self->output(<< "__EOD__"
 #
 
-$ctx->{TARGET}: \$($ctx->{TYPE}_$ctx->{NAME}_DEPEND_LIST) \$($ctx->{TYPE}_$ctx->{NAME}_OBJ_LIST) $init_obj
+$ctx->{TARGET}: \$($ctx->{TYPE}_$ctx->{NAME}_DEPEND_LIST) \$($ctx->{TYPE}_$ctx->{NAME}_FULL_OBJ_LIST) $init_obj
 	\@echo Linking \$\@
 	\@mkdir -p $ctx->{DEBUGDIR}
 	\@\$(SHLD) \$(SHLD_FLAGS) -o \$\@ \$(LOCAL_LINK_FLAGS) \\
 		\$($ctx->{TYPE}_$ctx->{NAME}_LINK_FLAGS) $soarg \\
-		$init_obj \$($ctx->{TYPE}_$ctx->{NAME}_LINK_LIST)$soargdebug
+		$init_obj $soargdebug
 __EOD__
 );
 		if (defined($ctx->{ALIASES})) {
@@ -297,12 +305,12 @@ __EOD__
 	$self->output(<< "__EOD__"
 #
 
-$installdir/$ctx->{LIBRARY_REALNAME}: \$($ctx->{TYPE}_$ctx->{NAME}_DEPEND_LIST) \$($ctx->{TYPE}_$ctx->{NAME}_OBJ_LIST) $init_obj
+$installdir/$ctx->{LIBRARY_REALNAME}: \$($ctx->{TYPE}_$ctx->{NAME}_DEPEND_LIST) \$($ctx->{TYPE}_$ctx->{NAME}_FULL_OBJ_LIST) $init_obj
 	\@echo Linking \$\@
 	\@mkdir -p $installdir
 	\@\$(SHLD) \$(SHLD_FLAGS) -o \$\@ \$(INSTALL_LINK_FLAGS) \\
 		\$($ctx->{TYPE}_$ctx->{NAME}_LINK_FLAGS) $soarg \\
-		$init_obj \$($ctx->{TYPE}_$ctx->{NAME}_LINK_LIST)$singlesoarg
+		$init_obj $singlesoarg
 
 __EOD__
 );
@@ -312,17 +320,18 @@ sub MergedObj($$)
 {
 	my ($self,$ctx) = @_;
 
-	return unless $ctx->{TARGET};
-
 	$self->_prepare_list($ctx, "OBJ_LIST");
+	$self->_prepare_list($ctx, "FULL_OBJ_LIST");
 	$self->_prepare_list($ctx, "DEPEND_LIST");
 
-	push(@{$self->{all_objs}}, "\$($ctx->{TYPE}_$ctx->{NAME}_OBJ_LIST)");
+	return unless $ctx->{TARGET};
+
+	push(@{$self->{all_objs}}, "\$($ctx->{TYPE}_$ctx->{NAME}_FULL_OBJ_LIST)");
 		
-	$self->output("$ctx->{TARGET}: \$($ctx->{TYPE}_$ctx->{NAME}_OBJ_LIST)\n");
+	$self->output("$ctx->{TARGET}: \$($ctx->{TYPE}_$ctx->{NAME}_FULL_OBJ_LIST)\n");
 
 	$self->output("\t\@echo \"Pre-Linking $ctx->{TYPE} $ctx->{NAME}\"\n");
-	$self->output("\t@\$(LD) -r \$($ctx->{TYPE}_$ctx->{NAME}_OBJ_LIST) -o $ctx->{TARGET}\n");
+	$self->output("\t@\$(LD) -r \$($ctx->{TYPE}_$ctx->{NAME}_FULL_OBJ_LIST) -o $ctx->{TARGET}\n");
 	$self->output("\n");
 }
 
@@ -332,12 +341,13 @@ sub ObjList($$)
 
 	return unless $ctx->{TARGET};
 
-	push(@{$self->{all_objs}}, "\$($ctx->{TYPE}_$ctx->{NAME}_OBJ_LIST)");
+	push(@{$self->{all_objs}}, "\$($ctx->{TYPE}_$ctx->{NAME}_FULL_OBJ_LIST)");
 		
 	$self->_prepare_list($ctx, "OBJ_LIST");
+	$self->_prepare_list($ctx, "FULL_OBJ_LIST");
 	$self->_prepare_list($ctx, "DEPEND_LIST");
 	$self->output("$ctx->{TARGET}: ");
-	$self->output("\$($ctx->{TYPE}_$ctx->{NAME}_DEPEND_LIST) \$($ctx->{TYPE}_$ctx->{NAME}_OBJ_LIST)\n");
+	$self->output("\$($ctx->{TYPE}_$ctx->{NAME}_DEPEND_LIST) \$($ctx->{TYPE}_$ctx->{NAME}_FULL_OBJ_LIST)\n");
 	$self->output("\t\@touch $ctx->{TARGET}\n");
 }
 
@@ -348,19 +358,17 @@ sub StaticLibrary($$)
 	push (@{$self->{static_libs}}, $ctx->{TARGET});
 
 	$self->_prepare_list($ctx, "OBJ_LIST");
+	$self->_prepare_list($ctx, "FULL_OBJ_LIST");
 
-	$self->_prepare_list($ctx, "DEPEND_LIST");
-	$self->_prepare_list($ctx, "LINK_LIST");
 	$self->_prepare_list($ctx, "LINK_FLAGS");
 
-	push(@{$self->{all_objs}}, "\$($ctx->{TYPE}_$ctx->{NAME}_OBJ_LIST)");
+	push(@{$self->{all_objs}}, "\$($ctx->{TYPE}_$ctx->{NAME}_FULL_OBJ_LIST)");
 		
 	$self->output(<< "__EOD__"
 #
-$ctx->{TARGET}: \$($ctx->{TYPE}_$ctx->{NAME}_OBJ_LIST) 
+$ctx->{TARGET}: \$($ctx->{TYPE}_$ctx->{NAME}_FULL_OBJ_LIST)
 	\@echo Linking \$@
-	\@\$(STLD) \$(STLD_FLAGS) \$@ \\
-		\$($ctx->{TYPE}_$ctx->{NAME}_OBJ_LIST)
+	\@\$(STLD) \$(STLD_FLAGS) \$@ \$($ctx->{TYPE}_$ctx->{NAME}_FULL_OBJ_LIST)
 
 __EOD__
 );
@@ -391,7 +399,7 @@ sub Binary($$)
 		$installdir = "bin";
 	}
 
-	push(@{$self->{all_objs}}, "\$($ctx->{TYPE}_$ctx->{NAME}_OBJ_LIST)");
+	push(@{$self->{all_objs}}, "\$($ctx->{TYPE}_$ctx->{NAME}_FULL_OBJ_LIST)");
 		
 	unless (defined($ctx->{INSTALLDIR})) {
 	} elsif ($ctx->{INSTALLDIR} eq "SBINDIR") {
@@ -403,17 +411,16 @@ sub Binary($$)
 	push (@{$self->{binaries}}, "bin/$ctx->{BINARY}");
 
 	$self->_prepare_list($ctx, "OBJ_LIST");
+	$self->_prepare_list($ctx, "FULL_OBJ_LIST");
 	$self->_prepare_list($ctx, "DEPEND_LIST");
-	$self->_prepare_list($ctx, "LINK_LIST");
 	$self->_prepare_list($ctx, "LINK_FLAGS");
 
 	if ($self->{duplicate_build}) {
 	$self->output(<< "__EOD__"
 #
-bin/$ctx->{BINARY}: \$($ctx->{TYPE}_$ctx->{NAME}_DEPEND_LIST) \$($ctx->{TYPE}_$ctx->{NAME}_OBJ_LIST) 
+bin/$ctx->{BINARY}: \$($ctx->{TYPE}_$ctx->{NAME}_DEPEND_LIST) \$($ctx->{TYPE}_$ctx->{NAME}_FULL_OBJ_LIST) 
 	\@echo Linking \$\@
 	\@\$(CC) \$(LDFLAGS) -o \$\@ \$(LOCAL_LINK_FLAGS) \$(INSTALL_LINK_FLAGS) \\
-		\$\($ctx->{TYPE}_$ctx->{NAME}_LINK_LIST) \\
 		\$\($ctx->{TYPE}_$ctx->{NAME}_LINK_FLAGS) 
 
 __EOD__
@@ -421,10 +428,9 @@ __EOD__
 	}
 
 $self->output(<< "__EOD__"
-$installdir/$ctx->{BINARY}: \$($ctx->{TYPE}_$ctx->{NAME}_DEPEND_LIST) \$($ctx->{TYPE}_$ctx->{NAME}_OBJ_LIST) 
+$installdir/$ctx->{BINARY}: \$($ctx->{TYPE}_$ctx->{NAME}_DEPEND_LIST) \$($ctx->{TYPE}_$ctx->{NAME}_FULL_OBJ_LIST) 
 	\@echo Linking \$\@
 	\@\$(CC) \$(LDFLAGS) -o \$\@ \$(INSTALL_LINK_FLAGS) \\
-		\$\($ctx->{TYPE}_$ctx->{NAME}_LINK_LIST) \\
 		\$\($ctx->{TYPE}_$ctx->{NAME}_LINK_FLAGS) 
 
 __EOD__

@@ -25,6 +25,7 @@
 #include "rpc_server/dcerpc_server.h"
 #include "rpc_server/common/common.h"
 #include "lib/ldb/include/ldb.h"
+#include "auth/auth_sam.h"
 #include "auth/auth.h"
 #include "dsdb/samdb/samdb.h"
 #include "rpc_server/samr/proto.h"

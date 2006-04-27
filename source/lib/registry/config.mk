@@ -53,7 +53,7 @@ PUBLIC_DEPENDENCIES = LIBTALLOC
 [MODULE::registry_rpc]
 INIT_FUNCTION = registry_rpc_init
 PRIVATE_PROTO_HEADER = reg_backend_rpc.h
-OUTPUT_TYPE = MERGEDOBJ
+OUTPUT_TYPE = INTEGRATED
 SUBSYSTEM = registry
 OBJ_FILES = \
 		reg_backend_rpc.o

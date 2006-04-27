@@ -613,3 +613,22 @@ _PUBLIC_ void strupper_m(char *s)
 	*d = 0;
 }
 
+
+/**
+ Find the number of 'c' chars in a string
+**/
+_PUBLIC_ size_t count_chars_w(const char *s, char c)
+{
+	size_t count = 0;
+
+	while (*s) {
+		size_t size;
+		codepoint_t c2 = next_codepoint(s, &size);
+		if (c2 == c) count++;
+		s += size;
+	}
+
+	return count;
+}
+
+

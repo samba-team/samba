@@ -14,7 +14,7 @@ PUBLIC_DEPENDENCIES = \
 # Start MODULE service_smb
 [MODULE::service_smb]
 INIT_FUNCTION = server_service_smb_init
-OUTPUT_TYPE = MERGEDOBJ
+OUTPUT_TYPE = INTEGRATED
 SUBSYSTEM = service
 PUBLIC_DEPENDENCIES = \
 		SMB_SERVER
@@ -26,7 +26,7 @@ PUBLIC_DEPENDENCIES = \
 [MODULE::service_rpc]
 INIT_FUNCTION = server_service_rpc_init
 SUBSYSTEM = service
-OUTPUT_TYPE = MERGEDOBJ
+OUTPUT_TYPE = INTEGRATED
 PUBLIC_DEPENDENCIES = \
 		dcerpc_server
 # End MODULE server_rpc
@@ -129,6 +129,10 @@ PRIVATE_DEPENDENCIES = \
 		LIBSAMBA-UTIL \
 		PIDFILE \
 		POPT_SAMBA \
-		LIBPOPT
+		LIBPOPT \
+		gensec \
+		registry \
+		ntptr \
+		ntvfs
 # End BINARY smbd
 #################################

@@ -169,6 +169,7 @@ struct reg_diff
 };
 
 struct auth_session_info;
+struct event_context;
 
 #include "lib/registry/registry_proto.h"
 

@@ -29,7 +29,8 @@ PRIVATE_DEPENDENCIES = \
 		LIBPOPT \
 		POPT_SAMBA \
 		POPT_CREDENTIALS \
-		gensec
+		gensec \
+		LIBCLI_RESOLVE
 MANPAGE = man/ntlm_auth.1
 # End BINARY ntlm_auth
 #################################
@@ -81,7 +82,8 @@ PRIVATE_DEPENDENCIES = \
 		LIBCLI_NBT \
 		LIBPOPT \
 		POPT_SAMBA \
-		LIBNETIF
+		LIBNETIF \
+		LIBCLI_RESOLVE
 # End BINARY nmblookup
 #################################
 
@@ -96,6 +98,8 @@ PRIVATE_DEPENDENCIES = \
 		LIBSAMBA-UTIL \
 		LIBPOPT \
 		SOCKET \
-		POPT_SAMBA
+		POPT_SAMBA \
+		LIBCLI_RESOLVE \
+		CHARSET
 # End BINARY testparm
 #################################
