@@ -1,3 +1,33 @@
+2006-04-27  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* send_recv.c: set and clear error string
+
+	* rename_s.c: Break out the that we request from principal from
+	the entry and pass it in as a separate argument.
+
+	* randkey_s.c: Break out the that we request from principal from
+	the entry and pass it in as a separate argument.
+
+	* modify_s.c: Break out the that we request from principal from
+	the entry and pass it in as a separate argument.
+
+	* log.c: Break out the that we request from principal from the
+	entry and pass it in as a separate argument.
+
+	* get_s.c: Break out the that we request from principal from the
+	entry and pass it in as a separate argument.
+
+	* delete_s.c: Break out the that we request from principal from
+	the entry and pass it in as a separate argument.
+
+	* chpass_s.c: Break out the that we request from principal from
+	the entry and pass it in as a separate argument.
+	
+2006-04-25  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* create_s.c (create_principal*): If client doesn't send kvno,
+	make sure to set it to 1.
+	
 2006-04-10  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* log.c: (kadm5_log_rename): handle errors better
