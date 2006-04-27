@@ -1,5 +1,30 @@
-2006-04-26  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-04-27  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kdc/kerberos5.c (tgs_rep2): check that the client exists in the
+	kerberos database if its local request.
+
+	* kdc/{misc.c,524.c,kaserver.c,kerberos5.c}: pass down HDB_F_GET_
+	flags as appropriate
+
+	* kdc/kerberos4.c (_kdc_db_fetch4): pass down flags though
+	krb5_425_conv_principal_ext2
+
+	* kdc/misc.c (_kdc_db_fetch): Break out the that we request from
+	principal from the entry and pass it in as a seprate argument.
+
+	* lib/hdb/keytab.c (hdb_get_entry): Break out the that we request
+	from principal from the entry and pass it in as a seprate
+	argument.
+
+	* lib/hdb/common.c: Break out the that we request from principal
+	from the entry and pass it in as a seprate argument.
+
+	* lib/hdb/hdb.h: Break out the that we request from principal from
+	the entry and pass it in as a seprate argument. Add more flags to
+	->hdb_get(). Re-indent.
+	
+2006-04-26  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* doc/setup.texi: document pki-allow-proxy-certificate
 
 	* kdc/pkinit.c: Add option [kdc]pki-allow-proxy-certificate=bool
