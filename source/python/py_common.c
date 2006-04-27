@@ -45,6 +45,8 @@ void py_samba_init(void)
 	if (initialised)
 		return;
 
+	load_case_tables();
+
 	/* Load configuration file */
 
 	if (!lp_load(dyn_CONFIGFILE, True, False, False, True))
@@ -212,6 +214,7 @@ struct cli_state *open_pipe_creds(char *server, PyObject *creds,
 {
 	char *username, *password, *domain;
 	struct cli_state *cli;
+	struct rpc_pipe_client *pipe_hnd;
 	NTSTATUS result;
 	
 	/* Extract credentials from the python dictionary */
@@ -230,7 +233,8 @@ struct cli_state *open_pipe_creds(char *server, PyObject *creds,
 		return NULL;
 	}
 
-	if (!cli_nt_session_open(cli, pipe_idx)) {
+	pipe_hnd = cli_rpc_pipe_open_noauth(cli, pipe_idx, &result);
+	if (!pipe_hnd) {
 		cli_shutdown(cli);
 		asprintf(errstr, "error opening pipe index %d", pipe_idx);
 		return NULL;
