@@ -1,5 +1,7 @@
 2006-04-27  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kuser/kdestroy.1: Document --credential=principal.
+
 	* kdc/kerberos5.c (tgs_rep2): check that the client exists in the
 	kerberos database if its local request.
 
