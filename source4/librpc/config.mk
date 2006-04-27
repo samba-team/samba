@@ -345,9 +345,9 @@ SO_VERSION = 0
 OBJ_FILES = gen_ndr/ndr_winsrepl.o
 PUBLIC_DEPENDENCIES = LIBNDR NDR_NBT
 
-librpc/gen_ndr/tables.c: $(IDL_NDR_HEADER_FILES)
+librpc/gen_ndr/tables.c: $(IDL_NDR_PARSE_H_FILES)
 	@echo Generating librpc/gen_ndr/tables.c
-	@$(PERL) $(srcdir)/librpc/tables.pl --output=librpc/gen_ndr/tables.c $(IDL_NDR_HEADER_FILES) > librpc/gen_ndr/tables.x
+	@$(PERL) $(srcdir)/librpc/tables.pl --output=librpc/gen_ndr/tables.c $(IDL_NDR_PARSE_H_FILES) > librpc/gen_ndr/tables.x
 	mv librpc/gen_ndr/tables.x librpc/gen_ndr/tables.c
 
 [SUBSYSTEM::NDR_IFACE_TABLE]
