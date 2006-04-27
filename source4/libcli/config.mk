@@ -86,11 +86,12 @@ PUBLIC_DEPENDENCIES = NDR_WINSREPL SOCKET LIBEVENTS
 PRIVATE_PROTO_HEADER = resolve/proto.h
 OBJ_FILES = \
 	resolve/resolve.o \
-	resolve/nbtlist.o \
 	resolve/bcast.o \
+	resolve/nbtlist.o \
 	resolve/wins.o \
 	resolve/host.o
-PUBLIC_DEPENDENCIES = LIBCLI_NBT LIBNETIF
+PUBLIC_DEPENDENCIES = LIBNETIF
+PRIVATE_DEPENDENCIES = LIBCLI_NBT 
 
 [SUBSYSTEM::LIBCLI_FINDDCS]
 PRIVATE_PROTO_HEADER = finddcs.h
@@ -120,6 +121,7 @@ OBJ_FILES = clireadwrite.o \
 
 [SUBSYSTEM::LIBCLI_RAW]
 PRIVATE_PROTO_HEADER = raw/raw_proto.h
+PRIVATE_DEPENDENCIES = LIBCLI_COMPOSITE
 PUBLIC_DEPENDENCIES = LIBCLI_RAW_KRB5
 OBJ_FILES = raw/rawfile.o \
 		raw/smb_signing.o \

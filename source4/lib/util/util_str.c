@@ -81,14 +81,14 @@ _PUBLIC_ size_t count_chars(const char *s, char c)
 	size_t count = 0;
 
 	while (*s) {
-		size_t size;
-		codepoint_t c2 = next_codepoint(s, &size);
-		if (c2 == c) count++;
-		s += size;
+		if (*s == c) count++;
+		s ++;
 	}
 
 	return count;
 }
+
+
 
 /**
  Safe string copy into a known length string. maxlength does not
@@ -433,12 +433,12 @@ _PUBLIC_ void rfc1738_unescape(char *buf)
 {
 	char *p=buf;
 
-	while ((p=strchr_m(p,'+')))
+	while ((p=strchr(p,'+')))
 		*p = ' ';
 
 	p = buf;
 
-	while (p && *p && (p=strchr_m(p,'%'))) {
+	while (p && *p && (p=strchr(p,'%'))) {
 		int c1 = p[1];
 		int c2 = p[2];
 

@@ -65,10 +65,7 @@ sub check_module($$$)
 		$mod->{INIT_FUNCTION_TYPE} = "NTSTATUS (*) (void)";
 	}
 
-	if (defined($mod->{CHOSEN_BUILD}) and $mod->{CHOSEN_BUILD} ne "DEFAULT") 
-	{
-		$mod->{OUTPUT_TYPE} = $mod->{CHOSEN_BUILD};
-	} elsif (not defined($mod->{OUTPUT_TYPE})) {
+	if (not defined($mod->{OUTPUT_TYPE})) {
 		$mod->{OUTPUT_TYPE} = $default_ot;
 	}
 
@@ -76,8 +73,7 @@ sub check_module($$$)
 		$mod->{INSTALLDIR} = "MODULESDIR/$mod->{SUBSYSTEM}";
 		push (@{$mod->{PRIVATE_DEPENDENCIES}}, $mod->{SUBSYSTEM}) unless 
 			$INPUT->{$mod->{SUBSYSTEM}}->{TYPE} eq "BINARY";
-	} else {
-		push (@{$INPUT->{$mod->{SUBSYSTEM}}{PRIVATE_DEPENDENCIES}}, $mod->{NAME});
+	} else { 
 		push (@{$INPUT->{$mod->{SUBSYSTEM}}{INIT_FUNCTIONS}}, $mod->{INIT_FUNCTION}) if defined($mod->{INIT_FUNCTION});
 	}
 }
@@ -118,17 +114,33 @@ sub check_binary($$)
 	$bin->{OUTPUT_TYPE} = "BINARY";
 }
 
+
+sub import_integrated($$)
+{
+	my ($lib, $depend) = @_;
+
+	foreach my $mod (values %$depend) {
+		next if(not defined($mod->{SUBSYSTEM}));
+		next if($mod->{SUBSYSTEM} ne $lib->{NAME});
+		next if($mod->{ENABLE} ne "YES");
+
+		push (@{$lib->{FULL_OBJ_LIST}}, "\$($mod->{TYPE}_$mod->{NAME}_OBJ_LIST)");
+		push (@{$lib->{LINK_FLAGS}}, "\$($mod->{TYPE}_$mod->{NAME}_LINK_FLAGS)");
+		push (@{$lib->{PRIVATE_DEPENDENCIES}}, @{$mod->{PUBLIC_DEPENDENCIES}}) if defined($mod->{PUBLIC_DEPENDENCIES});
+		push (@{$lib->{PRIVATE_DEPENDENCIES}}, @{$mod->{PRIVATE_DEPENDENCIES}}) if defined($mod->{PRIVATE_DEPENDENCIES});
+
+		$mod->{ENABLE} = "NO";
+	}
+}
+
 sub calc_unique_deps($$$$$$)
 {
 	sub calc_unique_deps($$$$$$);
 	my ($name, $INPUT, $deps, $udeps, $withlibs, $busy) = @_;
 
 	foreach my $n (@$deps) {
-		if (grep (/^$n$/, @$busy)) {
-		#	print "($name) BUSY: $n, list: " . join(',', @$busy) . "\n";
-		#	die("Recursive dependency for $dep->{NAME}");
-			next;
-		}
+		die("Dependency unknown: $n") unless (defined($INPUT->{$n}));
+		die("Recursive dependency: $n, list: " . join(',', @$busy)) if (grep (/^$n$/, @$busy));
 		next if (grep /^$n$/, @$udeps);
 		my $dep = $INPUT->{$n};
 
@@ -136,6 +148,7 @@ sub calc_unique_deps($$$$$$)
 			($withlibs or 
 			($dep->{OUTPUT_TYPE} eq "OBJ_LIST") or 
 			($dep->{OUTPUT_TYPE} eq "MERGEDOBJ") or 
+			($dep->{OUTPUT_TYPE} eq "INTEGRATED") or 
 			($dep->{OUTPUT_TYPE} eq "STATIC_LIBRARY"))) {
 				push (@$busy, $dep->{NAME});
 			        calc_unique_deps($dep->{NAME}, $INPUT, $dep->{PUBLIC_DEPENDENCIES}, $udeps, $withlibs, $busy);
@@ -143,9 +156,7 @@ sub calc_unique_deps($$$$$$)
 				pop (@$busy);
 	        }
 
-		# FIXME: Insert at the right position
-		push (@{$udeps}, $dep->{NAME});
-
+		unshift (@{$udeps}, $dep->{NAME});
 	}
 }
 
@@ -191,10 +202,16 @@ sub check($$$$$)
 	foreach my $k (keys %$INPUT) {
 		my $part = $INPUT->{$k};
 
+		$part->{FULL_OBJ_LIST} = ["\$($part->{TYPE}_$part->{NAME}_OBJ_LIST)"];
+
 		check_subsystem($INPUT, $part, $subsys_ot) if ($part->{TYPE} eq "SUBSYSTEM");
 		check_module($INPUT, $part, $module_ot) if ($part->{TYPE} eq "MODULE");
 		check_library($INPUT, $part, $lib_ot) if ($part->{TYPE} eq "LIBRARY");
 		check_binary($INPUT, $part) if ($part->{TYPE} eq "BINARY");
+	}
+
+	foreach my $part (values %$INPUT) {
+		import_integrated($part, $INPUT);
 	}
 
 	foreach my $part (values %$INPUT) {

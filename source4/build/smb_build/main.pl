@@ -45,10 +45,8 @@ if (defined($ENV{"MODULE_OUTPUT_TYPE"})) {
 	$module_output_type = $ENV{MODULE_OUTPUT_TYPE};
 } elsif ($config::config{BLDSHARED} eq "true") {
 	$module_output_type = "SHARED_LIBRARY";
-} elsif ($config::config{BLDMERGED} eq "true") {
-	$module_output_type = "MERGEDOBJ";
 } else {
-	$module_output_type = "OBJ_LIST";
+	$module_output_type = "INTEGRATED";
 }
 
 my $DEPEND = smb_build::input::check($INPUT, \%config::enabled, 
@@ -58,6 +56,13 @@ $config::config{SUBSYSTEM_OUTPUT_TYPE} = $subsystem_output_type;
 $config::config{LIBRARY_OUTPUT_TYPE} = $library_output_type;
 $config::config{MODULE_OUTPUT_TYPE} = $module_output_type;
 my $mkenv = new smb_build::makefile(\%config::config, $mkfile);
+
+
+foreach my $key (values %$OUTPUT) {
+	next unless defined $key->{OUTPUT_TYPE};
+
+	$mkenv->Integrated($key) if $key->{OUTPUT_TYPE} eq "INTEGRATED";
+}
 
 foreach my $key (values %$OUTPUT) {
 	next unless defined $key->{OUTPUT_TYPE};

@@ -103,7 +103,7 @@ PUBLIC_DEPENDENCIES = \
 
 [MODULE::torture_rpc]
 # TORTURE_NET and TORTURE_NBT use functions from torture_rpc...
-OUTPUT_TYPE = MERGEDOBJ
+OUTPUT_TYPE = INTEGRATED
 SUBSYSTEM = torture
 INIT_FUNCTION = torture_rpc_init
 PRIVATE_PROTO_HEADER = \

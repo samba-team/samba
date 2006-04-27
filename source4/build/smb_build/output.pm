@@ -16,8 +16,10 @@ sub add_dir($$)
 	$dir =~ s/^\.\///g;
 	
 	foreach (@$files) {
-		$_ = "$dir/$_";
-		s/([^\/\.]+)\/\.\.\///g;
+		if (substr($_, 0, 1) ne "\$") {
+			$_ = "$dir/$_";
+			s/([^\/\.]+)\/\.\.\///g;
+		}
 		push (@ret, $_);
 	}
 	
@@ -45,8 +47,8 @@ sub generate_shared_library($)
 	my $link_name;
 	my $lib_name;
 
-	@{$lib->{DEPEND_LIST}} = ();
-	@{$lib->{LINK_LIST}} = ("\$($lib->{TYPE}_$lib->{NAME}\_OBJ_LIST)");
+	$lib->{DEPEND_LIST} = [];
+	$lib->{LINK_FLAGS} = ["\$($lib->{TYPE}_$lib->{NAME}\_OBJ_LIST)"];
 
 	$link_name = lc($lib->{NAME});
 	$lib_name = $link_name;
@@ -77,8 +79,8 @@ sub generate_shared_library($)
 	}
 
 	if (defined($lib->{VERSION})) {
-		$lib->{LIBRARY_SONAME} = $lib->{LIBRARY_REALNAME}.".$lib->{SO_VERSION}";
-		$lib->{LIBRARY_REALNAME} = $lib->{LIBRARY_REALNAME}.".$lib->{VERSION}";
+		$lib->{LIBRARY_SONAME} = "$lib->{LIBRARY_REALNAME}.$lib->{SO_VERSION}";
+		$lib->{LIBRARY_REALNAME} = "$lib->{LIBRARY_REALNAME}.$lib->{VERSION}";
 	} 
 	
 	$lib->{TARGET} = "$lib->{DEBUGDIR}/$lib->{LIBRARY_REALNAME}";
@@ -90,14 +92,13 @@ sub generate_static_library($)
 	my $lib = shift;
 	my $link_name;
 
-	@{$lib->{DEPEND_LIST}} = ();
+	$lib->{DEPEND_LIST} = [];
 
 	$link_name = $lib->{NAME};
 	$link_name =~ s/^LIB//;
 
 	$lib->{LIBRARY_NAME} = "lib".lc($link_name).".a";
-	@{$lib->{LINK_LIST}} = ("\$($lib->{TYPE}_$lib->{NAME}\_OBJ_LIST)");
-	@{$lib->{LINK_FLAGS}} = ();
+	$lib->{LINK_FLAGS} = ["\$($lib->{TYPE}_$lib->{NAME}\_OBJ_LIST)"];
 
 	$lib->{TARGET} = "bin/$lib->{LIBRARY_NAME}";
 	$lib->{OUTPUT} = "-l".lc($link_name);
@@ -107,9 +108,8 @@ sub generate_binary($)
 {
 	my $bin = shift;
 
-	@{$bin->{DEPEND_LIST}} = ();
-	@{$bin->{LINK_LIST}} = ("\$($bin->{TYPE}_$bin->{NAME}\_OBJ_LIST)");
-	@{$bin->{LINK_FLAGS}} = ();
+	$bin->{DEPEND_LIST} = [];
+	$bin->{LINK_FLAGS} = ["\$($bin->{TYPE}_$bin->{NAME}\_OBJ_LIST)"];
 
 	$bin->{RELEASEDIR} = "bin/install";
 	$bin->{DEBUGDIR} = "bin/";
@@ -117,17 +117,16 @@ sub generate_binary($)
 	$bin->{BINARY} = $bin->{NAME};
 }
 
+
 sub create_output($$)
 {
 	my ($depend, $config) = @_;
 	my $part;
 
 	foreach $part (values %{$depend}) {
-		next if not defined($part->{OUTPUT_TYPE});
+		next unless(defined($part->{OUTPUT_TYPE}));
 
 		# Combine object lists
-		push(@{$part->{OBJ_LIST}}, add_dir($part->{BASEDIR}, $part->{INIT_OBJ_FILES})) if defined($part->{INIT_OBJ_FILES});
-		push(@{$part->{OBJ_LIST}}, add_dir($part->{BASEDIR}, $part->{ADD_OBJ_FILES})) if defined($part->{ADD_OBJ_FILES});
 		push(@{$part->{OBJ_LIST}}, add_dir($part->{BASEDIR}, $part->{OBJ_FILES})) if defined($part->{OBJ_FILES});
 
 		if ((not defined($part->{OBJ_LIST}) or 
@@ -161,7 +160,7 @@ sub create_output($$)
 			my $elem = $depend->{$_};
 			next if $elem == $part;
 
-			push(@{$part->{LINK_LIST}}, $elem->{OUTPUT}) if defined($elem->{OUTPUT});
+			push(@{$part->{LINK_FLAGS}}, $elem->{OUTPUT}) if defined($elem->{OUTPUT});
 			push(@{$part->{LINK_FLAGS}}, @{$elem->{LIBS}}) if defined($elem->{LIBS});
 			push(@{$part->{LINK_FLAGS}},@{$elem->{LDFLAGS}}) if defined($elem->{LDFLAGS});
 		    	push(@{$part->{DEPEND_LIST}}, $elem->{TARGET}) if defined($elem->{TARGET});
@@ -176,6 +175,7 @@ sub create_output($$)
 			$part->{CFLAGS} .=  " -fvisibility=$part->{STANDARD_VISIBILITY}";
 		}
 	}
+
 
 	return $depend;
 }

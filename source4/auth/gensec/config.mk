@@ -52,7 +52,7 @@ INIT_FUNCTION = gensec_schannel_init
 OBJ_FILES = schannel.o \
 			schannel_sign.o
 PUBLIC_DEPENDENCIES = auth SCHANNELDB NDR_SCHANNEL
-OUTPUT_TYPE = MERGEDOBJ
+OUTPUT_TYPE = INTEGRATED
 # End MODULE gensec_schannel
 ################################################
 
