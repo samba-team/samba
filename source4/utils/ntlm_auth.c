@@ -29,6 +29,7 @@
 #include "pstring.h"
 #include "libcli/auth/libcli_auth.h"
 #include "librpc/gen_ndr/ndr_security.h"
+#include "lib/ldb/include/ldb.h"
 
 #define SQUID_BUFFER_SIZE 2010
 
@@ -126,6 +127,34 @@ static BOOL parse_ntlm_auth_domain_user(const char *domuser, fstring domain,
 
 	return True;
 }
+
+/**
+ * Decode a base64 string into a DATA_BLOB - simple and slow algorithm
+ **/
+static DATA_BLOB base64_decode_data_blob(TALLOC_CTX *mem_ctx, const char *s)
+{
+	DATA_BLOB ret = data_blob_talloc(mem_ctx, s, strlen(s)+1);
+	ret.length = ldb_base64_decode((char *)ret.data);
+	return ret;
+}
+
+/**
+ * Encode a base64 string into a talloc()ed string caller to free.
+ **/
+static char *base64_encode_data_blob(TALLOC_CTX *mem_ctx, DATA_BLOB data)
+{
+	return ldb_base64_encode(mem_ctx, (const char *)data.data, data.length);
+}
+
+/**
+ * Decode a base64 string in-place - wrapper for the above
+ **/
+static void base64_decode_inplace(char *s)
+{
+	ldb_base64_decode(s);
+}
+
+
 
 /* Authenticate a user with a plaintext password */
 
