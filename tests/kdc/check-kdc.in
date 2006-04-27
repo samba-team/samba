@@ -122,6 +122,8 @@ ${kinit} --password-file=${objdir}/foopassword foo@$R || exitcode=1
 for a in $enctypes; do
 	echo "Getting tickets ($a)"
 	${kgetcred} -e $a ${server}@${R} || exitcode=1
+	./ap-req ${server}@${R} ${keytab} ${cache} || exitcode=1
+	${kdestroy} --credential=${server}@${R}
 done
 ${kdestroy}
 
@@ -132,6 +134,8 @@ for a in $enctypes; do
 	for b in $enctypes; do
 		echo "Getting tickets ($a ->  $b)"
 		${kgetcred} -e $b ${server}@${R} || exitcode=1
+		./ap-req ${server}@${R} ${keytab} ${cache} || exitcode=1
+		${kdestroy} --credential=${server}@${R}
 	done
 	${kdestroy}
 done
