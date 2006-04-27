@@ -2,7 +2,9 @@
 
 #######################
 # Start SUBSYSTEM CLDAPD
-[SUBSYSTEM::CLDAPD]
+[MODULE::CLDAPD]
+INIT_FUNCTION = server_service_cldapd_init
+SUBSYSTEM = service
 PRIVATE_PROTO_HEADER = proto.h
 OBJ_FILES = \
 		cldap_server.o \

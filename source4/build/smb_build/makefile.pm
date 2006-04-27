@@ -202,6 +202,7 @@ sub Integrated($$)
 	my ($self,$ctx) = @_;
 
 	$self->_prepare_list($ctx, "OBJ_LIST");
+	$self->_prepare_list($ctx, "FULL_OBJ_LIST");
 	$self->_prepare_list($ctx, "LINK_FLAGS");
 }
 
@@ -314,41 +315,6 @@ $installdir/$ctx->{LIBRARY_REALNAME}: \$($ctx->{TYPE}_$ctx->{NAME}_DEPEND_LIST) 
 
 __EOD__
 );
-}
-
-sub MergedObj($$)
-{
-	my ($self,$ctx) = @_;
-
-	$self->_prepare_list($ctx, "OBJ_LIST");
-	$self->_prepare_list($ctx, "FULL_OBJ_LIST");
-	$self->_prepare_list($ctx, "DEPEND_LIST");
-
-	return unless $ctx->{TARGET};
-
-	push(@{$self->{all_objs}}, "\$($ctx->{TYPE}_$ctx->{NAME}_FULL_OBJ_LIST)");
-		
-	$self->output("$ctx->{TARGET}: \$($ctx->{TYPE}_$ctx->{NAME}_FULL_OBJ_LIST)\n");
-
-	$self->output("\t\@echo \"Pre-Linking $ctx->{TYPE} $ctx->{NAME}\"\n");
-	$self->output("\t@\$(LD) -r \$($ctx->{TYPE}_$ctx->{NAME}_FULL_OBJ_LIST) -o $ctx->{TARGET}\n");
-	$self->output("\n");
-}
-
-sub ObjList($$)
-{
-	my ($self,$ctx) = @_;
-
-	return unless $ctx->{TARGET};
-
-	push(@{$self->{all_objs}}, "\$($ctx->{TYPE}_$ctx->{NAME}_FULL_OBJ_LIST)");
-		
-	$self->_prepare_list($ctx, "OBJ_LIST");
-	$self->_prepare_list($ctx, "FULL_OBJ_LIST");
-	$self->_prepare_list($ctx, "DEPEND_LIST");
-	$self->output("$ctx->{TARGET}: ");
-	$self->output("\$($ctx->{TYPE}_$ctx->{NAME}_DEPEND_LIST) \$($ctx->{TYPE}_$ctx->{NAME}_FULL_OBJ_LIST)\n");
-	$self->output("\t\@touch $ctx->{TARGET}\n");
 }
 
 sub StaticLibrary($$)

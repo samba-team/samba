@@ -205,12 +205,11 @@ PUBLIC_DEPENDENCIES = \
 
 ################################################
 # Start SUBSYSTEM dcerpc_server
-[LIBRARY::dcerpc_server]
-DESCRIPTION = DCE/RPC Server implementation
-VERSION = 0.0.1
-SO_VERSION = 0
-PUBLIC_HEADERS = dcerpc_server.h
-PUBLIC_PROTO_HEADER = dcerpc_server_proto.h
+[MODULE::dcerpc_server]
+INIT_FUNCTION = server_service_rpc_init
+SUBSYSTEM = service
+#PUBLIC_HEADERS = dcerpc_server.h
+PRIVATE_PROTO_HEADER = dcerpc_server_proto.h
 OBJ_FILES = \
 		dcerpc_server.o \
 		dcerpc_sock.o \

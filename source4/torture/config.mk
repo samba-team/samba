@@ -176,7 +176,7 @@ OBJ_FILES = \
 		auth/ntlmssp.o \
 		auth/pac.o
 PUBLIC_DEPENDENCIES = \
-		LIBSMB gensec auth
+		LIBSMB gensec auth LIBSAMBA3
 # End SUBSYSTEM TORTURE_AUTH
 #################################
 

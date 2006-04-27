@@ -2,7 +2,9 @@
 
 #######################
 # Start SUBSYSTEM KDC
-[SUBSYSTEM::KDC]
+[MODULE::KDC]
+INIT_FUNCTION = server_service_kdc_init
+SUBSYSTEM = service
 OBJ_FILES = \
 		kdc.o \
 		kpasswdd.o

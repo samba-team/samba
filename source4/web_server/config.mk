@@ -2,7 +2,9 @@
 
 #######################
 # Start SUBSYSTEM WEB
-[SUBSYSTEM::WEB]
+[MODULE::WEB]
+INIT_FUNCTION = server_service_web_init
+SUBSYSTEM = service
 PRIVATE_PROTO_HEADER = proto.h
 OBJ_FILES = \
 		web_server.o \

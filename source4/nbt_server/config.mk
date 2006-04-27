@@ -54,7 +54,9 @@ PUBLIC_DEPENDENCIES = \
 
 #######################
 # Start SUBSYSTEM NBTD
-[SUBSYSTEM::NBTD]
+[MODULE::NBTD]
+INIT_FUNCTION = server_service_nbtd_init
+SUBSYSTEM = service
 OBJ_FILES = \
 		nbt_server.o \
 		interfaces.o \

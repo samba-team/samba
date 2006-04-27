@@ -26,21 +26,6 @@ sub add_dir($$)
 	return @ret;
 }
 
-sub generate_mergedobj($)
-{
-	my $subsys = shift;
-
-	$subsys->{OUTPUT} = $subsys->{TARGET} = "bin/subsystems/$subsys->{TYPE}_$subsys->{NAME}.o";
-}
-
-sub generate_objlist($)
-{
-	my $subsys = shift;
-
-	$subsys->{TARGET} = "bin/.$subsys->{TYPE}_$subsys->{NAME}";
-	$subsys->{OUTPUT} = "\$($subsys->{TYPE}_$subsys->{NAME}_OBJ_LIST)";
-}
-
 sub generate_shared_library($)
 {
 	my $lib = shift;
@@ -129,15 +114,7 @@ sub create_output($$)
 		# Combine object lists
 		push(@{$part->{OBJ_LIST}}, add_dir($part->{BASEDIR}, $part->{OBJ_FILES})) if defined($part->{OBJ_FILES});
 
-		if ((not defined($part->{OBJ_LIST}) or 
-			scalar(@{$part->{OBJ_LIST}}) == 0) and 
-			$part->{OUTPUT_TYPE} eq "MERGEDOBJ") {
-			$part->{OUTPUT_TYPE} = "OBJLIST";
-		}
-
 		generate_binary($part) if $part->{OUTPUT_TYPE} eq "BINARY";
-		generate_mergedobj($part) if $part->{OUTPUT_TYPE} eq "MERGEDOBJ";
-		generate_objlist($part) if $part->{OUTPUT_TYPE} eq "OBJLIST";
 		generate_shared_library($part) if $part->{OUTPUT_TYPE} eq "SHARED_LIBRARY";
 		generate_static_library($part) if $part->{OUTPUT_TYPE} eq "STATIC_LIBRARY";
 
