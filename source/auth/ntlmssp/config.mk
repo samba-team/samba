@@ -13,6 +13,6 @@ OBJ_FILES = ntlmssp.o \
 		ntlmssp_client.o \
 		ntlmssp_server.o
 PUBLIC_DEPENDENCIES = auth MSRPC_PARSE
-OUTPUT_TYPE = MERGEDOBJ
+OUTPUT_TYPE = INTEGRATED
 # End MODULE gensec_ntlmssp
 ################################################

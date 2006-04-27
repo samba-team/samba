@@ -21,6 +21,7 @@
 
 #include "includes.h"
 #include "dlinklist.h"
+#include "lib/ldb/include/ldb.h"
 #include "auth/auth.h"
 #include "lib/events/events.h"
 #include "build.h"
