@@ -172,27 +172,6 @@ _PUBLIC_ char *safe_strcat(char *dest, const char *src, size_t maxlength)
 }
 
 /**
- Like strncpy but always null terminates. Make sure there is room!
- The variable n should always be one less than the available size.
-**/
-
-_PUBLIC_ char *StrnCpy(char *dest,const char *src,size_t n)
-{
-	char *d = dest;
-	if (!dest)
-		return(NULL);
-	if (!src) {
-		*dest = 0;
-		return(dest);
-	}
-	while (n-- && (*d++ = *src++))
-		;
-	*d = 0;
-	return(dest);
-}
-
-
-/**
  Routine to get hex characters and turn them into a 16 byte array.
  the array can be variable length, and any non-hex-numeric
  characters are skipped.  "0xnn" or "0Xnn" is specially catered
