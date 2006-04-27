@@ -1,5 +1,14 @@
-2006-04-25  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-04-27  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kdc/Makefile.am: Build as-req.
+
+	* kdc/check-kdc.in: Sprinkel some as-req
+
+	* kdc/ap-req.c: simple test program checking that as ap-req/as-rep
+	exchange works
+	
+2006-04-25  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* {,kdc/,db/}.cvsignore: ignore Makefile.in
 
 	* kdc/check-kdc.in: Try to detect another KDC running.
