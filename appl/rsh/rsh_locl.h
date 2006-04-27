@@ -114,10 +114,6 @@ struct krb5_dh_moduli;
 #include <kafs.h>
 #endif
 
-#ifndef _PATH_NOLOGIN
-#define _PATH_NOLOGIN   "/etc/nologin"
-#endif
-
 #ifndef _PATH_BSHELL
 #define _PATH_BSHELL	"/bin/sh"
 #endif
@@ -126,9 +122,7 @@ struct krb5_dh_moduli;
 #define _PATH_DEFPATH	"/usr/bin:/bin"
 #endif
 
-#ifndef _PATH_ETC_ENVIRONMENT
-#define _PATH_ETC_ENVIRONMENT SYSCONFDIR "/environment"
-#endif
+#include "loginpaths.h"
 
 /*
  *

@@ -111,9 +111,6 @@
 #ifndef _PATH_DEV
 #define _PATH_DEV "/dev/"
 #endif
-#ifndef _PATH_NOLOGIN
-#define _PATH_NOLOGIN "/etc/nologin"
-#endif
 #ifndef _PATH_WTMP
 #ifdef WTMP_FILE
 #define _PATH_WTMP WTMP_FILE
@@ -137,18 +134,11 @@
 #define _PATH_LOGIN_CONF SYSCONFDIR "/login.conf"
 #endif /* _PATH_LOGIN_CONF */
 
-#ifndef _PATH_ETC_ENVIRONMENT
-#define _PATH_ETC_ENVIRONMENT SYSCONFDIR "/environment"
-#endif
-
 #ifndef _PATH_DEFPATH
 #define _PATH_DEFPATH "/usr/bin:/bin"
 #endif
 
-#ifndef _PATH_LIMITS_CONF
-#define _PATH_LIMITS_CONF "/etc/security/limits.conf"
-#endif
-
+#include "loginpaths.h"
 
 struct spwd;
 
