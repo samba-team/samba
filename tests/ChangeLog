@@ -1,5 +1,11 @@
 2006-04-27  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kdc/check-kdc.in: Sprinkle more ap-req now that the credential
+	is removed from the cache using kdestroy --credential=
+
+	* kdc/ap-req.c: check that AP_OPTS_MUTUAL_REQUIRED matches, check
+	seqnumber
+
 	* kdc/Makefile.am: Build as-req.
 
 	* kdc/check-kdc.in: Sprinkel some as-req
