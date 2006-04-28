@@ -1203,6 +1203,20 @@ Credentials cache: FILE:/tmp/krb5cc_19100a
 Apr 20 02:08:08  Apr 20 12:08:08  krbtgt/EXAMPLE.ORG@@EXAMPLE.ORG
 @end example
 
+Using PKCS11 it can look like this instead:
+
+@example
+$ kinit -C PKCS11:/tmp/pkcs11/lib/soft-pkcs11.so lha@@EXAMPLE.ORG
+PIN code for SoftToken (slot): 
+$ klist
+Credentials cache: API:4
+        Principal: lha@@EXAMPLE.ORG
+
+  Issued           Expires          Principal
+Mar 26 23:40:10  Mar 27 09:40:10  krbtgt/EXAMPLE.ORG@@EXAMPLE.ORG
+@end example
+
+
 Write about the kdc.
 
 @section Configure the client
