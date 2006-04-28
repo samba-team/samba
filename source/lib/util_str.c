@@ -1566,7 +1566,7 @@ void strupper_m(char *s)
  Caller must free.
 **/
 
-char *binary_string(char *buf, int len)
+char *binary_string_rfc2254(char *buf, int len)
 {
 	char *s;
 	int i, j;
@@ -1584,6 +1584,22 @@ char *binary_string(char *buf, int len)
 	return s;
 }
 
+char *binary_string(char *buf, int len)
+{
+	char *s;
+	int i, j;
+	const char *hex = "0123456789ABCDEF";
+	s = SMB_MALLOC(len * 2 + 1);
+	if (!s)
+		return NULL;
+	for (j=i=0;i<len;i++) {
+		s[j]   = hex[((unsigned char)buf[i]) >> 4];
+		s[j+1] = hex[((unsigned char)buf[i]) & 0xF];
+		j += 2;
+	}
+	s[j] = 0;
+	return s;
+}
 /**
  Just a typesafety wrapper for snprintf into a pstring.
 **/
