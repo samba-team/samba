@@ -1,3 +1,7 @@
+2006-04-28  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* parse.y: Add missing ;'s, found by bison on a SuSE 8.2 machine.
+	
 2006-04-26  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* Makefile.am: Add definitions from RFC 3820, Proxy Certificate
