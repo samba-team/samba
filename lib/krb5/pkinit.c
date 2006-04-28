@@ -84,6 +84,7 @@ struct krb5_pk_init_ctx_data {
     int require_binding;
     int require_eku;
     int require_krbtgt_otherName;
+    int require_hostname_match;
 };
 
 void KRB5_LIB_FUNCTION
@@ -524,6 +525,13 @@ _krb5_pk_mk_padata(krb5_context context,
 				     "pkinit_require_krbtgt_otherName",
 				     NULL);
 
+    ctx->require_hostname_match = 
+	krb5_config_get_bool_default(context, NULL,
+				     FALSE,
+				     "realms",
+				     req_body->realm,
+				     "pkinit_require_hostname_match",
+				     NULL);
 
     return pk_mk_padata(context, type, ctx, req_body, nonce, md);
 }
@@ -727,7 +735,6 @@ pk_verify_host(krb5_context context,
     }
     if (ctx->require_krbtgt_otherName) {
 	hx509_octet_string_list list;
-	krb5_error_code ret;
 	int i;
 
 	ret = hx509_cert_find_subjectAltName_otherName(host->cert,
@@ -765,7 +772,16 @@ pk_verify_host(krb5_context context,
 	}
 	hx509_free_octet_string_list(&list);
     }
+    if (ret)
+	return ret;
+    
+    ret = hx509_verify_hostname(ctx->id->hx509ctx, host->cert, 
+				ctx->require_hostname_match,
+				hi->hostname,
+				hi->ai->ai_addr, hi->ai->ai_addrlen);
 
+    if (ret)
+	krb5_clear_error_string(context);
     return ret;
 }
 
