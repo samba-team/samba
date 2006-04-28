@@ -1184,15 +1184,15 @@ PKCS12:/path/to/file.pfx
 
 @end table
 
-@section Configuring the kerberos software
+@section Configure the Kerberos software
 
-Add configuration options to krb5.conf
+Write about configuration options to krb5.conf.
 
-kinit
+Write about kinit.
 
-kdc
+Write about the kdc.
 
-@section Configuring the client
+@section Configure the client
 
 @example
 [appdefaults]
@@ -1202,11 +1202,13 @@ kdc
         EXAMPLE.COM = @{
 		pkinit_require_eku = true
 		pkinit_require_krbtgt_otherName = true
+		win2k_pkinit = no
+		win2k_pkinit_require_binding = yes
 	@}
 
 @end example
 
-@section Configuring the KDC
+@section Configure the KDC
 
 @example
 [kdc]
@@ -1225,8 +1227,8 @@ Note that the file this is space sensitive.
 @example
 # cat /var/heimdal/pki-mapping
 # comments starts with #
-lha@EXAMPLE.ORG:C=SE,O=Stockholm universitet,CN=Love,UID=lha
-lha@EXAMPLE.ORG:CN=Love,UID=lha
+lha@@EXAMPLE.ORG:C=SE,O=Stockholm universitet,CN=Love,UID=lha
+lha@@EXAMPLE.ORG:CN=Love,UID=lha
 @end example
 
 @subsection Using Kerberos database
@@ -1278,3 +1280,39 @@ openssl x509 -extensions user_certificate
 @c #subjectAltName         = email:copy
 
 
+@section Using PK-INIT with Windows
+
+@subsection Client configration
+
+Clients using a Windows KDC with PK-INIT need configuration since
+windows uses pre-standard format and this can't be autodetected.
+
+The win2k_pkinit_require_binding option requires the reply for the KDC
+to be of the new, secure, type that binds the request to reply. Before
+clients should fake the reply from the KDC. To use this option you
+have to apply a fix from Microsoft.
+
+@example
+[realms]
+        MY.MS.REALM = @{
+                win2k_pkinit = yes
+                win2k_pkinit_require_binding = no
+	@}
+@end example
+
+@subsection Certificates
+
+The client certificates needs to have the extended keyusage ``Microsoft
+Smartcardlogin'' (openssl have the oid shortname msSmartcardLogin).
+
+See Microsoft Knowledge Base Article - 281245 ``Guidelines for Enabling
+Smart Card Logon with Third-Party Certification Authorities'' for a
+more extensive description of how set setup an external CA to it
+includes all information that will make a Windows KDC happy.
+
+@subsection Configure Windows 2000 CA
+
+To enable Microsoft Smartcardlogin> for certificates in your Windows
+2000 CA, you want to look at Microsoft Knowledge Base Article -
+313274 ``HOW TO: Configure a Certification Authority to Issue
+Smart Card Certificates in Windows''.
