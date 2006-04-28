@@ -3,7 +3,7 @@
    struct samu access routines
    Copyright (C) Jeremy Allison 		1996-2001
    Copyright (C) Luke Kenneth Casson Leighton 	1996-1998
-   Copyright (C) Gerald (Jerry) Carter		2000-2001
+   Copyright (C) Gerald (Jerry) Carter		2000-2006
    Copyright (C) Andrew Bartlett		2001-2002
    Copyright (C) Stefan (metze) Metzmacher	2002
       
@@ -1016,12 +1016,13 @@ BOOL pdb_set_lanman_passwd (struct samu *sampass, const uint8 pwd[LM_HASH_LEN], 
 
 	data_blob_clear_free(&sampass->lm_pw);
 	
-       if (pwd) {
-               sampass->lm_pw =
-		       data_blob_talloc(sampass, pwd, LM_HASH_LEN);
-       } else {
-               sampass->lm_pw = data_blob(NULL, 0);
-       }
+	/* on keep the password if we are allowing LANMAN authentication */
+
+	if (pwd && lp_lanman_auth() ) {
+		sampass->lm_pw = data_blob_talloc(sampass, pwd, LM_HASH_LEN);
+	} else {
+		sampass->lm_pw = data_blob(NULL, 0);
+	}
 
 	return pdb_set_init_flags(sampass, PDB_LMPASSWD, flag);
 }
