@@ -1,8 +1,8 @@
+- replace StrnCpy() with strlcpy()
+- Add --export-dynamic for each subsystem that has modules
 - let the build system implement some make functions($(patsubst),$(wildcard),...) and use our own implementations where `make' does not support them
 - include extra_flags.txt using Makefile construction if 
   supported by current make
-- change default subsystem/library build type to STATIC_LIBRARY
- - fix order of UNIQUE_DEPENDENCIES
 - make --enable-dso the default
  - fix module loading for selftest during non-developer builds
 - clearer distinction between dcerpc and ndr. seperate interface tables?

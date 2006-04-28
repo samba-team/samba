@@ -71,8 +71,6 @@ sub check_module($$$)
 
 	if ($mod->{OUTPUT_TYPE} eq "SHARED_LIBRARY") {
 		$mod->{INSTALLDIR} = "MODULESDIR/$mod->{SUBSYSTEM}";
-		push (@{$mod->{PRIVATE_DEPENDENCIES}}, $mod->{SUBSYSTEM}) unless 
-			$INPUT->{$mod->{SUBSYSTEM}}->{TYPE} eq "BINARY";
 	} else { 
 		push (@{$INPUT->{$mod->{SUBSYSTEM}}{INIT_FUNCTIONS}}, $mod->{INIT_FUNCTION}) if defined($mod->{INIT_FUNCTION});
 	}
@@ -113,7 +111,6 @@ sub check_binary($$)
 
 	$bin->{OUTPUT_TYPE} = "BINARY";
 }
-
 
 sub import_integrated($$)
 {
@@ -200,6 +197,7 @@ sub check($$$$$)
 	foreach my $k (keys %$INPUT) {
 		my $part = $INPUT->{$k};
 
+		$part->{LINK_FLAGS} = [];
 		$part->{FULL_OBJ_LIST} = ["\$($part->{TYPE}_$part->{NAME}_OBJ_LIST)"];
 
 		check_subsystem($INPUT, $part, $subsys_ot) if ($part->{TYPE} eq "SUBSYSTEM");
@@ -209,6 +207,9 @@ sub check($$$$$)
 	}
 
 	foreach my $part (values %$INPUT) {
+		if (defined($part->{INIT_FUNCTIONS})) {
+			push (@{$part->{LINK_FLAGS}}, "\$(DYNEXP)");
+		}
 		import_integrated($part, $INPUT);
 	}
 

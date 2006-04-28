@@ -1,12 +1,16 @@
 # SMB server subsystem
+#
+[MODULE::SERVICE_SMB]
+INIT_FUNCTION = server_service_smb_init
+SUBSYSTEM = service
+OBJ_FILES = smb_server.o
+PRIVATE_PROTO_HEADER = service_smb_proto.h
+PRIVATE_DEPENDENCIES = SMB_SERVER
 
 #######################
 # Start SUBSYSTEM SMB
-[MODULE::SMB_SERVER]
-INIT_FUNCTION = server_service_smb_init
-SUBSYSTEM = service
+[SUBSYSTEM::SMB_SERVER]
 OBJ_FILES = \
-		smb_server.o \
 		tcon.o \
 		session.o \
 		management.o
