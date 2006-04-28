@@ -2298,18 +2298,14 @@ static int pack_values(NT_PRINTER_DATA *data, char *buf, int buflen)
 
 uint32 del_a_printer(const char *sharename)
 {
-	pstring key;
 	TDB_DATA kbuf;
 	pstring printdb_path;
 
-	slprintf(key, sizeof(key)-1, "%s%s", PRINTERS_PREFIX, sharename);
-	kbuf.dptr=key;
-	kbuf.dsize=strlen(key)+1;
+	kbuf = make_printer_tdbkey( sharename );
 	tdb_delete(tdb_printers, kbuf);
 
-	slprintf(key, sizeof(key)-1, "%s%s", SECDESC_PREFIX, sharename);
-	kbuf.dptr=key;
-	kbuf.dsize=strlen(key)+1;
+	kbuf.dptr = make_printers_secdesc_tdbkey( sharename );
+	kbuf.dsize = strlen(kbuf.dptr) + 1;
 	tdb_delete(tdb_printers, kbuf);
 
 	close_all_print_db();
