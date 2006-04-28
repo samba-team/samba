@@ -1,5 +1,14 @@
 2006-04-28  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* doc/setup.texi: More options and some text about windows
+	clients, certificate and KDCs.
+
+	* doc/setup.texi: notice about pki-mappings file space sensitive
+
+	* doc/setup.texi: Example pki-mapping file.
+
+	* lib/krb5/pkinit.c (pk_verify_host): verify hostname/address
+
 	* lib/hdb/hdb.h: Bump hdb interface version to 4.
 	
 2006-04-27  Love Hörnquist Åstrand  <lha@it.su.se>
