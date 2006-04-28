@@ -1220,7 +1220,7 @@ kdc
 
 @subsection Using pki-mapping file
 
-Note that the file this is space sensive.
+Note that the file this is space sensitive.
 
 @example
 # cat /var/heimdal/pki-mapping
