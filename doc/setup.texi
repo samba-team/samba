@@ -1276,6 +1276,7 @@ Command usage
 
 @example
 openssl x509 -extensions user_certificate 
+openssl ca -extensions user_certificate 
 @end example
 
 
