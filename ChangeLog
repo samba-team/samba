@@ -1,5 +1,9 @@
-2006-04-27  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-04-28  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/hdb/hdb.h: Bump hdb interface version to 4.
+	
+2006-04-27  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* kuser/kdestroy.1: Document --credential=principal.
 
 	* kdc/kerberos5.c (tgs_rep2): check that the client exists in the
