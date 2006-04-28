@@ -1,11 +1,10 @@
 dnl Checks for programs.
 dnl Unique-to-Samba variables we'll be playing with.
 
-DYNEXP=
-
 AC_SUBST(SHLIBEXT)
 AC_SUBST(LDSHFLAGS)
 AC_SUBST(SONAMEFLAG)
+AC_SUBST(DYNEXP)
 AC_SUBST(PICFLAG)
 
 AC_SYS_LARGEFILE
@@ -103,6 +102,7 @@ AC_SUBST(BLDSHARED)
 BLDSHARED="false"
 
 # these are the defaults, good for lots of systems
+DYNEXP=
 HOST_OS="$host_os"
 LDSHFLAGS="-shared"
 SONAMEFLAG=""

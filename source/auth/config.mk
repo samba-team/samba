@@ -6,11 +6,8 @@ include credentials/config.mk
 
 [SUBSYSTEM::auth_sam]
 PRIVATE_PROTO_HEADER = auth_sam.h
-OBJ_FILES = \
-		sam.o \
-		auth_sam_reply.o
-PUBLIC_DEPENDENCIES = \
-		SAMDB
+OBJ_FILES = sam.o auth_sam_reply.o
+PUBLIC_DEPENDENCIES = SAMDB
 
 #######################
 # Start MODULE auth_sam
@@ -39,9 +36,7 @@ OBJ_FILES = auth_anonymous.o
 INIT_FUNCTION = auth_winbind_init
 SUBSYSTEM = auth
 OBJ_FILES = auth_winbind.o
-PUBLIC_DEPENDENCIES = \
-		LIBWINBIND-CLIENT \
-		NDR_NETLOGON LIBNDR
+PUBLIC_DEPENDENCIES = LIBWINBIND-CLIENT NDR_NETLOGON LIBNDR
 # End MODULE auth_winbind
 #######################
 

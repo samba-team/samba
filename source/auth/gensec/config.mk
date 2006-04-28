@@ -8,7 +8,7 @@ PUBLIC_HEADERS = gensec.h spnego.h
 PUBLIC_PROTO_HEADER = gensec_proto.h
 OBJ_FILES = gensec.o
 PUBLIC_DEPENDENCIES = \
-		CREDENTIALS LIBSAMBA-UTIL
+		CREDENTIALS LIBSAMBA-UTIL LIBCRYPTO
 # End SUBSYSTEM gensec
 #################################
 

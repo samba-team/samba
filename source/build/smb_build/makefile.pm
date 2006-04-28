@@ -144,6 +144,7 @@ STLD_FLAGS=-rc
 SHLD=$self->{config}->{CC}
 SHLD_FLAGS=$self->{config}->{LDSHFLAGS} $self->{config}->{LDFLAGS} -L\$(builddir)/bin
 SHLIBEXT=$self->{config}->{SHLIBEXT}
+DYNEXP=$self->{config}->{DYNEXP}
 
 XSLTPROC=$self->{config}->{XSLTPROC}
 

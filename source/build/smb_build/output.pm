@@ -33,7 +33,7 @@ sub generate_shared_library($)
 	my $lib_name;
 
 	$lib->{DEPEND_LIST} = [];
-	$lib->{LINK_FLAGS} = ["\$($lib->{TYPE}_$lib->{NAME}\_OBJ_LIST)"];
+	push(@{$lib->{LINK_FLAGS}}, "\$($lib->{TYPE}_$lib->{NAME}\_OBJ_LIST)");
 
 	$link_name = lc($lib->{NAME});
 	$lib_name = $link_name;
@@ -83,7 +83,7 @@ sub generate_static_library($)
 	$link_name =~ s/^LIB//;
 
 	$lib->{LIBRARY_NAME} = "lib".lc($link_name).".a";
-	$lib->{LINK_FLAGS} = ["\$($lib->{TYPE}_$lib->{NAME}\_OBJ_LIST)"];
+	push(@{$lib->{LINK_FLAGS}}, "\$($lib->{TYPE}_$lib->{NAME}\_OBJ_LIST)");
 
 	$lib->{TARGET} = "bin/$lib->{LIBRARY_NAME}";
 	$lib->{OUTPUT} = "-l".lc($link_name);
@@ -94,7 +94,7 @@ sub generate_binary($)
 	my $bin = shift;
 
 	$bin->{DEPEND_LIST} = [];
-	$bin->{LINK_FLAGS} = ["\$($bin->{TYPE}_$bin->{NAME}\_OBJ_LIST)"];
+	push(@{$bin->{LINK_FLAGS}}, "\$($bin->{TYPE}_$bin->{NAME}\_OBJ_LIST)");
 
 	$bin->{RELEASEDIR} = "bin/install";
 	$bin->{DEBUGDIR} = "bin/";

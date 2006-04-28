@@ -27,7 +27,7 @@ sub _prepare_build_h($)
 	my @defines = ();
 	my $output = "";
 
-	foreach my $key (values %{$depend}) {
+	foreach my $key (values %$depend) {
 		my $DEFINE = ();
 		next if ($key->{TYPE} ne "LIBRARY" and 
 				 $key->{TYPE} ne "MODULE" and

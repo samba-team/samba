@@ -22,6 +22,7 @@
 #include "libcli/smb2/smb2.h"
 #include "libcli/smb2/smb2_calls.h"
 #include "smb_server/smb_server.h"
+#include "smb_server/service_smb_proto.h"
 #include "smb_server/smb2/smb2_server.h"
 
 static NTSTATUS smb2srv_tcon_backend(struct smb2srv_request *req, struct smb2_tree_connect *io)
