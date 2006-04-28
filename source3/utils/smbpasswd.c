@@ -407,7 +407,7 @@ static int process_root(int local_flags)
 				sampass = samu_new( NULL );
 				ret = pdb_getsampwnam(sampass, user_name);
 				if((ret) &&
-				   (pdb_get_lanman_passwd(sampass) == NULL)) {
+				   (pdb_get_nt_passwd(sampass) == NULL)) {
 					local_flags |= LOCAL_SET_PASSWORD;
 				}
 				TALLOC_FREE(sampass);
