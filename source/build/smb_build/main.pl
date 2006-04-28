@@ -19,14 +19,6 @@ use strict;
 my $INPUT = {};
 my $mkfile = smb_build::config_mk::run_config_mk($INPUT, $config::config{srcdir}, $config::config{builddir}, "main.mk");
 
-my $subsystem_output_type;
-
-if (defined($ENV{"SUBSYSTEM_OUTPUT_TYPE"})) {
-	$subsystem_output_type = $ENV{SUBSYSTEM_OUTPUT_TYPE};
-} else {
-	$subsystem_output_type = "STATIC_LIBRARY";
-}
-
 my $library_output_type;
 if (defined($ENV{"LIBRARY_OUTPUT_TYPE"})) {
 	$library_output_type = $ENV{LIBRARY_OUTPUT_TYPE};
@@ -46,9 +38,9 @@ if (defined($ENV{"MODULE_OUTPUT_TYPE"})) {
 }
 
 my $DEPEND = smb_build::input::check($INPUT, \%config::enabled, 
-	$subsystem_output_type, $library_output_type, $module_output_type);
+	"STATIC_LIBRARY", $library_output_type, $module_output_type);
 my $OUTPUT = output::create_output($DEPEND, \%config::config);
-$config::config{SUBSYSTEM_OUTPUT_TYPE} = $subsystem_output_type;
+$config::config{SUBSYSTEM_OUTPUT_TYPE} = "STATIC_LIBRARY";
 $config::config{LIBRARY_OUTPUT_TYPE} = $library_output_type;
 $config::config{MODULE_OUTPUT_TYPE} = $module_output_type;
 my $mkenv = new smb_build::makefile(\%config::config, $mkfile);

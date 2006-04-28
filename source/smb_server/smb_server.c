@@ -24,6 +24,7 @@
 #include "smbd/service_stream.h"
 #include "smbd/service.h"
 #include "smb_server/smb_server.h"
+#include "smb_server/service_smb_proto.h"
 #include "lib/messaging/irpc.h"
 #include "lib/stream/packet.h"
 #include "libcli/smb2/smb2.h"

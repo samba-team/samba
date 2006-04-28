@@ -294,7 +294,7 @@ VERSION = 0.0.1
 SO_VERSION = 0
 OBJ_FILES = gen_ndr/ndr_netlogon.o
 PUBLIC_HEADERS = gen_ndr/netlogon.h
-PUBLIC_DEPENDENCIES = LIBNDR NDR_SAMR NDR_LSA
+PUBLIC_DEPENDENCIES = LIBNDR NDR_SAMR NDR_LSA NDR_SECURITY
 
 [LIBRARY::NDR_TRKWKS]
 VERSION = 0.0.1
@@ -605,11 +605,11 @@ OBJ_FILES = \
 		rpc/dcerpc_sock.o \
 		rpc/dcerpc_connect.o
 PUBLIC_DEPENDENCIES = \
-		SOCKET LIBSMB \
+		SOCKET LIBSMB LIBCLI_SMB2 \
 		LIBNDR NDR_DCERPC \
 		RPC_NDR_EPMAPPER \
 		NDR_SCHANNEL RPC_NDR_NETLOGON \
-		gensec
+		gensec LIBCLI_AUTH
 # End SUBSYSTEM dcerpc
 ################################################
 
