@@ -124,7 +124,7 @@ typedef struct HDB{
 				   struct HDB*);
 }HDB;
 
-#define HDB_INTERFACE_VERSION	3
+#define HDB_INTERFACE_VERSION	4
 
 struct hdb_so_method {
     int version;
