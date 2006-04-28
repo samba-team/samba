@@ -1571,6 +1571,19 @@ hx509_verify_signature(hx509_context context,
 }
 
 int
+hx509_verify_hostname(hx509_context context,
+		      const hx509_cert cert,
+		      int require_match,
+		      const char *hostname,
+		      const struct sockaddr *sa,
+		      /* XXX krb5_socklen_t */ int sa_size) 
+{
+    if (sa && sa_size <= 0)
+	return EINVAL;
+    return 0;
+}
+
+int
 _hx509_set_cert_attribute(hx509_cert cert, const heim_oid *oid, 
 			  const heim_octet_string *attr)
 {
