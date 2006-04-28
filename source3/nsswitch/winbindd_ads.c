@@ -585,7 +585,12 @@ static NTSTATUS lookup_usergroups_alt(struct winbindd_domain *domain,
 				DEBUG(1,("No sid for this group ?!?\n"));
 				continue;
 			}
-
+	
+			/* ignore Builtin groups from ADS - Guenther */
+			if (sid_check_is_in_builtin(&group_sid)) {
+				continue;
+			}
+			       
 			add_sid_to_array(mem_ctx, &group_sid, user_sids,
 					 &num_groups);
 		}
