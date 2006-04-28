@@ -1188,7 +1188,20 @@ PKCS12:/path/to/file.pfx
 
 Write about configuration options to krb5.conf.
 
-Write about kinit.
+First configure the client's trust anchors and what parameters to
+verify, see subsection below how to do that. Now you can use kinit to
+get yourself tickets. One example how that can look it like this:
+
+@example
+$ kinit -C FILE:$HOME/.certs/lha.crt,$HOME/.certs/lha.key lha@@EXAMPLE.ORG
+Enter your private key passphrase: 
+: lha@@nutcracker ; klist
+Credentials cache: FILE:/tmp/krb5cc_19100a
+        Principal: lha@@EXAMPLE.ORG
+
+  Issued           Expires          Principal                 
+Apr 20 02:08:08  Apr 20 12:08:08  krbtgt/EXAMPLE.ORG@@EXAMPLE.ORG
+@end example
 
 Write about the kdc.
 
