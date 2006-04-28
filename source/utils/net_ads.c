@@ -55,6 +55,8 @@ int net_ads_usage(int argc, const char **argv)
 "\n\tperform a raw LDAP search and dump the results\n"
 "\nnet ads dn"\
 "\n\tperform a raw LDAP search and dump attributes of a particular DN\n"
+"\nnet ads sid"\
+"\n\tperform a raw LDAP search and dump attributes of a particular SID\n"
 "\nnet ads keytab"\
 "\n\tcreates and updates the kerberos system keytab file\n"
 		);
@@ -1387,6 +1389,71 @@ static int net_ads_dn(int argc, const char **argv)
 	return 0;
 }
 
+/*
+  help for net ads sid search
+*/
+static int net_ads_sid_usage(int argc, const char **argv)
+{
+	d_printf(
+		"\nnet ads sid <sid> <attributes...>\n"\
+		"\nperform a raw LDAP search on a ADS server and dump the results\n"\
+		"The SID is in string format, and the attributes are a list of LDAP fields \n"\
+		"to show in the results\n\n"\
+		"Example: net ads sid 'S-1-5-32' distinguishedName\n\n"
+		);
+	net_common_flags_usage(argc, argv);
+	return -1;
+}
+
+
+/*
+  general ADS search function. Useful in diagnosing problems in ADS
+*/
+static int net_ads_sid(int argc, const char **argv)
+{
+	ADS_STRUCT *ads;
+	ADS_STATUS rc;
+	const char *sid_string;
+	const char **attrs;
+	void *res = NULL;
+	DOM_SID sid;
+
+	if (argc < 1) {
+		return net_ads_sid_usage(argc, argv);
+	}
+
+	if (!(ads = ads_startup())) {
+		return -1;
+	}
+
+	sid_string = argv[0];
+	attrs = (argv + 1);
+
+	if (!string_to_sid(&sid, sid_string)) {
+		d_fprintf(stderr, "could not convert sid\ņ");
+		ads_destroy(&ads);
+		return -1;
+	}
+
+	rc = ads_search_retry_sid(ads, &res, &sid, attrs);
+	if (!ADS_ERR_OK(rc)) {
+		d_fprintf(stderr, "search failed: %s\n", ads_errstr(rc));
+		ads_destroy(&ads);
+		return -1;
+	}	
+
+	d_printf("Got %d replies\n\n", ads_count_replies(ads, res));
+
+	/* dump the results */
+	ads_dump(ads, res);
+
+	ads_msgfree(ads, res);
+	ads_destroy(&ads);
+
+	return 0;
+}
+
+
 static int net_ads_keytab_usage(int argc, const char **argv)
 {
 	d_printf(
@@ -1504,6 +1571,7 @@ int net_ads(int argc, const char **argv)
 		{"PRINTER", net_ads_printer},
 		{"SEARCH", net_ads_search},
 		{"DN", net_ads_dn},
+		{"SID", net_ads_sid},
 		{"WORKGROUP", net_ads_workgroup},
 		{"LOOKUP", net_ads_lookup},
 		{"KEYTAB", net_ads_keytab},
