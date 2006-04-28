@@ -1220,6 +1220,13 @@ kdc
 
 @subsection Using pki-mapping file
 
+@example
+# cat /var/heimdal/pki-mapping
+# comments starts with #
+lha@EXAMPLE.ORG:C=SE,O=Stockholm universitet,CN=Love,UID=lha
+lha@EXAMPLE.ORG:CN=Love,UID=lha
+@end example
+
 @subsection Using Kerberos database
 
 @section Use OpenSSL to create certificates
