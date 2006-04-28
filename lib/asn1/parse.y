@@ -537,8 +537,10 @@ Constraint	: '(' ConstraintSpec ')'
 		{
 		    $$ = $2;
 		}
+		;
 
 ConstraintSpec	: GeneralConstraint
+		;
 
 GeneralConstraint: ContentsConstraint
 		| UserDefinedConstraint
