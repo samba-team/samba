@@ -1,5 +1,11 @@
 2006-04-28  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* data/{pkinit,kdc}.{crt,key}: pkinit certificates
+
+	* data/gen-req.sh: Generate pkinit certificates.
+
+	* data/openssl.cnf: Add pkinit glue.
+
 	* cert.c (hx509_verify_hostname): implement stub function
 	
 2006-04-27  Love Hörnquist Åstrand  <lha@it.su.se>
