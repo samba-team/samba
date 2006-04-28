@@ -1,5 +1,13 @@
-2006-04-26  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-04-28  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* cert.c (hx509_verify_hostname): implement stub function
+	
+2006-04-27  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* TODO: CRL delta support
+
+2006-04-26 Love Hörnquist Åstrand <lha@it.su.se>
+	
 	* data/.cvsignore: ignore leftover from OpenSSL cert generation
 
 	* hx509_err.et: Add name malformated error
