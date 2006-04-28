@@ -1,0 +1,56 @@
+Certificate:
+    Data:
+        Version: 3 (0x2)
+        Serial Number: 6 (0x6)
+        Signature Algorithm: sha1WithRSAEncryption
+        Issuer: CN=hx509 Test Root CA, C=SE
+        Validity
+            Not Before: Apr 28 14:47:49 2006 GMT
+            Not After : Apr 25 14:47:49 2016 GMT
+        Subject: C=SE, CN=pkinit
+        Subject Public Key Info:
+            Public Key Algorithm: rsaEncryption
+            RSA Public Key: (1024 bit)
+                Modulus (1024 bit):
+                    00:c6:11:3a:3b:b7:f8:d0:aa:bd:84:5c:45:87:2a:
+                    e2:52:bc:e2:f7:d4:5b:ac:c0:79:d0:60:4d:5c:93:
+                    6b:7e:a6:5e:eb:70:f2:6e:59:1d:29:ab:64:ed:f0:
+                    53:3c:31:a6:5c:1d:09:1b:eb:b4:7a:da:18:48:88:
+                    58:f1:74:a3:3b:85:1b:03:02:bb:5e:0e:c1:dd:ca:
+                    d4:ac:6b:45:09:dd:b6:cc:81:a1:6f:42:da:3f:f5:
+                    03:ee:d4:e2:e2:3e:3a:d2:e3:84:60:63:a6:10:46:
+                    e5:6e:fe:2d:8d:27:0b:33:36:6c:18:f8:d4:9d:75:
+                    72:8e:d3:fe:e5:45:26:f9:39
+                Exponent: 65537 (0x10001)
+        X509v3 extensions:
+            X509v3 Basic Constraints: 
+                CA:FALSE
+            X509v3 Key Usage: 
+                Digital Signature, Non Repudiation, Key Encipherment
+            X509v3 Subject Key Identifier: 
+                DC:61:31:A6:07:C5:5D:8F:F8:27:30:DD:73:89:07:C0:62:F3:31:59
+            X509v3 Subject Alternative Name: 
+                othername:<unsupported>
+    Signature Algorithm: sha1WithRSAEncryption
+        84:f6:34:44:b1:21:b4:0a:18:f6:5b:47:5a:62:e4:10:a3:5e:
+        e0:ef:da:63:fb:ed:dc:54:0d:da:2f:9b:cd:21:8a:44:13:66:
+        34:12:04:19:84:d8:c5:fd:c0:a8:14:4d:7b:e4:60:e1:5d:bc:
+        56:3d:90:04:f9:c9:f6:9c:24:a9:b1:e3:12:bd:f2:54:fc:ac:
+        c0:48:42:1c:94:78:57:ef:e6:71:34:19:7b:f6:71:0c:42:24:
+        b0:f7:7b:9c:88:26:d6:ef:80:4f:f5:2d:ff:a5:6f:98:58:c6:
+        81:77:b2:ae:a1:f5:31:95:9f:29:f3:57:e8:5b:86:b6:65:64:
+        bc:c8
+-----BEGIN CERTIFICATE-----
+MIICMTCCAZqgAwIBAgIBBjANBgkqhkiG9w0BAQUFADAqMRswGQYDVQQDDBJoeDUw
+OSBUZXN0IFJvb3QgQ0ExCzAJBgNVBAYTAlNFMB4XDTA2MDQyODE0NDc0OVoXDTE2
+MDQyNTE0NDc0OVowHjELMAkGA1UEBhMCU0UxDzANBgNVBAMMBnBraW5pdDCBnzAN
+BgkqhkiG9w0BAQEFAAOBjQAwgYkCgYEAxhE6O7f40Kq9hFxFhyriUrzi99RbrMB5
+0GBNXJNrfqZe63DyblkdKatk7fBTPDGmXB0JG+u0etoYSIhY8XSjO4UbAwK7Xg7B
+3crUrGtFCd22zIGhb0LaP/UD7tTi4j460uOEYGOmEEblbv4tjScLMzZsGPjUnXVy
+jtP+5UUm+TkCAwEAAaNzMHEwCQYDVR0TBAIwADALBgNVHQ8EBAMCBeAwHQYDVR0O
+BBYEFNxhMaYHxV2P+Ccw3XOJB8Bi8zFZMDgGA1UdEQQxMC+gLQYGKwYBBQICoCMw
+IaANGwtFWEFNUExFLk9SR6EQMA6gAwIBAaEHMAUbA2JhcjANBgkqhkiG9w0BAQUF
+AAOBgQCE9jREsSG0Chj2W0daYuQQo17g79pj++3cVA3aL5vNIYpEE2Y0EgQZhNjF
+/cCoFE175GDhXbxWPZAE+cn2nCSpseMSvfJU/KzASEIclHhX7+ZxNBl79nEMQiSw
+93uciCbW74BP9S3/pW+YWMaBd7KuofUxlZ8p81foW4a2ZWS8yA==
+-----END CERTIFICATE-----
