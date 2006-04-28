@@ -1,6 +1,9 @@
 #!/bin/sh
 # $Id$
 #
+# This script need openssl 0.9.8a or newer, so it can parse the
+# otherName section for pkinit certificates.
+#
 
 gen_cert()
 {
@@ -72,6 +75,8 @@ gen_cert "/CN=Test cert/C=SE" "ca" "test" "usr"
 gen_cert "/CN=Revoke cert/C=SE" "ca" "revoke" "usr"
 gen_cert "/CN=Test cert KeyEncipherment/C=SE" "ca" "test-ke-only" "usr_ke"
 gen_cert "/CN=Test cert DigitalSignature/C=SE" "ca" "test-ds-only" "usr_ds"
+gen_cert "/CN=pkinit/C=SE" "ca" "pkinit" "pkinit_client"
+gen_cert "/CN=kdc/C=SE" "ca" "kdc" "pkinit_kdc"
 gen_cert "/CN=Sub CA/C=SE" "ca" "sub-ca" "subca"
 gen_cert "/CN=Test sub cert/C=SE" "sub-ca" "sub-cert" "usr"
 gen_cert "/C=SE/CN=Test cert/CN=proxy" "test" "proxy" "proxy_cert" proxy-test
