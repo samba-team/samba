@@ -634,13 +634,8 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 		goto done;
 	}
 
-	rc = ads_sid_to_dn(ads, mem_ctx, sid, &user_dn);
-	if (!ADS_ERR_OK(rc)) {
-		status = ads_ntstatus(rc);
-		goto done;
-	}
+	rc = ads_search_retry_sid(ads, (void**)(void *)&msg, sid, attrs);
 
-	rc = ads_search_retry_dn(ads, (void**)(void *)&msg, user_dn, attrs);
 	if (!ADS_ERR_OK(rc)) {
 		status = ads_ntstatus(rc);
 		DEBUG(1,("lookup_usergroups(sid=%s) ads_search tokenGroups: %s\n", 
@@ -648,10 +643,25 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 		goto done;
 	}
 	
+	count = ads_count_replies(ads, msg);
+	if (count != 1) {
+		status = NT_STATUS_UNSUCCESSFUL;
+		DEBUG(1,("lookup_usergroups(sid=%s) ads_search tokenGroups: "
+			 "invalid number of results (count=%d)\n", 
+			 sid_to_string(sid_string, sid), count));
+		goto done;
+	}
+
 	if (!msg) {
 		DEBUG(1,("lookup_usergroups(sid=%s) ads_search tokenGroups: NULL msg\n", 
 			 sid_to_string(sid_string, sid)));
 		status = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+
+	user_dn = ads_get_dn(ads, msg);
+	if (user_dn == NULL) {
+		status = NT_STATUS_NO_MEMORY;
 		goto done;
 	}
 

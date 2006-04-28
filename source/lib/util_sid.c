@@ -535,6 +535,24 @@ char *sid_binstring(const DOM_SID *sid)
 	if (!buf)
 		return NULL;
 	sid_linearize(buf, len, sid);
+	s = binary_string_rfc2254(buf, len);
+	free(buf);
+	return s;
+}
+
+/*****************************************************************
+ Return the binary string representation of a DOM_SID.
+ Caller must free.
+*****************************************************************/
+
+char *sid_binstring_hex(const DOM_SID *sid)
+{
+	char *buf, *s;
+	int len = sid_size(sid);
+	buf = SMB_MALLOC(len);
+	if (!buf)
+		return NULL;
+	sid_linearize(buf, len, sid);
 	s = binary_string(buf, len);
 	free(buf);
 	return s;

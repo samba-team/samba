@@ -105,4 +105,29 @@ ADS_STATUS ads_search_retry_dn(ADS_STRUCT *ads, void **res,
 	return ads_do_search_retry(ads, dn, LDAP_SCOPE_BASE,
 				   "(objectclass=*)", attrs, res);
 }
+
+ADS_STATUS ads_search_retry_sid(ADS_STRUCT *ads, void **res, 
+				const DOM_SID *sid,
+				const char **attrs)
+{
+	char *dn, *sid_string;
+	ADS_STATUS status;
+	
+	sid_string = sid_binstring_hex(sid);
+	if (sid_string == NULL) {
+		return ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
+	}
+
+	if (!asprintf(&dn, "<SID=%s>", sid_string)) {
+		SAFE_FREE(sid_string);
+		return ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
+	}
+
+	status = ads_do_search_retry(ads, dn, LDAP_SCOPE_BASE,
+				   "(objectclass=*)", attrs, res);
+	SAFE_FREE(dn);
+	SAFE_FREE(sid_string);
+	return status;
+}
+
 #endif
