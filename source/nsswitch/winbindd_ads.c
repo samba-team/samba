@@ -626,6 +626,12 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 	DEBUG(3,("ads: lookup_usergroups\n"));
 	*p_num_groups = 0;
 
+	status = lookup_usergroups_cached(domain, mem_ctx, sid, 
+					  p_num_groups, user_sids);
+	if (NT_STATUS_IS_OK(status)) {
+		return NT_STATUS_OK;
+	}
+
 	ads = ads_cached_connection(domain);
 	
 	if (!ads) {
@@ -681,10 +687,12 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 
 	/* there must always be at least one group in the token, 
 	   unless we are talking to a buggy Win2k server */
+
 	if (count == 0) {
+
 		status = lookup_usergroups_alt(domain, mem_ctx, user_dn, 
-					     &primary_group,
-					     &num_groups, user_sids);
+					       &primary_group,
+					       &num_groups, user_sids);
 		*p_num_groups = (uint32)num_groups;
 		return status;
 	}
