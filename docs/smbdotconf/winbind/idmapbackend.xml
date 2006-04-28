@@ -13,7 +13,7 @@
 	</para>
 
 	<para>
-	An alternate method of SID to UID / GID  mapping can be achieved using the idmap_rid
+	An alternate method of SID to UID / GID  mapping can be achieved using the rid
 	plug-in. This plug-in uses the account RID to derive the UID and GID by adding the
 	RID to a base value specified. This utility requires that the parameter
 	<quote>allow trusted domains = No</quote> must be specified, as it is not compatible
@@ -22,9 +22,9 @@
 	</para>
 
 	<para>
-	Finally, using the idmap_ad module, the UID and GID can directly
+	Finally, using the ad module, the UID and GID can directly
 	be retrieved from an Active Directory LDAP Server that supports an
-	RFC2307 compliant LDAP schema. idmap_ad supports "Services for Unix"
+	RFC2307 compliant LDAP schema. ad supports "Services for Unix"
 	(SFU) version 2.x and 3.0.  
 	</para>
 
@@ -32,6 +32,6 @@
 
 <value type="default"></value>
 <value type="example">ldap:ldap://ldapslave.example.com</value>
-<value type="example">idmap_rid:"BUILTIN=1000-1999,DOMNAME=2000-100000000"</value>
-<value type="example">idmap_ad</value>
+<value type="example">rid:"BUILTIN=1000-1999,DOMNAME=2000-100000000"</value>
+<value type="example">ad</value>
 </samba:parameter>
