@@ -81,6 +81,7 @@ AC_HAVE_DECL(vasprintf, [#include <stdio.h>])
 AC_HAVE_DECL(vsnprintf, [#include <stdio.h>])
 AC_HAVE_DECL(snprintf, [#include <stdio.h>])
 AC_CHECK_FUNCS(snprintf vsnprintf asprintf vasprintf)
+AC_CHECK_HEADERS(strings.h)
 
 AC_CACHE_CHECK([for C99 vsnprintf],samba_cv_HAVE_C99_VSNPRINTF,[
 AC_TRY_RUN([
@@ -177,4 +178,4 @@ else
     fi
 fi
 
-AC_CHECK_HEADERS([sys/param.h])
+AC_CHECK_HEADERS([sys/param.h limits.h])
