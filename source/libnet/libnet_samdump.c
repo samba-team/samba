@@ -25,7 +25,7 @@
 #include "libnet/libnet.h"
 #include "dlinklist.h"
 #include "samba3/samba3.h"
-#include "librpc/gen_ndr/ndr_security.h"
+#include "libcli/security/security.h"
 
 
 struct samdump_secret {

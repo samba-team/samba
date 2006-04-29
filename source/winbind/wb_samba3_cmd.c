@@ -28,7 +28,6 @@
 #include "libcli/composite/composite.h"
 #include "version.h"
 #include "librpc/gen_ndr/netlogon.h"
-#include "librpc/gen_ndr/ndr_security.h"
 #include "libcli/security/security.h"
 #include "auth/pam_errors.h"
 

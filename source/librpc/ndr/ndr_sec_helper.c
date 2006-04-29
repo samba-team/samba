@@ -23,47 +23,38 @@
 
 #include "includes.h"
 #include "librpc/gen_ndr/ndr_security.h"
+#include "libcli/security/security.h"
 
 /*
   return the wire size of a dom_sid
 */
-size_t ndr_size_dom_sid(const struct dom_sid *sid)
+size_t ndr_size_dom_sid(const struct dom_sid *sid, int flags)
 {
 	if (!sid) return 0;
-	return 8 + 4*sid->num_auths;
-}
-
-/*
-  return the wire size of a dom_sid
-*/
-size_t ndr_length_dom_sid(const struct dom_sid *sid)
-{
-	if (!sid) return 0;
-	if (sid->sid_rev_num == 0) return 0;
 	return 8 + 4*sid->num_auths;
 }
 
 /*
   return the wire size of a security_ace
 */
-size_t ndr_size_security_ace(const struct security_ace *ace)
+size_t ndr_size_security_ace(const struct security_ace *ace, int flags)
 {
 	if (!ace) return 0;
-	return 8 + ndr_size_dom_sid(&ace->trustee);
+	return 8 + ndr_size_dom_sid(&ace->trustee, flags);
 }
 
 
 /*
   return the wire size of a security_acl
 */
-size_t ndr_size_security_acl(const struct security_acl *acl)
+size_t ndr_size_security_acl(const struct security_acl *acl, int flags)
 {
 	size_t ret;
 	int i;
 	if (!acl) return 0;
 	ret = 8;
 	for (i=0;i<acl->num_aces;i++) {
-		ret += ndr_size_security_ace(&acl->aces[i]);
+		ret += ndr_size_security_ace(&acl->aces[i], flags);
 	}
 	return ret;
 }
@@ -71,16 +62,16 @@ size_t ndr_size_security_acl(const struct security_acl *acl)
 /*
   return the wire size of a security descriptor
 */
-size_t ndr_size_security_descriptor(const struct security_descriptor *sd)
+size_t ndr_size_security_descriptor(const struct security_descriptor *sd, int flags)
 {
 	size_t ret;
 	if (!sd) return 0;
 	
 	ret = 20;
-	ret += ndr_size_dom_sid(sd->owner_sid);
-	ret += ndr_size_dom_sid(sd->group_sid);
-	ret += ndr_size_security_acl(sd->dacl);
-	ret += ndr_size_security_acl(sd->sacl);
+	ret += ndr_size_dom_sid(sd->owner_sid, flags);
+	ret += ndr_size_dom_sid(sd->group_sid, flags);
+	ret += ndr_size_security_acl(sd->dacl, flags);
+	ret += ndr_size_security_acl(sd->sacl, flags);
 	return ret;
 }
 
@@ -102,35 +93,97 @@ void ndr_print_dom_sid28(struct ndr_print *ndr, const char *name, const struct d
 	ndr_print_dom_sid(ndr, name, sid);
 }
 
+
 /*
-  convert a dom_sid to a string
+  parse a dom_sid2 - this is a dom_sid but with an extra copy of the num_auths field
 */
-char *dom_sid_string(TALLOC_CTX *mem_ctx, const struct dom_sid *sid)
+NTSTATUS ndr_pull_dom_sid2(struct ndr_pull *ndr, int ndr_flags, struct dom_sid *sid)
 {
-	int i, ofs, maxlen;
-	uint32_t ia;
-	char *ret;
-	
-	if (!sid) {
-		return talloc_strdup(mem_ctx, "(NULL SID)");
+	uint32_t num_auths;
+	if (!(ndr_flags & NDR_SCALARS)) {
+		return NT_STATUS_OK;
+	}
+	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &num_auths));
+	NDR_CHECK(ndr_pull_dom_sid(ndr, ndr_flags, sid));
+	if (sid->num_auths != num_auths) {
+		return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, 
+				      "Bad array size %u should exceed %u", 
+				      num_auths, sid->num_auths);
+	}
+	return NT_STATUS_OK;
+}
+
+/*
+  parse a dom_sid2 - this is a dom_sid but with an extra copy of the num_auths field
+*/
+NTSTATUS ndr_push_dom_sid2(struct ndr_push *ndr, int ndr_flags, const struct dom_sid *sid)
+{
+	if (!(ndr_flags & NDR_SCALARS)) {
+		return NT_STATUS_OK;
+	}
+	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, sid->num_auths));
+	return ndr_push_dom_sid(ndr, ndr_flags, sid);
+}
+
+/*
+  parse a dom_sid28 - this is a dom_sid in a fixed 28 byte buffer, so we need to ensure there are only upto 5 sub_auth
+*/
+NTSTATUS ndr_pull_dom_sid28(struct ndr_pull *ndr, int ndr_flags, struct dom_sid *sid)
+{
+	NTSTATUS status;
+	struct ndr_pull *subndr;
+
+	if (!(ndr_flags & NDR_SCALARS)) {
+		return NT_STATUS_OK;
 	}
 
-	maxlen = sid->num_auths * 11 + 25;
-	ret = talloc_size(mem_ctx, maxlen);
-	if (!ret) return talloc_strdup(mem_ctx, "(SID ERR)");
+	subndr = talloc_zero(ndr, struct ndr_pull);
+	NT_STATUS_HAVE_NO_MEMORY(subndr);
+	subndr->flags		= ndr->flags;
+	subndr->current_mem_ctx	= ndr->current_mem_ctx;
 
-	ia = (sid->id_auth[5]) +
-		(sid->id_auth[4] << 8 ) +
-		(sid->id_auth[3] << 16) +
-		(sid->id_auth[2] << 24);
+	subndr->data		= ndr->data + ndr->offset;
+	subndr->data_size	= 28;
+	subndr->offset		= 0;
 
-	ofs = snprintf(ret, maxlen, "S-%u-%lu", 
-		       (uint_t)sid->sid_rev_num, (unsigned long)ia);
+	NDR_CHECK(ndr_pull_advance(ndr, 28));
 
-	for (i = 0; i < sid->num_auths; i++) {
-		ofs += snprintf(ret + ofs, maxlen - ofs, "-%lu", (unsigned long)sid->sub_auths[i]);
+	status = ndr_pull_dom_sid(subndr, ndr_flags, sid);
+	if (!NT_STATUS_IS_OK(status)) {
+		/* handle a w2k bug which send random data in the buffer */
+		ZERO_STRUCTP(sid);
 	}
-	
-	return ret;
+
+	return NT_STATUS_OK;
+}
+
+/*
+  push a dom_sid28 - this is a dom_sid in a 28 byte fixed buffer
+*/
+NTSTATUS ndr_push_dom_sid28(struct ndr_push *ndr, int ndr_flags, const struct dom_sid *sid)
+{
+	uint32_t old_offset;
+	uint32_t padding;
+
+	if (!(ndr_flags & NDR_SCALARS)) {
+		return NT_STATUS_OK;
+	}
+
+	if (sid->num_auths > 5) {
+		return ndr_push_error(ndr, NDR_ERR_RANGE, 
+				      "dom_sid28 allows only upto 5 sub auth [%u]", 
+				      sid->num_auths);
+	}
+
+	old_offset = ndr->offset;
+	NDR_CHECK(ndr_push_dom_sid(ndr, ndr_flags, sid));
+
+	padding = 28 - (ndr->offset - old_offset);
+
+	if (padding > 0) {
+		NDR_CHECK(ndr_push_zero(ndr, padding));
+	}
+
+	return NT_STATUS_OK;
 }
 

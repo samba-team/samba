@@ -427,7 +427,7 @@
 		nstring          unicode_domain;
 		uint32           db_count;
 		nbt_db_change    dbchange[db_count];
-		[value(ndr_size_dom_sid(&sid))] uint32 sid_size;
+		[value(ndr_size_dom_sid(&sid, ndr->flags))] uint32 sid_size;
 		[flag(NDR_ALIGN4)] DATA_BLOB _pad2;
 		dom_sid          sid;
 		uint32           nt_version;
@@ -547,7 +547,7 @@
 		nstring              user_name;
 		astring              mailslot_name;
 		uint32               acct_control;
-		[value(ndr_size_dom_sid(&sid))] uint32 sid_size;
+		[value(ndr_size_dom_sid(&sid, ndr->flags))] uint32 sid_size;
 		[flag(NDR_ALIGN4)]   DATA_BLOB _pad;
 		dom_sid              sid;
 		uint32               nt_version;

@@ -22,8 +22,8 @@
 
 #include "includes.h"
 #include "system/iconv.h"
-#include "librpc/gen_ndr/ndr_security.h"
 #include "libcli/security/security.h"
+#include "librpc/gen_ndr/ndr_misc.h"
 
 struct flag_map {
 	const char *name;
