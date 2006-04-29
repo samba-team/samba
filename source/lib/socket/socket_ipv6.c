@@ -302,7 +302,8 @@ static struct socket_address *ipv6_tcp_get_peer_addr(struct socket_context *sock
 	socklen_t len = sizeof(*peer_addr);
 	struct socket_address *peer;
 	int ret;
-	struct hostent *he;
+	char addr[128];
+	const char *addr_ret;
 	
 	peer = talloc(mem_ctx, struct socket_address);
 	if (!peer) {
@@ -326,18 +327,18 @@ static struct socket_address *ipv6_tcp_get_peer_addr(struct socket_context *sock
 
 	peer->sockaddrlen = len;
 
-	he = gethostbyaddr((char *)&peer_addr->sin6_addr, len, AF_INET6);
+	addr_ret = inet_ntop(AF_INET6, &peer_addr->sin6_addr, addr, sizeof(addr));
+	if (addr_ret == NULL) {
+		talloc_free(peer);
+		return NULL;
+	}
 
-	if (!he || !he->h_name) {
+	peer->addr = talloc_strdup(peer, addr_ret);
+	if (peer->addr == NULL) {
 		talloc_free(peer);
 		return NULL;
 	}
-	
-	peer->addr = talloc_strdup(mem_ctx, he->h_name);
-	if (!peer->addr) {
-		talloc_free(peer);
-		return NULL;
-	}
+
 	peer->port = ntohs(peer_addr->sin6_port);
 
 	return peer;
