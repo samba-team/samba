@@ -86,7 +86,11 @@ sub generate_static_library($)
 	push(@{$lib->{LINK_FLAGS}}, "\$($lib->{TYPE}_$lib->{NAME}\_OBJ_LIST)");
 
 	$lib->{TARGET} = "bin/$lib->{LIBRARY_NAME}";
-	$lib->{OUTPUT} = "-l".lc($link_name);
+	if (defined($lib->{OBJ_FILES})) {
+		$lib->{OUTPUT} = $lib->{TARGET};
+	} else {
+		$lib->{OUTPUT} = "";
+	}
 }
 
 sub generate_binary($)

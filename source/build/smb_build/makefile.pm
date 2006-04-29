@@ -323,6 +323,8 @@ sub StaticLibrary($$)
 {
 	my ($self,$ctx) = @_;
 
+	return unless (defined($ctx->{OBJ_FILES}));
+
 	push (@{$self->{static_libs}}, $ctx->{TARGET});
 
 	$self->output("$ctx->{TYPE}_$ctx->{NAME}_OUTPUT = $ctx->{OUTPUT}\n");
