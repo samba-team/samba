@@ -1,5 +1,17 @@
-2006-04-27  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-04-29  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kdc/Makefile.am: clean the server.keytab
+
+	* kdc/check-kdc.in: Add test for pk-init
+
+	* kdc/krb5.conf.in: Add pkinit glue
+
+2006-04-28  Love Hörnquist Åstrand  <lha@it.su.se>
+	
+	* kdc/pki-mapping: Add pk-init mapping file
+	
+2006-04-27  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* kdc/check-kdc.in: Sprinkle more ap-req now that the credential
 	is removed from the cache using kdestroy --credential=
 
