@@ -1,3 +1,8 @@
+oid_section             = new_oids
+
+[ new_oids ]
+pkkdcekuoid = 1.3.6.1.5.2.3.5
+
 [ca]
 
 default_ca = user
@@ -108,6 +113,7 @@ princ1 = GeneralString:bar
 [ pkinit_kdc_cert ]
 basicConstraints=CA:FALSE
 keyUsage = nonRepudiation, digitalSignature, keyEncipherment
+extendedKeyUsage = pkkdcekuoid
 subjectKeyIdentifier	= hash
 subjectAltName=otherName:1.3.6.1.5.2.2;SEQUENCE:pkinitkdc_princ_name 
 
