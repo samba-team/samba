@@ -1430,7 +1430,7 @@ static int net_ads_sid(int argc, const char **argv)
 	attrs = (argv + 1);
 
 	if (!string_to_sid(&sid, sid_string)) {
-		d_fprintf(stderr, "could not convert sid\ņ");
+		d_fprintf(stderr, "could not convert sid\n");
 		ads_destroy(&ads);
 		return -1;
 	}
