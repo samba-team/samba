@@ -152,13 +152,30 @@ ${kdestroy}
 #echo "try all permutations (only aes)"
 #for a in $enctypes; do
 #	echo "Getting client initial tickets ($a)"
-#	${kinit} --enctype=$a --password-file=${objdir}/foopassword foo@$R || exitcode=1
+#	${kinit} --enctype=$a --password-file=${objdir}/foopassword foo@${R} || exitcode=1
 #	for b in $enctypes; do
 #		echo "Getting tickets ($a ->  $b)"
 #		${kgetcred} -e $b ${server}@${R} || exitcode=1
+#		./ap-req ${server}@${R} ${keytab} ${cache} || exitcode=1
+#		${kdestroy} --credential=${server}@${R}
 #	done
 #	${kdestroy}
 #done
+
+# If we support pkinit, lets try that
+if ${kinit} --help 2>&1 | grep "CA certificates" > /dev/null ; then
+	echo "Trying pk-init (princiapl in certificate)"
+	base="${srcdir}/../../lib/hx509/data"
+	${kinit} -C FILE:${base}/pkinit.crt,${base}/pkinit.key bar@${R} || exitcode=1
+	${kgetcred} ${server}@${R} || exitcode=1
+	${kdestroy}
+	echo "Trying pk-init (princiapl in pki-mapping)"
+	${kinit} -C FILE:${base}/pkinit.crt,${base}/pkinit.key foo@${R} || exitcode=1
+	${kgetcred} ${server}@${R} || exitcode=1
+	${kdestroy}
+else
+	echo no pkinit
+fi
 
 echo "killing kdc (${kdcpid})"
 kill $kdcpid || exit 1
