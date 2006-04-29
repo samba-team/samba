@@ -443,6 +443,12 @@ hx509_name_copy(hx509_context context, const hx509_name from, hx509_name *to)
     return 0;
 }
 
+int
+hx509_name_to_Name(const hx509_name from, Name *to)
+{
+    return copy_Name(&from->der_name, to);
+}
+
 
 void
 hx509_name_free(hx509_name *name)
@@ -467,6 +473,22 @@ hx509_unparse_der_name(const void *data, size_t length, char **str)
     hx509_name_free(&name);
     return ret;
 }
+
+int
+hx509_name_to_der_name(const hx509_name name, void **data, size_t *length)
+{
+    size_t size;
+    int ret;
+
+    ASN1_MALLOC_ENCODE(Name, *data, *length, &name->der_name, &size, ret);
+    if (ret)
+	return ret;
+    if (*length != size)
+	_hx509_abort("internal ASN.1 encoder error");
+
+    return 0;
+}
+
 
 int
 _hx509_unparse_Name(const Name *aname, char **str)
