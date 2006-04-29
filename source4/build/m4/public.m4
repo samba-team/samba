@@ -19,10 +19,6 @@ dnl #######################################################
 dnl SMB_SUBSYSTEM(name,obj_files,required_subsystems)
 AC_DEFUN([SMB_SUBSYSTEM],
 [
-	if test -z "$[SMB_SUBSYSTEM_NOPROTO_][$1]"; then
-		[SMB_SUBSYSTEM_NOPROTO_][$1]="NO";
-	fi
-
 SMB_INFO_SUBSYSTEMS="$SMB_INFO_SUBSYSTEMS
 ###################################
 # Start Subsystem $1
