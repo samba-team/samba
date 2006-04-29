@@ -31,4 +31,5 @@ CLEANFILES= \
 	current-db* \
 	foopassword \
 	barpassword \
+	tempfile \
 	client-cache
