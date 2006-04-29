@@ -51,7 +51,7 @@ OBJ_FILES = \
 		basic/attr.o \
 		basic/properties.o 
 PUBLIC_DEPENDENCIES = \
-		LIBSMB 
+		LIBCLI_SMB 
 # End SUBSYSTEM TORTURE_BASIC
 #################################
 
@@ -85,7 +85,7 @@ OBJ_FILES = \
 		raw/seek.o \
 		raw/composite.o
 PUBLIC_DEPENDENCIES = \
-		LIBSMB LIBCLI_LSA
+		LIBCLI_SMB LIBCLI_LSA
 # End SUBSYSTEM TORTURE_RAW
 #################################
 
@@ -163,7 +163,7 @@ PRIVATE_PROTO_HEADER = \
 OBJ_FILES = \
 		rap/rap.o
 PUBLIC_DEPENDENCIES = \
-		LIBSMB
+		LIBCLI_SMB
 # End SUBSYSTEM TORTURE_RAP
 #################################
 
@@ -176,7 +176,7 @@ OBJ_FILES = \
 		auth/ntlmssp.o \
 		auth/pac.o
 PUBLIC_DEPENDENCIES = \
-		LIBSMB gensec auth LIBSAMBA3
+		LIBCLI_SMB gensec auth LIBSAMBA3
 # End SUBSYSTEM TORTURE_AUTH
 #################################
 
@@ -222,7 +222,7 @@ OBJ_FILES = \
 		nbt/dgram.o \
 		nbt/browse.o
 PUBLIC_DEPENDENCIES = \
-		LIBSMB LIBCLI_NBT LIBCLI_WREPL
+		LIBCLI_SMB LIBCLI_NBT LIBCLI_WREPL
 # End SUBSYSTEM TORTURE_NBT
 #################################
 
@@ -274,7 +274,7 @@ PRIVATE_DEPENDENCIES = \
 		LIBPOPT \
 		POPT_SAMBA \
 		POPT_CREDENTIALS \
-		LIBSMB
+		LIBCLI_SMB
 MANPAGE = man/gentest.1
 # End BINARY gentest
 #################################
@@ -291,7 +291,7 @@ PRIVATE_DEPENDENCIES = \
 		LIBPOPT \
 		POPT_SAMBA \
 		POPT_CREDENTIALS \
-		LIBSMB
+		LIBCLI_SMB
 MANPAGE = man/masktest.1
 # End BINARY masktest
 #################################
@@ -303,7 +303,7 @@ INSTALLDIR = BINDIR
 OBJ_FILES = \
 		locktest.o
 PRIVATE_DEPENDENCIES = \
-		LIBSMB \
+		LIBCLI_SMB \
 		LIBSAMBA-CONFIG \
 		LIBSAMBA-UTIL
 MANPAGE = man/locktest.1
