@@ -420,21 +420,6 @@ static void ldapsrv_accept(struct stream_connection *c)
 	conn->connection  = c;
 	conn->service     = ldapsrv_service;
 
-	server_credentials 
-		= cli_credentials_init(conn);
-	if (!server_credentials) {
-		stream_terminate_connection(c, "Failed to init server credentials\n");
-		return;
-	}
-	
-	cli_credentials_set_conf(server_credentials);
-	status = cli_credentials_set_machine_account(server_credentials);
-	if (!NT_STATUS_IS_OK(status)) {
-		stream_terminate_connection(c, talloc_asprintf(conn, "Failed to obtain server credentials, perhaps a standalone server?: %s\n", nt_errstr(status)));
-		return;
-	}
-	conn->server_credentials = server_credentials;
-
 	c->private        = conn;
 
 	socket_address = socket_get_my_addr(c->socket, conn);
@@ -457,6 +442,7 @@ static void ldapsrv_accept(struct stream_connection *c)
 		ldapsrv_terminate_connection(conn, "out of memory");
 		return;
 	}
+
 	packet_set_private(conn->packet, conn);
 	packet_set_tls(conn->packet, conn->tls);
 	packet_set_callback(conn->packet, ldapsrv_decode);
@@ -465,6 +451,24 @@ static void ldapsrv_accept(struct stream_connection *c)
 	packet_set_event_context(conn->packet, c->event.ctx);
 	packet_set_fde(conn->packet, c->event.fde);
 	packet_set_serialise(conn->packet);
+	
+	/* Ensure we don't get packets until the database is ready below */
+	packet_recv_disable(conn->packet);
+
+	server_credentials 
+		= cli_credentials_init(conn);
+	if (!server_credentials) {
+		stream_terminate_connection(c, "Failed to init server credentials\n");
+		return;
+	}
+	
+	cli_credentials_set_conf(server_credentials);
+	status = cli_credentials_set_machine_account(server_credentials);
+	if (!NT_STATUS_IS_OK(status)) {
+		stream_terminate_connection(c, talloc_asprintf(conn, "Failed to obtain server credentials, perhaps a standalone server?: %s\n", nt_errstr(status)));
+		return;
+	}
+	conn->server_credentials = server_credentials;
 
 	/* Connections start out anonymous */
 	if (!NT_STATUS_IS_OK(auth_anonymous_session_info(conn, &conn->session_info))) {
@@ -487,6 +491,9 @@ static void ldapsrv_accept(struct stream_connection *c)
 	conn->limits.ite = event_add_timed(c->event.ctx, conn, 
 					   timeval_current_ofs(conn->limits.initial_timeout, 0),
 					   ldapsrv_conn_init_timeout, conn);
+
+	packet_recv_enable(conn->packet);
+
 }
 
 static const struct stream_server_ops ldap_stream_ops = {
