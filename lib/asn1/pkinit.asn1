@@ -50,10 +50,11 @@ ExternalPrincipalIdentifier ::= SEQUENCE {
 	...
 }
 
+ExternalPrincipalIdentifiers ::= SEQUENCE OF ExternalPrincipalIdentifier
+
 PA-PK-AS-REQ ::= SEQUENCE {
         signedAuthPack          [0] IMPLICIT OCTET STRING,
-        trustedCertifiers       [1] SEQUENCE OF 
-			ExternalPrincipalIdentifier OPTIONAL,
+        trustedCertifiers       [1] ExternalPrincipalIdentifiers OPTIONAL,
 	kdcPkId                 [2] IMPLICIT OCTET STRING OPTIONAL,
 	...
 }
@@ -74,8 +75,8 @@ AuthPack ::= SEQUENCE {
 	...
 }
 
-TD-TRUSTED-CERTIFIERS ::= SEQUENCE OF ExternalPrincipalIdentifier
-TD-INVALID-CERTIFICATES ::= SEQUENCE OF ExternalPrincipalIdentifier
+TD-TRUSTED-CERTIFIERS ::= ExternalPrincipalIdentifiers
+TD-INVALID-CERTIFICATES ::= ExternalPrincipalIdentifiers
 
 KRB5PrincipalName ::= SEQUENCE {
 	realm                   [0] Realm,

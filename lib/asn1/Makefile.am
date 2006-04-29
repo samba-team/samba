@@ -283,6 +283,7 @@ gen_files_pkinit =					\
 	asn1_DHNonce.x					\
 	asn1_TrustedCA.x				\
 	asn1_ExternalPrincipalIdentifier.x		\
+	asn1_ExternalPrincipalIdentifiers.x		\
 	asn1_PA_PK_AS_REQ.x				\
 	asn1_PKAuthenticator.x				\
 	asn1_AuthPack.x					\
