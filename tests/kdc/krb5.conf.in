@@ -4,12 +4,22 @@
 	default_realm = EXAMPLE.ORG
 	no-addresses = TRUE
 
+[appdefaults]
+	pkinit-anchors = FILE:@srcdir@/../../lib/hx509/data/ca.crt
+
 [realms]
 	EXAMPLE.ORG = {
 		kdc = localhost:8888
 	}
 
 [kdc]
+	enable-pkinit = true
+	pki-identity = FILE:@srcdir@/../../lib/hx509/data/kdc.crt,@srcdir@/../../lib/hx509/data/kdc.key
+	pki-anchors = FILE:@srcdir@/../../lib/hx509/data/ca.crt
+	pki-pool = FILE:@srcdir@/../../lib/hx509/data/sub-ca.crt
+#	pki-revoke = CRL:@srcdir@/../../lib/hx509/data/crl1.crl
+	pki-mappings-file = @srcdir@/pki-mapping
+
 	database = {
 		dbname = @objdir@/current-db
 		realm = EXAMPLE.ORG
