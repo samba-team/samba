@@ -729,7 +729,7 @@ pk_verify_host(krb5_context context,
 	ret = hx509_cert_check_eku(ctx->id->hx509ctx, host->cert,
 				   oid_id_pkkdcekuoid(), 0);
 	if (ret) {
-	    krb5_clear_error_string(context);
+	    krb5_set_error_string(context, "No PK-INIT KDC EKU in kdc certificate");
 	    return ret;
 	}
     }
@@ -762,7 +762,8 @@ pk_verify_host(krb5_context context,
 		strcmp(r.principalName.name_string.val[1], realm) != 0 ||
 		strcmp(r.realm, realm) != 0)
 	    {
-		krb5_clear_error_string(context);
+		krb5_set_error_string(context, "KDC have wrong realm name in "
+				      "the certificate");
 		ret = EINVAL;
 	    }
 
@@ -775,13 +776,15 @@ pk_verify_host(krb5_context context,
     if (ret)
 	return ret;
     
-    ret = hx509_verify_hostname(ctx->id->hx509ctx, host->cert, 
-				ctx->require_hostname_match,
-				hi->hostname,
-				hi->ai->ai_addr, hi->ai->ai_addrlen);
+    if (hi) {
+	ret = hx509_verify_hostname(ctx->id->hx509ctx, host->cert, 
+				    ctx->require_hostname_match,
+				    hi->hostname,
+				    hi->ai->ai_addr, hi->ai->ai_addrlen);
 
-    if (ret)
-	krb5_clear_error_string(context);
+	if (ret)
+	    krb5_set_error_string(context, "Address mismatch in the KDC certificate");
+    }
     return ret;
 }
 
