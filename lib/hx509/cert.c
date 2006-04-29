@@ -422,7 +422,7 @@ find_extension_eku(const Certificate *cert, ExtKeyUsage *eku)
 }
 
 static int
-add_to_list(hx509_octet_string_list *list, heim_octet_string *entry)
+add_to_list(hx509_octet_string_list *list, const heim_octet_string *entry)
 {
     void *p;
     int ret;
@@ -431,7 +431,7 @@ add_to_list(hx509_octet_string_list *list, heim_octet_string *entry)
     if (p == NULL)
 	return ENOMEM;
     list->val = p;
-    ret = copy_octet_string(&list->val[list->len], entry);
+    ret = copy_octet_string(entry, &list->val[list->len]);
     if (ret)
 	return ret;
     list->len++;
@@ -464,7 +464,10 @@ hx509_cert_find_subjectAltName_otherName(hx509_cert cert,
     while (1) {
 	ret = find_extension_subject_alt_name(_hx509_get_cert(cert), &i, &sa);
 	i++;
-	if (ret == HX509_EXTENSION_NOT_FOUND)
+	if (ret == HX509_EXTENSION_NOT_FOUND) {
+	    ret = 0;
+	    break;
+	} else if (ret != 0)
 	    break;
 
 
@@ -473,14 +476,14 @@ hx509_cert_find_subjectAltName_otherName(hx509_cert cert,
 		heim_oid_cmp(&sa.val[j].u.otherName.type_id, oid) == 0) 
 	    {
 		ret = add_to_list(list, &sa.val[j].u.otherName.value);
-		if (ret)
+		if (ret) {
+		    free_GeneralNames(&sa);
 		    return ret;
+		}
 	    }
 	}
 	free_GeneralNames(&sa);
     }
-    if (ret == HX509_EXTENSION_NOT_FOUND)
-	ret = 0;
     return ret;
 }
 
@@ -898,7 +901,7 @@ hx509_cert_get_base_subject(hx509_context context, hx509_cert c, hx509_name *nam
 {
     if (c->basename)
 	return hx509_name_copy(context, c->basename, name);
-    if (is_proxy_cert(c->data, NULL))
+    if (is_proxy_cert(c->data, NULL) == 0)
 	return EINVAL; /* XXX */
     return _hx509_name_from_Name(&c->data->tbsCertificate.subject, name);
 }
