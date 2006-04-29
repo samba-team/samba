@@ -9,10 +9,7 @@
 	used to expand macros here, but this turned out to be a bug because the Windows client can expand a variable
 	%G_osver% in which %G would have been substituted by the user's primary group.
     </para>
-    <para>
-    This parameter is set to "yes" by default, but this is about to change in the future.
-    </para>
 </description>
 
-<value type="default">yes</value>
+<value type="default">no</value>
 </samba:parameter>
