@@ -1,5 +1,7 @@
 2006-04-29  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* hxtool.c (main): add missing argument to printf
+
 	* data/openssl.cnf: Add EKU for the KDC certificate
 
 	* cert.c (hx509_cert_get_base_subject): reject un-canon proxy
