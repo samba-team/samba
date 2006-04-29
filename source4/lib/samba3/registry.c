@@ -40,14 +40,14 @@ static int regdb_unpack_values(TDB_CONTEXT *tdb, TALLOC_CTX *ctx, struct samba3_
 	int 		len = 0;
 	uint32_t	type;
 	uint32_t	size;
-	uint8_t		*data_p;
+	uint8_t *data_p;
 	uint32_t	num_values = 0;
 	int 		i;
 	fstring valuename;
 	
 	/* loop and unpack the rest of the registry values */
 	
-	len += tdb_unpack(tdb, data.dptr+len, data.dsize-len, "d", &num_values);
+	len += tdb_unpack(tdb, (char *)data.dptr+len, data.dsize-len, "d", &num_values);
 	
 	for ( i=0; i<num_values; i++ ) {
 		struct samba3_regval val;
@@ -56,7 +56,7 @@ static int regdb_unpack_values(TDB_CONTEXT *tdb, TALLOC_CTX *ctx, struct samba3_
 		type = REG_NONE;
 		size = 0;
 		data_p = NULL;
-		len += tdb_unpack(tdb, data.dptr+len, data.dsize-len, "fdB",
+		len += tdb_unpack(tdb, (char *)data.dptr+len, data.dsize-len, "fdB",
 				  valuename,
 				  &val.type,
 				  &size,
@@ -109,14 +109,14 @@ NTSTATUS samba3_read_regdb ( const char *fn, TALLOC_CTX *ctx, struct samba3_regd
 		struct samba3_regkey key;
 		char *skey;
 			
-		if (strncmp(kbuf.dptr, VALUE_PREFIX, strlen(VALUE_PREFIX)) == 0)
+		if (strncmp((char *)kbuf.dptr, VALUE_PREFIX, strlen(VALUE_PREFIX)) == 0)
 			continue;
 
 		vbuf = tdb_fetch(tdb, kbuf);
 
-		key.name = talloc_strdup(ctx, kbuf.dptr); 
+		key.name = talloc_strdup(ctx, (char *)kbuf.dptr); 
 
-		len = tdb_unpack(tdb, vbuf.dptr, vbuf.dsize, "d", &key.subkey_count);
+		len = tdb_unpack(tdb, (char *)vbuf.dptr, vbuf.dsize, "d", &key.subkey_count);
 
 		key.value_count = 0;
 		key.values = NULL;
@@ -124,7 +124,7 @@ NTSTATUS samba3_read_regdb ( const char *fn, TALLOC_CTX *ctx, struct samba3_regd
 	
 		for (i = 0; i < key.subkey_count; i++) {
 			fstring tmp;
-			len += tdb_unpack( tdb, vbuf.dptr+len, vbuf.dsize-len, "f", tmp );
+			len += tdb_unpack( tdb, (char *)vbuf.dptr+len, vbuf.dsize-len, "f", tmp );
 			key.subkeys[i] = talloc_strdup(ctx, tmp);
 		}
 
