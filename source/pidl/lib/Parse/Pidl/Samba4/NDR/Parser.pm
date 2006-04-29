@@ -194,13 +194,13 @@ sub check_null_pointer_void($)
 
 #####################################################################
 # declare a function public or static, depending on its attributes
-sub fn_declare($$)
+sub fn_declare($$$)
 {
-	my ($fn,$decl) = @_;
+	my ($type,$fn,$decl) = @_;
 
-	if (has_property($fn, "public")) {
+	if (has_property($fn, "no$type") or has_property($fn, "public")) {
 		pidl_hdr "$decl;";
-		pidl "_PUBLIC_ $decl";
+		pidl "_PUBLIC_ $decl" unless (has_property($fn, "no$type"));
 	} else {
 		pidl "static $decl";
 	}
@@ -1814,7 +1814,7 @@ sub ParseTypedefPush($)
 	my($e) = shift;
 
 	my $args = $typefamily{$e->{DATA}->{TYPE}}->{DECL}->($e,"push");
-	fn_declare($e, "NTSTATUS ndr_push_$e->{NAME}(struct ndr_push *ndr, int ndr_flags, $args)");
+	fn_declare("push", $e, "NTSTATUS ndr_push_$e->{NAME}(struct ndr_push *ndr, int ndr_flags, $args)");
 
 	pidl "{";
 	indent;
@@ -1833,7 +1833,7 @@ sub ParseTypedefPull($)
 
 	my $args = $typefamily{$e->{DATA}->{TYPE}}->{DECL}->($e,"pull");
 
-	fn_declare($e, "NTSTATUS ndr_pull_$e->{NAME}(struct ndr_pull *ndr, int ndr_flags, $args)");
+	fn_declare("pull", $e, "NTSTATUS ndr_pull_$e->{NAME}(struct ndr_pull *ndr, int ndr_flags, $args)");
 
 	pidl "{";
 	indent;
@@ -1871,7 +1871,7 @@ sub ParseTypedefNdrSize($)
 	my $tf = $typefamily{$t->{DATA}->{TYPE}};
 	my $args = $tf->{SIZE_FN_ARGS}->($t);
 
-	fn_declare($t, "size_t ndr_size_$t->{NAME}($args)");
+	fn_declare("size", $t, "size_t ndr_size_$t->{NAME}($args)");
 
 	pidl "{";
 	indent;
@@ -1952,9 +1952,9 @@ sub ParseFunctionPush($)
 { 
 	my($fn) = shift;
 
-	return if has_property($fn, "nopush");
+	fn_declare("push", $fn, "NTSTATUS ndr_push_$fn->{NAME}(struct ndr_push *ndr, int flags, const struct $fn->{NAME} *r)");
 
-	fn_declare($fn, "NTSTATUS ndr_push_$fn->{NAME}(struct ndr_push *ndr, int flags, const struct $fn->{NAME} *r)");
+	return if has_property($fn, "nopush");
 
 	pidl "{";
 	indent;
@@ -2032,10 +2032,11 @@ sub ParseFunctionPull($)
 { 
 	my($fn) = shift;
 
+	# pull function args
+	fn_declare("pull", $fn, "NTSTATUS ndr_pull_$fn->{NAME}(struct ndr_pull *ndr, int flags, struct $fn->{NAME} *r)");
+
 	return if has_property($fn, "nopull");
 
-	# pull function args
-	fn_declare($fn, "NTSTATUS ndr_pull_$fn->{NAME}(struct ndr_pull *ndr, int flags, struct $fn->{NAME} *r)");
 	pidl "{";
 	indent;
 
