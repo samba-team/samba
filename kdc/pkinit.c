@@ -1120,14 +1120,6 @@ _kdc_pk_check_client(krb5_context context,
     hx509_name name;
     int i;
 
-    if (config->enable_pkinit_princ_in_cert) {
-	ret = pk_principal_from_X509(context, config, 
-				     client_params->cert,
-				     client_princ);
-	if (ret == 0)
-	    return 0;
-    }
-
     ret = hx509_cert_get_base_subject(kdc_identity->hx509ctx, 
 				      client_params->cert,
 				      &name);
@@ -1142,6 +1134,17 @@ _kdc_pk_check_client(krb5_context context,
     kdc_log(context, config, 5,
 	    "Trying to authorize subject DN %s", 
 	    *subject_name);
+
+    if (config->enable_pkinit_princ_in_cert) {
+	ret = pk_principal_from_X509(context, config, 
+				     client_params->cert,
+				     client_princ);
+	if (ret == 0) {
+	    kdc_log(context, config, 5,
+		    "Found matching PK-INIT SAN in certificate");
+	    return 0;
+	}
+    }
 
     for (i = 0; i < principal_mappings.len; i++) {
 	krb5_boolean b;
