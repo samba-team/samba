@@ -775,8 +775,7 @@ _PUBLIC_ int strwicmp(const char *psz1, const char *psz2)
 **/
 _PUBLIC_ void string_replace(char *s, char oldc, char newc)
 {
-	while (*s) {
-		s++;
+	for (;s && *s; s++) {
 		if (*s == oldc) *s = newc;
 	}
 }
