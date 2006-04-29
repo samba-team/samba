@@ -296,9 +296,8 @@ static NTSTATUS gensec_krb5_client_start(struct gensec_security *gensec_security
 	{
 		DEBUG(3, ("kerberos (mk_req) failed: %s\n", 
 			  smb_get_krb5_error_message(gensec_krb5_state->smb_krb5_context->krb5_context, ret, gensec_krb5_state)));
-		/* fall down to remaining code */
+		/*fall through*/
 	}
-	
 	
 	/* just don't print a message for these really ordinary messages */
 	case KRB5_FCC_NOFILE:
