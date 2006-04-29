@@ -233,6 +233,7 @@ clean:: clean_pch
 	@echo Removing libraries
 	@-rm -f $(STATIC_LIBRARIES) $(SHARED_LIBRARIES)
 	@-rm -f bin/*.$(SHLIBEXT)*
+	@-rm -f bin/*.a
 	@echo Removing modules
 	@-rm -f bin/modules/*/*.$(SHLIBEXT)
 	@-rm -f bin/*_init_module.c
