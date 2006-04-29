@@ -268,7 +268,7 @@ _PUBLIC_ BOOL strcsequal_w(const char *s1,const char *s2)
 **/
 _PUBLIC_ void string_replace_w(char *s, char oldc, char newc)
 {
-	while (*s) {
+	for (; s && *s; s++) {
 		size_t size;
 		codepoint_t c = next_codepoint(s, &size);
 		if (c == oldc) {

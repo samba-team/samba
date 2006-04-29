@@ -1,4 +1,4 @@
-AC_CHECK_HEADERS(arpa/inet.h net/if.h netdb.h netinet/in.h)
+AC_CHECK_HEADERS(arpa/inet.h net/if.h netdb.h netinet/in.h sys/time.h)
 AC_CHECK_HEADERS(netinet/ip.h netinet/tcp.h netinet/in_systm.h netinet/in_ip.h)
 
 ##################
