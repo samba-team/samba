@@ -240,6 +240,7 @@ sub SharedLibrary($$)
 		}
 	}
 
+	$self->output("$ctx->{TYPE}_$ctx->{NAME}_OUTPUT = $ctx->{OUTPUT}\n");
 	$self->_prepare_list($ctx, "OBJ_LIST");
 	$self->_prepare_list($ctx, "FULL_OBJ_LIST");
 	$self->_prepare_list($ctx, "DEPEND_LIST");
@@ -324,6 +325,7 @@ sub StaticLibrary($$)
 
 	push (@{$self->{static_libs}}, $ctx->{TARGET});
 
+	$self->output("$ctx->{TYPE}_$ctx->{NAME}_OUTPUT = $ctx->{OUTPUT}\n");
 	$self->_prepare_list($ctx, "OBJ_LIST");
 	$self->_prepare_list($ctx, "FULL_OBJ_LIST");
 
