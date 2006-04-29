@@ -1,3 +1,13 @@
+2006-04-29  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* data/openssl.cnf: Add EKU for the KDC certificate
+
+	* cert.c (hx509_cert_get_base_subject): reject un-canon proxy
+	certs, not the reverse
+	(add_to_list): constify and fix argument order to
+	copy_octet_string
+	(hx509_cert_find_subjectAltName_otherName): make work
+	
 2006-04-28  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* data/{pkinit,kdc}.{crt,key}: pkinit certificates
