@@ -787,6 +787,7 @@ my %property_list = (
 	"public"		=> ["FUNCTION", "TYPEDEF"],
 	"nopush"		=> ["FUNCTION", "TYPEDEF"],
 	"nopull"		=> ["FUNCTION", "TYPEDEF"],
+	"nosize"		=> ["FUNCTION", "TYPEDEF"],
 	"noprint"		=> ["FUNCTION", "TYPEDEF"],
 	"noejs"			=> ["FUNCTION", "TYPEDEF"],
 
