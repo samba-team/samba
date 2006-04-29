@@ -71,7 +71,6 @@ OBJ_FILES = \
 ################################################
 # Start MODULE ldb_ildap
 [MODULE::ldb_ildap]
-ENABLE = NO
 SUBSYSTEM = ldb
 INIT_FUNCTION = ldb_ildap_init
 ALIASES = ldapi ldaps ldap
