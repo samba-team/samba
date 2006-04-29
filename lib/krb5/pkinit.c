@@ -162,6 +162,104 @@ _krb5_pk_create_sign(krb5_context context,
     return ret;
 }
 
+static int
+cert2epi(hx509_context context, void *ctx, hx509_cert c)
+{
+    ExternalPrincipalIdentifiers *ids = ctx;
+    ExternalPrincipalIdentifier id;
+    hx509_name subject = NULL;
+    void *p;
+    int ret;
+
+    memset(&id, 0, sizeof(id));
+
+    ret = hx509_cert_get_subject(c, &subject);
+    if (ret)
+	return ret;
+
+    id.subjectName = calloc(1, sizeof(*id.subjectName));
+    if (id.subjectName == NULL) {
+	hx509_name_free(&subject);
+	free_ExternalPrincipalIdentifier(&id);
+	return ENOMEM;
+    }
+    
+    ret = hx509_name_to_der_name(subject, &id.subjectName->data,
+				 &id.subjectName->length);
+    hx509_name_free(&subject);
+    if (ret) {
+	free_ExternalPrincipalIdentifier(&id);
+	return ret;
+    }
+
+    id.issuerAndSerialNumber = calloc(1, sizeof(*id.issuerAndSerialNumber));
+    if (id.issuerAndSerialNumber == NULL) {
+	free_ExternalPrincipalIdentifier(&id);
+	return ENOMEM;
+    }
+
+    {
+	IssuerAndSerialNumber iasn;
+	hx509_name issuer;
+	size_t size;
+	
+	memset(&iasn, 0, sizeof(iasn));
+
+	ret = hx509_cert_get_issuer(c, &issuer);
+	if (ret) {
+	    free_ExternalPrincipalIdentifier(&id);
+	    return ret;
+	}
+
+	ret = hx509_name_to_Name(issuer, &iasn.issuer);
+	hx509_name_free(&issuer);
+	if (ret) {
+	    free_ExternalPrincipalIdentifier(&id);
+	    return ret;
+	}
+	
+	ret = hx509_cert_get_serialnumber(c, &iasn.serialNumber);
+	if (ret) {
+	    free_IssuerAndSerialNumber(&iasn);
+	    free_ExternalPrincipalIdentifier(&id);
+	    return ret;
+	}
+
+	ASN1_MALLOC_ENCODE(IssuerAndSerialNumber,
+			   id.issuerAndSerialNumber->data, 
+			   id.issuerAndSerialNumber->length,
+			   &iasn, &size, ret);
+	free_IssuerAndSerialNumber(&iasn);
+	if (ret)
+	    return ret;
+	if (id.issuerAndSerialNumber->length != size)
+	    abort();
+    }
+
+    id.subjectKeyIdentifier = NULL;
+
+    p = realloc(ids->val, sizeof(ids->val[0]) * (ids->len + 1)); 
+    if (p == NULL) {
+	free_ExternalPrincipalIdentifier(&id);
+	return ENOMEM;
+    }
+
+    ids->val = p;
+    ids->val[ids->len] = id;
+    ids->len++;
+
+    return 0;
+}
+
+static krb5_error_code
+build_edi(krb5_context context,
+	  hx509_context hx509ctx,
+	  hx509_certs certs,
+	  ExternalPrincipalIdentifiers *ids)
+{
+    return hx509_certs_iter(hx509ctx, certs, cert2epi, ids);
+}
+
 static krb5_error_code
 build_auth_pack(krb5_context context,
 		unsigned nonce,
@@ -447,8 +545,19 @@ pk_mk_padata(krb5_context context,
 	memset(&req, 0, sizeof(req));
 	req.signedAuthPack = buf;	
 
-	/* XXX tell the kdc what CAs the client is willing to accept */
-	req.trustedCertifiers = NULL;
+	req.trustedCertifiers = calloc(1, sizeof(*req.trustedCertifiers));
+	if (req.trustedCertifiers == NULL) {
+	    krb5_set_error_string(context, "malloc: out of memory");
+	    free_PA_PK_AS_REQ(&req);
+	    goto out;
+	}
+	ret = build_edi(context, ctx->id->hx509ctx, 
+			ctx->id->anchors, req.trustedCertifiers);
+	if (ret) {
+	    krb5_set_error_string(context, "pk-init: failed to build trustedCertifiers");
+	    free_PA_PK_AS_REQ(&req);
+	    goto out;
+	}
 	req.kdcPkId = NULL;
 
 	ASN1_MALLOC_ENCODE(PA_PK_AS_REQ, buf.data, buf.length,
@@ -1750,7 +1859,7 @@ krb5_get_init_creds_opt_set_pkinit(krb5_context context,
 	}
 
 	if (DH_generate_key(opt->opt_private->pk_init_ctx->dh) != 1) {
-	    krb5_set_error_string(context, "malloc: out of memory");
+	    krb5_set_error_string(context, "pkinit: failed to generate DH key");
 	    _krb5_get_init_creds_opt_free_pkinit(opt);
 	    return ENOMEM;
 	}
