@@ -990,7 +990,7 @@ main(int argc, char **argv)
 
     ret = hx509_context_init(&context);
     if (ret)
-	errx(1, "hx509_context_init failed with %d");
+	errx(1, "hx509_context_init failed with %d", ret);
 
     ret = sl_command(commands, argc, argv);
     if(ret == -1)
