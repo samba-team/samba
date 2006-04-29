@@ -1,5 +1,7 @@
 2006-04-29  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kdc/pki-mapping: change pki-mapping
+	
 	* kdc/Makefile.am: clean the server.keytab
 
 	* kdc/check-kdc.in: Add test for pk-init

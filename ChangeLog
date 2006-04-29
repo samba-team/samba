@@ -1,3 +1,12 @@
+2006-04-29  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/pkinit.c (pk_verify_host): set better error string,
+	only check kdc name/address when we got a hostname/address passed
+	in the the function.
+
+	* kdc/pkinit.c (_kdc_pk_check_client): reorganize and make log
+	when a SAN matches.
+	
 2006-04-28  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* doc/setup.texi: More options and some text about windows
