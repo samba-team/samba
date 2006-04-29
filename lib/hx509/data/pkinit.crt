@@ -5,22 +5,22 @@ Certificate:
         Signature Algorithm: sha1WithRSAEncryption
         Issuer: CN=hx509 Test Root CA, C=SE
         Validity
-            Not Before: Apr 28 14:47:49 2006 GMT
-            Not After : Apr 25 14:47:49 2016 GMT
+            Not Before: Apr 29 14:47:05 2006 GMT
+            Not After : Apr 26 14:47:05 2016 GMT
         Subject: C=SE, CN=pkinit
         Subject Public Key Info:
             Public Key Algorithm: rsaEncryption
             RSA Public Key: (1024 bit)
                 Modulus (1024 bit):
-                    00:c6:11:3a:3b:b7:f8:d0:aa:bd:84:5c:45:87:2a:
-                    e2:52:bc:e2:f7:d4:5b:ac:c0:79:d0:60:4d:5c:93:
-                    6b:7e:a6:5e:eb:70:f2:6e:59:1d:29:ab:64:ed:f0:
-                    53:3c:31:a6:5c:1d:09:1b:eb:b4:7a:da:18:48:88:
-                    58:f1:74:a3:3b:85:1b:03:02:bb:5e:0e:c1:dd:ca:
-                    d4:ac:6b:45:09:dd:b6:cc:81:a1:6f:42:da:3f:f5:
-                    03:ee:d4:e2:e2:3e:3a:d2:e3:84:60:63:a6:10:46:
-                    e5:6e:fe:2d:8d:27:0b:33:36:6c:18:f8:d4:9d:75:
-                    72:8e:d3:fe:e5:45:26:f9:39
+                    00:c2:97:3d:9f:a4:9a:54:70:c7:58:d5:aa:b8:14:
+                    d7:3d:f9:b2:cc:3d:7a:9d:1d:f7:9a:0e:62:15:90:
+                    34:74:9d:e0:01:7e:6f:19:f3:cc:64:e6:ee:8d:a9:
+                    f3:c8:03:2c:9e:95:52:37:42:4e:60:99:1d:e9:3e:
+                    3f:88:dd:d5:36:c6:12:02:4c:b2:ec:74:b1:94:51:
+                    e3:43:d0:8a:fd:2a:14:e7:18:67:00:bb:62:70:da:
+                    0a:93:ec:d3:13:ff:13:17:a8:b5:b1:07:41:50:2c:
+                    7c:65:59:92:70:fd:7d:1e:44:d7:bc:0f:d3:24:dd:
+                    99:65:a5:53:69:fd:b5:13:bb
                 Exponent: 65537 (0x10001)
         X509v3 extensions:
             X509v3 Basic Constraints: 
@@ -28,29 +28,29 @@ Certificate:
             X509v3 Key Usage: 
                 Digital Signature, Non Repudiation, Key Encipherment
             X509v3 Subject Key Identifier: 
-                DC:61:31:A6:07:C5:5D:8F:F8:27:30:DD:73:89:07:C0:62:F3:31:59
+                3D:1B:08:54:71:8A:C9:62:52:61:6B:46:C9:A4:C6:84:CD:CA:86:03
             X509v3 Subject Alternative Name: 
                 othername:<unsupported>
     Signature Algorithm: sha1WithRSAEncryption
-        84:f6:34:44:b1:21:b4:0a:18:f6:5b:47:5a:62:e4:10:a3:5e:
-        e0:ef:da:63:fb:ed:dc:54:0d:da:2f:9b:cd:21:8a:44:13:66:
-        34:12:04:19:84:d8:c5:fd:c0:a8:14:4d:7b:e4:60:e1:5d:bc:
-        56:3d:90:04:f9:c9:f6:9c:24:a9:b1:e3:12:bd:f2:54:fc:ac:
-        c0:48:42:1c:94:78:57:ef:e6:71:34:19:7b:f6:71:0c:42:24:
-        b0:f7:7b:9c:88:26:d6:ef:80:4f:f5:2d:ff:a5:6f:98:58:c6:
-        81:77:b2:ae:a1:f5:31:95:9f:29:f3:57:e8:5b:86:b6:65:64:
-        bc:c8
+        b8:3a:d3:29:38:05:a3:81:ca:ac:c5:b0:3b:3a:ad:90:8b:89:
+        61:01:21:33:96:8a:4b:c2:06:99:ac:e4:ea:65:15:f4:25:11:
+        01:cb:62:93:e1:b4:89:a7:4b:c8:4b:7e:80:7b:8c:f1:b7:72:
+        68:be:1e:99:ae:2f:e2:71:64:61:ca:ca:ce:2c:ea:88:4e:34:
+        a8:c5:9b:c2:9f:fc:dd:e0:ed:22:5a:ad:1d:79:02:33:c3:90:
+        b2:6c:01:87:5b:f2:9f:8e:25:f2:fa:2a:e4:d2:1c:00:8e:7a:
+        04:95:26:55:55:01:92:94:18:76:42:d7:92:6d:d2:2f:60:0c:
+        9e:2c
 -----BEGIN CERTIFICATE-----
 MIICMTCCAZqgAwIBAgIBBjANBgkqhkiG9w0BAQUFADAqMRswGQYDVQQDDBJoeDUw
-OSBUZXN0IFJvb3QgQ0ExCzAJBgNVBAYTAlNFMB4XDTA2MDQyODE0NDc0OVoXDTE2
-MDQyNTE0NDc0OVowHjELMAkGA1UEBhMCU0UxDzANBgNVBAMMBnBraW5pdDCBnzAN
-BgkqhkiG9w0BAQEFAAOBjQAwgYkCgYEAxhE6O7f40Kq9hFxFhyriUrzi99RbrMB5
-0GBNXJNrfqZe63DyblkdKatk7fBTPDGmXB0JG+u0etoYSIhY8XSjO4UbAwK7Xg7B
-3crUrGtFCd22zIGhb0LaP/UD7tTi4j460uOEYGOmEEblbv4tjScLMzZsGPjUnXVy
-jtP+5UUm+TkCAwEAAaNzMHEwCQYDVR0TBAIwADALBgNVHQ8EBAMCBeAwHQYDVR0O
-BBYEFNxhMaYHxV2P+Ccw3XOJB8Bi8zFZMDgGA1UdEQQxMC+gLQYGKwYBBQICoCMw
+OSBUZXN0IFJvb3QgQ0ExCzAJBgNVBAYTAlNFMB4XDTA2MDQyOTE0NDcwNVoXDTE2
+MDQyNjE0NDcwNVowHjELMAkGA1UEBhMCU0UxDzANBgNVBAMMBnBraW5pdDCBnzAN
+BgkqhkiG9w0BAQEFAAOBjQAwgYkCgYEAwpc9n6SaVHDHWNWquBTXPfmyzD16nR33
+mg5iFZA0dJ3gAX5vGfPMZObujanzyAMsnpVSN0JOYJkd6T4/iN3VNsYSAkyy7HSx
+lFHjQ9CK/SoU5xhnALticNoKk+zTE/8TF6i1sQdBUCx8ZVmScP19HkTXvA/TJN2Z
+ZaVTaf21E7sCAwEAAaNzMHEwCQYDVR0TBAIwADALBgNVHQ8EBAMCBeAwHQYDVR0O
+BBYEFD0bCFRxisliUmFrRsmkxoTNyoYDMDgGA1UdEQQxMC+gLQYGKwYBBQICoCMw
 IaANGwtFWEFNUExFLk9SR6EQMA6gAwIBAaEHMAUbA2JhcjANBgkqhkiG9w0BAQUF
-AAOBgQCE9jREsSG0Chj2W0daYuQQo17g79pj++3cVA3aL5vNIYpEE2Y0EgQZhNjF
-/cCoFE175GDhXbxWPZAE+cn2nCSpseMSvfJU/KzASEIclHhX7+ZxNBl79nEMQiSw
-93uciCbW74BP9S3/pW+YWMaBd7KuofUxlZ8p81foW4a2ZWS8yA==
+AAOBgQC4OtMpOAWjgcqsxbA7Oq2Qi4lhASEzlopLwgaZrOTqZRX0JREBy2KT4bSJ
+p0vIS36Ae4zxt3Jovh6Zri/icWRhysrOLOqITjSoxZvCn/zd4O0iWq0deQIzw5Cy
+bAGHW/KfjiXy+irk0hwAjnoElSZVVQGSlBh2QteSbdIvYAyeLA==
 -----END CERTIFICATE-----
