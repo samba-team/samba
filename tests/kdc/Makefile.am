@@ -32,4 +32,5 @@ CLEANFILES= \
 	foopassword \
 	barpassword \
 	tempfile \
+	server.keytab \
 	client-cache
