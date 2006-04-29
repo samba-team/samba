@@ -61,10 +61,10 @@ NTSTATUS samba3_read_share_info(const char *fn, TALLOC_CTX *ctx, struct samba3 *
 		struct samba3_share_info *share;
 		char *name;
 		
-		if (strncmp(kbuf.dptr, "SECDESC/", strlen("SECDESC/")) != 0)
+		if (strncmp((char *)kbuf.dptr, "SECDESC/", strlen("SECDESC/")) != 0)
 			continue;
 
-		name = talloc_strndup(ctx, kbuf.dptr+strlen("SECDESC/"), kbuf.dsize-strlen("SECDESC/"));
+		name = talloc_strndup(ctx, (char *)kbuf.dptr+strlen("SECDESC/"), kbuf.dsize-strlen("SECDESC/"));
 
 		db->shares = talloc_realloc(db, db->shares, struct samba3_share_info, db->share_count+1);
 		share = &db->shares[db->share_count];

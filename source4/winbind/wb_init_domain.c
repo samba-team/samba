@@ -30,7 +30,6 @@
 #include "smbd/service_task.h"
 #include "librpc/gen_ndr/ndr_netlogon.h"
 #include "librpc/gen_ndr/ndr_lsa_c.h"
-#include "librpc/gen_ndr/ndr_security.h"
 
 #include "libcli/auth/credentials.h"
 #include "libcli/security/security.h"

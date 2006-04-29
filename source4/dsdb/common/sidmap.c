@@ -28,7 +28,6 @@
 #include "libcli/ldap/ldap.h"
 #include "db_wrap.h"
 #include "libcli/security/security.h"
-#include "librpc/gen_ndr/ndr_security.h"
 
 /*
   these are used for the fallback local uid/gid to sid mapping
@@ -43,7 +42,7 @@
   private context for sid mapping routines
 */
 struct sidmap_context {
-	struct ldb_wrap *samctx;
+	struct ldb_context *samctx;
 };
 
 /*
