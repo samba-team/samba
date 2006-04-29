@@ -1,4 +1,3 @@
-- replace StrnCpy() with strlcpy()
 - Add --export-dynamic for each subsystem that has modules
 - let the build system implement some make functions($(patsubst),$(wildcard),...) and use our own implementations where `make' does not support them
 - include extra_flags.txt using Makefile construction if 
