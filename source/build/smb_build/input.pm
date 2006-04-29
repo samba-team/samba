@@ -117,6 +117,8 @@ sub import_integrated($$)
 	my ($lib, $depend) = @_;
 
 	foreach my $mod (values %$depend) {
+		next if(not defined($mod->{OUTPUT_TYPE}));
+		next if($mod->{OUTPUT_TYPE} ne "INTEGRATED");
 		next if(not defined($mod->{SUBSYSTEM}));
 		next if($mod->{SUBSYSTEM} ne $lib->{NAME});
 		next if($mod->{ENABLE} ne "YES");

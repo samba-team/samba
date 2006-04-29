@@ -605,11 +605,11 @@ OBJ_FILES = \
 		rpc/dcerpc_sock.o \
 		rpc/dcerpc_connect.o
 PUBLIC_DEPENDENCIES = \
-		SOCKET LIBSMB LIBCLI_SMB2 \
+		SOCKET LIBCLI_RESOLVE LIBSMB LIBCLI_SMB2 \
 		LIBNDR NDR_DCERPC \
 		RPC_NDR_EPMAPPER \
 		NDR_SCHANNEL RPC_NDR_NETLOGON \
-		gensec LIBCLI_AUTH
+		gensec LIBCLI_AUTH LIBCLI_RAW
 # End SUBSYSTEM dcerpc
 ################################################
 
