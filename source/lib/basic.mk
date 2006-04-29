@@ -10,7 +10,6 @@ include tls/config.mk
 include registry/config.mk
 include messaging/config.mk
 include events/config.mk
-include popt/config.mk
 include cmdline/config.mk
 include socket_wrapper/config.mk
 include appweb/config.mk
