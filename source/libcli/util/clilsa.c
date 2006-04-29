@@ -30,7 +30,6 @@
 #include "libcli/raw/libcliraw.h"
 #include "libcli/libcli.h"
 #include "libcli/security/security.h"
-#include "librpc/gen_ndr/ndr_security.h"
 #include "librpc/gen_ndr/ndr_lsa.h"
 #include "librpc/gen_ndr/ndr_lsa_c.h"
 

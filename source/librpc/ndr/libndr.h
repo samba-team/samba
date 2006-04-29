@@ -291,4 +291,13 @@ extern const struct dcerpc_syntax_id ndr64_transfer_syntax;
 #include "librpc/gen_ndr/misc.h"
 #include "librpc/ndr/libndr_proto.h"
 
+/* FIXME: Use represent_as instead */
+struct dom_sid;
+NTSTATUS ndr_push_dom_sid2(struct ndr_push *ndr, int ndr_flags, const struct dom_sid *sid);
+NTSTATUS ndr_pull_dom_sid2(struct ndr_pull *ndr, int ndr_flags, struct dom_sid *sid);
+void ndr_print_dom_sid2(struct ndr_print *ndr, const char *name, const struct dom_sid *sid);
+NTSTATUS ndr_push_dom_sid28(struct ndr_push *ndr, int ndr_flags, const struct dom_sid *sid);
+NTSTATUS ndr_pull_dom_sid28(struct ndr_pull *ndr, int ndr_flags, struct dom_sid *sid);
+void ndr_print_dom_sid28(struct ndr_print *ndr, const char *name, const struct dom_sid *sid);
+
 #endif /* __LIBNDR_H__ */

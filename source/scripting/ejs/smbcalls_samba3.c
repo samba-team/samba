@@ -24,7 +24,8 @@
 #include "scripting/ejs/smbcalls.h"
 #include "lib/appweb/ejs/ejs.h"
 #include "lib/samba3/samba3.h"
-#include "librpc/gen_ndr/ndr_security.h"
+#include "libcli/security/security.h"
+#include "librpc/gen_ndr/ndr_misc.h"
 
 
 static struct MprVar mprRegistry(struct samba3_regdb *reg)

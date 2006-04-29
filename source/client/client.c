@@ -27,6 +27,7 @@
 #include "lib/cmdline/popt_common.h"
 #include "librpc/gen_ndr/ndr_srvsvc_c.h"
 #include "librpc/gen_ndr/ndr_lsa.h"
+#include "librpc/gen_ndr/ndr_security.h"
 #include "libcli/raw/libcliraw.h"
 #include "libcli/util/clilsa.h"
 #include "system/dir.h"
@@ -39,7 +40,6 @@
 #include "libcli/security/security.h"
 #include "lib/replace/readline.h"
 #include "librpc/gen_ndr/ndr_nbt.h"
-#include "librpc/gen_ndr/ndr_security.h"
 
 static int io_bufsize = 64512;
 

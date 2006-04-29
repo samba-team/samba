@@ -8,6 +8,6 @@ OBJ_FILES = security_token.o \
 		access_check.o \
 		privilege.o \
 		sddl.o
-PUBLIC_DEPENDENCIES = NDR_SECURITY 
+PUBLIC_DEPENDENCIES = NDR_MISC
 # End SUBSYSTEM LIBSECURITY
 #################################

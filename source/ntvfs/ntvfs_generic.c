@@ -32,7 +32,6 @@
 */
 
 #include "includes.h"
-#include "librpc/gen_ndr/ndr_security.h"
 #include "ntvfs/ntvfs.h"
 
 /* a second stage function converts from the out parameters of the generic

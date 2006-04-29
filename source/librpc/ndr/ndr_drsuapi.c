@@ -37,7 +37,7 @@ void ndr_print_drsuapi_DsReplicaObjectListItem(struct ndr_print *ndr, const char
 	}
 }
 
-void ndr_print_drsuapi_DsReplicaObjectListItemEx(struct ndr_print *ndr, const char *name, struct drsuapi_DsReplicaObjectListItemEx *r)
+void ndr_print_drsuapi_DsReplicaObjectListItemEx(struct ndr_print *ndr, const char *name, const struct drsuapi_DsReplicaObjectListItemEx *r)
 {
 	ndr_print_struct(ndr, name, "drsuapi_DsReplicaObjectListItemEx");
 	ndr->depth++;

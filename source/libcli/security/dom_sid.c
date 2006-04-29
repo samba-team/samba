@@ -240,3 +240,35 @@ BOOL dom_sid_in_domain(const struct dom_sid *domain_sid,
 
 	return dom_sid_compare_auth(domain_sid, sid) == 0;
 }
+
+/*
+  convert a dom_sid to a string
+*/
+char *dom_sid_string(TALLOC_CTX *mem_ctx, const struct dom_sid *sid)
+{
+	int i, ofs, maxlen;
+	uint32_t ia;
+	char *ret;
+	
+	if (!sid) {
+		return talloc_strdup(mem_ctx, "(NULL SID)");
+	}
+
+	maxlen = sid->num_auths * 11 + 25;
+	ret = talloc_size(mem_ctx, maxlen);
+	if (!ret) return talloc_strdup(mem_ctx, "(SID ERR)");
+
+	ia = (sid->id_auth[5]) +
+		(sid->id_auth[4] << 8 ) +
+		(sid->id_auth[3] << 16) +
+		(sid->id_auth[2] << 24);
+
+	ofs = snprintf(ret, maxlen, "S-%u-%lu", 
+		       (uint_t)sid->sid_rev_num, (unsigned long)ia);
+
+	for (i = 0; i < sid->num_auths; i++) {
+		ofs += snprintf(ret + ofs, maxlen - ofs, "-%lu", (unsigned long)sid->sub_auths[i]);
+	}
+	
+	return ret;
+}

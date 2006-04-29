@@ -31,11 +31,11 @@
 #include "lib/ldb/include/ldb.h"
 #include "heimdal/lib/krb5/krb5_locl.h"
 #include "heimdal/lib/krb5/krb5-private.h"
-#include "librpc/gen_ndr/ndr_security.h"
 #include "auth/auth.h"
 #include "dsdb/samdb/samdb.h"
 #include "rpc_server/dcerpc_server.h"
 #include "rpc_server/samr/proto.h"
+#include "libcli/security/security.h"
 
 /* hold information about one kdc socket */
 struct kpasswd_socket {

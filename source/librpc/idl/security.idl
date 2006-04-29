@@ -6,8 +6,7 @@
 
 [
 	pointer_default(unique),
-	depends(misc),
-	helper("librpc/ndr/ndr_sec.h")
+	depends(misc,security)
 ]
 interface security
 {
@@ -22,9 +21,9 @@ interface security
 		   
           common combinations of bits are prefixed with SEC_RIGHTS_
 	*/
-        const int SEC_MASK_GENERIC         = 0xF0000000;
-        const int SEC_MASK_FLAGS           = 0x0F000000;
-        const int SEC_MASK_STANDARD        = 0x00FF0000;
+    const int SEC_MASK_GENERIC         = 0xF0000000;
+    const int SEC_MASK_FLAGS           = 0x0F000000;
+    const int SEC_MASK_STANDARD        = 0x00FF0000;
 	const int SEC_MASK_SPECIFIC        = 0x0000FFFF;
 
 	/* generic bits */
@@ -210,7 +209,7 @@ interface security
 
 	/* a domain SID. Note that unlike Samba3 this contains a pointer,
 	   so you can't copy them using assignment */
-	typedef [public,noprint,noejs] struct {
+	typedef [public,gensize,noprint,noejs,nosize] struct {
 		uint8  sid_rev_num;             /**< SID revision number */
 		[range(0,15)] int8  num_auths;  /**< Number of sub-authorities */
 		uint8  id_auth[6];              /**< Identifier Authority */
@@ -273,10 +272,10 @@ interface security
 		[default];
 	} security_ace_object_ctr;
 
-	typedef [public] struct {
+	typedef [public,gensize,nosize] struct {
 		security_ace_type type;  /* SEC_ACE_TYPE_* */
 		security_ace_flags flags; /* SEC_ACE_FLAG_* */
-		[value(ndr_size_security_ace(r))] uint16 size;
+		[value(ndr_size_security_ace(r,ndr->flags))] uint16 size;
 		uint32 access_mask;
 		[switch_is(type)] security_ace_object_ctr object;
 		dom_sid trustee;
@@ -289,9 +288,9 @@ interface security
 
 	const uint NT4_ACL_REVISION	= SECURITY_ACL_REVISION_NT4;
 
-	typedef [public] struct {
+	typedef [public,gensize,nosize] struct {
 		security_acl_revision revision;
-		[value(ndr_size_security_acl(r))] uint16 size;
+		[value(ndr_size_security_acl(r,ndr->flags))] uint16 size;
 		[range(0,1000)] uint32 num_aces;
 		security_ace aces[num_aces];
 	} security_acl;
@@ -323,7 +322,7 @@ interface security
 		SEC_DESC_SELF_RELATIVE		= 0x8000
 	} security_descriptor_type;
 
-	typedef [public,flag(NDR_LITTLE_ENDIAN)] struct {
+	typedef [gensize,nosize,public,flag(NDR_LITTLE_ENDIAN)] struct {
 		security_descriptor_revision revision;
 		security_descriptor_type type;     /* SEC_DESC_xxxx flags */
 		[relative] dom_sid *owner_sid; 
@@ -333,7 +332,7 @@ interface security
 	} security_descriptor;
 
 	typedef [public] struct {
-		[range(0,0x40000),value(ndr_size_security_descriptor(sd))] uint32 sd_size;
+		[range(0,0x40000),value(ndr_size_security_descriptor(sd,ndr->flags))] uint32 sd_size;
 		[subcontext(4)] security_descriptor *sd;
 	} sec_desc_buf;
 

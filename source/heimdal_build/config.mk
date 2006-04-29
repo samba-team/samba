@@ -296,8 +296,6 @@ OBJ_FILES = \
 [SUBSYSTEM::HEIMDAL_ROKEN_GAI_STRERROR]
 OBJ_FILES = ../heimdal/lib/roken/gai_strerror.o
 
-#######################
-# Start SUBSYSTEM HEIMDAL_ROKEN_GAI_STRERROR
 [SUBSYSTEM::HEIMDAL_ROKEN_INET_ATON]
 CFLAGS = -Iheimdal_build -Iheimdal/lib/roken
 OBJ_FILES = ../heimdal/lib/roken/inet_aton.o
@@ -356,7 +354,8 @@ PUBLIC_DEPENDENCIES = \
 			HEIMDAL_ROKEN_GETPROGNAME \
 			GAI \
 			NSL \
-			LIBREPLACE
+			LIBREPLACE \
+			RESOLV
 # End SUBSYSTEM HEIMDAL_ROKEN
 #######################
 
@@ -485,8 +484,7 @@ SO_VERSION = 0
 CFLAGS = -Iheimdal_build
 OBJ_FILES = ../heimdal/lib/vers/print_version.o
 PUBLIC_DEPENDENCIES = \
-		HEIMDAL_GSSAPI HEIMDAL_KRB5 KERBEROS \
-		RESOLV
+		HEIMDAL_GSSAPI HEIMDAL_KRB5 KERBEROS
 # End SUBSYSTEM HEIMDAL
 #######################
 

@@ -31,7 +31,6 @@
 #include "libcli/security/security.h"
 #include "auth/credentials/credentials.h"
 #include "librpc/gen_ndr/ndr_samr_c.h"
-#include "librpc/gen_ndr/ndr_security.h"
 
 /*
  * complete a domain join, when joining to a AD domain:

@@ -23,7 +23,6 @@
 #include "includes.h"
 #include "lib/appweb/ejs/ejs.h"
 #include "scripting/ejs/smbcalls.h"
-#include "librpc/gen_ndr/ndr_security.h"
 #include "librpc/gen_ndr/lsa.h"
 #include "librpc/gen_ndr/winreg.h"
 #include "scripting/ejs/ejsrpc.h"

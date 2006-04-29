@@ -9,8 +9,7 @@
   version(0.0),
   pointer_default(unique),
   helpstring("Active Directory KRB5 PAC"),
-  depends(security,netlogon,samr),
-  helper("librpc/ndr/ndr_krb5pac.h")
+  depends(security,netlogon,samr)
 ]
 interface krb5pac
 {

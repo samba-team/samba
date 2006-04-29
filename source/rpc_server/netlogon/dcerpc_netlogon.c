@@ -25,13 +25,14 @@
 #include "rpc_server/dcerpc_server.h"
 #include "rpc_server/common/common.h"
 #include "lib/ldb/include/ldb.h"
-#include "auth/auth_sam.h"
 #include "auth/auth.h"
+#include "auth/auth_sam.h"
 #include "dsdb/samdb/samdb.h"
 #include "rpc_server/samr/proto.h"
 #include "db_wrap.h"
 #include "libcli/auth/libcli_auth.h"
 #include "auth/gensec/schannel_state.h"
+#include "libcli/security/security.h"
 
 struct server_pipe_state {
 	struct netr_Credential client_challenge;
