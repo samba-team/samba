@@ -303,7 +303,7 @@ WERROR DsCrackNameOneName(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 		char *str;
 		
 		str = talloc_strdup(mem_ctx, name);
-		WERR_TALLOC_CHECK(str);
+		W_ERROR_HAVE_NO_MEMORY(str);
 		
 		if (strlen(str) == 0 || str[strlen(str)-1] != '/') {
 			info1->status = DRSUAPI_DS_NAME_STATUS_RESOLVE_ERROR;
@@ -315,7 +315,7 @@ WERROR DsCrackNameOneName(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 		domain_filter = talloc_asprintf(mem_ctx, 
 						"(&(&(&(dnsRoot=%s)(objectclass=crossRef)))(nETBIOSName=*)(ncName=*))", 
 						ldb_binary_encode_string(mem_ctx, str));
-		WERR_TALLOC_CHECK(domain_filter);
+		W_ERROR_HAVE_NO_MEMORY(domain_filter);
 		
 		break;
 	}
@@ -325,7 +325,7 @@ WERROR DsCrackNameOneName(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 		const char *account = NULL;
 		
 		domain = talloc_strdup(mem_ctx, name);
-		WERR_TALLOC_CHECK(domain);
+		W_ERROR_HAVE_NO_MEMORY(domain);
 		
 		p = strchr(domain, '\\');
 		if (!p) {
@@ -342,11 +342,11 @@ WERROR DsCrackNameOneName(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 		domain_filter = talloc_asprintf(mem_ctx, 
 						"(&(&(nETBIOSName=%s)(objectclass=crossRef))(ncName=*))", 
 						ldb_binary_encode_string(mem_ctx, domain));
-		WERR_TALLOC_CHECK(domain_filter);
+		W_ERROR_HAVE_NO_MEMORY(domain_filter);
 		if (account) {
 			result_filter = talloc_asprintf(mem_ctx, "(sAMAccountName=%s)",
 							ldb_binary_encode_string(mem_ctx, account));
-			WERR_TALLOC_CHECK(result_filter);
+			W_ERROR_HAVE_NO_MEMORY(result_filter);
 		}
 		
 		talloc_free(domain);
@@ -383,7 +383,7 @@ WERROR DsCrackNameOneName(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 		}
 		result_filter = talloc_asprintf(mem_ctx, "(objectGUID=%s)",
 						ldap_guid);
-		WERR_TALLOC_CHECK(result_filter);
+		W_ERROR_HAVE_NO_MEMORY(result_filter);
 		break;
 	}
 	case DRSUAPI_DS_NAME_FORMAT_DISPLAY: {
@@ -392,7 +392,7 @@ WERROR DsCrackNameOneName(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 		result_filter = talloc_asprintf(mem_ctx, "(|(displayName=%s)(samAccountName=%s))",
 						ldb_binary_encode_string(mem_ctx, name), 
 						ldb_binary_encode_string(mem_ctx, name));
-		WERR_TALLOC_CHECK(result_filter);
+		W_ERROR_HAVE_NO_MEMORY(result_filter);
 		break;
 	}
 	
@@ -413,7 +413,7 @@ WERROR DsCrackNameOneName(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 		}
 		result_filter = talloc_asprintf(mem_ctx, "(objectSid=%s)",
 						ldap_sid);
-		WERR_TALLOC_CHECK(result_filter);
+		W_ERROR_HAVE_NO_MEMORY(result_filter);
 		break;
 	}
 	case DRSUAPI_DS_NAME_FORMAT_USER_PRINCIPAL: {
@@ -438,7 +438,7 @@ WERROR DsCrackNameOneName(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 						ldb_binary_encode_string(mem_ctx, unparsed_name));
 		
 		free(unparsed_name);
-		WERR_TALLOC_CHECK(result_filter);
+		W_ERROR_HAVE_NO_MEMORY(result_filter);
 		break;
 	}
 	case DRSUAPI_DS_NAME_FORMAT_SERVICE_PRINCIPAL: {
@@ -461,7 +461,7 @@ WERROR DsCrackNameOneName(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 			info1->dns_domain_name	= talloc_strdup(info1, *realm);
 			krb5_free_principal(smb_krb5_context->krb5_context, principal);
 	
-			WERR_TALLOC_CHECK(info1->dns_domain_name);
+			W_ERROR_HAVE_NO_MEMORY(info1->dns_domain_name);
 
 			info1->status = DRSUAPI_DS_NAME_STATUS_DOMAIN_ONLY;
 			return WERR_OK;
@@ -498,7 +498,7 @@ WERROR DsCrackNameOneName(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 		}
 		krb5_free_principal(smb_krb5_context->krb5_context, principal);
 		free(unparsed_name_short);
-		WERR_TALLOC_CHECK(result_filter);
+		W_ERROR_HAVE_NO_MEMORY(result_filter);
 		
 		break;
 	}
@@ -644,7 +644,7 @@ static WERROR DsCrackNameOneFilter(struct ldb_context *sam_ctx, TALLOC_CTX *mem_
 	}
 
 	info1->dns_domain_name	= samdb_result_string(domain_res[0], "dnsRoot", NULL);
-	WERR_TALLOC_CHECK(info1->dns_domain_name);
+	W_ERROR_HAVE_NO_MEMORY(info1->dns_domain_name);
 	info1->status		= DRSUAPI_DS_NAME_STATUS_DOMAIN_ONLY;
 
 	if (result_filter) {
@@ -691,7 +691,7 @@ static WERROR DsCrackNameOneFilter(struct ldb_context *sam_ctx, TALLOC_CTX *mem_
 	switch (format_desired) {
 	case DRSUAPI_DS_NAME_FORMAT_FQDN_1779: {
 		info1->result_name	= ldb_dn_linearize(mem_ctx, result_res[0]->dn);
-		WERR_TALLOC_CHECK(info1->result_name);
+		W_ERROR_HAVE_NO_MEMORY(info1->result_name);
 
 		info1->status		= DRSUAPI_DS_NAME_STATUS_OK;
 		return WERR_OK;
@@ -725,7 +725,7 @@ static WERROR DsCrackNameOneFilter(struct ldb_context *sam_ctx, TALLOC_CTX *mem_
 				return WERR_OK;
 			}
 			_dom = samdb_result_string(domain_res[0], "nETBIOSName", NULL);
-			WERR_TALLOC_CHECK(_dom);
+			W_ERROR_HAVE_NO_MEMORY(_dom);
 		
 		} else if (sid->num_auths == 5) {
 			const char *attrs[] = { NULL };
@@ -749,14 +749,14 @@ static WERROR DsCrackNameOneFilter(struct ldb_context *sam_ctx, TALLOC_CTX *mem_
 			}
 			
 			_dom = samdb_result_string(domain_res2[0], "nETBIOSName", NULL);
-			WERR_TALLOC_CHECK(_dom);
+			W_ERROR_HAVE_NO_MEMORY(_dom);
 
 			_acc = samdb_result_string(result_res[0], "sAMAccountName", NULL);
-			WERR_TALLOC_CHECK(_acc);
+			W_ERROR_HAVE_NO_MEMORY(_acc);
 		}
 
 		info1->result_name	= talloc_asprintf(mem_ctx, "%s\\%s", _dom, _acc);
-		WERR_TALLOC_CHECK(info1->result_name);
+		W_ERROR_HAVE_NO_MEMORY(info1->result_name);
 		
 		info1->status		= DRSUAPI_DS_NAME_STATUS_OK;
 		return WERR_OK;
@@ -767,7 +767,7 @@ static WERROR DsCrackNameOneFilter(struct ldb_context *sam_ctx, TALLOC_CTX *mem_
 		guid = samdb_result_guid(result_res[0], "objectGUID");
 		
 		info1->result_name	= GUID_string2(mem_ctx, &guid);
-		WERR_TALLOC_CHECK(info1->result_name);
+		W_ERROR_HAVE_NO_MEMORY(info1->result_name);
 		
 		info1->status		= DRSUAPI_DS_NAME_STATUS_OK;
 		return WERR_OK;

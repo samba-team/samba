@@ -42,7 +42,7 @@ static WERROR drsuapi_DsBind(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem
 	ZERO_STRUCTP(r->out.bind_handle);
 
 	b_state = talloc(dce_call->conn, struct drsuapi_bind_state);
-	WERR_TALLOC_CHECK(b_state);
+	W_ERROR_HAVE_NO_MEMORY(b_state);
 
 	b_state->sam_ctx = samdb_connect(b_state, dce_call->conn->auth_state.session_info); 
 	if (!b_state->sam_ctx) {
@@ -59,7 +59,7 @@ static WERROR drsuapi_DsBind(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem
 	handle->data = talloc_steal(handle, b_state);
 
 	bind_info = talloc(mem_ctx, struct drsuapi_DsBindInfoCtr);
-	WERR_TALLOC_CHECK(bind_info);
+	W_ERROR_HAVE_NO_MEMORY(bind_info);
 
 	ZERO_STRUCT(site_guid);
 
@@ -224,11 +224,11 @@ WERROR drsuapi_DsCrackNames(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_
 			int i;
 
 			ctr1 = talloc(mem_ctx, struct drsuapi_DsNameCtr1);
-			WERR_TALLOC_CHECK(ctr1);
+			W_ERROR_HAVE_NO_MEMORY(ctr1);
 
 			count = r->in.req.req1.count;
 			names = talloc_array(mem_ctx, struct drsuapi_DsNameInfo1, count);
-			WERR_TALLOC_CHECK(names);
+			W_ERROR_HAVE_NO_MEMORY(names);
 
 			for (i=0; i < count; i++) {
 				status = DsCrackNameOneName(b_state->sam_ctx, mem_ctx,

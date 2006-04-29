@@ -1088,7 +1088,7 @@ static NTSTATUS lsa_lookup_sid(struct lsa_policy_state *state, TALLOC_CTX *mem_c
 			*name = ldb_msg_find_string(res[0], "name", NULL);
 			if (!*name) {
 				*name = talloc_strdup(mem_ctx, sid_str);
-				NTSTATUS_TALLOC_CHECK(*name);
+				NT_STATUS_HAVE_NO_MEMORY(*name);
 			}
 		}
 
@@ -2425,14 +2425,14 @@ static NTSTATUS lsa_GetUserName(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 	authority_name = talloc_reference(mem_ctx, dce_call->conn->auth_state.session_info->server_info->domain_name);
 
 	_account_name = talloc(mem_ctx, struct lsa_String);
-	NTSTATUS_TALLOC_CHECK(_account_name);
+	NT_STATUS_HAVE_NO_MEMORY(_account_name);
 	_account_name->string = account_name;
 
 	if (r->in.authority_name) {
 		_authority_name = talloc(mem_ctx, struct lsa_StringPointer);
-		NTSTATUS_TALLOC_CHECK(_authority_name);
+		NT_STATUS_HAVE_NO_MEMORY(_authority_name);
 		_authority_name->string = talloc(mem_ctx, struct lsa_String);
-		NTSTATUS_TALLOC_CHECK(_authority_name->string);
+		NT_STATUS_HAVE_NO_MEMORY(_authority_name->string);
 		_authority_name->string->string = authority_name;
 	}
 
