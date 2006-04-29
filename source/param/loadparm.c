@@ -1645,7 +1645,7 @@ static void init_globals(BOOL first_time_only)
 	Globals.bWinbindRefreshTickets = False;
 	Globals.bWinbindOfflineLogon = False;
 
-	Globals.bPassdbExpandExplicit = True;
+	Globals.bPassdbExpandExplicit = False;
 
 	Globals.name_cache_timeout = 660; /* In seconds */
 
