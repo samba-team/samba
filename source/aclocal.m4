@@ -57,7 +57,7 @@ AC_DEFUN(SMB_MODULE,
 		string_shared_modules="$string_shared_modules $1"
 	elif test x"$DEST" = xSTATIC; then
 		[init_static_modules_]translit([$4], [A-Z], [a-z])="$[init_static_modules_]translit([$4], [A-Z], [a-z])  $1_init();"
- 		[decl_static_modules_]translit([$4], [A-Z], [a-z])="$[decl_static_modules_]translit([$4], [A-Z], [a-z]) extern NTSTATUS $1_init();"
+ 		[decl_static_modules_]translit([$4], [A-Z], [a-z])="$[decl_static_modules_]translit([$4], [A-Z], [a-z]) extern NTSTATUS $1_init(void);"
 		string_static_modules="$string_static_modules $1"
 		$4_STATIC="$$4_STATIC $2"
 		AC_SUBST($4_STATIC)
