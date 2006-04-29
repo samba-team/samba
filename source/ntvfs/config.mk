@@ -12,7 +12,7 @@ SUBSYSTEM = ntvfs
 OBJ_FILES = \
 		cifs/vfs_cifs.o
 PUBLIC_DEPENDENCIES = \
-		LIBCLI
+		LIBCLI_SMB
 # End MODULE ntvfs_cifs
 ################################################
 

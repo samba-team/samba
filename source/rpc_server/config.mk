@@ -60,7 +60,7 @@ SUBSYSTEM = dcerpc_server
 OBJ_FILES = \
 		remote/dcesrv_remote.o
 PUBLIC_DEPENDENCIES = \
-		LIBSMB NDR_TABLE
+		LIBCLI_SMB NDR_TABLE
 # End MODULE dcerpc_remote
 ################################################
 
