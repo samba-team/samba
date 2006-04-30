@@ -206,6 +206,7 @@ sub EjsPullArray($$$$$)
 	# uint8 arrays are treated as data blobs
 	if ($nl->{TYPE} eq 'DATA' && $e->{TYPE} eq 'uint8') {
 		if (!$l->{IS_FIXED}) {
+			check_null_pointer($size);
 			pidl "EJS_ALLOC_N(ejs, $var, $size);";
 		}
 		check_null_pointer($length);
