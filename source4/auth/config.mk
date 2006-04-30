@@ -6,7 +6,7 @@ include credentials/config.mk
 
 [SUBSYSTEM::auth_sam]
 PRIVATE_PROTO_HEADER = auth_sam.h
-OBJ_FILES = sam.o auth_sam_reply.o
+OBJ_FILES = sam.o auth_sam_reply.o ntlm_check.o 
 PUBLIC_DEPENDENCIES = SAMDB
 
 #######################
@@ -71,7 +71,6 @@ PUBLIC_PROTO_HEADER = auth_proto.h
 OBJ_FILES = \
 		auth.o \
 		auth_util.o \
-		ntlm_check.o \
 		auth_simple.o
 PUBLIC_DEPENDENCIES = LIBSECURITY process_model SAMDB
 # End SUBSYSTEM auth
