@@ -36,6 +36,13 @@
 #define HKEY_PERFORMANCE_TEXT	 0x80000050
 #define HKEY_PERFORMANCE_NLSTEXT 0x80000060
 
+struct reg_predefined_key {
+	uint32_t handle;
+	const char *name;
+};
+
+extern const struct reg_predefined_key reg_predefined_keys[];
+
 #define	REG_DELETE		-1
 
 /*
@@ -144,6 +151,8 @@ struct reg_init_function_entry {
 	const struct hive_operations *hive_functions;
 	struct reg_init_function_entry *prev, *next;
 };
+
+/* Representing differences between registry files */
 
 struct reg_diff_value
 {
