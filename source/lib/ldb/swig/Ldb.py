@@ -29,9 +29,15 @@ result = ldb_global_init()
 if result != 0:
     raise LdbError, (result, 'ldb_global_init failed')
 
+# Ldb exceptions
+
 class LdbError(Exception):
-    """An exception raised when a ldb error occurs."""
+    """An exception raised when a ldb error occurs.
+    The exception data is a tuple consisting of the ldb number and a
+    string description of the error."""
     pass
+
+# Ldb classes
 
 class LdbMessage:
     """A class representing a ldb message as a Python dictionary."""
@@ -41,9 +47,6 @@ class LdbMessage:
         self.msg = ldb_msg_new(self.mem_ctx)
 
     def __del__(self):
-        self.close()
-
-    def close(self):
         if self.mem_ctx is not None:
             talloc_free(self.mem_ctx)
             self.mem_ctx = None
@@ -88,7 +91,7 @@ class Ldb:
         self.mem_ctx = talloc_init('mem_ctx for ldb 0x%x' % id(self))
         self.ldb_ctx = ldb_init(self.mem_ctx)
 
-        result =  ldb_connect(self.ldb_ctx, url, flags, None)
+        result = ldb_connect(self.ldb_ctx, url, flags, None)
 
         if result != LDB_SUCCESS:
             raise LdbError, (result, ldb_strerror(result))
