@@ -111,7 +111,7 @@ static BOOL test_CreateKey(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	struct winreg_CreateKey r;
 	struct policy_handle newhandle;
 	NTSTATUS status;
-	uint32_t action_taken = 0;
+	enum winreg_CreateAction action_taken = 0;
 
 	printf("\ntesting CreateKey\n");
 
@@ -149,7 +149,7 @@ static BOOL test_CreateKey_sd(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 {
 	struct winreg_CreateKey r;
 	NTSTATUS status;
-	uint32_t action_taken = 0;
+	enum winreg_CreateAction action_taken = 0;
 	struct security_descriptor *sd;
 	DATA_BLOB sdblob;
 	struct winreg_SecBuf secbuf;
@@ -500,15 +500,16 @@ static BOOL test_QueryValue(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct p
 {
 	struct winreg_QueryValue r;
 	NTSTATUS status;
-	uint32_t zero = 0;
+	enum winreg_Type zero_type = 0;
 	uint32_t offered = 0xfff;
+	uint32_t zero = 0;
 
 	printf("Testing QueryValue\n");
 
 	r.in.handle = handle;
 	r.in.data = NULL;
 	r.in.value_name.name = valuename;
-	r.in.type = &zero;
+	r.in.type = &zero_type;
 	r.in.size = &offered;
 	r.in.length = &zero;
 
@@ -530,7 +531,7 @@ static BOOL test_EnumValue(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			   struct policy_handle *handle, int max_valnamelen, int max_valbufsize)
 {
 	struct winreg_EnumValue r;
-	uint32_t type = 0;
+	enum winreg_Type type = 0;
 	uint32_t size = max_valbufsize, zero = 0;
 	BOOL ret = True;
 	uint8_t buf8;
