@@ -193,22 +193,15 @@ out:
  */
 
 static int
-load_ocsp(hx509_context context, struct revoke_ocsp *ocsp)
+parse_ocsp_basic(const void *data, size_t length, OCSPBasicOCSPResponse *basic)
 {
     OCSPResponse resp;
-    OCSPBasicOCSPResponse basic;
-    hx509_certs certs = NULL;
-    size_t length, size;
-    struct stat sb;
-    void *data;
+    size_t size;
     int ret;
 
-    ret = _hx509_map_file(ocsp->path, &data, &length, &sb);
-    if (ret)
-	return ret;
+    memset(basic, 0, sizeof(*basic));
 
     ret = decode_OCSPResponse(data, length, &resp, &size);
-    _hx509_unmap_file(data, length);
     if (ret)
 	return ret;
     if (length != size) {
@@ -229,8 +222,7 @@ load_ocsp(hx509_context context, struct revoke_ocsp *ocsp)
 	return EINVAL;
     }
 
-    ret = heim_oid_cmp(&resp.responseBytes->responseType, 
-		       oid_id_pkix_ocsp_basic());
+    ret = heim_oid_cmp(&resp.responseBytes->responseType, oid_id_pkix_ocsp_basic());
     if (ret != 0) {
 	free_OCSPResponse(&resp);
 	return EINVAL;
@@ -238,7 +230,7 @@ load_ocsp(hx509_context context, struct revoke_ocsp *ocsp)
 
     ret = decode_OCSPBasicOCSPResponse(resp.responseBytes->response.data,
 				       resp.responseBytes->response.length,
-				       &basic,
+				       basic,
 				       &size);
     if (ret) {
 	free_OCSPResponse(&resp);
@@ -246,10 +238,36 @@ load_ocsp(hx509_context context, struct revoke_ocsp *ocsp)
     }
     if (size != resp.responseBytes->response.length) {
 	free_OCSPResponse(&resp);
-	free_OCSPBasicOCSPResponse(&basic);
+	free_OCSPBasicOCSPResponse(basic);
 	return EINVAL;
     }
     free_OCSPResponse(&resp);
+
+    return 0;
+}
+
+/*
+ *
+ */
+
+static int
+load_ocsp(hx509_context context, struct revoke_ocsp *ocsp)
+{
+    OCSPBasicOCSPResponse basic;
+    hx509_certs certs = NULL;
+    size_t length;
+    struct stat sb;
+    void *data;
+    int ret;
+
+    ret = _hx509_map_file(ocsp->path, &data, &length, &sb);
+    if (ret)
+	return ret;
+
+    ret = parse_ocsp_basic(data, length, &basic);
+    _hx509_unmap_file(data, length);
+    if (ret)
+	return ret;
 
     if (basic.certs) {
 	int i;
@@ -482,7 +500,6 @@ hx509_revoke_verify(hx509_context context,
 		    hx509_revoke_ctx revoke,
 		    hx509_certs certs,
 		    time_t now,
-		    time_t *expiration,
 		    hx509_cert cert,
 		    hx509_cert parent_cert)
 {
@@ -490,9 +507,6 @@ hx509_revoke_verify(hx509_context context,
     const Certificate *p = _hx509_get_cert(parent_cert);
     unsigned long i, j, k;
     int ret;
-
-    if (expiration)
-	*expiration = 0;
 
     for (i = 0; i < revoke->ocsps.len; i++) {
 	struct revoke_ocsp *ocsp = &revoke->ocsps.val[i];
@@ -561,13 +575,6 @@ hx509_revoke_verify(hx509_context context,
 	    } else
 		/* Should force a refetch, but can we ? */;
 
-	    if (expiration) {
-		if (*ocsp->ocsp.tbsResponseData.responses.val[i].nextUpdate)
-		    *expiration = *ocsp->ocsp.tbsResponseData.responses.val[i].nextUpdate;
-		else 
-		    *expiration = now + context->ocsp_time_diff;
-	    }
-
 	    return 0;
 	}
     }
@@ -630,9 +637,6 @@ hx509_revoke_verify(hx509_context context,
 	    
 	    return HX509_CRL_CERT_REVOKED;
 	}
-
-	if (expiration)
-	    *expiration = _hx509_Time2time_t(crl->crl.tbsCertList.nextUpdate);
 
 	return 0;
     }
@@ -903,4 +907,67 @@ hx509_revoke_ocsp_print(hx509_context context, const char *path, FILE *out)
 
     free_ocsp(&ocsp);
     return ret;
+}
+
+int
+hx509_ocsp_verify(hx509_context context,
+		  time_t now,
+		  hx509_cert cert,
+		  int flags,
+		  const void *data, size_t length,
+		  time_t *expiration)
+{
+    const Certificate *c = _hx509_get_cert(cert);
+    OCSPBasicOCSPResponse basic;
+    int ret, i;
+
+    *expiration = 0;
+
+    ret = parse_ocsp_basic(data, length, &basic);
+    if (ret)
+	return ret;
+
+
+    for (i = 0; i < basic.tbsResponseData.responses.len; i++) {
+
+	ret = heim_integer_cmp(&basic.tbsResponseData.responses.val[i].certID.serialNumber,
+			       &c->tbsCertificate.serialNumber);
+	if (ret != 0)
+	    continue;
+	    
+	/* verify issuer hashes hash */
+	ret = _hx509_verify_signature(NULL,
+				      &basic.tbsResponseData.responses.val[i].certID.hashAlgorithm,
+				      &c->tbsCertificate.issuer._save,
+				      &basic.tbsResponseData.responses.val[i].certID.issuerNameHash);
+	if (ret != 0)
+	    continue;
+
+	switch (basic.tbsResponseData.responses.val[i].certStatus.element) {
+	case choice_OCSPCertStatus_good:
+	    break;
+	case choice_OCSPCertStatus_revoked:
+	case choice_OCSPCertStatus_unknown:
+	    continue;
+	}
+
+	/* don't allow the update to be in the future */
+	if (basic.tbsResponseData.responses.val[i].thisUpdate > 
+	    now + context->ocsp_time_diff)
+	    continue;
+
+	/* don't allow the next updte to be in the past */
+	if (basic.tbsResponseData.responses.val[i].nextUpdate) {
+	    if (*basic.tbsResponseData.responses.val[i].nextUpdate < now)
+		continue;
+	} else
+	    continue;
+
+	*expiration = *basic.tbsResponseData.responses.val[i].nextUpdate;
+
+	return 0;
+    }
+    free_OCSPBasicOCSPResponse(&basic);
+
+    return 0;
 }
