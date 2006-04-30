@@ -26,6 +26,7 @@
 #include "system/filesys.h"
 #include "lib/cmdline/popt_common.h"
 #include "auth/auth.h"
+#include "auth/auth_sam.h"
 #include "pstring.h"
 #include "libcli/auth/libcli_auth.h"
 #include "libcli/security/security.h"

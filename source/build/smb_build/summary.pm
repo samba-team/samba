@@ -55,9 +55,9 @@ sub show($$)
 		    ? "yes" : "no (install GNU make >= 3.81)") .
 	     "\n";
 	
-	print "Using shared libraries internally (experimental): " .
+	print "Using shared libraries: " .
 	    (enabled($config->{BLDSHARED})
-		    ? "yes" : "no (try --enable-dso)") .
+		    ? "yes" : "no (not supported on this system)") .
 	    "\n";
 
 	print "\n";

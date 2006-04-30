@@ -99,12 +99,12 @@ int main(int argc, char **argv)
 		POPT_TABLEEND
 	};
 
-	registry_init();
-
 	pc = poptGetContext(argv[0], argc, (const char **) argv, long_options,0);
 	
 	while((opt = poptGetNextOpt(pc)) != -1) {
 	}
+
+	registry_init();
 
 	if (remote) {
 		error = reg_open_remote(&h, NULL, cmdline_credentials, remote, NULL);
