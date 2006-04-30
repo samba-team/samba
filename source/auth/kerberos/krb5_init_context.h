@@ -19,7 +19,7 @@
 */
 
 struct smb_krb5_context {
-	krb5_context krb5_context;
+	struct krb5_context_data *krb5_context;
 	krb5_log_facility *logf;
 };
 	
