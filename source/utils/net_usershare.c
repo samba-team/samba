@@ -62,12 +62,13 @@ static int net_usershare_add_usage(int argc, const char **argv)
 {
 	char c = *lp_winbind_separator();
 	d_printf(
-		"net usershare add [-l|--long] <sharename> <path> [<comment>] [<acl>]\n"
+		"net usershare add [-l|--long] <sharename> <path> [<comment>] [<acl>] [<guest_ok=[y|n]>]\n"
 		"\tAdds the specified share name for this user.\n"
 		"\t<sharename> is the new share name.\n"
 		"\t<path> is the path on the filesystem to export.\n"
 		"\t<comment> is the optional comment for the new share.\n"
 		"\t<acl> is an optional share acl in the format \"DOMAIN%cname:X,DOMAIN%cname:X,....\"\n"
+		"\t<guest_ok=y> if present sets \"guest ok = yes\" on this usershare.\n"
 		"\t\t\"X\" represents a permission and can be any one of the characters f, r or d\n"
 		"\t\twhere \"f\" means full control, \"r\" means read-only, \"d\" means deny access.\n"
 		"\t\tname may be a domain user or group. For local users use the local server name "
@@ -110,7 +111,8 @@ static int net_usershare_list_usage(int argc, const char **argv)
 
 int net_usershare_usage(int argc, const char **argv)
 {
-	d_printf("net usershare add <sharename> <path> [<comment>] [<acl>] to add or change a user defined share.\n"
+	d_printf("net usershare add <sharename> <path> [<comment>] [<acl>] [<guest_ok=[y|n]>] to "
+				"add or change a user defined share.\n"
 		"net usershare delete <sharename> to delete a user defined share.\n"
 		"net usershare info [-l|--long] [wildcard sharename] to print info about a user defined share.\n"
 		"net usershare list [-l|--long] [wildcard sharename] to list user defined shares.\n"
@@ -300,6 +302,7 @@ static int info_fn(struct file_list *fl, void *priv)
 	int num_aces;
 	char sep_str[2];
 	enum usershare_err us_err;
+	BOOL guest_ok = False;
 
 	sep_str[0] = *lp_winbind_separator();
 	sep_str[1] = '\0';
@@ -346,7 +349,8 @@ static int info_fn(struct file_list *fl, void *priv)
 	us_err = parse_usershare_file(ctx, &sbuf, fl->pathname, -1, lines, numlines,
 				sharepath,
 				comment,
-				&psd);
+				&psd,
+				&guest_ok);
 
 	file_lines_free(lines);
 
@@ -400,7 +404,8 @@ static int info_fn(struct file_list *fl, void *priv)
 		d_printf("[%s]\n", fl->pathname );
 		d_printf("path=%s\n", sharepath );
 		d_printf("comment=%s\n", comment);
-		d_printf("%s\n\n", acl_str);
+		d_printf("%s\n", acl_str);
+		d_printf("guest_ok=%c\n\n", guest_ok ? 'y' : 'n');
 	} else if (pi->op == US_LIST_OP) {
 		d_printf("%s\n", fl->pathname);
 	}
@@ -475,6 +480,7 @@ static int net_usershare_add(int argc, const char **argv)
 	const char *pacl;
 	size_t to_write;
 	uid_t myeuid = geteuid();
+	BOOL guest_ok = False;
 
 	us_comment = "";
 	arg_acl = "S-1-1-0:R";
@@ -498,6 +504,27 @@ static int net_usershare_add(int argc, const char **argv)
 			us_path = argv[1];
 			us_comment = argv[2];
 			arg_acl = argv[3];
+			break;
+		case 5:
+			sharename = strdup_lower(argv[0]);
+			us_path = argv[1];
+			us_comment = argv[2];
+			arg_acl = argv[3];
+			if (!strnequal(argv[4], "guest_ok=", 9)) {
+				return net_usershare_add_usage(argc, argv);
+			}
+			switch (argv[4][9]) {
+				case 'y':
+				case 'Y':
+					guest_ok = True;
+					break;
+				case 'n':
+				case 'N':
+					guest_ok = False;
+					break;
+				default: 
+					return net_usershare_add_usage(argc, argv);
+			}
 			break;
 	}
 
@@ -642,6 +669,15 @@ static int net_usershare_add(int argc, const char **argv)
 	/* Remove the last ',' */
 	us_acl[strlen(us_acl)-1] = '\0';
 
+	if (guest_ok && !lp_usershare_allow_guests()) {
+		d_fprintf(stderr, "net usershare add: guest_ok=y requested "
+			"but the \"usershare allow guests\" parameter is not enabled "
+			"by this server.\n");
+		talloc_destroy(ctx);
+		SAFE_FREE(sharename);
+		return -1;
+	}
+
 	/* Create a temporary filename for this share. */
 	tmpfd = smb_mkstemp(full_path_tmp);
 
@@ -688,9 +724,9 @@ static int net_usershare_add(int argc, const char **argv)
 	}
 
 	/* Create the in-memory image of the file. */
-	file_img = talloc_strdup(ctx, "#VERSION 1\npath=");
-	file_img = talloc_asprintf_append(file_img, "%s\ncomment=%s\nusershare_acl=%s\n",
-			us_path, us_comment, us_acl );
+	file_img = talloc_strdup(ctx, "#VERSION 2\npath=");
+	file_img = talloc_asprintf_append(file_img, "%s\ncomment=%s\nusershare_acl=%s\nguest_ok=%c\n",
+			us_path, us_comment, us_acl, guest_ok ? 'y' : 'n');
 
 	to_write = strlen(file_img);
 
