@@ -482,6 +482,7 @@ hx509_revoke_verify(hx509_context context,
 		    hx509_revoke_ctx revoke,
 		    hx509_certs certs,
 		    time_t now,
+		    time_t *expiration,
 		    hx509_cert cert,
 		    hx509_cert parent_cert)
 {
@@ -489,6 +490,9 @@ hx509_revoke_verify(hx509_context context,
     const Certificate *p = _hx509_get_cert(parent_cert);
     unsigned long i, j, k;
     int ret;
+
+    if (expiration)
+	*expiration = 0;
 
     for (i = 0; i < revoke->ocsps.len; i++) {
 	struct revoke_ocsp *ocsp = &revoke->ocsps.val[i];
@@ -557,6 +561,13 @@ hx509_revoke_verify(hx509_context context,
 	    } else
 		/* Should force a refetch, but can we ? */;
 
+	    if (expiration) {
+		if (*ocsp->ocsp.tbsResponseData.responses.val[i])
+		    *expiration = *ocsp->ocsp.tbsResponseData.responses.val[i].nextUpdate;
+		else 
+		    *expiration = now + context->ocsp_time_diff;
+	    }
+
 	    return 0;
 	}
     }
@@ -619,6 +630,10 @@ hx509_revoke_verify(hx509_context context,
 	    
 	    return HX509_CRL_CERT_REVOKED;
 	}
+
+	if (expiration)
+	    *expiration = *crl->tbsCertList.nextUpdate;
+
 	return 0;
     }
 
