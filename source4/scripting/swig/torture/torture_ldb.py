@@ -1,14 +1,18 @@
 #!/usr/bin/python
 
-import Ldb
+import Ldb, sys
 
-def fail(msg):
-    print 'FAILED:', msg
-    sys.exit(1)
+def test(cond, msg):
+    if not cond:
+        print 'FAILED:', msg
+        sys.exit(1)
 
-l = Ldb.Ldb()
+# Torture LdbMessage
 
-l.connect('tdb:///tmp/foo.ldb')
-result = l.search('(dn=*)')
+m = Ldb.LdbMessage()
+m['animal'] = 'dog'
+m['name'] = 'spotty'
 
-print result
+test(m.keys() == ['animal', 'name'], 'keys() test failed')
+test(m.values() == [['dog'], ['spotty']], 'values() test failed')
+test(m.items() == [('animal', ['dog']), ('name', ['spotty'])], 'items() test failed')
