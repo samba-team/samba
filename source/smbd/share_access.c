@@ -204,7 +204,8 @@ BOOL user_ok_token(const char *username, struct nt_user_token *token, int snum)
 		if (!token_contains_name_in_list(username,
 						 lp_servicename(snum), token,
 						 lp_valid_users(snum))) {
-			DEBUG(10, ("User %s no in 'valid users'\n", username));
+			DEBUG(10, ("User %s not in 'valid users'\n",
+				   username));
 			return False;
 		}
 	}
