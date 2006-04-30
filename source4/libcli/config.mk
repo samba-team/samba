@@ -42,10 +42,10 @@ PUBLIC_DEPENDENCIES = LIBCLI_COMPOSITE
 PRIVATE_PROTO_HEADER = nbt/nbtname.h
 OBJ_FILES = nbt/nbtname.o
 
-[LIBRARY::LIBCLI_NBT]
-VERSION = 0.0.1
-SO_VERSION = 0
-DESCRIPTION = NetBios over TCP/IP client library
+[SUBSYSTEM::LIBCLI_NBT]
+#VERSION = 0.0.1
+#SO_VERSION = 0
+#DESCRIPTION = NetBios over TCP/IP client library
 PRIVATE_PROTO_HEADER = nbt/nbt_proto.h
 OBJ_FILES = \
 	nbt/nbtsocket.o \
@@ -142,6 +142,6 @@ OBJ_FILES = raw/rawfile.o \
 		raw/rawacl.o \
 		raw/rawdate.o \
 		raw/rawlpq.o
-PUBLIC_DEPENDENCIES = LIBPACKET gensec
+PUBLIC_DEPENDENCIES = LIBPACKET gensec LIBCRYPTO
 
 include smb2/config.mk
