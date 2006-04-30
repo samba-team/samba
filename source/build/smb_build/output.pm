@@ -33,7 +33,7 @@ sub generate_shared_library($)
 	my $lib_name;
 
 	$lib->{DEPEND_LIST} = [];
-	push(@{$lib->{LINK_FLAGS}}, "\$($lib->{TYPE}_$lib->{NAME}\_OBJ_LIST)");
+	push(@{$lib->{LINK_FLAGS}}, "\$($lib->{TYPE}_$lib->{NAME}\_FULL_OBJ_LIST)");
 
 	$link_name = lc($lib->{NAME});
 	$lib_name = $link_name;

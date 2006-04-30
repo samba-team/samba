@@ -274,7 +274,8 @@ PRIVATE_DEPENDENCIES = \
 		LIBPOPT \
 		POPT_SAMBA \
 		POPT_CREDENTIALS \
-		LIBCLI_SMB
+		LIBCLI_SMB \
+		LIBCLI_RAW
 MANPAGE = man/gentest.1
 # End BINARY gentest
 #################################

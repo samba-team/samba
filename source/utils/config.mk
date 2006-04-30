@@ -30,7 +30,8 @@ PRIVATE_DEPENDENCIES = \
 		POPT_SAMBA \
 		POPT_CREDENTIALS \
 		gensec \
-		LIBCLI_RESOLVE
+		LIBCLI_RESOLVE \
+		auth
 MANPAGE = man/ntlm_auth.1
 # End BINARY ntlm_auth
 #################################
