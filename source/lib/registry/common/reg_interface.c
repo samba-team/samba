@@ -34,7 +34,7 @@ static struct reg_init_function_entry *backends = NULL;
 static struct reg_init_function_entry *reg_find_backend_entry(const char *name);
 
 /** Register a new backend. */
-_PUBLIC_ NTSTATUS registry_register(const void *_hive_ops)  
+_PUBLIC_ NTSTATUS registry_register(const void *_hive_ops)
 {
 	const struct hive_operations *hive_ops = _hive_ops;
 	struct reg_init_function_entry *entry = backends;
@@ -90,11 +90,7 @@ _PUBLIC_ BOOL reg_has_backend(const char *backend)
 	return reg_find_backend_entry(backend) != NULL?True:False;
 }
 
-static const struct {
-	uint32_t handle;
-	const char *name;
-} predef_names[] = 
-{
+const struct reg_predefined_key reg_predefined_keys[] = {
 	{HKEY_CLASSES_ROOT,"HKEY_CLASSES_ROOT" },
 	{HKEY_CURRENT_USER,"HKEY_CURRENT_USER" },
 	{HKEY_LOCAL_MACHINE, "HKEY_LOCAL_MACHINE" },
@@ -111,12 +107,12 @@ static const struct {
 _PUBLIC_ int reg_list_predefs(TALLOC_CTX *mem_ctx, char ***predefs, uint32_t **hkeys)
 {
 	int i;
-	*predefs = talloc_array(mem_ctx, char *, ARRAY_SIZE(predef_names));
-	*hkeys = talloc_array(mem_ctx, uint32_t, ARRAY_SIZE(predef_names));
+	*predefs = talloc_array(mem_ctx, char *, ARRAY_SIZE(reg_predefined_keys));
+	*hkeys = talloc_array(mem_ctx, uint32_t, ARRAY_SIZE(reg_predefined_keys));
 
-	for (i = 0; predef_names[i].name; i++) {
-		(*predefs)[i] = talloc_strdup(mem_ctx, predef_names[i].name);
-		(*hkeys)[i] = predef_names[i].handle;
+	for (i = 0; reg_predefined_keys[i].name; i++) {
+		(*predefs)[i] = talloc_strdup(mem_ctx, reg_predefined_keys[i].name);
+		(*hkeys)[i] = reg_predefined_keys[i].handle;
 	}
 
 	return i;
@@ -126,8 +122,8 @@ _PUBLIC_ int reg_list_predefs(TALLOC_CTX *mem_ctx, char ***predefs, uint32_t **h
 _PUBLIC_ const char *reg_get_predef_name(uint32_t hkey)
 {
 	int i;
-	for (i = 0; predef_names[i].name; i++) {
-		if (predef_names[i].handle == hkey) return predef_names[i].name;
+	for (i = 0; reg_predefined_keys[i].name; i++) {
+		if (reg_predefined_keys[i].handle == hkey) return reg_predefined_keys[i].name;
 	}
 
 	return NULL;
@@ -138,8 +134,8 @@ _PUBLIC_ WERROR reg_get_predefined_key_by_name(struct registry_context *ctx, con
 {
 	int i;
 	
-	for (i = 0; predef_names[i].name; i++) {
-		if (!strcasecmp(predef_names[i].name, name)) return reg_get_predefined_key(ctx, predef_names[i].handle, key);
+	for (i = 0; reg_predefined_keys[i].name; i++) {
+		if (!strcasecmp(reg_predefined_keys[i].name, name)) return reg_get_predefined_key(ctx, reg_predefined_keys[i].handle, key);
 	}
 
 	DEBUG(1, ("No predefined key with name '%s'\n", name));

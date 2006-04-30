@@ -125,10 +125,10 @@ int main(int argc, char **argv)
 	if (!h) {
 		print_tree(0, root, fullpath, no_values);
 	} else {
-		for(i = HKEY_CLASSES_ROOT; i < HKEY_PERFORMANCE_NLSTEXT; i++) {
-			error = reg_get_predefined_key(h, i, &root);
+		for(i = 0; reg_predefined_keys[i].handle; i++) {
+			error = reg_get_predefined_key(h, reg_predefined_keys[i].handle, &root);
 			if (!W_ERROR_IS_OK(error)) {
-				fprintf(stderr, "Skipping %s\n", reg_get_predef_name(i));
+				fprintf(stderr, "Skipping %s\n", reg_predefined_keys[i].name);
 				continue;
 			}
 			print_tree(0, root, fullpath, no_values);
