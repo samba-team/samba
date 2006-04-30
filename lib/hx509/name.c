@@ -504,3 +504,9 @@ _hx509_unparse_Name(const Name *aname, char **str)
     hx509_name_free(&name);
     return ret;
 }
+
+int
+hx509_name_is_null_p(const hx509_name name)
+{
+    return name->der_name.u.rdnSequence.len == 0;
+}
