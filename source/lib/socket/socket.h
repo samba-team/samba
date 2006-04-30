@@ -185,5 +185,6 @@ NTSTATUS socket_connect_multi(TALLOC_CTX *mem_ctx, const char *server_address,
 			      struct event_context *event_ctx,
 			      struct socket_context **result,
 			      uint16_t *port);
+void set_socket_options(int fd, const char *options);
 
 #endif /* _SAMBA_SOCKET_H */

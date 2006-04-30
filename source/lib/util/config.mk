@@ -22,7 +22,6 @@ OBJ_FILES = xfile.o \
 		util_file.o \
 		data_blob.o \
 		util.o \
-		util_sock.o \
 		substitute.o \
 		fsusage.o \
 		ms_fnmatch.o \
