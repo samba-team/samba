@@ -562,7 +562,7 @@ hx509_revoke_verify(hx509_context context,
 		/* Should force a refetch, but can we ? */;
 
 	    if (expiration) {
-		if (*ocsp->ocsp.tbsResponseData.responses.val[i])
+		if (*ocsp->ocsp.tbsResponseData.responses.val[i].nextUpdate)
 		    *expiration = *ocsp->ocsp.tbsResponseData.responses.val[i].nextUpdate;
 		else 
 		    *expiration = now + context->ocsp_time_diff;
@@ -632,7 +632,7 @@ hx509_revoke_verify(hx509_context context,
 	}
 
 	if (expiration)
-	    *expiration = *crl->tbsCertList.nextUpdate;
+	    *expiration = _hx509_Time2time_t(crl->crl.tbsCertList.nextUpdate);
 
 	return 0;
     }
