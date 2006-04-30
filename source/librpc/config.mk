@@ -24,7 +24,7 @@ DESCRIPTION = NDR support for compressed subcontexts
 PRIVATE_PROTO_HEADER = ndr/ndr_compression.h
 OBJ_FILES = \
 		ndr/ndr_compression.o
-PUBLIC_DEPENDENCIES = LIBCOMPRESSION
+PUBLIC_DEPENDENCIES = LIBCOMPRESSION LIBSAMBA-ERRORS
 # End SUBSYSTEM NDR_COMPRESSION
 ################################################
 
