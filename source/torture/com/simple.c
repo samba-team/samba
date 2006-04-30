@@ -38,7 +38,7 @@ static BOOL test_readwrite(TALLOC_CTX *mem_ctx, const char *host)
 	struct IUnknown *interfaces[3];
 	WERROR results[2];
 	struct com_context *ctx;
-	char test_data[5];
+	uint8_t test_data[5];
 	int i;
 
 	com_init();
@@ -53,7 +53,7 @@ static BOOL test_readwrite(TALLOC_CTX *mem_ctx, const char *host)
 	if (host) {
 		error = dcom_create_object(ctx, &clsid, 
 					   host, 2, IID,
-					   &interfaces, 
+					   (struct IUnknown ***)&interfaces, 
 					   results);
 	} else {
 		error = com_create_object(ctx, &clsid, 2, IID, interfaces, results);
@@ -74,7 +74,7 @@ static BOOL test_readwrite(TALLOC_CTX *mem_ctx, const char *host)
 		test_data[i] = i+1;
 	}
 
-	error = IStream_Write((struct IStream *)interfaces[0], mem_ctx, &test_data, 5, NULL);
+	error = IStream_Write((struct IStream *)interfaces[0], mem_ctx, test_data, 5, NULL);
 	if (!W_ERROR_IS_OK(error)) {
 		printf("IStream::Write() failed - %s\n", win_errstr(error));
 		ret = False;
