@@ -439,23 +439,11 @@ static char **reg_completion(const char *text, int start, int end)
 	}
 
 	if (h) {
-		uint32_t try_hkeys[] = {
-			HKEY_CLASSES_ROOT,
-			HKEY_CURRENT_USER,
-			HKEY_LOCAL_MACHINE,
-			HKEY_USERS,
-			HKEY_PERFORMANCE_DATA,
-			HKEY_CURRENT_CONFIG,
-			HKEY_DYN_DATA,
-			HKEY_PERFORMANCE_TEXT,
-			HKEY_PERFORMANCE_NLSTEXT,
-			0
-		};
 		int i;
 
-		for (i = 0; try_hkeys[i]; i++) {
+		for (i = 0; reg_predefined_keys[i].handle; i++) {
 			WERROR err;
-			err = reg_get_predefined_key(h, try_hkeys[i], &curkey);
+			err = reg_get_predefined_key(h, reg_predefined_keys[i].handle, &curkey);
 			if (W_ERROR_IS_OK(err)) {
 				break;
 			} else {
