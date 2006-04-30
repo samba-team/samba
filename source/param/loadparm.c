@@ -309,6 +309,7 @@ typedef struct {
 	BOOL bEnablePrivileges;
 	BOOL bASUSupport;
 	BOOL bUsershareOwnerOnly;
+	BOOL bUsershareAllowGuests;
 	int restrict_anonymous;
 	int name_cache_timeout;
 	int client_signing;
@@ -1239,6 +1240,7 @@ static struct parm_struct parm_table[] = {
 	{"root preexec close", P_BOOL, P_LOCAL, &sDefault.bRootpreexecClose, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE}, 
 	{"root postexec", P_STRING, P_LOCAL, &sDefault.szRootPostExec, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE | FLAG_PRINT}, 
 	{"available", P_BOOL, P_LOCAL, &sDefault.bAvailable, NULL, NULL, FLAG_BASIC | FLAG_ADVANCED | FLAG_SHARE | FLAG_PRINT}, 
+	{"usershare allow guests", P_BOOL, P_GLOBAL, &Globals.bUsershareAllowGuests, NULL, NULL, FLAG_ADVANCED},
 	{"usershare max shares", P_INTEGER, P_GLOBAL, &Globals.iUsershareMaxShares, NULL, NULL, FLAG_ADVANCED},
 	{"usershare owner only", P_BOOL, P_GLOBAL, &Globals.bUsershareOwnerOnly, NULL, NULL, FLAG_ADVANCED}, 
 	{"usershare path", P_STRING, P_GLOBAL, &Globals.szUsersharePath, NULL, NULL, FLAG_ADVANCED},
@@ -1670,6 +1672,8 @@ static void init_globals(BOOL first_time_only)
 	Globals.iUsershareMaxShares = 0;
 	/* By default disallow sharing of directories not owned by the sharer. */
 	Globals.bUsershareOwnerOnly = True;
+	/* By default disallow guest access to usershares. */
+	Globals.bUsershareAllowGuests = False;
 }
 
 static TALLOC_CTX *lp_talloc;
@@ -1875,6 +1879,7 @@ FN_GLOBAL_LIST(lp_usershare_prefix_deny_list, &Globals.szUsersharePrefixDenyList
 
 FN_GLOBAL_LIST(lp_eventlog_list, &Globals.szEventLogs)
 
+FN_GLOBAL_BOOL(lp_usershare_allow_guests, &Globals.bUsershareAllowGuests)
 FN_GLOBAL_BOOL(lp_usershare_owner_only, &Globals.bUsershareOwnerOnly)
 FN_GLOBAL_BOOL(lp_disable_netbios, &Globals.bDisableNetbios)
 FN_GLOBAL_BOOL(lp_reset_on_zero_vc, &Globals.bResetOnZeroVC)
@@ -4318,29 +4323,40 @@ enum usershare_err parse_usershare_file(TALLOC_CTX *ctx,
 			int numlines,
 			pstring sharepath,
 			pstring comment,
-			SEC_DESC **ppsd)
+			SEC_DESC **ppsd,
+			BOOL *pallow_guest)
 {
 	const char **prefixallowlist = lp_usershare_prefix_allow_list();
 	const char **prefixdenylist = lp_usershare_prefix_deny_list();
+	int us_vers;
 	SMB_STRUCT_DIR *dp;
 	SMB_STRUCT_STAT sbuf;
+
+	*pallow_guest = False;
 
 	if (numlines < 4) {
 		return USERSHARE_MALFORMED_FILE;
 	}
 
-	if (!strequal(lines[0], "#VERSION 1")) {
+	if (strcmp(lines[0], "#VERSION 1") == 0) {
+		us_vers = 1;
+	} else if (strcmp(lines[0], "#VERSION 2") == 0) {
+		us_vers = 2;
+		if (numlines < 5) {
+			return USERSHARE_MALFORMED_FILE;
+		}
+	} else {
 		return USERSHARE_BAD_VERSION;
 	}
 
-	if (!strnequal(lines[1], "path=", 5)) {
+	if (strncmp(lines[1], "path=", 5) != 0) {
 		return USERSHARE_MALFORMED_PATH;
 	}
 
 	pstrcpy(sharepath, &lines[1][5]);
 	trim_string(sharepath, " ", " ");
 
-	if (!strnequal(lines[2], "comment=", 8)) {
+	if (strncmp(lines[2], "comment=", 8) != 0) {
 		return USERSHARE_MALFORMED_COMMENT_DEF;
 	}
 
@@ -4348,7 +4364,7 @@ enum usershare_err parse_usershare_file(TALLOC_CTX *ctx,
 	trim_string(comment, " ", " ");
 	trim_char(comment, '"', '"');
 
-	if (!strnequal(lines[3], "usershare_acl=", 14)) {
+	if (strncmp(lines[3], "usershare_acl=", 14) != 0) {
 		return USERSHARE_MALFORMED_ACL_DEF;
 	}
 
@@ -4356,7 +4372,16 @@ enum usershare_err parse_usershare_file(TALLOC_CTX *ctx,
 		return USERSHARE_ACL_ERR;
 	}
 
-	if (snum != -1 && strequal(sharepath, ServicePtrs[snum]->szPath)) {
+	if (us_vers == 2) {
+		if (strncmp(lines[4], "guest_ok=", 9) != 0) {
+			return USERSHARE_MALFORMED_ACL_DEF;
+		}
+		if (lines[4][9] == 'y') {
+			*pallow_guest = True;
+		}
+	}
+
+	if (snum != -1 && (strcmp(sharepath, ServicePtrs[snum]->szPath) == 0)) {
 		/* Path didn't change, no checks needed. */
 		return USERSHARE_OK;
 	}
@@ -4468,6 +4493,7 @@ static int process_usershare_file(const char *dir_name, const char *file_name, i
 	int iService = -1;
 	TALLOC_CTX *ctx = NULL;
 	SEC_DESC *psd = NULL;
+	BOOL guest_ok = False;
 
 	/* Ensure share name doesn't contain invalid characters. */
 	if (!validate_net_name(file_name, INVALID_SHARENAME_CHARS, strlen(file_name))) {
@@ -4561,7 +4587,9 @@ static int process_usershare_file(const char *dir_name, const char *file_name, i
 		return 1;
 	}
 
-	if (parse_usershare_file(ctx, &sbuf, service_name, iService, lines, numlines, sharepath, comment, &psd) != USERSHARE_OK) {
+	if (parse_usershare_file(ctx, &sbuf, service_name,
+			iService, lines, numlines, sharepath,
+			comment, &psd, &guest_ok) != USERSHARE_OK) {
 		talloc_destroy(ctx);
 		SAFE_FREE(lines);
 		return -1;
@@ -4604,6 +4632,11 @@ static int process_usershare_file(const char *dir_name, const char *file_name, i
 
 	/* Set the service as a valid usershare. */
 	ServicePtrs[iService]->usershare = USERSHARE_VALID;
+
+	/* Set guest access. */
+	if (lp_usershare_allow_guests()) {
+		ServicePtrs[iService]->bGuest_ok = guest_ok;
+	}
 
 	/* And note when it was loaded. */
 	ServicePtrs[iService]->usershare_last_mod = sbuf.st_mtime;
