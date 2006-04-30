@@ -77,6 +77,14 @@ if set(values) != set(['1', '12', '123']):
 if set(items) != set([('a', '1'), ('ab', '12'), ('abc', '123')]):
     fail('values method produced wrong values')
 
+t.close()
+
+# Re-open read-only
+
+t = Tdb.Tdb(tdb_file, open_flags = os.O_RDONLY)
+t.keys()
+t.close()
+
 # Clean up
 
 os.unlink(tdb_file)
