@@ -1496,7 +1496,6 @@ hx509_verify_path(hx509_context context,
 				      ctx->revoke_ctx, 
 				      certs,
 				      ctx->time_now,
-				      NULL,
 				      path.val[i],
 				      path.val[parent]);
 	    if (ret) {
