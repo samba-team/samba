@@ -302,7 +302,7 @@ static void nbt_name_socket_handler(struct event_context *ev, struct fd_event *f
   initialise a nbt_name_socket. The event_ctx is optional, if provided
   then operations will use that event context
 */
-struct nbt_name_socket *nbt_name_socket_init(TALLOC_CTX *mem_ctx, 
+_PUBLIC_ struct nbt_name_socket *nbt_name_socket_init(TALLOC_CTX *mem_ctx, 
 					     struct event_context *event_ctx)
 {
 	struct nbt_name_socket *nbtsock;
