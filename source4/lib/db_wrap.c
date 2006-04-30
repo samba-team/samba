@@ -32,6 +32,7 @@
 #include "lib/events/events.h"
 #include "lib/tdb/include/tdb.h"
 #include "lib/ldb/include/ldb.h"
+#include "lib/ldb/include/ldb_errors.h"
 #include "lib/ldb/samba/ldif_handlers.h"
 #include "db_wrap.h"
 
@@ -123,7 +124,7 @@ struct ldb_context *ldb_wrap_connect(TALLOC_CTX *mem_ctx,
 	}
 	
 	ret = ldb_connect(ldb, real_url, flags, options);
-	if (ret == -1) {
+	if (ret != LDB_SUCCESS) {
 		talloc_free(ldb);
 		return NULL;
 	}
