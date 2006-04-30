@@ -115,7 +115,7 @@ enum ldb_scope {LDB_SCOPE_DEFAULT=-1,
 }
 
 /* 
- * Wrap TALLOC_CTX
+ * Wrap a small bit of talloc
  */
 
 /* Use talloc_init() to create a parameter to pass to ldb_init().  Don't
