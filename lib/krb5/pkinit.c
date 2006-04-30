@@ -177,20 +177,25 @@ cert2epi(hx509_context context, void *ctx, hx509_cert c)
     if (ret)
 	return ret;
 
-    id.subjectName = calloc(1, sizeof(*id.subjectName));
-    if (id.subjectName == NULL) {
-	hx509_name_free(&subject);
-	free_ExternalPrincipalIdentifier(&id);
-	return ENOMEM;
-    }
+    if (hx509_name_is_null_p(subject) != 0) {
+
+	id.subjectName = calloc(1, sizeof(*id.subjectName));
+	if (id.subjectName == NULL) {
+	    hx509_name_free(&subject);
+	    free_ExternalPrincipalIdentifier(&id);
+	    return ENOMEM;
+	}
     
-    ret = hx509_name_to_der_name(subject, &id.subjectName->data,
-				 &id.subjectName->length);
-    hx509_name_free(&subject);
-    if (ret) {
-	free_ExternalPrincipalIdentifier(&id);
-	return ret;
+	ret = hx509_name_to_der_name(subject, &id.subjectName->data,
+				     &id.subjectName->length);
+	if (ret) {
+	    hx509_name_free(&subject);
+	    free_ExternalPrincipalIdentifier(&id);
+	    return ret;
+	}
     }
+    hx509_name_free(&subject);
+
 
     id.issuerAndSerialNumber = calloc(1, sizeof(*id.issuerAndSerialNumber));
     if (id.issuerAndSerialNumber == NULL) {
