@@ -125,7 +125,7 @@ TDB_CONTEXT *tdb_open_ex(const char *name, int hash_size, int tdb_flags,
 
 int tdb_reopen(TDB_CONTEXT *tdb);
 
-int tdb_reopen_all(void);
+int tdb_reopen_all(int parent_longlived);
 
 void tdb_logging_function(TDB_CONTEXT *tdb, tdb_log_func);
 
