@@ -355,7 +355,8 @@ PUBLIC_DEPENDENCIES = \
 			GAI \
 			NSL \
 			LIBREPLACE \
-			RESOLV
+			RESOLV \
+			EXT_SOCKET
 # End SUBSYSTEM HEIMDAL_ROKEN
 #######################
 
