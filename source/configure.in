@@ -35,7 +35,6 @@ dnl disabled until we support external heimdal again
 dnl sinclude(auth/kerberos/config.m4)
 
 sinclude(auth/gensec/config.m4)
-sinclude(libcli/config.m4)
 sinclude(smbd/process_model.m4)
 sinclude(lib/registry/config.m4)
 sinclude(scripting/swig/config.m4)

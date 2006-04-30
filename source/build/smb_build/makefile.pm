@@ -325,7 +325,7 @@ sub StaticLibrary($$)
 
 	return unless (defined($ctx->{OBJ_FILES}));
 
-	push (@{$self->{static_libs}}, $ctx->{TARGET});
+	push (@{$self->{static_libs}}, $ctx->{TARGET}) if ($ctx->{TYPE} eq "LIBRARY");
 
 	$self->output("$ctx->{TYPE}_$ctx->{NAME}_OUTPUT = $ctx->{OUTPUT}\n");
 	$self->_prepare_list($ctx, "OBJ_LIST");
