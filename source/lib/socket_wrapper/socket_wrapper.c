@@ -462,7 +462,7 @@ _PUBLIC_ int swrap_accept(int s, struct sockaddr *addr, socklen_t *addrlen)
 	child_si->protocol = parent_si->protocol;
 	child_si->bound = 1;
 
-	ret = real_getsockname(fd, &un_my_addr, &un_my_addrlen);
+	ret = real_getsockname(fd, (struct sockaddr *)&un_my_addr, &un_my_addrlen);
 	if (ret == -1) return ret;
 
 	ret = sockaddr_convert_from_un(child_si, &un_my_addr, un_my_addrlen,

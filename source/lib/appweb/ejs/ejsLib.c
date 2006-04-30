@@ -64,8 +64,8 @@ static void			*lockData;
   this is a workaround for the use of global variables in ejs
 */
 struct ejs_state_ctx {
-	struct MprVar master;
-	struct MprArray *ejsList;
+	MprVar master;
+	MprArray *ejsList;
 };
 
 void *ejs_save_state(void)

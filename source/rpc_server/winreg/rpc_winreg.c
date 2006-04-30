@@ -219,7 +219,7 @@ static WERROR winreg_EnumValue(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 	/* the client can optionally pass a NULL for type, meaning they don't
 	   want that back */
 	if (r->in.type != NULL) {
-		r->out.type = talloc(mem_ctx, uint32_t);
+		r->out.type = talloc(mem_ctx, enum winreg_Type);
 		*r->out.type = value->data_type;
 	}
 
@@ -398,7 +398,7 @@ static WERROR winreg_QueryValue(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 	}
 
 	/* Just asking for the size of the buffer */
-	r->out.type = &val->data_type;
+	r->out.type = (enum winreg_Type *)&val->data_type;
 	r->out.length = &val->data.length;
 	if (!r->in.data) {
 		r->out.size = talloc(mem_ctx, uint32_t);
