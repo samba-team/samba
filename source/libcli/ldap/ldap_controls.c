@@ -127,7 +127,7 @@ static BOOL decode_server_sort_request(void *mem_ctx, DATA_BLOB in, void **out)
 		}
 
 		if (asn1_peek_tag(&data, ASN1_BOOLEAN)) {
-			bool reverse;
+			BOOL reverse;
 			if (!asn1_read_BOOLEAN(&data, &reverse)) {
 			return False;
 			}
@@ -904,11 +904,11 @@ BOOL ldap_decode_control(void *mem_ctx, struct asn1_data *data, struct ldb_contr
 	}
 
 	if (asn1_peek_tag(data, ASN1_BOOLEAN)) {
-		bool critical;
+		BOOL critical;
 		if (!asn1_read_BOOLEAN(data, &critical)) {
 			return False;
 		}
-		critical = ctrl->critical;
+		ctrl->critical = critical;
 	} else {
 		ctrl->critical = False;
 	}
