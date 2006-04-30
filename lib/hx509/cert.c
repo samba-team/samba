@@ -946,17 +946,6 @@ _hx509_cert_public_encrypt(const heim_octet_string *cleartext,
 				 encryption_oid, ciphertext);
 }
 
-int
-_hx509_cert_private_sigature(const heim_octet_string *cleartext,
-			     const heim_oid *signature_oid,
-			     hx509_cert p,
-			     heim_octet_string *signature)
-{
-    memset(signature, 0, sizeof(*signature));
-    return 0;
-}
-    
-
 /*
  *
  */
