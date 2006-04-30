@@ -128,11 +128,30 @@ BOOL lookup_name(TALLOC_CTX *mem_ctx,
 	 * the expansion of group names coming in from smb.conf
 	 */
 
-	if ((flags & LOOKUP_NAME_GROUP) &&
-	    (lookup_unix_group_name(name, &sid))) {
-		domain = talloc_strdup(tmp_ctx, unix_groups_domain_name());
-		type = SID_NAME_DOM_GRP;
-		goto ok;
+	if (flags & LOOKUP_NAME_GROUP) {
+		struct group *grp;
+
+		/* If we are using the smbpasswd backend, we need to use the
+		 * algorithmic mapping for the unix group we find. This is
+		 * necessary because when creating the NT token from the unix
+		 * gid list we got from initgroups() we use gid_to_sid() that
+		 * uses algorithmic mapping if pdb_rid_algorithm() is true. */
+
+		if (pdb_rid_algorithm() && ((grp = getgrnam(name)) != NULL) &&
+		    (grp->gr_gid < max_algorithmic_gid())) {
+			domain = talloc_strdup(tmp_ctx, get_global_sam_name());
+			sid_compose(&sid, get_global_sam_sid(),
+				    pdb_gid_to_group_rid(grp->gr_gid));
+			type = SID_NAME_DOM_GRP;
+			goto ok;
+		}
+		
+		if (lookup_unix_group_name(name, &sid)) {
+			domain = talloc_strdup(tmp_ctx,
+					       unix_groups_domain_name());
+			type = SID_NAME_DOM_GRP;
+			goto ok;
+		}
 	}
 
 	/* Now the guesswork begins, we haven't been given an explicit
