@@ -547,12 +547,12 @@ struct tls_context *tls_init_client(struct socket_context *sock,
 NTSTATUS tls_socket_recv(struct tls_context *tls, void *buf, size_t wantlen, 
 			 size_t *nread)
 {
-	return socket_recv((struct socket_context *)tls, buf, wantlen, nread, 0);
+	return socket_recv((struct socket_context *)tls, buf, wantlen, nread);
 }
 
 NTSTATUS tls_socket_send(struct tls_context *tls, const DATA_BLOB *blob, size_t *sendlen)
 {
-	return socket_send((struct socket_context *)tls, blob, sendlen, 0);
+	return socket_send((struct socket_context *)tls, blob, sendlen);
 }
 
 BOOL tls_enabled(struct tls_context *tls)
