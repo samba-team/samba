@@ -1,4 +1,12 @@
+2006-04-30  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* name.c: Add hx509_name_is_null_p
+
+	* cert.c: remove _hx509_cert_private_sigature
+	
 2006-04-29  Love Hörnquist Åstrand  <lha@it.su.se>
+	
+	* name.c: Expose more of Name.
 
 	* hxtool.c (main): add missing argument to printf
 
