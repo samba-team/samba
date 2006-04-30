@@ -168,7 +168,8 @@ static WERROR rpc_get_value_by_index(TALLOC_CTX *mem_ctx, const struct registry_
 	struct rpc_key_data *mykeydata = parent->backend_data;
 	WERROR error;
 	struct winreg_EnumValue r;
-	uint32_t type, len1, zero = 0;
+	uint32_t len1, zero = 0;
+	enum winreg_Type type;
 	NTSTATUS status;
 	struct winreg_StringBuf name;
 	uint8_t u8;
