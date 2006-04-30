@@ -53,7 +53,7 @@ static void dgm_socket_recv(struct nbt_dgram_socket *dgmsock)
 		return;
 	}
 
-	status = socket_recvfrom(dgmsock->sock, blob.data, blob.length, &nread, 0,
+	status = socket_recvfrom(dgmsock->sock, blob.data, blob.length, &nread,
 				 tmp_ctx, &src);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(tmp_ctx);
@@ -113,7 +113,7 @@ static void dgm_socket_send(struct nbt_dgram_socket *dgmsock)
 		size_t len;
 		
 		len = req->encoded.length;
-		status = socket_sendto(dgmsock->sock, &req->encoded, &len, 0, 
+		status = socket_sendto(dgmsock->sock, &req->encoded, &len,
 				       req->dest);
 		if (NT_STATUS_IS_ERR(status)) {
 			DEBUG(3,("Failed to send datagram of length %u to %s:%d: %s\n",

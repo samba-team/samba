@@ -298,7 +298,7 @@ _PUBLIC_ void packet_recv(struct packet_context *pc)
 					 npending, &nread);
 	} else {
 		status = socket_recv(pc->sock, pc->partial.data + pc->num_read, 
-				     npending, &nread, 0);
+				     npending, &nread);
 	}
 	if (NT_STATUS_IS_ERR(status)) {
 		packet_error(pc, status);
@@ -455,7 +455,7 @@ _PUBLIC_ void packet_queue_run(struct packet_context *pc)
 		if (pc->tls) {
 			status = tls_socket_send(pc->tls, &blob, &nwritten);
 		} else {
-			status = socket_send(pc->sock, &blob, &nwritten, 0);
+			status = socket_send(pc->sock, &blob, &nwritten);
 		}
 		if (NT_STATUS_IS_ERR(status)) {
 			packet_error(pc, NT_STATUS_NET_WRITE_FAULT);

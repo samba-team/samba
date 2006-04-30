@@ -82,10 +82,10 @@ static BOOL test_udp(TALLOC_CTX *mem_ctx)
 	generate_random_buffer(blob.data, blob.length);
 
 	sent = size;
-	status = socket_sendto(sock2, &blob, &sent, 0, srv_addr);
+	status = socket_sendto(sock2, &blob, &sent, srv_addr);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
-	status = socket_recvfrom(sock1, blob2.data, size, &nread, 0, 
+	status = socket_recvfrom(sock1, blob2.data, size, &nread, 
 				 sock1, &from_addr);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
@@ -104,10 +104,10 @@ static BOOL test_udp(TALLOC_CTX *mem_ctx)
 	}
 
 	generate_random_buffer(blob.data, blob.length);
-	status = socket_sendto(sock1, &blob, &sent, 0, from_addr);
+	status = socket_sendto(sock1, &blob, &sent, from_addr);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
-	status = socket_recvfrom(sock2, blob2.data, size, &nread, 0, 
+	status = socket_recvfrom(sock2, blob2.data, size, &nread, 
 				 sock2, &from_addr);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	if (strcmp(from_addr->addr, srv_addr->addr) != 0) {
@@ -195,10 +195,10 @@ static BOOL test_tcp(TALLOC_CTX *mem_ctx)
 	generate_random_buffer(blob.data, blob.length);
 
 	sent = size;
-	status = socket_send(sock2, &blob, &sent, 0);
+	status = socket_send(sock2, &blob, &sent);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
-	status = socket_recv(sock3, blob2.data, size, &nread, 0);
+	status = socket_recv(sock3, blob2.data, size, &nread);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 	from_addr = socket_get_peer_addr(sock3, mem_ctx);
@@ -217,38 +217,7 @@ static BOOL test_tcp(TALLOC_CTX *mem_ctx)
 	}
 
 	if (memcmp(blob2.data, blob.data, size) != 0) {
-		printf("Bad data in recvfrom\n");
-		ret = False;
-	}
-
-	generate_random_buffer(blob.data, blob.length);
-	status = socket_send(sock3, &blob, &sent, 0);
-	CHECK_STATUS(status, NT_STATUS_OK);
-
-	status = socket_recv(sock2, blob2.data, size, &nread, 0);
-	CHECK_STATUS(status, NT_STATUS_OK);
-
-	from_addr = socket_get_peer_addr(sock2, mem_ctx);
-
-	if (!from_addr || !from_addr->addr) {
-		printf("Unexpected recvfrom addr NULL\n");
-		return False;
-	}
-	if (strcmp(from_addr->addr, srv_addr->addr) != 0) {
-		printf("Unexpected recvfrom addr %s\n", from_addr ? from_addr->addr : NULL);
-		ret = False;
-	}
-	if (nread != size) {
-		printf("Unexpected recvfrom size %d should be %d\n", (int)nread, (int)size);
-		ret = False;
-	}
-	if (from_addr->port != srv_addr->port) {
-		printf("Unexpected recvfrom port %d should be %d\n", 
-		       from_addr->port, srv_addr->port);
-		ret = False;
-	}
-	if (memcmp(blob2.data, blob.data, size) != 0) {
-		printf("Bad data in recvfrom\n");
+		printf("Bad data in recv\n");
 		ret = False;
 	}
 

@@ -77,7 +77,7 @@ static ssize_t tls_pull(gnutls_transport_ptr ptr, void *buf, size_t size)
 		return 1;
 	}
 
-	status = socket_recv(tls->socket, buf, size, &nread, 0);
+	status = socket_recv(tls->socket, buf, size, &nread);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_END_OF_FILE)) {
 		return 0;
 	}
@@ -118,7 +118,7 @@ static ssize_t tls_push(gnutls_transport_ptr ptr, const void *buf, size_t size)
 	b.data = discard_const(buf);
 	b.length = size;
 
-	status = socket_send(tls->socket, &b, &nwritten, 0);
+	status = socket_send(tls->socket, &b, &nwritten);
 	if (NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES)) {
 		errno = EAGAIN;
 		return -1;
@@ -225,7 +225,7 @@ NTSTATUS tls_socket_recv(struct tls_context *tls, void *buf, size_t wantlen,
 	int ret;
 	NTSTATUS status;
 	if (tls->tls_enabled && tls->tls_detect) {
-		status = socket_recv(tls->socket, &tls->first_byte, 1, nread, 0);
+		status = socket_recv(tls->socket, &tls->first_byte, 1, nread);
 		NT_STATUS_NOT_OK_RETURN(status);
 		if (*nread == 0) return NT_STATUS_OK;
 		tls->tls_detect = False;
@@ -240,7 +240,7 @@ NTSTATUS tls_socket_recv(struct tls_context *tls, void *buf, size_t wantlen,
 	}
 
 	if (!tls->tls_enabled) {
-		return socket_recv(tls->socket, buf, wantlen, nread, 0);
+		return socket_recv(tls->socket, buf, wantlen, nread);
 	}
 
 	status = tls_handshake(tls);
@@ -274,7 +274,7 @@ NTSTATUS tls_socket_send(struct tls_context *tls, const DATA_BLOB *blob, size_t 
 	int ret;
 
 	if (!tls->tls_enabled) {
-		return socket_send(tls->socket, blob, sendlen, 0);
+		return socket_send(tls->socket, blob, sendlen);
 	}
 
 	status = tls_handshake(tls);

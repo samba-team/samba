@@ -219,23 +219,13 @@ static NTSTATUS unixdom_accept(struct socket_context *sock,
 }
 
 static NTSTATUS unixdom_recv(struct socket_context *sock, void *buf, 
-			     size_t wantlen, size_t *nread, uint32_t flags)
+			     size_t wantlen, size_t *nread)
 {
 	ssize_t gotlen;
-	int flgs = 0;
-
-	/* TODO: we need to map all flags here */
-	if (flags & SOCKET_FLAG_PEEK) {
-		flgs |= MSG_PEEK;
-	}
-
-	if (flags & SOCKET_FLAG_BLOCK) {
-		flgs |= MSG_WAITALL;
-	}
 
 	*nread = 0;
 
-	gotlen = recv(sock->fd, buf, wantlen, flgs);
+	gotlen = recv(sock->fd, buf, wantlen, 0);
 	if (gotlen == 0) {
 		return NT_STATUS_END_OF_FILE;
 	} else if (gotlen == -1) {
@@ -248,14 +238,13 @@ static NTSTATUS unixdom_recv(struct socket_context *sock, void *buf,
 }
 
 static NTSTATUS unixdom_send(struct socket_context *sock,
-			     const DATA_BLOB *blob, size_t *sendlen, uint32_t flags)
+			     const DATA_BLOB *blob, size_t *sendlen)
 {
 	ssize_t len;
-	int flgs = 0;
 
 	*sendlen = 0;
 
-	len = send(sock->fd, blob->data, blob->length, flgs);
+	len = send(sock->fd, blob->data, blob->length, 0);
 	if (len == -1) {
 		return unixdom_error(errno);
 	}	
@@ -267,15 +256,14 @@ static NTSTATUS unixdom_send(struct socket_context *sock,
 
 
 static NTSTATUS unixdom_sendto(struct socket_context *sock, 
-			       const DATA_BLOB *blob, size_t *sendlen, uint32_t flags,
+			       const DATA_BLOB *blob, size_t *sendlen, 
 			       const struct socket_address *dest)
 {
 	ssize_t len;
-	int flgs = 0;
 	*sendlen = 0;
 		
 	if (dest->sockaddr) {
-		len = sendto(sock->fd, blob->data, blob->length, flgs, 
+		len = sendto(sock->fd, blob->data, blob->length, 0, 
 			     dest->sockaddr, dest->sockaddrlen);
 	} else {
 		struct sockaddr_un srv_addr;
@@ -288,7 +276,7 @@ static NTSTATUS unixdom_sendto(struct socket_context *sock,
 		srv_addr.sun_family = AF_UNIX;
 		strncpy(srv_addr.sun_path, dest->addr, sizeof(srv_addr.sun_path));
 		
-		len = sendto(sock->fd, blob->data, blob->length, flgs, 
+		len = sendto(sock->fd, blob->data, blob->length, 0, 
 			     (struct sockaddr *)&srv_addr, sizeof(srv_addr));
 	}
 	if (len == -1) {

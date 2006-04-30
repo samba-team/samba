@@ -171,7 +171,7 @@ _PUBLIC_ NTSTATUS socket_accept(struct socket_context *sock, struct socket_conte
 }
 
 _PUBLIC_ NTSTATUS socket_recv(struct socket_context *sock, void *buf, 
-			      size_t wantlen, size_t *nread, uint32_t flags)
+			      size_t wantlen, size_t *nread)
 {
 	if (sock == NULL) {
 		return NT_STATUS_CONNECTION_DISCONNECTED;
@@ -191,14 +191,14 @@ _PUBLIC_ NTSTATUS socket_recv(struct socket_context *sock, void *buf,
 			*nread = 0;
 			return STATUS_MORE_ENTRIES;
 		}
-		return sock->ops->fn_recv(sock, buf, 1+(random() % wantlen), nread, flags);
+		return sock->ops->fn_recv(sock, buf, 1+(random() % wantlen), nread);
 	}
 
-	return sock->ops->fn_recv(sock, buf, wantlen, nread, flags);
+	return sock->ops->fn_recv(sock, buf, wantlen, nread);
 }
 
 _PUBLIC_ NTSTATUS socket_recvfrom(struct socket_context *sock, void *buf, 
-				  size_t wantlen, size_t *nread, uint32_t flags,
+				  size_t wantlen, size_t *nread, 
 				  TALLOC_CTX *mem_ctx, struct socket_address **src_addr)
 {
 	if (sock == NULL) {
@@ -212,12 +212,12 @@ _PUBLIC_ NTSTATUS socket_recvfrom(struct socket_context *sock, void *buf,
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
 
-	return sock->ops->fn_recvfrom(sock, buf, wantlen, nread, flags, 
+	return sock->ops->fn_recvfrom(sock, buf, wantlen, nread, 
 				      mem_ctx, src_addr);
 }
 
 _PUBLIC_ NTSTATUS socket_send(struct socket_context *sock, 
-			      const DATA_BLOB *blob, size_t *sendlen, uint32_t flags)
+			      const DATA_BLOB *blob, size_t *sendlen)
 {
 	if (sock == NULL) {
 		return NT_STATUS_CONNECTION_DISCONNECTED;
@@ -238,15 +238,15 @@ _PUBLIC_ NTSTATUS socket_send(struct socket_context *sock,
 			return STATUS_MORE_ENTRIES;
 		}
 		blob2.length = 1+(random() % blob2.length);
-		return sock->ops->fn_send(sock, &blob2, sendlen, flags);
+		return sock->ops->fn_send(sock, &blob2, sendlen);
 	}
 
-	return sock->ops->fn_send(sock, blob, sendlen, flags);
+	return sock->ops->fn_send(sock, blob, sendlen);
 }
 
 
 _PUBLIC_ NTSTATUS socket_sendto(struct socket_context *sock, 
-			        const DATA_BLOB *blob, size_t *sendlen, uint32_t flags,
+			        const DATA_BLOB *blob, size_t *sendlen, 
 			        const struct socket_address *dest_addr)
 {
 	if (sock == NULL) {
@@ -265,7 +265,7 @@ _PUBLIC_ NTSTATUS socket_sendto(struct socket_context *sock,
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
 
-	return sock->ops->fn_sendto(sock, blob, sendlen, flags, dest_addr);
+	return sock->ops->fn_sendto(sock, blob, sendlen, dest_addr);
 }
 
 

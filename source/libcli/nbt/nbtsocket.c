@@ -73,7 +73,7 @@ static void nbt_name_socket_send(struct nbt_name_socket *nbtsock)
 		size_t len;
 		
 		len = req->encoded.length;
-		status = socket_sendto(nbtsock->sock, &req->encoded, &len, 0, 
+		status = socket_sendto(nbtsock->sock, &req->encoded, &len, 
 				       req->dest);
 		if (NT_STATUS_IS_ERR(status)) goto failed;		
 
@@ -172,7 +172,7 @@ static void nbt_name_socket_recv(struct nbt_name_socket *nbtsock)
 		return;
 	}
 
-	status = socket_recvfrom(nbtsock->sock, blob.data, blob.length, &nread, 0,
+	status = socket_recvfrom(nbtsock->sock, blob.data, blob.length, &nread,
 				 tmp_ctx, &src);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(tmp_ctx);

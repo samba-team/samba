@@ -83,7 +83,7 @@ static void cldap_socket_recv(struct cldap_socket *cldap)
 		return;
 	}
 
-	status = socket_recvfrom(cldap->sock, blob.data, blob.length, &nread, 0,
+	status = socket_recvfrom(cldap->sock, blob.data, blob.length, &nread,
 				 tmp_ctx, &src);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(tmp_ctx);
@@ -156,7 +156,7 @@ static void cldap_request_timeout(struct event_context *event_ctx,
 
 		req->num_retries--;
 
-		socket_sendto(req->cldap->sock, &req->encoded, &len, 0, 
+		socket_sendto(req->cldap->sock, &req->encoded, &len, 
 			      req->dest);
 
 		req->te = event_add_timed(req->cldap->event_ctx, req, 
@@ -183,7 +183,7 @@ static void cldap_socket_send(struct cldap_socket *cldap)
 		size_t len;
 		
 		len = req->encoded.length;
-		status = socket_sendto(cldap->sock, &req->encoded, &len, 0, 
+		status = socket_sendto(cldap->sock, &req->encoded, &len,
 				       req->dest);
 		if (NT_STATUS_IS_ERR(status)) {
 			DEBUG(3,("Failed to send cldap request of length %u to %s:%d\n",
