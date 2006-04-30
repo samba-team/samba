@@ -8,7 +8,7 @@ PUBLIC_HEADERS = gensec.h spnego.h
 PUBLIC_PROTO_HEADER = gensec_proto.h
 OBJ_FILES = gensec.o
 PUBLIC_DEPENDENCIES = \
-		CREDENTIALS LIBSAMBA-UTIL LIBCRYPTO
+		CREDENTIALS LIBSAMBA-UTIL LIBCRYPTO ASN1_UTIL
 # End SUBSYSTEM gensec
 #################################
 
@@ -28,7 +28,7 @@ PUBLIC_DEPENDENCIES = KERBEROS auth auth_sam
 SUBSYSTEM = gensec
 INIT_FUNCTION = gensec_gssapi_init
 OBJ_FILES = gensec_gssapi.o 
-PUBLIC_DEPENDENCIES = KERBEROS auth
+PUBLIC_DEPENDENCIES = KERBEROS auth HEIMDAL_GSSAPI
 # End MODULE gensec_gssapi
 ################################################
 
@@ -38,6 +38,7 @@ PUBLIC_DEPENDENCIES = KERBEROS auth
 SUBSYSTEM = gensec
 INIT_FUNCTION = gensec_spnego_init
 PRIVATE_PROTO_HEADER = spnego_proto.h
+PRIVATE_DEPENDENCIES = ASN1_UTIL
 OBJ_FILES = spnego.o \
 			spnego_parse.o
 # End MODULE gensec_spnego
