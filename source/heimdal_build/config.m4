@@ -36,6 +36,7 @@ esac
 AC_CHECK_HEADERS([				\
 	crypt.h					\
 	curses.h				\
+	err.h					\
 	errno.h					\
 	inttypes.h				\
 	netdb.h					\
