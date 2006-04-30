@@ -52,6 +52,8 @@ class LdbMessage:
             self.mem_ctx = None
             self.msg = None
 
+    # Make the dn attribute of the object dynamic
+
     def __getattr__(self, attr):
         if attr == 'dn':
             return ldb_dn_linearize(None, self.msg.dn)
@@ -63,8 +65,7 @@ class LdbMessage:
             return
         self.__dict__[attr] = value
         
-    def len(self):
-        return self.msg.num_elements
+    # Get and set individual elements
 
     def __getitem__(self, key):
 
@@ -81,7 +82,23 @@ class LdbMessage:
             [ldb_msg_add_value(self.msg, key, v) for v in value]
         else:
             ldb_msg_add_value(self.msg, key, value)
-    
+
+    # Dictionary interface
+    # TODO: move to iterator based interface
+
+    def len(self):
+        return self.msg.num_elements
+
+    def keys(self):
+        return [ldb_message_element_array_getitem(self.msg.elements, i).name
+                for i in range(self.msg.num_elements)]
+
+    def values(self):
+        return [self[k] for k in self.keys()]
+
+    def items(self):
+        return [(k, self[k]) for k in self.keys()]
+
 class Ldb:
     """A class representing a binding to a ldb file."""
 
