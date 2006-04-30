@@ -170,7 +170,7 @@ static NTSTATUS try_send(struct messaging_rec *rec)
 
 	/* we send with privileges so messages work from any context */
 	priv = root_privileges();
-	status = socket_sendto(msg->sock, &rec->packet, &nsent, 0, path);
+	status = socket_sendto(msg->sock, &rec->packet, &nsent, path);
 	talloc_free(path);
 	talloc_free(priv);
 
@@ -226,7 +226,7 @@ static void messaging_recv_handler(struct messaging_context *msg)
 		return;
 	}
 	    
-	status = socket_recv(msg->sock, packet.data, msize, &msize, 0);
+	status = socket_recv(msg->sock, packet.data, msize, &msize);
 	if (!NT_STATUS_IS_OK(status)) {
 		data_blob_free(&packet);
 		return;

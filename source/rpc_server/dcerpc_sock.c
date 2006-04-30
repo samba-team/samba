@@ -47,7 +47,7 @@ static NTSTATUS dcerpc_write_fn(void *private_data, DATA_BLOB *out, size_t *nwri
 	struct socket_context *sock = talloc_get_type(private_data, struct socket_context);
 	size_t sendlen;
 
-	status = socket_send(sock, out, &sendlen, 0);
+	status = socket_send(sock, out, &sendlen);
 	NT_STATUS_IS_ERR_RETURN(status);
 
 	*nwritten = sendlen;
@@ -152,7 +152,7 @@ static void dcesrv_sock_recv(struct stream_connection *conn, uint16_t flags)
 		return;
 	}
 
-	status = socket_recv(conn->socket, tmp_blob.data, tmp_blob.length, &nread, 0);
+	status = socket_recv(conn->socket, tmp_blob.data, tmp_blob.length, &nread);
 	if (NT_STATUS_IS_ERR(status)) {
 		dcesrv_terminate_connection(dce_conn, nt_errstr(status));
 		return;

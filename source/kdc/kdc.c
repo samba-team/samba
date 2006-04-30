@@ -87,7 +87,7 @@ static void kdc_send_handler(struct kdc_socket *kdc_socket)
 		NTSTATUS status;
 		size_t sendlen;
 
-		status = socket_sendto(kdc_socket->sock, &rep->packet, &sendlen, 0,
+		status = socket_sendto(kdc_socket->sock, &rep->packet, &sendlen,
 				       rep->dest);
 		if (NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES)) {
 			break;
@@ -134,7 +134,7 @@ static void kdc_recv_handler(struct kdc_socket *kdc_socket)
 		return;
 	}
 
-	status = socket_recvfrom(kdc_socket->sock, blob.data, blob.length, &nread, 0,
+	status = socket_recvfrom(kdc_socket->sock, blob.data, blob.length, &nread,
 				 tmp_ctx, &src);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(tmp_ctx);
