@@ -99,7 +99,7 @@ static void smb_krb5_socket_recv(struct smb_krb5_socket *smb_krb5)
 			return;
 		}
 		
-		smb_krb5->status = socket_recv(smb_krb5->sock, blob.data, blob.length, &nread, 0);
+		smb_krb5->status = socket_recv(smb_krb5->sock, blob.data, blob.length, &nread);
 		if (!NT_STATUS_IS_OK(smb_krb5->status)) {
 			talloc_free(tmp_ctx);
 			return;
@@ -137,7 +137,7 @@ static void smb_krb5_socket_recv(struct smb_krb5_socket *smb_krb5)
 			smb_krb5->status = socket_recv(smb_krb5->sock, 
 					     smb_krb5->partial.data + smb_krb5->partial_read,
 					     4 - smb_krb5->partial_read,
-					     &nread, 0);
+					     &nread);
 			/* todo: this should be converted to the packet_*() routines */
 			if (!NT_STATUS_IS_OK(smb_krb5->status)) {
 				return;
@@ -164,7 +164,7 @@ static void smb_krb5_socket_recv(struct smb_krb5_socket *smb_krb5)
 		smb_krb5->status = socket_recv(smb_krb5->sock, 
 				     smb_krb5->partial.data + smb_krb5->partial_read,
 				     smb_krb5->partial.length - smb_krb5->partial_read,
-				     &nread, 0);
+				     &nread);
 		if (!NT_STATUS_IS_OK(smb_krb5->status)) return;
 		
 		smb_krb5->partial_read += nread;
@@ -200,7 +200,7 @@ static void smb_krb5_socket_send(struct smb_krb5_socket *smb_krb5)
 	size_t len;
 	
 	len = smb_krb5->request.length;
-	status = socket_send(smb_krb5->sock, &smb_krb5->request, &len, 0);
+	status = socket_send(smb_krb5->sock, &smb_krb5->request, &len);
 
 	if (!NT_STATUS_IS_OK(status)) return;
 	

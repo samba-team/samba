@@ -62,15 +62,15 @@ struct socket_ops {
 
 	/* general ops */
 	NTSTATUS (*fn_recv)(struct socket_context *sock, void *buf,
-			    size_t wantlen, size_t *nread, uint32_t flags);
+			    size_t wantlen, size_t *nread);
 	NTSTATUS (*fn_send)(struct socket_context *sock, 
-			    const DATA_BLOB *blob, size_t *sendlen, uint32_t flags);
+			    const DATA_BLOB *blob, size_t *sendlen);
 
 	NTSTATUS (*fn_sendto)(struct socket_context *sock, 
-			      const DATA_BLOB *blob, size_t *sendlen, uint32_t flags,
+			      const DATA_BLOB *blob, size_t *sendlen,
 			      const struct socket_address *dest_addr);
 	NTSTATUS (*fn_recvfrom)(struct socket_context *sock, 
-				void *buf, size_t wantlen, size_t *nread, uint32_t flags,
+				void *buf, size_t wantlen, size_t *nread,
 				TALLOC_CTX *addr_ctx, struct socket_address **src_addr);
 	NTSTATUS (*fn_pending)(struct socket_context *sock, size_t *npending);      
 
@@ -129,14 +129,14 @@ NTSTATUS socket_listen(struct socket_context *sock,
 		       int queue_size, uint32_t flags);
 NTSTATUS socket_accept(struct socket_context *sock, struct socket_context **new_sock);
 NTSTATUS socket_recv(struct socket_context *sock, void *buf, 
-		     size_t wantlen, size_t *nread, uint32_t flags);
+		     size_t wantlen, size_t *nread);
 NTSTATUS socket_recvfrom(struct socket_context *sock, void *buf, 
-			 size_t wantlen, size_t *nread, uint32_t flags,
+			 size_t wantlen, size_t *nread, 
 			 TALLOC_CTX *addr_ctx, struct socket_address **src_addr);
 NTSTATUS socket_send(struct socket_context *sock, 
-		     const DATA_BLOB *blob, size_t *sendlen, uint32_t flags);
+		     const DATA_BLOB *blob, size_t *sendlen);
 NTSTATUS socket_sendto(struct socket_context *sock, 
-		       const DATA_BLOB *blob, size_t *sendlen, uint32_t flags,
+		       const DATA_BLOB *blob, size_t *sendlen,
 		       const struct socket_address *dest_addr);
 NTSTATUS socket_pending(struct socket_context *sock, size_t *npending);
 NTSTATUS socket_set_option(struct socket_context *sock, const char *option, const char *val);

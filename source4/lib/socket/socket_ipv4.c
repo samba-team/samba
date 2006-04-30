@@ -251,23 +251,13 @@ static NTSTATUS ipv4_accept(struct socket_context *sock, struct socket_context *
 }
 
 static NTSTATUS ipv4_recv(struct socket_context *sock, void *buf, 
-			      size_t wantlen, size_t *nread, uint32_t flags)
+			      size_t wantlen, size_t *nread)
 {
 	ssize_t gotlen;
-	int flgs = 0;
-
-	/* TODO: we need to map all flags here */
-	if (flags & SOCKET_FLAG_PEEK) {
-		flgs |= MSG_PEEK;
-	}
-
-	if (flags & SOCKET_FLAG_BLOCK) {
-		flgs |= MSG_WAITALL;
-	}
 
 	*nread = 0;
 
-	gotlen = recv(sock->fd, buf, wantlen, flgs);
+	gotlen = recv(sock->fd, buf, wantlen, 0);
 	if (gotlen == 0) {
 		return NT_STATUS_END_OF_FILE;
 	} else if (gotlen == -1) {
@@ -281,11 +271,10 @@ static NTSTATUS ipv4_recv(struct socket_context *sock, void *buf,
 
 
 static NTSTATUS ipv4_recvfrom(struct socket_context *sock, void *buf, 
-			      size_t wantlen, size_t *nread, uint32_t flags,
+			      size_t wantlen, size_t *nread, 
 			      TALLOC_CTX *addr_ctx, struct socket_address **_src)
 {
 	ssize_t gotlen;
-	int flgs = 0;
 	struct sockaddr_in *from_addr;
 	socklen_t from_len = sizeof(*from_addr);
 	struct socket_address *src;
@@ -305,17 +294,10 @@ static NTSTATUS ipv4_recvfrom(struct socket_context *sock, void *buf,
 	}
 
 	src->sockaddr = (struct sockaddr *)from_addr;
-	if (flags & SOCKET_FLAG_PEEK) {
-		flgs |= MSG_PEEK;
-	}
-
-	if (flags & SOCKET_FLAG_BLOCK) {
-		flgs |= MSG_WAITALL;
-	}
 
 	*nread = 0;
 
-	gotlen = recvfrom(sock->fd, buf, wantlen, flgs, 
+	gotlen = recvfrom(sock->fd, buf, wantlen, 0, 
 			  src->sockaddr, &from_len);
 	if (gotlen == 0) {
 		talloc_free(src);
@@ -345,14 +327,13 @@ static NTSTATUS ipv4_recvfrom(struct socket_context *sock, void *buf,
 }
 
 static NTSTATUS ipv4_send(struct socket_context *sock, 
-			      const DATA_BLOB *blob, size_t *sendlen, uint32_t flags)
+			      const DATA_BLOB *blob, size_t *sendlen)
 {
 	ssize_t len;
-	int flgs = 0;
 
 	*sendlen = 0;
 
-	len = send(sock->fd, blob->data, blob->length, flgs);
+	len = send(sock->fd, blob->data, blob->length, 0);
 	if (len == -1) {
 		return map_nt_error_from_unix(errno);
 	}	
@@ -363,14 +344,13 @@ static NTSTATUS ipv4_send(struct socket_context *sock,
 }
 
 static NTSTATUS ipv4_sendto(struct socket_context *sock, 
-			    const DATA_BLOB *blob, size_t *sendlen, uint32_t flags,
+			    const DATA_BLOB *blob, size_t *sendlen, 
 			    const struct socket_address *dest_addr)
 {
 	ssize_t len;
-	int flgs = 0;
 
 	if (dest_addr->sockaddr) {
-		len = sendto(sock->fd, blob->data, blob->length, flgs, 
+		len = sendto(sock->fd, blob->data, blob->length, 0, 
 			     dest_addr->sockaddr, dest_addr->sockaddrlen);
 	} else {
 		struct sockaddr_in srv_addr;
@@ -387,7 +367,7 @@ static NTSTATUS ipv4_sendto(struct socket_context *sock,
 		
 		*sendlen = 0;
 		
-		len = sendto(sock->fd, blob->data, blob->length, flgs, 
+		len = sendto(sock->fd, blob->data, blob->length, 0, 
 			     (struct sockaddr *)&srv_addr, sizeof(srv_addr));
 	}
 	if (len == -1) {
