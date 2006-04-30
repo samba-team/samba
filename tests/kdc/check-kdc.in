@@ -54,6 +54,7 @@ klist="../../kuser/klist -c $cache"
 kgetcred="../../kuser/kgetcred -c $cache"
 kdestroy="../../kuser/kdestroy -c $cache"
 ktutil="../../admin/ktutil"
+hxtool="../../lib/hx509/hxtool"
 
 KRB5_CONFIG="${objdir}/krb5.conf"
 export KRB5_CONFIG
@@ -162,8 +163,16 @@ ${kdestroy}
 #	${kdestroy}
 #done
 
-# If we support pkinit, lets try that
-if ${kinit} --help 2>&1 | grep "CA certificates" > /dev/null ; then
+rsa=yes
+if ${hxtool} info | grep 'rsa: hx509 null RSA' > /dev/null ; then
+    rsa=no
+fi
+if ${kinit} --help 2>&1 | grep "CA certificates" > /dev/null; then
+    pkinit=yes
+fi
+
+# If we support pkinit and have RSA, lets try that
+if test "$pkinit" = yes -a "$rsa" = yes ; then
 	echo "Trying pk-init (princiapl in certificate)"
 	base="${srcdir}/../../lib/hx509/data"
 	${kinit} -C FILE:${base}/pkinit.crt,${base}/pkinit.key bar@${R} || exitcode=1
@@ -174,7 +183,7 @@ if ${kinit} --help 2>&1 | grep "CA certificates" > /dev/null ; then
 	${kgetcred} ${server}@${R} || exitcode=1
 	${kdestroy}
 else
-	echo no pkinit
+	echo "no pkinit (pkinit: $pkinit, rsa: $rsa)"
 fi
 
 echo "killing kdc (${kdcpid})"
