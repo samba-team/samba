@@ -1,3 +1,11 @@
+2006-05-01  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kafs.3: Spelling, from Björn Sandell.
+	
+2006-04-11  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* afssys.c: use afs_ioctlnum, From Tomas Olsson <tol@it.su.se>
+	
 2006-04-10  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* afssys.c: Try harder to get the pioctl to work via the /proc or
