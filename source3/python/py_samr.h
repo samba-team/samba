@@ -27,7 +27,7 @@
 
 typedef struct {
 	PyObject_HEAD
-	struct cli_state *cli;
+	struct rpc_pipe_client *cli;
 	TALLOC_CTX *mem_ctx;
 	POLICY_HND connect_pol;
 } samr_connect_hnd_object;
@@ -36,7 +36,7 @@ typedef struct {
 
 typedef struct {
 	PyObject_HEAD
-	struct cli_state *cli;
+	struct rpc_pipe_client *cli;
 	TALLOC_CTX *mem_ctx;
 	POLICY_HND domain_pol;
 } samr_domain_hnd_object;
@@ -45,7 +45,7 @@ typedef struct {
 
 typedef struct {
 	PyObject_HEAD
-	struct cli_state *cli;
+	struct rpc_pipe_client *cli;
 	TALLOC_CTX *mem_ctx;
 	POLICY_HND user_pol;
 } samr_user_hnd_object;

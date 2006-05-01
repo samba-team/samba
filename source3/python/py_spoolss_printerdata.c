@@ -321,7 +321,7 @@ PyObject *spoolss_hnd_enumprinterdataex(PyObject *self, PyObject *args, PyObject
 		return NULL;
 
 	if (!(ctr = TALLOC_ZERO_P(hnd->mem_ctx, REGVAL_CTR))) {
-		PyErr_SetObject(spoolss_werror, py_werror_tuple(werror));
+		PyErr_SetString(spoolss_error, "talloc failed");
 		return NULL;
 	}
 
