@@ -47,6 +47,7 @@ typedef struct hx509_revoke_ctx_data *hx509_revoke_ctx;
 typedef struct hx509_query_data hx509_query;
 typedef void * hx509_cursor;
 typedef struct hx509_request_data *hx509_request;
+typedef struct hx509_error_data *hx509_error;
 
 
 typedef void (*hx509_vprint_func)(void *, const char *, va_list);
@@ -90,5 +91,9 @@ typedef enum {
     HX509_QUERY_OPTION_KU_DIGITALSIGNATURE = 3,
     HX509_QUERY_OPTION_END = 0xffff
 } hx509_query_option;
+
+enum hx509_error_flag {
+    HX509_ERROR_APPEND = 1,
+};
 
 #include <hx509-protos.h>

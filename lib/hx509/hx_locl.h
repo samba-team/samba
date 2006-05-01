@@ -49,6 +49,7 @@
 #include <base64.h>
 #include <hex.h>
 #include <roken.h>
+#include <com_err.h>
 
 #include <krb5-types.h>
 
@@ -154,5 +155,7 @@ struct hx509_context_data {
 #define HX509_CTX_VERIFY_MISSING_OK	1
     int ocsp_time_diff;
 #define HX509_DEFAULT_OCSP_TIME_DIFF	(5*60)
+    hx509_error error;
+    struct et_list *et_list;
 };
 
