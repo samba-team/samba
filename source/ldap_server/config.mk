@@ -11,6 +11,6 @@ OBJ_FILES = \
 		ldap_backend.o \
 		ldap_bind.o
 PUBLIC_DEPENDENCIES = \
-		LIBCLI_LDAP SAMDB process_model
+		LIBCLI_LDAP SAMDB process_model auth
 # End SUBSYSTEM SMB
 #######################

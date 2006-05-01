@@ -147,7 +147,7 @@ NTSTATUS smb_raw_ioctl_recv(struct smbcli_request *req,
 /* 
    send a raw ioctl - sync interface
 */
-NTSTATUS smb_raw_ioctl(struct smbcli_tree *tree, 
+_PUBLIC_ NTSTATUS smb_raw_ioctl(struct smbcli_tree *tree, 
 		TALLOC_CTX *mem_ctx, union smb_ioctl *parms)
 {
 	struct smbcli_request *req;

@@ -26,7 +26,7 @@
 #include "auth/auth.h"
 #include "lib/events/events.h"
 
-NTSTATUS authenticate_username_pw(TALLOC_CTX *mem_ctx, 
+_PUBLIC_ NTSTATUS authenticate_username_pw(TALLOC_CTX *mem_ctx, 
 				  const char *nt4_domain, 
 				  const char *nt4_username, 
 				  const char *password, 

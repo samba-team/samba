@@ -156,7 +156,8 @@ OBJ_FILES = \
 PUBLIC_DEPENDENCIES = \
 		SAMDB \
 		DCERPC_COMMON \
-		NDR_LSA
+		NDR_LSA \
+		LIBCLI_AUTH
 # End MODULE dcerpc_lsa
 ################################################
 

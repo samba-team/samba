@@ -21,7 +21,7 @@ OBJ_FILES = \
 		hdb-ldb.o \
 		pac-glue.o 
 PUBLIC_DEPENDENCIES = \
-		ldb auth_sam 
+		ldb auth_sam KERBEROS
 # End SUBSYSTEM KDC
 #######################
 
