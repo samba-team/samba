@@ -251,7 +251,7 @@ hx509_certs_find(hx509_context context,
 	    break;
 	if (c == NULL)
 	    break;
-x	if (_hx509_query_match_cert(context, q, c)) {
+	if (_hx509_query_match_cert(context, q, c)) {
 	    *r = c;
 	    break;
 	}
