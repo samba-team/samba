@@ -18,8 +18,7 @@ PRIVATE_PROTO_HEADER = smb_server_proto.h
 PUBLIC_DEPENDENCIES = \
 		LIBPACKET \
 		SMB_PROTOCOL \
-		SMB2_PROTOCOL \
-		service
+		SMB2_PROTOCOL
 # End SUBSYSTEM SMB
 #######################
 
