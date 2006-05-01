@@ -1,4 +1,38 @@
+2006-05-01  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* revoke.c: changed signature of _hx509_check_key_usage
+
+	* keyset.c: changed signature of _hx509_query_match_cert
+
+	* hx509.h: Add support for error strings.
+
+	* cms.c: changed signature of _hx509_check_key_usage
+
+	* Makefile.am: ibhx509_la_files += error.c
+
+	* ks_file.c: Sprinkel setting error strings.
+
+	* cert.c: Sprinkel setting error strings.
+
+	* hx_locl.h: Add support for error strings.
+
+	* error.c: Add string error handling functions.
+
+	* keyset.c (hx509_certs_init): pass the right error code back
+	
 2006-04-30  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* revoke.c: Revert previous patch.
+	(hx509_ocsp_verify): new function that returns the expiration of
+	certificate in ocsp data-blob
+
+	* cert.c: Reverse previous patch, lets do it another way.
+
+	* cert.c (hx509_revoke_verify): update usage
+
+	* revoke.c: Make compile.
+
+	* revoke.c: Add the expiration time the crl/ocsp info expire
 
 	* name.c: Add hx509_name_is_null_p
 
