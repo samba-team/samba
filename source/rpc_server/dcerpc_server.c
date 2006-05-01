@@ -149,7 +149,7 @@ static struct dcesrv_call_state *dcesrv_find_call(struct dcesrv_connection *dce_
 /*
   register an interface on an endpoint
 */
-NTSTATUS dcesrv_interface_register(struct dcesrv_context *dce_ctx,
+_PUBLIC_ NTSTATUS dcesrv_interface_register(struct dcesrv_context *dce_ctx,
 				   const char *ep_name,
 				   const struct dcesrv_interface *iface,
 				   const struct security_descriptor *sd)
@@ -256,7 +256,7 @@ NTSTATUS dcesrv_generic_session_key(struct dcesrv_connection *p,
 /*
   fetch the user session key - may be default (above) or the SMB session key
 */
-NTSTATUS dcesrv_fetch_session_key(struct dcesrv_connection *p,
+_PUBLIC_ NTSTATUS dcesrv_fetch_session_key(struct dcesrv_connection *p,
 				  DATA_BLOB *session_key)
 {
 	return p->auth_state.session_key(p, session_key);
@@ -334,7 +334,7 @@ NTSTATUS dcesrv_endpoint_connect(struct dcesrv_context *dce_ctx,
 /*
   search and connect to a dcerpc endpoint
 */
-NTSTATUS dcesrv_endpoint_search_connect(struct dcesrv_context *dce_ctx,
+_PUBLIC_ NTSTATUS dcesrv_endpoint_search_connect(struct dcesrv_context *dce_ctx,
 					TALLOC_CTX *mem_ctx,
 					const struct dcerpc_binding *ep_description,
 					struct auth_session_info *session_info,
@@ -803,7 +803,7 @@ static NTSTATUS dcesrv_request(struct dcesrv_call_state *call)
 	return dcesrv_reply(call);
 }
 
-NTSTATUS dcesrv_reply(struct dcesrv_call_state *call)
+_PUBLIC_ NTSTATUS dcesrv_reply(struct dcesrv_call_state *call)
 {
 	struct ndr_push *push;
 	NTSTATUS status;
@@ -1087,7 +1087,7 @@ NTSTATUS dcesrv_input_process(struct dcesrv_connection *dce_conn)
   provide some input to a dcerpc endpoint server. This passes data
   from a dcerpc client into the server
 */
-NTSTATUS dcesrv_input(struct dcesrv_connection *dce_conn, const DATA_BLOB *data)
+_PUBLIC_ NTSTATUS dcesrv_input(struct dcesrv_connection *dce_conn, const DATA_BLOB *data)
 {
 	NTSTATUS status;
 
@@ -1205,7 +1205,7 @@ static NTSTATUS dcesrv_init_context(TALLOC_CTX *mem_ctx, const char **endpoint_s
 /*
   initialise the dcerpc server context for ncacn_np based services
 */
-NTSTATUS dcesrv_init_ipc_context(TALLOC_CTX *mem_ctx, struct dcesrv_context **_dce_ctx)
+_PUBLIC_ NTSTATUS dcesrv_init_ipc_context(TALLOC_CTX *mem_ctx, struct dcesrv_context **_dce_ctx)
 {
 	NTSTATUS status;
 	struct dcesrv_context *dce_ctx;
@@ -1232,7 +1232,7 @@ static int num_ep_servers;
 
   The 'type' is used to specify whether this is for a disk, printer or IPC$ share
 */
-NTSTATUS dcerpc_register_ep_server(const void *_ep_server)
+_PUBLIC_ NTSTATUS dcerpc_register_ep_server(const void *_ep_server)
 {
 	const struct dcesrv_endpoint_server *ep_server = _ep_server;
 	

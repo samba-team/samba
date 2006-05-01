@@ -138,7 +138,7 @@ case "$host_os" in
 	*next2*) AC_DEFINE(NEXT2,1,[Whether the host os is NeXT v2])
 		AC_DEFINE(STAT_ST_BLOCKSIZE,512)
 		;;
-	*dgux*) AC_CHECK_PROG( ROFF, groff, [groff -etpsR -Tascii -man])
+	*dgux*) 
 		AC_DEFINE(STAT_ST_BLOCKSIZE,512)
 		;;
 	*sysv4*) AC_DEFINE(SYSV,1,[Whether this is a system V system])

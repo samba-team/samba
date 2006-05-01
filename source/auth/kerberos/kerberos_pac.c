@@ -312,7 +312,7 @@ static krb5_error_code check_pac_checksum(TALLOC_CTX *mem_ctx,
 	return status;
 }
 
- NTSTATUS kerberos_pac_logon_info(TALLOC_CTX *mem_ctx,
+_PUBLIC_  NTSTATUS kerberos_pac_logon_info(TALLOC_CTX *mem_ctx,
 				  struct PAC_LOGON_INFO **logon_info,
 				  DATA_BLOB blob,
 				  krb5_context context,

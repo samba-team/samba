@@ -392,7 +392,7 @@ sub Binary($$)
 #
 bin/$ctx->{BINARY}: \$($ctx->{TYPE}_$ctx->{NAME}_DEPEND_LIST) \$($ctx->{TYPE}_$ctx->{NAME}_FULL_OBJ_LIST) 
 	\@echo Linking \$\@
-	\@\$(CC) \$(LDFLAGS) -o \$\@ \$(LOCAL_LINK_FLAGS) \$(INSTALL_LINK_FLAGS) \\
+	\@\$(CC) \$(DYNEXP) \$(LDFLAGS) -o \$\@ \$(LOCAL_LINK_FLAGS) \$(INSTALL_LINK_FLAGS) \\
 		\$\($ctx->{TYPE}_$ctx->{NAME}_LINK_FLAGS) 
 
 __EOD__
@@ -402,7 +402,7 @@ __EOD__
 $self->output(<< "__EOD__"
 $installdir/$ctx->{BINARY}: \$($ctx->{TYPE}_$ctx->{NAME}_DEPEND_LIST) \$($ctx->{TYPE}_$ctx->{NAME}_FULL_OBJ_LIST) 
 	\@echo Linking \$\@
-	\@\$(CC) \$(LDFLAGS) -o \$\@ \$(INSTALL_LINK_FLAGS) \\
+	\@\$(CC) \$(DYNEXP) \$(LDFLAGS) -o \$\@ \$(INSTALL_LINK_FLAGS) \\
 		\$\($ctx->{TYPE}_$ctx->{NAME}_LINK_FLAGS) 
 
 __EOD__
