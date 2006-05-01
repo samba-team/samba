@@ -35,8 +35,10 @@ sub _prepare_build_h($)
 			 	 $key->{TYPE} ne "BINARY");
 		next unless defined($key->{INIT_FUNCTIONS});
 
+		my $name = $key->{NAME};
+		$name =~ s/-/_/g;
 		$DEFINE->{COMMENT} = "$key->{TYPE} $key->{NAME} INIT";
-		$DEFINE->{KEY} = "STATIC_$key->{NAME}_MODULES";
+		$DEFINE->{KEY} = "STATIC_$name\_MODULES";
 		$DEFINE->{VAL} = "{ \\\n";
 		foreach (@{$key->{INIT_FUNCTIONS}}) {
 			$DEFINE->{VAL} .= "\t$_, \\\n";
