@@ -13,7 +13,7 @@ struct svfs_private {
 };
 
 struct svfs_dir {
-	uint_t count;
+	unsigned int count;
 	char *unix_dir;
 	struct svfs_dirfile {
 		char *name;
@@ -30,6 +30,6 @@ struct svfs_file {
 struct search_state {
 	struct search_state *next, *prev;
 	uint16_t handle;
-	uint_t current_index;
+	unsigned int current_index;
 	struct svfs_dir *dir;
 };

@@ -55,6 +55,10 @@ my $section_types = {
 
 		"MANPAGE"		=> "string",
 		"PRIVATE_PROTO_HEADER"	=> "string",
+		"PUBLIC_PROTO_HEADER"	=> "string",
+
+
+		"PUBLIC_HEADERS"	=> "list",
 
 		"CFLAGS"		=> "string"
 		},

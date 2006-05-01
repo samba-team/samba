@@ -74,7 +74,7 @@ struct nbt_name_request {
 	/* shall we allow multiple replies? */
 	BOOL allow_multiple_replies;
 
-	uint_t num_replies;
+	unsigned int num_replies;
 	struct nbt_name_reply {
 		struct nbt_name_packet *packet;
 		struct socket_address *dest;
