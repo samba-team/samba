@@ -20,7 +20,7 @@
 
 #include "python/py_lsa.h"
 
-PyObject *new_lsa_policy_hnd_object(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+PyObject *new_lsa_policy_hnd_object(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 				    POLICY_HND *pol)
 {
 	lsa_policy_hnd_object *o;
@@ -90,14 +90,14 @@ static PyObject *lsa_open_policy(PyObject *self, PyObject *args,
 	}
 
 	ntstatus = rpccli_lsa_open_policy(
-		cli, mem_ctx, True, desired_access, &hnd);
+		cli->pipe_list, mem_ctx, True, desired_access, &hnd);
 
 	if (!NT_STATUS_IS_OK(ntstatus)) {
 		PyErr_SetObject(lsa_ntstatus, py_ntstatus_tuple(ntstatus));
 		goto done;
 	}
 
-	result = new_lsa_policy_hnd_object(cli, mem_ctx, &hnd);
+	result = new_lsa_policy_hnd_object(cli->pipe_list, mem_ctx, &hnd);
 
 done:
 	if (!result) {
