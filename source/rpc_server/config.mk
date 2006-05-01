@@ -218,8 +218,8 @@ OBJ_FILES = \
 PUBLIC_DEPENDENCIES = \
 		LIBCLI_AUTH \
 		LIBNDR \
-		dcerpc \
-		service
+		dcerpc
+		
 #
 # End SUBSYSTEM DCERPC
 ################################################
