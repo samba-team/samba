@@ -25,6 +25,51 @@
 #include <unistd.h>
 #include "system/readline.h"
 
+/*******************************************************************
+ Similar to sys_select() but catch EINTR and continue.
+ This is what sys_select() used to do in Samba.
+********************************************************************/
+
+int sys_select_intr(int maxfd, fd_set *readfds, fd_set *writefds, fd_set *errorfds, struct timeval *tval)
+{
+	int ret;
+	fd_set *readfds2, readfds_buf, *writefds2, writefds_buf, *errorfds2, errorfds_buf;
+	struct timeval tval2, *ptval;
+
+	readfds2 = (readfds ? &readfds_buf : NULL);
+	writefds2 = (writefds ? &writefds_buf : NULL);
+	errorfds2 = (errorfds ? &errorfds_buf : NULL);
+	ptval = (tval ? &tval2 : NULL);
+
+	do {
+		if (readfds)
+			readfds_buf = *readfds;
+		if (writefds)
+			writefds_buf = *writefds;
+		if (errorfds)
+			errorfds_buf = *errorfds;
+		if (tval)
+			tval2 = *tval;
+
+		/* We must use select and not sys_select here. If we use
+		   sys_select we'd lose the fact a signal occurred when sys_select
+		   read a byte from the pipe. Fix from Mark Weaver
+		   <mark-clist@npsl.co.uk>
+		*/
+
+		ret = select(maxfd, readfds2, writefds2, errorfds2, ptval);
+	} while (ret == -1 && errno == EINTR);
+
+	if (readfds)
+		*readfds = readfds_buf;
+	if (writefds)
+		*writefds = writefds_buf;
+	if (errorfds)
+		*errorfds = errorfds_buf;
+
+	return ret;
+}
+
 /****************************************************************************
  Display the prompt and wait for input. Call callback() regularly
 ****************************************************************************/
