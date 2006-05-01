@@ -56,6 +56,7 @@ libhx509_la_files = \
 	cms.c \
 	collector.c \
 	crypto.c \
+	error.c \
 	file.c \
 	hx509.h \
 	keyset.c \
