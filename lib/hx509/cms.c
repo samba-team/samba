@@ -322,7 +322,7 @@ hx509_cms_envelope_1(hx509_context context,
     if (encryption_type == NULL)
 	encryption_type = oid_id_aes_256_cbc();
 
-    ret = _hx509_check_key_usage(cert, 1 << 2, TRUE);
+    ret = _hx509_check_key_usage(context, cert, 1 << 2, TRUE);
     if (ret)
 	goto out;
 

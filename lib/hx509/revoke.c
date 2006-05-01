@@ -402,7 +402,7 @@ verify_crl(hx509_context context,
 	if (ret)
 	    goto out;
 
-	ret = _hx509_check_key_usage(signer, 1 << 6, TRUE); /* crl */
+	ret = _hx509_check_key_usage(context, signer, 1 << 6, TRUE); /* crl */
 	if (ret != 0)
 	    goto out;
     }
