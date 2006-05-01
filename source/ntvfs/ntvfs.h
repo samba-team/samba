@@ -223,7 +223,7 @@ struct ntvfs_context {
 struct ntvfs_async_state {
 	struct ntvfs_async_state *prev, *next;
 	/* the async handling infos */
-	uint_t state;
+	unsigned int state;
 	void *private_data;
 	void (*send_fn)(struct ntvfs_request *);
 	NTSTATUS status;

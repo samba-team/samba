@@ -49,7 +49,7 @@ struct parm_struct {
 	void *ptr;
 	BOOL (*special)(const char *, char **);
 	const struct enum_list *enum_list;
-	uint_t flags;
+	unsigned int flags;
 	union {
 		BOOL bvalue;
 		int ivalue;
