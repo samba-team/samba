@@ -371,7 +371,7 @@ static void usage(void)
 	exit(1);
 }
 
- int main(int argc, const char **argv)
+int main(int argc, const char **argv)
 {
 	TALLOC_CTX *mem_ctx = talloc_new(NULL);
 	struct ldb_context *ldb;

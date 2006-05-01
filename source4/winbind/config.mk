@@ -24,7 +24,7 @@ OBJ_FILES = \
 		wb_cmd_list_trustdom.o \
 		wb_pam_auth.o
 PUBLIC_DEPENDENCIES = WB_HELPER RPC_NDR_LSA RPC_NDR_SAMR process_model \
-					  PAM_ERRORS
+					  PAM_ERRORS service
 # End SUBSYSTEM WINBIND
 #######################
 
