@@ -39,7 +39,7 @@ TDB_CONTEXT *elog_init_tdb( char *tdbfilename )
 		tdbfilename));
 
 	tdb = tdb_open_log( tdbfilename, 0, TDB_DEFAULT, 
-		O_RDWR|O_CREAT|O_TRUNC, 0600 );
+		O_RDWR|O_CREAT|O_TRUNC, 0660 );
 
 	if ( !tdb ) {
 		DEBUG( 0, ( "Can't open tdb for [%s]\n", tdbfilename ) );
