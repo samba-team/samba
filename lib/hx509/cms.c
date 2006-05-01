@@ -932,10 +932,10 @@ hx509_cms_create_signed_1(hx509_context context,
 				    &path);
 	if (ret) {
 	    _hx509_path_free(&path);
-	    ret = _hx509_path_append(&path, cert);
+	    ret = _hx509_path_append(context, &path, cert);
 	}
     } else
-	ret = _hx509_path_append(&path, cert);
+	ret = _hx509_path_append(context, &path, cert);
     if (ret)
 	goto out;
 
