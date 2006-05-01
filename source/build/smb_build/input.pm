@@ -71,6 +71,7 @@ sub check_module($$$)
 
 	if ($mod->{OUTPUT_TYPE} eq "SHARED_LIBRARY") {
 		$mod->{INSTALLDIR} = "MODULESDIR/$mod->{SUBSYSTEM}";
+		push (@{$mod->{PRIVATE_DEPENDENCIES}}, $mod->{SUBSYSTEM});
 	} else { 
 		push (@{$INPUT->{$mod->{SUBSYSTEM}}{INIT_FUNCTIONS}}, $mod->{INIT_FUNCTION}) if defined($mod->{INIT_FUNCTION});
 	}

@@ -37,7 +37,7 @@ INIT_FUNCTION = dcerpc_server_rpcecho_init
 SUBSYSTEM = dcerpc_server
 OBJ_FILES = \
 		echo/rpc_echo.o
-PUBLIC_DEPENDENCIES = NDR_ECHO
+PUBLIC_DEPENDENCIES = NDR_ECHO 
 # End MODULE dcerpc_rpcecho
 ################################################
 
@@ -218,7 +218,8 @@ OBJ_FILES = \
 PUBLIC_DEPENDENCIES = \
 		LIBCLI_AUTH \
 		LIBNDR \
-		dcerpc
+		dcerpc \
+		service
 #
 # End SUBSYSTEM DCERPC
 ################################################

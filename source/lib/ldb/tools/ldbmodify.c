@@ -84,7 +84,7 @@ static int process_file(struct ldb_context *ldb, FILE *f)
 	return count;
 }
 
- int main(int argc, const char **argv)
+int main(int argc, const char **argv)
 {
 	struct ldb_context *ldb;
 	int count=0;
