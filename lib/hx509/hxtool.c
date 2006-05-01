@@ -488,7 +488,7 @@ pcert_print(struct print_options *opt, int argc, char **argv)
 	int ret;
 	ret = hx509_certs_init(context, argv[0], 0, lock, &certs);
 	if (ret)
-	    errx(1, "hx509_certs_init: %d", ret);
+	    hx509_err(context, 1, ret, "hx509_certs_init");
 	hx509_certs_iter(context, certs, print_f, &s);
 	hx509_certs_free(&certs);
 	argv++;
