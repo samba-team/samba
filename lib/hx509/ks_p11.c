@@ -506,7 +506,8 @@ collect_cert(struct p11_module *p, struct p11_slot *slot,
     if (ret)
 	return ret;
 
-    _hx509_set_cert_attribute(cert,
+    _hx509_set_cert_attribute(ctx->context,
+			      cert,
 			      oid_id_pkcs_9_at_localKeyId(),
 			      &localKeyId);
 
