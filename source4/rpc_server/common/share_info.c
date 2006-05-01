@@ -35,7 +35,7 @@ uint32_t dcesrv_common_get_count_of_shares(TALLOC_CTX *mem_ctx, struct dcesrv_co
 	return lp_numservices();
 }
 
-const char *dcesrv_common_get_share_name(TALLOC_CTX *mem_ctx, struct dcesrv_context *dce_ctx, int snum)
+_PUBLIC_ const char *dcesrv_common_get_share_name(TALLOC_CTX *mem_ctx, struct dcesrv_context *dce_ctx, int snum)
 {
 	return talloc_strdup(mem_ctx, lp_servicename(snum));
 }
