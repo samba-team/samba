@@ -320,7 +320,7 @@ OBJ_FILES = \
 	../heimdal/lib/roken/freehostent.o \
 	../heimdal/lib/roken/copyhostent.o \
 	../heimdal/lib/roken/hostent_find_fqdn.o
-PRIVATE_DEPENDENCIES = SOCKET
+PRIVATE_DEPENDENCIES = EXT_SOCKET
 
 #######################
 # Start SUBSYSTEM HEIMDAL_ROKEN
