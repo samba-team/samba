@@ -1,5 +1,22 @@
 2006-05-01  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* test_name.c: renamed one error code
+
+	* name.c: renamed one error code
+
+	* ks_p11.c: _hx509_set_cert_attribute changed signature
+
+	* hxtool.c (pcert_print): use hx509_err so I can test it
+
+	* error.c (hx509_set_error_stringv): clear errors on malloc
+	failure
+
+	* hx509_err.et: Add some more errors
+
+	* cert.c: Sprinkle setting error strings.
+
+	* cms.c: _hx509_path_append changed signature.
+
 	* revoke.c: changed signature of _hx509_check_key_usage
 
 	* keyset.c: changed signature of _hx509_query_match_cert
