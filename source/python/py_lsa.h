@@ -27,7 +27,7 @@
 
 typedef struct {
 	PyObject_HEAD
-	struct cli_state *cli;
+	struct rpc_pipe_client *cli;
 	TALLOC_CTX *mem_ctx;
 	POLICY_HND pol;
 } lsa_policy_hnd_object;

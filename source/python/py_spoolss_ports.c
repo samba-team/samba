@@ -68,7 +68,7 @@ PyObject *spoolss_enumports(PyObject *self, PyObject *args, PyObject *kw)
 	/* Call rpc function */
 	
 	werror = rpccli_spoolss_enum_ports( 
-		cli, mem_ctx, level, &num_ports, &ctr);
+		cli->pipe_list, mem_ctx, level, &num_ports, &ctr);
 
 	if (!W_ERROR_IS_OK(werror)) {
 		PyErr_SetObject(spoolss_werror, py_werror_tuple(werror));

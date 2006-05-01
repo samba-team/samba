@@ -70,7 +70,7 @@ PyObject *spoolss_enumprinterdrivers(PyObject *self, PyObject *args,
 	}	
 
 	werror = rpccli_spoolss_enumprinterdrivers(
-		cli, mem_ctx, level, arch,
+		cli->pipe_list, mem_ctx, level, arch,
 		&num_drivers, &ctr);
 
 	if (!W_ERROR_IS_OK(werror)) {
@@ -263,7 +263,7 @@ PyObject *spoolss_getprinterdriverdir(PyObject *self, PyObject *args,
 	}	
 
 	werror = rpccli_spoolss_getprinterdriverdir(
-		cli, mem_ctx, level, arch, &ctr);
+		cli->pipe_list, mem_ctx, level, arch, &ctr);
 
 	if (!W_ERROR_IS_OK(werror)) {
 		PyErr_SetObject(spoolss_werror, py_werror_tuple(werror));
@@ -361,7 +361,7 @@ PyObject *spoolss_addprinterdriver(PyObject *self, PyObject *args,
 		goto done;
 	}
 
-	werror = rpccli_spoolss_addprinterdriver(cli, mem_ctx, level, &ctr);
+	werror = rpccli_spoolss_addprinterdriver(cli->pipe_list, mem_ctx, level, &ctr);
 
 	if (!W_ERROR_IS_OK(werror)) {
 		PyErr_SetObject(spoolss_werror, py_werror_tuple(werror));

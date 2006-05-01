@@ -569,7 +569,7 @@ static PyObject *samr_connect(PyObject *self, PyObject *args, PyObject *kw)
 		goto done;
 	}
 
-	ntstatus = rpccli_samr_connect(cli, mem_ctx, desired_access, &hnd);
+	ntstatus = rpccli_samr_connect(cli->pipe_list, mem_ctx, desired_access, &hnd);
 
 	if (!NT_STATUS_IS_OK(ntstatus)) {
 		cli_shutdown(cli);
