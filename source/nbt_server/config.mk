@@ -68,6 +68,6 @@ OBJ_FILES = \
 		irpc.o
 PRIVATE_PROTO_HEADER = nbt_server_proto.h
 PUBLIC_DEPENDENCIES = \
-		LIBCLI_NBT NBTD_WINS NBTD_DGRAM process_model
+		LIBCLI_NBT NBTD_WINS NBTD_DGRAM process_model service
 # End SUBSYSTEM NBTD
 #######################

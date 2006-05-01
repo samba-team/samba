@@ -8,7 +8,7 @@ SUBSYSTEM = ntptr
 OBJ_FILES = \
 		simple_ldb/ntptr_simple_ldb.o
 PUBLIC_DEPENDENCIES = \
-		ldb
+		ldb NDR_SPOOLSS
 # End MODULE ntptr_simple_ldb
 ################################################
 

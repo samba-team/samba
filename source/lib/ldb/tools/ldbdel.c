@@ -73,7 +73,7 @@ static void usage(void)
 	exit(1);
 }
 
- int main(int argc, const char **argv)
+int main(int argc, const char **argv)
 {
 	struct ldb_context *ldb;
 	int ret, i;
