@@ -1,4 +1,4 @@
-.\" Copyright (c) 1998 - 1999, 2001 - 2003 Kungliga Tekniska Högskolan
+.\" Copyright (c) 1998 - 2006 Kungliga Tekniska Högskolan
 .\" (Royal Institute of Technology, Stockholm, Sweden). 
 .\" All rights reserved. 
 .\"
@@ -31,7 +31,7 @@
 .\" 
 .\"	$Id$
 .\"
-.Dd Mar 17, 2003
+.Dd May  1, 2006
 .Os HEIMDAL
 .Dt KAFS 3
 .Sh NAME
@@ -45,7 +45,7 @@
 .Nm kafs_settoken_rxkad ,
 .Nm kafs_settoken ,
 .Nm krb_afslog ,
-.Nm krb_afslog_uid
+.Nm krb_afslog_uid ,
 .Nm kafs_settoken5 ,
 .Nm krb5_afslog ,
 .Nm krb5_afslog_uid
@@ -271,15 +271,14 @@ If any of these functions (apart from
 is called without AFS being present in the kernel, the process will
 usually (depending on the operating system) receive a SIGSYS signal.
 .Sh SEE ALSO
+.Xr krb5_appdefault 3 ,
+.Xr krb5.conf 5
 .Rs
 .%A Transarc Corporation
 .%J AFS-3 Programmer's Reference
 .%T File Server/Cache Manager Interface
 .%D 1991
 .Re
-.Pp
-.Xr krb5_appdefaults 3 ,
-.Xr krb5.conf 5
 .Sh BUGS
 .Ev AFS_SYSCALL
 has no effect under AIX.
