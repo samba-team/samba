@@ -423,7 +423,7 @@ hx509_parse_name(const char *str, hx509_name *name)
     return 0;
 out:
     hx509_name_free(&n);
-    return HX509_NAME_MALFORMATED;
+    return HX509_NAME_MALFORMED;
 }
 
 int

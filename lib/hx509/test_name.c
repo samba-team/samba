@@ -62,7 +62,7 @@ test_name_fail(const char *name)
 {
     hx509_name n;
 
-    if (hx509_parse_name(name, &n) == HX509_NAME_MALFORMATED)
+    if (hx509_parse_name(name, &n) == HX509_NAME_MALFORMED)
 	return 0;
     hx509_name_free(&n);
     return 1;
