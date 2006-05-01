@@ -442,7 +442,7 @@ sub PkgConfig($$)
 		foreach (@{$ctx->{PUBLIC_DEPENDENCIES}}) {
 #			next unless ($self-> ) {
 
-			$pubs .= "$_ ";
+#FIXME			$pubs .= "$_ ";
 		}
 	}
 
@@ -450,7 +450,7 @@ sub PkgConfig($$)
 		foreach (@{$ctx->{PRIVATE_DEPENDENCIES}}) {
 #			next unless ($self-> ) {
 
-			$privs .= "$_ ";
+#FIXME			$privs .= "$_ ";
 		}
 	}
 
