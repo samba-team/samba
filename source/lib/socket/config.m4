@@ -37,6 +37,23 @@ fi
 
 SMB_EXT_LIB(EXT_SOCKET,[${SOCKET_LIBS}],[${SOCKET_CFLAGS}],[${SOCKET_CPPFLAGS}],[${SOCKET_LDFLAGS}])
 
+AC_CHECK_FUNCS(gethostbyname)
+if test x"$ac_cv_func_gethostbyname" = x"no"; then
+    AC_CHECK_LIB_EXT(nsl_s, NSL_LIBS, gethostbyname)
+    AC_CHECK_LIB_EXT(nsl, NSl_LIBS, gethostbyname)
+    AC_CHECK_LIB_EXT(socket, NSL_LIBS, gethostbyname)
+    SMB_ENABLE(EXT_NSL,YES)
+    dnl We can't just call AC_CHECK_FUNCS(gethostbyname) here, because the value
+    dnl has been cached.
+    if test x"$ac_cv_lib_ext_nsl_s_gethostbyname" != x"yes" &&
+       test x"$ac_cv_lib_ext_nsl_gethostbyname" != x"yes" &&
+       test x"$ac_cv_lib_ext_socket_gethostbyname" != x"yes"; then
+		AC_MSG_ERROR([no gethostbyname() function available!])
+    fi
+fi
+
+SMB_EXT_LIB(EXT_NSL,[${NSL_LIBS}],[],[],[])
+
 ############################################
 # check for unix domain sockets
 AC_CACHE_CHECK([for unix domain sockets],samba_cv_unixsocket, [

@@ -25,7 +25,7 @@ PRIVATE_PROTO_HEADER = netif/proto.h
 OBJ_FILES = \
 		netif/interface.o \
 		netif/netif.o
-PRIVATE_DEPENDENCIES = LIBSAMBA-UTIL
+PRIVATE_DEPENDENCIES = LIBSAMBA-UTIL EXT_NSL
 # End SUBSYSTEM LIBNETIF
 ##############################
 
