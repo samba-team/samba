@@ -106,6 +106,8 @@ hx509_context_init(hx509_context *context)
 
     (*context)->ocsp_time_diff = HX509_DEFAULT_OCSP_TIME_DIFF;
 
+    initialize_hx_error_table_r(&(*context)->et_list);
+
     return 0;
 }
 
@@ -126,6 +128,7 @@ hx509_context_free(hx509_context *context)
 	(*context)->ks_ops = NULL;
     }
     (*context)->ks_num_ops = 0;
+    free_error_table ((*context)->et_list);
     free(*context);
     *context = NULL;
 }
@@ -489,7 +492,8 @@ hx509_cert_find_subjectAltName_otherName(hx509_cert cert,
 
 
 static int
-check_key_usage(const Certificate *cert, unsigned flags, int req_present)
+check_key_usage(hx509_context context, const Certificate *cert, 
+		unsigned flags, int req_present)
 {
     const Extension *e;
     KeyUsage ku;
@@ -502,8 +506,12 @@ check_key_usage(const Certificate *cert, unsigned flags, int req_present)
 
     e = find_extension(cert, oid_id_x509_ce_keyUsage(), &i);
     if (e == NULL) {
-	if (req_present)
+	if (req_present) {
+	    hx509_set_error_string(context, 0, HX509_KU_CERT_MISSING,
+				   "Required extension key "
+				   "usage missing from certifiate");
 	    return HX509_KU_CERT_MISSING;
+	}
 	return 0;
     }
     
@@ -511,21 +519,26 @@ check_key_usage(const Certificate *cert, unsigned flags, int req_present)
     if (ret)
 	return ret;
     ku_flags = KeyUsage2int(ku);
-    if ((ku_flags & flags) != flags)
+    if ((ku_flags & flags) != flags) {
+	hx509_set_error_string(context, 0, HX509_KU_CERT_MISSING,
+			       "Key usage missing from certifiate");
 	return HX509_KU_CERT_MISSING;
+    }
     return 0;
 }
 
 int
-_hx509_check_key_usage(hx509_cert cert, unsigned flags, int req_present)
+_hx509_check_key_usage(hx509_context context, hx509_cert cert, 
+		       unsigned flags, int req_present)
 {
-    return check_key_usage(_hx509_get_cert(cert), flags, req_present);
+    return check_key_usage(context, _hx509_get_cert(cert), flags, req_present);
 }
 
 enum certtype { PROXY_CERT, EE_CERT, CA_CERT };
 
 static int
-check_basic_constraints(const Certificate *cert, enum certtype type, int depth)
+check_basic_constraints(hx509_context context, const Certificate *cert, 
+			enum certtype type, int depth)
 {
     BasicConstraints bc;
     const Extension *e;
@@ -541,8 +554,16 @@ check_basic_constraints(const Certificate *cert, enum certtype type, int depth)
 	case PROXY_CERT:
 	case EE_CERT:
 	    return 0;
-	case CA_CERT:
+	case CA_CERT: {
+	    char *name;
+	    ret = _hx509_unparse_Name(&cert->tbsCertificate.subject, &name);
+	    assert(ret == 0);
+	    hx509_set_error_string(context, 0, HX509_EXTENSION_NOT_FOUND,
+				   "basicConstraints missing from "
+				   "CA certifiacte %s", name);
+	    free(name);
 	    return HX509_EXTENSION_NOT_FOUND;
+	}
 	}
     }
     
@@ -1306,7 +1327,7 @@ hx509_verify_path(hx509_context context,
 
 	switch (type) {
 	case CA_CERT:
-	    ret = check_key_usage(c, 1 << 5, TRUE); /* XXX make constants */
+	    ret = check_key_usage(context, c, 1 << 5, TRUE); /* XXX make constants */
 	    if (ret)
 		goto out;
 	    break;
@@ -1409,7 +1430,7 @@ hx509_verify_path(hx509_context context,
 	    break;
 	}
 
-	ret = check_basic_constraints(c, type, i - proxy_cert_depth);
+	ret = check_basic_constraints(context, c, type, i - proxy_cert_depth);
 	if (ret)
 	    goto out;
 
@@ -1728,7 +1749,7 @@ hx509_query_free(hx509_context context, hx509_query *q)
 }
 
 int
-_hx509_query_match_cert(const hx509_query *q, hx509_cert cert)
+_hx509_query_match_cert(hx509_context context, const hx509_query *q, hx509_cert cert)
 {
     Certificate *c = _hx509_get_cert(cert);
 
@@ -1787,7 +1808,7 @@ _hx509_query_match_cert(const hx509_query *q, hx509_cert cert)
 	    ku |= (1 << 5);
 	if (q->match & HX509_QUERY_KU_CRLSIGN)
 	    ku |= (1 << 6);
-	if (ku && check_key_usage(c, ku, TRUE))
+	if (ku && check_key_usage(context, c, ku, TRUE))
 	    return 0;
     }
     if ((q->match & HX509_QUERY_ANCHOR))

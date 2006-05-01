@@ -108,8 +108,10 @@ parse_certificate(hx509_context context, struct hx509_collector *c,
     int ret;
 
     ret = decode_Certificate(data, len, &t, &size);
-    if (ret)
+    if (ret) {
+	hx509_clear_error_string(context);
 	return ret;
+    }
 
     ret = hx509_cert_init(context, &t, &cert);
     free_Certificate(&t);
@@ -144,26 +146,43 @@ parse_rsa_private_key(hx509_context context, struct hx509_collector *c,
 	hx509_lock lock;
 
 	lock = _hx509_collector_get_lock(c);
-	if (lock == NULL)
+	if (lock == NULL) {
+	    hx509_set_error_string(context, 0, EINVAL,
+				   "Failed to get password for "
+				   "password protected file");
 	    return EINVAL;
-
+	}
 	pw = _hx509_lock_get_passwords(lock);
-	if (pw == NULL || pw->len < 1)
+	if (pw == NULL || pw->len < 1) {
+	    hx509_set_error_string(context, 0, EINVAL,
+				   "No passwords when decoding a "
+				   "password protected file");
 	    return EINVAL;
+	}
 
 	password = pw->val[0];
 	passwordlen = strlen(password);
 
-	if (strcmp(enc, "4,ENCRYPTED") != 0)
+	if (strcmp(enc, "4,ENCRYPTED") != 0) {
+	    hx509_set_error_string(context, 0, EINVAL,
+				   "RSA key encrypted in unknown method %s",
+				   enc);
+	    hx509_clear_error_string(context);
 	    return EINVAL;
+	}
 
 	dek = find_header(headers, "DEK-Info");
-	if (dek == NULL)
+	if (dek == NULL) {
+	    hx509_set_error_string(context, 0, EINVAL,
+				   "Encrypted RSA missing DEK-Info");
 	    return EINVAL;
+	}
 
 	type = strdup(dek);
-	if (type == NULL)
+	if (type == NULL) {
+	    hx509_clear_error_string(context);
 	    return ENOMEM;
+	}
 
 	iv = strchr(type, ',');
 	if (iv)
@@ -172,6 +191,7 @@ parse_rsa_private_key(hx509_context context, struct hx509_collector *c,
 	size = strlen(iv);
 	ivdata = malloc(size);
 	if (ivdata == NULL) {
+	    hx509_clear_error_string(context);
 	    free(type);
 	    return ENOMEM;
 	}
@@ -180,6 +200,10 @@ parse_rsa_private_key(hx509_context context, struct hx509_collector *c,
 	if (cipher == NULL) {
 	    free(type);
 	    free(ivdata);
+	    hx509_set_error_string(context, 0, EINVAL,
+				   "RSA key encrypted with "
+				   "unsupported cipher: %s",
+				   type);
 	    return EINVAL;
 	}
 
@@ -189,6 +213,7 @@ parse_rsa_private_key(hx509_context context, struct hx509_collector *c,
 	if (ssize < 0 || ssize < PKCS5_SALT_LEN || ssize < EVP_CIPHER_iv_length(cipher)) {
 	    free(ivdata);
 	    free(type);
+	    hx509_clear_error_string(context);
 	    return EINVAL;
 	}
 	
@@ -196,6 +221,7 @@ parse_rsa_private_key(hx509_context context, struct hx509_collector *c,
 	if (key == NULL) {
 	    free(type);
 	    free(ivdata);
+	    hx509_clear_error_string(context);
 	    return ENOMEM;
 	}
 
@@ -206,6 +232,8 @@ parse_rsa_private_key(hx509_context context, struct hx509_collector *c,
 	if (ret <= 0) {
 	    free(key);
 	    free(ivdata);
+	    hx509_clear_error_string(context);
+
 	    return EINVAL;
 	}
 
@@ -269,9 +297,12 @@ parse_pem_file(hx509_context context,
     where = BEFORE;
     *found_data = 0;
 
-    if ((f = fopen(fn, "r")) == NULL)
+    if ((f = fopen(fn, "r")) == NULL) {
+	hx509_set_error_string(context, 0, ENOENT, 
+			       "Failed to open PEM file \"%s\": %s", 
+			       fn, strerror(errno));
 	return ENOENT;
-
+    }
     ret = 0;
 
     while (fgets(buf, sizeof(buf), f) != NULL) {
@@ -385,7 +416,7 @@ file_init(hx509_context context,
 {
     char *files = NULL, *p, *pnext;
     int ret;
-    struct ks_file *f;
+    struct ks_file *f = NULL;
     struct hx509_collector *c;
 
     *data = NULL;
@@ -399,12 +430,14 @@ file_init(hx509_context context,
 
     f = calloc(1, sizeof(*f));
     if (f == NULL) {
+	hx509_clear_error_string(context);
 	ret = ENOMEM;
 	goto out;
     }
 
     files = strdup(residue);
     if (files == NULL) {
+	hx509_clear_error_string(context);
 	ret = ENOMEM;
 	goto out;
     }
@@ -426,8 +459,10 @@ file_init(hx509_context context,
 	    int ret;
 
 	    ret = _hx509_map_file(p, &data, &length, NULL);
-	    if (ret)
+	    if (ret) {
+		hx509_clear_error_string(context);
 		goto out;
+	    }
 
 	    ret = parse_certificate(context, c, NULL, data, length);
 	    _hx509_unmap_file(data, length);
@@ -437,11 +472,11 @@ file_init(hx509_context context,
     }
 
     ret = _hx509_collector_collect(context, c, &f->certs);
+out:
     if (ret == 0)
 	*data = f;
     else
 	free(f);
-out:
     free(files);
 
     _hx509_collector_free(c);
