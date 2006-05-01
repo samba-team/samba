@@ -25,7 +25,6 @@ OBJ_FILES = xfile.o \
 		substitute.o \
 		fsusage.o \
 		ms_fnmatch.o \
-		select.o \
 		mutex.o \
 		idtree.o \
 		module.o
