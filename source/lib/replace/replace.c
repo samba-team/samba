@@ -200,6 +200,9 @@ Corrections by richard.kettlewell@kewill.com
 	errno = ENOSYS;
 	return -1;
 #else /* HAVE_SETGROUPS */
+
+#include <grp.h>
+
 	gid_t *grouplst = NULL;
 	int max_gr = groups_max();
 	int ret;
