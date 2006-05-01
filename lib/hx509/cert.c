@@ -684,18 +684,19 @@ subject_null_p(const Certificate *c)
 }
 
 
-static hx509_cert
+static int
 find_parent(hx509_context context,
 	    hx509_certs trust_anchors,
 	    hx509_path *path,
 	    hx509_certs pool, 
-	    hx509_cert current)
+	    hx509_cert current,
+	    hx509_cert *parent)
 {
     AuthorityKeyIdentifier ai;
     hx509_query q;
-    hx509_cert c;
     int ret;
 
+    *parent = NULL;
     memset(&ai, 0, sizeof(ai));
     
     _hx509_query_clear(&q);
@@ -705,12 +706,18 @@ find_parent(hx509_context context,
 	q.subject = _hx509_get_cert(current);
     } else {
 	ret = find_extension_auth_key_id(current->data, &ai);
-	if (ret)
-	    return NULL;
+	if (ret) {
+	    hx509_set_error_string(context, 0, HX509_CERTIFICATE_MALFORMED,
+				   "Subjectless certificate missing AuthKeyID");
+	    return HX509_CERTIFICATE_MALFORMED;
+	}
 
 	if (ai.keyIdentifier == NULL) {
 	    free_AuthorityKeyIdentifier(&ai);
-	    return NULL;
+	    hx509_set_error_string(context, 0, HX509_CERTIFICATE_MALFORMED,
+				   "Subjectless certificate missing keyIdentifier "
+				   "inside AuthKeyID");
+	    return HX509_CERTIFICATE_MALFORMED;
 	}
 
 	q.subject_id = ai.keyIdentifier;
@@ -721,10 +728,10 @@ find_parent(hx509_context context,
     q.match |= HX509_QUERY_NO_MATCH_PATH;
 
     if (pool) {
-	ret = hx509_certs_find(context, pool, &q, &c);
+	ret = hx509_certs_find(context, pool, &q, parent);
 	if (ret == 0) {
 	    free_AuthorityKeyIdentifier(&ai);
-	    return c;
+	    return 0;
 	}
     }
 
@@ -733,14 +740,37 @@ find_parent(hx509_context context,
      * KeyUsage.KeyCertSign
      */
     q.match |= HX509_QUERY_KU_KEYCERTSIGN;
-    ret = hx509_certs_find(context, trust_anchors, &q, &c);
+    ret = hx509_certs_find(context, trust_anchors, &q, parent);
     if (ret == 0) {
 	free_AuthorityKeyIdentifier(&ai);
-	return c;
+	return ret;
     }
 
     free_AuthorityKeyIdentifier(&ai);
-    return NULL;
+
+    {
+	hx509_name name;
+	char *str;
+	int ret;
+
+	ret = hx509_cert_get_subject(current, &name);
+	if (ret) {
+	    hx509_clear_error_string(context);
+	    return HX509_ISSUER_NOT_FOUND;
+	}
+	ret = hx509_name_to_string(name, &str);
+	hx509_name_free(&name);
+	if (ret) {
+	    hx509_clear_error_string(context);
+	    return HX509_ISSUER_NOT_FOUND;
+	}
+	
+	hx509_set_error_string(context, 0, HX509_ISSUER_NOT_FOUND,
+			       "Failed to find issuer for"
+			       "certificate with subject: %s", str);
+	free(str);
+    }
+    return HX509_ISSUER_NOT_FOUND;
 }
 
 /*
@@ -748,7 +778,7 @@ find_parent(hx509_context context,
  */
 
 static int
-is_proxy_cert(const Certificate *cert, ProxyCertInfo *rinfo)
+is_proxy_cert(hx509_context context, const Certificate *cert, ProxyCertInfo *rinfo)
 {
     ProxyCertInfo info;
     const Extension *e;
@@ -759,17 +789,22 @@ is_proxy_cert(const Certificate *cert, ProxyCertInfo *rinfo)
 	memset(rinfo, 0, sizeof(*rinfo));
 
     e = find_extension(cert, oid_id_pe_proxyCertInfo(), &i);
-    if (e == NULL)
+    if (e == NULL) {
+	hx509_clear_error_string(context);
 	return HX509_EXTENSION_NOT_FOUND;
+    }
 
     ret = decode_ProxyCertInfo(e->extnValue.data, 
 			       e->extnValue.length, 
 			       &info,
 			       &size);
-    if (ret)
+    if (ret) {
+	hx509_clear_error_string(context);
 	return ret;
+    }
     if (size != e->extnValue.length) {
 	free_ProxyCertInfo(&info);
+	hx509_clear_error_string(context);
 	return HX509_EXTRA_DATA_AFTER_STRUCTURE; 
     }
     if (rinfo)
@@ -784,12 +819,14 @@ is_proxy_cert(const Certificate *cert, ProxyCertInfo *rinfo)
  */
 
 int
-_hx509_path_append(hx509_path *path, hx509_cert cert)
+_hx509_path_append(hx509_context context, hx509_path *path, hx509_cert cert)
 {
     hx509_cert *val;
     val = realloc(path->val, (path->len + 1) * sizeof(path->val[0]));
-    if (val == NULL)
+    if (val == NULL) {
+	hx509_set_error_string(context, 0, ENOMEM, "out of memory");
 	return ENOMEM;
+    }
 
     path->val = val;
     path->val[path->len] = hx509_cert_ref(cert);
@@ -836,7 +873,7 @@ _hx509_calculate_path(hx509_context context,
     if (max_depth == 0)
 	max_depth = HX509_VERIFY_MAX_DEPTH;
 
-    ret = _hx509_path_append(path, cert);
+    ret = _hx509_path_append(context, path, cert);
     if (ret)
 	return ret;
 
@@ -844,18 +881,21 @@ _hx509_calculate_path(hx509_context context,
 
     while (!certificate_is_anchor(context, trust_anchors, current)) {
 
-	parent = find_parent(context, trust_anchors, path, pool, current);
+	ret = find_parent(context, trust_anchors, path, pool, current, &parent);
 	hx509_cert_free(current);
-	if (parent == NULL)
-	    return HX509_ISSUER_NOT_FOUND;
+	if (ret)
+	    return ret;
 
-	ret = _hx509_path_append(path, parent);
+	ret = _hx509_path_append(context, path, parent);
 	if (ret)
 	    return ret;
 	current = parent;
 
-	if (path->len > max_depth)
+	if (path->len > max_depth) {
+	    hx509_set_error_string(context, 0, HX509_PATH_TOO_LONG,
+				   "Path too long while bulding certificate chain");
 	    return HX509_PATH_TOO_LONG;
+	}
     }
     hx509_cert_free(current);
     return 0;
@@ -922,7 +962,7 @@ hx509_cert_get_base_subject(hx509_context context, hx509_cert c, hx509_name *nam
 {
     if (c->basename)
 	return hx509_name_copy(context, c->basename, name);
-    if (is_proxy_cert(c->data, NULL) == 0)
+    if (is_proxy_cert(context, c->data, NULL) == 0)
 	return EINVAL; /* XXX */
     return _hx509_name_from_Name(&c->data->tbsCertificate.subject, name);
 }
@@ -995,7 +1035,7 @@ init_name_constraints(hx509_name_constraints *nc)
 }
 
 static int
-add_name_constraints(const Certificate *c, int not_ca,
+add_name_constraints(hx509_context context, const Certificate *c, int not_ca,
 		     hx509_name_constraints *nc)
 {
     NameConstraints tnc;
@@ -1004,21 +1044,27 @@ add_name_constraints(const Certificate *c, int not_ca,
     ret = find_extension_name_constraints(c, &tnc);
     if (ret == HX509_EXTENSION_NOT_FOUND)
 	return 0;
-    else if (ret)
+    else if (ret) {
+	hx509_set_error_string(context, 0, ret, "Failed getting NameConstraints");
 	return ret;
-    else if (not_ca) {
+    } else if (not_ca) {
 	ret = HX509_VERIFY_CONSTRAINTS;
+	hx509_set_error_string(context, 0, ret, "Not a CA and "
+			       "have NameConstraints");
     } else {
 	NameConstraints *val;
 	val = realloc(nc->val, sizeof(nc->val[0]) * (nc->len + 1));
 	if (val == NULL) {
+	    hx509_clear_error_string(context);
 	    ret = ENOMEM;
 	    goto out;
 	}
 	nc->val = val;
 	ret = copy_NameConstraints(&tnc, &nc->val[nc->len]);
-	if (ret)
+	if (ret) {
+	    hx509_clear_error_string(context);
 	    goto out;
+	}
 	nc->len += 1;
     }
 out:
@@ -1219,7 +1265,8 @@ match_tree(const GeneralSubtrees *t, const Certificate *c, int *match)
 }
 
 static int
-check_name_constraints(const hx509_name_constraints *nc,
+check_name_constraints(hx509_context context, 
+		       const hx509_name_constraints *nc,
 		       const Certificate *c)
 {
     int match, ret;
@@ -1231,19 +1278,27 @@ check_name_constraints(const hx509_name_constraints *nc,
 	if (nc->val[i].permittedSubtrees) {
 	    GeneralSubtrees_SET(&gs, nc->val[i].permittedSubtrees);
 	    ret = match_tree(&gs, c, &match);
-	    if (ret)
+	    if (ret) {
+		hx509_clear_error_string(context);
 		return ret;
+	    }
 	    /* allow null subjectNames, they wont matches anything */
-	    if (match == 0 && !subject_null_p(c))
+	    if (match == 0 && !subject_null_p(c)) {
+		hx509_clear_error_string(context);
 		return HX509_VERIFY_CONSTRAINTS;
+	    }
 	}
 	if (nc->val[i].excludedSubtrees) {
 	    GeneralSubtrees_SET(&gs, nc->val[i].excludedSubtrees);
 	    ret = match_tree(&gs, c, &match);
-	    if (ret)
+	    if (ret) {
+		hx509_clear_error_string(context);
 		return ret;
-	    if (match)
+	    }
+	    if (match) {
+		hx509_clear_error_string(context);
 		return HX509_VERIFY_CONSTRAINTS;
+	    }
 	}
     }
     return 0;
@@ -1334,7 +1389,7 @@ hx509_verify_path(hx509_context context,
 	case PROXY_CERT: {
 	    ProxyCertInfo info;	    
 
-	    if (is_proxy_cert(c, &info) == 0) {
+	    if (is_proxy_cert(context, c, &info) == 0) {
 		Name name;
 		int j;
 
@@ -1342,6 +1397,7 @@ hx509_verify_path(hx509_context context,
 		    *info.pCPathLenConstraint < i + 1)
 		{
 		    free_ProxyCertInfo(&info);
+		    hx509_clear_error_string(context);
 		    ret = HX509_PATH_TOO_LONG;
 		    goto out;
 		}
@@ -1349,6 +1405,7 @@ hx509_verify_path(hx509_context context,
 		j = 0;
 		if (find_extension(c, oid_id_x509_ce_subjectAltName(), &j)) {
 		    free_ProxyCertInfo(&info);
+		    hx509_clear_error_string(context);
 		    ret = HX509_PROXY_CERT_INVALID;
 		    goto out;
 		}
@@ -1356,6 +1413,7 @@ hx509_verify_path(hx509_context context,
 		j = 0;
 		if (find_extension(c, oid_id_x509_ce_issuerAltName(), &j)) {
 		    free_ProxyCertInfo(&info);
+		    hx509_clear_error_string(context);
 		    ret = HX509_PROXY_CERT_INVALID;
 		    goto out;
 		}
@@ -1369,6 +1427,7 @@ hx509_verify_path(hx509_context context,
 
 		ret = copy_Name(&c->tbsCertificate.subject, &name);
 		if (ret) {
+		    hx509_clear_error_string(context);
 		    free_ProxyCertInfo(&info);
 		    goto out;
 		}
@@ -1380,6 +1439,7 @@ hx509_verify_path(hx509_context context,
 				    oid_id_at_commonName()))
 		{
 		    free_ProxyCertInfo(&info);
+		    hx509_clear_error_string(context);
 		    ret = HX509_PROXY_CERT_NAME_WRONG;
 		    goto out;
 		}
@@ -1392,6 +1452,7 @@ hx509_verify_path(hx509_context context,
 		    free_Name(&name);
 		    if (ret) {
 			free_ProxyCertInfo(&info);
+			hx509_clear_error_string(context);
 			ret = HX509_PROXY_CERT_NAME_WRONG;
 			goto out;
 		    }
@@ -1413,14 +1474,17 @@ hx509_verify_path(hx509_context context,
 					  &c->tbsCertificate.subject);
 		    if (ret) {
 			ret = HX509_PROXY_CERT_NAME_WRONG;
+			hx509_clear_error_string(context);
 			goto out;
 		    }
 		    if (cert->basename)
 			hx509_name_free(&cert->basename);
 
 		    ret = _hx509_name_from_Name(&proxy_issuer, &cert->basename);
-		    if (ret)
+		    if (ret) {
+			hx509_clear_error_string(context);
 			goto out;
+		    }
 		}
 	    }
 	    type = EE_CERT;
@@ -1437,11 +1501,13 @@ hx509_verify_path(hx509_context context,
 	t = _hx509_Time2time_t(&c->tbsCertificate.validity.notBefore);
 	if (t > ctx->time_now) {
 	    ret = HX509_CERT_USED_BEFORE_TIME;
+	    hx509_clear_error_string(context);
 	    goto out;
 	}
 	t = _hx509_Time2time_t(&c->tbsCertificate.validity.notAfter);
 	if (t < ctx->time_now) {
 	    ret = HX509_CERT_USED_AFTER_TIME;
+	    hx509_clear_error_string(context);
 	    goto out;
 	}
 
@@ -1466,6 +1532,7 @@ hx509_verify_path(hx509_context context,
 	/* XXX this is wrong */
 	ret = alg_cmp(&c->tbsCertificate.signature, alg_id);
 	if (ret) {
+	    hx509_clear_error_string(context);
 	    ret = HX509_PATH_ALGORITHM_CHANGED;
 	    goto out;
 	}
@@ -1473,11 +1540,12 @@ hx509_verify_path(hx509_context context,
 
 	/* verify name constraints, not for selfsigned and anchor */
 	if (!certificate_is_self_signed(c) || i == path.len - 1) {
-	    ret = check_name_constraints(&nc, c);
-	    if (ret)
+	    ret = check_name_constraints(context, &nc, c);
+	    if (ret) {
 		goto out;
+	    }
 	}
-	ret = add_name_constraints(c, i == 0, &nc);
+	ret = add_name_constraints(context, c, i == 0, &nc);
 	if (ret)
 	    goto out;
 
@@ -1561,7 +1629,9 @@ hx509_verify_path(hx509_context context,
 						&c->tbsCertificate._save,
 						&c->signatureValue);
 	if (ret) {
-	    break;
+	    hx509_set_error_string(context, 0, ret,
+				   "Failed to verify signature of certificate");
+	    goto out;
 	}
     }
 
@@ -1597,7 +1667,9 @@ hx509_verify_hostname(hx509_context context,
 }
 
 int
-_hx509_set_cert_attribute(hx509_cert cert, const heim_oid *oid, 
+_hx509_set_cert_attribute(hx509_context context,
+			  hx509_cert cert, 
+			  const heim_oid *oid, 
 			  const heim_octet_string *attr)
 {
     hx509_cert_attribute a;
@@ -1608,8 +1680,10 @@ _hx509_set_cert_attribute(hx509_cert cert, const heim_oid *oid,
 
     d = realloc(cert->attrs.val, 
 		sizeof(cert->attrs.val[0]) * (cert->attrs.len + 1));
-    if (d == NULL)
+    if (d == NULL) {
+	hx509_clear_error_string(context);
 	return ENOMEM;
+    }
     cert->attrs.val = d;
 
     a = malloc(sizeof(*a));
@@ -1875,8 +1949,10 @@ hx509_cert_check_eku(hx509_context context, hx509_cert cert,
     int ret, i;
 
     ret = find_extension_eku(_hx509_get_cert(cert), &e);
-    if (ret)
+    if (ret) {
+	hx509_clear_error_string(context);
 	return ret;
+    }
 
     for (i = 0; i < e.len; i++) {
 	if (heim_oid_cmp(eku, &e.val[i]) == 0) {
@@ -1893,5 +1969,6 @@ hx509_cert_check_eku(hx509_context context, hx509_cert cert,
 	}
     }
     free_ExtKeyUsage(&e);
-    return -1;
+    hx509_clear_error_string(context);
+    return HX509_CERTIFICATE_MISSING_EKU;
 }
