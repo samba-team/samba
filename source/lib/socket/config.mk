@@ -2,7 +2,7 @@
 ################################################
 # Start MODULE socket_ipv4
 [MODULE::socket_ipv4]
-SUBSYSTEM = LIBSAMBA-SOCKET
+SUBSYSTEM = samba-socket
 OUTPUT_TYPE = INTEGRATED
 OBJ_FILES = \
 		socket_ipv4.o
@@ -14,7 +14,7 @@ PRIVATE_DEPENDENCIES = LIBSAMBA-ERRORS
 ################################################
 # Start MODULE socket_ipv6
 [MODULE::socket_ipv6]
-SUBSYSTEM = LIBSAMBA-SOCKET
+SUBSYSTEM = samba-socket
 OUTPUT_TYPE = INTEGRATED
 OBJ_FILES = \
 		socket_ipv6.o
@@ -25,7 +25,7 @@ PUBLIC_DEPENDENCIES = EXT_SOCKET EXT_NSL
 ################################################
 # Start MODULE socket_unix
 [MODULE::socket_unix]
-SUBSYSTEM = LIBSAMBA-SOCKET
+SUBSYSTEM = samba-socket
 OUTPUT_TYPE = INTEGRATED
 OBJ_FILES = \
 		socket_unix.o
@@ -35,7 +35,7 @@ PUBLIC_DEPENDENCIES = EXT_SOCKET EXT_NSL
 
 ################################################
 # Start SUBSYSTEM SOCKET
-[SUBSYSTEM::LIBSAMBA-SOCKET]
+[SUBSYSTEM::samba-socket]
 OBJ_FILES = \
 		socket.o \
 		access.o \
