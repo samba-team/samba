@@ -32,6 +32,7 @@
 #include "libcli/ldap/ldap_client.h"
 #include "libcli/composite/composite.h"
 #include "lib/stream/packet.h"
+#include "lib/tls/tls.h"
 #include "auth/gensec/gensec.h"
 #include "system/time.h"
 
@@ -85,12 +86,10 @@ static void ldap_connection_dead(struct ldap_connection *conn)
 		if (req->async.fn) {
 			req->async.fn(req);
 		}
-	}	
+	}
 
-	talloc_free(conn->tls);
-/*	talloc_free(conn->sock);  this will also free event.fde */
+	talloc_free(conn->sock);  /* this will also free event.fde */
 	talloc_free(conn->packet);
-	conn->tls = NULL;
 	conn->sock = NULL;
 	conn->event.fde = NULL;
 	conn->packet = NULL;
@@ -270,7 +269,7 @@ static void ldap_io_handler(struct event_context *ev, struct fd_event *fde,
 						       struct ldap_connection);
 	if (flags & EVENT_FD_WRITE) {
 		packet_queue_run(conn->packet);
-		if (conn->tls == NULL) return;
+		if (!tls_enabled(conn->sock)) return;
 	}
 	if (flags & EVENT_FD_READ) {
 		packet_recv(conn->packet);
@@ -339,11 +338,6 @@ struct composite_context *ldap_connect_send(struct ldap_connection *conn,
 	struct composite_context *result, *ctx;
 	struct ldap_connect_state *state;
 
-	if (conn->reconnect.url == NULL) {
-		conn->reconnect.url = talloc_strdup(conn, url);
-		if (conn->reconnect.url == NULL) goto failed;
-	}
-
 	result = talloc_zero(NULL, struct composite_context);
 	if (result == NULL) goto failed;
 	result->state = COMPOSITE_STATE_IN_PROGRESS;
@@ -356,6 +350,11 @@ struct composite_context *ldap_connect_send(struct ldap_connection *conn,
 	result->private_data = state;
 
 	state->conn = conn;
+
+	if (conn->reconnect.url == NULL) {
+		conn->reconnect.url = talloc_strdup(conn, url);
+		if (conn->reconnect.url == NULL) goto failed;
+	}
 
 	state->ctx->status = ldap_parse_basic_url(conn, url, &conn->host,
 						  &conn->port, &conn->ldaps);
@@ -379,6 +378,7 @@ struct composite_context *ldap_connect_send(struct ldap_connection *conn,
 
 static void ldap_connect_recv_conn(struct composite_context *ctx)
 {
+	struct socket_context *initial_socket;
 	struct ldap_connect_state *state =
 		talloc_get_type(ctx->async.private_data,
 				struct ldap_connect_state);
@@ -398,21 +398,24 @@ static void ldap_connect_recv_conn(struct composite_context *ctx)
 		return;
 	}
 
-	conn->tls = tls_init_client(conn->sock, conn->event.fde, conn->ldaps);
-	if (conn->tls == NULL) {
-		talloc_free(conn->sock);
-		return;
+	talloc_steal(conn, conn->sock);
+	initial_socket = conn->sock;
+	if (conn->ldaps) {
+		conn->sock = tls_init_client(conn->sock, conn->event.fde);
+		if (conn->sock == NULL) {
+			talloc_free(initial_socket);
+			return;
+		}
 	}
-	talloc_steal(conn, conn->tls);
-	talloc_steal(conn->tls, conn->sock);
 
 	conn->packet = packet_init(conn);
 	if (conn->packet == NULL) {
 		talloc_free(conn->sock);
 		return;
 	}
+
 	packet_set_private(conn->packet, conn);
-	packet_set_tls(conn->packet, conn->tls);
+	packet_set_socket(conn->packet, conn->sock);
 	packet_set_callback(conn->packet, ldap_recv_handler);
 	packet_set_full_request(conn->packet, ldap_complete_packet);
 	packet_set_error_handler(conn->packet, ldap_error_handler);
@@ -535,7 +538,7 @@ struct ldap_request *ldap_request_send(struct ldap_connection *conn,
 	req = talloc_zero(conn, struct ldap_request);
 	if (req == NULL) return NULL;
 
-	if (conn->tls == NULL) {
+	if (conn->sock == NULL) {
 		status = NT_STATUS_INVALID_CONNECTION;
 		goto failed;
 	}

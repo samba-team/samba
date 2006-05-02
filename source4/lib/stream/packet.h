@@ -21,8 +21,6 @@
    
 */
 
-#include "lib/tls/tls.h"
-
 typedef NTSTATUS (*packet_full_request_fn_t)(void *private, 
 					     DATA_BLOB blob, size_t *packet_size);
 typedef NTSTATUS (*packet_callback_fn_t)(void *private, DATA_BLOB blob);
@@ -35,7 +33,6 @@ void packet_set_callback(struct packet_context *pc, packet_callback_fn_t callbac
 void packet_set_error_handler(struct packet_context *pc, packet_error_handler_fn_t handler);
 void packet_set_private(struct packet_context *pc, void *private);
 void packet_set_full_request(struct packet_context *pc, packet_full_request_fn_t callback);
-void packet_set_tls(struct packet_context *pc, struct tls_context *tls);
 void packet_set_socket(struct packet_context *pc, struct socket_context *sock);
 void packet_set_event_context(struct packet_context *pc, struct event_context *ev);
 void packet_set_fde(struct packet_context *pc, struct fd_event *fde);

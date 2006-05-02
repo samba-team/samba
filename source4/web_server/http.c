@@ -237,12 +237,12 @@ static void http_redirect(EspHandle handle, int code, char *url)
 			char *p = strrchr(web->input.url, '/');
 			if (p == web->input.url) {
 				url = talloc_asprintf(web, "http%s://%s/%s", 
-						      tls_enabled(web->tls)?"s":"",
+						      tls_enabled(web->conn->socket)?"s":"",
 						      host, url);
 			} else {
 				int dirlen = p - web->input.url;
 				url = talloc_asprintf(web, "http%s://%s%*.*s/%s",
-						      tls_enabled(web->tls)?"s":"",
+						      tls_enabled(web->conn->socket)?"s":"",
 						      host, 
 						      dirlen, dirlen, web->input.url,
 						      url);
@@ -452,7 +452,7 @@ static void http_setup_arrays(struct esp_state *esp)
 	}
 
 	SETVAR(ESP_SERVER_OBJ, "DOCUMENT_ROOT", lp_swat_directory());
-	SETVAR(ESP_SERVER_OBJ, "SERVER_PROTOCOL", tls_enabled(web->tls)?"https":"http");
+	SETVAR(ESP_SERVER_OBJ, "SERVER_PROTOCOL", tls_enabled(web->conn->socket)?"https":"http");
 	SETVAR(ESP_SERVER_OBJ, "SERVER_SOFTWARE", "SWAT");
 	SETVAR(ESP_SERVER_OBJ, "GATEWAY_INTERFACE", "CGI/1.1");
 	SETVAR(ESP_SERVER_OBJ, "TLS_SUPPORT", tls_support(edata->tls_params)?"True":"False");
