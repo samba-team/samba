@@ -76,7 +76,7 @@ static void websrv_recv(struct stream_connection *conn, uint16_t flags)
 	DATA_BLOB b;
 
 	/* not the most efficient http parser ever, but good enough for us */
-	status = tls_socket_recv(web->tls, buf, sizeof(buf), &nread);
+	status = socket_recv(conn->socket, buf, sizeof(buf), &nread);
 	if (NT_STATUS_IS_ERR(status)) goto failed;
 	if (!NT_STATUS_IS_OK(status)) return;
 
@@ -149,7 +149,7 @@ static void websrv_send(struct stream_connection *conn, uint16_t flags)
 	b.data += web->output.nsent;
 	b.length -= web->output.nsent;
 
-	status = tls_socket_send(web->tls, &b, &nsent);
+	status = socket_send(conn->socket, &b, &nsent);
 	if (NT_STATUS_IS_ERR(status)) {
 		stream_terminate_connection(web->conn, "socket_send: failed");
 		return;
@@ -183,8 +183,6 @@ static void websrv_send(struct stream_connection *conn, uint16_t flags)
 
 	if (web->output.content.length == web->output.nsent && 
 	    web->output.fd == -1) {
-		talloc_free(web->tls);
-		web->tls = NULL;
 		stream_terminate_connection(web->conn, "websrv_send: finished sending");
 	}
 }
@@ -211,9 +209,10 @@ static void websrv_accept(struct stream_connection *conn)
 			timeval_current_ofs(HTTP_TIMEOUT, 0),
 			websrv_timeout, web);
 
-	web->tls = tls_init_server(edata->tls_params, conn->socket, 
-				   conn->event.fde, "GPHO", True);
-	if (web->tls == NULL) goto failed;
+	/* Overwrite the socket with a (possibly) TLS socket */
+	conn->socket = tls_init_server(edata->tls_params, conn->socket, 
+				       conn->event.fde, "GPHO");
+	if (conn->socket == NULL) goto failed;
 
 	return;
 

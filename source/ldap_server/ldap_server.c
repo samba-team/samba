@@ -46,10 +46,6 @@
 static void ldapsrv_terminate_connection(struct ldapsrv_connection *conn, 
 					 const char *reason)
 {
-	if (conn->tls) {
-		talloc_free(conn->tls);
-		conn->tls = NULL;
-	}
 	stream_terminate_connection(conn->connection, reason);
 }
 
@@ -430,13 +426,14 @@ static void ldapsrv_accept(struct stream_connection *c)
 	port = socket_address->port;
 	talloc_free(socket_address);
 
-	conn->tls = tls_init_server(ldapsrv_service->tls_params, c->socket, 
-				    c->event.fde, NULL, port != 389);
-	if (!conn->tls) {
-		ldapsrv_terminate_connection(conn, "ldapsrv_accept: tls_init_server() failed");
-		return;
+	if (port == 636) {
+		c->socket = tls_init_server(ldapsrv_service->tls_params, c->socket, 
+					    c->event.fde, NULL);
+		if (!c->socket) {
+			ldapsrv_terminate_connection(conn, "ldapsrv_accept: tls_init_server() failed");
+			return;
+		}
 	}
-
 	conn->packet = packet_init(conn);
 	if (conn->packet == NULL) {
 		ldapsrv_terminate_connection(conn, "out of memory");
@@ -444,7 +441,7 @@ static void ldapsrv_accept(struct stream_connection *c)
 	}
 
 	packet_set_private(conn->packet, conn);
-	packet_set_tls(conn->packet, conn->tls);
+	packet_set_socket(conn->packet, c->socket);
 	packet_set_callback(conn->packet, ldapsrv_decode);
 	packet_set_full_request(conn->packet, ldapsrv_complete_packet);
 	packet_set_error_handler(conn->packet, ldapsrv_error_handler);

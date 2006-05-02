@@ -26,7 +26,6 @@ struct ldapsrv_connection {
 	struct gensec_security *gensec;
 	struct auth_session_info *session_info;
 	struct ldapsrv_service *service;
-	struct tls_context *tls;
 	struct cli_credentials *server_credentials;
 	struct ldb_context *ldb;
 

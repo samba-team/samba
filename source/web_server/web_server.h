@@ -54,7 +54,6 @@ struct websrv_context {
 		int response_code;
 		const char **headers;
 	} output;
-	struct tls_context *tls;
 	struct session_data *session;
 };
 
