@@ -1652,6 +1652,9 @@ void winbindd_pam_chauthtok(struct winbindd_cli_state *state)
 	oldpass = state->request.data.chauthtok.oldpass;
 	newpass = state->request.data.chauthtok.newpass;
 
+	/* Initialize reject reason */
+	state->response.data.auth.reject_reason = Undefined;
+
 	/* Get sam handle */
 
 	result = cm_connect_sam(contact_domain, state->mem_ctx, &cli,
@@ -1690,8 +1693,6 @@ void winbindd_pam_chauthtok(struct winbindd_cli_state *state)
 		DEBUG(10,("Password change with chgpasswd3 failed with: %s, retrying chgpasswd_user\n", 
 			nt_errstr(result)));
 		
-		state->response.data.auth.reject_reason = 0;
-
 		result = rpccli_samr_chgpasswd_user(cli, state->mem_ctx, user, newpass, oldpass);
 	}
 
