@@ -75,6 +75,7 @@ NTSTATUS remove_ccache_by_ccname(const char *ccname)
 			DLIST_REMOVE(ccache_list, entry);
 			TALLOC_FREE(entry->event); /* unregisters events */
 			TALLOC_FREE(entry);
+			DEBUG(10,("remove_ccache_by_ccname: removed ccache %s\n", ccname));
 			return NT_STATUS_OK;
 		}
 	}
@@ -171,6 +172,7 @@ NTSTATUS add_ccache_to_list(const char *princ_name,
 			    BOOL schedule_refresh_event)
 {
 	struct WINBINDD_CCACHE_ENTRY *new_entry = NULL;
+	struct WINBINDD_CCACHE_ENTRY *old_entry = NULL;
 	NTSTATUS status;
 
 	if ((username == NULL && sid_string == NULL && princ_name == NULL) || 
@@ -192,6 +194,16 @@ NTSTATUS add_ccache_to_list(const char *princ_name,
 		return NT_STATUS_NO_MORE_ENTRIES;
 	}
 
+	/* get rid of old entries */
+	old_entry = get_ccache_by_username(username);
+	if (old_entry) {
+		status = remove_ccache_by_ccname(old_entry->ccname);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(10,("add_ccache_to_list: failed to delete old ccache entry\n"));
+			return status;
+		}
+	}
+	
 	new_entry = TALLOC_P(mem_ctx, struct WINBINDD_CCACHE_ENTRY);
 	if (new_entry == NULL) {
 		return NT_STATUS_NO_MEMORY;
