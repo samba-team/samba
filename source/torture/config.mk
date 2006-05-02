@@ -146,7 +146,8 @@ OBJ_FILES = \
 		rpc/dssetup.o \
 		rpc/alter_context.o \
 		rpc/bench.o \
-		rpc/rpc.o
+		rpc/rpc.o \
+		rpc/async_bind.o
 PUBLIC_DEPENDENCIES = \
 		NDR_TABLE RPC_NDR_UNIXINFO RPC_NDR_SAMR RPC_NDR_WINREG RPC_NDR_INITSHUTDOWN \
 		RPC_NDR_OXIDRESOLVER RPC_NDR_EVENTLOG RPC_NDR_ECHO RPC_NDR_SVCCTL \
