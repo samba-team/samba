@@ -8,7 +8,8 @@ OBJ_FILES = dcerpc_wrap.o
 #######################
 
 # Swig extensions
-swig: lib/tdb/swig/_tdb.$(SHLIBEXT) lib/ldb/swig/_ldb.$(SHLIBEXT)
+swig: lib/tdb/swig/_tdb.$(SHLIBEXT) lib/ldb/swig/_ldb.$(SHLIBEXT) \
+	libcli/swig/_libcli_nbt.$(SHLIBEXT)
 
 .SUFFIXES: _wrap.c .i
 
