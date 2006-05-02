@@ -199,12 +199,17 @@ struct ldb_result {
  * Wrap ldb functions 
  */
 
-int ldb_global_init(void);
+/* Initialisation */
 
+int ldb_global_init(void);
 struct ldb_context *ldb_init(TALLOC_CTX *mem_ctx);
+
+/* Error handling */
 
 const char *ldb_errstring(struct ldb_context *ldb);
 const char *ldb_strerror(int ldb_err);
+
+/* Top-level ldb operations */
 
 int ldb_connect(struct ldb_context *ldb, const char *url, unsigned int flags, const char *options[]);
 
@@ -216,9 +221,20 @@ int ldb_rename(struct ldb_context *ldb, const struct ldb_dn *olddn, const struct
 
 int ldb_add(struct ldb_context *ldb, const struct ldb_message *message);
 
+/* Ldb message operations */
+
 struct ldb_message *ldb_msg_new(void *mem_ctx);
+
 struct ldb_message_element *ldb_msg_find_element(const struct ldb_message *msg, const char *attr_name);
+
 int ldb_msg_add_value(struct ldb_message *msg, const char *attr_name, const struct ldb_val *INPUT);
 
+void ldb_msg_remove_attr(struct ldb_message *msg, const char *attr);
+
+int ldb_msg_sanity_check(struct ldb_message *msg);
+
+/* DN operations */
+
 struct ldb_dn *ldb_dn_explode(void *mem_ctx, const char *dn);
+
 char *ldb_dn_linearize(void *mem_ctx, const struct ldb_dn *dn);
