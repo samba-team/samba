@@ -25,7 +25,7 @@ if test x"$PYTHON" != "x"; then
 	AC_MSG_RESULT([${withval-python}])
 else
 	AC_MSG_RESULT(no)
-	SMB_ENABLE(swig_libli_nbt, NO)
+	SMB_ENABLE(swig_libcli_nbt, NO)
 fi
 
 AC_SUBST(PYTHON)
