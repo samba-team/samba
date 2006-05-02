@@ -533,7 +533,7 @@ const char *ldb_strerror(int ldb_err)
 		return "Alias problem";
 	case LDB_ERR_INVALID_DN_SYNTAX:
 		return "Invalid DN syntax";
-/* 53 RESERVED */
+/* 35 RESERVED */
 	case LDB_ERR_ALIAS_DEREFERENCING_PROBLEM:
 		return "Alias dereferencing problem";
 /* 37-47 unused */
