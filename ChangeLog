@@ -1,5 +1,11 @@
-2006-05-01  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-05-02  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kdc/pkinit.c (_kdc_pk_mk_pa_reply): send back ocsp response if
+	it seems to be valid, simplfy the pkinit-windows DH case (it
+	doesn't exists).
+	
+2006-05-01  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* lib/krb5/krb5_warn.3: Spelling/mdoc changes, from Björn Sandell.
 
 	* lib/krb5/krb5_verify_user.3: Spelling/mdoc changes, from Björn

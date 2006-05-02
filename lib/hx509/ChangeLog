@@ -1,5 +1,15 @@
-2006-05-01  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-05-02  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* keyset.c: Sprinkle setting error strings.
+
+	* crypto.c: Sprinkle setting error strings.
+
+	* collector.c: Sprinkle setting error strings.
+
+	* cms.c: Sprinkle setting error strings.
+	
+2006-05-01  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* test_name.c: renamed one error code
 
 	* name.c: renamed one error code
