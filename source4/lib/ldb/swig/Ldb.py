@@ -20,6 +20,15 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 
+#
+# Interface notes:
+#
+#   - should an empty dn be represented as None, or an empty string?
+#
+#   - should single-valued attributes be a string, or a list with one
+#     element?
+#
+
 from ldb import *
 
 # Global initialisation
@@ -62,6 +71,9 @@ class LdbMessage:
     def __setattr__(self, attr, value):
         if attr == 'dn':
             self.msg.dn = ldb_dn_explode(self.msg, value)
+            if self.msg.dn == None:
+                err = LDB_ERR_INVALID_DN_SYNTAX
+                raise LdbError(err, ldb_strerror(err))
             return
         self.__dict__[attr] = value
         
@@ -78,6 +90,7 @@ class LdbMessage:
                 for i in range(elt.num_values)]
 
     def __setitem__(self, key, value):
+        ldb_msg_remove_attr(self.msg, key)
         if type(value) in (list, tuple):
             [ldb_msg_add_value(self.msg, key, v) for v in value]
         else:
@@ -98,6 +111,11 @@ class LdbMessage:
 
     def items(self):
         return [(k, self[k]) for k in self.keys()]
+
+    # Misc stuff
+
+    def sanity_check(self):
+        return ldb_msg_sanity_check(self.msg)
 
 class Ldb:
     """A class representing a binding to a ldb file."""
