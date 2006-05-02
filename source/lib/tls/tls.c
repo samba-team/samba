@@ -3,8 +3,10 @@
 
    transport layer security handling code
 
-   Copyright (C) Andrew Tridgell 2005
-   
+   Copyright (C) Andrew Tridgell 2004-2005
+   Copyright (C) Stefan Metzmacher 2004
+   Copyright (C) Andrew Bartlett 2006
+ 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 2 of the License, or
@@ -35,22 +37,60 @@ struct tls_params {
 	gnutls_dh_params dh_params;
 	BOOL tls_enabled;
 };
+#endif
 
 /* hold per connection tls data */
 struct tls_context {
 	struct socket_context *socket;
 	struct fd_event *fde;
+	BOOL tls_enabled;
+#if HAVE_LIBGNUTLS
 	gnutls_session session;
 	BOOL done_handshake;
 	BOOL have_first_byte;
 	uint8_t first_byte;
-	BOOL tls_enabled;
 	BOOL tls_detect;
 	const char *plain_chars;
 	BOOL output_pending;
 	gnutls_certificate_credentials xcred;
 	BOOL interrupted;
+#endif
 };
+
+BOOL tls_enabled(struct socket_context *sock)
+{
+	struct tls_context *tls;
+	if (!sock) {
+		return False;
+	}
+	if (strcmp(sock->backend_name, "tls") != 0) {
+		return False;
+	}
+	tls = talloc_get_type(sock->private_data, struct tls_context);
+	if (!tls) {
+		return False;
+	}
+	return tls->tls_enabled;
+}
+
+
+#if HAVE_LIBGNUTLS
+
+static const struct socket_ops tls_socket_ops;
+
+static NTSTATUS tls_socket_init(struct socket_context *sock)
+{
+	switch (sock->type) {
+	case SOCKET_TYPE_STREAM:
+		break;
+	default:
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	sock->backend_name = "tls";
+
+	return NT_STATUS_OK;
+}
 
 #define TLSCHECK(call) do { \
 	ret = call; \
@@ -59,7 +99,6 @@ struct tls_context {
 		goto failed; \
 	} \
 } while (0)
-
 
 
 /*
@@ -199,8 +238,9 @@ static NTSTATUS tls_interrupted(struct tls_context *tls)
 /*
   see how many bytes are pending on the connection
 */
-NTSTATUS tls_socket_pending(struct tls_context *tls, size_t *npending)
+static NTSTATUS tls_socket_pending(struct socket_context *sock, size_t *npending)
 {
+	struct tls_context *tls = talloc_get_type(sock->private_data, struct tls_context);
 	if (!tls->tls_enabled || tls->tls_detect) {
 		return socket_pending(tls->socket, npending);
 	}
@@ -219,11 +259,13 @@ NTSTATUS tls_socket_pending(struct tls_context *tls, size_t *npending)
 /*
   receive data either by tls or normal socket_recv
 */
-NTSTATUS tls_socket_recv(struct tls_context *tls, void *buf, size_t wantlen, 
-			 size_t *nread)
+static NTSTATUS tls_socket_recv(struct socket_context *sock, void *buf, 
+				size_t wantlen, size_t *nread)
 {
 	int ret;
 	NTSTATUS status;
+	struct tls_context *tls = talloc_get_type(sock->private_data, struct tls_context);
+
 	if (tls->tls_enabled && tls->tls_detect) {
 		status = socket_recv(tls->socket, &tls->first_byte, 1, nread);
 		NT_STATUS_NOT_OK_RETURN(status);
@@ -268,10 +310,12 @@ NTSTATUS tls_socket_recv(struct tls_context *tls, void *buf, size_t wantlen,
 /*
   send data either by tls or normal socket_recv
 */
-NTSTATUS tls_socket_send(struct tls_context *tls, const DATA_BLOB *blob, size_t *sendlen)
+static NTSTATUS tls_socket_send(struct socket_context *sock, 
+				const DATA_BLOB *blob, size_t *sendlen)
 {
 	NTSTATUS status;
 	int ret;
+	struct tls_context *tls = talloc_get_type(sock->private_data, struct tls_context);
 
 	if (!tls->tls_enabled) {
 		return socket_send(tls->socket, blob, sendlen);
@@ -389,24 +433,41 @@ init_failed:
 /*
   setup for a new connection
 */
-struct tls_context *tls_init_server(struct tls_params *params, 
+struct socket_context *tls_init_server(struct tls_params *params, 
 				    struct socket_context *socket,
 				    struct fd_event *fde, 
-				    const char *plain_chars,
-				    BOOL tls_enable)
+				    const char *plain_chars)
 {
 	struct tls_context *tls;
 	int ret;
+	struct socket_context *new_sock;
+	NTSTATUS nt_status;
+	
+	nt_status = socket_create_with_ops(socket, &tls_socket_ops, &new_sock, 
+					   SOCKET_TYPE_STREAM, 0);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		return NULL;
+	}
 
-	tls = talloc(socket, struct tls_context);
-	if (tls == NULL) return NULL;
+	tls = talloc(new_sock, struct tls_context);
+	if (tls == NULL) {
+		return NULL;
+	}
 
 	tls->socket          = socket;
 	tls->fde             = fde;
+	if (talloc_reference(tls, fde) == NULL) {
+		return NULL;
+	}
+	if (talloc_reference(tls, socket) == NULL) {
+		return NULL;
+	}
 
-	if (!params->tls_enabled || !tls_enable) {
+	new_sock->private_data    = tls;
+
+	if (!params->tls_enabled) {
 		tls->tls_enabled = False;
-		return tls;
+		return new_sock;
 	}
 
 	TLSCHECK(gnutls_init(&tls->session, GNUTLS_SERVER));
@@ -436,38 +497,49 @@ struct tls_context *tls_init_server(struct tls_params *params,
 	tls->tls_enabled     = True;
 	tls->interrupted     = False;
 	
-	return tls;
+	new_sock->state = SOCKET_STATE_SERVER_CONNECTED;
+
+	return new_sock;
 
 failed:
 	DEBUG(0,("TLS init connection failed - %s\n", gnutls_strerror(ret)));
 	tls->tls_enabled = False;
 	params->tls_enabled = False;
-	return tls;
+	return new_sock;
 }
 
 
 /*
   setup for a new client connection
 */
-struct tls_context *tls_init_client(struct socket_context *socket,
-				    struct fd_event *fde, 
-				    BOOL tls_enable)
+struct socket_context *tls_init_client(struct socket_context *socket,
+				       struct fd_event *fde)
 {
 	struct tls_context *tls;
-	int ret=0;
+	int ret = 0;
 	const int cert_type_priority[] = { GNUTLS_CRT_X509, GNUTLS_CRT_OPENPGP, 0 };
 	char *cafile;
+	struct socket_context *new_sock;
+	NTSTATUS nt_status;
+	
+	nt_status = socket_create_with_ops(socket, &tls_socket_ops, &new_sock, 
+					   SOCKET_TYPE_STREAM, 0);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		return NULL;
+	}
 
-	tls = talloc(socket, struct tls_context);
+	tls = talloc(new_sock, struct tls_context);
 	if (tls == NULL) return NULL;
 
 	tls->socket          = socket;
 	tls->fde             = fde;
-	tls->tls_enabled     = tls_enable;
-
-	if (!tls->tls_enabled) {
-		return tls;
+	if (talloc_reference(tls, fde) == NULL) {
+		return NULL;
 	}
+	if (talloc_reference(tls, socket) == NULL) {
+		return NULL;
+	}
+	new_sock->private_data    = tls;
 
 	cafile = private_path(tls, lp_tls_cafile());
 	if (!cafile || !*cafile) {
@@ -498,18 +570,60 @@ struct tls_context *tls_init_client(struct socket_context *socket,
 	tls->tls_enabled     = True;
 	tls->interrupted     = False;
 	
-	return tls;
+	new_sock->state = SOCKET_STATE_CLIENT_CONNECTED;
+
+	return new_sock;
 
 failed:
 	DEBUG(0,("TLS init connection failed - %s\n", gnutls_strerror(ret)));
 	tls->tls_enabled = False;
-	return tls;
+	return new_sock;
 }
 
-BOOL tls_enabled(struct tls_context *tls)
+static NTSTATUS tls_socket_set_option(struct socket_context *sock, const char *option, const char *val)
 {
-	return tls->tls_enabled;
+	set_socket_options(socket_get_fd(sock), option);
+	return NT_STATUS_OK;
 }
+
+static char *tls_socket_get_peer_name(struct socket_context *sock, TALLOC_CTX *mem_ctx)
+{
+	struct tls_context *tls = talloc_get_type(sock->private_data, struct tls_context);
+	return socket_get_peer_name(tls->socket, mem_ctx);
+}
+
+static struct socket_address *tls_socket_get_peer_addr(struct socket_context *sock, TALLOC_CTX *mem_ctx)
+{
+	struct tls_context *tls = talloc_get_type(sock->private_data, struct tls_context);
+	return socket_get_peer_addr(tls->socket, mem_ctx);
+}
+
+static struct socket_address *tls_socket_get_my_addr(struct socket_context *sock, TALLOC_CTX *mem_ctx)
+{
+	struct tls_context *tls = talloc_get_type(sock->private_data, struct tls_context);
+	return socket_get_my_addr(tls->socket, mem_ctx);
+}
+
+static int tls_socket_get_fd(struct socket_context *sock)
+{
+	struct tls_context *tls = talloc_get_type(sock->private_data, struct tls_context);
+	return socket_get_fd(tls->socket);
+}
+
+static const struct socket_ops tls_socket_ops = {
+	.name			= "tls",
+	.fn_init		= tls_socket_init,
+	.fn_recv		= tls_socket_recv,
+	.fn_send		= tls_socket_send,
+	.fn_pending		= tls_socket_pending,
+
+	.fn_set_option		= tls_socket_set_option,
+
+	.fn_get_peer_name	= tls_socket_get_peer_name,
+	.fn_get_peer_addr	= tls_socket_get_peer_addr,
+	.fn_get_my_addr		= tls_socket_get_my_addr,
+	.fn_get_fd		= tls_socket_get_fd
+};
 
 BOOL tls_support(struct tls_params *params)
 {
@@ -526,38 +640,25 @@ struct tls_params *tls_initialise(TALLOC_CTX *mem_ctx)
 	return talloc_new(mem_ctx);
 }
 
-struct tls_context *tls_init_server(struct tls_params *params, 
-				    struct socket_context *sock, 
-				    struct fd_event *fde,
-				    const char *plain_chars,
-				    BOOL tls_enable)
+/*
+  setup for a new connection
+*/
+struct socket_context *tls_init_server(struct tls_params *params, 
+				    struct socket_context *socket,
+				    struct fd_event *fde, 
+				    const char *plain_chars)
 {
-	if (tls_enable && plain_chars == NULL) return NULL;
-	return (struct tls_context *)sock;
-}
-
-struct tls_context *tls_init_client(struct socket_context *sock, 
-				    struct fd_event *fde,
-				    BOOL tls_enable)
-{
-	return (struct tls_context *)sock;
+	return socket;
 }
 
 
-NTSTATUS tls_socket_recv(struct tls_context *tls, void *buf, size_t wantlen, 
-			 size_t *nread)
+/*
+  setup for a new client connection
+*/
+struct socket_context *tls_init_client(struct socket_context *socket,
+				       struct fd_event *fde)
 {
-	return socket_recv((struct socket_context *)tls, buf, wantlen, nread);
-}
-
-NTSTATUS tls_socket_send(struct tls_context *tls, const DATA_BLOB *blob, size_t *sendlen)
-{
-	return socket_send((struct socket_context *)tls, blob, sendlen);
-}
-
-BOOL tls_enabled(struct tls_context *tls)
-{
-	return False;
+	return socket;
 }
 
 BOOL tls_support(struct tls_params *params)
@@ -565,9 +666,5 @@ BOOL tls_support(struct tls_params *params)
 	return False;
 }
 
-NTSTATUS tls_socket_pending(struct tls_context *tls, size_t *npending)
-{
-	return socket_pending((struct socket_context *)tls, npending);
-}
-
 #endif
+

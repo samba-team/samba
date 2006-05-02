@@ -37,31 +37,21 @@ struct tls_params *tls_initialise(TALLOC_CTX *mem_ctx);
   tls and non-tls servers on the same port. If this is NULL then only
   tls connections will be allowed
 */
-struct tls_context *tls_init_server(struct tls_params *parms,
+struct socket_context *tls_init_server(struct tls_params *parms,
 				    struct socket_context *sock, 
 				    struct fd_event *fde,
-				    const char *plain_chars,
-				    BOOL tls_enable);
+				    const char *plain_chars);
 
 /*
   call tls_init_client() on each new client connection
 */
-struct tls_context *tls_init_client(struct socket_context *sock, 
-				    struct fd_event *fde,
-				    BOOL tls_enable);
-
-/*
-  call these to send and receive data. They behave like socket_send() and socket_recv()
- */
-NTSTATUS tls_socket_recv(struct tls_context *tls, void *buf, size_t wantlen, 
-			 size_t *nread);
-NTSTATUS tls_socket_send(struct tls_context *tls, const DATA_BLOB *blob, 
-			 size_t *sendlen);
+struct socket_context *tls_init_client(struct socket_context *sock, 
+				    struct fd_event *fde);
 
 /*
   return True if a connection used tls
 */
-BOOL tls_enabled(struct tls_context *tls);
+BOOL tls_enabled(struct socket_context *tls);
 
 
 /*
@@ -69,10 +59,6 @@ BOOL tls_enabled(struct tls_context *tls);
 */
 BOOL tls_support(struct tls_params *parms);
 
-
-/*
-  ask for the number of bytes in a pending incoming packet
-*/
-NTSTATUS tls_socket_pending(struct tls_context *tls, size_t *npending);
+const struct socket_ops *socket_tls_ops(enum socket_type type);
 
 #endif

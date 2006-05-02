@@ -223,7 +223,7 @@ NTSTATUS ldap_bind_sasl(struct ldap_connection *conn, struct cli_credentials *cr
 
 	/* require Kerberos SIGN/SEAL only if we don't use SSL
 	 * Windows seem not to like double encryption */
-	if (conn->tls == NULL || (! tls_enabled(conn->tls))) {
+	if (!tls_enabled(conn->sock)) {
 		gensec_want_feature(conn->gensec, 0 | GENSEC_FEATURE_SIGN | GENSEC_FEATURE_SEAL);
 	}
 

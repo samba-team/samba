@@ -37,9 +37,9 @@ static int socket_destructor(void *ptr)
 	return 0;
 }
 
-static NTSTATUS socket_create_with_ops(TALLOC_CTX *mem_ctx, const struct socket_ops *ops,
-				       struct socket_context **new_sock, 
-				       enum socket_type type, uint32_t flags)
+_PUBLIC_ NTSTATUS socket_create_with_ops(TALLOC_CTX *mem_ctx, const struct socket_ops *ops,
+					 struct socket_context **new_sock, 
+					 enum socket_type type, uint32_t flags)
 {
 	NTSTATUS status;
 

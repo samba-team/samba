@@ -26,7 +26,6 @@
 #include "dlinklist.h"
 #include "lib/events/events.h"
 #include "lib/socket/socket.h"
-#include "lib/tls/tls.h"
 #include "lib/stream/packet.h"
 
 
@@ -37,7 +36,6 @@ struct packet_context {
 	DATA_BLOB partial;
 	uint32_t num_read;
 	uint32_t initial_read;
-	struct tls_context *tls;
 	struct socket_context *sock;
 	struct event_context *ev;
 	size_t packet_size;
@@ -126,15 +124,7 @@ _PUBLIC_ void packet_set_full_request(struct packet_context *pc, packet_full_req
 }
 
 /*
-  set a tls context to use. You must either set a tls_context or a socket_context
-*/
-_PUBLIC_ void packet_set_tls(struct packet_context *pc, struct tls_context *tls)
-{
-	pc->tls = tls;
-}
-
-/*
-  set a socket context to use. You must either set a tls_context or a socket_context
+  set a socket context to use. You must set a socket_context
 */
 _PUBLIC_ void packet_set_socket(struct packet_context *pc, struct socket_context *sock)
 {
@@ -194,7 +184,6 @@ _PUBLIC_ void packet_set_nofree(struct packet_context *pc)
 */
 static void packet_error(struct packet_context *pc, NTSTATUS status)
 {
-	pc->tls = NULL;
 	pc->sock = NULL;
 	if (pc->error_handler) {
 		pc->error_handler(pc->private, status);
@@ -266,9 +255,7 @@ _PUBLIC_ void packet_recv(struct packet_context *pc)
 	} else if (pc->initial_read != 0) {
 		npending = pc->initial_read - pc->num_read;
 	} else {
-		if (pc->tls) {
-			status = tls_socket_pending(pc->tls, &npending);
-		} else if (pc->sock) {
+		if (pc->sock) {
 			status = socket_pending(pc->sock, &npending);
 		} else {
 			status = NT_STATUS_CONNECTION_DISCONNECTED;
@@ -293,13 +280,9 @@ _PUBLIC_ void packet_recv(struct packet_context *pc)
 		}
 	}
 
-	if (pc->tls) {
-		status = tls_socket_recv(pc->tls, pc->partial.data + pc->num_read, 
-					 npending, &nread);
-	} else {
-		status = socket_recv(pc->sock, pc->partial.data + pc->num_read, 
-				     npending, &nread);
-	}
+	status = socket_recv(pc->sock, pc->partial.data + pc->num_read, 
+			     npending, &nread);
+
 	if (NT_STATUS_IS_ERR(status)) {
 		packet_error(pc, status);
 		return;
@@ -452,11 +435,8 @@ _PUBLIC_ void packet_queue_run(struct packet_context *pc)
 		DATA_BLOB blob = data_blob_const(el->blob.data + el->nsent,
 						 el->blob.length - el->nsent);
 
-		if (pc->tls) {
-			status = tls_socket_send(pc->tls, &blob, &nwritten);
-		} else {
-			status = socket_send(pc->sock, &blob, &nwritten);
-		}
+		status = socket_send(pc->sock, &blob, &nwritten);
+
 		if (NT_STATUS_IS_ERR(status)) {
 			packet_error(pc, NT_STATUS_NET_WRITE_FAULT);
 			return;
