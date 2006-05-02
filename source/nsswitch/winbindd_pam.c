@@ -611,9 +611,14 @@ failed:
 
 	krb5_ret = ads_kdestroy(cc);
 	if (krb5_ret) {
-		DEBUG(0,("winbindd_raw_kerberos_login: "
+		DEBUG(3,("winbindd_raw_kerberos_login: "
 			 "could not destroy krb5 credential cache: "
 			 "%s\n", error_message(krb5_ret)));
+	}
+
+	if (!NT_STATUS_IS_OK(remove_ccache_by_ccname(cc))) {
+		DEBUG(3,("winbindd_raw_kerberos_login: "
+			  "could not remove ccache\n"));
 	}
 
 done:
