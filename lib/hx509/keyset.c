@@ -91,18 +91,23 @@ hx509_certs_init(hx509_context context,
 	type = strdup("MEMORY");
 	residue = name;
     }
-    if (type == NULL)
+    if (type == NULL) {
+	hx509_clear_error_string(context);
 	return ENOMEM;
+    }
     
     ops = _hx509_ks_type(context, type);
     free(type);
-    if (ops == NULL)
+    if (ops == NULL) {
+	hx509_set_error_string(context, 0, ENOENT, 
+			       "Keyset type %s is not supported", type);
 	return ENOENT;
-
+    }
     c = calloc(1, sizeof(*c));
-    if (c == NULL)
+    if (c == NULL) {
+	hx509_clear_error_string(context);
 	return ENOMEM;
-
+    }
     c->ops = ops;
 
     ret = (*ops->init)(context, c, &c->ops_data, flags, residue, lock);
@@ -132,8 +137,12 @@ hx509_certs_start_seq(hx509_context context,
 {
     int ret;
 
-    if (certs->ops->iter_start == NULL)
+    if (certs->ops->iter_start == NULL) {
+	hx509_set_error_string(context, 0, ENOENT, 
+			       "Keyset type %s doesn't support iteration", 
+			       certs->ops->name);
 	return ENOENT;
+    }
 
     ret = (*certs->ops->iter_start)(context, certs, certs->ops_data, cursor);
     if (ret)
@@ -219,8 +228,12 @@ hx509_ci_print_names(hx509_context context, void *ctx, hx509_cert c)
 int
 hx509_certs_add(hx509_context context, hx509_certs certs, hx509_cert cert)
 {
-    if (certs->ops->add == NULL)
+    if (certs->ops->add == NULL) {
+	hx509_set_error_string(context, 0, ENOENT, 
+			       "Keyset type %s doesn't support add operation", 
+			       certs->ops->name);
 	return ENOENT;
+    }
 
     return (*certs->ops->add)(context, certs, certs->ops_data, cert);
 }
@@ -261,8 +274,10 @@ hx509_certs_find(hx509_context context,
     hx509_certs_end_seq(context, certs, cursor);
     if (ret)
 	return ret;
-    if (c == NULL)
+    if (c == NULL) {
+	hx509_clear_error_string(context);
 	return HX509_CERT_NOT_FOUND;
+    }
 
     return 0;
 }
