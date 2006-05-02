@@ -971,8 +971,10 @@ _hx509_private_key2SPKI(hx509_context context,
 			SubjectPublicKeyInfo *spki)
 {
     const struct signature_alg *md = private_key->md;
-    if (md->private_key2SPKI == NULL)
+    if (md->private_key2SPKI == NULL) {
+	hx509_set_error_string(context, 0, EINVAL, "private key have no key2SPKI function");
 	return EINVAL;
+    }
     return (*md->private_key2SPKI)(private_key, spki);
 }
 
@@ -1165,6 +1167,8 @@ CMSCBCParam_get(hx509_context context, const hx509_crypto crypto,
 		       ivec, &size, ret);
     if (ret == 0 && size != param->length)
 	_hx509_abort("Internal asn1 encoder failure");
+    if (ret)
+	hx509_clear_error_string(context);
     return ret;
 }
 
@@ -1172,10 +1176,15 @@ static int
 CMSCBCParam_set(hx509_context context, const heim_octet_string *param,
 		hx509_crypto crypto, heim_octet_string *ivec)
 {
+    int ret;
     if (ivec == NULL)
 	return 0;
 
-    return decode_CMSCBCParameter(param->data, param->length, ivec, NULL);
+    ret = decode_CMSCBCParameter(param->data, param->length, ivec, NULL);
+    if (ret)
+	hx509_clear_error_string(context);
+
+    return ret;
 }
 
 struct _RC2_params {
@@ -1229,12 +1238,15 @@ CMSRC2CBCParam_set(hx509_context context, const heim_octet_string *param,
 
     ret = decode_CMSRC2CBCParameter(param->data, param->length,
 				    &rc2param, &size);
-    if (ret)
+    if (ret) {
+	hx509_clear_error_string(context);
 	return ret;
+    }
 
     p = calloc(1, sizeof(*p));
     if (p == NULL) {
 	free_CMSRC2CBCParameter(&rc2param);
+	hx509_clear_error_string(context);
 	return ENOMEM;
     }
     switch(rc2param.rc2ParameterVersion) {
@@ -1257,7 +1269,9 @@ CMSRC2CBCParam_set(hx509_context context, const heim_octet_string *param,
     if (ivec)
 	ret = copy_octet_string(&rc2param.iv, ivec);
     free_CMSRC2CBCParameter(&rc2param);
-    if (ret == 0)
+    if (ret)
+	hx509_clear_error_string(context);
+    else
 	crypto->param = p;
 
     return ret;
@@ -1373,18 +1387,25 @@ hx509_crypto_init(hx509_context context,
     *crypto = NULL;
 
     cipher = find_cipher_by_oid(enctype);
-    if (cipher == NULL)
+    if (cipher == NULL) {
+	hx509_set_error_string(context, 0, HX509_ALG_NOT_SUPP,
+			       "Algorithm not supported");
 	return HX509_ALG_NOT_SUPP;
+    }
 
     *crypto = calloc(1, sizeof(**crypto));
-    if (*crypto == NULL)
+    if (*crypto == NULL) {
+	hx509_clear_error_string(context);
 	return ENOMEM;
+    }
 
     (*crypto)->cipher = cipher;
     (*crypto)->c = (*cipher->evp_func)();
 
     if (copy_oid(enctype, &(*crypto)->oid)) {
 	hx509_crypto_destroy(*crypto);
+	*crypto = NULL;
+	hx509_clear_error_string(context);
 	return ENOMEM;
     }
 
@@ -1779,19 +1800,27 @@ _hx509_pbe_decrypt(hx509_context context,
 
     enc_oid = find_string2key(&ai->algorithm, &c, &md, &s2k);
     if (enc_oid == NULL) {
+	hx509_set_error_string(context, 0, HX509_ALG_NOT_SUPP,
+			       "String to key algorithm not supported");
 	ret = HX509_ALG_NOT_SUPP;
 	goto out;
     }
 
     key.length = EVP_CIPHER_key_length(c);
     key.data = malloc(key.length);
-    if (key.data == NULL)
+    if (key.data == NULL) {
+	ret = ENOMEM;
+	hx509_clear_error_string(context);
 	goto out;
+    }
 
     iv.length = EVP_CIPHER_iv_length(c);
     iv.data = malloc(iv.length);
-    if (iv.data == NULL)
+    if (iv.data == NULL) {
+	ret = ENOMEM;
+	hx509_clear_error_string(context);
 	goto out;
+    }
 
     pw = _hx509_lock_get_passwords(lock);
 
