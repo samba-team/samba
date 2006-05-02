@@ -350,11 +350,13 @@ hx509_cms_envelope_1(hx509_context context,
 	AlgorithmIdentifier *enc_alg;
 	enc_alg = &ed.encryptedContentInfo.contentEncryptionAlgorithm;
 	ret = copy_oid(encryption_type, &enc_alg->algorithm);
-	if (ret)
+	if (ret) {
+	    hx509_clear_error_string(context);
 	    goto out;
-	
+	}	
 	ALLOC(enc_alg->parameters, 1);
 	if (enc_alg->parameters == NULL) {
+	    hx509_clear_error_string(context);
 	    ret = ENOMEM;
 	    goto out;
 	}
@@ -434,8 +436,10 @@ any_to_certs(hx509_context context, const SignedData *sd, hx509_certs certs)
 	size_t size, length = sd->certificates->val[i].length;
 
 	ret = decode_Certificate(p, length, &cert, &size);
-	if (ret)
+	if (ret) {
+	    hx509_clear_error_string(context);
 	    return ret;
+	}
 
 	ret = hx509_cert_init(context, &cert, &c);
 	free_Certificate(&cert);
@@ -488,10 +492,12 @@ hx509_cms_verify_signed(hx509_context context,
 
     ret = decode_SignedData(data, length, &sd, &size);
     if (ret) {
+	hx509_clear_error_string(context);
 	goto out;
     }
 
     if (sd.encapContentInfo.eContent == NULL) {
+	hx509_clear_error_string(context);
 	ret = HX509_CMS_NO_DATA_AVAILABLE;
 	goto out;
     }
@@ -519,6 +525,8 @@ hx509_cms_verify_signed(hx509_context context,
 	    goto out;
     }
 
+    hx509_clear_error_string(context);
+
     ret = HX509_CMS_SIGNER_NOT_FOUND;
     for (found_valid_sig = 0, i = 0; i < sd.signerInfos.len; i++) {
 	heim_octet_string *signed_data;
@@ -530,13 +538,16 @@ hx509_cms_verify_signed(hx509_context context,
 
 	if (signer_info->signature.length == 0) {
 	    ret = HX509_CMS_MISSING_SIGNER_DATA;
+	    hx509_clear_error_string(context);
 	    continue;
 	}
 
 	ret = find_CMSIdentifier(context, &signer_info->sid, certs, &cert,
 				 HX509_QUERY_KU_DIGITALSIGNATURE);
-	if (ret)
+	if (ret) {
+	    hx509_clear_error_string(context);
 	    continue;
+	}
 
 	if (signer_info->signedAttrs) {
 	    const Attribute *attr;
@@ -551,10 +562,12 @@ hx509_cms_verify_signed(hx509_context context,
 	    attr = find_attribute(&sa, oid_id_pkcs9_messageDigest());
 	    if (attr == NULL) {
 		ret = HX509_CRYPTO_SIGNATURE_MISSING;
+		hx509_clear_error_string(context);
 		continue;
 	    }
 	    if (attr->value.len != 1) {
 		ret = HX509_CRYPTO_SIGNATURE_MISSING;
+		hx509_clear_error_string(context);
 		continue;
 	    }
 	    
@@ -562,16 +575,20 @@ hx509_cms_verify_signed(hx509_context context,
 				       attr->value.val[0].length,
 				       &os,
 				       &size);
-	    if (ret)
+	    if (ret) {
+		hx509_clear_error_string(context);
 		continue;
+	    }
 
 	    ret = _hx509_verify_signature(NULL,
 					  &signer_info->digestAlgorithm,
 					  sd.encapContentInfo.eContent,
 					  &os);
 	    free_octet_string(&os);
-	    if (ret)
+	    if (ret) {
+		hx509_clear_error_string(context);
 		continue;
+	    }
 
 	    /* 
 	     * Fetch content oid inside signedAttrs or set it to
@@ -583,14 +600,17 @@ hx509_cms_verify_signed(hx509_context context,
 	    } else {
 		if (attr->value.len != 1) {
 		    ret = HX509_CMS_DATA_OID_MISMATCH;
+		    hx509_clear_error_string(context);
 		    continue;
 		}
 		ret = decode_ContentType(attr->value.val[0].data, 
 					 attr->value.val[0].length,
 					 &decode_oid, 
 					 &size);
-		if (ret)
+		if (ret) {
+		    hx509_clear_error_string(context);
 		    continue;
+		}
 		match_oid = &decode_oid;
 	    }
 
@@ -599,6 +619,7 @@ hx509_cms_verify_signed(hx509_context context,
 		if (match_oid == &decode_oid)
 		    free_oid(&decode_oid);
 		ret = ENOMEM;
+		hx509_clear_error_string(context);
 		continue;
 	    }
 	    
@@ -611,6 +632,7 @@ hx509_cms_verify_signed(hx509_context context,
 		if (match_oid == &decode_oid)
 		    free_oid(&decode_oid);
 		free(signed_data);
+		hx509_clear_error_string(context);
 		continue;
 	    }
 	    if (size != signed_data->length)
@@ -623,9 +645,10 @@ hx509_cms_verify_signed(hx509_context context,
 	if (ret)
 	    return ret;
 
-	if (heim_oid_cmp(match_oid, &sd.encapContentInfo.eContentType))
+	if (heim_oid_cmp(match_oid, &sd.encapContentInfo.eContentType)) {
 	    ret = HX509_CMS_DATA_OID_MISMATCH;
-	
+		    hx509_clear_error_string(context);
+	}	
 	if (match_oid == &decode_oid)
 	    free_oid(&decode_oid);
 	
@@ -664,11 +687,13 @@ hx509_cms_verify_signed(hx509_context context,
 
     ret = copy_oid(&sd.encapContentInfo.eContentType, contentType);
     if (ret) {
+	hx509_clear_error_string(context);
 	goto out;
     }
 
     content->data = malloc(sd.encapContentInfo.eContent->length);
     if (content->data == NULL) {
+	hx509_clear_error_string(context);
 	ret = ENOMEM;
 	goto out;
     }
@@ -775,8 +800,10 @@ hx509_cms_create_signed_1(hx509_context context,
     memset(&name, 0, sizeof(name));
     memset(&path, 0, sizeof(path));
 
-    if (_hx509_cert_private_key(cert) == NULL)
+    if (_hx509_cert_private_key(cert) == NULL) {
+	hx509_clear_error_string(context);
 	return HX509_PRIVATE_KEY_MISSING;
+    }
 
     /* XXX */
     if (digest_alg == NULL)
@@ -787,12 +814,14 @@ hx509_cms_create_signed_1(hx509_context context,
     copy_oid(eContentType, &sd.encapContentInfo.eContentType);
     ALLOC(sd.encapContentInfo.eContent, 1);
     if (sd.encapContentInfo.eContent == NULL) {
+	hx509_clear_error_string(context);
 	ret = ENOMEM;
 	goto out;
     }
 
     sd.encapContentInfo.eContent->data = malloc(length);
     if (sd.encapContentInfo.eContent->data == NULL) {
+	hx509_clear_error_string(context);
 	ret = ENOMEM;
 	goto out;
     }
@@ -801,6 +830,7 @@ hx509_cms_create_signed_1(hx509_context context,
 
     ALLOC_SEQ(&sd.signerInfos, 1);
     if (sd.signerInfos.val == NULL) {
+	hx509_clear_error_string(context);
 	ret = ENOMEM;
 	goto out;
     }
@@ -810,9 +840,11 @@ hx509_cms_create_signed_1(hx509_context context,
     signer_info->version = 1;
 
     ret = fill_CMSIdentifier(cert, &signer_info->sid);
-    if (ret)
+    if (ret) {
+	hx509_clear_error_string(context);
 	goto out;
-			    
+    }			    
+
     signer_info->signedAttrs = NULL;
     signer_info->unsignedAttrs = NULL;
 
@@ -827,16 +859,20 @@ hx509_cms_create_signed_1(hx509_context context,
 
 	ret = copy_AlgorithmIdentifier(digest_alg,
 				       &signer_info->digestAlgorithm);
-	if (ret)
+	if (ret) {
+	    hx509_clear_error_string(context);
 	    goto out;
+	}
 
 	ret = _hx509_create_signature(NULL,
 				      digest_alg,
 				      sd.encapContentInfo.eContent,
 				      NULL,
 				      &digest);
-	if (ret)
+	if (ret) {
+	    hx509_clear_error_string(context);
 	    goto out;
+	}
 
 	ASN1_MALLOC_ENCODE(MessageDigest,
 			   buf.data,
@@ -845,8 +881,10 @@ hx509_cms_create_signed_1(hx509_context context,
 			   &size,
 			   ret);
 	free_octet_string(&digest);
-	if (ret)
+	if (ret) {
+	    hx509_clear_error_string(context);
 	    goto out;
+	}
 	if (size != buf.length)
 	    _hx509_abort("internal ASN.1 encoder error");
 
@@ -854,8 +892,10 @@ hx509_cms_create_signed_1(hx509_context context,
 				&signer_info->signedAttrs->len,
 				oid_id_pkcs9_messageDigest(),
 				&buf);
-	if (ret)
+	if (ret) {
+	    hx509_clear_error_string(context);
 	    goto out;
+	}
 
     }
 
@@ -876,9 +916,10 @@ hx509_cms_create_signed_1(hx509_context context,
 				&signer_info->signedAttrs->len,
 				oid_id_pkcs9_contentType(),
 				&buf);
-	if (ret)
+	if (ret) {
+	    hx509_clear_error_string(context);
 	    goto out;
-
+	}
     }
 
 
@@ -895,8 +936,10 @@ hx509_cms_create_signed_1(hx509_context context,
 			   &sa,
 			   &size,
 			   ret);
-	if (ret)
+	if (ret) {
+	    hx509_clear_error_string(context);
 	    goto out;
+	}
 	if (size != os.length)
 	    _hx509_abort("internal ASN.1 encoder error");
 			   
@@ -907,19 +950,23 @@ hx509_cms_create_signed_1(hx509_context context,
 				      &signer_info->signature);
 				      
 	free_octet_string(&os);
-	if (ret)
+	if (ret) {
+	    hx509_clear_error_string(context);
 	    goto out;
+	}
     }
 
     ALLOC_SEQ(&sd.digestAlgorithms, 1);
     if (sd.digestAlgorithms.val == NULL) {
 	ret = ENOMEM;
+	hx509_clear_error_string(context);
 	goto out;
     }
 
     ret = copy_AlgorithmIdentifier(digest_alg,
 				   &sd.digestAlgorithms.val[0]);
     if (ret) {
+	hx509_clear_error_string(context);
 	goto out;
     }
 
@@ -945,11 +992,13 @@ hx509_cms_create_signed_1(hx509_context context,
 
 	ALLOC(sd.certificates, 1);
 	if (sd.certificates == NULL) {
+	    hx509_clear_error_string(context);
 	    ret = ENOMEM;
 	    goto out;
 	}
 	ALLOC_SEQ(sd.certificates, path.len);
 	if (sd.certificates->val == NULL) {
+	    hx509_clear_error_string(context);
 	    ret = ENOMEM;
 	    goto out;
 	}
@@ -960,16 +1009,20 @@ hx509_cms_create_signed_1(hx509_context context,
 			       sd.certificates->val[i].length,
 			       _hx509_get_cert(path.val[i]),
 			       &size, ret);
-	    if (ret)
+	    if (ret) {
+		hx509_clear_error_string(context);
 		goto out;
+	    }
 	}
     }
 
     ASN1_MALLOC_ENCODE(SignedData,
 		       signed_data->data, signed_data->length,
 		       &sd, &size, ret);
-    if (ret)
+    if (ret) {
+	hx509_clear_error_string(context);
 	goto out;
+    }
     if (signed_data->length != size)
 	_hx509_abort("internal ASN.1 encoder error");
 
@@ -997,21 +1050,27 @@ hx509_cms_decrypt_encrypted(hx509_context context,
     memset(&cont, 0, sizeof(cont));
 
     ret = decode_CMSEncryptedData(data, length, &ed, NULL);
-    if (ret)
+    if (ret) {
+	hx509_clear_error_string(context);
 	return ret;
+    }
 
     if (ed.encryptedContentInfo.encryptedContent == NULL) {
 	ret = HX509_CMS_NO_DATA_AVAILABLE;
+	hx509_clear_error_string(context);
 	goto out;
     }
 
     ret = copy_oid(&ed.encryptedContentInfo.contentType, contentType);
-    if (ret)
+    if (ret) {
+	hx509_clear_error_string(context);
 	goto out;
+    }
 
     ai = &ed.encryptedContentInfo.contentEncryptionAlgorithm;
     if (ai->parameters == NULL) {
 	ret = HX509_ALG_NOT_SUPP;
+	hx509_clear_error_string(context);
 	goto out;
     }
 
