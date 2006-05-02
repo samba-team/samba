@@ -554,8 +554,8 @@ static int winbind_chauthtok_request(pam_handle_t * pamh,
 			case -1:
 				break;
 			case REJECT_REASON_OTHER:
-				if ((response.data.auth.policy.min_passwordage > 0)) &&
-				    (pwd_last_set + response.data.auth.policy.min_passwordage > time(NULL)) {
+				if ((response.data.auth.policy.min_passwordage > 0) &&
+				    (pwd_last_set + response.data.auth.policy.min_passwordage > time(NULL))) {
 					PAM_WB_REMARK_DIRECT(pamh, "NT_STATUS_PWD_TOO_RECENT");
 				}
 				break;
