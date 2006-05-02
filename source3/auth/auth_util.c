@@ -1563,16 +1563,11 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
+	/* this call will try to create the user if necessary */
+
 	nt_status = fill_sam_account(mem_ctx, nt_domain, sent_nt_username,
 				     &found_username, &uid, &gid, sam_account);
 
-	if (NT_STATUS_EQUAL(nt_status, NT_STATUS_NO_SUCH_USER)) {
-		DEBUG(3,("User %s does not exist, trying to add it\n",
-			 internal_username));
-		smb_create_user( nt_domain, sent_nt_username, NULL);
-		nt_status = fill_sam_account( mem_ctx, nt_domain, sent_nt_username, 
-					      &found_username, &uid, &gid, sam_account );
-	}
 	
 	/* if we still don't have a valid unix account check for 
 	  'map to guest = bad uid' */
