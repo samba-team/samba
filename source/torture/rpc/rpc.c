@@ -130,6 +130,7 @@ NTSTATUS torture_rpc_init(void)
 	register_torture_op("RPC-JOIN", torture_rpc_join, 0);
 	register_torture_op("RPC-DSSYNC", torture_rpc_dssync, 0);
 	register_torture_op("BENCH-RPC", torture_bench_rpc, 0);
+	register_torture_op("RPC-ASYNCBIND", torture_async_bind, 0);
 
 	return NT_STATUS_OK;
 }
