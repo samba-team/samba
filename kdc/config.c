@@ -528,6 +528,12 @@ configure(krb5_context context, int argc, char **argv)
 					"pki-revoke",
 					NULL);
 
+	config->pkinit_kdc_ocsp_file =
+	    krb5_config_get_string(context, NULL,
+				   "kdc",
+				   "pki-kdc-ocsp",
+				   NULL);
+
 	_kdc_pk_initialize(context, config, user_id, anchors, pool, revoke);
 
 	krb5_config_free_strings(pool);
