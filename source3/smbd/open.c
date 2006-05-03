@@ -1308,7 +1308,7 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 	 */
 
 #if defined(O_SYNC)
-	if (lp_strict_sync(SNUM(conn)) && (create_options & FILE_WRITE_THROUGH)) {
+	if ((create_options & FILE_WRITE_THROUGH) && lp_strict_sync(SNUM(conn))) {
 		flags2 |= O_SYNC;
 	}
 #endif /* O_SYNC */
