@@ -3,7 +3,7 @@
 
    Client credentials structure
 
-   Copyright (C) Jelmer Vernooij 2004-2005
+   Copyright (C) Jelmer Vernooij 2004-2006
    Copyright (C) Andrew Bartlett <abartlet@samba.org> 2005
 
    This program is free software; you can redistribute it and/or modify
@@ -33,6 +33,7 @@ enum credentials_obtained {
 	CRED_GUESS_ENV,	         /* Current value should be used, which was guessed */
 	CRED_CALLBACK, 		 /* Callback should be used to obtain value */
 	CRED_GUESS_FILE,	 /* A guess from a file (or file pointed at in env variable) */
+	CRED_CALLBACK_RESULT,    /* Value was obtained from a callback */
 	CRED_SPECIFIED		 /* Was explicitly specified on the command-line */
 };
 
@@ -104,6 +105,9 @@ struct cli_credentials {
 
 	/* Should we be trying to use kerberos? */
 	enum credentials_use_kerberos use_kerberos;
+
+	/* Number of retries left before bailing out */
+	int tries;
 };
 
 #include "auth/credentials/credentials_proto.h"
