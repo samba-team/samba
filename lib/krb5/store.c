@@ -380,19 +380,19 @@ krb5_ret_stringz(krb5_storage *sp,
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_store_principal(krb5_storage *sp,
-		     krb5_principal p)
+		     krb5_const_principal p)
 {
     int i;
     int ret;
 
     if(!krb5_storage_is_flags(sp, KRB5_STORAGE_PRINCIPAL_NO_NAME_TYPE)) {
-    ret = krb5_store_int32(sp, p->name.name_type);
-    if(ret) return ret;
+	ret = krb5_store_int32(sp, p->name.name_type);
+	if(ret) return ret;
     }
     if(krb5_storage_is_flags(sp, KRB5_STORAGE_PRINCIPAL_WRONG_NUM_COMPONENTS))
 	ret = krb5_store_int32(sp, p->name.name_string.len + 1);
     else
-    ret = krb5_store_int32(sp, p->name.name_string.len);
+	ret = krb5_store_int32(sp, p->name.name_string.len);
     
     if(ret) return ret;
     ret = krb5_store_string(sp, p->realm);
