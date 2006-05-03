@@ -1261,28 +1261,16 @@ void brl_close_fnum(struct byte_range_lock *br_lck, struct process_id pid)
 }
 
 /****************************************************************************
- Traverse the whole database with this function, calling traverse_callback
- on each lock.
+ Ensure this set of lock entries is valid.
 ****************************************************************************/
 
-static int traverse_fn(TDB_CONTEXT *ttdb, TDB_DATA kbuf, TDB_DATA dbuf, void *state)
+static BOOL validate_lock_entries(unsigned int *pnum_entries, struct lock_struct **pplocks)
 {
-	struct lock_struct *locks;
-	struct lock_key *key;
 	unsigned int i;
-	unsigned int num_locks = 0;
 	unsigned int num_valid_entries = 0;
+	struct lock_struct *locks = *pplocks;
 
-	BRLOCK_FN(traverse_callback) = (BRLOCK_FN_CAST())state;
-
-	locks = (struct lock_struct *)dbuf.dptr;
-	key = (struct lock_key *)kbuf.dptr;
-
-	num_locks = dbuf.dsize/sizeof(*locks);
-
-	/* Ensure the lock db is clean of invalid processes. */
-
-	for (i = 0; i < num_locks; i++) {
+	for (i = 0; i < *pnum_entries; i++) {
 		struct lock_struct *lock_data = &locks[i];
 		if (!process_exists(lock_data->context.pid)) {
 			/* This process no longer exists - mark this
@@ -1293,17 +1281,18 @@ static int traverse_fn(TDB_CONTEXT *ttdb, TDB_DATA kbuf, TDB_DATA dbuf, void *st
 		}
 	}
 
-	if (num_valid_entries != num_locks) {
+	if (num_valid_entries != *pnum_entries) {
 		struct lock_struct *new_lock_data = NULL;
 
 		if (num_valid_entries) {
 			new_lock_data = SMB_MALLOC_ARRAY(struct lock_struct, num_valid_entries);
 			if (!new_lock_data) {
 				DEBUG(3, ("malloc fail\n"));
-				return 0;
+				return False;
 			}
+
 			num_valid_entries = 0;
-			for (i = 0; i < num_locks; i++) {
+			for (i = 0; i < *pnum_entries; i++) {
 				struct lock_struct *lock_data = &locks[i];
 				if (lock_data->context.smbpid &&
 						lock_data->context.tid) {
@@ -1314,9 +1303,51 @@ static int traverse_fn(TDB_CONTEXT *ttdb, TDB_DATA kbuf, TDB_DATA dbuf, void *st
 				}
 			}
 		}
-		SAFE_FREE(dbuf.dptr);
-		dbuf.dptr = (void *)new_lock_data;
-		dbuf.dsize = (num_valid_entries) * sizeof(*locks);
+
+		SAFE_FREE(*pplocks);
+		*pplocks = new_lock_data;
+		*pnum_entries = num_valid_entries;
+	}
+
+	return True;
+}
+
+/****************************************************************************
+ Traverse the whole database with this function, calling traverse_callback
+ on each lock.
+****************************************************************************/
+
+static int traverse_fn(TDB_CONTEXT *ttdb, TDB_DATA kbuf, TDB_DATA dbuf, void *state)
+{
+	struct lock_struct *locks;
+	struct lock_key *key;
+	unsigned int i;
+	unsigned int num_locks = 0;
+	unsigned int orig_num_locks = 0;
+
+	BRLOCK_FN(traverse_callback) = (BRLOCK_FN_CAST())state;
+
+	/* In a traverse function we must make a copy of
+	   dbuf before modifying it. */
+
+	locks = (struct lock_struct *)memdup(dbuf.dptr, dbuf.dsize);
+	if (!locks) {
+		return -1; /* Terminate traversal. */
+	}
+
+	key = (struct lock_key *)kbuf.dptr;
+	orig_num_locks = num_locks = dbuf.dsize/sizeof(*locks);
+
+	/* Ensure the lock db is clean of entries from invalid processes. */
+
+	if (!validate_lock_entries(&num_locks, &locks)) {
+		SAFE_FREE(locks);
+		return -1; /* Terminate traversal */
+	}
+
+	if (orig_num_locks != num_locks) {
+		dbuf.dptr = (void *)locks;
+		dbuf.dsize = num_locks * sizeof(*locks);
 
 		if (dbuf.dsize) {
 			tdb_store(ttdb, kbuf, dbuf, TDB_REPLACE);
@@ -1325,7 +1356,7 @@ static int traverse_fn(TDB_CONTEXT *ttdb, TDB_DATA kbuf, TDB_DATA dbuf, void *st
 		}
 	}
 
-	for (i=0;i<dbuf.dsize/sizeof(*locks);i++) {
+	for ( i=0; i<num_locks; i++) {
 		traverse_callback(key->device,
 				  key->inode,
 				  locks[i].context.pid,
@@ -1334,6 +1365,8 @@ static int traverse_fn(TDB_CONTEXT *ttdb, TDB_DATA kbuf, TDB_DATA dbuf, void *st
 				  locks[i].start,
 				  locks[i].size);
 	}
+
+	SAFE_FREE(locks);
 	return 0;
 }
 
@@ -1429,47 +1462,12 @@ struct byte_range_lock *brl_get_locks(files_struct *fsp)
 		/* This is the first time we've accessed this. */
 		/* Go through and ensure all entries exist - remove any that don't. */
 		/* Makes the lockdb self cleaning at low cost. */
-		unsigned int num_valid_entries = 0;
-		unsigned int i;
 
-		for (i = 0; i < br_lck->num_locks; i++) {
-			struct lock_struct *lock_data = &((struct lock_struct *)br_lck->lock_data)[i];
-			if (!process_exists(lock_data->context.pid)) {
-				/* This process no longer exists - mark this
-				   entry as invalid by zeroing it. */
-				ZERO_STRUCTP(lock_data);
-			} else {
-				num_valid_entries++;
-			}
-		}
-
-		if (num_valid_entries != br_lck->num_locks) {
-			struct lock_struct *new_lock_data = NULL;
-
-			if (num_valid_entries) {
-				new_lock_data = SMB_MALLOC_ARRAY(struct lock_struct, num_valid_entries);
-				if (!new_lock_data) {
-					DEBUG(3, ("malloc fail\n"));
-					tdb_chainunlock(tdb, key);
-					SAFE_FREE(br_lck->lock_data);
-					SAFE_FREE(br_lck);
-					return NULL;
-				}
-				num_valid_entries = 0;
-				for (i = 0; i < br_lck->num_locks; i++) {
-					struct lock_struct *lock_data = &((struct lock_struct *)br_lck->lock_data)[i];
-					if (lock_data->context.smbpid &&
-							lock_data->context.tid) {
-						/* Valid (nonzero) entry - copy it. */
-						memcpy(&new_lock_data[num_valid_entries],
-							lock_data, sizeof(struct lock_struct));
-						num_valid_entries++;
-					}
-				}
-			}
+		if (!validate_lock_entries(&br_lck->num_locks, (struct lock_struct **)&br_lck->lock_data)) {
+			tdb_chainunlock(tdb, key);
 			SAFE_FREE(br_lck->lock_data);
-			br_lck->lock_data = (void *)new_lock_data;
-			br_lck->num_locks = num_valid_entries;
+			SAFE_FREE(br_lck);
+			return NULL;
 		}
 
 		/* Mark the lockdb as "clean" as seen from this open file. */
