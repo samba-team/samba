@@ -140,7 +140,6 @@ AC_INCLUDES_DEFAULT
 #endif]
 )
 
-sinclude(lib/replace/readline.m4)
 sinclude(lib/replace/getpass.m4)
 
 dnl VA_COPY

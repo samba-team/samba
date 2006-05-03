@@ -50,6 +50,7 @@ pread
 pwrite
 getpass
 readline (the library)
+inet_ntoa
 
 Types:
 bool
