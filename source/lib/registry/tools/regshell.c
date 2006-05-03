@@ -25,7 +25,7 @@
 #include "lib/events/events.h"
 #include "lib/registry/reg_backend_rpc.h"
 #include "system/time.h"
-#include "lib/replace/smbreadline.h"
+#include "lib/smbreadline/smbreadline.h"
 #include "librpc/gen_ndr/ndr_security.h"
 
 /* 
