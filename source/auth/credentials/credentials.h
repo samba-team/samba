@@ -108,6 +108,9 @@ struct cli_credentials {
 
 	/* Number of retries left before bailing out */
 	int tries;
+
+	/* Whether any callback is currently running */
+	BOOL callback_running;
 };
 
 #include "auth/credentials/credentials_proto.h"

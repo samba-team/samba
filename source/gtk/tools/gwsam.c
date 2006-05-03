@@ -437,7 +437,6 @@ int main(int argc, char **argv)
 
 	gtk_init(&argc, &argv);
 	mainwin = create_mainwindow();
-	connect_sam();
 	gtk_widget_show_all(mainwin);
 
 	return gtk_event_loop();
