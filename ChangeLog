@@ -1,5 +1,11 @@
-2006-05-02  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-05-03  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kdc/kdc.h (krb5_kdc_configuration): add pkinit_kdc_ocsp_file
+
+	* kdc/config.c: read [kdc]pki-kdc-ocsp
+	
+2006-05-02  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* kdc/pkinit.c (_kdc_pk_mk_pa_reply): send back ocsp response if
 	it seems to be valid, simplfy the pkinit-windows DH case (it
 	doesn't exists).
