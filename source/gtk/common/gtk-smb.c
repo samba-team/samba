@@ -174,7 +174,7 @@ static void gtk_rpc_binding_dialog_init (GtkRpcBindingDialog *gtk_rpc_binding_di
 	gtk_dialog_add_action_widget (GTK_DIALOG (gtk_rpc_binding_dialog), btn_cancel, GTK_RESPONSE_CANCEL);
 	GTK_WIDGET_SET_FLAGS (btn_cancel, GTK_CAN_DEFAULT);
 
-	btn_connect = gtk_button_new_with_mnemonic ("_Connect");
+	btn_connect = gtk_button_new_with_mnemonic ("C_onnect");
 	gtk_dialog_add_action_widget (GTK_DIALOG (gtk_rpc_binding_dialog), btn_connect, GTK_RESPONSE_ACCEPT);
 	gtk_container_set_border_width (GTK_CONTAINER (btn_connect), 1);
 	GTK_WIDGET_SET_FLAGS (btn_connect, GTK_CAN_DEFAULT);
