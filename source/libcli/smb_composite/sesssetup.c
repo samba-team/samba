@@ -77,6 +77,8 @@ static void request_handler(struct smbcli_request *req)
 	switch (state->setup.old.level) {
 	case RAW_SESSSETUP_OLD:
 		state->io->out.vuid = state->setup.old.out.vuid;
+		/* This doesn't work, as this only happens on old
+		 * protocols, where this comparison won't match. */
 		if (NT_STATUS_EQUAL(c->status, NT_STATUS_LOGON_FAILURE)) {
 			if (cli_credentials_wrong_password(state->io->in.credentials)) {
 				nt_status = session_setup_old(c, session, 
