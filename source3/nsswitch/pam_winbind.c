@@ -242,8 +242,9 @@ static int pam_winbind_request(pam_handle_t * pamh, int ctrl,
 	/* Copy reply data from socket */
 	if (response->result != WINBINDD_OK) {
 		if (response->data.auth.pam_error != PAM_SUCCESS) {
-			_pam_log(LOG_ERR, "request failed: %s, PAM error was %d, NT error was %s", 
+			_pam_log(LOG_ERR, "request failed: %s, PAM error was %s (%d), NT error was %s", 
 				 response->data.auth.error_string,
+				 pam_strerror(pamh, response->data.auth.pam_error),
 				 response->data.auth.pam_error,
 				 response->data.auth.nt_status_string);
 			return response->data.auth.pam_error;
@@ -1149,6 +1150,9 @@ int pam_sm_chauthtok(pam_handle_t * pamh, int flags,
 	}
 
 	_pam_log_debug(ctrl, LOG_DEBUG,"pam_winbind: pam_sm_chauthtok");
+
+	/* clearing offline bit for the auth in the password change */
+	ctrl &= ~WINBIND_CACHED_LOGIN;
 
 	/*
 	 * First get the name of a user
