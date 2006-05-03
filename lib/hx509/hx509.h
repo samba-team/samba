@@ -72,7 +72,7 @@ typedef struct hx509_prompt {
     const char *prompt;
     int hidden;
     hx509_prompt_type type;
-    heim_octet_string *reply;
+    heim_octet_string reply;
 } hx509_prompt;
 
 typedef int (*hx509_prompter_fct)(void *, const hx509_prompt *);
