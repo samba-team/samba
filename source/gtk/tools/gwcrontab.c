@@ -22,12 +22,14 @@
 #include "includes.h"
 #include "librpc/gen_ndr/ndr_atsvc_c.h"
 #include "gtk/common/gtk-smb.h"
+#include "gtk/common/select.h"
 #include "auth/credentials/credentials.h"
 
 static struct dcerpc_pipe *at_pipe = NULL;
 static GtkWidget *mainwin;
 static GtkListStore *store_jobs;
 static GtkWidget *tasks;
+static GtkWidget *new_task;
 static GtkWidget *entry_cmd;
 static GtkWidget *entry_repeat_weekly;
 static GtkWidget *entry_repeat_monthly;
@@ -70,7 +72,6 @@ static void update_joblist(void)
 
 	}
 	talloc_free(mem_ctx);
-	gtk_widget_set_sensitive(tasks, TRUE);
 }
 
 static void on_job_select(GtkTreeSelection *sel, gpointer data)
@@ -81,45 +82,12 @@ static void on_job_select(GtkTreeSelection *sel, gpointer data)
 
 static void on_connect_activate(GtkMenuItem *menuitem, gpointer user_data)
 {
-	GtkRpcBindingDialog *d;
-	NTSTATUS status;
-	struct cli_credentials *credentials;
-	gint result;
-	TALLOC_CTX *mem_ctx;
+	at_pipe = gtk_connect_rpc_interface(talloc_autofree_context(), &dcerpc_table_atsvc);
 
-	d = GTK_RPC_BINDING_DIALOG(gtk_rpc_binding_dialog_new(NULL));
-	result = gtk_dialog_run(GTK_DIALOG(d));
-	switch(result) {
-		case GTK_RESPONSE_ACCEPT:
-			break;
-		default: 
-        	gtk_widget_destroy(GTK_WIDGET(d));
+	if (!at_pipe)
 		return;
-	}
 
-	mem_ctx = talloc_init("gwcrontab_connect");
-	/* If connected, get list of jobs */
-
-	credentials = cli_credentials_init(mem_ctx);
-	cli_credentials_guess(credentials);
-	cli_credentials_set_gtk_callbacks(credentials);
-	
-	status = dcerpc_pipe_connect_b(mem_ctx, &at_pipe,
-				       gtk_rpc_binding_dialog_get_binding(d, mem_ctx),
-					   &dcerpc_table_atsvc,
-				       credentials, NULL);
-
-	if(!NT_STATUS_IS_OK(status)) {
-		gtk_show_ntstatus(mainwin, "Error while connecting to at service", status);
-		at_pipe = NULL;
-		gtk_widget_destroy(GTK_WIDGET(d));
-		talloc_free(mem_ctx);
-		return;
-	}
-	gtk_widget_destroy(GTK_WIDGET(d));
-
-	at_pipe = talloc_reference(talloc_autofree_context(), at_pipe);
-	talloc_free(mem_ctx);
+	gtk_widget_set_sensitive (new_task, TRUE);
 	update_joblist();
 }
 
@@ -129,12 +97,9 @@ static void on_quit_activate(GtkMenuItem *menuitem, gpointer user_data)
 	gtk_main_quit();
 }
 
-
 static GtkWidget* create_new_job_dialog (void);
 
-void
-on_new_activate                        (GtkMenuItem     *menuitem,
-										gpointer         user_data)
+void on_new_activate (GtkMenuItem *menuitem, gpointer user_data)
 {
 	GtkWidget *d = create_new_job_dialog();
 	gint result = gtk_dialog_run(GTK_DIALOG(d));
@@ -176,9 +141,7 @@ on_new_activate                        (GtkMenuItem     *menuitem,
 }
 
 
-void
-on_delete_activate                     (GtkMenuItem     *menuitem,
-                                        gpointer         user_data)
+void on_delete_activate(GtkMenuItem *menuitem, gpointer user_data)
 {
 	GtkTreeSelection *sel = gtk_tree_view_get_selection(GTK_TREE_VIEW(tasks));
 	GtkTreeModel *model = GTK_TREE_MODEL(store_jobs);
@@ -227,7 +190,6 @@ static GtkWidget* create_mainwindow (void)
 	GtkWidget *quit;
 	GtkWidget *task;
 	GtkWidget *task_menu;
-	GtkWidget *new;
 	GtkCellRenderer *renderer;
 	GtkTreeViewColumn *curcol;
 	GtkWidget *menuitem7;
@@ -273,8 +235,9 @@ static GtkWidget* create_mainwindow (void)
 	task_menu = gtk_menu_new ();
 	gtk_menu_item_set_submenu (GTK_MENU_ITEM (task), task_menu);
 
-	new = gtk_menu_item_new_with_mnemonic ("_New");
-	gtk_container_add (GTK_CONTAINER (task_menu), new);
+	new_task = gtk_menu_item_new_with_mnemonic ("_New");
+	gtk_container_add (GTK_CONTAINER (task_menu), new_task);
+	gtk_widget_set_sensitive (new_task, FALSE);
 
 	delete = gtk_menu_item_new_with_mnemonic ("_Delete");
 	gtk_widget_set_sensitive(delete, FALSE);
@@ -343,7 +306,7 @@ static GtkWidget* create_mainwindow (void)
 
 	g_signal_connect ((gpointer) quit, "activate",
 	  G_CALLBACK (on_quit_activate), NULL);
-	g_signal_connect ((gpointer) new, "activate",
+	g_signal_connect ((gpointer) new_task, "activate",
 	  G_CALLBACK (on_new_activate), NULL);
 	g_signal_connect ((gpointer) delete, "activate",
 	  G_CALLBACK (on_delete_activate), NULL);
@@ -351,28 +314,23 @@ static GtkWidget* create_mainwindow (void)
 	  G_CALLBACK (on_about_activate), NULL);
 
 	gtk_window_add_accel_group (GTK_WINDOW (mainwindow), accel_group);
-	gtk_widget_set_sensitive(tasks, FALSE);
 
 	return mainwindow;
 }
 
-void
-on_chk_weekly_toggled                  (GtkToggleButton *togglebutton,
-										gpointer         user_data)
+void on_chk_weekly_toggled(GtkToggleButton *togglebutton, gpointer user_data)
 {
 	gtk_widget_set_sensitive(entry_repeat_weekly, gtk_toggle_button_get_active(togglebutton));
 }
 
 
-void
-on_chk_monthly_toggled                 (GtkToggleButton *togglebutton,
-                                        gpointer         user_data)
+void on_chk_monthly_toggled(GtkToggleButton *togglebutton, gpointer user_data)
 {
 	gtk_widget_set_sensitive(entry_repeat_monthly, gtk_toggle_button_get_active(togglebutton));
 }
 
 
-static GtkWidget*create_new_job_dialog (void)
+static GtkWidget *create_new_job_dialog (void)
 {
 	GtkWidget *new_job_dialog;
 	GtkWidget *dialog_vbox1;
