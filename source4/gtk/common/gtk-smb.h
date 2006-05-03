@@ -22,7 +22,6 @@
 #ifndef __GTK_SMB_H__
 #define __GTK_SMB_H__
 
-
 #define GTK_DISABLE_DEPRECATED
 #include <gtk/gtk.h>
 

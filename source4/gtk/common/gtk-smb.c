@@ -26,6 +26,9 @@
 #include "librpc/rpc/dcerpc.h"
 #include "auth/credentials/credentials.h"
 
+/** 
+ * Dialog error showing a WERROR
+ */
 void gtk_show_werror(GtkWidget *win, const char *message, WERROR err) 
 {
 	GtkWidget *dialog = gtk_message_dialog_new( GTK_WINDOW(win), 
@@ -38,6 +41,9 @@ void gtk_show_werror(GtkWidget *win, const char *message, WERROR err)
  	gtk_widget_destroy (dialog);
 }
                    
+/** 
+ * GTK+ dialog showing a NTSTATUS error
+ */
 void gtk_show_ntstatus(GtkWidget *win, const char *message, NTSTATUS status) 
 {
 	GtkWidget *dialog = gtk_message_dialog_new( GTK_WINDOW(win), 
@@ -50,7 +56,7 @@ void gtk_show_ntstatus(GtkWidget *win, const char *message, NTSTATUS status)
  	gtk_widget_destroy (dialog);
 }
 
-static void on_browse_activate  (GtkButton     *button,  gpointer         user_data)
+static void on_browse_activate (GtkButton *button, gpointer user_data)
 {
 	GtkRpcBindingDialog *rbd = user_data;
 	GtkWidget *shd = gtk_select_host_dialog_new(rbd->sam_pipe);
@@ -116,8 +122,6 @@ static void gtk_rpc_binding_dialog_init (GtkRpcBindingDialog *gtk_rpc_binding_di
 	gtk_box_pack_start (GTK_BOX (vbox6), gtk_rpc_binding_dialog->transport_tcp_ip, FALSE, FALSE, 0);
 	gtk_radio_button_set_group (GTK_RADIO_BUTTON (gtk_rpc_binding_dialog->transport_tcp_ip), transport_smb_group);
 	transport_smb_group = gtk_radio_button_get_group (GTK_RADIO_BUTTON (gtk_rpc_binding_dialog->transport_tcp_ip));
-
-
 
 	label1 = gtk_label_new ("Transport");
 	gtk_frame_set_label_widget (GTK_FRAME (frame_transport), label1);
@@ -213,6 +217,12 @@ GType gtk_rpc_binding_dialog_get_type (void)
   return mytype;
 }
 
+/**
+ * Create a new GTK+ dialog asking for binding information for 
+ * DCE/RPC
+ *
+ * Optionally gets a sam pipe that will be used to look up users
+ */
 GtkWidget *gtk_rpc_binding_dialog_new (struct dcerpc_pipe *sam_pipe)
 {
 	GtkRpcBindingDialog *d = GTK_RPC_BINDING_DIALOG ( g_object_new (gtk_rpc_binding_dialog_get_type (), NULL));
@@ -291,7 +301,7 @@ GtkWidget *create_gtk_samba_about_dialog (const char *appname)
 	label3 = gtk_label_new_with_mnemonic ("Part of Samba <http://www.samba.org/>");
 	gtk_box_pack_start (GTK_BOX (dialog_vbox1), label3, FALSE, FALSE, 0);
 
-	label4 = gtk_label_new ("\302\251 1992-2005 The Samba Team");
+	label4 = gtk_label_new ("\302\251 1992-2006 The Samba Team");
 	gtk_box_pack_start (GTK_BOX (dialog_vbox1), label4, FALSE, FALSE, 0);
 
 	dialog_action_area1 = GTK_DIALOG (samba_about_dialog)->action_area;

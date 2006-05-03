@@ -23,6 +23,7 @@
 #include "librpc/gen_ndr/ndr_samr_c.h"
 #include "gtk/common/select.h"
 #include "gtk/common/gtk-smb.h"
+#include "auth/credentials/credentials.h"
 
 /* GtkSelectDomainDialog */
 
@@ -259,4 +260,44 @@ GType gtk_select_host_dialog_get_type (void)
 GtkWidget *gtk_select_host_dialog_new (struct dcerpc_pipe *sam_pipe)
 {
         return GTK_WIDGET ( g_object_new (gtk_select_host_dialog_get_type (), NULL ));
+}
+
+/**
+ * Connect to a specific interface, but ask the user 
+ * for information not specified
+ */
+struct dcerpc_pipe *gtk_connect_rpc_interface(TALLOC_CTX *mem_ctx, const struct dcerpc_interface_table *table)
+{
+	GtkRpcBindingDialog *d;
+	NTSTATUS status;
+	struct dcerpc_pipe *pipe;
+	struct cli_credentials *cred;
+	gint result;
+
+	d = GTK_RPC_BINDING_DIALOG(gtk_rpc_binding_dialog_new(NULL));
+	result = gtk_dialog_run(GTK_DIALOG(d));
+
+	if (result != GTK_RESPONSE_ACCEPT) {
+		gtk_widget_destroy(GTK_WIDGET(d));
+		return NULL;
+	}
+
+	cred = cli_credentials_init(mem_ctx);
+	cli_credentials_guess(cred);
+	cli_credentials_set_gtk_callbacks(cred);
+
+	status = dcerpc_pipe_connect_b(mem_ctx, &pipe,
+				       gtk_rpc_binding_dialog_get_binding(d, mem_ctx),
+				       table, cred, NULL);
+
+	if(!NT_STATUS_IS_OK(status)) {
+		gtk_show_ntstatus(NULL, "While connecting to interface", status);
+		gtk_widget_destroy(GTK_WIDGET(d));
+		talloc_free(mem_ctx);
+		return NULL;
+	}
+
+	gtk_widget_destroy(GTK_WIDGET(d));
+
+	return pipe;
 }
