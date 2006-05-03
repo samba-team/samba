@@ -7,6 +7,14 @@ x501 name
 DSA support
 DSA2 support
 
+Rewrite the pkcs11 code to support the following:
+
+	* Keep as many sessions open to the card as long as possible.
+	* Avoid trying to login to the card over and over.
+	* Reset the pin on card change.
+	* Ref count the lock structure to make sure we have a
+          prompter when we need it.
+
 x509 policy mappings support
 
 CRL delta support
