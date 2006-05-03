@@ -447,6 +447,7 @@ typedef struct files_struct {
 	BOOL is_directory;
 	BOOL is_stat;
 	BOOL aio_write_behind;
+	BOOL lockdb_clean;
 	char *fsp_name;
  	FAKE_FILE_HANDLE *fake_file_handle;
 } files_struct;
