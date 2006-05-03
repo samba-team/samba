@@ -624,7 +624,7 @@ _PUBLIC_ void ndr_print_struct(struct ndr_print *ndr, const char *name, const ch
 }
 
 _PUBLIC_ void ndr_print_enum(struct ndr_print *ndr, const char *name, const char *type, 
-		    const char *val, uint_t value)
+		    const char *val, uint32_t value)
 {
 	if (ndr->flags & LIBNDR_PRINT_ARRAY_HEX) {
 		ndr->print(ndr, "%-25s: %s (0x%X)", name, val?val:"UNKNOWN_ENUM_VALUE", value);
@@ -633,7 +633,7 @@ _PUBLIC_ void ndr_print_enum(struct ndr_print *ndr, const char *name, const char
 	}
 }
 
-_PUBLIC_ void ndr_print_bitmap_flag(struct ndr_print *ndr, size_t size, const char *flag_name, uint_t flag, uint_t value)
+_PUBLIC_ void ndr_print_bitmap_flag(struct ndr_print *ndr, size_t size, const char *flag_name, uint32_t flag, uint32_t value)
 {
 	/* this is an attempt to support multi-bit bitmap masks */
 	value &= flag;
