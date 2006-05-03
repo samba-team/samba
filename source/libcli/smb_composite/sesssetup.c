@@ -36,6 +36,18 @@ struct sesssetup_state {
 	struct smbcli_request *req;
 };
 
+static NTSTATUS session_setup_old(struct composite_context *c,
+				  struct smbcli_session *session, 
+				  struct smb_composite_sesssetup *io,
+				  struct smbcli_request **req); 
+static NTSTATUS session_setup_nt1(struct composite_context *c,
+				  struct smbcli_session *session, 
+				  struct smb_composite_sesssetup *io,
+				  struct smbcli_request **req); 
+static NTSTATUS session_setup_spnego(struct composite_context *c,
+				     struct smbcli_session *session, 
+				     struct smb_composite_sesssetup *io,
+				     struct smbcli_request **req);
 
 /*
   store the user session key for a transport
@@ -58,21 +70,60 @@ static void request_handler(struct smbcli_request *req)
 	struct smbcli_session *session = req->session;
 	DATA_BLOB session_key = data_blob(NULL, 0);
 	DATA_BLOB null_data_blob = data_blob(NULL, 0);
-	NTSTATUS session_key_err;
+	NTSTATUS session_key_err, nt_status;
 
 	c->status = smb_raw_sesssetup_recv(req, state, &state->setup);
 
 	switch (state->setup.old.level) {
 	case RAW_SESSSETUP_OLD:
 		state->io->out.vuid = state->setup.old.out.vuid;
+		if (NT_STATUS_EQUAL(c->status, NT_STATUS_LOGON_FAILURE)) {
+			if (cli_credentials_wrong_password(state->io->in.credentials)) {
+				nt_status = session_setup_old(c, session, 
+							      state->io, 
+							      &state->req);
+				if (NT_STATUS_IS_OK(nt_status)) {
+					c->status = nt_status;
+					state->req->async.fn = request_handler;
+					state->req->async.private = c;
+					return;
+				}
+			}
+		}
 		break;
 
 	case RAW_SESSSETUP_NT1:
 		state->io->out.vuid = state->setup.nt1.out.vuid;
+		if (NT_STATUS_EQUAL(c->status, NT_STATUS_LOGON_FAILURE)) {
+			if (cli_credentials_wrong_password(state->io->in.credentials)) {
+				nt_status = session_setup_nt1(c, session, 
+							      state->io, 
+							      &state->req);
+				if (NT_STATUS_IS_OK(nt_status)) {
+					c->status = nt_status;
+					state->req->async.fn = request_handler;
+					state->req->async.private = c;
+					return;
+				}
+			}
+		}
 		break;
 
 	case RAW_SESSSETUP_SPNEGO:
 		session->vuid = state->io->out.vuid = state->setup.spnego.out.vuid;
+		if (NT_STATUS_EQUAL(c->status, NT_STATUS_LOGON_FAILURE)) {
+			if (cli_credentials_wrong_password(state->io->in.credentials)) {
+				nt_status = session_setup_spnego(c, session, 
+								      state->io, 
+								      &state->req);
+				if (NT_STATUS_IS_OK(nt_status)) {
+					c->status = nt_status;
+					state->req->async.fn = request_handler;
+					state->req->async.private = c;
+					return;
+				}
+			}
+		}
 		if (!NT_STATUS_EQUAL(c->status, NT_STATUS_MORE_PROCESSING_REQUIRED) && 
 		    !NT_STATUS_IS_OK(c->status)) {
 			break;
