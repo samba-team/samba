@@ -52,7 +52,8 @@ static void gtk_get_credentials(struct cli_credentials *credentials)
 	gtk_table_attach(GTK_TABLE(table), entry_domain, 1,2,0,1, GTK_FILL, 0,0,0);
 	gtk_entry_set_activates_default (GTK_ENTRY (entry_domain), TRUE);
 
-	if (credentials->domain_obtained != CRED_UNINITIALISED) {
+	if (credentials->domain_obtained != CRED_UNINITIALISED && 
+	    credentials->domain) {
 		gtk_entry_set_text(GTK_ENTRY(entry_domain), credentials->domain);
 	}
 
@@ -75,7 +76,8 @@ static void gtk_get_credentials(struct cli_credentials *credentials)
 	gtk_table_attach(GTK_TABLE(table),entry_password,1,2,3,4,GTK_FILL,0,0,0);
 	gtk_entry_set_visibility (GTK_ENTRY (entry_password), FALSE);
 	gtk_entry_set_activates_default (GTK_ENTRY (entry_password), TRUE);
-	if (credentials->password_obtained != CRED_UNINITIALISED) {
+	if (credentials->password_obtained != CRED_UNINITIALISED &&
+	    credentials->password) {
 		gtk_entry_set_text(GTK_ENTRY(entry_password), credentials->password);
 	}
 
