@@ -1269,12 +1269,61 @@ static int traverse_fn(TDB_CONTEXT *ttdb, TDB_DATA kbuf, TDB_DATA dbuf, void *st
 {
 	struct lock_struct *locks;
 	struct lock_key *key;
-	int i;
+	unsigned int i;
+	unsigned int num_locks = 0;
+	unsigned int num_valid_entries = 0;
 
 	BRLOCK_FN(traverse_callback) = (BRLOCK_FN_CAST())state;
 
 	locks = (struct lock_struct *)dbuf.dptr;
 	key = (struct lock_key *)kbuf.dptr;
+
+	num_locks = dbuf.dsize/sizeof(*locks);
+
+	/* Ensure the lock db is clean of invalid processes. */
+
+	for (i = 0; i < num_locks; i++) {
+		struct lock_struct *lock_data = &locks[i];
+		if (!process_exists(lock_data->context.pid)) {
+			/* This process no longer exists - mark this
+			   entry as invalid by zeroing it. */
+			ZERO_STRUCTP(lock_data);
+		} else {
+			num_valid_entries++;
+		}
+	}
+
+	if (num_valid_entries != num_locks) {
+		struct lock_struct *new_lock_data = NULL;
+
+		if (num_valid_entries) {
+			new_lock_data = SMB_MALLOC_ARRAY(struct lock_struct, num_valid_entries);
+			if (!new_lock_data) {
+				DEBUG(3, ("malloc fail\n"));
+				return 0;
+			}
+			num_valid_entries = 0;
+			for (i = 0; i < num_locks; i++) {
+				struct lock_struct *lock_data = &locks[i];
+				if (lock_data->context.smbpid &&
+						lock_data->context.tid) {
+					/* Valid (nonzero) entry - copy it. */
+					memcpy(&new_lock_data[num_valid_entries],
+						lock_data, sizeof(struct lock_struct));
+					num_valid_entries++;
+				}
+			}
+		}
+		SAFE_FREE(dbuf.dptr);
+		dbuf.dptr = (void *)new_lock_data;
+		dbuf.dsize = (num_valid_entries) * sizeof(*locks);
+
+		if (dbuf.dsize) {
+			tdb_store(ttdb, kbuf, dbuf, TDB_REPLACE);
+		} else {
+			tdb_delete(ttdb, kbuf);
+		}
+	}
 
 	for (i=0;i<dbuf.dsize/sizeof(*locks);i++) {
 		traverse_callback(key->device,
@@ -1374,6 +1423,58 @@ struct byte_range_lock *brl_get_locks(files_struct *fsp)
 	data = tdb_fetch(tdb, key);
 	br_lck->lock_data = (void *)data.dptr;
 	br_lck->num_locks = data.dsize / sizeof(struct lock_struct);
+
+	if (!fsp->lockdb_clean) {
+
+		/* This is the first time we've accessed this. */
+		/* Go through and ensure all entries exist - remove any that don't. */
+		/* Makes the lockdb self cleaning at low cost. */
+		unsigned int num_valid_entries = 0;
+		unsigned int i;
+
+		for (i = 0; i < br_lck->num_locks; i++) {
+			struct lock_struct *lock_data = &((struct lock_struct *)br_lck->lock_data)[i];
+			if (!process_exists(lock_data->context.pid)) {
+				/* This process no longer exists - mark this
+				   entry as invalid by zeroing it. */
+				ZERO_STRUCTP(lock_data);
+			} else {
+				num_valid_entries++;
+			}
+		}
+
+		if (num_valid_entries != br_lck->num_locks) {
+			struct lock_struct *new_lock_data = NULL;
+
+			if (num_valid_entries) {
+				new_lock_data = SMB_MALLOC_ARRAY(struct lock_struct, num_valid_entries);
+				if (!new_lock_data) {
+					DEBUG(3, ("malloc fail\n"));
+					tdb_chainunlock(tdb, key);
+					SAFE_FREE(br_lck->lock_data);
+					SAFE_FREE(br_lck);
+					return NULL;
+				}
+				num_valid_entries = 0;
+				for (i = 0; i < br_lck->num_locks; i++) {
+					struct lock_struct *lock_data = &((struct lock_struct *)br_lck->lock_data)[i];
+					if (lock_data->context.smbpid &&
+							lock_data->context.tid) {
+						/* Valid (nonzero) entry - copy it. */
+						memcpy(&new_lock_data[num_valid_entries],
+							lock_data, sizeof(struct lock_struct));
+						num_valid_entries++;
+					}
+				}
+			}
+			SAFE_FREE(br_lck->lock_data);
+			br_lck->lock_data = (void *)new_lock_data;
+			br_lck->num_locks = num_valid_entries;
+		}
+
+		/* Mark the lockdb as "clean" as seen from this open file. */
+		fsp->lockdb_clean = True;
+	}
 
 	if (DEBUGLEVEL >= 10) {
 		unsigned int i;
