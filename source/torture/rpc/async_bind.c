@@ -49,6 +49,11 @@ BOOL torture_async_bind(struct torture_context *torture)
 	struct dcerpc_pipe *pipe[ASYNC_COUNT];
 	struct dcerpc_interface_table *table[ASYNC_COUNT];
 
+	if (!lp_parm_bool(-1, "torture", "dangerous", False)) {
+		printf("async bind test disabled - enable dangerous tests to use\n");
+		return True;
+	}
+
 	binding_string = lp_parm_string(-1, "torture", "binding");
 
 	/* talloc context */
