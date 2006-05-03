@@ -58,6 +58,8 @@ struct cli_credentials *cli_credentials_init(TALLOC_CTX *mem_ctx)
 
 	cred->bind_dn = NULL;
 
+	cred->tries = 3;
+
 	cli_credentials_set_kerberos_state(cred, CRED_AUTO_USE_KERBEROS);
 
 	return cred;
@@ -233,7 +235,7 @@ const char *cli_credentials_get_password(struct cli_credentials *cred)
 
 	if (cred->password_obtained == CRED_CALLBACK) {
 		cred->password = cred->password_cb(cred);
-		cred->password_obtained = CRED_SPECIFIED;
+		cred->password_obtained = CRED_CALLBACK_RESULT;
 	}
 
 	return cred->password;
