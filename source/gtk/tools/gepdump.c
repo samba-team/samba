@@ -23,6 +23,7 @@
 #include "librpc/gen_ndr/ndr_epmapper_c.h"
 #include "librpc/gen_ndr/ndr_mgmt_c.h"
 #include "gtk/common/gtk-smb.h"
+#include "gtk/common/select.h"
 #include "auth/gensec/gensec.h"
 
 /* 
@@ -166,40 +167,14 @@ static void on_refresh_clicked (GtkButton *btn, gpointer user_data)
 	refresh_eps();
 }
 
-static void on_connect_clicked(GtkButton *btn, gpointer         user_data)
+static void on_connect_clicked(GtkButton *btn, gpointer user_data)
 {
-	GtkRpcBindingDialog *d;
-	const char *bs;
-	TALLOC_CTX *mem_ctx;
 	NTSTATUS status;
-	gint result;
-	struct cli_credentials *credentials;
+	TALLOC_CTX *mem_ctx = talloc_init("connect");
 
-	d = GTK_RPC_BINDING_DIALOG(gtk_rpc_binding_dialog_new(NULL));
-	result = gtk_dialog_run(GTK_DIALOG(d));
-	switch(result) {
-	case GTK_RESPONSE_ACCEPT:
-		break;
-	default:
-		gtk_widget_destroy(GTK_WIDGET(d));
+	epmapper_pipe = gtk_connect_rpc_interface(mem_ctx, &dcerpc_table_epmapper);
+	if (epmapper_pipe == NULL)
 		return;
-	}
-
-	mem_ctx = talloc_init("connect");
-	bs = gtk_rpc_binding_dialog_get_binding_string (d, mem_ctx);
-
-	credentials = cli_credentials_init(mem_ctx);
-	cli_credentials_guess(credentials);
-	cli_credentials_set_gtk_callbacks(credentials);
-
-	status = dcerpc_pipe_connect(talloc_autofree_context(), &epmapper_pipe, bs, 
-					 &dcerpc_table_epmapper,
-				     credentials, NULL);
-
-	if (NT_STATUS_IS_ERR(status)) {
-		gtk_show_ntstatus(mainwin, "Error connecting to endpoint mapper", status);
-		goto fail;
-	}
 	
 	gtk_widget_set_sensitive( mnu_refresh, True );
 
@@ -210,11 +185,7 @@ static void on_connect_clicked(GtkButton *btn, gpointer         user_data)
 	if (NT_STATUS_IS_ERR(status)) {
 		mgmt_pipe = NULL;
 		gtk_show_ntstatus(NULL, "Error connecting to mgmt interface over secondary connection", status);
-		goto fail;
 	}
-
-fail:
-	gtk_widget_destroy(GTK_WIDGET(d));
 }
 
 static gboolean on_eps_select(GtkTreeSelection *selection,

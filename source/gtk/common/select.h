@@ -22,8 +22,6 @@
 #ifndef __GTK_SELECT_H__
 #define __GTK_SELECT_H__
 
-#ifdef HAVE_GTK
-
 #define GTK_DISABLE_DEPRECATED
 #include <gtk/gtk.h>
 
@@ -80,7 +78,7 @@ GtkWidget *gtk_select_host_dialog_new (struct dcerpc_pipe *sam_pipe);
 const char *gtk_select_host_dialog_get_host (GtkSelectHostDialog *d);
 GType gtk_select_host_dialog_get_type (void);
 
-
-#endif
+struct dcerpc_interface_table;
+struct dcerpc_pipe *gtk_connect_rpc_interface(TALLOC_CTX *mem_ctx, const struct dcerpc_interface_table *table);
 
 #endif

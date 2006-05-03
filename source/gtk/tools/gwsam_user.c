@@ -22,9 +22,7 @@
 #include "includes.h"
 #include "gtk/common/gtk-smb.h"
 
-
-GtkWidget*
-create_user_edit_dialog (void)
+GtkWidget* create_user_edit_dialog (void)
 {
 	GtkWidget *user_edit_dialog;
 	GtkWidget *dialog_vbox1;

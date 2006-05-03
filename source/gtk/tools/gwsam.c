@@ -30,6 +30,8 @@ struct dcerpc_pipe *sam_pipe = NULL;
 static struct policy_handle domain_handle;
 GtkWidget *mainwin;
 GtkWidget *seldomain;
+GtkListStore *store_users;
+GtkListStore *store_groups;
 static GtkWidget *mnu_disconnect;
 
 static void update_grouplist(void)
@@ -48,11 +50,13 @@ static void update_userlist(void)
 
 	if(!sam_pipe) return;
 
+	gtk_list_store_clear(store_users);
+
 	mem_ctx = talloc_init("update_userlist");
 	r.in.domain_handle = &domain_handle;
 	r.in.resume_handle = &resume_handle;
 	r.in.acct_flags = 0;
-	r.in.max_size = (uint32_t)-1;
+	r.in.max_size = (uint32_t)100;
 	r.out.resume_handle = &resume_handle;
 
 	status = dcerpc_samr_EnumDomainUsers(sam_pipe, mem_ctx, &r);
@@ -68,7 +72,13 @@ static void update_userlist(void)
 	}
 
 	for (i=0;i<r.out.sam->count;i++) {
-		printf("Found: %s\n", r.out.sam->entries[i].name.string);
+                GtkTreeIter iter;
+                gtk_list_store_append(store_users, &iter);
+                gtk_list_store_set (store_users, &iter, 
+			0, r.out.sam->entries[i].name.string,
+			1, r.out.sam->entries[i].name.string,
+			2, 0, -1);
+
 		/* FIXME: Query user info */
 
 		//		if (!test_OpenUser(sam_pipe, mem_ctx, &sam_handle, r.out.sam->entries[i].idx)) {
@@ -80,7 +90,7 @@ static void update_userlist(void)
 
 static void on_new1_activate(GtkMenuItem *menuitem, gpointer user_data)
 {
-
+	/* FIXME */
 }
 
 static void on_select_domain_activate(GtkMenuItem *menuitem, gpointer user_data)
@@ -106,40 +116,16 @@ static void on_select_domain_activate(GtkMenuItem *menuitem, gpointer user_data)
 
 static void connect_sam(void)
 {
-	GtkRpcBindingDialog *d;
-	NTSTATUS status;
 	struct samr_Connect r;
-	struct cli_credentials *cred;
 	TALLOC_CTX *mem_ctx;
-	gint result;
-
-	d = GTK_RPC_BINDING_DIALOG(gtk_rpc_binding_dialog_new(NULL));
-	result = gtk_dialog_run(GTK_DIALOG(d));
-	switch(result) {
-	case GTK_RESPONSE_ACCEPT:
-		break;
-	default:
-		gtk_widget_destroy(GTK_WIDGET(d));
-		return;
-	}
+	NTSTATUS status;
 
 	mem_ctx = talloc_init("gwsam_connect");
-	cred = cli_credentials_init(mem_ctx);
-	cli_credentials_guess(cred);
-	cli_credentials_set_gtk_callbacks(cred);
 
-	/* If connected, get list of jobs */
-	status = dcerpc_pipe_connect_b(mem_ctx, &sam_pipe,
-				       gtk_rpc_binding_dialog_get_binding(d, mem_ctx),
-				       &dcerpc_table_samr, cred, NULL);
+	sam_pipe = gtk_connect_rpc_interface(talloc_autofree_context(), &dcerpc_table_samr);
 
-	if(!NT_STATUS_IS_OK(status)) {
-		gtk_show_ntstatus(mainwin, "While connecting to SAMR interface", status);
-		sam_pipe = NULL;
-		gtk_widget_destroy(GTK_WIDGET(d));
-		talloc_free(mem_ctx);
+	if (!sam_pipe)
 		return;
-	}
 
 	r.in.system_name = 0;
 	r.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
@@ -149,30 +135,26 @@ static void connect_sam(void)
 	if (!NT_STATUS_IS_OK(status)) {
 		gtk_show_ntstatus(mainwin, "While running connect on SAMR", status);
 		sam_pipe = NULL;
-		gtk_widget_destroy(GTK_WIDGET(d));
 		talloc_free(mem_ctx);
 		return;
 	}
 
 	gtk_widget_set_sensitive (seldomain, TRUE);
 	gtk_widget_set_sensitive (mnu_disconnect, TRUE);
-	gtk_window_set_title (GTK_WINDOW (mainwin), talloc_asprintf(mem_ctx, "User Manager - Connected to %s", gtk_rpc_binding_dialog_get_host(d)));
-	gtk_widget_destroy(GTK_WIDGET(d));
 
 	sam_pipe = talloc_reference(talloc_autofree_context(), sam_pipe);
 	talloc_free(mem_ctx);
-
 }
 
 static void on_connect_activate (GtkMenuItem *menuitem, gpointer user_data)
 {
 	connect_sam();
+	/* FIXME: Connect to default domain */
 }
 
 static void on_disconnect_activate (GtkMenuItem *menuitem, gpointer user_data)
 {
 	gtk_widget_set_sensitive (mnu_disconnect, FALSE);
-	gtk_window_set_title (GTK_WINDOW (mainwin), "User Manager");
 }
 
 static void on_quit_activate (GtkMenuItem *menuitem, gpointer user_data)
@@ -230,6 +212,8 @@ static GtkWidget* create_mainwindow (void)
 	GtkWidget *new1;
 	GtkWidget *separatormenuitem1;
 	GtkWidget *quit;
+	GtkCellRenderer *renderer;
+	GtkTreeViewColumn *curcol;
 	GtkWidget *policies;
 	GtkWidget *policies_menu;
 	GtkWidget *account;
@@ -297,8 +281,6 @@ static GtkWidget* create_mainwindow (void)
 	new1 = gtk_image_menu_item_new_from_stock ("gtk-new", accel_group);
 	gtk_container_add (GTK_CONTAINER (menuitem1_menu), new1);
 
-
-
 	policies = gtk_menu_item_new_with_mnemonic ("_Policies");
 	gtk_container_add (GTK_CONTAINER (menubar), policies);
 	gtk_widget_set_sensitive (policies, FALSE);
@@ -350,11 +332,59 @@ static GtkWidget* create_mainwindow (void)
 	user_list = gtk_tree_view_new ();
 	gtk_container_add (GTK_CONTAINER (scrolledwindow1), user_list);
 
+	curcol = gtk_tree_view_column_new();
+	gtk_tree_view_column_set_title(curcol, "Name");
+	renderer = gtk_cell_renderer_text_new();
+	gtk_tree_view_column_pack_start(curcol, renderer, True);
+	gtk_tree_view_append_column(GTK_TREE_VIEW(user_list), curcol);
+	gtk_tree_view_column_add_attribute(curcol, renderer, "text", 0);
+
+	curcol = gtk_tree_view_column_new();
+	gtk_tree_view_column_set_title(curcol, "Description");
+	renderer = gtk_cell_renderer_text_new();
+	gtk_tree_view_column_pack_start(curcol, renderer, True);
+	gtk_tree_view_append_column(GTK_TREE_VIEW(user_list), curcol);
+	gtk_tree_view_column_add_attribute(curcol, renderer, "text", 1);
+
+	curcol = gtk_tree_view_column_new();
+	gtk_tree_view_column_set_title(curcol, "RID");
+	renderer = gtk_cell_renderer_text_new();
+	gtk_tree_view_column_pack_start(curcol, renderer, True);
+	gtk_tree_view_append_column(GTK_TREE_VIEW(user_list), curcol);
+	gtk_tree_view_column_add_attribute(curcol, renderer, "text", 1);
+
+	store_users = gtk_list_store_new(3, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_INT);
+	gtk_tree_view_set_model(GTK_TREE_VIEW(user_list), GTK_TREE_MODEL(store_users));
+
 	scrolledwindow2 = gtk_scrolled_window_new (NULL, NULL);
 	gtk_paned_pack2 (GTK_PANED (vpaned), scrolledwindow2, TRUE, TRUE);
 
 	group_list = gtk_tree_view_new ();
 	gtk_container_add (GTK_CONTAINER (scrolledwindow2), group_list);
+
+	curcol = gtk_tree_view_column_new();
+	gtk_tree_view_column_set_title(curcol, "Name");
+	renderer = gtk_cell_renderer_text_new();
+	gtk_tree_view_column_pack_start(curcol, renderer, True);
+	gtk_tree_view_append_column(GTK_TREE_VIEW(group_list), curcol);
+	gtk_tree_view_column_add_attribute(curcol, renderer, "text", 0);
+
+	curcol = gtk_tree_view_column_new();
+	gtk_tree_view_column_set_title(curcol, "Description");
+	renderer = gtk_cell_renderer_text_new();
+	gtk_tree_view_column_pack_start(curcol, renderer, True);
+	gtk_tree_view_append_column(GTK_TREE_VIEW(group_list), curcol);
+	gtk_tree_view_column_add_attribute(curcol, renderer, "text", 1);
+
+	curcol = gtk_tree_view_column_new();
+	gtk_tree_view_column_set_title(curcol, "RID");
+	renderer = gtk_cell_renderer_text_new();
+	gtk_tree_view_column_pack_start(curcol, renderer, True);
+	gtk_tree_view_append_column(GTK_TREE_VIEW(group_list), curcol);
+	gtk_tree_view_column_add_attribute(curcol, renderer, "text", 1);
+
+	store_groups = gtk_list_store_new(3, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_INT);
+	gtk_tree_view_set_model(GTK_TREE_VIEW(group_list), GTK_TREE_MODEL(store_groups));
 
 	statusbar = gtk_statusbar_new ();
 	gtk_box_pack_start (GTK_BOX (vbox1), statusbar, FALSE, FALSE, 0);
