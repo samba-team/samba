@@ -29,6 +29,12 @@ MANPAGE = man/gwcrontab.1
 OBJ_FILES = tools/gwcrontab.o
 PRIVATE_DEPENDENCIES = LIBSAMBA-CONFIG gtksamba RPC_NDR_ATSVC
 
+[BINARY::gwsvcctl]
+INSTALLDIR = BINDIR
+MANPAGE = man/gwsvcctl.1
+OBJ_FILES = tools/gwsvcctl.o
+PRIVATE_DEPENDENCIES = LIBSAMBA-CONFIG gtksamba RPC_NDR_SVCCTL
+
 # This binary is disabled for now as it doesn't do anything useful yet...
 [BINARY::gwsam]
 #INSTALLDIR = BINDIR
