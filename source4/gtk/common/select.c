@@ -293,11 +293,13 @@ struct dcerpc_pipe *gtk_connect_rpc_interface(TALLOC_CTX *mem_ctx, const struct 
 	if(!NT_STATUS_IS_OK(status)) {
 		gtk_show_ntstatus(NULL, "While connecting to interface", status);
 		gtk_widget_destroy(GTK_WIDGET(d));
-		talloc_free(mem_ctx);
+		talloc_free(cred);
 		return NULL;
 	}
 
 	gtk_widget_destroy(GTK_WIDGET(d));
+	
+	talloc_free(cred);
 
 	return pipe;
 }
