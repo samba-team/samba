@@ -1344,8 +1344,8 @@ hx_pass_prompter(void *data, const hx509_prompt *prompter)
     krb5_data password_data;
     struct prompter *p = data;
    
-    password_data.data   = prompter->reply->data;
-    password_data.length = prompter->reply->length;
+    password_data.data   = prompter->reply.data;
+    password_data.length = prompter->reply.length;
     prompt.prompt = "Enter your private key passphrase: ";
     prompt.hidden = 1;
     prompt.reply  = &password_data;
@@ -1356,10 +1356,10 @@ hx_pass_prompter(void *data, const hx509_prompt *prompter)
    
     ret = (*p->prompter)(p->context, p->prompter_data, NULL, NULL, 1, &prompt);
     if (ret) {
-	memset (prompter->reply->data, 0, prompter->reply->length);
+	memset (prompter->reply.data, 0, prompter->reply.length);
 	return 0;
     }
-    return strlen(prompter->reply->data);
+    return strlen(prompter->reply.data);
 }
 
 
