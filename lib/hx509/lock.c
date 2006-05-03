@@ -179,18 +179,18 @@ static int
 default_prompter(void *data, const hx509_prompt *prompter)
 {
     if (prompter->hidden) {
-	if(UI_UTIL_read_pw_string(prompter->reply->data,
-				  prompter->reply->length,
+	if(UI_UTIL_read_pw_string(prompter->reply.data,
+				  prompter->reply.length,
 				  prompter->prompt,
 				  0))
 	    return 1;
     } else {
-	char *s = prompter->reply->data;
+	char *s = prompter->reply.data;
 
 	fputs (prompter->prompt, stdout);
 	fflush (stdout);
-	if(fgets(prompter->reply->data,
-		 prompter->reply->length,
+	if(fgets(prompter->reply.data,
+		 prompter->reply.length,
 		 stdin) == NULL)
 	    return 1;
 	s[strcspn(s, "\n")] = '\0';
