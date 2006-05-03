@@ -514,6 +514,38 @@ void cli_credentials_parse_string(struct cli_credentials *credentials, const cha
 }
 
 /**
+ * Given a string, typically obtained from a -U argument, parse it into domain, username, realm and password fields
+ *
+ * The format accepted is [domain\\]user[%password] or user[@realm][%password]
+ *
+ * @param credentials Credentials structure on which to set the password
+ * @param data the string containing the username, password etc
+ * @param obtained This enum describes how 'specified' this password is
+ */
+
+const char *cli_credentials_get_unparsed_name(struct cli_credentials *credentials, TALLOC_CTX *mem_ctx)
+{
+	const char *bind_dn = cli_credentials_get_bind_dn(credentials);
+	const char *domain;
+	const char *username;
+	const char *name;
+
+	if (bind_dn) {
+		name = talloc_reference(mem_ctx, bind_dn);
+	} else {
+		cli_credentials_get_ntlm_username_domain(credentials, mem_ctx, &username, &domain);
+		if (domain && domain[0]) {
+			name = talloc_asprintf(mem_ctx, "%s\\%s", 
+					       domain, username);
+		} else {
+			name = talloc_asprintf(mem_ctx, "%s", 
+					       username);
+		}
+	}
+	return name;
+}
+
+/**
  * Specifies default values for domain, workstation and realm
  * from the smb.conf configuration file
  *
@@ -565,8 +597,10 @@ void cli_credentials_guess(struct cli_credentials *cred)
 	if (getenv("PASSWD_FILE")) {
 		cli_credentials_parse_password_file(cred, getenv("PASSWD_FILE"), CRED_GUESS_FILE);
 	}
-
-	cli_credentials_set_ccache(cred, NULL, CRED_GUESS_FILE);
+	
+	if (cli_credentials_get_kerberos_state(cred) != CRED_DONT_USE_KERBEROS) {
+		cli_credentials_set_ccache(cred, NULL, CRED_GUESS_FILE);
+	}
 }
 
 /**
@@ -646,7 +680,7 @@ BOOL cli_credentials_is_anonymous(struct cli_credentials *cred)
  * Mark the current password for a credentials struct as wrong. This will 
  * cause the password to be prompted again (if a callback is set).
  *
- * This will decremebt the number of times the password can be tried.
+ * This will decrement the number of times the password can be tried.
  *
  * @retval whether the credentials struct is finished
  */

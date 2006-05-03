@@ -24,27 +24,14 @@
 
 static const char *cmdline_get_userpassword(struct cli_credentials *credentials)
 {
-	char *prompt;
 	char *ret;
-	const char *domain;
-	const char *username;
 	TALLOC_CTX *mem_ctx = talloc_new(NULL);
 
-	const char *bind_dn = cli_credentials_get_bind_dn(credentials);
-	
-	if (bind_dn) {
-		prompt = talloc_asprintf(mem_ctx, "Password for [%s]:", 
-					 bind_dn);
-	} else {
-		cli_credentials_get_ntlm_username_domain(credentials, mem_ctx, &username, &domain);
-		if (domain && domain[0]) {
-			prompt = talloc_asprintf(mem_ctx, "Password for [%s\\%s]:", 
-						 domain, username);
-		} else {
-			prompt = talloc_asprintf(mem_ctx, "Password for [%s]:", 
-						 username);
-		}
-	}
+	const char *prompt_name = cli_credentials_get_unparsed_name(credentials, mem_ctx);
+	const char *prompt;
+
+	prompt = talloc_asprintf(mem_ctx, "Password for [%s]:", 
+				 prompt_name);
 
 	ret = getpass(prompt);
 
