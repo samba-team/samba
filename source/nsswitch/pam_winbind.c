@@ -286,8 +286,7 @@ static int pam_winbind_request_log(pam_handle_t * pamh,
 		return retval;
 	case PAM_USER_UNKNOWN:
 		/* the user does not exist */
-		_pam_log_debug(ctrl, LOG_NOTICE, "user `%s' not found",
-				 user);
+		_pam_log_debug(ctrl, LOG_NOTICE, "user `%s' not found", user);
 		if (ctrl & WINBIND_UNKNOWN_OK_ARG) {
 			return PAM_IGNORE;
 		}	 
@@ -475,6 +474,7 @@ static int winbind_auth_request(pam_handle_t * pamh,
 
 	if (response.data.auth.info3.user_flgs & LOGON_CACHED_ACCOUNT) {
 		_make_remark(pamh, PAM_ERROR_MSG, "Logging on using cached account. Network ressources can be unavailable");
+		_pam_log_debug(ctrl, LOG_DEBUG,"User %s logged on using cached account\n", user);
 	}
 
 	/* save the CIFS homedir for pam_cifs / pam_mount */
