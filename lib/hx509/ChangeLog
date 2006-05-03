@@ -1,3 +1,14 @@
+2006-05-03  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* TODO: More to do about the about the PKCS11 code.
+
+	* ks_p11.c: Use the prompter from the lock function.
+
+	* lock.c: Deal with that hx509_prompt.reply is no longer a
+	pointer.
+
+	* hx509.h: Make hx509_prompt.reply not a pointer.
+	
 2006-05-02  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* keyset.c: Sprinkle setting error strings.
