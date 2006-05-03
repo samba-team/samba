@@ -639,3 +639,24 @@ BOOL cli_credentials_is_anonymous(struct cli_credentials *cred)
 
 	return False;
 }
+
+/**
+ * Mark the current password for a credentials struct as wrong. This will 
+ * cause the password to be prompted again (if a callback is set).
+ *
+ * This will decremebt the number of times the password can be tried.
+ *
+ * @retval whether the credentials struct is finished
+ */
+BOOL cli_credentials_wrong_password(struct cli_credentials *cred)
+{
+	if (cred->password_obtained != CRED_CALLBACK_RESULT) {
+		return False;
+	}
+	
+	cred->password_obtained = CRED_CALLBACK;
+
+	cred->tries--;
+
+	return (cred->tries > 0);
+}
