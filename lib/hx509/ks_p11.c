@@ -55,13 +55,14 @@ struct p11_module {
 	CK_BBOOL token;
 	char *name;
 	hx509_certs certs;
+	char *pin;
     } slot;
 };
 
 #define P11SESSION(module) ((module)->session)
 #define P11FUNC(module,f,args) (*(module)->funcs->C_##f)args
 
-static int p11_get_session(struct p11_module *, struct p11_slot *);
+static int p11_get_session(struct p11_module *, struct p11_slot *, hx509_lock);
 static int p11_put_session(struct p11_module *, struct p11_slot *);
 static void p11_release_module(struct p11_module *);
 
@@ -119,7 +120,7 @@ p11_rsa_private_encrypt(int flen,
 
     ck_sigsize = RSA_size(rsa);
 
-    p11_get_session(p11rsa->p, p11rsa->slot);
+    p11_get_session(p11rsa->p, p11rsa->slot, NULL);
 
     ret = P11FUNC(p11rsa->p, SignInit,
 		  (P11SESSION(p11rsa->slot), &mechanism, key));
@@ -156,7 +157,7 @@ p11_rsa_private_decrypt(int flen, const unsigned char *from, unsigned char *to,
 
     ck_sigsize = RSA_size(rsa);
 
-    p11_get_session(p11rsa->p, p11rsa->slot);
+    p11_get_session(p11rsa->p, p11rsa->slot, NULL);
 
     ret = P11FUNC(p11rsa->p, DecryptInit,
 		  (P11SESSION(p11rsa->slot), &mechanism, key));
@@ -250,7 +251,9 @@ p11_init_slot(struct p11_module *p, CK_SLOT_ID id, struct p11_slot *slot)
 }
 
 static int
-p11_get_session(struct p11_module *p, struct p11_slot *slot)
+p11_get_session(struct p11_module *p,
+		struct p11_slot *slot,
+		hx509_lock lock)
 {
     CK_RV ret;
 
@@ -267,25 +270,65 @@ p11_get_session(struct p11_module *p, struct p11_slot *slot)
     
     slot->flags |= P11_SESSION;
     
-    if ((slot->flags & P11_LOGIN_REQ) && (slot->flags & P11_LOGIN_DONE) == 0) {
+    /* 
+     * If we have have to login, and haven't tried before and have a
+     * prompter or known to work pin code.
+     *
+     * This code is very conversative and only uses the prompter in
+     * the hx509_lock, the reason is that its bad to try many
+     * passwords on a pkcs11 token, it might lock up and have to be
+     * unlocked by a administrator.
+     *
+     * XXX try harder to not use pin several times on the same card.
+     */
+
+    if (   (slot->flags & P11_LOGIN_REQ)
+	&& (slot->flags & P11_LOGIN_DONE) == 0
+	&& (lock || slot->pin))
+    {
+	hx509_prompt prompt;
 	char pin[20];
-	char *prompt;
+	char *str;
 
 	slot->flags |= P11_LOGIN_DONE;
 
-	asprintf(&prompt, "PIN code for %s: ", slot->name);
+	if (slot->pin == NULL) {
 
-	if (UI_UTIL_read_pw_string(pin, sizeof(pin), prompt, 0)) {
-	    free(prompt);
-	    return EINVAL;
+	    memset(&prompt, 0, sizeof(prompt));
+
+	    asprintf(&str, "PIN code for %s: ", slot->name);
+	    prompt.prompt = str;
+	    prompt.hidden = 1;
+	    prompt.type = HX509_PROMPT_TYPE_PASSWORD;
+	    prompt.reply.data = pin;
+	    prompt.reply.length = sizeof(pin);
+	    
+	    ret = hx509_lock_prompt(lock, &prompt);
+	    if (ret) {
+		free(str);
+		return ret;
+	    }
+	    free(str);
+	} else {
+	    strlcpy(pin, slot->pin, sizeof(pin));
 	}
-	free(prompt);
 
 	ret = P11FUNC(p, Login, (P11SESSION(slot), CKU_USER,
 				 (unsigned char*)pin, strlen(pin)));
-	if (ret != CKR_OK)
+	if (ret != CKR_OK) {
+	    p11_put_session(p, slot);
 	    return EINVAL;
-    }
+	}
+	if (slot->pin == NULL) {
+	    slot->pin = strdup(pin);
+	    if (slot->pin == NULL) {
+		p11_put_session(p, slot);
+		return EINVAL;
+	    }
+	}
+
+    } else
+	slot->flags |= P11_LOGIN_DONE;
 
     return 0;
 }
@@ -667,7 +710,7 @@ p11_init(hx509_context context,
 
 	free(slot_ids);
 
-	p11_get_session(p, &p->slot);
+	p11_get_session(p, &p->slot, lock);
 	p11_list_keys(context, p, &p->slot, NULL, &p->slot.certs);
 	p11_put_session(p, &p->slot);
     }
@@ -692,6 +735,10 @@ p11_release_module(struct p11_module *p)
 	dlclose(p->dl_handle);
     if (p->slot.name)
 	free(p->slot.name);
+    if (p->slot.pin) {
+	memset(p->slot.pin, 0, strlen(p->slot.pin));
+	free(p->slot.pin);
+    }
     memset(p, 0, sizeof(*p));
     free(p);
 }
