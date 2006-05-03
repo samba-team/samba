@@ -34,15 +34,16 @@ AC_MSG_CHECKING([ability to build shared libraries])
 
 # and these are for particular systems
 case "$host_os" in
-	*linux*)   AC_DEFINE(LINUX,1,[Whether the host os is linux])
+	*linux*)
+		AC_DEFINE(LINUX,1,[Whether the host os is linux])
 		BLDSHARED="true"
 		LDSHFLAGS="-shared" 
 		DYNEXP="-Wl,--export-dynamic"
 		PICFLAG="-fPIC"
 		SONAMEFLAG="-Wl,-soname="
-		AC_DEFINE(STAT_ST_BLOCKSIZE,512)
 		;;
-	*solaris*) AC_DEFINE(SUNOS5,1,[Whether the host os is solaris])
+	*solaris*)
+		AC_DEFINE(SUNOS5,1,[Whether the host os is solaris])
 		BLDSHARED="true"
 		LDSHFLAGS="-G"
 		if test "${GCC}" = "yes"; then
@@ -57,27 +58,27 @@ case "$host_os" in
 			LDSHFLAGS="-G \${CFLAGS}"
 			PICSUFFIX="po.o"
 		fi
-		AC_DEFINE(STAT_ST_BLOCKSIZE,512,[The size of a block])
 		;;
-	*sunos*) AC_DEFINE(SUNOS4,1,[Whether the host os is sunos4])
+	*sunos*)
+		AC_DEFINE(SUNOS4,1,[Whether the host os is sunos4])
 		BLDSHARED="true"
 		LDSHFLAGS="-G"
 		PICFLAG="-KPIC"   # Is this correct for SunOS
-		AC_DEFINE(STAT_ST_BLOCKSIZE,512)
 		;;
-	*netbsd* | *freebsd*)  BLDSHARED="true"
+	*netbsd* | *freebsd*) 
+		BLDSHARED="true"
 		LDSHFLAGS="-shared"
 		DYNEXP="-Wl,--export-dynamic"
 		PICFLAG="-fPIC -DPIC"
-		AC_DEFINE(STAT_ST_BLOCKSIZE,512,[The size of a block])
 		;;
-	*openbsd*)  BLDSHARED="true"
+	*openbsd*)
+		BLDSHARED="true"
 		LDSHFLAGS="-shared"
 		DYNEXP="-Wl,-Bdynamic"
 		PICFLAG="-fPIC"
-		AC_DEFINE(STAT_ST_BLOCKSIZE,512,[The size of a block])
 		;;
-	*irix*) AC_DEFINE(IRIX,1,[Whether the host os is irix])
+	*irix*)
+		AC_DEFINE(IRIX,1,[Whether the host os is irix])
 		ATTEMPT_WRAP32_BUILD=yes
 		BLDSHARED="true"
 		LDSHFLAGS="-set_version sgi1.0 -shared"
@@ -88,9 +89,9 @@ case "$host_os" in
 		else 
 			PICFLAG="-KPIC"
 		fi
-		AC_DEFINE(STAT_ST_BLOCKSIZE,512,[The size of a block])
 		;;
-	*aix*) AC_DEFINE(AIX,1,[Whether the host os is aix])
+	*aix*)
+		AC_DEFINE(AIX,1,[Whether the host os is aix])
 		BLDSHARED="true"
 		LDSHFLAGS="-Wl,-bexpall,-bM:SRE,-bnoentry,-berok"
 		DYNEXP="-Wl,-brtl,-bexpall,-bbigtoc"
@@ -99,10 +100,9 @@ case "$host_os" in
 			## for funky AIX compiler using strncpy()
 			CFLAGS="$CFLAGS -D_LINUX_SOURCE_COMPAT -qmaxmem=32000"
 		fi
-
-		AC_DEFINE(STAT_ST_BLOCKSIZE,DEV_BSIZE,[The size of a block])
 		;;
-	*hpux*) AC_DEFINE(HPUX,1,[Whether the host os is HPUX])
+	*hpux*)
+		AC_DEFINE(HPUX,1,[Whether the host os is HPUX])
 		SHLIBEXT="sl"
 		# Use special PIC flags for the native HP-UX compiler.
 		if test $ac_cv_prog_cc_Ae = yes; then
@@ -113,64 +113,64 @@ case "$host_os" in
 			PICFLAG="+z"
 		fi
 		DYNEXP="-Wl,-E"
-		AC_DEFINE(STAT_ST_BLOCKSIZE,8192,[The size of a block])
 		;;
-	*qnx*) AC_DEFINE(QNX,1,[Whether the host os is qnx])
-		AC_DEFINE(STAT_ST_BLOCKSIZE,512)
+	*qnx*)
+		AC_DEFINE(QNX,1,[Whether the host os is qnx])
 		;;
-	*osf*) AC_DEFINE(OSF1,1,[Whether the host os is osf1])
+	*osf*)
+		AC_DEFINE(OSF1,1,[Whether the host os is osf1])
 		BLDSHARED="true"
 		LDSHFLAGS="-shared"
 		SONAMEFLAG="-Wl,-soname,"
 		PICFLAG="-fPIC"
-		AC_DEFINE(STAT_ST_BLOCKSIZE,512)
 		;;
-	*sco*) AC_DEFINE(SCO,1,[Whether the host os is sco unix])
-		AC_DEFINE(STAT_ST_BLOCKSIZE,512)
+	*sco*)
+		AC_DEFINE(SCO,1,[Whether the host os is sco unix])
 		;;
-	*unixware*) AC_DEFINE(UNIXWARE,1,[Whether the host os is unixware])
+	*unixware*)
+		AC_DEFINE(UNIXWARE,1,[Whether the host os is unixware])
 		BLDSHARED="true"
 		LDSHFLAGS="-shared"
 		SONAMEFLAG="-Wl,-soname,"
 		PICFLAG="-KPIC"
-		AC_DEFINE(STAT_ST_BLOCKSIZE,512)
 		;;
-	*next2*) AC_DEFINE(NEXT2,1,[Whether the host os is NeXT v2])
-		AC_DEFINE(STAT_ST_BLOCKSIZE,512)
+	*next2*)
+		AC_DEFINE(NEXT2,1,[Whether the host os is NeXT v2])
 		;;
-	*dgux*) 
-		AC_DEFINE(STAT_ST_BLOCKSIZE,512)
+	*dgux*)
 		;;
-	*sysv4*) AC_DEFINE(SYSV,1,[Whether this is a system V system])
+	*sysv4*)
+		AC_DEFINE(SYSV,1,[Whether this is a system V system])
 		case "$host" in
-			*-univel-*)     if [ test "$GCC" != yes ]; then
+			*-univel-*)
+				if [ test "$GCC" != yes ]; then
 					AC_DEFINE(HAVE_MEMSET,1,[Whether memset() is available])
 				fi
 				LDSHFLAGS="-G"
-                            		DYNEXP="-Bexport"
-			;;
-			*mips-sni-sysv4*) AC_DEFINE(RELIANTUNIX,1,[Whether the host os is reliantunix]);;
+                            	DYNEXP="-Bexport"
+				;;
+			*mips-sni-sysv4*)
+				AC_DEFINE(RELIANTUNIX,1,[Whether the host os is reliantunix])
+				;;
 		esac
-		AC_DEFINE(STAT_ST_BLOCKSIZE,512)
 		;;
 
-	*sysv5*) AC_DEFINE(SYSV,1,[Whether this is a system V system])
+	*sysv5*)
+		AC_DEFINE(SYSV,1,[Whether this is a system V system])
 		if [ test "$GCC" != yes ]; then
 			AC_DEFINE(HAVE_MEMSET,1,[Whether memset() is available])
 		fi
 		LDSHFLAGS="-G"
-		AC_DEFINE(STAT_ST_BLOCKSIZE,512)
 		;;
 	*-vms)
 		BLDSHARED="false"
 		LDSHFLAGS=""
 		;;
-	*vos*) AC_DEFINE(STAT_ST_BLOCKSIZE,4096)
+	*vos*)
 		BLDSHARED="false"
 		LDSHFLAGS=""
 		;;
 	*)
-		AC_DEFINE(STAT_ST_BLOCKSIZE,512)
 		;;
 esac
 AC_MSG_RESULT($BLDSHARED)
