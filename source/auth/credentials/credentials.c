@@ -514,13 +514,12 @@ void cli_credentials_parse_string(struct cli_credentials *credentials, const cha
 }
 
 /**
- * Given a string, typically obtained from a -U argument, parse it into domain, username, realm and password fields
+ * Given a a credentials structure, print it as a string
  *
- * The format accepted is [domain\\]user[%password] or user[@realm][%password]
+ * The format output is [domain\\]user[%password] or user[@realm][%password]
  *
  * @param credentials Credentials structure on which to set the password
- * @param data the string containing the username, password etc
- * @param obtained This enum describes how 'specified' this password is
+ * @param mem_ctx The memory context to place the result on
  */
 
 const char *cli_credentials_get_unparsed_name(struct cli_credentials *credentials, TALLOC_CTX *mem_ctx)
