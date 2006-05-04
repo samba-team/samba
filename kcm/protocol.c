@@ -303,7 +303,7 @@ kcm_op_retrieve(krb5_context context,
 
     KCM_LOG_REQUEST_NAME(context, client, opcode, name);
 
-    ret = krb5_ret_int32(request, &flags);
+    ret = krb5_ret_uint32(request, &flags);
     if (ret) {
 	free(name);
 	return ret;
@@ -482,7 +482,7 @@ kcm_op_get_next(krb5_context context,
 
     KCM_LOG_REQUEST_NAME(context, client, opcode, name);
 
-    ret = krb5_ret_int32(request, &cursor);
+    ret = krb5_ret_uint32(request, &cursor);
     if (ret) {
 	free(name);
 	return ret;
@@ -543,7 +543,7 @@ kcm_op_end_get(krb5_context context,
 
     KCM_LOG_REQUEST_NAME(context, client, opcode, name);
 
-    ret = krb5_ret_int32(request, &cursor);
+    ret = krb5_ret_uint32(request, &cursor);
     if (ret) {
 	free(name);
 	return ret;
@@ -592,7 +592,7 @@ kcm_op_remove_cred(krb5_context context,
 
     KCM_LOG_REQUEST_NAME(context, client, opcode, name);
 
-    ret = krb5_ret_int32(request, &whichfields);
+    ret = krb5_ret_uint32(request, &whichfields);
     if (ret) {
 	free(name);
 	return ret;
@@ -649,7 +649,7 @@ kcm_op_set_flags(krb5_context context,
 
     KCM_LOG_REQUEST_NAME(context, client, opcode, name);
 
-    ret = krb5_ret_int32(request, &flags);
+    ret = krb5_ret_uint32(request, &flags);
     if (ret) {
 	free(name);
 	return ret;
@@ -697,13 +697,13 @@ kcm_op_chown(krb5_context context,
 
     KCM_LOG_REQUEST_NAME(context, client, opcode, name);
 
-    ret = krb5_ret_int32(request, &uid);
+    ret = krb5_ret_uint32(request, &uid);
     if (ret) {
 	free(name);
 	return ret;
     }
 
-    ret = krb5_ret_int32(request, &gid);
+    ret = krb5_ret_uint32(request, &gid);
     if (ret) {
 	free(name);
 	return ret;
@@ -750,7 +750,7 @@ kcm_op_chmod(krb5_context context,
 
     KCM_LOG_REQUEST_NAME(context, client, opcode, name);
 
-    ret = krb5_ret_int16(request, &mode);
+    ret = krb5_ret_uint16(request, &mode);
     if (ret) {
 	free(name);
 	return ret;
@@ -901,7 +901,7 @@ kcm_op_get_ticket(krb5_context context,
 
     KCM_LOG_REQUEST_NAME(context, client, opcode, name);
 
-    ret = krb5_ret_int32(request, &flags.i);
+    ret = krb5_ret_uint32(request, &flags.i);
     if (ret) {
 	free(name);
 	return ret;
@@ -1011,7 +1011,11 @@ kcm_dispatch(krb5_context context,
 	goto out;
     }
 
-    krb5_ret_int16(req_sp, &opcode);
+    ret = krb5_ret_uint16(req_sp, &opcode);
+    if (ret) {
+	kcm_log(0, "Process %d: didn't send a message", client->pid);
+	goto out;
+    }
 
     if (opcode >= sizeof(kcm_ops)/sizeof(kcm_ops[0])) {
 	kcm_log(0, "Process %d: invalid operation code %d",
