@@ -207,13 +207,13 @@ static void ndr_print_string_helper(struct ndr_print *ndr, const char *format, .
 	int i;
 
 	for (i=0;i<ndr->depth;i++) {
-		ndr->private = talloc_asprintf_append(ndr->private, "    ");
+		ndr->private_data = talloc_asprintf_append(ndr->private_data, "    ");
 	}
 
 	va_start(ap, format);
-	ndr->private = talloc_vasprintf_append(ndr->private, format, ap);
+	ndr->private_data = talloc_vasprintf_append(ndr->private_data, format, ap);
 	va_end(ap);
-	ndr->private = talloc_asprintf_append(ndr->private, "\n");
+	ndr->private_data = talloc_asprintf_append(ndr->private_data, "\n");
 }
 
 /*
@@ -278,15 +278,15 @@ _PUBLIC_ char *ndr_print_function_string(TALLOC_CTX *mem_ctx,
 
 	ndr = talloc_zero(mem_ctx, struct ndr_print);
 	if (!ndr) return NULL;
-	ndr->private = talloc_strdup(ndr, "");
-	if (!ndr->private) {
+	ndr->private_data = talloc_strdup(ndr, "");
+	if (!ndr->private_data) {
 		goto failed;
 	}
 	ndr->print = ndr_print_string_helper;
 	ndr->depth = 1;
 	ndr->flags = 0;
 	fn(ndr, name, flags, ptr);
-	ret = talloc_steal(mem_ctx, ndr->private);
+	ret = talloc_steal(mem_ctx, ndr->private_data);
 failed:
 	talloc_free(ndr);
 	return ret;

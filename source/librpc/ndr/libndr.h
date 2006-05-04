@@ -105,7 +105,7 @@ struct ndr_print {
 	uint32_t depth;
 	struct ndr_token_list *switch_list;
 	void (*print)(struct ndr_print *, const char *, ...);
-	void *private;
+	void *private_data;
 };
 
 #define LIBNDR_FLAG_BIGENDIAN  (1<<0)
