@@ -668,7 +668,7 @@ _krb5_krb_decomp_ticket(krb5_context context,
     RCHECK(ret, get_v4_stringz(sp, &ad->pname, ANAME_SZ), error);
     RCHECK(ret, get_v4_stringz(sp, &ad->pinst, INST_SZ), error);
     RCHECK(ret, get_v4_stringz(sp, &ad->prealm, REALM_SZ), error);
-    RCHECK(ret, krb5_ret_int32(sp, &ad->address), error);
+    RCHECK(ret, krb5_ret_uint32(sp, &ad->address), error);
 	
     size = krb5_storage_read(sp, des_key, sizeof(des_key));
     if (size != sizeof(des_key)) {
@@ -676,14 +676,14 @@ _krb5_krb_decomp_ticket(krb5_context context,
 	goto error;
     }
 
-    RCHECK(ret, krb5_ret_int8(sp, &ad->life), error);
+    RCHECK(ret, krb5_ret_uint8(sp, &ad->life), error);
 
     if (ad->k_flags & 1)
 	krb5_storage_set_byteorder(sp, KRB5_STORAGE_BYTEORDER_LE);
     else
 	krb5_storage_set_byteorder(sp, KRB5_STORAGE_BYTEORDER_BE);
 
-    RCHECK(ret, krb5_ret_int32(sp, &ad->time_sec), error);
+    RCHECK(ret, krb5_ret_uint32(sp, &ad->time_sec), error);
 
     RCHECK(ret, get_v4_stringz(sp, sname, ANAME_SZ), error);
     RCHECK(ret, get_v4_stringz(sp, sinstance, INST_SZ), error);
@@ -795,8 +795,8 @@ _krb5_krb_rd_req(krb5_context context,
 
     RCHECK(ret, krb5_ret_int8(sp, &s_kvno), error);
     RCHECK(ret, get_v4_stringz(sp, &realm, REALM_SZ), error);
-    RCHECK(ret, krb5_ret_int8(sp, &ticket_length), error);
-    RCHECK(ret, krb5_ret_int8(sp, &eaut_length), error);
+    RCHECK(ret, krb5_ret_uint8(sp, &ticket_length), error);
+    RCHECK(ret, krb5_ret_uint8(sp, &eaut_length), error);
     RCHECK(ret, krb5_data_alloc(&ticket, ticket_length), error);
 
     size = krb5_storage_read(sp, ticket.data, ticket.length);
@@ -842,9 +842,9 @@ _krb5_krb_rd_req(krb5_context context,
     RCHECK(ret, get_v4_stringz(sp, &r_instance, INST_SZ), error);
     RCHECK(ret, get_v4_stringz(sp, &r_realm, REALM_SZ), error);
 
-    RCHECK(ret, krb5_ret_int32(sp, &ad->checksum), error);
-    RCHECK(ret, krb5_ret_int8(sp, &time_5ms), error);
-    RCHECK(ret, krb5_ret_int32(sp, &r_time_sec), error);
+    RCHECK(ret, krb5_ret_uint32(sp, &ad->checksum), error);
+    RCHECK(ret, krb5_ret_uint8(sp, &time_5ms), error);
+    RCHECK(ret, krb5_ret_uint32(sp, &r_time_sec), error);
 
     if (strcmp(ad->pname, r_name) != 0 ||
 	strcmp(ad->pinst, r_instance) != 0 ||
@@ -853,7 +853,7 @@ _krb5_krb_rd_req(krb5_context context,
 	goto error;
     }
     
-    if (from_addr && from_addr == ad->address) {
+    if (from_addr && from_addr != ad->address) {
 	ret = EINVAL; /* RD_AP_BADD */
 	goto error;
     }
