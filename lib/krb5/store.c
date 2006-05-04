@@ -181,6 +181,13 @@ krb5_store_int32(krb5_storage *sp,
     return krb5_store_int(sp, value, 4);
 }
 
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_store_uint32(krb5_storage *sp,
+		  u_int32_t value)
+{
+    return krb5_store_int32(sp, (u_int32_t)value);
+}
+
 static krb5_error_code
 krb5_ret_int(krb5_storage *sp,
 	     int32_t *value,
@@ -212,6 +219,13 @@ krb5_ret_int32(krb5_storage *sp,
 }
 
 krb5_error_code KRB5_LIB_FUNCTION
+krb5_ret_uint32(krb5_storage *sp,
+		u_int32_t *value)
+{
+    return krb5_ret_int32(sp, (u_int32_t *)value);
+}
+
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_store_int16(krb5_storage *sp,
 		 int16_t value)
 {
@@ -220,6 +234,13 @@ krb5_store_int16(krb5_storage *sp,
     else if(BYTEORDER_IS_LE(sp))
 	value = bswap16(value);
     return krb5_store_int(sp, value, 2);
+}
+
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_store_uint16(krb5_storage *sp,
+		 u_int8_t value)
+{
+    return krb5_store_int16(sp, (u_int16_t)value);
 }
 
 krb5_error_code KRB5_LIB_FUNCTION
@@ -240,6 +261,13 @@ krb5_ret_int16(krb5_storage *sp,
 }
 
 krb5_error_code KRB5_LIB_FUNCTION
+krb5_ret_uint16(krb5_storage *sp,
+		u_int16_t *value)
+{
+    return krb5_ret_int16(sp, (int16_t *)value);
+}
+
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_store_int8(krb5_storage *sp,
 		int8_t value)
 {
@@ -252,6 +280,13 @@ krb5_store_int8(krb5_storage *sp,
 }
 
 krb5_error_code KRB5_LIB_FUNCTION
+krb5_store_uint8(krb5_storage *sp,
+		 u_int8_t value)
+{
+    return krb5_store_int8(sp, (u_int8_t)value);
+}
+
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_ret_int8(krb5_storage *sp,
 	      int8_t *value)
 {
@@ -261,6 +296,13 @@ krb5_ret_int8(krb5_storage *sp,
     if (ret != sizeof(*value))
 	return (ret<0)?errno:sp->eof_code;
     return 0;
+}
+
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_ret_uint8(krb5_storage *sp,
+	       u_int8_t *value)
+{
+    return krb5_ret_int8(sp, (int8_t *)value);
 }
 
 krb5_error_code KRB5_LIB_FUNCTION
