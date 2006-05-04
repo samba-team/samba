@@ -1256,7 +1256,7 @@ AC_CHECK_LIB(exc, trace_back_stack)
 # any of them.
 AC_MSG_CHECKING([for libunwind])
 save_LIBS=$LIBS
-if test x"$UNAME_P" != xunknown ; then
+if test x"$UNAME_P" = xunknown ; then
     # This probably won't link without the platform-specific libunwind.
     LIBS="$LIBS -lunwind"
 else
