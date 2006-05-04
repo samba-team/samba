@@ -180,7 +180,7 @@ _kdc_do_version4(krb5_context context,
 	RCHECK(krb5_ret_int32(sp, &req_time), out1);
 	if(lsb)
 	    req_time = swap32(req_time);
-	RCHECK(krb5_ret_int8(sp, &life), out1);
+	RCHECK(krb5_ret_uint8(sp, &life), out1);
 	RCHECK(krb5_ret_stringz(sp, &sname), out1);
 	RCHECK(krb5_ret_stringz(sp, &sinst), out1);
 	snprintf (client_name, sizeof(client_name),
@@ -429,7 +429,7 @@ _kdc_do_version4(krb5_context context,
 	RCHECK(krb5_ret_int32(sp, &req_time), out2);
 	if(lsb)
 	    req_time = swap32(req_time);
-	RCHECK(krb5_ret_int8(sp, &life), out2);
+	RCHECK(krb5_ret_uint8(sp, &life), out2);
 	RCHECK(krb5_ret_stringz(sp, &sname), out2);
 	RCHECK(krb5_ret_stringz(sp, &sinst), out2);
 	snprintf (server_name, sizeof(server_name),
