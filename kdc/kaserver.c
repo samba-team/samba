@@ -107,38 +107,69 @@ RCSID("$Id$");
 #define KATOOSOON                                (180521L)
 #define KALOCKED                                 (180522L)
 
-static void
+
+static krb5_error_code
 decode_rx_header (krb5_storage *sp,
 		  struct rx_header *h)
 {
-    krb5_ret_int32(sp, &h->epoch);
-    krb5_ret_int32(sp, &h->connid);
-    krb5_ret_int32(sp, &h->callid);
-    krb5_ret_int32(sp, &h->seqno);
-    krb5_ret_int32(sp, &h->serialno);
-    krb5_ret_int8(sp,  &h->type);
-    krb5_ret_int8(sp,  &h->flags);
-    krb5_ret_int8(sp,  &h->status);
-    krb5_ret_int8(sp,  &h->secindex);
-    krb5_ret_int16(sp, &h->reserved);
-    krb5_ret_int16(sp, &h->serviceid);
+    krb5_error_code ret;
+
+    ret = krb5_ret_uint32(sp, &h->epoch);
+    if (ret) return ret;
+    ret = krb5_ret_uint32(sp, &h->connid);
+    if (ret) return ret;
+    ret = krb5_ret_uint32(sp, &h->callid);
+    if (ret) return ret;
+    ret = krb5_ret_uint32(sp, &h->seqno);
+    if (ret) return ret;
+    ret = krb5_ret_uint32(sp, &h->serialno);
+    if (ret) return ret;
+    ret = krb5_ret_uint8(sp,  &h->type);
+    if (ret) return ret;
+    ret = krb5_ret_uint8(sp,  &h->flags);
+    if (ret) return ret;
+    ret = krb5_ret_uint8(sp,  &h->status);
+    if (ret) return ret;
+    ret = krb5_ret_uint8(sp,  &h->secindex);
+    if (ret) return ret;
+    ret = krb5_ret_uint16(sp, &h->reserved);
+    if (ret) return ret;
+    ret = krb5_ret_uint16(sp, &h->serviceid);
+    if (ret) return ret;
+
+    return 0;
 }
 
-static void
+static krb5_error_code
 encode_rx_header (struct rx_header *h,
 		  krb5_storage *sp)
 {
-    krb5_store_int32(sp, h->epoch);
-    krb5_store_int32(sp, h->connid);
-    krb5_store_int32(sp, h->callid);
-    krb5_store_int32(sp, h->seqno);
-    krb5_store_int32(sp, h->serialno);
-    krb5_store_int8(sp,  h->type);
-    krb5_store_int8(sp,  h->flags);
-    krb5_store_int8(sp,  h->status);
-    krb5_store_int8(sp,  h->secindex);
-    krb5_store_int16(sp, h->reserved);
-    krb5_store_int16(sp, h->serviceid);
+    krb5_error_code ret;
+
+    ret = krb5_store_uint32(sp, h->epoch);
+    if (ret) return ret;
+    ret = krb5_store_uint32(sp, h->connid);
+    if (ret) return ret;
+    ret = krb5_store_uint32(sp, h->callid);
+    if (ret) return ret;
+    ret = krb5_store_uint32(sp, h->seqno);
+    if (ret) return ret;
+    ret = krb5_store_uint32(sp, h->serialno);
+    if (ret) return ret;
+    ret = krb5_store_uint8(sp,  h->type);
+    if (ret) return ret;
+    ret = krb5_store_uint8(sp,  h->flags);
+    if (ret) return ret;
+    ret = krb5_store_uint8(sp,  h->status);
+    if (ret) return ret;
+    ret = krb5_store_uint8(sp,  h->secindex);
+    if (ret) return ret;
+    ret = krb5_store_uint16(sp, h->reserved);
+    if (ret) return ret;
+    ret = krb5_store_uint16(sp, h->serviceid);
+    if (ret) return ret;
+
+    return 0;
 }
 
 static void
@@ -171,7 +202,7 @@ make_error_reply (struct rx_header *hdr,
 
     init_reply_header (hdr, &reply_hdr, HT_ABORT, HF_LAST);
     sp = krb5_storage_emem();
-    encode_rx_header (&reply_hdr, sp);
+    ret = encode_rx_header (&reply_hdr, sp);
     krb5_store_int32(sp, ret);
     krb5_storage_to_data (sp, reply);
     krb5_storage_free (sp);
@@ -254,6 +285,7 @@ create_reply_ticket (krb5_context context,
 		     krb5_keyblock *key,
 		     krb5_data *reply)
 {
+    krb5_error_code ret;
     krb5_data ticket;
     krb5_keyblock session;
     krb5_storage *sp;
@@ -339,7 +371,7 @@ create_reply_ticket (krb5_context context,
     /* create the reply packet */
     init_reply_header (hdr, &reply_hdr, HT_DATA, HF_LAST);
     sp = krb5_storage_emem ();
-    encode_rx_header (&reply_hdr, sp);
+    ret = encode_rx_header (&reply_hdr, sp);
     krb5_store_int32 (sp, max_seq_len);
     krb5_store_xdr_data (sp, enc_data);
     krb5_data_free (&enc_data);
@@ -846,7 +878,9 @@ _kdc_do_kaserver(krb5_context context,
 	return -1;
     sp = krb5_storage_from_mem (buf, len);
 
-    decode_rx_header (sp, &hdr);
+    ret = decode_rx_header (sp, &hdr);
+    if (ret)
+	goto out;
     buf += RX_HEADER_SIZE;
     len -= RX_HEADER_SIZE;
 
@@ -872,7 +906,9 @@ _kdc_do_kaserver(krb5_context context,
 	goto out;
     }
 
-    krb5_ret_int32(sp, &op);
+    ret = krb5_ret_uint32(sp, &op);
+    if (ret)
+	goto out;
     switch (op) {
     case AUTHENTICATE :
     case AUTHENTICATE_V2 :
