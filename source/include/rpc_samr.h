@@ -542,10 +542,8 @@ typedef struct sam_unknown_info_3_info
 
 typedef struct sam_unknown_info_6_info
 {
-	uint32 unknown_0; /* 0x0000 0000 */
-
-	uint32 ptr_0;     /* pointer to unknown structure */
-	uint8  padding[12]; /* 12 bytes zeros */
+	UNIHDR hdr_server; /* server name unicode header */
+	UNISTR2 uni_server; /* server name unicode string */
 
 } SAM_UNK_INFO_6;
 
@@ -562,6 +560,12 @@ typedef struct sam_unknown_info_8_info
 
 } SAM_UNK_INFO_8;
 
+typedef struct sam_unknown_info_9_info
+{
+	uint32 unknown;
+
+} SAM_UNK_INFO_9;
+
 typedef struct sam_unknown_info_12_inf
 {
 	NTTIME duration;
@@ -570,12 +574,29 @@ typedef struct sam_unknown_info_12_inf
 
 } SAM_UNK_INFO_12;
 
+typedef struct sam_unknown_info_13_info
+{
+	UINT64_S seq_num;
+	NTTIME domain_create_time;
+	uint32 unknown1;
+	uint32 unknown2;
+
+} SAM_UNK_INFO_13;
+
 typedef struct sam_unknown_info_5_inf
 {
 	UNIHDR hdr_domain; /* domain name unicode header */
 	UNISTR2 uni_domain; /* domain name unicode string */
 
 } SAM_UNK_INFO_5;
+
+typedef struct sam_unknown_info_4_inf
+{
+	UNIHDR hdr_comment; /* comment according to samba4 idl */
+	UNISTR2 uni_comment; /* comment unicode string */
+
+} SAM_UNK_INFO_4;
+
 
 typedef struct sam_unknown_info_2_inf
 {
@@ -621,11 +642,14 @@ typedef struct sam_unknown_ctr_info
 		SAM_UNK_INFO_1 inf1;
 		SAM_UNK_INFO_2 inf2;
 		SAM_UNK_INFO_3 inf3;
+		SAM_UNK_INFO_4 inf4;
 		SAM_UNK_INFO_5 inf5;
 		SAM_UNK_INFO_6 inf6;
 		SAM_UNK_INFO_7 inf7;
 		SAM_UNK_INFO_8 inf8;
+		SAM_UNK_INFO_9 inf9;
 		SAM_UNK_INFO_12 inf12;
+		SAM_UNK_INFO_13 inf13;
 
 	} info;
 
