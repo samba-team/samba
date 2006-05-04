@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997-2004 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2006 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -183,9 +183,9 @@ krb5_store_int32(krb5_storage *sp,
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_store_uint32(krb5_storage *sp,
-		  u_int32_t value)
+		  uint32_t value)
 {
-    return krb5_store_int32(sp, (u_int32_t)value);
+    return krb5_store_int32(sp, (uint32_t)value);
 }
 
 static krb5_error_code
@@ -220,7 +220,7 @@ krb5_ret_int32(krb5_storage *sp,
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_ret_uint32(krb5_storage *sp,
-		u_int32_t *value)
+		uint32_t *value)
 {
     return krb5_ret_int32(sp, (int32_t *)value);
 }
@@ -238,9 +238,9 @@ krb5_store_int16(krb5_storage *sp,
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_store_uint16(krb5_storage *sp,
-		 u_int8_t value)
+		 uint8_t value)
 {
-    return krb5_store_int16(sp, (u_int16_t)value);
+    return krb5_store_int16(sp, (uint16_t)value);
 }
 
 krb5_error_code KRB5_LIB_FUNCTION
@@ -262,7 +262,7 @@ krb5_ret_int16(krb5_storage *sp,
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_ret_uint16(krb5_storage *sp,
-		u_int16_t *value)
+		uint16_t *value)
 {
     return krb5_ret_int16(sp, (int16_t *)value);
 }
@@ -281,9 +281,9 @@ krb5_store_int8(krb5_storage *sp,
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_store_uint8(krb5_storage *sp,
-		 u_int8_t value)
+		 uint8_t value)
 {
-    return krb5_store_int8(sp, (u_int8_t)value);
+    return krb5_store_int8(sp, (uint8_t)value);
 }
 
 krb5_error_code KRB5_LIB_FUNCTION
@@ -300,7 +300,7 @@ krb5_ret_int8(krb5_storage *sp,
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_ret_uint8(krb5_storage *sp,
-	       u_int8_t *value)
+	       uint8_t *value)
 {
     return krb5_ret_int8(sp, (int8_t *)value);
 }
@@ -752,7 +752,7 @@ krb5_ret_creds(krb5_storage *sp, krb5_creds *creds)
      * format.
      */
     {
-	u_int32_t mask = 0xffff0000;
+	uint32_t mask = 0xffff0000;
 	creds->flags.i = 0;
 	creds->flags.b.anonymous = 1;
 	if (creds->flags.i & mask)
@@ -907,7 +907,7 @@ krb5_ret_creds_tag(krb5_storage *sp,
      * format.
      */
     {
-	u_int32_t mask = 0xffff0000;
+	uint32_t mask = 0xffff0000;
 	creds->flags.i = 0;
 	creds->flags.b.anonymous = 1;
 	if (creds->flags.i & mask)
