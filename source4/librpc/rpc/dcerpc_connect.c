@@ -28,6 +28,7 @@
 #include "smb.h"
 #include "libcli/composite/composite.h"
 #include "libcli/smb_composite/smb_composite.h"
+#include "lib/events/events.h"
 #include "libcli/smb2/smb2.h"
 #include "libcli/smb2/smb2_calls.h"
 #include "auth/credentials/credentials.h"
@@ -762,8 +763,9 @@ static void continue_pipe_auth(struct composite_context *ctx)
 {
 	struct composite_context *c = talloc_get_type(ctx->async.private_data,
 						      struct composite_context);
+	struct pipe_connect_state *s = talloc_get_type(c->private_data, struct pipe_connect_state);
 
-	c->status = dcerpc_pipe_auth_recv(ctx);
+	c->status = dcerpc_pipe_auth_recv(ctx, s, &s->pipe);
 	if (!composite_is_ok(c)) return;
 
 	composite_done(c);
@@ -775,7 +777,6 @@ static void continue_pipe_auth(struct composite_context *ctx)
   specified binding structure to determine the endpoint and options
 */
 struct composite_context* dcerpc_pipe_connect_b_send(TALLOC_CTX *parent_ctx,
-						     struct dcerpc_pipe **pp,
 						     struct dcerpc_binding *binding,
 						     const struct dcerpc_interface_table *table,
 						     struct cli_credentials *credentials,
@@ -796,15 +797,18 @@ struct composite_context* dcerpc_pipe_connect_b_send(TALLOC_CTX *parent_ctx,
 	c->state = COMPOSITE_STATE_IN_PROGRESS;
 	c->private_data = s;
 
-	(*pp) = NULL;
+	if (ev == NULL) {
+		ev = event_context_init(c);
+		if (ev == NULL) {
+			talloc_free(c);
+			return NULL;
+		}
+	}
+	c->event_ctx = ev;
 
 	/* initialise dcerpc pipe structure */
 	s->pipe = dcerpc_pipe_init(c, ev);
 	if (composite_nomem(s->pipe, c)) return c;
-
-	/* get event context from initialised dcerpc pipe */
-	c->event_ctx = s->pipe->conn->event_ctx;
-	(*pp) = s->pipe;
 
 	/* store parameters in state structure */
 	s->binding      = binding;
@@ -842,12 +846,10 @@ NTSTATUS dcerpc_pipe_connect_b_recv(struct composite_context *c, TALLOC_CTX *mem
 	
 	status = composite_wait(c);
 	
-	if (NT_STATUS_IS_OK(status) && p) {
-		s = talloc_get_type(c->private_data, struct pipe_connect_state);
-		talloc_steal(mem_ctx, s->pipe);
-		*p = s->pipe;
-	}
-	
+	s = talloc_get_type(c->private_data, struct pipe_connect_state);
+	talloc_steal(mem_ctx, s->pipe);
+	*p = s->pipe;
+
 	talloc_free(c);
 	return status;
 }
@@ -866,7 +868,7 @@ NTSTATUS dcerpc_pipe_connect_b(TALLOC_CTX *parent_ctx,
 {
 	struct composite_context *c;
 	
-	c = dcerpc_pipe_connect_b_send(parent_ctx, pp, binding, table,
+	c = dcerpc_pipe_connect_b_send(parent_ctx, binding, table,
 				       credentials, ev);
 	return dcerpc_pipe_connect_b_recv(c, parent_ctx, pp);
 }
@@ -908,6 +910,15 @@ struct composite_context* dcerpc_pipe_connect_send(TALLOC_CTX *parent_ctx,
 	c->state = COMPOSITE_STATE_IN_PROGRESS;
 	c->private_data = s;
 
+	if (ev == NULL) {
+		ev = event_context_init(c);
+		if (ev == NULL) {
+			talloc_free(c);
+			return NULL;
+		}
+	}
+	c->event_ctx = ev;
+
 	/* parse binding string to the structure */
 	status = dcerpc_parse_binding(c, binding, &b);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -922,11 +933,8 @@ struct composite_context* dcerpc_pipe_connect_send(TALLOC_CTX *parent_ctx,
 	   start connecting to a rpc pipe after binding structure
 	   is established
 	 */
-	pipe_conn_req = dcerpc_pipe_connect_b_send(c, &s->pipe, b, table,
+	pipe_conn_req = dcerpc_pipe_connect_b_send(c, b, table,
 						   credentials, ev);
-
-	/* event context for created dcerpc_pipe would be useful... */
-	c->event_ctx = s->pipe->conn->event_ctx;
 
 	if (composite_nomem(pipe_conn_req, c)) return c;
 
@@ -947,6 +955,7 @@ static void continue_pipe_connect_b(struct composite_context *ctx)
 						    struct pipe_conn_state);
 
 	c->status = dcerpc_pipe_connect_b_recv(ctx, c, &s->pipe);
+	talloc_steal(s, s->pipe);
 	if (!composite_is_ok(c)) return;
 
 	composite_done(c);
@@ -965,10 +974,8 @@ NTSTATUS dcerpc_pipe_connect_recv(struct composite_context *c,
 	struct pipe_conn_state *s;
 
 	status = composite_wait(c);
-	if (NT_STATUS_IS_OK(status) && pp) {
-		s = talloc_get_type(c->private_data, struct pipe_conn_state);
-		*pp = talloc_steal(mem_ctx, s->pipe);
-	}
+	s = talloc_get_type(c->private_data, struct pipe_conn_state);
+	*pp = talloc_steal(mem_ctx, s->pipe);
 
 	talloc_free(c);
 	return status;
