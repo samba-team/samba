@@ -662,10 +662,10 @@ static BOOL sam_io_unk_info12(const char *desc, SAM_UNK_INFO_12 * u_12,
 inits a structure.
 ********************************************************************/
 
-void init_unk_info5(SAM_UNK_INFO_5 * u_5,const char *server)
+void init_unk_info5(SAM_UNK_INFO_5 * u_5,const char *domain)
 {
-	init_unistr2(&u_5->uni_server, server, UNI_FLAGS_NONE);
-	init_uni_hdr(&u_5->hdr_server, &u_5->uni_server);
+	init_unistr2(&u_5->uni_domain, domain, UNI_FLAGS_NONE);
+	init_uni_hdr(&u_5->hdr_domain, &u_5->uni_domain);
 }
 
 /*******************************************************************
@@ -681,10 +681,10 @@ static BOOL sam_io_unk_info5(const char *desc, SAM_UNK_INFO_5 * u_5,
 	prs_debug(ps, depth, desc, "sam_io_unk_info5");
 	depth++;
 
-	if(!smb_io_unihdr("hdr_server", &u_5->hdr_server, ps, depth))
+	if(!smb_io_unihdr("hdr_domain", &u_5->hdr_domain, ps, depth))
 		return False;
 
-	if(!smb_io_unistr2("uni_server", &u_5->uni_server, u_5->hdr_server.buffer, ps, depth))
+	if(!smb_io_unistr2("uni_domain", &u_5->uni_domain, u_5->hdr_domain.buffer, ps, depth))
 		return False;
 
 	return True;
