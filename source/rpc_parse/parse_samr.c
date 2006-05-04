@@ -529,11 +529,10 @@ static BOOL sam_io_unk_info3(const char *desc, SAM_UNK_INFO_3 * u_3,
 inits a structure.
 ********************************************************************/
 
-void init_unk_info6(SAM_UNK_INFO_6 * u_6)
+void init_unk_info6(SAM_UNK_INFO_6 * u_6, const char *server)
 {
-	u_6->unknown_0 = 0x00000000;
-	u_6->ptr_0 = 1;
-	memset(u_6->padding, 0, sizeof(u_6->padding));	/* 12 bytes zeros */
+	init_unistr2(&u_6->uni_server, server, UNI_FLAGS_NONE);
+	init_uni_hdr(&u_6->hdr_server, &u_6->uni_server);
 }
 
 /*******************************************************************
@@ -549,11 +548,42 @@ static BOOL sam_io_unk_info6(const char *desc, SAM_UNK_INFO_6 * u_6,
 	prs_debug(ps, depth, desc, "sam_io_unk_info6");
 	depth++;
 
-	if(!prs_uint32("unknown_0", ps, depth, &u_6->unknown_0)) /* 0x0000 0000 */
+	if(!smb_io_unihdr("hdr_server", &u_6->hdr_server, ps, depth))
 		return False;
-	if(!prs_uint32("ptr_0", ps, depth, &u_6->ptr_0)) /* pointer to unknown structure */
+
+	if(!smb_io_unistr2("uni_server", &u_6->uni_server, u_6->hdr_server.buffer, ps, depth))
 		return False;
-	if(!prs_uint8s(False, "padding", ps, depth, u_6->padding, sizeof(u_6->padding)))	/* 12 bytes zeros */
+
+	return True;
+}
+
+/*******************************************************************
+inits a structure.
+********************************************************************/
+
+void init_unk_info4(SAM_UNK_INFO_4 * u_4,const char *comment)
+{
+	init_unistr2(&u_4->uni_comment, comment, UNI_FLAGS_NONE);
+	init_uni_hdr(&u_4->hdr_comment, &u_4->uni_comment);
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+
+static BOOL sam_io_unk_info4(const char *desc, SAM_UNK_INFO_4 * u_4,
+			     prs_struct *ps, int depth)
+{
+	if (u_4 == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "sam_io_unk_info4");
+	depth++;
+
+	if(!smb_io_unihdr("hdr_comment", &u_4->hdr_comment, ps, depth))
+		return False;
+
+	if(!smb_io_unistr2("uni_comment", &u_4->uni_comment, u_4->hdr_comment.buffer, ps, depth))
 		return False;
 
 	return True;
@@ -620,6 +650,33 @@ static BOOL sam_io_unk_info8(const char *desc, SAM_UNK_INFO_8 * u_8,
 	return True;
 }
 
+/*******************************************************************
+inits a structure.
+********************************************************************/
+
+void init_unk_info9(SAM_UNK_INFO_9 * u_9, uint32 unknown)
+{
+	u_9->unknown = unknown;
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+
+static BOOL sam_io_unk_info9(const char *desc, SAM_UNK_INFO_9 * u_9,
+			     prs_struct *ps, int depth)
+{
+	if (u_9 == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "sam_io_unk_info9");
+	depth++;
+
+	if (!prs_uint32("unknown", ps, depth, &u_9->unknown))
+		return False;
+
+	return True;
+}
 
 /*******************************************************************
 inits a structure.
@@ -686,6 +743,48 @@ static BOOL sam_io_unk_info5(const char *desc, SAM_UNK_INFO_5 * u_5,
 
 	if(!smb_io_unistr2("uni_domain", &u_5->uni_domain, u_5->hdr_domain.buffer, ps, depth))
 		return False;
+
+	return True;
+}
+
+/*******************************************************************
+inits a structure.
+********************************************************************/
+
+void init_unk_info13(SAM_UNK_INFO_13 * u_13, uint32 seq_num)
+{
+	unix_to_nt_time(&u_13->domain_create_time, 0);
+	u_13->seq_num.low = seq_num;
+	u_13->seq_num.high = 0x0000;
+	u_13->unknown1 = 0;
+	u_13->unknown2 = 0;
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+
+static BOOL sam_io_unk_info13(const char *desc, SAM_UNK_INFO_13 * u_13,
+			     prs_struct *ps, int depth)
+{
+	if (u_13 == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "sam_io_unk_info13");
+	depth++;
+
+	if (!prs_uint64("seq_num", ps, depth, &u_13->seq_num))
+		return False;
+
+	if(!smb_io_time("domain_create_time", &u_13->domain_create_time, ps, depth))
+		return False;
+
+	if (!prs_uint32("unknown1", ps, depth, &u_13->unknown1))
+		return False;
+	if (!prs_uint32("unknown2", ps, depth, &u_13->unknown2))
+		return False;
+
+
 
 	return True;
 }
@@ -867,8 +966,16 @@ BOOL samr_io_r_query_dom_info(const char *desc, SAMR_R_QUERY_DOMAIN_INFO * r_u,
 			return False;
 
 		switch (r_u->switch_value) {
+		case 0x0d:
+			if(!sam_io_unk_info13("unk_inf13", &r_u->ctr->info.inf13, ps, depth))
+				return False;
+			break;
 		case 0x0c:
 			if(!sam_io_unk_info12("unk_inf12", &r_u->ctr->info.inf12, ps, depth))
+				return False;
+			break;
+		case 0x09:
+			if(!sam_io_unk_info9("unk_inf9",&r_u->ctr->info.inf9, ps,depth))
 				return False;
 			break;
 		case 0x08:
@@ -885,6 +992,10 @@ BOOL samr_io_r_query_dom_info(const char *desc, SAMR_R_QUERY_DOMAIN_INFO * r_u,
 			break;
 		case 0x05:
 			if(!sam_io_unk_info5("unk_inf5",&r_u->ctr->info.inf5, ps,depth))
+				return False;
+			break;
+		case 0x04:
+			if(!sam_io_unk_info4("unk_inf4",&r_u->ctr->info.inf4, ps,depth))
 				return False;
 			break;
 		case 0x03:

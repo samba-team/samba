@@ -2304,7 +2304,10 @@ NTSTATUS _samr_query_dom_info(pipes_struct *p, SAMR_Q_QUERY_DOMAIN_INFO *q_u, SA
 			init_unk_info5(&ctr->info.inf5, get_global_sam_name());
 			break;
 		case 0x06:
-			init_unk_info6(&ctr->info.inf6);
+			/* NT returns its own name when a PDC. win2k and later
+			 * only the name of the PDC if itself is a BDC (samba4
+			 * idl) */
+			init_unk_info6(&ctr->info.inf6, global_myname());
 			break;
 		case 0x07:
 			server_role = ROLE_DOMAIN_PDC;
@@ -4712,8 +4715,8 @@ NTSTATUS _samr_remove_sid_foreign_domain(pipes_struct *p,
  ********************************************************************/
 
 NTSTATUS _samr_query_domain_info2(pipes_struct *p,
-		SAMR_Q_QUERY_DOMAIN_INFO2 *q_u,
-		SAMR_R_QUERY_DOMAIN_INFO2 *r_u)
+				  SAMR_Q_QUERY_DOMAIN_INFO2 *q_u,
+				  SAMR_R_QUERY_DOMAIN_INFO2 *r_u)
 {
 	struct samr_info *info = NULL;
 	SAM_UNK_CTR *ctr;
@@ -4805,7 +4808,10 @@ NTSTATUS _samr_query_domain_info2(pipes_struct *p,
 			init_unk_info5(&ctr->info.inf5, get_global_sam_name());
 			break;
 		case 0x06:
-			init_unk_info6(&ctr->info.inf6);
+			/* NT returns its own name when a PDC. win2k and later
+			 * only the name of the PDC if itself is a BDC (samba4
+			 * idl) */
+			init_unk_info6(&ctr->info.inf6, global_myname());
 			break;
 		case 0x07:
 			server_role = ROLE_DOMAIN_PDC;
@@ -4849,7 +4855,7 @@ NTSTATUS _samr_query_domain_info2(pipes_struct *p,
 }
 
 /*******************************************************************
- _samr_
+ _samr_set_dom_info
  ********************************************************************/
 
 NTSTATUS _samr_set_dom_info(pipes_struct *p, SAMR_Q_SET_DOMAIN_INFO *q_u, SAMR_R_SET_DOMAIN_INFO *r_u)
