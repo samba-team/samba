@@ -102,7 +102,7 @@ void data_blob_free(DATA_BLOB *d)
  Clear a DATA_BLOB's contents
 *******************************************************************/
 
-static void data_blob_clear(DATA_BLOB *d)
+void data_blob_clear(DATA_BLOB *d)
 {
 	if (d->data) {
 		memset(d->data, 0, d->length);

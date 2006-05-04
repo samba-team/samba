@@ -639,7 +639,7 @@ char *http_timestring(time_t t)
  Return the date and time as a string
 ****************************************************************************/
 
-char *timestring(BOOL hires)
+char *current_timestring(BOOL hires)
 {
 	static fstring TimeBuf;
 	struct timeval tp;
@@ -1057,3 +1057,49 @@ struct timespec get_create_timespec(SMB_STRUCT_STAT *st,BOOL fake_dirs)
 	return ret;
 }
 #endif
+
+
+/**
+ Return the date and time as a string
+**/
+char *timestring(TALLOC_CTX *mem_ctx, time_t t)
+{
+	char *TimeBuf;
+	char tempTime[80];
+	struct tm *tm;
+
+	tm = localtime(&t);
+	if (!tm) {
+		return talloc_asprintf(mem_ctx,
+				       "%ld seconds since the Epoch",
+				       (long)t);
+	}
+
+#ifdef HAVE_STRFTIME
+	/* some versions of gcc complain about using %c. This is a bug
+	   in the gcc warning, not a bug in this code. See a recent
+	   strftime() manual page for details.
+	 */
+	strftime(tempTime,sizeof(tempTime)-1,"%c %Z",tm);
+	TimeBuf = talloc_strdup(mem_ctx, tempTime);
+#else
+	TimeBuf = talloc_strdup(mem_ctx, asctime(tm));
+#endif
+
+	return TimeBuf;
+}
+
+
+/**
+  return a talloced string representing a NTTIME for human consumption
+*/
+const char *nt_time_string(TALLOC_CTX *mem_ctx, NTTIME nt)
+{
+	time_t t;
+	if (nt.low == 0 && nt.high == 0) {
+		return "NTTIME(0)";
+	}
+	t = nt_time_to_unix(&nt);
+	return timestring(mem_ctx, t);
+}
+
