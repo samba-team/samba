@@ -4,6 +4,7 @@
    Windows NT Domain nsswitch module
 
    Copyright (C) Tim Potter 2000
+   Copyright (C) James Peach 2006
    
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Library General Public
@@ -23,8 +24,19 @@
 
 #include "winbind_client.h"
 
+#ifndef PRINTF_ATTRIBUTE
+#define PRINTF_ATTRIBUTE(m, n)
+#endif
+
+#ifndef HAVE_ASPRINTF_DECL
+/*PRINTFLIKE2 */
+int asprintf(char **,const char *, ...) PRINTF_ATTRIBUTE(2,3);
+#endif
+
 #ifdef HAVE_NS_API_H
 #undef VOLATILE
+#undef STATIC
+#undef DYNAMIC
 #include <ns_daemon.h>
 #endif
 
@@ -165,13 +177,10 @@ static int
 winbind_callback(nsd_file_t **rqp, int fd)
 {
 	struct winbindd_response response;
-	struct winbindd_pw *pw = &response.data.pw;
-	struct winbindd_gr *gr = &response.data.gr;
 	nsd_file_t *rq;
 	NSS_STATUS status;
-	fstring result;
-	char *members;
-	int i, maxlen;
+	char * result = NULL;
+	size_t rlen;
 
 	dequeue_request();
 
@@ -192,76 +201,164 @@ winbind_callback(nsd_file_t **rqp, int fd)
 		nsd_logprintf(NSD_LOG_MIN, 
 			"callback (winbind) returning not found, status = %d\n",
 			status);
-		rq->f_status = NS_NOTFOUND;
+
+		switch (status) {
+		    case NSS_STATUS_UNAVAIL:
+			rq->f_status = NS_UNAVAIL;
+			break;
+		    case NSS_STATUS_TRYAGAIN:
+			rq->f_status = NS_TRYAGAIN;
+			break;
+		    case NSS_STATUS_NOTFOUND:
+			/* FALLTHRU */
+		    default:
+			rq->f_status = NS_NOTFOUND;
+		}
+
 		return NSD_NEXT;
 	}
-
-	maxlen = sizeof(result) - 1;
 
 	switch ((int)rq->f_cmd_data) {
 	    case WINBINDD_WINS_BYNAME:
 	    case WINBINDD_WINS_BYIP:
-		snprintf(result,maxlen,"%s\n",response.data.winsresp);
-		break;
+		nsd_logprintf(NSD_LOG_MIN,
+			"callback (winbind) WINS_BYNAME | WINS_BYIP\n");
+
+		rlen = asprintf(&result, "%s\n", response.data.winsresp);
+		if (rlen == 0 || result == NULL) {
+			return NSD_ERROR;
+		}
+		
+		free_response(&response);
+		
+		nsd_logprintf(NSD_LOG_MIN, "    %s\n", result);
+		nsd_set_result(rq, NS_SUCCESS, result, rlen, DYNAMIC);
+		return NSD_OK;
+
 	    case WINBINDD_GETPWUID:
 	    case WINBINDD_GETPWNAM:
-		snprintf(result,maxlen,"%s:%s:%d:%d:%s:%s:%s\n",
-			pw->pw_name,
-			pw->pw_passwd,
-			pw->pw_uid,
-			pw->pw_gid,
-			pw->pw_gecos,
-			pw->pw_dir,
-			pw->pw_shell);
-		break;
+	    {
+	        struct winbindd_pw *pw = &response.data.pw;
+	    
+	        nsd_logprintf(NSD_LOG_MIN,
+			"callback (winbind) GETPWUID | GETPWUID\n");
+
+	        rlen = asprintf(&result,"%s:%s:%d:%d:%s:%s:%s\n",
+	                        pw->pw_name,
+	                        pw->pw_passwd,
+	                        pw->pw_uid,
+	                        pw->pw_gid,
+	                        pw->pw_gecos,
+	                        pw->pw_dir,
+	                        pw->pw_shell);
+	        if (rlen == 0 || result == NULL)
+	            return NSD_ERROR;
+	    
+	        free_response(&response);
+	    
+	        nsd_logprintf(NSD_LOG_MIN, "    %s\n", result);
+	        nsd_set_result(rq, NS_SUCCESS, result, rlen, DYNAMIC);
+	        return NSD_OK;
+	    }
+
 	    case WINBINDD_GETGRNAM:
 	    case WINBINDD_GETGRGID:
-		if (gr->num_gr_mem && response.extra_data.data)
-			members = response.extra_data.data;
-		else
-			members = "";
-		snprintf(result,maxlen,"%s:%s:%d:%s\n",
-			gr->gr_name, gr->gr_passwd, gr->gr_gid, members);
-		break;
+	    {
+	        const struct winbindd_gr *gr = &response.data.gr;
+	        const char * members;
+	    
+	        nsd_logprintf(NSD_LOG_MIN,
+			"callback (winbind) GETGRNAM | GETGRGID\n");
+
+	        if (gr->num_gr_mem && response.extra_data.data) {
+	                members = response.extra_data.data;
+	        } else {
+	                members = "";
+	        }
+	    
+	        rlen = asprintf(&result, "%s:%s:%d:%s\n",
+			    gr->gr_name, gr->gr_passwd, gr->gr_gid, members);
+	        if (rlen == 0 || result == NULL)
+	            return NSD_ERROR;
+	    
+	        free_response(&response);
+	    
+	        nsd_logprintf(NSD_LOG_MIN, "    %s\n", result);
+	        nsd_set_result(rq, NS_SUCCESS, result, rlen, DYNAMIC);
+	        return NSD_OK;
+	    }
+
 	    case WINBINDD_SETGRENT:
 	    case WINBINDD_SETPWENT:
-		nsd_logprintf(NSD_LOG_MIN, "callback (winbind) - SETPWENT/SETGRENT\n");
+		nsd_logprintf(NSD_LOG_MIN,
+			"callback (winbind) SETGRENT | SETPWENT\n");
 		free_response(&response);
 		return(do_list(1,rq));
+
 	    case WINBINDD_GETGRENT:
 	    case WINBINDD_GETGRLST:
-		nsd_logprintf(NSD_LOG_MIN, 
-			"callback (winbind) - %d GETGRENT responses\n",
-			response.data.num_entries);
-		if (response.data.num_entries) {
-		    gr = (struct winbindd_gr *)response.extra_data.data;
-		    if (! gr ) {
-			nsd_logprintf(NSD_LOG_MIN, "     no extra_data.data\n");
-			free_response(&response);
-			return NSD_ERROR;
-		    }
-		    members = (char *)response.extra_data.data + 
-				(response.data.num_entries * sizeof(struct winbindd_gr));
-		    for (i = 0; i < response.data.num_entries; i++) {
-			snprintf(result,maxlen,"%s:%s:%d:%s\n",
-				gr->gr_name, gr->gr_passwd, gr->gr_gid, 
-				&members[gr->gr_mem_ofs]);
-			nsd_logprintf(NSD_LOG_MIN, "     GETGRENT %s\n",result);
-			nsd_append_element(rq,NS_SUCCESS,result,strlen(result));
-			gr++;
-		    }
-		}
-		i = response.data.num_entries;
-		free_response(&response);
-		if (i < MAX_GETPWENT_USERS)
-		    return(do_list(2,rq));
-		else
-		    return(do_list(1,rq));
+	    {
+	        int entries;
+	    
+	        nsd_logprintf(NSD_LOG_MIN,
+		    "callback (winbind) GETGRENT | GETGRLIST %d responses\n",
+		    response.data.num_entries);
+	    
+	        if (response.data.num_entries) {
+	            const struct winbindd_gr *gr = &response.data.gr;
+	            const char * members;
+	            fstring grp_name;
+	            int     i;
+	    
+	            gr = (struct winbindd_gr *)response.extra_data.data;
+	            if (! gr ) {
+	                nsd_logprintf(NSD_LOG_MIN, "     no extra_data\n");
+	                free_response(&response);
+	                return NSD_ERROR;
+	            }
+	    
+	            members = (char *)response.extra_data.data +
+			(response.data.num_entries * sizeof(struct winbindd_gr));
+	    
+	            for (i = 0; i < response.data.num_entries; i++) {
+	                snprintf(grp_name, sizeof(grp_name) - 1, "%s:%s:%d:",
+	                            gr->gr_name, gr->gr_passwd, gr->gr_gid);
+	    
+	                nsd_append_element(rq, NS_SUCCESS, result, rlen);
+	                nsd_append_result(rq, NS_SUCCESS,
+				&members[gr->gr_mem_ofs],
+	                        strlen(&members[gr->gr_mem_ofs]));
+	    
+	                /* Don't log the whole list, because it might be
+	                 * _really_ long and we probably don't want to clobber
+	                 * the log with it.
+	                 */
+	                nsd_logprintf(NSD_LOG_MIN, "    %s (...)\n", grp_name);
+	    
+	                gr++;
+	            }
+	        }
+	    
+	        entries = response.data.num_entries;
+	        free_response(&response);
+	        if (entries < MAX_GETPWENT_USERS)
+	            return(do_list(2,rq));
+	        else
+	            return(do_list(1,rq));
+	    }
+
 	    case WINBINDD_GETPWENT:
-		nsd_logprintf(NSD_LOG_MIN, 
-			"callback (winbind) - %d GETPWENT responses\n",
+	    {
+		int entries;
+
+		nsd_logprintf(NSD_LOG_MIN,
+			"callback (winbind) GETPWENT  %d responses\n",
 			response.data.num_entries);
+
 		if (response.data.num_entries) {
+		    struct winbindd_pw *pw = &response.data.pw;
+		    int i;
+
 		    pw = (struct winbindd_pw *)response.extra_data.data;
 		    if (! pw ) {
 			nsd_logprintf(NSD_LOG_MIN, "     no extra_data\n");
@@ -269,41 +366,46 @@ winbind_callback(nsd_file_t **rqp, int fd)
 			return NSD_ERROR;
 		    }
 		    for (i = 0; i < response.data.num_entries; i++) {
-			snprintf(result,maxlen,"%s:%s:%d:%d:%s:%s:%s",
-				pw->pw_name,
-				pw->pw_passwd,
-				pw->pw_uid,
-				pw->pw_gid,
-				pw->pw_gecos,
-				pw->pw_dir,
-				pw->pw_shell);
-			nsd_logprintf(NSD_LOG_MIN, "     GETPWENT %s\n",result);
-			nsd_append_element(rq,NS_SUCCESS,result,strlen(result));
+			result = NULL;
+			rlen = asprintf(&result, "%s:%s:%d:%d:%s:%s:%s",
+					pw->pw_name,
+					pw->pw_passwd,
+					pw->pw_uid,
+					pw->pw_gid,
+					pw->pw_gecos,
+					pw->pw_dir,
+					pw->pw_shell);
+
+			if (rlen != 0 && result != NULL) {
+			    nsd_logprintf(NSD_LOG_MIN, "    %s\n",result);
+			    nsd_append_element(rq, NS_SUCCESS, result, rlen);
+			    free(result);
+			}
+
 			pw++;
 		    }
 		}
-		i = response.data.num_entries;
+
+		entries = response.data.num_entries;
 		free_response(&response);
-		if (i < MAX_GETPWENT_USERS)
+		if (entries < MAX_GETPWENT_USERS)
 		    return(do_list(2,rq));
 		else
 		    return(do_list(1,rq));
+	    }
+
 	    case WINBINDD_ENDGRENT:
 	    case WINBINDD_ENDPWENT:
-		nsd_logprintf(NSD_LOG_MIN, "callback (winbind) - ENDPWENT/ENDGRENT\n");
-		nsd_append_element(rq,NS_SUCCESS,"\n",1);
+		nsd_logprintf(NSD_LOG_MIN, "callback (winbind) ENDGRENT | ENDPWENT\n");
+		nsd_append_element(rq, NS_SUCCESS, "\n", 1);
 		free_response(&response);
 		return NSD_NEXT;
+
 	    default:
 		free_response(&response);
-		nsd_logprintf(NSD_LOG_MIN, "callback (winbind) - no valid command\n");
+		nsd_logprintf(NSD_LOG_MIN, "callback (winbind) invalid command %d\n", (int)rq->f_cmd_data);
 		return NSD_NEXT;
 	}
-	nsd_logprintf(NSD_LOG_MIN, "callback (winbind) %s\n", result);
-	/* free any extra data area in response structure */
-	free_response(&response);
-	nsd_set_result(rq,NS_SUCCESS,result,strlen(result),VOLATILE);
-	return NSD_OK;
 }
 
 static int 
@@ -349,14 +451,16 @@ send_next_request(nsd_file_t *rq, struct winbindd_request *request)
                         return NSD_NEXT;
         }
 
-	nsd_logprintf(NSD_LOG_MIN, "send_next_request (winbind) %d to = %d\n",
+	nsd_logprintf(NSD_LOG_MIN,
+		"send_next_request (winbind) %d, timeout = %d sec\n",
 			rq->f_cmd_data, timeout);
 	status = winbindd_send_request((int)rq->f_cmd_data,request);
 	SAFE_FREE(request);
 
 	if (status != NSS_STATUS_SUCCESS) {
 		nsd_logprintf(NSD_LOG_MIN, 
-			"send_next_request (winbind) error status = %d\n",status);
+			"send_next_request (winbind) error status = %d\n",
+			status);
 		rq->f_status = status;
 		return NSD_NEXT;
 	}
