@@ -1546,6 +1546,9 @@ BOOL netdfs_io_q_dfs_Add(const char *desc, NETDFS_Q_DFS_ADD *v, prs_struct *ps, 
 	
 	prs_debug(ps, depth, desc, "netdfs_io_q_dfs_Add");
 	depth++;
+	if (!prs_align_custom(ps, 4))
+		return False;
+	
 	if (!smb_io_unistr2("path", &v->path, 1, ps, depth))
 		return False;
 	
@@ -1562,6 +1565,9 @@ BOOL netdfs_io_q_dfs_Add(const char *desc, NETDFS_Q_DFS_ADD *v, prs_struct *ps, 
 		return False;
 	
 	if (v->ptr0_share) {
+		if (!prs_align_custom(ps, 4))
+			return False;
+		
 		if (!smb_io_unistr2("share", &v->share, 1, ps, depth))
 			return False;
 	}
@@ -1573,6 +1579,9 @@ BOOL netdfs_io_q_dfs_Add(const char *desc, NETDFS_Q_DFS_ADD *v, prs_struct *ps, 
 		return False;
 	
 	if (v->ptr0_comment) {
+		if (!prs_align_custom(ps, 4))
+			return False;
+		
 		if (!smb_io_unistr2("comment", &v->comment, 1, ps, depth))
 			return False;
 	}
@@ -1641,6 +1650,9 @@ BOOL netdfs_io_q_dfs_Remove(const char *desc, NETDFS_Q_DFS_REMOVE *v, prs_struct
 	
 	prs_debug(ps, depth, desc, "netdfs_io_q_dfs_Remove");
 	depth++;
+	if (!prs_align_custom(ps, 4))
+		return False;
+	
 	if (!smb_io_unistr2("path", &v->path, 1, ps, depth))
 		return False;
 	
@@ -1651,6 +1663,9 @@ BOOL netdfs_io_q_dfs_Remove(const char *desc, NETDFS_Q_DFS_REMOVE *v, prs_struct
 		return False;
 	
 	if (v->ptr0_server) {
+		if (!prs_align_custom(ps, 4))
+			return False;
+		
 		if (!smb_io_unistr2("server", &v->server, 1, ps, depth))
 			return False;
 	}
@@ -1662,6 +1677,9 @@ BOOL netdfs_io_q_dfs_Remove(const char *desc, NETDFS_Q_DFS_REMOVE *v, prs_struct
 		return False;
 	
 	if (v->ptr0_share) {
+		if (!prs_align_custom(ps, 4))
+			return False;
+		
 		if (!smb_io_unistr2("share", &v->share, 1, ps, depth))
 			return False;
 	}
@@ -1765,6 +1783,9 @@ BOOL netdfs_io_q_dfs_GetInfo(const char *desc, NETDFS_Q_DFS_GETINFO *v, prs_stru
 	
 	prs_debug(ps, depth, desc, "netdfs_io_q_dfs_GetInfo");
 	depth++;
+	if (!prs_align_custom(ps, 4))
+		return False;
+	
 	if (!smb_io_unistr2("path", &v->path, 1, ps, depth))
 		return False;
 	
@@ -1775,6 +1796,9 @@ BOOL netdfs_io_q_dfs_GetInfo(const char *desc, NETDFS_Q_DFS_GETINFO *v, prs_stru
 		return False;
 	
 	if (v->ptr0_server) {
+		if (!prs_align_custom(ps, 4))
+			return False;
+		
 		if (!smb_io_unistr2("server", &v->server, 1, ps, depth))
 			return False;
 	}
@@ -1786,6 +1810,9 @@ BOOL netdfs_io_q_dfs_GetInfo(const char *desc, NETDFS_Q_DFS_GETINFO *v, prs_stru
 		return False;
 	
 	if (v->ptr0_share) {
+		if (!prs_align_custom(ps, 4))
+			return False;
+		
 		if (!smb_io_unistr2("share", &v->share, 1, ps, depth))
 			return False;
 	}

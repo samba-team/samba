@@ -702,7 +702,7 @@ size_t convert_string_allocate(TALLOC_CTX *ctx, charset_t from, charset_t to,
  *
  * @returns Size in bytes of the converted string; or -1 in case of error.
  **/
-size_t convert_string_talloc(TALLOC_CTX *ctx, charset_t from, charset_t to,
+static size_t convert_string_talloc(TALLOC_CTX *ctx, charset_t from, charset_t to,
 		      		void const *src, size_t srclen, void **dest, BOOL allow_bad_conv)
 {
 	size_t dest_len;
