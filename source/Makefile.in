@@ -201,6 +201,9 @@ PASSCHANGE_OBJ = libsmb/passchange.o
 
 SOCKET_WRAPPER_OBJ = lib/socket_wrapper.o
 
+LIBNDR_OBJ = libndr/ndr_basic.o libndr/ndr.o libndr/ndr_misc.o \
+		libndr/ndr_sec_helper.o libndr/ndr_string.o libndr/sid.o
+
 RPC_PARSE_OBJ0 = rpc_parse/parse_prs.o rpc_parse/parse_misc.o
 
 LIB_OBJ = $(VERSION_OBJ) lib/charcnv.o lib/debug.o lib/fault.o \
@@ -331,7 +334,7 @@ RPC_PARSE_OBJ = rpc_parse/parse_lsa.o rpc_parse/parse_net.o \
 		rpc_parse/parse_echo.o rpc_parse/parse_shutdown.o \
 		rpc_parse/parse_svcctl.o rpc_parse/parse_unixinfo.o \
 		rpc_parse/parse_eventlog.o rpc_parse/parse_buffer.o \
-                rpc_parse/parse_ntsvcs.o $(REGOBJS_OBJ)
+                rpc_parse/parse_ntsvcs.o $(REGOBJS_OBJ) $(LIBNDR_OBJ)
 
 RPC_CLIENT_OBJ = rpc_client/cli_pipe.o
 
@@ -681,7 +684,7 @@ DEBUG2HTML_OBJ = utils/debug2html.o utils/debugparse.o
 SMBFILTER_OBJ = utils/smbfilter.o $(PARAM_OBJ) $(LIBSMB_OBJ) $(SECRETS_OBJ) \
                  $(LIB_NONSMBD_OBJ) $(KRBCLIENT_OBJ) 
 
-PROTO_OBJ = $(SMBD_OBJ_MAIN) \
+PROTO_OBJ = $(SMBD_OBJ_MAIN) $(LIBNDR_OBJ) \
 	    $(SMBD_OBJ_SRV) $(NMBD_OBJ1) $(SWAT_OBJ1) $(LIB_OBJ) $(LIBSMB_OBJ) \
 	    $(SMBTORTURE_OBJ1) $(RPCCLIENT_OBJ1) \
 	    $(LIBMSRPC_OBJ) @SMBWRAP_OBJS@ \

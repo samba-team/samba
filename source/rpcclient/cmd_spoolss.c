@@ -2013,7 +2013,7 @@ static WERROR cmd_spoolss_setprinterdata(struct rpc_pipe_client *cli,
         if (!W_ERROR_IS_OK(result))
                 goto done;
 		
-	printf("%s\n", timestring(True));
+	printf("%s\n", current_timestring(True));
 	printf("\tchange_id (before set)\t:[0x%x]\n", info.change_id);
 
 	/* Set the printer data */
@@ -2089,7 +2089,7 @@ static WERROR cmd_spoolss_setprinterdata(struct rpc_pipe_client *cli,
         if (!W_ERROR_IS_OK(result))
                 goto done;
 		
-	printf("%s\n", timestring(True));
+	printf("%s\n", current_timestring(True));
 	printf("\tchange_id (after set)\t:[0x%x]\n", info.change_id);
 
 done:

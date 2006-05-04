@@ -447,6 +447,26 @@ SMB_OFF_T get_file_size(char *file_name)
 }
 
 /*******************************************************************
+ Return a string representing an attribute for a file.
+********************************************************************/
+
+char *attrib_string(uint16 mode)
+{
+	static fstring attrstr;
+
+	attrstr[0] = 0;
+
+	if (mode & aVOLID) fstrcat(attrstr,"V");
+	if (mode & aDIR) fstrcat(attrstr,"D");
+	if (mode & aARCH) fstrcat(attrstr,"A");
+	if (mode & aHIDDEN) fstrcat(attrstr,"H");
+	if (mode & aSYSTEM) fstrcat(attrstr,"S");
+	if (mode & aRONLY) fstrcat(attrstr,"R");	  
+
+	return(attrstr);
+}
+
+/*******************************************************************
  Show a smb message structure.
 ********************************************************************/
 

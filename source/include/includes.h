@@ -1008,6 +1008,8 @@ extern int errno;
 
 #include "event.h"
 
+#include "libndr/libndr.h"
+
 /*
  * Type for wide character dirent structure.
  * Only d_name is defined by POSIX.
