@@ -157,7 +157,7 @@ NTSTATUS libnet_SamSync_netlogon(struct libnet_context *ctx, TALLOC_CTX *mem_ctx
 	struct cli_credentials *machine_account;
 	struct dcerpc_pipe *p;
 	struct libnet_context *machine_net_ctx;
-	struct libnet_RpcConnectDCInfo *c;
+	struct libnet_RpcConnect *c;
 	struct libnet_SamSync_state *state;
 	const enum netr_SamDatabaseID database_ids[] = {SAM_DATABASE_DOMAIN, SAM_DATABASE_BUILTIN, SAM_DATABASE_PRIVS}; 
 	int i;
@@ -193,21 +193,22 @@ NTSTATUS libnet_SamSync_netlogon(struct libnet_context *ctx, TALLOC_CTX *mem_ctx
 		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 	}
 
-	c = talloc(samsync_ctx, struct libnet_RpcConnectDCInfo);
+	c = talloc(samsync_ctx, struct libnet_RpcConnect);
 	if (!c) {
 		r->out.error_string = NULL;
 		talloc_free(samsync_ctx);
 		return NT_STATUS_NO_MEMORY;
 	}
 
+	c->level              = LIBNET_RPC_CONNECT_DC_INFO;
 	if (r->in.binding_string) {
-		c->level      = LIBNET_RPC_CONNECT_BINDING;
 		c->in.binding = r->in.binding_string;
+
 	} else {
-		/* prepare connect to the NETLOGON pipe of PDC */
-		c->level      = LIBNET_RPC_CONNECT_PDC;
 		c->in.name    = cli_credentials_get_domain(machine_account);
 	}
+	
+	/* prepare connect to the NETLOGON pipe of PDC */
 	c->in.dcerpc_iface      = &dcerpc_table_netlogon;
 
 	/* We must do this as the machine, not as any command-line
@@ -223,7 +224,7 @@ NTSTATUS libnet_SamSync_netlogon(struct libnet_context *ctx, TALLOC_CTX *mem_ctx
 	machine_net_ctx->cred = machine_account;
 
 	/* connect to the NETLOGON pipe of the PDC */
-	nt_status = libnet_RpcConnectDCInfo(machine_net_ctx, c);
+	nt_status = libnet_RpcConnect(machine_net_ctx, samsync_ctx, c);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		if (r->in.binding_string) {
 			r->out.error_string = talloc_asprintf(mem_ctx,

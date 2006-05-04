@@ -404,7 +404,7 @@ NTSTATUS libnet_JoinDomain(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 
 	NTSTATUS status, cu_status;
 
-	struct libnet_RpcConnectDCInfo *connect_with_info;
+	struct libnet_RpcConnect *connect_with_info;
 	struct dcerpc_pipe *samr_pipe;
 
 	struct samr_Connect sc;
@@ -445,7 +445,7 @@ NTSTATUS libnet_JoinDomain(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 		return NT_STATUS_NO_MEMORY;
 	}
 	
-	connect_with_info = talloc(tmp_ctx, struct libnet_RpcConnectDCInfo);
+	connect_with_info = talloc(tmp_ctx, struct libnet_RpcConnect);
 	if (!connect_with_info) {
 		r->out.error_string = NULL;
 		talloc_free(tmp_ctx);
@@ -454,19 +454,18 @@ NTSTATUS libnet_JoinDomain(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 
 	/* prepare connect to the LSA pipe of PDC */
 	if (r->in.level == LIBNET_JOINDOMAIN_AUTOMATIC) {
-		connect_with_info->level      = LIBNET_RPC_CONNECT_PDC;
 		connect_with_info->in.name    = r->in.domain_name;
 	} else {
-		connect_with_info->level      = LIBNET_RPC_CONNECT_BINDING;
 		connect_with_info->in.binding = r->in.binding;
 	}
 
+	connect_with_info->level              = LIBNET_RPC_CONNECT_DC_INFO;
 	connect_with_info->in.dcerpc_iface    = &dcerpc_table_samr;
+
 	/*
 	  establish a SAMR connection, on the same CIFS transport
 	*/
-	
-	status = libnet_RpcConnectDCInfo(ctx, connect_with_info);
+	status = libnet_RpcConnect(ctx, tmp_ctx, connect_with_info);
 	if (!NT_STATUS_IS_OK(status)) {
 		if (r->in.binding) {
 			r->out.error_string = talloc_asprintf(mem_ctx,

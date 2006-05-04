@@ -29,7 +29,9 @@ enum libnet_RpcConnect_level {
 					    name to a pdc address before connecting) */
 	LIBNET_RPC_CONNECT_DC,           /* connect to any DC (resolves domain
 					    name to a DC address before connecting) */
-	LIBNET_RPC_CONNECT_BINDING       /* specified binding string */
+	LIBNET_RPC_CONNECT_BINDING,      /* specified binding string */
+	LIBNET_RPC_CONNECT_DC_INFO       /* connect to a DC and provide basic domain
+					    information (name, realm, sid, guid) */
 };
 
 struct libnet_RpcConnect {
@@ -42,6 +44,15 @@ struct libnet_RpcConnect {
 	} in;
 	struct {
 		struct dcerpc_pipe *dcerpc_pipe;
+		
+		/* parameters provided in LIBNET_RPC_CONNECT_DC_INFO level, null otherwise */
+		const char *domain_name;
+		struct dom_sid *domain_sid;
+
+		/* These parameters are only present if the remote server is known to be AD */
+		const char *realm;
+		struct GUID *guid;
+
 		const char *error_string;
 	} out;
 };
