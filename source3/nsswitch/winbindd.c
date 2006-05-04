@@ -1035,6 +1035,7 @@ int main(int argc, char **argv)
 	/* Handle online/offline messages. */
 	message_register(MSG_WINBIND_OFFLINE,winbind_msg_offline);
 	message_register(MSG_WINBIND_ONLINE,winbind_msg_online);
+	message_register(MSG_WINBIND_ONLINESTATUS,winbind_msg_onlinestatus);
 
 	poptFreeContext(pc);
 

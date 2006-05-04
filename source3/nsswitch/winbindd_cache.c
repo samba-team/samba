@@ -2357,6 +2357,11 @@ void set_global_winbindd_state_online(void)
 	tdb_delete_bystring(wcache->tdb, "WINBINDD_OFFLINE");
 }
 
+BOOL get_global_winbindd_state_online(void)
+{
+	return global_winbindd_offline_state;
+}
+
 /* the cache backend methods are exposed via this structure */
 struct winbindd_methods cache_methods = {
 	True,
