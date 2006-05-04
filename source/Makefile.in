@@ -995,9 +995,9 @@ bin/smbstatus@EXEEXT@: $(STATUS_OBJ) @BUILD_POPT@ bin/.dummy
 
 bin/smbcontrol@EXEEXT@: $(SMBCONTROL_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
-	@$(CC) -DUSING_SMBCONTROL $(FLAGS) @PIE_LDFLAGS@ -o $@ $(SMBCONTROL_OBJ) $(DYNEXP) \
-	$(LDFLAGS) $(LIBS) \
-	@POPTLIBS@
+	@$(CC) -DUSING_SMBCONTROL $(FLAGS) @PIE_LDFLAGS@ -o $@ \
+	$(SMBCONTROL_OBJ) $(DYNEXP) $(LDFLAGS) \
+	$(LIBS) @LIBUNWIND_PTRACE@ @POPTLIBS@
 
 bin/smbtree@EXEEXT@: $(SMBTREE_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@

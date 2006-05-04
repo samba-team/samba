@@ -7,6 +7,7 @@
    Copyright (C) Andrew Tridgell 1994-1998
    Copyright (C) Martin Pool 2001-2002
    Copyright (C) Simo Sorce 2002
+   Copyright (C) James Peach 2006
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -24,6 +25,18 @@
 */
 
 #include "includes.h"
+
+#if HAVE_LIBUNWIND_H
+#include <libunwind.h>
+#endif
+
+#if HAVE_LIBUNWIND_PTRACE_H
+#include <libunwind-ptrace.h>
+#endif
+
+#if HAVE_SYS_PTRACE_H
+#include <sys/ptrace.h>
+#endif
 
 /* Default timeout value when waiting for replies (in seconds) */
 
@@ -131,7 +144,177 @@ static BOOL do_debug(const struct process_id pid,
 		pid, MSG_DEBUG, argv[1], strlen(argv[1]) + 1, False);
 }
 
-/* Inject a fault (fata signal) into a running smbd */
+#if defined(HAVE_LIBUNWIND_PTRACE) && defined(HAVE_LINUX_PTRACE)
+
+/* Return the name of a process given it's PID. This will only work on Linux,
+ * but that's probably moot since this whole stack tracing implementatino is
+ * Linux-specific anyway.
+ */
+static const char * procname(pid_t pid, char * buf, size_t bufsz)
+{
+	char path[64];
+	FILE * fp;
+
+	snprintf(path, sizeof(path), "/proc/%llu/cmdline",
+		(unsigned long long)pid);
+	if ((fp = fopen(path, "r")) == NULL) {
+		return NULL;
+	}
+
+	fgets(buf, bufsz, fp);
+
+	fclose(fp);
+	return buf;
+}
+
+static void print_stack_trace(pid_t pid, int * count)
+{
+	void *		    pinfo = NULL;
+	unw_addr_space_t    aspace = NULL;
+	unw_cursor_t	    cursor;
+	unw_word_t	    ip, sp;
+
+	char		    nbuf[256];
+	unw_word_t	    off;
+
+	int ret;
+
+	if (ptrace(PTRACE_ATTACH, pid, NULL, NULL) < 0) {
+		fprintf(stderr,
+			"Failed to attach to process %llu: %s\n",
+			(unsigned long long)pid, strerror(errno));
+		return;
+	}
+
+	/* Wait until the attach is complete. */
+	waitpid(pid, NULL, 0);
+
+	if (((pinfo = _UPT_create(pid)) == NULL) ||
+	    ((aspace = unw_create_addr_space(&_UPT_accessors, 0)) == NULL)) {
+		/* Probably out of memory. */
+		fprintf(stderr,
+			"Unable to initialize stack unwind for process %llu\n",
+			(unsigned long long)pid);
+		goto cleanup;
+	}
+
+	if ((ret = unw_init_remote(&cursor, aspace, pinfo))) {
+		fprintf(stderr,
+			"Unable to unwind stack for process %llu: %s\n",
+			(unsigned long long)pid, unw_strerror(ret));
+		goto cleanup;
+	}
+
+	if (*count > 0) {
+		printf("\n");
+	}
+
+	if (procname(pid, nbuf, sizeof(nbuf))) {
+		printf("Stack trace for process %llu (%s):\n",
+			(unsigned long long)pid, nbuf);
+	} else {
+		printf("Stack trace for process %llu:\n",
+			(unsigned long long)pid);
+	}
+
+	while (unw_step(&cursor) > 0) {
+		ip = sp = off = 0;
+		unw_get_reg(&cursor, UNW_REG_IP, &ip);
+		unw_get_reg(&cursor, UNW_REG_SP, &sp);
+
+		ret = unw_get_proc_name(&cursor, nbuf, sizeof(nbuf), &off);
+		if (ret != 0 && ret != -UNW_ENOMEM) {
+			snprintf(nbuf, sizeof(nbuf), "<unknown symbol>");
+		}
+		printf("    %s + %#llx [ip=%#llx] [sp=%#llx]\n",
+			nbuf, (long long)off, (long long)ip,
+			(long long)sp);
+	}
+
+	(*count)++;
+
+cleanup:
+	if (aspace) {
+		unw_destroy_addr_space(aspace);
+	}
+
+	if (pinfo) {
+		_UPT_destroy(pinfo);
+	}
+
+	ptrace(PTRACE_DETACH, pid, NULL, NULL);
+}
+
+static int stack_trace_connection(TDB_CONTEXT * tdb, TDB_DATA key,
+	TDB_DATA data, void * priv)
+{
+	struct connections_data conn;
+
+	if (data.dsize != sizeof(conn))
+		return 0;
+
+	memcpy(&conn, data.dptr, sizeof(conn));
+	print_stack_trace(procid_to_pid(&conn.pid), (int *)priv);
+
+	return 0;
+}
+
+static BOOL do_daemon_stack_trace(const struct process_id pid,
+		       const int argc, const char **argv)
+{
+	fprintf(stderr,
+		"Daemon stack tracing is not supported on this platform\n");
+	return False;
+
+	pid_t	dest;
+	int	count = 0;
+
+	if (argc != 1) {
+		fprintf(stderr, "Usage: smbcontrol <dest> stacktrace\n");
+		return False;
+	}
+
+	dest = procid_to_pid(&pid);
+
+	if (dest != 0) {
+		/* It would be nice to be able to make sure that this PID is
+		 * the PID of a smbd/winbind/nmbd process, not some random PID
+		 * the user liked the look of. It doesn't seem like it's worth
+		 * the effort at the moment, however.
+		 */
+		print_stack_trace(dest, &count);
+	} else {
+		TDB_CONTEXT * tdb;
+
+		tdb = tdb_open_log(lock_path("connections.tdb"), 0, 
+				   TDB_DEFAULT, O_RDONLY, 0);
+		if (!tdb) {
+			fprintf(stderr,
+				"Failed to open connections database: %s\n",
+				strerror(errno));
+			return False;
+		}
+
+		tdb_traverse(tdb, stack_trace_connection, &count);
+		tdb_close(tdb);
+	}
+
+	return True;
+}
+
+#else /* defined(HAVE_LIBUNWIND_PTRACE) && defined(HAVE_LINUX_PTRACE) */
+
+static BOOL do_daemon_stack_trace(const struct process_id pid,
+		       const int argc, const char **argv)
+{
+	fprintf(stderr,
+		"Daemon stack tracing is not supported on this platform\n");
+	return False;
+}
+
+#endif /* defined(HAVE_LIBUNWIND_PTRACE) && defined(HAVE_LINUX_PTRACE) */
+
+/* Inject a fault (fatal signal) into a running smbd */
 
 static BOOL do_inject_fault(const struct process_id pid,
 		       const int argc, const char **argv)
@@ -799,6 +982,8 @@ static const struct {
 	{ "profile", do_profile, "" },
 	{ "inject", do_inject_fault,
 	    "Inject a fatal signal into a running smbd"},
+	{ "stacktrace", do_daemon_stack_trace,
+	    "Display a stack trace of a daemon" },
 	{ "profilelevel", do_profilelevel, "" },
 	{ "debuglevel", do_debuglevel, "Display current debuglevels" },
 	{ "printnotify", do_printnotify, "Send a print notify message" },
