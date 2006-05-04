@@ -70,6 +70,7 @@ static struct composite_context* libnet_RpcConnectSrv_send(struct libnet_context
 	case LIBNET_RPC_CONNECT_DC:
 	case LIBNET_RPC_CONNECT_PDC:
 	case LIBNET_RPC_CONNECT_SERVER:
+	case LIBNET_RPC_CONNECT_DC_INFO:
 		s->binding = talloc_asprintf(s, "ncacn_np:%s", r->in.name);
 		break;
 
@@ -333,6 +334,10 @@ struct composite_context* libnet_RpcConnect_send(struct libnet_context *ctx,
 		c = libnet_RpcConnectDC_send(ctx, mem_ctx, r);
 		break;
 
+	case LIBNET_RPC_CONNECT_DC_INFO:
+		c = libnet_RpcConnectDCInfo_send(ctx, mem_ctx, r);
+		break;
+
 	default:
 		c = talloc_zero(mem_ctx, struct composite_context);
 		composite_error(c, NT_STATUS_INVALID_LEVEL);
@@ -364,6 +369,9 @@ NTSTATUS libnet_RpcConnect_recv(struct composite_context *c, struct libnet_conte
 	case LIBNET_RPC_CONNECT_DC:
 		return libnet_RpcConnectDC_recv(c, ctx, mem_ctx, r);
 
+	case LIBNET_RPC_CONNECT_DC_INFO:
+		return libnet_RpcConnectDCInfo_recv(c, ctx, mem_ctx, r);
+
 	default:
 		return NT_STATUS_INVALID_LEVEL;
 	}
@@ -389,6 +397,281 @@ NTSTATUS libnet_RpcConnect(struct libnet_context *ctx, TALLOC_CTX *mem_ctx,
 }
 
 
+struct rpc_connect_dci_state {
+	struct libnet_context *ctx;
+	struct libnet_RpcConnect r;
+	struct libnet_RpcConnect rpc_conn;
+	struct policy_handle lsa_handle;
+	struct lsa_QosInfo qos;
+	struct lsa_ObjectAttribute attr;
+	struct lsa_OpenPolicy2 lsa_open_policy;
+	struct dcerpc_pipe *lsa_pipe;
+	struct lsa_QueryInfoPolicy2 lsa_query_info2;
+	struct lsa_QueryInfoPolicy lsa_query_info;
+	struct dcerpc_binding *final_binding;
+	struct dcerpc_pipe *final_pipe;
+};
+
+
+static void continue_dci_rpc_connect(struct composite_context *ctx);
+static void continue_lsa_policy(struct rpc_request *req);
+static void continue_lsa_query_info(struct rpc_request *req);
+static void continue_lsa_query_info2(struct rpc_request *req);
+static void continue_epm_map_binding(struct composite_context *ctx);
+static void continue_secondary_conn(struct composite_context *ctx);
+
+
+static void continue_dci_rpc_connect(struct composite_context *ctx)
+{
+	struct composite_context *c;
+	struct rpc_connect_dci_state *s;
+	struct rpc_request *open_pol_req;
+
+	c = talloc_get_type(ctx->async.private_data, struct composite_context);
+	s = talloc_get_type(c->private_data, struct rpc_connect_dci_state);
+
+	c->status = libnet_RpcConnect_recv(ctx, s->ctx, c, &s->rpc_conn);
+	if (!NT_STATUS_IS_OK(c->status)) {
+		composite_error(c, c->status);
+		return;
+	}
+
+	s->lsa_pipe = s->ctx->pipe;
+	
+	s->qos.len = 0;
+	s->qos.impersonation_level = 2;
+	s->qos.context_mode = 1;
+	s->qos.effective_only = 0;
+
+	s->attr.sec_qos = &s->qos;
+
+	s->lsa_open_policy.in.attr = &s->attr;
+	s->lsa_open_policy.in.system_name = talloc_asprintf(c, "\\");
+	if (composite_nomem(s->lsa_open_policy.in.system_name, c)) return;
+
+	s->lsa_open_policy.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
+	s->lsa_open_policy.out.handle = &s->lsa_handle;
+
+	open_pol_req = dcerpc_lsa_OpenPolicy2_send(s->lsa_pipe, c, &s->lsa_open_policy);
+	if (composite_nomem(open_pol_req, c)) return;
+
+	composite_continue_rpc(c, open_pol_req, continue_lsa_policy, c);
+}
+
+
+static void continue_lsa_policy(struct rpc_request *req)
+{
+	struct composite_context *c;
+	struct rpc_connect_dci_state *s;
+	struct rpc_request *query_info_req;
+
+	c = talloc_get_type(req->async.private, struct composite_context);
+	s = talloc_get_type(c->private_data, struct rpc_connect_dci_state);
+
+	c->status = dcerpc_ndr_request_recv(req);
+	if (!NT_STATUS_IS_OK(c->status)) {
+		composite_error(c, c->status);
+		return;
+	}
+
+	s->lsa_query_info2.in.handle = &s->lsa_handle;
+	s->lsa_query_info2.in.level  = LSA_POLICY_INFO_DNS;
+
+	query_info_req = dcerpc_lsa_QueryInfoPolicy2_send(s->lsa_pipe, c, &s->lsa_query_info2);
+	if (composite_nomem(query_info_req, c)) return;
+
+	composite_continue_rpc(c, query_info_req, continue_lsa_query_info2, c);
+}
+
+
+static void continue_lsa_query_info2(struct rpc_request *req)
+{	
+	struct composite_context *c;
+	struct rpc_connect_dci_state *s;
+	struct rpc_request *query_info_req;
+
+	c = talloc_get_type(req->async.private, struct composite_context);
+	s = talloc_get_type(c->private_data, struct rpc_connect_dci_state);
+
+	c->status = dcerpc_ndr_request_recv(req);
+	if (NT_STATUS_EQUAL(c->status, NT_STATUS_NET_WRITE_FAULT)) {
+		s->r.out.realm = NULL;
+		s->r.out.guid  = NULL;
+
+	} else {
+		if (!NT_STATUS_IS_OK(c->status)) {
+			s->r.out.error_string = talloc_asprintf(c,
+								"lsa_QueryInfoPolicy2 failed: %s",
+								nt_errstr(c->status));
+			composite_error(c, c->status);
+			return;
+		}
+
+		/* this should actually be a conversion from lsa_StringLarge */
+		s->r.out.realm = s->lsa_query_info2.out.info->dns.dns_domain.string;
+		s->r.out.guid  = talloc(c, struct GUID);
+		if (composite_nomem(s->r.out.guid, c)) {
+			s->r.out.error_string = NULL;
+			return;
+		}
+		*s->r.out.guid = s->lsa_query_info2.out.info->dns.domain_guid;
+	}
+
+	s->lsa_query_info.in.handle = &s->lsa_handle;
+	s->lsa_query_info.in.level  = LSA_POLICY_INFO_DOMAIN;
+
+	query_info_req = dcerpc_lsa_QueryInfoPolicy_send(s->lsa_pipe, c, &s->lsa_query_info);
+	if (composite_nomem(query_info_req, c)) return;
+
+	composite_continue_rpc(c, query_info_req, continue_lsa_query_info, c);
+}
+
+
+static void continue_lsa_query_info(struct rpc_request *req)
+{
+	struct composite_context *c, *epm_map_req;
+	struct rpc_connect_dci_state *s;
+
+	c = talloc_get_type(req->async.private, struct composite_context);
+	s = talloc_get_type(c->private_data, struct rpc_connect_dci_state);
+
+	c->status = dcerpc_ndr_request_recv(req);
+	if (!NT_STATUS_IS_OK(c->status)) {
+		s->r.out.error_string = talloc_asprintf(c,
+							"lsa_QueryInfoPolicy failed: %s",
+							nt_errstr(c->status));
+		composite_error(c, c->status);
+		return;
+	}
+
+	s->r.out.domain_sid  = s->lsa_query_info.out.info->domain.sid;
+	s->r.out.domain_name = s->lsa_query_info.out.info->domain.name.string;
+
+	s->final_binding = talloc(s, struct dcerpc_binding);
+	if (composite_nomem(s->final_binding, c)) return;
+	
+	*s->final_binding = *s->lsa_pipe->binding;
+	/* Ensure we keep hold of the member elements */
+	talloc_reference(s->final_binding, s->lsa_pipe->binding);
+
+	epm_map_req = dcerpc_epm_map_binding_send(c, s->final_binding, s->r.in.dcerpc_iface,
+						  s->lsa_pipe->conn->event_ctx);
+	if (composite_nomem(epm_map_req, c)) return;
+
+	composite_continue(c, epm_map_req, continue_epm_map_binding, c);
+}
+
+
+static void continue_epm_map_binding(struct composite_context *ctx)
+{
+	struct composite_context *c, *sec_conn_req;
+	struct rpc_connect_dci_state *s;
+
+	c = talloc_get_type(ctx->async.private_data, struct composite_context);
+	s = talloc_get_type(c->private_data, struct rpc_connect_dci_state);
+
+	c->status = dcerpc_epm_map_binding_recv(ctx);
+	if (!NT_STATUS_IS_OK(c->status)) {
+		s->r.out.error_string = talloc_asprintf(c,
+							"failed to map pipe with endpoint mapper - %s",
+							nt_errstr(c->status));
+		composite_error(c, c->status);
+		return;
+	}
+	
+	sec_conn_req = dcerpc_secondary_connection_send(s->lsa_pipe, s->final_binding);
+	if (composite_nomem(sec_conn_req, c)) return;
+
+	composite_continue(c, sec_conn_req, continue_secondary_conn, c);
+}
+
+
+static void continue_secondary_conn(struct composite_context *ctx)
+{
+	struct composite_context *c;
+	struct rpc_connect_dci_state *s;
+
+	c = talloc_get_type(ctx->async.private_data, struct composite_context);
+	s = talloc_get_type(c->private_data, struct rpc_connect_dci_state);
+
+	c->status = dcerpc_secondary_connection_recv(ctx, &s->final_pipe);
+	if (!NT_STATUS_IS_OK(c->status)) {
+		s->r.out.error_string = talloc_asprintf(c,
+							"secondary connection failed: %s",
+							nt_errstr(c->status));
+		
+		composite_error(c, c->status);
+		return;
+	}
+
+	s->r.out.dcerpc_pipe = s->final_pipe;
+	composite_done(c);
+}
+
+
+struct composite_context* libnet_RpcConnectDCInfo_send(struct libnet_context *ctx,
+						       TALLOC_CTX *mem_ctx,
+						       struct libnet_RpcConnect *r)
+{
+	struct composite_context *c, *conn_req;
+	struct rpc_connect_dci_state *s;
+
+	c = talloc_zero(mem_ctx, struct composite_context);
+	if (c == NULL) return NULL;
+
+	s = talloc_zero(c, struct rpc_connect_dci_state);
+	if (composite_nomem(s, c)) return c;
+
+	c->state = COMPOSITE_STATE_IN_PROGRESS;
+	c->private_data = s;
+	c->event_ctx = ctx->event_ctx;
+
+	s->r   = *r;
+	s->ctx = ctx;
+
+	s->rpc_conn.level = r->level;
+
+	if (r->in.binding == NULL) {
+		s->rpc_conn.in.name    = r->in.name;
+		s->rpc_conn.level      = LIBNET_RPC_CONNECT_DC;
+	} else {
+		s->rpc_conn.in.binding = r->in.binding;
+		s->rpc_conn.level      = LIBNET_RPC_CONNECT_BINDING;
+	}
+
+	s->rpc_conn.in.dcerpc_iface    = &dcerpc_table_lsarpc;
+	
+	/* request connection to the lsa pipe on the pdc */
+	conn_req = libnet_RpcConnect_send(ctx, c, &s->rpc_conn);
+	if (composite_nomem(c, conn_req)) return c;
+
+	composite_continue(c, conn_req, continue_dci_rpc_connect, c);
+
+	return c;
+}
+
+
+NTSTATUS libnet_RpcConnectDCInfo_recv(struct composite_context *c, struct libnet_context *ctx,
+				      TALLOC_CTX *mem_ctx, struct libnet_RpcConnect *r)
+{
+	NTSTATUS status;
+	struct rpc_connect_dci_state *s;
+
+	status = composite_wait(c);
+	if (NT_STATUS_IS_OK(status)) {
+		s = talloc_get_type(c->private_data, struct rpc_connect_dci_state);
+
+		r->out.realm        = talloc_steal(mem_ctx, s->r.out.realm);
+		r->out.domain_sid   = talloc_steal(mem_ctx, s->r.out.domain_sid);
+		r->out.domain_name  = talloc_steal(mem_ctx, s->r.out.domain_name);
+		r->out.dcerpc_pipe  = talloc_steal(mem_ctx, s->r.out.dcerpc_pipe);
+	}
+
+	talloc_free(c);
+	return status;
+}
+
+
 /**
  * Connects to rpc pipe on remote server or pdc, and returns info on the domain name, domain sid and realm
  * 
@@ -397,188 +680,11 @@ NTSTATUS libnet_RpcConnect(struct libnet_context *ctx, TALLOC_CTX *mem_ctx,
  * @return nt status of the call
  **/
 
-NTSTATUS libnet_RpcConnectDCInfo(struct libnet_context *ctx, 
-				 struct libnet_RpcConnectDCInfo *r)
+NTSTATUS libnet_RpcConnectDCInfo(struct libnet_context *ctx, TALLOC_CTX *mem_ctx,
+				 struct libnet_RpcConnect *r)
 {
-	TALLOC_CTX *tmp_ctx;
-	NTSTATUS status;
+	struct composite_context *c;
 
-	struct libnet_RpcConnect *c;
-	struct lsa_ObjectAttribute attr;
-	struct lsa_QosInfo qos;
-	struct lsa_OpenPolicy2 lsa_open_policy;
-	struct policy_handle lsa_p_handle;
-	struct lsa_QueryInfoPolicy2 lsa_query_info2;
-	struct lsa_QueryInfoPolicy lsa_query_info;
-
-	struct dcerpc_pipe *lsa_pipe;
-
-	struct dcerpc_binding *final_binding;
-	struct dcerpc_pipe *final_pipe;
-
-	tmp_ctx = talloc_new(r);
-	if (!tmp_ctx) {
-		r->out.error_string = NULL;
-		return NT_STATUS_NO_MEMORY;
-	}
-	
-	c = talloc(tmp_ctx, struct libnet_RpcConnect);
-	if (!c) {
-		r->out.error_string = NULL;
-		talloc_free(tmp_ctx);
-		return NT_STATUS_NO_MEMORY;
-	}
-	c->level              = r->level;
-
-	if (r->level != LIBNET_RPC_CONNECT_BINDING) {
-		c->in.name    = r->in.name;
-	} else {
-		c->in.binding = r->in.binding;
-	}
-	
-	c->in.dcerpc_iface    = &dcerpc_table_lsarpc;
-	
-	/* connect to the LSA pipe of the PDC */
-
-	status = libnet_RpcConnect(ctx, c, c);
-	if (!NT_STATUS_IS_OK(status)) {
-		if (r->level != LIBNET_RPC_CONNECT_BINDING) {
-			r->out.error_string = talloc_asprintf(r,
-							      "Connection to LSA pipe of DC failed: %s",
-							      c->out.error_string);
-		} else {
-			r->out.error_string = talloc_asprintf(r,
-							      "Connection to LSA pipe with binding '%s' failed: %s",
-							      r->in.binding, c->out.error_string);
-		}
-		talloc_free(tmp_ctx);
-		return status;
-	}			
-	lsa_pipe = c->out.dcerpc_pipe;
-	
-	/* Get an LSA policy handle */
-
-	ZERO_STRUCT(lsa_p_handle);
-	qos.len = 0;
-	qos.impersonation_level = 2;
-	qos.context_mode = 1;
-	qos.effective_only = 0;
-
-	attr.len = 0;
-	attr.root_dir = NULL;
-	attr.object_name = NULL;
-	attr.attributes = 0;
-	attr.sec_desc = NULL;
-	attr.sec_qos = &qos;
-
-	lsa_open_policy.in.attr = &attr;
-	
-	lsa_open_policy.in.system_name = talloc_asprintf(tmp_ctx, "\\"); 
-	if (!lsa_open_policy.in.system_name) {
-		r->out.error_string = NULL;
-		talloc_free(tmp_ctx);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	lsa_open_policy.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
-	lsa_open_policy.out.handle = &lsa_p_handle;
-
-	status = dcerpc_lsa_OpenPolicy2(lsa_pipe, tmp_ctx, &lsa_open_policy); 
-
-	/* This now fails on ncacn_ip_tcp against Win2k3 SP1 */
-	if (NT_STATUS_IS_OK(status)) {
-		/* Look to see if this is ADS (a fault indicates NT4 or Samba 3.0) */
-		
-		lsa_query_info2.in.handle = &lsa_p_handle;
-		lsa_query_info2.in.level = LSA_POLICY_INFO_DNS;
-		
-		status = dcerpc_lsa_QueryInfoPolicy2(lsa_pipe, tmp_ctx, 		
-						     &lsa_query_info2);
-		
-		if (!NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
-			if (!NT_STATUS_IS_OK(status)) {
-				r->out.error_string = talloc_asprintf(r,
-								      "lsa_QueryInfoPolicy2 failed: %s",
-								      nt_errstr(status));
-				talloc_free(tmp_ctx);
-				return status;
-			}
-			r->out.realm = lsa_query_info2.out.info->dns.dns_domain.string;
-			r->out.guid = talloc(r, struct GUID);
-			if (!r->out.guid) {
-				r->out.error_string = NULL;
-				return NT_STATUS_NO_MEMORY;
-			}
-			*r->out.guid = lsa_query_info2.out.info->dns.domain_guid;
-		} else {
-			r->out.realm = NULL;
-			r->out.guid = NULL;
-		}
-		
-		/* Grab the domain SID (regardless of the result of the previous call */
-		
-		lsa_query_info.in.handle = &lsa_p_handle;
-		lsa_query_info.in.level = LSA_POLICY_INFO_DOMAIN;
-		
-		status = dcerpc_lsa_QueryInfoPolicy(lsa_pipe, tmp_ctx, 
-						    &lsa_query_info);
-		
-		if (!NT_STATUS_IS_OK(status)) {
-			r->out.error_string = talloc_asprintf(r,
-							      "lsa_QueryInfoPolicy2 failed: %s",
-							      nt_errstr(status));
-			talloc_free(tmp_ctx);
-			return status;
-		}
-		
-		r->out.domain_sid = lsa_query_info.out.info->domain.sid;
-		r->out.domain_name = lsa_query_info.out.info->domain.name.string;
-	} else {
-		/* Cause the code further down to try this with just SAMR */
-		r->out.domain_sid = NULL;
-		r->out.domain_name = NULL;
-		r->out.realm = NULL;
-	}
-
-	/* Find the original binding string */
-	final_binding = talloc(tmp_ctx, struct dcerpc_binding);
-	if (!final_binding) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	*final_binding = *lsa_pipe->binding;
-	/* Ensure we keep hold of the member elements */
-	talloc_reference(final_binding, lsa_pipe->binding);
-
-	/* Make binding string for samr, not the other pipe */
-	status = dcerpc_epm_map_binding(tmp_ctx, final_binding, 					
-					r->in.dcerpc_iface,
-					lsa_pipe->conn->event_ctx);
-	if (!NT_STATUS_IS_OK(status)) {
-		r->out.error_string = talloc_asprintf(r,
-						      "Failed to map pipe with endpoint mapper - %s",
-						      nt_errstr(status));
-		talloc_free(tmp_ctx);
-		return status;
-	}
-
-	/* Now that we have the info setup a final connection to the pipe they wanted */
-	status = dcerpc_secondary_connection(lsa_pipe, &final_pipe, final_binding);
-	if (!NT_STATUS_IS_OK(status)) {
-		r->out.error_string = talloc_asprintf(r,
-						      "secondary connection failed: %s",
-						      nt_errstr(status));
-		talloc_free(tmp_ctx);
-		return status;
-	}
-	r->out.dcerpc_pipe = final_pipe;
-
-	talloc_steal(r, r->out.realm);
-	talloc_steal(r, r->out.domain_sid);
-	talloc_steal(r, r->out.domain_name);
-	talloc_steal(r, r->out.dcerpc_pipe);
-
-	/* This should close the LSA pipe, which we don't need now we have the info */
-	talloc_free(tmp_ctx);
-	return NT_STATUS_OK;
+	c = libnet_RpcConnectDCInfo_send(ctx, mem_ctx, r);
+	return libnet_RpcConnectDCInfo_recv(c, ctx, mem_ctx, r);
 }
-
