@@ -144,15 +144,18 @@ struct dcerpc_pipe {
 /* set LIBNDR_FLAG_REF_ALLOC flag when decoding NDR */
 #define DCERPC_NDR_REF_ALLOC           (1<<14)
 
-#define DCERPC_AUTH_OPTIONS    (DCERPC_SEAL|DCERPC_SIGN|DCERPC_SCHANNEL|DCERPC_AUTH_SPNEGO|DCERPC_AUTH_KRB5)
+#define DCERPC_AUTH_OPTIONS    (DCERPC_SEAL|DCERPC_SIGN|DCERPC_SCHANNEL|DCERPC_AUTH_SPNEGO|DCERPC_AUTH_KRB5|DCERPC_AUTH_NTLM)
 
-/* enable spnego auth */
+/* select spnego auth */
 #define DCERPC_AUTH_SPNEGO             (1<<15)
 
-/* enable krb5 auth */
+/* select krb5 auth */
 #define DCERPC_AUTH_KRB5               (1<<16)
 
 #define DCERPC_SMB2                    (1<<17)
+
+/* select NTLM auth */
+#define DCERPC_AUTH_NTLM               (1<<18)
 
 /*
   this is used to find pointers to calls
