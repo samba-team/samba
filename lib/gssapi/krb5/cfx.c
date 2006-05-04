@@ -147,9 +147,8 @@ OM_uint32 _gssapi_wrap_size_cfx(OM_uint32 *minor_status,
 static krb5_error_code
 rrc_rotate(void *data, size_t len, u_int16_t rrc, krb5_boolean unrotate)
 {
-    u_char *tmp;
+    u_char *tmp, buf[256];
     size_t left;
-    char buf[256];
 
     if (len == 0)
 	return 0;
