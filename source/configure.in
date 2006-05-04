@@ -1280,11 +1280,60 @@ AC_TRY_LINK(
     [
 	AC_MSG_RESULT(yes)
 	AC_DEFINE(HAVE_LIBUNWIND, 1, [Whether libunwind is available])
+
+	# If we have libunwind, test whether we also have libunwind-ptrace
+	# which would let us unwind arbitrary processes.
+	save_LIBS=$LIBS
+	AC_CHECK_HEADERS(libunwind-ptrace.h)
+	AC_CHECK_LIB(unwind-ptrace, _UPT_create,
+	    [
+		LIBUNWIND_PTRACE="-lunwind-ptrace";
+		AC_DEFINE(HAVE_LIBUNWIND_PTRACE, 1,
+		    [Whether libunwind-ptrace.a is available.])
+	    ],
+	    [ LIBUNWIND_PTRACE="" ])
+
+	LIBS=$save_LIBS
     ],
     [
 	AC_MSG_RESULT(no)
 	LIBS=$save_LIBS
     ])
+
+# To use libunwind-ptrace, we also need to make some ptrace system calls.
+if test x"$LIBUNWIND_PTRACE" != x"" ; then
+    AC_CHECK_HEADERS(sys/ptrace.h)
+    AC_MSG_CHECKING([for the Linux ptrace(2) interface])
+    AC_TRY_LINK(
+	    [
+#if HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+#if HAVE_SYS_PTRACE_H
+#include <sys/ptrace.h>
+#endif
+	    ],
+	    [
+		int main(int argc, const char ** argv)
+		{
+			pid_t me = (pid_t)-1;
+			ptrace(PTRACE_ATTACH, me, 0, 0);
+			ptrace(PTRACE_DETACH, me, 0, 0);
+			return 0;
+		}
+	    ],
+	    [
+		AC_MSG_RESULT(yes)
+		AC_DEFINE(HAVE_LINUX_PTRACE, 1,
+		    [Whether the Linux ptrace(2) interface is available.])
+	    ],
+	    [
+		AC_MSG_RESULT(no)
+		LIBUNWIND_PTRACE=""
+	    ])
+fi
+
+AC_SUBST(LIBUNWIND_PTRACE)
 
 # syscall() is needed for smbwrapper.
 AC_CHECK_FUNCS(syscall)
