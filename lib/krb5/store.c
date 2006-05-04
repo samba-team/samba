@@ -185,7 +185,7 @@ krb5_error_code KRB5_LIB_FUNCTION
 krb5_store_uint32(krb5_storage *sp,
 		  uint32_t value)
 {
-    return krb5_store_int32(sp, (uint32_t)value);
+    return krb5_store_int32(sp, (int32_t)value);
 }
 
 static krb5_error_code
@@ -240,7 +240,7 @@ krb5_error_code KRB5_LIB_FUNCTION
 krb5_store_uint16(krb5_storage *sp,
 		 uint16_t value)
 {
-    return krb5_store_int16(sp, (uint16_t)value);
+    return krb5_store_int16(sp, (int16_t)value);
 }
 
 krb5_error_code KRB5_LIB_FUNCTION
@@ -283,7 +283,7 @@ krb5_error_code KRB5_LIB_FUNCTION
 krb5_store_uint8(krb5_storage *sp,
 		 uint8_t value)
 {
-    return krb5_store_int8(sp, (uint8_t)value);
+    return krb5_store_int8(sp, (int8_t)value);
 }
 
 krb5_error_code KRB5_LIB_FUNCTION
