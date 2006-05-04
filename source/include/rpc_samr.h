@@ -597,8 +597,6 @@ typedef struct sam_unknown_info_2_inf
 	uint32 num_domain_grps; /* number of domain groups in domain */
 	uint32 num_local_grps; /* number of local groups in domain */
 
-	uint8 padding[12]; /* 12 bytes zeros */
-
 	UNISTR2 uni_comment; /* comment unicode string */
 	UNISTR2 uni_domain; /* domain name unicode string */
 	UNISTR2 uni_server; /* server name unicode string */

@@ -712,8 +712,6 @@ void init_unk_info2(SAM_UNK_INFO_2 * u_2,
 	u_2->num_domain_grps = num_groups;
 	u_2->num_local_grps = num_alias;
 
-	memset(u_2->padding, 0, sizeof(u_2->padding));	/* 12 bytes zeros */
-
 	init_unistr2(&u_2->uni_comment, comment, UNI_FLAGS_NONE);
 	init_uni_hdr(&u_2->hdr_comment, &u_2->uni_comment);
 	init_unistr2(&u_2->uni_domain, domain, UNI_FLAGS_NONE);
