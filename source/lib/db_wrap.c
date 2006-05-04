@@ -68,6 +68,8 @@ char *wrap_casefold(void *context, void *mem_ctx, const char *s)
 /*
   wrapped connection to a ldb database
   to close just talloc_free() the returned ldb_context
+
+  TODO:  We need an error_string parameter
  */
 struct ldb_context *ldb_wrap_connect(TALLOC_CTX *mem_ctx,
 				     const char *url,
