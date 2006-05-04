@@ -246,8 +246,8 @@ _gssapi_verify_mic_arcfour(OM_uint32 * minor_status,
     krb5_error_code ret;
     int32_t seq_number;
     OM_uint32 omret;
-    char cksum_data[8], k6_data[16], SND_SEQ[8];
-    u_char *p;
+    u_char SND_SEQ[8], cksum_data[8], *p;
+    char k6_data[16];
     int cmp;
     
     if (qop_state)
@@ -295,7 +295,7 @@ _gssapi_verify_mic_arcfour(OM_uint32 * minor_status,
     {
 	RC4_KEY rc4_key;
 	
-	RC4_set_key (&rc4_key, sizeof(k6_data), k6_data);
+	RC4_set_key (&rc4_key, sizeof(k6_data), (void*)k6_data);
 	RC4 (&rc4_key, 8, p, SND_SEQ);
 	
 	memset(&rc4_key, 0, sizeof(rc4_key));
@@ -435,7 +435,7 @@ _gssapi_wrap_arcfour(OM_uint32 * minor_status,
     if(conf_req_flag) {
 	RC4_KEY rc4_key;
 
-	RC4_set_key (&rc4_key, sizeof(k6_data), k6_data);
+	RC4_set_key (&rc4_key, sizeof(k6_data), (void *)k6_data);
 	/* XXX ? */
 	RC4 (&rc4_key, 8 + datalen, p0 + 24, p0 + 24); /* Confounder + data */
 	memset(&rc4_key, 0, sizeof(rc4_key));
@@ -481,8 +481,8 @@ OM_uint32 _gssapi_unwrap_arcfour(OM_uint32 *minor_status,
     int32_t seq_number;
     size_t datalen;
     OM_uint32 omret;
-    char k6_data[16], SND_SEQ[8], Confounder[8];
-    char cksum_data[8];
+    u_char k6_data[16], SND_SEQ[8], Confounder[8];
+    u_char cksum_data[8];
     u_char *p, *p0;
     int cmp;
     int conf_flag;
