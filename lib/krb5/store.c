@@ -222,7 +222,7 @@ krb5_error_code KRB5_LIB_FUNCTION
 krb5_ret_uint32(krb5_storage *sp,
 		u_int32_t *value)
 {
-    return krb5_ret_int32(sp, (u_int32_t *)value);
+    return krb5_ret_int32(sp, (int32_t *)value);
 }
 
 krb5_error_code KRB5_LIB_FUNCTION
