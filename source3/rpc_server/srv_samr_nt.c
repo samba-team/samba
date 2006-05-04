@@ -2301,7 +2301,7 @@ NTSTATUS _samr_query_dom_info(pipes_struct *p, SAMR_Q_QUERY_DOMAIN_INFO *q_u, SA
 			init_unk_info3(&ctr->info.inf3, nt_logout);
 			break;
 		case 0x05:
-			init_unk_info5(&ctr->info.inf5, global_myname());
+			init_unk_info5(&ctr->info.inf5, get_global_sam_name());
 			break;
 		case 0x06:
 			init_unk_info6(&ctr->info.inf6);
@@ -4802,7 +4802,7 @@ NTSTATUS _samr_query_domain_info2(pipes_struct *p,
 			init_unk_info3(&ctr->info.inf3, nt_logout);
 			break;
 		case 0x05:
-			init_unk_info5(&ctr->info.inf5, global_myname());
+			init_unk_info5(&ctr->info.inf5, get_global_sam_name());
 			break;
 		case 0x06:
 			init_unk_info6(&ctr->info.inf6);
