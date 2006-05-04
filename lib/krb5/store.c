@@ -238,7 +238,7 @@ krb5_store_int16(krb5_storage *sp,
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_store_uint16(krb5_storage *sp,
-		 uint8_t value)
+		 uint16_t value)
 {
     return krb5_store_int16(sp, (uint16_t)value);
 }
