@@ -1,4 +1,4 @@
-.\" Copyright (c) 2003 - 2005 Kungliga Tekniska Högskolan
+.\" Copyright (c) 2003 - 2006 Kungliga Tekniska Högskolan
 .\" (Royal Institute of Technology, Stockholm, Sweden).
 .\" All rights reserved.
 .\"
@@ -31,7 +31,7 @@
 .\"
 .\" $Id$
 .\"
-.Dd May 10, 2005
+.Dd May  4, 2006
 .Dt KRB5_STORAGE 3
 .Os HEIMDAL
 .Sh NAME
@@ -53,10 +53,16 @@
 .Nm krb5_storage_to_data ,
 .Nm krb5_store_int32 ,
 .Nm krb5_ret_int32 ,
+.Nm krb5_store_uint32 ,
+.Nm krb5_ret_uint32 ,
 .Nm krb5_store_int16 ,
 .Nm krb5_ret_int16 ,
+.Nm krb5_store_uint16 ,
+.Nm krb5_ret_uint16 ,
 .Nm krb5_store_int8 ,
 .Nm krb5_ret_int8 ,
+.Nm krb5_store_uint8 ,
+.Nm krb5_ret_uint8 ,
 .Nm krb5_store_data ,
 .Nm krb5_ret_data ,
 .Nm krb5_store_string ,
@@ -120,13 +126,25 @@ Kerberos 5 Library (libkrb5, -lkrb5)
 .Ft krb5_error_code
 .Fn krb5_ret_int32 "krb5_storage *sp" "int32_t *value"
 .Ft krb5_error_code
+.Fn krb5_ret_uint32 "krb5_storage *sp" "u_int32_t *value"
+.Ft krb5_error_code
+.Fn krb5_store_uint32 "krb5_storage *sp" "u_int32_t value"
+.Ft krb5_error_code
 .Fn krb5_store_int16 "krb5_storage *sp" "int16_t value"
 .Ft krb5_error_code
 .Fn krb5_ret_int16 "krb5_storage *sp" "int16_t *value"
 .Ft krb5_error_code
+.Fn krb5_store_uint16 "krb5_storage *sp" "u_int16_t value"
+.Ft krb5_error_code
+.Fn krb5_ret_uint16 "krb5_storage *sp" "u_int16_t *value"
+.Ft krb5_error_code
 .Fn krb5_store_int8 "krb5_storage *sp" "int8_t value"
 .Ft krb5_error_code
 .Fn krb5_ret_int8 "krb5_storage *sp" "int8_t *value"
+.Ft krb5_error_code
+.Fn krb5_store_uint8 "krb5_storage *sp" "u_int8_t value"
+.Ft krb5_error_code
+.Fn krb5_ret_uint8 "krb5_storage *sp" "u_int8_t *value"
 .Ft krb5_error_code
 .Fn krb5_store_data "krb5_storage *sp" "krb5_data data"
 .Ft krb5_error_code
@@ -315,11 +333,17 @@ functions move the current offset forward when the functions returns.
 .Pp
 .Fn krb5_store_int32 ,
 .Fn krb5_ret_int32 ,
+.Fn krb5_store_uint32 ,
+.Fn krb5_ret_uint32 ,
 .Fn krb5_store_int16 ,
 .Fn krb5_ret_int16 ,
+.Fn krb5_store_uint16 ,
+.Fn krb5_ret_uint16 ,
 .Fn krb5_store_int8 ,
-and
 .Fn krb5_ret_int8 
+.Fn krb5_store_uint8 ,
+and
+.Fn krb5_ret_uint8 
 stores and reads an integer from
 .Fa sp
 in the byte order specified by the flags set on the
