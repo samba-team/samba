@@ -572,8 +572,8 @@ typedef struct sam_unknown_info_12_inf
 
 typedef struct sam_unknown_info_5_inf
 {
-	UNIHDR hdr_server; /* server name unicode header */
-	UNISTR2 uni_server; /* server name unicode string */
+	UNIHDR hdr_domain; /* domain name unicode header */
+	UNISTR2 uni_domain; /* domain name unicode string */
 
 } SAM_UNK_INFO_5;
 
