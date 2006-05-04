@@ -1,5 +1,15 @@
-2006-04-12  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-05-04  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* cfx.c: Less pointer signedness warnings.
+
+	* arcfour.c: Avoid pointer signedness warnings.
+
+	* gssapi_locl.h (gssapi_decode_*): make data argument const void *
+	
+	* 8003.c (gssapi_decode_*): make data argument const void *
+	
+2006-04-12  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* export_sec_context.c: Export sequence order element. From Wynn
 	Wilkes <wynn.wilkes@quest.com>.
 
