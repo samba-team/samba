@@ -291,9 +291,9 @@ krb5_error_code
 gssapi_encode_be_om_uint32(OM_uint32, u_char *);
 
 krb5_error_code
-gssapi_decode_om_uint32(u_char *, OM_uint32 *);
+gssapi_decode_om_uint32(const void *, OM_uint32 *);
 
 krb5_error_code
-gssapi_decode_be_om_uint32(u_char *, OM_uint32 *);
+gssapi_decode_be_om_uint32(const void *, OM_uint32 *);
 
 #endif
