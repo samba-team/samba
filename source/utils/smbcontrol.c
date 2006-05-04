@@ -909,6 +909,36 @@ static BOOL do_winbind_offline(const struct process_id pid,
 	return ret;
 }
 
+static BOOL do_winbind_onlinestatus(const struct process_id pid,
+				    const int argc, const char **argv)
+{
+	struct process_id myid;
+
+	myid = pid_to_procid(sys_getpid());
+
+	if (argc != 1) {
+		fprintf(stderr, "Usage: smbcontrol winbindd onlinestatus\n");
+		return False;
+	}
+
+	message_register(MSG_WINBIND_ONLINESTATUS, print_pid_string_cb);
+
+	if (!send_message(pid, MSG_WINBIND_ONLINESTATUS, &myid, sizeof(myid), False))
+		return False;
+
+	wait_replies(procid_to_pid(&pid) == 0);
+
+	/* No replies were received within the timeout period */
+
+	if (num_replies == 0)
+		printf("No replies received\n");
+
+	message_deregister(MSG_WINBIND_ONLINESTATUS);
+
+	return num_replies;
+}
+
+
 static BOOL do_reload_config(const struct process_id pid,
 			     const int argc, const char **argv)
 {
@@ -999,6 +1029,7 @@ static const struct {
 	{ "nodestatus", do_nodestatus, "Ask nmbd to do a node status request"},
 	{ "online", do_winbind_online, "Ask winbind to go into online state"},
 	{ "offline", do_winbind_offline, "Ask winbind to go into offline state"},
+	{ "onlinestatus", do_winbind_onlinestatus, "Request winbind online status"},
 	{ "noop", do_noop, "Do nothing" },
 	{ NULL }
 };
