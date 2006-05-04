@@ -481,9 +481,9 @@ NTSTATUS libnet_JoinDomain(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 		return status;
 	}
 
-	samr_pipe = connect_with_info->out.dcerpc_pipe, 
+	samr_pipe = connect_with_info->out.dcerpc_pipe;
 
-	status = dcerpc_pipe_auth(samr_pipe,
+	status = dcerpc_pipe_auth(tmp_ctx, &samr_pipe,
 				  connect_with_info->out.dcerpc_pipe->binding, 
 				  &dcerpc_table_samr, ctx->cred);
 	if (!NT_STATUS_IS_OK(status)) {
