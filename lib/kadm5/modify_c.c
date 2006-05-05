@@ -38,7 +38,7 @@ RCSID("$Id$");
 kadm5_ret_t
 kadm5_c_modify_principal(void *server_handle,
 			 kadm5_principal_ent_t princ, 
-			 u_int32_t mask)
+			 uint32_t mask)
 {
     kadm5_client_context *context = server_handle;
     kadm5_ret_t ret;

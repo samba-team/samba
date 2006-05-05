@@ -176,7 +176,7 @@ hx509_name_to_string(const hx509_name name, char **str)
 		ss = ds->u.ia5String;
 		break;
 	    case choice_DirectoryString_bmpString: {
-		u_int16_t *bmp = ds->u.bmpString.data;
+		uint16_t *bmp = ds->u.bmpString.data;
 		size_t len = ds->u.bmpString.length;
 		int k;
 

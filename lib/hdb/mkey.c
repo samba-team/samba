@@ -355,7 +355,7 @@ hdb_write_master_key(krb5_context context, const char *filename,
 }
 
 hdb_master_key
-_hdb_find_master_key(u_int32_t *mkvno, hdb_master_key mkey)
+_hdb_find_master_key(uint32_t *mkvno, hdb_master_key mkey)
 {
     hdb_master_key ret = NULL;
     while(mkey) {

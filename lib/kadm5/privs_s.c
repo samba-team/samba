@@ -36,7 +36,7 @@
 RCSID("$Id$");
 
 kadm5_ret_t
-kadm5_s_get_privs(void *server_handle, u_int32_t *privs)
+kadm5_s_get_privs(void *server_handle, uint32_t *privs)
 {
     kadm5_server_context *context = server_handle;
     *privs = context->acl_flags;

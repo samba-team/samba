@@ -57,7 +57,7 @@ PKCS5_PBKDF2_HMAC_SHA1(const void * password, size_t password_len,
 {
     size_t datalen, leftofkey, checksumsize;
     char *data, *tmpcksum;
-    u_int32_t keypart;
+    uint32_t keypart;
     const EVP_MD *md;
     unsigned long i;
     int j;

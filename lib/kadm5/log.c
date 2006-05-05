@@ -50,7 +50,7 @@ RCSID("$Id$");
 
 kadm5_ret_t
 kadm5_log_get_version_fd (int fd,
-			  u_int32_t *ver)
+			  uint32_t *ver)
 {
     int ret;
     krb5_storage *sp;
@@ -73,13 +73,13 @@ kadm5_log_get_version_fd (int fd,
 }
 
 kadm5_ret_t
-kadm5_log_get_version (kadm5_server_context *context, u_int32_t *ver)
+kadm5_log_get_version (kadm5_server_context *context, uint32_t *ver)
 {
     return kadm5_log_get_version_fd (context->log_context.log_fd, ver);
 }
 
 kadm5_ret_t
-kadm5_log_set_version (kadm5_server_context *context, u_int32_t vno)
+kadm5_log_set_version (kadm5_server_context *context, uint32_t vno)
 {
     kadm5_log_context *log_context = &context->log_context;
 
@@ -265,8 +265,8 @@ kadm5_log_create (kadm5_server_context *context,
 
 kadm5_ret_t
 kadm5_log_replay_create (kadm5_server_context *context,
-			 u_int32_t ver,
-			 u_int32_t len,
+			 uint32_t ver,
+			 uint32_t len,
 			 krb5_storage *sp)
 {
     krb5_error_code ret;
@@ -342,8 +342,8 @@ out:
 
 kadm5_ret_t
 kadm5_log_replay_delete (kadm5_server_context *context,
-			 u_int32_t ver,
-			 u_int32_t len,
+			 uint32_t ver,
+			 uint32_t len,
 			 krb5_storage *sp)
 {
     krb5_error_code ret;
@@ -428,8 +428,8 @@ failed:
 
 kadm5_ret_t
 kadm5_log_replay_rename (kadm5_server_context *context,
-			 u_int32_t ver,
-			 u_int32_t len,
+			 uint32_t ver,
+			 uint32_t len,
 			 krb5_storage *sp)
 {
     krb5_error_code ret;
@@ -477,12 +477,12 @@ kadm5_log_replay_rename (kadm5_server_context *context,
 kadm5_ret_t
 kadm5_log_modify (kadm5_server_context *context,
 		  hdb_entry *ent,
-		  u_int32_t mask)
+		  uint32_t mask)
 {
     krb5_storage *sp;
     kadm5_ret_t ret;
     krb5_data value;
-    u_int32_t len;
+    uint32_t len;
     kadm5_log_context *log_context = &context->log_context;
 
     krb5_data_zero(&value);
@@ -529,8 +529,8 @@ failed:
 
 kadm5_ret_t
 kadm5_log_replay_modify (kadm5_server_context *context,
-			 u_int32_t ver,
-			 u_int32_t len,
+			 uint32_t ver,
+			 uint32_t len,
 			 krb5_storage *sp)
 {
     krb5_error_code ret;
@@ -741,8 +741,8 @@ kadm5_log_nop (kadm5_server_context *context)
 
 kadm5_ret_t
 kadm5_log_replay_nop (kadm5_server_context *context,
-		      u_int32_t ver,
-		      u_int32_t len,
+		      uint32_t ver,
+		      uint32_t len,
 		      krb5_storage *sp)
 {
     return 0;
@@ -755,10 +755,10 @@ kadm5_log_replay_nop (kadm5_server_context *context,
 kadm5_ret_t
 kadm5_log_foreach (kadm5_server_context *context,
 		   void (*func)(kadm5_server_context *server_context,
-				u_int32_t ver,
+				uint32_t ver,
 				time_t timestamp,
 				enum kadm_ops op,
-				u_int32_t len,
+				uint32_t len,
 				krb5_storage *,
 				void *),
 		   void *ctx)
@@ -803,10 +803,10 @@ kadm5_log_goto_end (int fd)
 kadm5_ret_t
 kadm5_log_previous (krb5_context context,
 		    krb5_storage *sp,
-		    u_int32_t *ver,
+		    uint32_t *ver,
 		    time_t *timestamp,
 		    enum kadm_ops *op,
-		    u_int32_t *len)
+		    uint32_t *len)
 {
     krb5_error_code ret;
     off_t off;
@@ -858,8 +858,8 @@ kadm5_log_previous (krb5_context context,
 kadm5_ret_t
 kadm5_log_replay (kadm5_server_context *context,
 		  enum kadm_ops op,
-		  u_int32_t ver,
-		  u_int32_t len,
+		  uint32_t ver,
+		  uint32_t len,
 		  krb5_storage *sp)
 {
     switch (op) {
@@ -886,7 +886,7 @@ kadm5_ret_t
 kadm5_log_truncate (kadm5_server_context *server_context)
 {
     kadm5_ret_t ret;
-    u_int32_t vno;
+    uint32_t vno;
 
     ret = kadm5_log_init (server_context);
     if (ret)

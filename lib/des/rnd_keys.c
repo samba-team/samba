@@ -82,8 +82,8 @@ static
 int
 sumFile (const char *name, int len, void *res)
 {
-  u_int32_t sum[2] = { 0, 0 };
-  u_int32_t buf[1024*2];
+  uint32_t sum[2] = { 0, 0 };
+  uint32_t buf[1024*2];
   int fd, i;
 
   fd = open (name, 0);
@@ -148,7 +148,7 @@ md5sumFile (const char *name, int len, int32_t sum[4])
  * based on an initial des key used as a seed.
  */
 static DES_key_schedule sequence_seed;
-static u_int32_t sequence_index[2];
+static uint32_t sequence_index[2];
 
 /* 
  * Random number generator based on ideas from truerand in cryptolib

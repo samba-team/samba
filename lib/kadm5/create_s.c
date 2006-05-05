@@ -56,14 +56,14 @@ get_default(kadm5_server_context *context, krb5_principal princ,
 static kadm5_ret_t
 create_principal(kadm5_server_context *context,
 		 kadm5_principal_ent_t princ,
-		 u_int32_t mask,
+		 uint32_t mask,
 		 hdb_entry_ex *ent,
-		 u_int32_t required_mask,
-		 u_int32_t forbidden_mask)
+		 uint32_t required_mask,
+		 uint32_t forbidden_mask)
 {
     kadm5_ret_t ret;
     kadm5_principal_ent_rec defrec, *defent;
-    u_int32_t def_mask;
+    uint32_t def_mask;
     
     if((mask & required_mask) != required_mask)
 	return KADM5_BAD_MASK;
@@ -104,7 +104,7 @@ create_principal(kadm5_server_context *context,
 kadm5_ret_t
 kadm5_s_create_principal_with_key(void *server_handle,
 				  kadm5_principal_ent_t princ,
-				  u_int32_t mask)
+				  uint32_t mask)
 {
     kadm5_ret_t ret;
     hdb_entry_ex ent;
@@ -143,7 +143,7 @@ out:
 kadm5_ret_t
 kadm5_s_create_principal(void *server_handle,
 			 kadm5_principal_ent_t princ, 
-			 u_int32_t mask,
+			 uint32_t mask,
 			 const char *password)
 {
     kadm5_ret_t ret;

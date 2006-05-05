@@ -286,7 +286,7 @@ wrap_des3
   u_char seq[8];
   int32_t seq_number;
   size_t len, total_len, padlength, datalen;
-  u_int32_t ret;
+  uint32_t ret;
   krb5_crypto crypto;
   Checksum cksum;
   krb5_data encdata;

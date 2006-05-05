@@ -106,7 +106,7 @@ struct slave {
     struct sockaddr_in addr;
     char *name;
     krb5_auth_context ac;
-    u_int32_t version;
+    uint32_t version;
     time_t seen;
     unsigned long flags;
 #define SLAVE_F_DEAD	0x1
@@ -310,7 +310,7 @@ prop_one (krb5_context context, HDB *db, hdb_entry_ex *entry, void *v)
 
 static int
 send_complete (krb5_context context, slave *s,
-	       const char *database, u_int32_t current_version)
+	       const char *database, uint32_t current_version)
 {
     krb5_error_code ret;
     krb5_storage *sp;
@@ -413,13 +413,13 @@ send_are_you_there (krb5_context context, slave *s)
 
 static int
 send_diffs (krb5_context context, slave *s, int log_fd,
-	    const char *database, u_int32_t current_version)
+	    const char *database, uint32_t current_version)
 {
     krb5_storage *sp;
-    u_int32_t ver;
+    uint32_t ver;
     time_t timestamp;
     enum kadm_ops op;
-    u_int32_t len;
+    uint32_t len;
     off_t right, left;
     krb5_data data;
     int ret = 0;
@@ -478,7 +478,7 @@ send_diffs (krb5_context context, slave *s, int log_fd,
 
 static int
 process_msg (krb5_context context, slave *s, int log_fd,
-	     const char *database, u_int32_t current_version)
+	     const char *database, uint32_t current_version)
 {
     int ret = 0;
     krb5_data out;
@@ -535,7 +535,7 @@ process_msg (krb5_context context, slave *s, int log_fd,
 #define SLAVE_SEEN	"Last Seen"
 
 static void
-write_stats(krb5_context context, slave *slaves, u_int32_t current_version)
+write_stats(krb5_context context, slave *slaves, uint32_t current_version)
 {
     char str[100];
     rtbl_t tbl;
@@ -641,7 +641,7 @@ main(int argc, char **argv)
     int signal_fd, listen_fd;
     int log_fd;
     slave *slaves = NULL;
-    u_int32_t current_version = 0, old_version = 0;
+    uint32_t current_version = 0, old_version = 0;
     krb5_keytab keytab;
     int optidx;
     char **files;
@@ -719,7 +719,7 @@ main(int argc, char **argv)
 	fd_set readset;
 	int max_fd = 0;
 	struct timeval to = {30, 0};
-	u_int32_t vers;
+	uint32_t vers;
 
 	if (signal_fd >= FD_SETSIZE || listen_fd >= FD_SETSIZE)
 	    krb5_errx (context, 1, "fd too large");

@@ -48,7 +48,7 @@ static struct units acl_units[] = {
 };
 
 kadm5_ret_t
-_kadm5_string_to_privs(const char *s, u_int32_t* privs)
+_kadm5_string_to_privs(const char *s, uint32_t* privs)
 {
     int flags;
     flags = parse_flags(s, acl_units, 0);
@@ -59,7 +59,7 @@ _kadm5_string_to_privs(const char *s, u_int32_t* privs)
 }
 
 kadm5_ret_t
-_kadm5_privs_to_string(u_int32_t privs, char *string, size_t len)
+_kadm5_privs_to_string(uint32_t privs, char *string, size_t len)
 {
     if(privs == 0)
 	strlcpy(string, "none", len);

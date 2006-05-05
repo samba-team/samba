@@ -187,7 +187,7 @@ init_auth
     krb5_creds this_cred, *cred = NULL;
     krb5_data outbuf;
     krb5_ccache ccache = NULL;
-    u_int32_t flags;
+    uint32_t flags;
     krb5_data authenticator;
     Checksum cksum;
     krb5_enctype enctype;

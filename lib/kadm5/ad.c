@@ -561,7 +561,7 @@ get_fqdn(krb5_context context, const krb5_principal p)
 static kadm5_ret_t
 kadm5_ad_create_principal(void *server_handle,
 			  kadm5_principal_ent_t entry,
-			  u_int32_t mask,
+			  uint32_t mask,
 			  const char *password)
 {
     kadm5_ad_context *context = server_handle;
@@ -877,7 +877,7 @@ static kadm5_ret_t
 kadm5_ad_get_principal(void *server_handle,
 		       krb5_principal principal, 
 		       kadm5_principal_ent_t entry, 
-		       u_int32_t mask)
+		       uint32_t mask)
 {
     kadm5_ad_context *context = server_handle;
 #ifdef OPENLDAP
@@ -982,7 +982,7 @@ kadm5_ad_get_principal(void *server_handle,
  	if (mask & KADM5_ATTRIBUTES) {
 	    vals = ldap_get_values(CTX2LP(context), m0, "userAccountControl");
 	    if (vals) {
-		u_int32_t i;
+		uint32_t i;
 		i = atoi(vals[0]);
 		if (i & (UF_ACCOUNTDISABLE|UF_LOCKOUT))
 		    entry->attributes |= KRB5_KDB_DISALLOW_ALL_TIX;
@@ -1051,7 +1051,7 @@ kadm5_ad_get_principals(void *server_handle,
 }
 
 static kadm5_ret_t
-kadm5_ad_get_privs(void *server_handle, u_int32_t*privs)
+kadm5_ad_get_privs(void *server_handle, uint32_t*privs)
 {
     kadm5_ad_context *context = server_handle;
     krb5_set_error_string(context->context, "Function not implemented");
@@ -1061,7 +1061,7 @@ kadm5_ad_get_privs(void *server_handle, u_int32_t*privs)
 static kadm5_ret_t
 kadm5_ad_modify_principal(void *server_handle,
 			  kadm5_principal_ent_t entry,
-			  u_int32_t mask)
+			  uint32_t mask)
 {
     kadm5_ad_context *context = server_handle;
 

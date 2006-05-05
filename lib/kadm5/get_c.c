@@ -39,7 +39,7 @@ kadm5_ret_t
 kadm5_c_get_principal(void *server_handle, 
 		      krb5_principal princ, 
 		      kadm5_principal_ent_t out, 
-		      u_int32_t mask)
+		      uint32_t mask)
 {
     kadm5_client_context *context = server_handle;
     kadm5_ret_t ret;

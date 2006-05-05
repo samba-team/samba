@@ -48,7 +48,7 @@ wrap_length_cfx(krb5_crypto crypto,
 		size_t input_length,
 		size_t *output_length,
 		size_t *cksumsize,
-		u_int16_t *padlength)
+		uint16_t *padlength)
 {
     krb5_error_code ret;
     krb5_cksumtype type;
@@ -107,7 +107,7 @@ OM_uint32 _gssapi_wrap_size_cfx(OM_uint32 *minor_status,
 {
     krb5_error_code ret;
     krb5_crypto crypto;
-    u_int16_t padlength;
+    uint16_t padlength;
     size_t output_length, cksumsize;
 
     ret = krb5_crypto_init(gssapi_krb5_context, key, 0, &crypto);
@@ -145,7 +145,7 @@ OM_uint32 _gssapi_wrap_size_cfx(OM_uint32 *minor_status,
  */
 
 static krb5_error_code
-rrc_rotate(void *data, size_t len, u_int16_t rrc, krb5_boolean unrotate)
+rrc_rotate(void *data, size_t len, uint16_t rrc, krb5_boolean unrotate)
 {
     u_char *tmp, buf[256];
     size_t left;
@@ -199,7 +199,7 @@ OM_uint32 _gssapi_wrap_cfx(OM_uint32 *minor_status,
     unsigned usage;
     krb5_data cipher;
     size_t wrapped_len, cksumsize;
-    u_int16_t padlength, rrc = 0;
+    uint16_t padlength, rrc = 0;
     OM_uint32 seq_number;
     u_char *p;
 
@@ -221,7 +221,7 @@ OM_uint32 _gssapi_wrap_cfx(OM_uint32 *minor_status,
     }
 
     /* Always rotate encrypted token (if any) and checksum to header */
-    rrc = (conf_req_flag ? sizeof(*token) : 0) + (u_int16_t)cksumsize;
+    rrc = (conf_req_flag ? sizeof(*token) : 0) + (uint16_t)cksumsize;
 
     output_message_buffer->length = wrapped_len;
     output_message_buffer->value = malloc(output_message_buffer->length);
@@ -421,7 +421,7 @@ OM_uint32 _gssapi_unwrap_cfx(OM_uint32 *minor_status,
     krb5_error_code ret;
     unsigned usage;
     krb5_data data;
-    u_int16_t ec, rrc;
+    uint16_t ec, rrc;
     OM_uint32 seq_number_lo, seq_number_hi;
     size_t len;
     u_char *p;

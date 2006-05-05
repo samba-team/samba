@@ -98,10 +98,10 @@ static const char *op_names[] = {
 
 static void
 print_entry(kadm5_server_context *server_context,
-	    u_int32_t ver,
+	    uint32_t ver,
 	    time_t timestamp,
 	    enum kadm_ops op,
-	    u_int32_t len,
+	    uint32_t len,
 	    krb5_storage *sp,
 	    void *ctx)
 {
@@ -308,10 +308,10 @@ int end_version = -1;
 
 static void
 apply_entry(kadm5_server_context *server_context,
-	    u_int32_t ver,
+	    uint32_t ver,
 	    time_t timestamp,
 	    enum kadm_ops op,
-	    u_int32_t len,
+	    uint32_t len,
 	    krb5_storage *sp, 
 	    void *ctx)
 {

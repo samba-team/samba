@@ -51,10 +51,10 @@ min_length_passwd_quality (krb5_context context,
 			   char *message,
 			   size_t length)
 {
-    u_int32_t min_length = krb5_config_get_int_default(context, NULL, 6,
-						       "password_quality",
-						       "min_length",
-						       NULL);
+    uint32_t min_length = krb5_config_get_int_default(context, NULL, 6,
+						      "password_quality",
+						      "min_length",
+						      NULL);
 
     if (pwd->length < min_length) {
 	strlcpy(message, "Password too short", length);

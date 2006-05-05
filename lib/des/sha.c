@@ -72,7 +72,7 @@ SHA1_Init (struct sha *m)
 
 #define DO(t,f,k) \
 do { \
-  u_int32_t temp; \
+  uint32_t temp; \
  \
   temp = cshift(AA, 5) + f(BB,CC,DD) + EE + data[t] + k; \
   EE = DD; \
@@ -83,10 +83,10 @@ do { \
 } while(0)
 
 static inline void
-calc (struct sha *m, u_int32_t *in)
+calc (struct sha *m, uint32_t *in)
 {
-  u_int32_t AA, BB, CC, DD, EE;
-  u_int32_t data[80];
+  uint32_t AA, BB, CC, DD, EE;
+  uint32_t data[80];
   int i;
 
   AA = A;
@@ -204,11 +204,11 @@ calc (struct sha *m, u_int32_t *in)
  */
 
 #if !defined(WORDS_BIGENDIAN) || defined(_CRAY)
-static inline u_int32_t
-swap_u_int32_t (u_int32_t t)
+static inline uint32_t
+swap_uint32_t (uint32_t t)
 {
 #define ROL(x,n) ((x)<<(n))|((x)>>(32-(n)))
-  u_int32_t temp1, temp2;
+  uint32_t temp1, temp2;
 
   temp1   = cshift(t, 16);
   temp2   = temp1 >> 8;
@@ -244,15 +244,15 @@ SHA1_Update (struct sha *m, const void *v, size_t len)
     if(offset == 64){
 #if !defined(WORDS_BIGENDIAN) || defined(_CRAY)
       int i;
-      u_int32_t current[16];
+      uint32_t current[16];
       struct x32 *u = (struct x32*)m->save;
       for(i = 0; i < 8; i++){
-	current[2*i+0] = swap_u_int32_t(u[i].a);
-	current[2*i+1] = swap_u_int32_t(u[i].b);
+	current[2*i+0] = swap_uint32_t(u[i].a);
+	current[2*i+1] = swap_uint32_t(u[i].b);
       }
       calc(m, current);
 #else
-      calc(m, (u_int32_t*)m->save);
+      calc(m, (uint32_t*)m->save);
 #endif
       offset = 0;
     }
@@ -291,10 +291,10 @@ SHA1_Final (void *res, struct sha *m)
 #if 0
   {
     int i;
-    u_int32_t *r = (u_int32_t *)res;
+    uint32_t *r = (uint32_t *)res;
 
     for (i = 0; i < 5; ++i)
-      r[i] = swap_u_int32_t (m->counter[i]);
+      r[i] = swap_uint32_t (m->counter[i]);
   }
 #endif
 }

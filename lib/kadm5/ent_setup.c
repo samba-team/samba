@@ -116,11 +116,11 @@ perform_tl_data(krb5_context context,
 kadm5_ret_t
 _kadm5_setup_entry(kadm5_server_context *context,
 		   hdb_entry_ex *ent,
-		   u_int32_t mask,
+		   uint32_t mask,
 		   kadm5_principal_ent_t princ, 
-		   u_int32_t princ_mask,
+		   uint32_t princ_mask,
 		   kadm5_principal_ent_t def,
-		   u_int32_t def_mask)
+		   uint32_t def_mask)
 {
     if(mask & KADM5_PRINC_EXPIRE_TIME
        && princ_mask & KADM5_PRINC_EXPIRE_TIME) {

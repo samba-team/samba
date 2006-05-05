@@ -42,7 +42,7 @@ static int lifetime = 255;
 static void
 build_request(KTEXT req,
 	      const char *name, const char *inst, const char *realm, 
-	      u_int32_t checksum)
+	      uint32_t checksum)
 {
     struct timeval tv;
     krb5_storage *sp;

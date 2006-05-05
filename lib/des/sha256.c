@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995 - 2001, 2006 Kungliga Tekniska Högskolan
+ * Copyright (c) 2006 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -59,7 +59,7 @@ RCSID("$Id$");
 #define G m->counter[6]
 #define H m->counter[7]
 
-static const u_int32_t constant_256[64] = {
+static const uint32_t constant_256[64] = {
     0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5,
     0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
     0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3,
@@ -94,10 +94,10 @@ SHA256_Init (SHA256_CTX *m)
 }
 
 static void
-calc (SHA256_CTX *m, u_int32_t *in)
+calc (SHA256_CTX *m, uint32_t *in)
 {
-    u_int32_t AA, BB, CC, DD, EE, FF, GG, HH;
-    u_int32_t data[64];
+    uint32_t AA, BB, CC, DD, EE, FF, GG, HH;
+    uint32_t data[64];
     int i;
 
     AA = A;
@@ -116,7 +116,7 @@ calc (SHA256_CTX *m, u_int32_t *in)
 	    sigma0(data[i-15]) + data[i - 16];
 
     for (i = 0; i < 64; i++) {
-	u_int32_t T1, T2;
+	uint32_t T1, T2;
 
 	T1 = HH + Sigma1(EE) + Ch(EE, FF, GG) + constant_256[i] + data[i];
 	T2 = Sigma0(AA) + Maj(AA,BB,CC);
@@ -146,11 +146,11 @@ calc (SHA256_CTX *m, u_int32_t *in)
  */
 
 #if !defined(WORDS_BIGENDIAN) || defined(_CRAY)
-static inline u_int32_t
-swap_u_int32_t (u_int32_t t)
+static inline uint32_t
+swap_uint32_t (uint32_t t)
 {
 #define ROL(x,n) ((x)<<(n))|((x)>>(32-(n)))
-    u_int32_t temp1, temp2;
+    uint32_t temp1, temp2;
 
     temp1   = cshift(t, 16);
     temp2   = temp1 >> 8;
@@ -186,15 +186,15 @@ SHA256_Update (SHA256_CTX *m, const void *v, size_t len)
 	if(offset == 64){
 #if !defined(WORDS_BIGENDIAN) || defined(_CRAY)
 	    int i;
-	    u_int32_t current[16];
+	    uint32_t current[16];
 	    struct x32 *u = (struct x32*)m->save;
 	    for(i = 0; i < 8; i++){
-		current[2*i+0] = swap_u_int32_t(u[i].a);
-		current[2*i+1] = swap_u_int32_t(u[i].b);
+		current[2*i+0] = swap_uint32_t(u[i].a);
+		current[2*i+1] = swap_uint32_t(u[i].b);
 	    }
 	    calc(m, current);
 #else
-	    calc(m, (u_int32_t*)m->save);
+	    calc(m, (uint32_t*)m->save);
 #endif
 	    offset = 0;
 	}

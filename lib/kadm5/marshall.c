@@ -105,7 +105,7 @@ kadm5_ret_tl_data(krb5_storage *sp,
 static kadm5_ret_t
 store_principal_ent(krb5_storage *sp,
 		    kadm5_principal_ent_t princ,
-		    u_int32_t mask)
+		    uint32_t mask)
 {
     int i;
 
@@ -173,7 +173,7 @@ kadm5_store_principal_ent(krb5_storage *sp,
 kadm5_ret_t
 kadm5_store_principal_ent_mask(krb5_storage *sp,
 			       kadm5_principal_ent_t princ,
-			       u_int32_t mask)
+			       uint32_t mask)
 {
     krb5_store_int32(sp, mask);
     return store_principal_ent (sp, princ, mask);
@@ -182,7 +182,7 @@ kadm5_store_principal_ent_mask(krb5_storage *sp,
 static kadm5_ret_t
 ret_principal_ent(krb5_storage *sp,
 		  kadm5_principal_ent_t princ,
-		  u_int32_t mask)
+		  uint32_t mask)
 {
     int i;
     int32_t tmp;
@@ -287,7 +287,7 @@ kadm5_ret_principal_ent(krb5_storage *sp,
 kadm5_ret_t
 kadm5_ret_principal_ent_mask(krb5_storage *sp,
 			     kadm5_principal_ent_t princ,
-			     u_int32_t *mask)
+			     uint32_t *mask)
 {
     int32_t tmp;
 

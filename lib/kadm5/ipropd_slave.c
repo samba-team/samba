@@ -133,7 +133,7 @@ get_creds(krb5_context context, const char *keytab_str,
 
 static void
 ihave (krb5_context context, krb5_auth_context auth_context,
-       int fd, u_int32_t version)
+       int fd, uint32_t version)
 {
     int ret;
     u_char buf[8];
