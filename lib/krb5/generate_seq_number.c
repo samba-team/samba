@@ -38,11 +38,11 @@ RCSID("$Id$");
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_generate_seq_number(krb5_context context,
 			 const krb5_keyblock *key,
-			 u_int32_t *seqno)
+			 uint32_t *seqno)
 {
     krb5_error_code ret;
     krb5_keyblock *subkey;
-    u_int32_t q;
+    uint32_t q;
     u_char *p;
     int i;
 

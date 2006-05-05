@@ -602,7 +602,7 @@ AES_string_to_key(krb5_context context,
 		  krb5_keyblock *key)
 {
     krb5_error_code ret;
-    u_int32_t iter;
+    uint32_t iter;
     struct encryption_type *et;
     struct key_data kd;
 
@@ -611,7 +611,7 @@ AES_string_to_key(krb5_context context,
     else if (opaque.length == 4) {
 	unsigned long v;
 	_krb5_get_int(opaque.data, &v, 4);
-	iter = ((u_int32_t)v);
+	iter = ((uint32_t)v);
     } else
 	return KRB5_PROG_KEYTYPE_NOSUPP; /* XXX */
 	
@@ -1296,7 +1296,7 @@ CRC32_checksum(krb5_context context,
 	       unsigned usage,
 	       Checksum *C)
 {
-    u_int32_t crc;
+    uint32_t crc;
     unsigned char *r = C->checksum.data;
     _krb5_crc_init_table ();
     crc = _krb5_crc_update (data, len, 0);
@@ -4282,7 +4282,7 @@ _krb5_pk_octetstring2key(krb5_context context,
 static krb5_error_code
 krb5_get_keyid(krb5_context context,
 	       krb5_keyblock *key,
-	       u_int32_t *keyid)
+	       uint32_t *keyid)
 {
     MD5_CTX md5;
     unsigned char tmp[16];
@@ -4300,7 +4300,7 @@ krb5_crypto_debug(krb5_context context,
 		  size_t len,
 		  krb5_keyblock *key)
 {
-    u_int32_t keyid;
+    uint32_t keyid;
     char *kt;
     krb5_get_keyid(context, key, &keyid);
     krb5_enctype_to_string(context, key->keytype, &kt);

@@ -77,7 +77,7 @@ krb5_recvauth_match_version(krb5_context context,
     const char *version = KRB5_SENDAUTH_VERSION;
     char her_version[sizeof(KRB5_SENDAUTH_VERSION)];
     char *her_appl_version;
-    u_int32_t len;
+    uint32_t len;
     u_char repl;
     krb5_data data;
     krb5_flags ap_options;

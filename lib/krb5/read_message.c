@@ -41,8 +41,8 @@ krb5_read_message (krb5_context context,
 		   krb5_data *data)
 {
     krb5_error_code ret;
-    u_int32_t len;
-    u_int8_t buf[4];
+    uint32_t len;
+    uint8_t buf[4];
 
     krb5_data_zero(data);
 

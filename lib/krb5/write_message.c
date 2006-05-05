@@ -40,8 +40,8 @@ krb5_write_message (krb5_context context,
 		    krb5_pointer p_fd,
 		    krb5_data *data)
 {
-    u_int32_t len;
-    u_int8_t buf[4];
+    uint32_t len;
+    uint8_t buf[4];
     int ret;
 
     len = data->length;

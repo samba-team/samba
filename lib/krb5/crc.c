@@ -62,8 +62,8 @@ _krb5_crc_init_table(void)
     flag = 1;
 }
 
-u_int32_t
-_krb5_crc_update (const char *p, size_t len, u_int32_t res)
+uint32_t
+_krb5_crc_update (const char *p, size_t len, uint32_t res)
 {
     while (len--)
 	res = table[(res ^ *p++) & 0xFF] ^ (res >> 8);

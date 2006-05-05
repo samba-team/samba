@@ -84,7 +84,7 @@ enum {
 };
 
 typedef int32_t cc_int32;
-typedef u_int32_t cc_uint32;
+typedef uint32_t cc_uint32;
 typedef struct cc_context_t *cc_context_t;
 typedef struct cc_ccache_t *cc_ccache_t;
 typedef struct cc_ccache_iterator_t *cc_ccache_iterator_t;

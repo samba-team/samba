@@ -199,7 +199,7 @@ ipv4_mask_boundary(krb5_context context, const krb5_address *inaddr,
 		   unsigned long len, krb5_address *low, krb5_address *high)
 {
     unsigned long ia;
-    u_int32_t l, h, m = 0xffffffff;
+    uint32_t l, h, m = 0xffffffff;
 
     if (len > 32) {
 	krb5_set_error_string(context, "IPv4 prefix too large (%ld)", len);
@@ -391,7 +391,7 @@ ipv6_mask_boundary(krb5_context context, const krb5_address *inaddr,
 		   unsigned long len, krb5_address *low, krb5_address *high)
 {
     struct in6_addr addr, laddr, haddr;
-    u_int32_t m;
+    uint32_t m;
     int i, sub_len;
 
     if (len > 128) {
