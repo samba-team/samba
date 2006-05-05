@@ -770,3 +770,21 @@ AC_DEFUN( [AC_TRY_RUN_STRICT],
 	old_LDFLAGS="";
 	export LDFLAGS;
 ])
+
+dnl SMB_CHECK_SYSCONF(varname)
+dnl Tests whether the sysconf(3) variable "varname" is available.
+AC_DEFUN([SMB_CHECK_SYSCONF],
+[
+    AC_CACHE_CHECK([for sysconf($1)],
+	samba_cv_SYSCONF$1,
+	[
+	    AC_TRY_LINK([#include <unistd.h>],
+		[ return sysconf($1) == -1 ? 1 : 0; ],
+		[ samba_cv_SYSCONF$1=yes ],
+		[ samba_cv_SYSCONF$1=no ])
+	])
+
+    if test x"$samba_cv_SYSCONF$1" = x"yes" ; then
+	AC_DEFINE(SYSCONF$1, 1, [Whether sysconf($1) is available])
+    fi
+])
