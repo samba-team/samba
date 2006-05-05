@@ -43,7 +43,7 @@ fi
 for ln in $LANGS; do
 
   # images
-  for f in $SRCDIR../swat/$ln/images/*.png; do
+  for f in $SRCDIR../swat/$ln/images/*.gif; do
     if [ ! -f $f ] ; then
       continue
     fi
@@ -104,29 +104,6 @@ for ln in $LANGS; do
 	continue
       fi
       FNAME="$DESTDIR/$SWATDIR/$ln/include/`basename $f`"
-      echo $FNAME
-      if test "$mode" = 'install'; then
-        cp "$f" "$FNAME"
-        if test ! -f "$FNAME"; then
-          echo "Cannot install $FNAME. Does $USER have privileges? "
-          exit 1
-        fi
-        chmod 0644 $FNAME
-      elif test "$mode" = 'uninstall'; then
-        rm -f "$FNAME"
-        if test -f "$FNAME"; then
-          echo "Cannot remove $FNAME.  Does $USER have privileges? "
-          exit 1
-        fi
-      fi
-  done
-
-  # javascripts
-  for f in $SRCDIR../swat/$ln/js/*.js; do
-      if [ ! -f $f ] ; then
-	continue
-      fi
-      FNAME="$DESTDIR/$SWATDIR/$ln/js/`basename $f`"
       echo $FNAME
       if test "$mode" = 'install'; then
         cp "$f" "$FNAME"
