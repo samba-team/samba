@@ -2471,6 +2471,7 @@ const char *ads_get_attrname_by_oid(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, const 
 	void *res = NULL;
 	char *expr = NULL;
 	const char *attrs[] = { "lDAPDisplayName", NULL };
+	char *result;
 
 	if (ads == NULL || mem_ctx == NULL || OID == NULL) {
 		goto failed;
@@ -2492,12 +2493,16 @@ const char *ads_get_attrname_by_oid(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, const 
 		goto failed;
 	}
 
-	return ads_pull_string(ads, mem_ctx, res, "lDAPDisplayName");
+	result = ads_pull_string(ads, mem_ctx, res, "lDAPDisplayName");
+	ads_msgfree(ads, res);
+
+	return result;
 	
 failed:
 	DEBUG(0,("ads_get_attrname_by_oid: failed to retrieve name for oid: %s\n", 
 		OID));
 	
+	ads_msgfree(ads, res);
 	return NULL;
 }
 
