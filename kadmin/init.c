@@ -41,7 +41,7 @@ static kadm5_ret_t
 create_random_entry(krb5_principal princ,
 		    unsigned max_life,
 		    unsigned max_rlife,
-		    u_int32_t attributes)
+		    uint32_t attributes)
 {
     kadm5_principal_ent_rec ent;
     kadm5_ret_t ret;

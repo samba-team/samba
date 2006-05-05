@@ -193,7 +193,7 @@ init_reply_header (struct rx_header *hdr,
 
 static void
 make_error_reply (struct rx_header *hdr,
-		  u_int32_t ret,
+		  uint32_t ret,
 		  krb5_data *reply)
 
 {
@@ -280,7 +280,7 @@ create_reply_ticket (krb5_context context,
 		     int kvno,
 		     int32_t max_seq_len,
 		     const char *sname, const char *sinstance,
-		     u_int32_t challenge,
+		     uint32_t challenge,
 		     const char *label,
 		     krb5_keyblock *key,
 		     krb5_data *reply)
@@ -442,7 +442,7 @@ do_authenticate (krb5_context context,
     Key *skey = NULL;
     krb5_storage *reply_sp;
     time_t max_life;
-    u_int8_t life;
+    uint8_t life;
     int32_t chal;
     char client_name[256];
     char server_name[256];
@@ -871,7 +871,7 @@ _kdc_do_kaserver(krb5_context context,
 {
     krb5_error_code ret = 0;
     struct rx_header hdr;
-    u_int32_t op;
+    uint32_t op;
     krb5_storage *sp;
 
     if (len < RX_HEADER_SIZE)

@@ -150,7 +150,7 @@ usage(int ret)
 int
 get_privs(void *opt, int argc, char **argv)
 {
-    u_int32_t privs;
+    uint32_t privs;
     char str[128];
     kadm5_ret_t ret;
     

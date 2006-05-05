@@ -289,7 +289,7 @@ kcm_op_retrieve(krb5_context context,
 		krb5_storage *request,
 		krb5_storage *response)
 {
-    u_int32_t flags;
+    uint32_t flags;
     krb5_creds mcreds;
     krb5_error_code ret;
     kcm_ccache ccache;
@@ -424,7 +424,7 @@ kcm_op_get_first(krb5_context context,
 {
     krb5_error_code ret;
     kcm_ccache ccache;
-    u_int32_t cursor;
+    uint32_t cursor;
     char *name;
 
     ret = krb5_ret_stringz(request, &name);
@@ -473,7 +473,7 @@ kcm_op_get_next(krb5_context context,
     krb5_error_code ret;
     kcm_ccache ccache;
     char *name;
-    u_int32_t cursor;
+    uint32_t cursor;
     kcm_cursor *c;
 
     ret = krb5_ret_stringz(request, &name);
@@ -534,7 +534,7 @@ kcm_op_end_get(krb5_context context,
 {
     krb5_error_code ret;
     kcm_ccache ccache;
-    u_int32_t cursor;
+    uint32_t cursor;
     char *name;
 
     ret = krb5_ret_stringz(request, &name);
@@ -580,7 +580,7 @@ kcm_op_remove_cred(krb5_context context,
 		   krb5_storage *request,
 		   krb5_storage *response)
 {
-    u_int32_t whichfields;
+    uint32_t whichfields;
     krb5_creds mcreds;
     krb5_error_code ret;
     kcm_ccache ccache;
@@ -638,7 +638,7 @@ kcm_op_set_flags(krb5_context context,
 		 krb5_storage *request,
 		 krb5_storage *response)
 {
-    u_int32_t flags;
+    uint32_t flags;
     krb5_error_code ret;
     kcm_ccache ccache;
     char *name;
@@ -685,8 +685,8 @@ kcm_op_chown(krb5_context context,
 	     krb5_storage *request,
 	     krb5_storage *response)
 {
-    u_int32_t uid;
-    u_int32_t gid;
+    uint32_t uid;
+    uint32_t gid;
     krb5_error_code ret;
     kcm_ccache ccache;
     char *name;
@@ -739,7 +739,7 @@ kcm_op_chmod(krb5_context context,
 	     krb5_storage *request,
 	     krb5_storage *response)
 {
-    u_int16_t mode;
+    uint16_t mode;
     krb5_error_code ret;
     kcm_ccache ccache;
     char *name;
@@ -990,7 +990,7 @@ kcm_dispatch(krb5_context context,
     kcm_method method;
     krb5_storage *req_sp = NULL;
     krb5_storage *resp_sp = NULL;
-    u_int16_t opcode;
+    uint16_t opcode;
 
     resp_sp = krb5_storage_emem();
     if (resp_sp == NULL) {

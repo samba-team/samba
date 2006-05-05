@@ -126,7 +126,7 @@ dump_krb4(krb5_context context, hdb_entry *ent, int fd)
     free(p);
 
     { 
-	u_int32_t *key = ent->keys.val[i].key.keyvalue.data;
+	uint32_t *key = ent->keys.val[i].key.keyvalue.data;
 	kdb_encrypt_key((des_cblock*)key, (des_cblock*)key,
 			&mkey4, msched4, DES_ENCRYPT);
 	asprintf(&p, "%x %x ", (int)htonl(*key), (int)htonl(*(key+1)));

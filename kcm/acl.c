@@ -42,7 +42,7 @@ kcm_access(krb5_context context,
 {
     int read_p = 0;
     int write_p = 0;
-    u_int16_t mask;
+    uint16_t mask;
     krb5_error_code ret;
 
     KCM_ASSERT_VALID(ccache);
@@ -57,6 +57,7 @@ kcm_access(krb5_context context,
     case KCM_OP_CHMOD:
     case KCM_OP_GET_INITIAL_TICKET:
     case KCM_OP_GET_TICKET:
+    case KCM_OP_CC_SET_DEFAULT:
 	write_p = 1;
 	read_p = 0;
 	break;
@@ -125,7 +126,7 @@ krb5_error_code
 kcm_chmod(krb5_context context,
 	  kcm_client *client,
 	  kcm_ccache ccache,
-	  u_int16_t mode)
+	  uint16_t mode)
 {
     KCM_ASSERT_VALID(ccache);
 

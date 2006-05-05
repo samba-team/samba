@@ -488,7 +488,7 @@ display_v4_tickets (int do_verbose)
 static void
 display_tokens(int do_verbose)
 {
-    u_int32_t i;
+    uint32_t i;
     unsigned char t[4096];
     struct ViceIoctl parms;
 

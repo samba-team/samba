@@ -38,7 +38,7 @@ krb5_error_code
 kcm_cursor_new(krb5_context context,
 	       pid_t pid,
 	       kcm_ccache ccache,
-	       u_int32_t *cursor)
+	       uint32_t *cursor)
 {
     kcm_cursor **p;
     krb5_error_code ret;
@@ -76,7 +76,7 @@ krb5_error_code
 kcm_cursor_find(krb5_context context,
 		pid_t pid,
 		kcm_ccache ccache,
-		u_int32_t key,
+		uint32_t key,
 		kcm_cursor **cursor)
 {
     kcm_cursor *p;
@@ -113,7 +113,7 @@ krb5_error_code
 kcm_cursor_delete(krb5_context context,
 	     	  pid_t pid,
 		  kcm_ccache ccache,
-		  u_int32_t key)
+		  uint32_t key)
 {
     kcm_cursor **p;
     krb5_error_code ret;

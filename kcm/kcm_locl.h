@@ -67,7 +67,7 @@ struct kcm_creds;
 
 typedef struct kcm_cursor {
     pid_t pid;
-    u_int32_t key;
+    uint32_t key;
     struct kcm_creds *credp;		/* pointer to next credential */ 
     struct kcm_cursor *next;
 } kcm_cursor;
@@ -75,8 +75,8 @@ typedef struct kcm_cursor {
 typedef struct kcm_ccache_data {
     char *name;
     unsigned refcnt;
-    u_int16_t flags;
-    u_int16_t mode;
+    uint16_t flags;
+    uint16_t mode;
     uid_t uid;
     gid_t gid;
     krb5_principal client; /* primary client principal */
@@ -85,7 +85,7 @@ typedef struct kcm_ccache_data {
 	krb5_creds cred; /* XXX would be useful for have ACLs on creds */
 	struct kcm_creds *next;
     } *creds;
-    u_int32_t n_cursor;
+    uint32_t n_cursor;
     kcm_cursor *cursors;
     krb5_deltat tkt_life;
     krb5_deltat renew_life;

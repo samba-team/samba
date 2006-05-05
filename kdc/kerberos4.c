@@ -38,8 +38,8 @@
 RCSID("$Id$");
 
 #ifndef swap32
-static u_int32_t
-swap32(u_int32_t x)
+static uint32_t
+swap32(uint32_t x)
 {
     return ((x << 24) & 0xff000000) |
 	((x << 8) & 0xff0000) |
@@ -144,7 +144,7 @@ _kdc_do_version4(krb5_context context,
     char *sname = NULL, *sinst = NULL;
     int32_t req_time;
     time_t max_life;
-    u_int8_t life;
+    uint8_t life;
     char client_name[256];
     char server_name[256];
 

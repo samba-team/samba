@@ -74,7 +74,7 @@ send_reply (int s,
 {
     struct msghdr msghdr;
     struct iovec iov[3];
-    u_int16_t len, ap_rep_len;
+    uint16_t len, ap_rep_len;
     u_char header[6];
     u_char *p;
 
@@ -120,7 +120,7 @@ send_reply (int s,
 
 static int
 make_result (krb5_data *data,
-	     u_int16_t result_code,
+	     uint16_t result_code,
 	     const char *expl)
 {
     krb5_data_zero (data);
@@ -144,7 +144,7 @@ reply_error (krb5_realm realm,
 	     struct sockaddr *sa,
 	     int sa_size,
 	     krb5_error_code error_code,
-	     u_int16_t result_code,
+	     uint16_t result_code,
 	     const char *expl)
 {
     krb5_error_code ret;
@@ -189,7 +189,7 @@ reply_priv (krb5_auth_context auth_context,
 	    int s,
 	    struct sockaddr *sa,
 	    int sa_size,
-	    u_int16_t result_code,
+	    uint16_t result_code,
 	    const char *expl)
 {
     krb5_error_code ret;
@@ -231,7 +231,7 @@ reply_priv (krb5_auth_context auth_context,
 static void
 change (krb5_auth_context auth_context,
 	krb5_principal admin_principal,
-	u_int16_t version,
+	uint16_t version,
 	int s,
 	struct sockaddr *sa,
 	int sa_size,
@@ -427,7 +427,7 @@ verify (krb5_auth_context *auth_context,
 	krb5_keytab keytab,
 	krb5_ticket **ticket,
 	krb5_data *out_data,
-	u_int16_t *version,
+	uint16_t *version,
 	int s,
 	struct sockaddr *sa,
 	int sa_size,
@@ -435,7 +435,7 @@ verify (krb5_auth_context *auth_context,
 	size_t len)
 {
     krb5_error_code ret;
-    u_int16_t pkt_len, pkt_ver, ap_req_len;
+    uint16_t pkt_len, pkt_ver, ap_req_len;
     krb5_data ap_req_data;
     krb5_data krb_priv_data;
     krb5_realm *r;
@@ -553,7 +553,7 @@ process (krb5_realm *realms,
     krb5_data out_data;
     krb5_ticket *ticket;
     krb5_address other_addr;
-    u_int16_t version;
+    uint16_t version;
 
 
     krb5_data_zero (&out_data);

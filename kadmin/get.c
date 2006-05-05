@@ -42,7 +42,7 @@ static struct field_name {
     const char *fieldname;
     unsigned int fieldvalue;
     unsigned int subvalue;
-    u_int32_t extra_mask;
+    uint32_t extra_mask;
     const char *default_header;
     const char *def_longheader;
     unsigned int flags;
@@ -77,8 +77,8 @@ struct field_info {
 struct get_entry_data {
     void (*format)(struct get_entry_data*, kadm5_principal_ent_t);
     rtbl_t table;
-    u_int32_t mask;
-    u_int32_t extra_mask;
+    uint32_t mask;
+    uint32_t extra_mask;
     struct field_info *chead, **ctail;
 };
 
