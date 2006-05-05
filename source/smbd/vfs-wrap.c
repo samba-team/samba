@@ -549,7 +549,7 @@ int vfswrap_fchmod(vfs_handle_struct *handle, files_struct *fsp, int fd, mode_t 
 	{
 		int saved_errno = errno; /* We might get ENOSYS */
 		if ((result = SMB_VFS_FCHMOD_ACL(fsp, fd, mode)) == 0) {
-			END_PROFILE(syscall_chmod);
+			END_PROFILE(syscall_fchmod);
 			return result;
 		}
 		/* Error - return the old errno. */
