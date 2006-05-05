@@ -121,7 +121,7 @@ krb4_adat(void *app_data, void *buf, size_t len)
     AUTH_DAT auth_dat;
     char *p;
     int kerror;
-    u_int32_t cs;
+    uint32_t cs;
     char msg[35]; /* size of encrypted block */
     int tmp_len;
     struct krb4_data *d = app_data;
@@ -240,7 +240,7 @@ krb4_auth(void *app_data, char *host)
     KTEXT_ST adat;
     MSG_DAT msg_data;
     int checksum;
-    u_int32_t cs;
+    uint32_t cs;
     struct krb4_data *d = app_data;
     struct sockaddr_in *localaddr  = (struct sockaddr_in *)LOCAL_ADDR;
     struct sockaddr_in *remoteaddr = (struct sockaddr_in *)REMOTE_ADDR;

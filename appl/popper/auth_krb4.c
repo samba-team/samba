@@ -43,7 +43,7 @@ RCSID("$Id$");
 
 struct krb4_state {
     int stage;
-    u_int32_t nonce;
+    uint32_t nonce;
 };
 
 static int
@@ -128,7 +128,7 @@ krb4_loop(POP *p, void *state,
     }
 
     if(ks->stage == 2) {
-	u_int32_t nonce_reply;
+	uint32_t nonce_reply;
 	/* C -> S: nonce | bit | max segment | username */
 
 	if (input_length % 8 != 0) {

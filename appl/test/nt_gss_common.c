@@ -51,7 +51,7 @@ void
 nt_write_token (int sock, gss_buffer_t buf)
 {
     unsigned char net_len[4];
-    u_int32_t len;
+    uint32_t len;
     OM_uint32 min_stat;
 
     len = buf->length;
@@ -77,7 +77,7 @@ void
 nt_read_token (int sock, gss_buffer_t buf)
 {
     unsigned char net_len[4];
-    u_int32_t len;
+    uint32_t len;
 
     if (read(sock, net_len, 4) != 4)
 	err (1, "read");

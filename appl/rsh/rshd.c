@@ -314,7 +314,7 @@ recv_krb5_auth (int s, u_char *buf,
 		char **server_username,
 		char **cmd)
 {
-    u_int32_t len;
+    uint32_t len;
     krb5_auth_context auth_context = NULL;
     krb5_ticket *ticket;
     krb5_error_code status;

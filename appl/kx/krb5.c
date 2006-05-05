@@ -352,7 +352,7 @@ krb5_make_context (kx_context *kc)
 int
 recv_v5_auth (kx_context *kc, int sock, u_char *buf)
 {
-    u_int32_t len;
+    uint32_t len;
     krb5_error_code ret;
     krb5_principal server;
     krb5_auth_context auth_context = NULL;

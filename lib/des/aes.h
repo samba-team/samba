@@ -54,7 +54,7 @@
 #define AES_DECRYPT 0
 
 typedef struct aes_key {
-    u_int32_t key[(AES_MAXNR+1)*4];
+    uint32_t key[(AES_MAXNR+1)*4];
     int rounds;
 } AES_KEY;
 

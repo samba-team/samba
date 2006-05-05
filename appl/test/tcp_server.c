@@ -47,7 +47,7 @@ proto (int sock, const char *service)
     char hostname[MAXHOSTNAMELEN];
     krb5_data packet;
     krb5_data data;
-    u_int32_t len, net_len;
+    uint32_t len, net_len;
     ssize_t n;
 
     status = krb5_auth_con_init (context, &auth_context);

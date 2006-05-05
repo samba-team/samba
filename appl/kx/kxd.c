@@ -119,7 +119,7 @@ recv_conn (int sock, kx_context *kc,
      int ret = 1;
      int flags;
      int len;
-     u_int32_t tmp32;
+     uint32_t tmp32;
 
      memset(kc, 0, sizeof(*kc));
      *nsockets = 0;

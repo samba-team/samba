@@ -52,7 +52,7 @@
 
 struct sha {
   unsigned int sz[2];
-  u_int32_t counter[5];
+  uint32_t counter[5];
   unsigned char save[64];
 };
 
@@ -70,7 +70,7 @@ void SHA1_Final (void *res, struct sha *m);
 
 struct hc_sha256state {
   unsigned int sz[2];
-  u_int32_t counter[8];
+  uint32_t counter[8];
   unsigned char save[64];
 };
 

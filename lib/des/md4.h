@@ -49,7 +49,7 @@
 
 struct md4 {
   unsigned int sz[2];
-  u_int32_t counter[4];
+  uint32_t counter[4];
   unsigned char save[64];
 };
 

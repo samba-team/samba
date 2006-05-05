@@ -208,7 +208,7 @@ doit_passive (kx_context *kc)
      int otherside;
      u_char msg[1024], *p;
      int len;
-     u_int32_t tmp;
+     uint32_t tmp;
      const char *host = kc->host;
 
      otherside = connect_host (kc);
@@ -352,7 +352,7 @@ doit_active (kx_context *kc)
     char *str;
     int i;
     size_t rem;
-    u_int32_t other_port;
+    uint32_t other_port;
     int error;
     const char *host = kc->host;
 
@@ -417,7 +417,7 @@ doit_active (kx_context *kc)
 	err (1, "read from %s", host);
     p = (u_char *)msg;
     if (*p == ERROR) {
-	u_int32_t u32;
+	uint32_t u32;
 
 	p++;
 	p += krb_get_int (p, &u32, 4, 0);
@@ -478,7 +478,7 @@ doit_active (kx_context *kc)
 	    err (1, "read from %s", host);
 	p = (u_char *)msg;
 	if (*p == ERROR) {
-	    u_int32_t val;
+	    uint32_t val;
 
 	    p++;
 	    p += krb_get_int (p, &val, 4, 0);

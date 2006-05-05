@@ -37,7 +37,7 @@ RCSID("$Id$");
 
 char x_socket[MaxPathLen];
 
-u_int32_t display_num;
+uint32_t display_num;
 char display[MaxPathLen];
 int display_size = sizeof(display);
 char xauthfile[MaxPathLen];
@@ -782,7 +782,7 @@ suspicious_address (int sock, struct sockaddr *addr)
 #ifndef KRB4
 
 int
-krb_get_int(void *f, u_int32_t *to, int size, int lsb)
+krb_get_int(void *f, uint32_t *to, int size, int lsb)
 {
     int i;
     unsigned char *from = (unsigned char *)f;
@@ -799,7 +799,7 @@ krb_get_int(void *f, u_int32_t *to, int size, int lsb)
 }
 
 int
-krb_put_int(u_int32_t from, void *to, size_t rem, int size)
+krb_put_int(uint32_t from, void *to, size_t rem, int size)
 {
     int i;
     unsigned char *p = (unsigned char *)to;

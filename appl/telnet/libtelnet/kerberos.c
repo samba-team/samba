@@ -652,7 +652,7 @@ static int
 unpack_cred(unsigned char *buf, int len, CREDENTIALS *cred)
 {
     char *p = (char*)buf;
-    u_int32_t tmp;
+    uint32_t tmp;
 
     strncpy (cred->service, p, ANAME_SZ);
     cred->service[ANAME_SZ - 1] = '\0';
@@ -676,7 +676,7 @@ unpack_cred(unsigned char *buf, int len, CREDENTIALS *cred)
     p += cred->ticket_st.length;
     p += krb_get_int(p, &tmp, 4, 0);
     cred->ticket_st.mbz = 0;
-    p += krb_get_int(p, (u_int32_t *)&cred->issue_date, 4, 0);
+    p += krb_get_int(p, (uint32_t *)&cred->issue_date, 4, 0);
 
     strncpy (cred->pname, p, ANAME_SZ);
     cred->pname[ANAME_SZ - 1] = '\0';

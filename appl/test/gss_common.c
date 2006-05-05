@@ -39,7 +39,7 @@ RCSID("$Id$");
 void
 write_token (int sock, gss_buffer_t buf)
 {
-    u_int32_t len, net_len;
+    uint32_t len, net_len;
     OM_uint32 min_stat;
 
     len = buf->length;
@@ -69,7 +69,7 @@ enet_read(int fd, void *buf, size_t len)
 void
 read_token (int sock, gss_buffer_t buf)
 {
-    u_int32_t len, net_len;
+    uint32_t len, net_len;
 
     enet_read (sock, &net_len, 4);
     len = ntohl(net_len);

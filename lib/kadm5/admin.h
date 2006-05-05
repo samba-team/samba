@@ -140,7 +140,7 @@ typedef struct _kadm5_principal_ent_t {
     krb5_kvno mkvno;
 
     char * policy;
-    u_int32_t aux_attributes;
+    uint32_t aux_attributes;
 
     krb5_deltat max_renewable_life;
     krb5_timestamp last_success;
@@ -155,12 +155,12 @@ typedef struct _kadm5_principal_ent_t {
 typedef struct _kadm5_policy_ent_t {
     char *policy;
 
-    u_int32_t pw_min_life;
-    u_int32_t pw_max_life;
-    u_int32_t pw_min_length;
-    u_int32_t pw_min_classes;
-    u_int32_t pw_history_num;
-    u_int32_t policy_refcnt;
+    uint32_t pw_min_life;
+    uint32_t pw_max_life;
+    uint32_t pw_min_length;
+    uint32_t pw_min_classes;
+    uint32_t pw_history_num;
+    uint32_t policy_refcnt;
 } kadm5_policy_ent_rec, *kadm5_policy_ent_t;
 
 #define KADM5_CONFIG_REALM			(1 << 0)
@@ -196,7 +196,7 @@ typedef struct {
 }krb5_key_salt_tuple;
 
 typedef struct _kadm5_config_params {
-    u_int32_t mask;
+    uint32_t mask;
 
     /* Client and server fields */
     char *realm;
@@ -228,7 +228,7 @@ kadm5_decrypt_key(void *server_handle,
 
 kadm5_ret_t
 kadm5_create_policy(void *server_handle,
-		    kadm5_policy_ent_t policy, u_int32_t mask); 
+		    kadm5_policy_ent_t policy, uint32_t mask); 
 
 kadm5_ret_t
 kadm5_delete_policy(void *server_handle, char *policy);
@@ -237,7 +237,7 @@ kadm5_delete_policy(void *server_handle, char *policy);
 kadm5_ret_t
 kadm5_modify_policy(void *server_handle,
 		    kadm5_policy_ent_t policy, 
-		    u_int32_t mask);
+		    uint32_t mask);
 
 kadm5_ret_t
 kadm5_get_policy(void *server_handle, char *policy, kadm5_policy_ent_t ent); 

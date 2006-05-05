@@ -49,7 +49,7 @@
 
 struct md5 {
   unsigned int sz[2];
-  u_int32_t counter[4];
+  uint32_t counter[4];
   unsigned char save[64];
 };
 
@@ -57,6 +57,6 @@ typedef struct md5 MD5_CTX;
 
 void MD5_Init (struct md5 *m);
 void MD5_Update (struct md5 *m, const void *p, size_t len);
-void MD5_Final (void *res, struct md5 *m); /* u_int32_t res[4] */
+void MD5_Final (void *res, struct md5 *m); /* uint32_t res[4] */
 
 #endif /* HEIM_MD5_H */

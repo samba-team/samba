@@ -82,7 +82,7 @@ do_read (int fd, void *buf, size_t sz, void *ivec)
 #ifdef KRB5
         if(auth_method == AUTH_KRB5) {
 	    krb5_error_code ret;
-	    u_int32_t len, outer_len;
+	    uint32_t len, outer_len;
 	    int status;
 	    krb5_data data;
 	    void *edata;

@@ -61,8 +61,8 @@
 #define CRAYFIX(X) (X)
 #endif
 
-static inline u_int32_t
-cshift (u_int32_t x, unsigned int n)
+static inline uint32_t
+cshift (uint32_t x, unsigned int n)
 {
     x = CRAYFIX(x);
     return CRAYFIX((x << n) | (x >> (32 - n)));

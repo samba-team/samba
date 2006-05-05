@@ -103,7 +103,7 @@ krb5_authenticate (POP *p, int s, u_char *buf, struct sockaddr *addr)
 {
     krb5_error_code ret;
     krb5_auth_context auth_context = NULL;
-    u_int32_t len;
+    uint32_t len;
     krb5_ticket *ticket;
     char *server;
 
