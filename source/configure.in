@@ -3227,17 +3227,6 @@ else
 	fi
     fi
 
-    AC_CHECK_FUNC_EXT(ldap_domain2hostlist,$LDAP_LIBS)
-
-    if test x"$ac_cv_func_ext_ldap_domain2hostlist" != x"yes"; then
-	if test x"$with_ads_support" = x"yes"; then
-	    AC_MSG_ERROR(Active Directory support requires ldap_domain2hostlist)
-	elif test x"$with_ads_support" = x"auto"; then
-	    AC_MSG_WARN(Disabling Active Directory support (requires ldap_domain2hostlist))
-	    with_ads_support=no
-	fi
-    fi
-
     AC_CHECK_FUNC_EXT(ldap_add_result_entry,$LDAP_LIBS)
 
     if test x"$ac_cv_func_ext_ldap_add_result_entry" != x"yes"; then
