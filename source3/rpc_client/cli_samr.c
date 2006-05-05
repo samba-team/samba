@@ -1102,15 +1102,15 @@ NTSTATUS rpccli_samr_query_dom_info(struct rpc_pipe_client *cli,
 
 	/* Marshall data and send request */
 
-	init_samr_q_query_dom_info(&q, domain_pol, switch_value);
+	init_samr_q_query_domain_info(&q, domain_pol, switch_value);
 
 	r.ctr = ctr;
 
 	CLI_DO_RPC(cli, mem_ctx, PI_SAMR, SAMR_QUERY_DOMAIN_INFO,
 		q, r,
 		qbuf, rbuf,
-		samr_io_q_query_dom_info,
-		samr_io_r_query_dom_info,
+		samr_io_q_query_domain_info,
+		samr_io_r_query_domain_info,
 		NT_STATUS_UNSUCCESSFUL); 
 
 	/* Return output parameters */

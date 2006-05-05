@@ -525,10 +525,10 @@ static BOOL api_samr_query_usergroups(pipes_struct *p)
 }
 
 /*******************************************************************
- api_samr_query_dom_info
+ api_samr_query_domain_info
  ********************************************************************/
 
-static BOOL api_samr_query_dom_info(pipes_struct *p)
+static BOOL api_samr_query_domain_info(pipes_struct *p)
 {
 	SAMR_Q_QUERY_DOMAIN_INFO q_u;
 	SAMR_R_QUERY_DOMAIN_INFO r_u;
@@ -538,16 +538,16 @@ static BOOL api_samr_query_dom_info(pipes_struct *p)
 	ZERO_STRUCT(q_u);
 	ZERO_STRUCT(r_u);
 
-	if(!samr_io_q_query_dom_info("", &q_u, data, 0)) {
-		DEBUG(0,("api_samr_query_dom_info: unable to unmarshall SAMR_Q_QUERY_DOMAIN_INFO.\n"));
+	if(!samr_io_q_query_domain_info("", &q_u, data, 0)) {
+		DEBUG(0,("api_samr_query_domain_info: unable to unmarshall SAMR_Q_QUERY_DOMAIN_INFO.\n"));
 		return False;
 	}
 
-	r_u.status = _samr_query_dom_info(p, &q_u, &r_u);
+	r_u.status = _samr_query_domain_info(p, &q_u, &r_u);
 
 	/* store the response in the SMB stream */
-	if(!samr_io_r_query_dom_info("", &r_u, rdata, 0)) {
-		DEBUG(0,("api_samr_query_dom_info: unable to marshall SAMR_R_QUERY_DOMAIN_INFO.\n"));
+	if(!samr_io_r_query_domain_info("", &r_u, rdata, 0)) {
+		DEBUG(0,("api_samr_query_domain_info: unable to marshall SAMR_R_QUERY_DOMAIN_INFO.\n"));
 		return False;
 	}
 
@@ -1449,7 +1449,6 @@ static BOOL api_samr_query_domain_info2(pipes_struct *p)
 	ZERO_STRUCT(q_u);
 	ZERO_STRUCT(r_u);
 
-	/* grab the samr unknown 8 command */
 	if(!samr_io_q_query_domain_info2("", &q_u, data, 0)) {
 		DEBUG(0,("api_samr_query_domain_info2: unable to unmarshall SAMR_Q_QUERY_DOMAIN_INFO2.\n"));
 		return False;
@@ -1458,7 +1457,7 @@ static BOOL api_samr_query_domain_info2(pipes_struct *p)
 	r_u.status = _samr_query_domain_info2(p, &q_u, &r_u);
 
 	/* store the response in the SMB stream */
-	if(!samr_io_r_samr_query_domain_info2("", &r_u, rdata, 0)) {
+	if(!samr_io_r_query_domain_info2("", &r_u, rdata, 0)) {
 		DEBUG(0,("api_samr_query_domain_info2: unable to marshall SAMR_R_QUERY_DOMAIN_INFO2.\n"));
 		return False;
 	}
@@ -1529,7 +1528,7 @@ static struct api_struct api_samr_cmds [] =
       {"SAMR_SET_USERINFO"      , SAMR_SET_USERINFO     , api_samr_set_userinfo     },
       {"SAMR_SET_USERINFO2"     , SAMR_SET_USERINFO2    , api_samr_set_userinfo2    },
       
-      {"SAMR_QUERY_DOMAIN_INFO" , SAMR_QUERY_DOMAIN_INFO, api_samr_query_dom_info   },
+      {"SAMR_QUERY_DOMAIN_INFO" , SAMR_QUERY_DOMAIN_INFO, api_samr_query_domain_info},
       {"SAMR_QUERY_USERGROUPS"  , SAMR_QUERY_USERGROUPS , api_samr_query_usergroups },
       {"SAMR_QUERY_DISPINFO"    , SAMR_QUERY_DISPINFO   , api_samr_query_dispinfo   },
       {"SAMR_QUERY_DISPINFO3"   , SAMR_QUERY_DISPINFO3  , api_samr_query_dispinfo   },
