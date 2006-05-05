@@ -473,7 +473,7 @@ int net_ads_user(int argc, const char **argv)
 
 		rc = ads_do_search_all_fn(ads, ads->config.bind_path, 
 					  LDAP_SCOPE_SUBTREE,
-					  "(objectclass=user)", 
+					  "(objectCategory=user)", 
 					  opt_long_list_entries ? longattrs :
 					  shortattrs, usergrp_display, 
 					  disp_fields);
@@ -597,7 +597,7 @@ int net_ads_group(int argc, const char **argv)
 				 "\n-----------------------------\n");
 		rc = ads_do_search_all_fn(ads, ads->config.bind_path, 
 					  LDAP_SCOPE_SUBTREE, 
-					  "(objectclass=group)", 
+					  "(objectCategory=group)", 
 					  opt_long_list_entries ? longattrs : 
 					  shortattrs, usergrp_display, 
 					  disp_fields);
