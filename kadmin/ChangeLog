@@ -1,5 +1,7 @@
 2006-05-05  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* dump-format.txt: Moved to info documentation.
+
 	* Rename u_intXX_t to uintXX_t
 	
 2006-05-01  Love Hörnquist Åstrand  <lha@it.su.se>
