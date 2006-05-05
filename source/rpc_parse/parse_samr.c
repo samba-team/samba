@@ -7812,8 +7812,20 @@ BOOL samr_io_r_query_domain_info2(const char *desc, SAMR_R_QUERY_DOMAIN_INFO2 * 
 			return False;
 
 		switch (r_u->switch_value) {
+		case 0x0d:
+			if(!sam_io_unk_info13("unk_inf13", &r_u->ctr->info.inf13, ps, depth))
+				return False;
+			break;
 		case 0x0c:
 			if(!sam_io_unk_info12("unk_inf12", &r_u->ctr->info.inf12, ps, depth))
+				return False;
+			break;
+		case 0x09:
+			if(!sam_io_unk_info9("unk_inf9",&r_u->ctr->info.inf9, ps,depth))
+				return False;
+			break;
+		case 0x08:
+			if(!sam_io_unk_info8("unk_inf8",&r_u->ctr->info.inf8, ps,depth))
 				return False;
 			break;
 		case 0x07:
@@ -7826,6 +7838,10 @@ BOOL samr_io_r_query_domain_info2(const char *desc, SAMR_R_QUERY_DOMAIN_INFO2 * 
 			break;
 		case 0x05:
 			if(!sam_io_unk_info5("unk_inf5",&r_u->ctr->info.inf5, ps,depth))
+				return False;
+			break;
+		case 0x04:
+			if(!sam_io_unk_info4("unk_inf4",&r_u->ctr->info.inf4, ps,depth))
 				return False;
 			break;
 		case 0x03:
