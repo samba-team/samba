@@ -1,5 +1,12 @@
 2006-05-05  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/krb5/*.[ch3]: Rename u_intXX_t to uintXX_t
+
+	* lib/krb5/Makefile.am: Add test_store to TESTS
+
+	* lib/krb5/pkinit.c: Catch using hx509 null DH and print a more
+	useful error message.
+
 	* lib/krb5/store.c: Rewrite the krb5_ret_u as proposed by Johan.
 	
 2006-05-04  Love Hörnquist Åstrand  <lha@it.su.se>
