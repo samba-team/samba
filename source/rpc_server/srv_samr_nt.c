@@ -4720,138 +4720,22 @@ NTSTATUS _samr_query_domain_info2(pipes_struct *p,
 				  SAMR_Q_QUERY_DOMAIN_INFO2 *q_u,
 				  SAMR_R_QUERY_DOMAIN_INFO2 *r_u)
 {
-	struct samr_info *info = NULL;
-	SAM_UNK_CTR *ctr;
-	uint32 min_pass_len,pass_hist,password_properties;
-	time_t u_expire, u_min_age;
-	NTTIME nt_expire, nt_min_age;
+	SAMR_Q_QUERY_DOMAIN_INFO q;
+	SAMR_R_QUERY_DOMAIN_INFO r;
 
-	time_t u_lock_duration, u_reset_time;
-	NTTIME nt_lock_duration, nt_reset_time;
-	uint32 lockout;
-	
-	time_t u_logout;
-	NTTIME nt_logout;
-
-	uint32 num_users=0, num_groups=0, num_aliases=0;
-
-	uint32 account_policy_temp;
-
-	time_t seq_num;
-	uint32 server_role;
-
-	if ((ctr = TALLOC_ZERO_P(p->mem_ctx, SAM_UNK_CTR)) == NULL)
-		return NT_STATUS_NO_MEMORY;
-
-	ZERO_STRUCTP(ctr);
-
-	r_u->status = NT_STATUS_OK;
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
 
 	DEBUG(5,("_samr_query_domain_info2: %d\n", __LINE__));
 
-	/* find the policy handle.  open a policy on it. */
-	if (!find_policy_by_hnd(p, &q_u->domain_pol, (void **)(void *)&info))
-		return NT_STATUS_INVALID_HANDLE;
+	q.domain_pol = q_u->domain_pol;
+	q.switch_value = q_u->switch_value;
 
-	switch (q_u->switch_value) {
-		case 0x01:
-			pdb_get_account_policy(AP_MIN_PASSWORD_LEN, &account_policy_temp);
-			min_pass_len = account_policy_temp;
+	r_u->status = _samr_query_domain_info(p, &q, &r);
 
-			pdb_get_account_policy(AP_PASSWORD_HISTORY, &account_policy_temp);
-			pass_hist = account_policy_temp;
-
-			pdb_get_account_policy(AP_USER_MUST_LOGON_TO_CHG_PASS, &account_policy_temp);
-			password_properties = account_policy_temp;
-
-			pdb_get_account_policy(AP_MAX_PASSWORD_AGE, &account_policy_temp);
-			u_expire = account_policy_temp;
-
-			pdb_get_account_policy(AP_MIN_PASSWORD_AGE, &account_policy_temp);
-			u_min_age = account_policy_temp;
-
-			unix_to_nt_time_abs(&nt_expire, u_expire);
-			unix_to_nt_time_abs(&nt_min_age, u_min_age);
-
-			init_unk_info1(&ctr->info.inf1, (uint16)min_pass_len, (uint16)pass_hist, 
-			               password_properties, nt_expire, nt_min_age);
-			break;
-		case 0x02:
-			become_root();		
-			num_users = count_sam_users(info->disp_info, ACB_NORMAL);
-			num_groups = count_sam_groups(info->disp_info);
-			num_aliases = count_sam_aliases(info->disp_info);
-			unbecome_root();
-
-			pdb_get_account_policy(AP_TIME_TO_LOGOUT, &account_policy_temp);
-			u_logout = account_policy_temp;
-
-			unix_to_nt_time_abs(&nt_logout, u_logout);
-
-			if (!pdb_get_seq_num(&seq_num))
-				seq_num = time(NULL);
-
-			server_role = ROLE_DOMAIN_PDC;
-			if (lp_server_role() == ROLE_DOMAIN_BDC)
-				server_role = ROLE_DOMAIN_BDC;
-
-			init_unk_info2(&ctr->info.inf2, lp_serverstring(), lp_workgroup(), global_myname(), seq_num, 
-				       num_users, num_groups, num_aliases, nt_logout, server_role);
-			break;
-		case 0x03:
-			pdb_get_account_policy(AP_TIME_TO_LOGOUT, &account_policy_temp);
-			u_logout = account_policy_temp;
-
-			unix_to_nt_time_abs(&nt_logout, u_logout);
-			
-			init_unk_info3(&ctr->info.inf3, nt_logout);
-			break;
-		case 0x05:
-			init_unk_info5(&ctr->info.inf5, get_global_sam_name());
-			break;
-		case 0x06:
-			/* NT returns its own name when a PDC. win2k and later
-			 * only the name of the PDC if itself is a BDC (samba4
-			 * idl) */
-			init_unk_info6(&ctr->info.inf6, global_myname());
-			break;
-		case 0x07:
-			server_role = ROLE_DOMAIN_PDC;
-			if (lp_server_role() == ROLE_DOMAIN_BDC)
-				server_role = ROLE_DOMAIN_BDC;
-
-			init_unk_info7(&ctr->info.inf7, server_role);
-			break;
-		case 0x08:
-			if (!pdb_get_seq_num(&seq_num))
-				seq_num = time(NULL);
-
-			init_unk_info8(&ctr->info.inf8, (uint32) seq_num);
-			break;
-		case 0x0c:
-			pdb_get_account_policy(AP_LOCK_ACCOUNT_DURATION, &account_policy_temp);
-			u_lock_duration = account_policy_temp;
-			if (u_lock_duration != -1)
-				u_lock_duration *= 60;
-
-			pdb_get_account_policy(AP_RESET_COUNT_TIME, &account_policy_temp);
-			u_reset_time = account_policy_temp * 60;
-
-			pdb_get_account_policy(AP_BAD_ATTEMPT_LOCKOUT, &account_policy_temp);
-			lockout = account_policy_temp;
-	
-			unix_to_nt_time_abs(&nt_lock_duration, u_lock_duration);
-			unix_to_nt_time_abs(&nt_reset_time, u_reset_time);
-	
-            		init_unk_info12(&ctr->info.inf12, nt_lock_duration, nt_reset_time, (uint16)lockout);
-			break;
-		default:
-			return NT_STATUS_INVALID_INFO_CLASS;
-	}
-
-	init_samr_r_query_domain_info2(r_u, q_u->switch_value, ctr, NT_STATUS_OK);
-
-	DEBUG(5,("_samr_query_domain_info2: %d\n", __LINE__));
+	r_u->ptr_0 		= r.ptr_0;
+	r_u->switch_value	= r.switch_value;
+	r_u->ctr		= r.ctr;
 
 	return r_u->status;
 }
