@@ -242,14 +242,21 @@ END {
 	# add code to display the various type sizes
 	print "       /* Output the sizes of the various types */";
 	print "       output(screen, \"\\nType sizes:\\n\");";
-	print "       output(screen, \"   sizeof(char):    %lu\\n\",(unsigned long)sizeof(char));";
-	print "       output(screen, \"   sizeof(int):     %lu\\n\",(unsigned long)sizeof(int));";
-	print "       output(screen, \"   sizeof(long):    %lu\\n\",(unsigned long)sizeof(long));";
-	print "       output(screen, \"   sizeof(uint8):   %lu\\n\",(unsigned long)sizeof(uint8));";
-	print "       output(screen, \"   sizeof(uint16):  %lu\\n\",(unsigned long)sizeof(uint16));";
-	print "       output(screen, \"   sizeof(uint32):  %lu\\n\",(unsigned long)sizeof(uint32));";
-	print "       output(screen, \"   sizeof(short):   %lu\\n\",(unsigned long)sizeof(short));";
-	print "       output(screen, \"   sizeof(void*):   %lu\\n\",(unsigned long)sizeof(void*));";
+	print "       output(screen, \"   sizeof(char):         %lu\\n\",(unsigned long)sizeof(char));";
+	print "       output(screen, \"   sizeof(int):          %lu\\n\",(unsigned long)sizeof(int));";
+	print "       output(screen, \"   sizeof(long):         %lu\\n\",(unsigned long)sizeof(long));";
+	print "#if HAVE_LONGLONG"
+	print "       output(screen, \"   sizeof(long long):    %lu\\n\",(unsigned long)sizeof(long long));";
+	print "#endif"
+	print "       output(screen, \"   sizeof(uint8):        %lu\\n\",(unsigned long)sizeof(uint8));";
+	print "       output(screen, \"   sizeof(uint16):       %lu\\n\",(unsigned long)sizeof(uint16));";
+	print "       output(screen, \"   sizeof(uint32):       %lu\\n\",(unsigned long)sizeof(uint32));";
+	print "       output(screen, \"   sizeof(short):        %lu\\n\",(unsigned long)sizeof(short));";
+	print "       output(screen, \"   sizeof(void*):        %lu\\n\",(unsigned long)sizeof(void*));";
+	print "       output(screen, \"   sizeof(size_t):       %lu\\n\",(unsigned long)sizeof(size_t));";
+	print "       output(screen, \"   sizeof(off_t):        %lu\\n\",(unsigned long)sizeof(off_t));";
+	print "       output(screen, \"   sizeof(ino_t):        %lu\\n\",(unsigned long)sizeof(ino_t));";
+	print "       output(screen, \"   sizeof(dev_t):        %lu\\n\",(unsigned long)sizeof(dev_t));";
 
 	##################################################
 	# add code to give information about modules
