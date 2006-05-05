@@ -394,7 +394,7 @@ the error code itself).
 @section File formats
 
 This section documents the diffrent file formats that are used in
-Heimdal and different Kerberos implementations.
+Heimdal and other Kerberos implementations.
 
 @subsection keytab
 
