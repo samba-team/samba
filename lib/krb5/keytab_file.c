@@ -428,7 +428,7 @@ loop:
      * if it's zero, assume that the 8bit one was right,
      * otherwise trust the new value */
     curpos = krb5_storage_seek(cursor->sp, 0, SEEK_CUR);
-    if(len + 4 + pos - curpos == 4) {
+    if(len + 4 + pos - curpos >= 4) {
 	ret = krb5_ret_int32(cursor->sp, &tmp32);
 	if (ret == 0 && tmp32 != 0) {
 	    entry->vno = tmp32;
