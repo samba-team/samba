@@ -96,7 +96,7 @@ static BOOL reply_sesssetup_blob(connection_struct *conn, char *outbuf,
 	char *p;
 
 	if (!NT_STATUS_IS_OK(nt_status) && !NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-		ERROR_NT(nt_status);
+		ERROR_NT(nt_status_squash(nt_status));
 	} else {
 		set_message(outbuf,4,0,True);
 
@@ -186,11 +186,11 @@ static int reply_spnego_kerberos(connection_struct *conn,
 
 	mem_ctx = talloc_init("reply_spnego_kerberos");
 	if (mem_ctx == NULL)
-		return ERROR_NT(NT_STATUS_NO_MEMORY);
+		return ERROR_NT(nt_status_squash(NT_STATUS_NO_MEMORY));
 
 	if (!spnego_parse_krb5_wrap(*secblob, &ticket, tok_id)) {
 		talloc_destroy(mem_ctx);
-		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
+		return ERROR_NT(nt_status_squash(NT_STATUS_LOGON_FAILURE));
 	}
 
 	ret = ads_verify_ticket(mem_ctx, lp_realm(), &ticket, &client, &pac_data, &ap_rep, &session_key);
@@ -200,7 +200,7 @@ static int reply_spnego_kerberos(connection_struct *conn,
 	if (!NT_STATUS_IS_OK(ret)) {
 		DEBUG(1,("Failed to verify incoming ticket!\n"));	
 		talloc_destroy(mem_ctx);
-		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
+		return ERROR_NT(nt_status_squash(NT_STATUS_LOGON_FAILURE));
 	}
 
 	DEBUG(3,("Ticket name is [%s]\n", client));
@@ -212,7 +212,7 @@ static int reply_spnego_kerberos(connection_struct *conn,
 		data_blob_free(&session_key);
 		SAFE_FREE(client);
 		talloc_destroy(mem_ctx);
-		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
+		return ERROR_NT(nt_status_squash(NT_STATUS_LOGON_FAILURE));
 	}
 
 	*p = 0;
@@ -233,7 +233,7 @@ static int reply_spnego_kerberos(connection_struct *conn,
 			data_blob_free(&session_key);
 			SAFE_FREE(client);
 			talloc_destroy(mem_ctx);
-			return ERROR_NT(NT_STATUS_LOGON_FAILURE);
+			return ERROR_NT(nt_status_squash(NT_STATUS_LOGON_FAILURE));
 		}
 	}
 
@@ -311,7 +311,7 @@ static int reply_spnego_kerberos(connection_struct *conn,
 			data_blob_free(&ap_rep);
 			data_blob_free(&session_key);
 			talloc_destroy(mem_ctx);
-			return ERROR_NT(NT_STATUS_LOGON_FAILURE);
+			return ERROR_NT(nt_status_squash(NT_STATUS_LOGON_FAILURE));
 		}
 	}
 
@@ -331,7 +331,7 @@ static int reply_spnego_kerberos(connection_struct *conn,
 			data_blob_free(&ap_rep);
 			data_blob_free(&session_key);
 			talloc_destroy(mem_ctx);
-			return ERROR_NT(ret);
+			return ERROR_NT(nt_status_squash(ret));
 		}
 
 	} else {
@@ -344,7 +344,7 @@ static int reply_spnego_kerberos(connection_struct *conn,
 			data_blob_free(&ap_rep);
 			data_blob_free(&session_key);
 			talloc_destroy(mem_ctx);
-			return ERROR_NT(ret);
+			return ERROR_NT(nt_status_squash(ret));
 		}
 
 	        /* make_server_info_pw does not set the domain. Without this
@@ -367,7 +367,7 @@ static int reply_spnego_kerberos(connection_struct *conn,
 			data_blob_free(&session_key);
 			TALLOC_FREE( mem_ctx );
 			TALLOC_FREE( server_info );
-			return ERROR_NT(ret);
+			return ERROR_NT(nt_status_squash(ret));
 		}
 	}
 
@@ -520,7 +520,7 @@ static int reply_spnego_negotiate(connection_struct *conn,
 		/* Kill the intermediate vuid */
 		invalidate_vuid(vuid);
 
-		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
+		return ERROR_NT(nt_status_squash(NT_STATUS_LOGON_FAILURE));
 	}
 
 	/* only look at the first OID for determining the mechToken --
@@ -567,7 +567,7 @@ static int reply_spnego_negotiate(connection_struct *conn,
 		/* Kill the intermediate vuid */
 		invalidate_vuid(vuid);
 
-		return ERROR_NT(nt_status);
+		return ERROR_NT(nt_status_squash(nt_status));
 	}
 
 	nt_status = auth_ntlmssp_update(*auth_ntlmssp_state, 
@@ -604,7 +604,7 @@ static int reply_spnego_auth(connection_struct *conn, char *inbuf, char *outbuf,
 		/* Kill the intermediate vuid */
 		invalidate_vuid(vuid);
 
-		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+		return ERROR_NT(nt_status_squash(NT_STATUS_INVALID_PARAMETER));
 	}
 	
 	if (!*auth_ntlmssp_state) {
@@ -612,7 +612,7 @@ static int reply_spnego_auth(connection_struct *conn, char *inbuf, char *outbuf,
 		invalidate_vuid(vuid);
 
 		/* auth before negotiatiate? */
-		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+		return ERROR_NT(nt_status_squash(NT_STATUS_INVALID_PARAMETER));
 	}
 	
 	nt_status = auth_ntlmssp_update(*auth_ntlmssp_state, 
@@ -664,7 +664,7 @@ static int reply_sesssetup_and_X_spnego(connection_struct *conn, char *inbuf,
 
 	if (data_blob_len == 0) {
 		/* an invalid request */
-		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
+		return ERROR_NT(nt_status_squash(NT_STATUS_LOGON_FAILURE));
 	}
 
 	bufrem = smb_bufrem(inbuf, p);
@@ -696,14 +696,14 @@ static int reply_sesssetup_and_X_spnego(connection_struct *conn, char *inbuf,
 	if (!vuser) {
 		vuid = register_vuid(NULL, data_blob(NULL, 0), data_blob(NULL, 0), NULL);
 		if (vuid == UID_FIELD_INVALID ) {
-			return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+			return ERROR_NT(nt_status_squash(NT_STATUS_INVALID_PARAMETER));
 		}
 	
 		vuser = get_partial_auth_user_struct(vuid);
 	}
 
 	if (!vuser) {
-		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+		return ERROR_NT(nt_status_squash(NT_STATUS_INVALID_PARAMETER));
 	}
 	
 	SSVAL(outbuf,smb_uid,vuid);
@@ -733,7 +733,7 @@ static int reply_sesssetup_and_X_spnego(connection_struct *conn, char *inbuf,
 				/* Kill the intermediate vuid */
 				invalidate_vuid(vuid);
 				
-				return ERROR_NT(nt_status);
+				return ERROR_NT(nt_status_squash(nt_status));
 			}
 		}
 
@@ -754,7 +754,7 @@ static int reply_sesssetup_and_X_spnego(connection_struct *conn, char *inbuf,
 
 	data_blob_free(&blob1);
 
-	return ERROR_NT(NT_STATUS_LOGON_FAILURE);
+	return ERROR_NT(nt_status_squash(NT_STATUS_LOGON_FAILURE));
 }
 
 /****************************************************************************
@@ -846,7 +846,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 	    (SVAL(inbuf, smb_flg2) & FLAGS2_EXTENDED_SECURITY)) {
 		if (!global_spnego_negotiated) {
 			DEBUG(0,("reply_sesssetup_and_X:  Rejecting attempt at SPNEGO session setup when it was not negoitiated.\n"));
-			return ERROR_NT(NT_STATUS_LOGON_FAILURE);
+			return ERROR_NT(nt_status_squash(NT_STATUS_LOGON_FAILURE));
 		}
 
 		if (SVAL(inbuf,smb_vwv4) == 0) {
@@ -864,7 +864,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 		remove_from_common_flags2(FLAGS2_32_BIT_ERROR_CODES);
 
 		if ((passlen1 > MAX_PASS_LEN) || (passlen1 > smb_bufrem(inbuf, smb_buf(inbuf)))) {
-			return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+			return ERROR_NT(nt_status_squash(NT_STATUS_INVALID_PARAMETER));
 		}
 
 		if (doencrypt) {
@@ -925,11 +925,11 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 		
 		/* check for nasty tricks */
 		if (passlen1 > MAX_PASS_LEN || passlen1 > smb_bufrem(inbuf, p)) {
-			return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+			return ERROR_NT(nt_status_squash(NT_STATUS_INVALID_PARAMETER));
 		}
 
 		if (passlen2 > MAX_PASS_LEN || passlen2 > smb_bufrem(inbuf, p+passlen1)) {
-			return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+			return ERROR_NT(nt_status_squash(NT_STATUS_INVALID_PARAMETER));
 		}
 
 		/* Save the lanman2 password and the NT md4 password. */
@@ -1007,7 +1007,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 			/* This has to be here, because this is a perfectly valid behaviour for guest logons :-( */
 			
 			DEBUG(0,("reply_sesssetup_and_X:  Rejecting attempt at 'normal' session setup after negotiating spnego.\n"));
-			return ERROR_NT(NT_STATUS_LOGON_FAILURE);
+			return ERROR_NT(nt_status_squash(NT_STATUS_LOGON_FAILURE));
 		}
 		fstrcpy(sub_user, user);
 	} else {
@@ -1038,7 +1038,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 	} else if (doencrypt) {
 		if (!negprot_global_auth_context) {
 			DEBUG(0, ("reply_sesssetup_and_X:  Attempted encrypted session setup without negprot denied!\n"));
-			return ERROR_NT(NT_STATUS_LOGON_FAILURE);
+			return ERROR_NT(nt_status_squash(NT_STATUS_LOGON_FAILURE));
 		}
 		nt_status = make_user_info_for_reply_enc(&user_info, user, domain,
 		                                         lm_resp, nt_resp);
@@ -1087,7 +1087,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 
 	/* Ensure we can't possible take a code path leading to a null defref. */
 	if (!server_info) {
-		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
+		return ERROR_NT(nt_status_squash(NT_STATUS_LOGON_FAILURE));
 	}
 
 	nt_status = create_local_token(server_info);
@@ -1130,7 +1130,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 	data_blob_free(&lm_resp);
 
 	if (sess_vuid == UID_FIELD_INVALID) {
-		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
+		return ERROR_NT(nt_status_squash(NT_STATUS_LOGON_FAILURE));
 	}
 
 	/* current_user_info is changed on new vuid */
