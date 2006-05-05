@@ -1,3 +1,7 @@
+2006-05-05  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* Rename u_intXX_t to uintXX_t
+
 2006-03-23  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* ftp/ftp.1: Add undocument flags and spelling, from Ted Percival
