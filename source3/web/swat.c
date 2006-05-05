@@ -1375,6 +1375,8 @@ static void printers_page(void)
 
 	poptFreeContext(pc);
 
+	load_case_tables();
+
 	setup_logging(argv[0],False);
 	load_config(True);
 	load_interfaces();
