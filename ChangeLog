@@ -1,6 +1,14 @@
 2006-05-05  Love Hörnquist Åstrand  <lha@it.su.se>
 
-	* lib/krb5/*.[ch3]: Rename u_intXX_t to uintXX_t
+	* kuser: Rename u_intXX_t to uintXX_t
+
+	* kdc: Rename u_intXX_t to uintXX_t
+
+	* lib/hdb: Rename u_intXX_t to uintXX_t
+	
+	* lib/45]: Rename u_intXX_t to uintXX_t
+
+	* lib/krb5: Rename u_intXX_t to uintXX_t
 
 	* lib/krb5/Makefile.am: Add test_store to TESTS
 
