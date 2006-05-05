@@ -21,14 +21,6 @@
 
 */
 
-/*
- * Reasons for cache flush.
- */
-
-#define NUM_FLUSH_REASONS 8 /* Keep this in sync with the enum below. */
-enum flush_reason_enum { SEEK_FLUSH, READ_FLUSH, WRITE_FLUSH, READRAW_FLUSH,
-			OPLOCK_RELEASE_FLUSH, CLOSE_FLUSH, SYNC_FLUSH, SIZECHANGE_FLUSH };
-
 /* this file defines the profile structure in the profile shared
    memory area */
 
@@ -417,6 +409,8 @@ extern struct timeval profile_endtime_nested;
 extern BOOL do_profile_flag;
 extern BOOL do_profile_times;
 
+#ifdef WITH_PROFILE
+
 /* these are helper macros - do not call them directly in the code
  * use the DO_PROFILE_* START_PROFILE and END_PROFILE ones
  * below which test for the profile flage first
@@ -424,61 +418,63 @@ extern BOOL do_profile_times;
 #define INC_PROFILE_COUNT(x) profile_p->x++
 #define DEC_PROFILE_COUNT(x) profile_p->x--
 #define ADD_PROFILE_COUNT(x,y) profile_p->x += (y)
-#define PROFILE_TIME \
-	((profile_endtime.tv_sec - profile_starttime.tv_sec) *1000000 + \
-	((int)profile_endtime.tv_usec - (int)profile_starttime.tv_usec))
-#define PROFILE_TIME_NESTED \
-	((profile_endtime_nested.tv_sec - profile_starttime_nested.tv_sec) *1000000 + \
-	((int)profile_endtime_nested.tv_usec - (int)profile_starttime_nested.tv_usec))
 
-#ifdef WITH_PROFILE
+static inline unsigned long long profile_timestamp(void)
+{
+	struct timeval tv;
+	GetTimeOfDay(&tv);
+	return (tv.tv_sec * 1000000) + tv.tv_usec;
+}
+
+/* end of helper macros */
+
 #define DO_PROFILE_INC(x) \
 	if (do_profile_flag) { \
 		INC_PROFILE_COUNT(x); \
 	}
+
 #define DO_PROFILE_DEC(x) \
 	if (do_profile_flag) { \
 		DEC_PROFILE_COUNT(x); \
 	}
+
 #define DO_PROFILE_DEC_INC(x,y) \
 	if (do_profile_flag) { \
 		DEC_PROFILE_COUNT(x); \
 		INC_PROFILE_COUNT(y); \
 	}
+
 #define DO_PROFILE_ADD(x,n) \
 	if (do_profile_flag) { \
 		ADD_PROFILE_COUNT(x,n); \
 	}
+
 #define START_PROFILE(x) \
+	unsigned long long __profstamp_##x = 0; \
 	if (do_profile_flag) { \
-		if (do_profile_times) \
-			GetTimeOfDay(&profile_starttime); \
+		__profstamp_##x = do_profile_times ? profile_timestamp() : 0;\
 		INC_PROFILE_COUNT(x##_count); \
-	}
-#define START_PROFILE_NESTED(x) \
-	if (do_profile_flag) { \
-		if (do_profile_times) \
-			GetTimeOfDay(&profile_starttime_nested); \
-		INC_PROFILE_COUNT(x##_count); \
-	}
+  	}
+
 #define START_PROFILE_BYTES(x,n) \
+	unsigned long long __profstamp_##x = 0; \
 	if (do_profile_flag) { \
-		if (do_profile_times) \
-			GetTimeOfDay(&profile_starttime); \
+		__profstamp_##x = do_profile_times ? profile_timestamp() : 0;\
 		INC_PROFILE_COUNT(x##_count); \
-		ADD_PROFILE_COUNT(x##_bytes,n); \
-	}
+		ADD_PROFILE_COUNT(x##_bytes, n); \
+  	}
+
 #define END_PROFILE(x) \
 	if (do_profile_times) { \
-		GetTimeOfDay(&profile_endtime); \
-		ADD_PROFILE_COUNT(x##_time,PROFILE_TIME); \
+		ADD_PROFILE_COUNT(x##_time, \
+		    profile_timestamp() - __profstamp_##x); \
 	}
-#define END_PROFILE_NESTED(x) \
-	if (do_profile_times) { \
-		GetTimeOfDay(&profile_endtime_nested); \
-		ADD_PROFILE_COUNT(x##_time,PROFILE_TIME_NESTED); \
-	}
-#else
+
+#define START_PROFILE_NESTED(x) START_PROFILE(x)
+#define END_PROFILE_NESTED(x) END_PROFILE(x)
+
+#else /* WITH_PROFILE */
+
 #define DO_PROFILE_INC(x)
 #define DO_PROFILE_DEC(x)
 #define DO_PROFILE_DEC_INC(x,y)
@@ -488,6 +484,7 @@ extern BOOL do_profile_times;
 #define START_PROFILE_BYTES(x,n)
 #define END_PROFILE(x)
 #define END_PROFILE_NESTED(x)
-#endif
+
+#endif /* WITH_PROFILE */
 
 #endif
