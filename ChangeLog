@@ -1,4 +1,35 @@
+2006-05-05  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/store.c: Rewrite the krb5_ret_u as proposed by Johan.
+	
+2006-05-04  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kdc/kerberos4.c: Use the new unsigned integer storage types.
+
+	* kdc/kaserver.c: Use the new unsigned integer storage
+	types. Sprinkle some error handling.
+
+	* lib/krb5/krb5_storage.3: Document ret and store function for the
+	unsigned fixed size integer types.
+
+	* lib/krb5/v4_glue.c: Use the new unsigned integer storage
+	types. Fail that the address doesn't match, not the reverse.
+
+	* lib/krb5/store.c: Add ret and store function for the unsigned
+	fixed size integer types.
+
+	* lib/krb5/test_store.c: Test the integer storage types.
+	
 2006-05-03  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/store.c (krb5_store_principal): make it take a
+	krb5_const_principal, indent
+
+	* lib/krb5/krb5_storage.3: krb5_store_principal takes a
+	krb5_const_principal
+
+	* lib/krb5/pkinit.c: Deal with that hx509_prompt.reply is no
+	longer a pointer.
 
 	* kdc/kdc.h (krb5_kdc_configuration): add pkinit_kdc_ocsp_file
 
