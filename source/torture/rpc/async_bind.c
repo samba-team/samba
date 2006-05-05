@@ -24,6 +24,7 @@
 #include "includes.h"
 #include "torture/torture.h"
 #include "lib/events/events.h"
+#include "libcli/composite/composite.h"
 #include "librpc/gen_ndr/ndr_lsa.h"
 #include "lib/cmdline/popt_common.h"
 #include "librpc/rpc/dcerpc.h"
@@ -43,23 +44,30 @@ BOOL torture_async_bind(struct torture_context *torture)
 	int i;
 	const char *binding_string;
 	struct cli_credentials *creds;
+	extern int torture_numasync;
 
-#define ASYNC_COUNT 100
-	struct composite_context *bind_req[ASYNC_COUNT];
-	struct dcerpc_pipe *pipe[ASYNC_COUNT];
-	struct dcerpc_interface_table *table[ASYNC_COUNT];
+	struct composite_context **bind_req;
+	struct dcerpc_pipe **pipe;
+	const struct dcerpc_interface_table **table;
 
-	if (!lp_parm_bool(-1, "torture", "dangerous", False)) {
+	if (!lp_parm_bool(-1, "torture", "async", False)) {
 		printf("async bind test disabled - enable dangerous tests to use\n");
 		return True;
 	}
-
+	
 	binding_string = lp_parm_string(-1, "torture", "binding");
 
 	/* talloc context */
 	mem_ctx = talloc_init("torture_async_bind");
 	if (mem_ctx == NULL) return False;
 
+	bind_req = talloc_array(torture, struct composite_context*, torture_numasync);
+	if (bind_req == NULL) return False;
+	pipe     = talloc_array(torture, struct dcerpc_pipe*, torture_numasync);
+	if (pipe == NULL) return False;
+	table    = talloc_array(torture, const struct dcerpc_interface_table*, torture_numasync);
+	if (table == NULL) return False;
+	
 	/* event context */
 	evt_ctx = event_context_init(mem_ctx);
 	if (evt_ctx == NULL) return False;
@@ -67,15 +75,20 @@ BOOL torture_async_bind(struct torture_context *torture)
 	/* credentials */
 	creds = cmdline_credentials;
 
-	for (i = 0; i < ASYNC_COUNT; i++) {
+	/* send bind requests */
+	for (i = 0; i < torture_numasync; i++) {
 		table[i] = &dcerpc_table_lsarpc;
 		bind_req[i] = dcerpc_pipe_connect_send(mem_ctx, &pipe[i], binding_string,
 						       table[i], creds, evt_ctx);
 	}
 
-	for (i = 0; i < ASYNC_COUNT; i++) {
+	/* recv bind requests */
+	for (i = 0; i < torture_numasync; i++) {
 		status = dcerpc_pipe_connect_recv(bind_req[i], mem_ctx, &pipe[i]);
-		if (!NT_STATUS_IS_OK(status)) return False;
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("async rpc connection failed: %s\n", nt_errstr(status));
+			return False;
+		}
 	}
 
 	talloc_free(mem_ctx);

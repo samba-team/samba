@@ -55,6 +55,7 @@ _PUBLIC_ int torture_numops=10;
 _PUBLIC_ int torture_entries=1000;
 _PUBLIC_ int torture_failures=1;
 _PUBLIC_ int torture_seed=0;
+_PUBLIC_ int torture_numasync=100;
 _PUBLIC_ BOOL use_oplocks;
 static int procnum; /* records process count number when forking */
 static struct smbcli_state *current_cli;
