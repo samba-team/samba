@@ -436,6 +436,8 @@ file format. All values are in network byte order. All text is ASCII.
   @};
 @end example
 
+All numbers are stored in network byteorder (big endian) format.
+
 The keytab file format begins with the 16 bit file_format_version which
 at the time this document was authored is 0x502. The format of older
 keytabs is described at the end of this document.
