@@ -263,7 +263,7 @@ fills in a
 .Li "struct sockaddr"
 .Fa sa
 that can be used to
-.Xf bind 2
+.Xr bind 2
 to.
 The argument
 .Fa sa_size
@@ -287,7 +287,7 @@ including the final
 .Ql \e0 ) .
 .Pp
 .Fn krb5_parse_address
-Returns the resolved a hostname in
+Returns the resolved hostname in
 .Fa string
 to the
 .Li krb5_addresses
@@ -301,7 +301,7 @@ and
 so that it can be used for sorting addresses. If the addresses are the
 same address
 .Fa krb5_address_order
-will be return 0.
+will return 0.
 .Pp
 .Fn krb5_address_compare
 compares the addresses
