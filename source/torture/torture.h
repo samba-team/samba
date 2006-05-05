@@ -40,6 +40,7 @@ extern int torture_nprocs;
 extern int torture_seed;
 extern int torture_numops;
 extern int torture_failures;
+extern int torture_numasync;
 extern BOOL use_level_II_oplocks;
 
 struct torture_test;
