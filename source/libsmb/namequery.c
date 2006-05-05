@@ -1024,13 +1024,13 @@ static BOOL resolve_hosts(const char *name, int name_type,
 static BOOL resolve_ads(const char *name, int name_type,
                          struct ip_service **return_iplist, int *return_count)
 {
-	
 #ifdef HAVE_ADS
 	if ( name_type == 0x1c ) {
 		int 			count, i = 0;
-		char 			*list = NULL;
-		const char		*ptr;
-		pstring			tok;
+		NTSTATUS  		status;
+		TALLOC_CTX		*ctx;
+		struct dns_rr_srv	*dcs = NULL;
+		int			numdcs = 0;
 		
 		/* try to lookup the _ldap._tcp.<domain> if we are using ADS */
 		if ( lp_security() != SEC_ADS )
@@ -1039,25 +1039,31 @@ static BOOL resolve_ads(const char *name, int name_type,
 		DEBUG(5,("resolve_hosts: Attempting to resolve DC's for %s using DNS\n",
 			name));
 			
-		if (ldap_domain2hostlist(name, &list) != LDAP_SUCCESS)
+		if ( (ctx = talloc_init("resolve_ads")) == NULL ) {
+			DEBUG(0,("resolve_ads: talloc_init() failed!\n"));
 			return False;
-				
-		count = count_chars(list, ' ') + 1;
-		if ( (*return_iplist = SMB_MALLOC_ARRAY(struct ip_service, count)) == NULL ) {
-			DEBUG(0,("resolve_hosts: malloc failed for %d entries\n", count ));
+		}
+		
+		status = ads_dns_query_dcs( ctx, name, &dcs, &numdcs );
+		if ( !NT_STATUS_IS_OK( status ) ) {
+			return False;
+		}
+		
+		if ( (*return_iplist = SMB_MALLOC_ARRAY(struct ip_service, numdcs)) == NULL ) {
+			DEBUG(0,("resolve_ads: malloc failed for %d entries\n", count ));
 			return False;
 		}
 
-		ptr = list;
-		while (next_token(&ptr, tok, " ", sizeof(tok))) {
-			unsigned port = LDAP_PORT;	
-			char *p = strchr(tok, ':');
-			if (p) {
-				*p = 0;
-				port = atoi(p+1);
-			}
-			(*return_iplist)[i].ip   = *interpret_addr2(tok);
-			(*return_iplist)[i].port = port;
+		i = 0;
+		while ( i < numdcs ) {
+
+			/* use the IP address from the SRV structure if we have one */
+			if ( is_zero_ip( dcs[i].ip ) )
+				(*return_iplist)[i].ip   = *interpret_addr2(dcs[i].hostname);
+			else
+				(*return_iplist)[i].ip = dcs[i].ip;
+
+			(*return_iplist)[i].port = dcs[i].port;
 			
 			/* make sure it is a valid IP.  I considered checking the negative
 			   connection cache, but this is the wrong place for it.  Maybe only
@@ -1067,11 +1073,12 @@ static BOOL resolve_ads(const char *name, int name_type,
 			   our DNS server doesn't know anything about the DC's   -- jerry */	
 			   
 			if ( is_zero_ip((*return_iplist)[i].ip) )
-				continue;
-		
+				continue;		
+
 			i++;
 		}
-		SAFE_FREE(list);
+		
+		TALLOC_FREE( dcs );
 		
 		*return_count = i;
 				
