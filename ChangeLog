@@ -1,5 +1,11 @@
 2006-05-05  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/krb5/keytab_file.c (fkt_next_entry_int): read the 32 bit
+	kvno if the reset of the data is longer then 4 bytes in hope to be
+	forward compatible. Pointed out by Michael B Allen.
+
+	* doc/programming.texi: Add fileformats.
+
 	* appl/test: Rename u_intXX_t to uintXX_t
 
 	* kuser: Rename u_intXX_t to uintXX_t
