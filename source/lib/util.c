@@ -1948,7 +1948,8 @@ BOOL fcntl_lock(int fd, int op, SMB_OFF_T offset, SMB_OFF_T count, int type)
 	SMB_STRUCT_FLOCK lock;
 	int ret;
 
-	DEBUG(8,("fcntl_lock %d %d %.0f %.0f %d\n",fd,op,(double)offset,(double)count,type));
+	DEBUG(8,("fcntl_lock fd=%d op=%d offset=%.0f count=%.0f type=%d\n",
+		fd,op,(double)offset,(double)count,type));
 
 	lock.l_type = type;
 	lock.l_whence = SEEK_SET;
@@ -1982,7 +1983,8 @@ BOOL fcntl_getlock(int fd, SMB_OFF_T *poffset, SMB_OFF_T *pcount, int *ptype, pi
 	SMB_STRUCT_FLOCK lock;
 	int ret;
 
-	DEBUG(8,("fcntl_getlock %d %.0f %.0f %d\n",fd,(double)*poffset,(double)*pcount,*ptype));
+	DEBUG(8,("fcntl_getlock fd=%d offset=%.0f count=%.0f type=%d\n",
+		    fd,(double)*poffset,(double)*pcount,*ptype));
 
 	lock.l_type = *ptype;
 	lock.l_whence = SEEK_SET;
