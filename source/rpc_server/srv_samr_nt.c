@@ -2180,10 +2180,12 @@ NTSTATUS _samr_query_usergroups(pipes_struct *p, SAMR_Q_QUERY_USERGROUPS *q_u, S
 }
 
 /*******************************************************************
- _samr_query_dom_info
+ _samr_query_domain_info
  ********************************************************************/
 
-NTSTATUS _samr_query_dom_info(pipes_struct *p, SAMR_Q_QUERY_DOMAIN_INFO *q_u, SAMR_R_QUERY_DOMAIN_INFO *r_u)
+NTSTATUS _samr_query_domain_info(pipes_struct *p, 
+				 SAMR_Q_QUERY_DOMAIN_INFO *q_u, 
+				 SAMR_R_QUERY_DOMAIN_INFO *r_u)
 {
 	struct samr_info *info = NULL;
 	SAM_UNK_CTR *ctr;
@@ -2212,7 +2214,7 @@ NTSTATUS _samr_query_dom_info(pipes_struct *p, SAMR_Q_QUERY_DOMAIN_INFO *q_u, SA
 
 	r_u->status = NT_STATUS_OK;
 	
-	DEBUG(5,("_samr_query_dom_info: %d\n", __LINE__));
+	DEBUG(5,("_samr_query_domain_info: %d\n", __LINE__));
 	
 	/* find the policy handle.  open a policy on it. */
 	if (!find_policy_by_hnd(p, &q_u->domain_pol, (void **)(void *)&info)) {
@@ -2364,9 +2366,9 @@ NTSTATUS _samr_query_dom_info(pipes_struct *p, SAMR_Q_QUERY_DOMAIN_INFO *q_u, SA
 		}
 	
 
-	init_samr_r_query_dom_info(r_u, q_u->switch_value, ctr, NT_STATUS_OK);
+	init_samr_r_query_domain_info(r_u, q_u->switch_value, ctr, NT_STATUS_OK);
 	
-	DEBUG(5,("_samr_query_dom_info: %d\n", __LINE__));
+	DEBUG(5,("_samr_query_domain_info: %d\n", __LINE__));
 	
 	return r_u->status;
 }
@@ -4847,7 +4849,7 @@ NTSTATUS _samr_query_domain_info2(pipes_struct *p,
 			return NT_STATUS_INVALID_INFO_CLASS;
 	}
 
-	init_samr_r_samr_query_domain_info2(r_u, q_u->switch_value, ctr, NT_STATUS_OK);
+	init_samr_r_query_domain_info2(r_u, q_u->switch_value, ctr, NT_STATUS_OK);
 
 	DEBUG(5,("_samr_query_domain_info2: %d\n", __LINE__));
 
