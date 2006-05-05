@@ -62,71 +62,85 @@ static int net_lookup_host(int argc, const char **argv)
 	return 0;
 }
 
-#ifdef HAVE_LDAP
-static void print_ldap_srvlist(char *srvlist)
+#ifdef HAVE_ADS
+static void print_ldap_srvlist(struct dns_rr_srv *dclist, int numdcs )
 {
-	char *cur, *next;
 	struct in_addr ip;
-	BOOL printit;
+	int i;
 
-	cur = srvlist;
-	do {
-		next = strchr(cur,':');
-		if (next) *next++='\0';
-		printit = resolve_name(cur, &ip, 0x20);
-		cur=next;
-		next=cur ? strchr(cur,' ') :NULL;
-		if (next)
-			*next++='\0';
-		if (printit)
-			d_printf("%s:%s\n", inet_ntoa(ip), cur?cur:"");
-		cur = next;
-	} while (next);
+	for ( i=0; i<numdcs; i++ ) {
+		if ( resolve_name(dclist[i].hostname, &ip, 0x20) ) {
+			d_printf("%s:%d\n", inet_ntoa(ip), dclist[i].port); 
+		}
+	}
 }
 #endif
 
 static int net_lookup_ldap(int argc, const char **argv)
 {
 #ifdef HAVE_ADS
-	char *srvlist;
 	const char *domain;
-	int rc;
 	struct in_addr addr;
 	struct hostent *hostent;
+	struct dns_rr_srv *dcs = NULL;
+	int numdcs = 0;
+	TALLOC_CTX *ctx;
+	NTSTATUS status;
 
 	if (argc > 0)
 		domain = argv[0];
 	else
 		domain = opt_target_workgroup;
 
+	if ( (ctx = talloc_init("net_lookup_ldap")) == NULL ) {
+		d_fprintf(stderr, "net_lookup_ldap: talloc_inti() failed!\n");
+		return -1;
+	}
+
 	DEBUG(9, ("Lookup up ldap for domain %s\n", domain));
-	rc = ldap_domain2hostlist(domain, &srvlist);
-	if ((rc == LDAP_SUCCESS) && srvlist) {
-		print_ldap_srvlist(srvlist);
+
+	status = ads_dns_query_dcs( ctx, domain, &dcs, &numdcs );
+	if ( NT_STATUS_IS_OK(status) && numdcs ) {
+		print_ldap_srvlist(dcs, numdcs);
+		TALLOC_FREE( ctx );
+
 		return 0;
 	}
 
      	DEBUG(9, ("Looking up DC for domain %s\n", domain));
-	if (!get_pdc_ip(domain, &addr))
+	if (!get_pdc_ip(domain, &addr)) {
+		TALLOC_FREE( ctx );
 		return -1;
+	}
 
 	hostent = gethostbyaddr((char *) &addr.s_addr, sizeof(addr.s_addr),
 				AF_INET);
-	if (!hostent)
+	if (!hostent) {
+		TALLOC_FREE( ctx );
 		return -1;
+	}
 
 	DEBUG(9, ("Found DC with DNS name %s\n", hostent->h_name));
 	domain = strchr(hostent->h_name, '.');
-	if (!domain)
+	if (!domain) {
+		TALLOC_FREE( ctx );
 		return -1;
+	}
 	domain++;
 
 	DEBUG(9, ("Looking up ldap for domain %s\n", domain));
-	rc = ldap_domain2hostlist(domain, &srvlist);
-	if ((rc == LDAP_SUCCESS) && srvlist) {
-		print_ldap_srvlist(srvlist);
+
+	status = ads_dns_query_dcs( ctx, domain, &dcs, &numdcs );
+	if ( NT_STATUS_IS_OK(status) && numdcs ) {
+		print_ldap_srvlist(dcs, numdcs);
+		TALLOC_FREE( ctx );
+
 		return 0;
 	}
+
+	TALLOC_FREE( ctx );
+
+
 	return -1;
 #endif
 	DEBUG(1,("No ADS support\n"));
