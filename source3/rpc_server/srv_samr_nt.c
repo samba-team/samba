@@ -2302,6 +2302,9 @@ NTSTATUS _samr_query_domain_info(pipes_struct *p,
 			
 			init_unk_info3(&ctr->info.inf3, nt_logout);
 			break;
+		case 0x04:
+			init_unk_info4(&ctr->info.inf4, lp_serverstring());
+			break;
 		case 0x05:
 			init_unk_info5(&ctr->info.inf5, get_global_sam_name());
 			break;
