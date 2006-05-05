@@ -241,6 +241,7 @@ Programming with Kerberos
 * Walkthrough of a sample Kerberos 5 client::  
 * Validating a password in a server application::  
 * API differences to MIT Kerberos::  
+* File formats::
 
 @end detailmenu
 @end menu
