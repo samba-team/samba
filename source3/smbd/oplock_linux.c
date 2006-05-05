@@ -18,6 +18,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+#define DBGC_CLASS DBGC_LOCKING
 #include "includes.h"
 
 #if HAVE_KERNEL_OPLOCKS_LINUX
