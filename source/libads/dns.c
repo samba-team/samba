@@ -38,12 +38,17 @@
 
 #define MAX_DNS_PACKET_SIZE 0xffff
 
-#ifndef NS_HFIXEDSZ
+#ifdef NS_HFIXEDSZ	/* Bind 8/9 interface */
+#  define C_IN		ns_c_in
+#  define T_A   	ns_t_a
+#  define T_SRV 	ns_t_srv
+#else
 #  ifdef HFIXEDSZ
 #    define NS_HFIXEDSZ HFIXEDSZ
 #  else
-#    define NS_HFIXEDSZ 12
+#    define NS_HFIXEDSZ sizeof(HEADER)
 #  endif
+#  define T_SRV 	33
 #endif
 
 /*********************************************************************
@@ -160,7 +165,7 @@ static BOOL ads_dns_parse_rr_srv( TALLOC_CTX *ctx, uint8 *start, uint8 *end,
 		return False;
 	}
 
-	if ( rr.type != ns_t_srv ) {
+	if ( rr.type != T_SRV ) {
 		DEBUG(1,("ads_dns_parse_rr_srv: Bad answer type (%d)\n", rr.type));
 		return False;
 	}
@@ -248,7 +253,7 @@ NTSTATUS ads_dns_lookup_srv( TALLOC_CTX *ctx, const char *name, struct dns_rr_sr
 			return NT_STATUS_NO_MEMORY;
 		}
 
-		if ( (resp_len = res_query(name, ns_c_in, ns_t_srv, buffer, buf_len)) < 0 ) {
+		if ( (resp_len = res_query(name, C_IN, T_SRV, buffer, buf_len)) < 0 ) {
 			DEBUG(1,("ads_dns_lookup_srv: Failed to resolve %s (%s)\n", name, strerror(errno)));
 			TALLOC_FREE( buffer );
 			return NT_STATUS_UNSUCCESSFUL;
@@ -328,7 +333,7 @@ NTSTATUS ads_dns_lookup_srv( TALLOC_CTX *ctx, const char *name, struct dns_rr_sr
 		/* only interested in A records as a shortcut for having to come 
 		   back later and lookup the name */
 
-		if ( (rr.type != ns_t_a) || (rr.rdatalen != 4) ) 
+		if ( (rr.type != T_A) || (rr.rdatalen != 4) ) 
 			continue;
 
 		for ( i=0; i<idx; i++ ) {
