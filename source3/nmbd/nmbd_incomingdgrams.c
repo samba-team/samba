@@ -797,7 +797,7 @@ void process_announce_request(struct subnet_record *subrec, struct packet_struct
 	work->needannounce = True;
 done:
 
-	END_PROFILE(lm_host_announce);
+	END_PROFILE(announce_request);
 }
 
 /*******************************************************************
@@ -838,5 +838,5 @@ void process_lm_announce_request(struct subnet_record *subrec, struct packet_str
 
 done:
 
-	END_PROFILE(lm_host_announce);
+	END_PROFILE(lm_announce_request);
 }

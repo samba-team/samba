@@ -1085,11 +1085,12 @@ int reply_search(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 	BOOL mask_contains_wcard = False;
 	BOOL allow_long_path_components = (SVAL(inbuf,smb_flg2) & FLAGS2_LONG_PATH_COMPONENTS) ? True : False;
 
+	START_PROFILE(SMBsearch);
+
 	if (lp_posix_pathnames()) {
+		END_PROFILE(SMBsearch);
 		return reply_unknown(inbuf, outbuf);
 	}
-
-	START_PROFILE(SMBsearch);
 
 	*mask = *directory = *fname = 0;
 
@@ -1284,11 +1285,12 @@ int reply_fclose(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 	NTSTATUS err;
 	BOOL path_contains_wcard = False;
 
+	START_PROFILE(SMBfclose);
+
 	if (lp_posix_pathnames()) {
+		END_PROFILE(SMBfclose);
 		return reply_unknown(inbuf, outbuf);
 	}
-
-	START_PROFILE(SMBfclose);
 
 	outsize = set_message(outbuf,1,0,True);
 	p = smb_buf(inbuf) + 1;
@@ -1517,13 +1519,13 @@ int reply_open_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 		fsp->initial_allocation_size = smb_roundup(fsp->conn, allocation_size);
 		if (vfs_allocate_file_space(fsp, fsp->initial_allocation_size) == -1) {
 			close_file(fsp,ERROR_CLOSE);
-			END_PROFILE(SMBntcreateX);
+			END_PROFILE(SMBopenX);
 			return ERROR_NT(NT_STATUS_DISK_FULL);
 		}
 		retval = vfs_set_filelen(fsp, (SMB_OFF_T)allocation_size);
 		if (retval < 0) {
 			close_file(fsp,ERROR_CLOSE);
-			END_PROFILE(SMBwrite);
+			END_PROFILE(SMBopenX);
 			return ERROR_NT(NT_STATUS_DISK_FULL);
 		}
 		size = get_allocation_size(conn,fsp,&sbuf);
@@ -2629,7 +2631,6 @@ int send_file_readX(connection_struct *conn, char *inbuf,char *outbuf,int length
 	nread = read_file(fsp,data,startpos,smb_maxcnt);
   
 	if (nread < 0) {
-		END_PROFILE(SMBreadX);
 		return(UNIXERROR(ERRDOS,ERRnoaccess));
 	}
 

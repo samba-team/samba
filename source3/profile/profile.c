@@ -36,11 +36,6 @@ struct profile_stats *profile_p;
 BOOL do_profile_flag = False;
 BOOL do_profile_times = False;
 
-struct timeval profile_starttime;
-struct timeval profile_endtime;
-struct timeval profile_starttime_nested;
-struct timeval profile_endtime_nested;
-
 /****************************************************************************
 receive a set profile level message
 ****************************************************************************/
