@@ -264,7 +264,7 @@ char *dom_sid_string(TALLOC_CTX *mem_ctx, const struct dom_sid *sid)
 		(sid->id_auth[2] << 24);
 
 	ofs = snprintf(ret, maxlen, "S-%u-%lu", 
-		       (uint_t)sid->sid_rev_num, (unsigned long)ia);
+		       (unsigned int)sid->sid_rev_num, (unsigned long)ia);
 
 	for (i = 0; i < sid->num_auths; i++) {
 		ofs += snprintf(ret + ofs, maxlen - ofs, "-%lu", (unsigned long)sid->sub_auths[i]);

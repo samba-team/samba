@@ -139,7 +139,7 @@ _PUBLIC_ BOOL null_nttime(NTTIME t)
 static uint16_t make_dos_date1(struct tm *t)
 {
 	uint16_t ret=0;
-	ret = (((uint_t)(t->tm_mon+1)) >> 3) | ((t->tm_year-80) << 1);
+	ret = (((unsigned int)(t->tm_mon+1)) >> 3) | ((t->tm_year-80) << 1);
 	ret = ((ret&0xFF)<<8) | (t->tm_mday | (((t->tm_mon+1) & 0x7) << 5));
 	return ret;
 }
@@ -150,7 +150,7 @@ static uint16_t make_dos_date1(struct tm *t)
 static uint16_t make_dos_time1(struct tm *t)
 {
 	uint16_t ret=0;
-	ret = ((((uint_t)t->tm_min >> 3)&0x7) | (((uint_t)t->tm_hour) << 3));
+	ret = ((((unsigned int)t->tm_min >> 3)&0x7) | (((unsigned int)t->tm_hour) << 3));
 	ret = ((ret&0xFF)<<8) | ((t->tm_sec/2) | ((t->tm_min & 0x7) << 5));
 	return ret;
 }
@@ -440,7 +440,7 @@ _PUBLIC_ struct timeval timeval_add(const struct timeval *tv,
 			   uint32_t secs, uint32_t usecs)
 {
 	struct timeval tv2 = *tv;
-	const uint_t million = 1000000;
+	const unsigned int million = 1000000;
 	tv2.tv_sec += secs;
 	tv2.tv_usec += usecs;
 	tv2.tv_sec += tv2.tv_usec / million;
