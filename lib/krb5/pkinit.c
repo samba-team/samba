@@ -1836,6 +1836,16 @@ krb5_get_init_creds_opt_set_pkinit(krb5_context context,
 
     if ((flags & 2) == 0) {
 	const char *moduli_file;
+	const DH_METHOD *dhm;
+
+	dhm = DH_get_default_method();
+	if (strcmp(dhm->name, "hx509 null DH") == 0) {
+	    krb5_set_error_string(context,
+				  "pkinit uses dummy DH in libhcrypto, "
+				  "please install DH engine");
+	    _krb5_get_init_creds_opt_free_pkinit(opt);
+	    return EINVAL;
+	}
 
 	moduli_file = krb5_config_get_string(context, NULL,
 					     "libdefaults",
