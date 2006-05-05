@@ -1,5 +1,8 @@
 2006-05-05  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* dh.c (DH_compute_key): check return status value from
+	DH_check_pubkey
+
 	* Rename u_intXX_t to uintXX_t
 	
 2006-04-24  Love Hörnquist Åstrand  <lha@it.su.se>
