@@ -265,7 +265,7 @@ const static struct torture_ui_ops std_ui_ops = {
 	char **argv_new;
 	poptContext pc;
 	enum {OPT_LOADFILE=1000,OPT_UNCLIST,OPT_TIMELIMIT,OPT_DNS,
-	    OPT_DANGEROUS,OPT_SMB_PORTS};
+	      OPT_DANGEROUS,OPT_SMB_PORTS,OPT_ASYNC};
 	
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
@@ -281,7 +281,12 @@ const static struct torture_ui_ops std_ui_ops = {
 		{"timelimit",	't', POPT_ARG_STRING,	NULL, 	OPT_TIMELIMIT,	"timelimit", 	NULL},
 		{"failures",	'f', POPT_ARG_INT,  &torture_failures, 	0,	"failures", 	NULL},
 		{"parse-dns",	'D', POPT_ARG_STRING,	NULL, 	OPT_DNS,	"parse-dns", 	NULL},
-		{"dangerous",	'X', POPT_ARG_NONE,	NULL,   OPT_DANGEROUS,	"dangerous", 	NULL},
+		{"dangerous",	'X', POPT_ARG_NONE,	NULL,   OPT_DANGEROUS,
+		 "run dangerous tests (eg. wiping out password database)", NULL},
+		{"async",       'a', POPT_ARG_NONE,     NULL,   OPT_ASYNC,
+		 "run async tests", NULL},
+		{"num-async",    0, POPT_ARG_INT,  &torture_numasync,  0,
+		 "number of simultaneous async requests", NULL},
 		{"maximum-runtime", 0, POPT_ARG_INT, &max_runtime, 0, 
 		 "set maximum time for smbtorture to live", "seconds"},
 		POPT_COMMON_SAMBA
@@ -319,6 +324,9 @@ const static struct torture_ui_ops std_ui_ops = {
 			break;
 		case OPT_DANGEROUS:
 			lp_set_cmdline("torture:dangerous", "Yes");
+			break;
+		case OPT_ASYNC:
+			lp_set_cmdline("torture:async", "Yes");
 			break;
 		case OPT_SMB_PORTS:
 			lp_set_cmdline("smb ports", poptGetOptArg(pc));
