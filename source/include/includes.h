@@ -943,8 +943,6 @@ extern int errno;
 
 #include "msdfs.h"
 
-#include "smbprofile.h"
-
 #include "rap.h"
 
 #include "md5.h"
@@ -1059,10 +1057,29 @@ struct smb_ldap_privates;
 
 #include "smb_ldap.h"
 
+/*
+ * Reasons for cache flush.
+ */
+
+enum flush_reason_enum {
+    SEEK_FLUSH,
+    READ_FLUSH,
+    WRITE_FLUSH,
+    READRAW_FLUSH,
+    OPLOCK_RELEASE_FLUSH,
+    CLOSE_FLUSH,
+    SYNC_FLUSH,
+    SIZECHANGE_FLUSH,
+    /* NUM_FLUSH_REASONS must remain the last value in the enumeration. */
+    NUM_FLUSH_REASONS};
+
 /***** automatically generated prototypes *****/
 #ifndef NO_PROTO_H
 #include "proto.h"
 #endif
+
+/* We need this after proto.h to reference GetTimeOfDay(). */
+#include "smbprofile.h"
 
 /* String routines */
 
