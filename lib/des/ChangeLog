@@ -1,3 +1,7 @@
+2006-05-05  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* Rename u_intXX_t to uintXX_t
+	
 2006-04-24  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* pkcs5.c: include <krb5-types.h>

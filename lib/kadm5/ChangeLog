@@ -1,3 +1,7 @@
+2006-05-05  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* Rename u_intXX_t to uintXX_t
+
 2006-04-27  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* chpass_s.c,delete_s.c,get_s.c,log.c,modify_s.c,randkey_s.c,rename_s.c:
