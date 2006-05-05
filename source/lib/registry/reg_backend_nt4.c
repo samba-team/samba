@@ -2,6 +2,7 @@
    Samba CIFS implementation
    Registry backend for REGF files
    Copyright (C) 2005 Jelmer Vernooij, jelmer@samba.org
+   Copyright (C) 2006 Wilco Baan Hofman, wilco@baanhofman.nl
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -484,8 +485,25 @@ static WERROR regf_get_subkey (TALLOC_CTX *ctx, const struct registry_key *key, 
 	}
 
 	if (!strncmp((char *)data.data, "li", 2)) {
-		DEBUG(4, ("Subkeys in LI list\n"));
-		SMB_ASSERT(0);
+		struct li_block li;
+		struct tdr_pull pull;
+
+		DEBUG(10, ("Subkeys in LI list\n"));
+		ZERO_STRUCT(pull);
+		pull.data = data;
+
+		if (NT_STATUS_IS_ERR(tdr_pull_li_block(&pull, nk, &li))) {
+			DEBUG(0, ("Error parsing LI list\n"));
+			return WERR_GENERAL_FAILURE;
+		}
+		SMB_ASSERT(!strncmp(li.header, "li",2));
+
+		if (li.key_count != nk->num_subkeys) {
+			DEBUG(0, ("Subkey counts don't match\n"));
+			return WERR_GENERAL_FAILURE;
+		}
+		key_off = li.nk_offset[idx];
+	
 	} else if (!strncmp((char *)data.data, "lf", 2)) {
 		struct lf_block lf;
 		struct tdr_pull pull;
@@ -498,19 +516,107 @@ static WERROR regf_get_subkey (TALLOC_CTX *ctx, const struct registry_key *key, 
 			DEBUG(0, ("Error parsing LF list\n"));
 			return WERR_GENERAL_FAILURE;
 		}
+		SMB_ASSERT(!strncmp(lf.header, "lf",2));
 
 		if (lf.key_count != nk->num_subkeys) {
 			DEBUG(0, ("Subkey counts don't match\n"));
 			return WERR_GENERAL_FAILURE;
 		}
 
-		key_off = lf.hr[idx].nk_off;
-	} else if (!strncmp((char *)data.data, "ri", 2)) {
-		DEBUG(4, ("Subkeys in RI list\n"));
-		SMB_ASSERT(0);
+		key_off = lf.hr[idx].nk_offset;
 	} else if (!strncmp((char *)data.data, "lh", 2)) {
-		DEBUG(4, ("Subkeys in LH list\n"));
-		SMB_ASSERT(0);
+		struct lh_block lh;
+		struct tdr_pull pull;
+		
+		DEBUG(10, ("Subkeys in LH list"));
+		ZERO_STRUCT(pull);
+		pull.data = data;
+		
+		if (NT_STATUS_IS_ERR(tdr_pull_lh_block(&pull, nk, &lh))) {
+			DEBUG(0, ("Error parsing LH list\n"));
+			return WERR_GENERAL_FAILURE;
+		}
+		SMB_ASSERT(!strncmp(lh.header, "lh",2));
+		
+		if (lh.key_count != nk->num_subkeys) {
+			DEBUG(0, ("Subkey counts don't match\n"));
+			return WERR_GENERAL_FAILURE;
+		}
+		key_off = lh.hr[idx].nk_offset;
+	} else if (!strncmp((char *)data.data, "ri", 2)) {
+		struct ri_block ri;
+		struct tdr_pull pull;
+		uint16_t i;
+		uint16_t sublist_count = 0;
+		
+		ZERO_STRUCT(pull);
+		pull.data = data;
+		
+		if (NT_STATUS_IS_ERR(tdr_pull_ri_block(&pull, nk, &ri))) {
+			DEBUG(0, ("Error parsing RI list\n"));
+			return WERR_GENERAL_FAILURE;
+		}
+		SMB_ASSERT(!strncmp(ri.header, "ri",2));
+		
+		for (i = 0; i < ri.key_count; i++) {
+			DATA_BLOB list_data;
+			
+			/* Get sublist data blob */
+			list_data = hbin_get(key->hive->backend_data, ri.offset[i]);
+			if (!list_data.data) {
+				DEBUG(0, ("Error getting RI list."));
+				return WERR_GENERAL_FAILURE;
+			}
+			
+			ZERO_STRUCT(pull);
+			pull.data = list_data;
+			
+			if (!strncmp((char *)list_data.data, "li", 2)) {
+				struct li_block li;
+
+				if (NT_STATUS_IS_ERR(tdr_pull_li_block(&pull, nk, &li))) {
+					DEBUG(0, ("Error parsing LI list from RI\n"));
+					return WERR_GENERAL_FAILURE;
+				}
+				SMB_ASSERT(!strncmp(li.header, "li",2));
+				
+				/* Advance to next sublist if necessary */
+				if (idx >= sublist_count + li.key_count) {
+					sublist_count += li.key_count;
+					continue;
+				}
+				key_off = li.nk_offset[idx - sublist_count];
+				sublist_count += li.key_count;
+				break;
+			} else if (!strncmp((char *)list_data.data, "lh", 2)) {
+				struct lh_block lh;
+				
+				if (NT_STATUS_IS_ERR(tdr_pull_lh_block(&pull, nk, &lh))) {
+					DEBUG(0, ("Error parsing LH list from RI\n"));
+					return WERR_GENERAL_FAILURE;
+				}
+				SMB_ASSERT(!strncmp(lh.header, "lh",2));
+
+				
+				/* Advance to next sublist if necessary */
+				if (idx >= sublist_count + lh.key_count) {
+					sublist_count += lh.key_count;
+					continue;
+				}
+				key_off = lh.hr[idx - sublist_count].nk_offset;
+				sublist_count += lh.key_count;
+				break;
+			} else {
+				DEBUG(0,("Unknown sublist in ri block\n"));
+				SMB_ASSERT(0);
+			}
+			
+		}
+	
+		if (idx > sublist_count) {
+			return WERR_NO_MORE_ITEMS;
+		}
+
 	} else {
 		DEBUG(0, ("Unknown type for subkey list (0x%04x): %c%c\n", nk->subkeys_offset, data.data[0], data.data[1]));
 		return WERR_GENERAL_FAILURE;
@@ -577,7 +683,7 @@ static uint32_t lf_add_entry (struct regf_data *regf, uint32_t list_offset, cons
 	}
 
 	lf.hr = talloc_realloc(regf, lf.hr, struct hash_record, lf.key_count+1);
-	lf.hr[lf.key_count].nk_off = key_offset;
+	lf.hr[lf.key_count].nk_offset = key_offset;
 	lf.hr[lf.key_count].hash = talloc_strndup(regf, name, 4);
 	lf.key_count++;
 
@@ -736,7 +842,7 @@ static WERROR nt_open_hive (struct registry_hive *h, struct registry_key **key)
 	regf->hbins = talloc_array(regf, struct hbin_block *, 1);
 	regf->hbins[0] = NULL;
 
-	while (pull.offset < pull.data.length) {
+	while (pull.offset < pull.data.length && pull.offset < regf->header->last_block) {
 		struct hbin_block *hbin = talloc(regf->hbins, struct hbin_block);
 
 		if (NT_STATUS_IS_ERR(tdr_pull_hbin_block(&pull, hbin, hbin))) {

@@ -2,13 +2,13 @@
  Definitions for the REGF registry file format as used by 
  Windows NT4 and above. 
 
- Written by Jelmer Vernooij, 2005
+   Copyright (C) 2005 Jelmer Vernooij, jelmer@samba.org
+   Copyright (C) 2006 Wilco Baan Hofman, wilco@baanhofman.nl
    
  Based on two files from Samba 3:
  	regedit.c by Richard Sharpe
     regfio.c by Jerry Carter
  
- Thanks to Wilco Baan Hofman for some of the info on li and ri fields.
 */
 
 interface regf
@@ -114,25 +114,25 @@ interface regf
 		uint8 sec_desc[rec_size]; 
 	} sk_block;
 
-	typedef [noprint,nopush,nopull] struct {
-			uint32 offset_nk;
+	typedef [noprint] struct {
+			uint32 nk_offset;
 			uint32 base37; /* base37 of key name */
 	} lh_hash;
 	
 	/* Subkey listing with hash of first 4 characters */
-	typedef [noprint,nopush,nopull] struct {
+	typedef [public,noprint] struct {
 		[charset(DOS)] uint8 header[2];
 		uint16 key_count;
-		lh_hash hashes[key_count];
+		lh_hash hr[key_count];
 	} lh_block;
 
-	typedef [noprint,nopush,nopull] struct {
+	typedef [public,noprint] struct {
 		[charset(DOS)] uint8 header[2];
 		uint16 key_count;
-		uint32 offset_nk[key_count];
+		uint32 nk_offset[key_count];
 	} li_block;
 
-	typedef [noprint,nopush,nopull] struct {
+	typedef [public,noprint] struct {
 		[charset(DOS)] uint8 header[2];
 		uint16 key_count;
 		uint32 offset[key_count]; /* li/lh offset */
@@ -151,7 +151,7 @@ interface regf
 	} vk_block;
 
 	typedef [noprint] struct {
-		uint32 nk_off;
+		uint32 nk_offset;
 		[charset(DOS)] uint8 hash[4];
 	} hash_record;
 
