@@ -23,7 +23,6 @@
 
 #include "includes.h"
 
-#define PW_MAX_BUF_SIZE          sysconf(_SC_GETPW_R_SIZE_MAX)
 #define TICKET_CC_DIR            "/tmp"
 #define CC_PREFIX                "krb5cc_" /* prefix of the ticket cache */
 #define CC_MAX_FILE_LEN          24   
