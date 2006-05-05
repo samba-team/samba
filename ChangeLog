@@ -1,5 +1,7 @@
 2006-05-05  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* appl/test: Rename u_intXX_t to uintXX_t
+
 	* kuser: Rename u_intXX_t to uintXX_t
 
 	* kdc: Rename u_intXX_t to uintXX_t
