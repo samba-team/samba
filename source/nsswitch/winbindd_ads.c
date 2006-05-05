@@ -173,7 +173,7 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 		goto done;
 	}
 
-	rc = ads_search_retry(ads, &res, "(objectClass=user)", attrs);
+	rc = ads_search_retry(ads, &res, "(objectCategory=user)", attrs);
 	if (!ADS_ERR_OK(rc) || !res) {
 		DEBUG(1,("query_user_list ads_search: %s\n", ads_errstr(rc)));
 		goto done;
@@ -552,7 +552,7 @@ static NTSTATUS lookup_usergroups_alt(struct winbindd_domain *domain,
 	/* buggy server, no tokenGroups.  Instead lookup what groups this user
 	   is a member of by DN search on member*/
 
-	if (!(ldap_exp = talloc_asprintf(mem_ctx, "(&(member=%s)(objectClass=group))", escaped_dn))) {
+	if (!(ldap_exp = talloc_asprintf(mem_ctx, "(&(member=%s)(objectCategory=group))", escaped_dn))) {
 		DEBUG(1,("lookup_usergroups(dn=%s) asprintf failed!\n", user_dn));
 		SAFE_FREE(escaped_dn);
 		status = NT_STATUS_NO_MEMORY;
