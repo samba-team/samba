@@ -38,6 +38,14 @@
 
 #define MAX_DNS_PACKET_SIZE 0xffff
 
+#ifndef NS_HFIXEDSZ
+#  ifdef HFIXEDSZ
+#    define NS_HFIXEDSZ HFIXEDSZ
+#  else
+#    define NS_HFIXEDSZ 12
+#  endif
+#endif
+
 /*********************************************************************
 *********************************************************************/
 
