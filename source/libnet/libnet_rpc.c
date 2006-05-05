@@ -615,9 +615,12 @@ static NTSTATUS libnet_RpcConnectDCInfo_recv(struct composite_context *c, struct
 		s = talloc_get_type(c->private_data, struct rpc_connect_dci_state);
 
 		r->out.realm        = talloc_steal(mem_ctx, s->r.out.realm);
-		r->out.domain_sid   = talloc_steal(mem_ctx, s->r.out.domain_sid);
+		r->out.guid         = talloc_steal(mem_ctx, s->r.out.guid);
 		r->out.domain_name  = talloc_steal(mem_ctx, s->r.out.domain_name);
+		r->out.domain_sid   = talloc_steal(mem_ctx, s->r.out.domain_sid);
 		r->out.dcerpc_pipe  = talloc_steal(mem_ctx, s->r.out.dcerpc_pipe);
+
+		r->out.error_string = NULL;
 	}
 
 	talloc_free(c);
