@@ -72,8 +72,12 @@ static int net_ads_lookup(int argc, const char **argv)
 {
 	ADS_STRUCT *ads;
 	ADS_STATUS status;
+	const char *realm = NULL;
 
-	ads = ads_init(NULL, opt_target_workgroup, opt_host);
+	if ( strequal(lp_workgroup(), opt_target_workgroup ) )
+		realm = lp_realm();
+
+	ads = ads_init(realm, opt_target_workgroup, opt_host);
 	if (ads) {
 		ads->auth.flags |= ADS_AUTH_NO_BIND;
 	}
