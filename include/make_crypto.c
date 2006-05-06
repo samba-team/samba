@@ -63,6 +63,7 @@ main(int argc, char **argv)
     fputs("#ifndef OPENSSL_DES_LIBDES_COMPATIBILITY\n", f);
     fputs("#define OPENSSL_DES_LIBDES_COMPATIBILITY\n", f);
     fputs("#endif\n", f);
+    fputs("#include <openssl/evp.h>\n", f);
     fputs("#include <openssl/des.h>\n", f);
     fputs("#include <openssl/rc4.h>\n", f);
     fputs("#include <openssl/rc2.h>\n", f);
@@ -72,7 +73,6 @@ main(int argc, char **argv)
     fputs("#include <openssl/sha.h>\n", f);
     fputs("#include <openssl/aes.h>\n", f);
     fputs("#include <openssl/ui.h>\n", f);
-    fputs("#include <openssl/evp.h>\n", f);
     fputs("#include <openssl/rand.h>\n", f);
     fputs("#include <openssl/engine.h>\n", f);
     fputs("#include <openssl/pkcs12.h>\n", f);
@@ -85,6 +85,7 @@ main(int argc, char **argv)
     fputs("#ifdef KRB5\n", f);
     fputs("#include <krb5-types.h>\n", f);
     fputs("#endif\n", f);
+    fputs("#include <hcrypto/evp.h>\n", f);
     fputs("#include <hcrypto/des.h>\n", f);
     fputs("#include <hcrypto/md2.h>\n", f);
     fputs("#include <hcrypto/md4.h>\n", f);
@@ -94,7 +95,6 @@ main(int argc, char **argv)
     fputs("#include <hcrypto/rc2.h>\n", f);
     fputs("#include <hcrypto/aes.h>\n", f);
     fputs("#include <hcrypto/ui.h>\n", f);
-    fputs("#include <hcrypto/evp.h>\n", f);
     fputs("#include <hcrypto/rand.h>\n", f);
     fputs("#include <hcrypto/engine.h>\n", f);
     fputs("#include <hcrypto/pkcs12.h>\n", f);

@@ -11,6 +11,7 @@ m4_define([test_headers], [
 		#ifdef HAVE_SYS_TYPES_H
 		#include <sys/types.h>
 		#endif
+		#include <openssl/evp.h>
 		#include <openssl/md4.h>
 		#include <openssl/md5.h>
 		#include <openssl/sha.h>
@@ -20,10 +21,10 @@ m4_define([test_headers], [
 		#include <openssl/engine.h>
 		#include <openssl/ui.h>
 		#include <openssl/rand.h>
-		#include <openssl/evp.h>
 		#include <openssl/hmac.h>
 		#include <openssl/pkcs12.h>
 		#else
+		#include <hcrypto/evp.h>
 		#include <hcrypto/md4.h>
 		#include <hcrypto/md5.h>
 		#include <hcrypto/sha.h>
@@ -31,7 +32,6 @@ m4_define([test_headers], [
 		#include <hcrypto/rc4.h>
 		#include <hcrypto/aes.h>
 		#include <hcrypto/engine.h>
-		#include <hcrypto/evp.h>
 		#include <hcrypto/hmac.h>
 		#include <hcrypto/pkcs12.h>
 		#endif
