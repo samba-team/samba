@@ -1,5 +1,9 @@
-2006-05-05  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-05-06  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* dh.c (DH_check_pubkey): describe what the function do
+
+2006-05-05  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* dh.c (DH_compute_key): check return status value from
 	DH_check_pubkey
 
