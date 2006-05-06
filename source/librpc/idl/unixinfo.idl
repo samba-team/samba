@@ -16,7 +16,7 @@
 	/* Function: 0x00 */
 	NTSTATUS unixinfo_SidToUid (
 	    [in]	dom_sid sid,
-	    [out]	hyper uid
+	    [out,ref]	hyper *uid
 	    );
 
 	/******************/
@@ -30,14 +30,14 @@
 	/* Function: 0x02 */
 	NTSTATUS unixinfo_SidToGid (
 	    [in]	dom_sid sid,
-	    [out]	hyper gid
+	    [out,ref]	hyper *gid
 	    );
 
 	/******************/
 	/* Function: 0x03 */
 	NTSTATUS unixinfo_GidToSid (
 	    [in]	hyper gid,
-	    [out]	dom_sid *sid
+	    [out,ref]	dom_sid *sid
 	    );
 
     typedef struct {
@@ -49,8 +49,8 @@
 	/******************/
 	/* Function: 0x04 */
         NTSTATUS unixinfo_GetPWUid (
-		[in,out,range(0,1023)] uint32 count,
-		[in,size_is(count)] hyper uids[],
-		[out,size_is(count)] unixinfo_GetPWUidInfo infos[]
+		[in,out,ref,range(0,1023)] uint32 *count,
+		[in,size_is(*count)] hyper uids[],
+		[out,size_is(*count)] unixinfo_GetPWUidInfo *infos
         );
 }
