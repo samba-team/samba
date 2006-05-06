@@ -176,6 +176,7 @@ static int reply_spnego_kerberos(connection_struct *conn,
 	DATA_BLOB nullblob = data_blob(NULL, 0);
 	fstring real_username;
 	BOOL map_domainuser_to_guest = False;
+	BOOL username_was_mapped;
 	PAC_LOGON_INFO *logon_info = NULL;
 
 	ZERO_STRUCT(ticket);
@@ -288,7 +289,7 @@ static int reply_spnego_kerberos(connection_struct *conn,
 	
 	/* lookup the passwd struct, create a new user if necessary */
 
-	map_username( user );
+	username_was_mapped = map_username( user );
 
 	pw = smb_getpwnam( mem_ctx, user, real_username, True );
 	if (!pw) {
@@ -355,6 +356,8 @@ static int reply_spnego_kerberos(connection_struct *conn,
 			pdb_set_domain(server_info->sam_account, domain, PDB_SET);
 		}
 	}
+
+	server_info->was_mapped |= username_was_mapped;
 	
 	/* we need to build the token for the user. make_server_info_guest()
 	   already does this */
