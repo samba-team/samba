@@ -29,6 +29,7 @@ typedef struct auth_usersupplied_info {
 	
 	BOOL encrypted;
 	
+	BOOL was_mapped;	      /* Did the username map actually match? */
 	char *client_domain;          /* domain name string */
 	char *domain;                 /* domain name after mapping */
 	char *internal_username;      /* username after mapping */
@@ -67,6 +68,7 @@ typedef struct auth_serversupplied_info {
 	
 	void *pam_handle;
 
+	BOOL was_mapped;	/* Did the username map match? */
 	char *unix_name;
 	
 } auth_serversupplied_info;

@@ -132,6 +132,9 @@ static NTSTATUS check_winbind_security(const struct auth_context *auth_context,
 					server_info, &info3); 
 			}
 			
+			if (NT_STATUS_IS_OK(nt_status)) {
+				(*server_info)->was_mapped |= user_info->was_mapped;
+			}
 		}
 	} else if (NT_STATUS_IS_OK(nt_status)) {
 		nt_status = NT_STATUS_NO_LOGON_SERVERS;

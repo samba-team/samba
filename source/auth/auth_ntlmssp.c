@@ -80,6 +80,7 @@ static NTSTATUS auth_ntlmssp_check_password(struct ntlmssp_state *ntlmssp_state,
 	AUTH_NTLMSSP_STATE *auth_ntlmssp_state = ntlmssp_state->auth_context;
 	auth_usersupplied_info *user_info = NULL;
 	NTSTATUS nt_status;
+	BOOL username_was_mapped;
 
 	/* the client has given us its machine name (which we otherwise would not get on port 445).
 	   we need to possibly reload smb.conf if smb.conf includes depend on the machine name */
@@ -110,11 +111,15 @@ static NTSTATUS auth_ntlmssp_check_password(struct ntlmssp_state *ntlmssp_state,
 	nt_status = auth_ntlmssp_state->auth_context->check_ntlm_password(auth_ntlmssp_state->auth_context, 
 									  user_info, &auth_ntlmssp_state->server_info); 
 
+	username_was_mapped = user_info->was_mapped;
+
 	free_user_info(&user_info);
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
 	}
+
+	auth_ntlmssp_state->server_info->was_mapped |= username_was_mapped;
 
 	nt_status = create_local_token(auth_ntlmssp_state->server_info);
 
