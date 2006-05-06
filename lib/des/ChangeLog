@@ -1,5 +1,18 @@
 2006-05-06  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* engine.c: Lets say we have RSA_null_method(), not really
+	useable, but still.
+
+	* test_engine_dso.c: If there are no arguments, use the internal
+	engine.
+
+	* engine.h: Cpp rename some ENGINE symbols.
+
+	* engine.c (ENGINE_load_builtin_engines): Load the internal
+	engine.
+
+	* dh.c: Default to use DH-imath.
+
 	* dh.c (DH_check_pubkey): describe what the function do
 
 2006-05-05  Love Hörnquist Åstrand  <lha@it.su.se>
