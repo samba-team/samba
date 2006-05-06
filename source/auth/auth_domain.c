@@ -251,7 +251,6 @@ static NTSTATUS domain_client_validate(TALLOC_CTX *mem_ctx,
 		}
 	} else {
 		nt_status = make_server_info_info3(mem_ctx,
-						user_info->internal_username, 
 						user_info->smb_name,
 						domain,
 						server_info,
