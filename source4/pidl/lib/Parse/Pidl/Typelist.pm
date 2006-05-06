@@ -7,7 +7,7 @@ package Parse::Pidl::Typelist;
 
 require Exporter;
 @ISA = qw(Exporter);
-@EXPORT_OK = qw(hasType getType mapType);
+@EXPORT_OK = qw(hasType getType mapType scalar_is_reference);
 use vars qw($VERSION);
 $VERSION = '0.01';
 
