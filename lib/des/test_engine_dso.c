@@ -98,10 +98,12 @@ main(int argc, char **argv)
     argc -= idx;
     argv += idx;
 
-    if (argc == 0)
-	usage(1);
-
-    engine = ENGINE_by_dso(argv[0], id_flag);
+    if (argc == 0) {
+	ENGINE_load_builtin_engines();
+	engine = ENGINE_by_id("builtin");
+    } else {
+	engine = ENGINE_by_dso(argv[0], id_flag);
+    }
     if (engine == NULL)
 	errx(1, "ENGINE_by_dso failed");
 
