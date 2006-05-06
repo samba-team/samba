@@ -45,10 +45,8 @@ install-build-headers:: $(hcryptoinclude_HEADERS)
 		fi ; \
 	done
 
-
-noinst_PROGRAMS = test_engine_dso
-
-check_PROGRAMS = \
+TESTS = \
+	test_engine_dso \
 	destest \
 	mdtest \
 	rc2test  \
@@ -59,13 +57,13 @@ check_PROGRAMS = \
 	test_pkcs12 \
 	test_hmac
 
-# md5crypt_test 
+check_PROGRAMS = $(TESTS)
 
-TESTS = $(check_PROGRAMS)
 
 LDADD = $(lib_LTLIBRARIES) $(LIB_roken)
 
 libhcrypto_la_SOURCES =	\
+	$(imathsource)	\
 	aes.c		\
 	aes.h		\
 	bn.c		\
@@ -74,6 +72,7 @@ libhcrypto_la_SOURCES =	\
 	des.h		\
 	dh.c		\
 	dh.h		\
+	dh-imath.c	\
 	dsa.c		\
 	dsa.h		\
 	evp.c		\
@@ -106,6 +105,16 @@ libhcrypto_la_SOURCES =	\
 	sha256.c	\
 	ui.c		\
 	ui.h
+
+imathsource =			\
+	imath/imath.c		\
+	imath/imath.h		\
+	imath/imrat.c		\
+	imath/imrat.h		\
+	imath/iprime.c		\
+	imath/iprime.h		\
+	imath/rsamath.c		\
+	imath/rsamath.h
 
 $(libhcrypto_la_OBJECTS): hcrypto-link
 
