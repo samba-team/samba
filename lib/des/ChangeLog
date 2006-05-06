@@ -1,5 +1,7 @@
 2006-05-06  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* Makefile.am: Add imath source, add test_engine_dso to TESTS.
+
 	* engine.c: Lets say we have RSA_null_method(), not really
 	useable, but still.
 
