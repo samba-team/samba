@@ -395,8 +395,8 @@ int net_rpc_join(int argc, const char **argv)
 	}
 
 	if (strlen(global_myname()) > 15) {
-		d_printf("Our netbios name can only be 15 chars long, \"%s\""
-			 " is %d chars long\n",
+		d_printf("Our netbios name can be at most 15 chars long, "
+			 "\"%s\" is %d chars long\n",
 			 global_myname(), strlen(global_myname()));
 		return -1;
 	}
