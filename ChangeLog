@@ -1,5 +1,9 @@
 2006-05-06  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* doc/heimdal.texi: Add blob about imath.
+
+	* doc/ack.texi: Add blob about imath.
+
 	* include/make_crypto.c: Move up evp.h to please OpenSSL, from
 	Douglas E. Engert.
 

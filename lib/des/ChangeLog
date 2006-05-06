@@ -1,5 +1,7 @@
 2006-05-06  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* imath: Add imath-1.1.9
+
 	* dh.h: Expose DH_imath_method.
 
 	* Makefile.am: Add imath source, add test_engine_dso to TESTS.
