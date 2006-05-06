@@ -5,12 +5,15 @@
 @appendix Acknowledgments
 
 Eric Young wrote ``libdes''. Heimdal used to use libdes, without it
-kth-krb would never have existed. 
+kth-krb would never have existed. Since there are no longer any Eric
+Young code left in the library, we renamed it to libhcrypto.
 
-All functions in libdes have been re-implemented or used available
+All functions in libhcrypto have been re-implemented or used available
 public domain code. The core AES function where written by Vincent
 Rijmen, Antoon Bosselaers and Paulo Barreto.  The core DES SBOX
-transformation was written by Richard Outerbridge.
+transformation was written by Richard Outerbridge. @code{imath} that
+is used for public key crypto support is written by Michael
+J. Fromberger.
 
 The University of California at Berkeley initially wrote @code{telnet},
 and @code{telnetd}.  The authentication and encryption code of
