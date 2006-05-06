@@ -57,7 +57,6 @@ kcm_access(krb5_context context,
     case KCM_OP_CHMOD:
     case KCM_OP_GET_INITIAL_TICKET:
     case KCM_OP_GET_TICKET:
-    case KCM_OP_CC_SET_DEFAULT:
 	write_p = 1;
 	read_p = 0;
 	break;
