@@ -216,6 +216,21 @@ add_engine(ENGINE *engine)
 void
 ENGINE_load_builtin_engines(void)
 {
+    ENGINE *engine;
+    int ret;
+
+    engine = calloc(1, sizeof(*engine));
+    if (engine == NULL)
+	return;
+
+    ENGINE_set_id(engine, "builtin");
+    ENGINE_set_name(engine, 
+		    "Heimdal crypto builtin engine version " PACKAGE_VERSION);
+    ENGINE_set_DH(engine, DH_imath_method());
+
+    ret = add_engine(engine);
+    if (ret != 1)
+	ENGINE_finish(engine);
 }
 
 ENGINE *
@@ -327,5 +342,3 @@ ENGINE_add_conf_module(void)
     }
 
 }
-
-
