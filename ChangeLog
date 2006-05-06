@@ -1,4 +1,27 @@
+2006-05-06  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* include/make_crypto.c: Move up evp.h to please OpenSSL, from
+	Douglas E. Engert.
+
+	* kcm/acl.c: Multicache kcm interation isn't done yet, let wait
+	with this enum.
+	
 2006-05-05  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/krb5_set_default_realm.3: Spelling/mdoc from Björn
+	Sandell
+
+	* lib/krb5/krb5_rcache.3: Spelling/mdoc from Björn Sandell
+
+	* lib/krb5/krb5_keytab.3: Spelling/mdoc from Björn Sandell
+
+	* lib/krb5/krb5_get_in_cred.3: Spelling/mdoc from Björn Sandell
+
+	* lib/krb5/krb5_expand_hostname.3: Spelling/mdoc from Björn
+	Sandell
+
+	* lib/krb5/krb5_c_make_checksum.3: Spelling/mdoc from Björn
+	Sandell
 
 	* lib/krb5/keytab_file.c (fkt_next_entry_int): read the 32 bit
 	kvno if the reset of the data is longer then 4 bytes in hope to be
