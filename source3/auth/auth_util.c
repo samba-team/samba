@@ -1496,7 +1496,6 @@ struct passwd *smb_getpwnam( TALLOC_CTX *mem_ctx, char *domuser,
 ***************************************************************************/
 
 NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx, 
-				const char *internal_username,
 				const char *sent_nt_username,
 				const char *domain,
 				auth_serversupplied_info **server_info, 
