@@ -111,8 +111,14 @@ main(int argc, char **argv)
     printf("id: %s\n", ENGINE_get_id(engine));
     have_rsa = ENGINE_get_RSA(engine) != NULL;
     have_dh = ENGINE_get_DH(engine) != NULL;
-    printf("RSA: %s\n", have_rsa ? "yes" : "no");
-    printf("DH: %s\n", have_dh ? "yes" : "no");
+    printf("RSA: %s", have_rsa ? "yes," : "no");
+    if (have_rsa)
+	printf(" %s", ENGINE_get_RSA(engine)->name);
+    printf("\n");
+    printf("DH: %s", have_dh ? "yes," : "no");
+    if (have_dh)
+	printf(" %s", ENGINE_get_DH(engine)->name);
+    printf("\n");
 
     if (rsa_flag && have_rsa) {
 	unsigned char buf[1024 * 4];
