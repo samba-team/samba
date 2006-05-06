@@ -271,7 +271,8 @@ static const DH_METHOD dh_null_method = {
     dh_null_generate_params
 };
 
-static const DH_METHOD *dh_default_method = &dh_null_method;
+extern const DH_METHOD hc_dh_imath_method;
+static const DH_METHOD *dh_default_method = &hc_dh_imath_method;
 
 const DH_METHOD *
 DH_null_method(void)
