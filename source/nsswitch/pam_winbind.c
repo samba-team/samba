@@ -191,7 +191,7 @@ static int _make_remark(pam_handle_t * pamh, int type, const char *text)
 	struct pam_response *resp;
 	
 	pmsg[0] = &msg[0];
-	msg[0].msg = text;
+	msg[0].msg = CONST_DISCARD(char *, text);
 	msg[0].msg_style = type;
 	
 	resp = NULL;
@@ -709,7 +709,7 @@ static int _winbind_read_password(pam_handle_t * pamh,
 		if (comment != NULL) {
 			pmsg[0] = &msg[0];
 			msg[0].msg_style = PAM_TEXT_INFO;
-			msg[0].msg = comment;
+			msg[0].msg = CONST_DISCARD(char *, comment);
 			i = 1;
 		} else {
 			i = 0;
@@ -717,13 +717,13 @@ static int _winbind_read_password(pam_handle_t * pamh,
 
 		pmsg[i] = &msg[i];
 		msg[i].msg_style = PAM_PROMPT_ECHO_OFF;
-		msg[i++].msg = prompt1;
+		msg[i++].msg = CONST_DISCARD(char *, prompt1);
 		replies = 1;
 
 		if (prompt2 != NULL) {
 			pmsg[i] = &msg[i];
 			msg[i].msg_style = PAM_PROMPT_ECHO_OFF;
-			msg[i++].msg = prompt2;
+			msg[i++].msg = CONST_DISCARD(char *, prompt2);
 			++replies;
 		}
 		/* so call the conversation expecting i responses */
