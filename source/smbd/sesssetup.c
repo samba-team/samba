@@ -322,7 +322,7 @@ static int reply_spnego_kerberos(connection_struct *conn,
 	if ( map_domainuser_to_guest ) {
 		make_server_info_guest(&server_info);
 	} else if (logon_info) {
-		ret = make_server_info_info3(mem_ctx, real_username, real_username, domain, 
+		ret = make_server_info_info3(mem_ctx, real_username, domain, 
 					     &server_info, &logon_info->info3);
 		if ( !NT_STATUS_IS_OK(ret) ) {
 			DEBUG(1,("make_server_info_info3 failed: %s!\n",
