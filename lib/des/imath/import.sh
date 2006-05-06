@@ -13,7 +13,7 @@ rm *.[ch]
 headers=`grep ^HDRS "$dir"/Makefile |sed 's/^HDRS=//' | sed 's/imdrover.h//'`
 code=`echo $headers | sed 's/\.h/.c/g'`
 
-for a in $headers $code ; do
+for a in $headers $code LICENSE ; do
     cp "$dir"/"$a" .
 done
 
