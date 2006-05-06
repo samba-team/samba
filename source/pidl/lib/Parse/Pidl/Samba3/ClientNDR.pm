@@ -15,13 +15,16 @@ use Parse::Pidl::Samba3::Types qw(DeclLong);
 use vars qw($VERSION);
 $VERSION = '0.01';
 
-my $res = "";
+my $res;
+my $res_hdr;
 my $tabs = "";
 sub indent() { $tabs.="\t"; }
 sub deindent() { $tabs = substr($tabs, 1); }
 sub pidl($) { $res .= $tabs.(shift)."\n"; }
+sub pidl_hdr($) { $res_hdr .= (shift)."\n"; }
 sub fatal($$) { my ($e,$s) = @_; die("$e->{ORIGINAL}->{FILE}:$e->{ORIGINAL}->{LINE}: $s\n"); }
 sub warning($$) { my ($e,$s) = @_; warn("$e->{ORIGINAL}->{FILE}:$e->{ORIGINAL}->{LINE}: $s\n"); }
+sub fn_declare($) { my ($n) = @_; pidl $n; pidl_hdr "$n;"; }
 
 sub CopyLevel($$$$)
 {
@@ -51,12 +54,12 @@ sub ParseFunction($$)
 	my $inargs = "";
 	my $defargs = "";
 	my $uif = uc($if->{NAME});
-	my $ufn = uc($fn->{NAME});
+	my $ufn = "DCERPC_".uc($fn->{NAME});
 
 	foreach (@{$fn->{ELEMENTS}}) {
 		$defargs .= ", " . DeclLong($_);
 	}
-	pidl "NTSTATUS rpccli_$fn->{NAME}(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx$defargs)";
+	fn_declare "NTSTATUS rpccli_$fn->{NAME}(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx$defargs)";
 	pidl "{";
 	indent;
 	pidl "struct $fn->{NAME} r;";
@@ -79,10 +82,7 @@ sub ParseFunction($$)
 	foreach my $e (@{$fn->{ELEMENTS}}) {
 		next unless (grep(/out/, @{$e->{DIRECTION}}));
 
-		if ($e->{LEVELS}[0]->{TYPE} ne "POINTER") {
-			warning($e, "First element not a pointer for [out] argument");
-			next;
-		}
+		fatal($e, "[out] argument is not a pointer") if ($e->{LEVELS}[0]->{TYPE} ne "POINTER");
 
 		CopyLevel($e, $e->{LEVELS}[1], $e->{NAME}, "r.out.$e->{NAME}");
 	}
@@ -109,7 +109,12 @@ sub ParseInterface($)
 {
 	my $if = shift;
 
+	my $uif = uc($if->{NAME});
+
+	pidl_hdr "#ifndef __CLI_$uif\__";
+	pidl_hdr "#define __CLI_$uif\__";
 	ParseFunction($if, $_) foreach (@{$if->{FUNCTIONS}});
+	pidl_hdr "#endif /* __CLI_$uif\__ */";
 }
 
 sub Parse($$)
@@ -117,6 +122,7 @@ sub Parse($$)
 	my($ndr,$filename) = @_;
 
 	$res = "";
+	$res_hdr = "";
 
 	pidl "/*";
 	pidl " * Unix SMB/CIFS implementation.";
@@ -130,7 +136,7 @@ sub Parse($$)
 		ParseInterface($_) if ($_->{TYPE} eq "INTERFACE");
 	}
 
-	return $res;
+	return ($res, $res_hdr);
 }
 
 1;

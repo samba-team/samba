@@ -808,9 +808,12 @@ $dcom
 	}
 
 	if (defined($opt_samba3_ndr_client)) {
-		my $header = ($opt_samba3_ndr_client or "$outputdir/cli_$basename.c");
+		my $client = ($opt_samba3_ndr_client or "$outputdir/cli_$basename.c");
+		my $header = $client; $header =~ s/\.c$/\.h/;
 		require Parse::Pidl::Samba3::ClientNDR;
-		FileSave($header, Parse::Pidl::Samba3::ClientNDR::Parse($ndr, $basename));
+		my ($c_code,$h_code) = Parse::Pidl::Samba3::ClientNDR::Parse($ndr, $basename);
+		FileSave($client, $c_code);
+		FileSave($header, $h_code);
 	}
 
 
