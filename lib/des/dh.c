@@ -149,6 +149,14 @@ DH_generate_parameters_ex(DH *dh, int prime_len, int generator, BN_GENCB *cb)
     return 0;
 }
 
+/*
+ * Check that
+ *
+ * 	pub_key > 1    and    pub_key < p - 1
+ *
+ * to avoid small subgroups attack.
+ */
+
 int
 DH_check_pubkey(const DH *dh, const BIGNUM *pub_key, int *codes)
 {
@@ -166,9 +174,6 @@ DH_check_pubkey(const DH *dh, const BIGNUM *pub_key, int *codes)
 
     if (BN_cmp(bn, pub_key) >= 0)
 	*codes |= DH_CHECK_PUBKEY_TOO_SMALL;
-
-    if (!BN_set_word(bn, 2))
-	goto out;
 
     sum = BN_new();
     if (sum == NULL)
