@@ -50,14 +50,14 @@ static int version_flag;
 static int help_flag;
 static char *id_flag;
 static char *rsa_flag;
-static int dh_flag;
+static int dh_flag = 1;
 
 static struct getargs args[] = {
     { "id",		0,	arg_string,	&id_flag,
       "selects the engine id", 	"engine-id" },
     { "rsa",		0,	arg_string,	&rsa_flag,
       "tests RSA modes", 	"private-rsa-der-file" },
-    { "dh",		0,	arg_flag,	&dh_flag,
+    { "dh",		0,	arg_negative_flag,	&dh_flag,
       "test dh", NULL },
     { "version",	0,	arg_flag,	&version_flag,
       "print version", NULL },
@@ -239,7 +239,7 @@ main(int argc, char **argv)
 	DH_free(server);
 	DH_free(client);
 
-	printf("dh test passed\n");
+	printf("DH test passed\n");
     }
 
     ENGINE_finish(engine);
