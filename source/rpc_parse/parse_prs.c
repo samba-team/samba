@@ -1792,3 +1792,32 @@ BOOL schannel_decode(struct schannel_auth_struct *a, enum pipe_auth_level auth_l
 	return (memcmp(digest_final, verf->packet_digest, 
 		       sizeof(verf->packet_digest)) == 0);
 }
+
+/*******************************************************************
+creates a new prs_struct containing a DATA_BLOB
+********************************************************************/
+BOOL prs_init_data_blob(prs_struct *prs, DATA_BLOB *blob, TALLOC_CTX *mem_ctx)
+{
+	if (!prs_init( prs, RPC_MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL ))
+		return False;
+
+
+	if (!prs_copy_data_in(prs, (char *)blob->data, blob->length))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+return the contents of a prs_struct in a DATA_BLOB
+********************************************************************/
+BOOL prs_data_blob(prs_struct *prs, DATA_BLOB *blob, TALLOC_CTX *mem_ctx)
+{
+	blob->length = prs_offset(prs);
+	blob->data = talloc_zero_size(mem_ctx, blob->length);
+
+	if (!prs_copy_all_data_out((char *)blob->data, prs))
+		return False;
+	
+	return True;
+}
