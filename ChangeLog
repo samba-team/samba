@@ -1,5 +1,8 @@
 2006-05-06  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kdc/pkinit.c: Don't call DH_check_pubkey, it doesn't exists in
+	older OpenSSL.
+
 	* doc/heimdal.texi: Add blob about imath.
 
 	* doc/ack.texi: Add blob about imath.
