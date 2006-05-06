@@ -7,10 +7,9 @@
 package Parse::Pidl::Samba3::ClientNDR;
 
 use strict;
-use Parse::Pidl::Typelist qw(hasType getType mapType);
-use Parse::Pidl::Util qw(has_property ParseExpr);
+use Parse::Pidl::Typelist qw(hasType getType mapType scalar_is_reference);
+use Parse::Pidl::Util qw(has_property ParseExpr is_constant);
 use Parse::Pidl::NDR qw(GetPrevLevel GetNextLevel ContainsDeferred);
-use Parse::Pidl::Samba3::Types qw(DeclLong);
 
 use vars qw($VERSION);
 $VERSION = '0.01';
@@ -47,6 +46,42 @@ sub CopyLevel($$$$)
 	}
 }
 
+sub DeclLong($)
+{
+	my($element) = shift;
+	my $ret = "";
+
+	if (has_property($element, "represent_as")) {
+		$ret.=mapType($element->{PROPERTIES}->{represent_as})." ";
+	} else {
+		if (has_property($element, "charset")) {
+			$ret.="const char";
+		} else {
+			$ret.=mapType($element->{TYPE});
+		}
+
+		$ret.=" ";
+		my $numstar = $element->{ORIGINAL}->{POINTERS};
+		if ($numstar >= 1) {
+			$numstar-- if scalar_is_reference($element->{TYPE});
+		}
+		foreach (@{$element->{ORIGINAL}->{ARRAY_LEN}})
+		{
+			next if is_constant($_) and 
+				not has_property($element, "charset");
+			$numstar++;
+		}
+		$ret.="*" foreach (1..$numstar);
+	}
+	$ret.=$element->{NAME};
+	foreach (@{$element->{ARRAY_LEN}}) {
+		next unless (is_constant($_) and not has_property($element, "charset"));
+		$ret.="[$_]";
+	}
+
+	return $ret;
+}
+
 sub ParseFunction($$)
 {
 	my ($if,$fn) = @_;
@@ -73,7 +108,7 @@ sub ParseFunction($$)
 		} 
 	}
 
-	pidl "status = cli_do_rpc_ndr(cli, mem_ctx, PI_$uif, $ufn, &r, ndr_pull_$fn->{NAME}, ndr_push_$fn->{NAME});";
+	pidl "status = cli_do_rpc_ndr(cli, mem_ctx, PI_$uif, $ufn, &r, (ndr_pull_flags_fn_t)ndr_pull_$fn->{NAME}, (ndr_push_flags_fn_t)ndr_push_$fn->{NAME});";
 	pidl "if (NT_STATUS_IS_ERR(status)) {";
 	pidl "\treturn status;";
 	pidl "}";
@@ -92,9 +127,9 @@ sub ParseFunction($$)
 	if (not $fn->{RETURN_TYPE}) {
 		pidl "return NT_STATUS_OK;";
 	} elsif ($fn->{RETURN_TYPE} eq "NTSTATUS") {
-		pidl "return r.status;";
+		pidl "return r.out.result;";
 	} elsif ($fn->{RETURN_TYPE} eq "WERROR") {
-		pidl "return werror_to_ntstatus(r.status);";
+		pidl "return werror_to_ntstatus(r.out.result);";
 	} else {
 		pidl "/* Sorry, don't know how to convert $fn->{RETURN_TYPE} to NTSTATUS */";
 		pidl "return NT_STATUS_OK;";
@@ -117,9 +152,9 @@ sub ParseInterface($)
 	pidl_hdr "#endif /* __CLI_$uif\__ */";
 }
 
-sub Parse($$)
+sub Parse($$$)
 {
-	my($ndr,$filename) = @_;
+	my($ndr,$header,$ndr_header) = @_;
 
 	$res = "";
 	$res_hdr = "";
@@ -130,6 +165,8 @@ sub Parse($$)
 	pidl " */";
 	pidl "";
 	pidl "#include \"includes.h\"";
+	pidl "#include \"$header\"";
+	pidl_hdr "#include \"$ndr_header\"";
 	pidl "";
 	
 	foreach (@$ndr) {
