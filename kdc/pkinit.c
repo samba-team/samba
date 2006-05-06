@@ -266,7 +266,6 @@ get_dh_param(krb5_context context,
     DomainParameters dhparam;
     DH *dh = NULL;
     krb5_error_code ret;
-    int dhret;
 
     memset(&dhparam, 0, sizeof(dhparam));
 
@@ -342,14 +341,6 @@ get_dh_param(krb5_context context,
 	free_heim_integer(&glue);
 	if (client_params->dh_public_key == NULL)
 	    goto out;
-    }
-
-
-    if (DH_check_pubkey(dh, client_params->dh_public_key, &dhret) != 1 ||
-	dhret != 0) {
-	krb5_set_error_string(context, "PKINIT DH data not ok");
-	ret = KRB5_KDC_ERR_DH_KEY_PARAMETERS_NOT_ACCEPTED;
-	goto out;
     }
 
     client_params->dh = dh;
