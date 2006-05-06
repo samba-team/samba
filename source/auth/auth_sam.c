@@ -349,6 +349,8 @@ static NTSTATUS check_sam_security(const struct auth_context *auth_context,
 				 lm_sess_key.length);
 	data_blob_free(&lm_sess_key);
 
+	(*server_info)->was_mapped |= user_info->was_mapped;
+
 	return nt_status;
 }
 
