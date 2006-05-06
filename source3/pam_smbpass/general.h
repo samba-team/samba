@@ -50,10 +50,6 @@ typedef struct {
 #define set(x,ctrl)   (ctrl = ((ctrl)&smb_args[x].mask)|smb_args[x].flag)
 #define unset(x,ctrl) (ctrl &= ~(smb_args[x].flag))
 
-#ifndef __linux__
-#define strncasecmp(s1,s2,n) StrnCaseCmp(s1,s2,n)
-#endif
-
 /* the generic mask */
 #define _ALL_ON_  (~0U)
 
