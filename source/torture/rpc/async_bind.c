@@ -51,7 +51,7 @@ BOOL torture_async_bind(struct torture_context *torture)
 	const struct dcerpc_interface_table **table;
 
 	if (!lp_parm_bool(-1, "torture", "async", False)) {
-		printf("async bind test disabled - enable dangerous tests to use\n");
+		printf("async bind test disabled - enable async tests to use\n");
 		return True;
 	}
 	
