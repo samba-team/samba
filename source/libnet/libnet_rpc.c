@@ -70,13 +70,18 @@ static struct composite_context* libnet_RpcConnectSrv_send(struct libnet_context
 	case LIBNET_RPC_CONNECT_DC:
 	case LIBNET_RPC_CONNECT_PDC:
 	case LIBNET_RPC_CONNECT_SERVER:
-	case LIBNET_RPC_CONNECT_DC_INFO:
 		s->binding = talloc_asprintf(s, "ncacn_np:%s", r->in.name);
 		break;
 
 	case LIBNET_RPC_CONNECT_BINDING:
 		s->binding = talloc_strdup(s, r->in.binding);
 		break;
+
+	case LIBNET_RPC_CONNECT_DC_INFO:
+		/* this should never happen - DC_INFO level has a separate
+		   composite function */
+		composite_error(c, NT_STATUS_INVALID_LEVEL);
+		return c;
 	}
 
 	/* connect to remote dcerpc pipe */
@@ -346,6 +351,7 @@ static struct composite_context* libnet_RpcConnectDCInfo_send(struct libnet_cont
 	struct composite_context *c, *conn_req;
 	struct rpc_connect_dci_state *s;
 
+	/* composite context allocation and setup */
 	c = talloc_zero(mem_ctx, struct composite_context);
 	if (c == NULL) return NULL;
 
@@ -369,6 +375,7 @@ static struct composite_context* libnet_RpcConnectDCInfo_send(struct libnet_cont
 		s->rpc_conn.level      = LIBNET_RPC_CONNECT_BINDING;
 	}
 
+	/* we need to query information on lsarpc interface first */
 	s->rpc_conn.in.dcerpc_iface    = &dcerpc_table_lsarpc;
 	
 	/* request connection to the lsa pipe on the pdc */
@@ -376,7 +383,6 @@ static struct composite_context* libnet_RpcConnectDCInfo_send(struct libnet_cont
 	if (composite_nomem(c, conn_req)) return c;
 
 	composite_continue(c, conn_req, continue_dci_rpc_connect, c);
-
 	return c;
 }
 
@@ -400,21 +406,22 @@ static void continue_dci_rpc_connect(struct composite_context *ctx)
 		return;
 	}
 
+	/* prepare to open a policy handle on lsa pipe */
 	s->lsa_pipe = s->ctx->pipe;
 	
-	s->qos.len = 0;
+	s->qos.len                 = 0;
 	s->qos.impersonation_level = 2;
-	s->qos.context_mode = 1;
-	s->qos.effective_only = 0;
+	s->qos.context_mode        = 1;
+	s->qos.effective_only      = 0;
 
 	s->attr.sec_qos = &s->qos;
 
-	s->lsa_open_policy.in.attr = &s->attr;
+	s->lsa_open_policy.in.attr        = &s->attr;
 	s->lsa_open_policy.in.system_name = talloc_asprintf(c, "\\");
 	if (composite_nomem(s->lsa_open_policy.in.system_name, c)) return;
 
 	s->lsa_open_policy.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
-	s->lsa_open_policy.out.handle = &s->lsa_handle;
+	s->lsa_open_policy.out.handle     = &s->lsa_handle;
 
 	open_pol_req = dcerpc_lsa_OpenPolicy2_send(s->lsa_pipe, c, &s->lsa_open_policy);
 	if (composite_nomem(open_pol_req, c)) return;
@@ -442,6 +449,7 @@ static void continue_lsa_policy(struct rpc_request *req)
 		return;
 	}
 
+	/* query lsa info for dns domain name and guid */
 	s->lsa_query_info2.in.handle = &s->lsa_handle;
 	s->lsa_query_info2.in.level  = LSA_POLICY_INFO_DNS;
 
@@ -466,6 +474,11 @@ static void continue_lsa_query_info2(struct rpc_request *req)
 	s = talloc_get_type(c->private_data, struct rpc_connect_dci_state);
 
 	c->status = dcerpc_ndr_request_recv(req);
+	
+	/* In case of error just null the realm and guid and proceed
+	   to the next step. After all, it doesn't have to be AD domain
+	   controller we talking to - NT-style PDC also counts */
+
 	if (NT_STATUS_EQUAL(c->status, NT_STATUS_NET_WRITE_FAULT)) {
 		s->r.out.realm = NULL;
 		s->r.out.guid  = NULL;
@@ -479,6 +492,8 @@ static void continue_lsa_query_info2(struct rpc_request *req)
 			return;
 		}
 
+		/* Copy the dns domain name and guid from the query result */
+
 		/* this should actually be a conversion from lsa_StringLarge */
 		s->r.out.realm = s->lsa_query_info2.out.info->dns.dns_domain.string;
 		s->r.out.guid  = talloc(c, struct GUID);
@@ -489,6 +504,7 @@ static void continue_lsa_query_info2(struct rpc_request *req)
 		*s->r.out.guid = s->lsa_query_info2.out.info->dns.domain_guid;
 	}
 
+	/* query lsa info for domain name and sid */
 	s->lsa_query_info.in.handle = &s->lsa_handle;
 	s->lsa_query_info.in.level  = LSA_POLICY_INFO_DOMAIN;
 
@@ -520,9 +536,12 @@ static void continue_lsa_query_info(struct rpc_request *req)
 		return;
 	}
 
+	/* Copy the domain name and sid from the query result */
 	s->r.out.domain_sid  = s->lsa_query_info.out.info->domain.sid;
 	s->r.out.domain_name = s->lsa_query_info.out.info->domain.name.string;
 
+
+	/* prepare to get endpoint mapping for the requested interface */
 	s->final_binding = talloc(s, struct dcerpc_binding);
 	if (composite_nomem(s->final_binding, c)) return;
 	
@@ -540,7 +559,8 @@ static void continue_lsa_query_info(struct rpc_request *req)
 
 /*
   Step 6 of RpcConnectDCInfo: Receive endpoint mapping and create secondary
-  lsa pipe connection derived from already used pipe
+  rpc connection derived from already used pipe but connected to the requested
+  one (as specified in libnet_RpcConnect structure)
 */
 static void continue_epm_map_binding(struct composite_context *ctx)
 {
@@ -558,7 +578,8 @@ static void continue_epm_map_binding(struct composite_context *ctx)
 		composite_error(c, c->status);
 		return;
 	}
-	
+
+	/* create secondary connection derived from lsa pipe */
 	sec_conn_req = dcerpc_secondary_connection_send(s->lsa_pipe, s->final_binding);
 	if (composite_nomem(sec_conn_req, c)) return;
 
@@ -646,13 +667,10 @@ struct composite_context* libnet_RpcConnect_send(struct libnet_context *ctx,
 
 	switch (r->level) {
 	case LIBNET_RPC_CONNECT_SERVER:
-		c = libnet_RpcConnectSrv_send(ctx, mem_ctx, r);
-		break;
-
 	case LIBNET_RPC_CONNECT_BINDING:
 		c = libnet_RpcConnectSrv_send(ctx, mem_ctx, r);
 		break;
-			
+
 	case LIBNET_RPC_CONNECT_PDC:
 	case LIBNET_RPC_CONNECT_DC:
 		c = libnet_RpcConnectDC_send(ctx, mem_ctx, r);
