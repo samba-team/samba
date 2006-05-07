@@ -82,12 +82,7 @@ int net_run_usage(struct net_context *ctx,
 			const struct net_functable *functable)
 {
 	int i;
-/*
-	if (argc < 1) {
-		d_printf("net_run_usage: TODO (argc < 1)\n");
-		return 1;
-	}
-*/
+
 	for (i=0; functable[i].name; i++) {
 		if (strcasecmp_m(argv[0], functable[i].name) == 0)
 			if (functable[i].usage) {
@@ -107,7 +102,7 @@ static const struct net_functable net_functable[] = {
 	{"time", "get remote server's time\n", net_time, net_time_usage},
 	{"join", "join a domain\n", net_join, net_join_usage},
 	{"samdump", "dump the sam of a domain\n", net_samdump, net_samdump_usage},
-	{"samsync", "syncrosnise into the local ldb the sam of a domain\n", net_samsync_ldb, net_samsync_ldb_usage},
+	{"samsync", "synchronise into the local ldb the sam of a domain\n", net_samsync_ldb, net_samsync_ldb_usage},
 	{"user", "manage user accounts\n", net_user, net_user_usage},
 	{NULL, NULL, NULL, NULL}
 };
