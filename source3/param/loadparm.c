@@ -56,7 +56,6 @@
 BOOL in_client = False;		/* Not in the client by default */
 BOOL bLoaded = False;
 
-extern userdom_struct current_user_info;
 extern pstring user_socket_options;
 extern enum protocol_types Protocol;
 
