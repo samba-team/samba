@@ -1,4 +1,12 @@
+2006-05-07  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/crypto.c (create_checksum): provide a error message
+	that a key checksum needs a key.  From Andew Bartlett.
+	
 2006-05-06  Love Hörnquist Åstrand  <lha@it.su.se>
+	
+	* lib/krb5/pkinit.c: Now that hcrypto supports DH, remove check
+	for hx509 null DH.
 
 	* kdc/pkinit.c: Don't call DH_check_pubkey, it doesn't exists in
 	older OpenSSL.
