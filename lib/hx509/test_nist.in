@@ -37,7 +37,7 @@
 srcdir="@srcdir@"
 nistdir=/sources/pki/nist/PKITS_data
 
-if ./hxtool info | grep 'rsa: hx509 null RSA' > /dev/null ; then
+if ./hxtool info | grep 'rsa: hcrypto null RSA' > /dev/null ; then
     exit 77
 fi
 

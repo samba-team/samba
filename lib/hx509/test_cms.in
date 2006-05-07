@@ -36,7 +36,7 @@
 
 srcdir="@srcdir@"
 
-if ./hxtool info | grep 'rsa: hx509 null RSA' > /dev/null ; then
+if ./hxtool info | grep 'rsa: hcrypto null RSA' > /dev/null ; then
     exit 77
 fi
 
