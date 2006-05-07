@@ -28,8 +28,6 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
 
-extern userdom_struct current_user_info;
-
 static BOOL fillup_pw_field(const char *lp_template, 
 			    const char *username, 
 			    const char *domname,
@@ -109,11 +107,6 @@ static BOOL winbindd_fill_pwent(char *dom_name, char *user_name,
 	   defaults are /tmp for the home directory and /bin/false for
 	   shell. */
 	
-	/* The substitution of %U and %D in the 'template homedir' is done
-	   by alloc_sub_specified() below. */
-
-	fstrcpy(current_user_info.domain, dom_name);
-
 	if (!fillup_pw_field(lp_template_homedir(), user_name, dom_name, 
 			     pw->pw_uid, pw->pw_gid, homedir, pw->pw_dir))
 		return False;
@@ -292,8 +285,6 @@ static void getpwsid_sid2gid_recv(void *private_data, BOOL success, gid_t gid)
 	fill_domain_username(output_username, s->domain->name, s->username, True); 
 	safe_strcpy(pw->pw_name, output_username, sizeof(pw->pw_name) - 1);
 	safe_strcpy(pw->pw_gecos, s->fullname, sizeof(pw->pw_gecos) - 1);
-
-	fstrcpy(current_user_info.domain, s->domain->name);
 
 	if (!fillup_pw_field(lp_template_homedir(), s->username, s->domain->name, 
 			     pw->pw_uid, pw->pw_gid, s->homedir, pw->pw_dir)) {
