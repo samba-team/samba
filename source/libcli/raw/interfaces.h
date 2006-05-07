@@ -52,6 +52,8 @@ struct smb2_handle {
 	uint64_t data[2];
 };
 
+struct ntvfs_handle;
+
 /*
  * a generic container for file handles or file pathes
  * for qfileinfo/setfileinfo and qpathinfo/setpathinfo
@@ -72,18 +74,17 @@ union smb_handle_or_path {
 	 * this is used as file handle in SMB2
 	 */
 	struct smb2_handle handle;
+
+	/*
+	 * this is used as generic file handle for the NTVFS layer
+	 */
+	struct ntvfs_handle *ntvfs;
 };
 
 /*
  a generic container for file handles
 */
 union smb_handle {
-	/*
-	 * this is used for
-	 * the qpathinfo and setpathinfo
-	 * calls
-	 */
-	const char *path;
 	/*
 	 * this is used as file handle in SMB
 	 */
@@ -93,6 +94,11 @@ union smb_handle {
 	 * this is used as file handle in SMB2
 	 */
 	struct smb2_handle handle;
+
+	/*
+	 * this is used as generic file handle for the NTVFS layer
+	 */
+	struct ntvfs_handle *ntvfs;
 };
 
 /*
@@ -111,7 +117,7 @@ union smb_seek {
 		struct {
 			int32_t offset;
 		} out;
-	} lseek;
+	} lseek, generic;
 };
 
 /* struct used in unlink() call */
@@ -1681,7 +1687,7 @@ union smb_flush {
 		struct {
 			union smb_handle file;
 		} in;
-	} flush;
+	} flush, generic;
 };
 
 
