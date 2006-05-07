@@ -77,6 +77,7 @@ gsskrb5_is_cfx(gss_ctx_id_t context_handle, int *is_cfx)
 {
     krb5_keyblock *key;
     int acceptor = (context_handle->more_flags & LOCAL) == 0;
+    *is_cfx = 0;
 
     if (acceptor) {
 	if (context_handle->auth_context->local_subkey)
@@ -403,9 +404,10 @@ gsskrb5_acceptor_start
 					crypto, KRB5_KU_AP_REQ_AUTH_CKSUM, NULL, 0,
 					authenticator->cksum);
 	    krb5_free_authenticator(gssapi_krb5_context, &authenticator);
+	    krb5_crypto_destroy(gssapi_krb5_context, crypto);
 
 	    if(kret) {
-		ret = GSS_S_FAILURE;
+		ret = GSS_S_BAD_SIG;
 		*minor_status = kret;
 		gssapi_krb5_set_error_string ();
 		return ret;
