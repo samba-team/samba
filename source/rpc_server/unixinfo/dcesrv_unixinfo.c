@@ -34,6 +34,7 @@ static NTSTATUS unixinfo_SidToUid(struct dcesrv_call_state *dce_call,
 				  TALLOC_CTX *mem_ctx,
 				  struct unixinfo_SidToUid *r)
 {
+	NTSTATUS status;
 	struct sidmap_context *sidmap;
 	uid_t uid;
 
@@ -43,13 +44,11 @@ static NTSTATUS unixinfo_SidToUid(struct dcesrv_call_state *dce_call,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	r->out.result = sidmap_sid_to_unixuid(sidmap, &r->in.sid, &uid);
+	status = sidmap_sid_to_unixuid(sidmap, &r->in.sid, &uid);
+	NT_STATUS_NOT_OK_RETURN(status);
 
-	if (NT_STATUS_IS_OK(r->out.result)) {
-		r->out.uid = uid;
-	}
-
-	return r->out.result;
+	*r->out.uid = uid;
+	return NT_STATUS_OK;
 }
 
 static NTSTATUS unixinfo_UidToSid(struct dcesrv_call_state *dce_call,
@@ -72,15 +71,14 @@ static NTSTATUS unixinfo_UidToSid(struct dcesrv_call_state *dce_call,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	r->out.sid = NULL;
-	r->out.result = sidmap_uid_to_sid(sidmap, mem_ctx, uid, &r->out.sid);
-	return r->out.result;
+	return sidmap_uid_to_sid(sidmap, mem_ctx, uid, &r->out.sid);
 }
 
 static NTSTATUS unixinfo_SidToGid(struct dcesrv_call_state *dce_call,
 				  TALLOC_CTX *mem_ctx,
 				  struct unixinfo_SidToGid *r)
 {
+	NTSTATUS status;
 	struct sidmap_context *sidmap;
 	gid_t gid;
 
@@ -90,13 +88,11 @@ static NTSTATUS unixinfo_SidToGid(struct dcesrv_call_state *dce_call,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	r->out.result = sidmap_sid_to_unixgid(sidmap, &r->in.sid, &gid);
+	status = sidmap_sid_to_unixgid(sidmap, &r->in.sid, &gid);
+	NT_STATUS_NOT_OK_RETURN(status);
 
-	if (NT_STATUS_IS_OK(r->out.result)) {
-		r->out.gid = gid;
-	}
-
-	return r->out.result;
+	*r->out.gid = gid;
+	return NT_STATUS_OK;
 }
 
 static NTSTATUS unixinfo_GidToSid(struct dcesrv_call_state *dce_call,
@@ -119,9 +115,7 @@ static NTSTATUS unixinfo_GidToSid(struct dcesrv_call_state *dce_call,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	r->out.sid = NULL;
-	r->out.result = sidmap_gid_to_sid(sidmap, mem_ctx, gid, &r->out.sid);
-	return r->out.result;
+	return sidmap_gid_to_sid(sidmap, mem_ctx, gid, &r->out.sid);
 }
 
 static NTSTATUS unixinfo_GetPWUid(struct dcesrv_call_state *dce_call,
@@ -130,17 +124,14 @@ static NTSTATUS unixinfo_GetPWUid(struct dcesrv_call_state *dce_call,
 {
 	int i;
 
+	*r->out.count = 0;
+
 	r->out.infos = talloc_zero_array(mem_ctx, struct unixinfo_GetPWUidInfo,
-					 r->in.count);
-	if (r->out.infos == NULL) {
-		DEBUG(0, ("talloc failed\n"));
-		return NT_STATUS_NO_MEMORY;
-	}
+					 *r->in.count);
+	NT_STATUS_HAVE_NO_MEMORY(r->out.infos);
+	*r->out.count = *r->in.count;
 
-	r->out.result = NT_STATUS_OK;
-	r->out.count = r->in.count;
-
-	for (i=0; i<r->in.count; i++) {
+	for (i=0; i < *r->in.count; i++) {
 		uid_t uid;
 		struct passwd *pwd;
 
