@@ -260,7 +260,7 @@ dh_null_generate_params(DH *dh, int prime_num, int len, BN_GENCB *cb)
 }
 
 static const DH_METHOD dh_null_method = {
-    "hx509 null DH",
+    "hcrypto null DH",
     dh_null_generate_key,
     dh_null_compute_key,
     NULL,

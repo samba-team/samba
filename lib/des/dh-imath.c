@@ -195,7 +195,7 @@ dh_finish(DH *dh)
  */
 
 const DH_METHOD hc_dh_imath_method = {
-    "hx509 imath DH",
+    "hcrypto imath DH",
     dh_generate_key,
     dh_compute_key,
     NULL,
