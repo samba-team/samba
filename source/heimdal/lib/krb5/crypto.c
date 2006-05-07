@@ -2042,7 +2042,8 @@ verify_checksum(krb5_context context,
     }
     keyed_checksum = (ct->flags & F_KEYED) != 0;
     if(keyed_checksum && crypto == NULL) {
-	krb5_clear_error_string (context);
+	krb5_set_error_string (context, "checksum type %s is keyed, and requires a crypto context",
+			       ct->name);
 	return KRB5_PROG_SUMTYPE_NOSUPP; /* XXX */
     }
     if(keyed_checksum)
