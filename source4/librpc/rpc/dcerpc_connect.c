@@ -764,7 +764,7 @@ static void continue_pipe_auth(struct composite_context *ctx)
 						      struct composite_context);
 	struct pipe_connect_state *s = talloc_get_type(c->private_data, struct pipe_connect_state);
 
-	c->status = dcerpc_pipe_auth_recv(ctx, s, &s->pipe);
+	c->status = dcerpc_pipe_auth_recv(s, &s->pipe);
 	if (!composite_is_ok(c)) return;
 
 	composite_done(c);
@@ -1170,7 +1170,8 @@ NTSTATUS dcerpc_secondary_connection_recv(struct composite_context *c,
 	s = talloc_get_type(c->private_data, struct sec_conn_state);
 
 	if (NT_STATUS_IS_OK(status)) {
-		*p2 = talloc_steal(s->pipe, s->pipe2);
+		talloc_steal(s->pipe, s->pipe2);
+		*p2 = s->pipe2;
 	}
 
 	talloc_free(c);

@@ -490,6 +490,20 @@ static NTSTATUS dcerpc_map_reason(uint16_t reason)
 }
 
 /*
+  map a fault reason to a NTSTATUS
+*/
+static NTSTATUS dcerpc_map_fault(uint32_t status)
+{
+	switch (status) {
+	case DCERPC_FAULT_OP_RNG_ERROR:
+		return NT_STATUS_ILLEGAL_FUNCTION;
+	case DCERPC_FAULT_ACCESS_DENIED:
+		return NT_STATUS_ACCESS_DENIED;
+	}
+	return NT_STATUS_NET_WRITE_FAULT;
+}
+
+/*
   mark the dcerpc connection dead. All outstanding requests get an error
 */
 static void dcerpc_connection_dead(struct dcerpc_connection *conn, NTSTATUS status)
@@ -555,27 +569,19 @@ static void dcerpc_recv_data(struct dcerpc_connection *conn, DATA_BLOB *blob, NT
 		dcerpc_connection_dead(conn, status);
 	}
 
-	switch (pkt.ptype) {
-	case DCERPC_PKT_BIND_NAK:
-	case DCERPC_PKT_BIND_ACK:
-		if (conn->bind_private) {
-			talloc_steal(conn->bind_private, blob->data);
-			dcerpc_bind_recv_data(conn, &pkt);
-		}
-		break;
-
-	case DCERPC_PKT_ALTER_RESP:
-		if (conn->alter_private) {
-			talloc_steal(conn->alter_private, blob->data);
-			dcerpc_alter_recv_data(conn, &pkt);
-		}
-		break;
-
-	default:
-		/* assume its an ordinary request */
-		dcerpc_request_recv_data(conn, blob, &pkt);
-		break;
+	if (conn->bind_private) {
+		talloc_steal(conn->bind_private, blob->data);
+		dcerpc_bind_recv_data(conn, &pkt);
+		return;
 	}
+	if (conn->alter_private) {
+		talloc_steal(conn->alter_private, blob->data);
+		dcerpc_alter_recv_data(conn, &pkt);
+		return;
+	}
+
+	/* assume its an ordinary request */
+	dcerpc_request_recv_data(conn, blob, &pkt);
 }
 
 
@@ -590,6 +596,13 @@ static void dcerpc_bind_recv_data(struct dcerpc_connection *conn, struct ncacn_p
 
 	/* mark the connection as not waiting for a bind reply */
 	conn->bind_private = NULL;
+
+	if (pkt->ptype == DCERPC_PKT_FAULT) {
+		DEBUG(2,("dcerpc: bind faulted: reason %s\n",
+			 dcerpc_errstr(c, pkt->u.fault.status)));
+		composite_error(c, dcerpc_map_fault(pkt->u.fault.status));
+		return;
+	}
 
 	if (pkt->ptype == DCERPC_PKT_BIND_NAK) {
 		DEBUG(2,("dcerpc: bind_nak reason %d\n",
@@ -1527,6 +1540,13 @@ static void dcerpc_alter_recv_data(struct dcerpc_connection *conn, struct ncacn_
 
 	/* mark the connection as not waiting for a alter context reply */
 	conn->alter_private = NULL;
+
+	if (pkt->ptype == DCERPC_PKT_FAULT) {
+		DEBUG(2,("dcerpc: alter context faulted: reason %s\n",
+			 dcerpc_errstr(c, pkt->u.fault.status)));
+		composite_error(c, dcerpc_map_fault(pkt->u.fault.status));
+		return;
+	}
 
 	if (pkt->ptype == DCERPC_PKT_ALTER_RESP &&
 	    pkt->u.alter_resp.num_results == 1 &&
