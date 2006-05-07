@@ -48,31 +48,8 @@ struct libnet_RpcConnect {
 		/* parameters provided in LIBNET_RPC_CONNECT_DC_INFO level, null otherwise */
 		const char *domain_name;
 		struct dom_sid *domain_sid;
-
-		/* These parameters are only present if the remote server is known to be AD */
-		const char *realm;
-		struct GUID *guid;
-
-		const char *error_string;
-	} out;
-};
-
-struct libnet_RpcConnectDCInfo {
-	enum libnet_RpcConnect_level level;
-
-	struct {
-		const char *name;
-		const char *binding;
-		const struct dcerpc_interface_table *dcerpc_iface;
-	} in;
-	struct {
-		struct dcerpc_pipe *dcerpc_pipe;
-		struct dom_sid *domain_sid;
-		const char *domain_name;
-
-		/* These parameters only present if the remote server is known to be AD */
-		const char *realm;
-		struct GUID *guid;
+		const char *realm;           /* these parameters are only present if */
+		struct GUID *guid;           /* the remote server is known to be AD */
 
 		const char *error_string;
 	} out;
