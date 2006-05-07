@@ -46,4 +46,8 @@ for bindoptions in validate seal; do
  name="RPC-SECRETS on $transport:$server[$bindoptions] with Kerberos (use target principal)"
  testit "$name" bin/smbtorture $TORTURE_OPTIONS $transport:"$server[$bindoptions]" -k yes -U"$username"%"$password" -W $domain "--option=clientusespnegoprincipal=yes" "--option=gensec:target_hostname=$netbios_name" RPC-SECRETS "$*" || failed=`expr $failed + 1`
 done
+name="RPC-SECRETS on $transport:$server with Kerberos (use Samba3 style login)"
+ testit "$name" bin/smbtorture $TORTURE_OPTIONS $transport:"$server" -k yes -U"$username"%"$password" -W $domain "--option=gensec:fake_gssapi_krb5=yes" "--option=gensec:gssapi_krb5=no" "--option=gensec:target_hostname=$netbios_name" RPC-SECRETS "$*" || failed=`expr $failed + 1`
+name="RPC-SECRETS on $transport:$server with Kerberos (use Samba3 style login, use target principal)"
+ testit "$name" bin/smbtorture $TORTURE_OPTIONS $transport:"$server" -k yes -U"$username"%"$password" -W $domain "--option=clientusespnegoprincipal=yes" "--option=gensec:fake_gssapi_krb5=yes" "--option=gensec:gssapi_krb5=no" "--option=gensec:target_hostname=$netbios_name" RPC-SECRETS "$*" || failed=`expr $failed + 1`
 testok $0 $failed
