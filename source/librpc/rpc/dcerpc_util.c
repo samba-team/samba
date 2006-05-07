@@ -976,7 +976,7 @@ struct pipe_auth_state {
 	struct dcerpc_binding *binding;
 	const struct dcerpc_interface_table *table;
 	struct cli_credentials *credentials;
-	uint8_t next_auth_type;
+	uint8_t auth_type;
 	BOOL try_ntlm_fallback;
 };
 
@@ -1011,10 +1011,12 @@ static void continue_recv_bind(struct composite_context *ctx)
 	struct pipe_auth_state *s = talloc_get_type(c->private_data, struct pipe_auth_state);
 
 	status = dcerpc_bind_auth_recv(ctx);
-	if (s->try_ntlm_fallback && NT_STATUS_EQUAL(status, NT_STATUS_INVALID_PARAMETER)) {
+	if (s->auth_type == DCERPC_AUTH_TYPE_SPNEGO
+	    && s->try_ntlm_fallback
+	    && NT_STATUS_EQUAL(status, NT_STATUS_INVALID_PARAMETER)) {
 		struct composite_context *sec_conn_req;
 		s->try_ntlm_fallback = False;
-		s->next_auth_type = DCERPC_AUTH_TYPE_NTLMSSP;
+		s->auth_type = DCERPC_AUTH_TYPE_NTLMSSP;
 		/* send a request for secondary rpc connection */
 		sec_conn_req = dcerpc_secondary_connection_send(s->pipe,
 								s->binding);
@@ -1023,10 +1025,9 @@ static void continue_recv_bind(struct composite_context *ctx)
 		composite_continue(c, sec_conn_req, continue_new_auth_bind, c);
 		
 		return;
-	} else if (NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
+	} else if (s->auth_type == DCERPC_AUTH_TYPE_SPNEGO && NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
 		struct composite_context *sec_conn_req;
 		if (cli_credentials_wrong_password(s->credentials)) {
-			s->next_auth_type = DCERPC_AUTH_TYPE_SPNEGO;
 			/* send a request for secondary rpc connection */
 			sec_conn_req = dcerpc_secondary_connection_send(s->pipe,
 									s->binding);
@@ -1070,7 +1071,7 @@ static void continue_new_auth_bind(struct composite_context *ctx)
 
 	/* initiate a authenticated bind */
 	auth_req = dcerpc_bind_auth_send(c, s->pipe, s->table,
-					 s->credentials, s->next_auth_type,
+					 s->credentials, s->auth_type,
 					 dcerpc_auth_level(s->pipe->conn),
 					 s->table->authservices->names[0]);
 	if (composite_nomem(auth_req, c)) return;
@@ -1157,8 +1158,6 @@ struct composite_context *dcerpc_pipe_auth_send(struct dcerpc_pipe *p,
 		 * connection is not signed or sealed.  For that case
 		 * we rely on the already authenticated CIFS connection
 		 */
-		
-		uint8_t auth_type;
 
 		if ((conn->flags & (DCERPC_SIGN|DCERPC_SEAL)) == 0) {
 			/*
@@ -1172,23 +1171,23 @@ struct composite_context *dcerpc_pipe_auth_send(struct dcerpc_pipe *p,
 		}
 
 		if (s->binding->flags & DCERPC_AUTH_SPNEGO) {
-			auth_type = DCERPC_AUTH_TYPE_SPNEGO;
+			s->auth_type = DCERPC_AUTH_TYPE_SPNEGO;
 
 		} else if (s->binding->flags & DCERPC_AUTH_KRB5) {
-			auth_type = DCERPC_AUTH_TYPE_KRB5;
+			s->auth_type = DCERPC_AUTH_TYPE_KRB5;
 
 		} else if (s->binding->flags & DCERPC_SCHANNEL) {
-			auth_type = DCERPC_AUTH_TYPE_SCHANNEL;
+			s->auth_type = DCERPC_AUTH_TYPE_SCHANNEL;
 
 		} else if (s->binding->flags & DCERPC_AUTH_NTLM) {
-			auth_type = DCERPC_AUTH_TYPE_NTLMSSP;
+			s->auth_type = DCERPC_AUTH_TYPE_NTLMSSP;
 		} else {
-			auth_type = DCERPC_AUTH_TYPE_SPNEGO;
+			s->auth_type = DCERPC_AUTH_TYPE_SPNEGO;
 			s->try_ntlm_fallback = True;
 		}
 
 		auth_req = dcerpc_bind_auth_send(c, s->pipe, s->table,
-						 s->credentials, DCERPC_AUTH_TYPE_SPNEGO,
+						 s->credentials, s->auth_type,
 						 dcerpc_auth_level(conn),
 						 s->table->authservices->names[0]);
 		if (composite_nomem(auth_req, c)) return c;
