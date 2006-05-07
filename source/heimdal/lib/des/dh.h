@@ -32,7 +32,7 @@
  */
 
 /*
- * $Id: dh.h,v 1.5 2006/04/20 18:16:17 lha Exp $
+ * $Id: dh.h,v 1.6 2006/05/06 13:11:15 lha Exp $
  */
 
 #ifndef _HEIM_DH_H
@@ -40,6 +40,7 @@
 
 /* symbol renaming */
 #define DH_null_method hc_DH_null_method
+#define DH_imath_method hc_DH_imath_method
 #define DH_new hc_DH_new
 #define DH_new_method hc_DH_new_method
 #define DH_free hc_DH_free
@@ -113,6 +114,7 @@ struct DH {
  */
 
 const DH_METHOD *DH_null_method(void);
+const DH_METHOD *DH_imath_method(void);
 
 DH *	DH_new(void);
 DH *	DH_new_method(ENGINE *);

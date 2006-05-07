@@ -33,7 +33,7 @@
 
 #include <krb5_locl.h>
 
-RCSID("$Id: changepw.c,v 1.55 2005/12/12 12:48:57 lha Exp $");
+RCSID("$Id: changepw.c,v 1.56 2006/05/05 09:26:47 lha Exp $");
 
 static void
 str2data (krb5_data *d,
@@ -271,7 +271,7 @@ process_reply (krb5_context context,
     krb5_error_code ret;
     u_char reply[1024 * 3];
     ssize_t len;
-    u_int16_t pkt_len, pkt_ver;
+    uint16_t pkt_len, pkt_ver;
     krb5_data ap_rep_data;
     int save_errno;
 

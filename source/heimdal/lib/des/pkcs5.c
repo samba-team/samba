@@ -35,7 +35,11 @@
 #include <config.h>
 #endif
 
-RCSID("$Id: pkcs5.c,v 1.1 2006/02/28 14:16:57 lha Exp $");
+RCSID("$Id: pkcs5.c,v 1.3 2006/05/05 10:23:11 lha Exp $");
+
+#ifdef KRB5
+#include <krb5-types.h>
+#endif
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -53,7 +57,7 @@ PKCS5_PBKDF2_HMAC_SHA1(const void * password, size_t password_len,
 {
     size_t datalen, leftofkey, checksumsize;
     char *data, *tmpcksum;
-    u_int32_t keypart;
+    uint32_t keypart;
     const EVP_MD *md;
     unsigned long i;
     int j;

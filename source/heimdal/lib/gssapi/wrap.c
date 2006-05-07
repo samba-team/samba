@@ -33,7 +33,7 @@
 
 #include "gssapi_locl.h"
 
-RCSID("$Id: wrap.c,v 1.32 2006/04/02 02:10:03 lha Exp $");
+RCSID("$Id: wrap.c,v 1.33 2006/05/05 10:27:36 lha Exp $");
 
 OM_uint32
 gsskrb5_get_initiator_subkey(OM_uint32 *minor_status,
@@ -428,7 +428,7 @@ wrap_des3
   u_char seq[8];
   int32_t seq_number;
   size_t len, total_len, padlength, datalen;
-  u_int32_t ret;
+  uint32_t ret;
   krb5_crypto crypto;
   Checksum cksum;
   krb5_data encdata;

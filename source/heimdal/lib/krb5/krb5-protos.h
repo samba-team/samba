@@ -1592,7 +1592,7 @@ krb5_error_code KRB5_LIB_FUNCTION
 krb5_generate_seq_number (
 	krb5_context /*context*/,
 	const krb5_keyblock */*key*/,
-	u_int32_t */*seqno*/);
+	uint32_t */*seqno*/);
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_generate_subkey (
@@ -2803,6 +2803,21 @@ krb5_ret_times (
 	krb5_times */*times*/);
 
 krb5_error_code KRB5_LIB_FUNCTION
+krb5_ret_uint16 (
+	krb5_storage */*sp*/,
+	uint16_t */*value*/);
+
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_ret_uint32 (
+	krb5_storage */*sp*/,
+	uint32_t */*value*/);
+
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_ret_uint8 (
+	krb5_storage */*sp*/,
+	uint8_t */*value*/);
+
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_salttype_to_string (
 	krb5_context /*context*/,
 	krb5_enctype /*etype*/,
@@ -3087,7 +3102,7 @@ krb5_store_keyblock (
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_store_principal (
 	krb5_storage */*sp*/,
-	krb5_principal /*p*/);
+	krb5_const_principal /*p*/);
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_store_string (
@@ -3103,6 +3118,21 @@ krb5_error_code KRB5_LIB_FUNCTION
 krb5_store_times (
 	krb5_storage */*sp*/,
 	krb5_times /*times*/);
+
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_store_uint16 (
+	krb5_storage */*sp*/,
+	uint16_t /*value*/);
+
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_store_uint32 (
+	krb5_storage */*sp*/,
+	uint32_t /*value*/);
+
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_store_uint8 (
+	krb5_storage */*sp*/,
+	uint8_t /*value*/);
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_string_to_deltat (

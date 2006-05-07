@@ -45,7 +45,7 @@
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
-RCSID("$Id: des.c,v 1.17 2006/04/14 14:19:36 lha Exp $");
+RCSID("$Id: des.c,v 1.18 2006/04/24 14:26:19 lha Exp $");
 #endif
 
 #include <stdio.h>
@@ -513,9 +513,10 @@ DES_cfb64_encrypt(const void *in, void *out,
 
     load(*iv, uiv);
 
+    assert(*num >= 0 && *num < DES_CBLOCK_LEN);
+
     if (forward_encrypt) {
 	int i = *num;
-	assert(i >= 0);
 
 	while (length > 0) {
 	    if (i == 0)
@@ -537,7 +538,6 @@ DES_cfb64_encrypt(const void *in, void *out,
     } else {
 	int i = *num;
 	unsigned char c;
-	assert(i >= 0);
 
 	while (length > 0) {
 	    if (i == 0) {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997-2005 Kungliga Tekniska HÃ¶gskolan
+ * Copyright (c) 1997-2005 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -33,7 +33,7 @@
 
 #include "kdc_locl.h"
 
-RCSID("$Id: 524.c,v 1.36 2006/04/07 22:12:28 lha Exp $");
+RCSID("$Id: 524.c,v 1.37 2006/04/27 11:33:20 lha Exp $");
 
 #include <krb5-v4compat.h>
 
@@ -66,7 +66,7 @@ fetch_server (krb5_context context,
 		krb5_get_err_text(context, ret));
 	return ret;
     }
-    ret = _kdc_db_fetch(context, config, sprinc, HDB_ENT_TYPE_SERVER, server);
+    ret = _kdc_db_fetch(context, config, sprinc, HDB_F_GET_SERVER, server);
     krb5_free_principal(context, sprinc);
     if (ret) {
 	kdc_log(context, config, 0,

@@ -31,7 +31,7 @@
  * SUCH DAMAGE. 
  */
 
-/* $Id: krb5_ccapi.h,v 1.2 2006/03/27 04:21:06 lha Exp $ */
+/* $Id: krb5_ccapi.h,v 1.3 2006/05/05 09:29:59 lha Exp $ */
 
 #ifndef KRB5_CCAPI_H
 #define KRB5_CCAPI_H 1
@@ -84,7 +84,7 @@ enum {
 };
 
 typedef int32_t cc_int32;
-typedef u_int32_t cc_uint32;
+typedef uint32_t cc_uint32;
 typedef struct cc_context_t *cc_context_t;
 typedef struct cc_ccache_t *cc_ccache_t;
 typedef struct cc_ccache_iterator_t *cc_ccache_iterator_t;

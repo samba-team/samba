@@ -33,7 +33,7 @@
 
 #include "kdc_locl.h"
 
-RCSID("$Id: kerberos5.c,v 1.206 2006/04/02 01:54:37 lha Exp $");
+RCSID("$Id: kerberos5.c,v 1.211 2006/04/27 12:01:09 lha Exp $");
 
 #define MAX_TIME ((time_t)((1U << 31) - 1))
 
@@ -120,7 +120,9 @@ static krb5_error_code
 find_keys(krb5_context context, 
 	  krb5_kdc_configuration *config,
 	  const hdb_entry_ex *client,
-	  const hdb_entry_ex *server, 
+	  const char *client_name,
+	  const hdb_entry_ex *server,
+	  const char *server_name,
 	  Key **ckey,
 	  krb5_enctype *cetype,
 	  Key **skey,
@@ -128,20 +130,14 @@ find_keys(krb5_context context,
 	  krb5_enctype *etypes,
 	  unsigned num_etypes)
 {
-    char unparse_name[] = "krb5_unparse_name failed";
     krb5_error_code ret;
-    char *name;
 
     if(client){
 	/* find client key */
 	ret = find_etype(context, client, etypes, num_etypes, ckey, cetype);
 	if (ret) {
-	    if (krb5_unparse_name(context, client->entry.principal, &name) != 0)
-		name = unparse_name;
 	    kdc_log(context, config, 0, 
-		    "Client (%s) has no support for etypes", name);
-	    if (name != unparse_name)
-		free(name);
+		    "Client (%s) has no support for etypes", client_name);
 	    return ret;
 	}
     }
@@ -150,12 +146,8 @@ find_keys(krb5_context context,
 	/* find server key */
 	ret = find_etype(context, server, etypes, num_etypes, skey, setype);
 	if (ret) {
-	    if (krb5_unparse_name(context, server->entry.principal, &name) != 0)
-		name = unparse_name;
 	    kdc_log(context, config, 0, 
-		    "Server (%s) has no support for etypes", name);
-	    if (name != unparse_name)
-		free(name);
+		    "Server (%s) has no support for etypes", server_name);
 	    return ret;
 	}
     }
@@ -243,6 +235,9 @@ log_patypes(krb5_context context,
 	    return;
 	}
     }
+    if (p == NULL)
+	p = rk_strpoolprintf(p, "none");
+	
     str = rk_strpoolcollect(p);
     kdc_log(context, config, 0, "Client sent patypes: %s", str);
     free(str);
@@ -899,7 +894,8 @@ _kdc_as_rep(krb5_context context,
     kdc_log(context, config, 0, "AS-REQ %s from %s for %s", 
 	    client_name, from, server_name);
 
-    ret = _kdc_db_fetch(context, config, client_princ, HDB_ENT_TYPE_CLIENT, &client);
+    ret = _kdc_db_fetch(context, config, client_princ, 
+			HDB_F_GET_CLIENT, &client);
     if(ret){
 	kdc_log(context, config, 0, "UNKNOWN -- %s: %s", client_name,
 		krb5_get_err_text(context, ret));
@@ -907,7 +903,8 @@ _kdc_as_rep(krb5_context context,
 	goto out;
     }
 
-    ret = _kdc_db_fetch(context, config, server_princ, HDB_ENT_TYPE_SERVER, &server);
+    ret = _kdc_db_fetch(context, config, server_princ,
+			HDB_F_GET_SERVER|HDB_F_GET_KRBTGT, &server);
     if(ret){
 	kdc_log(context, config, 0, "UNKNOWN -- %s: %s", server_name,
 		krb5_get_err_text(context, ret));
@@ -1166,6 +1163,7 @@ _kdc_as_rep(krb5_context context,
 	 * - If the client is 'modern', because it knows about 'new'
 	 *   enctype types, then only send the 'info2' reply.
 	*/
+
 	/* XXX check ret */
 	if (only_older_enctype_p(req))
 	    ret = get_pa_etype_info(context, config,
@@ -1200,12 +1198,12 @@ _kdc_as_rep(krb5_context context,
     }
     
     ret = find_keys(context, config, 
-		    client, server, &ckey, &cetype, &skey, &setype,
+		    client, client_name, 
+		    server, server_name, 
+		    &ckey, &cetype, &skey, &setype,
 		    b->etype.val, b->etype.len);
-    if(ret) {
-	kdc_log(context, config, 0, "Server/client has no support for etypes");
+    if(ret)
 	goto out;
-    }
 	
     {
 	struct rk_strpool *p = NULL;
@@ -1226,6 +1224,9 @@ _kdc_as_rep(krb5_context context,
 		goto out;
 	    }
 	}
+	if (p == NULL)
+	    p = rk_strpoolprintf(p, "no encryption types");
+
 	str = rk_strpoolcollect(p);
 	kdc_log(context, config, 0, "Client supported enctypes: %s", str);
 	free(str);
@@ -1757,6 +1758,7 @@ tgs_make_reply(krb5_context context,
 	       AuthorizationData *auth_data,
 	       krb5_ticket *tgs_ticket,
 	       hdb_entry_ex *server, 
+	       const char *server_name, 
 	       hdb_entry_ex *client, 
 	       krb5_principal client_principal, 
 	       hdb_entry_ex *krbtgt,
@@ -1788,12 +1790,11 @@ tgs_make_reply(krb5_context context,
 	etype = b->etype.val[i];
     }else{
 	ret = find_keys(context, config, 
-			NULL, server, NULL, NULL, &skey, &etype, 
+			NULL, NULL, server, server_name,
+			NULL, NULL, &skey, &etype, 
 			b->etype.val, b->etype.len);
-	if(ret) {
-	    kdc_log(context, config, 0, "Server has no support for etypes");
+	if(ret)
 	    return ret;
-	}
 	ekey = &skey->key;
     }
     
@@ -2140,7 +2141,7 @@ tgs_rep2(krb5_context context,
 				       ap_req.ticket.sname,
 				       ap_req.ticket.realm);
     
-    ret = _kdc_db_fetch(context, config, princ, HDB_ENT_TYPE_SERVER, &krbtgt);
+    ret = _kdc_db_fetch(context, config, princ, HDB_F_GET_KRBTGT, &krbtgt);
 
     if(ret) {
 	char *p;
@@ -2340,7 +2341,8 @@ tgs_rep2(krb5_context context,
 		goto out2;
 	    }
 	    _krb5_principalname2krb5_principal(&p, t->sname, t->realm);
-	    ret = _kdc_db_fetch(context, config, p, HDB_ENT_TYPE_SERVER, &uu);
+	    ret = _kdc_db_fetch(context, config, p, 
+				HDB_F_GET_CLIENT|HDB_F_GET_SERVER, &uu);
 	    krb5_free_principal(context, p);
 	    if(ret){
 		if (ret == HDB_ERR_NOENTRY)
@@ -2381,7 +2383,7 @@ tgs_rep2(krb5_context context,
 	    kdc_log(context, config, 0,
 		    "TGS-REQ %s from %s for %s", cpn, from, spn);
     server_lookup:
-	ret = _kdc_db_fetch(context, config, sp, HDB_ENT_TYPE_SERVER, &server);
+	ret = _kdc_db_fetch(context, config, sp, HDB_F_GET_SERVER, &server);
 
 	if(ret){
 	    const char *new_rlm;
@@ -2430,24 +2432,28 @@ tgs_rep2(krb5_context context,
 	    goto out;
 	}
 
-	ret = _kdc_db_fetch(context, config, cp, HDB_ENT_TYPE_CLIENT, &client);
+	ret = _kdc_db_fetch(context, config, cp, HDB_F_GET_CLIENT, &client);
 	if(ret)
 	    kdc_log(context, config, 1, "Client not found in database: %s: %s",
 		    cpn, krb5_get_err_text(context, ret));
-#if 0
-	/* XXX check client only if same realm as krbtgt-instance */
-	if(ret){
-	    kdc_log(context, config, 0,
-		    "Client not found in database: %s: %s",
-		    cpn, krb5_get_err_text(context, ret));
-	    if (ret == HDB_ERR_NOENTRY)
-		ret = KRB5KDC_ERR_C_PRINCIPAL_UNKNOWN;
-	    goto out;
-	}
-#endif
+
+	/*
+	 * If the client belongs to the same realm as our krbtgt, it
+	 * should exist in the local database.
+	 *
+	 * If its not the same, check the "direction" on the krbtgt,
+	 * so its not a backward uni-directional trust.
+	 */
 
 	if(strcmp(krb5_principal_get_realm(context, sp),
-		  krb5_principal_get_comp_string(context, krbtgt->entry.principal, 1)) != 0) {
+		  krb5_principal_get_comp_string(context, 
+						 krbtgt->entry.principal, 1)) == 0) {
+	    if(ret) {
+		if (ret == HDB_ERR_NOENTRY)
+		    ret = KRB5KDC_ERR_C_PRINCIPAL_UNKNOWN;
+		goto out;
+	    }
+	} else {
 	    char *tpn;
 	    ret = krb5_unparse_name(context, krbtgt->entry.principal, &tpn);
 	    kdc_log(context, config, 0,
@@ -2491,6 +2497,7 @@ tgs_rep2(krb5_context context,
 			     auth_data,
 			     ticket,
 			     server, 
+			     spn,
 			     client, 
 			     cp, 
 			     krbtgt, 
