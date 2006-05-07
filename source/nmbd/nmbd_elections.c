@@ -166,13 +166,16 @@ void run_elections(time_t t)
   
 	struct subnet_record *subrec;
   
+	START_PROFILE(run_elections);
+
 	/* Send election packets once every 2 seconds - note */
-	if (lastime && (t - lastime < 2))
+	if (lastime && (t - lastime < 2)) {
+		END_PROFILE(run_elections);
 		return;
+	}
   
 	lastime = t;
   
-	START_PROFILE(run_elections);
 	for (subrec = FIRST_SUBNET; subrec; subrec = NEXT_SUBNET_EXCLUDING_UNICAST(subrec)) {
 		struct work_record *work;
 
@@ -267,10 +270,11 @@ void process_election(struct subnet_record *subrec, struct packet_struct *p, cha
 	struct work_record *work;
 	unstring workgroup_name;
 
+	START_PROFILE(election);
+
 	pull_ascii_nstring(server_name, sizeof(server_name), buf+13);
 	pull_ascii_nstring(workgroup_name, sizeof(workgroup_name), dgram->dest_name.name);
 
-	START_PROFILE(election);
 	server_name[15] = 0;  
 
 	DEBUG(3,("process_election: Election request from %s at IP %s on subnet %s for workgroup %s.\n",
