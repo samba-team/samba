@@ -1957,6 +1957,9 @@ create_checksum (krb5_context context,
     }
     keyed_checksum = (ct->flags & F_KEYED) != 0;
     if(keyed_checksum && crypto == NULL) {
+	krb5_set_error_string (context, "Checksum type %s is keyed "
+			       "not no crypto context (key) was passed in",
+			       ct->name);
 	krb5_clear_error_string (context);
 	return KRB5_PROG_SUMTYPE_NOSUPP; /* XXX */
     }
