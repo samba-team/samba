@@ -31,7 +31,7 @@
  * SUCH DAMAGE.
  */
 
-/* $Id: aes.h,v 1.5 2006/01/08 21:47:27 lha Exp $ */
+/* $Id: aes.h,v 1.6 2006/05/05 11:06:35 lha Exp $ */
 
 #ifndef HEIM_AES_H
 #define HEIM_AES_H 1
@@ -54,7 +54,7 @@
 #define AES_DECRYPT 0
 
 typedef struct aes_key {
-    u_int32_t key[(AES_MAXNR+1)*4];
+    uint32_t key[(AES_MAXNR+1)*4];
     int rounds;
 } AES_KEY;
 

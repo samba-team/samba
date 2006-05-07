@@ -30,7 +30,7 @@
  * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
 
-/* $Id: hash.h,v 1.3 2005/04/27 11:53:48 lha Exp $ */
+/* $Id: hash.h,v 1.4 2006/05/05 11:06:49 lha Exp $ */
 
 /* stuff in common between md4, md5, and sha1 */
 
@@ -61,8 +61,8 @@
 #define CRAYFIX(X) (X)
 #endif
 
-static inline u_int32_t
-cshift (u_int32_t x, unsigned int n)
+static inline uint32_t
+cshift (uint32_t x, unsigned int n)
 {
     x = CRAYFIX(x);
     return CRAYFIX((x << n) | (x >> (32 - n)));

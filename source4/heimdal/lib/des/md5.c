@@ -34,7 +34,7 @@
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 
-RCSID("$Id: md5.c,v 1.17 2005/04/27 11:54:35 lha Exp $");
+RCSID("$Id: md5.c,v 1.18 2006/05/05 10:22:35 lha Exp $");
 #endif
 
 #include "hash.h"
@@ -71,9 +71,9 @@ a = b + cshift(a + OP(b,c,d) + X[k] + (i), s)
 #define DO4(a,b,c,d,k,s,i) DOIT(a,b,c,d,k,s,i,I)
 
 static inline void
-calc (struct md5 *m, u_int32_t *data)
+calc (struct md5 *m, uint32_t *data)
 {
-  u_int32_t AA, BB, CC, DD;
+  uint32_t AA, BB, CC, DD;
 
   AA = A;
   BB = B;
@@ -179,10 +179,10 @@ calc (struct md5 *m, u_int32_t *data)
  */
 
 #if defined(WORDS_BIGENDIAN)
-static inline u_int32_t
-swap_u_int32_t (u_int32_t t)
+static inline uint32_t
+swap_uint32_t (uint32_t t)
 {
-  u_int32_t temp1, temp2;
+  uint32_t temp1, temp2;
 
   temp1   = cshift(t, 16);
   temp2   = temp1 >> 8;
@@ -218,15 +218,15 @@ MD5_Update (struct md5 *m, const void *v, size_t len)
     if(offset == 64){
 #if defined(WORDS_BIGENDIAN)
       int i;
-      u_int32_t current[16];
+      uint32_t current[16];
       struct x32 *u = (struct x32*)m->save;
       for(i = 0; i < 8; i++){
-	current[2*i+0] = swap_u_int32_t(u[i].a);
-	current[2*i+1] = swap_u_int32_t(u[i].b);
+	current[2*i+0] = swap_uint32_t(u[i].a);
+	current[2*i+1] = swap_uint32_t(u[i].b);
       }
       calc(m, current);
 #else
-      calc(m, (u_int32_t*)m->save);
+      calc(m, (uint32_t*)m->save);
 #endif
       offset = 0;
     }
@@ -265,10 +265,10 @@ MD5_Final (void *res, struct md5 *m)
 #if 0
   {
     int i;
-    u_int32_t *r = (u_int32_t *)res;
+    uint32_t *r = (uint32_t *)res;
 
     for (i = 0; i < 4; ++i)
-      r[i] = swap_u_int32_t (m->counter[i]);
+      r[i] = swap_uint32_t (m->counter[i]);
   }
 #endif
 }

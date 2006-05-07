@@ -247,7 +247,7 @@
 #include "gen_locl.h"
 #include "der.h"
 
-RCSID("$Id: parse.y,v 1.27 2005/12/14 09:44:36 lha Exp $");
+RCSID("$Id: parse.y,v 1.28 2006/04/28 10:51:35 lha Exp $");
 
 static Type *new_type (Typetype t);
 static struct constraint_spec *new_constraint_spec(enum ctype);
@@ -538,13 +538,13 @@ static const unsigned short int yyrline[] =
      327,   328,   331,   338,   348,   353,   360,   368,   374,   379,
      383,   396,   404,   407,   414,   422,   428,   435,   442,   448,
      456,   464,   470,   478,   486,   493,   494,   497,   508,   513,
-     520,   536,   541,   543,   544,   547,   553,   561,   571,   577,
-     590,   599,   602,   606,   610,   617,   620,   624,   631,   642,
-     645,   650,   655,   660,   665,   670,   678,   684,   689,   700,
-     711,   717,   723,   731,   737,   744,   757,   758,   761,   768,
-     771,   782,   786,   797,   803,   804,   807,   808,   809,   810,
-     811,   814,   817,   820,   831,   839,   845,   853,   861,   864,
-     869
+     520,   536,   542,   545,   546,   549,   555,   563,   573,   579,
+     592,   601,   604,   608,   612,   619,   622,   626,   633,   644,
+     647,   652,   657,   662,   667,   672,   680,   686,   691,   702,
+     713,   719,   725,   733,   739,   746,   759,   760,   763,   770,
+     773,   784,   788,   799,   805,   806,   809,   810,   811,   812,
+     813,   816,   819,   822,   833,   841,   847,   855,   863,   866,
+     871
 };
 #endif
 
@@ -1752,7 +1752,7 @@ yyreduce:
     break;
 
   case 75:
-#line 548 "parse.y"
+#line 550 "parse.y"
     {
 		    (yyval.constraint_spec) = new_constraint_spec(CT_CONTENTS);
 		    (yyval.constraint_spec)->u.content.type = (yyvsp[0].type);
@@ -1761,7 +1761,7 @@ yyreduce:
     break;
 
   case 76:
-#line 554 "parse.y"
+#line 556 "parse.y"
     {
 		    if ((yyvsp[0].value)->type != objectidentifiervalue)
 			error_message("Non-OID used in ENCODED BY constraint");
@@ -1772,7 +1772,7 @@ yyreduce:
     break;
 
   case 77:
-#line 562 "parse.y"
+#line 564 "parse.y"
     {
 		    if ((yyvsp[0].value)->type != objectidentifiervalue)
 			error_message("Non-OID used in ENCODED BY constraint");
@@ -1783,14 +1783,14 @@ yyreduce:
     break;
 
   case 78:
-#line 572 "parse.y"
+#line 574 "parse.y"
     {
 		    (yyval.constraint_spec) = new_constraint_spec(CT_USER);
 		}
     break;
 
   case 79:
-#line 578 "parse.y"
+#line 580 "parse.y"
     {
 			(yyval.type) = new_type(TTag);
 			(yyval.type)->tag = (yyvsp[-2].tag);
@@ -1804,7 +1804,7 @@ yyreduce:
     break;
 
   case 80:
-#line 591 "parse.y"
+#line 593 "parse.y"
     {
 			(yyval.tag).tagclass = (yyvsp[-2].constant);
 			(yyval.tag).tagvalue = (yyvsp[-1].constant);
@@ -1813,56 +1813,56 @@ yyreduce:
     break;
 
   case 81:
-#line 599 "parse.y"
+#line 601 "parse.y"
     {
 			(yyval.constant) = ASN1_C_CONTEXT;
 		}
     break;
 
   case 82:
-#line 603 "parse.y"
+#line 605 "parse.y"
     {
 			(yyval.constant) = ASN1_C_UNIV;
 		}
     break;
 
   case 83:
-#line 607 "parse.y"
+#line 609 "parse.y"
     {
 			(yyval.constant) = ASN1_C_APPL;
 		}
     break;
 
   case 84:
-#line 611 "parse.y"
+#line 613 "parse.y"
     {
 			(yyval.constant) = ASN1_C_PRIVATE;
 		}
     break;
 
   case 85:
-#line 617 "parse.y"
+#line 619 "parse.y"
     {
 			(yyval.constant) = TE_EXPLICIT;
 		}
     break;
 
   case 86:
-#line 621 "parse.y"
+#line 623 "parse.y"
     {
 			(yyval.constant) = TE_EXPLICIT;
 		}
     break;
 
   case 87:
-#line 625 "parse.y"
+#line 627 "parse.y"
     {
 			(yyval.constant) = TE_IMPLICIT;
 		}
     break;
 
   case 88:
-#line 632 "parse.y"
+#line 634 "parse.y"
     {
 			Symbol *s;
 			s = addsym ((yyvsp[-3].name));
@@ -1874,7 +1874,7 @@ yyreduce:
     break;
 
   case 90:
-#line 646 "parse.y"
+#line 648 "parse.y"
     {
 			(yyval.type) = new_tag(ASN1_C_UNIV, UT_GeneralString, 
 				     TE_EXPLICIT, new_type(TGeneralString));
@@ -1882,7 +1882,7 @@ yyreduce:
     break;
 
   case 91:
-#line 651 "parse.y"
+#line 653 "parse.y"
     {
 			(yyval.type) = new_tag(ASN1_C_UNIV, UT_UTF8String, 
 				     TE_EXPLICIT, new_type(TUTF8String));
@@ -1890,7 +1890,7 @@ yyreduce:
     break;
 
   case 92:
-#line 656 "parse.y"
+#line 658 "parse.y"
     {
 			(yyval.type) = new_tag(ASN1_C_UNIV, UT_PrintableString, 
 				     TE_EXPLICIT, new_type(TPrintableString));
@@ -1898,7 +1898,7 @@ yyreduce:
     break;
 
   case 93:
-#line 661 "parse.y"
+#line 663 "parse.y"
     {
 			(yyval.type) = new_tag(ASN1_C_UNIV, UT_IA5String, 
 				     TE_EXPLICIT, new_type(TIA5String));
@@ -1906,7 +1906,7 @@ yyreduce:
     break;
 
   case 94:
-#line 666 "parse.y"
+#line 668 "parse.y"
     {
 			(yyval.type) = new_tag(ASN1_C_UNIV, UT_BMPString, 
 				     TE_EXPLICIT, new_type(TBMPString));
@@ -1914,7 +1914,7 @@ yyreduce:
     break;
 
   case 95:
-#line 671 "parse.y"
+#line 673 "parse.y"
     {
 			(yyval.type) = new_tag(ASN1_C_UNIV, UT_UniversalString, 
 				     TE_EXPLICIT, new_type(TUniversalString));
@@ -1922,7 +1922,7 @@ yyreduce:
     break;
 
   case 96:
-#line 679 "parse.y"
+#line 681 "parse.y"
     {
 			(yyval.members) = emalloc(sizeof(*(yyval.members)));
 			ASN1_TAILQ_INIT((yyval.members));
@@ -1931,7 +1931,7 @@ yyreduce:
     break;
 
   case 97:
-#line 685 "parse.y"
+#line 687 "parse.y"
     {
 			ASN1_TAILQ_INSERT_TAIL((yyvsp[-2].members), (yyvsp[0].member), members);
 			(yyval.members) = (yyvsp[-2].members);
@@ -1939,7 +1939,7 @@ yyreduce:
     break;
 
   case 98:
-#line 690 "parse.y"
+#line 692 "parse.y"
     {
 		        struct member *m = ecalloc(1, sizeof(*m));
 			m->name = estrdup("...");
@@ -1951,7 +1951,7 @@ yyreduce:
     break;
 
   case 99:
-#line 701 "parse.y"
+#line 703 "parse.y"
     {
 		  (yyval.member) = emalloc(sizeof(*(yyval.member)));
 		  (yyval.member)->name = (yyvsp[-1].name);
@@ -1963,7 +1963,7 @@ yyreduce:
     break;
 
   case 100:
-#line 712 "parse.y"
+#line 714 "parse.y"
     {
 			(yyval.member) = (yyvsp[0].member);
 			(yyval.member)->optional = 0;
@@ -1972,7 +1972,7 @@ yyreduce:
     break;
 
   case 101:
-#line 718 "parse.y"
+#line 720 "parse.y"
     {
 			(yyval.member) = (yyvsp[-1].member);
 			(yyval.member)->optional = 1;
@@ -1981,7 +1981,7 @@ yyreduce:
     break;
 
   case 102:
-#line 724 "parse.y"
+#line 726 "parse.y"
     {
 			(yyval.member) = (yyvsp[-2].member);
 			(yyval.member)->optional = 0;
@@ -1990,7 +1990,7 @@ yyreduce:
     break;
 
   case 103:
-#line 732 "parse.y"
+#line 734 "parse.y"
     {
 			(yyval.members) = emalloc(sizeof(*(yyval.members)));
 			ASN1_TAILQ_INIT((yyval.members));
@@ -1999,7 +1999,7 @@ yyreduce:
     break;
 
   case 104:
-#line 738 "parse.y"
+#line 740 "parse.y"
     {
 			ASN1_TAILQ_INSERT_TAIL((yyvsp[-2].members), (yyvsp[0].member), members);
 			(yyval.members) = (yyvsp[-2].members);
@@ -2007,7 +2007,7 @@ yyreduce:
     break;
 
   case 105:
-#line 745 "parse.y"
+#line 747 "parse.y"
     {
 		  (yyval.member) = emalloc(sizeof(*(yyval.member)));
 		  (yyval.member)->name = (yyvsp[-3].name);
@@ -2021,26 +2021,26 @@ yyreduce:
     break;
 
   case 107:
-#line 758 "parse.y"
+#line 760 "parse.y"
     { (yyval.objid) = NULL; }
     break;
 
   case 108:
-#line 762 "parse.y"
+#line 764 "parse.y"
     {
 			(yyval.objid) = (yyvsp[-1].objid);
 		}
     break;
 
   case 109:
-#line 768 "parse.y"
+#line 770 "parse.y"
     {
 			(yyval.objid) = NULL;
 		}
     break;
 
   case 110:
-#line 772 "parse.y"
+#line 774 "parse.y"
     {
 		        if ((yyvsp[0].objid)) {
 				(yyval.objid) = (yyvsp[0].objid);
@@ -2052,14 +2052,14 @@ yyreduce:
     break;
 
   case 111:
-#line 783 "parse.y"
+#line 785 "parse.y"
     {
 			(yyval.objid) = new_objid((yyvsp[-3].name), (yyvsp[-1].constant));
 		}
     break;
 
   case 112:
-#line 787 "parse.y"
+#line 789 "parse.y"
     {
 		    Symbol *s = addsym((yyvsp[0].name));
 		    if(s->stype != SValue ||
@@ -2073,14 +2073,14 @@ yyreduce:
     break;
 
   case 113:
-#line 798 "parse.y"
+#line 800 "parse.y"
     {
 		    (yyval.objid) = new_objid(NULL, (yyvsp[0].constant));
 		}
     break;
 
   case 123:
-#line 821 "parse.y"
+#line 823 "parse.y"
     {
 			Symbol *s = addsym((yyvsp[0].name));
 			if(s->stype != SValue)
@@ -2092,7 +2092,7 @@ yyreduce:
     break;
 
   case 124:
-#line 832 "parse.y"
+#line 834 "parse.y"
     {
 			(yyval.value) = emalloc(sizeof(*(yyval.value)));
 			(yyval.value)->type = stringvalue;
@@ -2101,7 +2101,7 @@ yyreduce:
     break;
 
   case 125:
-#line 840 "parse.y"
+#line 842 "parse.y"
     {
 			(yyval.value) = emalloc(sizeof(*(yyval.value)));
 			(yyval.value)->type = booleanvalue;
@@ -2110,7 +2110,7 @@ yyreduce:
     break;
 
   case 126:
-#line 846 "parse.y"
+#line 848 "parse.y"
     {
 			(yyval.value) = emalloc(sizeof(*(yyval.value)));
 			(yyval.value)->type = booleanvalue;
@@ -2119,7 +2119,7 @@ yyreduce:
     break;
 
   case 127:
-#line 854 "parse.y"
+#line 856 "parse.y"
     {
 			(yyval.value) = emalloc(sizeof(*(yyval.value)));
 			(yyval.value)->type = integervalue;
@@ -2128,13 +2128,13 @@ yyreduce:
     break;
 
   case 129:
-#line 865 "parse.y"
+#line 867 "parse.y"
     {
 		}
     break;
 
   case 130:
-#line 870 "parse.y"
+#line 872 "parse.y"
     {
 			(yyval.value) = emalloc(sizeof(*(yyval.value)));
 			(yyval.value)->type = objectidentifiervalue;
@@ -2374,7 +2374,7 @@ yyreturn:
 }
 
 
-#line 877 "parse.y"
+#line 879 "parse.y"
 
 
 void

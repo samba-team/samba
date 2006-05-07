@@ -38,9 +38,9 @@
 #define RIJNDAEL_MAXKB	(256/8)
 #define RIJNDAEL_MAXNR	14
 
-int rijndaelKeySetupEnc(u_int32_t rk[/*4*(Nr + 1)*/], const u_int8_t cipherKey[], int keyBits);
-int rijndaelKeySetupDec(u_int32_t rk[/*4*(Nr + 1)*/], const u_int8_t cipherKey[], int keyBits);
-void rijndaelEncrypt(const u_int32_t rk[/*4*(Nr + 1)*/], int Nr, const u_int8_t pt[16], u_int8_t ct[16]);
-void rijndaelDecrypt(const u_int32_t rk[/*4*(Nr + 1)*/], int Nr, const u_int8_t ct[16], u_int8_t pt[16]);
+int rijndaelKeySetupEnc(uint32_t rk[/*4*(Nr + 1)*/], const uint8_t cipherKey[], int keyBits);
+int rijndaelKeySetupDec(uint32_t rk[/*4*(Nr + 1)*/], const uint8_t cipherKey[], int keyBits);
+void rijndaelEncrypt(const uint32_t rk[/*4*(Nr + 1)*/], int Nr, const uint8_t pt[16], uint8_t ct[16]);
+void rijndaelDecrypt(const uint32_t rk[/*4*(Nr + 1)*/], int Nr, const uint8_t ct[16], uint8_t pt[16]);
 
 #endif /* __RIJNDAEL_ALG_FST_H */

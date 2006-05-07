@@ -32,7 +32,7 @@
  */
 
 /*
- * $Id: engine.h,v 1.5 2006/04/17 13:16:17 lha Exp $
+ * $Id: engine.h,v 1.6 2006/05/06 12:34:36 lha Exp $
  */
 
 #ifndef _HEIM_ENGINE_H
@@ -55,6 +55,10 @@
 #define ENGINE_set_name hc_ENGINE_set_name
 #define ENGINE_set_destroy_function hc_ENGINE_set_destroy_function
 #define ENGINE_up_ref hc_ENGINE_up_ref
+#define ENGINE_get_default_DH hc_ENGINE_get_default_DH
+#define ENGINE_get_default_RSA hc_ENGINE_get_default_RSA
+#define ENGINE_set_default_DH hc_ENGINE_set_default_DH
+#define ENGINE_set_default_RSA hc_ENGINE_set_default_RSA
 
 /*
  *

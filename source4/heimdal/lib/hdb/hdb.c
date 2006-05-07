@@ -33,7 +33,7 @@
 
 #include "hdb_locl.h"
 
-RCSID("$Id: hdb.c,v 1.60 2005/12/12 12:35:36 lha Exp $");
+RCSID("$Id: hdb.c,v 1.61 2006/04/24 20:57:58 lha Exp $");
 
 #ifdef HAVE_DLFCN_H
 #include <dlfcn.h>

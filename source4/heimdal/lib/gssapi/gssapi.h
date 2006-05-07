@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2003 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2006 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -31,7 +31,7 @@
  * SUCH DAMAGE. 
  */
 
-/* $Id: gssapi.h,v 1.39 2005/12/05 11:52:45 lha Exp $ */
+/* $Id: gssapi.h,v 1.40 2006/05/05 11:08:29 lha Exp $ */
 
 #ifndef GSSAPI_H_
 #define GSSAPI_H_
@@ -47,9 +47,9 @@
  * Now define the three implementation-dependent types.
  */
 
-typedef u_int32_t OM_uint32;
+typedef uint32_t OM_uint32;
 
-typedef u_int32_t gss_uint32;
+typedef uint32_t gss_uint32;
 
 /*
  * This is to avoid having to include <krb5.h>

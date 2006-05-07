@@ -33,7 +33,7 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id: log.c,v 1.38 2006/04/10 09:41:26 lha Exp $");
+RCSID("$Id: log.c,v 1.39 2006/04/24 15:09:27 lha Exp $");
 
 struct facility {
     int min;
@@ -221,8 +221,10 @@ log_file(const char *timestr,
     if(f->fd == NULL)
 	return;
     fprintf(f->fd, "%s %s\n", timestr, msg);
-    if(f->keep_open == 0)
+    if(f->keep_open == 0) {
 	fclose(f->fd);
+	f->fd = NULL;
+    }
 }
 
 static void
