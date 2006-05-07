@@ -371,15 +371,48 @@ gsskrb5_acceptor_start
 	    return ret;
 	}
 
-	ret = gssapi_krb5_verify_8003_checksum(minor_status,
-					       input_chan_bindings,
-					       authenticator->cksum,
-					       &flags,
-					       &(*context_handle)->fwd_data);
-	krb5_free_authenticator(gssapi_krb5_context, &authenticator);
-	if (ret) {
-	    return ret;
-	}
+        if (authenticator->cksum->cksumtype == CKSUMTYPE_GSSAPI) {
+            ret = gssapi_krb5_verify_8003_checksum(minor_status,
+                                                   input_chan_bindings,
+                                                   authenticator->cksum,
+                                                   &flags,
+                                                   &(*context_handle)->fwd_data);
+
+	    krb5_free_authenticator(gssapi_krb5_context, &authenticator);
+	    if (ret) {
+		return ret;
+	    }
+        } else {
+	    krb5_crypto crypto;
+
+	    kret = krb5_crypto_init(gssapi_krb5_context, 
+				   (*context_handle)->auth_context->keyblock, 
+				   0, &crypto);
+	    if(kret) {
+		krb5_free_authenticator(gssapi_krb5_context, &authenticator);
+
+		ret = GSS_S_FAILURE;
+		*minor_status = kret;
+		gssapi_krb5_set_error_string ();
+		return ret;
+	    }
+
+	    /* Windows accepts Samba3's use of a kerberos, 
+	       rather than GSSAPI checksum here */
+	    kret = krb5_verify_checksum(gssapi_krb5_context,
+					crypto, KRB5_KU_AP_REQ_AUTH_CKSUM, NULL, 0,
+					authenticator->cksum);
+	    krb5_free_authenticator(gssapi_krb5_context, &authenticator);
+
+	    if(kret) {
+		ret = GSS_S_FAILURE;
+		*minor_status = kret;
+		gssapi_krb5_set_error_string ();
+		return ret;
+	    }
+
+	    flags = GSS_C_MUTUAL_FLAG | GSS_C_REPLAY_FLAG | GSS_C_SEQUENCE_FLAG;
+        }
     }
     
     if(flags & GSS_C_MUTUAL_FLAG) {
