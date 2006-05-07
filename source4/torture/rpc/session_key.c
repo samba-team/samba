@@ -180,7 +180,10 @@ BOOL torture_rpc_lsa_secrets(struct torture_context *torture)
 	}
 
 	if (test_lsa_OpenPolicy2(p, mem_ctx, &handle)) {
-		if (!test_CreateSecret_basic(p, mem_ctx, handle)) {
+		if (!handle) {
+			printf("OpenPolicy2 failed.  This test cannot run against this server\n");
+			ret = False;
+		} else if (!test_CreateSecret_basic(p, mem_ctx, handle)) {
 			ret = False;
 		}
 	} else {
