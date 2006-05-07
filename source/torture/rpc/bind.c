@@ -63,7 +63,7 @@ BOOL torture_multi_bind(struct torture_context *torture)
 		return False;
 	}
 
-	status = dcerpc_pipe_auth(&p, binding, &dcerpc_table_lsarpc, cmdline_credentials);
+	status = dcerpc_pipe_auth(mem_ctx, &p, binding, &dcerpc_table_lsarpc, cmdline_credentials);
 
 	if (NT_STATUS_IS_OK(status)) {
 		printf("(incorrectly) allowed re-bind to uuid %s - %s\n", 

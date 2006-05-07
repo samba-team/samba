@@ -976,12 +976,14 @@ struct pipe_auth_state {
 	struct dcerpc_binding *binding;
 	const struct dcerpc_interface_table *table;
 	struct cli_credentials *credentials;
-	uint8_t auth_type;
-	BOOL try_ntlm_fallback;
 };
 
 
-static void continue_new_auth_bind(struct composite_context *ctx);
+static void continue_auth_schannel(struct composite_context *ctx);
+static void continue_auth(struct composite_context *ctx);
+static void continue_auth_none(struct composite_context *ctx);
+static void continue_ntlmssp_connection(struct composite_context *ctx);
+static void continue_spnego_after_wrong_pass(struct composite_context *ctx);
 
 
 /*
@@ -1000,32 +1002,42 @@ static void continue_auth_schannel(struct composite_context *ctx)
 
 
 /*
+  Stage 2 of pipe_auth: Receive result of authenticated bind request
+*/
+static void continue_auth(struct composite_context *ctx)
+{
+	struct composite_context *c = talloc_get_type(ctx->async.private_data,
+						      struct composite_context);
+
+	c->status = dcerpc_bind_auth_recv(ctx);
+	if (!composite_is_ok(c)) return;
+	
+	composite_done(c);
+}
+/*
   Stage 2 of pipe_auth: Receive result of authenticated bind request, but handle fallbacks:
   SPNEGO -> NTLMSSP
 */
-static void continue_recv_bind(struct composite_context *ctx)
+static void continue_auth_auto(struct composite_context *ctx)
 {
-	NTSTATUS status;
 	struct composite_context *c = talloc_get_type(ctx->async.private_data,
 						      struct composite_context);
-	struct pipe_auth_state *s = talloc_get_type(c->private_data, struct pipe_auth_state);
 
-	status = dcerpc_bind_auth_recv(ctx);
-	if (s->auth_type == DCERPC_AUTH_TYPE_SPNEGO
-	    && s->try_ntlm_fallback
-	    && NT_STATUS_EQUAL(status, NT_STATUS_INVALID_PARAMETER)) {
+	c->status = dcerpc_bind_auth_recv(ctx);
+	if (NT_STATUS_EQUAL(c->status, NT_STATUS_INVALID_PARAMETER)) {
+		struct pipe_auth_state *s = talloc_get_type(c->private_data, struct pipe_auth_state);
 		struct composite_context *sec_conn_req;
-		s->try_ntlm_fallback = False;
-		s->auth_type = DCERPC_AUTH_TYPE_NTLMSSP;
+
 		/* send a request for secondary rpc connection */
 		sec_conn_req = dcerpc_secondary_connection_send(s->pipe,
 								s->binding);
 		if (composite_nomem(sec_conn_req, c)) return;
 		
-		composite_continue(c, sec_conn_req, continue_new_auth_bind, c);
+		composite_continue(c, sec_conn_req, continue_ntlmssp_connection, c);
 		
 		return;
-	} else if (s->auth_type == DCERPC_AUTH_TYPE_SPNEGO && NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
+	} else if (NT_STATUS_EQUAL(c->status, NT_STATUS_LOGON_FAILURE)) {
+		struct pipe_auth_state *s = talloc_get_type(c->private_data, struct pipe_auth_state);
 		struct composite_context *sec_conn_req;
 		if (cli_credentials_wrong_password(s->credentials)) {
 			/* send a request for secondary rpc connection */
@@ -1033,12 +1045,9 @@ static void continue_recv_bind(struct composite_context *ctx)
 									s->binding);
 			if (composite_nomem(sec_conn_req, c)) return;
 			
-			composite_continue(c, sec_conn_req, continue_new_auth_bind, c);
-
-			return;
+			composite_continue(c, sec_conn_req, continue_spnego_after_wrong_pass, c);
 		}
 	}
-	c->status = status;
 
 	if (!composite_is_ok(c)) return;
 	
@@ -1046,14 +1055,11 @@ static void continue_recv_bind(struct composite_context *ctx)
 }
 
 /*
-  Stage 3 of pipe_auth (fallback to NTLMSSP case/SPNEGO password retry case): 
-  
-  Receive secondary rpc connection (the first one can't be used any
-  more, due to the bind nak) and perform authenticated bind request
-
-  Calls back to stage 2 to process the response.
+  Stage 3 of pipe_auth (fallback to NTLMSSP case): Receive secondary
+  rpc connection (the first one can't be used any more, due to the
+  bind nak) and perform authenticated bind request
 */
-static void continue_new_auth_bind(struct composite_context *ctx)
+static void continue_ntlmssp_connection(struct composite_context *ctx)
 {
 	struct composite_context *c;
 	struct pipe_auth_state *s;
@@ -1065,25 +1071,60 @@ static void continue_new_auth_bind(struct composite_context *ctx)
 
 	/* receive secondary rpc connection */
 	c->status = dcerpc_secondary_connection_recv(ctx, &p2);
+	talloc_steal(s, p2);
+	talloc_steal(p2, s->pipe);
 	s->pipe = p2;
 
 	if (!composite_is_ok(c)) return;
 
 	/* initiate a authenticated bind */
 	auth_req = dcerpc_bind_auth_send(c, s->pipe, s->table,
-					 s->credentials, s->auth_type,
+					 s->credentials, DCERPC_AUTH_TYPE_NTLMSSP,
 					 dcerpc_auth_level(s->pipe->conn),
 					 s->table->authservices->names[0]);
 	if (composite_nomem(auth_req, c)) return;
 		
-	composite_continue(c, auth_req, continue_recv_bind, c);
+	composite_continue(c, auth_req, continue_auth, c);
+}
+
+/*
+  Stage 3 of pipe_auth (retry on wrong password): Receive secondary
+  rpc connection (the first one can't be used any more, due to the
+  bind nak) and perform authenticated bind request
+*/
+static void continue_spnego_after_wrong_pass(struct composite_context *ctx)
+{
+	struct composite_context *c;
+	struct pipe_auth_state *s;
+	struct composite_context *auth_req;
+	struct dcerpc_pipe *p2;
+
+	c = talloc_get_type(ctx->async.private_data, struct composite_context);
+	s = talloc_get_type(c->private_data, struct pipe_auth_state);
+
+	/* receive secondary rpc connection */
+	c->status = dcerpc_secondary_connection_recv(ctx, &p2);
+	talloc_steal(s, p2);
+	talloc_steal(p2, s->pipe);
+	s->pipe = p2;
+
+	if (!composite_is_ok(c)) return;
+
+	/* initiate a authenticated bind */
+	auth_req = dcerpc_bind_auth_send(c, s->pipe, s->table,
+					 s->credentials, DCERPC_AUTH_TYPE_SPNEGO,
+					 dcerpc_auth_level(s->pipe->conn),
+					 s->table->authservices->names[0]);
+	if (composite_nomem(auth_req, c)) return;
+		
+	composite_continue(c, auth_req, continue_auth, c);
 }
 
 
 /*
   Stage 2 of pipe_auth: Receive result of non-authenticated bind request
 */
-static void continue_auth_recv_none(struct composite_context *ctx)
+static void continue_auth_none(struct composite_context *ctx)
 {
 	struct composite_context *c = talloc_get_type(ctx->async.private_data,
 						      struct composite_context);
@@ -1158,6 +1199,8 @@ struct composite_context *dcerpc_pipe_auth_send(struct dcerpc_pipe *p,
 		 * connection is not signed or sealed.  For that case
 		 * we rely on the already authenticated CIFS connection
 		 */
+		
+		uint8_t auth_type;
 
 		if ((conn->flags & (DCERPC_SIGN|DCERPC_SEAL)) == 0) {
 			/*
@@ -1171,34 +1214,40 @@ struct composite_context *dcerpc_pipe_auth_send(struct dcerpc_pipe *p,
 		}
 
 		if (s->binding->flags & DCERPC_AUTH_SPNEGO) {
-			s->auth_type = DCERPC_AUTH_TYPE_SPNEGO;
+			auth_type = DCERPC_AUTH_TYPE_SPNEGO;
 
 		} else if (s->binding->flags & DCERPC_AUTH_KRB5) {
-			s->auth_type = DCERPC_AUTH_TYPE_KRB5;
+			auth_type = DCERPC_AUTH_TYPE_KRB5;
 
 		} else if (s->binding->flags & DCERPC_SCHANNEL) {
-			s->auth_type = DCERPC_AUTH_TYPE_SCHANNEL;
+			auth_type = DCERPC_AUTH_TYPE_SCHANNEL;
 
 		} else if (s->binding->flags & DCERPC_AUTH_NTLM) {
-			s->auth_type = DCERPC_AUTH_TYPE_NTLMSSP;
+			auth_type = DCERPC_AUTH_TYPE_NTLMSSP;
 		} else {
-			s->auth_type = DCERPC_AUTH_TYPE_SPNEGO;
-			s->try_ntlm_fallback = True;
+			auth_req = dcerpc_bind_auth_send(c, s->pipe, s->table,
+							 s->credentials, DCERPC_AUTH_TYPE_SPNEGO,
+							 dcerpc_auth_level(conn),
+							 s->table->authservices->names[0]);
+			if (composite_nomem(auth_req, c)) return c;
+			
+			composite_continue(c, auth_req, continue_auth_auto, c);
+			return c;
 		}
-
+		
 		auth_req = dcerpc_bind_auth_send(c, s->pipe, s->table,
-						 s->credentials, s->auth_type,
+						 s->credentials, auth_type,
 						 dcerpc_auth_level(conn),
 						 s->table->authservices->names[0]);
 		if (composite_nomem(auth_req, c)) return c;
 		
-		composite_continue(c, auth_req, continue_recv_bind, c);
+		composite_continue(c, auth_req, continue_auth, c);
 
 	} else {
 		auth_none_req = dcerpc_bind_auth_none_send(c, s->pipe, s->table);
 		if (composite_nomem(auth_none_req, c)) return c;
 
-		composite_continue(c, auth_none_req, continue_auth_recv_none, c);
+		composite_continue(c, auth_none_req, continue_auth_none, c);
 	}
 
 	return c;
@@ -1212,7 +1261,7 @@ struct composite_context *dcerpc_pipe_auth_send(struct dcerpc_pipe *p,
   supllied, as it rebinds to a new pipe due to authentication fallback
 
 */
-NTSTATUS dcerpc_pipe_auth_recv(struct composite_context *c, 
+NTSTATUS dcerpc_pipe_auth_recv(struct composite_context *c, TALLOC_CTX *mem_ctx, 
 			       struct dcerpc_pipe **p)
 {
 	NTSTATUS status;
@@ -1225,6 +1274,7 @@ NTSTATUS dcerpc_pipe_auth_recv(struct composite_context *c,
 		DEBUG(0, ("Failed to bind to uuid %s - %s\n", uuid_str, nt_errstr(status)));
 		talloc_free(uuid_str);
 	} else {
+		talloc_steal(mem_ctx, s->pipe);
 		*p = s->pipe;
 	}
 
@@ -1238,7 +1288,8 @@ NTSTATUS dcerpc_pipe_auth_recv(struct composite_context *c,
 
    This may change *p, as it rebinds to a new pipe due to authentication fallback
 */
-NTSTATUS dcerpc_pipe_auth(struct dcerpc_pipe **p, 
+NTSTATUS dcerpc_pipe_auth(TALLOC_CTX *mem_ctx,
+			  struct dcerpc_pipe **p, 
 			  struct dcerpc_binding *binding,
 			  const struct dcerpc_interface_table *table,
 			  struct cli_credentials *credentials)
@@ -1246,7 +1297,7 @@ NTSTATUS dcerpc_pipe_auth(struct dcerpc_pipe **p,
 	struct composite_context *c;
 
 	c = dcerpc_pipe_auth_send(*p, binding, table, credentials);
-	return dcerpc_pipe_auth_recv(c, p);
+	return dcerpc_pipe_auth_recv(c, mem_ctx, p);
 }
 
 
