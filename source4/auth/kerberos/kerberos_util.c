@@ -209,6 +209,13 @@ krb5_error_code principal_from_credentials(TALLOC_CTX *parent_ctx,
 		talloc_free(mem_ctx);
 		return ret;
 	}
+
+	if (ret == KRB5KDC_ERR_PREAUTH_FAILED && cli_credentials_wrong_password(credentials)) {
+		ret = kinit_to_ccache(parent_ctx,
+				      credentials,
+				      smb_krb5_context,
+				      ccache); 
+	}
 	if (ret) {
 		DEBUG(1,("kinit for %s failed (%s)\n", 
 			 cli_credentials_get_principal(credentials, mem_ctx), 
