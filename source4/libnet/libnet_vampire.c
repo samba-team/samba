@@ -304,7 +304,7 @@ NTSTATUS libnet_SamSync_netlogon(struct libnet_context *ctx, TALLOC_CTX *mem_ctx
 		return nt_status;
 	}
 
-	/* Setup details for the syncronisation */
+	/* Setup details for the synchronisation */
 	dbsync.in.logon_server = talloc_asprintf(samsync_ctx, "\\\\%s", dcerpc_server_name(p));
 	dbsync.in.computername = cli_credentials_get_workstation(machine_account);
 	dbsync.in.preferredmaximumlength = (uint32_t)-1;
@@ -340,7 +340,7 @@ NTSTATUS libnet_SamSync_netlogon(struct libnet_context *ctx, TALLOC_CTX *mem_ctx
 				char *error_string = NULL;
 				delta_ctx = talloc_named(loop_ctx, 0, "DatabaseSync delta context");
 				/* 'Fix' elements, by decrypting and
-				 * de-obfustiating the data */
+				 * de-obfuscating the data */
 				nt_status = fix_delta(delta_ctx, 
 						      creds, 
 						      dbsync.in.database_id,
