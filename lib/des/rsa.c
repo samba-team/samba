@@ -255,7 +255,7 @@ null_rsa_finish(RSA *rsa)
 }
 
 static const RSA_METHOD rsa_null_method = {
-    "hx509 null RSA",
+    "hcrypto null RSA",
     null_rsa_public_encrypt,
     null_rsa_public_decrypt,
     null_rsa_private_encrypt,
@@ -276,7 +276,8 @@ RSA_null_method(void)
     return &rsa_null_method;
 }
 
-static const RSA_METHOD *default_rsa_method = &rsa_null_method;
+extern const RSA_METHOD hc_rsa_imath_method;
+static const RSA_METHOD *default_rsa_method = &hc_rsa_imath_method;
 
 const RSA_METHOD *
 RSA_get_default_method(void)
