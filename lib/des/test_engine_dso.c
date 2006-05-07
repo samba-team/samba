@@ -160,7 +160,7 @@ main(int argc, char **argv)
 	    errx(1, "failed to public decrypt");
 
 	if (keylen != 7)
-	    errx(1, "output buffer not same length");
+	    errx(1, "output buffer not same length: %d", (int)keylen);
 
 	if (memcmp(buf, "hejsan", 7) != 0)
 	    errx(1, "string not the same after decryption");
@@ -179,7 +179,7 @@ main(int argc, char **argv)
 	    errx(1, "failed to private decrypt");
 
 	if (keylen != 7)
-	    errx(1, "output buffer not same length");
+	    errx(1, "output buffer not same length: %d", (int)keylen);
 
 	if (memcmp(buf, "hejsan", 7) != 0)
 	    errx(1, "string not the same after decryption");
