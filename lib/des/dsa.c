@@ -93,7 +93,7 @@ DSA_up_ref(DSA *dsa)
  */
 
 static const DSA_METHOD dsa_null_method = {
-    "hx509 null DSA"
+    "hcrypto null DSA"
 };
 
 const DSA_METHOD *
