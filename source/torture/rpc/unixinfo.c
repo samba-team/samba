@@ -47,8 +47,8 @@ static BOOL test_uidtosid(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 static BOOL test_getpwuid(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 {
 	uint64_t uids[512];
-	const int num_uids = sizeof(uids)/sizeof(uids[0]);
-	int i;
+	uint32_t num_uids = ARRAY_SIZE(uids);
+	uint32_t i;
 	struct unixinfo_GetPWUid r;
 	NTSTATUS result;
 
@@ -56,7 +56,7 @@ static BOOL test_getpwuid(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 		uids[i] = i;
 	}
 	
-	r.in.count = num_uids;
+	r.in.count = &num_uids;
 	r.in.uids = uids;
 
 	result = dcerpc_unixinfo_GetPWUid(p, mem_ctx, &r);
