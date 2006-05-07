@@ -31,7 +31,7 @@
  * SUCH DAMAGE. 
  */
 
-/* $Id: krb5-v4compat.h,v 1.6 2005/04/23 19:38:16 lha Exp $ */
+/* $Id: krb5-v4compat.h,v 1.7 2006/05/05 09:29:07 lha Exp $ */
 
 #ifndef __KRB5_V4COMPAT_H__
 #define __KRB5_V4COMPAT_H__
@@ -119,7 +119,7 @@
 struct ktext {
     unsigned int length;		/* Length of the text */
     unsigned char dat[MAX_KTXT_LEN];	/* The data itself */
-    u_int32_t mbz;		/* zero to catch runaway strings */
+    uint32_t mbz;		/* zero to catch runaway strings */
 };
 
 struct credentials {
@@ -157,11 +157,11 @@ struct _krb5_krb_auth_data {
     char    *pname;		/* Principal's name */
     char    *pinst;		/* His Instance */
     char    *prealm;		/* His Realm */
-    u_int32_t checksum;		/* Data checksum (opt) */
+    uint32_t checksum;		/* Data checksum (opt) */
     krb5_keyblock session;	/* Session Key */
     unsigned char life;		/* Life of ticket */
-    u_int32_t time_sec;		/* Time ticket issued */
-    u_int32_t address;		/* Address in ticket */
+    uint32_t time_sec;		/* Time ticket issued */
+    uint32_t address;		/* Address in ticket */
 };
 
 time_t		_krb5_krb_life_to_time (int, int);

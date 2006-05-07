@@ -33,7 +33,7 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id: keytab_keyfile.c,v 1.18 2006/04/02 01:24:52 lha Exp $");
+RCSID("$Id: keytab_keyfile.c,v 1.19 2006/04/24 15:06:57 lha Exp $");
 
 /* afs keyfile operations --------------------------------------- */
 
@@ -63,8 +63,7 @@ struct akf_data {
  */
 
 static int
-get_cell_and_realm (krb5_context context,
-		    struct akf_data *d)
+get_cell_and_realm (krb5_context context, struct akf_data *d)
 {
     FILE *f;
     char buf[BUFSIZ], *cp;
@@ -95,6 +94,7 @@ get_cell_and_realm (krb5_context context,
     if (f != NULL) {
 	if (fgets (buf, sizeof(buf), f) == NULL) {
 	    free (d->cell);
+	    d->cell = NULL;
 	    fclose (f);
 	    krb5_set_error_string (context, "no realm in %s",
 				   AFS_SERVERMAGICKRBCONF);
@@ -110,6 +110,7 @@ get_cell_and_realm (krb5_context context,
     d->realm = strdup (buf);
     if (d->realm == NULL) {
 	free (d->cell);
+	d->cell = NULL;
 	krb5_set_error_string (context, "malloc: out of memory");
 	return ENOMEM;
     }

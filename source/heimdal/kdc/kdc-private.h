@@ -28,8 +28,8 @@ krb5_error_code
 _kdc_db_fetch (
 	krb5_context /*context*/,
 	krb5_kdc_configuration */*config*/,
-	krb5_principal /*principal*/,
-	enum hdb_ent_type /*ent_type*/,
+	krb5_const_principal /*principal*/,
+	unsigned /*flags*/,
 	hdb_entry_ex **/*h*/);
 
 krb5_error_code
@@ -39,7 +39,7 @@ _kdc_db_fetch4 (
 	const char */*name*/,
 	const char */*instance*/,
 	const char */*realm*/,
-	enum hdb_ent_type /*ent_type*/,
+	unsigned /*flags*/,
 	hdb_entry_ex **/*ent*/);
 
 krb5_error_code

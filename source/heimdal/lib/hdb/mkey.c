@@ -36,7 +36,7 @@
 #define O_BINARY 0
 #endif
 
-RCSID("$Id: mkey.c,v 1.21 2005/08/19 13:07:03 lha Exp $");
+RCSID("$Id: mkey.c,v 1.22 2006/05/05 10:27:59 lha Exp $");
 
 struct hdb_master_key_data {
     krb5_keytab_entry keytab;
@@ -355,7 +355,7 @@ hdb_write_master_key(krb5_context context, const char *filename,
 }
 
 hdb_master_key
-_hdb_find_master_key(u_int32_t *mkvno, hdb_master_key mkey)
+_hdb_find_master_key(uint32_t *mkvno, hdb_master_key mkey)
 {
     hdb_master_key ret = NULL;
     while(mkey) {

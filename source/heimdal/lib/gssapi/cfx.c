@@ -32,7 +32,7 @@
 
 #include "gssapi_locl.h"
 
-RCSID("$Id: cfx.c,v 1.17 2005/04/27 17:47:32 lha Exp $");
+RCSID("$Id: cfx.c,v 1.19 2006/05/05 10:26:43 lha Exp $");
 
 /*
  * Implementation of draft-ietf-krb-wg-gssapi-cfx-06.txt
@@ -143,11 +143,10 @@ OM_uint32 _gssapi_wrap_size_cfx(OM_uint32 *minor_status,
  */
 
 static krb5_error_code
-rrc_rotate(void *data, size_t len, u_int16_t rrc, krb5_boolean unrotate)
+rrc_rotate(void *data, size_t len, uint16_t rrc, krb5_boolean unrotate)
 {
-    u_char *tmp;
+    u_char *tmp, buf[256];
     size_t left;
-    char buf[256];
 
     if (len == 0)
 	return 0;
@@ -220,7 +219,7 @@ OM_uint32 _gssapi_wrap_cfx(OM_uint32 *minor_status,
     }
 
     /* Always rotate encrypted token (if any) and checksum to header */
-    rrc = (conf_req_flag ? sizeof(*token) : 0) + (u_int16_t)cksumsize;
+    rrc = (conf_req_flag ? sizeof(*token) : 0) + (uint16_t)cksumsize;
 
     output_message_buffer->length = wrapped_len;
     output_message_buffer->value = malloc(output_message_buffer->length);
@@ -420,7 +419,7 @@ OM_uint32 _gssapi_unwrap_cfx(OM_uint32 *minor_status,
     krb5_error_code ret;
     unsigned usage;
     krb5_data data;
-    u_int16_t ec, rrc;
+    uint16_t ec, rrc;
     OM_uint32 seq_number_lo, seq_number_hi;
     size_t len;
     u_char *p;

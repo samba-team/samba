@@ -31,7 +31,7 @@
  * SUCH DAMAGE. 
  */
 
-/* $Id: gssapi_locl.h,v 1.44 2006/04/12 17:44:05 lha Exp $ */
+/* $Id: gssapi_locl.h,v 1.45 2006/05/04 11:56:14 lha Exp $ */
 
 #ifndef GSSAPI_LOCL_H
 #define GSSAPI_LOCL_H
@@ -307,9 +307,9 @@ krb5_error_code
 gssapi_encode_be_om_uint32(OM_uint32, u_char *);
 
 krb5_error_code
-gssapi_decode_om_uint32(u_char *, OM_uint32 *);
+gssapi_decode_om_uint32(const void *, OM_uint32 *);
 
 krb5_error_code
-gssapi_decode_be_om_uint32(u_char *, OM_uint32 *);
+gssapi_decode_be_om_uint32(const void *, OM_uint32 *);
 
 #endif

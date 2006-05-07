@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997-2004 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2006 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -34,7 +34,7 @@
 #include "krb5_locl.h"
 #include "store-int.h"
 
-RCSID("$Id: store.c,v 1.51 2006/04/07 22:23:20 lha Exp $");
+RCSID("$Id: store.c,v 1.58 2006/05/05 07:15:18 lha Exp $");
 
 #define BYTEORDER_IS(SP, V) (((SP)->flags & KRB5_STORAGE_BYTEORDER_MASK) == (V))
 #define BYTEORDER_IS_LE(SP) BYTEORDER_IS((SP), KRB5_STORAGE_BYTEORDER_LE)
@@ -181,6 +181,13 @@ krb5_store_int32(krb5_storage *sp,
     return krb5_store_int(sp, value, 4);
 }
 
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_store_uint32(krb5_storage *sp,
+		  uint32_t value)
+{
+    return krb5_store_int32(sp, (int32_t)value);
+}
+
 static krb5_error_code
 krb5_ret_int(krb5_storage *sp,
 	     int32_t *value,
@@ -212,6 +219,20 @@ krb5_ret_int32(krb5_storage *sp,
 }
 
 krb5_error_code KRB5_LIB_FUNCTION
+krb5_ret_uint32(krb5_storage *sp,
+		uint32_t *value)
+{
+    krb5_error_code ret;
+    int32_t v;
+
+    ret = krb5_ret_int32(sp, &v);
+    if (ret == 0)
+	*value = (uint32_t)v;
+
+    return ret;
+}
+
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_store_int16(krb5_storage *sp,
 		 int16_t value)
 {
@@ -220,6 +241,13 @@ krb5_store_int16(krb5_storage *sp,
     else if(BYTEORDER_IS_LE(sp))
 	value = bswap16(value);
     return krb5_store_int(sp, value, 2);
+}
+
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_store_uint16(krb5_storage *sp,
+		  uint16_t value)
+{
+    return krb5_store_int16(sp, (int16_t)value);
 }
 
 krb5_error_code KRB5_LIB_FUNCTION
@@ -240,6 +268,20 @@ krb5_ret_int16(krb5_storage *sp,
 }
 
 krb5_error_code KRB5_LIB_FUNCTION
+krb5_ret_uint16(krb5_storage *sp,
+		uint16_t *value)
+{
+    krb5_error_code ret;
+    int16_t v;
+
+    ret = krb5_ret_int16(sp, &v);
+    if (ret == 0)
+	*value = (uint16_t)v;
+
+    return ret;
+}
+
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_store_int8(krb5_storage *sp,
 		int8_t value)
 {
@@ -252,6 +294,13 @@ krb5_store_int8(krb5_storage *sp,
 }
 
 krb5_error_code KRB5_LIB_FUNCTION
+krb5_store_uint8(krb5_storage *sp,
+		 uint8_t value)
+{
+    return krb5_store_int8(sp, (int8_t)value);
+}
+
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_ret_int8(krb5_storage *sp,
 	      int8_t *value)
 {
@@ -261,6 +310,20 @@ krb5_ret_int8(krb5_storage *sp,
     if (ret != sizeof(*value))
 	return (ret<0)?errno:sp->eof_code;
     return 0;
+}
+
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_ret_uint8(krb5_storage *sp,
+	       uint8_t *value)
+{
+    krb5_error_code ret;
+    int8_t v;
+
+    ret = krb5_ret_int8(sp, &v);
+    if (ret == 0)
+	*value = (uint8_t)v;
+
+    return ret;
 }
 
 krb5_error_code KRB5_LIB_FUNCTION
@@ -380,19 +443,19 @@ krb5_ret_stringz(krb5_storage *sp,
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_store_principal(krb5_storage *sp,
-		     krb5_principal p)
+		     krb5_const_principal p)
 {
     int i;
     int ret;
 
     if(!krb5_storage_is_flags(sp, KRB5_STORAGE_PRINCIPAL_NO_NAME_TYPE)) {
-    ret = krb5_store_int32(sp, p->name.name_type);
-    if(ret) return ret;
+	ret = krb5_store_int32(sp, p->name.name_type);
+	if(ret) return ret;
     }
     if(krb5_storage_is_flags(sp, KRB5_STORAGE_PRINCIPAL_WRONG_NUM_COMPONENTS))
 	ret = krb5_store_int32(sp, p->name.name_string.len + 1);
     else
-    ret = krb5_store_int32(sp, p->name.name_string.len);
+	ret = krb5_store_int32(sp, p->name.name_string.len);
     
     if(ret) return ret;
     ret = krb5_store_string(sp, p->realm);
@@ -710,7 +773,7 @@ krb5_ret_creds(krb5_storage *sp, krb5_creds *creds)
      * format.
      */
     {
-	u_int32_t mask = 0xffff0000;
+	uint32_t mask = 0xffff0000;
 	creds->flags.i = 0;
 	creds->flags.b.anonymous = 1;
 	if (creds->flags.i & mask)
@@ -865,7 +928,7 @@ krb5_ret_creds_tag(krb5_storage *sp,
      * format.
      */
     {
-	u_int32_t mask = 0xffff0000;
+	uint32_t mask = 0xffff0000;
 	creds->flags.i = 0;
 	creds->flags.b.anonymous = 1;
 	if (creds->flags.i & mask)

@@ -8,14 +8,13 @@ krb5_error_code
 _hdb_fetch (
 	krb5_context /*context*/,
 	HDB */*db*/,
-	unsigned /*flags*/,
 	krb5_const_principal /*principal*/,
-	enum hdb_ent_type /*ent_type*/,
+	unsigned /*flags*/,
 	hdb_entry_ex */*entry*/);
 
 hdb_master_key
 _hdb_find_master_key (
-	u_int32_t */*mkvno*/,
+	uint32_t */*mkvno*/,
 	hdb_master_key /*mkey*/);
 
 int
@@ -43,7 +42,7 @@ krb5_error_code
 _hdb_remove (
 	krb5_context /*context*/,
 	HDB */*db*/,
-	hdb_entry_ex */*entry*/);
+	krb5_const_principal /*principal*/);
 
 krb5_error_code
 _hdb_store (

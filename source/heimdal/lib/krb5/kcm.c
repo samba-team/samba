@@ -43,7 +43,7 @@
 
 #include "kcm.h"
 
-RCSID("$Id: kcm.c,v 1.8 2005/09/19 20:23:05 lha Exp $");
+RCSID("$Id: kcm.c,v 1.9 2006/05/05 09:28:48 lha Exp $");
 
 typedef struct krb5_kcmcache {
     char *name;
@@ -53,7 +53,7 @@ typedef struct krb5_kcmcache {
 
 #define KCMCACHE(X)	((krb5_kcmcache *)(X)->data.data)
 #define CACHENAME(X)	(KCMCACHE(X)->name)
-#define KCMCURSOR(C)	(*(u_int32_t *)(C))
+#define KCMCURSOR(C)	(*(uint32_t *)(C))
 
 static krb5_error_code
 try_door(krb5_context context, const krb5_kcmcache *k,
@@ -903,7 +903,7 @@ _krb5_kcm_noop(krb5_context context,
 krb5_error_code
 _krb5_kcm_chmod(krb5_context context,
 		krb5_ccache id,
-		u_int16_t mode)
+		uint16_t mode)
 {
     krb5_error_code ret;
     krb5_kcmcache *k = KCMCACHE(id);
@@ -944,8 +944,8 @@ _krb5_kcm_chmod(krb5_context context,
 krb5_error_code
 _krb5_kcm_chown(krb5_context context,
 		krb5_ccache id,
-		u_int32_t uid,
-		u_int32_t gid)
+		uint32_t uid,
+		uint32_t gid)
 {
     krb5_error_code ret;
     krb5_kcmcache *k = KCMCACHE(id);

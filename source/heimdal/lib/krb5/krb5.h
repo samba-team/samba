@@ -31,7 +31,7 @@
  * SUCH DAMAGE. 
  */
 
-/* $Id: krb5.h,v 1.240 2005/11/30 15:20:32 lha Exp $ */
+/* $Id: krb5.h,v 1.241 2006/05/05 09:29:36 lha Exp $ */
 
 #ifndef __KRB5_H__
 #define __KRB5_H__
@@ -64,7 +64,7 @@ typedef int32_t krb5_error_code;
 
 typedef int krb5_kvno;
 
-typedef u_int32_t krb5_flags;
+typedef uint32_t krb5_flags;
 
 typedef void *krb5_pointer;
 typedef const void *krb5_const_pointer;
@@ -492,7 +492,7 @@ typedef struct krb5_keytab_entry {
     krb5_principal principal;
     krb5_kvno vno;
     krb5_keyblock keyblock;
-    u_int32_t timestamp;
+    uint32_t timestamp;
 } krb5_keytab_entry;
 
 typedef struct krb5_kt_cursor {
@@ -536,7 +536,7 @@ typedef struct krb5_keytab_key_proc_args krb5_keytab_key_proc_args;
 typedef struct krb5_replay_data {
     krb5_timestamp timestamp;
     int32_t usec;
-    u_int32_t seq;
+    uint32_t seq;
 } krb5_replay_data;
 
 /* flags for krb5_auth_con_setflags */
@@ -569,8 +569,8 @@ typedef struct krb5_auth_context_data {
     krb5_keyblock *local_subkey;
     krb5_keyblock *remote_subkey;
 
-    u_int32_t local_seqnumber;
-    u_int32_t remote_seqnumber;
+    uint32_t local_seqnumber;
+    uint32_t remote_seqnumber;
 
     krb5_authenticator authenticator;
   

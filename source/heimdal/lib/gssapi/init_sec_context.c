@@ -33,7 +33,7 @@
 
 #include "gssapi_locl.h"
 
-RCSID("$Id: init_sec_context.c,v 1.62 2006/04/09 18:45:18 lha Exp $");
+RCSID("$Id: init_sec_context.c,v 1.63 2006/05/05 10:27:13 lha Exp $");
 
 /*
  * copy the addresses from `input_chan_bindings' (if any) to

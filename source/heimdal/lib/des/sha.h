@@ -31,7 +31,7 @@
  * SUCH DAMAGE.
  */
 
-/* $Id: sha.h,v 1.10 2006/04/15 07:54:11 lha Exp $ */
+/* $Id: sha.h,v 1.11 2006/05/05 11:06:21 lha Exp $ */
 
 #ifndef HEIM_SHA_H
 #define HEIM_SHA_H 1
@@ -52,7 +52,7 @@
 
 struct sha {
   unsigned int sz[2];
-  u_int32_t counter[5];
+  uint32_t counter[5];
   unsigned char save[64];
 };
 
@@ -70,7 +70,7 @@ void SHA1_Final (void *res, struct sha *m);
 
 struct hc_sha256state {
   unsigned int sz[2];
-  u_int32_t counter[8];
+  uint32_t counter[8];
   unsigned char save[64];
 };
 

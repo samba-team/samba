@@ -35,7 +35,7 @@
 
 /* keytab backend for HDB databases */
 
-RCSID("$Id: keytab.c,v 1.10 2006/04/02 20:20:45 lha Exp $");
+RCSID("$Id: keytab.c,v 1.11 2006/04/27 11:01:30 lha Exp $");
 
 struct hdb_data {
     char *dbname;
@@ -218,8 +218,8 @@ hdb_get_entry(krb5_context context,
 	(*db->hdb_destroy)(context, db);
 	return ret;
     }
+    ret = (*db->hdb_fetch)(context, db, principal, HDB_F_DECRYPT, &ent);
 
-    ret = (*db->hdb_fetch)(context, db, HDB_F_DECRYPT, principal, HDB_ENT_TYPE_SERVER, &ent);
 
     /* Shutdown the hdb on error */
     if(ret == HDB_ERR_NOENTRY) {

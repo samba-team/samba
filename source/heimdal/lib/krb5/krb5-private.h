@@ -30,11 +30,11 @@ _krb5_cc_allocate (
 void
 _krb5_crc_init_table (void);
 
-u_int32_t
+uint32_t
 _krb5_crc_update (
 	const char */*p*/,
 	size_t /*len*/,
-	u_int32_t /*res*/);
+	uint32_t /*res*/);
 
 krb5_error_code
 _krb5_dh_group_ok (
@@ -120,14 +120,14 @@ krb5_error_code
 _krb5_kcm_chmod (
 	krb5_context /*context*/,
 	krb5_ccache /*id*/,
-	u_int16_t /*mode*/);
+	uint16_t /*mode*/);
 
 krb5_error_code
 _krb5_kcm_chown (
 	krb5_context /*context*/,
 	krb5_ccache /*id*/,
-	u_int32_t /*uid*/,
-	u_int32_t /*gid*/);
+	uint32_t /*uid*/,
+	uint32_t /*gid*/);
 
 krb5_error_code
 _krb5_kcm_get_initial_ticket (
@@ -158,8 +158,8 @@ _krb5_krb_cr_err_reply (
 	const char */*name*/,
 	const char */*inst*/,
 	const char */*realm*/,
-	u_int32_t /*time_ws*/,
-	u_int32_t /*e*/,
+	uint32_t /*time_ws*/,
+	uint32_t /*e*/,
 	const char */*e_string*/,
 	krb5_data */*data*/);
 
@@ -171,7 +171,7 @@ _krb5_krb_create_auth_reply (
 	const char */*prealm*/,
 	int32_t /*time_ws*/,
 	int /*n*/,
-	u_int32_t /*x_date*/,
+	uint32_t /*x_date*/,
 	unsigned char /*kvno*/,
 	const krb5_data */*cipher*/,
 	krb5_data */*data*/);
@@ -183,10 +183,10 @@ _krb5_krb_create_ciph (
 	const char */*service*/,
 	const char */*instance*/,
 	const char */*realm*/,
-	u_int32_t /*life*/,
+	uint32_t /*life*/,
 	unsigned char /*kvno*/,
 	const krb5_data */*ticket*/,
-	u_int32_t /*kdc_time*/,
+	uint32_t /*kdc_time*/,
 	const krb5_keyblock */*key*/,
 	krb5_data */*enc_data*/);
 
@@ -299,6 +299,11 @@ _krb5_parse_moduli_line (
 	struct krb5_dh_moduli **/*m*/);
 
 void KRB5_LIB_FUNCTION
+_krb5_pk_allow_proxy_certificate (
+	struct krb5_pk_identity */*id*/,
+	int /*boolean*/);
+
+void KRB5_LIB_FUNCTION
 _krb5_pk_cert_free (struct krb5_pk_cert */*cert*/);
 
 krb5_error_code KRB5_LIB_FUNCTION
@@ -341,6 +346,7 @@ _krb5_pk_octetstring2key (
 krb5_error_code KRB5_LIB_FUNCTION
 _krb5_pk_rd_pa_reply (
 	krb5_context /*context*/,
+	const char */*realm*/,
 	void */*c*/,
 	krb5_enctype /*etype*/,
 	const krb5_krbhst_info */*hi*/,

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2005 Kungliga Tekniska HÃ¶gskolan
+ * Copyright (c) 1997 - 2005 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -35,11 +35,11 @@
 
 #include <krb5-v4compat.h>
 
-RCSID("$Id: kerberos4.c,v 1.57 2006/04/02 01:54:37 lha Exp $");
+RCSID("$Id: kerberos4.c,v 1.60 2006/05/05 10:50:44 lha Exp $");
 
 #ifndef swap32
-static u_int32_t
-swap32(u_int32_t x)
+static uint32_t
+swap32(uint32_t x)
 {
     return ((x << 24) & 0xff000000) |
 	((x << 8) & 0xff0000) |
@@ -62,12 +62,17 @@ make_err_reply(krb5_context context, krb5_data *reply,
 			   kdc_time, code, msg, reply);
 }
 
+struct valid_princ_ctx {
+    krb5_kdc_configuration *config;
+    unsigned flags;
+};
+
 static krb5_boolean
 valid_princ(krb5_context context,
 	    void *funcctx,
 	    krb5_principal princ)
 {
-    krb5_kdc_configuration *config = funcctx;
+    struct valid_princ_ctx *ctx = funcctx;
     krb5_error_code ret;
     char *s;
     hdb_entry_ex *ent;
@@ -75,14 +80,14 @@ valid_princ(krb5_context context,
     ret = krb5_unparse_name(context, princ, &s);
     if (ret)
 	return FALSE;
-    ret = _kdc_db_fetch(context, config, princ, HDB_ENT_TYPE_ANY, &ent);
+    ret = _kdc_db_fetch(context, ctx->config, princ, ctx->flags, &ent);
     if (ret) {
-	kdc_log(context, config, 7, "Lookup %s failed: %s", s,
+	kdc_log(context, ctx->config, 7, "Lookup %s failed: %s", s,
 		krb5_get_err_text (context, ret));
 	free(s);
 	return FALSE;
     }
-    kdc_log(context, config, 7, "Lookup %s succeeded", s);
+    kdc_log(context, ctx->config, 7, "Lookup %s succeeded", s);
     free(s);
     _kdc_free_ent(context, ent);
     return TRUE;
@@ -90,19 +95,23 @@ valid_princ(krb5_context context,
 
 krb5_error_code
 _kdc_db_fetch4(krb5_context context,
-	  krb5_kdc_configuration *config,
-	  const char *name, const char *instance, const char *realm,
-	  enum hdb_ent_type ent_type, 
-	  hdb_entry_ex **ent)
+	       krb5_kdc_configuration *config,
+	       const char *name, const char *instance, const char *realm,
+	       unsigned flags,
+	       hdb_entry_ex **ent)
 {
     krb5_principal p;
     krb5_error_code ret;
+    struct valid_princ_ctx ctx;
+
+    ctx.config = config;
+    ctx.flags = flags;
     
     ret = krb5_425_conv_principal_ext2(context, name, instance, realm, 
-				       valid_princ, config, 0, &p);
+				       valid_princ, &ctx, 0, &p);
     if(ret)
 	return ret;
-    ret = _kdc_db_fetch(context, config, p, ent_type, ent);
+    ret = _kdc_db_fetch(context, config, p, flags, ent);
     krb5_free_principal(context, p);
     return ret;
 }
@@ -135,7 +144,7 @@ _kdc_do_version4(krb5_context context,
     char *sname = NULL, *sinst = NULL;
     int32_t req_time;
     time_t max_life;
-    u_int8_t life;
+    uint8_t life;
     char client_name[256];
     char server_name[256];
 
@@ -171,7 +180,7 @@ _kdc_do_version4(krb5_context context,
 	RCHECK(krb5_ret_int32(sp, &req_time), out1);
 	if(lsb)
 	    req_time = swap32(req_time);
-	RCHECK(krb5_ret_int8(sp, &life), out1);
+	RCHECK(krb5_ret_uint8(sp, &life), out1);
 	RCHECK(krb5_ret_stringz(sp, &sname), out1);
 	RCHECK(krb5_ret_stringz(sp, &sinst), out1);
 	snprintf (client_name, sizeof(client_name),
@@ -182,7 +191,8 @@ _kdc_do_version4(krb5_context context,
 	kdc_log(context, config, 0, "AS-REQ (krb4) %s from %s for %s",
 		client_name, from, server_name);
 
-	ret = _kdc_db_fetch4(context, config, name, inst, realm, HDB_ENT_TYPE_CLIENT, &client);
+	ret = _kdc_db_fetch4(context, config, name, inst, realm, 
+			     HDB_F_GET_CLIENT, &client);
 	if(ret) {
 	    kdc_log(context, config, 0, "Client not found in database: %s: %s",
 		    client_name, krb5_get_err_text(context, ret));
@@ -190,8 +200,8 @@ _kdc_do_version4(krb5_context context,
 			   "principal unknown");
 	    goto out1;
 	}
-	ret = _kdc_db_fetch4(context, config, sname, sinst, 
-			config->v4_realm, HDB_ENT_TYPE_SERVER, &server);
+	ret = _kdc_db_fetch4(context, config, sname, sinst, config->v4_realm,
+			     HDB_F_GET_SERVER, &server);
 	if(ret){
 	    kdc_log(context, config, 0, "Server not found in database: %s: %s",
 		    server_name, krb5_get_err_text(context, ret));
@@ -361,7 +371,8 @@ _kdc_do_version4(krb5_context context,
 	    goto out2;
 	}
 
-	ret = _kdc_db_fetch(context, config, tgt_princ, HDB_ENT_TYPE_SERVER, &tgt);
+	ret = _kdc_db_fetch(context, config, tgt_princ,
+			    HDB_F_GET_KRBTGT, &tgt);
 	if(ret){
 	    char *s;
 	    s = kdc_log_msg(context, config, 0, "Ticket-granting ticket not "
@@ -418,7 +429,7 @@ _kdc_do_version4(krb5_context context,
 	RCHECK(krb5_ret_int32(sp, &req_time), out2);
 	if(lsb)
 	    req_time = swap32(req_time);
-	RCHECK(krb5_ret_int8(sp, &life), out2);
+	RCHECK(krb5_ret_uint8(sp, &life), out2);
 	RCHECK(krb5_ret_stringz(sp, &sname), out2);
 	RCHECK(krb5_ret_stringz(sp, &sinst), out2);
 	snprintf (server_name, sizeof(server_name),
@@ -456,7 +467,8 @@ _kdc_do_version4(krb5_context context,
 	    goto out2;
 	}
 	
-	ret = _kdc_db_fetch4(context, config, ad.pname, ad.pinst, ad.prealm, HDB_ENT_TYPE_CLIENT, &client);
+	ret = _kdc_db_fetch4(context, config, ad.pname, ad.pinst, ad.prealm,
+			     HDB_F_GET_CLIENT, &client);
 	if(ret && ret != HDB_ERR_NOENTRY) {
 	    char *s;
 	    s = kdc_log_msg(context, config, 0,
@@ -476,8 +488,8 @@ _kdc_do_version4(krb5_context context,
 	    goto out2;
 	}
 
-	ret = _kdc_db_fetch4(context, config, sname, sinst, config->v4_realm, 
-			     HDB_ENT_TYPE_SERVER, &server);
+	ret = _kdc_db_fetch4(context, config, sname, sinst, config->v4_realm,
+			     HDB_F_GET_SERVER, &server);
 	if(ret){
 	    char *s;
 	    s = kdc_log_msg(context, config, 0,

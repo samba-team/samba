@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2005 Kungliga Tekniska HÃ¶gskolan
+ * Copyright (c) 1997 - 2005 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -33,7 +33,7 @@
 
 #include "kdc_locl.h"
 
-RCSID("$Id: kaserver.c,v 1.32 2006/04/02 01:54:37 lha Exp $");
+RCSID("$Id: kaserver.c,v 1.35 2006/05/05 10:49:50 lha Exp $");
 
 #include <krb5-v4compat.h>
 #include <rx.h>
@@ -107,38 +107,69 @@ RCSID("$Id: kaserver.c,v 1.32 2006/04/02 01:54:37 lha Exp $");
 #define KATOOSOON                                (180521L)
 #define KALOCKED                                 (180522L)
 
-static void
+
+static krb5_error_code
 decode_rx_header (krb5_storage *sp,
 		  struct rx_header *h)
 {
-    krb5_ret_int32(sp, &h->epoch);
-    krb5_ret_int32(sp, &h->connid);
-    krb5_ret_int32(sp, &h->callid);
-    krb5_ret_int32(sp, &h->seqno);
-    krb5_ret_int32(sp, &h->serialno);
-    krb5_ret_int8(sp,  &h->type);
-    krb5_ret_int8(sp,  &h->flags);
-    krb5_ret_int8(sp,  &h->status);
-    krb5_ret_int8(sp,  &h->secindex);
-    krb5_ret_int16(sp, &h->reserved);
-    krb5_ret_int16(sp, &h->serviceid);
+    krb5_error_code ret;
+
+    ret = krb5_ret_uint32(sp, &h->epoch);
+    if (ret) return ret;
+    ret = krb5_ret_uint32(sp, &h->connid);
+    if (ret) return ret;
+    ret = krb5_ret_uint32(sp, &h->callid);
+    if (ret) return ret;
+    ret = krb5_ret_uint32(sp, &h->seqno);
+    if (ret) return ret;
+    ret = krb5_ret_uint32(sp, &h->serialno);
+    if (ret) return ret;
+    ret = krb5_ret_uint8(sp,  &h->type);
+    if (ret) return ret;
+    ret = krb5_ret_uint8(sp,  &h->flags);
+    if (ret) return ret;
+    ret = krb5_ret_uint8(sp,  &h->status);
+    if (ret) return ret;
+    ret = krb5_ret_uint8(sp,  &h->secindex);
+    if (ret) return ret;
+    ret = krb5_ret_uint16(sp, &h->reserved);
+    if (ret) return ret;
+    ret = krb5_ret_uint16(sp, &h->serviceid);
+    if (ret) return ret;
+
+    return 0;
 }
 
-static void
+static krb5_error_code
 encode_rx_header (struct rx_header *h,
 		  krb5_storage *sp)
 {
-    krb5_store_int32(sp, h->epoch);
-    krb5_store_int32(sp, h->connid);
-    krb5_store_int32(sp, h->callid);
-    krb5_store_int32(sp, h->seqno);
-    krb5_store_int32(sp, h->serialno);
-    krb5_store_int8(sp,  h->type);
-    krb5_store_int8(sp,  h->flags);
-    krb5_store_int8(sp,  h->status);
-    krb5_store_int8(sp,  h->secindex);
-    krb5_store_int16(sp, h->reserved);
-    krb5_store_int16(sp, h->serviceid);
+    krb5_error_code ret;
+
+    ret = krb5_store_uint32(sp, h->epoch);
+    if (ret) return ret;
+    ret = krb5_store_uint32(sp, h->connid);
+    if (ret) return ret;
+    ret = krb5_store_uint32(sp, h->callid);
+    if (ret) return ret;
+    ret = krb5_store_uint32(sp, h->seqno);
+    if (ret) return ret;
+    ret = krb5_store_uint32(sp, h->serialno);
+    if (ret) return ret;
+    ret = krb5_store_uint8(sp,  h->type);
+    if (ret) return ret;
+    ret = krb5_store_uint8(sp,  h->flags);
+    if (ret) return ret;
+    ret = krb5_store_uint8(sp,  h->status);
+    if (ret) return ret;
+    ret = krb5_store_uint8(sp,  h->secindex);
+    if (ret) return ret;
+    ret = krb5_store_uint16(sp, h->reserved);
+    if (ret) return ret;
+    ret = krb5_store_uint16(sp, h->serviceid);
+    if (ret) return ret;
+
+    return 0;
 }
 
 static void
@@ -162,7 +193,7 @@ init_reply_header (struct rx_header *hdr,
 
 static void
 make_error_reply (struct rx_header *hdr,
-		  u_int32_t ret,
+		  uint32_t ret,
 		  krb5_data *reply)
 
 {
@@ -171,7 +202,7 @@ make_error_reply (struct rx_header *hdr,
 
     init_reply_header (hdr, &reply_hdr, HT_ABORT, HF_LAST);
     sp = krb5_storage_emem();
-    encode_rx_header (&reply_hdr, sp);
+    ret = encode_rx_header (&reply_hdr, sp);
     krb5_store_int32(sp, ret);
     krb5_storage_to_data (sp, reply);
     krb5_storage_free (sp);
@@ -249,11 +280,12 @@ create_reply_ticket (krb5_context context,
 		     int kvno,
 		     int32_t max_seq_len,
 		     const char *sname, const char *sinstance,
-		     u_int32_t challenge,
+		     uint32_t challenge,
 		     const char *label,
 		     krb5_keyblock *key,
 		     krb5_data *reply)
 {
+    krb5_error_code ret;
     krb5_data ticket;
     krb5_keyblock session;
     krb5_storage *sp;
@@ -339,7 +371,7 @@ create_reply_ticket (krb5_context context,
     /* create the reply packet */
     init_reply_header (hdr, &reply_hdr, HT_DATA, HF_LAST);
     sp = krb5_storage_emem ();
-    encode_rx_header (&reply_hdr, sp);
+    ret = encode_rx_header (&reply_hdr, sp);
     krb5_store_int32 (sp, max_seq_len);
     krb5_store_xdr_data (sp, enc_data);
     krb5_data_free (&enc_data);
@@ -410,7 +442,7 @@ do_authenticate (krb5_context context,
     Key *skey = NULL;
     krb5_storage *reply_sp;
     time_t max_life;
-    u_int8_t life;
+    uint8_t life;
     int32_t chal;
     char client_name[256];
     char server_name[256];
@@ -433,8 +465,7 @@ do_authenticate (krb5_context context,
 	    client_name, from, server_name);
 
     ret = _kdc_db_fetch4 (context, config, name, instance, 
-			  config->v4_realm, HDB_ENT_TYPE_CLIENT, 
-			  &client_entry);
+			  config->v4_realm, HDB_F_GET_CLIENT, &client_entry);
     if (ret) {
 	kdc_log(context, config, 0, "Client not found in database: %s: %s",
 		client_name, krb5_get_err_text(context, ret));
@@ -444,7 +475,7 @@ do_authenticate (krb5_context context,
 
     ret = _kdc_db_fetch4 (context, config, "krbtgt", 
 			  config->v4_realm, config->v4_realm, 
-			  HDB_ENT_TYPE_SERVER, &server_entry);
+			  HDB_F_GET_KRBTGT, &server_entry);
     if (ret) {
 	kdc_log(context, config, 0, "Server not found in database: %s: %s",
 		server_name, krb5_get_err_text(context, ret));
@@ -650,8 +681,7 @@ do_getticket (krb5_context context,
 	      "%s.%s@%s", name, instance, config->v4_realm);
 
     ret = _kdc_db_fetch4 (context, config, name, instance, 
-			  config->v4_realm, HDB_ENT_TYPE_SERVER, 
-			  &server_entry);
+			  config->v4_realm, HDB_F_GET_SERVER, &server_entry);
     if (ret) {
 	kdc_log(context, config, 0, "Server not found in database: %s: %s",
 		server_name, krb5_get_err_text(context, ret));
@@ -660,8 +690,7 @@ do_getticket (krb5_context context,
     }
 
     ret = _kdc_db_fetch4 (context, config, "krbtgt", 
-			  config->v4_realm, config->v4_realm, 
-			  HDB_ENT_TYPE_CLIENT, &krbtgt_entry);
+		     config->v4_realm, config->v4_realm, HDB_F_GET_KRBTGT, &krbtgt_entry);
     if (ret) {
 	kdc_log(context, config, 0,
 		"Server not found in database: %s.%s@%s: %s",
@@ -734,8 +763,8 @@ do_getticket (krb5_context context,
 	    client_name, from, server_name);
 
     ret = _kdc_db_fetch4 (context, config, 
-			  ad.pname, ad.pinst, ad.prealm, 
-			  HDB_ENT_TYPE_CLIENT, &client_entry);
+			  ad.pname, ad.pinst, ad.prealm, HDB_F_GET_CLIENT,
+			  &client_entry);
     if(ret && ret != HDB_ERR_NOENTRY) {
 	kdc_log(context, config, 0,
 		"Client not found in database: (krb4) %s: %s",
@@ -842,14 +871,16 @@ _kdc_do_kaserver(krb5_context context,
 {
     krb5_error_code ret = 0;
     struct rx_header hdr;
-    u_int32_t op;
+    uint32_t op;
     krb5_storage *sp;
 
     if (len < RX_HEADER_SIZE)
 	return -1;
     sp = krb5_storage_from_mem (buf, len);
 
-    decode_rx_header (sp, &hdr);
+    ret = decode_rx_header (sp, &hdr);
+    if (ret)
+	goto out;
     buf += RX_HEADER_SIZE;
     len -= RX_HEADER_SIZE;
 
@@ -875,7 +906,9 @@ _kdc_do_kaserver(krb5_context context,
 	goto out;
     }
 
-    krb5_ret_int32(sp, &op);
+    ret = krb5_ret_uint32(sp, &op);
+    if (ret)
+	goto out;
     switch (op) {
     case AUTHENTICATE :
     case AUTHENTICATE_V2 :

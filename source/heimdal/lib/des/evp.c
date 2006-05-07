@@ -841,11 +841,13 @@ EVP_BytesToKey(const EVP_CIPHER *type,
 	    EVP_DigestUpdate(&c, salt, PKCS5_SALT_LEN);
 
 	EVP_DigestFinal_ex(&c, buf, &mds);
+	assert(mds == EVP_MD_size(md));
 
 	for (i = 1; i < count; i++) {
 	    EVP_DigestInit_ex(&c, md, NULL);
 	    EVP_DigestUpdate(&c, buf, mds);
 	    EVP_DigestFinal_ex(&c, buf, &mds);
+	    assert(mds == EVP_MD_size(md));
 	}
 
 	i = 0;

@@ -31,7 +31,7 @@
  * SUCH DAMAGE.
  */
 
-/* $Id: md4.h,v 1.10 2006/01/08 21:47:28 lha Exp $ */
+/* $Id: md4.h,v 1.11 2006/05/05 11:07:01 lha Exp $ */
 
 #ifndef HEIM_MD4_H
 #define HEIM_MD4_H 1
@@ -49,7 +49,7 @@
 
 struct md4 {
   unsigned int sz[2];
-  u_int32_t counter[4];
+  uint32_t counter[4];
   unsigned char save[64];
 };
 

@@ -41,7 +41,7 @@
 #include <fnmatch.h>
 #include "resolve.h"
 
-RCSID("$Id: principal.c,v 1.94 2006/04/10 10:10:01 lha Exp $");
+RCSID("$Id: principal.c,v 1.95 2006/04/24 15:16:14 lha Exp $");
 
 #define princ_num_comp(P) ((P)->name.name_string.len)
 #define princ_type(P) ((P)->name.name_type)
@@ -829,7 +829,6 @@ krb5_425_conv_principal_ext2(krb5_context context,
 	if (r) {
 	    if (r->head && r->head->type == T_AAAA) {
 		inst = strdup(r->head->domain);
-		dns_free_data(r);
 		passed = TRUE;
 	    }
 	    dns_free_data(r);

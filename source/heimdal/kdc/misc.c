@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2001 Kungliga Tekniska HÃ¶gskolan
+ * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -33,14 +33,15 @@
 
 #include "kdc_locl.h"
 
-RCSID("$Id: misc.c,v 1.27 2006/01/01 23:17:16 lha Exp $");
+RCSID("$Id: misc.c,v 1.29 2006/04/27 11:33:21 lha Exp $");
 
 struct timeval _kdc_now;
 
 krb5_error_code
 _kdc_db_fetch(krb5_context context,
 	      krb5_kdc_configuration *config,
-	      krb5_principal principal, enum hdb_ent_type ent_type, 
+	      krb5_const_principal principal,
+	      unsigned flags,
 	      hdb_entry_ex **h)
 {
     hdb_entry_ex *ent;
@@ -60,9 +61,8 @@ _kdc_db_fetch(krb5_context context,
 	}
 	ret = config->db[i]->hdb_fetch(context, 
 				       config->db[i],
-				       HDB_F_DECRYPT, 
-				       principal, 
-				       ent_type,
+				       principal,
+				       flags | HDB_F_DECRYPT,
 				       ent);
 	config->db[i]->hdb_close(context, config->db[i]);
 	if(ret == 0) {

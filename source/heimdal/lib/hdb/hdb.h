@@ -31,7 +31,7 @@
  * SUCH DAMAGE. 
  */
 
-/* $Id: hdb.h,v 1.36 2005/12/12 12:35:36 lha Exp $ */
+/* $Id: hdb.h,v 1.38 2006/04/28 07:37:11 lha Exp $ */
 
 #ifndef __HDB_H__
 #define __HDB_H__
@@ -44,13 +44,15 @@
 enum hdb_lockop{ HDB_RLOCK, HDB_WLOCK };
 
 /* flags for various functions */
-#define HDB_F_DECRYPT		1 /* decrypt keys */
-#define HDB_F_REPLACE		2 /* replace entry */
+#define HDB_F_DECRYPT		1	/* decrypt keys */
+#define HDB_F_REPLACE		2	/* replace entry */
+#define HDB_F_GET_CLIENT	4	/* fetch client */
+#define HDB_F_GET_SERVER	8	/* fetch server */
+#define HDB_F_GET_KRBTGT	16	/* fetch krbtgt */
+#define HDB_F_GET_ANY		28	/* fetch any of client,server,krbtgt */
 
 /* key usage for master key */
 #define HDB_KU_MKEY	0x484442
-
-enum hdb_ent_type{ HDB_ENT_TYPE_CLIENT, HDB_ENT_TYPE_SERVER, HDB_ENT_TYPE_ANY };
 
 typedef struct hdb_master_key_data *hdb_master_key;
 
@@ -87,30 +89,60 @@ typedef struct HDB{
     hdb_master_key hdb_master_key;
     void *hdb_openp;
 
-    krb5_error_code (*hdb_open)(krb5_context, struct HDB*, int, mode_t);
-    krb5_error_code (*hdb_close)(krb5_context, struct HDB*);
-    void	    (*hdb_free)(krb5_context,struct HDB*,hdb_entry_ex*);
-    krb5_error_code (*hdb_fetch)(krb5_context,struct HDB*,unsigned hdb_flags, 
-				 krb5_const_principal principal,
-				 enum hdb_ent_type ent_type, hdb_entry_ex*);
-    krb5_error_code (*hdb_store)(krb5_context,struct HDB*,
-				 unsigned,hdb_entry_ex*);
-    krb5_error_code (*hdb_remove)(krb5_context, struct HDB*, hdb_entry_ex*);
-    krb5_error_code (*hdb_firstkey)(krb5_context, struct HDB*,
-				    unsigned, hdb_entry_ex*);
-    krb5_error_code (*hdb_nextkey)(krb5_context, struct HDB*,
-				   unsigned, hdb_entry_ex*);
-    krb5_error_code (*hdb_lock)(krb5_context, struct HDB*, int operation);
-    krb5_error_code (*hdb_unlock)(krb5_context, struct HDB*);
-    krb5_error_code (*hdb_rename)(krb5_context, struct HDB*, const char*);
-    krb5_error_code (*hdb__get)(krb5_context,struct HDB*,krb5_data,krb5_data*);
-    krb5_error_code (*hdb__put)(krb5_context, struct HDB*, int, 
-				krb5_data, krb5_data);
-    krb5_error_code (*hdb__del)(krb5_context, struct HDB*, krb5_data);
-    krb5_error_code (*hdb_destroy)(krb5_context, struct HDB*);
+    krb5_error_code (*hdb_open)(krb5_context,
+				struct HDB*,
+				int,
+				mode_t);
+    krb5_error_code (*hdb_close)(krb5_context, 
+				 struct HDB*);
+    void	    (*hdb_free)(krb5_context,
+				struct HDB*,
+				hdb_entry_ex*);
+    krb5_error_code (*hdb_fetch)(krb5_context,
+				 struct HDB*,
+				 krb5_const_principal,
+				 unsigned,
+				 hdb_entry_ex*);
+    krb5_error_code (*hdb_store)(krb5_context,
+				 struct HDB*,
+				 unsigned,
+				 hdb_entry_ex*);
+    krb5_error_code (*hdb_remove)(krb5_context,
+				  struct HDB*,
+				  krb5_const_principal);
+    krb5_error_code (*hdb_firstkey)(krb5_context,
+				    struct HDB*,
+				    unsigned,
+				    hdb_entry_ex*);
+    krb5_error_code (*hdb_nextkey)(krb5_context,
+				   struct HDB*,
+				   unsigned,
+				   hdb_entry_ex*);
+    krb5_error_code (*hdb_lock)(krb5_context,
+				struct HDB*,
+				int operation);
+    krb5_error_code (*hdb_unlock)(krb5_context,
+				  struct HDB*);
+    krb5_error_code (*hdb_rename)(krb5_context,
+				  struct HDB*,
+				  const char*);
+    krb5_error_code (*hdb__get)(krb5_context,
+				struct HDB*,
+				krb5_data,
+				krb5_data*);
+    krb5_error_code (*hdb__put)(krb5_context,
+				struct HDB*,
+				int, 
+				krb5_data,
+				krb5_data);
+    krb5_error_code (*hdb__del)(krb5_context, 
+				struct HDB*,
+				krb5_data);
+    krb5_error_code (*hdb_destroy)(krb5_context,
+				   struct HDB*);
 }HDB;
 
-#define HDB_INTERFACE_VERSION	3
+#define HDB_INTERFACE_VERSION	4
 
 struct hdb_so_method {
     int version;

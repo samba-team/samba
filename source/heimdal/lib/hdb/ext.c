@@ -34,7 +34,7 @@
 #include "hdb_locl.h"
 #include <der.h>
 
-RCSID("$Id: ext.c,v 1.1 2005/08/11 20:49:31 lha Exp $");
+RCSID("$Id: ext.c,v 1.2 2006/04/25 10:20:22 lha Exp $");
 
 krb5_error_code
 hdb_entry_check_mandatory(krb5_context context, const hdb_entry *ent)
@@ -168,10 +168,10 @@ hdb_replace_extension(krb5_context context,
 
     ret = copy_HDB_extension(ext,
 			     &entry->extensions->val[entry->extensions->len]);
-    if (ret == 0) {
+    if (ret == 0)
 	entry->extensions->len++;
+    else
 	krb5_set_error_string(context, "hdb: failed to copy new extension");
-    }
 
     return ret;
 }

@@ -33,7 +33,7 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id: init_creds_pw.c,v 1.92 2006/04/02 01:20:15 lha Exp $");
+RCSID("$Id: init_creds_pw.c,v 1.94 2006/04/24 08:49:08 lha Exp $");
 
 typedef struct krb5_get_init_creds_ctx {
     krb5_kdc_flags flags;
@@ -1150,6 +1150,7 @@ process_pa_data_to_key(krb5_context context,
     if (pa && ctx->pk_init_ctx) {
 #ifdef PKINIT
 	ret = _krb5_pk_rd_pa_reply(context,
+				   a->req_body.realm,
 				   ctx->pk_init_ctx,
 				   etype,
 				   hi,

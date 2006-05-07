@@ -33,7 +33,7 @@
 
 #include "gssapi_locl.h"
 
-RCSID("$Id: 8003.c,v 1.17 2005/04/01 08:55:36 lha Exp $");
+RCSID("$Id: 8003.c,v 1.18 2006/05/04 11:55:40 lha Exp $");
 
 krb5_error_code
 gssapi_encode_om_uint32(OM_uint32 n, u_char *p)
@@ -56,15 +56,17 @@ gssapi_encode_be_om_uint32(OM_uint32 n, u_char *p)
 }
 
 krb5_error_code
-gssapi_decode_om_uint32(u_char *p, OM_uint32 *n)
+gssapi_decode_om_uint32(const void *ptr, OM_uint32 *n)
 {
+    const u_char *p = ptr;
     *n = (p[0] << 0) | (p[1] << 8) | (p[2] << 16) | (p[3] << 24);
     return 0;
 }
 
 krb5_error_code
-gssapi_decode_be_om_uint32(u_char *p, OM_uint32 *n)
+gssapi_decode_be_om_uint32(const void *ptr, OM_uint32 *n)
 {
+    const u_char *p = ptr;
     *n = (p[0] <<24) | (p[1] << 16) | (p[2] << 8) | (p[3] << 0);
     return 0;
 }
