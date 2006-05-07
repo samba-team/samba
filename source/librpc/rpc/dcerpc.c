@@ -585,10 +585,8 @@ static void dcerpc_recv_data(struct dcerpc_connection *conn, DATA_BLOB *blob, NT
 static void dcerpc_bind_recv_data(struct dcerpc_connection *conn, struct ncacn_packet *pkt)
 {
 	struct composite_context *c;
-	struct dcerpc_pipe *pipe;
 
 	c = talloc_get_type(conn->bind_private, struct composite_context);
-	pipe = talloc_get_type(c->private_data, struct dcerpc_pipe);
 
 	/* mark the connection as not waiting for a bind reply */
 	conn->bind_private = NULL;
@@ -633,10 +631,10 @@ static void bind_timeout_handler(struct event_context *ev,
 {
 	struct composite_context *ctx =
 		talloc_get_type(private, struct composite_context);
-	struct dcerpc_pipe *pipe = talloc_get_type(ctx->private_data, struct dcerpc_pipe);
+	struct dcerpc_pipe *timeout_pipe = talloc_get_type(ctx->private_data, struct dcerpc_pipe);
 
-	SMB_ASSERT(pipe->conn->bind_private != NULL);
-	pipe->conn->bind_private = NULL;
+	SMB_ASSERT(timeout_pipe->conn->bind_private != NULL);
+	timeout_pipe->conn->bind_private = NULL;
 	composite_error(ctx, NT_STATUS_IO_TIMEOUT);
 }
 
@@ -1522,10 +1520,10 @@ uint32_t dcerpc_auth_level(struct dcerpc_connection *c)
 static void dcerpc_alter_recv_data(struct dcerpc_connection *conn, struct ncacn_packet *pkt)
 {
 	struct composite_context *c;
-	struct dcerpc_pipe *pipe;
+	struct dcerpc_pipe *recv_pipe;
 
 	c = talloc_get_type(conn->alter_private, struct composite_context);
-	pipe = talloc_get_type(c->private_data, struct dcerpc_pipe);
+	recv_pipe = talloc_get_type(c->private_data, struct dcerpc_pipe);
 
 	/* mark the connection as not waiting for a alter context reply */
 	conn->alter_private = NULL;
@@ -1547,11 +1545,11 @@ static void dcerpc_alter_recv_data(struct dcerpc_connection *conn, struct ncacn_
 	}
 
 	/* the alter_resp might contain a reply set of credentials */
-	if (pipe->conn->security_state.auth_info &&
+	if (recv_pipe->conn->security_state.auth_info &&
 	    pkt->u.alter_resp.auth_info.length) {
 		c->status = ndr_pull_struct_blob(
-			&pkt->u.alter_resp.auth_info, pipe,
-			pipe->conn->security_state.auth_info,
+			&pkt->u.alter_resp.auth_info, recv_pipe,
+			recv_pipe->conn->security_state.auth_info,
 			(ndr_pull_flags_fn_t)ndr_pull_dcerpc_auth);
 		if (!composite_is_ok(c)) return;
 	}
