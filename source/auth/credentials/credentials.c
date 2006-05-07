@@ -59,6 +59,7 @@ struct cli_credentials *cli_credentials_init(TALLOC_CTX *mem_ctx)
 	cred->bind_dn = NULL;
 
 	cred->tries = 3;
+	cred->callback_running = False;
 
 	cli_credentials_set_kerberos_state(cred, CRED_AUTO_USE_KERBEROS);
 
@@ -157,9 +158,9 @@ const char *cli_credentials_get_principal(struct cli_credentials *cred, TALLOC_C
 
 	if (cred->principal_obtained == CRED_CALLBACK && 
 	    !cred->callback_running) {
-	    	cred->callback_running = False;
-		cred->principal = cred->principal_cb(cred);
 	    	cred->callback_running = True;
+		cred->principal = cred->principal_cb(cred);
+	    	cred->callback_running = False;
 		cred->principal_obtained = CRED_SPECIFIED;
 	}
 
@@ -241,9 +242,9 @@ const char *cli_credentials_get_password(struct cli_credentials *cred)
 
 	if (cred->password_obtained == CRED_CALLBACK && 
 	    !cred->callback_running) {
-	    	cred->callback_running = False;
-		cred->password = cred->password_cb(cred);
 	    	cred->callback_running = True;
+		cred->password = cred->password_cb(cred);
+	    	cred->callback_running = False;
 		cred->password_obtained = CRED_CALLBACK_RESULT;
 	}
 
