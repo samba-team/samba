@@ -1,5 +1,30 @@
-2006-05-06  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-05-07  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* rsa-imath.c: Fix a off by one.
+	
+	* test_engine_dso.c: print the lengths when they don't match.
+
+	* engine.c (ENGINE_load_builtin_engines): use RSA_imath_method for
+	the building engine.
+
+	* rsa.h: expose RSA_imath_method
+
+	* rsa.c (RSA_check_key): Do sign/verify instead.
+
+	* dsa.c: rename the DSA_METHOD
+
+	* dh.c: rename the DH_METHOD
+
+	* dh-imath.c: rename the DH_METHOD
+
+	* rsa.c: Default to use rsa-imath.
+
+	* Makefile.am: Add rsa-imath.c to libhcrypto
+
+	* rsa-imath.c: Add RSA support using imath.
+	
+2006-05-06 Love Hörnquist Åstrand <lha@it.su.se>
+	
 	* imath: Add imath-1.1.9
 
 	* dh.h: Expose DH_imath_method.
