@@ -176,14 +176,14 @@ RSA_check_key(const RSA *key)
     if (buffer == NULL)
 	return 0;
     
-    ret = RSA_public_encrypt(sizeof(inbuf), inbuf, buffer, 
+    ret = RSA_private_encrypt(sizeof(inbuf), inbuf, buffer, 
 			     rsa, RSA_PKCS1_PADDING);
     if (ret == -1) {
 	free(buffer);
 	return 0;
     }
 
-    ret = RSA_private_decrypt(ret, buffer, buffer,
+    ret = RSA_public_decrypt(ret, buffer, buffer,
 			      rsa, RSA_PKCS1_PADDING);
     if (ret == -1) {
 	free(buffer);
