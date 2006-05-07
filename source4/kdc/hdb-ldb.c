@@ -295,9 +295,6 @@ static krb5_error_code LDB_message2entry(krb5_context context, HDB *db,
 		 * replace the client principal's realm with the one
 		 * we determine from our records */
 		
-		/* don't leak */
-		free(*krb5_princ_realm(context, entry_ex->entry.principal));
-		
 		/* this has to be with malloc() */
 		strdup_realm = strdup(realm);
 		if (!strdup_realm) {
@@ -305,6 +302,7 @@ static krb5_error_code LDB_message2entry(krb5_context context, HDB *db,
 			krb5_clear_error_string(context);
 			goto out;
 		}
+		free(*krb5_princ_realm(context, entry_ex->entry.principal));
 		krb5_princ_set_realm(context, entry_ex->entry.principal, &strdup_realm);
 	}
 
