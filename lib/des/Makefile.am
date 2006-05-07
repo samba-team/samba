@@ -99,6 +99,7 @@ libhcrypto_la_SOURCES =	\
 	rijndael-alg-fst.h \
 	rnd_keys.c	\
 	rsa.c		\
+	rsa-imath.c	\
 	rsa.h		\
 	sha.c		\
 	sha.h		\
