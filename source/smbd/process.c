@@ -43,7 +43,6 @@ int max_send = BUFFER_SIZE;
 int max_recv = BUFFER_SIZE;
 
 extern int last_message;
-extern userdom_struct current_user_info;
 extern int smb_read_error;
 SIG_ATOMIC_T reload_after_sighup = 0;
 SIG_ATOMIC_T got_sig_term = 0;
