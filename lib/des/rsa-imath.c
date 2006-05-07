@@ -114,7 +114,7 @@ imath_rsa_public_encrypt(int flen, const unsigned char* from,
 
     mp_int_init(&enc);
     mp_int_init(&dec);
-    mp_int_read_unsigned(&dec, p0, size);
+    mp_int_read_unsigned(&dec, p0, size - 1);
     free(p0);
 
     res = rsa_rsaep(&dec, &e, &n, &enc);
