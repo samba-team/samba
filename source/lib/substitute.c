@@ -687,7 +687,7 @@ char *alloc_sub_advanced(int snum, const char *user,
 
 	a_string = SMB_STRDUP(str);
 	if (a_string == NULL) {
-		DEBUG(0, ("alloc_sub_specified: Out of memory!\n"));
+		DEBUG(0, ("alloc_sub_advanced: Out of memory!\n"));
 		return NULL;
 	}
 	
