@@ -175,6 +175,6 @@ int net_samsync_ldb_usage(struct net_context *ctx, int argc, const char **argv)
 
 int net_samsync_ldb_help(struct net_context *ctx, int argc, const char **argv)
 {
-	d_printf("Syncrosnise into the local ldb the SAM of a domain.\n");
+	d_printf("Synchronise into the local ldb the SAM of a domain.\n");
 	return 0;	
 }
