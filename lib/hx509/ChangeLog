@@ -1,5 +1,8 @@
 2006-05-08  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* crypto.c (hx509_crypto_encrypt): free correctly in error
+	path. From Andrew Bartlett.
+
 	* crypto.c: If RAND_bytes fails, then we will attempt to
 	double-free crypt->key.data.  From Andrew Bartlett.
 	
