@@ -1,5 +1,10 @@
-2006-05-07  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-05-08  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* rc2test.c: Less "pointer targets in passing argument differ in
+	signedness" warnings.
+	
+2006-05-07  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* rsa-imath.c: Fix a off by one.
 	
 	* test_engine_dso.c: print the lengths when they don't match.
