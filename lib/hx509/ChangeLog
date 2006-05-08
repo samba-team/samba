@@ -1,5 +1,10 @@
-2006-05-05  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-05-08  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* crypto.c: If RAND_bytes fails, then we will attempt to
+	double-free crypt->key.data.  From Andrew Bartlett.
+	
+2006-05-05  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* name.c: Rename u_intXX_t to uintXX_t
 	
 2006-05-03  Love Hörnquist Åstrand  <lha@it.su.se>
