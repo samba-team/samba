@@ -45,6 +45,8 @@ kadm5_c_get_privs(void *server_handle, uint32_t *privs)
     int32_t tmp;
     krb5_data reply;
 
+    *privs = 0;
+
     ret = _kadm5_connect(server_handle);
     if(ret)
 	return ret;
@@ -72,8 +74,7 @@ kadm5_c_get_privs(void *server_handle, uint32_t *privs)
     krb5_clear_error_string(context->context);
     ret = tmp;
     if(ret == 0){
-	krb5_ret_int32(sp, &tmp);
-	*privs = tmp;
+	krb5_ret_uint32(sp, privs);
     }
     krb5_storage_free(sp);
     krb5_data_free (&reply);
