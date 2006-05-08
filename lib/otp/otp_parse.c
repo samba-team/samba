@@ -107,11 +107,11 @@ parse_words(unsigned wn[],
 	    void *arg)
 {
   const unsigned char *w, *wend;
-  unsigned char *wcopy;
+  char *wcopy;
   int i;
   int tmp;
 
-  w = str;
+  w = (const unsigned char *)str;
   for (i = 0; i < 6; ++i) {
     while (isspace(*w))
       ++w;
