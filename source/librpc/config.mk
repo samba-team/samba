@@ -10,7 +10,7 @@ OBJ_FILES = \
 		ndr/ndr.o \
 		ndr/ndr_basic.o \
 		ndr/ndr_string.o \
-		ndr/ndr_misc.o
+		ndr/uuid.o
 PUBLIC_DEPENDENCIES = LIBSAMBA-ERRORS LIBTALLOC LIBSAMBA-UTIL CHARSET EXT_NSL
 # End SUBSYSTEM LIBNDR
 ################################################
@@ -76,7 +76,7 @@ OBJ_FILES = gen_ndr/ndr_efs.o
 PUBLIC_DEPENDENCIES = LIBNDR NDR_SECURITY
 
 [SUBSYSTEM::NDR_MISC]
-OBJ_FILES = gen_ndr/ndr_misc.o
+OBJ_FILES = gen_ndr/ndr_misc.o ndr/ndr_misc.o
 PUBLIC_HEADERS = gen_ndr/misc.h gen_ndr/ndr_misc.h
 PUBLIC_DEPENDENCIES = LIBNDR
 
@@ -231,13 +231,9 @@ PUBLIC_DEPENDENCIES = LIBNDR
 OBJ_FILES = gen_ndr/ndr_dcom.o
 PUBLIC_DEPENDENCIES = LIBNDR NDR_ORPC
 
-[SUBSYSTEM::NDR_ORPC_MANUAL]
-PRIVATE_PROTO_HEADER = ndr/ndr_orpc.h
-OBJ_FILES = ndr/ndr_orpc.o 
-
 [SUBSYSTEM::NDR_ORPC]
-OBJ_FILES = gen_ndr/ndr_orpc.o
-PUBLIC_DEPENDENCIES = LIBNDR NDR_ORPC_MANUAL
+OBJ_FILES = gen_ndr/ndr_orpc.o ndr/ndr_orpc.o 
+PUBLIC_DEPENDENCIES = LIBNDR 
 
 [LIBRARY::NDR_OXIDRESOLVER]
 VERSION = 0.0.1
