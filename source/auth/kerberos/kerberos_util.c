@@ -181,7 +181,7 @@ krb5_error_code principal_from_credentials(TALLOC_CTX *parent_ctx,
 			return EINVAL;
 		}
 		ret = krb5_keyblock_init(smb_krb5_context->krb5_context,
-					 ENCTYPE_ARCFOUR_HMAC,
+					 ETYPE_ARCFOUR_HMAC_MD5,
 					 mach_pwd->hash, sizeof(mach_pwd->hash), 
 					 &keyblock);
 		
@@ -410,7 +410,7 @@ static int create_keytab(TALLOC_CTX *parent_ctx,
 			return EINVAL;
 		}
 		ret = krb5_keyblock_init(smb_krb5_context->krb5_context,
-					 ENCTYPE_ARCFOUR_HMAC,
+					 ETYPE_ARCFOUR_HMAC_MD5,
 					 mach_pwd->hash, sizeof(mach_pwd->hash), 
 					 &entry.keyblock);
 		if (ret) {
@@ -434,7 +434,9 @@ static int create_keytab(TALLOC_CTX *parent_ctx,
 			return ret;
 		}
 		
-		krb5_enctype_to_string(smb_krb5_context->krb5_context, ENCTYPE_ARCFOUR_HMAC, &enctype_string);
+		krb5_enctype_to_string(smb_krb5_context->krb5_context, 
+				       ETYPE_ARCFOUR_HMAC_MD5,
+				       &enctype_string);
 		DEBUG(5, ("Added %s(kvno %d) to keytab (%s)\n", 
 			  cli_credentials_get_principal(machine_account, mem_ctx),
 			  cli_credentials_get_kvno(machine_account),

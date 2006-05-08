@@ -491,7 +491,7 @@ static int password_hash_handle(struct ldb_module *module, struct ldb_request *r
 			size_t len;
 			struct ldb_val val;
 			
-			if (keys[i].key.keytype == ENCTYPE_ARCFOUR_HMAC) {
+			if (keys[i].key.keytype == ETYPE_ARCFOUR_HMAC_MD5) {
 				/* We might end up doing this below:
 				 * This ensures we get the unicode
 				 * conversion right.  This should also
@@ -548,9 +548,9 @@ static int password_hash_handle(struct ldb_module *module, struct ldb_request *r
 		key.salt = NULL; /* No salt for this enc type */
 
 		krb5_ret = krb5_keyblock_init(smb_krb5_context->krb5_context,
-					 ENCTYPE_ARCFOUR_HMAC,
-					 ntPwdHash->hash, sizeof(ntPwdHash->hash), 
-					 &key.key);
+					      ETYPE_ARCFOUR_HMAC_MD5,
+					      ntPwdHash->hash, sizeof(ntPwdHash->hash), 
+					      &key.key);
 		if (krb5_ret) {
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
