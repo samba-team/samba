@@ -69,26 +69,33 @@ if test x"${SAMBA_VERSION_IS_SVN_SNAPSHOT}" = x"yes";then
     _SAVE_LANG=${LANG}
     LANG=""
     HAVESVN=no
-    svn info ${SOURCE_DIR} >/dev/null 2>&1 && HAVESVN=yes
-    TMP_REVISION=`(svn info ${SOURCE_DIR} 2>/dev/null || svk info ${SOURCE_DIR} 2>/dev/null) |grep 'Last Changed Rev.*:' |sed -e 's/Last Changed Rev.*: \([0-9]*\).*/\1/'`
-    if test x"${HAVESVN}" = x"no";then
+    SVN_INFO=`svn info ${SOURCE_DIR} 2>/dev/null`
+    TMP_REVISION=`echo -e "${SVN_INFO}" | grep 'Last Changed Rev.*:' |sed -e 's/Last Changed Rev.*: \([0-9]*\).*/\1/'`
+    if test -n "$TMP_REVISION"; then
+	HAVESVN=yes
+    fi
+    if test x"${HAVESVN}" != x"yes";then
 	HAVESVK=no
-	svk info ${SOURCE_DIR} >/dev/null 2>&1 && HAVESVK=yes
-	TMP_MIRRORED_REVISION=`(svk info ${SOURCE_DIR} 2>/dev/null) |grep 'Mirrored From:.*samba\.org.*' |sed -e 's/Mirrored From: .* Rev\..* \([0-9]*\).*/\1/'`
+	SVK_INFO=`svk info ${SOURCE_DIR} 2>/dev/null`
+	TMP_REVISION=`echo -e "${SVK_INFO}" | grep 'Last Changed Rev.*:' |sed -e 's/Last Changed Rev.*: \([0-9]*\).*/\1/'`
+	if test -n "$TMP_REVISION"; then
+	    HAVESVK=yes
+	fi
+	TMP_MIRRORED_REVISION=`echo -e "${SVK_INFO}" | grep 'Mirrored From:.*samba\.org.*' |sed -e 's/Mirrored From: .* Rev\..* \([0-9]*\).*/\1/'`
+    fi
+
+    if test x"${HAVESVN}" = x"yes";then
+	SAMBA_VERSION_STRING="${SAMBA_VERSION_STRING}-SVN-build-${TMP_REVISION}"
+	echo "#define SAMBA_VERSION_SVN_REVISION ${TMP_REVISION}" >> $OUTPUT_FILE
+    elif test x"${HAVESVK}" = x"yes";then
 	if test -n "$TMP_MIRRORED_REVISION"; then
 	    TMP_SVK_REVISION_STR="${TMP_REVISION}-${USER}@${HOSTNAME}-[SVN-${TMP_MIRRORED_REVISION}]"
 	else
 	    TMP_SVK_REVISION_STR="${TMP_REVISION}-${USER}@${HOSTNAME}"
 	fi
-    fi
-
-    if test x"${HAVESVN}" = x"yes";then
-	    SAMBA_VERSION_STRING="${SAMBA_VERSION_STRING}-SVN-build-${TMP_REVISION}"
-	    echo "#define SAMBA_VERSION_SVN_REVISION ${TMP_REVISION}" >> $OUTPUT_FILE
-    elif test x"${HAVESVK}" = x"yes";then
-	    SAMBA_VERSION_STRING="${SAMBA_VERSION_STRING}-SVK-build-${TMP_SVK_REVISION_STR}"
+	SAMBA_VERSION_STRING="${SAMBA_VERSION_STRING}-SVK-build-${TMP_SVK_REVISION_STR}"
     else
-	    SAMBA_VERSION_STRING="${SAMBA_VERSION_STRING}-SVN-build-UNKNOWN"
+	SAMBA_VERSION_STRING="${SAMBA_VERSION_STRING}-SVN-build-UNKNOWN"
     fi
     LANG=${_SAVE_LANG}
 fi
