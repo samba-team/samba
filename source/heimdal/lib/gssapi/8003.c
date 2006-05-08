@@ -184,14 +184,9 @@ gssapi_krb5_verify_8003_checksum(
 	*minor_status = 0;
 	return GSS_S_BAD_BINDINGS;
     }
-    
-    if(cksum->cksumtype != CKSUMTYPE_GSSAPI) {
-	*minor_status = 0;
-	return GSS_S_BAD_BINDINGS;
-    }
-    
+
     /* XXX should handle checksums > 24 bytes */
-    if(cksum->checksum.length < 24) {
+    if(cksum->cksumtype != CKSUMTYPE_GSSAPI || cksum->checksum.length < 24) {
 	*minor_status = 0;
 	return GSS_S_BAD_BINDINGS;
     }

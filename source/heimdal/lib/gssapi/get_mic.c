@@ -33,7 +33,7 @@
 
 #include "gssapi_locl.h"
 
-RCSID("$Id: get_mic.c,v 1.30 2006/04/02 02:12:52 lha Exp $");
+RCSID("$Id: get_mic.c,v 1.31 2006/05/08 09:55:37 lha Exp $");
 
 static OM_uint32
 mic_des
@@ -172,6 +172,8 @@ mic_des3
   tmp = malloc (message_buffer->length + 8);
   if (tmp == NULL) {
       free (message_token->value);
+      message_token->value = NULL;
+      message_token->length = 0;
       *minor_status = ENOMEM;
       return GSS_S_FAILURE;
   }

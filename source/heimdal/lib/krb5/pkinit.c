@@ -33,7 +33,7 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id: pkinit.c,v 1.98 2006/05/06 13:24:54 lha Exp $");
+RCSID("$Id: pkinit.c,v 1.99 2006/05/07 12:32:38 lha Exp $");
 
 struct krb5_dh_moduli {
     char *name;
@@ -682,32 +682,10 @@ _krb5_pk_verify_sign(krb5_context context,
 	goto out;
     }
 	
-    /* XXX */
-    {
-	hx509_cursor cursor;
-
-	ret = hx509_certs_start_seq(id->hx509ctx,
-				    signer_certs,
-				    &cursor);
-	if (ret) {
-	    krb5_clear_error_string(context);
-	    goto out;
-	}
-	ret = hx509_certs_next_cert(id->hx509ctx,
-				    signer_certs,
-				    cursor,
-				    &(*signer)->cert);
-	if (ret) {
-	    krb5_clear_error_string(context);
-	    goto out;
-	}
-	ret = hx509_certs_end_seq(id->hx509ctx,
-				  signer_certs,
-				  cursor);
-	if (ret) {
-	    krb5_clear_error_string(context);
-	    goto out;
-	}
+    ret = hx509_get_one_cert(id->hx509ctx, signer_certs, &(*signer)->cert);
+    if (ret) {
+	krb5_clear_error_string(context);
+	goto out;
     }
 
 out:

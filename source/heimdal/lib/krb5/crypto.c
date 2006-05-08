@@ -32,7 +32,7 @@
  */
 
 #include "krb5_locl.h"
-RCSID("$Id: crypto.c,v 1.135 2006/05/05 09:27:24 lha Exp $");
+RCSID("$Id: crypto.c,v 1.138 2006/05/08 13:47:24 lha Exp $");
 
 #undef CRYPTO_DEBUG
 #ifdef CRYPTO_DEBUG
@@ -70,7 +70,6 @@ struct krb5_crypto_data {
 #define F_PSEUDO	16	/* not a real protocol type */
 #define F_SPECIAL	32	/* backwards */
 #define F_DISABLED	64	/* enctype/checksum disabled */
-#define F_PADCMS	128	/* padding done like in CMS */
 
 struct salt_type {
     krb5_salttype type;
@@ -1957,7 +1956,9 @@ create_checksum (krb5_context context,
     }
     keyed_checksum = (ct->flags & F_KEYED) != 0;
     if(keyed_checksum && crypto == NULL) {
-	krb5_clear_error_string (context);
+	krb5_set_error_string (context, "Checksum type %s is keyed "
+			       "but no crypto context (key) was passed in",
+			       ct->name);
 	return KRB5_PROG_SUMTYPE_NOSUPP; /* XXX */
     }
     if(keyed_checksum) {
@@ -2042,7 +2043,8 @@ verify_checksum(krb5_context context,
     }
     keyed_checksum = (ct->flags & F_KEYED) != 0;
     if(keyed_checksum && crypto == NULL) {
-	krb5_set_error_string (context, "checksum type %s is keyed, and requires a crypto context",
+	krb5_set_error_string (context, "Checksum type %s is keyed "
+			       "but no crypto context (key) was passed in",
 			       ct->name);
 	return KRB5_PROG_SUMTYPE_NOSUPP; /* XXX */
     }
@@ -2391,55 +2393,6 @@ AES_CTS_encrypt(krb5_context context,
     return 0;
 }
 
-static krb5_error_code 
-AES_CBC_encrypt(krb5_context context,
-                struct key_data *key, 
-                void *data,
-                size_t len,  
-                krb5_boolean encryptp, 
-                int usage,
-                void *ivec)
-{
-    struct krb5_aes_schedule *aeskey = key->schedule->data;
-    char local_ivec[AES_BLOCK_SIZE];
-    AES_KEY *k;
-
-    if (encryptp)
-	k = &aeskey->ekey;
-    else
-	k = &aeskey->dkey;
-
-    if(ivec == NULL) {
-        ivec = &local_ivec;
-        memset(local_ivec, 0, sizeof(local_ivec));
-    }
-    AES_cbc_encrypt(data, data, len, k, ivec, encryptp);
-    return 0;
-}
-
-/*
- * RC2
- */
-
-static krb5_error_code 
-RC2_CBC_encrypt(krb5_context context,
-                struct key_data *key, 
-                void *data,
-                size_t len,  
-                krb5_boolean encryptp, 
-                int usage,
-                void *ivec)
-{
-    unsigned char local_ivec[8];
-    RC2_KEY *s = key->schedule->data; 
-    if(ivec == NULL) {
-        ivec = &local_ivec;
-        memset(local_ivec, 0, sizeof(local_ivec));
-    }
-    RC2_cbc_encrypt(data, data, len, s, ivec, encryptp);
-    return 0;
-}
-
 /*
  * section 6 of draft-brezak-win2k-krb-rc4-hmac-03
  *
@@ -2764,51 +2717,6 @@ static struct encryption_type enctype_aes256_cts_hmac_sha1 = {
     F_DERIVED,
     AES_CTS_encrypt,
 };
-static unsigned aes_128_cbc_num[] = { 2, 16, 840, 1, 101, 3, 4, 1, 2 };
-static heim_oid aes_128_cbc_oid = kcrypto_oid_enc(aes_128_cbc_num);
-static struct encryption_type enctype_aes128_cbc_none = {
-    ETYPE_AES128_CBC_NONE,
-    "aes128-cbc-none",
-    &aes_128_cbc_oid,
-    16,
-    16,
-    16,
-    &keytype_aes128,
-    &checksum_none,
-    NULL,
-    F_PSEUDO|F_PADCMS,
-    AES_CBC_encrypt,
-};
-static unsigned aes_192_cbc_num[] = { 2, 16, 840, 1, 101, 3, 4, 1, 22 };
-static heim_oid aes_192_cbc_oid = kcrypto_oid_enc(aes_192_cbc_num);
-static struct encryption_type enctype_aes192_cbc_none = {
-    ETYPE_AES192_CBC_NONE,
-    "aes192-cbc-none",
-    &aes_192_cbc_oid,
-    16,
-    16,
-    16,
-    &keytype_aes192,
-    &checksum_none,
-    NULL,
-    F_PSEUDO|F_PADCMS,
-    AES_CBC_encrypt,
-};
-static unsigned aes_256_cbc_num[] = { 2, 16, 840, 1, 101, 3, 4, 1, 42 };
-static heim_oid aes_256_cbc_oid = kcrypto_oid_enc(aes_256_cbc_num);
-static struct encryption_type enctype_aes256_cbc_none = {
-    ETYPE_AES256_CBC_NONE,
-    "aes256-cbc-none",
-    &aes_256_cbc_oid,
-    16,
-    16,
-    16,
-    &keytype_aes256,
-    &checksum_none,
-    NULL,
-    F_PSEUDO|F_PADCMS,
-    AES_CBC_encrypt,
-};
 static struct encryption_type enctype_des_cbc_none = {
     ETYPE_DES_CBC_NONE,
     "des-cbc-none",
@@ -2848,21 +2756,6 @@ static struct encryption_type enctype_des_pcbc_none = {
     F_PSEUDO,
     DES_PCBC_encrypt_key_ivec,
 };
-static unsigned des_ede3_cbc_num[] = { 1, 2, 840, 113549, 3, 7 };
-static heim_oid des_ede3_cbc_oid = kcrypto_oid_enc(des_ede3_cbc_num);
-static struct encryption_type enctype_des3_cbc_none_cms = {
-    ETYPE_DES3_CBC_NONE_CMS,
-    "des3-cbc-none-cms",
-    &des_ede3_cbc_oid,
-    8,
-    8,
-    0,
-    &keytype_des3_derived,
-    &checksum_none,
-    NULL,
-    F_PSEUDO|F_PADCMS,
-    DES3_CBC_encrypt,
-};
 static struct encryption_type enctype_des3_cbc_none = {
     ETYPE_DES3_CBC_NONE,
     "des3-cbc-none",
@@ -2876,21 +2769,6 @@ static struct encryption_type enctype_des3_cbc_none = {
     F_PSEUDO,
     DES3_CBC_encrypt,
 };
-static unsigned rc2CBC_num[] = { 1, 2, 840, 113549, 3, 2 };
-static heim_oid rc2CBC_oid = kcrypto_oid_enc(rc2CBC_num);
-static struct encryption_type enctype_rc2_cbc_none = {
-    ETYPE_RC2_CBC_NONE,
-    "rc2-cbc-none",
-    &rc2CBC_oid,
-    8,
-    8,
-    0,
-    &keytype_rc2,
-    &checksum_none,
-    NULL,
-    F_PSEUDO|F_PADCMS,
-    RC2_CBC_encrypt,
-};
 
 static struct encryption_type *etypes[] = {
     &enctype_null,
@@ -2903,15 +2781,10 @@ static struct encryption_type *etypes[] = {
     &enctype_old_des3_cbc_sha1,
     &enctype_aes128_cts_hmac_sha1,
     &enctype_aes256_cts_hmac_sha1,
-    &enctype_aes128_cbc_none,
-    &enctype_aes192_cbc_none,
-    &enctype_aes256_cbc_none,
     &enctype_des_cbc_none,
     &enctype_des_cfb64_none,
     &enctype_des_pcbc_none,
-    &enctype_des3_cbc_none,
-    &enctype_des3_cbc_none_cms,
-    &enctype_rc2_cbc_none
+    &enctype_des3_cbc_none
 };
 
 static unsigned num_etypes = sizeof(etypes) / sizeof(etypes[0]);
@@ -3234,7 +3107,7 @@ encrypt_internal(krb5_context context,
 		 krb5_data *result,
 		 void *ivec)
 {
-    size_t sz, block_sz, checksum_sz, padsize = 0;
+    size_t sz, block_sz, checksum_sz;
     Checksum cksum;
     unsigned char *p, *q;
     krb5_error_code ret;
@@ -3244,11 +3117,6 @@ encrypt_internal(krb5_context context,
     
     sz = et->confoundersize + checksum_sz + len;
     block_sz = (sz + et->padsize - 1) &~ (et->padsize - 1); /* pad */
-    if ((et->flags & F_PADCMS) && et->padsize != 1) {
-	padsize = et->padsize - (sz % et->padsize);
-	if (padsize == et->padsize)
-	    block_sz += et->padsize;
-    }
     p = calloc(1, block_sz);
     if(p == NULL) {
 	krb5_set_error_string(context, "malloc: out of memory");
@@ -3281,12 +3149,6 @@ encrypt_internal(krb5_context context,
     ret = _key_schedule(context, &crypto->key, crypto->params);
     if(ret)
 	goto fail;
-    if (et->flags & F_PADCMS) {
-	int i;
-	q = p + len + checksum_sz + et->confoundersize;
-	for (i = 0; i < padsize; i++)
-	    q[i] = padsize;
-    }
 #ifdef CRYPTO_DEBUG
     krb5_crypto_debug(context, 1, block_sz, crypto->key.key);
 #endif
