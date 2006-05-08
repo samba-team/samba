@@ -1,5 +1,8 @@
 2006-05-08  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* rctest.c: Less "pointer targets in passing argument differ in
+	signedness" warnings.
+
 	* rc2test.c: Less "pointer targets in passing argument differ in
 	signedness" warnings.
 	
