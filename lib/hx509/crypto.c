@@ -1443,6 +1443,7 @@ hx509_crypto_set_key_data(hx509_crypto crypto, const void *data, size_t length)
 
     if (crypto->key.data) {
 	free(crypto->key.data);
+	crypto->key.data = NULL;
 	crypto->key.length = 0;
     }
     crypto->key.data = malloc(length);
@@ -1470,6 +1471,7 @@ hx509_crypto_set_random_key(hx509_crypto crypto, heim_octet_string *key)
     }
     if (RAND_bytes(crypto->key.data, crypto->key.length) <= 0) {
 	free(crypto->key.data);
+	crypto->key.data = NULL;
 	crypto->key.length = 0;
 	return HX509_CRYPTO_INTERNAL_ERROR;
     }
