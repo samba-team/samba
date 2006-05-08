@@ -1960,8 +1960,10 @@ BOOL fcntl_lock(int fd, int op, SMB_OFF_T offset, SMB_OFF_T count, int type)
 	ret = sys_fcntl_ptr(fd,op,&lock);
 
 	if (ret == -1) {
+		int sav = errno;
 		DEBUG(3,("fcntl_lock: lock failed at offset %.0f count %.0f op %d type %d (%s)\n",
 			(double)offset,(double)count,op,type,strerror(errno)));
+		errno = sav;
 		return False;
 	}
 
@@ -1995,8 +1997,10 @@ BOOL fcntl_getlock(int fd, SMB_OFF_T *poffset, SMB_OFF_T *pcount, int *ptype, pi
 	ret = sys_fcntl_ptr(fd,SMB_F_GETLK,&lock);
 
 	if (ret == -1) {
+		int sav = errno;
 		DEBUG(3,("fcntl_getlock: lock request failed at offset %.0f count %.0f type %d (%s)\n",
 			(double)*poffset,(double)*pcount,*ptype,strerror(errno)));
+		errno = sav;
 		return False;
 	}
 
