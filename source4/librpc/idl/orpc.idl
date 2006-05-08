@@ -6,8 +6,7 @@
  */
 
 [
-	pointer_default(unique),
-	helper("librpc/ndr/ndr_orpc.h")
+	pointer_default(unique)
 ]
 interface ObjectRpcBaseTypes
 {
