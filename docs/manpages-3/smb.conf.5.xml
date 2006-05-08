@@ -295,6 +295,94 @@ alias|alias|alias|alias...
 </refsect1>
 
 <refsect1>
+	<title>USERSHARES</title>
+
+	<para>Starting with Samba version 3.0.23 the capability for non-root users to add, modify, and delete
+	their own share definitions has been added. This capability is called <emphasis>usershares</emphasis> and
+	is controlled by a set of parameters in the <literal>[global]</literal> section of the smb.conf.
+	The relevent parameters are :
+	</para>
+
+	<variablelist>
+		<varlistentry>
+		<term>usershare allow guests</term>
+		<listitem><para>Controls if usershares can permit guest access.</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>usershare max shares</term>
+		<listitem><para>Maximum number of user defined shares allowed.</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>usershare owner only</term>
+		<listitem><para>If set only directories owned by the sharing user can be shared.</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>usershare path</term>
+		<listitem><para>Points to the directory containing the user defined share definitions.
+		The filesystem permissions on this directory control who can create user defined shares.</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>usershare prefix allow list</term>
+		<listitem><para>Comma-separated list of abolute pathnames restricting what directories
+		can be shared. Only directories below the pathnames in this list are permitted.</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>usershare prefix deny list</term>
+		<listitem><para>Comma-separated list of abolute pathnames restricting what directories
+		can be shared. Directories below the pathnames in this list are prohibited.</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>usershare template share</term>
+		<listitem><para>Names a pre-existing share used as a template for creating new usershares.
+		All other share parameters not specified in the user defined share definition
+		are copied from this named share.</para></listitem>
+		</varlistentry>
+	</variablelist>
+
+	<para>To allow members of the UNIX group <literal>foo</literal> to create user defined
+	shares, create the directory to contain the share definitions as follows:
+	</para>
+	<para>Become root:</para>
+	<programlisting>
+	mkdir /usr/local/samba/lib/usershares
+	chgrp foo /usr/local/samba/lib/usershares
+	chmod 1770 /usr/local/samba/lib/usershares
+	</programlisting>
+	<para>Then add the parameters <literal>usershare path = /usr/local/samba/lib/usershares</literal>,
+	<literal>usershare max shares = 10</literal> (or the desired number of shares) to the global
+	section of your smb.conf. Members of the group foo may then manipulate the user defined shares
+	using the following commands.</para>
+
+	<variablelist>
+		<varlistentry>
+		<term>net usershare add sharename path [comment] [acl] [guest_ok=[y|n]]</term>
+		<listitem><para>To create or modify (overwrite) a user defined share.</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>net usershare delete sharename</term>
+		<listitem><para>To delete a user defined share.</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>net usershare list wildcard-sharename</term>
+		<listitem><para>To list user defined shares.</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>net usershare info wildcard-sharename</term>
+		<listitem><para>To print information about user defined shares.</para></listitem>
+		</varlistentry>
+	</variablelist>
+</refsect1>
+	
+<refsect1>
 	<title>PARAMETERS</title>
 
 	<para>Parameters define the specific attributes of sections.</para>
