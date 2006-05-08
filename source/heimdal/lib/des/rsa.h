@@ -32,7 +32,7 @@
  */
 
 /*
- * $Id: rsa.h,v 1.4 2006/04/16 19:38:23 lha Exp $
+ * $Id: rsa.h,v 1.5 2006/05/07 11:34:02 lha Exp $
  */
 
 #ifndef _HEIM_RSA_H
@@ -40,6 +40,7 @@
 
 /* symbol renaming */
 #define RSA_null_method hc_RSA_null_method
+#define RSA_imath_method hc_RSA_imath_method
 #define RSA_new hc_RSA_new
 #define RSA_new_method hc_RSA_new_method
 #define RSA_free hc_RSA_free
@@ -128,6 +129,7 @@ struct RSA {
  */
 
 const RSA_METHOD *RSA_null_method(void);
+const RSA_METHOD *RSA_imath_method(void);
 
 /*
  *
