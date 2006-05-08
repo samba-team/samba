@@ -1577,7 +1577,7 @@ hx509_crypto_encrypt(hx509_crypto crypto,
 	    free(ivec->data);
 	    memset(ivec, 0, sizeof(*ivec));
 	}
-	if (ciphertext) {
+	if (*ciphertext) {
 	    if ((*ciphertext)->data) {
 		free((*ciphertext)->data);
 	    }
