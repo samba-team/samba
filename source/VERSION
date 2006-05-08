@@ -74,7 +74,7 @@ SAMBA_VERSION_RC_RELEASE=
 # in the development BRANCH, and set to 'no' only in   #
 # the SAMBA_X_X_RELEASE BRANCH                         #
 #                                                      #
-# <MAJOR>.<MINOR>.<RELEASE>[...]cvs                    #
+# <MAJOR>.<MINOR>.<RELEASE>[...]-SVN-build-xxx         #
 #                                                      #
 # e.g. SAMBA_VERSION_IS_SVN_SNAPSHOT=yes               #
 #  ->  "3.0.0-SVN-build-199"                           #
@@ -84,7 +84,7 @@ SAMBA_VERSION_IS_SVN_SNAPSHOT=yes
 ########################################################
 # This is for specifying a release nickname            #
 #                                                      #
-# e.g. SAMBA_VERSION_RELEASE_NICKNAME="Nicky Nickname" #
+# e.g. SAMBA_VERSION_RELEASE_NICKNAME=Nicky Nickname   #
 #      smbd --version will then give:                  #
 #  ->  "4.0.0-tp1-VendorVersion (Nicky Nickname)"      #
 ########################################################
@@ -99,21 +99,9 @@ SAMBA_VERSION_RELEASE_NICKNAME=
 #                                                      #
 # Note the '-' is automaticaly added                   #
 #                                                      #
-# e.g. SAMBA_VERSION_VENDOR_SUFFIX="VendorVersion"     #
+# e.g. SAMBA_VERSION_VENDOR_SUFFIX=VendorVersion       #
 #  ->  "CVS 3.0.0rc2-VendorVersion"                    #
 #                                                      #
-# Note: If you want to use a function,                 #
-#       then patch lib/version.c and add this function #
-#       there, because the symbol must be available in #
-#       binary.                                        #
-#                                                      #
-# const char *vendor_version(void)                     #
-# {                                                    #
-#	return "VendorVersion";                        #
-# }                                                    #
-#                                                      #
-# e.g. SAMBA_VERSION_VENDOR_SUFFIX=vendor_version()    #
-#  ->  "CVS 3.0.0rc2-VendorVersion"                    #
 ########################################################
 SAMBA_VERSION_VENDOR_SUFFIX=
 SAMBA_VERSION_VENDOR_PATCH=
