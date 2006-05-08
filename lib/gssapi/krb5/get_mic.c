@@ -172,6 +172,8 @@ mic_des3
   tmp = malloc (message_buffer->length + 8);
   if (tmp == NULL) {
       free (message_token->value);
+      message_token->value = NULL;
+      message_token->length = 0;
       *minor_status = ENOMEM;
       return GSS_S_FAILURE;
   }
