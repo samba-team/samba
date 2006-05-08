@@ -1,4 +1,16 @@
+2006-05-08  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/crypto.c: Catches both keyed checkout w/o crypto
+	context cases and doesn't reset the string, and corrects the
+	grammar.
+
+	* lib/krb5/crypto.c: Drop aes-cbc, rc2 and CMS padding support,
+	its all containted in libhcrypto and libhx509 now.
+	
 2006-05-07  Love Hörnquist Åstrand  <lha@it.su.se>
+	
+	* lib/krb5/pkinit.c (_krb5_pk_verify_sign): Use
+	hx509_get_one_cert.
 
 	* lib/krb5/crypto.c (create_checksum): provide a error message
 	that a key checksum needs a key.  From Andew Bartlett.
