@@ -472,8 +472,9 @@ char *aes_key2 =
 
 
 static int
-samep(int testn, char *type, const char *p1, const char *p2, size_t len)
+samep(int testn, char *type, const void *pp1, const void *pp2, size_t len)
 {
+    const unsigned char *p1 = pp1, *p2 = pp2;
     size_t i;
     int val = 1;
 
@@ -493,13 +494,13 @@ samep(int testn, char *type, const char *p1, const char *p2, size_t len)
 }
 
 static int
-encryption_test(krb5_context context, char *key, size_t keylen,
+encryption_test(krb5_context context, const void *key, size_t keylen,
 		struct enc_test *enc, int numenc)
 {
-    char iv[AES_BLOCK_SIZE];
+    unsigned char iv[AES_BLOCK_SIZE];
     int i, val, failed = 0;
     AES_KEY ekey, dkey;
-    char *p;
+    unsigned char *p;
 
     AES_set_encrypt_key(key, keylen, &ekey);
     AES_set_decrypt_key(key, keylen, &dkey);

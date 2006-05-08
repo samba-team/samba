@@ -42,11 +42,11 @@ RCSID("$Id$");
 #include <string.h>
 
 struct {
-    const char *key;
+    const void *key;
     const int keylen;
     const int bitsize;
-    const char *plain;
-    const char *cipher;
+    const void *plain;
+    const void *cipher;
 } tests[] = {
     {
 	"\x00\x00\x00\x00\x00\x00\x00\x00"
@@ -103,12 +103,12 @@ struct {
     }
 };
 
-const char cbc_key[16] = 
+const unsigned char cbc_key[16] = 
 "\x00\x00\x00\x00\x00\x00\x00\x00"
 "\x00\x00\x00\x00\x00\x00\x00\x00";
 const char cbc_iv[8] =
 "\x01\x01\x01\x01\x01\x01\x01\x01";
-const char cbc_in_data[32] = 
+const unsigned char cbc_in_data[32] = 
 "\x20\x20\x20\x20\x20\x20\x20\x20"
 "\x20\x20\x20\x20\x20\x20\x20\x20"
 "\x20\x20\x20\x20\x20\x20\x20\x20"

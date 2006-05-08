@@ -144,7 +144,7 @@ const unsigned char cipher3[] =
 int
 main (void)
 {
-    char buf[1024];
+    unsigned char buf[1024];
     RC4_KEY key;
 
     RC4_set_key(&key, 8, key1);
