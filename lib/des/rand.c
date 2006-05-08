@@ -127,9 +127,9 @@ static int
 get_device_fd(int flags)
 {
     static const char *rnd_devices[] = {
+	"/dev/urandom",
 	"/dev/random",
 	"/dev/srandom",
-	"/dev/urandom",
 	"/dev/arandom",
 	NULL
     };
