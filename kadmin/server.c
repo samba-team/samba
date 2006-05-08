@@ -371,12 +371,13 @@ kadmind_dispatch(void *kadm_handle, krb5_boolean initial,
 	break;
     }
     case kadm_get_privs:{
-	ret = kadm5_get_privs(kadm_handle, &mask);
+	uint32_t privs;
+	ret = kadm5_get_privs(kadm_handle, &privs);
 	krb5_storage_free(sp);
 	sp = krb5_storage_emem();
 	krb5_store_int32(sp, ret);
 	if(ret == 0)
-	    krb5_store_int32(sp, mask);
+	    krb5_store_uint32(sp, privs);
 	break;
     }
     case kadm_get_princs:{
