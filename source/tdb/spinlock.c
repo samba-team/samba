@@ -266,23 +266,6 @@ static void yield_cpu(void)
 #endif
 }
 
-static int this_is_smp(void)
-{
-#if defined(HAVE_SYSCONF)
-
-#if defined(SYSCONF_SC_NPROC_ONLN)
-        return (sysconf(_SC_NPROC_ONLN) > 1) ? 1 : 0;
-#elif defined(SYSCONF_SC_NPROCESSORS_ONLN)
-        return (sysconf(_SC_NPROCESSORS_ONLN) > 1) ? 1 : 0;
-#else
-	return 0;
-#endif
-
-#else
-	return 0;
-#endif
-}
-
 /*
  * GENERIC
  */

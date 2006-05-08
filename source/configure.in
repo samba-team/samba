@@ -2019,6 +2019,8 @@ if test x"$samba_cv_HAVE_GETTIMEOFDAY_TZ" = x"yes"; then
     AC_DEFINE(HAVE_GETTIMEOFDAY_TZ,1,[Whether gettimeofday() is available])
 fi
 
+AC_LIBTESTFUNC(rt, clock_gettime)
+
 AC_CACHE_CHECK([for va_copy],samba_cv_HAVE_VA_COPY,[
 AC_TRY_LINK([#include <stdarg.h>
 va_list ap1,ap2;], [va_copy(ap1,ap2);],
