@@ -39,6 +39,7 @@ struct cvfs_private {
 	struct ntvfs_module_context *ntvfs;
 	struct async_info *pending;
 	BOOL map_generic;
+	BOOL map_trans2;
 };
 
 
@@ -172,6 +173,9 @@ static NTSTATUS cvfs_connect(struct ntvfs_module_context *ntvfs,
 
 	private->map_generic = lp_parm_bool(ntvfs->ctx->config.snum, 
 					    "cifs", "mapgeneric", False);
+
+	private->map_trans2 = lp_parm_bool(ntvfs->ctx->config.snum,
+					   "cifs", "maptrans2", False);
 
 	return NT_STATUS_OK;
 }
@@ -873,6 +877,10 @@ static NTSTATUS cvfs_trans2(struct ntvfs_module_context *ntvfs,
 	struct cvfs_private *private = ntvfs->private_data;
 	struct smbcli_request *c_req;
 
+	if (!private->map_trans2) {
+		return NT_STATUS_NOT_IMPLEMENTED;
+	}
+
 	SETUP_PID;
 
 	if (!(req->async_states->state & NTVFS_ASYNC_STATE_MAY_ASYNC)) {
@@ -979,10 +987,7 @@ NTSTATUS ntvfs_cifs_init(void)
 	ops.async_setup = cvfs_async_setup;
 	ops.cancel = cvfs_cancel;
 	ops.notify = cvfs_notify;
-
-	if (lp_parm_bool(-1, "cifs", "maptrans2", False)) {
-		ops.trans2 = cvfs_trans2;
-	}
+	ops.trans2 = cvfs_trans2;
 
 	/* register ourselves with the NTVFS subsystem. We register
 	   under the name 'cifs'. */
