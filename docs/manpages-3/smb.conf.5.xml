@@ -299,8 +299,8 @@ alias|alias|alias|alias...
 
 	<para>Starting with Samba version 3.0.23 the capability for non-root users to add, modify, and delete
 	their own share definitions has been added. This capability is called <emphasis>usershares</emphasis> and
-	is controlled by a set of parameters in the <literal>[global]</literal> section of the smb.conf.
-	The relevent parameters are :
+	is controlled by a set of parameters in the <smbconfsection>[global]</smbconfsection> section of the smb.conf.
+	The relevant parameters are :
 	</para>
 
 	<variablelist>
@@ -349,14 +349,20 @@ alias|alias|alias|alias...
 	shares, create the directory to contain the share definitions as follows:
 	</para>
 	<para>Become root:</para>
-	<programlisting>
-	mkdir /usr/local/samba/lib/usershares
-	chgrp foo /usr/local/samba/lib/usershares
-	chmod 1770 /usr/local/samba/lib/usershares
-	</programlisting>
-	<para>Then add the parameters <literal>usershare path = /usr/local/samba/lib/usershares</literal>,
-	<literal>usershare max shares = 10</literal> (or the desired number of shares) to the global
-	section of your smb.conf. Members of the group foo may then manipulate the user defined shares
+<programlisting>
+mkdir /usr/local/samba/lib/usershares
+chgrp foo /usr/local/samba/lib/usershares
+chmod 1770 /usr/local/samba/lib/usershares
+</programlisting>
+<para>Then add the parameters 
+
+<programlisting>
+	<smbconfoption name="usershare path">/usr/local/samba/lib/usershares</smbconfoption>
+	<smbconfoption name="usershare max shares">10</smbconfoption> # (or the desired number of shares)
+</programlisting> 
+
+	to the global
+	section of your <filename>smb.conf</filename>. Members of the group foo may then manipulate the user defined shares
 	using the following commands.</para>
 
 	<variablelist>
