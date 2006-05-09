@@ -7,12 +7,24 @@ use strict;
 use lib 'build';
 use smb_build::config_mk;
 
-sub generate($)
+my $subsys = shift @ARGV;
+
+sub contains($$)
 {
-	my $depend = shift;
-	my $res = "digraph samba4 {\n";
+	my ($haystack,$needle) = @_;
+	foreach (@$haystack) {
+		return 1 if ($_ eq $needle);
+	}
+	return 0;
+}
+
+sub generate($$$)
+{
+	my ($depend,$only,$name) = @_;
+	my $res = "digraph $name {\n";
 
 	foreach my $part (values %{$depend}) {
+		next if (defined($only) and not contains($only,$part->{NAME}));
 		foreach my $elem (@{$part->{PUBLIC_DEPENDENCIES}},
 				  @{$part->{PRIVATE_DEPENDENCIES}}) {
 			$res .= "\t\"$part->{NAME}\" -> \"$elem\";\n";
@@ -25,9 +37,25 @@ sub generate($)
 my $INPUT = {};
 smb_build::config_mk::run_config_mk($INPUT, '.', '.', "main.mk");
 
-print __FILE__.": creating samba4-deps.dot\n";
-open DOTTY, ">samba4-deps.dot";
-print DOTTY generate($INPUT);
+my $name = "samba4";
+
+my $only;
+if (defined($subsys)) {
+	my $DEPEND = smb_build::input::check($INPUT, \%config::enabled, 
+		"STATIC_LIBRARY", "SHARED_LIBRARY", "SHARED_LIBRARY");
+
+	die("No such subsystem $subsys") unless (defined($DEPEND->{$subsys}));
+
+	$only = $DEPEND->{$subsys}->{UNIQUE_DEPENDENCIES_ALL};
+	push (@$only, "$subsys");
+
+	$name = $subsys;
+}
+
+my $fname = "$name-deps.dot";
+print __FILE__.": creating $fname\n";
+open DOTTY, ">$fname";
+print DOTTY generate($INPUT, $only, $name);
 close DOTTY;
 
 1;
