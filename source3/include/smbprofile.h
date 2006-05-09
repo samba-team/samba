@@ -423,7 +423,7 @@ extern BOOL do_profile_times;
 
 extern clockid_t __profile_clock;
 
-static inline unsigned long long profile_timestamp(void)
+static inline SMB_BIG_UINT profile_timestamp(void)
 {
 	struct timespec ts;
 
@@ -438,7 +438,7 @@ static inline unsigned long long profile_timestamp(void)
 
 #else
 
-static inline unsigned long long profile_timestamp(void)
+static inline SMB_BIG_UINT profile_timestamp(void)
 {
 	struct timeval tv;
 	GetTimeOfDay(&tv);
@@ -471,14 +471,14 @@ static inline unsigned long long profile_timestamp(void)
 	}
 
 #define START_PROFILE(x) \
-	unsigned long long __profstamp_##x = 0; \
+	SMB_BIG_UINT __profstamp_##x = 0; \
 	if (do_profile_flag) { \
 		__profstamp_##x = do_profile_times ? profile_timestamp() : 0;\
 		INC_PROFILE_COUNT(x##_count); \
   	}
 
 #define START_PROFILE_BYTES(x,n) \
-	unsigned long long __profstamp_##x = 0; \
+	SMB_BIG_UINT __profstamp_##x = 0; \
 	if (do_profile_flag) { \
 		__profstamp_##x = do_profile_times ? profile_timestamp() : 0;\
 		INC_PROFILE_COUNT(x##_count); \
