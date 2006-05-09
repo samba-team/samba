@@ -916,7 +916,7 @@ static void manage_gss_spnego_request(enum stdio_helper_mode stdio_helper_mode,
 			response.negTokenTarg.mechListMIC = data_blob(NULL, 0);
 			response.negTokenTarg.responseToken = data_blob(NULL, 0);
 
-			status = ads_verify_ticket(mem_ctx, lp_realm(),
+			status = ads_verify_ticket(mem_ctx, lp_realm(), 0,
 						   &request.negTokenInit.mechToken,
 						   &principal, NULL, &ap_rep,
 						   &session_key);

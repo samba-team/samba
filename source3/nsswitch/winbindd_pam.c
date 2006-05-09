@@ -540,6 +540,7 @@ static NTSTATUS winbindd_raw_kerberos_login(struct winbindd_domain *domain,
 
 	result = ads_verify_ticket(state->mem_ctx, 
 				   lp_realm(), 
+				   time_offset,
 				   &tkt, 
 				   &client_princ_out, 
 				   &pac_data, 

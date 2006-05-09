@@ -286,7 +286,8 @@ static BOOL ads_secrets_verify_ticket(krb5_context context, krb5_auth_context au
 ***********************************************************************************/
 
 NTSTATUS ads_verify_ticket(TALLOC_CTX *mem_ctx,
-			   const char *realm, const DATA_BLOB *ticket, 
+			   const char *realm, time_t time_offset,
+			   const DATA_BLOB *ticket, 
 			   char **principal, PAC_DATA **pac_data,
 			   DATA_BLOB *ap_rep,
 			   DATA_BLOB *session_key)
@@ -321,6 +322,10 @@ NTSTATUS ads_verify_ticket(TALLOC_CTX *mem_ctx,
 	if (ret) {
 		DEBUG(1,("ads_verify_ticket: krb5_init_context failed (%s)\n", error_message(ret)));
 		return NT_STATUS_LOGON_FAILURE;
+	}
+
+	if (time_offset != 0) {
+		krb5_set_real_time(context, time(NULL) + time_offset, 0);
 	}
 
 	ret = krb5_set_default_realm(context, realm);
