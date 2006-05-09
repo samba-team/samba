@@ -8,12 +8,12 @@ exec smbscript "$0" ${1+"$@"}
 
 options = GetOptions(ARGV,
 		"POPT_AUTOHELP",
-		"POPT_COMMON_SAMBA",
-		"POPT_COMMON_VERSION",
-		"POPT_COMMON_CREDENTIALS",
 		'username=s',
 		'unixname=s',
 		'password=s',
+		"POPT_COMMON_SAMBA",
+		"POPT_COMMON_VERSION",
+		"POPT_COMMON_CREDENTIALS",
 		'quiet');
 
 if (options == undefined) {
@@ -23,7 +23,6 @@ if (options == undefined) {
 
 libinclude("base.js");
 libinclude("provision.js");
-
 
 /*
   print a message if quiet is not set
@@ -56,6 +55,7 @@ You must provide at least a username
 if (options['username'] == undefined) {
 	ShowHelp();
 }
+
 if (options['password'] == undefined) {
 	random_init(local);
 	options.password = randpass(12);
