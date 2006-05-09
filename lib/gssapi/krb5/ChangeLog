@@ -1,4 +1,18 @@
-2006-05-04  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-05-09  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* accept_sec_context.c (gsskrb5_is_cfx): always set is_cfx. From
+	Andrew Abartlet.
+	
+2006-05-08  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* get_mic.c (mic_des3): make sure message_buffer doesn't point to
+	free()ed memory on failure. Pointed out by IBM checker.
+	
+2006-05-05  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* Rename u_intXX_t to uintXX_t
+	
+2006-05-04 Love Hörnquist Åstrand <lha@it.su.se>
 
 	* cfx.c: Less pointer signedness warnings.
 
