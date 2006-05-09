@@ -7,7 +7,7 @@
 	<para>This parameter controls whether user defined shares are allowed
 	to be accessed by non-authenticated users or not. It is the equivalent
 	of allowing people who can create a share the option of setting
-	<<parameter moreinfo="none">guest ok = yes</parameter> in a share
+	<parameter moreinfo="none">guest ok = yes</parameter> in a share
 	definition. Due to the security sensitive nature of this the default
 	is set to off.</para>
 
