@@ -12,7 +12,7 @@
 	<para>This parameter is only used when your system supports 
 	change notification to user programs, using the FAM daemon. If the FAM
 	daemon is not running, this parameter is automatically disabled. The
-	<parameter moreinfo=none>kernel change notify</parameter>
+	<parameter moreinfo="none">kernel change notify</parameter>
 	parameter will take precedence if it is also enabled.
 	</para>
 </description>
