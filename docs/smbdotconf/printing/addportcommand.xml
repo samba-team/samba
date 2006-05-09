@@ -1,4 +1,4 @@
-<samba:parameter name="add printer command"
+<samba:parameter name="add port command"
                  context="G"
 				 type="string"
 		 advanced="1" developer="1"
