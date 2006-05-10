@@ -66,7 +66,7 @@ static int _pam_parse(int argc, const char **argv, dictionary **d)
 
 	*d = iniparser_load(CONST_DISCARD(char *, config_file));
 	if (*d == NULL) {
-		return -1;
+		goto config_from_pam;
 	}
 
 	if (iniparser_getboolean(*d, CONST_DISCARD(char *, "global:debug"), False)) {
@@ -807,7 +807,7 @@ const char *get_conf_item_string(int argc,
 		goto out;
 	}
 
-	/* let the pam opt take precedence over the smb.conf option */
+	/* let the pam opt take precedence over the pam_winbind.conf option */
 
 	if (d != NULL) {
 
@@ -836,7 +836,9 @@ const char *get_conf_item_string(int argc,
 		}
 	}
 
-	_pam_log_debug(ctrl, LOG_INFO, "CONFIG file: %s '%s'\n", item, parm_opt);
+	if (d != NULL) {
+		_pam_log_debug(ctrl, LOG_INFO, "CONFIG file: %s '%s'\n", item, parm_opt);
+	}
 out:
 	SAFE_FREE(parm);
 	return parm_opt;
