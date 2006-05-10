@@ -158,8 +158,12 @@ BOOL profile_setup(BOOL rdonly)
 		return False;
 	}
 
-	if (shm_ds.shm_perm.cuid != sec_initial_uid() || shm_ds.shm_perm.cgid != sec_initial_gid()) {
-		DEBUG(0,("ERROR: we did not create the shmem (owned by another user)\n"));
+	if (shm_ds.shm_perm.cuid != sec_initial_uid() ||
+	    shm_ds.shm_perm.cgid != sec_initial_gid()) {
+		DEBUG(0,("ERROR: we did not create the shmem "
+			 "(owned by another user, uid %u, gid %u)\n",
+			 shm_ds.shm_perm.cuid,
+			 shm_ds.shm_perm.cgid));
 		return False;
 	}
 
