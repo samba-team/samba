@@ -624,7 +624,7 @@ static const char *collect_onlinestatus(TALLOC_CTX *mem_ctx)
 
 	buf = talloc_asprintf_append(buf, "\n");
 
-	DEBUG(5,("collect_onlinestatus: %s\n", buf));
+	DEBUG(5,("collect_onlinestatus: %s", buf));
 
 	return buf;
 }
