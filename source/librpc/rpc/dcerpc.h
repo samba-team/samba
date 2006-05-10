@@ -84,12 +84,6 @@ struct dcerpc_connection {
 	/* Sync requests waiting to be shipped */
 	struct rpc_request *request_queue;
 
-	/* private pointer for pending binds */
-	void *bind_private;
-
-	/* private pointer for pending alter context requests */
-	void *alter_private;
-
 	/* the next context_id to be assigned */
 	uint32_t next_context_id;
 };
@@ -231,6 +225,11 @@ struct rpc_request {
 	DATA_BLOB payload;
 	uint32_t flags;
 	uint32_t fault_code;
+
+	/* this is used to distinguish bind and alter_context requests
+	   from normal requests */
+	void (*recv_handler)(struct rpc_request *conn, 
+			     DATA_BLOB *blob, struct ncacn_packet *pkt);
 
 	const struct GUID *object;
 	uint16_t opnum;

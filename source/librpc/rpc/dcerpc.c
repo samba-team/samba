@@ -490,6 +490,16 @@ static NTSTATUS dcerpc_map_reason(uint16_t reason)
 }
 
 /*
+  a bind or alter context has failed
+*/
+static void dcerpc_composite_fail(struct rpc_request *req)
+{
+	struct composite_context *c = talloc_get_type(req->async.private, 
+						      struct composite_context);
+	composite_error(c, req->status);
+}
+
+/*
   mark the dcerpc connection dead. All outstanding requests get an error
 */
 static void dcerpc_connection_dead(struct dcerpc_connection *conn, NTSTATUS status)
@@ -504,26 +514,12 @@ static void dcerpc_connection_dead(struct dcerpc_connection *conn, NTSTATUS stat
 			req->async.callback(req);
 		}
 	}	
-
-	if (conn->bind_private) {
-		/* a bind was in flight - fail it */
-		struct composite_context *c = talloc_get_type(conn->bind_private, struct composite_context);
-		composite_error(c, status);		
-	}
-
-	if (conn->alter_private) {
-		/* a alter context was in flight - fail it */
-		struct composite_context *c = talloc_get_type(conn->alter_private, struct composite_context);
-		composite_error(c, status);		
-	}
 }
 
 /*
-  forward declarations of the recv_data handlers for the 3 types of packets we need
-  to handle
+  forward declarations of the recv_data handlers for the types of
+  packets we need to handle
 */
-static void dcerpc_bind_recv_data(struct dcerpc_connection *conn, struct ncacn_packet *pkt);
-static void dcerpc_alter_recv_data(struct dcerpc_connection *conn, struct ncacn_packet *pkt);
 static void dcerpc_request_recv_data(struct dcerpc_connection *c, 
 				     DATA_BLOB *raw_packet, struct ncacn_packet *pkt);
 
@@ -555,41 +551,20 @@ static void dcerpc_recv_data(struct dcerpc_connection *conn, DATA_BLOB *blob, NT
 		dcerpc_connection_dead(conn, status);
 	}
 
-	switch (pkt.ptype) {
-	case DCERPC_PKT_BIND_NAK:
-	case DCERPC_PKT_BIND_ACK:
-		if (conn->bind_private) {
-			talloc_steal(conn->bind_private, blob->data);
-			dcerpc_bind_recv_data(conn, &pkt);
-		}
-		break;
-
-	case DCERPC_PKT_ALTER_RESP:
-		if (conn->alter_private) {
-			talloc_steal(conn->alter_private, blob->data);
-			dcerpc_alter_recv_data(conn, &pkt);
-		}
-		break;
-
-	default:
-		/* assume its an ordinary request */
-		dcerpc_request_recv_data(conn, blob, &pkt);
-		break;
-	}
+	dcerpc_request_recv_data(conn, blob, &pkt);
 }
 
 
 /*
   Receive a bind reply from the transport
 */
-static void dcerpc_bind_recv_data(struct dcerpc_connection *conn, struct ncacn_packet *pkt)
+static void dcerpc_bind_recv_handler(struct rpc_request *req, 
+				     DATA_BLOB *raw_packet, struct ncacn_packet *pkt)
 {
 	struct composite_context *c;
+	struct dcerpc_connection *conn;
 
-	c = talloc_get_type(conn->bind_private, struct composite_context);
-
-	/* mark the connection as not waiting for a bind reply */
-	conn->bind_private = NULL;
+	c = talloc_get_type(req->async.private, struct composite_context);
 
 	if (pkt->ptype == DCERPC_PKT_BIND_NAK) {
 		DEBUG(2,("dcerpc: bind_nak reason %d\n",
@@ -605,6 +580,8 @@ static void dcerpc_bind_recv_data(struct dcerpc_connection *conn, struct ncacn_p
 		composite_error(c, NT_STATUS_UNSUCCESSFUL);
 		return;
 	}
+
+	conn = req->p->conn;
 
 	conn->srv_max_xmit_frag = pkt->u.bind_ack.max_xmit_frag;
 	conn->srv_max_recv_frag = pkt->u.bind_ack.max_recv_frag;
@@ -623,20 +600,25 @@ static void dcerpc_bind_recv_data(struct dcerpc_connection *conn, struct ncacn_p
 }
 
 /*
-  handle timeouts of dcerpc bind and alter context requests
+  handle timeouts of individual dcerpc requests
 */
-static void bind_timeout_handler(struct event_context *ev,
-				 struct timed_event *te, 
-				 struct timeval t, void *private)
+static void dcerpc_timeout_handler(struct event_context *ev, struct timed_event *te, 
+				   struct timeval t, void *private)
 {
-	struct composite_context *ctx =
-		talloc_get_type(private, struct composite_context);
-	struct dcerpc_pipe *timeout_pipe = talloc_get_type(ctx->private_data, struct dcerpc_pipe);
+	struct rpc_request *req = talloc_get_type(private, struct rpc_request);
 
-	SMB_ASSERT(timeout_pipe->conn->bind_private != NULL);
-	timeout_pipe->conn->bind_private = NULL;
-	composite_error(ctx, NT_STATUS_IO_TIMEOUT);
+	if (req->state != RPC_REQUEST_PENDING) {
+		return;
+	}
+
+	req->status = NT_STATUS_IO_TIMEOUT;
+	req->state = RPC_REQUEST_DONE;
+	DLIST_REMOVE(req->p->conn->pending, req);
+	if (req->async.callback) {
+		req->async.callback(req);
+	}
 }
+
 
 /*
   send a async dcerpc bind request
@@ -649,6 +631,13 @@ struct composite_context *dcerpc_bind_send(struct dcerpc_pipe *p,
 	struct composite_context *c;
 	struct ncacn_packet pkt;
 	DATA_BLOB blob;
+	struct rpc_request *req;
+
+	/* we allocate a dcerpc_request so we can be in the same
+	   request queue as normal requests, but most of the request
+	   fields are not used as there is no call id */
+	req = talloc_zero(mem_ctx, struct rpc_request);
+	if (req == NULL) return NULL;
 
 	c = talloc_zero(mem_ctx, struct composite_context);
 	if (c == NULL) return NULL;
@@ -691,7 +680,15 @@ struct composite_context *dcerpc_bind_send(struct dcerpc_pipe *p,
 	}
 
 	p->conn->transport.recv_data = dcerpc_recv_data;
-	p->conn->bind_private = c;
+
+	req->state = RPC_REQUEST_PENDING;
+	req->call_id = pkt.call_id;
+	req->async.private = c;
+	req->async.callback = dcerpc_composite_fail;
+	req->p = p;
+	req->recv_handler = dcerpc_bind_recv_handler;
+
+	DLIST_ADD_END(p->conn->pending, req, struct rpc_request *);
 
 	c->status = p->conn->transport.send_request(p->conn, &blob,
 						    True);
@@ -699,9 +696,9 @@ struct composite_context *dcerpc_bind_send(struct dcerpc_pipe *p,
 		goto failed;
 	}
 
-	event_add_timed(c->event_ctx, c,
+	event_add_timed(c->event_ctx, req,
 			timeval_current_ofs(DCERPC_REQUEST_TIMEOUT, 0),
-			bind_timeout_handler, c);
+			dcerpc_timeout_handler, req);
 
 	return c;
 
@@ -845,6 +842,13 @@ static void dcerpc_request_recv_data(struct dcerpc_connection *c,
 
 	talloc_steal(req, raw_packet->data);
 
+	if (req->recv_handler != NULL) {
+		req->state = RPC_REQUEST_DONE;
+		DLIST_REMOVE(c->pending, req);
+		req->recv_handler(req, raw_packet, pkt);
+		return;
+	}
+
 	if (pkt->ptype == DCERPC_PKT_FAULT) {
 		DEBUG(5,("rpc fault: %s\n", dcerpc_errstr(c, pkt->u.fault.status)));
 		req->fault_code = pkt->u.fault.status;
@@ -912,27 +916,6 @@ req_done:
 }
 
 /*
-  handle timeouts of individual dcerpc requests
-*/
-static void dcerpc_timeout_handler(struct event_context *ev, struct timed_event *te, 
-				   struct timeval t, void *private)
-{
-	struct rpc_request *req = talloc_get_type(private, struct rpc_request);
-
-	if (req->state != RPC_REQUEST_PENDING) {
-		return;
-	}
-
-	req->status = NT_STATUS_IO_TIMEOUT;
-	req->state = RPC_REQUEST_DONE;
-	DLIST_REMOVE(req->p->conn->pending, req);
-	if (req->async.callback) {
-		req->async.callback(req);
-	}
-}
-
-
-/*
   make sure requests are cleaned up 
  */
 static int dcerpc_req_destructor(void *ptr)
@@ -969,6 +952,8 @@ static struct rpc_request *dcerpc_request_send(struct dcerpc_pipe *p,
 	req->fault_code = 0;
 	req->async_call = async;
 	req->async.callback = NULL;
+	req->async.private = NULL;
+	req->recv_handler = NULL;
 
 	if (object != NULL) {
 		req->object = talloc_memdup(req, object, sizeof(*object));
@@ -1301,7 +1286,15 @@ static NTSTATUS dcerpc_ndr_validate_out(struct dcerpc_connection *c,
 	s2 = ndr_print_function_string(mem_ctx, ndr_print, "VALIDATE", 
 				       NDR_OUT, st);
 	if (strcmp(s1, s2) != 0) {
+#if 1
 		printf("VALIDATE ERROR:\nWIRE:\n%s\n GEN:\n%s\n", s1, s2);
+#else
+		/* this is sometimes useful */
+		printf("VALIDATE ERROR\n");
+		file_save("wire.dat", s1, strlen(s1));
+		file_save("gen.dat", s2, strlen(s2));
+		system("diff -u wire.dat gen.dat");
+#endif
 	}
 
 	return NT_STATUS_OK;
@@ -1517,16 +1510,14 @@ uint32_t dcerpc_auth_level(struct dcerpc_connection *c)
 /*
   Receive an alter reply from the transport
 */
-static void dcerpc_alter_recv_data(struct dcerpc_connection *conn, struct ncacn_packet *pkt)
+static void dcerpc_alter_recv_handler(struct rpc_request *req,
+				      DATA_BLOB *raw_packet, struct ncacn_packet *pkt)
 {
 	struct composite_context *c;
 	struct dcerpc_pipe *recv_pipe;
 
-	c = talloc_get_type(conn->alter_private, struct composite_context);
+	c = talloc_get_type(req->async.private, struct composite_context);
 	recv_pipe = talloc_get_type(c->private_data, struct dcerpc_pipe);
-
-	/* mark the connection as not waiting for a alter context reply */
-	conn->alter_private = NULL;
 
 	if (pkt->ptype == DCERPC_PKT_ALTER_RESP &&
 	    pkt->u.alter_resp.num_results == 1 &&
@@ -1568,8 +1559,15 @@ struct composite_context *dcerpc_alter_context_send(struct dcerpc_pipe *p,
 	struct composite_context *c;
 	struct ncacn_packet pkt;
 	DATA_BLOB blob;
+	struct rpc_request *req;
 
-	c = talloc_zero(mem_ctx, struct composite_context);
+	/* we allocate a dcerpc_request so we can be in the same
+	   request queue as normal requests, but most of the request
+	   fields are not used as there is no call id */
+	req = talloc_zero(mem_ctx, struct rpc_request);
+	if (req == NULL) return NULL;
+
+	c = talloc_zero(req, struct composite_context);
 	if (c == NULL) return NULL;
 
 	c->state = COMPOSITE_STATE_IN_PROGRESS;
@@ -1610,16 +1608,24 @@ struct composite_context *dcerpc_alter_context_send(struct dcerpc_pipe *p,
 	}
 
 	p->conn->transport.recv_data = dcerpc_recv_data;
-	p->conn->alter_private = c;
+
+	req->state = RPC_REQUEST_PENDING;
+	req->call_id = pkt.call_id;
+	req->async.private = c;
+	req->async.callback = dcerpc_composite_fail;
+	req->p = p;
+	req->recv_handler = dcerpc_alter_recv_handler;
+
+	DLIST_ADD_END(p->conn->pending, req, struct rpc_request *);
 
 	c->status = p->conn->transport.send_request(p->conn, &blob, True);
 	if (!NT_STATUS_IS_OK(c->status)) {
 		goto failed;
 	}
 
-	event_add_timed(c->event_ctx, c,
+	event_add_timed(c->event_ctx, req,
 			timeval_current_ofs(DCERPC_REQUEST_TIMEOUT, 0),
-			bind_timeout_handler, c);
+			dcerpc_timeout_handler, req);
 
 	return c;
 
