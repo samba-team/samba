@@ -1405,7 +1405,7 @@ _krb5_pk_load_id(krb5_context context,
 	    goto out;
     }
 
-    ret = hx509_certs_init(id->hx509ctx, user_id, 0, NULL, &id->certs);
+    ret = hx509_certs_init(id->hx509ctx, user_id, 0, lock, &id->certs);
     if (ret)
 	goto out;
 
