@@ -227,7 +227,7 @@ NTSTATUS add_ccache_to_list(const char *princ_name,
 		new_entry->service = talloc_strdup(mem_ctx, service);
 		NT_STATUS_HAVE_NO_MEMORY(new_entry->service);
 	}
-	if (pass) {
+	if (schedule_refresh_event && pass) {
 		new_entry->pass = talloc_strdup(mem_ctx, pass);
 		NT_STATUS_HAVE_NO_MEMORY(new_entry->pass);
 	}
