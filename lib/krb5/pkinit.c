@@ -1769,7 +1769,7 @@ krb5_get_init_creds_opt_set_pkinit(krb5_context context,
 				   krb5_principal principal,
 				   const char *user_id,
 				   const char *x509_anchors,
-				   char * const * chain,
+				   char * const * pool,
 				   char * const * revoke,
 				   int flags,
 				   krb5_prompter_fct prompter,
@@ -1797,11 +1797,30 @@ krb5_get_init_creds_opt_set_pkinit(krb5_context context,
     opt->opt_private->pk_init_ctx->require_eku = 1;
     opt->opt_private->pk_init_ctx->require_krbtgt_otherName = 1;
 
+
+    /* XXX implement krb5_appdefault_strings  */
+    if (pool == NULL)
+	pool = krb5_config_get_strings(context, NULL,
+				       "appdefaults", 
+				       "pkinit-pool", 
+				       NULL);
+
+    if (revoke == NULL)
+	revoke = krb5_config_get_strings(context, NULL,
+					 "appdefaults", 
+					 "pkinit-revoke", 
+					 NULL);
+
+    if (x509_anchors == NULL)
+	krb5_appdefault_string(context, "kinit",
+			       krb5_principal_get_realm(context, principal), 
+			       "pkinit-anchors", NULL, &x509_anchors);
+
     ret = _krb5_pk_load_id(context,
 			   &opt->opt_private->pk_init_ctx->id,
 			   user_id,
 			   x509_anchors,
-			   chain,
+			   pool,
 			   revoke,
 			   prompter,
 			   prompter_data,
