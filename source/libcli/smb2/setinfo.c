@@ -33,7 +33,7 @@ struct smb2_request *smb2_setinfo_send(struct smb2_tree *tree, struct smb2_setin
 	NTSTATUS status;
 	struct smb2_request *req;
 
-	req = smb2_request_init_tree(tree, SMB2_OP_SETINFO, 0x20, io->in.blob.length);
+	req = smb2_request_init_tree(tree, SMB2_OP_SETINFO, 0x20, True, io->in.blob.length);
 	if (req == NULL) return NULL;
 
 	SSVAL(req->out.body, 0x02, io->in.level);

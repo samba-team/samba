@@ -32,7 +32,7 @@ struct smb2_request *smb2_ioctl_send(struct smb2_tree *tree, struct smb2_ioctl *
 	NTSTATUS status;
 	struct smb2_request *req;
 
-	req = smb2_request_init_tree(tree, SMB2_OP_IOCTL, 0x38, 
+	req = smb2_request_init_tree(tree, SMB2_OP_IOCTL, 0x38, True,
 				     io->in.in.length+io->in.out.length);
 	if (req == NULL) return NULL;
 

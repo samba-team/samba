@@ -69,7 +69,7 @@ struct smb2_request *smb2_session_setup_send(struct smb2_session *session,
 	NTSTATUS status;
 	
 	req = smb2_request_init(session->transport, SMB2_OP_SESSSETUP, 
-				0x10, io->in.secblob.length);
+				0x10, True, io->in.secblob.length);
 	if (req == NULL) return NULL;
 
 	SBVAL(req->out.hdr,  SMB2_HDR_UID, session->uid);

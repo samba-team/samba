@@ -31,7 +31,7 @@ struct smb2_request *smb2_keepalive_send(struct smb2_transport *transport)
 {
 	struct smb2_request *req;
 
-	req = smb2_request_init(transport, SMB2_OP_KEEPALIVE, 0x04, 0);
+	req = smb2_request_init(transport, SMB2_OP_KEEPALIVE, 0x04, False, 0);
 	if (req == NULL) return NULL;
 
 	SSVAL(req->out.body, 0x02, 0);

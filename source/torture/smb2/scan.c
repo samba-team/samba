@@ -219,7 +219,7 @@ BOOL torture_smb2_scan(struct torture_context *torture)
 	tree->session->transport->options.timeout = 3;
 
 	for (opcode=0;opcode<1000;opcode++) {
-		req = smb2_request_init_tree(tree, opcode, 2, 0);
+		req = smb2_request_init_tree(tree, opcode, 2, False, 0);
 		SSVAL(req->out.body, 0, 0);
 		smb2_transport_send(req);
 		if (!smb2_request_receive(req)) {

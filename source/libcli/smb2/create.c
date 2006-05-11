@@ -67,7 +67,7 @@ struct smb2_request *smb2_create_send(struct smb2_tree *tree, struct smb2_create
 	NTSTATUS status;
 	DATA_BLOB blob = data_blob(NULL, 0);
 
-	req = smb2_request_init_tree(tree, SMB2_OP_CREATE, 0x38, 1);
+	req = smb2_request_init_tree(tree, SMB2_OP_CREATE, 0x38, True, 0);
 	if (req == NULL) return NULL;
 
 	SSVAL(req->out.body, 0x02, io->in.oplock_flags);

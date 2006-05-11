@@ -31,9 +31,18 @@
   initialise a smb2 request
 */
 struct smb2_request *smb2_request_init(struct smb2_transport *transport, uint16_t opcode,
-				       uint16_t body_fixed_size, uint32_t body_dynamic_size)
+				       uint16_t body_fixed_size, BOOL body_dynamic_present,
+				       uint32_t body_dynamic_size)
 {
 	struct smb2_request *req;
+
+	if (body_dynamic_present) {
+		if (body_dynamic_size == 0) {
+			body_dynamic_size = 1;
+		}
+	} else {
+		body_dynamic_size = 0;
+	}
 
 	req = talloc(transport, struct smb2_request);
 	if (req == NULL) return NULL;
@@ -95,10 +104,12 @@ struct smb2_request *smb2_request_init(struct smb2_transport *transport, uint16_
     initialise a smb2 request for tree operations
 */
 struct smb2_request *smb2_request_init_tree(struct smb2_tree *tree, uint16_t opcode,
-					    uint16_t body_fixed_size, uint32_t body_dynamic_size)
+					    uint16_t body_fixed_size, BOOL body_dynamic_present,
+					    uint32_t body_dynamic_size)
 {
 	struct smb2_request *req = smb2_request_init(tree->session->transport, opcode, 
-						     body_fixed_size, body_dynamic_size);
+						     body_fixed_size, body_dynamic_present,
+						     body_dynamic_size);
 	if (req == NULL) return NULL;
 
 	SBVAL(req->out.hdr,  SMB2_HDR_UID, tree->session->uid);

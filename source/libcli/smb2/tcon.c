@@ -54,7 +54,7 @@ struct smb2_request *smb2_tree_connect_send(struct smb2_tree *tree,
 	NTSTATUS status;
 
 	req = smb2_request_init(tree->session->transport, SMB2_OP_TCON, 
-				0x08, 1);
+				0x08, True, 0);
 	if (req == NULL) return NULL;
 
 	SBVAL(req->out.hdr,  SMB2_HDR_UID, tree->session->uid);

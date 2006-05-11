@@ -32,7 +32,7 @@ struct smb2_request *smb2_close_send(struct smb2_tree *tree, struct smb2_close *
 {
 	struct smb2_request *req;
 
-	req = smb2_request_init_tree(tree, SMB2_OP_CLOSE, 0x18, 0);
+	req = smb2_request_init_tree(tree, SMB2_OP_CLOSE, 0x18, False, 0);
 	if (req == NULL) return NULL;
 
 	SSVAL(req->out.body, 0x02, io->in.flags);
