@@ -713,11 +713,11 @@ p11_init(hx509_context context,
 	ret = p11_init_slot(p, slot_ids[p->selected_slot], &p->slot);
 	free(slot_ids);
 	if (ret)
-	    goot out;
+	    goto out;
 
 	ret = p11_get_session(p, &p->slot, lock);
 	if (ret)
-	    goot out;
+	    goto out;
 	ret = p11_list_keys(context, p, &p->slot, NULL, &p->slot.certs);
 	p11_put_session(p, &p->slot);
     }
