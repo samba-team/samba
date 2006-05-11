@@ -35,31 +35,11 @@
 RCSID("$Id$");
 #include <dirent.h>
 
-static int
-file_to_cert(hx509_context context, const char *p, hx509_cert *cert)
-{
-    Certificate t;
-    size_t length;
-    void *data;
-    size_t size;
-    int ret;
-
-    *cert = NULL;
-
-    ret = _hx509_map_file(p, &data, &length, NULL);
-    if (ret)
-	return ret;
-
-    ret = decode_Certificate(data, length, &t, &size);
-    _hx509_unmap_file(data, length);
-    if (ret)
-	return ret;
-
-    ret = hx509_cert_init(context, &t, cert);
-    free_Certificate(&t);
-
-    return ret;
-}
+struct dircursor {
+    DIR *dir;
+    hx509_certs certs;
+    void *iter;
+};
 
 /*
  *
@@ -104,13 +84,21 @@ static int
 dir_iter_start(hx509_context context,
 	       hx509_certs certs, void *data, void **cursor)
 {
-    DIR *d;
+    struct dircursor *d;
 
-    d = opendir(data);
-    if (d == NULL) {
-	*cursor = 0;
-	return 0;
+    *cursor = NULL;
+
+    d = calloc(1, sizeof(*d));
+    if (d == NULL)
+	return ENOMEM;
+
+    d->dir = opendir(data);
+    if (d->dir == NULL) {
+	free(d);
+	return errno;
     }
+    d->certs = NULL;
+    d->iter = NULL;
 
     *cursor = d;
     return 0;
@@ -120,8 +108,8 @@ static int
 dir_iter(hx509_context context,
 	 hx509_certs certs, void *data, void *iter, hx509_cert *cert)
 {
-    DIR *d = iter;
-    int ret;
+    struct dircursor *d = iter;
+    int ret = 0;
     
     *cert = NULL;
 
@@ -129,16 +117,49 @@ dir_iter(hx509_context context,
 	struct dirent *dir;
 	char *fn;
 
-	dir = readdir(d);
-	if (dir == NULL)
-	    return 0;
+	if (d->certs) {
+	    ret = hx509_certs_next_cert(context, d->certs, d->iter, cert);
+	    if (ret) {
+		hx509_certs_end_seq(context, d->certs, d->iter);
+		d->iter = NULL;
+		hx509_certs_free(&d->certs);
+		return ret;
+	    }
+	    if (*cert) {
+		ret = 0;
+		break;
+	    }
+	    hx509_certs_end_seq(context, d->certs, d->iter);
+	    d->iter = NULL;
+	    hx509_certs_free(&d->certs);
+	}
+
+	dir = readdir(d->dir);
+	if (dir == NULL) {
+	    ret = 0;
+	    break;
+	}
+	if (strcmp(dir->d_name, ".") == 0 || strcmp(dir->d_name, "..") == 0)
+	    continue;
 	
-	if (asprintf(&fn, "%s/%s", (char *)data, dir->d_name) == -1)
+	if (asprintf(&fn, "FILE:%s/%s", (char *)data, dir->d_name) == -1)
 	    return ENOMEM;
 	
-	ret = file_to_cert(context, fn, cert);
+	ret = hx509_certs_init(context, fn, 0, NULL, &d->certs);
+	if (ret == 0) {
+
+	    ret = hx509_certs_start_seq(context, d->certs, &d->iter);
+	    if (ret)
+	    hx509_certs_free(&d->certs);
+	}
+	/* ignore errors */
+	if (ret) {
+	    d->certs = NULL;
+	    ret = 0;
+	}
+
 	free(fn);
-    } while(ret != 0);
+    } while(ret == 0);
 
     return ret;
 }
@@ -150,8 +171,15 @@ dir_iter_end(hx509_context context,
 	     void *data,
 	     void *cursor)
 {
-    DIR *d = cursor;
-    closedir(d);
+    struct dircursor *d = cursor;
+
+    if (d->certs) {
+	hx509_certs_end_seq(context, d->certs, d->iter);
+	d->iter = NULL;
+	hx509_certs_free(&d->certs);
+    }
+    closedir(d->dir);
+    free(d);
     return 0;
 }
 
