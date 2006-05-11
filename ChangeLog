@@ -1,5 +1,13 @@
 2006-05-12  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kuser/kinit.c: Pass down prompter and password to
+	krb5_get_init_creds_opt_set_pkinit.
+
+	* lib/krb5/pkinit.c (_krb5_pk_load_id): only use password if its
+	longer then 0
+	
+	* doc/ack.texi: Add Jason McIntyre.
+	
 	* lib/krb5/krb5_acl_match_file.3: Various tweaks, from Jason
 	McIntyre.
 	
