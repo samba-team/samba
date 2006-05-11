@@ -787,6 +787,11 @@ out_free:
 		}
 	}
 	
+	if ((server[0] == '/' || server[0] == '\\') &&
+			(server[1] == '/' || server[1] == '\\')) {
+		server += 2;
+	}
+
 	nt_status = cli_full_connection(&cli, global_myname(), server, 
 					opt_ipaddr ? &server_ip : NULL, opt_port,
 					"IPC$", "IPC",  
