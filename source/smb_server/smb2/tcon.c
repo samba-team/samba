@@ -34,10 +34,10 @@ static NTSTATUS smb2srv_tcon_backend(struct smb2srv_request *req, struct smb2_tr
 
 	/* TODO: do real tree connect */
 
-	io->out.unknown1	= 0;
-	io->out.unknown2	= 0;
-	io->out.unknown3	= 0;
-	io->out.access_mask	= 0;
+	io->out.unknown1	= 0x0001; /* 1 - DISK, 2 - Print, 3 - IPC */
+	io->out.unknown2	= 0x00000000;
+	io->out.unknown3	= 0x00000000;
+	io->out.access_mask	= SEC_RIGHTS_FILE_ALL;
 
 	io->out.tid		= tcon->tid;
 
