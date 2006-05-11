@@ -66,7 +66,6 @@ static int p11_get_session(struct p11_module *, struct p11_slot *, hx509_lock);
 static int p11_put_session(struct p11_module *, struct p11_slot *);
 static void p11_release_module(struct p11_module *);
 
-
 /*
  *
  */
@@ -120,7 +119,9 @@ p11_rsa_private_encrypt(int flen,
 
     ck_sigsize = RSA_size(rsa);
 
-    p11_get_session(p11rsa->p, p11rsa->slot, NULL);
+    ret = p11_get_session(p11rsa->p, p11rsa->slot, NULL);
+    if (ret)
+	return -1;
 
     ret = P11FUNC(p11rsa->p, SignInit,
 		  (P11SESSION(p11rsa->slot), &mechanism, key));
@@ -130,7 +131,8 @@ p11_rsa_private_encrypt(int flen,
     }
 
     ret = P11FUNC(p11rsa->p, Sign,
-		  (P11SESSION(p11rsa->slot), (CK_BYTE *)from, flen, to, &ck_sigsize));
+		  (P11SESSION(p11rsa->slot), (CK_BYTE *)from, 
+		   flen, to, &ck_sigsize));
     if (ret != CKR_OK)
 	return -1;
 
@@ -157,7 +159,9 @@ p11_rsa_private_decrypt(int flen, const unsigned char *from, unsigned char *to,
 
     ck_sigsize = RSA_size(rsa);
 
-    p11_get_session(p11rsa->p, p11rsa->slot, NULL);
+    ret = p11_get_session(p11rsa->p, p11rsa->slot, NULL);
+    if (ret)
+	return -1;
 
     ret = P11FUNC(p11rsa->p, DecryptInit,
 		  (P11SESSION(p11rsa->slot), &mechanism, key));
@@ -707,11 +711,14 @@ p11_init(hx509_context context,
 	}
 
 	ret = p11_init_slot(p, slot_ids[p->selected_slot], &p->slot);
-
 	free(slot_ids);
+	if (ret)
+	    goot out;
 
-	p11_get_session(p, &p->slot, lock);
-	p11_list_keys(context, p, &p->slot, NULL, &p->slot.certs);
+	ret = p11_get_session(p, &p->slot, lock);
+	if (ret)
+	    goot out;
+	ret = p11_list_keys(context, p, &p->slot, NULL, &p->slot.certs);
 	p11_put_session(p, &p->slot);
     }
 
