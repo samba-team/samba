@@ -484,9 +484,9 @@ get_new_tickets(krb5_context context,
 						 NULL,
 						 NULL,
 						 0,
+						 krb5_prompter_posix,
 						 NULL,
-						 NULL,
-						 NULL);
+						 passwd);
 	if (ret)
 	    krb5_err(context, 1, ret, "krb5_get_init_creds_opt_set_pkinit");
     }
