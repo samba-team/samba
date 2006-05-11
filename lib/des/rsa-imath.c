@@ -240,7 +240,7 @@ imath_rsa_private_encrypt(int flen, const unsigned char* from,
     {
 	size_t ssize;
 	ssize = mp_int_unsigned_len(&s);
-	assert(size == ssize);
+	assert(size >= ssize);
 	mp_int_to_unsigned(&s, to, size);
     }
     mp_int_clear(&s);
