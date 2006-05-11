@@ -478,7 +478,7 @@ static NTSTATUS winbindd_raw_kerberos_login(struct winbindd_domain *domain,
 
 	if (!internal_ccache) {
 
-		seteuid(uid);
+		set_effective_uid(uid);
 		DEBUG(10,("winbindd_raw_kerberos_login: uid is %d\n", uid));
 	}
 
@@ -533,7 +533,7 @@ static NTSTATUS winbindd_raw_kerberos_login(struct winbindd_domain *domain,
 	}
 
 	if (!internal_ccache) {
-		seteuid(0);
+		gain_root_privilege();
 	}
 
 	/************************ NON-ROOT **********************/
@@ -631,7 +631,7 @@ done:
 	SAFE_FREE(client_princ_out);
 
 	if (!internal_ccache) {
-		seteuid(0);
+		gain_root_privilege();
 	}
 
 	return result;
