@@ -1392,7 +1392,7 @@ _krb5_pk_load_id(krb5_context context,
 	goto out;
 
     ret = hx509_lock_init(id->hx509ctx, &lock);
-    if (password)
+    if (password && password[0])
 	hx509_lock_add_password(lock, password);
 
     if (prompter) {
