@@ -415,9 +415,9 @@ file_init(hx509_context context,
 	  const char *residue, hx509_lock lock)
 {
     char *files = NULL, *p, *pnext;
-    int ret;
     struct ks_file *f = NULL;
     struct hx509_collector *c;
+    int ret;
 
     *data = NULL;
 
@@ -456,7 +456,6 @@ file_init(hx509_context context,
 	if (!found_data) {
 	    size_t length;
 	    void *data;
-	    int ret;
 
 	    ret = _hx509_map_file(p, &data, &length, NULL);
 	    if (ret) {
@@ -480,7 +479,6 @@ out:
     free(files);
 
     _hx509_collector_free(c);
-
     return ret;
 }
 
