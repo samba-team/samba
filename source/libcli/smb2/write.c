@@ -32,7 +32,7 @@ struct smb2_request *smb2_write_send(struct smb2_tree *tree, struct smb2_write *
 	NTSTATUS status;
 	struct smb2_request *req;
 
-	req = smb2_request_init_tree(tree, SMB2_OP_WRITE, 0x30, io->in.data.length);
+	req = smb2_request_init_tree(tree, SMB2_OP_WRITE, 0x30, True, io->in.data.length);
 	if (req == NULL) return NULL;
 
 	status = smb2_push_o16s32_blob(&req->out, 0x02, io->in.data);

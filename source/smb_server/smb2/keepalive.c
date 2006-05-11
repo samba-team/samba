@@ -39,7 +39,7 @@ static void smb2srv_keepalive_send(struct smb2srv_request *req)
 		return;
 	}
 
-	status = smb2srv_setup_reply(req, 0x04, 0);
+	status = smb2srv_setup_reply(req, 0x04, False, 0);
 	if (!NT_STATUS_IS_OK(status)) {
 		smbsrv_terminate_connection(req->smb_conn, nt_errstr(status));
 		talloc_free(req);

@@ -41,8 +41,17 @@ static struct smb2srv_request *smb2srv_init_request(struct smbsrv_connection *sm
 	return req;
 }
 
-NTSTATUS smb2srv_setup_reply(struct smb2srv_request *req, uint_t body_fixed_size, size_t body_dynamic_size)
+NTSTATUS smb2srv_setup_reply(struct smb2srv_request *req, uint16_t body_fixed_size,
+			     BOOL body_dynamic_present, uint32_t body_dynamic_size)
 {
+	if (body_dynamic_present) {
+		if (body_dynamic_size == 0) {
+			body_dynamic_size = 1;
+		}
+	} else {
+		body_dynamic_size = 0;
+	}
+
 	req->out.size		= SMB2_HDR_BODY+NBT_HDR_SIZE+body_fixed_size;
 
 	req->out.allocated	= req->out.size + body_dynamic_size;
@@ -103,7 +112,7 @@ void smb2srv_send_error(struct smb2srv_request *req, NTSTATUS error)
 {
 	NTSTATUS status;
 
-	status = smb2srv_setup_reply(req, 8, 1);
+	status = smb2srv_setup_reply(req, 8, True, 0);
 	if (!NT_STATUS_IS_OK(status)) {
 		smbsrv_terminate_connection(req->smb_conn, nt_errstr(status));
 		talloc_free(req);
