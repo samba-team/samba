@@ -1335,9 +1335,9 @@ hx_pass_prompter(void *data, const hx509_prompt *prompter)
     ret = (*p->prompter)(p->context, p->prompter_data, NULL, NULL, 1, &prompt);
     if (ret) {
 	memset (prompter->reply.data, 0, prompter->reply.length);
-	return 0;
+	return 1;
     }
-    return strlen(prompter->reply.data);
+    return 0;
 }
 
 
