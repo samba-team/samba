@@ -1,4 +1,10 @@
+2006-05-12  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* rsa-imath.c: Fix the last one of the asserts.
+	
 2006-05-08  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* rand.c (get_device_fd): use /dev/urandom first.
 
 	* rctest.c: Less "pointer targets in passing argument differ in
 	signedness" warnings.
