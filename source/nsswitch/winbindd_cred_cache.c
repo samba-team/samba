@@ -105,7 +105,7 @@ static void krb5_ticket_refresh_handler(struct timed_event *te,
 
 	if ((entry->renew_until < time(NULL)) && (entry->pass != NULL)) {
 	     
-		seteuid(entry->uid);
+		set_effective_uid(entry->uid);
 
 		ret = kerberos_kinit_password_ext(entry->principal_name,
 						  entry->pass,
@@ -116,7 +116,7 @@ static void krb5_ticket_refresh_handler(struct timed_event *te,
 						  False, /* no PAC required anymore */
 						  True,
 						  WINBINDD_PAM_AUTH_KRB5_RENEW_TIME);
-		seteuid(0);
+		gain_root_privilege();
 
 		if (ret) {
 			DEBUG(3,("could not re-kinit: %s\n", error_message(ret)));
@@ -132,13 +132,13 @@ static void krb5_ticket_refresh_handler(struct timed_event *te,
 		goto done;
 	}
 
-	seteuid(entry->uid);
+	set_effective_uid(entry->uid);
 
 	ret = smb_krb5_renew_ticket(entry->ccname, 
 				    entry->principal_name,
 				    entry->service,
 				    &new_start);
-	seteuid(0);
+	gain_root_privilege();
 
 	if (ret) {
 		DEBUG(3,("could not renew tickets: %s\n", error_message(ret)));
