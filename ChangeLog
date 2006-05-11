@@ -1,5 +1,20 @@
-2006-05-08  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-05-11  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kuser/kinit.c: Move parsing of the PK-INIT configuration file to
+	the library so application doesn't need to deal with it.
+
+	* lib/krb5/pkinit.c (krb5_get_init_creds_opt_set_pkinit): move
+	parsing of the configuration file to the library so application
+	doesn't need to deal with it.
+
+	* lib/krb5/pkinit.c (_krb5_pk_load_id): pass the hx509_lock to
+	when trying to read the user certificate.
+
+	* lib/krb5/pkinit.c (hx_pass_prompter): return 0 on success and 1
+	on failure. Pointed out by Douglas E. Engert.
+	
+2006-05-08  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* lib/krb5/crypto.c: Catches both keyed checkout w/o crypto
 	context cases and doesn't reset the string, and corrects the
 	grammar.
