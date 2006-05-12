@@ -81,6 +81,11 @@ static BOOL notify_hash(connection_struct *conn, char *path, uint32 flags,
                 return True;
         }
 
+	if (lp_change_notify_timeout(SNUM(conn)) <= 0) {
+		/* It change notify timeout has been disabled, never scan the directory. */
+		return True;
+	}
+
 	/*
 	 * If we are to watch for changes that are only stored
 	 * in inodes of files, not in the directory inode, we must
@@ -179,9 +184,17 @@ static BOOL hash_check_notify(connection_struct *conn, uint16 vuid, char *path, 
 {
 	struct change_data *data = (struct change_data *)datap;
 	struct change_data data2;
+	int cnto = lp_change_notify_timeout(SNUM(conn));
 
-	if (t && t < data->last_check_time + lp_change_notify_timeout())
+	if (t && cnto <= 0) {
+		/* Change notify turned off on this share.
+		 * Only scan when (t==0) - we think something changed. */
 		return False;
+	}
+
+	if (t && t < data->last_check_time + cnto) {
+		return False;
+	}
 
 	if (!change_to_user(conn,vuid))
 		return True;
@@ -201,8 +214,9 @@ static BOOL hash_check_notify(connection_struct *conn, uint16 vuid, char *path, 
 		return True;
 	}
 
-	if (t)
+	if (t) {
 		data->last_check_time = t;
+	}
 
 	change_to_root_user();
 
@@ -229,7 +243,7 @@ struct cnotify_fns *hash_notify_init(void)
 	cnotify.register_notify = hash_register_notify;
 	cnotify.check_notify = hash_check_notify;
 	cnotify.remove_notify = hash_remove_notify;
-	cnotify.select_time = lp_change_notify_timeout();
+	cnotify.select_time = 60; /* Start with 1 minute default. */
 	cnotify.notification_fd = -1;
 
 	return &cnotify;

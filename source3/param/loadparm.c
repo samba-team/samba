@@ -220,7 +220,6 @@ typedef struct {
 	int lm_interval;
 	int announce_as;	/* This is initialised in init_globals */
 	int machine_password_timeout;
-	int change_notify_timeout;
 	int map_to_guest;
 	int oplock_break_wait_time;
 	int winbind_cache_time;
@@ -449,6 +448,7 @@ typedef struct {
 	int iAioReadSize;
 	int iAioWriteSize;
 	int iMap_readonly;
+	int ichange_notify_timeout;
 	param_opt_struct *param_opt;
 
 	char dummy[3];		/* for alignment */
@@ -587,6 +587,7 @@ static service sDefault = {
 	0,			/* iAioReadSize */
 	0,			/* iAioWriteSize */
 	MAP_READONLY_YES,	/* iMap_readonly */
+	60,			/* ichange_notify_timeout = 1 minute default. */
 	
 	NULL,			/* Parametric options */
 
@@ -996,7 +997,7 @@ static struct parm_struct parm_table[] = {
 	{N_("Tuning Options"), P_SEP, P_SEPARATOR}, 
 
 	{"block size", P_INTEGER, P_LOCAL, &sDefault.iBlock_size, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL}, 
-	{"change notify timeout", P_INTEGER, P_GLOBAL, &Globals.change_notify_timeout, NULL, NULL, FLAG_ADVANCED}, 
+	{"change notify timeout", P_INTEGER, P_LOCAL, &sDefault.ichange_notify_timeout, NULL, NULL, FLAG_ADVANCED}, 
 	{"deadtime", P_INTEGER, P_GLOBAL, &Globals.deadtime, NULL, NULL, FLAG_ADVANCED}, 
 	{"getwd cache", P_BOOL, P_GLOBAL, &use_getwd_cache, NULL, NULL, FLAG_ADVANCED}, 
 	{"keepalive", P_INTEGER, P_GLOBAL, &keepalive, NULL, NULL, FLAG_ADVANCED}, 
@@ -1507,7 +1508,6 @@ static void init_globals(BOOL first_time_only)
 	Globals.max_wins_ttl = 60 * 60 * 24 * 6;	/* 6 days default. */
 	Globals.min_wins_ttl = 60 * 60 * 6;	/* 6 hours default. */
 	Globals.machine_password_timeout = 60 * 60 * 24 * 7;	/* 7 days default. */
-	Globals.change_notify_timeout = 60;	/* 1 minute default. */
 	Globals.bKernelChangeNotify = True;	/* On if we have it. */
 	Globals.bFamChangeNotify = True;	/* On if we have it. */
 	Globals.lm_announce = 2;	/* = Auto: send only if LM clients found */
@@ -1934,7 +1934,6 @@ static FN_GLOBAL_INTEGER(lp_announce_as, &Globals.announce_as)
 FN_GLOBAL_INTEGER(lp_lm_announce, &Globals.lm_announce)
 FN_GLOBAL_INTEGER(lp_lm_interval, &Globals.lm_interval)
 FN_GLOBAL_INTEGER(lp_machine_password_timeout, &Globals.machine_password_timeout)
-FN_GLOBAL_INTEGER(lp_change_notify_timeout, &Globals.change_notify_timeout)
 FN_GLOBAL_INTEGER(lp_map_to_guest, &Globals.map_to_guest)
 FN_GLOBAL_INTEGER(lp_oplock_break_wait_time, &Globals.oplock_break_wait_time)
 FN_GLOBAL_INTEGER(lp_lock_spin_count, &Globals.iLockSpinCount)
@@ -2066,6 +2065,7 @@ FN_LOCAL_INTEGER(lp_allocation_roundup_size, iallocation_roundup_size)
 FN_LOCAL_INTEGER(lp_aio_read_size, iAioReadSize)
 FN_LOCAL_INTEGER(lp_aio_write_size, iAioWriteSize)
 FN_LOCAL_INTEGER(lp_map_readonly, iMap_readonly)
+FN_LOCAL_INTEGER(lp_change_notify_timeout, ichange_notify_timeout)
 FN_LOCAL_CHAR(lp_magicchar, magic_char)
 FN_GLOBAL_INTEGER(lp_winbind_cache_time, &Globals.winbind_cache_time)
 FN_GLOBAL_LIST(lp_winbind_nss_info, &Globals.szWinbindNssInfo)
