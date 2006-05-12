@@ -1,6 +1,8 @@
 Changes in release 0.8
 
- * HDB extensions
+ * PK-INIT support
+
+ * HDB extensions support, used by PK-INIT
 
  * New ASN.1 compiler
 
