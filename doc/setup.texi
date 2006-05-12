@@ -1261,11 +1261,19 @@ lha@@EXAMPLE.ORG:CN=Love,UID=lha
 
 @section Use OpenSSL to create certificates
 
+This section tries to give the CA owners hints how to create
+certificates using OpenSSL (or CA software based on OpenSSL).
+
 @subsection Using OpenSSL to create certificate with krb5PrincipalName
 
-To make OpenSSL create certificate with krb5PrincipalName use the following 
+To make OpenSSL create certificate with krb5PrincipalName use
+@file{openssl.cnf} as described below. To see an complete example of
+creating client and KDC certificates, see the test-data generation
+script @file{lib/hx509/data/gen-req.sh} in the source-tree. The
+certicates it creates are used to test the PK-INIT functionality in
+@file{tests/kdc/check-kdc.in}.
 
-@file{openssl.cnf}.
+To use this example you have to use OpenSSL 0.9.8a or later.
 
 @example
 
