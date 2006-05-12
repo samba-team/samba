@@ -5,7 +5,7 @@
 #  Copyright (C) Jelmer Vernooij 2004
 #  Released under the GNU GPL
 
-use config;
+use smb_build::config;
 use strict;
 package smb_build::input;
 

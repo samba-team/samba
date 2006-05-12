@@ -13,7 +13,7 @@ use smb_build::output;
 use smb_build::env;
 use smb_build::cflags;
 use smb_build::summary;
-use config;
+use smb_build::config;
 use strict;
 
 my $INPUT = {};
