@@ -383,7 +383,6 @@ DCUTIL_OBJ  = libsmb/namequery_dc.o libsmb/trustdom_cache.o libsmb/trusts_util.o
 AUTH_BUILTIN_OBJ = auth/auth_builtin.o
 AUTH_DOMAIN_OBJ = auth/auth_domain.o
 AUTH_SAM_OBJ = auth/auth_sam.o
-AUTH_RHOSTS_OBJ = auth/auth_rhosts.o
 AUTH_SERVER_OBJ = auth/auth_server.o
 AUTH_UNIX_OBJ = auth/auth_unix.o
 AUTH_WINBIND_OBJ = auth/auth_winbind.o
@@ -1215,10 +1214,6 @@ bin/pam_winbind.@SHLIBEXT@: $(PAM_WINBIND_PICOBJ) bin/.dummy
 	@echo "Linking shared library $@"
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(PAM_WINBIND_PICOBJ) \
 		@SONAMEFLAG@`basename $@` -lpam @INIPARSERLIBS@
-
-bin/rhosts.@SHLIBEXT@: $(AUTH_RHOSTS_OBJ:.o=.@PICSUFFIX@)
-	@echo "Building plugin $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(AUTH_RHOSTS_OBJ:.o=.@PICSUFFIX@) @SONAMEFLAG@`basename $@`
 
 bin/builtin.@SHLIBEXT@: $(AUTH_BUILTIN_OBJ:.o=.@PICSUFFIX@)
 	@echo "Building plugin $@"

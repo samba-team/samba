@@ -114,7 +114,6 @@ typedef struct {
 	char *szGetQuota;
 	char *szSetQuota;
 	char *szMsgCommand;
-	char *szHostsEquiv;
 	char *szServerString;
 	char *szAutoServices;
 	char *szPasswdProgram;
@@ -852,7 +851,6 @@ static struct parm_struct parm_table[] = {
 	{"client schannel", P_ENUM, P_GLOBAL, &Globals.clientSchannel, NULL, enum_bool_auto, FLAG_BASIC | FLAG_ADVANCED}, 
 	{"server schannel", P_ENUM, P_GLOBAL, &Globals.serverSchannel, NULL, enum_bool_auto, FLAG_BASIC | FLAG_ADVANCED}, 
 	{"allow trusted domains", P_BOOL, P_GLOBAL, &Globals.bAllowTrustedDomains, NULL, NULL, FLAG_ADVANCED}, 
-	{"hosts equiv", P_STRING, P_GLOBAL, &Globals.szHostsEquiv, NULL, NULL, FLAG_ADVANCED}, 
 	{"map to guest", P_ENUM, P_GLOBAL, &Globals.map_to_guest, NULL, enum_map_to_guest, FLAG_ADVANCED}, 
 	{"null passwords", P_BOOL, P_GLOBAL, &Globals.bNullPasswords, NULL, NULL, FLAG_ADVANCED}, 
 	{"obey pam restrictions", P_BOOL, P_GLOBAL, &Globals.bObeyPamRestrictions, NULL, NULL, FLAG_ADVANCED}, 
@@ -1773,7 +1771,6 @@ FN_GLOBAL_STRING(lp_defaultservice, &Globals.szDefaultService)
 FN_GLOBAL_STRING(lp_msg_command, &Globals.szMsgCommand)
 FN_GLOBAL_STRING(lp_get_quota_command, &Globals.szGetQuota)
 FN_GLOBAL_STRING(lp_set_quota_command, &Globals.szSetQuota)
-FN_GLOBAL_STRING(lp_hosts_equiv, &Globals.szHostsEquiv)
 FN_GLOBAL_STRING(lp_auto_services, &Globals.szAutoServices)
 FN_GLOBAL_STRING(lp_passwd_program, &Globals.szPasswdProgram)
 FN_GLOBAL_STRING(lp_passwd_chat, &Globals.szPasswdChat)
