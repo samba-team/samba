@@ -182,6 +182,11 @@ if test "$pkinit" = yes -a "$rsa" = yes ; then
 	${kinit} -C FILE:${base}/pkinit.crt,${base}/pkinit.key foo@${R} || exitcode=1
 	${kgetcred} ${server}@${R} || exitcode=1
 	${kdestroy}
+	echo "Trying pk-init (password protected key)"
+	${kinit} -C FILE:${base}/pkinit.crt,${base}/pkinit-pw.key --password-file=${objdir}/foopassword foo@${R} || exitcode=1
+	${kgetcred} ${server}@${R} || exitcode=1
+	${kdestroy}
+
 else
 	echo "no pkinit (pkinit: $pkinit, rsa: $rsa)"
 fi
