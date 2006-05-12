@@ -233,6 +233,29 @@ NTSTATUS connect_to_ipc_anonymous(struct cli_state **c,
 	}
 }
 
+/****************************************************************************
+connect to \\server\ipc$ using KRB5
+****************************************************************************/
+NTSTATUS connect_to_ipc_krb5(struct cli_state **c,
+			struct in_addr *server_ip, const char *server_name)
+{
+	NTSTATUS nt_status;
+
+	nt_status = cli_full_connection(c, NULL, server_name, 
+					server_ip, opt_port,
+					"IPC$", "IPC",  
+					opt_user_name, opt_workgroup,
+					opt_password, CLI_FULL_CONNECTION_USE_KERBEROS, 
+					Undefined, NULL);
+	
+	if (NT_STATUS_IS_OK(nt_status)) {
+		return nt_status;
+	} else {
+		DEBUG(1,("Cannot connect to server using kerberos.  Error was %s\n", nt_errstr(nt_status)));
+		return nt_status;
+	}
+}
+
 /**
  * Connect a server and open a given pipe
  *
@@ -304,8 +327,9 @@ int net_use_machine_password(void)
 	return 0;
 }
 
-BOOL net_find_server(unsigned flags, struct in_addr *server_ip, char **server_name)
+BOOL net_find_server(const char *domain, unsigned flags, struct in_addr *server_ip, char **server_name)
 {
+	const char *d = domain ? domain : opt_target_workgroup;
 
 	if (opt_host) {
 		*server_name = SMB_STRDUP(opt_host);
@@ -325,23 +349,22 @@ BOOL net_find_server(unsigned flags, struct in_addr *server_ip, char **server_na
 	} else if (flags & NET_FLAGS_PDC) {
 		struct in_addr pdc_ip;
 
-		if (get_pdc_ip(opt_target_workgroup, &pdc_ip)) {
+		if (get_pdc_ip(d, &pdc_ip)) {
 			fstring dc_name;
 			
 			if (is_zero_ip(pdc_ip))
 				return False;
 			
-			if ( !name_status_find(opt_target_workgroup, 0x1b, 0x20, pdc_ip, dc_name) )
+			if ( !name_status_find(d, 0x1b, 0x20, pdc_ip, dc_name) )
 				return False;
 				
 			*server_name = SMB_STRDUP(dc_name);
 			*server_ip = pdc_ip;
 		}
-		
 	} else if (flags & NET_FLAGS_DMB) {
 		struct in_addr msbrow_ip;
 		/*  if (!resolve_name(MSBROWSE, &msbrow_ip, 1)) */
-		if (!resolve_name(opt_target_workgroup, &msbrow_ip, 0x1B))  {
+		if (!resolve_name(d, &msbrow_ip, 0x1B))  {
 			DEBUG(1,("Unable to resolve domain browser via name lookup\n"));
 			return False;
 		} else {
@@ -350,7 +373,7 @@ BOOL net_find_server(unsigned flags, struct in_addr *server_ip, char **server_na
 		*server_name = SMB_STRDUP(inet_ntoa(opt_dest_ip));
 	} else if (flags & NET_FLAGS_MASTER) {
 		struct in_addr brow_ips;
-		if (!resolve_name(opt_target_workgroup, &brow_ips, 0x1D))  {
+		if (!resolve_name(d, &brow_ips, 0x1D))  {
 				/* go looking for workgroups */
 			DEBUG(1,("Unable to resolve master browser via name lookup\n"));
 			return False;
@@ -387,17 +410,27 @@ BOOL net_find_pdc(struct in_addr *server_ip, fstring server_name, const char *do
 		return False;
 }
 
+struct cli_state *net_make_ipc_connection( unsigned flags )
+{
+	return net_make_ipc_connection_ex( NULL, NULL, NULL, flags );
+}
 
-struct cli_state *net_make_ipc_connection(unsigned flags)
+struct cli_state *net_make_ipc_connection_ex( const char *domain, const char *server,
+                                              struct in_addr *ip, unsigned flags)
 {
 	char *server_name = NULL;
 	struct in_addr server_ip;
 	struct cli_state *cli = NULL;
 	NTSTATUS nt_status;
 
-	if (!net_find_server(flags, &server_ip, &server_name)) {
-		d_fprintf(stderr, "\nUnable to find a suitable server\n");
-		return NULL;
+	if ( !server || !ip ) {
+		if (!net_find_server(domain, flags, &server_ip, &server_name)) {
+			d_fprintf(stderr, "Unable to find a suitable server\n");
+			return NULL;
+		}
+	} else {
+		server_name = SMB_STRDUP( server );
+		server_ip = *ip;
 	}
 
 	if (flags & NET_FLAGS_ANONYMOUS) {
