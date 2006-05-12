@@ -787,8 +787,8 @@ out_free:
 		}
 	}
 	
-	if ((server[0] == '/' || server[0] == '\\') &&
-			(server[1] == '/' || server[1] == '\\')) {
+	if ((server[0] == '/' && server[1] == '/') ||
+			(server[0] == '\\' && server[1] ==  '\\')) {
 		server += 2;
 	}
 
