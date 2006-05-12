@@ -234,10 +234,6 @@ typedef struct {
 	char *szLdapUserSuffix;
 	char *szLdapIdmapSuffix;
 	char *szLdapGroupSuffix;
-#ifdef WITH_LDAP_SAMCONFIG
-	int ldap_port;
-	char *szLdapServer;
-#endif
 	int ldap_ssl;
 	char *szLdapSuffix;
 	char *szLdapAdminDn;
@@ -671,12 +667,6 @@ static const struct enum_list enum_printing[] = {
 };
 
 static const struct enum_list enum_ldap_ssl[] = {
-#ifdef WITH_LDAP_SAMCONFIG
-	{LDAP_SSL_ON, "Yes"},
-	{LDAP_SSL_ON, "yes"},
-	{LDAP_SSL_ON, "on"},
-	{LDAP_SSL_ON, "On"},
-#endif
 	{LDAP_SSL_OFF, "no"},
 	{LDAP_SSL_OFF, "No"},
 	{LDAP_SSL_OFF, "off"},
@@ -1172,10 +1162,6 @@ static struct parm_struct parm_table[] = {
 
 	{N_("Ldap Options"), P_SEP, P_SEPARATOR}, 
 
-#ifdef WITH_LDAP_SAMCONFIG
-	{"ldap server", P_STRING, P_GLOBAL, &Globals.szLdapServer, NULL, NULL, FLAG_ADVANCED}, 
-	{"ldap port", P_INTEGER, P_GLOBAL, &Globals.ldap_port, NULL, NULL, FLAG_ADVANCED}, 
-#endif
 	{"ldap admin dn", P_STRING, P_GLOBAL, &Globals.szLdapAdminDn, NULL, NULL, FLAG_ADVANCED}, 
 	{"ldap delete dn", P_BOOL, P_GLOBAL, &Globals.ldap_delete_dn, NULL, NULL, FLAG_ADVANCED}, 
 	{"ldap group suffix", P_STRING, P_GLOBAL, &Globals.szLdapGroupSuffix, NULL, NULL, FLAG_ADVANCED}, 
@@ -1574,13 +1560,7 @@ static void init_globals(BOOL first_time_only)
 	   a large number of sites (tridge) */
 	Globals.bHostnameLookups = False;
 
-#ifdef WITH_LDAP_SAMCONFIG
-	string_set(&Globals.szLdapServer, "localhost");
-	Globals.ldap_port = 636;
-	string_set(&Globals.szPassdbBackend, "ldapsam_compat");
-#else
 	string_set(&Globals.szPassdbBackend, "smbpasswd");
-#endif /* WITH_LDAP_SAMCONFIG */
 	string_set(&Globals.szLdapSuffix, "");
 	string_set(&Globals.szLdapMachineSuffix, "");
 	string_set(&Globals.szLdapUserSuffix, "");
@@ -1857,10 +1837,6 @@ FN_GLOBAL_BOOL(lp_winbind_offline_logon, &Globals.bWinbindOfflineLogon)
 FN_GLOBAL_LIST(lp_idmap_backend, &Globals.szIdmapBackend)
 FN_GLOBAL_BOOL(lp_passdb_expand_explicit, &Globals.bPassdbExpandExplicit)
 
-#ifdef WITH_LDAP_SAMCONFIG
-FN_GLOBAL_STRING(lp_ldap_server, &Globals.szLdapServer)
-FN_GLOBAL_INTEGER(lp_ldap_port, &Globals.ldap_port)
-#endif
 FN_GLOBAL_STRING(lp_ldap_suffix, &Globals.szLdapSuffix)
 FN_GLOBAL_STRING(lp_ldap_admin_dn, &Globals.szLdapAdminDn)
 FN_GLOBAL_INTEGER(lp_ldap_ssl, &Globals.ldap_ssl)
