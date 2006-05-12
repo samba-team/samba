@@ -92,6 +92,7 @@ cat test.crt test.key > test.combined.crt
 
 # password protected key
 openssl rsa -in test.key -aes256 -passout pass:foobar -out test-pw.key
+openssl rsa -in pkinit.key -aes256 -passout pass:foo -out pkinit-pw.key
 
 
 openssl ca \
