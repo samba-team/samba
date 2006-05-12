@@ -1130,9 +1130,8 @@ Below is a list of types to use.
 
 @item DIR:
 
-DIR is reading all certificates in a directory that is DER formated.
-If there are any files that are not certificates, DIR will fail
-parsing the directory.
+DIR is reading all certificates in a directory that is DER or PEM
+formated.
 
 The main feature of DIR is that the directory is read on demand when
 iterating over certificates, that way appliction can for some cases
