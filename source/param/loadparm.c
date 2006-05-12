@@ -163,7 +163,6 @@ typedef struct {
 	char *szUsernameMapScript;
 	char *szCheckPasswordScript;
 	char *szWINSHook;
-	char *szWINSPartners;
 	char *szUtmpDir;
 	char *szWtmpDir;
 	BOOL bUtmp;
@@ -1140,7 +1139,6 @@ static struct parm_struct parm_table[] = {
 	{"wins server", P_LIST, P_GLOBAL, &Globals.szWINSservers, NULL, NULL, FLAG_BASIC | FLAG_ADVANCED | FLAG_WIZARD}, 
 	{"wins support", P_BOOL, P_GLOBAL, &Globals.bWINSsupport, NULL, NULL, FLAG_BASIC | FLAG_ADVANCED | FLAG_WIZARD}, 
 	{"wins hook", P_STRING, P_GLOBAL, &Globals.szWINSHook, NULL, NULL, FLAG_ADVANCED}, 
-	{"wins partners", P_STRING, P_GLOBAL, &Globals.szWINSPartners, NULL, NULL, FLAG_ADVANCED | FLAG_WIZARD}, 
 
 	{N_("Locking Options"), P_SEP, P_SEPARATOR}, 
 
@@ -1821,7 +1819,6 @@ FN_GLOBAL_STRING(lp_username_map_script, &Globals.szUsernameMapScript)
 FN_GLOBAL_STRING(lp_check_password_script, &Globals.szCheckPasswordScript)
 
 FN_GLOBAL_STRING(lp_wins_hook, &Globals.szWINSHook)
-FN_GLOBAL_STRING(lp_wins_partners, &Globals.szWINSPartners)
 FN_GLOBAL_CONST_STRING(lp_template_homedir, &Globals.szTemplateHomedir)
 FN_GLOBAL_CONST_STRING(lp_template_shell, &Globals.szTemplateShell)
 FN_GLOBAL_CONST_STRING(lp_winbind_separator, &Globals.szWinbindSeparator)
