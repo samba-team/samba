@@ -135,7 +135,19 @@ void remove_pending_change_notify_requests_by_filename(files_struct *fsp, NTSTAT
 }
 
 /****************************************************************************
- Return true if there are pending change notifies.
+ Set the current change notify timeout to the lowest value across all service
+ values.
+****************************************************************************/
+
+void set_change_notify_timeout(int val)
+{
+	if (val > 0) {
+		cnotify->select_time = MIN(cnotify->select_time, val);
+	}
+}
+
+/****************************************************************************
+ Longest time to sleep for before doing a change notify scan.
 ****************************************************************************/
 
 int change_notify_timeout(void)
