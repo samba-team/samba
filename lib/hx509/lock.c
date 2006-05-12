@@ -218,12 +218,15 @@ hx509_lock_free(hx509_lock lock)
 int
 hx509_prompt_hidden(hx509_prompt_type type)
 {
+    /* default to hidden if unknown */
+
     switch (type) {
     case HX509_PROMPT_TYPE_QUESTION:
     case HX509_PROMPT_TYPE_INFO:
 	return 0;
+    default:
+	return 1;
     }
-    return 1;
 }
 
 int
