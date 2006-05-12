@@ -90,6 +90,9 @@ hx509_revoke_free(hx509_revoke_ctx *revoke)
 {
     size_t i ;
 
+    if (revoke == NULL || *revoke == NULL)
+	return;
+
     for (i = 0; i < (*revoke)->crls.len; i++) {
 	free((*revoke)->crls.val[i].path);
 	free_CRLCertificateList(&(*revoke)->crls.val[i].crl);
