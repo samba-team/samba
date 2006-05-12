@@ -1531,8 +1531,10 @@ if test x"$samba_stat_hires_notimespec" = x"yes" ; then
 fi
 
 #####################################
-# we might need the resolv library on some systems
+# needed for SRV lookups
 AC_CHECK_LIB(resolv, dn_expand)
+AC_CHECK_LIB(resolv, _dn_expand)
+AC_CHECK_LIB(resolv, __dn_expand)
 
 #
 # Check for the functions putprpwnam, set_auth_parameters,
