@@ -1,5 +1,10 @@
 2006-05-12  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* doc/setup.texi: Point to more examples, hint that you have to
+	use openssl 0.9.8a or later.
+
+	* doc/setup.texi: DIR now handles both PEM and DER.
+
 	* kuser/kinit.c: Pass down prompter and password to
 	krb5_get_init_creds_opt_set_pkinit.
 
