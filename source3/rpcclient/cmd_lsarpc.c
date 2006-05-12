@@ -859,10 +859,7 @@ static void display_trust_dom_info_4(TRUSTED_DOMAIN_INFO_PASSWORD *p, const char
 	DATA_BLOB data_old = data_blob(NULL, p->old_password.length);
 
 	memcpy(data.data, p->password.data, p->password.length);
-	data.length 	= p->password.length;
-				
 	memcpy(data_old.data, p->old_password.data, p->old_password.length);
-	data_old.length = p->old_password.length;
 	
 	pwd 	= decrypt_trustdom_secret(password, &data);
 	pwd_old = decrypt_trustdom_secret(password, &data_old);
