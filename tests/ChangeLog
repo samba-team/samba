@@ -1,5 +1,13 @@
-2006-04-29  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-05-12  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kdc/check-kdc.in: Check password protected pk-init keyfile.
+	
+2006-04-30  Love Hörnquist Åstrand  <lha@it.su.se>
+	
+	* kdc/check-kdc.in: Don't try pkinit if there is no rsa
+	
+2006-04-29  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* kdc/pki-mapping: change pki-mapping
 	
 	* kdc/Makefile.am: clean the server.keytab
