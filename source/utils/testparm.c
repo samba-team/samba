@@ -96,15 +96,6 @@ to a valid password server.\n", sec_setting );
 
 	
 	/*
-	 * Check 'hosts equiv' and 'use rhosts' compatibility with 'hostname lookup' value.
-	 */
-
-	if(*lp_hosts_equiv() && !lp_hostname_lookups()) {
-		fprintf(stderr, "ERROR: The setting 'hosts equiv = %s' requires that 'hostname lookups = yes'.\n", lp_hosts_equiv());
-		ret = 1;
-	}
-
-	/*
 	 * Password chat sanity checks.
 	 */
 
