@@ -618,18 +618,11 @@ static void dcip_to_name( const char *domainname, const char *realm,
 	if ( lp_security() == SEC_ADS ) 
 	{
 		ADS_STRUCT *ads;
-		ADS_STATUS status;
 
 		ads = ads_init( realm, domainname, NULL );
 		ads->auth.flags |= ADS_AUTH_NO_BIND;
 
-		if ( !ads_try_connect( ads, inet_ntoa(ip), LDAP_PORT ) )  {
-			ads_destroy( &ads );
-			return;
-		}
-
-		status = ads_server_info(ads);
-		if ( !ADS_ERR_OK(status) ) {
+		if ( !ads_try_connect( ads, inet_ntoa(ip) ) )  {
 			ads_destroy( &ads );
 			return;
 		}
