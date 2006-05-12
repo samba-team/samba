@@ -213,6 +213,8 @@ static int		smb_print(struct cli_state *, char *, FILE *);
 
   in_client = True;   /* Make sure that we tell lp_load we are */
 
+  load_case_tables();
+
   if (!lp_load(dyn_CONFIGFILE, True, False, False, True))
   {
     fprintf(stderr, "ERROR: Can't load %s - run testparm to debug it\n", dyn_CONFIGFILE);
