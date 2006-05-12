@@ -5427,23 +5427,6 @@ NTSTATUS pdb_init_ldapsam_compat(struct pdb_methods **pdb_method, const char *lo
 	struct ldapsam_privates *ldap_state;
 	char *uri = talloc_strdup( NULL, location );
 
-#ifdef WITH_LDAP_SAMCONFIG
-	if (!uri) {
-		int ldap_port = lp_ldap_port();
-			
-		/* remap default port if not using SSL (ie clear or TLS) */
-		if ( (lp_ldap_ssl() != LDAP_SSL_ON) && (ldap_port == 636) ) {
-			ldap_port = 389;
-		}
-
-		uri = talloc_asprintf(NULL, "%s://%s:%d", lp_ldap_ssl() == LDAP_SSL_ON ? "ldaps" : "ldap", lp_ldap_server(), ldap_port);
-		if (!uri) {
-			return NT_STATUS_NO_MEMORY;
-		}
-		location = uri;
-	}
-#endif
-
 	if (!NT_STATUS_IS_OK(nt_status = pdb_init_ldapsam_common( pdb_method, uri ))) {
 		return nt_status;
 	}
