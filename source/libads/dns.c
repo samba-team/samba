@@ -47,7 +47,12 @@
 #    define NS_HFIXEDSZ HFIXEDSZ
 #  else
 #    define NS_HFIXEDSZ sizeof(HEADER)
-#  endif
+#  endif	/* HFIXEDSZ */
+#  ifdef PACKETSZ
+#    define NS_PACKETSZ	PACKETSZ
+#  else	/* 512 is usually the default */
+#    define NS_PACKETSZ	512
+#  endif	/* PACKETSZ */
 #  define T_SRV 	33
 #endif
 
