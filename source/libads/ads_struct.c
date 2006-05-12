@@ -118,12 +118,13 @@ void ads_destroy(ADS_STRUCT **ads)
 
 		is_mine = (*ads)->is_mine;
 #if HAVE_LDAP
-		if ((*ads)->ld) ldap_unbind((*ads)->ld);
+		if ((*ads)->ld) {
+			ldap_unbind((*ads)->ld);
+		}
 #endif
 		SAFE_FREE((*ads)->server.realm);
 		SAFE_FREE((*ads)->server.workgroup);
 		SAFE_FREE((*ads)->server.ldap_server);
-		SAFE_FREE((*ads)->server.ldap_uri);
 
 		SAFE_FREE((*ads)->auth.realm);
 		SAFE_FREE((*ads)->auth.password);
@@ -132,7 +133,6 @@ void ads_destroy(ADS_STRUCT **ads)
 
 		SAFE_FREE((*ads)->config.realm);
 		SAFE_FREE((*ads)->config.bind_path);
-		SAFE_FREE((*ads)->config.schema_path);
 		SAFE_FREE((*ads)->config.ldap_server_name);
 		
 		SAFE_FREE((*ads)->schema.sfu_uidnumber_attr);

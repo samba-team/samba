@@ -41,7 +41,7 @@
  * @return A shell status integer (0 for success)
  *
  **/
-static int net_rpc_join_ok(const char *domain)
+int net_rpc_join_ok(const char *domain, const char *server, struct in_addr *ip )
 {
 	uint32 neg_flags = NETLOGON_NEG_AUTH2_FLAGS|NETLOGON_NEG_SCHANNEL;
 	struct cli_state *cli = NULL;
@@ -50,7 +50,7 @@ static int net_rpc_join_ok(const char *domain)
 	NTSTATUS ntret = NT_STATUS_UNSUCCESSFUL;
 
 	/* Connect to remote machine */
-	if (!(cli = net_make_ipc_connection(NET_FLAGS_ANONYMOUS | NET_FLAGS_PDC))) {
+	if (!(cli = net_make_ipc_connection_ex(domain, server, ip, (NET_FLAGS_ANONYMOUS|NET_FLAGS_PDC)))) {
 		return -1;
 	}
 
@@ -402,7 +402,7 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 	}
 
 	/* double-check, connection from scratch */
-	retval = net_rpc_join_ok(domain);
+	retval = net_rpc_join_ok(domain, cli->desthost, &cli->dest_ip);
 	
 done:
 
@@ -434,7 +434,7 @@ int net_rpc_testjoin(int argc, const char **argv)
 	char *domain = smb_xstrdup(opt_target_workgroup);
 
 	/* Display success or failure */
-	if (net_rpc_join_ok(domain) != 0) {
+	if (net_rpc_join_ok(domain, NULL, NULL) != 0) {
 		fprintf(stderr,"Join to domain '%s' is not valid\n",domain);
 		free(domain);
 		return -1;

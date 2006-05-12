@@ -78,10 +78,6 @@ static ADS_STRUCT *ad_idmap_cached_connection(void)
 	ADS_STATUS status;
 	BOOL local = False;
 
-#ifdef ADS_AUTH_EXTERNAL_BIND
-	local = ((strncmp(ad_idmap_uri, "ldapi://", sizeof("ldapi://") - 1)) == 0);
-#endif /* ADS_AUTH_EXTERNAL_BIND */
-
 	if (ad_idmap_ads != NULL) {
 		ads = ad_idmap_ads;
 
@@ -105,40 +101,18 @@ static ADS_STRUCT *ad_idmap_cached_connection(void)
 		setenv("KRB5CCNAME", WINBIND_CCACHE_NAME, 1);
 	}
 
-	ads = ads_init(NULL, NULL, NULL);
+	ads = ads_init(lp_realm(), lp_workgroup(), NULL);
 	if (!ads) {
 		DEBUG(1,("ads_init failed\n"));
 		return NULL;
 	}
 
-	/* if ad_imap_uri is not empty we try to connect to
-	 * the given URI in smb.conf. Else try to connect to
-	 * one of the DCs
-	 */
-	if (*ad_idmap_uri != '\0') {
-		ads->server.ldap_uri = SMB_STRDUP(ad_idmap_uri);
-		if (ads->server.ldap_uri == NULL) {
-			return NULL;
-		}
-	}
-	else {
-		ads->server.ldap_uri    = NULL;
-		ads->server.ldap_server = NULL;
-	}
+	/* the machine acct password might have change - fetch it every time */
+	SAFE_FREE(ads->auth.password);
+	ads->auth.password = secrets_fetch_machine_password(lp_workgroup(), NULL, NULL);
 
-#ifdef ADS_AUTH_EXTERNAL_BIND
-	if (local)
-		ads->auth.flags |= ADS_AUTH_EXTERNAL_BIND;
-	else
-#endif
-	{
-		/* the machine acct password might have change - fetch it every time */
-		SAFE_FREE(ads->auth.password);
-		ads->auth.password = secrets_fetch_machine_password(lp_workgroup(), NULL, NULL);
-
-		SAFE_FREE(ads->auth.realm);
-		ads->auth.realm = SMB_STRDUP(lp_realm());
-	}
+	SAFE_FREE(ads->auth.realm);
+	ads->auth.realm = SMB_STRDUP(lp_realm());
 
 	status = ads_connect(ads);
 	if (!ADS_ERR_OK(status)) {

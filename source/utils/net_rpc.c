@@ -6197,7 +6197,7 @@ BOOL net_rpc_check(unsigned flags)
 	char *server_name = NULL;
 
 	/* flags (i.e. server type) may depend on command */
-	if (!net_find_server(flags, &server_ip, &server_name))
+	if (!net_find_server(NULL, flags, &server_ip, &server_name))
 		return False;
 
 	ZERO_STRUCT(cli);

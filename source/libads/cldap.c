@@ -20,33 +20,6 @@
 */
 
 #include "includes.h"
-#include "utils/net.h"
-
-#ifdef HAVE_ADS
-
-#define MAX_DNS_LABEL 255 + 1
-
-struct cldap_netlogon_reply {
-	uint32 type;
-	uint32 flags;
-	UUID_FLAT guid;
-
-	char forest[MAX_DNS_LABEL];
-	char domain[MAX_DNS_LABEL];
-	char hostname[MAX_DNS_LABEL];
-
-	char netbios_domain[MAX_DNS_LABEL];
-	char netbios_hostname[MAX_DNS_LABEL];
-
-	char unk[MAX_DNS_LABEL];
-	char user_name[MAX_DNS_LABEL];
-	char site_name[MAX_DNS_LABEL];
-	char site_name_2[MAX_DNS_LABEL];
-
-	uint32 version;
-	uint16 lmnt_token;
-	uint16 lm20_token;
-};
 
 /*
   These seem to be strings as described in RFC1035 4.1.4 and can be:
@@ -272,94 +245,34 @@ static int recv_cldap_netlogon(int sock, struct cldap_netlogon_reply *reply)
 	return 0;
 }
 
-/*
-  do a cldap netlogon query
-*/
-int ads_cldap_netlogon(ADS_STRUCT *ads)
+/*******************************************************************
+  do a cldap netlogon query.  Always 389/udp
+*******************************************************************/
+
+BOOL ads_cldap_netlogon(const char *server, const char *realm,  struct cldap_netlogon_reply *reply)
 {
 	int sock;
 	int ret;
-	struct cldap_netlogon_reply reply;
-	const char *target = opt_host ? opt_host : inet_ntoa(ads->ldap_ip);
 
-	sock = open_udp_socket(target, ads->ldap_port);
+	sock = open_udp_socket(server, LDAP_PORT );
 	if (sock == -1) {
-		d_fprintf(stderr, "Failed to open udp socket to %s:%u\n", 
-			 inet_ntoa(ads->ldap_ip), 
-			 ads->ldap_port);
-		return -1;
-
+		DEBUG(2,("ads_cldap_netlogon: Failed to open udp socket to %s\n", 
+			 server));
+		return False;
 	}
 
-	ret = send_cldap_netlogon(sock, ads->config.realm, global_myname(), 6);
+	ret = send_cldap_netlogon(sock, realm, global_myname(), 6);
 	if (ret != 0) {
-		return ret;
+		return False;
 	}
-	ret = recv_cldap_netlogon(sock, &reply);
+	ret = recv_cldap_netlogon(sock, reply);
 	close(sock);
 
 	if (ret == -1) {
-		return -1;
+		return False;
 	}
 
-	d_printf("Information for Domain Controller: %s\n\n", 
-		 ads->config.ldap_server_name);
-
-	d_printf("Response Type: ");
-	switch (reply.type) {
-	case SAMLOGON_AD_UNK_R:
-		d_printf("SAMLOGON\n");
-		break;
-	case SAMLOGON_AD_R:
-		d_printf("SAMLOGON_USER\n");
-		break;
-	default:
-		d_printf("0x%x\n", reply.type);
-		break;
-	}
-	d_printf("GUID: %s\n", 
-		 smb_uuid_string_static(smb_uuid_unpack_static(reply.guid))); 
-	d_printf("Flags:\n"
-		 "\tIs a PDC:                                   %s\n"
-		 "\tIs a GC of the forest:                      %s\n"
-		 "\tIs an LDAP server:                          %s\n"
-		 "\tSupports DS:                                %s\n"
-		 "\tIs running a KDC:                           %s\n"
-		 "\tIs running time services:                   %s\n"
-		 "\tIs the closest DC:                          %s\n"
-		 "\tIs writable:                                %s\n"
-		 "\tHas a hardware clock:                       %s\n"
-		 "\tIs a non-domain NC serviced by LDAP server: %s\n",
-		 (reply.flags & ADS_PDC) ? "yes" : "no",
-		 (reply.flags & ADS_GC) ? "yes" : "no",
-		 (reply.flags & ADS_LDAP) ? "yes" : "no",
-		 (reply.flags & ADS_DS) ? "yes" : "no",
-		 (reply.flags & ADS_KDC) ? "yes" : "no",
-		 (reply.flags & ADS_TIMESERV) ? "yes" : "no",
-		 (reply.flags & ADS_CLOSEST) ? "yes" : "no",
-		 (reply.flags & ADS_WRITABLE) ? "yes" : "no",
-		 (reply.flags & ADS_GOOD_TIMESERV) ? "yes" : "no",
-		 (reply.flags & ADS_NDNC) ? "yes" : "no");
-
-	printf("Forest:\t\t\t%s\n", reply.forest);
-	printf("Domain:\t\t\t%s\n", reply.domain);
-	printf("Domain Controller:\t%s\n", reply.hostname);
-
-	printf("Pre-Win2k Domain:\t%s\n", reply.netbios_domain);
-	printf("Pre-Win2k Hostname:\t%s\n", reply.netbios_hostname);
-
-	if (*reply.unk) printf("Unk:\t\t\t%s\n", reply.unk);
-	if (*reply.user_name) printf("User name:\t%s\n", reply.user_name);
-
-	printf("Site Name:\t\t%s\n", reply.site_name);
-	printf("Site Name (2):\t\t%s\n", reply.site_name_2);
-
-	d_printf("NT Version: %d\n", reply.version);
-	d_printf("LMNT Token: %.2x\n", reply.lmnt_token);
-	d_printf("LM20 Token: %.2x\n", reply.lm20_token);
-
-	return ret;
+	return True;
 }
 
 
-#endif

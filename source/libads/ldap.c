@@ -112,60 +112,58 @@ static int ldap_search_with_timeout(LDAP *ld,
 /*
   try a connection to a given ldap server, returning True and setting the servers IP
   in the ads struct if successful
-  
-  TODO : add a negative connection cache in here leveraged off of the one
-  found in the rpc code.  --jerry
  */
-BOOL ads_try_connect(ADS_STRUCT *ads, const char *server, unsigned port)
+BOOL ads_try_connect(ADS_STRUCT *ads, const char *server )
 {
 	char *srv;
+	struct cldap_netlogon_reply cldap_reply;
 
 	if (!server || !*server) {
 		return False;
 	}
-
-	DEBUG(5,("ads_try_connect: trying ldap server '%s' port %u\n", server, port));
+	
+	DEBUG(5,("ads_try_connect: sending CLDAP request to %s\n", server));
 
 	/* this copes with inet_ntoa brokenness */
+	
 	srv = SMB_STRDUP(server);
 
-	ads->ld = ldap_open_with_timeout(srv, port, lp_ldap_timeout());
-	if (!ads->ld) {
-		free(srv);
+	ZERO_STRUCT( cldap_reply );
+	
+	if ( !ads_cldap_netlogon( srv, ads->server.realm, &cldap_reply ) ) {
+		DEBUG(3,("ads_try_connect: CLDAP request %s failed.\n", srv));
 		return False;
 	}
-	ads->ldap_port = port;
+
+	/* Check the CLDAP reply flags */
+
+	if ( !(cldap_reply.flags & ADS_LDAP) ) {
+		DEBUG(1,("ads_try_connect: %s's CLDAP reply says it is not an LDAP server!\n",
+			srv));
+		SAFE_FREE( srv );
+		return False;
+	}
+
+	/* Fill in the ads->config values */
+
+	SAFE_FREE(ads->config.realm);
+	SAFE_FREE(ads->config.bind_path);
+	SAFE_FREE(ads->config.ldap_server_name);
+
+	ads->config.ldap_server_name   = SMB_STRDUP(cldap_reply.hostname);
+	strupper_m(cldap_reply.domain);
+	ads->config.realm              = SMB_STRDUP(cldap_reply.domain);
+	ads->config.bind_path          = ads_build_dn(ads->config.realm);
+
+	ads->ldap_port = LDAP_PORT;
 	ads->ldap_ip = *interpret_addr2(srv);
-	free(srv);
+	SAFE_FREE(srv);
 	
 	/* cache the successful connection */
 	
 	saf_store( ads->server.workgroup, server );
 
 	return True;
-}
-
-/*
-  try a connection to a given ldap server, based on URL, returning True if successful
- */
-static BOOL ads_try_connect_uri(ADS_STRUCT *ads)
-{
-#if defined(LDAP_API_FEATURE_X_OPENLDAP) && (LDAP_API_VERSION > 2000)
-	DEBUG(5,("ads_try_connect: trying ldap server at URI '%s'\n", 
-		 ads->server.ldap_uri));
-
-	
-	if (ldap_initialize((LDAP**)&(ads->ld), ads->server.ldap_uri) == LDAP_SUCCESS) {
-		return True;
-	}
-	DEBUG(0, ("ldap_initialize: %s\n", strerror(errno)));
-	
-#else 
-
-	DEBUG(1, ("no URL support in LDAP libs!\n"));
-#endif
-
-	return False;
 }
 
 /**********************************************************************
@@ -233,8 +231,6 @@ again:
 			
 	/* if we fail this loop, then giveup since all the IP addresses returned were dead */
 	for ( i=0; i<count; i++ ) {
-		/* since this is an ads conection request, default to LDAP_PORT is not set */
-		int port = (ip_list[i].port!=PORT_NONE) ? ip_list[i].port : LDAP_PORT;
 		fstring server;
 		
 		fstrcpy( server, inet_ntoa(ip_list[i].ip) );
@@ -242,7 +238,7 @@ again:
 		if ( !NT_STATUS_IS_OK(check_negative_conn_cache(realm, server)) )
 			continue;
 			
-		if ( ads_try_connect(ads, server, port) ) {
+		if ( ads_try_connect(ads, server) ) {
 			SAFE_FREE(ip_list);
 			return True;
 		}
@@ -270,16 +266,10 @@ ADS_STATUS ads_connect(ADS_STRUCT *ads)
 	ads->last_attempt = time(NULL);
 	ads->ld = NULL;
 
-	/* try with a URL based server */
-
-	if (ads->server.ldap_uri &&
-	    ads_try_connect_uri(ads)) {
-		goto got_connection;
-	}
-
 	/* try with a user specified server */
+
 	if (ads->server.ldap_server && 
-	    ads_try_connect(ads, ads->server.ldap_server, LDAP_PORT)) {
+	    ads_try_connect(ads, ads->server.ldap_server)) {
 		goto got_connection;
 	}
 
@@ -292,22 +282,12 @@ ADS_STATUS ads_connect(ADS_STRUCT *ads)
 got_connection:
 	DEBUG(3,("Connected to LDAP server %s\n", inet_ntoa(ads->ldap_ip)));
 
-	status = ads_server_info(ads);
-	if (!ADS_ERR_OK(status)) {
-		DEBUG(1,("Failed to get ldap server info\n"));
-		return status;
-	}
-
-	ldap_set_option(ads->ld, LDAP_OPT_PROTOCOL_VERSION, &version);
-
-	status = ADS_ERROR(smb_ldap_start_tls(ads->ld, version));
-	if (!ADS_ERR_OK(status)) {
-		return status;
-	}
-
 	if (!ads->auth.user_name) {
 		/* have to use the userPrincipalName value here and 
-		   not servicePrincipalName; found by Guenther Deschner @ Sernet */
+		   not servicePrincipalName; found by Guenther Deschner @ Sernet.
+
+		   Is this still correct?  The comment does not match
+		   the code.   --jerry */
 
 		asprintf(&ads->auth.user_name, "host/%s", global_myname() );
 	}
@@ -331,10 +311,35 @@ got_connection:
 	}
 #endif
 
+	/* If the caller() requested no LDAP bind, then we are done */
+	
 	if (ads->auth.flags & ADS_AUTH_NO_BIND) {
 		return ADS_SUCCESS;
 	}
+	
+	/* Otherwise setup the TCP LDAP session */
 
+	if ( (ads->ld = ldap_open_with_timeout(ads->config.ldap_server_name, 
+		LDAP_PORT, lp_ldap_timeout())) == NULL )
+	{
+		return ADS_ERROR(LDAP_OPERATIONS_ERROR);
+	}
+	ldap_set_option(ads->ld, LDAP_OPT_PROTOCOL_VERSION, &version);
+
+	status = ADS_ERROR(smb_ldap_start_tls(ads->ld, version));
+	if (!ADS_ERR_OK(status)) {
+		return status;
+	}
+
+	/* fill in the current time and offsets */
+	
+	status = ads_current_time( ads );
+	if ( !ADS_ERR_OK(status) ) {
+		return status;
+	}
+
+	/* Now do the bind */
+	
 	if (ads->auth.flags & ADS_AUTH_ANON_BIND) {
 		return ADS_ERROR(ldap_simple_bind_s( ads->ld, NULL, NULL));
 	}
@@ -2464,7 +2469,7 @@ static time_t ads_parse_time(const char *str)
 }
 
 
-const char *ads_get_attrname_by_oid(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, const char * OID)
+const char *ads_get_attrname_by_oid(ADS_STRUCT *ads, const char *schema_path, TALLOC_CTX *mem_ctx, const char * OID)
 {
 	ADS_STATUS rc;
 	int count = 0;
@@ -2482,8 +2487,8 @@ const char *ads_get_attrname_by_oid(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, const 
 		goto failed;
 	}
 
-	rc = ads_do_search_retry(ads, ads->config.schema_path, 
-			LDAP_SCOPE_SUBTREE, expr, attrs, &res);
+	rc = ads_do_search_retry(ads, schema_path, LDAP_SCOPE_SUBTREE, 
+		expr, attrs, &res);
 	if (!ADS_ERR_OK(rc)) {
 		goto failed;
 	}
@@ -2513,87 +2518,49 @@ failed:
  * @param ads connection to ads server
  * @return status of search
  **/
-ADS_STATUS ads_server_info(ADS_STRUCT *ads)
+ADS_STATUS ads_current_time(ADS_STRUCT *ads)
 {
-	const char *attrs[] = {"ldapServiceName", 
-			       "currentTime", 
-			       "schemaNamingContext", NULL};
+	const char *attrs[] = {"currentTime", NULL};
 	ADS_STATUS status;
 	void *res;
-	char *value;
-	char *p;
 	char *timestr;
-	char *schema_path;
 	TALLOC_CTX *ctx;
+	ADS_STRUCT *ads_s = ads;
 
 	if (!(ctx = talloc_init("ads_server_info"))) {
 		return ADS_ERROR(LDAP_NO_MEMORY);
 	}
 
-	status = ads_do_search(ads, "", LDAP_SCOPE_BASE, "(objectclass=*)", attrs, &res);
+        /* establish a new ldap tcp session if necessary */
+
+	if ( !ads->ld ) {
+		if ( (ads_s = ads_init( ads->server.realm, ads->server.workgroup, 
+			ads->server.ldap_server )) == NULL )
+		{
+			goto done;
+		}
+		ads_s->auth.flags = ADS_AUTH_ANON_BIND;
+		status = ads_connect( ads_s );
+		if ( !ADS_ERR_OK(status))
+			goto done;
+	}
+
+	status = ads_do_search(ads_s, "", LDAP_SCOPE_BASE, "(objectclass=*)", attrs, &res);
 	if (!ADS_ERR_OK(status)) {
 		talloc_destroy(ctx);
-		return status;
+		goto done;
 	}
 
-	value = ads_pull_string(ads, ctx, res, "ldapServiceName");
-	if (!value) {
-		ads_msgfree(ads, res);
-		talloc_destroy(ctx);
-		return ADS_ERROR(LDAP_NO_RESULTS_RETURNED);
-	}
-
-	timestr = ads_pull_string(ads, ctx, res, "currentTime");
+	timestr = ads_pull_string(ads_s, ctx, res, "currentTime");
 	if (!timestr) {
 		ads_msgfree(ads, res);
 		talloc_destroy(ctx);
-		return ADS_ERROR(LDAP_NO_RESULTS_RETURNED);
+		status = ADS_ERROR(LDAP_NO_RESULTS_RETURNED);
+		goto done;
 	}
 
-	schema_path = ads_pull_string(ads, ctx, res, "schemaNamingContext");
-	if (!schema_path) {
-		ads_msgfree(ads, res);
-		talloc_destroy(ctx);
-		return ADS_ERROR(LDAP_NO_RESULTS_RETURNED);
-	}
-
-	SAFE_FREE(ads->config.schema_path);
-	ads->config.schema_path = SMB_STRDUP(schema_path);
-
-	ads_msgfree(ads, res);
-
-	p = strchr(value, ':');
-	if (!p) {
-		talloc_destroy(ctx);
-		DEBUG(1, ("ads_server_info: returned ldap server name did not contain a ':' "
-			  "so was deemed invalid\n"));
-		return ADS_ERROR(LDAP_DECODING_ERROR);
-	}
-
-	SAFE_FREE(ads->config.ldap_server_name);
-
-	ads->config.ldap_server_name = SMB_STRDUP(p+1);
-	p = strchr(ads->config.ldap_server_name, '$');
-	if (!p || p[1] != '@') {
-		talloc_destroy(ctx);
-		DEBUG(1, ("ads_server_info: returned ldap server name (%s) does not contain '$@'"
-			  " so was deemed invalid\n", ads->config.ldap_server_name));
-		SAFE_FREE(ads->config.ldap_server_name);
-		return ADS_ERROR(LDAP_DECODING_ERROR);
-	}
-
-	*p = 0;
-
-	SAFE_FREE(ads->config.realm);
-	SAFE_FREE(ads->config.bind_path);
-
-	ads->config.realm = SMB_STRDUP(p+2);
-	ads->config.bind_path = ads_build_dn(ads->config.realm);
-
-	DEBUG(3,("got ldap server name %s@%s, using bind path: %s\n", 
-		 ads->config.ldap_server_name, ads->config.realm,
-		 ads->config.bind_path));
-
+	/* but save the time and offset in the original ADS_STRUCT */	
+	
 	ads->config.current_time = ads_parse_time(timestr);
 
 	if (ads->config.current_time != 0) {
@@ -2601,9 +2568,44 @@ ADS_STATUS ads_server_info(ADS_STRUCT *ads)
 		DEBUG(4,("time offset is %d seconds\n", ads->auth.time_offset));
 	}
 
+	status = ADS_SUCCESS;
+
+done:
+	/* free any temporary ads connections */
+	if ( ads_s != ads ) {
+		ads_destroy( &ads_s );
+	}
 	talloc_destroy(ctx);
 
-	return ADS_SUCCESS;
+	return status;
+}
+
+/*********************************************************************
+*********************************************************************/
+
+static ADS_STATUS ads_schema_path(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, char **schema_path)
+{
+	ADS_STATUS status;
+	void *res;
+	const char *schema;
+	const char *attrs[] = { "schemaNamingContext", NULL };
+
+	status = ads_do_search(ads, "", LDAP_SCOPE_BASE, "(objectclass=*)", attrs, &res);
+	if (!ADS_ERR_OK(status)) {
+		return status;
+	}
+
+	if ( (schema = ads_pull_string(ads, mem_ctx, res, "schemaNamingContext")) == NULL ) {
+		return ADS_ERROR(LDAP_NO_RESULTS_RETURNED);
+	}
+
+	if ( (*schema_path = talloc_strdup(mem_ctx, schema)) == NULL ) {
+		return ADS_ERROR(LDAP_NO_MEMORY);
+	}
+
+	ads_msgfree(ads, res);
+
+	return status;
 }
 
 /**
@@ -2617,41 +2619,71 @@ BOOL ads_check_sfu_mapping(ADS_STRUCT *ads)
 	BOOL ret = False; 
 	TALLOC_CTX *ctx = NULL; 
 	const char *gidnumber, *uidnumber, *homedir, *shell, *gecos;
+	char *schema_path;
+	ADS_STRUCT *ads_s = ads;
+	ADS_STATUS status;
 
-	ctx = talloc_init("ads_check_sfu_mapping");
-	if (ctx == NULL)
+	if ( (ctx = talloc_init("ads_check_sfu_mapping")) == NULL ) {
 		goto done;
+	}
 
-	gidnumber = ads_get_attrname_by_oid(ads, ctx, ADS_ATTR_SFU_GIDNUMBER_OID);
+	/* establish a new ldap tcp session if necessary */
+
+	if ( !ads->ld ) {
+		if ( (ads_s = ads_init( ads->server.realm, ads->server.workgroup, 
+			ads->server.ldap_server )) == NULL )
+		{
+			goto done;
+		}
+
+		ads_s->auth.flags = ADS_AUTH_ANON_BIND;
+		status = ads_connect( ads_s );
+		if ( !ADS_ERR_OK(status))
+			goto done;
+	}
+
+	status = ads_schema_path( ads, ctx, &schema_path );
+	if ( !ADS_ERR_OK(status) ) {
+		DEBUG(3,("ads_check_sfu_mapping: Unable to retrieve schema DN!\n"));
+		goto done;
+	}
+
+	gidnumber = ads_get_attrname_by_oid(ads_s, schema_path, ctx, ADS_ATTR_SFU_GIDNUMBER_OID);
 	if (gidnumber == NULL)
 		goto done;
 	ads->schema.sfu_gidnumber_attr = SMB_STRDUP(gidnumber);
 
-	uidnumber = ads_get_attrname_by_oid(ads, ctx, ADS_ATTR_SFU_UIDNUMBER_OID);
+	uidnumber = ads_get_attrname_by_oid(ads_s, schema_path, ctx, ADS_ATTR_SFU_UIDNUMBER_OID);
 	if (uidnumber == NULL)
 		goto done;
 	ads->schema.sfu_uidnumber_attr = SMB_STRDUP(uidnumber);
 
-	homedir = ads_get_attrname_by_oid(ads, ctx, ADS_ATTR_SFU_HOMEDIR_OID);
+	homedir = ads_get_attrname_by_oid(ads_s, schema_path, ctx, ADS_ATTR_SFU_HOMEDIR_OID);
 	if (homedir == NULL)
 		goto done;
 	ads->schema.sfu_homedir_attr = SMB_STRDUP(homedir);
 	
-	shell = ads_get_attrname_by_oid(ads, ctx, ADS_ATTR_SFU_SHELL_OID);
+	shell = ads_get_attrname_by_oid(ads_s, schema_path, ctx, ADS_ATTR_SFU_SHELL_OID);
 	if (shell == NULL)
 		goto done;
 	ads->schema.sfu_shell_attr = SMB_STRDUP(shell);
 
-	gecos = ads_get_attrname_by_oid(ads, ctx, ADS_ATTR_SFU_GECOS_OID);
+	gecos = ads_get_attrname_by_oid(ads_s, schema_path, ctx, ADS_ATTR_SFU_GECOS_OID);
 	if (gecos == NULL)
 		goto done;
 	ads->schema.sfu_gecos_attr = SMB_STRDUP(gecos);
 
 	ret = True;
 done:
-	if (ctx)
+	/* free any temporary ads connections */
+	if ( ads_s != ads ) {
+		ads_destroy( &ads_s );
+	}
+
+	if (ctx) {
 		talloc_destroy(ctx);
-	
+	}
+
 	return ret;
 }
 
@@ -2675,81 +2707,6 @@ ADS_STATUS ads_domain_sid(ADS_STRUCT *ads, DOM_SID *sid)
 		return ADS_ERROR_SYSTEM(ENOENT);
 	}
 	ads_msgfree(ads, res);
-	
-	return ADS_SUCCESS;
-}
-
-/* this is rather complex - we need to find the allternate (netbios) name
-   for the domain, but there isn't a simple query to do this. Instead
-   we look for the principle names on the DCs account and find one that has 
-   the right form, then extract the netbios name of the domain from that
-
-   NOTE! better method is this:
-
-bin/net -Uadministrator%XXXXX ads search '(&(objectclass=crossref)(dnsroot=VNET3.HOME.SAMBA.ORG))'  nETBIOSName 
-
-but you need to force the bind path to match the configurationNamingContext from the rootDSE
-
-*/
-ADS_STATUS ads_workgroup_name(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, const char **workgroup)
-{
-	char *expr;
-	ADS_STATUS rc;
-	char **principles;
-	char *prefix;
-	int prefix_length;
-	int i;
-	void *res;
-	const char *attrs[] = {"servicePrincipalName", NULL};
-	size_t num_principals;
-
-	(*workgroup) = NULL;
-
-	asprintf(&expr, "(&(objectclass=computer)(dnshostname=%s.%s))", 
-		 ads->config.ldap_server_name, ads->config.realm);
-	if (expr == NULL) {
-		return ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
-	}
-
-	rc = ads_search(ads, &res, expr, attrs);
-	free(expr);
-
-	if (!ADS_ERR_OK(rc)) {
-		return rc;
-	}
-
-	principles = ads_pull_strings(ads, mem_ctx, res,
-				      "servicePrincipalName", &num_principals);
-
-	ads_msgfree(ads, res);
-
-	if (!principles) {
-		return ADS_ERROR(LDAP_NO_RESULTS_RETURNED);
-	}
-
-	asprintf(&prefix, "HOST/%s.%s/", 
-		 ads->config.ldap_server_name, 
-		 ads->config.realm);
-
-	prefix_length = strlen(prefix);
-
-	for (i=0;principles[i]; i++) {
-		if (strnequal(principles[i], prefix, prefix_length) &&
-		    !strequal(ads->config.realm, principles[i]+prefix_length) &&
-		    !strchr(principles[i]+prefix_length, '.')) {
-			/* found an alternate (short) name for the domain. */
-			DEBUG(3,("Found alternate name '%s' for realm '%s'\n",
-				 principles[i]+prefix_length, 
-				 ads->config.realm));
-			(*workgroup) = talloc_strdup(mem_ctx, principles[i]+prefix_length);
-			break;
-		}
-	}
-	free(prefix);
-
-	if (!*workgroup) {
-		return ADS_ERROR(LDAP_NO_RESULTS_RETURNED);
-	}
 	
 	return ADS_SUCCESS;
 }

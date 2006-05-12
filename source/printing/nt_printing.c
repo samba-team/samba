@@ -3158,7 +3158,7 @@ WERROR check_published_printers(void)
 	int n_services = lp_numservices();
 	NT_PRINTER_INFO_LEVEL *printer = NULL;
 
-	ads = ads_init(NULL, NULL, NULL);
+	ads = ads_init(lp_realm(), lp_workgroup(), NULL);
 	if (!ads) {
 		DEBUG(3, ("ads_init() failed\n"));
 		return WERR_SERVER_UNAVAILABLE;
