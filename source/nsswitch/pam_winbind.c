@@ -877,7 +877,7 @@ int pam_sm_authenticate(pam_handle_t *pamh, int flags,
 		goto out;
 	}
 
-	_pam_log_debug(ctrl, LOG_DEBUG,"pam_winbind: pam_sm_authenticate");
+	_pam_log_debug(ctrl, LOG_DEBUG,"pam_winbind: pam_sm_authenticate (flags: 0x%04x)", flags);
 
 	/* Get the username */
 	retval = pam_get_user(pamh, &username, NULL);
@@ -946,7 +946,7 @@ int pam_sm_setcred(pam_handle_t *pamh, int flags,
 		return PAM_SYSTEM_ERR;
 	}
 
-	_pam_log_debug(ctrl, LOG_DEBUG,"pam_winbind: pam_sm_setcred");
+	_pam_log_debug(ctrl, LOG_DEBUG,"pam_winbind: pam_sm_setcred (flags: 0x%04x)", flags);
 
 	if (flags & PAM_DELETE_CRED) {
 		return pam_sm_close_session(pamh, flags, argc, argv);
@@ -973,7 +973,7 @@ int pam_sm_acct_mgmt(pam_handle_t *pamh, int flags,
 		return PAM_SYSTEM_ERR;
 	}
 
-	_pam_log_debug(ctrl, LOG_DEBUG,"pam_winbind: pam_sm_acct_mgmt");
+	_pam_log_debug(ctrl, LOG_DEBUG,"pam_winbind: pam_sm_acct_mgmt (flags: 0x%04x)", flags);
 
 
 	/* Get the username */
@@ -1040,7 +1040,7 @@ int pam_sm_open_session(pam_handle_t *pamh, int flags,
 		return PAM_SYSTEM_ERR;
 	}
 
-	_pam_log_debug(ctrl, LOG_DEBUG,"pam_winbind: pam_sm_open_session handler");
+	_pam_log_debug(ctrl, LOG_DEBUG,"pam_winbind: pam_sm_open_session handler (flags: 0x%04x)", flags);
 
 	return PAM_SUCCESS;
 }
@@ -1059,7 +1059,7 @@ int pam_sm_close_session(pam_handle_t *pamh, int flags,
 		goto out;
 	}
 
-	_pam_log_debug(ctrl, LOG_DEBUG,"pam_winbind: pam_sm_close_session handler");
+	_pam_log_debug(ctrl, LOG_DEBUG,"pam_winbind: pam_sm_close_session handler (flags: 0x%04x)", flags);
 
 	if (!(flags & PAM_DELETE_CRED)) {
 		retval = PAM_SUCCESS;
@@ -1151,7 +1151,7 @@ int pam_sm_chauthtok(pam_handle_t * pamh, int flags,
 		goto out;
 	}
 
-	_pam_log_debug(ctrl, LOG_DEBUG,"pam_winbind: pam_sm_chauthtok");
+	_pam_log_debug(ctrl, LOG_DEBUG,"pam_winbind: pam_sm_chauthtok (flags: 0x%04x)", flags);
 
 	/* clearing offline bit for the auth in the password change */
 	ctrl &= ~WINBIND_CACHED_LOGIN;
