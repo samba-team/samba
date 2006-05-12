@@ -3936,36 +3936,6 @@ if test x"$samba_cv_HAVE_TRUNCATED_SALT" = x"yes"; then
 fi
 fi
 
-
-########################################################################################
-##
-## TESTS FOR SAM BACKENDS.  KEEP THESE GROUPED TOGETHER
-##
-########################################################################################
-
-#################################################
-# check for a LDAP password database configuration backwards compatibility
-AC_MSG_CHECKING(whether to use LDAP SAM 2.2 compatible configuration)
-AC_ARG_WITH(ldapsam,
-[  --with-ldapsam          Include LDAP SAM 2.2 compatible configuration (default=no)],
-[ case "$withval" in
-  yes)
-    AC_MSG_RESULT(yes)
-    AC_DEFINE(WITH_LDAP_SAMCONFIG,1,[Whether to include 2.2 compatible LDAP SAM configuration])
-    ;;
-  *)
-    AC_MSG_RESULT(no)
-    ;;
-  esac ],
-  AC_MSG_RESULT(no)
-)
-
-########################################################################################
-##
-## END OF TESTS FOR SAM BACKENDS.  
-##
-########################################################################################
-
 #################################################
 # check for a NISPLUS_HOME support 
 AC_MSG_CHECKING(whether to use NISPLUS_HOME)
