@@ -1324,13 +1324,21 @@ hx_pass_prompter(void *data, const hx509_prompt *prompter)
    
     password_data.data   = prompter->reply.data;
     password_data.length = prompter->reply.length;
-    prompt.prompt = "Enter your private key passphrase: ";
-    prompt.hidden = 1;
+
+    prompt.prompt = prompter->prompt;
+    prompt.hidden = hx509_prompt_hidden(prompter->type);
     prompt.reply  = &password_data;
-    if (prompter->hidden)
+
+    switch (prompter->type) {
+    case HX509_PROMPT_TYPE_INFO:
+	prompt.type   = KRB5_PROMPT_TYPE_INFO;
+	break;
+    case HX509_PROMPT_TYPE_PASSWORD:
+    case HX509_PROMPT_TYPE_QUESTION:
+    default:
 	prompt.type   = KRB5_PROMPT_TYPE_PASSWORD;
-    else
-	prompt.type   = KRB5_PROMPT_TYPE_PREAUTH; /* XXX */
+	break;
+    }	
    
     ret = (*p->prompter)(p->context, p->prompter_data, NULL, NULL, 1, &prompt);
     if (ret) {
@@ -1778,6 +1786,7 @@ krb5_get_init_creds_opt_set_pkinit(krb5_context context,
 {
 #ifdef PKINIT
     krb5_error_code ret;
+    char *anchors = NULL;
 
     if (opt->opt_private == NULL) {
 	krb5_set_error_string(context, "PKINIT: on non extendable opt");
@@ -1811,10 +1820,12 @@ krb5_get_init_creds_opt_set_pkinit(krb5_context context,
 					 "pkinit-revoke", 
 					 NULL);
 
-    if (x509_anchors == NULL)
+    if (x509_anchors == NULL) {
 	krb5_appdefault_string(context, "kinit",
 			       krb5_principal_get_realm(context, principal), 
-			       "pkinit-anchors", NULL, &x509_anchors);
+			       "pkinit-anchors", NULL, &anchors);
+	x509_anchors = anchors;
+    }
 
     ret = _krb5_pk_load_id(context,
 			   &opt->opt_private->pk_init_ctx->id,
