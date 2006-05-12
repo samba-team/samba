@@ -178,7 +178,7 @@ hx509_lock_reset_promper(hx509_lock lock)
 static int 
 default_prompter(void *data, const hx509_prompt *prompter)
 {
-    if (prompter->hidden) {
+    if (hx509_prompt_hidden(prompter->type)) {
 	if(UI_UTIL_read_pw_string(prompter->reply.data,
 				  prompter->reply.length,
 				  prompter->prompt,
@@ -213,6 +213,17 @@ hx509_lock_free(hx509_lock lock)
     hx509_lock_reset_passwords(lock);
     memset(lock, 0, sizeof(*lock));
     free(lock);
+}
+
+int
+hx509_prompt_hidden(hx509_prompt_type type)
+{
+    switch (type) {
+    case HX509_PROMPT_TYPE_QUESTION:
+    case HX509_PROMPT_TYPE_INFO:
+	return 0;
+    }
+    return 1;
 }
 
 int
