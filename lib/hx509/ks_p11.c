@@ -302,7 +302,6 @@ p11_get_session(struct p11_module *p,
 
 	    asprintf(&str, "PIN code for %s: ", slot->name);
 	    prompt.prompt = str;
-	    prompt.hidden = 1;
 	    prompt.type = HX509_PROMPT_TYPE_PASSWORD;
 	    prompt.reply.data = pin;
 	    prompt.reply.length = sizeof(pin);
