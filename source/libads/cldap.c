@@ -165,7 +165,17 @@ static int send_cldap_netlogon(int sock, const char *domain,
 	return 0;
 }
 
-
+static SIG_ATOMIC_T gotalarm;
+                                                                                                                   
+/***************************************************************
+ Signal function to tell us we timed out.
+****************************************************************/
+                                                                                                                   
+static void gotalarm_sig(void)
+{
+	gotalarm = 1;
+}
+                                                                                                                   
 /*
   receive a cldap netlogon reply
 */
@@ -180,7 +190,17 @@ static int recv_cldap_netlogon(int sock, struct cldap_netlogon_reply *reply)
 
 	blob = data_blob(NULL, 8192);
 
+	/* Setup timeout */
+	gotalarm = 0;
+	CatchSignal(SIGALRM, SIGNAL_CAST gotalarm_sig);
+	alarm(lp_ldap_timeout());
+	/* End setup timeout. */
+ 
 	ret = read(sock, blob.data, blob.length);
+
+	/* Teardown timeout. */
+	CatchSignal(SIGALRM, SIGNAL_CAST SIG_IGN);
+	alarm(0);
 
 	if (ret <= 0) {
 		d_fprintf(stderr, "no reply received to cldap netlogon\n");
