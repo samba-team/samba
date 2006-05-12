@@ -1024,70 +1024,62 @@ static BOOL resolve_hosts(const char *name, int name_type,
 static BOOL resolve_ads(const char *name, int name_type,
                          struct ip_service **return_iplist, int *return_count)
 {
-#ifdef HAVE_ADS
-	if ( name_type == 0x1c ) {
-		int 			count, i = 0;
-		NTSTATUS  		status;
-		TALLOC_CTX		*ctx;
-		struct dns_rr_srv	*dcs = NULL;
-		int			numdcs = 0;
+	int 			count, i = 0;
+	NTSTATUS  		status;
+	TALLOC_CTX		*ctx;
+	struct dns_rr_srv	*dcs = NULL;
+	int			numdcs = 0;
+
+	if ( name_type != 0x1c )
+		return False;
 		
-		/* try to lookup the _ldap._tcp.<domain> if we are using ADS */
-		if ( lp_security() != SEC_ADS )
-			return False;
+	DEBUG(5,("resolve_hosts: Attempting to resolve DC's for %s using DNS\n",
+		name));
 			
-		DEBUG(5,("resolve_hosts: Attempting to resolve DC's for %s using DNS\n",
-			name));
-			
-		if ( (ctx = talloc_init("resolve_ads")) == NULL ) {
-			DEBUG(0,("resolve_ads: talloc_init() failed!\n"));
-			return False;
-		}
-		
-		status = ads_dns_query_dcs( ctx, name, &dcs, &numdcs );
-		if ( !NT_STATUS_IS_OK( status ) ) {
-			return False;
-		}
-		
-		if ( (*return_iplist = SMB_MALLOC_ARRAY(struct ip_service, numdcs)) == NULL ) {
-			DEBUG(0,("resolve_ads: malloc failed for %d entries\n", count ));
-			return False;
-		}
-
-		i = 0;
-		while ( i < numdcs ) {
-
-			/* use the IP address from the SRV structure if we have one */
-			if ( is_zero_ip( dcs[i].ip ) )
-				(*return_iplist)[i].ip   = *interpret_addr2(dcs[i].hostname);
-			else
-				(*return_iplist)[i].ip = dcs[i].ip;
-
-			(*return_iplist)[i].port = dcs[i].port;
-			
-			/* make sure it is a valid IP.  I considered checking the negative
-			   connection cache, but this is the wrong place for it.  Maybe only
-			   as a hac.  After think about it, if all of the IP addresses retuend
-			   from DNS are dead, what hope does a netbios name lookup have?
-			   The standard reason for falling back to netbios lookups is that 
-			   our DNS server doesn't know anything about the DC's   -- jerry */	
-			   
-			if ( is_zero_ip((*return_iplist)[i].ip) )
-				continue;		
-
-			i++;
-		}
-		
-		TALLOC_FREE( dcs );
-		
-		*return_count = i;
-				
-		return True;
-	} else 
-#endif 	/* HAVE_ADS */
-	{ 
+	if ( (ctx = talloc_init("resolve_ads")) == NULL ) {
+		DEBUG(0,("resolve_ads: talloc_init() failed!\n"));
 		return False;
 	}
+		
+	status = ads_dns_query_dcs( ctx, name, &dcs, &numdcs );
+	if ( !NT_STATUS_IS_OK( status ) ) {
+		return False;
+	}
+		
+	if ( (*return_iplist = SMB_MALLOC_ARRAY(struct ip_service, numdcs)) == NULL ) {
+		DEBUG(0,("resolve_ads: malloc failed for %d entries\n", count ));
+		return False;
+	}
+
+	i = 0;
+	while ( i < numdcs ) {
+
+		/* use the IP address from the SRV structure if we have one */
+		if ( is_zero_ip( dcs[i].ip ) )
+			(*return_iplist)[i].ip   = *interpret_addr2(dcs[i].hostname);
+		else
+			(*return_iplist)[i].ip = dcs[i].ip;
+
+		(*return_iplist)[i].port = dcs[i].port;
+			
+		/* make sure it is a valid IP.  I considered checking the negative
+		   connection cache, but this is the wrong place for it.  Maybe only
+		   as a hac.  After think about it, if all of the IP addresses retuend
+		   from DNS are dead, what hope does a netbios name lookup have?
+		   The standard reason for falling back to netbios lookups is that 
+		   our DNS server doesn't know anything about the DC's   -- jerry */	
+			   
+		if ( is_zero_ip((*return_iplist)[i].ip) )
+			continue;		
+
+		i++;
+	}
+		
+	TALLOC_FREE( dcs );
+		
+	*return_count = i;
+				
+	return True;
 }
 
 /*******************************************************************
@@ -1178,8 +1170,7 @@ BOOL internal_resolve_name(const char *name, int name_type,
 				}
 			} else if(strequal( tok, "ads")) {
 				/* deal with 0x1c names here.  This will result in a
-					SRV record lookup for _ldap._tcp.<domain> if we
-					are using 'security = ads' */
+					SRV record lookup */
 				if (resolve_ads(name, name_type, return_iplist, return_count)) {
 					result = True;
 					goto done;

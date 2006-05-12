@@ -916,50 +916,29 @@ extern int errno;
 #include "messages.h"
 #include "charset.h"
 #include "dynconfig.h"
-
 #include "util_getent.h"
-
 #include "debugparse.h"
-
 #include "version.h"
-
 #include "privileges.h"
-
 #include "smb.h"
-
+#include "ads_cldap.h"
 #include "nameserv.h"
-
 #include "secrets.h"
-
 #include "byteorder.h"
-
 #include "privileges.h"
-
 #include "rpc_misc.h"
-
 #include "rpc_dce.h"
-
 #include "mapping.h"
-
 #include "passdb.h"
-
 #include "rpc_secdes.h"
-
 #include "authdata.h"
-
 #include "msdfs.h"
-
 #include "rap.h"
-
 #include "md5.h"
 #include "hmacmd5.h"
-
 #include "ntlmssp.h"
-
 #include "auth.h"
-
 #include "ntdomain.h"
-
 #include "rpc_svcctl.h"
 #include "rpc_ntsvcs.h"
 #include "rpc_lsa.h"
@@ -978,11 +957,8 @@ extern int errno;
 #include "rpc_unixinfo.h"
 #include "rpc_perfcount.h"
 #include "rpc_perfcount_defs.h"
-
 #include "nt_printing.h"
-
 #include "idmap.h"
-
 #include "client.h"
 
 #ifdef WITH_SMBWRAPPER
@@ -990,21 +966,13 @@ extern int errno;
 #endif
 
 #include "session.h"
-
 #include "asn_1.h"
-
 #include "popt.h"
-
 #include "mangle.h"
-
 #include "module.h"
-
 #include "nsswitch/winbind_client.h"
-
 #include "spnego.h"
-
 #include "rpc_client.h"
-
 #include "event.h"
 
 #include "libndr/libndr.h"

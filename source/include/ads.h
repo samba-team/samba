@@ -17,7 +17,6 @@ typedef struct {
 		char *realm;
 		char *workgroup;
 		char *ldap_server;
-		char *ldap_uri;
 		int foreign; /* set to 1 if connecting to a foreign realm */
 	} server;
 
@@ -37,7 +36,6 @@ typedef struct {
 	struct {
 		char *realm;
 		char *bind_path;
-		char *schema_path;
 		char *ldap_server_name;
 		time_t current_time;
 	} config;
@@ -219,19 +217,6 @@ typedef void **ADS_MODLIST;
 #define GTYPE_DISTRIBUTION_DOMAIN_LOCAL_GROUP	0x00000004	/* 4 */
 #define GTYPE_DISTRIBUTION_UNIVERSAL_GROUP	0x00000008	/* 8 */
 
-/* Mailslot or cldap getdcname response flags */
-#define ADS_PDC            0x00000001  /* DC is PDC */
-#define ADS_GC             0x00000004  /* DC is a GC of forest */
-#define ADS_LDAP           0x00000008  /* DC is an LDAP server */
-#define ADS_DS             0x00000010  /* DC supports DS */
-#define ADS_KDC            0x00000020  /* DC is running KDC */
-#define ADS_TIMESERV       0x00000040  /* DC is running time services */
-#define ADS_CLOSEST        0x00000080  /* DC is closest to client */
-#define ADS_WRITABLE       0x00000100  /* DC has writable DS */
-#define ADS_GOOD_TIMESERV  0x00000200  /* DC has hardware clock
-	  				 (and running time) */
-#define ADS_NDNC           0x00000400  /* DomainName is non-domain NC serviced
-	  				 by LDAP server */
 #define ADS_PINGS          0x0000FFFF  /* Ping response */
 #define ADS_DNS_CONTROLLER 0x20000000  /* DomainControllerName is a DNS name*/
 #define ADS_DNS_DOMAIN     0x40000000  /* DomainName is a DNS name */
