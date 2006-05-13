@@ -73,13 +73,13 @@ der_parse_hex_heim_integer (const char *p, heim_integer *data)
     }
 
     {
-	unsigned char *p = data->data;
-	while(*p == 0 && len > 0) {
-	    p++;
+	unsigned char *q = data->data;
+	while(*q == 0 && len > 0) {
+	    q++;
 	    len--;
 	}
 	data->length = len;
-	memmove(data->data, p, len);
+	memmove(data->data, q, len);
     }
     return 0;
 }
