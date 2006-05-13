@@ -46,6 +46,7 @@ sub show($$)
 	showitem($output, "changing process titles (see --with-setproctitle)", ["SETPROCTITLE"]);
 	showitem($output, "using extended attributes", ["XATTR"]);
 	showitem($output, "using libblkid", ["BLKID"]);
+	showitem($output, "using iconv", ["ICONV"]);
 	showitem($output, "using pam", ["PAM"]);
 	print "Using external popt: ".
 	    (($output->{LIBPOPT}->{TYPE} eq "EXT_LIB")?"yes":"no")."\n";
