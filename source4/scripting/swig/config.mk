@@ -14,7 +14,7 @@ swig: lib/tdb/swig/_tdb.$(SHLIBEXT) lib/ldb/swig/_ldb.$(SHLIBEXT) \
 .SUFFIXES: _wrap.c .i
 
 .i_wrap.c:
-	swig -python $<
+	swig -I$(srcdir)/scripting/swig -python $<
 
 SWIG_INCLUDES = librpc/gen_ndr/samr.i librpc/gen_ndr/lsa.i librpc/gen_ndr/spoolss.i
 
