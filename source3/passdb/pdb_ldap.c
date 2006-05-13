@@ -4356,6 +4356,7 @@ static NTSTATUS ldapsam_get_new_rid(struct ldapsam_privates *priv,
 	char *value;
 	int rc;
 	uint32 nextRid = 0;
+	const char *dn;
 
 	TALLOC_CTX *mem_ctx;
 
@@ -4419,9 +4420,12 @@ static NTSTATUS ldapsam_get_new_rid(struct ldapsam_privates *priv,
 			 talloc_asprintf(mem_ctx, "%d", nextRid));
 	talloc_autofree_ldapmod(mem_ctx, mods);
 
-	rc = smbldap_modify(smbldap_state,
-			    smbldap_talloc_dn(mem_ctx, priv2ld(priv), entry),
-			    mods);
+	if ((dn = smbldap_talloc_dn(mem_ctx, priv2ld(priv), entry)) == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
+	rc = smbldap_modify(smbldap_state, dn, mods);
 
 	/* ACCESS_DENIED is used as a placeholder for "the modify failed,
 	 * please retry" */
