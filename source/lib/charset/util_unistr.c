@@ -20,7 +20,7 @@
 */
 
 #include "includes.h"
-#include "system/iconv.h"
+#include "system/locale.h"
 
 /**
  * @file

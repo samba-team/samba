@@ -21,7 +21,6 @@
 */
 
 #include "includes.h"
-#include "system/iconv.h"
 #include "system/filesys.h"
 #include "lib/tdb/include/tdbutil.h"
 #include "lib/samba3/samba3.h"

@@ -24,8 +24,8 @@
 
 #include "includes.h"
 #include "system/network.h"
-#include "system/iconv.h"
 #include "system/filesys.h"
+#include "system/locale.h"
 
 /**
  * @file

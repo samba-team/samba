@@ -38,7 +38,6 @@
 #include "hdb.h"
 #include "lib/ldb/include/ldb.h"
 #include "lib/ldb/include/ldb_errors.h"
-#include "system/iconv.h"
 #include "librpc/gen_ndr/netlogon.h"
 #include "auth/auth.h"
 #include "auth/auth_sam.h"

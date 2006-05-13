@@ -7,7 +7,7 @@
 #ifdef _SAMBA_BUILD_
 
 #include "system/filesys.h"
-#include "system/iconv.h"
+#include "system/locale.h"
 #include "system/time.h"
 
 /* tell ldb we have the internal ldap code */

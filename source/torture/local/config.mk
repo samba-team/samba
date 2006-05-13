@@ -21,6 +21,7 @@ PUBLIC_DEPENDENCIES = \
 		RPC_NDR_ECHO \
 		LIBCLI_SMB \
 		MESSAGING \
+		ICONV \
 		registry
 # End SUBSYSTEM TORTURE_LOCAL
 #################################

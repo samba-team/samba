@@ -21,8 +21,8 @@
 */
 
 #include "includes.h"
+#include "system/locale.h"
 #include "vfs_posix.h"
-#include "system/iconv.h"
 
 /*
   this mangling scheme uses the following format

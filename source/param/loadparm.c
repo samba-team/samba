@@ -58,7 +58,7 @@
 #include "dynconfig.h"
 #include "pstring.h"
 #include "system/time.h"
-#include "system/iconv.h"
+#include "system/locale.h"
 #include "librpc/gen_ndr/svcctl.h"
 #include "librpc/gen_ndr/samr.h"
 #include "smb_server/smb_server.h"
