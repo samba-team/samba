@@ -66,7 +66,7 @@ static unsigned pull_netlogon_string(char *ret, const char *ptr,
 			uint8 len = (uint8)*(ptr++);
 
 			if ((pret - ret + len + 1) >= MAX_DNS_LABEL) {
-				d_fprintf(stderr, "DC returning too long DNS name\n");
+				DEBUG(1,("DC returning too long DNS name\n"));
 				return 0;
 			}
 
@@ -151,13 +151,13 @@ static int send_cldap_netlogon(int sock, const char *domain,
 	asn1_pop_tag(&data);
 
 	if (data.has_error) {
-		d_fprintf(stderr, "Failed to build cldap netlogon at offset %d\n", (int)data.ofs);
+		DEBUG(2,("Failed to build cldap netlogon at offset %d\n", (int)data.ofs));
 		asn1_free(&data);
 		return -1;
 	}
 
 	if (write(sock, data.data, data.length) != (ssize_t)data.length) {
-		d_fprintf(stderr, "failed to send cldap query (%s)\n", strerror(errno));
+		DEBUG(2,("failed to send cldap query (%s)\n", strerror(errno)));
 	}
 
 	asn1_free(&data);
@@ -203,7 +203,7 @@ static int recv_cldap_netlogon(int sock, struct cldap_netlogon_reply *reply)
 	alarm(0);
 
 	if (ret <= 0) {
-		d_fprintf(stderr, "no reply received to cldap netlogon\n");
+		DEBUG(1,("no reply received to cldap netlogon\n"));
 		return -1;
 	}
 	blob.length = ret;
@@ -225,7 +225,7 @@ static int recv_cldap_netlogon(int sock, struct cldap_netlogon_reply *reply)
 	asn1_end_tag(&data);
 
 	if (data.has_error) {
-		d_fprintf(stderr, "Failed to parse cldap reply\n");
+		DEBUG(1,("Failed to parse cldap reply\n"));
 		return -1;
 	}
 
