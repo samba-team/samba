@@ -661,7 +661,7 @@ sub process_file($)
 		defined($opt_dump_ndr_tree) or defined($opt_samba3_header) or 
 	    defined($opt_samba3_parser) or defined($opt_samba3_server) or 
 		defined($opt_samba3_template) or defined($opt_samba3_client) or
-		defined($opt_samba3_ndr_client)) {
+		defined($opt_swig) or defined($opt_samba3_ndr_client)) {
 		require Parse::Pidl::NDR;
 		$ndr = Parse::Pidl::NDR::Parse($pidl);
 	}
@@ -689,6 +689,13 @@ sub process_file($)
 
 		FileSave($c_client, $srcd);
 		FileSave($c_header, $hdrd);
+	}
+
+	if (defined($opt_swig)) {
+		  require Parse::Pidl::Samba4::SWIG;
+		  my($filename) = ($opt_swig or "$outputdir/$basename.i");
+		  my $code = Parse::Pidl::Samba4::SWIG::Parse($ndr, $basename, "$outputdir/ndr_$basename\_c.h", $gen_header);
+		  FileSave($filename, $code);
 	}
 
 	if (defined($opt_ejs)) {
@@ -735,11 +742,6 @@ $dcom
 		FileSave($parser_fname, $parser);
 		FileSave($h_filename, $header);
 
-		if (defined($opt_swig)) {
-		  require Parse::Pidl::Samba4::SWIG;
-		  my($filename) = ($opt_swig or "$outputdir/$basename.i");
-		  Parse::Pidl::Samba4::SWIG::RewriteHeader($pidl, $h_filename, $filename);
-		}
 	}
 
 	if (defined($opt_eth_parser)) {
