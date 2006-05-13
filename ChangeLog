@@ -1,3 +1,9 @@
+2006-05-13  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/krb5_get_init_creds.3: Add KRB5_PROMPT_TYPE_INFO
+	
+	* lib/krb5/krb5.h: Add KRB5_PROMPT_TYPE_INFO
+	
 2006-05-12  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/pkinit.c: Hidden field of hx509 prompter is removed.
