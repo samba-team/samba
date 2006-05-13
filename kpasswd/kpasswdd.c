@@ -334,6 +334,9 @@ change (krb5_auth_context auth_context,
 	goto out;
     }
 
+    conf.realm = principal->realm;
+    conf.mask |= KADM5_CONFIG_REALM;
+
     ret = kadm5_init_with_password_ctx(context, 
 				       admin,
 				       NULL,
