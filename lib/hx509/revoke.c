@@ -62,16 +62,16 @@ struct hx509_revoke_ctx_data {
 };
 
 int
-hx509_revoke_init(hx509_context context, hx509_revoke_ctx *revoke)
+hx509_revoke_init(hx509_context context, hx509_revoke_ctx *ctx)
 {
-    *revoke = calloc(1, sizeof(**revoke));
-    if (*revoke == NULL)
+    *ctx = calloc(1, sizeof(**ctx));
+    if (*ctx == NULL)
 	return ENOMEM;
 
-    (*revoke)->crls.len = 0;
-    (*revoke)->crls.val = NULL;
-    (*revoke)->ocsps.len = 0;
-    (*revoke)->ocsps.val = NULL;
+    (*ctx)->crls.len = 0;
+    (*ctx)->crls.val = NULL;
+    (*ctx)->ocsps.len = 0;
+    (*ctx)->ocsps.val = NULL;
 
     return 0;
 }
@@ -86,26 +86,26 @@ free_ocsp(struct revoke_ocsp *ocsp)
 }
 
 void
-hx509_revoke_free(hx509_revoke_ctx *revoke)
+hx509_revoke_free(hx509_revoke_ctx *ctx)
 {
     size_t i ;
 
-    if (revoke == NULL || *revoke == NULL)
+    if (ctx == NULL || *ctx == NULL)
 	return;
 
-    for (i = 0; i < (*revoke)->crls.len; i++) {
-	free((*revoke)->crls.val[i].path);
-	free_CRLCertificateList(&(*revoke)->crls.val[i].crl);
+    for (i = 0; i < (*ctx)->crls.len; i++) {
+	free((*ctx)->crls.val[i].path);
+	free_CRLCertificateList(&(*ctx)->crls.val[i].crl);
     }
 
-    for (i = 0; i < (*revoke)->ocsps.len; i++)
-	free_ocsp(&(*revoke)->ocsps.val[i]);
+    for (i = 0; i < (*ctx)->ocsps.len; i++)
+	free_ocsp(&(*ctx)->ocsps.val[i]);
 
-    free((*revoke)->crls.val);
+    free((*ctx)->crls.val);
 
-    memset(*revoke, 0, sizeof(**revoke));
-    free(*revoke);
-    *revoke = NULL;
+    memset(*ctx, 0, sizeof(**ctx));
+    free(*ctx);
+    *ctx = NULL;
 }
 
 static int
@@ -310,7 +310,7 @@ load_ocsp(hx509_context context, struct revoke_ocsp *ocsp)
 
 int
 hx509_revoke_add_ocsp(hx509_context context,
-		      hx509_revoke_ctx revoke,
+		      hx509_revoke_ctx ctx,
 		      const char *path)
 {
     void *data;
@@ -322,31 +322,31 @@ hx509_revoke_add_ocsp(hx509_context context,
 
     path += 5;
 
-    for (i = 0; i < revoke->ocsps.len; i++) {
-	if (strcmp(revoke->ocsps.val[0].path, path) == 0)
+    for (i = 0; i < ctx->ocsps.len; i++) {
+	if (strcmp(ctx->ocsps.val[0].path, path) == 0)
 	    return 0;
     }
 
-    data = realloc(revoke->ocsps.val, 
-		   (revoke->ocsps.len + 1) * sizeof(revoke->ocsps.val[0]));
+    data = realloc(ctx->ocsps.val, 
+		   (ctx->ocsps.len + 1) * sizeof(ctx->ocsps.val[0]));
     if (data == NULL)
 	return ENOMEM;
 
-    revoke->ocsps.val = data;
+    ctx->ocsps.val = data;
 
-    memset(&revoke->ocsps.val[revoke->ocsps.len], 0, 
-	   sizeof(revoke->ocsps.val[0]));
+    memset(&ctx->ocsps.val[ctx->ocsps.len], 0, 
+	   sizeof(ctx->ocsps.val[0]));
 
-    revoke->ocsps.val[revoke->ocsps.len].path = strdup(path);
-    if (revoke->ocsps.val[revoke->ocsps.len].path == NULL)
+    ctx->ocsps.val[ctx->ocsps.len].path = strdup(path);
+    if (ctx->ocsps.val[ctx->ocsps.len].path == NULL)
 	return ENOMEM;
 
-    ret = load_ocsp(context, &revoke->ocsps.val[revoke->ocsps.len]);
+    ret = load_ocsp(context, &ctx->ocsps.val[ctx->ocsps.len]);
     if (ret) {
-	free(revoke->ocsps.val[revoke->ocsps.len].path);
+	free(ctx->ocsps.val[ctx->ocsps.len].path);
 	return ret;
     }
-    revoke->ocsps.len++;
+    ctx->ocsps.len++;
 
     return ret;
 }
@@ -454,7 +454,7 @@ load_crl(const char *path, time_t *t, CRLCertificateList *crl)
 
 int
 hx509_revoke_add_crl(hx509_context context,
-		     hx509_revoke_ctx revoke,
+		     hx509_revoke_ctx ctx,
 		     const char *path)
 {
     void *data;
@@ -466,33 +466,33 @@ hx509_revoke_add_crl(hx509_context context,
     
     path += 5;
 
-    for (i = 0; i < revoke->crls.len; i++) {
-	if (strcmp(revoke->crls.val[0].path, path) == 0)
+    for (i = 0; i < ctx->crls.len; i++) {
+	if (strcmp(ctx->crls.val[0].path, path) == 0)
 	    return 0;
     }
 
-    data = realloc(revoke->crls.val, 
-		   (revoke->crls.len + 1) * sizeof(revoke->crls.val[0]));
+    data = realloc(ctx->crls.val, 
+		   (ctx->crls.len + 1) * sizeof(ctx->crls.val[0]));
     if (data == NULL)
 	return ENOMEM;
 
-    revoke->crls.val = data;
+    ctx->crls.val = data;
 
-    memset(&revoke->crls.val[revoke->crls.len], 0, sizeof(revoke->crls.val[0]));
+    memset(&ctx->crls.val[ctx->crls.len], 0, sizeof(ctx->crls.val[0]));
 
-    revoke->crls.val[revoke->crls.len].path = strdup(path);
-    if (revoke->crls.val[revoke->crls.len].path == NULL)
+    ctx->crls.val[ctx->crls.len].path = strdup(path);
+    if (ctx->crls.val[ctx->crls.len].path == NULL)
 	return ENOMEM;
 
     ret = load_crl(path, 
-		   &revoke->crls.val[revoke->crls.len].last_modfied,
-		   &revoke->crls.val[revoke->crls.len].crl);
+		   &ctx->crls.val[ctx->crls.len].last_modfied,
+		   &ctx->crls.val[ctx->crls.len].crl);
     if (ret) {
-	free(revoke->crls.val[revoke->crls.len].path);
+	free(ctx->crls.val[ctx->crls.len].path);
 	return ret;
     }
 
-    revoke->crls.len++;
+    ctx->crls.len++;
 
     return ret;
 }
@@ -500,7 +500,7 @@ hx509_revoke_add_crl(hx509_context context,
 
 int
 hx509_revoke_verify(hx509_context context,
-		    hx509_revoke_ctx revoke,
+		    hx509_revoke_ctx ctx,
 		    hx509_certs certs,
 		    time_t now,
 		    hx509_cert cert,
@@ -511,8 +511,8 @@ hx509_revoke_verify(hx509_context context,
     unsigned long i, j, k;
     int ret;
 
-    for (i = 0; i < revoke->ocsps.len; i++) {
-	struct revoke_ocsp *ocsp = &revoke->ocsps.val[i];
+    for (i = 0; i < ctx->ocsps.len; i++) {
+	struct revoke_ocsp *ocsp = &ctx->ocsps.val[i];
 	struct stat sb;
 
 	/* check this ocsp apply to this cert */
@@ -582,8 +582,8 @@ hx509_revoke_verify(hx509_context context,
 	}
     }
 
-    for (i = 0; i < revoke->crls.len; i++) {
-	struct revoke_crl *crl = &revoke->crls.val[i];
+    for (i = 0; i < ctx->crls.len; i++) {
+	struct revoke_crl *crl = &ctx->crls.val[i];
 	struct stat sb;
 
 	/* check if cert.issuer == crls.val[i].crl.issuer */
@@ -594,12 +594,12 @@ hx509_revoke_verify(hx509_context context,
 
 	ret = stat(crl->path, &sb);
 	if (ret == 0 && crl->last_modfied != sb.st_mtime) {
-	    CRLCertificateList c;
+	    CRLCertificateList cl;
 
-	    ret = load_crl(crl->path, &crl->last_modfied, &c);
+	    ret = load_crl(crl->path, &crl->last_modfied, &cl);
 	    if (ret == 0) {
 		free_CRLCertificateList(&crl->crl);
-		crl->crl = c;
+		crl->crl = cl;
 		crl->verified = 0;
 	    }
 	}
