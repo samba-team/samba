@@ -194,7 +194,7 @@ sub bitmap_type_fn($)
 sub mapType($)
 {
 	my $t = shift;
-	die("Undef passed to mapType") unless defined($t);
+	return "void" unless defined($t);
 	my $dt;
 
 	unless ($dt or ($dt = getType($t))) {

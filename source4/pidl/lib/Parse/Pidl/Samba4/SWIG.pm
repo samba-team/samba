@@ -7,6 +7,8 @@
 package Parse::Pidl::Samba4::SWIG;
 
 use vars qw($VERSION);
+use Parse::Pidl::Samba4 qw(DeclLong);
+use Parse::Pidl::Typelist qw(mapType);
 $VERSION = '0.01';
 
 use strict;
@@ -23,9 +25,9 @@ sub pidl($)
 sub indent() { $tabs.="\t"; }
 sub deindent() { $tabs = substr($tabs,0,-1); }
 
-sub ParseInterface($)
+sub ParseInterface($$)
 {
-	my $if = shift;
+	my ($basename,$if) = @_;
 
 	pidl "\%{";
 	pidl "struct $if->{NAME} {";
@@ -36,8 +38,6 @@ sub ParseInterface($)
 	pidl "%}";
 	pidl "";
 
-	# FIXME: Generate ignores for all manual functions
-		
 	pidl "\%extend $if->{NAME} {";
 	indent();
 	pidl "struct $if->{NAME} *$if->{NAME} (const char *binding, struct cli_credentials *cred = NULL, TALLOC_CTX *mem_ctx = NULL, struct event_context *event = NULL)";
@@ -61,8 +61,39 @@ sub ParseInterface($)
 	pidl "}";
 	pidl "";
 
-	foreach (@{$if->{FUNCTIONS}}) {
-		pidl "/* $_->{NAME} */";
+	foreach my $fn (@{$if->{FUNCTIONS}}) {
+		pidl "/* $fn->{NAME} */";
+		my $args = "";
+		foreach (@{$fn->{ELEMENTS}}) {
+			$args .= DeclLong($_) . ", ";
+		}
+		my $name = $fn->{NAME};
+		$name =~ s/^$if->{NAME}_//g;
+		$name =~ s/^$basename\_//g;
+		$args .= "TALLOC_CTX *mem_ctx = NULL";
+		pidl mapType($fn->{RETURN_TYPE}) . " $name($args)";
+		pidl "{";
+		indent;
+		pidl "struct $fn->{NAME} r;";
+		my $assign = "";
+		if (defined($fn->{RETURN_TYPE})) {
+			pidl mapType($fn->{RETURN_TYPE}) . " ret;";
+			$assign = "ret = ";
+		}
+		pidl "";
+		pidl "/* Fill r structure */";
+		pidl "/* FIXME */";
+		pidl "";
+		pidl $assign."dcerpc_$fn->{NAME}(self->pipe, mem_ctx, &r);";
+		pidl "";
+		pidl "/* Set out arguments */";
+		pidl "/* FIXME */";
+		if (defined($fn->{RETURN_TYPE})) {
+			pidl "return ret;";
+		}
+		deindent;
+		pidl "}";
+		pidl "";
 	}
 
 	deindent();
@@ -70,7 +101,7 @@ sub ParseInterface($)
 	pidl "";
 
 	foreach (@{$if->{TYPES}}) {
-		pidl "/* $_->{NAME} */";	
+		pidl "/* $_->{NAME} */";
 	}
 	
 	pidl "";
@@ -98,12 +129,11 @@ sub Parse($$$$)
 	pidl "";
 
 	foreach (@$ndr) {
-		ParseInterface($_) if ($_->{TYPE} eq "INTERFACE");
+		ParseInterface($basename, $_) if ($_->{TYPE} eq "INTERFACE");
 	}
 	#FIXME: Foreach ref pointer, set NONNULL
 	#FIXME: Foreach unique/full pointer, set MAYBENULL
 	#FIXME: Foreach [out] parameter, set OUTPARAM
-	#
 	return $ret;
 }
 
