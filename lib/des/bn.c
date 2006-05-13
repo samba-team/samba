@@ -344,10 +344,10 @@ BN_rand(BIGNUM *bn, int bits, int top, int bottom)
     }
 
     {
-	size_t i = len * 8;
-	while(i > bits) {
-	    BN_clear_bit(bn, i -1);
-	    i--;
+	size_t j = len * 8;
+	while(j > bits) {
+	    BN_clear_bit(bn, j - 1);
+	    j--;
 	}
     }
 
