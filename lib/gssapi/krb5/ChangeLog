@@ -1,3 +1,29 @@
+2006-05-13  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* verify_mic.c: Less pointer signedness warnings.
+
+	* unwrap.c: Less pointer signedness warnings.
+
+	* arcfour.c: Less pointer signedness warnings.
+
+	* gssapi_locl.h: Use const void * to instead of unsigned char * to
+	avoid pointer signedness warnings.
+
+	* encapsulate.c: Use const void * to instead of unsigned char * to
+	avoid pointer signedness warnings.
+
+	* decapsulate.c: Use const void * to instead of unsigned char * to
+	avoid pointer signedness warnings.
+
+	* decapsulate.c: Less pointer signedness warnings.
+
+	* cfx.c: Less pointer signedness warnings.
+
+	* init_sec_context.c: Less pointer signedness warnings (partly by
+	using the new asn.1 CHOICE decoder)
+
+	* import_sec_context.c: Less pointer signedness warnings.
+
 2006-05-09  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* accept_sec_context.c (gsskrb5_is_cfx): always set is_cfx. From
