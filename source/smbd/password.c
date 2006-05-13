@@ -189,6 +189,11 @@ int register_vuid(auth_serversupplied_info *server_info,
 	vuser->vuid = next_vuid;
 
 	if (!server_info) {
+		/*
+		 * This happens in an unfinished NTLMSSP session setup. We
+		 * need to allocate a vuid between the first and second calls
+		 * to NTLMSSP.
+		 */
 		next_vuid++;
 		num_validated_vuids++;
 		
