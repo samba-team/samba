@@ -321,6 +321,14 @@ and clients which are unable to cope with this will fail. Kerberos 4
 suffers from this.
 .Ed
 .Pp
+.Nm check
+.Op Ar realm
+.Pp
+.Bd -ragged -offset indent
+Check database for strange configurations on important principals. If
+no realm is given, the default realm is used.
+.Ed
+.Pp
 .Ed
 .Pp
 When running in local mode, the following commands can also be used:
