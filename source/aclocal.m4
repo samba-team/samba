@@ -1,16 +1,3 @@
-dnl test whether dirent has a d_off member
-AC_DEFUN(AC_DIRENT_D_OFF,
-[AC_CACHE_CHECK([for d_off in dirent], ac_cv_dirent_d_off,
-[AC_TRY_COMPILE([
-#include <unistd.h>
-#include <sys/types.h>
-#include <dirent.h>], [struct dirent d; d.d_off;],
-ac_cv_dirent_d_off=yes, ac_cv_dirent_d_off=no)])
-if test $ac_cv_dirent_d_off = yes; then
-  AC_DEFINE(HAVE_DIRENT_D_OFF,1,[Whether dirent has a d_off member])
-fi
-])
-
 dnl AC_PROG_CC_FLAG(flag)
 AC_DEFUN(AC_PROG_CC_FLAG,
 [AC_CACHE_CHECK(whether ${CC-cc} accepts -$1, ac_cv_prog_cc_$1,
