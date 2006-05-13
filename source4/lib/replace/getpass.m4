@@ -5,7 +5,7 @@ AC_TRY_COMPILE([
 #define REPLACE_GETPASS 1
 #define NO_CONFIG_H 1
 #define main dont_declare_main
-#include "${srcdir-.}/lib/cmdline/getsmbpass.c"
+#include "${srcdir-.}/lib/replace/getpass.c"
 #undef main
 ],[],samba_cv_REPLACE_GETPASS=yes,samba_cv_REPLACE_GETPASS=no)
 CPPFLAGS="$SAVE_CPPFLAGS"
