@@ -83,7 +83,6 @@ int net_ads_usage(int argc, const char **argv)
 */
 static int net_ads_cldap_netlogon(ADS_STRUCT *ads)
 {
-	int ret;
 	struct cldap_netlogon_reply reply;
 
 	if ( !ads_cldap_netlogon( inet_ntoa(ads->ldap_ip), ads->server.realm, &reply ) ) {
@@ -147,7 +146,7 @@ static int net_ads_cldap_netlogon(ADS_STRUCT *ads)
 	d_printf("LMNT Token: %.2x\n", reply.lmnt_token);
 	d_printf("LM20 Token: %.2x\n", reply.lm20_token);
 
-	return ret;
+	return 0;
 }
 
 
