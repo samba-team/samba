@@ -10,6 +10,7 @@ use strict;
 use Parse::Pidl::Typelist qw(hasType getType mapType scalar_is_reference);
 use Parse::Pidl::Util qw(has_property ParseExpr is_constant);
 use Parse::Pidl::NDR qw(GetPrevLevel GetNextLevel ContainsDeferred);
+use Parse::Pidl::Samba4 qw(DeclLong);
 
 use vars qw($VERSION);
 $VERSION = '0.01';
@@ -44,42 +45,6 @@ sub CopyLevel($$$$)
 	} elsif ($l->{TYPE} eq "ARRAY") {
 		pidl "*$argument = $member;";
 	}
-}
-
-sub DeclLong($)
-{
-	my($element) = shift;
-	my $ret = "";
-
-	if (has_property($element, "represent_as")) {
-		$ret.=mapType($element->{PROPERTIES}->{represent_as})." ";
-	} else {
-		if (has_property($element, "charset")) {
-			$ret.="const char";
-		} else {
-			$ret.=mapType($element->{TYPE});
-		}
-
-		$ret.=" ";
-		my $numstar = $element->{ORIGINAL}->{POINTERS};
-		if ($numstar >= 1) {
-			$numstar-- if scalar_is_reference($element->{TYPE});
-		}
-		foreach (@{$element->{ORIGINAL}->{ARRAY_LEN}})
-		{
-			next if is_constant($_) and 
-				not has_property($element, "charset");
-			$numstar++;
-		}
-		$ret.="*" foreach (1..$numstar);
-	}
-	$ret.=$element->{NAME};
-	foreach (@{$element->{ARRAY_LEN}}) {
-		next unless (is_constant($_) and not has_property($element, "charset"));
-		$ret.="[$_]";
-	}
-
-	return $ret;
 }
 
 sub ParseFunction($$)
