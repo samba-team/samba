@@ -9,6 +9,7 @@ package Parse::Pidl::Samba4::SWIG;
 use vars qw($VERSION);
 use Parse::Pidl::Samba4 qw(DeclLong);
 use Parse::Pidl::Typelist qw(mapType);
+use Parse::Pidl::Util qw(has_property);
 $VERSION = '0.01';
 
 use strict;
@@ -25,30 +26,35 @@ sub pidl($)
 sub indent() { $tabs.="\t"; }
 sub deindent() { $tabs = substr($tabs,0,-1); }
 
+sub IgnoreInterface($$)
+{
+	my ($basename,$if) = @_;
+
+	foreach (@{$if->{TYPES}}) {
+		next unless (has_property($_, "public"));
+		pidl "\%types($_->{NAME});";
+	}
+}
+
 sub ParseInterface($$)
 {
 	my ($basename,$if) = @_;
 
-	pidl "\%{";
-	pidl "struct $if->{NAME} {";
-	indent;
-	pidl "struct dcerpc_pipe *pipe;";
-	deindent;
-	pidl "};";
-	pidl "%}";
+	pidl "\%inline {";
+	pidl "struct $if->{NAME} { struct dcerpc_pipe *pipe; };";
+	pidl "}";
 	pidl "";
-
 	pidl "\%extend $if->{NAME} {";
 	indent();
-	pidl "struct $if->{NAME} *$if->{NAME} (const char *binding, struct cli_credentials *cred = NULL, TALLOC_CTX *mem_ctx = NULL, struct event_context *event = NULL)";
+	pidl "$if->{NAME} (const char *binding, struct cli_credentials *cred = NULL, TALLOC_CTX *mem_ctx = NULL, struct event_context *event = NULL)";
 	pidl "{";
 	indent;
 	pidl "struct $if->{NAME} *ret = talloc(mem_ctx, struct $if->{NAME});";
 	pidl "NTSTATUS status;";
 	pidl "";
-	pidl "status = dcerpc_pipe_connect(mem_ctx, &ret->pipe, &dcerpc_table_$if->{NAME}, cred, event);";
+	pidl "status = dcerpc_pipe_connect(mem_ctx, &ret->pipe, binding, &dcerpc_table_$if->{NAME}, cred, event);";
 	pidl "if (NT_STATUS_IS_ERR(status)) {";
-	pidl "\tsamba_nt_status_exception(status);";
+	pidl "\tntstatus_exception(status);";
 	pidl "\treturn NULL;";
 	pidl "}";
 	pidl "";
@@ -75,21 +81,38 @@ sub ParseInterface($$)
 		pidl "{";
 		indent;
 		pidl "struct $fn->{NAME} r;";
-		my $assign = "";
-		if (defined($fn->{RETURN_TYPE})) {
-			pidl mapType($fn->{RETURN_TYPE}) . " ret;";
-			$assign = "ret = ";
-		}
+		pidl "NTSTATUS status;";
 		pidl "";
 		pidl "/* Fill r structure */";
-		pidl "/* FIXME */";
+
+		foreach (@{$fn->{ELEMENTS}}) {
+			if (grep(/in/, @{$_->{DIRECTION}})) {
+				pidl "r.in.$_->{NAME} = $_->{NAME};";
+			} 
+		}
+
 		pidl "";
-		pidl $assign."dcerpc_$fn->{NAME}(self->pipe, mem_ctx, &r);";
+		pidl "status = dcerpc_$fn->{NAME}(self->pipe, mem_ctx, &r);";
+		pidl "if (NT_STATUS_IS_ERR(status)) {";
+		pidl "\tntstatus_exception(status);";
+		if (defined($fn->{RETURN_TYPE})) {
+			pidl "\treturn r.out.result;";
+		} else {
+			pidl "\treturn;";
+		}
+		pidl "}";
 		pidl "";
 		pidl "/* Set out arguments */";
-		pidl "/* FIXME */";
+		foreach (@{$fn->{ELEMENTS}}) {
+			next unless (grep(/out/, @{$_->{DIRECTION}}));
+
+			pidl ("/* FIXME: $_->{NAME} [out] argument is not a pointer */") if ($_->{LEVELS}[0]->{TYPE} ne "POINTER");
+
+			pidl "*$_->{NAME} = *r.out.$_->{NAME};";
+		}
+
 		if (defined($fn->{RETURN_TYPE})) {
-			pidl "return ret;";
+			pidl "return r.out.result;";
 		}
 		deindent;
 		pidl "}";
@@ -97,7 +120,7 @@ sub ParseInterface($$)
 	}
 
 	deindent();
-	pidl "}";
+	pidl "};";
 	pidl "";
 
 	foreach (@{$if->{TYPES}}) {
@@ -121,10 +144,23 @@ sub Parse($$$$)
 
 	pidl "\%{";
 	pidl "#include \"includes.h\"";
+	pidl "#include \"auth/credentials/credentials.h\"";
 	pidl "#include \"$header\"";
+	pidl "#include \"$gen_header\"";
 	pidl "%}";
-	pidl "\%include \"samba.i\"";
-	pidl "\%include \"$gen_header\"";
+	pidl "\%import \"samba.i\"";
+	pidl "";
+	pidl "\%inline {";
+	pidl "void ntstatus_exception(NTSTATUS status)"; 
+	pidl "{";
+	pidl "\t/* FIXME */";
+	pidl "}";
+	pidl "}";
+	pidl "";
+	foreach (@$ndr) {
+		IgnoreInterface($basename, $_) if ($_->{TYPE} eq "INTERFACE");
+	}
+	pidl "";
 
 	pidl "";
 
