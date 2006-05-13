@@ -102,15 +102,3 @@ static BOOL set_inherited_process_capability( uint32_t cap_flag, BOOL enable )
 	return True;
 }
 #endif
-
-/**
- Gain the oplock capability from the kernel if possible.
-**/
-
-_PUBLIC_ void oplock_set_capability(BOOL this_process, BOOL inherit)
-{
-#if HAVE_KERNEL_OPLOCKS_IRIX
-	set_process_capability(KERNEL_OPLOCK_CAPABILITY,this_process);
-	set_inherited_process_capability(KERNEL_OPLOCK_CAPABILITY,inherit);
-#endif
-}
