@@ -94,7 +94,7 @@ _gssapi_verify_mech_header(u_char **str,
 OM_uint32
 gssapi_krb5_verify_header(u_char **str,
 			  size_t total_len,
-			  u_char *type,
+			  const void *type,
 			  gss_OID oid)
 {
     OM_uint32 ret;
@@ -157,7 +157,7 @@ OM_uint32
 gssapi_krb5_decapsulate(OM_uint32 *minor_status,    
 			gss_buffer_t input_token_buffer,
 			krb5_data *out_data,
-			char *type,
+			const void *type,
 			gss_OID oid)
 {
     u_char *p;
@@ -166,7 +166,7 @@ gssapi_krb5_decapsulate(OM_uint32 *minor_status,
     p = input_token_buffer->value;
     ret = gssapi_krb5_verify_header(&p,
 				    input_token_buffer->length,
-				    (u_char *)type,
+				    type,
 				    oid);
     if (ret) {
 	*minor_status = 0;
