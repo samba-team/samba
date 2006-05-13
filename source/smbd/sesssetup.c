@@ -1127,20 +1127,30 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 	/* register the name and uid as being validated, so further connections
 	   to a uid can get through without a password, on the same VC */
 
-	/* register_vuid keeps the server info */
-	sess_vuid = register_vuid(server_info, session_key, nt_resp.data ? nt_resp : lm_resp, sub_user);
-	data_blob_free(&nt_resp);
-	data_blob_free(&lm_resp);
+	if (lp_security() == SEC_SHARE) {
+		sess_vuid = UID_FIELD_INVALID;
+		data_blob_free(&session_key);
+		TALLOC_FREE(server_info);
+	} else {
+		/* register_vuid keeps the server info */
+		sess_vuid = register_vuid(server_info, session_key,
+					  nt_resp.data ? nt_resp : lm_resp,
+					  sub_user);
+		if (sess_vuid == UID_FIELD_INVALID) {
+			data_blob_free(&nt_resp);
+			data_blob_free(&lm_resp);
+			return ERROR_NT(nt_status_squash(NT_STATUS_LOGON_FAILURE));
+		}
 
-	if (sess_vuid == UID_FIELD_INVALID) {
-		return ERROR_NT(nt_status_squash(NT_STATUS_LOGON_FAILURE));
+		/* current_user_info is changed on new vuid */
+		reload_services( True );
+
+		sessionsetup_start_signing_engine(server_info, inbuf);
 	}
 
-	/* current_user_info is changed on new vuid */
-	reload_services( True );
-
-	sessionsetup_start_signing_engine(server_info, inbuf);
-
+	data_blob_free(&nt_resp);
+	data_blob_free(&lm_resp);
+	
 	SSVAL(outbuf,smb_uid,sess_vuid);
 	SSVAL(inbuf,smb_uid,sess_vuid);
 	
