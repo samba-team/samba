@@ -1042,10 +1042,12 @@ static NTSTATUS populate_ldap_for_ldif(fstring sid, const char *suffix, const ch
 	fflush(add_fd);
 
 	user_suffix = lp_ldap_user_suffix();
+	if (user_suffix == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
 	/* If it exists and is distinct from other containers, 
 	   Write the Users entity */
-	if (user_suffix && *user_suffix &&
-	    strcmp(user_suffix, suffix)) {
+	if (*user_suffix && strcmp(user_suffix, suffix)) {
 		user_attr = sstring_sub(lp_ldap_user_suffix(), '=', ',');
 		fprintf(add_fd, "# %s\n", user_suffix);
 		fprintf(add_fd, "dn: %s\n", user_suffix);
@@ -1057,10 +1059,12 @@ static NTSTATUS populate_ldap_for_ldif(fstring sid, const char *suffix, const ch
 
 
 	group_suffix = lp_ldap_group_suffix();
+	if (group_suffix == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
 	/* If it exists and is distinct from other containers, 
 	   Write the Groups entity */
-	if (group_suffix && *group_suffix &&
-	    strcmp(group_suffix, suffix)) {
+	if (*group_suffix && strcmp(group_suffix, suffix)) {
 		group_attr = sstring_sub(lp_ldap_group_suffix(), '=', ',');
 		fprintf(add_fd, "# %s\n", group_suffix);
 		fprintf(add_fd, "dn: %s\n", group_suffix);
@@ -1073,8 +1077,10 @@ static NTSTATUS populate_ldap_for_ldif(fstring sid, const char *suffix, const ch
 	/* If it exists and is distinct from other containers, 
 	   Write the Computers entity */
 	machine_suffix = lp_ldap_machine_suffix();
-	if (machine_suffix && *machine_suffix && 
-	    strcmp(machine_suffix, user_suffix) &&
+	if (machine_suffix == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	if (*machine_suffix && strcmp(machine_suffix, user_suffix) &&
 	    strcmp(machine_suffix, suffix)) {
 		char *machine_ou = NULL;
 		fprintf(add_fd, "# %s\n", machine_suffix);
@@ -1092,7 +1098,10 @@ static NTSTATUS populate_ldap_for_ldif(fstring sid, const char *suffix, const ch
 	/* If it exists and is distinct from other containers, 
 	   Write the IdMap entity */
 	idmap_suffix = lp_ldap_idmap_suffix();
-	if (idmap_suffix && *idmap_suffix &&
+	if (idmap_suffix == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	if (*idmap_suffix &&
 	    strcmp(idmap_suffix, user_suffix) &&
 	    strcmp(idmap_suffix, suffix)) {
 		char *s;
