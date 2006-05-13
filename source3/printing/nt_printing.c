@@ -3020,7 +3020,18 @@ static WERROR nt_printer_publish_ads(ADS_STRUCT *ads,
 
 	/* build the ads mods */
 	ctx = talloc_init("nt_printer_publish_ads");
+	if (ctx == NULL) {
+		SAFE_FREE(prt_dn);
+		return WERR_NOMEM;
+	}
+
 	mods = ads_init_mods(ctx);
+
+	if (mods == NULL) {
+		SAFE_FREE(prt_dn);
+		talloc_destroy(ctx);
+		return WERR_NOMEM;
+	}
 
 	get_local_printer_publishing_data(ctx, &mods, printer->info_2->data);
 	ads_mod_str(ctx, &mods, SPOOL_REG_PRINTERNAME, 
