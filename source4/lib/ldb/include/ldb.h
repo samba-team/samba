@@ -625,11 +625,11 @@ struct ldb_search {
 };
 
 struct ldb_add {
-	const struct ldb_message *message;
+	struct ldb_message *message;
 };
 
 struct  ldb_modify {
-	const struct ldb_message *message;
+	struct ldb_message *message;
 };
 
 struct ldb_delete {
@@ -1177,6 +1177,10 @@ struct ldb_message *ldb_msg_canonicalize(struct ldb_context *ldb,
 struct ldb_message *ldb_msg_diff(struct ldb_context *ldb, 
 				 struct ldb_message *msg1,
 				 struct ldb_message *msg2);
+
+int ldb_msg_check_string_attribute(const struct ldb_message *msg,
+				   const char *name,
+				   const char *value);
 
 /**
    Integrity check an ldb_message
