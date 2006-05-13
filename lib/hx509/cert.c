@@ -295,9 +295,9 @@ hx509_verify_attach_anchors(hx509_verify_ctx ctx, hx509_certs set)
 }
 
 void
-hx509_verify_attach_revoke(hx509_verify_ctx ctx, hx509_revoke_ctx revoke)
+hx509_verify_attach_revoke(hx509_verify_ctx ctx, hx509_revoke_ctx revoke_ctx)
 {
-    ctx->revoke_ctx = revoke;
+    ctx->revoke_ctx = revoke_ctx;
 }
 
 void
@@ -751,7 +751,6 @@ find_parent(hx509_context context,
     {
 	hx509_name name;
 	char *str;
-	int ret;
 
 	ret = hx509_cert_get_subject(current, &name);
 	if (ret) {
