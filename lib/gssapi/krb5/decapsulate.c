@@ -166,7 +166,7 @@ gssapi_krb5_decapsulate(OM_uint32 *minor_status,
     p = input_token_buffer->value;
     ret = gssapi_krb5_verify_header(&p,
 				    input_token_buffer->length,
-				    type,
+				    (u_char *)type,
 				    oid);
     if (ret) {
 	*minor_status = 0;
