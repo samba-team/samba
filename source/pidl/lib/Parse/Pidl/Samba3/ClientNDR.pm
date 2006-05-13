@@ -26,27 +26,6 @@ sub fatal($$) { my ($e,$s) = @_; die("$e->{ORIGINAL}->{FILE}:$e->{ORIGINAL}->{LI
 sub warning($$) { my ($e,$s) = @_; warn("$e->{ORIGINAL}->{FILE}:$e->{ORIGINAL}->{LINE}: $s\n"); }
 sub fn_declare($) { my ($n) = @_; pidl $n; pidl_hdr "$n;"; }
 
-sub CopyLevel($$$$)
-{
-	sub CopyLevel($$$$);
-	my ($e,$l,$argument,$member) = @_;
-
-	if ($l->{TYPE} eq "DATA") {
-		pidl "*$argument = *$member;";
-	} elsif ($l->{TYPE} eq "POINTER") {
-		pidl "if (r.ptr$l->{POINTER_INDEX}_$e->{NAME}) {";
-		indent;
-		pidl "*$argument = talloc_size(mem_ctx, sizeof(void *));";
-		CopyLevel($e,GetNextLevel($e,$l),"*$argument", $member);
-		deindent;
-		pidl "}";
-	} elsif ($l->{TYPE} eq "SWITCH") {
-		CopyLevel($e,GetNextLevel($e,$l),$argument,$member);	
-	} elsif ($l->{TYPE} eq "ARRAY") {
-		pidl "*$argument = $member;";
-	}
-}
-
 sub ParseFunction($$)
 {
 	my ($if,$fn) = @_;
@@ -84,7 +63,7 @@ sub ParseFunction($$)
 
 		fatal($e, "[out] argument is not a pointer") if ($e->{LEVELS}[0]->{TYPE} ne "POINTER");
 
-		CopyLevel($e, $e->{LEVELS}[1], $e->{NAME}, "r.out.$e->{NAME}");
+		pidl "*$e->{NAME} = *r.out.$e->{NAME};";
 	}
 
 	pidl"";
