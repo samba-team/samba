@@ -16,6 +16,7 @@ noinst_PROGRAMS = add_random_users
 
 kadmin_SOURCES =				\
 	ank.c					\
+	check.c					\
 	cpw.c					\
 	del.c					\
 	del_enctype.c				\
