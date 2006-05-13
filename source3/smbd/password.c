@@ -155,10 +155,9 @@ int register_vuid(auth_serversupplied_info *server_info,
 {
 	user_struct *vuser = NULL;
 
-	/* Ensure no vuid gets registered in share level security. */
+	/* Paranoia check. */
 	if(lp_security() == SEC_SHARE) {
-		data_blob_free(&session_key);
-		return UID_FIELD_INVALID;
+		smb_panic("Tried to register uid in security=share\n");
 	}
 
 	/* Limit allowed vuids to 16bits - VUID_OFFSET. */
