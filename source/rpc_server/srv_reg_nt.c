@@ -1199,7 +1199,7 @@ WERROR _reg_set_value(pipes_struct *p, REG_Q_SET_VALUE  *q_u, REG_R_SET_VALUE *r
 WERROR _reg_delete_key(pipes_struct *p, REG_Q_DELETE_KEY  *q_u, REG_R_DELETE_KEY *r_u)
 {
 	REGISTRY_KEY *parent = find_regkey_index_by_hnd(p, &q_u->handle);
-	REGISTRY_KEY *newparentinfo;
+	REGISTRY_KEY *newparentinfo = NULL;
 	POLICY_HND newparent_handle;
 	REGSUBKEY_CTR *subkeys;
 	BOOL write_result;
