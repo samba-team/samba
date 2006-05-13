@@ -30,7 +30,7 @@ AC_CHECK_HEADERS(sys/capability.h)
 # passwd
 AC_CHECK_HEADERS(grp.h sys/id.h compat.h shadow.h sys/priv.h pwd.h sys/security.h)
 
-# iconv
+# locale
 AC_CHECK_HEADERS(ctype.h locale.h)
 
 # glob

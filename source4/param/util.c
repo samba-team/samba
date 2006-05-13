@@ -25,7 +25,6 @@
 #include "includes.h"
 #include "dynconfig.h"
 #include "system/network.h"
-#include "system/iconv.h"
 #include "system/filesys.h"
 
 /**

@@ -54,8 +54,8 @@
 */
 
 #include "includes.h"
+#include "system/locale.h"
 #include "lib/samba3/samba3.h"
-#include "system/iconv.h"
 
 /*! Convert 32 hex characters into a 16 byte array. */
 

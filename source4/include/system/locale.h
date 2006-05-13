@@ -1,7 +1,7 @@
 /* 
    Unix SMB/CIFS implementation.
 
-   iconv memory system include wrappers
+   locale include wrappers
 
    Copyright (C) Andrew Tridgell 2004
    
@@ -20,16 +20,10 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#ifdef HAVE_ICONV_H
-#include <iconv.h>
-#endif
-#ifdef HAVE_GICONV_H
-#include <giconv.h>
+#ifdef HAVE_CTYPE_H
+#include <ctype.h>
 #endif
 
-/* needed for some systems without iconv. Doesn't really matter
-   what error code we use */
-#ifndef EILSEQ
-#define EILSEQ EIO
+#ifdef HAVE_LOCALE_H
+#include <locale.h>
 #endif
-

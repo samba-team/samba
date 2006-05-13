@@ -23,7 +23,6 @@
 #include "system/time.h"
 #include "system/network.h"
 #include "system/filesys.h"
-#include "system/iconv.h"
 
  void replace_dummy(void);
  void replace_dummy(void) {}

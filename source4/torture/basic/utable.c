@@ -20,8 +20,8 @@
 
 #include "includes.h"
 #include "torture/torture.h"
-#include "system/iconv.h"
 #include "system/filesys.h"
+#include "system/locale.h"
 #include "libcli/libcli.h"
 #include "torture/util.h"
 #include "pstring.h"
