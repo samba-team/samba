@@ -30,7 +30,7 @@ INIT_FUNCTION = process_model_thread_init
 SUBSYSTEM = process_model
 OBJ_FILES = \
 		process_thread.o
-PUBLIC_DEPENDENCIES = PTHREAD
+PUBLIC_DEPENDENCIES = PTHREAD KERBEROS_LIB
 # End MODULE process_model_thread
 ################################################
 
