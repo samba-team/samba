@@ -288,7 +288,7 @@ parse_pem_file(hx509_context context,
     void *data = NULL;
     size_t len = 0;
     char buf[1024];
-    int i, ret;
+    int ret;
     FILE *f;
 
 
@@ -307,6 +307,7 @@ parse_pem_file(hx509_context context,
 
     while (fgets(buf, sizeof(buf), f) != NULL) {
 	char *p;
+	int i;
 
 	i = strcspn(buf, "\n");
 	if (buf[i] == '\n') {
@@ -352,6 +353,7 @@ parse_pem_file(hx509_context context,
 	    break;
 	case INDATA:
 	indata:
+
 	    if (strncmp("-----END ", buf, 9) == 0) {
 		where = DONE;
 		break;
@@ -370,13 +372,13 @@ parse_pem_file(hx509_context context,
 	}
 
 	if (where == DONE) {
-	    int i;
+	    int j;
 
 	    ret = EINVAL;
-	    for (i = 0; i < sizeof(formats)/sizeof(formats[0]); i++) {
-		const char *p = formats[i].name;
-		if (strncmp(type, p, strlen(p)) == 0)
-		    ret = (*formats[i].func)(context, c, headers, data, len);
+	    for (j = 0; j < sizeof(formats)/sizeof(formats[0]); j++) {
+		const char *q = formats[j].name;
+		if (strncmp(type, q, strlen(q)) == 0)
+		    ret = (*formats[j].func)(context, c, headers, data, len);
 	    }
 	    free(data);
 	    data = NULL;
@@ -455,16 +457,16 @@ file_init(hx509_context context,
 
 	if (!found_data) {
 	    size_t length;
-	    void *data;
+	    void *ptr;
 
-	    ret = _hx509_map_file(p, &data, &length, NULL);
+	    ret = _hx509_map_file(p, &ptr, &length, NULL);
 	    if (ret) {
 		hx509_clear_error_string(context);
 		goto out;
 	    }
 
-	    ret = parse_certificate(context, c, NULL, data, length);
-	    _hx509_unmap_file(data, length);
+	    ret = parse_certificate(context, c, NULL, ptr, length);
+	    _hx509_unmap_file(ptr, length);
 	    if (ret)
 		goto out;
 	}
