@@ -1,3 +1,10 @@
+2006-05-13  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* xnlock.c (main): argc_in_out argument to XtVaAppInitialize
+	should be an 'int *' accoring to manpage and headerfile, so remove
+	the cast added in 1996
+	(rev 1.54)
+	
 2005-10-22  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* xnlock.c: Check return value from asprintf instead of string !=
