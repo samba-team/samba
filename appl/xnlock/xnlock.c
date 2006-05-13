@@ -1030,7 +1030,7 @@ main (int argc, char **argv)
 #endif
 
     override = XtVaAppInitialize(&app, "XNlock", options, XtNumber(options),
-				 (Cardinal*)&argc, argv, NULL, 
+				 &argc, argv, NULL, 
 				 XtNoverrideRedirect, True, 
 				 NULL);
     
