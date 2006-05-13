@@ -52,7 +52,7 @@ verify_mic_des
   DES_key_schedule schedule;
   DES_cblock zero;
   DES_cblock deskey;
-  int32_t seq_number;
+  uint32_t seq_number;
   OM_uint32 ret;
   int cmp;
 
@@ -140,7 +140,7 @@ verify_mic_des3
 {
   u_char *p;
   u_char *seq;
-  int32_t seq_number;
+  uint32_t seq_number;
   OM_uint32 ret;
   krb5_crypto crypto;
   krb5_data seq_data;

@@ -244,7 +244,7 @@ _gssapi_verify_mic_arcfour(OM_uint32 * minor_status,
 			   char *type)
 {
     krb5_error_code ret;
-    int32_t seq_number;
+    uint32_t seq_number;
     OM_uint32 omret;
     u_char SND_SEQ[8], cksum_data[8], *p;
     char k6_data[16];
@@ -478,7 +478,7 @@ OM_uint32 _gssapi_unwrap_arcfour(OM_uint32 *minor_status,
     u_char Klocaldata[16];
     krb5_keyblock Klocal;
     krb5_error_code ret;
-    int32_t seq_number;
+    uint32_t seq_number;
     size_t datalen;
     OM_uint32 omret;
     u_char k6_data[16], SND_SEQ[8], Confounder[8];

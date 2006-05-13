@@ -54,7 +54,7 @@ unwrap_des
   DES_cblock deskey;
   DES_cblock zero;
   int i;
-  int32_t seq_number;
+  uint32_t seq_number;
   size_t padlength;
   OM_uint32 ret;
   int cstate;
@@ -187,7 +187,7 @@ unwrap_des3
   u_char *seq;
   krb5_data seq_data;
   u_char cksum[20];
-  int32_t seq_number;
+  uint32_t seq_number;
   size_t padlength;
   OM_uint32 ret;
   int cstate;
