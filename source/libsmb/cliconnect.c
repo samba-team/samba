@@ -221,6 +221,7 @@ static BOOL cli_session_setup_plaintext(struct cli_state *cli, const char *user,
 	
 	fstr_sprintf( lanman, "Samba %s", SAMBA_VERSION_STRING);
 
+	memset(cli->outbuf, '\0', smb_size);
 	set_message(cli->outbuf,13,0,True);
 	SCVAL(cli->outbuf,smb_com,SMBsesssetupX);
 	cli_setup_packet(cli);
@@ -937,7 +938,8 @@ BOOL cli_send_tconX(struct cli_state *cli,
 		pass = "";
 	}
 
-	if ((cli->sec_mode & NEGOTIATE_SECURITY_CHALLENGE_RESPONSE) && *pass && passlen != 24) {
+	if ((cli->sec_mode & NEGOTIATE_SECURITY_CHALLENGE_RESPONSE) &&
+	    pass && *pass && passlen != 24) {
 		if (!lp_client_lanman_auth()) {
 			DEBUG(1, ("Server requested LANMAN password (share-level security) but 'client use lanman auth'"
 				  " is disabled\n"));
