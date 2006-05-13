@@ -177,13 +177,13 @@ hx509_name_to_string(const hx509_name name, char **str)
 		break;
 	    case choice_DirectoryString_bmpString: {
 		uint16_t *bmp = ds->u.bmpString.data;
-		size_t len = ds->u.bmpString.length;
-		int k;
+		size_t bmplen = ds->u.bmpString.length;
+		size_t k;
 
-		ss = malloc(len + 1);
+		ss = malloc(bmplen + 1);
 		if (ss == NULL)
 		    _hx509_abort("allocation failure"); /* XXX */
-		for (k = 0; k < len; k++)
+		for (k = 0; k < bmplen; k++)
 		    ss[k] = bmp[k] & 0xff; /* XXX */
 		ss[k] = '\0';
 		break;
@@ -319,7 +319,6 @@ int
 hx509_parse_name(const char *str, hx509_name *name)
 {
     const char *p, *q;
-    char *r;
     size_t len;
     hx509_name n;
     void *ptr;
@@ -399,16 +398,17 @@ hx509_parse_name(const char *str, hx509_name *name)
 	}
 
 	{
-	    size_t strlen = len - (q - p) - 1;
-	    const char *str = p + (q - p) + 1;
+	    size_t pstr_len = len - (q - p) - 1;
+	    const char *pstr = p + (q - p) + 1;
+	    char *r;
 	    
-	    r = malloc(strlen + 1);
+	    r = malloc(pstr_len + 1);
 	    if (r == NULL) {
 		/* _hx509_abort("malloc"); */
 		goto out;
 	    }
-	    memcpy(r, str, strlen);
-	    r[strlen] = '\0';
+	    memcpy(r, pstr, pstr_len);
+	    r[pstr_len] = '\0';
 	    
 	    rdn->val[0].value.element = choice_DirectoryString_printableString;
 	    rdn->val[0].value.u.printableString = r;
