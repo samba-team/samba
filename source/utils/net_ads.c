@@ -917,7 +917,7 @@ static NTSTATUS join_create_machine( TALLOC_CTX *mem_ctx, struct cli_state *cli,
 	uint32 user_rid;
 	uint32 num_rids, *name_types, *user_rids;
 	uint32 flags = 0x3e8;
-	uint32 acb_info = ACB_WSTRUST;
+	uint32 acb_info = ACB_WSTRUST | ACB_PWNOEXP;
 	uchar pwbuf[516];
 	SAM_USERINFO_CTR ctr;
 	SAM_USER_INFO_24 p24;
@@ -948,6 +948,10 @@ static NTSTATUS join_create_machine( TALLOC_CTX *mem_ctx, struct cli_state *cli,
 	acct_name = talloc_asprintf(mem_ctx, "%s$", global_myname()); 
 	strlower_m(acct_name);
 	const_acct_name = acct_name;
+
+#ifndef ENCTYPE_ARCFOUR_HMAC
+	acb_info |= ACB_USE_DES_KEY_ONLY;
+#endif
 
 	status = rpccli_samr_create_dom_user(pipe_hnd, mem_ctx, &domain_pol,
 			acct_name, acb_info, 0xe005000b, &user_pol, &user_rid);
@@ -1073,17 +1077,15 @@ done:
 static ADS_STATUS net_set_machine_spn(TALLOC_CTX *ctx, ADS_STRUCT *ads_s )
 {
 	ADS_STATUS status = ADS_ERROR(LDAP_SERVER_DOWN);
-	char *host_upn, *new_dn, *controlstr;
+	char *host_upn, *new_dn;
 	ADS_MODLIST mods;
 	const char *servicePrincipalName[3] = {NULL, NULL, NULL};
 	char *psp;
-	unsigned acct_control;
 	fstring my_fqdn;
 	LDAPMessage *res = NULL;
 	char *dn_string = NULL;
 	const char *machine_name = global_myname();
 	int count;
-	uint32 account_type;
 	
 	if ( !machine_name ) {
 		return ADS_ERROR(LDAP_NO_MEMORY);
@@ -1129,16 +1131,6 @@ static ADS_STATUS net_set_machine_spn(TALLOC_CTX *ctx, ADS_STRUCT *ads_s )
 	if (!(host_upn = talloc_asprintf(ctx, "%s@%s", servicePrincipalName[0], ads_s->config.realm)))
 		goto done;
 
-	/* set the account control string now */
-	
-	acct_control = account_type | UF_DONT_EXPIRE_PASSWD;
-#ifndef ENCTYPE_ARCFOUR_HMAC
-	acct_control |= UF_USE_DES_KEY_ONLY;
-#endif
-	if (!(controlstr = talloc_asprintf(ctx, "%u", acct_control))) {
-		goto done;
-	}
-
 	/* now do the mods */
 	
 	if (!(mods = ads_init_mods(ctx))) {
@@ -1153,7 +1145,6 @@ static ADS_STATUS net_set_machine_spn(TALLOC_CTX *ctx, ADS_STRUCT *ads_s )
 	ads_mod_str(ctx, &mods, "userPrincipalName", host_upn);
 	ads_mod_str(ctx, &mods, "operatingSystem", "Samba");
 	ads_mod_str(ctx, &mods, "operatingSystemVersion", SAMBA_VERSION_STRING);
-	ads_mod_str(ctx, &mods, "userAccountControl", controlstr);
 #endif
 
 	status = ads_gen_mod(ads_s, new_dn, mods);
