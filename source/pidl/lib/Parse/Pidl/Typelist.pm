@@ -22,105 +22,55 @@ my @reference_scalars = (
 );
 
 # a list of known scalar types
-my $scalars = {
+my %scalars = (
 	# 0 byte types
-	"void"		=> {
-				C_TYPE		=> "void",
-			},
+	"void"		=> "void",
 
 	# 1 byte types
-	"char"		=> {
-				C_TYPE		=> "char",
-			},
-	"int8"		=> {
-				C_TYPE		=> "int8_t",
-			},
-	"uint8"		=> {
-				C_TYPE		=> "uint8_t",
-			},
+	"char"		=> "char",
+	"int8"		=> "int8_t",
+	"uint8"		=> "uint8_t",
 
 	# 2 byte types
-	"int16"		=> {
-				C_TYPE		=> "int16_t",
-			},
-	"uint16"	=> {	C_TYPE		=> "uint16_t",
-			},
+	"int16"		=> "int16_t",
+	"uint16"	=> "uint16_t",
 
 	# 4 byte types
-	"int32"		=> {
-				C_TYPE		=> "int32_t",
-			},
-	"uint32"	=> {	C_TYPE		=> "uint32_t",
-			},
+	"int32"		=> "int32_t",
+	"uint32"	=> "uint32_t",
 
 	# 8 byte types
-	"hyper"		=> {
-				C_TYPE		=> "uint64_t",
-			},
-	"dlong"		=> {
-				C_TYPE		=> "int64_t",
-			},
-	"udlong"	=> {
-				C_TYPE		=> "uint64_t",
-			},
-	"udlongr"	=> {
-				C_TYPE		=> "uint64_t",
-			},
+	"hyper"		=> "uint64_t",
+	"dlong"		=> "int64_t",
+	"udlong"	=> "uint64_t",
+	"udlongr"	=> "uint64_t",
+
 	# assume its a 8 byte type, but cope with either
-	"pointer"	=> {
-				C_TYPE		=> "void*",
-			},
+	"pointer"	=> "void*",
 
 	# DATA_BLOB types
-	"DATA_BLOB"	=> {
-				C_TYPE		=> "DATA_BLOB",
-			},
+	"DATA_BLOB"	=> "DATA_BLOB",
 
 	# string types
-	"string"	=> {
-				C_TYPE		=> "const char *",
-			},
-	"string_array"	=> {
-				C_TYPE		=> "const char **",
-			},
+	"string"	=> "const char *",
+	"string_array"	=> "const char **",
 
 	# time types
-	"time_t"	=> {
-				C_TYPE		=> "time_t",
-			},
-	"NTTIME"	=> {
-				C_TYPE		=> "NTTIME",
-			},
-	"NTTIME_1sec"	=> {
-				C_TYPE		=> "NTTIME",
-			},
-	"NTTIME_hyper"	=> {
-				C_TYPE		=> "NTTIME",
-			},
-
+	"time_t"	=> "time_t",
+	"NTTIME"	=> "NTTIME",
+	"NTTIME_1sec"	=> "NTTIME",
+	"NTTIME_hyper"	=> "NTTIME",
 
 	# error code types
-	"WERROR"	=> {
-				C_TYPE		=> "WERROR",
-			},
-	"NTSTATUS"	=> {
-				C_TYPE		=> "NTSTATUS",
-			},
-	"COMRESULT" => { 
-				C_TYPE		=> "COMRESULT",
-			},
+	"WERROR"	=> "WERROR",
+	"NTSTATUS"	=> "NTSTATUS",
+	"COMRESULT" => "COMRESULT",
 
 	# special types
-	"nbt_string"	=> {
-				C_TYPE		=> "const char *",
-			},
-	"wrepl_nbt_name"=> {
-				C_TYPE		=> "struct nbt_name *",
-			},
-	"ipv4address"	=> {
-				C_TYPE		=> "const char *",
-			}
-};
+	"nbt_string"	=> "const char *",
+	"wrepl_nbt_name"=> "struct nbt_name *",
+	"ipv4address"	=> "const char *",
+);
 
 # map from a IDL type to a C header type
 sub mapScalarType($)
@@ -129,7 +79,7 @@ sub mapScalarType($)
 
 	# it's a bug when a type is not in the list
 	# of known scalars or has no mapping
-	return $typedefs{$name}->{DATA}->{C_TYPE} if defined($typedefs{$name}) and defined($typedefs{$name}->{DATA}->{C_TYPE});
+	return $scalars{$name} if defined($scalars{$name});
 
 	die("Unknown scalar type $name");
 }
@@ -149,8 +99,7 @@ sub getType($)
 
 sub typeIs($$)
 {
-	my $t = shift;
-	my $tt = shift;
+	my ($t,$tt) = @_;
 
 	return 1 if (hasType($t) and getType($t)->{DATA}->{TYPE} eq $tt);
 	return 0;
@@ -186,18 +135,20 @@ sub scalar_is_reference($)
 
 sub RegisterScalars()
 {
-	foreach my $k (keys %{$scalars}) {
-		$typedefs{$k} = {
-			NAME => $k,
+	foreach (keys %scalars) {
+		addType({
+			NAME => $_,
 			TYPE => "TYPEDEF",
-			DATA => $scalars->{$k}
-		};
-		$typedefs{$k}->{DATA}->{TYPE} = "SCALAR";
-		$typedefs{$k}->{DATA}->{NAME} = $k;
+			DATA => {
+				TYPE => "SCALAR",
+				NAME => $_
+			}
+		}
+		);
 	}
 }
 
-my $aliases = {
+my %aliases = (
 	"DWORD" => "uint32",
 	"int" => "int32",
 	"WORD" => "uint16",
@@ -206,12 +157,12 @@ my $aliases = {
 	"short" => "int16",
 	"HYPER_T" => "hyper",
 	"HRESULT" => "COMRESULT",
-};
+);
 
 sub RegisterAliases()
 {
-	foreach my $k (keys %{$aliases}) {
-		$typedefs{$k} = $typedefs{$aliases->{$k}};
+	foreach (keys %aliases) {
+		$typedefs{$_} = $typedefs{$aliases{$_}};
 	}
 }
 
