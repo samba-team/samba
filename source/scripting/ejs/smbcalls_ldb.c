@@ -26,7 +26,6 @@
 #include "lib/appweb/ejs/ejs.h"
 #include "lib/ldb/include/ldb.h"
 #include "lib/ldb/include/ldb_errors.h"
-#include "lib/cmdline/popt_common.h"
 #include "db_wrap.h"
 
 /*
