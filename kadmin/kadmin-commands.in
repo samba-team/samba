@@ -357,7 +357,6 @@ command = {
 	min_args = "1"
 	help = "Lists principals in a terse format. Equivalent to \"get -t\"." 
 }
-
 command = {
 	name = "verify-password-quality"
 	name = "pwq"
@@ -367,7 +366,14 @@ command = {
 	max_args = "2"
 	help = "Try run the password quality function locally (not doing RPC out to server)."
 }
-
+command = {
+	name = "check"
+	function = "check"
+	argument = "[realm]"
+	min_args = "0"
+	max_args = "1"
+	help = "Check the realm (if not given, the default realm) for configuration errors."
+}
 command = {
 	name = "help"
 	name = "?"
@@ -376,7 +382,6 @@ command = {
 	max_args = "1"
 	help = "Help! I need somebody."
 }
-
 command = {
 	name = "exit"
 	name = "quit"
