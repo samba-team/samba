@@ -107,7 +107,7 @@ do_delegation (krb5_auth_context ac,
 	       krb5_creds *cred,
 	       const gss_name_t target_name,
 	       krb5_data *fwd_data,
-	       int *flags)
+	       uint32_t *flags)
 {
     krb5_creds creds;
     krb5_kdc_flags fwd_flags;
@@ -491,7 +491,8 @@ repl_mutual
             OM_uint32 * time_rec
            )
 {
-    OM_uint32 ret, seq_number;
+    OM_uint32 ret;
+    int32_t seq_number;
     krb5_error_code kret;
     krb5_data indata;
     krb5_ap_rep_enc_part *repl;
@@ -624,13 +625,13 @@ spnego_reply
 {
     OM_uint32 ret;
     krb5_data indata;
-    NegTokenTarg targ;
+    NegotiationToken token;
+    NegTokenTarg *targ;
     u_char oidbuf[17];
     size_t oidlen;
     gss_buffer_desc sub_token;
     ssize_t mech_len;
     const u_char *p;
-    size_t len, taglen;
     krb5_boolean require_mic;
 
     output_token->length = 0;
@@ -674,51 +675,42 @@ spnego_reply
     } else
 	return GSS_S_BAD_MECH;
 
-    ret = der_match_tag_and_length((const char *)indata.data,
-				   indata.length,
-				   ASN1_C_CONTEXT, CONS, 1, &len, &taglen);
+    ret = decode_NegotiationToken(indata.data, indata.length, &token, NULL);
     if (ret) {
-	gssapi_krb5_set_status("Failed to decode NegToken choice");
+	gssapi_krb5_set_status("Failed to decode NegotiationToken");
 	*minor_status = ret;
 	return GSS_S_FAILURE;
     }
 
-    if(len > indata.length - taglen) {
-	gssapi_krb5_set_status("Buffer overrun in NegToken choice");
+    if(token.element != choice_NegotiationToken_negTokenTarg ) {
+	gssapi_krb5_set_status("NegotiationToken not a NegTokenTarg");
 	*minor_status = ASN1_OVERRUN;
 	return GSS_S_FAILURE;
     }
+    targ = &token.u.negTokenTarg;
 
-    ret = decode_NegTokenTarg((const char *)indata.data + taglen, 
-			      len, &targ, NULL);
-    if (ret) {
-	gssapi_krb5_set_status("Failed to decode NegTokenTarg");
-	*minor_status = ret;
-	return GSS_S_FAILURE;
-    }
-
-    if (targ.negResult == NULL
-	|| *(targ.negResult) == reject
-	|| targ.supportedMech == NULL) {
-	free_NegTokenTarg(&targ);
+    if (targ->negResult == NULL
+	|| *(targ->negResult) == reject
+	|| targ->supportedMech == NULL) {
+	free_NegotiationToken(&token);
 	return GSS_S_BAD_MECH;
     }
     
     ret = der_put_oid(oidbuf + sizeof(oidbuf) - 1,
 		      sizeof(oidbuf),
-		      targ.supportedMech,
+		      targ->supportedMech,
 		      &oidlen);
     if (ret || oidlen != GSS_KRB5_MECHANISM->length
 	|| memcmp(oidbuf + sizeof(oidbuf) - oidlen,
 		  GSS_KRB5_MECHANISM->elements,
 		  oidlen) != 0) {
-	free_NegTokenTarg(&targ);
+	free_NegotiationToken(&token);
 	return GSS_S_BAD_MECH;
     }
 
-    if (targ.responseToken != NULL) {
-	sub_token.length = targ.responseToken->length;
-	sub_token.value  = targ.responseToken->data;
+    if (targ->responseToken != NULL) {
+	sub_token.length = targ->responseToken->length;
+	sub_token.value  = targ->responseToken->data;
     } else {
 	sub_token.length = 0;
 	sub_token.value  = NULL;
@@ -738,7 +730,7 @@ spnego_reply
 				   ret_flags,
 				   time_rec);
     if (ret) {
-	free_NegTokenTarg(&targ);
+	free_NegotiationToken(&token);
 	return ret;
     }
 
@@ -749,7 +741,7 @@ spnego_reply
     ret = _gss_spnego_require_mechlist_mic(minor_status, *context_handle,
 					   &require_mic);
     if (ret) {
-	free_NegTokenTarg(&targ);
+	free_NegotiationToken(&token);
 	return ret;
     }
 
@@ -759,8 +751,8 @@ spnego_reply
 	size_t buf_len;
 	gss_buffer_desc mic_buf, mech_buf;
 
-	if (targ.mechListMIC == NULL) {
-	    free_NegTokenTarg(&targ);
+	if (targ->mechListMIC == NULL) {
+	    free_NegotiationToken(&token);
 	    *minor_status = 0;
 	    return GSS_S_BAD_MIC;
 	}
@@ -773,7 +765,7 @@ spnego_reply
 			  &m0,
 			  NULL);
 	if (ret) {
-	    free_NegTokenTarg(&targ);
+	    free_NegotiationToken(&token);
 	    *minor_status = ENOMEM;
 	    return GSS_S_FAILURE;
 	}
@@ -781,7 +773,7 @@ spnego_reply
 	ASN1_MALLOC_ENCODE(MechTypeList, mech_buf.value, mech_buf.length,
 			   &mechlist, &buf_len, ret);
 	if (ret) {
-	    free_NegTokenTarg(&targ);
+	    free_NegotiationToken(&token);
 	    free_oid(&m0);
 	    *minor_status = ENOMEM;
 	    return GSS_S_FAILURE;
@@ -789,15 +781,15 @@ spnego_reply
 	if (mech_buf.length != buf_len)
 	    abort();
 
-	mic_buf.length = targ.mechListMIC->length;
-	mic_buf.value  = targ.mechListMIC->data;
+	mic_buf.length = targ->mechListMIC->length;
+	mic_buf.value  = targ->mechListMIC->data;
 
 	ret = gss_verify_mic(minor_status, *context_handle,
 			     &mech_buf, &mic_buf, NULL);
 	free(mech_buf.value);
 	free_oid(&m0);
     }
-    free_NegTokenTarg(&targ);
+    free_NegotiationToken(&token);
     return ret;
 }
 
