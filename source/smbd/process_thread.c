@@ -368,7 +368,7 @@ static int thread_rwlock_unlock(smb_rwlock_t *rwlock, const char *name)
 }
 
 /*****************************************************************
- Log suspicious usage (primarily for possible thread-unsafe behavior.
+ Log suspicious usage (primarily for possible thread-unsafe behavior).
 *****************************************************************/  
 static void thread_log_suspicious_usage(const char* from, const char* info)
 {
