@@ -4,6 +4,7 @@
    Copyright (C) 2001 Andrew Tridgell (tridge@samba.org)
    Copyright (C) 2001 Remus Koos (remuskoos@yahoo.com)
    Copyright (C) 2002 Jim McDonough (jmcd@us.ibm.com)
+   Copyright (C) 2006 Gerald (Jerry) Carter (jerry@samba.org)
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -1163,6 +1164,61 @@ done:
 	return status;
 }
 
+
+/*******************************************************************
+  join a domain using ADS (LDAP mods)
+ ********************************************************************/
+
+static ADS_STATUS net_precreate_machine_acct( ADS_STRUCT *ads, const char *ou )
+{
+	ADS_STRUCT *ads_s = ads;
+	ADS_STATUS rc = ADS_ERROR(LDAP_SERVER_DOWN);
+	char *dn, *ou_str;
+	LDAPMessage *res = NULL;
+
+	ou_str = ads_ou_string(ads, ou);
+	asprintf(&dn, "%s,%s", ou_str, ads->config.bind_path);
+	free(ou_str);
+
+	if ( !ads->ld ) {
+		ads_s = ads_init( ads->config.realm, NULL, ads->config.ldap_server_name );
+
+		if ( ads_s ) {
+			rc = ads_connect( ads_s );
+		}
+
+		if ( !ADS_ERR_OK(rc) ) {
+			goto done;
+		}
+	}
+
+	rc = ads_search_dn(ads, (void**)&res, dn, NULL);
+	ads_msgfree(ads, res);
+
+	if (!ADS_ERR_OK(rc)) {
+		goto done;
+	}
+
+	/* Attempt to create the machine account and bail if this fails.
+	   Assume that the admin wants exactly what they requested */
+
+	rc = ads_create_machine_acct( ads, global_myname(), dn );
+	if ( rc.error_type == ENUM_ADS_ERROR_LDAP && rc.err.rc == LDAP_ALREADY_EXISTS ) {
+		rc = ADS_SUCCESS;
+		goto done;
+	}
+	if ( !ADS_ERR_OK(rc) ) {
+		goto done;
+	}
+
+done:
+	if ( ads_s != ads )
+		ads_destroy( &ads_s );
+	SAFE_FREE( dn );
+
+	return rc;
+}
+
 /*******************************************************************
   join a domain using ADS (LDAP mods)
  ********************************************************************/
@@ -1183,11 +1239,9 @@ int net_ads_join(int argc, const char **argv)
 		return -1;
 	}
 
-	if (!(ads = ads_init(lp_realm(), NULL, NULL ))) {
+	if ( (ads = ads_startup()) == NULL ) {
 		return -1;
 	}
-	ads->auth.flags = ADS_AUTH_NO_BIND;
-	status = ads_connect(ads);
 
 	if (strcmp(ads->config.realm, lp_realm()) != 0) {
 		d_fprintf(stderr, "realm of remote server (%s) and realm in smb.conf "
@@ -1197,10 +1251,22 @@ int net_ads_join(int argc, const char **argv)
 		return -1;
 	}
 
-
-	if (!(ctx = talloc_init("net_join_domain"))) {
+	if (!(ctx = talloc_init("net_ads_join"))) {
 		DEBUG(0, ("Could not initialise talloc context\n"));
 		return -1;
+	}
+
+	/* If we were given an OU, try to create the machine in the OU account 
+	   first and then do the normal RPC join */
+
+	if ( argc > 0 ) {
+		status = net_precreate_machine_acct( ads, argv[0] );
+		if ( !ADS_ERR_OK(status) ) {
+			d_fprintf( stderr, "Failed to pre-create the machine object "
+				"in OU %s.\n", argv[0]);
+			ads_destroy( &ads );
+			return -1;
+		}
 	}
 
 	/* Do the domain join here */

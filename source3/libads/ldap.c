@@ -980,6 +980,7 @@ ADS_STATUS ads_mod_strlist(TALLOC_CTX *ctx, ADS_MODLIST *mods,
 			       name, (const void **) vals);
 }
 
+#if 0
 /**
  * Add a single ber-encoded value to a mod list
  * @param ctx An initialized TALLOC_CTX
@@ -1000,6 +1001,7 @@ static ADS_STATUS ads_mod_ber(TALLOC_CTX *ctx, ADS_MODLIST *mods,
 	return ads_modlist_add(ctx, mods, LDAP_MOD_REPLACE|LDAP_MOD_BVALUES,
 			       name, (const void **) values);
 }
+#endif
 
 /**
  * Perform an ldap modify
@@ -1421,105 +1423,33 @@ ADS_STATUS ads_add_service_principal_name(ADS_STRUCT *ads, const char *machine_n
  * @return 0 upon success, or non-zero otherwise
 **/
 
-static ADS_STATUS ads_add_machine_acct(ADS_STRUCT *ads, const char *machine_name, 
-				       uint32 account_type,
-				       const char *org_unit)
+ADS_STATUS ads_create_machine_acct(ADS_STRUCT *ads, const char *machine_name, 
+                                   const char *org_unit)
 {
-	ADS_STATUS ret, status;
-	char *host_spn, *host_upn, *new_dn, *samAccountName, *controlstr;
+	ADS_STATUS ret;
+	char *samAccountName, *controlstr;
 	TALLOC_CTX *ctx;
 	ADS_MODLIST mods;
+	char *new_dn;
 	const char *objectClass[] = {"top", "person", "organizationalPerson",
 				     "user", "computer", NULL};
-	const char *servicePrincipalName[7] = {NULL, NULL, NULL, NULL, NULL, NULL, NULL};
-	char *psp, *psp2, *psp3, *psp4;
-	unsigned acct_control;
-	unsigned exists=0;
-	fstring my_fqdn;
 	LDAPMessage *res = NULL;
-	int i, next_spn;
-
+	uint32 acct_control = ( UF_WORKSTATION_TRUST_ACCOUNT |\
+	                        UF_DONT_EXPIRE_PASSWD |\
+			        UF_ACCOUNTDISABLE );
+			      
 	if (!(ctx = talloc_init("ads_add_machine_acct")))
 		return ADS_ERROR(LDAP_NO_MEMORY);
 
 	ret = ADS_ERROR(LDAP_NO_MEMORY);
+		
+	new_dn = talloc_asprintf(ctx, "cn=%s,%s", machine_name, org_unit);
+	samAccountName = talloc_asprintf(ctx, "%s$", machine_name);
 
-	name_to_fqdn(my_fqdn, machine_name);
-
-	status = ads_find_machine_acct(ads, (void **)(void *)&res, machine_name);
-	if (ADS_ERR_OK(status) && ads_count_replies(ads, res) == 1) {
-		char *dn_string = ads_get_dn(ads, res);
-		if (!dn_string) {
-			DEBUG(1, ("ads_add_machine_acct: ads_get_dn returned NULL (malloc failure?)\n"));
-			goto done;
-		}
-		new_dn = talloc_strdup(ctx, dn_string);
-		ads_memfree(ads,dn_string);
-		DEBUG(0, ("ads_add_machine_acct: Host account for %s already exists - modifying old account\n",
-			machine_name));
-		exists=1;
-	} else {
-		char *ou_str = ads_ou_string(ads,org_unit);
-		if (!ou_str) {
-			DEBUG(1, ("ads_add_machine_acct: ads_ou_string returned NULL (malloc failure?)\n"));
-			goto done;
-		}
-		new_dn = talloc_asprintf(ctx, "cn=%s,%s,%s", machine_name, ou_str, 
-				ads->config.bind_path);
-
-		SAFE_FREE(ou_str);
-	}
-
-	if (!new_dn) {
+	if ( !new_dn || !samAccountName ) {
 		goto done;
 	}
-
-	if (!(host_spn = talloc_asprintf(ctx, "HOST/%s", machine_name)))
-		goto done;
-	if (!(host_upn = talloc_asprintf(ctx, "%s@%s", host_spn, ads->config.realm)))
-		goto done;
-	servicePrincipalName[0] = talloc_asprintf(ctx, "HOST/%s", machine_name);
-	psp = talloc_asprintf(ctx, "HOST/%s.%s", 
-				machine_name, 
-				ads->config.realm);
-	strlower_m(&psp[5]);
-	servicePrincipalName[1] = psp;
-	servicePrincipalName[2] = talloc_asprintf(ctx, "CIFS/%s", machine_name);
-	psp2 = talloc_asprintf(ctx, "CIFS/%s.%s", 
-			       machine_name, 
-			       ads->config.realm);
-	strlower_m(&psp2[5]);
-	servicePrincipalName[3] = psp2;
-
-	/* Ensure servicePrincipalName[4] and [5] are unique. */
-	strlower_m(my_fqdn);
-	psp3 = talloc_asprintf(ctx, "CIFS/%s", my_fqdn);
-	strlower_m(&psp3[5]);
-
-	next_spn = 4;
-	for (i = 0; i < next_spn; i++) {
-		if (strequal(servicePrincipalName[i], psp3))
-			break;
-	}
-	if (i == next_spn) {
-		servicePrincipalName[next_spn++] = psp3;
-	}
-
-	psp4 = talloc_asprintf(ctx, "HOST/%s", my_fqdn);
-	strlower_m(&psp4[5]);
-	for (i = 0; i < next_spn; i++) {
-		if (strequal(servicePrincipalName[i], psp4))
-			break;
-	}
-	if (i == next_spn) {
-		servicePrincipalName[next_spn++] = psp4;
-	}
-
-	if (!(samAccountName = talloc_asprintf(ctx, "%s$", machine_name))) {
-		goto done;
-	}
-
-	acct_control = account_type | UF_DONT_EXPIRE_PASSWD;
+	
 #ifndef ENCTYPE_ARCFOUR_HMAC
 	acct_control |= UF_USE_DES_KEY_ONLY;
 #endif
@@ -1531,44 +1461,18 @@ static ADS_STATUS ads_add_machine_acct(ADS_STRUCT *ads, const char *machine_name
 	if (!(mods = ads_init_mods(ctx))) {
 		goto done;
 	}
-
-	if (!exists) {
-		ads_mod_str(ctx, &mods, "cn", machine_name);
-		ads_mod_str(ctx, &mods, "sAMAccountName", samAccountName);
-		ads_mod_strlist(ctx, &mods, "objectClass", objectClass);
-	}
-	ads_mod_str(ctx, &mods, "userAccountControl", controlstr);
-	ads_mod_str(ctx, &mods, "dNSHostName", my_fqdn);
-	ads_mod_str(ctx, &mods, "userPrincipalName", host_upn);
-	ads_mod_strlist(ctx, &mods, "servicePrincipalName", servicePrincipalName);
-	ads_mod_str(ctx, &mods, "operatingSystem", "Samba");
-	ads_mod_str(ctx, &mods, "operatingSystemVersion", SAMBA_VERSION_STRING);
-
-	if (!exists)  {
-		ret = ads_gen_add(ads, new_dn, mods);
-	} else {
-		ret = ads_gen_mod(ads, new_dn, mods);
-	}
-
-	if (!ADS_ERR_OK(ret)) {
-		goto done;
-	}
-
-	/* Do not fail if we can't set security descriptor
-	 * it shouldn't be mandatory and probably we just 
-	 * don't have enough rights to do it.
-	 */
-	if (!exists) {
-		status = ads_set_machine_sd(ads, machine_name, new_dn);
 	
-		if (!ADS_ERR_OK(status)) {
-			DEBUG(0, ("Warning: ads_set_machine_sd: %s\n",
-					ads_errstr(status)));
-		}
-	}
+	ads_mod_str(ctx, &mods, "cn", machine_name);
+	ads_mod_str(ctx, &mods, "sAMAccountName", samAccountName);
+	ads_mod_strlist(ctx, &mods, "objectClass", objectClass);
+	ads_mod_str(ctx, &mods, "userAccountControl", controlstr);
+
+	ret = ads_gen_add(ads, new_dn, mods);
+
 done:
 	ads_msgfree(ads, res);
 	talloc_destroy(ctx);
+	
 	return ret;
 }
 
@@ -1784,58 +1688,6 @@ int ads_count_replies(ADS_STRUCT *ads, void *res)
 }
 
 /**
- * Join a machine to a realm
- *  Creates the machine account and sets the machine password
- * @param ads connection to ads server
- * @param machine name of host to add
- * @param org_unit Organizational unit to place machine in
- * @return status of join
- **/
-ADS_STATUS ads_join_realm(ADS_STRUCT *ads, const char *machine_name, 
-			  uint32 account_type, const char *org_unit)
-{
-	ADS_STATUS status;
-	LDAPMessage *res = NULL;
-	char *machine;
-
-	/* machine name must be lowercase */
-	machine = SMB_STRDUP(machine_name);
-	strlower_m(machine);
-
-	/*
-	status = ads_find_machine_acct(ads, (void **)&res, machine);
-	if (ADS_ERR_OK(status) && ads_count_replies(ads, res) == 1) {
-		DEBUG(0, ("Host account for %s already exists - deleting old account\n", machine));
-		status = ads_leave_realm(ads, machine);
-		if (!ADS_ERR_OK(status)) {
-			DEBUG(0, ("Failed to delete host '%s' from the '%s' realm.\n", 
-				  machine, ads->config.realm));
-			return status;
-		}
-	}
-	*/
-
-	status = ads_add_machine_acct(ads, machine, account_type, org_unit);
-	if (!ADS_ERR_OK(status)) {
-		DEBUG(0, ("ads_join_realm: ads_add_machine_acct failed (%s): %s\n", machine, ads_errstr(status)));
-		SAFE_FREE(machine);
-		return status;
-	}
-
-	status = ads_find_machine_acct(ads, (void **)(void *)&res, machine);
-	if (!ADS_ERR_OK(status)) {
-		DEBUG(0, ("ads_join_realm: Host account test failed for machine %s\n", machine));
-		SAFE_FREE(machine);
-		return status;
-	}
-
-	SAFE_FREE(machine);
-	ads_msgfree(ads, res);
-
-	return status;
-}
-
-/**
  * Delete a machine from the realm
  * @param ads connection to ads server
  * @param hostname Machine to remove
@@ -1895,6 +1747,7 @@ ADS_STATUS ads_leave_realm(ADS_STRUCT *ads, const char *hostname)
 	return status;
 }
 
+#if 0 
 /**
  * add machine account to existing security descriptor 
  * @param ads connection to ads server
@@ -1902,7 +1755,7 @@ ADS_STATUS ads_leave_realm(ADS_STRUCT *ads, const char *hostname)
  * @param dn DN of security descriptor
  * @return status
  **/
-ADS_STATUS ads_set_machine_sd(ADS_STRUCT *ads, const char *hostname, char *dn)
+static ADS_STATUS ads_set_machine_sd(ADS_STRUCT *ads, const char *hostname, char *dn)
 {
 	const char     *attrs[] = {"nTSecurityDescriptor", "objectSid", 0};
 	char           *expr     = 0;
@@ -2016,6 +1869,7 @@ ads_set_sd_error:
 	talloc_destroy(ctx);
 	return ret;
 }
+#endif
 
 /**
  * pull the first entry from a ADS result
