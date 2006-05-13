@@ -1,5 +1,7 @@
 2006-05-13  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* Makefile.am: kadmin_SOURCES += add check.c
+
 	* kadmin_locl.h: Avoid shadowing.
 
 	* kadmin.8: Document the new check command.
