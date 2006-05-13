@@ -724,3 +724,20 @@ void ldb_dump_results(struct ldb_context *ldb, struct ldb_result *result, FILE *
 	}
 }
 
+int ldb_msg_check_string_attribute(const struct ldb_message *msg, const char *name, const char *value)
+{
+	struct ldb_message_element *el;
+	struct ldb_val val;
+	
+	el = ldb_msg_find_element(msg, name);
+	if (el == NULL)
+		return 0;
+
+	val.data = discard_const(value);
+	val.length = strlen(value) + 1;
+
+	if (ldb_msg_find_val(el, &val))
+		return 1;
+
+	return 0;
+}

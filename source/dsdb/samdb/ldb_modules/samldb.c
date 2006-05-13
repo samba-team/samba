@@ -859,20 +859,12 @@ static int samldb_add_async(struct ldb_module *module, struct ldb_request *req)
 		}
 	}
 
+	*down_req = *req;
 	
 	if (msg2 != NULL) {
 		down_req->op.add.message = talloc_steal(down_req, msg2);
-	} else {
-		down_req->op.add.message = msg;
 	}
 	
-	down_req->controls = req->controls;
-	down_req->creds = req->creds;
-
-	down_req->async.context = req->async.context;
-	down_req->async.callback = req->async.callback;
-	down_req->async.timeout = req->async.timeout;
-
 	/* go on with the call chain */
 	ret = ldb_next_request(module, down_req);
 
