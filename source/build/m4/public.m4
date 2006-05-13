@@ -16,7 +16,7 @@ dnl #######################################################
 dnl ### And now the implementation			###
 dnl #######################################################
 
-dnl SMB_SUBSYSTEM(name,obj_files,required_subsystems)
+dnl SMB_SUBSYSTEM(name,obj_files,required_subsystems,cflags)
 AC_DEFUN([SMB_SUBSYSTEM],
 [
 SMB_INFO_SUBSYSTEMS="$SMB_INFO_SUBSYSTEMS
@@ -25,6 +25,7 @@ SMB_INFO_SUBSYSTEMS="$SMB_INFO_SUBSYSTEMS
 @<:@SUBSYSTEM::$1@:>@
 OBJ_FILES = $2
 PRIVATE_DEPENDENCIES = $3
+CFLAGS = $4
 ENABLE = YES
 # End Subsystem $1
 ###################################
