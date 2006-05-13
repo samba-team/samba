@@ -613,7 +613,8 @@ typedef enum {
     KRB5_PROMPT_TYPE_PASSWORD		= 0x1,
     KRB5_PROMPT_TYPE_NEW_PASSWORD	= 0x2,
     KRB5_PROMPT_TYPE_NEW_PASSWORD_AGAIN = 0x3,
-    KRB5_PROMPT_TYPE_PREAUTH		= 0x4
+    KRB5_PROMPT_TYPE_PREAUTH		= 0x4,
+    KRB5_PROMPT_TYPE_INFO		= 0x5
 } krb5_prompt_type;
 
 typedef struct _krb5_prompt {
