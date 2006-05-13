@@ -89,7 +89,7 @@ CFLAGS_REMOVE_USR_INCLUDE(CPPFLAGS)
 AC_SUBST(ac_default_prefix)
 
 echo "configure: creating build/smb_build/config.pm"
-cat >${srcdir}/build/smb_build/config.pm<<CEOF
+cat >build/smb_build/config.pm<<CEOF
 # config.pm - Autogenerate by configure. DO NOT EDIT!
 
 package config;
