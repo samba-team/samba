@@ -426,7 +426,7 @@ _kdc_pk_rd_padata(krb5_context context,
     krb5_data signed_content = { 0, NULL };
     const char *type = "unknown type";
     const heim_oid *pa_contentType;
-    int have_data;
+    int have_data = 0;
 
     *ret_params = NULL;
     
@@ -444,7 +444,6 @@ _kdc_pk_rd_padata(krb5_context context,
 
     if (pa->padata_type == KRB5_PADATA_PK_AS_REQ_WIN) {
 	PA_PK_AS_REQ_Win2k r;
-	int have_data;
 
 	type = "PK-INIT-Win2k";
 	pa_contentType = oid_id_pkcs7_data();
@@ -1282,7 +1281,7 @@ _kdc_pk_initialize(krb5_context context,
 		   const char *user_id,
 		   const char *anchors,
 		   char **pool,
-		   char **revoke)
+		   char **revoke_list)
 {
     const char *file; 
     krb5_error_code ret;
@@ -1305,7 +1304,7 @@ _kdc_pk_initialize(krb5_context context,
 			   user_id,
 			   anchors,
 			   pool,
-			   revoke,
+			   revoke_list,
 			   NULL,
 			   NULL,
 			   NULL);

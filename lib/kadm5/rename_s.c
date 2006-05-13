@@ -43,7 +43,7 @@ kadm5_s_rename_principal(void *server_handle,
     kadm5_server_context *context = server_handle;
     kadm5_ret_t ret;
     hdb_entry_ex ent;
-    krb5_principal remove = NULL;
+    krb5_principal oldname;
 
     memset(&ent, 0, sizeof(ent));
     if(krb5_principal_compare(context->context, source, target))
@@ -81,12 +81,12 @@ kadm5_s_rename_principal(void *server_handle,
     }
     if(ret)
 	goto out2;
-    remove = ent.entry.principal;
+    oldname = ent.entry.principal;
     ent.entry.principal = target;
 
     ret = hdb_seal_keys(context->context, context->db, &ent.entry);
     if (ret) {
-	ent.entry.principal = remove;
+	ent.entry.principal = oldname;
 	goto out2;
     }
 
@@ -96,11 +96,11 @@ kadm5_s_rename_principal(void *server_handle,
 
     ret = context->db->hdb_store(context->context, context->db, 0, &ent);
     if(ret){
-	ent.entry.principal = remove;
+	ent.entry.principal = oldname;
 	goto out2;
     }
-    ret = context->db->hdb_remove(context->context, context->db, remove);
-    ent.entry.principal = remove;
+    ret = context->db->hdb_remove(context->context, context->db, oldname);
+    ent.entry.principal = oldname;
 out2:
     context->db->hdb_close(context->context, context->db);
     hdb_free_entry(context->context, &ent);

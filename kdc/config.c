@@ -501,8 +501,8 @@ configure(krb5_context context, int argc, char **argv)
 				     "enable-pkinit",
 				     NULL);
     if (config->enable_pkinit) {
-	const char *user_id, *anchors;
-	char **pool, **revoke;
+	const char *user_id, *anchors, *ocsp_file;
+	char **pool_list, **revoke_list;
 
 	user_id = krb5_config_get_string(context, NULL,
 					 "kdc",
@@ -518,26 +518,31 @@ configure(krb5_context context, int argc, char **argv)
 	if (anchors == NULL)
 	    krb5_errx(context, 1, "pkinit enabled but no X509 anchors");
 
-	pool = krb5_config_get_strings(context, NULL,
-					"kdc",
-					"pki-pool",
-					NULL);
+	pool_list = krb5_config_get_strings(context, NULL,
+					    "kdc",
+					    "pki-pool",
+					    NULL);
 
-	revoke = krb5_config_get_strings(context, NULL,
-					"kdc",
-					"pki-revoke",
-					NULL);
+	revoke_list = krb5_config_get_strings(context, NULL,
+					      "kdc",
+					      "pki-revoke",
+					      NULL);
 
-	config->pkinit_kdc_ocsp_file =
+	ocsp_file = 
 	    krb5_config_get_string(context, NULL,
 				   "kdc",
 				   "pki-kdc-ocsp",
 				   NULL);
+	if (ocsp_file) {
+	    config->pkinit_kdc_ocsp_file = strdup(ocsp_file);
+	    if (config->pkinit_kdc_ocsp_file == NULL)
+		krb5_errx(context, 1, "out of memory");
+	}
+	_kdc_pk_initialize(context, config, user_id, anchors, 
+			   pool_list, revoke_list);
 
-	_kdc_pk_initialize(context, config, user_id, anchors, pool, revoke);
-
-	krb5_config_free_strings(pool);
-	krb5_config_free_strings(revoke);
+	krb5_config_free_strings(pool_list);
+	krb5_config_free_strings(revoke_list);
 
 	config->enable_pkinit_princ_in_cert = 
 	    krb5_config_get_bool_default(context, 
@@ -550,11 +555,11 @@ configure(krb5_context context, int argc, char **argv)
 
     config->pkinit_dh_min_bits =
 	krb5_config_get_int_default(context, 
-				     NULL, 
-				     0,
-				     "kdc",
-				     "pkinit-dh-min-bits",
-				     NULL);
+				    NULL, 
+				    0,
+				    "kdc",
+				    "pkinit-dh-min-bits",
+				    NULL);
 
 #endif
 

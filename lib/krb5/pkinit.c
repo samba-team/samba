@@ -1362,8 +1362,8 @@ _krb5_pk_load_id(krb5_context context,
 		 struct krb5_pk_identity **ret_id,
 		 const char *user_id,
 		 const char *anchor_id,
-		 char * const *chain,
-		 char * const *revoke,
+		 char * const *chain_list,
+		 char * const *revoke_list,
 		 krb5_prompter_fct prompter,
 		 void *prompter_data,
 		 char *password)
@@ -1426,33 +1426,34 @@ _krb5_pk_load_id(krb5_context context,
     if (ret)
 	goto out;
 
-    while (chain && *chain) {
-	ret = hx509_certs_append(id->hx509ctx, id->certpool, NULL, *chain);
+    while (chain_list && *chain_list) {
+	ret = hx509_certs_append(id->hx509ctx, id->certpool,
+				 NULL, *chain_list);
 	if (ret) {
 	    krb5_set_error_string(context,
 				  "pkinit failed to load chain %s",
-				  *chain);
+				  *chain_list);
 	    goto out;
 	}
-	chain++;
+	chain_list++;
     }
 
-    if (revoke) {
+    if (revoke_list) {
 	ret = hx509_revoke_init(id->hx509ctx, &id->revoke);
 	if (ret) {
 	    krb5_set_error_string(context, "revoke failed to init");
 	    goto out;
 	}
 
-	while (*revoke) {
-	    ret = hx509_revoke_add_crl(id->hx509ctx, id->revoke, *revoke);
+	while (*revoke_list) {
+	    ret = hx509_revoke_add_crl(id->hx509ctx, id->revoke, *revoke_list);
 	    if (ret) {
 		krb5_set_error_string(context,
 				      "pkinit failed to load revoke %s",
-				      *revoke);
+				      *revoke_list);
 		goto out;
 	    }
-	    revoke++;
+	    revoke_list++;
 	}
     } else
 	hx509_context_set_missing_revoke(id->hx509ctx, 1);

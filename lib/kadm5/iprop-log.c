@@ -111,7 +111,7 @@ print_entry(kadm5_server_context *server_context,
     krb5_principal source;
     char *name1, *name2;
     krb5_data data;
-    krb5_context context = server_context->context;
+    krb5_context scontext = server_context->context;
 
     off_t end = krb5_storage_seek(sp, 0, SEEK_CUR) + len;
     
@@ -130,32 +130,32 @@ print_entry(kadm5_server_context *server_context,
     switch(op) {
     case kadm_delete:
 	krb5_ret_principal(sp, &source);
-	krb5_unparse_name(context, source, &name1);
+	krb5_unparse_name(scontext, source, &name1);
 	printf("    %s\n", name1);
 	free(name1);
-	krb5_free_principal(context, source);
+	krb5_free_principal(scontext, source);
 	break;
     case kadm_rename:
 	ret = krb5_data_alloc(&data, len);
 	if (ret)
-	    krb5_err (context, 1, ret, "kadm_rename: data alloc: %d", len);
+	    krb5_err (scontext, 1, ret, "kadm_rename: data alloc: %d", len);
 	krb5_ret_principal(sp, &source);
 	krb5_storage_read(sp, data.data, data.length);
-	hdb_value2entry(context, &data, &ent);
-	krb5_unparse_name(context, source, &name1);
-	krb5_unparse_name(context, ent.principal, &name2);
+	hdb_value2entry(scontext, &data, &ent);
+	krb5_unparse_name(scontext, source, &name1);
+	krb5_unparse_name(scontext, ent.principal, &name2);
 	printf("    %s -> %s\n", name1, name2);
 	free(name1);
 	free(name2);
-	krb5_free_principal(context, source);
+	krb5_free_principal(scontext, source);
 	free_hdb_entry(&ent);
 	break;
     case kadm_create:
 	ret = krb5_data_alloc(&data, len);
 	if (ret)
-	    krb5_err (context, 1, ret, "kadm_create: data alloc: %d", len);
+	    krb5_err (scontext, 1, ret, "kadm_create: data alloc: %d", len);
 	krb5_storage_read(sp, data.data, data.length);
-	ret = hdb_value2entry(context, &data, &ent);
+	ret = hdb_value2entry(scontext, &data, &ent);
 	if(ret)
 	    abort();
 	mask = ~0;
@@ -163,15 +163,15 @@ print_entry(kadm5_server_context *server_context,
     case kadm_modify:
 	ret = krb5_data_alloc(&data, len);
 	if (ret)
-	    krb5_err (context, 1, ret, "kadm_modify: data alloc: %d", len);
+	    krb5_err (scontext, 1, ret, "kadm_modify: data alloc: %d", len);
 	krb5_ret_int32(sp, &mask);
 	krb5_storage_read(sp, data.data, data.length);
-	ret = hdb_value2entry(context, &data, &ent);
+	ret = hdb_value2entry(scontext, &data, &ent);
 	if(ret)
 	    abort();
     foo:
 	if(ent.principal /* mask & KADM5_PRINCIPAL */) {
-	    krb5_unparse_name(context, ent.principal, &name1);
+	    krb5_unparse_name(scontext, ent.principal, &name1);
 	    printf("    principal = %s\n", name1);
 	    free(name1);
 	}
