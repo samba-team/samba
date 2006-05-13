@@ -200,7 +200,7 @@ OM_uint32 _gssapi_wrap_cfx(OM_uint32 *minor_status,
     krb5_data cipher;
     size_t wrapped_len, cksumsize;
     uint16_t padlength, rrc = 0;
-    OM_uint32 seq_number;
+    int32_t seq_number;
     u_char *p;
 
     ret = krb5_crypto_init(gssapi_krb5_context, key, 0, &crypto);
@@ -633,7 +633,7 @@ OM_uint32 _gssapi_mic_cfx(OM_uint32 *minor_status,
     Checksum cksum;
     u_char *buf;
     size_t len;
-    OM_uint32 seq_number;
+    int32_t seq_number;
 
     ret = krb5_crypto_init(gssapi_krb5_context, key, 0, &crypto);
     if (ret != 0) {
