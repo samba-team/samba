@@ -94,7 +94,8 @@ gss_import_sec_context (
     /* retrieve the auth context */
 
     ac = (*context_handle)->auth_context;
-    krb5_ret_int32 (sp, &ac->flags);
+    if (krb5_ret_uint32 (sp, &ac->flags) != 0)
+	goto failure;
     if (flags & SC_LOCAL_ADDRESS) {
 	if (krb5_ret_address (sp, localp = &local) != 0)
 	    goto failure;
@@ -135,9 +136,9 @@ gss_import_sec_context (
 	krb5_auth_con_setremotesubkey (gssapi_krb5_context, ac, &keyblock);
 	krb5_free_keyblock_contents (gssapi_krb5_context, &keyblock);
     }
-    if (krb5_ret_int32 (sp, &ac->local_seqnumber))
+    if (krb5_ret_uint32 (sp, &ac->local_seqnumber))
 	goto failure;
-    if (krb5_ret_int32 (sp, &ac->remote_seqnumber))
+    if (krb5_ret_uint32 (sp, &ac->remote_seqnumber))
 	goto failure;
 
     if (krb5_ret_int32 (sp, &tmp) != 0)
