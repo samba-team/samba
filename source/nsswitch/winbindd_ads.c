@@ -849,6 +849,14 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 	(*name_types) = TALLOC_ZERO_ARRAY(mem_ctx, uint32, num_members);
 	(*names) = TALLOC_ZERO_ARRAY(mem_ctx, char *, num_members);
 
+	if ((num_members != 0) &&
+	    ((members == NULL) || (*sid_mem == NULL) ||
+	     (*name_types == NULL) || (*names == NULL))) {
+		DEBUG(1, ("talloc failed\n"));
+		status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+ 
 	for (i=0;i<num_members;i++) {
 		uint32 name_type;
 		char *name;
