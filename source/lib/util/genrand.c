@@ -21,9 +21,9 @@
 */
 
 #include "includes.h"
-#include "system/iconv.h"
 #include "system/filesys.h"
 #include "lib/crypto/crypto.h"
+#include "system/locale.h"
 
 /**
  * @file

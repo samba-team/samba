@@ -20,8 +20,8 @@
 
 #include "includes.h"
 #include "lib/cmdline/popt_common.h"
-#include "system/iconv.h"
 #include "system/filesys.h"
+#include "system/locale.h"
 #include "librpc/rpc/dcerpc.h"
 #include "librpc/rpc/dcerpc_table.h"
 
