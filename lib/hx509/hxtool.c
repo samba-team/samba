@@ -427,7 +427,7 @@ struct print_s {
 };
 
 static int
-print_f(hx509_context context, void *ctx, hx509_cert cert)
+print_f(hx509_context hxcontext, void *ctx, hx509_cert cert)
 {
     struct print_s *s = ctx;
     hx509_name name;
@@ -458,14 +458,14 @@ print_f(hx509_context context, void *ctx, hx509_cert cert)
     free(str);
 
     if (s->verbose) {
-	hx509_validate_ctx ctx;
+	hx509_validate_ctx vctx;
 
-	hx509_validate_ctx_init(context, &ctx);
-	hx509_validate_ctx_set_print(ctx, hx509_print_stdout, stdout);
-	hx509_validate_ctx_add_flags(ctx, HX509_VALIDATE_F_VALIDATE);
-	hx509_validate_ctx_add_flags(ctx, HX509_VALIDATE_F_VERBOSE);
+	hx509_validate_ctx_init(hxcontext, &vctx);
+	hx509_validate_ctx_set_print(vctx, hx509_print_stdout, stdout);
+	hx509_validate_ctx_add_flags(vctx, HX509_VALIDATE_F_VALIDATE);
+	hx509_validate_ctx_add_flags(vctx, HX509_VALIDATE_F_VERBOSE);
 	
-	hx509_validate_cert(context, ctx, cert);
+	hx509_validate_cert(hxcontext, vctx, cert);
     }
 
     return 0;
@@ -501,9 +501,9 @@ pcert_print(struct print_options *opt, int argc, char **argv)
 
 
 static int
-validate_f(hx509_context context, void *ctx, hx509_cert c)
+validate_f(hx509_context hxcontext, void *ctx, hx509_cert c)
 {
-    hx509_validate_cert(context, ctx, c);
+    hx509_validate_cert(hxcontext, ctx, c);
     return 0;
 }
 
@@ -543,12 +543,12 @@ struct verify {
 };
 
 static int
-verify_f(hx509_context context, void *ctx, hx509_cert c)
+verify_f(hx509_context hxcontext, void *ctx, hx509_cert c)
 {
     struct verify *v = ctx;
     int ret;
 
-    ret = hx509_verify_path(context, v->ctx, c, v->chain);
+    ret = hx509_verify_path(hxcontext, v->ctx, c, v->chain);
     if (ret)
 	printf("verify_path returned %d\n", ret);
     else
@@ -561,7 +561,7 @@ int
 pcert_verify(struct verify_options *opt, int argc, char **argv)
 {
     hx509_certs anchors, chain, certs;
-    hx509_revoke_ctx revoke;
+    hx509_revoke_ctx revoke_ctx;
     hx509_verify_ctx ctx;
     struct verify v;
     int ret;
@@ -577,7 +577,7 @@ pcert_verify(struct verify_options *opt, int argc, char **argv)
     if (opt->allow_proxy_certificate_flag)
 	hx509_verify_set_proxy_certificate(ctx, 1);
 
-    ret = hx509_revoke_init(context, &revoke);
+    ret = hx509_revoke_init(context, &revoke_ctx);
     if (ret)
 	errx(1, "hx509_revoke_init: %d", ret);
 
@@ -608,14 +608,14 @@ pcert_verify(struct verify_options *opt, int argc, char **argv)
 	} else if (strncmp(s, "crl:", 4) == 0) {
 	    s += 4;
 
-	    ret = hx509_revoke_add_crl(context, revoke, s);
+	    ret = hx509_revoke_add_crl(context, revoke_ctx, s);
 	    if (ret)
 		errx(1, "hx509_revoke_add_crl: %s: %d", s, ret);
 
 	} else if (strncmp(s, "ocsp:", 4) == 0) {
 	    s += 5;
 
-	    ret = hx509_revoke_add_ocsp(context, revoke, s);
+	    ret = hx509_revoke_add_ocsp(context, revoke_ctx, s);
 	    if (ret)
 		errx(1, "hx509_revoke_add_ocsp: %s: %d", s, ret);
 
@@ -625,7 +625,7 @@ pcert_verify(struct verify_options *opt, int argc, char **argv)
     }
 
     hx509_verify_attach_anchors(ctx, anchors);
-    hx509_verify_attach_revoke(ctx, revoke);
+    hx509_verify_attach_revoke(ctx, revoke_ctx);
 
     v.ctx = ctx;
     v.chain = chain;
@@ -862,7 +862,7 @@ pkcs10_print(struct pkcs10_print_options *opt, int argc, char **argv)
 
     for (i = 0; i < argc; i++) {
 	CertificationRequest req;
-	CertificationRequestInfo *info;
+	CertificationRequestInfo *rinfo;
 
 	ret = _hx509_map_file(argv[i], &p, &length, NULL);
 	if (ret)
@@ -873,13 +873,13 @@ pkcs10_print(struct pkcs10_print_options *opt, int argc, char **argv)
 	if (ret)
 	    errx(1, "failed to parse file %s: %d", argv[i], ret);
 
-	info = &req.certificationRequestInfo;
+	rinfo = &req.certificationRequestInfo;
 
 	{
 	    char *subject;
 	    hx509_name n;
 
-	    ret = _hx509_name_from_Name(&info->subject, &n);
+	    ret = _hx509_name_from_Name(&rinfo->subject, &n);
 	    if (ret)
 		abort();
 	    
@@ -892,14 +892,14 @@ pkcs10_print(struct pkcs10_print_options *opt, int argc, char **argv)
 	    free(subject);
 	}
 
-	if (info->attributes && info->attributes->len) {
-	    int i;
+	if (rinfo->attributes && rinfo->attributes->len) {
+	    int j;
 
 	    printf("Attributes:\n");
 
-	    for (i = 0; i < info->attributes->len; i++) {
+	    for (j = 0; j < rinfo->attributes->len; j++) {
 		char *str;
-		hx509_oid_sprint(&info->attributes->val[i].type, &str);
+		hx509_oid_sprint(&rinfo->attributes->val[j].type, &str);
 		printf("\toid: %s\n", str);
 		free(str);
 	    }
