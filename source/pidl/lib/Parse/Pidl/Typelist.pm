@@ -16,130 +16,109 @@ use strict;
 
 my %typedefs = ();
 
+my @reference_scalars = (
+	"string", "string_array", "nbt_string", 
+	"wrepl_nbt_name", "ipv4address"
+);
+
 # a list of known scalar types
 my $scalars = {
 	# 0 byte types
 	"void"		=> {
 				C_TYPE		=> "void",
-				IS_REFERENCE	=> 0,
 			},
 
 	# 1 byte types
 	"char"		=> {
 				C_TYPE		=> "char",
-				IS_REFERENCE	=> 0,
 			},
 	"int8"		=> {
 				C_TYPE		=> "int8_t",
-				IS_REFERENCE	=> 0,
 			},
 	"uint8"		=> {
 				C_TYPE		=> "uint8_t",
-				IS_REFERENCE	=> 0,
 			},
 
 	# 2 byte types
 	"int16"		=> {
 				C_TYPE		=> "int16_t",
-				IS_REFERENCE	=> 0,
 			},
 	"uint16"	=> {	C_TYPE		=> "uint16_t",
-				IS_REFERENCE	=> 0,
 			},
 
 	# 4 byte types
 	"int32"		=> {
 				C_TYPE		=> "int32_t",
-				IS_REFERENCE	=> 0,
 			},
 	"uint32"	=> {	C_TYPE		=> "uint32_t",
-				IS_REFERENCE	=> 0,
 			},
 
 	# 8 byte types
 	"hyper"		=> {
 				C_TYPE		=> "uint64_t",
-				IS_REFERENCE	=> 0,
 			},
 	"dlong"		=> {
 				C_TYPE		=> "int64_t",
-				IS_REFERENCE	=> 0,
 			},
 	"udlong"	=> {
 				C_TYPE		=> "uint64_t",
-				IS_REFERENCE	=> 0,
 			},
 	"udlongr"	=> {
 				C_TYPE		=> "uint64_t",
-				IS_REFERENCE	=> 0,
 			},
 	# assume its a 8 byte type, but cope with either
 	"pointer"	=> {
 				C_TYPE		=> "void*",
-				IS_REFERENCE	=> 0,
 			},
 
 	# DATA_BLOB types
 	"DATA_BLOB"	=> {
 				C_TYPE		=> "DATA_BLOB",
-				IS_REFERENCE	=> 0,
 			},
 
 	# string types
 	"string"	=> {
 				C_TYPE		=> "const char *",
-				IS_REFERENCE	=> 1,
 			},
 	"string_array"	=> {
 				C_TYPE		=> "const char **",
-				IS_REFERENCE	=> 1,
 			},
 
 	# time types
 	"time_t"	=> {
 				C_TYPE		=> "time_t",
-				IS_REFERENCE	=> 0,
 			},
 	"NTTIME"	=> {
 				C_TYPE		=> "NTTIME",
-				IS_REFERENCE	=> 0,
 			},
 	"NTTIME_1sec"	=> {
 				C_TYPE		=> "NTTIME",
-				IS_REFERENCE	=> 0,
 			},
 	"NTTIME_hyper"	=> {
 				C_TYPE		=> "NTTIME",
-				IS_REFERENCE	=> 0,
 			},
 
 
 	# error code types
 	"WERROR"	=> {
 				C_TYPE		=> "WERROR",
-				IS_REFERENCE	=> 0,
 			},
 	"NTSTATUS"	=> {
 				C_TYPE		=> "NTSTATUS",
-				IS_REFERENCE	=> 0,
 			},
 	"COMRESULT" => { 
 				C_TYPE		=> "COMRESULT",
-				IS_REFERENCE	=> 0,
 			},
 
 	# special types
 	"nbt_string"	=> {
 				C_TYPE		=> "const char *",
-				IS_REFERENCE	=> 1,
 			},
 	"wrepl_nbt_name"=> {
 				C_TYPE		=> "struct nbt_name *",
-				IS_REFERENCE	=> 1,
 			},
 	"ipv4address"	=> {
 				C_TYPE		=> "const char *",
-				IS_REFERENCE	=> 1,
 			}
 };
 
@@ -200,8 +179,8 @@ sub is_scalar($)
 sub scalar_is_reference($)
 {
 	my $name = shift;
-
-	return $scalars->{$name}{IS_REFERENCE} if defined($scalars->{$name}) and defined($scalars->{$name}{IS_REFERENCE});
+	
+	return 1 if (grep(/^$name$/, @reference_scalars));
 	return 0;
 }
 
