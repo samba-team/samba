@@ -48,7 +48,6 @@
 #include "lib/events/events.h"
 #include "libcli/ldap/ldap.h"
 #include "libcli/ldap/ldap_client.h"
-#include "lib/cmdline/popt_common.h"
 #include "auth/auth.h"
 
 struct ildb_private {
