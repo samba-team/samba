@@ -245,7 +245,8 @@ OBJ_FILES = \
 		libnet/libnet_share.o \
 		libnet/libnet_rpc.o
 PUBLIC_DEPENDENCIES = \
-		LIBSAMBA-NET
+		LIBSAMBA-NET \
+		POPT_CREDENTIALS
 # End SUBSYSTEM TORTURE_NET
 #################################
 
