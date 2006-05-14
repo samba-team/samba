@@ -917,7 +917,7 @@ static NTSTATUS join_create_machine( TALLOC_CTX *mem_ctx, struct cli_state *cli,
 	uint32 user_rid;
 	uint32 num_rids, *name_types, *user_rids;
 	uint32 flags = 0x3e8;
-	uint32 acb_info = ACB_WSTRUST | ACB_PWNOEXP;
+	uint32 acb_info = ACB_WSTRUST;
 	uchar pwbuf[516];
 	SAM_USERINFO_CTR ctr;
 	SAM_USER_INFO_24 p24;
@@ -949,9 +949,7 @@ static NTSTATUS join_create_machine( TALLOC_CTX *mem_ctx, struct cli_state *cli,
 	strlower_m(acct_name);
 	const_acct_name = acct_name;
 
-#ifndef ENCTYPE_ARCFOUR_HMAC
-	acb_info |= ACB_USE_DES_KEY_ONLY;
-#endif
+	/* Don't try to set any acb_info flags other than ACB_WSTRUST */
 
 	status = rpccli_samr_create_dom_user(pipe_hnd, mem_ctx, &domain_pol,
 			acct_name, acb_info, 0xe005000b, &user_pol, &user_rid);
@@ -1026,10 +1024,14 @@ static NTSTATUS join_create_machine( TALLOC_CTX *mem_ctx, struct cli_state *cli,
 	ctr.switch_value = 16;
 	ctr.info.id16 = &p16;
 
-	init_sam_user_info16(&p16, acb_info);
+	/* Fill in the additional account flags now */
 
-	/* Ignoring the return value is necessary for joining a domain
-	   as a normal user with "Add workstation to domain" privilege. */
+	acb_info |= ACB_PWNOEXP;
+#ifndef ENCTYPE_ARCFOUR_HMAC
+	acb_info |= ACB_USE_DES_KEY_ONLY;
+#endif
+
+	init_sam_user_info16(&p16, acb_info);
 
 	status = rpccli_samr_set_userinfo2(pipe_hnd, mem_ctx, &user_pol, 16, 
 					&cli->user_session_key, &ctr);
