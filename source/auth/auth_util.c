@@ -1096,6 +1096,12 @@ NTSTATUS create_token_from_username(TALLOC_CTX *mem_ctx, const char *username,
 
 		sid_copy(&primary_group_sid, pdb_get_group_sid(sam_acct));
 
+		if (!sid_to_gid(&primary_group_sid, gid)) {
+			DEBUG(1, ("sid_to_gid(%s) failed\n",
+				  sid_string_static(&primary_group_sid)));
+			goto done;
+		}
+
 		result = pdb_enum_group_memberships(tmp_ctx, sam_acct,
 						    &group_sids, &gids,
 						    &num_group_sids);
