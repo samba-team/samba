@@ -258,7 +258,7 @@ static NTSTATUS pvfs_lock_cancel(struct pvfs_state *pvfs, struct ntvfs_request *
 
 			/* an exact match! we can cancel it, which is equivalent
 			   to triggering the timeout early */
-			pvfs_pending_lock_continue(p ,True);
+			pvfs_pending_lock_continue(p, PVFS_WAIT_TIMEOUT);
 			return NT_STATUS_OK;
 		}
 	}
