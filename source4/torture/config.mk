@@ -208,7 +208,7 @@ OBJ_FILES = \
 		ldap/cldap.o \
 		ldap/cldapbench.o
 PUBLIC_DEPENDENCIES = \
-		LIBCLI_LDAP LIBCLI_CLDAP
+		LIBCLI_LDAP LIBCLI_CLDAP POPT_CREDENTIALS
 # End SUBSYSTEM TORTURE_LDAP
 #################################
 
