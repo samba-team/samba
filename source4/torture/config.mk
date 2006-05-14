@@ -99,7 +99,7 @@ PRIVATE_PROTO_HEADER = \
 OBJ_FILES = \
 		com/simple.o
 PUBLIC_DEPENDENCIES = \
-		com dcom
+		com dcom POPT_CREDENTIALS
 
 [MODULE::torture_rpc]
 # TORTURE_NET and TORTURE_NBT use functions from torture_rpc...
