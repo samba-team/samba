@@ -540,6 +540,11 @@ sub ParseFunction($$$)
 		my $e = ParseElement($x);
 		push (@{$e->{DIRECTION}}, "in") if (has_property($x, "in"));
 		push (@{$e->{DIRECTION}}, "out") if (has_property($x, "out"));
+
+		nonfatal($x, "`$e->{NAME}' is [out] argument but not a pointer")
+			if ($e->{LEVELS}[0]->{TYPE} ne "POINTER") and 
+			    grep(/out/, @{$e->{DIRECTION}});
+
 		push (@elements, $e);
 	}
 
