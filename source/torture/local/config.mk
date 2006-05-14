@@ -22,7 +22,8 @@ PUBLIC_DEPENDENCIES = \
 		LIBCLI_SMB \
 		MESSAGING \
 		ICONV \
-		registry
+		registry \
+		POPT_CREDENTIALS
 # End SUBSYSTEM TORTURE_LOCAL
 #################################
 
