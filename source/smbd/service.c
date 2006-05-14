@@ -523,8 +523,12 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 		return NULL;
 	}
 
+	conn->nt_user_token = NULL;
+
 	if (lp_guest_only(snum)) {
 		const char *guestname = lp_guestaccount();
+		NTSTATUS status2;
+		char *found_username;
 		guest = True;
 		pass = getpwnam_alloc(NULL, guestname);
 		if (!pass) {
@@ -534,11 +538,18 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 			*status = NT_STATUS_NO_SUCH_USER;
 			return NULL;
 		}
-		fstrcpy(user,pass->pw_name);
+		status2 = create_token_from_username(NULL, pass->pw_name, True,
+						     &conn->uid, &conn->gid,
+						     &found_username,
+						     &conn->nt_user_token);
+		if (!NT_STATUS_IS_OK(status2)) {
+			conn_free(conn);
+			*status = status2;
+			return NULL;
+		}
+		fstrcpy(user, found_username);
+		string_set(&conn->user,user);
 		conn->force_user = True;
-		conn->uid = pass->pw_uid;
-		conn->gid = pass->pw_gid;
-		string_set(&conn->user,pass->pw_name);
 		TALLOC_FREE(pass);
 		DEBUG(3,("Guest only user %s\n",user));
 	} else if (vuser) {
@@ -570,6 +581,8 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 		fstrcpy(user,vuser->user.unix_name);
 		guest = vuser->guest; 
 	} else if (lp_security() == SEC_SHARE) {
+		NTSTATUS status2;
+		char *found_username;
 		/* add it as a possible user name if we 
 		   are in share mode security */
 		add_session_user(lp_servicename(snum));
@@ -582,12 +595,18 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 			return NULL;
 		}
 		pass = Get_Pwnam(user);
+		status2 = create_token_from_username(NULL, pass->pw_name, True,
+						     &conn->uid, &conn->gid,
+						     &found_username,
+						     &conn->nt_user_token);
+		if (!NT_STATUS_IS_OK(status2)) {
+			conn_free(conn);
+			*status = status2;
+			return NULL;
+		}
+		fstrcpy(user, found_username);
+		string_set(&conn->user,user);
 		conn->force_user = True;
-		conn->uid = pass->pw_uid;
-		conn->gid = pass->pw_gid;
-		string_set(&conn->user, pass->pw_name);
-		fstrcpy(user, pass->pw_name);
-
 	} else {
 		DEBUG(0, ("invalid VUID (vuser) but not in security=share\n"));
 		conn_free(conn);
@@ -626,7 +645,6 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 	conn->aio_write_behind_list = NULL;
 	string_set(&conn->dirpath,"");
 	string_set(&conn->user,user);
-	conn->nt_user_token = NULL;
 
 	conn->read_only = lp_readonly(conn->service);
 	conn->admin_user = False;
