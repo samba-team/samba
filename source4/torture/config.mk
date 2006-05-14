@@ -51,7 +51,7 @@ OBJ_FILES = \
 		basic/attr.o \
 		basic/properties.o 
 PUBLIC_DEPENDENCIES = \
-		LIBCLI_SMB 
+		LIBCLI_SMB POPT_CREDENTIALS
 # End SUBSYSTEM TORTURE_BASIC
 #################################
 
@@ -85,7 +85,8 @@ OBJ_FILES = \
 		raw/seek.o \
 		raw/composite.o
 PUBLIC_DEPENDENCIES = \
-		LIBCLI_SMB LIBCLI_LSA LIBCLI_SMB_COMPOSITE
+		LIBCLI_SMB LIBCLI_LSA LIBCLI_SMB_COMPOSITE \
+		POPT_CREDENTIALS
 # End SUBSYSTEM TORTURE_RAW
 #################################
 
@@ -178,7 +179,8 @@ OBJ_FILES = \
 		auth/ntlmssp.o \
 		auth/pac.o
 PUBLIC_DEPENDENCIES = \
-		LIBCLI_SMB gensec auth LIBSAMBA3 KERBEROS
+		LIBCLI_SMB gensec auth LIBSAMBA3 KERBEROS \
+		POPT_CREDENTIALS
 # End SUBSYSTEM TORTURE_AUTH
 #################################
 
