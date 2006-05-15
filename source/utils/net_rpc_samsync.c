@@ -1043,6 +1043,7 @@ static NTSTATUS populate_ldap_for_ldif(fstring sid, const char *suffix, const ch
 
 	user_suffix = lp_ldap_user_suffix();
 	if (user_suffix == NULL) {
+		SAFE_FREE(suffix_attr);
 		return NT_STATUS_NO_MEMORY;
 	}
 	/* If it exists and is distinct from other containers, 
@@ -1060,6 +1061,8 @@ static NTSTATUS populate_ldap_for_ldif(fstring sid, const char *suffix, const ch
 
 	group_suffix = lp_ldap_group_suffix();
 	if (group_suffix == NULL) {
+		SAFE_FREE(suffix_attr);
+		SAFE_FREE(user_attr);
 		return NT_STATUS_NO_MEMORY;
 	}
 	/* If it exists and is distinct from other containers, 
@@ -1078,6 +1081,9 @@ static NTSTATUS populate_ldap_for_ldif(fstring sid, const char *suffix, const ch
 	   Write the Computers entity */
 	machine_suffix = lp_ldap_machine_suffix();
 	if (machine_suffix == NULL) {
+		SAFE_FREE(suffix_attr);
+		SAFE_FREE(user_attr);
+		SAFE_FREE(group_attr);
 		return NT_STATUS_NO_MEMORY;
 	}
 	if (*machine_suffix && strcmp(machine_suffix, user_suffix) &&
@@ -1099,6 +1105,9 @@ static NTSTATUS populate_ldap_for_ldif(fstring sid, const char *suffix, const ch
 	   Write the IdMap entity */
 	idmap_suffix = lp_ldap_idmap_suffix();
 	if (idmap_suffix == NULL) {
+		SAFE_FREE(suffix_attr);
+		SAFE_FREE(user_attr);
+		SAFE_FREE(group_attr);
 		return NT_STATUS_NO_MEMORY;
 	}
 	if (*idmap_suffix &&
