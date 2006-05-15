@@ -8,7 +8,7 @@ if test -z "$VERSION_FILE";then
 fi
 
 if test -z "$OUTPUT_FILE";then
-	OUTPUT_FILE="include/version.h"
+	OUTPUT_FILE="version.h"
 fi
 
 SOURCE_DIR=$3
