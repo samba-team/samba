@@ -25,11 +25,18 @@ struct libnet_context {
 	 */
 	struct cli_credentials *cred;
 
-	/* pipe */
+	/* pipes */
 	struct dcerpc_pipe *pipe;
+	struct dcerpc_pipe *lsa_pipe;
+	struct dcerpc_pipe *samr_pipe;
 
-	/* opened handles */
-	struct policy_handle domain_handle;
+	/* opened handles and related properties */
+	struct {
+		const char *name;
+		uint32_t access_mask;
+		struct policy_handle handle;
+	} domain;
+
 	struct policy_handle user_handle;
 
 	/* name resolution methods */
@@ -49,5 +56,6 @@ struct libnet_context {
 #include "libnet/libnet_user.h"
 #include "libnet/libnet_share.h"
 #include "libnet/libnet_lookup.h"
+#include "libnet/libnet_domain.h"
 #include "libnet/composite.h"
 #include "libnet/libnet_proto.h"
