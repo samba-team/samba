@@ -57,20 +57,26 @@ struct lock_context {
    size of the record */
 struct lock_struct {
 	struct lock_context context;
+	uint16_t fnum;
 	uint64_t start;
 	uint64_t size;
-	uint16_t fnum;
 	enum brl_type lock_type;
 	void *notify_ptr;
 };
 
+/* this struct is attached to on oprn file handle */
+struct brl_handle {
+	DATA_BLOB key;
+	uint16_t fnum;
+	struct lock_struct last_lock;
+};
+
+/* this struct is typicaly attached to tcon */
 struct brl_context {
 	struct tdb_wrap *w;
 	uint32_t server;
 	struct messaging_context *messaging_ctx;
-	struct lock_struct last_lock;
 };
-
 
 /*
   Open up the brlock.tdb database. Close it down using
@@ -89,7 +95,7 @@ struct brl_context *brl_init(TALLOC_CTX *mem_ctx, uint32_t server,
 	}
 
 	path = smbd_tmp_path(brl, "brlock.tdb");
-	brl->w = tdb_wrap_open(brl, path, 0,  
+	brl->w = tdb_wrap_open(brl, path, 0,
 			       TDB_DEFAULT, O_RDWR|O_CREAT, 0600);
 	talloc_free(path);
 	if (brl->w == NULL) {
@@ -99,11 +105,25 @@ struct brl_context *brl_init(TALLOC_CTX *mem_ctx, uint32_t server,
 
 	brl->server = server;
 	brl->messaging_ctx = messaging_ctx;
-	ZERO_STRUCT(brl->last_lock);
 
 	return brl;
 }
 
+struct brl_handle *brl_create_handle(TALLOC_CTX *mem_ctx, DATA_BLOB *file_key, uint16_t fnum)
+{
+	struct brl_handle *brlh;
+
+	brlh = talloc(mem_ctx, struct brl_handle);
+	if (brlh == NULL) {
+		return NULL;
+	}
+
+	brlh->key = *file_key;
+	brlh->fnum = fnum;
+	ZERO_STRUCT(brlh->last_lock);
+
+	return brlh;
+}
 
 /*
   see if two locking contexts are equal
@@ -196,24 +216,47 @@ static BOOL brl_conflict_other(struct lock_struct *lck1, struct lock_struct *lck
   is the same as this one and changes its error code. I wonder if any
   app depends on this?
 */
-static NTSTATUS brl_lock_failed(struct brl_context *brl, struct lock_struct *lock)
+static NTSTATUS brl_lock_failed(struct brl_handle *brlh, struct lock_struct *lock)
 {
-	if (lock->context.server == brl->last_lock.context.server &&
-	    lock->context.ctx == brl->last_lock.context.ctx &&
-	    lock->fnum == brl->last_lock.fnum &&
-	    lock->start == brl->last_lock.start &&
-	    lock->size == brl->last_lock.size) {
+	/*
+	 * this function is only called for non pending lock!
+	 */
+
+	/* 
+	 * if the notify_ptr is non NULL,
+	 * it means that we're at the end of a pending lock
+	 * and the real lock is requested after the timout went by
+	 * In this case we need to remember the last_lock and always
+	 * give FILE_LOCK_CONFLICT
+	 */
+	if (lock->notify_ptr) {
+		brlh->last_lock = *lock;
 		return NT_STATUS_FILE_LOCK_CONFLICT;
 	}
-	brl->last_lock = *lock;
-	if (lock->start >= 0xEF000000 && 
-	    (lock->start >> 63) == 0) {
-		/* amazing the little things you learn with a test
-		   suite. Locks beyond this offset (as a 64 bit
-		   number!) always generate the conflict error code,
-		   unless the top bit is set */
+
+	/* 
+	 * amazing the little things you learn with a test
+	 * suite. Locks beyond this offset (as a 64 bit
+	 * number!) always generate the conflict error code,
+	 * unless the top bit is set
+	 */
+	if (lock->start >= 0xEF000000 && (lock->start >> 63) == 0) {
+		brlh->last_lock = *lock;
 		return NT_STATUS_FILE_LOCK_CONFLICT;
 	}
+
+	/*
+	 * if the current lock matches the last failed lock on the file handle
+	 * and starts at the same offset, then FILE_LOCK_CONFLICT should be returned
+	 */
+	if (lock->context.server == brlh->last_lock.context.server &&
+	    lock->context.ctx == brlh->last_lock.context.ctx &&
+	    lock->fnum == brlh->last_lock.fnum &&
+	    lock->start == brlh->last_lock.start) {
+		return NT_STATUS_FILE_LOCK_CONFLICT;
+	}
+
+	brlh->last_lock = *lock;
 	return NT_STATUS_LOCK_NOT_GRANTED;
 }
 
@@ -225,9 +268,8 @@ static NTSTATUS brl_lock_failed(struct brl_context *brl, struct lock_struct *loc
   notification is sent, identified by the notify_ptr
 */
 NTSTATUS brl_lock(struct brl_context *brl,
-		  DATA_BLOB *file_key, 
+		  struct brl_handle *brlh,
 		  uint16_t smbpid,
-		  uint16_t fnum, 
 		  uint64_t start, uint64_t size, 
 		  enum brl_type lock_type,
 		  void *notify_ptr)
@@ -237,8 +279,8 @@ NTSTATUS brl_lock(struct brl_context *brl,
 	struct lock_struct lock, *locks=NULL;
 	NTSTATUS status;
 
-	kbuf.dptr = file_key->data;
-	kbuf.dsize = file_key->length;
+	kbuf.dptr = brlh->key.data;
+	kbuf.dsize = brlh->key.length;
 
 	if (tdb_chainlock(brl->w->tdb, kbuf) != 0) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
@@ -251,7 +293,12 @@ NTSTATUS brl_lock(struct brl_context *brl,
 	   preventing the real lock gets removed */
 	if (lock_type >= PENDING_READ_LOCK) {
 		enum brl_type rw = (lock_type==PENDING_READ_LOCK? READ_LOCK : WRITE_LOCK);
-		status = brl_lock(brl, file_key, smbpid, fnum, start, size, rw, NULL);
+
+		/* here we need to force that the last_lock isn't overwritten */
+		lock = brlh->last_lock;
+		status = brl_lock(brl, brlh, smbpid, start, size, rw, NULL);
+		brlh->last_lock = lock;
+
 		if (NT_STATUS_IS_OK(status)) {
 			tdb_chainunlock(brl->w->tdb, kbuf);
 			return NT_STATUS_OK;
@@ -263,9 +310,10 @@ NTSTATUS brl_lock(struct brl_context *brl,
 	lock.context.smbpid = smbpid;
 	lock.context.server = brl->server;
 	lock.context.ctx = brl;
+	lock.fnum = brlh->fnum;
+	lock.context.ctx = brl;
 	lock.start = start;
 	lock.size = size;
-	lock.fnum = fnum;
 	lock.lock_type = lock_type;
 	lock.notify_ptr = notify_ptr;
 
@@ -275,7 +323,7 @@ NTSTATUS brl_lock(struct brl_context *brl,
 		count = dbuf.dsize / sizeof(*locks);
 		for (i=0; i<count; i++) {
 			if (brl_conflict(&locks[i], &lock)) {
-				status = brl_lock_failed(brl, &lock);
+				status = brl_lock_failed(brlh, &lock);
 				goto fail;
 			}
 		}
@@ -304,7 +352,7 @@ NTSTATUS brl_lock(struct brl_context *brl,
 	   we have reached here then it must be a pending lock that
 	   was granted, so tell them the lock failed */
 	if (lock_type >= PENDING_READ_LOCK) {
-		return brl_lock_failed(brl, &lock);
+		return NT_STATUS_LOCK_NOT_GRANTED;
 	}
 
 	return NT_STATUS_OK;
@@ -371,9 +419,8 @@ static void brl_notify_all(struct brl_context *brl,
  Unlock a range of bytes.
 */
 NTSTATUS brl_unlock(struct brl_context *brl,
-		    DATA_BLOB *file_key, 
+		    struct brl_handle *brlh, 
 		    uint16_t smbpid,
-		    uint16_t fnum,
 		    uint64_t start, uint64_t size)
 {
 	TDB_DATA kbuf, dbuf;
@@ -382,8 +429,8 @@ NTSTATUS brl_unlock(struct brl_context *brl,
 	struct lock_context context;
 	NTSTATUS status;
 
-	kbuf.dptr = file_key->data;
-	kbuf.dsize = file_key->length;
+	kbuf.dptr = brlh->key.data;
+	kbuf.dsize = brlh->key.length;
 
 	if (tdb_chainlock(brl->w->tdb, kbuf) != 0) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
@@ -407,7 +454,7 @@ NTSTATUS brl_unlock(struct brl_context *brl,
 		struct lock_struct *lock = &locks[i];
 		
 		if (brl_same_context(&lock->context, &context) &&
-		    lock->fnum == fnum &&
+		    lock->fnum == brlh->fnum &&
 		    lock->start == start &&
 		    lock->size == size &&
 		    lock->lock_type < PENDING_READ_LOCK) {
@@ -458,7 +505,7 @@ NTSTATUS brl_unlock(struct brl_context *brl,
   getting it. In either case they no longer need to be notified.
 */
 NTSTATUS brl_remove_pending(struct brl_context *brl,
-			    DATA_BLOB *file_key, 
+			    struct brl_handle *brlh, 
 			    void *notify_ptr)
 {
 	TDB_DATA kbuf, dbuf;
@@ -466,8 +513,8 @@ NTSTATUS brl_remove_pending(struct brl_context *brl,
 	struct lock_struct *locks;
 	NTSTATUS status;
 
-	kbuf.dptr = file_key->data;
-	kbuf.dsize = file_key->length;
+	kbuf.dptr = brlh->key.data;
+	kbuf.dsize = brlh->key.length;
 
 	if (tdb_chainlock(brl->w->tdb, kbuf) != 0) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
@@ -528,8 +575,7 @@ NTSTATUS brl_remove_pending(struct brl_context *brl,
   Test if we are allowed to perform IO on a region of an open file
 */
 NTSTATUS brl_locktest(struct brl_context *brl,
-		      DATA_BLOB *file_key, 
-		      uint16_t fnum,
+		      struct brl_handle *brlh,
 		      uint16_t smbpid, 
 		      uint64_t start, uint64_t size, 
 		      enum brl_type lock_type)
@@ -538,8 +584,8 @@ NTSTATUS brl_locktest(struct brl_context *brl,
 	int count, i;
 	struct lock_struct lock, *locks;
 
-	kbuf.dptr = file_key->data;
-	kbuf.dsize = file_key->length;
+	kbuf.dptr = brlh->key.data;
+	kbuf.dsize = brlh->key.length;
 
 	dbuf = tdb_fetch(brl->w->tdb, kbuf);
 	if (dbuf.dptr == NULL) {
@@ -549,9 +595,9 @@ NTSTATUS brl_locktest(struct brl_context *brl,
 	lock.context.smbpid = smbpid;
 	lock.context.server = brl->server;
 	lock.context.ctx = brl;
+	lock.fnum = brlh->fnum;
 	lock.start = start;
 	lock.size = size;
-	lock.fnum = fnum;
 	lock.lock_type = lock_type;
 
 	/* there are existing locks - make sure they don't conflict */
@@ -574,15 +620,15 @@ NTSTATUS brl_locktest(struct brl_context *brl,
  Remove any locks associated with a open file.
 */
 NTSTATUS brl_close(struct brl_context *brl,
-		   DATA_BLOB *file_key, int fnum)
+		   struct brl_handle *brlh)
 {
 	TDB_DATA kbuf, dbuf;
 	int count, i, dcount=0;
 	struct lock_struct *locks;
 	NTSTATUS status;
 
-	kbuf.dptr = file_key->data;
-	kbuf.dsize = file_key->length;
+	kbuf.dptr = brlh->key.data;
+	kbuf.dsize = brlh->key.length;
 
 	if (tdb_chainlock(brl->w->tdb, kbuf) != 0) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
@@ -603,7 +649,7 @@ NTSTATUS brl_close(struct brl_context *brl,
 
 		if (lock->context.ctx == brl &&
 		    lock->context.server == brl->server &&
-		    lock->fnum == fnum) {
+		    lock->fnum == brlh->fnum) {
 			/* found it - delete it */
 			if (count > 1 && i < count-1) {
 				memmove(&locks[i], &locks[i+1], 
