@@ -42,7 +42,7 @@ sub show($$)
 	showitem($output, "GTK+ frontends", ["gtk","gconf"]);
 	showitem($output, "SSL in SWAT", ["GNUTLS"]);
 	showitem($output, "threads in smbd (see --with-pthread)", ["PTHREAD"]);
-	showitem($output, "intelligent command line editing", ["EXT_READLINE"]);
+	showitem($output, "intelligent command line editing", ["READLINE"]);
 	showitem($output, "changing process titles (see --with-setproctitle)", ["SETPROCTITLE"]);
 	showitem($output, "using extended attributes", ["XATTR"]);
 	showitem($output, "using libblkid", ["BLKID"]);
