@@ -21,9 +21,9 @@ interface security
 		   
           common combinations of bits are prefixed with SEC_RIGHTS_
 	*/
-    const int SEC_MASK_GENERIC         = 0xF0000000;
-    const int SEC_MASK_FLAGS           = 0x0F000000;
-    const int SEC_MASK_STANDARD        = 0x00FF0000;
+	const int SEC_MASK_GENERIC         = 0xF0000000;
+	const int SEC_MASK_FLAGS           = 0x0F000000;
+	const int SEC_MASK_STANDARD        = 0x00FF0000;
 	const int SEC_MASK_SPECIFIC        = 0x0000FFFF;
 
 	/* generic bits */
