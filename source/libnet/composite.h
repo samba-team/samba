@@ -111,14 +111,3 @@ struct libnet_rpc_usermod {
 		} change;
 	} in;
 };
-
-
-struct libnet_rpc_domain_open {
-	struct {
-		const char *domain_name;
-		uint32_t access_mask;
-	} in;
-	struct {
-		struct policy_handle domain_handle;
-	} out;
-};

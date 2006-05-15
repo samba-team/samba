@@ -1,7 +1,7 @@
 /* 
    Unix SMB/CIFS implementation.
-   
-   Copyright (C) Stefan Metzmacher	2004
+
+   Copyright (C) Rafal Szczesniak 2005
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -18,35 +18,17 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#include "includes.h"
-#include "libnet/libnet.h"
-#include "lib/events/events.h"
 
-struct libnet_context *libnet_context_init(struct event_context *ev)
-{
-	struct libnet_context *ctx;
+/*
+ * struct definition for opening a domain
+ */
 
-	/* create brand new libnet context */ 
-	ctx = talloc(NULL, struct libnet_context);
-	if (!ctx) {
-		return NULL;
-	}
-
-	/* events */
-	if (ev == NULL) {
-		ev = event_context_find(ctx);
-		if (ev == NULL) {
-			talloc_free(ctx);
-			return NULL;
-		}
-	}
-	ctx->event_ctx = ev;
-
-	/* name resolution methods */
-	ctx->name_res_methods = str_list_copy(ctx, lp_name_resolve_order());
-
-	/* connected domain params */
-	ZERO_STRUCT(ctx->domain);
-	
-	return ctx;
-}
+struct libnet_DomainOpen {
+	struct {
+		const char *domain_name;
+		uint32_t access_mask;
+	} in;
+	struct {
+		struct policy_handle domain_handle;
+	} out;
+};

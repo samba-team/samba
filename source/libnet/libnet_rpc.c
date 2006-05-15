@@ -24,6 +24,7 @@
 #include "libcli/libcli.h"
 #include "libcli/composite/composite.h"
 #include "librpc/gen_ndr/ndr_lsa_c.h"
+#include "librpc/gen_ndr/ndr_samr.h"
 
 
 struct rpc_connect_srv_state {
@@ -137,7 +138,15 @@ static NTSTATUS libnet_RpcConnectSrv_recv(struct composite_context *c,
 		/* move the returned rpc pipe between memory contexts */
 		s = talloc_get_type(c->private_data, struct rpc_connect_srv_state);
 		r->out.dcerpc_pipe = talloc_steal(mem_ctx, s->r.out.dcerpc_pipe);
-		ctx->pipe = r->out.dcerpc_pipe;
+
+		/* reference created pipe structure to long-term libnet_context
+		   so that it can be used by other api functions even after short-term
+		   mem_ctx is freed */
+		if (r->in.dcerpc_iface == &dcerpc_table_samr) {
+			ctx->samr_pipe = talloc_reference(ctx, r->out.dcerpc_pipe);
+		} else {
+			ctx->pipe = talloc_reference(ctx, r->out.dcerpc_pipe);
+		}
 	}
 
 	talloc_free(c);
@@ -301,7 +310,15 @@ static NTSTATUS libnet_RpcConnectDC_recv(struct composite_context *c,
 		/* move connected rpc pipe between memory contexts */
 		s = talloc_get_type(c->private_data, struct rpc_connect_dc_state);
 		r->out.dcerpc_pipe = talloc_steal(mem_ctx, s->r.out.dcerpc_pipe);
-		ctx->pipe = r->out.dcerpc_pipe;
+
+		/* reference created pipe structure to long-term libnet_context
+		   so that it can be used by other api functions even after short-term
+		   mem_ctx is freed */
+		if (r->in.dcerpc_iface == &dcerpc_table_samr) {
+			ctx->samr_pipe = talloc_reference(ctx, r->out.dcerpc_pipe);
+		} else {
+			ctx->pipe = talloc_reference(ctx, r->out.dcerpc_pipe);
+		}
 	}
 
 	talloc_free(c);
@@ -639,9 +656,17 @@ static NTSTATUS libnet_RpcConnectDCInfo_recv(struct composite_context *c, struct
 		r->out.guid         = talloc_steal(mem_ctx, s->r.out.guid);
 		r->out.domain_name  = talloc_steal(mem_ctx, s->r.out.domain_name);
 		r->out.domain_sid   = talloc_steal(mem_ctx, s->r.out.domain_sid);
+
 		r->out.dcerpc_pipe  = talloc_steal(mem_ctx, s->r.out.dcerpc_pipe);
 
-		r->out.error_string = NULL;
+		/* reference created pipe structure to long-term libnet_context
+		   so that it can be used by other api functions even after short-term
+		   mem_ctx is freed */
+		if (r->in.dcerpc_iface == &dcerpc_table_samr) {
+			ctx->samr_pipe = talloc_reference(ctx, r->out.dcerpc_pipe);
+		} else {
+			ctx->pipe = talloc_reference(ctx, r->out.dcerpc_pipe);
+		}
 	}
 
 	talloc_free(c);
