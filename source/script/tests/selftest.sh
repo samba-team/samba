@@ -160,6 +160,8 @@ if [ x"$RUN_FROM_BUILD_FARM" = x"yes" ];then
 	TORTURE4_OPTIONS="$TORTURE4_OPTIONS --option=\"torture:progress=no\""
 fi
 
+TORTURE4_OPTIONS="$TORTURE4_OPTIONS --option=\"target:samba3=yes\""
+
 ##
 ## ready to go...now loop through the tests
 ##
