@@ -34,7 +34,7 @@ static void gtk_get_credentials(struct cli_credentials *credentials)
 	GtkWidget *cancelbutton1;
 	GtkWidget *okbutton1;
 	GtkWidget *anonymous;
-	char *username;
+	const char *username;
 
 	dialog = gtk_dialog_new ();
 	gtk_window_set_title (GTK_WINDOW (dialog), "Credentials");
