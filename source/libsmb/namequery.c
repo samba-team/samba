@@ -1024,7 +1024,7 @@ static BOOL resolve_hosts(const char *name, int name_type,
 static BOOL resolve_ads(const char *name, int name_type,
                          struct ip_service **return_iplist, int *return_count)
 {
-	int 			count, i = 0;
+	int 			i = 0;
 	NTSTATUS  		status;
 	TALLOC_CTX		*ctx;
 	struct dns_rr_srv	*dcs = NULL;
@@ -1047,7 +1047,7 @@ static BOOL resolve_ads(const char *name, int name_type,
 	}
 		
 	if ( (*return_iplist = SMB_MALLOC_ARRAY(struct ip_service, numdcs)) == NULL ) {
-		DEBUG(0,("resolve_ads: malloc failed for %d entries\n", count ));
+		DEBUG(0,("resolve_ads: malloc failed for %d entries\n", numdcs ));
 		return False;
 	}
 
