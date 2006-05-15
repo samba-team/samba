@@ -21,7 +21,7 @@ OBJ_FILES = \
 		libnet_user.o \
 		libnet_share.o \
 		libnet_lookup.o \
+		libnet_domain.o \
 		userinfo.o \
-		userman.o \
-		domain.o 
+		userman.o
 PUBLIC_DEPENDENCIES = dcerpc RPC_NDR_SAMR RPC_NDR_LSA RPC_NDR_SRVSVC RPC_NDR_DRSUAPI LIBCLI_COMPOSITE LIBCLI_RESOLVE LIBCLI_FINDDCS LIBSAMBA3 LIBCLI_CLDAP LIBCLI_FINDDCS gensec_schannel
