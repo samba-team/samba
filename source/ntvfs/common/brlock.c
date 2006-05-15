@@ -411,7 +411,7 @@ NTSTATUS brl_unlock(struct brl_context *brl,
 		    lock->fnum == fnum &&
 		    lock->start == start &&
 		    lock->size == size &&
-		    lock->notify_ptr == NULL) {
+		    lock->lock_type < PENDING_READ_LOCK) {
 			/* found it - delete it */
 			if (count == 1) {
 				if (tdb_delete(brl->w->tdb, kbuf) != 0) {
@@ -487,7 +487,8 @@ NTSTATUS brl_remove_pending(struct brl_context *brl,
 	for (i=0; i<count; i++) {
 		struct lock_struct *lock = &locks[i];
 		
-		if (lock->notify_ptr == notify_ptr &&
+		if (lock->lock_type >= PENDING_READ_LOCK &&
+		    lock->notify_ptr == notify_ptr &&
 		    lock->context.server == brl->server) {
 			/* found it - delete it */
 			if (count == 1) {
