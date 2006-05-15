@@ -277,13 +277,13 @@ static NTSTATUS pvfs_open_directory(struct pvfs_state *pvfs,
 	f->share_access  = io->generic.in.share_access;
 	f->impersonation = io->generic.in.impersonation;
 	f->access_mask   = access_mask;
+	f->brl_handle	 = NULL;
 	f->notify_buffer = NULL;
 
 	f->handle->pvfs              = pvfs;
 	f->handle->name              = talloc_steal(f->handle, name);
 	f->handle->fd                = -1;
 	f->handle->odb_locking_key   = data_blob(NULL, 0);
-	f->handle->brl_locking_key   = data_blob(NULL, 0);
 	f->handle->create_options    = io->generic.in.create_options;
 	f->handle->seek_offset       = 0;
 	f->handle->position          = 0;
@@ -526,31 +526,36 @@ static int pvfs_fnum_destructor(void *p)
   account of file streams (each stream is a separate byte range
   locking space)
 */
-static NTSTATUS pvfs_brl_locking_key(struct pvfs_filename *name, 
-				     TALLOC_CTX *mem_ctx, DATA_BLOB *key)
+static NTSTATUS pvfs_brl_locking_handle(TALLOC_CTX *mem_ctx,
+					struct pvfs_filename *name, 
+					uint16_t fnum,
+					struct brl_handle **_h)
 {
-	DATA_BLOB odb_key;
+	DATA_BLOB odb_key, key;
 	NTSTATUS status;
+	struct brl_handle *h;
+
 	status = pvfs_locking_key(name, mem_ctx, &odb_key);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
+	NT_STATUS_NOT_OK_RETURN(status);
+
 	if (name->stream_name == NULL) {
-		*key = odb_key;
-		return NT_STATUS_OK;
+		key = odb_key;
+	} else {
+		key = data_blob_talloc(mem_ctx, NULL, 
+				       odb_key.length + strlen(name->stream_name) + 1);
+		NT_STATUS_HAVE_NO_MEMORY(key.data);
+		memcpy(key.data, odb_key.data, odb_key.length);
+		memcpy(key.data + odb_key.length, 
+		       name->stream_name, strlen(name->stream_name) + 1);
+		data_blob_free(&odb_key);
 	}
-	*key = data_blob_talloc(mem_ctx, NULL, 
-				odb_key.length + strlen(name->stream_name) + 1);
-	if (key->data == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	memcpy(key->data, odb_key.data, odb_key.length);
-	memcpy(key->data + odb_key.length, 
-	       name->stream_name, strlen(name->stream_name)+1);
-	data_blob_free(&odb_key);
+
+	h = brl_create_handle(mem_ctx, &key, fnum);
+	NT_STATUS_HAVE_NO_MEMORY(h);
+
+	*_h = h;
 	return NT_STATUS_OK;
 }
-
 
 /*
   create a new file
@@ -665,7 +670,7 @@ static NTSTATUS pvfs_create_file(struct pvfs_state *pvfs,
 		goto cleanup_delete;
 	}
 
-	status = pvfs_brl_locking_key(name, f->handle, &f->handle->brl_locking_key);
+	status = pvfs_brl_locking_handle(f, name, fnum, &f->brl_handle);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto cleanup_delete;
 	}
@@ -1168,7 +1173,7 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 		return status;
 	}
 
-	status = pvfs_brl_locking_key(name, f->handle, &f->handle->brl_locking_key);
+	status = pvfs_brl_locking_handle(f, name, f->fnum, &f->brl_handle);
 	if (!NT_STATUS_IS_OK(status)) {
 		idr_remove(pvfs->files.idtree, f->fnum);
 		return status;

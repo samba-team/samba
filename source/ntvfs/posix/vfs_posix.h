@@ -134,9 +134,6 @@ struct pvfs_file_handle {
 	/* a unique file key to be used for open file locking */
 	DATA_BLOB odb_locking_key;
 
-	/* a unique file key to be used for byte range locking */
-	DATA_BLOB brl_locking_key;
-
 	uint32_t create_options;
 
 	/* this is set by the mode_information level. What does it do? */
@@ -177,6 +174,9 @@ struct pvfs_file {
 
 	/* a list of pending locks - used for locking cancel operations */
 	struct pvfs_pending_lock *pending_list;
+
+	/* a file handle to be used for byte range locking */
+	struct brl_handle *brl_handle;
 
 	/* a count of active locks - used to avoid calling brl_close on
 	   file close */

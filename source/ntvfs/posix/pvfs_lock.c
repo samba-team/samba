@@ -41,8 +41,7 @@ NTSTATUS pvfs_check_lock(struct pvfs_state *pvfs,
 	}
 
 	return brl_locktest(pvfs->brl_context,
-			    &f->handle->brl_locking_key,
-			    f->fnum,
+			    f->brl_handle,
 			    smbpid,
 			    offset, count, rw);
 }
@@ -73,9 +72,8 @@ static void pvfs_lock_async_failed(struct pvfs_state *pvfs,
 	/* undo the locks we just did */
 	for (i=i-1;i>=0;i--) {
 		brl_unlock(pvfs->brl_context,
-			   &f->handle->brl_locking_key,
+			   f->brl_handle,
 			   locks[i].pid,
-			   f->fnum,
 			   locks[i].offset,
 			   locks[i].count);
 		f->lock_count--;
@@ -120,13 +118,17 @@ static void pvfs_pending_lock_continue(void *private, enum pvfs_wait_notice reas
 	if (reason == PVFS_WAIT_CANCEL) {
 		status = NT_STATUS_FILE_LOCK_CONFLICT;
 	} else {
+		/* 
+		 * here it's important to pass the pending pointer
+		 * because with this we'll get the correct error code
+		 * FILE_LOCK_CONFLICT in the error case
+		 */
 		status = brl_lock(pvfs->brl_context,
-				  &f->handle->brl_locking_key,
+				  f->brl_handle,
 				  req->smbpid,
-				  f->fnum,
 				  locks[pending->pending_lock].offset,
 				  locks[pending->pending_lock].count,
-				  rw, NULL);
+				  rw, pending);
 	}
 	if (NT_STATUS_IS_OK(status)) {
 		f->lock_count++;
@@ -138,7 +140,7 @@ static void pvfs_pending_lock_continue(void *private, enum pvfs_wait_notice reas
 	if (NT_STATUS_IS_OK(status) || timed_out) {
 		NTSTATUS status2;
 		status2 = brl_remove_pending(pvfs->brl_context, 
-					     &f->handle->brl_locking_key, pending);
+					     f->brl_handle, pending);
 		if (!NT_STATUS_IS_OK(status2)) {
 			DEBUG(0,("pvfs_lock: failed to remove pending lock - %s\n", nt_errstr(status2)));
 		}
@@ -171,9 +173,8 @@ static void pvfs_pending_lock_continue(void *private, enum pvfs_wait_notice reas
 		}
 
 		status = brl_lock(pvfs->brl_context,
-				  &f->handle->brl_locking_key,
+				  f->brl_handle,
 				  req->smbpid,
-				  f->fnum,
 				  locks[i].offset,
 				  locks[i].count,
 				  rw, pending);
@@ -216,7 +217,7 @@ void pvfs_lock_close(struct pvfs_state *pvfs, struct pvfs_file *f)
 	if (f->lock_count || f->pending_list) {
 		DEBUG(5,("pvfs_lock: removing %.0f locks on close\n", 
 			 (double)f->lock_count));
-		brl_close(f->pvfs->brl_context, &f->handle->brl_locking_key, f->fnum);
+		brl_close(f->pvfs->brl_context, f->brl_handle);
 		f->lock_count = 0;
 	}
 
@@ -338,9 +339,8 @@ NTSTATUS pvfs_lock(struct ntvfs_module_context *ntvfs,
 
 	for (i=0;i<lck->lockx.in.ulock_cnt;i++) {
 		status = brl_unlock(pvfs->brl_context,
-				    &f->handle->brl_locking_key,
+				    f->brl_handle,
 				    locks[i].pid,
-				    f->fnum,
 				    locks[i].offset,
 				    locks[i].count);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -357,9 +357,8 @@ NTSTATUS pvfs_lock(struct ntvfs_module_context *ntvfs,
 		}
 
 		status = brl_lock(pvfs->brl_context,
-				  &f->handle->brl_locking_key,
+				  f->brl_handle,
 				  locks[i].pid,
-				  f->fnum,
 				  locks[i].offset,
 				  locks[i].count,
 				  rw, pending);
@@ -381,9 +380,8 @@ NTSTATUS pvfs_lock(struct ntvfs_module_context *ntvfs,
 			/* undo the locks we just did */
 			for (i=i-1;i>=0;i--) {
 				brl_unlock(pvfs->brl_context,
-					   &f->handle->brl_locking_key,
+					   f->brl_handle,
 					   locks[i].pid,
-					   f->fnum,
 					   locks[i].offset,
 					   locks[i].count);
 				f->lock_count--;
@@ -395,4 +393,3 @@ NTSTATUS pvfs_lock(struct ntvfs_module_context *ntvfs,
 
 	return NT_STATUS_OK;
 }
-
