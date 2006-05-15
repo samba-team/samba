@@ -117,7 +117,7 @@ BOOL torture_createuser(struct torture_context *torture)
 		return False;
 	}
 
-	if (!test_cleanup(ctx->pipe, mem_ctx, &ctx->domain_handle, TEST_USERNAME)) {
+	if (!test_cleanup(ctx->samr_pipe, mem_ctx, &ctx->domain.handle, TEST_USERNAME)) {
 		printf("cleanup failed\n");
 		return False;
 	}

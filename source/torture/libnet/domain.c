@@ -21,22 +21,23 @@
 
 #include "includes.h"
 #include "torture/rpc/rpc.h"
+#include "lib/events/events.h"
 #include "libnet/libnet.h"
 #include "librpc/gen_ndr/ndr_samr_c.h"
 
-static BOOL test_domainopen(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+static BOOL test_domainopen(struct libnet_context *net_ctx, TALLOC_CTX *mem_ctx,
 			    struct lsa_String *domname,
 			    struct policy_handle *domain_handle)
 {
 	NTSTATUS status;
-	struct libnet_rpc_domain_open io;
+	struct libnet_DomainOpen io;
 	
 	printf("opening domain\n");
 	
 	io.in.domain_name  = talloc_strdup(mem_ctx, domname->string);
 	io.in.access_mask  = SEC_FLAG_MAXIMUM_ALLOWED;
 
-	status = libnet_rpc_domain_open(p, mem_ctx, &io);
+	status = libnet_DomainOpen(net_ctx, mem_ctx, &io);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Composite domain open failed - %s\n", nt_errstr(status));
 		return False;
@@ -73,7 +74,8 @@ BOOL torture_domainopen(struct torture_context *torture)
 {
 	NTSTATUS status;
 	const char *binding;
-	struct dcerpc_pipe *p;
+	struct libnet_context *net_ctx;
+	struct event_context *evt_ctx;
 	TALLOC_CTX *mem_ctx;
 	BOOL ret = True;
 	struct policy_handle h;
@@ -82,8 +84,11 @@ BOOL torture_domainopen(struct torture_context *torture)
 	mem_ctx = talloc_init("test_domain_open");
 	binding = lp_parm_string(-1, "torture", "binding");
 
+	evt_ctx = event_context_find(torture);
+	net_ctx = libnet_context_init(evt_ctx);
+
 	status = torture_rpc_connection(mem_ctx, 
-					&p,
+					&net_ctx->samr_pipe,
 					&dcerpc_table_samr);
 	
 	if (!NT_STATUS_IS_OK(status)) {
@@ -95,12 +100,12 @@ BOOL torture_domainopen(struct torture_context *torture)
 	/*
 	 * Testing synchronous version
 	 */
-	if (!test_domainopen(p, mem_ctx, &name, &h)) {
+	if (!test_domainopen(net_ctx, mem_ctx, &name, &h)) {
 		ret = False;
 		goto done;
 	}
 
-	if (!test_cleanup(p, mem_ctx, &h)) {
+	if (!test_cleanup(net_ctx->samr_pipe, mem_ctx, &h)) {
 		ret = False;
 		goto done;
 	}

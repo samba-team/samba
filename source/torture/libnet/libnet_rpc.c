@@ -101,6 +101,36 @@ static BOOL test_samr_connect(struct libnet_context *ctx)
 	return True;
 }
 
+
+static BOOL test_samr_dcinfo_connect(struct libnet_context *ctx)
+{
+	NTSTATUS status;
+	struct libnet_RpcConnect connect;
+	connect.level           = LIBNET_RPC_CONNECT_DC_INFO;
+	connect.in.binding      = lp_parm_string(-1, "torture", "binding");
+	connect.in.dcerpc_iface = &dcerpc_table_samr;
+	
+	status = libnet_RpcConnect(ctx, ctx, &connect);
+	
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("Couldn't connect to rpc service %s on %s: %s\n",
+		       connect.in.dcerpc_iface->name, connect.in.binding,
+		       nt_errstr(status));
+
+		return False;
+	}
+
+	printf("Domain Controller Info:\n");
+	printf("\tDomain Name:\t %s\n", connect.out.domain_name);
+	printf("\tDomain SID:\t %s\n", dom_sid_string(ctx, connect.out.domain_sid));
+	printf("\tRealm:\t\t %s\n", connect.out.realm);
+	printf("\tGUID:\t\t %s\n", GUID_string(ctx, connect.out.guid));
+
+	return True;
+}
+
+
+
 BOOL torture_rpc_connect(struct torture_context *torture)
 {
 	struct libnet_context *ctx;
@@ -108,21 +138,27 @@ BOOL torture_rpc_connect(struct torture_context *torture)
 	ctx = libnet_context_init(NULL);
 	ctx->cred = cmdline_credentials;
 
-	printf("Testing connection to lsarpc interface\n");
+	printf("Testing connection to LSA interface\n");
 	if (!test_lsa_connect(ctx)) {
-		printf("failed to connect lsarpc interface\n");
+		printf("failed to connect LSA interface\n");
 		return False;
 	}
 
-	printf("Testing connection with domain info to lsarpc interface\n");
+	printf("Testing connection with domain info to LSA interface\n");
 	if (!test_lsa_dcinfo_connect(ctx)) {
-		printf("failed to connect lsarpc interface\n");
+		printf("failed to connect LSA interface\n");
 		return False;
 	}
 
 	printf("Testing connection to SAMR service\n");
 	if (!test_samr_connect(ctx)) {
-		printf("failed to connect samr interface\n");
+		printf("failed to connect SAMR interface\n");
+		return False;
+	}
+
+	printf("Testing connection with domain info to SAMR interface\n");
+	if (!test_samr_dcinfo_connect(ctx)) {
+		printf("failed to connect SAMR interface\n");
 		return False;
 	}
 
