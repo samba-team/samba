@@ -922,6 +922,7 @@ BOOL cli_ulogoff(struct cli_state *cli)
 /****************************************************************************
  Send a tconX.
 ****************************************************************************/
+
 BOOL cli_send_tconX(struct cli_state *cli, 
 		    const char *share, const char *dev, const char *pass, int passlen)
 {
@@ -936,10 +937,13 @@ BOOL cli_send_tconX(struct cli_state *cli,
 	if (cli->sec_mode & NEGOTIATE_SECURITY_USER_LEVEL) {
 		passlen = 1;
 		pass = "";
+	} else if (!pass) {
+		DEBUG(1, ("Server not using user level security and no password supplied.\n"));
+		return False;
 	}
 
 	if ((cli->sec_mode & NEGOTIATE_SECURITY_CHALLENGE_RESPONSE) &&
-	    pass && *pass && passlen != 24) {
+	    *pass && passlen != 24) {
 		if (!lp_client_lanman_auth()) {
 			DEBUG(1, ("Server requested LANMAN password (share-level security) but 'client use lanman auth'"
 				  " is disabled\n"));
@@ -965,7 +969,9 @@ BOOL cli_send_tconX(struct cli_state *cli,
 			passlen = clistr_push(cli, pword, pass, sizeof(pword), STR_TERMINATE);
 			
 		} else {
-			memcpy(pword, pass, passlen);
+			if (passlen) {
+				memcpy(pword, pass, passlen);
+			}
 		}
 	}
 
@@ -980,7 +986,9 @@ BOOL cli_send_tconX(struct cli_state *cli,
 	SSVAL(cli->outbuf,smb_vwv3,passlen);
 
 	p = smb_buf(cli->outbuf);
-	memcpy(p,pword,passlen);
+	if (passlen) {
+		memcpy(p,pword,passlen);
+	}
 	p += passlen;
 	p += clistr_push(cli, p, fullshare, -1, STR_TERMINATE |STR_UPPER);
 	p += clistr_push(cli, p, dev, -1, STR_TERMINATE |STR_UPPER | STR_ASCII);
