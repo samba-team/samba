@@ -1716,6 +1716,7 @@ union smb_ioctl {
 			uint32_t function;
 			BOOL fsctl;
 			uint8_t filter;
+			DATA_BLOB blob;
 		} in;
 		struct {
 			DATA_BLOB blob;

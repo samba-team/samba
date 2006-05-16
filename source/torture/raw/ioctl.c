@@ -105,6 +105,7 @@ static BOOL test_fsctl(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	nt.ntioctl.in.file.fnum = fnum;
 	nt.ntioctl.in.fsctl = True;
 	nt.ntioctl.in.filter = 0;
+	nt.ntioctl.in.blob = data_blob(NULL, 0);
 
 	status = smb_raw_ioctl(cli->tree, mem_ctx, &nt);
 	CHECK_STATUS(status, NT_STATUS_OK);
@@ -115,6 +116,7 @@ static BOOL test_fsctl(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	nt.ntioctl.in.file.fnum = fnum;
 	nt.ntioctl.in.fsctl = True;
 	nt.ntioctl.in.filter = 0;
+	nt.ntioctl.in.blob = data_blob(NULL, 0);
 
 	status = smb_raw_ioctl(cli->tree, mem_ctx, &nt);
 	if (NT_STATUS_IS_OK(status)) {

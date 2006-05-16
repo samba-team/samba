@@ -86,7 +86,7 @@ static struct smbcli_request *smb_raw_ntioctl_send(struct smbcli_tree *tree,
 	SCVAL(setup, 7, parms->ntioctl.in.filter);
 	nt.in.function = NT_TRANSACT_IOCTL;
 	nt.in.params = data_blob(NULL, 0);
-	nt.in.data = data_blob(NULL, 0);
+	nt.in.data = parms->ntioctl.in.blob;
 
 	return smb_raw_nttrans_send(tree, &nt);
 }
@@ -98,13 +98,22 @@ static NTSTATUS smb_raw_ntioctl_recv(struct smbcli_request *req,
 				     TALLOC_CTX *mem_ctx,
 				     union smb_ioctl *parms)
 {
-	if (!smbcli_request_receive(req) ||
-	    smbcli_request_is_error(req)) {
-		return smbcli_request_destroy(req);
-	}
+	NTSTATUS status;
+	struct smb_nttrans nt;
+	TALLOC_CTX *tmp_mem;
 
-	parms->ntioctl.out.blob = smbcli_req_pull_blob(req, mem_ctx, req->in.data, -1);
-	return smbcli_request_destroy(req);
+	tmp_mem = talloc_new(mem_ctx);
+	NT_STATUS_HAVE_NO_MEMORY(tmp_mem);
+
+	status = smb_raw_nttrans_recv(req, tmp_mem, &nt);
+	if (!NT_STATUS_IS_OK(status)) goto fail;
+
+	parms->ntioctl.out.blob = nt.out.data;
+	talloc_steal(mem_ctx, parms->ntioctl.out.blob.data);
+
+fail:
+	talloc_free(tmp_mem);
+	return status;
 }
 
 
