@@ -981,7 +981,7 @@ static int smbldap_connect_system(struct smbldap_state *ldap_state, LDAP * ldap_
 
 	ldap_get_option(ldap_state->ldap_struct, LDAP_OPT_PROTOCOL_VERSION, &version);
 
-	if (smbldap_has_control(ldap_state, ADS_PAGE_CTL_OID) && version == 3) {
+	if (smbldap_has_control(ldap_state->ldap_struct, ADS_PAGE_CTL_OID) && version == 3) {
 		ldap_state->paged_results = True;
 	}
 
@@ -1554,7 +1554,6 @@ NTSTATUS smbldap_init(TALLOC_CTX *mem_ctx, const char *location, struct smbldap_
 /*******************************************************************
  Return a copy of the DN for a LDAPMessage. Convert from utf8 to CH_UNIX.
 ********************************************************************/
-
 char *smbldap_get_dn(LDAP *ld, LDAPMessage *entry)
 {
 	char *utf8_dn, *unix_dn;
@@ -1595,7 +1594,7 @@ char *smbldap_get_dn(LDAP *ld, LDAPMessage *entry)
  Check if root-dse has a certain Control or Extension
 ********************************************************************/
 
-static BOOL smbldap_check_root_dse(struct smbldap_state *ldap_state, const char **attrs, const char *value) 
+static BOOL smbldap_check_root_dse(LDAP *ld, const char **attrs, const char *value) 
 {
 	LDAPMessage *msg = NULL;
 	LDAPMessage *entry = NULL;
@@ -1615,7 +1614,7 @@ static BOOL smbldap_check_root_dse(struct smbldap_state *ldap_state, const char 
 		return False;
 	}
 
-	rc = ldap_search_s(ldap_state->ldap_struct, "", LDAP_SCOPE_BASE, 
+	rc = ldap_search_s(ld, "", LDAP_SCOPE_BASE, 
 			   "(objectclass=*)", CONST_DISCARD(char **, attrs), 0 , &msg);
 
 	if (rc != LDAP_SUCCESS) {
@@ -1623,21 +1622,21 @@ static BOOL smbldap_check_root_dse(struct smbldap_state *ldap_state, const char 
 		return False;
 	}
 
-	num_result = ldap_count_entries(ldap_state->ldap_struct, msg);
+	num_result = ldap_count_entries(ld, msg);
 
 	if (num_result != 1) {
 		DEBUG(3,("smbldap_check_root_dse: Expected one rootDSE, got %d\n", num_result));
 		goto done;
 	}
 
-	entry = ldap_first_entry(ldap_state->ldap_struct, msg);
+	entry = ldap_first_entry(ld, msg);
 
 	if (entry == NULL) {
 		DEBUG(3,("smbldap_check_root_dse: Could not retrieve rootDSE\n"));
 		goto done;
 	}
 
-	values = ldap_get_values(ldap_state->ldap_struct, entry, attrs[0]);
+	values = ldap_get_values(ld, entry, attrs[0]);
 
 	if (values == NULL) {
 		DEBUG(5,("smbldap_check_root_dse: LDAP Server does not support any %s\n", attrs[0]));
@@ -1671,28 +1670,28 @@ static BOOL smbldap_check_root_dse(struct smbldap_state *ldap_state, const char 
  Check if LDAP-Server supports a certain Control (OID in string format)
 ********************************************************************/
 
-BOOL smbldap_has_control(struct smbldap_state *ldap_state, const char *control)
+BOOL smbldap_has_control(LDAP *ld, const char *control)
 {
 	const char *attrs[] = { "supportedControl", NULL };
-	return smbldap_check_root_dse(ldap_state, attrs, control);
+	return smbldap_check_root_dse(ld, attrs, control);
 }
 
 /*******************************************************************
  Check if LDAP-Server supports a certain Extension (OID in string format)
 ********************************************************************/
 
-BOOL smbldap_has_extension(struct smbldap_state *ldap_state, const char *extension)
+BOOL smbldap_has_extension(LDAP *ld, const char *extension)
 {
 	const char *attrs[] = { "supportedExtension", NULL };
-	return smbldap_check_root_dse(ldap_state, attrs, extension);
+	return smbldap_check_root_dse(ld, attrs, extension);
 }
 
 /*******************************************************************
  Check if LDAP-Server holds a given namingContext
 ********************************************************************/
 
-BOOL smbldap_has_naming_context(struct smbldap_state *ldap_state, const char *naming_context)
+BOOL smbldap_has_naming_context(LDAP *ld, const char *naming_context)
 {
 	const char *attrs[] = { "namingContexts", NULL };
-	return smbldap_check_root_dse(ldap_state, attrs, naming_context);
+	return smbldap_check_root_dse(ld, attrs, naming_context);
 }
