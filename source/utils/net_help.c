@@ -61,7 +61,7 @@ static int help_usage(int argc, const char **argv)
 "Valid functions are:\n"\
 "  RPC RAP ADS FILE SHARE SESSION SERVER DOMAIN PRINTQ USER GROUP VALIDATE\n"\
 "  GROUPMEMBER ADMIN SERVICE PASSWORD TIME LOOKUP GETLOCALSID SETLOCALSID\n"\
-"  CHANGESCRETPW LOOKUP SAM\n");
+"  SETDOMAINSID CHANGESCRETPW LOOKUP SAM\n");
 	return -1;
 }
 
@@ -230,6 +230,7 @@ static int net_usage(int argc, const char **argv)
 		 "  net cache\t\tto operate on cache tdb file\n"\
 		 "  net getlocalsid [NAME]\tto get the SID for local name\n"\
 		 "  net setlocalsid SID\tto set the local domain SID\n"\
+		 "  net setdomainsid SID\tto set the domain SID on member servers\n"\
 		 "  net changesecretpw\tto change the machine password in the local secrets database only\n"\
 		 "                    \tthis requires the -f flag as a safety barrier\n"\
 		 "  net status\t\tShow server status\n"\
