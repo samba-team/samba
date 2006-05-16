@@ -1173,6 +1173,48 @@ enum smb_open_level {
 
 /* union for open() backend call */
 union smb_open {
+/* 
+ * because the *.out.file structs are not aligned to the same offset for each level
+ * we provide a hepler macro that should be used to find the current smb_handle structure
+ */
+#define SMB_OPEN_OUT_FILE(op, file) do { \
+	switch (op->generic.level) { \
+	case RAW_OPEN_OPEN: \
+		file = &op->openold.out.file; \
+		break; \
+	case RAW_OPEN_OPENX: \
+		file = &op->openx.out.file; \
+		break; \
+	case RAW_OPEN_MKNEW: \
+		file = &op->mknew.out.file; \
+		break; \
+	case RAW_OPEN_CREATE: \
+		file = &op->create.out.file; \
+		break; \
+	case RAW_OPEN_CTEMP: \
+		file = &op->ctemp.out.file; \
+		break; \
+	case RAW_OPEN_SPLOPEN: \
+		file = &op->splopen.out.file; \
+		break; \
+	case RAW_OPEN_NTCREATEX: \
+		file = &op->ntcreatex.out.file; \
+		break; \
+	case RAW_OPEN_T2OPEN: \
+		file = &op->t2open.out.file; \
+		break; \
+	case RAW_OPEN_NTTRANS_CREATE: \
+		file = &op->nttrans.out.file; \
+		break; \
+	case RAW_OPEN_OPENX_READX: \
+		file = &op->openxreadx.out.file; \
+		break; \
+	default: \
+		/* this must be a programmer error */ \
+		file = NULL; \
+		break; \
+	} \
+} while (0)
 	/* SMBNTCreateX interface */
 	struct {
 		enum smb_open_level level;
@@ -1212,7 +1254,7 @@ union smb_open {
 			uint16_t ipc_state;
 			uint8_t  is_directory;
 		} out;
-	} ntcreatex, generic;
+	} ntcreatex, nttrans, generic;
 
 	/* TRANS2_OPEN interface */
 	struct {
