@@ -1,5 +1,3 @@
-#include "idl_types.h"
-
 [
 	uuid("b9e79e60-3d52-11ce-aaa1-00006901293f"),
 	version(0.2),

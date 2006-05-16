@@ -1,5 +1,3 @@
-#include "idl_types.h"
-
 /**
   DCOM interfaces
   http://www.ietf.org/internet-drafts/draft-brown-dcom-v1-spec-04.txt

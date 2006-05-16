@@ -20,7 +20,7 @@ interface opendb
 		pointer file_handle;
 		/* we need a per-entry delete on close, as well as a per-file
 		   one, to cope with strange semantics on open */
-		bool8 delete_on_close;
+		boolean8 delete_on_close;
 		uint32 oplock_level;
 	} opendb_entry;
 
@@ -30,7 +30,7 @@ interface opendb
 	} opendb_pending;
 
 	typedef [public] struct {
-		bool8 delete_on_close;
+		boolean8 delete_on_close;
 		utf8string path;
 		uint32 num_entries;
 		opendb_entry entries[num_entries];
