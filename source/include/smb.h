@@ -738,6 +738,7 @@ struct locking_data {
 #define PW_HISTORY_SALT_LEN 16
 #define SALTED_MD5_HASH_LEN 16
 #define PW_HISTORY_ENTRY_LEN (PW_HISTORY_SALT_LEN+SALTED_MD5_HASH_LEN)
+#define MAX_PW_HISTORY_LEN 24
 
 /*
  * Flags for account policy.

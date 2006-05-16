@@ -773,9 +773,9 @@ static BOOL init_sam_from_ldap(struct ldapsam_privates *ldap_state,
 	if (pwHistLen > 0){
 		uint8 *pwhist = NULL;
 		int i;
+		char history_string[MAX_PW_HISTORY_LEN*64];
 
-		/* We can only store (sizeof(pstring)-1)/64 password history entries. */
-		pwHistLen = MIN(pwHistLen, ((sizeof(temp)-1)/64));
+		pwHistLen = MIN(pwHistLen, MAX_PW_HISTORY_LEN);
 
 		if ((pwhist = SMB_MALLOC(pwHistLen * PW_HISTORY_ENTRY_LEN)) == NULL){
 			DEBUG(0, ("init_sam_from_ldap: malloc failed!\n"));
@@ -783,19 +783,20 @@ static BOOL init_sam_from_ldap(struct ldapsam_privates *ldap_state,
 		}
 		memset(pwhist, '\0', pwHistLen * PW_HISTORY_ENTRY_LEN);
 
-		if (!smbldap_get_single_pstring (ldap_state->smbldap_state->ldap_struct, entry, 
-			get_userattr_key2string(ldap_state->schema_ver, LDAP_ATTR_PWD_HISTORY), temp)) {
+		if (!smbldap_get_single_attribute(ldap_state->smbldap_state->ldap_struct, entry,
+						  get_userattr_key2string(ldap_state->schema_ver, LDAP_ATTR_PWD_HISTORY),
+						  history_string, sizeof(history_string))) {
 			/* leave as default - zeros */
 		} else {
 			BOOL hex_failed = False;
 			for (i = 0; i < pwHistLen; i++){
 				/* Get the 16 byte salt. */
-				if (!pdb_gethexpwd(&temp[i*64], &pwhist[i*PW_HISTORY_ENTRY_LEN])) {
+				if (!pdb_gethexpwd(&history_string[i*64], &pwhist[i*PW_HISTORY_ENTRY_LEN])) {
 					hex_failed = True;
 					break;
 				}
 				/* Get the 16 byte MD5 hash of salt+passwd. */
-				if (!pdb_gethexpwd(&temp[(i*64)+32],
+				if (!pdb_gethexpwd(&history_string[(i*64)+32],
 						&pwhist[(i*PW_HISTORY_ENTRY_LEN)+PW_HISTORY_SALT_LEN])) {
 					hex_failed = True;
 					break;
