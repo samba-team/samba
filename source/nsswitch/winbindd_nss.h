@@ -395,7 +395,7 @@ struct WINBINDD_CCACHE_ENTRY {
 	const char *service;
 	const char *username;
 	const char *sid_string;
-	const char *pass;
+	char *pass;
 	uid_t uid;
 	time_t create_time;
 	time_t renew_until;

@@ -74,6 +74,23 @@ NTSTATUS remove_ccache_by_ccname(const char *ccname)
 		if (strequal(entry->ccname, ccname)) {
 			DLIST_REMOVE(ccache_list, entry);
 			TALLOC_FREE(entry->event); /* unregisters events */
+#ifdef HAVE_MUNLOCK
+			if (entry->pass) {	
+				size_t len = strlen(entry->pass)+1;
+#ifdef DEBUG_PASSWORD
+				DEBUG(10,("unlocking memory: %p\n", entry->pass));
+#endif
+				memset(&(entry->pass), 0, len);
+				if ((munlock(&entry->pass, len)) == -1) {
+					DEBUG(0,("failed to munlock memory: %s (%d)\n", 
+						strerror(errno), errno));
+					return map_nt_error_from_unix(errno);
+				}
+#ifdef DEBUG_PASSWORD
+				DEBUG(10,("munlocked memory: %p\n", entry->pass));
+#endif
+			}
+#endif /* HAVE_MUNLOCK */
 			TALLOC_FREE(entry);
 			DEBUG(10,("remove_ccache_by_ccname: removed ccache %s\n", ccname));
 			return NT_STATUS_OK;
@@ -227,9 +244,31 @@ NTSTATUS add_ccache_to_list(const char *princ_name,
 		new_entry->service = talloc_strdup(mem_ctx, service);
 		NT_STATUS_HAVE_NO_MEMORY(new_entry->service);
 	}
+
 	if (schedule_refresh_event && pass) {
+#ifdef HAVE_MLOCK
+		size_t len = strlen(pass)+1;
+		
+		new_entry->pass = TALLOC_ZERO(mem_ctx, len);
+		NT_STATUS_HAVE_NO_MEMORY(new_entry->pass);
+		
+#ifdef DEBUG_PASSWORD
+		DEBUG(10,("mlocking memory: %p\n", new_entry->pass));
+#endif		
+		if ((mlock(new_entry->pass, len)) == -1) {
+			DEBUG(0,("failed to mlock memory: %s (%d)\n", 
+				strerror(errno), errno));
+			return map_nt_error_from_unix(errno);
+		} 
+		
+#ifdef DEBUG_PASSWORD
+		DEBUG(10,("mlocked memory: %p\n", new_entry->pass));
+#endif		
+		memcpy(new_entry->pass, pass, len);
+#else
 		new_entry->pass = talloc_strdup(mem_ctx, pass);
 		NT_STATUS_HAVE_NO_MEMORY(new_entry->pass);
+#endif /* HAVE_MLOCK */
 	}
 
 	new_entry->create_time = create_time;
@@ -261,6 +300,13 @@ NTSTATUS add_ccache_to_list(const char *princ_name,
 
 NTSTATUS destroy_ccache_list(void)
 {
+#ifdef HAVE_MUNLOCKALL
+	if ((munlockall()) == -1) {
+		DEBUG(0,("failed to unlock memory: %s (%d)\n", 
+			strerror(errno), errno));
+		return map_nt_error_from_unix(errno);
+	}
+#endif /* HAVE_MUNLOCKALL */
 	return talloc_destroy(mem_ctx) ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
 }
 
