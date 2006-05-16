@@ -304,7 +304,6 @@ static NTSTATUS nttrans_ioctl(struct smbsrv_request *req,
 	uint16_t fnum;
 	uint8_t filter;
 	BOOL fsctl;
-	DATA_BLOB *blob;
 	NTSTATUS status;
 
 	/* should have at least 4 setup words */
@@ -320,13 +319,12 @@ static NTSTATUS nttrans_ioctl(struct smbsrv_request *req,
 	fsctl = CVAL(trans->in.setup, 6);
 	filter = CVAL(trans->in.setup, 7);
 
-	blob = &trans->in.data;
-
 	nt->ntioctl.level = RAW_IOCTL_NTIOCTL;
 	nt->ntioctl.in.file.fnum = fnum;
 	nt->ntioctl.in.function = function;
 	nt->ntioctl.in.fsctl = fsctl;
 	nt->ntioctl.in.filter = filter;
+	nt->ntioctl.in.blob = trans->in.data;
 
 	status = nttrans_setup_reply(op, trans, 0, 0, 1);
 	NT_STATUS_NOT_OK_RETURN(status);
