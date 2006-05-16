@@ -751,7 +751,7 @@ static int samldb_fill_foreignSecurityPrincipal_object(struct ldb_module *module
 /* add_record */
 static int samldb_add(struct ldb_module *module, struct ldb_request *req)
 {
-	const struct ldb_message *msg = req->op.add.message;
+	struct ldb_message *msg = req->op.add.message;
 	struct ldb_message *msg2 = NULL;
 	int ret;
 
