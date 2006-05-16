@@ -353,7 +353,7 @@ interface netlogon
 	} netr_USER_KEYS;
 
 	typedef struct {
-		bool8  SensitiveDataFlag;
+		boolean8  SensitiveDataFlag;
 		uint32 DataLength;
 
 		/* netr_USER_KEYS encrypted with the session key */
@@ -380,9 +380,9 @@ interface netlogon
 		samr_AcctFlags acct_flags;
 		samr_Password lmpassword;
 		samr_Password ntpassword;
-		bool8 nt_password_present;
-		bool8 lm_password_present;
-		bool8 password_expired;
+		boolean8 nt_password_present;
+		boolean8 lm_password_present;
+		boolean8 password_expired;
 		lsa_String comment;
 		lsa_String parameters;
 		uint16 country_code;
@@ -498,7 +498,7 @@ interface netlogon
 	typedef struct {
 		uint32 maxlogsize;
 		NTTIME auditretentionperiod;
-		bool8 auditingmode;
+		boolean8 auditingmode;
 		uint32 maxauditeventcount;
 		[size_is(maxauditeventcount+1)] uint32 *eventauditoptions;
 		lsa_String primary_domain_name;

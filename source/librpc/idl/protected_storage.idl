@@ -1,5 +1,3 @@
-#include "idl_types.h"
-
 /*
   protected_storage interface definitions
   Also seen with UUID: 

@@ -817,15 +817,15 @@
 	*/
 	NTSTATUS samr_ChangePasswordUser(
 		[in,ref]    policy_handle *user_handle,
-		[in]        bool8 lm_present,
+		[in]        boolean8 lm_present,
 		[in]        samr_Password *old_lm_crypted,
 		[in]        samr_Password *new_lm_crypted,
-		[in]        bool8 nt_present,
+		[in]        boolean8 nt_present,
 		[in]        samr_Password *old_nt_crypted,
 		[in]        samr_Password *new_nt_crypted,
-		[in]        bool8 cross1_present,
+		[in]        boolean8 cross1_present,
 		[in]        samr_Password *nt_cross,
-		[in]        bool8 cross2_present,
+		[in]        boolean8 cross2_present,
 		[in]        samr_Password *lm_cross
 		);
 
@@ -1086,7 +1086,7 @@
 		[in,ref]          lsa_String *account,
 		[in]              samr_CryptPassword *nt_password,
 		[in]              samr_Password *nt_verifier,
-		[in]              bool8 lm_change,
+		[in]              boolean8 lm_change,
 		[in]              samr_CryptPassword *lm_password,
 		[in]              samr_Password *lm_verifier
 		);
@@ -1171,7 +1171,7 @@
 		[in,ref]          lsa_String *account,
 		[in]              samr_CryptPassword *nt_password,
 		[in]              samr_Password *nt_verifier,
-		[in]              bool8 lm_change,
+		[in]              boolean8 lm_change,
 		[in]              samr_CryptPassword *lm_password,
 		[in]              samr_Password *lm_verifier,
 		[in]              samr_CryptPassword *password3,
