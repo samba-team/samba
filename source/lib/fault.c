@@ -151,6 +151,15 @@ void dump_core_setup(const char *progname)
 
  void dump_core(void)
 {
+	/* Note that even if core dumping has been disabled, we still set up
+	 * the core path. This is to handle the case where core dumping is
+	 * turned on in smb.conf and the relevant daemon is not restarted.
+	 */
+	if (!lp_enable_core_files()) {
+		DEBUG(0, ("Exiting on internal error (core file administratively disabled\n"));
+		exit(1);
+	}
+
 	if (*corepath != '\0') {
 		/* The chdir might fail if we dump core before we finish
 		 * processing the config file.
