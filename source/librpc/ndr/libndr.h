@@ -104,7 +104,7 @@ struct ndr_print {
 	uint32_t flags; /* LIBNDR_FLAG_* */
 	uint32_t depth;
 	struct ndr_token_list *switch_list;
-	void (*print)(struct ndr_print *, const char *, ...);
+	void (*print)(struct ndr_print *, const char *, ...) PRINTF_ATTRIBUTE(2,3);
 	void *private_data;
 };
 
