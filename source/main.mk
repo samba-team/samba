@@ -34,8 +34,8 @@ include kdc/config.mk
 include passdb/config.mk
 
 DEFAULT_HEADERS = $(srcdir)/include/core.h \
-				  $(srcdir)/include/dlinklist.h \
-				  $(srcdir)/version.h
+		  $(srcdir)/include/dlinklist.h \
+		  $(srcdir)/version.h
 
 binaries: $(BINARIES)
 libraries: $(STATIC_LIBS) $(SHARED_LIBS)
@@ -258,7 +258,7 @@ removebackup:
 
 realdistclean: distclean removebackup
 	-rm -f include/config_tmp.h.in
-	-rm -f include/version.h
+	-rm -f version.h
 	-rm -f configure
 	-rm -f $(MANPAGES)
 
