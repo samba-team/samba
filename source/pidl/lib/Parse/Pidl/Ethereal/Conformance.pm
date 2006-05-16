@@ -74,6 +74,13 @@ Code to insert when generating the specified dissector. @HF@ and
 
 Override the text shown when a bitmap boolean value is enabled or disabled.
 
+=item I<MANUAL> fn_name
+
+Force pidl to not generate a particular function but allow the user 
+to write a function manually. This can be used to remove the function 
+for only one level for a particular element rather then all the functions and 
+ett/hf variables for a particular element as the NOEMIT command does.
+
 =back
 
 =head1 EXAMPLE
@@ -232,15 +239,20 @@ sub handle_strip_prefix($$$)
 
 sub handle_noemit($$$)
 {
-	my $pos = shift;
-	my $data = shift;
-	my $type = shift;
+	my ($pos,$data,$type) = @_;
 
 	if (defined($type)) {
 	    $data->{noemit}->{$type} = 1;
 	} else {
 	    $data->{noemit_dissector} = 1;
 	}
+}
+
+sub handle_manual($$$)
+{
+	my ($pos,$data,$fn) = @_;
+
+    $data->{manual}->{$fn} = 1;
 }
 
 sub handle_protocol($$$$$$)
@@ -287,6 +299,7 @@ sub handle_import
 my %field_handlers = (
 	TYPE => \&handle_type,
 	NOEMIT => \&handle_noemit, 
+	MANUAL => \&handle_manual,
 	PARAM_VALUE => \&handle_param_value, 
 	HF_FIELD => \&handle_hf_field, 
 	HF_RENAME => \&handle_hf_rename, 
