@@ -7,7 +7,7 @@ package Parse::Pidl::Typelist;
 
 require Exporter;
 @ISA = qw(Exporter);
-@EXPORT_OK = qw(hasType getType mapType scalar_is_reference);
+@EXPORT_OK = qw(hasType getType mapType scalar_is_reference expandAlias);
 use vars qw($VERSION);
 $VERSION = '0.01';
 
@@ -71,6 +71,29 @@ my %scalars = (
 	"wrepl_nbt_name"=> "struct nbt_name *",
 	"ipv4address"	=> "const char *",
 );
+
+my %aliases = (
+	"error_status_t" => "uint32",
+	"boolean8" => "uint8",
+	"boolean32" => "uint32",
+	"DWORD" => "uint32",
+	"int" => "int32",
+	"WORD" => "uint16",
+	"char" => "uint8",
+	"long" => "int32",
+	"short" => "int16",
+	"HYPER_T" => "hyper",
+	"HRESULT" => "COMRESULT",
+);
+
+sub expandAlias($)
+{
+	my $name = shift;
+
+	return $aliases{$name} if defined($aliases{$name});
+
+	return $name;
+}
 
 # map from a IDL type to a C header type
 sub mapScalarType($)
@@ -148,24 +171,6 @@ sub RegisterScalars()
 	}
 }
 
-my %aliases = (
-	"DWORD" => "uint32",
-	"int" => "int32",
-	"WORD" => "uint16",
-	"char" => "uint8",
-	"long" => "int32",
-	"short" => "int16",
-	"HYPER_T" => "hyper",
-	"HRESULT" => "COMRESULT",
-);
-
-sub RegisterAliases()
-{
-	foreach (keys %aliases) {
-		$typedefs{$_} = $typedefs{$aliases{$_}};
-	}
-}
-
 sub enum_type_fn($)
 {
 	my $enum = shift;
@@ -196,6 +201,7 @@ sub mapType($)
 	my $t = shift;
 	return "void" unless defined($t);
 	my $dt;
+	$t = expandAlias($t);
 
 	unless ($dt or ($dt = getType($t))) {
 		# Best guess
@@ -237,6 +243,5 @@ sub LoadIdl($)
 }
 
 RegisterScalars();
-RegisterAliases();
 
 1;

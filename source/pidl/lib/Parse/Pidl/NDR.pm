@@ -37,7 +37,7 @@ $VERSION = '0.01';
 @EXPORT = qw(GetPrevLevel GetNextLevel ContainsDeferred ContainsString);
 
 use strict;
-use Parse::Pidl::Typelist qw(hasType getType);
+use Parse::Pidl::Typelist qw(hasType getType expandAlias);
 use Parse::Pidl::Util qw(has_property property_matches);
 
 # Alignment of the built-in scalar types
@@ -364,6 +364,8 @@ sub ParseElement($)
 {
 	my $e = shift;
 
+	$e->{TYPE} = expandAlias($e->{TYPE});
+
 	return {
 		NAME => $e->{NAME},
 		TYPE => $e->{TYPE},
@@ -549,7 +551,7 @@ sub ParseFunction($$$)
 	}
 
 	if ($d->{RETURN_TYPE} ne "void") {
-		$rettype = $d->{RETURN_TYPE};
+		$rettype = expandAlias($d->{RETURN_TYPE});
 	}
 	
 	my $async = 0;
