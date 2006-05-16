@@ -2101,19 +2101,14 @@ static int traverse_fn_cleanup(TDB_CONTEXT *the_tdb, TDB_DATA kbuf,
 			       TDB_DATA dbuf, void *state)
 {
 	struct cache_entry *centry;
-	char buf[1024];
 
-	if (!snprintf(buf, kbuf.dsize + 1, "%s", kbuf.dptr)) {
-		return 1;
-	}
-
-	centry = wcache_fetch_raw(buf);
+	centry = wcache_fetch_raw(kbuf.dptr);
 	if (!centry) {
 		return 0;
 	}
 
 	if (!NT_STATUS_IS_OK(centry->status)) {
-		DEBUG(10,("deleting centry %s\n", buf));
+		DEBUG(10,("deleting centry %s\n", kbuf.dptr));
 		tdb_delete(the_tdb, kbuf);
 	}
 
