@@ -596,6 +596,26 @@ static int net_setlocalsid(int argc, const char **argv)
 	return 0;
 }
 
+static int net_setdomainsid(int argc, const char **argv)
+{
+	DOM_SID sid;
+
+	if ( (argc != 1)
+	     || (strncmp(argv[0], "S-1-5-21-", strlen("S-1-5-21-")) != 0)
+	     || (!string_to_sid(&sid, argv[0]))
+	     || (sid.num_auths != 4)) {
+		d_printf("usage: net setdomainsid S-1-5-21-x-y-z\n");
+		return 1;
+	}
+
+	if (!secrets_store_domain_sid(lp_workgroup(), &sid)) {
+		DEBUG(0,("Can't store domain SID.\n"));
+		return 1;
+	}
+
+	return 0;
+}
+
 static int net_getdomainsid(int argc, const char **argv)
 {
 	DOM_SID domain_sid;
@@ -793,6 +813,7 @@ static struct functable net_func[] = {
 	{"CACHE", net_cache},
 	{"GETLOCALSID", net_getlocalsid},
 	{"SETLOCALSID", net_setlocalsid},
+	{"SETDOMAINSID", net_setdomainsid},
 	{"GETDOMAINSID", net_getdomainsid},
 	{"MAXRID", net_maxrid},
 	{"IDMAP", net_idmap},
