@@ -2473,7 +2473,7 @@ BOOL ads_check_sfu_mapping(ADS_STRUCT *ads)
 	BOOL ret = False; 
 	TALLOC_CTX *ctx = NULL; 
 	const char *gidnumber, *uidnumber, *homedir, *shell, *gecos;
-	char *schema_path;
+	char *schema_path = NULL;
 	ADS_STRUCT *ads_s = ads;
 	ADS_STATUS status;
 
