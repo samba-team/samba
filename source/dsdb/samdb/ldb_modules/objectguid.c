@@ -53,7 +53,7 @@ static struct ldb_message_element *objectguid_find_attribute(const struct ldb_me
 /* add_record: add objectGUID attribute */
 static int objectguid_add(struct ldb_module *module, struct ldb_request *req)
 {
-	const struct ldb_message *msg = req->op.add.message;
+	struct ldb_message *msg = req->op.add.message;
 	struct ldb_val v;
 	struct ldb_message *msg2;
 	struct ldb_message_element *attribute;
