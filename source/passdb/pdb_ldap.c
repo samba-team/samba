@@ -212,7 +212,7 @@ static NTSTATUS ldapsam_get_seq_num(struct pdb_methods *my_methods, time_t *seq_
 		return ntstatus;
 	}
 
-	if (!smbldap_has_naming_context(ldap_state->smbldap_state, lp_ldap_suffix())) {
+	if (!smbldap_has_naming_context(ldap_state->smbldap_state->ldap_struct, lp_ldap_suffix())) {
 		DEBUG(3,("ldapsam_get_seq_num: DIT not configured to hold %s "
 			 "as top-level namingContext\n", lp_ldap_suffix()));
 		return ntstatus;
@@ -1505,11 +1505,6 @@ static NTSTATUS ldapsam_getsampwsid(struct pdb_methods *my_methods, struct samu 
 	return NT_STATUS_OK;
 }	
 
-static BOOL ldapsam_can_pwchange_exop(struct smbldap_state *ldap_state)
-{
-	return smbldap_has_extension(ldap_state, LDAP_EXOP_MODIFY_PASSWD);
-}
-
 /********************************************************************
  Do the actual modification - also change a plaintext passord if 
  it it set.
@@ -1572,7 +1567,9 @@ static NTSTATUS ldapsam_modify_entry(struct pdb_methods *my_methods,
 		char *utf8_dn;
 
 		if (!ldap_state->is_nds_ldap) {
-			if (!ldapsam_can_pwchange_exop(ldap_state->smbldap_state)) {
+
+			if (!smbldap_has_extension(ldap_state->smbldap_state->ldap_struct, 
+						   LDAP_EXOP_MODIFY_PASSWD)) {
 				DEBUG(2, ("ldap password change requested, but LDAP "
 					  "server does not support it -- ignoring\n"));
 				return NT_STATUS_OK;
