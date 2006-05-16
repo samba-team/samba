@@ -79,7 +79,7 @@ static void rap_cli_push_paramdesc(struct rap_call *call, char desc)
 
 	call->paramdesc = talloc_realloc(call,
 					 call->paramdesc,
-					 uint8_t,
+					 char,
 					 len+2);
 
 	call->paramdesc[len] = desc;
