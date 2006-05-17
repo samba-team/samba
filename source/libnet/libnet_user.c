@@ -39,7 +39,7 @@ struct create_user_state {
 
 
 static void continue_rpc_useradd(struct composite_context *ctx);
-static void continue_domain_open(struct composite_context *ctx);
+static void continue_domain_open_create(struct composite_context *ctx);
 
 
 struct composite_context* libnet_CreateUser_send(struct libnet_context *ctx,
@@ -74,7 +74,7 @@ struct composite_context* libnet_CreateUser_send(struct libnet_context *ctx,
 			domopen_req = libnet_DomainOpen_send(ctx, &s->domain_open, monitor);
 			if (composite_nomem(domopen_req, c)) return c;
 			
-			composite_continue(c, domopen_req, continue_domain_open, c);
+			composite_continue(c, domopen_req, continue_domain_open_create, c);
 			return c;
 		} else {
 			/* no domain name provided - neither in io structure nor default
@@ -93,7 +93,7 @@ struct composite_context* libnet_CreateUser_send(struct libnet_context *ctx,
 			domopen_req = libnet_DomainOpen_send(ctx, &s->domain_open, monitor);
 			if (composite_nomem(domopen_req, c)) return c;
 			
-			composite_continue(c, domopen_req, continue_domain_open, c);
+			composite_continue(c, domopen_req, continue_domain_open_create, c);
 			return c;
 		}
 	}
@@ -109,7 +109,7 @@ struct composite_context* libnet_CreateUser_send(struct libnet_context *ctx,
 }
 
 
-static void continue_domain_open(struct composite_context *ctx)
+static void continue_domain_open_create(struct composite_context *ctx)
 {
 	struct composite_context *c;
 	struct create_user_state *s;
@@ -178,101 +178,148 @@ NTSTATUS libnet_CreateUser(struct libnet_context *ctx, TALLOC_CTX *mem_ctx,
 }
 
 
-#ifdef OBSOLETE
-NTSTATUS libnet_CreateUser(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, struct libnet_CreateUser *r)
+
+struct delete_user_state {
+	struct libnet_DeleteUser r;
+	struct libnet_context *ctx;
+	struct libnet_DomainOpen domain_open;
+	struct libnet_rpc_userdel user_del;
+
+	/* information about the progress */
+	void (*monitor_fn)(struct monitor_msg *);
+};
+
+
+static void continue_rpc_userdel(struct composite_context *ctx);
+static void continue_domain_open_delete(struct composite_context *ctx);
+
+
+struct composite_context *libnet_DeleteUser_send(struct libnet_context *ctx,
+						 TALLOC_CTX *mem_ctx,
+						 struct libnet_DeleteUser *r,
+						 void (*monitor)(struct monitor_msg*))
+{
+	struct composite_context *c;
+	struct delete_user_state *s;
+	struct composite_context *domopen_req;
+	struct composite_context *delete_req;
+
+	c = talloc_zero(mem_ctx, struct composite_context);
+	if (c == NULL) return NULL;
+
+	s = talloc_zero(c, struct delete_user_state);
+	if (composite_nomem(s, c)) return c;
+
+	c->private_data = s;
+	c->state = COMPOSITE_STATE_IN_PROGRESS;
+	c->event_ctx = ctx->event_ctx;
+
+	s->ctx = ctx;
+	s->r = *r;
+	
+	if (s->r.in.domain_name == NULL) {
+		
+		if (policy_handle_empty(&ctx->domain.handle)) {
+			s->domain_open.in.domain_name = cli_credentials_get_domain(ctx->cred);
+			s->domain_open.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
+			
+			domopen_req = libnet_DomainOpen_send(ctx, &s->domain_open, monitor);
+			if (composite_nomem(domopen_req, c)) return c;
+			
+			composite_continue(c, domopen_req, continue_domain_open_delete, c);
+			return c;
+		}
+
+	} else {
+
+		if (policy_handle_empty(&ctx->domain.handle) ||
+		    !strequal(s->r.in.domain_name, ctx->domain.name)) {
+			s->domain_open.in.domain_name = s->r.in.domain_name;
+			s->domain_open.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
+			
+			domopen_req = libnet_DomainOpen_send(ctx, &s->domain_open, monitor);
+			if (composite_nomem(domopen_req, c)) return c;
+
+			composite_continue(c, domopen_req, continue_domain_open_delete, c);
+			return c;
+		}
+	}
+
+	s->user_del.in.username       = r->in.user_name;
+	s->user_del.in.domain_handle  = ctx->domain.handle;
+	
+	delete_req = libnet_rpc_userdel_send(ctx->samr_pipe, &s->user_del, monitor);
+	if (composite_nomem(delete_req, c)) return c;
+	
+	composite_continue(c, delete_req, continue_rpc_userdel, c);
+	return c;
+}
+
+
+static void continue_domain_open_delete(struct composite_context *ctx)
+{
+	struct composite_context *c;
+	struct delete_user_state *s;
+	struct composite_context *delete_req;
+	struct monitor_msg msg;
+
+	c = talloc_get_type(ctx->async.private_data, struct composite_context);
+	s = talloc_get_type(c->private_data, struct delete_user_state);
+
+	c->status = libnet_DomainOpen_recv(ctx, s->ctx, c, &s->domain_open);
+	if (!composite_is_ok(c)) return;
+
+	if (s->monitor_fn) s->monitor_fn(&msg);
+	
+	s->user_del.in.username       = s->r.in.user_name;
+	s->user_del.in.domain_handle  = s->ctx->domain.handle;
+
+	delete_req = libnet_rpc_userdel_send(s->ctx->samr_pipe, &s->user_del, s->monitor_fn);
+	if (composite_nomem(delete_req, c)) return;
+	
+	composite_continue(c, delete_req, continue_rpc_userdel, c);
+}
+
+
+static void continue_rpc_userdel(struct composite_context *ctx)
+{
+	struct composite_context *c;
+	struct delete_user_state *s;
+	struct monitor_msg msg;
+
+	c = talloc_get_type(ctx->async.private_data, struct composite_context);
+	s = talloc_get_type(c->private_data, struct delete_user_state);
+
+	c->status = libnet_rpc_userdel_recv(ctx, c, &s->user_del);
+	if (!composite_is_ok(c)) return;
+
+	if (s->monitor_fn) s->monitor_fn(&msg);
+	composite_done(c);
+}
+
+
+NTSTATUS libnet_DeleteUser_recv(struct composite_context *c, TALLOC_CTX *mem_ctx,
+				struct libnet_CreateUser *r)
 {
 	NTSTATUS status;
-	struct libnet_RpcConnect cn;
-	struct libnet_DomainOpen dom_io;
-	struct libnet_rpc_useradd user_io;
+	struct delete_user_state *s;
+
+	status = composite_wait(c);
+	if (!NT_STATUS_IS_OK(status)) {
+		s = talloc_get_type(c->private_data, struct delete_user_state);
+		r->out.error_string = talloc_steal(mem_ctx, s->r.out.error_string);
+	}
 	
-	/* connect rpc service of remote DC */
-	cn.level               = LIBNET_RPC_CONNECT_PDC;
-	cn.in.name             = talloc_strdup(mem_ctx, r->in.domain_name);
-	cn.in.dcerpc_iface     = &dcerpc_table_samr;
-
-	status = libnet_RpcConnect(ctx, mem_ctx, &cn);
-	if (!NT_STATUS_IS_OK(status)) {
-		r->out.error_string = talloc_asprintf(mem_ctx,
-						      "Connection to SAMR pipe domain '%s' PDC failed: %s\n",
-						      r->in.domain_name, nt_errstr(status));
-		return status;
-	}
-
-	/* open connected domain */
-	dom_io.in.domain_name   = r->in.domain_name;
-	dom_io.in.access_mask   = SEC_FLAG_MAXIMUM_ALLOWED;
-	
-	status = libnet_DomainOpen(ctx, mem_ctx, &dom_io);
-	if (!NT_STATUS_IS_OK(status)) {
-		r->out.error_string = talloc_asprintf(mem_ctx,
-						      "Creating user account failed: %s\n",
-						      nt_errstr(status));
-		return status;
-	}
-
-	/* create user */
-	user_io.in.username       = r->in.user_name;
-	user_io.in.domain_handle  = dom_io.out.domain_handle;
-
-	status = libnet_rpc_useradd(ctx, mem_ctx, &user_io);
-	if (!NT_STATUS_IS_OK(status)) {
-		r->out.error_string = talloc_asprintf(mem_ctx,
-						      "Creating user account failed: %s\n",
-						      nt_errstr(status));
-		return status;
-	}
-
-	ctx->user_handle = user_io.out.user_handle;
-
+	r->out.error_string = NULL;
 	return status;
 }
-#endif
 
 
-NTSTATUS libnet_DeleteUser(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, struct libnet_DeleteUser *r)
+NTSTATUS libnet_DeleteUser(struct libnet_context *ctx, TALLOC_CTX *mem_ctx,
+			   struct libnet_DeleteUser *r)
 {
-	NTSTATUS status;
-	struct libnet_RpcConnect cn;
-	struct libnet_DomainOpen dom_io;
-	struct libnet_rpc_userdel user_io;
+	struct composite_context *c;
 	
-	/* connect rpc service of remote DC */
-	cn.level               = LIBNET_RPC_CONNECT_PDC;
-	cn.in.name             = talloc_strdup(mem_ctx, r->in.domain_name);
-	cn.in.dcerpc_iface     = &dcerpc_table_samr;
-
-	status = libnet_RpcConnect(ctx, mem_ctx, &cn);
-	if (!NT_STATUS_IS_OK(status)) {
-		r->out.error_string = talloc_asprintf(mem_ctx,
-						      "Connection to SAMR pipe domain '%s' PDC failed: %s\n",
-						      r->in.domain_name, nt_errstr(status));
-		return status;
-	}
-
-	/* open connected domain */
-	dom_io.in.domain_name   = r->in.domain_name;
-	dom_io.in.access_mask   = SEC_FLAG_MAXIMUM_ALLOWED;
-	
-	status = libnet_DomainOpen(ctx, mem_ctx, &dom_io);
-	if (!NT_STATUS_IS_OK(status)) {
-		r->out.error_string = talloc_asprintf(mem_ctx,
-						      "Opening domain to delete user account failed: %s\n",
-						      nt_errstr(status));
-		return status;
-	}
-
-	/* create user */
-	user_io.in.username       = r->in.user_name;
-	user_io.in.domain_handle  = dom_io.out.domain_handle;
-
-	status = libnet_rpc_userdel(ctx, mem_ctx, &user_io);
-	if (!NT_STATUS_IS_OK(status)) {
-		r->out.error_string = talloc_asprintf(mem_ctx,
-						      "Deleting user account failed: %s\n",
-						      nt_errstr(status));
-		return status;
-	}
-
-	return status;
+	c = libnet_DeleteUser_send(ctx, mem_ctx, r, NULL);
+	return libnet_DeleteUser_recv(c, mem_ctx, r);
 }
