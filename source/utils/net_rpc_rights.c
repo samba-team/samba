@@ -609,5 +609,5 @@ struct rpc_sh_cmd *net_rpc_rights_cmds(TALLOC_CTX *mem_ctx,
 	};
 
 	return cmds;
-};
+}
 

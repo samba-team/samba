@@ -1606,7 +1606,7 @@ struct rpc_sh_cmd *net_rpc_user_cmds(TALLOC_CTX *mem_ctx,
 	};
 
 	return cmds;
-};
+}
 
 /****************************************************************************/
 
@@ -4793,7 +4793,7 @@ struct rpc_sh_cmd *net_rpc_share_cmds(TALLOC_CTX *mem_ctx,
 	};
 
 	return cmds;
-};
+}
 
 /****************************************************************************/
 
