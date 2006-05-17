@@ -927,7 +927,7 @@ static void fill_share_mode_entry(struct share_mode_entry *e,
 	e->op_type = op_type;
 	e->time.tv_sec = fsp->open_time.tv_sec;
 	e->time.tv_usec = fsp->open_time.tv_usec;
-	e->share_file_id = fsp->file_id;
+	e->share_file_id = fsp->fh->file_id;
 	e->dev = fsp->dev;
 	e->inode = fsp->inode;
 }
@@ -986,28 +986,19 @@ void add_deferred_open(struct share_mode_lock *lck, uint16 mid,
 
 /*******************************************************************
  Check if two share mode entries are identical, ignoring oplock 
- and mid info and desired_access.
+ and mid info and desired_access. (Removed paranoia test - it's
+ not automatically a logic error if they are identical. JRA.)
 ********************************************************************/
 
 static BOOL share_modes_identical(struct share_mode_entry *e1,
 				  struct share_mode_entry *e2)
 {
-#if 1 /* JRA PARANOIA TEST - REMOVE LATER */
-	if (procid_equal(&e1->pid, &e2->pid) &&
-	    e1->share_file_id == e2->share_file_id &&
-	    e1->dev == e2->dev &&
-	    e1->inode == e2->inode &&
-	    (e1->share_access) != (e2->share_access)) {
-		DEBUG(0,("PANIC: share_modes_identical: share_mode "
-			 "mismatch (e1 = 0x%x, e2 = 0x%x). Logic error.\n",
-			 (unsigned int)e1->share_access,
-			 (unsigned int)e2->share_access ));
-		smb_panic("PANIC: share_modes_identical logic error.\n");
-	}
-#endif
+	/* We used to check for e1->share_access == e2->share_access here
+	   as well as the other fields but 2 different DOS or FCB opens
+	   sharing the same share mode entry may validly differ in
+	   fsp->share_access field. */
 
 	return (procid_equal(&e1->pid, &e2->pid) &&
-		(e1->share_access) == (e2->share_access) &&
 		e1->dev == e2->dev &&
 		e1->inode == e2->inode &&
 		e1->share_file_id == e2->share_file_id );

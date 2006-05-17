@@ -145,7 +145,7 @@ static files_struct *irix_oplock_receive_message(fd_set *fds)
      
 	DEBUG(5,("irix_oplock_receive_message: kernel oplock break request "
 		 "received for dev = %x, inode = %.0f\n, file_id = %ul",
-		 (unsigned int)fsp->dev, (double)fsp->inode, fsp->file_id ));
+		 (unsigned int)fsp->dev, (double)fsp->inode, fsp->fh->file_id ));
 
 	return fsp;
 }
@@ -160,18 +160,18 @@ static BOOL irix_set_kernel_oplock(files_struct *fsp, int oplock_type)
 		if(errno != EAGAIN) {
 			DEBUG(0,("irix_set_kernel_oplock: Unable to get kernel oplock on file %s, dev = %x, \
 inode = %.0f, file_id = %ul. Error was %s\n", 
-				 fsp->fsp_name, (unsigned int)fsp->dev, (double)fsp->inode, fsp->file_id,
+				 fsp->fsp_name, (unsigned int)fsp->dev, (double)fsp->inode, fsp->fh->file_id,
 				 strerror(errno) ));
 		} else {
 			DEBUG(5,("irix_set_kernel_oplock: Refused oplock on file %s, fd = %d, dev = %x, \
 inode = %.0f, file_id = %ul. Another process had the file open.\n",
-				 fsp->fsp_name, fsp->fh->fd, (unsigned int)fsp->dev, (double)fsp->inode, fsp->file_id ));
+				 fsp->fsp_name, fsp->fh->fd, (unsigned int)fsp->dev, (double)fsp->inode, fsp->fh->file_id ));
 		}
 		return False;
 	}
 	
 	DEBUG(10,("irix_set_kernel_oplock: got kernel oplock on file %s, dev = %x, inode = %.0f, file_id = %ul\n",
-		  fsp->fsp_name, (unsigned int)fsp->dev, (double)fsp->inode, fsp->file_id));
+		  fsp->fsp_name, (unsigned int)fsp->dev, (double)fsp->inode, fsp->fh->file_id));
 
 	return True;
 }
@@ -190,7 +190,7 @@ static void irix_release_kernel_oplock(files_struct *fsp)
 		int state = sys_fcntl_long(fsp->fh->fd, F_OPLKACK, -1);
 		dbgtext("irix_release_kernel_oplock: file %s, dev = %x, inode = %.0f file_id = %ul, has kernel \
 oplock state of %x.\n", fsp->fsp_name, (unsigned int)fsp->dev,
-                        (double)fsp->inode, fsp->file_id, state );
+                        (double)fsp->inode, fsp->fh->file_id, state );
 	}
 
 	/*
@@ -201,7 +201,7 @@ oplock state of %x.\n", fsp->fsp_name, (unsigned int)fsp->dev,
 			dbgtext("irix_release_kernel_oplock: Error when removing kernel oplock on file " );
 			dbgtext("%s, dev = %x, inode = %.0f, file_id = %ul. Error was %s\n",
 				fsp->fsp_name, (unsigned int)fsp->dev, 
-				(double)fsp->inode, fsp->file_id, strerror(errno) );
+				(double)fsp->inode, fsp->fh->file_id, strerror(errno) );
 		}
 	}
 }
