@@ -47,6 +47,14 @@ struct libnet_context *libnet_context_init(struct event_context *ev)
 
 	/* connected domain params */
 	ZERO_STRUCT(ctx->domain);
+
+	/* currently opened user */
+	ZERO_STRUCT(ctx->user_handle);
+
+	/* init pipe pointers */
+	ctx->samr_pipe = NULL;
+	ctx->lsa_pipe  = NULL;
+	ctx->pipe      = NULL;
 	
 	return ctx;
 }
