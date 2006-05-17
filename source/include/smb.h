@@ -401,6 +401,7 @@ struct fd_handle {
 				 * DELETE_ON_CLOSE is not stored in the share
 				 * mode database.
 				 */
+	unsigned long file_id;
 };
 
 struct timed_event;
@@ -435,7 +436,6 @@ typedef struct files_struct {
 	struct share_mode_entry *pending_break_messages;
 	int num_pending_break_messages;
 
-	unsigned long file_id;
 	BOOL can_lock;
 	BOOL can_read;
 	BOOL can_write;

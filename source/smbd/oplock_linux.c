@@ -164,7 +164,7 @@ inode = %.0f. (%s)\n",
 	}
 	
 	DEBUG(3,("linux_set_kernel_oplock: got kernel oplock on file %s, dev = %x, inode = %.0f, file_id = %lu\n",
-		  fsp->fsp_name, (unsigned int)fsp->dev, (double)fsp->inode, fsp->file_id));
+		  fsp->fsp_name, (unsigned int)fsp->dev, (double)fsp->inode, fsp->fh->file_id));
 
 	return True;
 }
@@ -183,7 +183,7 @@ static void linux_release_kernel_oplock(files_struct *fsp)
 		int state = fcntl(fsp->fh->fd, F_GETLEASE, 0);
 		dbgtext("linux_release_kernel_oplock: file %s, dev = %x, inode = %.0f file_id = %lu has kernel \
 oplock state of %x.\n", fsp->fsp_name, (unsigned int)fsp->dev,
-                        (double)fsp->inode, fsp->file_id, state );
+                        (double)fsp->inode, fsp->fh->file_id, state );
 	}
 
 	/*
@@ -194,7 +194,7 @@ oplock state of %x.\n", fsp->fsp_name, (unsigned int)fsp->dev,
 			dbgtext("linux_release_kernel_oplock: Error when removing kernel oplock on file " );
 			dbgtext("%s, dev = %x, inode = %.0f, file_id = %lu. Error was %s\n",
 				fsp->fsp_name, (unsigned int)fsp->dev, 
-				(double)fsp->inode, fsp->file_id, strerror(errno) );
+				(double)fsp->inode, fsp->fh->file_id, strerror(errno) );
 		}
 	}
 }
