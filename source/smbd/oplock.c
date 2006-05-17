@@ -89,7 +89,7 @@ void process_kernel_oplocks(fd_set *pfds)
 		/* Put the kernel break info into the message. */
 		SDEV_T_VAL(msg,0,fsp->dev);
 		SINO_T_VAL(msg,8,fsp->inode);
-		SIVAL(msg,16,fsp->file_id);
+		SIVAL(msg,16,fsp->fh->file_id);
 
 		/* Don't need to be root here as we're only ever
 		   sending to ourselves. */
@@ -122,7 +122,7 @@ BOOL set_file_oplock(files_struct *fsp, int oplock_type)
 	DEBUG(5,("set_file_oplock: granted oplock on file %s, 0x%x/%.0f/%lu, "
 		    "tv_sec = %x, tv_usec = %x\n",
 		 fsp->fsp_name, (unsigned int)fsp->dev, (double)fsp->inode,
-		 fsp->file_id, (int)fsp->open_time.tv_sec,
+		 fsp->fh->file_id, (int)fsp->open_time.tv_sec,
 		 (int)fsp->open_time.tv_usec ));
 
 	return True;
@@ -333,7 +333,7 @@ static files_struct *initial_break_processing(SMB_DEV_T dev, SMB_INO_T inode, un
 		if( DEBUGLVL( 3 ) ) {
 			dbgtext( "initial_break_processing: file %s ", fsp->fsp_name );
 			dbgtext( "(dev = %x, inode = %.0f, file_id = %lu) has no oplock.\n",
-				(unsigned int)dev, (double)inode, fsp->file_id );
+				(unsigned int)dev, (double)inode, fsp->fh->file_id );
 			dbgtext( "Allowing break to succeed regardless.\n" );
 		}
 		return NULL;
