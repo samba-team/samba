@@ -109,7 +109,7 @@ files_struct *file_new(connection_struct *conn)
 	fsp->fh->fd = -1;
 
 	fsp->conn = conn;
-	fsp->file_id = get_gen_count();
+	fsp->fh->file_id = get_gen_count();
 	GetTimeOfDay(&fsp->open_time);
 
 	first_file = (i+1) % real_max_open_files;
@@ -238,7 +238,7 @@ void file_dump_open_table(void)
 
 	for (fsp=Files;fsp;fsp=fsp->next,count++) {
 		DEBUG(10,("Files[%d], fnum = %d, name %s, fd = %d, fileid = %lu, dev = %x, inode = %.0f\n",
-			count, fsp->fnum, fsp->fsp_name, fsp->fh->fd, (unsigned long)fsp->file_id,
+			count, fsp->fnum, fsp->fsp_name, fsp->fh->fd, (unsigned long)fsp->fh->file_id,
 			(unsigned int)fsp->dev, (double)fsp->inode ));
 	}
 }
@@ -277,7 +277,7 @@ files_struct *file_find_dif(SMB_DEV_T dev, SMB_INO_T inode, unsigned long file_i
 		/* We can have a fsp->fh->fd == -1 here as it could be a stat open. */
 		if (fsp->dev == dev && 
 		    fsp->inode == inode &&
-		    fsp->file_id == file_id ) {
+		    fsp->fh->file_id == file_id ) {
 			if (count > 10) {
 				DLIST_PROMOTE(Files, fsp);
 			}
@@ -287,7 +287,7 @@ files_struct *file_find_dif(SMB_DEV_T dev, SMB_INO_T inode, unsigned long file_i
 			    (fsp->oplock_type != FAKE_LEVEL_II_OPLOCK)) {
 				DEBUG(0,("file_find_dif: file %s dev = %x, inode = %.0f, file_id = %u \
 oplock_type = %u is a stat open with oplock type !\n", fsp->fsp_name, (unsigned int)fsp->dev,
-						(double)fsp->inode, (unsigned int)fsp->file_id,
+						(double)fsp->inode, (unsigned int)fsp->fh->file_id,
 						(unsigned int)fsp->oplock_type ));
 				smb_panic("file_find_dif\n");
 			}
