@@ -447,6 +447,8 @@ int close_file(files_struct *fsp, enum file_close_type close_type)
 		return close_directory(fsp, close_type);
 	else if (fsp->is_stat)
 		return close_stat(fsp);
+	else if (fsp->fake_file_handle != NULL)
+		return close_fake_file(fsp);
 	else
 		return close_normal_file(fsp, close_type);
 }
