@@ -299,7 +299,7 @@ static void continue_rpc_userdel(struct composite_context *ctx)
 
 
 NTSTATUS libnet_DeleteUser_recv(struct composite_context *c, TALLOC_CTX *mem_ctx,
-				struct libnet_CreateUser *r)
+				struct libnet_DeleteUser *r)
 {
 	NTSTATUS status;
 	struct delete_user_state *s;
