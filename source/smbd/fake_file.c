@@ -107,6 +107,7 @@ files_struct *open_fake_file(connection_struct *conn,
 				uint32 access_mask)
 {
 	files_struct *fsp = NULL;
+	NTSTATUS status;
 
 	/* access check */
 	if (current_user.ut.uid != 0) {
@@ -116,8 +117,9 @@ files_struct *open_fake_file(connection_struct *conn,
 		return NULL;
 	}
 
-	fsp = file_new(conn);
-	if(!fsp) {
+	status = file_new(conn, &fsp);
+	if(!NT_STATUS_IS_OK(status)) {
+		set_saved_ntstatus(status);
 		return NULL;
 	}
 

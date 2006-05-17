@@ -32,11 +32,15 @@ files_struct *print_fsp_open(connection_struct *conn, const char *fname)
 {
 	int jobid;
 	SMB_STRUCT_STAT sbuf;
-	files_struct *fsp = file_new(conn);
+	files_struct *fsp;
 	fstring name;
+	NTSTATUS status;
 
-	if(!fsp)
+	status = file_new(conn, &fsp);
+	if(!NT_STATUS_IS_OK(status)) {
+		set_saved_ntstatus(status);
 		return NULL;
+	}
 
 	fstrcpy( name, "Remote Downlevel Document");
 	if (fname) {

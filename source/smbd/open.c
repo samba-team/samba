@@ -1336,8 +1336,9 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 		return NULL;
 	}
 
-	fsp = file_new(conn);
-	if(!fsp) {
+	status = file_new(conn, &fsp);
+	if(!NT_STATUS_IS_OK(status)) {
+		set_saved_ntstatus(status);
 		return NULL;
 	}
 
@@ -1775,13 +1776,15 @@ files_struct *open_file_fchmod(connection_struct *conn, const char *fname,
 {
 	files_struct *fsp = NULL;
 	BOOL fsp_open;
+	NTSTATUS status;
 
 	if (!VALID_STAT(*psbuf)) {
 		return NULL;
 	}
 
-	fsp = file_new(conn);
-	if(!fsp) {
+	status = file_new(conn, &fsp);
+	if(!NT_STATUS_IS_OK(status)) {
+		set_saved_ntstatus(status);
 		return NULL;
 	}
 
@@ -1933,8 +1936,9 @@ files_struct *open_directory(connection_struct *conn,
 		}
 	}
 
-	fsp = file_new(conn);
-	if(!fsp) {
+	status = file_new(conn, &fsp);
+	if(!NT_STATUS_IS_OK(status)) {
+		set_saved_ntstatus(status);
 		return NULL;
 	}
 
@@ -2027,6 +2031,7 @@ files_struct *open_file_stat(connection_struct *conn, char *fname,
 			     SMB_STRUCT_STAT *psbuf)
 {
 	files_struct *fsp = NULL;
+	NTSTATUS status;
 
 	if (!VALID_STAT(*psbuf))
 		return NULL;
@@ -2035,9 +2040,11 @@ files_struct *open_file_stat(connection_struct *conn, char *fname,
 	if(S_ISDIR(psbuf->st_mode))
 		return NULL;
 
-	fsp = file_new(conn);
-	if(!fsp)
+	status = file_new(conn, &fsp);
+	if(!fsp) {
+		set_saved_ntstatus(status);
 		return NULL;
+	}
 
 	DEBUG(5,("open_file_stat: 'opening' file %s\n", fname));
 

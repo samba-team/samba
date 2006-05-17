@@ -61,7 +61,7 @@ static unsigned long get_gen_count(void)
  Find first available file slot.
 ****************************************************************************/
 
-files_struct *file_new(connection_struct *conn)
+NTSTATUS file_new(connection_struct *conn, files_struct **result)
 {
 	int i;
 	static int first_file;
@@ -84,23 +84,19 @@ files_struct *file_new(connection_struct *conn)
 		/* TODO: We have to unconditionally return a DOS error here,
 		 * W2k3 even returns ERRDOS/ERRnofids for ntcreate&x with
 		 * NTSTATUS negotiated */
-		set_saved_ntstatus(NT_STATUS_TOO_MANY_OPENED_FILES);
-		return NULL;
+		return NT_STATUS_TOO_MANY_OPENED_FILES;
 	}
 
 	fsp = SMB_MALLOC_P(files_struct);
 	if (!fsp) {
-		set_saved_ntstatus(NT_STATUS_NO_MEMORY);
-		return NULL;
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	ZERO_STRUCTP(fsp);
 
 	fsp->fh = SMB_MALLOC_P(struct fd_handle);
 	if (!fsp->fh) {
-		SAFE_FREE(fsp);
-		set_saved_ntstatus(NT_STATUS_NO_MEMORY);
-		return NULL;
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	ZERO_STRUCTP(fsp->fh);
@@ -133,8 +129,9 @@ files_struct *file_new(connection_struct *conn)
 	if (fsp_fi_cache.fsp == NULL) {
 		ZERO_STRUCT(fsp_fi_cache);
 	}
-	
-	return fsp;
+
+	*result = fsp;
+	return NT_STATUS_OK;
 }
 
 /****************************************************************************
@@ -529,9 +526,13 @@ files_struct *dup_file_fsp(files_struct *fsp,
 				uint32 share_access,
 				uint32 create_options)
 {
-	files_struct *dup_fsp = file_new(fsp->conn);
+	NTSTATUS status;
+	files_struct *dup_fsp;
 
-	if (!dup_fsp) {
+	status = file_new(fsp->conn, &dup_fsp);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		set_saved_ntstatus(status);
 		return NULL;
 	}
 
