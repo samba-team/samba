@@ -369,7 +369,8 @@ static void userdel_handler(struct rpc_request *req)
  */
 
 struct composite_context *libnet_rpc_userdel_send(struct dcerpc_pipe *p,
-						  struct libnet_rpc_userdel *io)
+						  struct libnet_rpc_userdel *io,
+						  void (*monitor)(struct monitor_msg*))
 {
 	struct composite_context *c;
 	struct userdel_state *s;
@@ -449,7 +450,7 @@ NTSTATUS libnet_rpc_userdel(struct dcerpc_pipe *p,
 			    TALLOC_CTX *mem_ctx,
 			    struct libnet_rpc_userdel *io)
 {
-	struct composite_context *c = libnet_rpc_userdel_send(p, io);
+	struct composite_context *c = libnet_rpc_userdel_send(p, io, NULL);
 	return libnet_rpc_userdel_recv(c, mem_ctx, io);
 }
 
