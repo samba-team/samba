@@ -324,6 +324,7 @@ static NTSTATUS nttrans_ioctl(struct smbsrv_request *req,
 	nt->ntioctl.in.function = function;
 	nt->ntioctl.in.fsctl = fsctl;
 	nt->ntioctl.in.filter = filter;
+	nt->ntioctl.in.max_data = trans->in.max_data;
 	nt->ntioctl.in.blob = trans->in.data;
 
 	status = nttrans_setup_reply(op, trans, 0, 0, 1);
