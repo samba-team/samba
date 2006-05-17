@@ -156,3 +156,9 @@ void destroy_fake_file_handle(FAKE_FILE_HANDLE **fh)
 	talloc_destroy((*fh)->mem_ctx);
 	(*fh) = NULL;
 }
+
+int close_fake_file(files_struct *fsp)
+{
+	file_free(fsp);
+	return 0;
+}
