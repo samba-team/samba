@@ -469,7 +469,7 @@ static WERROR regf_get_value (TALLOC_CTX *ctx, const struct registry_key *key, i
 	return WERR_OK;
 }
 
-static WERROR regf_get_subkey (TALLOC_CTX *ctx, const struct registry_key *key, int idx, struct registry_key **ret)
+static WERROR regf_get_subkey_by_index (TALLOC_CTX *ctx, const struct registry_key *key, int idx, struct registry_key **ret)
 {
 	DATA_BLOB data;
 	struct nk_block *nk = key->backend_data;
@@ -627,6 +627,239 @@ static WERROR regf_get_subkey (TALLOC_CTX *ctx, const struct registry_key *key, 
 	return WERR_OK;
 }
 
+static WERROR regf_match_subkey_by_name (TALLOC_CTX *ctx, const struct registry_key *key, uint32_t offset, const char *name, uint32_t *ret) 
+{
+	DATA_BLOB subkey_data;
+	struct nk_block subkey;
+	struct tdr_pull pull;
+	
+	subkey_data = hbin_get(key->hive->backend_data, offset);
+	if (!subkey_data.data) {
+		DEBUG(0, ("Unable to retrieve subkey HBIN\n"));
+		return WERR_GENERAL_FAILURE;
+	}
+
+	ZERO_STRUCT(pull);
+	pull.data = subkey_data;
+	
+	if (NT_STATUS_IS_ERR(tdr_pull_nk_block(&pull, ctx, &subkey))) {
+		DEBUG(0, ("Error parsing NK structure.\n"));
+		return WERR_GENERAL_FAILURE;
+	}
+	if (strncmp(subkey.header, "nk", 2)) {
+		DEBUG(0, ("Not an NK structure.\n"));
+		return WERR_GENERAL_FAILURE;
+	}
+	if (!strcasecmp(subkey.key_name, name)) {
+		*ret = offset;
+	} else {
+		*ret = 0;
+	}
+	return WERR_OK;
+}
+	
+static WERROR regf_get_subkey_by_name (TALLOC_CTX *ctx, const struct registry_key *key, const char *name, struct registry_key **ret)
+{
+	DATA_BLOB data;
+	struct nk_block *nk = key->backend_data;
+	uint32_t key_off = 0;
+
+	data = hbin_get(key->hive->backend_data, nk->subkeys_offset);
+	if (!data.data) {
+		DEBUG(0, ("Unable to find subkey list\n"));
+		return WERR_GENERAL_FAILURE;
+	}
+
+	if (!strncmp((char *)data.data, "li",2)) {
+		struct li_block li;
+		struct tdr_pull pull;
+		uint16_t i;
+
+		DEBUG(10, ("Subkeys in LI list\n"));
+		ZERO_STRUCT(pull);
+		pull.data = data;
+		
+		if (NT_STATUS_IS_ERR(tdr_pull_li_block(&pull, nk, &li))) {
+			DEBUG(0, ("Error parsing LI list\n"));
+			return WERR_GENERAL_FAILURE;
+		}
+		SMB_ASSERT(!strncmp(li.header, "li",2));
+
+		if (li.key_count != nk->num_subkeys) {
+			DEBUG(0, ("Subkey counts don't match\n"));
+			return WERR_GENERAL_FAILURE;
+		}
+		
+		for (i = 0; i < li.key_count; i++) {
+			W_ERROR_NOT_OK_RETURN(regf_match_subkey_by_name(nk, key, li.nk_offset[i], name, &key_off));
+			if (key_off) {
+				break;
+			}
+		}
+		if (!key_off) {
+			return WERR_DEST_NOT_FOUND;
+		}
+	} else if (!strncmp((char *)data.data, "lf",2)) {
+		struct lf_block lf;
+		struct tdr_pull pull;
+		uint16_t i;
+
+		DEBUG(10, ("Subkeys in LF list\n"));
+		ZERO_STRUCT(pull);
+		pull.data = data;
+		
+		if (NT_STATUS_IS_ERR(tdr_pull_lf_block(&pull, nk, &lf))) {
+			DEBUG(0, ("Error parsing LF list\n"));
+			return WERR_GENERAL_FAILURE;
+		}
+		SMB_ASSERT(!strncmp(lf.header, "lf",2));
+
+		if (lf.key_count != nk->num_subkeys) {
+			DEBUG(0, ("Subkey counts don't match\n"));
+			return WERR_GENERAL_FAILURE;
+		}
+		
+		for (i = 0; i < lf.key_count; i++) {
+			if (strncmp(lf.hr[i].hash, name, 4)) {
+				continue;
+			}
+			W_ERROR_NOT_OK_RETURN(regf_match_subkey_by_name(nk, key, lf.hr[i].nk_offset, name, &key_off));
+			if (key_off) {
+				break;
+			}
+		}
+		if (!key_off) {
+			return WERR_DEST_NOT_FOUND;
+		}
+	} else if (!strncmp((char *)data.data, "lh",2)) {
+		struct lh_block lh;
+		struct tdr_pull pull;
+		uint16_t i;
+		uint32_t hash = 0;
+		char *hash_name;
+
+		DEBUG(10, ("Subkeys in LH list\n"));
+		ZERO_STRUCT(pull);
+		pull.data = data;
+		
+		if (NT_STATUS_IS_ERR(tdr_pull_lh_block(&pull, nk, &lh))) {
+			DEBUG(0, ("Error parsing LH list\n"));
+			return WERR_GENERAL_FAILURE;
+		}
+		SMB_ASSERT(!strncmp(lh.header, "lh",2));
+
+		if (lh.key_count != nk->num_subkeys) {
+			DEBUG(0, ("Subkey counts don't match\n"));
+			return WERR_GENERAL_FAILURE;
+		}
+		
+		/* Compute hash for the name */
+		hash_name = strupper_talloc(nk, name);		
+		for (i = 0; *(hash_name + i) != 0; i++) {
+			hash *= 37;
+			hash += *(hash_name + i);
+		}
+		for (i = 0; i < lh.key_count; i++) {
+			if (lh.hr[i].base37 != hash) {
+				continue;
+			}
+			W_ERROR_NOT_OK_RETURN(regf_match_subkey_by_name(nk, key, lh.hr[i].nk_offset, name, &key_off));
+			if (key_off) {
+				break;
+			}
+		}	
+		if (!key_off) {
+			return WERR_DEST_NOT_FOUND;
+		}
+	} else if (!strncmp((char *)data.data, "ri", 2)) {
+		struct ri_block ri;
+		struct tdr_pull pull;
+		uint16_t i, j;
+
+		DEBUG(10, ("Subkeys in RI list\n"));
+		ZERO_STRUCT(pull);
+		pull.data = data;
+		
+		if (NT_STATUS_IS_ERR(tdr_pull_ri_block(&pull, nk, &ri))) {
+			DEBUG(0, ("Error parsing RI list\n"));
+			return WERR_GENERAL_FAILURE;
+		}
+		SMB_ASSERT(!strncmp(ri.header, "ri",2));
+
+			
+		for (i = 0; i < ri.key_count; i++) {
+			DATA_BLOB list_data;
+			
+			/* Get sublist data blob */
+			list_data = hbin_get(key->hive->backend_data, ri.offset[i]);
+			if (!list_data.data) {
+				DEBUG(0, ("Error getting RI list."));
+				return WERR_GENERAL_FAILURE;
+			}
+				
+			ZERO_STRUCT(pull);
+			pull.data = list_data;
+			
+			if (!strncmp((char *)list_data.data, "li", 2)) {
+				struct li_block li;
+	
+				if (NT_STATUS_IS_ERR(tdr_pull_li_block(&pull, nk, &li))) {
+					DEBUG(0, ("Error parsing LI list from RI\n"));
+					return WERR_GENERAL_FAILURE;
+				}
+				SMB_ASSERT(!strncmp(li.header, "li",2));
+				
+				for (j = 0; j < li.key_count; j++) {
+					W_ERROR_NOT_OK_RETURN(regf_match_subkey_by_name(nk, key, 
+								li.nk_offset[j], name, &key_off));
+					if (key_off) {
+						break;
+					}
+				}
+			} else if (!strncmp((char *)list_data.data, "lh", 2)) {
+				struct lh_block lh;
+				uint32_t hash = 0;
+				char *hash_name;
+				
+				if (NT_STATUS_IS_ERR(tdr_pull_lh_block(&pull, nk, &lh))) {
+					DEBUG(0, ("Error parsing LH list from RI\n"));
+					return WERR_GENERAL_FAILURE;
+				}
+				SMB_ASSERT(!strncmp(lh.header, "lh",2));
+
+				/* Compute hash for the name */
+				hash_name = strupper_talloc(nk, name);		
+				for (j = 0; *(hash_name + j) != 0; j++) {
+					hash *= 37;
+					hash += *(hash_name + j);
+				}
+				for (j = 0; j < lh.key_count; j++) {
+					if (lh.hr[j].base37 != hash) {
+						continue;
+					}
+					W_ERROR_NOT_OK_RETURN(regf_match_subkey_by_name(nk, key, 
+								lh.hr[j].nk_offset, name, &key_off));
+					if (key_off) {
+						break;
+					}
+				}
+			}
+			if (key_off) {
+				break;
+			}
+				
+		}
+		if (!key_off) {
+			return WERR_DEST_NOT_FOUND;
+		}
+	} else {
+		DEBUG(0, ("Unknown subkey list type.\n"));
+		return WERR_GENERAL_FAILURE;
+	}
+
+	*ret = regf_get_key (ctx, key->hive->backend_data, key_off);
+	return WERR_OK;
+}
 
 static WERROR regf_set_sec_desc (const struct registry_key *key, const struct security_descriptor *sec_desc)
 {
@@ -873,7 +1106,8 @@ static struct hive_operations reg_backend_nt4 = {
 	.open_hive = nt_open_hive,
 	.num_subkeys = regf_num_subkeys,
 	.num_values = regf_num_values,
-	.get_subkey_by_index = regf_get_subkey,
+	.get_subkey_by_index = regf_get_subkey_by_index,
+	.get_subkey_by_name = regf_get_subkey_by_name,
 	.get_value_by_index = regf_get_value,
 	.key_get_sec_desc = regf_get_sec_desc,
 	.key_set_sec_desc = regf_set_sec_desc,
