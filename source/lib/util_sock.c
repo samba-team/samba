@@ -278,7 +278,12 @@ ssize_t read_udp_socket(int fd,char *buf,size_t len)
 	memset((char *)&lastip,'\0',sizeof(lastip));
 	ret = (ssize_t)sys_recvfrom(fd,buf,len,0,(struct sockaddr *)&sock,&socklen);
 	if (ret <= 0) {
-		DEBUG(2,("read socket failed. ERRNO=%s\n",strerror(errno)));
+		/* Don't print a low debug error for a non-blocking socket. */
+		if (errno == EAGAIN) {
+			DEBUG(10,("read socket returned EAGAIN. ERRNO=%s\n",strerror(errno)));
+		} else {
+			DEBUG(2,("read socket failed. ERRNO=%s\n",strerror(errno)));
+		}
 		return(0);
 	}
 
