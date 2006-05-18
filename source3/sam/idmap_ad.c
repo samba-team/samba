@@ -30,14 +30,6 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_IDMAP
 
-#ifndef ATTR_UIDNUMBER
-#define ATTR_UIDNUMBER ADS_ATTR_SFU_UIDNUMBER_OID
-#endif
-
-#ifndef ATTR_GIDNUMBER
-#define ATTR_GIDNUMBER ADS_ATTR_SFU_GIDNUMBER_OID
-#endif
-
 #define WINBIND_CCACHE_NAME "MEMORY:winbind_ccache"
 
 NTSTATUS init_module(void);
@@ -48,28 +40,42 @@ static char *ad_idmap_uri = NULL;
 static char *attr_uidnumber = NULL;
 static char *attr_gidnumber = NULL;
 
-static BOOL ad_idmap_check_attr_mapping(ADS_STRUCT *ads)
+static ADS_STATUS ad_idmap_check_attr_mapping(ADS_STRUCT *ads)
 {
+	ADS_STATUS status;
+	enum wb_posix_mapping map_type;
+
 	if (attr_uidnumber != NULL && attr_gidnumber != NULL) {
-		return True;
+		return ADS_ERROR(LDAP_SUCCESS);
 	}
 
-	if (use_nss_info("sfu")) {
-	
-		if (!ads_check_sfu_mapping(ads)) {
-			DEBUG(0,("ad_idmap_check_attr_mapping: failed to check for SFU schema\n"));
-			return False;
+	SMB_ASSERT(ads->server.workgroup);
+
+	map_type = get_nss_info(ads->server.workgroup);
+
+	if ((map_type == WB_POSIX_MAP_SFU) ||
+	    (map_type == WB_POSIX_MAP_RFC2307)) {
+
+		status = ads_check_posix_schema_mapping(ads, map_type);
+		if (ADS_ERR_OK(status)) {
+			attr_uidnumber = SMB_STRDUP(ads->schema.posix_uidnumber_attr);
+			attr_gidnumber = SMB_STRDUP(ads->schema.posix_gidnumber_attr);
+			ADS_ERROR_HAVE_NO_MEMORY(attr_uidnumber);
+			ADS_ERROR_HAVE_NO_MEMORY(attr_gidnumber);
+			return ADS_ERROR(LDAP_SUCCESS);
+		} else {
+			DEBUG(0,("ads_check_posix_schema_mapping failed: %s\n", ads_errstr(status)));
+			/* return status; */
 		}
-
-		attr_uidnumber = SMB_STRDUP(ads->schema.sfu_uidnumber_attr);
-		attr_gidnumber = SMB_STRDUP(ads->schema.sfu_gidnumber_attr);
-
-	} else {
-		attr_uidnumber = SMB_STRDUP("uidNumber");
-		attr_gidnumber = SMB_STRDUP("gidNumber");
 	}
+	
+	/* fallback to XAD defaults */
+	attr_uidnumber = SMB_STRDUP("uidNumber");
+	attr_gidnumber = SMB_STRDUP("gidNumber");
+	ADS_ERROR_HAVE_NO_MEMORY(attr_uidnumber);
+	ADS_ERROR_HAVE_NO_MEMORY(attr_gidnumber);
 
-	return True;
+	return ADS_ERROR(LDAP_SUCCESS);
 }
 
 static ADS_STRUCT *ad_idmap_cached_connection(void)
@@ -123,7 +129,8 @@ static ADS_STRUCT *ad_idmap_cached_connection(void)
 
 	ads->is_mine = False;
 
-	if (!ad_idmap_check_attr_mapping(ads)) {
+	status = ad_idmap_check_attr_mapping(ads);
+	if (!ADS_ERR_OK(status)) {
 		DEBUG(1, ("ad_idmap_init: failed to check attribute mapping\n"));
 		return NULL;
 	}
@@ -168,14 +175,14 @@ static NTSTATUS ad_idmap_get_sid_from_id(DOM_SID *sid, unid_t unid, int id_type)
 		case ID_USERID:
 			if (asprintf(&expr, "(&(|(sAMAccountType=%d)(sAMAccountType=%d)(sAMAccountType=%d))(%s=%d))",
 				ATYPE_NORMAL_ACCOUNT, ATYPE_WORKSTATION_TRUST, ATYPE_INTERDOMAIN_TRUST,
-				ATTR_UIDNUMBER, (int)unid.uid) == -1) {
+				ads->schema.posix_uidnumber_attr, (int)unid.uid) == -1) {
 				return NT_STATUS_NO_MEMORY;
 			}
 			break;
 		case ID_GROUPID:
 			if (asprintf(&expr, "(&(|(sAMAccountType=%d)(sAMAccountType=%d))(%s=%d))",
 				ATYPE_SECURITY_GLOBAL_GROUP, ATYPE_SECURITY_LOCAL_GROUP,
-				ATTR_GIDNUMBER, (int)unid.gid) == -1) {
+				ads->schema.posix_gidnumber_attr, (int)unid.gid) == -1) {
 				return NT_STATUS_NO_MEMORY;
 			}
 			break;
@@ -228,7 +235,11 @@ static NTSTATUS ad_idmap_get_id_from_sid(unid_t *unid, int *id_type, const DOM_S
 {
 	ADS_STATUS rc;
 	NTSTATUS status = NT_STATUS_NONE_MAPPED;
-	const char *attrs[] = { "sAMAccountType", ATTR_UIDNUMBER, ATTR_GIDNUMBER, NULL };
+	const char *attrs[] = { "sAMAccountType", ADS_ATTR_SFU_UIDNUMBER_OID, 
+						  ADS_ATTR_SFU_GIDNUMBER_OID, 
+						  ADS_ATTR_RFC2307_UIDNUMBER_OID,
+						  ADS_ATTR_RFC2307_GIDNUMBER_OID,
+						  NULL };
 	void *res = NULL;
 	void *msg = NULL;
 	char *expr = NULL;

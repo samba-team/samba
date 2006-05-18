@@ -38,6 +38,9 @@ static ADS_STRUCT *ads_cached_connection(struct winbindd_domain *domain)
 {
 	ADS_STRUCT *ads;
 	ADS_STATUS status;
+	enum wb_posix_mapping map_type;
+
+	DEBUG(10,("ads_cached_connection\n"));
 
 	if (domain->private_data) {
 		ads = (ADS_STRUCT *)domain->private_data;
@@ -125,11 +128,18 @@ static ADS_STRUCT *ads_cached_connection(struct winbindd_domain *domain)
 		return NULL;
 	}
 
-	if (use_nss_info("sfu") && (!ads_check_sfu_mapping(ads))) {
-		DEBUG(0,("ads_cached_connection: failed to check sfu attributes\n"));
-		return NULL;
-	}
+	map_type = get_nss_info(domain->name);
+
+	if ((map_type == WB_POSIX_MAP_RFC2307)||
+	    (map_type == WB_POSIX_MAP_SFU)) {
 	
+		status = ads_check_posix_schema_mapping(ads, map_type);
+		if (!ADS_ERR_OK(status)) {
+			DEBUG(10,("ads_check_posix_schema_mapping failed "
+				  "with: %s\n", ads_errstr(status)));
+		} 
+	}
+
 	/* set the flag that says we don't own the memory even 
 	   though we do so that ads_destroy() won't destroy the 
 	   structure we pass back by reference */
@@ -155,6 +165,9 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 			       ADS_ATTR_SFU_HOMEDIR_OID, 
 			       ADS_ATTR_SFU_SHELL_OID,
 			       ADS_ATTR_SFU_GECOS_OID,
+			       ADS_ATTR_RFC2307_HOMEDIR_OID,
+			       ADS_ATTR_RFC2307_SHELL_OID,
+			       ADS_ATTR_RFC2307_GECOS_OID,
 			       NULL};
 	int i, count;
 	ADS_STATUS rc;
@@ -208,13 +221,17 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 
 		name = ads_pull_username(ads, mem_ctx, msg);
 
-		if (use_nss_info("sfu")) {
+		if (get_nss_info(domain->name) && ads->schema.map_type) {
+
+			DEBUG(10,("pulling posix attributes (%s schema)\n", 
+				wb_posix_map_str(ads->schema.map_type)));
+
 			homedir = ads_pull_string(ads, mem_ctx, msg, 
-						  ads->schema.sfu_homedir_attr);
+						  ads->schema.posix_homedir_attr);
 			shell 	= ads_pull_string(ads, mem_ctx, msg, 
-						  ads->schema.sfu_shell_attr);
+						  ads->schema.posix_shell_attr);
 			gecos 	= ads_pull_string(ads, mem_ctx, msg, 
-						  ads->schema.sfu_gecos_attr);
+						  ads->schema.posix_gecos_attr);
 		}
 
 		if (gecos == NULL) {
@@ -446,6 +463,9 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 			       ADS_ATTR_SFU_HOMEDIR_OID, 
 			       ADS_ATTR_SFU_SHELL_OID,
 			       ADS_ATTR_SFU_GECOS_OID,
+			       ADS_ATTR_RFC2307_HOMEDIR_OID,
+			       ADS_ATTR_RFC2307_SHELL_OID,
+			       ADS_ATTR_RFC2307_GECOS_OID,
 			       NULL};
 	ADS_STATUS rc;
 	int count;
@@ -484,13 +504,17 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 
 	info->acct_name = ads_pull_username(ads, mem_ctx, msg);
 
-	if (use_nss_info("sfu")) {
+	if (get_nss_info(domain->name) && ads->schema.map_type) {
+
+		DEBUG(10,("pulling posix attributes (%s schema)\n", 
+			wb_posix_map_str(ads->schema.map_type)));
+		
 		info->homedir 	= ads_pull_string(ads, mem_ctx, msg, 
-						  ads->schema.sfu_homedir_attr);
+						  ads->schema.posix_homedir_attr);
 		info->shell 	= ads_pull_string(ads, mem_ctx, msg, 
-						  ads->schema.sfu_shell_attr);
+						  ads->schema.posix_shell_attr);
 		info->full_name	= ads_pull_string(ads, mem_ctx, msg,
-						  ads->schema.sfu_gecos_attr);
+						  ads->schema.posix_gecos_attr);
 	}
 
 	if (info->full_name == NULL) {
