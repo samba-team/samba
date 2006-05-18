@@ -96,6 +96,7 @@ NTSTATUS file_new(connection_struct *conn, files_struct **result)
 
 	fsp->fh = SMB_MALLOC_P(struct fd_handle);
 	if (!fsp->fh) {
+		SAFE_FREE(fsp);
 		return NT_STATUS_NO_MEMORY;
 	}
 
