@@ -172,7 +172,7 @@ echo -n "PROVISIONING..."
 echo "DONE"
 
 if [ x"$RUN_FROM_BUILD_FARM" = x"yes" ];then
-	CONFIGURATION="$CONFIGURATION --option=\"torture:progress=no\""
+	CONFIGURATION="$CONFIGURATION --option=torture:progress=no"
 fi
 
 SOCKET_WRAPPER_DEFAULT_IFACE=1
@@ -186,7 +186,7 @@ TORTURE_INTERFACES='127.0.0.26/8,127.0.0.27/8,127.0.0.28/8,127.0.0.29/8,127.0.0.
 TORTURE_OPTIONS="--maximum-runtime=$TORTURE_MAXTIME --option=interfaces=$TORTURE_INTERFACES $CONFIGURATION"
 export TORTURE_OPTIONS
 
-TORTURE_OPTIONS="$TORTURE_OPTIONS --option=\"target:samba4=yes\""
+TORTURE_OPTIONS="$TORTURE_OPTIONS --option=target:samba4=yes"
 
 START=`date`
 (
