@@ -570,7 +570,7 @@ TOOL_OBJ = client/smbctool.o client/clitar.o $(PARAM_OBJ) $(LIBSMB_OBJ) \
 	     $(LIB_NONSMBD_OBJ) $(KRBCLIENT_OBJ) \
              $(READLINE_OBJ) $(POPT_LIB_OBJ) $(SECRETS_OBJ)
 
-NET_OBJ1 = utils/net.o utils/net_ads.o utils/net_help.o \
+NET_OBJ1 = utils/net.o utils/net_ads.o utils/net_domain.o utils/net_help.o \
 	   utils/net_rap.o utils/net_rpc.o utils/net_rpc_samsync.o \
 	   utils/net_rpc_join.o utils/net_time.o utils/net_lookup.o \
 	   utils/net_cache.o utils/net_groupmap.o utils/net_idmap.o \
