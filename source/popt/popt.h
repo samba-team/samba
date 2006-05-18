@@ -443,7 +443,7 @@ int poptConfigFileToString(FILE *fp, /*@out@*/ char ** argstrp, int flags)
  * @param error		popt error
  * @return		error string
  */
-/*@observer@*/ const char *const poptStrerror(const int error)
+/*@observer@*/ const char* poptStrerror(const int error)
 	/*@*/;
 
 /** \ingroup popt
