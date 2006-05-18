@@ -135,11 +135,11 @@ void ads_destroy(ADS_STRUCT **ads)
 		SAFE_FREE((*ads)->config.bind_path);
 		SAFE_FREE((*ads)->config.ldap_server_name);
 		
-		SAFE_FREE((*ads)->schema.sfu_uidnumber_attr);
-		SAFE_FREE((*ads)->schema.sfu_gidnumber_attr);
-		SAFE_FREE((*ads)->schema.sfu_shell_attr);
-		SAFE_FREE((*ads)->schema.sfu_homedir_attr);
-		SAFE_FREE((*ads)->schema.sfu_gecos_attr);
+		SAFE_FREE((*ads)->schema.posix_uidnumber_attr);
+		SAFE_FREE((*ads)->schema.posix_gidnumber_attr);
+		SAFE_FREE((*ads)->schema.posix_shell_attr);
+		SAFE_FREE((*ads)->schema.posix_homedir_attr);
+		SAFE_FREE((*ads)->schema.posix_gecos_attr);
 		
 		ZERO_STRUCTP(*ads);
 

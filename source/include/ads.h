@@ -4,6 +4,13 @@
   basically this is a wrapper around ldap
 */
 
+enum wb_posix_mapping {
+	WB_POSIX_MAP_TEMPLATE 	= 0, 
+	WB_POSIX_MAP_SFU 	= 1, 
+	WB_POSIX_MAP_RFC2307 	= 2,
+	WB_POSIX_MAP_UNIXINFO	= 3
+};
+
 typedef struct {
 	void *ld; /* the active ldap structure */
 	struct in_addr ldap_ip; /* the ip of the active connection, if any */
@@ -42,11 +49,12 @@ typedef struct {
 
 	/* info derived from the servers schema */
 	struct {
-		char *sfu_homedir_attr;
-		char *sfu_shell_attr;
-		char *sfu_uidnumber_attr;
-		char *sfu_gidnumber_attr;
-		char *sfu_gecos_attr;
+		enum wb_posix_mapping map_type;
+		char *posix_homedir_attr;
+		char *posix_shell_attr;
+		char *posix_uidnumber_attr;
+		char *posix_gidnumber_attr;
+		char *posix_gecos_attr;
 	} schema;
 
 } ADS_STRUCT;
@@ -83,6 +91,13 @@ typedef void **ADS_MODLIST;
 #define ADS_ERR_OK(status) ((status.error_type == ENUM_ADS_ERROR_NT) ? NT_STATUS_IS_OK(status.err.nt_status):(status.err.rc == 0))
 #define ADS_SUCCESS ADS_ERROR(0)
 
+#define ADS_ERROR_HAVE_NO_MEMORY(x) do { \
+        if (!(x)) {\
+                return ADS_ERROR(LDAP_NO_MEMORY);\
+        }\
+} while (0)
+
+
 /* time between reconnect attempts */
 #define ADS_RECONNECT_TIME 5
 
@@ -99,6 +114,13 @@ typedef void **ADS_MODLIST;
 #define ADS_ATTR_SFU_HOMEDIR_OID 	"1.2.840.113556.1.6.18.1.344"
 #define ADS_ATTR_SFU_SHELL_OID 		"1.2.840.113556.1.6.18.1.312"
 #define ADS_ATTR_SFU_GECOS_OID 		"1.2.840.113556.1.6.18.1.337"
+
+/* ldap attribute oids (RFC2307) */
+#define ADS_ATTR_RFC2307_UIDNUMBER_OID	"1.3.6.1.1.1.1.0"
+#define ADS_ATTR_RFC2307_GIDNUMBER_OID	"1.3.6.1.1.1.1.1"
+#define ADS_ATTR_RFC2307_HOMEDIR_OID	"1.3.6.1.1.1.1.3"
+#define ADS_ATTR_RFC2307_SHELL_OID	"1.3.6.1.1.1.1.4"
+#define ADS_ATTR_RFC2307_GECOS_OID	"1.3.6.1.1.1.1.2"
 
 /* ldap bitwise searches */
 #define ADS_LDAP_MATCHING_RULE_BIT_AND	"1.2.840.113556.1.4.803"
