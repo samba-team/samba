@@ -23,8 +23,6 @@
 
 #include "includes.h"
 
-extern int ClientNMB;
-
 extern uint16 samba_nb_type;
 
 int workgroup_count = 0; /* unique index key: one for each workgroup */

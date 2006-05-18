@@ -23,8 +23,6 @@
 
 #include "includes.h"
 
-extern int ClientNMB;
-
 int num_response_packets = 0;
 
 /***************************************************************************
