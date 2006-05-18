@@ -1493,6 +1493,7 @@ NTSTATUS cli_full_connection(struct cli_state **output_cli,
 {
 	NTSTATUS nt_status;
 	struct cli_state *cli = NULL;
+	int pw_len = password ? strlen(password)+1 : 0;
 
 	nt_status = cli_start_connection(&cli, my_name, dest_host, 
 					 dest_ip, port, signing_state, flags, retry);
@@ -1501,9 +1502,7 @@ NTSTATUS cli_full_connection(struct cli_state **output_cli,
 		return nt_status;
 	}
 
-	if (!cli_session_setup(cli, user, password, strlen(password)+1, 
-			       password, strlen(password)+1, 
-			       domain)) {
+	if (!cli_session_setup(cli, user, password, pw_len, password, pw_len, domain)) {
 		if ((flags & CLI_FULL_CONNECTION_ANNONYMOUS_FALLBACK)
 		    && cli_session_setup(cli, "", "", 0, "", 0, domain)) {
 		} else {
@@ -1517,8 +1516,7 @@ NTSTATUS cli_full_connection(struct cli_state **output_cli,
 	} 
 
 	if (service) {
-		if (!cli_send_tconX(cli, service, service_type,
-				    password, strlen(password)+1)) {
+		if (!cli_send_tconX(cli, service, service_type, password, pw_len)) {
 			nt_status = cli_nt_error(cli);
 			DEBUG(1,("failed tcon_X with %s\n", nt_errstr(nt_status)));
 			cli_shutdown(cli);
