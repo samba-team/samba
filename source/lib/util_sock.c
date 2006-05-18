@@ -1003,7 +1003,7 @@ BOOL open_any_socket_out(struct sockaddr_in *addrs, int num_addrs,
 	tv.tv_sec = 0;
 	tv.tv_usec = connect_loop;
 
-	res = sys_select(maxfd+1, &r_fds, &wr_fds, NULL, &tv);
+	res = sys_select_intr(maxfd+1, &r_fds, &wr_fds, NULL, &tv);
 
 	if (res < 0)
 		goto done;
