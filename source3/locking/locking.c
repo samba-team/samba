@@ -665,6 +665,7 @@ static TDB_DATA unparse_share_modes(struct share_mode_lock *lck)
 		p += sizeof(uid_t);
 
 		memcpy(p, &lck->delete_token->gid, sizeof(gid_t));
+		p += sizeof(gid_t);
 
 		for (i = 0; i < lck->delete_token->ngroups; i++) {
 			memcpy(p, &lck->delete_token->groups[i], sizeof(gid_t));
