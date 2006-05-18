@@ -175,7 +175,7 @@ static NTSTATUS cvfs_connect(struct ntvfs_module_context *ntvfs,
 					    "cifs", "mapgeneric", False);
 
 	private->map_trans2 = lp_parm_bool(ntvfs->ctx->config.snum,
-					   "cifs", "maptrans2", False);
+					   "cifs", "maptrans2", True);
 
 	return NT_STATUS_OK;
 }
