@@ -1,5 +1,5 @@
 #################################
-# Start SUBSYSTEM gensec
+# Start SUBSYSTEM CREDENTIALS
 [SUBSYSTEM::CREDENTIALS]
 PUBLIC_PROTO_HEADER = credentials_proto.h
 PUBLIC_HEADERS = credentials.h
