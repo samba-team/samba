@@ -1143,11 +1143,6 @@ static ADS_STATUS net_set_machine_spn(TALLOC_CTX *ctx, ADS_STRUCT *ads_s )
 	
 	ads_mod_str(ctx, &mods, "dNSHostName", my_fqdn);
 	ads_mod_strlist(ctx, &mods, "servicePrincipalName", servicePrincipalName);
-#if 0 
-	ads_mod_str(ctx, &mods, "userPrincipalName", host_upn);
-	ads_mod_str(ctx, &mods, "operatingSystem", "Samba");
-	ads_mod_str(ctx, &mods, "operatingSystemVersion", SAMBA_VERSION_STRING);
-#endif
 
 	status = ads_gen_mod(ads_s, new_dn, mods);
 
@@ -1164,7 +1159,6 @@ done:
 
 static ADS_STATUS net_precreate_machine_acct( ADS_STRUCT *ads, const char *ou )
 {
-	ADS_STRUCT *ads_s = ads;
 	ADS_STATUS rc = ADS_ERROR(LDAP_SERVER_DOWN);
 	char *dn, *ou_str;
 	LDAPMessage *res = NULL;
@@ -1173,40 +1167,19 @@ static ADS_STATUS net_precreate_machine_acct( ADS_STRUCT *ads, const char *ou )
 	asprintf(&dn, "%s,%s", ou_str, ads->config.bind_path);
 	free(ou_str);
 
-	if ( !ads->ld ) {
-		ads_s = ads_init( ads->config.realm, NULL, ads->config.ldap_server_name );
-
-		if ( ads_s ) {
-			rc = ads_connect( ads_s );
-		}
-
-		if ( !ADS_ERR_OK(rc) ) {
-			goto done;
-		}
-	}
-
 	rc = ads_search_dn(ads, (void**)&res, dn, NULL);
 	ads_msgfree(ads, res);
 
-	if (!ADS_ERR_OK(rc)) {
-		goto done;
+	if (ADS_ERR_OK(rc)) {
+		/* Attempt to create the machine account and bail if this fails.
+		   Assume that the admin wants exactly what they requested */
+
+		rc = ads_create_machine_acct( ads, global_myname(), dn );
+		if ( rc.error_type == ENUM_ADS_ERROR_LDAP && rc.err.rc == LDAP_ALREADY_EXISTS ) {
+			rc = ADS_SUCCESS;
+		}
 	}
 
-	/* Attempt to create the machine account and bail if this fails.
-	   Assume that the admin wants exactly what they requested */
-
-	rc = ads_create_machine_acct( ads, global_myname(), dn );
-	if ( rc.error_type == ENUM_ADS_ERROR_LDAP && rc.err.rc == LDAP_ALREADY_EXISTS ) {
-		rc = ADS_SUCCESS;
-		goto done;
-	}
-	if ( !ADS_ERR_OK(rc) ) {
-		goto done;
-	}
-
-done:
-	if ( ads_s != ads )
-		ads_destroy( &ads_s );
 	SAFE_FREE( dn );
 
 	return rc;
@@ -1218,7 +1191,7 @@ done:
  
 int net_ads_join(int argc, const char **argv)
 {
-	ADS_STRUCT *ads, *ads_s;
+	ADS_STRUCT *ads;
 	ADS_STATUS status;
 	char *machine_account = NULL;
 	const char *short_domain_name = NULL;
@@ -1311,38 +1284,16 @@ int net_ads_join(int argc, const char **argv)
 		return -1;
 	}	
 
-	/* From here on out, use the machine account.  But first delete any 
-	   existing tickets based on the user's creds.  */
-
-	ads_kdestroy( NULL );
+	/* create the dNSHostName & servicePrincipalName values */
 	
-	status = ADS_ERROR(LDAP_SERVER_DOWN);
-	ads_s = ads_init( ads->server.realm, ads->server.workgroup, ads->server.ldap_server );
+	status = net_set_machine_spn( ctx, ads );
+	if ( !ADS_ERR_OK(status) )  {
+		d_fprintf(stderr, "Failed to set servicePrincipalNames. Only NTLM authentication will be possible.\n");
+		d_fprintf(stderr, "Please ensure that the DNS domain of this server matches the AD domain,\n");
+		d_fprintf(stderr, "Or rejoin with using Domain Admin credentials.\n");
 
-	if ( ads_s ) {
-		asprintf( &ads_s->auth.user_name, "%s$", global_myname() );
-		ads_s->auth.password = secrets_fetch_machine_password( short_domain_name, NULL, NULL );
-		ads_s->auth.realm = SMB_STRDUP( lp_realm() );
-		ads_kinit_password( ads_s );
-		status = ads_connect( ads_s );
+		/* don't fail */
 	}
-	if ( !ADS_ERR_OK(status) ) {
-		d_fprintf( stderr, "LDAP bind using machine credentials failed!\n");
-		d_fprintf(stderr, "Only NTLM authentication will be possible.\n");
-	} else {
-		/* create the dNSHostName & servicePrincipalName values */
-	
-		status = net_set_machine_spn( ctx, ads_s );
-		if ( !ADS_ERR_OK(status) )  {
-			d_fprintf(stderr, "Failed to set servicePrincipalNames.\n");
-			d_fprintf(stderr, "Only NTLM authentication will be possible.\n");
-
-			/* don't fail */
-		}
-	}
-	
-	ads_destroy( &ads_s );
-		
 
 #if defined(HAVE_KRB5) 
 	if (asprintf(&machine_account, "%s$", global_myname()) == -1) {
