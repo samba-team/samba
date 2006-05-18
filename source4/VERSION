@@ -100,7 +100,7 @@ SAMBA_VERSION_RELEASE_NICKNAME=
 # Note the '-' is automaticaly added                   #
 #                                                      #
 # e.g. SAMBA_VERSION_VENDOR_SUFFIX=VendorVersion       #
-#  ->  "CVS 3.0.0rc2-VendorVersion"                    #
+#  ->  "3.0.0rc2-VendorVersion"                        #
 #                                                      #
 ########################################################
 SAMBA_VERSION_VENDOR_SUFFIX=
