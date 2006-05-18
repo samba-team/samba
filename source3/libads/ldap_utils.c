@@ -27,9 +27,9 @@
   a wrapper around ldap_search_s that retries depending on the error code
   this is supposed to catch dropped connections and auto-reconnect
 */
-ADS_STATUS ads_do_search_retry(ADS_STRUCT *ads, const char *bind_path, int scope, 
-			       const char *expr,
-			       const char **attrs, void **res)
+static ADS_STATUS ads_do_search_retry_internal(ADS_STRUCT *ads, const char *bind_path, int scope, 
+					       const char *expr,
+					       const char **attrs, void *args, void **res)
 {
 	ADS_STATUS status = ADS_SUCCESS;
 	int count = 3;
@@ -49,7 +49,7 @@ ADS_STATUS ads_do_search_retry(ADS_STRUCT *ads, const char *bind_path, int scope
 	}
 
 	*res = NULL;
-	status = ads_do_search_all(ads, bp, scope, expr, attrs, res);
+	status = ads_do_search_all_args(ads, bp, scope, expr, attrs, args, res);
 	if (ADS_ERR_OK(status)) {
 		DEBUG(5,("Search for %s gave %d replies\n",
 			 expr, ads_count_replies(ads, *res)));
@@ -82,7 +82,7 @@ ADS_STATUS ads_do_search_retry(ADS_STRUCT *ads, const char *bind_path, int scope
 		}
 
 		*res = NULL;
-		status = ads_do_search_all(ads, bp, scope, expr, attrs, res);
+		status = ads_do_search_all_args(ads, bp, scope, expr, attrs, args, res);
 		if (ADS_ERR_OK(status)) {
 			DEBUG(5,("Search for %s gave %d replies\n",
 				 expr, ads_count_replies(ads, *res)));
@@ -97,6 +97,20 @@ ADS_STATUS ads_do_search_retry(ADS_STRUCT *ads, const char *bind_path, int scope
 			 ads_errstr(status)));
 
 	return status;
+}
+
+ADS_STATUS ads_do_search_retry(ADS_STRUCT *ads, const char *bind_path, int scope, 
+			       const char *expr,
+			       const char **attrs, void **res)
+{
+	return ads_do_search_retry_internal(ads, bind_path, scope, expr, attrs, NULL, res);
+}
+
+ADS_STATUS ads_do_search_retry_args(ADS_STRUCT *ads, const char *bind_path, int scope, 
+				    const char *expr,
+				    const char **attrs, void *args, void **res)
+{
+	return ads_do_search_retry_internal(ads, bind_path, scope, expr, attrs, args, res);
 }
 
 
@@ -114,6 +128,21 @@ ADS_STATUS ads_search_retry_dn(ADS_STRUCT *ads, void **res,
 {
 	return ads_do_search_retry(ads, dn, LDAP_SCOPE_BASE,
 				   "(objectclass=*)", attrs, res);
+}
+
+ADS_STATUS ads_search_retry_extended_dn(ADS_STRUCT *ads, void **res, 
+					const char *dn, 
+					const char **attrs,
+					enum ads_extended_dn_flags flags)
+{
+	ads_control args;
+
+	args.control = ADS_EXTENDED_DN_OID;
+	args.val = flags;
+	args.critical = True;
+
+	return ads_do_search_retry_args(ads, dn, LDAP_SCOPE_BASE,
+					"(objectclass=*)", attrs, &args, res);
 }
 
 ADS_STATUS ads_search_retry_sid(ADS_STRUCT *ads, void **res, 

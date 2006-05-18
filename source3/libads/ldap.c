@@ -445,21 +445,25 @@ static char **ads_pull_strvals(TALLOC_CTX *ctx, const char **in_vals)
  * @param cookie The paged results cookie to be returned on subsequent calls
  * @return status of search
  **/
-ADS_STATUS ads_do_paged_search(ADS_STRUCT *ads, const char *bind_path,
-			       int scope, const char *expr,
-			       const char **attrs, void **res, 
-			       int *count, void **cookie)
+ADS_STATUS ads_do_paged_search_args(ADS_STRUCT *ads, const char *bind_path,
+				    int scope, const char *expr,
+				    const char **attrs, void *args, void **res, 
+				    int *count, void **cookie)
 {
 	int rc, i, version;
 	char *utf8_expr, *utf8_path, **search_attrs;
-	LDAPControl PagedResults, NoReferrals, *controls[3], **rcontrols; 
+	LDAPControl PagedResults, NoReferrals, ExtendedDn, *controls[4], **rcontrols;
 	BerElement *cookie_be = NULL;
 	struct berval *cookie_bv= NULL;
+	BerElement *extdn_be = NULL;
+	struct berval *extdn_bv= NULL;
+
 	TALLOC_CTX *ctx;
+	ads_control *external_control = (ads_control *) args;
 
 	*res = NULL;
 
-	if (!(ctx = talloc_init("ads_do_paged_search")))
+	if (!(ctx = talloc_init("ads_do_paged_search_args")))
 		return ADS_ERROR(LDAP_NO_MEMORY);
 
 	/* 0 means the conversion worked but the result was empty 
@@ -509,10 +513,47 @@ ADS_STATUS ads_do_paged_search(ADS_STRUCT *ads, const char *bind_path,
 	NoReferrals.ldctl_value.bv_len = 0;
 	NoReferrals.ldctl_value.bv_val = CONST_DISCARD(char *, "");
 
+	if (external_control && strequal(external_control->control, ADS_EXTENDED_DN_OID)) {
 
-	controls[0] = &NoReferrals;
-	controls[1] = &PagedResults;
-	controls[2] = NULL;
+		ExtendedDn.ldctl_oid = CONST_DISCARD(char *, external_control->control);
+		ExtendedDn.ldctl_iscritical = (char) external_control->critical;
+
+		/* win2k does not accept a ldctl_value beeing passed in */
+
+		if (external_control->val != 0) {
+
+			if ((extdn_be = ber_alloc_t(LBER_USE_DER)) == NULL ) {
+				rc = LDAP_NO_MEMORY;
+				goto done;
+			}
+
+			if ((ber_printf(extdn_be, "{i}", (ber_int_t) external_control->val)) == -1) {
+				rc = LDAP_NO_MEMORY;
+				goto done;
+			}
+			if ((ber_flatten(extdn_be, &extdn_bv)) == -1) {
+				rc = LDAP_NO_MEMORY;
+				goto done;
+			}
+
+			ExtendedDn.ldctl_value.bv_len = extdn_bv->bv_len;
+			ExtendedDn.ldctl_value.bv_val = extdn_bv->bv_val;
+
+		} else {
+			ExtendedDn.ldctl_value.bv_len = 0;
+			ExtendedDn.ldctl_value.bv_val = CONST_DISCARD(char *, "");
+		}
+
+		controls[0] = &NoReferrals;
+		controls[1] = &PagedResults;
+		controls[2] = &ExtendedDn;
+		controls[3] = NULL;
+
+	} else {
+		controls[0] = &NoReferrals;
+		controls[1] = &PagedResults;
+		controls[2] = NULL;
+	}
 
 	/* we need to disable referrals as the openldap libs don't
 	   handle them and paged results at the same time.  Using them
@@ -533,7 +574,7 @@ ADS_STATUS ads_do_paged_search(ADS_STRUCT *ads, const char *bind_path,
 	ber_bvfree(cookie_bv);
 
 	if (rc) {
-		DEBUG(3,("ads_do_paged_search: ldap_search_with_timeout(%s) -> %s\n", expr,
+		DEBUG(3,("ads_do_paged_search_args: ldap_search_with_timeout(%s) -> %s\n", expr,
 			 ldap_err2string(rc)));
 		goto done;
 	}
@@ -565,10 +606,27 @@ ADS_STATUS ads_do_paged_search(ADS_STRUCT *ads, const char *bind_path,
 
 done:
 	talloc_destroy(ctx);
+
+	if (extdn_be) {
+		ber_free(extdn_be, 1);
+	}
+
+	if (extdn_bv) {
+		ber_bvfree(extdn_bv);
+	}
+ 
 	/* if/when we decide to utf8-encode attrs, take out this next line */
 	str_list_free(&search_attrs);
 
 	return ADS_ERROR(rc);
+}
+
+ADS_STATUS ads_do_paged_search(ADS_STRUCT *ads, const char *bind_path,
+			       int scope, const char *expr,
+			       const char **attrs, void **res, 
+			       int *count, void **cookie)
+{
+	return ads_do_paged_search_args(ads, bind_path, scope, expr, attrs, NULL, res, count, cookie);
 }
 
 
@@ -583,16 +641,16 @@ done:
  * @param res ** which will contain results - free res* with ads_msgfree()
  * @return status of search
  **/
-ADS_STATUS ads_do_search_all(ADS_STRUCT *ads, const char *bind_path,
-			     int scope, const char *expr,
-			     const char **attrs, void **res)
+ADS_STATUS ads_do_search_all_args(ADS_STRUCT *ads, const char *bind_path,
+				  int scope, const char *expr,
+				  const char **attrs, void *args, void **res)
 {
 	void *cookie = NULL;
 	int count = 0;
 	ADS_STATUS status;
 
 	*res = NULL;
-	status = ads_do_paged_search(ads, bind_path, scope, expr, attrs, res,
+	status = ads_do_paged_search_args(ads, bind_path, scope, expr, attrs, args, res,
 				     &count, &cookie);
 
 	if (!ADS_ERR_OK(status)) 
@@ -604,8 +662,8 @@ ADS_STATUS ads_do_search_all(ADS_STRUCT *ads, const char *bind_path,
 		ADS_STATUS status2;
 		LDAPMessage *msg, *next;
 
-		status2 = ads_do_paged_search(ads, bind_path, scope, expr, 
-					      attrs, &res2, &count, &cookie);
+		status2 = ads_do_paged_search_args(ads, bind_path, scope, expr, 
+					      attrs, args, &res2, &count, &cookie);
 
 		if (!ADS_ERR_OK(status2)) break;
 
@@ -624,6 +682,13 @@ ADS_STATUS ads_do_search_all(ADS_STRUCT *ads, const char *bind_path,
 #endif
 
 	return status;
+}
+
+ADS_STATUS ads_do_search_all(ADS_STRUCT *ads, const char *bind_path,
+			     int scope, const char *expr,
+			     const char **attrs, void **res)
+{
+	return ads_do_search_all_args(ads, bind_path, scope, expr, attrs, NULL, res);
 }
 
 /**
@@ -2578,6 +2643,129 @@ ADS_STATUS ads_upn_suffixes(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, char **suffixe
 	ads_msgfree(ads, res);
 
 	return status;
+}
+
+/**
+ * pull a DOM_SID from an extended dn string
+ * @param mem_ctx TALLOC_CTX 
+ * @param flags string type of extended_dn
+ * @param sid pointer to a DOM_SID
+ * @return boolean inidicating success
+ **/
+BOOL ads_get_sid_from_extended_dn(TALLOC_CTX *mem_ctx, 
+				  const char *dn, 
+				  enum ads_extended_dn_flags flags, 
+				  DOM_SID *sid)
+{
+	char *p, *q;
+
+	if (!dn) {
+		return False;
+	}
+
+	/* 
+	 * ADS_EXTENDED_DN_HEX_STRING:
+	 * <GUID=238e1963cb390f4bb032ba0105525a29>;<SID=010500000000000515000000bb68c8fd6b61b427572eb04556040000>;CN=gd,OU=berlin,OU=suse,DC=ber,DC=suse,DC=de
+	 *
+	 * ADS_EXTENDED_DN_STRING (only with w2k3):
+	<GUID=63198e23-39cb-4b0f-b032-ba0105525a29>;<SID=S-1-5-21-4257769659-666132843-1169174103-1110>;CN=gd,OU=berlin,OU=suse,DC=ber,DC=suse,DC=de
+	 */
+
+	p = strchr(dn, ';');
+	if (!p) {
+		return False;
+	}
+
+	if (strncmp(p, ";<SID=", strlen(";<SID=")) != 0) {
+		return False;
+	}
+
+	p += strlen(";<SID=");
+
+	q = strchr(p, '>');
+	if (!q) {
+		return False;
+	}
+	
+	*q = '\0';
+
+	DEBUG(100,("ads_get_sid_from_extended_dn: sid string is %s\n", p));
+
+	switch (flags) {
+	
+	case ADS_EXTENDED_DN_STRING:
+		if (!string_to_sid(sid, p)) {
+			return False;
+		}
+		break;
+	case ADS_EXTENDED_DN_HEX_STRING: {
+		pstring buf;
+		size_t buf_len;
+
+		buf_len = strhex_to_str(buf, strlen(p), p);
+		if (buf_len == 0) {
+			return False;
+		}
+
+		if (!sid_parse(buf, buf_len, sid)) {
+			DEBUG(10,("failed to parse sid\n"));
+			return False;
+		}
+		break;
+		}
+	default:
+		DEBUG(10,("unknown extended dn format\n"));
+		return False;
+	}
+
+	return True;
+}
+
+/**
+ * pull an array of DOM_SIDs from a ADS result
+ * @param ads connection to ads server
+ * @param mem_ctx TALLOC_CTX for allocating sid array
+ * @param msg Results of search
+ * @param field Attribute to retrieve
+ * @param flags string type of extended_dn
+ * @param sids pointer to sid array to allocate
+ * @return the count of SIDs pulled
+ **/
+int ads_pull_sids_from_extendeddn(ADS_STRUCT *ads, 
+				  TALLOC_CTX *mem_ctx, 
+				  void *msg, 
+				  const char *field,
+				  enum ads_extended_dn_flags flags,
+				  DOM_SID **sids)
+{
+	int i;
+	size_t dn_count;
+	char **dn_strings;
+
+	if ((dn_strings = ads_pull_strings(ads, mem_ctx, msg, field, 
+					   &dn_count)) == NULL) {
+		return 0;
+	}
+
+	(*sids) = TALLOC_ZERO_ARRAY(mem_ctx, DOM_SID, dn_count + 1);
+	if (!(*sids)) {
+		TALLOC_FREE(dn_strings);
+		return 0;
+	}
+
+	for (i=0; i<dn_count; i++) {
+
+		if (!ads_get_sid_from_extended_dn(mem_ctx, dn_strings[i], 
+						  flags, &(*sids)[i])) {
+			TALLOC_FREE(*sids);
+			TALLOC_FREE(dn_strings);
+			return 0;
+		}
+	}
+
+	TALLOC_FREE(dn_strings);
+
+	return dn_count;
 }
 
 #endif
