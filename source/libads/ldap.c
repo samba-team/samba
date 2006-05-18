@@ -2422,6 +2422,8 @@ ADS_STATUS ads_current_time(ADS_STRUCT *ads)
 		DEBUG(4,("time offset is %d seconds\n", ads->auth.time_offset));
 	}
 
+	ads_msgfree(ads, res);
+
 	status = ADS_SUCCESS;
 
 done:
