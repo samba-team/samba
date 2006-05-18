@@ -794,7 +794,7 @@ static int net_ads_leave(int argc, const char **argv)
 	}
 
 	if ( !NT_STATUS_IS_OK(netdom_leave_domain( ctx, cli, dom_sid )) ) {
-		d_printf(stderr, "Failed to disable machine account for '%s' in realm '%s'\n",
+		d_fprintf(stderr, "Failed to disable machine account for '%s' in realm '%s'\n",
 			global_myname(), ads->config.realm);
 		goto done;
 	}
