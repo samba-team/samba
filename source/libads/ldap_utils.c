@@ -154,12 +154,12 @@ ADS_STATUS ads_search_retry_sid(ADS_STRUCT *ads, void **res,
 	
 	sid_string = sid_binstring_hex(sid);
 	if (sid_string == NULL) {
-		return ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
+		return ADS_ERROR(LDAP_NO_MEMORY);
 	}
 
 	if (!asprintf(&dn, "<SID=%s>", sid_string)) {
 		SAFE_FREE(sid_string);
-		return ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
+		return ADS_ERROR(LDAP_NO_MEMORY);
 	}
 
 	status = ads_do_search_retry(ads, dn, LDAP_SCOPE_BASE,
