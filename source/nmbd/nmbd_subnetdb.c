@@ -26,8 +26,6 @@
 #include "includes.h"
 
 extern struct in_addr loopback_ip;
-extern int ClientNMB;
-extern int ClientDGRAM;
 extern int global_nmb_port;
 
 /* This is the broadcast subnets database. */
@@ -118,6 +116,10 @@ static struct subnet_record *make_subnet(const char *name, enum subnet_type type
 		/* Make sure we can broadcast from these sockets. */
 		set_socket_options(nmb_sock,"SO_BROADCAST");
 		set_socket_options(dgram_sock,"SO_BROADCAST");
+
+		/* Set them non-blocking. */
+		set_blocking(nmb_sock, False);
+		set_blocking(dgram_sock, False);
 	}
 
 	subrec = SMB_MALLOC_P(struct subnet_record);
