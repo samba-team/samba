@@ -1247,6 +1247,7 @@ NTSTATUS lookup_usergroups_cached(struct winbindd_domain *domain,
 	
 	*user_sids = NULL;
 	num_groups = 0;
+	*p_num_groups = 0;
 
 	info3 = netsamlogon_cache_get(mem_ctx, user_sid);
 
@@ -1275,6 +1276,8 @@ NTSTATUS lookup_usergroups_cached(struct winbindd_domain *domain,
 	SAFE_FREE(info3);
 	*p_num_groups = num_groups;
 	status = (user_sids != NULL) ? NT_STATUS_OK : NT_STATUS_NO_MEMORY;
-		
+	
+	DEBUG(3,(": lookup_usergroups_cached succeeded\n"));
+
 	return status;
 }
