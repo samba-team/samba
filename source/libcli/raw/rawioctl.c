@@ -75,7 +75,7 @@ static struct smbcli_request *smb_raw_ntioctl_send(struct smbcli_tree *tree,
 	struct smb_nttrans nt;
 	uint8_t setup[8];
 
-	nt.in.max_setup = 0;
+	nt.in.max_setup = 4;
 	nt.in.max_param = 0;
 	nt.in.max_data = parms->ntioctl.in.max_data;
 	nt.in.setup_count = 4;
