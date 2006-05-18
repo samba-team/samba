@@ -877,7 +877,7 @@ static NTSTATUS cvfs_trans2(struct ntvfs_module_context *ntvfs,
 	struct cvfs_private *private = ntvfs->private_data;
 	struct smbcli_request *c_req;
 
-	if (!private->map_trans2) {
+	if (private->map_trans2) {
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
 
