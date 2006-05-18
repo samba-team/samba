@@ -769,16 +769,22 @@ static void process_loop(void)
         
 	selret = sys_select(maxfd + 1, &r_fds, &w_fds, NULL, &timeout);
 
-	if (selret == 0)
+	if (selret == 0) {
 		goto no_fds_ready;
+	}
 
-	if ((selret == -1 && errno != EINTR) || selret == 0) {
+	if (selret == -1) {
+		if (errno == EINTR) {
+			goto no_fds_ready;
+		}
 
 		/* Select error, something is badly wrong */
 
 		perror("select");
 		exit(1);
 	}
+
+	/* selret > 0 */
 
 	ev = fd_events;
 	while (ev != NULL) {
