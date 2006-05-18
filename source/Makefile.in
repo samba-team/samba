@@ -247,7 +247,8 @@ LIBADS_OBJ = libads/ldap.o libads/ldap_printer.o libads/sasl.o \
              libads/disp_sec.o libads/ads_utils.o libads/ldap_utils.o \
 	     libads/authdata.o libads/cldap.o
 
-LIBADS_SERVER_OBJ = libads/util.o libads/kerberos_verify.o
+LIBADS_SERVER_OBJ = libads/util.o libads/kerberos_verify.o \
+		    libads/ldap_schema.o sam/nss_info.o
 
 SECRETS_OBJ = passdb/secrets.o passdb/machine_sid.o 
 
