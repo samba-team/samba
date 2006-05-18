@@ -1198,7 +1198,6 @@ BOOL user_in_group(const char *username, const char *groupname)
 {
 	TALLOC_CTX *mem_ctx;
 	DOM_SID group_sid;
-	NTSTATUS status;
 	BOOL ret;
 
 	mem_ctx = talloc_new(NULL);
@@ -1212,8 +1211,7 @@ BOOL user_in_group(const char *username, const char *groupname)
 	TALLOC_FREE(mem_ctx);
 
 	if (!ret) {
-		DEBUG(10, ("lookup_name(%s) failed: %s\n", groupname,
-			   nt_errstr(status)));
+		DEBUG(10, ("lookup_name for (%s) failed.\n", groupname));
 		return False;
 	}
 
