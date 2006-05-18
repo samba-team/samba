@@ -157,10 +157,10 @@ TORTURE4_OPTIONS="--maximum-runtime=$TORTURE_MAXTIME --option=interfaces=$TORTUR
 export TORTURE4_OPTIONS
 
 if [ x"$RUN_FROM_BUILD_FARM" = x"yes" ];then
-	TORTURE4_OPTIONS="$TORTURE4_OPTIONS --option=\"torture:progress=no\""
+	TORTURE4_OPTIONS="$TORTURE4_OPTIONS --option=torture:progress=no"
 fi
 
-TORTURE4_OPTIONS="$TORTURE4_OPTIONS --option=\"target:samba3=yes\""
+TORTURE4_OPTIONS="$TORTURE4_OPTIONS --option=target:samba3=yes"
 
 ##
 ## ready to go...now loop through the tests
