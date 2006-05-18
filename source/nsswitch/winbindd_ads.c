@@ -542,11 +542,11 @@ done:
 
 /* Lookup groups a user is a member of - alternate method, for when
    tokenGroups are not available. */
-static NTSTATUS lookup_usergroups_alt(struct winbindd_domain *domain,
-				      TALLOC_CTX *mem_ctx,
-				      const char *user_dn, 
-				      DOM_SID *primary_group,
-				      size_t *p_num_groups, DOM_SID **user_sids)
+static NTSTATUS lookup_usergroups_member(struct winbindd_domain *domain,
+					 TALLOC_CTX *mem_ctx,
+					 const char *user_dn, 
+					 DOM_SID *primary_group,
+					 size_t *p_num_groups, DOM_SID **user_sids)
 {
 	ADS_STATUS rc;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
@@ -559,7 +559,7 @@ static NTSTATUS lookup_usergroups_alt(struct winbindd_domain *domain,
 	char *escaped_dn;
 	size_t num_groups = 0;
 
-	DEBUG(3,("ads: lookup_usergroups_alt\n"));
+	DEBUG(3,("ads: lookup_usergroups_member\n"));
 
 	ads = ads_cached_connection(domain);
 
@@ -572,9 +572,6 @@ static NTSTATUS lookup_usergroups_alt(struct winbindd_domain *domain,
 		status = NT_STATUS_NO_MEMORY;
 		goto done;
 	}
-
-	/* buggy server, no tokenGroups.  Instead lookup what groups this user
-	   is a member of by DN search on member*/
 
 	if (!(ldap_exp = talloc_asprintf(mem_ctx, "(&(member=%s)(objectCategory=group))", escaped_dn))) {
 		DEBUG(1,("lookup_usergroups(dn=%s) asprintf failed!\n", user_dn));
@@ -624,13 +621,96 @@ static NTSTATUS lookup_usergroups_alt(struct winbindd_domain *domain,
 	*p_num_groups = num_groups;
 	status = (user_sids != NULL) ? NT_STATUS_OK : NT_STATUS_NO_MEMORY;
 
-	DEBUG(3,("ads lookup_usergroups (alt) for dn=%s\n", user_dn));
+	DEBUG(3,("ads lookup_usergroups (member) succeeded for dn=%s\n", user_dn));
 done:
 	if (res) 
 		ads_msgfree(ads, res);
 
 	return status;
 }
+
+/* Lookup groups a user is a member of - alternate method, for when
+   tokenGroups are not available. */
+static NTSTATUS lookup_usergroups_memberof(struct winbindd_domain *domain,
+					   TALLOC_CTX *mem_ctx,
+					   const char *user_dn, 
+					   DOM_SID *primary_group,
+					   size_t *p_num_groups, DOM_SID **user_sids)
+{
+	ADS_STATUS rc;
+	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
+	int count;
+	void *res = NULL;
+	ADS_STRUCT *ads;
+	const char *attrs[] = {"memberOf", NULL};
+	size_t num_groups = 0;
+	DOM_SID *group_sids = NULL;
+	int i;
+
+	DEBUG(3,("ads: lookup_usergroups_memberof\n"));
+
+	ads = ads_cached_connection(domain);
+
+	if (!ads) {
+		domain->last_status = NT_STATUS_SERVER_DISABLED;
+		goto done;
+	}
+
+	rc = ads_search_retry_extended_dn(ads, &res, user_dn, attrs, 
+					  ADS_EXTENDED_DN_HEX_STRING);
+	
+	if (!ADS_ERR_OK(rc) || !res) {
+		DEBUG(1,("lookup_usergroups_memberof ads_search member=%s: %s\n", 
+			user_dn, ads_errstr(rc)));
+		return ads_ntstatus(rc);
+	}
+	
+	count = ads_count_replies(ads, res);
+
+	if (count == 0) {
+		status = NT_STATUS_NO_SUCH_USER;
+		goto done;
+	}
+	
+	*user_sids = NULL;
+	num_groups = 0;
+
+	/* always add the primary group to the sid array */
+	add_sid_to_array(mem_ctx, primary_group, user_sids, &num_groups);
+
+	count = ads_pull_sids_from_extendeddn(ads, mem_ctx, res, "memberOf", 
+					      ADS_EXTENDED_DN_HEX_STRING, 
+					      &group_sids);
+	if (count == 0) {
+		DEBUG(1,("No memberOf for this user?!?\n"));
+		status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
+	for (i=0; i<count; i++) {
+
+		/* ignore Builtin groups from ADS - Guenther */
+		if (sid_check_is_in_builtin(&group_sids[i])) {
+			continue;
+		}
+		       
+		add_sid_to_array(mem_ctx, &group_sids[i], user_sids,
+				 &num_groups);
+	
+	}
+
+	*p_num_groups = num_groups;
+	status = (user_sids != NULL) ? NT_STATUS_OK : NT_STATUS_NO_MEMORY;
+
+	DEBUG(3,("ads lookup_usergroups (memberof) succeeded for dn=%s\n", user_dn));
+done:
+	TALLOC_FREE(group_sids);
+	if (res) 
+		ads_msgfree(ads, res);
+
+	return status;
+}
+
 
 /* Lookup groups a user is a member of. */
 static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
@@ -717,13 +797,29 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 	/* there must always be at least one group in the token, 
 	   unless we are talking to a buggy Win2k server */
 
+	/* actually this only happens when the machine account has no read
+	 * permissions on the tokenGroup attribute - gd */
+
 	if (count == 0) {
 
-		status = lookup_usergroups_alt(domain, mem_ctx, user_dn, 
-					       &primary_group,
-					       &num_groups, user_sids);
-		*p_num_groups = (uint32)num_groups;
-		return status;
+		/* no tokenGroups */
+		
+		/* lookup what groups this user is a member of by DN search on
+		 * "memberOf" */
+
+		status = lookup_usergroups_memberof(domain, mem_ctx, user_dn,
+						    &primary_group,
+						    p_num_groups, user_sids);
+		if (NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+
+		/* lookup what groups this user is a member of by DN search on
+		 * "member" */
+
+		return lookup_usergroups_member(domain, mem_ctx, user_dn, 
+						&primary_group,
+						p_num_groups, user_sids);
 	}
 
 	*user_sids = NULL;
@@ -745,7 +841,7 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 	*p_num_groups = (uint32)num_groups;
 	status = (user_sids != NULL) ? NT_STATUS_OK : NT_STATUS_NO_MEMORY;
 
-	DEBUG(3,("ads lookup_usergroups for sid=%s\n",
+	DEBUG(3,("ads lookup_usergroups (tokenGroups) succeeded for sid=%s\n",
 		 sid_to_string(sid_string, sid)));
 done:
 	return status;

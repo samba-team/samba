@@ -107,6 +107,7 @@ typedef void **ADS_MODLIST;
 #define ADS_SERVER_SORT_OID 	"1.2.840.113556.1.4.473"
 #define ADS_PERMIT_MODIFY_OID 	"1.2.840.113556.1.4.1413"
 #define ADS_ASQ_OID		"1.2.840.113556.1.4.1504"
+#define ADS_EXTENDED_DN_OID	"1.2.840.113556.1.4.529"
 
 /* ldap attribute oids (Services for Unix) */
 #define ADS_ATTR_SFU_UIDNUMBER_OID 	"1.2.840.113556.1.6.18.1.310"
@@ -289,3 +290,17 @@ typedef struct {
 #endif
 } smb_krb5_addresses;
 #endif
+
+enum ads_extended_dn_flags {
+	ADS_EXTENDED_DN_HEX_STRING	= 0,
+	ADS_EXTENDED_DN_STRING		= 1 /* not supported on win2k */
+};
+
+/* this is probably not very well suited to pass other controls generically but
+ * is good enough for the extended dn control where it is only used for atm */
+
+typedef struct {
+	const char *control;
+	int val;
+	int critical;
+} ads_control;
