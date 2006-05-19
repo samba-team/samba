@@ -283,6 +283,28 @@ static NTSTATUS nttrans_rename(struct smbsrv_request *req,
 }
 
 /* 
+   parse NTTRANS_IOCTL send
+ */
+static NTSTATUS nttrans_ioctl_send(struct nttrans_op *op)
+{
+	union smb_ioctl *info = talloc_get_type(op->op_info, union smb_ioctl);
+	NTSTATUS status;
+
+	/* 
+	 * we pass 0 as data_count here,
+	 * because we reuse the DATA_BLOB from the smb_ioctl
+	 * struct
+	 */
+	status = nttrans_setup_reply(op, op->trans, 0, 0, 1);
+	NT_STATUS_NOT_OK_RETURN(status);
+
+	op->trans->out.setup[0]		= 0;
+	op->trans->out.data		= info->ntioctl.out.blob;
+
+	return NT_STATUS_OK;
+}
+
+/* 
    parse NTTRANS_IOCTL request
  */
 static NTSTATUS nttrans_ioctl(struct smbsrv_request *req, 
@@ -290,11 +312,6 @@ static NTSTATUS nttrans_ioctl(struct smbsrv_request *req,
 {
 	struct smb_nttrans *trans = op->trans;
 	union smb_ioctl *nt;
-	uint32_t function;
-	uint16_t fnum;
-	uint8_t filter;
-	BOOL fsctl;
-	NTSTATUS status;
 
 	/* should have at least 4 setup words */
 	if (trans->in.setup_count != 4) {
@@ -304,24 +321,17 @@ static NTSTATUS nttrans_ioctl(struct smbsrv_request *req,
 	nt = talloc(op, union smb_ioctl);
 	NT_STATUS_HAVE_NO_MEMORY(nt);
 	
-	function  = IVAL(trans->in.setup, 0);
-	fnum  = SVAL(trans->in.setup, 4);
-	fsctl = CVAL(trans->in.setup, 6);
-	filter = CVAL(trans->in.setup, 7);
+	nt->ntioctl.level		= RAW_IOCTL_NTIOCTL;
+	nt->ntioctl.in.function		= IVAL(trans->in.setup, 0);
+	nt->ntioctl.in.file.fnum	= SVAL(trans->in.setup, 4);
+	nt->ntioctl.in.fsctl		= CVAL(trans->in.setup, 6);
+	nt->ntioctl.in.filter		= CVAL(trans->in.setup, 7);
+	nt->ntioctl.in.max_data		= trans->in.max_data;
+	nt->ntioctl.in.blob		= trans->in.data;
 
-	nt->ntioctl.level = RAW_IOCTL_NTIOCTL;
-	nt->ntioctl.in.file.fnum = fnum;
-	nt->ntioctl.in.function = function;
-	nt->ntioctl.in.fsctl = fsctl;
-	nt->ntioctl.in.filter = filter;
-	nt->ntioctl.in.max_data = trans->in.max_data;
-	nt->ntioctl.in.blob = trans->in.data;
+	op->op_info = nt;
+	op->send_fn = nttrans_ioctl_send;
 
-	status = nttrans_setup_reply(op, trans, 0, 0, 1);
-	NT_STATUS_NOT_OK_RETURN(status);
-
-	trans->out.setup[0] = 0;
-	
 	return ntvfs_ioctl(req->ntvfs, nt);
 }
 
