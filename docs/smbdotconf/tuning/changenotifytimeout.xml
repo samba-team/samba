@@ -1,6 +1,6 @@
 <samba:parameter name="change notify timeout"
 	type="integer"
-                 context="G"
+                 context="S"
                  developer="1"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
@@ -10,7 +10,13 @@
     a directory is expensive under UNIX, hence an <citerefentry><refentrytitle>smbd</refentrytitle>
     <manvolnum>8</manvolnum></citerefentry> daemon only performs such a scan 
     on each requested directory once every <parameter moreinfo="none">change notify 
-    timeout</parameter> seconds.</para>
+    timeout</parameter> seconds. Note that in 3.0.23 this has been changed to a
+    per-share parameter and setting this to zero prevents any change notify directory
+    scans completely on a share. This is to allow this paramter to be set to zero on
+    shares configured for very large directories, where a Windows client will re-scan
+    the entire directory after every delete operation (when deleting many files) due to
+    the change notify triggering. This is an extremely expensive operation on some
+    systems.</para>
 </description>
 
 <value type="default">60</value>
