@@ -3831,6 +3831,17 @@ int reply_mkdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 
 	status = mkdir_internal(conn, directory,bad_path);
 	if (!NT_STATUS_IS_OK(status)) {
+
+		if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_COLLISION) &&
+		    !use_nt_status()) {
+			/*
+			 * Yes, in the DOS error code case we get a
+			 * ERRDOS:ERRnoaccess here. See BASE-SAMBA3ERROR
+			 * samba4 torture test.
+			 */
+			status = NT_STATUS_DOS(ERRDOS, ERRnoaccess);
+		}
+
 		END_PROFILE(SMBmkdir);
 		return ERROR_NT(status);
 	}
