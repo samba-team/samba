@@ -3591,6 +3591,8 @@ int reply_printopen(connection_struct *conn,
 {
 	int outsize = 0;
 	files_struct *fsp;
+	NTSTATUS status;
+	
 	START_PROFILE(SMBsplopen);
 	
 	if (!CAN_PRINT(conn)) {
@@ -3599,11 +3601,11 @@ int reply_printopen(connection_struct *conn,
 	}
 
 	/* Open for exclusive use, write only. */
-	fsp = print_fsp_open(conn, NULL);
+	status = print_fsp_open(conn, NULL, &fsp);
 
-	if (!fsp) {
+	if (!NT_STATUS_IS_OK(status)) {
 		END_PROFILE(SMBsplopen);
-		return(UNIXERROR(ERRDOS,ERRnoaccess));
+		return(ERROR_NT(status));
 	}
 
 	outsize = set_message(outbuf,1,0,True);

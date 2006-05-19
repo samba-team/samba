@@ -1115,7 +1115,11 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 
 		DEBUG(10, ("open_file_ntcreate: printer open fname=%s\n", fname));
 
-		return print_fsp_open(conn, fname);
+		status = print_fsp_open(conn, fname, &fsp);
+		if (!NT_STATUS_IS_OK(status)) {
+			set_saved_ntstatus(status);
+		}
+		return fsp;
 	}
 
 	/* We add aARCH to this as this mode is only used if the file is
