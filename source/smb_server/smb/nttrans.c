@@ -68,14 +68,11 @@ static NTSTATUS nttrans_create_send(struct nttrans_op *op)
 {
 	union smb_open *io = talloc_get_type(op->op_info, union smb_open);
 	uint8_t *params;
+	NTSTATUS status;
 
-	op->trans->out.setup_count = 0;
-	op->trans->out.setup       = NULL;
-	op->trans->out.params      = data_blob_talloc(op, NULL, 69);
-	op->trans->out.data        = data_blob(NULL, 0);
-
+	status = nttrans_setup_reply(op, op->trans, 69, 0, 0);
+	NT_STATUS_NOT_OK_RETURN(status);
 	params = op->trans->out.params.data;
-	NT_STATUS_HAVE_NO_MEMORY(params);
 
 	SSVAL(params,        0, io->ntcreatex.out.oplock_level);
 	SSVAL(params,        2, io->ntcreatex.out.file.fnum);
@@ -197,22 +194,20 @@ static NTSTATUS nttrans_create(struct smbsrv_request *req,
  */
 static NTSTATUS nttrans_query_sec_desc_send(struct nttrans_op *op)
 {
-	struct smb_nttrans *trans = op->trans;
 	union smb_fileinfo *io = talloc_get_type(op->op_info, union smb_fileinfo);
+	uint8_t *params;
 	NTSTATUS status;
 
-	trans->out.setup_count = 0;
-	trans->out.setup       = NULL;
-	trans->out.params      = data_blob_talloc(op, NULL, 4);
-	trans->out.data        = data_blob(NULL, 0);
-	NT_STATUS_HAVE_NO_MEMORY(trans->out.params.data);
+	status = nttrans_setup_reply(op, op->trans, 4, 0, 0);
+	NT_STATUS_NOT_OK_RETURN(status);
+	params = op->trans->out.params.data;
 
-	status = ndr_push_struct_blob(&trans->out.data, op, 
+	status = ndr_push_struct_blob(&op->trans->out.data, op, 
 				      io->query_secdesc.out.sd, 
 				      (ndr_push_flags_fn_t)ndr_push_security_descriptor);
 	NT_STATUS_NOT_OK_RETURN(status);
 
-	SIVAL(trans->out.params.data, 0, trans->out.data.length);
+	SIVAL(params, 0, op->trans->out.data.length);
 
 	return NT_STATUS_OK;
 }
