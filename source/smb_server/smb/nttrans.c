@@ -275,11 +275,6 @@ static NTSTATUS nttrans_set_sec_desc(struct smbsrv_request *req,
 				      (ndr_pull_flags_fn_t)ndr_pull_security_descriptor);
 	NT_STATUS_NOT_OK_RETURN(status);
 
-	trans->out.setup_count = 0;
-	trans->out.setup       = NULL;
-	trans->out.params      = data_blob(NULL, 0);
-	trans->out.data        = data_blob(NULL, 0);
-
 	return ntvfs_setfileinfo(req->ntvfs, io);
 }
 
@@ -355,7 +350,6 @@ static NTSTATUS nttrans_notify_change_send(struct nttrans_op *op)
 
 	status = nttrans_setup_reply(op, op->trans, size, 0, 0);
 	NT_STATUS_NOT_OK_RETURN(status);
-
 	p = op->trans->out.params.data;
 
 	/* construct the changes buffer */
@@ -589,17 +583,17 @@ void smbsrv_reply_nttrans(struct smbsrv_request *req)
 	op->op_info = NULL;
 	op->send_fn = NULL;
 
-	trans->in.max_setup   = CVAL(req->in.vwv, 0);
+	trans->in.max_setup  = CVAL(req->in.vwv, 0);
 	param_total          = IVAL(req->in.vwv, 3);
 	data_total           = IVAL(req->in.vwv, 7);
-	trans->in.max_param   = IVAL(req->in.vwv, 11);
-	trans->in.max_data    = IVAL(req->in.vwv, 15);
+	trans->in.max_param  = IVAL(req->in.vwv, 11);
+	trans->in.max_data   = IVAL(req->in.vwv, 15);
 	param_count          = IVAL(req->in.vwv, 19);
 	param_ofs            = IVAL(req->in.vwv, 23);
 	data_count           = IVAL(req->in.vwv, 27);
 	data_ofs             = IVAL(req->in.vwv, 31);
-	trans->in.setup_count = CVAL(req->in.vwv, 35);
-	trans->in.function	 = SVAL(req->in.vwv, 36);
+	trans->in.setup_count= CVAL(req->in.vwv, 35);
+	trans->in.function   = SVAL(req->in.vwv, 36);
 
 	if (req->in.wct != 19 + trans->in.setup_count) {
 		smbsrv_send_error(req, NT_STATUS_DOS(ERRSRV, ERRerror));
