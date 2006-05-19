@@ -808,7 +808,7 @@ int samdb_msg_add_hash(struct ldb_context *sam_ldb, TALLOC_CTX *mem_ctx, struct 
 /*
   add a samr_Password array to a message
 */
-int samdb_msg_add_hashes(struct ldb_context *sam_ldb, TALLOC_CTX *mem_ctx, struct ldb_message *msg,
+int samdb_msg_add_hashes(TALLOC_CTX *mem_ctx, struct ldb_message *msg,
 			 const char *attr_name, struct samr_Password *hashes, uint_t count)
 {
 	struct ldb_val val;
