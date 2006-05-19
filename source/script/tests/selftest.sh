@@ -15,7 +15,7 @@ PREFIX=`echo $1 | sed s+//+/+`
 mkdir -p $PREFIX || exit $?
 OLD_PWD=`pwd`
 cd $PREFIX || exit $?
-export PREFIX_ABS=`pwd`
+PREFIX_ABS=`pwd`
 cd $OLD_PWD
 
 if [ -z "$TORTURE_MAXTIME" ]; then
@@ -29,7 +29,7 @@ export TORTURE_MAXTIME
 
 SERVER=localhost2
 SERVER_IP=127.0.0.2
-USERNAME=`whoami`
+USERNAME=`PATH=/usr/ucb:$PATH whoami`
 PASSWORD=test
 
 SRCDIR=`pwd`
