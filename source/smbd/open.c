@@ -1178,8 +1178,11 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 	if (!lp_posix_pathnames() && strstr(fname,".+,;=[].")) {
 		/* OS/2 Workplace shell fix may be main code stream in a later
 		 * release. */ 
-		set_saved_error_triple(ERRDOS, ERRcannotopen,
-				       NT_STATUS_OBJECT_NAME_NOT_FOUND);
+		if (use_nt_status()) {
+			set_saved_ntstatus(NT_STATUS_OBJECT_NAME_NOT_FOUND);
+		} else {
+			set_saved_ntstatus(NT_STATUS_DOS(ERRDOS, ERRcannotopen));
+		}
 		DEBUG(5,("open_file_ntcreate: OS/2 long filenames are not "
 			 "supported.\n"));
 		return NULL;
@@ -1873,8 +1876,11 @@ files_struct *open_directory(connection_struct *conn,
 				DEBUG(5,("open_directory: FILE_CREATE "
 					 "requested for directory %s and it "
 					 "already exists.\n", fname ));
-				set_saved_error_triple(ERRDOS, ERRfilexists,
-						       NT_STATUS_OBJECT_NAME_COLLISION);
+				if (use_nt_status()) {
+					set_saved_ntstatus(NT_STATUS_OBJECT_NAME_COLLISION);
+				} else {
+					set_saved_ntstatus(NT_STATUS_DOS(ERRDOS, ERRfilexists));
+				}
 				return NULL;
 			}
 			create_dir = True;

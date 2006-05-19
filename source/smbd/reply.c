@@ -1367,7 +1367,7 @@ int reply_open(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
 	if (!map_open_params_to_ntcreate(fname, deny_mode, OPENX_FILE_EXISTS_OPEN,
 			&access_mask, &share_mode, &create_disposition, &create_options)) {
 		END_PROFILE(SMBopen);
-		return ERROR_FORCE_DOS(ERRDOS, ERRbadaccess);
+		return ERROR_NT(NT_STATUS_DOS(ERRDOS, ERRbadaccess));
 	}
 
 	fsp = open_file_ntcreate(conn,fname,&sbuf,
@@ -1490,7 +1490,7 @@ int reply_open_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 				&create_disposition,
 				&create_options)) {
 		END_PROFILE(SMBopenX);
-		return ERROR_FORCE_DOS(ERRDOS, ERRbadaccess);
+		return ERROR_NT(NT_STATUS_DOS(ERRDOS, ERRbadaccess));
 	}
 
 	fsp = open_file_ntcreate(conn,fname,&sbuf,
@@ -4988,8 +4988,12 @@ int reply_copy(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
 			END_PROFILE(SMBcopy);
 			return ERROR_DOS(ERRDOS,error);
 		} else {
-			if((errno == ENOENT) && (bad_path1 || bad_path2)) {
-				set_saved_error_triple(ERRDOS, ERRbadpath, NT_STATUS_OK);
+			if((errno == ENOENT) && (bad_path1 || bad_path2) &&
+			   !use_nt_status()) {
+				/* Samba 3.0.22 has ERRDOS/ERRbadpath in the
+				 * DOS error code case
+				 */
+				set_saved_ntstatus(NT_STATUS_DOS(ERRDOS, ERRbadpath));
 			}
 			END_PROFILE(SMBcopy);
 			return(UNIXERROR(ERRDOS,error));
@@ -5222,7 +5226,7 @@ int reply_lockingX(connection_struct *conn, char *inbuf, char *outbuf,
 		/* we don't support these - and CANCEL_LOCK makes w2k
 		   and XP reboot so I don't really want to be
 		   compatible! (tridge) */
-		return ERROR_FORCE_DOS(ERRDOS, ERRnoatomiclocks);
+		return ERROR_NT(NT_STATUS_DOS(ERRDOS, ERRnoatomiclocks));
 	}
 	
 	if (locktype & LOCKING_ANDX_CANCEL_LOCK) {

@@ -182,7 +182,6 @@
 #define CACHED_ERROR(fsp) cached_error_packet(outbuf,fsp,__LINE__,__FILE__)
 
 #define ERROR_DOS(class,code) error_packet(outbuf,class,code,NT_STATUS_OK,__LINE__,__FILE__)
-#define ERROR_FORCE_DOS(class,code) error_packet(outbuf,class,code,NT_STATUS_INVALID,__LINE__,__FILE__)
 #define ERROR_NT(status) error_packet(outbuf,0,0,status,__LINE__,__FILE__)
 #define ERROR_FORCE_NT(status) error_packet(outbuf,-1,-1,status,__LINE__,__FILE__)
 #define ERROR_BOTH(status,class,code) error_packet(outbuf,class,code,status,__LINE__,__FILE__)

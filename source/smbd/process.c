@@ -958,7 +958,7 @@ static int switch_message(int type,char *inbuf,char *outbuf,int size,int bufsize
 			if (flags & AS_GUEST) 
 				flags &= ~AS_USER;
 			else
-				return(ERROR_FORCE_DOS(ERRSRV,ERRbaduid));
+				return(ERROR_NT(NT_STATUS_DOS(ERRSRV,ERRbaduid)));
 		}
 
 		/* this code is to work around a bug is MS client 3 without
