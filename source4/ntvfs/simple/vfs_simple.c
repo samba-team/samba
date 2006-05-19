@@ -549,8 +549,22 @@ static NTSTATUS svfs_flush(struct ntvfs_module_context *ntvfs,
 			   struct ntvfs_request *req,
 			   union smb_flush *io)
 {
-	fsync(io->flush.in.file.fnum);
-	return NT_STATUS_OK;
+	struct svfs_private *private = ntvfs->private_data;
+	struct svfs_file *f;
+
+	switch (io->generic.level) {
+	case RAW_FLUSH_FLUSH:
+		fsync(io->flush.in.file.fnum);
+		return NT_STATUS_OK;
+
+	case RAW_FLUSH_ALL:
+		for (f=private->open_files;f;f=f->next) {
+			fsync(f->fd);
+		}
+		return NT_STATUS_OK;
+	}
+
+	return NT_STATUS_INVALID_LEVEL;
 }
 
 /*
