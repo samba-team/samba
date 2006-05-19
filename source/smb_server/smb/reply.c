@@ -1069,13 +1069,21 @@ void smbsrv_reply_lseek(struct smbsrv_request *req)
 void smbsrv_reply_flush(struct smbsrv_request *req)
 {
 	union smb_flush *io;
+	uint16_t fnum;
 
 	/* parse request */
 	SMBSRV_CHECK_WCT(req, 1);
 	SMBSRV_TALLOC_IO_PTR(io, union smb_flush);
 	SMBSRV_SETUP_NTVFS_REQUEST(reply_simple_send, NTVFS_ASYNC_STATE_MAY_ASYNC);
 
-	io->flush.in.file.fnum = req_fnum(req, req->in.vwv,  VWV(0));
+	fnum = req_fnum(req, req->in.vwv,  VWV(0));
+
+	if (fnum == 0xFFFF) {
+		io->flush_all.level	= RAW_FLUSH_ALL;
+	} else {
+		io->flush.level		= RAW_FLUSH_FLUSH;
+		io->flush.in.file.fnum	= fnum;
+	}
 
 	SMBSRV_CALL_NTVFS_BACKEND(ntvfs_flush(req->ntvfs, io));
 }

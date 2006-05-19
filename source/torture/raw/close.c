@@ -144,24 +144,27 @@ BOOL torture_raw_close(struct torture_context *torture)
 	printf("testing flush\n");
 	smbcli_close(cli->tree, fnum);
 
-	io_flush.flush.in.file.fnum = fnum;
+	io_flush.flush.level		= RAW_FLUSH_FLUSH;
+	io_flush.flush.in.file.fnum	= fnum;
 	status = smb_raw_flush(cli->tree, &io_flush);
 	CHECK_STATUS(status, NT_STATUS_INVALID_HANDLE);
 
-	io_flush.flush.in.file.fnum = 0xffff;
+	io_flush.flush_all.level	= RAW_FLUSH_ALL;
 	status = smb_raw_flush(cli->tree, &io_flush);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 	REOPEN;
 
-	io_flush.flush.in.file.fnum = fnum;
+	io_flush.flush.level		= RAW_FLUSH_FLUSH;
+	io_flush.flush.in.file.fnum	= fnum;
 	status = smb_raw_flush(cli->tree, &io_flush);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 	printf("Testing SMBexit\n");
 	smb_raw_exit(cli->session);
 
-	io_flush.flush.in.file.fnum = fnum;
+	io_flush.flush.level		= RAW_FLUSH_FLUSH;
+	io_flush.flush.in.file.fnum	= fnum;
 	status = smb_raw_flush(cli->tree, &io_flush);
 	CHECK_STATUS(status, NT_STATUS_INVALID_HANDLE);
 	

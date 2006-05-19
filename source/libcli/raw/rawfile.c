@@ -849,9 +849,19 @@ NTSTATUS smb_raw_chkpath(struct smbcli_tree *tree, union smb_chkpath *parms)
 struct smbcli_request *smb_raw_flush_send(struct smbcli_tree *tree, union smb_flush *parms)
 {
 	struct smbcli_request *req; 
+	uint16_t fnum;
+
+	switch (parms->generic.level) {
+	case RAW_FLUSH_FLUSH:
+		fnum = parms->flush.in.file.fnum;
+		break;
+	case RAW_FLUSH_ALL:
+		fnum = 0xFFFF;
+		break;
+	}
 
 	SETUP_REQUEST(SMBflush, 1, 0);
-	SSVAL(req->out.vwv, VWV(0), parms->flush.in.file.fnum);
+	SSVAL(req->out.vwv, VWV(0), fnum);
 
 	if (!smbcli_request_send(req)) {
 		smbcli_request_destroy(req);

@@ -253,6 +253,7 @@ static BOOL test_delayed_write_update2(struct smbcli_state *cli, TALLOC_CTX *mem
 
 	printf("Doing flush after write\n");
 
+	flsh.flush.level	= RAW_FLUSH_FLUSH;
 	flsh.flush.in.file.fnum = fnum1;
 	status = smb_raw_flush(cli->tree, &flsh);
 	if (!NT_STATUS_IS_OK(status)) {

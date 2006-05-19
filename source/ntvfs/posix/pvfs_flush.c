@@ -46,23 +46,27 @@ NTSTATUS pvfs_flush(struct ntvfs_module_context *ntvfs,
 	struct pvfs_state *pvfs = ntvfs->private_data;
 	struct pvfs_file *f;
 
-	if (io->flush.in.file.fnum != 0xFFFF) {
+	switch (io->generic.level) {
+	case RAW_FLUSH_FLUSH:
 		f = pvfs_find_fd(pvfs, req, io->flush.in.file.fnum);
 		if (!f) {
 			return NT_STATUS_INVALID_HANDLE;
 		}
 		pvfs_flush_file(pvfs, f);
 		return NT_STATUS_OK;
-	}
 
-	if (!(pvfs->flags & PVFS_FLAG_STRICT_SYNC)) {
+	case RAW_FLUSH_ALL:
+		if (!(pvfs->flags & PVFS_FLAG_STRICT_SYNC)) {
+			return NT_STATUS_OK;
+		}
+
+		/* they are asking to flush all open files */
+		for (f=pvfs->files.list;f;f=f->next) {
+			pvfs_flush_file(pvfs, f);
+		}
+
 		return NT_STATUS_OK;
 	}
 
-	/* they are asking to flush all open files */
-	for (f=pvfs->files.list;f;f=f->next) {
-		pvfs_flush_file(pvfs, f);
-	}
-
-	return NT_STATUS_OK;
+	return NT_STATUS_INVALID_LEVEL;
 }

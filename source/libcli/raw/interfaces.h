@@ -1725,13 +1725,20 @@ union smb_ioctl {
 	} ntioctl;
 };
 
+enum smb_flush_level {RAW_FLUSH_FLUSH, RAW_FLUSH_ALL};
+
 /* struct for SMBflush */
 union smb_flush {
 	struct {
+		enum smb_ioctl_level level;
 		struct {
 			union smb_handle file;
 		} in;
 	} flush, generic;
+
+	struct {
+		enum smb_ioctl_level level;
+	} flush_all;
 };
 
 
