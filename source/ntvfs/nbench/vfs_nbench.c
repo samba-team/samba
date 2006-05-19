@@ -534,10 +534,19 @@ static NTSTATUS nbench_seek(struct ntvfs_module_context *ntvfs,
 static void nbench_flush_send(struct ntvfs_request *req)
 {
 	union smb_flush *io = req->async_states->private_data;
+	uint16_t fnum;
+
+	switch (io->generic.level) {
+	case RAW_FLUSH_FLUSH:
+		fnum = io->flush.in.file.fnum;
+		break;
+	case RAW_FLUSH_ALL:
+		fnum = 0xFFFF;
+		break;
+	}
 
 	nbench_log(req, "Flush %d %s\n",
-		   io->flush.in.file.fnum,
-		   get_nt_error_c_code(req->async_states->status));
+		   fnum, get_nt_error_c_code(req->async_states->status));
 
 	PASS_THRU_REP_POST(req);
 }

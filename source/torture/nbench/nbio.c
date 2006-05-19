@@ -646,7 +646,8 @@ void nb_flush(int fnum, NTSTATUS status)
 	int i;
 	i = find_handle(fnum);
 
-	io.flush.in.file.fnum = i;
+	io.flush.level		= RAW_FLUSH_FLUSH;
+	io.flush.in.file.fnum	= i;
 
 	ret = smb_raw_flush(c->tree, &io);
 
