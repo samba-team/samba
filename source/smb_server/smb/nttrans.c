@@ -42,8 +42,8 @@ struct nttrans_op {
 /* setup a nttrans reply, given the data and params sizes */
 static NTSTATUS nttrans_setup_reply(struct nttrans_op *op, 
 				    struct smb_nttrans *trans,
-				    uint16_t param_size, uint16_t data_size,
-				    uint16_t setup_count)
+				    uint32_t param_size, uint32_t data_size,
+				    uint8_t setup_count)
 {
 	trans->out.setup_count = setup_count;
 	if (setup_count != 0) {
