@@ -412,10 +412,14 @@ int reply_ntcreate_and_X_quota(connection_struct *conn,
 	int result;
 	char *p;
 	uint32 desired_access = IVAL(inbuf,smb_ntcreate_DesiredAccess);
-	files_struct *fsp = open_fake_file(conn, fake_file_type, fname, desired_access);
+	files_struct *fsp;
+	NTSTATUS status;
 
-	if (!fsp) {
-		return ERROR_NT(NT_STATUS_ACCESS_DENIED);
+	status = open_fake_file(conn, fake_file_type, fname, desired_access,
+				&fsp);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		return ERROR_NT(status);
 	}
 
 	set_message(outbuf,34,0,True);
