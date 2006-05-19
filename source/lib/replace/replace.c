@@ -19,10 +19,12 @@
 */
 
 #include "includes.h"
+#include "system/locale.h"
 #include "system/wait.h"
 #include "system/time.h"
 #include "system/network.h"
 #include "system/filesys.h"
+#include "system/syslog.h"
 
  void replace_dummy(void);
  void replace_dummy(void) {}
