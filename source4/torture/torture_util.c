@@ -22,6 +22,7 @@
 #include "smb.h"
 #include "lib/cmdline/popt_common.h"
 #include "libcli/raw/libcliraw.h"
+#include "libcli/raw/ioctl.h"
 #include "libcli/libcli.h"
 #include "system/shmem.h"
 #include "system/time.h"
@@ -385,10 +386,12 @@ NTSTATUS torture_set_sparse(struct smbcli_tree *tree, int fnum)
 	}
 
 	nt.ntioctl.level = RAW_IOCTL_NTIOCTL;
-	nt.ntioctl.in.function = 0x900c4;
+	nt.ntioctl.in.function = FSCTL_SET_SPARSE;
 	nt.ntioctl.in.file.fnum = fnum;
 	nt.ntioctl.in.fsctl = True;
 	nt.ntioctl.in.filter = 0;
+	nt.ntioctl.in.max_data = 0;
+	nt.ntioctl.in.blob = data_blob(NULL, 0);
 
 	status = smb_raw_ioctl(tree, mem_ctx, &nt);
 
