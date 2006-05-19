@@ -626,9 +626,11 @@ void smbsrv_reply_nttrans(struct smbsrv_request *req)
 	if (param_total > param_count ||
 	    data_total > data_count) {
 		DEBUG(0,("REWRITE: not handling partial nttrans requests!\n"));
+		smbsrv_send_error(req, NT_STATUS_FOOBAR);
 		return;
 	}
 
+	ZERO_STRUCT(trans->out);
 	SMBSRV_CALL_NTVFS_BACKEND(nttrans_backend(req, op));
 }
 
