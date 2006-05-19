@@ -1608,7 +1608,156 @@ static BOOL torture_chkpath_test(struct torture_context *torture)
 	return ret;
 }
 
+/*
+ * This is a test to excercise some weird Samba3 error paths.
+ */
 
+static BOOL torture_samba3_errorpaths(struct torture_context *torture)
+{
+	BOOL nt_status_support;
+	struct smbcli_state *cli_nt = NULL, *cli_dos = NULL;
+	BOOL result = False;
+	int fnum;
+	const char *os2_fname = ".+,;=[].";
+	const char *dirname = "samba3_errordir";
+	union smb_open io;
+	TALLOC_CTX *mem_ctx = talloc_init(NULL);
+	NTSTATUS status;
+
+	if (mem_ctx == NULL) {
+		printf("talloc_init failed\n");
+		return False;
+	}
+
+	nt_status_support = lp_nt_status_support();
+
+	if (!lp_set_cmdline("nt status support", "yes")) {
+		printf("Could not set 'nt status support = yes'\n");
+		goto fail;
+	}
+
+	if (!torture_open_connection(&cli_nt)) {
+		goto fail;
+	}
+
+	if (!lp_set_cmdline("nt status support", "no")) {
+		printf("Could not set 'nt status support = yes'\n");
+		goto fail;
+	}
+
+	if (!torture_open_connection(&cli_dos)) {
+		goto fail;
+	}
+
+	if (!lp_set_cmdline("nt status support",
+			    nt_status_support ? "yes":"no")) {
+		printf("Could not reset 'nt status support = yes'");
+		goto fail;
+	}
+
+	smbcli_unlink(cli_nt->tree, os2_fname);
+	smbcli_rmdir(cli_nt->tree, dirname);
+
+	if (!NT_STATUS_IS_OK(smbcli_mkdir(cli_nt->tree, dirname))) {
+		printf("smbcli_mkdir(%s) failed: %s\n", dirname,
+		       smbcli_errstr(cli_nt->tree));
+		goto fail;
+	}
+
+	io.generic.level = RAW_OPEN_NTCREATEX;
+	io.ntcreatex.in.flags = NTCREATEX_FLAGS_EXTENDED;
+	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.access_mask = SEC_RIGHTS_FILE_ALL;
+	io.ntcreatex.in.alloc_size = 1024*1024;
+	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_DIRECTORY;
+	io.ntcreatex.in.share_access = NTCREATEX_SHARE_ACCESS_NONE;
+	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_CREATE;
+	io.ntcreatex.in.create_options = 0;
+	io.ntcreatex.in.impersonation = NTCREATEX_IMPERSONATION_ANONYMOUS;
+	io.ntcreatex.in.security_flags = 0;
+	io.ntcreatex.in.fname = dirname;
+
+	status = smb_raw_open(cli_nt->tree, mem_ctx, &io);
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_COLLISION)) {
+		printf("(%s) incorrect status %s should be %s\n",
+		       __location__, nt_errstr(status),
+		       nt_errstr(NT_STATUS_OBJECT_NAME_COLLISION));
+		goto fail;
+	}
+	status = smb_raw_open(cli_dos->tree, mem_ctx, &io);
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_DOS(ERRDOS, ERRfilexists))) {
+		printf("(%s) incorrect status %s should be %s\n",
+		       __location__, nt_errstr(status),
+		       nt_errstr(NT_STATUS_DOS(ERRDOS, ERRfilexists)));
+		goto fail;
+	}
+
+	status = smbcli_mkdir(cli_nt->tree, dirname);
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_COLLISION)) {
+		printf("(%s) incorrect status %s should be %s\n",
+		       __location__, nt_errstr(status),
+		       nt_errstr(NT_STATUS_OBJECT_NAME_COLLISION));
+		goto fail;
+	}
+	status = smbcli_mkdir(cli_dos->tree, dirname);
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_DOS(ERRDOS, ERRnoaccess))) {
+		printf("(%s) incorrect status %s should be %s\n",
+		       __location__, nt_errstr(status),
+		       nt_errstr(NT_STATUS_DOS(ERRDOS, ERRnoaccess)));
+		goto fail;
+	}
+
+	if (!lp_parm_bool(-1, "target", "samba3", False)) {
+		goto done;
+	}
+
+	fnum = smbcli_open(cli_dos->tree, os2_fname, 
+			   O_RDWR | O_CREAT | O_TRUNC,
+			   DENY_NONE);
+	if (fnum != -1) {
+		printf("Open(%s) succeeded -- expected failure\n",
+		       os2_fname);
+		smbcli_close(cli_dos->tree, fnum);
+		goto fail;
+	}
+
+	if (!NT_STATUS_EQUAL(smbcli_nt_error(cli_dos->tree),
+			     NT_STATUS_DOS(ERRDOS, ERRcannotopen))) {
+		printf("Expected DOS error ERRDOS/ERRcannotopen, got %s\n",
+		       smbcli_errstr(cli_dos->tree));
+		goto fail;
+	}
+
+	fnum = smbcli_open(cli_nt->tree, os2_fname, 
+			   O_RDWR | O_CREAT | O_TRUNC,
+			   DENY_NONE);
+	if (fnum != -1) {
+		printf("Open(%s) succeeded -- expected failure\n",
+		       os2_fname);
+		smbcli_close(cli_nt->tree, fnum);
+		goto fail;
+	}
+
+	if (!NT_STATUS_EQUAL(smbcli_nt_error(cli_nt->tree),
+			     NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
+		printf("Expected DOS error NT_STATUS_OBJECT_NAME_NOT_FOUND, "
+		       "got %s\n", smbcli_errstr(cli_nt->tree));
+		goto fail;
+	}
+
+ done:
+	result = True;
+
+ fail:
+	if (cli_dos != NULL) {
+		torture_close_connection(cli_dos);
+	}
+	if (cli_nt != NULL) {
+		torture_close_connection(cli_nt);
+	}
+	
+	return result;
+}
 
 
 NTSTATUS torture_base_init(void)
@@ -1651,6 +1800,7 @@ NTSTATUS torture_base_init(void)
 	register_torture_op("BASE-SECLEAK",  torture_sec_leak, 0);
 	register_torture_op("BASE-DISCONNECT",  torture_disconnect, 0);
 	register_torture_op("BASE-DELAYWRITE", torture_delay_write, 0);
+	register_torture_op("BASE-SAMBA3ERROR", torture_samba3_errorpaths, 0);
 
 	register_torture_op("SCAN-CASETABLE", torture_casetable, 0);
 	register_torture_op("SCAN-UTABLE", torture_utable, 0);
