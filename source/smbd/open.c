@@ -884,8 +884,8 @@ static files_struct *fcb_or_dos_open(connection_struct *conn,
 	}
 
 	/* We need to duplicate this fsp. */
-	dup_fsp = dup_file_fsp(fsp, access_mask, share_access, create_options);
-	if (!dup_fsp) {
+	if (!NT_STATUS_IS_OK(dup_file_fsp(fsp, access_mask, share_access,
+					  create_options, &dup_fsp))) {
 		return NULL;
 	}
 

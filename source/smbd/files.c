@@ -522,10 +522,11 @@ void file_chain_restore(void)
  Duplicate the file handle part for a DOS or FCB open.
 ****************************************************************************/
 
-files_struct *dup_file_fsp(files_struct *fsp,
+NTSTATUS dup_file_fsp(files_struct *fsp,
 				uint32 access_mask,
 				uint32 share_access,
-				uint32 create_options)
+				uint32 create_options,
+		      		files_struct **result)
 {
 	NTSTATUS status;
 	files_struct *dup_fsp;
@@ -533,8 +534,7 @@ files_struct *dup_file_fsp(files_struct *fsp,
 	status = file_new(fsp->conn, &dup_fsp);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		set_saved_ntstatus(status);
-		return NULL;
+		return status;
 	}
 
 	SAFE_FREE(dup_fsp->fh);
@@ -569,5 +569,6 @@ files_struct *dup_file_fsp(files_struct *fsp,
 	dup_fsp->aio_write_behind = fsp->aio_write_behind;
         string_set(&dup_fsp->fsp_name,fsp->fsp_name);
 
-	return dup_fsp;
+	*result = dup_fsp;
+	return NT_STATUS_OK;
 }
