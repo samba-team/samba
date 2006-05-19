@@ -1918,7 +1918,7 @@ files_struct *open_directory(connection_struct *conn,
 				 "Error was %s\n", fname, strerror(errno) ));
 			/* Ensure we return the correct NT status to the
 			 * client. */
-			set_saved_error_triple(0, 0, status);
+			set_saved_ntstatus(status);
 			return NULL;
 		}
 
