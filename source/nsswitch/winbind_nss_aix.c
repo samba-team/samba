@@ -360,6 +360,9 @@ static char *wb_aix_getgrset(char *user)
 
 	logit("getgrset '%s'\n", r_user);
 
+        ZERO_STRUCT(response);
+        ZERO_STRUCT(request);
+
 	STRCPY_RETNULL(request.data.username, r_user);
 
 	if (*user == WB_AIX_ENCODED) {
