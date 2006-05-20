@@ -171,15 +171,15 @@ BOOL torture_smb2_find_scan(struct torture_context *torture)
 	}
 
 	ZERO_STRUCT(io);
-	io.in.pattern = "*";
-	io.in.continue_flags = SMB2_CONTINUE_FLAG_RESTART;
-	io.in.max_response_size = 0x10000;
-	io.in.handle = handle;
+	io.in.file.handle	= handle;
+	io.in.pattern		= "*";
+	io.in.continue_flags	= SMB2_CONTINUE_FLAG_RESTART;
+	io.in.max_response_size	= 0x10000;
 
 	for (i=1;i<0x100;i++) {
 		io.in.level = i;
 
-		io.in.handle = handle;
+		io.in.file.handle = handle;
 		status = smb2_find(tree, mem_ctx, &io);
 		if (!NT_STATUS_EQUAL(status, NT_STATUS_INVALID_INFO_CLASS) &&
 		    !NT_STATUS_EQUAL(status, NT_STATUS_INVALID_PARAMETER) &&

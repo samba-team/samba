@@ -38,7 +38,7 @@ struct smb2_request *smb2_ioctl_send(struct smb2_tree *tree, struct smb2_ioctl *
 
 	SSVAL(req->out.body, 0x02, 0); /* pad */
 	SIVAL(req->out.body, 0x04, io->in.function);
-	smb2_push_handle(req->out.body+0x08, &io->in.handle);
+	smb2_push_handle(req->out.body+0x08, &io->in.file.handle);
 
 	status = smb2_push_o32s32_blob(&req->out, 0x18, io->in.out);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -80,7 +80,7 @@ NTSTATUS smb2_ioctl_recv(struct smb2_request *req,
 
 	io->out._pad       = SVAL(req->in.body, 0x02);
 	io->out.function   = IVAL(req->in.body, 0x04);
-	smb2_pull_handle(req->in.body+0x08, &io->out.handle);
+	smb2_pull_handle(req->in.body+0x08, &io->out.file.handle);
 
 	status = smb2_pull_o32s32_blob(&req->in, mem_ctx, req->in.body+0x18, &io->out.in);
 	if (!NT_STATUS_IS_OK(status)) {

@@ -137,6 +137,9 @@ struct smbcli_request *smb_raw_sesssetup_send(struct smbcli_session *session,
 		smbcli_req_append_string(req, parms->spnego.in.lanman, STR_TERMINATE);
 		smbcli_req_append_string(req, parms->spnego.in.workgroup, STR_TERMINATE);
 		break;
+
+	case RAW_SESSSETUP_SMB2:
+		return NULL;
 	}
 
 	if (!smbcli_request_send(req)) {
@@ -212,6 +215,10 @@ NTSTATUS smb_raw_sesssetup_recv(struct smbcli_request *req,
 		p += smbcli_req_pull_string(req, mem_ctx, &parms->spnego.out.os, p, -1, STR_TERMINATE);
 		p += smbcli_req_pull_string(req, mem_ctx, &parms->spnego.out.lanman, p, -1, STR_TERMINATE);
 		p += smbcli_req_pull_string(req, mem_ctx, &parms->spnego.out.workgroup, p, -1, STR_TERMINATE);
+		break;
+
+	case RAW_SESSSETUP_SMB2:
+		req->status = NT_STATUS_INTERNAL_ERROR;
 		break;
 	}
 

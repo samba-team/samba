@@ -373,6 +373,9 @@ NTSTATUS smbsrv_sesssetup_backend(struct smbsrv_request *req,
 		case RAW_SESSSETUP_SPNEGO:
 			status = sesssetup_spnego(req, sess);
 			break;
+		case RAW_SESSSETUP_SMB2:
+			status = NT_STATUS_INTERNAL_ERROR;
+			break;
 	}
 
 	if (NT_STATUS_IS_OK(status)) {

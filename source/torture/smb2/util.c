@@ -37,7 +37,7 @@ NTSTATUS smb2_util_close(struct smb2_tree *tree, struct smb2_handle h)
 	struct smb2_close c;
 
 	ZERO_STRUCT(c);
-	c.in.handle = h;
+	c.in.file.handle = h;
 
 	return smb2_close(tree, &c);
 }
@@ -67,7 +67,7 @@ NTSTATUS smb2_util_unlink(struct smb2_tree *tree, const char *fname)
 	}
 	NT_STATUS_NOT_OK_RETURN(status);
 
-	return smb2_util_close(tree, io.out.handle);
+	return smb2_util_close(tree, io.out.file.handle);
 }
 
 /*
@@ -80,8 +80,8 @@ NTSTATUS smb2_util_write(struct smb2_tree *tree,
 	struct smb2_write w;
 
 	ZERO_STRUCT(w);
+	w.in.file.handle = handle;
 	w.in.offset      = offset;
-	w.in.handle      = handle;
 	w.in.data        = data_blob_const(buf, size);
 
 	return smb2_write(tree, &w);
@@ -135,7 +135,7 @@ static NTSTATUS smb2_create_complex(struct smb2_tree *tree, const char *fname,
 	talloc_free(tmp_ctx);
 	NT_STATUS_NOT_OK_RETURN(status);
 
-	*handle = io.out.handle;
+	*handle = io.out.file.handle;
 
 	if (!dir) {
 		status = smb2_util_write(tree, *handle, buf, 0, sizeof(buf));
@@ -332,12 +332,12 @@ NTSTATUS torture_smb2_testfile(struct smb2_tree *tree, const char *fname,
 	status = smb2_create(tree, tree, &io);
 	NT_STATUS_NOT_OK_RETURN(status);
 
-	*handle = io.out.handle;
+	*handle = io.out.file.handle;
 
 	ZERO_STRUCT(r);
+	r.in.file.handle = *handle;
 	r.in.length      = 5;
 	r.in.offset      = 0;
-	r.in.handle      = *handle;
 
 	smb2_read(tree, tree, &r);
 
@@ -365,7 +365,7 @@ NTSTATUS torture_smb2_testdir(struct smb2_tree *tree, const char *fname,
 	status = smb2_create(tree, tree, &io);
 	NT_STATUS_NOT_OK_RETURN(status);
 
-	*handle = io.out.handle;
+	*handle = io.out.file.handle;
 
 	return NT_STATUS_OK;
 }
@@ -417,7 +417,7 @@ NTSTATUS smb2_util_roothandle(struct smb2_tree *tree, struct smb2_handle *handle
 	status = smb2_create(tree, tree, &io);
 	NT_STATUS_NOT_OK_RETURN(status);
 
-	*handle = io.out.handle;
+	*handle = io.out.file.handle;
 
 	return NT_STATUS_OK;
 }

@@ -132,6 +132,9 @@ struct smbcli_request *smb_raw_ioctl_send(struct smbcli_tree *tree, union smb_io
 	case RAW_IOCTL_NTIOCTL:
 		req = smb_raw_ntioctl_send(tree, parms);
 		break;
+
+	case RAW_IOCTL_SMB2:
+		return NULL;
 	}
 
 	return req;
@@ -149,6 +152,9 @@ NTSTATUS smb_raw_ioctl_recv(struct smbcli_request *req,
 		
 	case RAW_IOCTL_NTIOCTL:
 		return smb_raw_ntioctl_recv(req, mem_ctx, parms);
+
+	case RAW_IOCTL_SMB2:
+		break;
 	}
 	return NT_STATUS_INVALID_LEVEL;
 }

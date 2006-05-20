@@ -566,6 +566,10 @@ static void nbench_flush_send(struct ntvfs_request *req)
 			   0xFFFF,
 			   get_nt_error_c_code(req->async_states->status));
 		break;
+	default:
+		nbench_log(req, "Flush-%d - NOT HANDLED\n",
+			   io->generic.level);
+		break;
 	}
 
 	PASS_THRU_REP_POST(req);

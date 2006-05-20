@@ -36,7 +36,7 @@ struct smb2_request *smb2_flush_send(struct smb2_tree *tree, struct smb2_flush *
 
 	SSVAL(req->out.body, 0x02, 0); /* pad? */
 	SIVAL(req->out.body, 0x04, io->in.unknown);
-	smb2_push_handle(req->out.body+0x08, &io->in.handle);
+	smb2_push_handle(req->out.body+0x08, &io->in.file.handle);
 
 	smb2_transport_send(req);
 

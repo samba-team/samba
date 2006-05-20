@@ -39,7 +39,7 @@ struct smb2_request *smb2_find_send(struct smb2_tree *tree, struct smb2_find *io
 	SCVAL(req->out.body, 0x02, io->in.level);
 	SCVAL(req->out.body, 0x03, io->in.continue_flags);
 	SIVAL(req->out.body, 0x04, io->in.unknown);
-	smb2_push_handle(req->out.body+0x08, &io->in.handle);
+	smb2_push_handle(req->out.body+0x08, &io->in.file.handle);
 
 	status = smb2_push_o16s16_string(&req->out, 0x18, io->in.pattern);
 	if (!NT_STATUS_IS_OK(status)) {

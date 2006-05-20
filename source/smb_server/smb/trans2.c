@@ -1085,6 +1085,7 @@ static BOOL find_fill_info(struct find_state *state,
 	case RAW_SEARCH_FFIRST:
 	case RAW_SEARCH_FUNIQUE:
 	case RAW_SEARCH_GENERIC:
+	case RAW_SEARCH_SMB2:
 		/* handled elsewhere */
 		return False;
 

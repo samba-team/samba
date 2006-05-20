@@ -121,10 +121,10 @@ static BOOL torture_smb2_find_levels(struct smb2_tree *tree)
 	}
 
 	ZERO_STRUCT(f);
-	f.in.handle = handle;
-	f.in.pattern = FNAME;
-	f.in.continue_flags = SMB2_CONTINUE_FLAG_RESTART;
-	f.in.max_response_size = 0x10000;
+	f.in.file.handle	= handle;
+	f.in.pattern		= FNAME;
+	f.in.continue_flags	= SMB2_CONTINUE_FLAG_RESTART;
+	f.in.max_response_size	= 0x10000;
 
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
 		union smb_search_data *d;

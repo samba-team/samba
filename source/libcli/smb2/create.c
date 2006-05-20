@@ -144,7 +144,7 @@ NTSTATUS smb2_create_recv(struct smb2_request *req, TALLOC_CTX *mem_ctx, struct 
 	io->out.size           = BVAL(req->in.body, 0x30);
 	io->out.file_attr      = IVAL(req->in.body, 0x38);
 	io->out._pad           = IVAL(req->in.body, 0x3C);
-	smb2_pull_handle(req->in.body+0x40, &io->out.handle);
+	smb2_pull_handle(req->in.body+0x40, &io->out.file.handle);
 	status = smb2_pull_o32s32_blob(&req->in, mem_ctx, req->in.body+0x50, &io->out.blob);
 	if (!NT_STATUS_IS_OK(status)) {
 		smb2_request_destroy(req);
