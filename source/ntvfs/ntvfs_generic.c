@@ -1268,8 +1268,15 @@ _PUBLIC_ NTSTATUS ntvfs_map_close(struct ntvfs_module_context *ntvfs,
 		return NT_STATUS_INVALID_LEVEL;
 
 	case RAW_CLOSE_SPLCLOSE:
-		cl2->close.level	= RAW_CLOSE_CLOSE;
-		cl2->close.in.file.ntvfs= cl->splclose.in.file.ntvfs;
+		cl2->generic.level		= RAW_CLOSE_CLOSE;
+		cl2->generic.in.file.ntvfs	= cl->splclose.in.file.ntvfs;
+		break;
+
+	case RAW_CLOSE_SMB2:
+		cl2->generic.level		= RAW_CLOSE_CLOSE;
+		cl2->generic.in.file.ntvfs	= cl->smb2.in.file.ntvfs;
+		/* SMB2 Close has output parameter, but we just zero them */
+		ZERO_STRUCT(cl->smb2.out);
 		break;
 	}
 
