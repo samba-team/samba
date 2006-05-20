@@ -671,7 +671,7 @@ NTSTATUS smbsrv_handle_create_new(void *private_data, struct ntvfs_request *ntvf
 	struct smbsrv_handle *handle;
 	struct ntvfs_handle *h;
 
-	handle = smbsrv_handle_new(req);
+	handle = smbsrv_handle_new(req->session, req->tcon, req, req->request_time);
 	if (!handle) return NT_STATUS_INSUFFICIENT_RESOURCES;
 
 	h = talloc_zero(handle, struct ntvfs_handle);
