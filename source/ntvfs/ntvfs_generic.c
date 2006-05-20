@@ -1165,13 +1165,16 @@ static NTSTATUS ntvfs_map_read_finish(struct ntvfs_module_context *ntvfs,
 {
 	switch (rd->generic.level) {
 	case RAW_READ_READ:
-		rd->read.out.nread        = rd2->generic.out.nread;
+		rd->read.out.nread	= rd2->generic.out.nread;
 		break;
 	case RAW_READ_READBRAW:
-		rd->readbraw.out.nread    = rd2->generic.out.nread;
+		rd->readbraw.out.nread	= rd2->generic.out.nread;
 		break;
 	case RAW_READ_LOCKREAD:
-		rd->lockread.out.nread = rd2->generic.out.nread;
+		rd->lockread.out.nread	= rd2->generic.out.nread;
+		break;
+	case RAW_READ_SMB2:
+		rd->smb2.out.data.length= rd2->generic.out.nread;
 		break;
 	default:
 		return NT_STATUS_INVALID_LEVEL;
@@ -1258,6 +1261,22 @@ _PUBLIC_ NTSTATUS ntvfs_map_read(struct ntvfs_module_context *ntvfs,
 		if (NT_STATUS_IS_OK(status)) {
 			status = ntvfs->ops->read(ntvfs, req, rd2);
 		}
+		break;
+
+	case RAW_READ_SMB2:
+		if (rd->smb2.in.length > UINT16_MAX) {
+			DEBUG(0,("%s: mapping SMB2 => generic length to large %u!\n",
+				__FUNCTION__, rd->smb2.in.length));
+			status = NT_STATUS_FOOBAR;
+			goto done;
+		}
+		rd2->readx.in.file.ntvfs= rd->smb2.in.file.ntvfs;
+		rd2->readx.in.offset    = rd->smb2.in.offset;
+		rd2->readx.in.mincnt    = rd->smb2.in.length;
+		rd2->readx.in.maxcnt    = rd->smb2.in.length;
+		rd2->readx.in.remaining = 0;
+		rd2->readx.out.data     = rd->smb2.out.data.data;
+		status = ntvfs->ops->read(ntvfs, req, rd2);
 		break;
 	}
 
