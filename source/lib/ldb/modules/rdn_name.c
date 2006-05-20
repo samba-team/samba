@@ -132,67 +132,6 @@ static int rdn_name_add(struct ldb_module *module, struct ldb_request *req)
 	return ret;
 }
 
-static int rdn_name_modify(struct ldb_module *module, struct ldb_request *req)
-{
-	const struct ldb_message *msg = req->op.mod.message;
-	struct ldb_message *msg2;
-	struct ldb_message_element *attribute;
-	struct ldb_dn_component *rdn;
-	int ret, i;
-
-	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "rdn_name_modify_record\n");
-
-	/* do not manipulate our control entries */
-	if (ldb_dn_is_special(msg->dn)) {
-		return ldb_next_request(module, req);
-	}
-
-	/* Perhaps someone above us knows better */
-	if ((attribute = rdn_name_find_attribute(msg, "name")) != NULL ) {
-		return ldb_next_request(module, req);
-	}
-
-	msg2 = talloc(module, struct ldb_message);
-	if (!msg2) {
-		return -1;
-	}
-
-	msg2->dn = msg->dn;
-	msg2->num_elements = msg->num_elements;
-	msg2->private_data = msg->private_data;
-	msg2->elements = talloc_array(msg2, struct ldb_message_element, msg2->num_elements);
-	for (i = 0; i < msg2->num_elements; i++) {
-		msg2->elements[i] = msg->elements[i];
-	}
-	
-	rdn = ldb_dn_get_rdn(msg2, msg2->dn);
-	if (!rdn) {
-		talloc_free(msg2);
-		return -1;
-	}
-	
-	if (ldb_msg_add_value(msg2, "name", &rdn->value) != 0) {
-		talloc_free(msg2);
-		return -1;
-	}
-
-	attribute = rdn_name_find_attribute(msg2, "name");
-	if (!attribute) {
-		talloc_free(msg2);
-		return -1;
-	}
-
-	attribute->flags = LDB_FLAG_MOD_REPLACE;
-
-	req->op.add.message = msg2;
-	ret = ldb_next_request(module, req);
-	req->op.add.message = msg;
-
-	talloc_free(msg2);
-
-	return ret;
-}
-
 static int rdn_name_add_async(struct ldb_module *module, struct ldb_request *req)
 {
 	struct ldb_request *down_req;
@@ -281,77 +220,6 @@ static int rdn_name_add_async(struct ldb_module *module, struct ldb_request *req
 	return ret;
 }
 
-static int rdn_name_modify_async(struct ldb_module *module, struct ldb_request *req)
-{
-	struct ldb_request *down_req;
-	struct ldb_message *msg;
-	struct ldb_message_element *attribute;
-	struct ldb_dn_component *rdn;
-	int ret;
-
-	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "rdn_name_modify_record\n");
-
-	/* do not manipulate our control entries */
-	if (ldb_dn_is_special(req->op.mod.message->dn)) {
-		return ldb_next_request(module, req);
-	}
-
-	/* Perhaps someone above us knows better */
-	if ((attribute = rdn_name_find_attribute(req->op.mod.message, "name")) != NULL ) {
-		return ldb_next_request(module, req);
-	}
-
-	/* FIXME: are we sure we wont to change "name" on each and every modify operation ?? */
-	down_req = talloc(module, struct ldb_request);
-	if (down_req == NULL) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	msg = ldb_msg_copy_shallow(down_req, req->op.add.message);
-	if (msg == NULL) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	rdn = ldb_dn_get_rdn(msg, msg->dn);
-	if (rdn == NULL) {
-		talloc_free(down_req);
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-	
-	if (ldb_msg_add_value(msg, "name", &rdn->value) != 0) {
-		talloc_free(down_req);
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	attribute = rdn_name_find_attribute(msg, "name");
-	if (!attribute) {
-		talloc_free(down_req);
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	attribute->flags = LDB_FLAG_MOD_REPLACE;
-
-	down_req->op.add.message = msg;
-	
-	down_req->controls = req->controls;
-	down_req->creds = req->creds;
-
-	down_req->async.context = req->async.context;
-	down_req->async.callback = req->async.callback;
-	down_req->async.timeout = req->async.timeout;
-
-	/* go on with the call chain */
-	ret = ldb_next_request(module, down_req);
-
-	/* do not free down_req as the call results may be linked to it,
-	 * it will be freed when the upper level request get freed */
-	if (ret == LDB_SUCCESS) {
-		req->async.handle = down_req->async.handle;
-	}
-
-	return ret;
-}
-
 static int rdn_name_request(struct ldb_module *module, struct ldb_request *req)
 {
 	switch (req->operation) {
@@ -359,14 +227,8 @@ static int rdn_name_request(struct ldb_module *module, struct ldb_request *req)
 	case LDB_REQ_ADD:
 		return rdn_name_add(module, req);
 
-	case LDB_REQ_MODIFY:
-		return rdn_name_modify(module, req);
-
 	case LDB_ASYNC_ADD:
 		return rdn_name_add_async(module, req);
-
-	case LDB_ASYNC_MODIFY:
-		return rdn_name_modify_async(module, req);
 
 	default:
 		return ldb_next_request(module, req);
