@@ -65,18 +65,13 @@ NTSTATUS pvfs_ioctl(struct ntvfs_module_context *ntvfs,
 		    struct ntvfs_request *req,
 		    union smb_ioctl *io)
 {
-	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
-
 	switch (io->generic.level) {
 	case RAW_IOCTL_IOCTL:
-		status = pvfs_ioctl_old(ntvfs, req, io);
-		break;
+		return pvfs_ioctl_old(ntvfs, req, io);
 
 	case RAW_IOCTL_NTIOCTL:
-		status = pvfs_ntioctl(ntvfs, req, io);
-		break;
+		return pvfs_ntioctl(ntvfs, req, io);
 	}
 
-	return status;
+	return NT_STATUS_INVALID_LEVEL;
 }
-
