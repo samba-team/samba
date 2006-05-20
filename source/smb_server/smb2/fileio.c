@@ -117,9 +117,35 @@ void smb2srv_close_recv(struct smb2srv_request *req)
 	SMB2SRV_CALL_NTVFS_BACKEND(ntvfs_close(req->ntvfs, io));
 }
 
+static void smb2srv_flush_send(struct ntvfs_request *ntvfs)
+{
+	struct smb2srv_request *req;
+	union smb_flush *io;
+
+	SMB2SRV_CHECK_ASYNC_STATUS(io, union smb_flush);
+	SMB2SRV_CHECK(smb2srv_setup_reply(req, 0x04, False, 0));
+
+	SSVAL(req->out.body,	0x02,	0);
+
+	smb2srv_send_reply(req);
+}
+
 void smb2srv_flush_recv(struct smb2srv_request *req)
 {
-	smb2srv_send_error(req, NT_STATUS_NOT_IMPLEMENTED);
+	union smb_flush *io;
+	uint16_t _pad;
+
+	SMB2SRV_CHECK_BODY_SIZE(req, 0x18, False);
+	SMB2SRV_TALLOC_IO_PTR(io, union smb_flush);
+	SMB2SRV_SETUP_NTVFS_REQUEST(smb2srv_flush_send, NTVFS_ASYNC_STATE_MAY_ASYNC);
+
+	io->smb2.level			= RAW_FLUSH_SMB2;
+	_pad				= SVAL(req->in.body, 0x02);
+	io->smb2.in.unknown		= IVAL(req->in.body, 0x04);
+	io->smb2.in.file.ntvfs		= smb2srv_pull_handle(req, req->in.body, 0x08);
+
+	SMB2SRV_CHECK_FILE_HANDLE(io->smb2.in.file.ntvfs);
+	SMB2SRV_CALL_NTVFS_BACKEND(ntvfs_flush(req->ntvfs, io));
 }
 
 void smb2srv_read_recv(struct smb2srv_request *req)
