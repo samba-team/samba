@@ -556,7 +556,8 @@ static int ejs_ldb_init(MprVarHandle eid, int argc, struct MprVar **argv)
 /*
   setup C functions that be called from ejs
 */
-void smb_setup_ejs_ldb(void)
+NTSTATUS smb_setup_ejs_ldb(void)
 {
 	ejsDefineCFunction(-1, "ldb_init", ejs_ldb_init, NULL, MPR_VAR_SCRIPT_HANDLE);
+	return NT_STATUS_OK;
 }
