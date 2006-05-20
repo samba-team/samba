@@ -545,6 +545,8 @@ struct smbcli_request *smb_raw_open_send(struct smbcli_tree *tree, union smb_ope
 			SIVAL(req->out.vwv, VWV(10),parms->openxreadx.in.offset>>32);
 		}
 		break;
+	case RAW_OPEN_SMB2:
+		return NULL;
 	}
 
 	if (!smbcli_request_send(req)) {
@@ -680,6 +682,9 @@ NTSTATUS smb_raw_open_recv(struct smbcli_request *req, TALLOC_CTX *mem_ctx, unio
 			req->status = NT_STATUS_BUFFER_TOO_SMALL;
 		}
 		break;
+	case RAW_OPEN_SMB2:
+		req->status = NT_STATUS_INTERNAL_ERROR;
+		break;
 	}
 
 failed:
@@ -717,6 +722,9 @@ struct smbcli_request *smb_raw_close_send(struct smbcli_tree *tree, union smb_cl
 		SSVAL(req->out.vwv, VWV(0), parms->splclose.in.file.fnum);
 		SIVAL(req->out.vwv, VWV(1), 0); /* reserved */
 		break;
+
+	case RAW_CLOSE_SMB2:
+		return NULL;
 	}
 
 	if (!req) return NULL;
@@ -858,6 +866,8 @@ struct smbcli_request *smb_raw_flush_send(struct smbcli_tree *tree, union smb_fl
 	case RAW_FLUSH_ALL:
 		fnum = 0xFFFF;
 		break;
+	case RAW_FLUSH_SMB2:
+		return NULL;
 	}
 
 	SETUP_REQUEST(SMBflush, 1, 0);

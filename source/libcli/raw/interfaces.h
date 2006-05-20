@@ -207,7 +207,11 @@ union smb_rename {
 	} ntrename;
 };
 
-enum smb_tcon_level {RAW_TCON_TCON, RAW_TCON_TCONX};
+enum smb_tcon_level {
+	RAW_TCON_TCON,
+	RAW_TCON_TCONX,
+	RAW_TCON_SMB2
+};
 
 /* union used in tree connect call */
 union smb_tcon {
@@ -248,10 +252,42 @@ union smb_tcon {
 			uint16_t tid;
 		} out;
 	} tconx;
+
+	/* SMB2 TreeConnect */
+	struct smb2_tree_connect {
+		enum smb_tcon_level level;
+
+		struct {
+			/* static body buffer 8 (0x08) bytes */
+			/* uint16_t buffer_code; 0x09 = 0x08 + 1 */
+			uint16_t unknown1; /* 0x0000 */
+			/* uint16_t path_ofs */
+			/* uint16_t path_size */
+	
+			/* dynamic body */
+			const char *path; /* as non-terminated UTF-16 on the wire */
+		} in;
+		struct {
+			/* static body buffer 16 (0x10) bytes */
+			/* uint16_t buffer_code;  0x10 */
+			uint16_t unknown1; /* 0x02 */
+			uint32_t unknown2; /* 0x00 */
+			uint32_t unknown3; /* 0x00 */
+			uint32_t access_mask;
+	
+			/* extracted from the SMB2 header */
+			uint32_t tid;
+		} out;
+	} smb2;
 };
 
 
-enum smb_sesssetup_level {RAW_SESSSETUP_OLD, RAW_SESSSETUP_NT1, RAW_SESSSETUP_SPNEGO};
+enum smb_sesssetup_level {
+	RAW_SESSSETUP_OLD,
+	RAW_SESSSETUP_NT1,
+	RAW_SESSSETUP_SPNEGO,
+	RAW_SESSSETUP_SMB2
+};
 
 /* union used in session_setup call */
 union smb_sesssetup {
@@ -330,6 +366,37 @@ union smb_sesssetup {
 			uint16_t vuid;
 		} out;
 	} spnego;
+
+	/* SMB2 SessionSetup */
+	struct smb2_session_setup {
+		enum smb_sesssetup_level level;
+
+		struct {
+			/* static body buffer 16 (0x10) bytes */
+			/* uint16_t buffer_code;  0x11 = 0x10 + 1 */
+			uint16_t _pad;
+			uint32_t unknown2; /* 0xF */
+			uint32_t unknown3; /* 0x00 */
+			/* uint16_t secblob_ofs */
+			/* uint16_t secblob_size */
+
+			/* dynamic body */
+			DATA_BLOB secblob;
+		} in;
+		struct {
+			/* static body buffer 8 (0x08) bytes */
+			/* uint16_t buffer_code; 0x09 = 0x08 +1 */
+			uint16_t _pad;
+			/* uint16_t secblob_ofs */
+			/* uint16_t secblob_size */
+
+			/* dynamic body */
+			DATA_BLOB secblob;
+
+			/* extracted from the SMB2 header */
+			uint64_t uid;
+		} out;
+	} smb2;
 };
 
 /* Note that the specified enum values are identical to the actual info-levels used
@@ -1161,12 +1228,18 @@ union smb_fsinfo {
 
 
 enum smb_open_level {
-		 RAW_OPEN_OPEN, RAW_OPEN_OPENX, 
-		 RAW_OPEN_MKNEW, RAW_OPEN_CREATE, 
-		 RAW_OPEN_CTEMP, RAW_OPEN_SPLOPEN,
-		 RAW_OPEN_NTCREATEX, RAW_OPEN_T2OPEN,
-		 RAW_OPEN_NTTRANS_CREATE, 
-		 RAW_OPEN_OPENX_READX};
+	RAW_OPEN_OPEN,
+	RAW_OPEN_OPENX, 
+	RAW_OPEN_MKNEW,
+	RAW_OPEN_CREATE, 
+	RAW_OPEN_CTEMP,
+	RAW_OPEN_SPLOPEN,
+	RAW_OPEN_NTCREATEX,
+	RAW_OPEN_T2OPEN,
+	RAW_OPEN_NTTRANS_CREATE, 
+	RAW_OPEN_OPENX_READX,
+	RAW_OPEN_SMB2
+};
 
 /* the generic interface is defined to be equal to the NTCREATEX interface */
 #define RAW_OPEN_GENERIC RAW_OPEN_NTCREATEX
@@ -1417,11 +1490,73 @@ union smb_open {
 			uint16_t nread;
 		} out;
 	} openxreadx;
+
+#define SMB2_CREATE_FLAG_REQUEST_OPLOCK           0x0100
+#define SMB2_CREATE_FLAG_REQUEST_EXCLUSIVE_OPLOCK 0x0800
+#define SMB2_CREATE_FLAG_GRANT_OPLOCK             0x0001
+#define SMB2_CREATE_FLAG_GRANT_EXCLUSIVE_OPLOCK   0x0080
+
+	/* SMB2 Create */
+	struct smb2_create {
+		enum smb_open_level level;
+		struct {
+			/* static body buffer 56 (0x38) bytes */
+			/* uint16_t buffer_code;  0x39 = 0x38 + 1 */
+			uint16_t oplock_flags; /* SMB2_CREATE_FLAG_* */
+			uint32_t impersonation;
+			uint32_t unknown3[4];
+			uint32_t access_mask;
+
+			uint32_t file_attr;
+			uint32_t share_access;
+			uint32_t open_disposition;
+			uint32_t create_options;
+
+			/* uint16_t fname_ofs */
+			/* uint16_t fname_size */
+			/* uint32_t blob_ofs; */
+			/* uint32_t blob_size; */
+
+			/* dynamic body */
+			const char *fname;
+
+			/* optional list of extended attributes */
+			struct smb_ea_list eas;
+		} in;
+		struct {
+			union smb_handle file;
+
+			/* static body buffer 88 (0x58) bytes */
+			/* uint16_t buffer_code;  0x59 = 0x58 + 1 */
+			uint16_t oplock_flags; /* SMB2_CREATE_FLAG_* */
+			uint32_t create_action;
+			NTTIME   create_time;
+			NTTIME   access_time;
+			NTTIME   write_time;
+			NTTIME   change_time;
+			uint64_t alloc_size;
+			uint64_t size;
+			uint32_t file_attr;
+			uint32_t _pad;
+			/* struct smb2_handle handle;*/
+			/* uint32_t blob_ofs; */
+			/* uint32_t blob_size; */
+
+			/* dynamic body */
+			DATA_BLOB blob;
+		} out;
+	} smb2;
 };
 
 
 
-enum smb_read_level {RAW_READ_READBRAW, RAW_READ_LOCKREAD, RAW_READ_READ, RAW_READ_READX};
+enum smb_read_level {
+	RAW_READ_READBRAW,
+	RAW_READ_LOCKREAD,
+	RAW_READ_READ,
+	RAW_READ_READX,
+	RAW_READ_SMB2
+};
 
 #define RAW_READ_GENERIC RAW_READ_READX
 
@@ -1496,12 +1631,45 @@ union smb_read {
 			uint16_t nread;
 		} out;
 	} read;
+
+	/* SMB2 Read */
+	struct smb2_read {
+		enum smb_read_level level;
+		struct {
+			union smb_handle file;
+
+			/* static body buffer 48 (0x30) bytes */
+			/* uint16_t buffer_code;  0x31 = 0x30 + 1 */
+			uint16_t _pad;
+			uint32_t length;
+			uint64_t offset;
+			/* struct smb2_handle handle; */
+			uint64_t unknown1; /* 0x0000000000000000 */
+			uint64_t unknown2; /* 0x0000000000000000 */
+			uint8_t _bug;
+		} in;
+		struct {
+			/* static body buffer 16 (0x10) bytes */
+			/* uint16_t buffer_code;  0x11 = 0x10 + 1 */
+			/* uint16_t data_ofs; */
+			/* uint32_t data_size; */
+			uint64_t unknown1; /* 0x0000000000000000 */
+
+			/* dynamic body */
+			DATA_BLOB data;
+		} out;
+	} smb2;
 };
 
 
-enum smb_write_level {RAW_WRITE_WRITEUNLOCK, RAW_WRITE_WRITE, 
-		      RAW_WRITE_WRITEX, RAW_WRITE_WRITECLOSE, 
-		      RAW_WRITE_SPLWRITE};
+enum smb_write_level {
+	RAW_WRITE_WRITEUNLOCK,
+	RAW_WRITE_WRITE,
+	RAW_WRITE_WRITEX,
+	RAW_WRITE_WRITECLOSE,
+	RAW_WRITE_SPLWRITE,
+	RAW_WRITE_SMB2
+};
 
 #define RAW_WRITE_GENERIC RAW_WRITE_WRITEX
 
@@ -1579,6 +1747,34 @@ union smb_write {
 			const uint8_t *data;
 		} in;
 	} splwrite;
+
+	/* SMB2 Write */
+	struct smb2_write {
+		enum smb_write_level level;
+		struct {
+			union smb_handle file;
+
+			/* static body buffer 48 (0x30) bytes */
+			/* uint16_t buffer_code;  0x31 = 0x30 + 1 */
+			/* uint16_t data_ofs; */
+			/* uint32_t data_size; */
+			uint64_t offset;
+			/* struct smb2_handle handle; */
+			uint64_t unknown1; /* 0xFFFFFFFFFFFFFFFF */
+			uint64_t unknown2; /* 0xFFFFFFFFFFFFFFFF */
+
+			/* dynamic body */
+			DATA_BLOB data;
+		} in;
+		struct {
+			/* static body buffer 17 (0x11) bytes */
+			/* uint16_t buffer_code;  0x11 */
+			uint16_t _pad;
+			uint32_t nwritten;
+			uint64_t unknown1; /* 0x0000000000000000 */
+			uint8_t _bug;
+		} out;
+	} smb2;
 };
 
 
@@ -1619,7 +1815,11 @@ union smb_lock {
 };
 
 
-enum smb_close_level {RAW_CLOSE_CLOSE, RAW_CLOSE_SPLCLOSE};
+enum smb_close_level {
+	RAW_CLOSE_CLOSE,
+	RAW_CLOSE_SPLCLOSE,
+	RAW_CLOSE_SMB2
+};
 
 #define RAW_CLOSE_GENERIC RAW_CLOSE_CLOSE
 
@@ -1643,6 +1843,33 @@ union smb_close {
 			union smb_handle file;
 		} in;
 	} splclose;
+
+	/* SMB2 Close */
+	struct smb2_close {
+		enum smb_close_level level;
+		struct {
+			union smb_handle file;
+
+			/* static body buffer 24 (0x18) bytes */
+			/* uint16_t buffer_code;  0x18 */
+#define SMB2_CLOSE_FLAGS_FULL_INFORMATION (1<<0)
+			uint16_t flags; /* SMB2_CLOSE_FLAGS_* */
+			uint32_t _pad;
+		} in;
+		struct {
+			/* static body buffer 60 (0x3C) bytes */
+			/* uint16_t buffer_code;  0x3C */
+			uint16_t flags;
+			uint32_t _pad;
+			NTTIME   create_time;
+			NTTIME   access_time;
+			NTTIME   write_time;
+			NTTIME   change_time;
+			uint64_t alloc_size;
+			uint64_t size;
+			uint32_t file_attr;
+		} out;
+	} smb2;
 };
 
 
@@ -1681,7 +1908,11 @@ union smb_lpq {
 	} retq;
 };
 
-enum smb_ioctl_level {RAW_IOCTL_IOCTL, RAW_IOCTL_NTIOCTL};
+enum smb_ioctl_level {
+	RAW_IOCTL_IOCTL,
+	RAW_IOCTL_NTIOCTL,
+	RAW_IOCTL_SMB2
+};
 
 /*
   union for ioctl() backend
@@ -1723,12 +1954,60 @@ union smb_ioctl {
 			DATA_BLOB blob;
 		} out;
 	} ntioctl;
+
+	/* SMB2 Ioctl */
+	struct smb2_ioctl {
+		enum smb_ioctl_level level;
+		struct {
+			union smb_handle file;
+
+			/* static body buffer 56 (0x38) bytes */
+			/* uint16_t buffer_code;  0x39 = 0x38 + 1 */
+			uint16_t _pad;
+			uint32_t function;
+			/*struct smb2_handle handle;*/
+			/* uint32_t out_ofs; */
+			/* uint32_t out_size; */
+			uint32_t unknown2;
+			/* uint32_t in_ofs; */
+			/* uint32_t in_size; */
+			uint32_t max_response_size;
+			uint64_t flags;
+
+			/* dynamic body */
+			DATA_BLOB out;
+			DATA_BLOB in;
+		} in;
+		struct {
+			union smb_handle file;
+
+			/* static body buffer 48 (0x30) bytes */
+			/* uint16_t buffer_code;  0x31 = 0x30 + 1 */
+			uint16_t _pad;
+			uint32_t function;
+			/* struct smb2_handle handle; */
+			/* uint32_t in_ofs; */
+			/* uint32_t in_size; */
+			/* uint32_t out_ofs; */
+			/* uint32_t out_size; */
+			uint32_t unknown2;
+			uint32_t unknown3;
+
+			/* dynamic body */
+			DATA_BLOB in;
+			DATA_BLOB out;
+		} out;
+	} smb2;
 };
 
-enum smb_flush_level {RAW_FLUSH_FLUSH, RAW_FLUSH_ALL};
+enum smb_flush_level {
+	RAW_FLUSH_FLUSH,
+	RAW_FLUSH_ALL,
+	RAW_FLUSH_SMB2
+};
 
-/* struct for SMBflush */
 union smb_flush {
+	/* struct for SMBflush */
 	struct {
 		enum smb_flush_level level;
 		struct {
@@ -1736,11 +2015,20 @@ union smb_flush {
 		} in;
 	} flush, generic;
 
+	/* SMBflush with 0xFFFF wildcard fnum */
 	struct {
 		enum smb_flush_level level;
 	} flush_all;
-};
 
+	/* SMB2 Flush */
+	struct smb2_flush {
+		enum smb_flush_level level;
+		struct {
+			union smb_handle file;
+			uint32_t unknown;
+		} in;
+	} smb2;
+};
 
 /* struct for SMBcopy */
 struct smb_copy {
@@ -1823,7 +2111,8 @@ struct smb_notify {
 enum smb_search_level {RAW_SEARCH_GENERIC                 = 0xF000, 
 		       RAW_SEARCH_SEARCH,                 /* SMBsearch */ 
 		       RAW_SEARCH_FFIRST,                 /* SMBffirst */ 
-		       RAW_SEARCH_FUNIQUE,                /* SMBfunique */ 
+		       RAW_SEARCH_FUNIQUE,                /* SMBfunique */
+		       RAW_SEARCH_SMB2,                   /* SMB2 Find */
 		       RAW_SEARCH_STANDARD                = SMB_FIND_STANDARD,
 		       RAW_SEARCH_EA_SIZE                 = SMB_FIND_EA_SIZE,
 		       RAW_SEARCH_EA_LIST                 = SMB_FIND_EA_LIST,
@@ -1878,6 +2167,45 @@ union smb_search_first {
 			uint16_t end_of_search;
 		} out;
 	} t2ffirst;
+
+/*
+  SMB2 uses different level numbers for the same old SMB search levels
+*/
+#define SMB2_FIND_DIRECTORY_INFO         0x01
+#define SMB2_FIND_FULL_DIRECTORY_INFO    0x02
+#define SMB2_FIND_BOTH_DIRECTORY_INFO    0x03
+#define SMB2_FIND_NAME_INFO              0x0C
+#define SMB2_FIND_ID_BOTH_DIRECTORY_INFO 0x25
+#define SMB2_FIND_ID_FULL_DIRECTORY_INFO 0x26
+	/* SMB2 Find */
+	struct smb2_find {
+		enum smb_search_level level;
+		struct {
+			union smb_handle file;
+
+			/* static body buffer 32 (0x20) bytes */
+			/* uint16_t buffer_code;  0x21 = 0x20 + 1 */
+			uint8_t level;
+			uint8_t continue_flags; /* SMB2_CONTINUE_FLAG_* */
+			uint32_t unknown; /* perhaps a continue token? */
+			/* struct smb2_handle handle; */
+			/* uint16_t pattern_ofs; */
+			/* uint32_t pattern_size; */
+			uint32_t max_response_size;
+	
+			/* dynamic body */
+			const char *pattern;
+		} in;
+		struct {
+			/* static body buffer 8 (0x08) bytes */
+			/* uint16_t buffer_code;  0x08 */
+			/* uint16_t blob_ofs; */
+			/* uint32_t blob_size; */
+
+			/* dynamic body */
+			DATA_BLOB blob;
+		} out;
+	} smb2;
 };
 
 /* union for file search continue */

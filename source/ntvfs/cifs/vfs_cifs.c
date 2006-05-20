@@ -714,6 +714,8 @@ static NTSTATUS cvfs_flush(struct ntvfs_module_context *ntvfs,
 	case RAW_FLUSH_ALL:
 		io->generic.in.file.fnum = 0xFFFF;
 		break;
+	case RAW_FLUSH_SMB2:
+		return NT_STATUS_INVALID_LEVEL;
 	}
 
 	if (!(req->async_states->state & NTVFS_ASYNC_STATE_MAY_ASYNC)) {

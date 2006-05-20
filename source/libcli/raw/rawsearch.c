@@ -482,6 +482,7 @@ static int parse_trans2_search(struct smbcli_tree *tree,
 	case RAW_SEARCH_SEARCH:
 	case RAW_SEARCH_FFIRST:
 	case RAW_SEARCH_FUNIQUE:
+	case RAW_SEARCH_SMB2:
 		/* handled elsewhere */
 		return -1;
 

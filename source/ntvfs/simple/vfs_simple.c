@@ -580,7 +580,9 @@ static NTSTATUS svfs_flush(struct ntvfs_module_context *ntvfs,
 
 	switch (io->generic.level) {
 	case RAW_FLUSH_FLUSH:
-		f = find_fd(private, io->flush.in.file.ntvfs);
+	case RAW_FLUSH_SMB2:
+		/* ignore the additional unknown option in SMB2 */
+		f = find_fd(private, io->generic.in.file.ntvfs);
 		if (!f) {
 			return NT_STATUS_INVALID_HANDLE;
 		}
