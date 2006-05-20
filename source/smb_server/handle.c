@@ -76,6 +76,12 @@ struct smbsrv_handle *smbsrv_smb_handle_find(struct smbsrv_tcon *smb_tcon,
 	return smbsrv_handle_find(&smb_tcon->handles, fnum, request_time);
 }
 
+struct smbsrv_handle *smbsrv_smb2_handle_find(struct smbsrv_tcon *smb_tcon,
+					      uint64_t hid, struct timeval request_time)
+{
+	return smbsrv_handle_find(&smb_tcon->handles, hid, request_time);
+}
+
 /*
   destroy a connection structure
 */
@@ -102,16 +108,19 @@ static int smbsrv_handle_destructor(void *ptr)
 /*
   find first available handle slot
 */
-struct smbsrv_handle *smbsrv_handle_new(struct smbsrv_request *req)
+struct smbsrv_handle *smbsrv_handle_new(struct smbsrv_session *session,
+				        struct smbsrv_tcon *tcon,
+				        TALLOC_CTX *mem_ctx,
+					struct timeval request_time)
 {
-	struct smbsrv_handles_context *handles_ctx = &req->tcon->handles;
+	struct smbsrv_handles_context *handles_ctx = &tcon->handles;
 	struct smbsrv_handle *handle;
 	int i;
 
-	handle = talloc_zero(req, struct smbsrv_handle);
+	handle = talloc_zero(mem_ctx, struct smbsrv_handle);
 	if (!handle) return NULL;
-	handle->tcon	= req->tcon;
-	handle->session	= req->session;
+	handle->tcon	= tcon;
+	handle->session	= session;
 	
 	i = idr_get_new_above(handles_ctx->idtree_hid, handle, 1, handles_ctx->idtree_limit);
 	if (i == -1) {
@@ -122,12 +131,12 @@ struct smbsrv_handle *smbsrv_handle_new(struct smbsrv_request *req)
 	handle->session_item.handle = handle;
 
 	DLIST_ADD(handles_ctx->list, handle);
-	DLIST_ADD(handle->session->handles, &handle->session_item);
+	DLIST_ADD(session->handles, &handle->session_item);
 	talloc_set_destructor(handle, smbsrv_handle_destructor);
 
 	/* now fill in some statistics */
-	handle->statistics.open_time		= req->request_time;
-	handle->statistics.last_use_time	= req->request_time;
+	handle->statistics.open_time		= request_time;
+	handle->statistics.last_use_time	= request_time;
 
 	return handle;
 
