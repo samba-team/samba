@@ -3043,8 +3043,7 @@ static int try_chown(connection_struct *conn, const char *fname, uid_t uid, gid_
 		return -1;
 	}
 
-	fsp = open_file_fchmod(conn,fname,&st);
-	if (!fsp) {
+	if (!NT_STATUS_IS_OK(open_file_fchmod(conn,fname,&st,&fsp))) {
 		return -1;
 	}
 

@@ -1778,21 +1778,20 @@ files_struct *open_file_ntcreate(connection_struct *conn,
  Open a file for for write to ensure that we can fchmod it.
 ****************************************************************************/
 
-files_struct *open_file_fchmod(connection_struct *conn, const char *fname,
-			       SMB_STRUCT_STAT *psbuf)
+NTSTATUS open_file_fchmod(connection_struct *conn, const char *fname,
+			  SMB_STRUCT_STAT *psbuf, files_struct **result)
 {
 	files_struct *fsp = NULL;
 	BOOL fsp_open;
 	NTSTATUS status;
 
 	if (!VALID_STAT(*psbuf)) {
-		return NULL;
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	status = file_new(conn, &fsp);
 	if(!NT_STATUS_IS_OK(status)) {
-		set_saved_ntstatus(status);
-		return NULL;
+		return status;
 	}
 
 	/* note! we must use a non-zero desired access or we don't get
@@ -1806,11 +1805,13 @@ files_struct *open_file_fchmod(connection_struct *conn, const char *fname,
 	 */
 
 	if (!fsp_open) {
+		status = map_nt_error_from_unix(errno);
 		file_free(fsp);
-		return NULL;
+		return status;
 	}
 
-	return fsp;
+	*result = fsp;
+	return NT_STATUS_OK;
 }
 
 /****************************************************************************
