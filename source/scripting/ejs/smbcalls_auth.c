@@ -187,8 +187,9 @@ static int ejs_system_session(MprVarHandle eid, int argc, struct MprVar **argv)
 /*
   setup C functions that be called from ejs
 */
-void smb_setup_ejs_auth(void)
+NTSTATUS smb_setup_ejs_auth(void)
 {
 	ejsDefineCFunction(-1, "userAuth", ejs_userAuth, NULL, MPR_VAR_SCRIPT_HANDLE);
 	ejsDefineCFunction(-1, "system_session", ejs_system_session, NULL, MPR_VAR_SCRIPT_HANDLE);
+	return NT_STATUS_OK;
 }
