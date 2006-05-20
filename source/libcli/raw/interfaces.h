@@ -1282,6 +1282,9 @@ union smb_open {
 	case RAW_OPEN_OPENX_READX: \
 		file = &op->openxreadx.out.file; \
 		break; \
+	case RAW_OPEN_SMB2: \
+		file = &op->smb2.out.file; \
+		break; \
 	default: \
 		/* this must be a programmer error */ \
 		file = NULL; \
