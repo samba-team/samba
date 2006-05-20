@@ -39,6 +39,8 @@ void pong_message(int msg_type, struct process_id src, void *buf, size_t len)
 	int i, n;
 	char buf[12];
 
+	load_case_tables();
+
 	setup_logging(argv[0],True);
 	
 	lp_load(dyn_CONFIGFILE,False,False,False,True);
