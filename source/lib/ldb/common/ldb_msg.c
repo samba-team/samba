@@ -734,7 +734,7 @@ int ldb_msg_check_string_attribute(const struct ldb_message *msg, const char *na
 		return 0;
 
 	val.data = discard_const(value);
-	val.length = strlen(value) + 1;
+	val.length = strlen(value);
 
 	if (ldb_msg_find_val(el, &val))
 		return 1;
