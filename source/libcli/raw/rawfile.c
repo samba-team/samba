@@ -844,7 +844,7 @@ NTSTATUS smb_raw_chkpath(struct smbcli_tree *tree, union smb_chkpath *parms)
 
 /****************************************************************************
  flush a file - async send
- a flush to fnum 0xFFFF will flush all files
+ a flush with RAW_FLUSH_ALL will flush all files
 ****************************************************************************/
 struct smbcli_request *smb_raw_flush_send(struct smbcli_tree *tree, union smb_flush *parms)
 {
