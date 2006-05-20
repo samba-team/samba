@@ -28,16 +28,16 @@
 #include "smb_server/smb2/smb2_server.h"
 #include "smbd/service_stream.h"
 
-static NTSTATUS smb2srv_sesssetup_backend(struct smb2srv_request *req, struct smb2_session_setup *io)
+static NTSTATUS smb2srv_sesssetup_backend(struct smb2srv_request *req, union smb_sesssetup *io)
 {
 	NTSTATUS status;
 	struct smbsrv_session *smb_sess = NULL;
 	struct auth_session_info *session_info = NULL;
 	uint64_t vuid;
 
-	io->out._pad	= 0;
-	io->out.uid	= 0;
-	io->out.secblob = data_blob(NULL, 0);
+	io->smb2.out._pad	= 0;
+	io->smb2.out.uid	= 0;
+	io->smb2.out.secblob = data_blob(NULL, 0);
 
 	vuid = BVAL(req->in.hdr, SMB2_HDR_UID);
 
@@ -88,9 +88,9 @@ static NTSTATUS smb2srv_sesssetup_backend(struct smb2srv_request *req, struct sm
 		goto failed;
 	}
 
-	status = gensec_update(smb_sess->gensec_ctx, req, io->in.secblob, &io->out.secblob);
+	status = gensec_update(smb_sess->gensec_ctx, req, io->smb2.in.secblob, &io->smb2.out.secblob);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-		io->out.uid = smb_sess->vuid;
+		io->smb2.out.uid = smb_sess->vuid;
 		return status;
 	} else if (!NT_STATUS_IS_OK(status)) {
 		goto failed;
@@ -109,7 +109,7 @@ static NTSTATUS smb2srv_sesssetup_backend(struct smb2srv_request *req, struct sm
 	}
 	req->session = smb_sess;
 
-	io->out.uid = smb_sess->vuid;
+	io->smb2.out.uid = smb_sess->vuid;
 	return status;
 
 failed:
@@ -117,7 +117,7 @@ failed:
 	return auth_nt_status_squash(status);
 }
 
-static void smb2srv_sesssetup_send(struct smb2srv_request *req, struct smb2_session_setup *io)
+static void smb2srv_sesssetup_send(struct smb2srv_request *req, union smb_sesssetup *io)
 {
 	NTSTATUS status;
 
@@ -126,17 +126,17 @@ static void smb2srv_sesssetup_send(struct smb2srv_request *req, struct smb2_sess
 		return;
 	}
 
-	status = smb2srv_setup_reply(req, 0x08, True, io->out.secblob.length);
+	status = smb2srv_setup_reply(req, 0x08, True, io->smb2.out.secblob.length);
 	if (!NT_STATUS_IS_OK(status)) {
 		smbsrv_terminate_connection(req->smb_conn, nt_errstr(status));
 		talloc_free(req);
 		return;
 	}
 
-	SBVAL(req->out.hdr, SMB2_HDR_UID,    io->out.uid);
+	SBVAL(req->out.hdr, SMB2_HDR_UID,    io->smb2.out.uid);
 
-	SSVAL(req->out.body, 0x02, io->out._pad);
-	status = smb2_push_o16s16_blob(&req->out, 0x04, io->out.secblob);
+	SSVAL(req->out.body, 0x02, io->smb2.out._pad);
+	status = smb2_push_o16s16_blob(&req->out, 0x04, io->smb2.out.secblob);
 	if (!NT_STATUS_IS_OK(status)) {
 		smbsrv_terminate_connection(req->smb_conn, nt_errstr(status));
 		talloc_free(req);
@@ -148,7 +148,7 @@ static void smb2srv_sesssetup_send(struct smb2srv_request *req, struct smb2_sess
 
 void smb2srv_sesssetup_recv(struct smb2srv_request *req)
 {
-	struct smb2_session_setup *io;
+	union smb_sesssetup *io;
 	NTSTATUS status;
 
 	if (req->in.body_size < 0x10) {
@@ -156,17 +156,18 @@ void smb2srv_sesssetup_recv(struct smb2srv_request *req)
 		return;
 	}
 
-	io = talloc(req, struct smb2_session_setup);
+	io = talloc(req, union smb_sesssetup);
 	if (!io) {
 		smbsrv_terminate_connection(req->smb_conn, nt_errstr(NT_STATUS_NO_MEMORY));
 		talloc_free(req);
 		return;
 	}
 
-	io->in._pad	= SVAL(req->in.body, 0x02);
-	io->in.unknown2 = IVAL(req->in.body, 0x04);
-	io->in.unknown3 = IVAL(req->in.body, 0x08);
-	status = smb2_pull_o16s16_blob(&req->in, io, req->in.body+0x0C, &io->in.secblob);
+	io->smb2.level		= RAW_SESSSETUP_SMB2;
+	io->smb2.in._pad	= SVAL(req->in.body, 0x02);
+	io->smb2.in.unknown2	= IVAL(req->in.body, 0x04);
+	io->smb2.in.unknown3	= IVAL(req->in.body, 0x08);
+	status = smb2_pull_o16s16_blob(&req->in, io, req->in.body+0x0C, &io->smb2.in.secblob);
 	if (!NT_STATUS_IS_OK(status)) {
 		smbsrv_terminate_connection(req->smb_conn, nt_errstr(status));
 		talloc_free(req);
