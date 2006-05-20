@@ -454,7 +454,6 @@ _PUBLIC_ NTSTATUS ntvfs_map_open(struct ntvfs_module_context *ntvfs,
 
 	case RAW_OPEN_CTEMP:
 		io2->generic.in.file_attr = io->ctemp.in.attrib;
-		io2->generic.in.file_attr = 0;
 		io2->generic.in.fname = 
 			talloc_asprintf(io2, "%s\\SRV%s", 
 					io->ctemp.in.directory,
