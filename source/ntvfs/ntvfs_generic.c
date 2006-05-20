@@ -1056,6 +1056,14 @@ static NTSTATUS ntvfs_map_write_finish(struct ntvfs_module_context *ntvfs,
 
 	case RAW_WRITE_SPLWRITE:
 		break;
+
+	case RAW_WRITE_SMB2:
+		wr->smb2.out._pad	= 0;
+		wr->smb2.out.nwritten	= wr2->generic.out.nwritten;
+		wr->smb2.out.unknown1	= 0;
+		wr->smb2.out._bug	= 0;
+		break;
+
 	default:
 		return NT_STATUS_INVALID_LEVEL;
 	}
@@ -1131,6 +1139,15 @@ _PUBLIC_ NTSTATUS ntvfs_map_write(struct ntvfs_module_context *ntvfs,
 		wr2->writex.in.data      = wr->splwrite.in.data;
 		status = ntvfs->ops->write(ntvfs, req, wr2);
 		break;
+
+	case RAW_WRITE_SMB2:
+		wr2->writex.in.file.ntvfs= wr->smb2.in.file.ntvfs;
+		wr2->writex.in.offset    = wr->smb2.in.offset;
+		wr2->writex.in.wmode     = 0;
+		wr2->writex.in.remaining = 0;
+		wr2->writex.in.count     = wr->smb2.in.data.length;
+		wr2->writex.in.data      = wr->smb2.in.data.data;
+		status = ntvfs->ops->write(ntvfs, req, wr2);
 	}
 
 	return ntvfs_map_async_finish(req, status);
