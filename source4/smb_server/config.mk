@@ -11,6 +11,7 @@ PRIVATE_DEPENDENCIES = SMB_SERVER
 # Start SUBSYSTEM SMB
 [SUBSYSTEM::SMB_SERVER]
 OBJ_FILES = \
+		handle.o \
 		tcon.o \
 		session.o \
 		management.o

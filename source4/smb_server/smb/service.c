@@ -110,7 +110,19 @@ static NTSTATUS make_connection_snum(struct smbsrv_request *req,
 
 	status = ntvfs_set_addr_callbacks(tcon->ntvfs, smbsrv_get_my_addr, smbsrv_get_peer_addr, req->smb_conn);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,("make_connection: NTVFS failed to set the oplock handler!\n"));
+		DEBUG(0,("make_connection: NTVFS failed to set the addr callbacks!\n"));
+		goto failed;
+	}
+
+	status = ntvfs_set_handle_callbacks(tcon->ntvfs,
+					    smbsrv_handle_create_new,
+					    smbsrv_handle_make_valid,
+					    smbsrv_handle_destroy,
+					    smbsrv_handle_search_by_wire_key,
+					    smbsrv_handle_get_wire_key,
+					    tcon);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("make_connection: NTVFS failed to set the handle callbacks!\n"));
 		goto failed;
 	}
 

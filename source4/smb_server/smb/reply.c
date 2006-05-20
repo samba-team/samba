@@ -3,6 +3,7 @@
    Main SMB reply routines
    Copyright (C) Andrew Tridgell 1992-2003
    Copyright (C) James J Myers 2003 <myersjj@samba.org>
+   Copyright (C) Stefan Metzmacher 2006
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -20,7 +21,7 @@
 */
 /*
    This file handles most of the reply_ calls that the server
-   makes to handle specific protocols
+   makes to handle specific SMB commands
 */
 
 #include "includes.h"
@@ -204,10 +205,11 @@ void smbsrv_reply_ioctl(struct smbsrv_request *req)
 	SMBSRV_SETUP_NTVFS_REQUEST(reply_ioctl_send, NTVFS_ASYNC_STATE_MAY_ASYNC);
 
 	io->ioctl.level		= RAW_IOCTL_IOCTL;
-	io->ioctl.in.file.fnum	= req_fnum(req, req->in.vwv, VWV(0));
+	io->ioctl.in.file.ntvfs	= smbsrv_pull_fnum(req, req->in.vwv, VWV(0));
 	io->ioctl.in.request	= IVAL(req->in.vwv, VWV(1));
 
-	/* call backend */
+	SMBSRV_CHECK_FILE_HANDLE_ERROR(io->ioctl.in.file.ntvfs,
+				       NT_STATUS_DOS(ERRSRV, ERRerror));
 	SMBSRV_CALL_NTVFS_BACKEND(ntvfs_ioctl(req->ntvfs, io));
 }
 
@@ -353,7 +355,7 @@ static void reply_open_send(struct ntvfs_request *ntvfs)
 	/* construct reply */
 	smbsrv_setup_reply(req, 7, 0);
 
-	SSVAL(req->out.vwv, VWV(0), oi->openold.out.file.fnum);
+	smbsrv_push_fnum(req->out.vwv, VWV(0), oi->openold.out.file.ntvfs);
 	SSVAL(req->out.vwv, VWV(1), oi->openold.out.attrib);
 	srv_push_dos_date3(req->smb_conn, req->out.vwv, VWV(2), oi->openold.out.write_time);
 	SIVAL(req->out.vwv, VWV(4), oi->openold.out.size);
@@ -408,7 +410,7 @@ static void reply_open_and_X_send(struct ntvfs_request *ntvfs)
 
 	SSVAL(req->out.vwv, VWV(0), SMB_CHAIN_NONE);
 	SSVAL(req->out.vwv, VWV(1), 0);
-	SSVAL(req->out.vwv, VWV(2), oi->openx.out.file.fnum);
+	smbsrv_push_fnum(req->out.vwv, VWV(2), oi->openx.out.file.ntvfs);
 	SSVAL(req->out.vwv, VWV(3), oi->openx.out.attrib);
 	srv_push_dos_date3(req->smb_conn, req->out.vwv, VWV(4), oi->openx.out.write_time);
 	SIVAL(req->out.vwv, VWV(6), oi->openx.out.size);
@@ -423,7 +425,7 @@ static void reply_open_and_X_send(struct ntvfs_request *ntvfs)
 		SMBSRV_VWV_RESERVED(17, 2);
 	}
 
-	req->chained_fnum = oi->openx.out.file.fnum;
+	req->chained_fnum = SVAL(req->out.vwv, VWV(2));
 
 	smbsrv_chain_reply(req);
 }
@@ -475,7 +477,7 @@ static void reply_mknew_send(struct ntvfs_request *ntvfs)
 	/* build the reply */
 	smbsrv_setup_reply(req, 1, 0);
 
-	SSVAL(req->out.vwv, VWV(0), oi->mknew.out.file.fnum);
+	smbsrv_push_fnum(req->out.vwv, VWV(0), oi->mknew.out.file.ntvfs);
 
 	smbsrv_send_reply(req);
 }
@@ -524,7 +526,7 @@ static void reply_ctemp_send(struct ntvfs_request *ntvfs)
 	/* build the reply */
 	smbsrv_setup_reply(req, 1, 0);
 
-	SSVAL(req->out.vwv, VWV(0), oi->ctemp.out.file.fnum);
+	smbsrv_push_fnum(req->out.vwv, VWV(0), oi->ctemp.out.file.ntvfs);
 
 	/* the returned filename is relative to the directory */
 	req_push_str(req, NULL, oi->ctemp.out.name, -1, STR_TERMINATE | STR_ASCII);
@@ -599,11 +601,15 @@ void smbsrv_reply_readbraw(struct smbsrv_request *req)
 		goto failed;
 	}
 
-	io.readbraw.in.file.fnum = req_fnum(req, req->in.vwv, VWV(0));
+	io.readbraw.in.file.ntvfs = smbsrv_pull_fnum(req, req->in.vwv, VWV(0));
 	io.readbraw.in.offset  = IVAL(req->in.vwv, VWV(1));
 	io.readbraw.in.maxcnt  = SVAL(req->in.vwv, VWV(3));
 	io.readbraw.in.mincnt  = SVAL(req->in.vwv, VWV(4));
 	io.readbraw.in.timeout = IVAL(req->in.vwv, VWV(5));
+
+	if (!io.readbraw.in.file.ntvfs) {
+		goto failed;
+	}
 
 	/* the 64 bit variant */
 	if (req->in.wct == 10) {
@@ -695,17 +701,18 @@ void smbsrv_reply_lockread(struct smbsrv_request *req)
 	SMBSRV_SETUP_NTVFS_REQUEST(reply_lockread_send, NTVFS_ASYNC_STATE_MAY_ASYNC);
 
 	io->lockread.level = RAW_READ_LOCKREAD;
-	io->lockread.in.file.fnum = req_fnum(req, req->in.vwv, VWV(0));
+	io->lockread.in.file.ntvfs= smbsrv_pull_fnum(req, req->in.vwv, VWV(0));
 	io->lockread.in.count     = SVAL(req->in.vwv, VWV(1));
 	io->lockread.in.offset    = IVAL(req->in.vwv, VWV(2));
 	io->lockread.in.remaining = SVAL(req->in.vwv, VWV(4));
-	
+
 	/* setup the reply packet assuming the maximum possible read */
 	smbsrv_setup_reply(req, 5, 3 + io->lockread.in.count);
 
 	/* tell the backend where to put the data */
 	io->lockread.out.data = req->out.data + 3;
 
+	SMBSRV_CHECK_FILE_HANDLE(io->lockread.in.file.ntvfs);
 	SMBSRV_CALL_NTVFS_BACKEND(ntvfs_read(req->ntvfs, io));
 }
 
@@ -749,17 +756,18 @@ void smbsrv_reply_read(struct smbsrv_request *req)
 	SMBSRV_SETUP_NTVFS_REQUEST(reply_read_send, NTVFS_ASYNC_STATE_MAY_ASYNC);
 
 	io->read.level = RAW_READ_READ;
-	io->read.in.file.fnum     = req_fnum(req, req->in.vwv, VWV(0));
+	io->read.in.file.ntvfs    = smbsrv_pull_fnum(req, req->in.vwv, VWV(0));
 	io->read.in.count         = SVAL(req->in.vwv, VWV(1));
 	io->read.in.offset        = IVAL(req->in.vwv, VWV(2));
 	io->read.in.remaining     = SVAL(req->in.vwv, VWV(4));
-	
+
 	/* setup the reply packet assuming the maximum possible read */
 	smbsrv_setup_reply(req, 5, 3 + io->read.in.count);
 
 	/* tell the backend where to put the data */
 	io->read.out.data = req->out.data + 3;
 
+	SMBSRV_CHECK_FILE_HANDLE(io->read.in.file.ntvfs);
 	SMBSRV_CALL_NTVFS_BACKEND(ntvfs_read(req->ntvfs, io));
 }
 
@@ -812,7 +820,7 @@ void smbsrv_reply_read_and_X(struct smbsrv_request *req)
 	SMBSRV_SETUP_NTVFS_REQUEST(reply_read_and_X_send, NTVFS_ASYNC_STATE_MAY_ASYNC);
 
 	io->readx.level = RAW_READ_READX;
-	io->readx.in.file.fnum     = req_fnum(req, req->in.vwv, VWV(2));
+	io->readx.in.file.ntvfs    = smbsrv_pull_fnum(req, req->in.vwv, VWV(2));
 	io->readx.in.offset        = IVAL(req->in.vwv, VWV(3));
 	io->readx.in.maxcnt        = SVAL(req->in.vwv, VWV(5));
 	io->readx.in.mincnt        = SVAL(req->in.vwv, VWV(6));
@@ -847,6 +855,7 @@ void smbsrv_reply_read_and_X(struct smbsrv_request *req)
 		io->readx.out.data = req->out.data;
 	}
 
+	SMBSRV_CHECK_FILE_HANDLE(io->readx.in.file.ntvfs);
 	SMBSRV_CALL_NTVFS_BACKEND(ntvfs_read(req->ntvfs, io));
 }
 
@@ -890,7 +899,7 @@ void smbsrv_reply_writeunlock(struct smbsrv_request *req)
 	SMBSRV_SETUP_NTVFS_REQUEST(reply_writeunlock_send, NTVFS_ASYNC_STATE_MAY_ASYNC);
 
 	io->writeunlock.level = RAW_WRITE_WRITEUNLOCK;
-	io->writeunlock.in.file.fnum   = req_fnum(req, req->in.vwv, VWV(0));
+	io->writeunlock.in.file.ntvfs  = smbsrv_pull_fnum(req, req->in.vwv, VWV(0));
 	io->writeunlock.in.count       = SVAL(req->in.vwv, VWV(1));
 	io->writeunlock.in.offset      = IVAL(req->in.vwv, VWV(2));
 	io->writeunlock.in.remaining   = SVAL(req->in.vwv, VWV(4));
@@ -908,6 +917,7 @@ void smbsrv_reply_writeunlock(struct smbsrv_request *req)
 		return;
 	}
 
+	SMBSRV_CHECK_FILE_HANDLE(io->writeunlock.in.file.ntvfs);
 	SMBSRV_CALL_NTVFS_BACKEND(ntvfs_write(req->ntvfs, io));
 }
 
@@ -943,7 +953,7 @@ void smbsrv_reply_write(struct smbsrv_request *req)
 	SMBSRV_SETUP_NTVFS_REQUEST(reply_write_send, NTVFS_ASYNC_STATE_MAY_ASYNC);
 
 	io->write.level = RAW_WRITE_WRITE;
-	io->write.in.file.fnum   = req_fnum(req, req->in.vwv, VWV(0));
+	io->write.in.file.ntvfs  = smbsrv_pull_fnum(req, req->in.vwv, VWV(0));
 	io->write.in.count       = SVAL(req->in.vwv, VWV(1));
 	io->write.in.offset      = IVAL(req->in.vwv, VWV(2));
 	io->write.in.remaining   = SVAL(req->in.vwv, VWV(4));
@@ -961,6 +971,7 @@ void smbsrv_reply_write(struct smbsrv_request *req)
 		return;
 	}
 
+	SMBSRV_CHECK_FILE_HANDLE(io->write.in.file.ntvfs);
 	SMBSRV_CALL_NTVFS_BACKEND(ntvfs_write(req->ntvfs, io));
 }
 
@@ -1003,7 +1014,7 @@ void smbsrv_reply_write_and_X(struct smbsrv_request *req)
 	SMBSRV_SETUP_NTVFS_REQUEST(reply_write_and_X_send, NTVFS_ASYNC_STATE_MAY_ASYNC);
 
 	io->writex.level = RAW_WRITE_WRITEX;
-	io->writex.in.file.fnum = req_fnum(req, req->in.vwv, VWV(2));
+	io->writex.in.file.ntvfs= smbsrv_pull_fnum(req, req->in.vwv, VWV(2));
 	io->writex.in.offset    = IVAL(req->in.vwv, VWV(3));
 	io->writex.in.wmode     = SVAL(req->in.vwv, VWV(7));
 	io->writex.in.remaining = SVAL(req->in.vwv, VWV(8));
@@ -1021,8 +1032,9 @@ void smbsrv_reply_write_and_X(struct smbsrv_request *req)
 	if (req_data_oob(req, io->writex.in.data, io->writex.in.count)) {
 		smbsrv_send_error(req, NT_STATUS_FOOBAR);
 		return;
-	} 
+	}
 
+	SMBSRV_CHECK_FILE_HANDLE(io->writex.in.file.ntvfs);
 	SMBSRV_CALL_NTVFS_BACKEND(ntvfs_write(req->ntvfs, io));
 }
 
@@ -1056,10 +1068,11 @@ void smbsrv_reply_lseek(struct smbsrv_request *req)
 	SMBSRV_TALLOC_IO_PTR(io, union smb_seek);
 	SMBSRV_SETUP_NTVFS_REQUEST(reply_lseek_send, NTVFS_ASYNC_STATE_MAY_ASYNC);
 
-	io->lseek.in.file.fnum	= req_fnum(req, req->in.vwv,  VWV(0));
+	io->lseek.in.file.ntvfs	= smbsrv_pull_fnum(req, req->in.vwv,  VWV(0));
 	io->lseek.in.mode	= SVAL(req->in.vwv,  VWV(1));
 	io->lseek.in.offset	= IVALS(req->in.vwv, VWV(2));
 
+	SMBSRV_CHECK_FILE_HANDLE(io->lseek.in.file.ntvfs);
 	SMBSRV_CALL_NTVFS_BACKEND(ntvfs_seek(req->ntvfs, io));
 }
 
@@ -1076,45 +1089,17 @@ void smbsrv_reply_flush(struct smbsrv_request *req)
 	SMBSRV_TALLOC_IO_PTR(io, union smb_flush);
 	SMBSRV_SETUP_NTVFS_REQUEST(reply_simple_send, NTVFS_ASYNC_STATE_MAY_ASYNC);
 
-	fnum = req_fnum(req, req->in.vwv,  VWV(0));
-
+	fnum = SVAL(req->in.vwv,  VWV(0));
 	if (fnum == 0xFFFF) {
 		io->flush_all.level	= RAW_FLUSH_ALL;
 	} else {
 		io->flush.level		= RAW_FLUSH_FLUSH;
-		io->flush.in.file.fnum	= fnum;
+		io->flush.in.file.ntvfs = smbsrv_pull_fnum(req, req->in.vwv,  VWV(0));
+		SMBSRV_CHECK_FILE_HANDLE(io->flush.in.file.ntvfs);
 	}
 
 	SMBSRV_CALL_NTVFS_BACKEND(ntvfs_flush(req->ntvfs, io));
 }
-
-
-/****************************************************************************
- Reply to a exit. This closes all files open by a smbpid
-****************************************************************************/
-void smbsrv_reply_exit(struct smbsrv_request *req)
-{
-	NTSTATUS status;
-	struct smbsrv_tcon *tcon;
-	SMBSRV_CHECK_WCT(req, 0);
-
-	for (tcon=req->smb_conn->smb_tcons.list;tcon;tcon=tcon->next) {
-		req->tcon = tcon;
-		SMBSRV_SETUP_NTVFS_REQUEST(NULL,0);
-		status = ntvfs_exit(req->ntvfs);
-		talloc_free(req->ntvfs);
-		req->ntvfs = NULL;
-		req->tcon = NULL;
-		if (!NT_STATUS_IS_OK(status)) {
-			smbsrv_send_error(req, status);
-			return;
-		}
-	}
-
-	smbsrv_setup_reply(req, 0, 0);
-	smbsrv_send_reply(req);
-}
-
 
 /****************************************************************************
  Reply to a close 
@@ -1131,9 +1116,10 @@ void smbsrv_reply_close(struct smbsrv_request *req)
 	SMBSRV_SETUP_NTVFS_REQUEST(reply_simple_send, NTVFS_ASYNC_STATE_MAY_ASYNC);
 
 	io->close.level = RAW_CLOSE_CLOSE;
-	io->close.in.file.fnum  = req_fnum(req, req->in.vwv,  VWV(0));
+	io->close.in.file.ntvfs = smbsrv_pull_fnum(req, req->in.vwv,  VWV(0));
 	io->close.in.write_time = srv_pull_dos_date3(req->smb_conn, req->in.vwv + VWV(1));
 
+	SMBSRV_CHECK_FILE_HANDLE(io->close.in.file.ntvfs);
 	SMBSRV_CALL_NTVFS_BACKEND(ntvfs_close(req->ntvfs, io));
 }
 
@@ -1171,12 +1157,12 @@ void smbsrv_reply_writeclose(struct smbsrv_request *req)
 	SMBSRV_TALLOC_IO_PTR(io, union smb_write);
 	SMBSRV_SETUP_NTVFS_REQUEST(reply_writeclose_send, NTVFS_ASYNC_STATE_MAY_ASYNC);
 
-	io->writeclose.level = RAW_WRITE_WRITECLOSE;
-	io->writeclose.in.file.fnum = req_fnum(req, req->in.vwv, VWV(0));
-	io->writeclose.in.count  = SVAL(req->in.vwv, VWV(1));
-	io->writeclose.in.offset = IVAL(req->in.vwv, VWV(2));
-	io->writeclose.in.mtime  = srv_pull_dos_date3(req->smb_conn, req->in.vwv + VWV(4));
-	io->writeclose.in.data   = req->in.data + 1;
+	io->writeclose.level		= RAW_WRITE_WRITECLOSE;
+	io->writeclose.in.file.ntvfs	= smbsrv_pull_fnum(req, req->in.vwv, VWV(0));
+	io->writeclose.in.count		= SVAL(req->in.vwv, VWV(1));
+	io->writeclose.in.offset	= IVAL(req->in.vwv, VWV(2));
+	io->writeclose.in.mtime		= srv_pull_dos_date3(req->smb_conn, req->in.vwv + VWV(4));
+	io->writeclose.in.data		= req->in.data + 1;
 
 	/* make sure they gave us the data they promised */
 	if (req_data_oob(req, io->writeclose.in.data, io->writeclose.in.count)) {
@@ -1184,6 +1170,7 @@ void smbsrv_reply_writeclose(struct smbsrv_request *req)
 		return;
 	}
 
+	SMBSRV_CHECK_FILE_HANDLE(io->writeclose.in.file.ntvfs);
 	SMBSRV_CALL_NTVFS_BACKEND(ntvfs_write(req->ntvfs, io));
 }
 
@@ -1200,10 +1187,11 @@ void smbsrv_reply_lock(struct smbsrv_request *req)
 	SMBSRV_SETUP_NTVFS_REQUEST(reply_simple_send, NTVFS_ASYNC_STATE_MAY_ASYNC);
 
 	lck->lock.level		= RAW_LOCK_LOCK;
-	lck->lock.in.file.fnum	= req_fnum(req, req->in.vwv, VWV(0));
+	lck->lock.in.file.ntvfs	= smbsrv_pull_fnum(req, req->in.vwv, VWV(0));
 	lck->lock.in.count	= IVAL(req->in.vwv, VWV(1));
 	lck->lock.in.offset	= IVAL(req->in.vwv, VWV(3));
 
+	SMBSRV_CHECK_FILE_HANDLE(lck->lock.in.file.ntvfs);
 	SMBSRV_CALL_NTVFS_BACKEND(ntvfs_lock(req->ntvfs, lck));
 }
 
@@ -1221,10 +1209,11 @@ void smbsrv_reply_unlock(struct smbsrv_request *req)
 	SMBSRV_SETUP_NTVFS_REQUEST(reply_simple_send, NTVFS_ASYNC_STATE_MAY_ASYNC);
 
 	lck->unlock.level		= RAW_LOCK_UNLOCK;
-	lck->unlock.in.file.fnum	= req_fnum(req, req->in.vwv, VWV(0));
+	lck->unlock.in.file.ntvfs	= smbsrv_pull_fnum(req, req->in.vwv, VWV(0));
 	lck->unlock.in.count 		= IVAL(req->in.vwv, VWV(1));
 	lck->unlock.in.offset		= IVAL(req->in.vwv, VWV(3));
 
+	SMBSRV_CHECK_FILE_HANDLE(lck->unlock.in.file.ntvfs);
 	SMBSRV_CALL_NTVFS_BACKEND(ntvfs_lock(req->ntvfs, lck));
 }
 
@@ -1234,14 +1223,27 @@ void smbsrv_reply_unlock(struct smbsrv_request *req)
 ****************************************************************************/
 void smbsrv_reply_tdis(struct smbsrv_request *req)
 {
+	struct smbsrv_handle *h, *nh;
+
 	SMBSRV_CHECK_WCT(req, 0);
 
+	/*
+	 * TODO: cancel all pending requests on this tcon
+	 */
+
+	/*
+	 * close all handles on this tcon
+	 */
+	for (h=req->tcon->handles.list; h; h=nh) {
+		nh = h->next;
+		talloc_free(h);
+	}
+
+	/* finaly destroy the tcon */
 	talloc_free(req->tcon);
 	req->tcon = NULL;
 
-	/* construct reply */
 	smbsrv_setup_reply(req, 0, 0);
-
 	smbsrv_send_reply(req);
 }
 
@@ -1292,7 +1294,7 @@ static void reply_printopen_send(struct ntvfs_request *ntvfs)
 	/* construct reply */
 	smbsrv_setup_reply(req, 1, 0);
 
-	SSVAL(req->out.vwv, VWV(0), oi->openold.out.file.fnum);
+	smbsrv_push_fnum(req->out.vwv, VWV(0), oi->openold.out.file.ntvfs);
 
 	smbsrv_send_reply(req);
 }
@@ -1330,9 +1332,10 @@ void smbsrv_reply_printclose(struct smbsrv_request *req)
 	SMBSRV_TALLOC_IO_PTR(io, union smb_close);
 	SMBSRV_SETUP_NTVFS_REQUEST(reply_simple_send, NTVFS_ASYNC_STATE_MAY_ASYNC);
 
-	io->splclose.level = RAW_CLOSE_SPLCLOSE;
-	io->splclose.in.file.fnum = req_fnum(req, req->in.vwv,  VWV(0));
+	io->splclose.level		= RAW_CLOSE_SPLCLOSE;
+	io->splclose.in.file.ntvfs	= smbsrv_pull_fnum(req, req->in.vwv,  VWV(0));
 
+	SMBSRV_CHECK_FILE_HANDLE(io->splclose.in.file.ntvfs);
 	SMBSRV_CALL_NTVFS_BACKEND(ntvfs_close(req->ntvfs, io));
 }
 
@@ -1414,16 +1417,15 @@ void smbsrv_reply_printwrite(struct smbsrv_request *req)
 	SMBSRV_TALLOC_IO_PTR(io, union smb_write);
 	SMBSRV_SETUP_NTVFS_REQUEST(reply_simple_send, NTVFS_ASYNC_STATE_MAY_ASYNC);
 
-	io->splwrite.level = RAW_WRITE_SPLWRITE;
-
 	if (req->in.data_size < 3) {
 		smbsrv_send_error(req, NT_STATUS_FOOBAR);
 		return;
 	}
 
-	io->splwrite.in.file.fnum = req_fnum(req, req->in.vwv, VWV(0));
-	io->splwrite.in.count = SVAL(req->in.data, 1);
-	io->splwrite.in.data  = req->in.data + 3;
+	io->splwrite.level		= RAW_WRITE_SPLWRITE;
+	io->splwrite.in.file.ntvfs	= smbsrv_pull_fnum(req, req->in.vwv, VWV(0));
+	io->splwrite.in.count		= SVAL(req->in.data, 1);
+	io->splwrite.in.data		= req->in.data + 3;
 
 	/* make sure they gave us the data they promised */
 	if (req_data_oob(req, io->splwrite.in.data, io->splwrite.in.count)) {
@@ -1431,6 +1433,7 @@ void smbsrv_reply_printwrite(struct smbsrv_request *req)
 		return;
 	}
 
+	SMBSRV_CHECK_FILE_HANDLE(io->splwrite.in.file.ntvfs);
 	SMBSRV_CALL_NTVFS_BACKEND(ntvfs_write(req->ntvfs, io));
 }
 
@@ -1621,7 +1624,7 @@ void smbsrv_reply_lockingX(struct smbsrv_request *req)
 	SMBSRV_SETUP_NTVFS_REQUEST(reply_lockingX_send, NTVFS_ASYNC_STATE_MAY_ASYNC);
 
 	lck->lockx.level = RAW_LOCK_LOCKX;
-	lck->lockx.in.file.fnum = req_fnum(req, req->in.vwv, VWV(2));
+	lck->lockx.in.file.ntvfs= smbsrv_pull_fnum(req, req->in.vwv, VWV(2));
 	lck->lockx.in.mode      = SVAL(req->in.vwv, VWV(3));
 	lck->lockx.in.timeout   = IVAL(req->in.vwv, VWV(4));
 	lck->lockx.in.ulock_cnt = SVAL(req->in.vwv, VWV(6));
@@ -1676,6 +1679,7 @@ void smbsrv_reply_lockingX(struct smbsrv_request *req)
 		p += lck_size;
 	}
 
+	SMBSRV_CHECK_FILE_HANDLE(lck->lockx.in.file.ntvfs);
 	SMBSRV_CALL_NTVFS_BACKEND(ntvfs_lock(req->ntvfs, lck));
 }
 
@@ -1702,11 +1706,12 @@ void smbsrv_reply_setattrE(struct smbsrv_request *req)
 	SMBSRV_SETUP_NTVFS_REQUEST(reply_simple_send, NTVFS_ASYNC_STATE_MAY_ASYNC);
 
 	info->setattre.level = RAW_SFILEINFO_SETATTRE;
-	info->setattre.in.file.fnum   = req_fnum(req, req->in.vwv,    VWV(0));
+	info->setattre.in.file.ntvfs  = smbsrv_pull_fnum(req, req->in.vwv,    VWV(0));
 	info->setattre.in.create_time = srv_pull_dos_date2(req->smb_conn, req->in.vwv + VWV(1));
 	info->setattre.in.access_time = srv_pull_dos_date2(req->smb_conn, req->in.vwv + VWV(3));
 	info->setattre.in.write_time  = srv_pull_dos_date2(req->smb_conn, req->in.vwv + VWV(5));
 
+	SMBSRV_CHECK_FILE_HANDLE(info->setattre.in.file.ntvfs);
 	SMBSRV_CALL_NTVFS_BACKEND(ntvfs_setfileinfo(req->ntvfs, info));
 }
 
@@ -1765,9 +1770,10 @@ void smbsrv_reply_getattrE(struct smbsrv_request *req)
 	SMBSRV_TALLOC_IO_PTR(info, union smb_fileinfo);
 	SMBSRV_SETUP_NTVFS_REQUEST(reply_getattrE_send, NTVFS_ASYNC_STATE_MAY_ASYNC);
 
-	info->getattr.level = RAW_FILEINFO_GETATTRE;
-	info->getattr.in.file.fnum = req_fnum(req, req->in.vwv, VWV(0));
+	info->getattr.level		= RAW_FILEINFO_GETATTRE;
+	info->getattr.in.file.ntvfs	= smbsrv_pull_fnum(req, req->in.vwv, VWV(0));
 
+	SMBSRV_CHECK_FILE_HANDLE(info->getattr.in.file.ntvfs);
 	SMBSRV_CALL_NTVFS_BACKEND(ntvfs_qfileinfo(req->ntvfs, info));
 }
 
@@ -1988,26 +1994,81 @@ void smbsrv_reply_sesssetup(struct smbsrv_request *req)
 }
 
 /****************************************************************************
+ Reply to a exit. This closes all files open by a smbpid
+****************************************************************************/
+void smbsrv_reply_exit(struct smbsrv_request *req)
+{
+	struct smbsrv_handle_session_item *i, *ni;
+	struct smbsrv_handle *h;
+	struct smbsrv_tcon *tcon;
+	uint16_t smbpid;
+
+	SMBSRV_CHECK_WCT(req, 0);
+
+	smbpid = SVAL(req->in.hdr,HDR_PID);
+
+	/* first destroy all handles, which have the same PID as the request */
+	for (i=req->session->handles; i; i=ni) {
+		ni = i->next;
+		h = i->handle;
+		if (h->smbpid != smbpid) continue;
+
+		talloc_free(h);
+	}
+
+	/*
+	 * then let the ntvfs backends proxy the call if they want to,
+	 * but we didn't check the return value of the backends,
+	 * as for the SMB client the call succeed
+	 */
+	for (tcon=req->smb_conn->smb_tcons.list;tcon;tcon=tcon->next) {
+		req->tcon = tcon;
+		SMBSRV_SETUP_NTVFS_REQUEST(NULL,0);
+		ntvfs_exit(req->ntvfs);
+		talloc_free(req->ntvfs);
+		req->ntvfs = NULL;
+		req->tcon = NULL;
+	}
+
+	smbsrv_setup_reply(req, 0, 0);
+	smbsrv_send_reply(req);
+}
+
+/****************************************************************************
  Reply to a SMBulogoffX.
 ****************************************************************************/
 void smbsrv_reply_ulogoffX(struct smbsrv_request *req)
 {
+	struct smbsrv_handle_session_item *i, *ni;
+	struct smbsrv_handle *h;
 	struct smbsrv_tcon *tcon;
-	NTSTATUS status;
 
-	/* in user level security we are supposed to close any files
-	   open by this user on all open tree connects */
+	SMBSRV_CHECK_WCT(req, 2);
+
+	/*
+	 * TODO: cancel all pending requests
+	 */
+	
+
+	/* destroy all handles */
+	for (i=req->session->handles; i; i=ni) {
+		ni = i->next;
+		h = i->handle;
+		talloc_free(h);
+	}
+
+	/*
+	 * then let the ntvfs backends proxy the call if they want to,
+	 * but we didn't check the return value of the backends,
+	 * as for the SMB client the call succeed
+	 */
 	for (tcon=req->smb_conn->smb_tcons.list;tcon;tcon=tcon->next) {
 		req->tcon = tcon;
 		SMBSRV_SETUP_NTVFS_REQUEST(NULL,0);
-		status = ntvfs_logoff(req->ntvfs);
+		ntvfs_logoff(req->ntvfs);
 		talloc_free(req->ntvfs);
 		req->ntvfs = NULL;
 		req->tcon = NULL;
-		if (!NT_STATUS_IS_OK(status)) {
-			smbsrv_send_error(req, status);
-			return;
-		}
 	}
 
 	talloc_free(req->session);
@@ -2018,7 +2079,7 @@ void smbsrv_reply_ulogoffX(struct smbsrv_request *req)
 
 	SSVAL(req->out.vwv, VWV(0), SMB_CHAIN_NONE);
 	SSVAL(req->out.vwv, VWV(1), 0);	
-	
+
 	smbsrv_chain_reply(req);
 }
 
@@ -2067,7 +2128,7 @@ static void reply_ntcreate_and_X_send(struct ntvfs_request *ntvfs)
 	SCVAL(req->out.vwv, VWV(2), io->ntcreatex.out.oplock_level);
 
 	/* the rest of the parameters are not aligned! */
-	SSVAL(req->out.vwv,        5, io->ntcreatex.out.file.fnum);
+	smbsrv_push_fnum(req->out.vwv, 5, io->ntcreatex.out.file.ntvfs);
 	SIVAL(req->out.vwv,        7, io->ntcreatex.out.create_action);
 	push_nttime(req->out.vwv, 11, io->ntcreatex.out.create_time);
 	push_nttime(req->out.vwv, 19, io->ntcreatex.out.access_time);
@@ -2080,7 +2141,7 @@ static void reply_ntcreate_and_X_send(struct ntvfs_request *ntvfs)
 	SSVAL(req->out.vwv,       65, io->ntcreatex.out.ipc_state);
 	SCVAL(req->out.vwv,       67, io->ntcreatex.out.is_directory);
 
-	req->chained_fnum = io->ntcreatex.out.file.fnum;
+	req->chained_fnum = SVAL(req->out.vwv, 5);
 
 	smbsrv_chain_reply(req);
 }

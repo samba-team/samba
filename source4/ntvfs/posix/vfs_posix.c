@@ -194,10 +194,6 @@ static NTSTATUS pvfs_connect(struct ntvfs_module_context *ntvfs,
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
-	/* allocate the fnum id -> ptr tree */
-	pvfs->files.idtree = idr_init(pvfs);
-	NT_STATUS_HAVE_NO_MEMORY(pvfs->files.idtree);
-
 	/* allocate the search handle -> ptr tree */
 	pvfs->search.idtree = idr_init(pvfs);
 	NT_STATUS_HAVE_NO_MEMORY(pvfs->search.idtree);

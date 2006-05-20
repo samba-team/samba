@@ -63,9 +63,6 @@ struct pvfs_state {
 	uint32_t alloc_size_rounding;
 
 	struct {
-		/* an id tree mapping open file handle -> struct pvfs_file */
-		struct idr_context *idtree;
-
 		/* the open files as DLINKLIST */
 		struct pvfs_file *list;
 	} files;
@@ -156,7 +153,7 @@ struct pvfs_file_handle {
 struct pvfs_file {
 	struct pvfs_file *next, *prev;
 	struct pvfs_file_handle *handle;
-	uint16_t fnum;
+	struct ntvfs_handle *ntvfs;
 
 	struct pvfs_state *pvfs;
 
