@@ -27,23 +27,31 @@ struct smb2srv_request {
 	/* the server_context contains all context specific to this SMB socket */
 	struct smbsrv_connection *smb_conn;
 
-	/* the smbsrv_session for the request */
+	/* conn is only set for operations that have a valid TID */
+	struct smbsrv_tcon *tcon;
+
+	/* the session context is derived from the vuid */
 	struct smbsrv_session *session;
 
-	/* the smbsrv_tcon for the request */
-	struct smbsrv_tcon *tcon;
+#define SMB2SRV_REQ_CTRL_FLAG_NOT_REPLY (1<<0)
+	uint32_t control_flags;
 
 	/* the system time when the request arrived */
 	struct timeval request_time;
 
-	/* for matching request and reply */
-	uint64_t seqnum;
+	/* a pointer to the per request union smb_* io structure */
+	void *io_ptr;
+
+	/* the ntvfs_request */
+	struct ntvfs_request *ntvfs;
+
+	/* Now the SMB2 specific stuff */
 
 	/* the status the backend returned */
 	NTSTATUS status;
 
-#define SMB2SRV_REQ_CTRL_FLAG_NOT_REPLY (1<<0)
-	uint32_t control_flags;
+	/* for matching request and reply */
+	uint64_t seqnum;
 
 	struct smb2_request_buffer in;
 	struct smb2_request_buffer out;
