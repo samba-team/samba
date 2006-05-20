@@ -59,7 +59,7 @@ struct ntvfs_handle *smb2srv_pull_handle(struct smb2srv_request *req, const uint
 		tcon = smbsrv_smb2_tcon_find(req->session, tid, req->request_time);
 	}
 
-	handle = smbsrv_smb_handle_find(tcon, hid, req->request_time);
+	handle = smbsrv_smb2_handle_find(tcon, hid, req->request_time);
 	if (!handle) {
 		return NULL;
 	}
@@ -83,12 +83,12 @@ void smb2srv_push_handle(uint8_t *base, uint_t offset, struct ntvfs_handle *ntvf
 
 static NTSTATUS smb2srv_handle_create_new(void *private_data, struct ntvfs_request *ntvfs, struct ntvfs_handle **_h)
 {
-	struct smbsrv_request *req = talloc_get_type(ntvfs->frontend_data.private_data,
-				     struct smbsrv_request);
+	struct smb2srv_request *req = talloc_get_type(ntvfs->frontend_data.private_data,
+				      struct smb2srv_request);
 	struct smbsrv_handle *handle;
 	struct ntvfs_handle *h;
 
-	handle = smbsrv_handle_new(req);
+	handle = smbsrv_handle_new(req->session, req->tcon, req, req->request_time);
 	if (!handle) return NT_STATUS_INSUFFICIENT_RESOURCES;
 
 	h = talloc_zero(handle, struct ntvfs_handle);
