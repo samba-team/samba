@@ -103,12 +103,12 @@ static void smb2_read_callback(struct smb2_request *req)
 
 	/* initiate another read request, as we only got part of a fragment */
 	ZERO_STRUCT(io);
+	io.in.file.handle = smb->handle;
 	io.in.length = MIN(state->c->srv_max_xmit_frag, 
 			   frag_length - state->data.length);
 	if (io.in.length < 16) {
 		io.in.length = 16;
 	}
-	io.in.handle = smb->handle;
 	
 	req = smb2_read_send(smb->tree, &io);
 	if (req == NULL) {
@@ -147,7 +147,7 @@ static NTSTATUS send_read_request_continue(struct dcerpc_connection *c, DATA_BLO
 	}
 
 	ZERO_STRUCT(io);
-	io.in.handle = smb->handle;
+	io.in.file.handle = smb->handle;
 
 	if (state->data.length >= 16) {
 		uint16_t frag_length = dcerpc_get_frag_length(&state->data);
@@ -232,11 +232,11 @@ static NTSTATUS smb2_send_trans_request(struct dcerpc_connection *c, DATA_BLOB *
 	state->c = c;
 	
 	ZERO_STRUCT(io);
-	io.in.function = FSCTL_NAMED_PIPE_READ_WRITE;
-	io.in.handle = smb->handle;
-	io.in.max_response_size = 0x1000;
-	io.in.flags = 1;
-	io.in.out = *blob;
+	io.in.file.handle	= smb->handle;
+	io.in.function		= FSCTL_NAMED_PIPE_READ_WRITE;
+	io.in.max_response_size	= 0x1000;
+	io.in.flags		= 1;
+	io.in.out		= *blob;
 
         req = smb2_ioctl_send(smb->tree, &io);
 	if (req == NULL) {
@@ -282,8 +282,8 @@ static NTSTATUS smb2_send_request(struct dcerpc_connection *c, DATA_BLOB *blob,
 	}
 
 	ZERO_STRUCT(io);
-	io.in.handle = smb->handle;
-	io.in.data = *blob;
+	io.in.file.handle	= smb->handle;
+	io.in.data		= *blob;
 
 	req = smb2_write_send(smb->tree, &io);
 	if (req == NULL) {
@@ -309,7 +309,7 @@ static NTSTATUS smb2_shutdown_pipe(struct dcerpc_connection *c)
 	if (!smb) return NT_STATUS_OK;
 
 	ZERO_STRUCT(io);
-	io.in.handle = smb->handle;
+	io.in.file.handle = smb->handle;
 	req = smb2_close_send(smb->tree, &io);
 	if (req != NULL) {
 		/* we don't care if this fails, so just free it if it succeeds */
@@ -454,7 +454,7 @@ static void pipe_open_recv(struct smb2_request *req)
 	smb = talloc(c, struct smb2_private);
 	if (composite_nomem(smb, ctx)) return;
 
-	smb->handle	= io.out.handle;
+	smb->handle	= io.out.file.handle;
 	smb->tree	= talloc_reference(smb, tree);
 	smb->server_name= strupper_talloc(smb, 
 					  tree->session->transport->socket->hostname);

@@ -79,6 +79,9 @@ struct smbcli_request *smb_raw_tcon_send(struct smbcli_tree *tree,
 		smbcli_req_append_string(req, parms->tconx.in.path,   STR_TERMINATE | STR_UPPER);
 		smbcli_req_append_string(req, parms->tconx.in.device, STR_TERMINATE | STR_ASCII);
 		break;
+
+	case RAW_TCON_SMB2:
+		return NULL;
 	}
 
 	if (!smbcli_request_send(req)) {
@@ -124,6 +127,10 @@ NTSTATUS smb_raw_tcon_recv(struct smbcli_request *req, TALLOC_CTX *mem_ctx,
 					 p, -1, STR_ASCII | STR_TERMINATE);
 		p += smbcli_req_pull_string(req, mem_ctx, &parms->tconx.out.fs_type, 
 					 p, -1, STR_TERMINATE);
+		break;
+
+	case RAW_TCON_SMB2:
+		req->status = NT_STATUS_INTERNAL_ERROR;
 		break;
 	}
 

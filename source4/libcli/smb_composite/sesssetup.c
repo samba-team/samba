@@ -165,6 +165,11 @@ static void request_handler(struct smbcli_request *req)
 			state->req->async.private = c;
 			return;
 		}
+		break;
+
+	case RAW_SESSSETUP_SMB2:
+		c->status = NT_STATUS_INTERNAL_ERROR;
+		break;
 	}
 
 	/* enforce the local signing required flag */

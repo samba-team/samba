@@ -38,8 +38,8 @@ static NTSTATUS torture_smb2_close(struct smb2_tree *tree, struct smb2_handle ha
 	TALLOC_CTX *tmp_ctx = talloc_new(tree);
 
 	ZERO_STRUCT(io);
-	io.in.flags       = SMB2_CLOSE_FLAGS_FULL_INFORMATION;
-	io.in.handle   = handle;
+	io.in.file.handle	= handle;
+	io.in.flags		= SMB2_CLOSE_FLAGS_FULL_INFORMATION;
 	status = smb2_close(tree, &io);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("close failed - %s\n", nt_errstr(status));
@@ -85,8 +85,8 @@ static NTSTATUS torture_smb2_write(struct smb2_tree *tree, struct smb2_handle ha
 	}
 
 	ZERO_STRUCT(w);
+	w.in.file.handle = handle;
 	w.in.offset      = 0;
-	w.in.handle      = handle;
 	w.in.data        = data;
 
 	status = smb2_write(tree, &w);
@@ -106,7 +106,7 @@ static NTSTATUS torture_smb2_write(struct smb2_tree *tree, struct smb2_handle ha
 	torture_smb2_all_info(tree, handle);
 
 	ZERO_STRUCT(f);
-	f.in.handle      = handle;
+	f.in.file.handle = handle;
 
 	status = smb2_flush(tree, &f);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -115,9 +115,9 @@ static NTSTATUS torture_smb2_write(struct smb2_tree *tree, struct smb2_handle ha
 	}
 
 	ZERO_STRUCT(r);
+	r.in.file.handle = handle;
 	r.in.length      = data.length;
 	r.in.offset      = 0;
-	r.in.handle      = handle;
 
 	status = smb2_read(tree, tree, &r);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -160,7 +160,7 @@ static struct smb2_handle torture_smb2_create(struct smb2_tree *tree,
 	status = smb2_create(tree, tmp_ctx, &io);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("create1 failed - %s\n", nt_errstr(status));
-		return io.out.handle;
+		return io.out.file.handle;
 	}
 
 	if (DEBUGLVL(1)) {
@@ -175,13 +175,13 @@ static struct smb2_handle torture_smb2_create(struct smb2_tree *tree,
 		printf("size            = %lld\n", (long long)io.out.size);
 		printf("file_attr       = 0x%x\n", io.out.file_attr);
 		printf("handle          = %016llx%016llx\n", 
-		       (long long)io.out.handle.data[0], 
-		       (long long)io.out.handle.data[1]);
+		       (long long)io.out.file.handle.data[0], 
+		       (long long)io.out.file.handle.data[1]);
 	}
 
 	talloc_free(tmp_ctx);
 	
-	return io.out.handle;
+	return io.out.file.handle;
 }
 
 

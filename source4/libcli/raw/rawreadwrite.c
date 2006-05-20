@@ -94,6 +94,9 @@ struct smbcli_request *smb_raw_read_send(struct smbcli_tree *tree, union smb_rea
 			SSVAL(req->out.hdr, HDR_FLG2, flags2);
 		}
 		break;
+
+	case RAW_READ_SMB2:
+		return NULL;
 	}
 
 	if (!smbcli_request_send(req)) {
@@ -164,6 +167,10 @@ NTSTATUS smb_raw_read_recv(struct smbcli_request *req, union smb_read *parms)
 				       parms->readx.out.data)) {
 			req->status = NT_STATUS_BUFFER_TOO_SMALL;
 		}
+		break;
+
+	case RAW_READ_SMB2:
+		req->status = NT_STATUS_INTERNAL_ERROR;
 		break;
 	}
 
@@ -261,6 +268,9 @@ struct smbcli_request *smb_raw_write_send(struct smbcli_tree *tree, union smb_wr
 			memcpy(req->out.data, parms->splwrite.in.data, parms->splwrite.in.count);
 		}
 		break;
+
+	case RAW_WRITE_SMB2:
+		return NULL;
 	}
 
 	if (!smbcli_request_send(req)) {
@@ -302,6 +312,9 @@ NTSTATUS smb_raw_write_recv(struct smbcli_request *req, union smb_write *parms)
 		parms->writex.out.remaining = SVAL(req->in.vwv, VWV(3));
 		break;
 	case RAW_WRITE_SPLWRITE:
+		break;
+	case RAW_WRITE_SMB2:
+		req->status = NT_STATUS_INTERNAL_ERROR;
 		break;
 	}
 
