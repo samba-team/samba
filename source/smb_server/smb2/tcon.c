@@ -26,7 +26,7 @@
 #include "smb_server/smb2/smb2_server.h"
 #include "librpc/gen_ndr/security.h"
 
-static NTSTATUS smb2srv_tcon_backend(struct smb2srv_request *req, struct smb2_tree_connect *io)
+static NTSTATUS smb2srv_tcon_backend(struct smb2srv_request *req, union smb_tcon *io)
 {
 	struct smbsrv_tcon *tcon;
 
@@ -35,18 +35,18 @@ static NTSTATUS smb2srv_tcon_backend(struct smb2srv_request *req, struct smb2_tr
 
 	/* TODO: do real tree connect */
 
-	io->out.unknown1	= 0x0001; /* 1 - DISK, 2 - Print, 3 - IPC */
-	io->out.unknown2	= 0x00000000;
-	io->out.unknown3	= 0x00000000;
-	io->out.access_mask	= SEC_RIGHTS_FILE_ALL;
+	io->smb2.out.unknown1	= 0x0001; /* 1 - DISK, 2 - Print, 3 - IPC */
+	io->smb2.out.unknown2	= 0x00000000;
+	io->smb2.out.unknown3	= 0x00000000;
+	io->smb2.out.access_mask= SEC_RIGHTS_FILE_ALL;
 
-	io->out.tid		= tcon->tid;
+	io->smb2.out.tid	= tcon->tid;
 
 	req->tcon = tcon;
 	return NT_STATUS_OK;
 }
 
-static void smb2srv_tcon_send(struct smb2srv_request *req, struct smb2_tree_connect *io)
+static void smb2srv_tcon_send(struct smb2srv_request *req, union smb_tcon *io)
 {
 	NTSTATUS status;
 
@@ -62,19 +62,19 @@ static void smb2srv_tcon_send(struct smb2srv_request *req, struct smb2_tree_conn
 		return;
 	}
 
-	SBVAL(req->out.hdr, SMB2_HDR_TID,    io->out.tid);
+	SBVAL(req->out.hdr,	SMB2_HDR_TID,	io->smb2.out.tid);
 
-	SSVAL(req->out.body, 0x02, io->out.unknown1);
-	SIVAL(req->out.body, 0x04, io->out.unknown2);
-	SIVAL(req->out.body, 0x08, io->out.unknown3);
-	SIVAL(req->out.body, 0x0C, io->out.access_mask);
+	SSVAL(req->out.body,	0x02,		io->smb2.out.unknown1);
+	SIVAL(req->out.body,	0x04,		io->smb2.out.unknown2);
+	SIVAL(req->out.body,	0x08,		io->smb2.out.unknown3);
+	SIVAL(req->out.body,	0x0C,		io->smb2.out.access_mask);
 
 	smb2srv_send_reply(req);
 }
 
 void smb2srv_tcon_recv(struct smb2srv_request *req)
 {
-	struct smb2_tree_connect *io;
+	union smb_tcon *io;
 	NTSTATUS status;
 
 	if (req->in.body_size < 0x08) {
@@ -82,15 +82,16 @@ void smb2srv_tcon_recv(struct smb2srv_request *req)
 		return;
 	}
 
-	io = talloc(req, struct smb2_tree_connect);
+	io = talloc(req, union smb_tcon);
 	if (!io) {
 		smbsrv_terminate_connection(req->smb_conn, nt_errstr(NT_STATUS_NO_MEMORY));
 		talloc_free(req);
 		return;
 	}
 
-	io->in.unknown1 = SVAL(req->in.body, 0x02);
-	status = smb2_pull_o16s16_string(&req->in, io, req->in.body+0x04, &io->in.path);
+	io->smb2.level		= RAW_TCON_SMB2;
+	io->smb2.in.unknown1	= SVAL(req->in.body, 0x02);
+	status = smb2_pull_o16s16_string(&req->in, io, req->in.body+0x04, &io->smb2.in.path);
 	if (!NT_STATUS_IS_OK(status)) {
 		smbsrv_terminate_connection(req->smb_conn, nt_errstr(status));
 		talloc_free(req);
