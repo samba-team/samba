@@ -60,3 +60,100 @@ struct smb2srv_request {
 struct smbsrv_request;
 
 #include "smb_server/smb2/smb2_proto.h"
+
+/* useful way of catching wct errors with file and line number */
+#define SMB2SRV_CHECK_BODY_SIZE(req, size, dynamic) do { \
+	size_t is_size = req->in.body_size; \
+	uint16_t field_size = SVAL(req->in.body, 0); \
+	uint16_t want_size = ((dynamic)?(size)+1:(size)); \
+	if (is_size < (size)) { \
+		DEBUG(0,("%s: buffer too small 0x%x. Expected 0x%x\n", \
+			 __location__, is_size, want_size)); \
+		smb2srv_send_error(req,  NT_STATUS_FOOBAR); \
+	}\
+	if (field_size != want_size) { \
+		DEBUG(0,("%s: unexpected fixed body size 0x%x. Expected 0x%x\n", \
+			 __location__, field_size, want_size)); \
+		smb2srv_send_error(req,  NT_STATUS_FOOBAR); \
+	} \
+} while (0)
+
+#define SMB2SRV_CHECK(cmd) do {\
+	NTSTATUS _status; \
+	_status = cmd; \
+	if (!NT_STATUS_IS_OK(_status)) { \
+		smb2srv_send_error(req,  _status); \
+		return; \
+	} \
+} while (0)
+
+/* useful wrapper for talloc with NO_MEMORY reply */
+#define SMB2SRV_TALLOC_IO_PTR(ptr, type) do { \
+	ptr = talloc(req, type); \
+	if (!ptr) { \
+		smb2srv_send_error(req, NT_STATUS_NO_MEMORY); \
+		return; \
+	} \
+	req->io_ptr = ptr; \
+} while (0)
+
+#define SMB2SRV_SETUP_NTVFS_REQUEST(send_fn, state) do { \
+	req->ntvfs = ntvfs_request_create(req->tcon->ntvfs, req, \
+					  req->session->session_info,\
+					  0, \
+					  0, \
+					  req->request_time, \
+					  req, send_fn, state); \
+	if (!req->ntvfs) { \
+		smb2srv_send_error(req, NT_STATUS_NO_MEMORY); \
+		return; \
+	} \
+	if (!talloc_reference(req->ntvfs, req)) { \
+		smb2srv_send_error(req, NT_STATUS_NO_MEMORY); \
+		return; \
+	} \
+	req->ntvfs->frontend_data.private_data = req; \
+} while (0)
+
+#define SMB2SRV_CHECK_FILE_HANDLE(handle) do { \
+	if (!handle) { \
+		smb2srv_send_error(req, NT_STATUS_INVALID_HANDLE); \
+		return; \
+	} \
+} while (0)
+
+/* 
+   check if the backend wants to handle the request asynchronously.
+   if it wants it handled synchronously then call the send function
+   immediately
+*/
+#define SMB2SRV_CALL_NTVFS_BACKEND(cmd) do { \
+	req->ntvfs->async_states->status = cmd; \
+	if (!(req->ntvfs->async_states->state & NTVFS_ASYNC_STATE_ASYNC)) { \
+		req->ntvfs->async_states->send_fn(req->ntvfs); \
+	} \
+} while (0)
+
+/* check req->ntvfs->async_states->status and if not OK then send an error reply */
+#define SMB2SRV_CHECK_ASYNC_STATUS_ERR_SIMPLE do { \
+	req = talloc_get_type(ntvfs->async_states->private_data, struct smb2srv_request); \
+	if (NT_STATUS_IS_ERR(ntvfs->async_states->status)) { \
+		smb2srv_send_error(req, ntvfs->async_states->status); \
+		return; \
+	} \
+} while (0)
+#define SMB2SRV_CHECK_ASYNC_STATUS_ERR(ptr, type) do { \
+	SMB2SRV_CHECK_ASYNC_STATUS_ERR_SIMPLE; \
+	ptr = talloc_get_type(req->io_ptr, type); \
+} while (0)
+#define SMB2SRV_CHECK_ASYNC_STATUS_SIMPLE do { \
+	req = talloc_get_type(ntvfs->async_states->private_data, struct smb2srv_request); \
+	if (!NT_STATUS_IS_OK(ntvfs->async_states->status)) { \
+		smb2srv_send_error(req, ntvfs->async_states->status); \
+		return; \
+	} \
+} while (0)
+#define SMB2SRV_CHECK_ASYNC_STATUS(ptr, type) do { \
+	SMB2SRV_CHECK_ASYNC_STATUS_SIMPLE; \
+	ptr = talloc_get_type(req->io_ptr, type); \
+} while (0)
