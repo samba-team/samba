@@ -28,6 +28,120 @@
 #include "smbd/service_stream.h"
 #include "ntvfs/ntvfs.h"
 
+/*
+  send an oplock break request to a client
+*/
+static NTSTATUS smb2srv_send_oplock_break(void *p, struct ntvfs_handle *ntvfs, uint8_t level)
+{
+	DEBUG(0,("TODO: we don't pass SMB2 oplock breaks to the Clients yet!\n"));
+	return NT_STATUS_OK;
+}
+
+struct ntvfs_handle *smb2srv_pull_handle(struct smb2srv_request *req, const uint8_t *base, uint_t offset)
+{
+	struct smbsrv_tcon *tcon;
+	struct smbsrv_handle *handle;
+	uint64_t hid;
+	uint32_t tid;
+	uint32_t pad;
+
+	hid = BVAL(base, offset);
+	tid = IVAL(base, offset + 8);
+	pad = IVAL(base, offset + 12);
+
+	if (pad != 0xFFFFFFFF) {
+		return NULL;
+	}
+
+/* TODO: add comments */
+	tcon = req->tcon;
+	if (tid != req->tcon->tid) {
+		tcon = smbsrv_smb2_tcon_find(req->session, tid, req->request_time);
+	}
+
+	handle = smbsrv_smb_handle_find(tcon, hid, req->request_time);
+	if (!handle) {
+		return NULL;
+	}
+
+	req->tcon = tcon;
+	return handle->ntvfs;
+}
+
+void smb2srv_push_handle(uint8_t *base, uint_t offset, struct ntvfs_handle *ntvfs)
+{
+	struct smbsrv_handle *handle = talloc_get_type(ntvfs->frontend_data.private_data,
+				       struct smbsrv_handle);
+
+	/* 
+	 * the handle is 128 bit on the wire
+	 */
+	SBVAL(base, offset,	handle->hid);
+	SIVAL(base, offset + 8,	handle->tcon->tid);
+	SIVAL(base, offset + 12,0xFFFFFFFF);
+}
+
+static NTSTATUS smb2srv_handle_create_new(void *private_data, struct ntvfs_request *ntvfs, struct ntvfs_handle **_h)
+{
+	struct smbsrv_request *req = talloc_get_type(ntvfs->frontend_data.private_data,
+				     struct smbsrv_request);
+	struct smbsrv_handle *handle;
+	struct ntvfs_handle *h;
+
+	handle = smbsrv_handle_new(req);
+	if (!handle) return NT_STATUS_INSUFFICIENT_RESOURCES;
+
+	h = talloc_zero(handle, struct ntvfs_handle);
+	if (!h) goto nomem;
+
+	/* 
+	 * note: we don't set handle->ntvfs yet,
+	 *       this will be done by smbsrv_handle_make_valid()
+	 *       this makes sure the handle is invalid for clients
+	 *       until the ntvfs subsystem has made it valid
+	 */
+	h->ctx		= ntvfs->ctx;
+	h->session_info	= ntvfs->session_info;
+	h->smbpid	= ntvfs->smbpid;
+
+	h->frontend_data.private_data = handle;
+
+	*_h = h;
+	return NT_STATUS_OK;
+nomem:
+	talloc_free(handle);
+	return NT_STATUS_NO_MEMORY;
+}
+
+static NTSTATUS smb2srv_handle_make_valid(void *private_data, struct ntvfs_handle *h)
+{
+	struct smbsrv_tcon *tcon = talloc_get_type(private_data, struct smbsrv_tcon);
+	struct smbsrv_handle *handle = talloc_get_type(h->frontend_data.private_data,
+						       struct smbsrv_handle);
+	/* this tells the frontend that the handle is valid */
+	handle->ntvfs = h;
+	/* this moves the smbsrv_request to the smbsrv_tcon memory context */
+	talloc_steal(tcon, handle);
+	return NT_STATUS_OK;
+}
+
+static void smb2srv_handle_destroy(void *private_data, struct ntvfs_handle *h)
+{
+	struct smbsrv_handle *handle = talloc_get_type(h->frontend_data.private_data,
+						       struct smbsrv_handle);
+	talloc_free(handle);
+}
+
+static struct ntvfs_handle *smb2srv_handle_search_by_wire_key(void *private_data, struct ntvfs_request *ntvfs, const DATA_BLOB *key)
+{
+	return NULL;
+}
+
+static DATA_BLOB smb2srv_handle_get_wire_key(void *private_data, struct ntvfs_handle *handle, TALLOC_CTX *mem_ctx)
+{
+	return data_blob(NULL, 0);
+}
+
 static NTSTATUS smb2srv_tcon_backend(struct smb2srv_request *req, union smb_tcon *io)
 {
 	struct smbsrv_tcon *tcon;
@@ -89,19 +203,19 @@ static NTSTATUS smb2srv_tcon_backend(struct smb2srv_request *req, union smb_tcon
 		goto failed;
 	}
 
-/*	status = ntvfs_set_oplock_handler(tcon->ntvfs, smb2srv_send_oplock_break, tcon);
+	status = ntvfs_set_oplock_handler(tcon->ntvfs, smb2srv_send_oplock_break, tcon);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("smb2srv_tcon_backend: NTVFS failed to set the oplock handler!\n"));
 		goto failed;
 	}
-*/
+
 	status = ntvfs_set_addr_callbacks(tcon->ntvfs, smbsrv_get_my_addr, smbsrv_get_peer_addr, req->smb_conn);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("smb2srv_tcon_backend: NTVFS failed to set the addr callbacks!\n"));
 		goto failed;
 	}
 
-/*	status = ntvfs_set_handle_callbacks(tcon->ntvfs,
+	status = ntvfs_set_handle_callbacks(tcon->ntvfs,
 					    smb2srv_handle_create_new,
 					    smb2srv_handle_make_valid,
 					    smb2srv_handle_destroy,
@@ -112,7 +226,7 @@ static NTSTATUS smb2srv_tcon_backend(struct smb2srv_request *req, union smb_tcon
 		DEBUG(0,("smb2srv_tcon_backend: NTVFS failed to set the handle callbacks!\n"));
 		goto failed;
 	}
-*/
+
 	req->ntvfs = ntvfs_request_create(req->tcon->ntvfs, req,
 					  req->session->session_info,
 					  0, /* TODO: fill in PID */
