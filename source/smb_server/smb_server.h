@@ -225,13 +225,21 @@ struct smbsrv_request {
 	struct smbsrv_session *session;
 
 	/* a set of flags to control usage of the request. See SMBSRV_REQ_CONTROL_* */
-	unsigned control_flags;
-
-	/* the flags from the SMB request, in raw form (host byte order) */
-	uint16_t flags2;
+	uint32_t control_flags;
 
 	/* the system time when the request arrived */
 	struct timeval request_time;
+
+	/* a pointer to the per request union smb_* io structure */
+	void *io_ptr;
+
+	/* the ntvfs_request */
+	struct ntvfs_request *ntvfs;
+
+	/* Now the SMB specific stuff */
+
+	/* the flags from the SMB request, in raw form (host byte order) */
+	uint16_t flags2;
 
 	/* this can contain a fnum from an earlier part of a chained
 	 * message (such as an SMBOpenX), or -1 */
@@ -242,12 +250,6 @@ struct smbsrv_request {
 
 	/* the sequence number for signing */
 	uint64_t seq_num;
-
-	/* a pointer to the per request union smb_* io structure */
-	void *io_ptr;
-
-	/* the ntvfs_request */
-	struct ntvfs_request *ntvfs;
 
 	struct request_buffer in;
 	struct request_buffer out;
