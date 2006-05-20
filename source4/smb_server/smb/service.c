@@ -23,46 +23,6 @@
 #include "smbd/service_stream.h"
 #include "ntvfs/ntvfs.h"
 
-
-/**
- * Find a service entry. service is always in dos codepage.
- *
- * @param service is modified (to canonical form??)
- **/
-static int find_service(const char *service)
-{
-	int iService;
-
-	iService = lp_servicenumber(service);
-
-	if (iService >= 0 && !lp_snum_ok(iService)) {
-		DEBUG(0,("Invalid snum %d for %s\n",iService, service));
-		iService = -1;
-	}
-
-	if (iService == -1) {
-		DEBUG(3,("find_service() failed to find service %s\n", service));
-	}
-
-	return iService;
-}
-
-static struct socket_address *smbsrv_get_my_addr(void *p, TALLOC_CTX *mem_ctx)
-{
-	struct smbsrv_connection *smb_conn = talloc_get_type(p,
-					     struct smbsrv_connection);
-
-	return socket_get_my_addr(smb_conn->connection->socket, mem_ctx);
-}
-
-static struct socket_address *smbsrv_get_peer_addr(void *p, TALLOC_CTX *mem_ctx)
-{
-	struct smbsrv_connection *smb_conn = talloc_get_type(p,
-					     struct smbsrv_connection);
-
-	return socket_get_peer_addr(smb_conn->connection->socket, mem_ctx);
-}
-
 /****************************************************************************
   Make a connection, given the snum to connect to, and the vuser of the
   connecting user if appropriate.
@@ -176,8 +136,7 @@ static NTSTATUS make_connection(struct smbsrv_request *req,
 		}
 	}
 
-	snum = find_service(service);
-
+	snum = smbsrv_find_service(service);
 	if (snum == -1) {
 		DEBUG(0,("couldn't find service %s\n", service));
 		return NT_STATUS_BAD_NETWORK_NAME;
