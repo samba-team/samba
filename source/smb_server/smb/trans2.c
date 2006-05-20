@@ -1086,7 +1086,7 @@ static BOOL find_fill_info(struct find_state *state,
 	case RAW_SEARCH_FUNIQUE:
 	case RAW_SEARCH_GENERIC:
 		/* handled elsewhere */
-		break;
+		return False;
 
 	case RAW_SEARCH_STANDARD:
 		if (state->flags & FLAG_TRANS2_FIND_REQUIRE_RESUME) {
