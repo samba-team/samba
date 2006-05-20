@@ -522,6 +522,14 @@ NTSTATUS smb2_pull_o16s16_string(struct smb2_request_buffer *buf, TALLOC_CTX *me
 	status = smb2_pull_o16s16_blob(buf, mem_ctx, ptr, &blob);
 	NT_STATUS_NOT_OK_RETURN(status);
 
+	if (blob.length == 0) {
+		char *s;
+		s = talloc_strdup(mem_ctx, "");
+		NT_STATUS_HAVE_NO_MEMORY(s);
+		*str = s;
+		return NT_STATUS_OK;
+	}
+
 	size = convert_string_talloc(mem_ctx, CH_UTF16, CH_UNIX, 
 				     blob.data, blob.length, &vstr);
 	data_blob_free(&blob);
