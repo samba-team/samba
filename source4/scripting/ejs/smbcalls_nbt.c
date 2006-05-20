@@ -87,7 +87,8 @@ static int ejs_resolve_name(MprVarHandle eid, int argc, struct MprVar **argv)
 /*
   setup C functions that be called from ejs
 */
-void smb_setup_ejs_nbt(void)
+NTSTATUS smb_setup_ejs_nbt(void)
 {
 	ejsDefineCFunction(-1, "resolveName", ejs_resolve_name, NULL, MPR_VAR_SCRIPT_HANDLE);
+	return NT_STATUS_OK;
 }

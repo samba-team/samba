@@ -505,7 +505,8 @@ static int ejs_string_init(MprVarHandle eid, int argc, struct MprVar **argv)
 /*
   setup C functions that be called from ejs
 */
-void smb_setup_ejs_string(void)
+NTSTATUS smb_setup_ejs_string(void)
 {
 	ejsDefineCFunction(-1, "string_init", ejs_string_init, NULL, MPR_VAR_SCRIPT_HANDLE);
+	return NT_STATUS_OK;
 }

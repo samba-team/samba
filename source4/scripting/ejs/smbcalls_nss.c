@@ -154,7 +154,8 @@ static int ejs_nss_init(MprVarHandle eid, int argc, struct MprVar **argv)
 /*
   setup C functions that be called from ejs
 */
-void smb_setup_ejs_nss(void)
+NTSTATUS smb_setup_ejs_nss(void)
 {
 	ejsDefineCFunction(-1, "nss_init", ejs_nss_init, NULL, MPR_VAR_SCRIPT_HANDLE);
+	return NT_STATUS_OK;
 }

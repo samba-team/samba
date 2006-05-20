@@ -215,7 +215,8 @@ static int ejs_loadparm_init(MprVarHandle eid, int argc, struct MprVar **argv)
 /*
   setup C functions that be called from ejs
 */
-void smb_setup_ejs_config(void)
+NTSTATUS smb_setup_ejs_config(void)
 {
 	ejsDefineCFunction(-1, "loadparm_init", ejs_loadparm_init, NULL, MPR_VAR_SCRIPT_HANDLE);
+	return NT_STATUS_OK;
 }

@@ -494,7 +494,8 @@ static int ejs_samba3_read(MprVarHandle eid, int argc, struct MprVar **argv)
 /*
   setup C functions that be called from ejs
 */
-void smb_setup_ejs_samba3(void)
+NTSTATUS smb_setup_ejs_samba3(void)
 {
 	ejsDefineCFunction(-1, "samba3_read", ejs_samba3_read, NULL, MPR_VAR_SCRIPT_HANDLE);
+	return NT_STATUS_OK;
 }
