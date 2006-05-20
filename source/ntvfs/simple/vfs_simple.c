@@ -55,7 +55,8 @@ static NTSTATUS svfs_connect(struct ntvfs_module_context *ntvfs,
 	int snum = ntvfs->ctx->config.snum;
 
 	private = talloc(ntvfs, struct svfs_private);
-
+	NT_STATUS_HAVE_NO_MEMORY(private);
+	private->ntvfs = ntvfs;
 	private->next_search_handle = 0;
 	private->connectpath = talloc_strdup(private, lp_pathname(snum));
 	private->open_files = NULL;
@@ -91,15 +92,18 @@ static NTSTATUS svfs_disconnect(struct ntvfs_module_context *ntvfs)
 /*
   find open file handle given fd
 */
-static struct svfs_file *find_fd(struct svfs_private *private, int fd)
+static struct svfs_file *find_fd(struct svfs_private *private, struct ntvfs_handle *handle)
 {
 	struct svfs_file *f;
-	for (f=private->open_files;f;f=f->next) {
-		if (f->fd == fd) {
-			return f;
-		}
-	}
-	return NULL;
+	void *p;
+
+	p = ntvfs_handle_get_backend_data(handle, private->ntvfs);
+	if (!p) return NULL;
+
+	f = talloc_get_type(p, struct svfs_file);
+	if (!f) return NULL;
+
+	return f;
 }
 
 /*
@@ -282,12 +286,12 @@ static NTSTATUS svfs_qfileinfo(struct ntvfs_module_context *ntvfs,
 		return ntvfs_map_qfileinfo(ntvfs, req, info);
 	}
 
-	f = find_fd(private, info->generic.in.file.fnum);
+	f = find_fd(private, info->generic.in.file.ntvfs);
 	if (!f) {
 		return NT_STATUS_INVALID_HANDLE;
 	}
 	
-	if (fstat(info->generic.in.file.fnum, &st) == -1) {
+	if (fstat(f->fd, &st) == -1) {
 		return map_nt_error_from_unix(errno);
 	}
 
@@ -308,6 +312,8 @@ static NTSTATUS svfs_open(struct ntvfs_module_context *ntvfs,
 	struct svfs_file *f;
 	int create_flags, rdwr_flags;
 	BOOL readonly;
+	NTSTATUS status;
+	struct ntvfs_handle *handle;
 	
 	if (io->generic.level != RAW_OPEN_GENERIC) {
 		return ntvfs_map_open(ntvfs, req, io);
@@ -379,7 +385,10 @@ do_open:
 		return map_nt_error_from_unix(errno);
 	}
 
-	f = talloc(ntvfs, struct svfs_file);
+	status = ntvfs_handle_new(ntvfs, req, &handle);
+	NT_STATUS_NOT_OK_RETURN(status);
+
+	f = talloc(handle, struct svfs_file);
 	NT_STATUS_HAVE_NO_MEMORY(f);
 	f->fd = fd;
 	f->name = talloc_strdup(f, unix_path);
@@ -387,13 +396,16 @@ do_open:
 
 	DLIST_ADD(private->open_files, f);
 
+	status = ntvfs_handle_set_backend_data(handle, ntvfs, f);
+	NT_STATUS_NOT_OK_RETURN(status);
+
 	ZERO_STRUCT(io->generic.out);
 	
 	unix_to_nt_time(&io->generic.out.create_time, st.st_ctime);
 	unix_to_nt_time(&io->generic.out.access_time, st.st_atime);
 	unix_to_nt_time(&io->generic.out.write_time,  st.st_mtime);
 	unix_to_nt_time(&io->generic.out.change_time, st.st_mtime);
-	io->generic.out.file.fnum = fd;
+	io->generic.out.file.ntvfs = handle;
 	io->generic.out.alloc_size = st.st_size;
 	io->generic.out.size = st.st_size;
 	io->generic.out.attrib = svfs_unix_to_dos_attrib(st.st_mode);
@@ -483,13 +495,20 @@ static NTSTATUS svfs_copy(struct ntvfs_module_context *ntvfs,
 static NTSTATUS svfs_read(struct ntvfs_module_context *ntvfs,
 			  struct ntvfs_request *req, union smb_read *rd)
 {
+	struct svfs_private *private = ntvfs->private_data;
+	struct svfs_file *f;
 	ssize_t ret;
 
 	if (rd->generic.level != RAW_READ_READX) {
 		return NT_STATUS_NOT_SUPPORTED;
 	}
 
-	ret = pread(rd->readx.in.file.fnum, 
+	f = find_fd(private, rd->readx.in.file.ntvfs);
+	if (!f) {
+		return NT_STATUS_INVALID_HANDLE;
+	}
+
+	ret = pread(f->fd, 
 		    rd->readx.out.data, 
 		    rd->readx.in.maxcnt,
 		    rd->readx.in.offset);
@@ -510,6 +529,8 @@ static NTSTATUS svfs_read(struct ntvfs_module_context *ntvfs,
 static NTSTATUS svfs_write(struct ntvfs_module_context *ntvfs,
 			   struct ntvfs_request *req, union smb_write *wr)
 {
+	struct svfs_private *private = ntvfs->private_data;
+	struct svfs_file *f;
 	ssize_t ret;
 
 	if (wr->generic.level != RAW_WRITE_WRITEX) {
@@ -518,7 +539,12 @@ static NTSTATUS svfs_write(struct ntvfs_module_context *ntvfs,
 
 	CHECK_READ_ONLY(req);
 
-	ret = pwrite(wr->writex.in.file.fnum, 
+	f = find_fd(private, wr->writex.in.file.ntvfs);
+	if (!f) {
+		return NT_STATUS_INVALID_HANDLE;
+	}
+
+	ret = pwrite(f->fd, 
 		     wr->writex.in.data, 
 		     wr->writex.in.count,
 		     wr->writex.in.offset);
@@ -554,7 +580,11 @@ static NTSTATUS svfs_flush(struct ntvfs_module_context *ntvfs,
 
 	switch (io->generic.level) {
 	case RAW_FLUSH_FLUSH:
-		fsync(io->flush.in.file.fnum);
+		f = find_fd(private, io->flush.in.file.ntvfs);
+		if (!f) {
+			return NT_STATUS_INVALID_HANDLE;
+		}
+		fsync(f->fd);
 		return NT_STATUS_OK;
 
 	case RAW_FLUSH_ALL:
@@ -582,12 +612,12 @@ static NTSTATUS svfs_close(struct ntvfs_module_context *ntvfs,
 		return NT_STATUS_INVALID_LEVEL;
 	}
 
-	f = find_fd(private, io->close.in.file.fnum);
+	f = find_fd(private, io->close.in.file.ntvfs);
 	if (!f) {
 		return NT_STATUS_INVALID_HANDLE;
 	}
 
-	if (close(io->close.in.file.fnum) == -1) {
+	if (close(f->fd) == -1) {
 		return map_nt_error_from_unix(errno);
 	}
 
@@ -662,15 +692,21 @@ static NTSTATUS svfs_setfileinfo(struct ntvfs_module_context *ntvfs,
 				 struct ntvfs_request *req, 
 				 union smb_setfileinfo *info)
 {
+	struct svfs_private *private = ntvfs->private_data;
+	struct svfs_file *f;
 	struct utimbuf unix_times;
-	int fd;
 
 	CHECK_READ_ONLY(req);
-		
+
+	f = find_fd(private, info->generic.in.file.ntvfs);
+	if (!f) {
+		return NT_STATUS_INVALID_HANDLE;
+	}
+	
 	switch (info->generic.level) {
 	case RAW_SFILEINFO_END_OF_FILE_INFO:
 	case RAW_SFILEINFO_END_OF_FILE_INFORMATION:
-		if (ftruncate(info->end_of_file_info.in.file.fnum, 
+		if (ftruncate(f->fd, 
 			      info->end_of_file_info.in.size) == -1) {
 			return map_nt_error_from_unix(errno);
 		}
@@ -678,8 +714,7 @@ static NTSTATUS svfs_setfileinfo(struct ntvfs_module_context *ntvfs,
 	case RAW_SFILEINFO_SETATTRE:
 		unix_times.actime = info->setattre.in.access_time;
 		unix_times.modtime = info->setattre.in.write_time;
-  		fd = info->setattre.in.file.fnum;
-	
+
 		if (unix_times.actime == 0 && unix_times.modtime == 0) {
 			break;
 		} 
@@ -690,7 +725,7 @@ static NTSTATUS svfs_setfileinfo(struct ntvfs_module_context *ntvfs,
 		}
 
 		/* Set the date on this file */
-		if (svfs_file_utime(fd, &unix_times) != 0) {
+		if (svfs_file_utime(f->fd, &unix_times) != 0) {
 			return NT_STATUS_ACCESS_DENIED;
 		}
   		break;

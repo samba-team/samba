@@ -3,6 +3,7 @@
    Manage smbsrv_tcon structures
    Copyright (C) Andrew Tridgell 1998
    Copyright (C) Alexander Bokovoy 2002
+   Copyright (C) Stefan Metzmacher 2005-2006
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -109,6 +110,7 @@ static int smbsrv_tcon_destructor(void *ptr)
 	/* tell the ntvfs backend that we are disconnecting */
 	if (tcon->ntvfs) {
 		ntvfs_disconnect(tcon->ntvfs);
+		tcon->ntvfs = NULL;
 	}
 
 	if (tcon->smb2.session) {
@@ -132,6 +134,7 @@ static struct smbsrv_tcon *smbsrv_tcon_new(struct smbsrv_connection *smb_conn,
 	TALLOC_CTX *mem_ctx;
 	struct smbsrv_tcons_context *tcons_ctx;
 	struct smbsrv_tcon *tcon;
+	NTSTATUS status;
 	int i;
 
 	if (smb_sess) {
@@ -148,6 +151,16 @@ static struct smbsrv_tcon *smbsrv_tcon_new(struct smbsrv_connection *smb_conn,
 	tcon->smb2.session	= smb_sess;
 	tcon->share_name	= talloc_strdup(tcon, share_name);
 	if (!tcon->share_name) goto failed;
+
+	/*
+	 * the use -1 here, because we don't want to give away the wildcard
+	 * fnum used in SMBflush
+	 */
+	status = smbsrv_init_handles(tcon, UINT16_MAX - 1);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1,("ERROR! failed to init handles: %s\n", nt_errstr(status)));
+		goto failed;
+	}
 
 	i = idr_get_new_random(tcons_ctx->idtree_tid, tcon, tcons_ctx->idtree_limit);
 	if (i == -1) {

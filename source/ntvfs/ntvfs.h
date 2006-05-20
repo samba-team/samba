@@ -191,7 +191,7 @@ struct ntvfs_context {
 
 	struct {
 		void *private_data;
-		NTSTATUS (*handler)(void *private_data, uint16_t fnum, uint8_t level);
+		NTSTATUS (*handler)(void *private_data, struct ntvfs_handle *handle, uint8_t level);
 	} oplock;
 
 	struct {
@@ -199,8 +199,16 @@ struct ntvfs_context {
 		struct socket_address *(*get_my_addr)(void *private_data, TALLOC_CTX *mem_ctx);
 		struct socket_address *(*get_peer_addr)(void *private_data, TALLOC_CTX *mem_ctx);
 	} client;
-};
 
+	struct {
+		void *private_data;
+		NTSTATUS (*create_new)(void *private_data, struct ntvfs_request *req, struct ntvfs_handle **h);
+		NTSTATUS (*make_valid)(void *private_data, struct ntvfs_handle *h);
+		void (*destroy)(void *private_data, struct ntvfs_handle *h);
+		struct ntvfs_handle *(*search_by_wire_key)(void *private_data,  struct ntvfs_request *req, const DATA_BLOB *key);
+		DATA_BLOB (*get_wire_key)(void *private_data, struct ntvfs_handle *handle, TALLOC_CTX *mem_ctx);
+	} handles;
+};
 
 /* a set of flags to control handling of request structures */
 #define NTVFS_ASYNC_STATE_ASYNC     (1<<1) /* the backend will answer this one later */
@@ -253,6 +261,28 @@ struct ntvfs_request {
 		/* the system time when the request arrived */
 		struct timeval request_time;
 	} statistics;
+
+	struct {
+		void *private_data;
+	} frontend_data;
+};
+
+struct ntvfs_handle {
+	struct ntvfs_context *ctx;
+
+	struct auth_session_info *session_info;
+
+	uint16_t smbpid;
+
+	struct ntvfs_handle_data {
+		struct ntvfs_handle_data *prev, *next;
+		struct ntvfs_module_context *owner;
+		void *private_data;/* this must be a valid talloc pointer */
+	} *backend_data;
+
+	struct {
+		void *private_data;
+	} frontend_data;
 };
 
 /* this structure is used by backends to determine the size of some critical types */
@@ -264,6 +294,8 @@ struct ntvfs_critical_sizes {
 	int sizeof_ntvfs_ops;
 	int sizeof_ntvfs_async_state;
 	int sizeof_ntvfs_request;
+	int sizeof_ntvfs_handle;
+	int sizeof_ntvfs_handle_data;
 };
 
 #define NTVFS_CURRENT_CRITICAL_SIZES(c) \
@@ -275,6 +307,8 @@ struct ntvfs_critical_sizes {
 	.sizeof_ntvfs_ops		= sizeof(struct ntvfs_ops), \
 	.sizeof_ntvfs_async_state	= sizeof(struct ntvfs_async_state), \
 	.sizeof_ntvfs_request		= sizeof(struct ntvfs_request), \
+	.sizeof_ntvfs_handle		= sizeof(struct ntvfs_handle), \
+	.sizeof_ntvfs_handle_data	= sizeof(struct ntvfs_handle_data), \
     }
 
 struct messaging_context;

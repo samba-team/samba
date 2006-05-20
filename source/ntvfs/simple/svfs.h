@@ -1,5 +1,7 @@
 
 struct svfs_private {
+	struct ntvfs_module_context *ntvfs;
+
 	/* the base directory */
 	char *connectpath;
 
@@ -24,6 +26,7 @@ struct svfs_dir {
 struct svfs_file {
 	struct svfs_file *next, *prev;
 	int fd;
+	struct ntvfs_handle *handle;
 	char *name;
 };
 

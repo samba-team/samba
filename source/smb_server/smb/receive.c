@@ -31,7 +31,7 @@
 /*
   send an oplock break request to a client
 */
-NTSTATUS smbsrv_send_oplock_break(void *p, uint16_t fnum, uint8_t level)
+NTSTATUS smbsrv_send_oplock_break(void *p, struct ntvfs_handle *ntvfs, uint8_t level)
 {
 	struct smbsrv_tcon *tcon = talloc_get_type(p, struct smbsrv_tcon);
 	struct smbsrv_request *req;
@@ -51,7 +51,7 @@ NTSTATUS smbsrv_send_oplock_break(void *p, uint16_t fnum, uint8_t level)
 
 	SSVAL(req->out.vwv, VWV(0), SMB_CHAIN_NONE);
 	SSVAL(req->out.vwv, VWV(1), 0);
-	SSVAL(req->out.vwv, VWV(2), fnum);
+	smbsrv_push_fnum(req->out.vwv, VWV(2), ntvfs);
 	SCVAL(req->out.vwv, VWV(3), LOCKING_ANDX_OPLOCK_RELEASE);
 	SCVAL(req->out.vwv, VWV(3)+1, level);
 	SIVAL(req->out.vwv, VWV(4), 0);
