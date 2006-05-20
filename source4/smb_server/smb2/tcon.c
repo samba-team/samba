@@ -25,25 +25,125 @@
 #include "smb_server/service_smb_proto.h"
 #include "smb_server/smb2/smb2_server.h"
 #include "librpc/gen_ndr/security.h"
+#include "smbd/service_stream.h"
+#include "ntvfs/ntvfs.h"
 
 static NTSTATUS smb2srv_tcon_backend(struct smb2srv_request *req, union smb_tcon *io)
 {
 	struct smbsrv_tcon *tcon;
+	NTSTATUS status;
+	enum ntvfs_type type;
+	uint16_t type_smb2;
+	int snum;
+	const char *service = io->smb2.in.path;
 
-	tcon = smbsrv_smb2_tcon_new(req->session, "fake");
-	NT_STATUS_HAVE_NO_MEMORY(tcon);
+	if (strncmp(service, "\\\\", 2) == 0) {
+		const char *p = strchr(service+2, '\\');
+		if (p) {
+			service = p + 1;
+		}
+	}
 
-	/* TODO: do real tree connect */
+	snum = smbsrv_find_service(service);
+	if (snum == -1) {
+		DEBUG(0,("smb2srv_tcon_backend: couldn't find service %s\n", service));
+		return NT_STATUS_BAD_NETWORK_NAME;
+	}
 
-	io->smb2.out.unknown1	= 0x0001; /* 1 - DISK, 2 - Print, 3 - IPC */
+	if (!socket_check_access(req->smb_conn->connection->socket, 
+				 lp_servicename(snum), 
+				 lp_hostsallow(snum), 
+				 lp_hostsdeny(snum))) {
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	/* work out what sort of connection this is */
+	if (strcmp(lp_fstype(snum), "IPC") == 0) {
+		type = NTVFS_IPC;
+		type_smb2 = 0x0003;
+	} else if (lp_print_ok(snum)) {
+		type = NTVFS_PRINT;
+		type_smb2 = 0x0002;
+	} else {
+		type = NTVFS_DISK;
+		type_smb2 = 0x0001;
+	}
+
+	tcon = smbsrv_smb2_tcon_new(req->session, lp_servicename(snum));
+	if (!tcon) {
+		DEBUG(0,("smb2srv_tcon_backend: Couldn't find free connection.\n"));
+		return NT_STATUS_INSUFFICIENT_RESOURCES;
+	}
+	req->tcon = tcon;
+
+	/* init ntvfs function pointers */
+	status = ntvfs_init_connection(tcon, snum, type,
+				       req->smb_conn->negotiate.protocol,
+				       req->smb_conn->connection->event.ctx,
+				       req->smb_conn->connection->msg_ctx,
+				       req->smb_conn->connection->server_id,
+				       &tcon->ntvfs);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("smb2srv_tcon_backend: ntvfs_init_connection failed for service %s\n", 
+			  lp_servicename(snum)));
+		goto failed;
+	}
+
+/*	status = ntvfs_set_oplock_handler(tcon->ntvfs, smb2srv_send_oplock_break, tcon);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("smb2srv_tcon_backend: NTVFS failed to set the oplock handler!\n"));
+		goto failed;
+	}
+*/
+	status = ntvfs_set_addr_callbacks(tcon->ntvfs, smbsrv_get_my_addr, smbsrv_get_peer_addr, req->smb_conn);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("smb2srv_tcon_backend: NTVFS failed to set the addr callbacks!\n"));
+		goto failed;
+	}
+
+/*	status = ntvfs_set_handle_callbacks(tcon->ntvfs,
+					    smb2srv_handle_create_new,
+					    smb2srv_handle_make_valid,
+					    smb2srv_handle_destroy,
+					    smb2srv_handle_search_by_wire_key,
+					    smb2srv_handle_get_wire_key,
+					    tcon);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("smb2srv_tcon_backend: NTVFS failed to set the handle callbacks!\n"));
+		goto failed;
+	}
+*/
+	req->ntvfs = ntvfs_request_create(req->tcon->ntvfs, req,
+					  req->session->session_info,
+					  0, /* TODO: fill in PID */
+					  0, /* TODO: fill in MID */
+					  req->request_time,
+					  req, NULL, 0);
+	if (!req->ntvfs) {
+		status = NT_STATUS_NO_MEMORY;
+		goto failed;
+	}
+
+	/* Invoke NTVFS connection hook */
+	status = ntvfs_connect(req->ntvfs, lp_servicename(snum));
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("smb2srv_tcon_backend: NTVFS ntvfs_connect() failed!\n"));
+		goto failed;
+	}
+
+	io->smb2.out.unknown1	= type_smb2; /* 1 - DISK, 2 - Print, 3 - IPC */
 	io->smb2.out.unknown2	= 0x00000000;
 	io->smb2.out.unknown3	= 0x00000000;
 	io->smb2.out.access_mask= SEC_RIGHTS_FILE_ALL;
 
 	io->smb2.out.tid	= tcon->tid;
 
-	req->tcon = tcon;
 	return NT_STATUS_OK;
+
+failed:
+	req->tcon = NULL;
+	talloc_free(tcon);
+	return status;
 }
 
 static void smb2srv_tcon_send(struct smb2srv_request *req, union smb_tcon *io)
