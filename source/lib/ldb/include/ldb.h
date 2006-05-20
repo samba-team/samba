@@ -619,17 +619,17 @@ struct ldb_async_handle {
 struct ldb_search {
 	const struct ldb_dn *base;
 	enum ldb_scope scope;
-	struct ldb_parse_tree *tree;
+	const struct ldb_parse_tree *tree;
 	const char * const *attrs;
 	struct ldb_result *res;
 };
 
 struct ldb_add {
-	struct ldb_message *message;
+	const struct ldb_message *message;
 };
 
 struct  ldb_modify {
-	struct ldb_message *message;
+	const struct ldb_message *message;
 };
 
 struct ldb_delete {
@@ -647,7 +647,7 @@ struct ldb_register_control {
 
 struct ldb_request {
 
-	int operation;
+	enum ldb_request_type operation;
 
 	union {
 		struct ldb_search search;
