@@ -2037,23 +2037,24 @@ files_struct *open_directory(connection_struct *conn,
  Open a pseudo-file (no locking checks - a 'stat' open).
 ****************************************************************************/
 
-files_struct *open_file_stat(connection_struct *conn, char *fname,
-			     SMB_STRUCT_STAT *psbuf)
+NTSTATUS open_file_stat(connection_struct *conn, char *fname,
+			SMB_STRUCT_STAT *psbuf, files_struct **result)
 {
 	files_struct *fsp = NULL;
 	NTSTATUS status;
 
-	if (!VALID_STAT(*psbuf))
-		return NULL;
+	if (!VALID_STAT(*psbuf)) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
 
 	/* Can't 'stat' open directories. */
-	if(S_ISDIR(psbuf->st_mode))
-		return NULL;
+	if(S_ISDIR(psbuf->st_mode)) {
+		return NT_STATUS_FILE_IS_A_DIRECTORY;
+	}
 
 	status = file_new(conn, &fsp);
-	if(!fsp) {
-		set_saved_ntstatus(status);
-		return NULL;
+	if(!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
 	DEBUG(5,("open_file_stat: 'opening' file %s\n", fname));
@@ -2080,7 +2081,8 @@ files_struct *open_file_stat(connection_struct *conn, char *fname,
 
 	conn->num_files_open++;
 
-	return fsp;
+	*result = fsp;
+	return NT_STATUS_OK;
 }
 
 /****************************************************************************

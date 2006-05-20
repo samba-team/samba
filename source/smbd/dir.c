@@ -867,7 +867,9 @@ static BOOL user_can_read_file(connection_struct *conn, char *name, SMB_STRUCT_S
 			0, /* no create options. */
 			NULL);
 	} else {
-		fsp = open_file_stat(conn, name, pst);
+		if (!NT_STATUS_IS_OK(open_file_stat(conn, name, pst, &fsp))) {
+			return False;
+		}
 	}
 
 	if (!fsp) {
