@@ -179,7 +179,7 @@ void change_owner_to_parent(connection_struct *conn,
  Open a file.
 ****************************************************************************/
 
-static BOOL open_file(files_struct *fsp,
+static NTSTATUS open_file(files_struct *fsp,
 			connection_struct *conn,
 			const char *fname,
 			SMB_STRUCT_STAT *psbuf,
@@ -210,7 +210,7 @@ static BOOL open_file(files_struct *fsp,
 		/* It's a read-only share - fail if we wanted to write. */
 		if(accmode != O_RDONLY) {
 			DEBUG(3,("Permission denied opening %s\n",fname));
-			return False;
+			return NT_STATUS_ACCESS_DENIED;
 		} else if(flags & O_CREAT) {
 			/* We don't want to write - but we must make sure that
 			   O_CREAT doesn't create the file if we have write
@@ -265,8 +265,7 @@ static BOOL open_file(files_struct *fsp,
 		/* Don't create files with Microsoft wildcard characters. */
 		if ((local_flags & O_CREAT) && !file_existed &&
 		    ms_has_wild(fname))  {
-			set_saved_ntstatus(NT_STATUS_OBJECT_NAME_INVALID);
-			return False;
+			return NT_STATUS_OBJECT_NAME_INVALID;
 		}
 
 		/* Actually do the open */
@@ -275,7 +274,7 @@ static BOOL open_file(files_struct *fsp,
 			DEBUG(3,("Error opening file %s (%s) (local_flags=%d) "
 				 "(flags=%d)\n",
 				 fname,strerror(errno),local_flags,flags));
-			return False;
+			return map_nt_error_from_unix(errno);
 		}
 
 		/* Inherit the ACL if the file was created. */
@@ -303,8 +302,9 @@ static BOOL open_file(files_struct *fsp,
 
 		/* For a non-io open, this stat failing means file not found. JRA */
 		if (ret == -1) {
+			NTSTATUS status = map_nt_error_from_unix(errno);
 			fd_close(conn, fsp);
-			return False;
+			return status;
 		}
 	}
 
@@ -317,7 +317,7 @@ static BOOL open_file(files_struct *fsp,
 	if(S_ISDIR(psbuf->st_mode)) {
 		fd_close(conn, fsp);
 		errno = EISDIR;
-		return False;
+		return NT_STATUS_FILE_IS_A_DIRECTORY;
 	}
 
 	fsp->mode = psbuf->st_mode;
@@ -351,7 +351,7 @@ static BOOL open_file(files_struct *fsp,
 		 conn->num_files_open + 1));
 
 	errno = 0;
-	return True;
+	return NT_STATUS_OK;
 }
 
 /*******************************************************************
@@ -1090,7 +1090,7 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 	BOOL internal_only_open = False;
 	SMB_DEV_T dev = 0;
 	SMB_INO_T inode = 0;
-	BOOL fsp_open = False;
+	NTSTATUS fsp_open = NT_STATUS_ACCESS_DENIED;
 	files_struct *fsp = NULL;
 	mode_t new_unx_mode = (mode_t)0;
 	mode_t unx_mode = (mode_t)0;
@@ -1450,11 +1450,11 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 
 			DEBUG(4,("open_file_ntcreate : share_mode deny - "
 				 "calling open_file with flags=0x%X "
-				 "flags2=0x%X mode=0%o returned %d\n",
+				 "flags2=0x%X mode=0%o returned %s\n",
 				 flags, (flags2&~(O_TRUNC|O_CREAT)),
-				 (unsigned int)unx_mode, (int)fsp_open ));
+				 (unsigned int)unx_mode, nt_errstr(fsp_open)));
 
-			if (!fsp_open && errno) {
+			if (!NT_STATUS_IS_OK(fsp_open) && errno) {
 				/* Default error. */
 				set_saved_ntstatus(NT_STATUS_ACCESS_DENIED);
 			}
@@ -1503,7 +1503,7 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 			}
 
 			TALLOC_FREE(lck);
-			if (fsp_open) {
+			if (NT_STATUS_IS_OK(fsp_open)) {
 				fd_close(conn, fsp);
 				/*
 				 * We have detected a sharing violation here
@@ -1543,11 +1543,12 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 	fsp_open = open_file(fsp,conn,fname,psbuf,flags|flags2,unx_mode,
 			     access_mask);
 
-	if (!fsp_open) {
+	if (!NT_STATUS_IS_OK(fsp_open)) {
 		if (lck != NULL) {
 			TALLOC_FREE(lck);
 		}
 		file_free(fsp);
+		set_saved_ntstatus(status);
 		return NULL;
 	}
 
@@ -1782,7 +1783,6 @@ NTSTATUS open_file_fchmod(connection_struct *conn, const char *fname,
 			  SMB_STRUCT_STAT *psbuf, files_struct **result)
 {
 	files_struct *fsp = NULL;
-	BOOL fsp_open;
 	NTSTATUS status;
 
 	if (!VALID_STAT(*psbuf)) {
@@ -1796,7 +1796,7 @@ NTSTATUS open_file_fchmod(connection_struct *conn, const char *fname,
 
 	/* note! we must use a non-zero desired access or we don't get
            a real file descriptor. Oh what a twisted web we weave. */
-	fsp_open = open_file(fsp,conn,fname,psbuf,O_WRONLY,0,FILE_WRITE_DATA);
+	status = open_file(fsp,conn,fname,psbuf,O_WRONLY,0,FILE_WRITE_DATA);
 
 	/* 
 	 * This is not a user visible file open.
@@ -1804,8 +1804,7 @@ NTSTATUS open_file_fchmod(connection_struct *conn, const char *fname,
 	 * the conn->num_files_open.
 	 */
 
-	if (!fsp_open) {
-		status = map_nt_error_from_unix(errno);
+	if (!NT_STATUS_IS_OK(status)) {
 		file_free(fsp);
 		return status;
 	}
