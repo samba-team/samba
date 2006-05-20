@@ -447,7 +447,7 @@ static NTSTATUS trans2_open_send(struct trans_op *op)
 
 	trans2_setup_reply(trans, 30, 0, 0);
 
-	SSVAL(trans->out.params.data, VWV(0), io->t2open.out.file.fnum);
+	smbsrv_push_fnum(trans->out.params.data, VWV(0), io->t2open.out.file.ntvfs);
 	SSVAL(trans->out.params.data, VWV(1), io->t2open.out.attrib);
 	srv_push_dos_date3(req->smb_conn, trans->out.params.data, 
 			   VWV(2), io->t2open.out.write_time);
@@ -847,7 +847,8 @@ static NTSTATUS trans2_qfileinfo(struct smbsrv_request *req, struct trans_op *op
 	struct smb_trans2 *trans = op->trans;
 	union smb_fileinfo *st;
 	NTSTATUS status;
-	uint16_t level, fnum;
+	uint16_t level;
+	struct ntvfs_handle *h;
 
 	/* make sure we got enough parameters */
 	if (trans->in.params.length < 4) {
@@ -857,10 +858,10 @@ static NTSTATUS trans2_qfileinfo(struct smbsrv_request *req, struct trans_op *op
 	st = talloc(op, union smb_fileinfo);
 	NT_STATUS_HAVE_NO_MEMORY(st);
 
-	fnum  = SVAL(trans->in.params.data, 0);
+	h     = smbsrv_pull_fnum(req, trans->in.params.data, 0);
 	level = SVAL(trans->in.params.data, 2);
 
-	st->generic.in.file.fnum = fnum;
+	st->generic.in.file.ntvfs = h;
 	/* work out the backend level - we make it 1-1 in the header */
 	st->generic.level = (enum smb_fileinfo_level)level;
 	if (st->generic.level >= RAW_FILEINFO_GENERIC) {
@@ -877,6 +878,7 @@ static NTSTATUS trans2_qfileinfo(struct smbsrv_request *req, struct trans_op *op
 	op->op_info = st;
 	op->send_fn = trans2_fileinfo_send;
 
+	SMBSRV_CHECK_FILE_HANDLE_NTSTATUS(st->generic.in.file.ntvfs);
 	return ntvfs_qfileinfo(req->ntvfs, st);
 }
 
@@ -985,7 +987,8 @@ static NTSTATUS trans2_setfileinfo(struct smbsrv_request *req, struct trans_op *
 	struct smb_trans2 *trans = op->trans;
 	union smb_setfileinfo *st;
 	NTSTATUS status;
-	uint16_t level, fnum;
+	uint16_t level;
+	struct ntvfs_handle *h;
 
 	/* make sure we got enough parameters */
 	if (trans->in.params.length < 4) {
@@ -995,10 +998,10 @@ static NTSTATUS trans2_setfileinfo(struct smbsrv_request *req, struct trans_op *
 	st = talloc(op, union smb_setfileinfo);
 	NT_STATUS_HAVE_NO_MEMORY(st);
 
-	fnum  = SVAL(trans->in.params.data, 0);
+	h     = smbsrv_pull_fnum(req, trans->in.params.data, 0);
 	level = SVAL(trans->in.params.data, 2);
 
-	st->generic.in.file.fnum = fnum;
+	st->generic.in.file.ntvfs = h;
 	/* work out the backend level - we make it 1-1 in the header */
 	st->generic.level = (enum smb_setfileinfo_level)level;
 	if (st->generic.level >= RAW_SFILEINFO_GENERIC) {
@@ -1011,6 +1014,7 @@ static NTSTATUS trans2_setfileinfo(struct smbsrv_request *req, struct trans_op *
 	op->op_info = st;
 	op->send_fn = trans2_simple_send;
 
+	SMBSRV_CHECK_FILE_HANDLE_NTSTATUS(st->generic.in.file.ntvfs);
 	return ntvfs_setfileinfo(req->ntvfs, st);
 }
 

@@ -636,10 +636,100 @@ BOOL req_data_oob(struct smbsrv_request *req, const uint8_t *ptr, uint32_t count
 /* 
    pull an open file handle from a packet, taking account of the chained_fnum
 */
-uint16_t req_fnum(struct smbsrv_request *req, const uint8_t *base, uint_t offset)
+static uint16_t req_fnum(struct smbsrv_request *req, const uint8_t *base, uint_t offset)
 {
 	if (req->chained_fnum != -1) {
 		return req->chained_fnum;
 	}
 	return SVAL(base, offset);
+}
+
+struct ntvfs_handle *smbsrv_pull_fnum(struct smbsrv_request *req, const uint8_t *base, uint_t offset)
+{
+	struct smbsrv_handle *handle;
+	uint16_t fnum = req_fnum(req, base, offset);
+
+	handle = smbsrv_smb_handle_find(req->tcon, fnum, req->request_time);
+	if (!handle) {
+		return NULL;
+	}
+
+	return handle->ntvfs;
+}
+
+void smbsrv_push_fnum(uint8_t *base, uint_t offset, struct ntvfs_handle *ntvfs)
+{
+	struct smbsrv_handle *handle = talloc_get_type(ntvfs->frontend_data.private_data,
+				       struct smbsrv_handle);
+	SSVAL(base, offset, handle->hid);
+}
+
+NTSTATUS smbsrv_handle_create_new(void *private_data, struct ntvfs_request *ntvfs, struct ntvfs_handle **_h)
+{
+	struct smbsrv_request *req = talloc_get_type(ntvfs->frontend_data.private_data,
+				     struct smbsrv_request);
+	struct smbsrv_handle *handle;
+	struct ntvfs_handle *h;
+
+	handle = smbsrv_handle_new(req);
+	if (!handle) return NT_STATUS_INSUFFICIENT_RESOURCES;
+
+	h = talloc_zero(handle, struct ntvfs_handle);
+	if (!h) goto nomem;
+
+	/* 
+	 * note: we don't set handle->ntvfs yet,
+	 *       this will be done by smbsrv_handle_make_valid()
+	 *       this makes sure the handle is invalid for clients
+	 *       until the ntvfs subsystem has made it valid
+	 */
+	h->ctx		= ntvfs->ctx;
+	h->session_info	= ntvfs->session_info;
+	h->smbpid	= ntvfs->smbpid;
+
+	h->frontend_data.private_data = handle;
+
+	*_h = h;
+	return NT_STATUS_OK;
+nomem:
+	talloc_free(handle);
+	return NT_STATUS_NO_MEMORY;
+}
+
+NTSTATUS smbsrv_handle_make_valid(void *private_data, struct ntvfs_handle *h)
+{
+	struct smbsrv_tcon *tcon = talloc_get_type(private_data, struct smbsrv_tcon);
+	struct smbsrv_handle *handle = talloc_get_type(h->frontend_data.private_data,
+						       struct smbsrv_handle);
+	/* this tells the frontend that the handle is valid */
+	handle->ntvfs = h;
+	/* this moves the smbsrv_request to the smbsrv_tcon memory context */
+	talloc_steal(tcon, handle);
+	return NT_STATUS_OK;
+}
+
+void smbsrv_handle_destroy(void *private_data, struct ntvfs_handle *h)
+{
+	struct smbsrv_handle *handle = talloc_get_type(h->frontend_data.private_data,
+						       struct smbsrv_handle);
+	talloc_free(handle);
+}
+
+struct ntvfs_handle *smbsrv_handle_search_by_wire_key(void *private_data, struct ntvfs_request *ntvfs, const DATA_BLOB *key)
+{
+	struct smbsrv_request *req = talloc_get_type(ntvfs->frontend_data.private_data,
+				     struct smbsrv_request);
+
+	if (key->length != 2) return NULL;
+
+	return smbsrv_pull_fnum(req, key->data, 0);
+}
+
+DATA_BLOB smbsrv_handle_get_wire_key(void *private_data, struct ntvfs_handle *handle, TALLOC_CTX *mem_ctx)
+{
+	uint8_t key[2];
+
+	smbsrv_push_fnum(key, 0, handle);
+
+	return data_blob_talloc(mem_ctx, key, sizeof(key));
 }

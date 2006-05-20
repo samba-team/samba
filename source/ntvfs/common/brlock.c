@@ -57,7 +57,7 @@ struct lock_context {
    size of the record */
 struct lock_struct {
 	struct lock_context context;
-	uint16_t fnum;
+	struct ntvfs_handle *ntvfs;
 	uint64_t start;
 	uint64_t size;
 	enum brl_type lock_type;
@@ -67,7 +67,7 @@ struct lock_struct {
 /* this struct is attached to on oprn file handle */
 struct brl_handle {
 	DATA_BLOB key;
-	uint16_t fnum;
+	struct ntvfs_handle *ntvfs;
 	struct lock_struct last_lock;
 };
 
@@ -109,7 +109,7 @@ struct brl_context *brl_init(TALLOC_CTX *mem_ctx, uint32_t server,
 	return brl;
 }
 
-struct brl_handle *brl_create_handle(TALLOC_CTX *mem_ctx, DATA_BLOB *file_key, uint16_t fnum)
+struct brl_handle *brl_create_handle(TALLOC_CTX *mem_ctx, struct ntvfs_handle *ntvfs, DATA_BLOB *file_key)
 {
 	struct brl_handle *brlh;
 
@@ -119,7 +119,7 @@ struct brl_handle *brl_create_handle(TALLOC_CTX *mem_ctx, DATA_BLOB *file_key, u
 	}
 
 	brlh->key = *file_key;
-	brlh->fnum = fnum;
+	brlh->ntvfs = ntvfs;
 	ZERO_STRUCT(brlh->last_lock);
 
 	return brlh;
@@ -173,7 +173,7 @@ static BOOL brl_conflict(struct lock_struct *lck1,
 	}
 
 	if (brl_same_context(&lck1->context, &lck2->context) &&
-	    lck2->lock_type == READ_LOCK && lck1->fnum == lck2->fnum) {
+	    lck2->lock_type == READ_LOCK && lck1->ntvfs == lck2->ntvfs) {
 		return False;
 	}
 
@@ -202,7 +202,7 @@ static BOOL brl_conflict_other(struct lock_struct *lck1, struct lock_struct *lck
 	 * in smbtorture.
 	 */
 	if (brl_same_context(&lck1->context, &lck2->context) &&
-	    lck1->fnum == lck2->fnum &&
+	    lck1->ntvfs == lck2->ntvfs &&
 	    (lck2->lock_type == READ_LOCK || lck1->lock_type == WRITE_LOCK)) {
 		return False;
 	}
@@ -251,7 +251,7 @@ static NTSTATUS brl_lock_failed(struct brl_handle *brlh, struct lock_struct *loc
 	 */
 	if (lock->context.server == brlh->last_lock.context.server &&
 	    lock->context.ctx == brlh->last_lock.context.ctx &&
-	    lock->fnum == brlh->last_lock.fnum &&
+	    lock->ntvfs == brlh->last_lock.ntvfs &&
 	    lock->start == brlh->last_lock.start) {
 		return NT_STATUS_FILE_LOCK_CONFLICT;
 	}
@@ -310,7 +310,7 @@ NTSTATUS brl_lock(struct brl_context *brl,
 	lock.context.smbpid = smbpid;
 	lock.context.server = brl->server;
 	lock.context.ctx = brl;
-	lock.fnum = brlh->fnum;
+	lock.ntvfs = brlh->ntvfs;
 	lock.context.ctx = brl;
 	lock.start = start;
 	lock.size = size;
@@ -454,7 +454,7 @@ NTSTATUS brl_unlock(struct brl_context *brl,
 		struct lock_struct *lock = &locks[i];
 		
 		if (brl_same_context(&lock->context, &context) &&
-		    lock->fnum == brlh->fnum &&
+		    lock->ntvfs == brlh->ntvfs &&
 		    lock->start == start &&
 		    lock->size == size &&
 		    lock->lock_type < PENDING_READ_LOCK) {
@@ -595,7 +595,7 @@ NTSTATUS brl_locktest(struct brl_context *brl,
 	lock.context.smbpid = smbpid;
 	lock.context.server = brl->server;
 	lock.context.ctx = brl;
-	lock.fnum = brlh->fnum;
+	lock.ntvfs = brlh->ntvfs;
 	lock.start = start;
 	lock.size = size;
 	lock.lock_type = lock_type;
@@ -649,7 +649,7 @@ NTSTATUS brl_close(struct brl_context *brl,
 
 		if (lock->context.ctx == brl &&
 		    lock->context.server == brl->server &&
-		    lock->fnum == brlh->fnum) {
+		    lock->ntvfs == brlh->ntvfs) {
 			/* found it - delete it */
 			if (count > 1 && i < count-1) {
 				memmove(&locks[i], &locks[i+1], 

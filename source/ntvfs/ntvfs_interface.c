@@ -668,7 +668,7 @@ _PUBLIC_ NTSTATUS ntvfs_next_exit(struct ntvfs_module_context *ntvfs,
 
 /* oplock helpers */
 _PUBLIC_ NTSTATUS ntvfs_set_oplock_handler(struct ntvfs_context *ntvfs,
-					   NTSTATUS (*handler)(void *private_data, uint16_t fnum, uint8_t level),
+					   NTSTATUS (*handler)(void *private_data, struct ntvfs_handle *handle, uint8_t level),
 					   void *private_data)
 {
 	ntvfs->oplock.handler		= handler;
@@ -677,13 +677,13 @@ _PUBLIC_ NTSTATUS ntvfs_set_oplock_handler(struct ntvfs_context *ntvfs,
 }
 
 _PUBLIC_ NTSTATUS ntvfs_send_oplock_break(struct ntvfs_module_context *ntvfs,
-					  uint16_t fnum, uint8_t level)
+					  struct ntvfs_handle *handle, uint8_t level)
 {
 	if (!ntvfs->ctx->oplock.handler) {
 		return NT_STATUS_OK;
 	}
 
-	return ntvfs->ctx->oplock.handler(ntvfs->ctx->oplock.private_data, fnum, level);
+	return ntvfs->ctx->oplock.handler(ntvfs->ctx->oplock.private_data, handle, level);
 }
 
 /* client connection callback */

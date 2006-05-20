@@ -57,7 +57,19 @@ struct smbsrv_sessions_context {
 	/* also kept as a link list so it can be enumerated by
 	   the management code */
 	struct smbsrv_session *list;
-} sessions;
+};
+
+struct smbsrv_handles_context {
+	/* an id tree used to allocate file handles */
+	struct idr_context *idtree_hid;
+
+	/* this is the limit of handle values for this context */
+	uint64_t idtree_limit;
+
+	/* also kept as a link list so it can be enumerated by
+	   the management code */
+	struct smbsrv_handle *list;
+};
 
 /* the current user context for a request */
 struct smbsrv_session {
@@ -65,7 +77,17 @@ struct smbsrv_session {
 
 	struct smbsrv_connection *smb_conn;
 
+	/*
+	 * in SMB2 tcons belong to just one session
+	 * and not to the whole connection
+	 */
 	struct smbsrv_tcons_context smb2_tcons;
+
+	/*
+	 * the open file handles for this session,
+	 * used for SMBexit, SMBulogoff and SMB2 SessionLogoff
+	 */
+	struct smbsrv_handle_session_item *handles;
 
 	/* 
 	 * an index passed over the wire:
@@ -78,7 +100,7 @@ struct smbsrv_session {
 
 	struct auth_session_info *session_info;
 
-	/* some statictics for the management tools */
+	/* some statistics for the management tools */
 	struct {
 		/* the time when the session setup started */
 		struct timeval connect_time;
@@ -98,6 +120,9 @@ struct smbsrv_tcon {
 
 	/* the server context that this was created on */
 	struct smbsrv_connection *smb_conn;
+
+	/* the open file handles on this tcon */
+	struct smbsrv_handles_context handles;
 
 	/* 
 	 * an index passed over the wire:
@@ -124,12 +149,60 @@ struct smbsrv_tcon {
 		struct smbsrv_session *session;
 	} smb2;
 
-	/* some statictics for the management tools */
+	/* some statistics for the management tools */
 	struct {
 		/* the time when the tree connect started */
 		struct timeval connect_time;
 		/* the time when the last request comes in */
 		struct timeval last_request_time;
+	} statistics;
+};
+
+struct smbsrv_handle {
+	struct smbsrv_handle *next, *prev;
+
+	/* the tcon the handle belongs to */
+	struct smbsrv_tcon *tcon;
+
+	/* the session the handle was opened on */
+	struct smbsrv_session *session;
+
+	/* the smbpid used on the open, used for SMBexit */
+	uint16_t smbpid;
+
+	/*
+	 * this is for adding the handle into a linked list
+	 * on the smbsrv_session, we can't use *next,*prev
+	 * for this because they're used for the linked list on the 
+	 * smbsrv_tcon
+	 */
+	struct smbsrv_handle_session_item {
+		struct smbsrv_handle_session_item *prev, *next;
+		struct smbsrv_handle *handle;
+	} session_item;
+
+	/*
+	 * the value passed over the wire
+	 * - 16 bit for smb
+	 * - 64 bit for smb2
+	 *   Note: for SMB2 handles are 128 bit
+	 *         we'll fill the 2nd 64 bit with:
+	 *         - 32 bit TID
+	 *         - 32 bit 0xFFFFFFFF
+	 */
+	uint64_t hid;
+
+	/*
+	 * the ntvfs handle passed to the ntvfs backend
+	 */
+	struct ntvfs_handle *ntvfs;
+
+	/* some statistics for the management tools */
+	struct {
+		/* the time when the tree connect started */
+		struct timeval open_time;
+		/* the time when the last request comes in */
+		struct timeval last_use_time;
 	} statistics;
 };
 
@@ -266,7 +339,7 @@ struct smbsrv_connection {
 		struct nbt_name *calling_name;
 	} negotiate;
 
-	/* the context associated with open tree connects on a smb socket */
+	/* the context associated with open tree connects on a smb socket, not for SMB2 */
 	struct smbsrv_tcons_context smb_tcons;
 
 	/* context associated with currently valid session setups */
@@ -283,7 +356,7 @@ struct smbsrv_connection {
 	} *requests;
 
 	struct smb_signing_context signing;
-	
+
 	struct stream_connection *connection;
 
 	/* this holds a partially received request */
@@ -349,6 +422,27 @@ struct smbsrv_connection {
 	if (!talloc_reference(req->ntvfs, req)) { \
 		smbsrv_send_error(req, NT_STATUS_NO_MEMORY); \
 		return; \
+	} \
+	req->ntvfs->frontend_data.private_data = req; \
+} while (0)
+
+#define SMBSRV_CHECK_FILE_HANDLE(handle) do { \
+	if (!handle) { \
+		smbsrv_send_error(req, NT_STATUS_INVALID_HANDLE); \
+		return; \
+	} \
+} while (0)
+
+#define SMBSRV_CHECK_FILE_HANDLE_ERROR(handle, _status) do { \
+	if (!handle) { \
+		smbsrv_send_error(req, _status); \
+		return; \
+	} \
+} while (0)
+
+#define SMBSRV_CHECK_FILE_HANDLE_NTSTATUS(handle) do { \
+	if (!handle) { \
+		return NT_STATUS_INVALID_HANDLE; \
 	} \
 } while (0)
 

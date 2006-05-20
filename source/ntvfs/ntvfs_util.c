@@ -98,3 +98,100 @@ _PUBLIC_ void ntvfs_async_state_pop(struct ntvfs_request *req)
 
 	talloc_free(async);
 }
+
+_PUBLIC_ NTSTATUS ntvfs_handle_new(struct ntvfs_module_context *ntvfs,
+				   struct ntvfs_request *req,
+				   struct ntvfs_handle **h)
+{
+	return ntvfs->ctx->handles.create_new(ntvfs->ctx->handles.private_data, req, h);
+}
+
+_PUBLIC_ NTSTATUS ntvfs_handle_set_backend_data(struct ntvfs_handle *h,
+						struct ntvfs_module_context *ntvfs,
+						TALLOC_CTX *private_data)
+{
+	struct ntvfs_handle_data *d;
+	BOOL first_time = h->backend_data?False:True;
+
+	for (d=h->backend_data; d; d = d->next) {
+		if (d->owner != ntvfs) continue;
+		d->private_data = talloc_steal(d, private_data);
+		return NT_STATUS_OK;
+	}
+
+	d = talloc(h, struct ntvfs_handle_data);
+	NT_STATUS_HAVE_NO_MEMORY(d);
+	d->owner = ntvfs;
+	d->private_data = talloc_steal(d, private_data);
+
+	DLIST_ADD(h->backend_data, d);
+
+	if (first_time) {
+		NTSTATUS status;
+		status = h->ctx->handles.make_valid(h->ctx->handles.private_data, h);
+		NT_STATUS_NOT_OK_RETURN(status);
+	}
+
+	return NT_STATUS_OK;
+}
+
+_PUBLIC_ void *ntvfs_handle_get_backend_data(struct ntvfs_handle *h,
+					     struct ntvfs_module_context *ntvfs)
+{
+	struct ntvfs_handle_data *d;
+
+	for (d=h->backend_data; d; d = d->next) {
+		if (d->owner != ntvfs) continue;
+		return d->private_data;
+	}
+
+	return NULL;
+}
+
+_PUBLIC_ void ntvfs_handle_remove_backend_data(struct ntvfs_handle *h,
+					       struct ntvfs_module_context *ntvfs)
+{
+	struct ntvfs_handle_data *d,*n;
+
+	for (d=h->backend_data; d; d = n) {
+		n = d->next;
+		if (d->owner != ntvfs) continue;
+		DLIST_REMOVE(h->backend_data, d);
+		talloc_free(d);
+		d = NULL;
+	}
+
+	if (h->backend_data) return;
+
+	/* if there's no backend_data anymore, destroy the handle */
+	h->ctx->handles.destroy(h->ctx->handles.private_data, h);
+}
+
+_PUBLIC_ struct ntvfs_handle *ntvfs_handle_search_by_wire_key(struct ntvfs_module_context *ntvfs,
+							      struct ntvfs_request *req,
+							      const DATA_BLOB *key)
+{
+	return ntvfs->ctx->handles.search_by_wire_key(ntvfs->ctx->handles.private_data, req, key);
+}
+
+_PUBLIC_ DATA_BLOB ntvfs_handle_get_wire_key(struct ntvfs_handle *h, TALLOC_CTX *mem_ctx)
+{
+	return h->ctx->handles.get_wire_key(h->ctx->handles.private_data, h, mem_ctx);
+}
+
+_PUBLIC_ NTSTATUS ntvfs_set_handle_callbacks(struct ntvfs_context *ntvfs,
+					     NTSTATUS (*create_new)(void *private_data, struct ntvfs_request *req, struct ntvfs_handle **h),
+					     NTSTATUS (*make_valid)(void *private_data, struct ntvfs_handle *h),
+					     void (*destroy)(void *private_data, struct ntvfs_handle *h),
+					     struct ntvfs_handle *(*search_by_wire_key)(void *private_data, struct ntvfs_request *req, const DATA_BLOB *key),
+					     DATA_BLOB (*get_wire_key)(void *private_data, struct ntvfs_handle *handle, TALLOC_CTX *mem_ctx),
+					     void *private_data)
+{
+	ntvfs->handles.create_new		= create_new;
+	ntvfs->handles.make_valid		= make_valid;
+	ntvfs->handles.destroy			= destroy;
+	ntvfs->handles.search_by_wire_key	= search_by_wire_key;
+	ntvfs->handles.get_wire_key		= get_wire_key;
+	ntvfs->handles.private_data		= private_data;
+	return NT_STATUS_OK;
+}

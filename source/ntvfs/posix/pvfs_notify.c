@@ -203,7 +203,7 @@ NTSTATUS pvfs_notify(struct ntvfs_module_context *ntvfs,
 	NTSTATUS status;
 	struct notify_pending *pending;
 
-	f = pvfs_find_fd(pvfs, req, info->in.file.fnum);
+	f = pvfs_find_fd(pvfs, req, info->in.file.ntvfs);
 	if (!f) {
 		return NT_STATUS_INVALID_HANDLE;
 	}

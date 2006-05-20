@@ -336,7 +336,7 @@ NTSTATUS pvfs_qfileinfo(struct ntvfs_module_context *ntvfs,
 	NTSTATUS status;
 	uint32_t access_needed;
 
-	f = pvfs_find_fd(pvfs, req, info->generic.in.file.fnum);
+	f = pvfs_find_fd(pvfs, req, info->generic.in.file.ntvfs);
 	if (!f) {
 		return NT_STATUS_INVALID_HANDLE;
 	}

@@ -262,7 +262,7 @@ NTSTATUS pvfs_setfileinfo(struct ntvfs_module_context *ntvfs,
 	uint32_t access_needed;
 	uint32_t change_mask = 0;
 
-	f = pvfs_find_fd(pvfs, req, info->generic.in.file.fnum);
+	f = pvfs_find_fd(pvfs, req, info->generic.in.file.ntvfs);
 	if (!f) {
 		return NT_STATUS_INVALID_HANDLE;
 	}

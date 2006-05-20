@@ -75,7 +75,7 @@ static NTSTATUS nttrans_create_send(struct nttrans_op *op)
 	params = op->trans->out.params.data;
 
 	SSVAL(params,        0, io->ntcreatex.out.oplock_level);
-	SSVAL(params,        2, io->ntcreatex.out.file.fnum);
+	smbsrv_push_fnum(params, 2, io->ntcreatex.out.file.ntvfs);
 	SIVAL(params,        4, io->ntcreatex.out.create_action);
 	SIVAL(params,        8, 0); /* ea error offset */
 	push_nttime(params, 12, io->ntcreatex.out.create_time);
@@ -230,12 +230,13 @@ static NTSTATUS nttrans_query_sec_desc(struct smbsrv_request *req,
 	NT_STATUS_HAVE_NO_MEMORY(io);
 
 	io->query_secdesc.level            = RAW_FILEINFO_SEC_DESC;
-	io->query_secdesc.in.file.fnum     = SVAL(trans->in.params.data, 0);
+	io->query_secdesc.in.file.ntvfs    = smbsrv_pull_fnum(req, trans->in.params.data, 0);
 	io->query_secdesc.in.secinfo_flags = IVAL(trans->in.params.data, 4);
 
 	op->op_info = io;
 	op->send_fn = nttrans_query_sec_desc_send;
 
+	SMBSRV_CHECK_FILE_HANDLE_NTSTATUS(io->query_secdesc.in.file.ntvfs);
 	return ntvfs_qfileinfo(req->ntvfs, io);
 }
 
@@ -259,7 +260,7 @@ static NTSTATUS nttrans_set_sec_desc(struct smbsrv_request *req,
 	NT_STATUS_HAVE_NO_MEMORY(io);
 
 	io->set_secdesc.level            = RAW_SFILEINFO_SEC_DESC;
-	io->set_secdesc.in.file.fnum     = SVAL(trans->in.params.data, 0);
+	io->set_secdesc.in.file.ntvfs    = smbsrv_pull_fnum(req, trans->in.params.data, 0);
 	io->set_secdesc.in.secinfo_flags = IVAL(trans->in.params.data, 4);
 
 	io->set_secdesc.in.sd = talloc(io, struct security_descriptor);
@@ -270,6 +271,7 @@ static NTSTATUS nttrans_set_sec_desc(struct smbsrv_request *req,
 				      (ndr_pull_flags_fn_t)ndr_pull_security_descriptor);
 	NT_STATUS_NOT_OK_RETURN(status);
 
+	SMBSRV_CHECK_FILE_HANDLE_NTSTATUS(io->set_secdesc.in.file.ntvfs);
 	return ntvfs_setfileinfo(req->ntvfs, io);
 }
 
@@ -304,6 +306,7 @@ static NTSTATUS nttrans_ioctl_send(struct nttrans_op *op)
 	return NT_STATUS_OK;
 }
 
+
 /* 
    parse NTTRANS_IOCTL request
  */
@@ -323,7 +326,7 @@ static NTSTATUS nttrans_ioctl(struct smbsrv_request *req,
 	
 	nt->ntioctl.level		= RAW_IOCTL_NTIOCTL;
 	nt->ntioctl.in.function		= IVAL(trans->in.setup, 0);
-	nt->ntioctl.in.file.fnum	= SVAL(trans->in.setup, 4);
+	nt->ntioctl.in.file.ntvfs	= smbsrv_pull_fnum(req, (uint8_t *)trans->in.setup, 4);
 	nt->ntioctl.in.fsctl		= CVAL(trans->in.setup, 6);
 	nt->ntioctl.in.filter		= CVAL(trans->in.setup, 7);
 	nt->ntioctl.in.max_data		= trans->in.max_data;
@@ -332,6 +335,7 @@ static NTSTATUS nttrans_ioctl(struct smbsrv_request *req,
 	op->op_info = nt;
 	op->send_fn = nttrans_ioctl_send;
 
+	SMBSRV_CHECK_FILE_HANDLE_NTSTATUS(nt->ntioctl.in.file.ntvfs);
 	return ntvfs_ioctl(req->ntvfs, nt);
 }
 
@@ -408,13 +412,14 @@ static NTSTATUS nttrans_notify_change(struct smbsrv_request *req,
 	NT_STATUS_HAVE_NO_MEMORY(info);
 
 	info->in.completion_filter = IVAL(trans->in.setup, 0);
-	info->in.file.fnum         = SVAL(trans->in.setup, 4);
+	info->in.file.ntvfs        = smbsrv_pull_fnum(req, (uint8_t *)trans->in.setup, 4);
 	info->in.recursive         = SVAL(trans->in.setup, 6);
 	info->in.buffer_size       = trans->in.max_param;
 
 	op->op_info = info;
 	op->send_fn = nttrans_notify_change_send;
 	
+	SMBSRV_CHECK_FILE_HANDLE_NTSTATUS(info->in.file.ntvfs);
 	return ntvfs_notify(req->ntvfs, info);
 }
 

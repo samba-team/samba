@@ -19,6 +19,10 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
+
+/* this module needs to be converted to use ntvfs_handle's! */
+#define fnum _XXX_use_ntvfs_handle_not_fnum_XXX_
+
 /*
   this implements a very simple NTVFS filesystem backend. 
   

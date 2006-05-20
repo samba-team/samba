@@ -32,15 +32,11 @@
 #include "ntvfs/ipc/proto.h"
 #include "rpc_server/dcerpc_server.h"
 
-#define IPC_BASE_FNUM 0x400
-
 /* this is the private structure used to keep the state of an open
    ipc$ connection. It needs to keep information about all open
    pipes */
 struct ipc_private {
 	struct ntvfs_module_context *ntvfs;
-
-	struct idr_context *idtree_fnum;
 
 	struct dcesrv_context *dcesrv;
 
@@ -49,39 +45,41 @@ struct ipc_private {
 		struct pipe_state *next, *prev;
 		struct ipc_private *private;
 		const char *pipe_name;
-		uint16_t fnum;
+		struct ntvfs_handle *handle;
 		struct dcesrv_connection *dce_conn;
 		uint16_t ipc_state;
-		/* we need to remember the session it was opened on,
-		   as it is illegal to operate on someone elses fnum */
-		struct auth_session_info *session_info;
-
-		/* we need to remember the client pid that 
-		   opened the file so SMBexit works */
-		uint16_t smbpid;
 	} *pipe_list;
 };
 
 
 /*
-  find a open pipe give a file descriptor
+  find a open pipe give a file handle
 */
-static struct pipe_state *pipe_state_find(struct ipc_private *private, uint16_t fnum,
-					  struct auth_session_info *session_info)
+static struct pipe_state *pipe_state_find(struct ipc_private *private, struct ntvfs_handle *handle)
 {
 	struct pipe_state *s;
 	void *p;
 
-	p = idr_find(private->idtree_fnum, fnum);
+	p = ntvfs_handle_get_backend_data(handle, private->ntvfs);
 	if (!p) return NULL;
 
 	s = talloc_get_type(p, struct pipe_state);
-
-	if (s->session_info != session_info) {
-		return NULL;
-	}
+	if (!s) return NULL;
 
 	return s;
+}
+
+/*
+  find a open pipe give a wire fnum
+*/
+static struct pipe_state *pipe_state_find_key(struct ipc_private *private, struct ntvfs_request *req, const DATA_BLOB *key)
+{
+	struct ntvfs_handle *h;
+
+	h = ntvfs_handle_search_by_wire_key(private->ntvfs, req, key);
+	if (!h) return NULL;
+
+	return pipe_state_find(private, h);
 }
 
 
@@ -108,9 +106,6 @@ static NTSTATUS ipc_connect(struct ntvfs_module_context *ntvfs,
 
 	private->ntvfs = ntvfs;
 	private->pipe_list = NULL;
-
-	private->idtree_fnum = idr_init(private);
-	NT_STATUS_HAVE_NO_MEMORY(private->idtree_fnum);
 
 	/* setup the DCERPC server subsystem */
 	status = dcesrv_init_ipc_context(private, &private->dcesrv);
@@ -182,7 +177,6 @@ static NTSTATUS ipc_setpathinfo(struct ntvfs_module_context *ntvfs,
 static int ipc_fd_destructor(void *ptr)
 {
 	struct pipe_state *p = ptr;
-	idr_remove(p->private->idtree_fnum, p->fnum);
 	DLIST_REMOVE(p->private->pipe_list, p);
 	return 0;
 }
@@ -212,9 +206,12 @@ static NTSTATUS ipc_open_generic(struct ntvfs_module_context *ntvfs,
 	NTSTATUS status;
 	struct dcerpc_binding *ep_description;
 	struct ipc_private *private = ntvfs->private_data;
-	int fnum;
+	struct ntvfs_handle *h;
 
-	p = talloc(req, struct pipe_state);
+	status = ntvfs_handle_new(ntvfs, req, &h);
+	NT_STATUS_NOT_OK_RETURN(status);
+
+	p = talloc(h, struct pipe_state);
 	NT_STATUS_HAVE_NO_MEMORY(p);
 
 	ep_description = talloc(req, struct dcerpc_binding);
@@ -225,12 +222,7 @@ static NTSTATUS ipc_open_generic(struct ntvfs_module_context *ntvfs,
 	p->pipe_name = talloc_asprintf(p, "\\pipe\\%s", fname);
 	NT_STATUS_HAVE_NO_MEMORY(p->pipe_name);
 
-	fnum = idr_get_new_above(private->idtree_fnum, p, IPC_BASE_FNUM, UINT16_MAX);
-	if (fnum == -1) {
-		return NT_STATUS_TOO_MANY_OPENED_FILES;
-	}
-
-	p->fnum = fnum;
+	p->handle = h;
 	p->ipc_state = 0x5ff;
 
 	/*
@@ -248,14 +240,11 @@ static NTSTATUS ipc_open_generic(struct ntvfs_module_context *ntvfs,
 	status = dcesrv_endpoint_search_connect(private->dcesrv,
 						p,
 						ep_description, 
-						req->session_info,
+						h->session_info,
 						ntvfs->ctx->event_ctx,
 						0,
 						&p->dce_conn);
-	if (!NT_STATUS_IS_OK(status)) {
-		idr_remove(private->idtree_fnum, p->fnum);
-		return status;
-	}
+	NT_STATUS_NOT_OK_RETURN(status);
 
 	p->dce_conn->transport.private_data		= private;
 	p->dce_conn->transport.report_output_data	= NULL;
@@ -264,16 +253,14 @@ static NTSTATUS ipc_open_generic(struct ntvfs_module_context *ntvfs,
 	
 	DLIST_ADD(private->pipe_list, p);
 
-	p->smbpid = req->smbpid;
-	p->session_info = req->session_info;
 	p->private = private;
-
-	*ps = p;
-
-	talloc_steal(private, p);
 
 	talloc_set_destructor(p, ipc_fd_destructor);
 
+	status = ntvfs_handle_set_backend_data(h, private->ntvfs, p);
+	NT_STATUS_NOT_OK_RETURN(status);
+
+	*ps = p;
 	return NT_STATUS_OK;
 }
 
@@ -292,7 +279,7 @@ static NTSTATUS ipc_open_ntcreatex(struct ntvfs_module_context *ntvfs,
 	}
 
 	ZERO_STRUCT(oi->ntcreatex.out);
-	oi->ntcreatex.out.file.fnum = p->fnum;
+	oi->ntcreatex.out.file.ntvfs= p->handle;
 	oi->ntcreatex.out.ipc_state = p->ipc_state;
 	oi->ntcreatex.out.file_type = FILE_TYPE_MESSAGE_MODE_PIPE;
 
@@ -315,7 +302,7 @@ static NTSTATUS ipc_open_openx(struct ntvfs_module_context *ntvfs,
 	}
 
 	ZERO_STRUCT(oi->openx.out);
-	oi->openx.out.file.fnum	= p->fnum;
+	oi->openx.out.file.ntvfs= p->handle;
 	oi->openx.out.ftype	= 2;
 	oi->openx.out.devstate	= p->ipc_state;
 	
@@ -401,7 +388,6 @@ static NTSTATUS ipc_read(struct ntvfs_module_context *ntvfs,
 {
 	struct ipc_private *private = ntvfs->private_data;
 	DATA_BLOB data;
-	uint16_t fnum;
 	struct pipe_state *p;
 	NTSTATUS status = NT_STATUS_OK;
 
@@ -409,9 +395,7 @@ static NTSTATUS ipc_read(struct ntvfs_module_context *ntvfs,
 		return ntvfs_map_read(ntvfs, req, rd);
 	}
 
-	fnum = rd->readx.in.file.fnum;
-
-	p = pipe_state_find(private, fnum, req->session_info);
+	p = pipe_state_find(private, rd->readx.in.file.ntvfs);
 	if (!p) {
 		return NT_STATUS_INVALID_HANDLE;
 	}
@@ -444,7 +428,6 @@ static NTSTATUS ipc_write(struct ntvfs_module_context *ntvfs,
 {
 	struct ipc_private *private = ntvfs->private_data;
 	DATA_BLOB data;
-	uint16_t fnum;
 	struct pipe_state *p;
 	NTSTATUS status;
 
@@ -452,11 +435,10 @@ static NTSTATUS ipc_write(struct ntvfs_module_context *ntvfs,
 		return ntvfs_map_write(ntvfs, req, wr);
 	}
 
-	fnum = wr->writex.in.file.fnum;
 	data.data = discard_const_p(void, wr->writex.in.data);
 	data.length = wr->writex.in.count;
 
-	p = pipe_state_find(private, fnum, req->session_info);
+	p = pipe_state_find(private, wr->writex.in.file.ntvfs);
 	if (!p) {
 		return NT_STATUS_INVALID_HANDLE;
 	}
@@ -505,7 +487,7 @@ static NTSTATUS ipc_close(struct ntvfs_module_context *ntvfs,
 		return ntvfs_map_close(ntvfs, req, io);
 	}
 
-	p = pipe_state_find(private, io->close.in.file.fnum, req->session_info);
+	p = pipe_state_find(private, io->close.in.file.ntvfs);
 	if (!p) {
 		return NT_STATUS_INVALID_HANDLE;
 	}
@@ -526,8 +508,8 @@ static NTSTATUS ipc_exit(struct ntvfs_module_context *ntvfs,
 	
 	for (p=private->pipe_list; p; p=next) {
 		next = p->next;
-		if (p->session_info == req->session_info &&
-		    p->smbpid == req->smbpid) {
+		if (p->handle->session_info == req->session_info &&
+		    p->handle->smbpid == req->smbpid) {
 			talloc_free(p);
 		}
 	}
@@ -546,7 +528,7 @@ static NTSTATUS ipc_logoff(struct ntvfs_module_context *ntvfs,
 	
 	for (p=private->pipe_list; p; p=next) {
 		next = p->next;
-		if (p->session_info == req->session_info) {
+		if (p->handle->session_info == req->session_info) {
 			talloc_free(p);
 		}
 	}
@@ -674,9 +656,12 @@ static NTSTATUS ipc_dcerpc_cmd(struct ntvfs_module_context *ntvfs,
 	struct pipe_state *p;
 	struct ipc_private *private = ntvfs->private_data;
 	NTSTATUS status;
+	DATA_BLOB fnum_key;
 
 	/* the fnum is in setup[1] */
-	p = pipe_state_find(private, trans->in.setup[1], req->session_info);
+	fnum_key = data_blob_const(&trans->in.setup[1], sizeof(trans->in.setup[1]));
+
+	p = pipe_state_find_key(private, req, &fnum_key);
 	if (!p) {
 		return NT_STATUS_INVALID_HANDLE;
 	}
@@ -715,13 +700,16 @@ static NTSTATUS ipc_dcerpc_cmd(struct ntvfs_module_context *ntvfs,
 
 /* SMBtrans - set named pipe state */
 static NTSTATUS ipc_set_nm_pipe_state(struct ntvfs_module_context *ntvfs,
-				struct ntvfs_request *req, struct smb_trans2 *trans)
+				      struct ntvfs_request *req, struct smb_trans2 *trans)
 {
 	struct ipc_private *private = ntvfs->private_data;
 	struct pipe_state *p;
+	DATA_BLOB fnum_key;
 
 	/* the fnum is in setup[1] */
-	p = pipe_state_find(private, trans->in.setup[1], req->session_info);
+	fnum_key = data_blob_const(&trans->in.setup[1], sizeof(trans->in.setup[1]));
+
+	p = pipe_state_find_key(private, req, &fnum_key);
 	if (!p) {
 		return NT_STATUS_INVALID_HANDLE;
 	}

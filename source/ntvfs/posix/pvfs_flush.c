@@ -48,7 +48,7 @@ NTSTATUS pvfs_flush(struct ntvfs_module_context *ntvfs,
 
 	switch (io->generic.level) {
 	case RAW_FLUSH_FLUSH:
-		f = pvfs_find_fd(pvfs, req, io->flush.in.file.fnum);
+		f = pvfs_find_fd(pvfs, req, io->flush.in.file.ntvfs);
 		if (!f) {
 			return NT_STATUS_INVALID_HANDLE;
 		}
