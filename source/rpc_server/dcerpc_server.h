@@ -178,6 +178,12 @@ struct dcesrv_connection {
 	/* the event_context that will be used for this connection */
 	struct event_context *event_ctx;
 
+	/* the message_context that will be used for this connection */
+	struct messaging_context *msg_ctx;
+
+	/* the server_id that will be used for this connection */
+	uint32_t server_id;
+
 	/* the transport level session key */
 	DATA_BLOB transport_session_key;
 

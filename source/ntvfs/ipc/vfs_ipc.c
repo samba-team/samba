@@ -242,6 +242,8 @@ static NTSTATUS ipc_open_generic(struct ntvfs_module_context *ntvfs,
 						ep_description, 
 						h->session_info,
 						ntvfs->ctx->event_ctx,
+						ntvfs->ctx->msg_ctx,
+						ntvfs->ctx->server_id,
 						0,
 						&p->dce_conn);
 	NT_STATUS_NOT_OK_RETURN(status);
