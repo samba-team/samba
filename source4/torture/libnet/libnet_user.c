@@ -219,6 +219,7 @@ BOOL torture_createuser(struct torture_context *torture)
 
 	req.in.user_name = TEST_USERNAME;
 	req.in.domain_name = lp_workgroup();
+	req.out.error_string = NULL;
 
 	status = libnet_CreateUser(ctx, mem_ctx, &req);
 	if (!NT_STATUS_IS_OK(status)) {
