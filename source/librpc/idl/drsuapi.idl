@@ -7,7 +7,8 @@
   authservice("ldap"),
   helpstring("Active Directory Replication"),
   pointer_default(unique),
-  depends(security,misc)
+  depends(security,misc),
+  keepref
 ] 
 interface drsuapi
 {

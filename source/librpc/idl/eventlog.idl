@@ -7,7 +7,8 @@
   version(0.0),
   depends(lsa,security),
   pointer_default(unique),
-  helpstring("Event Logger")
+  helpstring("Event Logger"),
+  keepref
 ] interface eventlog
 {
 	typedef bitmap {

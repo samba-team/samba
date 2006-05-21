@@ -9,7 +9,8 @@
   version(1.0),
   endpoint("ncacn_np:[\\pipe\\InitShutdown]"),
   pointer_default(unique),
-  helpstring("Init shutdown service")
+  helpstring("Init shutdown service"),
+  keepref
 ] interface initshutdown
 {
 	typedef struct {

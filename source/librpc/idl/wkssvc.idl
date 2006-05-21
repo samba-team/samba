@@ -7,7 +7,8 @@
   pointer_default(unique),
   pointer_default_top(unique),
   helpstring("Workstation Service"),
-  depends(srvsvc)
+  depends(srvsvc),
+  keepref
 ] interface wkssvc
 {
 	declare [v1_enum] enum srvsvc_PlatformId;

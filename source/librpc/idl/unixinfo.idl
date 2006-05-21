@@ -7,7 +7,8 @@
   endpoint("ncacn_np:[\\pipe\\unixinfo]", "ncacn_ip_tcp:", "ncalrpc:"),
   pointer_default(unique),
   helpstring("Unixinfo specific stuff"),
-  depends(security)
+  depends(security),
+  keepref
 ] interface unixinfo
 {
 	/******************/
