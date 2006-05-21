@@ -186,6 +186,10 @@ static void cldap_dump_results(struct cldap_search *search)
 	struct ldb_ldif ldif;
 	struct ldb_context *ldb;
 
+	if (!search || !(search->out.response)) {
+		return;
+	}
+
 	/* we need a ldb context to use ldb_ldif_write_file() */
 	ldb = ldb_init(NULL);
 
