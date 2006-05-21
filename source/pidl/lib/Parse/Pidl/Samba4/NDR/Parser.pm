@@ -103,7 +103,7 @@ sub get_value_of($)
 }
 
 my $res;
-my $deferred = "";
+my $deferred = [];
 my $tabs = "";
 
 ####################################
@@ -128,14 +128,16 @@ sub pidl_hdr ($) { my $d = shift; $res_hdr .= "$d\n"; }
 # output buffer at the end of the structure/union/function
 # This is needed to cope with code that must be pushed back
 # to the end of a block of elements
+my $defer_tabs = "";
+sub defer_indent() { $defer_tabs.="\t"; }
+sub defer_deindent() { $defer_tabs=substr($defer_tabs, 0, -1); }
+
 sub defer($)
 {
 	my $d = shift;
 	if ($d) {
-		$deferred .= $tabs;
-		$deferred .= $d;
+		push(@$deferred, $defer_tabs.$d);
 	}
-	$deferred .="\n";
 }
 
 ########################################
@@ -143,8 +145,9 @@ sub defer($)
 # output
 sub add_deferred()
 {
-	$res .= $deferred;
-	$deferred = "";
+	pidl $_ foreach (@$deferred);
+	$deferred = [];
+	$defer_tabs = "";
 }
 
 sub indent()
@@ -370,16 +373,20 @@ sub ParseArrayPullHeader($$$$$)
 	if ($l->{IS_CONFORMANT} and not $l->{IS_ZERO_TERMINATED}) {
 		my $size = ParseExpr($l->{SIZE_IS}, $env);
 		defer "if ($var_name) {";
+		defer_indent;
 		check_null_pointer_deferred($size);
 		defer "NDR_CHECK(ndr_check_array_size(ndr, (void*)" . get_pointer_to($var_name) . ", $size));";
+		defer_deindent;
 		defer "}";
 	}
 
 	if ($l->{IS_VARYING} and not $l->{IS_ZERO_TERMINATED}) {
 		my $length = ParseExpr($l->{LENGTH_IS}, $env);
 		defer "if ($var_name) {";
+		defer_indent;
 		check_null_pointer_deferred($length);
 		defer "NDR_CHECK(ndr_check_array_length(ndr, (void*)" . get_pointer_to($var_name) . ", $length));";
+		defer_deindent;
 		defer "}"
 	}
 
