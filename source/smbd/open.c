@@ -1071,7 +1071,7 @@ static void schedule_defer_open(struct share_mode_lock *lck, struct timeval requ
  Open a file with a share mode.
 ****************************************************************************/
 
-files_struct *open_file_ntcreate(connection_struct *conn,
+NTSTATUS open_file_ntcreate(connection_struct *conn,
 				 const char *fname,
 				 SMB_STRUCT_STAT *psbuf,
 				 uint32 access_mask,		/* access bits (FILE_READ_DATA etc.) */
@@ -1081,7 +1081,8 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 				 uint32 new_dos_attributes,	/* attributes used for new file. */
 				 int oplock_request, 		/* internal Samba oplock codes. */
 				 				/* Information (FILE_EXISTS etc.) */
-				 int *pinfo)
+				 int *pinfo,
+				 files_struct **result)
 {
 	int flags=0;
 	int flags2=0;
@@ -1115,11 +1116,7 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 
 		DEBUG(10, ("open_file_ntcreate: printer open fname=%s\n", fname));
 
-		status = print_fsp_open(conn, fname, &fsp);
-		if (!NT_STATUS_IS_OK(status)) {
-			set_saved_ntstatus(status);
-		}
-		return fsp;
+		return print_fsp_open(conn, fname, &fsp);
 	}
 
 	/* We add aARCH to this as this mode is only used if the file is
@@ -1164,7 +1161,7 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 	}
 
 	if (!check_name(fname,conn)) {
-		return NULL;
+		return map_nt_error_from_unix(errno);
 	} 
 
 	new_dos_attributes &= SAMBA_ATTRIBUTES_MASK;
@@ -1182,14 +1179,12 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 	if (!lp_posix_pathnames() && strstr(fname,".+,;=[].")) {
 		/* OS/2 Workplace shell fix may be main code stream in a later
 		 * release. */ 
-		if (use_nt_status()) {
-			set_saved_ntstatus(NT_STATUS_OBJECT_NAME_NOT_FOUND);
-		} else {
-			set_saved_ntstatus(NT_STATUS_DOS(ERRDOS, ERRcannotopen));
-		}
 		DEBUG(5,("open_file_ntcreate: OS/2 long filenames are not "
 			 "supported.\n"));
-		return NULL;
+		if (use_nt_status()) {
+			return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+		}
+		return NT_STATUS_DOS(ERRDOS, ERRcannotopen);
 	}
 
 	switch( create_disposition ) {
@@ -1217,9 +1212,8 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 				DEBUG(5,("open_file_ntcreate: FILE_OPEN "
 					 "requested for file %s and file "
 					 "doesn't exist.\n", fname ));
-				set_saved_ntstatus(NT_STATUS_OBJECT_NAME_NOT_FOUND);
 				errno = ENOENT;
-				return NULL;
+				return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 			}
 			break;
 
@@ -1230,9 +1224,8 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 				DEBUG(5,("open_file_ntcreate: FILE_OVERWRITE "
 					 "requested for file %s and file "
 					 "doesn't exist.\n", fname ));
-				set_saved_ntstatus(NT_STATUS_OBJECT_NAME_NOT_FOUND);
 				errno = ENOENT;
-				return NULL;
+				return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 			}
 			flags2 |= O_TRUNC;
 			break;
@@ -1249,7 +1242,7 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 				} else {
 					errno = EEXIST;
 				}
-				return NULL;
+				return map_nt_error_from_unix(errno);
 			}
 			flags2 |= (O_CREAT|O_EXCL);
 			break;
@@ -1261,8 +1254,7 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 			break;
 
 		default:
-			set_saved_ntstatus(NT_STATUS_INVALID_PARAMETER);
-			return NULL;
+			return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	/* We only care about matching attributes on file exists and
@@ -1281,7 +1273,7 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 				 (unsigned int)psbuf->st_mode,
 				 (unsigned int)unx_mode ));
 			errno = EACCES;
-			return NULL;
+			return NT_STATUS_ACCESS_DENIED;
 		}
 	}
 
@@ -1338,15 +1330,13 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 		DEBUG(5,("open_file_ntcreate: write access requested for "
 			 "file %s on read only %s\n",
 			 fname, !CAN_WRITE(conn) ? "share" : "file" ));
-		set_saved_ntstatus(NT_STATUS_ACCESS_DENIED);
 		errno = EACCES;
-		return NULL;
+		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	status = file_new(conn, &fsp);
 	if(!NT_STATUS_IS_OK(status)) {
-		set_saved_ntstatus(status);
-		return NULL;
+		return status;
 	}
 
 	fsp->dev = psbuf->st_dev;
@@ -1370,15 +1360,14 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 
 		if (lck == NULL) {
 			DEBUG(0, ("Could not get share mode lock\n"));
-			set_saved_ntstatus(NT_STATUS_SHARING_VIOLATION);
-			return NULL;
+			return NT_STATUS_SHARING_VIOLATION;
 		}
 
 		/* First pass - send break only on batch oplocks. */
 		if (delay_for_oplocks(lck, fsp, 1)) {
 			schedule_defer_open(lck, request_time);
 			TALLOC_FREE(lck);
-			return NULL;
+			return NT_STATUS_SHARING_VIOLATION;
 		}
 
 		status = open_mode_check(conn, fname, lck,
@@ -1391,16 +1380,15 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 			if (delay_for_oplocks(lck, fsp, 2)) {
 				schedule_defer_open(lck, request_time);
 				TALLOC_FREE(lck);
-				return NULL;
+				return NT_STATUS_SHARING_VIOLATION;
 			}
 		}
 
 		if (NT_STATUS_EQUAL(status, NT_STATUS_DELETE_PENDING)) {
 			/* DELETE_PENDING is not deferred for a second */
-			set_saved_ntstatus(status);
 			TALLOC_FREE(lck);
 			file_free(fsp);
-			return NULL;
+			return status;
 		}
 
 		if (!NT_STATUS_IS_OK(status)) {
@@ -1425,7 +1413,8 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 						*pinfo = FILE_WAS_OPENED;
 					}
 					conn->num_files_open++;
-					return fsp_dup;
+					*result = fsp_dup;
+					return NT_STATUS_OK;
 				}
 			}
 
@@ -1456,7 +1445,7 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 
 			if (!NT_STATUS_IS_OK(fsp_open) && errno) {
 				/* Default error. */
-				set_saved_ntstatus(NT_STATUS_ACCESS_DENIED);
+				fsp_open = NT_STATUS_ACCESS_DENIED;
 			}
 
 			/* 
@@ -1509,10 +1498,10 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 				 * We have detected a sharing violation here
 				 * so return the correct error code
 				 */
-				set_saved_ntstatus(NT_STATUS_SHARING_VIOLATION);
+				return NT_STATUS_SHARING_VIOLATION;
 			}
 			file_free(fsp);
-			return NULL;
+			return fsp_open;
 		}
 
 		/*
@@ -1548,8 +1537,7 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 			TALLOC_FREE(lck);
 		}
 		file_free(fsp);
-		set_saved_ntstatus(status);
-		return NULL;
+		return fsp_open;
 	}
 
 	if (!file_existed) { 
@@ -1580,8 +1568,7 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 			DEBUG(0, ("open_file_ntcreate: Could not get share mode lock for %s\n", fname));
 			fd_close(conn, fsp);
 			file_free(fsp);
-			set_saved_ntstatus(NT_STATUS_SHARING_VIOLATION);
-			return NULL;
+			return NT_STATUS_SHARING_VIOLATION;
 		}
 
 		status = open_mode_check(conn, fname, lck,
@@ -1608,7 +1595,7 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 			defer_open(lck, request_time, timeval_zero(),
 				   &state);
 			TALLOC_FREE(lck);
-			return NULL;
+			return status;
 		}
 
 		/*
@@ -1644,10 +1631,11 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 		 */
 		if ((SMB_VFS_FTRUNCATE(fsp,fsp->fh->fd,0) == -1) ||
 		    (SMB_VFS_FSTAT(fsp,fsp->fh->fd,psbuf)==-1)) {
+			status = map_nt_error_from_unix(errno);
 			TALLOC_FREE(lck);
 			fd_close(conn,fsp);
 			file_free(fsp);
-			return NULL;
+			return status;
 		}
 	}
 
@@ -1694,16 +1682,15 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 
 		/* Handle strange delete on close create semantics. */
 		if (create_options & FILE_DELETE_ON_CLOSE) {
-			NTSTATUS result = can_set_delete_on_close(fsp, True, new_dos_attributes);
+			status = can_set_delete_on_close(fsp, True, new_dos_attributes);
 
-			if (!NT_STATUS_IS_OK(result)) {
+			if (!NT_STATUS_IS_OK(status)) {
 				/* Remember to delete the mode we just added. */
 				del_share_mode(lck, fsp);
 				TALLOC_FREE(lck);
 				fd_close(conn,fsp);
 				file_free(fsp);
-				set_saved_ntstatus(result);
-				return NULL;
+				return status;
 			}
 			/* Note that here we set the *inital* delete on close flag,
 			   not the regular one. */
@@ -1772,7 +1759,8 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 
 	conn->num_files_open++;
 
-	return fsp;
+	*result = fsp;
+	return NT_STATUS_OK;
 }
 
 /****************************************************************************
@@ -1828,14 +1816,15 @@ int close_file_fchmod(files_struct *fsp)
  Open a directory from an NT SMB call.
 ****************************************************************************/
 
-files_struct *open_directory(connection_struct *conn,
+NTSTATUS open_directory(connection_struct *conn,
 				const char *fname,
 				SMB_STRUCT_STAT *psbuf,
 				uint32 access_mask,
 				uint32 share_access,
 				uint32 create_disposition,
 				uint32 create_options,
-				int *pinfo)
+				int *pinfo,
+				files_struct **result)
 {
 	files_struct *fsp = NULL;
 	BOOL dir_existed = VALID_STAT(*psbuf) ? True : False;
@@ -1855,8 +1844,7 @@ files_struct *open_directory(connection_struct *conn,
 
 	if (is_ntfs_stream_name(fname)) {
 		DEBUG(0,("open_directory: %s is a stream name!\n", fname ));
-		set_saved_ntstatus(NT_STATUS_NOT_A_DIRECTORY);
-		return NULL;
+		return NT_STATUS_NOT_A_DIRECTORY;
 	}
 
 	switch( create_disposition ) {
@@ -1867,8 +1855,7 @@ files_struct *open_directory(connection_struct *conn,
 				DEBUG(5,("open_directory: FILE_OPEN requested "
 					 "for directory %s and it doesn't "
 					 "exist.\n", fname ));
-				set_saved_ntstatus(NT_STATUS_OBJECT_NAME_NOT_FOUND);
-				return NULL;
+				return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 			}
 			info = FILE_WAS_OPENED;
 			break;
@@ -1881,11 +1868,11 @@ files_struct *open_directory(connection_struct *conn,
 					 "requested for directory %s and it "
 					 "already exists.\n", fname ));
 				if (use_nt_status()) {
-					set_saved_ntstatus(NT_STATUS_OBJECT_NAME_COLLISION);
+					return NT_STATUS_OBJECT_NAME_COLLISION;
 				} else {
-					set_saved_ntstatus(NT_STATUS_DOS(ERRDOS, ERRfilexists));
+					return NT_STATUS_DOS(ERRDOS,
+							     ERRfilexists);
 				}
-				return NULL;
 			}
 			create_dir = True;
 			info = FILE_WAS_CREATED;
@@ -1910,8 +1897,7 @@ files_struct *open_directory(connection_struct *conn,
 				 "0x%x for directory %s\n",
 				 (unsigned int)create_disposition, fname));
 			file_free(fsp);
-			set_saved_ntstatus(NT_STATUS_INVALID_PARAMETER);
-			return NULL;
+			return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	if (create_dir) {
@@ -1928,28 +1914,26 @@ files_struct *open_directory(connection_struct *conn,
 				 "Error was %s\n", fname, strerror(errno) ));
 			/* Ensure we return the correct NT status to the
 			 * client. */
-			set_saved_ntstatus(status);
-			return NULL;
+			return status;
 		}
 
 		/* Ensure we're checking for a symlink here.... */
 		/* We don't want to get caught by a symlink racer. */
 
 		if(SMB_VFS_LSTAT(conn,fname, psbuf) != 0) {
-			return NULL;
+			return map_nt_error_from_unix(errno);
 		}
 
 		if(!S_ISDIR(psbuf->st_mode)) {
 			DEBUG(0,("open_directory: %s is not a directory !\n",
 				 fname ));
-			return NULL;
+			return NT_STATUS_NOT_A_DIRECTORY;
 		}
 	}
 
 	status = file_new(conn, &fsp);
 	if(!NT_STATUS_IS_OK(status)) {
-		set_saved_ntstatus(status);
-		return NULL;
+		return status;
 	}
 
 	/*
@@ -1984,8 +1968,7 @@ files_struct *open_directory(connection_struct *conn,
 	if (lck == NULL) {
 		DEBUG(0, ("open_directory: Could not get share mode lock for %s\n", fname));
 		file_free(fsp);
-		set_saved_ntstatus(NT_STATUS_SHARING_VIOLATION);
-		return NULL;
+		return NT_STATUS_SHARING_VIOLATION;
 	}
 
 	status = open_mode_check(conn, fname, lck,
@@ -1993,10 +1976,9 @@ files_struct *open_directory(connection_struct *conn,
 				create_options, &dir_existed);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		set_saved_ntstatus(status);
 		TALLOC_FREE(lck);
 		file_free(fsp);
-		return NULL;
+		return status;
 	}
 
 	set_share_mode(lck, fsp, 0, NO_OPLOCK);
@@ -2006,10 +1988,9 @@ files_struct *open_directory(connection_struct *conn,
 	if (create_options & FILE_DELETE_ON_CLOSE) {
 		status = can_set_delete_on_close(fsp, True, 0);
 		if (!NT_STATUS_IS_OK(status)) {
-			set_saved_ntstatus(status);
 			TALLOC_FREE(lck);
 			file_free(fsp);
-			return NULL;
+			return status;
 		}
 
 		set_delete_on_close_token(lck, &current_user.ut);
@@ -2030,7 +2011,8 @@ files_struct *open_directory(connection_struct *conn,
 
 	conn->num_files_open++;
 
-	return fsp;
+	*result = fsp;
+	return NT_STATUS_OK;
 }
 
 /****************************************************************************

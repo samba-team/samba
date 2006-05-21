@@ -24,22 +24,6 @@
 extern struct unix_error_map unix_dos_nt_errmap[];
 
 extern uint32 global_client_caps;
-/* these can be set by some functions to override the error codes */
-static NTSTATUS override_ERR_ntstatus;
-
-void set_saved_ntstatus(NTSTATUS status)
-{
-	override_ERR_ntstatus = status;
-}
-
-/****************************************************************************
- Return the current settings of the error triple. Return True if any are set.
-****************************************************************************/
-
-NTSTATUS get_saved_ntstatus(void)
-{
-	return override_ERR_ntstatus;
-}
 
 /****************************************************************************
  Create an error packet from a cached error.
@@ -102,11 +86,6 @@ int error_packet(char *outbuf, uint8 eclass, uint32 ecode, NTSTATUS ntstatus, in
 	int outsize = set_message(outbuf,0,0,True);
 	BOOL force_nt_status = False;
 	BOOL force_dos_status = False;
-
-	if (!NT_STATUS_IS_OK(override_ERR_ntstatus)) {
-		ntstatus = override_ERR_ntstatus;
-		override_ERR_ntstatus = NT_STATUS_OK;
-	}
 
 	if (eclass == (uint8)-1) {
 		force_nt_status = True;

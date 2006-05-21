@@ -832,16 +832,16 @@ static int call_trans2open(connection_struct *conn, char *inbuf, char *outbuf, i
 		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 	}
 
-	fsp = open_file_ntcreate(conn,fname,&sbuf,
+	status = open_file_ntcreate(conn,fname,&sbuf,
 		access_mask,
 		share_mode,
 		create_disposition,
 		create_options,
 		open_attr,
 		oplock_request,
-		&smb_action);
+		&smb_action, &fsp);
       
-	if (!fsp) {
+	if (!NT_STATUS_IS_OK(status)) {
 		talloc_destroy(ctx);
 		if (open_was_deferred(SVAL(inbuf,smb_mid))) {
 			/* We have re-scheduled this call. */
@@ -3994,16 +3994,16 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 				if (fd == -1) {
 					files_struct *new_fsp = NULL;
  
-					new_fsp = open_file_ntcreate(conn, fname, &sbuf,
+					status = open_file_ntcreate(conn, fname, &sbuf,
 									FILE_WRITE_DATA,
 									FILE_SHARE_READ|FILE_SHARE_WRITE,
 									FILE_OPEN,
 									0,
 									FILE_ATTRIBUTE_NORMAL,
 									INTERNAL_OPEN_ONLY,
-									NULL);
+									NULL, &new_fsp);
  
-					if (new_fsp == NULL) {
+					if (!NT_STATUS_IS_OK(status)) {
 						return(UNIXERROR(ERRDOS,ERRbadpath));
 					}
 					ret = vfs_allocate_file_space(new_fsp, allocation_size);
@@ -4634,16 +4634,16 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 		if (fd == -1) {
 			files_struct *new_fsp = NULL;
 
-			new_fsp = open_file_ntcreate(conn, fname, &sbuf,
+			status = open_file_ntcreate(conn, fname, &sbuf,
 						FILE_WRITE_DATA,
 						FILE_SHARE_READ|FILE_SHARE_WRITE,
 						FILE_OPEN,
 						0,
 						FILE_ATTRIBUTE_NORMAL,
 						INTERNAL_OPEN_ONLY,
-						NULL);
+						NULL, &new_fsp);
 	
-			if (new_fsp == NULL) {
+			if (!NT_STATUS_IS_OK(status)) {
 				return(UNIXERROR(ERRDOS,ERRbadpath));
 			}
 			ret = vfs_set_filelen(new_fsp, size);

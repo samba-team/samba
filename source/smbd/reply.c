@@ -1370,22 +1370,22 @@ int reply_open(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
 		return ERROR_NT(NT_STATUS_DOS(ERRDOS, ERRbadaccess));
 	}
 
-	fsp = open_file_ntcreate(conn,fname,&sbuf,
+	status = open_file_ntcreate(conn,fname,&sbuf,
 			access_mask,
 			share_mode,
 			create_disposition,
 			create_options,
 			dos_attr,
 			oplock_request,
-			&info);
+			&info, &fsp);
 
-	if (!fsp) {
+	if (!NT_STATUS_IS_OK(status)) {
 		END_PROFILE(SMBopen);
 		if (open_was_deferred(SVAL(inbuf,smb_mid))) {
 			/* We have re-scheduled this call. */
 			return -1;
 		}
-		return set_bad_path_error(errno, bad_path, outbuf, ERRDOS, ERRnoaccess);
+		return ERROR_NT(status);
 	}
 
 	size = sbuf.st_size;
@@ -1493,22 +1493,22 @@ int reply_open_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 		return ERROR_NT(NT_STATUS_DOS(ERRDOS, ERRbadaccess));
 	}
 
-	fsp = open_file_ntcreate(conn,fname,&sbuf,
+	status = open_file_ntcreate(conn,fname,&sbuf,
 			access_mask,
 			share_mode,
 			create_disposition,
 			create_options,
 			smb_attr,
 			oplock_request,
-			&smb_action);
+			&smb_action, &fsp);
       
-	if (!fsp) {
+	if (!NT_STATUS_IS_OK(status)) {
 		END_PROFILE(SMBopenX);
 		if (open_was_deferred(SVAL(inbuf,smb_mid))) {
 			/* We have re-scheduled this call. */
 			return -1;
 		}
-		return set_bad_path_error(errno, bad_path, outbuf, ERRDOS, ERRnoaccess);
+		return ERROR_NT(status);
 	}
 
 	size = sbuf.st_size;
@@ -1668,22 +1668,22 @@ int reply_mknew(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 	}
 
 	/* Open file using ntcreate. */
-	fsp = open_file_ntcreate(conn,fname,&sbuf,
+	status = open_file_ntcreate(conn,fname,&sbuf,
 				access_mask,
 				share_mode,
 				create_disposition,
 				create_options,
 				fattr,
 				oplock_request,
-				NULL);
+				NULL, &fsp);
   
-	if (!fsp) {
+	if (!NT_STATUS_IS_OK(status)) {
 		END_PROFILE(SMBcreate);
 		if (open_was_deferred(SVAL(inbuf,smb_mid))) {
 			/* We have re-scheduled this call. */
 			return -1;
 		}
-		return set_bad_path_error(errno, bad_path, outbuf, ERRDOS, ERRnoaccess);
+		return ERROR_NT(status);
 	}
  
 	outsize = set_message(outbuf,1,0,True);
@@ -1752,25 +1752,25 @@ int reply_ctemp(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 	SMB_VFS_STAT(conn,fname,&sbuf);
 
 	/* We should fail if file does not exist. */
-	fsp = open_file_ntcreate(conn,fname,&sbuf,
+	status = open_file_ntcreate(conn,fname,&sbuf,
 				FILE_GENERIC_READ | FILE_GENERIC_WRITE,
 				FILE_SHARE_READ|FILE_SHARE_WRITE,
 				FILE_OPEN,
 				0,
 				fattr,
 				oplock_request,
-				NULL);
+				NULL, &fsp);
 
 	/* close fd from smb_mkstemp() */
 	close(tmpfd);
 
-	if (!fsp) {
+	if (!NT_STATUS_IS_OK(status)) {
 		END_PROFILE(SMBctemp);
 		if (open_was_deferred(SVAL(inbuf,smb_mid))) {
 			/* We have re-scheduled this call. */
 			return -1;
 		}
-		return set_bad_path_error(errno, bad_path, outbuf, ERRDOS, ERRnoaccess);
+		return ERROR_NT(status);
 	}
 
 	outsize = set_message(outbuf,1,0,True);
@@ -1818,6 +1818,7 @@ static NTSTATUS can_rename(connection_struct *conn, char *fname, uint16 dirtype,
 {
 	files_struct *fsp;
 	uint32 fmode;
+	NTSTATUS status;
 
 	if (!CAN_WRITE(conn)) {
 		return NT_STATUS_MEDIA_WRITE_PROTECTED;
@@ -1832,25 +1833,16 @@ static NTSTATUS can_rename(connection_struct *conn, char *fname, uint16 dirtype,
 		return NT_STATUS_OK;
 	}
 
-	/* We need a better way to return NT status codes from open... */
-	set_saved_ntstatus(NT_STATUS_OK);
-
-	fsp = open_file_ntcreate(conn, fname, pst,
+	status = open_file_ntcreate(conn, fname, pst,
 				DELETE_ACCESS,
 				FILE_SHARE_READ|FILE_SHARE_WRITE,
 				FILE_OPEN,
 				0,
 				FILE_ATTRIBUTE_NORMAL,
 				0,
-				NULL);
+				NULL, &fsp);
 
-	if (!fsp) {
-		NTSTATUS ret = get_saved_ntstatus();
-		if (!NT_STATUS_IS_OK(ret)) {
-			set_saved_ntstatus(NT_STATUS_OK);
-			return ret;
-		}
-		set_saved_ntstatus(NT_STATUS_OK);
+	if (!NT_STATUS_IS_OK(status)) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
 	close_file(fsp,NORMAL_CLOSE);
@@ -1866,6 +1858,7 @@ NTSTATUS can_delete(connection_struct *conn, char *fname, uint32 dirtype, BOOL b
 	SMB_STRUCT_STAT sbuf;
 	uint32 fattr;
 	files_struct *fsp;
+	NTSTATUS status;
 
 	DEBUG(10,("can_delete: %s, dirtype = %d\n", fname, dirtype ));
 
@@ -1925,26 +1918,17 @@ NTSTATUS can_delete(connection_struct *conn, char *fname, uint32 dirtype, BOOL b
 		/* On open checks the open itself will check the share mode, so
 		   don't do it here as we'll get it wrong. */
 
-		/* We need a better way to return NT status codes from open... */
-		set_saved_ntstatus(NT_STATUS_OK);
-
-		fsp = open_file_ntcreate(conn, fname, &sbuf,
+		status = open_file_ntcreate(conn, fname, &sbuf,
 					DELETE_ACCESS,
 					FILE_SHARE_NONE,
 					FILE_OPEN,
 					0,
 					FILE_ATTRIBUTE_NORMAL,
 					0,
-					NULL);
+					NULL, &fsp);
 
-		if (!fsp) {
-			NTSTATUS ret = get_saved_ntstatus();
-			if (!NT_STATUS_IS_OK(ret)) {
-				set_saved_ntstatus(NT_STATUS_OK);
-				return ret;
-			}
-			set_saved_ntstatus(NT_STATUS_OK);
-			return NT_STATUS_ACCESS_DENIED;
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
 		}
 		close_file(fsp,NORMAL_CLOSE);
 	}
@@ -4745,6 +4729,7 @@ BOOL copy_file(char *src,char *dest1,connection_struct *conn, int ofun,
 	pstring dest;
  	uint32 dosattrs;
 	uint32 new_create_disposition;
+	NTSTATUS status;
  
 	*err_ret = 0;
 
@@ -4773,16 +4758,16 @@ BOOL copy_file(char *src,char *dest1,connection_struct *conn, int ofun,
 		}
 	}
 
-	fsp1 = open_file_ntcreate(conn,src,&src_sbuf,
+	status = open_file_ntcreate(conn,src,&src_sbuf,
 			FILE_GENERIC_READ,
 			FILE_SHARE_READ|FILE_SHARE_WRITE,
 			FILE_OPEN,
 			0,
 			FILE_ATTRIBUTE_NORMAL,
 			INTERNAL_OPEN_ONLY,
-			NULL);
+			NULL, &fsp1);
 
-	if (!fsp1) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return(False);
 	}
 
@@ -4791,16 +4776,16 @@ BOOL copy_file(char *src,char *dest1,connection_struct *conn, int ofun,
 		ZERO_STRUCTP(&sbuf2);
 	}
 
-	fsp2 = open_file_ntcreate(conn,dest,&sbuf2,
+	status = open_file_ntcreate(conn,dest,&sbuf2,
 			FILE_GENERIC_WRITE,
 			FILE_SHARE_READ|FILE_SHARE_WRITE,
 			new_create_disposition,
 			0,
 			dosattrs,
 			INTERNAL_OPEN_ONLY,
-			NULL);
+			NULL, &fsp2);
 
-	if (!fsp2) {
+	if (!NT_STATUS_IS_OK(status)) {
 		close_file(fsp1,ERROR_CLOSE);
 		return(False);
 	}
@@ -5006,7 +4991,7 @@ int reply_copy(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
 				/* Samba 3.0.22 has ERRDOS/ERRbadpath in the
 				 * DOS error code case
 				 */
-				set_saved_ntstatus(NT_STATUS_DOS(ERRDOS, ERRbadpath));
+				return ERROR_DOS(ERRDOS, ERRbadpath);
 			}
 			END_PROFILE(SMBcopy);
 			return(UNIXERROR(ERRDOS,error));

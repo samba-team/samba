@@ -1874,14 +1874,14 @@ WERROR _srv_net_file_query_secdesc(pipes_struct *p, SRV_Q_NET_FILE_QUERY_SECDESC
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		/* Perhaps it is a directory */
 		if (NT_STATUS_EQUAL(nt_status, NT_STATUS_FILE_IS_A_DIRECTORY))
-			fsp = open_directory(conn, filename, &st,
+			nt_status = open_directory(conn, filename, &st,
 					READ_CONTROL_ACCESS,
 					FILE_SHARE_READ|FILE_SHARE_WRITE,
 					FILE_OPEN,
 					0,
-					NULL);
+					NULL, &fsp);
 
-		if (!fsp) {
+		if (!NT_STATUS_IS_OK(nt_status)) {
 			DEBUG(3,("_srv_net_file_query_secdesc: Unable to open file %s\n", filename));
 			r_u->status = WERR_ACCESS_DENIED;
 			goto error_exit;
@@ -1991,14 +1991,14 @@ WERROR _srv_net_file_set_secdesc(pipes_struct *p, SRV_Q_NET_FILE_SET_SECDESC *q_
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		/* Perhaps it is a directory */
 		if (NT_STATUS_EQUAL(nt_status, NT_STATUS_FILE_IS_A_DIRECTORY))
-			fsp = open_directory(conn, filename, &st,
+			nt_status = open_directory(conn, filename, &st,
 						FILE_READ_ATTRIBUTES,
 						FILE_SHARE_READ|FILE_SHARE_WRITE,
 						FILE_OPEN,
 						0,
-						NULL);
+						NULL, &fsp);
 
-		if (!fsp) {
+		if (!NT_STATUS_IS_OK(nt_status)) {
 			DEBUG(3,("_srv_net_file_set_secdesc: Unable to open file %s\n", filename));
 			r_u->status = WERR_ACCESS_DENIED;
 			goto error_exit;

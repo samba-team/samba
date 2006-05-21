@@ -692,16 +692,16 @@ create_options = 0x%x root_dir_fid = 0x%x\n",
 			return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 		}
 
-		fsp = open_directory(conn, fname, &sbuf,
+		status = open_directory(conn, fname, &sbuf,
 					access_mask,
 					share_access,
 					create_disposition,
 					create_options,
-					&info);
+					&info, &fsp);
 
 		restore_case_semantics(conn, file_attributes);
 
-		if(!fsp) {
+		if(!NT_STATUS_IS_OK(status)) {
 			END_PROFILE(SMBntcreateX);
 			return set_bad_path_error(errno, bad_path, outbuf, ERRDOS,ERRnoaccess);
 		}
@@ -723,15 +723,15 @@ create_options = 0x%x root_dir_fid = 0x%x\n",
 		 * before issuing an oplock break request to
 		 * our client. JRA.  */
 
-		fsp = open_file_ntcreate(conn,fname,&sbuf,
+		status = open_file_ntcreate(conn,fname,&sbuf,
 					access_mask,
 					share_access,
 					create_disposition,
 					create_options,
 					file_attributes,
 					oplock_request,
-					&info);
-		if (!fsp) { 
+					&info, &fsp);
+		if (!NT_STATUS_IS_OK(status)) { 
 			/* We cheat here. There are two cases we
 			 * care about. One is a directory rename,
 			 * where the NT client will attempt to
@@ -751,7 +751,8 @@ create_options = 0x%x root_dir_fid = 0x%x\n",
 			 * we handle in the open_file_stat case. JRA.
 			 */
 
-			if(errno == EISDIR) {
+			if (NT_STATUS_EQUAL(status,
+					    NT_STATUS_FILE_IS_A_DIRECTORY)) {
 
 				/*
 				 * Fail the open if it was explicitly a non-directory file.
@@ -764,17 +765,17 @@ create_options = 0x%x root_dir_fid = 0x%x\n",
 				}
 	
 				oplock_request = 0;
-				fsp = open_directory(conn, fname, &sbuf,
+				status = open_directory(conn, fname, &sbuf,
 							access_mask,
 							share_access,
 							create_disposition,
 							create_options,
-							&info);
+							&info, &fsp);
 
-				if(!fsp) {
+				if(!NT_STATUS_IS_OK(status)) {
 					restore_case_semantics(conn, file_attributes);
 					END_PROFILE(SMBntcreateX);
-					return set_bad_path_error(errno, bad_path, outbuf, ERRDOS,ERRnoaccess);
+					return ERROR_NT(status);
 				}
 			} else {
 
@@ -784,7 +785,7 @@ create_options = 0x%x root_dir_fid = 0x%x\n",
 					/* We have re-scheduled this call. */
 					return -1;
 				}
-				return set_bad_path_error(errno, bad_path, outbuf, ERRDOS,ERRnoaccess);
+				return ERROR_NT(status);
 			}
 		} 
 	}
@@ -1331,13 +1332,13 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 		 * CreateDirectory() call.
 		 */
 
-		fsp = open_directory(conn, fname, &sbuf,
+		status = open_directory(conn, fname, &sbuf,
 					access_mask,
 					share_access,
 					create_disposition,
 					create_options,
-					&info);
-		if(!fsp) {
+					&info, &fsp);
+		if(!NT_STATUS_IS_OK(status)) {
 			talloc_destroy(ctx);
 			restore_case_semantics(conn, file_attributes);
 			return set_bad_path_error(errno, bad_path, outbuf, ERRDOS,ERRnoaccess);
@@ -1349,17 +1350,18 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 		 * Ordinary file case.
 		 */
 
-		fsp = open_file_ntcreate(conn,fname,&sbuf,
+		status = open_file_ntcreate(conn,fname,&sbuf,
 					access_mask,
 					share_access,
 					create_disposition,
 					create_options,
 					file_attributes,
 					oplock_request,
-					&info);
+					&info, &fsp);
 
-		if (!fsp) { 
-			if(errno == EISDIR) {
+		if (!NT_STATUS_IS_OK(status)) { 
+			if (NT_STATUS_EQUAL(status,
+					    NT_STATUS_FILE_IS_A_DIRECTORY)) {
 
 				/*
 				 * Fail the open if it was explicitly a non-directory file.
@@ -1371,13 +1373,13 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 				}
 	
 				oplock_request = 0;
-				fsp = open_directory(conn, fname, &sbuf,
+				status = open_directory(conn, fname, &sbuf,
 							access_mask,
 							share_access,
 							create_disposition,
 							create_options,
-							&info);
-				if(!fsp) {
+							&info, &fsp);
+				if(!NT_STATUS_IS_OK(status)) {
 					talloc_destroy(ctx);
 					restore_case_semantics(conn, file_attributes);
 					return set_bad_path_error(errno, bad_path, outbuf, ERRDOS,ERRnoaccess);
@@ -1654,39 +1656,29 @@ static NTSTATUS copy_internals(connection_struct *conn, char *oldname, char *new
 
 	DEBUG(10,("copy_internals: doing file copy %s to %s\n", oldname, newname));
 
-        fsp1 = open_file_ntcreate(conn,oldname,&sbuf1,
+        status = open_file_ntcreate(conn,oldname,&sbuf1,
 			FILE_READ_DATA, /* Read-only. */
 			0, /* No sharing. */
 			FILE_OPEN,
 			0, /* No create options. */
 			FILE_ATTRIBUTE_NORMAL,
 			INTERNAL_OPEN_ONLY,
-			&info);
+			&info, &fsp1);
 
-	if (!fsp1) {
-		status = get_saved_ntstatus();
-		if (NT_STATUS_IS_OK(status)) {
-			status = NT_STATUS_ACCESS_DENIED;
-		}
-		set_saved_ntstatus(NT_STATUS_OK);
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-        fsp2 = open_file_ntcreate(conn,newname,&sbuf2,
+        status = open_file_ntcreate(conn,newname,&sbuf2,
 			FILE_WRITE_DATA, /* Read-only. */
 			0, /* No sharing. */
 			FILE_CREATE,
 			0, /* No create options. */
 			fattr,
 			INTERNAL_OPEN_ONLY,
-			&info);
+			&info, &fsp2);
 
-	if (!fsp2) {
-		status = get_saved_ntstatus();
-		if (NT_STATUS_IS_OK(status)) {
-			status = NT_STATUS_ACCESS_DENIED;
-		}
-		set_saved_ntstatus(NT_STATUS_OK);
+	if (!NT_STATUS_IS_OK(status)) {
 		close_file(fsp1,ERROR_CLOSE);
 		return status;
 	}

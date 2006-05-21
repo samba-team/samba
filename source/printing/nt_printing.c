@@ -1253,6 +1253,8 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file, fstr
 	SMB_STRUCT_STAT stat_buf;
 	BOOL bad_path;
 
+	NTSTATUS status;
+
 	SET_STAT_INVALID(st);
 	SET_STAT_INVALID(stat_buf);
 	new_create_time = (time_t)0;
@@ -1263,16 +1265,16 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file, fstr
 
 	driver_unix_convert(filepath,conn,NULL,&bad_path,&stat_buf);
 
-	fsp = open_file_ntcreate(conn, filepath, &stat_buf,
+	status = open_file_ntcreate(conn, filepath, &stat_buf,
 				FILE_GENERIC_READ,
 				FILE_SHARE_READ|FILE_SHARE_WRITE,
 				FILE_OPEN,
 				0,
 				FILE_ATTRIBUTE_NORMAL,
 				INTERNAL_OPEN_ONLY,
-				NULL);
+				NULL, &fsp);
 
-	if (!fsp) {
+	if (!NT_STATUS_IS_OK(status)) {
 		/* Old file not found, so by definition new file is in fact newer */
 		DEBUG(10,("file_version_is_newer: Can't open old file [%s], errno = %d\n",
 				filepath, errno));
@@ -1299,16 +1301,16 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file, fstr
 	pstrcpy(filepath, new_file);
 	driver_unix_convert(filepath,conn,NULL,&bad_path,&stat_buf);
 
-	fsp = open_file_ntcreate(conn, filepath, &stat_buf,
+	status = open_file_ntcreate(conn, filepath, &stat_buf,
 				FILE_GENERIC_READ,
 				FILE_SHARE_READ|FILE_SHARE_WRITE,
 				FILE_OPEN,
 				0,
 				FILE_ATTRIBUTE_NORMAL,
 				INTERNAL_OPEN_ONLY,
-				NULL);
+				NULL, &fsp);
 
-	if (!fsp) {
+	if (!NT_STATUS_IS_OK(status)) {
 		/* New file not found, this shouldn't occur if the caller did its job */
 		DEBUG(3,("file_version_is_newer: Can't open new file [%s], errno = %d\n",
 				filepath, errno));
@@ -1377,6 +1379,7 @@ static uint32 get_correct_cversion(const char *architecture, fstring driverpath_
 	BOOL              bad_path;
 	SMB_STRUCT_STAT   st;
 	connection_struct *conn;
+	NTSTATUS status;
 
 	SET_STAT_INVALID(st);
 
@@ -1432,16 +1435,16 @@ static uint32 get_correct_cversion(const char *architecture, fstring driverpath_
 		goto error_exit;
 	}
 
-	fsp = open_file_ntcreate(conn, driverpath, &st,
+	status = open_file_ntcreate(conn, driverpath, &st,
 				FILE_GENERIC_READ,
 				FILE_SHARE_READ|FILE_SHARE_WRITE,
 				FILE_OPEN,
 				0,
 				FILE_ATTRIBUTE_NORMAL,
 				INTERNAL_OPEN_ONLY,
-				NULL);
+				NULL, &fsp);
 
-	if (!fsp) {
+	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(3,("get_correct_cversion: Can't open file [%s], errno = %d\n",
 				driverpath, errno));
 		*perr = WERR_ACCESS_DENIED;
