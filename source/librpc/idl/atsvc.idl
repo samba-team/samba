@@ -6,8 +6,7 @@
   version(1.0),
   pointer_default(unique),
   helpstring("Microsoft AT-Scheduler Service"),
-  endpoint("ncacn_np:[\\pipe\\atsvc]", "ncalrpc:"),
-  keepref
+  endpoint("ncacn_np:[\\pipe\\atsvc]", "ncalrpc:")
 ] interface atsvc
 {
 	typedef [bitmap32bit] bitmap {
@@ -74,7 +73,7 @@
 	/* Function: 0x00 */
 	NTSTATUS atsvc_JobAdd(
 		[in,unique,string,charset(UTF16)] uint16 *servername,
-		[in,keepref] atsvc_JobInfo *job_info,
+		[in] atsvc_JobInfo *job_info,
 		[out]	 uint32 job_id
 	);
 

@@ -75,7 +75,7 @@ static BOOL test_JobEnum(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	r.in.servername = dcerpc_server_name(p);
 	ctr.entries_read = 0;
 	ctr.first_entry = NULL;
-	r.in.ctr = r.out.ctr = &ctr;
+	r.in.ctr = ctr;
 	r.in.preferred_max_len = 0xffffffff;
 	r.in.resume_handle = r.out.resume_handle = &resume_handle;
 
@@ -86,8 +86,8 @@ static BOOL test_JobEnum(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 		return False;
 	}
 
-	for (i = 0; r.out.ctr && i < r.out.ctr->entries_read; i++) {
-		if (!test_JobGetInfo(p, mem_ctx, r.out.ctr->first_entry[i].job_id)) {
+	for (i = 0; i < r.out.ctr.entries_read; i++) {
+		if (!test_JobGetInfo(p, mem_ctx, r.out.ctr.first_entry[i].job_id)) {
 			ret = False;
 		}
 	}
@@ -109,7 +109,7 @@ static BOOL test_JobAdd(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	info.days_of_week = 0x02;   /* Tuesday */
 	info.flags = 0x11;	    /* periodic, non-interactive */
 	info.command = "foo.exe";
-	r.in.job_info = &info;
+	r.in.job_info = info;
 
 	status = dcerpc_atsvc_JobAdd(p, mem_ctx, &r);
 
