@@ -34,7 +34,11 @@ NTSTATUS torture_net_init(void)
 	register_torture_op("NET-API-LOOKUPPDC", torture_lookup_pdc, 0);
 	register_torture_op("NET-API-CREATEUSER", torture_createuser, 0);
 	register_torture_op("NET-API-DELETEUSER", torture_deleteuser, 0);
-	register_torture_op("NET-API-RPCCONNECT", torture_rpc_connect, 0);
+	register_torture_op("NET-API-RPCCONN-BIND", torture_rpc_connect_binding, 0);
+	register_torture_op("NET-API-RPCCONN-SRV", torture_rpc_connect_srv, 0);
+	register_torture_op("NET-API-RPCCONN-PDC", torture_rpc_connect_pdc, 0);
+	register_torture_op("NET-API-RPCCONN-DC", torture_rpc_connect_dc, 0);
+	register_torture_op("NET-API-RPCCONN-DCINFO", torture_rpc_connect_dc_info, 0);
 	register_torture_op("NET-API-LISTSHARES", torture_listshares, 0);
 	register_torture_op("NET-API-DELSHARE", torture_delshare, 0);
 
