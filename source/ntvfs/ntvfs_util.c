@@ -103,6 +103,9 @@ _PUBLIC_ NTSTATUS ntvfs_handle_new(struct ntvfs_module_context *ntvfs,
 				   struct ntvfs_request *req,
 				   struct ntvfs_handle **h)
 {
+	if (!ntvfs->ctx->handles.create_new) {
+		return NT_STATUS_NOT_IMPLEMENTED;
+	}
 	return ntvfs->ctx->handles.create_new(ntvfs->ctx->handles.private_data, req, h);
 }
 
@@ -171,6 +174,9 @@ _PUBLIC_ struct ntvfs_handle *ntvfs_handle_search_by_wire_key(struct ntvfs_modul
 							      struct ntvfs_request *req,
 							      const DATA_BLOB *key)
 {
+	if (!ntvfs->ctx->handles.search_by_wire_key) {
+		return NULL;
+	}
 	return ntvfs->ctx->handles.search_by_wire_key(ntvfs->ctx->handles.private_data, req, key);
 }
 
