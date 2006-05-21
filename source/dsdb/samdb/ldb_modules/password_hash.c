@@ -205,6 +205,8 @@ static int password_hash_handle(struct ldb_module *module, struct ldb_request *r
 	case LDB_REQ_MODIFY:
 		modified_orig_request->op.mod.message = msg2;
 		break;
+	default:
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	/* Send the (modified) request of the original caller down to the database */
@@ -1275,7 +1277,7 @@ static int password_hash_add_async_do_add(struct ldb_async_handle *h) {
 
 	ac = talloc_get_type(h->private_data, struct ph_async_context);
 
-	domain = get_domain_data(ac->module, ac, ac->search_res);
+	domain = get_domain_data(ac->module, ac, ac->dom_res);
 	if (domain == NULL) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
@@ -1693,7 +1695,8 @@ static int ph_async_wait(struct ldb_async_handle *handle) {
 				return LDB_SUCCESS;
 			}
 		}
-		return LDB_SUCCESS;
+
+		break;
 		
 	case PH_MOD_DO_REQ:
 		if (ac->down_req->async.handle->state != LDB_ASYNC_DONE) {
