@@ -376,7 +376,7 @@ static BOOL test_QueryInfoKey(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	printf("\ntesting QueryInfoKey\n");
 
 	r.in.handle = handle;
-	init_winreg_String(&r.in.class, class);
+	init_winreg_String(&r.in.class_in, class);
 	
 	status = dcerpc_winreg_QueryInfoKey(p, mem_ctx, &r);
 

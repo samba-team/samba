@@ -9,7 +9,8 @@
   pointer_default(unique),
   pointer_default_top(unique),
   endpoint("ncacn_np:[\\pipe\\svcctl]", "ncalrpc:"),
-  helpstring("Service Control")
+  helpstring("Service Control"),
+  keepref
 ] interface svcctl
 {
 	typedef struct {
