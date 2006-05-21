@@ -58,8 +58,8 @@ _PUBLIC_ struct ntvfs_request *ntvfs_request_create(struct ntvfs_context *ctx, T
 	DLIST_ADD(req->async_states, async);
 
 	return req;
-
 failed:
+	talloc_free(req);
 	return NULL;
 }
 
