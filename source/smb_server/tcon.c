@@ -26,24 +26,6 @@
 #include "smbd/service_stream.h"
 #include "ntvfs/ntvfs.h"
 
-int smbsrv_find_service(const char *service)
-{
-	int iService;
-
-	iService = lp_servicenumber(service);
-
-	if (iService >= 0 && !lp_snum_ok(iService)) {
-		DEBUG(0,("smbsrv_find_service: Invalid snum %d for '%s'\n",iService, service));
-		iService = -1;
-	}
-
-	if (iService == -1) {
-		DEBUG(3,("smbsrv_find_service: failed to find service '%s'\n", service));
-	}
-
-	return iService;
-}
-
 struct socket_address *smbsrv_get_my_addr(void *p, TALLOC_CTX *mem_ctx)
 {
 	struct smbsrv_connection *smb_conn = talloc_get_type(p,
