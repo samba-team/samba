@@ -702,13 +702,15 @@ sub ParseElementPrint($$$)
 
 	foreach my $l (@{$e->{LEVELS}}) {
 		if ($l->{TYPE} eq "POINTER") {
+			if ($l->{POINTER_TYPE} ne "ref" or has_property($e, "keepref")) {
 			pidl "ndr_print_ptr(ndr, \"$e->{NAME}\", $var_name);";
 			pidl "ndr->depth++;";
-			if ($l->{POINTER_TYPE} ne "ref") {
-				pidl "if ($var_name) {";
-				indent;
+				if ($l->{POINTER_TYPE} ne "ref") {
+					pidl "if ($var_name) {";
+					indent;
+				}
+				$var_name = get_value_of($var_name);
 			}
-			$var_name = get_value_of($var_name);
 		} elsif ($l->{TYPE} eq "ARRAY") {
 			my $length;
 
@@ -757,11 +759,13 @@ sub ParseElementPrint($$$)
 
 	foreach my $l (reverse @{$e->{LEVELS}}) {
 		if ($l->{TYPE} eq "POINTER") {
-			if ($l->{POINTER_TYPE} ne "ref") {
-				deindent;
-				pidl "}";
+			if ($l->{POINTER_TYPE} ne "ref" or has_property($e, "keepref")) {
+				if ($l->{POINTER_TYPE} ne "ref") {
+					deindent;
+					pidl "}";
+				}
+				pidl "ndr->depth--;";
 			}
-			pidl "ndr->depth--;";
 		} elsif (($l->{TYPE} eq "ARRAY")
 			and not is_charset_array($e,$l)
 			and not has_fast_array($e,$l)) {
