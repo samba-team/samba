@@ -350,13 +350,19 @@ NTSTATUS pvfs_access_check_unix(struct pvfs_state *pvfs,
 	uint32_t max_bits = SEC_RIGHTS_FILE_READ | SEC_FILE_ALL;
 
 	/* owner and root get extra permissions */
-	if (uid == 0 || uid == name->st.st_uid) {
+	if (uid == 0) {
+		max_bits |= SEC_STD_ALL | SEC_FLAG_SYSTEM_SECURITY;
+	} else if (uid == name->st.st_uid) {
 		max_bits |= SEC_STD_ALL;
 	}
 
 	if (*access_mask == SEC_FLAG_MAXIMUM_ALLOWED) {
 		*access_mask = max_bits;
 		return NT_STATUS_OK;
+	}
+
+	if (uid != 0 && (*access_mask & SEC_FLAG_SYSTEM_SECURITY)) {
+		return NT_STATUS_PRIVILEGE_NOT_HELD;
 	}
 
 	if (*access_mask & ~max_bits) {
