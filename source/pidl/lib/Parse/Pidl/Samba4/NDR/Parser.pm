@@ -582,7 +582,9 @@ sub ParseElementPushLevel
 				pidl "NDR_CHECK(ndr_push_relative_ptr2(ndr, $var_name));";
 			}
 		}
-		$var_name = get_value_of($var_name);
+		if ($l->{POINTER_TYPE} ne "ref" or has_property($e, "keepref")) {
+			$var_name = get_value_of($var_name);
+		}
 		ParseElementPushLevel($e, GetNextLevel($e, $l), $ndr, $var_name, $env, 1, 1);
 
 		if ($l->{POINTER_TYPE} ne "ref") {
@@ -662,10 +664,11 @@ sub ParsePtrPush($$$)
 	my ($e,$l,$var_name) = @_;
 
 	if ($l->{POINTER_TYPE} eq "ref") {
-		if ($l->{LEVEL} eq "EMBEDDED") {
-			pidl "NDR_CHECK(ndr_push_ref_ptr(ndr, $var_name));";
-		} else {
+		if (has_property($e, "keepref")) {
 			check_null_pointer(get_value_of($var_name));
+		}
+		if ($l->{LEVEL} eq "EMBEDDED") {
+			pidl "NDR_CHECK(ndr_push_ref_ptr(ndr));";
 		}
 	} elsif ($l->{POINTER_TYPE} eq "relative") {
 		pidl "NDR_CHECK(ndr_push_relative_ptr1(ndr, $var_name));";
@@ -872,7 +875,7 @@ sub ParseMemCtxPullStart($$$)
 		my $next_is_array = ($nl->{TYPE} eq "ARRAY");
 		my $next_is_string = (($nl->{TYPE} eq "DATA") and 
 					($nl->{DATA_TYPE} eq "string"));
-		if ($next_is_array or $next_is_string) {
+		if ($next_is_array or $next_is_string or not has_property($e, "keepref")) {
 			return;
 		} else {
 			$mem_c_flags = "LIBNDR_FLAG_REF_ALLOC";
@@ -898,7 +901,7 @@ sub ParseMemCtxPullEnd($$)
 		my $next_is_array = ($nl->{TYPE} eq "ARRAY");
 		my $next_is_string = (($nl->{TYPE} eq "DATA") and 
 					($nl->{DATA_TYPE} eq "string"));
-		if ($next_is_array or $next_is_string) {
+		if ($next_is_array or $next_is_string or not has_property($e, "keepref")) {
 			return;
 		} else {
 			$mem_r_flags = "LIBNDR_FLAG_REF_ALLOC";
@@ -975,7 +978,9 @@ sub ParseElementPullLevel
 
 		ParseMemCtxPullStart($e,$l, $var_name);
 
-		$var_name = get_value_of($var_name);
+		if ($l->{POINTER_TYPE} ne "ref" or has_property($e, "keepref")) {
+			$var_name = get_value_of($var_name);
+		}
 		ParseElementPullLevel($e,GetNextLevel($e,$l), $ndr, $var_name, $env, 1, 1);
 
 		ParseMemCtxPullEnd($e,$l);
@@ -1075,11 +1080,12 @@ sub ParsePtrPull($$$$)
 						 ($nl->{DATA_TYPE} eq "string"));
 
 	if ($l->{POINTER_TYPE} eq "ref") {
-		unless ($l->{LEVEL} eq "TOP") {
+		if ($l->{LEVEL} eq "EMBEDDED") {
 			pidl "NDR_CHECK(ndr_pull_ref_ptr($ndr, &_ptr_$e->{NAME}));";
 		}
 
-		unless ($next_is_array or $next_is_string) {
+		if (!$next_is_array and !$next_is_string and 
+			has_property($e, "keepref")) {
 			pidl "if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {";
 			pidl "\tNDR_PULL_ALLOC($ndr, $var_name);"; 
 			pidl "}";
@@ -1413,8 +1419,7 @@ sub DeclareArrayVariables($)
 
 sub need_decl_mem_ctx($$)
 {
-	my $e = shift;
-	my $l = shift;
+	my ($e,$l) = @_;
 
 	return 0 if has_fast_array($e,$l);
 	return 0 if is_charset_array($e,$l);
@@ -1425,7 +1430,7 @@ sub need_decl_mem_ctx($$)
 		my $next_is_array = ($nl->{TYPE} eq "ARRAY");
 		my $next_is_string = (($nl->{TYPE} eq "DATA") and 
 					($nl->{DATA_TYPE} eq "string"));
-		return 0 if ($next_is_array or $next_is_string);
+		return 0 if ($next_is_array or $next_is_string or not has_property($e, "keepref"));
 	}
 	return 1 if ($l->{TYPE} eq "POINTER");
 
@@ -2091,6 +2096,7 @@ sub ParseFunctionPull($)
 		next unless (grep(/out/, @{$e->{DIRECTION}}));
 		next unless ($e->{LEVELS}[0]->{TYPE} eq "POINTER" and 
 		             $e->{LEVELS}[0]->{POINTER_TYPE} eq "ref");
+		next unless has_property($e, "keepref");
 		next if (($e->{LEVELS}[1]->{TYPE} eq "DATA") and 
 				 ($e->{LEVELS}[1]->{DATA_TYPE} eq "string"));
 		next if (($e->{LEVELS}[1]->{TYPE} eq "ARRAY") 

@@ -6,7 +6,8 @@
  */
 
 [
-	pointer_default(unique)
+	pointer_default(unique),
+	keepref
 ]
 interface ObjectRpcBaseTypes
 {

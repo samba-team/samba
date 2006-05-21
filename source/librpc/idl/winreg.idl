@@ -9,7 +9,8 @@
   pointer_default(unique),
   pointer_default_top(unique),
   helpstring("Remote Registry Service"),
-  depends(lsa,initshutdown,security)
+  depends(lsa,initshutdown,security),
+  keepref
 ] interface winreg
 {
 	declare bitmap security_secinfo;
@@ -205,8 +206,8 @@
 	/* Function: 0x10 */
 	WERROR winreg_QueryInfoKey(
 		[in,ref] policy_handle *handle,
-		[in] winreg_String class,
-		[out] winreg_String class,
+		[in] winreg_String class_in,
+		[out] winreg_String *class_out,
 		[out] uint32 num_subkeys,
 		[out] uint32 max_subkeylen,
 		[out] uint32 max_subkeysize,

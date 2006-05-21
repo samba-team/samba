@@ -10,7 +10,8 @@
   pointer_default(unique),
   pointer_default_top(unique),
   helpstring("Server Service"),
-  depends(security,svcctl)
+  depends(security,svcctl),
+  keepref
 ] interface srvsvc
 {
 	declare bitmap svcctl_ServerType;

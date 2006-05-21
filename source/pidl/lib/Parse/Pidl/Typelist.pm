@@ -23,50 +23,29 @@ my @reference_scalars = (
 
 # a list of known scalar types
 my %scalars = (
-	# 0 byte types
 	"void"		=> "void",
-
-	# 1 byte types
 	"char"		=> "char",
 	"int8"		=> "int8_t",
 	"uint8"		=> "uint8_t",
-
-	# 2 byte types
 	"int16"		=> "int16_t",
 	"uint16"	=> "uint16_t",
-
-	# 4 byte types
 	"int32"		=> "int32_t",
 	"uint32"	=> "uint32_t",
-
-	# 8 byte types
 	"hyper"		=> "uint64_t",
 	"dlong"		=> "int64_t",
 	"udlong"	=> "uint64_t",
 	"udlongr"	=> "uint64_t",
-
-	# assume its a 8 byte type, but cope with either
 	"pointer"	=> "void*",
-
-	# DATA_BLOB types
 	"DATA_BLOB"	=> "DATA_BLOB",
-
-	# string types
 	"string"	=> "const char *",
 	"string_array"	=> "const char **",
-
-	# time types
 	"time_t"	=> "time_t",
 	"NTTIME"	=> "NTTIME",
 	"NTTIME_1sec"	=> "NTTIME",
 	"NTTIME_hyper"	=> "NTTIME",
-
-	# error code types
 	"WERROR"	=> "WERROR",
 	"NTSTATUS"	=> "NTSTATUS",
 	"COMRESULT" => "COMRESULT",
-
-	# special types
 	"nbt_string"	=> "const char *",
 	"wrepl_nbt_name"=> "struct nbt_name *",
 	"ipv4address"	=> "const char *",
