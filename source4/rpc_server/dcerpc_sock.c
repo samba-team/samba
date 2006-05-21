@@ -113,6 +113,8 @@ static void dcesrv_sock_accept(struct stream_connection *srv_conn)
 					 dcesrv_sock->endpoint,
 					 session_info,
 					 srv_conn->event.ctx,
+					 srv_conn->msg_ctx,
+					 srv_conn->server_id,
 					 DCESRV_CALL_STATE_FLAG_MAY_ASYNC,
 					 &dcesrv_conn);
 	if (!NT_STATUS_IS_OK(status)) {

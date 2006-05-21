@@ -292,6 +292,8 @@ NTSTATUS dcesrv_endpoint_connect(struct dcesrv_context *dce_ctx,
 				 const struct dcesrv_endpoint *ep,
 				 struct auth_session_info *session_info,
 				 struct event_context *event_ctx,
+				 struct messaging_context *msg_ctx,
+				 uint32_t server_id,
 				 uint32_t state_flags,
 				 struct dcesrv_connection **_p)
 {
@@ -321,6 +323,8 @@ NTSTATUS dcesrv_endpoint_connect(struct dcesrv_context *dce_ctx,
 	p->auth_state.session_info = session_info;
 	p->auth_state.session_key = dcesrv_generic_session_key;
 	p->event_ctx = event_ctx;
+	p->msg_ctx = msg_ctx;
+	p->server_id = server_id;
 	p->processing = False;
 	p->state_flags = state_flags;
 	ZERO_STRUCT(p->transport);
@@ -339,6 +343,8 @@ _PUBLIC_ NTSTATUS dcesrv_endpoint_search_connect(struct dcesrv_context *dce_ctx,
 					const struct dcerpc_binding *ep_description,
 					struct auth_session_info *session_info,
 					struct event_context *event_ctx,
+					struct messaging_context *msg_ctx,
+					uint32_t server_id,
 					uint32_t state_flags,
 					struct dcesrv_connection **dce_conn_p)
 {
@@ -351,7 +357,9 @@ _PUBLIC_ NTSTATUS dcesrv_endpoint_search_connect(struct dcesrv_context *dce_ctx,
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 
-	status = dcesrv_endpoint_connect(dce_ctx, mem_ctx, ep, session_info, event_ctx, state_flags, dce_conn_p);
+	status = dcesrv_endpoint_connect(dce_ctx, mem_ctx, ep, session_info,
+					 event_ctx, msg_ctx, server_id,
+					 state_flags, dce_conn_p);
 	NT_STATUS_NOT_OK_RETURN(status);
 
 	(*dce_conn_p)->auth_state.session_key = dcesrv_inherited_session_key;
