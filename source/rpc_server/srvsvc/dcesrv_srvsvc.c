@@ -3,7 +3,7 @@
 
    endpoint server for the srvsvc pipe
 
-   Copyright (C) Stefan (metze) Metzmacher 2004
+   Copyright (C) Stefan (metze) Metzmacher 2004-2006
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -27,6 +27,8 @@
 #include "auth/auth.h"
 #include "libcli/security/security.h"
 #include "system/time.h"
+#include "ntvfs/ntvfs.h"
+#include "rpc_server/srvsvc/proto.h"
 
 #define SRVSVC_CHECK_ADMIN_ACCESS do { \
 	struct security_token *t = dce_call->conn->auth_state.session_info->security_token; \
@@ -1403,7 +1405,40 @@ static WERROR srvsvc_NetShareDelCommit(struct dcesrv_call_state *dce_call, TALLO
 static WERROR srvsvc_NetGetFileSecurity(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct srvsvc_NetGetFileSecurity *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	struct sec_desc_buf *sd_buf;
+	struct ntvfs_context *ntvfs_ctx = NULL;
+	struct ntvfs_request *ntvfs_req;
+	union smb_fileinfo *io;
+	NTSTATUS nt_status;
+
+	nt_status = srvsvc_create_ntvfs_context(dce_call, mem_ctx, r->in.share, &ntvfs_ctx);
+	if (!NT_STATUS_IS_OK(nt_status)) return ntstatus_to_werror(nt_status);
+
+	ntvfs_req = ntvfs_request_create(ntvfs_ctx, mem_ctx,
+					 dce_call->conn->auth_state.session_info,
+					 0,
+					 0,
+					 dce_call->time,
+					 NULL, NULL, 0);
+	W_ERROR_HAVE_NO_MEMORY(ntvfs_req);
+
+	sd_buf = talloc(mem_ctx, struct sec_desc_buf);
+	W_ERROR_HAVE_NO_MEMORY(sd_buf);
+
+	io = talloc(mem_ctx, union smb_fileinfo);
+	W_ERROR_HAVE_NO_MEMORY(io);
+
+	io->query_secdesc.level			= RAW_FILEINFO_SEC_DESC;
+	io->query_secdesc.in.file.path		= r->in.file;
+	io->query_secdesc.in.secinfo_flags	= r->in.securityinformation;
+
+	nt_status = ntvfs_qpathinfo(ntvfs_req, io);
+	if (!NT_STATUS_IS_OK(nt_status)) return ntstatus_to_werror(nt_status);
+
+	sd_buf->sd = io->query_secdesc.out.sd;
+
+	r->out.sd_buf = sd_buf;
+	return WERR_OK;
 }
 
 
@@ -1413,7 +1448,34 @@ static WERROR srvsvc_NetGetFileSecurity(struct dcesrv_call_state *dce_call, TALL
 static WERROR srvsvc_NetSetFileSecurity(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct srvsvc_NetSetFileSecurity *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	struct ntvfs_context *ntvfs_ctx;
+	struct ntvfs_request *ntvfs_req;
+	union smb_setfileinfo *io;
+	NTSTATUS nt_status;
+
+	nt_status = srvsvc_create_ntvfs_context(dce_call, mem_ctx, r->in.share, &ntvfs_ctx);
+	if (!NT_STATUS_IS_OK(nt_status)) return ntstatus_to_werror(nt_status);
+
+	ntvfs_req = ntvfs_request_create(ntvfs_ctx, mem_ctx,
+					 dce_call->conn->auth_state.session_info,
+					 0,
+					 0,
+					 dce_call->time,
+					 NULL, NULL, 0);
+	W_ERROR_HAVE_NO_MEMORY(ntvfs_req);
+
+	io = talloc(mem_ctx, union smb_setfileinfo);
+	W_ERROR_HAVE_NO_MEMORY(io);
+
+	io->set_secdesc.level			= RAW_FILEINFO_SEC_DESC;
+	io->set_secdesc.in.file.path		= r->in.file;
+	io->set_secdesc.in.secinfo_flags	= r->in.securityinformation;
+	io->set_secdesc.in.sd			= r->in.sd_buf.sd;
+
+	nt_status = ntvfs_setpathinfo(ntvfs_req, io);
+	if (!NT_STATUS_IS_OK(nt_status)) return ntstatus_to_werror(nt_status);
+
+	return WERR_OK;
 }
 
 

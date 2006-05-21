@@ -68,9 +68,11 @@ PUBLIC_DEPENDENCIES = \
 # Start MODULE dcerpc_srvsvc
 [MODULE::dcerpc_srvsvc]
 INIT_FUNCTION = dcerpc_server_srvsvc_init
+PRIVATE_PROTO_HEADER = srvsvc/proto.h
 SUBSYSTEM = dcerpc_server
 OBJ_FILES = \
-		srvsvc/dcesrv_srvsvc.o
+		srvsvc/dcesrv_srvsvc.o \
+		srvsvc/srvsvc_ntvfs.o
 PUBLIC_DEPENDENCIES = \
 		DCERPC_COMMON NDR_SRVSVC
 # End MODULE dcerpc_srvsvc
