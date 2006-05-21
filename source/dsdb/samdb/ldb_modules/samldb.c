@@ -625,6 +625,20 @@ static int samldb_fill_user_or_computer_object(struct ldb_module *module, const 
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
+	/* make sure we also add person, organizationalPerson and top */
+	if ( ! samldb_find_or_add_attribute(module, msg2, "objectclass", "person", "person")) {
+		talloc_free(mem_ctx);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	if ( ! samldb_find_or_add_attribute(module, msg2, "objectclass", "organizationalPerson", "organizationalPerson")) {
+		talloc_free(mem_ctx);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	if ( ! samldb_find_or_add_attribute(module, msg2, "objectclass", "top", "top")) {
+		talloc_free(mem_ctx);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
 	/* meddle with objectclass */
 
 	if (ldb_msg_find_element(msg2, "samAccountName") == NULL) {
@@ -762,13 +776,16 @@ static int samldb_add(struct ldb_module *module, struct ldb_request *req)
 		return ldb_next_request(module, req);
 	}
 
-	/* is user or computer?  add all relevant missing objects */
-	if ((samldb_find_attribute(msg, "objectclass", "user") != NULL) || 
-	    (samldb_find_attribute(msg, "objectclass", "computer") != NULL)) {
-		ret = samldb_fill_user_or_computer_object(module, msg, &msg2);
-		if (ret) {
-			return ret;
-		}
+	/* is user or computer? Skip if not */
+	if ((samldb_find_attribute(msg, "objectclass", "user") == NULL) &&
+	    (samldb_find_attribute(msg, "objectclass", "computer") == NULL)) {
+		return ldb_next_request(module, req);
+	}
+
+	/*  add all relevant missing objects */
+	ret = samldb_fill_user_or_computer_object(module, msg, &msg2);
+	if (ret) {
+		return ret;
 	}
 
 	/* is group? add all relevant missing objects */
@@ -830,13 +847,16 @@ static int samldb_add_async(struct ldb_module *module, struct ldb_request *req)
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	/* is user or computer?  add all relevant missing objects */
-	if ((samldb_find_attribute(msg, "objectclass", "user") != NULL) || 
-	    (samldb_find_attribute(msg, "objectclass", "computer") != NULL)) {
-		ret = samldb_fill_user_or_computer_object(module, msg, &msg2);
-		if (ret) {
-			return ret;
-		}
+	/* is user or computer? Skip if not */
+	if ((samldb_find_attribute(msg, "objectclass", "user") == NULL) &&
+	    (samldb_find_attribute(msg, "objectclass", "computer") == NULL)) {
+		return ldb_next_request(module, req);
+	}
+
+	/*  add all relevant missing objects */
+	ret = samldb_fill_user_or_computer_object(module, msg, &msg2);
+	if (ret) {
+		return ret;
 	}
 
 	/* is group? add all relevant missing objects */
