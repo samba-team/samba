@@ -85,6 +85,7 @@ NTSTATUS smb2srv_setup_reply(struct smb2srv_request *req, uint16_t body_fixed_si
 	 * which is always be part of the packet is initialized
 	 */
 	if (body_dynamic_size) {
+		req->out.size += 1;
 		SCVAL(req->out.dynamic, 0, 0);
 	}
 
