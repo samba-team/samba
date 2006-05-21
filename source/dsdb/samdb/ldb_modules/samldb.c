@@ -776,16 +776,14 @@ static int samldb_add(struct ldb_module *module, struct ldb_request *req)
 		return ldb_next_request(module, req);
 	}
 
-	/* is user or computer? Skip if not */
-	if ((samldb_find_attribute(msg, "objectclass", "user") == NULL) &&
-	    (samldb_find_attribute(msg, "objectclass", "computer") == NULL)) {
-		return ldb_next_request(module, req);
-	}
-
-	/*  add all relevant missing objects */
-	ret = samldb_fill_user_or_computer_object(module, msg, &msg2);
-	if (ret) {
-		return ret;
+	/* is user or computer? */
+	if ((samldb_find_attribute(msg, "objectclass", "user") != NULL) ||
+	    (samldb_find_attribute(msg, "objectclass", "computer") != NULL)) {
+		/*  add all relevant missing objects */
+		ret = samldb_fill_user_or_computer_object(module, msg, &msg2);
+		if (ret) {
+			return ret;
+		}
 	}
 
 	/* is group? add all relevant missing objects */
@@ -842,21 +840,14 @@ static int samldb_add_async(struct ldb_module *module, struct ldb_request *req)
 		return ldb_next_request(module, req);
 	}
 
-	down_req = talloc(module, struct ldb_request);
-	if (down_req == NULL) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	/* is user or computer? Skip if not */
+	/* is user or computer? */
 	if ((samldb_find_attribute(msg, "objectclass", "user") == NULL) &&
 	    (samldb_find_attribute(msg, "objectclass", "computer") == NULL)) {
-		return ldb_next_request(module, req);
-	}
-
-	/*  add all relevant missing objects */
-	ret = samldb_fill_user_or_computer_object(module, msg, &msg2);
-	if (ret) {
-		return ret;
+		/*  add all relevant missing objects */
+		ret = samldb_fill_user_or_computer_object(module, msg, &msg2);
+		if (ret) {
+			return ret;
+		}
 	}
 
 	/* is group? add all relevant missing objects */
@@ -879,11 +870,18 @@ static int samldb_add_async(struct ldb_module *module, struct ldb_request *req)
 		}
 	}
 
+	if (msg2 == NULL) {
+		return ldb_next_request(module, req);
+	}
+
+	down_req = talloc(module, struct ldb_request);
+	if (down_req == NULL) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
 	*down_req = *req;
 	
-	if (msg2 != NULL) {
-		down_req->op.add.message = talloc_steal(down_req, msg2);
-	}
+	down_req->op.add.message = talloc_steal(down_req, msg2);
 	
 	/* go on with the call chain */
 	ret = ldb_next_request(module, down_req);
