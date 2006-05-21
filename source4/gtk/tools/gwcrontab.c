@@ -44,14 +44,14 @@ static void update_joblist(void)
 	int i;
 	uint32_t resume_handle = 0;
 
-        gtk_list_store_clear(store_jobs);
+    gtk_list_store_clear(store_jobs);
 
 	ctr.entries_read = 0;
 	ctr.first_entry = NULL;
 	r.in.servername = dcerpc_server_name(at_pipe);
-	r.in.ctr = r.out.ctr = &ctr;
-        r.in.preferred_max_len = 0xffffffff;
-        r.in.resume_handle = r.out.resume_handle = &resume_handle;
+	r.in.ctr = ctr;
+    r.in.preferred_max_len = 0xffffffff;
+    r.in.resume_handle = r.out.resume_handle = &resume_handle;
 	
 	status = dcerpc_atsvc_JobEnum(at_pipe, mem_ctx, &r);
 	if(!NT_STATUS_IS_OK(status)) {
@@ -59,15 +59,15 @@ static void update_joblist(void)
 		return;
 	}
 
-       	for (i = 0; r.out.ctr && i < r.out.ctr->entries_read; i++) {
+       	for (i = 0; i < r.out.ctr.entries_read; i++) {
                 GtkTreeIter iter;
                 gtk_list_store_append(store_jobs, &iter);
                 gtk_list_store_set (store_jobs, &iter, 
-			0, r.out.ctr->first_entry[i].flags,
-			1, r.out.ctr->first_entry[i].job_id, 
-			2, r.out.ctr->first_entry[i].days_of_week, /*FIXME: Nicer format */
-			3, r.out.ctr->first_entry[i].job_time, /* FIXME: Nicer format */
-			4, r.out.ctr->first_entry[i].command,
+			0, r.out.ctr.first_entry[i].flags,
+			1, r.out.ctr.first_entry[i].job_id, 
+			2, r.out.ctr.first_entry[i].days_of_week, /*FIXME: Nicer format */
+			3, r.out.ctr.first_entry[i].job_time, /* FIXME: Nicer format */
+			4, r.out.ctr.first_entry[i].command,
                         -1);
 
 	}
@@ -122,7 +122,7 @@ void on_new_activate (GtkMenuItem *menuitem, gpointer user_data)
 	job.flags = 0; /* FIXME */
 	job.command = gtk_entry_get_text(GTK_ENTRY(entry_cmd));
 	r.in.servername = dcerpc_server_name(at_pipe);
-	r.in.job_info = &job;
+	r.in.job_info = job;
 
 	status = dcerpc_atsvc_JobAdd(at_pipe, mem_ctx, &r);
 	if(!NT_STATUS_IS_OK(status)) {
