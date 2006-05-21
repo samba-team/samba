@@ -14,6 +14,7 @@
 ] interface srvsvc
 {
 	declare bitmap svcctl_ServerType;
+	declare bitmap security_secinfo;
 
 /**************************/
 /* srvsvc_NetCharDev      */
@@ -1407,8 +1408,8 @@
 		[in]       [string,charset(UTF16)] uint16 *server_unc,
 		[in]       [string,charset(UTF16)] uint16 *share,
 		[in]       [string,charset(UTF16)] uint16 file[],
-		[in]       uint32 securityinformation,
-		[out, subcontext(4)] security_descriptor *sd
+		[in]       security_secinfo securityinformation,
+		[out]	   sec_desc_buf *sd_buf
 		);
 
 	/******************/
@@ -1417,8 +1418,8 @@
 		[in]       [string,charset(UTF16)] uint16 *server_unc,
 		[in]       [string,charset(UTF16)] uint16 *share,
 		[in]       [string,charset(UTF16)] uint16 file[],
-		[in]       uint32 securityinformation,
-		[in, subcontext(4)] security_descriptor sd
+		[in]       security_secinfo securityinformation,
+		[in]	   sec_desc_buf sd_buf
 		);
 
 
