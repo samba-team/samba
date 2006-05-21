@@ -152,7 +152,9 @@ static int rdn_name_add_async(struct ldb_module *module, struct ldb_request *req
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	msg = ldb_msg_copy_shallow(down_req, req->op.add.message);
+	*down_req = *req;
+
+	down_req->op.add.message = msg = ldb_msg_copy_shallow(down_req, req->op.add.message);
 	if (msg == NULL) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
@@ -198,15 +200,6 @@ static int rdn_name_add_async(struct ldb_module *module, struct ldb_request *req
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 	}
-
-	down_req->op.add.message = msg;
-	
-	down_req->controls = req->controls;
-	down_req->creds = req->creds;
-
-	down_req->async.context = req->async.context;
-	down_req->async.callback = req->async.callback;
-	down_req->async.timeout = req->async.timeout;
 
 	/* go on with the call chain */
 	ret = ldb_next_request(module, down_req);
