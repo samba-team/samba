@@ -94,6 +94,7 @@ struct smb2_request *smb2_request_init(struct smb2_transport *transport, uint16_
 	 * which is always be part of the packet is initialized
 	 */
 	if (body_dynamic_size) {
+		req->out.size += 1;
 		SCVAL(req->out.dynamic, 0, 0);
 	}
 
