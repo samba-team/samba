@@ -905,7 +905,7 @@ _PUBLIC_ NTSTATUS dcesrv_reply(struct dcesrv_call_state *call)
 	return NT_STATUS_OK;
 }
 
-struct socket_address *dcesrv_connection_get_my_addr(struct dcesrv_connection *conn, TALLOC_CTX *mem_ctx)
+_PUBLIC_ struct socket_address *dcesrv_connection_get_my_addr(struct dcesrv_connection *conn, TALLOC_CTX *mem_ctx)
 {
 	if (!conn->transport.get_my_addr) {
 		return NULL;
@@ -914,7 +914,7 @@ struct socket_address *dcesrv_connection_get_my_addr(struct dcesrv_connection *c
 	return conn->transport.get_my_addr(conn, mem_ctx);
 }
 
-struct socket_address *dcesrv_connection_get_peer_addr(struct dcesrv_connection *conn, TALLOC_CTX *mem_ctx)
+_PUBLIC_ struct socket_address *dcesrv_connection_get_peer_addr(struct dcesrv_connection *conn, TALLOC_CTX *mem_ctx)
 {
 	if (!conn->transport.get_peer_addr) {
 		return NULL;
