@@ -2543,6 +2543,24 @@ int lp_servicenumber(const char *pszServiceName)
 	return (iService);
 }
 
+int lp_find_valid_service(const char *pszServiceName)
+{
+	int iService;
+
+	iService = lp_servicenumber(pszServiceName);
+
+	if (iService >= 0 && !lp_snum_ok(iService)) {
+		DEBUG(0,("lp_find_valid_service: Invalid snum %d for '%s'\n",iService, pszServiceName));
+		iService = -1;
+	}
+
+	if (iService == -1) {
+		DEBUG(3,("lp_find_valid_service: failed to find service '%s'\n", pszServiceName));
+	}
+
+	return iService;
+}
+
 /*******************************************************************
  A useful volume label function. 
 ********************************************************************/

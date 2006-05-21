@@ -158,7 +158,7 @@ static NTSTATUS smb2srv_tcon_backend(struct smb2srv_request *req, union smb_tcon
 		}
 	}
 
-	snum = smbsrv_find_service(service);
+	snum = lp_find_valid_service(service);
 	if (snum == -1) {
 		DEBUG(0,("smb2srv_tcon_backend: couldn't find service %s\n", service));
 		return NT_STATUS_BAD_NETWORK_NAME;
