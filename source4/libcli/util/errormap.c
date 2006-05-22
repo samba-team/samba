@@ -1198,6 +1198,11 @@ void ntstatus_to_dos(NTSTATUS ntstatus, uint8_t *eclass, uint32_t *ecode)
 		*ecode = 0;
 		return;
 	}
+	if (NT_STATUS_IS_DOS(ntstatus)) {
+		*eclass = NT_STATUS_DOS_CLASS(ntstatus);
+		*ecode  = NT_STATUS_DOS_CODE(ntstatus);
+		return;
+	}
 	for (i=0; NT_STATUS_V(ntstatus_to_dos_map[i].ntstatus); i++) {
 		if (NT_STATUS_V(ntstatus) == 
 		    NT_STATUS_V(ntstatus_to_dos_map[i].ntstatus)) {
