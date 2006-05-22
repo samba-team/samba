@@ -1702,11 +1702,11 @@ static int cmd_fsinfo(struct smbclient_context *ctx, const char **args)
 			 GUID_string(ctx,&fsinfo.objectid_information.out.guid));
 		d_printf("\tunknown[6]:                 [%llu,%llu,%llu,%llu,%llu,%llu]\n", 
 			 (unsigned long long) fsinfo.objectid_information.out.unknown[0],
+			 (unsigned long long) fsinfo.objectid_information.out.unknown[1],
 			 (unsigned long long) fsinfo.objectid_information.out.unknown[2],
 			 (unsigned long long) fsinfo.objectid_information.out.unknown[3],
 			 (unsigned long long) fsinfo.objectid_information.out.unknown[4],
-			 (unsigned long long) fsinfo.objectid_information.out.unknown[5],
-			 (unsigned long long) fsinfo.objectid_information.out.unknown[6] );
+			 (unsigned long long) fsinfo.objectid_information.out.unknown[5] );
 		break;
 	case RAW_QFS_GENERIC:
 		d_printf("\twrong level returned\n");
