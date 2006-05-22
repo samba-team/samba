@@ -447,6 +447,11 @@ NTSTATUS notify_remove(struct notify_context *notify, void *private)
 		return status;
 	}
 
+	if (depth >= notify->array->num_depths) {
+		notify_unlock(notify);
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	}
+
 	/* we only have to search at the depth of this element */
 	d = &notify->array->depth[depth];
 
