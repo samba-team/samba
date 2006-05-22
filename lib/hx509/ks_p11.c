@@ -660,35 +660,50 @@ p11_init(hx509_context context,
     p->dl_handle = dlopen(list, RTLD_NOW);
     free(list);
     if (p->dl_handle == NULL) {
+	hx509_set_error_string(context, 0, EINVAL,
+			       "Failed to open %s: %s", list, dlerror());
 	ret = EINVAL; /* XXX */
 	goto out;
     }
 
     getFuncs = dlsym(p->dl_handle, "C_GetFunctionList");
     if (getFuncs == NULL) {
+	hx509_set_error_string(context, 0, EINVAL,
+			       "C_GetFunctionList missing in %s: %s", 
+			       list, dlerror());
 	ret = EINVAL;
 	goto out;
     }
 
     ret = (*getFuncs)(&p->funcs);
     if (ret) {
+	hx509_set_error_string(context, 0, EINVAL,
+			       "C_GetFunctionList failed in %s", list);
 	ret = EINVAL;
 	goto out;
     }
 
     ret = P11FUNC(p, Initialize, (NULL_PTR));
     if (ret != CKR_OK) {
+	hx509_set_error_string(context, 0, EINVAL,
+			       "Failed initialize the PKCS11 module");
 	ret = EINVAL;
 	goto out;
     }
 
     ret = P11FUNC(p, GetSlotList, (FALSE, NULL, &p->num_slots));
     if (ret) {
+	hx509_set_error_string(context, 0, EINVAL,
+			       "Failed to get number of PKCS11 slots");
 	ret = EINVAL;
 	goto out;
     }
 
     if (p->selected_slot >= p->num_slots) {
+	hx509_set_error_string(context, 0, EINVAL,
+			       "Selected PKCS11 slot (%d) larger "
+			       "then maximum slot (%d)",
+			       p->selected_slot, p->num_slots);
 	ret = EINVAL;
 	goto out;
     }
