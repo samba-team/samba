@@ -607,7 +607,7 @@ enum dcerpc_transport_t dcerpc_transport_by_endpoint_protocol(int prot)
 	}
 	
 	/* Unknown transport */
-	return -1;
+	return (unsigned int)-1;
 }
 
 enum dcerpc_transport_t dcerpc_transport_by_tower(struct epm_tower *tower)
@@ -633,7 +633,7 @@ enum dcerpc_transport_t dcerpc_transport_by_tower(struct epm_tower *tower)
 	}
 	
 	/* Unknown transport */
-	return -1;
+	return (unsigned int)-1;
 }
 
 NTSTATUS dcerpc_binding_from_tower(TALLOC_CTX *mem_ctx, struct epm_tower *tower, struct dcerpc_binding **b_out)
@@ -651,7 +651,7 @@ NTSTATUS dcerpc_binding_from_tower(TALLOC_CTX *mem_ctx, struct epm_tower *tower,
 
 	binding->transport = dcerpc_transport_by_tower(tower);
 
-	if (binding->transport == -1) {
+	if (binding->transport == (unsigned int)-1) {
 		return NT_STATUS_NOT_SUPPORTED;
 	}
 
