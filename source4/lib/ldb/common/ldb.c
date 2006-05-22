@@ -2,6 +2,7 @@
    ldb database library
 
    Copyright (C) Andrew Tridgell  2004
+   Copyright (C) Simo Sorce  2005-2006
 
      ** NOTE! The following LGPL license applies to the ldb
      ** library. This does NOT imply that all of Samba is released
@@ -251,6 +252,7 @@ int ldb_async_wait(struct ldb_async_handle *handle, enum ldb_async_wait_type typ
 	return handle->module->ops->async_wait(handle, type);
 }
 
+
 /*
   check for an error return from an op 
   if an op fails, but has not setup an error string, then setup one now
@@ -272,6 +274,7 @@ static int ldb_op_finish(struct ldb_context *ldb, int status)
 /*
   start an ldb request
   autostarts a transacion if none active and the operation is not a search
+  does not work for ASYNC operations
   NOTE: the request must be a talloc context.
   returns LDB_ERR_* on errors.
 */
@@ -285,7 +288,7 @@ int ldb_request(struct ldb_context *ldb, struct ldb_request *req)
 		req->op.search.res = NULL;
 	}
 
-	/* start a transaction if needed */
+	/* start a transaction if not async and not search */
 	if ((!ldb->transaction_active) &&
 	    (req->operation == LDB_REQ_ADD ||
 	     req->operation == LDB_REQ_MODIFY ||
@@ -317,6 +320,71 @@ int ldb_request(struct ldb_context *ldb, struct ldb_request *req)
   Use talloc_free to free the ldb_message returned in 'res', if successful
 
 */
+static int ldb_search_callback(struct ldb_context *ldb, void *context, struct ldb_async_result *ares)
+{
+	struct ldb_result *res;
+	int n;
+	
+ 	if (!context) {
+		ldb_set_errstring(ldb, talloc_asprintf(ldb, "NULL Context in callback"));
+		return LDB_ERR_OPERATIONS_ERROR;
+	}	
+
+	res = *((struct ldb_result **)context);
+
+	if (!res || !ares) {
+		goto error;
+	}
+
+	if (ares->type == LDB_REPLY_ENTRY) {
+		res->msgs = talloc_realloc(res, res->msgs, struct ldb_message *, res->count + 2);
+		if (! res->msgs) {
+			goto error;
+		}
+
+		res->msgs[res->count + 1] = NULL;
+
+		res->msgs[res->count] = talloc_steal(res->msgs, ares->message);
+		if (! res->msgs[res->count]) {
+			goto error;
+		}
+
+		res->count++;
+	}
+
+	if (ares->type == LDB_REPLY_REFERRAL) {
+		if (res->refs) {
+			for (n = 0; res->refs[n]; n++) /*noop*/ ;
+		} else {
+			n = 0;
+		}
+
+		res->refs = talloc_realloc(res, res->refs, char *, n + 2);
+		if (! res->refs) {
+			goto error;
+		}
+
+		res->refs[n] = talloc_steal(res->refs, ares->referral);
+		res->refs[n + 1] = NULL;
+	}
+
+	if (ares->controls) {
+		res->controls = talloc_steal(res, ares->controls);
+		if (! res->controls) {
+			goto error;
+		}
+	}
+
+	talloc_free(ares);
+	return LDB_SUCCESS;
+
+error:
+	talloc_free(ares);
+	talloc_free(res);
+	*((struct ldb_result **)context) = NULL;
+	return LDB_ERR_OPERATIONS_ERROR;
+}
+
 int ldb_search(struct ldb_context *ldb, 
 	       const struct ldb_dn *base,
 	       enum ldb_scope scope,
@@ -327,7 +395,10 @@ int ldb_search(struct ldb_context *ldb,
 	struct ldb_request *req;
 	int ret;
 
-	(*res) = NULL;
+	*res = talloc_zero(ldb, struct ldb_result);
+	if (! *res) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
 
 	req = talloc(ldb, struct ldb_request);
 	if (req == NULL) {
@@ -335,7 +406,7 @@ int ldb_search(struct ldb_context *ldb,
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	req->operation = LDB_REQ_SEARCH;
+	req->operation = LDB_ASYNC_SEARCH;
 	req->op.search.base = base;
 	req->op.search.scope = scope;
 
@@ -348,15 +419,52 @@ int ldb_search(struct ldb_context *ldb,
 
 	req->op.search.attrs = attrs;
 	req->controls = NULL;
+	req->creds = NULL;
+	req->async.context = res;
+	req->async.callback = ldb_search_callback;
+	req->async.timeout = 600; /* 10 minutes */
 
 	ret = ldb_request(ldb, req);
 	
 	if (ret == LDB_SUCCESS) {
-		(*res) = talloc_steal(ldb, req->op.search.res);
+		ret = ldb_async_wait(req->async.handle, LDB_WAIT_ALL);
 	}
+	
+	if (ret != LDB_SUCCESS) {
+		talloc_free(*res);
+		*res = NULL;
+	}
+
 	talloc_free(req);
 	return ret;
 }
+
+static int ldb_autotransaction_request(struct ldb_context *ldb, struct ldb_request *req)
+{
+	int ret, close_transaction;
+
+	close_transaction = 0;
+	if (!ldb->transaction_active) {
+		ret = ldb_transaction_start(ldb);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+		close_transaction = 1;
+	}
+
+	ret = ldb_request(ldb, req);
+
+	if (ret == LDB_SUCCESS) {
+		ret = ldb_async_wait(req->async.handle, LDB_WAIT_ALL);
+	}
+
+	if (close_transaction) {
+		return ldb_op_finish(ldb, ret);
+	}
+
+	return ret;
+}
+
 
 /*
   add a record to the database. Will fail if a record with the given class and key
@@ -377,11 +485,16 @@ int ldb_add(struct ldb_context *ldb,
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	req->operation = LDB_REQ_ADD;
+	req->operation = LDB_ASYNC_ADD;
 	req->op.add.message = message;
 	req->controls = NULL;
+	req->creds = NULL;
+	req->async.context = NULL;
+	req->async.callback = NULL;
+	req->async.timeout = 600; /* 10 minutes */
 
-	ret = ldb_request(ldb, req);
+	/* do request and autostart a transaction */
+	ret = ldb_autotransaction_request(ldb, req);
 
 	talloc_free(req);
 	return ret;
@@ -405,11 +518,16 @@ int ldb_modify(struct ldb_context *ldb,
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	req->operation = LDB_REQ_MODIFY;
+	req->operation = LDB_ASYNC_MODIFY;
 	req->op.add.message = message;
 	req->controls = NULL;
+	req->creds = NULL;
+	req->async.context = NULL;
+	req->async.callback = NULL;
+	req->async.timeout = 600; /* 10 minutes */
 
-	ret = ldb_request(ldb, req);
+	/* do request and autostart a transaction */
+	ret = ldb_autotransaction_request(ldb, req);
 
 	talloc_free(req);
 	return ret;
@@ -430,11 +548,16 @@ int ldb_delete(struct ldb_context *ldb, const struct ldb_dn *dn)
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	req->operation = LDB_REQ_DELETE;
+	req->operation = LDB_ASYNC_DELETE;
 	req->op.del.dn = dn;
 	req->controls = NULL;
+	req->creds = NULL;
+	req->async.context = NULL;
+	req->async.callback = NULL;
+	req->async.timeout = 600; /* 10 minutes */
 
-	ret = ldb_request(ldb, req);
+	/* do request and autostart a transaction */
+	ret = ldb_autotransaction_request(ldb, req);
 
 	talloc_free(req);
 	return ret;
@@ -454,12 +577,17 @@ int ldb_rename(struct ldb_context *ldb, const struct ldb_dn *olddn, const struct
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	req->operation = LDB_REQ_RENAME;
+	req->operation = LDB_ASYNC_RENAME;
 	req->op.rename.olddn = olddn;
 	req->op.rename.newdn = newdn;
 	req->controls = NULL;
+	req->creds = NULL;
+	req->async.context = NULL;
+	req->async.callback = NULL;
+	req->async.timeout = 600; /* 10 minutes */
 
-	ret = ldb_request(ldb, req);
+	/* do request and autostart a transaction */
+	ret = ldb_autotransaction_request(ldb, req);
 
 	talloc_free(req);
 	return ret;

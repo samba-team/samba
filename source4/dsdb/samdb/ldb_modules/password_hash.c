@@ -975,16 +975,25 @@ static int add_krb5_keys_from_NThash(struct ldb_module *module, struct ldb_messa
 	return LDB_SUCCESS;
 }
 
-static int set_pwdLastSet(struct ldb_module *module, struct ldb_message *msg)
+static int set_pwdLastSet(struct ldb_module *module, struct ldb_message *msg, int is_mod)
 {
 	NTTIME now_nt;
 
 	/* set it as now */
 	unix_to_nt_time(&now_nt, time(NULL));
 
-	/* replace or add */
-	if (ldb_msg_add_empty(msg, "pwdLastSet", LDB_FLAG_MOD_REPLACE) != 0) {
-		return LDB_ERR_OPERATIONS_ERROR;
+	if (!is_mod) {
+		/* be sure there isn't a 0 value set (eg. coming from the template) */
+		ldb_msg_remove_attr(msg, "pwdLastSet");
+		/* add */
+		if (ldb_msg_add_empty(msg, "pwdLastSet", LDB_FLAG_MOD_ADD) != 0) {
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+	} else {
+		/* replace */
+		if (ldb_msg_add_empty(msg, "pwdLastSet", LDB_FLAG_MOD_REPLACE) != 0) {
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
 	}
 
 	if (samdb_msg_add_uint64(module->ldb, msg, msg, "pwdLastSet", now_nt) != 0) {
@@ -1326,7 +1335,7 @@ static int password_hash_add_async_do_add(struct ldb_async_handle *h) {
 
 	/* don't touch it if a value is set. It could be an incoming samsync */
 	if (ldb_msg_find_uint64(msg, "pwdLastSet", 0) == 0) {
-		if (set_pwdLastSet(ac->module, msg) != LDB_SUCCESS) {
+		if (set_pwdLastSet(ac->module, msg, 0) != LDB_SUCCESS) {
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 	}
@@ -1630,7 +1639,7 @@ static int password_hash_mod_async_do_mod(struct ldb_async_handle *h) {
 	}
 
 	/* set change time */
-	if (set_pwdLastSet(ac->module, msg) != LDB_SUCCESS) {
+	if (set_pwdLastSet(ac->module, msg, 1) != LDB_SUCCESS) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 

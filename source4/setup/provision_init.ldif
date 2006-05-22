@@ -82,8 +82,8 @@ vendorVersion: ${VERSION}
 #
 # Some Known ordering constraints:
 # - rootdse must be first, as it makes redirects from "" -> cn=rootdse
-# - password_hash must be before samldb, or else the template code in samldb breaks setting the pwdLastSet attribute
+# - samldb must be before password_hash, because password_hash checks that the objectclass is of type person (filled in by samldb)
 
 dn: @MODULES
-@LIST: rootdse,kludge_acl,paged_results,server_sort,extended_dn,asq,password_hash,samldb,operational,objectguid,rdn_name,objectclass
+@LIST: rootdse,kludge_acl,paged_results,server_sort,extended_dn,asq,samldb,password_hash,operational,objectguid,rdn_name,objectclass
 
