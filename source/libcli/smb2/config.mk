@@ -18,5 +18,6 @@ OBJ_FILES = \
 	logoff.o \
 	tdis.o \
 	flush.o \
+	lock.o \
 	keepalive.o
 PUBLIC_DEPENDENCIES = LIBCLI_RAW LIBPACKET gensec
