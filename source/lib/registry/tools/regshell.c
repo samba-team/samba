@@ -90,19 +90,23 @@ static struct registry_key *cmd_pwd(TALLOC_CTX *mem_ctx, struct registry_context
 
 static struct registry_key *cmd_set(TALLOC_CTX *mem_ctx, struct registry_context *ctx,struct registry_key *cur, int argc, char **argv)
 {
+	struct registry_value val;
+	WERROR error;
+
 	if (argc < 4) {
 		fprintf(stderr, "Usage: set value-name type value\n");
-	} else {
-		struct registry_value val;
-		if (reg_string_to_val(mem_ctx, argv[2], argv[3], &val.data_type, &val.data)) {
-			WERROR error = reg_val_set(cur, argv[1], val.data_type, val.data);
-			if (!W_ERROR_IS_OK(error)) {
-				fprintf(stderr, "Error setting value: %s\n", win_errstr(error));
-				return NULL;
-			}
-		} else {
-			fprintf(stderr, "Unable to interpret data\n");
-		}
+		return cur;
+	} 
+
+	if (!reg_string_to_val(mem_ctx, argv[2], argv[3], &val.data_type, &val.data)) {
+		fprintf(stderr, "Unable to interpret data\n");
+		return cur;
+	}
+
+	error = reg_val_set(cur, argv[1], val.data_type, val.data);
+	if (!W_ERROR_IS_OK(error)) {
+		fprintf(stderr, "Error setting value: %s\n", win_errstr(error));
+		return NULL;
 	}
 	return cur;
 }
