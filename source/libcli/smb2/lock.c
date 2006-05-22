@@ -34,8 +34,6 @@ struct smb2_request *smb2_lock_send(struct smb2_tree *tree, struct smb2_lock *io
 	req = smb2_request_init_tree(tree, SMB2_OP_LOCK, 0x30, False, 0);
 	if (req == NULL) return NULL;
 
-	SIVAL(req->out.hdr, SMB2_HDR_PID,     io->in.unknown2);
-
 	SSVAL(req->out.body, 0x02, io->in.unknown1);
 	SIVAL(req->out.body, 0x04, io->in.unknown2);
 	smb2_push_handle(req->out.body+0x08, &io->in.file.handle);
