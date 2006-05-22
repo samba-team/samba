@@ -1781,7 +1781,12 @@ union smb_write {
 };
 
 
-enum smb_lock_level {RAW_LOCK_LOCK, RAW_LOCK_UNLOCK, RAW_LOCK_LOCKX};
+enum smb_lock_level {
+	RAW_LOCK_LOCK,
+	RAW_LOCK_UNLOCK,
+	RAW_LOCK_LOCKX,
+	RAW_LOCK_SMB2
+};
 
 /* the generic interface is defined to be equal to the lockingX interface */
 #define RAW_LOCK_GENERIC RAW_LOCK_LOCKX
@@ -1815,6 +1820,33 @@ union smb_lock {
 			uint32_t offset;
 		} in;
 	} lock, unlock;
+
+	/* SMB2 Lock */
+	struct smb2_lock {
+		enum smb_lock_level level;
+		struct {
+			union smb_handle file;
+
+			/* static body buffer 48 (0x30) bytes */
+			/* uint16_t buffer_code;  0x30 */
+			uint16_t unknown1; /* must be 0x0001 */
+			uint32_t unknown2;
+			/* struct smb2_handle handle; */
+			uint64_t offset;
+			uint64_t count;
+			uint32_t unknown5;
+#define SMB2_LOCK_FLAG_NONE	0x00000000
+#define SMB2_LOCK_FLAG_EXCLUSIV	0x00000002
+#define SMB2_LOCK_FLAG_UNLOCK	0x00000004
+#define SMB2_LOCK_FLAGS_MASK	0x00000006
+			uint32_t flags; 
+		} in;
+		struct {
+			/* static body buffer 4 (0x04) bytes */
+			/* uint16_t buffer_code;  0x04 */
+			uint16_t unknown1;
+		} out;
+	} smb2;
 };
 
 

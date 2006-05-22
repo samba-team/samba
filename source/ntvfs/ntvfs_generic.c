@@ -969,6 +969,9 @@ _PUBLIC_ NTSTATUS ntvfs_map_lock(struct ntvfs_module_context *ntvfs,
 		lck2->generic.in.ulock_cnt = 1;
 		lck2->generic.in.lock_cnt = 0;
 		break;
+
+	case RAW_LOCK_SMB2:
+		return NT_STATUS_INVALID_LEVEL;
 	}
 
 	lck2->generic.level = RAW_LOCK_GENERIC;

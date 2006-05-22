@@ -802,6 +802,8 @@ struct smbcli_request *smb_raw_lock_send(struct smbcli_tree *tree, union smb_loc
 			}
 		}	
 	}
+	case RAW_LOCK_SMB2:
+		return NULL;
 	}
 
 	if (!smbcli_request_send(req)) {
