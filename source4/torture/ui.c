@@ -62,18 +62,31 @@ void torture_comment(struct torture_test *test, const char *comment, ...) _PRINT
 
 void torture_ok(struct torture_test *test)
 {
-	test->context->ui_ops->test_result(test, TORTURE_OK);
+	test->context->ui_ops->test_result(test, TORTURE_OK, NULL);
 	test->context->success++;
 }
 
-void torture_fail(struct torture_test *test)
+void torture_fail(struct torture_test *test, const char *fmt, ...) _PRINTF_ATTRIBUTE(2,3)
 {
-	test->context->ui_ops->test_result(test, TORTURE_FAIL);
+	va_list ap;
+	char *reason;
+	va_start(ap, fmt);
+	reason = talloc_vasprintf(test, fmt, ap);
+	va_end(ap);
+	test->context->ui_ops->test_result(test, TORTURE_FAIL, reason);
+	talloc_free(reason);
+
 	test->context->failed++;
 }
 
-void torture_skip(struct torture_test *test)
+void torture_skip(struct torture_test *test, const char *fmt, ...) _PRINTF_ATTRIBUTE(2,3)
 {
-	test->context->ui_ops->test_result(test, TORTURE_SKIP);
+	va_list ap;
+	char *reason;
+	va_start(ap, fmt);
+	reason = talloc_vasprintf(test, fmt, ap);
+	va_end(ap);
+	test->context->ui_ops->test_result(test, TORTURE_SKIP, reason);
+	talloc_free(reason);
 	test->context->skipped++;
 }
