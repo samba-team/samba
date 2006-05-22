@@ -111,7 +111,7 @@ static int ejs_net_join_domain(MprVarHandle eid, int argc, struct MprVar **argv)
 	join->in.netbios_name  = NULL;
 	join->in.join_type     = SEC_CHAN_WKSTA;
 	join->in.domain_name   = cli_credentials_get_domain(ctx->cred);
-	join->in.level         = LIBNET_JOINDOMAIN_AUTOMATIC;
+	join->in.level         = LIBNET_JOIN_AUTOMATIC;
 	join->out.error_string = NULL;
 
 	if (argc == 1 && argv[0]->type == MPR_TYPE_OBJECT) {
