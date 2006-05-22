@@ -421,10 +421,6 @@ struct smbsrv_connection {
 		smbsrv_send_error(req, NT_STATUS_NO_MEMORY); \
 		return; \
 	} \
-	if (!talloc_reference(req->ntvfs, req)) { \
-		smbsrv_send_error(req, NT_STATUS_NO_MEMORY); \
-		return; \
-	} \
 	req->ntvfs->frontend_data.private_data = req; \
 } while (0)
 
