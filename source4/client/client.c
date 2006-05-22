@@ -935,7 +935,7 @@ do a mget command
 static int cmd_mget(struct smbclient_context *ctx, const char **args)
 {
 	uint16_t attribute = FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN;
-	char *mget_mask;
+	char *mget_mask = NULL;
 	int i;
 
 	if (ctx->recurse)
@@ -950,14 +950,15 @@ static int cmd_mget(struct smbclient_context *ctx, const char **args)
 		if (mget_mask[0] != '\\')
 			mget_mask = talloc_append_string(ctx, mget_mask, "\\");
 		do_list(ctx, mget_mask, attribute,do_mget,False,True);
+
+		talloc_free(mget_mask);
 	}
 
-	if (!*mget_mask) {
+	if (mget_mask == NULL) {
 		mget_mask = talloc_asprintf(ctx, "%s\\*", ctx->remote_cur_dir);
 		do_list(ctx, mget_mask, attribute,do_mget,False,True);
+		talloc_free(mget_mask);
 	}
-
-	talloc_free(mget_mask);
 	
 	return 0;
 }
