@@ -235,9 +235,9 @@ static void simple_test_start (struct torture_test *test)
 	printf("Testing %s...\n", test->name);
 }
 
-static void simple_test_result (struct torture_test *test, enum torture_result res)
+static void simple_test_result (struct torture_test *test, enum torture_result res, const char *reason)
 {
-	printf("\t %d\n",res);
+	printf("\t %d: %s\n",res, reason?reason:"");
 }
 
 static void simple_comment (struct torture_test *test, const char *comment)
