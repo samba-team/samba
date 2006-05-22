@@ -3053,11 +3053,11 @@ static int do_message_op(const char *desthost, const char *destip, int name_type
  int main(int argc,char *argv[])
 {
 	const char *base_directory = NULL;
-	const char *dest_ip;
+	const char *dest_ip = NULL;
 	int opt;
 	const char *query_host = NULL;
 	BOOL message = False;
-	const char *desthost;
+	const char *desthost = NULL;
 #ifdef KANJI
 	const char *term_code = KANJI;
 #else
