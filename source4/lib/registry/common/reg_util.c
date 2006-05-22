@@ -122,7 +122,7 @@ _PUBLIC_ BOOL reg_string_to_val(TALLOC_CTX *mem_ctx, const char *type_str, const
 			break;
 
 		case REG_NONE:
-			ZERO_STRUCT(data);
+			ZERO_STRUCTP(data);
 			break;
 	
 		case REG_BINARY: 
