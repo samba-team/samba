@@ -23,7 +23,8 @@ PUBLIC_DEPENDENCIES = \
 		MESSAGING \
 		ICONV \
 		registry \
-		POPT_CREDENTIALS
+		POPT_CREDENTIALS \
+		TORTURE_UI
 # End SUBSYSTEM TORTURE_LOCAL
 #################################
 
