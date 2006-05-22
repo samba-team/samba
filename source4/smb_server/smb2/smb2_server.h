@@ -114,7 +114,7 @@ struct smbsrv_request;
 
 #define SMB2SRV_CHECK_FILE_HANDLE(handle) do { \
 	if (!handle) { \
-		smb2srv_send_error(req, NT_STATUS_INVALID_HANDLE); \
+		smb2srv_send_error(req, NT_STATUS_NOT_FOUND); \
 		return; \
 	} \
 } while (0)
