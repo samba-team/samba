@@ -1445,7 +1445,7 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 
 			if (!NT_STATUS_IS_OK(fsp_open) && errno) {
 				/* Default error. */
-				fsp_open = NT_STATUS_ACCESS_DENIED;
+				status = NT_STATUS_ACCESS_DENIED;
 			}
 
 			/* 
@@ -1498,10 +1498,10 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 				 * We have detected a sharing violation here
 				 * so return the correct error code
 				 */
-				return NT_STATUS_SHARING_VIOLATION;
+				status = NT_STATUS_SHARING_VIOLATION;
 			}
 			file_free(fsp);
-			return fsp_open;
+			return status;
 		}
 
 		/*
