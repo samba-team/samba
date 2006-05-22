@@ -28,7 +28,11 @@ static struct in6_addr interpret_addr6(const char *name)
 	struct hostent *he;
 	
 	if (name == NULL) return in6addr_any;
-	
+
+	if (strcasecmp(name, "localhost") == 0) {
+		name = "::1";
+	}
+
 	he = gethostbyname2(name, PF_INET6);
 
 	if (he == NULL) return in6addr_any;
