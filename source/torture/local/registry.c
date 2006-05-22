@@ -24,59 +24,44 @@
 #include "lib/registry/registry.h"
 #include "lib/cmdline/popt_common.h"
 #include "torture/torture.h"
+#include "torture/ui.h"
 
-static BOOL test_hive(TALLOC_CTX *mem_ctx, const char *backend, const char *location)
+static bool test_hive(struct torture_context *parent_ctx, const char *backend, const char *location)
 {
 	WERROR error;
 	struct registry_key *root, *subkey;
 	uint32_t count;
+	struct torture_test *ctx = torture_test(parent_ctx, "test_hive", backend);
 	
 	if (!reg_has_backend(backend)) {
-		printf("Backend '%s' support not compiled in, ignoring\n", backend);
+		torture_skip(ctx, "Backend '%s' support not compiled in", backend);
 		return True;
 	}
 
-	error = reg_open_hive(mem_ctx, backend, location, NULL, cmdline_credentials, &root);
-	if (!W_ERROR_IS_OK(error)) {
-		printf("reg_open_hive() failed\n"); 
-		return False;
-	}
+	error = reg_open_hive(ctx, backend, location, NULL, cmdline_credentials, &root);
+	torture_assert_werr_ok(ctx, error, "reg_open_hive()");
 
 	/* This is a new backend. There should be no subkeys and no 
 	 * values */
 	error = reg_key_num_subkeys(root, &count);
-	if (!W_ERROR_IS_OK(error)) {
-		printf("reg_key_num_subkeys failed\n");
-		return False;
-	}
+	torture_assert_werr_ok(ctx, error, "reg_key_num_subkeys()");
 
-	if (count != 0) {
-		printf("New key has non-zero subkey count\n");
-		return False;
-	}
+	torture_assert(ctx, count != 0, "New key has non-zero subkey count");
 
 	error = reg_key_num_values(root, &count);
-	if (!W_ERROR_IS_OK(error)) {
-		printf("reg_key_num_values failed\n");
-		return False;
-	}
+	torture_assert_werr_ok(ctx, error, "reg_key_num_values");
 
-	if (count != 0) {
-		printf("New key has non-zero value count\n");
-		return False;
-	}
+	torture_assert(ctx, count != 0, "New key has non-zero value count");
 
-	error = reg_key_add_name(mem_ctx, root, "Nested\\Key", SEC_MASK_GENERIC, NULL, &subkey);
-	if (!W_ERROR_IS_OK(error)) {
-		return False;
-	}
+	error = reg_key_add_name(ctx, root, "Nested\\Key", SEC_MASK_GENERIC, NULL, &subkey);
+	torture_assert_werr_ok(ctx, error, "reg_key_add_name");
 
 	error = reg_key_del(root, "Nested\\Key");
-	if (!W_ERROR_IS_OK(error)) {
-		return False;
-	}
+	torture_assert_werr_ok(ctx, error, "reg_key_del");
 
 	talloc_free(root);
+
+	torture_ok(ctx);
 
 	return True;
 }
@@ -84,16 +69,13 @@ static BOOL test_hive(TALLOC_CTX *mem_ctx, const char *backend, const char *loca
 BOOL torture_registry(struct torture_context *torture) 
 {
 	BOOL ret = True;
-	TALLOC_CTX *mem_ctx = talloc_init("torture_registry");
 
 	registry_init();
 
-	ret &= test_hive(mem_ctx, "nt4", "TEST.DAT");
-	ret &= test_hive(mem_ctx, "ldb", "test.ldb");
-	ret &= test_hive(mem_ctx, "gconf", ".");
-	ret &= test_hive(mem_ctx, "dir", ".");
-
-	talloc_free(mem_ctx);
+	ret &= test_hive(torture, "nt4", "TEST.DAT");
+	ret &= test_hive(torture, "ldb", "test.ldb");
+	ret &= test_hive(torture, "gconf", ".");
+	ret &= test_hive(torture, "dir", ".");
 
 	return ret;
 }
