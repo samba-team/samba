@@ -207,6 +207,12 @@ BOOL torture_smb2_connect(struct torture_context *torture)
 	torture_smb2_close(tree, h1);
 	torture_smb2_close(tree, h2);
 
+	status = smb2_util_close(tree, h1);
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
+		printf("close should have closed the handle - %s\n", nt_errstr(status));
+		return False;
+	}
+
 	status = smb2_tdis(tree);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("tdis failed - %s\n", nt_errstr(status));
