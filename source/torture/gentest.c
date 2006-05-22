@@ -206,7 +206,7 @@ static BOOL connect_servers(void)
 static uint_t time_skew(void)
 {
 	uint_t ret;
-	ret = abs(servers[0].cli[0]->transport->negotiate.server_time -
+	ret = labs(servers[0].cli[0]->transport->negotiate.server_time -
 		  servers[1].cli[0]->transport->negotiate.server_time);
 	return ret + 300;
 }
@@ -1036,7 +1036,7 @@ again:
 } while(0)
 
 #define CHECK_TIMES_EQUAL(field) do { \
-	if (abs(parm[0].field - parm[1].field) > time_skew() && \
+	if (labs(parm[0].field - parm[1].field) > time_skew() && \
 	    !ignore_pattern(#field)) { \
 		printf("Mismatch in %s - 0x%x 0x%x\n", #field, \
 		       (int)parm[0].field, (int)parm[1].field); \
@@ -1045,7 +1045,7 @@ again:
 } while(0)
 
 #define CHECK_NTTIMES_EQUAL(field) do { \
-	if (abs(nt_time_to_unix(parm[0].field) - \
+	if (labs(nt_time_to_unix(parm[0].field) - \
 		nt_time_to_unix(parm[1].field)) > time_skew() && \
 	    !ignore_pattern(#field)) { \
 		printf("Mismatch in %s - 0x%x 0x%x\n", #field, \
