@@ -541,7 +541,7 @@ ADS_STATUS ads_do_paged_search_args(ADS_STRUCT *ads, const char *bind_path,
 
 		} else {
 			ExtendedDn.ldctl_value.bv_len = 0;
-			ExtendedDn.ldctl_value.bv_val = CONST_DISCARD(char *, "");
+			ExtendedDn.ldctl_value.bv_val = NULL;
 		}
 
 		controls[0] = &NoReferrals;
