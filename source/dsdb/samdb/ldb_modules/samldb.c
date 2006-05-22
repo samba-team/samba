@@ -94,12 +94,33 @@ static BOOL samldb_msg_add_sid(struct ldb_module *module, struct ldb_message *ms
 	return (ldb_msg_add_value(msg, name, &v) == 0);
 }
 
-static BOOL samldb_find_or_add_attribute(struct ldb_module *module, struct ldb_message *msg, const char *name, const char *value, const char *set_value)
+static BOOL samldb_find_or_add_value(struct ldb_module *module, struct ldb_message *msg, const char *name, const char *value, const char *set_value)
 {
+	if (msg == NULL || name == NULL || value == NULL || set_value == NULL) {
+		return False;
+	}
+
 	if (samldb_find_attribute(msg, name, value) == NULL) {
 		return samldb_msg_add_string(module, msg, name, set_value);
 	}
 	return True;
+}
+
+static BOOL samldb_find_or_add_attribute(struct ldb_module *module, struct ldb_message *msg, const char *name, const char *set_value)
+{
+	int j;
+	struct ldb_message_element *el;
+
+	if (msg == NULL || name == NULL || set_value == NULL) {
+		return False;
+	}
+
+       	el = ldb_msg_find_element(msg, name);
+	if (el) {
+		return True;
+	}
+		
+	return samldb_msg_add_string(module, msg, name, set_value);
 }
 
 /*
@@ -492,16 +513,15 @@ static int samldb_copy_template(struct ldb_module *module, struct ldb_message *m
 				    strcasecmp((char *)el->values[j].data, "secretTemplate") == 0) {
 					continue;
 				}
-				if ( ! samldb_find_or_add_attribute(module, msg, el->name, 
-								    (char *)el->values[j].data,
-								    (char *)el->values[j].data)) {
+				if ( ! samldb_find_or_add_value(module, msg, el->name, 
+								(char *)el->values[j].data,
+								(char *)el->values[j].data)) {
 					ldb_debug(module->ldb, LDB_DEBUG_FATAL, "Attribute adding failed...\n");
 					talloc_free(res);
 					return -1;
 				}
 			} else {
 				if ( ! samldb_find_or_add_attribute(module, msg, el->name, 
-								    NULL,
 								    (char *)el->values[j].data)) {
 					ldb_debug(module->ldb, LDB_DEBUG_FATAL, "Attribute adding failed...\n");
 					talloc_free(res);
@@ -558,7 +578,7 @@ static int samldb_fill_group_object(struct ldb_module *module, const struct ldb_
 			talloc_free(mem_ctx);
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
-		if ( ! samldb_find_or_add_attribute(module, msg2, "sAMAccountName", NULL, name)) {
+		if ( ! samldb_find_or_add_attribute(module, msg2, "sAMAccountName", name)) {
 			talloc_free(mem_ctx);
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
@@ -620,7 +640,7 @@ static int samldb_fill_user_or_computer_object(struct ldb_module *module, const 
 	}
 
 	/* if the only attribute was: "objectclass: computer", then make sure we also add "user" objectclass */
-	if ( ! samldb_find_or_add_attribute(module, msg2, "objectclass", "user", "user")) {
+	if ( ! samldb_find_or_add_value(module, msg2, "objectclass", "user", "user")) {
 		talloc_free(mem_ctx);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
@@ -633,7 +653,7 @@ static int samldb_fill_user_or_computer_object(struct ldb_module *module, const 
 			talloc_free(mem_ctx);
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
-		if ( ! samldb_find_or_add_attribute(module, msg2, "sAMAccountName", NULL, name)) {
+		if ( ! samldb_find_or_add_attribute(module, msg2, "sAMAccountName", name)) {
 			talloc_free(mem_ctx);
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
