@@ -122,7 +122,7 @@ int main(int argc, char **argv)
 
 	error = WERR_OK;
 	
-	if (!h) {
+	if (root != NULL) {
 		print_tree(0, root, fullpath, no_values);
 	} else {
 		for(i = 0; reg_predefined_keys[i].handle; i++) {
@@ -131,6 +131,7 @@ int main(int argc, char **argv)
 				fprintf(stderr, "Skipping %s\n", reg_predefined_keys[i].name);
 				continue;
 			}
+			SMB_ASSERT(root);
 			print_tree(0, root, fullpath, no_values);
 		}
 	}
