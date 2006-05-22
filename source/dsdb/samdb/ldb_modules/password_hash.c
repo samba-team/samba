@@ -769,23 +769,22 @@ static int add_password_hashes(struct ldb_module *module, struct ldb_message *ms
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	/* compute the new nt and lm hashes */
 	if (is_mod) {
 		if (ldb_msg_add_empty(msg, "ntPwdHash", LDB_FLAG_MOD_REPLACE) != 0) {
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
+		if (ldb_msg_add_empty(msg, "lmPwdHash", LDB_FLAG_MOD_REPLACE) != 0) {
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
 	}	
+
+	/* compute the new nt and lm hashes */
 	E_md4hash(sambaPassword, tmp_hash.hash);
 	if (samdb_msg_add_hash(module->ldb, msg, msg, "ntPwdHash", &tmp_hash) != 0) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	if (E_deshash(sambaPassword, tmp_hash.hash)) {
-		if (is_mod) {
-			if (ldb_msg_add_empty(msg, "lmPwdHash", LDB_FLAG_MOD_REPLACE) != 0) {
-				return LDB_ERR_OPERATIONS_ERROR;
-			}
-		}
 		if (samdb_msg_add_hash(module->ldb, msg, msg, "lmPwdHash", &tmp_hash) != 0) {
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
