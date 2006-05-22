@@ -624,6 +624,7 @@ static struct {
 	{"SMB2-GETINFO", torture_smb2_getinfo, 0},
 	{"SMB2-SETINFO", torture_smb2_setinfo, 0},
 	{"SMB2-FIND", torture_smb2_find, 0},
+	{"SMB2-LOCK", torture_smb2_lock, 0},
 
 	/* RAP tests */
 	{"RAP-BASIC", torture_rap_basic, 0},
