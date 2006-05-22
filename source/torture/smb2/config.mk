@@ -10,7 +10,8 @@ OBJ_FILES = \
 		util.o \
 		getinfo.o \
 		setinfo.o \
-		find.o
+		find.o \
+		lock.o
 PUBLIC_DEPENDENCIES = \
 		LIBCLI_SMB2 POPT_CREDENTIALS
 # End SUBSYSTEM TORTURE_SMB2
