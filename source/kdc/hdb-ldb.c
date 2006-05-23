@@ -799,27 +799,21 @@ static krb5_error_code LDB_fetch(krb5_context context, HDB *db,
 
 	if (flags & HDB_F_GET_CLIENT) {
 		ret = LDB_fetch_client(context, db, mem_ctx, principal, flags, entry_ex);
-		if (ret != HDB_ERR_NOENTRY) {
-			talloc_free(mem_ctx);
-			return ret;
-		}
+		if (ret != HDB_ERR_NOENTRY) goto done;
 	}
 	if (flags & HDB_F_GET_SERVER) {
 		ret = LDB_fetch_server(context, db, mem_ctx, principal, flags, entry_ex);
-		if (ret != HDB_ERR_NOENTRY) {
-			return ret;
-		}
+		if (ret != HDB_ERR_NOENTRY) goto done;
 		ret = LDB_fetch_krbtgt(context, db, mem_ctx, principal, flags, entry_ex);
-		if (ret != HDB_ERR_NOENTRY) {
-			return ret;
-		}
+		if (ret != HDB_ERR_NOENTRY) goto done;
 	}
 	if (flags & HDB_F_GET_KRBTGT) {
 		ret = LDB_fetch_krbtgt(context, db, mem_ctx, principal, flags, entry_ex);
-		if (ret != HDB_ERR_NOENTRY) {
-			return ret;
-		}
+		if (ret != HDB_ERR_NOENTRY) goto done;
 	}
+
+done:
+	talloc_free(mem_ctx);
 	return ret;
 }
 
