@@ -58,7 +58,7 @@ static int pvfs_dir_handle_destructor(void *p)
 {
 	struct pvfs_file_handle *h = p;
 	int open_count;
-	char *path;
+	char *path = NULL;
 
 	if (h->name->stream_name == NULL && 
 	    pvfs_delete_on_close_set(h->pvfs, h, &open_count, &path) &&
@@ -74,6 +74,8 @@ static int pvfs_dir_handle_destructor(void *p)
 				 path, strerror(errno)));
 		}
 	}
+
+	talloc_free(path);
 
 	if (h->have_opendb_entry) {
 		struct odb_lock *lck;
@@ -414,7 +416,7 @@ static int pvfs_handle_destructor(void *p)
 {
 	struct pvfs_file_handle *h = p;
 	int open_count;
-	char *path;
+	char *path = NULL;
 
 	/* the write time is no longer sticky */
 	if (h->sticky_write_time) {
@@ -463,6 +465,8 @@ static int pvfs_handle_destructor(void *p)
 				       path);
 		}
 	}
+
+	talloc_free(path);
 
 	if (h->have_opendb_entry) {
 		struct odb_lock *lck;
