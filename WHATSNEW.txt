@@ -185,6 +185,8 @@ o   Volker Lendecke <vl@samba.org>
     * Add special close handling for fake files.
     * BUG 3788: Fix nss_winbind's getgrouplist() call on AIX.
     * BUG 3435: Fix 'msdfs root = yes' in [homes].
+    * Instruct winbindd to find a trusted DC on its own when runing on 
+      a Samba DC.
 
 
 o   Jim McDonough <jmcd@us.ibm.com>
