@@ -23,6 +23,8 @@
 #ifndef _TLS_H_
 #define _TLS_H_
 
+#include "lib/socket/socket.h"
+
 /*
   call tls_initialise() once per task to startup the tls subsystem
 */
