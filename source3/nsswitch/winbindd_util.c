@@ -363,7 +363,7 @@ enum winbindd_result init_child_connection(struct winbindd_domain *domain,
 	state->continuation = continuation;
 	state->private_data = private_data;
 
-	if (domain->primary) {
+	if (IS_DC || domain->primary) {
 		/* The primary domain has to find the DC name itself */
 		request->cmd = WINBINDD_INIT_CONNECTION;
 		fstrcpy(request->domain_name, domain->name);
