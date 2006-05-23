@@ -698,7 +698,7 @@ void *talloc_steal(const void *new_ctx, const void *ptr)
 
 	new_tc = talloc_chunk_from_ptr(new_ctx);
 
-	if (tc == new_tc) {
+	if (tc == new_tc || tc->parent == new_tc) {
 		return discard_const_p(void, ptr);
 	}
 
