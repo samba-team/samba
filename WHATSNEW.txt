@@ -1,24 +1,252 @@
-                   ==================================
+                   =================================
+                   Release Notes for Samba 3.0.23rc1
+                               May 24, 2006
+                   =================================
+
+This is the first release candidate of the 3.0.23 code base and is 
+provided for testing purposes only.  While close to the final stable 
+release, this snapshot is *not* intended for production servers. 
+Your testing and feedback is greatly appreciated.
+
+New features in 3.0.23rc1 include:
+
+   o Winbind IDMAP integration with RFC2307 schema objects 
+     supported by Windows 2003 R2.
+   o Rewritten 'net ads join' to mimic Windows XP without 
+     requiring administrative rights to join a domain.
+
+
+######################################################################
+Changes
+#######
+
+Changes since 3.0.23pre1
+------------------------
+
+smb.conf changes
+----------------
+
+    Parameter Name                      Description	  Default
+    --------------                      -----------	  -------
+    change notify timeout		Changed Scope
+    enable core files			New               Yes
+    hosts equiv 			Removed
+    passdb expand explicit		Changed default   No
+    usershare allow guests		New               No
+    wins partners			Removed
+
+commits
+-------
+o   Jeremy Allison <jra@samba.org>
+    * BUG 3592: Ignore a file in the tar output from smbclient if the 
+      read failed (e.g. due to ACCESS_DENIED).  (Based on ideas from
+      Justin Best <justinb@pdxmission.org>).
+    * BUG 3668: Workaround issues in Windows server code with LARGE_READX.
+    * Push/Pull kerberos principal and realm names to/from UTF-8.
+    * Fix incorrect boolean in assert to make POSIX lock tests
+      pass with CIFSFS.
+    * Don't ever set O_SYNC on open unless "strict sync = yes".
+    * Remove dead printing code.
+    * Allow configurable guest access to Samba's usershare functionality.
+    * BUG 3587: Make byte-range locking tdb self-cleaning.
+    * Ensure every exit error path in the session setup code calls 
+      nt_status_squash().
+    * Use portable wrapper functions instead of seteuid directly in 
+      winbindd.
+    * Make "change notify timeout" a per-share parameter.
+    * Fix regression in SAMBA_4_0's smbtorture DENY tests.
+    * Fix valgrind-spotted issue in BASE-DELETE test.
+    * Fix early termination condition in winbindd when trying to 
+      connect to a remote DC.
+    * Instruct winbindd to ignore fd_set when select() returns -1.
+    * BUG 3779: Make nmbd udp sockets non-blocking to prevent problem
+      with select returning true but no data being available.
+
+
+o   Timur Bakeyev <timur@com.bat.ru>
+    * BUG 2961: Fix compile warnings for pam_smbpass.
+    * BUG 2746, 3763: Fix compile warnings in pam_winbind.
+
+
+o   Andrew Bartlett <abartlet@samba.org>
+    * Work around abort() in the OpenLDAP client libs caused by a NULL 
+      msg pointer.
+
+
+o   Gerald (Jerry) Carter <jerry@samba.org>
+    * Normalize printing keys when deleting.
+    * Only store LANMAN passwords on a change if 'lanman auth = yes'.
+    * Look at the NT password (not lanman one) when determining if 'smbpasswd 
+      -e' should probably for a password.
+    * Default eventlog tdbs to mode 0660 to allow easier access by 
+      BUILTIN\Administrators.
+    * Remove extra call to create_user on member servers without winbindd.
+    * Replace the use of OpenLDAP's ldap_domain2hostlist() for locating 
+      AD DC's with out own DNS SRV queries.
+    * Fix compile error on HP-UX reported by Ryan Novosielski.
+    * Rewrite 'net ads join' to share common code with 'net rpc join' 
+      and behave more like a Windows XP client.
+    * Remove --with-ldapsam option from configure (only used for 
+      backwards compatibility for 2.2 smb.conf files).
+    * Remove 'wins partners' and 'hosts equiv' smb.conf parameters.
+    * Remove rhosts authentication module.
+    * Reimplement 'net ads leave' to disable the machine account in the 
+      domain rather than removing it.
+
+
+o   Guenther Deschner <gd@samba.org>
+    [pam_winbind]
+    * Attempt to send the correct warning from pam_winbind when a password 
+      change was attempted too early.
+    * Don't use cached credentials when changing passwords.
+    * Correctly disallow unauthorized access when logging on with the
+      kerberized pam_winbind and workstation restrictions are in effect.
+    * Save useless round trips in pam_winbind's auth calls.
+    * Make the existence of the /etc/security/pam_winbind.conf file
+      non-critical and fallback to only parse the argv options in that 
+      case.
+
+
+    [winbindd]
+    * Add winbind debug class to the main winbindd process.
+    * Be consistent between rpc and ads winbind backend: let the 
+      ads backend query the samlogon cache first as well.
+    * Ignore BUILTIN groups when searching AD for group memberships.
+    * Fix KRB5KDC_ERR_POLICY -> NTSTATUS mapping.
+    * Cleanup credential caches from winbind's linked list.
+    * Fix 'winbindd -n' for new persistent caches.
+    * Fix searching by SID in winbindd.
+    * Add "smbcontrol winbind onlinestatus" for debugging purpose.
+    * Prefer to use the indexed objectCategory attribute (instead of
+      objectClass which is not indexed on AD) in LDAP queries.
+    * Free LDAP result in ads_get_attrname_by_oid().
+    * Prevent unnecessary storing of password in a WINBINDD_CCACHE_ENTRY.
+    * Prevent passwords of winbindd's list of credential caches from 
+      being swapped to disk using mlock().
+    * BUG 3345: Expand the "winbind nss info" to also take "rfc2307" to 
+      support the plain posix attributes LDAP schema from win2k3-r2
+      (based on patches from Howard Wilkinson and Bob Gautier).
+    * Add more robust code for fallback when lookup_usergroups() fails.
+
+    [misc]
+    * Fix 'net rpc join' for winbindd running on a Samba DC.
+    * Add help text for new 'net rpc audit' utility.
+    * Add net ads search SID.
+    * samrQueryDomainInfo level 5 should return the domain name, not our 
+      netbios name when we are a DC.
+    * Add some more client rpc for the querydominfo calls (from samba4 idl).
+    * Process all the supported info levels in the samr_query_domain_info2 
+      call.
+    * Wrap the samr_query_domain_info2() call around 
+      samr_query_domain_info().
+    * Fix segv in smbctool.
+    * Honour the time_offset also when verifying kerberos tickets.
+    * Prevent unnecessary longstanding LDAP connection to eDirectory.
+    * Fix segv in smbspool.
+    * BUG 1914: Allow to store 24 password history entries in ldapsam.
+
+
+o   Aleksey Fedoseev <fedoseev@ru.ibm.com>
+    * Fixes for msgtest torture tool.
+
+
+o   Paul Green <paulg@samba.org>
+    * Fix build on platforms that do not support shared libs.
+    * Remove dead code in the auth_script module. 
+
+
+o   Deryck Hodge <deryck@samba.org>
+    * Fix import of python modules broken by the rpc_client rewrite
+      for 3.0.21.
+    * BUG 3702: Fix segv in SWAT.
+    * Fix 'make installswat'.
+
+
+o   William Jojo <jojowil@hvcc.edu>
+    * Fixes for the winbind NSS library on AIX.
+
+
+o   Leonid Kabanov <lkabanov@mail.ru> 
+    * BUG 3711: Shell portability fixes for 'make test'.
+
+
+o   Volker Lendecke <vl@samba.org>
+    * Memory leak fixes in 'net sam'.
+    * BUG 3720: Fix uninitialized error return variable.
+    * Default "passdb expand explicit" to no.
+    * BUG 3741: Re-enable algorithmic SID mapping in one critical place.
+    * Fix user NT token creation when utilizing a username map.
+    * More coverity fixes.
+    * Fix a VUID bug in 'security = share'.
+    * Correctly fill in the gid for local users.
+    * Fix some warnings on True64.
+    * Add special close handling for fake files.
+    * BUG 3788: Fix nss_winbind's getgrouplist() call on AIX.
+    * BUG 3435: Fix 'msdfs root = yes' in [homes].
+
+
+o   Jim McDonough <jmcd@us.ibm.com>
+    * Ensure we do a wildcard search for SID's starting with the global SAM 
+      sid, not an exact search (from John Janosik).
+    * Adapt smbclient fix to smbtree to enable long share names.
+
+
+o   Stefan Metzmacher <metze@samba.org>
+    * Fix linking of smbmount tools with --enable-socket-wrapper.
+    * Pass 'target:samba3=yes' to samba4's smbtorture when running 
+      samba3's make test.
+    * Miscellaneous fixes for 'make test'.
+
+
+o   Lars Müller <lmuelle@samba.org>
+    * Fix lock calls in the python tdb bindings.
+
+
+o   James Peach <jpeach@sgi.com>
+    * Correct comparison logic so that libunwind can be correctly detected.
+    * Implement a "stacktrace" smbcontrol option using libunwind's remote
+      stack tracing support (ia64 only).
+    * Use dynamic buffers in the IRIX nsswitch module to prevent truncation
+      of long group lists.
+    * New autoconf macro to test for sysconf variables.
+    * Change profiling data macros to use stack variables rather than
+      globals. This catches mismatched start/end calls and removes
+      the need for special nested profiling calls.
+    * Rewrite AC_LIBTESTFUNC so that it works like the callers
+      of it expect.
+    * Use clock_gettime for profiling timstamps if it is available. Use
+      the fastest clock available on uniprocessors.
+    * Preserve errno in fcntl lock wrappers.
+    * Initialize our saved uid and gid so that we can tell when we 
+      created the profiling shmem segment and don't bogusly refuse to 
+      look at it.
+    * Add a new option "enable core files" which can be used to disable 
+      automatic core file dumping. 
+    * Update our internal copy of popt to that distributed with the RPM 
+      4.2 source code.
+
+
+o   Tim Potter <tpot@samba.org>
+    * Build janitorial duties.
+    * BUG 3725: Put references to $PICFLAGS in quotes.
+
+
+o   Simo Sorce <idra@samba.org>
+    * Implement 'net setdomainsid' command.
+
+
+o   Ronan Waide <waider@waider.ie>
+    * Add 'wbinfo -i' functionality to exercise winbindd's getpwnam() 
+      functionality.
+
+
+Release Notes for older release follow:
+
+      --------------------------------------------------
+                    ==================================
                    Release Notes for Samba 3.0.23pre1
                                Apr 22, 2006
                    ==================================
-
-This is a preview release of the Samba 3.0.23 code base and
-is provided for testing only.  This release is *not* intended
-for production servers.  There has been a substantial amount
-of development since the 3.0.21 series of stable releases.
-We would like to ask the Samba community for help in testing
-these changes as we work towards the next significant production
-upgrade Samba 3.0 release.
-
-There has been a substantial amount of cleanup work done 
-during this development cycle.  Two weeks of development time
-was dedicated to fixing bugs reported by the Coverity source 
-code scans.  Details can be found at in the following two 
-articles:
-
-	http://news.samba.org/#coverity_zero_bugs 
-	http://news.samba.org/#zdnet_quick_response
 
 New features introduced in 3.0.23pre1 include:
 
@@ -405,8 +633,6 @@ o   ISHIKAWA Tomonori <toishika@fsi.co.jp>
     * BUG 2715: Fix nmbd datagram comment buffer size for multibyte 
       character strings
 
-
-Release Notes for older release follow:
 
       --------------------------------------------------
                    ==============================
