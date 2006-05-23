@@ -61,6 +61,8 @@ o   Jeremy Allison <jra@samba.org>
     * Instruct winbindd to ignore fd_set when select() returns -1.
     * BUG 3779: Make nmbd udp sockets non-blocking to prevent problem
       with select returning true but no data being available.
+    * Backport talloc_steal() fixes from SAMBA_4_0 (original fixes by 
+      Andrew Tridgell).
 
 
 o   Timur Bakeyev <timur@com.bat.ru>
