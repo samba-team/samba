@@ -1707,6 +1707,39 @@ static BOOL torture_samba3_errorpaths(struct torture_context *torture)
 		goto fail;
 	}
 
+	{
+		/* Test an invalid DOS deny mode */
+		const char *fname = "test.txt";
+
+		fnum = smbcli_open(cli_nt->tree, fname, O_RDWR | O_CREAT, 5);
+		if (fnum != -1) {
+			printf("Open(%s) with invalid deny mode succeeded -- "
+			       "expected failure\n", fname);
+			smbcli_close(cli_nt->tree, fnum);
+			goto fail;
+		}
+		if (!NT_STATUS_EQUAL(smbcli_nt_error(cli_nt->tree),
+				     NT_STATUS_DOS(ERRDOS,ERRbadaccess))) {
+			printf("Expected DOS error ERRDOS/ERRbadaccess, "
+			       "got %s\n", smbcli_errstr(cli_nt->tree));
+			goto fail;
+		}
+
+		fnum = smbcli_open(cli_dos->tree, fname, O_RDWR | O_CREAT, 5);
+		if (fnum != -1) {
+			printf("Open(%s) with invalid deny mode succeeded -- "
+			       "expected failure\n", fname);
+			smbcli_close(cli_nt->tree, fnum);
+			goto fail;
+		}
+		if (!NT_STATUS_EQUAL(smbcli_nt_error(cli_nt->tree),
+				     NT_STATUS_DOS(ERRDOS,ERRbadaccess))) {
+			printf("Expected DOS error ERRDOS:ERRbadaccess, "
+			       "got %s\n", smbcli_errstr(cli_nt->tree));
+			goto fail;
+		}
+	}
+
 	if (!lp_parm_bool(-1, "target", "samba3", False)) {
 		goto done;
 	}
@@ -1740,7 +1773,7 @@ static BOOL torture_samba3_errorpaths(struct torture_context *torture)
 
 	if (!NT_STATUS_EQUAL(smbcli_nt_error(cli_nt->tree),
 			     NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
-		printf("Expected DOS error NT_STATUS_OBJECT_NAME_NOT_FOUND, "
+		printf("Expected error NT_STATUS_OBJECT_NAME_NOT_FOUND, "
 		       "got %s\n", smbcli_errstr(cli_nt->tree));
 		goto fail;
 	}
