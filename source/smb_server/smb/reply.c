@@ -1239,7 +1239,7 @@ void smbsrv_reply_tdis(struct smbsrv_request *req)
 		talloc_free(h);
 	}
 
-	/* finaly destroy the tcon */
+	/* finally destroy the tcon */
 	talloc_free(req->tcon);
 	req->tcon = NULL;
 
