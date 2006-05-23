@@ -191,7 +191,8 @@ static NTSTATUS unixuid_setup_security(struct ntvfs_module_context *ntvfs,
 	NTSTATUS status2; \
 	struct unix_sec_ctx *sec; \
 	status = unixuid_setup_security(ntvfs, req, &sec); \
-	if (NT_STATUS_IS_OK(status)) status = ntvfs_next_##op args; \
+	NT_STATUS_NOT_OK_RETURN(status); \
+	status = ntvfs_next_##op args; \
 	status2 = set_unix_security(sec); \
 	if (!NT_STATUS_IS_OK(status2)) smb_panic("Unable to reset security context"); \
 } while (0)
