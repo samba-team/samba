@@ -127,7 +127,7 @@ static void kdc_recv_handler(struct kdc_socket *kdc_socket)
 		return;
 	}
 
-	blob = data_blob_talloc(kdc_socket, NULL, dsize);
+	blob = data_blob_talloc(tmp_ctx, NULL, dsize);
 	if (blob.data == NULL) {
 		/* hope this is a temporary low memory condition */
 		talloc_free(tmp_ctx);
