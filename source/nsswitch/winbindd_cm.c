@@ -372,6 +372,7 @@ static NTSTATUS cm_prepare_connection(const struct winbindd_domain *domain,
 			result = NT_STATUS_UNSUCCESSFUL;
 
 		cli_shutdown(*cli);
+		*cli = NULL;
 		goto done;
 	}
 
