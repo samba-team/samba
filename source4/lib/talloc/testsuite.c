@@ -824,7 +824,7 @@ static BOOL test_speed(void)
 }
 
 
-BOOL test_lifeless(void)
+static BOOL test_lifeless(void)
 {
 	char *top = talloc_new(NULL);
 	char *parent, *child; 
@@ -836,10 +836,53 @@ BOOL test_lifeless(void)
 	child = talloc_strdup(parent, "child");  
 	talloc_reference(child, parent);
 	talloc_reference(child_owner, child); 
+	talloc_report_full(top, stdout);
 	talloc_unlink(top, parent);
 	talloc_free(child);
 	talloc_report_full(top, stdout);
 	talloc_free(top);
+	talloc_free(child_owner);
+#if 0
+	talloc_free(child);
+#endif
+	return True;
+}
+
+static int loop_destructor_count;
+
+static int test_loop_destructor(void *ptr)
+{
+	printf("loop destructor\n");
+	loop_destructor_count++;
+	return 0;
+}
+
+static BOOL test_loop(void)
+{
+	char *top = talloc_new(NULL);
+	char *parent;
+	struct req1 {
+		char *req2, *req3;
+	} *req1;
+
+	printf("TESTING TALLOC LOOP DESTRUCTION\n");
+	parent = talloc_strdup(top, "parent");
+	req1 = talloc(parent, struct req1);
+	req1->req2 = talloc_strdup(req1, "req2");  
+	talloc_set_destructor(req1->req2, test_loop_destructor);
+	req1->req3 = talloc_strdup(req1, "req3");
+	talloc_reference(req1->req3, req1);
+	talloc_report_full(top, stdout);
+	talloc_free(parent);
+	talloc_report_full(top, stdout);
+	talloc_report_full(NULL, stdout);
+	talloc_free(top);
+
+	if (loop_destructor_count != 1) {
+		printf("FAILED TO FIRE LOOP DESTRUCTOR\n");
+		return False;
+	}
+
 	return True;
 }
 
@@ -861,6 +904,7 @@ BOOL torture_local_talloc(struct torture_context *torture)
 	ret &= test_realloc_fn();
 	ret &= test_type();
 	ret &= test_lifeless();
+	ret &= test_loop();
 	if (ret) {
 		ret &= test_speed();
 	}
