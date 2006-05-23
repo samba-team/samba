@@ -15,7 +15,7 @@ PREFIX=`echo $1 | sed s+//+/+`
 mkdir -p $PREFIX || exit $?
 OLD_PWD=`pwd`
 cd $PREFIX || exit $?
-export PREFIX_ABS=`pwd`
+PREFIX_ABS=`pwd`
 cd $OLD_PWD
 
 if [ -z "$TORTURE_MAXTIME" ]; then
@@ -29,7 +29,7 @@ export TORTURE_MAXTIME
 
 SERVER=localhost2
 SERVER_IP=127.0.0.2
-USERNAME=`whoami`
+USERNAME=`PATH=/usr/ucb:$PATH whoami`
 PASSWORD=test
 
 SRCDIR=`pwd`
@@ -46,7 +46,7 @@ LOGDIR=$PREFIX_ABS/logs
 SOCKET_WRAPPER_DIR=$PREFIX/sw
 CONFIGURATION="-s $CONFFILE"
 
-export PREFIX_ABS CONFIGURATION CONFFILE PATH SOCKET_WRAPPER_DIR DOMAIN
+export PREFIX PREFIX_ABS CONFIGURATION CONFFILE PATH SOCKET_WRAPPER_DIR DOMAIN
 export PRIVATEDIR LIBDIR PIDDIR LOCKDIR LOGDIR SERVERCONFFILE
 export SRCDIR SCRIPTDIR
 export USERNAME PASSWORD
@@ -157,8 +157,10 @@ TORTURE4_OPTIONS="--maximum-runtime=$TORTURE_MAXTIME --option=interfaces=$TORTUR
 export TORTURE4_OPTIONS
 
 if [ x"$RUN_FROM_BUILD_FARM" = x"yes" ];then
-	TORTURE4_OPTIONS="$TORTURE4_OPTIONS --option=\"torture:progress=no\""
+	TORTURE4_OPTIONS="$TORTURE4_OPTIONS --option=torture:progress=no"
 fi
+
+TORTURE4_OPTIONS="$TORTURE4_OPTIONS --option=target:samba3=yes"
 
 ##
 ## ready to go...now loop through the tests

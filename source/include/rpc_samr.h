@@ -531,51 +531,15 @@ typedef struct q_samr_query_domain_info
 
 } SAMR_Q_QUERY_DOMAIN_INFO;
 
-typedef struct sam_unknown_info_3_info
+typedef struct sam_unknown_info_1_inf
 {
-	NTTIME logout;	
-	/* 0x8000 0000 */ /* DON'T forcibly disconnect remote users from server when logon hours expire*/
+	uint16 min_length_password;
+	uint16 password_history;
+	uint32 password_properties;
+	NTTIME expire;
+	NTTIME min_passwordage;
 
-	/* 0x0000 0000 */ /* forcibly disconnect remote users from server when logon hours expire*/
-
-} SAM_UNK_INFO_3;
-
-typedef struct sam_unknown_info_6_info
-{
-	uint32 unknown_0; /* 0x0000 0000 */
-
-	uint32 ptr_0;     /* pointer to unknown structure */
-	uint8  padding[12]; /* 12 bytes zeros */
-
-} SAM_UNK_INFO_6;
-
-typedef struct sam_unknown_info_7_info
-{
-	uint16 server_role;
-
-} SAM_UNK_INFO_7;
-
-typedef struct sam_unknown_info_8_info
-{
-	UINT64_S seq_num;
-	NTTIME domain_create_time;
-
-} SAM_UNK_INFO_8;
-
-typedef struct sam_unknown_info_12_inf
-{
-	NTTIME duration;
-	NTTIME reset_count;
-	uint16 bad_attempt_lockout;
-
-} SAM_UNK_INFO_12;
-
-typedef struct sam_unknown_info_5_inf
-{
-	UNIHDR hdr_server; /* server name unicode header */
-	UNISTR2 uni_server; /* server name unicode string */
-
-} SAM_UNK_INFO_5;
+} SAM_UNK_INFO_1;
 
 typedef struct sam_unknown_info_2_inf
 {
@@ -597,24 +561,76 @@ typedef struct sam_unknown_info_2_inf
 	uint32 num_domain_grps; /* number of domain groups in domain */
 	uint32 num_local_grps; /* number of local groups in domain */
 
-	uint8 padding[12]; /* 12 bytes zeros */
-
 	UNISTR2 uni_comment; /* comment unicode string */
 	UNISTR2 uni_domain; /* domain name unicode string */
 	UNISTR2 uni_server; /* server name unicode string */
 
 } SAM_UNK_INFO_2;
 
-typedef struct sam_unknown_info_1_inf
+typedef struct sam_unknown_info_3_info
 {
-	uint16 min_length_password;
-	uint16 password_history;
-	uint32 password_properties;
-	NTTIME expire;
-	NTTIME min_passwordage;
+	NTTIME logout;	
+	/* 0x8000 0000 */ /* DON'T forcibly disconnect remote users from server when logon hours expire*/
+	/* 0x0000 0000 */ /* forcibly disconnect remote users from server when logon hours expire*/
 
-} SAM_UNK_INFO_1;
+} SAM_UNK_INFO_3;
 
+typedef struct sam_unknown_info_4_inf
+{
+	UNIHDR hdr_comment; /* comment according to samba4 idl */
+	UNISTR2 uni_comment; /* comment unicode string */
+
+} SAM_UNK_INFO_4;
+
+typedef struct sam_unknown_info_5_inf
+{
+	UNIHDR hdr_domain; /* domain name unicode header */
+	UNISTR2 uni_domain; /* domain name unicode string */
+
+} SAM_UNK_INFO_5;
+
+typedef struct sam_unknown_info_6_info
+{
+	UNIHDR hdr_server; /* server name unicode header */
+	UNISTR2 uni_server; /* server name unicode string */
+
+} SAM_UNK_INFO_6;
+
+typedef struct sam_unknown_info_7_info
+{
+	uint16 server_role;
+
+} SAM_UNK_INFO_7;
+
+typedef struct sam_unknown_info_8_info
+{
+	UINT64_S seq_num;
+	NTTIME domain_create_time;
+
+} SAM_UNK_INFO_8;
+
+typedef struct sam_unknown_info_9_info
+{
+	uint32 unknown;
+
+} SAM_UNK_INFO_9;
+
+typedef struct sam_unknown_info_12_inf
+{
+	NTTIME duration;
+	NTTIME reset_count;
+	uint16 bad_attempt_lockout;
+
+} SAM_UNK_INFO_12;
+
+typedef struct sam_unknown_info_13_info
+{
+	UINT64_S seq_num;
+	NTTIME domain_create_time;
+	uint32 unknown1;
+	uint32 unknown2;
+
+} SAM_UNK_INFO_13;
 
 typedef struct sam_unknown_ctr_info
 {
@@ -623,11 +639,14 @@ typedef struct sam_unknown_ctr_info
 		SAM_UNK_INFO_1 inf1;
 		SAM_UNK_INFO_2 inf2;
 		SAM_UNK_INFO_3 inf3;
+		SAM_UNK_INFO_4 inf4;
 		SAM_UNK_INFO_5 inf5;
 		SAM_UNK_INFO_6 inf6;
 		SAM_UNK_INFO_7 inf7;
 		SAM_UNK_INFO_8 inf8;
+		SAM_UNK_INFO_9 inf9;
 		SAM_UNK_INFO_12 inf12;
+		SAM_UNK_INFO_13 inf13;
 
 	} info;
 

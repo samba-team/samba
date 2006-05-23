@@ -56,7 +56,6 @@
 BOOL in_client = False;		/* Not in the client by default */
 BOOL bLoaded = False;
 
-extern userdom_struct current_user_info;
 extern pstring user_socket_options;
 extern enum protocol_types Protocol;
 
@@ -115,7 +114,6 @@ typedef struct {
 	char *szGetQuota;
 	char *szSetQuota;
 	char *szMsgCommand;
-	char *szHostsEquiv;
 	char *szServerString;
 	char *szAutoServices;
 	char *szPasswdProgram;
@@ -164,7 +162,6 @@ typedef struct {
 	char *szUsernameMapScript;
 	char *szCheckPasswordScript;
 	char *szWINSHook;
-	char *szWINSPartners;
 	char *szUtmpDir;
 	char *szWtmpDir;
 	BOOL bUtmp;
@@ -223,7 +220,6 @@ typedef struct {
 	int lm_interval;
 	int announce_as;	/* This is initialised in init_globals */
 	int machine_password_timeout;
-	int change_notify_timeout;
 	int map_to_guest;
 	int oplock_break_wait_time;
 	int winbind_cache_time;
@@ -235,10 +231,6 @@ typedef struct {
 	char *szLdapUserSuffix;
 	char *szLdapIdmapSuffix;
 	char *szLdapGroupSuffix;
-#ifdef WITH_LDAP_SAMCONFIG
-	int ldap_port;
-	char *szLdapServer;
-#endif
 	int ldap_ssl;
 	char *szLdapSuffix;
 	char *szLdapAdminDn;
@@ -297,6 +289,7 @@ typedef struct {
 	BOOL bDebugHiresTimestamp;
 	BOOL bDebugPid;
 	BOOL bDebugUid;
+	BOOL bEnableCoreFiles;
 	BOOL bHostMSDfs;
 	BOOL bUseMmap;
 	BOOL bHostnameLookups;
@@ -309,6 +302,7 @@ typedef struct {
 	BOOL bEnablePrivileges;
 	BOOL bASUSupport;
 	BOOL bUsershareOwnerOnly;
+	BOOL bUsershareAllowGuests;
 	int restrict_anonymous;
 	int name_cache_timeout;
 	int client_signing;
@@ -455,6 +449,7 @@ typedef struct {
 	int iAioReadSize;
 	int iAioWriteSize;
 	int iMap_readonly;
+	int ichange_notify_timeout;
 	param_opt_struct *param_opt;
 
 	char dummy[3];		/* for alignment */
@@ -593,6 +588,7 @@ static service sDefault = {
 	0,			/* iAioReadSize */
 	0,			/* iAioWriteSize */
 	MAP_READONLY_YES,	/* iMap_readonly */
+	60,			/* ichange_notify_timeout = 1 minute default. */
 	
 	NULL,			/* Parametric options */
 
@@ -671,12 +667,6 @@ static const struct enum_list enum_printing[] = {
 };
 
 static const struct enum_list enum_ldap_ssl[] = {
-#ifdef WITH_LDAP_SAMCONFIG
-	{LDAP_SSL_ON, "Yes"},
-	{LDAP_SSL_ON, "yes"},
-	{LDAP_SSL_ON, "on"},
-	{LDAP_SSL_ON, "On"},
-#endif
 	{LDAP_SSL_OFF, "no"},
 	{LDAP_SSL_OFF, "No"},
 	{LDAP_SSL_OFF, "off"},
@@ -863,7 +853,6 @@ static struct parm_struct parm_table[] = {
 	{"client schannel", P_ENUM, P_GLOBAL, &Globals.clientSchannel, NULL, enum_bool_auto, FLAG_BASIC | FLAG_ADVANCED}, 
 	{"server schannel", P_ENUM, P_GLOBAL, &Globals.serverSchannel, NULL, enum_bool_auto, FLAG_BASIC | FLAG_ADVANCED}, 
 	{"allow trusted domains", P_BOOL, P_GLOBAL, &Globals.bAllowTrustedDomains, NULL, NULL, FLAG_ADVANCED}, 
-	{"hosts equiv", P_STRING, P_GLOBAL, &Globals.szHostsEquiv, NULL, NULL, FLAG_ADVANCED}, 
 	{"map to guest", P_ENUM, P_GLOBAL, &Globals.map_to_guest, NULL, enum_map_to_guest, FLAG_ADVANCED}, 
 	{"null passwords", P_BOOL, P_GLOBAL, &Globals.bNullPasswords, NULL, NULL, FLAG_ADVANCED}, 
 	{"obey pam restrictions", P_BOOL, P_GLOBAL, &Globals.bObeyPamRestrictions, NULL, NULL, FLAG_ADVANCED}, 
@@ -959,6 +948,7 @@ static struct parm_struct parm_table[] = {
 	{"debug hires timestamp", P_BOOL, P_GLOBAL, &Globals.bDebugHiresTimestamp, NULL, NULL, FLAG_ADVANCED}, 
 	{"debug pid", P_BOOL, P_GLOBAL, &Globals.bDebugPid, NULL, NULL, FLAG_ADVANCED}, 
 	{"debug uid", P_BOOL, P_GLOBAL, &Globals.bDebugUid, NULL, NULL, FLAG_ADVANCED}, 
+	{"enable core files", P_BOOL, P_GLOBAL, &Globals.bEnableCoreFiles, NULL, NULL, FLAG_ADVANCED},
 
 	{N_("Protocol Options"), P_SEP, P_SEPARATOR}, 
 
@@ -1009,7 +999,7 @@ static struct parm_struct parm_table[] = {
 	{N_("Tuning Options"), P_SEP, P_SEPARATOR}, 
 
 	{"block size", P_INTEGER, P_LOCAL, &sDefault.iBlock_size, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL}, 
-	{"change notify timeout", P_INTEGER, P_GLOBAL, &Globals.change_notify_timeout, NULL, NULL, FLAG_ADVANCED}, 
+	{"change notify timeout", P_INTEGER, P_LOCAL, &sDefault.ichange_notify_timeout, NULL, NULL, FLAG_ADVANCED}, 
 	{"deadtime", P_INTEGER, P_GLOBAL, &Globals.deadtime, NULL, NULL, FLAG_ADVANCED}, 
 	{"getwd cache", P_BOOL, P_GLOBAL, &use_getwd_cache, NULL, NULL, FLAG_ADVANCED}, 
 	{"keepalive", P_INTEGER, P_GLOBAL, &keepalive, NULL, NULL, FLAG_ADVANCED}, 
@@ -1150,7 +1140,6 @@ static struct parm_struct parm_table[] = {
 	{"wins server", P_LIST, P_GLOBAL, &Globals.szWINSservers, NULL, NULL, FLAG_BASIC | FLAG_ADVANCED | FLAG_WIZARD}, 
 	{"wins support", P_BOOL, P_GLOBAL, &Globals.bWINSsupport, NULL, NULL, FLAG_BASIC | FLAG_ADVANCED | FLAG_WIZARD}, 
 	{"wins hook", P_STRING, P_GLOBAL, &Globals.szWINSHook, NULL, NULL, FLAG_ADVANCED}, 
-	{"wins partners", P_STRING, P_GLOBAL, &Globals.szWINSPartners, NULL, NULL, FLAG_ADVANCED | FLAG_WIZARD}, 
 
 	{N_("Locking Options"), P_SEP, P_SEPARATOR}, 
 
@@ -1172,10 +1161,6 @@ static struct parm_struct parm_table[] = {
 
 	{N_("Ldap Options"), P_SEP, P_SEPARATOR}, 
 
-#ifdef WITH_LDAP_SAMCONFIG
-	{"ldap server", P_STRING, P_GLOBAL, &Globals.szLdapServer, NULL, NULL, FLAG_ADVANCED}, 
-	{"ldap port", P_INTEGER, P_GLOBAL, &Globals.ldap_port, NULL, NULL, FLAG_ADVANCED}, 
-#endif
 	{"ldap admin dn", P_STRING, P_GLOBAL, &Globals.szLdapAdminDn, NULL, NULL, FLAG_ADVANCED}, 
 	{"ldap delete dn", P_BOOL, P_GLOBAL, &Globals.ldap_delete_dn, NULL, NULL, FLAG_ADVANCED}, 
 	{"ldap group suffix", P_STRING, P_GLOBAL, &Globals.szLdapGroupSuffix, NULL, NULL, FLAG_ADVANCED}, 
@@ -1239,6 +1224,7 @@ static struct parm_struct parm_table[] = {
 	{"root preexec close", P_BOOL, P_LOCAL, &sDefault.bRootpreexecClose, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE}, 
 	{"root postexec", P_STRING, P_LOCAL, &sDefault.szRootPostExec, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE | FLAG_PRINT}, 
 	{"available", P_BOOL, P_LOCAL, &sDefault.bAvailable, NULL, NULL, FLAG_BASIC | FLAG_ADVANCED | FLAG_SHARE | FLAG_PRINT}, 
+	{"usershare allow guests", P_BOOL, P_GLOBAL, &Globals.bUsershareAllowGuests, NULL, NULL, FLAG_ADVANCED},
 	{"usershare max shares", P_INTEGER, P_GLOBAL, &Globals.iUsershareMaxShares, NULL, NULL, FLAG_ADVANCED},
 	{"usershare owner only", P_BOOL, P_GLOBAL, &Globals.bUsershareOwnerOnly, NULL, NULL, FLAG_ADVANCED}, 
 	{"usershare path", P_STRING, P_GLOBAL, &Globals.szUsersharePath, NULL, NULL, FLAG_ADVANCED},
@@ -1520,11 +1506,11 @@ static void init_globals(BOOL first_time_only)
 	Globals.bDebugHiresTimestamp = False;
 	Globals.bDebugPid = False;
 	Globals.bDebugUid = False;
+	Globals.bEnableCoreFiles = True;
 	Globals.max_ttl = 60 * 60 * 24 * 3;	/* 3 days default. */
 	Globals.max_wins_ttl = 60 * 60 * 24 * 6;	/* 6 days default. */
 	Globals.min_wins_ttl = 60 * 60 * 6;	/* 6 hours default. */
 	Globals.machine_password_timeout = 60 * 60 * 24 * 7;	/* 7 days default. */
-	Globals.change_notify_timeout = 60;	/* 1 minute default. */
 	Globals.bKernelChangeNotify = True;	/* On if we have it. */
 	Globals.bFamChangeNotify = True;	/* On if we have it. */
 	Globals.lm_announce = 2;	/* = Auto: send only if LM clients found */
@@ -1573,13 +1559,7 @@ static void init_globals(BOOL first_time_only)
 	   a large number of sites (tridge) */
 	Globals.bHostnameLookups = False;
 
-#ifdef WITH_LDAP_SAMCONFIG
-	string_set(&Globals.szLdapServer, "localhost");
-	Globals.ldap_port = 636;
-	string_set(&Globals.szPassdbBackend, "ldapsam_compat");
-#else
 	string_set(&Globals.szPassdbBackend, "smbpasswd");
-#endif /* WITH_LDAP_SAMCONFIG */
 	string_set(&Globals.szLdapSuffix, "");
 	string_set(&Globals.szLdapMachineSuffix, "");
 	string_set(&Globals.szLdapUserSuffix, "");
@@ -1645,7 +1625,7 @@ static void init_globals(BOOL first_time_only)
 	Globals.bWinbindRefreshTickets = False;
 	Globals.bWinbindOfflineLogon = False;
 
-	Globals.bPassdbExpandExplicit = True;
+	Globals.bPassdbExpandExplicit = False;
 
 	Globals.name_cache_timeout = 660; /* In seconds */
 
@@ -1670,6 +1650,8 @@ static void init_globals(BOOL first_time_only)
 	Globals.iUsershareMaxShares = 0;
 	/* By default disallow sharing of directories not owned by the sharer. */
 	Globals.bUsershareOwnerOnly = True;
+	/* By default disallow guest access to usershares. */
+	Globals.bUsershareAllowGuests = False;
 }
 
 static TALLOC_CTX *lp_talloc;
@@ -1792,7 +1774,6 @@ FN_GLOBAL_STRING(lp_defaultservice, &Globals.szDefaultService)
 FN_GLOBAL_STRING(lp_msg_command, &Globals.szMsgCommand)
 FN_GLOBAL_STRING(lp_get_quota_command, &Globals.szGetQuota)
 FN_GLOBAL_STRING(lp_set_quota_command, &Globals.szSetQuota)
-FN_GLOBAL_STRING(lp_hosts_equiv, &Globals.szHostsEquiv)
 FN_GLOBAL_STRING(lp_auto_services, &Globals.szAutoServices)
 FN_GLOBAL_STRING(lp_passwd_program, &Globals.szPasswdProgram)
 FN_GLOBAL_STRING(lp_passwd_chat, &Globals.szPasswdChat)
@@ -1838,7 +1819,6 @@ FN_GLOBAL_STRING(lp_username_map_script, &Globals.szUsernameMapScript)
 FN_GLOBAL_STRING(lp_check_password_script, &Globals.szCheckPasswordScript)
 
 FN_GLOBAL_STRING(lp_wins_hook, &Globals.szWINSHook)
-FN_GLOBAL_STRING(lp_wins_partners, &Globals.szWINSPartners)
 FN_GLOBAL_CONST_STRING(lp_template_homedir, &Globals.szTemplateHomedir)
 FN_GLOBAL_CONST_STRING(lp_template_shell, &Globals.szTemplateShell)
 FN_GLOBAL_CONST_STRING(lp_winbind_separator, &Globals.szWinbindSeparator)
@@ -1854,10 +1834,6 @@ FN_GLOBAL_BOOL(lp_winbind_offline_logon, &Globals.bWinbindOfflineLogon)
 FN_GLOBAL_LIST(lp_idmap_backend, &Globals.szIdmapBackend)
 FN_GLOBAL_BOOL(lp_passdb_expand_explicit, &Globals.bPassdbExpandExplicit)
 
-#ifdef WITH_LDAP_SAMCONFIG
-FN_GLOBAL_STRING(lp_ldap_server, &Globals.szLdapServer)
-FN_GLOBAL_INTEGER(lp_ldap_port, &Globals.ldap_port)
-#endif
 FN_GLOBAL_STRING(lp_ldap_suffix, &Globals.szLdapSuffix)
 FN_GLOBAL_STRING(lp_ldap_admin_dn, &Globals.szLdapAdminDn)
 FN_GLOBAL_INTEGER(lp_ldap_ssl, &Globals.ldap_ssl)
@@ -1875,6 +1851,7 @@ FN_GLOBAL_LIST(lp_usershare_prefix_deny_list, &Globals.szUsersharePrefixDenyList
 
 FN_GLOBAL_LIST(lp_eventlog_list, &Globals.szEventLogs)
 
+FN_GLOBAL_BOOL(lp_usershare_allow_guests, &Globals.bUsershareAllowGuests)
 FN_GLOBAL_BOOL(lp_usershare_owner_only, &Globals.bUsershareOwnerOnly)
 FN_GLOBAL_BOOL(lp_disable_netbios, &Globals.bDisableNetbios)
 FN_GLOBAL_BOOL(lp_reset_on_zero_vc, &Globals.bResetOnZeroVC)
@@ -1901,6 +1878,7 @@ FN_GLOBAL_BOOL(lp_timestamp_logs, &Globals.bTimestampLogs)
 FN_GLOBAL_BOOL(lp_debug_hires_timestamp, &Globals.bDebugHiresTimestamp)
 FN_GLOBAL_BOOL(lp_debug_pid, &Globals.bDebugPid)
 FN_GLOBAL_BOOL(lp_debug_uid, &Globals.bDebugUid)
+FN_GLOBAL_BOOL(lp_enable_core_files, &Globals.bEnableCoreFiles)
 FN_GLOBAL_BOOL(lp_browse_list, &Globals.bBrowseList)
 FN_GLOBAL_BOOL(lp_nis_home_map, &Globals.bNISHomeMap)
 static FN_GLOBAL_BOOL(lp_time_server, &Globals.bTimeServer)
@@ -1960,7 +1938,6 @@ static FN_GLOBAL_INTEGER(lp_announce_as, &Globals.announce_as)
 FN_GLOBAL_INTEGER(lp_lm_announce, &Globals.lm_announce)
 FN_GLOBAL_INTEGER(lp_lm_interval, &Globals.lm_interval)
 FN_GLOBAL_INTEGER(lp_machine_password_timeout, &Globals.machine_password_timeout)
-FN_GLOBAL_INTEGER(lp_change_notify_timeout, &Globals.change_notify_timeout)
 FN_GLOBAL_INTEGER(lp_map_to_guest, &Globals.map_to_guest)
 FN_GLOBAL_INTEGER(lp_oplock_break_wait_time, &Globals.oplock_break_wait_time)
 FN_GLOBAL_INTEGER(lp_lock_spin_count, &Globals.iLockSpinCount)
@@ -2092,6 +2069,7 @@ FN_LOCAL_INTEGER(lp_allocation_roundup_size, iallocation_roundup_size)
 FN_LOCAL_INTEGER(lp_aio_read_size, iAioReadSize)
 FN_LOCAL_INTEGER(lp_aio_write_size, iAioWriteSize)
 FN_LOCAL_INTEGER(lp_map_readonly, iMap_readonly)
+FN_LOCAL_INTEGER(lp_change_notify_timeout, ichange_notify_timeout)
 FN_LOCAL_CHAR(lp_magicchar, magic_char)
 FN_GLOBAL_INTEGER(lp_winbind_cache_time, &Globals.winbind_cache_time)
 FN_GLOBAL_LIST(lp_winbind_nss_info, &Globals.szWinbindNssInfo)
@@ -4318,29 +4296,40 @@ enum usershare_err parse_usershare_file(TALLOC_CTX *ctx,
 			int numlines,
 			pstring sharepath,
 			pstring comment,
-			SEC_DESC **ppsd)
+			SEC_DESC **ppsd,
+			BOOL *pallow_guest)
 {
 	const char **prefixallowlist = lp_usershare_prefix_allow_list();
 	const char **prefixdenylist = lp_usershare_prefix_deny_list();
+	int us_vers;
 	SMB_STRUCT_DIR *dp;
 	SMB_STRUCT_STAT sbuf;
+
+	*pallow_guest = False;
 
 	if (numlines < 4) {
 		return USERSHARE_MALFORMED_FILE;
 	}
 
-	if (!strequal(lines[0], "#VERSION 1")) {
+	if (strcmp(lines[0], "#VERSION 1") == 0) {
+		us_vers = 1;
+	} else if (strcmp(lines[0], "#VERSION 2") == 0) {
+		us_vers = 2;
+		if (numlines < 5) {
+			return USERSHARE_MALFORMED_FILE;
+		}
+	} else {
 		return USERSHARE_BAD_VERSION;
 	}
 
-	if (!strnequal(lines[1], "path=", 5)) {
+	if (strncmp(lines[1], "path=", 5) != 0) {
 		return USERSHARE_MALFORMED_PATH;
 	}
 
 	pstrcpy(sharepath, &lines[1][5]);
 	trim_string(sharepath, " ", " ");
 
-	if (!strnequal(lines[2], "comment=", 8)) {
+	if (strncmp(lines[2], "comment=", 8) != 0) {
 		return USERSHARE_MALFORMED_COMMENT_DEF;
 	}
 
@@ -4348,7 +4337,7 @@ enum usershare_err parse_usershare_file(TALLOC_CTX *ctx,
 	trim_string(comment, " ", " ");
 	trim_char(comment, '"', '"');
 
-	if (!strnequal(lines[3], "usershare_acl=", 14)) {
+	if (strncmp(lines[3], "usershare_acl=", 14) != 0) {
 		return USERSHARE_MALFORMED_ACL_DEF;
 	}
 
@@ -4356,7 +4345,16 @@ enum usershare_err parse_usershare_file(TALLOC_CTX *ctx,
 		return USERSHARE_ACL_ERR;
 	}
 
-	if (snum != -1 && strequal(sharepath, ServicePtrs[snum]->szPath)) {
+	if (us_vers == 2) {
+		if (strncmp(lines[4], "guest_ok=", 9) != 0) {
+			return USERSHARE_MALFORMED_ACL_DEF;
+		}
+		if (lines[4][9] == 'y') {
+			*pallow_guest = True;
+		}
+	}
+
+	if (snum != -1 && (strcmp(sharepath, ServicePtrs[snum]->szPath) == 0)) {
 		/* Path didn't change, no checks needed. */
 		return USERSHARE_OK;
 	}
@@ -4468,6 +4466,7 @@ static int process_usershare_file(const char *dir_name, const char *file_name, i
 	int iService = -1;
 	TALLOC_CTX *ctx = NULL;
 	SEC_DESC *psd = NULL;
+	BOOL guest_ok = False;
 
 	/* Ensure share name doesn't contain invalid characters. */
 	if (!validate_net_name(file_name, INVALID_SHARENAME_CHARS, strlen(file_name))) {
@@ -4561,7 +4560,9 @@ static int process_usershare_file(const char *dir_name, const char *file_name, i
 		return 1;
 	}
 
-	if (parse_usershare_file(ctx, &sbuf, service_name, iService, lines, numlines, sharepath, comment, &psd) != USERSHARE_OK) {
+	if (parse_usershare_file(ctx, &sbuf, service_name,
+			iService, lines, numlines, sharepath,
+			comment, &psd, &guest_ok) != USERSHARE_OK) {
 		talloc_destroy(ctx);
 		SAFE_FREE(lines);
 		return -1;
@@ -4604,6 +4605,11 @@ static int process_usershare_file(const char *dir_name, const char *file_name, i
 
 	/* Set the service as a valid usershare. */
 	ServicePtrs[iService]->usershare = USERSHARE_VALID;
+
+	/* Set guest access. */
+	if (lp_usershare_allow_guests()) {
+		ServicePtrs[iService]->bGuest_ok = guest_ok;
+	}
 
 	/* And note when it was loaded. */
 	ServicePtrs[iService]->usershare_last_mod = sbuf.st_mtime;

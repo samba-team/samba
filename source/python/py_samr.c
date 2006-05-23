@@ -283,7 +283,7 @@ PyTypeObject samr_user_hnd_type = {
 	0,          /*tp_hash */
 };
 
-PyObject *new_samr_user_hnd_object(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+PyObject *new_samr_user_hnd_object(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 				   POLICY_HND *pol)
 {
 	samr_user_hnd_object *o;
@@ -304,7 +304,7 @@ static void py_samr_connect_hnd_dealloc(PyObject* self)
 	PyObject_Del(self);
 }
 
-PyObject *new_samr_domain_hnd_object(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+PyObject *new_samr_domain_hnd_object(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 				     POLICY_HND *pol)
 {
 	samr_domain_hnd_object *o;
@@ -396,7 +396,7 @@ PyTypeObject samr_connect_hnd_type = {
 	0,          /*tp_hash */
 };
 
-PyObject *new_samr_connect_hnd_object(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+PyObject *new_samr_connect_hnd_object(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 				      POLICY_HND *pol)
 {
 	samr_connect_hnd_object *o;
@@ -569,7 +569,7 @@ static PyObject *samr_connect(PyObject *self, PyObject *args, PyObject *kw)
 		goto done;
 	}
 
-	ntstatus = rpccli_samr_connect(cli, mem_ctx, desired_access, &hnd);
+	ntstatus = rpccli_samr_connect(cli->pipe_list, mem_ctx, desired_access, &hnd);
 
 	if (!NT_STATUS_IS_OK(ntstatus)) {
 		cli_shutdown(cli);
@@ -577,7 +577,7 @@ static PyObject *samr_connect(PyObject *self, PyObject *args, PyObject *kw)
 		goto done;
 	}
 
-	result = new_samr_connect_hnd_object(cli, mem_ctx, &hnd);
+	result = new_samr_connect_hnd_object(cli->pipe_list, mem_ctx, &hnd);
 
 done:
 	if (!result) {

@@ -152,9 +152,11 @@ NTSTATUS make_user_info_map(auth_usersupplied_info **user_info,
 			    BOOL encrypted)
 {
 	const char *domain;
+	NTSTATUS result;
+	BOOL was_mapped;
 	fstring internal_username;
 	fstrcpy(internal_username, smb_name);
-	map_username(internal_username); 
+	was_mapped = map_username(internal_username); 
 	
 	DEBUG(5, ("make_user_info_map: Mapping user [%s]\\[%s] from workstation [%s]\n",
 	      client_domain, smb_name, wksta_name));
@@ -176,11 +178,15 @@ NTSTATUS make_user_info_map(auth_usersupplied_info **user_info,
 	
 	/* we know that it is a trusted domain (and we are allowing them) or it is our domain */
 	
-	return make_user_info(user_info, smb_name, internal_username, 
+	result = make_user_info(user_info, smb_name, internal_username, 
 			      client_domain, domain, wksta_name, 
 			      lm_pwd, nt_pwd,
 			      lm_interactive_pwd, nt_interactive_pwd,
 			      plaintext, encrypted);
+	if (NT_STATUS_IS_OK(result)) {
+		(*user_info)->was_mapped = was_mapped;
+	}
+	return result;
 }
 
 /****************************************************************************
@@ -923,15 +929,29 @@ NTSTATUS create_local_token(auth_serversupplied_info *server_info)
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	server_info->ptok = create_local_nt_token(
-		server_info,
-		pdb_get_user_sid(server_info->sam_account),
-		pdb_get_group_sid(server_info->sam_account),
-		server_info->guest,
-		server_info->num_sids, server_info->sids);
+	if (server_info->was_mapped) {
+		status = create_token_from_username(server_info,
+						    server_info->unix_name,
+						    server_info->guest,
+						    &server_info->uid,
+						    &server_info->gid,
+						    &server_info->unix_name,
+						    &server_info->ptok);
+		
+	} else {
+		server_info->ptok = create_local_nt_token(
+			server_info,
+			pdb_get_user_sid(server_info->sam_account),
+			pdb_get_group_sid(server_info->sam_account),
+			server_info->guest,
+			server_info->num_sids, server_info->sids);
+		status = server_info->ptok ?
+			NT_STATUS_OK : NT_STATUS_NO_SUCH_USER;
+	}
 
-	if ( !server_info->ptok ) {
-		return NT_STATUS_NO_SUCH_USER;
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(mem_ctx);
+		return status;
 	}
 	
 	/* Convert the SIDs to gids. */
@@ -1076,6 +1096,12 @@ NTSTATUS create_token_from_username(TALLOC_CTX *mem_ctx, const char *username,
 
 		sid_copy(&primary_group_sid, pdb_get_group_sid(sam_acct));
 
+		if (!sid_to_gid(&primary_group_sid, gid)) {
+			DEBUG(1, ("sid_to_gid(%s) failed\n",
+				  sid_string_static(&primary_group_sid)));
+			goto done;
+		}
+
 		result = pdb_enum_group_memberships(tmp_ctx, sam_acct,
 						    &group_sids, &gids,
 						    &num_group_sids);
@@ -1172,7 +1198,6 @@ BOOL user_in_group(const char *username, const char *groupname)
 {
 	TALLOC_CTX *mem_ctx;
 	DOM_SID group_sid;
-	NTSTATUS status;
 	BOOL ret;
 
 	mem_ctx = talloc_new(NULL);
@@ -1186,8 +1211,7 @@ BOOL user_in_group(const char *username, const char *groupname)
 	TALLOC_FREE(mem_ctx);
 
 	if (!ret) {
-		DEBUG(10, ("lookup_name(%s) failed: %s\n", groupname,
-			   nt_errstr(status)));
+		DEBUG(10, ("lookup_name for (%s) failed.\n", groupname));
 		return False;
 	}
 
@@ -1366,7 +1390,8 @@ static NTSTATUS fill_sam_account(TALLOC_CTX *mem_ctx,
 				 const char *username,
 				 char **found_username,
 				 uid_t *uid, gid_t *gid,
-				 struct samu *account)
+				 struct samu *account,
+				 BOOL *username_was_mapped)
 {
 	NTSTATUS nt_status;
 	fstring dom_user, lower_username;
@@ -1381,7 +1406,7 @@ static NTSTATUS fill_sam_account(TALLOC_CTX *mem_ctx,
 
 	/* Get the passwd struct.  Try to create the account is necessary. */
 
-	map_username( dom_user );
+	*username_was_mapped = map_username( dom_user );
 
 	if ( !(passwd = smb_getpwnam( NULL, dom_user, real_username, True )) )
 		return NT_STATUS_NO_SUCH_USER;
@@ -1496,7 +1521,6 @@ struct passwd *smb_getpwnam( TALLOC_CTX *mem_ctx, char *domuser,
 ***************************************************************************/
 
 NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx, 
-				const char *internal_username,
 				const char *sent_nt_username,
 				const char *domain,
 				auth_serversupplied_info **server_info, 
@@ -1511,6 +1535,7 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 	struct samu *sam_account = NULL;
 	DOM_SID user_sid;
 	DOM_SID group_sid;
+	BOOL username_was_mapped;
 
 	uid_t uid;
 	gid_t gid;
@@ -1563,16 +1588,12 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	nt_status = fill_sam_account(mem_ctx, nt_domain, sent_nt_username,
-				     &found_username, &uid, &gid, sam_account);
+	/* this call will try to create the user if necessary */
 
-	if (NT_STATUS_EQUAL(nt_status, NT_STATUS_NO_SUCH_USER)) {
-		DEBUG(3,("User %s does not exist, trying to add it\n",
-			 internal_username));
-		smb_create_user( nt_domain, sent_nt_username, NULL);
-		nt_status = fill_sam_account( mem_ctx, nt_domain, sent_nt_username, 
-					      &found_username, &uid, &gid, sam_account );
-	}
+	nt_status = fill_sam_account(mem_ctx, nt_domain, sent_nt_username,
+				     &found_username, &uid, &gid, sam_account,
+				     &username_was_mapped);
+
 	
 	/* if we still don't have a valid unix account check for 
 	  'map to guest = bad uid' */
@@ -1721,6 +1742,8 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 			result, info3->lm_sess_key,
 			sizeof(info3->lm_sess_key));
 	}
+
+	result->was_mapped = username_was_mapped;
 
 	*server_info = result;
 

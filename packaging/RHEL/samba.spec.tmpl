@@ -27,7 +27,7 @@ Provides: samba = %{version}
 
 Prefix: /usr
 BuildRoot: %{_tmppath}/%{name}-%{version}-root
-BuildRequires: pam-devel, readline-devel, fileutils, libacl-devel, openldap2-devel, krb5-devel, cups-devel
+BuildRequires: pam-devel, readline-devel, fileutils, libacl-devel, openldap-devel, krb5-devel, cups-devel
 
 # Working around perl dependency problem from docs
 %define __perl_requires %{SOURCE998}
@@ -112,7 +112,7 @@ cd source
 # RPM_OPT_FLAGS="$RPM_OPT_FLAGS -D_FILE_OFFSET_BITS=64"
 
 ## check for ccache
-ccache -h 2>&1 > /dev/null
+# ccache -h 2>&1 > /dev/null
 #if [ $? -eq 0 ]; then
 #	CC="ccache gcc"
 #else

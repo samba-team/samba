@@ -65,6 +65,7 @@ int kerberos_kinit_password_ext(const char *principal,
 				time_t *renew_till_time,
 				const char *cache_name,
 				BOOL request_pac,
+				BOOL add_netbios_addr,
 				time_t renewable_time)
 {
 	krb5_context ctx = NULL;
@@ -73,6 +74,7 @@ int kerberos_kinit_password_ext(const char *principal,
 	krb5_principal me;
 	krb5_creds my_creds;
 	krb5_get_init_creds_opt opt;
+	smb_krb5_addresses *addr = NULL;
 
 	initialize_krb5_error_table();
 	if ((code = krb5_init_context(&ctx)))
@@ -90,7 +92,7 @@ int kerberos_kinit_password_ext(const char *principal,
 		return code;
 	}
 	
-	if ((code = krb5_parse_name(ctx, principal, &me))) {
+	if ((code = smb_krb5_parse_name(ctx, principal, &me))) {
 		krb5_free_context(ctx);	
 		return code;
 	}
@@ -101,19 +103,36 @@ int kerberos_kinit_password_ext(const char *principal,
 	
 	if (request_pac) {
 #ifdef HAVE_KRB5_GET_INIT_CREDS_OPT_SET_PAC_REQUEST
-		krb5_get_init_creds_opt_set_pac_request(ctx, &opt, True);
+		code = krb5_get_init_creds_opt_set_pac_request(ctx, &opt, True);
+		if (code) {
+			krb5_free_principal(ctx, me);
+			krb5_free_context(ctx);
+			return code;
+		}
 #endif
+	}
+
+	if (add_netbios_addr) {
+		code = smb_krb5_gen_netbios_krb5_address(&addr);
+		if (code) {
+			krb5_free_principal(ctx, me);
+			krb5_free_context(ctx);		
+			return code;	
+		}
+		krb5_get_init_creds_opt_set_address_list(&opt, addr->addrs);
 	}
 
 	if ((code = krb5_get_init_creds_password(ctx, &my_creds, me, CONST_DISCARD(char *,password), 
 						 kerb_prompter, NULL, 0, NULL, &opt)))
 	{
+		smb_krb5_free_addresses(ctx, addr);
 		krb5_free_principal(ctx, me);
 		krb5_free_context(ctx);		
 		return code;
 	}
 	
 	if ((code = krb5_cc_initialize(ctx, cc, me))) {
+		smb_krb5_free_addresses(ctx, addr);
 		krb5_free_cred_contents(ctx, &my_creds);
 		krb5_free_principal(ctx, me);
 		krb5_free_context(ctx);		
@@ -122,6 +141,7 @@ int kerberos_kinit_password_ext(const char *principal,
 	
 	if ((code = krb5_cc_store_cred(ctx, cc, &my_creds))) {
 		krb5_cc_close(ctx, cc);
+		smb_krb5_free_addresses(ctx, addr);
 		krb5_free_cred_contents(ctx, &my_creds);
 		krb5_free_principal(ctx, me);
 		krb5_free_context(ctx);		
@@ -137,6 +157,7 @@ int kerberos_kinit_password_ext(const char *principal,
 	}
 
 	krb5_cc_close(ctx, cc);
+	smb_krb5_free_addresses(ctx, addr);
 	krb5_free_cred_contents(ctx, &my_creds);
 	krb5_free_principal(ctx, me);
 	krb5_free_context(ctx);		
@@ -178,7 +199,7 @@ int ads_kinit_password(ADS_STRUCT *ads)
 	}
 	
 	ret = kerberos_kinit_password_ext(s, ads->auth.password, ads->auth.time_offset,
-			&ads->auth.expire, NULL, NULL, False, ads->auth.renewable);
+			&ads->auth.expire, NULL, NULL, False, False, ads->auth.renewable);
 
 	if (ret) {
 		DEBUG(0,("kerberos_kinit_password %s failed: %s\n", 
@@ -260,21 +281,21 @@ krb5_principal kerberos_fetch_salt_princ_for_host_princ(krb5_context context,
 	char *unparsed_name = NULL, *salt_princ_s = NULL;
 	krb5_principal ret_princ = NULL;
 
-	if (krb5_unparse_name(context, host_princ, &unparsed_name) != 0) {
+	if (smb_krb5_unparse_name(context, host_princ, &unparsed_name) != 0) {
 		return (krb5_principal)NULL;
 	}
 
 	if ((salt_princ_s = kerberos_secrets_fetch_salting_principal(unparsed_name, enctype)) == NULL) {
-		krb5_free_unparsed_name(context, unparsed_name);
+		SAFE_FREE(unparsed_name);
 		return (krb5_principal)NULL;
 	}
 
-	if (krb5_parse_name(context, salt_princ_s, &ret_princ) != 0) {
-		krb5_free_unparsed_name(context, unparsed_name);
+	if (smb_krb5_parse_name(context, salt_princ_s, &ret_princ) != 0) {
+		SAFE_FREE(unparsed_name);
 		SAFE_FREE(salt_princ_s);
 		return (krb5_principal)NULL;
 	}
-	krb5_free_unparsed_name(context, unparsed_name);
+	SAFE_FREE(unparsed_name);
 	SAFE_FREE(salt_princ_s);
 	return ret_princ;
 }
@@ -308,11 +329,11 @@ BOOL kerberos_secrets_store_salting_principal(const char *service,
 		asprintf(&princ_s, "%s@%s", service, lp_realm());
 	}
 
-	if (krb5_parse_name(context, princ_s, &princ) != 0) {
+	if (smb_krb5_parse_name(context, princ_s, &princ) != 0) {
 		goto out;
 		
 	}
-	if (krb5_unparse_name(context, princ, &unparsed_name) != 0) {
+	if (smb_krb5_unparse_name(context, princ, &unparsed_name) != 0) {
 		goto out;
 	}
 
@@ -331,10 +352,8 @@ BOOL kerberos_secrets_store_salting_principal(const char *service,
 
 	SAFE_FREE(key);
 	SAFE_FREE(princ_s);
+	SAFE_FREE(unparsed_name);
 
-	if (unparsed_name) {
-		krb5_free_unparsed_name(context, unparsed_name);
-	}
 	if (context) {
 		krb5_free_context(context);
 	}
@@ -396,8 +415,8 @@ static krb5_error_code get_service_ticket(krb5_context ctx,
 		asprintf(&service_s, "%s@%s", service_principal, lp_realm());
 	}
 
-	if ((err = krb5_parse_name(ctx, service_s, &creds.server))) {
-		DEBUG(0,("get_service_ticket: krb5_parse_name %s failed: %s\n", 
+	if ((err = smb_krb5_parse_name(ctx, service_s, &creds.server))) {
+		DEBUG(0,("get_service_ticket: smb_krb5_parse_name %s failed: %s\n", 
 			service_s, error_message(err)));
 		goto out;
 	}
@@ -476,8 +495,8 @@ static BOOL verify_service_password(krb5_context ctx,
 		asprintf(&salting_s, "%s@%s", salting_principal, lp_realm());
 	}
 
-	if ((err = krb5_parse_name(ctx, salting_s, &salting_kprinc))) {
-		DEBUG(0,("verify_service_password: krb5_parse_name %s failed: %s\n", 
+	if ((err = smb_krb5_parse_name(ctx, salting_s, &salting_kprinc))) {
+		DEBUG(0,("verify_service_password: smb_krb5_parse_name %s failed: %s\n", 
 			salting_s, error_message(err)));
 		goto out;
 	}
@@ -813,6 +832,7 @@ int kerberos_kinit_password(const char *principal,
 					   0, 
 					   0,
 					   cache_name,
+					   False,
 					   False,
 					   0);
 }

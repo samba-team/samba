@@ -545,7 +545,7 @@ DYNEXP=
 
 dnl Add modules that have to be built by default here
 dnl These have to be built static:
-default_static_modules="pdb_smbpasswd pdb_tdbsam rpc_lsa rpc_samr rpc_reg rpc_lsa_ds rpc_wks rpc_svcctl rpc_ntsvcs rpc_net rpc_netdfs rpc_srv rpc_spoolss rpc_eventlog auth_rhosts auth_sam auth_unix auth_winbind auth_server auth_domain auth_builtin"
+default_static_modules="pdb_smbpasswd pdb_tdbsam rpc_lsa rpc_samr rpc_reg rpc_lsa_ds rpc_wks rpc_svcctl rpc_ntsvcs rpc_net rpc_netdfs rpc_srv rpc_spoolss rpc_eventlog auth_sam auth_unix auth_winbind auth_server auth_domain auth_builtin"
 
 dnl These are preferably build shared, and static if dlopen() is not available
 default_shared_modules="vfs_recycle vfs_audit vfs_extd_audit vfs_full_audit vfs_netatalk vfs_fake_perms vfs_default_quota vfs_readonly vfs_cap vfs_expand_msdfs vfs_shadow_copy charset_CP850 charset_CP437 auth_script"
@@ -819,7 +819,8 @@ AC_HEADER_DIRENT
 AC_HEADER_TIME
 AC_HEADER_SYS_WAIT
 AC_CHECK_HEADERS(aio.h arpa/inet.h sys/fcntl.h sys/select.h fcntl.h sys/time.h sys/unistd.h rpc/nettype.h)
-AC_CHECK_HEADERS(unistd.h utime.h grp.h sys/id.h limits.h memory.h alloca.h)
+AC_CHECK_HEADERS(unistd.h utime.h grp.h sys/id.h memory.h alloca.h)
+AC_CHECK_HEADERS(limits.h float.h)
 AC_CHECK_HEADERS(rpc/rpc.h rpcsvc/nis.h rpcsvc/ypclnt.h)
 AC_CHECK_HEADERS(sys/param.h ctype.h sys/wait.h sys/resource.h sys/ioctl.h sys/ipc.h sys/prctl.h)
 AC_CHECK_HEADERS(sys/mman.h sys/filio.h sys/priv.h sys/shm.h string.h strings.h stdlib.h sys/socket.h)
@@ -1243,6 +1244,8 @@ AC_CHECK_FUNCS(srandom random srand rand setenv usleep strcasecmp fcvt fcvtl sym
 AC_CHECK_FUNCS(syslog vsyslog timegm)
 AC_CHECK_FUNCS(setlocale nl_langinfo)
 AC_CHECK_FUNCS(nanosleep)
+AC_CHECK_FUNCS(mlock munlock mlockall munlockall)
+AC_CHECK_HEADERS(sys/mman.h)
 # setbuffer, shmget, shm_open are needed for smbtorture
 AC_CHECK_FUNCS(setbuffer shmget shm_open)
 
@@ -1256,7 +1259,7 @@ AC_CHECK_LIB(exc, trace_back_stack)
 # any of them.
 AC_MSG_CHECKING([for libunwind])
 save_LIBS=$LIBS
-if test x"$UNAME_P" != xunknown ; then
+if test x"$UNAME_P" = xunknown ; then
     # This probably won't link without the platform-specific libunwind.
     LIBS="$LIBS -lunwind"
 else
@@ -1280,11 +1283,60 @@ AC_TRY_LINK(
     [
 	AC_MSG_RESULT(yes)
 	AC_DEFINE(HAVE_LIBUNWIND, 1, [Whether libunwind is available])
+
+	# If we have libunwind, test whether we also have libunwind-ptrace
+	# which would let us unwind arbitrary processes.
+	save_LIBS=$LIBS
+	AC_CHECK_HEADERS(libunwind-ptrace.h)
+	AC_CHECK_LIB(unwind-ptrace, _UPT_create,
+	    [
+		LIBUNWIND_PTRACE="-lunwind-ptrace";
+		AC_DEFINE(HAVE_LIBUNWIND_PTRACE, 1,
+		    [Whether libunwind-ptrace.a is available.])
+	    ],
+	    [ LIBUNWIND_PTRACE="" ])
+
+	LIBS=$save_LIBS
     ],
     [
 	AC_MSG_RESULT(no)
 	LIBS=$save_LIBS
     ])
+
+# To use libunwind-ptrace, we also need to make some ptrace system calls.
+if test x"$LIBUNWIND_PTRACE" != x"" ; then
+    AC_CHECK_HEADERS(sys/ptrace.h)
+    AC_MSG_CHECKING([for the Linux ptrace(2) interface])
+    AC_TRY_LINK(
+	    [
+#if HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+#if HAVE_SYS_PTRACE_H
+#include <sys/ptrace.h>
+#endif
+	    ],
+	    [
+		int main(int argc, const char ** argv)
+		{
+			pid_t me = (pid_t)-1;
+			ptrace(PTRACE_ATTACH, me, 0, 0);
+			ptrace(PTRACE_DETACH, me, 0, 0);
+			return 0;
+		}
+	    ],
+	    [
+		AC_MSG_RESULT(yes)
+		AC_DEFINE(HAVE_LINUX_PTRACE, 1,
+		    [Whether the Linux ptrace(2) interface is available.])
+	    ],
+	    [
+		AC_MSG_RESULT(no)
+		LIBUNWIND_PTRACE=""
+	    ])
+fi
+
+AC_SUBST(LIBUNWIND_PTRACE)
 
 # syscall() is needed for smbwrapper.
 AC_CHECK_FUNCS(syscall)
@@ -1482,8 +1534,10 @@ if test x"$samba_stat_hires_notimespec" = x"yes" ; then
 fi
 
 #####################################
-# we might need the resolv library on some systems
+# needed for SRV lookups
 AC_CHECK_LIB(resolv, dn_expand)
+AC_CHECK_LIB(resolv, _dn_expand)
+AC_CHECK_LIB(resolv, __dn_expand)
 
 #
 # Check for the functions putprpwnam, set_auth_parameters,
@@ -1969,6 +2023,8 @@ main() { struct timeval tv; exit(gettimeofday(&tv, NULL));}],
 if test x"$samba_cv_HAVE_GETTIMEOFDAY_TZ" = x"yes"; then
     AC_DEFINE(HAVE_GETTIMEOFDAY_TZ,1,[Whether gettimeofday() is available])
 fi
+
+AC_LIBTESTFUNC(rt, clock_gettime)
 
 AC_CACHE_CHECK([for va_copy],samba_cv_HAVE_VA_COPY,[
 AC_TRY_LINK([#include <stdarg.h>
@@ -2653,21 +2709,10 @@ if test x"$samba_cv_REPLACE_READDIR" = x"yes"; then
 	AC_DEFINE(REPLACE_READDIR,1,[replace readdir])
 fi
 
-AC_CACHE_CHECK([for sysconf(_SC_NGROUPS_MAX)],samba_cv_SYSCONF_SC_NGROUPS_MAX,[
-AC_TRY_RUN([#include <unistd.h>
-main() { exit(sysconf(_SC_NGROUPS_MAX) == -1 ? 1 : 0); }],
-samba_cv_SYSCONF_SC_NGROUPS_MAX=yes,samba_cv_SYSCONF_SC_NGROUPS_MAX=no,samba_cv_SYSCONF_SC_NGROUPS_MAX=cross)])
-if test x"$samba_cv_SYSCONF_SC_NGROUPS_MAX" = x"yes"; then
-    AC_DEFINE(SYSCONF_SC_NGROUPS_MAX,1,[Whether sysconf(_SC_NGROUPS_MAX) is available])
-fi
-
-AC_CACHE_CHECK([for sysconf(_SC_NPROC_ONLN)],samba_cv_SYSCONF_SC_NPROC_ONLN,[
-AC_TRY_RUN([#include <unistd.h>
-main() { exit(sysconf(_SC_NPROC_ONLN) == -1 ? 1 : 0); }],
-samba_cv_SYSCONF_SC_NPROC_ONLN=yes,samba_cv_SYSCONF_SC_NPROC_ONLN=no,samba_cv_SYSCONF_SC_NPROC_ONLN=cross)])
-if test x"$samba_cv_SYSCONF_SC_NPROC_ONLN" = x"yes"; then
-    AC_DEFINE(SYSCONF_SC_NPROC_ONLN,1,[Whether sysconf(_SC_NPROC_ONLN) is available])
-fi
+SMB_CHECK_SYSCONF(_SC_NGROUPS_MAX)
+SMB_CHECK_SYSCONF(_SC_NPROC_ONLN)
+SMB_CHECK_SYSCONF(_SC_NPROCESSORS_ONLN)
+SMB_CHECK_SYSCONF(_SC_PAGESIZE)
 
 AC_CACHE_CHECK([for root],samba_cv_HAVE_ROOT,[
 AC_TRY_RUN([main() { exit(getuid() != 0); }],
@@ -2913,7 +2958,7 @@ AC_ARG_WITH(smbwrapper,
 
 # Conditions under which smbwrapper should not be built.
 
-	if test x$PICFLAGS = x; then
+	if test x"$PICFLAGS" = x; then
 	   echo No support for PIC code - disabling smbwrapper and smbsh
 	   WRAPPROG=""
 	   WRAP=""
@@ -3185,17 +3230,6 @@ else
 	    AC_MSG_ERROR(Active Directory support requires ldap_initialize)
 	elif test x"$with_ads_support" = x"auto"; then
 	    AC_MSG_WARN(Disabling Active Directory support (requires ldap_initialize))
-	    with_ads_support=no
-	fi
-    fi
-
-    AC_CHECK_FUNC_EXT(ldap_domain2hostlist,$LDAP_LIBS)
-
-    if test x"$ac_cv_func_ext_ldap_domain2hostlist" != x"yes"; then
-	if test x"$with_ads_support" = x"yes"; then
-	    AC_MSG_ERROR(Active Directory support requires ldap_domain2hostlist)
-	elif test x"$with_ads_support" = x"auto"; then
-	    AC_MSG_WARN(Disabling Active Directory support (requires ldap_domain2hostlist))
 	    with_ads_support=no
 	fi
     fi
@@ -3655,6 +3689,18 @@ if test x"$with_ads_support" != x"no"; then
               [Whether krb5_keytab_entry has keyblock member])
   fi
 
+  AC_CACHE_CHECK([for magic in krb5_address],
+                 samba_cv_HAVE_MAGIC_IN_KRB5_ADDRESS,[
+    AC_TRY_COMPILE([#include <krb5.h>],
+      [krb5_address addr; addr.magic = 0;],
+      samba_cv_HAVE_MAGIC_IN_KRB5_ADDRESS=yes,
+      samba_cv_HAVE_MAGIC_IN_KRB5_ADDRESS=no)])
+
+  if test x"$samba_cv_HAVE_MAGIC_IN_KRB5_ADDRESS" = x"yes"; then
+    AC_DEFINE(HAVE_MAGIC_IN_KRB5_ADDRESS,1,
+              [Whether the krb5_address struct has a magic property])
+  fi
+
   if test x"$ac_cv_lib_ext_krb5_krb5_mk_req_extended" = x"yes"; then
     AC_DEFINE(HAVE_KRB5,1,[Whether to have KRB5 support])
     AC_DEFINE(WITH_ADS,1,[Whether to include Active Directory support])
@@ -3703,6 +3749,18 @@ if test x"$with_ads_support" != x"no"; then
   if test x"$samba_cv_KRB5_PRINC_REALM_RETURNS_REALM" = x"yes"; then
     AC_DEFINE(KRB5_PRINC_REALM_RETURNS_REALM,1,
               [Whether krb5_princ_realm returns krb5_realm or krb5_data])
+  fi
+
+  AC_CACHE_CHECK([for krb5_addresses type],
+                samba_cv_HAVE_KRB5_ADDRESSES,[
+    AC_TRY_COMPILE([#include <krb5.h>],
+      [krb5_addresses addr;],
+      samba_cv_HAVE_KRB5_ADDRESSES=yes,
+      samba_cv_HAVE_KRB5_ADDRESSES=no)])
+
+  if test x"$samba_cv_HAVE_KRB5_ADDRESSES" = x"yes"; then
+    AC_DEFINE(HAVE_KRB5_ADDRESSES,1,
+               [Whether the type krb5_addresses type exists])
   fi
 
 LIBS="$ac_save_LIBS"
@@ -3838,7 +3896,7 @@ AC_ARG_WITH(pam_smbpass,
 
        # Conditions under which pam_smbpass should not be built.
 
-       if test x$PICFLAGS = x; then
+       if test x"$PICFLAGS" = x; then
           AC_MSG_ERROR([No support for PIC code])
        elif test x"$ac_cv_header_security_pam_appl_h" = x"no"; then
 	  AC_MSG_ERROR([No security/pam_appl.h found])
@@ -3882,36 +3940,6 @@ if test x"$samba_cv_HAVE_TRUNCATED_SALT" = x"yes"; then
 	AC_DEFINE(HAVE_TRUNCATED_SALT,1,[Whether crypt needs truncated salt])
 fi
 fi
-
-
-########################################################################################
-##
-## TESTS FOR SAM BACKENDS.  KEEP THESE GROUPED TOGETHER
-##
-########################################################################################
-
-#################################################
-# check for a LDAP password database configuration backwards compatibility
-AC_MSG_CHECKING(whether to use LDAP SAM 2.2 compatible configuration)
-AC_ARG_WITH(ldapsam,
-[  --with-ldapsam          Include LDAP SAM 2.2 compatible configuration (default=no)],
-[ case "$withval" in
-  yes)
-    AC_MSG_RESULT(yes)
-    AC_DEFINE(WITH_LDAP_SAMCONFIG,1,[Whether to include 2.2 compatible LDAP SAM configuration])
-    ;;
-  *)
-    AC_MSG_RESULT(no)
-    ;;
-  esac ],
-  AC_MSG_RESULT(no)
-)
-
-########################################################################################
-##
-## END OF TESTS FOR SAM BACKENDS.  
-##
-########################################################################################
 
 #################################################
 # check for a NISPLUS_HOME support 
@@ -5499,7 +5527,6 @@ SMB_MODULE(charset_CP437, modules/CP437.o, "bin/CP437.$SHLIBEXT", CHARSET)
 SMB_MODULE(charset_macosxfs, modules/charset_macosxfs.o,"bin/macosxfs.$SHLIBEXT", CHARSET)
 SMB_SUBSYSTEM(CHARSET,lib/iconv.o)
 
-SMB_MODULE(auth_rhosts, \$(AUTH_RHOSTS_OBJ), "bin/rhosts.$SHLIBEXT", AUTH)
 SMB_MODULE(auth_sam, \$(AUTH_SAM_OBJ), "bin/sam.$SHLIBEXT", AUTH)
 SMB_MODULE(auth_unix, \$(AUTH_UNIX_OBJ), "bin/unix.$SHLIBEXT", AUTH)
 SMB_MODULE(auth_winbind, \$(AUTH_WINBIND_OBJ), "bin/winbind.$SHLIBEXT", AUTH)

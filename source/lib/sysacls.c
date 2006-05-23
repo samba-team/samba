@@ -1318,7 +1318,6 @@ char *sys_acl_to_text(SMB_ACL_T acl_d, ssize_t *len_p)
 		if ((len + nbytes) > maxlen) {
 			maxlen += nbytes + 20 * (acl_d->count - i);
 			if ((text = SMB_REALLOC(text, maxlen)) == NULL) {
-				free(oldtext);
 				errno = ENOMEM;
 				return NULL;
 			}

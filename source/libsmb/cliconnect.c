@@ -221,6 +221,7 @@ static BOOL cli_session_setup_plaintext(struct cli_state *cli, const char *user,
 	
 	fstr_sprintf( lanman, "Samba %s", SAMBA_VERSION_STRING);
 
+	memset(cli->outbuf, '\0', smb_size);
 	set_message(cli->outbuf,13,0,True);
 	SCVAL(cli->outbuf,smb_com,SMBsesssetupX);
 	cli_setup_packet(cli);
@@ -921,6 +922,7 @@ BOOL cli_ulogoff(struct cli_state *cli)
 /****************************************************************************
  Send a tconX.
 ****************************************************************************/
+
 BOOL cli_send_tconX(struct cli_state *cli, 
 		    const char *share, const char *dev, const char *pass, int passlen)
 {
@@ -935,9 +937,13 @@ BOOL cli_send_tconX(struct cli_state *cli,
 	if (cli->sec_mode & NEGOTIATE_SECURITY_USER_LEVEL) {
 		passlen = 1;
 		pass = "";
+	} else if (!pass) {
+		DEBUG(1, ("Server not using user level security and no password supplied.\n"));
+		return False;
 	}
 
-	if ((cli->sec_mode & NEGOTIATE_SECURITY_CHALLENGE_RESPONSE) && *pass && passlen != 24) {
+	if ((cli->sec_mode & NEGOTIATE_SECURITY_CHALLENGE_RESPONSE) &&
+	    *pass && passlen != 24) {
 		if (!lp_client_lanman_auth()) {
 			DEBUG(1, ("Server requested LANMAN password (share-level security) but 'client use lanman auth'"
 				  " is disabled\n"));
@@ -963,7 +969,9 @@ BOOL cli_send_tconX(struct cli_state *cli,
 			passlen = clistr_push(cli, pword, pass, sizeof(pword), STR_TERMINATE);
 			
 		} else {
-			memcpy(pword, pass, passlen);
+			if (passlen) {
+				memcpy(pword, pass, passlen);
+			}
 		}
 	}
 
@@ -978,7 +986,9 @@ BOOL cli_send_tconX(struct cli_state *cli,
 	SSVAL(cli->outbuf,smb_vwv3,passlen);
 
 	p = smb_buf(cli->outbuf);
-	memcpy(p,pword,passlen);
+	if (passlen) {
+		memcpy(p,pword,passlen);
+	}
 	p += passlen;
 	p += clistr_push(cli, p, fullshare, -1, STR_TERMINATE |STR_UPPER);
 	p += clistr_push(cli, p, dev, -1, STR_TERMINATE |STR_UPPER | STR_ASCII);
@@ -1483,6 +1493,11 @@ NTSTATUS cli_full_connection(struct cli_state **output_cli,
 {
 	NTSTATUS nt_status;
 	struct cli_state *cli = NULL;
+	int pw_len = password ? strlen(password)+1 : 0;
+
+	if (password == NULL) {
+		password = "";
+	}
 
 	nt_status = cli_start_connection(&cli, my_name, dest_host, 
 					 dest_ip, port, signing_state, flags, retry);
@@ -1491,9 +1506,7 @@ NTSTATUS cli_full_connection(struct cli_state **output_cli,
 		return nt_status;
 	}
 
-	if (!cli_session_setup(cli, user, password, strlen(password)+1, 
-			       password, strlen(password)+1, 
-			       domain)) {
+	if (!cli_session_setup(cli, user, password, pw_len, password, pw_len, domain)) {
 		if ((flags & CLI_FULL_CONNECTION_ANNONYMOUS_FALLBACK)
 		    && cli_session_setup(cli, "", "", 0, "", 0, domain)) {
 		} else {
@@ -1507,8 +1520,7 @@ NTSTATUS cli_full_connection(struct cli_state **output_cli,
 	} 
 
 	if (service) {
-		if (!cli_send_tconX(cli, service, service_type,
-				    password, strlen(password)+1)) {
+		if (!cli_send_tconX(cli, service, service_type, password, pw_len)) {
 			nt_status = cli_nt_error(cli);
 			DEBUG(1,("failed tcon_X with %s\n", nt_errstr(nt_status)));
 			cli_shutdown(cli);

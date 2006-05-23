@@ -461,10 +461,10 @@ BOOL samr_io_q_query_sec_obj(const char *desc, SAMR_Q_QUERY_SEC_OBJ * q_u,
 reads or writes a structure.
 ********************************************************************/
 
-void init_samr_q_query_dom_info(SAMR_Q_QUERY_DOMAIN_INFO * q_u,
-				POLICY_HND *domain_pol, uint16 switch_value)
+void init_samr_q_query_domain_info(SAMR_Q_QUERY_DOMAIN_INFO * q_u,
+				   POLICY_HND *domain_pol, uint16 switch_value)
 {
-	DEBUG(5, ("samr_init_samr_q_query_dom_info\n"));
+	DEBUG(5, ("samr_init_samr_q_query_domain_info\n"));
 
 	q_u->domain_pol = *domain_pol;
 	q_u->switch_value = switch_value;
@@ -474,13 +474,13 @@ void init_samr_q_query_dom_info(SAMR_Q_QUERY_DOMAIN_INFO * q_u,
 reads or writes a structure.
 ********************************************************************/
 
-BOOL samr_io_q_query_dom_info(const char *desc, SAMR_Q_QUERY_DOMAIN_INFO * q_u,
-			      prs_struct *ps, int depth)
+BOOL samr_io_q_query_domain_info(const char *desc, SAMR_Q_QUERY_DOMAIN_INFO * q_u,
+				 prs_struct *ps, int depth)
 {
 	if (q_u == NULL)
 		return False;
 
-	prs_debug(ps, depth, desc, "samr_io_q_query_dom_info");
+	prs_debug(ps, depth, desc, "samr_io_q_query_domain_info");
 	depth++;
 
 	if(!prs_align(ps))
@@ -495,6 +495,139 @@ BOOL samr_io_q_query_dom_info(const char *desc, SAMR_Q_QUERY_DOMAIN_INFO * q_u,
 	return True;
 }
 
+/*******************************************************************
+inits a structure.
+********************************************************************/
+
+void init_unk_info1(SAM_UNK_INFO_1 *u_1, uint16 min_pass_len, uint16 pass_hist, 
+		    uint32 password_properties, NTTIME nt_expire, NTTIME nt_min_age)
+{
+	u_1->min_length_password = min_pass_len;
+	u_1->password_history = pass_hist;
+	
+	if (lp_check_password_script() && *lp_check_password_script()) {
+		password_properties |= DOMAIN_PASSWORD_COMPLEX;
+	}
+	u_1->password_properties = password_properties;
+
+	/* password never expire */
+	u_1->expire.high = nt_expire.high;
+	u_1->expire.low = nt_expire.low;
+
+	/* can change the password now */
+	u_1->min_passwordage.high = nt_min_age.high;
+	u_1->min_passwordage.low = nt_min_age.low;
+	
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+
+static BOOL sam_io_unk_info1(const char *desc, SAM_UNK_INFO_1 * u_1,
+			     prs_struct *ps, int depth)
+{
+	if (u_1 == NULL)
+	  return False;
+
+	prs_debug(ps, depth, desc, "sam_io_unk_info1");
+	depth++;
+
+	if(!prs_uint16("min_length_password", ps, depth, &u_1->min_length_password))
+		return False;
+	if(!prs_uint16("password_history", ps, depth, &u_1->password_history))
+		return False;
+	if(!prs_uint32("password_properties", ps, depth, &u_1->password_properties))
+		return False;
+	if(!smb_io_time("expire", &u_1->expire, ps, depth))
+		return False;
+	if(!smb_io_time("min_passwordage", &u_1->min_passwordage, ps, depth))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+inits a structure.
+********************************************************************/
+
+void init_unk_info2(SAM_UNK_INFO_2 * u_2,
+			const char *comment, const char *domain, const char *server,
+			uint32 seq_num, uint32 num_users, uint32 num_groups, uint32 num_alias, NTTIME nt_logout, uint32 server_role)
+{
+	u_2->logout.low = nt_logout.low;
+	u_2->logout.high = nt_logout.high;
+
+	u_2->seq_num.low = seq_num;
+	u_2->seq_num.high = 0x00000000;
+
+
+	u_2->unknown_4 = 0x00000001;
+	u_2->server_role = server_role;
+	u_2->unknown_6 = 0x00000001;
+	u_2->num_domain_usrs = num_users;
+	u_2->num_domain_grps = num_groups;
+	u_2->num_local_grps = num_alias;
+
+	init_unistr2(&u_2->uni_comment, comment, UNI_FLAGS_NONE);
+	init_uni_hdr(&u_2->hdr_comment, &u_2->uni_comment);
+	init_unistr2(&u_2->uni_domain, domain, UNI_FLAGS_NONE);
+	init_uni_hdr(&u_2->hdr_domain, &u_2->uni_domain);
+	init_unistr2(&u_2->uni_server, server, UNI_FLAGS_NONE);
+	init_uni_hdr(&u_2->hdr_server, &u_2->uni_server);
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+
+static BOOL sam_io_unk_info2(const char *desc, SAM_UNK_INFO_2 * u_2,
+			     prs_struct *ps, int depth)
+{
+	if (u_2 == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "sam_io_unk_info2");
+	depth++;
+
+	if(!smb_io_time("logout", &u_2->logout, ps, depth))
+		return False;
+	if(!smb_io_unihdr("hdr_comment", &u_2->hdr_comment, ps, depth))
+		return False;
+	if(!smb_io_unihdr("hdr_domain", &u_2->hdr_domain, ps, depth))
+		return False;
+	if(!smb_io_unihdr("hdr_server", &u_2->hdr_server, ps, depth))
+		return False;
+
+	/* put all the data in here, at the moment, including what the above
+	   pointer is referring to
+	 */
+
+	if(!prs_uint64("seq_num ", ps, depth, &u_2->seq_num))
+		return False;
+
+	if(!prs_uint32("unknown_4 ", ps, depth, &u_2->unknown_4)) /* 0x0000 0001 */
+		return False;
+	if(!prs_uint32("server_role ", ps, depth, &u_2->server_role))
+		return False;
+	if(!prs_uint32("unknown_6 ", ps, depth, &u_2->unknown_6)) /* 0x0000 0001 */
+		return False;
+	if(!prs_uint32("num_domain_usrs ", ps, depth, &u_2->num_domain_usrs))
+		return False;
+	if(!prs_uint32("num_domain_grps", ps, depth, &u_2->num_domain_grps))
+		return False;
+	if(!prs_uint32("num_local_grps", ps, depth, &u_2->num_local_grps))
+		return False;
+
+	if(!smb_io_unistr2("uni_comment", &u_2->uni_comment, u_2->hdr_comment.buffer, ps, depth))
+		return False;
+	if(!smb_io_unistr2("uni_domain", &u_2->uni_domain, u_2->hdr_domain.buffer, ps, depth))
+		return False;
+	if(!smb_io_unistr2("uni_server", &u_2->uni_server, u_2->hdr_server.buffer, ps, depth))
+		return False;
+
+	return True;
+}
 
 /*******************************************************************
 inits a structure.
@@ -529,11 +662,74 @@ static BOOL sam_io_unk_info3(const char *desc, SAM_UNK_INFO_3 * u_3,
 inits a structure.
 ********************************************************************/
 
-void init_unk_info6(SAM_UNK_INFO_6 * u_6)
+void init_unk_info4(SAM_UNK_INFO_4 * u_4,const char *comment)
 {
-	u_6->unknown_0 = 0x00000000;
-	u_6->ptr_0 = 1;
-	memset(u_6->padding, 0, sizeof(u_6->padding));	/* 12 bytes zeros */
+	init_unistr2(&u_4->uni_comment, comment, UNI_FLAGS_NONE);
+	init_uni_hdr(&u_4->hdr_comment, &u_4->uni_comment);
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+
+static BOOL sam_io_unk_info4(const char *desc, SAM_UNK_INFO_4 * u_4,
+			     prs_struct *ps, int depth)
+{
+	if (u_4 == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "sam_io_unk_info4");
+	depth++;
+
+	if(!smb_io_unihdr("hdr_comment", &u_4->hdr_comment, ps, depth))
+		return False;
+
+	if(!smb_io_unistr2("uni_comment", &u_4->uni_comment, u_4->hdr_comment.buffer, ps, depth))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+inits a structure.
+********************************************************************/
+
+void init_unk_info5(SAM_UNK_INFO_5 * u_5,const char *domain)
+{
+	init_unistr2(&u_5->uni_domain, domain, UNI_FLAGS_NONE);
+	init_uni_hdr(&u_5->hdr_domain, &u_5->uni_domain);
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+
+static BOOL sam_io_unk_info5(const char *desc, SAM_UNK_INFO_5 * u_5,
+			     prs_struct *ps, int depth)
+{
+	if (u_5 == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "sam_io_unk_info5");
+	depth++;
+
+	if(!smb_io_unihdr("hdr_domain", &u_5->hdr_domain, ps, depth))
+		return False;
+
+	if(!smb_io_unistr2("uni_domain", &u_5->uni_domain, u_5->hdr_domain.buffer, ps, depth))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+inits a structure.
+********************************************************************/
+
+void init_unk_info6(SAM_UNK_INFO_6 * u_6, const char *server)
+{
+	init_unistr2(&u_6->uni_server, server, UNI_FLAGS_NONE);
+	init_uni_hdr(&u_6->hdr_server, &u_6->uni_server);
 }
 
 /*******************************************************************
@@ -549,11 +745,10 @@ static BOOL sam_io_unk_info6(const char *desc, SAM_UNK_INFO_6 * u_6,
 	prs_debug(ps, depth, desc, "sam_io_unk_info6");
 	depth++;
 
-	if(!prs_uint32("unknown_0", ps, depth, &u_6->unknown_0)) /* 0x0000 0000 */
+	if(!smb_io_unihdr("hdr_server", &u_6->hdr_server, ps, depth))
 		return False;
-	if(!prs_uint32("ptr_0", ps, depth, &u_6->ptr_0)) /* pointer to unknown structure */
-		return False;
-	if(!prs_uint8s(False, "padding", ps, depth, u_6->padding, sizeof(u_6->padding)))	/* 12 bytes zeros */
+
+	if(!smb_io_unistr2("uni_server", &u_6->uni_server, u_6->hdr_server.buffer, ps, depth))
 		return False;
 
 	return True;
@@ -620,6 +815,33 @@ static BOOL sam_io_unk_info8(const char *desc, SAM_UNK_INFO_8 * u_8,
 	return True;
 }
 
+/*******************************************************************
+inits a structure.
+********************************************************************/
+
+void init_unk_info9(SAM_UNK_INFO_9 * u_9, uint32 unknown)
+{
+	u_9->unknown = unknown;
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+
+static BOOL sam_io_unk_info9(const char *desc, SAM_UNK_INFO_9 * u_9,
+			     prs_struct *ps, int depth)
+{
+	if (u_9 == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "sam_io_unk_info9");
+	depth++;
+
+	if (!prs_uint32("unknown", ps, depth, &u_9->unknown))
+		return False;
+
+	return True;
+}
 
 /*******************************************************************
 inits a structure.
@@ -662,161 +884,37 @@ static BOOL sam_io_unk_info12(const char *desc, SAM_UNK_INFO_12 * u_12,
 inits a structure.
 ********************************************************************/
 
-void init_unk_info5(SAM_UNK_INFO_5 * u_5,const char *server)
+void init_unk_info13(SAM_UNK_INFO_13 * u_13, uint32 seq_num)
 {
-	init_unistr2(&u_5->uni_server, server, UNI_FLAGS_NONE);
-	init_uni_hdr(&u_5->hdr_server, &u_5->uni_server);
+	unix_to_nt_time(&u_13->domain_create_time, 0);
+	u_13->seq_num.low = seq_num;
+	u_13->seq_num.high = 0x0000;
+	u_13->unknown1 = 0;
+	u_13->unknown2 = 0;
 }
 
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
 
-static BOOL sam_io_unk_info5(const char *desc, SAM_UNK_INFO_5 * u_5,
+static BOOL sam_io_unk_info13(const char *desc, SAM_UNK_INFO_13 * u_13,
 			     prs_struct *ps, int depth)
 {
-	if (u_5 == NULL)
+	if (u_13 == NULL)
 		return False;
 
-	prs_debug(ps, depth, desc, "sam_io_unk_info5");
+	prs_debug(ps, depth, desc, "sam_io_unk_info13");
 	depth++;
 
-	if(!smb_io_unihdr("hdr_server", &u_5->hdr_server, ps, depth))
+	if (!prs_uint64("seq_num", ps, depth, &u_13->seq_num))
 		return False;
 
-	if(!smb_io_unistr2("uni_server", &u_5->uni_server, u_5->hdr_server.buffer, ps, depth))
+	if(!smb_io_time("domain_create_time", &u_13->domain_create_time, ps, depth))
 		return False;
 
-	return True;
-}
-
-/*******************************************************************
-inits a structure.
-********************************************************************/
-
-void init_unk_info2(SAM_UNK_INFO_2 * u_2,
-			const char *comment, const char *domain, const char *server,
-			uint32 seq_num, uint32 num_users, uint32 num_groups, uint32 num_alias, NTTIME nt_logout, uint32 server_role)
-{
-	u_2->logout.low = nt_logout.low;
-	u_2->logout.high = nt_logout.high;
-
-	u_2->seq_num.low = seq_num;
-	u_2->seq_num.high = 0x00000000;
-
-
-	u_2->unknown_4 = 0x00000001;
-	u_2->server_role = server_role;
-	u_2->unknown_6 = 0x00000001;
-	u_2->num_domain_usrs = num_users;
-	u_2->num_domain_grps = num_groups;
-	u_2->num_local_grps = num_alias;
-
-	memset(u_2->padding, 0, sizeof(u_2->padding));	/* 12 bytes zeros */
-
-	init_unistr2(&u_2->uni_comment, comment, UNI_FLAGS_NONE);
-	init_uni_hdr(&u_2->hdr_comment, &u_2->uni_comment);
-	init_unistr2(&u_2->uni_domain, domain, UNI_FLAGS_NONE);
-	init_uni_hdr(&u_2->hdr_domain, &u_2->uni_domain);
-	init_unistr2(&u_2->uni_server, server, UNI_FLAGS_NONE);
-	init_uni_hdr(&u_2->hdr_server, &u_2->uni_server);
-}
-
-/*******************************************************************
-reads or writes a structure.
-********************************************************************/
-
-static BOOL sam_io_unk_info2(const char *desc, SAM_UNK_INFO_2 * u_2,
-			     prs_struct *ps, int depth)
-{
-	if (u_2 == NULL)
+	if (!prs_uint32("unknown1", ps, depth, &u_13->unknown1))
 		return False;
-
-	prs_debug(ps, depth, desc, "sam_io_unk_info2");
-	depth++;
-
-	if(!smb_io_time("logout", &u_2->logout, ps, depth))
-		return False;
-	if(!smb_io_unihdr("hdr_comment", &u_2->hdr_comment, ps, depth))
-		return False;
-	if(!smb_io_unihdr("hdr_domain", &u_2->hdr_domain, ps, depth))
-		return False;
-	if(!smb_io_unihdr("hdr_server", &u_2->hdr_server, ps, depth))
-		return False;
-
-	/* put all the data in here, at the moment, including what the above
-	   pointer is referring to
-	 */
-
-	if(!prs_uint64("seq_num ", ps, depth, &u_2->seq_num))
-		return False;
-
-	if(!prs_uint32("unknown_4 ", ps, depth, &u_2->unknown_4)) /* 0x0000 0001 */
-		return False;
-	if(!prs_uint32("server_role ", ps, depth, &u_2->server_role))
-		return False;
-	if(!prs_uint32("unknown_6 ", ps, depth, &u_2->unknown_6)) /* 0x0000 0001 */
-		return False;
-	if(!prs_uint32("num_domain_usrs ", ps, depth, &u_2->num_domain_usrs))
-		return False;
-	if(!prs_uint32("num_domain_grps", ps, depth, &u_2->num_domain_grps))
-		return False;
-	if(!prs_uint32("num_local_grps", ps, depth, &u_2->num_local_grps))
-		return False;
-
-	if(!smb_io_unistr2("uni_comment", &u_2->uni_comment, u_2->hdr_comment.buffer, ps, depth))
-		return False;
-	if(!smb_io_unistr2("uni_domain", &u_2->uni_domain, u_2->hdr_domain.buffer, ps, depth))
-		return False;
-	if(!smb_io_unistr2("uni_server", &u_2->uni_server, u_2->hdr_server.buffer, ps, depth))
-		return False;
-
-	return True;
-}
-
-/*******************************************************************
-inits a structure.
-********************************************************************/
-
-void init_unk_info1(SAM_UNK_INFO_1 *u_1, uint16 min_pass_len, uint16 pass_hist, 
-		    uint32 password_properties, NTTIME nt_expire, NTTIME nt_min_age)
-{
-	u_1->min_length_password = min_pass_len;
-	u_1->password_history = pass_hist;
-	u_1->password_properties = password_properties;
-	
-	/* password never expire */
-	u_1->expire.high = nt_expire.high;
-	u_1->expire.low = nt_expire.low;
-	
-	/* can change the password now */
-	u_1->min_passwordage.high = nt_min_age.high;
-	u_1->min_passwordage.low = nt_min_age.low;
-	
-}
-
-/*******************************************************************
-reads or writes a structure.
-********************************************************************/
-
-static BOOL sam_io_unk_info1(const char *desc, SAM_UNK_INFO_1 * u_1,
-			     prs_struct *ps, int depth)
-{
-	if (u_1 == NULL)
-	  return False;
-
-	prs_debug(ps, depth, desc, "sam_io_unk_info1");
-	depth++;
-
-	if(!prs_uint16("min_length_password", ps, depth, &u_1->min_length_password))
-		return False;
-	if(!prs_uint16("password_history", ps, depth, &u_1->password_history))
-		return False;
-	if(!prs_uint32("password_properties", ps, depth, &u_1->password_properties))
-		return False;
-	if(!smb_io_time("expire", &u_1->expire, ps, depth))
-		return False;
-	if(!smb_io_time("min_passwordage", &u_1->min_passwordage, ps, depth))
+	if (!prs_uint32("unknown2", ps, depth, &u_13->unknown2))
 		return False;
 
 	return True;
@@ -826,11 +924,11 @@ static BOOL sam_io_unk_info1(const char *desc, SAM_UNK_INFO_1 * u_1,
 inits a SAMR_R_QUERY_DOMAIN_INFO structure.
 ********************************************************************/
 
-void init_samr_r_query_dom_info(SAMR_R_QUERY_DOMAIN_INFO * r_u,
-				uint16 switch_value, SAM_UNK_CTR * ctr,
-				NTSTATUS status)
+void init_samr_r_query_domain_info(SAMR_R_QUERY_DOMAIN_INFO * r_u,
+				   uint16 switch_value, SAM_UNK_CTR * ctr,
+				   NTSTATUS status)
 {
-	DEBUG(5, ("init_samr_r_query_dom_info\n"));
+	DEBUG(5, ("init_samr_r_query_domain_info\n"));
 
 	r_u->ptr_0 = 0;
 	r_u->switch_value = 0;
@@ -847,13 +945,13 @@ void init_samr_r_query_dom_info(SAMR_R_QUERY_DOMAIN_INFO * r_u,
 reads or writes a structure.
 ********************************************************************/
 
-BOOL samr_io_r_query_dom_info(const char *desc, SAMR_R_QUERY_DOMAIN_INFO * r_u,
-			      prs_struct *ps, int depth)
+BOOL samr_io_r_query_domain_info(const char *desc, SAMR_R_QUERY_DOMAIN_INFO * r_u,
+				 prs_struct *ps, int depth)
 {
         if (r_u == NULL)
 		return False;
 
-	prs_debug(ps, depth, desc, "samr_io_r_query_dom_info");
+	prs_debug(ps, depth, desc, "samr_io_r_query_domain_info");
 	depth++;
 
 	if(!prs_align(ps))
@@ -869,8 +967,16 @@ BOOL samr_io_r_query_dom_info(const char *desc, SAMR_R_QUERY_DOMAIN_INFO * r_u,
 			return False;
 
 		switch (r_u->switch_value) {
+		case 0x0d:
+			if(!sam_io_unk_info13("unk_inf13", &r_u->ctr->info.inf13, ps, depth))
+				return False;
+			break;
 		case 0x0c:
 			if(!sam_io_unk_info12("unk_inf12", &r_u->ctr->info.inf12, ps, depth))
+				return False;
+			break;
+		case 0x09:
+			if(!sam_io_unk_info9("unk_inf9",&r_u->ctr->info.inf9, ps,depth))
 				return False;
 			break;
 		case 0x08:
@@ -889,6 +995,10 @@ BOOL samr_io_r_query_dom_info(const char *desc, SAMR_R_QUERY_DOMAIN_INFO * r_u,
 			if(!sam_io_unk_info5("unk_inf5",&r_u->ctr->info.inf5, ps,depth))
 				return False;
 			break;
+		case 0x04:
+			if(!sam_io_unk_info4("unk_inf4",&r_u->ctr->info.inf4, ps,depth))
+				return False;
+			break;
 		case 0x03:
 			if(!sam_io_unk_info3("unk_inf3",&r_u->ctr->info.inf3, ps,depth))
 				return False;
@@ -902,7 +1012,7 @@ BOOL samr_io_r_query_dom_info(const char *desc, SAMR_R_QUERY_DOMAIN_INFO * r_u,
 				return False;
 			break;
 		default:
-			DEBUG(0, ("samr_io_r_query_dom_info: unknown switch level 0x%x\n",
+			DEBUG(0, ("samr_io_r_query_domain_info: unknown switch level 0x%x\n",
 				r_u->switch_value));
 			r_u->status = NT_STATUS_INVALID_INFO_CLASS;
 			return False;
@@ -7659,11 +7769,11 @@ BOOL samr_io_q_query_domain_info2(const char *desc, SAMR_Q_QUERY_DOMAIN_INFO2 *q
 inits a SAMR_R_QUERY_DOMAIN_INFO structure.
 ********************************************************************/
 
-void init_samr_r_samr_query_domain_info2(SAMR_R_QUERY_DOMAIN_INFO2 * r_u,
-				uint16 switch_value, SAM_UNK_CTR * ctr,
-				NTSTATUS status)
+void init_samr_r_query_domain_info2(SAMR_R_QUERY_DOMAIN_INFO2 * r_u,
+				    uint16 switch_value, SAM_UNK_CTR * ctr,
+				    NTSTATUS status)
 {
-	DEBUG(5, ("init_samr_r_samr_query_domain_info2\n"));
+	DEBUG(5, ("init_samr_r_query_domain_info2\n"));
 
 	r_u->ptr_0 = 0;
 	r_u->switch_value = 0;
@@ -7680,13 +7790,13 @@ void init_samr_r_samr_query_domain_info2(SAMR_R_QUERY_DOMAIN_INFO2 * r_u,
 reads or writes a structure.
 ********************************************************************/
 
-BOOL samr_io_r_samr_query_domain_info2(const char *desc, SAMR_R_QUERY_DOMAIN_INFO2 * r_u,
-			      prs_struct *ps, int depth)
+BOOL samr_io_r_query_domain_info2(const char *desc, SAMR_R_QUERY_DOMAIN_INFO2 * r_u,
+				  prs_struct *ps, int depth)
 {
         if (r_u == NULL)
 		return False;
 
-	prs_debug(ps, depth, desc, "samr_io_r_samr_query_domain_info2");
+	prs_debug(ps, depth, desc, "samr_io_r_query_domain_info2");
 	depth++;
 
 	if(!prs_align(ps))
@@ -7702,8 +7812,20 @@ BOOL samr_io_r_samr_query_domain_info2(const char *desc, SAMR_R_QUERY_DOMAIN_INF
 			return False;
 
 		switch (r_u->switch_value) {
+		case 0x0d:
+			if(!sam_io_unk_info13("unk_inf13", &r_u->ctr->info.inf13, ps, depth))
+				return False;
+			break;
 		case 0x0c:
 			if(!sam_io_unk_info12("unk_inf12", &r_u->ctr->info.inf12, ps, depth))
+				return False;
+			break;
+		case 0x09:
+			if(!sam_io_unk_info9("unk_inf9",&r_u->ctr->info.inf9, ps,depth))
+				return False;
+			break;
+		case 0x08:
+			if(!sam_io_unk_info8("unk_inf8",&r_u->ctr->info.inf8, ps,depth))
 				return False;
 			break;
 		case 0x07:
@@ -7716,6 +7838,10 @@ BOOL samr_io_r_samr_query_domain_info2(const char *desc, SAMR_R_QUERY_DOMAIN_INF
 			break;
 		case 0x05:
 			if(!sam_io_unk_info5("unk_inf5",&r_u->ctr->info.inf5, ps,depth))
+				return False;
+			break;
+		case 0x04:
+			if(!sam_io_unk_info4("unk_inf4",&r_u->ctr->info.inf4, ps,depth))
 				return False;
 			break;
 		case 0x03:
@@ -7731,7 +7857,7 @@ BOOL samr_io_r_samr_query_domain_info2(const char *desc, SAMR_R_QUERY_DOMAIN_INF
 				return False;
 			break;
 		default:
-			DEBUG(0, ("samr_io_r_samr_query_domain_info2: unknown switch level 0x%x\n",
+			DEBUG(0, ("samr_io_r_query_domain_info2: unknown switch level 0x%x\n",
 				r_u->switch_value));
 			r_u->status = NT_STATUS_INVALID_INFO_CLASS;
 			return False;

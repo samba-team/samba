@@ -33,6 +33,10 @@
 #include "libnscd.h"
 #endif
 
+#ifdef HAVE_SYS_MMAN_H
+#include <sys/mman.h>
+#endif
+
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
 

@@ -389,15 +389,14 @@ static int rpc_join_usage(int argc, const char **argv)
 
 int net_rpc_join(int argc, const char **argv) 
 {
-	if ((lp_server_role() != ROLE_DOMAIN_MEMBER) &&
-	    (lp_server_role() != ROLE_DOMAIN_BDC)) {
-		d_printf("can only join as domain member or as BDC\n");
+	if (lp_server_role() == ROLE_STANDALONE) {
+		d_printf("cannot join as standalone machine\n");
 		return -1;
 	}
 
 	if (strlen(global_myname()) > 15) {
-		d_printf("Our netbios name can only be 15 chars long, \"%s\""
-			 " is %d chars long\n",
+		d_printf("Our netbios name can be at most 15 chars long, "
+			 "\"%s\" is %d chars long\n",
 			 global_myname(), strlen(global_myname()));
 		return -1;
 	}
@@ -1607,7 +1606,7 @@ struct rpc_sh_cmd *net_rpc_user_cmds(TALLOC_CTX *mem_ctx,
 	};
 
 	return cmds;
-};
+}
 
 /****************************************************************************/
 
@@ -4794,7 +4793,7 @@ struct rpc_sh_cmd *net_rpc_share_cmds(TALLOC_CTX *mem_ctx,
 	};
 
 	return cmds;
-};
+}
 
 /****************************************************************************/
 
@@ -6198,7 +6197,7 @@ BOOL net_rpc_check(unsigned flags)
 	char *server_name = NULL;
 
 	/* flags (i.e. server type) may depend on command */
-	if (!net_find_server(flags, &server_ip, &server_name))
+	if (!net_find_server(NULL, flags, &server_ip, &server_name))
 		return False;
 
 	ZERO_STRUCT(cli);
@@ -6611,6 +6610,7 @@ int net_rpc_usage(int argc, const char **argv)
 	d_printf("  net rpc rights\t\tto manage privileges assigned to SIDs\n");
 	d_printf("  net rpc registry\t\tto manage registry hives\n");
 	d_printf("  net rpc service\t\tto start, stop and query services\n");
+	d_printf("  net rpc audit\t\t\tto modify global auditing settings\n");
 	d_printf("\n");
 	d_printf("'net rpc shutdown' also accepts the following miscellaneous options:\n"); /* misc options */
 	d_printf("\t-r or --reboot\trequest remote server reboot on shutdown\n");

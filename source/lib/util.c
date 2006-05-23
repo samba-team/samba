@@ -1948,7 +1948,8 @@ BOOL fcntl_lock(int fd, int op, SMB_OFF_T offset, SMB_OFF_T count, int type)
 	SMB_STRUCT_FLOCK lock;
 	int ret;
 
-	DEBUG(8,("fcntl_lock %d %d %.0f %.0f %d\n",fd,op,(double)offset,(double)count,type));
+	DEBUG(8,("fcntl_lock fd=%d op=%d offset=%.0f count=%.0f type=%d\n",
+		fd,op,(double)offset,(double)count,type));
 
 	lock.l_type = type;
 	lock.l_whence = SEEK_SET;
@@ -1959,8 +1960,10 @@ BOOL fcntl_lock(int fd, int op, SMB_OFF_T offset, SMB_OFF_T count, int type)
 	ret = sys_fcntl_ptr(fd,op,&lock);
 
 	if (ret == -1) {
+		int sav = errno;
 		DEBUG(3,("fcntl_lock: lock failed at offset %.0f count %.0f op %d type %d (%s)\n",
 			(double)offset,(double)count,op,type,strerror(errno)));
+		errno = sav;
 		return False;
 	}
 
@@ -1982,7 +1985,8 @@ BOOL fcntl_getlock(int fd, SMB_OFF_T *poffset, SMB_OFF_T *pcount, int *ptype, pi
 	SMB_STRUCT_FLOCK lock;
 	int ret;
 
-	DEBUG(8,("fcntl_getlock %d %.0f %.0f %d\n",fd,(double)*poffset,(double)*pcount,*ptype));
+	DEBUG(8,("fcntl_getlock fd=%d offset=%.0f count=%.0f type=%d\n",
+		    fd,(double)*poffset,(double)*pcount,*ptype));
 
 	lock.l_type = *ptype;
 	lock.l_whence = SEEK_SET;
@@ -1993,8 +1997,10 @@ BOOL fcntl_getlock(int fd, SMB_OFF_T *poffset, SMB_OFF_T *pcount, int *ptype, pi
 	ret = sys_fcntl_ptr(fd,SMB_F_GETLK,&lock);
 
 	if (ret == -1) {
+		int sav = errno;
 		DEBUG(3,("fcntl_getlock: lock request failed at offset %.0f count %.0f type %d (%s)\n",
 			(double)*poffset,(double)*pcount,*ptype,strerror(errno)));
+		errno = sav;
 		return False;
 	}
 
@@ -2967,3 +2973,21 @@ BOOL procid_is_local(const struct process_id *pid)
 {
 	return True;
 }
+
+int this_is_smp(void)
+{
+#if defined(HAVE_SYSCONF)
+
+#if defined(SYSCONF_SC_NPROC_ONLN)
+        return (sysconf(_SC_NPROC_ONLN) > 1) ? 1 : 0;
+#elif defined(SYSCONF_SC_NPROCESSORS_ONLN)
+        return (sysconf(_SC_NPROCESSORS_ONLN) > 1) ? 1 : 0;
+#else
+	return 0;
+#endif
+
+#else
+	return 0;
+#endif
+}
+

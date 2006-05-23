@@ -38,6 +38,78 @@
 #define KRB5_KEY_DATA(k)	((k)->contents)
 #endif /* HAVE_KRB5_KEYBLOCK_KEYVALUE */
 
+/**************************************************************
+ Wrappers around kerberos string functions that convert from
+ utf8 -> unix charset and vica versa.
+**************************************************************/
+
+/**************************************************************
+ krb5_parse_name that takes a UNIX charset.
+**************************************************************/
+
+ krb5_error_code smb_krb5_parse_name(krb5_context context,
+				const char *name, /* in unix charset */
+				krb5_principal *principal)
+{
+	krb5_error_code ret;
+	char *utf8_name;
+
+	if (push_utf8_allocate(&utf8_name, name) == (size_t)-1) {
+		return ENOMEM;
+	}
+
+	ret = krb5_parse_name(context, utf8_name, principal);
+	SAFE_FREE(utf8_name);
+	return ret;
+}
+
+#ifdef HAVE_KRB5_PARSE_NAME_NOREALM
+/**************************************************************
+ krb5_parse_name_norealm that takes a UNIX charset.
+**************************************************************/
+
+static krb5_error_code smb_krb5_parse_name_norealm_conv(krb5_context context,
+				const char *name, /* in unix charset */
+				krb5_principal *principal)
+{
+	krb5_error_code ret;
+	char *utf8_name;
+
+	if (push_utf8_allocate(&utf8_name, name) == (size_t)-1) {
+		return ENOMEM;
+	}
+
+	ret = krb5_parse_name_norealm(context, utf8_name, principal);
+	SAFE_FREE(utf8_name);
+	return ret;
+}
+#endif
+
+/**************************************************************
+ krb5_parse_name that returns a UNIX charset name. Must
+ be freed with normal free() call.
+**************************************************************/
+
+ krb5_error_code smb_krb5_unparse_name(krb5_context context,
+					krb5_const_principal principal,
+					char **unix_name)
+{
+	krb5_error_code ret;
+	char *utf8_name;
+
+	ret = krb5_unparse_name(context, principal, &utf8_name);
+	if (ret) {
+		return ret;
+	}
+
+	if (pull_utf8_allocate(unix_name, utf8_name)==-1) {
+		krb5_free_unparsed_name(context, utf8_name);
+		return ENOMEM;
+	}
+	krb5_free_unparsed_name(context, utf8_name);
+	return 0;
+}
+
 #ifndef HAVE_KRB5_SET_REAL_TIME
 /*
  * This function is not in the Heimdal mainline.
@@ -459,7 +531,7 @@ static krb5_error_code ads_krb5_mk_req(krb5_context context,
 	BOOL creds_ready = False;
 	int i = 0, maxtries = 3;
 	
-	retval = krb5_parse_name(context, principal, &server);
+	retval = smb_krb5_parse_name(context, principal, &server);
 	if (retval) {
 		DEBUG(1,("ads_krb5_mk_req: Failed to parse principal %s\n", principal));
 		return retval;
@@ -795,10 +867,11 @@ get_key_from_keytab(krb5_context context,
 	}
 
 	if ( DEBUGLEVEL >= 10 ) {
-		krb5_unparse_name(context, server, &name);
-		DEBUG(10,("get_key_from_keytab: will look for kvno %d, enctype %d and name: %s\n", 
-			kvno, enctype, name));
-		krb5_free_unparsed_name(context, name);
+		if (smb_krb5_unparse_name(context, server, &name) == 0) {
+			DEBUG(10,("get_key_from_keytab: will look for kvno %d, enctype %d and name: %s\n", 
+				kvno, enctype, name));
+			SAFE_FREE(name);
+		}
 	}
 
 	ret = krb5_kt_get_entry(context,
@@ -943,7 +1016,7 @@ out:
 					    krb5_principal *principal)
 {
 #ifdef HAVE_KRB5_PARSE_NAME_NOREALM
-	return krb5_parse_name_norealm(context, name, principal);
+	return smb_krb5_parse_name_norealm_conv(context, name, principal);
 #endif
 
 	/* we are cheating here because parse_name will in fact set the realm.
@@ -951,7 +1024,7 @@ out:
 	 * ignores the realm anyway when calling
 	 * smb_krb5_principal_compare_any_realm later - Guenther */
 
-	return krb5_parse_name(context, name, principal);
+	return smb_krb5_parse_name(context, name, principal);
 }
 
  BOOL smb_krb5_principal_compare_any_realm(krb5_context context, 
@@ -1022,7 +1095,7 @@ out:
 		krb5_creds creds;
 	
 		if (client_string) {
-			ret = krb5_parse_name(context, client_string, &client);
+			ret = smb_krb5_parse_name(context, client_string, &client);
 			if (ret) {
 				goto done;
 			}
@@ -1063,7 +1136,7 @@ out:
 		memset(&creds_in, 0, sizeof(creds_in));
 
 		if (client_string) {
-			ret = krb5_parse_name(context, client_string, &creds_in.client);
+			ret = smb_krb5_parse_name(context, client_string, &creds_in.client);
 			if (ret) {
 				goto done;
 			}
@@ -1075,7 +1148,7 @@ out:
 		}
 
 		if (service_string) {
-			ret = krb5_parse_name(context, service_string, &creds_in.server);
+			ret = smb_krb5_parse_name(context, service_string, &creds_in.server);
 			if (ret) { 
 				goto done;
 			}
@@ -1131,6 +1204,113 @@ done:
 	return ret;
     
 }
+
+ krb5_error_code smb_krb5_free_addresses(krb5_context context, smb_krb5_addresses *addr)
+{
+	krb5_error_code ret = 0;
+	if (addr == NULL) {
+		return ret;
+	}
+#if defined(HAVE_MAGIC_IN_KRB5_ADDRESS) && defined(HAVE_ADDRTYPE_IN_KRB5_ADDRESS) /* MIT */
+	krb5_free_addresses(context, addr->addrs);
+#elif defined(HAVE_ADDR_TYPE_IN_KRB5_ADDRESS) /* Heimdal */
+	ret = krb5_free_addresses(context, addr->addrs);
+	SAFE_FREE(addr->addrs);
+#endif
+	SAFE_FREE(addr);
+	addr = NULL;
+	return ret;
+}
+
+ krb5_error_code smb_krb5_gen_netbios_krb5_address(smb_krb5_addresses **kerb_addr)
+{
+	krb5_error_code ret = 0;
+	nstring buf;
+#if defined(HAVE_MAGIC_IN_KRB5_ADDRESS) && defined(HAVE_ADDRTYPE_IN_KRB5_ADDRESS) /* MIT */
+	krb5_address **addrs = NULL;
+#elif defined(HAVE_ADDR_TYPE_IN_KRB5_ADDRESS) /* Heimdal */
+	krb5_addresses *addrs = NULL;
+#endif
+
+	*kerb_addr = (smb_krb5_addresses *)SMB_MALLOC(sizeof(smb_krb5_addresses));
+	if (*kerb_addr == NULL) {
+		return ENOMEM;
+	}
+
+	put_name(buf, global_myname(), ' ', 0x20);
+
+#if defined(HAVE_MAGIC_IN_KRB5_ADDRESS) && defined(HAVE_ADDRTYPE_IN_KRB5_ADDRESS) /* MIT */
+	{
+		int num_addr = 2;
+
+		addrs = (krb5_address **)SMB_MALLOC(sizeof(krb5_address *) * num_addr);
+		if (addrs == NULL) {
+			SAFE_FREE(kerb_addr);
+			return ENOMEM;
+		}
+
+		memset(addrs, 0, sizeof(krb5_address *) * num_addr);
+
+		addrs[0] = (krb5_address *)SMB_MALLOC(sizeof(krb5_address));
+		if (addrs[0] == NULL) {
+			SAFE_FREE(addrs);
+			SAFE_FREE(kerb_addr);
+			return ENOMEM;
+		}
+
+		addrs[0]->magic = KV5M_ADDRESS;
+		addrs[0]->addrtype = KRB5_ADDR_NETBIOS;
+		addrs[0]->length = MAX_NETBIOSNAME_LEN;
+		addrs[0]->contents = (unsigned char *)SMB_MALLOC(addrs[0]->length);
+		if (addrs[0]->contents == NULL) {
+			SAFE_FREE(addrs[0]);
+			SAFE_FREE(addrs);
+			SAFE_FREE(kerb_addr);
+			return ENOMEM;
+		}
+
+		memcpy(addrs[0]->contents, buf, addrs[0]->length);
+
+		addrs[1] = NULL;
+	}
+#elif defined(HAVE_ADDR_TYPE_IN_KRB5_ADDRESS) /* Heimdal */
+	{
+		addrs = (krb5_addresses *)SMB_MALLOC(sizeof(krb5_addresses));
+		if (addrs == NULL) {
+			SAFE_FREE(kerb_addr);
+			return ENOMEM;
+		}
+
+		memset(addrs, 0, sizeof(krb5_addresses));
+
+		addrs->len = 1;
+		addrs->val = (krb5_address *)SMB_MALLOC(sizeof(krb5_address));
+		if (addrs->val == NULL) {
+			SAFE_FREE(addrs);
+			SAFE_FREE(kerb_addr);
+			return ENOMEM;
+		}
+
+		addrs->val[0].addr_type = KRB5_ADDR_NETBIOS;
+		addrs->val[0].address.length = MAX_NETBIOSNAME_LEN;
+		addrs->val[0].address.data = (unsigned char *)SMB_MALLOC(addrs->val[0].address.length);
+		if (addrs->val[0].address.data == NULL) {
+			SAFE_FREE(addrs->val);
+			SAFE_FREE(addrs);
+			SAFE_FREE(kerb_addr);
+			return ENOMEM;
+		}
+
+		memcpy(addrs->val[0].address.data, buf, addrs->val[0].address.length);
+	}
+#else
+#error UNKNOWN_KRB5_ADDRESS_FORMAT
+#endif
+	(*kerb_addr)->addrs = addrs;
+
+	return ret;
+}
+				
 
 #else /* HAVE_KRB5 */
  /* this saves a few linking headaches */

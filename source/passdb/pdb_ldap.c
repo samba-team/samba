@@ -212,7 +212,7 @@ static NTSTATUS ldapsam_get_seq_num(struct pdb_methods *my_methods, time_t *seq_
 		return ntstatus;
 	}
 
-	if (!smbldap_has_naming_context(ldap_state->smbldap_state, lp_ldap_suffix())) {
+	if (!smbldap_has_naming_context(ldap_state->smbldap_state->ldap_struct, lp_ldap_suffix())) {
 		DEBUG(3,("ldapsam_get_seq_num: DIT not configured to hold %s "
 			 "as top-level namingContext\n", lp_ldap_suffix()));
 		return ntstatus;
@@ -773,9 +773,9 @@ static BOOL init_sam_from_ldap(struct ldapsam_privates *ldap_state,
 	if (pwHistLen > 0){
 		uint8 *pwhist = NULL;
 		int i;
+		char history_string[MAX_PW_HISTORY_LEN*64];
 
-		/* We can only store (sizeof(pstring)-1)/64 password history entries. */
-		pwHistLen = MIN(pwHistLen, ((sizeof(temp)-1)/64));
+		pwHistLen = MIN(pwHistLen, MAX_PW_HISTORY_LEN);
 
 		if ((pwhist = SMB_MALLOC(pwHistLen * PW_HISTORY_ENTRY_LEN)) == NULL){
 			DEBUG(0, ("init_sam_from_ldap: malloc failed!\n"));
@@ -783,19 +783,20 @@ static BOOL init_sam_from_ldap(struct ldapsam_privates *ldap_state,
 		}
 		memset(pwhist, '\0', pwHistLen * PW_HISTORY_ENTRY_LEN);
 
-		if (!smbldap_get_single_pstring (ldap_state->smbldap_state->ldap_struct, entry, 
-			get_userattr_key2string(ldap_state->schema_ver, LDAP_ATTR_PWD_HISTORY), temp)) {
+		if (!smbldap_get_single_attribute(ldap_state->smbldap_state->ldap_struct, entry,
+						  get_userattr_key2string(ldap_state->schema_ver, LDAP_ATTR_PWD_HISTORY),
+						  history_string, sizeof(history_string))) {
 			/* leave as default - zeros */
 		} else {
 			BOOL hex_failed = False;
 			for (i = 0; i < pwHistLen; i++){
 				/* Get the 16 byte salt. */
-				if (!pdb_gethexpwd(&temp[i*64], &pwhist[i*PW_HISTORY_ENTRY_LEN])) {
+				if (!pdb_gethexpwd(&history_string[i*64], &pwhist[i*PW_HISTORY_ENTRY_LEN])) {
 					hex_failed = True;
 					break;
 				}
 				/* Get the 16 byte MD5 hash of salt+passwd. */
-				if (!pdb_gethexpwd(&temp[(i*64)+32],
+				if (!pdb_gethexpwd(&history_string[(i*64)+32],
 						&pwhist[(i*PW_HISTORY_ENTRY_LEN)+PW_HISTORY_SALT_LEN])) {
 					hex_failed = True;
 					break;
@@ -1505,11 +1506,6 @@ static NTSTATUS ldapsam_getsampwsid(struct pdb_methods *my_methods, struct samu 
 	return NT_STATUS_OK;
 }	
 
-static BOOL ldapsam_can_pwchange_exop(struct smbldap_state *ldap_state)
-{
-	return smbldap_has_extension(ldap_state, LDAP_EXOP_MODIFY_PASSWD);
-}
-
 /********************************************************************
  Do the actual modification - also change a plaintext passord if 
  it it set.
@@ -1572,7 +1568,9 @@ static NTSTATUS ldapsam_modify_entry(struct pdb_methods *my_methods,
 		char *utf8_dn;
 
 		if (!ldap_state->is_nds_ldap) {
-			if (!ldapsam_can_pwchange_exop(ldap_state->smbldap_state)) {
+
+			if (!smbldap_has_extension(ldap_state->smbldap_state->ldap_struct, 
+						   LDAP_EXOP_MODIFY_PASSWD)) {
 				DEBUG(2, ("ldap password change requested, but LDAP "
 					  "server does not support it -- ignoring\n"));
 				return NT_STATUS_OK;
@@ -4303,7 +4301,7 @@ static BOOL ldapsam_search_grouptype(struct pdb_methods *methods,
 	state->scope = LDAP_SCOPE_SUBTREE;
 	state->filter =	talloc_asprintf(search->mem_ctx,
 					"(&(objectclass=sambaGroupMapping)"
-					"(sambaGroupType=%d)(sambaSID=%s))", 
+					"(sambaGroupType=%d)(sambaSID=%s*))", 
 					type, sid_string_static(sid));
 	state->attrs = talloc_attrs(search->mem_ctx, "cn", "sambaSid",
 				    "displayName", "description",
@@ -4356,6 +4354,7 @@ static NTSTATUS ldapsam_get_new_rid(struct ldapsam_privates *priv,
 	char *value;
 	int rc;
 	uint32 nextRid = 0;
+	const char *dn;
 
 	TALLOC_CTX *mem_ctx;
 
@@ -4419,9 +4418,12 @@ static NTSTATUS ldapsam_get_new_rid(struct ldapsam_privates *priv,
 			 talloc_asprintf(mem_ctx, "%d", nextRid));
 	talloc_autofree_ldapmod(mem_ctx, mods);
 
-	rc = smbldap_modify(smbldap_state,
-			    smbldap_talloc_dn(mem_ctx, priv2ld(priv), entry),
-			    mods);
+	if ((dn = smbldap_talloc_dn(mem_ctx, priv2ld(priv), entry)) == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
+	rc = smbldap_modify(smbldap_state, dn, mods);
 
 	/* ACCESS_DENIED is used as a placeholder for "the modify failed,
 	 * please retry" */
@@ -5426,23 +5428,6 @@ NTSTATUS pdb_init_ldapsam_compat(struct pdb_methods **pdb_method, const char *lo
 	NTSTATUS nt_status;
 	struct ldapsam_privates *ldap_state;
 	char *uri = talloc_strdup( NULL, location );
-
-#ifdef WITH_LDAP_SAMCONFIG
-	if (!uri) {
-		int ldap_port = lp_ldap_port();
-			
-		/* remap default port if not using SSL (ie clear or TLS) */
-		if ( (lp_ldap_ssl() != LDAP_SSL_ON) && (ldap_port == 636) ) {
-			ldap_port = 389;
-		}
-
-		uri = talloc_asprintf(NULL, "%s://%s:%d", lp_ldap_ssl() == LDAP_SSL_ON ? "ldaps" : "ldap", lp_ldap_server(), ldap_port);
-		if (!uri) {
-			return NT_STATUS_NO_MEMORY;
-		}
-		location = uri;
-	}
-#endif
 
 	if (!NT_STATUS_IS_OK(nt_status = pdb_init_ldapsam_common( pdb_method, uri ))) {
 		return nt_status;

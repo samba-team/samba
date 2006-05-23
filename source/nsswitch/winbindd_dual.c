@@ -496,6 +496,26 @@ void winbind_msg_online(int msg_type, struct process_id src, void *buf, size_t l
 	}
 }
 
+/* Forward the online/offline messages to our children. */
+void winbind_msg_onlinestatus(int msg_type, struct process_id src, void *buf, size_t len)
+{
+	struct winbindd_child *child;
+
+	DEBUG(10,("winbind_msg_onlinestatus: got onlinestatus message.\n"));
+
+	for (child = children; child != NULL; child = child->next) {
+		if (child->domain && child->domain->primary) {
+			DEBUG(10,("winbind_msg_onlinestatus: "
+				  "sending message to pid %u of primary domain.\n",
+				  (unsigned int)child->pid));
+			message_send_pid(pid_to_procid(child->pid), 
+					 MSG_WINBIND_ONLINESTATUS, buf, len, False);
+			break;
+		}
+	}
+}
+
+
 static void account_lockout_policy_handler(struct timed_event *te,
 					   const struct timeval *now,
 					   void *private_data)
@@ -582,6 +602,60 @@ static void child_msg_online(int msg_type, struct process_id src, void *buf, siz
 	}
 }
 
+static const char *collect_onlinestatus(TALLOC_CTX *mem_ctx)
+{
+	struct winbindd_domain *domain;
+	char *buf = NULL;
+
+	if ((buf = talloc_asprintf(mem_ctx, "global:%s ", 
+				   get_global_winbindd_state_online() ? 
+				   "Offline":"Online")) == NULL) {
+		return NULL;
+	}
+
+	for (domain = domain_list(); domain; domain = domain->next) {
+		if ((buf = talloc_asprintf_append(buf, "%s:%s ", 
+						  domain->name, 
+						  domain->online ?
+						  "Online":"Offline")) == NULL) {
+			return NULL;
+		}
+	}
+
+	buf = talloc_asprintf_append(buf, "\n");
+
+	DEBUG(5,("collect_onlinestatus: %s", buf));
+
+	return buf;
+}
+
+static void child_msg_onlinestatus(int msg_type, struct process_id src, void *buf, size_t len)
+{
+	TALLOC_CTX *mem_ctx;
+	const char *message;
+	struct process_id *sender;
+	
+	DEBUG(5,("winbind_msg_onlinestatus received.\n"));
+
+	if (!buf) {
+		return;
+	}
+
+	sender = (struct process_id *)buf;
+
+	mem_ctx = talloc_init("winbind_msg_onlinestatus");
+	if (mem_ctx == NULL) {
+		return;
+	}
+	
+	message = collect_onlinestatus(mem_ctx);
+
+	message_send_pid(*sender, MSG_WINBIND_ONLINESTATUS, 
+			 message, strlen(message) + 1, True);
+
+	talloc_destroy(mem_ctx);
+}
+
 static BOOL fork_domain_child(struct winbindd_child *child)
 {
 	int fdpair[2];
@@ -646,6 +720,7 @@ static BOOL fork_domain_child(struct winbindd_child *child)
 	message_deregister(MSG_SHUTDOWN);
 	message_deregister(MSG_WINBIND_OFFLINE);
 	message_deregister(MSG_WINBIND_ONLINE);
+	message_deregister(MSG_WINBIND_ONLINESTATUS);
 
 	/* The child is ok with online/offline messages now. */
 	message_unblock();
@@ -667,6 +742,7 @@ static BOOL fork_domain_child(struct winbindd_child *child)
 	/* Handle online/offline messages. */
 	message_register(MSG_WINBIND_OFFLINE,child_msg_offline);
 	message_register(MSG_WINBIND_ONLINE,child_msg_online);
+	message_register(MSG_WINBIND_ONLINESTATUS,child_msg_onlinestatus);
 
 	while (1) {
 

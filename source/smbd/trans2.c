@@ -5011,6 +5011,7 @@ int handle_trans2(connection_struct *conn,
 	/* Now we must call the relevant TRANS2 function */
 	switch(state->call)  {
 	case TRANSACT2_OPEN:
+	{
 		START_PROFILE_NESTED(Trans2_open);
 		outsize = call_trans2open(
 			conn, inbuf, outbuf, bufsize, 
@@ -5019,8 +5020,10 @@ int handle_trans2(connection_struct *conn,
 			state->max_data_return);
 		END_PROFILE_NESTED(Trans2_open);
 		break;
+	}
 
 	case TRANSACT2_FINDFIRST:
+	{
 		START_PROFILE_NESTED(Trans2_findfirst);
 		outsize = call_trans2findfirst(
 			conn, inbuf, outbuf, bufsize,
@@ -5029,8 +5032,10 @@ int handle_trans2(connection_struct *conn,
 			state->max_data_return);
 		END_PROFILE_NESTED(Trans2_findfirst);
 		break;
+	}
 
 	case TRANSACT2_FINDNEXT:
+	{
 		START_PROFILE_NESTED(Trans2_findnext);
 		outsize = call_trans2findnext(
 			conn, inbuf, outbuf, size, bufsize, 
@@ -5039,8 +5044,10 @@ int handle_trans2(connection_struct *conn,
 			state->max_data_return);
 		END_PROFILE_NESTED(Trans2_findnext);
 		break;
+	}
 
 	case TRANSACT2_QFSINFO:
+	{
 		START_PROFILE_NESTED(Trans2_qfsinfo);
 		outsize = call_trans2qfsinfo(
 			conn, inbuf, outbuf, size, bufsize,
@@ -5049,8 +5056,10 @@ int handle_trans2(connection_struct *conn,
 			state->max_data_return);
 		END_PROFILE_NESTED(Trans2_qfsinfo);
 	    break;
+	}
 
 	case TRANSACT2_SETFSINFO:
+	{
 		START_PROFILE_NESTED(Trans2_setfsinfo);
 		outsize = call_trans2setfsinfo(
 			conn, inbuf, outbuf, size, bufsize, 
@@ -5059,9 +5068,11 @@ int handle_trans2(connection_struct *conn,
 			state->max_data_return);
 		END_PROFILE_NESTED(Trans2_setfsinfo);
 		break;
+	}
 
 	case TRANSACT2_QPATHINFO:
 	case TRANSACT2_QFILEINFO:
+	{
 		START_PROFILE_NESTED(Trans2_qpathinfo);
 		outsize = call_trans2qfilepathinfo(
 			conn, inbuf, outbuf, size, bufsize, state->call,
@@ -5070,8 +5081,11 @@ int handle_trans2(connection_struct *conn,
 			state->max_data_return);
 		END_PROFILE_NESTED(Trans2_qpathinfo);
 		break;
+	}
+
 	case TRANSACT2_SETPATHINFO:
 	case TRANSACT2_SETFILEINFO:
+	{
 		START_PROFILE_NESTED(Trans2_setpathinfo);
 		outsize = call_trans2setfilepathinfo(
 			conn, inbuf, outbuf, size, bufsize, state->call,
@@ -5080,8 +5094,10 @@ int handle_trans2(connection_struct *conn,
 			state->max_data_return);
 		END_PROFILE_NESTED(Trans2_setpathinfo);
 		break;
+	}
 
 	case TRANSACT2_FINDNOTIFYFIRST:
+	{
 		START_PROFILE_NESTED(Trans2_findnotifyfirst);
 		outsize = call_trans2findnotifyfirst(
 			conn, inbuf, outbuf, size, bufsize, 
@@ -5090,8 +5106,10 @@ int handle_trans2(connection_struct *conn,
 			state->max_data_return);
 		END_PROFILE_NESTED(Trans2_findnotifyfirst);
 		break;
+	}
 
 	case TRANSACT2_FINDNOTIFYNEXT:
+	{
 		START_PROFILE_NESTED(Trans2_findnotifynext);
 		outsize = call_trans2findnotifynext(
 			conn, inbuf, outbuf, size, bufsize, 
@@ -5100,7 +5118,10 @@ int handle_trans2(connection_struct *conn,
 			state->max_data_return);
 		END_PROFILE_NESTED(Trans2_findnotifynext);
 		break;
+	}
+
 	case TRANSACT2_MKDIR:
+	{
 		START_PROFILE_NESTED(Trans2_mkdir);
 		outsize = call_trans2mkdir(
 			conn, inbuf, outbuf, size, bufsize,
@@ -5109,8 +5130,10 @@ int handle_trans2(connection_struct *conn,
 			state->max_data_return);
 		END_PROFILE_NESTED(Trans2_mkdir);
 		break;
+	}
 
 	case TRANSACT2_GET_DFS_REFERRAL:
+	{
 		START_PROFILE_NESTED(Trans2_get_dfs_referral);
 		outsize = call_trans2getdfsreferral(
 			conn, inbuf, outbuf, size, bufsize,
@@ -5119,7 +5142,10 @@ int handle_trans2(connection_struct *conn,
 			state->max_data_return);
 		END_PROFILE_NESTED(Trans2_get_dfs_referral);
 		break;
+	}
+
 	case TRANSACT2_IOCTL:
+	{
 		START_PROFILE_NESTED(Trans2_ioctl);
 		outsize = call_trans2ioctl(
 			conn, inbuf, outbuf, size, bufsize,
@@ -5128,11 +5154,14 @@ int handle_trans2(connection_struct *conn,
 			state->max_data_return);
 		END_PROFILE_NESTED(Trans2_ioctl);
 		break;
+	}
+
 	default:
 		/* Error in request */
 		DEBUG(2,("Unknown request %d in trans2 call\n", state->call));
 		outsize = ERROR_DOS(ERRSRV,ERRerror);
 	}
+
 	return outsize;
 }
 
@@ -5154,8 +5183,8 @@ int reply_trans2(connection_struct *conn, char *inbuf,char *outbuf,
 
 	START_PROFILE(SMBtrans2);
 
-	if (!NT_STATUS_IS_OK(allow_new_trans(conn->pending_trans,
-					     SVAL(inbuf, smb_mid)))) {
+	result = allow_new_trans(conn->pending_trans, SVAL(inbuf, smb_mid));
+	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(2, ("Got invalid trans2 request: %s\n",
 			  nt_errstr(result)));
 		END_PROFILE(SMBtrans2);
@@ -5246,7 +5275,7 @@ int reply_trans2(connection_struct *conn, char *inbuf,char *outbuf,
 				 "bytes !\n", state->total_param));
 			SAFE_FREE(state->data);
 			TALLOC_FREE(state);
-			END_PROFILE(SMBtrans);
+			END_PROFILE(SMBtrans2);
 			return(ERROR_DOS(ERRDOS,ERRnomem));
 		} 
 		if ((psoff+pscnt < psoff) || (psoff+pscnt < pscnt))
@@ -5269,7 +5298,7 @@ int reply_trans2(connection_struct *conn, char *inbuf,char *outbuf,
 		SAFE_FREE(state->data);
 		SAFE_FREE(state->param);
 		TALLOC_FREE(state);
-		END_PROFILE(SMBtrans);
+		END_PROFILE(SMBtrans2);
 		return outsize;
 	}
 
@@ -5379,7 +5408,7 @@ int reply_transs2(connection_struct *conn,
 
 	if ((state->received_param < state->total_param) ||
 	    (state->received_data < state->total_data)) {
-		END_PROFILE(SMBtranss);
+		END_PROFILE(SMBtranss2);
 		return -1;
 	}
 
@@ -5396,7 +5425,7 @@ int reply_transs2(connection_struct *conn,
 	TALLOC_FREE(state);
 
 	if (outsize == 0) {
-		END_PROFILE(SMBtranss);
+		END_PROFILE(SMBtranss2);
 		return(ERROR_DOS(ERRSRV,ERRnosupport));
 	}
 	

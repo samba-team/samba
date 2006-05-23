@@ -43,7 +43,7 @@ static BOOL fillup_pw_field(const char *lp_template,
 	if (out == NULL)
 		return False;
 
-	if (in && !strequal(in,"") && lp_security() == SEC_ADS && use_nss_info("sfu")) {
+	if (in && !strequal(in,"") && lp_security() == SEC_ADS && (get_nss_info(domname))) {
 		safe_strcpy(out, in, sizeof(fstring) - 1);
 		return True;
 	}

@@ -1232,3 +1232,52 @@ void winbindd_flush_nscd_cache(void)
 #endif
 }
 
+NTSTATUS lookup_usergroups_cached(struct winbindd_domain *domain,
+				  TALLOC_CTX *mem_ctx,
+				  const DOM_SID *user_sid,
+				  uint32 *p_num_groups, DOM_SID **user_sids)
+{
+	NET_USER_INFO_3 *info3 = NULL;
+	NTSTATUS status = NT_STATUS_NO_MEMORY;
+	int i;
+	size_t num_groups = 0;
+	DOM_SID group_sid, primary_group;
+	
+	DEBUG(3,(": lookup_usergroups_cached\n"));
+	
+	*user_sids = NULL;
+	num_groups = 0;
+	*p_num_groups = 0;
+
+	info3 = netsamlogon_cache_get(mem_ctx, user_sid);
+
+	if (info3 == NULL) {
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	}
+
+	if (info3->num_groups == 0) {
+		SAFE_FREE(info3);
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+	
+	/* always add the primary group to the sid array */
+	sid_compose(&primary_group, &info3->dom_sid.sid, info3->user_rid);
+	
+	add_sid_to_array(mem_ctx, &primary_group, user_sids, &num_groups);
+
+	for (i=0; i<info3->num_groups; i++) {
+		sid_copy(&group_sid, &info3->dom_sid.sid);
+		sid_append_rid(&group_sid, info3->gids[i].g_rid);
+
+		add_sid_to_array(mem_ctx, &group_sid, user_sids,
+				 &num_groups);
+	}
+
+	SAFE_FREE(info3);
+	*p_num_groups = num_groups;
+	status = (user_sids != NULL) ? NT_STATUS_OK : NT_STATUS_NO_MEMORY;
+	
+	DEBUG(3,(": lookup_usergroups_cached succeeded\n"));
+
+	return status;
+}

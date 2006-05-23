@@ -251,11 +251,14 @@ static NTSTATUS domain_client_validate(TALLOC_CTX *mem_ctx,
 		}
 	} else {
 		nt_status = make_server_info_info3(mem_ctx,
-						user_info->internal_username, 
 						user_info->smb_name,
 						domain,
 						server_info,
 						&info3);
+
+		if (NT_STATUS_IS_OK(nt_status)) {
+			(*server_info)->was_mapped |= user_info->was_mapped;
+		}
 
 		netsamlogon_cache_store( user_info->smb_name, &info3 );
 	}

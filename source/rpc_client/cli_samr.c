@@ -1102,15 +1102,57 @@ NTSTATUS rpccli_samr_query_dom_info(struct rpc_pipe_client *cli,
 
 	/* Marshall data and send request */
 
-	init_samr_q_query_dom_info(&q, domain_pol, switch_value);
+	init_samr_q_query_domain_info(&q, domain_pol, switch_value);
 
 	r.ctr = ctr;
 
 	CLI_DO_RPC(cli, mem_ctx, PI_SAMR, SAMR_QUERY_DOMAIN_INFO,
 		q, r,
 		qbuf, rbuf,
-		samr_io_q_query_dom_info,
-		samr_io_r_query_dom_info,
+		samr_io_q_query_domain_info,
+		samr_io_r_query_domain_info,
+		NT_STATUS_UNSUCCESSFUL); 
+
+	/* Return output parameters */
+
+	if (!NT_STATUS_IS_OK(result = r.status)) {
+		goto done;
+	}
+
+ done:
+
+	return result;
+}
+
+/* Query domain info2 */
+
+NTSTATUS rpccli_samr_query_dom_info2(struct rpc_pipe_client *cli,
+				     TALLOC_CTX *mem_ctx, 
+				     POLICY_HND *domain_pol,
+				     uint16 switch_value,
+				     SAM_UNK_CTR *ctr)
+{
+	prs_struct qbuf, rbuf;
+	SAMR_Q_QUERY_DOMAIN_INFO2 q;
+	SAMR_R_QUERY_DOMAIN_INFO2 r;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+
+	DEBUG(10,("cli_samr_query_dom_info2\n"));
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Marshall data and send request */
+
+	init_samr_q_query_domain_info2(&q, domain_pol, switch_value);
+
+	r.ctr = ctr;
+
+	CLI_DO_RPC(cli, mem_ctx, PI_SAMR, SAMR_QUERY_DOMAIN_INFO2,
+		q, r,
+		qbuf, rbuf,
+		samr_io_q_query_domain_info2,
+		samr_io_r_query_domain_info2,
 		NT_STATUS_UNSUCCESSFUL); 
 
 	/* Return output parameters */

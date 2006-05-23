@@ -23,8 +23,6 @@
 
 #include "includes.h"
 
-extern int ClientNMB;
-
 int updatecount = 0;
 
 /*******************************************************************

@@ -605,6 +605,10 @@ static BOOL open_sockets(BOOL isdaemon, int port)
 	set_socket_options( ClientNMB,   "SO_BROADCAST" );
 	set_socket_options( ClientDGRAM, "SO_BROADCAST" );
 
+	/* Ensure we're non-blocking. */
+	set_blocking( ClientNMB, False);
+	set_blocking( ClientDGRAM, False);
+
 	DEBUG( 3, ( "open_sockets: Broadcast sockets opened.\n" ) );
 	return( True );
 }

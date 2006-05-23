@@ -57,6 +57,7 @@ AC_DEFUN(SMB_MODULE,
 		string_shared_modules="$string_shared_modules $1"
 	elif test x"$DEST" = xSTATIC; then
 		[init_static_modules_]translit([$4], [A-Z], [a-z])="$[init_static_modules_]translit([$4], [A-Z], [a-z])  $1_init();"
+ 		[decl_static_modules_]translit([$4], [A-Z], [a-z])="$[decl_static_modules_]translit([$4], [A-Z], [a-z]) extern NTSTATUS $1_init(void);"
 		string_static_modules="$string_static_modules $1"
 		$4_STATIC="$$4_STATIC $2"
 		AC_SUBST($4_STATIC)
@@ -73,6 +74,7 @@ AC_DEFUN(SMB_SUBSYSTEM,
 	AC_SUBST($1_STATIC)
 	AC_SUBST($1_MODULES)
 	AC_DEFINE_UNQUOTED([static_init_]translit([$1], [A-Z], [a-z]), [{$init_static_modules_]translit([$1], [A-Z], [a-z])[}], [Static init functions])
+	AC_DEFINE_UNQUOTED([static_decl_]translit([$1], [A-Z], [a-z]), [$decl_static_modules_]translit([$1], [A-Z], [a-z]), [Decl of Static init functions])
     	ifelse([$2], , :, [rm -f $2])
 ])
 
@@ -102,20 +104,32 @@ AC_DEFUN(AC_HAVE_DECL,
 ])
 
 
-dnl Check for a function in a library, but don't
-dnl keep adding the same library to the LIBS variable.
-dnl Check whether the function is available in the current
-dnl LIBS before adding the library. This prevents us spuriously
-dnl finding symbols that are in libc.
-dnl AC_LIBTESTFUNC(lib,func)
+dnl Check for a function in a library, but don't keep adding the same library
+dnl to the LIBS variable.  Check whether the function is available in the
+dnl current LIBS before adding the library which prevents us spuriously
+dnl adding libraries for symbols that are in libc. On success, this ensures that
+dnl HAVE_FOO is defined.
+AC_LIBTESTFUNC(lib,func)
 AC_DEFUN(AC_LIBTESTFUNC,
 [
-  AC_CHECK_FUNCS($2, [],
-      [ case "$LIBS" in
-          *-l$1*) AC_CHECK_FUNCS($2) ;;
-          *) AC_CHECK_LIB($1, $2) 
-             AC_CHECK_FUNCS($2)
-          ;;
+  AC_CHECK_FUNCS($2,
+      [
+        # $2 was found in libc or existing $LIBS
+	AC_DEFINE(translit([HAVE_$2], [a-z], [A-Z]), 1,
+	    [Whether $2 is available])
+      ],
+      [
+        # $2 was not found, try adding lib$1
+	case " $LIBS " in
+          *\ -l$1\ *) ;;
+          *) AC_CHECK_LIB($1, $2,
+	      [
+		AC_DEFINE(translit([HAVE_$2], [a-z], [A-Z]), 1,
+		    [Whether $2 is available])
+	        LIBS="-l$1 $LIBS"
+	      ],
+	      [])
+	  ;;
         esac
       ])
 ])
@@ -767,4 +781,22 @@ AC_DEFUN( [AC_TRY_RUN_STRICT],
 	LDFLAGS="$old_LDFLAGS";
 	old_LDFLAGS="";
 	export LDFLAGS;
+])
+
+dnl SMB_CHECK_SYSCONF(varname)
+dnl Tests whether the sysconf(3) variable "varname" is available.
+AC_DEFUN([SMB_CHECK_SYSCONF],
+[
+    AC_CACHE_CHECK([for sysconf($1)],
+	samba_cv_SYSCONF$1,
+	[
+	    AC_TRY_LINK([#include <unistd.h>],
+		[ return sysconf($1) == -1 ? 1 : 0; ],
+		[ samba_cv_SYSCONF$1=yes ],
+		[ samba_cv_SYSCONF$1=no ])
+	])
+
+    if test x"$samba_cv_SYSCONF$1" = x"yes" ; then
+	AC_DEFINE(SYSCONF$1, 1, [Whether sysconf($1) is available])
+    fi
 ])

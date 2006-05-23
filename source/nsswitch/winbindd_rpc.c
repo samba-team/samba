@@ -412,7 +412,6 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 	unsigned int i;
 	fstring sid_string;
 	uint32 user_rid;
-	NET_USER_INFO_3 *user;
 	struct rpc_pipe_client *cli;
 
 	DEBUG(3,("rpc: lookup_usergroups sid=%s\n",
@@ -425,23 +424,10 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 	*user_grpsids = NULL;
 
 	/* so lets see if we have a cached user_info_3 */
-	
-	if ( (user = netsamlogon_cache_get( mem_ctx, user_sid )) != NULL )
-	{
-		DEBUG(5,("query_user: Cache lookup succeeded for %s\n", 
-			sid_string_static(user_sid)));
-			
-		*num_groups = user->num_groups;
-				
-		(*user_grpsids) = TALLOC_ARRAY(mem_ctx, DOM_SID, *num_groups);
-		for (i=0;i<(*num_groups);i++) {
-			sid_copy(&((*user_grpsids)[i]), &domain->sid);
-			sid_append_rid(&((*user_grpsids)[i]),
-				       user->gids[i].g_rid);
-		}
-				
-		SAFE_FREE(user);
-				
+	result = lookup_usergroups_cached(domain, mem_ctx, user_sid, 
+					  num_groups, user_grpsids);
+
+	if (NT_STATUS_IS_OK(result)) {
 		return NT_STATUS_OK;
 	}
 

@@ -62,30 +62,23 @@ struct rpc_sh_cmd {
 	const char *help;
 };
 
+enum netdom_domain_t { ND_TYPE_NT4, ND_TYPE_AD };
+
 /* INCLUDE FILES */
 
 #include "utils/net_proto.h"
  
 /* MACROS & DEFINES */
 
-#define NET_FLAGS_MASTER 1
-#define NET_FLAGS_DMB 2
-
-/* Would it be insane to set 'localhost' as the default
-   remote host for this operation? 
-
-   For example, localhost is insane for a 'join' operation.
-*/
-#define NET_FLAGS_LOCALHOST_DEFAULT_INSANE 4 
-
-/* We want to find the PDC only */
-#define NET_FLAGS_PDC 8 
-
-/* We want an anonymous connection */
-#define NET_FLAGS_ANONYMOUS 16 
-
-/* don't open an RPC pipe */
-#define NET_FLAGS_NO_PIPE 32
+#define NET_FLAGS_MASTER 			0x00000001
+#define NET_FLAGS_DMB 				0x00000002
+#define NET_FLAGS_LOCALHOST_DEFAULT_INSANE 	0x00000004 	/* Would it be insane to set 'localhost'
+								   as the default remote host for this
+								   operation?  For example, localhost
+								   is insane for a 'join' operation.  */
+#define NET_FLAGS_PDC 				0x00000008	/* PDC only */ 
+#define NET_FLAGS_ANONYMOUS 			0x00000010	/* use an anonymous connection */
+#define NET_FLAGS_NO_PIPE 			0x00000020	/* don't open an RPC pipe */
 
 /* net share operation modes */
 #define NET_MODE_SHARE_MIGRATE 1

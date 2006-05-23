@@ -25,6 +25,24 @@
 
 static int pong_count;
 
+
+/* samba4 timeval functions */
+
+double timeval_elapsed2(const struct timeval *tv1, const struct timeval *tv2)
+{
+        return (tv2->tv_sec - tv1->tv_sec) +
+               (tv2->tv_usec - tv1->tv_usec)*1.0e-6;
+}
+
+/**
+  return the number of seconds elapsed since a given time
+*/
+double timeval_elapsed(const struct timeval *tv)
+{
+        struct timeval tv2 = timeval_current();
+        return timeval_elapsed2(tv, &tv2);
+}
+
 /****************************************************************************
 a useful function for testing the message system
 ****************************************************************************/
@@ -38,6 +56,8 @@ void pong_message(int msg_type, struct process_id src, void *buf, size_t len)
 	pid_t pid;
 	int i, n;
 	char buf[12];
+
+	load_case_tables();
 
 	setup_logging(argv[0],True);
 	
@@ -83,7 +103,42 @@ void pong_message(int msg_type, struct process_id src, void *buf, size_t len)
 
 	if (pong_count != 2) {
 		fprintf(stderr, "Duplicate filter failed (%d).\n", pong_count);
-		exit(1);
+	}
+
+	/* Speed testing */
+
+	pong_count = 0;
+
+	{
+		struct timeval tv = timeval_current();
+		size_t timelimit = n;
+		size_t ping_count = 0;
+
+		printf("Sending pings for %d seconds\n", timelimit);
+		while (timeval_elapsed(&tv) < timelimit) {				
+			if(message_send_pid(pid_to_procid(pid), MSG_PING,
+								buf, 11, False)) ping_count++;
+			if(message_send_pid(pid_to_procid(pid), MSG_PING,
+								NULL, 0, False)) ping_count++;
+
+			while (ping_count > pong_count + 20) {
+				message_dispatch();
+			}
+		}
+		
+		printf("waiting for %d remaining replies (done %d)\n", 
+			   ping_count - pong_count, pong_count);
+		while (timeval_elapsed(&tv) < 30 && pong_count < ping_count) {
+			message_dispatch();
+		}
+		
+		if (ping_count != pong_count) {
+			fprintf(stderr, "ping test failed! received %d, sent %d\n", 
+		       pong_count, ping_count);
+		}
+		
+		printf("ping rate of %.0f messages/sec\n", 
+			   (ping_count+pong_count)/timeval_elapsed(&tv));
 	}
 
 	return (0);

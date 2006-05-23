@@ -478,7 +478,7 @@ static NTSTATUS winbindd_raw_kerberos_login(struct winbindd_domain *domain,
 
 	if (!internal_ccache) {
 
-		seteuid(uid);
+		set_effective_uid(uid);
 		DEBUG(10,("winbindd_raw_kerberos_login: uid is %d\n", uid));
 	}
 
@@ -488,6 +488,7 @@ static NTSTATUS winbindd_raw_kerberos_login(struct winbindd_domain *domain,
 					       &ticket_lifetime,
 					       &renewal_until,
 					       cc, 
+					       True,
 					       True,
 					       WINBINDD_PAM_AUTH_KRB5_RENEW_TIME);
 
@@ -532,13 +533,14 @@ static NTSTATUS winbindd_raw_kerberos_login(struct winbindd_domain *domain,
 	}
 
 	if (!internal_ccache) {
-		seteuid(0);
+		gain_root_privilege();
 	}
 
 	/************************ NON-ROOT **********************/
 
 	result = ads_verify_ticket(state->mem_ctx, 
 				   lp_realm(), 
+				   time_offset,
 				   &tkt, 
 				   &client_princ_out, 
 				   &pac_data, 
@@ -610,9 +612,14 @@ failed:
 
 	krb5_ret = ads_kdestroy(cc);
 	if (krb5_ret) {
-		DEBUG(0,("winbindd_raw_kerberos_login: "
+		DEBUG(3,("winbindd_raw_kerberos_login: "
 			 "could not destroy krb5 credential cache: "
 			 "%s\n", error_message(krb5_ret)));
+	}
+
+	if (!NT_STATUS_IS_OK(remove_ccache_by_ccname(cc))) {
+		DEBUG(3,("winbindd_raw_kerberos_login: "
+			  "could not remove ccache\n"));
 	}
 
 done:
@@ -624,7 +631,7 @@ done:
 	SAFE_FREE(client_princ_out);
 
 	if (!internal_ccache) {
-		seteuid(0);
+		gain_root_privilege();
 	}
 
 	return result;
@@ -1105,7 +1112,9 @@ enum winbindd_result winbindd_dual_pam_auth(struct winbindd_domain *domain,
 			DEBUG(10,("winbindd_dual_pam_auth_kerberos failed: %s\n", nt_errstr(result)));
 		}
 
-		if (NT_STATUS_EQUAL(result, NT_STATUS_NO_LOGON_SERVERS)) {
+		if (NT_STATUS_EQUAL(result, NT_STATUS_NO_LOGON_SERVERS) ||
+		    NT_STATUS_EQUAL(result, NT_STATUS_IO_TIMEOUT) ||
+		    NT_STATUS_EQUAL(result, NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND)) {
 			DEBUG(10,("winbindd_dual_pam_auth_kerberos setting domain to offline\n"));
 			domain->online = False;
 		}
@@ -1644,6 +1653,9 @@ void winbindd_pam_chauthtok(struct winbindd_cli_state *state)
 	oldpass = state->request.data.chauthtok.oldpass;
 	newpass = state->request.data.chauthtok.newpass;
 
+	/* Initialize reject reason */
+	state->response.data.auth.reject_reason = Undefined;
+
 	/* Get sam handle */
 
 	result = cm_connect_sam(contact_domain, state->mem_ctx, &cli,
@@ -1682,8 +1694,6 @@ void winbindd_pam_chauthtok(struct winbindd_cli_state *state)
 		DEBUG(10,("Password change with chgpasswd3 failed with: %s, retrying chgpasswd_user\n", 
 			nt_errstr(result)));
 		
-		state->response.data.auth.reject_reason = 0;
-
 		result = rpccli_samr_chgpasswd_user(cli, state->mem_ctx, user, newpass, oldpass);
 	}
 

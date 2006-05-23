@@ -39,12 +39,6 @@ int extra_time_offset = 0;
 #define TIME_T_MAX (~ (time_t) 0 - TIME_T_MIN)
 #endif
 
-void get_nttime_max(NTTIME *t)
-{
-	/* FIXME: This is incorrect */
-	unix_to_nt_time(t, get_time_t_max());
-}
-
 /*******************************************************************
  External access to time_t_min and time_t_max.
 ********************************************************************/

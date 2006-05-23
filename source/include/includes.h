@@ -93,6 +93,10 @@
 
 #include <sys/types.h>
 
+#ifdef HAVE_STDINT_H
+#include <stdint.h>
+#endif
+
 #ifdef TIME_WITH_SYS_TIME
 #include <sys/time.h>
 #include <time.h>
@@ -903,6 +907,7 @@ extern int errno;
 
 #include "nt_status.h"
 #include "ads.h"
+#include "ads_dns.h"
 #include "interfaces.h"
 #include "trans2.h"
 #include "nterr.h"
@@ -910,52 +915,29 @@ extern int errno;
 #include "messages.h"
 #include "charset.h"
 #include "dynconfig.h"
-
 #include "util_getent.h"
-
 #include "debugparse.h"
-
 #include "version.h"
-
 #include "privileges.h"
-
 #include "smb.h"
-
+#include "ads_cldap.h"
 #include "nameserv.h"
-
 #include "secrets.h"
-
 #include "byteorder.h"
-
 #include "privileges.h"
-
 #include "rpc_misc.h"
-
 #include "rpc_dce.h"
-
 #include "mapping.h"
-
 #include "passdb.h"
-
 #include "rpc_secdes.h"
-
 #include "authdata.h"
-
 #include "msdfs.h"
-
-#include "smbprofile.h"
-
 #include "rap.h"
-
 #include "md5.h"
 #include "hmacmd5.h"
-
 #include "ntlmssp.h"
-
 #include "auth.h"
-
 #include "ntdomain.h"
-
 #include "rpc_svcctl.h"
 #include "rpc_ntsvcs.h"
 #include "rpc_lsa.h"
@@ -973,11 +955,8 @@ extern int errno;
 #include "rpc_shutdown.h"
 #include "rpc_perfcount.h"
 #include "rpc_perfcount_defs.h"
-
 #include "nt_printing.h"
-
 #include "idmap.h"
-
 #include "client.h"
 
 #ifdef WITH_SMBWRAPPER
@@ -985,21 +964,13 @@ extern int errno;
 #endif
 
 #include "session.h"
-
 #include "asn_1.h"
-
 #include "popt.h"
-
 #include "mangle.h"
-
 #include "module.h"
-
 #include "nsswitch/winbind_client.h"
-
 #include "spnego.h"
-
 #include "rpc_client.h"
-
 #include "event.h"
 
 /*
@@ -1059,10 +1030,29 @@ struct smb_ldap_privates;
 
 #include "smb_ldap.h"
 
+/*
+ * Reasons for cache flush.
+ */
+
+enum flush_reason_enum {
+    SEEK_FLUSH,
+    READ_FLUSH,
+    WRITE_FLUSH,
+    READRAW_FLUSH,
+    OPLOCK_RELEASE_FLUSH,
+    CLOSE_FLUSH,
+    SYNC_FLUSH,
+    SIZECHANGE_FLUSH,
+    /* NUM_FLUSH_REASONS must remain the last value in the enumeration. */
+    NUM_FLUSH_REASONS};
+
 /***** automatically generated prototypes *****/
 #ifndef NO_PROTO_H
 #include "proto.h"
 #endif
+
+/* We need this after proto.h to reference GetTimeOfDay(). */
+#include "smbprofile.h"
 
 /* String routines */
 
@@ -1458,6 +1448,14 @@ time_t timegm(struct tm *tm);
 
 #if defined(HAVE_KRB5)
 
+krb5_error_code smb_krb5_parse_name(krb5_context context,
+				const char *name, /* in unix charset */
+                                krb5_principal *principal);
+
+krb5_error_code smb_krb5_unparse_name(krb5_context context,
+				krb5_const_principal principal,
+				char **unix_name);
+
 #ifndef HAVE_KRB5_SET_REAL_TIME
 krb5_error_code krb5_set_real_time(krb5_context context, int32_t seconds, int32_t microseconds);
 #endif
@@ -1530,6 +1528,8 @@ int cli_krb5_get_ticket(const char *principal, time_t time_offset,
 PAC_LOGON_INFO *get_logon_info_from_pac(PAC_DATA *pac_data);
 krb5_error_code smb_krb5_renew_ticket(const char *ccache_string, const char *client_string, const char *service_string, time_t *new_start_time);
 krb5_error_code kpasswd_err_to_krb5_err(krb5_error_code res_code);
+krb5_error_code smb_krb5_gen_netbios_krb5_address(smb_krb5_addresses **kerb_addr);
+krb5_error_code smb_krb5_free_addresses(krb5_context context, smb_krb5_addresses *addr);
 NTSTATUS krb5_to_nt_status(krb5_error_code kerberos_error);
 krb5_error_code nt_status_to_krb5(NTSTATUS nt_status);
 #endif /* HAVE_KRB5 */

@@ -524,6 +524,12 @@ static struct cache_entry *wcache_fetch(struct winbind_cache *cache,
 	char *kstr;
 	struct cache_entry *centry;
 
+	extern BOOL opt_nocache;
+
+	if (opt_nocache) {
+		return NULL;
+	}
+
 	refresh_sequence_number(domain, False);
 
 	va_start(ap, format);
@@ -2095,19 +2101,14 @@ static int traverse_fn_cleanup(TDB_CONTEXT *the_tdb, TDB_DATA kbuf,
 			       TDB_DATA dbuf, void *state)
 {
 	struct cache_entry *centry;
-	char buf[1024];
 
-	if (!snprintf(buf, kbuf.dsize + 1, "%s", kbuf.dptr)) {
-		return 1;
-	}
-
-	centry = wcache_fetch_raw(buf);
+	centry = wcache_fetch_raw(kbuf.dptr);
 	if (!centry) {
 		return 0;
 	}
 
 	if (!NT_STATUS_IS_OK(centry->status)) {
-		DEBUG(10,("deleting centry %s\n", buf));
+		DEBUG(10,("deleting centry %s\n", kbuf.dptr));
 		tdb_delete(the_tdb, kbuf);
 	}
 
@@ -2349,6 +2350,11 @@ void set_global_winbindd_state_online(void)
 
 	/* Ensure there is no key "WINBINDD_OFFLINE" in the cache tdb. */
 	tdb_delete_bystring(wcache->tdb, "WINBINDD_OFFLINE");
+}
+
+BOOL get_global_winbindd_state_online(void)
+{
+	return global_winbindd_offline_state;
 }
 
 /* the cache backend methods are exposed via this structure */

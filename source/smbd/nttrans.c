@@ -2719,6 +2719,7 @@ static int handle_nttrans(connection_struct *conn,
 	/* Now we must call the relevant NT_TRANS function */
 	switch(state->call) {
 		case NT_TRANSACT_CREATE:
+		{
 			START_PROFILE_NESTED(NT_transact_create);
 			outsize = call_nt_transact_create(conn, inbuf, outbuf,
 							  size, bufsize, 
@@ -2728,7 +2729,10 @@ static int handle_nttrans(connection_struct *conn,
 							  state->max_data_return);
 			END_PROFILE_NESTED(NT_transact_create);
 			break;
+		}
+
 		case NT_TRANSACT_IOCTL:
+		{
 			START_PROFILE_NESTED(NT_transact_ioctl);
 			outsize = call_nt_transact_ioctl(conn, inbuf, outbuf,
 							 size, bufsize, 
@@ -2737,7 +2741,10 @@ static int handle_nttrans(connection_struct *conn,
 							 &state->data, state->total_data, state->max_data_return);
 			END_PROFILE_NESTED(NT_transact_ioctl);
 			break;
+		}
+
 		case NT_TRANSACT_SET_SECURITY_DESC:
+		{
 			START_PROFILE_NESTED(NT_transact_set_security_desc);
 			outsize = call_nt_transact_set_security_desc(conn, inbuf, outbuf, 
 							 size, bufsize, 
@@ -2746,7 +2753,10 @@ static int handle_nttrans(connection_struct *conn,
 							 &state->data, state->total_data, state->max_data_return);
 			END_PROFILE_NESTED(NT_transact_set_security_desc);
 			break;
+		}
+
 		case NT_TRANSACT_NOTIFY_CHANGE:
+		{
 			START_PROFILE_NESTED(NT_transact_notify_change);
 			outsize = call_nt_transact_notify_change(conn, inbuf, outbuf, 
 							 size, bufsize, 
@@ -2755,7 +2765,10 @@ static int handle_nttrans(connection_struct *conn,
 							 &state->data, state->total_data, state->max_data_return);
 			END_PROFILE_NESTED(NT_transact_notify_change);
 			break;
+		}
+
 		case NT_TRANSACT_RENAME:
+		{
 			START_PROFILE_NESTED(NT_transact_rename);
 			outsize = call_nt_transact_rename(conn, inbuf, outbuf,
 							 size, bufsize, 
@@ -2764,8 +2777,10 @@ static int handle_nttrans(connection_struct *conn,
 							 &state->data, state->total_data, state->max_data_return);
 			END_PROFILE_NESTED(NT_transact_rename);
 			break;
+		}
 
 		case NT_TRANSACT_QUERY_SECURITY_DESC:
+		{
 			START_PROFILE_NESTED(NT_transact_query_security_desc);
 			outsize = call_nt_transact_query_security_desc(conn, inbuf, outbuf, 
 							 size, bufsize, 
@@ -2774,8 +2789,11 @@ static int handle_nttrans(connection_struct *conn,
 							 &state->data, state->total_data, state->max_data_return);
 			END_PROFILE_NESTED(NT_transact_query_security_desc);
 			break;
+		}
+
 #ifdef HAVE_SYS_QUOTAS
 		case NT_TRANSACT_GET_USER_QUOTA:
+		{
 			START_PROFILE_NESTED(NT_transact_get_user_quota);
 			outsize = call_nt_transact_get_user_quota(conn, inbuf, outbuf, 
 							 size, bufsize, 
@@ -2784,7 +2802,10 @@ static int handle_nttrans(connection_struct *conn,
 							 &state->data, state->total_data, state->max_data_return);
 			END_PROFILE_NESTED(NT_transact_get_user_quota);
 			break;
+		}
+
 		case NT_TRANSACT_SET_USER_QUOTA:
+		{
 			START_PROFILE_NESTED(NT_transact_set_user_quota);
 			outsize = call_nt_transact_set_user_quota(conn, inbuf, outbuf, 
 							 size, bufsize, 
@@ -2793,7 +2814,9 @@ static int handle_nttrans(connection_struct *conn,
 							 &state->data, state->total_data, state->max_data_return);
 			END_PROFILE_NESTED(NT_transact_set_user_quota);
 			break;					
+		}
 #endif /* HAVE_SYS_QUOTAS */
+
 		default:
 			/* Error in request */
 			DEBUG(0,("reply_nttrans: Unknown request %d in nttrans call\n",
@@ -2827,8 +2850,8 @@ int reply_nttrans(connection_struct *conn,
 		return ERROR_DOS(ERRSRV,ERRaccess);
 	}
 
-	if (!NT_STATUS_IS_OK(allow_new_trans(conn->pending_trans,
-					     SVAL(inbuf, smb_mid)))) {
+	result = allow_new_trans(conn->pending_trans, SVAL(inbuf, smb_mid));
+	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(2, ("Got invalid nttrans request: %s\n", nt_errstr(result)));
 		END_PROFILE(SMBnttrans);
 		return ERROR_NT(result);
@@ -2881,7 +2904,7 @@ int reply_nttrans(connection_struct *conn,
 			DEBUG(0,("reply_nttrans: data malloc fail for %u "
 				 "bytes !\n", state->total_data));
 			TALLOC_FREE(state);
-			END_PROFILE(SMBtrans);
+			END_PROFILE(SMBnttrans);
 			return(ERROR_DOS(ERRDOS,ERRnomem));
 		} 
 		if ((dsoff+dscnt < dsoff) || (dsoff+dscnt < dscnt))
@@ -2901,7 +2924,7 @@ int reply_nttrans(connection_struct *conn,
 				 "bytes !\n", state->total_param));
 			SAFE_FREE(state->data);
 			TALLOC_FREE(state);
-			END_PROFILE(SMBtrans);
+			END_PROFILE(SMBnttrans);
 			return(ERROR_DOS(ERRDOS,ERRnomem));
 		} 
 		if ((psoff+pscnt < psoff) || (psoff+pscnt < pscnt))

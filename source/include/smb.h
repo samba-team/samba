@@ -330,6 +330,7 @@ extern const DOM_SID global_sid_Builtin_Server_Operators;
 extern const DOM_SID global_sid_Builtin_Print_Operators;
 extern const DOM_SID global_sid_Builtin_Backup_Operators;
 extern const DOM_SID global_sid_Builtin_Replicator;
+extern const DOM_SID global_sid_Builtin_PreWin2kAccess;
 extern const DOM_SID global_sid_Unix_Users;
 extern const DOM_SID global_sid_Unix_Groups;
 
@@ -403,6 +404,7 @@ struct fd_handle {
 				 * DELETE_ON_CLOSE is not stored in the share
 				 * mode database.
 				 */
+	unsigned long file_id;
 };
 
 struct timed_event;
@@ -437,7 +439,6 @@ typedef struct files_struct {
 	struct share_mode_entry *pending_break_messages;
 	int num_pending_break_messages;
 
-	unsigned long file_id;
 	BOOL can_lock;
 	BOOL can_read;
 	BOOL can_write;
@@ -446,6 +447,7 @@ typedef struct files_struct {
 	BOOL is_directory;
 	BOOL is_stat;
 	BOOL aio_write_behind;
+	BOOL lockdb_clean;
 	char *fsp_name;
  	FAKE_FILE_HANDLE *fake_file_handle;
 } files_struct;
@@ -736,6 +738,7 @@ struct locking_data {
 #define PW_HISTORY_SALT_LEN 16
 #define SALTED_MD5_HASH_LEN 16
 #define PW_HISTORY_ENTRY_LEN (PW_HISTORY_SALT_LEN+SALTED_MD5_HASH_LEN)
+#define MAX_PW_HISTORY_LEN 24
 
 /*
  * Flags for account policy.

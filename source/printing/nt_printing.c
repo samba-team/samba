@@ -2298,18 +2298,14 @@ static int pack_values(NT_PRINTER_DATA *data, char *buf, int buflen)
 
 uint32 del_a_printer(const char *sharename)
 {
-	pstring key;
 	TDB_DATA kbuf;
 	pstring printdb_path;
 
-	slprintf(key, sizeof(key)-1, "%s%s", PRINTERS_PREFIX, sharename);
-	kbuf.dptr=key;
-	kbuf.dsize=strlen(key)+1;
+	kbuf = make_printer_tdbkey( sharename );
 	tdb_delete(tdb_printers, kbuf);
 
-	slprintf(key, sizeof(key)-1, "%s%s", SECDESC_PREFIX, sharename);
-	kbuf.dptr=key;
-	kbuf.dsize=strlen(key)+1;
+	kbuf.dptr = make_printers_secdesc_tdbkey( sharename );
+	kbuf.dsize = strlen(kbuf.dptr) + 1;
 	tdb_delete(tdb_printers, kbuf);
 
 	close_all_print_db();
@@ -3024,7 +3020,18 @@ static WERROR nt_printer_publish_ads(ADS_STRUCT *ads,
 
 	/* build the ads mods */
 	ctx = talloc_init("nt_printer_publish_ads");
+	if (ctx == NULL) {
+		SAFE_FREE(prt_dn);
+		return WERR_NOMEM;
+	}
+
 	mods = ads_init_mods(ctx);
+
+	if (mods == NULL) {
+		SAFE_FREE(prt_dn);
+		talloc_destroy(ctx);
+		return WERR_NOMEM;
+	}
 
 	get_local_printer_publishing_data(ctx, &mods, printer->info_2->data);
 	ads_mod_str(ctx, &mods, SPOOL_REG_PRINTERNAME, 
@@ -3162,7 +3169,7 @@ WERROR check_published_printers(void)
 	int n_services = lp_numservices();
 	NT_PRINTER_INFO_LEVEL *printer = NULL;
 
-	ads = ads_init(NULL, NULL, NULL);
+	ads = ads_init(lp_realm(), lp_workgroup(), NULL);
 	if (!ads) {
 		DEBUG(3, ("ads_init() failed\n"));
 		return WERR_SERVER_UNAVAILABLE;

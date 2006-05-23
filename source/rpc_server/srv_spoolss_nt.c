@@ -40,23 +40,6 @@ extern userdom_struct current_user_info;
 #define MAGIC_DISPLAY_FREQUENCY 0xfade2bad
 #define PHANTOM_DEVMODE_KEY "_p_f_a_n_t_0_m_"
 
-
-/* Table to map the driver version */
-/* to OS */
-static const char * drv_ver_to_os[] = {
-	"WIN9X",   /* driver version/cversion 0 */
-	"",        /* unused ? */
-	"WINNT",   /* driver version/cversion 2 */
-	"WIN2K",   /* driver version/cversion 3 */
-};
-
-static const char *get_drv_ver_to_os(int ver)
-{
-	if (ver < 0 || ver > 3)
-		return "";
-	return drv_ver_to_os[ver];
-}
-
 struct table_node {
 	const char    *long_archi;
 	const char    *short_archi;
@@ -7656,21 +7639,6 @@ WERROR _spoolss_addprinterdriver(pipes_struct *p, SPOOL_Q_ADDPRINTERDRIVER *q_u,
 		err = WERR_ACCESS_DENIED;
 		goto done;
 	}
-
-	/* BEGIN_ADMIN_LOG */
-        switch(level) {
-	    case 3:
-		fstrcpy(driver_name, driver.info_3->name ? driver.info_3->name : "");
-		sys_adminlog(LOG_INFO,"Added printer driver. Print driver name: %s. Print driver OS: %s. Administrator name: %s.",
-			driver_name, get_drv_ver_to_os(driver.info_3->cversion),uidtoname(user.ut.uid));
-		break;
-	    case 6:   
-		fstrcpy(driver_name, driver.info_6->name ?  driver.info_6->name : "");
-		sys_adminlog(LOG_INFO,"Added printer driver. Print driver name: %s. Print driver OS: %s. Administrator name: %s.",
-			driver_name, get_drv_ver_to_os(driver.info_6->version),uidtoname(user.ut.uid));
-		break;
-        }
-	/* END_ADMIN_LOG */
 
 	/* 
 	 * I think this is where he DrvUpgradePrinter() hook would be

@@ -74,6 +74,8 @@ const DOM_SID global_sid_Builtin_Backup_Operators =	/* Builtin backup operators 
 { 1, 2, {0,0,0,0,0,5}, {32,551,0,0,0,0,0,0,0,0,0,0,0,0,0}};
 const DOM_SID global_sid_Builtin_Replicator =		/* Builtin replicator */
 { 1, 2, {0,0,0,0,0,5}, {32,552,0,0,0,0,0,0,0,0,0,0,0,0,0}};
+const DOM_SID global_sid_Builtin_PreWin2kAccess =	/* Builtin pre win2k access */
+{ 1, 2, {0,0,0,0,0,5}, {32,554,0,0,0,0,0,0,0,0,0,0,0,0,0}};
 
 const DOM_SID global_sid_Unix_Users =			/* Unmapped Unix users */
 { 1, 1, {0,0,0,0,0,22}, {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0}};
@@ -526,6 +528,24 @@ BOOL non_mappable_sid(DOM_SID *sid)
 *****************************************************************/
 
 char *sid_binstring(const DOM_SID *sid)
+{
+	char *buf, *s;
+	int len = sid_size(sid);
+	buf = SMB_MALLOC(len);
+	if (!buf)
+		return NULL;
+	sid_linearize(buf, len, sid);
+	s = binary_string_rfc2254(buf, len);
+	free(buf);
+	return s;
+}
+
+/*****************************************************************
+ Return the binary string representation of a DOM_SID.
+ Caller must free.
+*****************************************************************/
+
+char *sid_binstring_hex(const DOM_SID *sid)
 {
 	char *buf, *s;
 	int len = sid_size(sid);

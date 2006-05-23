@@ -28,6 +28,9 @@
 #ifdef WITH_PROFILE
 static int shm_id;
 static BOOL read_only;
+#if defined(HAVE_CLOCK_GETTIME)
+clockid_t __profile_clock;
+#endif
 #endif
 
 struct profile_header *profile_h;
@@ -35,11 +38,6 @@ struct profile_stats *profile_p;
 
 BOOL do_profile_flag = False;
 BOOL do_profile_times = False;
-
-struct timeval profile_starttime;
-struct timeval profile_endtime;
-struct timeval profile_starttime_nested;
-struct timeval profile_endtime_nested;
 
 /****************************************************************************
 receive a set profile level message
@@ -108,6 +106,24 @@ BOOL profile_setup(BOOL rdonly)
 
 	read_only = rdonly;
 
+#if defined(HAVE_CLOCK_GETTIME)
+	if (this_is_smp()) {
+		/* This is faster that gettimeofday, but not fast enough to
+		 * leave it enabled in production.
+		 */
+		__profile_clock = CLOCK_MONOTONIC;
+	} else {
+		/* CLOCK_PROCESS_CPUTIME_ID is sufficiently fast that the
+		 * always profiling times is plausible. Unfortunately it is
+		 * only accurate if we can guarantee we will not be scheduled
+		 * onto a different CPU between samples. Until there is some
+		 * way to set processor affinity, we can only use this on
+		 * uniprocessors.
+		 */
+		__profile_clock = CLOCK_PROCESS_CPUTIME_ID;
+	}
+#endif
+
  again:
 	/* try to use an existing key */
 	shm_id = shmget(PROF_SHMEM_KEY, 0, 0);
@@ -142,8 +158,12 @@ BOOL profile_setup(BOOL rdonly)
 		return False;
 	}
 
-	if (shm_ds.shm_perm.cuid != sec_initial_uid() || shm_ds.shm_perm.cgid != sec_initial_gid()) {
-		DEBUG(0,("ERROR: we did not create the shmem (owned by another user)\n"));
+	if (shm_ds.shm_perm.cuid != sec_initial_uid() ||
+	    shm_ds.shm_perm.cgid != sec_initial_gid()) {
+		DEBUG(0,("ERROR: we did not create the shmem "
+			 "(owned by another user, uid %u, gid %u)\n",
+			 shm_ds.shm_perm.cuid,
+			 shm_ds.shm_perm.cgid));
 		return False;
 	}
 

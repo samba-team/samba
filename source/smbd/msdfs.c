@@ -419,7 +419,10 @@ BOOL dfs_redirect( pstring pathname, connection_struct *conn, BOOL search_wcard_
 		return False;
 	}
 	
-	if (!strequal(dp.servicename, lp_servicename(SNUM(conn)) )) {
+	if ( !( strequal(dp.servicename, lp_servicename(SNUM(conn))) 
+		|| ( strequal(dp.servicename, HOMES_NAME) 
+		     && strequal(lp_servicename(SNUM(conn)), get_current_username()) )) ) 
+	{
 		return False;
 	}
 

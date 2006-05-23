@@ -4,6 +4,13 @@
   basically this is a wrapper around ldap
 */
 
+enum wb_posix_mapping {
+	WB_POSIX_MAP_TEMPLATE 	= 0, 
+	WB_POSIX_MAP_SFU 	= 1, 
+	WB_POSIX_MAP_RFC2307 	= 2,
+	WB_POSIX_MAP_UNIXINFO	= 3
+};
+
 typedef struct {
 	void *ld; /* the active ldap structure */
 	struct in_addr ldap_ip; /* the ip of the active connection, if any */
@@ -17,7 +24,6 @@ typedef struct {
 		char *realm;
 		char *workgroup;
 		char *ldap_server;
-		char *ldap_uri;
 		int foreign; /* set to 1 if connecting to a foreign realm */
 	} server;
 
@@ -37,18 +43,18 @@ typedef struct {
 	struct {
 		char *realm;
 		char *bind_path;
-		char *schema_path;
 		char *ldap_server_name;
 		time_t current_time;
 	} config;
 
 	/* info derived from the servers schema */
 	struct {
-		char *sfu_homedir_attr;
-		char *sfu_shell_attr;
-		char *sfu_uidnumber_attr;
-		char *sfu_gidnumber_attr;
-		char *sfu_gecos_attr;
+		enum wb_posix_mapping map_type;
+		char *posix_homedir_attr;
+		char *posix_shell_attr;
+		char *posix_uidnumber_attr;
+		char *posix_gidnumber_attr;
+		char *posix_gecos_attr;
 	} schema;
 
 } ADS_STRUCT;
@@ -85,6 +91,13 @@ typedef void **ADS_MODLIST;
 #define ADS_ERR_OK(status) ((status.error_type == ENUM_ADS_ERROR_NT) ? NT_STATUS_IS_OK(status.err.nt_status):(status.err.rc == 0))
 #define ADS_SUCCESS ADS_ERROR(0)
 
+#define ADS_ERROR_HAVE_NO_MEMORY(x) do { \
+        if (!(x)) {\
+                return ADS_ERROR(LDAP_NO_MEMORY);\
+        }\
+} while (0)
+
+
 /* time between reconnect attempts */
 #define ADS_RECONNECT_TIME 5
 
@@ -94,6 +107,7 @@ typedef void **ADS_MODLIST;
 #define ADS_SERVER_SORT_OID 	"1.2.840.113556.1.4.473"
 #define ADS_PERMIT_MODIFY_OID 	"1.2.840.113556.1.4.1413"
 #define ADS_ASQ_OID		"1.2.840.113556.1.4.1504"
+#define ADS_EXTENDED_DN_OID	"1.2.840.113556.1.4.529"
 
 /* ldap attribute oids (Services for Unix) */
 #define ADS_ATTR_SFU_UIDNUMBER_OID 	"1.2.840.113556.1.6.18.1.310"
@@ -101,6 +115,13 @@ typedef void **ADS_MODLIST;
 #define ADS_ATTR_SFU_HOMEDIR_OID 	"1.2.840.113556.1.6.18.1.344"
 #define ADS_ATTR_SFU_SHELL_OID 		"1.2.840.113556.1.6.18.1.312"
 #define ADS_ATTR_SFU_GECOS_OID 		"1.2.840.113556.1.6.18.1.337"
+
+/* ldap attribute oids (RFC2307) */
+#define ADS_ATTR_RFC2307_UIDNUMBER_OID	"1.3.6.1.1.1.1.0"
+#define ADS_ATTR_RFC2307_GIDNUMBER_OID	"1.3.6.1.1.1.1.1"
+#define ADS_ATTR_RFC2307_HOMEDIR_OID	"1.3.6.1.1.1.1.3"
+#define ADS_ATTR_RFC2307_SHELL_OID	"1.3.6.1.1.1.1.4"
+#define ADS_ATTR_RFC2307_GECOS_OID	"1.3.6.1.1.1.1.2"
 
 /* ldap bitwise searches */
 #define ADS_LDAP_MATCHING_RULE_BIT_AND	"1.2.840.113556.1.4.803"
@@ -219,19 +240,6 @@ typedef void **ADS_MODLIST;
 #define GTYPE_DISTRIBUTION_DOMAIN_LOCAL_GROUP	0x00000004	/* 4 */
 #define GTYPE_DISTRIBUTION_UNIVERSAL_GROUP	0x00000008	/* 8 */
 
-/* Mailslot or cldap getdcname response flags */
-#define ADS_PDC            0x00000001  /* DC is PDC */
-#define ADS_GC             0x00000004  /* DC is a GC of forest */
-#define ADS_LDAP           0x00000008  /* DC is an LDAP server */
-#define ADS_DS             0x00000010  /* DC supports DS */
-#define ADS_KDC            0x00000020  /* DC is running KDC */
-#define ADS_TIMESERV       0x00000040  /* DC is running time services */
-#define ADS_CLOSEST        0x00000080  /* DC is closest to client */
-#define ADS_WRITABLE       0x00000100  /* DC has writable DS */
-#define ADS_GOOD_TIMESERV  0x00000200  /* DC has hardware clock
-	  				 (and running time) */
-#define ADS_NDNC           0x00000400  /* DomainName is non-domain NC serviced
-	  				 by LDAP server */
 #define ADS_PINGS          0x0000FFFF  /* Ping response */
 #define ADS_DNS_CONTROLLER 0x20000000  /* DomainControllerName is a DNS name*/
 #define ADS_DNS_DOMAIN     0x40000000  /* DomainName is a DNS name */
@@ -266,3 +274,33 @@ typedef void **ADS_MODLIST;
 
 #define WELL_KNOWN_GUID_COMPUTERS	"AA312825768811D1ADED00C04FD8D5CD" 
 #define WELL_KNOWN_GUID_USERS		"A9D1CA15768811D1ADED00C04FD8D5CD"
+
+#ifndef KRB5_ADDR_NETBIOS
+#define KRB5_ADDR_NETBIOS 0x14
+#endif
+
+#ifdef HAVE_KRB5
+typedef struct {
+#if defined(HAVE_MAGIC_IN_KRB5_ADDRESS) && defined(HAVE_ADDRTYPE_IN_KRB5_ADDRESS) /* MIT */
+	krb5_address **addrs;
+#elif defined(HAVE_KRB5_ADDRESSES) /* Heimdal */
+	krb5_addresses *addrs;
+#else
+#error UNKNOWN_KRB5_ADDRESS_TYPE
+#endif
+} smb_krb5_addresses;
+#endif
+
+enum ads_extended_dn_flags {
+	ADS_EXTENDED_DN_HEX_STRING	= 0,
+	ADS_EXTENDED_DN_STRING		= 1 /* not supported on win2k */
+};
+
+/* this is probably not very well suited to pass other controls generically but
+ * is good enough for the extended dn control where it is only used for atm */
+
+typedef struct {
+	const char *control;
+	int val;
+	int critical;
+} ads_control;

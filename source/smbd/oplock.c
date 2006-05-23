@@ -20,6 +20,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+#define DBGC_CLASS DBGC_LOCKING
 #include "includes.h"
 
 /* Current number of oplocks we have outstanding. */
@@ -88,7 +89,7 @@ void process_kernel_oplocks(fd_set *pfds)
 		/* Put the kernel break info into the message. */
 		SDEV_T_VAL(msg,0,fsp->dev);
 		SINO_T_VAL(msg,8,fsp->inode);
-		SIVAL(msg,16,fsp->file_id);
+		SIVAL(msg,16,fsp->fh->file_id);
 
 		/* Don't need to be root here as we're only ever
 		   sending to ourselves. */
@@ -118,10 +119,11 @@ BOOL set_file_oplock(files_struct *fsp, int oplock_type)
 		exclusive_oplocks_open++;
 	}
 
-	DEBUG(5,("set_file_oplock: granted oplock on file %s, dev = %x, inode = %.0f, file_id = %lu, \
-tv_sec = %x, tv_usec = %x\n",
-		 fsp->fsp_name, (unsigned int)fsp->dev, (double)fsp->inode, fsp->file_id,
-		 (int)fsp->open_time.tv_sec, (int)fsp->open_time.tv_usec ));
+	DEBUG(5,("set_file_oplock: granted oplock on file %s, 0x%x/%.0f/%lu, "
+		    "tv_sec = %x, tv_usec = %x\n",
+		 fsp->fsp_name, (unsigned int)fsp->dev, (double)fsp->inode,
+		 fsp->fh->file_id, (int)fsp->open_time.tv_sec,
+		 (int)fsp->open_time.tv_usec ));
 
 	return True;
 }
@@ -191,7 +193,7 @@ BOOL remove_oplock(files_struct *fsp)
 	ret = remove_share_oplock(lck, fsp);
 	if (!ret) {
 		DEBUG(0,("remove_oplock: failed to remove share oplock for "
-			 "file %s fnum %d, dev = %x, inode = %.0f\n",
+			 "file %s fnum %d, 0x%x/%.0f\n",
 			 fsp->fsp_name, fsp->fnum, (unsigned int)dev,
 			 (double)inode));
 	}
@@ -292,8 +294,8 @@ static files_struct *initial_break_processing(SMB_DEV_T dev, SMB_INO_T inode, un
 	files_struct *fsp = NULL;
 
 	if( DEBUGLVL( 3 ) ) {
-		dbgtext( "initial_break_processing: called for dev = 0x%x, inode = %.0f file_id = %lu\n",
-			(unsigned int)dev, (double)inode, file_id);
+		dbgtext( "initial_break_processing: called for 0x%x/%.0f/%u\n",
+			(unsigned int)dev, (double)inode, (int)file_id);
 		dbgtext( "Current oplocks_open (exclusive = %d, levelII = %d)\n",
 			exclusive_oplocks_open, level_II_oplocks_open );
 	}
@@ -331,7 +333,7 @@ static files_struct *initial_break_processing(SMB_DEV_T dev, SMB_INO_T inode, un
 		if( DEBUGLVL( 3 ) ) {
 			dbgtext( "initial_break_processing: file %s ", fsp->fsp_name );
 			dbgtext( "(dev = %x, inode = %.0f, file_id = %lu) has no oplock.\n",
-				(unsigned int)dev, (double)inode, fsp->file_id );
+				(unsigned int)dev, (double)inode, fsp->fh->file_id );
 			dbgtext( "Allowing break to succeed regardless.\n" );
 		}
 		return NULL;
@@ -403,9 +405,9 @@ static void process_oplock_async_level2_break_message(int msg_type, struct proce
 	/* De-linearize incoming message. */
 	message_to_share_mode_entry(&msg, buf);
 
-	DEBUG(10, ("Got oplock async level 2 break message from pid %d: 0x%x/%.0f/%d\n",
-		   (int)procid_to_pid(&src), (unsigned int)msg.dev, (double)msg.inode,
-		   (int)msg.share_file_id));
+	DEBUG(10, ("Got oplock async level 2 break message from pid %d: 0x%x/%.0f/%lu\n",
+		   (int)procid_to_pid(&src), (unsigned int)msg.dev,
+		   (double)msg.inode, msg.share_file_id));
 
 	fsp = initial_break_processing(msg.dev, msg.inode,
 				       msg.share_file_id);
@@ -490,9 +492,9 @@ static void process_oplock_break_message(int msg_type, struct process_id src,
 	/* De-linearize incoming message. */
 	message_to_share_mode_entry(&msg, buf);
 
-	DEBUG(10, ("Got oplock break message from pid %d: 0x%x/%.0f/%d\n",
-		   (int)procid_to_pid(&src), (unsigned int)msg.dev, (double)msg.inode,
-		   (int)msg.share_file_id));
+	DEBUG(10, ("Got oplock break message from pid %d: 0x%x/%.0f/%lu\n",
+		   (int)procid_to_pid(&src), (unsigned int)msg.dev,
+		   (double)msg.inode, msg.share_file_id));
 
 	fsp = initial_break_processing(msg.dev, msg.inode,
 				       msg.share_file_id);
@@ -693,9 +695,10 @@ static void process_oplock_break_response(int msg_type, struct process_id src,
 	/* De-linearize incoming message. */
 	message_to_share_mode_entry(&msg, buf);
 
-	DEBUG(10, ("Got oplock break response from pid %d: 0x%x/%.0f/%u mid %u\n",
-		   (int)procid_to_pid(&src), (unsigned int)msg.dev, (double)msg.inode,
-		   (unsigned int)msg.share_file_id, (unsigned int)msg.op_mid));
+	DEBUG(10, ("Got oplock break response from pid %d: 0x%x/%.0f/%lu mid %u\n",
+		   (int)procid_to_pid(&src), (unsigned int)msg.dev,
+		   (double)msg.inode, msg.share_file_id,
+		   (unsigned int)msg.op_mid));
 
 	/* Here's the hack from open.c, store the mid in the 'port' field */
 	schedule_deferred_open_smb_message(msg.op_mid);
@@ -719,8 +722,9 @@ static void process_open_retry_message(int msg_type, struct process_id src,
 	/* De-linearize incoming message. */
 	message_to_share_mode_entry(&msg, buf);
 
-	DEBUG(10, ("Got open retry msg from pid %d: 0x%x/%.0f mid %u\n",
-		   (int)procid_to_pid(&src), (unsigned int)msg.dev, (double)msg.inode,
+	DEBUG(10, ("Got open retry msg from pid %d: 0x%x/%.0f/%lu mid %u\n",
+		   (int)procid_to_pid(&src), (unsigned int)msg.dev,
+		   (double)msg.inode, msg.share_file_id,
 		   (unsigned int)msg.op_mid));
 
 	schedule_deferred_open_smb_message(msg.op_mid);

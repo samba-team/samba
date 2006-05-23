@@ -61,9 +61,13 @@ static NTSTATUS do_smb_load_module(const char *module_name, BOOL is_probe)
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	status = init();
-
 	DEBUG(2, ("Module '%s' loaded\n", module_name));
+
+	status = init();
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("Module '%s' initialization failed: %s\n",
+			    module_name, get_friendly_nt_error_msg(status)));
+	}
 
 	return status;
 }

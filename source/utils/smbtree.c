@@ -127,6 +127,60 @@ static BOOL get_servers(char *workgroup, struct user_auth_info *user_info)
         return True;
 }
 
+static BOOL get_rpc_shares(struct cli_state *cli, 
+			   void (*fn)(const char *, uint32, const char *, void *),
+			   void *state)
+{
+	NTSTATUS status;
+	struct rpc_pipe_client *pipe_hnd;
+	TALLOC_CTX *mem_ctx;
+	ENUM_HND enum_hnd;
+	WERROR werr;
+	SRV_SHARE_INFO_CTR ctr;
+	int i;
+
+	mem_ctx = talloc_new(NULL);
+	if (mem_ctx == NULL) {
+		DEBUG(0, ("talloc_new failed\n"));
+		return False;
+	}
+
+	init_enum_hnd(&enum_hnd, 0);
+
+	pipe_hnd = cli_rpc_pipe_open_noauth(cli, PI_SRVSVC, &status);
+
+	if (pipe_hnd == NULL) {
+		DEBUG(10, ("Could not connect to srvsvc pipe: %s\n",
+			   nt_errstr(status)));
+		TALLOC_FREE(mem_ctx);
+		return False;
+	}
+
+	werr = rpccli_srvsvc_net_share_enum(pipe_hnd, mem_ctx, 1, &ctr,
+					    0xffffffff, &enum_hnd);
+
+	if (!W_ERROR_IS_OK(werr)) {
+		TALLOC_FREE(mem_ctx);
+		cli_rpc_pipe_close(pipe_hnd);
+		return False;
+	}
+
+	for (i=0; i<ctr.num_entries; i++) {
+		SRV_SHARE_INFO_1 *info = &ctr.share.info1[i];
+		char *name, *comment;
+		name = rpcstr_pull_unistr2_talloc(
+			mem_ctx, &info->info_1_str.uni_netname);
+		comment = rpcstr_pull_unistr2_talloc(
+			mem_ctx, &info->info_1_str.uni_remark);
+		fn(name, info->info_1.type, comment, state);
+	}
+
+	TALLOC_FREE(mem_ctx);
+	cli_rpc_pipe_close(pipe_hnd);
+	return True;
+}
+
+
 static BOOL get_shares(char *server_name, struct user_auth_info *user_info)
 {
         struct cli_state *cli;
@@ -134,6 +188,9 @@ static BOOL get_shares(char *server_name, struct user_auth_info *user_info)
         if (!(cli = get_ipc_connect(server_name, NULL, user_info)))
                 return False;
 
+	if (get_rpc_shares(cli, add_name, &shares))
+		return True;
+	
         if (!cli_RNetShareEnum(cli, add_name, &shares))
                 return False;
 
