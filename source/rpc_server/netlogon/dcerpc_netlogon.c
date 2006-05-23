@@ -479,8 +479,8 @@ static NTSTATUS netr_LogonSamLogon_base(struct dcesrv_call_state *dce_call, TALL
 		user_info->workstation_name = r->in.logon.network->identity_info.workstation.string;
 		
 		user_info->password_state = AUTH_PASSWORD_RESPONSE;
-		user_info->password.response.lanman = data_blob(r->in.logon.network->lm.data, r->in.logon.network->lm.length);
-		user_info->password.response.nt = data_blob(r->in.logon.network->nt.data, r->in.logon.network->nt.length);
+		user_info->password.response.lanman = data_blob_talloc(mem_ctx, r->in.logon.network->lm.data, r->in.logon.network->lm.length);
+		user_info->password.response.nt = data_blob_talloc(mem_ctx, r->in.logon.network->nt.data, r->in.logon.network->nt.length);
 	
 		break;
 	default:
