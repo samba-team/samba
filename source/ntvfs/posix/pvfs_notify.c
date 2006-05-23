@@ -25,6 +25,7 @@
 #include "lib/messaging/irpc.h"
 #include "messaging/messaging.h"
 #include "dlinklist.h"
+#include "lib/events/events.h"
 
 /* pending notifies buffer, hung off struct pvfs_file for open directories
    that have used change notify */
@@ -44,9 +45,22 @@ struct pvfs_notify_buffer {
 };
 
 /*
+  send a notify on the next event run. 
+*/
+void pvfs_notify_send_next(struct event_context *ev, struct timed_event *te, 
+			   struct timeval t, void *ptr)
+{
+	struct ntvfs_request *req = talloc_get_type(ptr, struct ntvfs_request);
+	talloc_free(req);
+	req->async_states->send_fn(req);
+}
+
+
+/*
   send a reply to a pending notify request
 */
-static void pvfs_notify_send(struct pvfs_notify_buffer *notify_buffer, NTSTATUS status)
+static void pvfs_notify_send(struct pvfs_notify_buffer *notify_buffer, 
+			     NTSTATUS status, BOOL immediate)
 {
 	struct notify_pending *pending = notify_buffer->pending;
 	struct ntvfs_request *req;
@@ -57,7 +71,7 @@ static void pvfs_notify_send(struct pvfs_notify_buffer *notify_buffer, NTSTATUS 
 		/* on buffer overflow return no changes and destroys the notify buffer */
 		notify_buffer->num_changes = 0;
 		while (notify_buffer->pending) {
-			pvfs_notify_send(notify_buffer, NT_STATUS_OK);
+			pvfs_notify_send(notify_buffer, NT_STATUS_OK, immediate);
 		}
 		talloc_free(notify_buffer);
 		return;
@@ -86,7 +100,18 @@ static void pvfs_notify_send(struct pvfs_notify_buffer *notify_buffer, NTSTATUS 
 	}
 
 	req->async_states->status = status;
-	req->async_states->send_fn(req);
+
+	if (immediate) {
+		req->async_states->send_fn(req);
+		return;
+	} 
+
+	/* we can't call pvfs_notify_send() directly here, as that
+	   would free the request, and the ntvfs modules above us
+	   could use it, so call it on the next event */
+	talloc_reference(notify_buffer, req);
+	event_add_timed(req->ctx->event_ctx, 
+			req, timeval_zero(), pvfs_notify_send_next, req);
 }
 
 /*
@@ -97,7 +122,7 @@ static int pvfs_notify_destructor(void *ptr)
 	struct pvfs_notify_buffer *n = talloc_get_type(ptr, struct pvfs_notify_buffer);
 	notify_remove(n->f->pvfs->notify_context, n);
 	n->f->notify_buffer = NULL;
-	pvfs_notify_send(n, NT_STATUS_OK);
+	pvfs_notify_send(n, NT_STATUS_OK, True);
 	return 0;
 }
 
@@ -140,7 +165,7 @@ static void pvfs_notify_callback(void *private, const struct notify_event *ev)
 
 	/* send what we have, unless its the first part of a rename */
 	if (ev->action != NOTIFY_ACTION_OLD_NAME) {
-		pvfs_notify_send(n, NT_STATUS_OK);
+		pvfs_notify_send(n, NT_STATUS_OK, True);
 	}
 }
 
@@ -185,9 +210,9 @@ static void pvfs_notify_end(void *private, enum pvfs_wait_notice reason)
 	struct pvfs_notify_buffer *notify_buffer = talloc_get_type(private, 
 								   struct pvfs_notify_buffer);
 	if (reason == PVFS_WAIT_CANCEL) {
-		pvfs_notify_send(notify_buffer, NT_STATUS_CANCELLED);
+		pvfs_notify_send(notify_buffer, NT_STATUS_CANCELLED, False);
 	} else {
-		pvfs_notify_send(notify_buffer, NT_STATUS_OK);
+		pvfs_notify_send(notify_buffer, NT_STATUS_OK, True);
 	}
 }
 
@@ -251,7 +276,8 @@ NTSTATUS pvfs_notify(struct ntvfs_module_context *ntvfs,
 		return NT_STATUS_OK;
 	}
 
-	pvfs_notify_send(f->notify_buffer, NT_STATUS_OK);
+	req->async_states->state |= NTVFS_ASYNC_STATE_ASYNC;
+	pvfs_notify_send(f->notify_buffer, NT_STATUS_OK, False);
 
 	return NT_STATUS_OK;
 }
