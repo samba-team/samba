@@ -137,6 +137,7 @@ void *talloc_autofree_context(void);
 size_t talloc_get_size(const void *ctx);
 void *talloc_find_parent_byname(const void *ctx, const char *name);
 void talloc_show_parents(const void *context, FILE *file);
+int talloc_is_parent(const void *context, const char *ptr);
 
 #endif
 

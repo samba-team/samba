@@ -542,7 +542,13 @@ int talloc_free(void *ptr)
 	tc = talloc_chunk_from_ptr(ptr);
 
 	if (tc->refs) {
+		int is_child;
+		struct talloc_reference_handle *handle = tc->refs;
+		is_child = talloc_is_parent(handle, handle->ptr);
 		talloc_reference_destructor(tc->refs);
+		if (is_child) {
+			return talloc_free(ptr);
+		}
 		return -1;
 	}
 
@@ -1197,7 +1203,9 @@ void *talloc_find_parent_byname(const void *context, const char *name)
 			return TC_PTR_FROM_CHUNK(tc);
 		}
 		while (tc && tc->prev) tc = tc->prev;
-		tc = tc->parent;
+		if (tc) {
+			tc = tc->parent;
+		}
 	}
 	return NULL;
 }
@@ -1219,6 +1227,30 @@ void talloc_show_parents(const void *context, FILE *file)
 	while (tc) {
 		fprintf(file, "\t'%s'\n", talloc_get_name(TC_PTR_FROM_CHUNK(tc)));
 		while (tc && tc->prev) tc = tc->prev;
-		tc = tc->parent;
+		if (tc) {
+			tc = tc->parent;
+		}
 	}
+}
+
+/*
+  return 1 if ptr is a parent of context
+*/
+int talloc_is_parent(const void *context, const char *ptr)
+{
+	struct talloc_chunk *tc;
+
+	if (context == NULL) {
+		return 0;
+	}
+
+	tc = talloc_chunk_from_ptr(context);
+	while (tc) {
+		if (TC_PTR_FROM_CHUNK(tc) == ptr) return 1;
+		while (tc && tc->prev) tc = tc->prev;
+		if (tc) {
+			tc = tc->parent;
+		}
+	}
+	return 0;
 }
