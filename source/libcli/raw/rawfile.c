@@ -801,6 +801,7 @@ struct smbcli_request *smb_raw_lock_send(struct smbcli_tree *tree, union smb_loc
 				SIVAL(p, 6, lockp[i].count);
 			}
 		}	
+		break;
 	}
 	case RAW_LOCK_SMB2:
 		return NULL;
