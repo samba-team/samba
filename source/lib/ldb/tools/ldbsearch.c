@@ -284,6 +284,8 @@ int main(int argc, const char **argv)
 	int ret = -1;
 	const char *expression = "(|(objectClass=*)(distinguishedName=*))";
 
+	ldb_global_init();
+
 	ldb = ldb_init(NULL);
 
 	options = ldb_cmdline_process(ldb, argc, argv, usage);
