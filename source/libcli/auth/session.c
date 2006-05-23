@@ -151,7 +151,7 @@ DATA_BLOB sess_encrypt_blob(TALLOC_CTX *mem_ctx, DATA_BLOB *blob_in, const DATA_
 		return data_blob(NULL, 0);
 	}
 
-	ret = data_blob(NULL, 8+dlen);
+	ret = data_blob_talloc(mem_ctx, NULL, 8+dlen);
 	if (!ret.data) {
 		data_blob_free(&src);
 		return data_blob(NULL, 0);
