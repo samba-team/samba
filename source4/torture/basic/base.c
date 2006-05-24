@@ -1619,7 +1619,7 @@ static BOOL torture_samba3_errorpaths(struct torture_context *torture)
 	BOOL result = False;
 	int fnum;
 	const char *os2_fname = ".+,;=[].";
-	const char *dirname = "samba3_errordir";
+	const char *dname = "samba3_errordir";
 	union smb_open io;
 	TALLOC_CTX *mem_ctx = talloc_init(NULL);
 	NTSTATUS status;
@@ -1656,10 +1656,10 @@ static BOOL torture_samba3_errorpaths(struct torture_context *torture)
 	}
 
 	smbcli_unlink(cli_nt->tree, os2_fname);
-	smbcli_rmdir(cli_nt->tree, dirname);
+	smbcli_rmdir(cli_nt->tree, dname);
 
-	if (!NT_STATUS_IS_OK(smbcli_mkdir(cli_nt->tree, dirname))) {
-		printf("smbcli_mkdir(%s) failed: %s\n", dirname,
+	if (!NT_STATUS_IS_OK(smbcli_mkdir(cli_nt->tree, dname))) {
+		printf("smbcli_mkdir(%s) failed: %s\n", dname,
 		       smbcli_errstr(cli_nt->tree));
 		goto fail;
 	}
@@ -1675,7 +1675,7 @@ static BOOL torture_samba3_errorpaths(struct torture_context *torture)
 	io.ntcreatex.in.create_options = 0;
 	io.ntcreatex.in.impersonation = NTCREATEX_IMPERSONATION_ANONYMOUS;
 	io.ntcreatex.in.security_flags = 0;
-	io.ntcreatex.in.fname = dirname;
+	io.ntcreatex.in.fname = dname;
 
 	status = smb_raw_open(cli_nt->tree, mem_ctx, &io);
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_COLLISION)) {
@@ -1692,14 +1692,14 @@ static BOOL torture_samba3_errorpaths(struct torture_context *torture)
 		goto fail;
 	}
 
-	status = smbcli_mkdir(cli_nt->tree, dirname);
+	status = smbcli_mkdir(cli_nt->tree, dname);
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_COLLISION)) {
 		printf("(%s) incorrect status %s should be %s\n",
 		       __location__, nt_errstr(status),
 		       nt_errstr(NT_STATUS_OBJECT_NAME_COLLISION));
 		goto fail;
 	}
-	status = smbcli_mkdir(cli_dos->tree, dirname);
+	status = smbcli_mkdir(cli_dos->tree, dname);
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_DOS(ERRDOS, ERRnoaccess))) {
 		printf("(%s) incorrect status %s should be %s\n",
 		       __location__, nt_errstr(status),

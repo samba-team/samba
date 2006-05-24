@@ -145,13 +145,13 @@ static BOOL check_delete_on_close(struct smbcli_state *cli, int fnum,
 		goto fail; \
 	}} while (0)
 
-const char *fname = "\\delete.file";
-const char *fname_new = "\\delete.new";
-const char *dirname = "\\delete.dir";
+static const char *fname = "\\delete.file";
+static const char *fname_new = "\\delete.new";
+static const char *dname = "\\delete.dir";
 
 static void del_clean_area(struct smbcli_state *cli1, struct smbcli_state *cli2)
 {
-	smbcli_deltree(cli1->tree, dirname);
+	smbcli_deltree(cli1->tree, dname);
 	smbcli_setatr(cli1->tree, fname, 0, 0);
 	smbcli_unlink(cli1->tree, fname);
 	smbcli_setatr(cli1->tree, fname_new, 0, 0);
@@ -886,7 +886,7 @@ static BOOL deltest14(struct smbcli_state *cli1, struct smbcli_state *cli2)
 
 	/* Test 14 -- directory */
 
-	dnum1 = smbcli_nt_create_full(cli1->tree, dirname, 0,
+	dnum1 = smbcli_nt_create_full(cli1->tree, dname, 0,
 				      SEC_FILE_READ_DATA|
 				      SEC_FILE_WRITE_DATA|
 				      SEC_STD_DELETE,
@@ -897,24 +897,24 @@ static BOOL deltest14(struct smbcli_state *cli1, struct smbcli_state *cli2)
 				      NTCREATEX_DISP_CREATE, 0, 0);
 	if (dnum1 == -1) {
 		printf("(%s) open of %s failed: %s!\n", 
-		       __location__, dirname, smbcli_errstr(cli1->tree));
+		       __location__, dname, smbcli_errstr(cli1->tree));
 		correct = False;
 		goto fail;
 	}
 
-	correct &= check_delete_on_close(cli1, dnum1, dirname, False, __location__);
+	correct &= check_delete_on_close(cli1, dnum1, dname, False, __location__);
 	if (NT_STATUS_IS_ERR(smbcli_nt_delete_on_close(cli1->tree, dnum1, True))) {
 		printf("(%s) setting delete_on_close on file failed !\n",
 		       __location__);
 		correct = False;
 		goto fail;
 	}
-	correct &= check_delete_on_close(cli1, dnum1, dirname, True, __location__);
+	correct &= check_delete_on_close(cli1, dnum1, dname, True, __location__);
 	smbcli_close(cli1->tree, dnum1);
 
 	/* Now it should be gone... */
 
-	dnum1 = smbcli_nt_create_full(cli1->tree, dirname, 0,
+	dnum1 = smbcli_nt_create_full(cli1->tree, dname, 0,
 				      SEC_FILE_READ_DATA|
 				      SEC_FILE_WRITE_DATA|
 				      SEC_STD_DELETE,
@@ -1277,10 +1277,10 @@ static BOOL deltest18(struct smbcli_state *cli1, struct smbcli_state *cli2)
 	smbcli_close(cli1->tree, fnum1);
 	smbcli_close(cli1->tree, fnum2);
 
-	smbcli_deltree(cli1->tree, dirname);
+	smbcli_deltree(cli1->tree, dname);
 
 	/* Firstly create with all access, but delete on close. */
-	fnum1 = smbcli_nt_create_full(cli1->tree, dirname, 0, 
+	fnum1 = smbcli_nt_create_full(cli1->tree, dname, 0, 
 				      SEC_FILE_READ_DATA|
 				      SEC_FILE_WRITE_DATA|
 				      SEC_STD_DELETE,
@@ -1293,16 +1293,16 @@ static BOOL deltest18(struct smbcli_state *cli1, struct smbcli_state *cli2)
 	
 	if (fnum1 == -1) {
 		printf("(%s) open - 1 of %s failed (%s)\n", 
-		       __location__, dirname, smbcli_errstr(cli1->tree));
+		       __location__, dname, smbcli_errstr(cli1->tree));
 		correct = False;
 		goto fail;
 	}
 
 	/* The delete on close bit is *not* reported as being set. */
-	correct &= check_delete_on_close(cli1, fnum1, dirname, False, __location__);
+	correct &= check_delete_on_close(cli1, fnum1, dname, False, __location__);
 
 	/* Now try opening again for read-only. */
-	fnum2 = smbcli_nt_create_full(cli1->tree, dirname, 0, 
+	fnum2 = smbcli_nt_create_full(cli1->tree, dname, 0, 
 				      SEC_RIGHTS_FILE_READ,
 				      FILE_ATTRIBUTE_DIRECTORY,
 				      NTCREATEX_SHARE_ACCESS_READ|
@@ -1315,22 +1315,22 @@ static BOOL deltest18(struct smbcli_state *cli1, struct smbcli_state *cli2)
 	/* Should work. */
 	if (fnum2 == -1) {
 		printf("(%s) open - 1 of %s failed (%s)\n", 
-		       __location__, dirname, smbcli_errstr(cli1->tree));
+		       __location__, dname, smbcli_errstr(cli1->tree));
 		correct = False;
 		goto fail;
 	}
 
-	correct &= check_delete_on_close(cli1, fnum1, dirname, False, __location__);
-	correct &= check_delete_on_close(cli1, fnum2, dirname, False, __location__);
+	correct &= check_delete_on_close(cli1, fnum1, dname, False, __location__);
+	correct &= check_delete_on_close(cli1, fnum2, dname, False, __location__);
 
 	smbcli_close(cli1->tree, fnum1);
 
-	correct &= check_delete_on_close(cli1, fnum2, dirname, True, __location__);
+	correct &= check_delete_on_close(cli1, fnum2, dname, True, __location__);
 
 	smbcli_close(cli1->tree, fnum2);
 
 	/* And the directory should be deleted ! */
-	fnum1 = smbcli_nt_create_full(cli1->tree, dirname, 0, 
+	fnum1 = smbcli_nt_create_full(cli1->tree, dname, 0, 
 				      SEC_RIGHTS_FILE_READ,
 				      FILE_ATTRIBUTE_DIRECTORY,
 				      NTCREATEX_SHARE_ACCESS_READ|
@@ -1340,7 +1340,7 @@ static BOOL deltest18(struct smbcli_state *cli1, struct smbcli_state *cli2)
 				      NTCREATEX_OPTIONS_DIRECTORY, 0);
 	if (fnum1 != -1) {
 		printf("(%s) open of %s succeeded (should fail)\n", 
-		       __location__, dirname);
+		       __location__, dname);
 		correct = False;
 		goto fail;
 	}
@@ -1363,10 +1363,10 @@ static BOOL deltest19(struct smbcli_state *cli1, struct smbcli_state *cli2)
 
 	/* Test 19. */
 
-	smbcli_deltree(cli1->tree, dirname);
+	smbcli_deltree(cli1->tree, dname);
 
 	/* Firstly open and create with all access */
-	fnum1 = smbcli_nt_create_full(cli1->tree, dirname, 0, 
+	fnum1 = smbcli_nt_create_full(cli1->tree, dname, 0, 
 				      SEC_FILE_READ_DATA|
 				      SEC_FILE_WRITE_DATA|
 				      SEC_STD_DELETE,
@@ -1379,7 +1379,7 @@ static BOOL deltest19(struct smbcli_state *cli1, struct smbcli_state *cli2)
 	
 	if (fnum1 == -1) {
 		printf("(%s) open - 1 of %s failed (%s)\n", 
-		       __location__, dirname, smbcli_errstr(cli1->tree));
+		       __location__, dname, smbcli_errstr(cli1->tree));
 		correct = False;
 		goto fail;
 	}
@@ -1388,7 +1388,7 @@ static BOOL deltest19(struct smbcli_state *cli1, struct smbcli_state *cli2)
 	smbcli_close(cli1->tree, fnum1);
 	
 	/* Next open with all access, but add delete on close. */
-	fnum1 = smbcli_nt_create_full(cli1->tree, dirname, 0, 
+	fnum1 = smbcli_nt_create_full(cli1->tree, dname, 0, 
 				      SEC_FILE_READ_DATA|
 				      SEC_FILE_WRITE_DATA|
 				      SEC_STD_DELETE,
@@ -1407,10 +1407,10 @@ static BOOL deltest19(struct smbcli_state *cli1, struct smbcli_state *cli2)
 	}
 
 	/* The delete on close bit is *not* reported as being set. */
-	correct &= check_delete_on_close(cli1, fnum1, dirname, False, __location__);
+	correct &= check_delete_on_close(cli1, fnum1, dname, False, __location__);
 
 	/* Now try opening again for read-only. */
-	fnum2 = smbcli_nt_create_full(cli1->tree, dirname, 0, 
+	fnum2 = smbcli_nt_create_full(cli1->tree, dname, 0, 
 				      SEC_RIGHTS_FILE_READ,
 				      FILE_ATTRIBUTE_DIRECTORY,
 				      NTCREATEX_SHARE_ACCESS_READ|
@@ -1422,19 +1422,19 @@ static BOOL deltest19(struct smbcli_state *cli1, struct smbcli_state *cli2)
 	/* Should work. */
 	if (fnum2 == -1) {
 		printf("(%s) open - 1 of %s failed (%s)\n", 
-		       __location__, dirname, smbcli_errstr(cli1->tree));
+		       __location__, dname, smbcli_errstr(cli1->tree));
 		correct = False;
 		goto fail;
 	}
 
 	smbcli_close(cli1->tree, fnum1);
 
-	correct &= check_delete_on_close(cli1, fnum2, dirname, True, __location__);
+	correct &= check_delete_on_close(cli1, fnum2, dname, True, __location__);
 
 	smbcli_close(cli1->tree, fnum2);
 
 	/* See if the file is deleted - for a directory this seems to be true ! */
-	fnum1 = smbcli_nt_create_full(cli1->tree, dirname, 0, 
+	fnum1 = smbcli_nt_create_full(cli1->tree, dname, 0, 
 				      SEC_RIGHTS_FILE_READ,
 				      FILE_ATTRIBUTE_DIRECTORY,
 				      NTCREATEX_SHARE_ACCESS_READ|
@@ -1447,7 +1447,7 @@ static BOOL deltest19(struct smbcli_state *cli1, struct smbcli_state *cli2)
 
 	if (fnum1 != -1) {
 		printf("(%s) open of %s succeeded (should fail)\n", 
-		       __location__, dirname);
+		       __location__, dname);
 		correct = False;
 		goto fail;
 	}
@@ -1471,9 +1471,9 @@ static BOOL deltest20(struct smbcli_state *cli1, struct smbcli_state *cli2)
 
 	/* Test 20 -- non-empty directory hardest to get right... */
 
-	smbcli_deltree(cli1->tree, dirname);
+	smbcli_deltree(cli1->tree, dname);
 
-	dnum1 = smbcli_nt_create_full(cli1->tree, dirname, 0,
+	dnum1 = smbcli_nt_create_full(cli1->tree, dname, 0,
 				      SEC_FILE_READ_DATA|
 				      SEC_FILE_WRITE_DATA|
 				      SEC_STD_DELETE,
@@ -1485,17 +1485,17 @@ static BOOL deltest20(struct smbcli_state *cli1, struct smbcli_state *cli2)
 				      NTCREATEX_OPTIONS_DIRECTORY, 0);
 	if (dnum1 == -1) {
 		printf("(%s) open of %s failed: %s!\n", 
-		       __location__, dirname, smbcli_errstr(cli1->tree));
+		       __location__, dname, smbcli_errstr(cli1->tree));
 		correct = False;
 		goto fail;
 	}
 
-	correct &= check_delete_on_close(cli1, dnum1, dirname, False, __location__);
+	correct &= check_delete_on_close(cli1, dnum1, dname, False, __location__);
 	status = smbcli_nt_delete_on_close(cli1->tree, dnum1, True);
 
 	{
 		char *fullname;
-		asprintf(&fullname, "\\%s%s", dirname, fname);
+		asprintf(&fullname, "\\%s%s", dname, fname);
 		fnum1 = smbcli_open(cli1->tree, fullname, O_CREAT|O_RDWR,
 				    DENY_NONE);
 		if (fnum1 != -1) {
@@ -1526,7 +1526,7 @@ static BOOL deltest20(struct smbcli_state *cli1, struct smbcli_state *cli2)
 		
 	{
 		char *fullname;
-		asprintf(&fullname, "\\%s%s", dirname, fname);
+		asprintf(&fullname, "\\%s%s", dname, fname);
 		fnum1 = smbcli_open(cli1->tree, fullname, O_CREAT|O_RDWR,
 				    DENY_NONE);
 		if (fnum1 == -1) {
