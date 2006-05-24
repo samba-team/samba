@@ -903,11 +903,11 @@ static uint32_t lf_add_entry (struct regf_data *regf, uint32_t list_offset, cons
 	uint32_t ret;
 	struct lf_block lf;
 
+	ZERO_STRUCT(lf);
+
 	/* Add to subkeys list */
 	if (list_offset == -1) { /* Need to create subkeys list */
 		lf.header = "lf";
-		lf.key_count = 0;
-		lf.hr = NULL;
 	} else {
 		if (!hbin_get_tdr(regf, list_offset, regf, (tdr_pull_fn_t)tdr_pull_lf_block, &lf)) {
 			DEBUG(0, ("Can't get subkeys list\n"));
