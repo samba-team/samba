@@ -19,8 +19,8 @@ samba3_stop_sig_kill() {
 samba3_check_or_start() {
 	if [ -n "$SERVER_TEST_FIFO" ];then
 
-		trap samba3_stop_sig_kill SIGINT SIGQUIT
-		trap samba3_stop_sig_kill SIGTERM
+		trap samba3_stop_sig_kill INT QUIT
+		trap samba3_stop_sig_kill TERM
 
 		if [ -p "$SERVER_TEST_FIFO" ];then
 			return 0;
