@@ -51,7 +51,7 @@ struct parm_struct {
 	const struct enum_list *enum_list;
 	unsigned int flags;
 	union {
-		BOOL bvalue;
+		int bvalue;
 		int ivalue;
 		char *svalue;
 		char cvalue;

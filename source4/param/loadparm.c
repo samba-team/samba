@@ -784,7 +784,7 @@ static const char *lp_string(const char *s)
 #define FN_GLOBAL_LIST(fn_name,ptr) \
  const char **fn_name(void) {return(*(const char ***)(ptr));}
 #define FN_GLOBAL_BOOL(fn_name,ptr) \
- BOOL fn_name(void) {return(*(BOOL *)(ptr));}
+ BOOL fn_name(void) {return((BOOL)*(int *)(ptr));}
 #define FN_GLOBAL_CHAR(fn_name,ptr) \
  char fn_name(void) {return(*(char *)(ptr));}
 #define FN_GLOBAL_INTEGER(fn_name,ptr) \
@@ -1443,7 +1443,7 @@ static void copy_service(service * pserviceDest, service * pserviceSource, int *
 
 			switch (parm_table[i].type) {
 				case P_BOOL:
-					*(BOOL *)dest_ptr = *(BOOL *)src_ptr;
+					*(int *)dest_ptr = *(int *)src_ptr;
 					break;
 
 				case P_INTEGER:
@@ -2035,7 +2035,7 @@ static void print_parameter(struct parm_struct *p, void *ptr, FILE * f)
 			break;
 
 		case P_BOOL:
-			fprintf(f, "%s", BOOLSTR(*(BOOL *)ptr));
+			fprintf(f, "%s", BOOLSTR((BOOL)*(int *)ptr));
 			break;
 
 		case P_INTEGER:
@@ -2072,7 +2072,7 @@ static BOOL equal_parameter(parm_type type, void *ptr1, void *ptr2)
 {
 	switch (type) {
 		case P_BOOL:
-			return (*((BOOL *)ptr1) == *((BOOL *)ptr2));
+			return (*((int *)ptr1) == *((int *)ptr2));
 
 		case P_INTEGER:
 		case P_BYTES:
@@ -2162,7 +2162,7 @@ static BOOL is_default(int i)
 					*(char **)parm_table[i].ptr);
 		case P_BOOL:
 			return parm_table[i].def.bvalue ==
-				*(BOOL *)parm_table[i].ptr;
+				*(int *)parm_table[i].ptr;
 		case P_INTEGER:
 		case P_BYTES:
 		case P_ENUM:
