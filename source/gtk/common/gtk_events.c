@@ -34,7 +34,7 @@
  */
 static struct event_context *gtk_event_context_global;
 
-static int gtk_event_context_destructor(void *ptr)
+static int gtk_event_context_destructor(struct event_context *ev)
 {
 	gtk_event_context_global = NULL;
 	return 0;
@@ -83,9 +83,8 @@ static gboolean gtk_event_fd_handler(GIOChannel *source, GIOCondition condition,
 /*
   destroy an fd_event
 */
-static int gtk_event_fd_destructor(void *ptr)
+static int gtk_event_fd_destructor(struct fd_event *fde)
 {
-	struct fd_event *fde = talloc_get_type(ptr, struct fd_event);
 	struct gtk_fd_event *gtk_fd = talloc_get_type(fde->additional_data,
 						      struct gtk_fd_event);
 
@@ -212,9 +211,8 @@ struct gtk_timed_event {
 /*
   destroy a timed event
 */
-static int gtk_event_timed_destructor(void *ptr)
+static int gtk_event_timed_destructor(struct timed_event *te)
 {
-	struct timed_event *te = talloc_get_type(ptr, struct timed_event);
 	struct gtk_timed_event *gtk_te = talloc_get_type(te->additional_data,
 							 struct gtk_timed_event);
 
@@ -223,7 +221,7 @@ static int gtk_event_timed_destructor(void *ptr)
 	return 0;
 }
 
-static int gtk_event_timed_deny_destructor(void *ptr)
+static int gtk_event_timed_deny_destructor(struct timed_event *te)
 {
 	return -1;
 }

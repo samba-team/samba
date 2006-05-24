@@ -104,16 +104,15 @@ int cli_credentials_set_from_ccache(struct cli_credentials *cred,
 }
 
 /* Free a memory ccache */
-static int free_mccache(void *ptr) {
-	struct ccache_container *ccc = ptr;
+static int free_mccache(struct ccache_container *ccc)
+{
 	krb5_cc_destroy(ccc->smb_krb5_context->krb5_context, ccc->ccache);
 
 	return 0;
 }
 
 /* Free a disk-based ccache */
-static int free_dccache(void *ptr) {
-	struct ccache_container *ccc = ptr;
+static int free_dccache(struct ccache_container *ccc) {
 	krb5_cc_close(ccc->smb_krb5_context->krb5_context, ccc->ccache);
 
 	return 0;
@@ -273,11 +272,10 @@ int cli_credentials_get_ccache(struct cli_credentials *cred,
 	return ret;
 }
 
-static int free_gssapi_creds(void *ptr) {
+static int free_gssapi_creds(struct gssapi_creds_container *gcc)
+{
 	OM_uint32 min_stat, maj_stat;
-	struct gssapi_creds_container *gcc = ptr;
-	maj_stat = gss_release_cred(&min_stat, 
-				    &gcc->creds);
+	maj_stat = gss_release_cred(&min_stat, &gcc->creds);
 	return 0;
 }
 
