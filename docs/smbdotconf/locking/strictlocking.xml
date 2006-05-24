@@ -4,7 +4,7 @@
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>
-	This is an enumberated type that controls the handling of file locking in the server. When this is set to <constant>yes</constant>,
+	This is an enumerated type that controls the handling of file locking in the server. When this is set to <constant>yes</constant>,
 	the server will check every read and write access for file locks, and deny access if locks exist. This can be slow on 
 	some systems.
 	</para>
