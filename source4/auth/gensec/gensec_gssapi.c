@@ -95,9 +95,8 @@ static char *gssapi_error_string(TALLOC_CTX *mem_ctx,
 }
 
 
-static int gensec_gssapi_destory(void *ptr) 
+static int gensec_gssapi_destory(struct gensec_gssapi_state *gensec_gssapi_state)
 {
-	struct gensec_gssapi_state *gensec_gssapi_state = ptr;
 	OM_uint32 maj_stat, min_stat;
 	
 	if (gensec_gssapi_state->delegated_cred_handle != GSS_C_NO_CREDENTIAL) {

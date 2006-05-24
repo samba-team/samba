@@ -198,9 +198,8 @@ static HDBFlags uf2HDBFlags(krb5_context context, int userAccountControl, enum h
 	return flags;
 }
 
-static int hdb_ldb_destrutor(void *ptr)
+static int hdb_ldb_destrutor(struct hdb_ldb_private *private)
 {
-    struct hdb_ldb_private *private = ptr;
     hdb_entry_ex *entry_ex = private->entry_ex;
     free_hdb_entry(&entry_ex->entry);
     return 0;

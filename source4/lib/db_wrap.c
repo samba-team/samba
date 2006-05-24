@@ -166,9 +166,8 @@ static void tdb_wrap_log(TDB_CONTEXT *tdb, int level,
 
 
 /* destroy the last connection to a tdb */
-static int tdb_wrap_destructor(void *ctx)
+static int tdb_wrap_destructor(struct tdb_wrap *w)
 {
-	struct tdb_wrap *w = ctx;
 	tdb_close(w->tdb);
 	DLIST_REMOVE(tdb_list, w);
 	return 0;
