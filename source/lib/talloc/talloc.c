@@ -1066,6 +1066,7 @@ char *talloc_vasprintf_append(char *s, const char *fmt, va_list ap)
 	struct talloc_chunk *tc;
 	int len, s_len;
 	va_list ap2;
+	char c;
 
 	if (s == NULL) {
 		return talloc_vasprintf(NULL, fmt, ap);
@@ -1076,7 +1077,7 @@ char *talloc_vasprintf_append(char *s, const char *fmt, va_list ap)
 	va_copy(ap2, ap);
 
 	s_len = tc->size - 1;
-	if ((len = vsnprintf(NULL, 0, fmt, ap2)) <= 0) {
+	if ((len = vsnprintf(&c, 1, fmt, ap2)) <= 0) {
 		/* Either the vsnprintf failed or the format resulted in
 		 * no characters being formatted. In the former case, we
 		 * ought to return NULL, in the latter we ought to return
