@@ -159,12 +159,13 @@ NTSTATUS libnet_CreateUser_recv(struct composite_context *c, TALLOC_CTX *mem_ctx
 	struct create_user_state *s;
 
 	status = composite_wait(c);
-	if (!NT_STATUS_IS_OK(status)) {
+	if (NT_STATUS_IS_OK(status)) {
+		r->out.error_string = NULL;
+	} else {
 		s = talloc_get_type(c->private_data, struct create_user_state);
 		r->out.error_string = talloc_steal(mem_ctx, s->r.out.error_string);
 	}
 
-	r->out.error_string = NULL;
 	return status;
 }
 
@@ -307,12 +308,13 @@ NTSTATUS libnet_DeleteUser_recv(struct composite_context *c, TALLOC_CTX *mem_ctx
 	struct delete_user_state *s;
 
 	status = composite_wait(c);
-	if (!NT_STATUS_IS_OK(status)) {
+	if (NT_STATUS_IS_OK(status)) {
+		r->out.error_string = NULL;
+	} else {
 		s = talloc_get_type(c->private_data, struct delete_user_state);
 		r->out.error_string = talloc_steal(mem_ctx, s->r.out.error_string);
 	}
 	
-	r->out.error_string = NULL;
 	return status;
 }
 
