@@ -108,16 +108,29 @@ int main(int argc, char **argv)
 
 	if (remote) {
 		error = reg_open_remote(&h, NULL, cmdline_credentials, remote, NULL);
+
+		if(!W_ERROR_IS_OK(error)) {
+			fprintf(stderr, "Unable to open remote registry at %s:%s \n", remote, win_errstr(error));
+			return 1;
+		}
+
 	} else if (backend) {
 	    error = reg_open_hive(NULL, backend, poptGetArg(pc), NULL, cmdline_credentials, &root);
+	
+		if(!W_ERROR_IS_OK(error)) {
+			fprintf(stderr, "Unable to open '%s' with backend '%s':%s \n", poptGetArg(pc), backend, win_errstr(error));
+			return 1;
+		}
 	} else {
 		error = reg_open_local (&h, NULL, cmdline_credentials);
+
+		if(!W_ERROR_IS_OK(error)) {
+			fprintf(stderr, "Unable to open local registry:%s \n", win_errstr(error));
+			return 1;
+		}
+
 	}
 
-	if(!W_ERROR_IS_OK(error)) {
-		fprintf(stderr, "Unable to open '%s' with backend '%s':%s \n", poptGetArg(pc), backend, win_errstr(error));
-		return 1;
-	}
 	poptFreeContext(pc);
 
 	error = WERR_OK;
