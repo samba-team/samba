@@ -1963,11 +1963,8 @@ failed:
 	return -1;
 }
 
-static int
-destructor(void *p)
-{
-	struct lsqlite3_private *lsqlite3 = p;
-        
+static int destructor(struct lsqlite3_private *lsqlite3)
+{        
 	if (lsqlite3->sqlite) {
 		sqlite3_close(lsqlite3->sqlite);
 	}

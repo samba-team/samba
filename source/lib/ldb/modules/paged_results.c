@@ -71,10 +71,8 @@ struct private_data {
 	
 };
 
-int store_destructor(void *data)
+int store_destructor(struct results_store *store)
 {
-	struct results_store *store = talloc_get_type(data, struct results_store);
-
 	if (store->prev) {
 		store->prev->next = store->next;
 	}

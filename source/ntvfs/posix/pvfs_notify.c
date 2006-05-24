@@ -117,9 +117,8 @@ static void pvfs_notify_send(struct pvfs_notify_buffer *notify_buffer,
 /*
   destroy a notify buffer. Called when the handle is closed
  */
-static int pvfs_notify_destructor(void *ptr)
+static int pvfs_notify_destructor(struct pvfs_notify_buffer *n)
 {
-	struct pvfs_notify_buffer *n = talloc_get_type(ptr, struct pvfs_notify_buffer);
 	notify_remove(n->f->pvfs->notify_context, n);
 	n->f->notify_buffer = NULL;
 	pvfs_notify_send(n, NT_STATUS_OK, True);

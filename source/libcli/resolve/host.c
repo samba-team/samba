@@ -51,9 +51,8 @@ struct host_state {
   name resolution without leaving a potentially blocking call running
   in a child
 */
-static int host_destructor(void *ptr)
+static int host_destructor(struct host_state *state)
 {
-	struct host_state *state = talloc_get_type(ptr, struct host_state);
 	close(state->child_fd);
 	if (state->child != (pid_t)-1) {
 		kill(state->child, SIGTERM);

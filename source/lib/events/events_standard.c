@@ -93,10 +93,8 @@ static uint32_t epoll_map_flags(uint16_t flags)
 /*
  free the epoll fd
 */
-static int epoll_ctx_destructor(void *ptr)
+static int epoll_ctx_destructor(struct std_event_context *std_ev)
 {
-	struct std_event_context *std_ev = talloc_get_type(ptr,
-							   struct std_event_context);
 	close(std_ev->epoll_fd);
 	std_ev->epoll_fd = -1;
 	return 0;
@@ -336,9 +334,8 @@ static void calc_maxfd(struct std_event_context *std_ev)
 /*
   destroy an fd_event
 */
-static int std_event_fd_destructor(void *ptr)
+static int std_event_fd_destructor(struct fd_event *fde)
 {
-	struct fd_event *fde = talloc_get_type(ptr, struct fd_event);
 	struct event_context *ev = fde->event_ctx;
 	struct std_event_context *std_ev = talloc_get_type(ev->additional_data,
 							   struct std_event_context);
@@ -420,16 +417,15 @@ static void std_event_set_fd_flags(struct fd_event *fde, uint16_t flags)
 /*
   destroy a timed event
 */
-static int std_event_timed_destructor(void *ptr)
+static int std_event_timed_destructor(struct timed_event *te)
 {
-	struct timed_event *te = talloc_get_type(ptr, struct timed_event);
 	struct std_event_context *std_ev = talloc_get_type(te->event_ctx->additional_data,
 							   struct std_event_context);
 	DLIST_REMOVE(std_ev->timed_events, te);
 	return 0;
 }
 
-static int std_event_timed_deny_destructor(void *ptr)
+static int std_event_timed_deny_destructor(struct timed_event *te)
 {
 	return -1;
 }

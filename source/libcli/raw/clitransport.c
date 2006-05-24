@@ -50,10 +50,8 @@ static void smbcli_transport_event_handler(struct event_context *ev,
 /*
   destroy a transport
  */
-static int transport_destructor(void *ptr)
+static int transport_destructor(struct smbcli_transport *transport)
 {
-	struct smbcli_transport *transport = ptr;
-
 	smbcli_transport_dead(transport);
 	return 0;
 }
@@ -538,9 +536,8 @@ static void smbcli_timeout_handler(struct event_context *ev, struct timed_event 
 /*
   destroy a request
 */
-static int smbcli_request_destructor(void *ptr)
+static int smbcli_request_destructor(struct smbcli_request *req)
 {
-	struct smbcli_request *req = talloc_get_type(ptr, struct smbcli_request);
 	if (req->state == SMBCLI_REQUEST_RECV) {
 		DLIST_REMOVE(req->transport->pending_recv, req);
 	}

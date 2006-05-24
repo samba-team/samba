@@ -1042,9 +1042,8 @@ static const struct ldb_module_ops lldb_ops = {
 };
 
 
-static int lldb_destructor(void *p)
+static int lldb_destructor(struct lldb_private *lldb)
 {
-	struct lldb_private *lldb = p;
 	ldap_unbind(lldb->ldap);
 	return 0;
 }

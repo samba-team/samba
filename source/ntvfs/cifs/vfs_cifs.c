@@ -237,9 +237,8 @@ static NTSTATUS cvfs_disconnect(struct ntvfs_module_context *ntvfs)
 /*
   destroy an async info structure
 */
-static int async_info_destructor(void *p)
+static int async_info_destructor(struct async_info *async)
 {
-	struct async_info *async = talloc_get_type(p, struct async_info);
 	DLIST_REMOVE(async->cvfs->pending, async);
 	return 0;
 }

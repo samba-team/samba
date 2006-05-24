@@ -100,9 +100,8 @@ _PUBLIC_ struct odb_context *odb_init(TALLOC_CTX *mem_ctx,
 /*
   destroy a lock on the database
 */
-static int odb_lock_destructor(void *ptr)
+static int odb_lock_destructor(struct odb_lock *lck)
 {
-	struct odb_lock *lck = ptr;
 	tdb_chainunlock(lck->odb->w->tdb, lck->key);
 	return 0;
 }

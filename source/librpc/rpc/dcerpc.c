@@ -40,9 +40,8 @@ NTSTATUS dcerpc_init(void)
 static void dcerpc_ship_next_request(struct dcerpc_connection *c);
 
 /* destroy a dcerpc connection */
-static int dcerpc_connection_destructor(void *ptr)
+static int dcerpc_connection_destructor(struct dcerpc_connection *c)
 {
-	struct dcerpc_connection *c = ptr;
 	if (c->transport.shutdown_pipe) {
 		c->transport.shutdown_pipe(c);
 	}
@@ -918,9 +917,8 @@ req_done:
 /*
   make sure requests are cleaned up 
  */
-static int dcerpc_req_destructor(void *ptr)
+static int dcerpc_req_destructor(struct rpc_request *req)
 {
-	struct rpc_request *req = ptr;
 	DLIST_REMOVE(req->p->conn->pending, req);
 	return 0;
 }

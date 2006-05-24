@@ -175,9 +175,8 @@ static ssize_t tls_push(gnutls_transport_ptr ptr, const void *buf, size_t size)
 /*
   destroy a tls session
  */
-static int tls_destructor(void *ptr)
+static int tls_destructor(struct tls_context *tls)
 {
-	struct tls_context *tls = talloc_get_type(ptr, struct tls_context);
 	int ret;
 	ret = gnutls_bye(tls->session, GNUTLS_SHUT_WR);
 	if (ret < 0) {

@@ -49,9 +49,8 @@ struct saved_state {
 	uid_t uid;
 };
 
-static int privileges_destructor(void *ptr)
+static int privileges_destructor(struct saved_state *s)
 {
-	struct saved_state *s = ptr;
 	if (geteuid() != s->uid &&
 	    seteuid(s->uid) != 0) {
 		smb_panic("Failed to restore privileges");

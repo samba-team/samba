@@ -51,9 +51,8 @@ static void smb2_transport_event_handler(struct event_context *ev,
 /*
   destroy a transport
  */
-static int transport_destructor(void *ptr)
+static int transport_destructor(struct smb2_transport *transport)
 {
-	struct smb2_transport *transport = ptr;
 	smb2_transport_dead(transport);
 	return 0;
 }
@@ -254,9 +253,8 @@ static void smb2_timeout_handler(struct event_context *ev, struct timed_event *t
 /*
   destroy a request
 */
-static int smb2_request_destructor(void *ptr)
+static int smb2_request_destructor(struct smb2_request *req)
 {
-	struct smb2_request *req = talloc_get_type(ptr, struct smb2_request);
 	if (req->state == SMB2_REQUEST_RECV) {
 		DLIST_REMOVE(req->transport->pending_recv, req);
 	}
