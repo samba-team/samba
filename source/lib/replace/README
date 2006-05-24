@@ -69,6 +69,7 @@ UINT64_MAX
 Macros:
 va_copy
 __FUNCTION__
+__STRING
 MIN
 MAX
 
