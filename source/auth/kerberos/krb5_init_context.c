@@ -47,21 +47,18 @@ struct smb_krb5_socket {
 	krb5_krbhst_info *hi;
 };
 
-static int smb_krb5_context_destroy_1(void *ptr) 
+static int smb_krb5_context_destroy_1(struct smb_krb5_context *ctx)
 {
-	struct smb_krb5_context *ctx = ptr;
 	krb5_free_context(ctx->krb5_context); 
 	return 0;
 }
 
-static int smb_krb5_context_destroy_2(void *ptr) 
+static int smb_krb5_context_destroy_2(struct smb_krb5_context *ctx)
 {
-	struct smb_krb5_context *ctx = ptr;
-
 	/* Otherwise krb5_free_context will try and close what we have already free()ed */
 	krb5_set_warn_dest(ctx->krb5_context, NULL);
 	krb5_closelog(ctx->krb5_context, ctx->logf);
-	smb_krb5_context_destroy_1(ptr);
+	smb_krb5_context_destroy_1(ctx);
 	return 0;
 }
 

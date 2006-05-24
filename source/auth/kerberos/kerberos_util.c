@@ -31,8 +31,8 @@ struct principal_container {
 	krb5_principal principal;
 };
 
-static int free_principal(void *ptr) {
-	struct principal_container *pc = ptr;
+static int free_principal(struct principal_container *pc)
+{
 	/* current heimdal - 0.6.3, which we need anyway, fixes segfaults here */
 	krb5_free_principal(pc->smb_krb5_context->krb5_context, pc->principal);
 
@@ -227,8 +227,8 @@ krb5_error_code principal_from_credentials(TALLOC_CTX *parent_ctx,
 	return 0;
 }
 
-static int free_keytab(void *ptr) {
-	struct keytab_container *ktc = ptr;
+static int free_keytab(struct keytab_container *ktc)
+{
 	krb5_kt_close(ktc->smb_krb5_context->krb5_context, ktc->keytab);
 
 	return 0;
@@ -265,8 +265,8 @@ struct enctypes_container {
 	krb5_enctype *enctypes;
 };
 
-static int free_enctypes(void *ptr) {
-	struct enctypes_container *etc = ptr;
+static int free_enctypes(struct enctypes_container *etc)
+{
 	free_kerberos_etypes(etc->smb_krb5_context->krb5_context, etc->enctypes);
 	return 0;
 }

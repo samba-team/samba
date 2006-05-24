@@ -54,10 +54,8 @@ struct gensec_krb5_state {
 	BOOL gssapi;
 };
 
-static int gensec_krb5_destroy(void *ptr) 
+static int gensec_krb5_destroy(struct gensec_krb5_state *gensec_krb5_state)
 {
-	struct gensec_krb5_state *gensec_krb5_state = ptr;
-
 	if (!gensec_krb5_state->smb_krb5_context) {
 		/* We can't clean anything else up unless we started up this far */
 		return 0;
