@@ -19,8 +19,8 @@ samba3_stop_sig_kill() {
 samba3_check_or_start() {
 	if [ -n "$SERVER_TEST_FIFO" ];then
 
-		trap samba3_stop_sig_kill SIGINT SIGQUIT
-		trap samba3_stop_sig_kill SIGTERM
+		trap samba3_stop_sig_kill INT QUIT
+		trap samba3_stop_sig_kill TERM
 
 		if [ -p "$SERVER_TEST_FIFO" ];then
 			return 0;
@@ -40,7 +40,7 @@ samba3_check_or_start() {
 		rm -f $NMBD_TEST_LOG
 		echo -n "STARTING NMBD..."
 		((
-			if [ -z "$NMBD_MAXTIME" ]; then
+			if ! test -n "$NMBD_MAXTIME"; then
 			    NMBD_MAXTIME=2700
 			fi
 			timelimit $NMBD_MAXTIME $NMBD_VALGRIND $SRCDIR/bin/nmbd -F -S --no-process-group -d0 -s $SERVERCONFFILE > $NMBD_TEST_LOG 2>&1 &
@@ -69,7 +69,7 @@ samba3_check_or_start() {
 		rm -f $SMBD_TEST_LOG
 		echo -n "STARTING SMBD..."
 		((
-			if [ -z "$SMBD_MAXTIME" ]; then
+			if ! test -n "$SMBD_MAXTIME"; then
 			    SMBD_MAXTIME=2700
 			fi
 			timelimit $SMBD_MAXTIME $SMBD_VALGRIND $SRCDIR/bin/smbd -F -S --no-process-group -d0 -s $SERVERCONFFILE > $SMBD_TEST_LOG 2>&1 &
