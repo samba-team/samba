@@ -187,6 +187,8 @@ o   Volker Lendecke <vl@samba.org>
     * BUG 3435: Fix 'msdfs root = yes' in [homes].
     * Instruct winbindd to find a trusted DC on its own when runing on 
       a Samba DC.
+    * Fix segv in child winbindd processes caused by a failed tconX 
+      to the DC.
 
 
 o   Jim McDonough <jmcd@us.ibm.com>
