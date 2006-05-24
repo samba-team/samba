@@ -58,15 +58,15 @@ pstring dyn_LMHOSTSFILE = LMHOSTSFILE;
  * @sa lib_path() to get the path to a file inside the LIBDIR.
  **/
 pstring dyn_LIBDIR = LIBDIR;
-const fstring dyn_SHLIBEXT = SHLIBEXT;
+fstring dyn_SHLIBEXT = SHLIBEXT;
 
 /**
  * @brief Directory holding lock files.
  *
  * Not writable, but used to set a default in the parameter table.
  **/
-const pstring dyn_LOCKDIR = LOCKDIR;
-const pstring dyn_PIDDIR  = PIDDIR;
+pstring dyn_LOCKDIR = LOCKDIR;
+pstring dyn_PIDDIR  = PIDDIR;
 
-const pstring dyn_SMB_PASSWD_FILE = SMB_PASSWD_FILE;
-const pstring dyn_PRIVATE_DIR = PRIVATE_DIR;
+pstring dyn_SMB_PASSWD_FILE = SMB_PASSWD_FILE;
+pstring dyn_PRIVATE_DIR = PRIVATE_DIR;

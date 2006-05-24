@@ -4,6 +4,7 @@
 
    Copyright (C) Tim Potter 2001,2002
    Copyright (C) Jelmer Vernooij 2002,2003
+   Copyright (C) James Peach 2006
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -39,11 +40,9 @@ extern BOOL override_logfile;
 
 struct user_auth_info cmdline_auth_info;
 
-static void popt_common_callback(poptContext con, 
-			   enum poptCallbackReason reason,
-			   const struct poptOption *opt,
-			   const char *arg, const void *data)
+static void set_logfile(poptContext con, const char * arg)
 {
+
 	pstring logfile;
 	const char *pname;
 	
@@ -55,9 +54,19 @@ static void popt_common_callback(poptContext con,
 	else 
 		pname++;
 
+	pstr_sprintf(logfile, "%s/log.%s", arg, pname);
+	lp_set_logfile(logfile);
+	override_logfile = True;
+}
+
+static void popt_common_callback(poptContext con,
+			   enum poptCallbackReason reason,
+			   const struct poptOption *opt,
+			   const char *arg, const void *data)
+{
+
 	if (reason == POPT_CALLBACK_REASON_PRE) {
-		pstr_sprintf(logfile, "%s/log.%s", dyn_LOGFILEBASE, pname);
-		lp_set_logfile(logfile);
+		set_logfile(con, dyn_LOGFILEBASE);
 		return;
 	}
 
@@ -94,9 +103,8 @@ static void popt_common_callback(poptContext con,
 
 	case 'l':
 		if (arg) {
-			pstr_sprintf(logfile, "%s/log.%s", arg, pname);
-			lp_set_logfile(logfile);
-			override_logfile = True;
+			set_logfile(con, arg);
+			pstr_sprintf(dyn_LOGFILEBASE, "%s", arg);
 		}
 		break;
 
@@ -128,8 +136,8 @@ struct poptOption popt_common_connection[] = {
 struct poptOption popt_common_samba[] = {
 	{ NULL, 0, POPT_ARG_CALLBACK|POPT_CBFLAG_PRE, popt_common_callback },
 	{ "debuglevel", 'd', POPT_ARG_STRING, NULL, 'd', "Set debug level", "DEBUGLEVEL" },
-	{ "configfile", 's', POPT_ARG_STRING, NULL, 's', "Use alternative configuration file", "CONFIGFILE" },
-	{ "log-basename", 'l', POPT_ARG_STRING, NULL, 'l', "Basename for log/debug files", "LOGFILEBASE" },
+	{ "configfile", 's', POPT_ARG_STRING, NULL, 's', "Use alternate configuration file", "CONFIGFILE" },
+	{ "log-basename", 'l', POPT_ARG_STRING, NULL, 'l', "Base name for log files", "LOGFILEBASE" },
 	{ "version", 'V', POPT_ARG_NONE, NULL, 'V', "Print version" },
 	POPT_TABLEEND
 };
@@ -141,6 +149,130 @@ struct poptOption popt_common_version[] = {
 };
 
 
+/* Handle command line options:
+ *		--sbindir
+ *		--bindir
+ *		--swatdir
+ *		--lmhostsfile
+ *		--libdir
+ *		--shlibext
+ *		--lockdir
+ *		--piddir
+ *		--smb-passwd-file
+ *		--private-dir
+ */
+
+enum dyn_item{
+	DYN_SBINDIR = 1,
+	DYN_BINDIR,
+	DYN_SWATDIR,
+	DYN_LMHOSTSFILE,
+	DYN_LIBDIR,
+	DYN_SHLIBEXT,
+	DYN_LOCKDIR,
+	DYN_PIDDIR,
+	DYN_SMB_PASSWD_FILE,
+	DYN_PRIVATE_DIR,
+};
+
+
+static void popt_dynconfig_callback(poptContext con,
+			   enum poptCallbackReason reason,
+			   const struct poptOption *opt,
+			   const char *arg, const void *data)
+{
+
+	switch (opt->val) {
+	case DYN_SBINDIR:
+		if (arg) {
+			dyn_SBINDIR = SMB_STRDUP(arg);
+		}
+		break;
+
+	case DYN_BINDIR:
+		if (arg) {
+			dyn_BINDIR = SMB_STRDUP(arg);
+		}
+		break;
+
+	case DYN_SWATDIR:
+		if (arg) {
+			dyn_SWATDIR = SMB_STRDUP(arg);
+		}
+		break;
+
+	case DYN_LMHOSTSFILE:
+		if (arg) {
+			pstrcpy(dyn_LMHOSTSFILE, arg);
+		}
+		break;
+
+	case DYN_LIBDIR:
+		if (arg) {
+			pstrcpy(dyn_LIBDIR, arg);
+		}
+		break;
+
+	case DYN_SHLIBEXT:
+		if (arg) {
+			fstrcpy(dyn_SHLIBEXT, arg);
+		}
+		break;
+
+	case DYN_LOCKDIR:
+		if (arg) {
+			pstrcpy(dyn_LOCKDIR, arg);
+		}
+		break;
+
+	case DYN_PIDDIR:
+		if (arg) {
+			pstrcpy(dyn_PIDDIR, arg);
+		}
+		break;
+
+	case DYN_SMB_PASSWD_FILE:
+		if (arg) {
+			pstrcpy(dyn_SMB_PASSWD_FILE, arg);
+		}
+		break;
+
+	case DYN_PRIVATE_DIR:
+		if (arg) {
+			pstrcpy(dyn_PRIVATE_DIR, arg);
+		}
+		break;
+
+	}
+}
+
+const struct poptOption popt_common_dynconfig[] = {
+
+	{ NULL, '\0', POPT_ARG_CALLBACK, popt_dynconfig_callback },
+
+	{ "sbindir", '\0' , POPT_ARG_STRING, NULL, DYN_SBINDIR,
+	    "Path to sbin directory", "SBINDIR" },
+	{ "bindir", '\0' , POPT_ARG_STRING, NULL, DYN_BINDIR,
+	    "Path to bin directory", "BINDIR" },
+	{ "swatdir", '\0' , POPT_ARG_STRING, NULL, DYN_SWATDIR,
+	    "Path to SWAT installation directory", "SWATDIR" },
+	{ "lmhostsfile", '\0' , POPT_ARG_STRING, NULL, DYN_LMHOSTSFILE,
+	    "Path to lmhosts file", "LMHOSTSFILE" },
+	{ "libdir", '\0' , POPT_ARG_STRING, NULL, DYN_LIBDIR,
+	    "Path to shared library directory", "LIBDIR" },
+	{ "shlibext", '\0' , POPT_ARG_STRING, NULL, DYN_SHLIBEXT,
+	    "Shared library extension", "SHLIBEXT" },
+	{ "lockdir", '\0' , POPT_ARG_STRING, NULL, DYN_LOCKDIR,
+	    "Path to lock file directory", "LOCKDIR" },
+	{ "piddir", '\0' , POPT_ARG_STRING, NULL, DYN_PIDDIR,
+	    "Path to PID file directory", "PIDDIR" },
+	{ "smb-passwd-file", '\0' , POPT_ARG_STRING, NULL, DYN_SMB_PASSWD_FILE,
+	    "Path to smbpasswd file", "SMB_PASSWD_FILE" },
+	{ "private-dir", '\0' , POPT_ARG_STRING, NULL, DYN_PRIVATE_DIR,
+	    "Path to private data directory", "PRIVATE_DIR" },
+
+	POPT_TABLEEND
+};
 
 /****************************************************************************
  * get a password from a a file or file descriptor
