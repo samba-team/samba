@@ -144,9 +144,8 @@ static void wrepl_error(void *private, NTSTATUS status)
 /*
   destroy a wrepl_socket destructor
 */
-static int wrepl_socket_destructor(void *ptr)
+static int wrepl_socket_destructor(struct wrepl_socket *sock)
 {
-	struct wrepl_socket *sock = talloc_get_type(ptr, struct wrepl_socket);
 	if (sock->dead) {
 		sock->free_skipped = True;
 		return -1;
@@ -244,9 +243,8 @@ failed:
 /*
   destroy a wrepl_request
 */
-static int wrepl_request_destructor(void *ptr)
+static int wrepl_request_destructor(struct wrepl_request *req)
 {
-	struct wrepl_request *req = talloc_get_type(ptr, struct wrepl_request);
 	if (req->state == WREPL_REQUEST_RECV) {
 		DLIST_REMOVE(req->wrepl_socket->recv_queue, req);
 	}
@@ -431,9 +429,8 @@ struct wrepl_send_ctrl_state {
 	struct wrepl_socket *wrepl_sock;
 };
 
-static int wrepl_send_ctrl_destructor(void *ptr)
+static int wrepl_send_ctrl_destructor(struct wrepl_send_ctrl_state *s)
 {
-	struct wrepl_send_ctrl_state *s = talloc_get_type(ptr, struct wrepl_send_ctrl_state);
 	struct wrepl_request *req = s->wrepl_sock->recv_queue;
 
 	/* check if the request is still in WREPL_STATE_RECV,

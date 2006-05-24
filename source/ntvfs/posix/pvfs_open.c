@@ -54,9 +54,8 @@ struct pvfs_file *pvfs_find_fd(struct pvfs_state *pvfs,
 /*
   cleanup a open directory handle
 */
-static int pvfs_dir_handle_destructor(void *p)
+static int pvfs_dir_handle_destructor(struct pvfs_file_handle *h)
 {
-	struct pvfs_file_handle *h = p;
 	int open_count;
 	char *path = NULL;
 
@@ -102,10 +101,8 @@ static int pvfs_dir_handle_destructor(void *p)
 /*
   cleanup a open directory fnum
 */
-static int pvfs_dir_fnum_destructor(void *p)
+static int pvfs_dir_fnum_destructor(struct pvfs_file *f)
 {
-	struct pvfs_file *f = p;
-
 	DLIST_REMOVE(f->pvfs->files.list, f);
 	ntvfs_handle_remove_backend_data(f->ntvfs, f->pvfs->ntvfs);
 
@@ -412,9 +409,8 @@ cleanup_delete:
 /*
   destroy a struct pvfs_file_handle
 */
-static int pvfs_handle_destructor(void *p)
+static int pvfs_handle_destructor(struct pvfs_file_handle *h)
 {
-	struct pvfs_file_handle *h = p;
 	int open_count;
 	char *path = NULL;
 
@@ -494,10 +490,8 @@ static int pvfs_handle_destructor(void *p)
 /*
   destroy a struct pvfs_file
 */
-static int pvfs_fnum_destructor(void *p)
+static int pvfs_fnum_destructor(struct pvfs_file *f)
 {
-	struct pvfs_file *f = talloc_get_type(p, struct pvfs_file);
-
 	DLIST_REMOVE(f->pvfs->files.list, f);
 	pvfs_lock_close(f->pvfs, f);
 	ntvfs_handle_remove_backend_data(f->ntvfs, f->pvfs->ntvfs);
@@ -768,9 +762,8 @@ struct pvfs_open_retry {
 };
 
 /* destroy a pending open request */
-static int pvfs_retry_destructor(void *ptr)
+static int pvfs_retry_destructor(struct pvfs_open_retry *r)
 {
-	struct pvfs_open_retry *r = ptr;
 	struct pvfs_state *pvfs = r->ntvfs->private_data;
 	if (r->odb_locking_key.data) {
 		struct odb_lock *lck;

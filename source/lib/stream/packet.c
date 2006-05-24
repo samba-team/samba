@@ -60,10 +60,8 @@ struct packet_context {
   a destructor used when we are processing packets to prevent freeing of this
   context while it is being used
 */
-static int packet_destructor(void *p)
+static int packet_destructor(struct packet_context *pc)
 {
-	struct packet_context *pc = talloc_get_type(p, struct packet_context);
-
 	if (pc->busy) {
 		pc->destructor_called = True;
 		/* now we refuse the talloc_free() request. The free will

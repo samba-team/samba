@@ -28,9 +28,8 @@
 /*
   auto-close sockets on free
 */
-static int socket_destructor(void *ptr)
+static int socket_destructor(struct socket_context *sock)
 {
-	struct socket_context *sock = ptr;
 	if (sock->ops->fn_close) {
 		sock->ops->fn_close(sock);
 	}

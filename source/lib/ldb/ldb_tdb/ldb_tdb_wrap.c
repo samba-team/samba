@@ -43,9 +43,8 @@ struct ltdb_wrap {
 static struct ltdb_wrap *tdb_list;
 
 /* destroy the last connection to a tdb */
-static int ltdb_wrap_destructor(void *ctx)
+static int ltdb_wrap_destructor(struct ltdb_wrap *w)
 {
-	struct ltdb_wrap *w = talloc_get_type(ctx, struct ltdb_wrap);
 	tdb_close(w->tdb);
 	if (w->next) {
 		w->next->prev = w->prev;

@@ -434,9 +434,8 @@ NTSTATUS messaging_send_ptr(struct messaging_context *msg, uint32_t server,
 /*
   destroy the messaging context
 */
-static int messaging_destructor(void *ptr)
+static int messaging_destructor(struct messaging_context *msg)
 {
-	struct messaging_context *msg = ptr;
 	unlink(msg->path);
 	while (msg->names && msg->names[0]) {
 		irpc_remove_name(msg, msg->names[0]);
@@ -720,9 +719,8 @@ failed:
 /*
   destroy a irpc request
 */
-static int irpc_destructor(void *ptr)
+static int irpc_destructor(struct irpc_request *irpc)
 {
-	struct irpc_request *irpc = talloc_get_type(ptr, struct irpc_request);
 	idr_remove(irpc->msg_ctx->idr, irpc->callid);
 	return 0;
 }

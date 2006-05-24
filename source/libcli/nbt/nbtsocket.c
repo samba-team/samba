@@ -32,10 +32,8 @@
 /*
   destroy a pending request
 */
-static int nbt_name_request_destructor(void *ptr)
-{
-	struct nbt_name_request *req = talloc_get_type(ptr, struct nbt_name_request);
-	
+static int nbt_name_request_destructor(struct nbt_name_request *req)
+{	
 	if (req->state == NBT_REQUEST_SEND) {
 		DLIST_REMOVE(req->nbtsock->send_queue, req);
 	}

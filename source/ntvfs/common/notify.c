@@ -63,9 +63,8 @@ static void notify_handler(struct messaging_context *msg_ctx, void *private,
 /*
   destroy the notify context
 */
-static int notify_destructor(void *p)
+static int notify_destructor(struct notify_context *notify)
 {
-	struct notify_context *notify = talloc_get_type(p, struct notify_context);
 	messaging_deregister(notify->messaging_ctx, MSG_PVFS_NOTIFY, notify);
 	notify_remove_all(notify);
 	return 0;

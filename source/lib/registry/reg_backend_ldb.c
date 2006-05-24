@@ -32,9 +32,8 @@ struct ldb_key_data
 	int subkey_count, value_count;
 };
 
-static int ldb_free_hive (void *_hive)
+static int ldb_free_hive (struct registry_hive *hive)
 {
-	struct registry_hive *hive = _hive;
 	talloc_free(hive->backend_data);
 	hive->backend_data = NULL;
 	return 0;
@@ -96,9 +95,8 @@ static struct ldb_message *reg_ldb_pack_value(struct ldb_context *ctx, TALLOC_CT
 }
 
 
-static int reg_close_ldb_key (void *data)
+static int reg_close_ldb_key(struct registry_key *key)
 {
-	struct registry_key *key = data;
 	struct ldb_key_data *kd = talloc_get_type(key->backend_data, struct ldb_key_data);
 /*	struct ldb_context *c = key->hive->backend_data; */
 

@@ -87,9 +87,8 @@ static int skel_del_trans(struct ldb_module *module)
 	return ldb_next_del_trans(module);
 }
 
-static int skel_destructor(void *module_ctx)
+static int skel_destructor(struct ldb_module *ctx)
 {
-	struct ldb_module *ctx = talloc_get_type(module_ctx, struct ldb_module);
 	struct private_data *data = talloc_get_type(ctx->private_data, struct private_data);
 	/* put your clean-up functions here */
 	if (data->some_private_data) talloc_free(data->some_private_data);

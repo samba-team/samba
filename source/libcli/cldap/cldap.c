@@ -44,9 +44,8 @@
 /*
   destroy a pending request
 */
-static int cldap_request_destructor(void *ptr)
+static int cldap_request_destructor(struct cldap_request *req)
 {
-	struct cldap_request *req = talloc_get_type(ptr, struct cldap_request);
 	if (req->state == CLDAP_REQUEST_SEND) {
 		DLIST_REMOVE(req->cldap->send_queue, req);
 	}

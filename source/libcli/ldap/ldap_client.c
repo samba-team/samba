@@ -487,9 +487,8 @@ static void ldap_reconnect(struct ldap_connection *conn)
 }
 
 /* destroy an open ldap request */
-static int ldap_request_destructor(void *ptr)
+static int ldap_request_destructor(struct ldap_request *req)
 {
-	struct ldap_request *req = talloc_get_type(ptr, struct ldap_request);
 	if (req->state == LDAP_REQUEST_PENDING) {
 		DLIST_REMOVE(req->conn->pending, req);
 	}
