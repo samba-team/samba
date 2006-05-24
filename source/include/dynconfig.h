@@ -31,8 +31,8 @@ extern char const *dyn_SBINDIR,
 extern pstring dyn_CONFIGFILE;
 extern pstring dyn_LOGFILEBASE, dyn_LMHOSTSFILE;
 extern pstring dyn_LIBDIR;
-extern const fstring dyn_SHLIBEXT;
-extern const pstring dyn_LOCKDIR; 
-extern const pstring dyn_PIDDIR;
-extern const pstring dyn_SMB_PASSWD_FILE;
-extern const pstring dyn_PRIVATE_DIR;
+extern fstring dyn_SHLIBEXT;
+extern pstring dyn_LOCKDIR;
+extern pstring dyn_PIDDIR;
+extern pstring dyn_SMB_PASSWD_FILE;
+extern pstring dyn_PRIVATE_DIR;
