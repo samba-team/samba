@@ -1145,7 +1145,10 @@ static int get_domain_data_callback(struct ldb_context *ldb, void *context, stru
 static int build_domain_data_request(struct ph_async_context *ac,
 				     struct dom_sid *sid)
 {
-	const char * const attrs[] = { "pwdProperties", "pwdHistoryLength", "dnsDomain", NULL };
+	/* attrs[] is returned from this function in
+	   ac->dom_req->op.search.attrs, so it must be static, as
+	   otherwise the compiler can put it on the stack */
+	static const char * const attrs[] = { "pwdProperties", "pwdHistoryLength", "dnsDomain", NULL };
 	char *filter;
 
 	ac->dom_req = talloc_zero(ac, struct ldb_request);
