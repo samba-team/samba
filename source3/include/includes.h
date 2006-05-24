@@ -596,11 +596,13 @@ typedef int socklen_t;
 #endif
 
 #if !defined(int16) && !defined(HAVE_INT16_FROM_RPC_RPC_H)
-#if (SIZEOF_SHORT == 4)
-#define int16 __ERROR___CANNOT_DETERMINE_TYPE_FOR_INT16;
-#else /* SIZEOF_SHORT != 4 */
-#define int16 short
-#endif /* SIZEOF_SHORT != 4 */
+#  if (SIZEOF_SHORT == 4)
+#    define int16 __ERROR___CANNOT_DETERMINE_TYPE_FOR_INT16;
+#  else /* SIZEOF_SHORT != 4 */
+#    define int16 short
+#  endif /* SIZEOF_SHORT != 4 */
+   /* needed to work around compile issue on HP-UX 11.x */
+#  define _INT16	1
 #endif
 
 /*
@@ -617,16 +619,18 @@ typedef int socklen_t;
 #endif
 
 #if !defined(int32) && !defined(HAVE_INT32_FROM_RPC_RPC_H)
-#if (SIZEOF_INT == 4)
-#define int32 int
-#elif (SIZEOF_LONG == 4)
-#define int32 long
-#elif (SIZEOF_SHORT == 4)
-#define int32 short
-#else
-/* uggh - no 32 bit type?? probably a CRAY. just hope this works ... */
-#define int32 int
-#endif
+#  if (SIZEOF_INT == 4)
+#    define int32 int
+#  elif (SIZEOF_LONG == 4)
+#    define int32 long
+#  elif (SIZEOF_SHORT == 4)
+#    define int32 short
+#  else
+     /* uggh - no 32 bit type?? probably a CRAY. just hope this works ... */
+#    define int32 int
+#  endif
+   /* needed to work around compile issue on HP-UX 11.x */
+#  define _INT32	1
 #endif
 
 /*
