@@ -65,6 +65,7 @@ static struct composite_context* libnet_RpcConnectSrv_send(struct libnet_context
 	c->event_ctx = ctx->event_ctx;
 
 	s->r = *r;
+	ZERO_STRUCT(s->r.out);
 
 	/* prepare binding string */
 	switch (r->level) {
@@ -131,10 +132,12 @@ static NTSTATUS libnet_RpcConnectSrv_recv(struct composite_context *c,
 					  TALLOC_CTX *mem_ctx,
 					  struct libnet_RpcConnect *r)
 {
-	struct rpc_connect_srv_state *s;
-	NTSTATUS status = composite_wait(c);
+	NTSTATUS status;
+	struct rpc_connect_srv_state *s = talloc_get_type(c->private_data,
+					  struct rpc_connect_srv_state);
 
-	if (NT_STATUS_IS_OK(status) && ctx && mem_ctx && r) {
+	status = composite_wait(c);
+	if (NT_STATUS_IS_OK(status)) {
 		/* move the returned rpc pipe between memory contexts */
 		s = talloc_get_type(c->private_data, struct rpc_connect_srv_state);
 		r->out.dcerpc_pipe = talloc_steal(mem_ctx, s->r.out.dcerpc_pipe);
@@ -147,6 +150,8 @@ static NTSTATUS libnet_RpcConnectSrv_recv(struct composite_context *c,
 		} else {
 			ctx->pipe = talloc_reference(ctx, r->out.dcerpc_pipe);
 		}
+	} else {
+		r->out.error_string = talloc_steal(mem_ctx, s->r.out.error_string);
 	}
 
 	talloc_free(c);
@@ -195,8 +200,9 @@ static struct composite_context* libnet_RpcConnectDC_send(struct libnet_context 
 	c->private_data = s;
 	c->event_ctx = ctx->event_ctx;
 
-	s->r   = *r;
 	s->ctx = ctx;
+	s->r   = *r;
+	ZERO_STRUCT(s->r.out);
 
 	switch (r->level) {
 	case LIBNET_RPC_CONNECT_PDC:
@@ -302,13 +308,12 @@ static NTSTATUS libnet_RpcConnectDC_recv(struct composite_context *c,
 					 struct libnet_RpcConnect *r)
 {
 	NTSTATUS status;
-	struct rpc_connect_dc_state *s;
-	
-	status = composite_wait(c);
+	struct rpc_connect_dc_state *s = talloc_get_type(c->private_data,
+					 struct rpc_connect_dc_state);
 
-	if (NT_STATUS_IS_OK(status) && ctx && mem_ctx && r) {
+	status = composite_wait(c);
+	if (NT_STATUS_IS_OK(status)) {
 		/* move connected rpc pipe between memory contexts */
-		s = talloc_get_type(c->private_data, struct rpc_connect_dc_state);
 		r->out.dcerpc_pipe = talloc_steal(mem_ctx, s->r.out.dcerpc_pipe);
 
 		/* reference created pipe structure to long-term libnet_context
@@ -319,6 +324,8 @@ static NTSTATUS libnet_RpcConnectDC_recv(struct composite_context *c,
 		} else {
 			ctx->pipe = talloc_reference(ctx, r->out.dcerpc_pipe);
 		}
+	} else {
+		r->out.error_string = talloc_steal(mem_ctx, s->r.out.error_string);
 	}
 
 	talloc_free(c);
@@ -379,8 +386,9 @@ static struct composite_context* libnet_RpcConnectDCInfo_send(struct libnet_cont
 	c->private_data = s;
 	c->event_ctx = ctx->event_ctx;
 
-	s->r   = *r;
 	s->ctx = ctx;
+	s->r   = *r;
+	ZERO_STRUCT(s->r.out);
 
 	/* proceed to pure rpc connection if the binding string is provided,
 	   otherwise try to connect domain controller */
@@ -646,12 +654,11 @@ static NTSTATUS libnet_RpcConnectDCInfo_recv(struct composite_context *c, struct
 					     TALLOC_CTX *mem_ctx, struct libnet_RpcConnect *r)
 {
 	NTSTATUS status;
-	struct rpc_connect_dci_state *s;
+	struct rpc_connect_dci_state *s = talloc_get_type(c->private_data,
+					  struct rpc_connect_dci_state);
 
 	status = composite_wait(c);
 	if (NT_STATUS_IS_OK(status)) {
-		s = talloc_get_type(c->private_data, struct rpc_connect_dci_state);
-
 		r->out.realm        = talloc_steal(mem_ctx, s->r.out.realm);
 		r->out.guid         = talloc_steal(mem_ctx, s->r.out.guid);
 		r->out.domain_name  = talloc_steal(mem_ctx, s->r.out.domain_name);
@@ -667,6 +674,8 @@ static NTSTATUS libnet_RpcConnectDCInfo_recv(struct composite_context *c, struct
 		} else {
 			ctx->pipe = talloc_reference(ctx, r->out.dcerpc_pipe);
 		}
+	} else {
+		r->out.error_string = talloc_steal(mem_ctx, s->r.out.error_string);
 	}
 
 	talloc_free(c);
@@ -740,6 +749,7 @@ NTSTATUS libnet_RpcConnect_recv(struct composite_context *c, struct libnet_conte
 		return libnet_RpcConnectDCInfo_recv(c, ctx, mem_ctx, r);
 
 	default:
+		ZERO_STRUCT(r->out);
 		return NT_STATUS_INVALID_LEVEL;
 	}
 }
