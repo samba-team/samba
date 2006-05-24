@@ -49,7 +49,7 @@ AC_ARG_WITH(libiconv,
 ])
 
 if test x$ICONV_FOUND = xno; then
-	SMB_CHECK_ICONV(iconv.h,[ICONV_FOUND=yes])
+	SMB_CHECK_ICONV(iconv.h,[AC_DEFINE(HAVE_ICONV_H,1,[Whether iconv.h is present]) ICONV_FOUND=yes])
 fi
 
 for i in $LOOK_DIRS ; do
@@ -58,7 +58,7 @@ for i in $LOOK_DIRS ; do
 	fi
 	
 	SMB_CHECK_ICONV_DIR($i, [
-		ICONV_FOUND=yes; 
+		ICONV_FOUND=yes
 		ICONV_CPPFLAGS="$CPPFLAGS"
 		ICONV_LIBS="$LIBS"
 		ICONV_LDFLAGS="$LDFLAGS"
