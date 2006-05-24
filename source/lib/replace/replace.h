@@ -231,6 +231,8 @@ typedef int bool;
 #define MAX(a,b) ((a)>(b)?(a):(b))
 #endif
 
-
+#ifndef __STRING
+#define __STRING(x)    #x
+#endif
 
 #endif
