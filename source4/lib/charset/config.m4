@@ -69,7 +69,7 @@ for i in $LOOK_DIRS ; do
 		break
 	fi
 	
-	SMB_CHECK_ICONV_DIR($withval, [
+	SMB_CHECK_ICONV_DIR($i, [
 		ICONV_FOUND=yes; 
 		ICONV_CPPFLAGS="$CPPFLAGS"
 		ICONV_LIBS="$LIBS"
