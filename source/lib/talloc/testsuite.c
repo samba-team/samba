@@ -850,7 +850,7 @@ static BOOL test_lifeless(void)
 
 static int loop_destructor_count;
 
-static int test_loop_destructor(void *ptr)
+static int test_loop_destructor(char *ptr)
 {
 	printf("loop destructor\n");
 	loop_destructor_count++;

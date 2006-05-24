@@ -30,12 +30,12 @@
   inspired by http://swapped.cc/halloc/
 */
 
-
 #include "config.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <errno.h>
 
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -218,7 +218,7 @@ void *_talloc(const void *context, size_t size)
   if the destructor fails then the free is failed, and the memory can
   be continued to be used
 */
-void talloc_set_destructor(const void *ptr, int (*destructor)(void *))
+void _talloc_set_destructor(const void *ptr, int (*destructor)(void *))
 {
 	struct talloc_chunk *tc = talloc_chunk_from_ptr(ptr);
 	tc->destructor = destructor;
@@ -235,10 +235,9 @@ void talloc_increase_ref_count(const void *ptr)
 /*
   helper for talloc_reference()
 */
-static int talloc_reference_destructor(void *ptr)
+static int talloc_reference_destructor(struct talloc_reference_handle *handle)
 {
-	struct talloc_reference_handle *handle = ptr;
-	struct talloc_chunk *tc1 = talloc_chunk_from_ptr(ptr);
+	struct talloc_chunk *tc1 = talloc_chunk_from_ptr(handle);
 	struct talloc_chunk *tc2 = talloc_chunk_from_ptr(handle->ptr);
 	if (tc1->destructor != (talloc_destructor_t)-1) {
 		tc1->destructor = NULL;
@@ -534,6 +533,7 @@ void talloc_free_children(void *ptr)
 int talloc_free(void *ptr)
 {
 	struct talloc_chunk *tc;
+	int old_errno;
 
 	if (ptr == NULL) {
 		return -1;
@@ -586,7 +586,9 @@ int talloc_free(void *ptr)
 
 	tc->flags |= TALLOC_FLAG_FREE;
 
+	old_errno = errno;
 	free(tc);
+	errno = old_errno;
 	return 0;
 }
 
@@ -667,7 +669,7 @@ void *_talloc_realloc(const void *context, void *ptr, size_t size, const char *n
    ptr on success, or NULL if it could not be transferred.
    passing NULL as ptr will always return NULL with no side effects.
 */
-void *talloc_steal(const void *new_ctx, const void *ptr)
+void *_talloc_steal(const void *new_ctx, const void *ptr)
 {
 	struct talloc_chunk *tc, *new_tc;
 

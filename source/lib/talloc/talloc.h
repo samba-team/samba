@@ -40,6 +40,34 @@ typedef void TALLOC_CTX;
 #define TALLOC_DEPRECATED 0
 #endif
 
+#ifndef PRINTF_ATTRIBUTE
+#if (__GNUC__ >= 3)
+/** Use gcc attribute to check printf fns.  a1 is the 1-based index of
+ * the parameter containing the format, and a2 the index of the first
+ * argument. Note that some gcc 2.x versions don't handle this
+ * properly **/
+#define PRINTF_ATTRIBUTE(a1, a2) __attribute__ ((format (__printf__, a1, a2)))
+#else
+#define PRINTF_ATTRIBUTE(a1, a2)
+#endif
+#endif
+
+/* try to make talloc_set_destructor() and talloc_steal() type safe,
+   if we have a recent gcc */
+#if (__GNUC__ >= 3)
+#define _TALLOC_TYPEOF(ptr) __typeof__(ptr)
+#define talloc_set_destructor(ptr, function)				      \
+	do {								      \
+		int (*_talloc_destructor_fn)(typeof(ptr)) = (function);	      \
+		_talloc_set_destructor((ptr), (void *)_talloc_destructor_fn); \
+	} while(0)
+#define _TALLOC_CHECK_TYPE(type,val) 
+#else
+#define talloc_set_destructor(ptr, function) \
+	_talloc_set_destructor((ptr), (int (*)(void *))(function))
+#define _TALLOC_TYPEOF(ptr) void *
+#endif
+
 /* useful macros for creating type checked pointers */
 #define talloc(ctx, type) (type *)talloc_named_const(ctx, sizeof(type), #type)
 #define talloc_size(ctx, size) talloc_named_const(ctx, size, __location__)
@@ -70,7 +98,7 @@ typedef void TALLOC_CTX;
 #define talloc_get_type(ptr, type) (type *)talloc_check_name(ptr, #type)
 
 #define talloc_find_parent_bytype(ptr, type) (type *)talloc_find_parent_byname(ptr, #type)
-
+#define talloc_steal(ctx, ptr) (_TALLOC_TYPEOF(ptr))_talloc_steal((ctx),(ptr))
 
 #if TALLOC_DEPRECATED
 #define talloc_zero_p(ctx, type) talloc_zero(ctx, type)
@@ -80,22 +108,9 @@ typedef void TALLOC_CTX;
 #define talloc_destroy(ctx) talloc_free(ctx)
 #endif
 
-#ifndef PRINTF_ATTRIBUTE
-#if (__GNUC__ >= 3)
-/** Use gcc attribute to check printf fns.  a1 is the 1-based index of
- * the parameter containing the format, and a2 the index of the first
- * argument. Note that some gcc 2.x versions don't handle this
- * properly **/
-#define PRINTF_ATTRIBUTE(a1, a2) __attribute__ ((format (__printf__, a1, a2)))
-#else
-#define PRINTF_ATTRIBUTE(a1, a2)
-#endif
-#endif
-
-
 /* The following definitions come from talloc.c  */
 void *_talloc(const void *context, size_t size);
-void talloc_set_destructor(const void *ptr, int (*destructor)(void *));
+void _talloc_set_destructor(const void *ptr, int (*destructor)(void *));
 void talloc_increase_ref_count(const void *ptr);
 void *talloc_reference(const void *context, const void *ptr);
 int talloc_unlink(const void *context, void *ptr);
@@ -111,7 +126,7 @@ void *talloc_parent(const void *ptr);
 void *talloc_init(const char *fmt, ...) PRINTF_ATTRIBUTE(1,2);
 int talloc_free(void *ptr);
 void *_talloc_realloc(const void *context, void *ptr, size_t size, const char *name);
-void *talloc_steal(const void *new_ctx, const void *ptr);
+void *_talloc_steal(const void *new_ctx, const void *ptr);
 off_t talloc_total_size(const void *ptr);
 off_t talloc_total_blocks(const void *ptr);
 void talloc_report_full(const void *ptr, FILE *f);
