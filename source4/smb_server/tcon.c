@@ -111,13 +111,12 @@ struct smbsrv_tcon *smbsrv_smb2_tcon_find(struct smbsrv_session *smb_sess,
 /*
   destroy a connection structure
 */
-static int smbsrv_tcon_destructor(void *ptr)
+static int smbsrv_tcon_destructor(struct smbsrv_tcon *tcon)
 {
-	struct smbsrv_tcon *tcon = talloc_get_type(ptr, struct smbsrv_tcon);
 	struct smbsrv_tcons_context *tcons_ctx;
 	struct socket_address *client_addr;
 
-	client_addr = socket_get_peer_addr(tcon->smb_conn->connection->socket, ptr);
+	client_addr = socket_get_peer_addr(tcon->smb_conn->connection->socket, tcon);
 	DEBUG(3,("%s closed connection to service %s\n",
 		 client_addr ? client_addr->addr : "(unknown)",
 		 tcon->share_name));

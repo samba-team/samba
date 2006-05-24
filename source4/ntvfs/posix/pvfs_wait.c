@@ -102,9 +102,8 @@ static void pvfs_wait_timeout(struct event_context *ev,
 /*
   destroy a pending wait
  */
-static int pvfs_wait_destructor(void *ptr)
+static int pvfs_wait_destructor(struct pvfs_wait *pwait)
 {
-	struct pvfs_wait *pwait = ptr;
 	if (pwait->msg_type != -1) {
 		messaging_deregister(pwait->msg_ctx, pwait->msg_type, pwait);
 	}
