@@ -43,9 +43,8 @@ struct srvsvc_ntvfs_ctx {
 	struct ntvfs_context *ntvfs;
 };
 
-static int srvsvc_ntvfs_ctx_destructor(void *p)
+static int srvsvc_ntvfs_ctx_destructor(struct srvsvc_ntvfs_ctx *c)
 {
-	struct srvsvc_ntvfs_ctx *c = talloc_get_type(p, struct srvsvc_ntvfs_ctx);
 	ntvfs_disconnect(c->ntvfs);
 	return 0;
 }

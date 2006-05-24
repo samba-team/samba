@@ -85,9 +85,8 @@ struct smbsrv_handle *smbsrv_smb2_handle_find(struct smbsrv_tcon *smb_tcon,
 /*
   destroy a connection structure
 */
-static int smbsrv_handle_destructor(void *ptr)
+static int smbsrv_handle_destructor(struct smbsrv_handle *handle)
 {
-	struct smbsrv_handle *handle = talloc_get_type(ptr, struct smbsrv_handle);
 	struct smbsrv_handles_context *handles_ctx;
 
 	handles_ctx = &handle->tcon->handles;

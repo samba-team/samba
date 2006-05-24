@@ -668,9 +668,8 @@ static void session_timeout(struct event_context *ev, struct timed_event *te,
 /*
   destroy a session
  */
-static int session_destructor(void *ptr)
+static int session_destructor(struct session_data *s)
 {
-	struct session_data *s = talloc_get_type(ptr, struct session_data);
 	DLIST_REMOVE(s->edata->sessions, s);
 	return 0;
 }

@@ -35,9 +35,8 @@
 /*
   destroy an open search
 */
-static int pvfs_search_destructor(void *ptr)
+static int pvfs_search_destructor(struct pvfs_search_state *search)
 {
-	struct pvfs_search_state *search = ptr;
 	DLIST_REMOVE(search->pvfs->search.list, search);
 	idr_remove(search->pvfs->search.idtree, search->handle);
 	return 0;
