@@ -1194,16 +1194,16 @@ static int cmd_put(struct smbclient_context *ctx, const char **args)
 	char *rname;
 	
 	if (!args[1]) {
-		d_printf("put <filename>\n");
+		d_printf("put <filename> [<remotename>]\n");
 		return 1;
 	}
 
-	lname = talloc_asprintf(ctx, "%s\\%s", ctx->remote_cur_dir, args[1]);
+	lname = talloc_strdup(ctx, args[1]);
   
 	if (args[2])
 		rname = talloc_strdup(ctx, args[2]);
 	else
-		rname = talloc_strdup(ctx, lname);
+		rname = talloc_asprintf(ctx, "%s\\%s", ctx->remote_cur_dir, lname);
 	
 	dos_clean_name(rname);
 

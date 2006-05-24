@@ -32,14 +32,14 @@ EOF
 
 
 # put that file
-echo mput tmpfile | runcmd "Putting file" || failed=`expr $failed + 1`
+echo mput tmpfile | runcmd "MPutting file" || failed=`expr $failed + 1`
 # check file info
 echo altname tmpfile | runcmd "Getting alternative name" || failed=`expr $failed + 1`
 # run allinfo on that file
 echo allinfo tmpfile | runcmd "Checking info on file" || failed=`expr $failed + 1`
 # get that file
 mv tmpfile tmpfile-old
-echo mget tmpfile | runcmd "Getting file" || failed=`expr $failed + 1`
+echo mget tmpfile | runcmd "MGetting file" || failed=`expr $failed + 1`
 # remove that file
 echo rm tmpfile | runcmd "Removing file" || failed=`expr $failed + 1`
 # compare locally
@@ -61,6 +61,24 @@ echo rmdir bla | runcmd "Removing directory" || failed=`expr $failed + 1`
 # run fsinfo
 echo fsinfo objectid | runcmd "Getting file system info" || failed=`expr $failed + 1`
 
-rm -f tmpfile tmpfile-old
+# put that file
+echo put tmpfile | runcmd "Putting file" || failed=`expr $failed + 1`
+# get that file
+mv tmpfile tmpfile-old
+echo get tmpfile | runcmd "Getting file" || failed=`expr $failed + 1`
+# remove that file
+echo rm tmpfile | runcmd "Removing file" || failed=`expr $failed + 1`
+# compare locally
+testit "Comparing files" diff tmpfile-old tmpfile || failed=`expr $failed + 1`
+# put that file
+echo put tmpfile tmpfilex | runcmd "Putting file with different name" || failed=`expr $failed + 1`
+# get that file
+echo get tmpfilex | runcmd "Getting file again" || failed=`expr $failed + 1`
+# compare locally
+testit "Comparing files" diff tmpfilex tmpfile || failed=`expr $failed + 1`
+# remove that file
+echo rm tmpfilex | runcmd "Removing file" || failed=`expr $failed + 1`
+
+rm -f tmpfile tmpfile-old tmpfilex
 
 testok $0 $failed
