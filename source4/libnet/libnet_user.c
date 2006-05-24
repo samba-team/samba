@@ -64,6 +64,7 @@ struct composite_context* libnet_CreateUser_send(struct libnet_context *ctx,
 
 	s->ctx = ctx;
 	s->r   = *r;
+	ZERO_STRUCT(s->r.out);
 
 	if (s->r.in.domain_name == NULL) {
 		
