@@ -652,6 +652,7 @@ static struct {
 	{"LOCAL-RESOLVE", torture_local_resolve, 0},
 	{"LOCAL-SDDL", torture_local_sddl, 0},
 	{"LOCAL-NDR", torture_local_ndr, 0},
+	{"LOCAL-EVENT", torture_local_event, 0},
 
 	/* ldap testers */
 	{"LDAP-BASIC", torture_ldap_basic, 0},
