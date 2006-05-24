@@ -16,7 +16,8 @@ OBJ_FILES = \
 		util_strlist.o \
 		util_file.o \
 		sddl.o \
-		ndr.o
+		ndr.o \
+		event.o
 PUBLIC_DEPENDENCIES = \
 		RPC_NDR_ECHO \
 		LIBCLI_SMB \
