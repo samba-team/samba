@@ -84,9 +84,8 @@ static NTSTATUS pvfs_list_no_wildcard(struct pvfs_state *pvfs, struct pvfs_filen
 /*
   destroy an open search
 */
-static int pvfs_dirlist_destructor(void *ptr)
+static int pvfs_dirlist_destructor(struct pvfs_dir *dir)
 {
-	struct pvfs_dir *dir = ptr;
 	if (dir->dir) closedir(dir->dir);
 	return 0;
 }

@@ -174,9 +174,8 @@ static NTSTATUS ipc_setpathinfo(struct ntvfs_module_context *ntvfs,
 /*
   destroy a open pipe structure
 */
-static int ipc_fd_destructor(void *ptr)
+static int ipc_fd_destructor(struct pipe_state *p)
 {
-	struct pipe_state *p = ptr;
 	DLIST_REMOVE(p->private->pipe_list, p);
 	return 0;
 }

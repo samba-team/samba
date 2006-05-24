@@ -35,9 +35,8 @@
  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!	 
 */
 
-static int oop_event_context_destructor(void *ptr)
+static int oop_event_context_destructor(struct event_context *ev)
 {
-	struct event_context *ev = talloc_get_type(ptr, struct event_context);
 	oop_source_sys *oop_sys = ev->additional_data;
 
 	oop_sys_delete(oop_sys);
@@ -91,9 +90,8 @@ static void *oop_event_fd_handler(oop_source *oop, int fd, oop_event oop_type, v
 /*
   destroy an fd_event
 */
-static int oop_event_fd_destructor(void *ptr)
+static int oop_event_fd_destructor(struct fd_event *fde)
 {
-	struct fd_event *fde = talloc_get_type(ptr, struct fd_event);
 	struct event_context *ev = fde->event_ctx;
 	oop_source_sys *oop_sys = ev->additional_data;
 	oop_source *oop = oop_sys_source(oop_sys);
@@ -174,8 +172,9 @@ static void oop_event_set_fd_flags(struct fd_event *fde, uint16_t flags)
 	fde->flags = flags;
 }
 
-static int oop_event_timed_destructor(void *ptr);
-static int oop_event_timed_deny_destructor(void *ptr)
+static int oop_event_timed_destructor(struct timed_event *te);
+
+static int oop_event_timed_deny_destructor(struct timed_event *te)
 {
 	return -1;
 }
@@ -197,9 +196,8 @@ static void *oop_event_timed_handler(oop_source *oop, struct timeval t, void *pt
 /*
   destroy a timed event
 */
-static int oop_event_timed_destructor(void *ptr)
+static int oop_event_timed_destructor(struct timed_event *te)
 {
-	struct timed_event *te = talloc_get_type(ptr, struct timed_event);
 	struct event_context *ev = te->event_ctx;
 	oop_source_sys *oop_sys = ev->additional_data;
 	oop_source *oop = oop_sys_source(oop_sys);

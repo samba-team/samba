@@ -41,11 +41,8 @@
 /*
   destroy a mailslot handler
 */
-static int dgram_mailslot_destructor(void *ptr)
+static int dgram_mailslot_destructor(struct dgram_mailslot_handler *dgmslot)
 {
-	struct dgram_mailslot_handler *dgmslot = 
-		talloc_get_type(ptr, struct dgram_mailslot_handler);
-	
 	DLIST_REMOVE(dgmslot->dgmsock->mailslot_handlers, dgmslot);
 	return 0;
 }
