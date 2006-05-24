@@ -38,9 +38,8 @@ void wreplsrv_terminate_in_connection(struct wreplsrv_in_connection *wreplconn, 
 	stream_terminate_connection(wreplconn->conn, reason);
 }
 
-static int terminate_after_send_destructor(void *ptr)
+static int terminate_after_send_destructor(struct wreplsrv_in_connection **tas)
 {
-	struct wreplsrv_in_connection **tas = talloc_get_type(ptr, struct wreplsrv_in_connection *);
 	wreplsrv_terminate_in_connection(*tas, "wreplsrv_in_connection: terminate_after_send");
 	return 0;
 }

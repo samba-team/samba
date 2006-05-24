@@ -37,9 +37,8 @@
 /*
   destroy a web connection
 */
-static int websrv_destructor(void *ptr)
+static int websrv_destructor(struct websrv_context *web)
 {
-	struct websrv_context *web = talloc_get_type(ptr, struct websrv_context);
 	if (web->output.fd != -1) {
 		close(web->output.fd);
 	}

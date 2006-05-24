@@ -266,10 +266,8 @@ _PUBLIC_ NTSTATUS dcesrv_fetch_session_key(struct dcesrv_connection *p,
 /*
   destroy a link to an endpoint
 */
-static int dcesrv_endpoint_destructor(void *ptr)
+static int dcesrv_endpoint_destructor(struct dcesrv_connection *p)
 {
-	struct dcesrv_connection *p = ptr;
-
 	while (p->contexts) {
 		struct dcesrv_connection_context *c = p->contexts;
 

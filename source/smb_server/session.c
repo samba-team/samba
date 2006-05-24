@@ -122,9 +122,8 @@ NTSTATUS smbsrv_session_sesssetup_finished(struct smbsrv_session *sess,
 /****************************************************************************
 destroy a session structure
 ****************************************************************************/
-static int smbsrv_session_destructor(void *p)
+static int smbsrv_session_destructor(struct smbsrv_session *sess)
 {
-	struct smbsrv_session *sess = talloc_get_type(p, struct smbsrv_session);
 	struct smbsrv_connection *smb_conn = sess->smb_conn;
 
 	idr_remove(smb_conn->sessions.idtree_vuid, sess->vuid);

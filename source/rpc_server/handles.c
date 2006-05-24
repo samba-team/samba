@@ -27,9 +27,8 @@
 /*
   destroy a rpc handle
 */
-static int dcesrv_handle_destructor(void *ptr)
+static int dcesrv_handle_destructor(struct dcesrv_handle *h)
 {
-	struct dcesrv_handle *h = ptr;
 	DLIST_REMOVE(h->context->handles, h);
 	talloc_free(h);
 	return 0;

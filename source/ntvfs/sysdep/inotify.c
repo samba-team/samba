@@ -82,9 +82,8 @@ struct watch_context {
 /*
   destroy the inotify private context
 */
-static int inotify_destructor(void *ptr)
+static int inotify_destructor(struct inotify_private *in)
 {
-	struct inotify_private *in = talloc_get_type(ptr, struct inotify_private);
 	close(in->fd);
 	return 0;
 }
@@ -308,9 +307,8 @@ static uint32_t inotify_map(struct notify_entry *e)
 /*
   destroy a watch
 */
-static int watch_destructor(void *ptr)
+static int watch_destructor(struct watch_context *w)
 {
-	struct watch_context *w = talloc_get_type(ptr, struct watch_context);
 	struct inotify_private *in = w->in;
 	int wd = w->wd;
 	DLIST_REMOVE(w->in->watches, w);

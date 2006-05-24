@@ -104,9 +104,8 @@ static void pvfs_setup_options(struct pvfs_state *pvfs)
 	}
 }
 
-static int pvfs_state_destructor(void *ptr)
+static int pvfs_state_destructor(struct pvfs_state *pvfs)
 {
-	struct pvfs_state *pvfs = talloc_get_type(ptr, struct pvfs_state);
 	struct pvfs_file *f, *fn;
 	struct pvfs_search_state *s, *sn;
 
