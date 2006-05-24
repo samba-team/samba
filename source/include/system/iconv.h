@@ -20,11 +20,13 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+#ifdef HAVE_NATIVE_ICONV
 #ifdef HAVE_ICONV_H
 #include <iconv.h>
 #endif
 #ifdef HAVE_GICONV_H
 #include <giconv.h>
+#endif
 #endif
 
 /* needed for some systems without iconv. Doesn't really matter

@@ -1,14 +1,7 @@
 dnl SMB_CHECK_ICONV(action-if-found,action-if-not-found)
 AC_DEFUN(SMB_CHECK_ICONV,[
-  AC_CHECK_HEADERS(iconv.h giconv.h)
-
   AC_TRY_RUN([#include <stdlib.h>
-#ifdef HAVE_GICONV_H
-#include <giconv.h>
-#endif
-#ifdef HAVE_ICONV_H
-#include <iconv.h>
-#endif
+#include <$1>
 
 int main()
 {
@@ -16,29 +9,24 @@ int main()
    if (cd == 0 || cd == (iconv_t)-1) return -1;
    return 0;
 } 
-   ],[$1],[$2])
+   ],[$2],[$3])
 ])
 
 dnl SMB_CHECK_ICONV_DIR(dir,action-if-found,action-if-not-found)
 AC_DEFUN(SMB_CHECK_ICONV_DIR,
 [
-    if test -f "$1/include/iconv.h" -o -f "$1/include/giconv.h"; then
 	CPPFLAGS="-I$1/include"
 	LDFLAGS="-L$1/lib"
 	LIBS=-liconv
 
-	SMB_CHECK_ICONV([$2], 
-	[
-            LIBS=-lgiconv
-            SMB_CHECK_ICONV([$2],[$3])
+	SMB_CHECK_ICONV(iconv.h,[ AC_DEFINE(HAVE_ICONV_H,1,[Whether iconv.h is present]) $2 ], [
+        LIBS=-lgiconv
+        SMB_CHECK_ICONV(giconv.h,[AC_DEFINE(HAVE_GICONV_H,1,[Whether giconv.h is present]) $2],[$3])
 	])
 
 	CPPFLAGS=$save_CPPFLAGS
 	LDFLAGS=$save_LDFLAGS
 	LIBS=$save_LIBS
-    else
-	$2
-    fi
 ])
 
 ICONV_FOUND=no
@@ -61,7 +49,7 @@ AC_ARG_WITH(libiconv,
 ])
 
 if test x$ICONV_FOUND = xno; then
-	SMB_CHECK_ICONV([ICONV_FOUND=yes])
+	SMB_CHECK_ICONV(iconv.h,[ICONV_FOUND=yes])
 fi
 
 for i in $LOOK_DIRS ; do
