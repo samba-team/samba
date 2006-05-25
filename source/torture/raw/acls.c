@@ -1559,12 +1559,14 @@ static BOOL test_sd_get_set(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	uint64_t desired_64;
 	uint32_t desired = 0, granted;
 	int i = 0;
+#define NO_BITS_HACK (((uint64_t)1)<<32)
 	uint64_t open_bits =
 		SEC_MASK_GENERIC |
 		SEC_FLAG_SYSTEM_SECURITY |
 		SEC_FLAG_MAXIMUM_ALLOWED |
 		SEC_STD_ALL |
-		SEC_FILE_ALL;
+		SEC_FILE_ALL | 
+		NO_BITS_HACK;
 	uint64_t get_owner_bits = SEC_MASK_GENERIC | SEC_FLAG_MAXIMUM_ALLOWED | SEC_STD_READ_CONTROL;
 	uint64_t set_owner_bits = SEC_GENERIC_ALL  | SEC_FLAG_MAXIMUM_ALLOWED | SEC_STD_WRITE_OWNER;
 	uint64_t get_group_bits = SEC_MASK_GENERIC | SEC_FLAG_MAXIMUM_ALLOWED | SEC_STD_READ_CONTROL;
@@ -1610,10 +1612,10 @@ static BOOL test_sd_get_set(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	/* 
 	 * now try each access_mask bit and no bit at all in a loop
 	 * and see what's allowed
-	 * NOTE: if i == 32 it means access_mask = 0
+	 * NOTE: if i == 32 it means access_mask = 0 (see NO_BITS_HACK above)
 	 */
 	for (i=0; i <= 32; i++) {
-		desired_64 = 1 << i;
+		desired_64 = ((uint64_t)1) << i;
 		desired = (uint32_t)desired_64;
 
 		/* first open the file with the desired access */
