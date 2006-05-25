@@ -96,6 +96,10 @@ int rename(const char *zfrom, const char *zto);
 char *strcasestr(const char *haystack, const char *needle);
 #endif
 
+#ifndef HAVE_STRTOK_R
+char *strtok_r(char *s, const char *delim, char **save_ptr);
+#endif
+
 #ifndef HAVE_FTRUNCATE
 int ftruncate(int f,long l);
 #endif
