@@ -97,16 +97,6 @@ PUBLIC_DEPENDENCIES = \
 
 include smb2/config.mk
 
-[MODULE::torture_com]
-INIT_FUNCTION = torture_com_init
-SUBSYSTEM = torture
-PRIVATE_PROTO_HEADER = \
-		com/proto.h
-OBJ_FILES = \
-		com/simple.o
-PUBLIC_DEPENDENCIES = \
-		com dcom POPT_CREDENTIALS
-
 [MODULE::torture_rpc]
 # TORTURE_NET and TORTURE_NBT use functions from torture_rpc...
 OUTPUT_TYPE = INTEGRATED

@@ -13,24 +13,6 @@ OBJ_FILES = \
 ################################################
 
 ################################################
-# Start MODULE dcerpc_dcom
-[MODULE::dcerpc_dcom]
-ENABLE = NO
-INIT_FUNCTION = dcerpc_server_dcom_init
-SUBSYSTEM = dcerpc_server
-OBJ_FILES = \
-		dcom/oxidresolver.o \
-		dcom/rot.o \
-		dcom/rodb.o \
-		dcom/remact.o \
-		librpc/gen_ndr/ndr_dcom_d.o
-PUBLIC_DEPENDENCIES = \
-		DCERPC_COMMON \
-		dcom
-# End MODULE dcerpc_dcom
-################################################
-
-################################################
 # Start MODULE dcerpc_rpcecho
 [MODULE::dcerpc_rpcecho]
 INIT_FUNCTION = dcerpc_server_rpcecho_init
