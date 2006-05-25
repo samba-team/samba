@@ -5,8 +5,9 @@
 
 - support nested elements
  - generate names for anonymous tagged types
+ - support typedefs properly
 
-- improve represent_as()
+- improve represent_as(): allow it to be used for arrays and other complex types
 
 - --explain-ndr option that dumps out parse tree ?
 
