@@ -241,7 +241,7 @@ static int expect(int master, char *issue, char *expected)
 			if (lp_passwd_chat_debug())
 				DEBUG(100, ("expect: sending [%s]\n", issue));
 
-			if ((len = write(master, issue, strlen(issue))) != strlen(issue)) {
+			if ((len = sys_write(master, issue, strlen(issue))) != strlen(issue)) {
 				DEBUG(2,("expect: (short) write returned %d\n", len ));
 				return False;
 			}
