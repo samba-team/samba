@@ -33,6 +33,7 @@
  */
 
 #include "includes.h"
+#include "system/time.h"
 #include "kdc.h"
 #include "ads.h"
 #include "hdb.h"
