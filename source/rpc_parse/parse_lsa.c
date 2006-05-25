@@ -595,7 +595,7 @@ void init_r_enum_trust_dom(TALLOC_CTX *ctx, LSA_R_ENUM_TRUST_DOM *out,
 				
 			init_dom_sid2(out->domlist->domains[i].sid,
 				      &(td[i])->sid);
-			if (push_ucs2_talloc(ctx, &name, (td[i])->name) < 0){
+			if (push_ucs2_talloc(ctx, &name, (td[i])->name) == (size_t)-1){
 				out->status = NT_STATUS_NO_MEMORY;
 				return;
 			}
