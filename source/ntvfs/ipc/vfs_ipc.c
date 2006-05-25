@@ -658,9 +658,11 @@ static NTSTATUS ipc_dcerpc_cmd(struct ntvfs_module_context *ntvfs,
 	struct ipc_private *private = ntvfs->private_data;
 	NTSTATUS status;
 	DATA_BLOB fnum_key;
+	uint16_t fnum;
 
-	/* the fnum is in setup[1] */
-	fnum_key = data_blob_const(&trans->in.setup[1], sizeof(trans->in.setup[1]));
+	/* the fnum is in setup[1], a 16 bit value */
+	SSVAL(&fnum, 0, trans->in.setup[1]);
+	fnum_key = data_blob_const(&fnum, 2);
 
 	p = pipe_state_find_key(private, req, &fnum_key);
 	if (!p) {
