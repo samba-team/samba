@@ -1,5 +1,4 @@
 # LIB BASIC subsystem
-include com/config.mk
 include samba3/config.mk
 include socket/config.mk
 include charset/config.mk

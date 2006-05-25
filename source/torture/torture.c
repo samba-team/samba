@@ -42,7 +42,6 @@
 #include "torture/local/proto.h"
 #include "torture/nbench/proto.h"
 #include "torture/ldap/proto.h"
-#include "torture/com/proto.h"
 #include "torture/nbt/proto.h"
 #include "torture/libnet/proto.h"
 #include "torture/util.h"
