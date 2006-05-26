@@ -4439,7 +4439,7 @@ static NTSTATUS ldapsam_get_new_rid(struct ldapsam_privates *priv,
 	return status;
 }
 
-static BOOL ldapsam_new_rid(struct pdb_methods *methods, uint32 *rid)
+static NTSTATUS ldapsam_new_rid_internal(struct pdb_methods *methods, uint32 *rid)
 {
 	int i;
 
@@ -4447,18 +4447,24 @@ static BOOL ldapsam_new_rid(struct pdb_methods *methods, uint32 *rid)
 		NTSTATUS result = ldapsam_get_new_rid(methods->private_data,
 						      rid);
 		if (NT_STATUS_IS_OK(result)) {
-			return True;
+			return result;
 		}
 
 		if (!NT_STATUS_EQUAL(result, NT_STATUS_ACCESS_DENIED)) {
-			return False;
+			return result;
 		}
 
 		/* The ldap update failed (maybe a race condition), retry */
 	}
 
 	/* Tried 10 times, fail. */
-	return False;
+	return NT_STATUS_ACCESS_DENIED;
+}
+
+static BOOL ldapsam_new_rid(struct pdb_methods *methods, uint32 *rid)
+{
+	NTSTATUS result = ldapsam_new_rid_internal(methods, rid);
+	return NT_STATUS_IS_OK(result) ? True : False;
 }
 
 static BOOL ldapsam_sid_to_id(struct pdb_methods *methods,
@@ -4645,7 +4651,7 @@ static NTSTATUS ldapsam_create_user(struct pdb_methods *my_methods,
 	}
 	
 	/* Create the basic samu structure and generate the mods for the ldap commit */
-	if (!NT_STATUS_IS_OK((ret = ldapsam_get_new_rid(ldap_state, rid)))) {
+	if (!NT_STATUS_IS_OK((ret = ldapsam_new_rid_internal(my_methods, rid)))) {
 		DEBUG(1, ("ldapsam_create_user: Could not allocate a new RID\n"));
 		return ret;
 	}
@@ -4934,7 +4940,7 @@ static NTSTATUS ldapsam_create_dom_group(struct pdb_methods *my_methods,
 		smbldap_set_mod(&mods, LDAP_MOD_ADD, "gidNumber", gidstr);
 	}
 
-	if (!NT_STATUS_IS_OK((ret = ldapsam_get_new_rid(ldap_state, rid)))) {
+	if (!NT_STATUS_IS_OK((ret = ldapsam_new_rid_internal(my_methods, rid)))) {
 		DEBUG(1, ("ldapsam_create_group: Could not allocate a new RID\n"));
 		return ret;
 	}
