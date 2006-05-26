@@ -55,54 +55,59 @@ static void test_displayshares(struct libnet_ListShares s)
 	switch (s.in.level) {
 	case 0:
 		for (i = 0; i < s.out.ctr.ctr0->count; i++) {
-			printf("\t[%d] %s\n", i, s.out.ctr.ctr0->array[i].name);
+			struct srvsvc_NetShareInfo0 *info = &s.out.ctr.ctr0->array[i];
+			d_printf("\t[%d] %s\n", i, info->name);
 		}
 		break;
 
 	case 1:
 		for (i = 0; i < s.out.ctr.ctr1->count; i++) {
+			struct srvsvc_NetShareInfo1 *info = &s.out.ctr.ctr1->array[i];
 			for (j = 0; j < ARRAY_SIZE(share_types); j++) {
-				if (share_types[j].type == s.out.ctr.ctr1->array[i].type) break;
+				if (share_types[j].type == info->type) break;
 			}
-			printf("\t[%d] %s (%s)\t%s\n", i, s.out.ctr.ctr1->array[i].name,
-			       s.out.ctr.ctr1->array[i].comment, share_types[j].desc);
+			d_printf("\t[%d] %s (%s)\t%s\n", i, info->name,
+			       info->comment, share_types[j].desc);
 		}
 		break;
 
 	case 2:
 		for (i = 0; i < s.out.ctr.ctr2->count; i++) {
+			struct srvsvc_NetShareInfo2 *info = &s.out.ctr.ctr2->array[i];
 			for (j = 0; j < ARRAY_SIZE(share_types); j++) {
-				if (share_types[j].type == s.out.ctr.ctr2->array[i].type) break;
+				if (share_types[j].type == info->type) break;
 			}
-			printf("\t[%d] %s\t%s\n\t    %s\n\t    [perms=0x%08x, max_usr=%d, cur_usr=%d, path=%s, pass=%s]\n",
-			       i, s.out.ctr.ctr2->array[i].name, share_types[j].desc, s.out.ctr.ctr2->array[i].comment,
-			       s.out.ctr.ctr2->array[i].permissions, s.out.ctr.ctr2->array[i].max_users,
-			       s.out.ctr.ctr2->array[i].current_users, s.out.ctr.ctr2->array[i].path,
-			       s.out.ctr.ctr2->array[i].password);
+			d_printf("\t[%d] %s\t%s\n\t    %s\n\t    [perms=0x%08x, max_usr=%d, cur_usr=%d, path=%s, pass=%s]\n",
+				 i, info->name, share_types[j].desc, info->comment,
+				 info->permissions, info->max_users,
+				 info->current_users, info->path,
+				 info->password);
 		}
 		break;
 
 	case 501:
 		for (i = 0; i < s.out.ctr.ctr501->count; i++) {
+			struct srvsvc_NetShareInfo501 *info = &s.out.ctr.ctr501->array[i];
 			for (j = 0; j < ARRAY_SIZE(share_types); j++) {
-				if (share_types[j].type == s.out.ctr.ctr501->array[i].type) break;
+				if (share_types[j].type == info->type) break;
 			}
-			printf("\t[%d] %s\t%s [csc_policy=0x%08x]\n\t    %s\n", i, s.out.ctr.ctr501->array[i].name,
-			       share_types[j].desc, s.out.ctr.ctr501->array[i].csc_policy,
-			       s.out.ctr.ctr501->array[i].comment);
+			d_printf("\t[%d] %s\t%s [csc_policy=0x%08x]\n\t    %s\n", i, info->name,
+				 share_types[j].desc, info->csc_policy,
+				 info->comment);
 		}
 		break;
 
 	case 502:
 		for (i = 0; i < s.out.ctr.ctr502->count; i++) {
+			struct srvsvc_NetShareInfo502 *info = &s.out.ctr.ctr502->array[i];
 			for (j = 0; j < ARRAY_SIZE(share_types); j++) {
-				if (share_types[j].type == s.out.ctr.ctr502->array[i].type) break;
+				if (share_types[j].type == info->type) break;
 			}
-			printf("\t[%d] %s\t%s\n\t    %s\n\t    [perms=0x%08x, max_usr=%d, cur_usr=%d, path=%s, pass=%s, unknown=0x%08x]\n",
-			       i, s.out.ctr.ctr502->array[i].name, share_types[j].desc, s.out.ctr.ctr502->array[i].comment,
-			       s.out.ctr.ctr502->array[i].permissions, s.out.ctr.ctr502->array[i].max_users,
-			       s.out.ctr.ctr502->array[i].current_users, s.out.ctr.ctr502->array[i].path,
-			       s.out.ctr.ctr502->array[i].password, s.out.ctr.ctr502->array[i].unknown);
+			d_printf("\t[%d] %s\t%s\n\t    %s\n\t    [perms=0x%08x, max_usr=%d, cur_usr=%d, path=%s, pass=%s, unknown=0x%08x]\n",
+				 i, info->name, share_types[j].desc, info->comment,
+				 info->permissions, info->max_users,
+				 info->current_users, info->path,
+				 info->password, info->unknown);
 		}
 		break;
 	}
