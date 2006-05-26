@@ -56,7 +56,7 @@ static BOOL test_connect_service(struct libnet_context *ctx,
 	status = libnet_RpcConnect(ctx, ctx, &connect);
 
 	if (!NT_STATUS_EQUAL(status, expected_status)) {
-		printf("Connecting to rpc service %s on %s.\n\tFAILED. Expected: %s."
+		d_printf("Connecting to rpc service %s on %s.\n\tFAILED. Expected: %s."
 		       "Received: %s\n",
 		       connect.in.dcerpc_iface->name, connect.in.binding, nt_errstr(expected_status),
 		       nt_errstr(status));
@@ -64,18 +64,18 @@ static BOOL test_connect_service(struct libnet_context *ctx,
 		return False;
 	}
 
-	printf("PASSED. Expected: %s, received: %s\n", nt_errstr(expected_status),
+	d_printf("PASSED. Expected: %s, received: %s\n", nt_errstr(expected_status),
 	       nt_errstr(status));
 
 	if (connect.level == LIBNET_RPC_CONNECT_DC_INFO && NT_STATUS_IS_OK(status)) {
-		printf("Domain Controller Info:\n");
-		printf("\tDomain Name:\t %s\n", connect.out.domain_name);
-		printf("\tDomain SID:\t %s\n", dom_sid_string(ctx, connect.out.domain_sid));
-		printf("\tRealm:\t\t %s\n", connect.out.realm);
-		printf("\tGUID:\t\t %s\n", GUID_string(ctx, connect.out.guid));
+		d_printf("Domain Controller Info:\n");
+		d_printf("\tDomain Name:\t %s\n", connect.out.domain_name);
+		d_printf("\tDomain SID:\t %s\n", dom_sid_string(ctx, connect.out.domain_sid));
+		d_printf("\tRealm:\t\t %s\n", connect.out.realm);
+		d_printf("\tGUID:\t\t %s\n", GUID_string(ctx, connect.out.guid));
 
 	} else if (!NT_STATUS_IS_OK(status)) {
-		printf("Error string: %s\n", connect.out.error_string);
+		d_printf("Error string: %s\n", connect.out.error_string);
 	}
 
 	return True;
@@ -91,38 +91,38 @@ static BOOL torture_rpc_connect(struct torture_context *torture,
 	ctx = libnet_context_init(NULL);
 	ctx->cred = cmdline_credentials;
 	
-	printf("Testing connection to LSA interface\n");
+	d_printf("Testing connection to LSA interface\n");
 	if (!test_connect_service(ctx, &dcerpc_table_lsarpc, bindstr,
 				  hostname, level, False, NT_STATUS_OK)) {
-		printf("failed to connect LSA interface\n");
+		d_printf("failed to connect LSA interface\n");
 		return False;
 	}
 
-	printf("Testing connection to SAMR interface\n");
+	d_printf("Testing connection to SAMR interface\n");
 	if (!test_connect_service(ctx, &dcerpc_table_samr, bindstr,
 				  hostname, level, False, NT_STATUS_OK)) {
-		printf("failed to connect SAMR interface\n");
+		d_printf("failed to connect SAMR interface\n");
 		return False;
 	}
 
-	printf("Testing connection to SRVSVC interface\n");
+	d_printf("Testing connection to SRVSVC interface\n");
 	if (!test_connect_service(ctx, &dcerpc_table_srvsvc, bindstr,
 				  hostname, level, False, NT_STATUS_OK)) {
-		printf("failed to connect SRVSVC interface\n");
+		d_printf("failed to connect SRVSVC interface\n");
 		return False;
 	}
 
-	printf("Testing connection to LSA interface with wrong credentials\n");
+	d_printf("Testing connection to LSA interface with wrong credentials\n");
 	if (!test_connect_service(ctx, &dcerpc_table_lsarpc, bindstr,
 				  hostname, level, True, NT_STATUS_LOGON_FAILURE)) {
-		printf("failed to test wrong credentials on LSA interface\n");
+		d_printf("failed to test wrong credentials on LSA interface\n");
 		return False;
 	}
 
-	printf("Testing connection to SAMR interface with wrong credentials\n");
+	d_printf("Testing connection to SAMR interface with wrong credentials\n");
 	if (!test_connect_service(ctx, &dcerpc_table_samr, bindstr,
 				  hostname, level, True, NT_STATUS_LOGON_FAILURE)) {
-		printf("failed to test wrong credentials on SAMR interface\n");
+		d_printf("failed to test wrong credentials on SAMR interface\n");
 		return False;
 	}
 
@@ -142,7 +142,7 @@ BOOL torture_rpc_connect_srv(struct torture_context *torture)
 	bindstr = lp_parm_string(-1, "torture", "binding");
 	status = dcerpc_parse_binding(torture, bindstr, &binding);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("failed to parse binding string\n");
+		d_printf("failed to parse binding string\n");
 		return False;
 	}
 
@@ -160,7 +160,7 @@ BOOL torture_rpc_connect_pdc(struct torture_context *torture)
 	bindstr = lp_parm_string(-1, "torture", "binding");
 	status = dcerpc_parse_binding(torture, bindstr, &binding);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("failed to parse binding string\n");
+		d_printf("failed to parse binding string\n");
 		return False;
 	}
 
@@ -178,7 +178,7 @@ BOOL torture_rpc_connect_dc(struct torture_context *torture)
 	bindstr = lp_parm_string(-1, "torture", "binding");
 	status = dcerpc_parse_binding(torture, bindstr, &binding);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("failed to parse binding string\n");
+		d_printf("failed to parse binding string\n");
 		return False;
 	}
 
@@ -196,7 +196,7 @@ BOOL torture_rpc_connect_dc_info(struct torture_context *torture)
 	bindstr = lp_parm_string(-1, "torture", "binding");
 	status = dcerpc_parse_binding(torture, bindstr, &binding);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("failed to parse binding string\n");
+		d_printf("failed to parse binding string\n");
 		return False;
 	}
 
@@ -214,7 +214,7 @@ BOOL torture_rpc_connect_binding(struct torture_context *torture)
 	bindstr = lp_parm_string(-1, "torture", "binding");
 	status = dcerpc_parse_binding(torture, bindstr, &binding);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("failed to parse binding string\n");
+		d_printf("failed to parse binding string\n");
 		return False;
 	}
 

@@ -305,7 +305,7 @@ static BOOL test_SetPassword(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	creds_des_encrypt(creds, &r.in.new_password);
 
 	printf("Testing ServerPasswordSet on machine account\n");
-	printf("Changing machine account password to '%s'\n", password);
+	d_printf("Changing machine account password to '%s'\n", password);
 
 	creds_client_authenticator(creds, &r.in.credential);
 
@@ -324,7 +324,7 @@ static BOOL test_SetPassword(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	   allows the password to be set to the same value twice in a
 	   row (match win2k3) */
 	printf("Testing a second ServerPasswordSet on machine account\n");
-	printf("Changing machine account password to '%s' (same as previous run)\n", password);
+	d_printf("Changing machine account password to '%s' (same as previous run)\n", password);
 
 	creds_client_authenticator(creds, &r.in.credential);
 
@@ -377,7 +377,7 @@ static BOOL test_SetPassword2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	r.in.new_password.length = IVAL(password_buf.data, 512);
 
 	printf("Testing ServerPasswordSet2 on machine account\n");
-	printf("Changing machine account password to '%s'\n", password);
+	d_printf("Changing machine account password to '%s'\n", password);
 
 	creds_client_authenticator(creds, &r.in.credential);
 
@@ -409,7 +409,7 @@ static BOOL test_SetPassword2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 		r.in.new_password.length = IVAL(password_buf.data, 512);
 		
 		printf("Testing ServerPasswordSet2 on machine account\n");
-		printf("Changing machine account password to '%s'\n", password);
+		d_printf("Changing machine account password to '%s'\n", password);
 		
 		creds_client_authenticator(creds, &r.in.credential);
 		
@@ -440,7 +440,7 @@ static BOOL test_SetPassword2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	r.in.new_password.length = IVAL(password_buf.data, 512);
 
 	printf("Testing second ServerPasswordSet2 on machine account\n");
-	printf("Changing machine account password to '%s'\n", password);
+	d_printf("Changing machine account password to '%s'\n", password);
 
 	creds_client_authenticator(creds, &r.in.credential);
 
@@ -459,7 +459,7 @@ static BOOL test_SetPassword2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	   allows the password to be set to the same value twice in a
 	   row (match win2k3) */
 	printf("Testing a second ServerPasswordSet2 on machine account\n");
-	printf("Changing machine account password to '%s' (same as previous run)\n", password);
+	d_printf("Changing machine account password to '%s' (same as previous run)\n", password);
 
 	creds_client_authenticator(creds, &r.in.credential);
 
@@ -548,7 +548,7 @@ BOOL test_netlogon_ops(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	r.in.logon_level = 2;
 	r.in.logon.network = &ninfo;
 
-	printf("Testing LogonSamLogon with name %s\n", ninfo.identity_info.account_name.string);
+	d_printf("Testing LogonSamLogon with name %s\n", ninfo.identity_info.account_name.string);
 	
 	for (i=2;i<3;i++) {
 		ZERO_STRUCT(auth2);
