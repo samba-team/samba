@@ -107,6 +107,7 @@ void foo(const char *format, ...) {
        if (snprintf(buf, 3, "hello") != 5 || strcmp(buf, "he") != 0) exit(1);
 
        if (snprintf(buf, 20, "%lld", l) != 12 || strcmp(buf, "123456789000") != 0) exit(1);
+       if (snprintf(buf, 20, "%s", 0) < 3) exit(1);
 
        exit(0);
 }
