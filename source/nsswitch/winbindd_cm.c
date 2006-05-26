@@ -177,7 +177,6 @@ static NTSTATUS cm_prepare_connection(const struct winbindd_domain *domain,
 	char *ipc_username, *ipc_domain, *ipc_password;
 
 	BOOL got_mutex;
-	BOOL add_failed_connection = True;
 
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 
@@ -233,6 +232,7 @@ static NTSTATUS cm_prepare_connection(const struct winbindd_domain *domain,
 	    (peeraddr_in->sin_family != PF_INET))
 	{
 		DEBUG(0,("cm_prepare_connection: %s\n", strerror(errno)));
+		result = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
 
@@ -246,6 +246,7 @@ static NTSTATUS cm_prepare_connection(const struct winbindd_domain *domain,
 		if (!cli_session_request(*cli, &calling, &called)) {
 			DEBUG(8, ("cli_session_request failed for %s\n",
 				  controller));
+			result = NT_STATUS_UNSUCCESSFUL;
 			goto done;
 		}
 	}
@@ -254,10 +255,9 @@ static NTSTATUS cm_prepare_connection(const struct winbindd_domain *domain,
 
 	if (!cli_negprot(*cli)) {
 		DEBUG(1, ("cli_negprot failed\n"));
-		cli_shutdown(*cli);
+		result = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
-
 			
 	if ((*cli)->protocol >= PROTOCOL_NT1 && (*cli)->capabilities & CAP_EXTENDED_SECURITY) {
 		ADS_STATUS ads_status;
@@ -371,8 +371,6 @@ static NTSTATUS cm_prepare_connection(const struct winbindd_domain *domain,
 		if (NT_STATUS_IS_OK(result))
 			result = NT_STATUS_UNSUCCESSFUL;
 
-		cli_shutdown(*cli);
-		*cli = NULL;
 		goto done;
 	}
 
@@ -386,7 +384,6 @@ static NTSTATUS cm_prepare_connection(const struct winbindd_domain *domain,
 	}
 
 	result = NT_STATUS_OK;
-	add_failed_connection = False;
 
  done:
 	if (got_mutex) {
@@ -400,8 +397,12 @@ static NTSTATUS cm_prepare_connection(const struct winbindd_domain *domain,
 	SAFE_FREE(ipc_domain);
 	SAFE_FREE(ipc_password);
 
-	if (add_failed_connection) {
+	if (!NT_STATUS_IS_OK(result)) {
 		add_failed_connection_entry(domain->name, controller, result);
+		if ((*cli) != NULL) {
+			cli_shutdown(*cli);
+			*cli = NULL;
+		}
 	}
 
 	return result;
@@ -579,7 +580,7 @@ static BOOL receive_getdc_response(struct in_addr dc_ip,
  convert an ip to a name
 *******************************************************************/
 
-static void dcip_to_name( const char *domainname, const char *realm, 
+static BOOL dcip_to_name( const char *domainname, const char *realm, 
                           const DOM_SID *sid, struct in_addr ip, fstring name )
 {
 	struct ip_service ip_list;
@@ -595,7 +596,7 @@ static void dcip_to_name( const char *domainname, const char *realm,
 		for (i=0; i<5; i++) {
 			if (receive_getdc_response(ip, domainname, name)) {
 				namecache_store(name, 0x20, 1, &ip_list);
-				return;
+				return True;
 			}
 			smb_msleep(500);
 		}
@@ -605,12 +606,8 @@ static void dcip_to_name( const char *domainname, const char *realm,
 
 	if ( name_status_find(domainname, 0x1c, 0x20, ip, name) ) {
 		namecache_store(name, 0x20, 1, &ip_list);
-		return;
+		return True;
 	}
-
-	/* backup in case the netbios stuff fails */
-
-	fstrcpy( name, inet_ntoa(ip) );
 
 #ifdef WITH_ADS
 	/* for active directory servers, try to get the ldap server name.
@@ -625,17 +622,18 @@ static void dcip_to_name( const char *domainname, const char *realm,
 
 		if ( !ads_try_connect( ads, inet_ntoa(ip) ) )  {
 			ads_destroy( &ads );
-			return;
+			return False;
 		}
 
 		fstrcpy(name, ads->config.ldap_server_name);
 		namecache_store(name, 0x20, 1, &ip_list);
 
 		ads_destroy( &ads );
+		return True;
 	}
 #endif
 
-	return;
+	return False;
 }
 
 /*******************************************************************
@@ -705,6 +703,7 @@ static BOOL find_new_dc(TALLOC_CTX *mem_ctx,
 
 	int i, fd_index;
 
+ again:
 	if (!get_dcs(mem_ctx, domain, &dcs, &num_dcs) || (num_dcs == 0))
 		return False;
 
@@ -735,15 +734,22 @@ static BOOL find_new_dc(TALLOC_CTX *mem_ctx,
 
 	*addr = addrs[fd_index];
 
-	/* if we have no name on the server or just an IP address for 
-	   the name, now try to get the name */
-
-	if ( is_ipaddress(dcnames[fd_index]) || *dcnames[fd_index] == '\0' )
-		dcip_to_name( domain->name, domain->alt_name, &domain->sid, addr->sin_addr, dcname );
-	else
+	if (*dcnames[fd_index] != '\0' && !is_ipaddress(dcnames[fd_index])) {
+		/* Ok, we've got a name for the DC */
 		fstrcpy(dcname, dcnames[fd_index]);
+		return True;
+	}
 
-	return True;
+	/* Try to figure out the name */
+	if (dcip_to_name( domain->name, domain->alt_name, &domain->sid,
+			  addr->sin_addr, dcname )) {
+		return True;
+	}
+
+	/* We can not continue without the DC's name */
+	add_failed_connection_entry(domain->name, dcs[fd_index].name,
+				    NT_STATUS_UNSUCCESSFUL);
+	goto again;
 }
 
 static NTSTATUS cm_open_connection(struct winbindd_domain *domain,
@@ -769,8 +775,14 @@ static NTSTATUS cm_open_connection(struct winbindd_domain *domain,
 			struct in_addr ip;
 
 			ip = *interpret_addr2( saf_servername );
-			dcip_to_name( domain->name, domain->alt_name, &domain->sid, ip, saf_name );
-			fstrcpy( domain->dcname, saf_name );
+			if (dcip_to_name( domain->name, domain->alt_name,
+					  &domain->sid, ip, saf_name )) {
+				fstrcpy( domain->dcname, saf_name );
+			} else {
+				add_failed_connection_entry(
+					domain->name, saf_name,
+					NT_STATUS_UNSUCCESSFUL);
+			}
 		} 
 		else 
 		{
