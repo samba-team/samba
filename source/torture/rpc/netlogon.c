@@ -820,7 +820,7 @@ static BOOL test_GetDcName(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 		return False;
 	}
 
-	printf("\tDC is at '%s'\n", r.out.dcname);
+	d_printf("\tDC is at '%s'\n", r.out.dcname);
 
 	return True;
 }
@@ -1134,14 +1134,14 @@ static BOOL test_netr_DsRGetSiteName(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		ret = False;
 	} else {
 		if (strcmp(expected_site, r.out.site) != 0) {
-			printf("netr_DsRGetSiteName - unexpected result: %s, expected %s\n", 
+			d_printf("netr_DsRGetSiteName - unexpected result: %s, expected %s\n", 
 			       r.out.site, expected_site);
 					
 			ret = False;
 		}
 	}
 	r.in.computer_name		= talloc_asprintf(mem_ctx, "\\\\%s", computer_name);
-	printf("Testing netr_DsRGetSiteName with broken computer name: %s\n", r.in.computer_name);
+	d_printf("Testing netr_DsRGetSiteName with broken computer name: %s\n", r.in.computer_name);
 
 	status = dcerpc_netr_DsRGetSiteName(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
