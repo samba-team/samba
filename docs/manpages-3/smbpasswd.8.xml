@@ -30,6 +30,7 @@
 		<arg choice="opt">-h</arg>	
 		<arg choice="opt">-s</arg>	
 		<arg choice="opt">-w pass</arg>	
+		<arg choice="opt">-W</arg>
 		<arg choice="opt">-i</arg>
 		<arg choice="opt">-L</arg>
 		<arg choice="opt">username</arg>	
@@ -329,6 +330,24 @@
 		</para>
 		</listitem>
 		</varlistentry>
+
+		<varlistentry>
+		<term>-W</term>
+		<listitem><para><command>NOTE: </command> This option is same as "-w"
+		except that the password should be entered using stdin.
+		</para>
+		<para>This parameter is only available if Samba
+		has been compiled with LDAP support. The <parameter>-W</parameter>
+		switch is used to specify the password to be used with the
+		<smbconfoption name="ldap admin dn"/>.  Note that the password is stored in
+		the <filename>secrets.tdb</filename> and is keyed off
+		of the admin's DN.  This means that if the value of <parameter>ldap
+		admin dn</parameter> ever changes, the password will need to be
+		manually updated as well.
+		</para>
+		</listitem>
+		</varlistentry>
+
 
 		<varlistentry>
 		<term>-i</term>
