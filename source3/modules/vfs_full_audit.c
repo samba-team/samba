@@ -60,8 +60,6 @@
 
 #include "includes.h"
 
-extern struct current_user current_user;
-
 static int vfs_full_audit_debug_level = DBGC_VFS;
 
 struct vfs_full_audit_private_data {
