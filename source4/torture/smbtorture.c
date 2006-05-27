@@ -142,7 +142,8 @@ static void usage(poptContext pc)
 
 	printf("  TRANSPORT:host[flags]\n\n");
 
-	printf("  where TRANSPORT is either ncacn_np for SMB or ncacn_ip_tcp for RPC/TCP\n\n");
+	printf("  where TRANSPORT is either ncacn_np for SMB, ncacn_ip_tcp for RPC/TCP\n");
+	printf("  or ncalrpc for local connections.\n\n");
 
 	printf("  'host' is an IP or hostname or netbios name. If the binding string\n");
 	printf("  identifies the server side of an endpoint, 'host' may be an empty\n");
@@ -177,6 +178,8 @@ static void usage(poptContext pc)
 	printf("    ncacn_ip_tcp:myserver\n");
 	printf("    ncacn_ip_tcp:myserver[1024]\n");
 	printf("    ncacn_ip_tcp:myserver[1024,sign,seal]\n\n");
+
+	printf("    ncalrpc:\n\n");
 
 	printf("The UNC format is:\n\n");
 
