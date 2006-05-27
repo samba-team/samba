@@ -181,6 +181,23 @@ static mode_t recycle_directory_mode(vfs_handle_struct *handle)
 	return (mode_t)dirmode;
 }
 
+static mode_t recycle_subdir_mode(vfs_handle_struct *handle)
+{
+	int dirmode;
+	const char *buff;
+
+	buff = lp_parm_const_string(SNUM(handle->conn), "recycle", "subdir_mode", NULL);
+
+	if (buff != NULL ) {
+		sscanf(buff, "%o", &dirmode);
+	} else {
+		dirmode=recycle_directory_mode(handle);
+	}
+
+	DEBUG(10, ("recycle: subdir_mode = %o\n", dirmode));
+	return (mode_t)dirmode;
+}
+
 static BOOL recycle_directory_exist(vfs_handle_struct *handle, const char *dname)
 {
 	SMB_STRUCT_STAT st;
@@ -270,6 +287,7 @@ static BOOL recycle_create_dir(vfs_handle_struct *handle, const char *dname)
 			}
 		}
 		safe_strcat(new_dir, "/", len);
+		mode = recycle_subdir_mode(handle);
 	}
 
 	ret = True;
