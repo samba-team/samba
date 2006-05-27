@@ -59,6 +59,8 @@ struct hx509_cert_data {
     hx509_private_key private_key;
     struct _hx509_cert_attrs attrs;
     hx509_name basename;
+    _hx509_cert_release_func release;
+    void *ctx;
 };
 
 typedef struct hx509_name_constraints {
@@ -195,6 +197,8 @@ hx509_cert_init(hx509_context context, const Certificate *c, hx509_cert *cert)
     (*cert)->attrs.val = NULL;
     (*cert)->private_key = NULL;
     (*cert)->basename = NULL;
+    (*cert)->release = NULL;
+    (*cert)->ctx = NULL;
 
     (*cert)->data = malloc(sizeof(*(*cert)->data));
     if ((*cert)->data == NULL) {
@@ -209,6 +213,16 @@ hx509_cert_init(hx509_context context, const Certificate *c, hx509_cert *cert)
     }
     return ret;
 }
+
+void
+_hx509_cert_set_release(hx509_cert cert, 
+			_hx509_cert_release_func release,
+			void *ctx)
+{
+    cert->release = release;
+    cert->ctx = ctx;
+}
+
 
 /* Doesn't make a copy of `private_key'. */
 
@@ -233,6 +247,9 @@ hx509_cert_free(hx509_cert cert)
 	_hx509_abort("refcount <= 0");
     if (--cert->ref > 0)
 	return;
+
+    if (cert->release)
+	(cert->release)(cert, cert->ctx);
 
     if (cert->private_key)
 	_hx509_free_private_key(&cert->private_key);
