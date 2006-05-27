@@ -1,3 +1,7 @@
+2006-05-27  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* cms.c: sprinkle more hx509_clear_error_string
+
 2006-05-22  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* ks_p11.c: Sprinkle some hx509_set_error_strings
