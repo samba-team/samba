@@ -340,11 +340,18 @@ quotasettings:	gid nolimit = no
 <indexterm><primary>.recycle</primary></indexterm>
 <indexterm><primary>recycle:keeptree</primary></indexterm>
 <indexterm><primary>deleted files</primary></indexterm>
-		The <guiicon>Recycle Bin</guiicon> will not appear in <application>Windows Explorer</application> views of the
-		network file system (share) nor on any mapped drive. Instead, a directory called <filename>.recycle</filename>
-		will be automatically created when the first file is deleted. Users can recover files from the
-		<filename>.recycle</filename> directory. If the <parameter>recycle:keeptree</parameter> has been specified,
-		deleted files will be found in a path identical with that from which the file was deleted.
+		The <guiicon>Recycle Bin</guiicon> will not appear in
+		<application>Windows Explorer</application> views of the network
+		file system (share) nor on any mapped drive. Instead, a directory
+		called <filename>.recycle</filename> will be automatically created
+		when the first file is deleted and <parameter>recycle:repository</parameter>
+		is not configured.
+		If <parameter>recycle:repository</parameter> is configured, the name
+		of the created directory depends on <parameter>recycle:repository</parameter>.
+		Users can recover files from the recycle bin. If the
+		<parameter>recycle:keeptree</parameter> has been specified,	deleted
+		files will be found in a path identical with that from which the
+		file was deleted.
 		</para>
 		
 		<para>Supported options for the <command>recycle</command> module are as follow:
@@ -353,7 +360,34 @@ quotasettings:	gid nolimit = no
 			<term>recycle:repository</term>
 				<listitem><para>
 <indexterm><primary>recycle:repository</primary></indexterm>
-				Relative path of the directory where deleted files should be moved.
+				Path of the directory where deleted files should be moved.
+				</para></listitem>
+			</varlistentry>
+
+			<varlistentry>
+			<term>recycle:directory_mode</term>
+				<listitem><para>
+<indexterm><primary>directory_mode</primary></indexterm>
+				Set it to the octal mode you want for the recycle directory. With
+				this mode the recycle directory	will be created if it not
+				exists and the first file is deleted.
+				If <parameter>recycle:subdir_mode</parameter> is not set, these
+				mode also apply to sub directories.
+				If <parameter>directory_mode</parameter> not exists, the default
+				mode 0700 is used.
+				</para></listitem>
+			</varlistentry>
+
+			<varlistentry>
+			<term>recycle:subdir_mode</term>
+				<listitem><para>
+<indexterm><primary>recycle:subdir_mode</primary></indexterm>
+				Set it to the octal mode you want for the sub directories of
+				the recycle directory. With this mode	the sub directories will
+				be created.
+				If <parameter>recycle:subdir_mode</parameter> is not set, the
+				sub directories will be created with the mode from
+				<parameter>directory_mode</parameter>.
 				</para></listitem>
 			</varlistentry>
 
