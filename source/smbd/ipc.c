@@ -291,6 +291,12 @@ static int api_fd_reply(connection_struct *conn,uint16 vuid,char *outbuf,
 		return ERROR_NT(NT_STATUS_INVALID_HANDLE);
 	}
 
+	if (vuid != p->vuid) {
+		DEBUG(1, ("Got pipe request (pnum %x) using invalid VUID %d, "
+			  "expected %d\n", pnum, vuid, p->vuid));
+		return ERROR_NT(NT_STATUS_INVALID_HANDLE);
+	}
+
 	DEBUG(3,("Got API command 0x%x on pipe \"%s\" (pnum %x)\n", subcommand, p->name, pnum));
 
 	/* record maximum data length that can be transmitted in an SMBtrans */
