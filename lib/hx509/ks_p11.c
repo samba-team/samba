@@ -50,7 +50,6 @@ struct p11_module {
 #define P11_SESSION		1
 #define P11_LOGIN_REQ		2
 #define P11_LOGIN_DONE		4
-	CK_SESSION_HANDLE session;
 	CK_SLOT_ID id;
 	CK_BBOOL token;
 	char *name;
@@ -59,11 +58,15 @@ struct p11_module {
     } slot;
 };
 
-#define P11SESSION(module) ((module)->session)
 #define P11FUNC(module,f,args) (*(module)->funcs->C_##f)args
 
-static int p11_get_session(struct p11_module *, struct p11_slot *, hx509_lock);
-static int p11_put_session(struct p11_module *, struct p11_slot *);
+static int p11_get_session(struct p11_module *,
+			   struct p11_slot *,
+			   hx509_lock,
+			   CK_SESSION_HANDLE *);
+static int p11_put_session(struct p11_module *,
+			   struct p11_slot *,
+			   CK_SESSION_HANDLE);
 static void p11_release_module(struct p11_module *);
 
 /*
@@ -107,6 +110,7 @@ p11_rsa_private_encrypt(int flen,
 {
     struct p11_rsa *p11rsa = RSA_get_app_data(rsa);
     CK_OBJECT_HANDLE key = p11rsa->private_key;
+    CK_SESSION_HANDLE session;
     CK_MECHANISM mechanism;
     CK_ULONG ck_sigsize;
     int ret;
@@ -119,24 +123,22 @@ p11_rsa_private_encrypt(int flen,
 
     ck_sigsize = RSA_size(rsa);
 
-    ret = p11_get_session(p11rsa->p, p11rsa->slot, NULL);
+    ret = p11_get_session(p11rsa->p, p11rsa->slot, NULL, &session);
     if (ret)
 	return -1;
 
-    ret = P11FUNC(p11rsa->p, SignInit,
-		  (P11SESSION(p11rsa->slot), &mechanism, key));
+    ret = P11FUNC(p11rsa->p, SignInit, (session, &mechanism, key));
     if (ret != CKR_OK) {
-	p11_put_session(p11rsa->p, p11rsa->slot);
+	p11_put_session(p11rsa->p, p11rsa->slot, session);
 	return -1;
     }
 
-    ret = P11FUNC(p11rsa->p, Sign,
-		  (P11SESSION(p11rsa->slot), (CK_BYTE *)from, 
-		   flen, to, &ck_sigsize));
+    ret = P11FUNC(p11rsa->p, Sign, 
+		  (session, (CK_BYTE *)from, flen, to, &ck_sigsize));
     if (ret != CKR_OK)
 	return -1;
 
-    p11_put_session(p11rsa->p, p11rsa->slot);
+    p11_put_session(p11rsa->p, p11rsa->slot, session);
 
     return ck_sigsize;
 }
@@ -147,6 +149,7 @@ p11_rsa_private_decrypt(int flen, const unsigned char *from, unsigned char *to,
 {
     struct p11_rsa *p11rsa = RSA_get_app_data(rsa);
     CK_OBJECT_HANDLE key = p11rsa->private_key;
+    CK_SESSION_HANDLE session;
     CK_MECHANISM mechanism;
     CK_ULONG ck_sigsize;
     int ret;
@@ -159,24 +162,22 @@ p11_rsa_private_decrypt(int flen, const unsigned char *from, unsigned char *to,
 
     ck_sigsize = RSA_size(rsa);
 
-    ret = p11_get_session(p11rsa->p, p11rsa->slot, NULL);
+    ret = p11_get_session(p11rsa->p, p11rsa->slot, NULL, &session);
     if (ret)
 	return -1;
 
-    ret = P11FUNC(p11rsa->p, DecryptInit,
-		  (P11SESSION(p11rsa->slot), &mechanism, key));
+    ret = P11FUNC(p11rsa->p, DecryptInit, (session, &mechanism, key));
     if (ret != CKR_OK) {
-	p11_put_session(p11rsa->p, p11rsa->slot);
+	p11_put_session(p11rsa->p, p11rsa->slot, session);
 	return -1;
     }
 
-    ret = P11FUNC(p11rsa->p, Decrypt,
-		  (P11SESSION(p11rsa->slot), (CK_BYTE *)from, 
-		   flen, to, &ck_sigsize));
+    ret = P11FUNC(p11rsa->p, Decrypt, 
+		  (session, (CK_BYTE *)from, flen, to, &ck_sigsize));
     if (ret != CKR_OK)
 	return -1;
 
-    p11_put_session(p11rsa->p, p11rsa->slot);
+    p11_put_session(p11rsa->p, p11rsa->slot, session);
 
     return ck_sigsize;
 }
@@ -257,8 +258,10 @@ p11_init_slot(struct p11_module *p, CK_SLOT_ID id, struct p11_slot *slot)
 static int
 p11_get_session(struct p11_module *p,
 		struct p11_slot *slot,
-		hx509_lock lock)
+		hx509_lock lock,
+		CK_SESSION_HANDLE *psession)
 {
+    CK_SESSION_HANDLE session;
     CK_RV ret;
 
     if (slot->flags & P11_SESSION)
@@ -268,7 +271,7 @@ p11_get_session(struct p11_module *p,
 				   CKF_SERIAL_SESSION,
 				   NULL,
 				   NULL,
-				   &slot->session));
+				   &session));
     if (ret != CKR_OK)
 	return EINVAL;
     
@@ -316,16 +319,16 @@ p11_get_session(struct p11_module *p,
 	    strlcpy(pin, slot->pin, sizeof(pin));
 	}
 
-	ret = P11FUNC(p, Login, (P11SESSION(slot), CKU_USER,
+	ret = P11FUNC(p, Login, (session, CKU_USER,
 				 (unsigned char*)pin, strlen(pin)));
 	if (ret != CKR_OK) {
-	    p11_put_session(p, slot);
+	    p11_put_session(p, slot, session);
 	    return EINVAL;
 	}
 	if (slot->pin == NULL) {
 	    slot->pin = strdup(pin);
 	    if (slot->pin == NULL) {
-		p11_put_session(p, slot);
+		p11_put_session(p, slot, session);
 		return EINVAL;
 	    }
 	}
@@ -333,11 +336,15 @@ p11_get_session(struct p11_module *p,
     } else
 	slot->flags |= P11_LOGIN_DONE;
 
+    *psession = session;
+
     return 0;
 }
 
 static int
-p11_put_session(struct p11_module *p, struct p11_slot *slot)
+p11_put_session(struct p11_module *p,
+		struct p11_slot *slot, 
+		CK_SESSION_HANDLE session)
 {
     int ret;
 
@@ -345,7 +352,7 @@ p11_put_session(struct p11_module *p, struct p11_slot *slot)
 	_hx509_abort("slot not in session");
     slot->flags &= ~P11_SESSION;
 
-    ret = P11FUNC(p, CloseSession, (P11SESSION(slot)));
+    ret = P11FUNC(p, CloseSession, (session));
     if (ret != CKR_OK)
 	return EINVAL;
 
@@ -354,9 +361,11 @@ p11_put_session(struct p11_module *p, struct p11_slot *slot)
 
 static int
 iterate_entries(struct p11_module *p, struct p11_slot *slot,
+		CK_SESSION_HANDLE session,
 		CK_ATTRIBUTE *search_data, int num_search_data,
 		CK_ATTRIBUTE *query, int num_query,
 		int (*func)(struct p11_module *, struct p11_slot *,
+			    CK_SESSION_HANDLE session,
 			    CK_OBJECT_HANDLE object,
 			    void *, CK_ATTRIBUTE *, int), void *ptr)
 {
@@ -364,14 +373,12 @@ iterate_entries(struct p11_module *p, struct p11_slot *slot,
     CK_ULONG object_count;
     int ret, i;
 
-    ret = P11FUNC(p, FindObjectsInit,
-		  (P11SESSION(slot), search_data, num_search_data));
+    ret = P11FUNC(p, FindObjectsInit, (session, search_data, num_search_data));
     if (ret != CKR_OK) {
 	return -1;
     }
     while (1) {
-	ret = P11FUNC(p, FindObjects, 
-		      (P11SESSION(slot), &object, 1, &object_count));
+	ret = P11FUNC(p, FindObjects, (session, &object, 1, &object_count));
 	if (ret != CKR_OK) {
 	    return -1;
 	}
@@ -382,7 +389,7 @@ iterate_entries(struct p11_module *p, struct p11_slot *slot,
 	    query[i].pValue = NULL;
 
 	ret = P11FUNC(p, GetAttributeValue, 
-		      (P11SESSION(slot), object, query, num_query));
+		      (session, object, query, num_query));
 	if (ret != CKR_OK) {
 	    return -1;
 	}
@@ -394,13 +401,13 @@ iterate_entries(struct p11_module *p, struct p11_slot *slot,
 	    }
 	}
 	ret = P11FUNC(p, GetAttributeValue,
-		      (P11SESSION(slot), object, query, num_query));
+		      (session, object, query, num_query));
 	if (ret != CKR_OK) {
 	    ret = -1;
 	    goto out;
 	}
 	
-	ret = (*func)(p, slot, object, ptr, query, num_query);
+	ret = (*func)(p, slot, session, object, ptr, query, num_query);
 	if (ret)
 	    goto out;
 
@@ -418,7 +425,7 @@ iterate_entries(struct p11_module *p, struct p11_slot *slot,
 	query[i].pValue = NULL;
     }
 
-    ret = P11FUNC(p, FindObjectsFinal, (P11SESSION(slot)));
+    ret = P11FUNC(p, FindObjectsFinal, (session));
     if (ret != CKR_OK) {
 	return -2;
     }
@@ -428,8 +435,11 @@ iterate_entries(struct p11_module *p, struct p11_slot *slot,
 }
 		
 static BIGNUM *
-getattr_bn(struct p11_module *p, struct p11_slot *slot,
-	   CK_OBJECT_HANDLE object, unsigned int type)
+getattr_bn(struct p11_module *p,
+	   struct p11_slot *slot,
+	   CK_SESSION_HANDLE session,
+	   CK_OBJECT_HANDLE object, 
+	   unsigned int type)
 {
     CK_ATTRIBUTE query;
     BIGNUM *bn;
@@ -440,14 +450,14 @@ getattr_bn(struct p11_module *p, struct p11_slot *slot,
     query.ulValueLen = 0;
 
     ret = P11FUNC(p, GetAttributeValue, 
-		  (P11SESSION(slot), object, &query, 1));
+		  (session, object, &query, 1));
     if (ret != CKR_OK)
 	return NULL;
 
     query.pValue = malloc(query.ulValueLen);
 
     ret = P11FUNC(p, GetAttributeValue, 
-		  (P11SESSION(slot), object, &query, 1));
+		  (session, object, &query, 1));
     if (ret != CKR_OK) {
 	free(query.pValue);
 	return NULL;
@@ -465,6 +475,7 @@ struct p11_collector {
 
 static int
 collect_private_key(struct p11_module *p, struct p11_slot *slot,
+		    CK_SESSION_HANDLE session,
 		    CK_OBJECT_HANDLE object,
 		    void *ptr, CK_ATTRIBUTE *query, int num_query)
 {
@@ -489,10 +500,10 @@ collect_private_key(struct p11_module *p, struct p11_slot *slot,
     if (rsa == NULL)
 	_hx509_abort("out of memory");
 
-    rsa->n = getattr_bn(p, slot, object, CKA_MODULUS);
+    rsa->n = getattr_bn(p, slot, session, object, CKA_MODULUS);
     if (rsa->n == NULL)
 	_hx509_abort("CKA_MODULUS missing");
-    rsa->e = getattr_bn(p, slot, object, CKA_PUBLIC_EXPONENT);
+    rsa->e = getattr_bn(p, slot, session, object, CKA_PUBLIC_EXPONENT);
     if (rsa->e == NULL)
 	_hx509_abort("CKA_PUBLIC_EXPONENT missing");
 
@@ -528,8 +539,17 @@ collect_private_key(struct p11_module *p, struct p11_slot *slot,
     return 0;
 }
 
+static void
+p11_cert_release(hx509_cert cert, void *ctx)
+{
+    struct p11_module *p = ctx;
+    p11_release_module(p);
+}
+
+
 static int
 collect_cert(struct p11_module *p, struct p11_slot *slot,
+	     CK_SESSION_HANDLE session,
 	     CK_OBJECT_HANDLE object,
 	     void *ptr, CK_ATTRIBUTE *query, int num_query)
 {
@@ -552,6 +572,13 @@ collect_cert(struct p11_module *p, struct p11_slot *slot,
     if (ret)
 	return ret;
 
+    p->refcount++;
+    if (p->refcount == 0)
+	_hx509_abort("pkcs11 refcount to high");
+
+    _hx509_cert_set_release(cert, p11_cert_release, p);
+
+
     _hx509_set_cert_attribute(ctx->context,
 			      cert,
 			      oid_id_pkcs_9_at_localKeyId(),
@@ -571,6 +598,7 @@ static int
 p11_list_keys(hx509_context context,
 	      struct p11_module *p,
 	      struct p11_slot *slot, 
+	      CK_SESSION_HANDLE session,
 	      hx509_lock lock,
 	      hx509_certs *certs)
 {
@@ -595,7 +623,7 @@ p11_list_keys(hx509_context context,
 	return ENOMEM;
 
     key_class = CKO_PRIVATE_KEY;
-    ret = iterate_entries(p, slot,
+    ret = iterate_entries(p, slot, session,
 			  search_data, 1,
 			  query_data, 1,
 			  collect_private_key, &ctx);
@@ -603,7 +631,7 @@ p11_list_keys(hx509_context context,
 	goto out;
 
     key_class = CKO_CERTIFICATE;
-    ret = iterate_entries(p, slot,
+    ret = iterate_entries(p, slot, session,
 			  search_data, 1,
 			  query_data, 2,
 			  collect_cert, &ctx);
@@ -709,10 +737,12 @@ p11_init(hx509_context context,
     }
 
     {
+	CK_SESSION_HANDLE session;
 	CK_SLOT_ID_PTR slot_ids;
 
 	slot_ids = malloc(p->num_slots * sizeof(*slot_ids));
 	if (slot_ids == NULL) {
+	    hx509_clear_error_string(context);
 	    ret = ENOMEM;
 	    goto out;
 	}
@@ -720,20 +750,32 @@ p11_init(hx509_context context,
 	ret = P11FUNC(p, GetSlotList, (FALSE, slot_ids, &p->num_slots));
 	if (ret) {
 	    free(slot_ids);
+	    hx509_set_error_string(context, 0, EINVAL,
+				   "Failed getting slot-list from "
+				   "PKCS11 module");
 	    ret = EINVAL;
 	    goto out;
 	}
 
 	ret = p11_init_slot(p, slot_ids[p->selected_slot], &p->slot);
 	free(slot_ids);
-	if (ret)
+	if (ret) {
+	    hx509_set_error_string(context, 0, ret,
+				   "Failed to init PKCS11 slot %d",
+				   p->selected_slot);
 	    goto out;
+	}
 
-	ret = p11_get_session(p, &p->slot, lock);
-	if (ret)
+	ret = p11_get_session(p, &p->slot, lock, &session);
+	if (ret) {
+	    hx509_set_error_string(context, 0, ret,
+				   "Failed to get session PKCS11 slot %d",
+				   p->selected_slot);
 	    goto out;
-	ret = p11_list_keys(context, p, &p->slot, NULL, &p->slot.certs);
-	p11_put_session(p, &p->slot);
+	}
+	ret = p11_list_keys(context, p, &p->slot, session,
+			    NULL, &p->slot.certs);
+	p11_put_session(p, &p->slot, session);
     }
 
     *data = p;
