@@ -72,6 +72,9 @@ struct hx509_collector;
 typedef struct hx509_path hx509_path;
 
 #include <hx509.h>
+
+typedef void (*_hx509_cert_release_func)(struct hx509_cert_data *, void *);
+
 #include <hx509-private.h>
 #include <hx509_err.h>
 
