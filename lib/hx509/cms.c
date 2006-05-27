@@ -205,13 +205,16 @@ hx509_cms_unenvelope(hx509_context context,
     memset(contentType, 0, sizeof(*contentType));
 
     ret = decode_EnvelopedData(data, length, &ed, &size);
-    if (ret)
+    if (ret) {
+	hx509_clear_error_string(context);
 	return ret;
+    }
 
     /* XXX check content of ed */
 
     if (ed.encryptedContentInfo.encryptedContent == NULL) {
 	ret = HX509_CMS_NO_DATA_AVAILABLE;
+	hx509_clear_error_string(context);
 	goto out;
     }
 
@@ -243,12 +246,16 @@ hx509_cms_unenvelope(hx509_context context,
 	cert = NULL;
     }
     
-    if (cert == NULL)
+    if (cert == NULL) {
+	hx509_clear_error_string(context);
 	goto out;
+    }
 
     ret = copy_oid(&ed.encryptedContentInfo.contentType, contentType);
-    if (ret)
+    if (ret) {
+	hx509_clear_error_string(context);
 	goto out;
+    }
 
     enccontent = ed.encryptedContentInfo.encryptedContent;
 
@@ -274,14 +281,20 @@ hx509_cms_unenvelope(hx509_context context,
 	}
 
 	ret = hx509_crypto_set_key_data(crypto, key.data, key.length);
-	if (ret)
+	if (ret) {
+	    hx509_clear_error_string(context);
 	    goto out;
+	}
 	
 	ret = hx509_crypto_decrypt(crypto, 
 				   enccontent->data,
 				   enccontent->length,
 				   ivec.length ? &ivec : NULL,
 				   content);
+	if (ret) {
+	    hx509_clear_error_string(context);
+	    goto out;
+	}
     }
 
 out:
@@ -332,6 +345,7 @@ hx509_cms_envelope_1(hx509_context context,
 
     ret = hx509_crypto_set_random_key(crypto, &key);
     if (ret) {
+	hx509_clear_error_string(context);
 	hx509_crypto_destroy(crypto);
 	goto out;
     }
@@ -342,6 +356,7 @@ hx509_cms_envelope_1(hx509_context context,
 			       &ivec,
 			       &ed.encryptedContentInfo.encryptedContent);
     if (ret) {
+	hx509_clear_error_string(context);
 	hx509_crypto_destroy(crypto);
 	goto out;
     }
@@ -351,12 +366,14 @@ hx509_cms_envelope_1(hx509_context context,
 	enc_alg = &ed.encryptedContentInfo.contentEncryptionAlgorithm;
 	ret = copy_oid(encryption_type, &enc_alg->algorithm);
 	if (ret) {
+	    hx509_crypto_destroy(crypto);
 	    hx509_clear_error_string(context);
 	    goto out;
 	}	
 	ALLOC(enc_alg->parameters, 1);
 	if (enc_alg->parameters == NULL) {
 	    hx509_clear_error_string(context);
+	    hx509_crypto_destroy(crypto);
 	    ret = ENOMEM;
 	    goto out;
 	}
@@ -365,13 +382,16 @@ hx509_cms_envelope_1(hx509_context context,
 				      crypto,
 				      &ivec,
 				      enc_alg->parameters);
+	hx509_crypto_destroy(crypto);
+	if (ret) {
+	    hx509_clear_error_string(context);
+	    goto out;
+	}
     }
-    hx509_crypto_destroy(crypto);
-    if (ret)
-	goto out;
 
     ALLOC_SEQ(&ed.recipientInfos, 1);
     if (ed.recipientInfos.val == NULL) {
+	hx509_clear_error_string(context);
 	ret = ENOMEM;
 	goto out;
     }
@@ -380,14 +400,18 @@ hx509_cms_envelope_1(hx509_context context,
 
     ri->version = 0;
     ret = fill_CMSIdentifier(cert, &ri->rid);
-    if (ret)
+    if (ret) {
+	hx509_clear_error_string(context);
 	goto out;
+    }
 
     ret = _hx509_cert_public_encrypt(&key, cert,
 				     &ri->keyEncryptionAlgorithm.algorithm,
 				     &ri->encryptedKey);
-    if (ret)
+    if (ret) {
+	hx509_clear_error_string(context);
 	goto out;
+    }
 
     /*
      *
@@ -397,15 +421,19 @@ hx509_cms_envelope_1(hx509_context context,
     ed.originatorInfo = NULL;
 
     ret = copy_oid(contentType, &ed.encryptedContentInfo.contentType);
-    if (ret)
+    if (ret) {
+	hx509_clear_error_string(context);
 	goto out;
+    }
 
     ed.unprotectedAttrs = NULL;
 
     ASN1_MALLOC_ENCODE(EnvelopedData, content->data, content->length,
 		       &ed, &size, ret);
-    if (ret)
+    if (ret) {
+	hx509_clear_error_string(context);
 	goto out;
+    }
     if (size != content->length)
 	_hx509_abort("internal ASN.1 encoder error");
 
