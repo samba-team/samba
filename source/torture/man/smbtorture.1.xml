@@ -40,7 +40,10 @@
 		<arg choice="opt">-s seed</arg>
 		<arg choice="opt">-f max_failures</arg>
 		<arg choice="opt">-X</arg>
-		TEST1 TEST2 ...
+		<arg choice="req">BINDING-STRING|UNC</arg>
+		<arg choice="req">TEST1</arg>
+		<arg choice="opt">TEST2</arg>
+		<arg choice="opt">...</arg>
 	</cmdsynopsis>
 	
 </refsynopsisdiv>
@@ -61,6 +64,90 @@
 
 	<para>If no arguments are specified at all, all available options 
 		and tests are listed.</para>
+
+	<refsect2>
+		<title>Binding string format</title>
+
+		<para>The binding string format is:</para>
+
+		<para>TRANSPORT:host[flags]</para>
+
+		<para>Where TRANSPORT is either ncacn_np for SMB, ncacn_ip_tcp for RPC/TCP or ncalrpc for local connections.
+		</para>
+
+		<para>
+		'host' is an IP or hostname or netbios name. If the binding string 
+		identifies the server side of an endpoint, 'host' may be an empty");
+	  	string.
+		</para>
+
+		<para>
+		'flags' can include a SMB pipe name if using the ncacn_np transport or
+		a TCP port number if using the ncacn_ip_tcp transport, otherwise they
+		will be auto-determined.
+		</para>
+
+		<para>
+		other recognised flags are:
+		</para>
+
+	  <variablelist>
+		  <varlistentry><term>sign</term>
+			  <listitem><para>enable ntlmssp signing</para></listitem>
+		  </varlistentry>
+
+		  <varlistentry><term>seal</term>
+			  <listitem><para>enable ntlmssp sealing</para></listitem>
+		  </varlistentry>
+
+		  <varlistentry><term>connect</term>
+			  <listitem><para>enable rpc connect level auth (auth, but no sign or seal)</para></listitem>
+		  </varlistentry>
+
+		  <varlistentry><term>validate</term>
+			  <listitem><para>enable the NDR validator</para></listitem>
+		  </varlistentry>
+
+		  <varlistentry><term>print</term>
+			  <listitem><para>enable debugging of the packets</para></listitem>
+		  </varlistentry>
+
+		  <varlistentry><term>bigendian</term>
+			  <listitem><para>use bigendian RPC</para></listitem>
+		  </varlistentry>
+
+		  <varlistentry><term>padcheck</term>
+			  <listitem><para>check reply data for non-zero pad bytes</para></listitem>
+		  </varlistentry>
+	  </variablelist>
+
+	  <para>For example, these all connect to the samr pipe:</para>
+
+	  <itemizedlist>
+	    <listitem><para>ncacn_np:myserver</para></listitem>
+	    <listitem><para>ncacn_np:myserver[samr]</para></listitem>
+	    <listitem><para>ncacn_np:myserver[\\pipe\\samr]</para></listitem>
+	    <listitem><para>ncacn_np:myserver[/pipe/samr]</para></listitem>
+	    <listitem><para>ncacn_np:myserver[samr,sign,print]</para></listitem>
+	    <listitem><para>ncacn_np:myserver[\\pipe\\samr,sign,seal,bigendian]</para></listitem>
+	    <listitem><para>ncacn_np:myserver[/pipe/samr,seal,validate]</para></listitem>
+	    <listitem><para>ncacn_np:</para></listitem>
+	    <listitem><para>ncacn_np:[/pipe/samr]</para></listitem>
+	    <listitem><para>ncacn_ip_tcp:myserver</para></listitem>
+	    <listitem><para>ncacn_ip_tcp:myserver[1024]</para></listitem>
+	    <listitem><para>ncacn_ip_tcp:myserver[1024,sign,seal]</para></listitem>
+	    <listitem><para>ncalrpc:</para></listitem>
+	  </itemizedlist>
+
+	</refsect2>
+
+	<refsect2>
+		<title>UNC Format</title>
+
+		<para>The UNC format is:</para>
+
+		<para>//server/share</para>
+	</refsect2>
 
 </refsect1>
 
