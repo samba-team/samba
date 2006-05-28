@@ -49,7 +49,7 @@ int cac_LsaOpenPolicy(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct LsaOpenP
 
    /*see if there is already an active session on this pipe, if not then open one*/
    if(!hnd->_internal.pipes[PI_LSARPC]) {
-      pipe_hnd = cli_rpc_pipe_open_noauth(&(srv->cli), PI_LSARPC, &(hnd->status));
+      pipe_hnd = cli_rpc_pipe_open_noauth(srv->cli, PI_LSARPC, &hnd->status);
 
       if(!pipe_hnd) {
          hnd->status = NT_STATUS_UNSUCCESSFUL;

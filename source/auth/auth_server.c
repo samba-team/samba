@@ -39,7 +39,7 @@ static struct cli_state *server_cryptkey(TALLOC_CTX *mem_ctx)
 	char *pserver;
 	BOOL connected_ok = False;
 
-	if (!(cli = cli_initialise(cli)))
+	if (!(cli = cli_initialise()))
 		return NULL;
 
 	/* security = server just can't function with spnego */
@@ -85,7 +85,7 @@ static struct cli_state *server_cryptkey(TALLOC_CTX *mem_ctx)
 		return NULL;
 	}
 	
-	if (!attempt_netbios_session_request(cli, global_myname(), 
+	if (!attempt_netbios_session_request(&cli, global_myname(), 
 					     desthost, &dest_ip)) {
 		release_server_mutex();
 		DEBUG(1,("password server fails session request\n"));
@@ -129,7 +129,7 @@ static struct cli_state *server_cryptkey(TALLOC_CTX *mem_ctx)
 	}
 	
 	release_server_mutex();
-	
+
 	DEBUG(3,("password server OK\n"));
 	
 	return cli;

@@ -487,7 +487,7 @@ static int
 smbc_check_server(SMBCCTX * context,
                   SMBCSRV * server) 
 {
-	if ( send_keepalive(server->cli.fd) == False )
+	if ( send_keepalive(server->cli->fd) == False )
 		return 1;
 
 	/* connection is ok */
@@ -524,7 +524,8 @@ smbc_remove_unused_server(SMBCCTX * context,
 
 	DLIST_REMOVE(context->internal->_servers, srv);
 
-	cli_shutdown(&srv->cli);
+	cli_shutdown(srv->cli);
+	srv->cli = NULL;
 
 	DEBUG(3, ("smbc_remove_usused_server: %p removed.\n", srv));
 
@@ -630,7 +631,7 @@ smbc_server(SMBCCTX *context,
             fstring password)
 {
 	SMBCSRV *srv=NULL;
-	struct cli_state c;
+	struct cli_state *c;
 	struct nmb_name called, calling;
 	const char *server_n = server;
 	pstring ipenv;
@@ -666,7 +667,7 @@ smbc_server(SMBCCTX *context,
                  * disconnect if the requested share is not the same as the
                  * one that was already connected.
                  */
-                if (srv->cli.cnum == (uint16) -1) {
+                if (srv->cli->cnum == (uint16) -1) {
                         /* Ensure we have accurate auth info */
                         if (context->internal->_auth_fn_with_context != NULL) {
                                 context->internal->_auth_fn_with_context(
@@ -683,11 +684,12 @@ smbc_server(SMBCCTX *context,
                                         password, sizeof(fstring));
                         }
 
-                        if (! cli_send_tconX(&srv->cli, share, "?????",
+                        if (! cli_send_tconX(srv->cli, share, "?????",
                                              password, strlen(password)+1)) {
                         
-                                errno = smbc_errno(context, &srv->cli);
-                                cli_shutdown(&srv->cli);
+                                errno = smbc_errno(context, srv->cli);
+                                cli_shutdown(srv->cli);
+				srv->cli = NULL;
                                 context->callbacks.remove_cached_srv_fn(context,
                                                                         srv);
                                 srv = NULL;
@@ -730,19 +732,19 @@ smbc_server(SMBCCTX *context,
 	zero_ip(&ip);
 
 	/* have to open a new connection */
-	if (!cli_initialise(&c)) {
+	if ((c = cli_initialise()) == NULL) {
 		errno = ENOMEM;
 		return NULL;
 	}
 
 	if (context->flags & SMB_CTX_FLAG_USE_KERBEROS) {
-		c.use_kerberos = True;
+		c->use_kerberos = True;
 	}
 	if (context->flags & SMB_CTX_FLAG_FALLBACK_AFTER_KERBEROS) {
-		c.fallback_after_kerberos = True;
+		c->fallback_after_kerberos = True;
 	}
 
-	c.timeout = context->timeout;
+	c->timeout = context->timeout;
 
         /*
          * Force use of port 139 for first try if share is $IPC, empty, or
@@ -756,49 +758,47 @@ smbc_server(SMBCCTX *context,
                 port_try_next = 139;
         }
 
-        c.port = port_try_first;
+        c->port = port_try_first;
 
-	if (!cli_connect(&c, server_n, &ip)) {
+	if (!cli_connect(c, server_n, &ip)) {
 
                 /* First connection attempt failed.  Try alternate port. */
-                c.port = port_try_next;
+                c->port = port_try_next;
 
-                if (!cli_connect(&c, server_n, &ip)) {
-                        cli_shutdown(&c);
+                if (!cli_connect(c, server_n, &ip)) {
+                        cli_shutdown(c);
                         errno = ETIMEDOUT;
                         return NULL;
                 }
  	}
 
-	if (!cli_session_request(&c, &calling, &called)) {
-		cli_shutdown(&c);
+	if (!cli_session_request(c, &calling, &called)) {
+		cli_shutdown(c);
 		if (strcmp(called.name, "*SMBSERVER")) {
 			make_nmb_name(&called , "*SMBSERVER", 0x20);
 			goto again;
-		}
-		else {  /* Try one more time, but ensure we don't loop */
+		} else {  /* Try one more time, but ensure we don't loop */
 
-		  /* Only try this if server is an IP address ... */
+			/* Only try this if server is an IP address ... */
 
-		  if (is_ipaddress(server) && !tried_reverse) {
-		    fstring remote_name;
-		    struct in_addr rem_ip;
+			if (is_ipaddress(server) && !tried_reverse) {
+				fstring remote_name;
+				struct in_addr rem_ip;
 
-		    if ((rem_ip.s_addr=inet_addr(server)) == INADDR_NONE) {
-		      DEBUG(4, ("Could not convert IP address %s to struct in_addr\n", server));
-		      errno = ETIMEDOUT;
-		      return NULL;
-		    }
+				if ((rem_ip.s_addr=inet_addr(server)) == INADDR_NONE) {
+					DEBUG(4, ("Could not convert IP address "
+						"%s to struct in_addr\n", server));
+					errno = ETIMEDOUT;
+					return NULL;
+				}
 
-		    tried_reverse++; /* Yuck */
+				tried_reverse++; /* Yuck */
 
-		    if (name_status_find("*", 0, 0, rem_ip, remote_name)) {
-		      make_nmb_name(&called, remote_name, 0x20);
-		      goto again;
-		    }
-
-
-		  }
+				if (name_status_find("*", 0, 0, rem_ip, remote_name)) {
+					make_nmb_name(&called, remote_name, 0x20);
+					goto again;
+				}
+			}
 		}
 		errno = ETIMEDOUT;
 		return NULL;
@@ -806,15 +806,15 @@ smbc_server(SMBCCTX *context,
   
 	DEBUG(4,(" session request ok\n"));
   
-	if (!cli_negprot(&c)) {
-		cli_shutdown(&c);
+	if (!cli_negprot(c)) {
+		cli_shutdown(c);
 		errno = ETIMEDOUT;
 		return NULL;
 	}
 
         username_used = username;
 
-	if (!cli_session_setup(&c, username_used, 
+	if (!cli_session_setup(c, username_used, 
 			       password, strlen(password),
 			       password, strlen(password),
 			       workgroup)) {
@@ -823,12 +823,12 @@ smbc_server(SMBCCTX *context,
                 username_used = "";
 
                 if ((context->flags & SMBCCTX_FLAG_NO_AUTO_ANONYMOUS_LOGON) ||
-                     !cli_session_setup(&c, username_used,
+                     !cli_session_setup(c, username_used,
                                         password, 1,
                                         password, 0,
                                         workgroup)) {
 
-                        cli_shutdown(&c);
+                        cli_shutdown(c);
                         errno = EPERM;
                         return NULL;
                 }
@@ -836,10 +836,10 @@ smbc_server(SMBCCTX *context,
 
 	DEBUG(4,(" session setup ok\n"));
 
-	if (!cli_send_tconX(&c, share, "?????",
+	if (!cli_send_tconX(c, share, "?????",
 			    password, strlen(password)+1)) {
-		errno = smbc_errno(context, &c);
-		cli_shutdown(&c);
+		errno = smbc_errno(context, c);
+		cli_shutdown(c);
 		return NULL;
 	}
   
@@ -858,7 +858,6 @@ smbc_server(SMBCCTX *context,
 
 	ZERO_STRUCTP(srv);
 	srv->cli = c;
-        srv->cli.allocated = False;
 	srv->dev = (dev_t)(str_checksum(server) ^ str_checksum(share));
         srv->no_pathinfo = False;
         srv->no_pathinfo2 = False;
@@ -884,8 +883,10 @@ smbc_server(SMBCCTX *context,
 	return srv;
 
  failed:
-	cli_shutdown(&c);
-	if (!srv) return NULL;
+	cli_shutdown(c);
+	if (!srv) {
+		return NULL;
+	}
   
 	SAFE_FREE(srv);
 	return NULL;
@@ -960,19 +961,16 @@ smbc_attr_server(SMBCCTX *context,
                 }
 
                 ZERO_STRUCTP(ipc_srv);
-                ipc_srv->cli = *ipc_cli;
-                ipc_srv->cli.allocated = False;
-
-                free(ipc_cli);
+                ipc_srv->cli = ipc_cli;
 
                 if (pol) {
-                        pipe_hnd = cli_rpc_pipe_open_noauth(&ipc_srv->cli,
+                        pipe_hnd = cli_rpc_pipe_open_noauth(ipc_srv->cli,
                                                             PI_LSARPC,
                                                             &nt_status);
                         if (!pipe_hnd) {
                                 DEBUG(1, ("cli_nt_session_open fail!\n"));
                                 errno = ENOTSUP;
-                                cli_shutdown(&ipc_srv->cli);
+                                cli_shutdown(ipc_srv->cli);
                                 free(ipc_srv);
                                 return NULL;
                         }
@@ -985,14 +983,14 @@ smbc_attr_server(SMBCCTX *context,
         
                         nt_status = rpccli_lsa_open_policy(
                                 pipe_hnd,
-                                ipc_srv->cli.mem_ctx,
+                                ipc_srv->cli->mem_ctx,
                                 True, 
                                 GENERIC_EXECUTE_ACCESS,
                                 pol);
         
                         if (!NT_STATUS_IS_OK(nt_status)) {
-                                errno = smbc_errno(context, &ipc_srv->cli);
-                                cli_shutdown(&ipc_srv->cli);
+                                errno = smbc_errno(context, ipc_srv->cli);
+                                cli_shutdown(ipc_srv->cli);
                                 return NULL;
                         }
                 }
@@ -1009,7 +1007,7 @@ smbc_attr_server(SMBCCTX *context,
                         if (errno == 0) {
                                 errno = ENOMEM;
                         }
-                        cli_shutdown(&ipc_srv->cli);
+                        cli_shutdown(ipc_srv->cli);
                         free(ipc_srv);
                         return NULL;
                 }
@@ -1098,7 +1096,7 @@ smbc_open_ctx(SMBCCTX *context,
 		ZERO_STRUCTP(file);
 
 		/*d_printf(">>>open: resolving %s\n", path);*/
-		if (!cli_resolve_path( "", &srv->cli, path, &targetcli, targetpath))
+		if (!cli_resolve_path( "", srv->cli, path, &targetcli, targetpath))
 		{
 			d_printf("Could not resolve %s\n", path);
 			SAFE_FREE(file);
@@ -1172,7 +1170,7 @@ smbc_open_ctx(SMBCCTX *context,
 	if (fd == -1) {
 		int eno = 0;
 
-		eno = smbc_errno(context, &srv->cli);
+		eno = smbc_errno(context, srv->cli);
 		file = context->opendir(context, fname);
 		if (!file) errno = eno;
 		return file;
@@ -1275,7 +1273,7 @@ smbc_read_ctx(SMBCCTX *context,
         }
 	
 	/*d_printf(">>>read: resolving %s\n", path);*/
-	if (!cli_resolve_path("", &file->srv->cli, path,
+	if (!cli_resolve_path("", file->srv->cli, path,
                               &targetcli, targetpath))
 	{
 		d_printf("Could not resolve %s\n", path);
@@ -1358,7 +1356,7 @@ smbc_write_ctx(SMBCCTX *context,
         }
 	
 	/*d_printf(">>>write: resolving %s\n", path);*/
-	if (!cli_resolve_path("", &file->srv->cli, path,
+	if (!cli_resolve_path("", file->srv->cli, path,
                               &targetcli, targetpath))
 	{
 		d_printf("Could not resolve %s\n", path);
@@ -1430,7 +1428,7 @@ smbc_close_ctx(SMBCCTX *context,
         }
 	
 	/*d_printf(">>>close: resolving %s\n", path);*/
-	if (!cli_resolve_path("", &file->srv->cli, path,
+	if (!cli_resolve_path("", file->srv->cli, path,
                               &targetcli, targetpath))
 	{
 		d_printf("Could not resolve %s\n", path);
@@ -1500,7 +1498,7 @@ smbc_getatr(SMBCCTX * context,
 	}
 	DEBUG(4,("smbc_getatr: sending qpathinfo\n"));
   
-	if (!cli_resolve_path( "", &srv->cli, fixedpath, &targetcli, targetpath))
+	if (!cli_resolve_path( "", srv->cli, fixedpath, &targetcli, targetpath))
 	{
 		d_printf("Couldn't resolve %s\n", path);
 		return False;
@@ -1565,7 +1563,7 @@ smbc_setatr(SMBCCTX * context, SMBCSRV *srv, char *path,
          * attributes manipulated.
          */
         if (srv->no_pathinfo ||
-            ! cli_setpathinfo(&srv->cli, path, c_time, a_time, m_time, mode)) {
+            ! cli_setpathinfo(srv->cli, path, c_time, a_time, m_time, mode)) {
 
                 /*
                  * setpathinfo is not supported; go to plan B. 
@@ -1581,9 +1579,9 @@ smbc_setatr(SMBCCTX * context, SMBCSRV *srv, char *path,
                 srv->no_pathinfo = True;
 
                 /* Open the file */
-                if ((fd = cli_open(&srv->cli, path, O_RDWR, DENY_NONE)) < 0) {
+                if ((fd = cli_open(srv->cli, path, O_RDWR, DENY_NONE)) < 0) {
 
-                        errno = smbc_errno(context, &srv->cli);
+                        errno = smbc_errno(context, srv->cli);
                         return -1;
                 }
 
@@ -1592,7 +1590,7 @@ smbc_setatr(SMBCCTX * context, SMBCSRV *srv, char *path,
                  * We'll need it in the set call
                  */
                 if (c_time == 0) {
-                        ret = cli_getattrE(&srv->cli, fd,
+                        ret = cli_getattrE(srv->cli, fd,
                                            NULL, NULL,
                                            &c_time, NULL, NULL);
                 } else {
@@ -1619,9 +1617,9 @@ smbc_setatr(SMBCCTX * context, SMBCSRV *srv, char *path,
                         if (c_time > m_time) c_time = m_time;
                         
                         /* Set the new attributes */
-                        ret = cli_setattrE(&srv->cli, fd,
+                        ret = cli_setattrE(srv->cli, fd,
                                            c_time, a_time, m_time);
-                        cli_close(&srv->cli, fd);
+                        cli_close(srv->cli, fd);
                 }
 
                 /*
@@ -1631,11 +1629,11 @@ smbc_setatr(SMBCCTX * context, SMBCSRV *srv, char *path,
                  * seems to work on win98.
                  */
                 if (ret && mode != (uint16) -1) {
-                        ret = cli_setatr(&srv->cli, path, mode, 0);
+                        ret = cli_setatr(srv->cli, path, mode, 0);
                 }
 
                 if (! ret) {
-                        errno = smbc_errno(context, &srv->cli);
+                        errno = smbc_errno(context, srv->cli);
                         return False;
                 }
         }
@@ -1695,7 +1693,7 @@ smbc_unlink_ctx(SMBCCTX *context,
 	}
 
 	/*d_printf(">>>unlink: resolving %s\n", path);*/
-	if (!cli_resolve_path( "", &srv->cli, path, &targetcli, targetpath))
+	if (!cli_resolve_path( "", srv->cli, path, &targetcli, targetpath))
 	{
 		d_printf("Could not resolve %s\n", path);
 		return -1;
@@ -1828,14 +1826,14 @@ smbc_rename_ctx(SMBCCTX *ocontext,
 	}
 
 	/*d_printf(">>>rename: resolving %s\n", path1);*/
-	if (!cli_resolve_path( "", &srv->cli, path1, &targetcli1, targetpath1))
+	if (!cli_resolve_path( "", srv->cli, path1, &targetcli1, targetpath1))
 	{
 		d_printf("Could not resolve %s\n", path1);
 		return -1;
 	}
 	/*d_printf(">>>rename: resolved path as %s\n", targetpath1);*/
 	/*d_printf(">>>rename: resolving %s\n", path2);*/
-	if (!cli_resolve_path( "", &srv->cli, path2, &targetcli2, targetpath2))
+	if (!cli_resolve_path( "", srv->cli, path2, &targetcli2, targetpath2))
 	{
 		d_printf("Could not resolve %s\n", path2);
 		return -1;
@@ -1930,7 +1928,7 @@ smbc_lseek_ctx(SMBCCTX *context,
 			}
 		
 		/*d_printf(">>>lseek: resolving %s\n", path);*/
-		if (!cli_resolve_path("", &file->srv->cli, path,
+		if (!cli_resolve_path("", file->srv->cli, path,
                                       &targetcli, targetpath))
 		{
 			d_printf("Could not resolve %s\n", path);
@@ -2099,7 +2097,7 @@ smbc_stat_ctx(SMBCCTX *context,
 	if (!smbc_getatr(context, srv, path, &mode, &size, 
 			 &c_time, &a_time, &m_time, &ino)) {
 
-		errno = smbc_errno(context, &srv->cli);
+		errno = smbc_errno(context, srv->cli);
 		return -1;
 		
 	}
@@ -2175,7 +2173,7 @@ smbc_fstat_ctx(SMBCCTX *context,
         }
 	
 	/*d_printf(">>>fstat: resolving %s\n", path);*/
-	if (!cli_resolve_path("", &file->srv->cli, path,
+	if (!cli_resolve_path("", file->srv->cli, path,
                               &targetcli, targetpath))
 	{
 		d_printf("Could not resolve %s\n", path);
@@ -2676,7 +2674,7 @@ smbc_opendir_ctx(SMBCCTX *context,
 
                         /* Now, list the stuff ... */
                         
-                        if (!cli_NetServerEnum(&srv->cli,
+                        if (!cli_NetServerEnum(srv->cli,
                                                workgroup,
                                                SV_TYPE_DOMAIN_ENUM,
                                                list_unique_wg_fn,
@@ -2772,7 +2770,7 @@ smbc_opendir_ctx(SMBCCTX *context,
 				dir->srv = srv;
 
 				/* Now, list the servers ... */
-				if (!cli_NetServerEnum(&srv->cli, server,
+				if (!cli_NetServerEnum(srv->cli, server,
                                                        0x0000FFFE, list_fn,
 						       (void *)dir)) {
 
@@ -2808,15 +2806,15 @@ smbc_opendir_ctx(SMBCCTX *context,
                                 /* List the shares ... */
 
                                 if (net_share_enum_rpc(
-                                            &srv->cli,
+                                            srv->cli,
                                             list_fn,
                                             (void *) dir) < 0 &&
                                     cli_RNetShareEnum(
-                                            &srv->cli,
+                                            srv->cli,
                                             list_fn, 
                                             (void *)dir) < 0) {
                                                 
-                                        errno = cli_errno(&srv->cli);
+                                        errno = cli_errno(srv->cli);
                                         if (dir) {
                                                 SAFE_FREE(dir->fname);
                                                 SAFE_FREE(dir);
@@ -2866,7 +2864,7 @@ smbc_opendir_ctx(SMBCCTX *context,
                         p = path + strlen(path);
 			pstrcat(path, "\\*");
 
-			if (!cli_resolve_path("", &srv->cli, path,
+			if (!cli_resolve_path("", srv->cli, path,
                                               &targetcli, targetpath))
 			{
 				d_printf("Could not resolve %s\n", path);
@@ -3215,7 +3213,7 @@ smbc_mkdir_ctx(SMBCCTX *context,
 	}
 
 	/*d_printf(">>>mkdir: resolving %s\n", path);*/
-	if (!cli_resolve_path( "", &srv->cli, path, &targetcli, targetpath))
+	if (!cli_resolve_path( "", srv->cli, path, &targetcli, targetpath))
 	{
 		d_printf("Could not resolve %s\n", path);
 		return -1;
@@ -3312,7 +3310,7 @@ smbc_rmdir_ctx(SMBCCTX *context,
 	}
 
 	/*d_printf(">>>rmdir: resolving %s\n", path);*/
-	if (!cli_resolve_path( "", &srv->cli, path, &targetcli, targetpath))
+	if (!cli_resolve_path( "", srv->cli, path, &targetcli, targetpath))
 	{
 		d_printf("Could not resolve %s\n", path);
 		return -1;
@@ -3568,8 +3566,8 @@ smbc_chmod_ctx(SMBCCTX *context,
 	if ((newmode & S_IXGRP) && lp_map_system(-1)) mode |= aSYSTEM;
 	if ((newmode & S_IXOTH) && lp_map_hidden(-1)) mode |= aHIDDEN;
 
-	if (!cli_setatr(&srv->cli, path, mode, 0)) {
-		errno = smbc_errno(context, &srv->cli);
+	if (!cli_setatr(srv->cli, path, mode, 0)) {
+		errno = smbc_errno(context, srv->cli);
 		return -1;
 	}
 	
@@ -4096,7 +4094,7 @@ dos_attr_query(SMBCCTX *context,
                          &mode, &size, 
                          &c_time, &a_time, &m_time, &inode)) {
         
-                errno = smbc_errno(context, &srv->cli);
+                errno = smbc_errno(context, srv->cli);
                 DEBUG(5, ("dos_attr_query Failed to query old attributes\n"));
                 return NULL;
         
@@ -4204,7 +4202,7 @@ cacl_get(SMBCCTX *context,
 	SMB_OFF_T size = 0;
 	uint16 mode = 0;
 	SMB_INO_T ino = 0;
-        struct cli_state *cli = &srv->cli;
+        struct cli_state *cli = srv->cli;
 
         /* Copy name so we can strip off exclusions (if any are specified) */
         strncpy(name_sandbox, attr_name, sizeof(name_sandbox) - 1);
@@ -4549,7 +4547,7 @@ cacl_get(SMBCCTX *context,
                 if (!smbc_getatr(context, srv, filename, &mode, &size, 
                                  &c_time, &a_time, &m_time, &ino)) {
                         
-                        errno = smbc_errno(context, &srv->cli);
+                        errno = smbc_errno(context, srv->cli);
                         return -1;
                         
                 }
@@ -5106,8 +5104,8 @@ smbc_setxattr_ctx(SMBCCTX *context,
                 }
 
                 if (ipc_srv) {
-                        ret = cacl_set(ctx, &srv->cli,
-                                       &ipc_srv->cli, &pol, path,
+                        ret = cacl_set(ctx, srv->cli,
+                                       ipc_srv->cli, &pol, path,
                                        namevalue,
                                        (*namevalue == '*'
                                         ? SMBC_XATTR_MODE_SET
@@ -5169,8 +5167,8 @@ smbc_setxattr_ctx(SMBCCTX *context,
                         errno = ENOMEM;
                         ret = -1;
                 } else {
-                        ret = cacl_set(ctx, &srv->cli,
-                                       &ipc_srv->cli, &pol, path,
+                        ret = cacl_set(ctx, srv->cli,
+                                       ipc_srv->cli, &pol, path,
                                        namevalue,
                                        (*namevalue == '*'
                                         ? SMBC_XATTR_MODE_SET
@@ -5200,8 +5198,8 @@ smbc_setxattr_ctx(SMBCCTX *context,
                         errno = ENOMEM;
                         ret = -1;
                 } else {
-                        ret = cacl_set(ctx, &srv->cli,
-                                       &ipc_srv->cli, &pol, path,
+                        ret = cacl_set(ctx, srv->cli,
+                                       ipc_srv->cli, &pol, path,
                                        namevalue, SMBC_XATTR_MODE_CHOWN, 0);
                 }
                 talloc_destroy(ctx);
@@ -5227,8 +5225,8 @@ smbc_setxattr_ctx(SMBCCTX *context,
                         errno = ENOMEM;
                         ret = -1;
                 } else {
-                        ret = cacl_set(ctx, &srv->cli,
-                                       &ipc_srv->cli, &pol, path,
+                        ret = cacl_set(ctx, srv->cli,
+                                       ipc_srv->cli, &pol, path,
                                        namevalue, SMBC_XATTR_MODE_CHOWN, 0);
                 }
                 talloc_destroy(ctx);
@@ -5386,12 +5384,12 @@ smbc_getxattr_ctx(SMBCCTX *context,
 
                 /* Yup. */
                 ret = cacl_get(context, ctx, srv,
-                               ipc_srv == NULL ? NULL : &ipc_srv->cli, 
+                               ipc_srv == NULL ? NULL : ipc_srv->cli, 
                                &pol, path,
                                CONST_DISCARD(char *, name),
                                CONST_DISCARD(char *, value), size);
                 if (ret < 0 && errno == 0) {
-                        errno = smbc_errno(context, &srv->cli);
+                        errno = smbc_errno(context, srv->cli);
                 }
                 talloc_destroy(ctx);
                 return ret;
@@ -5482,8 +5480,8 @@ smbc_removexattr_ctx(SMBCCTX *context,
             StrCaseCmp(name, "system.nt_sec_desc.*+") == 0) {
 
                 /* Yup. */
-                ret = cacl_set(ctx, &srv->cli,
-                               &ipc_srv->cli, &pol, path,
+                ret = cacl_set(ctx, srv->cli,
+                               ipc_srv->cli, &pol, path,
                                NULL, SMBC_XATTR_MODE_REMOVE_ALL, 0);
                 talloc_destroy(ctx);
                 return ret;
@@ -5502,8 +5500,8 @@ smbc_removexattr_ctx(SMBCCTX *context,
             StrnCaseCmp(name, "system.nt_sec_desc.acl+", 23) == 0) {
 
                 /* Yup. */
-                ret = cacl_set(ctx, &srv->cli,
-                               &ipc_srv->cli, &pol, path,
+                ret = cacl_set(ctx, srv->cli,
+                               ipc_srv->cli, &pol, path,
                                name + 19, SMBC_XATTR_MODE_REMOVE, 0);
                 talloc_destroy(ctx);
                 return ret;
@@ -5753,10 +5751,10 @@ smbc_list_print_jobs_ctx(SMBCCTX *context,
 
         }
 
-        if (cli_print_queue(&srv->cli,
+        if (cli_print_queue(srv->cli,
                             (void (*)(struct print_job_info *))fn) < 0) {
 
-                errno = smbc_errno(context, &srv->cli);
+                errno = smbc_errno(context, srv->cli);
                 return -1;
 
         }
@@ -5823,10 +5821,10 @@ smbc_unlink_print_job_ctx(SMBCCTX *context,
 
         }
 
-        if ((err = cli_printjob_del(&srv->cli, id)) != 0) {
+        if ((err = cli_printjob_del(srv->cli, id)) != 0) {
 
                 if (err < 0)
-                        errno = smbc_errno(context, &srv->cli);
+                        errno = smbc_errno(context, srv->cli);
                 else if (err == ERRnosuchprintjob)
                         errno = EINVAL;
                 return -1;
@@ -5945,8 +5943,8 @@ smbc_free_context(SMBCCTX *context,
                         s = context->internal->_servers;
                         while (s) {
                                 DEBUG(1, ("Forced shutdown: %p (fd=%d)\n",
-                                          s, s->cli.fd));
-                                cli_shutdown(&s->cli);
+                                          s, s->cli->fd));
+                                cli_shutdown(s->cli);
                                 context->callbacks.remove_cached_srv_fn(context,
                                                                         s);
                                 next = s->next;
