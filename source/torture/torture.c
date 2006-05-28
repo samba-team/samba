@@ -94,28 +94,27 @@ void *shm_setup(int size)
 }
 
 
-static BOOL open_nbt_connection(struct cli_state *c)
+static struct cli_state *open_nbt_connection(void)
 {
 	struct nmb_name called, calling;
 	struct in_addr ip;
-
-	ZERO_STRUCTP(c);
+	struct cli_state *c;
 
 	make_nmb_name(&calling, myname, 0x0);
 	make_nmb_name(&called , host, 0x20);
 
         zero_ip(&ip);
 
-	if (!cli_initialise(c)) {
+	if (!(c = cli_initialise())) {
 		printf("Failed initialize cli_struct to connect with %s\n", host);
-		return False;
+		return NULL;
 	}
 
 	c->port = port_to_use;
 
 	if (!cli_connect(c, host, &ip)) {
 		printf("Failed to connect with %s\n", host);
-		return False;
+		return NULL;
 	}
 
 	c->use_kerberos = use_kerberos;
@@ -131,7 +130,7 @@ static BOOL open_nbt_connection(struct cli_state *c)
 		 */
 		if (!cli_connect(c, host, &ip)) {
 			printf("Failed to connect with %s\n", host);
-			return False;
+			return NULL;
 		}
 
 		make_nmb_name(&called, "*SMBSERVER", 0x20);
@@ -140,11 +139,11 @@ static BOOL open_nbt_connection(struct cli_state *c)
 			printf("We tried with a called name of %s & %s\n",
 				host, "*SMBSERVER");
 			cli_shutdown(c);
-			return False;
+			return NULL;
 		}
 	}
 
-	return True;
+	return c;
 }
 
 BOOL torture_open_connection(struct cli_state **c)
@@ -462,8 +461,8 @@ static BOOL rw_torture2(struct cli_state *c1, struct cli_state *c2)
 	int fnum1;
 	int fnum2;
 	int i;
-	uchar buf[131072];
-	uchar buf_rd[131072];
+	char buf[131072];
+	char buf_rd[131072];
 	BOOL correct = True;
 	ssize_t bytes_read;
 
@@ -2174,20 +2173,20 @@ static void rand_buf(char *buf, int len)
 static BOOL run_negprot_nowait(int dummy)
 {
 	int i;
-	static struct cli_state cli;
+	static struct cli_state *cli;
 	BOOL correct = True;
 
 	printf("starting negprot nowait test\n");
 
-	if (!open_nbt_connection(&cli)) {
+	if (!(cli = open_nbt_connection())) {
 		return False;
 	}
 
 	for (i=0;i<50000;i++) {
-		cli_negprot_send(&cli);
+		cli_negprot_send(cli);
 	}
 
-	if (!torture_close_connection(&cli)) {
+	if (!torture_close_connection(cli)) {
 		correct = False;
 	}
 
@@ -4550,8 +4549,8 @@ static BOOL run_dirtest1(int dummy)
 
 static BOOL run_error_map_extract(int dummy) {
 	
-	static struct cli_state c_dos;
-	static struct cli_state c_nt;
+	static struct cli_state *c_dos;
+	static struct cli_state *c_nt;
 
 	uint32 error;
 
@@ -4564,81 +4563,81 @@ static BOOL run_error_map_extract(int dummy) {
 
 	/* NT-Error connection */
 
-	if (!open_nbt_connection(&c_nt)) {
+	if (!(c_nt = open_nbt_connection())) {
 		return False;
 	}
 
-	c_nt.use_spnego = False;
+	c_nt->use_spnego = False;
 
-	if (!cli_negprot(&c_nt)) {
-		printf("%s rejected the NT-error negprot (%s)\n",host, cli_errstr(&c_nt));
-		cli_shutdown(&c_nt);
+	if (!cli_negprot(c_nt)) {
+		printf("%s rejected the NT-error negprot (%s)\n",host, cli_errstr(c_nt));
+		cli_shutdown(c_nt);
 		return False;
 	}
 
-	if (!cli_session_setup(&c_nt, "", "", 0, "", 0,
+	if (!cli_session_setup(c_nt, "", "", 0, "", 0,
 			       workgroup)) {
-		printf("%s rejected the NT-error initial session setup (%s)\n",host, cli_errstr(&c_nt));
+		printf("%s rejected the NT-error initial session setup (%s)\n",host, cli_errstr(c_nt));
 		return False;
 	}
 
 	/* DOS-Error connection */
 
-	if (!open_nbt_connection(&c_dos)) {
+	if (!(c_dos = open_nbt_connection())) {
 		return False;
 	}
 
-	c_dos.use_spnego = False;
-	c_dos.force_dos_errors = True;
+	c_dos->use_spnego = False;
+	c_dos->force_dos_errors = True;
 
-	if (!cli_negprot(&c_dos)) {
-		printf("%s rejected the DOS-error negprot (%s)\n",host, cli_errstr(&c_dos));
-		cli_shutdown(&c_dos);
+	if (!cli_negprot(c_dos)) {
+		printf("%s rejected the DOS-error negprot (%s)\n",host, cli_errstr(c_dos));
+		cli_shutdown(c_dos);
 		return False;
 	}
 
-	if (!cli_session_setup(&c_dos, "", "", 0, "", 0,
+	if (!cli_session_setup(c_dos, "", "", 0, "", 0,
 			       workgroup)) {
-		printf("%s rejected the DOS-error initial session setup (%s)\n",host, cli_errstr(&c_dos));
+		printf("%s rejected the DOS-error initial session setup (%s)\n",host, cli_errstr(c_dos));
 		return False;
 	}
 
 	for (error=(0xc0000000 | 0x1); error < (0xc0000000| 0xFFF); error++) {
 		fstr_sprintf(user, "%X", error);
 
-		if (cli_session_setup(&c_nt, user, 
+		if (cli_session_setup(c_nt, user, 
 				       password, strlen(password),
 				       password, strlen(password),
 				      workgroup)) {
 			printf("/** Session setup succeeded.  This shouldn't happen...*/\n");
 		}
 		
-		flgs2 = SVAL(c_nt.inbuf,smb_flg2);
+		flgs2 = SVAL(c_nt->inbuf,smb_flg2);
 		
 		/* Case #1: 32-bit NT errors */
 		if (flgs2 & FLAGS2_32_BIT_ERROR_CODES) {
-			nt_status = NT_STATUS(IVAL(c_nt.inbuf,smb_rcls));
+			nt_status = NT_STATUS(IVAL(c_nt->inbuf,smb_rcls));
 		} else {
 			printf("/** Dos error on NT connection! (%s) */\n", 
-			       cli_errstr(&c_nt));
+			       cli_errstr(c_nt));
 			nt_status = NT_STATUS(0xc0000000);
 		}
 
-		if (cli_session_setup(&c_dos, user, 
+		if (cli_session_setup(c_dos, user, 
 				       password, strlen(password),
 				       password, strlen(password),
 				       workgroup)) {
 			printf("/** Session setup succeeded.  This shouldn't happen...*/\n");
 		}
-		flgs2 = SVAL(c_dos.inbuf,smb_flg2), errnum;
+		flgs2 = SVAL(c_dos->inbuf,smb_flg2), errnum;
 		
 		/* Case #1: 32-bit NT errors */
 		if (flgs2 & FLAGS2_32_BIT_ERROR_CODES) {
 			printf("/** NT error on DOS connection! (%s) */\n", 
-			       cli_errstr(&c_nt));
+			       cli_errstr(c_nt));
 			errnum = errclass = 0;
 		} else {
-			cli_dos_error(&c_dos, &errclass, &errnum);
+			cli_dos_error(c_dos, &errclass, &errnum);
 		}
 
 		if (NT_STATUS_V(nt_status) != error) { 
