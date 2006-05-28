@@ -19,6 +19,24 @@
 */
 
 
+#include "librpc/gen_ndr/samr.h"
+
+/*
+ * IO structures for userinfo.c functions
+ */
+
+struct libnet_rpc_userinfo {
+	struct {
+		struct policy_handle domain_handle;
+		const char *sid;
+		uint16_t level;
+	} in;
+	struct {
+		union samr_UserInfo info;
+	} out;
+};
+
+
 /*
  * Monitor messages sent from userinfo.c functions
  */

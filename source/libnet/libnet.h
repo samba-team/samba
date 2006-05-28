@@ -47,6 +47,9 @@ struct libnet_context {
 
 
 #include "lib/ldb/include/ldb.h"
+#include "libnet/composite.h"
+#include "libnet/userman.h"
+#include "libnet/userinfo.h"
 #include "libnet/libnet_passwd.h"
 #include "libnet/libnet_time.h"
 #include "libnet/libnet_rpc.h"
@@ -57,5 +60,4 @@ struct libnet_context {
 #include "libnet/libnet_share.h"
 #include "libnet/libnet_lookup.h"
 #include "libnet/libnet_domain.h"
-#include "libnet/composite.h"
 #include "libnet/libnet_proto.h"

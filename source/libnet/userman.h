@@ -20,6 +20,66 @@
 
 
 /*
+ * IO structures for userman.c functions
+ */
+
+struct libnet_rpc_useradd {
+	struct {
+		struct policy_handle domain_handle;
+		const char *username;
+	} in;
+	struct {
+		struct policy_handle user_handle;
+	} out;
+};
+
+
+struct libnet_rpc_userdel {
+	struct {
+		struct policy_handle domain_handle;
+		const char *username;
+	} in;
+	struct {
+		struct policy_handle user_handle;
+	} out;
+};
+
+
+#define USERMOD_FIELD_ACCOUNT_NAME    ( 0x00000001 )
+#define USERMOD_FIELD_FULL_NAME       ( 0x00000002 )
+#define USERMOD_FIELD_DESCRIPTION     ( 0x00000010 )
+#define USERMOD_FIELD_COMMENT         ( 0x00000020 )
+#define USERMOD_FIELD_LOGON_SCRIPT    ( 0x00000100 )
+#define USERMOD_FIELD_PROFILE_PATH    ( 0x00000200 )
+#define USERMOD_FIELD_ACCT_EXPIRY     ( 0x00004000 )
+#define USERMOD_FIELD_ALLOW_PASS_CHG  ( 0x00008000 )
+#define USERMOD_FIELD_FORCE_PASS_CHG  ( 0x00010000 )
+#define USERMOD_FIELD_ACCT_FLAGS      ( 0x00100000 )
+
+struct libnet_rpc_usermod {
+	struct {
+		struct policy_handle domain_handle;
+		const char *username;
+
+		struct usermod_change {
+			uint32_t fields;    /* bitmask field */
+
+			const char *account_name;
+			const char *full_name;
+			const char *description;
+			const char *comment;
+			const char *logon_script;
+			const char *profile_path;
+			struct timeval *acct_expiry;
+			struct timeval *allow_password_change;
+			struct timeval *force_password_change;
+			uint32_t acct_flags;
+		} change;
+	} in;
+};
+
+
+/*
  * Monitor messages sent from userman.c functions
  */
 
