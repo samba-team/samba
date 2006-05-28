@@ -140,7 +140,7 @@ BOOL torture_bind_authcontext(struct torture_context *torture)
 		mem_ctx, "\\\\%s", dcerpc_server_name(lsa_pipe));
 	ZERO_STRUCT(objectattr);
 	openpolicy.in.attr = &objectattr;
-	openpolicy.in.access_mask = SEC_GENERIC_WRITE;
+	openpolicy.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	openpolicy.out.handle = &handle;
 
 	status = dcerpc_lsa_OpenPolicy2(lsa_pipe, mem_ctx, &openpolicy);
