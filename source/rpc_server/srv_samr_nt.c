@@ -2498,7 +2498,8 @@ NTSTATUS _samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u,
 	}
 		
 	DEBUG(5, ("_samr_create_user: %s can add this account : %s\n",
-		p->pipe_user_name, can_add_account ? "True":"False" ));
+		  uidtoname(p->pipe_user.ut.uid),
+		  can_add_account ? "True":"False" ));
 		
 	/********** BEGIN Admin BLOCK **********/
 
@@ -3366,7 +3367,8 @@ NTSTATUS _samr_set_userinfo(pipes_struct *p, SAMR_Q_SET_USERINFO *q_u, SAMR_R_SE
 	}
 	
 	DEBUG(5, ("_samr_set_userinfo: %s does%s possess sufficient rights\n",
-		p->pipe_user_name, has_enough_rights ? "" : " not"));
+		  uidtoname(p->pipe_user.ut.uid),
+		  has_enough_rights ? "" : " not"));
 
 	/* ================ BEGIN SeMachineAccountPrivilege BLOCK ================ */
 	
@@ -3518,7 +3520,8 @@ NTSTATUS _samr_set_userinfo2(pipes_struct *p, SAMR_Q_SET_USERINFO2 *q_u, SAMR_R_
 	}
 	
 	DEBUG(5, ("_samr_set_userinfo2: %s does%s possess sufficient rights\n",
-		p->pipe_user_name, has_enough_rights ? "" : " not"));
+		  uidtoname(p->pipe_user.ut.uid),
+		  has_enough_rights ? "" : " not"));
 
 	/* ================ BEGIN SeMachineAccountPrivilege BLOCK ================ */
 	
