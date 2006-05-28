@@ -190,6 +190,9 @@ static int asq_search(struct ldb_module *module, struct ldb_control *control, st
 }
 
 struct asq_async_context {
+
+	enum {ASQ_SEARCH_BASE, ASQ_SEARCH_MULTI} step;
+
 	struct ldb_module *module;
 	void *up_context;
 	int (*up_callback)(struct ldb_context *, void *, struct ldb_async_result *);
@@ -411,6 +414,8 @@ static int asq_search_async(struct ldb_module *module, struct ldb_control *contr
 	ac->base_req->async.callback = asq_base_callback;
 	ac->base_req->async.timeout = req->async.timeout;
 
+	ac->step = ASQ_SEARCH_BASE;
+
 	ret = ldb_request(module->ldb, ac->base_req);
 
 	if (ret != LDB_SUCCESS) {
@@ -464,10 +469,12 @@ static int asq_async_requests(struct ldb_async_handle *handle) {
 		ac->reqs[i]->async.timeout = ac->base_req->async.timeout;
 	}
 
+	ac->step = ASQ_SEARCH_MULTI;
+
 	return LDB_SUCCESS;
 }
 
-static int asq_async_wait(struct ldb_async_handle *handle, enum ldb_async_wait_type type)
+static int asq_async_wait_none(struct ldb_async_handle *handle)
 {
 	struct asq_async_context *ac;
 	int ret;
@@ -485,72 +492,88 @@ static int asq_async_wait(struct ldb_async_handle *handle, enum ldb_async_wait_t
 
 	ac = talloc_get_type(handle->private_data, struct asq_async_context);
 
-/* TODO: make this like password_hash */
 
-	if (type == LDB_WAIT_ALL) {
-		while (ac->base_req->async.handle->state != LDB_ASYNC_DONE) {
-			ret = ldb_async_wait(ac->base_req->async.handle, type);
-			if (ret != LDB_SUCCESS) goto error;
+	switch (ac->step) {
+	case ASQ_SEARCH_BASE:
+		ret = ldb_async_wait(ac->base_req->async.handle, LDB_WAIT_NONE);
+		
+		if (ret != LDB_SUCCESS) {
+			handle->status = ret;
+			goto done;
 		}
 
-		ret = asq_async_requests(handle);
-		if (ret != LDB_SUCCESS) goto error;
-
-		for (; ac->cur_req < ac->num_reqs; ac->cur_req++) {
-			ret = ldb_request(ac->module->ldb, ac->reqs[ac->cur_req]);
-			if (ret != LDB_SUCCESS) goto error;
-
-			while (ac->reqs[ac->cur_req]->async.handle->state != LDB_ASYNC_DONE) {
-				ret = ldb_async_wait(ac->reqs[ac->cur_req]->async.handle, type);
-				if (ret != LDB_SUCCESS) goto error;
-			}
+		if (ac->base_req->async.handle->status != LDB_SUCCESS) {
+			handle->status = ac->base_req->async.handle->status;
+			goto done;
 		}
-
-		return asq_terminate(handle);
-	}
-
-	/* type == LDB_WAIT_NONE */
-
-	if (ac->base_req->async.handle->state != LDB_ASYNC_DONE) {
-		ret = ldb_async_wait(ac->base_req->async.handle, type);
-		if (ret != LDB_SUCCESS) goto error;
-
 		if (ac->base_req->async.handle->state != LDB_ASYNC_DONE) {
-			return ret;
+			return LDB_SUCCESS;
 		}
-	}
 
-	if (ac->reqs == NULL) {
-		/* need to build up the reqs array before calling out */
 		ret = asq_async_requests(handle);
-		if (ret != LDB_SUCCESS) goto error;
-	}
 
-	if (ac->cur_req < ac->num_reqs) {
+	case ASQ_SEARCH_MULTI:
 
 		if (ac->reqs[ac->cur_req]->async.handle == NULL) {
 			ret = ldb_request(ac->module->ldb, ac->reqs[ac->cur_req]);
-			if (ret != LDB_SUCCESS) goto error;
+			if (ret != LDB_SUCCESS) {
+				return ret;
+			}
 		}
 
-		if (ac->reqs[ac->cur_req]->async.handle->state != LDB_ASYNC_DONE) {
-			ret = ldb_async_wait(ac->reqs[ac->cur_req]->async.handle, type);
-			if (ret != LDB_SUCCESS) goto error;
+		ret = ldb_async_wait(ac->reqs[ac->cur_req]->async.handle, LDB_WAIT_NONE);
+		
+		if (ret != LDB_SUCCESS) {
+			handle->status = ret;
+			goto done;
+		}
+		if (ac->reqs[ac->cur_req]->async.handle->status != LDB_SUCCESS) {
+			handle->status = ac->reqs[ac->cur_req]->async.handle->status;
 		}
 
 		if (ac->reqs[ac->cur_req]->async.handle->state == LDB_ASYNC_DONE) {
 			ac->cur_req++;
 		}
 
-		return handle->status;
+		if (ac->cur_req < ac->num_reqs) {
+			return LDB_SUCCESS;
+		}
+
+		return asq_terminate(handle);
+
+	default:
+		ret = LDB_ERR_OPERATIONS_ERROR;
+		goto done;
 	}
 
-	return asq_terminate(handle);
+	ret = LDB_SUCCESS;
 
-error:
+done:
 	handle->state = LDB_ASYNC_DONE;
-	handle->status = ret;
 	return ret;
+}
+
+static int asq_async_wait_all(struct ldb_async_handle *handle)
+{
+	int ret;
+
+	while (handle->state != LDB_ASYNC_DONE) {
+		ret = asq_async_wait_none(handle);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+	}
+
+	return handle->status;
+}
+
+static int asq_async_wait(struct ldb_async_handle *handle, enum ldb_async_wait_type type)
+{
+	if (type == LDB_WAIT_ALL) {
+		return asq_async_wait_all(handle);
+	} else {
+		return asq_async_wait_none(handle);
+	}
 }
 
 static int asq(struct ldb_module *module, struct ldb_request *req)
