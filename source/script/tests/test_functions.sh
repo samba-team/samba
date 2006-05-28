@@ -40,7 +40,7 @@ samba3_check_or_start() {
 		rm -f $NMBD_TEST_LOG
 		echo -n "STARTING NMBD..."
 		((
-			if ! test -n "$NMBD_MAXTIME"; then
+			if test ! -n "$NMBD_MAXTIME"; then
 			    NMBD_MAXTIME=2700
 			fi
 			timelimit $NMBD_MAXTIME $NMBD_VALGRIND $SRCDIR/bin/nmbd -F -S --no-process-group -d0 -s $SERVERCONFFILE > $NMBD_TEST_LOG 2>&1 &
@@ -69,7 +69,7 @@ samba3_check_or_start() {
 		rm -f $SMBD_TEST_LOG
 		echo -n "STARTING SMBD..."
 		((
-			if ! test -n "$SMBD_MAXTIME"; then
+			if test ! -n "$SMBD_MAXTIME"; then
 			    SMBD_MAXTIME=2700
 			fi
 			timelimit $SMBD_MAXTIME $SMBD_VALGRIND $SRCDIR/bin/smbd -F -S --no-process-group -d0 -s $SERVERCONFFILE > $SMBD_TEST_LOG 2>&1 &
