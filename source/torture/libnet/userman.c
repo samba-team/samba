@@ -21,7 +21,6 @@
 
 #include "includes.h"
 #include "torture/rpc/rpc.h"
-#include "libnet/userman.h"
 #include "libnet/libnet.h"
 #include "librpc/gen_ndr/ndr_samr_c.h"
 
