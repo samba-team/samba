@@ -54,3 +54,24 @@ struct libnet_DeleteUser {
 		const char *error_string;
 	} out;
 };
+
+
+struct libnet_ModifyUser {
+	struct {
+		const char *user_name;
+		const char *domain_name;
+
+		const char *full_name;
+		const char *description;
+		const char *comment;
+		const char *logon_script;
+		const char *profile_path;
+		struct timeval *acct_expiry;
+		struct timeval *allow_password_change;
+		struct timeval *force_password_change;
+		uint32_t acct_flags;
+	} in;
+	struct {
+		const char *error_string;
+	} out;
+};
