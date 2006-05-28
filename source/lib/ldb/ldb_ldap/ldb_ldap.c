@@ -718,7 +718,7 @@ static int lldb_parse_result(struct ldb_async_handle *handle, LDAPMessage *resul
 	char *errmsgp = NULL;
 	char **referralsp = NULL;
 	LDAPControl **serverctrlsp = NULL;
-	int ret;
+	int ret = LDB_SUCCESS;
 
 	type = ldap_msgtype(result);
 
@@ -732,24 +732,24 @@ static int lldb_parse_result(struct ldb_async_handle *handle, LDAPMessage *resul
 
 			ares = talloc_zero(ac, struct ldb_async_result);
 			if (!ares) {
-				handle->status = LDB_ERR_OPERATIONS_ERROR;
+				ret = LDB_ERR_OPERATIONS_ERROR;
 				goto error;
 			}
 
 			ares->message = ldb_msg_new(ares);
 			if (!ares->message) {
-				handle->status = LDB_ERR_OPERATIONS_ERROR;
+				ret = LDB_ERR_OPERATIONS_ERROR;
 				goto error;
 			}
 
 			dn = ldap_get_dn(lldb->ldap, msg);
 			if (!dn) {
-				handle->status = LDB_ERR_OPERATIONS_ERROR;
+				ret = LDB_ERR_OPERATIONS_ERROR;
 				goto error;
 			}
 			ares->message->dn = ldb_dn_explode_or_special(ares->message, dn);
 			if (ares->message->dn == NULL) {
-				handle->status = LDB_ERR_OPERATIONS_ERROR;
+				ret = LDB_ERR_OPERATIONS_ERROR;
 				goto error;
 			}
 			ldap_memfree(dn);
@@ -774,11 +774,7 @@ static int lldb_parse_result(struct ldb_async_handle *handle, LDAPMessage *resul
 
 
 			ares->type = LDB_REPLY_ENTRY;
-			handle->state = LDB_ASYNC_PENDING;
 			ret = ac->callback(ac->module->ldb, ac->context, ares);
-			if (ret != LDB_SUCCESS) {
-				handle->status = ret;
-			}
 		} else {
 			handle->status = LDB_ERR_PROTOCOL_ERROR;
 			handle->state = LDB_ASYNC_DONE;
@@ -789,7 +785,7 @@ static int lldb_parse_result(struct ldb_async_handle *handle, LDAPMessage *resul
 		if (ldap_parse_result(lldb->ldap, result, &handle->status,
 					&matcheddnp, &errmsgp,
 					&referralsp, &serverctrlsp, 1) != LDAP_SUCCESS) {
-			handle->status = LDB_ERR_OPERATIONS_ERROR;
+			ret = LDB_ERR_OPERATIONS_ERROR;
 			goto error;
 		}
 		if (referralsp == NULL) {
@@ -799,17 +795,13 @@ static int lldb_parse_result(struct ldb_async_handle *handle, LDAPMessage *resul
 
 		ares = talloc_zero(ac, struct ldb_async_result);
 		if (!ares) {
-			handle->status = LDB_ERR_OPERATIONS_ERROR;
+			ret = LDB_ERR_OPERATIONS_ERROR;
 			goto error;
 		}
 
 		ares->referral = talloc_strdup(ares, *referralsp);
 		ares->type = LDB_REPLY_REFERRAL;
-		handle->state = LDB_ASYNC_PENDING;
 		ret = ac->callback(ac->module->ldb, ac->context, ares);
-		if (ret != LDB_SUCCESS) {
-			handle->status = ret;
-		}
 
 		break;
 
@@ -823,7 +815,7 @@ static int lldb_parse_result(struct ldb_async_handle *handle, LDAPMessage *resul
 
 		ares = talloc_zero(ac, struct ldb_async_result);
 		if (!ares) {
-			handle->status = LDB_ERR_OPERATIONS_ERROR;
+			ret = LDB_ERR_OPERATIONS_ERROR;
 			goto error;
 		}
 
@@ -835,9 +827,6 @@ static int lldb_parse_result(struct ldb_async_handle *handle, LDAPMessage *resul
 		ares->type = LDB_REPLY_DONE;
 		handle->state = LDB_ASYNC_DONE;
 		ret = ac->callback(ac->module->ldb, ac->context, ares);
-		if (ret != LDB_SUCCESS) {
-			handle->status = ret;
-		}
 
 		break;
 
@@ -853,13 +842,13 @@ static int lldb_parse_result(struct ldb_async_handle *handle, LDAPMessage *resul
 		}
 		if (ac->callback && handle->status == LDB_SUCCESS) {
 			ares = NULL; /* FIXME: build a corresponding ares to pass on */
-			handle->status = ac->callback(ac->module->ldb, ac->context, ares);
+			ret = ac->callback(ac->module->ldb, ac->context, ares);
 		}
 		handle->state = LDB_ASYNC_DONE;
 		break;
 
 	default:
-		handle->status = LDB_ERR_PROTOCOL_ERROR;
+		ret = LDB_ERR_PROTOCOL_ERROR;
 		goto error;
 	}
 
@@ -872,12 +861,12 @@ static int lldb_parse_result(struct ldb_async_handle *handle, LDAPMessage *resul
 	if (serverctrlsp) ldap_controls_free(serverctrlsp);
 
 	ldap_msgfree(result);
-	return handle->status;
+	return ret;
 
 error:
 	handle->state = LDB_ASYNC_DONE;
 	ldap_msgfree(result);
-	return handle->status;
+	return ret;
 }
 
 static int lldb_async_wait(struct ldb_async_handle *handle, enum ldb_async_wait_type type)
@@ -886,7 +875,7 @@ static int lldb_async_wait(struct ldb_async_handle *handle, enum ldb_async_wait_
 	struct lldb_private *lldb = talloc_get_type(handle->module->private_data, struct lldb_private);
 	struct timeval timeout;
 	LDAPMessage *result;
-	int ret = LDB_ERR_OPERATIONS_ERROR;
+	int ret, lret;
 
 	if (handle->state == LDB_ASYNC_DONE) {
 		return handle->status;
@@ -896,40 +885,54 @@ static int lldb_async_wait(struct ldb_async_handle *handle, enum ldb_async_wait_
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
+	handle->state = LDB_ASYNC_PENDING;
 	handle->status = LDB_SUCCESS;
 
 	switch(type) {
 	case LDB_WAIT_NONE:
 		timeout.tv_sec = 0;
 		timeout.tv_usec = 0;
-		ret = ldap_result(lldb->ldap, ac->msgid, 0, &timeout, &result);
-		if (ret == -1) {
-			handle->status = LDB_ERR_OPERATIONS_ERROR;
-			return handle->status;
+
+		lret = ldap_result(lldb->ldap, ac->msgid, 0, &timeout, &result);
+		if (lret == -1) {
+			return LDB_ERR_OPERATIONS_ERROR;
 		}
-		if (ret == 0) {
-			handle->status = LDB_SUCCESS;
-			return handle->status;
+		if (lret == 0) {
+			ret = LDB_SUCCESS;
+			goto done;
 		}
-		ret = lldb_parse_result(handle, result);
-		break;
+
+		return lldb_parse_result(handle, result);
+
 	case LDB_WAIT_ALL:
 		timeout.tv_sec = ac->timeout;
 		timeout.tv_usec = 0;
+		ret = LDB_ERR_OPERATIONS_ERROR;
+
 		while (handle->status == LDB_SUCCESS && handle->state != LDB_ASYNC_DONE) {
-			ret = ldap_result(lldb->ldap, ac->msgid, 0, &timeout, &result);
-			if (ret == -1 || ret == 0) {
-				handle->status = LDB_ERR_OPERATIONS_ERROR;
-				return handle->status;
+
+			lret = ldap_result(lldb->ldap, ac->msgid, 0, &timeout, &result);
+			if (lret == -1) {
+				return LDB_ERR_OPERATIONS_ERROR;
 			}
+			if (lret == 0) {
+				return LDB_ERR_TIME_LIMIT_EXCEEDED;
+			}
+
 			ret = lldb_parse_result(handle, result);
 			if (ret != LDB_SUCCESS) {
 				return ret;
 			}
 		}
+
 		break;
+		
+	default:
+		handle->state = LDB_ASYNC_DONE;
+		ret = LDB_ERR_OPERATIONS_ERROR;
 	}
 
+done:
 	return ret;
 }
 

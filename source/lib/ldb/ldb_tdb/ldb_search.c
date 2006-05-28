@@ -462,15 +462,12 @@ static int ltdb_search_full(struct ldb_async_handle *handle)
 
 	ret = tdb_traverse_read(ltdb->tdb, search_func, handle);
 
-	handle->state = LDB_ASYNC_DONE;
-
 	if (ret == -1) {
 		handle->status = LDB_ERR_OPERATIONS_ERROR;
-		return handle->status;
 	}
 
-	handle->status = LDB_SUCCESS;
-	return handle->status;
+	handle->state = LDB_ASYNC_DONE;
+	return LDB_SUCCESS;
 }
 
 static int ltdb_search_sync_callback(struct ldb_context *ldb, void *context, struct ldb_async_result *ares)
@@ -548,7 +545,6 @@ int ltdb_search_async(struct ldb_module *module, const struct ldb_dn *base,
 
 	*handle = init_ltdb_handle(ltdb, module, context, callback);
 	if (*handle == NULL) {
-		talloc_free(*handle);
 		ltdb_unlock_read(module);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
@@ -566,13 +562,13 @@ int ltdb_search_async(struct ldb_module *module, const struct ldb_dn *base,
 	}
 	if (ret != LDB_SUCCESS) {
 		ldb_set_errstring(module->ldb, talloc_strdup(module->ldb, "Indexed and full searches both failed!\n"));
-		talloc_free(*handle);
-		*handle = NULL;
+		(*handle)->state = LDB_ASYNC_DONE;
+		(*handle)->status = ret;
 	}
 
 	ltdb_unlock_read(module);
 
-	return ret;
+	return LDB_SUCCESS;
 }
 
 /*

@@ -481,8 +481,11 @@ static int asq_async_wait(struct ldb_async_handle *handle, enum ldb_async_wait_t
 	}
 
 	handle->state = LDB_ASYNC_PENDING;
+	handle->status = LDB_SUCCESS;
 
 	ac = talloc_get_type(handle->private_data, struct asq_async_context);
+
+/* TODO: make this like password_hash */
 
 	if (type == LDB_WAIT_ALL) {
 		while (ac->base_req->async.handle->state != LDB_ASYNC_DONE) {
