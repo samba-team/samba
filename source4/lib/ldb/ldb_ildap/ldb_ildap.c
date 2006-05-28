@@ -951,7 +951,7 @@ static int ildb_async_wait(struct ldb_async_handle *handle, enum ldb_async_wait_
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 	
-	return handle->status;
+	return LDB_SUCCESS;
 }
 
 /*

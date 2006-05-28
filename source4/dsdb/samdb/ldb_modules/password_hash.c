@@ -1680,82 +1680,119 @@ static int ph_async_wait(struct ldb_async_handle *handle) {
 	}
 
 	handle->state = LDB_ASYNC_PENDING;
+	handle->status = LDB_SUCCESS;
 
 	ac = talloc_get_type(handle->private_data, struct ph_async_context);
 
 	switch (ac->step) {
 	case PH_ADD_SEARCH_DOM:
-		if (ac->dom_req->async.handle->state != LDB_ASYNC_DONE) {
-			ret = ldb_async_wait(ac->dom_req->async.handle, LDB_WAIT_NONE);
-			if (ret != LDB_SUCCESS) goto done;
+		ret = ldb_async_wait(ac->dom_req->async.handle, LDB_WAIT_NONE);
 
-			if (ac->dom_req->async.handle->state != LDB_ASYNC_DONE) {
-				return LDB_SUCCESS;
-			}
+		if (ret != LDB_SUCCESS) {
+			handle->status = ret;
+			goto done;
+		}
+		if (ac->dom_req->async.handle->status != LDB_SUCCESS) {
+			handle->status = ac->dom_req->async.handle->status;
+			goto done;
+		}
+
+		if (ac->dom_req->async.handle->state != LDB_ASYNC_DONE) {
+			return LDB_SUCCESS;
 		}
 
 		/* domain search done, go on */
 		return password_hash_add_async_do_add(handle);
 
 	case PH_ADD_DO_ADD:
-		if (ac->down_req->async.handle->state != LDB_ASYNC_DONE) {
-			ret = ldb_async_wait(ac->down_req->async.handle, LDB_WAIT_NONE);
-			if (ret != LDB_SUCCESS) goto done;
+		ret = ldb_async_wait(ac->down_req->async.handle, LDB_WAIT_NONE);
 
-			if (ac->down_req->async.handle->state != LDB_ASYNC_DONE) {
-				return LDB_SUCCESS;
-			}
+		if (ret != LDB_SUCCESS) {
+			handle->status = ret;
+			goto done;
+		}
+		if (ac->down_req->async.handle->status != LDB_SUCCESS) {
+			handle->status = ac->down_req->async.handle->status;
+			goto done;
+		}
+
+		if (ac->down_req->async.handle->state != LDB_ASYNC_DONE) {
+			return LDB_SUCCESS;
 		}
 
 		break;
 		
 	case PH_MOD_DO_REQ:
-		if (ac->down_req->async.handle->state != LDB_ASYNC_DONE) {
-			ret = ldb_async_wait(ac->down_req->async.handle, LDB_WAIT_NONE);
-			if (ret != LDB_SUCCESS) goto done;
+		ret = ldb_async_wait(ac->down_req->async.handle, LDB_WAIT_NONE);
 
-			if (ac->down_req->async.handle->state != LDB_ASYNC_DONE) {
-				return LDB_SUCCESS;
-			}
+		if (ret != LDB_SUCCESS) {
+			handle->status = ret;
+			goto done;
+		}
+		if (ac->down_req->async.handle->status != LDB_SUCCESS) {
+			handle->status = ac->down_req->async.handle->status;
+			goto done;
+		}
+
+		if (ac->down_req->async.handle->state != LDB_ASYNC_DONE) {
+			return LDB_SUCCESS;
 		}
 
 		/* non-password mods done, go on */
 		return password_hash_mod_async_search_self(handle);
 		
 	case PH_MOD_SEARCH_SELF:
-		if (ac->search_req->async.handle->state != LDB_ASYNC_DONE) {
-			ret = ldb_async_wait(ac->search_req->async.handle, LDB_WAIT_NONE);
-			if (ret != LDB_SUCCESS) goto done;
+		ret = ldb_async_wait(ac->search_req->async.handle, LDB_WAIT_NONE);
 
-			if (ac->search_req->async.handle->state != LDB_ASYNC_DONE) {
-				return LDB_SUCCESS;
-			}
+		if (ret != LDB_SUCCESS) {
+			handle->status = ret;
+			goto done;
+		}
+		if (ac->search_req->async.handle->status != LDB_SUCCESS) {
+			handle->status = ac->search_req->async.handle->status;
+			goto done;
+		}
+
+		if (ac->search_req->async.handle->state != LDB_ASYNC_DONE) {
+			return LDB_SUCCESS;
 		}
 
 		/* self search done, go on */
 		return password_hash_mod_async_search_dom(handle);
 		
 	case PH_MOD_SEARCH_DOM:
-		if (ac->dom_req->async.handle->state != LDB_ASYNC_DONE) {
-			ret = ldb_async_wait(ac->dom_req->async.handle, LDB_WAIT_NONE);
-			if (ret != LDB_SUCCESS) goto done;
+		ret = ldb_async_wait(ac->dom_req->async.handle, LDB_WAIT_NONE);
 
-			if (ac->dom_req->async.handle->state != LDB_ASYNC_DONE) {
-				return LDB_SUCCESS;
-			}
+		if (ret != LDB_SUCCESS) {
+			handle->status = ret;
+			goto done;
+		}
+		if (ac->dom_req->async.handle->status != LDB_SUCCESS) {
+			handle->status = ac->dom_req->async.handle->status;
+			goto done;
+		}
+
+		if (ac->dom_req->async.handle->state != LDB_ASYNC_DONE) {
+			return LDB_SUCCESS;
 		}
 
 		/* domain search done, go on */
 		return password_hash_mod_async_do_mod(handle);
 
 	case PH_MOD_DO_MOD:
-		if (ac->mod_req->async.handle->state != LDB_ASYNC_DONE) {
-			ret = ldb_async_wait(ac->mod_req->async.handle, LDB_WAIT_NONE);
-			if (ret != LDB_SUCCESS) goto done;
+		ret = ldb_async_wait(ac->mod_req->async.handle, LDB_WAIT_NONE);
 
-			if (ac->mod_req->async.handle->state != LDB_ASYNC_DONE) {
-				return LDB_SUCCESS;
-			}
+		if (ret != LDB_SUCCESS) {
+			handle->status = ret;
+			goto done;
+		}
+		if (ac->mod_req->async.handle->status != LDB_SUCCESS) {
+			handle->status = ac->mod_req->async.handle->status;
+			goto done;
+		}
+
+		if (ac->mod_req->async.handle->state != LDB_ASYNC_DONE) {
+			return LDB_SUCCESS;
 		}
 
 		break;
@@ -1769,7 +1806,6 @@ static int ph_async_wait(struct ldb_async_handle *handle) {
 
 done:
 	handle->state = LDB_ASYNC_DONE;
-	handle->status = ret;
 	return ret;
 }
 
