@@ -71,7 +71,7 @@ static void to_unix(char *s)
         catia_string_replace(s, '\xb1', ' ');
 }
 
-static SMB_STRUCT_DIR *catia_opendir(vfs_handle_struct *handle, connection_struct 
+static SMB_STRUCT_DIR *catia_opendir(vfs_handle_struct *handle,
 			  const char *fname, const char *mask, uint32 attr)
 {
         pstring name;
