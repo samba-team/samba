@@ -19,15 +19,7 @@
 */
 
 
-enum libnet_CreateUser_level {
-	LIBNET_CREATE_USER_GENERIC,
-	LIBNET_CREATE_USER_SAMR,
-};
-
-
 struct libnet_CreateUser {
-	enum libnet_CreateUser_level level;
-
 	struct {
 		const char *user_name;
 		const char *domain_name;
@@ -37,15 +29,8 @@ struct libnet_CreateUser {
 	} out;
 };
 
-enum libnet_DeleteUser_level {
-	LIBNET_DELETE_USER_GENERIC,
-	LIBNET_DELETE_USER_SAMR,
-};
-
 
 struct libnet_DeleteUser {
-	enum libnet_DeleteUser_level level;
-
 	struct {
 		const char *user_name;
 		const char *domain_name;
