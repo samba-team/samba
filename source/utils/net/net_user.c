@@ -50,7 +50,6 @@ static int net_user_add(struct net_context *ctx, int argc, const char **argv)
 	lnet_ctx->cred = ctx->credentials;
 
 	/* calling CreateUser function */
-	r.level              = LIBNET_CREATE_USER_GENERIC;
 	r.in.user_name       = user_name;
 	r.in.domain_name     = cli_credentials_get_domain(lnet_ctx->cred);
 
@@ -91,7 +90,6 @@ static int net_user_delete(struct net_context *ctx, int argc, const char **argv)
 	lnet_ctx->cred = ctx->credentials;
 
 	/* calling DeleteUser function */
-	r.level              = LIBNET_DELETE_USER_GENERIC;
 	r.in.user_name       = user_name;
 	r.in.domain_name     = cli_credentials_get_domain(lnet_ctx->cred);
 
