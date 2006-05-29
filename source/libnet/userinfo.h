@@ -28,6 +28,7 @@
 struct libnet_rpc_userinfo {
 	struct {
 		struct policy_handle domain_handle;
+		const char *username;
 		const char *sid;
 		uint16_t level;
 	} in;
