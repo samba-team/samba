@@ -245,7 +245,7 @@ static NTSTATUS open_file(files_struct *fsp,
 
 		/*
 		 * We can't actually truncate here as the file may be locked.
-		 * open_file_shared will take care of the truncate later. JRA.
+		 * open_file_ntcreate will take care of the truncate later. JRA.
 		 */
 
 		local_flags &= ~O_TRUNC;
@@ -1738,7 +1738,7 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 			if (ret == -1 && errno == ENOSYS) {
 				errno = saved_errno; /* Ignore ENOSYS */
 			} else {
-				DEBUG(5, ("open_file_shared: reset "
+				DEBUG(5, ("open_file_ntcreate: reset "
 					  "attributes of file %s to 0%o\n",
 					fname, (unsigned int)new_unx_mode));
 				ret = 0; /* Don't do the fchmod below. */
@@ -1747,7 +1747,7 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 
 		if ((ret == -1) &&
 		    (SMB_VFS_FCHMOD(fsp, fsp->fh->fd, new_unx_mode) == -1))
-			DEBUG(5, ("open_file_shared: failed to reset "
+			DEBUG(5, ("open_file_ntcreate: failed to reset "
 				  "attributes of file %s to 0%o\n",
 				fname, (unsigned int)new_unx_mode));
 	}
