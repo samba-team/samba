@@ -340,13 +340,21 @@ error:
 	return LDB_ERR_OPERATIONS_ERROR;
 }
 
-static int server_sort_search_async(struct ldb_module *module, struct ldb_control *control, struct ldb_request *req)
+static int server_sort_search_async(struct ldb_module *module, struct ldb_request *req)
 {
+	struct ldb_control *control;
 	struct ldb_server_sort_control **sort_ctrls;
 	struct ldb_control **saved_controls;
 	struct sort_async_context *ac;
 	struct ldb_async_handle *h;
 	int ret;
+
+	/* check if there's a paged request control */
+	control = get_control_from_list(req->controls, LDB_CONTROL_SERVER_SORT_OID);
+	if (control == NULL) {
+		/* not found go on */
+		return ldb_next_request(module, req);
+	}
 
 	req->async.handle = NULL;
 
@@ -543,9 +551,6 @@ static int server_sort(struct ldb_module *module, struct ldb_request *req)
 	case LDB_REQ_SEARCH:
 		return server_sort_search(module, control, req);
 
-	case LDB_ASYNC_SEARCH:
-		return server_sort_search_async(module, control, req);
-
 	default:
 		return LDB_ERR_PROTOCOL_ERROR;
 
@@ -579,6 +584,7 @@ static int server_sort_init(struct ldb_module *module)
 
 static const struct ldb_module_ops server_sort_ops = {
 	.name		   = "server_sort",
+	.search            = server_sort_search_async,
 	.request      	   = server_sort,
 	.async_wait        = server_sort_async_wait,
 	.init_context	   = server_sort_init

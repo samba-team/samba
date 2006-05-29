@@ -97,28 +97,7 @@ static int skel_destructor(struct ldb_module *ctx)
 
 static int skel_request(struct ldb_module *module, struct ldb_request *req)
 {
-	switch (req->operation) {
-
-	case LDB_REQ_SEARCH:
-		return skel_search(module, req);
-
-	case LDB_REQ_ADD:
-		return skel_add(module, req);
-
-	case LDB_REQ_MODIFY:
-		return skel_modify(module, req);
-
-	case LDB_REQ_DELETE:
-		return skel_delete(module, req);
-
-	case LDB_REQ_RENAME:
-		return skel_rename(module,
-				   req);
-
-	default:
-		return ldb_next_request(module, req);
-
-	}
+	return ldb_next_request(module, req);
 }
 
 static int skel_init(struct ldb_module *ctx)
@@ -141,6 +120,11 @@ static int skel_init(struct ldb_module *ctx)
 static const struct ldb_module_ops skel_ops = {
 	.name		   = "skel",
 	.init_context	   = skel_init,
+	.search            = skel_search,
+	.add               = skel_add,
+	.modify            = skel_modify,
+	.del               = skel_delete,
+	.rename            = skel_rename,
 	.request      	   = skel_request,
 	.start_transaction = skel_start_trans,
 	.end_transaction   = skel_end_trans,

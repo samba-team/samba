@@ -37,12 +37,27 @@
 #include "system/network.h"
 #include "netif/netif.h"
 
-/* add_record: do things with the sambaPassword attribute */
-static int wins_ldb_verify(struct ldb_module *module, struct ldb_request *req, const struct ldb_message *msg)
+static int wins_ldb_verify(struct ldb_module *module, struct ldb_request *req)
 {
 	struct winsdb_handle *h = talloc_get_type(ldb_get_opaque(module->ldb, "winsdb_handle"),
 						  struct winsdb_handle);
+	const struct ldb_message *msg;
 	char *error = NULL;
+
+	switch (req->operation) {
+	case LDB_REQ_ADD:
+	case LDB_ASYNC_ADD:
+		msg = req->op.add.message;
+		break;
+		
+	case LDB_REQ_MODIFY:
+	case LDB_ASYNC_MODIFY:
+		msg = req->op.mod.message;
+		break;
+
+	default:
+		return ldb_next_request(module, req);
+	}
 
 	/* do not manipulate our control entries */
 	if (ldb_dn_is_special(msg->dn)) {
@@ -73,26 +88,13 @@ static int wins_ldb_verify(struct ldb_module *module, struct ldb_request *req, c
 
 static int wins_ldb_request(struct ldb_module *module, struct ldb_request *req)
 {
-	const struct ldb_message *msg;
-
 	switch (req->operation) {
 	case LDB_REQ_ADD:
-	case LDB_ASYNC_ADD:
-
-		msg = req->op.add.message;
-		break;
-		
 	case LDB_REQ_MODIFY:
-	case LDB_ASYNC_MODIFY:
-
-		msg = req->op.mod.message;
-		break;
-
+		return wins_ldb_verify(module, req);
 	default:
 		return ldb_next_request(module, req);
 	}
-
-	return wins_ldb_verify(module, req, msg);
 }
 	
 
@@ -127,6 +129,8 @@ failed:
 
 static const struct ldb_module_ops wins_ldb_ops = {
 	.name          = "wins_ldb",
+	.add           = wins_ldb_verify,
+	.modify        = wins_ldb_verify,
 	.request       = wins_ldb_request,
 	.init_context  = wins_ldb_init
 };

@@ -123,7 +123,7 @@ static struct results_store *new_store(struct private_data *priv)
 }
 
 /* search */
-static int paged_search(struct ldb_module *module, struct ldb_control *control, struct ldb_request *req)
+static int paged_search_sync(struct ldb_module *module, struct ldb_control *control, struct ldb_request *req)
 {
 	struct private_data *private_data = talloc_get_type(module->private_data, struct private_data);
 	struct results_store *current = NULL;
@@ -364,14 +364,24 @@ error:
 	return LDB_ERR_OPERATIONS_ERROR;
 }
 
-static int paged_search_async(struct ldb_module *module, struct ldb_control *control, struct ldb_request *req)
+static int paged_search(struct ldb_module *module, struct ldb_request *req)
 {
-	struct private_data *private_data = talloc_get_type(module->private_data, struct private_data);
+	struct ldb_control *control;
+	struct private_data *private_data;
 	struct ldb_paged_control *paged_ctrl;
 	struct ldb_control **saved_controls;
 	struct paged_async_context *ac;
 	struct ldb_async_handle *h;
 	int ret;
+
+	/* check if there's a paged request control */
+	control = get_control_from_list(req->controls, LDB_CONTROL_PAGED_RESULTS_OID);
+	if (control == NULL) {
+		/* not found go on */
+		return ldb_next_request(module, req);
+	}
+
+	private_data = talloc_get_type(module->private_data, struct private_data);
 
 	req->async.handle = NULL;
 
@@ -463,7 +473,7 @@ static int paged_search_async(struct ldb_module *module, struct ldb_control *con
 
 }
 
-static int paged_async_results(struct ldb_async_handle *handle)
+static int paged_results(struct ldb_async_handle *handle)
 {
 	struct paged_async_context *ac;
 	struct ldb_paged_control *paged;
@@ -590,7 +600,7 @@ static int paged_async_wait(struct ldb_async_handle *handle, enum ldb_async_wait
 	if (ac->store->req->async.handle->state == LDB_ASYNC_DONE) {
 		/* if lower level is finished we do not need to call it anymore */
 		/* return all we have until size == 0 or we empty storage */
-		ret = paged_async_results(handle);
+		ret = paged_results(handle);
 
 		/* we are done, if num_entries is zero free the storage
 		 * as that mean we delivered the last batch */
@@ -611,7 +621,7 @@ static int paged_async_wait(struct ldb_async_handle *handle, enum ldb_async_wait
 			}
 		}
 
-		ret = paged_async_results(handle);
+		ret = paged_results(handle);
 
 		/* we are done, if num_entries is zero free the storage
 		 * as that mean we delivered the last batch */
@@ -634,7 +644,7 @@ static int paged_async_wait(struct ldb_async_handle *handle, enum ldb_async_wait
 	if (ac->store->num_entries >= ac->size ||
 	    ac->store->req->async.handle->state == LDB_ASYNC_DONE) {
 
-		ret = paged_async_results(handle);
+		ret = paged_results(handle);
 
 		/* we are done, if num_entries is zero free the storage
 		 * as that mean we delivered the last batch */
@@ -660,10 +670,7 @@ static int paged_request(struct ldb_module *module, struct ldb_request *req)
 	switch (req->operation) {
 
 	case LDB_REQ_SEARCH:
-		return paged_search(module, control, req);
-
-	case LDB_ASYNC_SEARCH:
-		return paged_search_async(module, control, req);
+		return paged_search_sync(module, control, req);
 
 	default:
 		return LDB_ERR_PROTOCOL_ERROR;
@@ -707,7 +714,8 @@ static int paged_request_init(struct ldb_module *module)
 }
 
 static const struct ldb_module_ops paged_ops = {
-	.name		   	= "paged_results",
+	.name           = "paged_results",
+	.search         = paged_search,
 	.request        = paged_request,
 	.async_wait     = paged_async_wait,
 	.init_context 	= paged_request_init

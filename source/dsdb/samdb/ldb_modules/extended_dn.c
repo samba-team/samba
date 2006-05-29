@@ -290,14 +290,22 @@ error:
 	return LDB_ERR_OPERATIONS_ERROR;
 }
 
-static int extended_search_async(struct ldb_module *module, struct ldb_control *control, struct ldb_request *req)
+static int extended_search_async(struct ldb_module *module, struct ldb_request *req)
 {
+	struct ldb_control *control;
 	struct ldb_extended_dn_control *extended_ctrl;
 	struct ldb_control **saved_controls;
 	struct extended_async_context *ac;
 	struct ldb_request *down_req;
 	char **new_attrs;
 	int ret;
+
+	/* check if there's an extended dn control */
+	control = get_control_from_list(req->controls, LDB_CONTROL_EXTENDED_DN_OID);
+	if (control == NULL) {
+		/* not found go on */
+		return ldb_next_request(module, req);
+	}
 
 	extended_ctrl = talloc_get_type(control->data, struct ldb_extended_dn_control);
 	if (!extended_ctrl) {
@@ -397,9 +405,6 @@ static int extended_request(struct ldb_module *module, struct ldb_request *req)
 	case LDB_REQ_SEARCH:
 		return extended_search(module, control, req);
 
-	case LDB_ASYNC_SEARCH:
-		return extended_search_async(module, control, req);
-
 	default:
 		return LDB_ERR_OPERATIONS_ERROR;
 
@@ -433,6 +438,7 @@ static int extended_init(struct ldb_module *module)
 
 static const struct ldb_module_ops extended_dn_ops = {
 	.name		   = "extended_dn",
+	.search            = extended_search_async,
 	.request      	   = extended_request,
 	.init_context	   = extended_init
 };

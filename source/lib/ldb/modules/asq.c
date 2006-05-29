@@ -77,7 +77,7 @@ static int build_response(struct ldb_result *res, int result)
 }
 
 /* search */
-static int asq_search(struct ldb_module *module, struct ldb_control *control, struct ldb_request *req)
+static int asq_search_sync(struct ldb_module *module, struct ldb_control *control, struct ldb_request *req)
 {
 	struct ldb_asq_control *asq_ctrl;
 	struct ldb_request *base_req;
@@ -352,13 +352,21 @@ error:
 	return LDB_ERR_OPERATIONS_ERROR;
 }
 
-static int asq_search_async(struct ldb_module *module, struct ldb_control *control, struct ldb_request *req)
+static int asq_search(struct ldb_module *module, struct ldb_request *req)
 {
+	struct ldb_control *control;
 	struct ldb_asq_control *asq_ctrl;
 	struct asq_async_context *ac;
 	struct ldb_async_handle *h;
 	char **base_attrs;
 	int ret;
+
+	/* check if there's a paged request control */
+	control = get_control_from_list(req->controls, LDB_CONTROL_ASQ_OID);
+	if (control == NULL) {
+		/* not found go on */
+		return ldb_next_request(module, req);
+	}
 
 	req->async.handle = NULL;
 
@@ -590,11 +598,8 @@ static int asq(struct ldb_module *module, struct ldb_request *req)
 	switch (req->operation) {
 
 	case LDB_REQ_SEARCH:
-		return asq_search(module, control, req);
+		return asq_search_sync(module, control, req);
 	
-	case LDB_ASYNC_SEARCH:
-		return asq_search_async(module, control, req);
-
 	default:
 		return LDB_ERR_PROTOCOL_ERROR;
 
@@ -622,6 +627,7 @@ static int asq_init(struct ldb_module *module)
 
 static const struct ldb_module_ops asq_ops = {
 	.name		   = "asq",
+	.search		   = asq_search,
 	.request      	   = asq,
 	.async_wait        = asq_async_wait,
 	.init_context	   = asq_init
