@@ -444,7 +444,6 @@ int ldb_search(struct ldb_context *ldb,
 
 	req->op.search.attrs = attrs;
 	req->controls = NULL;
-	req->creds = NULL;
 	req->async.context = res;
 	req->async.callback = ldb_search_callback;
 	req->async.timeout = 600; /* 10 minutes */
@@ -512,7 +511,6 @@ int ldb_add(struct ldb_context *ldb,
 	req->operation = LDB_ASYNC_ADD;
 	req->op.add.message = message;
 	req->controls = NULL;
-	req->creds = NULL;
 	req->async.context = NULL;
 	req->async.callback = NULL;
 	req->async.timeout = 600; /* 10 minutes */
@@ -545,7 +543,6 @@ int ldb_modify(struct ldb_context *ldb,
 	req->operation = LDB_ASYNC_MODIFY;
 	req->op.add.message = message;
 	req->controls = NULL;
-	req->creds = NULL;
 	req->async.context = NULL;
 	req->async.callback = NULL;
 	req->async.timeout = 600; /* 10 minutes */
@@ -575,7 +572,6 @@ int ldb_delete(struct ldb_context *ldb, const struct ldb_dn *dn)
 	req->operation = LDB_ASYNC_DELETE;
 	req->op.del.dn = dn;
 	req->controls = NULL;
-	req->creds = NULL;
 	req->async.context = NULL;
 	req->async.callback = NULL;
 	req->async.timeout = 600; /* 10 minutes */
@@ -605,7 +601,6 @@ int ldb_rename(struct ldb_context *ldb, const struct ldb_dn *olddn, const struct
 	req->op.rename.olddn = olddn;
 	req->op.rename.newdn = newdn;
 	req->controls = NULL;
-	req->creds = NULL;
 	req->async.context = NULL;
 	req->async.callback = NULL;
 	req->async.timeout = 600; /* 10 minutes */

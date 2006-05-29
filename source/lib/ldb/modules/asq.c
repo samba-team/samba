@@ -117,7 +117,6 @@ static int asq_search_sync(struct ldb_module *module, struct ldb_control *contro
 		return LDB_ERR_OPERATIONS_ERROR;
 	base_attrs[1] = NULL;
 	base_req->op.search.attrs = (const char * const *)base_attrs;
-	base_req->creds = req->creds;
 
 	ret = ldb_request(module->ldb, base_req);
 
@@ -154,7 +153,6 @@ static int asq_search_sync(struct ldb_module *module, struct ldb_control *contro
 		exp_req->op.search.scope = LDB_SCOPE_BASE;
 		exp_req->op.search.tree = req->op.search.tree;
 		exp_req->op.search.attrs = req->op.search.attrs;
-		exp_req->creds = req->creds;
 
 		ret = ldb_request(module->ldb, exp_req);
 
@@ -416,7 +414,6 @@ static int asq_search(struct ldb_module *module, struct ldb_request *req)
 		return LDB_ERR_OPERATIONS_ERROR;
 	base_attrs[1] = NULL;
 	ac->base_req->op.search.attrs = (const char * const *)base_attrs;
-	ac->base_req->creds = req->creds;
 
 	ac->base_req->async.context = ac;
 	ac->base_req->async.callback = asq_base_callback;
@@ -470,7 +467,6 @@ static int asq_async_requests(struct ldb_async_handle *handle) {
 		ac->reqs[i]->op.search.scope = LDB_SCOPE_BASE;
 		ac->reqs[i]->op.search.tree = ac->base_req->op.search.tree;
 		ac->reqs[i]->op.search.attrs = ac->req_attrs;
-		ac->reqs[i]->creds = ac->base_req->creds;
 
 		ac->reqs[i]->async.context = ac;
 		ac->reqs[i]->async.callback = asq_reqs_callback;

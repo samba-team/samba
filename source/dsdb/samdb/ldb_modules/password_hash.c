@@ -1175,7 +1175,6 @@ static int build_domain_data_request(struct ph_async_context *ac,
 	}
 	ac->dom_req->op.search.attrs = attrs;
 	ac->dom_req->controls = NULL;
-	ac->dom_req->creds = ac->orig_req->creds;
 	ac->dom_req->async.context = ac;
 	ac->dom_req->async.callback = get_domain_data_callback;
 	ac->dom_req->async.timeout = ac->orig_req->async.timeout;
@@ -1507,7 +1506,6 @@ static int password_hash_mod_async_search_self(struct ldb_async_handle *h) {
 	}
 	ac->search_req->op.search.attrs = NULL;
 	ac->search_req->controls = NULL;
-	ac->search_req->creds = ac->orig_req->creds;
 	ac->search_req->async.context = ac;
 	ac->search_req->async.callback = get_self_callback;
 	ac->search_req->async.timeout = ac->orig_req->async.timeout;
