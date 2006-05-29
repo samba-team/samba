@@ -104,24 +104,64 @@ AC_DEFUN(AC_HAVE_DECL,
 ])
 
 
+dnl AC_LIBTESTFUNC(lib, function, [actions if found], [actions if not found])
 dnl Check for a function in a library, but don't keep adding the same library
 dnl to the LIBS variable.  Check whether the function is available in the
 dnl current LIBS before adding the library which prevents us spuriously
-dnl adding libraries for symbols that are in libc. On success, this ensures that
-dnl HAVE_FOO is defined.
-AC_LIBTESTFUNC(lib,func)
-AC_DEFUN(AC_LIBTESTFUNC,
+dnl adding libraries for symbols that are in libc.
+dnl
+dnl On success, the default actions ensure that HAVE_FOO is defined. The lib
+dnl is always added to $LIBS if it was found to be necessary. The caller
+dnl can use SMB_LIB_REMOVE to strp this if necessary.
+AC_DEFUN([AC_LIBTESTFUNC],
 [
-  AC_CHECK_FUNCS($2, [],
-      [ case "$LIBS" in
-          *-l$1*) ;;
-          *) AC_CHECK_LIB($1, $2,
-	      [
+  AC_CHECK_FUNCS($2,
+      [
+        # $2 was found in libc or existing $LIBS
+	ifelse($3, [],
+	    [
 		AC_DEFINE(translit([HAVE_$2], [a-z], [A-Z]), 1,
 		    [Whether $2 is available])
-	        LIBS="-l$1 $LIBS"
+	    ],
+	    [
+		$3
+	    ])
+      ],
+      [
+        # $2 was not found, try adding lib$1
+	case " $LIBS " in
+          *\ -l$1\ *)
+	    ifelse($4, [],
+		[
+		    # $2 was not found and we already had lib$1
+		    # nothing to do here by default
+		    true
+		],
+		[ $4 ])
+	    ;;
+          *)
+	    # $2 was not found, try adding lib$1
+	    AC_CHECK_LIB($1, $2,
+	      [
+		LIBS="-l$1 $LIBS"
+		ifelse($3, [],
+		    [
+			AC_DEFINE(translit([HAVE_$2], [a-z], [A-Z]), 1,
+			    [Whether $2 is available])
+		    ],
+		    [
+			$3
+		    ])
 	      ],
-	      [])
+	      [
+		ifelse($4, [],
+		    [
+			# $2 was not found in lib$1
+			# nothing to do here by default
+			true
+		    ],
+		    [ $4 ])
+	      ])
 	  ;;
         esac
       ])
@@ -793,3 +833,22 @@ AC_DEFUN([SMB_CHECK_SYSCONF],
 	AC_DEFINE(SYSCONF$1, 1, [Whether sysconf($1) is available])
     fi
 ])
+
+dnl SMB_IS_LIBPTHREAD_LINKED([actions if true], [actions if false])
+dnl Test whether the current LIBS results in libpthread being present.
+dnl Execute the corresponding user action list.
+AC_DEFUN([SMB_IS_LIBPTHREAD_LINKED],
+[
+    AC_TRY_LINK([],
+	[return pthread_create(0, 0, 0, 0);],
+	[$1],
+	[$2])
+])
+
+dnl SMB_REMOVE_LIB(lib)
+dnl Remove the given library from $LIBS
+AC_DEFUN([SMB_REMOVELIB],
+[
+    LIBS=`echo $LIBS | sed -es/-l$1//g`
+])
+
