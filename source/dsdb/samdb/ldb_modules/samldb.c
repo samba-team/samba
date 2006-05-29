@@ -615,19 +615,39 @@ static int samldb_fill_user_or_computer_object(struct ldb_module *module, const 
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
+	/* remove objectclasses so that they will be added in the right order for MMC to be happy */
+	ldb_msg_remove_attr(msg, "objectclass");
+
 	if (samldb_find_attribute(msg, "objectclass", "computer") != NULL) {
+
 		ret = samldb_copy_template(module, msg2, "(&(CN=TemplateComputer)(objectclass=userTemplate))");
 		if (ret) {
 			ldb_debug(module->ldb, LDB_DEBUG_WARNING, "samldb_fill_user_or_computer_object: Error copying computer template!\n");
 			talloc_free(mem_ctx);
 			return ret;
 		}
+
+		/* readd user and then computer objectclasses */
+		if ( ! samldb_find_or_add_value(module, msg2, "objectclass", "user", "user")) {
+			talloc_free(mem_ctx);
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+		if ( ! samldb_find_or_add_value(module, msg2, "objectclass", "computer", "computer")) {
+			talloc_free(mem_ctx);
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+		
 	} else {
 		ret = samldb_copy_template(module, msg2, "(&(CN=TemplateUser)(objectclass=userTemplate))");
 		if (ret) {
 			ldb_debug(module->ldb, LDB_DEBUG_WARNING, "samldb_fill_user_or_computer_object: Error copying user template!\n");
 			talloc_free(mem_ctx);
 			return ret;
+		}
+		/* readd user objectclass */
+		if ( ! samldb_find_or_add_value(module, msg2, "objectclass", "user", "user")) {
+			talloc_free(mem_ctx);
+			return LDB_ERR_OPERATIONS_ERROR;
 		}
 	}
 
@@ -638,14 +658,6 @@ static int samldb_fill_user_or_computer_object(struct ldb_module *module, const 
 		talloc_free(mem_ctx);
 		return LDB_ERR_CONSTRAINT_VIOLATION;
 	}
-
-	/* if the only attribute was: "objectclass: computer", then make sure we also add "user" objectclass */
-	if ( ! samldb_find_or_add_value(module, msg2, "objectclass", "user", "user")) {
-		talloc_free(mem_ctx);
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	/* meddle with objectclass */
 
 	if (ldb_msg_find_element(msg2, "samAccountName") == NULL) {
 		name = samldb_generate_samAccountName(module, mem_ctx);
@@ -769,61 +781,6 @@ static int samldb_fill_foreignSecurityPrincipal_object(struct ldb_module *module
 }
 
 /* add_record */
-static int samldb_add(struct ldb_module *module, struct ldb_request *req)
-{
-	struct ldb_message *msg = req->op.add.message;
-	struct ldb_message *msg2 = NULL;
-	int ret;
-
-	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "samldb_add_record\n");
-
-	
-	if (ldb_dn_is_special(msg->dn)) { /* do not manipulate our control entries */
-		return ldb_next_request(module, req);
-	}
-
-	/* is user or computer? */
-	if ((samldb_find_attribute(msg, "objectclass", "user") != NULL) ||
-	    (samldb_find_attribute(msg, "objectclass", "computer") != NULL)) {
-		/*  add all relevant missing objects */
-		ret = samldb_fill_user_or_computer_object(module, msg, &msg2);
-		if (ret) {
-			return ret;
-		}
-	}
-
-	/* is group? add all relevant missing objects */
-	if ( ! msg2 ) {
-		if (samldb_find_attribute(msg, "objectclass", "group") != NULL) {
-			ret = samldb_fill_group_object(module, msg, &msg2);
-			if (ret) {
-				return ret;
-			}
-		}
-	}
-
-	/* perhaps a foreignSecurityPrincipal? */
-	if ( ! msg2 ) {
-		if (samldb_find_attribute(msg, "objectclass", "foreignSecurityPrincipal") != NULL) {
-			ret = samldb_fill_foreignSecurityPrincipal_object(module, msg, &msg2);
-			if (ret) {
-				return ret;
-			}
-		}
-	}
-
-	if (msg2) {
-		req->op.add.message = msg2;
-		ret = ldb_next_request(module, req);
-		req->op.add.message = msg;
-	} else {
-		ret = ldb_next_request(module, req);
-	}
-
-	return ret;
-}
-
-/* add_record */
 
 /*
  * FIXME
@@ -833,7 +790,7 @@ static int samldb_add(struct ldb_module *module, struct ldb_request *req)
  * left SYNC for now until we think of a good solution.
  */
 
-static int samldb_add_async(struct ldb_module *module, struct ldb_request *req)
+static int samldb_add(struct ldb_module *module, struct ldb_request *req)
 {
 	const struct ldb_message *msg = req->op.add.message;
 	struct ldb_message *msg2 = NULL;
@@ -908,19 +865,6 @@ static int samldb_destructor(void *module_ctx)
 	return 0;
 }
 
-static int samldb_request(struct ldb_module *module, struct ldb_request *req)
-{
-	switch (req->operation) {
-
-	case LDB_REQ_ADD:
-		return samldb_add(module, req);
-
-	default:
-		return ldb_next_request(module, req);
-
-	}
-}
-
 static int samldb_init(struct ldb_module *module)
 {
 	talloc_set_destructor(module, samldb_destructor);
@@ -930,8 +874,7 @@ static int samldb_init(struct ldb_module *module)
 static const struct ldb_module_ops samldb_ops = {
 	.name          = "samldb",
 	.init_context  = samldb_init,
-	.add           = samldb_add_async,
-	.request       = samldb_request
+	.add           = samldb_add,
 };
 
 

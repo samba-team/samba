@@ -53,62 +53,6 @@ static struct ldb_message_element *objectguid_find_attribute(const struct ldb_me
 /* add_record: add objectGUID attribute */
 static int objectguid_add(struct ldb_module *module, struct ldb_request *req)
 {
-	struct ldb_message *msg = req->op.add.message;
-	struct ldb_val v;
-	struct ldb_message *msg2;
-	struct ldb_message_element *attribute;
-	struct GUID guid;
-	NTSTATUS nt_status;
-	int ret, i;
-
-	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "objectguid_add_record\n");
-
-	if (ldb_dn_is_special(msg->dn)) { /* do not manipulate our control entries */
-		return ldb_next_request(module, req);
-	}
-
-	if ((attribute = objectguid_find_attribute(msg, "objectGUID")) != NULL ) {
-		return ldb_next_request(module, req);
-	}
-
-	msg2 = talloc(module, struct ldb_message);
-	if (!msg2) {
-		return -1;
-	}
-
-	msg2->dn = msg->dn;
-	msg2->num_elements = msg->num_elements;
-	msg2->private_data = msg->private_data;
-	msg2->elements = talloc_array(msg2, struct ldb_message_element, msg2->num_elements);
-	for (i = 0; i < msg2->num_elements; i++) {
-		msg2->elements[i] = msg->elements[i];
-	}
-
-	/* a new GUID */
-	guid = GUID_random();
-
-	nt_status = ndr_push_struct_blob(&v, msg2, &guid, 
-					 (ndr_push_flags_fn_t)ndr_push_GUID);
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		return -1;
-	}
-
-	ret = ldb_msg_add_value(msg2, "objectGUID", &v);
-	if (ret) {
-		return ret;
-	}
-
-	req->op.add.message = msg2;
-	ret = ldb_next_request(module, req);
-	req->op.add.message = msg;
-
-	talloc_free(msg2);
-
-	return ret;
-}
-
-static int objectguid_add_async(struct ldb_module *module, struct ldb_request *req)
-{
 	struct ldb_request *down_req;
 	struct ldb_message_element *attribute;
 	struct ldb_message *msg;
@@ -167,23 +111,9 @@ static int objectguid_add_async(struct ldb_module *module, struct ldb_request *r
 	return ret;
 }
 
-static int objectguid_request(struct ldb_module *module, struct ldb_request *req)
-{
-	switch (req->operation) {
-
-	case LDB_REQ_ADD:
-		return objectguid_add(module, req);
-
-	default:
-		return ldb_next_request(module, req);
-
-	}
-}
-
 static const struct ldb_module_ops objectguid_ops = {
 	.name          = "objectguid",
-	.add           = objectguid_add_async,
-	.request       = objectguid_request
+	.add           = objectguid_add,
 };
 
 

@@ -120,42 +120,6 @@ failed:
 /*
   handle search requests
 */
-static int rootdse_search_bytree(struct ldb_module *module, struct ldb_request *req)
-{
-	struct ldb_search *s = &req->op.search;
-	int ret;
-	TALLOC_CTX *tmp_ctx;
-
-	/* see if its for the rootDSE */
-	if (s->scope != LDB_SCOPE_BASE ||
-	    (s->base && s->base->comp_num != 0)) {
-		return ldb_next_request(module, req);
-	}
-
-	tmp_ctx = talloc_new(module);
-
-	/* in our db we store the rootDSE with a DN of cn=rootDSE */
-	s->base = ldb_dn_explode(tmp_ctx, "cn=rootDSE");
-	s->tree = ldb_parse_tree(tmp_ctx, "dn=*");
-	if (s->base == NULL || s->tree == NULL) {
-		ldb_oom(module->ldb);
-		talloc_free(tmp_ctx);
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	/* grab the static contents of the record */
-	ret = ldb_next_request(module, req);
-
-	req->op.search.res = s->res;
-
-	if ((ret == LDB_SUCCESS) && (s->res->msgs != NULL)) {
-		ret = rootdse_add_dynamic(module, s->res->msgs[0], s->attrs);
-	}
-
-	talloc_free(tmp_ctx);
-
-	return ret;
-}
 
 struct rootdse_async_context {
 	struct ldb_module *module;
@@ -192,7 +156,7 @@ error:
 	return LDB_ERR_OPERATIONS_ERROR;
 }
 
-static int rootdse_search_async(struct ldb_module *module, struct ldb_request *req)
+static int rootdse_search(struct ldb_module *module, struct ldb_request *req)
 {
 	struct rootdse_async_context *ac;
 	struct ldb_request *down_req;
@@ -274,8 +238,6 @@ static int rootdse_register_control(struct ldb_module *module, struct ldb_reques
 static int rootdse_request(struct ldb_module *module, struct ldb_request *req)
 {
 	switch (req->operation) {
-	case LDB_REQ_SEARCH:
-		return rootdse_search_bytree(module, req);
 
 	case LDB_REQ_REGISTER:
 		return rootdse_register_control(module, req);
@@ -305,7 +267,7 @@ static int rootdse_init(struct ldb_module *module)
 static const struct ldb_module_ops rootdse_ops = {
 	.name			= "rootdse",
 	.init_context           = rootdse_init,
-	.search                 = rootdse_search_async,
+	.search                 = rootdse_search,
 	.request		= rootdse_request
 };
 

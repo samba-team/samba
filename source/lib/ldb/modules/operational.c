@@ -170,76 +170,6 @@ failed:
 }
 
 /*
-  hook search operations
-*/
-static int operational_search_bytree(struct ldb_module *module, struct ldb_request *req)
-{
-	int i, r, a;
-	int ret;
-	const char * const *attrs = req->op.search.attrs;
-	const char **search_attrs = NULL;
-
-	req->op.search.res = NULL;
-
-	/* replace any attributes in the parse tree that are
-	   searchable, but are stored using a different name in the
-	   backend */
-	for (i=0;i<ARRAY_SIZE(parse_tree_sub);i++) {
-		ldb_parse_tree_attr_replace(req->op.search.tree, 
-					    parse_tree_sub[i].attr, 
-					    parse_tree_sub[i].replace);
-	}
-
-	/* in the list of attributes we are looking for, rename any
-	   attributes to the alias for any hidden attributes that can
-	   be fetched directly using non-hidden names */
-	for (a=0;attrs && attrs[a];a++) {
-		for (i=0;i<ARRAY_SIZE(search_sub);i++) {
-			if (ldb_attr_cmp(attrs[a], search_sub[i].attr) == 0 &&
-			    search_sub[i].replace) {
-				if (!search_attrs) {
-					search_attrs = ldb_attr_list_copy(req, attrs);
-					if (search_attrs == NULL) {
-						goto failed;
-					}
-				}
-				search_attrs[a] = search_sub[i].replace;
-			}
-		}
-	}
-	
-	/* use new set of attrs if any */
-	if (search_attrs) req->op.search.attrs = search_attrs;
-	/* perform the search */
-	ret = ldb_next_request(module, req);
-	/* set back saved attrs if needed */
-	if (search_attrs) req->op.search.attrs = attrs;
-
-	/* check operation result */
-	if (ret != LDB_SUCCESS) {
-		return ret;
-	}
-
-	/* for each record returned post-process to add any derived
-	   attributes that have been asked for */
-	for (r = 0; r < req->op.search.res->count; r++) {
-		if (operational_search_post_process(module, req->op.search.res->msgs[r], attrs) != 0) {
-			goto failed;
-		}
-	}
-
-	/* all done */
-	talloc_free(search_attrs);
-	return ret;
-
-failed:
-	talloc_free(search_attrs);
-	talloc_free(req->op.search.res);
-	ldb_oom(module->ldb);
-	return LDB_ERR_OTHER;
-}
-
-/*
   add a time element to a record
 */
 static int add_time_element(struct ldb_message *msg, const char *attr, time_t t)
@@ -291,95 +221,6 @@ static int add_uint64_element(struct ldb_message *msg, const char *attr, uint64_
 	return 0;
 }
 
-
-/*
-  hook add record ops
-*/
-static int operational_add_sync(struct ldb_module *module, struct ldb_request *req)
-{
-	const struct ldb_message *msg = req->op.add.message;
-	time_t t = time(NULL);
-	struct ldb_message *msg2;
-	int ret;
-
-	if (ldb_dn_is_special(msg->dn)) {
-		return ldb_next_request(module, req);
-	}
-
-	/* we have to copy the message as the caller might have it as a const */
-	msg2 = ldb_msg_copy_shallow(module, msg);
-	if (msg2 == NULL) {
-		return -1;
-	}
-	if (add_time_element(msg2, "whenCreated", t) != 0 ||
-	    add_time_element(msg2, "whenChanged", t) != 0) {
-		talloc_free(msg2);
-		return -1;
-	}
-
-	/* see if the backend can give us the USN */
-	if (module->ldb->sequence_number != NULL) {
-		uint64_t seq_num = module->ldb->sequence_number(module->ldb);
-		if (add_uint64_element(msg2, "uSNCreated", seq_num) != 0 ||
-		    add_uint64_element(msg2, "uSNChanged", seq_num) != 0) {
-			talloc_free(msg2);
-			return -1;
-		}
-	}
-
-	/* use the new structure for the call chain below this point */
-	req->op.add.message = msg2;
-	/* go on with the call chain */
-	ret = ldb_next_request(module, req);
-	/* put back saved message */
-	req->op.add.message = msg;
-	/* free temproary compy */
-	talloc_free(msg2);
-	return ret;
-}
-
-/*
-  hook modify record ops
-*/
-static int operational_modify_sync(struct ldb_module *module, struct ldb_request *req)
-{
-	const struct ldb_message *msg = req->op.mod.message;
-	time_t t = time(NULL);
-	struct ldb_message *msg2;
-	int ret;
-
-	if (ldb_dn_is_special(msg->dn)) {
-		return ldb_next_request(module, req);
-	}
-
-	/* we have to copy the message as the caller might have it as a const */
-	msg2 = ldb_msg_copy_shallow(module, msg);
-	if (msg2 == NULL) {
-		return -1;
-	}
-	if (add_time_element(msg2, "whenChanged", t) != 0) {
-		talloc_free(msg2);
-		return -1;
-	}
-
-	/* update the records USN if possible */
-	if (module->ldb->sequence_number != NULL &&
-	    add_uint64_element(msg2, "uSNChanged", 
-			       module->ldb->sequence_number(module->ldb)) != 0) {
-		talloc_free(msg2);
-		return -1;
-	}
-
-	/* use the new structure for the call chain below this point */
-	req->op.mod.message = msg2;
-	/* go on with the call chain */
-	ret = ldb_next_request(module, req);
-	/* put back saved message */
-	req->op.mod.message = msg;
-	/* free temproary compy */
-	talloc_free(msg2);
-	return ret;
-}
 
 /*
   hook search operations
@@ -607,26 +448,6 @@ static int operational_modify(struct ldb_module *module, struct ldb_request *req
 	return ret;
 }
 
-
-static int operational_request(struct ldb_module *module, struct ldb_request *req)
-{
-	switch (req->operation) {
-
-	case LDB_REQ_SEARCH:
-		return operational_search_bytree(module, req);
-
-	case LDB_REQ_ADD:
-		return operational_add_sync(module, req);
-
-	case LDB_REQ_MODIFY:
-		return operational_modify_sync(module, req);
-
-	default:
-		return ldb_next_request(module, req);
-
-	}
-}
-
 static int operational_init(struct ldb_module *ctx)
 {
 	/* setup some standard attribute handlers */
@@ -643,7 +464,6 @@ static const struct ldb_module_ops operational_ops = {
 	.search            = operational_search,
 	.add               = operational_add,
 	.modify            = operational_modify,
-	.request           = operational_request,
 	.init_context	   = operational_init
 };
 

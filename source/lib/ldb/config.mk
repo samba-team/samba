@@ -38,15 +38,15 @@ OBJ_FILES = \
 # End MODULE ldb_operational
 ################################################
 
-################################################
-# Start MODULE ldb_objectclass
-[MODULE::ldb_objectclass]
-INIT_FUNCTION = ldb_objectclass_init
-SUBSYSTEM = ldb
-OBJ_FILES = \
-		modules/objectclass.o
-# End MODULE ldb_objectclass
-################################################
+# ################################################
+# # Start MODULE ldb_objectclass
+# [MODULE::ldb_objectclass]
+# INIT_FUNCTION = ldb_objectclass_init
+# SUBSYSTEM = ldb
+# OBJ_FILES = \
+# 		modules/objectclass.o
+# # End MODULE ldb_objectclass
+# ################################################
 
 ################################################
 # Start MODULE ldb_rdn_name
@@ -58,15 +58,15 @@ OBJ_FILES = \
 # End MODULE ldb_rdn_name
 ################################################
 
-################################################
-# Start MODULE ldb_schema
-[MODULE::ldb_schema]
-INIT_FUNCTION = ldb_schema_init
-SUBSYSTEM = ldb
-OBJ_FILES = \
-		modules/schema.o
-# End MODULE ldb_schema
-################################################
+# ################################################
+# # Start MODULE ldb_schema
+# [MODULE::ldb_schema]
+# INIT_FUNCTION = ldb_schema_init
+# SUBSYSTEM = ldb
+# OBJ_FILES = \
+# 		modules/schema.o
+# # End MODULE ldb_schema
+# ################################################
 
 ################################################
 # Start MODULE ldb_ildap
@@ -81,13 +81,13 @@ PUBLIC_DEPENDENCIES = \
 # End MODULE ldb_ildap
 ################################################
 
-################################################
-# Start MODULE ldb_map
-[SUBSYSTEM::ldb_map]
-PUBLIC_DEPENDENCIES = ldb
-OBJ_FILES = modules/ldb_map.o
-# End MODULE ldb_map
-################################################
+# ################################################
+# # Start MODULE ldb_map
+# [SUBSYSTEM::ldb_map]
+# PUBLIC_DEPENDENCIES = ldb
+# OBJ_FILES = modules/ldb_map.o
+# # End MODULE ldb_map
+# ################################################
 
 ################################################
 # Start MODULE ldb_skel

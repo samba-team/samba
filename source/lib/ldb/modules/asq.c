@@ -41,152 +41,6 @@
 #define ASQ_CTRL_UNWILLING_TO_PERFORM		53
 #define ASQ_CTRL_AFFECTS_MULTIPLE_DSA		71
 
-static int build_response(struct ldb_result *res, int result)
-{
-	struct ldb_asq_control *asq;
-	int i;
-
-	if (res->controls) {
-		for (i = 0; res->controls[i]; i++);
-		res->controls = talloc_realloc(res, res->controls, struct ldb_control *, i + 2);
-	} else {
-		i = 0;
-		res->controls = talloc_array(res, struct ldb_control *, 2);
-	}
-	if (res->controls == NULL)
-		return LDB_ERR_OPERATIONS_ERROR;
-
-	res->controls[i] = talloc(res->controls, struct ldb_control);
-	if (res->controls[i] == NULL)
-		return LDB_ERR_OPERATIONS_ERROR;
-
-	res->controls[i]->oid = LDB_CONTROL_ASQ_OID;
-	res->controls[i]->critical = 0;
-
-	asq = talloc_zero(res->controls[i], struct ldb_asq_control);
-	if (asq == NULL)
-		return LDB_ERR_OPERATIONS_ERROR;
-
-	asq->result = result;
-	
-	res->controls[i]->data = asq;
-
-	res->controls[i + 1] = NULL;
-
-	return LDB_SUCCESS;
-}
-
-/* search */
-static int asq_search_sync(struct ldb_module *module, struct ldb_control *control, struct ldb_request *req)
-{
-	struct ldb_asq_control *asq_ctrl;
-	struct ldb_request *base_req;
-	struct ldb_message_element *el;
-	struct ldb_result *res;
-	char **base_attrs;
-	int i, c, ret;
-
-	/* pre-allocate a clean result structure */
-	req->op.search.res = res = talloc_zero(req, struct ldb_result);
-	if (res == NULL)
-		return LDB_ERR_OPERATIONS_ERROR;
-
-	/* check the search is well formed */
-	if (req->op.search.scope != LDB_SCOPE_BASE) {
-		return build_response(res, ASQ_CTRL_UNWILLING_TO_PERFORM);
-	}
-
-	asq_ctrl = talloc_get_type(control->data, struct ldb_asq_control);
-	if (!asq_ctrl) {
-		return LDB_ERR_PROTOCOL_ERROR;
-	}
-
-	/* get the object to retrieve the DNs to search */
-	base_req = talloc_zero(req, struct ldb_request);
-	if (base_req == NULL)
-		return LDB_ERR_OPERATIONS_ERROR;
-	base_req->operation = LDB_REQ_SEARCH;
-	base_req->op.search.base = req->op.search.base;
-	base_req->op.search.scope = LDB_SCOPE_BASE;
-	base_req->op.search.tree = req->op.search.tree;
-	base_attrs = talloc_array(base_req, char *, 2);
-	if (base_attrs == NULL)
-		return LDB_ERR_OPERATIONS_ERROR;
-	base_attrs[0] = talloc_strdup(base_attrs, asq_ctrl->source_attribute);
-	if (base_attrs[0] == NULL)
-		return LDB_ERR_OPERATIONS_ERROR;
-	base_attrs[1] = NULL;
-	base_req->op.search.attrs = (const char * const *)base_attrs;
-
-	ret = ldb_request(module->ldb, base_req);
-
-	if (ret != LDB_SUCCESS) {
-		talloc_free(base_req);
-		return ret;
-	}
-
-	if (base_req->op.search.res->count == 0) {
-		talloc_free(base_req);
-		return build_response(res, ASQ_CTRL_SUCCESS);
-	}
-	
-	/* look up the DNs */
-	el = ldb_msg_find_element(base_req->op.search.res->msgs[0],
-				  asq_ctrl->source_attribute);
-	/* no values found */
-	if (el == NULL) {
-		talloc_free(base_req);
-		return build_response(res, ASQ_CTRL_SUCCESS);
-	}
-
-	for (i = 0, c = 0; i < el->num_values; i++) {
-		struct ldb_request *exp_req;
-
-		exp_req = talloc_zero(req, struct ldb_request);
-		if (exp_req == NULL)
-			return LDB_ERR_OPERATIONS_ERROR;
-		exp_req->operation = LDB_REQ_SEARCH;
-		exp_req->op.search.base = ldb_dn_explode(exp_req, (const char *)el->values[i].data);
-		if (exp_req->op.search.base == NULL) {
-			return build_response(res, ASQ_CTRL_INVALID_ATTRIBUTE_SYNTAX);
-		}
-		exp_req->op.search.scope = LDB_SCOPE_BASE;
-		exp_req->op.search.tree = req->op.search.tree;
-		exp_req->op.search.attrs = req->op.search.attrs;
-
-		ret = ldb_request(module->ldb, exp_req);
-
-		if (ret != LDB_SUCCESS)
-			return ret;
-
-		if (exp_req->op.search.res && exp_req->op.search.res->count != 0) {
-			if (res->msgs == NULL) {
-				res->msgs = talloc_array(res,
-						struct ldb_message *, 2);
-			} else {
-				res->msgs = talloc_realloc(res, res->msgs,
-						struct ldb_message *, c + 2);
-			}
-			if (res->msgs == NULL)
-				return LDB_ERR_OPERATIONS_ERROR;
-
-			res->msgs[c] = talloc_steal(res->msgs, exp_req->op.search.res->msgs[0]);
-			c++;
-		}
-
-		if (res->msgs) {
-			res->msgs[c] = NULL;
-			res->count = c;
-		}
-
-		talloc_free(exp_req);
-	}
-
-	talloc_free(base_req);
-
-	return build_response(res, ASQ_CTRL_SUCCESS);
-}
-
 struct asq_async_context {
 
 	enum {ASQ_SEARCH_BASE, ASQ_SEARCH_MULTI} step;
@@ -580,28 +434,6 @@ static int asq_async_wait(struct ldb_async_handle *handle, enum ldb_async_wait_t
 	}
 }
 
-static int asq(struct ldb_module *module, struct ldb_request *req)
-{
-	struct ldb_control *control;
-
-	/* check if there's a paged request control */
-	control = get_control_from_list(req->controls, LDB_CONTROL_ASQ_OID);
-	if (control == NULL) {
-		/* not found go on */
-		return ldb_next_request(module, req);
-	}
-
-	switch (req->operation) {
-
-	case LDB_REQ_SEARCH:
-		return asq_search_sync(module, control, req);
-	
-	default:
-		return LDB_ERR_PROTOCOL_ERROR;
-
-	}
-}
-
 static int asq_init(struct ldb_module *module)
 {
 	struct ldb_request request;
@@ -624,7 +456,6 @@ static int asq_init(struct ldb_module *module)
 static const struct ldb_module_ops asq_ops = {
 	.name		   = "asq",
 	.search		   = asq_search,
-	.request      	   = asq,
 	.async_wait        = asq_async_wait,
 	.init_context	   = asq_init
 };

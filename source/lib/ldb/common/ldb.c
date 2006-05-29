@@ -273,34 +273,15 @@ static int ldb_op_finish(struct ldb_context *ldb, int status)
 
 /*
   start an ldb request
-  autostarts a transacion if none active and the operation is not a search
-  does not work for ASYNC operations
   NOTE: the request must be a talloc context.
   returns LDB_ERR_* on errors.
 */
 int ldb_request(struct ldb_context *ldb, struct ldb_request *req)
 {
 	struct ldb_module *module;
-	int ret, started_transaction=0;
+	int ret;
 
 	ldb_reset_err_string(ldb);
-
-	if (req->operation == LDB_REQ_SEARCH) {
-		req->op.search.res = NULL;
-	}
-
-	/* start a transaction if SYNC and not search */
-	if ((!ldb->transaction_active) &&
-	    (req->operation == LDB_REQ_ADD ||
-	     req->operation == LDB_REQ_MODIFY ||
-	     req->operation == LDB_REQ_DELETE ||
-	     req->operation == LDB_REQ_RENAME)) {
-		ret = ldb_transaction_start(ldb);
-		if (ret != LDB_SUCCESS) {
-			return ret;
-		}
-		started_transaction = 1;
-	}
 
 	/* call the first module in the chain */
 	switch (req->operation) {
@@ -328,10 +309,6 @@ int ldb_request(struct ldb_context *ldb, struct ldb_request *req)
 		FIRST_OP(ldb, request);
 		ret = module->ops->request(module, req);
 		break;
-	}
-
-	if (started_transaction) {
-		return ldb_op_finish(ldb, ret);
 	}
 
 	return ret;
@@ -463,6 +440,7 @@ int ldb_search(struct ldb_context *ldb,
 	return ret;
 }
 
+/* autostarts a transacion if none active */
 static int ldb_autotransaction_request(struct ldb_context *ldb, struct ldb_request *req)
 {
 	int ret, close_transaction;

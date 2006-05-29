@@ -45,12 +45,10 @@ static int wins_ldb_verify(struct ldb_module *module, struct ldb_request *req)
 	char *error = NULL;
 
 	switch (req->operation) {
-	case LDB_REQ_ADD:
 	case LDB_ASYNC_ADD:
 		msg = req->op.add.message;
 		break;
 		
-	case LDB_REQ_MODIFY:
 	case LDB_ASYNC_MODIFY:
 		msg = req->op.mod.message;
 		break;
@@ -86,18 +84,6 @@ static int wins_ldb_verify(struct ldb_module *module, struct ldb_request *req)
 	return LDB_ERR_OTHER;
 }
 
-static int wins_ldb_request(struct ldb_module *module, struct ldb_request *req)
-{
-	switch (req->operation) {
-	case LDB_REQ_ADD:
-	case LDB_REQ_MODIFY:
-		return wins_ldb_verify(module, req);
-	default:
-		return ldb_next_request(module, req);
-	}
-}
-	
-
 static int wins_ldb_init(struct ldb_module *ctx)
 {
 	struct winsdb_handle *h;
@@ -131,7 +117,6 @@ static const struct ldb_module_ops wins_ldb_ops = {
 	.name          = "wins_ldb",
 	.add           = wins_ldb_verify,
 	.modify        = wins_ldb_verify,
-	.request       = wins_ldb_request,
 	.init_context  = wins_ldb_init
 };
 

@@ -167,90 +167,6 @@ static BOOL inject_extended_dn(struct ldb_message *msg,
 }
 
 /* search */
-static int extended_search(struct ldb_module *module, struct ldb_control *control, struct ldb_request *req)
-{
-	struct ldb_result *extended_result;
-	struct ldb_control **saved_controls;
-	struct ldb_extended_dn_control *extended_ctrl;
-	int i, ret;
-	const char * const *saved_attrs = NULL;
-	char **new_attrs;
-	BOOL remove_guid = False;
-	BOOL remove_sid = False;
-
-	extended_ctrl = talloc_get_type(control->data, struct ldb_extended_dn_control);
-	if (!extended_ctrl) {
-		return LDB_ERR_PROTOCOL_ERROR;
-	}
-
-	/* save it locally and remove it from the list */
-	if (!save_controls(control, req, &saved_controls)) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-		
-	/* check if attrs only is specified, in that case check wether we need to modify them */
-	if (req->op.search.attrs) {
-		if (! is_attr_in_list(req->op.search.attrs, "objectGUID")) {
-			remove_guid = True;
-		}
-		if (! is_attr_in_list(req->op.search.attrs, "objectSID")) {
-			remove_sid = True;
-		}
-		if (remove_guid || remove_sid) {
-			new_attrs = copy_attrs(req, req->op.search.attrs);
-			if (!new_attrs)
-				return LDB_ERR_OPERATIONS_ERROR;
-			
-			saved_attrs = req->op.search.attrs;
-
-			if (remove_guid) {
-				if (!add_attrs(req, &new_attrs, "objectGUID"))
-					return LDB_ERR_OPERATIONS_ERROR;
-			}
-			if (remove_sid) {
-				if (!add_attrs(req, &new_attrs, "objectSID"))
-					return LDB_ERR_OPERATIONS_ERROR;
-			}
-
-			req->op.search.attrs = (const char * const *)new_attrs;
-		}
-	}
-
-	ret = ldb_next_request(module, req);
-
-	/* put request back into original shape */
-	/* TODO: build a new req and don't touch the original one */
-
-	if (req->controls) talloc_free(req->controls);
-	req->controls = saved_controls;
-
-	if (saved_attrs) {
-		talloc_free(new_attrs);
-		req->op.search.attrs = saved_attrs;
-	}
-
-	if (ret != LDB_SUCCESS) {
-		return ret;
-	}
-
-	extended_result = req->op.search.res;
-	
-	for (i = 0; i < extended_result->count; i++) {
-		/* TODO: the following funtion updates only dn and
-		 * distinguishedName. We still need to address other
-		 * DN entries like objectCategory
-		 */
-		if (!inject_extended_dn(extended_result->msgs[i], 
-					extended_ctrl->type,
-					remove_guid, remove_sid)) {
-			return LDB_ERR_OPERATIONS_ERROR;
-		}
-	}
-	
-	return LDB_SUCCESS;	
-}
-
-/* search */
 struct extended_async_context {
 
 	struct ldb_module *module;
@@ -387,28 +303,6 @@ static int extended_search_async(struct ldb_module *module, struct ldb_request *
 	return ret;
 }
 
-static int extended_request(struct ldb_module *module, struct ldb_request *req)
-{
-	struct ldb_control *control;
-
-	/* check if there's an extended dn control */
-	control = get_control_from_list(req->controls, LDB_CONTROL_EXTENDED_DN_OID);
-	if (control == NULL) {
-		/* not found go on */
-		return ldb_next_request(module, req);
-	}
-
-	switch (req->operation) {
-
-	case LDB_REQ_SEARCH:
-		return extended_search(module, control, req);
-
-	default:
-		return LDB_ERR_OPERATIONS_ERROR;
-
-	}
-}
-
 static int extended_init(struct ldb_module *module)
 {
 	struct ldb_request *req;
@@ -437,7 +331,6 @@ static int extended_init(struct ldb_module *module)
 static const struct ldb_module_ops extended_dn_ops = {
 	.name		   = "extended_dn",
 	.search            = extended_search_async,
-	.request      	   = extended_request,
 	.init_context	   = extended_init
 };
 
