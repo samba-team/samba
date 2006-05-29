@@ -295,7 +295,7 @@ static int add_uint64_element(struct ldb_message *msg, const char *attr, uint64_
 /*
   hook add record ops
 */
-static int operational_add(struct ldb_module *module, struct ldb_request *req)
+static int operational_add_sync(struct ldb_module *module, struct ldb_request *req)
 {
 	const struct ldb_message *msg = req->op.add.message;
 	time_t t = time(NULL);
@@ -341,7 +341,7 @@ static int operational_add(struct ldb_module *module, struct ldb_request *req)
 /*
   hook modify record ops
 */
-static int operational_modify(struct ldb_module *module, struct ldb_request *req)
+static int operational_modify_sync(struct ldb_module *module, struct ldb_request *req)
 {
 	const struct ldb_message *msg = req->op.mod.message;
 	time_t t = time(NULL);
@@ -421,7 +421,7 @@ error:
 	return LDB_ERR_OPERATIONS_ERROR;
 }
 
-static int operational_search_async(struct ldb_module *module, struct ldb_request *req)
+static int operational_search(struct ldb_module *module, struct ldb_request *req)
 {
 	struct operational_async_context *ac;
 	struct ldb_request *down_req;
@@ -506,7 +506,7 @@ static int operational_search_async(struct ldb_module *module, struct ldb_reques
 /*
   hook add record ops
 */
-static int operational_add_async(struct ldb_module *module, struct ldb_request *req)
+static int operational_add(struct ldb_module *module, struct ldb_request *req)
 {
 	struct ldb_request *down_req;
 	struct ldb_message *msg;
@@ -560,7 +560,7 @@ static int operational_add_async(struct ldb_module *module, struct ldb_request *
 /*
   hook modify record ops
 */
-static int operational_modify_async(struct ldb_module *module, struct ldb_request *req)
+static int operational_modify(struct ldb_module *module, struct ldb_request *req)
 {
 	struct ldb_request *down_req;
 	struct ldb_message *msg;
@@ -617,19 +617,10 @@ static int operational_request(struct ldb_module *module, struct ldb_request *re
 		return operational_search_bytree(module, req);
 
 	case LDB_REQ_ADD:
-		return operational_add(module, req);
+		return operational_add_sync(module, req);
 
 	case LDB_REQ_MODIFY:
-		return operational_modify(module, req);
-
-	case LDB_ASYNC_SEARCH:
-		return operational_search_async(module, req);
-
-	case LDB_ASYNC_ADD:
-		return operational_add_async(module, req);
-
-	case LDB_ASYNC_MODIFY:
-		return operational_modify_async(module, req);
+		return operational_modify_sync(module, req);
 
 	default:
 		return ldb_next_request(module, req);
@@ -650,6 +641,9 @@ static int operational_init(struct ldb_module *ctx)
 
 static const struct ldb_module_ops operational_ops = {
 	.name              = "operational",
+	.search            = operational_search,
+	.add               = operational_add,
+	.modify            = operational_modify,
 	.request           = operational_request,
 	.init_context	   = operational_init
 };

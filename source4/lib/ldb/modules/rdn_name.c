@@ -310,7 +310,7 @@ static int rdn_name_rename_do_mod(struct ldb_async_handle *h) {
 	ac->step = RENAME_MODIFY;
 
 	/* do the mod call */
-	return ldb_next_request(h->module, ac->mod_req);
+	return ldb_request(h->module->ldb, ac->mod_req);
 }
 
 static int rename_async_wait(struct ldb_async_handle *handle)
@@ -409,12 +409,6 @@ static int rdn_name_request(struct ldb_module *module, struct ldb_request *req)
 	case LDB_REQ_ADD:
 		return rdn_name_add_sync(module, req);
 
-	case LDB_ASYNC_ADD:
-		return rdn_name_add(module, req);
-
-	case LDB_ASYNC_RENAME:
-		return rdn_name_rename(module, req);
-
 	default:
 		return ldb_next_request(module, req);
 
@@ -423,6 +417,8 @@ static int rdn_name_request(struct ldb_module *module, struct ldb_request *req)
 
 static const struct ldb_module_ops rdn_name_ops = {
 	.name              = "rdn_name",
+	.add               = rdn_name_add,
+	.rename            = rdn_name_rename,
 	.request           = rdn_name_request,
 	.async_wait        = rdn_name_async_wait
 };

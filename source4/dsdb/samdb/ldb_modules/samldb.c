@@ -915,9 +915,6 @@ static int samldb_request(struct ldb_module *module, struct ldb_request *req)
 	case LDB_REQ_ADD:
 		return samldb_add(module, req);
 
-	case LDB_ASYNC_ADD:
-		return samldb_add_async(module, req);
-
 	default:
 		return ldb_next_request(module, req);
 
@@ -933,6 +930,7 @@ static int samldb_init(struct ldb_module *module)
 static const struct ldb_module_ops samldb_ops = {
 	.name          = "samldb",
 	.init_context  = samldb_init,
+	.add           = samldb_add_async,
 	.request       = samldb_request
 };
 

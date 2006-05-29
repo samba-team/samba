@@ -280,7 +280,8 @@ static int ldb_op_finish(struct ldb_context *ldb, int status)
 */
 int ldb_request(struct ldb_context *ldb, struct ldb_request *req)
 {
-	int status, started_transaction=0;
+	struct ldb_module *module;
+	int ret, started_transaction=0;
 
 	ldb_reset_err_string(ldb);
 
@@ -288,28 +289,52 @@ int ldb_request(struct ldb_context *ldb, struct ldb_request *req)
 		req->op.search.res = NULL;
 	}
 
-	/* start a transaction if not async and not search */
+	/* start a transaction if SYNC and not search */
 	if ((!ldb->transaction_active) &&
 	    (req->operation == LDB_REQ_ADD ||
 	     req->operation == LDB_REQ_MODIFY ||
 	     req->operation == LDB_REQ_DELETE ||
 	     req->operation == LDB_REQ_RENAME)) {
-		status = ldb_transaction_start(ldb);
-		if (status != LDB_SUCCESS) {
-			talloc_free(req);
-			return status;
+		ret = ldb_transaction_start(ldb);
+		if (ret != LDB_SUCCESS) {
+			return ret;
 		}
 		started_transaction = 1;
 	}
 
 	/* call the first module in the chain */
-	status = ldb->modules->ops->request(ldb->modules, req);
-
-	if (started_transaction) {
-		return ldb_op_finish(ldb, status);
+	switch (req->operation) {
+	case LDB_ASYNC_SEARCH:
+		FIRST_OP(ldb, search);
+		ret = module->ops->search(module, req);
+		break;
+	case LDB_ASYNC_ADD:
+		FIRST_OP(ldb, add);
+		ret = module->ops->add(module, req);
+		break;
+	case LDB_ASYNC_MODIFY:
+		FIRST_OP(ldb, modify);
+		ret = module->ops->modify(module, req);
+		break;
+	case LDB_ASYNC_DELETE:
+		FIRST_OP(ldb, del);
+		ret = module->ops->del(module, req);
+		break;
+	case LDB_ASYNC_RENAME:
+		FIRST_OP(ldb, rename);
+		ret = module->ops->rename(module, req);
+		break;
+	default:
+		FIRST_OP(ldb, request);
+		ret = module->ops->request(module, req);
+		break;
 	}
 
-	return status;
+	if (started_transaction) {
+		return ldb_op_finish(ldb, ret);
+	}
+
+	return ret;
 }
 
 /*
@@ -453,7 +478,6 @@ static int ldb_autotransaction_request(struct ldb_context *ldb, struct ldb_reque
 	}
 
 	ret = ldb_request(ldb, req);
-
 	if (ret == LDB_SUCCESS) {
 		ret = ldb_async_wait(req->async.handle, LDB_WAIT_ALL);
 	}

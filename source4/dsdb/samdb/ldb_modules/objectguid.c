@@ -174,9 +174,6 @@ static int objectguid_request(struct ldb_module *module, struct ldb_request *req
 	case LDB_REQ_ADD:
 		return objectguid_add(module, req);
 
-	case LDB_ASYNC_ADD:
-		return objectguid_add_async(module, req);
-
 	default:
 		return ldb_next_request(module, req);
 
@@ -185,6 +182,7 @@ static int objectguid_request(struct ldb_module *module, struct ldb_request *req
 
 static const struct ldb_module_ops objectguid_ops = {
 	.name          = "objectguid",
+	.add           = objectguid_add_async,
 	.request       = objectguid_request
 };
 
