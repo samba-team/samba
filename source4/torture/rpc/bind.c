@@ -193,6 +193,10 @@ BOOL torture_bind_authcontext(struct torture_context *torture)
 
 	status = dcerpc_lsa_OpenPolicy2(lsa_pipe, mem_ctx, &openpolicy);
 
+	cli->tree->session = tmp;
+	talloc_free(lsa_pipe);
+	lsa_pipe = NULL;
+
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_INVALID_HANDLE)) {
 		d_printf("dcerpc_lsa_OpenPolicy2 with wrong vuid gave %s, "
 			 "expected NT_STATUS_INVALID_HANDLE\n",
