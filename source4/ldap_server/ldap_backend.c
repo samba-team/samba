@@ -108,6 +108,65 @@ NTSTATUS ldapsrv_unwilling(struct ldapsrv_call *call, int error)
 	return NT_STATUS_OK;
 }
 
+static int ldapsrv_SearchCallback(struct ldb_context *ldb, void *context, struct ldb_async_result *ares)
+{
+	struct ldb_result *res;
+	int n;
+	
+ 	if (!context || !ares) {
+		DEBUG(3, ("NULL Context or Ares in ldapsrv_SearchCallback"));
+		return LDB_ERR_OPERATIONS_ERROR;
+	}	
+
+	res = talloc_get_type(context, struct ldb_result);
+
+	if (ares->type == LDB_REPLY_ENTRY) {
+		res->msgs = talloc_realloc(res, res->msgs, struct ldb_message *, res->count + 2);
+		if (! res->msgs) {
+			goto error;
+		}
+
+		res->msgs[res->count + 1] = NULL;
+
+		res->msgs[res->count] = talloc_steal(res->msgs, ares->message);
+		if (! res->msgs[res->count]) {
+			goto error;
+		}
+
+		res->count++;
+	}
+
+	if (ares->type == LDB_REPLY_REFERRAL) {
+		if (res->refs) {
+			for (n = 0; res->refs[n]; n++) /*noop*/ ;
+		} else {
+			n = 0;
+		}
+
+		res->refs = talloc_realloc(res, res->refs, char *, n + 2);
+		if (! res->refs) {
+			goto error;
+		}
+
+		res->refs[n] = talloc_steal(res->refs, ares->referral);
+		res->refs[n + 1] = NULL;
+	}
+
+	if (ares->controls) {
+		res->controls = talloc_steal(res, ares->controls);
+		if (! res->controls) {
+			goto error;
+		}
+	}
+
+	talloc_free(ares);
+	return LDB_SUCCESS;
+
+error:
+	talloc_free(ares);
+	return LDB_ERR_OPERATIONS_ERROR;
+}
+
 static NTSTATUS ldapsrv_SearchRequest(struct ldapsrv_call *call)
 {
 	struct ldap_SearchRequest *req = &call->request->r.SearchRequest;
@@ -173,9 +232,12 @@ static NTSTATUS ldapsrv_SearchRequest(struct ldapsrv_call *call)
 		 req->basedn, ldb_filter_from_tree(call, req->tree)));
 
 	lreq = talloc(local_ctx, struct ldb_request);
-	NT_STATUS_HAVE_NO_MEMORY(local_ctx);
+	NT_STATUS_HAVE_NO_MEMORY(lreq);
+
+	res = talloc_zero(local_ctx, struct ldb_result);
+	NT_STATUS_HAVE_NO_MEMORY(res);
 	
-	lreq->operation = LDB_REQ_SEARCH;
+	lreq->operation = LDB_ASYNC_SEARCH;
 	lreq->op.search.base = basedn;
 	lreq->op.search.scope = scope;
 	lreq->op.search.tree = req->tree;
@@ -183,10 +245,17 @@ static NTSTATUS ldapsrv_SearchRequest(struct ldapsrv_call *call)
 
 	lreq->controls = call->request->controls;
 
+	lreq->async.context = res;
+	lreq->async.callback = ldapsrv_SearchCallback;
+	lreq->async.timeout = 600;
+
 	ldb_ret = ldb_request(samdb, lreq);
 
-	/* Ensure we don't keep the search results around for too long */
-	res = talloc_steal(local_ctx, lreq->op.search.res);
+	if (ldb_ret != LDB_SUCCESS) {
+		goto reply;
+	}
+
+	ldb_ret = ldb_async_wait(lreq->async.handle, LDB_WAIT_ALL);
 
 	if (ldb_ret == LDB_SUCCESS) {
 		for (i = 0; i < res->count; i++) {
