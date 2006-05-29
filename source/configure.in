@@ -412,6 +412,25 @@ then
 	LIBS="$LIBS -ldmalloc"	
 fi
 
+#################################################
+# check for a shared memory profiling support
+AC_MSG_CHECKING(whether to use profiling)
+AC_ARG_WITH(profiling-data,
+[  --with-profiling-data   Include gathering source code profile information (default=no)],
+[ case "$withval" in
+  yes)
+    AC_MSG_RESULT(yes)
+    AC_DEFINE(WITH_PROFILE,1,[Whether to use profiling])
+    samba_cv_WITH_PROFILE=yes
+    ;;
+  *)
+    AC_MSG_RESULT(no)
+    samba_cv_WITH_PROFILE=no
+    ;;
+  esac ],
+  AC_MSG_RESULT(no)
+)
+
 dnl Checks for programs.
 
 ##
@@ -2024,7 +2043,22 @@ if test x"$samba_cv_HAVE_GETTIMEOFDAY_TZ" = x"yes"; then
     AC_DEFINE(HAVE_GETTIMEOFDAY_TZ,1,[Whether gettimeofday() is available])
 fi
 
-AC_LIBTESTFUNC(rt, clock_gettime)
+if test x"$samba_cv_WITH_PROFILE" = x"yes"; then
+
+    # On some systems (eg. Linux) librt can pull in libpthread. We
+    # don't want this to happen because libpthreads changes signal delivery
+    # semantics in ways we are not prepared for. This breaks Linux oplocks
+    # which rely on signals.
+
+    AC_LIBTESTFUNC(rt, clock_gettime,
+	    [
+		SMB_IS_LIBPTHREAD_LINKED(
+			[ SMB_REMOVELIB(rt) ],
+			[ AC_DEFINE(HAVE_CLOCK_GETTIME, 1,
+			    [Whether clock_gettime is available]) ])
+	    ])
+
+fi
 
 AC_CACHE_CHECK([for va_copy],samba_cv_HAVE_VA_COPY,[
 AC_TRY_LINK([#include <stdarg.h>
@@ -3974,24 +4008,6 @@ AC_ARG_WITH(syslog,
   esac ],
   AC_MSG_RESULT(no)
 )
-
-#################################################
-# check for a shared memory profiling support
-AC_MSG_CHECKING(whether to use profiling)
-AC_ARG_WITH(profiling-data,
-[  --with-profiling-data   Include gathering source code profile information (default=no)],
-[ case "$withval" in
-  yes)
-    AC_MSG_RESULT(yes)
-    AC_DEFINE(WITH_PROFILE,1,[Whether to use profiling])
-    ;;
-  *)
-    AC_MSG_RESULT(no)
-    ;;
-  esac ],
-  AC_MSG_RESULT(no)
-)
-
 
 #################################################
 # check for experimental disk-quotas support
