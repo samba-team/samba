@@ -424,8 +424,6 @@ static int server_sort_search_async(struct ldb_module *module, struct ldb_reques
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	ac->req->creds = req->creds;
-
 	ac->req->async.context = ac;
 	ac->req->async.callback = server_sort_search_async_callback;
 	ac->req->async.timeout = req->async.timeout;

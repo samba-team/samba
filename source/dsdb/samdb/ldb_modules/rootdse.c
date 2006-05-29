@@ -232,7 +232,6 @@ static int rootdse_search_async(struct ldb_module *module, struct ldb_request *r
 	}
 	down_req->op.search.attrs = req->op.search.attrs;
 	down_req->controls = req->controls;
-	down_req->creds = req->creds;
 
 	down_req->async.context = ac;
 	down_req->async.callback = rootdse_async_callback;

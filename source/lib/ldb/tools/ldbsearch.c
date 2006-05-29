@@ -224,7 +224,6 @@ static int do_search(struct ldb_context *ldb,
 	if (req->op.search.tree == NULL) return -1;
 	req->op.search.attrs = attrs;
 	req->controls = actx->req_ctrls;
-	req->creds = NULL;
 	req->async.context = actx;
 	req->async.callback = &search_callback;
 	req->async.timeout = 3600; /* TODO: make this settable by command line */

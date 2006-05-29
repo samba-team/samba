@@ -371,8 +371,6 @@ static int extended_search_async(struct ldb_module *module, struct ldb_request *
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	down_req->creds = req->creds;
-
 	down_req->async.context = ac;
 	down_req->async.callback = extended_async_callback;
 	down_req->async.timeout = req->async.timeout;

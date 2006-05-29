@@ -485,7 +485,6 @@ static int operational_search(struct ldb_module *module, struct ldb_request *req
 	else down_req->op.search.attrs = req->op.search.attrs;
 	
 	down_req->controls = req->controls;
-	down_req->creds = req->creds;
 
 	down_req->async.context = ac;
 	down_req->async.callback = operational_async_callback;

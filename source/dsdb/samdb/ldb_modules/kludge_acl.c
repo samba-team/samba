@@ -209,7 +209,6 @@ static int kludge_acl_search_async(struct ldb_module *module, struct ldb_request
 	down_req->op.search.attrs = req->op.search.attrs;
 	
 	down_req->controls = req->controls;
-	down_req->creds = req->creds;
 
 	down_req->async.context = ac;
 	down_req->async.callback = kludge_acl_async_callback;

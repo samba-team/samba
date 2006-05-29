@@ -431,8 +431,6 @@ static int paged_search(struct ldb_module *module, struct ldb_request *req)
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 
-		ac->store->req->creds = req->creds;
-
 		ac->store->req->async.context = ac;
 		ac->store->req->async.callback = paged_search_async_callback;
 		ac->store->req->async.timeout = req->async.timeout;

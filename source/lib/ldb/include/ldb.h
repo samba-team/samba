@@ -561,8 +561,6 @@ struct ldb_control {
 	void *data;
 };
 
-struct ldb_credentials;
-
 enum ldb_request_type {
 	LDB_REQ_SEARCH,
 	LDB_REQ_ADD,
@@ -659,7 +657,6 @@ struct ldb_request {
 	} op;
 
 	struct ldb_control **controls;
-	struct ldb_credentials *creds;
 
 	struct {
 		void *context;
