@@ -72,19 +72,19 @@ static void to_unix(char *s)
 }
 
 static SMB_STRUCT_DIR *catia_opendir(vfs_handle_struct *handle, connection_struct 
-			  *conn, const char *fname, const char *mask, uint32 attr)
+			  const char *fname, const char *mask, uint32 attr)
 {
         pstring name;
         pstrcpy(name, fname);
         to_unix(name);
 
-        return SMB_VFS_NEXT_OPENDIR(handle, conn, name, mask, attr);
+        return SMB_VFS_NEXT_OPENDIR(handle, name, mask, attr);
 }
 
 static SMB_STRUCT_DIRENT *catia_readdir(vfs_handle_struct *handle, 
-					connection_struct *conn, SMB_STRUCT_DIR *dirp)
+					SMB_STRUCT_DIR *dirp)
 {
-        SMB_STRUCT_DIRENT *result = SMB_VFS_NEXT_READDIR(handle, conn, dirp);
+        SMB_STRUCT_DIRENT *result = SMB_VFS_NEXT_READDIR(handle, dirp);
 
         if (result == NULL)
                 return result;
@@ -93,7 +93,7 @@ static SMB_STRUCT_DIRENT *catia_readdir(vfs_handle_struct *handle,
         return result;
 }
 
-static int catia_open(vfs_handle_struct *handle, connection_struct *conn, 
+static int catia_open(vfs_handle_struct *handle,
 		      const char *fname, int flags, mode_t mode)
 {
         pstring name;
@@ -101,10 +101,10 @@ static int catia_open(vfs_handle_struct *handle, connection_struct *conn,
         pstrcpy(name, fname);
         to_unix(name);
  
-        return SMB_VFS_NEXT_OPEN(handle, conn, name, flags, mode);
+        return SMB_VFS_NEXT_OPEN(handle, name, flags, mode);
 }
 
-static int catia_rename(vfs_handle_struct *handle, connection_struct *conn,
+static int catia_rename(vfs_handle_struct *handle,
 			const char *oldname, const char *newname)
 {
         pstring oname, nname;
@@ -117,109 +117,107 @@ static int catia_rename(vfs_handle_struct *handle, connection_struct *conn,
         DEBUG(10, ("converted old name: %s\n", oname));
         DEBUG(10, ("converted new name: %s\n", nname));
  
-        return SMB_VFS_NEXT_RENAME(handle, conn, oname, nname);
+        return SMB_VFS_NEXT_RENAME(handle, oname, nname);
 }
 
-static int catia_stat(vfs_handle_struct *handle, connection_struct *conn, 
+static int catia_stat(vfs_handle_struct *handle,
 		      const char *fname, SMB_STRUCT_STAT *sbuf)
 {
         pstring name;
         pstrcpy(name, fname);
         to_unix(name);
 
-        return SMB_VFS_NEXT_STAT(handle, conn, name, sbuf);
+        return SMB_VFS_NEXT_STAT(handle, name, sbuf);
 }
 
-static int catia_lstat(vfs_handle_struct *handle, connection_struct *conn, 
+static int catia_lstat(vfs_handle_struct *handle,
 		       const char *path, SMB_STRUCT_STAT *sbuf)
 {
         pstring name;
         pstrcpy(name, path);
         to_unix(name);
 
-        return SMB_VFS_NEXT_LSTAT(handle, conn, name, sbuf);
+        return SMB_VFS_NEXT_LSTAT(handle, name, sbuf);
 }
 
-static int catia_unlink(vfs_handle_struct *handle, connection_struct *conn,
-			const char *path)
+static int catia_unlink(vfs_handle_struct *handle, const char *path)
 {
         pstring name;
         pstrcpy(name, path);
         to_unix(name);
 
-        return SMB_VFS_NEXT_UNLINK(handle, conn, name);
+        return SMB_VFS_NEXT_UNLINK(handle, name);
 }
 
-static int catia_chmod(vfs_handle_struct *handle, connection_struct *conn, 
+static int catia_chmod(vfs_handle_struct *handle,
 		       const char *path, mode_t mode)
 {
         pstring name;
         pstrcpy(name, path);
         to_unix(name);
 
-        return SMB_VFS_NEXT_CHMOD(handle, conn, name, mode);
+        return SMB_VFS_NEXT_CHMOD(handle, name, mode);
 }
 
-static int catia_chown(vfs_handle_struct *handle, connection_struct *conn, 
+static int catia_chown(vfs_handle_struct *handle,
 		       const char *path, uid_t uid, gid_t gid)
 {
         pstring name;
         pstrcpy(name, path);
         to_unix(name);
 
-        return SMB_VFS_NEXT_CHOWN(handle, conn, name, uid, gid);
+        return SMB_VFS_NEXT_CHOWN(handle, name, uid, gid);
 }
 
-static int catia_chdir(vfs_handle_struct *handle, connection_struct *conn, 
+static int catia_chdir(vfs_handle_struct *handle,
 		       const char *path)
 {
         pstring name;
         pstrcpy(name, path);
         to_unix(name);
 
-        return SMB_VFS_NEXT_CHDIR(handle, conn, name);
+        return SMB_VFS_NEXT_CHDIR(handle, name);
 }
 
-static char *catia_getwd(vfs_handle_struct *handle, connection_struct *conn,
-			 char *buf)
+static char *catia_getwd(vfs_handle_struct *handle, char *buf)
 {
-        return SMB_VFS_NEXT_GETWD(handle, conn, buf);
+        return SMB_VFS_NEXT_GETWD(handle, buf);
 }
 
-static int catia_utime(vfs_handle_struct *handle, connection_struct *conn, 
+static int catia_utime(vfs_handle_struct *handle,
 		       const char *path, struct utimbuf *times)
 {
-        return SMB_VFS_NEXT_UTIME(handle, conn, path, times);
+        return SMB_VFS_NEXT_UTIME(handle, path, times);
 }
 
-static BOOL catia_symlink(vfs_handle_struct *handle, connection_struct *conn,
+static BOOL catia_symlink(vfs_handle_struct *handle,
 			  const char *oldpath, const char *newpath)
 {
-        return SMB_VFS_NEXT_SYMLINK(handle, conn, oldpath, newpath);
+        return SMB_VFS_NEXT_SYMLINK(handle, oldpath, newpath);
 }
 
-static BOOL catia_readlink(vfs_handle_struct *handle, connection_struct *conn,
+static BOOL catia_readlink(vfs_handle_struct *handle,
 			   const char *path, char *buf, size_t bufsiz)
 {
-        return SMB_VFS_NEXT_READLINK(handle, conn, path, buf, bufsiz);
+        return SMB_VFS_NEXT_READLINK(handle, path, buf, bufsiz);
 }
 
-static int catia_link(vfs_handle_struct *handle, connection_struct *conn, 
+static int catia_link(vfs_handle_struct *handle,
 		      const char *oldpath, const char *newpath)
 {
-        return SMB_VFS_NEXT_LINK(handle, conn, oldpath, newpath);
+        return SMB_VFS_NEXT_LINK(handle, oldpath, newpath);
 }
 
-static int catia_mknod(vfs_handle_struct *handle, connection_struct *conn, 
+static int catia_mknod(vfs_handle_struct *handle,
 		       const char *path, mode_t mode, SMB_DEV_T dev)
 {
-        return SMB_VFS_NEXT_MKNOD(handle, conn, path, mode, dev);
+        return SMB_VFS_NEXT_MKNOD(handle, path, mode, dev);
 }
 
-static char *catia_realpath(vfs_handle_struct *handle, connection_struct *conn,
+static char *catia_realpath(vfs_handle_struct *handle,
 			    const char *path, char *resolved_path)
 {
-        return SMB_VFS_NEXT_REALPATH(handle, conn, path, resolved_path);
+        return SMB_VFS_NEXT_REALPATH(handle, path, resolved_path);
 }
 
 static size_t catia_get_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
@@ -238,7 +236,7 @@ static BOOL catia_set_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
 				       psd);
 }
 
-static int catia_chmod_acl(vfs_handle_struct *handle, connection_struct *conn,
+static int catia_chmod_acl(vfs_handle_struct *handle,
 			   const char *name, mode_t mode)
 {
         /* If the underlying VFS doesn't have ACL support... */
@@ -246,7 +244,7 @@ static int catia_chmod_acl(vfs_handle_struct *handle, connection_struct *conn,
                 errno = ENOSYS;
                 return -1;
         }
-        return SMB_VFS_NEXT_CHMOD_ACL(handle, conn, name, mode);
+        return SMB_VFS_NEXT_CHMOD_ACL(handle, name, mode);
 }
 
 /* VFS operations structure */

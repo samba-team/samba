@@ -150,13 +150,12 @@ static BOOL expand_msdfs_target(connection_struct* conn, pstring target)
 }
 
 static int expand_msdfs_readlink(struct vfs_handle_struct *handle,
-				 struct connection_struct *conn,
 				 const char *path, char *buf, size_t bufsiz)
 {
 	pstring target;
 	int result;
 
-	result = SMB_VFS_NEXT_READLINK(handle, conn, path, target,
+	result = SMB_VFS_NEXT_READLINK(handle, path, target,
 				       sizeof(target));
 
 	if (result < 0)
@@ -166,7 +165,7 @@ static int expand_msdfs_readlink(struct vfs_handle_struct *handle,
 
 	if ((strncmp(target, "msdfs:", strlen("msdfs:")) == 0) &&
 	    (strchr_m(target, '@') != NULL)) {
-		if (!expand_msdfs_target(conn, target)) {
+		if (!expand_msdfs_target(handle->conn, target)) {
 			errno = ENOENT;
 			return -1;
 		}
