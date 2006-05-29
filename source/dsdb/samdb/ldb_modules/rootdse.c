@@ -278,9 +278,6 @@ static int rootdse_request(struct ldb_module *module, struct ldb_request *req)
 	case LDB_REQ_SEARCH:
 		return rootdse_search_bytree(module, req);
 
-	case LDB_ASYNC_SEARCH:
-		return rootdse_search_async(module, req);
-		
 	case LDB_REQ_REGISTER:
 		return rootdse_register_control(module, req);
 
@@ -309,6 +306,7 @@ static int rootdse_init(struct ldb_module *module)
 static const struct ldb_module_ops rootdse_ops = {
 	.name			= "rootdse",
 	.init_context           = rootdse_init,
+	.search                 = rootdse_search_async,
 	.request		= rootdse_request
 };
 

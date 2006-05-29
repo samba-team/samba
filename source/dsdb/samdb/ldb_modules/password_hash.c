@@ -1842,12 +1842,6 @@ static int password_hash_request(struct ldb_module *module, struct ldb_request *
 	case LDB_REQ_MODIFY:
 		return password_hash_modify(module, req);
 
-	case LDB_ASYNC_ADD:
-		return password_hash_add_async(module, req);
-
-	case LDB_ASYNC_MODIFY:
-		return password_hash_modify_async(module, req);
-
 	default:
 		return ldb_next_request(module, req);
 
@@ -1856,6 +1850,8 @@ static int password_hash_request(struct ldb_module *module, struct ldb_request *
 
 static const struct ldb_module_ops password_hash_ops = {
 	.name          = "password_hash",
+	.add           = password_hash_add_async,
+	.modify        = password_hash_modify_async,
 	.request       = password_hash_request,
 	.async_wait    = password_hash_async_wait
 };

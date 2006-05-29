@@ -266,20 +266,13 @@ static int kludge_acl_request(struct ldb_module *module, struct ldb_request *req
 	switch (req->operation) {
 
 	case LDB_REQ_ADD:
-	case LDB_ASYNC_ADD:
 	case LDB_REQ_MODIFY:
-	case LDB_ASYNC_MODIFY:
 	case LDB_REQ_DELETE:
-	case LDB_ASYNC_DELETE:
 	case LDB_REQ_RENAME:
-	case LDB_ASYNC_RENAME:
 		return kludge_acl_change(module, req);
 
 	case LDB_REQ_SEARCH:
 		return kludge_acl_search(module, req);
-
-	case LDB_ASYNC_SEARCH:
-		return kludge_acl_search_async(module, req);
 
 	case LDB_REQ_REGISTER:
 		return ldb_next_request(module, req);
@@ -354,6 +347,11 @@ done:
 
 static const struct ldb_module_ops kludge_acl_ops = {
 	.name		   = "kludge_acl",
+	.search            = kludge_acl_search_async,
+	.add               = kludge_acl_change,
+	.modify            = kludge_acl_change,
+	.del               = kludge_acl_change,
+	.rename            = kludge_acl_change,
 	.request      	   = kludge_acl_request,
 	.start_transaction = kludge_acl_start_trans,
 	.end_transaction   = kludge_acl_end_trans,

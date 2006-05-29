@@ -57,7 +57,12 @@ struct ldb_module {
 struct ldb_module_ops {
 	const char *name;
 	int (*init_context) (struct ldb_module *);
-	int (*request)(struct ldb_module *, struct ldb_request *);
+	int (*search)(struct ldb_module *, struct ldb_request *); /* search */
+	int (*add)(struct ldb_module *, struct ldb_request *); /* add */
+	int (*modify)(struct ldb_module *, struct ldb_request *); /* modify */
+	int (*del)(struct ldb_module *, struct ldb_request *); /* delete */
+	int (*rename)(struct ldb_module *, struct ldb_request *); /* rename */
+	int (*request)(struct ldb_module *, struct ldb_request *); /* match any other operation */
 	int (*start_transaction)(struct ldb_module *);
 	int (*end_transaction)(struct ldb_module *);
 	int (*del_transaction)(struct ldb_module *);
