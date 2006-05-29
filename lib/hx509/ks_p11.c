@@ -38,24 +38,24 @@ RCSID("$Id$");
 #include "pkcs11u.h"
 #include "pkcs11.h"
 
+struct p11_slot {
+    int flags;
+#define P11_SESSION		1
+#define P11_LOGIN_REQ		2
+#define P11_LOGIN_DONE		4
+    CK_SLOT_ID id;
+    CK_BBOOL token;
+    char *name;
+    hx509_certs certs;
+    char *pin;
+};
+
 struct p11_module {
     void *dl_handle;
     CK_FUNCTION_LIST_PTR funcs;
     CK_ULONG num_slots;
-    CK_ULONG selected_slot;
     unsigned int refcount;
-    /* slot info */
-    struct p11_slot {
-	int flags;
-#define P11_SESSION		1
-#define P11_LOGIN_REQ		2
-#define P11_LOGIN_DONE		4
-	CK_SLOT_ID id;
-	CK_BBOOL token;
-	char *name;
-	hx509_certs certs;
-	char *pin;
-    } slot;
+    struct p11_slot *slot;
 };
 
 #define P11FUNC(module,f,args) (*(module)->funcs->C_##f)args
@@ -68,6 +68,13 @@ static int p11_put_session(struct p11_module *,
 			   struct p11_slot *,
 			   CK_SESSION_HANDLE);
 static void p11_release_module(struct p11_module *);
+
+static int p11_list_keys(hx509_context,
+			 struct p11_module *,
+			 struct p11_slot *, 
+			 CK_SESSION_HANDLE,
+			 hx509_lock,
+			 hx509_certs *);
 
 /*
  *
@@ -218,17 +225,28 @@ static const RSA_METHOD rsa_pkcs1_method = {
  */
 
 static int
-p11_init_slot(struct p11_module *p, CK_SLOT_ID id, struct p11_slot *slot)
+p11_init_slot(hx509_context context, 
+	      struct p11_module *p,
+	      hx509_lock lock,
+	      CK_SLOT_ID id,
+	      int num,
+	      struct p11_slot *slot)
 {
+    CK_SESSION_HANDLE session;
     CK_SLOT_INFO slot_info;
     CK_TOKEN_INFO token_info;
     int ret, i;
 
+    slot->certs = NULL;
     slot->id = id;
 
     ret = P11FUNC(p, GetSlotInfo, (slot->id, &slot_info));
-    if (ret)
-	return ret;
+    if (ret) {
+	hx509_set_error_string(context, 0, EINVAL,
+			       "Failed to init PKCS11 slot %d",
+			       num);
+	return EINVAL;
+    }
 
     for (i = sizeof(slot_info.slotDescription) - 1; i > 0; i--) {
 	char c = slot_info.slotDescription[i];
@@ -246,13 +264,27 @@ p11_init_slot(struct p11_module *p, CK_SLOT_ID id, struct p11_slot *slot)
     }
 
     ret = P11FUNC(p, GetTokenInfo, (slot->id, &token_info));
-    if (ret)
-	return ret;
+    if (ret) {
+	hx509_set_error_string(context, 0, EINVAL,
+			       "Failed to init PKCS11 slot %d",
+			       num);
+	return EINVAL;
+    }
 
     if (token_info.flags & CKF_LOGIN_REQUIRED)
 	slot->flags |= P11_LOGIN_REQ;
 
-    return 0;
+    ret = p11_get_session(p, slot, lock, &session);
+    if (ret) {
+	hx509_set_error_string(context, 0, ret,
+			       "Failed to get session PKCS11 slot %d",
+			       num);
+	return ret;
+    }
+    ret = p11_list_keys(context, p, slot, session, lock, &slot->certs);
+    p11_put_session(p, slot, session);
+
+    return ret;
 }
 
 static int
@@ -669,7 +701,6 @@ p11_init(hx509_context context,
 	return ENOMEM;
     }
 
-    p->selected_slot = 0;
     p->refcount = 1;
 
     str = strchr(list, ',');
@@ -680,8 +711,10 @@ p11_init(hx509_context context,
 	strnext = strchr(str, ',');
 	if (strnext)
 	    *strnext++ = '\0';
+#if 0
 	if (strncasecmp(str, "slot=", 5) == 0)
 	    p->selected_slot = atoi(str + 5);
+#endif
 	str = strnext;
     }
 
@@ -727,18 +760,17 @@ p11_init(hx509_context context,
 	goto out;
     }
 
-    if (p->selected_slot >= p->num_slots) {
+   if (p->num_slots == 0) {
 	hx509_set_error_string(context, 0, EINVAL,
-			       "Selected PKCS11 slot (%d) larger "
-			       "then maximum slot (%d)",
-			       p->selected_slot, p->num_slots);
+			       "Select PKCS11 module have no slots");
 	ret = EINVAL;
 	goto out;
-    }
+   }
+
 
     {
-	CK_SESSION_HANDLE session;
 	CK_SLOT_ID_PTR slot_ids;
+	int i;
 
 	slot_ids = malloc(p->num_slots * sizeof(*slot_ids));
 	if (slot_ids == NULL) {
@@ -757,25 +789,24 @@ p11_init(hx509_context context,
 	    goto out;
 	}
 
-	ret = p11_init_slot(p, slot_ids[p->selected_slot], &p->slot);
+	p->slot = calloc(p->num_slots, sizeof(p->slot[0]));
+	if (p->slot == NULL) {
+	    free(slot_ids);
+	    hx509_set_error_string(context, 0, ENOMEM,
+				   "Failed to get memory for slot-list");
+	    ret = ENOMEM;
+	    goto out;
+	}
+			 
+	for (i = 0; i < p->num_slots; i++) {
+	    ret = p11_init_slot(context, p, lock, slot_ids[i], i, &p->slot[i]);
+	    if (ret)
+		break;
+	}
 	free(slot_ids);
 	if (ret) {
-	    hx509_set_error_string(context, 0, ret,
-				   "Failed to init PKCS11 slot %d",
-				   p->selected_slot);
 	    goto out;
 	}
-
-	ret = p11_get_session(p, &p->slot, lock, &session);
-	if (ret) {
-	    hx509_set_error_string(context, 0, ret,
-				   "Failed to get session PKCS11 slot %d",
-				   p->selected_slot);
-	    goto out;
-	}
-	ret = p11_list_keys(context, p, &p->slot, session,
-			    NULL, &p->slot.certs);
-	p11_put_session(p, &p->slot, session);
     }
 
     *data = p;
@@ -789,6 +820,7 @@ p11_init(hx509_context context,
 static void
 p11_release_module(struct p11_module *p)
 {
+    int i;
     if (p->refcount == 0)
 	_hx509_abort("pkcs11 refcount to low");
     if (--p->refcount > 0)
@@ -796,11 +828,17 @@ p11_release_module(struct p11_module *p)
 
     if (p->dl_handle)
 	dlclose(p->dl_handle);
-    if (p->slot.name)
-	free(p->slot.name);
-    if (p->slot.pin) {
-	memset(p->slot.pin, 0, strlen(p->slot.pin));
-	free(p->slot.pin);
+
+    for (i = 0; i < p->num_slots; i++) {
+	if (p->slot[i].certs)
+	    hx509_certs_free(&p->slot[i].certs);
+	if (p->slot[i].name)
+	    free(p->slot[i].name);
+	if (p->slot[i].pin) {
+	    memset(p->slot[i].pin, 0, strlen(p->slot[i].pin));
+	    free(p->slot[i].pin);
+	}
+	free(p->slot);
     }
     memset(p, 0, sizeof(*p));
     free(p);
@@ -813,28 +851,68 @@ p11_free(hx509_certs certs, void *data)
     return 0;
 }
 
+struct p11_cursor {
+    hx509_certs certs;
+    void *cursor;
+};
+
 static int 
 p11_iter_start(hx509_context context,
 	       hx509_certs certs, void *data, void **cursor)
 {
     struct p11_module *p = data;
-    return hx509_certs_start_seq(context, p->slot.certs, cursor);
+    struct p11_cursor *c;
+    int ret, i;
+
+    c = malloc(sizeof(*c));
+    if (c == NULL) {
+	hx509_clear_error_string(context);
+	return ENOMEM;
+    }
+    ret = hx509_certs_init(context, "MEMORY:pkcs11-iter", 0, NULL, &c->certs);
+    if (ret) {
+	free(c);
+	return ret;
+    }
+
+    for (i = 0 ; i < p->num_slots; i++) {
+	ret = hx509_certs_merge(context, c->certs, p->slot[i].certs);
+	if (ret) {
+	    hx509_certs_free(&c->certs);
+	    free(c);
+	    return ret;
+	}
+    }
+
+    ret = hx509_certs_start_seq(context, c->certs, &c->cursor);
+    if (ret) {
+	hx509_certs_free(&c->certs);
+	free(c);
+	return 0;
+    }
+    *cursor = c;
+
+    return 0;
 }
 
 static int
 p11_iter(hx509_context context,
 	 hx509_certs certs, void *data, void *cursor, hx509_cert *cert)
 {
-    struct p11_module *p = data;
-    return hx509_certs_next_cert(context, p->slot.certs, cursor, cert);
+    struct p11_cursor *c = cursor;
+    return hx509_certs_next_cert(context, c->certs, c->cursor, cert);
 }
 
 static int
 p11_iter_end(hx509_context context,
 	     hx509_certs certs, void *data, void *cursor)
 {
-    struct p11_module *p = data;
-    return hx509_certs_end_seq(context, p->slot.certs, cursor);
+    struct p11_cursor *c = cursor;
+    int ret;
+    ret = hx509_certs_end_seq(context, c->certs, c->cursor);
+    hx509_certs_free(&c->certs);
+    free(c);
+    return ret;
 }
 
 static struct hx509_keyset_ops keyset_pkcs11 = {
