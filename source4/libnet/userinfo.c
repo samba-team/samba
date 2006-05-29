@@ -32,14 +32,16 @@
 
 static void userinfo_handler(struct rpc_request *req);
 
-enum userinfo_stage { USERINFO_OPENUSER, USERINFO_GETUSER, USERINFO_CLOSEUSER };
+enum userinfo_stage { USERINFO_LOOKUP, USERINFO_OPENUSER, USERINFO_GETUSER, USERINFO_CLOSEUSER };
 
 struct userinfo_state {
 	enum userinfo_stage       stage;
 	struct dcerpc_pipe        *pipe;
 	struct rpc_request        *req;
+	struct policy_handle      domain_handle;
 	struct policy_handle      user_handle;
 	uint16_t                  level;
+	struct samr_LookupNames   lookup;
 	struct samr_OpenUser      openuser;
 	struct samr_QueryUserInfo queryuserinfo;
 	struct samr_Close         samrclose;	
@@ -51,7 +53,46 @@ struct userinfo_state {
 
 
 /**
- * Stage 1: Open user policy handle in SAM server.
+ * Stage 1 (optional): Look for a username in SAM server.
+ */
+static NTSTATUS userinfo_lookup(struct composite_context *c,
+				struct userinfo_state *s)
+{
+	/* receive samr_Lookup reply */
+	c->status = dcerpc_ndr_request_recv(s->req);
+	NT_STATUS_NOT_OK_RETURN(c->status);
+
+	/* have we actually got name resolved
+	   - we're looking for only one at the moment */
+	if (s->lookup.out.rids.count == 0) {
+		return NT_STATUS_NO_SUCH_USER;
+	}
+
+	/* TODO: find proper status code for more than one rid found */
+
+	/* prepare parameters for LookupNames */
+	s->openuser.in.domain_handle  = &s->domain_handle;
+	s->openuser.in.access_mask    = SEC_FLAG_MAXIMUM_ALLOWED;
+	s->openuser.in.rid            = s->lookup.out.rids.ids[0];
+	s->openuser.out.user_handle   = &s->user_handle;
+
+	/* send request */
+	s->req = dcerpc_samr_OpenUser_send(s->pipe, c, &s->openuser);
+	if (s->req == NULL) goto failure;
+
+	s->req->async.callback = userinfo_handler;
+	s->req->async.private  = c;
+	s->stage = USERINFO_OPENUSER;
+
+	return NT_STATUS_OK;
+
+failure:
+	return NT_STATUS_UNSUCCESSFUL;
+}
+
+
+/**
+ * Stage 2: Open user policy handle.
  */
 static NTSTATUS userinfo_openuser(struct composite_context *c,
 				  struct userinfo_state *s)
@@ -80,7 +121,7 @@ failure:
 
 
 /**
- * Stage 2: Get requested user information.
+ * Stage 3: Get requested user information.
  */
 static NTSTATUS userinfo_getuser(struct composite_context *c,
 				 struct userinfo_state *s)
@@ -107,7 +148,7 @@ static NTSTATUS userinfo_getuser(struct composite_context *c,
 
 
 /**
- * Stage 3: Close policy handle associated with opened user.
+ * Stage 4: Close policy handle associated with opened user.
  */
 static NTSTATUS userinfo_closeuser(struct composite_context *c,
 				   struct userinfo_state *s)
@@ -139,6 +180,10 @@ static void userinfo_handler(struct rpc_request *req)
 	
 	/* Stages of the call */
 	switch (s->stage) {
+	case USERINFO_LOOKUP:
+		c->status = userinfo_lookup(c, s);
+		break;
+
 	case USERINFO_OPENUSER:
 		c->status = userinfo_openuser(c, s);
 
@@ -208,29 +253,49 @@ struct composite_context *libnet_rpc_userinfo_send(struct dcerpc_pipe *p,
 	s = talloc_zero(c, struct userinfo_state);
 	if (s == NULL) goto failure;
 
-	s->level = io->in.level;
-	s->pipe  = p;
-	s->monitor_fn  = monitor;
-	
-	sid = dom_sid_parse_talloc(s, io->in.sid);
-	if (sid == NULL) goto failure;	
+	s->level         = io->in.level;
+	s->pipe          = p;
+	s->domain_handle = io->in.domain_handle;
+	s->monitor_fn    = monitor;
+
 	c->state        = COMPOSITE_STATE_IN_PROGRESS;
 	c->private_data = s;
 	c->event_ctx    = dcerpc_event_context(p);
 
-	/* preparing parameters to send rpc request */
-	s->openuser.in.domain_handle  = &io->in.domain_handle;
-	s->openuser.in.access_mask    = SEC_FLAG_MAXIMUM_ALLOWED;
-	s->openuser.in.rid            = sid->sub_auths[sid->num_auths - 1];
-	s->openuser.out.user_handle   = &s->user_handle;
+	if (io->in.sid) {
+		sid = dom_sid_parse_talloc(s, io->in.sid);
+		if (sid == NULL) goto failure;	
 
-	/* send request */
-	s->req = dcerpc_samr_OpenUser_send(p, c, &s->openuser);
+		s->openuser.in.domain_handle  = &s->domain_handle;
+		s->openuser.in.access_mask    = SEC_FLAG_MAXIMUM_ALLOWED;
+		s->openuser.in.rid            = sid->sub_auths[sid->num_auths - 1];
+		s->openuser.out.user_handle   = &s->user_handle;
+		
+		/* send request */
+		s->req = dcerpc_samr_OpenUser_send(p, c, &s->openuser);
+		if (s->req == NULL) goto failure;
+		
+		s->stage = USERINFO_OPENUSER;
+
+	} else {
+		/* preparing parameters to send rpc request */
+		s->lookup.in.domain_handle    = &s->domain_handle;
+		s->lookup.in.num_names        = 1;
+		s->lookup.in.names            = talloc_array(s, struct lsa_String, 1);
+		
+		if (composite_nomem(s->lookup.in.names, c)) return c;
+		s->lookup.in.names[0].string  = talloc_strdup(s, io->in.username);
+		
+		/* send request */
+		s->req = dcerpc_samr_LookupNames_send(p, c, &s->lookup);
+		if (s->req == NULL) goto failure;
+		
+		s->stage = USERINFO_LOOKUP;
+	}
 
 	/* callback handler */
 	s->req->async.callback = userinfo_handler;
-	s->req->async.private  = c;
-	s->stage = USERINFO_OPENUSER;
+	s->req->async.private = c;
 
 	return c;
 	
