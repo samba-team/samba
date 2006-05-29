@@ -224,7 +224,7 @@ static int lldb_add_msg_attr(struct ldb_context *ldb,
 /*
   search for matching records
 */
-static int lldb_search_async(struct ldb_module *module, struct ldb_request *req)
+static int lldb_search(struct ldb_module *module, struct ldb_request *req)
 {
 	struct lldb_private *lldb = talloc_get_type(module->private_data, struct lldb_private);
 	struct lldb_async_context *lldb_ac;
@@ -300,124 +300,10 @@ static int lldb_search_async(struct ldb_module *module, struct ldb_request *req)
 	return lldb_ldap_to_ldb(ret);
 }
 
-static int lldb_search_sync_callback(struct ldb_context *ldb, void *context, struct ldb_async_result *ares)
-{
-	struct ldb_result *res;
-	int n;
-	
- 	if (!context) {
-		ldb_set_errstring(ldb, talloc_asprintf(ldb, "NULL Context in callback"));
-		return LDB_ERR_OPERATIONS_ERROR;
-	}	
-
-	res = *((struct ldb_result **)context);
-
-	if (!res || !ares) {
-		goto error;
-	}
-
-	if (ares->type == LDB_REPLY_ENTRY) {
-		res->msgs = talloc_realloc(res, res->msgs, struct ldb_message *, res->count + 2);
-		if (! res->msgs) {
-			goto error;
-		}
-
-		res->msgs[res->count + 1] = NULL;
-
-		res->msgs[res->count] = talloc_steal(res->msgs, ares->message);
-		if (! res->msgs[res->count]) {
-			goto error;
-		}
-
-		res->count++;
-	}
-
-	if (ares->type == LDB_REPLY_REFERRAL) {
-		if (res->refs) {
-			for (n = 0; res->refs[n]; n++) /*noop*/ ;
-		} else {
-			n = 0;
-		}
-
-		res->refs = talloc_realloc(res, res->refs, char *, n + 2);
-		if (! res->refs) {
-			goto error;
-		}
-
-		res->refs[n] = talloc_steal(res->refs, ares->referral);
-		res->refs[n + 1] = NULL;
-	}
-
-	if (ares->type == LDB_REPLY_DONE) {
-		if (ares->controls) {
-			res->controls = talloc_steal(res, ares->controls);
-			if (! res->controls) {
-				goto error;
-			}
-		}
-	}
-
-	talloc_free(ares);
-	return LDB_SUCCESS;
-
-error:
-	talloc_free(ares);
-	talloc_free(res);
-	*((struct ldb_result **)context) = NULL;
-	return LDB_ERR_OPERATIONS_ERROR;
-}
-
-/*
-  search for matching records using a synchronous function
- */
-static int lldb_search_bytree(struct ldb_module *module, const struct ldb_dn *base,
-			      enum ldb_scope scope, struct ldb_parse_tree *tree,
-			      const char * const *attrs,
-			      struct ldb_control **control_req,
-			      struct ldb_result **res)
-{
-	struct lldb_private *lldb = talloc_get_type(module->private_data, struct lldb_private);
-	struct ldb_request *req;
-	int ret;
-
-	*res = talloc_zero(lldb, struct ldb_result);
-	if (! *res) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	req = talloc_zero(lldb, struct ldb_request);
-	if (! req) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	req->operation = LDB_ASYNC_SEARCH;
-	req->op.search.base = base;
-	req->op.search.scope = scope;
-	req->op.search.tree = tree;
-	req->op.search.attrs = attrs;
-	req->controls = control_req;
-	req->async.context = (void *)res;
-	req->async.callback = lldb_search_sync_callback;
-	req->async.timeout = lldb->timeout;
-
-	ret = lldb_search_async(module, req);
-
-	if (ret == LDB_SUCCESS) {
-		ret = ldb_async_wait(req->async.handle, LDB_WAIT_ALL);
-		talloc_free(req);
-	}
-
-	if (ret != LDB_SUCCESS) {
-		talloc_free(*res);
-	}
-
-	return ret;
-}
-
 /*
   add a record
 */
-static int lldb_add_async(struct ldb_module *module, struct ldb_request *req)
+static int lldb_add(struct ldb_module *module, struct ldb_request *req)
 {
 	struct lldb_private *lldb = talloc_get_type(module->private_data, struct lldb_private);
 	struct lldb_async_context *lldb_ac;
@@ -459,42 +345,10 @@ static int lldb_add_async(struct ldb_module *module, struct ldb_request *req)
 	return lldb_ldap_to_ldb(ret);
 }
 
-static int lldb_add(struct ldb_module *module, const struct ldb_message *msg)
-{
-	struct lldb_private *lldb = talloc_get_type(module->private_data, struct lldb_private);
-	struct ldb_request *req;
-	int ret;
-
-	req = talloc_zero(lldb, struct ldb_request);
-	if (! req) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	req->operation = LDB_ASYNC_ADD;
-	req->op.add.message = msg;
-	req->controls = NULL;
-	req->async.context = NULL;
-	req->async.callback = NULL;
-	req->async.timeout = lldb->timeout;
-
-	ret = lldb_add_async(module, req);
-
-	if (ret != LDB_SUCCESS) {
-		talloc_free(req);
-		return ret;
-	}
-
-	ret = ldb_async_wait(req->async.handle, LDB_WAIT_ALL);
-
-	talloc_free(req);
-	return ret;
-}
-
-
 /*
   modify a record
 */
-static int lldb_modify_async(struct ldb_module *module, struct ldb_request *req)
+static int lldb_modify(struct ldb_module *module, struct ldb_request *req)
 {
 	struct lldb_private *lldb = talloc_get_type(module->private_data, struct lldb_private);
 	struct lldb_async_context *lldb_ac;
@@ -536,41 +390,10 @@ static int lldb_modify_async(struct ldb_module *module, struct ldb_request *req)
 	return lldb_ldap_to_ldb(ret);
 }
 
-static int lldb_modify(struct ldb_module *module, const struct ldb_message *msg)
-{
-	struct lldb_private *lldb = talloc_get_type(module->private_data, struct lldb_private);
-	struct ldb_request *req;
-	int ret;
-
-	req = talloc_zero(lldb, struct ldb_request);
-	if (! req) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	req->operation = LDB_ASYNC_MODIFY;
-	req->op.mod.message = msg;
-	req->controls = NULL;
-	req->async.context = NULL;
-	req->async.callback = NULL;
-	req->async.timeout = lldb->timeout;
-
-	ret = lldb_modify_async(module, req);
-
-	if (ret != LDB_SUCCESS) {
-		talloc_free(req);
-		return ret;
-	}
-
-	ret = ldb_async_wait(req->async.handle, LDB_WAIT_ALL);
-
-	talloc_free(req);
-	return ret;
-}
-
 /*
   delete a record
 */
-static int lldb_delete_async(struct ldb_module *module, struct ldb_request *req)
+static int lldb_delete(struct ldb_module *module, struct ldb_request *req)
 {
 	struct lldb_private *lldb = talloc_get_type(module->private_data, struct lldb_private);
 	struct lldb_async_context *lldb_ac;
@@ -603,41 +426,10 @@ static int lldb_delete_async(struct ldb_module *module, struct ldb_request *req)
 	return lldb_ldap_to_ldb(ret);
 }
 
-static int lldb_delete(struct ldb_module *module, const struct ldb_dn *dn)
-{
-	struct lldb_private *lldb = talloc_get_type(module->private_data, struct lldb_private);
-	struct ldb_request *req;
-	int ret;
-
-	req = talloc_zero(lldb, struct ldb_request);
-	if (! req) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	req->operation = LDB_ASYNC_DELETE;
-	req->op.del.dn = dn;
-	req->controls = NULL;
-	req->async.context = NULL;
-	req->async.callback = NULL;
-	req->async.timeout = lldb->timeout;
-
-	ret = lldb_delete_async(module, req);
-
-	if (ret != LDB_SUCCESS) {
-		talloc_free(req);
-		return ret;
-	}
-
-	ret = ldb_async_wait(req->async.handle, LDB_WAIT_ALL);
-
-	talloc_free(req);
-	return ret;
-}
-
 /*
   rename a record
 */
-static int lldb_rename_async(struct ldb_module *module, struct ldb_request *req)
+static int lldb_rename(struct ldb_module *module, struct ldb_request *req)
 {
 	struct lldb_private *lldb = talloc_get_type(module->private_data, struct lldb_private);
 	struct lldb_async_context *lldb_ac;
@@ -684,38 +476,6 @@ static int lldb_rename_async(struct ldb_module *module, struct ldb_request *req)
 	}
 
 	return lldb_ldap_to_ldb(ret);
-}
-
-static int lldb_rename(struct ldb_module *module, const struct ldb_dn *olddn, const struct ldb_dn *newdn)
-{
-	struct lldb_private *lldb = talloc_get_type(module->private_data, struct lldb_private);
-	struct ldb_request *req;
-	int ret;
-
-	req = talloc_zero(lldb, struct ldb_request);
-	if (! req) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	req->operation = LDB_ASYNC_RENAME;
-	req->op.rename.olddn = olddn;
-	req->op.rename.newdn = newdn;
-	req->controls = NULL;
-	req->async.context = NULL;
-	req->async.callback = NULL;
-	req->async.timeout = lldb->timeout;
-
-	ret = lldb_rename_async(module, req);
-
-	if (ret != LDB_SUCCESS) {
-		talloc_free(req);
-		return ret;
-	}
-
-	ret = ldb_async_wait(req->async.handle, LDB_WAIT_ALL);
-
-	talloc_free(req);
-	return ret;
 }
 
 static int lldb_parse_result(struct ldb_async_handle *handle, LDAPMessage *result)
@@ -951,63 +711,35 @@ static int lldb_start_trans(struct ldb_module *module)
 {
 	/* TODO implement a local transaction mechanism here */
 
-	return 0;
+	return LDB_SUCCESS;
 }
 
 static int lldb_end_trans(struct ldb_module *module)
 {
 	/* TODO implement a local transaction mechanism here */
 
-	return 0;
+	return LDB_SUCCESS;
 }
 
 static int lldb_del_trans(struct ldb_module *module)
 {
 	/* TODO implement a local transaction mechanism here */
 
-	return 0;
+	return LDB_SUCCESS;
 }
 
 static int lldb_request(struct ldb_module *module, struct ldb_request *req)
 {
-	switch (req->operation) {
-
-	case LDB_REQ_SEARCH:
-		return lldb_search_bytree(module,
-					  req->op.search.base,
-					  req->op.search.scope, 
-					  req->op.search.tree, 
-					  req->op.search.attrs, 
-					  req->controls,
-					  &req->op.search.res);
-
-	case LDB_REQ_ADD:
-		return lldb_add(module, req->op.add.message);
-
-	case LDB_REQ_MODIFY:
-		return lldb_modify(module, req->op.mod.message);
-
-	case LDB_REQ_DELETE:
-		return lldb_delete(module, req->op.del.dn);
-
-	case LDB_REQ_RENAME:
-		return lldb_rename(module,
-					req->op.rename.olddn,
-					req->op.rename.newdn);
-
-	default:
-		return -1;
-
-	}
+	return LDB_ERR_OPERATIONS_ERROR;
 }
 
 static const struct ldb_module_ops lldb_ops = {
 	.name              = "ldap",
-	.search            = lldb_search_async,
-	.add               = lldb_add_async,
-	.modify            = lldb_modify_async,
-	.del               = lldb_delete_async,
-	.rename            = lldb_rename_async,
+	.search            = lldb_search,
+	.add               = lldb_add,
+	.modify            = lldb_modify,
+	.del               = lldb_delete,
+	.rename            = lldb_rename,
 	.request           = lldb_request,
 	.start_transaction = lldb_start_trans,
 	.end_transaction   = lldb_end_trans,

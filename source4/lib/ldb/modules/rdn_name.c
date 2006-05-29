@@ -53,85 +53,6 @@ static struct ldb_message_element *rdn_name_find_attribute(const struct ldb_mess
 	return NULL;
 }
 
-static int rdn_name_add_sync(struct ldb_module *module, struct ldb_request *req)
-{
-	const struct ldb_message *msg = req->op.add.message;
-	struct ldb_message *msg2;
-	struct ldb_message_element *attribute;
-	struct ldb_dn_component *rdn;
-	int i, ret;
-
-	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "rdn_name_add_record\n");
-
-	/* do not manipulate our control entries */
-	if (ldb_dn_is_special(msg->dn)) {
-		return ldb_next_request(module, req);
-	}
-
-	msg2 = talloc(module, struct ldb_message);
-	if (!msg2) {
-		return -1;
-	}
-
-	msg2->dn = msg->dn;
-	msg2->num_elements = msg->num_elements;
-	msg2->private_data = msg->private_data;
-	msg2->elements = talloc_array(msg2, struct ldb_message_element, msg2->num_elements);
-	for (i = 0; i < msg2->num_elements; i++) {
-		msg2->elements[i] = msg->elements[i];
-	}
-
-	rdn = ldb_dn_get_rdn(msg2, msg2->dn);
-	if (!rdn) {
-		talloc_free(msg2);
-		return -1;
-	}
-	
-	/* Perhaps someone above us tried to set this? */
-	if ((attribute = rdn_name_find_attribute(msg, "name")) != NULL ) {
-		attribute->num_values = 0;
-	}
-
-	if (ldb_msg_add_value(msg2, "name", &rdn->value) != 0) {
-		talloc_free(msg2);
-		return -1;
-	}
-
-	attribute = rdn_name_find_attribute(msg2, rdn->name);
-
-	if (!attribute) {
-		if (ldb_msg_add_value(msg2, rdn->name, &rdn->value) != 0) {
-			talloc_free(msg2);
-			return -1;
-		}
-	} else {
-		const struct ldb_attrib_handler *handler
-			= ldb_attrib_handler(module->ldb, rdn->name);
-		for (i=0; i < attribute->num_values; i++) {
-			if (handler->comparison_fn(module->ldb, msg2, &rdn->value, &attribute->values[i]) == 0) {
-				/* overwrite so it matches in case */
-				attribute->values[i] = rdn->value;
-				break;
-			}
-		}
-		if (i == attribute->num_values) {
-			ldb_debug_set(module->ldb, LDB_DEBUG_FATAL, 
-				      "RDN mismatch on %s: %s", 
-				      ldb_dn_linearize(msg2, msg2->dn), rdn->name);
-			talloc_free(msg2);
-			return -1;
-		}
-	}
-
-	req->op.add.message = msg2;
-	ret = ldb_next_request(module, req);
-	req->op.add.message = msg;
-
-	talloc_free(msg2);
-
-	return ret;
-}
-
 static int rdn_name_add(struct ldb_module *module, struct ldb_request *req)
 {
 	struct ldb_request *down_req;
@@ -402,24 +323,10 @@ static int rdn_name_async_wait(struct ldb_async_handle *handle, enum ldb_async_w
 	}
 }
 
-static int rdn_name_request(struct ldb_module *module, struct ldb_request *req)
-{
-	switch (req->operation) {
-
-	case LDB_REQ_ADD:
-		return rdn_name_add_sync(module, req);
-
-	default:
-		return ldb_next_request(module, req);
-
-	}
-}
-
 static const struct ldb_module_ops rdn_name_ops = {
 	.name              = "rdn_name",
 	.add               = rdn_name_add,
 	.rename            = rdn_name_rename,
-	.request           = rdn_name_request,
 	.async_wait        = rdn_name_async_wait
 };
 

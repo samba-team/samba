@@ -100,11 +100,7 @@ int ltdb_add_attr_results(struct ldb_module *module,
 			  unsigned int *count, 
 			  struct ldb_message ***res);
 int ltdb_filter_attrs(struct ldb_message *msg, const char * const *attrs);
-int ltdb_search_async(struct ldb_module *module, struct ldb_request *req);
-int ltdb_search_bytree(struct ldb_module *module, const struct ldb_dn *base,
-		       enum ldb_scope scope, struct ldb_parse_tree *tree,
-		       const char * const attrs[], struct ldb_result **res);
-
+int ltdb_search(struct ldb_module *module, struct ldb_request *req);
 
 /* The following definitions come from lib/ldb/ldb_tdb/ldb_tdb.c  */
 struct ldb_async_handle *init_ltdb_handle(struct ltdb_private *ltdb, struct ldb_module *module,
