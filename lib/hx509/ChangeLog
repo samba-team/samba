@@ -1,4 +1,15 @@
+2006-05-29  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* ks_p11.c: Iterate over all slots, not just the first/selected
+	one.
+	
 2006-05-27  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* cert.c: Add release function for certifiates so backend knowns
+	when its no longer used.
+
+	* ks_p11.c: Add reference counting on certifiates, push out
+	CK_SESSION_HANDLE from slot.
 
 	* cms.c: sprinkle more hx509_clear_error_string
 
