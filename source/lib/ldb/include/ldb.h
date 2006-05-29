@@ -562,11 +562,6 @@ struct ldb_control {
 };
 
 enum ldb_request_type {
-	LDB_REQ_SEARCH,
-	LDB_REQ_ADD,
-	LDB_REQ_MODIFY,
-	LDB_REQ_DELETE,
-	LDB_REQ_RENAME,
 	LDB_ASYNC_SEARCH,
 	LDB_ASYNC_ADD,
 	LDB_ASYNC_MODIFY,

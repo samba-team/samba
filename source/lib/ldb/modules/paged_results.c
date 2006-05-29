@@ -122,135 +122,6 @@ static struct results_store *new_store(struct private_data *priv)
 	return new;
 }
 
-/* search */
-static int paged_search_sync(struct ldb_module *module, struct ldb_control *control, struct ldb_request *req)
-{
-	struct private_data *private_data = talloc_get_type(module->private_data, struct private_data);
-	struct results_store *current = NULL;
-	struct ldb_result *paged_result;
-	struct ldb_control **saved_controls;
-	struct ldb_paged_control *paged_ctrl;
-	struct ldb_paged_control *paged_ret;
-	int i, ret;
-
-	paged_ctrl = talloc_get_type(control->data, struct ldb_paged_control);
-	if (!paged_ctrl) {
-		return LDB_ERR_PROTOCOL_ERROR;
-	}
-
-	/* check if it is a continuation search the store */
-	if (paged_ctrl->cookie_len != 0) {
-		for (current = private_data->store; current; current = current->next) {
-			if (strcmp(current->cookie, paged_ctrl->cookie) == 0) {
-				current->timestamp = time(NULL);
-				break;
-			}
-		}
-		if (current == NULL) {
-			return LDB_ERR_UNWILLING_TO_PERFORM;
-		}
-	}
-
-	/* is this a brand new paged request ? */
-	if (current == NULL) {
-
-		/* save controls list and remove this one from the list */
-		if (!save_controls(control, req, &saved_controls)) {
-			return LDB_ERR_OTHER;
-		}
-
-		/* perform the search */
-		ret = ldb_next_request(module, req);
-
-		/* restore original controls list */
-		if (req->controls) talloc_free(req->controls);
-		req->controls = saved_controls;
-
-		if (ret != LDB_SUCCESS) {
-			return ret;
-		}
-
-		/* create a new entry in the cache */
-		current = new_store(private_data);
-		if (!current) {
-			return LDB_ERR_OTHER;
-		}
-
-		/* steal the search result */
-		current->result = talloc_steal(current, req->op.search.res);
-		req->op.search.res = NULL;
-	}
-
-	/* create a container for the next batch of results */
-	paged_result = talloc(current, struct ldb_result);
-	if (!paged_result) {
-		return LDB_ERR_OTHER;
-	}
-	paged_result->count = 0;
-	paged_result->msgs = NULL;
-	paged_result->controls = NULL;
-
-	/* check if it is an abandon */
-	if (paged_ctrl->size == 0) {
-		req->op.search.res = talloc_steal(private_data, paged_result);
-		talloc_free(current);
-		return LDB_SUCCESS;
-	}
-
-	/* return a batch of results */
-		
-	paged_result->controls = talloc_array(paged_result, struct ldb_control *, 2);
-	if (!paged_result->controls) {
-		talloc_free(paged_result);
-		return LDB_ERR_OTHER;
-	}
-
-	paged_result->controls[0] = talloc(paged_result->controls, struct ldb_control);
-	if (!paged_result->controls[0]) {
-		talloc_free(paged_result);
-		return LDB_ERR_OTHER;
-	}
-	paged_result->controls[0]->oid = talloc_strdup(paged_result->controls[0], LDB_CONTROL_PAGED_RESULTS_OID);
-	paged_result->controls[0]->critical = 0;
-	paged_result->controls[1] = NULL;
-
-	paged_ret = talloc(paged_result->controls[0], struct ldb_paged_control);
-	if (!paged_ret) {
-		talloc_free(paged_result);
-		return LDB_ERR_OTHER;
-	}
-	paged_result->controls[0]->data = paged_ret;
-
-	if (paged_ctrl->size >= current->result->count) {
-		paged_ret->size = 0;
-		paged_ret->cookie = NULL;
-		paged_ret->cookie_len = 0;
-		paged_result->count = current->result->count;
-		current->result->count = 0;
-	} else {
-		paged_ret->size = current->result->count;
-		paged_ret->cookie = talloc_strdup(paged_ret, current->cookie);
-		paged_ret->cookie_len = strlen(paged_ret->cookie) + 1;
-		paged_result->count = paged_ctrl->size;
-		current->result->count -= paged_ctrl->size;
-	}
-
-	paged_result->msgs = talloc_array(paged_result, struct ldb_message *, paged_result->count + 1);
-	if (!paged_result->msgs) {
-		talloc_free(paged_result);
-		return LDB_ERR_OTHER;
-	}
-	for (i = 0; i < paged_result->count; i++) {
-		paged_result->msgs[i] = talloc_steal(paged_result->msgs, current->result->msgs[current->num_sent + i]);
-	}
-	current->num_sent += paged_result->count;
-	paged_result->msgs[paged_result->count] = NULL;
-
-	req->op.search.res = paged_result;
-
-	return LDB_SUCCESS;	
-}
-
 struct paged_async_context {
 	struct ldb_module *module;
 	void *up_context;
@@ -654,28 +525,6 @@ static int paged_async_wait(struct ldb_async_handle *handle, enum ldb_async_wait
 	return ret;
 }
 
-static int paged_request(struct ldb_module *module, struct ldb_request *req)
-{
-	struct ldb_control *control;
-
-	/* check if there's a paged request control */
-	control = get_control_from_list(req->controls, LDB_CONTROL_PAGED_RESULTS_OID);
-	if (control == NULL) {
-		/* not found go on */
-		return ldb_next_request(module, req);
-	}
-
-	switch (req->operation) {
-
-	case LDB_REQ_SEARCH:
-		return paged_search_sync(module, control, req);
-
-	default:
-		return LDB_ERR_PROTOCOL_ERROR;
-
-	}
-}
-
 static int paged_request_init(struct ldb_module *module)
 {
 	struct private_data *data;
@@ -714,7 +563,6 @@ static int paged_request_init(struct ldb_module *module)
 static const struct ldb_module_ops paged_ops = {
 	.name           = "paged_results",
 	.search         = paged_search,
-	.request        = paged_request,
 	.async_wait     = paged_async_wait,
 	.init_context 	= paged_request_init
 };

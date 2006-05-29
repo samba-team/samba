@@ -33,16 +33,16 @@ OBJ_FILES = \
 # End MODULE ldb_samldb
 ################################################
 
-################################################
-# Start MODULE ldb_proxy
-[MODULE::ldb_proxy]
-SUBSYSTEM = ldb
-INIT_FUNCTION = proxy_module_init
-OBJ_FILES = \
-		proxy.o
-#
-# End MODULE ldb_proxy
-################################################
+# ################################################
+# # Start MODULE ldb_proxy
+# [MODULE::ldb_proxy]
+# SUBSYSTEM = ldb
+# INIT_FUNCTION = proxy_module_init
+# OBJ_FILES = \
+# 		proxy.o
+# 
+# # End MODULE ldb_proxy
+# ################################################
 
 
 ################################################

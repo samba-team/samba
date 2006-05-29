@@ -470,51 +470,11 @@ static int ltdb_search_full(struct ldb_async_handle *handle)
 	return LDB_SUCCESS;
 }
 
-static int ltdb_search_sync_callback(struct ldb_context *ldb, void *context, struct ldb_async_result *ares)
-{
-	struct ldb_result *res = NULL;
-	
- 	if (!context) {
-		ldb_set_errstring(ldb, talloc_strdup(ldb, "NULL Context in callback"));
-		goto error;
-	}	
-
-	res = *((struct ldb_result **)context);
-
-	if (!res || !ares) {
-		goto error;
-	}
-
-	if (ares->type == LDB_REPLY_ENTRY) {
-		res->msgs = talloc_realloc(res, res->msgs, struct ldb_message *, res->count + 2);
-		if (! res->msgs) {
-			goto error;
-		}
-
-		res->msgs[res->count + 1] = NULL;
-
-		res->msgs[res->count] = talloc_steal(res->msgs, ares->message);
-		if (! res->msgs[res->count]) {
-			goto error;
-		}
-
-		res->count++;
-	} else {
-		ldb_debug(ldb, LDB_DEBUG_ERROR, "unrecognized async reply in ltdb_search_sync_callback!\n");
-		goto error;
-	}
-
-	talloc_free(ares);
-	return LDB_SUCCESS;
-
-error:
-	if (ares) talloc_free(ares);
-	if (res) talloc_free(res);
-	if (context) *((struct ldb_result **)context) = NULL;
-	return LDB_ERR_OPERATIONS_ERROR;
-}
-
-int ltdb_search_async(struct ldb_module *module, struct ldb_request *req)
+/*
+  search the database with a LDAP-like expression.
+  choses a search method
+*/
+int ltdb_search(struct ldb_module *module, struct ldb_request *req)
 {
 	struct ltdb_private *ltdb = talloc_get_type(module->private_data, struct ltdb_private);
 	struct ltdb_async_context *ltdb_ac;
@@ -565,49 +525,4 @@ int ltdb_search_async(struct ldb_module *module, struct ldb_request *req)
 
 	return LDB_SUCCESS;
 }
-
-/*
-  search the database with a LDAP-like expression.
-  choses a search method
-*/
-int ltdb_search_bytree(struct ldb_module *module, const struct ldb_dn *base,
-		       enum ldb_scope scope, struct ldb_parse_tree *tree,
-		       const char * const attrs[], struct ldb_result **res)
-{
-	struct ldb_request *req;
-	int ret;
-
-	*res = talloc_zero(module, struct ldb_result);
-	if (! *res) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	req = talloc_zero(module, struct ldb_request);
-	if (! req) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	req->operation = LDB_ASYNC_SEARCH;
-	req->op.search.base = base;
-	req->op.search.scope = scope;
-	req->op.search.tree = tree;
-	req->op.search.attrs = attrs;
-	req->controls = NULL;
-	req->async.context = (void *)res;
-	req->async.callback = ltdb_search_sync_callback;
-
-	ret = ltdb_search_async(module, req);
-
-	if (ret == LDB_SUCCESS) {
-		ret = ldb_async_wait(req->async.handle, LDB_WAIT_ALL);
-		talloc_free(req);
-	}
-
-	if (ret != LDB_SUCCESS) {
-		talloc_free(*res);
-	}
-
-	return ret;
-}
-
 

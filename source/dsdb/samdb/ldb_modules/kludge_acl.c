@@ -98,40 +98,6 @@ static const char *user_name(TALLOC_CTX *mem_ctx, struct ldb_module *module)
 }
 
 /* search */
-static int kludge_acl_search(struct ldb_module *module, struct ldb_request *req)
-{
-	struct kludge_private_data *data = talloc_get_type(module->private_data, struct kludge_private_data);
-	struct ldb_message *msg;
-	enum user_is user_type;
-	int i, j, ret;
-
-	/* go down the path and wait for reply to filter out stuff if needed */
-	ret = ldb_next_request(module, req);
-
-	/* We may not be fully initialised yet, or we might have just
-	 * got an error */
-	if (ret != LDB_SUCCESS || !data->password_attrs) {
-		return ret;
-	}
-
-	user_type = what_is_user(module);
-	switch (user_type) {
-	case SYSTEM:
-	case ADMINISTRATOR:
-		return ret;
-	default:
-		/* For every message, remove password attributes */
-		for (i=0; i < req->op.search.res->count; i++) {
-			msg = req->op.search.res->msgs[i];
-			for (j=0; data->password_attrs[j]; j++) {
-				ldb_msg_remove_attr(msg, data->password_attrs[j]);
-			}
-		}
-	}
-	return ret;
-}
-
-/* search */
 struct kludge_acl_async_context {
 
 	struct ldb_module *module;
@@ -260,28 +226,6 @@ static int kludge_acl_del_trans(struct ldb_module *module)
 	return ldb_next_del_trans(module);
 }
 
-static int kludge_acl_request(struct ldb_module *module, struct ldb_request *req)
-{
-	switch (req->operation) {
-
-	case LDB_REQ_ADD:
-	case LDB_REQ_MODIFY:
-	case LDB_REQ_DELETE:
-	case LDB_REQ_RENAME:
-		return kludge_acl_change(module, req);
-
-	case LDB_REQ_SEARCH:
-		return kludge_acl_search(module, req);
-
-	case LDB_REQ_REGISTER:
-		return ldb_next_request(module, req);
-
-	default:
-		/* anything else must be something new, let's throw an error */
-		return LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS;
-	}
-}
-
 static int kludge_acl_init(struct ldb_module *module)
 {
 	int ret, i;
@@ -351,7 +295,6 @@ static const struct ldb_module_ops kludge_acl_ops = {
 	.modify            = kludge_acl_change,
 	.del               = kludge_acl_change,
 	.rename            = kludge_acl_change,
-	.request      	   = kludge_acl_request,
 	.start_transaction = kludge_acl_start_trans,
 	.end_transaction   = kludge_acl_end_trans,
 	.del_transaction   = kludge_acl_del_trans,

@@ -196,91 +196,7 @@ static int sort_compare_async(struct ldb_message **msg1, struct ldb_message **ms
 	return ac->h->comparison_fn(ac->module->ldb, ac, &el1->values[0], &el2->values[0]);
 }
 
-/* search */
-static int server_sort_search(struct ldb_module *module, struct ldb_control *control, struct ldb_request *req)
-{
-	struct ldb_result *sort_result = NULL;
-	struct ldb_control **saved_controls;
-	struct ldb_server_sort_control **sort_ctrls;
-	int ret, result = 0;
-	int do_sort = 1;
-
-	sort_ctrls = talloc_get_type(control->data, struct ldb_server_sort_control *);
-	if (!sort_ctrls) {
-		return LDB_ERR_PROTOCOL_ERROR;
-	}
-
-	/* FIXME: we do not support more than one attribute for sorting right now */
-	/* FIXME: we need to check if the attribute type exist or return an error */
-	if (sort_ctrls[1] != NULL)
-		do_sort = 0;
-		
-	if (!do_sort && control->critical) {
-		sort_result = talloc_zero(req, struct ldb_result);
-		if (!sort_result)
-			return LDB_ERR_OPERATIONS_ERROR;
-
-		req->op.search.res = sort_result;
-	
-		/* 53 = unwilling to perform */
-		if ((ret = build_response(sort_result, &sort_result->controls, 53, "sort control is not complete yet")) != LDB_SUCCESS) {
-			return ret;
-		}
-
-		return LDB_ERR_UNSUPPORTED_CRITICAL_EXTENSION;
-	}
-
-	/* save it locally and remove it from the list */
-	if (!save_controls(control, req, &saved_controls)) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	ret = ldb_next_request(module, req);
-
-	if (req->controls) talloc_free(req->controls);
-	req->controls = saved_controls;
-
-	if (ret != LDB_SUCCESS) {
-		return ret;
-	}
-
-	sort_result = req->op.search.res;
-
-	/* SORT HERE */
-	if (do_sort) {
-		struct opaque *data;
-	       
-		data = talloc(module, struct opaque);
-		if (!data)
-			return LDB_ERR_OPERATIONS_ERROR;
-		
-		data->attribute = sort_ctrls[0]->attributeName;
-		data->reverse = sort_ctrls[0]->reverse;
-		data->ldb = module->ldb;
-		data->h = ldb_attrib_handler(data->ldb, data->attribute);
-		data->result = 0;
-
-		ldb_qsort(sort_result->msgs,
-			  sort_result->count,
-			  sizeof(struct ldb_message *),
-			  data,
-			  (ldb_qsort_cmp_fn_t)sort_compare);
-
-		result = data->result;
-
-		talloc_free(data);
-	} else {
-		result = 53;
-	}
-
-	if ((ret = build_response(sort_result, &sort_result->controls, result, "sort control is not complete yet")) != LDB_SUCCESS) {
-		return ret;
-	}
-
-	return LDB_SUCCESS;
-}
-
-static int server_sort_search_async_callback(struct ldb_context *ldb, void *context, struct ldb_async_result *ares)
+static int server_sort_search_callback(struct ldb_context *ldb, void *context, struct ldb_async_result *ares)
 {
 	struct sort_async_context *ac = NULL;
 	
@@ -340,7 +256,7 @@ error:
 	return LDB_ERR_OPERATIONS_ERROR;
 }
 
-static int server_sort_search_async(struct ldb_module *module, struct ldb_request *req)
+static int server_sort_search(struct ldb_module *module, struct ldb_request *req)
 {
 	struct ldb_control *control;
 	struct ldb_server_sort_control **sort_ctrls;
@@ -425,7 +341,7 @@ static int server_sort_search_async(struct ldb_module *module, struct ldb_reques
 	}
 
 	ac->req->async.context = ac;
-	ac->req->async.callback = server_sort_search_async_callback;
+	ac->req->async.callback = server_sort_search_callback;
 	ac->req->async.timeout = req->async.timeout;
 
 	req->async.handle = h;
@@ -433,7 +349,7 @@ static int server_sort_search_async(struct ldb_module *module, struct ldb_reques
 	return ldb_next_request(module, ac->req);
 }
 
-static int server_sort_async_results(struct ldb_async_handle *handle)
+static int server_sort_results(struct ldb_async_handle *handle)
 {
 	struct sort_async_context *ac;
 	struct ldb_async_result *ares;
@@ -527,32 +443,10 @@ static int server_sort_async_wait(struct ldb_async_handle *handle, enum ldb_asyn
 	}
 
 	if (handle->state == LDB_ASYNC_DONE) {
-		ret = server_sort_async_results(handle);
+		ret = server_sort_results(handle);
 	}
 
 	return ret;
-}
-
-static int server_sort(struct ldb_module *module, struct ldb_request *req)
-{
-	struct ldb_control *control;
-
-	/* check if there's a paged request control */
-	control = get_control_from_list(req->controls, LDB_CONTROL_SERVER_SORT_OID);
-	if (control == NULL) {
-		/* not found go on */
-		return ldb_next_request(module, req);
-	}
-
-	switch (req->operation) {
-
-	case LDB_REQ_SEARCH:
-		return server_sort_search(module, control, req);
-
-	default:
-		return LDB_ERR_PROTOCOL_ERROR;
-
-	}
 }
 
 static int server_sort_init(struct ldb_module *module)
@@ -582,8 +476,7 @@ static int server_sort_init(struct ldb_module *module)
 
 static const struct ldb_module_ops server_sort_ops = {
 	.name		   = "server_sort",
-	.search            = server_sort_search_async,
-	.request      	   = server_sort,
+	.search            = server_sort_search,
 	.async_wait        = server_sort_async_wait,
 	.init_context	   = server_sort_init
 };
