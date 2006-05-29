@@ -1704,8 +1704,9 @@ static NTSTATUS copy_internals(connection_struct *conn, char *oldname, char *new
 
 	close_ret = close_file(fsp2,NORMAL_CLOSE);
 
-	/* Grrr. We have to do this as open_file_shared1 adds aARCH when it
-	   creates the file. This isn't the correct thing to do in the copy case. JRA */
+	/* Grrr. We have to do this as open_file_ntcreate adds aARCH when it
+	   creates the file. This isn't the correct thing to do in the copy
+	   case. JRA */
 	file_set_dosmode(conn, newname, fattr, &sbuf2, True);
 
 	if (ret < (SMB_OFF_T)sbuf1.st_size) {

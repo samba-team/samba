@@ -1116,7 +1116,7 @@ BOOL downgrade_share_oplock(struct share_mode_lock *lck, files_struct *fsp)
 /****************************************************************************
  Deal with the internal needs of setting the delete on close flag. Note that
  as the tdb locking is recursive, it is safe to call this from within 
- open_file_shared. JRA.
+ open_file_ntcreate. JRA.
 ****************************************************************************/
 
 NTSTATUS can_set_delete_on_close(files_struct *fsp, BOOL delete_on_close,
