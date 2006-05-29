@@ -184,6 +184,7 @@ static BOOL test_userinfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			  struct dom_sid2 *domain_sid, const char* user_name,
 			  uint32_t *rid)
 {
+	const uint16_t level = 5;
 	NTSTATUS status;
 	struct libnet_rpc_userinfo user;
 	struct dom_sid *user_sid;
@@ -192,9 +193,23 @@ static BOOL test_userinfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	
 	user.in.domain_handle = *domain_handle;
 	user.in.sid           = dom_sid_string(mem_ctx, user_sid);
-	user.in.level         = 5;       /* this should be extended */
+	user.in.level         = level;       /* this should be extended */
 
-	printf("Testing sync libnet_rpc_userinfo\n");
+	printf("Testing sync libnet_rpc_userinfo (SID argument)\n");
+	status = libnet_rpc_userinfo(p, mem_ctx, &user);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("Failed to call sync libnet_rpc_userinfo - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	ZERO_STRUCT(user);
+
+	user.in.domain_handle = *domain_handle;
+	user.in.sid           = NULL;
+	user.in.username      = TEST_USERNAME;
+	user.in.level         = level;
+
+	printf("Testing sync libnet_rpc_userinfo (username argument)\n");
 	status = libnet_rpc_userinfo(p, mem_ctx, &user);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Failed to call sync libnet_rpc_userinfo - %s\n", nt_errstr(status));
@@ -234,6 +249,7 @@ static BOOL test_userinfo_async(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 				struct dom_sid2 *domain_sid, const char* user_name,
 				uint32_t *rid)
 {
+	const uint16_t level = 10;
 	NTSTATUS status;
 	struct composite_context *c;
 	struct libnet_rpc_userinfo user;
@@ -243,9 +259,30 @@ static BOOL test_userinfo_async(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	user.in.domain_handle = *domain_handle;
 	user.in.sid           = dom_sid_string(mem_ctx, user_sid);
-	user.in.level         = 10;       /* this should be extended */
+	user.in.level         = level;       /* this should be extended */
 
-	printf("Testing async libnet_rpc_userinfo\n");
+	printf("Testing async libnet_rpc_userinfo (SID argument)\n");
+
+	c = libnet_rpc_userinfo_send(p, &user, msg_handler);
+	if (!c) {
+		printf("Failed to call sync libnet_rpc_userinfo_send\n");
+		return False;
+	}
+
+	status = libnet_rpc_userinfo_recv(c, mem_ctx, &user);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("Calling async libnet_rpc_userinfo failed - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	ZERO_STRUCT(user);
+
+	user.in.domain_handle = *domain_handle;
+	user.in.sid           = NULL;
+	user.in.username      = TEST_USERNAME;
+	user.in.level         = level;
+
+	printf("Testing async libnet_rpc_userinfo (username argument)\n");
 
 	c = libnet_rpc_userinfo_send(p, &user, msg_handler);
 	if (!c) {
