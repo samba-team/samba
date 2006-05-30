@@ -1433,9 +1433,9 @@ int reply_open_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 	uint32 smb_attr = SVAL(inbuf,smb_vwv5);
 	/* Breakout the oplock request bits so we can set the
 		reply bits separately. */
-	BOOL ex_oplock_request = EXTENDED_OPLOCK_REQUEST(inbuf);
-	BOOL core_oplock_request = CORE_OPLOCK_REQUEST(inbuf);
-	BOOL oplock_request = ex_oplock_request | core_oplock_request;
+	int ex_oplock_request = EXTENDED_OPLOCK_REQUEST(inbuf);
+	int core_oplock_request = CORE_OPLOCK_REQUEST(inbuf);
+	int oplock_request = ex_oplock_request | core_oplock_request;
 #if 0
 	int smb_sattr = SVAL(inbuf,smb_vwv4); 
 	uint32 smb_time = make_unix_date3(inbuf+smb_vwv6);
