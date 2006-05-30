@@ -500,6 +500,7 @@ BOOL torture_ldap_schema(struct torture_context *torture)
 			       NULL,
 			       cmdline_credentials,
 			       0, NULL);
+	if (!ldb) goto failed;
 
 	ret &= test_search_rootDSE(ldb, &rootDSE);
 	if (!ret) goto failed;
