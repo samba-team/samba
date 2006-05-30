@@ -660,7 +660,12 @@ static NTSTATUS ipc_dcerpc_cmd(struct ntvfs_module_context *ntvfs,
 	DATA_BLOB fnum_key;
 	uint16_t fnum;
 
-	/* the fnum is in setup[1], a 16 bit value */
+	/*
+	 * the fnum is in setup[1], a 16 bit value
+	 * the setup[*] values are already in host byteorder
+	 * but ntvfs_handle_search_by_wire_key() expects
+	 * network byteorder
+	 */
 	SSVAL(&fnum, 0, trans->in.setup[1]);
 	fnum_key = data_blob_const(&fnum, 2);
 
