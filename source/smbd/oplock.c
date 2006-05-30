@@ -540,6 +540,7 @@ static void process_oplock_break_message(int msg_type, struct process_id src,
 	}
 
 	if ((global_client_caps & CAP_LEVEL_II_OPLOCKS) && 
+	    !(msg.op_type & FORCE_OPLOCK_BREAK_TO_NONE) &&
 	    !koplocks && /* NOTE: we force levelII off for kernel oplocks -
 			  * this will change when it is supported */
 	    lp_level2_oplocks(SNUM(fsp->conn))) {

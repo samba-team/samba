@@ -4024,7 +4024,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 									FILE_OPEN,
 									0,
 									FILE_ATTRIBUTE_NORMAL,
-									NO_OPLOCK,
+									FORCE_OPLOCK_BREAK_TO_NONE,
 									NULL);
  
 					if (new_fsp == NULL) {
@@ -4667,7 +4667,7 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 						FILE_OPEN,
 						0,
 						FILE_ATTRIBUTE_NORMAL,
-						NO_OPLOCK,
+						FORCE_OPLOCK_BREAK_TO_NONE,
 						NULL);
 	
 			if (new_fsp == NULL) {
