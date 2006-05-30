@@ -312,7 +312,7 @@ static int asq_async_requests(struct ldb_async_handle *handle) {
 		ac->reqs[i] = talloc_zero(ac->reqs, struct ldb_request);
 		if (ac->reqs[i] == NULL)
 			return LDB_ERR_OPERATIONS_ERROR;
-		ac->reqs[i]->operation = LDB_ASYNC_SEARCH;
+		ac->reqs[i]->operation = LDB_SEARCH;
 		ac->reqs[i]->op.search.base = ldb_dn_explode(ac->reqs[i], (const char *)el->values[i].data);
 		if (ac->reqs[i]->op.search.base == NULL) {
 			ac->asq_ret = ASQ_CTRL_INVALID_ATTRIBUTE_SYNTAX;

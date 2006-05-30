@@ -351,19 +351,19 @@ int ldb_load_modules(struct ldb_context *ldb, const char *options[])
 int ldb_next_request(struct ldb_module *module, struct ldb_request *request)
 {
 	switch (request->operation) {
-	case LDB_ASYNC_SEARCH:
+	case LDB_SEARCH:
 		FIND_OP(module, search);
 		return module->ops->search(module, request);
-	case LDB_ASYNC_ADD:
+	case LDB_ADD:
 		FIND_OP(module, add);
 		return module->ops->add(module, request);
-	case LDB_ASYNC_MODIFY:
+	case LDB_MODIFY:
 		FIND_OP(module, modify);
 		return module->ops->modify(module, request);
-	case LDB_ASYNC_DELETE:
+	case LDB_DELETE:
 		FIND_OP(module, del);
 		return module->ops->del(module, request);
-	case LDB_ASYNC_RENAME:
+	case LDB_RENAME:
 		FIND_OP(module, rename);
 		return module->ops->rename(module, request);
 	default:

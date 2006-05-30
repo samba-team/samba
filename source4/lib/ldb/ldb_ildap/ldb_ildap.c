@@ -744,7 +744,7 @@ static int ildb_init(struct ldb_module *module)
 
 	ildb->rootDSE = NULL;
 
-	req->operation = LDB_ASYNC_SEARCH;
+	req->operation = LDB_SEARCH;
 	req->op.search.base = ldb_dn_new(req);
 	req->op.search.scope = LDB_SCOPE_BASE;
 	req->op.search.tree = ldb_parse_tree(req, "dn=dc=rootDSE");
