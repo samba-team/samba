@@ -1479,7 +1479,7 @@ installpammodules: $(PAM_MODULES)
 	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS) $(DESTDIR) $(PAMMODULESDIR)
 	@for module in $(PAM_MODULES); do \
 		echo "Installing module $${module} as $(DESTDIR)/$(PAMMODULESDIR)/$${module}.@SHLIBEXT@ "; \
-		install -m $(INSTALLPERMS) bin/$${module}.@SHLIBEXT@ \
+		$(INSTALLCMD) -m $(INSTALLPERMS) bin/$${module}.@SHLIBEXT@ \
 			"$(DESTDIR)/$(PAMMODULESDIR)"; \
 	done
 
