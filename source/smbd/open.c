@@ -703,7 +703,6 @@ static BOOL delay_for_oplocks(struct share_mode_lock *lck,
 		if (!ret) {
 			DEBUG(3, ("Could not send oplock break message\n"));
 		}
-		file_free(fsp);
 	}
 
 	return delay_it;
