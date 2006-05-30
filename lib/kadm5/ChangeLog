@@ -1,3 +1,14 @@
+2006-05-30  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* password_quality.c (kadm5_check_password_quality): set error
+	message in context.
+	
+2006-05-13  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* iprop-log.c: Avoid shadowing.
+
+	* rename_s.c: Avoid shadowing.
+
 2006-05-08  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* privs_c.c (kadm5_c_get_privs): privs is a uint32_t, let copy it
