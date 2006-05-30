@@ -686,17 +686,14 @@ static BOOL delay_for_oplocks(struct share_mode_lock *lck,
 			   procid_str_static(&exclusive->pid)));
 		exclusive->op_mid = get_current_mid();
 
-		if (oplock_request & FORCE_OPLOCK_BREAK_TO_NONE) {
-			/* Send the message with this bit set. */
-			exclusive->op_type |= FORCE_OPLOCK_BREAK_TO_NONE;
-		}
-
 		/* Create the message. */
 		share_mode_entry_to_message(msg, exclusive);
 
-		/* And remove it again - we don't want this stored. */
+		/* Add in the FORCE_OPLOCK_BREAK_TO_NONE bit in the message if set. We don't
+		   want this set in the share mode struct pointed to by lck. */
+
 		if (oplock_request & FORCE_OPLOCK_BREAK_TO_NONE) {
-			exclusive->op_type &= ~FORCE_OPLOCK_BREAK_TO_NONE;
+			SSVAL(msg,6,exclusive->op_type | FORCE_OPLOCK_BREAK_TO_NONE);
 		}
 
 		become_root();
