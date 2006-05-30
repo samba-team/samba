@@ -1652,11 +1652,11 @@ static NTSTATUS copy_internals(connection_struct *conn, char *oldname, char *new
 
         fsp1 = open_file_ntcreate(conn,oldname,&sbuf1,
 			FILE_READ_DATA, /* Read-only. */
-			0, /* No sharing. */
+			FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,
 			FILE_OPEN,
 			0, /* No create options. */
 			FILE_ATTRIBUTE_NORMAL,
-			INTERNAL_OPEN_ONLY,
+			NO_OPLOCK,
 			&info);
 
 	if (!fsp1) {
@@ -1669,12 +1669,12 @@ static NTSTATUS copy_internals(connection_struct *conn, char *oldname, char *new
 	}
 
         fsp2 = open_file_ntcreate(conn,newname,&sbuf2,
-			FILE_WRITE_DATA, /* Read-only. */
-			0, /* No sharing. */
+			FILE_WRITE_DATA, /* Write-only. */
+			FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,
 			FILE_CREATE,
 			0, /* No create options. */
 			fattr,
-			INTERNAL_OPEN_ONLY,
+			NO_OPLOCK,
 			&info);
 
 	if (!fsp2) {

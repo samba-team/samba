@@ -599,7 +599,7 @@ static BOOL is_delete_request(files_struct *fsp) {
 }
 
 /*
- * 1) No files open at all: Grant whatever the client wants.
+ * 1) No files open at all or internal open: Grant whatever the client wants.
  *
  * 2) Exclusive (or batch) oplock around: If the requested access is a delete
  *    request, break if the oplock around is a batch oplock. If it's another
@@ -608,7 +608,10 @@ static BOOL is_delete_request(files_struct *fsp) {
  * 3) Only level2 around: Grant level2 and do nothing else.
  */
 
-static BOOL delay_for_oplocks(struct share_mode_lock *lck, files_struct *fsp, int pass_number)
+static BOOL delay_for_oplocks(struct share_mode_lock *lck,
+				files_struct *fsp,
+				int pass_number,
+				BOOL internal_only_open)
 {
 	int i;
 	struct share_mode_entry *exclusive = NULL;
@@ -616,7 +619,7 @@ static BOOL delay_for_oplocks(struct share_mode_lock *lck, files_struct *fsp, in
 	BOOL delay_it = False;
 	BOOL have_level2 = False;
 
-	if (is_stat_open(fsp->access_mask)) {
+	if (internal_only_open || is_stat_open(fsp->access_mask)) {
 		fsp->oplock_type = NO_OPLOCK;
 		return False;
 	}
@@ -1367,7 +1370,7 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 		}
 
 		/* First pass - send break only on batch oplocks. */
-		if (delay_for_oplocks(lck, fsp, 1)) {
+		if (delay_for_oplocks(lck, fsp, 1, internal_only_open)) {
 			schedule_defer_open(lck, request_time);
 			TALLOC_FREE(lck);
 			return NULL;
@@ -1380,7 +1383,7 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 		if (NT_STATUS_IS_OK(status)) {
 			/* We might be going to allow this open. Check oplock status again. */
 			/* Second pass - send break for both batch or exclusive oplocks. */
-			if (delay_for_oplocks(lck, fsp, 2)) {
+			if (delay_for_oplocks(lck, fsp, 2, internal_only_open)) {
 				schedule_defer_open(lck, request_time);
 				TALLOC_FREE(lck);
 				return NULL;
