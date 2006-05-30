@@ -1538,18 +1538,25 @@ extern int chain_size;
 
 /*
  * Bits we test with.
+ * Note these must fit into 16-bits.
  */
-                                                                                                                              
+
 #define NO_OPLOCK 0
 #define EXCLUSIVE_OPLOCK 1
 #define BATCH_OPLOCK 2
 #define LEVEL_II_OPLOCK 4
+
+/* The following are Samba-private. */
 #define INTERNAL_OPEN_ONLY 8
 #define FAKE_LEVEL_II_OPLOCK 16	/* Client requested no_oplock, but we have to
 				 * inform potential level2 holders on
 				 * write. */
 #define DEFERRED_OPEN_ENTRY 32
 #define UNUSED_SHARE_MODE_ENTRY 64
+#define FORCE_OPLOCK_BREAK_TO_NONE 128
+
+/* None of the following should ever appear in fsp->oplock_request. */
+#define SAMBA_PRIVATE_OPLOCK_MASK (INTERNAL_OPEN_ONLY|DEFERRED_OPEN_ENTRY|UNUSED_SHARE_MODE_ENTRY|FORCE_OPLOCK_BREAK_TO_NONE)
 
 #define EXCLUSIVE_OPLOCK_TYPE(lck) ((lck) & ((unsigned int)EXCLUSIVE_OPLOCK|(unsigned int)BATCH_OPLOCK))
 #define BATCH_OPLOCK_TYPE(lck) ((lck) & (unsigned int)BATCH_OPLOCK)

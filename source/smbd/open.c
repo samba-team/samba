@@ -599,7 +599,7 @@ static BOOL is_delete_request(files_struct *fsp) {
 }
 
 /*
- * 1) No files open at all: Grant whatever the client wants.
+ * 1) No files open at all or internal open: Grant whatever the client wants.
  *
  * 2) Exclusive (or batch) oplock around: If the requested access is a delete
  *    request, break if the oplock around is a batch oplock. If it's another
@@ -608,7 +608,10 @@ static BOOL is_delete_request(files_struct *fsp) {
  * 3) Only level2 around: Grant level2 and do nothing else.
  */
 
-static BOOL delay_for_oplocks(struct share_mode_lock *lck, files_struct *fsp, int pass_number)
+static BOOL delay_for_oplocks(struct share_mode_lock *lck,
+				files_struct *fsp,
+				int pass_number,
+				int oplock_request)
 {
 	int i;
 	struct share_mode_entry *exclusive = NULL;
@@ -616,7 +619,7 @@ static BOOL delay_for_oplocks(struct share_mode_lock *lck, files_struct *fsp, in
 	BOOL delay_it = False;
 	BOOL have_level2 = False;
 
-	if (is_stat_open(fsp->access_mask)) {
+	if ((oplock_request & INTERNAL_OPEN_ONLY) || is_stat_open(fsp->access_mask)) {
 		fsp->oplock_type = NO_OPLOCK;
 		return False;
 	}
@@ -683,7 +686,18 @@ static BOOL delay_for_oplocks(struct share_mode_lock *lck, files_struct *fsp, in
 			   procid_str_static(&exclusive->pid)));
 		exclusive->op_mid = get_current_mid();
 
+		if (oplock_request & FORCE_OPLOCK_BREAK_TO_NONE) {
+			/* Send the message with this bit set. */
+			exclusive->op_type |= FORCE_OPLOCK_BREAK_TO_NONE;
+		}
+
+		/* Create the message. */
 		share_mode_entry_to_message(msg, exclusive);
+
+		/* And remove it again - we don't want this stored. */
+		if (oplock_request & FORCE_OPLOCK_BREAK_TO_NONE) {
+			exclusive->op_type &= ~FORCE_OPLOCK_BREAK_TO_NONE;
+		}
 
 		become_root();
 		ret = message_send_pid(exclusive->pid, MSG_SMB_BREAK_REQUEST,
@@ -692,7 +706,6 @@ static BOOL delay_for_oplocks(struct share_mode_lock *lck, files_struct *fsp, in
 		if (!ret) {
 			DEBUG(3, ("Could not send oplock break message\n"));
 		}
-		file_free(fsp);
 	}
 
 	return delay_it;
@@ -1088,7 +1101,6 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 	int flags2=0;
 	BOOL file_existed = VALID_STAT(*psbuf);
 	BOOL def_acl = False;
-	BOOL internal_only_open = False;
 	SMB_DEV_T dev = 0;
 	SMB_INO_T inode = 0;
 	NTSTATUS fsp_open = NT_STATUS_ACCESS_DENIED;
@@ -1131,11 +1143,6 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 		   create_disposition, create_options, unx_mode,
 		   oplock_request));
 
-	if (oplock_request == INTERNAL_OPEN_ONLY) {
-		internal_only_open = True;
-		oplock_request = 0;
-	}
-
 	if ((pml = get_open_deferred_message(mid)) != NULL) {
 		struct deferred_open_record *state =
 			(struct deferred_open_record *)pml->private_data.data;
@@ -1172,7 +1179,8 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 	/* ignore any oplock requests if oplocks are disabled */
 	if (!lp_oplocks(SNUM(conn)) || global_client_failed_oplock_break ||
 	    IS_VETO_OPLOCK_PATH(conn, fname)) {
-		oplock_request = 0;
+		/* Mask off everything except the private Samba bits. */
+		oplock_request &= SAMBA_PRIVATE_OPLOCK_MASK;
 	}
 
 	/* this is for OS/2 long file names - say we don't support them */
@@ -1344,7 +1352,8 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 	fsp->share_access = share_access;
 	fsp->fh->private_options = create_options;
 	fsp->access_mask = access_mask;
-	fsp->oplock_type = oplock_request;
+	/* Ensure no SAMBA_PRIVATE bits can be set. */
+	fsp->oplock_type = (oplock_request & ~SAMBA_PRIVATE_OPLOCK_MASK);
 
 	if (timeval_is_zero(&request_time)) {
 		request_time = fsp->open_time;
@@ -1359,14 +1368,16 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 					fname);
 
 		if (lck == NULL) {
+			file_free(fsp);
 			DEBUG(0, ("Could not get share mode lock\n"));
 			return NT_STATUS_SHARING_VIOLATION;
 		}
 
 		/* First pass - send break only on batch oplocks. */
-		if (delay_for_oplocks(lck, fsp, 1)) {
+		if (delay_for_oplocks(lck, fsp, 1, oplock_request)) {
 			schedule_defer_open(lck, request_time);
 			TALLOC_FREE(lck);
+			file_free(fsp);
 			return NT_STATUS_SHARING_VIOLATION;
 		}
 
@@ -1377,9 +1388,10 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 		if (NT_STATUS_IS_OK(status)) {
 			/* We might be going to allow this open. Check oplock status again. */
 			/* Second pass - send break for both batch or exclusive oplocks. */
-			if (delay_for_oplocks(lck, fsp, 2)) {
+			if (delay_for_oplocks(lck, fsp, 2, oplock_request)) {
 				schedule_defer_open(lck, request_time);
 				TALLOC_FREE(lck);
+				file_free(fsp);
 				return NT_STATUS_SHARING_VIOLATION;
 			}
 		}
@@ -1453,7 +1465,7 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 			 * cope with the braindead 1 second delay.
 			 */
 
-			if (!internal_only_open &&
+			if (!(oplock_request & INTERNAL_OPEN_ONLY) &&
 			    lp_defer_sharing_violations()) {
 				struct timeval timeout;
 				struct deferred_open_record state;
