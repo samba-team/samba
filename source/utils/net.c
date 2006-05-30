@@ -65,6 +65,7 @@ const char *opt_workgroup = NULL;
 int opt_long_list_entries = 0;
 int opt_reboot = 0;
 int opt_force = 0;
+int opt_stdin = 0;
 int opt_port = 0;
 int opt_verbose = 0;
 int opt_maxusers = -1;
@@ -496,13 +497,24 @@ static int net_changetrustpw(int argc, const char **argv)
 	return net_rpc_changetrustpw(argc, argv);
 }
 
+static void set_line_buffering(FILE *f)
+{
+	setvbuf(f, NULL, _IOLBF, 0);
+}
+
 static int net_changesecretpw(int argc, const char **argv)
 {
         char *trust_pw;
         uint32 sec_channel_type = SEC_CHAN_WKSTA;
 
 	if(opt_force) {
-		trust_pw = getpass("Enter machine password: ");
+		if (opt_stdin) {
+			set_line_buffering(stdin);
+			set_line_buffering(stdout);
+			set_line_buffering(stderr);
+		}
+		
+		trust_pw = get_pass("Enter machine password: ", opt_stdin);
 
 		if (!secrets_store_machine_password(trust_pw, lp_workgroup(), sec_channel_type)) {
 			    d_fprintf(stderr, "Unable to write the machine account password in the secrets database");
@@ -856,6 +868,7 @@ static struct functable net_func[] = {
 		{"long",	'l', POPT_ARG_NONE,   &opt_long_list_entries},
 		{"reboot",	'r', POPT_ARG_NONE,   &opt_reboot},
 		{"force",	'f', POPT_ARG_NONE,   &opt_force},
+		{"stdin",	'i', POPT_ARG_NONE,   &opt_stdin},
 		{"timeout",	't', POPT_ARG_INT,    &opt_timeout},
 		{"machine-pass",'P', POPT_ARG_NONE,   &opt_machine_pass},
 		{"myworkgroup", 'W', POPT_ARG_STRING, &opt_workgroup},
