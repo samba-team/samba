@@ -462,12 +462,19 @@ kadm5_check_password_quality (krb5_context context,
     char **v, **vp;
     int ret;
 
+    /*
+     * Check if we should use the old version of policy function.
+     */
+
     v = krb5_config_get_strings(context, NULL, 
 				"password_quality", 
 				"policies", 
 				NULL);
-    if (v == NULL)
-	return (*passwd_quality_check) (context, principal, pwd_data);
+    if (v == NULL) {
+	msg = (*passwd_quality_check) (context, principal, pwd_data);
+	krb5_set_error_string(context, "password policy failed: %s", msg);
+	return msg;
+    }
 
     error_msg[0] = '\0';
 
@@ -476,11 +483,16 @@ kadm5_check_password_quality (krb5_context context,
 	proc = find_func(context, *vp);
 	if (proc == NULL) {
 	    msg = "failed to find password verifier function";
+	    krb5_set_error_string(context, "Failed to find password policy "
+				  "function: %s", *vp);
 	    break;
 	}
 	ret = (proc->func)(context, principal, pwd_data, NULL,
 			   error_msg, sizeof(error_msg));
 	if (ret) {
+	    krb5_set_error_string(context, "Password policy "
+				  "%s failed with %s", 
+				  proc->name, error_msg);
 	    msg = error_msg;
 	    break;
 	}
@@ -489,8 +501,12 @@ kadm5_check_password_quality (krb5_context context,
 
     /* If the default quality check isn't used, lets check that the
      * old quality function the user have set too */
-    if (msg == NULL && passwd_quality_check != min_length_passwd_quality_v0)
+    if (msg == NULL && passwd_quality_check != min_length_passwd_quality_v0) {
 	msg = (*passwd_quality_check) (context, principal, pwd_data);
-
+	if (msg)
+	    krb5_set_error_string(context, "(old) password policy "
+				  "failed with %s", msg);
+	    
+    }
     return msg;
 }
