@@ -192,14 +192,14 @@ static NTSTATUS winsdb_nbt_name(TALLOC_CTX *mem_ctx, struct ldb_dn *dn, struct n
 	}
 
 	if (dn->comp_num > cur && strcasecmp("scope", dn->components[cur].name) == 0) {
-		name->scope	= talloc_steal(name, dn->components[cur].value.data);
+		name->scope	= (const char *)talloc_steal(name, dn->components[cur].value.data);
 		cur++;
 	} else {
 		name->scope	= NULL;
 	}
 
 	if (dn->comp_num > cur && strcasecmp("name", dn->components[cur].name) == 0) {
-		name->name	= talloc_steal(name, dn->components[cur].value.data);
+		name->name	= (const char *)talloc_steal(name, dn->components[cur].value.data);
 		cur++;
 	} else {
 		name->name	= talloc_strdup(name, "");
@@ -251,7 +251,7 @@ static NTSTATUS winsdb_addr_decode(struct winsdb_handle *h, struct winsdb_record
 	p = strchr(address, ';');
 	if (!p) {
 		/* support old entries, with only the address */
-		addr->address		= talloc_steal(addr, val->data);
+		addr->address		= (const char *)talloc_steal(addr, val->data);
 		addr->wins_owner	= talloc_reference(addr, rec->wins_owner);
 		if (!addr->wins_owner) {
 			status = NT_STATUS_NO_MEMORY;
