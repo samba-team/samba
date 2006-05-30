@@ -1496,6 +1496,8 @@ NTSTATUS cli_full_connection(struct cli_state **output_cli,
 	struct cli_state *cli = NULL;
 	int pw_len = password ? strlen(password)+1 : 0;
 
+	*output_cli = NULL;
+
 	if (password == NULL) {
 		password = "";
 	}
