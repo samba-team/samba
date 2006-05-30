@@ -285,23 +285,23 @@ int ldb_request(struct ldb_context *ldb, struct ldb_request *req)
 
 	/* call the first module in the chain */
 	switch (req->operation) {
-	case LDB_ASYNC_SEARCH:
+	case LDB_SEARCH:
 		FIRST_OP(ldb, search);
 		ret = module->ops->search(module, req);
 		break;
-	case LDB_ASYNC_ADD:
+	case LDB_ADD:
 		FIRST_OP(ldb, add);
 		ret = module->ops->add(module, req);
 		break;
-	case LDB_ASYNC_MODIFY:
+	case LDB_MODIFY:
 		FIRST_OP(ldb, modify);
 		ret = module->ops->modify(module, req);
 		break;
-	case LDB_ASYNC_DELETE:
+	case LDB_DELETE:
 		FIRST_OP(ldb, del);
 		ret = module->ops->del(module, req);
 		break;
-	case LDB_ASYNC_RENAME:
+	case LDB_RENAME:
 		FIRST_OP(ldb, rename);
 		ret = module->ops->rename(module, req);
 		break;
@@ -408,7 +408,7 @@ int ldb_search(struct ldb_context *ldb,
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	req->operation = LDB_ASYNC_SEARCH;
+	req->operation = LDB_SEARCH;
 	req->op.search.base = base;
 	req->op.search.scope = scope;
 
@@ -486,7 +486,7 @@ int ldb_add(struct ldb_context *ldb,
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	req->operation = LDB_ASYNC_ADD;
+	req->operation = LDB_ADD;
 	req->op.add.message = message;
 	req->controls = NULL;
 	req->async.context = NULL;
@@ -518,7 +518,7 @@ int ldb_modify(struct ldb_context *ldb,
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	req->operation = LDB_ASYNC_MODIFY;
+	req->operation = LDB_MODIFY;
 	req->op.add.message = message;
 	req->controls = NULL;
 	req->async.context = NULL;
@@ -547,7 +547,7 @@ int ldb_delete(struct ldb_context *ldb, const struct ldb_dn *dn)
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	req->operation = LDB_ASYNC_DELETE;
+	req->operation = LDB_DELETE;
 	req->op.del.dn = dn;
 	req->controls = NULL;
 	req->async.context = NULL;
@@ -575,7 +575,7 @@ int ldb_rename(struct ldb_context *ldb, const struct ldb_dn *olddn, const struct
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	req->operation = LDB_ASYNC_RENAME;
+	req->operation = LDB_RENAME;
 	req->op.rename.olddn = olddn;
 	req->op.rename.newdn = newdn;
 	req->controls = NULL;

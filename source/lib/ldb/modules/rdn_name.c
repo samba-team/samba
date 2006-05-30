@@ -202,7 +202,7 @@ static int rdn_name_rename_do_mod(struct ldb_async_handle *h) {
 	
 	ac->mod_req = talloc_zero(ac, struct ldb_request);
 
-	ac->mod_req->operation = LDB_ASYNC_MODIFY;
+	ac->mod_req->operation = LDB_MODIFY;
 	ac->mod_req->op.mod.message = msg = ldb_msg_new(ac->mod_req);
 	if (msg == NULL) {
 		return LDB_ERR_OPERATIONS_ERROR;
