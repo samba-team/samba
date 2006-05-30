@@ -571,7 +571,7 @@ static BOOL test_oplock(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	smbcli_unlink(cli->tree, fname);
 
 	/* Test if a set-eof on pathname breaks an exclusive oplock. */
-	printf("Test if setpathinfo breaks oplocks.\n");
+	printf("Test if setpathinfo set EOF breaks oplocks.\n");
 
 	ZERO_STRUCT(break_info);
 	smbcli_oplock_handler(cli->transport, oplock_handler_ack_to_levelII, cli->tree);
@@ -586,7 +586,7 @@ static BOOL test_oplock(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_CREATE;
 	status = smb_raw_open(cli->tree, mem_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	fnum2 = io.ntcreatex.out.file.fnum;
+	fnum = io.ntcreatex.out.file.fnum;
 	CHECK_VAL(break_info.count, 0);
 	CHECK_VAL(break_info.failures, 0);
 	CHECK_VAL(io.ntcreatex.out.oplock_level, BATCH_OPLOCK_RETURN);
@@ -601,7 +601,43 @@ static BOOL test_oplock(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_VAL(break_info.count, 1);
 	CHECK_VAL(break_info.failures, 0);
+	CHECK_VAL(break_info.level, 0);
+
+	smbcli_close(cli->tree, fnum);
+	smbcli_unlink(cli->tree, fname);
+
+	/* Test if a set-allocation size on pathname breaks an exclusive oplock. */
+	printf("Test if setpathinfo allocation size breaks oplocks.\n");
+
+	ZERO_STRUCT(break_info);
+	smbcli_oplock_handler(cli->transport, oplock_handler_ack_to_levelII, cli->tree);
+
+	io.ntcreatex.in.flags = NTCREATEX_FLAGS_EXTENDED |
+		NTCREATEX_FLAGS_REQUEST_OPLOCK | 
+		NTCREATEX_FLAGS_REQUEST_BATCH_OPLOCK;
+	io.ntcreatex.in.access_mask = SEC_RIGHTS_FILE_ALL;
+	io.ntcreatex.in.share_access = NTCREATEX_SHARE_ACCESS_READ|
+		NTCREATEX_SHARE_ACCESS_WRITE|
+		NTCREATEX_SHARE_ACCESS_DELETE;
+	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_CREATE;
+	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	fnum = io.ntcreatex.out.file.fnum;
+	CHECK_VAL(break_info.count, 0);
+	CHECK_VAL(break_info.failures, 0);
 	CHECK_VAL(io.ntcreatex.out.oplock_level, BATCH_OPLOCK_RETURN);
+	
+	ZERO_STRUCT(sfi);
+	sfi.generic.level = SMB_SFILEINFO_ALLOCATION_INFORMATION;
+	sfi.generic.in.file.path = fname;
+	sfi.allocation_info.in.alloc_size = 65536 * 8;
+
+        status = smb_raw_setpathinfo(cli->tree, &sfi);
+
+	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_VAL(break_info.count, 1);
+	CHECK_VAL(break_info.failures, 0);
+	CHECK_VAL(break_info.level, 0);
 
 done:
 	smbcli_close(cli->tree, fnum);
