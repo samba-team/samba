@@ -696,7 +696,7 @@ static int ildb_async_wait(struct ldb_async_handle *handle, enum ldb_async_wait_
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 	
-	return LDB_SUCCESS;
+	return handle->status;
 }
 
 static int ildb_rootdse_callback(struct ldb_context *ldb, void *context, struct ldb_async_result *ares)
@@ -710,14 +710,21 @@ static int ildb_rootdse_callback(struct ldb_context *ldb, void *context, struct 
 
 	ildb = talloc_get_type(context, struct ildb_private);
 
-	if (ildb->rootDSE != NULL) {
-		/* what ? more than one rootdse entry ?! */
-		goto error;
-	}
-
 	/* we are interested only in the single reply (rootdse) we receive here */
-	if (ares->type == LDB_REPLY_ENTRY) {
+	switch (ares->type) {
+	case LDB_REPLY_ENTRY:
+		if (ildb->rootDSE != NULL) {
+			/* what ? more than one rootdse entry ?! */
+			goto error;
+		}
 		ildb->rootDSE = talloc_steal(ildb, ares->message);
+		break;
+
+	case LDB_REPLY_REFERRAL:
+		goto error;
+
+	case LDB_REPLY_DONE:
+		break;
 	}
 	
 	talloc_free(ares);
