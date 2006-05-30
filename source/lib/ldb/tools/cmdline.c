@@ -44,7 +44,7 @@ struct ldb_cmdline *ldb_cmdline_process(struct ldb_context *ldb, int argc, const
 #ifdef _SAMBA_BUILD_
 	int r;
 #endif
-    int num_options = 0;
+	int num_options = 0;
 	int opt;
 	struct poptOption popt_options[] = {
 		POPT_AUTOHELP
