@@ -112,6 +112,10 @@ int vasprintf(char **ptr, const char *format, va_list ap);
 #define bzero(a,b) memset((a),'\0',(b))
 #endif
 
+#ifndef HAVE_TIMEGM
+time_t timegm(struct tm *tm);
+#endif
+
 #ifndef PRINTF_ATTRIBUTE
 #if __GNUC__ >= 3
 /** Use gcc attribute to check printf fns.  a1 is the 1-based index of

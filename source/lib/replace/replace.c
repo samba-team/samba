@@ -368,19 +368,6 @@ duplicate a string
 #endif /* HAVE_VSYSLOG */
 
 
-#ifndef HAVE_TIMEGM
-/*
-  yes, I know this looks insane, but its really needed. The function in the 
-  Linux timegm() manpage does not work on solaris.
-*/
- time_t timegm(struct tm *tm) 
-{
-	time_t t = mktime(tm);
-	t -= mktime(gmtime(&t)) - (int)mktime(localtime(&t));
-	return t;
-}
-#endif
-
 #ifndef HAVE_SETENV
  int setenv(const char *name, const char *value, int overwrite) 
 {

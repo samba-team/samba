@@ -31,41 +31,42 @@
  * SUCH DAMAGE. 
  */
 
-#include "der_locl.h"
+/*
+  adapted for Samba4 by Andrew Tridgell
+*/
 
-RCSID("$Id: timegm.c,v 1.7 1999/12/02 17:05:02 joda Exp $");
+#include "includes.h"
+#include "system/time.h"
 
 #ifndef HAVE_TIMEGM
 
-static int
-is_leap(unsigned y)
+static int is_leap(unsigned y)
 {
-    y += 1900;
-    return (y % 4) == 0 && ((y % 100) != 0 || (y % 400) == 0);
+	y += 1900;
+	return (y % 4) == 0 && ((y % 100) != 0 || (y % 400) == 0);
 }
 
-time_t
-timegm (struct tm *tm)
+time_t timegm(struct tm *tm)
 {
-  static const unsigned ndays[2][12] ={
-    {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31},
-    {31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31}};
-  time_t res = 0;
-  unsigned i;
-
-  for (i = 70; i < tm->tm_year; ++i)
-    res += is_leap(i) ? 366 : 365;
-
-  for (i = 0; i < tm->tm_mon; ++i)
-    res += ndays[is_leap(tm->tm_year)][i];
-  res += tm->tm_mday - 1;
-  res *= 24;
-  res += tm->tm_hour;
-  res *= 60;
-  res += tm->tm_min;
-  res *= 60;
-  res += tm->tm_sec;
-  return res;
+	static const unsigned ndays[2][12] ={
+		{31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31},
+		{31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31}};
+	time_t res = 0;
+	unsigned i;
+	
+	for (i = 70; i < tm->tm_year; ++i)
+		res += is_leap(i) ? 366 : 365;
+	
+	for (i = 0; i < tm->tm_mon; ++i)
+		res += ndays[is_leap(tm->tm_year)][i];
+	res += tm->tm_mday - 1;
+	res *= 24;
+	res += tm->tm_hour;
+	res *= 60;
+	res += tm->tm_min;
+	res *= 60;
+	res += tm->tm_sec;
+	return res;
 }
 
 #endif /* HAVE_TIMEGM */

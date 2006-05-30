@@ -11,6 +11,7 @@ OBJ_FILES = \
 [SUBSYSTEM::LIBREPLACE]
 OBJ_FILES = replace.o \
 		snprintf.o \
+		timegm.o \
 		dlfcn.o \
 		getpass.o
 PUBLIC_DEPENDENCIES = REPLACE_READDIR
