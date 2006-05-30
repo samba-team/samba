@@ -134,6 +134,7 @@ static BOOL test_oplock(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	union smb_open io;
 	union smb_unlink unl;
 	union smb_read rd;
+	union smb_setfileinfo sfi;
 	uint16_t fnum=0, fnum2=0;
 	char c = 0;
 
@@ -564,6 +565,43 @@ static BOOL test_oplock(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_VAL(break_info.fnum, fnum2);
 	CHECK_VAL(break_info.level, 0);
 	CHECK_VAL(break_info.failures, 0);
+
+	smbcli_close(cli->tree, fnum);
+	smbcli_close(cli->tree, fnum2);
+	smbcli_unlink(cli->tree, fname);
+
+	/* Test if a set-eof on pathname breaks an exclusive oplock. */
+	printf("Test if setpathinfo breaks oplocks.\n");
+
+	ZERO_STRUCT(break_info);
+	smbcli_oplock_handler(cli->transport, oplock_handler_ack_to_levelII, cli->tree);
+
+	io.ntcreatex.in.flags = NTCREATEX_FLAGS_EXTENDED |
+		NTCREATEX_FLAGS_REQUEST_OPLOCK | 
+		NTCREATEX_FLAGS_REQUEST_BATCH_OPLOCK;
+	io.ntcreatex.in.access_mask = SEC_RIGHTS_FILE_ALL;
+	io.ntcreatex.in.share_access = NTCREATEX_SHARE_ACCESS_READ|
+		NTCREATEX_SHARE_ACCESS_WRITE|
+		NTCREATEX_SHARE_ACCESS_DELETE;
+	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_CREATE;
+	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	fnum2 = io.ntcreatex.out.file.fnum;
+	CHECK_VAL(break_info.count, 0);
+	CHECK_VAL(break_info.failures, 0);
+	CHECK_VAL(io.ntcreatex.out.oplock_level, BATCH_OPLOCK_RETURN);
+	
+	ZERO_STRUCT(sfi);
+	sfi.generic.level = RAW_SFILEINFO_END_OF_FILE_INFORMATION;
+	sfi.generic.in.file.path = fname;
+	sfi.end_of_file_info.in.size = 100;
+
+        status = smb_raw_setpathinfo(cli->tree, &sfi);
+
+	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_VAL(break_info.count, 1);
+	CHECK_VAL(break_info.failures, 0);
+	CHECK_VAL(io.ntcreatex.out.oplock_level, BATCH_OPLOCK_RETURN);
 
 done:
 	smbcli_close(cli->tree, fnum);
