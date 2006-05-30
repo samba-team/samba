@@ -1368,7 +1368,7 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 					fname);
 
 		if (lck == NULL) {
-			file_free_fsp(fsp);
+			file_free(fsp);
 			DEBUG(0, ("Could not get share mode lock\n"));
 			set_saved_ntstatus(NT_STATUS_SHARING_VIOLATION);
 			return NULL;
@@ -1378,7 +1378,7 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 		if (delay_for_oplocks(lck, fsp, 1, oplock_request)) {
 			schedule_defer_open(lck, request_time);
 			TALLOC_FREE(lck);
-			file_free_fsp(fsp);
+			file_free(fsp);
 			return NULL;
 		}
 
@@ -1392,7 +1392,7 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 			if (delay_for_oplocks(lck, fsp, 2, oplock_request)) {
 				schedule_defer_open(lck, request_time);
 				TALLOC_FREE(lck);
-				file_free_fsp(fsp);
+				file_free(fsp);
 				return NULL;
 			}
 		}
