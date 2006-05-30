@@ -111,6 +111,8 @@ cat >$SERVERCONFFILE<<EOF
 	bind interfaces only = yes
 	include = $COMMONCONFFILE
 
+	kernel oplocks = no
+
 [tmp]
 	path = $PREFIX_ABS/tmp
 	read only = no
