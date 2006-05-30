@@ -256,7 +256,7 @@ done:
 }
 
 
-static int ltdb_add_internal(struct ldb_module *module, struct ldb_message *msg)
+static int ltdb_add_internal(struct ldb_module *module, const struct ldb_message *msg)
 {
 	int ret;
 	
@@ -270,12 +270,14 @@ static int ltdb_add_internal(struct ldb_module *module, struct ldb_message *msg)
 	}
 
 	ret = ltdb_store(module, msg, TDB_INSERT);
-
 	if (ret != LDB_SUCCESS) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	ltdb_modified(module, msg->dn);
+	ret = ltdb_modified(module, msg->dn);
+	if (ret != LDB_SUCCESS) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
 
 	return LDB_SUCCESS;
 }
@@ -342,7 +344,7 @@ int ltdb_delete_noindex(struct ldb_module *module, const struct ldb_dn *dn)
 	return ret;
 }
 
-static int ltdb_delete_internal(struct ldb_module *module, struct ldb_dn *dn)
+static int ltdb_delete_internal(struct ldb_module *module, const struct ldb_dn *dn)
 {
 	struct ldb_message *msg;
 	int ret;
@@ -373,7 +375,11 @@ static int ltdb_delete_internal(struct ldb_module *module, struct ldb_dn *dn)
 		talloc_free(msg);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
-	ltdb_modified(module, dn);
+
+	ret = ltdb_modified(module, dn);
+	if (ret != LDB_SUCCESS) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
 
 	talloc_free(msg);
 	return LDB_SUCCESS;
@@ -718,6 +724,14 @@ int ltdb_modify_internal(struct ldb_module *module, const struct ldb_message *ms
 
 	/* we've made all the mods - save the modified record back into the database */
 	ret = ltdb_store(module, msg2, TDB_MODIFY);
+	if (ret != LDB_SUCCESS) {
+		goto failed;
+	}
+
+	if (ltdb_modified(module, msg->dn) != LDB_SUCCESS) {
+		ret = LDB_ERR_OPERATIONS_ERROR;
+		goto failed;
+	}
 
 	talloc_free(tdb_key.dptr);
 	free(tdb_data.dptr);
@@ -765,13 +779,10 @@ static int ltdb_modify(struct ldb_module *module, struct ldb_request *req)
 	}
 
 	tret = ltdb_modify_internal(module, req->op.mod.message);
-
 	if (tret != LDB_SUCCESS) {
 		req->async.handle->status = tret;
 		goto done;
 	}
-
-	ltdb_modified(module, req->op.mod.message->dn);
 
 	if (ltdb_ac->callback)
 		ret = ltdb_ac->callback(module->ldb, ltdb_ac->context, NULL);
