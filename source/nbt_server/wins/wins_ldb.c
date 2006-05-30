@@ -45,11 +45,11 @@ static int wins_ldb_verify(struct ldb_module *module, struct ldb_request *req)
 	char *error = NULL;
 
 	switch (req->operation) {
-	case LDB_ASYNC_ADD:
+	case LDB_ADD:
 		msg = req->op.add.message;
 		break;
 		
-	case LDB_ASYNC_MODIFY:
+	case LDB_MODIFY:
 		msg = req->op.mod.message;
 		break;
 

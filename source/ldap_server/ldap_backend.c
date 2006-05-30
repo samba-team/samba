@@ -237,7 +237,7 @@ static NTSTATUS ldapsrv_SearchRequest(struct ldapsrv_call *call)
 	res = talloc_zero(local_ctx, struct ldb_result);
 	NT_STATUS_HAVE_NO_MEMORY(res);
 	
-	lreq->operation = LDB_ASYNC_SEARCH;
+	lreq->operation = LDB_SEARCH;
 	lreq->op.search.base = basedn;
 	lreq->op.search.scope = scope;
 	lreq->op.search.tree = req->tree;
