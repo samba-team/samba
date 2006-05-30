@@ -271,7 +271,7 @@ static void ildb_callback(struct ldap_request *req)
 
 				ares->message = ldb_msg_new(ares);
 				if (!ares->message) {
-					handle->status = LDB_ERR_OPERATIONS_ERROR;;
+					handle->status = LDB_ERR_OPERATIONS_ERROR;
 					return;
 				}
 
@@ -437,7 +437,7 @@ static int ildb_search(struct ldb_module *module, struct ldb_request *req)
 	msg->r.SearchRequest.timelimit = 0;
 	msg->r.SearchRequest.sizelimit = 0;
 	msg->r.SearchRequest.attributesonly = 0;
-	msg->r.SearchRequest.tree = req->op.search.tree;
+	msg->r.SearchRequest.tree = discard_const(req->op.search.tree);
 	
 	for (n = 0; req->op.search.attrs && req->op.search.attrs[n]; n++) /* noop */ ;
 	msg->r.SearchRequest.num_attributes = n;
