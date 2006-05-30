@@ -200,10 +200,11 @@ PRIVATE_PROTO_HEADER = \
 OBJ_FILES = \
 		ldap/common.o \
 		ldap/basic.o \
+		ldap/schema.o \
 		ldap/cldap.o \
 		ldap/cldapbench.o
 PUBLIC_DEPENDENCIES = \
-		LIBCLI_LDAP LIBCLI_CLDAP POPT_CREDENTIALS
+		LIBCLI_LDAP LIBCLI_CLDAP SAMDB POPT_CREDENTIALS
 # End SUBSYSTEM TORTURE_LDAP
 #################################
 
