@@ -4020,15 +4020,19 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
  
 					new_fsp = open_file_ntcreate(conn, fname, &sbuf,
 									FILE_WRITE_DATA,
-									FILE_SHARE_READ|FILE_SHARE_WRITE,
+									FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,
 									FILE_OPEN,
 									0,
 									FILE_ATTRIBUTE_NORMAL,
-									INTERNAL_OPEN_ONLY,
+									NO_OPLOCK,
 									NULL);
  
 					if (new_fsp == NULL) {
-						return(UNIXERROR(ERRDOS,ERRbadpath));
+						if (open_was_deferred(SVAL(inbuf,smb_mid))) {
+							/* We have re-scheduled this call. */
+							return -1;
+						}
+						return(UNIXERROR(ERRDOS,ERRnoaccess));
 					}
 					ret = vfs_allocate_file_space(new_fsp, allocation_size);
 					if (SMB_VFS_FSTAT(new_fsp,new_fsp->fh->fd,&new_sbuf) != 0) {
@@ -4561,7 +4565,6 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 						POSIX_LOCK,
 						&my_lock_ctx);
 
-				/* TODO: Deal with rescheduling blocking lock fail here... */
 				if (lp_blocking_locks(SNUM(conn)) && ERROR_WAS_LOCK_DENIED(status)) {
 					/*
 					 * A blocking lock was requested. Package up
@@ -4660,15 +4663,19 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 
 			new_fsp = open_file_ntcreate(conn, fname, &sbuf,
 						FILE_WRITE_DATA,
-						FILE_SHARE_READ|FILE_SHARE_WRITE,
+						FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,
 						FILE_OPEN,
 						0,
 						FILE_ATTRIBUTE_NORMAL,
-						INTERNAL_OPEN_ONLY,
+						NO_OPLOCK,
 						NULL);
 	
 			if (new_fsp == NULL) {
-				return(UNIXERROR(ERRDOS,ERRbadpath));
+				if (open_was_deferred(SVAL(inbuf,smb_mid))) {
+					/* We have re-scheduled this call. */
+					return -1;
+				}
+				return(UNIXERROR(ERRDOS,ERRnoaccess));
 			}
 			ret = vfs_set_filelen(new_fsp, size);
 			close_file(new_fsp,NORMAL_CLOSE);
