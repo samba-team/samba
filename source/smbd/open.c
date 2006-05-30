@@ -611,7 +611,7 @@ static BOOL is_delete_request(files_struct *fsp) {
 static BOOL delay_for_oplocks(struct share_mode_lock *lck,
 				files_struct *fsp,
 				int pass_number,
-				BOOL internal_only_open)
+				int oplock_request)
 {
 	int i;
 	struct share_mode_entry *exclusive = NULL;
@@ -619,7 +619,7 @@ static BOOL delay_for_oplocks(struct share_mode_lock *lck,
 	BOOL delay_it = False;
 	BOOL have_level2 = False;
 
-	if (internal_only_open || is_stat_open(fsp->access_mask)) {
+	if ((oplock_request & INTERNAL_OPEN_ONLY) || is_stat_open(fsp->access_mask)) {
 		fsp->oplock_type = NO_OPLOCK;
 		return False;
 	}
@@ -686,7 +686,15 @@ static BOOL delay_for_oplocks(struct share_mode_lock *lck,
 			   procid_str_static(&exclusive->pid)));
 		exclusive->op_mid = get_current_mid();
 
+		/* Create the message. */
 		share_mode_entry_to_message(msg, exclusive);
+
+		/* Add in the FORCE_OPLOCK_BREAK_TO_NONE bit in the message if set. We don't
+		   want this set in the share mode struct pointed to by lck. */
+
+		if (oplock_request & FORCE_OPLOCK_BREAK_TO_NONE) {
+			SSVAL(msg,6,exclusive->op_type | FORCE_OPLOCK_BREAK_TO_NONE);
+		}
 
 		become_root();
 		ret = message_send_pid(exclusive->pid, MSG_SMB_BREAK_REQUEST,
@@ -1090,7 +1098,6 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 	int flags2=0;
 	BOOL file_existed = VALID_STAT(*psbuf);
 	BOOL def_acl = False;
-	BOOL internal_only_open = False;
 	SMB_DEV_T dev = 0;
 	SMB_INO_T inode = 0;
 	BOOL fsp_open = False;
@@ -1133,11 +1140,6 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 		   create_disposition, create_options, unx_mode,
 		   oplock_request));
 
-	if (oplock_request == INTERNAL_OPEN_ONLY) {
-		internal_only_open = True;
-		oplock_request = 0;
-	}
-
 	if ((pml = get_open_deferred_message(mid)) != NULL) {
 		struct deferred_open_record *state =
 			(struct deferred_open_record *)pml->private_data.data;
@@ -1174,7 +1176,8 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 	/* ignore any oplock requests if oplocks are disabled */
 	if (!lp_oplocks(SNUM(conn)) || global_client_failed_oplock_break ||
 	    IS_VETO_OPLOCK_PATH(conn, fname)) {
-		oplock_request = 0;
+		/* Mask off everything except the private Samba bits. */
+		oplock_request &= SAMBA_PRIVATE_OPLOCK_MASK;
 	}
 
 	/* this is for OS/2 long file names - say we don't support them */
@@ -1349,7 +1352,8 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 	fsp->share_access = share_access;
 	fsp->fh->private_options = create_options;
 	fsp->access_mask = access_mask;
-	fsp->oplock_type = oplock_request;
+	/* Ensure no SAMBA_PRIVATE bits can be set. */
+	fsp->oplock_type = (oplock_request & ~SAMBA_PRIVATE_OPLOCK_MASK);
 
 	if (timeval_is_zero(&request_time)) {
 		request_time = fsp->open_time;
@@ -1364,15 +1368,17 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 					fname);
 
 		if (lck == NULL) {
+			file_free_fsp(fsp);
 			DEBUG(0, ("Could not get share mode lock\n"));
 			set_saved_ntstatus(NT_STATUS_SHARING_VIOLATION);
 			return NULL;
 		}
 
 		/* First pass - send break only on batch oplocks. */
-		if (delay_for_oplocks(lck, fsp, 1, internal_only_open)) {
+		if (delay_for_oplocks(lck, fsp, 1, oplock_request)) {
 			schedule_defer_open(lck, request_time);
 			TALLOC_FREE(lck);
+			file_free_fsp(fsp);
 			return NULL;
 		}
 
@@ -1383,9 +1389,10 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 		if (NT_STATUS_IS_OK(status)) {
 			/* We might be going to allow this open. Check oplock status again. */
 			/* Second pass - send break for both batch or exclusive oplocks. */
-			if (delay_for_oplocks(lck, fsp, 2, internal_only_open)) {
+			if (delay_for_oplocks(lck, fsp, 2, oplock_request)) {
 				schedule_defer_open(lck, request_time);
 				TALLOC_FREE(lck);
+				file_free_fsp(fsp);
 				return NULL;
 			}
 		}
@@ -1459,7 +1466,7 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 			 * cope with the braindead 1 second delay.
 			 */
 
-			if (!internal_only_open &&
+			if (!(oplock_request & INTERNAL_OPEN_ONLY) &&
 			    lp_defer_sharing_violations()) {
 				struct timeval timeout;
 				struct deferred_open_record state;
