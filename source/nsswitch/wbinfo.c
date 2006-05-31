@@ -332,6 +332,14 @@ static BOOL wbinfo_list_domains(BOOL list_all_domains)
 	return True;
 }
 
+/* List own domain */
+
+static BOOL wbinfo_list_own_domain(void)
+{
+	d_printf("%s\n", get_winbind_domain());
+
+	return True;
+}
 
 /* show sequence numbers */
 static BOOL wbinfo_show_sequence(const char *domain)
@@ -1080,7 +1088,8 @@ enum {
 	OPT_ALLOCATE_UID,
 	OPT_ALLOCATE_GID,
 	OPT_SEPARATOR,
-	OPT_LIST_ALL_DOMAINS
+	OPT_LIST_ALL_DOMAINS,
+	OPT_LIST_OWN_DOMAIN
 };
 
 int main(int argc, char **argv)
@@ -1116,6 +1125,7 @@ int main(int argc, char **argv)
 		{ "check-secret", 't', POPT_ARG_NONE, 0, 't', "Check shared secret" },
 		{ "trusted-domains", 'm', POPT_ARG_NONE, 0, 'm', "List trusted domains" },
 		{ "all-domains", 0, POPT_ARG_NONE, 0, OPT_LIST_ALL_DOMAINS, "List all domains (trusted and own domain)" },
+		{ "own-domain", 0, POPT_ARG_NONE, 0, OPT_LIST_OWN_DOMAIN, "List own domain" },
 		{ "sequence", 0, POPT_ARG_NONE, 0, OPT_SEQUENCE, "Show sequence numbers of all domains" },
 		{ "domain-info", 'D', POPT_ARG_STRING, &string_arg, 'D', "Show most of the info we have about the domain" },
 		{ "user-info", 'i', POPT_ARG_STRING, &string_arg, 'i', "Get user info", "USER" },
@@ -1396,6 +1406,12 @@ int main(int argc, char **argv)
 			if (!wbinfo_list_domains(True)) {
 				goto done;
 			}
+			break;
+		case OPT_LIST_OWN_DOMAIN:
+			if (!wbinfo_list_own_domain()) {
+				goto done;
+			}
+			break;
 		/* generic configuration options */
 		case OPT_DOMAIN_NAME:
 			break;
