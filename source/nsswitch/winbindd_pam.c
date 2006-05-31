@@ -552,9 +552,6 @@ static NTSTATUS winbindd_raw_kerberos_login(struct winbindd_domain *domain,
 		goto failed;
 	}
 
-	DEBUG(10,("winbindd_raw_kerberos_login: winbindd validated ticket of %s\n", 
-		local_service));
-
 	if (!pac_data) {
 		DEBUG(3,("winbindd_raw_kerberos_login: no pac data\n"));
 		result = NT_STATUS_INVALID_PARAMETER;
@@ -567,6 +564,9 @@ static NTSTATUS winbindd_raw_kerberos_login(struct winbindd_domain *domain,
 		result = NT_STATUS_INVALID_PARAMETER;
 		goto failed;
 	}
+
+	DEBUG(10,("winbindd_raw_kerberos_login: winbindd validated ticket of %s\n", 
+		local_service));
 
 
 	/* last step: 
