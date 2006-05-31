@@ -563,6 +563,7 @@ typedef struct vfs_statvfs_struct {
 
 #define SMB_VFS_OP(x) ((void *) x)
 
+#define DEFAULT_VFS_MODULE_NAME "/[Default VFS]/"
 
 #include "vfs_macros.h"
 

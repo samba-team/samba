@@ -367,6 +367,7 @@ OPLOCK_OBJ = smbd/oplock.o smbd/oplock_irix.o smbd/oplock_linux.o
 
 NOTIFY_OBJ = smbd/notify.o smbd/notify_hash.o smbd/notify_kernel.o smbd/notify_fam.o
 
+VFS_DEFAULT_OBJ = modules/vfs_default.o
 VFS_AUDIT_OBJ = modules/vfs_audit.o
 VFS_EXTD_AUDIT_OBJ = modules/vfs_extd_audit.o
 VFS_FULL_AUDIT_OBJ = modules/vfs_full_audit.o
@@ -414,7 +415,7 @@ SMBD_OBJ_SRV = smbd/files.o smbd/chgpasswd.o smbd/connection.o \
                smbd/reply.o smbd/sesssetup.o smbd/trans2.o smbd/uid.o \
 	       smbd/dosmode.o smbd/filename.o smbd/open.o smbd/close.o \
 	       smbd/blocking.o smbd/sec_ctx.o smbd/srvstr.o \
-	       smbd/vfs.o smbd/vfs-wrap.o smbd/statcache.o \
+	       smbd/vfs.o smbd/statcache.o \
                smbd/posix_acls.o lib/sysacls.o $(SERVER_MUTEX_OBJ) \
 	       smbd/process.o smbd/service.o smbd/error.o \
 	       printing/printfsp.o lib/sysquotas.o lib/sysquotas_linux.o \
@@ -1325,6 +1326,9 @@ bin/macosxfs.@SHLIBEXT@: $(CHARSET_MACOSXFS_OBJ:.o=.@PICSUFFIX@)
 	@echo "Building plugin $@"
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(CHARSET_MACOSXFS_OBJ:.o=.@PICSUFFIX@) \
 		-framework CoreFoundation @SONAMEFLAG@`basename $@`
+
+# NOTE, there is no build rule for a dynamic default VFS module because
+# this one MUST MUST MUST be built statically.
 
 bin/audit.@SHLIBEXT@: $(VFS_AUDIT_OBJ:.o=.@PICSUFFIX@)
 	@echo "Building plugin $@"

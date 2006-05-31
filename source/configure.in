@@ -564,7 +564,7 @@ DYNEXP=
 
 dnl Add modules that have to be built by default here
 dnl These have to be built static:
-default_static_modules="pdb_smbpasswd pdb_tdbsam rpc_lsa rpc_samr rpc_reg rpc_lsa_ds rpc_wks rpc_svcctl rpc_ntsvcs rpc_net rpc_netdfs rpc_srv rpc_spoolss rpc_eventlog rpc_unixinfo auth_sam auth_unix auth_winbind auth_server auth_domain auth_builtin"
+default_static_modules="pdb_smbpasswd pdb_tdbsam rpc_lsa rpc_samr rpc_reg rpc_lsa_ds rpc_wks rpc_svcctl rpc_ntsvcs rpc_net rpc_netdfs rpc_srv rpc_spoolss rpc_eventlog rpc_unixinfo auth_sam auth_unix auth_winbind auth_server auth_domain auth_builtin vfs_default"
 
 dnl These are preferably build shared, and static if dlopen() is not available
 default_shared_modules="vfs_recycle vfs_audit vfs_extd_audit vfs_full_audit vfs_netatalk vfs_fake_perms vfs_default_quota vfs_readonly vfs_cap vfs_expand_msdfs vfs_shadow_copy charset_CP850 charset_CP437 auth_script"
@@ -5553,6 +5553,7 @@ SMB_MODULE(auth_builtin, \$(AUTH_BUILTIN_OBJ), "bin/builtin.$SHLIBEXT", AUTH)
 SMB_MODULE(auth_script, \$(AUTH_SCRIPT_OBJ), "bin/script.$SHLIBEXT", AUTH)
 SMB_SUBSYSTEM(AUTH,auth/auth.o)
 
+SMB_MODULE(vfs_default, \$(VFS_DEFAULT_OBJ), "bin/default.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_recycle, \$(VFS_RECYCLE_OBJ), "bin/recycle.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_audit, \$(VFS_AUDIT_OBJ), "bin/audit.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_extd_audit, \$(VFS_EXTD_AUDIT_OBJ), "bin/extd_audit.$SHLIBEXT", VFS)
