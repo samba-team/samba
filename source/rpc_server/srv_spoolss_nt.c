@@ -6279,7 +6279,13 @@ static WERROR publish_or_unpublish_printer(pipes_struct *p, POLICY_HND *handle,
 #ifdef HAVE_ADS
 	SPOOL_PRINTER_INFO_LEVEL_7 *info7 = info->info_7;
 	int snum;
-	Printer_entry *Printer = find_printer_index_by_hnd(p, handle);
+	Printer_entry *Printer;
+
+	if ( lp_security() != SEC_ADS ) {
+		return WERR_UNKNOWN_LEVEL;
+	}
+
+	Printer = find_printer_index_by_hnd(p, handle);
 
 	DEBUG(5,("publish_or_unpublish_printer, action = %d\n",info7->action));
 
