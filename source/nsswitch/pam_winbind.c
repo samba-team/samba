@@ -48,7 +48,7 @@ static int _pam_parse(int argc, const char **argv, dictionary **d)
 	int ctrl = 0;
 	const char *config_file = NULL;
 
-	if (d == NULL || *d == NULL) {
+	if (d == NULL) {
 		goto config_from_pam;
 	}
 
