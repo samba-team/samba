@@ -313,7 +313,6 @@ static int ltdb_add(struct ldb_module *module, struct ldb_request *req)
 	if (ltdb_ac->callback) {
 		ret = ltdb_ac->callback(module->ldb, ltdb_ac->context, NULL);
 	}
-
 done:
 	req->async.handle->state = LDB_ASYNC_DONE;
 	return ret;
@@ -419,9 +418,9 @@ static int ltdb_delete(struct ldb_module *module, struct ldb_request *req)
 		goto done;
 	}
 
-	if (ltdb_ac->callback)
+	if (ltdb_ac->callback) {
 		ret = ltdb_ac->callback(module->ldb, ltdb_ac->context, NULL);
-
+	}
 done:
 	req->async.handle->state = LDB_ASYNC_DONE;
 	return ret;
@@ -784,9 +783,9 @@ static int ltdb_modify(struct ldb_module *module, struct ldb_request *req)
 		goto done;
 	}
 
-	if (ltdb_ac->callback)
+	if (ltdb_ac->callback) {
 		ret = ltdb_ac->callback(module->ldb, ltdb_ac->context, NULL);
-
+	}
 done:
 	req->async.handle->state = LDB_ASYNC_DONE;
 	return ret;
@@ -855,9 +854,9 @@ static int ltdb_rename(struct ldb_module *module, struct ldb_request *req)
 		goto done;
 	}
 
-	if (ltdb_ac->callback)
+	if (ltdb_ac->callback) {
 		ret = ltdb_ac->callback(module->ldb, ltdb_ac->context, NULL);
-
+	}
 done:
 	req->async.handle->state = LDB_ASYNC_DONE;
 	return ret;
