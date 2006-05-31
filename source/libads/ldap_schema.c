@@ -303,13 +303,14 @@ ADS_STATUS ads_check_posix_schema_mapping(ADS_STRUCT *ads, enum wb_posix_mapping
 		}
 	}
 
-	talloc_destroy(ctx);
-	
-	ADS_ERROR_HAVE_NO_MEMORY(ads->schema.posix_uidnumber_attr);
-	ADS_ERROR_HAVE_NO_MEMORY(ads->schema.posix_gidnumber_attr);
-	ADS_ERROR_HAVE_NO_MEMORY(ads->schema.posix_homedir_attr);
-	ADS_ERROR_HAVE_NO_MEMORY(ads->schema.posix_shell_attr);
-	ADS_ERROR_HAVE_NO_MEMORY(ads->schema.posix_gecos_attr);
+	if (!ads->schema.posix_uidnumber_attr ||
+	    !ads->schema.posix_gidnumber_attr ||
+	    !ads->schema.posix_homedir_attr ||
+	    !ads->schema.posix_shell_attr ||
+	    !ads->schema.posix_gecos_attr) {
+	    	status = ADS_ERROR(LDAP_NO_MEMORY);
+	    	goto done;
+	}
 	
 	status = ADS_ERROR(LDAP_SUCCESS);
 	
