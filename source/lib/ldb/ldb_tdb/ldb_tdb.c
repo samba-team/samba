@@ -262,7 +262,7 @@ static int ltdb_add_internal(struct ldb_module *module, const struct ldb_message
 	
 	ret = ltdb_check_special_dn(module, msg);
 	if (ret != LDB_SUCCESS) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ret;
 	}
 	
 	if (ltdb_cache_load(module) != 0) {
@@ -271,7 +271,7 @@ static int ltdb_add_internal(struct ldb_module *module, const struct ldb_message
 
 	ret = ltdb_store(module, msg, TDB_INSERT);
 	if (ret != LDB_SUCCESS) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ret;
 	}
 
 	ret = ltdb_modified(module, msg->dn);
