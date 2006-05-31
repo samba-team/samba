@@ -606,9 +606,8 @@ int ltdb_modify_internal(struct ldb_module *module, const struct ldb_message *ms
 
 	ret = ltdb_unpack_data(module, &tdb_data, msg2);
 	if (ret == -1) {
-		talloc_free(tdb_key.dptr);
-		free(tdb_data.dptr);
-		return LDB_ERR_OTHER;
+		ret = LDB_ERR_OTHER;
+		goto failed;
 	}
 
 	if (!msg2->dn) {
@@ -654,8 +653,10 @@ int ltdb_modify_internal(struct ldb_module *module, const struct ldb_message *ms
 		        vals = talloc_realloc(msg2->elements, el2->values, struct ldb_val,
 						el2->num_values + el->num_values);
 
-			if (vals == NULL)
+			if (vals == NULL) {
+				ret = LDB_ERR_OTHER;
 				goto failed;
+			}
 
 			for (j=0;j<el->num_values;j++) {
 				vals[el2->num_values + j] =
@@ -675,6 +676,7 @@ int ltdb_modify_internal(struct ldb_module *module, const struct ldb_message *ms
 			/* add the replacement element, if not empty */
 			if (msg->elements[i].num_values != 0 &&
 			    msg_add_element(ldb, msg2, &msg->elements[i]) != 0) {
+				ret = LDB_ERR_OTHER;
 				goto failed;
 			}
 			break;
@@ -682,7 +684,10 @@ int ltdb_modify_internal(struct ldb_module *module, const struct ldb_message *ms
 		case LDB_FLAG_MOD_DELETE:
 
 			dn = ldb_dn_linearize(msg2, msg->dn);
-			if (dn == NULL) goto failed;
+			if (dn == NULL) {
+				ret = LDB_ERR_OTHER;
+				goto failed;
+			}
 
 			/* we could be being asked to delete all
 			   values or just some values */
@@ -707,6 +712,7 @@ int ltdb_modify_internal(struct ldb_module *module, const struct ldb_message *ms
 					goto failed;
 				}
 				if (ltdb_index_del_value(module, dn, &msg->elements[i], j) != 0) {
+					ret = LDB_ERR_OTHER;
 					goto failed;
 				}
 			}
