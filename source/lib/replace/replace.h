@@ -113,6 +113,7 @@ int vasprintf(char **ptr, const char *format, va_list ap);
 #endif
 
 #ifndef HAVE_TIMEGM
+struct tm;
 time_t timegm(struct tm *tm);
 #endif
 
