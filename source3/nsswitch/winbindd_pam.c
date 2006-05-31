@@ -512,7 +512,7 @@ static NTSTATUS winbindd_raw_kerberos_login(struct winbindd_domain *domain,
 	}
 	strlower_m(client_princ);
 
-	local_service = talloc_asprintf(state->mem_ctx, "HOST/%s@%s", client_princ, lp_realm());
+	local_service = talloc_asprintf(state->mem_ctx, "%s$@%s", client_princ, lp_realm());
 	if (local_service == NULL) {
 		DEBUG(0,("winbindd_raw_kerberos_login: out of memory\n"));
 		result = NT_STATUS_NO_MEMORY;
