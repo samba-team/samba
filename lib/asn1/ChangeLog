@@ -1,5 +1,9 @@
-2006-04-29  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-05-13  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* der_format.c (der_parse_hex_heim_integer): avoid shadowing.
+	
+2006-04-29  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* Makefile.am: Add ExternalPrincipalIdentifiers, shared between
 	several elements.
 

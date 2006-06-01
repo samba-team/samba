@@ -1,3 +1,7 @@
+2006-06-01  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* server.c: Less shadowing.
+	
 2006-05-13  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* Makefile.am: kadmin_SOURCES += add check.c

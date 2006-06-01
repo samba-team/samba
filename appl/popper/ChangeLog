@@ -1,5 +1,9 @@
-2005-10-22  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-05-05  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* Rename u_intXX_t to uintXX_t
+
+2005-10-22  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* pop_dropinfo.c: Check return value from asprintf instead of
 	string != NULL since it undefined behavior on Linux. From Björn
 	Sandell
