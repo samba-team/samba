@@ -53,17 +53,10 @@ static void sig_usr1(int sig)
 
 static void new_process_group(void)
 {
-#ifdef BSD_SETPGRP
-	if (setpgrp(0,0) == -1) {
-		perror("setpgrp");
+	if (setpgid(0,0) == -1) {
+		perror("setpgid");
 		exit(1);
 	}
-#else
-	if (setpgrp() == -1) {
-		perror("setpgrp");
-		exit(1);
-	}
-#endif
 }
 
 
