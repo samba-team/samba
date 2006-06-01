@@ -1,3 +1,11 @@
+2006-06-01  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kdc/krb5tgs.c: Split tgs_rep2 into tgs_parse_request and
+	tgs_build_reply.
+
+	* kdc/kerberos5.c: split out krb5 tgs req to make it easier to
+ 	reorganize the code.
+	
 2006-05-29  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/krb5_get_init_creds.3: spelling Björn Sandell
