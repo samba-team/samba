@@ -119,7 +119,7 @@ echo "initial tickets for deleted user test case"
 ${kinit} --password-file=${objdir}/foopassword remove@$R || exitcode=1
 ${kadmin} delete remove@${R} || exit 1
 echo "try getting ticket with deleted user"
-${kgetcred} ${server}@${R} && exitcode=1
+${kgetcred} ${server}@${R} 2> /dev/null && exitcode=1
 ${kdestroy}
 
 echo "Getting client initial tickets"
@@ -206,12 +206,12 @@ fi
 
 # If we support pkinit and have RSA, lets try that
 if test "$pkinit" = yes -a "$rsa" = yes ; then
-	echo "Trying pk-init (princiapl in certificate)"
+	echo "Trying pk-init (principal in certificate)"
 	base="${srcdir}/../../lib/hx509/data"
 	${kinit} -C FILE:${base}/pkinit.crt,${base}/pkinit.key bar@${R} || exitcode=1
 	${kgetcred} ${server}@${R} || exitcode=1
 	${kdestroy}
-	echo "Trying pk-init (princiapl in pki-mapping)"
+	echo "Trying pk-init (principal in pki-mapping)"
 	${kinit} -C FILE:${base}/pkinit.crt,${base}/pkinit.key foo@${R} || exitcode=1
 	${kgetcred} ${server}@${R} || exitcode=1
 	${kdestroy}
