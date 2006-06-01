@@ -2245,12 +2245,18 @@ tgs_rep2(krb5_context context,
 	krb5_crypto_destroy(context, crypto);
 	if(ret){
 	    krb5_auth_con_free(context, ac);
-	    kdc_log(context, config, 0, "Failed to decrypt enc-authorization-data");
+	    kdc_log(context, config, 0, 
+		    "Failed to decrypt enc-authorization-data");
 	    ret = KRB5KRB_AP_ERR_BAD_INTEGRITY; /* ? */
 	    goto out2;
 	}
 	krb5_free_keyblock(context, subkey);
 	ALLOC(auth_data);
+	if (auth_data == NULL) {
+	    krb5_auth_con_free(context, ac);
+	    ret = KRB5KRB_AP_ERR_BAD_INTEGRITY; /* ? */
+	    goto out2;
+	}
 	ret = decode_AuthorizationData(ad.data, ad.length, auth_data, NULL);
 	if(ret){
 	    krb5_auth_con_free(context, ac);
