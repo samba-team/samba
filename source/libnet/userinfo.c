@@ -24,9 +24,10 @@
 
 #include "includes.h"
 #include "libcli/composite/composite.h"
+#include "libnet/composite.h"
 #include "librpc/gen_ndr/security.h"
 #include "libcli/security/security.h"
-#include "libnet/composite.h"
+#include "libnet/userman.h"
 #include "libnet/userinfo.h"
 #include "librpc/gen_ndr/ndr_samr_c.h"
 
@@ -174,6 +175,7 @@ static void userinfo_handler(struct rpc_request *req)
 	struct composite_context *c = req->async.private;
 	struct userinfo_state *s = talloc_get_type(c->private_data, struct userinfo_state);
 	struct monitor_msg msg;
+	struct msg_rpc_lookup_name *msg_lookup;
 	struct msg_rpc_open_user *msg_open;
 	struct msg_rpc_query_user *msg_query;
 	struct msg_rpc_close_user *msg_close;
@@ -182,6 +184,13 @@ static void userinfo_handler(struct rpc_request *req)
 	switch (s->stage) {
 	case USERINFO_LOOKUP:
 		c->status = userinfo_lookup(c, s);
+
+		msg.type = rpc_lookup_name;
+		msg_lookup = talloc(s, struct msg_rpc_lookup_name);
+		msg_lookup->rid = s->lookup.out.rids.ids;
+		msg_lookup->count = s->lookup.out.rids.count;
+		msg.data = (void*)msg_lookup;
+		msg.data_size = sizeof(*msg_lookup);
 		break;
 
 	case USERINFO_OPENUSER:
