@@ -944,6 +944,7 @@ static int smbldap_connect_system(struct smbldap_state *ldap_state, LDAP * ldap_
 	DEBUG(10,("ldap_connect_system: Binding to ldap server %s as \"%s\"\n",
 		  ldap_state->uri, ldap_dn));
 
+#ifdef HAVE_LDAP_SET_REBIND_PROC
 #if defined(LDAP_API_FEATURE_X_OPENLDAP) && (LDAP_API_VERSION > 2000)
 # if LDAP_SET_REBIND_PROC_ARGS == 2	
 	ldap_set_rebind_proc(ldap_struct, &rebindproc_connect);	
@@ -959,6 +960,7 @@ static int smbldap_connect_system(struct smbldap_state *ldap_state, LDAP * ldap_
 	ldap_set_rebind_proc(ldap_struct, &rebindproc_with_state, (void *)ldap_state);	
 # endif
 #endif /*defined(LDAP_API_FEATURE_X_OPENLDAP) && (LDAP_API_VERSION > 2000)*/
+#endif
 
 	rc = ldap_simple_bind_s(ldap_struct, ldap_dn, ldap_secret);
 
@@ -1009,7 +1011,11 @@ static int smbldap_open(struct smbldap_state *ldap_state)
 
 	if ((ldap_state->ldap_struct != NULL) && ((ldap_state->last_ping + SMBLDAP_DONT_PING_TIME) < time(NULL))) {
 
+#ifdef HAVE_UNIXSOCKET
 		struct sockaddr_un addr;
+#else
+		struct sockaddr addr;
+#endif
 		socklen_t len = sizeof(addr);
 		int sd;
 
