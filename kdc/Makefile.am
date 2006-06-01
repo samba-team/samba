@@ -29,6 +29,7 @@ libkdc_la_SOURCES = \
 	default_config.c \
 	kdc_locl.h	\
 	kerberos5.c	\
+	krb5tgs.c	\
 	pkinit.c	\
 	log.c		\
 	misc.c		\
