@@ -407,7 +407,7 @@ do_request(krb5_context context,
     krb5_error_code ret;
     krb5_data reply;
     
-    reply.length = 0;
+    krb5_data_zero(&reply);
     ret = krb5_kdc_process_generic_request(context, config, 
 					   buf, len, &reply, &prependlength,
 			  d->addr_string, d->sa);
