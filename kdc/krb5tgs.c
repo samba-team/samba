@@ -625,14 +625,14 @@ tgs_parse_request(krb5_context context,
     if(ret){
 	kdc_log(context, config, 0, "Failed to decode AP-REQ: %s", 
 		krb5_get_err_text(context, ret));
-	goto out2;
+	goto out;
     }
     
     if(!get_krbtgt_realm(&ap_req.ticket.sname)){
 	/* XXX check for ticket.sname == req.sname */
 	kdc_log(context, config, 0, "PA-DATA is not a ticket-granting ticket");
 	ret = KRB5KDC_ERR_POLICY; /* ? */
-	goto out2;
+	goto out;
     }
     
     _krb5_principalname2krb5_principal(&princ,
@@ -653,7 +653,7 @@ tgs_parse_request(krb5_context context,
 	if (ret == 0)
 	    free(p);
 	ret = KRB5KRB_AP_ERR_NOT_US;
-	goto out2;
+	goto out;
     }
     
     if(ap_req.ticket.enc_part.kvno && 
@@ -672,7 +672,7 @@ tgs_parse_request(krb5_context context,
 	if (ret == 0)
 	    free (p);
 	ret = KRB5KRB_AP_ERR_BADKEYVER;
-	goto out2;
+	goto out;
     }
 
     ret = hdb_enctype2key(context, &(*krbtgt)->entry, 
@@ -686,7 +686,7 @@ tgs_parse_request(krb5_context context,
 	free(str);
 	free(p);
 	ret = KRB5KRB_AP_ERR_BADKEYVER;
-	goto out2;
+	goto out;
     }
     
     if (b->kdc_options.validate)
@@ -708,7 +708,7 @@ tgs_parse_request(krb5_context context,
     if(ret) {
 	kdc_log(context, config, 0, "Failed to verify AP-REQ: %s", 
 		krb5_get_err_text(context, ret));
-	goto out2;
+	goto out;
     }
 
     {
@@ -720,14 +720,14 @@ tgs_parse_request(krb5_context context,
 	    if (*csec == NULL) {
 		krb5_free_authenticator(context, &auth);
 		kdc_log(context, config, 0, "malloc failed");
-		goto out2;
+		goto out;
 	    }
 	    **csec  = auth->ctime;
 	    *cusec  = malloc(sizeof(**cusec));
 	    if (*cusec == NULL) {
 		krb5_free_authenticator(context, &auth);
 		kdc_log(context, config, 0, "malloc failed");
-		goto out2;
+		goto out;
 	    }
 	    **csec  = auth->cusec;
 	    krb5_free_authenticator(context, &auth);
@@ -738,7 +738,7 @@ tgs_parse_request(krb5_context context,
 				  ac, b, e_text, &(*ticket)->ticket.key);
     if (ret) {
 	krb5_auth_con_free(context, ac);
-	goto out2;
+	goto out;
     }
 
     if (b->enc_authorization_data) {
@@ -751,7 +751,7 @@ tgs_parse_request(krb5_context context,
 	    krb5_auth_con_free(context, ac);
 	    kdc_log(context, config, 0, "Failed to get remote subkey: %s", 
 		    krb5_get_err_text(context, ret));
-	    goto out2;
+	    goto out;
 	}
 	if(subkey == NULL){
 	    ret = krb5_auth_con_getkey(context, ac, &subkey);
@@ -759,7 +759,7 @@ tgs_parse_request(krb5_context context,
 		krb5_auth_con_free(context, ac);
 		kdc_log(context, config, 0, "Failed to get session key: %s", 
 			krb5_get_err_text(context, ret));
-		goto out2;
+		goto out;
 	    }
 	}
 	if(subkey == NULL){
@@ -767,14 +767,14 @@ tgs_parse_request(krb5_context context,
 	    kdc_log(context, config, 0,
 		    "Failed to get key for enc-authorization-data");
 	    ret = KRB5KRB_AP_ERR_BAD_INTEGRITY; /* ? */
-	    goto out2;
+	    goto out;
 	}
 	ret = krb5_crypto_init(context, subkey, 0, &crypto);
 	if (ret) {
 	    krb5_auth_con_free(context, ac);
 	    kdc_log(context, config, 0, "krb5_crypto_init failed: %s",
 		    krb5_get_err_text(context, ret));
-	    goto out2;
+	    goto out;
 	}
 	ret = krb5_decrypt_EncryptedData (context,
 					  crypto,
@@ -787,14 +787,14 @@ tgs_parse_request(krb5_context context,
 	    kdc_log(context, config, 0, 
 		    "Failed to decrypt enc-authorization-data");
 	    ret = KRB5KRB_AP_ERR_BAD_INTEGRITY; /* ? */
-	    goto out2;
+	    goto out;
 	}
 	krb5_free_keyblock(context, subkey);
 	ALLOC(*auth_data);
 	if (*auth_data == NULL) {
 	    krb5_auth_con_free(context, ac);
 	    ret = KRB5KRB_AP_ERR_BAD_INTEGRITY; /* ? */
-	    goto out2;
+	    goto out;
 	}
 	ret = decode_AuthorizationData(ad.data, ad.length, *auth_data, NULL);
 	if(ret){
@@ -803,13 +803,13 @@ tgs_parse_request(krb5_context context,
 	    *auth_data = NULL;
 	    kdc_log(context, config, 0, "Failed to decode authorization data");
 	    ret = KRB5KRB_AP_ERR_BAD_INTEGRITY; /* ? */
-	    goto out2;
+	    goto out;
 	}
     }
 
     krb5_auth_con_free(context, ac);
     
-out2:
+out:
     free_AP_REQ(&ap_req);
     
     return ret;
@@ -840,6 +840,8 @@ tgs_build_reply(krb5_context context,
     EncTicketPart adtkt;
     char opt_str[128];
 
+    memset(&adtkt, 0, sizeof(adtkt));
+
     s = b->sname;
     r = b->realm;
 
@@ -861,7 +863,7 @@ tgs_build_reply(krb5_context context,
 	    kdc_log(context, config, 0,
 		    "Additional ticket is not a ticket-granting ticket");
 	    ret = KRB5KDC_ERR_POLICY;
-	    goto out2;
+	    goto out;
 	}
 	_krb5_principalname2krb5_principal(&p, t->sname, t->realm);
 	ret = _kdc_db_fetch(context, config, p, 
@@ -1027,7 +1029,6 @@ server_lookup:
 			 e_text,
 			 reply);
 	
-out2:
 out:
     free(spn);
     free(cpn);
@@ -1040,10 +1041,7 @@ out:
     krb5_free_principal(context, cp);
     krb5_free_principal(context, sp);
 
-    if(auth_data){
-	free_AuthorizationData(auth_data);
-	free(auth_data);
-    }
+    free_EncTicketPart(&adtkt);
 
     return ret;
 }
@@ -1136,8 +1134,10 @@ out:
     if(krbtgt)
 	_kdc_free_ent(context, krbtgt);
 
-    if (auth_data)
+    if (auth_data) {
 	free_AuthorizationData(auth_data);
+	free(auth_data);
+    }
 
     return 0;
 }
