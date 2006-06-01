@@ -38,6 +38,7 @@ srcdir="@srcdir@"
 objdir="@objdir@"
 
 R=EXAMPLE.ORG
+R2=EXAMPLE.COM
 
 port=8888
 
@@ -45,6 +46,7 @@ kadmin="../../kadmin/kadmin -l -r $R"
 kdc="../../kdc/kdc --addresses=localhost -P $port"
 
 server=host/datan.example.org
+server2=host/computer.example.com
 cache="FILE:${objdir}/cache.krb5"
 keytabfile=${objdir}/server.keytab
 keytab="FILE:${keytabfile}"
@@ -71,10 +73,24 @@ ${kadmin} \
     --realm-max-renewable-life=1month \
     ${R} || exit 1
 
+${kadmin} \
+    init \
+    --realm-max-ticket-life=1day \
+    --realm-max-renewable-life=1month \
+    ${R2} || exit 1
+
 ${kadmin} add -p foo --use-defaults foo@${R} || exit 1
 ${kadmin} add -p bar --use-defaults bar@${R} || exit 1
+${kadmin} add -p foo --use-defaults remove@${R} || exit 1
 ${kadmin} add -p kaka --use-defaults ${server}@${R} || exit 1
 ${kadmin} ext -k ${keytab} ${server}@${R} || exit 1
+
+${kadmin} add -p kaka --use-defaults ${server2}@${R2} || exit 1
+${kadmin} ext -k ${keytab} ${server2}@${R2} || exit 1
+
+${kadmin} add -p cross1 --use-defaults krbtgt/${R2}@${R} || exit 1
+${kadmin} add -p cross2 --use-defaults krbtgt/${R}@${R2} || exit 1
+
 
 ${ktutil} -k ${keytab} list > tempfile || exit 1
 grep -ve '^FILE:' tempfile | grep -ve '^Vno' | \
@@ -98,6 +114,13 @@ if tail -1 messages.log | grep "No sockets" ; then
 fi
 
 exitcode=0
+
+echo "initial tickets for deleted user test case"
+${kinit} --password-file=${objdir}/foopassword remove@$R || exitcode=1
+${kadmin} delete remove@${R} || exit 1
+echo "try getting ticket with deleted user"
+${kgetcred} ${server}@${R} && exitcode=1
+${kdestroy}
 
 echo "Getting client initial tickets"
 ${kinit} --password-file=${objdir}/foopassword foo@$R || exitcode=1
@@ -125,6 +148,16 @@ for a in $enctypes; do
 	${kgetcred} -e $a ${server}@${R} || exitcode=1
 	./ap-req ${server}@${R} ${keytab} ${cache} || exitcode=1
 	${kdestroy} --credential=${server}@${R}
+done
+${kdestroy}
+
+echo "Getting client initial tickets for cross realm case"
+${kinit} --password-file=${objdir}/foopassword foo@$R || exitcode=1
+for a in $enctypes; do
+	echo "Getting cross realm tickets ($a)"
+	${kgetcred} -e $a ${server2}@${R2} || exitcode=1
+	./ap-req ${server2}@${R2} ${keytab} ${cache} || exitcode=1
+	${kdestroy} --credential=${server2}@${R2}
 done
 ${kdestroy}
 
