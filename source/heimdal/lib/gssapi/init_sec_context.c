@@ -245,7 +245,7 @@ gsskrb5_initiator_ready(
 	OM_uint32 ret;
 	int32_t seq_number;
 	int is_cfx = 0;
-	u_int32_t flags = (*context_handle)->flags;
+	OM_uint32 flags = (*context_handle)->flags;
 
 	krb5_auth_getremoteseqnumber (gssapi_krb5_context,
 				      (*context_handle)->auth_context,
@@ -275,7 +275,7 @@ do_delegation (krb5_auth_context ac,
 	       krb5_creds *cred,
 	       const gss_name_t target_name,
 	       krb5_data *fwd_data,
-	       u_int32_t *flags)
+	       OM_uint32 *flags)
 {
     krb5_creds creds;
     krb5_kdc_flags fwd_flags;
@@ -353,7 +353,7 @@ gsskrb5_initiator_start
     krb5_flags ap_options;
     krb5_creds *cred = NULL;
     krb5_data outbuf;
-    u_int32_t flags;
+    OM_uint32 flags;
     krb5_data authenticator;
     Checksum cksum;
     krb5_enctype enctype;
@@ -573,7 +573,7 @@ gsskrb5_initiator_wait_for_mutual(
 	OM_uint32 ret;
 	krb5_error_code kret;
 	krb5_data inbuf;
-	u_int32_t flags = (*context_handle)->flags;
+	OM_uint32 flags = (*context_handle)->flags;
 	int32_t l_seq_number;
 	int32_t r_seq_number;
 	

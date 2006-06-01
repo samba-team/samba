@@ -198,7 +198,7 @@ gsskrb5_acceptor_ready(
 	OM_uint32 ret;
 	int32_t seq_number;
 	int is_cfx = 0;
-	u_int32_t *flags = &(*context_handle)->flags;
+	OM_uint32 *flags = &(*context_handle)->flags;
 
 	krb5_auth_getremoteseqnumber (gssapi_krb5_context,
 				      (*context_handle)->auth_context,
