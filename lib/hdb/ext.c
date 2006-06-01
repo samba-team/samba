@@ -364,3 +364,19 @@ hdb_entry_clear_password(krb5_context context, hdb_entry *entry)
     return hdb_clear_extension(context, entry, 
 			       choice_HDB_extension_data_password);
 }
+
+krb5_error_code
+hdb_entry_get_ConstrainedDelegACL(const hdb_entry *entry, 
+				  const HDB_Ext_Constrained_delegation_acl **a)
+{
+    const HDB_extension *ext;
+
+    ext = hdb_find_extension(entry, 
+			     choice_HDB_extension_data_allowed_to_delegate_to);
+    if (ext)
+	*a = &ext->data.u.allowed_to_delegate_to;
+    else
+	*a = NULL;
+
+    return 0;
+}
