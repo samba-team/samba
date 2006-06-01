@@ -294,6 +294,7 @@ OBJ_FILES = \
 #######################
 # Start SUBSYSTEM HEIMDAL_ROKEN_GAI_STRERROR
 [SUBSYSTEM::HEIMDAL_ROKEN_GAI_STRERROR]
+CFLAGS = -Iheimdal_build -Iheimdal/lib/roken
 OBJ_FILES = ../heimdal/lib/roken/gai_strerror.o
 
 [SUBSYSTEM::HEIMDAL_ROKEN_INET_ATON]
