@@ -959,27 +959,40 @@ server_lookup:
     }
 
     ret = _kdc_db_fetch(context, config, cp, HDB_F_GET_CLIENT, &client);
-    if(ret)
-	kdc_log(context, config, 1, "Client not found in database: %s: %s",
-		cpn, krb5_get_err_text(context, ret));
+    if(ret) {
+	const char *krbtgt_realm; 
 
-    /*
-     * If the client belongs to the same realm as our krbtgt, it
-     * should exist in the local database.
-     *
-     * If its not the same, check the "direction" on the krbtgt,
-     * so its not a backward uni-directional trust.
-     */
+	/*
+	 * If the client belongs to the same realm as our krbtgt, it
+	 * should exist in the local database.
+	 *
+	 */
 
-    if(strcmp(krb5_principal_get_realm(context, sp),
-	      krb5_principal_get_comp_string(context, 
-					     krbtgt->entry.principal, 1)) == 0) {
-	if(ret) {
+	krbtgt_realm = krb5_principal_get_realm(context,
+						krbtgt->entry.principal);
+
+	if(strcmp(krb5_principal_get_realm(context, cp), krbtgt_realm) == 0) {
 	    if (ret == HDB_ERR_NOENTRY)
 		ret = KRB5KDC_ERR_C_PRINCIPAL_UNKNOWN;
+	    kdc_log(context, config, 1, "Client no longer in database: %s",
+		    cpn);
 	    goto out;
 	}
-    } else {
+	
+	kdc_log(context, config, 1, "Client not found in database: %s: %s",
+		cpn, krb5_get_err_text(context, ret));
+    }
+    
+    /*
+     * Check that service is in the same realm as the krbtgt. If its
+     * not the same, its someone that is using a uni-directional trust
+     * backward.
+     */
+    
+    if (strcmp(krb5_principal_get_realm(context, sp),
+	       krb5_principal_get_comp_string(context, 
+					      krbtgt->entry.principal, 
+					      1)) != 0) {
 	char *tpn;
 	ret = krb5_unparse_name(context, krbtgt->entry.principal, &tpn);
 	kdc_log(context, config, 0,
@@ -1111,7 +1124,7 @@ _kdc_tgs_rep(krb5_context context,
 			  from_addr);
     if (ret) {
 	kdc_log(context, config, 0, 
-		"Failed building TGS-REP to from %s", from);
+		"Failed building TGS-REP to %s", from);
 	goto out;
     }
 
