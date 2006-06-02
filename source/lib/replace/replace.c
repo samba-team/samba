@@ -394,6 +394,8 @@ duplicate a string
 	return strtouq(str, endptr, base);
 #elif defined(HAVE___STRTOULL) 
 	return __strtoull(str, endptr, base);
+#elif SIZEOF_LONG == SIZEOF_LONG_LONG
+	return (unsigned long long int) strtoul(str, endptr, base);
 #else
 # error "You need a strtoull function"
 #endif
@@ -407,6 +409,8 @@ duplicate a string
 	return strtoq(str, endptr, base);
 #elif defined(HAVE___STRTOLL) 
 	return __strtoll(str, endptr, base);
+#elif SIZEOF_LONG == SIZEOF_LONG_LONG
+	return (long long int) strtol(str, endptr, base);
 #else
 # error "You need a strtoll function"
 #endif
