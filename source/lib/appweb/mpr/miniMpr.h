@@ -199,8 +199,8 @@ typedef unsigned char 	uchar;
 #ifndef uint
 	#define uint unsigned
 #endif
-	typedef long long int int64;
-	typedef unsigned long long int uint64;
+	#define int64 int64_t
+	#define uint64 uint64_t
 #endif
 
 /*
