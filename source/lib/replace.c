@@ -434,27 +434,3 @@ char *rep_inet_ntoa(struct in_addr ip)
 }
 #endif /* HAVE_SYSLOG */
 #endif /* HAVE_VSYSLOG */
-
-
-#ifndef HAVE_TIMEGM
-/*
-  yes, I know this looks insane, but its really needed. The function in the 
-  Linux timegm() manpage does not work on solaris.
-*/
- time_t timegm(struct tm *tm) 
-{
-	struct tm tm2, tm3;
-	time_t t;
-
-	tm2 = *tm;
-
-	t = mktime(&tm2);
-	tm3 = *localtime(&t);
-	tm2 = *tm;
-	tm2.tm_isdst = tm3.tm_isdst;
-	t = mktime(&tm2);
-	t -= get_time_zone(t);
-
-	return t;
-}
-#endif
