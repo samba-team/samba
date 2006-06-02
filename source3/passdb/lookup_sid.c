@@ -1013,6 +1013,10 @@ void store_gid_sid_cache(const DOM_SID *psid, gid_t gid)
 	pc->gid = gid;
 	sid_copy(&pc->sid, psid);
 	DLIST_ADD(gid_sid_cache_head, pc);
+
+	DEBUG(3,("store_gid_sid_cache: gid %u in cache -> %s\n", (unsigned int)gid,
+		sid_string_static(psid)));
+
 	n_gid_sid_cache++;
 }
 
