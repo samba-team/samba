@@ -32,19 +32,19 @@ static ssize_t _wrap_getxattr(const char *path, const char *name, void *value, s
 {
 	return getxattr(path, name, value, size, 0, 0);
 }
-static ssize_t _wrap_fsetxattr(int fd, const char *name, void *value, size_t size, int flags)
+static int _wrap_fsetxattr(int fd, const char *name, void *value, size_t size, int flags)
 {
 	return fsetxattr(fd, name, value, size, 0, flags);
 }
-static ssize_t _wrap_setxattr(const char *path, const char *name, void *value, size_t size, int flags)
+static int _wrap_setxattr(const char *path, const char *name, void *value, size_t size, int flags)
 {
 	return setxattr(path, name, value, size, 0, flags);
 }
-static ssize_t _wrap_fremovexattr(int fd, const char *name)
+static int _wrap_fremovexattr(int fd, const char *name)
 {
 	return fremovexattr(fd, name, 0);
 }
-static ssize_t _wrap_removexattr(const char *path, const char *name)
+static int _wrap_removexattr(const char *path, const char *name)
 {
 	return removexattr(path, name, 0);
 }
@@ -65,22 +65,22 @@ static ssize_t _none_getxattr(const char *path, const char *name, void *value, s
 	errno = ENOTSUP;
 	return -1;
 }
-static ssize_t _none_fsetxattr(int fd, const char *name, void *value, size_t size, int flags)
+static int _none_fsetxattr(int fd, const char *name, void *value, size_t size, int flags)
 {
 	errno = ENOTSUP;
 	return -1;
 }
-static ssize_t _none_setxattr(const char *path, const char *name, void *value, size_t size, int flags)
+static int _none_setxattr(const char *path, const char *name, void *value, size_t size, int flags)
 {
 	errno = ENOTSUP;
 	return -1;
 }
-static ssize_t _none_fremovexattr(int fd, const char *name)
+static int _none_fremovexattr(int fd, const char *name)
 {
 	errno = ENOTSUP;
 	return -1;
 }
-static ssize_t _none_removexattr(const char *path, const char *name)
+static int _none_removexattr(const char *path, const char *name)
 {
 	errno = ENOTSUP;
 	return -1;
