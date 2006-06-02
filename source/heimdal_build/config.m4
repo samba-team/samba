@@ -41,7 +41,6 @@ AC_CHECK_HEADERS([				\
 	inttypes.h				\
 	netdb.h					\
 	signal.h				\
-	sys/bitypes.h				\
 	sys/bswap.h				\
 	sys/file.h				\
 	sys/stropts.h				\
