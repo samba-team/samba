@@ -23,7 +23,38 @@
 #include "includes.h"
 #include "vfs_posix.h"
 
-#if !defined(HAVE_XATTR_SUPPORT)
+#if defined(HAVE_XATTR_SUPPORT) && defined(XATTR_ADDITIONAL_OPTIONS)
+static ssize_t _wrap_fgetxattr(int fd, const char *name, void *value, size_t size)
+{
+	return fgetxattr(fd, name, value, size, 0, 0);
+}
+static ssize_t _wrap_getxattr(const char *path, const char *name, void *value, size_t size)
+{
+	return getxattr(path, name, value, size, 0, 0);
+}
+static ssize_t _wrap_fsetxattr(int fd, const char *name, void *value, size_t size, int flags)
+{
+	return fsetxattr(fd, name, value, size, 0, flags);
+}
+static ssize_t _wrap_setxattr(const char *path, const char *name, void *value, size_t size, int flags)
+{
+	return setxattr(path, name, value, size, 0, flags);
+}
+static ssize_t _wrap_fremovexattr(int fd, const char *name)
+{
+	return fremovexattr(fd, name, 0);
+}
+static ssize_t _wrap_removexattr(const char *path, const char *name)
+{
+	return removexattr(path, name, 0);
+}
+#define fgetxattr	_wrap_fgetxattr
+#define getxattr	_wrap_getxattr
+#define fsetxattr	_wrap_fsetxattr
+#define setxattr	_wrap_setxattr
+#define fremovexattr	_wrap_fremovexattr
+#define removexattr	_wrap_removexattr
+#elif !defined(HAVE_XATTR_SUPPORT)
 static ssize_t _none_fgetxattr(int fd, const char *name, void *value, size_t size)
 {
 	errno = ENOTSUP;
