@@ -39,6 +39,9 @@ if test x"$ac_cv_func_ext_flistxattr" = x"yes"; then
 		#elif HAVE_SYS_XATTR_H
 		#include <sys/xattr.h>
 		#endif
+		#ifndef NULL
+		#define NULL ((void *)0)
+		#endif
 		],[
 		getxattr(NULL, NULL, NULL, 0, 0, 0);
 		],smb_attr_cv_xattr_add_opt=yes,smb_attr_cv_xattr_add_opt=no)
