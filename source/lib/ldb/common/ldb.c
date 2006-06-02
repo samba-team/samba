@@ -265,7 +265,8 @@ static int ldb_op_finish(struct ldb_context *ldb, int status)
 	if (ldb->err_string == NULL) {
 		/* no error string was setup by the backend */
 		ldb_set_errstring(ldb, 
-				  talloc_asprintf(ldb, "ldb error %d", status));
+				  talloc_asprintf(ldb, "%s (%d)", 
+						  ldb_strerror(status), status));
 	}
 	ldb_transaction_cancel(ldb);
 	return status;
@@ -461,6 +462,13 @@ static int ldb_autotransaction_request(struct ldb_context *ldb, struct ldb_reque
 
 	if (close_transaction) {
 		return ldb_op_finish(ldb, ret);
+	}
+
+	if (ldb->err_string == NULL) {
+		/* no error string was setup by the backend */
+		ldb_set_errstring(ldb, 
+				  talloc_asprintf(ldb, "%s (%d)", 
+						  ldb_strerror(ret), ret));
 	}
 
 	return ret;
