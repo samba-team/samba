@@ -42,7 +42,7 @@ if test x"$ac_cv_func_ext_flistxattr" = x"yes"; then
 		],[
 		getxattr(NULL, NULL, NULL, 0, 0, 0);
 		],smb_attr_cv_xattr_add_opt=yes,smb_attr_cv_xattr_add_opt=no)
-	  LIBS=$old_LIBS)])
+	  LIBS=$old_LIBS])
 	if test x"$smb_attr_cv_xattr_add_opt" = x"yes"; then
 		AC_DEFINE(XATTR_ADDITIONAL_OPTIONS, 1, [xattr functions have additional options])
 	fi
