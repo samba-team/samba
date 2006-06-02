@@ -1,8 +1,8 @@
 /* 
    ldb database module
 
-   Copyright (C) Simo Sorce  2004
-   Copyright (C) Andrew Bartlett <abartlet@samba.org> 2005
+   Copyright (C) Simo Sorce  2004-2006
+   Copyright (C) Andrew Bartlett <abartlet@samba.org> 2005-2006
    Copyright (C) Andrew Tridgell 2004
 
    This program is free software; you can redistribute it and/or modify
@@ -229,7 +229,7 @@ static int add_krb5_keys_from_password(struct ldb_module *module, struct ldb_mes
 		struct ldb_val val;
 		int ret;
 		
-		if (keys[i].key.keytype == ENCTYPE_ARCFOUR_HMAC) {
+		if (keys[i].key.keytype == ETYPE_ARCFOUR_HMAC_MD5) {
 			/* We might end up doing this below:
 			 * This ensures we get the unicode
 			 * conversion right.  This should also
@@ -280,9 +280,9 @@ static int add_krb5_keys_from_NThash(struct ldb_module *module, struct ldb_messa
 	}
 
 	krb5_ret = krb5_keyblock_init(smb_krb5_context->krb5_context,
-				 ENCTYPE_ARCFOUR_HMAC,
-				 ntPwdHash->hash, sizeof(ntPwdHash->hash), 
-				 &key.key);
+				      ETYPE_ARCFOUR_HMAC_MD5,
+				      ntPwdHash->hash, sizeof(ntPwdHash->hash), 
+				      &key.key);
 	if (krb5_ret) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
@@ -818,6 +818,14 @@ static int get_self_callback(struct ldb_context *ldb, void *context, struct ldb_
 static int password_hash_mod_search_self(struct ldb_async_handle *h) {
 
 	struct ph_async_context *ac;
+	static const char * const attrs[] = { "userAccountControl", "sambaLMPwdHistory", 
+					      "sambaNTPwdHistory", 
+					      "ntPwdHash", 
+					      "objectSid", "msDS-KeyVersionNumber", 
+					      "objectClass", "userPrincipalName",
+					      "samAccountName", 
+					      "lmPwdHash", "ntPwdHash",
+					      NULL };
 
 	ac = talloc_get_type(h->private_data, struct ph_async_context);
 
@@ -836,7 +844,7 @@ static int password_hash_mod_search_self(struct ldb_async_handle *h) {
 		ldb_set_errstring(ac->module->ldb, talloc_asprintf(ac, "Invalid search filter"));
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
-	ac->search_req->op.search.attrs = NULL;
+	ac->search_req->op.search.attrs = attrs;
 	ac->search_req->controls = NULL;
 	ac->search_req->async.context = ac;
 	ac->search_req->async.callback = get_self_callback;
@@ -965,7 +973,7 @@ static int password_hash_mod_do_mod(struct ldb_async_handle *h) {
 		}
 	}
 
-	/* add also kr5 keys based on NT the hash */
+	/* add also krb5 keys based on NT the hash */
 	if (add_krb5_keys_from_NThash(ac->module, msg, smb_krb5_context) != LDB_SUCCESS) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
