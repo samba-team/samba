@@ -23,6 +23,45 @@
 #include "includes.h"
 #include "vfs_posix.h"
 
+#if !defined(HAVE_XATTR_SUPPORT)
+static ssize_t _none_fgetxattr(int fd, const char *name, void *value, size_t size)
+{
+	errno = ENOTSUP;
+	return -1;
+}
+static ssize_t _none_getxattr(const char *path, const char *name, void *value, size_t size)
+{
+	errno = ENOTSUP;
+	return -1;
+}
+static ssize_t _none_fsetxattr(int fd, const char *name, void *value, size_t size, int flags)
+{
+	errno = ENOTSUP;
+	return -1;
+}
+static ssize_t _none_setxattr(const char *path, const char *name, void *value, size_t size, int flags)
+{
+	errno = ENOTSUP;
+	return -1;
+}
+static ssize_t _none_fremovexattr(int fd, const char *name)
+{
+	errno = ENOTSUP;
+	return -1;
+}
+static ssize_t _none_removexattr(const char *path, const char *name)
+{
+	errno = ENOTSUP;
+	return -1;
+}
+#define fgetxattr	_none_fgetxattr
+#define getxattr	_none_getxattr
+#define fsetxattr	_none_fsetxattr
+#define setxattr	_none_setxattr
+#define fremovexattr	_none_fremovexattr
+#define removexattr	_none_removexattr
+#endif
+
 /*
   pull a xattr as a blob, from either a file or a file descriptor
 */
@@ -34,7 +73,6 @@ NTSTATUS pull_xattr_blob_system(struct pvfs_state *pvfs,
 				size_t estimated_size,
 				DATA_BLOB *blob)
 {
-#if HAVE_XATTR_SUPPORT
 	int ret;
 
 	*blob = data_blob_talloc(mem_ctx, NULL, estimated_size+16);
@@ -67,9 +105,6 @@ again:
 	blob->length = ret;
 
 	return NT_STATUS_OK;
-#else
-	return NT_STATUS_NOT_SUPPORTED;
-#endif
 }
 
 /*
@@ -81,7 +116,6 @@ NTSTATUS push_xattr_blob_system(struct pvfs_state *pvfs,
 				int fd, 
 				const DATA_BLOB *blob)
 {
-#if HAVE_XATTR_SUPPORT
 	int ret;
 
 	if (fd != -1) {
@@ -94,9 +128,6 @@ NTSTATUS push_xattr_blob_system(struct pvfs_state *pvfs,
 	}
 
 	return NT_STATUS_OK;
-#else
-	return NT_STATUS_NOT_SUPPORTED;
-#endif
 }
 
 
@@ -106,7 +137,6 @@ NTSTATUS push_xattr_blob_system(struct pvfs_state *pvfs,
 NTSTATUS delete_xattr_system(struct pvfs_state *pvfs, const char *attr_name, 
 			     const char *fname, int fd)
 {
-#if HAVE_XATTR_SUPPORT
 	int ret;
 
 	if (fd != -1) {
@@ -119,9 +149,6 @@ NTSTATUS delete_xattr_system(struct pvfs_state *pvfs, const char *attr_name,
 	}
 
 	return NT_STATUS_OK;
-#else
-	return NT_STATUS_NOT_SUPPORTED;
-#endif
 }
 
 /*
