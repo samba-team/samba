@@ -12,6 +12,18 @@ AC_CHECK_TYPE(ssize_t, int)
 AC_CHECK_TYPE(comparison_fn_t, 
 [AC_DEFINE(HAVE_COMPARISON_FN_T, 1,[Whether or not we have comparison_fn_t])])
 
+AC_CHECK_HEADERS(stdbool.h)
+
+AC_CHECK_TYPE(bool, 
+[AC_DEFINE(HAVE_BOOL, 1, [Whether the bool type is available])],,
+[
+AC_INCLUDES_DEFAULT
+#ifdef HAVE_STDBOOL_H
+#include <stdbool.h>
+#endif]
+)
+
+
 AC_CACHE_CHECK([for broken inet_ntoa],samba_cv_REPLACE_INET_NTOA,[
 AC_TRY_RUN([
 #include <stdio.h>
@@ -126,17 +138,6 @@ LIBS="$SAVE_LIBS"
 
 AC_CHECK_FUNCS([syslog memset setnetgrent getnetgrent endnetgrent memcpy],,
 			   [AC_MSG_ERROR([Required function not found])])
-
-AC_CHECK_HEADERS(stdbool.h)
-
-AC_CHECK_TYPE(bool, 
-[AC_DEFINE(HAVE_BOOL, 1, [Whether the bool type is available])],,
-[
-AC_INCLUDES_DEFAULT
-#ifdef HAVE_STDBOOL_H
-#include <stdbool.h>
-#endif]
-)
 
 sinclude(lib/replace/getpass.m4)
 
