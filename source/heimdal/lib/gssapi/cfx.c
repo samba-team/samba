@@ -48,7 +48,7 @@ wrap_length_cfx(krb5_crypto crypto,
 		size_t input_length,
 		size_t *output_length,
 		size_t *cksumsize,
-		u_int16_t *padlength, 
+		uint16_t *padlength, 
 	        size_t *padsize)
 {
     krb5_error_code ret;
@@ -109,7 +109,7 @@ OM_uint32 _gssapi_wrap_size_cfx(OM_uint32 *minor_status,
 {
     krb5_error_code ret;
     krb5_crypto crypto;
-    u_int16_t pad_length;
+    uint16_t pad_length;
     size_t pad_size;
     size_t output_length, cksumsize;
 
@@ -197,8 +197,9 @@ OM_uint32 _gssapi_wrap_cfx(OM_uint32 *minor_status,
     unsigned usage;
     krb5_data cipher;
     size_t wrapped_len, cksumsize;
-    u_int16_t padlength, rrc = 0;
-    OM_uint32 seq_number, padsize;
+    uint16_t padlength, rrc = 0;
+    int32_t seq_number;
+    OM_uint32 padsize;
     u_char *p;
 
     ret = krb5_crypto_init(gssapi_krb5_context, key, 0, &crypto);
@@ -631,7 +632,7 @@ OM_uint32 _gssapi_mic_cfx(OM_uint32 *minor_status,
     Checksum cksum;
     u_char *buf;
     size_t len;
-    OM_uint32 seq_number;
+    int32_t seq_number;
 
     ret = krb5_crypto_init(gssapi_krb5_context, key, 0, &crypto);
     if (ret != 0) {
