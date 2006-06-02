@@ -330,7 +330,7 @@ int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
 			}
 		}
 
-		if (ff_lastname > 0) {
+		if (ff_searchcount > 0) {
 			pstrcpy(mask, finfo.name);
 		} else {
 			pstrcpy(mask,"");
