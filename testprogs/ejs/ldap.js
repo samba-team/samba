@@ -37,36 +37,118 @@ objectClass: person
 cn: LDAPtestUSER
 ");
 	if (!ok) {
-		println(ldb.errstring());
-		assert(ok);
+		ok = ldb.del("cn=ldaptestuser,cn=users," + base_dn);
+		if (!ok) {
+			println(ldb.errstring());
+			assert(ok);
+		}
+		ok = ldb.add("
+dn: cn=ldaptestuser,cn=users," + base_dn + "
+objectClass: user
+objectClass: person
+cn: LDAPtestUSER
+");
+		if (!ok) {
+			println(ldb.errstring());
+			assert(ok);
+		}
 	}
 
 	ok = ldb.add("
 dn: cn=ldaptestuser2,cn=users," + base_dn + "
-objectClass: user
 objectClass: person
+objectClass: user
 cn: LDAPtestUSER2
 ");
 	if (!ok) {
-		println(ldb.errstring());
-		assert(ok);
+		ok = ldb.del("cn=ldaptestuser2,cn=users," + base_dn);
+		if (!ok) {
+			println(ldb.errstring());
+			assert(ok);
+		}
+	        ok = ldb.add("
+dn: cn=ldaptestuser2,cn=users," + base_dn + "
+objectClass: person
+objectClass: user
+cn: LDAPtestUSER2
+");
+		if (!ok) {
+			println(ldb.errstring());
+			assert(ok);
+		}
 	}
 
 	ok = ldb.add("
-dn: cn=ldaptestutf8user   èùéìòà ,cn=users," + base_dn + "
+dn: cn=ldaptestutf8user èùéìòà ,cn=users," + base_dn + "
 objectClass: user
 ");
 	if (!ok) {
-		println(ldb.errstring());
-		assert(ok);
+		ok = ldb.del("cn=ldaptestutf8user èùéìòà ,cn=users," + base_dn);
+		if (!ok) {
+			println(ldb.errstring());
+			assert(ok);
+		}
+	ok = ldb.add("
+dn: cn=ldaptestutf8user èùéìòà ,cn=users," + base_dn + "
+objectClass: user
+");
+		if (!ok) {
+			println(ldb.errstring());
+			assert(ok);
+		}
 	}
 
-	println("Testing ldb.search");
+	ok = ldb.add("
+dn: cn=ldaptestutf8user2  èùéìòà ,cn=users," + base_dn + "
+objectClass: user
+");
+	if (!ok) {
+		ok = ldb.del("cn=ldaptestutf8user2  èùéìòà ,cn=users," + base_dn);
+		if (!ok) {
+			println(ldb.errstring());
+			assert(ok);
+		}
+	ok = ldb.add("
+dn: cn=ldaptestutf8user2  èùéìòà ,cn=users," + base_dn + "
+objectClass: user
+");
+		if (!ok) {
+			println(ldb.errstring());
+			assert(ok);
+		}
+	}
+
+	println("Testing ldb.search for (&(cn=ldaptestuser)(objectClass=user))");
 	var res = ldb.search("(&(cn=ldaptestuser)(objectClass=user))");
+	if (res.length != 1) {
+		println("Could not find (&(cn=ldaptestuser)(objectClass=user))");
+		assert(res.length == 1);
+	}
 
 	assert(res[0].dn == "cn=ldaptestuser,cn=users," + base_dn);
 	assert(res[0].cn == "ldaptestuser");
 	assert(res[0].name == "ldaptestuser");
+	assert(res[0].objectClass[0] == "top");
+	assert(res[0].objectClass[1] == "person");
+	assert(res[0].objectClass[2] == "organizationalPerson");
+	assert(res[0].objectClass[3] == "user");
+	assert(res[0].objectGUID != undefined);
+	assert(res[0].whenCreated != undefined);
+
+	println("Testing ldb.search for (&(cn=ldaptestuser)(objectClass=user))");
+	var res = ldb.search("(&(cn=ldaptestuser)(objectClass=user))");
+	if (res.length != 1) {
+		println("Could not find (&(cn=ldaptestuser)(objectClass=user))");
+		assert(res.length == 1);
+	}
+
+	assert(res[0].dn == "cn=ldaptestuser,cn=users," + base_dn);
+	assert(res[0].cn == "ldaptestuser");
+	assert(res[0].name == "ldaptestuser");
+	assert(res[0].objectClass[0] == "top");
+	assert(res[0].objectClass[1] == "person");
+	assert(res[0].objectClass[2] == "organizationalPerson");
+	assert(res[0].objectClass[3] == "user");
 	assert(res[0].objectGUID != undefined);
 	assert(res[0].whenCreated != undefined);
 
@@ -76,12 +158,20 @@ objectClass: user
 		assert(ok);
 	}
 
-	println("Testing ldb.search");
+	println("Testing ldb.search for (&(cn=ldaptestUSer2)(objectClass=user))");
 	var res = ldb.search("(&(cn=ldaptestUSer2)(objectClass=user))");
+	if (res.length != 1) {
+		println("Could not find (&(cn=ldaptestUSer2)(objectClass=user))");
+		assert(res.length == 1);
+	}
 
 	assert(res[0].dn == "cn=ldaptestuser2,cn=users," + base_dn);
 	assert(res[0].cn == "ldaptestuser2");
 	assert(res[0].name == "ldaptestuser2");
+	assert(res[0].objectClass[0] == "top");
+	assert(res[0].objectClass[1] == "person");
+	assert(res[0].objectClass[2] == "organizationalPerson");
+	assert(res[0].objectClass[3] == "user");
 	assert(res[0].objectGUID != undefined);
 	assert(res[0].whenCreated != undefined);
 
@@ -91,12 +181,21 @@ objectClass: user
 		assert(ok);
 	}
 
-	println("Testing ldb.search");
+	println("Testing ldb.search for (&(cn=ldaptestutf8user ÈÙÉÌÒÀ)(objectClass=user))");
 	var res = ldb.search("(&(cn=ldaptestutf8user ÈÙÉÌÒÀ)(objectClass=user))");
 
-	assert(res[0].dn == "cn=ldaptestutf8user   èùéìòà,cn=users," + base_dn);
-	assert(res[0].cn == "ldaptestutf8user   èùéìòà");
-	assert(res[0].name == "ldaptestutf8user   èùéìòà");
+	if (res.length != 1) {
+		println("Could not find (&(cn=ldaptestutf8user ÈÙÉÌÒÀ)(objectClass=user))");
+		assert(res.length == 1);
+	}
+
+	assert(res[0].dn == "cn=ldaptestutf8user èùéìòà,cn=users," + base_dn);
+	assert(res[0].cn == "ldaptestutf8user èùéìòà");
+	assert(res[0].name == "ldaptestutf8user èùéìòà");
+	assert(res[0].objectClass[0] == "top");
+	assert(res[0].objectClass[1] == "person");
+	assert(res[0].objectClass[2] == "organizationalPerson");
+	assert(res[0].objectClass[3] == "user");
 	assert(res[0].objectGUID != undefined);
 	assert(res[0].whenCreated != undefined);
 
@@ -105,6 +204,17 @@ objectClass: user
 		println(ldb.errstring());
 		assert(ok);
 	}
+
+	println("Testing ldb.search for (&(cn=ldaptestutf8user2 ÈÙÉÌÒÀ)(objectClass=user))");
+	var res = ldb.search("(&(cn=ldaptestutf8user ÈÙÉÌÒÀ)(objectClass=user))");
+
+	if (res.length != 1) {
+		println("Could not find (expect space collapse, win2k3 fails) (&(cn=ldaptestutf8user2 ÈÙÉÌÒÀ)(objectClass=user))");
+	} else {
+		assert(res[0].dn == "cn=ldaptestutf8user2 èùéìòà,cn=users," + base_dn);
+		assert(res[0].cn == "ldaptestutf8user2 èùéìòà");
+	}
+
 }
 
 function find_basedn(ldb)
