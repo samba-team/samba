@@ -57,32 +57,32 @@ static int _wrap_darwin_removexattr(const char *path, const char *name)
 #elif !defined(HAVE_XATTR_SUPPORT)
 static ssize_t _none_fgetxattr(int fd, const char *name, void *value, size_t size)
 {
-	errno = ENOTSUP;
+	errno = ENOSYS;
 	return -1;
 }
 static ssize_t _none_getxattr(const char *path, const char *name, void *value, size_t size)
 {
-	errno = ENOTSUP;
+	errno = ENOSYS;
 	return -1;
 }
 static int _none_fsetxattr(int fd, const char *name, void *value, size_t size, int flags)
 {
-	errno = ENOTSUP;
+	errno = ENOSYS;
 	return -1;
 }
 static int _none_setxattr(const char *path, const char *name, void *value, size_t size, int flags)
 {
-	errno = ENOTSUP;
+	errno = ENOSYS;
 	return -1;
 }
 static int _none_fremovexattr(int fd, const char *name)
 {
-	errno = ENOTSUP;
+	errno = ENOSYS;
 	return -1;
 }
 static int _none_removexattr(const char *path, const char *name)
 {
-	errno = ENOTSUP;
+	errno = ENOSYS;
 	return -1;
 }
 #define fgetxattr	_none_fgetxattr
