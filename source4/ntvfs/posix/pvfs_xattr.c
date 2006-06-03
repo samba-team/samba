@@ -47,8 +47,10 @@ static NTSTATUS pull_xattr_blob(struct pvfs_state *pvfs,
 					fd, estimated_size, blob);
 
 	/* if the filesystem doesn't support them, then tell pvfs not to try again */
-	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_SUPPORTED)) {
-		DEBUG(5,("pvfs_xattr: xattr not supported in filesystem\n"));
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_SUPPORTED)||
+	    NT_STATUS_EQUAL(status, NT_STATUS_NOT_IMPLEMENTED)||
+	    NT_STATUS_EQUAL(status, NT_STATUS_INVALID_SYSTEM_SERVICE)) {
+		DEBUG(5,("pvfs_xattr: xattr not supported in filesystem: %s\n", nt_errstr(status)));
 		pvfs->flags &= ~PVFS_FLAG_XATTR_ENABLE;
 		status = NT_STATUS_NOT_FOUND;
 	}
