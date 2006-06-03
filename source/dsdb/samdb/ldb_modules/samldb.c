@@ -251,7 +251,7 @@ static int samldb_allocate_next_rid(struct ldb_module *module, TALLOC_CTX *mem_c
 	if (ret == -1) {
 		/* Bugger, there is a problem, and we don't know what it is until gendb_search improves */
 		return ret;
-	} else {
+	} else if (ret != 0) {
 		/* gah, there are conflicting sids.
 		 * This is a critical situation it means that someone messed up with
 		 * the DB and nextRid is not returning free RIDs, report an error
