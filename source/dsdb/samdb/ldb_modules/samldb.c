@@ -226,39 +226,39 @@ static int samldb_allocate_next_rid(struct ldb_module *module, TALLOC_CTX *mem_c
 	struct ldb_message **sid_msgs;
 	const char *sid_attrs[] = { NULL };
 	
-	do {
-		ret = samldb_find_next_rid(module, mem_ctx, dn, &old_rid);	
-		if (ret) {
-			return ret;
-		}
+	ret = samldb_find_next_rid(module, mem_ctx, dn, &old_rid);	
+	if (ret) {
+		return ret;
+	}
 		
-		/* return the new object sid */
-		obj_sid = dom_sid_add_rid(mem_ctx, dom_sid, old_rid);
+	/* return the new object sid */
+	obj_sid = dom_sid_add_rid(mem_ctx, dom_sid, old_rid);
 		
-		ret = samldb_set_next_rid(module->ldb, mem_ctx, dn, old_rid, old_rid + 1);
-		if (ret != 0) {
-			return ret;
-		}
+	ret = samldb_set_next_rid(module->ldb, mem_ctx, dn, old_rid, old_rid + 1);
+	if (ret != 0) {
+		return ret;
+	}
 
-		*new_sid = dom_sid_add_rid(mem_ctx, dom_sid, old_rid + 1);
-		if (!*new_sid) {
-			return LDB_ERR_OPERATIONS_ERROR;
-		}
+	*new_sid = dom_sid_add_rid(mem_ctx, dom_sid, old_rid + 1);
+	if (!*new_sid) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
 
-		ret = gendb_search(module->ldb,
-				   mem_ctx, NULL, &sid_msgs, sid_attrs,
-				   "objectSid=%s",
-				   ldap_encode_ndr_dom_sid(mem_ctx, *new_sid));
-		if (ret == 0) {
-			/* Great. There are no conflicting users/groups/etc */
-			return 0;
-		} else if (ret == -1) {
-			/* Bugger, there is a problem, and we don't know what it is until gendb_search improves */
-			return ret;
-		} else {
-                        /* gah, there are conflicting sids, lets move around the loop again... */
-		}
-	} while (1);
+	ret = gendb_search(module->ldb,
+			   mem_ctx, NULL, &sid_msgs, sid_attrs,
+			   "objectSid=%s",
+			   ldap_encode_ndr_dom_sid(mem_ctx, *new_sid));
+	if (ret == -1) {
+		/* Bugger, there is a problem, and we don't know what it is until gendb_search improves */
+		return ret;
+	} else {
+		/* gah, there are conflicting sids.
+		 * This is a critical situation it means that someone messed up with
+		 * the DB and nextRid is not returning free RIDs, report an error
+		 * and refuse to create any user until the problem is fixed */
+		ldb_set_errstring(module->ldb, talloc_asprintf(mem_ctx, "Critical Error: unconsistent DB, unable to retireve an unique RID to generate a new SID"));
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
 	return ret;
 }
 
