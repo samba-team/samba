@@ -38,15 +38,15 @@ OBJ_FILES = \
 # End MODULE ldb_operational
 ################################################
 
-# ################################################
-# # Start MODULE ldb_objectclass
-# [MODULE::ldb_objectclass]
-# INIT_FUNCTION = ldb_objectclass_init
-# SUBSYSTEM = ldb
-# OBJ_FILES = \
-# 		modules/objectclass.o
-# # End MODULE ldb_objectclass
-# ################################################
+################################################
+# Start MODULE ldb_objectclass
+[MODULE::ldb_objectclass]
+INIT_FUNCTION = ldb_objectclass_init
+SUBSYSTEM = ldb
+OBJ_FILES = \
+		modules/objectclass.o
+# End MODULE ldb_objectclass
+################################################
 
 ################################################
 # Start MODULE ldb_rdn_name
