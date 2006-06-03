@@ -280,7 +280,7 @@ struct substitute_context {
 /* Remote architectures we know about. */
 enum remote_arch_types {RA_UNKNOWN, RA_WFWG, RA_OS2, RA_WIN95, RA_WINNT, RA_WIN2K, RA_WINXP, RA_SAMBA};
 
-enum security_types {SEC_SHARE,SEC_USER} security;
+enum security_types {SEC_SHARE,SEC_USER};
 
 /* smb server context structure. This should contain all the state
  * information associated with a SMB server connection 
