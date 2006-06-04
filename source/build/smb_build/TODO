@@ -1,3 +1,4 @@
+- use pkg-config files in the buildsystem?
 - let the build system implement some make functions($(patsubst),$(wildcard),...) and use our own implementations where `make' does not support them
 - include extra_flags.txt using Makefile construction if 
   supported by current make

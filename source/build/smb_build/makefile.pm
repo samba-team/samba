@@ -73,6 +73,7 @@ selftest_prefix = $self->{config}->{selftest_prefix}
 VPATH = $self->{config}->{srcdir}:heimdal_build:heimdal/lib/asn1:heimdal/lib/krb5:heimdal/lib/gssapi:heimdal/lib/hdb:heimdal/lib/roken:heimdal/lib/des
 srcdir = $self->{config}->{srcdir}
 builddir = $self->{config}->{builddir}
+datarootdir = $self->{config}->{datarootdir}
 
 BASEDIR = $self->{config}->{prefix}
 BINDIR = $self->{config}->{bindir}
