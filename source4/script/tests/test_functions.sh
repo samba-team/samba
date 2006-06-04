@@ -1,3 +1,4 @@
+#!/bin/sh
 smbd_check_or_start() {
 	if [ -n "$SMBD_TEST_FIFO" ];then
 		if [ -p "$SMBD_TEST_FIFO" ];then
