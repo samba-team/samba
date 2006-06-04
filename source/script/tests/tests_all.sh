@@ -1,3 +1,4 @@
+#!/bin/sh
  $SRCDIR/script/tests/test_ejs.sh $DOMAIN $USERNAME $PASSWORD || failed=`expr $failed + $?`
  $SRCDIR/script/tests/test_ldap.sh $SERVER $USERNAME $PASSWORD || failed=`expr $failed + $?`
  $SRCDIR/script/tests/test_nbt.sh $SERVER || failed=`expr $failed + $?`

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 # Basic script to make sure that cifsdd can do both local and remote I/O.
 
