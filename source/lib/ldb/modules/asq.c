@@ -48,7 +48,6 @@ struct asq_async_context {
 	struct ldb_module *module;
 	void *up_context;
 	int (*up_callback)(struct ldb_context *, void *, struct ldb_async_result *);
-	int timeout;
 
 	const char * const *req_attrs;
 	char *req_attribute;
@@ -66,8 +65,7 @@ struct asq_async_context {
 
 static struct ldb_async_handle *init_handle(void *mem_ctx, struct ldb_module *module,
 					    void *context,
-					    int (*callback)(struct ldb_context *, void *, struct ldb_async_result *),
-					    int timeout)
+					    int (*callback)(struct ldb_context *, void *, struct ldb_async_result *))
 {
 	struct asq_async_context *ac;
 	struct ldb_async_handle *h;
@@ -95,7 +93,6 @@ static struct ldb_async_handle *init_handle(void *mem_ctx, struct ldb_module *mo
 	ac->module = module;
 	ac->up_context = context;
 	ac->up_callback = callback;
-	ac->timeout = timeout;
 
 	return h;
 }
@@ -233,7 +230,7 @@ static int asq_search(struct ldb_module *module, struct ldb_request *req)
 		return LDB_ERR_PROTOCOL_ERROR;
 	}
 
-	h = init_handle(req, module, req->async.context, req->async.callback, req->async.timeout);
+	h = init_handle(req, module, req->async.context, req->async.callback);
 	if (!h) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
@@ -271,7 +268,7 @@ static int asq_search(struct ldb_module *module, struct ldb_request *req)
 
 	ac->base_req->async.context = ac;
 	ac->base_req->async.callback = asq_base_callback;
-	ac->base_req->async.timeout = req->async.timeout;
+	ldb_set_timeout_from_prev_req(module->ldb, req, ac->base_req);
 
 	ac->step = ASQ_SEARCH_BASE;
 
@@ -324,7 +321,7 @@ static int asq_async_requests(struct ldb_async_handle *handle) {
 
 		ac->reqs[i]->async.context = ac;
 		ac->reqs[i]->async.callback = asq_reqs_callback;
-		ac->reqs[i]->async.timeout = ac->base_req->async.timeout;
+		ldb_set_timeout_from_prev_req(ac->module->ldb, ac->base_req, ac->reqs[i]);
 	}
 
 	ac->step = ASQ_SEARCH_MULTI;
@@ -436,14 +433,19 @@ static int asq_async_wait(struct ldb_async_handle *handle, enum ldb_async_wait_t
 
 static int asq_init(struct ldb_module *module)
 {
-	struct ldb_request request;
+	struct ldb_request *req;
 	int ret;
 
-	request.operation = LDB_REQ_REGISTER;
-	request.op.reg.oid = LDB_CONTROL_ASQ_OID;
-	request.controls = NULL;
+	req = talloc_zero(module, struct ldb_request);
+	if (req == NULL) {
+		ldb_debug(module->ldb, LDB_DEBUG_ERROR, "asq: Out of memory!\n");
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
 
-	ret = ldb_request(module->ldb, &request);
+	req->operation = LDB_REQ_REGISTER;
+	req->op.reg.oid = LDB_CONTROL_ASQ_OID;
+
+	ret = ldb_request(module->ldb, req);
 	if (ret != LDB_SUCCESS) {
 		ldb_debug(module->ldb, LDB_DEBUG_ERROR, "asq: Unable to register control with rootdse!\n");
 		return LDB_ERR_OTHER;

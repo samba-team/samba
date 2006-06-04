@@ -124,6 +124,7 @@ static int objectclass_add(struct ldb_module *module, struct ldb_request *req)
 
 	ac->down_req->async.context = NULL;
 	ac->down_req->async.callback = NULL;
+	ldb_set_timeout_from_prev_req(module->ldb, req, ac->down_req);
 
 	ac->step = OC_DO_REQ;
 
@@ -171,6 +172,7 @@ static int objectclass_modify(struct ldb_module *module, struct ldb_request *req
 
 	ac->down_req->async.context = NULL;
 	ac->down_req->async.callback = NULL;
+	ldb_set_timeout_from_prev_req(module->ldb, req, ac->down_req);
 
 	ac->step = OC_DO_REQ;
 
@@ -230,7 +232,7 @@ static int objectclass_search_self(struct ldb_async_handle *h) {
 	ac->search_req->controls = NULL;
 	ac->search_req->async.context = ac;
 	ac->search_req->async.callback = get_self_callback;
-	ac->search_req->async.timeout = ac->orig_req->async.timeout;
+	ldb_set_timeout_from_prev_req(ac->module->ldb, ac->orig_req, ac->search_req);
 
 	ac->step = OC_SEARCH_SELF;
 
@@ -270,7 +272,7 @@ static int objectclass_do_mod(struct ldb_async_handle *h) {
 	ac->mod_req->controls = NULL;
 	ac->mod_req->async.context = ac;
 	ac->mod_req->async.callback = NULL;
-	ac->mod_req->async.timeout = ac->orig_req->async.timeout;
+	ldb_set_timeout_from_prev_req(ac->module->ldb, ac->orig_req, ac->mod_req);
 	
 	/* use a new message structure */
 	ac->mod_req->op.mod.message = msg = ldb_msg_new(ac->mod_req);

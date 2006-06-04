@@ -231,7 +231,6 @@ struct operational_async_context {
 	struct ldb_module *module;
 	void *up_context;
 	int (*up_callback)(struct ldb_context *, void *, struct ldb_async_result *);
-	int timeout;
 
 	const char * const *attrs;
 };
@@ -279,7 +278,6 @@ static int operational_search(struct ldb_module *module, struct ldb_request *req
 	ac->module = module;
 	ac->up_context = req->async.context;
 	ac->up_callback = req->async.callback;
-	ac->timeout = req->async.timeout;
 	ac->attrs = req->op.search.attrs;
 
 	down_req = talloc_zero(req, struct ldb_request);
@@ -329,7 +327,7 @@ static int operational_search(struct ldb_module *module, struct ldb_request *req
 
 	down_req->async.context = ac;
 	down_req->async.callback = operational_async_callback;
-	down_req->async.timeout = req->async.timeout;
+	ldb_set_timeout_from_prev_req(module->ldb, req, down_req);
 
 	/* perform the search */
 	ret = ldb_next_request(module, down_req);
@@ -385,6 +383,8 @@ static int operational_add(struct ldb_module *module, struct ldb_request *req)
 		}
 	}
 
+	ldb_set_timeout_from_prev_req(module->ldb, req, down_req);
+
 	/* go on with the call chain */
 	ret = ldb_next_request(module, down_req);
 
@@ -436,6 +436,8 @@ static int operational_modify(struct ldb_module *module, struct ldb_request *req
 		return -1;
 	}
 	
+	ldb_set_timeout_from_prev_req(module->ldb, req, down_req);
+
 	/* go on with the call chain */
 	ret = ldb_next_request(module, down_req);
 

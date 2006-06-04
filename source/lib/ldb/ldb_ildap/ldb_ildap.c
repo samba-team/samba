@@ -143,7 +143,7 @@ static void ildb_request_timeout(struct event_context *ev, struct timed_event *t
 		DLIST_REMOVE(ac->req->conn->pending, ac->req);
 	}
 
-	handle->status = LDB_ERR_OPERATIONS_ERROR;
+	handle->status = LDB_ERR_TIME_LIMIT_EXCEEDED;
 
 	return;
 }
@@ -759,7 +759,7 @@ static int ildb_init(struct ldb_module *module)
 	req->controls = NULL;
 	req->async.context = ildb;
 	req->async.callback = ildb_rootdse_callback;
-	req->async.timeout = 60;
+	ldb_set_timeout(module->ldb, req, 60);
 
 	ret = ildb_search(module, req);
 	if (ret != LDB_SUCCESS) {

@@ -99,6 +99,8 @@ static int objectguid_add(struct ldb_module *module, struct ldb_request *req)
 		return ret;
 	}
 	
+	ldb_set_timeout_from_prev_req(module->ldb, req, down_req);
+
 	/* go on with the call chain */
 	ret = ldb_next_request(module, down_req);
 

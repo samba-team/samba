@@ -845,7 +845,9 @@ static int samldb_add(struct ldb_module *module, struct ldb_request *req)
 	*down_req = *req;
 	
 	down_req->op.add.message = talloc_steal(down_req, msg2);
-	
+
+	ldb_set_timeout_from_prev_req(module->ldb, req, down_req);
+
 	/* go on with the call chain */
 	ret = ldb_next_request(module, down_req);
 

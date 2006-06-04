@@ -103,7 +103,6 @@ struct kludge_acl_async_context {
 	struct ldb_module *module;
 	void *up_context;
 	int (*up_callback)(struct ldb_context *, void *, struct ldb_async_result *);
-	int timeout;
 
 	enum user_is user_type;
 };
@@ -160,7 +159,6 @@ static int kludge_acl_search_async(struct ldb_module *module, struct ldb_request
 	ac->module = module;
 	ac->up_context = req->async.context;
 	ac->up_callback = req->async.callback;
-	ac->timeout = req->async.timeout;
 	ac->user_type = what_is_user(module);
 
 	down_req = talloc_zero(req, struct ldb_request);
@@ -178,7 +176,7 @@ static int kludge_acl_search_async(struct ldb_module *module, struct ldb_request
 
 	down_req->async.context = ac;
 	down_req->async.callback = kludge_acl_async_callback;
-	down_req->async.timeout = req->async.timeout;
+	ldb_set_timeout_from_prev_req(module->ldb, req, down_req);
 
 	/* perform the search */
 	ret = ldb_next_request(module, down_req);
@@ -193,7 +191,8 @@ static int kludge_acl_search_async(struct ldb_module *module, struct ldb_request
 }
 
 /* ANY change type */
-static int kludge_acl_change(struct ldb_module *module, struct ldb_request *req){
+static int kludge_acl_change(struct ldb_module *module, struct ldb_request *req)
+{
 	enum user_is user_type = what_is_user(module);
 	switch (user_type) {
 	case SYSTEM:

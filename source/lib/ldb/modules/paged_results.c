@@ -126,7 +126,6 @@ struct paged_async_context {
 	struct ldb_module *module;
 	void *up_context;
 	int (*up_callback)(struct ldb_context *, void *, struct ldb_async_result *);
-	int timeout;
 
 	int size;
 
@@ -135,8 +134,7 @@ struct paged_async_context {
 
 static struct ldb_async_handle *init_handle(void *mem_ctx, struct ldb_module *module,
 					    void *context,
-					    int (*callback)(struct ldb_context *, void *, struct ldb_async_result *),
-					    int timeout)
+					    int (*callback)(struct ldb_context *, void *, struct ldb_async_result *))
 {
 	struct paged_async_context *ac;
 	struct ldb_async_handle *h;
@@ -164,7 +162,6 @@ static struct ldb_async_handle *init_handle(void *mem_ctx, struct ldb_module *mo
 	ac->module = module;
 	ac->up_context = context;
 	ac->up_callback = callback;
-	ac->timeout = timeout;
 
 	return h;
 }
@@ -267,7 +264,7 @@ static int paged_search(struct ldb_module *module, struct ldb_request *req)
 		return LDB_ERR_PROTOCOL_ERROR;
 	}
 
-	h = init_handle(req, module, req->async.context, req->async.callback, req->async.timeout);
+	h = init_handle(req, module, req->async.context, req->async.callback);
 	if (!h) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
@@ -304,7 +301,7 @@ static int paged_search(struct ldb_module *module, struct ldb_request *req)
 
 		ac->store->req->async.context = ac;
 		ac->store->req->async.callback = paged_search_async_callback;
-		ac->store->req->async.timeout = req->async.timeout;
+		ldb_set_timeout_from_prev_req(module->ldb, req, ac->store->req);
 
 		ret = ldb_next_request(module, ac->store->req);
 

@@ -226,7 +226,7 @@ static int do_search(struct ldb_context *ldb,
 	req->controls = actx->req_ctrls;
 	req->async.context = actx;
 	req->async.callback = &search_callback;
-	req->async.timeout = 3600; /* TODO: make this settable by command line */
+	ldb_set_timeout(ldb, req, 0); /* TODO: make this settable by command line */
 
 again:
 	actx->pending = 0;
