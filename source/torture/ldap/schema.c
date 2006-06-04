@@ -233,7 +233,7 @@ static BOOL test_create_schema_type(struct ldb_context *ldb, struct test_rootDSE
 	req->controls = ctrl;
 	req->async.context = actx;
 	req->async.callback = test_schema_search_callback;
-	req->async.timeout = 3600;
+	ldb_set_timeout(ldb, req, 0);
 
 	actx->count		= 0;
 	actx->ctrl		= control;

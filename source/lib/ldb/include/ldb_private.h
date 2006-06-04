@@ -113,6 +113,8 @@ struct ldb_context {
 
 	int transaction_active;
 
+	int default_timeout;
+
 	/* a backend supplied highestCommittedUSN function */
 	uint64_t (*sequence_number)(struct ldb_context *);
 };

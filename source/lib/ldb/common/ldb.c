@@ -140,6 +140,9 @@ int ldb_connect(struct ldb_context *ldb, const char *url, unsigned int flags, co
 		return LDB_ERR_OTHER;
 	}
 
+	/* TODO: get timeout from options if available there */
+	ldb->default_timeout = 300; /* set default to 5 minutes */
+
 	return LDB_SUCCESS;
 }
 
@@ -252,24 +255,41 @@ int ldb_async_wait(struct ldb_async_handle *handle, enum ldb_async_wait_type typ
 	return handle->module->ops->async_wait(handle, type);
 }
 
-
-/*
-  check for an error return from an op 
-  if an op fails, but has not setup an error string, then setup one now
-*/
-static int ldb_op_finish(struct ldb_context *ldb, int status)
+/* set the specified timeout or, if timeout is 0 set the default timeout */
+/* timeout == -1 means no timeout */
+int ldb_set_timeout(struct ldb_context *ldb, struct ldb_request *req, int timeout)
 {
-	if (status == LDB_SUCCESS) {
-		return ldb_transaction_commit(ldb);
+	if (req == NULL) return LDB_ERR_OPERATIONS_ERROR;
+	
+	if (timeout != 0) {
+		req->async.timeout = timeout;
+	} else {
+		req->async.timeout = ldb->default_timeout;
 	}
-	if (ldb->err_string == NULL) {
-		/* no error string was setup by the backend */
-		ldb_set_errstring(ldb, 
-				  talloc_asprintf(ldb, "%s (%d)", 
-						  ldb_strerror(status), status));
+	req->async.starttime = time(NULL);
+
+	return LDB_SUCCESS;
+}
+
+/* calculates the new timeout based on the previous starttime and timeout */
+int ldb_set_timeout_from_prev_req(struct ldb_context *ldb, struct ldb_request *oldreq, struct ldb_request *newreq)
+{
+	time_t now;
+
+	if (newreq == NULL) return LDB_ERR_OPERATIONS_ERROR;
+
+	now = time(NULL);
+
+	if (oldreq == NULL)
+		return ldb_set_timeout(ldb, newreq, 0);
+
+	if ((now - oldreq->async.starttime) > oldreq->async.timeout) {
+		return LDB_ERR_TIME_LIMIT_EXCEEDED;
 	}
-	ldb_transaction_cancel(ldb);
-	return status;
+	newreq->async.starttime = oldreq->async.starttime;
+	newreq->async.timeout = oldreq->async.timeout - (now - oldreq->async.starttime);
+
+	return LDB_SUCCESS;
 }
 
 /*
@@ -424,7 +444,7 @@ int ldb_search(struct ldb_context *ldb,
 	req->controls = NULL;
 	req->async.context = res;
 	req->async.callback = ldb_search_callback;
-	req->async.timeout = 600; /* 10 minutes */
+	ldb_set_timeout(ldb, req, 0); /* use default timeout */
 
 	ret = ldb_request(ldb, req);
 	
@@ -461,7 +481,10 @@ static int ldb_autotransaction_request(struct ldb_context *ldb, struct ldb_reque
 	}
 
 	if (close_transaction) {
-		return ldb_op_finish(ldb, ret);
+		if (ret == LDB_SUCCESS) {
+			return ldb_transaction_commit(ldb);
+		}
+		ldb_transaction_cancel(ldb);
 	}
 
 	if (ldb->err_string == NULL) {
@@ -499,7 +522,7 @@ int ldb_add(struct ldb_context *ldb,
 	req->controls = NULL;
 	req->async.context = NULL;
 	req->async.callback = NULL;
-	req->async.timeout = 600; /* 10 minutes */
+	ldb_set_timeout(ldb, req, 0); /* use default timeout */
 
 	/* do request and autostart a transaction */
 	ret = ldb_autotransaction_request(ldb, req);
@@ -531,7 +554,7 @@ int ldb_modify(struct ldb_context *ldb,
 	req->controls = NULL;
 	req->async.context = NULL;
 	req->async.callback = NULL;
-	req->async.timeout = 600; /* 10 minutes */
+	ldb_set_timeout(ldb, req, 0); /* use default timeout */
 
 	/* do request and autostart a transaction */
 	ret = ldb_autotransaction_request(ldb, req);
@@ -560,7 +583,7 @@ int ldb_delete(struct ldb_context *ldb, const struct ldb_dn *dn)
 	req->controls = NULL;
 	req->async.context = NULL;
 	req->async.callback = NULL;
-	req->async.timeout = 600; /* 10 minutes */
+	ldb_set_timeout(ldb, req, 0); /* use default timeout */
 
 	/* do request and autostart a transaction */
 	ret = ldb_autotransaction_request(ldb, req);
@@ -589,7 +612,7 @@ int ldb_rename(struct ldb_context *ldb, const struct ldb_dn *olddn, const struct
 	req->controls = NULL;
 	req->async.context = NULL;
 	req->async.callback = NULL;
-	req->async.timeout = 600; /* 10 minutes */
+	ldb_set_timeout(ldb, req, 0); /* use default timeout */
 
 	/* do request and autostart a transaction */
 	ret = ldb_autotransaction_request(ldb, req);
