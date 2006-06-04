@@ -199,7 +199,7 @@ static int samldb_find_next_rid(struct ldb_module *module, TALLOC_CTX *mem_ctx,
 	talloc_steal(mem_ctx, res);
 	if (res->count != 1) {
 		talloc_free(res);
-		return -1;
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	str = ldb_msg_find_string(res->msgs[0], "nextRid", NULL);
@@ -208,12 +208,12 @@ static int samldb_find_next_rid(struct ldb_module *module, TALLOC_CTX *mem_ctx,
 				  talloc_asprintf(mem_ctx, "attribute nextRid not found in %s\n",
 						  ldb_dn_linearize(res, dn)));
 		talloc_free(res);
-		return -1;
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	*old_rid = strtol(str, NULL, 0);
 	talloc_free(res);
-	return 0;
+	return LDB_SUCCESS;
 }
 
 static int samldb_allocate_next_rid(struct ldb_module *module, TALLOC_CTX *mem_ctx,
@@ -250,7 +250,7 @@ static int samldb_allocate_next_rid(struct ldb_module *module, TALLOC_CTX *mem_c
 			   ldap_encode_ndr_dom_sid(mem_ctx, *new_sid));
 	if (ret == -1) {
 		/* Bugger, there is a problem, and we don't know what it is until gendb_search improves */
-		return ret;
+		return LDB_ERR_OPERATIONS_ERROR;
 	} else if (ret != 0) {
 		/* gah, there are conflicting sids.
 		 * This is a critical situation it means that someone messed up with
@@ -375,7 +375,7 @@ int samldb_notice_sid(struct ldb_module *module,
 	
 	if (ret == -1) {
 		ldb_debug(module->ldb, LDB_DEBUG_FATAL, "samldb_get_new_sid: error searching for proposed sid!\n");
-		return -1;
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	dom_sid = dom_sid_dup(mem_ctx, sid);
@@ -393,18 +393,18 @@ int samldb_notice_sid(struct ldb_module *module,
 			   ldap_encode_ndr_dom_sid(mem_ctx, dom_sid));
 	if (ret == 0) {
 		/* This isn't an operation on a domain we know about, so nothing to update */
-		return 0;
+		return LDB_SUCCESS;
 	}
 
 	if (ret > 1) {
 		ldb_debug(module->ldb, LDB_DEBUG_FATAL, "samldb_get_new_sid: error retrieving domain from sid: duplicate domains!\n");
 		talloc_free(dom_msgs);
-		return -1;
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	if (ret != 1) {
 		ldb_debug(module->ldb, LDB_DEBUG_FATAL, "samldb_get_new_sid: error retrieving domain sid!\n");
-		return -1;
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	dom_dn = dom_msgs[0]->dn;
@@ -442,7 +442,7 @@ static int samldb_handle_sid(struct ldb_module *module,
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 		talloc_free(sid);
-		ret = 0;
+		ret = LDB_SUCCESS;
 	} else {
 		ret = samldb_notice_sid(module, msg2, sid);
 	}
@@ -587,12 +587,12 @@ static int samldb_fill_group_object(struct ldb_module *module, const struct ldb_
 	/* Manage SID allocation, conflicts etc */
 	ret = samldb_handle_sid(module, mem_ctx, msg2); 
 
-	if (ret == 0) {
+	if (ret == LDB_SUCCESS) {
 		talloc_steal(msg, msg2);
 		*ret_msg = msg2;
 	}
 	talloc_free(mem_ctx);
-	return 0;
+	return ret;
 }
 
 static int samldb_fill_user_or_computer_object(struct ldb_module *module, const struct ldb_message *msg,
@@ -685,7 +685,7 @@ static int samldb_fill_user_or_computer_object(struct ldb_module *module, const 
 		talloc_steal(msg, msg2);
 	}
 	talloc_free(mem_ctx);
-	return 0;
+	return ret;
 }
 	
 static int samldb_fill_foreignSecurityPrincipal_object(struct ldb_module *module, const struct ldb_message *msg, 
