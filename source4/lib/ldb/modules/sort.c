@@ -47,7 +47,6 @@ struct sort_async_context {
 	struct ldb_module *module;
 	void *up_context;
 	int (*up_callback)(struct ldb_context *, void *, struct ldb_async_result *);
-	int timeout;
 
 	char *attributeName;
 	char *orderingRule;
@@ -66,8 +65,7 @@ struct sort_async_context {
 
 static struct ldb_async_handle *init_handle(void *mem_ctx, struct ldb_module *module,
 					    void *context,
-					    int (*callback)(struct ldb_context *, void *, struct ldb_async_result *),
-					    int timeout)
+					    int (*callback)(struct ldb_context *, void *, struct ldb_async_result *))
 {
 	struct sort_async_context *ac;
 	struct ldb_async_handle *h;
@@ -95,7 +93,6 @@ static struct ldb_async_handle *init_handle(void *mem_ctx, struct ldb_module *mo
 	ac->module = module;
 	ac->up_context = context;
 	ac->up_callback = callback;
-	ac->timeout = timeout;
 
 	return h;
 }
@@ -143,33 +140,6 @@ static int build_response(void *mem_ctx, struct ldb_control ***ctrls, int result
 }
 
 static int sort_compare(struct ldb_message **msg1, struct ldb_message **msg2, void *opaque)
-{
-	struct opaque *data = (struct opaque *)opaque;
-	struct ldb_message_element *el1, *el2;
-
-	if (data->result != 0) {
-		/* an error occurred previously,
-		 * let's exit the sorting by returning always 0 */
-		return 0;
-	}
-
-	el1 = ldb_msg_find_element(*msg1, data->attribute);
-	el2 = ldb_msg_find_element(*msg2, data->attribute);
-
-	if (!el1 || !el2) {
-		/* the attribute was not found return and
-		 * set an error */
-		data->result = 53;
-		return 0;
-	}
-
-	if (data->reverse)
-		return data->h->comparison_fn(data->ldb, data, &el2->values[0], &el1->values[0]);
-
-	return data->h->comparison_fn(data->ldb, data, &el1->values[0], &el2->values[0]);
-}
-
-static int sort_compare_async(struct ldb_message **msg1, struct ldb_message **msg2, void *opaque)
 {
 	struct sort_async_context *ac = talloc_get_type(opaque, struct sort_async_context);
 	struct ldb_message_element *el1, *el2;
@@ -279,7 +249,7 @@ static int server_sort_search(struct ldb_module *module, struct ldb_request *req
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 	
-	h = init_handle(req, module, req->async.context, req->async.callback, req->async.timeout);
+	h = init_handle(req, module, req->async.context, req->async.callback);
 	if (!h) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
@@ -342,7 +312,7 @@ static int server_sort_search(struct ldb_module *module, struct ldb_request *req
 
 	ac->req->async.context = ac;
 	ac->req->async.callback = server_sort_search_callback;
-	ac->req->async.timeout = req->async.timeout;
+	ldb_set_timeout_from_prev_req(module->ldb, req, ac->req);
 
 	req->async.handle = h;
 
@@ -362,7 +332,7 @@ static int server_sort_results(struct ldb_async_handle *handle)
 
 	ldb_qsort(ac->msgs, ac->num_msgs,
 		  sizeof(struct ldb_message *),
-		  ac, (ldb_qsort_cmp_fn_t)sort_compare_async);
+		  ac, (ldb_qsort_cmp_fn_t)sort_compare);
 
 	for (i = 0; i < ac->num_msgs; i++) {
 		ares = talloc_zero(ac, struct ldb_async_result);

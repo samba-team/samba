@@ -510,6 +510,7 @@ static int build_domain_data_request(struct ph_async_context *ac,
 	ac->dom_req->async.context = ac;
 	ac->dom_req->async.callback = get_domain_data_callback;
 	ac->dom_req->async.timeout = ac->orig_req->async.timeout;
+	ldb_set_timeout_from_prev_req(ac->module->ldb, ac->orig_req, ac->dom_req);
 
 	return LDB_SUCCESS;
 }
@@ -634,7 +635,7 @@ static int password_hash_add_do_add(struct ldb_async_handle *h) {
 	if (ac->down_req->op.add.message == NULL) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
-	
+
 	/* Some operations below require kerberos contexts */
 	if (smb_krb5_init_context(ac->down_req, &smb_krb5_context) != 0) {
 		return LDB_ERR_OPERATIONS_ERROR;
@@ -684,6 +685,8 @@ static int password_hash_add_do_add(struct ldb_async_handle *h) {
 	h->status = LDB_SUCCESS;
 
 	ac->step = PH_ADD_DO_ADD;
+
+	ldb_set_timeout_from_prev_req(ac->module->ldb, ac->orig_req, ac->down_req);
 
 	/* perform the operation */
 	return ldb_next_request(ac->module, ac->down_req);
@@ -777,6 +780,8 @@ static int password_hash_modify(struct ldb_module *module, struct ldb_request *r
 
 	ac->step = PH_MOD_DO_REQ;
 
+	ldb_set_timeout_from_prev_req(module->ldb, req, ac->down_req);
+
 	return ldb_next_request(module, ac->down_req);
 }
 
@@ -848,7 +853,7 @@ static int password_hash_mod_search_self(struct ldb_async_handle *h) {
 	ac->search_req->controls = NULL;
 	ac->search_req->async.context = ac;
 	ac->search_req->async.callback = get_self_callback;
-	ac->search_req->async.timeout = ac->orig_req->async.timeout;
+	ldb_set_timeout_from_prev_req(ac->module->ldb, ac->orig_req, ac->search_req);
 
 	ac->step = PH_MOD_SEARCH_SELF;
 
@@ -1000,6 +1005,8 @@ static int password_hash_mod_do_mod(struct ldb_async_handle *h) {
 	h->status = LDB_SUCCESS;
 
 	ac->step = PH_MOD_DO_MOD;
+
+	ldb_set_timeout_from_prev_req(ac->module->ldb, ac->orig_req, ac->mod_req);
 
 	/* perform the search */
 	return ldb_next_request(ac->module, ac->mod_req);

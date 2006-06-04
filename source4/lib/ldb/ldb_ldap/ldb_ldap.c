@@ -46,13 +46,13 @@
 
 struct lldb_private {
 	LDAP *ldap;
-	int timeout;
 };
 
 struct lldb_async_context {
 	struct ldb_module *module;
 	int msgid;
 	int timeout;
+	time_t starttime;
 	void *context;
 	int (*callback)(struct ldb_context *, void *, struct ldb_async_result *);
 };
@@ -65,7 +65,7 @@ static int lldb_ldap_to_ldb(int err) {
 static struct ldb_async_handle *init_handle(struct lldb_private *lldb, struct ldb_module *module,
 					    void *context,
 					    int (*callback)(struct ldb_context *, void *, struct ldb_async_result *),
-					    int timeout)
+					    int timeout, time_t starttime)
 {
 	struct lldb_async_context *ac;
 	struct ldb_async_handle *h;
@@ -94,6 +94,7 @@ static struct ldb_async_handle *init_handle(struct lldb_private *lldb, struct ld
 	ac->context = context;
 	ac->callback = callback;
 	ac->timeout = timeout;
+	ac->starttime = starttime;
 	ac->msgid = 0;
 
 	return h;
@@ -248,7 +249,7 @@ static int lldb_search(struct ldb_module *module, struct ldb_request *req)
 		ldb_debug(module->ldb, LDB_DEBUG_WARNING, "Controls are not yet supported by ldb_ldap backend!\n");
 	}
 
-	req->async.handle = init_handle(lldb, module, req->async.context, req->async.callback, req->async.timeout);
+	req->async.handle = init_handle(lldb, module, req->async.context, req->async.callback, req->async.timeout, req->async.starttime);
 	if (req->async.handle == NULL) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
@@ -316,7 +317,7 @@ static int lldb_add(struct ldb_module *module, struct ldb_request *req)
 		return LDB_ERR_INVALID_DN_SYNTAX;
 	}
 
-	req->async.handle = init_handle(lldb, module, req->async.context, req->async.callback, req->async.timeout);
+	req->async.handle = init_handle(lldb, module, req->async.context, req->async.callback, req->async.timeout, req->async.starttime);
 	if (req->async.handle == NULL) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
@@ -361,7 +362,7 @@ static int lldb_modify(struct ldb_module *module, struct ldb_request *req)
 		return LDB_ERR_INVALID_DN_SYNTAX;
 	}
 
-	req->async.handle = init_handle(lldb, module, req->async.context, req->async.callback, req->async.timeout);
+	req->async.handle = init_handle(lldb, module, req->async.context, req->async.callback, req->async.timeout, req->async.starttime);
 	if (req->async.handle == NULL) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
@@ -405,7 +406,7 @@ static int lldb_delete(struct ldb_module *module, struct ldb_request *req)
 		return LDB_ERR_INVALID_DN_SYNTAX;
 	}
 
-	req->async.handle = init_handle(lldb, module, req->async.context, req->async.callback, req->async.timeout);
+	req->async.handle = init_handle(lldb, module, req->async.context, req->async.callback, req->async.timeout, req->async.starttime);
 	if (req->async.handle == NULL) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
@@ -443,7 +444,7 @@ static int lldb_rename(struct ldb_module *module, struct ldb_request *req)
 		return LDB_ERR_INVALID_DN_SYNTAX;
 	}
 
-	req->async.handle = init_handle(lldb, module, req->async.context, req->async.callback, req->async.timeout);
+	req->async.handle = init_handle(lldb, module, req->async.context, req->async.callback, req->async.timeout, req->async.starttime);
 	if (req->async.handle == NULL) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
@@ -661,6 +662,12 @@ static int lldb_async_wait(struct ldb_async_handle *handle, enum ldb_async_wait_
 
 	switch(type) {
 	case LDB_WAIT_NONE:
+
+		if ((ac->timeout != -1) &&
+		    ((ac->starttime + timeout) > time(NULL))) {
+			return LDB_ERR_TIME_LIMIT_EXCEEDED;
+		}
+
 		timeout.tv_sec = 0;
 		timeout.tv_usec = 0;
 
@@ -676,13 +683,19 @@ static int lldb_async_wait(struct ldb_async_handle *handle, enum ldb_async_wait_
 		return lldb_parse_result(handle, result);
 
 	case LDB_WAIT_ALL:
-		timeout.tv_sec = ac->timeout;
 		timeout.tv_usec = 0;
 		ret = LDB_ERR_OPERATIONS_ERROR;
 
 		while (handle->status == LDB_SUCCESS && handle->state != LDB_ASYNC_DONE) {
 
-			lret = ldap_result(lldb->ldap, ac->msgid, 0, &timeout, &result);
+			if (ac->timeout == -1) {
+				lret = ldap_result(lldb->ldap, ac->msgid, 0, NULL, &result);
+			} else {
+				timeout.tv_sec = ac->timeout - (time(NULL) - ac->starttime);
+				if (timeout.tv_sec <= 0)
+					return LDB_ERR_TIME_LIMIT_EXCEEDED;
+				lret = ldap_result(lldb->ldap, ac->msgid, 0, &timeout, &result);
+			}
 			if (lret == -1) {
 				return LDB_ERR_OPERATIONS_ERROR;
 			}
@@ -773,7 +786,6 @@ static int lldb_connect(struct ldb_context *ldb,
 	}
 
 	lldb->ldap = NULL;
-	lldb->timeout = 120; /* TODO: get timeout from options ? */
 
 	ret = ldap_initialize(&lldb->ldap, url);
 	if (ret != LDAP_SUCCESS) {

@@ -226,7 +226,7 @@ static int rdn_name_rename_do_mod(struct ldb_async_handle *h) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	ac->mod_req->async.timeout = ac->orig_req->async.timeout;
+	ldb_set_timeout_from_prev_req(h->module->ldb, ac->orig_req, ac->mod_req);
 
 	ac->step = RENAME_MODIFY;
 

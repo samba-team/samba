@@ -658,6 +658,7 @@ struct ldb_request {
 		int (*callback)(struct ldb_context *, void *, struct ldb_async_result *);
 
 		int timeout;
+		time_t starttime;
 		struct ldb_async_handle *handle;
 	} async;
 };
@@ -665,6 +666,9 @@ struct ldb_request {
 int ldb_request(struct ldb_context *ldb, struct ldb_request *request);
 
 int ldb_async_wait(struct ldb_async_handle *handle, enum ldb_async_wait_type type);
+
+int ldb_set_timeout(struct ldb_context *ldb, struct ldb_request *req, int timeout);
+int ldb_set_timeout_from_prev_req(struct ldb_context *ldb, struct ldb_request *oldreq, struct ldb_request *newreq);
 
 /**
   Initialise ldbs' global information
