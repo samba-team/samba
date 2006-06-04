@@ -11,6 +11,9 @@
 	EXAMPLE.ORG = {
 		kdc = localhost:8888
 	}
+	EXAMPLE.COM = {
+		kdc = localhost:8888
+	}
 
 [kdc]
 	enable-pkinit = true
