@@ -509,7 +509,7 @@ SMBPASSWD_OBJ = utils/smbpasswd.o utils/passwd_util.o $(PASSCHANGE_OBJ) \
 PDBEDIT_OBJ = utils/pdbedit.o utils/passwd_util.o $(PARAM_OBJ) $(PASSDB_OBJ) \
 		$(LIBSAMBA_OBJ) $(LIB_NONSMBD_OBJ) $(GROUPDB_OBJ) \
 		$(SECRETS_OBJ) $(POPT_LIB_OBJ) $(SMBLDAP_OBJ) libsmb/asn1.o \
-		$(RPC_PARSE_OBJ1) $(DOSERR_OBJ)
+		$(RPC_PARSE_OBJ1) $(DOSERR_OBJ) libsmb/errormap.o
 
 SMBGET_OBJ = utils/smbget.o $(POPT_LIB_OBJ) $(LIBSMBCLIENT_OBJ)
 
@@ -781,7 +781,8 @@ NTLM_AUTH_OBJ = ${NTLM_AUTH_OBJ1} $(LIBSAMBA_OBJ) $(POPT_LIB_OBJ) \
 		libsmb/asn1.o libsmb/spnego.o libsmb/clikrb5.o libads/kerberos.o \
 		libads/kerberos_verify.o $(SECRETS_OBJ) $(SERVER_MUTEX_OBJ) \
 		libads/authdata.o $(RPC_PARSE_OBJ1) $(PASSDB_OBJ) $(GROUPDB_OBJ) \
-		$(SMBLDAP_OBJ) $(DOSERR_OBJ) rpc_parse/parse_net.o $(LIBNMB_OBJ)
+		$(SMBLDAP_OBJ) $(DOSERR_OBJ) rpc_parse/parse_net.o $(LIBNMB_OBJ) \
+		libsmb/errormap.o
 
 ######################################################################
 # now the rules...
