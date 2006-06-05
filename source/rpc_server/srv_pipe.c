@@ -46,6 +46,11 @@ static void free_pipe_ntlmssp_auth_data(struct pipe_auth_data *auth)
 	auth->a_u.auth_ntlmssp_state = NULL;
 }
 
+static DATA_BLOB generic_session_key(void)
+{
+	return data_blob("SystemLibraryDTC", 16);
+}
+
 /*******************************************************************
  Generate the next PDU to be returned from the data in p->rdata. 
  Handle NTLMSSP.
@@ -657,11 +662,13 @@ static BOOL pipe_ntlmssp_verify_final(pipes_struct *p, DATA_BLOB *p_resp_blob)
 	p->pipe_user.ut.gid = a->server_info->gid;
 	
 	/*
-	 * Copy the session key from the ntlmssp state.
+	 * We're an authenticated bind over smbd, so the session key needs to
+	 * be set to "SystemLibraryDTC". Weird, but this is what Windows
+	 * does. See the RPC-SAMBA3SESSIONKEY.
 	 */
 
 	data_blob_free(&p->session_key);
-	p->session_key = data_blob(a->ntlmssp_state->session_key.data, a->ntlmssp_state->session_key.length);
+	p->session_key = generic_session_key();
 	if (!p->session_key.data) {
 		return False;
 	}
@@ -1340,7 +1347,20 @@ static BOOL pipe_schannel_auth_bind(pipes_struct *p, prs_struct *rpc_in_p,
 	 * JRA. Should we also copy the schannel session key into the pipe session key p->session_key
 	 * here ? We do that for NTLMSSP, but the session key is already set up from the vuser
 	 * struct of the person who opened the pipe. I need to test this further. JRA.
+	 *
+	 * VL. As we are mapping this to guest set the generic key
+	 * "SystemLibraryDTC" key here. It's a bit difficult to test against
+	 * W2k3, as it does not allow schannel binds against SAMR and LSA
+	 * anymore.
 	 */
+
+	data_blob_free(&p->session_key);
+	p->session_key = generic_session_key();
+	if (p->session_key.data == NULL) {
+		DEBUG(0, ("pipe_schannel_auth_bind: Could not alloc session"
+			  " key\n"));
+		return False;
+	}
 
 	init_rpc_hdr_auth(&auth_info, RPC_SCHANNEL_AUTH_TYPE, pauth_info->auth_level, RPC_HDR_AUTH_LEN, 1);
 	if(!smb_io_rpc_hdr_auth("", &auth_info, pout_auth, 0)) {
@@ -1625,6 +1645,8 @@ BOOL api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p)
 			/* We must set the pipe auth_level here also. */
 			p->auth.auth_level = PIPE_AUTH_LEVEL_NONE;
 			p->pipe_bound = True;
+			/* The session key was initialized from the SMB
+			 * session in make_internal_rpc_pipe_p */
 			break;
 
 		default:
