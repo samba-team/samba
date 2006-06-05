@@ -153,7 +153,6 @@ void get_process_uptime(struct timeval *ret_time)
 
 	GetTimeOfDay(&time_now_hires);
 	ret_time->tv_sec = time_now_hires.tv_sec - start_time_hires.tv_sec;
-	ret_time->tv_usec = time_now_hires.tv_usec - start_time_hires.tv_usec;
 	if (time_now_hires.tv_usec < start_time_hires.tv_usec) {
 		ret_time->tv_sec -= 1;
 		ret_time->tv_usec = 1000000 + (time_now_hires.tv_usec - start_time_hires.tv_usec);
