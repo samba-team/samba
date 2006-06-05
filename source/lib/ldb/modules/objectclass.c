@@ -96,12 +96,10 @@ static int objectclass_add(struct ldb_module *module, struct ldb_request *req)
 	
 	objectClassAttr = ldb_msg_find_element(req->op.add.message, "objectClass");
 
-	/* If no part of this touches the objectClass, then we don't
-	 * need to make any changes.  */
-	/* If the only operation is the deletion of the objectClass then go on */
+	/* If no part of this add has an objectClass, then we don't
+	 * need to make any changes. cn=rootdse doesn't have an objectClass */
 	if (!objectClassAttr) {
-		ldb_set_errstring(module->ldb, talloc_asprintf(ac, "Object class violation: no objectClass present"));
-		return LDB_ERR_OBJECT_CLASS_VIOLATION;
+		return ldb_next_request(module, req);
 	}
 
 	h = oc_init_handle(req, module);
