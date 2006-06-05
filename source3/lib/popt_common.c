@@ -56,7 +56,6 @@ static void set_logfile(poptContext con, const char * arg)
 
 	pstr_sprintf(logfile, "%s/log.%s", arg, pname);
 	lp_set_logfile(logfile);
-	override_logfile = True;
 }
 
 static void popt_common_callback(poptContext con,
@@ -104,6 +103,7 @@ static void popt_common_callback(poptContext con,
 	case 'l':
 		if (arg) {
 			set_logfile(con, arg);
+			override_logfile = True;
 			pstr_sprintf(dyn_LOGFILEBASE, "%s", arg);
 		}
 		break;
