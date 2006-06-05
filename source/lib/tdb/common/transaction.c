@@ -701,7 +701,7 @@ static int transaction_setup_recovery(struct tdb_context *tdb,
 			continue;
 		}
 		if (el->offset + el->length > tdb->transaction->old_map_size) {
-			TDB_LOG((tdb, 0, "tdb_transaction_commit: transaction data over new region boundary\n"));
+			TDB_LOG((tdb, 0, "tdb_transaction_setup_recovery: transaction data over new region boundary\n"));
 			free(data);
 			tdb->ecode = TDB_ERR_CORRUPT;
 			return -1;
@@ -729,7 +729,7 @@ static int transaction_setup_recovery(struct tdb_context *tdb,
 
 	/* write the recovery data to the recovery area */
 	if (methods->tdb_write(tdb, recovery_offset, data, sizeof(*rec) + recovery_size) == -1) {
-		TDB_LOG((tdb, 0, "tdb_transaction_commit: failed to write recovery data\n"));
+		TDB_LOG((tdb, 0, "tdb_transaction_setup_recovery: failed to write recovery data\n"));
 		free(data);
 		tdb->ecode = TDB_ERR_IO;
 		return -1;
@@ -751,7 +751,7 @@ static int transaction_setup_recovery(struct tdb_context *tdb,
 	*magic_offset = recovery_offset + offsetof(struct list_struct, magic);
 
 	if (methods->tdb_write(tdb, *magic_offset, &magic, sizeof(magic)) == -1) {
-		TDB_LOG((tdb, 0, "tdb_transaction_commit: failed to write recovery magic\n"));
+		TDB_LOG((tdb, 0, "tdb_transaction_setup_recovery: failed to write recovery magic\n"));
 		tdb->ecode = TDB_ERR_IO;
 		return -1;
 	}
