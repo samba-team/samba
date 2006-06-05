@@ -307,6 +307,8 @@ BOOL torture_bind_samba3(struct torture_context *torture)
 static NTSTATUS get_usr_handle(struct smbcli_state *cli,
 			       TALLOC_CTX *mem_ctx,
 			       struct cli_credentials *admin_creds,
+			       uint8_t auth_type,
+			       uint8_t auth_level,
 			       const char *wks_name,
 			       char **domain,
 			       struct dcerpc_pipe **result_pipe,
@@ -343,12 +345,23 @@ static NTSTATUS get_usr_handle(struct smbcli_state *cli,
 		goto fail;
 	}
 
-	status = dcerpc_bind_auth(samr_pipe, &dcerpc_table_samr,
-				  admin_creds, DCERPC_AUTH_TYPE_NTLMSSP,
-				  DCERPC_AUTH_LEVEL_INTEGRITY, NULL);
-	if (!NT_STATUS_IS_OK(status)) {
-		d_printf("dcerpc_bind_auth failed: %s\n", nt_errstr(status));
-		goto fail;
+	if (admin_creds != NULL) {
+		status = dcerpc_bind_auth(samr_pipe, &dcerpc_table_samr,
+					  admin_creds, auth_type, auth_level,
+					  NULL);
+		if (!NT_STATUS_IS_OK(status)) {
+			d_printf("dcerpc_bind_auth failed: %s\n",
+				 nt_errstr(status));
+			goto fail;
+		}
+	} else {
+		/* We must have an authenticated SMB connection */
+		status = dcerpc_bind_auth_none(samr_pipe, &dcerpc_table_samr);
+		if (!NT_STATUS_IS_OK(status)) {
+			d_printf("dcerpc_bind_auth_none failed: %s\n",
+				 nt_errstr(status));
+			goto fail;
+		}
 	}
 
 	conn.in.system_name = talloc_asprintf(
@@ -479,6 +492,8 @@ static BOOL join3(struct smbcli_state *cli,
 	}
 
 	status = get_usr_handle(cli, mem_ctx, admin_creds,
+				DCERPC_AUTH_TYPE_NTLMSSP,
+				DCERPC_AUTH_LEVEL_PRIVACY,
 				cli_credentials_get_workstation(wks_creds),
 				&dom_name, &samr_pipe, &wks_handle);
 
@@ -576,8 +591,6 @@ static BOOL auth2(struct smbcli_state *cli,
 			 nt_errstr(status));
 		goto done;
 	}
-
-	d_printf("Got the netlogon pipe\n");
 
 	status = dcerpc_bind_auth_none(net_pipe, &dcerpc_table_netlogon);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -858,12 +871,14 @@ static BOOL leave(struct smbcli_state *cli,
 	struct policy_handle *wks_handle;
 	BOOL ret = False;
 
-	if ((mem_ctx = talloc_init("join3")) == NULL) {
+	if ((mem_ctx = talloc_init("leave")) == NULL) {
 		d_printf("talloc_init failed\n");
 		return False;
 	}
 
 	status = get_usr_handle(cli, mem_ctx, admin_creds,
+				DCERPC_AUTH_TYPE_NTLMSSP,
+				DCERPC_AUTH_LEVEL_INTEGRITY,
 				cli_credentials_get_workstation(wks_creds),
 				&dom_name, &samr_pipe, &wks_handle);
 
@@ -947,7 +962,7 @@ BOOL torture_netlogon_samba3(struct torture_context *torture)
 	cli_credentials_set_secure_channel_type(wks_creds, SEC_CHAN_WKSTA);
 	cli_credentials_set_username(wks_creds, wks_name, CRED_SPECIFIED);
 	cli_credentials_set_workstation(wks_creds, wks_name, CRED_SPECIFIED);
-	cli_credentials_set_password(wks_creds, "blub", CRED_SPECIFIED);
+	cli_credentials_set_password(wks_creds, "", CRED_SPECIFIED);
 
 	if (!join3(cli, cmdline_credentials, wks_creds)) {
 		d_printf("join failed\n");
@@ -988,5 +1003,133 @@ BOOL torture_netlogon_samba3(struct torture_context *torture)
 
  done:
 	talloc_free(mem_ctx);
+	return ret;
+}
+
+/*
+ * Do a simple join, testjoin and leave using specified smb and samr
+ * credentials
+ */
+
+static BOOL test_join3(TALLOC_CTX *mem_ctx,
+		       struct cli_credentials *smb_creds,
+		       struct cli_credentials *samr_creds,
+		       const char *wks_name)
+{
+	NTSTATUS status;
+	BOOL ret = False;
+	struct smbcli_state *cli;
+	struct cli_credentials *wks_creds;
+
+	status = smbcli_full_connection(mem_ctx, &cli,
+					lp_parm_string(-1, "torture", "host"),
+					"IPC$", NULL, smb_creds, NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("smbcli_full_connection failed: %s\n",
+			 nt_errstr(status));
+		goto done;
+	}
+
+	wks_creds = cli_credentials_init(cli);
+	if (wks_creds == NULL) {
+		d_printf("cli_credentials_init failed\n");
+		goto done;
+	}
+
+	cli_credentials_set_conf(wks_creds);
+	cli_credentials_set_secure_channel_type(wks_creds, SEC_CHAN_WKSTA);
+	cli_credentials_set_username(wks_creds, wks_name, CRED_SPECIFIED);
+	cli_credentials_set_workstation(wks_creds, wks_name, CRED_SPECIFIED);
+	cli_credentials_set_password(wks_creds, "", CRED_SPECIFIED);
+
+	if (!join3(cli, samr_creds, wks_creds)) {
+		d_printf("join failed\n");
+		goto done;
+	}
+
+	cli_credentials_set_domain(
+		cmdline_credentials, cli_credentials_get_domain(wks_creds),
+		CRED_SPECIFIED);
+
+	if (!auth2(cli, wks_creds)) {
+		d_printf("auth2 failed\n");
+		goto done;
+	}
+
+	if (!leave(cli, samr_creds, wks_creds)) {
+		d_printf("leave failed\n");
+		goto done;
+	}
+
+	talloc_free(cli);
+
+	ret = True;
+
+ done:
+	return ret;
+}
+
+/*
+ * Test the different session key variants. Do it by joining, this uses the
+ * session key in the setpassword routine. Test the join by doing the auth2.
+ */
+
+BOOL torture_samba3_sessionkey(struct torture_context *torture)
+{
+	TALLOC_CTX *mem_ctx;
+	BOOL ret = False;
+	struct cli_credentials *anon_creds;
+	const char *wks_name;
+
+	wks_name = lp_parm_string(-1, "torture", "wksname");
+	if (wks_name == NULL) {
+		wks_name = get_myname();
+	}
+
+	mem_ctx = talloc_init("torture_bind_authcontext");
+
+	if (mem_ctx == NULL) {
+		d_printf("talloc_init failed\n");
+		return False;
+	}
+
+	anon_creds = cli_credentials_init(mem_ctx);
+	if (anon_creds == NULL) {
+		d_printf("cli_credentials_init failed\n");
+		goto done;
+	}
+
+	cli_credentials_set_conf(anon_creds);
+	cli_credentials_set_anonymous(anon_creds);
+
+	if (test_join3(mem_ctx, anon_creds, NULL, wks_name)) {
+		d_printf("join using anonymous bind on an anonymous smb "
+			 "connection succeeded -- HUH??\n");
+		goto done;
+	}
+
+	if (!test_join3(mem_ctx, anon_creds, cmdline_credentials, wks_name)) {
+		d_printf("join using ntlmssp bind on an anonymous smb "
+			 "connection failed\n");
+		goto done;
+	}
+
+	if (!test_join3(mem_ctx, cmdline_credentials, NULL, wks_name)) {
+		d_printf("join using anonymous bind on an authenticated smb "
+			 "connection failed\n");
+		goto done;
+	}
+
+	if (!test_join3(mem_ctx, cmdline_credentials, cmdline_credentials,
+			wks_name)) {
+		d_printf("join using ntlmssp bind on an authenticated smb "
+			 "connection failed\n");
+		goto done;
+	}
+
+	ret = True;
+
+ done:
+
 	return ret;
 }
