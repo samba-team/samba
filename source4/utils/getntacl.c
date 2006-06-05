@@ -23,8 +23,7 @@
 #include "includes.h"
 #include "system/filesys.h"
 #include "librpc/gen_ndr/ndr_xattr.h"
-
-#if HAVE_XATTR_SUPPORT	
+#include "lib/util/wrap_xattr.h"
 
 static void ntacl_print_debug_helper(struct ndr_print *ndr, const char *format, ...) PRINTF_ATTRIBUTE(2,3);
 
@@ -57,7 +56,7 @@ static NTSTATUS get_ntacl(char *filename, struct xattr_NTACL **ntacl,
 
 	*ntacl = talloc(NULL, struct xattr_NTACL);
 
-	size = getxattr(filename, XATTR_NTACL_NAME, NULL, 0);
+	size = wrap_getxattr(filename, XATTR_NTACL_NAME, NULL, 0);
 
 	if (size < 0) {
 		fprintf(stderr, "get_ntacl: %s\n", strerror(errno));
@@ -65,7 +64,7 @@ static NTSTATUS get_ntacl(char *filename, struct xattr_NTACL **ntacl,
 	}
 
 	blob.data = talloc_size(*ntacl, size);
-	size = getxattr(filename, XATTR_NTACL_NAME, blob.data, size);
+	size = wrap_getxattr(filename, XATTR_NTACL_NAME, blob.data, size);
 	if (size < 0) {
 		fprintf(stderr, "get_ntacl: %s\n", strerror(errno));
 		return NT_STATUS_INTERNAL_ERROR;
@@ -109,14 +108,3 @@ int main(int argc, char *argv[])
 
 	return 0;
 }
-
-#else
-
-int main(int argc, char *argv[])
-{
-	printf("getntacl: not compiled with xattr support!\n");
-	return 1;
-
-}
-
-#endif
