@@ -142,6 +142,7 @@ OBJ_FILES = \
 		rpc/dssetup.o \
 		rpc/alter_context.o \
 		rpc/bench.o \
+		rpc/samba3rpc.o \
 		rpc/rpc.o \
 		rpc/async_bind.o
 PUBLIC_DEPENDENCIES = \
