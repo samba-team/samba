@@ -125,6 +125,7 @@ NTSTATUS torture_rpc_init(void)
 	register_torture_op("RPC-AUTHCONTEXT", torture_bind_authcontext, 0);
 	register_torture_op("RPC-BINDSAMBA3", torture_bind_samba3, 0);
 	register_torture_op("RPC-NETLOGSAMBA3", torture_netlogon_samba3, 0);
+	register_torture_op("RPC-SAMBA3SESSIONKEY", torture_samba3_sessionkey, 0);
 	register_torture_op("RPC-DRSUAPI", torture_rpc_drsuapi, 0);
 	register_torture_op("RPC-CRACKNAMES", torture_rpc_drsuapi_cracknames, 0);
 	register_torture_op("RPC-ROT", torture_rpc_rot, 0);
