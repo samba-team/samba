@@ -22,76 +22,7 @@
 
 #include "includes.h"
 #include "vfs_posix.h"
-
-#if defined(HAVE_XATTR_SUPPORT) && defined(XATTR_ADDITIONAL_OPTIONS)
-static ssize_t _wrap_darwin_fgetxattr(int fd, const char *name, void *value, size_t size)
-{
-	return fgetxattr(fd, name, value, size, 0, 0);
-}
-static ssize_t _wrap_darwin_getxattr(const char *path, const char *name, void *value, size_t size)
-{
-	return getxattr(path, name, value, size, 0, 0);
-}
-static int _wrap_darwin_fsetxattr(int fd, const char *name, void *value, size_t size, int flags)
-{
-	return fsetxattr(fd, name, value, size, 0, flags);
-}
-static int _wrap_darwin_setxattr(const char *path, const char *name, void *value, size_t size, int flags)
-{
-	return setxattr(path, name, value, size, 0, flags);
-}
-static int _wrap_darwin_fremovexattr(int fd, const char *name)
-{
-	return fremovexattr(fd, name, 0);
-}
-static int _wrap_darwin_removexattr(const char *path, const char *name)
-{
-	return removexattr(path, name, 0);
-}
-#define fgetxattr	_wrap_darwin_fgetxattr
-#define getxattr	_wrap_darwin_getxattr
-#define fsetxattr	_wrap_darwin_fsetxattr
-#define setxattr	_wrap_darwin_setxattr
-#define fremovexattr	_wrap_darwin_fremovexattr
-#define removexattr	_wrap_darwin_removexattr
-#elif !defined(HAVE_XATTR_SUPPORT)
-static ssize_t _none_fgetxattr(int fd, const char *name, void *value, size_t size)
-{
-	errno = ENOSYS;
-	return -1;
-}
-static ssize_t _none_getxattr(const char *path, const char *name, void *value, size_t size)
-{
-	errno = ENOSYS;
-	return -1;
-}
-static int _none_fsetxattr(int fd, const char *name, void *value, size_t size, int flags)
-{
-	errno = ENOSYS;
-	return -1;
-}
-static int _none_setxattr(const char *path, const char *name, void *value, size_t size, int flags)
-{
-	errno = ENOSYS;
-	return -1;
-}
-static int _none_fremovexattr(int fd, const char *name)
-{
-	errno = ENOSYS;
-	return -1;
-}
-static int _none_removexattr(const char *path, const char *name)
-{
-	errno = ENOSYS;
-	return -1;
-}
-#define fgetxattr	_none_fgetxattr
-#define getxattr	_none_getxattr
-#define fsetxattr	_none_fsetxattr
-#define setxattr	_none_setxattr
-#define fremovexattr	_none_fremovexattr
-#define removexattr	_none_removexattr
-#endif
+#include "lib/util/wrap_xattr.h"
 
 /*
   pull a xattr as a blob, from either a file or a file descriptor
@@ -113,9 +44,9 @@ NTSTATUS pull_xattr_blob_system(struct pvfs_state *pvfs,
 
 again:
 	if (fd != -1) {
-		ret = fgetxattr(fd, attr_name, blob->data, estimated_size);
+		ret = wrap_fgetxattr(fd, attr_name, blob->data, estimated_size);
 	} else {
-		ret = getxattr(fname, attr_name, blob->data, estimated_size);
+		ret = wrap_getxattr(fname, attr_name, blob->data, estimated_size);
 	}
 	if (ret == -1 && errno == ERANGE) {
 		estimated_size *= 2;
@@ -150,9 +81,9 @@ NTSTATUS push_xattr_blob_system(struct pvfs_state *pvfs,
 	int ret;
 
 	if (fd != -1) {
-		ret = fsetxattr(fd, attr_name, blob->data, blob->length, 0);
+		ret = wrap_fsetxattr(fd, attr_name, blob->data, blob->length, 0);
 	} else {
-		ret = setxattr(fname, attr_name, blob->data, blob->length, 0);
+		ret = wrap_setxattr(fname, attr_name, blob->data, blob->length, 0);
 	}
 	if (ret == -1) {
 		return pvfs_map_errno(pvfs, errno);
@@ -171,9 +102,9 @@ NTSTATUS delete_xattr_system(struct pvfs_state *pvfs, const char *attr_name,
 	int ret;
 
 	if (fd != -1) {
-		ret = fremovexattr(fd, attr_name);
+		ret = wrap_fremovexattr(fd, attr_name);
 	} else {
-		ret = removexattr(fname, attr_name);
+		ret = wrap_removexattr(fname, attr_name);
 	}
 	if (ret == -1) {
 		return pvfs_map_errno(pvfs, errno);

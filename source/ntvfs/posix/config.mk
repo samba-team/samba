@@ -32,6 +32,6 @@ OBJ_FILES = \
 		pvfs_notify.o \
 		xattr_system.o \
 		xattr_tdb.o
-PUBLIC_DEPENDENCIES = NDR_XATTR XATTR BLKID ntvfs_common MESSAGING
+PUBLIC_DEPENDENCIES = NDR_XATTR WRAP_XATTR BLKID ntvfs_common MESSAGING
 # End MODULE ntvfs_posix
 ################################################
