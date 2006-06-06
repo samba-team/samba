@@ -37,6 +37,7 @@ RCSID("$Id$");
 
 static char *cache_str;
 static char *out_cache_str;
+static char *delegation_cred_str;
 static char *etype_str;
 static int transit_flag = 1;
 static int forwardable_flag;
@@ -49,6 +50,8 @@ struct getargs args[] = {
       "credential cache to use", "cache"},
     { "out-cache",	0,   arg_string, &out_cache_str,
       "credential cache to store credential in", "cache"},
+    { "delegation-credential-cache",0,arg_string, &delegation_cred_str,
+      "where to find the ticket use for delegation", "cache"},
     { "forwardable",	0, arg_flag, &forwardable_flag,
       "forwardable ticket requested"},
     { "transit-check",	0,   arg_negative_flag, &transit_flag },
@@ -76,7 +79,7 @@ main(int argc, char **argv)
     krb5_error_code ret;
     krb5_context context;
     krb5_ccache cache;
-    krb5_creds in, *out;
+    krb5_creds *out;
     int optidx = 0;
     krb5_get_creds_opt opt;
     krb5_principal server;
@@ -119,8 +122,6 @@ main(int argc, char **argv)
 	    krb5_err (context, 1, ret, "krb5_cc_resolve");
     }
 
-    memset(&in, 0, sizeof(in));
-
     ret = krb5_get_creds_opt_alloc(context, &opt);
     if (ret)
 	krb5_err (context, 1, ret, "krb5_get_creds_opt_alloc");
@@ -150,6 +151,40 @@ main(int argc, char **argv)
     if (!transit_flag)
 	krb5_get_creds_opt_add_options(context, opt, KRB5_GC_NO_TRANSIT_CHECK);
 
+    if (delegation_cred_str) {
+	krb5_ccache id;
+	krb5_creds c, mc;
+	Ticket ticket;
+
+	krb5_cc_clear_mcred(&mc);
+	ret = krb5_cc_get_principal(context, cache, &mc.server);
+	if (ret)
+	    krb5_err (context, 1, ret, "krb5_cc_get_principal");
+
+	ret = krb5_cc_resolve(context, delegation_cred_str, &id);
+	if(ret)
+	    krb5_err (context, 1, ret, "krb5_cc_resolve");
+
+	ret = krb5_cc_retrieve_cred(context, id, 0, &mc, &c);
+	if(ret)
+	    krb5_err (context, 1, ret, "krb5_cc_retrieve_cred");
+
+	ret = decode_Ticket(c.ticket.data, c.ticket.length, &ticket, NULL);
+	if (ret) {
+	    krb5_clear_error_string(context);
+	    krb5_err (context, 1, ret, "decode_Ticket");
+	}
+	krb5_free_cred_contents(context, &c);
+
+	ret = krb5_get_creds_opt_set_ticket(context, opt, &ticket);
+	if(ret)
+	    krb5_err (context, 1, ret, "krb5_get_creds_opt_set_ticket");
+	free_Ticket(&ticket);
+
+	krb5_cc_close (context, id);
+	krb5_free_principal(context, mc.server);
+    }
+
     ret = krb5_parse_name(context, argv[0], &server);
     if (ret)
 	krb5_err (context, 1, ret, "krb5_parse_name %s", argv[0]);
@@ -165,7 +200,7 @@ main(int argc, char **argv)
 	if(ret)
 	    krb5_err (context, 1, ret, "krb5_cc_resolve");
 
-	ret = krb5_cc_initialize(context, id, impersonate);
+	ret = krb5_cc_initialize(context, id, out->client);
 	if(ret)
 	    krb5_err (context, 1, ret, "krb5_cc_initialize");
 
