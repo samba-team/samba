@@ -107,6 +107,7 @@ kadm5_s_get_principal(void *server_handle,
 	out->attributes |= ent.entry.flags.server ? 0 : KRB5_KDB_DISALLOW_SVR;
 	out->attributes |= ent.entry.flags.change_pw ? KRB5_KDB_PWCHANGE_SERVICE : 0;
 	out->attributes |= ent.entry.flags.ok_as_delegate ? KRB5_KDB_OK_AS_DELEGATE : 0;
+	out->attributes |= ent.entry.flags.trusted_for_delegation ? KRB5_KDB_TRUSTED_FOR_DELEGATION : 0;
     }
     if(mask & KADM5_MAX_LIFE) {
 	if(ent.entry.max_life)
