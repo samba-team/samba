@@ -284,7 +284,7 @@ static int ldif_canonicalise_objectCategory(struct ldb_context *ldb, void *mem_c
 					    const struct ldb_val *in, struct ldb_val *out)
 {
 	struct ldb_dn *dn1 = NULL;
-	const char *oc1;
+	char *oc1;
 
 	dn1 = ldb_dn_explode(mem_ctx, (char *)in->data);
 	if (dn1 == NULL) {
