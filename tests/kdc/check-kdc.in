@@ -48,12 +48,15 @@ kdc="../../kdc/kdc --addresses=localhost -P $port"
 server=host/datan.example.org
 server2=host/computer.example.com
 cache="FILE:${objdir}/cache.krb5"
+ocache="FILE:${objdir}/ocache.krb5"
 keytabfile=${objdir}/server.keytab
 keytab="FILE:${keytabfile}"
+ps="proxy-service@${R}"
 
 kinit="../../kuser/kinit -c $cache --no-afslog"
 klist="../../kuser/klist -c $cache"
 kgetcred="../../kuser/kgetcred -c $cache"
+kgetcred_imp="../../kuser/kgetcred -c $cache --out-cache=${ocache}"
 kdestroy="../../kuser/kdestroy -c $cache"
 ktutil="../../admin/ktutil"
 hxtool="../../lib/hx509/hxtool"
@@ -83,7 +86,9 @@ ${kadmin} add -p foo --use-defaults foo@${R} || exit 1
 ${kadmin} add -p bar --use-defaults bar@${R} || exit 1
 ${kadmin} add -p foo --use-defaults remove@${R} || exit 1
 ${kadmin} add -p kaka --use-defaults ${server}@${R} || exit 1
+${kadmin} add -p foo --use-defaults ${ps} || exit 1
 ${kadmin} ext -k ${keytab} ${server}@${R} || exit 1
+${kadmin} ext -k ${keytab} ${ps} || exit 1
 
 ${kadmin} add -p kaka --use-defaults ${server2}@${R2} || exit 1
 ${kadmin} ext -k ${keytab} ${server2}@${R2} || exit 1
@@ -114,13 +119,6 @@ if tail -1 messages.log | grep "No sockets" ; then
 fi
 
 exitcode=0
-
-echo "initial tickets for deleted user test case"
-${kinit} --password-file=${objdir}/foopassword remove@$R || exitcode=1
-${kadmin} delete remove@${R} || exit 1
-echo "try getting ticket with deleted user"
-${kgetcred} ${server}@${R} 2> /dev/null && exitcode=1
-${kdestroy}
 
 echo "Getting client initial tickets"
 ${kinit} --password-file=${objdir}/foopassword foo@$R || exitcode=1
@@ -180,6 +178,13 @@ echo "Listing tickets"
 ${klist} | grep "Principal: ${server}" > /dev/null || exitcode=1
 ${kdestroy}
 
+echo "initial tickets for deleted user test case"
+${kinit} --password-file=${objdir}/foopassword remove@$R || exitcode=1
+${kadmin} delete remove@${R} || exit 1
+echo "try getting ticket with deleted user"
+${kgetcred} ${server}@${R} 2> /dev/null && exitcode=1
+${kdestroy}
+
 #echo deleting all but aes enctypes on krbtgt
 #${kadmin} del_enctype krbtgt/${R}@${R} ${enctype_sans_aes} || exit 1
 #
@@ -197,6 +202,7 @@ ${kdestroy}
 #done
 
 rsa=yes
+pkinit=no
 if ${hxtool} info | grep 'rsa: hx509 null RSA' > /dev/null ; then
     rsa=no
 fi
@@ -223,6 +229,14 @@ if test "$pkinit" = yes -a "$rsa" = yes ; then
 else
 	echo "no pkinit (pkinit: $pkinit, rsa: $rsa)"
 fi
+
+echo "tickets for impersonate test case"
+${kinit} --password-file=${objdir}/foopassword ${ps} || exitcode=1
+${kgetcred_imp} --impersonate=bar@${R} ${ps} || exitcode=1
+./ap-req ${ps} ${keytab} ${ocache} || exitcode=1
+${kgetcred_imp} --impersonate=bar@${R} foo@${R} 2>/dev/null && exitcode=1
+${kdestroy}
+
 
 echo "killing kdc (${kdcpid})"
 kill $kdcpid || exit 1
