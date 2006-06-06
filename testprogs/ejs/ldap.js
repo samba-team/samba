@@ -167,6 +167,15 @@ objectClass: user
 
 	assert(res[0].dn == res2[0].dn);
 
+	println("Testing ldb.search for (&(cn=ldaptestuser)(objectCategory=PerSon))");
+	var res3 = ldb.search("(&(cn=ldaptestuser)(objectCategory=PerSon))");
+	if (res.length != 1) {
+		println("Could not find (&(cn=ldaptestuser)(objectCategory=PerSon))");
+		assert(res.length == 1);
+	}
+
+	assert(res[0].dn == res3[0].dn);
+
 	ok = ldb.del(res[0].dn);
 	if (!ok) {
 		println(ldb.errstring());
@@ -194,12 +203,21 @@ objectClass: user
 
 	println("Testing ldb.search for (&(cn=ldaptestcomputer)(objectCategory=cn=computer,cn=schema,cn=configuration," + base_dn + "))");
 	var res2 = ldb.search("(&(cn=ldaptestcomputer)(objectCategory=cn=computer,cn=schema,cn=configuration," + base_dn + "))");
-	if (res.length != 1) {
+	if (res2.length != 1) {
 		println("Could not find (&(cn=ldaptestcomputer)(objectCategory=cn=computer,cn=schema,cn=configuration," + base_dn + "))");
-		assert(res.length == 1);
+		assert(res2.length == 1);
 	}
 
 	assert(res[0].dn == res2[0].dn);
+
+	println("Testing ldb.search for (&(cn=ldaptestcomputer)(objectCategory=compuTER))");
+	var res3 = ldb.search("(&(cn=ldaptestcomputer)(objectCategory=compuTER))");
+	if (res3.length != 1) {
+		println("Could not find (&(cn=ldaptestcomputer)(objectCategory=compuTER))");
+		assert(res3.length == 1);
+	}
+
+	assert(res[0].dn == res3[0].dn);
 
 	ok = ldb.del(res[0].dn);
 	if (!ok) {
