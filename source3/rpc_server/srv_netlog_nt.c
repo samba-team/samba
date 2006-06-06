@@ -510,7 +510,6 @@ NTSTATUS _net_auth_2(pipes_struct *p, NET_Q_AUTH_2 *q_u, NET_R_AUTH_2 *r_u)
 
 NTSTATUS _net_srv_pwset(pipes_struct *p, NET_Q_SRV_PWSET *q_u, NET_R_SRV_PWSET *r_u)
 {
-	NTSTATUS status = NT_STATUS_ACCESS_DENIED;
 	fstring remote_machine;
 	struct samu *sampass=NULL;
 	BOOL ret = False;
@@ -632,7 +631,7 @@ NTSTATUS _net_srv_pwset(pipes_struct *p, NET_Q_SRV_PWSET *q_u, NET_R_SRV_PWSET *
 	}
 
 	/* set up the LSA Server Password Set response */
-	init_net_r_srv_pwset(r_u, &cred_out, status);
+	init_net_r_srv_pwset(r_u, &cred_out, r_u->status);
 
 	TALLOC_FREE(sampass);
 	return r_u->status;
