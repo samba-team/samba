@@ -1161,7 +1161,6 @@ BOOL torture_samba3_sessionkey(struct torture_context *torture)
 		d_printf("join using anonymous bind on an anonymous smb "
 			 "connection succeeded -- HUH??\n");
 		ret = False;
-		goto done;
 	}
 
 	if (!test_join3(mem_ctx, False, anon_creds, cmdline_credentials,
