@@ -238,7 +238,7 @@ function setup_ldb(ldif, info, dbname)
 /*
   setup a file in the private dir
  */
-function setup_file(template, fname, subobj)
+function setup_file(template, message, fname, subobj)
 {
 	var lp = loadparm_init();
 	var f = fname;
@@ -250,7 +250,10 @@ function setup_file(template, fname, subobj)
 	data = substitute_var(data, subobj);
 
 	ok = sys.file_save(f, data);
-	assert(ok);
+	if (!ok) {
+		message("failed to create file: " + f + "\n");
+		assert(ok);
+	}
 }
 
 function provision_default_paths(subobj)
@@ -355,7 +358,7 @@ function provision(subobj, message, blank, paths, session_info, credentials)
 	var st = sys.stat(paths.smbconf);
 	if (st == undefined) {
 		message("Setting up smb.conf\n");
-		setup_file("provision.smb.conf", paths.smbconf, subobj);
+		setup_file("provision.smb.conf", info.message, paths.smbconf, subobj);
 		lp.reload();
 	}
 	message("Setting up secrets.ldb\n");
@@ -412,7 +415,7 @@ function provision_dns(subobj, message, paths, session_info, credentials)
 	assert(subobj.HOSTGUID != undefined);
 
 	setup_file("provision.zone", 
-		   paths.dns, 
+		   message, paths.dns, 
 		   subobj);
 
 	message("Please install the zone located in " + paths.dns + " into your DNS server\n");
@@ -456,7 +459,7 @@ function provision_guess()
 	subobj.NOGROUP      = findnss(nss.getgrnam, "nogroup", "nobody");
 	subobj.WHEEL        = findnss(nss.getgrnam, "wheel", "root", "staff");
 	subobj.BACKUP       = findnss(nss.getgrnam, "backup", "wheel", "root", "staff");
-	subobj.USERS        = findnss(nss.getgrnam, "users", "guest", "other");
+	subobj.USERS        = findnss(nss.getgrnam, "users", "guest", "other", "unknown");
 	subobj.DNSDOMAIN    = strlower(subobj.REALM);
 	subobj.DNSNAME      = sprintf("%s.%s", 
 				      strlower(subobj.HOSTNAME), 
