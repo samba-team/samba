@@ -3299,6 +3299,52 @@ static BOOL set_user_info_pw(uint8 *pass, struct samu *pwd)
 }
 
 /*******************************************************************
+ set_user_info_25
+ ********************************************************************/
+
+static NTSTATUS set_user_info_25(TALLOC_CTX *mem_ctx, SAM_USER_INFO_25 *id25,
+				 struct samu *pwd)
+{
+	NTSTATUS status;
+	
+	if (id25 == NULL) {
+		DEBUG(5, ("set_user_info_25: NULL id25\n"));
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	copy_id25_to_sam_passwd(pwd, id25);
+ 
+	/*
+	 * The funny part about the previous two calls is
+	 * that pwd still has the password hashes from the
+	 * passdb entry.  These have not been updated from
+	 * id21.  I don't know if they need to be set.    --jerry
+	 */
+ 
+	if ( IS_SAM_CHANGED(pwd, PDB_GROUPSID) ) {
+		status = pdb_set_unix_primary_group(mem_ctx, pwd);
+		if ( !NT_STATUS_IS_OK(status) ) {
+			return status;
+		}
+	}
+	
+	/* Don't worry about writing out the user account since the
+	   primary group SID is generated solely from the user's Unix 
+	   primary group. */
+
+	/* write the change out */
+	if(!NT_STATUS_IS_OK(status = pdb_update_sam_account(pwd))) {
+		TALLOC_FREE(pwd);
+		return status;
+ 	}
+
+	/* WARNING: No TALLOC_FREE(pwd), we are about to set the password
+	 * hereafter! */
+
+	return NT_STATUS_OK;
+}
+
+/*******************************************************************
  samr_reply_set_userinfo
  ********************************************************************/
 
@@ -3401,6 +3447,11 @@ NTSTATUS _samr_set_userinfo(pipes_struct *p, SAMR_Q_SET_USERINFO *q_u, SAMR_R_SE
 
 			dump_data(100, (char *)ctr->info.id25->pass, 532);
 
+			r_u->status = set_user_info_25(p->mem_ctx,
+						       ctr->info.id25, pwd);
+			if (!NT_STATUS_IS_OK(r_u->status)) {
+				goto done;
+			}
 			if (!set_user_info_pw(ctr->info.id25->pass, pwd))
 				r_u->status = NT_STATUS_ACCESS_DENIED;
 			break;
@@ -3433,6 +3484,7 @@ NTSTATUS _samr_set_userinfo(pipes_struct *p, SAMR_Q_SET_USERINFO *q_u, SAMR_R_SE
 			r_u->status = NT_STATUS_INVALID_INFO_CLASS;
 	}
 
+ done:
 	
 	if ( has_enough_rights )				
 		unbecome_root();
