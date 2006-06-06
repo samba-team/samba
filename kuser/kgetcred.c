@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2004 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2006 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -36,19 +36,26 @@
 RCSID("$Id$");
 
 static char *cache_str;
+static char *out_cache_str;
 static char *etype_str;
+static int transit_flag = 1;
+static int forwardable_flag;
 static int version_flag;
 static int help_flag;
-static int transit_check = 1;
-static int canonicalize = 0;
+static char *impersonate_str;
 
 struct getargs args[] = {
     { "cache",		'c', arg_string, &cache_str,
       "credential cache to use", "cache"},
+    { "out-cache",	0,   arg_string, &out_cache_str,
+      "credential cache to store credential in", "cache"},
+    { "forwardable",	0, arg_flag, &forwardable_flag,
+      "forwardable ticket requested"},
+    { "transit-check",	0,   arg_negative_flag, &transit_flag },
     { "enctype",	'e', arg_string, &etype_str,
       "encryption type to use", "enctype"},
-    { "transit-check",	0,   arg_negative_flag, &transit_check },
-    { "canonicalize",	0,   arg_flag, &canonicalize },
+    { "impersonate",	0,   arg_string, &impersonate_str,
+      "client to impersonate", "principal"},
     { "version", 	0,   arg_flag, &version_flag },
     { "help",		0,   arg_flag, &help_flag }
 };
@@ -70,12 +77,12 @@ main(int argc, char **argv)
     krb5_context context;
     krb5_ccache cache;
     krb5_creds in, *out;
-    krb5_kdc_flags flags;
     int optidx = 0;
+    krb5_get_creds_opt opt;
+    krb5_principal server;
+    krb5_principal impersonate = NULL;
 
     setprogname (argv[0]);
-
-    flags.i = 0;
 
     ret = krb5_init_context (&context);
     if (ret)
@@ -114,33 +121,59 @@ main(int argc, char **argv)
 
     memset(&in, 0, sizeof(in));
 
+    ret = krb5_get_creds_opt_alloc(context, &opt);
+    if (ret)
+	krb5_err (context, 1, ret, "krb5_get_creds_opt_alloc");
+
     if (etype_str) {
 	krb5_enctype enctype;
 
 	ret = krb5_string_to_enctype(context, etype_str, &enctype);
 	if (ret)
 	    krb5_errx (context, 1, "unrecognized enctype: %s", etype_str);
-	in.session.keytype = enctype;
+	krb5_get_creds_opt_set_enctype(context, opt, enctype);
     }
 
-    ret = krb5_cc_get_principal(context, cache, &in.client);
-    if (ret)
-	krb5_err (context, 1, ret, "krb5_cc_get_principal");
+    if (impersonate_str) {
+	ret = krb5_parse_name(context, impersonate_str, &impersonate);
+	if (ret)
+	    krb5_err (context, 1, ret, "krb5_parse_name %s", impersonate_str);
+	krb5_get_creds_opt_set_impersonate(context, opt, impersonate);
+	krb5_get_creds_opt_add_options(context, opt, KRB5_GC_NO_STORE);
+    }
 
-    ret = krb5_parse_name(context, argv[0], &in.server);
+    if (out_cache_str)
+	krb5_get_creds_opt_add_options(context, opt, KRB5_GC_NO_STORE);
+
+    if (forwardable_flag)
+	krb5_get_creds_opt_add_options(context, opt, KRB5_GC_FORWARDABLE);
+    if (!transit_flag)
+	krb5_get_creds_opt_add_options(context, opt, KRB5_GC_NO_TRANSIT_CHECK);
+
+    ret = krb5_parse_name(context, argv[0], &server);
     if (ret)
 	krb5_err (context, 1, ret, "krb5_parse_name %s", argv[0]);
 
-    if (!transit_check)
-	flags.b.disable_transited_check = 1;
-    if (canonicalize)
-	flags.b.canonicalize = 1;
-
-
-    in.times.endtime = 0;
-    ret = krb5_get_credentials_with_flags(context, 0, flags, cache, &in, &out);
+    ret = krb5_get_creds(context, opt, cache, server, &out);
     if (ret)
-	krb5_err (context, 1, ret, "krb5_get_credentials");
+	krb5_err (context, 1, ret, "krb5_get_creds");
+
+    if (out_cache_str) {
+	krb5_ccache id;
+
+	ret = krb5_cc_resolve(context, out_cache_str, &id);
+	if(ret)
+	    krb5_err (context, 1, ret, "krb5_cc_resolve");
+
+	ret = krb5_cc_initialize(context, id, impersonate);
+	if(ret)
+	    krb5_err (context, 1, ret, "krb5_cc_initialize");
+
+	ret = krb5_cc_store_cred(context, id, out);
+	if(ret)
+	    krb5_err (context, 1, ret, "krb5_cc_store_cred");
+	krb5_cc_close (context, id);
+    }
 
     krb5_free_cred_contents(context, out);
     return 0;
