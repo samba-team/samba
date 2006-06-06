@@ -166,6 +166,7 @@ int ldb_setup_wellknown_attributes(struct ldb_context *ldb)
 		{ "dn", LDB_SYNTAX_DN },
 		{ "ncName", LDB_SYNTAX_DN },
 		{ "distinguishedName", LDB_SYNTAX_DN },
+		{ "objectCategory", LDB_SYNTAX_DN },
 		{ "cn", LDB_SYNTAX_DIRECTORY_STRING },
 		{ "dc", LDB_SYNTAX_DIRECTORY_STRING },
 		{ "ou", LDB_SYNTAX_DIRECTORY_STRING },
