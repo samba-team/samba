@@ -41,7 +41,8 @@ HDBFlags ::= BIT STRING {
 	require-hwauth(10),		-- must use hwauth
 	ok-as-delegate(11),		-- as in TicketFlags
 	user-to-user(12),		-- may use user-to-user auth
-	immutable(13)			-- may not be deleted
+	immutable(13),			-- may not be deleted
+	trusted-for-delegation(14)	-- Trusted to print forwardabled tickets
 }
 
 GENERATION ::= SEQUENCE {
