@@ -108,7 +108,6 @@ static BOOL samldb_find_or_add_value(struct ldb_module *module, struct ldb_messa
 
 static BOOL samldb_find_or_add_attribute(struct ldb_module *module, struct ldb_message *msg, const char *name, const char *set_value)
 {
-	int j;
 	struct ldb_message_element *el;
 
 	if (msg == NULL || name == NULL || set_value == NULL) {
@@ -857,16 +856,8 @@ static int samldb_add(struct ldb_module *module, struct ldb_request *req)
 	return ret;
 }
 
-static int samldb_destructor(void *module_ctx)
-{
-	/* struct ldb_module *ctx = module_ctx; */
-	/* put your clean-up functions here */
-	return 0;
-}
-
 static int samldb_init(struct ldb_module *module)
 {
-	talloc_set_destructor(module, samldb_destructor);
 	return ldb_next_init(module);
 }
 
