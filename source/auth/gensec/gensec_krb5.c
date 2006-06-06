@@ -151,7 +151,7 @@ static NTSTATUS gensec_krb5_start(struct gensec_security *gensec_security)
 		}
 	}
 
-	peer_addr = gensec_get_my_addr(gensec_security);
+	peer_addr = gensec_get_peer_addr(gensec_security);
 	if (peer_addr && peer_addr->sockaddr) {
 		ret = krb5_sockaddr2address(gensec_krb5_state->smb_krb5_context->krb5_context, 
 					    peer_addr->sockaddr, &peer_krb5_addr);

@@ -611,13 +611,10 @@ static krb5_error_code LDB_fetch_client(krb5_context context, HDB *db,
 					      &msg, &realm_ref_msg);
 	free(principal_string);
 	if (NT_STATUS_EQUAL(nt_status, NT_STATUS_NO_SUCH_USER)) {
-		talloc_free(mem_ctx);
 		return HDB_ERR_NOENTRY;
 	} else if (NT_STATUS_EQUAL(nt_status, NT_STATUS_NO_MEMORY)) {
-		talloc_free(mem_ctx);
 		return ENOMEM;
 	} else if (!NT_STATUS_IS_OK(nt_status)) {
-		talloc_free(mem_ctx);
 		return EINVAL;
 	}
 	
@@ -788,7 +785,7 @@ static krb5_error_code LDB_fetch(krb5_context context, HDB *db,
 				 unsigned flags,
 				 hdb_entry_ex *entry_ex)
 {
-	krb5_error_code ret;
+	krb5_error_code ret = HDB_ERR_NOENTRY;
 
 	TALLOC_CTX *mem_ctx = talloc_named(db, 0, "LDB_fetch context");
 

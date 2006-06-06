@@ -218,7 +218,7 @@ hdb_get_entry(krb5_context context,
 	(*db->hdb_destroy)(context, db);
 	return ret;
     }
-    ret = (*db->hdb_fetch)(context, db, principal, HDB_F_DECRYPT, &ent);
+    ret = (*db->hdb_fetch)(context, db, principal, HDB_F_DECRYPT|HDB_F_GET_CLIENT|HDB_F_GET_SERVER, &ent);
 
 
     /* Shutdown the hdb on error */
