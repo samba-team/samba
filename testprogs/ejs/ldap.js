@@ -160,9 +160,9 @@ objectClass: user
 
 	println("Testing ldb.search for (&(cn=ldaptestuser)(objectCategory=cn=person,cn=schema,cn=configuration," + base_dn + "))");
 	var res2 = ldb.search("(&(cn=ldaptestuser)(objectCategory=cn=person,cn=schema,cn=configuration," + base_dn + "))");
-	if (res.length != 1) {
+	if (res2.length != 1) {
 		println("Could not find (&(cn=ldaptestuser)(objectCategory=cn=person,cn=schema,cn=configuration," + base_dn + "))");
-		assert(res.length == 1);
+		assert(res2.length == 1);
 	}
 
 	assert(res[0].dn == res2[0].dn);
