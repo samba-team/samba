@@ -54,6 +54,28 @@ cn: LDAPtestUSER
 		}
 	}
 
+	var ok = ldb.add("
+dn: cn=ldaptestcomputer,cn=computers," + base_dn + "
+objectClass: computer
+cn: LDAPtestCOMPUTER
+");
+	if (!ok) {
+		ok = ldb.del("cn=ldaptestcomputer,cn=computers," + base_dn);
+		if (!ok) {
+			println(ldb.errstring());
+			assert(ok);
+		}
+		ok = ldb.add("
+dn: cn=ldaptestcomputer,cn=computers," + base_dn + "
+objectClass: computer
+cn: LDAPtestCOMPUTER
+");
+		if (!ok) {
+			println(ldb.errstring());
+			assert(ok);
+		}
+	}
+
 	ok = ldb.add("
 dn: cn=ldaptestuser2,cn=users," + base_dn + "
 objectClass: person
@@ -134,23 +156,50 @@ objectClass: user
 	assert(res[0].objectClass[3] == "user");
 	assert(res[0].objectGUID != undefined);
 	assert(res[0].whenCreated != undefined);
+	assert(res[0].objectCategory == "cn=Person,cn=Schema,cn=Configuration," + base_dn);
 
-	println("Testing ldb.search for (&(cn=ldaptestuser)(objectClass=user))");
-	var res = ldb.search("(&(cn=ldaptestuser)(objectClass=user))");
+	println("Testing ldb.search for (&(cn=ldaptestuser)(objectCategory=cn=person,cn=schema,cn=configuration," + base_dn + "))");
+	var res2 = ldb.search("(&(cn=ldaptestuser)(objectCategory=cn=person,cn=schema,cn=configuration," + base_dn + "))");
+	if (res.length != 1) {
+		println("Could not find (&(cn=ldaptestuser)(objectCategory=cn=person,cn=schema,cn=configuration," + base_dn + "))");
+		assert(res.length == 1);
+	}
+
+	assert(res[0].dn == res2[0].dn);
+
+	ok = ldb.del(res[0].dn);
+	if (!ok) {
+		println(ldb.errstring());
+		assert(ok);
+	}
+
+	println("Testing ldb.search for (&(cn=ldaptestcomputer)(objectClass=user))");
+	var res = ldb.search("(&(cn=ldaptestcomputer)(objectClass=user))");
 	if (res.length != 1) {
 		println("Could not find (&(cn=ldaptestuser)(objectClass=user))");
 		assert(res.length == 1);
 	}
 
-	assert(res[0].dn == "cn=ldaptestuser,cn=users," + base_dn);
-	assert(res[0].cn == "ldaptestuser");
-	assert(res[0].name == "ldaptestuser");
+	assert(res[0].dn == "cn=ldaptestcomputer,cn=computers," + base_dn);
+	assert(res[0].cn == "ldaptestcomputer");
+	assert(res[0].name == "ldaptestcomputer");
 	assert(res[0].objectClass[0] == "top");
 	assert(res[0].objectClass[1] == "person");
 	assert(res[0].objectClass[2] == "organizationalPerson");
 	assert(res[0].objectClass[3] == "user");
+	assert(res[0].objectClass[4] == "computer");
 	assert(res[0].objectGUID != undefined);
 	assert(res[0].whenCreated != undefined);
+	assert(res[0].objectCategory == "cn=Computer,cn=Schema,cn=Configuration," + base_dn);
+
+	println("Testing ldb.search for (&(cn=ldaptestcomputer)(objectCategory=cn=computer,cn=schema,cn=configuration," + base_dn + "))");
+	var res2 = ldb.search("(&(cn=ldaptestcomputer)(objectCategory=cn=computer,cn=schema,cn=configuration," + base_dn + "))");
+	if (res.length != 1) {
+		println("Could not find (&(cn=ldaptestcomputer)(objectCategory=cn=computer,cn=schema,cn=configuration," + base_dn + "))");
+		assert(res.length == 1);
+	}
+
+	assert(res[0].dn == res2[0].dn);
 
 	ok = ldb.del(res[0].dn);
 	if (!ok) {

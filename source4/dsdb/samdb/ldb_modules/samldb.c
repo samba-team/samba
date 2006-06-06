@@ -615,9 +615,6 @@ static int samldb_fill_user_or_computer_object(struct ldb_module *module, const 
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	/* remove objectclasses so that they will be added in the right order for MMC to be happy */
-	ldb_msg_remove_attr(msg, "objectclass");
-
 	if (samldb_find_attribute(msg, "objectclass", "computer") != NULL) {
 
 		ret = samldb_copy_template(module, msg2, "(&(CN=TemplateComputer)(objectclass=userTemplate))");
