@@ -260,8 +260,9 @@ typedef struct sam_user_info_25
 	uint32 group_rid;     /* Primary Group ID */
 
 	uint32 acb_info; /* account info (ACB_xxxx bit-mask) */
+	uint32 fields_present;
 
-	uint32 unknown_6[6];
+	uint32 unknown_5[5];
 
 	uint8 pass[532];
 
