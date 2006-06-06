@@ -6041,8 +6041,10 @@ static BOOL sam_io_user_info25(const char *desc, SAM_USER_INFO_25 * usr, prs_str
 		return False;
 	if(!prs_uint32("acb_info      ", ps, depth, &usr->acb_info))
 		return False;
+	if(!prs_uint32("fields_present ", ps, depth, &usr->fields_present))
+		return False;
 
-	if(!prs_uint32s(False, "unknown_6      ", ps, depth, usr->unknown_6, 6))
+	if(!prs_uint32s(False, "unknown_5      ", ps, depth, usr->unknown_5, 5))
 		return False;
 
 	if(!prs_uint8s(False, "password      ", ps, depth, usr->pass, sizeof(usr->pass)))
