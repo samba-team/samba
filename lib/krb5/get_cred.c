@@ -1144,6 +1144,8 @@ krb5_get_creds(krb5_context context,
     }
     if (options & KRB5_GC_FORWARDABLE)
 	flags.b.forwardable = 1;
+    if (options & KRB5_GC_NO_TRANSIT_CHECK)
+	flags.b.disable_transited_check = 1;
 
     tgts = NULL;
     ret = get_cred_from_kdc_flags(context, flags, ccache, 
