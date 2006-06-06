@@ -1,8 +1,8 @@
 /* 
    ldb database library - ldif handlers for Samba
 
-   Copyright (C) Andrew Tridgell  2005
-
+   Copyright (C) Andrew Tridgell 2005
+   Copyright (C) Andrew Bartlett 2006
      ** NOTE! The following LGPL license applies to the ldb
      ** library. This does NOT imply that all of Samba is released
      ** under the LGPL
@@ -275,6 +275,75 @@ static int ldif_write_ntSecurityDescriptor(struct ldb_context *ldb, void *mem_ct
 	return 0;
 }
 
+/* 
+   canonicolise an objectCategory.  We use the short form as the cannoical form:
+   cn=Person,cn=Schema,cn=Configuration,<basedn> becomes 'person'
+*/
+
+static int ldif_canonicalise_objectCategory(struct ldb_context *ldb, void *mem_ctx,
+					    const struct ldb_val *in, struct ldb_val *out)
+{
+	struct ldb_dn *dn1 = NULL;
+	const char *oc1;
+
+	dn1 = ldb_dn_explode(mem_ctx, (char *)in->data);
+	if (dn1 == NULL) {
+		oc1 = talloc_strndup(mem_ctx, in->data, in->length);
+	} else if (dn1->comp_num >= 1 && strcasecmp(dn1->components[0].name, "cn") == 0) {
+		oc1 = talloc_strndup(mem_ctx, dn1->components[0].value.data, 
+				     dn1->components[0].value.length);
+	} else {
+		return -1;
+	}
+
+	oc1 = ldb_casefold(ldb, mem_ctx, oc1);
+	out->data = oc1;
+	out->length = strlen(oc1);
+	return 0;
+}
+
+static int ldif_comparison_objectCategory(struct ldb_context *ldb, void *mem_ctx,
+					  const struct ldb_val *v1,
+					  const struct ldb_val *v2)
+{
+	struct ldb_dn *dn1 = NULL, *dn2 = NULL;
+	const char *oc1, *oc2;
+
+	dn1 = ldb_dn_explode(mem_ctx, (char *)v1->data);
+	if (dn1 == NULL) {
+		oc1 = talloc_strndup(mem_ctx, v1->data, v1->length);
+	} else if (dn1->comp_num >= 1 && strcasecmp(dn1->components[0].name, "cn") == 0) {
+		oc1 = talloc_strndup(mem_ctx, dn1->components[0].value.data, 
+				     dn1->components[0].value.length);
+	} else {
+		oc1 = NULL;
+	}
+
+	dn2 = ldb_dn_explode(mem_ctx, (char *)v2->data);
+	if (dn2 == NULL) {
+		oc2 = talloc_strndup(mem_ctx, v2->data, v2->length);
+	} else if (dn2->comp_num >= 2 && strcasecmp(dn2->components[0].name, "cn") == 0) {
+		oc2 = talloc_strndup(mem_ctx, dn2->components[0].value.data, 
+				     dn2->components[0].value.length);
+	} else {
+		oc2 = NULL;
+	}
+
+	oc1 = ldb_casefold(ldb, mem_ctx, oc1);
+	oc2 = ldb_casefold(ldb, mem_ctx, oc2);
+	if (!oc1 && oc2) {
+		return -1;
+	} 
+	if (oc1 && !oc2) {
+		return 1;
+	}	
+	if (!oc1 && !oc2) {
+		return -1;
+	}
+
+	return strcmp(oc1, oc2);
+}
+
 static const struct ldb_attrib_handler samba_handlers[] = {
 	{ 
 		.attr            = "objectSid",
@@ -323,6 +392,14 @@ static const struct ldb_attrib_handler samba_handlers[] = {
 		.ldif_write_fn   = ldif_write_objectGUID,
 		.canonicalise_fn = ldb_canonicalise_objectGUID,
 		.comparison_fn   = ldb_comparison_objectGUID
+	},
+	{ 
+		.attr            = "objectCategory",
+		.flags           = 0,
+		.ldif_read_fn    = ldb_handler_copy,
+		.ldif_write_fn   = ldb_handler_copy,
+		.canonicalise_fn = ldif_canonicalise_objectCategory,
+		.comparison_fn   = ldif_comparison_objectCategory,
 	}
 };
 

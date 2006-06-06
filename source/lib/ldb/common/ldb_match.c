@@ -207,8 +207,11 @@ static int ldb_wildcard_compare(struct ldb_context *ldb,
 		chunk = tree->u.substring.chunks[c];
 		if(h->canonicalise_fn(ldb, ldb, chunk, &cnk) != 0) goto failed;
 
-		/* FIXME: case of embedded nulls */
-		if (strncmp((char *)val.data, (char *)cnk.data, cnk.length) != 0) goto failed;
+		/* This deals with wildcard prefix searches on binary attributes (eg objectGUID) */
+		if (cnk.length > val.length) {
+			goto failed;
+		}
+		if (memcmp((char *)val.data, (char *)cnk.data, cnk.length) != 0) goto failed;
 		val.length -= cnk.length;
 		val.data += cnk.length;
 		c++;
