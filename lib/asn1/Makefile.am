@@ -33,6 +33,7 @@ gen_files_k5 =						\
 	asn1_AUTHDATA_TYPE.x				\
 	asn1_Authenticator.x				\
 	asn1_AuthorizationData.x			\
+	asn1_CBCParameter.x				\
 	asn1_CKSUMTYPE.x				\
 	asn1_ChangePasswdDataMS.x			\
 	asn1_Checksum.x					\
@@ -62,8 +63,6 @@ gen_files_k5 =						\
 	asn1_KRB_PRIV.x					\
 	asn1_KRB_SAFE.x					\
 	asn1_KRB_SAFE_BODY.x				\
-	asn1_krb5int32.x				\
-	asn1_krb5uint32.x				\
 	asn1_KerberosString.x				\
 	asn1_KerberosTime.x				\
 	asn1_KrbCredInfo.x				\
@@ -76,15 +75,17 @@ gen_files_k5 =						\
 	asn1_PA_DATA.x					\
 	asn1_PA_ENC_SAM_RESPONSE_ENC.x         		\
 	asn1_PA_ENC_TS_ENC.x				\
+	asn1_PA_PAC_REQUEST.x				\
+	asn1_PA_S4U2Self.x				\
 	asn1_PA_SAM_CHALLENGE_2.x               	\
 	asn1_PA_SAM_CHALLENGE_2_BODY.x 			\
 	asn1_PA_SAM_REDIRECT.x				\
 	asn1_PA_SAM_RESPONSE_2.x			\
 	asn1_PA_SAM_TYPE.x				\
-	asn1_PA_PAC_REQUEST.x				\
 	asn1_PROV_SRV_LOCATION.x			\
 	asn1_Principal.x				\
 	asn1_PrincipalName.x				\
+	asn1_RC2CBCParameter.x				\
 	asn1_Realm.x					\
 	asn1_SAMFlags.x					\
 	asn1_TGS_REP.x					\
@@ -94,8 +95,8 @@ gen_files_k5 =						\
 	asn1_TicketFlags.x				\
 	asn1_TransitedEncoding.x			\
 	asn1_TypedData.x				\
-	asn1_RC2CBCParameter.x				\
-	asn1_CBCParameter.x
+	asn1_krb5int32.x				\
+	asn1_krb5uint32.x
 
 gen_files_cms =						\
 	asn1_CMSAttributes.x				\
