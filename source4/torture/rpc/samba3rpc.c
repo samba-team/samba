@@ -476,6 +476,7 @@ static NTSTATUS get_usr_handle(struct smbcli_state *cli,
  */
 
 static BOOL join3(struct smbcli_state *cli,
+		  BOOL use_level25,
 		  struct cli_credentials *admin_creds,
 		  struct cli_credentials *wks_creds)
 {
@@ -504,7 +505,56 @@ static BOOL join3(struct smbcli_state *cli,
 
 	cli_credentials_set_domain(wks_creds, dom_name, CRED_SPECIFIED);
 
-	{
+	if (use_level25) {
+		struct samr_SetUserInfo2 sui2;
+		union samr_UserInfo u_info;
+		struct samr_UserInfo21 *i21 = &u_info.info25.info;
+		DATA_BLOB session_key;
+		DATA_BLOB confounded_session_key = data_blob_talloc(
+			mem_ctx, NULL, 16);
+		struct MD5Context ctx;
+		uint8_t confounder[16];
+
+		ZERO_STRUCT(u_info);
+
+		i21->full_name.string = talloc_asprintf(
+			mem_ctx, "%s$",
+			cli_credentials_get_workstation(wks_creds));
+		i21->acct_flags = ACB_WSTRUST;
+		i21->fields_present = SAMR_FIELD_FULL_NAME |
+			SAMR_FIELD_ACCT_FLAGS | SAMR_FIELD_PASSWORD;
+
+		encode_pw_buffer(u_info.info25.password.data,
+				 cli_credentials_get_password(wks_creds),
+				 STR_UNICODE);
+		status = dcerpc_fetch_session_key(samr_pipe, &session_key);
+		if (!NT_STATUS_IS_OK(status)) {
+			d_printf("dcerpc_fetch_session_key failed: %s\n",
+				 nt_errstr(status));
+			goto done;
+		}
+		generate_random_buffer((uint8_t *)confounder, 16);
+
+		MD5Init(&ctx);
+		MD5Update(&ctx, confounder, 16);
+		MD5Update(&ctx, session_key.data, session_key.length);
+		MD5Final(confounded_session_key.data, &ctx);
+
+		arcfour_crypt_blob(u_info.info25.password.data, 516,
+				   &confounded_session_key);
+		memcpy(&u_info.info25.password.data[516], confounder, 16);
+
+		sui2.in.user_handle = wks_handle;
+		sui2.in.level = 25;
+		sui2.in.info = &u_info;
+
+		status = dcerpc_samr_SetUserInfo2(samr_pipe, mem_ctx, &sui2);
+		if (!NT_STATUS_IS_OK(status)) {
+			d_printf("samr_SetUserInfo2(25) failed: %s\n",
+				 nt_errstr(status));
+			goto done;
+		}
+	} else {
 		struct samr_SetUserInfo2 sui2;
 		struct samr_SetUserInfo sui;
 		union samr_UserInfo u_info;
@@ -878,7 +928,7 @@ static BOOL leave(struct smbcli_state *cli,
 
 	status = get_usr_handle(cli, mem_ctx, admin_creds,
 				DCERPC_AUTH_TYPE_NTLMSSP,
-				DCERPC_AUTH_LEVEL_INTEGRITY,
+				DCERPC_AUTH_LEVEL_PRIVACY,
 				cli_credentials_get_workstation(wks_creds),
 				&dom_name, &samr_pipe, &wks_handle);
 
@@ -964,7 +1014,7 @@ BOOL torture_netlogon_samba3(struct torture_context *torture)
 	cli_credentials_set_workstation(wks_creds, wks_name, CRED_SPECIFIED);
 	cli_credentials_set_password(wks_creds, "", CRED_SPECIFIED);
 
-	if (!join3(cli, cmdline_credentials, wks_creds)) {
+	if (!join3(cli, False, cmdline_credentials, wks_creds)) {
 		d_printf("join failed\n");
 		goto done;
 	}
@@ -1012,6 +1062,7 @@ BOOL torture_netlogon_samba3(struct torture_context *torture)
  */
 
 static BOOL test_join3(TALLOC_CTX *mem_ctx,
+		       BOOL use_level25,
 		       struct cli_credentials *smb_creds,
 		       struct cli_credentials *samr_creds,
 		       const char *wks_name)
@@ -1040,9 +1091,11 @@ static BOOL test_join3(TALLOC_CTX *mem_ctx,
 	cli_credentials_set_secure_channel_type(wks_creds, SEC_CHAN_WKSTA);
 	cli_credentials_set_username(wks_creds, wks_name, CRED_SPECIFIED);
 	cli_credentials_set_workstation(wks_creds, wks_name, CRED_SPECIFIED);
-	cli_credentials_set_password(wks_creds, "", CRED_SPECIFIED);
+	cli_credentials_set_password(wks_creds,
+				     generate_random_str(wks_creds, 8),
+				     CRED_SPECIFIED);
 
-	if (!join3(cli, samr_creds, wks_creds)) {
+	if (!join3(cli, use_level25, samr_creds, wks_creds)) {
 		d_printf("join failed\n");
 		goto done;
 	}
@@ -1102,32 +1155,52 @@ BOOL torture_samba3_sessionkey(struct torture_context *torture)
 	cli_credentials_set_conf(anon_creds);
 	cli_credentials_set_anonymous(anon_creds);
 
-	if (test_join3(mem_ctx, anon_creds, NULL, wks_name)) {
+	ret = True;
+
+	if (test_join3(mem_ctx, False, anon_creds, NULL, wks_name)) {
 		d_printf("join using anonymous bind on an anonymous smb "
 			 "connection succeeded -- HUH??\n");
+		ret = False;
 		goto done;
 	}
 
-	if (!test_join3(mem_ctx, anon_creds, cmdline_credentials, wks_name)) {
+	if (!test_join3(mem_ctx, False, anon_creds, cmdline_credentials,
+			wks_name)) {
 		d_printf("join using ntlmssp bind on an anonymous smb "
 			 "connection failed\n");
-		goto done;
+		ret = False;
 	}
 
-	if (!test_join3(mem_ctx, cmdline_credentials, NULL, wks_name)) {
+	if (!test_join3(mem_ctx, False, cmdline_credentials, NULL, wks_name)) {
 		d_printf("join using anonymous bind on an authenticated smb "
 			 "connection failed\n");
-		goto done;
+		ret = False;
 	}
 
-	if (!test_join3(mem_ctx, cmdline_credentials, cmdline_credentials,
+	if (!test_join3(mem_ctx, False, cmdline_credentials,
+			cmdline_credentials,
 			wks_name)) {
 		d_printf("join using ntlmssp bind on an authenticated smb "
 			 "connection failed\n");
-		goto done;
+		ret = False;
 	}
 
-	ret = True;
+	/*
+	 * The following two are tests for setuserinfolevel 25
+	 */
+
+	if (!test_join3(mem_ctx, True, anon_creds, cmdline_credentials,
+			wks_name)) {
+		d_printf("join using ntlmssp bind on an anonymous smb "
+			 "connection failed\n");
+		ret = False;
+	}
+
+	if (!test_join3(mem_ctx, True, cmdline_credentials, NULL, wks_name)) {
+		d_printf("join using anonymous bind on an authenticated smb "
+			 "connection failed\n");
+		ret = False;
+	}
 
  done:
 
