@@ -54,6 +54,7 @@ attr_to_flags(unsigned attr, HDBFlags *flags)
     flags->change_pw = 	       !!(attr & KRB5_KDB_PWCHANGE_SERVICE);
     flags->client =	        1; /* XXX */
     flags->ok_as_delegate =    !!(attr & KRB5_KDB_OK_AS_DELEGATE);
+    flags->trusted_for_delegation = !!(attr & KRB5_KDB_TRUSTED_FOR_DELEGATION);
 }
 
 /*
