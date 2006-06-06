@@ -408,6 +408,14 @@ struct timed_event;
 struct idle_event;
 struct share_mode_entry;
 
+struct vfs_fsp_data {
+    struct vfs_fsp_data *next;
+    struct vfs_handle_struct *owner;
+    /* NOTE: This structure contains two pointers so that we can guarantee
+     * that the end of the structure is always both 4-byte and 8-byte aligned.
+     */
+};
+
 typedef struct files_struct {
 	struct files_struct *next, *prev;
 	int fnum;
@@ -446,6 +454,8 @@ typedef struct files_struct {
 	BOOL aio_write_behind;
 	BOOL lockdb_clean;
 	char *fsp_name;
+
+	struct vfs_fsp_data *vfs_extension;
  	FAKE_FILE_HANDLE *fake_file_handle;
 } files_struct;
 

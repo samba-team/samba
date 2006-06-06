@@ -531,6 +531,14 @@ typedef struct vfs_statvfs_struct {
 	/* NB flags can come from FILE_SYSTEM_DEVICE_INFO call   */
 } vfs_statvfs_struct;
 
+#define VFS_ADD_FSP_EXTENSION(handle, fsp, type) \
+    vfs_add_fsp_extension_notype(handle, (fsp), sizeof(type))
+
+#define VFS_FETCH_FSP_EXTENSION(handle, fsp) \
+    vfs_fetch_fsp_extension(handle, (fsp))
+
+#define VFS_REMOVE_FSP_EXTENSION(handle, fsp) \
+    vfs_remove_fsp_extension((handle), (fsp))
 
 #define SMB_VFS_HANDLE_GET_DATA(handle, datap, type, ret) { \
 	if (!(handle)||((datap=(type *)(handle)->data)==NULL)) { \

@@ -4,6 +4,7 @@
    VFS initialisation and support functions
    Copyright (C) Tim Potter 1999
    Copyright (C) Alexander Bokovoy 2002
+   Copyright (C) James Peach 2006
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -186,6 +187,71 @@ BOOL vfs_init_custom(connection_struct *conn, const char *vfs_object)
 	SAFE_FREE(module_name);
 	return True;
 }
+
+/*****************************************************************
+ Allow VFS modules to extend files_struct with VFS-specific state.
+ This will be ok for small numbers of extensions, but might need to
+ be refactored if it becomes more widely used.
+******************************************************************/
+
+#define EXT_DATA_AREA(e) ((uint8 *)(e) + sizeof(struct vfs_fsp_data))
+
+void *vfs_add_fsp_extension_notype(vfs_handle_struct *handle, files_struct *fsp, size_t ext_size)
+{
+	struct vfs_fsp_data *ext;
+	void * ext_data;
+
+	/* Prevent VFS modules adding multiple extensions. */
+	if ((ext_data = vfs_fetch_fsp_extension(handle, fsp))) {
+		return ext_data;
+	}
+
+	ext = TALLOC_ZERO(handle->conn->mem_ctx,
+			    sizeof(struct vfs_fsp_data) + ext_size);
+	if (ext == NULL) {
+		return NULL;
+	}
+
+	ext->owner = handle;
+	ext->next = fsp->vfs_extension;
+	fsp->vfs_extension = ext;
+	return EXT_DATA_AREA(ext);
+}
+
+void vfs_remove_fsp_extension(vfs_handle_struct *handle, files_struct *fsp)
+{
+	struct vfs_fsp_data *curr;
+	struct vfs_fsp_data *prev;
+
+	for (curr = fsp->vfs_extension, prev = NULL;
+	     curr;
+	     prev = curr, curr = curr->next) {
+		if (curr->owner == handle) {
+		    if (prev) {
+			    prev->next = curr->next;
+		    } else {
+			    fsp->vfs_extension = curr->next;
+		    }
+		    TALLOC_FREE(curr);
+		    return;
+		}
+	}
+}
+
+void *vfs_fetch_fsp_extension(vfs_handle_struct *handle, files_struct *fsp)
+{
+	struct vfs_fsp_data *head;
+
+	for (head = fsp->vfs_extension; head; head = head->next) {
+		if (head->owner == handle) {
+			return EXT_DATA_AREA(head);
+		}
+	}
+
+	return NULL;
+}
+
+#undef EXT_DATA_AREA
 
 /*****************************************************************
  Generic VFS init.
