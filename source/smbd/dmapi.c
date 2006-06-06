@@ -24,12 +24,6 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_DMAPI
 
-#if defined(HAVE_LIBDM) || defined(HAVE_LIBJFSDM) || defined(HAVE_LIBXDSM)
-#if defined(HAVE_XFS_DMAPI_H) || defined(HAVE_SYS_DMI_H) || defined(HAVE_SYS_JFSDMAPI_H) || defined(HAVE_SYS_DMAPI_H)
-#define USE_DMAPI 1
-#endif
-#endif
-
 #ifndef USE_DMAPI
 
 int dmapi_init_session(void) { return -1; }
