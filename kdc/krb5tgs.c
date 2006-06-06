@@ -38,7 +38,7 @@ RCSID("$Id$");
 static krb5_error_code
 check_tgs_flags(krb5_context context,        
 		krb5_kdc_configuration *config,
-		KDC_REQ_BODY *b, EncTicketPart *tgt, EncTicketPart *et)
+		KDC_REQ_BODY *b, const EncTicketPart *tgt, EncTicketPart *et)
 {
     KDCOptions f = b->kdc_options;
 	
@@ -161,11 +161,46 @@ check_tgs_flags(krb5_context context,
     return 0;
 }
 
+/*
+ *
+ */
+
+static krb5_error_code
+check_constrained_delegation(krb5_context context, 
+			     krb5_kdc_configuration *config,
+			     hdb_entry_ex *client,
+			     krb5_const_principal server)
+{
+    const HDB_Ext_Constrained_delegation_acl *acl;
+    krb5_error_code ret;
+    int i;
+
+    ret = hdb_entry_get_ConstrainedDelegACL(&client->entry, &acl);
+    if (ret) {
+	krb5_clear_error_string(context);
+	return ret;
+    }
+
+    if (acl) {
+	for (i = 0; i < acl->len; i++) {
+	    if (krb5_principal_compare(context, server, &acl->val[i]) == TRUE)
+		return 0;
+	}
+    }
+    kdc_log(context, config, 0,
+	    "Bad request for constrained delegation");
+    return KRB5KDC_ERR_BADOPTION;
+}
+
+/*
+ *
+ */
+
 static krb5_error_code
 fix_transited_encoding(krb5_context context, 
 		       krb5_kdc_configuration *config,
 		       krb5_boolean check_policy,
-		       TransitedEncoding *tr, 
+		       const TransitedEncoding *tr, 
 		       EncTicketPart *et, 
 		       const char *client_realm, 
 		       const char *server_realm, 
@@ -275,8 +310,9 @@ static krb5_error_code
 tgs_make_reply(krb5_context context, 
 	       krb5_kdc_configuration *config,
 	       KDC_REQ_BODY *b, 
-	       EncTicketPart *tgt, 
-	       EncTicketPart *adtkt, 
+	       krb5_const_principal tgt_name,
+	       const EncTicketPart *tgt, 
+	       const EncTicketPart *adtkt, 
 	       AuthorizationData *auth_data,
 	       hdb_entry_ex *server, 
 	       const char *server_name, 
@@ -293,7 +329,7 @@ tgs_make_reply(krb5_context context,
     krb5_error_code ret;
     krb5_enctype etype;
     Key *skey;
-    EncryptionKey *ekey;
+    const EncryptionKey *ekey;
     
     if(adtkt) {
 	int i;
@@ -369,11 +405,11 @@ tgs_make_reply(krb5_context context,
     copy_Realm(krb5_princ_realm(context, server->entry.principal), 
 	       &rep.ticket.realm);
     _krb5_principal2principalname(&rep.ticket.sname, server->entry.principal);
-    copy_Realm(&tgt->crealm, &rep.crealm);
+    copy_Realm(&tgt_name->realm, &rep.crealm);
     if (f.request_anonymous)
-	_kdc_make_anonymous_principalname (&tgt->cname);
+	_kdc_make_anonymous_principalname (&rep.cname);
     else
-	copy_PrincipalName(&tgt->cname, &rep.cname);
+	copy_PrincipalName(&tgt_name->name, &rep.cname);
     rep.ticket.tkt_vno = 5;
 
     ek.caddr = et.caddr;
@@ -433,7 +469,7 @@ tgs_make_reply(krb5_context context,
 
     krb5_generate_random_keyblock(context, etype, &et.key);
     et.crealm = tgt->crealm;
-    et.cname = tgt->cname;
+    et.cname = tgt_name->name;
 	    
     ek.key = et.key;
     /* MIT must have at least one last_req */
@@ -818,6 +854,7 @@ out:
 static krb5_error_code
 tgs_build_reply(krb5_context context, 
 		krb5_kdc_configuration *config,
+		KDC_REQ *req, 
 		KDC_REQ_BODY *b,
 		hdb_entry_ex *krbtgt,
 		krb5_ticket *ticket,
@@ -828,8 +865,8 @@ tgs_build_reply(krb5_context context,
 		const struct sockaddr *from_addr)
 {
     krb5_error_code ret;
-    krb5_principal cp = NULL;
-    krb5_principal sp = NULL;
+    krb5_principal cp = NULL, sp = NULL;
+    krb5_principal client_principal = NULL;
     char *spn = NULL, *cpn = NULL;
     hdb_entry_ex *server = NULL, *client = NULL;
     EncTicketPart *tgt = &ticket->ticket;
@@ -907,6 +944,11 @@ tgs_build_reply(krb5_context context,
     else
 	kdc_log(context, config, 0,
 		"TGS-REQ %s from %s for %s", cpn, from, spn);
+
+    /*
+     * Fetch server
+     */
+
 server_lookup:
     ret = _kdc_db_fetch(context, config, sp, HDB_F_GET_SERVER, &server);
 
@@ -1005,6 +1047,128 @@ server_lookup:
 	    
     }
 
+    /*
+     *
+     */
+
+    client_principal = cp;
+
+    if (client) {
+	const PA_DATA *sdata;
+	int i = 0;
+
+	sdata = _kdc_find_padata(req, &i, KRB5_PADATA_S4U2SELF);
+	if (sdata) {
+	    krb5_crypto crypto;
+	    krb5_data datack;
+	    PA_S4U2Self self;
+	    char *selfcpn = NULL;
+	    const char *str;
+
+	    ret = decode_PA_S4U2Self(sdata->padata_value.data, 
+				     sdata->padata_value.length,
+				     &self, NULL);
+	    if (ret) {
+		kdc_log(context, config, 0, "Failed to decode PA-S4U2Self");
+		goto out;
+	    }
+
+	    ret = _krb5_s4u2self_to_checksumdata(context, &self, &datack);
+	    if (ret)
+		goto out;
+
+	    ret = krb5_crypto_init(context, &tgt->key, 0, &crypto);
+	    if (ret) {
+		free_PA_S4U2Self(&self);
+		krb5_data_free(&datack);
+		kdc_log(context, config, 0, "krb5_crypto_init failed: %s",
+			krb5_get_err_text(context, ret));
+		goto out;
+	    }
+
+	    ret = krb5_verify_checksum(context,
+				       crypto,
+				       KRB5_KU_TGS_IMPERSONATE,
+				       datack.data, 
+				       datack.length, 
+				       &self.cksum);
+	    krb5_data_free(&datack);
+	    krb5_crypto_destroy(context, crypto);
+	    if (ret) {
+		free_PA_S4U2Self(&self);
+		kdc_log(context, config, 0, 
+			"krb5_verify_checksum failed for S4U2Self: %s",
+			krb5_get_err_text(context, ret));
+		goto out;
+	    }
+
+	    ret = _krb5_principalname2krb5_principal(&client_principal,
+						     self.name,
+						     self.realm);
+	    free_PA_S4U2Self(&self);
+	    if (ret)
+		goto out;
+
+	    ret = krb5_unparse_name(context, client_principal, &selfcpn);	
+	    if (ret)
+		goto out;
+
+	    /*
+	     * Check that service doing the impersonating is
+	     * requesting a ticket to it-self.
+	     */
+	    if (krb5_principal_compare(context, cp, sp) != TRUE) {
+		kdc_log(context, config, 0, "S4U2Self: %s is not allowed "
+			"to impersonate some other user "
+			"(tried for user %s to service %s)",
+			cpn, selfcpn, spn);
+		free(selfcpn);
+		ret = KRB5KDC_ERR_BADOPTION; /* ? */
+		goto out;
+	    }
+
+	    /*
+	     * If the service isn't trusted for authentication to
+	     * delegation, remove the forward flag.
+	     */
+
+	    if (client->entry.flags.trusted_for_delegation) {
+		str = "[forwardable]";
+	    } else {
+		b->kdc_options.forwardable = 0;
+		str = "";
+	    }
+	    kdc_log(context, config, 0, "s4u2self %s impersonating %s to "
+		    "service %s %s", cpn, selfcpn, spn, str);
+	    free(selfcpn);
+	}
+    }
+
+    /*
+     *
+     */
+
+    if (b->additional_tickets != NULL
+	&& b->additional_tickets->len != 0
+	&& b->kdc_options.enc_tkt_in_skey == 0)
+    {
+	/* check that ticket is valid */
+	/* check that ticket is issued to client */
+	/* check that ticket have the forwardable flag set */
+
+	ret = check_constrained_delegation(context, config, client, sp);
+	if (ret) {
+	    kdc_log(context, config, 0,
+		    "constrained delegation from %s to %s not allowed", 
+		    spn, cpn);
+	    goto out;
+	}
+    }
+
+    /*
+     * Check flags
+     */
+
     ret = _kdc_check_flags(context, config, 
 			   client, cpn,
 			   server, spn,
@@ -1031,6 +1195,7 @@ server_lookup:
     ret = tgs_make_reply(context,
 			 config, 
 			 b, 
+			 client_principal,
 			 tgt, 
 			 b->kdc_options.enc_tkt_in_skey ? &adtkt : NULL, 
 			 auth_data,
@@ -1051,8 +1216,12 @@ out:
     if(client)
 	_kdc_free_ent(context, client);
 
-    krb5_free_principal(context, cp);
-    krb5_free_principal(context, sp);
+    if (client_principal && client_principal != cp)
+	krb5_free_principal(context, client_principal);
+    if (cp)
+	krb5_free_principal(context, cp);
+    if (sp)
+	krb5_free_principal(context, sp);
 
     free_EncTicketPart(&adtkt);
 
@@ -1114,6 +1283,7 @@ _kdc_tgs_rep(krb5_context context,
 
     ret = tgs_build_reply(context,
 			  config,
+			  req,
 			  &req->req_body,
 			  krbtgt,
 			  ticket,
