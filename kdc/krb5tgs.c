@@ -197,6 +197,27 @@ check_constrained_delegation(krb5_context context,
  */
 
 static krb5_error_code
+verify_flags (krb5_context context, 
+	      krb5_kdc_configuration *config,
+	      const EncTicketPart *et,
+	      const char *pstr)
+{
+    if(et->endtime < kdc_time){
+	kdc_log(context, config, 0, "Ticket expired (%s)", pstr);
+	return KRB5KRB_AP_ERR_TKT_EXPIRED;
+    }
+    if(et->flags.invalid){
+	kdc_log(context, config, 0, "Ticket not valid (%s)", pstr);
+	return KRB5KRB_AP_ERR_TKT_NYV;
+    }
+    return 0;
+}
+
+/*
+ *
+ */
+
+static krb5_error_code
 fix_transited_encoding(krb5_context context, 
 		       krb5_kdc_configuration *config,
 		       krb5_boolean check_policy,
@@ -922,6 +943,11 @@ tgs_build_reply(krb5_context context,
 	_kdc_free_ent(context, uu);
 	if(ret)
 	    goto out;
+
+	ret = verify_flags(context, config, &adtkt, spn);
+	if (ret)
+	    goto out;
+
 	s = &adtkt.cname;
 	r = adtkt.crealm;
     }
@@ -1148,13 +1174,41 @@ server_lookup:
      *
      */
 
-    if (b->additional_tickets != NULL
+    if (client != NULL
+	&& b->additional_tickets != NULL
 	&& b->additional_tickets->len != 0
 	&& b->kdc_options.enc_tkt_in_skey == 0)
     {
+	Key *clientkey;
+	Ticket *t;
+	char *str;
+
+	t = &b->additional_tickets->val[0];
+
+	ret = hdb_enctype2key(context, &client->entry, 
+			      t->enc_part.etype, &clientkey);
+	if(ret){
+	    ret = KRB5KDC_ERR_ETYPE_NOSUPP; /* XXX */
+	    goto out;
+	}
+
+	ret = krb5_decrypt_ticket(context, t, &clientkey->key, &adtkt, 0);
+	if (ret) {
+	    kdc_log(context, config, 0,
+		    "failed to decrypt ticket for "
+		    "constrained delegation from %s to %s ", spn, cpn);
+	    goto out;
+	}
+
 	/* check that ticket is valid */
-	/* check that ticket is issued to client */
-	/* check that ticket have the forwardable flag set */
+
+	if (adtkt.flags.forwardable == 0) {
+	    kdc_log(context, config, 0,
+		    "missing forwardable flag on ticket for "
+		    "constrained delegation from %s to %s ", spn, cpn);
+	    ret = KRB5KDC_ERR_ETYPE_NOSUPP; /* XXX */
+	    goto out;
+	}
 
 	ret = check_constrained_delegation(context, config, client, sp);
 	if (ret) {
@@ -1163,6 +1217,26 @@ server_lookup:
 		    spn, cpn);
 	    goto out;
 	}
+
+	ret = _krb5_principalname2krb5_principal(&client_principal,
+						 adtkt.cname,
+						 adtkt.crealm);
+	if (ret)
+	    goto out;
+
+	ret = krb5_unparse_name(context, client_principal, &str);
+	if (ret)
+	    goto out;
+
+	ret = verify_flags(context, config, &adtkt, str);
+	if (ret) {
+	    free(str);
+	    goto out;
+	}
+
+	kdc_log(context, config, 0, "constrained delegation for %s "
+		"from %s to %s", str, cpn, spn);
+	free(str);
     }
 
     /*
