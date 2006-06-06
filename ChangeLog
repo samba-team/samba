@@ -1,5 +1,24 @@
-2006-06-01  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-06-06  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kdc/krb5tgs.c: Add impersonation.
+
+	* kuser/kgetcred.c: use new krb5_get_creds interface, add
+	impersonation.
+
+	* lib/krb5/get_cred.c (krb5_get_creds): add
+	KRB5_GC_NO_TRANSIT_CHECK
+
+	* lib/krb5/misc.c: Add impersonate support functions.
+
+	* lib/krb5/get_cred.c: Add impersonate and new krb5_get_creds interface.
+
+	* lib/hdb/hdb.asn1 (HDBFlags): add trusted-for-delegation
+
+	* lib/krb5/krb5.h: Add krb5_get_creds_opt_data and some more
+	KRB5_GC flags.
+	
+2006-06-01  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* lib/hdb/ext.c (hdb_entry_get_ConstrainedDelegACL): new function.
 
 	* lib/krb5/pkinit.c: Avoid more shadowing.
