@@ -397,6 +397,7 @@ get_cred_kdc_usage(krb5_context context,
 		   krb5_creds *in_creds,
 		   krb5_creds *krbtgt,
 		   krb5_principal impersonate_principal,
+		   Ticket *second_ticket,
 		   krb5_creds *out_creds,
 		   krb5_key_usage usage)
 {
@@ -409,7 +410,7 @@ get_cred_kdc_usage(krb5_context context,
     unsigned nonce;
     krb5_keyblock *subkey = NULL;
     size_t len;
-    Ticket second_ticket;
+    Ticket second_ticket_data;
     int send_to_kdc_flags = 0;
     METHOD_DATA padata;
     
@@ -421,12 +422,13 @@ get_cred_kdc_usage(krb5_context context,
     krb5_generate_random_block(&nonce, sizeof(nonce));
     nonce &= 0xffffffff;
     
-    if(flags.b.enc_tkt_in_skey){
+    if(flags.b.enc_tkt_in_skey && second_ticket == NULL){
 	ret = decode_Ticket(in_creds->second_ticket.data, 
 			    in_creds->second_ticket.length, 
-			    &second_ticket, &len);
+			    &second_ticket_data, &len);
 	if(ret)
 	    return ret;
+	second_ticket = &second_ticket_data;
     }
 
 
@@ -485,7 +487,7 @@ get_cred_kdc_usage(krb5_context context,
 			id,
 			addresses,
 			flags,
-			flags.b.enc_tkt_in_skey ? &second_ticket : NULL,
+			second_ticket,
 			in_creds,
 			krbtgt,
 			nonce,
@@ -493,10 +495,6 @@ get_cred_kdc_usage(krb5_context context,
 			&subkey, 
 			&req,
 			usage);
-    if(flags.b.enc_tkt_in_skey) {
-	free_METHOD_DATA(&padata);
-	free_Ticket(&second_ticket);
-    }
     if (ret)
 	goto out;
 
@@ -567,6 +565,8 @@ again:
     }
 
 out:
+    if (second_ticket == &second_ticket_data)
+	free_Ticket(&second_ticket_data);
     free_METHOD_DATA(&padata);
     krb5_data_free(&resp);
     krb5_data_free(&enc);
@@ -586,18 +586,19 @@ get_cred_kdc(krb5_context context,
 	     krb5_creds *in_creds, 
 	     krb5_creds *krbtgt,
 	     krb5_principal impersonate_principal,
+	     Ticket *second_ticket,
 	     krb5_creds *out_creds)
 {
     krb5_error_code ret;
 
     ret = get_cred_kdc_usage(context, id, flags, addresses, in_creds,
-			     krbtgt, impersonate_principal, out_creds,
-			     KRB5_KU_TGS_REQ_AUTH);
+			     krbtgt, impersonate_principal, second_ticket,
+			     out_creds, KRB5_KU_TGS_REQ_AUTH);
     if (ret == KRB5KRB_AP_ERR_BAD_INTEGRITY) {
 	krb5_clear_error_string (context);
 	ret = get_cred_kdc_usage(context, id, flags, addresses, in_creds,
-				 krbtgt, impersonate_principal, out_creds, 
-				 KRB5_KU_AP_REQ_AUTH);
+				 krbtgt, impersonate_principal, second_ticket,
+				 out_creds, KRB5_KU_AP_REQ_AUTH);
     }
     return ret;
 }
@@ -607,7 +608,8 @@ get_cred_kdc(krb5_context context,
 static krb5_error_code
 get_cred_kdc_la(krb5_context context, krb5_ccache id, krb5_kdc_flags flags, 
 		krb5_creds *in_creds, krb5_creds *krbtgt, 
-		krb5_principal impersonate_principal, krb5_creds *out_creds)
+		krb5_principal impersonate_principal, Ticket *second_ticket,
+		krb5_creds *out_creds)
 {
     krb5_error_code ret;
     krb5_addresses addresses, *addrs = &addresses;
@@ -617,7 +619,8 @@ get_cred_kdc_la(krb5_context context, krb5_ccache id, krb5_kdc_flags flags,
     if(addresses.len == 0)
 	addrs = NULL;
     ret = get_cred_kdc(context, id, flags, addrs, 
-		       in_creds, krbtgt, impersonate_principal, out_creds);
+		       in_creds, krbtgt, impersonate_principal, second_ticket,
+		       out_creds);
     krb5_free_addresses(context, &addresses);
     return ret;
 }
@@ -649,7 +652,7 @@ krb5_get_kdc_cred(krb5_context context,
 	return ret;
     }
     ret = get_cred_kdc(context, id, flags, addresses, 
-		       in_creds, krbtgt, NULL, *out_creds);
+		       in_creds, krbtgt, NULL, NULL, *out_creds);
     krb5_free_creds (context, krbtgt);
     if(ret)
 	free(*out_creds);
@@ -735,6 +738,7 @@ get_cred_from_kdc_flags(krb5_context context,
 			krb5_ccache ccache,
 			krb5_creds *in_creds,
 			krb5_principal impersonate_principal,
+			Ticket *second_ticket,			
 			krb5_creds **out_creds,
 			krb5_creds ***ret_tgts)
 {
@@ -793,11 +797,15 @@ get_cred_from_kdc_flags(krb5_context context,
 		if (noaddr)
 		    ret = get_cred_kdc(context, ccache, flags, NULL,
 				       in_creds, &tgts,
-				       impersonate_principal, *out_creds);
+				       impersonate_principal, 
+				       second_ticket,
+				       *out_creds);
 		else
 		    ret = get_cred_kdc_la(context, ccache, flags, 
 					  in_creds, &tgts, 
-					  impersonate_principal, *out_creds);
+					  impersonate_principal, 
+					  second_ticket,
+					  *out_creds);
 		if (ret) {
 		    free (*out_creds);
 		    *out_creds = NULL;
@@ -818,7 +826,7 @@ get_cred_from_kdc_flags(krb5_context context,
 	heim_general_string tgt_inst;
 
 	ret = get_cred_from_kdc_flags(context, flags, ccache, &tmp_creds, 
-				      NULL, &tgt, ret_tgts);
+				      NULL, NULL, &tgt, ret_tgts);
 	if(ret) {
 	    krb5_free_principal(context, tmp_creds.server);
 	    krb5_free_principal(context, tmp_creds.client);
@@ -863,10 +871,12 @@ get_cred_from_kdc_flags(krb5_context context,
 				&noaddr);
 	if (noaddr)
 	    ret = get_cred_kdc (context, ccache, flags, NULL,
-				in_creds, tgt, NULL, *out_creds);
+				in_creds, tgt, NULL, NULL,
+				*out_creds);
 	else
 	    ret = get_cred_kdc_la(context, ccache, flags, 
-				  in_creds, tgt, NULL, *out_creds);
+				  in_creds, tgt, NULL, NULL,
+				  *out_creds);
 	if (ret) {
 	    free (*out_creds);
 	    *out_creds = NULL;
@@ -887,7 +897,8 @@ krb5_get_cred_from_kdc_opt(krb5_context context,
     krb5_kdc_flags f;
     f.i = flags;
     return get_cred_from_kdc_flags(context, f, ccache, 
-				   in_creds, NULL, out_creds, ret_tgts);
+				   in_creds, NULL, NULL,
+				   out_creds, ret_tgts);
 }
 
 krb5_error_code KRB5_LIB_FUNCTION
@@ -971,7 +982,7 @@ krb5_get_credentials_with_flags(krb5_context context,
 
     tgts = NULL;
     ret = get_cred_from_kdc_flags(context, flags, ccache, 
-				  in_creds, NULL, out_creds, &tgts);
+				  in_creds, NULL, NULL, out_creds, &tgts);
     for(i = 0; tgts && tgts[i]; i++) {
 	krb5_cc_store_cred(context, ccache, tgts[i]);
 	krb5_free_creds(context, tgts[i]);
@@ -999,6 +1010,7 @@ struct krb5_get_creds_opt_data {
     krb5_principal self;
     krb5_flags options;
     krb5_enctype enctype;
+    Ticket *ticket;
 };
 
 
@@ -1038,7 +1050,6 @@ krb5_get_creds_opt_add_options(krb5_context context,
     opt->options |= options;
 }
 
-
 void KRB5_LIB_FUNCTION
 krb5_get_creds_opt_set_enctype(krb5_context context,
 			       krb5_get_creds_opt opt,
@@ -1046,7 +1057,6 @@ krb5_get_creds_opt_set_enctype(krb5_context context,
 {
     opt->enctype = enctype;
 }
-
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_get_creds_opt_set_impersonate(krb5_context context,
@@ -1057,6 +1067,37 @@ krb5_get_creds_opt_set_impersonate(krb5_context context,
 	krb5_free_principal(context, opt->self);
     return krb5_copy_principal(context, self, &opt->self);
 }
+
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_get_creds_opt_set_ticket(krb5_context context,
+			      krb5_get_creds_opt opt,
+			      const Ticket *ticket)
+{
+    if (opt->ticket) {
+	free_Ticket(opt->ticket);
+	free(opt->ticket);
+	opt->ticket = NULL;
+    }
+    if (ticket) {
+	krb5_error_code ret;
+
+	opt->ticket = malloc(sizeof(*ticket));
+	if (opt->ticket == NULL) {
+	    krb5_set_error_string(context, "malloc: out of memory");
+	    return ENOMEM;
+	}
+	ret = copy_Ticket(ticket, opt->ticket);
+	if (ret) {
+	    free(opt->ticket);
+	    opt->ticket = NULL;
+	    krb5_set_error_string(context, "malloc: out of memory");
+	    return ret;
+	}
+    }
+    return 0;
+}
+
+
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_get_creds(krb5_context context,
@@ -1149,7 +1190,8 @@ krb5_get_creds(krb5_context context,
 
     tgts = NULL;
     ret = get_cred_from_kdc_flags(context, flags, ccache, 
-				  &in_creds, opt->self, out_creds, &tgts);
+				  &in_creds, opt->self, opt->ticket,
+				  out_creds, &tgts);
     krb5_free_principal(context, in_creds.client);
     for(i = 0; tgts && tgts[i]; i++) {
 	krb5_cc_store_cred(context, ccache, tgts[i]);
