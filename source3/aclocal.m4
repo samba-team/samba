@@ -852,3 +852,94 @@ AC_DEFUN([SMB_REMOVELIB],
     LIBS=`echo $LIBS | sed -es/-l$1//g`
 ])
 
+dnl SMB_CHECK_DMAPI([actions if true], [actions if false])
+dnl Check whether DMAPI is available and is a version that we know
+dnl how to deal with. The default truth action is to set samba_dmapi_libs
+dnl to the list of necessary libraries, and to define USE_DMAPI.
+AC_DEFUN([SMB_CHECK_DMAPI],
+[
+    samba_dmapi_libs=""
+
+    if test x"$samba_dmapi_libs" = x"" ; then
+	AC_CHECK_LIB(dm, dm_get_eventlist,
+		[ samba_dmapi_libs="-ldm"], [])
+    fi
+
+    if test x"$samba_dmapi_libs" = x"" ; then
+	AC_CHECK_LIB(jfsdm, dm_get_eventlist,
+		[samba_dmapi_libs="-ljfsdm"], [])
+    fi
+
+    if test x"$samba_dmapi_libs" = x"" ; then
+	AC_CHECK_LIB(xdsm, dm_get_eventlist,
+		[samba_dmapi_libs="-lxdsm"], [])
+    fi
+
+    # Only bother to test ehaders if we have a candidate DMAPI library
+    if test x"$samba_dmapi_libs" != x"" ; then
+	AC_CHECK_HEADERS(sys/dmi.h xfs/dmapi.h sys/jfsdmapi.h sys/dmapi.h)
+    fi
+
+    if test x"$samba_dmapi_libs" != x"" ; then
+	samba_dmapi_save_LIBS="$LIBS"
+	LIBS="$LIBS $samba_dmapi_libs"
+	AC_TRY_LINK(
+		[
+#ifdef HAVE_XFS_DMAPI_H
+#include <xfs/dmapi.h>
+#elif defined(HAVE_SYS_DMI_H)
+#include <sys/dmi.h>
+#elif defined(HAVE_SYS_JFSDMAPI_H)
+#include <sys/jfsdmapi.h>
+#elif defined(HAVE_SYS_DMAPI_H)
+#include <sys/dmapi.h>
+#endif
+		],
+		[
+/* This link test is designed to fail on IRI 6.4, but should
+ * succeed on Linux, IRIX 6.5 and AIX.
+ */
+void main(void) {
+	char * version;
+	dm_eventset_t events;
+	/* This doesn't take an argument on IRIX 6.4. */
+	dm_init_service(&version);
+	/* IRIX 6.4 expects events to be a pointer. */
+	DMEV_ISSET(DM_EVENT_READ, events);
+}
+		],
+		[
+		    true # DMAPI link test succeeded
+		],
+		[
+		    # DMAPI link failure
+		    samba_dmapi_libs=
+		])
+	LIBS="$samba_dmapi_save_LIBS"
+    fi
+
+    if test x"$samba_dmapi_libs" = x"" ; then
+	# DMAPI detection failure actions begin
+	ifelse($2, [],
+	    [
+		AC_ERROR(Failed to detect a supported DMAPI implementation)
+	    ],
+	    [
+		$2
+	    ])
+	# DMAPI detection failure actions end
+    else
+	# DMAPI detection success actions start
+	ifelse($1, [],
+	    [
+		AC_DEFINE(USE_DMAPI, 1,
+		    [Whether we should build DMAPI integration components])
+		AC_MSG_NOTICE(Found DMAPI support in $samba_dmapi_libs)
+	    ],
+	    [
+		$1
+	    ])
+	# DMAPI detection success actions end
+    fi
+
+])
