@@ -1,5 +1,7 @@
 2006-06-06  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kdc/krb5tgs.c (tgs_build_reply): add constrained delegation.
+
 	* kdc/krb5tgs.c: Add impersonation.
 
 	* kuser/kgetcred.c: use new krb5_get_creds interface, add
