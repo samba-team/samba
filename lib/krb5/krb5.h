@@ -72,6 +72,9 @@ typedef const void *krb5_const_pointer;
 struct krb5_crypto_data;
 typedef struct krb5_crypto_data *krb5_crypto;
 
+struct krb5_get_creds_opt_data;
+typedef struct krb5_get_creds_opt_data *krb5_get_creds_opt;
+
 typedef CKSUMTYPE krb5_cksumtype;
 
 typedef Checksum krb5_checksum;
@@ -203,8 +206,10 @@ typedef enum krb5_key_usage {
     /* Encryption of the SAM-TRACK-ID field */
     KRB5_KU_PA_SERVER_REFERRAL = 26,
     /* Keyusage for the server referral in a TGS req */
-    KRB5_KU_SAM_ENC_NONCE_SAD = 27
+    KRB5_KU_SAM_ENC_NONCE_SAD = 27,
     /* Encryption of the SAM-NONCE-OR-SAD field */
+    KRB5_KU_TGS_IMPERSONATE = -17
+    /* Checksum type used in the impersonate field */
 } krb5_key_usage;
 
 typedef krb5_key_usage krb5_keyusage;
@@ -339,6 +344,8 @@ typedef union {
 #define KRB5_GC_CACHED			(1U << 0)
 #define KRB5_GC_USER_USER		(1U << 1)
 #define KRB5_GC_EXPIRED_OK		(1U << 2)
+#define KRB5_GC_NO_STORE		(1U << 3)
+#define KRB5_GC_FORWARDABLE		(1U << 4)
 
 /* constants for compare_creds (and cc_retrieve_cred) */
 #define KRB5_TC_DONT_MATCH_REALM	(1U << 31)
