@@ -2463,6 +2463,8 @@ NTSTATUS _samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u,
 		return NT_STATUS_NO_MEMORY;
 	}
 
+	strlower_m(account);
+
 	nt_status = can_create(p->mem_ctx, account);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
