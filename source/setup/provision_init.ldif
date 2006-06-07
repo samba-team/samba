@@ -3,6 +3,7 @@ dn: @INDEXLIST
 @IDXATTR: sAMAccountName
 @IDXATTR: objectSid
 @IDXATTR: objectClass
+@IDXATTR: objectCategory
 @IDXATTR: member
 @IDXATTR: unixID
 @IDXATTR: unixName
