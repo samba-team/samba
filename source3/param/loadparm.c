@@ -1611,7 +1611,6 @@ static void init_globals(BOOL first_time_only)
 	string_set(&Globals.szTemplateShell, "/bin/false");
 	string_set(&Globals.szTemplateHomedir, "/home/%D/%U");
 	string_set(&Globals.szWinbindSeparator, "\\");
-	string_set(&Globals.szAclCompat, "");
 	string_set(&Globals.szCupsServer, "");
 	string_set(&Globals.szIPrintServer, "");
 
