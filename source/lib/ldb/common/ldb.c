@@ -171,13 +171,11 @@ void ldb_reset_err_string(struct ldb_context *ldb)
 /*
   start a transaction
 */
-int ldb_transaction_start(struct ldb_context *ldb)
+static int ldb_transaction_start_internal(struct ldb_context *ldb)
 {
 	struct ldb_module *module;
 	int status;
 	FIRST_OP(ldb, start_transaction);
-	
-	ldb->transaction_active++;
 
 	ldb_reset_err_string(ldb);
 
@@ -195,17 +193,11 @@ int ldb_transaction_start(struct ldb_context *ldb)
 /*
   commit a transaction
 */
-int ldb_transaction_commit(struct ldb_context *ldb)
+static int ldb_transaction_commit_internal(struct ldb_context *ldb)
 {
 	struct ldb_module *module;
 	int status;
 	FIRST_OP(ldb, end_transaction);
-
-	if (ldb->transaction_active > 0) {
-		ldb->transaction_active--;
-	} else {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
 
 	ldb_reset_err_string(ldb);
 
@@ -223,17 +215,11 @@ int ldb_transaction_commit(struct ldb_context *ldb)
 /*
   cancel a transaction
 */
-int ldb_transaction_cancel(struct ldb_context *ldb)
+static int ldb_transaction_cancel_internal(struct ldb_context *ldb)
 {
 	struct ldb_module *module;
 	int status;
 	FIRST_OP(ldb, del_transaction);
-
-	if (ldb->transaction_active > 0) {
-		ldb->transaction_active--;
-	} else {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
 
 	status = module->ops->del_transaction(module);
 	if (status != LDB_SUCCESS) {
@@ -244,6 +230,89 @@ int ldb_transaction_cancel(struct ldb_context *ldb)
 		}
 	}
 	return status;
+}
+
+int ldb_transaction_start(struct ldb_context *ldb)
+{
+	/* disable autotransactions */
+	ldb->transaction_active++;
+
+	return ldb_transaction_start_internal(ldb);
+}
+
+int ldb_transaction_commit(struct ldb_context *ldb)
+{
+	/* renable autotransactions (when we reach 0) */
+	if (ldb->transaction_active > 0)
+		ldb->transaction_active--;
+
+	return ldb_transaction_commit_internal(ldb);
+}
+
+int ldb_transaction_cancel(struct ldb_context *ldb)
+{
+	/* renable autotransactions (when we reach 0) */
+	if (ldb->transaction_active > 0)
+		ldb->transaction_active--;
+
+	return ldb_transaction_cancel_internal(ldb);
+}
+
+int ldb_autotransaction_start(struct ldb_context *ldb)
+{
+	/* explicit transaction active, ignore autotransaction request */
+	if (ldb->transaction_active)
+		return LDB_SUCCESS;
+
+	return ldb_transaction_start_internal(ldb);
+}
+
+int ldb_autotransaction_commit(struct ldb_context *ldb)
+{
+	/* explicit transaction active, ignore autotransaction request */
+	if (ldb->transaction_active)
+		return LDB_SUCCESS;
+
+	return ldb_transaction_commit_internal(ldb);
+}
+
+int ldb_autotransaction_cancel(struct ldb_context *ldb)
+{
+	/* explicit transaction active, ignore autotransaction request */
+	if (ldb->transaction_active)
+		return LDB_SUCCESS;
+
+	return ldb_transaction_cancel_internal(ldb);
+}
+
+/* autostarts a transacion if none active */
+static int ldb_autotransaction_request(struct ldb_context *ldb, struct ldb_request *req)
+{
+	int ret;
+
+	ret = ldb_autotransaction_start(ldb);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	ret = ldb_request(ldb, req);
+	if (ret == LDB_SUCCESS) {
+		ret = ldb_async_wait(req->async.handle, LDB_WAIT_ALL);
+	}
+
+	if (ret == LDB_SUCCESS) {
+		return ldb_autotransaction_commit(ldb);
+	}
+	ldb_autotransaction_cancel(ldb);
+
+	if (ldb->err_string == NULL) {
+		/* no error string was setup by the backend */
+		ldb_set_errstring(ldb, 
+				  talloc_asprintf(ldb, "%s (%d)", 
+						  ldb_strerror(ret), ret));
+	}
+
+	return ret;
 }
 
 int ldb_async_wait(struct ldb_async_handle *handle, enum ldb_async_wait_type type)
@@ -458,42 +527,6 @@ int ldb_search(struct ldb_context *ldb,
 	}
 
 	talloc_free(req);
-	return ret;
-}
-
-/* autostarts a transacion if none active */
-static int ldb_autotransaction_request(struct ldb_context *ldb, struct ldb_request *req)
-{
-	int ret, close_transaction;
-
-	close_transaction = 0;
-	if (!ldb->transaction_active) {
-		ret = ldb_transaction_start(ldb);
-		if (ret != LDB_SUCCESS) {
-			return ret;
-		}
-		close_transaction = 1;
-	}
-
-	ret = ldb_request(ldb, req);
-	if (ret == LDB_SUCCESS) {
-		ret = ldb_async_wait(req->async.handle, LDB_WAIT_ALL);
-	}
-
-	if (close_transaction) {
-		if (ret == LDB_SUCCESS) {
-			return ldb_transaction_commit(ldb);
-		}
-		ldb_transaction_cancel(ldb);
-	}
-
-	if (ldb->err_string == NULL) {
-		/* no error string was setup by the backend */
-		ldb_set_errstring(ldb, 
-				  talloc_asprintf(ldb, "%s (%d)", 
-						  ldb_strerror(ret), ret));
-	}
-
 	return ret;
 }
 
