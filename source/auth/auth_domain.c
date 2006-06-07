@@ -403,7 +403,7 @@ static NTSTATUS check_trustdomain_security(const struct auth_context *auth_conte
 
 #if 0
 	/* Test if machine password is expired and need to be changed */
-	if (time(NULL) > last_change_time + lp_machine_password_timeout())
+	if (time(NULL) > last_change_time + (time_t)lp_machine_password_timeout())
 	{
 		global_machine_password_needs_changing = True;
 	}
