@@ -130,6 +130,11 @@ struct ldb_context {
 */
 #define ldb_oom(ldb) ldb_debug_set(ldb, LDB_DEBUG_FATAL, "ldb out of memory at %s:%d\n", __FILE__, __LINE__)
 
+/* The following definitions come from lib/ldb/common/ldb.c  */
+
+int ldb_connect_backend(struct ldb_context *ldb, const char *url, unsigned int flags, const char *options[],
+			struct ldb_module **backend_module);
+
 /* The following definitions come from lib/ldb/common/ldb_modules.c  */
 
 int ldb_load_modules(struct ldb_context *ldb, const char *options[]);
