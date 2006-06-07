@@ -219,6 +219,33 @@ objectClass: user
 
 	assert(res[0].dn == res3[0].dn);
 
+	println("Testing ldb.search for (&(cn=ldaptest*computer)(objectCategory=compuTER))");
+	var res4 = ldb.search("(&(cn=ldaptest*computer)(objectCategory=compuTER))");
+	if (res4.length != 1) {
+		println("Could not find (&(cn=ldaptest*computer)(objectCategory=compuTER))");
+		assert(res4.length == 1);
+	}
+
+	assert(res[0].dn == res4[0].dn);
+
+	println("Testing ldb.search for (&(cn=ldaptestcomput*)(objectCategory=compuTER))");
+	var res5 = ldb.search("(&(cn=ldaptestcomput*)(objectCategory=compuTER))");
+	if (res5.length != 1) {
+		println("Could not find (&(cn=ldaptestcomput*)(objectCategory=compuTER))");
+		assert(res5.length == 1);
+	}
+
+	assert(res[0].dn == res5[0].dn);
+
+	println("Testing ldb.search for (&(cn=*daptestcomputer)(objectCategory=compuTER))");
+	var res6 = ldb.search("(&(cn=*daptestcomputer)(objectCategory=compuTER))");
+	if (res6.length != 1) {
+		println("Could not find (&(cn=*daptestcomputer)(objectCategory=compuTER))");
+		assert(res6.length == 1);
+	}
+
+	assert(res[0].dn == res6[0].dn);
+
 	ok = ldb.del(res[0].dn);
 	if (!ok) {
 		println(ldb.errstring());
