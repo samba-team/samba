@@ -251,10 +251,10 @@ log_patypes(krb5_context context,
 krb5_error_code
 _kdc_encode_reply(krb5_context context,
 		  krb5_kdc_configuration *config,
-		  KDC_REP *rep, EncTicketPart *et, EncKDCRepPart *ek, 
+		  KDC_REP *rep, const EncTicketPart *et, EncKDCRepPart *ek, 
 		  krb5_enctype etype, 
-		  int skvno, EncryptionKey *skey,
-		  int ckvno, EncryptionKey *ckey,
+		  int skvno, const EncryptionKey *skey,
+		  int ckvno, const EncryptionKey *ckey,
 		  const char **e_text,
 		  krb5_data *reply)
 {
