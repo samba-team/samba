@@ -229,7 +229,7 @@ static int kludge_acl_init(struct ldb_module *module)
 {
 	int ret, i;
 	TALLOC_CTX *mem_ctx = talloc_new(module);
-	const char *attrs[] = { "attribute", NULL };
+	static const char *attrs[] = { "passwordAttribute", NULL };
 	struct ldb_result *res;
 	struct ldb_message *msg;
 	struct ldb_message_element *password_attributes;
