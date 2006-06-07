@@ -1,3 +1,7 @@
+2006-06-06  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* ent_setup.c (attr_to_flags): Add KRB5_KDB_TRUSTED_FOR_DELEGATION
+
 2006-05-30  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* password_quality.c (kadm5_check_password_quality): set error
