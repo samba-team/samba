@@ -310,7 +310,7 @@ BOOL secrets_fetch_trust_account_password(const char *domain, uint8 ret_pwd[16],
 	/* Test if machine password has expired and needs to be changed */
 	if (lp_machine_password_timeout()) {
 		if (pass->mod_time > 0 && time(NULL) > (pass->mod_time +
-				lp_machine_password_timeout())) {
+				(time_t)lp_machine_password_timeout())) {
 			global_machine_password_needs_changing = True;
 		}
 	}
