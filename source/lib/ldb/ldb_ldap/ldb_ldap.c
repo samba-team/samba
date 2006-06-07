@@ -771,9 +771,10 @@ static int lldb_destructor(struct lldb_private *lldb)
   connect to the database
 */
 static int lldb_connect(struct ldb_context *ldb,
-		 const char *url, 
-		 unsigned int flags, 
-		 const char *options[])
+			const char *url, 
+			unsigned int flags, 
+			const char *options[],
+			struct ldb_module **module)
 {
 	struct lldb_private *lldb = NULL;
 	int version = 3;
@@ -803,15 +804,16 @@ static int lldb_connect(struct ldb_context *ldb,
 		goto failed;
 	}
 
-	ldb->modules = talloc(ldb, struct ldb_module);
-	if (!ldb->modules) {
+	*module = talloc(ldb, struct ldb_module);
+	if (!module) {
 		ldb_oom(ldb);
-		goto failed;
+		talloc_free(lldb);
+		return -1;
 	}
-	ldb->modules->ldb = ldb;
-	ldb->modules->prev = ldb->modules->next = NULL;
-	ldb->modules->private_data = lldb;
-	ldb->modules->ops = &lldb_ops;
+	(*module)->ldb = ldb;
+	(*module)->prev = ldb->modules->next = NULL;
+	(*module)->private_data = lldb;
+	(*module)->ops = &lldb_ops;
 
 	return 0;
 

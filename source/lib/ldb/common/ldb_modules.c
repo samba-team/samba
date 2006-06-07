@@ -366,6 +366,9 @@ int ldb_next_request(struct ldb_module *module, struct ldb_request *request)
 	case LDB_RENAME:
 		FIND_OP(module, rename);
 		return module->ops->rename(module, request);
+	case LDB_SEQUENCE_NUMBER:
+		FIND_OP(module, sequence_number);
+		return module->ops->sequence_number(module, request);
 	default:
 		FIND_OP(module, request);
 		return module->ops->request(module, request);

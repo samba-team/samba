@@ -2073,9 +2073,10 @@ static const struct ldb_module_ops lsqlite3_ops = {
  * connect to the database
  */
 static int lsqlite3_connect(struct ldb_context *ldb,
-		     const char *url, 
-		     unsigned int flags, 
-		     const char *options[])
+			    const char *url, 
+			    unsigned int flags, 
+			    const char *options[],
+			    struct ldb_module **module)
 {
 	int                         i;
         int                         ret;
@@ -2097,15 +2098,18 @@ static int lsqlite3_connect(struct ldb_context *ldb,
         
 	talloc_set_destructor(lsqlite3, destructor);
         
-	ldb->modules = talloc(ldb, struct ldb_module);
-	if (!ldb->modules) {
+
+
+	*module = talloc(ldb, struct ldb_module);
+	if (!module) {
+		ldb_oom(ldb);
 		goto failed;
 	}
-	ldb->modules->ldb = ldb;
-	ldb->modules->prev = ldb->modules->next = NULL;
-	ldb->modules->private_data = lsqlite3;
-	ldb->modules->ops = &lsqlite3_ops;
-        
+	(*module)->ldb = ldb;
+	(*module)->prev = ldb->modules->next = NULL;
+	(*module)->private_data = lsqlite3;
+	(*module)->ops = &lsqlite3_ops;
+
 	if (options) {
 		/*
                  * take a copy of the options array, so we don't have to rely
