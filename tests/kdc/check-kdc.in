@@ -241,6 +241,7 @@ ${kgetcred_imp} --impersonate=bar@${R} foo@${R} 2>/dev/null && exitcode=1
 echo test constrained delegation
 ${kgetcred_imp} --forward --impersonate=bar@${R} ${ps} || exitcode=1
 ${kgetcred} --out-cache=${o2cache} --delegation-credential-cache=${ocache} ${server}@${R} || exitcode=1
+./ap-req ${server}@${R} ${keytab} ${o2cache} || exitcode=1
 ${kgetcred} --out-cache=${o2cache} --delegation-credential-cache=${ocache} bar@${R} 2>/dev/null && exitcode=1
 ${kdestroy}
 
