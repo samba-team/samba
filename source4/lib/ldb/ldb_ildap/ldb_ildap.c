@@ -792,7 +792,8 @@ static const struct ldb_module_ops ildb_ops = {
   connect to the database
 */
 static int ildb_connect(struct ldb_context *ldb, const char *url, 
-		 unsigned int flags, const char *options[])
+			unsigned int flags, const char *options[],
+			struct ldb_module **module)
 {
 	struct ildb_private *ildb = NULL;
 	NTSTATUS status;
@@ -824,15 +825,17 @@ static int ildb_connect(struct ldb_context *ldb, const char *url,
 		goto failed;
 	}
 
-	ldb->modules = talloc(ldb, struct ldb_module);
-	if (!ldb->modules) {
+
+	*module = talloc(ldb, struct ldb_module);
+	if (!module) {
 		ldb_oom(ldb);
-		goto failed;
+		talloc_free(ildb);
+		return -1;
 	}
-	ldb->modules->ldb = ldb;
-	ldb->modules->prev = ldb->modules->next = NULL;
-	ldb->modules->private_data = ildb;
-	ldb->modules->ops = &ildb_ops;
+	(*module)->ldb = ldb;
+	(*module)->prev = ldb->modules->next = NULL;
+	(*module)->private_data = ildb;
+	(*module)->ops = &ildb_ops;
 
 	/* caller can optionally setup credentials using the opaque token 'credentials' */
 	creds = talloc_get_type(ldb_get_opaque(ldb, "credentials"), struct cli_credentials);

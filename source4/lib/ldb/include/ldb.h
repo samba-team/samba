@@ -567,8 +567,8 @@ enum ldb_request_type {
 	LDB_MODIFY,
 	LDB_DELETE,
 	LDB_RENAME,
-
-	LDB_REQ_REGISTER
+	LDB_REQ_REGISTER,
+	LDB_SEQUENCE_NUMBER
 };
 
 enum ldb_reply_type {
@@ -638,6 +638,10 @@ struct ldb_register_control {
 	const char *oid;
 };
 
+struct ldb_sequence_number {
+	uint64_t seq_num;
+};
+
 struct ldb_request {
 
 	enum ldb_request_type operation;
@@ -649,6 +653,7 @@ struct ldb_request {
 		struct ldb_delete del;
 		struct ldb_rename rename;
 		struct ldb_register_control reg;
+		struct ldb_sequence_number seq_num;
 	} op;
 
 	struct ldb_control **controls;
@@ -809,6 +814,11 @@ int ldb_rename(struct ldb_context *ldb, const struct ldb_dn *olddn, const struct
   otherwise a failure code)
 */
 int ldb_delete(struct ldb_context *ldb, const struct ldb_dn *dn);
+
+/**
+  Obtain current database sequence number
+*/
+int ldb_sequence_number(struct ldb_context *ldb, uint64_t *seq_num);
 
 /**
   start a transaction
