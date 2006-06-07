@@ -548,9 +548,9 @@ static struct ldb_val **ldap_decode_substring(TALLOC_CTX *mem_ctx, struct ldb_va
 	if (chunks[chunk_num]->data == NULL) {
 		return NULL;
 	}
-	chunks[chunk_num]->length = strlen(value) + 1;
+	chunks[chunk_num]->length = strlen(value);
 
-	chunks[chunk_num + 1] = NULL;
+	chunks[chunk_num + 1] = '\0';
 
 	return chunks;
 }
