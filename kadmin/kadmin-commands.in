@@ -313,6 +313,12 @@ command = {
 		help = "key version number"
 		default = "-1"
 	}
+	option = {
+		long = "constrained-delegation"
+		type = "string"
+		argument = "principal"
+		help = "allowed target principal"
+	}
 	argument = "principal"
 	min_args = "1"
 	max_args = "1"

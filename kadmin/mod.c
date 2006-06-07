@@ -58,7 +58,8 @@ do_mod_entry(krb5_principal principal, void *data)
        e->expiration_time_string ||
        e->pw_expiration_time_string ||
        e->attributes_string ||
-       e->kvno_integer != -1) {
+       e->kvno_integer != -1 ||
+       e->constrained_delegation_string) {
 	ret = set_entry(context, &princ, &mask, 
 			e->max_ticket_life_string, 
 			e->max_renewable_life_string, 
@@ -68,6 +69,44 @@ do_mod_entry(krb5_principal principal, void *data)
 	if(e->kvno_integer != -1) {
 	    princ.kvno = e->kvno_integer;
 	    mask |= KADM5_KVNO;
+	}
+	if (e->constrained_delegation_string) {
+	    HDB_extension ext;
+	    krb5_tl_data *tl, **ptl;
+	    krb5_data buf;
+	    krb5_principal p;
+	    size_t size;
+	    
+	    ext.mandatory = FALSE;
+	    ext.data.element = choice_HDB_extension_data_allowed_to_delegate_to;
+	    ext.data.u.allowed_to_delegate_to.len = 1;
+	    ext.data.u.allowed_to_delegate_to.val = 
+		emalloc(sizeof(ext.data.u.allowed_to_delegate_to.val[0]));
+	    ret = krb5_parse_name(context, 
+				  e->constrained_delegation_string,
+				  &p);
+	    ext.data.u.allowed_to_delegate_to.val[0] = *p;
+	    free(p);
+	    
+	    ASN1_MALLOC_ENCODE(HDB_extension, buf.data, buf.length,
+			       &ext, &size, ret);
+	    if (ret)
+		abort();
+	    if (buf.length != size)
+		abort();
+
+	    tl = ecalloc(1, sizeof(*tl));
+	    tl->tl_data_next = NULL;
+	    tl->tl_data_type = KRB5_TL_EXTENSION;
+	    tl->tl_data_length = buf.length;
+	    tl->tl_data_contents = buf.data;
+
+	    ptl = &princ.tl_data;
+	    while (*ptl != NULL)
+		ptl = &(*ptl)->tl_data_next;
+	    *ptl = tl;
+
+	    mask |= KADM5_TL_DATA;
 	}
     } else
 	ret = edit_entry(&princ, &mask, NULL, 0);
