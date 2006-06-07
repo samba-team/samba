@@ -67,9 +67,11 @@ struct ldb_module_ops {
 	int (*end_transaction)(struct ldb_module *);
 	int (*del_transaction)(struct ldb_module *);
 	int (*async_wait)(struct ldb_async_handle *, enum ldb_async_wait_type);
+	int (*sequence_number)(struct ldb_module *, struct ldb_request *);
 };
 
-typedef int (*ldb_connect_fn) (struct ldb_context *ldb, const char *url, unsigned int flags, const char *options[]);
+typedef int (*ldb_connect_fn) (struct ldb_context *ldb, const char *url, unsigned int flags, const char *options[],
+			       struct ldb_module **module);
 
 /*
   schema related information needed for matching rules

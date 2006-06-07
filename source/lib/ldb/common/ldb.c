@@ -91,16 +91,20 @@ static ldb_connect_fn ldb_find_backend(const char *url)
 }
 
 /* 
- connect to a database. The URL can either be one of the following forms
+   Return the ldb module form of a database. The URL can either be one of the following forms
    ldb://path
    ldapi://path
 
    flags is made up of LDB_FLG_*
 
    the options are passed uninterpreted to the backend, and are
-   backend specific
+   backend specific.
+
+  This allows modules to get at only the backend module, for example where a module 
+  may wish to direct certain requests at a particular backend.
 */
-int ldb_connect(struct ldb_context *ldb, const char *url, unsigned int flags, const char *options[])
+int ldb_connect_backend(struct ldb_context *ldb, const char *url, unsigned int flags, const char *options[],
+			struct ldb_module **backend_module)
 {
 	int ret;
 	char *backend;
@@ -128,10 +132,32 @@ int ldb_connect(struct ldb_context *ldb, const char *url, unsigned int flags, co
 		return LDB_ERR_OTHER;
 	}
 
-	ret = fn(ldb, url, flags, options);
+	ret = fn(ldb, url, flags, options, backend_module);
 
 	if (ret != LDB_SUCCESS) {
 		ldb_debug(ldb, LDB_DEBUG_ERROR, "Failed to connect to '%s'\n", url);
+		return ret;
+	}
+	return ret;
+}
+
+
+/* 
+ connect to a database. The URL can either be one of the following forms
+   ldb://path
+   ldapi://path
+
+   flags is made up of LDB_FLG_*
+
+   the options are passed uninterpreted to the backend, and are
+   backend specific
+*/
+int ldb_connect(struct ldb_context *ldb, const char *url, unsigned int flags, const char *options[])
+{
+	int ret;
+
+	ret = ldb_connect_backend(ldb, url, flags, options, &ldb->modules);
+	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
 
@@ -395,6 +421,10 @@ int ldb_request(struct ldb_context *ldb, struct ldb_request *req)
 		FIRST_OP(ldb, rename);
 		ret = module->ops->rename(module, req);
 		break;
+	case LDB_SEQUENCE_NUMBER:
+		FIRST_OP(ldb, sequence_number);
+		ret = module->ops->sequence_number(module, req);
+		break;
 	default:
 		FIRST_OP(ldb, request);
 		ret = module->ops->request(module, req);
@@ -649,6 +679,38 @@ int ldb_rename(struct ldb_context *ldb, const struct ldb_dn *olddn, const struct
 
 	/* do request and autostart a transaction */
 	ret = ldb_autotransaction_request(ldb, req);
+
+	talloc_free(req);
+	return ret;
+}
+
+
+/*
+  rename a record in the database
+*/
+int ldb_sequence_number(struct ldb_context *ldb, uint64_t *seq_num)
+{
+	struct ldb_request *req;
+	int ret;
+
+	req = talloc(ldb, struct ldb_request);
+	if (req == NULL) {
+		ldb_set_errstring(ldb, talloc_strdup(ldb, "Out of memory!"));
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	req->operation = LDB_SEQUENCE_NUMBER;
+	req->controls = NULL;
+	req->async.context = NULL;
+	req->async.callback = NULL;
+	ldb_set_timeout(ldb, req, 0); /* use default timeout */
+
+	/* do request and autostart a transaction */
+	ret = ldb_request(ldb, req);
+	
+	if (ret == LDB_SUCCESS) {
+		*seq_num = req->op.seq_num.seq_num;
+	}
 
 	talloc_free(req);
 	return ret;

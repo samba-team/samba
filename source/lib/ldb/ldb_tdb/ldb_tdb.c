@@ -923,26 +923,35 @@ static int ltdb_request(struct ldb_module *module, struct ldb_request *req)
 /*
   return sequenceNumber from @BASEINFO
 */
-static uint64_t ltdb_sequence_number(struct ldb_context *ldb)
+static int ltdb_sequence_number(struct ldb_module *module, struct ldb_request *req)
 {
-	TALLOC_CTX *tmp_ctx = talloc_new(ldb);
-	const char *attrs[] = { "sequenceNumber", NULL };
-	struct ldb_result *res = NULL;
+	TALLOC_CTX *tmp_ctx = talloc_new(req);
+	struct ldb_message *msg = NULL;
 	struct ldb_dn *dn = ldb_dn_explode(tmp_ctx, "@BASEINFO");
-	int ret;
-	uint64_t seq_num;
+	int tret;
 
-	ret = ldb_search(ldb, dn, LDB_SCOPE_BASE, NULL, attrs, &res);
-	talloc_steal(tmp_ctx, res);
-	if (ret != LDB_SUCCESS || res->count != 1) {
+	if (tmp_ctx == NULL) {
 		talloc_free(tmp_ctx);
-		/* zero is as good as anything when we don't know */
-		return 0;
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	seq_num = ldb_msg_find_uint64(res->msgs[0], "sequenceNumber", 0);
+	msg = talloc(tmp_ctx, struct ldb_message);
+	if (msg == NULL) {
+		talloc_free(tmp_ctx);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	tret = ltdb_search_dn1(module, dn, msg);
+	if (tret != 1) {
+		talloc_free(tmp_ctx);
+		req->op.seq_num.seq_num = 0;
+		/* zero is as good as anything when we don't know */
+		return LDB_SUCCESS;
+	}
+
+	req->op.seq_num.seq_num = ldb_msg_find_uint64(msg, "sequenceNumber", 0);
 	talloc_free(tmp_ctx);
-	return seq_num;	
+	return LDB_SUCCESS;
 }
 
 static const struct ldb_module_ops ltdb_ops = {
@@ -956,7 +965,8 @@ static const struct ldb_module_ops ltdb_ops = {
 	.start_transaction = ltdb_start_trans,
 	.end_transaction   = ltdb_end_trans,
 	.del_transaction   = ltdb_del_trans,
-	.async_wait        = ltdb_async_wait
+	.async_wait        = ltdb_async_wait,
+	.sequence_number   = ltdb_sequence_number
 };
 
 
@@ -964,7 +974,8 @@ static const struct ldb_module_ops ltdb_ops = {
   connect to the database
 */
 static int ltdb_connect(struct ldb_context *ldb, const char *url, 
-		 unsigned int flags, const char *options[])
+			unsigned int flags, const char *options[],
+			struct ldb_module **module)
 {
 	const char *path;
 	int tdb_flags, open_flags;
@@ -1010,17 +1021,16 @@ static int ltdb_connect(struct ldb_context *ldb, const char *url,
 
 	ltdb->sequence_number = 0;
 
-	ldb->modules = talloc(ldb, struct ldb_module);
-	if (!ldb->modules) {
+	*module = talloc(ldb, struct ldb_module);
+	if (!module) {
 		ldb_oom(ldb);
 		talloc_free(ltdb);
 		return -1;
 	}
-	ldb->modules->ldb = ldb;
-	ldb->modules->prev = ldb->modules->next = NULL;
-	ldb->modules->private_data = ltdb;
-	ldb->modules->ops = &ltdb_ops;
-	ldb->sequence_number = ltdb_sequence_number;
+	(*module)->ldb = ldb;
+	(*module)->prev = ldb->modules->next = NULL;
+	(*module)->private_data = ltdb;
+	(*module)->ops = &ltdb_ops;
 
 	return 0;
 }
