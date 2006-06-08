@@ -478,22 +478,24 @@ failed:
 	return NULL;
 }
 
-/* compare DNs using casefolding compare functions */
+/* Determine if dn is below base, in the ldap tree.  Used for
+ * evaluating a subtree search.
+ * 0 if they match, otherwise non-zero
+ */
 
 int ldb_dn_compare_base(struct ldb_context *ldb,
-		   const struct ldb_dn *base,
-		   const struct ldb_dn *dn)
+			const struct ldb_dn *base,
+			const struct ldb_dn *dn)
 {
 	int ret;
 	int n0, n1;
 
+	if (base == NULL || base->comp_num == 0) return 0;
+	if (dn == NULL || dn->comp_num == 0) return -1;
+
 	if (base->comp_num > dn->comp_num) {
 		return (dn->comp_num - base->comp_num);
 	}
-
-	if (base == NULL || base->comp_num == 0) return 0;
-	if (dn == NULL || dn->comp_num == 0) return -1;
-	if (base->comp_num > dn->comp_num) return -1;
 
 	/* if the number of components doesn't match they differ */
 	n0 = base->comp_num - 1;
@@ -521,6 +523,11 @@ int ldb_dn_compare_base(struct ldb_context *ldb,
 
 	return 0;
 }
+
+/* compare DNs using casefolding compare functions.  
+
+   If they match, then return 0
+ */
 
 int ldb_dn_compare(struct ldb_context *ldb,
 		   const struct ldb_dn *edn0,
