@@ -15,4 +15,4 @@
 
 - allow data structures outside of interfaces
 
-- mem_ctx in the interface rather then as struct ndr member.
+- mem_ctx in the interface rather than as struct ndr member.

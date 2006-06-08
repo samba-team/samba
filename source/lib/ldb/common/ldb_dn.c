@@ -672,7 +672,7 @@ static struct ldb_dn_component ldb_dn_copy_component(void *mem_ctx, struct ldb_d
 
 /* copy specified number of elements of a dn into a new one
    element are copied from top level up to the unique rdn
-   num_el may be greater then dn->comp_num (see ldb_dn_make_child)
+   num_el may be greater than dn->comp_num (see ldb_dn_make_child)
 */
 struct ldb_dn *ldb_dn_copy_partial(void *mem_ctx, const struct ldb_dn *dn, int num_el)
 {

@@ -159,8 +159,8 @@ _gssapi_msg_order_check(struct gss_msg_order *o, OM_uint32 seq_num)
 
     r = (o->flags & (GSS_C_REPLAY_FLAG|GSS_C_SEQUENCE_FLAG))==GSS_C_REPLAY_FLAG;
 
-    /* sequence number larger then largest sequence number 
-     * or smaller then the first sequence number */
+    /* sequence number larger than largest sequence number 
+     * or smaller than the first sequence number */
     if (seq_num > o->elem[0]
 	|| seq_num < o->first_seq
 	|| o->length == 0) 

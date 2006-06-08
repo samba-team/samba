@@ -65,7 +65,7 @@ interface IOXIDResolver
 
 	/* In some cases the client maybe unsure that a particular */
 	/* binding will reach the server. (For example, when the oxid */
-	/* bindings have more then one TCP/IP binding) This call */
+	/* bindings have more than one TCP/IP binding) This call */
 	/* can be used to validate the binding */
 	/* from the client. */
 	[idempotent] WERROR ServerAlive ();

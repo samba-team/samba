@@ -1211,7 +1211,7 @@ init_cred_loop(krb5_context context,
     ctx->pk_nonce = ctx->nonce;
 
     /*
-     * Increase counter when we want other pre-auth types then
+     * Increase counter when we want other pre-auth types than
      * KRB5_PA_ENC_TIMESTAMP.
      */
 #define MAX_PA_COUNTER 3 
@@ -1391,7 +1391,7 @@ krb5_get_init_creds(krb5_context context,
 	case KRB5KDC_ERR_KEY_EXPIRED :
 	    /* try to avoid recursion */
 
-	    /* don't try to change password where then where none */
+	    /* don't try to change password where there where none */
 	    if (prompter == NULL || ctx.password == NULL)
 		goto out;
 

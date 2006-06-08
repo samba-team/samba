@@ -463,7 +463,7 @@ static WERROR regf_get_value (TALLOC_CTX *ctx, const struct registry_key *key, i
 	}
 
 	if ((*ret)->data.length < vk->data_length) {
-		DEBUG(1, ("Read data less then indicated data length!\n"));
+		DEBUG(1, ("Read data less than indicated data length!\n"));
 	}
 	
 	return WERR_OK;

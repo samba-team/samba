@@ -61,7 +61,7 @@ directory.
 =item I<--parse-idl-tree>
 
 Read internal tree structure from input files rather 
-then assuming they contain IDL.
+than assuming they contain IDL.
 
 =item I<--dump-idl>
 
@@ -101,7 +101,7 @@ packet-dcerpc-OUTNAME.h.
 	
 Pidl will read additional data from an ethereal conformance file if present. 
 Such a file should have the same location as the IDL file but with the 
-extension I<cnf> rather then I<idl>. See L<Parse::Pidl::Ethereal::Conformance>
+extension I<cnf> rather than I<idl>. See L<Parse::Pidl::Ethereal::Conformance>
 for details on the format of this file.
 
 =item I<--diff>

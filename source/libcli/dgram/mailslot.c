@@ -22,10 +22,10 @@
 
 /*
    This implements "Class 2 mailslots", i.e. the communication mechanism 
-   used for all mailslot packets smaller then 425 bytes. 
+   used for all mailslot packets smaller than 425 bytes. 
 
    "Class 1 mailslots" (which use SMB) are used for messages larger 
-   then 426 bytes and are supported on some systems. These are not implemented
+   than 426 bytes and are supported on some systems. These are not implemented
    in Samba4 yet, as there don't appear to be any core services that use
    them.
 
