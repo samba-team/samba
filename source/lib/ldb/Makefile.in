@@ -134,7 +134,7 @@ examples/ldifreader: examples/ldifreader.o $(LIBS)
 	test -z "$(XSLTPROC)" || $(XSLTPROC) -o $@ http://docbook.sourceforge.net/release/xsl/current/html/docbook.xsl $<
 
 doxygen:
-	test -z "$(DOXYGEN)" || $(DOXYGEN)
+	test -z "$(DOXYGEN)" || "$(DOXYGEN)"
 
 clean:
 	rm -f */*.o *.gcov */*.gc?? tdbtest.ldb* \
