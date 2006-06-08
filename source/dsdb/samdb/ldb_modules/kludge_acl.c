@@ -207,24 +207,6 @@ static int kludge_acl_change(struct ldb_module *module, struct ldb_request *req)
 	}
 }
 
-/* start a transaction */
-static int kludge_acl_start_trans(struct ldb_module *module)
-{
-	return ldb_next_start_trans(module);
-}
-
-/* end a transaction */
-static int kludge_acl_end_trans(struct ldb_module *module)
-{
-	return ldb_next_end_trans(module);
-}
-
-/* delete a transaction */
-static int kludge_acl_del_trans(struct ldb_module *module)
-{
-	return ldb_next_del_trans(module);
-}
-
 static int kludge_acl_init(struct ldb_module *module)
 {
 	int ret, i;
@@ -294,9 +276,6 @@ static const struct ldb_module_ops kludge_acl_ops = {
 	.modify            = kludge_acl_change,
 	.del               = kludge_acl_change,
 	.rename            = kludge_acl_change,
-	.start_transaction = kludge_acl_start_trans,
-	.end_transaction   = kludge_acl_end_trans,
-	.del_transaction   = kludge_acl_del_trans,
 	.init_context	   = kludge_acl_init
 };
 
