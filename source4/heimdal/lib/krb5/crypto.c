@@ -2299,7 +2299,7 @@ _krb5_aes_cts_encrypt(const unsigned char *in, unsigned char *out,
 
     /*
      * In the framework of kerberos, the length can never be shorter
-     * then at least one blocksize.
+     * than at least one blocksize.
      */
 
     if (encryptp) {

@@ -112,7 +112,7 @@ find_type_in_ad(krb5_context context,
 
     if (level > 9) {
 	krb5_set_error_string(context, "Authorization data nested deeper "
-			      "then %d levels, stop searching", level);
+			      "than %d levels, stop searching", level);
 	ret = ENOENT; /* XXX */
 	goto out;
     }

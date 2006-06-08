@@ -678,7 +678,7 @@ static int showShortOptions(const struct poptOption * opt, FILE * fp,
 	/*@globals fileSystem @*/
 	/*@modifies *str, *fp, fileSystem @*/
 {
-    char * s = alloca(300);	/* larger then the ascii set */
+    char * s = alloca(300);	/* larger than the ascii set */
 
     s[0] = '\0';
     /*@-branchstate@*/		/* FIX: W2DO? */

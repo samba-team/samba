@@ -103,11 +103,11 @@ struct hive_operations {
 	WERROR (*num_values) (const struct registry_key *, uint32_t *count);
 	WERROR (*get_subkey_by_index) (TALLOC_CTX *, const struct registry_key *, int idx, struct registry_key **);
 
-	/* Can not contain more then one level */
+	/* Can not contain more than one level */
 	WERROR (*get_subkey_by_name) (TALLOC_CTX *, const struct registry_key *, const char *name, struct registry_key **);
 	WERROR (*get_value_by_index) (TALLOC_CTX *, const struct registry_key *, int idx, struct registry_value **);
 
-	/* Can not contain more then one level */
+	/* Can not contain more than one level */
 	WERROR (*get_value_by_name) (TALLOC_CTX *, const struct registry_key *, const char *name, struct registry_value **);
 
 	/* Security control */

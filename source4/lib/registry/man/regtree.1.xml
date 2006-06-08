@@ -30,7 +30,7 @@
 
 	<para>The regtree utility prints out all the contents of a 
 		Windows registry file. Subkeys are printed with one level 
-		more indentation then their parents. </para>
+		more indentation than their parents. </para>
 
 </refsect1>
 

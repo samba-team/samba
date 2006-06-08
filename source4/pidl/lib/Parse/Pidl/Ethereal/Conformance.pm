@@ -49,7 +49,7 @@ Generate a custom header field with specified properties.
 Force the use of new_hf_name when the parser generator was going to 
 use old_hf_name.
 
-This can be used in conjunction with HF_FIELD in order to make more then 
+This can be used in conjunction with HF_FIELD in order to make more than 
 one element use the same filter name.
 
 =item I<STRIP_PREFIX> prefix
@@ -78,7 +78,7 @@ Override the text shown when a bitmap boolean value is enabled or disabled.
 
 Force pidl to not generate a particular function but allow the user 
 to write a function manually. This can be used to remove the function 
-for only one level for a particular element rather then all the functions and 
+for only one level for a particular element rather than all the functions and 
 ett/hf variables for a particular element as the NOEMIT command does.
 
 =back
