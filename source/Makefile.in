@@ -806,6 +806,8 @@ eventlogadm: SHOWFLAGS bin/eventlogadm@EXEEXT@
 
 talloctort : SHOWFLAGS bin/talloctort@EXEEXT@
 
+timelimit : SHOWFLAGS bin/timelimit@EXEEXT@
+
 nsswitch : SHOWFLAGS bin/winbindd@EXEEXT@ bin/wbinfo@EXEEXT@ @WINBIND_NSS@ \
 	@WINBIND_WINS_NSS@ bin/pam_winbind.@SHLIBEXT@
 
@@ -1733,11 +1735,11 @@ test_pam_modules: pam_modules
 ##
 ## Targets for 'make test'
 ##
-test: all torture bin/timelimit
+test: all torture timelimit
 	@echo Running Test suite
 	@sh ./script/tests/selftest.sh ${selftest_prefix}/st all "${smbtorture4_path}"
 
-valgrindtest: all torture bin/timelimit
+valgrindtest: all torture timelimit
 	@echo Running Test suite with valgrind
 	@NMBD_VALGRIND="xterm -n smbd -e valgrind -q --db-attach=yes --num-callers=30" \
 	 SMBD_VALGRIND="xterm -n smbd -e valgrind -q --db-attach=yes --num-callers=30" \
