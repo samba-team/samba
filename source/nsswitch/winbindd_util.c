@@ -162,7 +162,7 @@ static struct winbindd_domain *add_trusted_domain(const char *domain_name, const
 	domain->sequence_number = DOM_SEQUENCE_NONE;
 	domain->last_seq_check = 0;
 	domain->initialized = False;
-	domain->online = False;
+	domain->online = is_internal_domain(sid);
 	if (sid) {
 		sid_copy(&domain->sid, sid);
 	}

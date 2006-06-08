@@ -310,7 +310,7 @@ BOOL secrets_fetch_trust_account_password(const char *domain, uint8 ret_pwd[16],
 	/* Test if machine password has expired and needs to be changed */
 	if (lp_machine_password_timeout()) {
 		if (pass->mod_time > 0 && time(NULL) > (pass->mod_time +
-				lp_machine_password_timeout())) {
+				(time_t)lp_machine_password_timeout())) {
 			global_machine_password_needs_changing = True;
 		}
 	}
@@ -404,7 +404,7 @@ BOOL secrets_store_trusted_domain_password(const char* domain, const char* pwd,
 	struct trusted_dom_pass pass;
 	ZERO_STRUCT(pass);
 
-	if (push_ucs2_allocate(&uni_dom_name, domain) < 0) {
+	if (push_ucs2_allocate(&uni_dom_name, domain) == (size_t)-1) {
 		DEBUG(0, ("Could not convert domain name %s to unicode\n",
 			  domain));
 		return False;
@@ -735,7 +735,7 @@ NTSTATUS secrets_trusted_domains(TALLOC_CTX *mem_ctx, uint32 *num_domains,
 		}
 
 		if (pull_ucs2_talloc(mem_ctx, &dom_info->name,
-				     pass.uni_name) < 0) {
+				     pass.uni_name) == (size_t)-1) {
 			DEBUG(2, ("pull_ucs2_talloc failed\n"));
 			tdb_search_list_free(keys);
 			return NT_STATUS_NO_MEMORY;

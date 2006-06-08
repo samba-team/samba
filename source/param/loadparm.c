@@ -234,7 +234,7 @@ typedef struct {
 	int ldap_ssl;
 	char *szLdapSuffix;
 	char *szLdapAdminDn;
-	char *szAclCompat;
+	int iAclCompat;
 	char *szCupsServer;
 	char *szIPrintServer;
 	int ldap_passwd_sync; 
@@ -967,7 +967,7 @@ static struct parm_struct parm_table[] = {
 	{"disable netbios", P_BOOL, P_GLOBAL, &Globals.bDisableNetbios, NULL, NULL, FLAG_ADVANCED}, 
 	{"reset on zero vc", P_BOOL, P_GLOBAL, &Globals.bResetOnZeroVC, NULL, NULL, FLAG_ADVANCED}, 
 
-	{"acl compatibility", P_STRING, P_GLOBAL, &Globals.szAclCompat, NULL,  enum_acl_compat_vals, FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL}, 
+	{"acl compatibility", P_ENUM, P_GLOBAL, &Globals.iAclCompat, NULL,  enum_acl_compat_vals, FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL}, 
 	{"defer sharing violations", P_BOOL, P_GLOBAL, &Globals.bDeferSharingViolations, NULL, NULL, FLAG_ADVANCED | FLAG_GLOBAL},
 	{"ea support", P_BOOL, P_LOCAL, &sDefault.bEASupport, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL}, 
 	{"nt acl support", P_BOOL, P_LOCAL, &sDefault.bNTAclSupport, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL}, 
@@ -1611,7 +1611,6 @@ static void init_globals(BOOL first_time_only)
 	string_set(&Globals.szTemplateShell, "/bin/false");
 	string_set(&Globals.szTemplateHomedir, "/home/%D/%U");
 	string_set(&Globals.szWinbindSeparator, "\\");
-	string_set(&Globals.szAclCompat, "");
 	string_set(&Globals.szCupsServer, "");
 	string_set(&Globals.szIPrintServer, "");
 
@@ -1822,7 +1821,7 @@ FN_GLOBAL_STRING(lp_wins_hook, &Globals.szWINSHook)
 FN_GLOBAL_CONST_STRING(lp_template_homedir, &Globals.szTemplateHomedir)
 FN_GLOBAL_CONST_STRING(lp_template_shell, &Globals.szTemplateShell)
 FN_GLOBAL_CONST_STRING(lp_winbind_separator, &Globals.szWinbindSeparator)
-FN_GLOBAL_INTEGER(lp_acl_compatibility, &Globals.szAclCompat)
+FN_GLOBAL_INTEGER(lp_acl_compatibility, &Globals.iAclCompat)
 FN_GLOBAL_BOOL(lp_winbind_enum_users, &Globals.bWinbindEnumUsers)
 FN_GLOBAL_BOOL(lp_winbind_enum_groups, &Globals.bWinbindEnumGroups)
 FN_GLOBAL_BOOL(lp_winbind_use_default_domain, &Globals.bWinbindUseDefaultDomain)

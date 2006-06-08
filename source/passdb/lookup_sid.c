@@ -43,6 +43,7 @@ BOOL lookup_name(TALLOC_CTX *mem_ctx,
 	DOM_SID sid;
 	enum SID_NAME_USE type;
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
+	struct group *grp;
 
 	if (tmp_ctx == NULL) {
 		DEBUG(0, ("talloc_new failed\n"));
@@ -128,8 +129,27 @@ BOOL lookup_name(TALLOC_CTX *mem_ctx,
 	 * the expansion of group names coming in from smb.conf
 	 */
 
-	if (flags & LOOKUP_NAME_GROUP) {
-		struct group *grp;
+	if ((flags & LOOKUP_NAME_GROUP) && ((grp = getgrnam(name)) != NULL)) {
+
+		GROUP_MAP map;
+
+		if (pdb_getgrgid(&map, grp->gr_gid)) {
+			/* The hack gets worse. Handle the case where we have
+			 * 'force group = +unixgroup' but "unixgroup" has a
+			 * group mapping */
+
+			if (sid_check_is_in_builtin(&map.sid)) {
+				domain = talloc_strdup(
+					tmp_ctx, builtin_domain_name());
+			} else {
+				domain = talloc_strdup(
+					tmp_ctx, get_global_sam_name());
+			}
+
+			sid_copy(&sid, &map.sid);
+			type = map.sid_name_use;
+			goto ok;
+		}
 
 		/* If we are using the smbpasswd backend, we need to use the
 		 * algorithmic mapping for the unix group we find. This is
@@ -137,7 +157,7 @@ BOOL lookup_name(TALLOC_CTX *mem_ctx,
 		 * gid list we got from initgroups() we use gid_to_sid() that
 		 * uses algorithmic mapping if pdb_rid_algorithm() is true. */
 
-		if (pdb_rid_algorithm() && ((grp = getgrnam(name)) != NULL) &&
+		if (pdb_rid_algorithm() &&
 		    (grp->gr_gid < max_algorithmic_gid())) {
 			domain = talloc_strdup(tmp_ctx, get_global_sam_name());
 			sid_compose(&sid, get_global_sam_sid(),
@@ -1013,6 +1033,10 @@ void store_gid_sid_cache(const DOM_SID *psid, gid_t gid)
 	pc->gid = gid;
 	sid_copy(&pc->sid, psid);
 	DLIST_ADD(gid_sid_cache_head, pc);
+
+	DEBUG(3,("store_gid_sid_cache: gid %u in cache -> %s\n", (unsigned int)gid,
+		sid_string_static(psid)));
+
 	n_gid_sid_cache++;
 }
 

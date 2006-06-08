@@ -217,6 +217,7 @@ static BOOL init_sam_from_buffer_v0(struct samu *sampass, uint8 *buf, uint32 buf
 
 	pdb_set_pw_history(sampass, NULL, 0, PDB_SET);
 	pdb_set_user_sid_from_rid(sampass, user_rid, PDB_SET);
+	pdb_set_group_sid_from_rid(sampass, group_rid, PDB_SET);
 	pdb_set_hours_len(sampass, hours_len, PDB_SET);
 	pdb_set_bad_password_count(sampass, bad_password_count, PDB_SET);
 	pdb_set_logon_count(sampass, logon_count, PDB_SET);
@@ -404,6 +405,7 @@ static BOOL init_sam_from_buffer_v1(struct samu *sampass, uint8 *buf, uint32 buf
 	pdb_set_pw_history(sampass, NULL, 0, PDB_SET);
 
 	pdb_set_user_sid_from_rid(sampass, user_rid, PDB_SET);
+	pdb_set_group_sid_from_rid(sampass, group_rid, PDB_SET);
 	pdb_set_hours_len(sampass, hours_len, PDB_SET);
 	pdb_set_bad_password_count(sampass, bad_password_count, PDB_SET);
 	pdb_set_logon_count(sampass, logon_count, PDB_SET);

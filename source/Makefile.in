@@ -204,7 +204,7 @@ RPC_PARSE_OBJ0 = rpc_parse/parse_prs.o rpc_parse/parse_misc.o
 
 LIB_OBJ = $(VERSION_OBJ) lib/charcnv.o lib/debug.o lib/fault.o \
           lib/getsmbpass.o lib/interface.o lib/md4.o \
-          lib/interfaces.o lib/pidfile.o lib/replace.o lib/replace1.o lib/repdir.o \
+          lib/interfaces.o lib/pidfile.o lib/replace.o lib/replace1.o lib/repdir.o lib/timegm.o \
           lib/signal.o lib/system.o lib/sendfile.o lib/time.o \
 	  lib/ufc.o lib/genrand.o lib/username.o \
 	  lib/util_pw.o lib/access.o lib/smbrun.o \
@@ -577,7 +577,8 @@ NET_OBJ1 = utils/net.o utils/net_ads.o utils/net_domain.o utils/net_help.o \
 	   utils/net_status.o utils/net_rpc_printer.o utils/net_rpc_rights.o \
 	   utils/net_rpc_service.o utils/net_rpc_registry.o utils/net_usershare.o \
 	   utils/netlookup.o utils/net_sam.o utils/net_rpc_shell.o \
-	   utils/net_util.o utils/net_rpc_sh_acct.o utils/net_rpc_audit.o 
+	   utils/net_util.o utils/net_rpc_sh_acct.o utils/net_rpc_audit.o \
+	   utils/passwd_util.o
 
 NET_OBJ = $(NET_OBJ1) $(PARAM_OBJ) $(SECRETS_OBJ) $(LIBSMB_OBJ) \
 	  $(RPC_PARSE_OBJ) $(PASSDB_OBJ) $(GROUPDB_OBJ) \
@@ -594,7 +595,7 @@ CUPS_OBJ = client/smbspool.o $(PARAM_OBJ) $(LIBSMB_OBJ) \
 MOUNT_OBJ = client/smbmount.o \
              $(PARAM_OBJ) $(LIBSMB_OBJ) $(KRBCLIENT_OBJ) $(LIB_NONSMBD_OBJ) $(SECRETS_OBJ)
 
-MNT_OBJ = client/smbmnt.o lib/replace.o $(VERSION_OBJ) $(SNPRINTF_OBJ) @SOCKWRAP@
+MNT_OBJ = client/smbmnt.o lib/replace.o lib/timegm.o $(VERSION_OBJ) $(SNPRINTF_OBJ) @SOCKWRAP@
 
 UMOUNT_OBJ = client/smbumount.o  @SOCKWRAP@
 
@@ -804,6 +805,8 @@ smbfilter : SHOWFLAGS bin/smbfilter@EXEEXT@
 eventlogadm: SHOWFLAGS bin/eventlogadm@EXEEXT@
 
 talloctort : SHOWFLAGS bin/talloctort@EXEEXT@
+
+timelimit : SHOWFLAGS bin/timelimit@EXEEXT@
 
 nsswitch : SHOWFLAGS bin/winbindd@EXEEXT@ bin/wbinfo@EXEEXT@ @WINBIND_NSS@ \
 	@WINBIND_WINS_NSS@ bin/pam_winbind.@SHLIBEXT@
@@ -1479,7 +1482,7 @@ installpammodules: $(PAM_MODULES)
 	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS) $(DESTDIR) $(PAMMODULESDIR)
 	@for module in $(PAM_MODULES); do \
 		echo "Installing module $${module} as $(DESTDIR)/$(PAMMODULESDIR)/$${module}.@SHLIBEXT@ "; \
-		install -m $(INSTALLPERMS) bin/$${module}.@SHLIBEXT@ \
+		$(INSTALLCMD) -m $(INSTALLPERMS) bin/$${module}.@SHLIBEXT@ \
 			"$(DESTDIR)/$(PAMMODULESDIR)"; \
 	done
 
@@ -1732,11 +1735,11 @@ test_pam_modules: pam_modules
 ##
 ## Targets for 'make test'
 ##
-test: all torture bin/timelimit
+test: all torture timelimit
 	@echo Running Test suite
 	@sh ./script/tests/selftest.sh ${selftest_prefix}/st all "${smbtorture4_path}"
 
-valgrindtest: all torture bin/timelimit
+valgrindtest: all torture timelimit
 	@echo Running Test suite with valgrind
 	@NMBD_VALGRIND="xterm -n smbd -e valgrind -q --db-attach=yes --num-callers=30" \
 	 SMBD_VALGRIND="xterm -n smbd -e valgrind -q --db-attach=yes --num-callers=30" \

@@ -727,7 +727,7 @@ static int call_trans2open(connection_struct *conn, char *inbuf, char *outbuf, i
 	time_t open_time;
 #endif
 	int open_ofun;
-	int32 open_size;
+	uint32 open_size;
 	char *pname;
 	pstring fname;
 	SMB_OFF_T size=0;
@@ -858,6 +858,30 @@ static int call_trans2open(connection_struct *conn, char *inbuf, char *outbuf, i
 		talloc_destroy(ctx);
 		close_file(fsp,ERROR_CLOSE);
 		return(ERROR_DOS(ERRDOS,ERRnoaccess));
+	}
+
+	/* Save the requested allocation size. */
+	/* Allocate space for the file if a size hint is supplied */
+	if ((smb_action == FILE_WAS_CREATED) || (smb_action == FILE_WAS_OVERWRITTEN)) {
+		SMB_BIG_UINT allocation_size = (SMB_BIG_UINT)open_size;
+		if (allocation_size && (allocation_size > (SMB_BIG_UINT)size)) {
+                        fsp->initial_allocation_size = smb_roundup(fsp->conn, allocation_size);
+                        if (fsp->is_directory) {
+                                close_file(fsp,ERROR_CLOSE);
+                                /* Can't set allocation size on a directory. */
+                                return ERROR_NT(NT_STATUS_ACCESS_DENIED);
+                        }
+                        if (vfs_allocate_file_space(fsp, fsp->initial_allocation_size) == -1) {
+                                close_file(fsp,ERROR_CLOSE);
+                                return ERROR_NT(NT_STATUS_DISK_FULL);
+                        }
+
+			/* Adjust size here to return the right size in the reply.
+			   Windows does it this way. */
+			size = fsp->initial_allocation_size;
+                } else {
+                        fsp->initial_allocation_size = smb_roundup(fsp->conn,(SMB_BIG_UINT)size);
+                }
 	}
 
 	if (total_data && smb_action == FILE_WAS_CREATED) {
@@ -3996,15 +4020,19 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
  
 					new_fsp = open_file_ntcreate(conn, fname, &sbuf,
 									FILE_WRITE_DATA,
-									FILE_SHARE_READ|FILE_SHARE_WRITE,
+									FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,
 									FILE_OPEN,
 									0,
 									FILE_ATTRIBUTE_NORMAL,
-									INTERNAL_OPEN_ONLY,
+									FORCE_OPLOCK_BREAK_TO_NONE,
 									NULL);
  
 					if (new_fsp == NULL) {
-						return(UNIXERROR(ERRDOS,ERRbadpath));
+						if (open_was_deferred(SVAL(inbuf,smb_mid))) {
+							/* We have re-scheduled this call. */
+							return -1;
+						}
+						return(UNIXERROR(ERRDOS,ERRnoaccess));
 					}
 					ret = vfs_allocate_file_space(new_fsp, allocation_size);
 					if (SMB_VFS_FSTAT(new_fsp,new_fsp->fh->fd,&new_sbuf) != 0) {
@@ -4537,7 +4565,6 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 						POSIX_LOCK,
 						&my_lock_ctx);
 
-				/* TODO: Deal with rescheduling blocking lock fail here... */
 				if (lp_blocking_locks(SNUM(conn)) && ERROR_WAS_LOCK_DENIED(status)) {
 					/*
 					 * A blocking lock was requested. Package up
@@ -4636,15 +4663,19 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 
 			new_fsp = open_file_ntcreate(conn, fname, &sbuf,
 						FILE_WRITE_DATA,
-						FILE_SHARE_READ|FILE_SHARE_WRITE,
+						FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,
 						FILE_OPEN,
 						0,
 						FILE_ATTRIBUTE_NORMAL,
-						INTERNAL_OPEN_ONLY,
+						FORCE_OPLOCK_BREAK_TO_NONE,
 						NULL);
 	
 			if (new_fsp == NULL) {
-				return(UNIXERROR(ERRDOS,ERRbadpath));
+				if (open_was_deferred(SVAL(inbuf,smb_mid))) {
+					/* We have re-scheduled this call. */
+					return -1;
+				}
+				return(UNIXERROR(ERRDOS,ERRnoaccess));
 			}
 			ret = vfs_set_filelen(new_fsp, size);
 			close_file(new_fsp,NORMAL_CLOSE);
@@ -5238,6 +5269,7 @@ int reply_trans2(connection_struct *conn, char *inbuf,char *outbuf,
 		} else {
 			DEBUG(2,("Invalid smb_sucnt in trans2 call(%u)\n",state->setup_count));
 			DEBUG(2,("Transaction is %d\n",tran_call));
+			TALLOC_FREE(state);
 			END_PROFILE(SMBtrans2);
 			return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 		}

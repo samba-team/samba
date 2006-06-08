@@ -121,6 +121,7 @@ int reply_open_pipe_and_X(connection_struct *conn,
 int reply_pipe_write(char *inbuf,char *outbuf,int length,int dum_bufsize)
 {
 	smb_np_struct *p = get_rpc_pipe_p(inbuf,smb_vwv0);
+	uint16 vuid = SVAL(inbuf,smb_uid);
 	size_t numtowrite = SVAL(inbuf,smb_vwv1);
 	int nwritten;
 	int outsize;
@@ -128,6 +129,10 @@ int reply_pipe_write(char *inbuf,char *outbuf,int length,int dum_bufsize)
 
 	if (!p) {
 		return(ERROR_DOS(ERRDOS,ERRbadfid));
+	}
+
+	if (p->vuid != vuid) {
+		return ERROR_NT(NT_STATUS_INVALID_HANDLE);
 	}
 
 	data = smb_buf(inbuf) + 3;
@@ -161,6 +166,7 @@ int reply_pipe_write(char *inbuf,char *outbuf,int length,int dum_bufsize)
 int reply_pipe_write_and_X(char *inbuf,char *outbuf,int length,int bufsize)
 {
 	smb_np_struct *p = get_rpc_pipe_p(inbuf,smb_vwv2);
+	uint16 vuid = SVAL(inbuf,smb_uid);
 	size_t numtowrite = SVAL(inbuf,smb_vwv10);
 	int nwritten = -1;
 	int smb_doff = SVAL(inbuf, smb_vwv11);
@@ -170,6 +176,10 @@ int reply_pipe_write_and_X(char *inbuf,char *outbuf,int length,int bufsize)
 
 	if (!p) {
 		return(ERROR_DOS(ERRDOS,ERRbadfid));
+	}
+
+	if (p->vuid != vuid) {
+		return ERROR_NT(NT_STATUS_INVALID_HANDLE);
 	}
 
 	data = smb_base(inbuf) + smb_doff;
