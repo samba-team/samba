@@ -1990,7 +1990,7 @@ static int lsql_request(struct ldb_module *module, struct ldb_request *req)
 	
 	switch (req->operation) {
 
-	case LDB_REQ_SEARCH:
+	case LDB_SEARCH:
 		return lsql_search_bytree(module,
 					  req->op.search.base,
 					  req->op.search.scope, 
@@ -1998,21 +1998,21 @@ static int lsql_request(struct ldb_module *module, struct ldb_request *req)
 					  req->op.search.attrs, 
 					  &req->op.search.res);
 
-	case LDB_REQ_ADD:
+	case LDB_ADD:
 		return lsql_add(module, req->op.add.message);
 
-	case LDB_REQ_MODIFY:
+	case LDB_MODIFY:
 		return lsql_modify(module, req->op.mod.message);
 
-	case LDB_REQ_DELETE:
+	case LDB_DELETE:
 		return lsql_delete(module, req->op.del.dn);
 
-	case LDB_REQ_RENAME:
+	case LDB_RENAME:
 		return lsql_rename(module,
 					req->op.rename.olddn,
 					req->op.rename.newdn);
 
-	case LDB_ASYNC_SEARCH:
+	case LDB_SEARCH:
 		return lsql_search_async(module,
 					req->op.search.base,
 					req->op.search.scope, 
@@ -2022,28 +2022,28 @@ static int lsql_request(struct ldb_module *module, struct ldb_request *req)
 					req->async.callback,
 					&req->async.handle);
 /*
-	case LDB_ASYNC_ADD:
+	case LDB_ADD:
 		return lsql_add_async(module,
 					req->op.add.message,
 					req->async.context,
 					req->async.callback,
 					&req->async.handle);
 
-	case LDB_ASYNC_MODIFY:
+	case LDB_MODIFY:
 		return lsql_modify_async(module,
 					req->op.mod.message,
 					req->async.context,
 					req->async.callback,
 					&req->async.handle);
 */
-	case LDB_ASYNC_DELETE:
+	case LDB_DELETE:
 		return lsql_delete_async(module,
 					req->op.del.dn,
 					req->async.context,
 					req->async.callback,
 					&req->async.handle);
 
-	case LDB_ASYNC_RENAME:
+	case LDB_RENAME:
 		return lsql_rename_async(module,
 					req->op.rename.olddn,
 					req->op.rename.newdn,
