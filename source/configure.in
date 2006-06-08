@@ -954,6 +954,7 @@ AC_CHECK_TYPE(loff_t,off_t)
 AC_CHECK_TYPE(offset_t,loff_t)
 AC_CHECK_TYPE(ssize_t, int)
 AC_CHECK_TYPE(wchar_t, unsigned short)
+AC_CHECK_TYPE(intptr_t, unsigned long long)
 AC_CHECK_TYPE(comparison_fn_t, 
 [AC_DEFINE(HAVE_COMPARISON_FN_T, 1,[Whether or not we have comparison_fn_t])])
 
