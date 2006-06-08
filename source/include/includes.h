@@ -1083,6 +1083,10 @@ enum flush_reason_enum {
 #define QSORT_CAST (int (*)(const void *, const void *))
 #endif
 
+#ifndef HAVE_COMPARISON_FN_T
+typedef int (*comparison_fn_t)(const void *, const void *);
+#endif
+
 #ifndef DEFAULT_PRINTING
 #ifdef HAVE_CUPS
 #define DEFAULT_PRINTING PRINT_CUPS
