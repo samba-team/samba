@@ -138,7 +138,7 @@ static BOOL smb_raw_setinfo_backend(struct smbcli_tree *tree,
 						    parms, blob);
 
 	case RAW_SFILEINFO_UNIX_BASIC:
-		NEED_BLOB(92);
+		NEED_BLOB(100);
 		SBVAL(blob->data, 0, parms->unix_basic.in.end_of_file);
 		SBVAL(blob->data, 8, parms->unix_basic.in.num_bytes);
 		smbcli_push_nttime(blob->data, 16, parms->unix_basic.in.status_change_time);
@@ -150,7 +150,8 @@ static BOOL smb_raw_setinfo_backend(struct smbcli_tree *tree,
 		SBVAL(blob->data, 60, parms->unix_basic.in.dev_major);
 		SBVAL(blob->data, 68, parms->unix_basic.in.dev_minor);
 		SBVAL(blob->data, 76, parms->unix_basic.in.unique_id);
-		SBVAL(blob->data, 84, parms->unix_basic.in.nlink);
+		SBVAL(blob->data, 84, parms->unix_basic.in.permissions);
+		SBVAL(blob->data, 92, parms->unix_basic.in.nlink);
 		return True;
 
 	case RAW_SFILEINFO_DISPOSITION_INFO:
