@@ -812,7 +812,7 @@ static int map_search_mp(struct ldb_module *module, struct ldb_request *req)
 	new_base = map_local_dn(module, module, base);
 
 	memset((char *)&(new_req), 0, sizeof(new_req));
-	new_req.operation = LDB_REQ_SEARCH;
+	new_req.operation = LDB_SEARCH;
 	new_req.op.search.base = new_base;
 	new_req.op.search.scope = scope;
 	new_req.op.search.tree = new_tree;
@@ -857,7 +857,7 @@ static int map_search_mp(struct ldb_module *module, struct ldb_request *req)
 		
 		/* Merge with additional data from fallback database */
 		memset((char *)&(mergereq), 0, sizeof(mergereq)); /* zero off the request structure */
-		mergereq.operation = LDB_REQ_SEARCH;
+		mergereq.operation = LDB_SEARCH;
 		mergereq.op.search.base = merged->dn;
 		mergereq.op.search.scope = LDB_SCOPE_BASE;
 		mergereq.op.search.tree = ldb_parse_tree(module, "");
@@ -1266,10 +1266,10 @@ static int map_modify(struct ldb_module *module, struct ldb_request *req)
 		fb_ret = ldb_next_request(module, req);
 		if (fb_ret == -1) {
 			ldb_msg_add_string(fb, "isMapped", "TRUE");
-			req->operation = LDB_REQ_ADD;
+			req->operation = LDB_ADD;
 			req->op.add.message = fb;
 			fb_ret = ldb_next_request(module, req);
-			req->operation = LDB_REQ_MODIFY;
+			req->operation = LDB_MODIFY;
 		}
 		req->op.mod.message = msg;
 	} else fb_ret = 0;
@@ -1289,19 +1289,19 @@ static int map_request(struct ldb_module *module, struct ldb_request *req)
 {
 	switch (req->operation) {
 
-	case LDB_REQ_SEARCH:
+	case LDB_SEARCH:
 		return map_search_bytree(module, req);
 
-	case LDB_REQ_ADD:
+	case LDB_ADD:
 		return map_add(module, req);
 
-	case LDB_REQ_MODIFY:
+	case LDB_MODIFY:
 		return map_modify(module, req);
 
-	case LDB_REQ_DELETE:
+	case LDB_DELETE:
 		return map_delete(module, req);
 
-	case LDB_REQ_RENAME:
+	case LDB_RENAME:
 		return map_rename(module, req);
 
 	default:

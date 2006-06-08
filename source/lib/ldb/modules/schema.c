@@ -465,10 +465,10 @@ static int schema_request(struct ldb_module *module, struct ldb_request *req)
 {
 	switch (req->operation) {
 
-	case LDB_REQ_ADD:
+	case LDB_ADD:
 		return schema_add(module, req);
 
-	case LDB_REQ_MODIFY:
+	case LDB_MODIFY:
 		return schema_modify(module, req);
 
 	default:
