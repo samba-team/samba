@@ -320,7 +320,7 @@ NTSTATUS wreplsrv_add_table(struct wreplsrv_service *service,
 
 	/* the min_version is always 0 here, and won't be updated */
 
-	/* if the given version is higher the then current nax_version, update */
+	/* if the given version is higher than the current max_version, update */
 	if (cur->owner.max_version < version) {
 		cur->owner.max_version = version;
 		/* if it's for our local db, we need to update the wins.ldb too */

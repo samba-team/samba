@@ -29,6 +29,6 @@ gregedit.c:
  - support for adding/deleting keys
  - support for security descriptors
 
-- pass parsed paths around rather then strings (i.e. just a list of strings)
+- pass parsed paths around rather than strings (i.e. just a list of strings)
 - integrate various registry tools ?
 - finish new patchfile code

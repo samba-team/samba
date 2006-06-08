@@ -34,9 +34,9 @@
  * that any upper layers will use.
  *
  * All local attributes will have to have a definition. Not all remote 
- * attributes need a definition as LDB is a lot less stricter then LDAP 
+ * attributes need a definition as LDB is a lot less strict than LDAP 
  * (in other words, sending unknown attributes to an LDAP server hurts us, 
- * returning too much attributes in ldb_search() doesn't)
+ * while returning too many attributes in ldb_search() doesn't)
  */
 
 struct ldb_map_context;

@@ -32,7 +32,7 @@
 #define SRV_SEAL "session key to server-to-client sealing key magic constant"
 
 /**
- * Some notes on then NTLM2 code:
+ * Some notes on the NTLM2 code:
  *
  * NTLM2 is a AEAD system.  This means that the data encrypted is not
  * all the data that is signed.  In DCE-RPC case, the headers of the

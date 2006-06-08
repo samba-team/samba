@@ -14,7 +14,7 @@ Release date: 22 March 2006
 
  * Call the wins hook script again (metze)
 
- * Make sure no more then 25 records are added in the WINS database (metze)
+ * Make sure no more than 25 records are added in the WINS database (metze)
  
  * Documentation updates (jelmer)
 

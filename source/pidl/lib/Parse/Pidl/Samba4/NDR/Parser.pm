@@ -836,7 +836,7 @@ sub ParseDataPush($$$$$)
 {
 	my ($e,$l,$ndr,$var_name,$ndr_flags) = @_;
 
-	# strings are passed by value rather then reference
+	# strings are passed by value rather than reference
 	if (not Parse::Pidl::Typelist::is_scalar($l->{DATA_TYPE}) or Parse::Pidl::Typelist::scalar_is_reference($l->{DATA_TYPE})) {
 		$var_name = get_pointer_to($var_name);
 	}
@@ -2101,7 +2101,7 @@ sub ParseFunctionPull($)
 	}
 
 	# allocate the "simple" out ref variables. FIXME: Shouldn't this have it's
-	# own flag rather then be in NDR_IN ?
+	# own flag rather than be in NDR_IN ?
 
 	foreach my $e (@{$fn->{ELEMENTS}}) {
 		next unless (grep(/out/, @{$e->{DIRECTION}}));
