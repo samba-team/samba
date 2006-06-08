@@ -662,7 +662,7 @@ static BOOL pipe_ntlmssp_verify_final(pipes_struct *p, DATA_BLOB *p_resp_blob)
 	p->pipe_user.ut.gid = a->server_info->gid;
 	
 	/*
-	 * We're an authenticated bind over smbd, so the session key needs to
+	 * We're an authenticated bind over smb, so the session key needs to
 	 * be set to "SystemLibraryDTC". Weird, but this is what Windows
 	 * does. See the RPC-SAMBA3SESSIONKEY.
 	 */
