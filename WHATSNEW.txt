@@ -1,12 +1,138 @@
                    =================================
-                   Release Notes for Samba 3.0.23rc1
-                               May 24, 2006
+                   Release Notes for Samba 3.0.23rc2
+                              Jun 9, 2006
                    =================================
 
-This is the first release candidate of the 3.0.23 code base and is 
+This is the second release candidate of the 3.0.23 code base and is 
 provided for testing purposes only.  While close to the final stable 
 release, this snapshot is *not* intended for production servers. 
 Your testing and feedback is greatly appreciated.
+
+Thanks very much to those people who spent time testing the RC1 
+release and reported their findings.  We would like to especially 
+thank Thomas Bork <tombork@web.de> for his numerous reports. 
+We believe that RC2 is in much better shape in a large part due 
+to his efforts.
+
+Common issues addressed in 3.0.23rc2 include:
+
+   o Winbindd & Samba PDC integration issues.
+   o Join problems from Windows clients in a Samba domain.
+   o Winbind & AD trust failures.
+
+
+######################################################################
+Changes
+#######
+
+Changes since 3.0.23rc1
+-----------------------
+
+commits
+-------
+
+o   Jeremy Allison <jra@samba.org>
+    * Ensure we use sys_write in password chats so we're not 
+      interrupted.
+    * Ensure all new rid allocation goes through the same pdb_ldap 
+      interface.
+    * BUG 3308: Stop us returning duplicate mid replies on path 
+      based set-EOF trans2 calls.
+    * Pass RAW-OPLOCK with kernel oplocks off.
+    * Fix bug in OS/2 Warp - it doesn't set the ff_last offset 
+      correctly when doing info level 1 directory scans.
+    * Add Samba4 replacement for timegm() to work on Solaris.
+
+
+o   Gerald (Jerry) Carter <jerry@samba.org>
+    * Only call the printer publishing calls if 'security = ads'.
+
+
+o   Guenther Deschner <gd@samba.org>
+    * Set our internal domains to "online" by default in winbindd.
+    * BUG 3800: Fill the password_policy method in winbindd for 
+      winbindd_passdb.
+    * Fix memory leak when LDAP posix attribute queries fail.
+    * Honour the krb5 principal name change (of the new ads join code) 
+      in the kerberized winbind pam_auth.
+    * Correctly handle the case when there is no configuration file 
+      for pam_winbind.
+    * Adding "own-domain" switch to wbinfo which is handy from time 
+      to time.
+    * BUG 3823: Fix in-forest domain trust enumeration in winbindd.
+
+
+o   Aleksey Fedoseev <fedoseev@ru.ibm.com>
+    * Fix parameter type for 'acl compatibility'.
+
+
+o   Paul Green <paulg@samba.org>
+    * Properly rebuild time limit on systems with executable extensions.
+
+
+o   Volker Lendecke <vl@samba.org>
+    * Fix more potential seg-faults when something on our way to a 
+      DC connection fails.
+    * Never fall back to using the IP address for a DC's name in RPC 
+      connections.
+    * Implement recycle:subdir_mode.
+    * Activate RPC-AUTHCONTEXT in "make test".
+    * Portability fixes for 'make test'.
+    * Correctly set the group RID in init_sam_from_buffer.
+    * Fix missing prompt in smbclient.
+    * Return correct error code upon success from _net_srv_pwset().
+    * Fix Windows XP joins to a Samba domain.
+    * Fix 'valid users = +unixgroup' which was failing with smbpasswd
+      when mapped to a non-algorithmic rid.
+    * Fix regression which upper-cased machine names passed to the
+      'add machine script'.
+
+
+o   Jason Mader <jason@ncac.gwu.edu>
+    * Compiler warning fixes.
+
+
+o   John E. Malmberg <wb8tyw@qsl.net>
+    * Make smbldap obey config tests.
+
+
+o   Jim McDonough <jmcd@us.ibm.com>
+    * Fixes for 'make test' on AIX.
+
+
+o   Stefan Metzmacher <metze@samba.org>
+    * Add more tests to 'make test'.
+    * Try to make timelimit.c more portable.
+
+
+o   James Peach <jpeach@sgi.com>
+    * Introduce command line options to set the remainder of the 
+      parameters in dynconfig.c.
+    * Avoid pulling in -lpthreads caused by -lrt.
+    * Fix build failures on IRIX 6.4 due to DMAPI support.
+
+
+o   Aruna Prabakar <aruna.prabakar@hp.com>
+    * Show -W option in smbpasswd usage text.
+
+
+o   Simo Sorce <idra@samba.org>
+    * Pam modules install fix.
+    * Allow "net changesecretpw" to accept a password via stdin.
+
+
+o   Shlomi Yaakobovich <Shlomi@exanet.com>
+    * Fix for machine password time_t overflow.
+
+
+
+Release Notes for older release follow:
+
+      --------------------------------------------------
+                   =================================
+                   Release Notes for Samba 3.0.23rc1
+                               May 24, 2006
+                   =================================
 
 New features in 3.0.23rc1 include:
 
@@ -185,7 +311,7 @@ o   Volker Lendecke <vl@samba.org>
     * Add special close handling for fake files.
     * BUG 3788: Fix nss_winbind's getgrouplist() call on AIX.
     * BUG 3435: Fix 'msdfs root = yes' in [homes].
-    * Instruct winbindd to find a trusted DC on its own when runing on 
+    * Instruct winbindd to find a trusted DC on its own when running on 
       a Samba DC.
     * Fix segv in child winbindd processes caused by a failed tconX 
       to the DC.
@@ -244,9 +370,6 @@ o   Simo Sorce <idra@samba.org>
 o   Ronan Waide <waider@waider.ie>
     * Add 'wbinfo -i' functionality to exercise winbindd's getpwnam() 
       functionality.
-
-
-Release Notes for older release follow:
 
       --------------------------------------------------
                     ==================================
