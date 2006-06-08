@@ -2106,7 +2106,7 @@ static int lsqlite3_connect(struct ldb_context *ldb,
 		goto failed;
 	}
 	(*module)->ldb = ldb;
-	(*module)->prev = ldb->modules->next = NULL;
+	(*module)->prev = (*module)->next = NULL;
 	(*module)->private_data = lsqlite3;
 	(*module)->ops = &lsqlite3_ops;
 

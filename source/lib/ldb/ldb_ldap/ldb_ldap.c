@@ -811,7 +811,7 @@ static int lldb_connect(struct ldb_context *ldb,
 		return -1;
 	}
 	(*module)->ldb = ldb;
-	(*module)->prev = ldb->modules->next = NULL;
+	(*module)->prev = (*module)->next = NULL;
 	(*module)->private_data = lldb;
 	(*module)->ops = &lldb_ops;
 

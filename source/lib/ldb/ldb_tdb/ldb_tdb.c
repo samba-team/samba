@@ -1028,7 +1028,7 @@ static int ltdb_connect(struct ldb_context *ldb, const char *url,
 		return -1;
 	}
 	(*module)->ldb = ldb;
-	(*module)->prev = ldb->modules->next = NULL;
+	(*module)->prev = (*module)->next = NULL;
 	(*module)->private_data = ltdb;
 	(*module)->ops = &ltdb_ops;
 
