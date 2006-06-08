@@ -483,12 +483,14 @@ static int samldb_copy_template(struct ldb_module *module, struct ldb_message *m
 	struct ldb_message *t;
 	int ret, i, j;
 	
+	struct ldb_dn *basedn = ldb_dn_string_compose(msg, samdb_base_dn(msg), "cn=Templates");
 
 	/* pull the template record */
-	ret = ldb_search(module->ldb, NULL, LDB_SCOPE_SUBTREE, filter, NULL, &res);
+	ret = ldb_search(module->ldb, basedn, LDB_SCOPE_SUBTREE, filter, NULL, &res);
 	if (ret != LDB_SUCCESS || res->count != 1) {
-		ldb_debug(module->ldb, LDB_DEBUG_WARNING, "samldb: ERROR: template '%s' matched too many records\n", filter);
-		return -1;
+		ldb_set_errstring(module->ldb, talloc_asprintf(module, "samldb_copy_template: ERROR: template '%s' matched %d records, expected 1\n", filter, 
+					  res->count));
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 	t = res->msgs[0];
 
@@ -515,16 +517,16 @@ static int samldb_copy_template(struct ldb_module *module, struct ldb_message *m
 				if ( ! samldb_find_or_add_value(module, msg, el->name, 
 								(char *)el->values[j].data,
 								(char *)el->values[j].data)) {
-					ldb_debug(module->ldb, LDB_DEBUG_FATAL, "Attribute adding failed...\n");
+					ldb_set_errstring(module->ldb, talloc_asprintf(module, "Adding objectClass %s failed.\n", el->values[j].data));
 					talloc_free(res);
-					return -1;
+					return LDB_ERR_OPERATIONS_ERROR;
 				}
 			} else {
 				if ( ! samldb_find_or_add_attribute(module, msg, el->name, 
 								    (char *)el->values[j].data)) {
-					ldb_debug(module->ldb, LDB_DEBUG_FATAL, "Attribute adding failed...\n");
+					ldb_set_errstring(module->ldb, talloc_asprintf(module, "Adding attribute %s failed.\n", el->name));
 					talloc_free(res);
-					return -1;
+					return LDB_ERR_OPERATIONS_ERROR;
 				}
 			}
 		}
@@ -532,7 +534,7 @@ static int samldb_copy_template(struct ldb_module *module, struct ldb_message *m
 
 	talloc_free(res);
 
-	return 0;
+	return LDB_SUCCESS;
 }
 
 static int samldb_fill_group_object(struct ldb_module *module, const struct ldb_message *msg,
@@ -557,7 +559,6 @@ static int samldb_fill_group_object(struct ldb_module *module, const struct ldb_
 
 	ret = samldb_copy_template(module, msg2, "(&(CN=TemplateGroup)(objectclass=groupTemplate))");
 	if (ret != 0) {
-		ldb_debug(module->ldb, LDB_DEBUG_WARNING, "samldb_fill_group_object: Error copying template!\n");
 		talloc_free(mem_ctx);
 		return ret;
 	}
@@ -755,13 +756,17 @@ static int samldb_fill_foreignSecurityPrincipal_object(struct ldb_module *module
 			   ldap_encode_ndr_dom_sid(mem_ctx, dom_sid));
 	if (ret >= 1) {
 		const char *name = samdb_result_string(dom_msgs[0], "name", NULL);
-		ldb_set_errstring(module->ldb, talloc_asprintf(mem_ctx, "Attempt to add foreign SID record with SID %s rejected, because this domian (%s) is already in the database", dom_sid_string(mem_ctx, sid), name)); 
+		ldb_set_errstring(module->ldb, talloc_asprintf(mem_ctx, 
+							       "Attempt to add foreign SID record with SID %s rejected, because this domian (%s) is already in the database", 
+							       dom_sid_string(mem_ctx, sid), name)); 
 		/* We don't really like the idea of foreign sids that are not foreign */
 		return LDB_ERR_CONSTRAINT_VIOLATION;
 	} else if (ret == -1) {
-		ldb_debug(module->ldb, LDB_DEBUG_FATAL, "samldb_fill_foreignSecurityPrincipal_object: error searching for a domain with this sid: %s\n", dom_sid_string(mem_ctx, dom_sid));
+		ldb_set_errstring(module->ldb, talloc_asprintf(mem_ctx, 
+							       "samldb_fill_foreignSecurityPrincipal_object: error searching for a domain with this sid: %s\n", 
+							       dom_sid_string(mem_ctx, dom_sid)));
 		talloc_free(dom_msgs);
-		return -1;
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	/* This isn't an operation on a domain we know about, so just
