@@ -189,9 +189,13 @@ void ldb_reset_err_string(struct ldb_context *ldb)
 }
 
 #define FIRST_OP(ldb, op) do { \
-	module = ldb->modules; \
+	module = ldb->modules;					\
 	while (module && module->ops->op == NULL) module = module->next; \
-	if (module == NULL) return LDB_ERR_OPERATIONS_ERROR; \
+	if (module == NULL) {						\
+		ldb_set_errstring(ldb, \
+				  talloc_asprintf(ldb, "unable to find module or backend to handle operation: " #op)); \
+		return LDB_ERR_OPERATIONS_ERROR;			\
+	} \
 } while (0)
 
 /*
