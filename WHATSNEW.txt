@@ -1514,7 +1514,8 @@ o   Volker Lendecke <vl@samba.org>
 
 o   Derrell Lipman <derrell@samba.org>
     * Cleanup libmsrpc version numbers.
-    * BUG 2357, 3267, 3273: Plug memory and file descriptor leaks.    * Fix crash bug in libsmbclient.
+    * BUG 2357, 3267, 3273: Plug memory and file descriptor leaks.    
+    * Fix crash bug in libsmbclient.
     * Add long share name support to libsmbclient when enumerating 
       shares.
 
