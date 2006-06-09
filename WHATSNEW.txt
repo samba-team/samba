@@ -42,6 +42,7 @@ o   Jeremy Allison <jra@samba.org>
     * Fix bug in OS/2 Warp - it doesn't set the ff_last offset 
       correctly when doing info level 1 directory scans.
     * Add Samba4 replacement for timegm() to work on Solaris.
+    * Remove extra add-byte in the trans2 UNIX_BASIC infolevel.
 
 
 o   Gerald (Jerry) Carter <jerry@samba.org>
@@ -60,6 +61,10 @@ o   Guenther Deschner <gd@samba.org>
     * Adding "own-domain" switch to wbinfo which is handy from time 
       to time.
     * BUG 3823: Fix in-forest domain trust enumeration in winbindd.
+    * Fix winbindd group enumeration for groups with no members.
+    * Correct "net ads changetrustpw" to use the sAMAccountName.
+    * Fix winbindd in ADS domains by removing code using the 
+      UPN and rely upon the sAMAccountName.
 
 
 o   Aleksey Fedoseev <fedoseev@ru.ibm.com>
@@ -68,6 +73,11 @@ o   Aleksey Fedoseev <fedoseev@ru.ibm.com>
 
 o   Paul Green <paulg@samba.org>
     * Properly rebuild time limit on systems with executable extensions.
+
+
+o   Björn Jacke <samba@j3e.de>
+    * Fall back to less-preferred clocks until we find one that we 
+      can use if clock_gmtime() is not available at run-time.
 
 
 o   Volker Lendecke <vl@samba.org>
@@ -110,6 +120,7 @@ o   James Peach <jpeach@sgi.com>
       parameters in dynconfig.c.
     * Avoid pulling in -lpthreads caused by -lrt.
     * Fix build failures on IRIX 6.4 due to DMAPI support.
+    * Isolate the slow CLOCK_REALTIME message in the profiling code.
 
 
 o   Aruna Prabakar <aruna.prabakar@hp.com>

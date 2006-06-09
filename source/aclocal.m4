@@ -839,10 +839,17 @@ dnl Test whether the current LIBS results in libpthread being present.
 dnl Execute the corresponding user action list.
 AC_DEFUN([SMB_IS_LIBPTHREAD_LINKED],
 [
+    AC_MSG_CHECKING(if libpthread is linked)
     AC_TRY_LINK([],
 	[return pthread_create(0, 0, 0, 0);],
-	[$1],
-	[$2])
+	[
+	    AC_MSG_RESULT(yes)
+	    $1
+	],
+	[
+	    AC_MSG_RESULT(no)
+	    $2
+	])
 ])
 
 dnl SMB_REMOVE_LIB(lib)
@@ -942,4 +949,35 @@ void main(void) {
 	# DMAPI detection success actions end
     fi
 
+])
+
+dnl SMB_CHECK_CLOCK_ID(clockid)
+dnl Test whether the specified clock_gettime clock ID is available. If it
+dnl is, we define HAVE_clockid
+AC_DEFUN([SMB_CHECK_CLOCK_ID],
+[
+    AC_MSG_CHECKING(for $1)
+    AC_TRY_LINK([
+#if TIME_WITH_SYS_TIME
+# include <sys/time.h>
+# include <time.h>
+#else
+# if HAVE_SYS_TIME_H
+#  include <sys/time.h>
+# else
+#  include <time.h>
+# endif
+#endif
+    ],
+    [
+clockid_t clk = $1;
+    ],
+    [
+	AC_MSG_RESULT(yes)
+	AC_DEFINE(HAVE_$1, 1,
+	    [Whether the clock_gettime clock ID $1 is available])
+    ],
+    [
+	AC_MSG_RESULT(no)
+    ])
 ])

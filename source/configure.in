@@ -2053,8 +2053,13 @@ if test x"$samba_cv_WITH_PROFILE" = x"yes"; then
 	    [
 		SMB_IS_LIBPTHREAD_LINKED(
 			[ SMB_REMOVELIB(rt) ],
-			[ AC_DEFINE(HAVE_CLOCK_GETTIME, 1,
-			    [Whether clock_gettime is available]) ])
+			[
+			    AC_DEFINE(HAVE_CLOCK_GETTIME, 1,
+				[Whether clock_gettime is available])
+			    SMB_CHECK_CLOCK_ID(CLOCK_MONOTONIC)
+			    SMB_CHECK_CLOCK_ID(CLOCK_PROCESS_CPUTIME_ID)
+			    SMB_CHECK_CLOCK_ID(CLOCK_REALTIME)
+			])
 	    ])
 
 fi

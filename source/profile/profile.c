@@ -30,6 +30,7 @@ static int shm_id;
 static BOOL read_only;
 #if defined(HAVE_CLOCK_GETTIME)
 clockid_t __profile_clock;
+BOOL have_profiling_clock = False;
 #endif
 #endif
 
@@ -62,6 +63,19 @@ void profile_message(int msg_type, struct process_id src, void *buf, size_t len)
 			 (int)procid_to_pid(&src)));
 		break;
 	case 2:		/* turn on complete profiling */
+
+#if defined(HAVE_CLOCK_GETTIME)
+		if (!have_profiling_clock) {
+			do_profile_flag = True;
+			do_profile_times = False;
+			DEBUG(1,("INFO: Profiling counts turned ON from "
+				"pid %d\n", (int)procid_to_pid(&src)));
+			DEBUGADD(1,("INFO: Profiling times disabled "
+				"due to lack of a suitable clock\n"));
+			break;
+		}
+#endif
+
 		do_profile_flag = True;
 		do_profile_times = True;
 		DEBUG(1,("INFO: Full profiling turned ON from pid %d\n",
@@ -100,28 +114,74 @@ void reqprofile_message(int msg_type, struct process_id src,
   open the profiling shared memory area
   ******************************************************************/
 #ifdef WITH_PROFILE
+
+#ifdef HAVE_CLOCK_GETTIME
+
+/* Find a clock. Just because the definition for a particular clock ID is
+ * present doesn't mean the system actually supports it.
+ */
+static void init_clock_gettime(void)
+{
+	struct timespec ts;
+
+	have_profiling_clock = False;
+
+#ifdef HAVE_CLOCK_PROCESS_CPUTIME_ID
+	/* CLOCK_PROCESS_CPUTIME_ID is sufficiently fast that the
+	 * always profiling times is plausible. Unfortunately on Linux
+	 * it is only accurate if we can guarantee we will not be scheduled
+	 * scheduled onto a different CPU between samples. Until there is
+	 * some way to set processor affinity, we can only use this on
+	 * uniprocessors.
+	 */
+	if (!this_is_smp()) {
+	    if (clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &ts) == 0) {
+		    DEBUG(10, ("Using CLOCK_PROCESS_CPUTIME_ID "
+				"for profile_clock\n"));
+		    __profile_clock = CLOCK_PROCESS_CPUTIME_ID;
+		    have_profiling_clock = True;
+	    }
+	}
+#endif
+
+#ifdef HAVE_CLOCK_MONOTONIC
+	if (!have_profiling_clock &&
+	    clock_gettime(CLOCK_MONOTONIC, &ts) == 0) {
+		DEBUG(10, ("Using CLOCK_MONOTONIC for profile_clock\n"));
+		__profile_clock = CLOCK_MONOTONIC;
+		have_profiling_clock = True;
+	}
+#endif
+
+#ifdef HAVE_CLOCK_REALTIME
+	/* POSIX says that CLOCK_REALTIME should be defined everywhere
+	 * where we have clock_gettime...
+	 */
+	if (!have_profiling_clock &&
+	    clock_gettime(CLOCK_REALTIME, &ts) == 0) {
+		__profile_clock = CLOCK_REALTIME;
+		have_profiling_clock = True;
+
+		SMB_WARN(__profile_clock != CLOCK_REALTIME,
+			("forced to use a slow profiling clock"));
+	}
+
+#endif
+
+	SMB_WARN(have_profiling_clock == True,
+		("could not find a working clock for profiling"));
+	return;
+}
+#endif
+
 BOOL profile_setup(BOOL rdonly)
 {
 	struct shmid_ds shm_ds;
 
 	read_only = rdonly;
 
-#if defined(HAVE_CLOCK_GETTIME)
-	if (this_is_smp()) {
-		/* This is faster that gettimeofday, but not fast enough to
-		 * leave it enabled in production.
-		 */
-		__profile_clock = CLOCK_MONOTONIC;
-	} else {
-		/* CLOCK_PROCESS_CPUTIME_ID is sufficiently fast that the
-		 * always profiling times is plausible. Unfortunately it is
-		 * only accurate if we can guarantee we will not be scheduled
-		 * onto a different CPU between samples. Until there is some
-		 * way to set processor affinity, we can only use this on
-		 * uniprocessors.
-		 */
-		__profile_clock = CLOCK_PROCESS_CPUTIME_ID;
-	}
+#ifdef HAVE_CLOCK_GETTIME
+	init_clock_gettime();
 #endif
 
  again:
