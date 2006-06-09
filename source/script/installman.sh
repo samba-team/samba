@@ -20,7 +20,7 @@ fi
 
 # Get the configured feature set
 test -f "${SRCDIR}/config.log" && \
-	eval $( grep "^[[:alnum:]]*=.*" "${SRCDIR}/config.log")
+	eval `grep "^[[:alnum:]]*=.*" "${SRCDIR}/config.log"`
 
 for lang in $langs; do
     if [ "X$lang" = XC ]; then
@@ -44,7 +44,7 @@ for lang in $langs; do
     for sect in 1 5 7 8 ; do
 	for m in $langdir/man$sect ; do
 	    for s in $SRCDIR../docs/manpages/$lang/*$sect; do
-	    MP_BASENAME=${s##*/}
+	    MP_BASENAME=`basename $s`
 
 	    # Check if this man page if required by the configured feature set
 	    case "${MP_BASENAME}" in
