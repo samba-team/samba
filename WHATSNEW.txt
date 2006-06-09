@@ -21,6 +21,17 @@ Common issues addressed in 3.0.23rc2 include:
    o Winbind & AD trust failures.
 
 
+Group Mapping Changes
+=====================
+
+The default mapping entries for groups such as "Domain Admins"
+are no longer created when using an smbpasswd file or a tdbsam passdb 
+backend.  This means that it is necessary to use 'net groupmap add'
+rathe than 'net groupmap modify' to set these entries.  This change
+has no effect on winbindd's IDmap functionality for domain groups.
+
+
+
 ######################################################################
 Changes
 #######
@@ -99,6 +110,8 @@ o   Volker Lendecke <vl@samba.org>
       when mapped to a non-algorithmic rid.
     * Fix regression which upper-cased machine names passed to the
       'add machine script'.
+    * Correct parsing error in parse_net.c for user's with no group
+      membership.
 
 
 o   Jason Mader <jason@ncac.gwu.edu>
