@@ -761,6 +761,16 @@ int samdb_msg_add_delval(struct ldb_context *sam_ldb, TALLOC_CTX *mem_ctx, struc
 }
 
 /*
+  add a int element to a message
+*/
+int samdb_msg_add_int(struct ldb_context *sam_ldb, TALLOC_CTX *mem_ctx, struct ldb_message *msg,
+		       const char *attr_name, int v)
+{
+	const char *s = talloc_asprintf(mem_ctx, "%d", v);
+	return samdb_msg_add_string(sam_ldb, mem_ctx, msg, attr_name, s);
+}
+
+/*
   add a uint_t element to a message
 */
 int samdb_msg_add_uint(struct ldb_context *sam_ldb, TALLOC_CTX *mem_ctx, struct ldb_message *msg,
