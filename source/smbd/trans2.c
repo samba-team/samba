@@ -3436,7 +3436,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 
 			{
 				int i;
-				DEBUG(4,("call_trans2qfilepathinfo: SMB_QUERY_FILE_UNIX_BASIC"));
+				DEBUG(4,("call_trans2qfilepathinfo: SMB_QUERY_FILE_UNIX_BASIC "));
 
 				for (i=0; i<100; i++)
 					DEBUG(4,("%d=%x, ",i, (*ppdata)[i]));

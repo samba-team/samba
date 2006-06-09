@@ -181,8 +181,8 @@ START=`date`
  bin/nmblookup $CONFIGURATION $SERVER
  # make sure smbd is also up set
  echo "wait for smbd"
- bin/smbclient $CONFIGURATION -L $SERVER_IP -N -p 139 | head -2
- bin/smbclient $CONFIGURATION -L $SERVER_IP -N -p 139 | head -2
+ bin/smbclient $CONFIGURATION -L $SERVER_IP -U% -p 139 | head -2
+ bin/smbclient $CONFIGURATION -L $SERVER_IP -U% -p 139 | head -2
 
  failed=0
 
