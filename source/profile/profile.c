@@ -150,7 +150,6 @@ static void init_clock_gettime(void)
 		DEBUG(10, ("Using CLOCK_MONOTONIC for profile_clock\n"));
 		__profile_clock = CLOCK_MONOTONIC;
 		have_profiling_clock = True;
-		return;
 	}
 #endif
 
@@ -162,15 +161,16 @@ static void init_clock_gettime(void)
 	    clock_gettime(CLOCK_REALTIME, &ts) == 0) {
 		__profile_clock = CLOCK_REALTIME;
 		have_profiling_clock = True;
+
+		SMB_WARN(__profile_clock != CLOCK_REALTIME,
+			("forced to use a slow profiling clock"));
 	}
 
-	SMB_WARN(__profile_clock == CLOCK_REALTIME,
-		("Using (slow) CLOCK_REALTIME for profile_clock"));
 #endif
 
-	SMB_WARN(have_profiling_clock == False,
+	SMB_WARN(have_profiling_clock == True,
 		("could not find a working clock for profiling"));
-	return have_profiling_clock;
+	return;
 }
 #endif
 
