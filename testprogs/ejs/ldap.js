@@ -309,6 +309,13 @@ objectClass: user
 		assert(res[0].cn == "ldaptestutf8user2 èùéìòà");
 	}
 
+	println("Testing for highestCommittedUSN");
+	var attrs = new Array("highestCommittedUSN");
+	var res = ldb.search("", "", ldb.SCOPE_BASE, attrs);
+	assert(res.length == 1);
+	assert(res[0].highestCommittedUSN != undefined);
+	assert(res[0].highestCommittedUSN != 0);
+
 }
 
 function find_basedn(ldb)
