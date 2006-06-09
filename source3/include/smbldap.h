@@ -101,6 +101,7 @@ struct smbldap_state;
 #define LDAP_ATTR_MOD_TIMESTAMP         41
 #define LDAP_ATTR_LOGON_HOURS		42 
 #define LDAP_ATTR_TRUST_PASSWD_FLAGS    43
+#define LDAP_ATTR_SN			44
 
 
 typedef struct _attrib_map_entry {
