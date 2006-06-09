@@ -4,7 +4,7 @@
  *  Copyright (C) Andrew Tridgell              1992-1997,
  *  Copyright (C) Luke Kenneth Casson Leighton 1996-1997,
  *  Copyright (C) Paul Ashton                       1997.
- *  Copyright (C) Jean François Micouleau           2002.
+ *  Copyright (C) Jean Francois Micouleau           2002.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -1711,29 +1711,24 @@ BOOL net_io_user_info3(const char *desc, NET_USER_INFO_3 *usr, prs_struct *ps,
 	if(!prs_align(ps))
 		return False;
 
-	if (usr->num_groups > 0) {
+	if(!prs_uint32("num_groups2   ", ps, depth, &usr->num_groups2))        /* num groups2 */
+		return False;
 
-		if(!prs_uint32("num_groups2   ", ps, depth, &usr->num_groups2))        /* num groups2 */
+	if (usr->num_groups != usr->num_groups2) {
+		DEBUG(3,("net_io_user_info3: num_groups mismatch! (%d != %d)\n", 
+			 usr->num_groups, usr->num_groups2));
+		return False;
+	}
+
+	if (UNMARSHALLING(ps)) {
+		usr->gids = PRS_ALLOC_MEM(ps, DOM_GID, usr->num_groups);
+		if (usr->gids == NULL)
 			return False;
+	}
 
-		if (usr->num_groups != usr->num_groups2) {
-			DEBUG(3,("net_io_user_info3: num_groups mismatch! (%d != %d)\n", 
-			usr->num_groups, usr->num_groups2));
+	for (i = 0; i < usr->num_groups; i++) {
+		if(!smb_io_gid("", &usr->gids[i], ps, depth)) /* group info */
 			return False;
-		}
-
-
-		if (UNMARSHALLING(ps)) {
-			usr->gids = PRS_ALLOC_MEM(ps, DOM_GID, usr->num_groups);
-			if (usr->gids == NULL)
-				return False;
-		}
-
-		for (i = 0; i < usr->num_groups; i++) {
-			if(!smb_io_gid("", &usr->gids[i], ps, depth)) /* group info */
-				return False;
-		}
-		
 	}
 
 	if(!smb_io_unistr2("uni_logon_srv", &usr->uni_logon_srv, usr->hdr_logon_srv.buffer, ps, depth)) /* logon server unicode string */
