@@ -615,17 +615,18 @@ static BOOL pipe_ntlmssp_verify_final(pipes_struct *p, DATA_BLOB *p_resp_blob)
 
 	ZERO_STRUCT(reply);
 
-	/* Set up for non-authenticated user. */
-	TALLOC_FREE(p->pipe_user.nt_user_token);
-	p->pipe_user.ut.ngroups = 0;
-	SAFE_FREE( p->pipe_user.ut.groups);
-
 	status = auth_ntlmssp_update(a, *p_resp_blob, &reply);
 
 	/* Don't generate a reply. */
 	data_blob_free(&reply);
 
 	if (!NT_STATUS_IS_OK(status)) {
+		return False;
+	}
+
+	if (a->server_info->ptok == NULL) {
+		DEBUG(1,("Error: Authmodule failed to provide nt_user_token\n"));
+		p->pipe_user.nt_user_token = NULL;
 		return False;
 	}
 
@@ -682,14 +683,7 @@ static BOOL pipe_ntlmssp_verify_final(pipes_struct *p, DATA_BLOB *p_resp_blob)
 		}
 	}
 
-	if (a->server_info->ptok) {
-		p->pipe_user.nt_user_token =
-			dup_nt_token(NULL, a->server_info->ptok);
-	} else {
-		DEBUG(1,("Error: Authmodule failed to provide nt_user_token\n"));
-		p->pipe_user.nt_user_token = NULL;
-		return False;
-	}
+	p->pipe_user.nt_user_token = dup_nt_token(NULL, a->server_info->ptok);
 
 	return True;
 }
@@ -1390,6 +1384,12 @@ static BOOL pipe_schannel_auth_bind(pipes_struct *p, prs_struct *rpc_in_p,
 	p->auth.auth_data_free_func = NULL;
 	p->auth.auth_type = PIPE_AUTH_TYPE_SCHANNEL;
 
+	if (!set_current_user_guest(&p->pipe_user)) {
+		DEBUG(1, ("pipe_schannel_auth_bind: Could not set guest "
+			  "token\n"));
+		return False;
+	}
+
 	p->pipe_bound = True;
 
 	return True;
@@ -1640,6 +1640,11 @@ BOOL api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p)
 
 		case RPC_ANONYMOUS_AUTH_TYPE:
 			/* Unauthenticated bind request. */
+			/* Get the authenticated pipe user from current_user */
+			if (!copy_current_user(&p->pipe_user, &current_user)) {
+				DEBUG(10, ("Could not copy current user\n"));
+				goto err_exit;
+			}
 			/* We're finished - no more packets. */
 			p->auth.auth_type = PIPE_AUTH_TYPE_NONE;
 			/* We must set the pipe auth_level here also. */
@@ -2150,23 +2155,6 @@ BOOL api_pipe_schannel_process(pipes_struct *p, prs_struct *rpc_in, uint32 *p_ss
 }
 
 /****************************************************************************
- Return a user struct for a pipe user.
-****************************************************************************/
-
-struct current_user *get_current_user(struct current_user *user, pipes_struct *p)
-{
-	if (p->pipe_bound &&
-			(p->auth.auth_type == PIPE_AUTH_TYPE_NTLMSSP ||
-			(p->auth.auth_type == PIPE_AUTH_TYPE_SPNEGO_NTLMSSP))) {
-		memcpy(user, &p->pipe_user, sizeof(struct current_user));
-	} else {
-		memcpy(user, &current_user, sizeof(struct current_user));
-	}
-
-	return user;
-}
-
-/****************************************************************************
  Find the set of RPC functions associated with this context_id
 ****************************************************************************/
 
@@ -2220,9 +2208,7 @@ BOOL api_pipe_request(pipes_struct *p)
 	BOOL changed_user = False;
 	PIPE_RPC_FNS *pipe_fns;
 	
-	if (p->pipe_bound &&
-			((p->auth.auth_type == PIPE_AUTH_TYPE_NTLMSSP) ||
-			 (p->auth.auth_type == PIPE_AUTH_TYPE_SPNEGO_NTLMSSP))) {
+	if (p->pipe_bound) {
 		if(!become_authenticated_pipe_user(p)) {
 			prs_mem_free(&p->out_data.rdata);
 			return False;

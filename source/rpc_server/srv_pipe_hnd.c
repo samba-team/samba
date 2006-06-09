@@ -351,8 +351,6 @@ static void *make_internal_rpc_pipe_p(char *pipe_name,
 	/* Store the session key and NT_TOKEN */
 	if (vuser) {
 		p->session_key = data_blob(vuser->session_key.data, vuser->session_key.length);
-		p->pipe_user.nt_user_token = dup_nt_token(
-			NULL, vuser->nt_user_token);
 	}
 
 	/*

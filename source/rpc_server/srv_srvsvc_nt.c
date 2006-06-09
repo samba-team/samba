@@ -1183,7 +1183,6 @@ net sess del
 WERROR _srv_net_sess_del(pipes_struct *p, SRV_Q_NET_SESS_DEL *q_u, SRV_R_NET_SESS_DEL *r_u)
 {
 	struct sessionid *session_list;
-	struct current_user user;
 	int num_sessions, snum;
 	fstring username;
 	fstring machine;
@@ -1203,11 +1202,9 @@ WERROR _srv_net_sess_del(pipes_struct *p, SRV_Q_NET_SESS_DEL *q_u, SRV_R_NET_SES
 
 	r_u->status = WERR_ACCESS_DENIED;
 
-	get_current_user(&user, p);
-
 	/* fail out now if you are not root or not a domain admin */
 
-	if ((user.ut.uid != sec_initial_uid()) && 
+	if ((p->pipe_user.ut.uid != sec_initial_uid()) && 
 		( ! nt_token_check_domain_rid(p->pipe_user.nt_user_token, DOMAIN_GROUP_RID_ADMINS))) {
 
 		goto done;
@@ -1218,7 +1215,7 @@ WERROR _srv_net_sess_del(pipes_struct *p, SRV_Q_NET_SESS_DEL *q_u, SRV_R_NET_SES
 		if ((strequal(session_list[snum].username, username) || username[0] == '\0' ) &&
 		    strequal(session_list[snum].remote_machine, machine)) {
 		
-			if (user.ut.uid != sec_initial_uid()) {
+			if (p->pipe_user.ut.uid != sec_initial_uid()) {
 				not_root = True;
 				become_root();
 			}
@@ -1335,7 +1332,6 @@ char *valid_share_pathname(char *dos_pathname)
 
 WERROR _srv_net_share_set_info(pipes_struct *p, SRV_Q_NET_SHARE_SET_INFO *q_u, SRV_R_NET_SHARE_SET_INFO *r_u)
 {
-	struct current_user user;
 	pstring command;
 	fstring share_name;
 	fstring comment;
@@ -1372,13 +1368,11 @@ WERROR _srv_net_share_set_info(pipes_struct *p, SRV_Q_NET_SHARE_SET_INFO *q_u, S
 	if (lp_print_ok(snum))
 		return WERR_ACCESS_DENIED;
 
-	get_current_user(&user,p);
-
 	is_disk_op = user_has_privileges( p->pipe_user.nt_user_token, &se_diskop );
 	
 	/* fail out now if you are not root and not a disk op */
 	
-	if ( user.ut.uid != sec_initial_uid() && !is_disk_op )
+	if ( p->pipe_user.ut.uid != sec_initial_uid() && !is_disk_op )
 		return WERR_ACCESS_DENIED;
 
 	switch (q_u->info_level) {
@@ -1523,7 +1517,6 @@ WERROR _srv_net_share_set_info(pipes_struct *p, SRV_Q_NET_SHARE_SET_INFO *q_u, S
 
 WERROR _srv_net_share_add(pipes_struct *p, SRV_Q_NET_SHARE_ADD *q_u, SRV_R_NET_SHARE_ADD *r_u)
 {
-	struct current_user user;
 	pstring command;
 	fstring share_name;
 	fstring comment;
@@ -1541,11 +1534,9 @@ WERROR _srv_net_share_add(pipes_struct *p, SRV_Q_NET_SHARE_ADD *q_u, SRV_R_NET_S
 
 	r_u->parm_error = 0;
 
-	get_current_user(&user,p);
-
 	is_disk_op = user_has_privileges( p->pipe_user.nt_user_token, &se_diskop );
 
-	if (user.ut.uid != sec_initial_uid()  && !is_disk_op ) 
+	if (p->pipe_user.ut.uid != sec_initial_uid()  && !is_disk_op ) 
 		return WERR_ACCESS_DENIED;
 
 	if (!lp_add_share_cmd() || !*lp_add_share_cmd()) {
@@ -1680,7 +1671,6 @@ WERROR _srv_net_share_add(pipes_struct *p, SRV_Q_NET_SHARE_ADD *q_u, SRV_R_NET_S
 
 WERROR _srv_net_share_del(pipes_struct *p, SRV_Q_NET_SHARE_DEL *q_u, SRV_R_NET_SHARE_DEL *r_u)
 {
-	struct current_user user;
 	pstring command;
 	fstring share_name;
 	int ret;
@@ -1708,11 +1698,9 @@ WERROR _srv_net_share_del(pipes_struct *p, SRV_Q_NET_SHARE_DEL *q_u, SRV_R_NET_S
 	if (lp_print_ok(snum))
 		return WERR_ACCESS_DENIED;
 
-	get_current_user(&user,p);
-
 	is_disk_op = user_has_privileges( p->pipe_user.nt_user_token, &se_diskop );
 
-	if (user.ut.uid != sec_initial_uid()  && !is_disk_op ) 
+	if (p->pipe_user.ut.uid != sec_initial_uid()  && !is_disk_op ) 
 		return WERR_ACCESS_DENIED;
 
 	if (!lp_delete_share_cmd() || !*lp_delete_share_cmd()) {
@@ -1824,7 +1812,6 @@ WERROR _srv_net_file_query_secdesc(pipes_struct *p, SRV_Q_NET_FILE_QUERY_SECDESC
 	SMB_STRUCT_STAT st;
 	BOOL bad_path;
 	NTSTATUS nt_status;
-	struct current_user user;
 	connection_struct *conn = NULL;
 	BOOL became_user = False; 
 
@@ -1837,10 +1824,8 @@ WERROR _srv_net_file_query_secdesc(pipes_struct *p, SRV_Q_NET_FILE_QUERY_SECDESC
 	/* Null password is ok - we are already an authenticated user... */
 	null_pw = data_blob(NULL, 0);
 
-	get_current_user(&user, p);
-
 	become_root();
-	conn = make_connection(qualname, null_pw, "A:", user.vuid, &nt_status);
+	conn = make_connection(qualname, null_pw, "A:", p->pipe_user.vuid, &nt_status);
 	unbecome_root();
 
 	if (conn == NULL) {
@@ -1906,7 +1891,7 @@ WERROR _srv_net_file_query_secdesc(pipes_struct *p, SRV_Q_NET_FILE_QUERY_SECDESC
 
 	close_file(fsp, NORMAL_CLOSE);
 	unbecome_user();
-	close_cnum(conn, user.vuid);
+	close_cnum(conn, p->pipe_user.vuid);
 	return r_u->status;
 
 error_exit:
@@ -1919,7 +1904,7 @@ error_exit:
 		unbecome_user();
 
 	if (conn) 
-		close_cnum(conn, user.vuid);
+		close_cnum(conn, p->pipe_user.vuid);
 
 	return r_u->status;
 }
@@ -1939,7 +1924,6 @@ WERROR _srv_net_file_set_secdesc(pipes_struct *p, SRV_Q_NET_FILE_SET_SECDESC *q_
 	SMB_STRUCT_STAT st;
 	BOOL bad_path;
 	NTSTATUS nt_status;
-	struct current_user user;
 	connection_struct *conn = NULL;
 	BOOL became_user = False;
 
@@ -1952,10 +1936,8 @@ WERROR _srv_net_file_set_secdesc(pipes_struct *p, SRV_Q_NET_FILE_SET_SECDESC *q_
 	/* Null password is ok - we are already an authenticated user... */
 	null_pw = data_blob(NULL, 0);
 
-	get_current_user(&user, p);
-
 	become_root();
-	conn = make_connection(qualname, null_pw, "A:", user.vuid, &nt_status);
+	conn = make_connection(qualname, null_pw, "A:", p->pipe_user.vuid, &nt_status);
 	unbecome_root();
 
 	if (conn == NULL) {
@@ -2015,7 +1997,7 @@ WERROR _srv_net_file_set_secdesc(pipes_struct *p, SRV_Q_NET_FILE_SET_SECDESC *q_
 
 	close_file(fsp, NORMAL_CLOSE);
 	unbecome_user();
-	close_cnum(conn, user.vuid);
+	close_cnum(conn, p->pipe_user.vuid);
 	return r_u->status;
 
 error_exit:
@@ -2029,7 +2011,7 @@ error_exit:
 	}
 
 	if (conn) {
-		close_cnum(conn, user.vuid);
+		close_cnum(conn, p->pipe_user.vuid);
 	}
 
 	return r_u->status;

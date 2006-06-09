@@ -1381,6 +1381,65 @@ NTSTATUS make_server_info_guest(auth_serversupplied_info **server_info)
 	return (*server_info != NULL) ? NT_STATUS_OK : NT_STATUS_NO_MEMORY;
 }
 
+BOOL copy_current_user(struct current_user *dst, struct current_user *src)
+{
+	gid_t *groups;
+	NT_USER_TOKEN *nt_token;
+
+	groups = memdup(src->ut.groups, sizeof(gid_t) * src->ut.ngroups);
+	if ((src->ut.ngroups != 0) && (groups == NULL)) {
+		return False;
+	}
+
+	nt_token = dup_nt_token(NULL, src->nt_user_token);
+	if (nt_token == NULL) {
+		SAFE_FREE(groups);
+		return False;
+	}
+
+	dst->conn = src->conn;
+	dst->vuid = src->vuid;
+	dst->ut.uid = src->ut.uid;
+	dst->ut.gid = src->ut.gid;
+	dst->ut.ngroups = src->ut.ngroups;
+	dst->ut.groups = groups;
+	dst->nt_user_token = nt_token;
+	return True;
+}
+
+BOOL set_current_user_guest(struct current_user *dst)
+{
+	gid_t *groups;
+	NT_USER_TOKEN *nt_token;
+
+	groups = memdup(guest_info->groups,
+			sizeof(gid_t) * guest_info->n_groups);
+	if (groups == NULL) {
+		return False;
+	}
+
+	nt_token = dup_nt_token(NULL, guest_info->ptok);
+	if (nt_token == NULL) {
+		SAFE_FREE(groups);
+		return False;
+	}
+
+	TALLOC_FREE(dst->nt_user_token);
+	SAFE_FREE(dst->ut.groups);
+
+	/* dst->conn is never really dereferenced, it's only tested for
+	 * equality in uid.c */
+	dst->conn = NULL;
+
+	dst->vuid = UID_FIELD_INVALID;
+	dst->ut.uid = guest_info->uid;
+	dst->ut.gid = guest_info->gid;
+	dst->ut.ngroups = guest_info->n_groups;
+	dst->ut.groups = groups;
+	dst->nt_user_token = nt_token;
+	return True;
+}
+
 /***************************************************************************
  Purely internal function for make_server_info_info3
  Fill the sam account from getpwnam

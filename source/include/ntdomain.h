@@ -234,7 +234,7 @@ typedef struct pipes_struct {
 	struct dcinfo *dc; /* Keeps the creds data from netlogon. */
 
 	/*
-	 * Unix user name and credentials used when a pipe is authenticated.
+	 * Credentials used for the pipe operations
 	 */
 
 	struct current_user pipe_user;
