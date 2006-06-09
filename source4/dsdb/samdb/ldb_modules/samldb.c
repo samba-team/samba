@@ -351,30 +351,35 @@ int samldb_notice_sid(struct ldb_module *module,
 	int ret;
 	struct ldb_dn *dom_dn;
 	struct dom_sid *dom_sid;
-	const char *dom_attrs[] = { NULL };
-	struct ldb_message **dom_msgs;
+	const char *attrs[] = { NULL };
+	struct ldb_result *dom_res;
+	struct ldb_result *res;
 	uint32_t old_rid;
+	char *filter;
 
-	/* find the domain DN */
+	/* find if this SID already exists */
 
-	ret = gendb_search(module->ldb,
-			   mem_ctx, NULL, &dom_msgs, dom_attrs,
-			   "objectSid=%s",
-			   ldap_encode_ndr_dom_sid(mem_ctx, sid));
-	if (ret > 0) {
-		ldb_set_errstring(module->ldb,
-				  talloc_asprintf(mem_ctx,
-						  "Attempt to add record with SID %s rejected,"
-						  " because this SID is already in the database",
-						  dom_sid_string(mem_ctx, sid)));
-		/* We have a duplicate SID, we must reject the add */
-		talloc_free(dom_msgs);
-		return LDB_ERR_CONSTRAINT_VIOLATION;
-	}
-	
-	if (ret == -1) {
-		ldb_debug(module->ldb, LDB_DEBUG_FATAL, "samldb_get_new_sid: error searching for proposed sid!\n");
-		return LDB_ERR_OPERATIONS_ERROR;
+	filter = talloc_asprintf(mem_ctx, "(objectSid=%s)",
+				 ldap_encode_ndr_dom_sid(mem_ctx, sid));
+
+	ret = ldb_search(module->ldb, samdb_base_dn(mem_ctx), LDB_SCOPE_SUBTREE, filter, attrs, &res);
+	if (ret == LDB_SUCCESS) {
+		if (res->count > 0) {
+			talloc_free(res);
+			ldb_set_errstring(module->ldb,
+					  talloc_asprintf(mem_ctx,
+							  "Attempt to add record with SID %s rejected,"
+							  " because this SID is already in the database",
+							  dom_sid_string(mem_ctx, sid)));
+			/* We have a duplicate SID, we must reject the add */
+			return LDB_ERR_CONSTRAINT_VIOLATION;
+		}
+		talloc_free(res);
+	} else {
+		ldb_set_errstring(module->ldb, talloc_asprintf(module, "samldb_notice_sid: error searching to see if sid %s is in use: %s\n", 
+							       dom_sid_string(dom_res, sid), 
+							       ldb_errstring(module->ldb)));
+		return ret;
 	}
 
 	dom_sid = dom_sid_dup(mem_ctx, sid);
@@ -385,33 +390,38 @@ int samldb_notice_sid(struct ldb_module *module,
 	dom_sid->num_auths--;
 
 	/* find the domain DN */
+	
+	filter = talloc_asprintf(mem_ctx, "(&(objectSid=%s)(objectclass=domain))",
+				 ldap_encode_ndr_dom_sid(mem_ctx, dom_sid));
 
-	ret = gendb_search(module->ldb,
-			   mem_ctx, NULL, &dom_msgs, dom_attrs,
-			   "(&(objectSid=%s)(objectclass=domain))",
-			   ldap_encode_ndr_dom_sid(mem_ctx, dom_sid));
-	if (ret == 0) {
-		/* This isn't an operation on a domain we know about, so nothing to update */
-		return LDB_SUCCESS;
+	ret = ldb_search(module->ldb, samdb_base_dn(mem_ctx), LDB_SCOPE_SUBTREE, filter, attrs, &dom_res);
+	if (ret == LDB_SUCCESS) {
+		talloc_steal(mem_ctx, dom_res);
+		if (dom_res->count == 0) {
+			talloc_free(dom_res);
+			/* This isn't an operation on a domain we know about, so nothing to update */
+			return LDB_SUCCESS;
+		}
+
+		if (dom_res->count > 1) {
+			talloc_free(dom_res);
+			ldb_set_errstring(module->ldb, talloc_asprintf(module, "samldb_notice_sid: error retrieving domain from sid: duplicate (found %d) domain: %s!\n", 
+								       dom_res->count, dom_sid_string(dom_res, dom_sid)));
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+	} else {
+		ldb_set_errstring(module->ldb, talloc_asprintf(module, "samldb_notice_sid: error retrieving domain from sid: %s: %s\n", 
+							       dom_sid_string(dom_res, dom_sid), 
+							       ldb_errstring(module->ldb)));
+		return ret;
 	}
 
-	if (ret > 1) {
-		ldb_debug(module->ldb, LDB_DEBUG_FATAL, "samldb_get_new_sid: error retrieving domain from sid: duplicate domains!\n");
-		talloc_free(dom_msgs);
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	if (ret != 1) {
-		ldb_debug(module->ldb, LDB_DEBUG_FATAL, "samldb_get_new_sid: error retrieving domain sid!\n");
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	dom_dn = dom_msgs[0]->dn;
+	dom_dn = dom_res->msgs[0]->dn;
 
 	ret = samldb_find_next_rid(module, mem_ctx, 
 				   dom_dn, &old_rid);
 	if (ret) {
-		talloc_free(dom_msgs);
+		talloc_free(dom_res);
 		return ret;
 	}
 
@@ -419,7 +429,7 @@ int samldb_notice_sid(struct ldb_module *module,
 		ret = samldb_set_next_rid(module->ldb, mem_ctx, dom_dn, old_rid, 
 					  sid->sub_auths[sid->num_auths - 1] + 1);
 	}
-	talloc_free(dom_msgs);
+	talloc_free(dom_res);
 	return ret;
 }
 
@@ -432,7 +442,7 @@ static int samldb_handle_sid(struct ldb_module *module,
 	if (sid == NULL) { 
 		sid = samldb_get_new_sid(module, msg2, msg2->dn);
 		if (sid == NULL) {
-			ldb_debug(module->ldb, LDB_DEBUG_FATAL, "samldb_fill_user_or_computer_object: internal error! Can't generate new sid\n");
+			ldb_debug(module->ldb, LDB_DEBUG_FATAL, "samldb_handle_sid: internal error! Can't generate new sid\n");
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 
