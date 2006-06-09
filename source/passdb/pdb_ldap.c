@@ -730,14 +730,21 @@ static BOOL init_sam_from_ldap(struct ldapsam_privates *ldap_state,
 			pwd_len = sizeof(clear_text_pw);
 			if (pdb_nds_get_password(ldap_state->smbldap_state, user_dn, &pwd_len, clear_text_pw) == LDAP_SUCCESS) {
 				nt_lm_owf_gen(clear_text_pw, smbntpwd, smblmpwd);
-				if (!pdb_set_lanman_passwd(sampass, smblmpwd, PDB_SET))
+				if (!pdb_set_lanman_passwd(sampass, smblmpwd, PDB_SET)) {
+					SAFE_FREE(user_dn);
 					return False;
+				}
 				ZERO_STRUCT(smblmpwd);
-				if (!pdb_set_nt_passwd(sampass, smbntpwd, PDB_SET))
+				if (!pdb_set_nt_passwd(sampass, smbntpwd, PDB_SET)) {
+					SAFE_FREE(user_dn);
 					return False;
+				}
 				ZERO_STRUCT(smbntpwd);
 				use_samba_attrs = False;
 			}
+
+			SAFE_FREE(user_dn);
+
 		} else {
 			DEBUG(0, ("init_sam_from_ldap: failed to get user_dn for '%s'\n", username));
 		}
