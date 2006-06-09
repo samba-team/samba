@@ -287,9 +287,13 @@ got_connection:
 		   not servicePrincipalName; found by Guenther Deschner @ Sernet.
 
 		   Is this still correct?  The comment does not match
-		   the code.   --jerry */
+		   the code.   --jerry 
+		   
+		   Yes it is :) 
+		   - Guenther
+		   */
 
-		asprintf(&ads->auth.user_name, "host/%s", global_myname() );
+		asprintf(&ads->auth.user_name, "%s$", global_myname() );
 	}
 
 	if (!ads->auth.realm) {
