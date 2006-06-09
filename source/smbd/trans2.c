@@ -3431,7 +3431,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 
 			SIVAL(pdata,0,sbuf.st_nlink);             /* number of hard links */
 			SIVAL(pdata,4,0);
-			pdata += 8+1;
+			pdata += 8;
 			data_size = PTR_DIFF(pdata,(*ppdata));
 
 			{
