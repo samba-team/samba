@@ -26,7 +26,6 @@ ADS_STATUS ads_change_trust_account_password(ADS_STRUCT *ads, char *host_princip
 {
 	char *password;
 	char *new_password;
-	char *service_principal;
 	ADS_STATUS ret;
 	uint32 sec_channel_type;
     
@@ -37,9 +36,7 @@ ADS_STATUS ads_change_trust_account_password(ADS_STRUCT *ads, char *host_princip
 
 	new_password = generate_random_str(DEFAULT_TRUST_ACCOUNT_PASSWORD_LENGTH);
     
-	asprintf(&service_principal, "HOST/%s", host_principal);
-
-	ret = kerberos_set_password(ads->auth.kdc_server, service_principal, password, service_principal, new_password, ads->auth.time_offset);
+	ret = kerberos_set_password(ads->auth.kdc_server, host_principal, password, host_principal, new_password, ads->auth.time_offset);
 
 	if (!ADS_ERR_OK(ret)) {
 		goto failed;
@@ -53,14 +50,13 @@ ADS_STATUS ads_change_trust_account_password(ADS_STRUCT *ads, char *host_princip
 
 	/* Determine if the KDC is salting keys for this principal in a
 	 * non-obvious way. */
-	if (!kerberos_derive_salting_principal(service_principal)) {
-		DEBUG(1,("Failed to determine correct salting principal for %s\n", service_principal));
+	if (!kerberos_derive_salting_principal(host_principal)) {
+		DEBUG(1,("Failed to determine correct salting principal for %s\n", host_principal));
 		ret = ADS_ERROR_SYSTEM(EACCES);
 		goto failed;
 	}
 
 failed:
-	SAFE_FREE(service_principal);
 	SAFE_FREE(password);
 	return ret;
 }

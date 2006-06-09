@@ -1529,19 +1529,19 @@ int net_ads_changetrustpw(int argc, const char **argv)
 
 	fstrcpy(my_name, global_myname());
 	strlower_m(my_name);
-	asprintf(&host_principal, "%s@%s", my_name, ads->config.realm);
-	d_printf("Changing password for principal: HOST/%s\n", host_principal);
+	asprintf(&host_principal, "%s$@%s", my_name, ads->config.realm);
+	d_printf("Changing password for principal: %s\n", host_principal);
 
 	ret = ads_change_trust_account_password(ads, host_principal);
 
 	if (!ADS_ERR_OK(ret)) {
-		d_fprintf(stderr, "Password change failed :-( ...\n");
+		d_fprintf(stderr, "Password change failed: %s\n", ads_errstr(ret));
 		ads_destroy(&ads);
 		SAFE_FREE(host_principal);
 		return -1;
 	}
     
-	d_printf("Password change for principal HOST/%s succeeded.\n", host_principal);
+	d_printf("Password change for principal %s succeeded.\n", host_principal);
 
 	if (lp_use_kerberos_keytab()) {
 		d_printf("Attempting to update system keytab with new password.\n");
