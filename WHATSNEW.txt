@@ -65,6 +65,9 @@ o   Guenther Deschner <gd@samba.org>
     * Correct "net ads changetrustpw" to use the sAMAccountName.
     * Fix winbindd in ADS domains by removing code using the 
       UPN and rely upon the sAMAccountName.
+    * Fix a eDir related memory leak.
+    * Don't try to add the sn attribute twice to an LDAP 
+      inetOrgPerson + samSamAccount entry.
 
 
 o   Aleksey Fedoseev <fedoseev@ru.ibm.com>
