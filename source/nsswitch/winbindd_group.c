@@ -789,7 +789,7 @@ void winbindd_getgrent(struct winbindd_cli_state *state)
 			/* Append to group membership list */
 			gr_mem_list = SMB_REALLOC( gr_mem_list, gr_mem_list_len + gr_mem_len);
 
-			if (!gr_mem_list) {
+			if (!gr_mem_list && (group_list[group_list_ndx].num_gr_mem != 0)) {
 				DEBUG(0, ("out of memory\n"));
 				gr_mem_list_len = 0;
 				break;
