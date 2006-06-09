@@ -5564,6 +5564,17 @@ if test "${ac_cv_prog_CC}" = "insure"; then
 fi
 
 #################################################
+# If run from the build farm, enable NASTY hacks
+#################################################
+AC_MSG_CHECKING(whether to enable build farm hacks)
+if test x"$RUN_FROM_BUILD_FARM" = x"yes"; then
+	AC_MSG_RESULT(yes)
+	AC_DEFINE(ENABLE_BUILD_FARM_HACKS, 1, [Defined if running in the build farm])
+else
+	AC_MSG_RESULT(no)
+fi
+
+#################################################
 # Display summary of libraries detected
 
 AC_MSG_RESULT([Using libraries:])

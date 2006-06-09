@@ -111,6 +111,10 @@ cat >$SERVERCONFFILE<<EOF
 	bind interfaces only = yes
 	include = $COMMONCONFFILE
 
+	; Necessary to add the build farm hacks
+	add user script = /bin/false
+	add machine script = /bin/false
+
 	kernel oplocks = no
 
 [tmp]

@@ -922,6 +922,82 @@ void sys_endpwent(void)
  Wrappers for getpwnam(), getpwuid(), getgrnam(), getgrgid()
 ****************************************************************************/
 
+#ifdef ENABLE_BUILD_FARM_HACKS
+
+/*
+ * In the build farm we want to be able to join machines to the domain. As we
+ * don't have root access, we need to bypass direct access to /etc/passwd
+ * after a user has been created via samr. Fake those users.
+ */
+
+static struct passwd *fake_pwd;
+static int num_fake_pwd;
+
+struct passwd *sys_getpwnam(const char *name)
+{
+	int i;
+
+	for (i=0; i<num_fake_pwd; i++) {
+		if (strcmp(fake_pwd[i].pw_name, name) == 0) {
+			DEBUG(10, ("Returning fake user %s\n", name));
+			return &fake_pwd[i];
+		}
+	}
+
+	return getpwnam(name);
+}
+
+struct passwd *sys_getpwuid(uid_t uid)
+{
+	int i;
+
+	for (i=0; i<num_fake_pwd; i++) {
+		if (fake_pwd[i].pw_uid == uid) {
+			DEBUG(10, ("Returning fake user %s\n",
+				   fake_pwd[i].pw_name));
+			return &fake_pwd[i];
+		}
+	}
+
+	return getpwuid(uid);
+}
+
+void faked_create_user(const char *name)
+{
+	int i;
+	uid_t uid;
+	struct passwd new_pwd;
+
+	for (i=0; i<10; i++) {
+		generate_random_buffer((unsigned char *)&uid,
+				       sizeof(uid));
+		if (getpwuid(uid) == NULL) {
+			break;
+		}
+	}
+
+	if (i==10) {
+		/* Weird. No free uid found... */
+		return;
+	}
+
+	new_pwd.pw_name = SMB_STRDUP(name);
+	new_pwd.pw_passwd = SMB_STRDUP("x");
+	new_pwd.pw_uid = uid;
+	new_pwd.pw_gid = 100;
+	new_pwd.pw_gecos = SMB_STRDUP("faked user");
+	new_pwd.pw_dir = SMB_STRDUP("/nodir");
+	new_pwd.pw_shell = SMB_STRDUP("/bin/false");
+
+	ADD_TO_ARRAY(NULL, struct passwd, new_pwd, &fake_pwd,
+		     &num_fake_pwd);
+
+	DEBUG(10, ("Added fake user %s, have %d fake users\n",
+		   name, num_fake_pwd));
+}
+
+#else
+
 struct passwd *sys_getpwnam(const char *name)
 {
 	return getpwnam(name);
@@ -931,6 +1007,8 @@ struct passwd *sys_getpwuid(uid_t uid)
 {
 	return getpwuid(uid);
 }
+
+#endif
 
 struct group *sys_getgrnam(const char *name)
 {

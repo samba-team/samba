@@ -371,6 +371,15 @@ static NTSTATUS pdb_default_create_user(struct pdb_methods *methods,
 		add_ret = smbrun(add_script,NULL);
 		DEBUG(add_ret ? 0 : 3, ("_samr_create_user: Running the command `%s' gave %d\n",
 					add_script, add_ret));
+
+#ifdef ENABLE_BUILD_FARM_HACKS
+		if (add_ret != 0) {
+			DEBUG(1, ("Creating a faked user %s for build farm "
+				  "purposes", name));
+			faked_create_user(name);
+		}
+#endif
+
 		flush_pwnam_cache();
 
 		pwd = Get_Pwnam_alloc(tmp_ctx, name);
