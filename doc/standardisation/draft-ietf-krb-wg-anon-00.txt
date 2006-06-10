@@ -1,0 +1,562 @@
+
+
+
+NETWORK WORKING GROUP                                             L. Zhu
+Internet-Draft                                                  P. Leach
+Updates: 4120 (if approved)                                K. Jaganathan
+Expires: December 5, 2006                          Microsoft Corporation
+                                                            June 3, 2006
+
+
+                     Anonymity Support for Kerberos
+                       draft-ietf-krb-wg-anon-00
+
+Status of this Memo
+
+   By submitting this Internet-Draft, each author represents that any
+   applicable patent or other IPR claims of which he or she is aware
+   have been or will be disclosed, and any of which he or she becomes
+   aware will be disclosed, in accordance with Section 6 of BCP 79.
+
+   Internet-Drafts are working documents of the Internet Engineering
+   Task Force (IETF), its areas, and its working groups.  Note that
+   other groups may also distribute working documents as Internet-
+   Drafts.
+
+   Internet-Drafts are draft documents valid for a maximum of six months
+   and may be updated, replaced, or obsoleted by other documents at any
+   time.  It is inappropriate to use Internet-Drafts as reference
+   material or to cite them other than as "work in progress."
+
+   The list of current Internet-Drafts can be accessed at
+   http://www.ietf.org/ietf/1id-abstracts.txt.
+
+   The list of Internet-Draft Shadow Directories can be accessed at
+   http://www.ietf.org/shadow.html.
+
+   This Internet-Draft will expire on December 5, 2006.
+
+Copyright Notice
+
+   Copyright (C) The Internet Society (2006).
+
+Abstract
+
+   This document defines the use of anonymous Kerberos tickets for the
+   purpose of authenticating the servers and enabling secure
+   communication between a client and a server, without identifying the
+   client to the server.
+
+
+
+
+
+
+Zhu, et al.             Expires December 5, 2006                [Page 1]
+
+Internet-Draft         Kerberos Anonymity Support              June 2006
+
+
+Table of Contents
+
+   1.  Introduction . . . . . . . . . . . . . . . . . . . . . . . . .  3
+   2.  Conventions Used in This Document  . . . . . . . . . . . . . .  3
+   3.  Definitions  . . . . . . . . . . . . . . . . . . . . . . . . .  3
+   4.  Protocol Description . . . . . . . . . . . . . . . . . . . . .  5
+   5.  GSS-API Implementation Notes . . . . . . . . . . . . . . . . .  6
+   6.  Security Considerations  . . . . . . . . . . . . . . . . . . .  7
+   7.  Acknowledgements . . . . . . . . . . . . . . . . . . . . . . .  7
+   8.  IANA Considerations  . . . . . . . . . . . . . . . . . . . . .  7
+   9.  Normative References . . . . . . . . . . . . . . . . . . . . .  7
+   Authors' Addresses . . . . . . . . . . . . . . . . . . . . . . . .  9
+   Intellectual Property and Copyright Statements . . . . . . . . . . 10
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Zhu, et al.             Expires December 5, 2006                [Page 2]
+
+Internet-Draft         Kerberos Anonymity Support              June 2006
+
+
+1.  Introduction
+
+   In certain situations or environments, the Kerberos [RFC4120] client
+   may wish to authenticate a server and/or protect communications
+   without revealing its own identity.  For example, consider an
+   application which provides read access to a research database, and
+   which permits queries by arbitrary requestors.  A client of such a
+   service might wish to authenticate the service, to establish trust in
+   the information received from it, but might not wish to disclose its
+   identity to the service for privacy reasons.
+
+   To accomplish this, a Kerberos mechanism is specified in this
+   document by which a client requests an anonymous ticket and use that
+   to authenticate the server and secure subsequent client-server
+   communications.  This provides Kerberos with functional equivalence
+   to TLS [RFC2246] in environments where Kerberos is a more attractive
+   authentication mechanism.
+
+   Using this mechanism, the client has to reveal its identity in its
+   initial request to its own Key Distribution Center (KDC) [RFC4120],
+   and then it can remain anonymous thereafter to KDCs on the cross-
+   realm authentication path, if any, and to the server with which it
+   communicates.
+
+
+2.  Conventions Used in This Document
+
+   The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
+   "SHOULD", "SHOULD NOT", "RECOMMENDED", "MAY", and "OPTIONAL" in this
+   document are to be interpreted as described in [RFC2119].
+
+
+3.  Definitions
+
+   An anonymous ticket is a ticket that has all of the following
+   properties:
+
+   o  The client's principal name is the anonymous Kerberos principal
+      name.  The anonymous Kerberos principal name is defined as
+      follows: it is a reserved Kerberos principal name as defined in
+      [KRBNAM], the name-type is KRB_NT_RESRVED [KRBNAM], and the name-
+      string is a sequence of two KerberosString components: "RESERVED",
+      "ANONYMOUS".
+
+   o  The client's realm name is the anonymous kerberos realm name.  The
+      anonymous Kerberos realm name is defined as follows: it is a
+      reserved realm name as defined in [KRBNAM] and the realm name is
+      the literal "RESERVED:ANONYMOUS".
+
+
+
+Zhu, et al.             Expires December 5, 2006                [Page 3]
+
+Internet-Draft         Kerberos Anonymity Support              June 2006
+
+
+   o  The authtime field in the ticket is set to the time of the ticket
+      request, not the time of the initial authentication for the
+      principal who has made the request.
+
+   o  The transited field [RFC4120] can either contain the client's
+      authentication path or contain the anonymous authentication path
+      defined as follows: the tr-type field of the transited field is
+      NO-TRANSITED-INFO (as defined later in this section) and the
+      contents field is an empty OCTET STRING.  If a TGS request
+      contains an anonymous ticket with a "normal" authentication path
+      (i.e. the transited field does not contain the anonymous
+      authentication path as defined above), then the reply ticket, if
+      any, MUST NOT contain the anonymous authentication path.  For
+      application servers, no transited policy is defined for the
+      anonymous authentication path, but all of the transited checks
+      would still apply if an anonymous ticket contains a "normal"
+      authentication path.  Note that the "normal" authentication path
+      in an anonymous ticket can be a partial path, thus it may not be
+      sufficient to identify the originating client realm.
+
+   o  It contains no information that can reveal the client's identity
+      other than, at most, the client's realm or the realm(s) on the
+      authentication path.
+
+   o  The anonymous ticket flag (as defined later in this section) is
+      set.
+
+   The anonymous ticket flag is defined as bit 14 (with the first bit
+   being bit 0) in the TicketFlags:
+
+           TicketFlags     ::= KerberosFlags
+             -- anonymous(14)
+             -- TicketFlags and KerberosFlags are defined in [RFC4120]
+
+   The anonymous ticket flag MUST NOT be set by implementations of this
+   specification if the ticket is not an anonymous ticket as defined in
+   this section.
+
+   The request-anonymous KDC option is defined as bit 14 (with the first
+   bit being bit 0) in the KDCOptions:
+
+           KDCOptions      ::= KerberosFlags
+             -- request-anonymous(14)
+             -- KDCOptions and KerberosFlags are defined in [RFC4120]
+
+   The anonymous transited encoding type is defined as follows:
+
+           NO-TRANSITED-INFO    0
+
+
+
+Zhu, et al.             Expires December 5, 2006                [Page 4]
+
+Internet-Draft         Kerberos Anonymity Support              June 2006
+
+
+   This transited encoding type indicates that there is no information
+   available about the authentication path.
+
+   Note that the server principal name and the server realm in a cross-
+   realm referral TGT are not dependent on whether the client is the
+   anonymous principal or not.
+
+
+4.  Protocol Description
+
+   In order to request an anonymous ticket, the client sets the request-
+   anonymous KDC option in an AS or TGS request [RFC4120].  Note that if
+   the service ticket in the PA-TGS-REQ [RFC4120] is anonymous, the
+   request-anonymous KDC option MUST be set in the request.
+
+   When policy allows, the KDC issues an anonymous ticket.  The KDC that
+   implements this specification MUST NOT carry information that can
+   reveal the client's identity, from the TGS request into the returned
+   anonymous ticket.
+
+   It should be noted that unless otherwise specified by this document
+   the client principal name and the client realm in the Kerberos
+   messages [RFC4120] should be the client name and client realm that
+   can uniquely identify the client principal to the KDC, not the
+   anonymous client principal name and the empty realm name.  For
+   example, the client name and realm in the request body and the
+   EncKDCRepPart of the reply [RFC4120] are identifiers of the client
+   principal.  In other words, the client name and client realm in the
+   EncKDCRepPart does not match with that of the returned anonymous
+   ticket.
+
+   If either local policy prohibits issuing of anonymous tickets or it
+   is inappropriate to remove information (such as restrictions) from
+   the TGS request in order to produce an anonymous ticket, the KDC MUST
+   return an error message with the code KDC_ERR_POLICY [RFC4120].
+
+   If a client requires anonymous communication then the client should
+   check to make sure that the resulting ticket is actually anonymous by
+   checking the presence of the anonymous ticket flag.  Because KDCs
+   ignore unknown KDC options, a KDC that does not understand the
+   request-anonymous KDC option will not return an error, but will
+   instead return a normal ticket.
+
+   The subsequent client and server communications then proceed as
+   described in [RFC4120].  The client principal name in the
+   Authenticator of the KRB_AP_REQ MUST be the anonymous client
+   principal name and the client realm of the Authenticator MUST be an
+   empty KerberosString [RFC4120].
+
+
+
+Zhu, et al.             Expires December 5, 2006                [Page 5]
+
+Internet-Draft         Kerberos Anonymity Support              June 2006
+
+
+   A server accepting such an anonymous service ticket may assume that
+   subsequent requests using the same ticket originate from the same
+   client.  Requests with different tickets are likely to originate from
+   different clients.
+
+   Interoperability and backward-compatibility notes: the KDC is given
+   the task of rejecting a request for an anonymous ticket when the
+   anonymous ticket is not acceptable by the server.
+
+
+5.  GSS-API Implementation Notes
+
+   At the GSS-API [RFC2743] level, the use of an anonymous principal by
+   the initiator/client requires a software change of the initiator/
+   client software (to assert the "anonymous" flag when calling
+   GSS_Init_Sec_Context().
+
+   GSS-API does not know or define "anonymous credentials", so the
+   (printable) name of the anonymous principal will rarely be used by or
+   relevant for the initator/client.  The printable name is relevant for
+   the acceptor/server when performing an authorization decision based
+   on the name that pops up from GSS_Accept_Sec_Context() upon
+   successful security context establishment.
+
+   A GSS-API initiator MUST carefully check the resulting context
+   attributes from the initial call to GSS_Init_Sec_Context() when
+   requesting anonymity, because (as in the GSS-API tradition and for
+   backwards compatibility) anonymity is just another optional context
+   attribute.  It could be that the mechanism doesn't recognize the
+   attribute at all or that anonymity is not available for some other
+   reasons -- and in that case the initiator must NOT send the initial
+   security context token to the acceptor, because it will likely reveal
+   the initiators identity to the acceptor, something that can rarely be
+   "un-done".
+
+   GSS-API defines name_type GSS_C_NT_ANONYMOUS [RFC2743] to represent
+   an anonymous identity.  In addition, according to Section 2.1.1 of
+   [RFC1964] the string representation of the anonymous client principal
+   name can be "RESERVED/ANONYMOUS" or "RESERVED/
+   ANONYMOUS@RESERVED:ANONYMOUS" with the name_type
+   GSS_KRB5_NT_PRINCIPAL_NAME.  Implementations conforming to this
+   specification MUST be able to accept the GSS_C_NT_ANONYMOUS name form
+   and the GSS_KRB5_NT_PRINCIPAL_NAME name forms, and consider them
+   equivalent.
+
+   Portable initiators are RECOMMENDED to use default credentials
+   whenever possible, and request anonymity only through the input
+   anon_req_flag to GSS_Init_Sec_Context().
+
+
+
+Zhu, et al.             Expires December 5, 2006                [Page 6]
+
+Internet-Draft         Kerberos Anonymity Support              June 2006
+
+
+6.  Security Considerations
+
+   Since KDCs ignore unknown options [RFC4120], a client requiring
+   anonymous communication needs to make sure that the ticket is
+   actually anonymous.  A KDC that that does not understand the
+   anonymous option would not return an anonymous ticket.
+
+   By using the mechanism defined in this specification, the client does
+   not reveal its identity to the server but its identity may be
+   revealed to the KDC of the server principal (when the server
+   principal is in a different realm than that of the client), and any
+   KDC on the cross-realm authentication path.  The Kerberos client MUST
+   verify the ticket being used are indeed anonymous before
+   communicating with the cross-realm KDC or the server, otherwise the
+   client's identity may be revealed to the server unintentionally.
+
+   In cases where specific server principals must not have access to the
+   client's identity (for example, an anonymous poll service), the KDC
+   can define server principal specific policy that insure any normal
+   service ticket can NEVER be issued to any of these server principals.
+
+
+7.  Acknowledgements
+
+   The authors would like to thank the following individuals for their
+   insightful comments and fruitful discussions: Sam Hartman, Martin
+   Rex, Nicolas Williams, Jeffery Altman, Tom Yu, Chaskiel M Grundman,
+   Love Hoernquist Aestrand, Jeffery Hutzelman, and Clifford Neuman.
+
+
+8.  IANA Considerations
+
+   No IANA actions are required for this document.
+
+9.  Normative References
+
+   [KRBNAM]   Zhu, L., "Additonal Kerberos Naming Contraints", 
+              draft-ietf-krb-wg-naming, work in progress.
+
+   [RFC1964]  Linn, J., "The Kerberos Version 5 GSS-API Mechanism",
+              RFC 1964, June 1996.
+
+   [RFC2119]  Bradner, S., "Key words for use in RFCs to Indicate
+              Requirement Levels", BCP 14, RFC 2119, March 1997.
+
+   [RFC2246]  Dierks, T. and C. Allen, "The TLS Protocol Version 1.0",
+              RFC 2246, January 1999.
+
+   [RFC2743]  Linn, J., "Generic Security Service Application Program
+
+
+
+Zhu, et al.             Expires December 5, 2006                [Page 7]
+
+Internet-Draft         Kerberos Anonymity Support              June 2006
+
+
+              Interface Version 2, Update 1", RFC 2743, January 2000.
+
+   [RFC4120]  Neuman, C., Yu, T., Hartman, S., and K. Raeburn, "The
+              Kerberos Network Authentication Service (V5)", RFC 4120,
+              July 2005.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Zhu, et al.             Expires December 5, 2006                [Page 8]
+
+Internet-Draft         Kerberos Anonymity Support              June 2006
+
+
+Authors' Addresses
+
+   Larry Zhu
+   Microsoft Corporation
+   One Microsoft Way
+   Redmond, WA  98052
+   US
+
+   Email: lzhu@microsoft.com
+
+
+   Paul Leach
+   Microsoft Corporation
+   One Microsoft Way
+   Redmond, WA  98052
+   US
+
+   Email: paulle@microsoft.com
+
+
+   Karthik Jaganathan
+   Microsoft Corporation
+   One Microsoft Way
+   Redmond, WA  98052
+   US
+
+   Email: karthikj@microsoft.com
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Zhu, et al.             Expires December 5, 2006                [Page 9]
+
+Internet-Draft         Kerberos Anonymity Support              June 2006
+
+
+Intellectual Property Statement
+
+   The IETF takes no position regarding the validity or scope of any
+   Intellectual Property Rights or other rights that might be claimed to
+   pertain to the implementation or use of the technology described in
+   this document or the extent to which any license under such rights
+   might or might not be available; nor does it represent that it has
+   made any independent effort to identify any such rights.  Information
+   on the procedures with respect to rights in RFC documents can be
+   found in BCP 78 and BCP 79.
+
+   Copies of IPR disclosures made to the IETF Secretariat and any
+   assurances of licenses to be made available, or the result of an
+   attempt made to obtain a general license or permission for the use of
+   such proprietary rights by implementers or users of this
+   specification can be obtained from the IETF on-line IPR repository at
+   http://www.ietf.org/ipr.
+
+   The IETF invites any interested party to bring to its attention any
+   copyrights, patents or patent applications, or other proprietary
+   rights that may cover technology that may be required to implement
+   this standard.  Please address the information to the IETF at
+   ietf-ipr@ietf.org.
+
+
+Disclaimer of Validity
+
+   This document and the information contained herein are provided on an
+   "AS IS" basis and THE CONTRIBUTOR, THE ORGANIZATION HE/SHE REPRESENTS
+   OR IS SPONSORED BY (IF ANY), THE INTERNET SOCIETY AND THE INTERNET
+   ENGINEERING TASK FORCE DISCLAIM ALL WARRANTIES, EXPRESS OR IMPLIED,
+   INCLUDING BUT NOT LIMITED TO ANY WARRANTY THAT THE USE OF THE
+   INFORMATION HEREIN WILL NOT INFRINGE ANY RIGHTS OR ANY IMPLIED
+   WARRANTIES OF MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE.
+
+
+Copyright Statement
+
+   Copyright (C) The Internet Society (2006).  This document is subject
+   to the rights, licenses and restrictions contained in BCP 78, and
+   except as set forth therein, the authors retain all their rights.
+
+
+Acknowledgment
+
+   Funding for the RFC Editor function is currently provided by the
+   Internet Society.
+
+
+
+
+Zhu, et al.             Expires December 5, 2006               [Page 10]
+
+
