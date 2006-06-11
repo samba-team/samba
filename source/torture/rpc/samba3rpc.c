@@ -880,9 +880,9 @@ static BOOL schan(struct smbcli_state *cli,
 			mem_ctx, "%s$", s.in.computer_name);
 		s.in.secure_channel_type = SEC_CHAN_WKSTA;
 		E_md4hash(password, s.in.new_password.hash);
-		creds_des_encrypt(creds_state, &s.in.new_password);
 
 		creds_state = cli_credentials_get_netlogon_creds(wks_creds);
+		creds_des_encrypt(creds_state, &s.in.new_password);
 		creds_client_authenticator(creds_state, &s.in.credential);
 
 		status = dcerpc_netr_ServerPasswordSet(net_pipe, mem_ctx, &s);
