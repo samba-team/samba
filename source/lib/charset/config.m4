@@ -15,6 +15,9 @@ int main()
 dnl SMB_CHECK_ICONV_DIR(dir,action-if-found,action-if-not-found)
 AC_DEFUN(SMB_CHECK_ICONV_DIR,
 [
+	save_CPPFLAGS="$CPPFLAGS"
+	save_LDFLAGS="$LDFLAGS"
+	save_LIBS="$LIBS"
 	CPPFLAGS="-I$1/include"
 	LDFLAGS="-L$1/lib"
 	LIBS=-liconv
@@ -24,9 +27,9 @@ AC_DEFUN(SMB_CHECK_ICONV_DIR,
         SMB_CHECK_ICONV(giconv.h,[AC_DEFINE(HAVE_GICONV_H,1,[Whether giconv.h is present]) $2],[$3])
 	])
 
-	CPPFLAGS=$save_CPPFLAGS
-	LDFLAGS=$save_LDFLAGS
-	LIBS=$save_LIBS
+	CPPFLAGS="$save_CPPFLAGS"
+	LDFLAGS="$save_LDFLAGS"
+	LIBS="$save_LIBS"
 ])
 
 ICONV_FOUND=no
