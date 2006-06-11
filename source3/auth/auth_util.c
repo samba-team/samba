@@ -1279,8 +1279,7 @@ NTSTATUS make_server_info_pw(auth_serversupplied_info **server_info,
  Make (and fill) a user_info struct for a guest login.
  This *must* succeed for smbd to start. If there is no mapping entry for
  the guest gid, then create one.
-**********************
-*****************************************************/
+***************************************************************************/
 
 static NTSTATUS make_new_server_info_guest(auth_serversupplied_info **server_info)
 {
