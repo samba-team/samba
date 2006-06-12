@@ -37,15 +37,6 @@
 #include "db_wrap.h"
 
 
-/*
-  This is a bad temporary hack until we have at least some kind of schema
-  support
-*/
-static char *ldb_hexstr(TALLOC_CTX *mem_ctx, uint32_t val)
-{
-	return talloc_asprintf(mem_ctx, "0x%.8x", val);
-}
-
 /* 
   samr_Connect 
 
@@ -418,7 +409,7 @@ static NTSTATUS samr_info_DomInfo1(struct samr_domain_state *state,
 static NTSTATUS samr_info_DomInfo2(struct samr_domain_state *state, TALLOC_CTX *mem_ctx,
 				   struct samr_DomInfo2 *info)
 {
-	const char * const dom_attrs[] = { "comment", NULL };
+	const char * const dom_attrs[] = { "comment", "forceLogoff", NULL };
 	int ret;
 	struct ldb_message **dom_msgs;
 	const char *domain_name;
@@ -430,8 +421,9 @@ static NTSTATUS samr_info_DomInfo2(struct samr_domain_state *state, TALLOC_CTX *
 	}
 
 	domain_name = state->domain_name;
-	/* where is this supposed to come from? is it settable? */
-	info->force_logoff_time = 0x8000000000000000LL;
+
+	info->force_logoff_time = ldb_msg_find_uint64(dom_msgs[0], "forceLogoff", 
+						      0x8000000000000000LL);
 
 	info->comment.string = samdb_result_string(dom_msgs[0], "comment", NULL);
 	info->domain_name.string  = domain_name;
@@ -457,8 +449,18 @@ static NTSTATUS samr_info_DomInfo3(struct samr_domain_state *state,
 				   TALLOC_CTX *mem_ctx,
 				   struct samr_DomInfo3 *info)
 {
-	/* where is this supposed to come from? is it settable? */
-	info->force_logoff_time = 0x8000000000000000LL;
+	const char * const dom_attrs[] = { "comment", "forceLogoff", NULL };
+	int ret;
+	struct ldb_message **dom_msgs;
+	
+	ret = gendb_search_dn(state->sam_ctx, mem_ctx,
+			      state->domain_dn, &dom_msgs, dom_attrs);
+	if (ret != 1) {
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	info->force_logoff_time = ldb_msg_find_uint64(dom_msgs[0], "forceLogoff", 
+						      0x8000000000000000LL);
 
 	return NT_STATUS_OK;
 }
@@ -639,9 +641,8 @@ static NTSTATUS samr_EnumDomainGroups(struct dcesrv_call_state *dce_call, TALLOC
 	ldb_cnt = samdb_search_domain(d_state->sam_ctx, mem_ctx,
 				      d_state->domain_dn, &res, attrs,
 				      d_state->domain_sid,
-				      "(&(grouptype=%s)(objectclass=group))",
-				      ldb_hexstr(mem_ctx,
-						 GTYPE_SECURITY_GLOBAL_GROUP));
+				      "(&(grouptype=%d)(objectclass=group))",
+				      GTYPE_SECURITY_GLOBAL_GROUP);
 	if (ldb_cnt == -1) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
@@ -1083,7 +1084,7 @@ static NTSTATUS samr_CreateDomAlias(struct dcesrv_call_state *dce_call, TALLOC_C
 
 	samdb_msg_add_string(d_state->sam_ctx, mem_ctx, msg, "sAMAccountName", alias_name);
 	samdb_msg_add_string(d_state->sam_ctx, mem_ctx, msg, "objectClass", "group");
-	samdb_msg_add_string(d_state->sam_ctx, mem_ctx, msg, "groupType", "0x80000004");
+	samdb_msg_add_int(d_state->sam_ctx, mem_ctx, msg, "groupType", 0x80000004);
 
 	/* create the alias */
 	ret = samdb_add(d_state->sam_ctx, mem_ctx, msg);
@@ -1154,12 +1155,10 @@ static NTSTATUS samr_EnumDomainAliases(struct dcesrv_call_state *dce_call, TALLO
 				      d_state->domain_dn,
 				      &res, attrs, 
 				      d_state->domain_sid,
-				      "(&(|(grouptype=%s)(grouptype=%s)))"
+				      "(&(|(grouptype=%d)(grouptype=%d)))"
 				      "(objectclass=group))",
-				      ldb_hexstr(mem_ctx,
-						 GTYPE_SECURITY_BUILTIN_LOCAL_GROUP),
-				      ldb_hexstr(mem_ctx,
-						 GTYPE_SECURITY_DOMAIN_LOCAL_GROUP));
+				      GTYPE_SECURITY_BUILTIN_LOCAL_GROUP,
+				      GTYPE_SECURITY_DOMAIN_LOCAL_GROUP);
 	if (ldb_cnt == -1) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
@@ -1245,12 +1244,10 @@ static NTSTATUS samr_GetAliasMembership(struct dcesrv_call_state *dce_call, TALL
 		const char * const attrs[2] = { "objectSid", NULL };
 
 		filter = talloc_asprintf(mem_ctx,
-					 "(&(|(grouptype=%s)(grouptype=%s))"
+					 "(&(|(grouptype=%d)(grouptype=%d))"
 					 "(objectclass=group)(|",
-					 ldb_hexstr(mem_ctx,
-						    GTYPE_SECURITY_BUILTIN_LOCAL_GROUP),
-					 ldb_hexstr(mem_ctx,
-						    GTYPE_SECURITY_DOMAIN_LOCAL_GROUP));
+					 GTYPE_SECURITY_BUILTIN_LOCAL_GROUP,
+					 GTYPE_SECURITY_DOMAIN_LOCAL_GROUP);
 		if (filter == NULL)
 			return NT_STATUS_NO_MEMORY;
 
@@ -1497,10 +1494,9 @@ static NTSTATUS samr_OpenGroup(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 	ret = gendb_search(d_state->sam_ctx,
 			   mem_ctx, d_state->domain_dn, &msgs, attrs,
 			   "(&(objectSid=%s)(objectclass=group)"
-			   "(grouptype=%s))",
+			   "(grouptype=%d))",
 			   ldap_encode_ndr_dom_sid(mem_ctx, sid),
-			   ldb_hexstr(mem_ctx,
-				      GTYPE_SECURITY_GLOBAL_GROUP));
+			   GTYPE_SECURITY_GLOBAL_GROUP);
 	if (ret == 0) {
 		return NT_STATUS_NO_SUCH_GROUP;
 	}
@@ -1969,12 +1965,10 @@ static NTSTATUS samr_OpenAlias(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 	ret = gendb_search(d_state->sam_ctx,
 			   mem_ctx, d_state->domain_dn, &msgs, attrs,
 			   "(&(objectSid=%s)(objectclass=group)"
-			   "(|(grouptype=%s)(grouptype=%s)))",
+			   "(|(grouptype=%d)(grouptype=%d)))",
 			   ldap_encode_ndr_dom_sid(mem_ctx, sid),
-			   ldb_hexstr(mem_ctx,
-				      GTYPE_SECURITY_BUILTIN_LOCAL_GROUP),
-			   ldb_hexstr(mem_ctx,
-				      GTYPE_SECURITY_DOMAIN_LOCAL_GROUP));
+			   GTYPE_SECURITY_BUILTIN_LOCAL_GROUP,
+			   GTYPE_SECURITY_DOMAIN_LOCAL_GROUP);
 	if (ret == 0) {
 		return NT_STATUS_NO_SUCH_ALIAS;
 	}
@@ -2916,10 +2910,9 @@ static NTSTATUS samr_GetGroupsForUser(struct dcesrv_call_state *dce_call, TALLOC
 
 	count = samdb_search_domain(a_state->sam_ctx, mem_ctx, NULL, &res,
 				    attrs, d_state->domain_sid,
-				    "(&(member=%s)(grouptype=%s)(objectclass=group))",
+				    "(&(member=%s)(grouptype=%d)(objectclass=group))",
 				    ldb_dn_linearize(mem_ctx, a_state->account_dn),
-				    ldb_hexstr(mem_ctx,
-					       GTYPE_SECURITY_GLOBAL_GROUP));
+				    GTYPE_SECURITY_GLOBAL_GROUP);
 	if (count < 0)
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 
@@ -2986,21 +2979,19 @@ static NTSTATUS samr_QueryDisplayInfo(struct dcesrv_call_state *dce_call, TALLOC
 	case 1:
 	case 4:
 		filter = talloc_asprintf(mem_ctx, "(&(objectclass=user)"
-					 "(sAMAccountType=%s))",
-					 ldb_hexstr(mem_ctx,
-						    ATYPE_NORMAL_ACCOUNT));
+					 "(sAMAccountType=%u))",
+					 ATYPE_NORMAL_ACCOUNT);
 		break;
 	case 2:
 		filter = talloc_asprintf(mem_ctx, "(&(objectclass=user)"
-					 "(sAMAccountType=%s))",
-					 ldb_hexstr(mem_ctx,
-						    ATYPE_WORKSTATION_TRUST));
+					 "(sAMAccountType=%u))",
+					 ATYPE_WORKSTATION_TRUST);
 		break;
 	case 3:
 	case 5:
-		filter = talloc_asprintf(mem_ctx, "(&(grouptype=%s)"
+		filter = talloc_asprintf(mem_ctx, "(&(grouptype=%d)"
 					 "(objectclass=group))",
-					 ldb_hexstr(mem_ctx, GTYPE_SECURITY_GLOBAL_GROUP));
+					 GTYPE_SECURITY_GLOBAL_GROUP);
 		break;
 	default:
 		return NT_STATUS_INVALID_INFO_CLASS;
@@ -3246,12 +3237,10 @@ static NTSTATUS samr_RemoveMemberFromForeignDomain(struct dcesrv_call_state *dce
 				    d_state->domain_dn, &res, attrs,
 				    d_state->domain_sid,
 				    "(&(member=%s)(objectClass=group)"
-				    "(|(groupType=%s)(groupType=%s)))",
+				    "(|(groupType=%d)(groupType=%d)))",
 				    memberdn,
-				    ldb_hexstr(mem_ctx,
-					       GTYPE_SECURITY_BUILTIN_LOCAL_GROUP),
-				    ldb_hexstr(mem_ctx,
-					       GTYPE_SECURITY_DOMAIN_LOCAL_GROUP));
+				    GTYPE_SECURITY_BUILTIN_LOCAL_GROUP,
+				    GTYPE_SECURITY_DOMAIN_LOCAL_GROUP);
 
 	if (count < 0)
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;

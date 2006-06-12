@@ -7,7 +7,7 @@ memberOf: CN=Domain Admins,CN=Users,${BASEDN}
 memberOf: CN=Enterprise Admins,CN=Users,${BASEDN}
 memberOf: CN=Schema Admins,CN=Users,${BASEDN}
 memberOf: CN=Administrators,CN=Builtin,${BASEDN}
-userAccountControl: 0x10200
+userAccountControl: 66048
 objectSid: ${DOMAINSID}-500
 adminCount: 1
 accountExpires: -1
@@ -20,7 +20,7 @@ objectClass: user
 cn: Guest
 description: Built-in account for guest access to the computer/domain
 memberOf: CN=Guests,CN=Builtin,${BASEDN}
-userAccountControl: 0x10222
+userAccountControl: 66082
 primaryGroupID: 514
 objectSid: ${DOMAINSID}-501
 sAMAccountName: Guest
@@ -37,9 +37,9 @@ member: CN=Administrator,CN=Users,${BASEDN}
 objectSid: S-1-5-32-544
 adminCount: 1
 sAMAccountName: Administrators
-sAMAccountType: 0x20000000
-systemFlags: 0x8c000000
-groupType: 0x80000005
+sAMAccountType: 536870912
+systemFlags: 2348810240
+groupType: 2147483653
 objectCategory: CN=Group,CN=Schema,CN=Configuration,${BASEDN}
 isCriticalSystemObject: TRUE
 privilege: SeSecurityPrivilege
@@ -99,9 +99,9 @@ description: Users are prevented from making accidental or intentional system-wi
 member: CN=Domain Users,CN=Users,${BASEDN}
 objectSid: S-1-5-32-545
 sAMAccountName: Users
-sAMAccountType: 0x20000000
-systemFlags: 0x8c000000
-groupType: 0x80000005
+sAMAccountType: 536870912
+systemFlags: 2348810240
+groupType: 2147483653
 objectCategory: CN=Group,CN=Schema,CN=Configuration,${BASEDN}
 isCriticalSystemObject: TRUE
 
@@ -114,9 +114,9 @@ member: CN=Domain Guests,CN=Users,${BASEDN}
 member: CN=Guest,CN=Users,${BASEDN}
 objectSid: S-1-5-32-546
 sAMAccountName: Guests
-sAMAccountType: 0x20000000
-systemFlags: 0x8c000000
-groupType: 0x80000005
+sAMAccountType: 536870912
+systemFlags: 2348810240
+groupType: 2147483653
 objectCategory: CN=Group,CN=Schema,CN=Configuration,${BASEDN}
 isCriticalSystemObject: TRUE
 
@@ -128,9 +128,9 @@ description: Members can administer domain printers
 objectSid: S-1-5-32-550
 adminCount: 1
 sAMAccountName: Print Operators
-sAMAccountType: 0x20000000
-systemFlags: 0x8c000000
-groupType: 0x80000005
+sAMAccountType: 536870912
+systemFlags: 2348810240
+groupType: 2147483653
 objectCategory: CN=Group,CN=Schema,CN=Configuration,${BASEDN}
 isCriticalSystemObject: TRUE
 privilege: SeLoadDriverPrivilege
@@ -145,9 +145,9 @@ description: Backup Operators can override security restrictions for the sole pu
 objectSid: S-1-5-32-551
 adminCount: 1
 sAMAccountName: Backup Operators
-sAMAccountType: 0x20000000
-systemFlags: 0x8c000000
-groupType: 0x80000005
+sAMAccountType: 536870912
+systemFlags: 2348810240
+groupType: 2147483653
 objectCategory: CN=Group,CN=Schema,CN=Configuration,${BASEDN}
 isCriticalSystemObject: TRUE
 privilege: SeBackupPrivilege
@@ -163,9 +163,9 @@ description: Supports file replication in a domain
 objectSid: S-1-5-32-552
 adminCount: 1
 sAMAccountName: Replicator
-sAMAccountType: 0x20000000
-systemFlags: 0x8c000000
-groupType: 0x80000005
+sAMAccountType: 536870912
+systemFlags: 2348810240
+groupType: 2147483653
 objectCategory: CN=Group,CN=Schema,CN=Configuration,${BASEDN}
 isCriticalSystemObject: TRUE
 
@@ -176,9 +176,9 @@ cn: Remote Desktop Users
 description: Members in this group are granted the right to logon remotely
 objectSid: S-1-5-32-555
 sAMAccountName: Remote Desktop Users
-sAMAccountType: 0x20000000
-systemFlags: 0x8c000000
-groupType: 0x80000005
+sAMAccountType: 536870912
+systemFlags: 2348810240
+groupType: 2147483653
 objectCategory: CN=Group,CN=Schema,CN=Configuration,${BASEDN}
 isCriticalSystemObject: TRUE
 
@@ -189,9 +189,9 @@ cn: Network Configuration Operators
 description: Members in this group can have some administrative privileges to manage configuration of networking features
 objectSid: S-1-5-32-556
 sAMAccountName: Network Configuration Operators
-sAMAccountType: 0x20000000
-systemFlags: 0x8c000000
-groupType: 0x80000005
+sAMAccountType: 536870912
+systemFlags: 2348810240
+groupType: 2147483653
 objectCategory: CN=Group,CN=Schema,CN=Configuration,${BASEDN}
 isCriticalSystemObject: TRUE
 
@@ -202,9 +202,9 @@ cn: Performance Monitor Users
 description: Members of this group have remote access to monitor this computer
 objectSid: S-1-5-32-558
 sAMAccountName: Performance Monitor Users
-sAMAccountType: 0x20000000
-systemFlags: 0x8c000000
-groupType: 0x80000005
+sAMAccountType: 536870912
+systemFlags: 2348810240
+groupType: 2147483653
 objectCategory: CN=Group,CN=Schema,CN=Configuration,${BASEDN}
 isCriticalSystemObject: TRUE
 
@@ -215,9 +215,9 @@ cn: Performance Log Users
 description: Members of this group have remote access to schedule logging of performance counters on this computer
 objectSid: S-1-5-32-559
 sAMAccountName: Performance Log Users
-sAMAccountType: 0x20000000
-systemFlags: 0x8c000000
-groupType: 0x80000005
+sAMAccountType: 536870912
+systemFlags: 2348810240
+groupType: 2147483653
 objectCategory: CN=Group,CN=Schema,CN=Configuration,${BASEDN}
 isCriticalSystemObject: TRUE
 
@@ -287,8 +287,8 @@ objectClass: top
 objectClass: group
 cn: Cert Publishers
 description: Members of this group are permitted to publish certificates to the Active Directory
-groupType: 0x80000004
-sAMAccountType: 0x20000000
+groupType: 2147483652
+sAMAccountType: 536870912
 objectSid: ${DOMAINSID}-517
 sAMAccountName: Cert Publishers
 objectCategory: CN=Group,CN=Schema,CN=Configuration,${BASEDN}
@@ -345,8 +345,8 @@ description: Servers in this group can access remote access properties of users
 instanceType: 4
 objectSid: ${DOMAINSID}-553
 sAMAccountName: RAS and IAS Servers
-sAMAccountType: 0x20000000
-groupType: 0x80000004
+sAMAccountType: 536870912
+groupType: 2147483652
 objectCategory: CN=Group,CN=Schema,CN=Configuration,${BASEDN}
 isCriticalSystemObject: TRUE
 
@@ -359,9 +359,9 @@ instanceType: 4
 objectSid: S-1-5-32-549
 adminCount: 1
 sAMAccountName: Server Operators
-sAMAccountType: 0x20000000
-systemFlags: 0x8c000000
-groupType: 0x80000005
+sAMAccountType: 536870912
+systemFlags: 2348810240
+groupType: 2147483653
 objectCategory: CN=Group,CN=Schema,CN=Configuration,${BASEDN}
 isCriticalSystemObject: TRUE
 privilege: SeBackupPrivilege
@@ -380,9 +380,9 @@ instanceType: 4
 objectSid: S-1-5-32-548
 adminCount: 1
 sAMAccountName: Account Operators
-sAMAccountType: 0x20000000
-systemFlags: 0x8c000000
-groupType: 0x80000005
+sAMAccountType: 536870912
+systemFlags: 2348810240
+groupType: 2147483653
 objectCategory: CN=Group,CN=Schema,CN=Configuration,${BASEDN}
 isCriticalSystemObject: TRUE
 privilege: SeInteractiveLogonRight
