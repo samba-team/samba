@@ -24,6 +24,7 @@
 #include "lib/events/events.h"
 #include "system/filesys.h"
 #include "torture/torture.h"
+#include "torture/ui.h"
 
 const struct event_ops *event_standard_get_ops(void);
 const struct event_ops *event_liboop_get_ops(void);
@@ -33,20 +34,20 @@ static int write_fd, read_fd;
 static struct fd_event *fde;
 static int te_count;
 static int fde_count;
-static BOOL ret = True;
+static struct torture_test *test;
 
 static void fde_handler(struct event_context *ev_ctx, struct fd_event *f, 
 			uint16_t flags, void *private)
 {
 	int *fd = private;
 
-	printf("event[%d] fd[%d] events[0x%08X]", fde_count, *fd, flags);
-	if (flags & EVENT_FD_READ) printf(" EVENT_FD_READ");
-	if (flags & EVENT_FD_WRITE) printf(" EVENT_FD_WRITE");
-	printf("\n");
+	torture_comment(test, "event[%d] fd[%d] events[0x%08X]%s%s", fde_count, 
+					*fd, flags, 
+					(flags & EVENT_FD_READ)?" EVENT_FD_READ":"", 
+					(flags & EVENT_FD_WRITE)?" EVENT_FD_WRITE":"");
 
 	if (fde_count > 5) {
-		printf("got more than fde 5 events - bug!\n");
+		torture_fail(test, "got more than fde 5 events - bug!");
 		talloc_free(fde);
 		fde = NULL;
 		return;
@@ -59,13 +60,13 @@ static void fde_handler(struct event_context *ev_ctx, struct fd_event *f,
 static void timed_handler(struct event_context *ev_ctx, struct timed_event *te,
 			  struct timeval tval, void *private)
 {
-	printf("timed_handler called[%d]\n", te_count);
+	torture_comment(test, "timed_handler called[%d]", te_count);
 	if (te_count > 2) {
 		close(write_fd);
 		write_fd = -1;
 	}
 	if (te_count > 5) {
-		printf("remove fd event!\n");
+		torture_comment(test, "remove fd event!");
 		talloc_free(fde);
 		fde = NULL;
 		return;
@@ -74,12 +75,11 @@ static void timed_handler(struct event_context *ev_ctx, struct timed_event *te,
 	event_add_timed(ev_ctx, ev_ctx, timeval_current_ofs(0,500), timed_handler, private);
 }
 
-
-static BOOL test_event_context(struct event_context *ev_ctx, const char *comment)
+static BOOL test_event_context(struct torture_context *torture, struct event_context *ev_ctx, const char *comment)
 {
 	int fd[2] = { -1, -1 };
 
-	printf("Testing '%s'\n", comment);
+	test = torture_test(torture, comment, comment);
 
 	/* reset globals */
 	write_fd = -1;
@@ -87,7 +87,6 @@ static BOOL test_event_context(struct event_context *ev_ctx, const char *comment
 	fde = NULL;
 	te_count = 0;
 	fde_count = 0;
-	ret = True;
 
 	/* create a pipe */
 	pipe(fd);
@@ -103,7 +102,9 @@ static BOOL test_event_context(struct event_context *ev_ctx, const char *comment
 	close(read_fd);
 	close(write_fd);
 
-	return ret;
+	torture_ok(test);
+	talloc_free(test);
+	return True;
 }
 
 BOOL torture_local_event(struct torture_context *torture) 
@@ -113,13 +114,16 @@ BOOL torture_local_event(struct torture_context *torture)
 	BOOL retv = True;
 
 	try_epoll = False;
-	ev_ctx = event_context_init_ops(NULL, event_standard_get_ops(), &try_epoll);
-	retv &= test_event_context(ev_ctx, "standard with select");
+	ev_ctx = event_context_init_ops(torture, event_standard_get_ops(), 
+									&try_epoll);
+	retv &= test_event_context(torture, ev_ctx, "standard with select");
 	talloc_free(ev_ctx);
 
 	try_epoll = True;
-	ev_ctx = event_context_init_ops(NULL, event_standard_get_ops(), &try_epoll);
-	retv &= test_event_context(ev_ctx, "standard try epool (or select)");
+	ev_ctx = event_context_init_ops(torture, event_standard_get_ops(), 
+									&try_epoll);
+	retv &= test_event_context(torture, ev_ctx, 
+							   "standard try epool (or select)");
 	talloc_free(ev_ctx);
 
 	return retv;
