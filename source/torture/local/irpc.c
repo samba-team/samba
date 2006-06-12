@@ -25,6 +25,7 @@
 #include "lib/messaging/irpc.h"
 #include "librpc/gen_ndr/ndr_echo.h"
 #include "torture/torture.h"
+#include "torture/ui.h"
 
 const uint32_t MSG_ID1 = 1, MSG_ID2 = 2;
 
@@ -74,7 +75,7 @@ static NTSTATUS irpc_EchoData(struct irpc_message *irpc, struct echo_EchoData *r
 /*
   test a addone call over the internal messaging system
 */
-static BOOL test_addone(TALLOC_CTX *mem_ctx, 
+static BOOL test_addone(struct torture_test *parent_test, 
 			struct messaging_context *msg_ctx1,
 			struct messaging_context *msg_ctx2,
 			uint32_t value)
@@ -82,25 +83,23 @@ static BOOL test_addone(TALLOC_CTX *mem_ctx,
 	struct echo_AddOne r;
 	NTSTATUS status;
 
+	struct torture_test *test = torture_subtest(parent_test, "test_addone",
+												"test_addone");
+
 	/* make the call */
 	r.in.in_data = value;
 
 	test_debug = True;
-	status = IRPC_CALL(msg_ctx1, MSG_ID2, rpcecho, ECHO_ADDONE, &r, mem_ctx);
+	status = IRPC_CALL(msg_ctx1, MSG_ID2, rpcecho, ECHO_ADDONE, &r, test);
 	test_debug = False;
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("AddOne failed - %s\n", nt_errstr(status));
-		return False;
-	}
+	torture_assert_ntstatus_ok(test, status, "AddOne failed");
 
 	/* check the answer */
-	if (*r.out.out_data != r.in.in_data + 1) {
-		printf("AddOne wrong answer - %u + 1 = %u should be %u\n", 
-		       r.in.in_data, *r.out.out_data, r.in.in_data+1);
-		return False;
-	}
+	torture_assert(test, 
+				   *r.out.out_data == r.in.in_data + 1, 
+				   "AddOne wrong answer");
 
-	printf("%u + 1 = %u\n", r.in.in_data, *r.out.out_data);
+	torture_comment(test, "%u + 1 = %u", r.in.in_data, *r.out.out_data);
 
 	return True;	
 }
@@ -108,31 +107,31 @@ static BOOL test_addone(TALLOC_CTX *mem_ctx,
 /*
   test a echodata call over the internal messaging system
 */
-static BOOL test_echodata(TALLOC_CTX *mem_ctx, 
+static BOOL test_echodata(struct torture_test *parent_test, 
 			  struct messaging_context *msg_ctx1,
 			  struct messaging_context *msg_ctx2)
 {
 	struct echo_EchoData r;
 	NTSTATUS status;
 
+	struct torture_test *test = torture_subtest(parent_test, "test_echodata",
+												"test_echodata");
+
 	/* make the call */
-	r.in.in_data = (unsigned char *)talloc_strdup(mem_ctx, "0123456789");
+	r.in.in_data = (unsigned char *)talloc_strdup(test, "0123456789");
 	r.in.len = strlen((char *)r.in.in_data);
 
-	status = IRPC_CALL(msg_ctx1, MSG_ID2, rpcecho, ECHO_ECHODATA, &r, mem_ctx);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("EchoData failed - %s\n", nt_errstr(status));
-		return False;
-	}
+	status = IRPC_CALL(msg_ctx1, MSG_ID2, rpcecho, ECHO_ECHODATA, &r, test);
+	torture_assert_ntstatus_ok(test, status, "EchoData failed");
 
 	/* check the answer */
 	if (memcmp(r.out.out_data, r.in.in_data, r.in.len) != 0) {
-		printf("EchoData wrong answer\n");
+		torture_fail(test, "EchoData wrong answer");
 		NDR_PRINT_OUT_DEBUG(echo_EchoData, &r);
 		return False;
 	}
 
-	printf("Echo '%*.*s' -> '%*.*s'\n", 
+	torture_comment(test, "Echo '%*.*s' -> '%*.*s'", 
 	       r.in.len, r.in.len,
 	       r.in.in_data,
 	       r.in.len, r.in.len,
@@ -160,31 +159,30 @@ static void irpc_callback(struct irpc_request *irpc)
 /*
   test echo speed
 */
-static BOOL test_speed(TALLOC_CTX *mem_ctx, 
+static BOOL test_speed(struct torture_test *parent_test, 
 		       struct messaging_context *msg_ctx1,
 		       struct messaging_context *msg_ctx2,
 		       struct event_context *ev)
 {
 	int ping_count = 0;
 	int pong_count = 0;
-	BOOL ret = True;
 	struct timeval tv;
 	struct echo_AddOne r;
 	int timelimit = lp_parm_int(-1, "torture", "timelimit", 10);
+
+	struct torture_test *test = torture_subtest(parent_test, "test_speed",
+												"test_speed");
 
 	tv = timeval_current();
 
 	r.in.in_data = 0;
 
-	printf("Sending echo for %d seconds\n", timelimit);
+	torture_comment(test, "Sending echo for %d seconds", timelimit);
 	while (timeval_elapsed(&tv) < timelimit) {
 		struct irpc_request *irpc;
 
-		irpc = IRPC_CALL_SEND(msg_ctx1, MSG_ID2, rpcecho, ECHO_ADDONE, &r, mem_ctx);
-		if (irpc == NULL) {
-			printf("AddOne send failed\n");
-			return False;
-		}
+		irpc = IRPC_CALL_SEND(msg_ctx1, MSG_ID2, rpcecho, ECHO_ADDONE, &r, test);
+		torture_assert(test, irpc != NULL, "AddOne send failed");
 
 		irpc->async.fn = irpc_callback;
 		irpc->async.private = &pong_count;
@@ -196,47 +194,40 @@ static BOOL test_speed(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	printf("waiting for %d remaining replies (done %d)\n", 
+	torture_comment(test, "waiting for %d remaining replies (done %d)", 
 	       ping_count - pong_count, pong_count);
 	while (timeval_elapsed(&tv) < 30 && pong_count < ping_count) {
 		event_loop_once(ev);
 	}
 
 	if (ping_count != pong_count) {
-		printf("ping test failed! received %d, sent %d\n", 
+		torture_fail(test, "ping test failed! received %d, sent %d", 
 		       pong_count, ping_count);
-		ret = False;
 	}
 
-	printf("echo rate of %.0f messages/sec\n", 
+	torture_comment(test, "echo rate of %.0f messages/sec", 
 	       (ping_count+pong_count)/timeval_elapsed(&tv));
 
-	return ret;
+	return True;
 }
 
 
 BOOL torture_local_irpc(struct torture_context *torture) 
 {
-	TALLOC_CTX *mem_ctx = talloc_init("torture_local_irpc");
-	BOOL ret = True;
+	struct torture_test *test = torture_test(torture, "torture_local_irpc", "");
 	struct messaging_context *msg_ctx1, *msg_ctx2;
 	struct event_context *ev;
 
 	lp_set_cmdline("lock dir", "lockdir.tmp");
 
-	ev = event_context_init(mem_ctx);
-	msg_ctx1 = messaging_init(mem_ctx, MSG_ID1, ev);
-	if (!msg_ctx1) {
-		printf("Failed to init first messaging context\n");
-		talloc_free(mem_ctx);
-		return False;
-	}
-	msg_ctx2 = messaging_init(mem_ctx, MSG_ID2, ev);
-	if (!msg_ctx2) {
-		printf("Failed to init second messaging context\n");
-		talloc_free(mem_ctx);
-		return False;
-	}
+	ev = event_context_init(test);
+	torture_assert(test, 
+				   msg_ctx1 = messaging_init(test, MSG_ID1, ev),
+				   "Failed to init first messaging context");
+
+	torture_assert(test,
+				   msg_ctx2 = messaging_init(test, MSG_ID2, ev),
+				   "Failed to init second messaging context");
 
 	/* register the server side function */
 	IRPC_REGISTER(msg_ctx1, rpcecho, ECHO_ADDONE, irpc_AddOne, NULL);
@@ -245,15 +236,15 @@ BOOL torture_local_irpc(struct torture_context *torture)
 	IRPC_REGISTER(msg_ctx1, rpcecho, ECHO_ECHODATA, irpc_EchoData, NULL);
 	IRPC_REGISTER(msg_ctx2, rpcecho, ECHO_ECHODATA, irpc_EchoData, NULL);
 
-	ret &= test_addone(mem_ctx, msg_ctx1, msg_ctx2, 0);
-	ret &= test_addone(mem_ctx, msg_ctx1, msg_ctx2, 0x7FFFFFFE);
-	ret &= test_addone(mem_ctx, msg_ctx1, msg_ctx2, 0xFFFFFFFE);
-	ret &= test_addone(mem_ctx, msg_ctx1, msg_ctx2, 0xFFFFFFFF);
-	ret &= test_addone(mem_ctx, msg_ctx1, msg_ctx2, random() & 0xFFFFFFFF);
-	ret &= test_echodata(mem_ctx, msg_ctx1, msg_ctx2);
-	ret &= test_speed(mem_ctx, msg_ctx1, msg_ctx2, ev);
+	test_addone(test, msg_ctx1, msg_ctx2, 0);
+	test_addone(test, msg_ctx1, msg_ctx2, 0x7FFFFFFE);
+	test_addone(test, msg_ctx1, msg_ctx2, 0xFFFFFFFE);
+	test_addone(test, msg_ctx1, msg_ctx2, 0xFFFFFFFF);
+	test_addone(test, msg_ctx1, msg_ctx2, random() & 0xFFFFFFFF);
+	test_echodata(test, msg_ctx1, msg_ctx2);
+	test_speed(test, msg_ctx1, msg_ctx2, ev);
 
-	talloc_free(mem_ctx);
+	talloc_free(test);
 
-	return ret;
+	return torture_result(torture);
 }
