@@ -23,6 +23,7 @@
 #include "auth/ntlmssp/ntlmssp.h"
 #include "lib/cmdline/popt_common.h"
 #include "torture/torture.h"
+#include "torture/ui.h"
 
 BOOL torture_ntlmssp_self_check(struct torture_context *torture) 
 {
@@ -31,24 +32,21 @@ BOOL torture_ntlmssp_self_check(struct torture_context *torture)
 	DATA_BLOB data;
 	DATA_BLOB sig, expected_sig;
 	NTSTATUS status;
+	struct torture_test *test = torture_test(torture, "ntlmssp_self_check", 
+											 "NTLMSSP Self Check");
 
-	status = gensec_client_start(NULL, &gensec_security, NULL);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		return False;
-	}
+	torture_assert_ntstatus_ok(test, 
+		gensec_client_start(torture, &gensec_security, NULL),
+		"gensec client start");
 
 	gensec_set_credentials(gensec_security, cmdline_credentials);
 
 	gensec_want_feature(gensec_security, GENSEC_FEATURE_SIGN);
 	gensec_want_feature(gensec_security, GENSEC_FEATURE_SEAL);
 
-	status = gensec_start_mech_by_oid(gensec_security, GENSEC_OID_NTLMSSP);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("Failed to start GENSEC for NTLMSSP\n");
-		return False;
-	}
+	torture_assert_ntstatus_ok(test,
+			gensec_start_mech_by_oid(gensec_security, GENSEC_OID_NTLMSSP),
+			"Failed to start GENSEC for NTLMSSP");
 
 	gensec_ntlmssp_state = gensec_security->private_data;
 
@@ -59,10 +57,9 @@ BOOL torture_ntlmssp_self_check(struct torture_context *torture)
 
 	gensec_ntlmssp_state->neg_flags = NTLMSSP_NEGOTIATE_SIGN | NTLMSSP_NEGOTIATE_UNICODE | NTLMSSP_NEGOTIATE_128 | NTLMSSP_NEGOTIATE_KEY_EXCH | NTLMSSP_NEGOTIATE_NTLM2;
 
-	if (!NT_STATUS_IS_OK(status = ntlmssp_sign_init(gensec_ntlmssp_state))) {
-		printf("Failed to sign_init: %s\n", nt_errstr(status));
-		return False;
-	}
+	torture_assert_ntstatus_ok(test, 
+		ntlmssp_sign_init(gensec_ntlmssp_state),
+		"Failed to sign_init");
 
 	data = strhex_to_data_blob("6a43494653");
 	gensec_ntlmssp_sign_packet(gensec_security, gensec_security,
@@ -74,34 +71,29 @@ BOOL torture_ntlmssp_self_check(struct torture_context *torture)
 	dump_data_pw("NTLMSSP expected sig: ", expected_sig.data, expected_sig.length);
 
 	if (sig.length != expected_sig.length) {
-		printf("Wrong sig length: %d != %d\n", 
+		torture_fail(test, "Wrong sig length: %d != %d", 
 		       (int)sig.length, (int)expected_sig.length);
+		talloc_free(test);
 		return False;
 	}
 
-	if (memcmp(sig.data, expected_sig.data, sig.length)) {
-		return False;
-	}
+	torture_assert(test, 0 == memcmp(sig.data, expected_sig.data, sig.length),
+				   "data mismatch");
 
 	talloc_free(gensec_security);
 
-	status = gensec_client_start(NULL, &gensec_security, NULL);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("Failed to start GENSEC for NTLMSSP\n");
-		return False;
-	}
+	torture_assert_ntstatus_ok(test, 
+		gensec_client_start(torture, &gensec_security, NULL),
+		"Failed to start GENSEC for NTLMSSP");
 
 	gensec_set_credentials(gensec_security, cmdline_credentials);
 
 	gensec_want_feature(gensec_security, GENSEC_FEATURE_SIGN);
 	gensec_want_feature(gensec_security, GENSEC_FEATURE_SEAL);
 
-	status = gensec_start_mech_by_oid(gensec_security, GENSEC_OID_NTLMSSP);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		return False;
-	}
+	torture_assert_ntstatus_ok(test,
+		gensec_start_mech_by_oid(gensec_security, GENSEC_OID_NTLMSSP),
+		"GENSEC start mech by oid");
 
 	gensec_ntlmssp_state = gensec_security->private_data;
 
@@ -112,10 +104,9 @@ BOOL torture_ntlmssp_self_check(struct torture_context *torture)
 
 	gensec_ntlmssp_state->neg_flags = NTLMSSP_NEGOTIATE_SIGN | NTLMSSP_NEGOTIATE_UNICODE | NTLMSSP_NEGOTIATE_KEY_EXCH;
 
-	if (!NT_STATUS_IS_OK(status = ntlmssp_sign_init(gensec_ntlmssp_state))) {
-		printf("Failed to sign_init: %s\n", nt_errstr(status));
-		return False;
-	}
+	torture_assert_ntstatus_ok(test, 
+		ntlmssp_sign_init(gensec_ntlmssp_state),
+		"Failed to sign_init");
 
 	data = strhex_to_data_blob("6a43494653");
 	gensec_ntlmssp_sign_packet(gensec_security, gensec_security,
@@ -127,16 +118,19 @@ BOOL torture_ntlmssp_self_check(struct torture_context *torture)
 	dump_data_pw("NTLMSSP expected sig: ", expected_sig.data, expected_sig.length);
 
 	if (sig.length != expected_sig.length) {
-		printf("Wrong sig length: %d != %d\n", 
+		torture_fail(test, "Wrong sig length: %d != %d", 
 		       (int)sig.length, (int)expected_sig.length);
+		talloc_free(test);
 		return False;
 	}
 
-	if (memcmp(sig.data+8, expected_sig.data+8, sig.length-8)) {
-		return False;
-	}
+	torture_assert(test, 
+				   0 == memcmp(sig.data+8, expected_sig.data+8, sig.length-8),
+				   "data mismatch");
 
 	talloc_free(gensec_security);
+	torture_ok(test);
+	talloc_free(test);
 
 	return True;
 }
