@@ -21,78 +21,68 @@
 
 #include "includes.h"
 #include "torture/torture.h"
+#include "torture/ui.h"
 #include "librpc/ndr/libndr.h"
 
-BOOL test_check_string_terminator(TALLOC_CTX *mem_ctx)
+static BOOL test_check_string_terminator(struct torture_context *torture)
 {
 	struct ndr_pull *ndr;
 	DATA_BLOB blob;
+	struct torture_test *test = torture_test(torture, "string_terminator",
+											 "string terminator");
 
 	/* Simple test */
 	blob = strhex_to_data_blob("0000");
 	
-	ndr = ndr_pull_init_blob(&blob, mem_ctx);
+	ndr = ndr_pull_init_blob(&blob, test);
 
-	if (NT_STATUS_IS_ERR(ndr_check_string_terminator(ndr, 1, 2))) {
-		DEBUG(0, ("simple check_string_terminator test failed\n"));
-		return False;
-	}
+	torture_assert_ntstatus_ok(test, 
+							   ndr_check_string_terminator(ndr, 1, 2),
+							   "simple check_string_terminator test failed");
 
-	if (ndr->offset != 0) {
-		DEBUG(0, ("check_string_terminator did not reset offset\n"));
-		return False;
-	}
+	torture_assert(test, ndr->offset == 0,
+		"check_string_terminator did not reset offset");
 
 	if (NT_STATUS_IS_OK(ndr_check_string_terminator(ndr, 1, 3))) {
-		DEBUG(0, ("check_string_terminator checked beyond string boundaries\n"));
+		torture_fail(test, "check_string_terminator checked beyond string boundaries");
+		talloc_free(test);
 		return False;
 	}
 
-	if (ndr->offset != 0) {
-		DEBUG(0, ("check_string_terminator did not reset offset\n"));
-		return False;
-	}
+	torture_assert(test, ndr->offset == 0, 
+		"check_string_terminator did not reset offset");
 
 	talloc_free(ndr);
 
 	blob = strhex_to_data_blob("11220000");
-	ndr = ndr_pull_init_blob(&blob, mem_ctx);
+	ndr = ndr_pull_init_blob(&blob, test);
 
-	if (NT_STATUS_IS_ERR(ndr_check_string_terminator(ndr, 4, 1))) {
-		DEBUG(0, ("check_string_terminator failed to recognize terminator\n"));
-		return False;
-	}
+	torture_assert_ntstatus_ok(test,
+		ndr_check_string_terminator(ndr, 4, 1),
+		"check_string_terminator failed to recognize terminator");
 
-	if (NT_STATUS_IS_ERR(ndr_check_string_terminator(ndr, 3, 1))) {
-		DEBUG(0, ("check_string_terminator failed to recognize terminator\n"));
-		return False;
-	}
+	torture_assert_ntstatus_ok(test,
+		ndr_check_string_terminator(ndr, 3, 1),
+		"check_string_terminator failed to recognize terminator");
 
 	if (NT_STATUS_IS_OK(ndr_check_string_terminator(ndr, 2, 1))) {
-		DEBUG(0, ("check_string_terminator erroneously reported terminator\n"));
+		torture_fail(test, 
+					 "check_string_terminator erroneously reported terminator");
+		talloc_free(test);
 		return False;
 	}
 
-	if (ndr->offset != 0) {
-		DEBUG(0, ("check_string_terminator did not reset offset\n"));
-		return False;
-	}
+	torture_assert (test, ndr->offset == 0,
+		"check_string_terminator did not reset offset");
 
-	talloc_free(ndr);
+	talloc_free(test);
 
 	return True;
 }
 
 BOOL torture_local_ndr(struct torture_context *torture)
 {
-	TALLOC_CTX *mem_ctx;
-	BOOL ret = True;
+	test_check_string_terminator(torture);
 
-	mem_ctx = talloc_init("torture_local_ndr");
-
-	ret &= test_check_string_terminator(mem_ctx);
-
-	talloc_free(mem_ctx);
-
-	return ret;
+	return torture_result(torture);
 }
