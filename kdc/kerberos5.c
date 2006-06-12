@@ -1380,7 +1380,7 @@ _kdc_as_rep(krb5_context context,
     ek.last_req.len = 0;
     if (client->entry.pw_end
 	&& (config->kdc_warn_pwexpire == 0
-	    || kdc_time + config->kdc_warn_pwexpire <= *client->entry.pw_end)) {
+	    || kdc_time + config->kdc_warn_pwexpire >= *client->entry.pw_end)) {
 	ek.last_req.val[ek.last_req.len].lr_type  = LR_PW_EXPTIME;
 	ek.last_req.val[ek.last_req.len].lr_value = *client->entry.pw_end;
 	++ek.last_req.len;
