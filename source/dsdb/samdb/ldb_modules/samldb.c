@@ -42,6 +42,8 @@
 #include "librpc/gen_ndr/ndr_security.h"
 #include "db_wrap.h"
 
+int samldb_notice_sid(struct ldb_module *module, 
+		      TALLOC_CTX *mem_ctx, const struct dom_sid *sid);
 
 /* if value is not null also check for attribute to have exactly that value */
 static struct ldb_message_element *samldb_find_attribute(const struct ldb_message *msg, const char *name, const char *value)
@@ -222,8 +224,6 @@ static int samldb_allocate_next_rid(struct ldb_module *module, TALLOC_CTX *mem_c
 	struct dom_sid *obj_sid;
 	uint32_t old_rid;
 	int ret;
-	struct ldb_message **sid_msgs;
-	const char *sid_attrs[] = { NULL };
 	
 	ret = samldb_find_next_rid(module, mem_ctx, dn, &old_rid);	
 	if (ret) {
@@ -233,30 +233,19 @@ static int samldb_allocate_next_rid(struct ldb_module *module, TALLOC_CTX *mem_c
 	/* return the new object sid */
 	obj_sid = dom_sid_add_rid(mem_ctx, dom_sid, old_rid);
 		
-	ret = samldb_set_next_rid(module->ldb, mem_ctx, dn, old_rid, old_rid + 1);
-	if (ret != 0) {
-		return ret;
-	}
-
 	*new_sid = dom_sid_add_rid(mem_ctx, dom_sid, old_rid + 1);
 	if (!*new_sid) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	ret = gendb_search(module->ldb,
-			   mem_ctx, NULL, &sid_msgs, sid_attrs,
-			   "objectSid=%s",
-			   ldap_encode_ndr_dom_sid(mem_ctx, *new_sid));
-	if (ret == -1) {
-		/* Bugger, there is a problem, and we don't know what it is until gendb_search improves */
-		return LDB_ERR_OPERATIONS_ERROR;
-	} else if (ret != 0) {
+	ret = samldb_notice_sid(module, mem_ctx, *new_sid);
+	if (ret != 0) {
 		/* gah, there are conflicting sids.
 		 * This is a critical situation it means that someone messed up with
 		 * the DB and nextRid is not returning free RIDs, report an error
 		 * and refuse to create any user until the problem is fixed */
-		ldb_set_errstring(module->ldb, talloc_asprintf(mem_ctx, "Critical Error: unconsistent DB, unable to retireve an unique RID to generate a new SID"));
-		return LDB_ERR_OPERATIONS_ERROR;
+		ldb_set_errstring(module->ldb, talloc_asprintf(mem_ctx, "Critical Error: unconsistent DB, unable to retireve an unique RID to generate a new SID: %s", ldb_errstring(module->ldb)));
+		return ret;
 	}
 	return ret;
 }
@@ -295,8 +284,9 @@ static struct ldb_dn *samldb_search_domain(struct ldb_module *module, TALLOC_CTX
    allocate a new RID for the domain
    return the new sid string
 */
-static struct dom_sid *samldb_get_new_sid(struct ldb_module *module, 
-					  TALLOC_CTX *mem_ctx, const struct ldb_dn *obj_dn)
+static int samldb_get_new_sid(struct ldb_module *module, 
+			      TALLOC_CTX *mem_ctx, const struct ldb_dn *obj_dn,
+			      struct dom_sid **sid)
 {
 	const char * const attrs[2] = { "objectSid", NULL };
 	struct ldb_result *res = NULL;
@@ -308,37 +298,45 @@ static struct dom_sid *samldb_get_new_sid(struct ldb_module *module,
 
 	dom_dn = samldb_search_domain(module, mem_ctx, obj_dn);
 	if (dom_dn == NULL) {
-		ldb_debug(module->ldb, LDB_DEBUG_FATAL, "Invalid dn (%s) not child of a domain object!\n", ldb_dn_linearize(mem_ctx, obj_dn));
-		return NULL;
+		ldb_set_errstring(module->ldb, talloc_asprintf(mem_ctx, "Invalid dn (%s) not child of a domain object!\n", ldb_dn_linearize(mem_ctx, obj_dn)));
+		return LDB_ERR_CONSTRAINT_VIOLATION;
 	}
 
 	/* find the domain sid */
 
 	ret = ldb_search(module->ldb, dom_dn, LDB_SCOPE_BASE, "objectSid=*", attrs, &res);
-	if (ret != LDB_SUCCESS || res->count != 1) {
-		ldb_debug(module->ldb, LDB_DEBUG_FATAL, "samldb_get_new_sid: error retrieving domain sid!\n");
+	if (ret != LDB_SUCCESS) {
+		ldb_set_errstring(module->ldb, talloc_asprintf(module, "samldb_get_new_sid: error retrieving domain sid from %s: %s!\n",
+							       ldb_dn_linearize(mem_ctx, dom_dn),
+							       ldb_errstring(module->ldb)));
 		talloc_free(res);
-		return NULL;
+		return ret;
+	}
+
+	if (res->count != 1) {
+		ldb_set_errstring(module->ldb, talloc_asprintf(module, "samldb_get_new_sid: error retrieving domain sid from %s: not found!\n",
+							       ldb_dn_linearize(mem_ctx, dom_dn)));
+		return LDB_ERR_CONSTRAINT_VIOLATION;
 	}
 
 	dom_sid = samdb_result_dom_sid(res, res->msgs[0], "objectSid");
 	if (dom_sid == NULL) {
-		ldb_debug(module->ldb, LDB_DEBUG_FATAL, "samldb_get_new_sid: error retrieving domain sid!\n");
+		ldb_set_errstring(module->ldb, talloc_asprintf(module, "samldb_get_new_sid: error parsing domain sid!\n"));
 		talloc_free(res);
-		return NULL;
+		return LDB_ERR_CONSTRAINT_VIOLATION;
 	}
 
 	/* allocate a new Rid for the domain */
-	ret = samldb_allocate_next_rid(module, mem_ctx, dom_dn, dom_sid, &obj_sid);
+	ret = samldb_allocate_next_rid(module, mem_ctx, dom_dn, dom_sid, sid);
 	if (ret != 0) {
-		ldb_debug(module->ldb, LDB_DEBUG_FATAL, "Failed to increment nextRid of %s\n", ldb_dn_linearize(mem_ctx, dom_dn));
+		ldb_debug(module->ldb, LDB_DEBUG_FATAL, "Failed to increment nextRid of %s: %s\n", ldb_dn_linearize(mem_ctx, dom_dn), ldb_errstring(module->ldb));
 		talloc_free(res);
-		return NULL;
+		return ret;
 	}
 
 	talloc_free(res);
 
-	return obj_sid;
+	return ret;
 }
 
 /* If we are adding new users/groups, we need to update the nextRid
@@ -440,10 +438,9 @@ static int samldb_handle_sid(struct ldb_module *module,
 	
 	struct dom_sid *sid = samdb_result_dom_sid(mem_ctx, msg2, "objectSid");
 	if (sid == NULL) { 
-		sid = samldb_get_new_sid(module, msg2, msg2->dn);
-		if (sid == NULL) {
-			ldb_debug(module->ldb, LDB_DEBUG_FATAL, "samldb_handle_sid: internal error! Can't generate new sid\n");
-			return LDB_ERR_OPERATIONS_ERROR;
+		ret = samldb_get_new_sid(module, msg2, msg2->dn, &sid);
+		if (ret != 0) {
+			return ret;
 		}
 
 		if ( ! samldb_msg_add_sid(module, msg2, "objectSid", sid)) {
