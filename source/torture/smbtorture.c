@@ -254,6 +254,41 @@ const static struct torture_ui_ops std_ui_ops = {
 	.test_result = simple_test_result
 };
 
+
+static void subunit_test_start (struct torture_test *test)
+{
+	printf("test: %s\n", test->name);
+}
+
+static void subunit_test_result (struct torture_test *test, enum torture_result res, const char *reason)
+{
+	switch (res) {
+	case TORTURE_OK:
+		printf("success: %s\n", test->name);
+		break;
+	case TORTURE_FAIL:
+		printf("failure: %s\n", test->name);
+		break;
+	case TORTURE_TODO:
+		printf("todo: %s\n", test->name);
+		break;
+	case TORTURE_SKIP:
+		printf("skip: %s\n", test->name);
+		break;
+	}
+}
+
+static void subunit_comment (struct torture_test *test, const char *comment)
+{
+	printf("# %s\n", comment);
+}
+
+const static struct torture_ui_ops subunit_ui_ops = {
+	.comment = subunit_comment,
+	.test_start = subunit_test_start,
+	.test_result = subunit_test_result
+};
+
 /****************************************************************************
   main program
 ****************************************************************************/
@@ -267,11 +302,13 @@ const static struct torture_ui_ops std_ui_ops = {
 	struct torture_context *torture;
 	char **argv_new;
 	poptContext pc;
+	static char *ui_ops_name = "simple";
 	enum {OPT_LOADFILE=1000,OPT_UNCLIST,OPT_TIMELIMIT,OPT_DNS,
 	      OPT_DANGEROUS,OPT_SMB_PORTS,OPT_ASYNC};
 	
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
+		{"format", 0, POPT_ARG_STRING, &ui_ops_name, 0, "Output format (one of: simple, subunit)", NULL },
 		{"smb-ports",	'p', POPT_ARG_STRING, NULL,     OPT_SMB_PORTS,	"SMB ports", 	NULL},
 		{"seed",	  0, POPT_ARG_INT,  &torture_seed, 	0,	"seed", 	NULL},
 		{"num-progs",	  0, POPT_ARG_INT,  &torture_nprocs, 	0,	"num progs",	NULL},
@@ -401,7 +438,14 @@ const static struct torture_ui_ops std_ui_ops = {
 	}
 
 	torture = talloc_zero(NULL, struct torture_context);
-	torture->ui_ops = &std_ui_ops;
+	if (!strcmp(ui_ops_name, "simple")) {
+		torture->ui_ops = &std_ui_ops;
+	} else if (!strcmp(ui_ops_name, "subunit")) {
+		torture->ui_ops = &subunit_ui_ops;
+	} else {
+		printf("Unknown output format '%s'\n", ui_ops_name);
+		exit(1);
+	}
 
 	if (argc_new == 0) {
 		printf("You must specify a test to run, or 'ALL'\n");
