@@ -40,6 +40,10 @@ char *escape_ldap_string_alloc(const char *s)
 	const char *sub;
 	int i = 0;
 	char *p = output;
+
+	if (output == NULL) {
+		return NULL;
+	}
 	
 	while (*s)
 	{
