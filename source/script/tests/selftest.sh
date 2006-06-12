@@ -121,6 +121,12 @@ cat >$SERVERCONFFILE<<EOF
 	path = $PREFIX_ABS/tmp
 	read only = no
 	smbd:sharedelay = 100000
+[hideunread]
+	copy = tmp
+	hide unreadable = yes
+[hideunwrite]
+	copy = tmp
+	hide unwriteable files = yes
 EOF
 
 
