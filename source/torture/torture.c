@@ -613,6 +613,7 @@ static struct {
 	{"RAW-STREAMS", torture_raw_streams, 0},
 	{"RAW-ACLS", torture_raw_acls, 0},
 	{"RAW-COMPOSITE", torture_raw_composite, 0},
+	{"RAW-SAMBA3HIDE", torture_samba3_hide, 0},
 
 	/* SMB2 tests */
 	{"SMB2-CONNECT", torture_smb2_connect, 0},
