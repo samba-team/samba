@@ -214,7 +214,9 @@ static int ldb_transaction_start_internal(struct ldb_context *ldb)
 		if (ldb->err_string == NULL) {
 			/* no error string was setup by the backend */
 			ldb_set_errstring(ldb, 
-					  talloc_asprintf(ldb, "ldb transaction start error %d", status));
+					  talloc_asprintf(ldb, "ldb transaction start: %s (%d)", 
+							  ldb_strerror(status), 
+							  status));
 		}
 	}
 	return status;
@@ -236,7 +238,9 @@ static int ldb_transaction_commit_internal(struct ldb_context *ldb)
 		if (ldb->err_string == NULL) {
 			/* no error string was setup by the backend */
 			ldb_set_errstring(ldb, 
-					  talloc_asprintf(ldb, "ldb transaction commit error %d", status));
+					  talloc_asprintf(ldb, "ldb transaction commit: %s (%d)", 
+							  ldb_strerror(status), 
+							  status));
 		}
 	}
 	return status;
@@ -256,7 +260,9 @@ static int ldb_transaction_cancel_internal(struct ldb_context *ldb)
 		if (ldb->err_string == NULL) {
 			/* no error string was setup by the backend */
 			ldb_set_errstring(ldb, 
-					  talloc_asprintf(ldb, "ldb transaction cancel error %d", status));
+					  talloc_asprintf(ldb, "ldb transaction cancel: %s (%d)", 
+							  ldb_strerror(status), 
+							  status));
 		}
 	}
 	return status;
