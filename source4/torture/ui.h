@@ -90,5 +90,5 @@ struct torture_test *torture_test(struct torture_context *ctx, const char *name,
 struct torture_test *torture_subtest(struct torture_test *parent, const char *name, const char *description);
 void torture_comment(struct torture_test *test, const char *comment, ...) _PRINTF_ATTRIBUTE(2,3);
 void torture_ok(struct torture_test *test);
-void torture_fail(struct torture_test *test, const char *reason, ...) _PRINTF_ATTRIBUTE(2,3);;
+void torture_fail(struct torture_test *test, const char *reason, ...) _PRINTF_ATTRIBUTE(2,3);
 void torture_skip(struct torture_test *test, const char *reason, ...) _PRINTF_ATTRIBUTE(2,3);
