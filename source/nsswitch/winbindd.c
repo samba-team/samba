@@ -235,7 +235,7 @@ static struct winbindd_dispatch_table {
 	{ WINBINDD_UID_TO_SID, winbindd_uid_to_sid, "UID_TO_SID" },
 	{ WINBINDD_GID_TO_SID, winbindd_gid_to_sid, "GID_TO_SID" },
 	{ WINBINDD_ALLOCATE_UID, winbindd_allocate_uid, "ALLOCATE_UID" },
-	{ WINBINDD_ALLOCATE_GID, winbindd_allocate_uid, "ALLOCATE_GID" },
+	{ WINBINDD_ALLOCATE_GID, winbindd_allocate_gid, "ALLOCATE_GID" },
 
 	/* Miscellaneous */
 
