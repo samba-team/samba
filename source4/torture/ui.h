@@ -43,6 +43,8 @@ struct torture_test
 
 	void *ui_data;
 
+	enum torture_result result;
+
 	struct torture_context *context;
 };
 

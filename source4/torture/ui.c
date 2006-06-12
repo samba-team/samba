@@ -22,6 +22,17 @@
 #include "includes.h"
 #include "torture/ui.h"
 
+static int test_destructor(void *_test)
+{
+	struct torture_test *test = _test;
+
+	if (test->result == TORTURE_OK)
+		torture_ok(test);
+
+	return 0;	
+}
+
+
 struct torture_test *torture_test(struct torture_context *ctx, const char *name, const char *description)
 {
 	struct torture_test *test = talloc(ctx, struct torture_test);
@@ -31,6 +42,8 @@ struct torture_test *torture_test(struct torture_context *ctx, const char *name,
 	test->context = ctx;
 
 	ctx->ui_ops->test_start(test);
+
+	talloc_set_destructor(test, test_destructor);
 
 	return test;
 }
@@ -44,8 +57,10 @@ struct torture_test *torture_subtest(struct torture_test *parent, const char *na
 	test->context = parent->context;
 
 	test->context->ui_ops->test_start(test);
+
+	talloc_set_destructor(test, test_destructor);
 	
-	return NULL;
+	return test;
 }
 
 void torture_comment(struct torture_test *test, const char *comment, ...) _PRINTF_ATTRIBUTE(2,3)
@@ -59,6 +74,7 @@ void torture_comment(struct torture_test *test, const char *comment, ...) _PRINT
 	
 	talloc_free(tmp);
 }
+
 
 void torture_ok(struct torture_test *test)
 {
