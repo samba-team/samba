@@ -76,6 +76,30 @@ cn: LDAPtestCOMPUTER
 		}
 	}
 
+	var ok = ldb.add("
+dn: cn=ldaptest2computer,cn=computers," + base_dn + "
+objectClass: computer
+cn: LDAPtest2COMPUTER
+userAccountControl: 4096
+");
+	if (!ok) {
+		ok = ldb.del("cn=ldaptest2computer,cn=computers," + base_dn);
+		if (!ok) {
+			println(ldb.errstring());
+			assert(ok);
+		}
+		ok = ldb.add("
+dn: cn=ldaptest2computer,cn=computers," + base_dn + "
+objectClass: computer
+cn: LDAPtest2COMPUTER
+userAccountControl: 4096
+");
+		if (!ok) {
+			println(ldb.errstring());
+			assert(ok);
+		}
+	}
+
 	ok = ldb.add("
 dn: cn=ldaptestuser2,cn=users," + base_dn + "
 objectClass: person
@@ -157,6 +181,8 @@ objectClass: user
 	assert(res[0].objectGUID != undefined);
 	assert(res[0].whenCreated != undefined);
 	assert(res[0].objectCategory == "cn=Person,cn=Schema,cn=Configuration," + base_dn);
+	assert(res[0].sAMAccountType == 805306368);
+//	assert(res[0].userAccountControl == 546);
 
 	println("Testing ldb.search for (&(cn=ldaptestuser)(objectCategory=cn=person,cn=schema,cn=configuration," + base_dn + "))");
 	var res2 = ldb.search("(&(cn=ldaptestuser)(objectCategory=cn=person,cn=schema,cn=configuration," + base_dn + "))");
@@ -200,6 +226,8 @@ objectClass: user
 	assert(res[0].objectGUID != undefined);
 	assert(res[0].whenCreated != undefined);
 	assert(res[0].objectCategory == "cn=Computer,cn=Schema,cn=Configuration," + base_dn);
+//	assert(res[0].sAMAccountType == 805306368);
+//	assert(res[0].userAccountControl == 546);
 
 	println("Testing ldb.search for (&(cn=ldaptestcomputer)(objectCategory=cn=computer,cn=schema,cn=configuration," + base_dn + "))");
 	var res2 = ldb.search("(&(cn=ldaptestcomputer)(objectCategory=cn=computer,cn=schema,cn=configuration," + base_dn + "))");
@@ -219,10 +247,10 @@ objectClass: user
 
 	assert(res[0].dn == res3[0].dn);
 
-	println("Testing ldb.search for (&(cn=ldaptest*computer)(objectCategory=compuTER))");
-	var res4 = ldb.search("(&(cn=ldaptest*computer)(objectCategory=compuTER))");
+	println("Testing ldb.search for (&(cn=ldaptestcomp*r)(objectCategory=compuTER))");
+	var res4 = ldb.search("(&(cn=ldaptestcomp*r)(objectCategory=compuTER))");
 	if (res4.length != 1) {
-		println("Could not find (&(cn=ldaptest*computer)(objectCategory=compuTER))");
+		println("Could not find (&(cn=ldaptestcomp*r)(objectCategory=compuTER))");
 		assert(res4.length == 1);
 	}
 
@@ -251,6 +279,28 @@ objectClass: user
 		println(ldb.errstring());
 		assert(ok);
 	}
+
+	println("Testing ldb.search for (&(cn=ldaptest2computer)(objectClass=user))");
+	var res = ldb.search("(&(cn=ldaptest2computer)(objectClass=user))");
+	if (res.length != 1) {
+		println("Could not find (&(cn=ldaptest2computer)(objectClass=user))");
+		assert(res.length == 1);
+	}
+
+	assert(res[0].dn == "cn=ldaptest2computer,cn=computers," + base_dn);
+	assert(res[0].cn == "ldaptest2computer");
+	assert(res[0].name == "ldaptest2computer");
+	assert(res[0].objectClass[0] == "top");
+	assert(res[0].objectClass[1] == "person");
+	assert(res[0].objectClass[2] == "organizationalPerson");
+	assert(res[0].objectClass[3] == "user");
+	assert(res[0].objectClass[4] == "computer");
+	assert(res[0].objectGUID != undefined);
+	assert(res[0].whenCreated != undefined);
+	assert(res[0].objectCategory == "cn=Computer,cn=Schema,cn=Configuration," + base_dn);
+	assert(res[0].sAMAccountType == 805306369);
+//	assert(res[0].userAccountControl == 4098);
+
 
 	println("Testing ldb.search for (&(cn=ldaptestUSer2)(objectClass=user))");
 	var res = ldb.search("(&(cn=ldaptestUSer2)(objectClass=user))");
