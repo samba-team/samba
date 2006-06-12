@@ -874,7 +874,8 @@ _kdc_as_rep(krb5_context context,
 	ret = krb5_unparse_name(context, server_princ, &server_name);
     }
     if (ret) {
-	kdc_log(context, config, 0, "AS-REQ malformed server name from %s", from);
+	kdc_log(context, config, 0, 
+		"AS-REQ malformed server name from %s", from);
 	goto out;
     }
     
@@ -887,7 +888,8 @@ _kdc_as_rep(krb5_context context,
 	ret = krb5_unparse_name(context, client_princ, &client_name);
     }
     if (ret) {
-	kdc_log(context, config, 0, "AS-REQ malformed client name from %s", from);
+	kdc_log(context, config, 0,
+		"AS-REQ malformed client name from %s", from);
 	goto out;
     }
 
