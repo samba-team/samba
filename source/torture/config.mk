@@ -88,6 +88,7 @@ OBJ_FILES = \
 		raw/streams.o \
 		raw/acls.o \
 		raw/seek.o \
+		raw/samba3hide.o \
 		raw/composite.o
 PUBLIC_DEPENDENCIES = \
 		LIBCLI_SMB LIBCLI_LSA LIBCLI_SMB_COMPOSITE \
