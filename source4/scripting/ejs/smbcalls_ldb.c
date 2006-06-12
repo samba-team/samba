@@ -48,7 +48,7 @@ static struct ldb_context *ejs_get_ldb_context(int eid)
      var attrs = new Array("attr1", "attr2", "attr3");
      ldb.search("expression", attrs);
      var basedn = "cn=this,dc=is,dc=a,dc=test";
-     ldb.search("expression", attrs, ldb.SCOPE_SUBTREE, basedn);
+     ldb.search("expression", basedn, ldb.SCOPE_SUBTREE, attrs);
 */
 static int ejs_ldbSearch(MprVarHandle eid, int argc, struct MprVar **argv)
 {
