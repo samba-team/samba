@@ -24,6 +24,7 @@
 #include "lib/events/events.h"
 #include "lib/messaging/irpc.h"
 #include "torture/torture.h"
+#include "torture/ui.h"
 
 
 static uint32_t msg_pong;
@@ -55,45 +56,46 @@ static void exit_message(struct messaging_context *msg, void *private,
 /*
   test ping speed
 */
-static BOOL test_ping_speed(TALLOC_CTX *mem_ctx)
+static void test_ping_speed(struct torture_context *torture)
 {
 	struct event_context *ev;
 	struct messaging_context *msg_client_ctx;
 	struct messaging_context *msg_server_ctx;
 	int ping_count = 0;
 	int pong_count = 0;
-	BOOL ret = True;
 	struct timeval tv;
 	int timelimit = lp_parm_int(-1, "torture", "timelimit", 10);
 	uint32_t msg_ping, msg_exit;
+	struct torture_test *test = torture_test(torture, "ping_speed", "ping speed");
 
 	lp_set_cmdline("lock dir", "lockdir.tmp");
 
-	ev = event_context_init(mem_ctx);
+	ev = event_context_init(test);
 
-	msg_server_ctx = messaging_init(mem_ctx, 1, ev);
+	msg_server_ctx = messaging_init(test, 1, ev);
 	
 	if (!msg_server_ctx) {
-		printf("Failed to init ping messaging context\n");
-		talloc_free(mem_ctx);
-		return False;
+		torture_fail(test, "Failed to init ping messaging context");
+		talloc_free(test);
+		return;
 	}
 		
 	messaging_register_tmp(msg_server_ctx, NULL, ping_message, &msg_ping);
-	messaging_register_tmp(msg_server_ctx, mem_ctx, exit_message, &msg_exit);
+	messaging_register_tmp(msg_server_ctx, test, exit_message, &msg_exit);
 
-	msg_client_ctx = messaging_init(mem_ctx, 2, ev);
+	msg_client_ctx = messaging_init(test, 2, ev);
 
 	if (!msg_client_ctx) {
-		printf("msg_client_ctx messaging_init() failed\n");
-		return False;
+		torture_fail(test, "msg_client_ctx messaging_init() failed");
+		talloc_free(test);
+		return;
 	}
 
 	messaging_register_tmp(msg_client_ctx, &pong_count, pong_message, &msg_pong);
 
 	tv = timeval_current();
 
-	printf("Sending pings for %d seconds\n", timelimit);
+	torture_comment(test, "Sending pings for %d seconds", timelimit);
 	while (timeval_elapsed(&tv) < timelimit) {
 		DATA_BLOB data;
 		NTSTATUS status1, status2;
@@ -105,13 +107,13 @@ static BOOL test_ping_speed(TALLOC_CTX *mem_ctx)
 		status2 = messaging_send(msg_client_ctx, 1, msg_ping, NULL);
 
 		if (!NT_STATUS_IS_OK(status1)) {
-			printf("msg1 failed - %s\n", nt_errstr(status1));
+			torture_fail(test, "msg1 failed - %s", nt_errstr(status1));
 		} else {
 			ping_count++;
 		}
 
 		if (!NT_STATUS_IS_OK(status2)) {
-			printf("msg2 failed - %s\n", nt_errstr(status2));
+			torture_fail(test, "msg2 failed - %s", nt_errstr(status2));
 		} else {
 			ping_count++;
 		}
@@ -121,40 +123,31 @@ static BOOL test_ping_speed(TALLOC_CTX *mem_ctx)
 		}
 	}
 
-	printf("waiting for %d remaining replies (done %d)\n", 
+	torture_comment(test, "waiting for %d remaining replies (done %d)", 
 	       ping_count - pong_count, pong_count);
 	while (timeval_elapsed(&tv) < 30 && pong_count < ping_count) {
 		event_loop_once(ev);
 	}
 
-	printf("sending exit\n");
+	torture_comment(test, "sending exit");
 	messaging_send(msg_client_ctx, 1, msg_exit, NULL);
 
 	if (ping_count != pong_count) {
-		printf("ping test failed! received %d, sent %d\n", 
+		torture_fail(test, "ping test failed! received %d, sent %d", 
 		       pong_count, ping_count);
-		ret = False;
 	}
 
-	printf("ping rate of %.0f messages/sec\n", 
+	torture_comment(test, "ping rate of %.0f messages/sec", 
 	       (ping_count+pong_count)/timeval_elapsed(&tv));
 
 	talloc_free(msg_client_ctx);
 	talloc_free(msg_server_ctx);
 
 	talloc_free(ev);
-
-	return ret;
 }
 
 BOOL torture_local_messaging(struct torture_context *torture) 
 {
-	TALLOC_CTX *mem_ctx = talloc_init("torture_local_messaging");
-	BOOL ret = True;
-
-	ret &= test_ping_speed(mem_ctx);
-
-	talloc_free(mem_ctx);
-
-	return ret;
+	test_ping_speed(torture);
+	return torture_result(torture);
 }
