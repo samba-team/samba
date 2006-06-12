@@ -1157,7 +1157,7 @@ static BOOL build_smb_pass (struct smb_passwd *smb_pw, const struct samu *sampas
 		if (rid == DOMAIN_USER_RID_GUEST) {
 			struct passwd *passwd = getpwnam_alloc(NULL, lp_guestaccount());
 			if (!passwd) {
-				DEBUG(0, ("Could not find gest account via getpwnam()! (%s)\n", lp_guestaccount()));
+				DEBUG(0, ("Could not find guest account via getpwnam()! (%s)\n", lp_guestaccount()));
 				return False;
 			}
 			smb_pw->smb_userid=passwd->pw_uid;
