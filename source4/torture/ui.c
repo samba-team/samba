@@ -79,6 +79,11 @@ void torture_fail(struct torture_test *test, const char *fmt, ...) _PRINTF_ATTRI
 	test->context->failed++;
 }
 
+BOOL torture_result(struct torture_context *torture)
+{
+	return (torture->failed == 0);
+}
+
 void torture_skip(struct torture_test *test, const char *fmt, ...) _PRINTF_ATTRIBUTE(2,3)
 {
 	va_list ap;

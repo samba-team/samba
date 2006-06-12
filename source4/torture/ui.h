@@ -78,6 +78,21 @@ struct torture_context
 		return False; \
 	}
 
+#define torture_assert_casestr_equal(ctx,got,expected,string) \
+	if (strcasecmp(got, expected) != 0) { \
+		torture_fail(ctx, "%s:%d (%s): got %s, expected %s", __FILE__, \
+					 __LINE__, string, got, expected); \
+		return False; \
+	}
+
+#define torture_assert_str_equal(ctx,got,expected,string) \
+	if (strcmp(got, expected) != 0) { \
+		torture_fail(ctx, "%s:%d (%s): got %s, expected %s", __FILE__, \
+					 __LINE__, string, got, expected); \
+		return False; \
+	}
+
+
 /* Convenience macros */
 
 #define torture_assert_ntstatus_ok(ctx,expr,string) \
@@ -92,3 +107,4 @@ void torture_comment(struct torture_test *test, const char *comment, ...) _PRINT
 void torture_ok(struct torture_test *test);
 void torture_fail(struct torture_test *test, const char *reason, ...) _PRINTF_ATTRIBUTE(2,3);
 void torture_skip(struct torture_test *test, const char *reason, ...) _PRINTF_ATTRIBUTE(2,3);
+BOOL torture_result(struct torture_context *torture);
