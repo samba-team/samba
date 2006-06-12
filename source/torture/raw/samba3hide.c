@@ -46,11 +46,11 @@ static void init_unixinfo_nochange(union smb_setfileinfo *info)
 
 	info->unix_basic.in.access_time = SMB_TIME_NO_CHANGE_HI;
 	info->unix_basic.in.access_time <<= 32;
-	info->unix_basic.in.access_time = SMB_TIME_NO_CHANGE_LO;
+	info->unix_basic.in.access_time |= SMB_TIME_NO_CHANGE_LO;
 
 	info->unix_basic.in.change_time = SMB_TIME_NO_CHANGE_HI;
 	info->unix_basic.in.change_time <<= 32;
-	info->unix_basic.in.change_time = SMB_TIME_NO_CHANGE_LO;
+	info->unix_basic.in.change_time |= SMB_TIME_NO_CHANGE_LO;
 
 	info->unix_basic.in.uid = SMB_UID_NO_CHANGE;
 	info->unix_basic.in.gid = SMB_GID_NO_CHANGE;
