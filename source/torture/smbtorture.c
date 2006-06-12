@@ -240,7 +240,22 @@ static void simple_test_start (struct torture_test *test)
 
 static void simple_test_result (struct torture_test *test, enum torture_result res, const char *reason)
 {
-	printf("\t %d: %s\n",res, reason?reason:"");
+	switch (res) {
+	case TORTURE_OK:
+		if (reason)
+			printf("OK: %s\n", reason);
+		break;
+	case TORTURE_FAIL:
+		printf("ERROR: %s - %s\n", test->name, reason);
+		break;
+	case TORTURE_TODO:
+		printf("TODO: %s - %s\n", test->name, reason);
+		break;
+	case TORTURE_SKIP:
+		printf("SKIP: %s - %s\n", test->name, reason);
+		break;
+
+	}
 }
 
 static void simple_comment (struct torture_test *test, const char *comment)
