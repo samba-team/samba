@@ -1243,10 +1243,9 @@ NTSTATUS make_server_info_pw(auth_serversupplied_info **server_info,
 	}
 
 	result = make_server_info(NULL);
-
-	if (!NT_STATUS_IS_OK(status)) {
+	if (result == NULL) {
 		TALLOC_FREE(sampass);
-		return status;
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	result->sam_account = sampass;
