@@ -9,7 +9,7 @@ dnsDomain: ${DNSDOMAIN}
 dc: ${RDN_DC}
 objectGUID: ${DOMAINGUID}
 creationTime: ${NTTIME}
-forceLogoff: 0x8000000000000000
+forceLogoff: 9223372036854775808
 lockoutDuration: -18000000000
 lockOutObservationWindow: -18000000000
 lockoutThreshold: 0
@@ -40,7 +40,7 @@ cn: Users
 description: Default container for upgraded user accounts
 instanceType: 4
 showInAdvancedViewOnly: FALSE
-systemFlags: 0x8c000000
+systemFlags: 2348810240
 objectCategory: CN=Container,CN=Schema,CN=Configuration,${BASEDN}
 isCriticalSystemObject: TRUE
 allowedChildClassesEffective: user
@@ -53,7 +53,7 @@ cn: Computers
 description: Default container for upgraded computer accounts
 instanceType: 4
 showInAdvancedViewOnly: FALSE
-systemFlags: 0x8c000000
+systemFlags: 2348810240
 objectCategory: CN=Container,CN=Schema,CN=Configuration,${BASEDN}
 isCriticalSystemObject: TRUE
 
@@ -64,7 +64,7 @@ ou: Domain Controllers
 description: Default container for domain controllers
 instanceType: 4
 showInAdvancedViewOnly: FALSE
-systemFlags: 0x8c000000
+systemFlags: 2348810240
 objectCategory: CN=Organizational-Unit,CN=Schema,CN=Configuration,${BASEDN}
 isCriticalSystemObject: TRUE
 
@@ -75,7 +75,7 @@ cn: ForeignSecurityPrincipals
 description: Default container for security identifiers (SIDs) associated with objects from external, trusted domains
 instanceType: 4
 showInAdvancedViewOnly: FALSE
-systemFlags: 0x8c000000
+systemFlags: 2348810240
 objectCategory: CN=Container,CN=Schema,CN=Configuration,${BASEDN}
 isCriticalSystemObject: TRUE
 
@@ -86,7 +86,7 @@ cn: System
 description: Builtin system settings
 instanceType: 4
 showInAdvancedViewOnly: TRUE
-systemFlags: 0x8c000000
+systemFlags: 2348810240
 objectCategory: CN=Container,CN=Schema,CN=Configuration,${BASEDN}
 isCriticalSystemObject: TRUE
 
@@ -96,7 +96,7 @@ objectclass: rIDManager
 cn: RID Manager$
 instanceType: 4
 showInAdvancedViewOnly: TRUE
-systemFlags: 0x8c000000
+systemFlags: 2348810240
 objectCategory: CN=RID-Manager,CN=Schema,CN=Configuration,${BASEDN}
 isCriticalSystemObject: TRUE
 fSMORoleOwner: CN=NTDS Settings,CN=${NETBIOSNAME},CN=Servers,CN=${DEFAULTSITE},CN=Sites,CN=Configuration,${BASEDN}
@@ -125,7 +125,7 @@ objectclass: infrastructureUpdate
 cn: Infrastructure
 instanceType: 4
 showInAdvancedViewOnly: TRUE
-systemFlags: 0x8c000000
+systemFlags: 2348810240
 objectCategory: CN=Infrastructure-Update,CN=Schema,CN=Configuration,${BASEDN}
 isCriticalSystemObject: TRUE
 fSMORoleOwner: CN=NTDS Settings,CN=${NETBIOSNAME},CN=Servers,CN=${DEFAULTSITE},CN=Sites,CN=Configuration,${BASEDN}
@@ -136,7 +136,7 @@ objectClass: builtinDomain
 cn: Builtin
 instanceType: 4
 showInAdvancedViewOnly: FALSE
-forceLogoff: 0x8000000000000000
+forceLogoff: 9223372036854775808
 lockoutDuration: -18000000000
 lockOutObservationWindow: -18000000000
 lockoutThreshold: 0
@@ -174,7 +174,7 @@ objectClass: crossRefContainer
 cn: Partitions
 instanceType: 4
 showInAdvancedViewOnly: TRUE
-systemFlags: 0x80000000
+systemFlags: 2147483648
 objectCategory: CN=Cross-Ref-Container,CN=Schema,CN=Configuration,${BASEDN}
 msDS-Behavior-Version: 0
 fSMORoleOwner: CN=NTDS Settings,CN=${NETBIOSNAME},CN=Servers,CN=${DEFAULTSITE},CN=Sites,CN=Configuration,${BASEDN}
@@ -185,7 +185,7 @@ objectClass: crossRef
 cn: Enterprise Configuration
 instanceType: 4
 showInAdvancedViewOnly: TRUE
-systemFlags: 0x00000001
+systemFlags: 1
 objectCategory: CN=Cross-Ref,CN=Schema,CN=Configuration,${BASEDN}
 nCName: CN=Configuration,${BASEDN}
 dnsRoot: ${DNSDOMAIN}
@@ -196,7 +196,7 @@ objectClass: crossRef
 cn: Enterprise Schema
 instanceType: 4
 showInAdvancedViewOnly: TRUE
-systemFlags: 0x00000001
+systemFlags: 1
 objectCategory: CN=Cross-Ref,CN=Schema,CN=Configuration,${BASEDN}
 nCName: CN=Schema,CN=Configuration,${BASEDN}
 dnsRoot: ${DNSDOMAIN}
@@ -207,7 +207,7 @@ objectClass: crossRef
 cn: ${DOMAIN}
 instanceType: 4
 showInAdvancedViewOnly: TRUE
-systemFlags: 0x00000003
+systemFlags: 3
 objectCategory: CN=Cross-Ref,CN=Schema,CN=Configuration,${BASEDN}
 nCName: ${BASEDN}
 nETBIOSName: ${DOMAIN}
@@ -219,7 +219,7 @@ objectClass: sitesContainer
 cn: Sites
 instanceType: 4
 showInAdvancedViewOnly: TRUE
-systemFlags: 0x82000000
+systemFlags: 2181038080
 objectCategory: CN=Sites-Container,CN=Schema,CN=Configuration,${BASEDN}
 
 dn: CN=${DEFAULTSITE},CN=Sites,CN=Configuration,${BASEDN}
@@ -228,7 +228,7 @@ objectClass: site
 cn: ${DEFAULTSITE}
 instanceType: 4
 showInAdvancedViewOnly: TRUE
-systemFlags: 0x82000000
+systemFlags: 2181038080
 objectCategory: CN=Site,CN=Schema,CN=Configuration,${BASEDN}
 
 dn: CN=Servers,CN=${DEFAULTSITE},CN=Sites,CN=Configuration,${BASEDN}
@@ -237,7 +237,7 @@ objectClass: serversContainer
 cn: Servers
 instanceType: 4
 showInAdvancedViewOnly: TRUE
-systemFlags: 0x82000000
+systemFlags: 2181038080
 objectCategory: CN=Servers-Container,CN=Schema,CN=Configuration,${BASEDN}
 
 dn: CN=${NETBIOSNAME},CN=Servers,CN=${DEFAULTSITE},CN=Sites,CN=Configuration,${BASEDN}
@@ -246,7 +246,7 @@ objectClass: server
 cn: ${NETBIOSNAME}
 instanceType: 4
 showInAdvancedViewOnly: TRUE
-systemFlags: 0x52000000
+systemFlags: 1375731712
 objectCategory: CN=Server,CN=Schema,CN=Configuration,${BASEDN}
 dNSHostName: ${DNSNAME}
 serverReference: CN=${NETBIOSNAME},OU=Domain Controllers,${BASEDN}
@@ -258,7 +258,7 @@ objectClass: nTDSDSA
 cn: NTDS Settings
 instanceType: 4
 showInAdvancedViewOnly: TRUE
-systemFlags: 0x02000000
+systemFlags: 33554432
 objectCategory: CN=NTDS-DSA,CN=Schema,CN=Configuration,${BASEDN}
 dMDLocation: CN=Schema,CN=Configuration,${BASEDN}
 objectGUID: ${INVOCATIONID}
@@ -271,7 +271,7 @@ objectClass: container
 cn: Services
 instanceType: 4
 showInAdvancedViewOnly: TRUE
-systemFlags: 0x80000000
+systemFlags: 2147483648
 objectCategory: CN=Container,CN=Schema,CN=Configuration,${BASEDN}
 
 dn: CN=Windows NT,CN=Services,CN=Configuration,${BASEDN}
