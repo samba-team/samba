@@ -22,6 +22,7 @@
 
 #include "includes.h"
 #include "torture/torture.h"
+#include "torture/ui.h"
 
 BOOL torture_local_idtree(struct torture_context *torture) 
 {
@@ -29,15 +30,14 @@ BOOL torture_local_idtree(struct torture_context *torture)
 	int i;
 	int *ids;
 	int *present;
-	BOOL ret = True;
 	extern int torture_numops;
 	int n = torture_numops;
-	void *ctx = talloc_new(NULL);
+	struct torture_test *test = torture_test(torture, "idtree", "idtree");
 
-	idr = idr_init(ctx);
+	idr = idr_init(test);
 
-	ids = talloc_zero_array(ctx, int, n);
-	present = talloc_zero_array(ctx, int, n);
+	ids = talloc_zero_array(test, int, n);
+	present = talloc_zero_array(test, int, n);
 
 	for (i=0;i<n;i++) {
 		ids[i] = -1;
@@ -48,32 +48,28 @@ BOOL torture_local_idtree(struct torture_context *torture)
 		void *p = idr_find(idr, ids[ii]);
 		if (present[ii]) {
 			if (p != &ids[ii]) {
-				printf("wrong ptr at %d - %p should be %p\n", 
+				torture_fail(test, "wrong ptr at %d - %p should be %p", 
 				       ii, p, &ids[ii]);
-				ret = False;
 			}
 			if (random() % 7 == 0) {
 				if (idr_remove(idr, ids[ii]) != 0) {
-					printf("remove failed at %d (id=%d)\n", 
+					torture_fail(test, "remove failed at %d (id=%d)", 
 					       i, ids[ii]);
-					ret = False;
 				}
 				present[ii] = 0;
 				ids[ii] = -1;
 			}
 		} else {
 			if (p != NULL) {
-				printf("non-present at %d gave %p (would be %d)\n", 
+				torture_fail(test, "non-present at %d gave %p (would be %d)", 
 				       ii, p, 
 				       (int)(((char *)p) - (char *)(&ids[0])) / sizeof(int));
-				ret = False;
 			}
 			if (random() % 5) {
 				ids[ii] = idr_get_new(idr, &ids[ii], n);
 				if (ids[ii] < 0) {
-					printf("alloc failure at %d (ret=%d)\n", 
+					torture_fail(test, "alloc failure at %d (ret=%d)", 
 					       ii, ids[ii]);
-					ret = False;
 				} else {
 					present[ii] = 1;
 				}
@@ -81,21 +77,20 @@ BOOL torture_local_idtree(struct torture_context *torture)
 		}
 	}
 
-	printf("done %d random ops\n", i);
+	torture_comment(test, "done %d random ops", i);
 
 	for (i=0;i<n;i++) {
 		if (present[i]) {
 			if (idr_remove(idr, ids[i]) != 0) {
-				printf("delete failed on cleanup at %d (id=%d)\n", 
+				torture_fail(test, "delete failed on cleanup at %d (id=%d)", 
 				       i, ids[i]);
-				ret = False;
 			}
 		}
 	}
 
-	printf("cleaned up\n");
+	torture_comment(test, "cleaned up");
 
-	talloc_free(ctx);
+	talloc_free(test);
 
-	return ret;
+	return torture_result(torture);
 }
