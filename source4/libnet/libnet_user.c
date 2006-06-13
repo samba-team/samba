@@ -43,38 +43,45 @@ static struct composite_context* domain_opened(struct libnet_context *ctx,
 	struct composite_context *domopen_req;
 
 	if (domain_name == NULL) {
+		/*
+		 * Try to guess the domain name from credentials,
+		 * if it's not been explicitly specified.
+		 */
+
 		if (policy_handle_empty(&ctx->domain.handle)) {
 			domain_open->in.domain_name = cli_credentials_get_domain(ctx->cred);
 			domain_open->in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
-			
-			domopen_req = libnet_DomainOpen_send(ctx, domain_open, monitor);
-			if (composite_nomem(domopen_req, parent_ctx)) return parent_ctx;
-			
-			composite_continue(parent_ctx, domopen_req, continue_fn, parent_ctx);
-			return parent_ctx;
-			
+
 		} else {
 			composite_error(parent_ctx, NT_STATUS_INVALID_PARAMETER);
 			return parent_ctx;
 		}
 
 	} else {
-		
+		/*
+		 * The domain name has been specified, so check whether the same
+		 * domain is already opened. If it is - just return NULL. Start
+		 * opening a new domain otherwise.
+		 */
+
 		if (policy_handle_empty(&ctx->domain.handle) ||
 		    !strequal(domain_name, ctx->domain.name)) {
 			domain_open->in.domain_name = domain_name;
-			domain_open->in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
-			
-			domopen_req = libnet_DomainOpen_send(ctx, domain_open, monitor);
-			if (composite_nomem(domopen_req, parent_ctx)) return parent_ctx;
-			
-			composite_continue(parent_ctx, domopen_req, continue_fn, parent_ctx);
-			return parent_ctx;
+			domain_open->in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;			
+
+		} else {
+			/* domain has already been opened and it's the same domain
+			   as requested */
+			return NULL;
 		}
 	}
 
-	/* domain has already been opened and it's the same domain as requested */
-	return NULL;
+	/* send request to open the domain */
+	domopen_req = libnet_DomainOpen_send(ctx, domain_open, monitor);
+	if (composite_nomem(domopen_req, parent_ctx)) return parent_ctx;
+	
+	composite_continue(parent_ctx, domopen_req, continue_fn, parent_ctx);
+	return parent_ctx;
 }
 
 
@@ -332,6 +339,7 @@ struct modify_user_state {
 	struct libnet_ModifyUser r;
 	struct libnet_context *ctx;
 	struct libnet_DomainOpen domain_open;
+	struct libnet_rpc_userinfo user_info;
 	struct libnet_rpc_usermod user_mod;
 
 	void (*monitor_fn)(struct monitor_msg *);
@@ -340,6 +348,7 @@ struct modify_user_state {
 
 static void continue_rpc_usermod(struct composite_context *ctx);
 static void continue_domain_open_modify(struct composite_context *ctx);
+static void continue_rpc_userinfo(struct composite_context *ctx);
 
 
 struct composite_context *libnet_ModifyUser_send(struct libnet_context *ctx,
@@ -349,9 +358,8 @@ struct composite_context *libnet_ModifyUser_send(struct libnet_context *ctx,
 {
 	struct composite_context *c;
 	struct modify_user_state *s;
-	struct composite_context *domopen_req;
-	struct composite_context *create_req;
 	struct composite_context *prereq_ctx;
+	struct composite_context *userinfo_req;
 
 	c = talloc_zero(mem_ctx, struct composite_context);
 	if (c == NULL) return NULL;
@@ -373,19 +381,20 @@ struct composite_context *libnet_ModifyUser_send(struct libnet_context *ctx,
 	s->user_mod.in.username      = r->in.user_name;
 	s->user_mod.in.domain_handle = ctx->domain.handle;
 
-	create_req = libnet_rpc_usermod_send(ctx->samr_pipe, &s->user_mod, monitor);
-	if (composite_nomem(create_req, c)) return c;
+	userinfo_req = libnet_rpc_userinfo_send(ctx->samr_pipe, &s->user_info, monitor);
+	if (composite_nomem(userinfo_req, c)) return c;
 
-	composite_continue(c, create_req, continue_rpc_usermod, c);
+	composite_continue(c, userinfo_req, continue_rpc_userinfo, c);
 	return c;
 }
 
 
 static void continue_domain_open_modify(struct composite_context *ctx)
 {
+	const uint16_t level = 21;
 	struct composite_context *c;
 	struct modify_user_state *s;
-	struct composite_context *modify_req;
+	struct composite_context *userinfo_req;
 	struct monitor_msg msg;
 
 	c = talloc_get_type(ctx->async.private_data, struct composite_context);
@@ -396,13 +405,36 @@ static void continue_domain_open_modify(struct composite_context *ctx)
 
 	if (s->monitor_fn) s->monitor_fn(&msg);
 	
-	s->user_mod.in.username       = s->r.in.user_name;
-	s->user_mod.in.domain_handle  = s->ctx->domain.handle;
+	s->user_info.in.domain_handle  = s->ctx->domain.handle;
+	s->user_info.in.username       = s->r.in.user_name;
+	s->user_info.in.level          = level;
 
-	modify_req = libnet_rpc_usermod_send(s->ctx->samr_pipe, &s->user_mod, s->monitor_fn);
-	if (composite_nomem(modify_req, c)) return;
+	userinfo_req = libnet_rpc_userinfo_send(s->ctx->samr_pipe, &s->user_info, s->monitor_fn);
+	if (composite_nomem(userinfo_req, c)) return;
 	
-	composite_continue(c, modify_req, continue_rpc_usermod, c);
+	composite_continue(c, userinfo_req, continue_rpc_userinfo, c);
+}
+
+
+static void continue_rpc_userinfo(struct composite_context *ctx)
+{
+	struct composite_context *c;
+	struct modify_user_state *s;
+	struct composite_context *usermod_req;
+
+	c = talloc_get_type(ctx->async.private_data, struct composite_context);
+	s = talloc_get_type(c->private_data, struct modify_user_state);
+
+	c->status = libnet_rpc_userinfo_recv(ctx, c, &s->user_info);
+	if (!composite_is_ok(c)) return;
+
+	/* TODO: prepare arguments based on requested changes
+	   and received current user info */
+
+	usermod_req = libnet_rpc_usermod_send(s->ctx->samr_pipe, &s->user_mod, s->monitor_fn);
+	if (composite_nomem(usermod_req, c)) return;
+
+	composite_continue(c, usermod_req, continue_rpc_usermod, c);
 }
 
 
