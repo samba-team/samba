@@ -2354,7 +2354,7 @@ NTSTATUS wcache_remove_oldest_cached_creds(struct winbindd_domain *domain, const
 	ret = tdb_traverse(cache->tdb, traverse_fn_get_credlist, NULL);
 	if (ret == 0) {
 		return NT_STATUS_OK;
-	} else if (ret == -1) {
+	} else if ((ret == -1) || (wcache_cred_list == NULL)) {
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 
