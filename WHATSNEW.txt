@@ -14,6 +14,10 @@ thank Thomas Bork <tombork@web.de> for his numerous reports.
 We believe that RC2 is in much better shape in a large part due 
 to his efforts.
 
+We would also like to thank the developers of Klokwork for their
+anaylsis of the Samba source tree.  This release candidates includes 
+multiple fixes based on reports from the klockwork code anaylzer.
+
 Common issues addressed in 3.0.23rc2 include:
 
    o Winbindd & Samba PDC integration issues.
@@ -56,6 +60,10 @@ o   Jeremy Allison <jra@samba.org>
     * Remove extra add-byte in the trans2 UNIX_BASIC infolevel.
 
 
+o   Alexander Bokovoy <ab@samba.org>
+    * Fix absolute symlinks in the installbin.sh script.
+
+
 o   Gerald (Jerry) Carter <jerry@samba.org>
     * Only call the printer publishing calls if 'security = ads'.
 
@@ -79,6 +87,7 @@ o   Guenther Deschner <gd@samba.org>
     * Fix a eDir related memory leak.
     * Don't try to add the sn attribute twice to an LDAP 
       inetOrgPerson + samSamAccount entry.
+    * Fix winbind function table typo.
 
 
 o   Aleksey Fedoseev <fedoseev@ru.ibm.com>
@@ -112,6 +121,8 @@ o   Volker Lendecke <vl@samba.org>
       'add machine script'.
     * Correct parsing error in parse_net.c for user's with no group
       membership.
+    * Fix off by one error in client SPNEGO code and other klokwork
+      bug fixes.
 
 
 o   Jason Mader <jason@ncac.gwu.edu>

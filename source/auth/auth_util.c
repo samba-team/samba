@@ -1243,10 +1243,9 @@ NTSTATUS make_server_info_pw(auth_serversupplied_info **server_info,
 	}
 
 	result = make_server_info(NULL);
-
-	if (!NT_STATUS_IS_OK(status)) {
+	if (result == NULL) {
 		TALLOC_FREE(sampass);
-		return status;
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	result->sam_account = sampass;
@@ -1279,8 +1278,7 @@ NTSTATUS make_server_info_pw(auth_serversupplied_info **server_info,
  Make (and fill) a user_info struct for a guest login.
  This *must* succeed for smbd to start. If there is no mapping entry for
  the guest gid, then create one.
-**********************
-*****************************************************/
+***************************************************************************/
 
 static NTSTATUS make_new_server_info_guest(auth_serversupplied_info **server_info)
 {
