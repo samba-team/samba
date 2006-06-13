@@ -1082,6 +1082,7 @@ NTSTATUS create_token_from_username(TALLOC_CTX *mem_ctx, const char *username,
 		/* This is a passdb user, so ask passdb */
 
 		struct samu *sam_acct = NULL;
+		const DOM_SID *gr_sid = NULL;
 
 		if ( !(sam_acct = samu_new( tmp_ctx )) ) {
 			goto done;
@@ -1094,7 +1095,13 @@ NTSTATUS create_token_from_username(TALLOC_CTX *mem_ctx, const char *username,
 			goto done;
 		}
 
-		sid_copy(&primary_group_sid, pdb_get_group_sid(sam_acct));
+		gr_sid = pdb_get_group_sid(sam_acct);
+		if (!gr_sid) {
+			result = NT_STATUS_NO_MEMORY;
+			goto done;
+		}
+
+		sid_copy(&primary_group_sid, gr_sid);
 
 		if (!sid_to_gid(&primary_group_sid, gid)) {
 			DEBUG(1, ("sid_to_gid(%s) failed\n",
