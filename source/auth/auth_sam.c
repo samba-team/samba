@@ -93,9 +93,11 @@ static BOOL logon_hours_ok(struct samu *sampass)
 	bitmask = 1 << (bitpos % 8);
 
 	if (! (hours[bitpos/8] & bitmask)) {
-		DEBUG(1,("logon_hours_ok: Account for user %s not allowed to logon at this time (%s).\n",
-			pdb_get_username(sampass), 
-			asctime(localtime(&lasttime)) ));
+		struct tm *t = localtime(&lasttime);
+		DEBUG(1, ("logon_hours_ok: Account for user %s not allowed to "
+			  "logon at this time (%s).\n",
+			  pdb_get_username(sampass),
+			  t ? asctime(t) : "INVALID TIME"));
 		return False;
 	}
 
