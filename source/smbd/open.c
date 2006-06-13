@@ -1905,7 +1905,6 @@ files_struct *open_directory(connection_struct *conn,
 			DEBUG(5,("open_directory: invalid create_disposition "
 				 "0x%x for directory %s\n",
 				 (unsigned int)create_disposition, fname));
-			file_free(fsp);
 			set_saved_ntstatus(NT_STATUS_INVALID_PARAMETER);
 			return NULL;
 	}
