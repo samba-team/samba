@@ -15,7 +15,7 @@ We believe that RC2 is in much better shape in a large part due
 to his efforts.
 
 We would also like to thank the developers of Klokwork for their
-analysis of the Samba source tree.  This release candidates includes 
+analysis of the Samba source tree.  This release candidate includes 
 multiple fixes based on reports from the Klokwork code analyzer.
 
 Common issues addressed in 3.0.23rc2 include:
@@ -31,7 +31,7 @@ Group Mapping Changes
 The default mapping entries for groups such as "Domain Admins"
 are no longer created when using an smbpasswd file or a tdbsam passdb 
 backend.  This means that it is necessary to use 'net groupmap add'
-rathe than 'net groupmap modify' to set these entries.  This change
+rather than 'net groupmap modify' to set these entries.  This change
 has no effect on winbindd's IDmap functionality for domain groups.
 
 
@@ -72,8 +72,8 @@ o   Guenther Deschner <gd@samba.org>
     * Set our internal domains to "online" by default in winbindd.
     * BUG 3800: Fill the password_policy method in winbindd for 
       winbindd_passdb.
-    * Fix memory leak when LDAP posix attribute queries fail.
-    * Honour the krb5 principal name change (of the new ads join code) 
+    * Fix memory leak when LDAP POSIX attribute queries fail.
+    * Honor the krb5 principal name change (of the new ads join code) 
       in the kerberized winbind pam_auth.
     * Correctly handle the case when there is no configuration file 
       for pam_winbind.
