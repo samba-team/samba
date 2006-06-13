@@ -723,7 +723,7 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 	ADS_STATUS rc;
 	int count;
 	LDAPMessage *msg = NULL;
-	char *user_dn;
+	char *user_dn = NULL;
 	DOM_SID *sids;
 	int i;
 	DOM_SID primary_group;
@@ -791,9 +791,6 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 
 	count = ads_pull_sids(ads, mem_ctx, msg, "tokenGroups", &sids);
 
-	if (msg) 
-		ads_msgfree(ads, msg);
-
 	/* there must always be at least one group in the token, 
 	   unless we are talking to a buggy Win2k server */
 
@@ -811,15 +808,16 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 						    &primary_group,
 						    p_num_groups, user_sids);
 		if (NT_STATUS_IS_OK(status)) {
-			return status;
+			goto done;
 		}
 
 		/* lookup what groups this user is a member of by DN search on
 		 * "member" */
 
-		return lookup_usergroups_member(domain, mem_ctx, user_dn, 
-						&primary_group,
-						p_num_groups, user_sids);
+		status = lookup_usergroups_member(domain, mem_ctx, user_dn, 
+						  &primary_group,
+						  p_num_groups, user_sids);
+		goto done;
 	}
 
 	*user_sids = NULL;
@@ -844,6 +842,8 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 	DEBUG(3,("ads lookup_usergroups (tokenGroups) succeeded for sid=%s\n",
 		 sid_to_string(sid_string, sid)));
 done:
+	ads_memfree(ads, user_dn);
+	ads_msgfree(ads, msg);
 	return status;
 }
 
@@ -885,7 +885,10 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 		goto done;
 	}
 
-	sidstr = sid_binstring(group_sid);
+	if ((sidstr = sid_binstring(group_sid)) == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
 
 	/* search for all members of the group */
 	if (!(ldap_exp = talloc_asprintf(mem_ctx, "(objectSid=%s)",sidstr))) {
