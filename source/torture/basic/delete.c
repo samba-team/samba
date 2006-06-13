@@ -1656,11 +1656,13 @@ BOOL torture_test_delete(struct torture_context *torture)
 	correct &= deltest13(cli1, cli2);
 	correct &= deltest14(cli1, cli2);
 	correct &= deltest15(cli1, cli2);
-	correct &= deltest16(cli1, cli2);
-	correct &= deltest17(cli1, cli2);
-	correct &= deltest18(cli1, cli2);
-	correct &= deltest19(cli1, cli2);
-	correct &= deltest20(cli1, cli2);
+	if (!lp_parm_bool(-1, "target", "samba3", False)) {
+		correct &= deltest16(cli1, cli2);
+		correct &= deltest17(cli1, cli2);
+		correct &= deltest18(cli1, cli2);
+		correct &= deltest19(cli1, cli2);
+		correct &= deltest20(cli1, cli2);
+	}
 	correct &= deltest21(&cli1, &cli2);
 
 	if (!correct) {
