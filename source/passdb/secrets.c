@@ -1044,8 +1044,6 @@ BOOL secrets_restore_schannel_session_info(TALLOC_CTX *mem_ctx,
 		return False;
 	}
 
-	tdb_close(tdb_sc);
-
 	pdc = TALLOC_ZERO_P(mem_ctx, struct dcinfo);
 
 	/* Retrieve the record. */
@@ -1063,6 +1061,7 @@ BOOL secrets_restore_schannel_session_info(TALLOC_CTX *mem_ctx,
 	if (ret == -1 || l1 != 8 || l2 != 8 || l3 != 8 || l4 != 16 || l5 != 16) {
 		/* Bad record - delete it. */
 		tdb_delete_bystring(tdb_sc, keystr);
+		tdb_close(tdb_sc);
 		TALLOC_FREE(keystr);
 		TALLOC_FREE(pdc);
 		SAFE_FREE(pseed_chal);
@@ -1073,6 +1072,8 @@ BOOL secrets_restore_schannel_session_info(TALLOC_CTX *mem_ctx,
 		SAFE_FREE(value.dptr);
 		return False;
 	}
+
+	tdb_close(tdb_sc);
 
 	memcpy(pdc->seed_chal.data, pseed_chal, 8);
 	memcpy(pdc->clnt_chal.data, pclnt_chal, 8);
