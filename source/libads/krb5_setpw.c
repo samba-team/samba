@@ -528,7 +528,6 @@ ADS_STATUS ads_krb5_set_password(const char *kdc_host, const char *princ,
 		DEBUG(1,("Failed to parse kadmin/changepw (%s)\n", error_message(ret)));
 		return ADS_ERROR_KRB5(ret);
 	}
-	free(princ_name);
 
 	/* parse the principal we got as a function argument */
 	ret = smb_krb5_parse_name(context, princ, &principal);
@@ -537,8 +536,11 @@ ADS_STATUS ads_krb5_set_password(const char *kdc_host, const char *princ,
 	        krb5_free_principal(context, creds.server);
                 krb5_free_context(context);
 		DEBUG(1,("Failed to parse %s (%s)\n", princ_name, error_message(ret)));
+		free(princ_name);
 		return ADS_ERROR_KRB5(ret);
 	}
+
+	free(princ_name);
 
 	/* The creds.server principal takes ownership of this memory.
 		Remember to set back to original value before freeing. */
