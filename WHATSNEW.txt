@@ -1,12 +1,40 @@
                    =================================
                    Release Notes for Samba 3.0.23rc2
-                              Jun 9, 2006
+                              Jun XX, 2006
                    =================================
 
-This is the second release candidate of the 3.0.23 code base and is 
+This is the third release candidate of the 3.0.23 code base and is 
 provided for testing purposes only.  While close to the final stable 
 release, this snapshot is *not* intended for production servers. 
 Your testing and feedback is greatly appreciated.
+
+Common issues addressed in 3.0.23rc3 include:
+
+   o 
+
+######################################################################
+Changes
+#######
+
+Changes since 3.0.23rc2
+-----------------------
+
+commits
+-------
+
+o   Guenther Deschner <gd@samba.org>
+    * Fix memleaks in winbindd ads searches.
+    * Fix timestamp bug in pam_winbindd which forced users to change
+      passwords prematurelty.
+
+
+Release Notes for older release follow:
+
+      --------------------------------------------------
+                   =================================
+                   Release Notes for Samba 3.0.23rc2
+                              Jun 9, 2006
+                   =================================
 
 Thanks very much to those people who spent time testing the RC1 
 release and reported their findings.  We would like to especially 
@@ -14,9 +42,9 @@ thank Thomas Bork <tombork@web.de> for his numerous reports.
 We believe that RC2 is in much better shape in a large part due 
 to his efforts.
 
-We would also like to thank the developers of Klokwork for their
+We would also like to thank the developers of Klocwork for their
 analysis of the Samba source tree.  This release candidate includes 
-multiple fixes based on reports from the Klokwork code analyzer.
+multiple fixes based on reports from the Klocwork code analyzer.
 
 Common issues addressed in 3.0.23rc2 include:
 
@@ -121,7 +149,7 @@ o   Volker Lendecke <vl@samba.org>
       'add machine script'.
     * Correct parsing error in parse_net.c for user's with no group
       membership.
-    * Fix off by one error in client SPNEGO code and other klokwork
+    * Fix off by one error in client SPNEGO code and other klocwork
       bug fixes.
 
 
