@@ -15,8 +15,8 @@ We believe that RC2 is in much better shape in a large part due
 to his efforts.
 
 We would also like to thank the developers of Klokwork for their
-anaylsis of the Samba source tree.  This release candidates includes 
-multiple fixes based on reports from the klockwork code anaylzer.
+analysis of the Samba source tree.  This release candidates includes 
+multiple fixes based on reports from the Klokwork code analyzer.
 
 Common issues addressed in 3.0.23rc2 include:
 
