@@ -1213,9 +1213,10 @@ char *ads_default_ou_string(ADS_STRUCT *ads, const char *wknguid)
 	status = ads_search_dn(ads, &res, base, attrs);
 	if (!ADS_ERR_OK(status)) {
 		DEBUG(1,("Failed while searching for: %s\n", base));
+		SAFE_FREE(base);
 		return NULL;
 	}
-	free(base);
+	SAFE_FREE(base);
 
 	if (ads_count_replies(ads, res) != 1) {
 		return NULL;
@@ -1241,6 +1242,10 @@ char *ads_default_ou_string(ADS_STRUCT *ads, const char *wknguid)
 		ret = SMB_STRDUP(s);
 		free(s);
 	}
+
+	ads_memfree(ads, wkn_dn);
+	ldap_value_free(wkn_dn_exp);
+	ldap_value_free(bind_dn_exp);
 
 	return ret;
 }
