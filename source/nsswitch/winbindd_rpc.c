@@ -262,7 +262,7 @@ NTSTATUS msrpc_name_to_sid(struct winbindd_domain *domain,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	DEBUG(3,("name_to_sid [rpc] %s for domain %s\n", name?name:"", domain_name ));
+	DEBUG(3,("name_to_sid [rpc] %s for domain %s\n", full_name?full_name:"", domain_name ));
 
 	result = cm_connect_lsa(domain, mem_ctx, &cli, &lsa_policy);
 	if (!NT_STATUS_IS_OK(result))

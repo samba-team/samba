@@ -717,7 +717,7 @@ static void wcache_save_name_to_sid(struct winbindd_domain *domain,
 	fstrcpy(uname, name);
 	strupper_m(uname);
 	centry_end(centry, "NS/%s/%s", domain_name, uname);
-	DEBUG(10,("wcache_save_name_to_sid: %s -> %s\n", uname,
+	DEBUG(10,("wcache_save_name_to_sid: %s\\%s -> %s\n", domain_name, uname,
 		  sid_string_static(sid)));
 	centry_free(centry);
 }
