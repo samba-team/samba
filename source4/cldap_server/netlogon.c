@@ -22,6 +22,8 @@
 
 #include "includes.h"
 #include "libcli/ldap/ldap.h"
+#include "lib/ldb/include/ldb.h"
+#include "lib/ldb/include/ldb_errors.h"
 #include "lib/events/events.h"
 #include "lib/socket/socket.h"
 #include "smbd/service_task.h"
@@ -45,10 +47,10 @@ static NTSTATUS cldapd_netlogon_fill(struct cldapd_server *cldapd,
 				     uint32_t version,
 				     union nbt_cldap_netlogon *netlogon)
 {
-	const char *ref_attrs[] = {"nETBIOSName", NULL};
+	const char *ref_attrs[] = {"nETBIOSName", "ncName", NULL};
 	const char *dom_attrs[] = {"dnsDomain", "objectGUID", NULL};
 	struct ldb_message **ref_res, **dom_res;
-	int ret;
+	int ret, count = 0;
 	const char **services = lp_server_services();
 	uint32_t server_type;
 	const char *pdc_name;
@@ -60,6 +62,7 @@ static NTSTATUS cldapd_netlogon_fill(struct cldapd_server *cldapd,
 	const char *site_name;
 	const char *site_name2;
 	const char *pdc_ip;
+	const struct ldb_dn *partitions_basedn = ldb_dn_string_compose(mem_ctx, samdb_base_dn(mem_ctx), "CN=Partitions,CN=Configuration");
 
 	if (cldapd->samctx == NULL) {
 		cldapd->samctx = samdb_connect(cldapd, anonymous_session(cldapd));
@@ -74,23 +77,53 @@ static NTSTATUS cldapd_netlogon_fill(struct cldapd_server *cldapd,
 		domain = talloc_strndup(mem_ctx, domain, strlen(domain)-1);
 	}
 
-	/* try and find the domain */
-	ret = gendb_search(cldapd->samctx, mem_ctx, NULL, &dom_res, dom_attrs, 
-			   "(&(objectClass=domainDNS)(|(dnsDomain=%s)(objectGUID=%s)))", 
-			   domain?domain:"", 
-			   domain_guid?domain_guid:"");
-	if (ret != 1) {
-		DEBUG(2,("Unable to find domain '%s' in sam\n", domain));
-		return NT_STATUS_NO_SUCH_DOMAIN;
+	if (domain) {
+		struct ldb_result *dom_ldb_result;
+		struct ldb_dn *dom_dn;
+		/* try and find the domain */
+		count = gendb_search(cldapd->samctx, mem_ctx, partitions_basedn, &ref_res, ref_attrs, 
+				   "(&(&(objectClass=crossRef)(dnsRoot=%s))(nETBIOSName=*))", 
+				   domain);
+		if (count == 1) {
+			dom_dn = samdb_result_dn(mem_ctx, ref_res[0], "ncName", NULL);
+			if (!dom_dn) {
+				return NT_STATUS_NO_SUCH_DOMAIN;
+			}
+			ret = ldb_search(cldapd->samctx, dom_dn,
+					 LDB_SCOPE_BASE, "objectClass=domain", 
+					 dom_attrs, &dom_ldb_result);
+			if (ret != LDB_SUCCESS) {
+				DEBUG(2,("Error finding domain '%s'/'%s' in sam: %s\n", domain, ldb_dn_linearize(mem_ctx, dom_dn), ldb_errstring(cldapd->samctx)));
+				return NT_STATUS_NO_SUCH_DOMAIN;
+			}
+			if (dom_ldb_result->count != 1) {
+				DEBUG(2,("Error finding domain '%s'/'%s' in sam\n", domain, ldb_dn_linearize(mem_ctx, dom_dn)));
+				return NT_STATUS_NO_SUCH_DOMAIN;
+			}
+			dom_res = dom_ldb_result->msgs;
+		}
 	}
 
-	/* try and find the domain */
-	ret = gendb_search(cldapd->samctx, mem_ctx, NULL, &ref_res, ref_attrs, 
-			   "(&(objectClass=crossRef)(ncName=%s))", 
-			   ldb_dn_linearize(mem_ctx, dom_res[0]->dn));
-	if (ret != 1) {
-		DEBUG(2,("Unable to find referece to '%s' in sam\n",
-			 ldb_dn_linearize(mem_ctx, dom_res[0]->dn)));
+	if (count == 0 && domain_guid) {
+		/* OK, so no dice with the name, try and find the domain with the GUID */
+		count = gendb_search(cldapd->samctx, mem_ctx, samdb_base_dn(mem_ctx), &dom_res, dom_attrs, 
+				   "(&(objectClass=domainDNS)(objectGUID=%s))", 
+				   domain_guid);
+		if (count == 1) {
+			/* try and find the domain */
+			ret = gendb_search(cldapd->samctx, mem_ctx, partitions_basedn, &ref_res, ref_attrs, 
+					   "(&(objectClass=crossRef)(ncName=%s))", 
+					   ldb_dn_linearize(mem_ctx, dom_res[0]->dn));
+			if (ret != 1) {
+				DEBUG(2,("Unable to find referece to '%s' in sam\n",
+					 ldb_dn_linearize(mem_ctx, dom_res[0]->dn)));
+				return NT_STATUS_NO_SUCH_DOMAIN;
+			}
+		}
+	}
+
+	if (count == 0) {
+		DEBUG(2,("Unable to find domain with name %s or GUID {%s}\n", domain, domain_guid));
 		return NT_STATUS_NO_SUCH_DOMAIN;
 	}
 
