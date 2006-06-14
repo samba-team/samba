@@ -221,6 +221,17 @@ _kdc_do_version4(krb5_context context,
 	    goto out1;
 	}
 
+	if (config->enable_v4_per_principal &&
+	    client->entry.flags.allow_kerberos4 == 0)
+	{
+	    kdc_log(context, config, 0,
+		    "Per principal Kerberos 4 flag not turned on for %s",
+		    client_name);
+	    make_err_reply(context, reply, KERB_ERR_NULL_KEY,
+			   "allow kerberos4 flag required");
+	    goto out1;
+	}
+
 	/*
 	 * There's no way to do pre-authentication in v4 and thus no
 	 * good error code to return if preauthentication is required.
