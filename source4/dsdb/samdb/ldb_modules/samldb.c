@@ -292,7 +292,7 @@ static int samldb_get_new_sid(struct ldb_module *module,
 	struct ldb_result *res = NULL;
 	const struct ldb_dn *dom_dn;
 	int ret;
-	struct dom_sid *dom_sid, *obj_sid;
+	struct dom_sid *dom_sid;
 
 	/* get the domain component part of the provided dn */
 
@@ -494,7 +494,10 @@ static int samldb_copy_template(struct ldb_module *module, struct ldb_message *m
 
 	/* pull the template record */
 	ret = ldb_search(module->ldb, basedn, LDB_SCOPE_SUBTREE, filter, NULL, &res);
-	if (ret != LDB_SUCCESS || res->count != 1) {
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+	if (res->count != 1) {
 		ldb_set_errstring(module->ldb, talloc_asprintf(module, "samldb_copy_template: ERROR: template '%s' matched %d records, expected 1\n", filter, 
 					  res->count));
 		return LDB_ERR_OPERATIONS_ERROR;
