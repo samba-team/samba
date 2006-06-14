@@ -101,7 +101,7 @@ static char *mapPid2Machine (struct process_id pid)
 static char *tstring(time_t t)
 {
 	static pstring buf;
-	pstrcpy(buf, asctime(localtime(&t)));
+	pstrcpy(buf, time_to_asc(&t));
 	all_string_sub(buf," ","&nbsp;",sizeof(buf));
 	return buf;
 }

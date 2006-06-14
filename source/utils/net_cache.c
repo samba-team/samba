@@ -37,24 +37,36 @@
 static void print_cache_entry(const char* keystr, const char* datastr,
                               const time_t timeout, void* dptr)
 {
-	char* timeout_str;
+	char *timeout_str;
 	time_t now_t = time(NULL);
 	struct tm timeout_tm, *now_tm;
 	/* localtime returns statically allocated pointer, so timeout_tm
 	   has to be copied somewhere else */
-	memcpy(&timeout_tm, localtime(&timeout), sizeof(struct tm));
+
+	now_tm = localtime(&timeout);
+	if (!now_tm) {
+		return;
+	}
+	memcpy(&timeout_tm, now_tm, sizeof(struct tm));
 	now_tm = localtime(&now_t);
+	if (!now_tm) {
+		return;
+	}
 
 	/* form up timeout string depending whether it's today's date or not */
 	if (timeout_tm.tm_year != now_tm->tm_year ||
-	    timeout_tm.tm_mon != now_tm->tm_mon ||
-	    timeout_tm.tm_mday != now_tm->tm_mday) {
+			timeout_tm.tm_mon != now_tm->tm_mon ||
+			timeout_tm.tm_mday != now_tm->tm_mday) {
 	    
-	    timeout_str = asctime(&timeout_tm);
-	    timeout_str[strlen(timeout_str) - 1] = '\0';	/* remove tailing CR */
-	} else
+		timeout_str = asctime(&timeout_tm);
+		if (!timeout_str) {
+			return;
+		}	
+		timeout_str[strlen(timeout_str) - 1] = '\0';	/* remove tailing CR */
+	} else {
 		asprintf(&timeout_str, "%.2d:%.2d:%.2d", timeout_tm.tm_hour,
 		         timeout_tm.tm_min, timeout_tm.tm_sec);
+	}
 	
 	d_printf("Key: %s\t Timeout: %s\t Value: %s  %s\n", keystr,
 	         timeout_str, datastr, timeout > now_t ? "": "(expired)");
