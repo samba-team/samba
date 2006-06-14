@@ -247,7 +247,9 @@ static NTSTATUS ldapsrv_SearchRequest(struct ldapsrv_call *call)
 
 	lreq->async.context = res;
 	lreq->async.callback = ldapsrv_SearchCallback;
-	lreq->async.timeout = 600;
+
+	/* Copy the timeout from the incoming call */
+	ldb_set_timeout(samdb, lreq, req->timelimit);
 
 	ldb_ret = ldb_request(samdb, lreq);
 
