@@ -220,7 +220,13 @@ BOOL create_subnets(void)
 
 	if (lp_we_are_a_wins_server()) {
 		/* Pick the first interface ip address as the WINS server ip. */
-		unicast_ip = *iface_n_ip(0);
+		struct in_addr *nip = iface_n_ip(0);
+
+		if (!nip) {
+			return False;
+		}
+
+		unicast_ip = *nip;
 	} else {
 		/* note that we do not set the wins server IP here. We just
 			set it at zero and let the wins registration code cope
