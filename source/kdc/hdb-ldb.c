@@ -527,6 +527,7 @@ static krb5_error_code LDB_lookup_realm(krb5_context context, struct ldb_context
  	int ret;
 	char *cross_ref_filter;
 	struct ldb_result *cross_ref_res;
+	const struct ldb_dn *partitions_basedn = ldb_dn_string_compose(mem_ctx, samdb_base_dn(mem_ctx), "CN=Partitions,CN=Configuration");
 
 	cross_ref_filter = talloc_asprintf(mem_ctx, 
 					   "(&(&(|(&(dnsRoot=%s)(nETBIOSName=*))(nETBIOSName=%s))(objectclass=crossRef))(ncName=*))",
@@ -536,7 +537,7 @@ static krb5_error_code LDB_lookup_realm(krb5_context context, struct ldb_context
 		return ENOMEM;
 	}
 
-	ret = ldb_search(ldb_ctx, NULL, LDB_SCOPE_SUBTREE, cross_ref_filter, realm_ref_attrs, &cross_ref_res);
+	ret = ldb_search(ldb_ctx, partitions_basedn, LDB_SCOPE_SUBTREE, cross_ref_filter, realm_ref_attrs, &cross_ref_res);
 
 	if (ret != LDB_SUCCESS) {
 		DEBUG(3, ("Failed to search for %s: %s\n", cross_ref_filter, ldb_errstring(ldb_ctx)));
@@ -708,6 +709,7 @@ static krb5_error_code LDB_fetch_server(krb5_context context, HDB *db,
 	const char *realm;
 	struct ldb_message **msg = NULL;
 	struct ldb_message **realm_ref_msg = NULL;
+	const struct ldb_dn *partitions_basedn = ldb_dn_string_compose(mem_ctx, samdb_base_dn(mem_ctx), "CN=Partitions,CN=Configuration");
 	if (principal->name.name_string.len >= 2) {
 		/* 'normal server' case */
 		int ldb_ret;
@@ -740,7 +742,7 @@ static krb5_error_code LDB_fetch_server(krb5_context context, HDB *db,
 		}
 		
 		ldb_ret = gendb_search((struct ldb_context *)db->hdb_db,
-				       mem_ctx, NULL, &realm_ref_msg, realm_ref_attrs, 
+				       mem_ctx, partitions_basedn, &realm_ref_msg, realm_ref_attrs, 
 				       "ncName=%s", ldb_dn_linearize(mem_ctx, domain_dn));
 		
 		if (ldb_ret != 1) {
