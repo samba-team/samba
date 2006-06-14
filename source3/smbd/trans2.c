@@ -2813,7 +2813,6 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 	char *fullpathname;
 	char *base_name;
 	char *p;
-	char *lock_data = NULL;
 	SMB_OFF_T pos = 0;
 	BOOL bad_path = False;
 	BOOL delete_pending = False;
@@ -2823,6 +2822,9 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 	TALLOC_CTX *data_ctx = NULL;
 	struct ea_list *ea_list = NULL;
 	uint32 access_mask = 0x12019F; /* Default - GENERIC_EXECUTE mapping from Windows */
+#if defined(DEVELOPER)
+	char *lock_data = NULL;
+#endif
 
 	if (!params)
 		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
