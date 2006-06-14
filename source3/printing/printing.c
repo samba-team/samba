@@ -337,27 +337,38 @@ static struct printjob *print_job_find(const char *sharename, uint32 jobid)
 	TDB_DATA 		ret;
 	struct tdb_print_db 	*pdb = get_print_db_byname(sharename);
 	
+	DEBUG(10,("print_job_find: looking up job %u for share %s\n",
+			(unsigned int)jobid, sharename ));
 
-	if (!pdb)
+	if (!pdb) {
 		return NULL;
+	}
 
 	ret = tdb_fetch(pdb->tdb, print_key(jobid));
 	release_print_db(pdb);
 
-	if (!ret.dptr)
+	if (!ret.dptr) {
+		DEBUG(10,("print_job_find: failed to find jobid %u.\n", (unsigned int)jobid ));
 		return NULL;
+	}
 	
-	if ( pjob.nt_devmode )
+	if ( pjob.nt_devmode ) {
 		free_nt_devicemode( &pjob.nt_devmode );
+	}
 		
 	ZERO_STRUCT( pjob );
 	
 	if ( unpack_pjob( ret.dptr, ret.dsize, &pjob ) == -1 ) {
+		DEBUG(10,("print_job_find: failed to unpack jobid %u.\n", (unsigned int)jobid ));
 		SAFE_FREE(ret.dptr);
 		return NULL;
 	}
 	
-	SAFE_FREE(ret.dptr);	
+	SAFE_FREE(ret.dptr);
+
+	DEBUG(10,("print_job_find: returning system job %d for jobid %u.\n",
+			(int)pjob.sysjob, (unsigned int)jobid ));
+
 	return &pjob;
 }
 
@@ -2014,11 +2025,17 @@ BOOL print_job_pause(struct current_user *user, int snum, uint32 jobid, WERROR *
 
 	pjob = print_job_find(sharename, jobid);
 	
-	if (!pjob || !user) 
+	if (!pjob || !user) {
+		DEBUG(10, ("print_job_pause: no pjob or user for jobid %u\n",
+			(unsigned int)jobid ));
 		return False;
+	}
 
-	if (!pjob->spooled || pjob->sysjob == -1) 
+	if (!pjob->spooled || pjob->sysjob == -1) {
+		DEBUG(10, ("print_job_pause: not spooled or bad sysjob = %d for jobid %u\n",
+			(int)pjob->sysjob, (unsigned int)jobid ));
 		return False;
+	}
 
 	if (!is_owner(user, snum, jobid) &&
 	    !print_access_check(user, snum, JOB_ACCESS_ADMINISTER)) {
@@ -2068,11 +2085,17 @@ BOOL print_job_resume(struct current_user *user, int snum, uint32 jobid, WERROR 
 
 	pjob = print_job_find(sharename, jobid);
 	
-	if (!pjob || !user)
+	if (!pjob || !user) {
+		DEBUG(10, ("print_job_resume: no pjob or user for jobid %u\n",
+			(unsigned int)jobid ));
 		return False;
+	}
 
-	if (!pjob->spooled || pjob->sysjob == -1)
+	if (!pjob->spooled || pjob->sysjob == -1) {
+		DEBUG(10, ("print_job_resume: not spooled or bad sysjob = %d for jobid %u\n",
+			(int)pjob->sysjob, (unsigned int)jobid ));
 		return False;
+	}
 
 	if (!is_owner(user, snum, jobid) &&
 	    !print_access_check(user, snum, JOB_ACCESS_ADMINISTER)) {
