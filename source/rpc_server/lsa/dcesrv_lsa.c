@@ -221,6 +221,7 @@ static NTSTATUS lsa_get_policy_state(struct dcesrv_call_state *dce_call, TALLOC_
 				     struct lsa_policy_state **_state)
 {
 	struct lsa_policy_state *state;
+	const struct ldb_dn *partitions_basedn = ldb_dn_string_compose(mem_ctx, samdb_base_dn(mem_ctx), "CN=Partitions,CN=Configuration");
 
 	state = talloc(mem_ctx, struct lsa_policy_state);
 	if (!state) {
@@ -246,7 +247,7 @@ static NTSTATUS lsa_get_policy_state(struct dcesrv_call_state *dce_call, TALLOC_
 	}
 
 	state->domain_name
-		= samdb_search_string(state->sam_ldb, state, NULL, "nETBIOSName", 
+		= samdb_search_string(state->sam_ldb, state, partitions_basedn, "nETBIOSName", 
 				      "(&(objectclass=crossRef)(ncName=%s))", ldb_dn_linearize(mem_ctx, state->domain_dn));
 	
 	if (!state->domain_name) {
