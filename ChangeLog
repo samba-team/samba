@@ -1,3 +1,25 @@
+2006-06-14  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/hdb/hdb-ldap.c: don't use the sambaNTPassword if there is
+	ARCFOUR key already.  Idea from Andreas Hasenack.  While here, set
+	pw change time using sambaPwdLastSet
+
+	* kdc/kerberos4.c: Use enable_v4_per_principal and check the new
+	hdb flag.
+
+	* kdc/kdc.h: Add enable_v4_per_principal
+	
+2006-06-12  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kdc/kerberos5.c (_kdc_as_rep): if kdc_time +
+	config->kdc_warn_pwexpire is past pw_end, add expiration
+	message. From Bernard Antoine.
+	
+	* kdc/default_config.c (krb5_kdc_default_config): set
+	kdc_warn_pwexpire to 0
+
+	* kdc/kerberos5.c: indent.
+	
 2006-06-07  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* kdc/kerberos5.c: constify
