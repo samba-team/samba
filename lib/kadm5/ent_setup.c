@@ -55,6 +55,7 @@ attr_to_flags(unsigned attr, HDBFlags *flags)
     flags->client =	        1; /* XXX */
     flags->ok_as_delegate =    !!(attr & KRB5_KDB_OK_AS_DELEGATE);
     flags->trusted_for_delegation = !!(attr & KRB5_KDB_TRUSTED_FOR_DELEGATION);
+    flags->allow_kerberos4 =   !!(attr & KRB5_KDB_ALLOW_KERBEROS4);
 }
 
 /*
