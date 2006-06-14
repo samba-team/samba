@@ -73,12 +73,15 @@ static time_t nettime(int *zone)
 }
 
 /* return a time as a string ready to be passed to /bin/date */
-static char *systime(time_t t)
+static const char *systime(time_t t)
 {
 	static fstring s;
 	struct tm *tm;
 
 	tm = localtime(&t);
+	if (!tm) {
+		return "unknown";
+	}
 	
 	fstr_sprintf(s, "%02d%02d%02d%02d%04d.%02d", 
 		 tm->tm_mon+1, tm->tm_mday, tm->tm_hour, 

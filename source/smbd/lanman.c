@@ -2212,6 +2212,9 @@ static BOOL api_NetRemoteTOD(connection_struct *conn,uint16 vuid, char *param,ch
 	/* the client expects to get localtime, not GMT, in this bit 
 		(I think, this needs testing) */
 	t = localtime(&unixdate);
+	if (!t) {
+		return False;
+	}
 
 	SIVAL(p,4,0);		/* msecs ? */
 	SCVAL(p,8,t->tm_hour);

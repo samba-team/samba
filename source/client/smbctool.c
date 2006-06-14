@@ -445,7 +445,7 @@ static void display_finfo(file_info *finfo)
 			 finfo->name,
 			 attrib_string(finfo->mode),
 			 (double)finfo->size,
-			 asctime(localtime(&t)));
+			 time_to_asc(&t));
 		dir_total += finfo->size;
 	}
 }
@@ -458,7 +458,7 @@ static void display_stat(char *name, struct stat *st)
 {
 	time_t t = st->st_mtime;
 	pstring time_str;
-	pstrcpy(time_str, asctime(localtime(&t)));
+	pstrcpy(time_str, time_to_asc(&t));
 	time_str[strlen(time_str)-1] = 0;
 	d_printf("> %-30s", name);
 	d_printf("%10.10s %8.0f  %s\n", *mode_t_string(st->st_mode), (double)st->st_size, time_str);
@@ -2303,6 +2303,7 @@ static int cmd_stat(void)
 	fstring mode_str;
 	SMB_STRUCT_STAT sbuf;
 	struct cli_state *targetcli;
+	struct tm *lt;
 	pstring targetname;
  
 	if (!SERVER_HAS_UNIX_CIFS(cli)) {
@@ -2357,15 +2358,30 @@ static int cmd_stat(void)
 		(unsigned int)sbuf.st_uid, 
 		(unsigned int)sbuf.st_gid);
 
-	strftime(mode_str, sizeof(mode_str), "%F %T %z", localtime(&sbuf.st_atime));
+	lt = localtime(&sbuf.st_atime);
+	if (lt) {
+		strftime(mode_str, sizeof(mode_str), "%F %T %z", lt);
+	} else {
+		fstrcpy(mode_str, "unknown");
+	}
 	d_printf("Access: %s\n", mode_str);
 
-	strftime(mode_str, sizeof(mode_str), "%F %T %z", localtime(&sbuf.st_mtime));
+	lt = localtime(&sbuf.st_mtime);
+	if (lt) {
+		strftime(mode_str, sizeof(mode_str), "%F %T %z", lt);
+	} else {
+		fstrcpy(mode_str, "unknown");
+	}
 	d_printf("Modify: %s\n", mode_str);
 
-	strftime(mode_str, sizeof(mode_str), "%F %T %z", localtime(&sbuf.st_ctime));
+	lt = localtime(&sbuf.st_ctime);
+	if (lt) {
+		strftime(mode_str, sizeof(mode_str), "%F %T %z", lt);
+	} else {
+		fstrcpy(mode_str, "unknown");
+	}
 	d_printf("Change: %s\n", mode_str);
-	
+
 	return 0;
 }
 
@@ -2538,7 +2554,7 @@ static int cmd_newer(void)
 	if (ok && (sys_stat(buf,&sbuf) == 0)) {
 		newer_than = sbuf.st_mtime;
 		DEBUG(1,("Getting files newer than %s",
-			 asctime(localtime(&newer_than))));
+			 time_to_asc(&newer_than)));
 	} else {
 		newer_than = 0;
 	}
