@@ -120,6 +120,7 @@ in workgroup %s on subnet %s\n",
 	if( subrec == unicast_subnet ) {
 		struct nmb_name nmbname;
 		struct in_addr my_first_ip;
+		struct in_addr *nip;
 
 		/* Put our name and first IP address into the 
 		   workgroup struct as domain master browser. This
@@ -130,7 +131,14 @@ in workgroup %s on subnet %s\n",
 
 		work->dmb_name = nmbname;
 		/* Pick the first interface ip address as the domain master browser ip. */
-		my_first_ip = *iface_n_ip(0);
+		nip = iface_n_ip(0);
+
+		if (!nip) {
+			DEBUG(0,("become_domain_master_stage2: Error. iface_n_ip returned NULL\n"));
+			return;
+		}
+
+		my_first_ip = *nip;
 
 		putip((char *)&work->dmb_addr, &my_first_ip);
 
