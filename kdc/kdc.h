@@ -65,10 +65,12 @@ typedef struct krb5_kdc_configuration {
 
     char *v4_realm;
     krb5_boolean enable_v4;
-    krb5_boolean enable_kaserver;
-	
-    krb5_boolean enable_524;
     krb5_boolean enable_v4_cross_realm;
+    krb5_boolean enable_v4_per_principal;
+
+    krb5_boolean enable_kaserver;
+
+    krb5_boolean enable_524;
 
     krb5_boolean enable_pkinit;
     krb5_boolean enable_pkinit_princ_in_cert;
