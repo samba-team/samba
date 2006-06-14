@@ -1108,7 +1108,6 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 	uint32 existing_dos_attributes = 0;
 	struct pending_message_list *pml = NULL;
 	uint16 mid = get_current_mid();
-	BOOL delayed_for_oplocks = False;
 	struct timeval request_time = timeval_zero();
 	struct share_mode_lock *lck = NULL;
 	NTSTATUS status;
@@ -1149,7 +1148,6 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 		   see if this has timed out. */
 
 		request_time = pml->request_time;
-		delayed_for_oplocks = state->delayed_for_oplocks;
 
 		/* Remove the deferred open entry under lock. */
 		lck = get_share_mode_lock(NULL, state->dev, state->inode, NULL, NULL);
