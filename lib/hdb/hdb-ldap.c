@@ -893,11 +893,10 @@ LDAP_message2entry(krb5_context context, HDB * db, LDAPMessage * msg,
 {
     char *unparsed_name = NULL, *dn = NULL, *ntPasswordIN = NULL;
     char *samba_acct_flags = NULL;
-    int ret;
     unsigned long tmp;
     struct berval **keys;
     char **values;
-    int tmp_time;
+    int tmp_time, i, ret, have_arcfour = 0;
 
     memset(ent, 0, sizeof(*ent));
     ent->entry.flags = int2HDBFlags(0);
@@ -981,9 +980,16 @@ LDAP_message2entry(krb5_context context, HDB * db, LDAPMessage * msg,
 	ldap_value_free(values);
     }
 
+    for (i = 0; i < ent->etypes->len; i++) {
+	if (ent->etypes->val[i] == ETYPE_ARCFOUR_HMAC_MD5) {
+	    have_arcfour = 1;
+	    break;
+	}
+    }
+
     /* manually construct the NT (type 23) key */
     ret = LDAP_get_string_value(db, msg, "sambaNTPassword", &ntPasswordIN);
-    if (ret == 0) {
+    if (ret == 0 && have_arcfour == 0) {
 	int *etypes;
 	Key *keys;
 
@@ -1134,22 +1140,10 @@ LDAP_message2entry(krb5_context context, HDB * db, LDAPMessage * msg,
 	*ent->entry.pw_end = tmp_time;
     }
 
-#if 0 /* we we have last_pw_change */
-    ent->entry.last_pw_change = malloc(sizeof(*ent->entry.last_pw_change));
-    if (ent->entry.last_pw_change == NULL) {
-	krb5_set_error_string(context, "malloc: out of memory");
-	ret = ENOMEM;
-	goto out;
-    }
-    ret = LDAP_get_integer_value(db, msg, "sambaPwdLastSet",
-				 &tmp_time);
-    if (ret) {
-	/* OPTIONAL */
-	free(ent->entry.last_pw_change);
-	ent->entry.last_pw_change = NULL;
-    } else
-	*ent->entry.last_pw_change = tmp_time;
-#endif
+    /* OPTIONAL */
+    ret = LDAP_get_integer_value(db, msg, "sambaPwdLastSet", &tmp_time);
+    if (ret == 0)
+	hdb_entry_set_pw_change_time(context, ent, tmp_time);
 
     ent->entry.max_life = malloc(sizeof(*ent->entry.max_life));
     if (ent->entry.max_life == NULL) {
