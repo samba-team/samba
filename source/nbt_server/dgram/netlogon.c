@@ -109,6 +109,7 @@ static void nbtd_netlogon_getdc2(struct dgram_mailslot_handler *dgmslot,
 	int ret;
 	const char **services = lp_server_services();
 	const char *my_ip = reply_iface->ip_address; 
+	const struct ldb_dn *partitions_basedn = ldb_dn_string_compose(packet, samdb_base_dn(packet), "CN=Partitions,CN=Configuration");
 	if (!my_ip) {
 		DEBUG(0, ("Could not obtain own IP address for datagram socket\n"));
 		return;
@@ -125,7 +126,7 @@ static void nbtd_netlogon_getdc2(struct dgram_mailslot_handler *dgmslot,
 		return;
 	}
 
-	ret = gendb_search(samctx, samctx, NULL, &ref_res, ref_attrs,
+	ret = gendb_search(samctx, samctx, partitions_basedn, &ref_res, ref_attrs,
 				  "(&(&(nETBIOSName=%s)(objectclass=crossRef))(ncName=*))", 
 				  name->name);
 	
