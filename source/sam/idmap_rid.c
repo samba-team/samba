@@ -553,7 +553,7 @@ static struct idmap_methods rid_methods = {
 	rid_idmap_status
 };
 
-NTSTATUS init_module(void)
+NTSTATUS idmap_rid_init(void)
 {
 	return smb_register_idmap(SMB_IDMAP_INTERFACE_VERSION, "rid", &rid_methods);
 }

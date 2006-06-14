@@ -378,7 +378,7 @@ static struct idmap_methods ad_methods = {
 
 
 /* support for new authentication subsystem */
-NTSTATUS init_module(void)
+NTSTATUS idmap_ad_init(void)
 {
 	return smb_register_idmap(SMB_IDMAP_INTERFACE_VERSION, "ad", &ad_methods);
 }
