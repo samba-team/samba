@@ -700,7 +700,7 @@ gsskrb5_accept_sec_context
     OM_uint32 ret = GSS_S_COMPLETE;
     krb5_data fwd_data;
     gss_ctx_id_t local_context;
-
+    OM_uint32 minor_status2;
     GSSAPI_KRB5_INIT();
 
     krb5_data_zero (&fwd_data);
@@ -772,7 +772,7 @@ gsskrb5_accept_sec_context
 	if (ret == GSS_S_COMPLETE || ret == GSS_S_CONTINUE_NEEDED) {
 	    *context_handle = local_context;
 	} else {
-	    gss_delete_sec_context(minor_status, 
+	    gss_delete_sec_context(&minor_status2, 
 				   &local_context, 
 				   NULL);
 	}
