@@ -870,8 +870,8 @@ NTSTATUS wcache_get_creds(struct winbindd_domain *domain,
 #endif
 	status = centry->status;
 
-	DEBUG(10,("wcache_get_creds: [Cached] - cached creds for user %s status %s\n",
-		sid_string_static(sid), get_friendly_nt_error_msg(status) ));
+	DEBUG(10,("wcache_get_creds: [Cached] - cached creds for user %s status: %s\n",
+		sid_string_static(sid), nt_errstr(status) ));
 
 	centry_free(centry);
 	return status;
@@ -953,8 +953,8 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 do_cached:	
 	status = centry->status;
 
-	DEBUG(10,("query_user_list: [Cached] - cached list for domain %s status %s\n",
-		domain->name, get_friendly_nt_error_msg(status) ));
+	DEBUG(10,("query_user_list: [Cached] - cached list for domain %s status: %s\n",
+		domain->name, nt_errstr(status) ));
 
 	centry_free(centry);
 	return status;
@@ -1065,8 +1065,8 @@ static NTSTATUS enum_dom_groups(struct winbindd_domain *domain,
 do_cached:	
 	status = centry->status;
 
-	DEBUG(10,("enum_dom_groups: [Cached] - cached list for domain %s status %s\n",
-		domain->name, get_friendly_nt_error_msg(status) ));
+	DEBUG(10,("enum_dom_groups: [Cached] - cached list for domain %s status: %s\n",
+		domain->name, nt_errstr(status) ));
 
 	centry_free(centry);
 	return status;
@@ -1148,8 +1148,8 @@ do_cached:
 	} else
 		status = centry->status;
 
-	DEBUG(10,("enum_local_groups: [Cached] - cached list for domain %s status %s\n",
-		domain->name, get_friendly_nt_error_msg(status) ));
+	DEBUG(10,("enum_local_groups: [Cached] - cached list for domain %s status: %s\n",
+		domain->name, nt_errstr(status) ));
 
 	centry_free(centry);
 	return status;
@@ -1213,8 +1213,8 @@ static NTSTATUS name_to_sid(struct winbindd_domain *domain,
 		centry_sid(centry, mem_ctx, sid);
 	}
 
-	DEBUG(10,("name_to_sid: [Cached] - cached name for domain %s status %s\n",
-		domain->name, get_friendly_nt_error_msg(status) ));
+	DEBUG(10,("name_to_sid: [Cached] - cached name for domain %s status: %s\n",
+		domain->name, nt_errstr(status) ));
 
 	centry_free(centry);
 	return status;
@@ -1279,8 +1279,8 @@ static NTSTATUS sid_to_name(struct winbindd_domain *domain,
 	}
 	status = centry->status;
 
-	DEBUG(10,("sid_to_name: [Cached] - cached name for domain %s status %s\n",
-		domain->name, get_friendly_nt_error_msg(status) ));
+	DEBUG(10,("sid_to_name: [Cached] - cached name for domain %s status: %s\n",
+		domain->name, nt_errstr(status) ));
 
 	centry_free(centry);
 	return status;
@@ -1353,8 +1353,8 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 	centry_sid(centry, mem_ctx, &info->group_sid);
 	status = centry->status;
 
-	DEBUG(10,("query_user: [Cached] - cached info for domain %s status %s\n",
-		domain->name, get_friendly_nt_error_msg(status) ));
+	DEBUG(10,("query_user: [Cached] - cached info for domain %s status: %s\n",
+		domain->name, nt_errstr(status) ));
 
 	centry_free(centry);
 	return status;
@@ -1427,8 +1427,8 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 do_cached:	
 	status = centry->status;
 
-	DEBUG(10,("lookup_usergroups: [Cached] - cached info for domain %s status %s\n",
-		domain->name, get_friendly_nt_error_msg(status) ));
+	DEBUG(10,("lookup_usergroups: [Cached] - cached info for domain %s status: %s\n",
+		domain->name, nt_errstr(status) ));
 
 	centry_free(centry);
 	return status;
@@ -1513,9 +1513,8 @@ static NTSTATUS lookup_useraliases(struct winbindd_domain *domain,
 
 	status = centry->status;
 
-	DEBUG(10,("lookup_useraliases: [Cached] - cached info for domain %s "
-		  "status %s\n", domain->name,
-		  get_friendly_nt_error_msg(status)));
+	DEBUG(10,("lookup_useraliases: [Cached] - cached info for domain: %s "
+		  "status %s\n", domain->name, nt_errstr(status)));
 
 	centry_free(centry);
 	return status;
@@ -1591,8 +1590,8 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 do_cached:	
 	status = centry->status;
 
-	DEBUG(10,("lookup_groupmem: [Cached] - cached info for domain %s status %s\n",
-		domain->name, get_friendly_nt_error_msg(status) ));
+	DEBUG(10,("lookup_groupmem: [Cached] - cached info for domain %s status: %s\n",
+		domain->name, nt_errstr(status)));
 
 	centry_free(centry);
 	return status;
@@ -1684,8 +1683,8 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 
  	status = centry->status;
  
-	DEBUG(10,("trusted_domains: [Cached] - cached info for domain %s (%d trusts) status %s\n",
-		domain->name, *num_domains, get_friendly_nt_error_msg(status) ));
+	DEBUG(10,("trusted_domains: [Cached] - cached info for domain %s (%d trusts) status: %s\n",
+		domain->name, *num_domains, nt_errstr(status) ));
  
  	centry_free(centry);
  	return status;
@@ -1760,8 +1759,8 @@ static NTSTATUS lockout_policy(struct winbindd_domain *domain,
  
  	status = centry->status;
  
-	DEBUG(10,("lockout_policy: [Cached] - cached info for domain %s status %s\n",
-		domain->name, get_friendly_nt_error_msg(status) ));
+	DEBUG(10,("lockout_policy: [Cached] - cached info for domain %s status: %s\n",
+		domain->name, nt_errstr(status) ));
  
  	centry_free(centry);
  	return status;
@@ -1811,8 +1810,8 @@ static NTSTATUS password_policy(struct winbindd_domain *domain,
 
 	status = centry->status;
 
-	DEBUG(10,("lockout_policy: [Cached] - cached info for domain %s status %s\n",
-		domain->name, get_friendly_nt_error_msg(status) ));
+	DEBUG(10,("lockout_policy: [Cached] - cached info for domain %s status: %s\n",
+		domain->name, nt_errstr(status) ));
 
 	centry_free(centry);
 	return status;
