@@ -593,7 +593,7 @@ static void fill_printq_info_52(connection_struct *conn, int snum,
 	PACKS(desc, "z", driver.info_3->monitorname); /* language monitor */
 	
 	fstrcpy(location, "\\\\%L\\print$\\WIN40\\0");
-	standard_sub_basic( "", location, sizeof(location)-1 );
+	standard_sub_basic( "", "", location, sizeof(location)-1 );
 	PACKS(desc,"z", location);                          /* share to retrieve files */
 	
 	PACKS(desc,"z", driver.info_3->defaultdatatype);    /* default data type */

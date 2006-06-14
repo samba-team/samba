@@ -647,12 +647,13 @@ static BOOL init_sam_from_ldap(struct ldapsam_privates *ldap_state,
 			get_userattr_key2string(ldap_state->schema_ver, LDAP_ATTR_HOME_PATH), homedir)) 
 	{
 		pdb_set_homedir( sampass, 
-			talloc_sub_basic(sampass, username, lp_logon_home()),
+			talloc_sub_basic(sampass, username, domain,
+					 lp_logon_home()),
 			PDB_DEFAULT );
 	} else {
 		pstrcpy( tmpstring, homedir );
 		if (expand_explicit) {
-			standard_sub_basic( username, tmpstring,
+			standard_sub_basic( username, domain, tmpstring,
 					    sizeof(tmpstring) );
 		}
 		pdb_set_homedir(sampass, tmpstring, PDB_SET);
@@ -662,12 +663,13 @@ static BOOL init_sam_from_ldap(struct ldapsam_privates *ldap_state,
 			get_userattr_key2string(ldap_state->schema_ver, LDAP_ATTR_LOGON_SCRIPT), logon_script)) 
 	{
 		pdb_set_logon_script( sampass, 
-			talloc_sub_basic(sampass, username, lp_logon_script()), 
+			talloc_sub_basic(sampass, username, domain,
+					 lp_logon_script()), 
 			PDB_DEFAULT );
 	} else {
 		pstrcpy( tmpstring, logon_script );
 		if (expand_explicit) {
-			standard_sub_basic( username, tmpstring,
+			standard_sub_basic( username, domain, tmpstring,
 					    sizeof(tmpstring) );
 		}
 		pdb_set_logon_script(sampass, tmpstring, PDB_SET);
@@ -677,12 +679,13 @@ static BOOL init_sam_from_ldap(struct ldapsam_privates *ldap_state,
 			get_userattr_key2string(ldap_state->schema_ver, LDAP_ATTR_PROFILE_PATH), profile_path)) 
 	{
 		pdb_set_profile_path( sampass, 
-			talloc_sub_basic( sampass, username, lp_logon_path()),
+			talloc_sub_basic( sampass, username, domain,
+					  lp_logon_path()),
 			PDB_DEFAULT );
 	} else {
 		pstrcpy( tmpstring, profile_path );
 		if (expand_explicit) {
-			standard_sub_basic( username, tmpstring,
+			standard_sub_basic( username, domain, tmpstring,
 					    sizeof(tmpstring) );
 		}
 		pdb_set_profile_path(sampass, tmpstring, PDB_SET);
@@ -964,15 +967,14 @@ static BOOL init_ldap_from_sam (struct ldapsam_privates *ldap_state,
 	/* only update the RID if we actually need to */
 	if (need_update(sampass, PDB_USERSID)) {
 		fstring sid_string;
-		fstring dom_sid_string;
 		const DOM_SID *user_sid = pdb_get_user_sid(sampass);
 		
 		switch ( ldap_state->schema_ver ) {
 			case SCHEMAVER_SAMBAACCOUNT:
 				if (!sid_peek_check_rid(&ldap_state->domain_sid, user_sid, &rid)) {
 					DEBUG(1, ("init_ldap_from_sam: User's SID (%s) is not for this domain (%s), cannot add to LDAP!\n", 
-						sid_to_string(sid_string, user_sid), 
-						sid_to_string(dom_sid_string, &ldap_state->domain_sid)));
+						  sid_string_static(user_sid), 
+						  sid_string_static(&ldap_state->domain_sid)));
 					return False;
 				}
 				slprintf(temp, sizeof(temp) - 1, "%i", rid);
@@ -998,15 +1000,14 @@ static BOOL init_ldap_from_sam (struct ldapsam_privates *ldap_state,
 
 	if (need_update(sampass, PDB_GROUPSID)) {
 		fstring sid_string;
-		fstring dom_sid_string;
 		const DOM_SID *group_sid = pdb_get_group_sid(sampass);
 		
 		switch ( ldap_state->schema_ver ) {
 			case SCHEMAVER_SAMBAACCOUNT:
 				if (!sid_peek_check_rid(&ldap_state->domain_sid, group_sid, &rid)) {
 					DEBUG(1, ("init_ldap_from_sam: User's Primary Group SID (%s) is not for this domain (%s), cannot add to LDAP!\n",
-						sid_to_string(sid_string, group_sid),
-						sid_to_string(dom_sid_string, &ldap_state->domain_sid)));
+						  sid_string_static(group_sid),
+						  sid_string_static(&ldap_state->domain_sid)));
 					return False;
 				}
 

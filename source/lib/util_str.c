@@ -28,6 +28,8 @@
  * @brief String utilities.
  **/
 
+extern userdom_struct current_user_info;
+
 /**
  * Get the next token from a string, return False if none found.
  * Handles double-quotes.
@@ -1890,7 +1892,7 @@ BOOL str_list_sub_basic( char **list, const char *smb_name )
 	
 	while ( *list ) {
 		s = *list;
-		tmpstr = alloc_sub_basic(smb_name, s);
+		tmpstr = alloc_sub_basic(smb_name, current_user_info.domain, s);
 		if ( !tmpstr ) {
 			DEBUG(0,("str_list_sub_basic: alloc_sub_basic() return NULL!\n"));
 			return False;

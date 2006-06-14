@@ -415,11 +415,12 @@ static const char *automount_server(const char *user_name)
  don't allow expansions.
 ****************************************************************************/
 
-void standard_sub_basic(const char *smb_name, char *str, size_t len)
+void standard_sub_basic(const char *smb_name, const char *domain_name,
+			char *str, size_t len)
 {
 	char *s;
 	
-	if ( (s = alloc_sub_basic( smb_name, str )) != NULL ) {
+	if ( (s = alloc_sub_basic( smb_name, domain_name, str )) != NULL ) {
 		strncpy( str, s, len );
 	}
 	
@@ -432,11 +433,12 @@ void standard_sub_basic(const char *smb_name, char *str, size_t len)
  This function will return an allocated string that have to be freed.
 ****************************************************************************/
 
-char *talloc_sub_basic(TALLOC_CTX *mem_ctx, const char *smb_name, const char *str)
+char *talloc_sub_basic(TALLOC_CTX *mem_ctx, const char *smb_name,
+		       const char *domain_name, const char *str)
 {
 	char *a, *t;
 	
-	if ( (a = alloc_sub_basic(smb_name, str)) == NULL ) {
+	if ( (a = alloc_sub_basic(smb_name, domain_name, str)) == NULL ) {
 		return NULL;
 	}
 	t = talloc_strdup(mem_ctx, a);
@@ -447,7 +449,8 @@ char *talloc_sub_basic(TALLOC_CTX *mem_ctx, const char *smb_name, const char *st
 /****************************************************************************
 ****************************************************************************/
 
-char *alloc_sub_basic(const char *smb_name, const char *str)
+char *alloc_sub_basic(const char *smb_name, const char *domain_name,
+		      const char *str)
 {
 	char *b, *p, *s, *r, *a_string;
 	fstring pidstr;
@@ -490,7 +493,7 @@ char *alloc_sub_basic(const char *smb_name, const char *str)
 			} 
 			break;
 		case 'D' :
-			r = strdup_upper(current_user_info.domain);
+			r = strdup_upper(domain_name);
 			if (r == NULL) {
 				goto error;
 			}
@@ -649,7 +652,8 @@ char *alloc_sub_specified(const char *input_string,
 		}
 	}
 
-	ret_string = alloc_sub_basic(username, a_string);
+	ret_string = alloc_sub_basic(username, current_user_info.domain,
+				     a_string);
 	SAFE_FREE(a_string);
 	return ret_string;
 }
@@ -737,7 +741,8 @@ char *alloc_sub_advanced(int snum, const char *user,
 		}
 	}
 
-	ret_string = alloc_sub_basic(smb_name, a_string);
+	ret_string = alloc_sub_basic(smb_name, current_user_info.domain,
+				     a_string);
 	SAFE_FREE(a_string);
 	return ret_string;
 }

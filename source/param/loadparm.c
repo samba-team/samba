@@ -58,6 +58,7 @@ BOOL bLoaded = False;
 
 extern pstring user_socket_options;
 extern enum protocol_types Protocol;
+extern userdom_struct current_user_info;
 
 #ifndef GLOBAL_NAME
 #define GLOBAL_NAME "global"
@@ -1702,11 +1703,13 @@ static char *lp_string(const char *s)
 	if (!lp_talloc)
 		lp_talloc = talloc_init("lp_talloc");
 
-	tmpstr = alloc_sub_basic(get_current_username(), s);
+	tmpstr = alloc_sub_basic(get_current_username(),
+				 current_user_info.domain, s);
 	if (trim_char(tmpstr, '\"', '\"')) {
 		if (strchr(tmpstr,'\"') != NULL) {
 			SAFE_FREE(tmpstr);
-			tmpstr = alloc_sub_basic(get_current_username(),s);
+			tmpstr = alloc_sub_basic(get_current_username(),
+						 current_user_info.domain, s);
 		}
 	}
 	ret = talloc_strdup(lp_talloc, tmpstr);
@@ -3002,7 +3005,9 @@ BOOL lp_file_list_changed(void)
 		time_t mod_time;
 
 		pstrcpy(n2, f->name);
-		standard_sub_basic( get_current_username(), n2, sizeof(n2) );
+		standard_sub_basic( get_current_username(),
+				    current_user_info.domain,
+				    n2, sizeof(n2) );
 
 		DEBUGADD(6, ("file %s -> %s  last mod_time: %s\n",
 			     f->name, n2, ctime(&f->modtime)));
@@ -3036,7 +3041,8 @@ static BOOL handle_netbios_name(int snum, const char *pszParmValue, char **ptr)
 
 	pstrcpy(netbios_name, pszParmValue);
 
-	standard_sub_basic(get_current_username(), netbios_name,sizeof(netbios_name));
+	standard_sub_basic(get_current_username(), current_user_info.domain,
+			   netbios_name, sizeof(netbios_name));
 
 	ret = set_global_myname(netbios_name);
 	string_set(&Globals.szNetbiosName,global_myname());
@@ -3094,7 +3100,8 @@ static BOOL handle_include(int snum, const char *pszParmValue, char **ptr)
 	pstring fname;
 	pstrcpy(fname, pszParmValue);
 
-	standard_sub_basic(get_current_username(), fname,sizeof(fname));
+	standard_sub_basic(get_current_username(), current_user_info.domain,
+			   fname,sizeof(fname));
 
 	add_to_file_list(pszParmValue, fname);
 
@@ -4936,7 +4943,8 @@ BOOL lp_load(const char *pszFname,
 
 	pstrcpy(n2, pszFname);
 	
-	standard_sub_basic( get_current_username(), n2,sizeof(n2) );
+	standard_sub_basic( get_current_username(), current_user_info.domain,
+			    n2,sizeof(n2) );
 
 	add_to_file_list(pszFname, n2);
 
@@ -5080,7 +5088,9 @@ int lp_servicenumber(const char *pszServiceName)
 			 * service names
 			 */
 			fstrcpy(serviceName, ServicePtrs[iService]->szService);
-			standard_sub_basic(get_current_username(), serviceName,sizeof(serviceName));
+			standard_sub_basic(get_current_username(),
+					   current_user_info.domain,
+					   serviceName,sizeof(serviceName));
 			if (strequal(serviceName, pszServiceName)) {
 				break;
 			}

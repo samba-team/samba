@@ -4305,7 +4305,8 @@ WERROR get_a_printer( Printer_entry *print_hnd, NT_PRINTER_INFO_LEVEL **pp_print
 				fstrcpy( servername, print_hnd->servername );
 			else {
 				fstrcpy( servername, "%L" );
-				standard_sub_basic( "", servername, sizeof(servername)-1 );
+				standard_sub_basic( "", "", servername,
+						    sizeof(servername)-1 );
 			}
 
 			result = get_a_printer_2( (*pp_printer)->info_2, servername, sharename );
