@@ -2054,15 +2054,11 @@ if test x"$samba_cv_WITH_PROFILE" = x"yes"; then
 
     AC_LIBTESTFUNC(rt, clock_gettime,
 	    [
-		SMB_IS_LIBPTHREAD_LINKED(
-			[ SMB_REMOVELIB(rt) ],
-			[
-			    AC_DEFINE(HAVE_CLOCK_GETTIME, 1,
-				[Whether clock_gettime is available])
-			    SMB_CHECK_CLOCK_ID(CLOCK_MONOTONIC)
-			    SMB_CHECK_CLOCK_ID(CLOCK_PROCESS_CPUTIME_ID)
-			    SMB_CHECK_CLOCK_ID(CLOCK_REALTIME)
-			])
+		AC_DEFINE(HAVE_CLOCK_GETTIME, 1,
+		    [Whether clock_gettime is available])
+		SMB_CHECK_CLOCK_ID(CLOCK_MONOTONIC)
+		SMB_CHECK_CLOCK_ID(CLOCK_PROCESS_CPUTIME_ID)
+		SMB_CHECK_CLOCK_ID(CLOCK_REALTIME)
 	    ])
 
 fi
@@ -5572,6 +5568,78 @@ if test x"$RUN_FROM_BUILD_FARM" = x"yes"; then
 	AC_DEFINE(ENABLE_BUILD_FARM_HACKS, 1, [Defined if running in the build farm])
 else
 	AC_MSG_RESULT(no)
+fi
+
+#################################################
+# check for bad librt/libpthread interactions
+
+if test x"$samba_cv_HAVE_KERNEL_OPLOCKS_LINUX" = x"yes" -o \
+    x"$samba_cv_HAVE_KERNEL_CHANGE_NOTIFY" = x"yes" -o \
+    x"$samba_cv_HAVE_AIO64" = x"yes" -o \
+    x"$samba_cv_HAVE_AIO" = x"yes" ; then
+
+SMB_IF_RTSIGNAL_BUG(
+	[
+	    # Have RT_SIGNAL bug, need to check whether the problem will
+	    # affect anything we have configured.
+
+	    rt_do_error=no
+	    if test x"$samba_cv_HAVE_KERNEL_OPLOCKS_LINUX" = x"yes"; then
+		if test x"$rt_signal_lease_ok" = x"no" ; then
+		    rt_do_error=yes
+		fi
+	    fi
+
+	    if test x"$samba_cv_HAVE_KERNEL_CHANGE_NOTIFY" = x"yes"; then
+		if test x"$rt_signal_notify_ok" = x"no" ; then
+		    rt_do_error=yes
+		fi
+	    fi
+
+	    if test x"$samba_cv_HAVE_AIO64" = x"yes" -o \
+		    x"$samba_cv_HAVE_AIO" = x"yes" ; then
+		if test x"$rt_signal_aio_ok" = x"no" ; then
+		    rt_do_error=yes
+		fi
+	    fi
+
+	    if test x"$rt_do_error" = x"yes" ; then
+		SMB_IS_LIBPTHREAD_LINKED(
+		    [
+			cat<<MSG
+
+*** On this platforms, linking Samba against pthreads causes problems
+*** with the oplock and change notification mechanisms. You may be
+*** using pthreads as a side-effect of using the --with-aio-support
+*** or --with-profiling-data options. Please remove these and try again.
+
+MSG
+		    ],
+		    [
+			cat<<MSG
+
+*** On this platform, the oplock and change notification mechanisms do not
+*** appear to work. Please report this problem to samba-technical@samba.org
+*** and attach the config.log file from this directory.
+
+MSG
+		    ])
+		AC_MSG_ERROR(unable to use realtime signals on this platform)
+	    fi
+	],
+	[
+	    # no RT_SIGNAL bug, we are golden
+	    SMB_IS_LIBPTHREAD_LINKED(
+		[
+		    AC_MSG_WARN(using libpthreads - this may degrade performance)
+		])
+
+	],
+	[
+	    # cross compiling, I hope you know what you are doing
+	    true
+	])
+
 fi
 
 #################################################
