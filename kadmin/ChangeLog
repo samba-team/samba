@@ -1,3 +1,7 @@
+2006-06-14  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* util.c (kdb_attrs): Add KRB5_KDB_ALLOW_KERBEROS4
+	
 2006-06-07  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* mod.c (do_mod_entry): Add setting 1 delegation entry
