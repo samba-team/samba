@@ -25,50 +25,62 @@ static const char *Months[13] = { "Jan", "Feb", "Mar", "Apr", "May", "Jun",
 
 
 /*******************************************************************
-process time fields
+ Process time fields
 ********************************************************************/
+
 static time_t EntryTime(fstring tok[], int ptr, int count, int minimum)
 {
-  time_t jobtime,jobtime1;
+	time_t jobtime,jobtime1;
 
-  jobtime = time(NULL);		/* default case: take current time */
-  if (count >= minimum) {
-    struct tm *t;
-    int i, day, hour, min, sec;
-    char   *c;
+	jobtime = time(NULL);		/* default case: take current time */
+	if (count >= minimum) {
+		struct tm *t;
+		int i, day, hour, min, sec;
+		char   *c;
 
-    for (i=0; i<13; i++) if (!strncmp(tok[ptr], Months[i],3)) break; /* Find month */
-    if (i<12) {
-      t = localtime(&jobtime);
-      day = atoi(tok[ptr+1]);
-      c=(char *)(tok[ptr+2]);
-      *(c+2)=0;
-      hour = atoi(c);
-      *(c+5)=0;
-      min = atoi(c+3);
-      if(*(c+6) != 0)sec = atoi(c+6);
-      else  sec=0;
+		for (i=0; i<13; i++) {
+			if (!strncmp(tok[ptr], Months[i],3)) {
+				break; /* Find month */
+			}
+		}
 
-      if ((t->tm_mon < i)||
-	  ((t->tm_mon == i)&&
-	   ((t->tm_mday < day)||
-	    ((t->tm_mday == day)&&
-	     (t->tm_hour*60+t->tm_min < hour*60+min)))))
-	t->tm_year--;		/* last year's print job */
+		if (i<12) {
+			t = localtime(&jobtime);
+			if (!t) {
+				return (time_t)-1;
+			}
+			day = atoi(tok[ptr+1]);
+			c=(char *)(tok[ptr+2]);
+			*(c+2)=0;
+			hour = atoi(c);
+			*(c+5)=0;
+			min = atoi(c+3);
+			if(*(c+6) != 0) {
+				sec = atoi(c+6);
+			} else {
+				sec=0;
+			}
 
-      t->tm_mon = i;
-      t->tm_mday = day;
-      t->tm_hour = hour;
-      t->tm_min = min;
-      t->tm_sec = sec;
-      jobtime1 = mktime(t);
-      if (jobtime1 != (time_t)-1)
-	jobtime = jobtime1;
-    }
-  }
-  return jobtime;
+			if ((t->tm_mon < i)|| ((t->tm_mon == i)&&
+					((t->tm_mday < day)||
+					((t->tm_mday == day)&&
+					(t->tm_hour*60+t->tm_min < hour*60+min))))) {
+				t->tm_year--;		/* last year's print job */
+			}
+
+			t->tm_mon = i;
+			t->tm_mday = day;
+			t->tm_hour = hour;
+			t->tm_min = min;
+			t->tm_sec = sec;
+			jobtime1 = mktime(t);
+			if (jobtime1 != (time_t)-1) {
+				jobtime = jobtime1;
+			}
+		}
+	}
+	return jobtime;
 }
-
 
 /****************************************************************************
 parse a lpq line
@@ -190,24 +202,27 @@ With lprng 3.16 The lpq time looks like
 static time_t LPRng_time(char *time_string)
 {
 	time_t jobtime;
-	struct tm t;
+	struct tm *t;
 
 	jobtime = time(NULL);         /* default case: take current time */
-	t = *localtime(&jobtime);
+	t = localtime(&jobtime);
+	if (!t) {
+		return (time_t)-1;
+	}
 
 	if ( atoi(time_string) < 24 ){
-		t.tm_hour = atoi(time_string);
-		t.tm_min = atoi(time_string+3);
-		t.tm_sec = atoi(time_string+6);
+		t->tm_hour = atoi(time_string);
+		t->tm_min = atoi(time_string+3);
+		t->tm_sec = atoi(time_string+6);
 	} else {
-		t.tm_year = atoi(time_string)-1900;
-		t.tm_mon = atoi(time_string+5)-1;
-		t.tm_mday = atoi(time_string+8);
-		t.tm_hour = atoi(time_string+11);
-		t.tm_min = atoi(time_string+14);
-		t.tm_sec = atoi(time_string+17);
+		t->tm_year = atoi(time_string)-1900;
+		t->tm_mon = atoi(time_string+5)-1;
+		t->tm_mday = atoi(time_string+8);
+		t->tm_hour = atoi(time_string+11);
+		t->tm_min = atoi(time_string+14);
+		t->tm_sec = atoi(time_string+17);
 	}    
-	jobtime = mktime(&t);
+	jobtime = mktime(t);
 
 	return jobtime;
 }

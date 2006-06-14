@@ -564,15 +564,31 @@ void dump_name_record( struct name_record *namerec, XFILE *fp)
 	x_fprintf(fp,"Source = %s\nb_flags = %x\t", src_type, namerec->data.nb_flags);
 
 	if(namerec->data.death_time != PERMANENT_TTL) {
+		const char *asct;
 		tm = localtime(&namerec->data.death_time);
-		x_fprintf(fp, "death_time = %s\t", asctime(tm));
+		if (!tm) {
+			return;
+		}
+		asct = asctime(tm);
+		if (!asct) {
+			return;
+		}
+		x_fprintf(fp, "death_time = %s\t", asct);
 	} else {
 		x_fprintf(fp, "death_time = PERMANENT\t");
 	}
 
 	if(namerec->data.refresh_time != PERMANENT_TTL) {
+		const char *asct;
 		tm = localtime(&namerec->data.refresh_time);
-		x_fprintf(fp, "refresh_time = %s\n", asctime(tm));
+		if (!tm) {
+			return;
+		}
+		asct = asctime(tm);
+		if (!asct) {
+			return;
+		}
+		x_fprintf(fp, "refresh_time = %s\n", asct);
 	} else {
 		x_fprintf(fp, "refresh_time = PERMANENT\n");
 	}
