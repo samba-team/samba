@@ -474,6 +474,11 @@ static void continue_lsa_policy(struct rpc_request *req)
 		return;
 	}
 
+	if (!NT_STATUS_IS_OK(s->lsa_query_info2.out.result)) {
+		composite_error(c, s->lsa_query_info2.out.result);
+		return;
+	}
+
 	/* query lsa info for dns domain name and guid */
 	s->lsa_query_info2.in.handle = &s->lsa_handle;
 	s->lsa_query_info2.in.level  = LSA_POLICY_INFO_DNS;
@@ -514,6 +519,14 @@ static void continue_lsa_query_info2(struct rpc_request *req)
 								"lsa_QueryInfoPolicy2 failed: %s",
 								nt_errstr(c->status));
 			composite_error(c, c->status);
+			return;
+		}
+
+		if (!NT_STATUS_IS_OK(s->lsa_query_info2.out.result)) {
+			s->r.out.error_string = talloc_asprintf(c,
+								"lsa_QueryInfoPolicy2 failed: %s",
+								nt_errstr(s->lsa_query_info2.out.result));
+			composite_error(c, s->lsa_query_info2.out.result);
 			return;
 		}
 

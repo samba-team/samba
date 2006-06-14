@@ -642,7 +642,7 @@ NTSTATUS libnet_JoinDomain(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 			if (!NT_STATUS_IS_OK(status)) {
 				r->out.error_string = talloc_asprintf(mem_ctx,
 								      "samr_CreateUser2 (recreate) for [%s] failed: %s\n",
-								      r->in.domain_name, nt_errstr(status));
+								      r->in.account_name, nt_errstr(status));
 				talloc_free(tmp_ctx);
 				return status;
 			}
@@ -650,7 +650,7 @@ NTSTATUS libnet_JoinDomain(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 	} else if (!NT_STATUS_IS_OK(status)) {
 		r->out.error_string = talloc_asprintf(mem_ctx,
 						      "samr_CreateUser2 for [%s] failed: %s\n",
-						      r->in.domain_name, nt_errstr(status));
+						      r->in.account_name, nt_errstr(status));
 		talloc_free(tmp_ctx);
 		return status;
 	}
