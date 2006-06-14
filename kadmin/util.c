@@ -49,6 +49,7 @@ get_response(const char *prompt, const char *def, char *buf, size_t len);
  */
 
 struct units kdb_attrs[] = {
+    { "allow-kerberos4",	KRB5_KDB_ALLOW_KERBEROS4 },
     { "trusted-for-delegation",	KRB5_KDB_TRUSTED_FOR_DELEGATION },
     { "ok-as-delegate",		KRB5_KDB_OK_AS_DELEGATE },
     { "new-princ",		KRB5_KDB_NEW_PRINC },
