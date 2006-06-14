@@ -206,7 +206,7 @@ _PUBLIC_ NTSTATUS authsam_make_server_info(TALLOC_CTX *mem_ctx, struct ldb_conte
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
 
 	group_ret = gendb_search(sam_ctx,
-				 tmp_ctx, NULL, &group_msgs, group_attrs,
+				 tmp_ctx, samdb_base_dn(tmp_ctx), &group_msgs, group_attrs,
 				 "(&(member=%s)(sAMAccountType=*))", 
 				 ldb_dn_linearize(tmp_ctx, msg->dn));
 	if (group_ret == -1) {
@@ -321,6 +321,7 @@ _PUBLIC_ NTSTATUS sam_get_results_principal(struct ldb_context *sam_ctx,
 	NTSTATUS nt_status;
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
 	int ret;
+	const struct ldb_dn *partitions_basedn = ldb_dn_string_compose(mem_ctx, samdb_base_dn(mem_ctx), "CN=Partitions,CN=Configuration");
 
 	if (!tmp_ctx) {
 		return NT_STATUS_NO_MEMORY;
@@ -333,7 +334,7 @@ _PUBLIC_ NTSTATUS sam_get_results_principal(struct ldb_context *sam_ctx,
 	}
 	
 	/* grab domain info from the reference */
-	ret = gendb_search(sam_ctx, tmp_ctx, NULL, msgs_domain_ref, domain_ref_attrs,
+	ret = gendb_search(sam_ctx, tmp_ctx, partitions_basedn, msgs_domain_ref, domain_ref_attrs,
 			   "(ncName=%s)", ldb_dn_linearize(tmp_ctx, domain_dn));
 
 	if (ret != 1) {

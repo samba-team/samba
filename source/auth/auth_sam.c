@@ -45,6 +45,7 @@ static NTSTATUS authsam_search_account(TALLOC_CTX *mem_ctx, struct ldb_context *
 	struct ldb_message **msgs_tmp;
 	struct ldb_message **msgs;
 	struct ldb_message **msgs_domain_ref;
+	const struct ldb_dn *partitions_basedn = ldb_dn_string_compose(mem_ctx, samdb_base_dn(mem_ctx), "CN=Partitions,CN=Configuration");
 
 	int ret;
 	int ret_domain;
@@ -54,7 +55,7 @@ static NTSTATUS authsam_search_account(TALLOC_CTX *mem_ctx, struct ldb_context *
 	if (domain_name) {
 		char *escaped_domain = ldb_binary_encode_string(mem_ctx, domain_name);
 		/* find the domain's DN */
-		ret_domain = gendb_search(sam_ctx, mem_ctx, NULL, &msgs_domain_ref, domain_ref_attrs,
+		ret_domain = gendb_search(sam_ctx, mem_ctx, partitions_basedn, &msgs_domain_ref, domain_ref_attrs,
 					  "(&(&(|(&(dnsRoot=%s)(nETBIOSName=*))(nETBIOSName=%s))(objectclass=crossRef))(ncName=*))", 
 					  escaped_domain, escaped_domain);
 		if (ret_domain == -1) {
@@ -74,6 +75,8 @@ static NTSTATUS authsam_search_account(TALLOC_CTX *mem_ctx, struct ldb_context *
 		}
 
 		domain_dn = samdb_result_dn(mem_ctx, msgs_domain_ref[0], "nCName", NULL);
+	} else {
+		domain_dn = samdb_base_dn(mem_ctx);
 	}
 
 	/* pull the user attributes */
@@ -85,8 +88,8 @@ static NTSTATUS authsam_search_account(TALLOC_CTX *mem_ctx, struct ldb_context *
 	}
 
 	if (ret == 0) {
-		DEBUG(3,("sam_search_user: Couldn't find user [%s] in samdb.\n", 
-			 account_name));
+		DEBUG(3,("sam_search_user: Couldn't find user [%s\\%s] in samdb, under %s\n", 
+			 domain_name, account_name, ldb_dn_linearize(mem_ctx, domain_dn)));
 		return NT_STATUS_NO_SUCH_USER;
 	}
 
@@ -104,7 +107,7 @@ static NTSTATUS authsam_search_account(TALLOC_CTX *mem_ctx, struct ldb_context *
 		}
 
 		/* find the domain's DN */
-		ret = gendb_search(sam_ctx, mem_ctx, NULL, &msgs_tmp, NULL,
+		ret = gendb_search(sam_ctx, mem_ctx, samdb_base_dn(mem_ctx), &msgs_tmp, NULL,
 				   "(&(objectSid=%s)(objectclass=domain))", 
 				   ldap_encode_ndr_dom_sid(mem_ctx, domain_sid));
 		if (ret == -1) {
@@ -123,7 +126,7 @@ static NTSTATUS authsam_search_account(TALLOC_CTX *mem_ctx, struct ldb_context *
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;
 		}
 
-		ret_domain = gendb_search(sam_ctx, mem_ctx, NULL, &msgs_domain_ref, domain_ref_attrs,
+		ret_domain = gendb_search(sam_ctx, mem_ctx, partitions_basedn, &msgs_domain_ref, domain_ref_attrs,
 					  "(nCName=%s)", ldb_dn_linearize(msgs_tmp, msgs_tmp[0]->dn));
 
 		if (ret_domain == -1) {
