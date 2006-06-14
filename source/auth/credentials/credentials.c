@@ -216,8 +216,8 @@ BOOL cli_credentials_authentication_requested(struct cli_credentials *cred)
 		return True;
 	}
 
-	if (cred->machine_account_pending) {
-		cli_credentials_set_machine_account(cred);
+	if (cli_credentials_is_anonymous(cred)){
+		return False;
 	}
 
 	if (cred->principal_obtained >= CRED_SPECIFIED) {
