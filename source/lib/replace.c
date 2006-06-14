@@ -95,49 +95,50 @@ Corrections by richard.kettlewell@kewill.com
 #define  YEAR    365*DAY
  time_t mktime(struct tm *t)
 {
-  struct tm       *u;
-  time_t  epoch = 0;
-  int n;
-  int             mon [] = { 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 },
-  y, m, i;
+	struct tm       *u;
+	time_t  epoch = 0;
+	int n;
+	int             mon [] = { 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 },
+	y, m, i;
 
-  if(t->tm_year < 70)
-    return((time_t)-1);
+	if(t->tm_year < 70) {
+		return((time_t)-1);
+	}
 
-  n = t->tm_year + 1900 - 1;
-  epoch = (t->tm_year - 70) * YEAR + 
-    ((n / 4 - n / 100 + n / 400) - (1969 / 4 - 1969 / 100 + 1969 / 400)) * DAY;
+	n = t->tm_year + 1900 - 1;
+	epoch = (t->tm_year - 70) * YEAR + ((n / 4 - n / 100 + n / 400) - (1969 / 4 - 1969 / 100 + 1969 / 400)) * DAY;
 
-  y = t->tm_year + 1900;
-  m = 0;
+	y = t->tm_year + 1900;
+	m = 0;
 
-  for(i = 0; i < t->tm_mon; i++) {
-    epoch += mon [m] * DAY;
-    if(m == 1 && y % 4 == 0 && (y % 100 != 0 || y % 400 == 0))
-      epoch += DAY;
+	for(i = 0; i < t->tm_mon; i++) {
+		epoch += mon [m] * DAY;
+		if(m == 1 && y % 4 == 0 && (y % 100 != 0 || y % 400 == 0)) {
+			epoch += DAY;
+		}
     
-    if(++m > 11) {
-      m = 0;
-      y++;
-    }
-  }
+		if(++m > 11) {
+			m = 0;
+			y++;
+		}
+	}
 
-  epoch += (t->tm_mday - 1) * DAY;
-  epoch += t->tm_hour * HOUR + t->tm_min * MINUTE + t->tm_sec;
+	epoch += (t->tm_mday - 1) * DAY;
+	epoch += t->tm_hour * HOUR + t->tm_min * MINUTE + t->tm_sec;
   
-  if((u = localtime(&epoch)) != NULL) {
-    t->tm_sec = u->tm_sec;
-    t->tm_min = u->tm_min;
-    t->tm_hour = u->tm_hour;
-    t->tm_mday = u->tm_mday;
-    t->tm_mon = u->tm_mon;
-    t->tm_year = u->tm_year;
-    t->tm_wday = u->tm_wday;
-    t->tm_yday = u->tm_yday;
-    t->tm_isdst = u->tm_isdst;
-  }
+	if((u = localtime(&epoch)) != NULL) {
+		t->tm_sec = u->tm_sec;
+		t->tm_min = u->tm_min;
+		t->tm_hour = u->tm_hour;
+		t->tm_mday = u->tm_mday;
+		t->tm_mon = u->tm_mon;
+		t->tm_year = u->tm_year;
+		t->tm_wday = u->tm_wday;
+		t->tm_yday = u->tm_yday;
+		t->tm_isdst = u->tm_isdst;
+	}
 
-  return(epoch);
+	return(epoch);
 }
 #endif /* !HAVE_MKTIME */
 
@@ -147,15 +148,15 @@ Corrections by richard.kettlewell@kewill.com
 /* Rename a file. (from libiberty in GNU binutils)  */
  int rename(const char *zfrom, const char *zto)
 {
-  if (link (zfrom, zto) < 0)
-    {
-      if (errno != EEXIST)
-	return -1;
-      if (unlink (zto) < 0
-	  || link (zfrom, zto) < 0)
-	return -1;
-    }
-  return unlink (zfrom);
+	if (link (zfrom, zto) < 0) {
+		if (errno != EEXIST) {
+			return -1;
+		}
+		if (unlink (zto) < 0 || link (zfrom, zto) < 0) {
+			return -1;
+		}
+	}
+	return unlink (zfrom);
 }
 #endif /* HAVE_RENAME */
 
