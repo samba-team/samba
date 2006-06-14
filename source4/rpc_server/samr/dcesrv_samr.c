@@ -29,6 +29,7 @@
 #include "rpc_server/samr/dcesrv_samr.h"
 #include "system/time.h"
 #include "lib/ldb/include/ldb.h"
+#include "lib/ldb/include/ldb_errors.h"
 #include "ads.h"
 #include "dsdb/samdb/samdb.h"
 #include "libcli/ldap/ldap.h"
@@ -163,6 +164,7 @@ static NTSTATUS samr_LookupDomain(struct dcesrv_call_state *dce_call, TALLOC_CTX
 	struct ldb_message **dom_msgs;
 	struct ldb_message **ref_msgs;
 	int ret;
+	const struct ldb_dn *partitions_basedn = ldb_dn_string_compose(mem_ctx, samdb_base_dn(mem_ctx), "CN=Partitions,CN=Configuration");
 
 	r->out.sid = NULL;
 
@@ -176,11 +178,11 @@ static NTSTATUS samr_LookupDomain(struct dcesrv_call_state *dce_call, TALLOC_CTX
 
 	if (strcasecmp(r->in.domain_name->string, "BUILTIN") == 0) {
 		ret = gendb_search(c_state->sam_ctx,
-				   mem_ctx, NULL, &dom_msgs, dom_attrs,
+				   mem_ctx, samdb_base_dn(mem_ctx), &dom_msgs, dom_attrs,
 				   "(objectClass=builtinDomain)");
 	} else {
 		ret = gendb_search(c_state->sam_ctx,
-				   mem_ctx, NULL, &ref_msgs, ref_attrs,
+				   mem_ctx, partitions_basedn, &ref_msgs, ref_attrs,
 				   "(&(&(nETBIOSName=%s)(objectclass=crossRef))(ncName=*))", 
 				   ldb_binary_encode_string(mem_ctx, r->in.domain_name->string));
 		if (ret != 1) {
@@ -226,6 +228,7 @@ static NTSTATUS samr_EnumDomains(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 	const char * const ref_attrs[] = { "nETBIOSName", NULL};
 	struct ldb_message **dom_msgs;
 	struct ldb_message **ref_msgs;
+	const struct ldb_dn *partitions_basedn = ldb_dn_string_compose(mem_ctx, samdb_base_dn(mem_ctx), "CN=Partitions,CN=Configuration");
 
 	*r->out.resume_handle = 0;
 	r->out.sam = NULL;
@@ -236,8 +239,8 @@ static NTSTATUS samr_EnumDomains(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 	c_state = h->data;
 
 	count = gendb_search(c_state->sam_ctx,
-			   mem_ctx, NULL, &dom_msgs, dom_attrs,
-			   "(objectClass=domain)");
+			     mem_ctx, samdb_base_dn(mem_ctx), &dom_msgs, dom_attrs,
+			     "(objectClass=domain)");
 	if (count == -1) {
 		DEBUG(0,("samdb: no domains found in EnumDomains\n"));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
@@ -269,7 +272,7 @@ static NTSTATUS samr_EnumDomains(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 		int ret;
 		array->entries[i].idx = start_i + i;
 		/* try and find the domain */
-		ret = gendb_search(c_state->sam_ctx, mem_ctx, NULL, 
+		ret = gendb_search(c_state->sam_ctx, mem_ctx, partitions_basedn,
 				   &ref_msgs, ref_attrs, 
 				   "(&(objectClass=crossRef)(ncName=%s))", 
 				   ldb_dn_linearize(mem_ctx, dom_msgs[i]->dn));
@@ -303,6 +306,7 @@ static NTSTATUS samr_OpenDomain(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 	struct ldb_message **dom_msgs;
 	struct ldb_message **ref_msgs;
 	int ret;
+	const struct ldb_dn *partitions_basedn = ldb_dn_string_compose(mem_ctx, samdb_base_dn(mem_ctx), "CN=Partitions,CN=Configuration");
 
 	ZERO_STRUCTP(r->out.domain_handle);
 
@@ -315,14 +319,14 @@ static NTSTATUS samr_OpenDomain(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 	}
 
 	ret = gendb_search(c_state->sam_ctx,
-			   mem_ctx, NULL, &dom_msgs, dom_attrs,
+			   mem_ctx, samdb_base_dn(mem_ctx), &dom_msgs, dom_attrs,
 			   "(&(objectSid=%s)(&(objectclass=domain)))",
 			   ldap_encode_ndr_dom_sid(mem_ctx, r->in.sid));
 	if (ret != 1) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	} else {
 		ret = gendb_search(c_state->sam_ctx,
-				   mem_ctx, NULL, &ref_msgs, ref_attrs,
+				   mem_ctx, partitions_basedn, &ref_msgs, ref_attrs,
 				   "(&(&(nETBIOSName=*)(objectclass=crossRef))(ncName=%s))", 
 				   ldb_dn_linearize(mem_ctx, dom_msgs[0]->dn));
 		if (ret == 0) {
@@ -431,11 +435,13 @@ static NTSTATUS samr_info_DomInfo2(struct samr_domain_state *state, TALLOC_CTX *
 	info->primary.string = lp_netbios_name();
 	info->sequence_num = 0;
 	info->role = ROLE_DOMAIN_PDC;
-	info->num_users = samdb_search_count(state->sam_ctx, mem_ctx, NULL, "(objectClass=user)");
-	info->num_groups = samdb_search_count(state->sam_ctx, mem_ctx, NULL,
+
+	/* TODO: Should these filter on SID, to avoid counting BUILTIN? */
+	info->num_users = samdb_search_count(state->sam_ctx, mem_ctx, state->domain_dn, "(objectClass=user)");
+	info->num_groups = samdb_search_count(state->sam_ctx, mem_ctx, state->domain_dn,
 					      "(&(objectClass=group)(sAMAccountType=%u))",
 					      ATYPE_GLOBAL_GROUP);
-	info->num_aliases = samdb_search_count(state->sam_ctx, mem_ctx, NULL,
+	info->num_aliases = samdb_search_count(state->sam_ctx, mem_ctx, state->domain_dn,
 					       "(&(objectClass=group)(sAMAccountType=%u))",
 					       ATYPE_LOCAL_GROUP);
 
@@ -764,7 +770,7 @@ static NTSTATUS samr_CreateUser2(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 	}
 
 	/* check if the user already exists */
-	name = samdb_search_string(d_state->sam_ctx, mem_ctx, NULL, 
+	name = samdb_search_string(d_state->sam_ctx, mem_ctx, samdb_base_dn(mem_ctx), 
 				   "sAMAccountName", 
 				   "(&(sAMAccountName=%s)(objectclass=user))", 
 				   ldb_binary_encode_string(mem_ctx, account_name));
@@ -830,7 +836,16 @@ static NTSTATUS samr_CreateUser2(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 	
 	/* create the user */
 	ret = samdb_add(d_state->sam_ctx, mem_ctx, msg);
-	if (ret != 0) {
+	switch (ret) {
+	case  LDB_SUCCESS:
+		break;
+	case  LDB_ERR_ENTRY_ALREADY_EXISTS:
+		ldb_transaction_cancel(d_state->sam_ctx);
+		DEBUG(0,("Failed to create user record %s: %s\n",
+			 ldb_dn_linearize(mem_ctx, msg->dn),
+			 ldb_errstring(d_state->sam_ctx)));
+		return NT_STATUS_USER_EXISTS;
+	default:
 		ldb_transaction_cancel(d_state->sam_ctx);
 		DEBUG(0,("Failed to create user record %s: %s\n",
 			 ldb_dn_linearize(mem_ctx, msg->dn),
@@ -1256,7 +1271,7 @@ static NTSTATUS samr_GetAliasMembership(struct dcesrv_call_state *dce_call, TALL
 
 			memberdn = 
 				samdb_search_string(d_state->sam_ctx,
-						    mem_ctx, NULL, "distinguishedName",
+						    mem_ctx, samdb_base_dn(mem_ctx), "distinguishedName",
 						    "(objectSid=%s)",
 						    ldap_encode_ndr_dom_sid(mem_ctx, 
 									    r->in.sids->sids[i].sid));
@@ -2164,7 +2179,7 @@ static NTSTATUS samr_AddAliasMember(struct dcesrv_call_state *dce_call, TALLOC_C
 	a_state = h->data;
 	d_state = a_state->domain_state;
 
-	ret = gendb_search(d_state->sam_ctx, mem_ctx, NULL,
+	ret = gendb_search(d_state->sam_ctx, mem_ctx, d_state->domain_dn,
 			   &msgs, attrs, "(objectsid=%s)", 
 			   ldap_encode_ndr_dom_sid(mem_ctx, r->in.sid));
 
@@ -2269,7 +2284,7 @@ static NTSTATUS samr_DeleteAliasMember(struct dcesrv_call_state *dce_call, TALLO
 	a_state = h->data;
 	d_state = a_state->domain_state;
 
-	memberdn = samdb_search_string(d_state->sam_ctx, mem_ctx, NULL,
+	memberdn = samdb_search_string(d_state->sam_ctx, mem_ctx, d_state->domain_dn,
 				       "distinguishedName", "(objectSid=%s)", 
 				       ldap_encode_ndr_dom_sid(mem_ctx, r->in.sid));
 
@@ -2908,7 +2923,7 @@ static NTSTATUS samr_GetGroupsForUser(struct dcesrv_call_state *dce_call, TALLOC
 	a_state = h->data;
 	d_state = a_state->domain_state;
 
-	count = samdb_search_domain(a_state->sam_ctx, mem_ctx, NULL, &res,
+	count = samdb_search_domain(a_state->sam_ctx, mem_ctx, d_state->domain_dn, &res,
 				    attrs, d_state->domain_sid,
 				    "(&(member=%s)(grouptype=%d)(objectclass=group))",
 				    ldb_dn_linearize(mem_ctx, a_state->account_dn),
