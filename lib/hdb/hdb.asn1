@@ -42,7 +42,8 @@ HDBFlags ::= BIT STRING {
 	ok-as-delegate(11),		-- as in TicketFlags
 	user-to-user(12),		-- may use user-to-user auth
 	immutable(13),			-- may not be deleted
-	trusted-for-delegation(14)	-- Trusted to print forwardabled tickets
+	trusted-for-delegation(14),	-- Trusted to print forwardabled tickets
+	allow-kerberos4(15)		-- Allow Kerberos 4 requests
 }
 
 GENERATION ::= SEQUENCE {
