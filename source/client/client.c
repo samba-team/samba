@@ -269,7 +269,7 @@ static int do_cd(char *newdir)
 	else
 		pstrcat(cur_dir,p);
 
-	if (*(cur_dir+strlen(cur_dir)-1) != '\\') {
+	if ((cur_dir[0] != '\0') && (*(cur_dir+strlen(cur_dir)-1) != '\\')) {
 		pstrcat(cur_dir, "\\");
 	}
 	
@@ -647,7 +647,7 @@ static int cmd_dir(void)
 	dir_total = 0;
 	if (strcmp(cur_dir, "\\") != 0) {
 		pstrcpy(mask,cur_dir);
-		if(mask[strlen(mask)-1]!='\\')
+		if ((mask[0] != '\0') && (mask[strlen(mask)-1]!='\\'))
 			pstrcat(mask,"\\");
 	} else {
 		pstrcpy(mask, "\\");
@@ -686,7 +686,7 @@ static int cmd_du(void)
 	
 	dir_total = 0;
 	pstrcpy(mask,cur_dir);
-	if(mask[strlen(mask)-1]!='\\')
+	if ((mask[0] != '\0') && (mask[strlen(mask)-1]!='\\'))
 		pstrcat(mask,"\\");
 	
 	if (next_token_nr(NULL,buf,NULL,sizeof(buf))) {
@@ -1008,7 +1008,7 @@ static int cmd_mget(void)
 
 	while (next_token_nr(NULL,p,NULL,sizeof(buf))) {
 		pstrcpy(mget_mask,cur_dir);
-		if(mget_mask[strlen(mget_mask)-1]!='\\')
+		if ((mask[0] != '\0') && (mget_mask[strlen(mget_mask)-1]!='\\'))
 			pstrcat(mget_mask,"\\");
 		
 		if (*p == '\\')
