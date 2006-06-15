@@ -628,6 +628,11 @@ static int new_machine (struct pdb_methods *in, const char *machine_in)
 	
 	get_global_sam_sid();
 
+	if (strlen(machine_in) == 0) {
+		fprintf(stderr, "No machine name given\n");
+		return -1;
+	}
+
 	fstrcpy(machinename, machine_in); 
 	machinename[15]= '\0';
 
@@ -708,6 +713,11 @@ static int delete_machine_entry (struct pdb_methods *in, const char *machinename
 {
 	fstring name;
 	struct samu *samaccount = NULL;
+
+	if (strlen(machinename) == 0) {
+		fprintf(stderr, "No machine name given\n");
+		return -1;
+	}
 	
 	fstrcpy(name, machinename);
 	name[15] = '\0';
