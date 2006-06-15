@@ -123,6 +123,28 @@ XFILE *x_fopen(const char *fname, int flags, mode_t mode)
 	return ret;
 }
 
+XFILE *x_fdup(const XFILE *f)
+{
+	XFILE *ret;
+	int fd;
+
+	fd = dup(x_fileno(f));
+	if (fd < 0) {
+		return NULL;
+	}
+
+	ret = SMB_CALLOC_ARRAY(XFILE, 1);
+	if (!ret) {
+		close(fd);
+		return NULL;
+	}
+
+	ret->fd = fd;
+	ret->open_flags = f->open_flags;
+	x_setvbuf(ret, NULL, X_IOFBF, XBUFSIZE);
+	return ret;
+}
+
 /* simulate fclose() */
 int x_fclose(XFILE *f)
 {
@@ -220,7 +242,7 @@ size_t x_fwrite(const void *p, size_t size, size_t nmemb, XFILE *f)
 }
 
 /* at least fileno() is simple! */
-int x_fileno(XFILE *f)
+int x_fileno(const XFILE *f)
 {
 	return f->fd;
 }

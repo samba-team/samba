@@ -3561,10 +3561,11 @@ static int do_message_op(void)
 	set_global_myname( "" );
 
 		/* set default debug level to 0 regardless of what smb.conf sets */
-	setup_logging( "smbclient", True );
+	setup_logging( "smbctool", True );
 	DEBUGLEVEL_CLASS[DBGC_ALL] = 1;
-	dbf = x_stderr;
-	x_setbuf( x_stderr, NULL );
+	if ((dbf = x_fdup(x_stderr))) {
+		x_setbuf( dbf, NULL );
+	}
 
 	pc = poptGetContext("smbclient", argc, (const char **) argv, long_options, 
 				POPT_CONTEXT_KEEP_FIRST);
