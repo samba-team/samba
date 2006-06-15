@@ -1,3 +1,12 @@
+2006-06-15  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/init_creds_pw.c (get_init_creds_common): drop cred
+	argument, its unused
+
+	* lib/krb5/Makefile.am: install krb5_get_creds.3
+	
+	* lib/krb5/krb5_get_creds.3: new file
+	
 2006-06-14  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/hdb/hdb-ldap.c: don't use the sambaNTPassword if there is
