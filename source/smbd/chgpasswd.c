@@ -579,6 +579,11 @@ BOOL check_lanman_password(char *user, uchar * pass1,
 	uint32 acct_ctrl;
 	const uint8 *lanman_pw;
 	BOOL ret;
+
+	if ( !(sampass = samu_new(NULL)) ) {
+		DEBUG(0, ("samu_new() failed!\n"));
+		return False;
+	}
 	
 	become_root();
 	ret = pdb_getsampwnam(sampass, user);

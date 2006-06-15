@@ -203,7 +203,8 @@ static BOOL parse_symlink(TALLOC_CTX *ctx, char *buf, struct referral **preflist
 	}
 
 	/* parse out the alternate paths */
-	while(((alt_path[count] = strtok(NULL,",")) != NULL) && count<MAX_REFERRAL_COUNT) {
+	while((count<MAX_REFERRAL_COUNT) &&
+	      ((alt_path[count] = strtok(NULL,",")) != NULL)) {
 		count++;
 	}
 

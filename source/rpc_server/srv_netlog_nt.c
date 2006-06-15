@@ -238,7 +238,7 @@ static NTSTATUS get_md4pw(char *md4pw, char *mach_acct, uint16 sec_chan_type)
 	ret = pdb_getsampwnam(sampass, mach_acct);
 	unbecome_root();
  
- 	if (ret == False) {
+ 	if (!ret) {
  		DEBUG(0,("get_md4pw: Workstation %s: no account in domain\n", mach_acct));
 		TALLOC_FREE(sampass);
 		return NT_STATUS_ACCESS_DENIED;
@@ -562,26 +562,30 @@ NTSTATUS _net_srv_pwset(pipes_struct *p, NET_Q_SRV_PWSET *q_u, NET_R_SRV_PWSET *
 	}
 
 	/* We must store the creds state after an update. */
+	sampass = samu_new( NULL );
+	if (!sampass) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
 	become_root();
 	secrets_store_schannel_session_info(p->pipe_state_mem_ctx,
 						remote_machine,
 						p->dc);
-	if ( (sampass = samu_new( NULL )) != NULL ) {
-		ret = pdb_getsampwnam(sampass, p->dc->mach_acct);
-	}
+	ret = pdb_getsampwnam(sampass, p->dc->mach_acct);
 	unbecome_root();
 
-	if ( !sampass ) 
-		return NT_STATUS_NO_MEMORY;
+	if (!ret) {
+		TALLOC_FREE(sampass);
+		return NT_STATUS_ACCESS_DENIED;
+	}
 
 	/* Ensure the account exists and is a machine account. */
 	
 	acct_ctrl = pdb_get_acct_ctrl(sampass);
 
-	if (!(ret 
-	      && (acct_ctrl & ACB_WSTRUST ||
+	if (!(acct_ctrl & ACB_WSTRUST ||
 		      acct_ctrl & ACB_SVRTRUST ||
-		      acct_ctrl & ACB_DOMTRUST))) {
+		      acct_ctrl & ACB_DOMTRUST)) {
 		TALLOC_FREE(sampass);
 		return NT_STATUS_NO_SUCH_USER;
 	}
@@ -626,7 +630,7 @@ NTSTATUS _net_srv_pwset(pipes_struct *p, NET_Q_SRV_PWSET *q_u, NET_R_SRV_PWSET *
 		}
 		
 		become_root();
-		r_u->status = pdb_update_sam_account (sampass);
+		r_u->status = pdb_update_sam_account(sampass);
 		unbecome_root();
 	}
 

@@ -92,6 +92,7 @@ check on a DCE/DFS authentication
 ********************************************************************/
 static BOOL dfs_auth(char *user, char *password)
 {
+	struct tm *t;
 	error_status_t err;
 	int err2;
 	int prterr;
@@ -341,8 +342,13 @@ static BOOL dfs_auth(char *user, char *password)
 	set_effective_uid(0);
 	set_effective_gid(0);
 
-	DEBUG(0,
-	      ("DCE context expires: %s", asctime(localtime(&expire_time))));
+	t = localtime(&expire_time);
+	if (t) {
+		const char *asct = asctime(t);
+		if (asct) {
+			DEBUG(0,("DCE context expires: %s", asct));
+		}
+	}
 
 	dcelogin_atmost_once = 1;
 	return (True);

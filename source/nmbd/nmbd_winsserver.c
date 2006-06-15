@@ -2222,7 +2222,13 @@ void wins_write_name_record(struct name_record *namerec, XFILE *fp)
 		char *ts, *nl;
 
 		tm = localtime(&namerec->data.death_time);
+		if (!tm) {
+			return;
+		}
 		ts = asctime(tm);
+		if (!ts) {
+			return;
+		}
 		nl = strrchr( ts, '\n' );
 		if( NULL != nl ) {
 			*nl = '\0';

@@ -403,12 +403,19 @@ static int process_root(int local_flags)
 			
 			if(local_flags & LOCAL_ENABLE_USER) {
 				struct samu *sampass = NULL;
-				BOOL ret;
 				
 				sampass = samu_new( NULL );
-				ret = pdb_getsampwnam(sampass, user_name);
-				if((ret) &&
-				   (pdb_get_nt_passwd(sampass) == NULL)) {
+				if (!sampass) {
+					fprintf(stderr, "talloc fail for struct samu.\n");
+					exit(1);
+				}
+				if (!pdb_getsampwnam(sampass, user_name)) {
+					fprintf(stderr, "Failed to find user %s in passdb backend.\n",
+						user_name );
+					exit(1);
+				}
+
+				if(pdb_get_nt_passwd(sampass) == NULL) {
 					local_flags |= LOCAL_SET_PASSWORD;
 				}
 				TALLOC_FREE(sampass);
@@ -437,16 +444,26 @@ static int process_root(int local_flags)
 		printf("Password changed for user %s on %s.\n", user_name, remote_machine );
 	} else if(!(local_flags & (LOCAL_ADD_USER|LOCAL_DISABLE_USER|LOCAL_ENABLE_USER|LOCAL_DELETE_USER|LOCAL_SET_NO_PASSWORD|LOCAL_SET_PASSWORD))) {
 		struct samu *sampass = NULL;
-		BOOL ret;
 		
 		sampass = samu_new( NULL );
-		ret = pdb_getsampwnam(sampass, user_name);
+		if (!sampass) {
+			fprintf(stderr, "talloc fail for struct samu.\n");
+			exit(1);
+		}
+
+		if (!pdb_getsampwnam(sampass, user_name)) {
+			fprintf(stderr, "Failed to find user %s in passdb backend.\n",
+				user_name );
+			exit(1);
+		}
 
 		printf("Password changed for user %s.", user_name );
-		if( (ret != False) && (pdb_get_acct_ctrl(sampass)&ACB_DISABLED) )
+		if(pdb_get_acct_ctrl(sampass)&ACB_DISABLED) {
 			printf(" User has disabled flag set.");
-		if((ret != False) && (pdb_get_acct_ctrl(sampass) & ACB_PWNOTREQ) )
+		}
+		if(pdb_get_acct_ctrl(sampass) & ACB_PWNOTREQ) {
 			printf(" User has no password flag set.");
+		}
 		printf("\n");
 		TALLOC_FREE(sampass);
 	}

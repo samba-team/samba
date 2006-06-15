@@ -268,17 +268,22 @@ BOOL asn1_start_tag(ASN1_DATA *data, uint8 tag)
 	}
 
 	if (!asn1_read_uint8(data, &b)) {
+		SAFE_FREE(nesting);
 		return False;
 	}
 
 	if (b & 0x80) {
 		int n = b & 0x7f;
-		if (!asn1_read_uint8(data, &b))
+		if (!asn1_read_uint8(data, &b)) {
+			SAFE_FREE(nesting);
 			return False;
+		}
 		nesting->taglen = b;
 		while (n > 1) {
-			if (!asn1_read_uint8(data, &b)) 
+			if (!asn1_read_uint8(data, &b)) {
+				SAFE_FREE(nesting);
 				return False;
+			}
 			nesting->taglen = (nesting->taglen << 8) | b;
 			n--;
 		}
@@ -335,7 +340,11 @@ BOOL asn1_read_OID(ASN1_DATA *data, char **OID)
 	pstring oid_str;
 	fstring el;
 
-	if (!asn1_start_tag(data, ASN1_OID)) return False;
+	*OID = NULL;
+
+	if (!asn1_start_tag(data, ASN1_OID)) {
+		return False;
+	}
 	asn1_read_uint8(data, &b);
 
 	oid_str[0] = 0;
@@ -356,7 +365,9 @@ BOOL asn1_read_OID(ASN1_DATA *data, char **OID)
 
 	asn1_end_tag(data);
 
-	*OID = SMB_STRDUP(oid_str);
+	if (!data->has_error) {
+	  	*OID = SMB_STRDUP(oid_str);
+	}
 
 	return !data->has_error;
 }
@@ -366,7 +377,9 @@ BOOL asn1_check_OID(ASN1_DATA *data, const char *OID)
 {
 	char *id;
 
-	if (!asn1_read_OID(data, &id)) return False;
+	if (!asn1_read_OID(data, &id)) {
+		return False;
+	}
 
 	if (strcmp(id, OID) != 0) {
 		data->has_error = True;

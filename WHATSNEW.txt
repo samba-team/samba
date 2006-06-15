@@ -8,6 +8,11 @@ provided for testing purposes only.  While close to the final stable
 release, this snapshot is *not* intended for production servers. 
 Your testing and feedback is greatly appreciated.
 
+We would like to thank the developers of Klocwork for their analysis 
+of the Samba source tree.  This release candidate includes fixes 
+for over two dozen defects reported by the Klocwork code analyzer.
+
+
 Common issues addressed in 3.0.23rc3 include:
 
    o 
@@ -22,10 +27,31 @@ Changes since 3.0.23rc2
 commits
 -------
 
+o   Jeremy Allison <jra@samba.org>
+    * Fixes for various Klocwork defect reports.
+    * Cleanup pdb_get_XXX() methods and ensure that a failure
+      to allocate memory for a samu user structure is reported 
+      as a failure to the calling function.
+
+
+o   Gerald (Jerry) Carter <jerry@samba.org>
+    * Fix 'make install' problem when building outside source/.
+
+
 o   Guenther Deschner <gd@samba.org>
     * Fix memleaks in winbindd ads searches.
     * Fix timestamp bug in pam_winbindd which forced users to change
       passwords prematurelty.
+    * Small debug message cleanups.
+
+
+o   Volker Lendecke <vl@samba.org>
+    * Fixes for various Klocwork defect reports.
+    * Fixes for two Coverity defect reports.
+
+
+o   Jason Mader <jason@ncac.gwu.edu>
+    * Compiler warning fixes.
 
 
 Release Notes for older release follow:

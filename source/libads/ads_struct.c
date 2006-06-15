@@ -48,16 +48,18 @@ char *ads_build_path(const char *realm, const char *sep, const char *field, int 
 
 	strlcpy(ret,field, len);
 	p=strtok(r,sep); 
-	strlcat(ret, p, len);
-
-	while ((p=strtok(NULL,sep))) {
-		char *s;
-		if (reverse)
-			asprintf(&s, "%s%s,%s", field, p, ret);
-		else
-			asprintf(&s, "%s,%s%s", ret, field, p);
-		free(ret);
-		ret = s;
+	if (p) {
+		strlcat(ret, p, len);
+	
+		while ((p=strtok(NULL,sep))) {
+			char *s;
+			if (reverse)
+				asprintf(&s, "%s%s,%s", field, p, ret);
+			else
+				asprintf(&s, "%s,%s%s", ret, field, p);
+			free(ret);
+			ret = s;
+		}
 	}
 
 	free(r);

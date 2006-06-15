@@ -269,7 +269,7 @@ static int do_cd(char *newdir)
 	else
 		pstrcat(cur_dir,p);
 
-	if (*(cur_dir+strlen(cur_dir)-1) != '\\') {
+	if ((cur_dir[0] != '\0') && (*(cur_dir+strlen(cur_dir)-1) != '\\')) {
 		pstrcat(cur_dir, "\\");
 	}
 	
@@ -379,7 +379,7 @@ static void display_finfo(file_info *finfo)
 			 finfo->name,
 			 attrib_string(finfo->mode),
 			 (double)finfo->size,
-			 asctime(localtime(&t)));
+			 time_to_asc(&t));
 		dir_total += finfo->size;
 	}
 }
@@ -647,7 +647,7 @@ static int cmd_dir(void)
 	dir_total = 0;
 	if (strcmp(cur_dir, "\\") != 0) {
 		pstrcpy(mask,cur_dir);
-		if(mask[strlen(mask)-1]!='\\')
+		if ((mask[0] != '\0') && (mask[strlen(mask)-1]!='\\'))
 			pstrcat(mask,"\\");
 	} else {
 		pstrcpy(mask, "\\");
@@ -686,7 +686,7 @@ static int cmd_du(void)
 	
 	dir_total = 0;
 	pstrcpy(mask,cur_dir);
-	if(mask[strlen(mask)-1]!='\\')
+	if ((mask[0] != '\0') && (mask[strlen(mask)-1]!='\\'))
 		pstrcat(mask,"\\");
 	
 	if (next_token_nr(NULL,buf,NULL,sizeof(buf))) {
@@ -1008,7 +1008,7 @@ static int cmd_mget(void)
 
 	while (next_token_nr(NULL,p,NULL,sizeof(buf))) {
 		pstrcpy(mget_mask,cur_dir);
-		if(mget_mask[strlen(mget_mask)-1]!='\\')
+		if ((mget_mask[0] != '\0') && (mget_mask[strlen(mget_mask)-1]!='\\'))
 			pstrcat(mget_mask,"\\");
 		
 		if (*p == '\\')
@@ -2111,6 +2111,7 @@ static int cmd_stat(void)
 	fstring mode_str;
 	SMB_STRUCT_STAT sbuf;
 	struct cli_state *targetcli;
+	struct tm *lt;
 	pstring targetname;
  
 	if (!SERVER_HAS_UNIX_CIFS(cli)) {
@@ -2165,13 +2166,28 @@ static int cmd_stat(void)
 		(unsigned int)sbuf.st_uid, 
 		(unsigned int)sbuf.st_gid);
 
-	strftime(mode_str, sizeof(mode_str), "%F %T %z", localtime(&sbuf.st_atime));
+	lt = localtime(&sbuf.st_atime);
+	if (lt) {
+		strftime(mode_str, sizeof(mode_str), "%F %T %z", lt);
+	} else {
+		fstrcpy(mode_str, "unknown");
+	}
 	d_printf("Access: %s\n", mode_str);
 
-	strftime(mode_str, sizeof(mode_str), "%F %T %z", localtime(&sbuf.st_mtime));
+	lt = localtime(&sbuf.st_mtime);
+	if (lt) {
+		strftime(mode_str, sizeof(mode_str), "%F %T %z", lt);
+	} else {
+		fstrcpy(mode_str, "unknown");
+	}
 	d_printf("Modify: %s\n", mode_str);
 
-	strftime(mode_str, sizeof(mode_str), "%F %T %z", localtime(&sbuf.st_ctime));
+	lt = localtime(&sbuf.st_ctime);
+	if (lt) {
+		strftime(mode_str, sizeof(mode_str), "%F %T %z", lt);
+	} else {
+		fstrcpy(mode_str, "unknown");
+	}
 	d_printf("Change: %s\n", mode_str);
 	
 	return 0;
@@ -2339,7 +2355,7 @@ static int cmd_newer(void)
 	if (ok && (sys_stat(buf,&sbuf) == 0)) {
 		newer_than = sbuf.st_mtime;
 		DEBUG(1,("Getting files newer than %s",
-			 asctime(localtime(&newer_than))));
+			 time_to_asc(&newer_than)));
 	} else {
 		newer_than = 0;
 	}

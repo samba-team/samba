@@ -615,16 +615,19 @@ char *http_timestring(time_t t)
 	static fstring buf;
 	struct tm *tm = localtime(&t);
 
-	if (!tm)
+	if (!tm) {
 		slprintf(buf,sizeof(buf)-1,"%ld seconds since the Epoch",(long)t);
-	else
+	} else {
 #ifndef HAVE_STRFTIME
-		fstrcpy(buf, asctime(tm));
-	if(buf[strlen(buf)-1] == '\n')
+		const char *asct = asctime(tm);
+		fstrcpy(buf, asct ? asct : "unknown");
+	}
+	if(buf[strlen(buf)-1] == '\n') {
 		buf[strlen(buf)-1] = 0;
 #else /* !HAVE_STRFTIME */
 		strftime(buf, sizeof(buf)-1, "%a, %d %b %Y %H:%M:%S %Z", tm);
 #endif /* !HAVE_STRFTIME */
+	}
 	return buf;
 }
 
@@ -672,13 +675,15 @@ char *timestring(BOOL hires)
 		}
 #else
 		if (hires) {
+			const char *asct = asctime(tm);
 			slprintf(TimeBuf, 
 				 sizeof(TimeBuf)-1, 
 				 "%s.%06ld", 
-				 asctime(tm), 
+				 asct ? asct : "unknown", 
 				 (long)tp.tv_usec);
 		} else {
-			fstrcpy(TimeBuf, asctime(tm));
+			const char *asct = asctime(tm);
+			fstrcpy(TimeBuf, asct ? asct : "unknown");
 		}
 #endif
 	}
@@ -1050,3 +1055,24 @@ struct timespec get_create_timespec(SMB_STRUCT_STAT *st,BOOL fake_dirs)
 	return ret;
 }
 #endif
+
+/****************************************************************************
+ Utility function that always returns a const string even if localtime
+ and asctime fail.
+****************************************************************************/
+
+const char *time_to_asc(const time_t *t)
+{
+	const char *asct;
+	struct tm *lt = localtime(t);
+
+	if (!lt) {
+		return "unknown time";
+	}
+
+	asct = asctime(lt);
+	if (!asct) {
+		return "unknown time";
+	}
+	return asct;
+}

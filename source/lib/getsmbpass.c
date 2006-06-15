@@ -147,8 +147,10 @@ char *getsmbpass(const char *prompt)
 		fgets(buf, bufsize, in);
 	}
 	nread = strlen(buf);
-	if (buf[nread - 1] == '\n')
-		buf[nread - 1] = '\0';
+	if (nread) {
+		if (buf[nread - 1] == '\n')
+			buf[nread - 1] = '\0';
+	}
 
 	/* Restore echoing.  */
 	if (echo_off) {

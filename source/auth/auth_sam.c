@@ -77,6 +77,7 @@ static BOOL logon_hours_ok(struct samu *sampass)
 	const uint8 *hours;
 	struct tm *utctime;
 	time_t lasttime;
+	const char *asct;
 	uint8 bitmask, bitpos;
 
 	hours = pdb_get_hours(sampass);
@@ -87,20 +88,36 @@ static BOOL logon_hours_ok(struct samu *sampass)
 
 	lasttime = time(NULL);
 	utctime = gmtime(&lasttime);
+	if (!utctime) {
+		DEBUG(1, ("logon_hours_ok: failed to get gmtime. Failing logon for user %s\n",
+			pdb_get_username(sampass) ));
+		return False;
+	}
 
 	/* find the corresponding byte and bit */
 	bitpos = (utctime->tm_wday * 24 + utctime->tm_hour) % 168;
 	bitmask = 1 << (bitpos % 8);
 
 	if (! (hours[bitpos/8] & bitmask)) {
-		DEBUG(1,("logon_hours_ok: Account for user %s not allowed to logon at this time (%s).\n",
-			pdb_get_username(sampass), 
-			asctime(localtime(&lasttime)) ));
+		struct tm *t = localtime(&lasttime);
+		if (!t) {
+			asct = "INVALID TIME";
+		} else {
+			asct = asctime(t);
+			if (!asct) {
+				asct = "INVALID TIME";
+			}
+		}
+		
+		DEBUG(1, ("logon_hours_ok: Account for user %s not allowed to "
+			  "logon at this time (%s).\n",
+			  pdb_get_username(sampass), asct ));
 		return False;
 	}
 
+	asct = asctime(utctime);
 	DEBUG(5,("logon_hours_ok: user %s allowed to logon at this time (%s)\n",
-		pdb_get_username(sampass), asctime(utctime) ));
+		pdb_get_username(sampass), asct ? asct : "UNKNOWN TIME" ));
 
 	return True;
 }

@@ -129,7 +129,7 @@ int net_usershare_usage(int argc, const char **argv)
 static void get_basepath(pstring basepath)
 {
 	pstrcpy(basepath, lp_usershare_path());
-	if (basepath[strlen(basepath)-1] == '/') {
+	if ((basepath[0] != '\0') && (basepath[strlen(basepath)-1] == '/')) {
 		basepath[strlen(basepath)-1] = '\0';
 	}
 }

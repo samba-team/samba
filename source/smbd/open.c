@@ -1107,7 +1107,6 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 	uint32 existing_dos_attributes = 0;
 	struct pending_message_list *pml = NULL;
 	uint16 mid = get_current_mid();
-	BOOL delayed_for_oplocks = False;
 	struct timeval request_time = timeval_zero();
 	struct share_mode_lock *lck = NULL;
 	NTSTATUS status;
@@ -1148,7 +1147,6 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 		   see if this has timed out. */
 
 		request_time = pml->request_time;
-		delayed_for_oplocks = state->delayed_for_oplocks;
 
 		/* Remove the deferred open entry under lock. */
 		lck = get_share_mode_lock(NULL, state->dev, state->inode, NULL, NULL);
@@ -1905,7 +1903,6 @@ files_struct *open_directory(connection_struct *conn,
 			DEBUG(5,("open_directory: invalid create_disposition "
 				 "0x%x for directory %s\n",
 				 (unsigned int)create_disposition, fname));
-			file_free(fsp);
 			set_saved_ntstatus(NT_STATUS_INVALID_PARAMETER);
 			return NULL;
 	}
