@@ -654,7 +654,7 @@ function newuser(username, unixname, password, message, session_info, credential
 	/* find the DNs for the domain and the domain users group */
 	var attrs = new Array("defaultNamingContext");
 	res = ldb.search("defaultNamingContext=*", "", ldb.SCOPE_BASE, attrs);
-	assert(res.length == 1 && res[0].defaultNamingContext != undefined)
+	assert(res.length == 1 && res[0].defaultNamingContext != undefined);
 	var domain_dn = res[0].defaultNamingContext;
 	assert(domain_dn != undefined);
 	var dom_users = searchone(ldb, domain_dn, "name=Domain Users", "dn");
