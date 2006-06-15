@@ -2716,9 +2716,9 @@ struct rpc_pipe_client *cli_rpc_pipe_open_krb5(struct cli_state *cli,
 		return NULL;
 	}
 
-	/* Default service principal is "host/server@realm" */
+	/* Default service principal is "desthost$@realm" */
 	if (!service_princ) {
-		service_princ = talloc_asprintf(result->mem_ctx, "host/%s@%s",
+		service_princ = talloc_asprintf(result->mem_ctx, "%s$@%s",
 			cli->desthost, lp_realm() );
 		if (!service_princ) {
 			cli_rpc_pipe_close(result);
