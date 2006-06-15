@@ -193,7 +193,7 @@ static int net_idmap_restore(int argc, const char **argv)
 	}
 
 	while (!feof(stdin)) {
-		fstring line, sid_string;
+		fstring line, sid_string, fmt_string;
 		int len;
 		unid_t id;
 		int type = ID_EMPTY;
@@ -208,14 +208,15 @@ static int net_idmap_restore(int argc, const char **argv)
 			line[len-1] = '\0';
 
 		/* Yuck - this is broken for sizeof(gid_t) != sizeof(int) */
-
-		if (sscanf(line, "GID %d %s", &id.gid, sid_string) == 2) {
+		snprintf(fmt_string, sizeof(fmt_string), "GID %%d %%%us", FSTRING_LEN);
+		if (sscanf(line, fmt_string, &id.gid, sid_string) == 2) {
 			type = ID_GROUPID;
 		}
 
 		/* Yuck - this is broken for sizeof(uid_t) != sizeof(int) */
 
-		if (sscanf(line, "UID %d %s", &id.uid, sid_string) == 2) {
+		snprintf(fmt_string, sizeof(fmt_string), "UID %%d %%%us", FSTRING_LEN);
+		if (sscanf(line, fmt_string, &id.uid, sid_string) == 2) {
 			type = ID_USERID;
 		}
 
