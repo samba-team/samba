@@ -1085,6 +1085,7 @@ NTSTATUS create_token_from_username(TALLOC_CTX *mem_ctx, const char *username,
 		const DOM_SID *gr_sid = NULL;
 
 		if ( !(sam_acct = samu_new( tmp_ctx )) ) {
+			result = NT_STATUS_NO_MEMORY;
 			goto done;
 		}
 
@@ -1347,25 +1348,44 @@ static auth_serversupplied_info *copy_serverinfo(auth_serversupplied_info *src)
 	dst->uid = src->uid;
 	dst->gid = src->gid;
 	dst->n_groups = src->n_groups;
-	if (src->n_groups != 0)
+	if (src->n_groups != 0) {
 		dst->groups = talloc_memdup(dst, src->groups,
 					    sizeof(gid_t)*dst->n_groups);
-	else
+	} else {
 		dst->groups = NULL;
-		
-	dst->ptok = dup_nt_token(dst, src->ptok);
+	}
+
+	if (src->ptok) {
+		dst->ptok = dup_nt_token(dst, src->ptok);
+		if (!dst->ptok) {
+			TALLOC_FREE(dst);
+			return NULL;
+		}
+	}
 	
 	dst->user_session_key = data_blob_talloc( dst, src->user_session_key.data,
-		src->user_session_key.length);
-		
+						src->user_session_key.length);
+
 	dst->lm_session_key = data_blob_talloc(dst, src->lm_session_key.data,
-		src->lm_session_key.length);
-		
-	if ( (dst->sam_account = samu_new( NULL )) != NULL )
-		pdb_copy_sam_account(dst->sam_account, src->sam_account);
+						src->lm_session_key.length);
+
+	dst->sam_account = samu_new(NULL);
+	if (!dst->sam_account) {
+		TALLOC_FREE(dst);
+		return NULL;
+	}
+
+	if (!pdb_copy_sam_account(dst->sam_account, src->sam_account)) {
+		TALLOC_FREE(dst);
+		return NULL;
+	}
 	
 	dst->pam_handle = NULL;
 	dst->unix_name = talloc_strdup(dst, src->unix_name);
+	if (!dst->unix_name) {
+		TALLOC_FREE(dst);
+		return NULL;
+	}
 
 	return dst;
 }

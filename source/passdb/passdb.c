@@ -67,7 +67,7 @@ static int samu_destroy(void *p)
  generate a new struct samuser
 ***********************************************************************/
 
-struct samu* samu_new( TALLOC_CTX *ctx )
+struct samu *samu_new( TALLOC_CTX *ctx )
 {
 	struct samu *user;
 	
@@ -634,7 +634,7 @@ NTSTATUS local_password_change(const char *user_name, int local_flags,
 			   char *err_str, size_t err_str_len,
 			   char *msg_str, size_t msg_str_len)
 {
-	struct samu 	*sam_pass=NULL;
+	struct samu *sam_pass=NULL;
 	uint32 other_acb;
 	NTSTATUS result;
 
@@ -1096,12 +1096,6 @@ uint32 init_buffer_from_sam_v3 (uint8 **buf, struct samu *sampass, BOOL size_onl
 	uint32  nt_pw_hist_len;
 	uint32 pwHistLen = 0;
 
-	/* do we have a valid struct samu pointer? */
-	if (sampass == NULL) {
-		DEBUG(0, ("init_buffer_from_sam: struct samu is NULL!\n"));
-		return -1;
-	}
-	
 	*buf = NULL;
 	buflen = 0;
 
@@ -1332,27 +1326,31 @@ uint32 init_buffer_from_sam_v3 (uint8 **buf, struct samu *sampass, BOOL size_onl
 
 BOOL pdb_copy_sam_account(struct samu *dst, struct samu *src )
 {
-	BOOL result;
-	uint8 *buf;
+	uint8 *buf = NULL;
 	int len;
 
-	if ( !dst )
-		return False;
-
 	len = init_buffer_from_sam_v3(&buf, src, False);
-
-	if (len == -1)
+	if (len == -1 || !buf) {
 		return False;
+	}
 
-	result = init_sam_from_buffer_v3( dst, buf, len );
+	if (!init_sam_from_buffer_v3( dst, buf, len )) {
+		free(buf);
+		return False;
+	}
+
 	dst->methods = src->methods;
 	
-	if ( src->unix_pw )
+	if ( src->unix_pw ) {
 		dst->unix_pw = tcopy_passwd( dst, src->unix_pw );
+		if (!dst->unix_pw) {
+			free(buf);
+			return False;
+		}
+	}
 
 	free(buf);
-
-	return result;
+	return True;
 }
 
 /*********************************************************************
@@ -1365,8 +1363,6 @@ BOOL pdb_update_bad_password_count(struct samu *sampass, BOOL *updated)
 	uint16 BadPasswordCount;
 	uint32 resettime; 
 
-	if (!sampass) return False;
-	
 	BadPasswordCount = pdb_get_bad_password_count(sampass);
 	if (!BadPasswordCount) {
 		DEBUG(9, ("No bad password attempts.\n"));
@@ -1407,8 +1403,6 @@ BOOL pdb_update_autolock_flag(struct samu *sampass, BOOL *updated)
 	uint32 duration;
 	time_t LastBadPassword;
 
-	if (!sampass) return False;
- 
 	if (!(pdb_get_acct_ctrl(sampass) & ACB_AUTOLOCK)) {
 		DEBUG(9, ("pdb_update_autolock_flag: Account %s not autolocked, no check needed\n",
 			pdb_get_username(sampass)));
@@ -1460,9 +1454,6 @@ BOOL pdb_increment_bad_password_count(struct samu *sampass)
 	uint32 account_policy_lockout;
 	BOOL autolock_updated = False, badpw_updated = False;
 	BOOL ret;
-
-	if (!sampass)
-		return False;
 
 	/* Retrieve the account lockout policy */
 	become_root();
