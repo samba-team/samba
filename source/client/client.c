@@ -1008,7 +1008,7 @@ static int cmd_mget(void)
 
 	while (next_token_nr(NULL,p,NULL,sizeof(buf))) {
 		pstrcpy(mget_mask,cur_dir);
-		if ((mask[0] != '\0') && (mget_mask[strlen(mget_mask)-1]!='\\'))
+		if ((mget_mask[0] != '\0') && (mget_mask[strlen(mget_mask)-1]!='\\'))
 			pstrcat(mget_mask,"\\");
 		
 		if (*p == '\\')
