@@ -3457,6 +3457,7 @@ if test x"$with_ads_support" != x"no"; then
   AC_CHECK_FUNC_EXT(krb5_get_init_creds_opt_set_pac_request, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(krb5_get_renewed_creds, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(krb5_get_kdc_cred, $KRB5_LIBS)
+  AC_CHECK_FUNC_EXT(krb5_free_error_contents, $KRB5_LIBS)
 
   LIBS="$KRB5_LIBS $LIBS"
 
@@ -3504,6 +3505,18 @@ if test x"$with_ads_support" != x"no"; then
   if test x"$samba_cv_HAVE_TICKET_POINTER_IN_KRB5_AP_REQ" = x"yes"; then
     AC_DEFINE(HAVE_TICKET_POINTER_IN_KRB5_AP_REQ,1,
                [Whether the krb5_ap_req struct has a ticket pointer])
+  fi
+
+  AC_CACHE_CHECK([for e_data pointer in krb5_error],
+                samba_cv_HAVE_E_DATA_POINTER_IN_KRB5_ERROR,[
+    AC_TRY_COMPILE([#include <krb5.h>],
+      [krb5_error err; err.e_data = NULL;],
+      samba_cv_HAVE_E_DATA_POINTER_IN_KRB5_ERROR=yes,
+      samba_cv_HAVE_E_DATA_POINTER_IN_KRB5_ERROR=no)])
+
+  if test x"$samba_cv_HAVE_E_DATA_POINTER_IN_KRB5_ERROR" = x"yes"; then
+    AC_DEFINE(HAVE_E_DATA_POINTER_IN_KRB5_ERROR,1,
+               [Whether the krb5_error struct has a e_data pointer])
   fi
 
   AC_CACHE_CHECK([for krb5_crypto type],
