@@ -577,6 +577,8 @@ static WERROR DsCrackNameOneFilter(struct ldb_context *sam_ctx, TALLOC_CTX *mem_
 	const char * const *result_attrs;
 	struct ldb_message **result_res = NULL;
 	const struct ldb_dn *result_basedn;
+	const struct ldb_dn *partitions_basedn = ldb_dn_string_compose(mem_ctx, samdb_base_dn(mem_ctx), "CN=Partitions,CN=Configuration");
+	const struct ldb_dn *basedn = samdb_base_dn(mem_ctx);
 
 	const char * const _domain_attrs_1779[] = { "ncName", "dnsRoot", NULL};
 	const char * const _result_attrs_null[] = { NULL };
@@ -622,10 +624,10 @@ static WERROR DsCrackNameOneFilter(struct ldb_context *sam_ctx, TALLOC_CTX *mem_
 
 	if (domain_filter) {
 		/* if we have a domain_filter look it up and set the result_basedn and the dns_domain_name */
-		ldb_ret = gendb_search(sam_ctx, mem_ctx, NULL, &domain_res, domain_attrs,
+		ldb_ret = gendb_search(sam_ctx, mem_ctx, partitions_basedn, &domain_res, domain_attrs,
 				       "%s", domain_filter);
 	} else {
-		ldb_ret = gendb_search(sam_ctx, mem_ctx, NULL, &domain_res, domain_attrs,
+		ldb_ret = gendb_search(sam_ctx, mem_ctx, partitions_basedn, &domain_res, domain_attrs,
 				       "(ncName=%s)", ldb_dn_linearize(mem_ctx, samdb_base_dn(mem_ctx)));
 	} 
 
@@ -718,7 +720,7 @@ static WERROR DsCrackNameOneFilter(struct ldb_context *sam_ctx, TALLOC_CTX *mem_
 		}
 
 		if (sid->num_auths == 4) {
-			ldb_ret = gendb_search(sam_ctx, mem_ctx, NULL, &domain_res, domain_attrs,
+			ldb_ret = gendb_search(sam_ctx, mem_ctx, partitions_basedn, &domain_res, domain_attrs,
 					       "(ncName=%s)", ldb_dn_linearize(mem_ctx, result_res[0]->dn));
 			if (ldb_ret != 1) {
 				info1->status = DRSUAPI_DS_NAME_STATUS_NOT_FOUND;
@@ -735,13 +737,13 @@ static WERROR DsCrackNameOneFilter(struct ldb_context *sam_ctx, TALLOC_CTX *mem_
 				return WERR_OK;
 			}
 			dom_sid->num_auths--;
-			ldb_ret = gendb_search(sam_ctx, mem_ctx, NULL, &domain_res, attrs,
+			ldb_ret = gendb_search(sam_ctx, mem_ctx, basedn, &domain_res, attrs,
 					       "(&(objectSid=%s)(objectClass=domain))", ldap_encode_ndr_dom_sid(mem_ctx, dom_sid));
 			if (ldb_ret != 1) {
 				info1->status = DRSUAPI_DS_NAME_STATUS_NOT_FOUND;
 				return WERR_OK;
 			}
-			ldb_ret = gendb_search(sam_ctx, mem_ctx, NULL, &domain_res2, domain_attrs,
+			ldb_ret = gendb_search(sam_ctx, mem_ctx, partitions_basedn, &domain_res2, domain_attrs,
 					       "(ncName=%s)", ldb_dn_linearize(mem_ctx, domain_res[0]->dn));
 			if (ldb_ret != 1) {
 				info1->status = DRSUAPI_DS_NAME_STATUS_NOT_FOUND;
