@@ -466,7 +466,7 @@ char *alloc_sub_basic(const char *smb_name, const char *domain_name,
 	
 	a_string = SMB_STRDUP(str);
 	if (a_string == NULL) {
-		DEBUG(0, ("alloc_sub_specified: Out of memory!\n"));
+		DEBUG(0, ("alloc_sub_basic: Out of memory!\n"));
 		return NULL;
 	}
 	
@@ -583,32 +583,20 @@ char *talloc_sub_specified(TALLOC_CTX *mem_ctx,
 			uid_t uid,
 			gid_t gid)
 {
-	char *a, *t;
-       	a = alloc_sub_specified(input_string, username, domain, uid, gid);
-	if (!a) {
+	char *a_string;
+	char *ret_string = NULL;
+	char *b, *p, *s;
+	TALLOC_CTX *tmp_ctx;
+
+	if (!(tmp_ctx = talloc_new(mem_ctx))) {
+		DEBUG(0, ("talloc_new failed\n"));
 		return NULL;
 	}
-	t = talloc_strdup(mem_ctx, a);
-	SAFE_FREE(a);
-	return t;
-}
 
-/****************************************************************************
-****************************************************************************/
-
-char *alloc_sub_specified(const char *input_string,
-			const char *username,
-			const char *domain,
-			uid_t uid,
-			gid_t gid)
-{
-	char *a_string, *ret_string;
-	char *b, *p, *s;
-
-	a_string = SMB_STRDUP(input_string);
+	a_string = talloc_strdup(tmp_ctx, input_string);
 	if (a_string == NULL) {
-		DEBUG(0, ("alloc_sub_specified: Out of memory!\n"));
-		return NULL;
+		DEBUG(0, ("talloc_sub_specified: Out of memory!\n"));
+		goto done;
 	}
 	
 	for (b = s = a_string; (p = strchr_m(s, '%')); s = a_string + (p - b)) {
@@ -617,30 +605,42 @@ char *alloc_sub_specified(const char *input_string,
 		
 		switch (*(p+1)) {
 		case 'U' : 
-			a_string = realloc_string_sub(a_string, "%U", username);
+			a_string = talloc_string_sub(
+				tmp_ctx, a_string, "%U", username);
 			break;
 		case 'u' : 
-			a_string = realloc_string_sub(a_string, "%u", username);
+			a_string = talloc_string_sub(
+				tmp_ctx, a_string, "%u", username);
 			break;
 		case 'G' :
 			if (gid != -1) {
-				a_string = realloc_string_sub(a_string, "%G", gidtoname(gid));
+				a_string = talloc_string_sub(
+					tmp_ctx, a_string, "%G",
+					gidtoname(gid));
 			} else {
-				a_string = realloc_string_sub(a_string, "%G", "NO_GROUP");
+				a_string = talloc_string_sub(
+					tmp_ctx, a_string,
+					"%G", "NO_GROUP");
 			}
 			break;
 		case 'g' :
 			if (gid != -1) {
-				a_string = realloc_string_sub(a_string, "%g", gidtoname(gid));
+				a_string = talloc_string_sub(
+					tmp_ctx, a_string, "%g",
+					gidtoname(gid));
 			} else {
-				a_string = realloc_string_sub(a_string, "%g", "NO_GROUP");
+				a_string = talloc_string_sub(
+					tmp_ctx, a_string, "%g", "NO_GROUP");
 			}
 			break;
 		case 'D' :
-			a_string = realloc_string_sub(a_string, "%D", domain);
+			a_string = talloc_string_sub(tmp_ctx, a_string,
+						     "%D", domain);
 			break;
 		case 'N' : 
-			a_string = realloc_string_sub(a_string, "%N", automount_server(username)); 
+			a_string = talloc_string_sub(
+				tmp_ctx, a_string, "%N",
+				automount_server(username)); 
 			break;
 		default: 
 			break;
@@ -648,13 +648,17 @@ char *alloc_sub_specified(const char *input_string,
 
 		p++;
 		if (a_string == NULL) {
-			return NULL;
+			goto done;
 		}
 	}
 
-	ret_string = alloc_sub_basic(username, current_user_info.domain,
-				     a_string);
-	SAFE_FREE(a_string);
+	/* Watch out, using "mem_ctx" here, so all intermediate stuff goes
+	 * away with the TALLOC_FREE(tmp_ctx) further down. */
+
+	ret_string = talloc_sub_basic(mem_ctx, username, domain, a_string);
+
+ done:
+	TALLOC_FREE(tmp_ctx);
 	return ret_string;
 }
 

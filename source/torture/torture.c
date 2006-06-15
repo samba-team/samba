@@ -493,7 +493,7 @@ static BOOL rw_torture2(struct cli_state *c1, struct cli_state *c2)
 			printf("%d\r", i); fflush(stdout);
 		}
 
-		generate_random_buffer(buf, buf_size);
+		generate_random_buffer((unsigned char *)buf, buf_size);
 
 		if (cli_write(c1, fnum1, 0, buf, 0, buf_size) != buf_size) {
 			printf("write failed (%s)\n", cli_errstr(c1));
@@ -2201,7 +2201,7 @@ static BOOL run_randomipc(int dummy)
 {
 	char *rparam = NULL;
 	char *rdata = NULL;
-	int rdrcnt,rprcnt;
+	unsigned int rdrcnt,rprcnt;
 	pstring param;
 	int api, param_len, i;
 	struct cli_state *cli;
@@ -4417,7 +4417,8 @@ static BOOL run_eatest(int dummy)
 
 	for (i = 0; i < num_eas; i++) {
 		printf("%d: ea_name = %s. Val = ", i, ea_list[i].name);
-		dump_data(0, ea_list[i].value.data, ea_list[i].value.length);
+		dump_data(0, (char *)ea_list[i].value.data,
+			  ea_list[i].value.length);
 	}
 
 	/* Setting EA's to zero length deletes them. Test this */
@@ -4444,7 +4445,8 @@ static BOOL run_eatest(int dummy)
 	printf("num_eas = %d\n", num_eas);
 	for (i = 0; i < num_eas; i++) {
 		printf("%d: ea_name = %s. Val = ", i, ea_list[i].name);
-		dump_data(0, ea_list[i].value.data, ea_list[i].value.length);
+		dump_data(0, (char *)ea_list[i].value.data,
+			  ea_list[i].value.length);
 	}
 
 	if (num_eas != 0) {
@@ -4654,6 +4656,42 @@ static BOOL run_error_map_extract(int dummy) {
 	return True;
 }
 
+static BOOL run_local_substitute(int dummy)
+{
+	TALLOC_CTX *mem_ctx;
+	int diff = 0;
+
+	if ((mem_ctx = talloc_init("run_local_subst")) == NULL) {
+		printf("talloc_init failed\n");
+		return False;
+	}
+
+	diff |= strcmp(talloc_sub_specified(mem_ctx, "%U", "bla", "", -1, -1),
+		       "bla");
+	diff |= strcmp(talloc_sub_specified(mem_ctx, "%u%U", "bla", "", -1, -1),
+		       "blabla");
+	diff |= strcmp(talloc_sub_specified(mem_ctx, "%g", "", "", -1, -1),
+		       "NO_GROUP");
+	diff |= strcmp(talloc_sub_specified(mem_ctx, "%G", "", "", -1, -1),
+		       "NO_GROUP");
+	diff |= strcmp(talloc_sub_specified(mem_ctx, "%g", "", "", -1, 0),
+		       gidtoname(0));
+	diff |= strcmp(talloc_sub_specified(mem_ctx, "%G", "", "", -1, 0),
+		       gidtoname(0));
+	diff |= strcmp(talloc_sub_specified(mem_ctx, "%D%u", "u", "dom", -1, 0),
+		       "domu");
+	diff |= strcmp(talloc_sub_specified(mem_ctx, "%i %I", "", "", -1, -1),
+		       "0.0.0.0 0.0.0.0");
+
+	/* Different captialization rules in sub_basic... */
+
+	diff |= strcmp(talloc_sub_basic(mem_ctx, "BLA", "dom", "%U%D"),
+		       "blaDOM");
+
+	TALLOC_FREE(mem_ctx);
+	return (diff == 0);
+}
+
 static double create_procs(BOOL (*fn)(int), BOOL *result)
 {
 	int i, status;
@@ -4804,6 +4842,7 @@ static struct {
 	{"CHKPATH",  torture_chkpath_test, 0},
 	{"FDSESS", run_fdsesstest, 0},
 	{ "EATEST", run_eatest, 0},
+	{ "LOCAL-SUBSTITUTE", run_local_substitute, 0},
 	{NULL, NULL, 0}};
 
 
