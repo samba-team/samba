@@ -1311,7 +1311,7 @@ done:
 	return ret;
 }
 
-void smb_krb5_free_error(krb5_context context, krb5_error *krberror)
+ void smb_krb5_free_error(krb5_context context, krb5_error *krberror)
 {
 #ifdef HAVE_KRB5_FREE_ERROR_CONTENTS /* Heimdal */
 	krb5_free_error_contents(context, krberror);
@@ -1320,8 +1320,8 @@ void smb_krb5_free_error(krb5_context context, krb5_error *krberror)
 #endif
 }
 
-krb5_error_code handle_krberror_packet(krb5_context context,
-				       krb5_data *packet)
+ krb5_error_code handle_krberror_packet(krb5_context context,
+					krb5_data *packet)
 {
 	krb5_error_code ret;
 	BOOL got_error_code = False;
