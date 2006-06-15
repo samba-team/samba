@@ -195,6 +195,7 @@ int ads_kinit_password(ADS_STRUCT *ads)
 	}
 
 	if (!ads->auth.password) {
+		SAFE_FREE(s);
 		return KRB5_LIBOS_CANTREADPWD;
 	}
 	
@@ -205,7 +206,7 @@ int ads_kinit_password(ADS_STRUCT *ads)
 		DEBUG(0,("kerberos_kinit_password %s failed: %s\n", 
 			 s, error_message(ret)));
 	}
-	free(s);
+	SAFE_FREE(s);
 	return ret;
 }
 
