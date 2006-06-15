@@ -2446,15 +2446,18 @@ struct rpc_pipe_client *get_schannel_session_key(struct cli_state *cli,
 		return NULL;
 	}
 
+	/* A DC should use DOMAIN$ as its account name.
+	   A member server can only use it's machine name since it
+	   does not have an account in a trusted domain.
+
+	   We don't check the domain against lp_workgroup() here since
+	   'net ads join' has to continue to work with only the realm
+	   specified in smb.conf.  -- jerry */
+
         if ( IS_DC && !strequal(domain, lp_workgroup()) && lp_allow_trusted_domains()) {
 		fstrcpy( machine_account, lp_workgroup() );
         } else {
-                /* Hmmm. Is this correct for trusted domains when we're a member server ? JRA. */
-                if (strequal(domain, lp_workgroup())) {
-                        fstrcpy(machine_account, global_myname());
-                } else {
-                        fstrcpy(machine_account, domain);
-                }
+		fstrcpy(machine_account, global_myname());
         }
 
 	*perr = rpccli_netlogon_setup_creds(netlogon_pipe,
