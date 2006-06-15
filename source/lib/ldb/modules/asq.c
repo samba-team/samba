@@ -442,8 +442,8 @@ static int asq_init(struct ldb_module *module)
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	req->operation = LDB_REQ_REGISTER;
-	req->op.reg.oid = LDB_CONTROL_ASQ_OID;
+	req->operation = LDB_REQ_REGISTER_CONTROL;
+	req->op.reg_control.oid = LDB_CONTROL_ASQ_OID;
 
 	ret = ldb_request(module->ldb, req);
 	if (ret != LDB_SUCCESS) {

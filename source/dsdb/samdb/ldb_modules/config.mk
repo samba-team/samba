@@ -92,3 +92,14 @@ OBJ_FILES = \
 # End MODULE ldb_extended_dn
 ################################################
 
+################################################
+# Start MODULE ldb_partition
+[MODULE::ldb_partition]
+SUBSYSTEM = ldb
+INIT_FUNCTION = ldb_partition_init
+OBJ_FILES = \
+		partition.o
+#
+# End MODULE ldb_partition
+################################################
+

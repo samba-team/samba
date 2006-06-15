@@ -311,8 +311,8 @@ static int extended_init(struct ldb_module *module)
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	req->operation = LDB_REQ_REGISTER;
-	req->op.reg.oid = LDB_CONTROL_EXTENDED_DN_OID;
+	req->operation = LDB_REQ_REGISTER_CONTROL;
+	req->op.reg_control.oid = LDB_CONTROL_EXTENDED_DN_OID;
 	req->controls = NULL;
 
 	ret = ldb_request(module->ldb, req);

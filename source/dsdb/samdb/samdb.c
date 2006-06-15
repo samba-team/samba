@@ -404,7 +404,7 @@ struct dom_sid *samdb_result_dom_sid(TALLOC_CTX *mem_ctx, struct ldb_message *ms
 /*
   pull a guid structure from a objectGUID in a result set. 
 */
-struct GUID samdb_result_guid(struct ldb_message *msg, const char *attr)
+struct GUID samdb_result_guid(const struct ldb_message *msg, const char *attr)
 {
 	const struct ldb_val *v;
 	NTSTATUS status;
@@ -630,9 +630,10 @@ int samdb_copy_template(struct ldb_context *sam_ldb, TALLOC_CTX *mem_ctx,
 	struct ldb_message **res, *t;
 	int ret, i, j;
 	
+	struct ldb_dn *basedn = ldb_dn_explode(msg, "cn=Templates");
 
 	/* pull the template record */
-	ret = gendb_search(sam_ldb, mem_ctx, NULL, &res, NULL, "%s", expression);
+	ret = gendb_search(sam_ldb, mem_ctx, basedn, &res, NULL, "%s", expression);
 	if (ret != 1) {
 		DEBUG(1,("samdb: ERROR: template '%s' matched %d records\n", 
 			 expression, ret));
@@ -1136,7 +1137,7 @@ _PUBLIC_ NTSTATUS samdb_set_password(struct ldb_context *ctx, TALLOC_CTX *mem_ct
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;
 		}
 
-		count = gendb_search(ctx, mem_ctx, NULL, &res, domain_attrs, 
+		count = gendb_search(ctx, mem_ctx, samdb_base_dn(mem_ctx), &res, domain_attrs, 
 				     "(objectSid=%s)", 
 				     ldap_encode_ndr_dom_sid(mem_ctx, domain_sid));
 		if (count != 1) {
@@ -1313,7 +1314,7 @@ _PUBLIC_ NTSTATUS samdb_set_password_sid(struct ldb_context *ctx, TALLOC_CTX *me
 		return NT_STATUS_TRANSACTION_ABORTED;
 	}
 
-	user_dn = samdb_search_dn(ctx, mem_ctx, NULL, 
+	user_dn = samdb_search_dn(ctx, mem_ctx, samdb_base_dn(mem_ctx), 
 				  "(&(objectSid=%s)(objectClass=user))", 
 				  ldap_encode_ndr_dom_sid(mem_ctx, user_sid));
 	if (!user_dn) {

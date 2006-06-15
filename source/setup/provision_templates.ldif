@@ -1,4 +1,4 @@
-dn: CN=Templates,${BASEDN}
+dn: CN=Templates
 objectClass: top
 objectClass: container
 cn: Templates
@@ -14,7 +14,7 @@ isCriticalSystemObject: TRUE
 # with what classes you put them in
 ###
 
-dn: CN=TemplateUser,CN=Templates,${BASEDN}
+dn: CN=TemplateUser,CN=Templates
 objectClass: top
 objectClass: person
 objectClass: organizationalPerson
@@ -36,7 +36,7 @@ logonCount: 0
 sAMAccountType: 805306368
 objectCategory: CN=Person,CN=Schema,CN=Configuration,${BASEDN}
 
-dn: CN=TemplateComputer,CN=Templates,${BASEDN}
+dn: CN=TemplateComputer,CN=Templates
 objectClass: top
 objectClass: person
 objectClass: organizationalPerson
@@ -58,7 +58,7 @@ logonCount: 0
 sAMAccountType: 805306369
 objectCategory: CN=Computer,CN=Schema,CN=Configuration,${BASEDN}
 
-dn: CN=TemplateTrustingDomain,CN=Templates,${BASEDN}
+dn: CN=TemplateTrustingDomain,CN=Templates
 objectClass: top
 objectClass: Template
 objectClass: userTemplate
@@ -71,13 +71,12 @@ countryCode: 0
 badPasswordTime: 0
 lastLogoff: 0
 lastLogon: 0
-pwdLastSet: 0
 primaryGroupID: 513
 accountExpires: -1
 logonCount: 0
 sAMAccountType: 805306370
 
-dn: CN=TemplateGroup,CN=Templates,${BASEDN}
+dn: CN=TemplateGroup,CN=Templates
 objectClass: top
 objectClass: Template
 objectClass: groupTemplate
@@ -89,7 +88,7 @@ objectCategory: CN=Group,CN=Schema,CN=Configuration,${BASEDN}
 
 # Currently this isn't used, we don't have a way to detect it different from an incoming alias
 #
-# dn: CN=TemplateAlias,CN=Templates,${BASEDN}
+# dn: CN=TemplateAlias,CN=Templates
 # objectClass: top
 # objectClass: Template
 # objectClass: aliasTemplate
@@ -98,7 +97,7 @@ objectCategory: CN=Group,CN=Schema,CN=Configuration,${BASEDN}
 # groupType: -2147483644
 # sAMAccountType: 268435456
 
-dn: CN=TemplateForeignSecurityPrincipal,CN=Templates,${BASEDN}
+dn: CN=TemplateForeignSecurityPrincipal,CN=Templates
 objectClass: top
 objectClass: Template
 objectClass: foreignSecurityPrincipalTemplate
@@ -107,7 +106,7 @@ instanceType: 4
 showInAdvancedViewOnly: TRUE
 objectCategory: CN=Foreign-Security-Principal,CN=Schema,CN=Configuration,${BASEDN}
 
-dn: CN=TemplateSecret,CN=Templates,${BASEDN}
+dn: CN=TemplateSecret,CN=Templates
 objectClass: top
 objectClass: leaf
 objectClass: Template
@@ -115,7 +114,7 @@ objectClass: secretTemplate
 cn: TemplateSecret
 instanceType: 4
 
-dn: CN=TemplateTrustedDomain,CN=Templates,${BASEDN}
+dn: CN=TemplateTrustedDomain,CN=Templates
 objectClass: top
 objectClass: leaf
 objectClass: Template
