@@ -2010,6 +2010,12 @@ static BOOL api_NetUserGetGroups(connection_struct *conn,uint16 vuid, char *para
 		return False;
 	}
 
+	if ( !(sampw = samu_new(mem_ctx)) ) {
+		DEBUG(0, ("samu_new() failed!\n"));
+		TALLOC_FREE(mem_ctx);
+		return False;
+	}
+
 	/* Lookup the user information; This should only be one of 
 	   our accounts (not remote domains) */
 
@@ -2024,11 +2030,6 @@ static BOOL api_NetUserGetGroups(connection_struct *conn,uint16 vuid, char *para
 	if (type != SID_NAME_USER) {
 		DEBUG(10, ("%s is a %s, not a user\n", UserName,
 			   sid_type_lookup(type)));
-		goto done;
-	}
-
-	if ( !(sampw = samu_new(mem_ctx)) ) {
-		DEBUG(0, ("samu_new() failed!\n"));
 		goto done;
 	}
 
