@@ -45,6 +45,14 @@
 #define KRB5_KPASSWD_BAD_PRINCIPAL		9
 #define KRB5_KPASSWD_ETYPE_NOSUPP		10
 
+/*
+ * we've got to be able to distinguish KRB_ERRORs from other
+ * requests - valid response for CHPW v2 replies.
+ */
+
+#define krb5_is_krb_error(packet) \
+	( packet && packet->length && (((char *)packet->data)[0] == 0x7e || ((char *)packet->data)[0] == 0x5e))
+
 /* This implements kerberos password change protocol as specified in 
  * kerb-chg-password-02.txt and kerberos-set-passwd-02.txt
  * as well as microsoft version of the protocol 
@@ -129,14 +137,16 @@ static krb5_error_code build_kpasswd_request(uint16 pversion,
 					   krb5_data *ap_req,
 					   const char *princ,
 					   const char *passwd,
+					   BOOL use_tcp,
 					   krb5_data *packet)
 {
 	krb5_error_code ret;
 	krb5_data cipherpw;
 	krb5_data encoded_setpw;
 	krb5_replay_data replay;
-	char *p;
+	char *p, *msg_start;
 	DATA_BLOB setpw;
+	unsigned int msg_length;
 
 	ret = krb5_auth_con_setflags(context,
 				     auth_context,KRB5_AUTH_CONTEXT_DO_SEQUENCE);
@@ -172,12 +182,16 @@ static krb5_error_code build_kpasswd_request(uint16 pversion,
 		return ret;
 	}
 
-	packet->data = (char *)SMB_MALLOC(ap_req->length + cipherpw.length + 6);
+	packet->data = (char *)SMB_MALLOC(ap_req->length + cipherpw.length + (use_tcp ? 10 : 6 ));
 	if (!packet->data)
 		return -1;
 
+
+
 	/* see the RFC for details */
-	p = ((char *)packet->data) + 2;
+
+	msg_start = p = ((char *)packet->data) + (use_tcp ? 4 : 0);
+	p += 2;
 	RSSVAL(p, 0, pversion);
 	p += 2;
 	RSSVAL(p, 0, ap_req->length);
@@ -187,7 +201,12 @@ static krb5_error_code build_kpasswd_request(uint16 pversion,
 	memcpy(p, cipherpw.data, cipherpw.length);
 	p += cipherpw.length;
 	packet->length = PTR_DIFF(p,packet->data);
-	RSSVAL(packet->data, 0, packet->length);
+	msg_length = PTR_DIFF(p,msg_start);
+
+	if (use_tcp) {
+		RSIVAL(packet->data, 0, msg_length);
+	}
+	RSSVAL(msg_start, 0, msg_length);
 	
 	free(cipherpw.data);    /* from 'krb5_mk_priv(...)' */
 
@@ -248,7 +267,8 @@ static krb5_error_code setpw_result_code_string(krb5_context context,
 			return KRB5KRB_ERR_GENERIC;
 	}
 }
-static krb5_error_code parse_setpw_reply(krb5_context context, 
+static krb5_error_code parse_setpw_reply(krb5_context context,
+					 BOOL use_tcp,
 					 krb5_auth_context auth_context,
 					 krb5_data *packet)
 {
@@ -259,23 +279,41 @@ static krb5_error_code parse_setpw_reply(krb5_context context,
 	krb5_data clearresult;
 	krb5_ap_rep_enc_part *ap_rep_enc;
 	krb5_replay_data replay;
-	
-	if (packet->length < 4) {
+	unsigned int msg_length = packet->length;
+
+
+	if (packet->length < (use_tcp ? 8 : 4)) {
 		return KRB5KRB_AP_ERR_MODIFIED;
 	}
 	
 	p = packet->data;
+	/*
+	** see if it is an error
+	*/
+	if (krb5_is_krb_error(packet)) {
+
+		ret = handle_krberror_packet(context, packet);
+		if (ret) {
+			return ret;
+		}
+	}
+
 	
-	if (((char *)packet->data)[0] == 0x7e || ((char *)packet->data)[0] == 0x5e) {
-		/* it's an error packet. We should parse it ... */
-		DEBUG(1,("Got error packet 0x%x from kpasswd server\n",
-			 ((char *)packet->data)[0]));
-		return KRB5KRB_AP_ERR_MODIFIED;
+	/* tcp... */
+	if (use_tcp) {
+		msg_length -= 4;
+		if (RIVAL(p, 0) != msg_length) {
+			DEBUG(1,("Bad TCP packet length (%d/%d) from kpasswd server\n",
+			RIVAL(p, 0), msg_length));
+			return KRB5KRB_AP_ERR_MODIFIED;
+		}
+
+		p += 4;
 	}
 	
-	if (RSVAL(p, 0) != packet->length) {
+	if (RSVAL(p, 0) != msg_length) {
 		DEBUG(1,("Bad packet length (%d/%d) from kpasswd server\n",
-			 RSVAL(p, 0), packet->length));
+			 RSVAL(p, 0), msg_length));
 		return KRB5KRB_AP_ERR_MODIFIED;
 	}
 
@@ -342,9 +380,9 @@ static krb5_error_code parse_setpw_reply(krb5_context context,
 		return KRB5KRB_AP_ERR_MODIFIED;
 	}
 
-	if(res_code == KRB5_KPASSWD_SUCCESS)
-			return 0;
-	else {
+	if (res_code == KRB5_KPASSWD_SUCCESS) {
+		return 0;
+	} else {
 		const char *errstr;
 		setpw_result_code_string(context, res_code, &errstr);
 		DEBUG(1, ("Error changing password: %s (%d)\n", errstr, res_code));
@@ -365,7 +403,10 @@ static ADS_STATUS do_krb5_kpasswd_request(krb5_context context,
 	int ret, sock;
 	socklen_t addr_len;
 	struct sockaddr remote_addr, local_addr;
+	struct in_addr *addr = interpret_addr2(kdc_host);
 	krb5_address local_kaddr, remote_kaddr;
+	BOOL	use_tcp = False;
+
 
 	ret = krb5_mk_req_extended(context, &auth_context, AP_OPTS_USE_SUBKEY,
 				   NULL, credsp, &ap_req);
@@ -373,102 +414,123 @@ static ADS_STATUS do_krb5_kpasswd_request(krb5_context context,
 		DEBUG(1,("krb5_mk_req_extended failed (%s)\n", error_message(ret)));
 		return ADS_ERROR_KRB5(ret);
 	}
+
+	do {
+
+		if (!use_tcp) {
+
+			sock = open_udp_socket(kdc_host, DEFAULT_KPASSWD_PORT);
+
+		} else {
+
+			sock = open_socket_out(SOCK_STREAM, addr, DEFAULT_KPASSWD_PORT, 
+					       LONG_CONNECT_TIMEOUT);
+		}
+
+		if (sock == -1) {
+			int rc = errno;
+			SAFE_FREE(ap_req.data);
+			krb5_auth_con_free(context, auth_context);
+			DEBUG(1,("failed to open kpasswd socket to %s (%s)\n", 
+				 kdc_host, strerror(errno)));
+			return ADS_ERROR_SYSTEM(rc);
+		}
+		
+		addr_len = sizeof(remote_addr);
+		getpeername(sock, &remote_addr, &addr_len);
+		addr_len = sizeof(local_addr);
+		getsockname(sock, &local_addr, &addr_len);
+		
+		setup_kaddr(&remote_kaddr, &remote_addr);
+		setup_kaddr(&local_kaddr, &local_addr);
 	
-	sock = open_udp_socket(kdc_host, DEFAULT_KPASSWD_PORT);
-	if (sock == -1) {
-		int rc = errno;
-	        free(ap_req.data);
-		krb5_auth_con_free(context, auth_context);
-		DEBUG(1,("failed to open kpasswd socket to %s (%s)\n", 
-			 kdc_host, strerror(errno)));
-		return ADS_ERROR_SYSTEM(rc);
-	}
+		ret = krb5_auth_con_setaddrs(context, auth_context, &local_kaddr, NULL);
+		if (ret) {
+			close(sock);
+			SAFE_FREE(ap_req.data);
+			krb5_auth_con_free(context, auth_context);
+			DEBUG(1,("krb5_auth_con_setaddrs failed (%s)\n", error_message(ret)));
+			return ADS_ERROR_KRB5(ret);
+		}
 	
-	addr_len = sizeof(remote_addr);
-	getpeername(sock, &remote_addr, &addr_len);
-	addr_len = sizeof(local_addr);
-	getsockname(sock, &local_addr, &addr_len);
+		ret = build_kpasswd_request(pversion, context, auth_context, &ap_req,
+					  princ, newpw, use_tcp, &chpw_req);
+		if (ret) {
+			close(sock);
+			SAFE_FREE(ap_req.data);
+			krb5_auth_con_free(context, auth_context);
+			DEBUG(1,("build_setpw_request failed (%s)\n", error_message(ret)));
+			return ADS_ERROR_KRB5(ret);
+		}
+
+		ret = write(sock, chpw_req.data, chpw_req.length); 
+
+		if (ret != chpw_req.length) {
+			close(sock);
+			SAFE_FREE(chpw_req.data);
+			SAFE_FREE(ap_req.data);
+			krb5_auth_con_free(context, auth_context);
+			DEBUG(1,("send of chpw failed (%s)\n", strerror(errno)));
+			return ADS_ERROR_SYSTEM(errno);
+		}
 	
-	setup_kaddr(&remote_kaddr, &remote_addr);
-	setup_kaddr(&local_kaddr, &local_addr);
+		SAFE_FREE(chpw_req.data);
+	
+		chpw_rep.length = 1500;
+		chpw_rep.data = (char *) SMB_MALLOC(chpw_rep.length);
+		if (!chpw_rep.data) {
+			close(sock);
+			SAFE_FREE(ap_req.data);
+			krb5_auth_con_free(context, auth_context);
+			DEBUG(1,("send of chpw failed (%s)\n", strerror(errno)));
+			errno = ENOMEM;
+			return ADS_ERROR_SYSTEM(errno);
+		}
+	
+		ret = read(sock, chpw_rep.data, chpw_rep.length);
+		if (ret < 0) {
+			close(sock);
+			SAFE_FREE(chpw_rep.data);
+			SAFE_FREE(ap_req.data);
+			krb5_auth_con_free(context, auth_context);
+			DEBUG(1,("recv of chpw reply failed (%s)\n", strerror(errno)));
+			return ADS_ERROR_SYSTEM(errno);
+		}
+	
+		close(sock);
+		chpw_rep.length = ret;
+	
+		ret = krb5_auth_con_setaddrs(context, auth_context, NULL,&remote_kaddr);
+		if (ret) {
+			SAFE_FREE(chpw_rep.data);
+			SAFE_FREE(ap_req.data);
+			krb5_auth_con_free(context, auth_context);
+			DEBUG(1,("krb5_auth_con_setaddrs on reply failed (%s)\n", 
+				 error_message(ret)));
+			return ADS_ERROR_KRB5(ret);
+		}
+	
+		ret = parse_setpw_reply(context, use_tcp, auth_context, &chpw_rep);
+		SAFE_FREE(chpw_rep.data);
+	
+		if (ret) {
+			
+			if (ret == KRB5KRB_ERR_RESPONSE_TOO_BIG && !use_tcp) {
+				DEBUG(5, ("Trying setpw with TCP!!!\n"));
+				use_tcp = True;
+				continue;
+			}
 
-	ret = krb5_auth_con_setaddrs(context, auth_context, &local_kaddr, NULL);
-	if (ret) {
-	        close(sock);
-	        free(ap_req.data);
+			SAFE_FREE(ap_req.data);
+			krb5_auth_con_free(context, auth_context);
+			DEBUG(1,("parse_setpw_reply failed (%s)\n", 
+				 error_message(ret)));
+			return ADS_ERROR_KRB5(ret);
+		}
+	
+		SAFE_FREE(ap_req.data);
 		krb5_auth_con_free(context, auth_context);
-		DEBUG(1,("krb5_auth_con_setaddrs failed (%s)\n", error_message(ret)));
-		return ADS_ERROR_KRB5(ret);
-	}
-
-	ret = build_kpasswd_request(pversion, context, auth_context, &ap_req,
-				  princ, newpw, &chpw_req);
-	if (ret) {
-	        close(sock);
-	        free(ap_req.data);
-		krb5_auth_con_free(context, auth_context);
-		DEBUG(1,("build_setpw_request failed (%s)\n", error_message(ret)));
-		return ADS_ERROR_KRB5(ret);
-	}
-
-	if (write(sock, chpw_req.data, chpw_req.length) != chpw_req.length) {
-	        close(sock);
-		free(chpw_req.data);
-	        free(ap_req.data);
-		krb5_auth_con_free(context, auth_context);
-		DEBUG(1,("send of chpw failed (%s)\n", strerror(errno)));
-		return ADS_ERROR_SYSTEM(errno);
-	}
-
-	free(chpw_req.data);
-
-	chpw_rep.length = 1500;
-	chpw_rep.data = (char *) SMB_MALLOC(chpw_rep.length);
-	if (!chpw_rep.data) {
-	        close(sock);
-	        free(ap_req.data);
-		krb5_auth_con_free(context, auth_context);
-		DEBUG(1,("send of chpw failed (%s)\n", strerror(errno)));
-		errno = ENOMEM;
-		return ADS_ERROR_SYSTEM(errno);
-	}
-
-	ret = read(sock, chpw_rep.data, chpw_rep.length);
-	if (ret < 0) {
-	        close(sock);
-		free(chpw_rep.data);
-		free(ap_req.data);
-		krb5_auth_con_free(context, auth_context);
-		DEBUG(1,("recv of chpw reply failed (%s)\n", strerror(errno)));
-		return ADS_ERROR_SYSTEM(errno);
-	}
-
-	close(sock);
-	chpw_rep.length = ret;
-
-	ret = krb5_auth_con_setaddrs(context, auth_context, NULL,&remote_kaddr);
-	if (ret) {
-	        free(chpw_rep.data);
-	        free(ap_req.data);
-		krb5_auth_con_free(context, auth_context);
-		DEBUG(1,("krb5_auth_con_setaddrs on reply failed (%s)\n", 
-			 error_message(ret)));
-		return ADS_ERROR_KRB5(ret);
-	}
-
-	ret = parse_setpw_reply(context, auth_context, &chpw_rep);
-	free(chpw_rep.data);
-
-	if (ret) {
-	        free(ap_req.data);
-		krb5_auth_con_free(context, auth_context);
-		DEBUG(1,("parse_setpw_reply failed (%s)\n", 
-			 error_message(ret)));
-		return ADS_ERROR_KRB5(ret);
-	}
-
-	free(ap_req.data);
-	krb5_auth_con_free(context, auth_context);
+	} while ( ret );
 
 	return ADS_SUCCESS;
 }

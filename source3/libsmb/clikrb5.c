@@ -1310,7 +1310,64 @@ done:
 
 	return ret;
 }
-				
+
+void smb_krb5_free_error(krb5_context context, krb5_error *krberror)
+{
+#ifdef HAVE_KRB5_FREE_ERROR_CONTENTS /* Heimdal */
+	krb5_free_error_contents(context, krberror);
+#else /* MIT */
+	krb5_free_error(context, krberror);
+#endif
+}
+
+krb5_error_code handle_krberror_packet(krb5_context context,
+				       krb5_data *packet)
+{
+	krb5_error_code ret;
+	BOOL got_error_code = False;
+
+	DEBUG(10,("handle_krberror_packet: got error packet\n"));
+	
+#ifdef HAVE_E_DATA_POINTER_IN_KRB5_ERROR /* Heimdal */
+	{
+		krb5_error krberror;
+
+		if ((ret = krb5_rd_error(context, packet, &krberror))) {
+			DEBUG(10,("handle_krberror_packet: krb5_rd_error failed with: %s\n", 
+				error_message(ret)));
+			return ret;
+		}
+
+		if (krberror.e_data == NULL || krberror.e_data->data == NULL) {
+			ret = (krb5_error_code) krberror.error_code;
+			got_error_code = True;
+		}
+
+		smb_krb5_free_error(context, &krberror);
+	}
+#else /* MIT */
+	{
+		krb5_error *krberror;
+
+		if ((ret = krb5_rd_error(context, packet, &krberror))) {
+			DEBUG(10,("handle_krberror_packet: krb5_rd_error failed with: %s\n", 
+				error_message(ret)));
+			return ret;
+		}
+
+		if (krberror->e_data.data == NULL) {
+			ret = ERROR_TABLE_BASE_krb5 + (krb5_error_code) krberror->error;
+			got_error_code = True;
+		}
+		smb_krb5_free_error(context, krberror);
+	}
+#endif
+	if (got_error_code) {
+		DEBUG(5,("handle_krberror_packet: got KERBERR from kpasswd: %s (%d)\n", 
+			error_message(ret), ret));
+	}
+	return ret;
+}
 
 #else /* HAVE_KRB5 */
  /* this saves a few linking headaches */
