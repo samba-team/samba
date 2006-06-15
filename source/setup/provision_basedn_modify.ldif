@@ -1,0 +1,90 @@
+###############################
+# Domain Naming Context
+###############################
+dn: ${BASEDN}
+changetype: modify
+replace: objectClass
+objectClass: top
+objectClass: domain
+objectClass: domainDNS
+-
+replace: dnsDomain
+dnsDomain: ${DNSDOMAIN}
+-
+replace: dc
+dc: ${RDN_DC}
+-
+replace: objectGUID
+objectGUID: ${DOMAINGUID}
+-
+replace: creationTime
+creationTime: ${NTTIME}
+-
+replace: forceLogoff
+forceLogoff: 9223372036854775808
+-
+replace: lockoutDuration
+lockoutDuration: -18000000000
+-
+replace: lockOutObservationWindow
+lockOutObservationWindow: -18000000000
+-
+replace: lockoutThreshold
+lockoutThreshold: 0
+-
+replace: maxPwdAge
+maxPwdAge: -37108517437440
+-
+replace: minPwdAge
+minPwdAge: 0
+-
+replace: minPwdLength
+minPwdLength: 7
+-
+replace: modifiedCountAtLastProm
+modifiedCountAtLastProm: 0
+-
+replace: nextRid
+nextRid: 1000
+-
+replace: pwdProperties
+pwdProperties: 1
+-
+replace: pwdHistoryLength
+pwdHistoryLength: 24
+-
+replace: objectSid
+objectSid: ${DOMAINSID}
+-
+replace: oEMInformation
+oEMInformation: Provisioned by Samba4: ${LDAPTIME}
+-
+replace: serverState
+serverState: 1
+-
+replace: nTMixedDomain
+nTMixedDomain: 1
+-
+replace: msDS-Behavior-Version
+msDS-Behavior-Version: 0
+-
+replace: ridManagerReference
+ridManagerReference: CN=RID Manager$,CN=System,${BASEDN}
+-
+replace: uASCompat
+uASCompat: 1
+-
+replace: modifiedCount
+modifiedCount: 1
+-
+replace: objectCategory
+objectCategory: CN=Domain-DNS,CN=Schema,CN=Configuration,${BASEDN}
+-
+replace: isCriticalSystemObject
+isCriticalSystemObject: TRUE
+-
+replace: subRefs
+subRefs: CN=Configuration,${BASEDN}
+subRefs: CN=Schema,CN=Configuration,${BASEDN}
+-
+

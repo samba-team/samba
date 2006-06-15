@@ -1,38 +1,3 @@
-###############################
-# Domain Naming Context
-###############################
-dn: ${BASEDN}
-objectClass: top
-objectClass: domain
-objectClass: domainDNS
-dnsDomain: ${DNSDOMAIN}
-dc: ${RDN_DC}
-objectGUID: ${DOMAINGUID}
-creationTime: ${NTTIME}
-forceLogoff: 9223372036854775808
-lockoutDuration: -18000000000
-lockOutObservationWindow: -18000000000
-lockoutThreshold: 0
-maxPwdAge: -37108517437440
-minPwdAge: 0
-minPwdLength: 7
-modifiedCountAtLastProm: 0
-nextRid: 1000
-pwdProperties: 1
-pwdHistoryLength: 24
-objectSid: ${DOMAINSID}
-oEMInformation: Provisioned by Samba4: ${LDAPTIME}
-serverState: 1
-nTMixedDomain: 1
-msDS-Behavior-Version: 0
-ridManagerReference: CN=RID Manager$,CN=System,${BASEDN}
-uASCompat: 1
-modifiedCount: 1
-objectCategory: CN=Domain-DNS,CN=Schema,CN=Configuration,${BASEDN}
-isCriticalSystemObject: TRUE
-subRefs: CN=Configuration,${BASEDN}
-subRefs: CN=Schema,CN=Configuration,${BASEDN}
-
 dn: CN=Users,${BASEDN}
 objectClass: top
 objectClass: container
@@ -57,15 +22,15 @@ systemFlags: 2348810240
 objectCategory: CN=Container,CN=Schema,CN=Configuration,${BASEDN}
 isCriticalSystemObject: TRUE
 
-dn: OU=Domain Controllers,${BASEDN}
+dn: CN=Domain Controllers,${BASEDN}
 objectClass: top
-objectClass: organizationalUnit
-ou: Domain Controllers
+objectClass: container
+cn: Domain Controllers
 description: Default container for domain controllers
 instanceType: 4
 showInAdvancedViewOnly: FALSE
 systemFlags: 2348810240
-objectCategory: CN=Organizational-Unit,CN=Schema,CN=Configuration,${BASEDN}
+objectCategory: CN=Container,CN=Schema,CN=Configuration,${BASEDN}
 isCriticalSystemObject: TRUE
 
 dn: CN=ForeignSecurityPrincipals,${BASEDN}
