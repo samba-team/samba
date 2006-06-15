@@ -62,94 +62,97 @@ static int _smb_add_user(pam_handle_t *pamh, unsigned int ctrl,
 int pam_sm_authenticate(pam_handle_t *pamh, int flags,
                         int argc, const char **argv)
 {
-    unsigned int ctrl;
-    int retval, *ret_data = NULL;
-    struct samu *sampass = NULL;
-    extern BOOL in_client;
-    const char *name;
-    void (*oldsig_handler)(int) = NULL;
-    BOOL found;
+	unsigned int ctrl;
+	int retval, *ret_data = NULL;
+	struct samu *sampass = NULL;
+	extern BOOL in_client;
+	const char *name;
+	void (*oldsig_handler)(int) = NULL;
+	BOOL found;
 
-    /* Points to memory managed by the PAM library. Do not free. */
-    char *p = NULL;
+	/* Points to memory managed by the PAM library. Do not free. */
+	char *p = NULL;
 
+	/* Samba initialization. */
+	load_case_tables();
+	setup_logging("pam_smbpass",False);
+	in_client = True;
 
-    /* Samba initialization. */
-    load_case_tables();
-    setup_logging("pam_smbpass",False);
-    in_client = True;
+	ctrl = set_ctrl(flags, argc, argv);
 
-    ctrl = set_ctrl(flags, argc, argv);
+	/* Get a few bytes so we can pass our return value to
+		pam_sm_setcred(). */
+	ret_data = SMB_MALLOC_P(int);
 
-    /* Get a few bytes so we can pass our return value to
-       pam_sm_setcred(). */
-    ret_data = SMB_MALLOC_P(int);
+	/* we need to do this before we call AUTH_RETURN */
+	/* Getting into places that might use LDAP -- protect the app
+	from a SIGPIPE it's not expecting */
+	oldsig_handler = CatchSignal(SIGPIPE, SIGNAL_CAST SIG_IGN);
 
-    /* we need to do this before we call AUTH_RETURN */
-    /* Getting into places that might use LDAP -- protect the app
-       from a SIGPIPE it's not expecting */
-    oldsig_handler = CatchSignal(SIGPIPE, SIGNAL_CAST SIG_IGN);
+	/* get the username */
+	retval = pam_get_user( pamh, &name, "Username: " );
+	if ( retval != PAM_SUCCESS ) {
+		if (on( SMB_DEBUG, ctrl )) {
+			_log_err(LOG_DEBUG, "auth: could not identify user");
+		}
+		AUTH_RETURN;
+	}
+	if (on( SMB_DEBUG, ctrl )) {
+		_log_err( LOG_DEBUG, "username [%s] obtained", name );
+	}
 
-    /* get the username */
-    retval = pam_get_user( pamh, &name, "Username: " );
-    if ( retval != PAM_SUCCESS ) {
-        if (on( SMB_DEBUG, ctrl )) {
-	    _log_err(LOG_DEBUG, "auth: could not identify user");
-        }
-        AUTH_RETURN;
-    }
-    if (on( SMB_DEBUG, ctrl )) {
-        _log_err( LOG_DEBUG, "username [%s] obtained", name );
-    }
+	if (!initialize_password_db(True)) {
+		_log_err( LOG_ALERT, "Cannot access samba password database" );
+		retval = PAM_AUTHINFO_UNAVAIL;
+		AUTH_RETURN;
+	}
 
-    if (!initialize_password_db(True)) {
-        _log_err( LOG_ALERT, "Cannot access samba password database" );
-        retval = PAM_AUTHINFO_UNAVAIL;
-        AUTH_RETURN;
-    }
+	sampass = samu_new( NULL );
+    	if (!sampass) {
+		_log_err( LOG_ALERT, "Cannot talloc a samu struct" );
+		retval = nt_status_to_pam(NT_STATUS_NO_MEMORY);
+		AUTH_RETURN;
+	}
 
-    sampass = samu_new( NULL );
-    
-    found = pdb_getsampwnam( sampass, name );
+	found = pdb_getsampwnam( sampass, name );
 
-    if (on( SMB_MIGRATE, ctrl )) {
-	retval = _smb_add_user(pamh, ctrl, name, sampass, found);
-	TALLOC_FREE(sampass);
-	AUTH_RETURN;
-    }
+	if (on( SMB_MIGRATE, ctrl )) {
+		retval = _smb_add_user(pamh, ctrl, name, sampass, found);
+		TALLOC_FREE(sampass);
+		AUTH_RETURN;
+	}
 
-    if (!found) {
-        _log_err(LOG_ALERT, "Failed to find entry for user %s.", name);
-        retval = PAM_USER_UNKNOWN;
-	TALLOC_FREE(sampass);
-	sampass = NULL;
-        AUTH_RETURN;
-    }
+	if (!found) {
+		_log_err(LOG_ALERT, "Failed to find entry for user %s.", name);
+		retval = PAM_USER_UNKNOWN;
+		TALLOC_FREE(sampass);
+		sampass = NULL;
+		AUTH_RETURN;
+	}
    
-    /* if this user does not have a password... */
+	/* if this user does not have a password... */
 
-    if (_smb_blankpasswd( ctrl, sampass )) {
-        TALLOC_FREE(sampass);
-        retval = PAM_SUCCESS;
-        AUTH_RETURN;
-    }
+	if (_smb_blankpasswd( ctrl, sampass )) {
+		TALLOC_FREE(sampass);
+		retval = PAM_SUCCESS;
+		AUTH_RETURN;
+	}
 
-    /* get this user's authentication token */
+	/* get this user's authentication token */
 
-    retval = _smb_read_password(pamh, ctrl, NULL, "Password: ", NULL, _SMB_AUTHTOK, &p);
-    if (retval != PAM_SUCCESS ) {
-	_log_err(LOG_CRIT, "auth: no password provided for [%s]"
-		 , name);
-        TALLOC_FREE(sampass);
-        AUTH_RETURN;
-    }
+	retval = _smb_read_password(pamh, ctrl, NULL, "Password: ", NULL, _SMB_AUTHTOK, &p);
+	if (retval != PAM_SUCCESS ) {
+		_log_err(LOG_CRIT, "auth: no password provided for [%s]", name);
+		TALLOC_FREE(sampass);
+		AUTH_RETURN;
+	}
 
-    /* verify the password of this user */
+	/* verify the password of this user */
 
-    retval = _smb_verify_password( pamh, sampass, p, ctrl );
-    TALLOC_FREE(sampass);
-    p = NULL;
-    AUTH_RETURN;
+	retval = _smb_verify_password( pamh, sampass, p, ctrl );
+	TALLOC_FREE(sampass);
+	p = NULL;
+	AUTH_RETURN;
 }
 
 /*
@@ -255,4 +258,3 @@ struct pam_module _pam_smbpass_auth_modstruct = {
      NULL
 };
 #endif
-
