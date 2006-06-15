@@ -489,10 +489,11 @@ static int build_domain_data_request(struct ph_async_context *ac,
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 	ac->dom_req->operation = LDB_SEARCH;
-	ac->dom_req->op.search.base = NULL;
+	ac->dom_req->op.search.base = samdb_base_dn(ac);
 	ac->dom_req->op.search.scope = LDB_SCOPE_SUBTREE;
 
-	filter = talloc_asprintf(ac->dom_req, "(&(objectSid=%s)(objectClass=domain))", dom_sid_string(ac->dom_req, sid));
+	filter = talloc_asprintf(ac->dom_req, "(&(objectSid=%s)(objectClass=domain))", 
+				 ldap_encode_ndr_dom_sid(ac->dom_req, sid));
 	if (filter == NULL) {
 		ldb_debug(ac->module->ldb, LDB_DEBUG_ERROR, "Out of Memory!\n");
 		talloc_free(ac->dom_req);
@@ -522,6 +523,12 @@ static struct domain_data *get_domain_data(struct ldb_module *module, void *mem_
 	
 	data = talloc_zero(mem_ctx, struct domain_data);
 	if (data == NULL) {
+		return NULL;
+	}
+
+	if (res == NULL) {
+		ldb_debug(module->ldb, LDB_DEBUG_ERROR, "Could not find this user's domain!\n");
+		talloc_free(data);
 		return NULL;
 	}
 
@@ -575,14 +582,16 @@ static int password_hash_add(struct ldb_module *module, struct ldb_request *req)
 	/* if it is not an entry of type person its an error */
 	/* TODO: remove this when sambaPassword will be in schema */
 	if (!ldb_msg_check_string_attribute(req->op.add.message, "objectClass", "person")) {
+		ldb_set_errstring(module->ldb, talloc_asprintf(module, "Cannot set a password on entry that does not have objectClass 'person'"));
 		return LDB_ERR_OBJECT_CLASS_VIOLATION;
 	}
 
 	/* check sambaPassword is single valued here */
 	/* TODO: remove this when sambaPassword will be single valued in schema */
 	if (attribute->num_values > 1) {
-		ldb_set_errstring(module->ldb, talloc_asprintf(req,
-					"mupltiple values for sambaPassword not allowed!\n"));
+		ldb_set_errstring(module->ldb, 
+				  talloc_asprintf(req,
+						  "mupltiple values for sambaPassword not allowed!\n"));
 		return LDB_ERR_CONSTRAINT_VIOLATION;
 	}
 
@@ -825,7 +834,6 @@ static int password_hash_mod_search_self(struct ldb_async_handle *h) {
 	struct ph_async_context *ac;
 	static const char * const attrs[] = { "userAccountControl", "sambaLMPwdHistory", 
 					      "sambaNTPwdHistory", 
-					      "ntPwdHash", 
 					      "objectSid", "msDS-KeyVersionNumber", 
 					      "objectClass", "userPrincipalName",
 					      "samAccountName", 
