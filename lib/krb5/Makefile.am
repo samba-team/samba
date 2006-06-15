@@ -203,6 +203,7 @@ man_MANS =					\
 	krb5_generate_random_block.3		\
 	krb5_get_all_client_addrs.3		\
 	krb5_get_credentials.3			\
+	krb5_get_creds.3			\
 	krb5_get_forwarded_creds.3		\
 	krb5_get_in_cred.3			\
 	krb5_get_init_creds.3			\
