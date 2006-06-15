@@ -258,7 +258,6 @@ print_expire (krb5_context context,
 
 static krb5_error_code
 get_init_creds_common(krb5_context context,
-		      krb5_creds *creds,
 		      krb5_principal client,
 		      krb5_deltat start_time,
 		      const char *in_tkt_service,
@@ -478,7 +477,7 @@ krb5_get_init_creds_keytab(krb5_context context,
     krb5_error_code ret;
     krb5_keytab_key_proc_args *a;
     
-    ret = get_init_creds_common(context, creds, client, start_time,
+    ret = get_init_creds_common(context, client, start_time,
 				in_tkt_service, options, &ctx);
     if (ret)
 	goto out;
@@ -1367,7 +1366,7 @@ krb5_get_init_creds(krb5_context context,
 
     memset(&kdc_reply, 0, sizeof(kdc_reply));
 
-    ret = get_init_creds_common(context, creds, client, start_time,
+    ret = get_init_creds_common(context, client, start_time,
 				in_tkt_service, options, &ctx);
     if (ret)
 	goto out;
@@ -1528,7 +1527,7 @@ krb5_get_init_creds_keyblock(krb5_context context,
     struct krb5_get_init_creds_ctx ctx;
     krb5_error_code ret;
     
-    ret = get_init_creds_common(context, creds, client, start_time,
+    ret = get_init_creds_common(context, client, start_time,
 				in_tkt_service, options, &ctx);
     if (ret)
 	goto out;
