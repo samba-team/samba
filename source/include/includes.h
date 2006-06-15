@@ -1540,6 +1540,9 @@ krb5_error_code smb_krb5_gen_netbios_krb5_address(smb_krb5_addresses **kerb_addr
 krb5_error_code smb_krb5_free_addresses(krb5_context context, smb_krb5_addresses *addr);
 NTSTATUS krb5_to_nt_status(krb5_error_code kerberos_error);
 krb5_error_code nt_status_to_krb5(NTSTATUS nt_status);
+void smb_krb5_free_error(krb5_context context, krb5_error *krberror);
+krb5_error_code handle_krberror_packet(krb5_context context,
+                                         krb5_data *packet);
 #endif /* HAVE_KRB5 */
 
 
