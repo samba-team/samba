@@ -490,7 +490,7 @@ static int samldb_copy_template(struct ldb_module *module, struct ldb_message *m
 	struct ldb_message *t;
 	int ret, i, j;
 	
-	struct ldb_dn *basedn = ldb_dn_string_compose(msg, samdb_base_dn(msg), "cn=Templates");
+	struct ldb_dn *basedn = ldb_dn_explode(msg, "cn=Templates");
 
 	/* pull the template record */
 	ret = ldb_search(module->ldb, basedn, LDB_SCOPE_SUBTREE, filter, NULL, &res);

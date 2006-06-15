@@ -567,7 +567,8 @@ enum ldb_request_type {
 	LDB_MODIFY,
 	LDB_DELETE,
 	LDB_RENAME,
-	LDB_REQ_REGISTER,
+	LDB_REQ_REGISTER_CONTROL,
+	LDB_REQ_REGISTER_PARTITION,
 	LDB_SEQUENCE_NUMBER
 };
 
@@ -638,6 +639,10 @@ struct ldb_register_control {
 	const char *oid;
 };
 
+struct ldb_register_partition {
+	const struct ldb_dn *dn;
+};
+
 struct ldb_sequence_number {
 	uint64_t seq_num;
 };
@@ -652,7 +657,8 @@ struct ldb_request {
 		struct ldb_modify mod;
 		struct ldb_delete del;
 		struct ldb_rename rename;
-		struct ldb_register_control reg;
+		struct ldb_register_control reg_control;
+		struct ldb_register_partition reg_partition;
 		struct ldb_sequence_number seq_num;
 	} op;
 
@@ -1245,6 +1251,7 @@ const struct ldb_attrib_handler *ldb_attrib_handler(struct ldb_context *ldb,
 
 
 const char **ldb_attr_list_copy(void *mem_ctx, const char * const *attrs);
+const char **ldb_attr_list_copy_add(void *mem_ctx, const char * const *attrs, const char *new_attr);
 int ldb_attr_in_list(const char * const *attrs, const char *attr);
 
 

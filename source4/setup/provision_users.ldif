@@ -68,7 +68,7 @@ privilege: SeNetworkLogonRight
 privilege: SeRemoteInteractiveLogonRight
 
 
-dn: CN=${NETBIOSNAME},OU=Domain Controllers,${BASEDN}
+dn: CN=${NETBIOSNAME},CN=Domain Controllers,${BASEDN}
 objectClass: computer
 cn: ${NETBIOSNAME}
 objectGUID: ${HOSTGUID}

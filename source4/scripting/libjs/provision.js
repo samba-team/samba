@@ -71,7 +71,7 @@ function setup_name_mapping(info, ldb, sid, unixname)
 {
 	var attrs = new Array("dn");
 	var res = ldb.search(sprintf("objectSid=%s", sid), 
-			     NULL, ldb.SCOPE_DEFAULT, attrs);
+			     info.subobj.BASEDN, ldb.SCOPE_SUBTREE, attrs);
 	if (res.length != 1) {
 		info.message("Failed to find record for objectSid %s\n", sid);
 		return false;
@@ -187,12 +187,72 @@ function ldb_erase(ldb)
 }
 
 /*
+  erase an ldb, removing all records
+*/
+function ldb_erase_partitions(info, dbname)
+{
+	var rootDSE_attrs = new Array("namingContexts");
+	var ldb = ldb_init();
+	var lp = loadparm_init();
+	var j;
+
+	ldb.session_info = info.session_info;
+	ldb.credentials = info.credentials;
+
+
+	ldb.filename = dbname;
+
+	var connect_ok = ldb.connect(dbname);
+	assert(connect_ok);
+
+	ldb.transaction_start();
+
+	var res = ldb.search("(objectClass=*)", "", ldb.SCOPE_BASE, rootDSE_attrs);
+	assert(typeof(res) != "undefined");
+	assert(res.length == 1);
+	for (j=0; j<res[0].namingContexts.length; j++) {
+		var attrs = new Array("dn");
+		var basedn = res[0].namingContexts[j];
+		var k;
+		var previous_remaining = 1;
+		var current_remaining = 0;
+
+			for (k=0; k < 10 && (previous_remaining != current_remaining); k++) {
+			/* and the rest */
+			var res2 = ldb.search("(|(objectclass=*)(dn=*))", basedn, ldb.SCOPE_SUBTREE, attrs);
+			var i;
+			if (typeof(res2) == "undefined") {
+				info.message("ldb search failed: " + ldb.errstring() + "\n");
+				continue;
+			}
+			previous_remaining = current_remaining;
+			current_remaining = res2.length;
+			for (i=0;i<res2.length;i++) {
+				ldb.del(res2[i].dn);
+			}
+			
+			var res3 = ldb.search("(|(objectclass=*)(dn=*))", basedn, ldb.SCOPE_SUBTREE, attrs);
+			if (res3.length != 0) {
+				info.message("Failed to delete all records under " + basedn + ", " + res3.length + " records remaining\n");
+			}
+		}
+	}
+
+	var commit_ok = ldb.transaction_commit();
+	if (!commit_ok) {
+		info.message("ldb commit failed: " + ldb.errstring() + "\n");
+		assert(add_ok);
+	}
+}
+
+/*
   setup a ldb in the private dir
  */
 function setup_ldb(ldif, info, dbname)
 {
 	var erase = true;
 	var extra = "";
+	var failok = false;
 	var ldb = ldb_init();
 	var lp = loadparm_init();
 	ldb.session_info = info.session_info;
@@ -202,8 +262,12 @@ function setup_ldb(ldif, info, dbname)
 		extra = arguments[3];
 	}
 
-	if (arguments.length == 5) {
+	if (arguments.length >= 5) {
 	        erase = arguments[4];
+        }
+
+	if (arguments.length == 6) {
+	        failok = arguments[5];
         }
 
 	var src = lp.get("setup directory") + "/" + ldif;
@@ -215,7 +279,11 @@ function setup_ldb(ldif, info, dbname)
 	ldb.filename = dbname;
 
 	var connect_ok = ldb.connect(dbname);
-	assert(connect_ok);
+	if (!connect_ok) {
+		sys.unlink(sprintf("%s/%s", lp.get("private dir"), dbname));
+		connect_ok = ldb.connect(dbname);
+		assert(connect_ok);
+	}
 
 	ldb.transaction_start();
 
@@ -226,12 +294,50 @@ function setup_ldb(ldif, info, dbname)
 	var add_ok = ldb.add(data);
 	if (!add_ok) {
 		info.message("ldb load failed: " + ldb.errstring() + "\n");
-		assert(add_ok);
+		if (!failok) {
+			assert(add_ok);
+	        }
+	}
+	if (add_ok) {
+		var commit_ok = ldb.transaction_commit();
+		if (!commit_ok) {
+			info.message("ldb commit failed: " + ldb.errstring() + "\n");
+			assert(commit_ok);
+		}
+	}
+}
+
+/*
+  setup a ldb in the private dir
+ */
+function setup_ldb_modify(ldif, info, dbname)
+{
+	var ldb = ldb_init();
+	var lp = loadparm_init();
+	ldb.session_info = info.session_info;
+	ldb.credentials = info.credentials;
+
+	var src = lp.get("setup directory") + "/" + ldif;
+
+	var data = sys.file_load(src);
+	data = substitute_var(data, info.subobj);
+
+	ldb.filename = dbname;
+
+	var connect_ok = ldb.connect(dbname);
+	assert(connect_ok);
+
+	ldb.transaction_start();
+
+	var mod_ok = ldb.modify(data);
+	if (!mod_ok) {
+		info.message("ldb load failed: " + ldb.errstring() + "\n");
+		assert(mod_ok);
 	}
 	var commit_ok = ldb.transaction_commit();
 	if (!commit_ok) {
 		info.message("ldb commit failed: " + ldb.errstring() + "\n");
-		assert(add_ok);
+		assert(commit_ok);
 	}
 }
 
@@ -271,6 +377,7 @@ function provision_default_paths(subobj)
 	paths.secrets = "secrets.ldb";
 	paths.dns = lp.get("private dir") + "/" + subobj.DNSDOMAIN + ".zone";
 	paths.winsdb = "wins.ldb";
+	paths.ldap_basedn_ldif = lp.get("private dir") + "/" + subobj.DNSDOMAIN + ".ldif";
 	return paths;
 }
 
@@ -289,12 +396,8 @@ function setup_name_mappings(info, subobj, session_info, credentials)
 		return false;
 	}
 	var attrs = new Array("objectSid");
-	var res = ldb.search("dnsDomain=" + subobj.REALM,
-			     NULL, ldb.SCOPE_DEFAULT, attrs);
-	if (res.length != 1) {
-		info.message("Failed to find dnsDomain %s\n", subobj.REALM);
-		return false;
-	}
+	res = ldb.search("objectSid=*", subobj.BASEDN, ldb.SCOPE_BASE, attrs);
+	assert(res.length == 1 && res[0].objectSid != undefined);
 	var sid = res[0].objectSid;
 
 	/* add some foreign sids if they are not present already */
@@ -369,9 +472,16 @@ function provision(subobj, message, blank, paths, session_info, credentials)
 	message("Setting up hklm.ldb\n");
 	setup_ldb("hklm.ldif", info, paths.hklm);
 
-
 	message("Setting up sam.ldb attributes\n");
 	setup_ldb("provision_init.ldif", info, paths.samdb);
+	message("Erasing data from partitions\n");
+	ldb_erase_partitions(info, paths.samdb);
+	
+	message("Adding baseDN: " + subobj.BASEDN + "\n");
+	setup_ldb("provision_basedn.ldif", info, paths.samdb, NULL, false, true);
+	message("Modifying baseDN: " + subobj.BASEDN + "\n");
+	setup_ldb_modify("provision_basedn_modify.ldif", info, paths.samdb)
+
 	message("Setting up sam.ldb schema\n");
 	setup_ldb("schema.ldif", info, paths.samdb, NULL, false);
 	message("Setting up display specifiers\n");
@@ -408,10 +518,12 @@ function provision_dns(subobj, message, paths, session_info, credentials)
 	assert(ok);
 
 	/* These values may have changed, due to an incoming SamSync, so fetch them from the database */
-	subobj.DOMAINGUID = searchone(ldb, "(&(objectClass=domainDNS)(dnsDomain=" + subobj.DNSDOMAIN + "))", "objectGUID");
-	assert(subobj.DOMAINGUID != undefined);
+	var attrs = new Array("objectGUID");
+	res = ldb.search("objectGUID=*", subobj.BASEDN, ldb.SCOPE_BASE, attrs);
+	assert(res.length == 1 && res[0].objectGUID != undefined)
+	subobj.DOMAINGUID = res[0].objectGUID;
 
-	subobj.HOSTGUID = searchone(ldb, "(&(objectClass=computer)(cn=" + subobj.NETBIOSNAME + "))", "objectGUID");
+	subobj.HOSTGUID = searchone(ldb, subobj.BASEDN, "(&(objectClass=computer)(cn=" + subobj.NETBIOSNAME + "))", "objectGUID");
 	assert(subobj.HOSTGUID != undefined);
 
 	setup_file("provision.zone", 
@@ -420,6 +532,21 @@ function provision_dns(subobj, message, paths, session_info, credentials)
 
 	message("Please install the zone located in " + paths.dns + " into your DNS server\n");
 }
+
+/* Write out a DNS zone file, from the info in the current database */
+function provision_ldapbase(subobj, message, paths)
+{
+	message("Setting up LDAP base entry: " + subobj.BASEDN + " \n");
+	var rdns = split(",", subobj.BASEDN);
+	subobj.RDN_DC = substr(rdns[0], strlen("DC="));
+
+	setup_file("provision_basedn.ldif", 
+		   message, paths.ldap_basedn_ldif, 
+		   subobj);
+
+	message("Please install the LDIF located in " + paths.ldap_basedn_ldif + " into your LDAP server, and re-run with --ldap-backend=ldap://my.ldap.server\n");
+}
+
 
 /*
   guess reasonably default options for provisioning
@@ -466,16 +593,17 @@ function provision_guess()
 				      subobj.DNSDOMAIN);
 	rdn_list = split(".", subobj.DNSDOMAIN);
 	subobj.BASEDN       = "DC=" + join(",DC=", rdn_list);
+	subobj.LDAPBACKEND  = "users.ldb";
 	return subobj;
 }
 
 /*
   search for one attribute as a string
  */
-function searchone(ldb, expression, attribute)
+function searchone(ldb, basedn, expression, attribute)
 {
 	var attrs = new Array(attribute);
-	res = ldb.search(expression, attrs);
+	res = ldb.search(expression, basedn, ldb.SCOPE_SUBTREE, attrs);
 	if (res.length != 1 ||
 	    res[0][attribute] == undefined) {
 		return undefined;
@@ -524,9 +652,12 @@ function newuser(username, unixname, password, message, session_info, credential
 	ldb.transaction_start();
 
 	/* find the DNs for the domain and the domain users group */
-	var domain_dn = searchone(ldb, "objectClass=domainDNS", "dn");
+	var attrs = new Array("defaultNamingContext");
+	res = ldb.search("defaultNamingContext=*", "", ldb.SCOPE_BASE, attrs);
+	assert(res.length == 1 && res[0].defaultNamingContext != undefined)
+	var domain_dn = res[0].defaultNamingContext;
 	assert(domain_dn != undefined);
-	var dom_users = searchone(ldb, "name=Domain Users", "dn");
+	var dom_users = searchone(ldb, domain_dn, "name=Domain Users", "dn");
 	assert(dom_users != undefined);
 
 	var user_dn = sprintf("CN=%s,CN=Users,%s", username, domain_dn);

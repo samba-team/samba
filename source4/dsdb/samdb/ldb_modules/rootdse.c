@@ -31,6 +31,8 @@
 struct private_data {
 	int num_controls;
 	char **controls;
+	int num_partitions;
+	struct ldb_dn **partitions;
 };
 
 /*
@@ -54,8 +56,10 @@ static int rootdse_add_dynamic(struct ldb_module *module, struct ldb_message *ms
 
 	msg->dn = ldb_dn_explode(msg, "");
 
-	/* don't return the distinduishedName attribute if any */
+	/* don't return the distinduishedName, cn and name attributes */
 	ldb_msg_remove_attr(msg, "distinguishedName");
+	ldb_msg_remove_attr(msg, "cn");
+	ldb_msg_remove_attr(msg, "name");
 
 	if (do_attribute(attrs, "currentTime")) {
 		if (ldb_msg_add_steal_string(msg, "currentTime", 
@@ -77,6 +81,17 @@ static int rootdse_add_dynamic(struct ldb_module *module, struct ldb_message *ms
  			}
  		}
  	}
+
+	if (do_attribute(attrs, "namingContexts")) {
+		int i;
+		for (i = 0; i < priv->num_partitions; i++) {
+			struct ldb_dn *dn = priv->partitions[i];
+			if (ldb_msg_add_steal_string(msg, "namingContexts",
+						     ldb_dn_linearize(msg, dn)) != 0) {
+				goto failed;
+ 			}
+ 		}
+	}
 
 	server_creds = talloc_get_type(ldb_get_opaque(module->ldb, "server_credentials"), 
 				       struct cli_credentials);
@@ -111,7 +126,7 @@ static int rootdse_add_dynamic(struct ldb_module *module, struct ldb_message *ms
 			}
 		}
 	}
-	
+
 	/* TODO: lots more dynamic attributes should be added here */
 
 	return LDB_SUCCESS;
@@ -189,7 +204,7 @@ static int rootdse_search(struct ldb_module *module, struct ldb_request *req)
 	/* in our db we store the rootDSE with a DN of cn=rootDSE */
 	down_req->op.search.base = ldb_dn_explode(down_req, "cn=rootDSE");
 	down_req->op.search.scope = LDB_SCOPE_BASE;
-	down_req->op.search.tree = ldb_parse_tree(down_req, "dn=*");
+	down_req->op.search.tree = ldb_parse_tree(down_req, NULL);
 	if (down_req->op.search.base == NULL || down_req->op.search.tree == NULL) {
 		ldb_oom(module->ldb);
 		talloc_free(down_req);
@@ -224,7 +239,7 @@ static int rootdse_register_control(struct ldb_module *module, struct ldb_reques
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	list[priv->num_controls] = talloc_strdup(list, req->op.reg.oid);
+	list[priv->num_controls] = talloc_strdup(list, req->op.reg_control.oid);
 	if (!list[priv->num_controls]) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
@@ -235,13 +250,36 @@ static int rootdse_register_control(struct ldb_module *module, struct ldb_reques
 	return LDB_SUCCESS;
 }
  
+static int rootdse_register_partition(struct ldb_module *module, struct ldb_request *req)
+{
+	struct private_data *priv = talloc_get_type(module->private_data, struct private_data);
+	struct ldb_dn **list;
+
+	list = talloc_realloc(priv, priv->partitions, struct ldb_dn *, priv->num_partitions + 1);
+	if (!list) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	list[priv->num_partitions] = talloc_reference(list, req->op.reg_partition.dn);
+	if (!list[priv->num_partitions]) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	priv->num_partitions += 1;
+	priv->partitions = list;
+
+	return LDB_SUCCESS;
+}
+ 
 
 static int rootdse_request(struct ldb_module *module, struct ldb_request *req)
 {
 	switch (req->operation) {
 
-	case LDB_REQ_REGISTER:
+	case LDB_REQ_REGISTER_CONTROL:
 		return rootdse_register_control(module, req);
+	case LDB_REQ_REGISTER_PARTITION:
+		return rootdse_register_partition(module, req);
 
 	default:
 		break;
@@ -260,6 +298,8 @@ static int rootdse_init(struct ldb_module *module)
 
 	data->num_controls = 0;
 	data->controls = NULL;
+	data->num_partitions = 0;
+	data->partitions = NULL;
 	module->private_data = data;
 
 	return ldb_next_init(module);
