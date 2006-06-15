@@ -36,6 +36,8 @@ o   Jeremy Allison <jra@samba.org>
 
 o   Gerald (Jerry) Carter <jerry@samba.org>
     * Fix 'make install' problem when building outside source/.
+    * Fix 'net ads join' when the workgroup is set incorrectly in 
+      smb.conf.
 
 
 o   Guenther Deschner <gd@samba.org>
