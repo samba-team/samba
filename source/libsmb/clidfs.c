@@ -416,7 +416,7 @@ static void clean_path( pstring clean, const char *path )
 	/* strip a trailing backslash */
 	
 	len = strlen( newpath );
-	if ( newpath[len-1] == '\\' )
+	if ( (len > 0) && (newpath[len-1] == '\\') )
 		newpath[len-1] = '\0';
 		
 	pstrcpy( clean, newpath );
