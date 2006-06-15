@@ -42,72 +42,80 @@
 int pam_sm_acct_mgmt( pam_handle_t *pamh, int flags,
                       int argc, const char **argv )
 {
-    unsigned int ctrl;
-    int retval;
+	unsigned int ctrl;
+	int retval;
 
-    const char *name;
-    struct samu *sampass = NULL;
-    void (*oldsig_handler)(int);
-    extern BOOL in_client;
+	const char *name;
+	struct samu *sampass = NULL;
+	void (*oldsig_handler)(int);
+	extern BOOL in_client;
 
-    /* Samba initialization. */
-    load_case_tables();
-    setup_logging( "pam_smbpass", False );
-    in_client = True;
+	/* Samba initialization. */
+	load_case_tables();
+	setup_logging( "pam_smbpass", False );
+	in_client = True;
 
-    ctrl = set_ctrl( flags, argc, argv );
+	ctrl = set_ctrl( flags, argc, argv );
 
-    /* get the username */
+	/* get the username */
 
-    retval = pam_get_user( pamh, &name, "Username: " );
-    if (retval != PAM_SUCCESS) {
-        if (on( SMB_DEBUG, ctrl )) {
-	    _log_err( LOG_DEBUG, "acct: could not identify user" );
-        }
-        return retval;
-    }
-    if (on( SMB_DEBUG, ctrl )) {
-        _log_err( LOG_DEBUG, "acct: username [%s] obtained", name );
-    }
+	retval = pam_get_user( pamh, &name, "Username: " );
+	if (retval != PAM_SUCCESS) {
+		if (on( SMB_DEBUG, ctrl )) {
+			_log_err( LOG_DEBUG, "acct: could not identify user" );
+		}
+		return retval;
+	}
+	if (on( SMB_DEBUG, ctrl )) {
+		_log_err( LOG_DEBUG, "acct: username [%s] obtained", name );
+	}
 
-    /* Getting into places that might use LDAP -- protect the app
-       from a SIGPIPE it's not expecting */
-    oldsig_handler = CatchSignal(SIGPIPE, SIGNAL_CAST SIG_IGN);
-    if (!initialize_password_db(True)) {
-        _log_err( LOG_ALERT, "Cannot access samba password database" );
-        CatchSignal(SIGPIPE, SIGNAL_CAST oldsig_handler);
-        return PAM_AUTHINFO_UNAVAIL;
-    }
+	/* Getting into places that might use LDAP -- protect the app
+		from a SIGPIPE it's not expecting */
+	oldsig_handler = CatchSignal(SIGPIPE, SIGNAL_CAST SIG_IGN);
+	if (!initialize_password_db(True)) {
+		_log_err( LOG_ALERT, "Cannot access samba password database" );
+		CatchSignal(SIGPIPE, SIGNAL_CAST oldsig_handler);
+		return PAM_AUTHINFO_UNAVAIL;
+	}
 
-    /* Get the user's record. */
+	/* Get the user's record. */
 
-    if ( (sampass = samu_new( NULL )) != NULL ) {
-    	pdb_getsampwnam(sampass, name );
-    } 
+	if (!(sampass = samu_new( NULL ))) {
+        	CatchSignal(SIGPIPE, SIGNAL_CAST oldsig_handler);
+		/* malloc fail. */
+		return nt_status_to_pam(NT_STATUS_NO_MEMORY);
+	}
 
-    /* check for lookup failure */
-    if ( !sampass || !strlen(pdb_get_username(sampass)) ) {
-        CatchSignal(SIGPIPE, SIGNAL_CAST oldsig_handler);
-        return PAM_USER_UNKNOWN;
-    }
+	if (!pdb_getsampwnam(sampass, name )) {
+		_log_err( LOG_DEBUG, "acct: could not identify user" );
+        	CatchSignal(SIGPIPE, SIGNAL_CAST oldsig_handler);
+        	return PAM_USER_UNKNOWN;
+	}
 
-    if (pdb_get_acct_ctrl(sampass) & ACB_DISABLED) {
-        if (on( SMB_DEBUG, ctrl )) {
-            _log_err( LOG_DEBUG
-                      , "acct: account %s is administratively disabled", name );
-        }
-        make_remark( pamh, ctrl, PAM_ERROR_MSG
-                     , "Your account has been disabled; "
-                       "please see your system administrator." );
+	/* check for lookup failure */
+	if (!strlen(pdb_get_username(sampass)) ) {
+		CatchSignal(SIGPIPE, SIGNAL_CAST oldsig_handler);
+		return PAM_USER_UNKNOWN;
+	}
 
-        CatchSignal(SIGPIPE, SIGNAL_CAST oldsig_handler);
-        return PAM_ACCT_EXPIRED;
-    }
+	if (pdb_get_acct_ctrl(sampass) & ACB_DISABLED) {
+		if (on( SMB_DEBUG, ctrl )) {
+			_log_err( LOG_DEBUG
+				, "acct: account %s is administratively disabled", name );
+		}
+		make_remark( pamh, ctrl, PAM_ERROR_MSG
+			, "Your account has been disabled; "
+			"please see your system administrator." );
 
-    /* TODO: support for expired passwords. */
+		CatchSignal(SIGPIPE, SIGNAL_CAST oldsig_handler);
+		return PAM_ACCT_EXPIRED;
+	}
 
-    CatchSignal(SIGPIPE, SIGNAL_CAST oldsig_handler);
-    return PAM_SUCCESS;
+	/* TODO: support for expired passwords. */
+
+	CatchSignal(SIGPIPE, SIGNAL_CAST oldsig_handler);
+	return PAM_SUCCESS;
 }
 
 /* static module data */
