@@ -446,7 +446,7 @@ static int process_root(int local_flags)
 		struct samu *sampass = NULL;
 		
 		sampass = samu_new( NULL );
-		if (!samu_new) {
+		if (!sampass) {
 			fprintf(stderr, "talloc fail for struct samu.\n");
 			exit(1);
 		}
