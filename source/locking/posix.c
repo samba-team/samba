@@ -454,9 +454,8 @@ static int delete_posix_lock_entry(files_struct *fsp, SMB_OFF_T start, SMB_OFF_T
 			entry->start == start &&
 			entry->size == size) {
 
-			/* Make a copy if requested. */
-			if (pl)
-				*pl = *entry;
+			/* Make a copy */
+			*pl = *entry;
 
 			/* Found it - delete it. */
 			if (count == 1) {
