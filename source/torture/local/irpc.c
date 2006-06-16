@@ -31,6 +31,12 @@ const uint32_t MSG_ID1 = 1, MSG_ID2 = 2;
 
 static BOOL test_debug;
 
+struct irpc_test_data
+{
+	struct messaging_context *msg_ctx1, *msg_ctx2;
+	struct event_context *ev;
+};
+
 /*
   serve up AddOne over the irpc system
 */
@@ -75,22 +81,19 @@ static NTSTATUS irpc_EchoData(struct irpc_message *irpc, struct echo_EchoData *r
 /*
   test a addone call over the internal messaging system
 */
-static BOOL test_addone(struct torture_test *parent_test, 
-			struct messaging_context *msg_ctx1,
-			struct messaging_context *msg_ctx2,
-			uint32_t value)
+static BOOL test_addone(struct torture_context *test, const void *_data,
+						const void *_value)
 {
 	struct echo_AddOne r;
 	NTSTATUS status;
-
-	struct torture_test *test = torture_subtest(parent_test, "test_addone",
-												"test_addone");
+	const struct irpc_test_data *data = _data;
+	uint32_t value = (uint32_t)value;
 
 	/* make the call */
 	r.in.in_data = value;
 
 	test_debug = True;
-	status = IRPC_CALL(msg_ctx1, MSG_ID2, rpcecho, ECHO_ADDONE, &r, test);
+	status = IRPC_CALL(data->msg_ctx1, MSG_ID2, rpcecho, ECHO_ADDONE, &r, test);
 	test_debug = False;
 	torture_assert_ntstatus_ok(test, status, "AddOne failed");
 
@@ -107,21 +110,19 @@ static BOOL test_addone(struct torture_test *parent_test,
 /*
   test a echodata call over the internal messaging system
 */
-static BOOL test_echodata(struct torture_test *parent_test, 
-			  struct messaging_context *msg_ctx1,
-			  struct messaging_context *msg_ctx2)
+static BOOL test_echodata(struct torture_context *test, 
+						  const void *_data, const void *_data2)
 {
 	struct echo_EchoData r;
 	NTSTATUS status;
-
-	struct torture_test *test = torture_subtest(parent_test, "test_echodata",
-												"test_echodata");
+	const struct irpc_test_data *data = _data;
 
 	/* make the call */
 	r.in.in_data = (unsigned char *)talloc_strdup(test, "0123456789");
 	r.in.len = strlen((char *)r.in.in_data);
 
-	status = IRPC_CALL(msg_ctx1, MSG_ID2, rpcecho, ECHO_ECHODATA, &r, test);
+	status = IRPC_CALL(data->msg_ctx1, MSG_ID2, rpcecho, ECHO_ECHODATA, &r, 
+					   test);
 	torture_assert_ntstatus_ok(test, status, "EchoData failed");
 
 	/* check the answer */
@@ -159,19 +160,16 @@ static void irpc_callback(struct irpc_request *irpc)
 /*
   test echo speed
 */
-static BOOL test_speed(struct torture_test *parent_test, 
-		       struct messaging_context *msg_ctx1,
-		       struct messaging_context *msg_ctx2,
-		       struct event_context *ev)
+static BOOL test_speed(struct torture_context *test, 
+					   const void *_data, 
+					   const void *_data2)
 {
 	int ping_count = 0;
 	int pong_count = 0;
+	const struct irpc_test_data *data = _data;
 	struct timeval tv;
 	struct echo_AddOne r;
 	int timelimit = lp_parm_int(-1, "torture", "timelimit", 10);
-
-	struct torture_test *test = torture_subtest(parent_test, "test_speed",
-												"test_speed");
 
 	tv = timeval_current();
 
@@ -181,7 +179,8 @@ static BOOL test_speed(struct torture_test *parent_test,
 	while (timeval_elapsed(&tv) < timelimit) {
 		struct irpc_request *irpc;
 
-		irpc = IRPC_CALL_SEND(msg_ctx1, MSG_ID2, rpcecho, ECHO_ADDONE, &r, test);
+		irpc = IRPC_CALL_SEND(data->msg_ctx1, MSG_ID2, rpcecho, ECHO_ADDONE, 
+							  &r, test);
 		torture_assert(test, irpc != NULL, "AddOne send failed");
 
 		irpc->async.fn = irpc_callback;
@@ -190,14 +189,14 @@ static BOOL test_speed(struct torture_test *parent_test,
 		ping_count++;
 
 		while (ping_count > pong_count + 20) {
-			event_loop_once(ev);
+			event_loop_once(data->ev);
 		}
 	}
 
 	torture_comment(test, "waiting for %d remaining replies (done %d)", 
 	       ping_count - pong_count, pong_count);
 	while (timeval_elapsed(&tv) < 30 && pong_count < ping_count) {
-		event_loop_once(ev);
+		event_loop_once(data->ev);
 	}
 
 	if (ping_count != pong_count) {
@@ -212,39 +211,49 @@ static BOOL test_speed(struct torture_test *parent_test,
 }
 
 
-BOOL torture_local_irpc(struct torture_context *torture) 
+static BOOL irpc_setup(struct torture_context *test, void **_data)
 {
-	struct torture_test *test = torture_test(torture, "torture_local_irpc", "");
-	struct messaging_context *msg_ctx1, *msg_ctx2;
-	struct event_context *ev;
+	struct irpc_test_data *data;
+
+	*_data = data = talloc(test, struct irpc_test_data);
 
 	lp_set_cmdline("lock dir", "lockdir.tmp");
 
-	ev = event_context_init(test);
+	data->ev = event_context_init(test);
 	torture_assert(test, 
-				   msg_ctx1 = messaging_init(test, MSG_ID1, ev),
+				   data->msg_ctx1 = messaging_init(test, MSG_ID1, data->ev),
 				   "Failed to init first messaging context");
 
 	torture_assert(test,
-				   msg_ctx2 = messaging_init(test, MSG_ID2, ev),
+				   data->msg_ctx2 = messaging_init(test, MSG_ID2, data->ev),
 				   "Failed to init second messaging context");
 
 	/* register the server side function */
-	IRPC_REGISTER(msg_ctx1, rpcecho, ECHO_ADDONE, irpc_AddOne, NULL);
-	IRPC_REGISTER(msg_ctx2, rpcecho, ECHO_ADDONE, irpc_AddOne, NULL);
+	IRPC_REGISTER(data->msg_ctx1, rpcecho, ECHO_ADDONE, irpc_AddOne, NULL);
+	IRPC_REGISTER(data->msg_ctx2, rpcecho, ECHO_ADDONE, irpc_AddOne, NULL);
 
-	IRPC_REGISTER(msg_ctx1, rpcecho, ECHO_ECHODATA, irpc_EchoData, NULL);
-	IRPC_REGISTER(msg_ctx2, rpcecho, ECHO_ECHODATA, irpc_EchoData, NULL);
+	IRPC_REGISTER(data->msg_ctx1, rpcecho, ECHO_ECHODATA, irpc_EchoData, NULL);
+	IRPC_REGISTER(data->msg_ctx2, rpcecho, ECHO_ECHODATA, irpc_EchoData, NULL);
 
-	test_addone(test, msg_ctx1, msg_ctx2, 0);
-	test_addone(test, msg_ctx1, msg_ctx2, 0x7FFFFFFE);
-	test_addone(test, msg_ctx1, msg_ctx2, 0xFFFFFFFE);
-	test_addone(test, msg_ctx1, msg_ctx2, 0xFFFFFFFF);
-	test_addone(test, msg_ctx1, msg_ctx2, random() & 0xFFFFFFFF);
-	test_echodata(test, msg_ctx1, msg_ctx2);
-	test_speed(test, msg_ctx1, msg_ctx2, ev);
+	return True;
+}
 
-	talloc_free(test);
+BOOL torture_local_irpc(struct torture_context *torture) 
+{
+	struct torture_suite *suite = torture_suite_create(torture, "LOCAL-IRPC");
+	struct torture_tcase *tcase = torture_suite_add_tcase(suite, "irpc");
+	int i;
+	uint32_t values[] = {0, 0x7FFFFFFE, 0xFFFFFFFE, 0xFFFFFFFF, 
+						 random() & 0xFFFFFFFF};
 
-	return torture_result(torture);
+	tcase->setup = irpc_setup;
+
+	for (i = 0; i < ARRAY_SIZE(values); i++) {
+		torture_tcase_add_test(tcase, "addone", test_addone, (void *)values[i]);
+	}
+						   
+	torture_tcase_add_test(tcase, "echodata", test_echodata, NULL);
+	torture_tcase_add_test(tcase, "speed", test_speed, NULL);
+
+	return torture_run_suite(torture, suite);
 }

@@ -233,12 +233,22 @@ static void max_runtime_handler(int sig)
 	exit(1);
 }
 
-static void simple_test_start (struct torture_test *test)
+static void simple_tcase_start (struct torture_context *ctx, 
+							   struct torture_tcase *tcase,
+							   struct torture_test *test)
 {
-	printf("Testing %s...\n", test->name);
+	printf("Testing %s...\n", tcase->name);
 }
 
-static void simple_test_result (struct torture_test *test, enum torture_result res, const char *reason)
+static void simple_test_start (struct torture_context *ctx, 
+							   struct torture_tcase *tcase,
+							   struct torture_test *test)
+{
+	printf("Testing %s/%s...\n", tcase->name, test->name);
+}
+
+static void simple_test_result (struct torture_context *context, 
+								enum torture_result res, const char *reason)
 {
 	switch (res) {
 	case TORTURE_OK:
@@ -246,19 +256,19 @@ static void simple_test_result (struct torture_test *test, enum torture_result r
 			printf("OK: %s\n", reason);
 		break;
 	case TORTURE_FAIL:
-		printf("ERROR: %s - %s\n", test->name, reason);
+		printf("ERROR: %s - %s\n", context->active_test->name, reason);
 		break;
 	case TORTURE_TODO:
-		printf("TODO: %s - %s\n", test->name, reason);
+		printf("TODO: %s - %s\n", context->active_test->name, reason);
 		break;
 	case TORTURE_SKIP:
-		printf("SKIP: %s - %s\n", test->name, reason);
+		printf("SKIP: %s - %s\n", context->active_test->name, reason);
 		break;
 
 	}
 }
 
-static void simple_comment (struct torture_test *test, const char *comment)
+static void simple_comment (struct torture_context *test, const char *comment)
 {
 	printf("# %s\n", comment);
 }
@@ -266,34 +276,38 @@ static void simple_comment (struct torture_test *test, const char *comment)
 const static struct torture_ui_ops std_ui_ops = {
 	.comment = simple_comment,
 	.test_start = simple_test_start,
+	.tcase_start = simple_tcase_start,
 	.test_result = simple_test_result
 };
 
 
-static void subunit_test_start (struct torture_test *test)
+static void subunit_test_start (struct torture_context *ctx, 
+							    struct torture_tcase *tcase,
+								struct torture_test *test)
 {
 	printf("test: %s\n", test->name);
 }
 
-static void subunit_test_result (struct torture_test *test, enum torture_result res, const char *reason)
+static void subunit_test_result (struct torture_context *context, 
+								 enum torture_result res, const char *reason)
 {
 	switch (res) {
 	case TORTURE_OK:
-		printf("success: %s\n", test->name);
+		printf("success: %s\n", context->active_test->name);
 		break;
 	case TORTURE_FAIL:
-		printf("failure: %s [ %s ]\n", test->name, reason);
+		printf("failure: %s [ %s ]\n", context->active_test->name, reason);
 		break;
 	case TORTURE_TODO:
-		printf("todo: %s\n", test->name);
+		printf("todo: %s\n", context->active_test->name);
 		break;
 	case TORTURE_SKIP:
-		printf("skip: %s\n", test->name);
+		printf("skip: %s\n", context->active_test->name);
 		break;
 	}
 }
 
-static void subunit_comment (struct torture_test *test, const char *comment)
+static void subunit_comment (struct torture_context *test, const char *comment)
 {
 	printf("# %s\n", comment);
 }
@@ -304,29 +318,32 @@ const static struct torture_ui_ops subunit_ui_ops = {
 	.test_result = subunit_test_result
 };
 
-static void harness_test_start (struct torture_test *test)
+static void harness_test_start (struct torture_context *ctx, 
+							    struct torture_tcase *tcase,
+								struct torture_test *test)
 {
 }
 
-static void harness_test_result (struct torture_test *test, enum torture_result res, const char *reason)
+static void harness_test_result (struct torture_context *context, 
+								 enum torture_result res, const char *reason)
 {
 	switch (res) {
 	case TORTURE_OK:
-		printf("ok %s - %s\n", test->name, reason);
+		printf("ok %s - %s\n", context->active_test->name, reason);
 		break;
 	case TORTURE_FAIL:
-		printf("not ok %s - %s\n", test->name, reason);
+		printf("not ok %s - %s\n", context->active_test->name, reason);
 		break;
 	case TORTURE_TODO:
-		printf("todo %s - %s\n", test->name, reason);
+		printf("todo %s - %s\n", context->active_test->name, reason);
 		break;
 	case TORTURE_SKIP:
-		printf("skip %s - %s\n", test->name, reason);
+		printf("skip %s - %s\n", context->active_test->name, reason);
 		break;
 	}
 }
 
-static void harness_comment (struct torture_test *test, const char *comment)
+static void harness_comment (struct torture_context *test, const char *comment)
 {
 	printf("# %s\n", comment);
 }
@@ -350,7 +367,7 @@ const static struct torture_ui_ops harness_ui_ops = {
 	struct torture_context *torture;
 	char **argv_new;
 	poptContext pc;
-	static char *ui_ops_name = "simple";
+	static const char *ui_ops_name = "simple";
 	enum {OPT_LOADFILE=1000,OPT_UNCLIST,OPT_TIMELIMIT,OPT_DNS,
 	      OPT_DANGEROUS,OPT_SMB_PORTS,OPT_ASYNC};
 	

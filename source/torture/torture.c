@@ -637,7 +637,7 @@ static struct {
 	{"SCAN-EAMAX", torture_max_eas, 0},
 
 	/* local (no server) testers */
-	{"LOCAL-NTLMSSP", torture_ntlmssp_self_check, 0},
+	{"LOCAL-NTLMSSP", torture_ntlmssp, 0},
 	{"LOCAL-ICONV", torture_local_iconv, 0},
 	{"LOCAL-TALLOC", torture_local_talloc, 0},
 	{"LOCAL-MESSAGING", torture_local_messaging, 0},

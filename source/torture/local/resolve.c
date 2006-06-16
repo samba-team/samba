@@ -26,11 +26,9 @@
 #include "torture/torture.h"
 #include "torture/ui.h"
 
-static BOOL test_async_resolve(struct torture_context *torture)
+static BOOL test_async_resolve(struct torture_context *test, const void *_data)
 {
 	struct nbt_name n;
-	struct torture_test *test = torture_test(torture, "async_resolve",
-											 "asynchronous resolve");
 	struct event_context *ev;
 	int timelimit = lp_parm_int(-1, "torture", "timelimit", 10);
 	const char *host = lp_parm_string(-1, "torture", "host");
@@ -56,21 +54,18 @@ static BOOL test_async_resolve(struct torture_context *torture)
 	torture_comment(test, "async rate of %.1f resolves/sec", 
 					count/timeval_elapsed(&tv));
 
-	talloc_free(test);
 	return True;
 }
 
 /*
   test resolution using sync method
 */
-static BOOL test_sync_resolve(struct torture_context *torture)
+static BOOL test_sync_resolve(struct torture_context *test, const void *_data)
 {
 	int timelimit = lp_parm_int(-1, "torture", "timelimit", 10);
 	struct timeval tv = timeval_current();
 	int count = 0;
 	const char *host = lp_parm_string(-1, "torture", "host");
-	struct torture_test *test = torture_test(torture, "sync resolve",
-											 "synchronous resolve");
 
 	torture_comment(test, "Testing sync resolve of localhost for %d seconds", 
 				 timelimit);
@@ -82,15 +77,17 @@ static BOOL test_sync_resolve(struct torture_context *torture)
 	torture_comment(test, "sync rate of %.1f resolves/sec", 
 				 count/timeval_elapsed(&tv));
 
-	talloc_free(test);
 	return True;
 }
 
 
 BOOL torture_local_resolve(struct torture_context *torture) 
 {
-	test_async_resolve(torture);
-	test_sync_resolve(torture);
+	struct torture_suite *suite = torture_suite_create(torture, 
+													   "LOCAL-RESOLVE");
 
-	return torture_result(torture);
+	torture_suite_add_simple_tcase(suite, "async", test_async_resolve, NULL);
+	torture_suite_add_simple_tcase(suite, "sync", test_sync_resolve, NULL);
+
+	return torture_run_suite(torture, suite);
 }

@@ -3368,45 +3368,27 @@ static BOOL test_Connect(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 BOOL torture_rpc_samr(struct torture_context *torture)
 {
-        NTSTATUS status;
-        struct dcerpc_pipe *p;
-	TALLOC_CTX *mem_ctx;
+    NTSTATUS status;
+    struct dcerpc_pipe *p;
 	BOOL ret = True;
 	struct policy_handle handle;
 
-	mem_ctx = talloc_init("torture_rpc_samr");
-
-	status = torture_rpc_connection(mem_ctx, &p, &dcerpc_table_samr);
+	status = torture_rpc_connection(torture, &p, &dcerpc_table_samr);
 	if (!NT_STATUS_IS_OK(status)) {
-		talloc_free(mem_ctx);
 		return False;
 	}
 
-	if (!test_Connect(p, mem_ctx, &handle)) {
-		ret = False;
-	}
+	ret &= test_Connect(p, torture, &handle);
 
-	if (!test_QuerySecurity(p, mem_ctx, &handle)) {
-		ret = False;
-	}
+	ret &= test_QuerySecurity(p, torture, &handle);
 
-	if (!test_EnumDomains(p, mem_ctx, &handle)) {
-		ret = False;
-	}
+	ret &= test_EnumDomains(p, torture, &handle);
 
-	if (!test_SetDsrmPassword(p, mem_ctx, &handle)) {
-		ret = False;
-	}
+	ret &= test_SetDsrmPassword(p, torture, &handle);
 
-	if (!test_Shutdown(p, mem_ctx, &handle)) {
-		ret = False;
-	}
+	ret &= test_Shutdown(p, torture, &handle);
 
-	if (!test_samr_handle_Close(p, mem_ctx, &handle)) {
-		ret = False;
-	}
-
-	talloc_free(mem_ctx);
+	ret &= test_samr_handle_Close(p, torture, &handle);
 
 	return ret;
 }

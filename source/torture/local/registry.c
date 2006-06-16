@@ -26,19 +26,32 @@
 #include "torture/torture.h"
 #include "torture/ui.h"
 
-static bool test_hive(struct torture_context *parent_ctx, const char *backend, const char *location)
+const static struct test_backend_settings {
+	const char *name;
+	const char *location;
+} backends[] = {
+	{ "nt4", "TEST.DAT" },
+	{ "ldb", "test.ldb" },
+	{ "gconf", "." },
+	{ "dir", "." },
+	{ NULL, NULL }
+};
+
+static BOOL test_hive(struct torture_context *ctx, const void *_backend)
 {
 	WERROR error;
 	struct registry_key *root, *subkey;
 	uint32_t count;
-	struct torture_test *ctx = torture_test(parent_ctx, "test_hive", backend);
-	
-	if (!reg_has_backend(backend)) {
-		torture_skip(ctx, "Backend '%s' support not compiled in", backend);
+	const struct test_backend_settings *backend = _backend;
+
+	if (!reg_has_backend(backend->name)) {
+		torture_skip(ctx, "Backend '%s' support not compiled in", 
+					 backend->name);
 		return True;
 	}
 
-	error = reg_open_hive(ctx, backend, location, NULL, cmdline_credentials, &root);
+	error = reg_open_hive(ctx, backend->name, 
+						  backend->location, NULL, cmdline_credentials, &root);
 	torture_assert_werr_ok(ctx, error, "reg_open_hive()");
 
 	/* This is a new backend. There should be no subkeys and no 
@@ -61,21 +74,20 @@ static bool test_hive(struct torture_context *parent_ctx, const char *backend, c
 
 	talloc_free(root);
 
-	torture_ok(ctx);
-
 	return True;
 }
 
 BOOL torture_registry(struct torture_context *torture) 
 {
-	BOOL ret = True;
+	struct torture_suite *suite = torture_suite_create(torture, 
+													   "LOCAL-REGISTRY");
+	int i;
 
 	registry_init();
 
-	ret &= test_hive(torture, "nt4", "TEST.DAT");
-	ret &= test_hive(torture, "ldb", "test.ldb");
-	ret &= test_hive(torture, "gconf", ".");
-	ret &= test_hive(torture, "dir", ".");
+	for (i = 0; backends[i].name; i++) {
+		torture_suite_add_simple_tcase(suite, backends[i].name, test_hive, &backends[i]);
+	}
 
-	return ret;
+	return torture_run_suite(torture, suite);
 }

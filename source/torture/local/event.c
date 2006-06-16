@@ -34,7 +34,7 @@ static int write_fd, read_fd;
 static struct fd_event *fde;
 static int te_count;
 static int fde_count;
-static struct torture_test *test;
+static struct torture_context *test;
 
 static void fde_handler(struct event_context *ev_ctx, struct fd_event *f, 
 			uint16_t flags, void *private)
@@ -75,11 +75,17 @@ static void timed_handler(struct event_context *ev_ctx, struct timed_event *te,
 	event_add_timed(ev_ctx, ev_ctx, timeval_current_ofs(0,500), timed_handler, private);
 }
 
-static BOOL test_event_context(struct torture_context *torture, struct event_context *ev_ctx, const char *comment)
+static BOOL test_event_context(struct torture_context *torture, const void *_data)
 {
+	struct event_context *ev_ctx;
 	int fd[2] = { -1, -1 };
+	BOOL try_epoll = (BOOL)_data;
 
-	test = torture_test(torture, comment, comment);
+	ev_ctx = event_context_init_ops(torture, 
+									event_standard_get_ops(), 
+									&try_epoll);
+
+	test = torture;
 
 	/* reset globals */
 	write_fd = -1;
@@ -101,30 +107,24 @@ static BOOL test_event_context(struct torture_context *torture, struct event_con
 
 	close(read_fd);
 	close(write_fd);
+	
+	talloc_free(ev_ctx);
 
-	torture_ok(test);
-	talloc_free(test);
 	return True;
 }
 
 BOOL torture_local_event(struct torture_context *torture) 
 {
-	struct event_context *ev_ctx;
-	BOOL try_epoll;
 	BOOL retv = True;
+	struct torture_suite *suite = torture_suite_create(torture, "LOCAL-EVENT");
 
-	try_epoll = False;
-	ev_ctx = event_context_init_ops(torture, event_standard_get_ops(), 
-									&try_epoll);
-	retv &= test_event_context(torture, ev_ctx, "standard with select");
-	talloc_free(ev_ctx);
+	torture_suite_add_simple_tcase(suite, "standard with select",
+								   test_event_context,
+								   (void *)False);
 
-	try_epoll = True;
-	ev_ctx = event_context_init_ops(torture, event_standard_get_ops(), 
-									&try_epoll);
-	retv &= test_event_context(torture, ev_ctx, 
-							   "standard try epool (or select)");
-	talloc_free(ev_ctx);
+	torture_suite_add_simple_tcase(suite, "standard try epoll (or select)",
+								   test_event_context,
+								   (void *)True);
 
 	return retv;
 }
