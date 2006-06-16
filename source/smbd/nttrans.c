@@ -1068,6 +1068,10 @@ static struct ea_list *read_nttrans_ea_list(TALLOC_CTX *ctx, const char *pdata, 
 		struct ea_list *tmp;
 		struct ea_list *eal = read_ea_list_entry(ctx, pdata + offset + 4, data_size - offset - 4, NULL);
 
+		if (!eal) {
+			return NULL;
+		}
+
 		DLIST_ADD_END(ea_list_head, eal, tmp);
 		if (next_offset == 0) {
 			break;
