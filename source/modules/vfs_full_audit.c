@@ -641,10 +641,15 @@ static int audit_syslog_priority(vfs_handle_struct *handle)
 static char *audit_prefix(connection_struct *conn)
 {
 	static pstring prefix;
+	extern userdom_struct current_user_info;
 
 	pstrcpy(prefix, lp_parm_const_string(SNUM(conn), "full_audit",
 					     "prefix", "%u|%I"));
-	standard_sub_snum(SNUM(conn), prefix, sizeof(prefix)-1);
+	standard_sub_advanced(SNUM(conn), conn->user,
+			      conn->connectpath, conn->gid,
+			      get_current_username(),
+			      current_user_info.domain,
+			      prefix, sizeof(prefix));
 	return prefix;
 }
 

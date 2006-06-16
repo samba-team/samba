@@ -575,6 +575,6 @@ int main(int argc, char *argv[])
 			process_cmd(&vfs, line);
 	}
 	
-	free(vfs.conn);
+	conn_free(vfs.conn);
 	return 0;
 }

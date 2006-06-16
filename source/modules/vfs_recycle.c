@@ -367,11 +367,14 @@ static void recycle_do_touch(vfs_handle_struct *handle, const char *fname, BOOL 
 	}
 }
 
+extern userdom_struct current_user_info;
+
 /**
  * Check if file should be recycled
  **/
 static int recycle_unlink(vfs_handle_struct *handle, const char *file_name)
 {
+	connection_struct *conn = handle->conn;
 	char *path_name = NULL;
        	char *temp_name = NULL;
 	char *final_name = NULL;
@@ -383,7 +386,11 @@ static int recycle_unlink(vfs_handle_struct *handle, const char *file_name)
 	BOOL exist;
 	int rc = -1;
 
-	repository = alloc_sub_conn(handle->conn, recycle_repository(handle));
+	repository = alloc_sub_advanced(SNUM(conn),  conn->user,
+					conn->connectpath, conn->gid,
+					get_current_username(),
+					current_user_info.domain,
+					recycle_repository(handle));
 	ALLOC_CHECK(repository, done);
 	/* shouldn't we allow absolute path names here? --metze */
 	/* Yes :-). JRA. */

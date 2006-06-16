@@ -51,7 +51,7 @@ static BOOL fillup_pw_field(const char *lp_template,
 	   shell. */
 	
 	/* The substitution of %U and %D in the 'template homedir' is done
-	   by alloc_sub_specified() below. */
+	   by talloc_sub_specified() below. */
 
 	templ = talloc_sub_specified(NULL, lp_template, username, domname,
 				     uid, gid);

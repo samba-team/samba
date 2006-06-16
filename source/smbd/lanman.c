@@ -72,7 +72,11 @@ static int CopyExpanded(connection_struct *conn,
 
 	StrnCpy(buf,src,sizeof(buf)/2);
 	pstring_sub(buf,"%S",lp_servicename(snum));
-	standard_sub_conn(conn,buf,sizeof(buf));
+	standard_sub_advanced(SNUM(conn), conn->user,
+			      conn->connectpath, conn->gid,
+			      get_current_username(),
+			      current_user_info.domain,
+			      buf, sizeof(buf));
 	l = push_ascii(*dst,buf,*n, STR_TERMINATE);
 	(*dst) += l;
 	(*n) -= l;
@@ -99,7 +103,11 @@ static int StrlenExpanded(connection_struct *conn, int snum, char *s)
 	}
 	StrnCpy(buf,s,sizeof(buf)/2);
 	pstring_sub(buf,"%S",lp_servicename(snum));
-	standard_sub_conn(conn,buf,sizeof(buf));
+	standard_sub_advanced(SNUM(conn), conn->user,
+			      conn->connectpath, conn->gid,
+			      get_current_username(),
+			      current_user_info.domain,
+			      buf, sizeof(buf));
 	return strlen(buf) + 1;
 }
 
@@ -111,7 +119,11 @@ static char *Expand(connection_struct *conn, int snum, char *s)
 	}
 	StrnCpy(buf,s,sizeof(buf)/2);
 	pstring_sub(buf,"%S",lp_servicename(snum));
-	standard_sub_conn(conn,buf,sizeof(buf));
+	standard_sub_advanced(SNUM(conn), conn->user,
+			      conn->connectpath, conn->gid,
+			      get_current_username(),
+			      current_user_info.domain,
+			      buf, sizeof(buf));
 	return &buf[0];
 }
 
@@ -2701,7 +2713,11 @@ static BOOL api_RNetServerGetInfo(connection_struct *conn,uint16 vuid, char *par
 			SIVAL(p,6,0);
 		} else {
 			SIVAL(p,6,PTR_DIFF(p2,*rdata));
-			standard_sub_conn(conn,comment,sizeof(comment));
+			standard_sub_advanced(SNUM(conn), conn->user,
+					      conn->connectpath, conn->gid,
+					      get_current_username(),
+					      current_user_info.domain,
+					      comment, sizeof(comment));
 			StrnCpy(p2,comment,MAX(mdrcnt - struct_len,0));
 			p2 = skip_string(p2,1);
 		}
@@ -3126,8 +3142,12 @@ static BOOL api_RNetUserGetInfo(connection_struct *conn,uint16 vuid, char *param
 			SSVALS(p,102,-1);	/* bad_pw_count */
 			SSVALS(p,104,-1);	/* num_logons */
 			SIVAL(p,106,PTR_DIFF(p2,*rdata)); /* logon_server */
-			pstrcpy(p2,"\\\\%L");
-			standard_sub_conn(conn, p2,0);
+			{
+				pstring tmp;
+				pstrcpy(tmp, "\\\\%L");
+				standard_sub_basic("", "", tmp, sizeof(tmp));
+				pstrcpy(p2, tmp);
+			}
 			p2 = skip_string(p2,1);
 			SSVAL(p,110,49);	/* country_code */
 			SSVAL(p,112,860);	/* code page */

@@ -746,7 +746,11 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 	{
 		pstring s;
 		pstrcpy(s,lp_pathname(snum));
-		standard_sub_conn(conn,s,sizeof(s));
+		standard_sub_advanced(SNUM(conn), conn->user,
+				      conn->connectpath, conn->gid,
+				      get_current_username(),
+				      current_user_info.domain,
+				      s, sizeof(s));
 		set_conn_connectpath(conn,s);
 		DEBUG(3,("Connect path is '%s' for service [%s]\n",s,
 			 lp_servicename(snum)));
@@ -821,7 +825,11 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 	if (*lp_rootpreexec(snum)) {
 		pstring cmd;
 		pstrcpy(cmd,lp_rootpreexec(snum));
-		standard_sub_conn(conn,cmd,sizeof(cmd));
+		standard_sub_advanced(SNUM(conn), conn->user,
+				      conn->connectpath, conn->gid,
+				      get_current_username(),
+				      current_user_info.domain,
+				      cmd, sizeof(cmd));
 		DEBUG(5,("cmd=%s\n",cmd));
 		ret = smbrun(cmd,NULL);
 		if (ret != 0 && lp_rootpreexec_close(snum)) {
@@ -854,7 +862,11 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 	if (*lp_preexec(snum)) {
 		pstring cmd;
 		pstrcpy(cmd,lp_preexec(snum));
-		standard_sub_conn(conn,cmd,sizeof(cmd));
+		standard_sub_advanced(SNUM(conn), conn->user,
+				      conn->connectpath, conn->gid,
+				      get_current_username(),
+				      current_user_info.domain,
+				      cmd, sizeof(cmd));
 		ret = smbrun(cmd,NULL);
 		if (ret != 0 && lp_preexec_close(snum)) {
 			DEBUG(1,("preexec gave %d - failing connection\n",
@@ -1148,7 +1160,11 @@ void close_cnum(connection_struct *conn, uint16 vuid)
 	    change_to_user(conn, vuid))  {
 		pstring cmd;
 		pstrcpy(cmd,lp_postexec(SNUM(conn)));
-		standard_sub_conn(conn,cmd,sizeof(cmd));
+		standard_sub_advanced(SNUM(conn), conn->user,
+				      conn->connectpath, conn->gid,
+				      get_current_username(),
+				      current_user_info.domain,
+				      cmd, sizeof(cmd));
 		smbrun(cmd,NULL);
 		change_to_root_user();
 	}
@@ -1158,7 +1174,11 @@ void close_cnum(connection_struct *conn, uint16 vuid)
 	if (*lp_rootpostexec(SNUM(conn)))  {
 		pstring cmd;
 		pstrcpy(cmd,lp_rootpostexec(SNUM(conn)));
-		standard_sub_conn(conn,cmd,sizeof(cmd));
+		standard_sub_advanced(SNUM(conn), conn->user,
+				      conn->connectpath, conn->gid,
+				      get_current_username(),
+				      current_user_info.domain,
+				      cmd, sizeof(cmd));
 		smbrun(cmd,NULL);
 	}
 

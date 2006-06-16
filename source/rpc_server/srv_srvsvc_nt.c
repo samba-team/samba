@@ -25,6 +25,7 @@
 #include "includes.h"
 
 extern struct generic_mapping file_generic_mapping;
+extern userdom_struct current_user_info;
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
@@ -70,11 +71,16 @@ static void init_srv_share_info_0(pipes_struct *p, SRV_SHARE_INFO_0 *sh0, int sn
 
 static void init_srv_share_info_1(pipes_struct *p, SRV_SHARE_INFO_1 *sh1, int snum)
 {
+	connection_struct *conn = p->conn;
 	pstring remark;
 
 	char *net_name = lp_servicename(snum);
 	pstrcpy(remark, lp_comment(snum));
-	standard_sub_conn(p->conn, remark,sizeof(remark));
+	standard_sub_advanced(SNUM(conn), conn->user,
+			      conn->connectpath, conn->gid,
+			      get_current_username(),
+			      current_user_info.domain,
+			      remark, sizeof(remark));
 
 	init_srv_share_info1(&sh1->info_1, net_name, get_share_type(snum), remark);
 	init_srv_share_info1_str(&sh1->info_1_str, net_name, remark);
@@ -86,6 +92,7 @@ static void init_srv_share_info_1(pipes_struct *p, SRV_SHARE_INFO_1 *sh1, int sn
 
 static void init_srv_share_info_2(pipes_struct *p, SRV_SHARE_INFO_2 *sh2, int snum)
 {
+	connection_struct *conn = p->conn;
 	pstring remark;
 	pstring path;
 	pstring passwd;
@@ -94,7 +101,11 @@ static void init_srv_share_info_2(pipes_struct *p, SRV_SHARE_INFO_2 *sh2, int sn
 
 	char *net_name = lp_servicename(snum);
 	pstrcpy(remark, lp_comment(snum));
-	standard_sub_conn(p->conn, remark,sizeof(remark));
+	standard_sub_advanced(SNUM(conn), conn->user,
+			      conn->connectpath, conn->gid,
+			      get_current_username(),
+			      current_user_info.domain,
+			      remark, sizeof(remark));
 	pstrcpy(path, "C:");
 	pstrcat(path, lp_pathname(snum));
 
@@ -179,11 +190,16 @@ out:
 
 static void init_srv_share_info_501(pipes_struct *p, SRV_SHARE_INFO_501 *sh501, int snum)
 {
+	connection_struct *conn = p->conn;
 	pstring remark;
 
 	const char *net_name = lp_servicename(snum);
 	pstrcpy(remark, lp_comment(snum));
-	standard_sub_conn(p->conn, remark, sizeof(remark));
+	standard_sub_advanced(SNUM(conn), conn->user,
+			      conn->connectpath, conn->gid,
+			      get_current_username(),
+			      current_user_info.domain,
+			      remark, sizeof(remark));
 
 	init_srv_share_info501(&sh501->info_501, net_name, get_share_type(snum), remark, (lp_csc_policy(snum) << 4));
 	init_srv_share_info501_str(&sh501->info_501_str, net_name, remark);
@@ -195,6 +211,7 @@ static void init_srv_share_info_501(pipes_struct *p, SRV_SHARE_INFO_501 *sh501, 
 
 static void init_srv_share_info_502(pipes_struct *p, SRV_SHARE_INFO_502 *sh502, int snum)
 {
+	connection_struct *conn = p->conn;
 	pstring net_name;
 	pstring remark;
 	pstring path;
@@ -208,7 +225,11 @@ static void init_srv_share_info_502(pipes_struct *p, SRV_SHARE_INFO_502 *sh502, 
 
 	pstrcpy(net_name, lp_servicename(snum));
 	pstrcpy(remark, lp_comment(snum));
-	standard_sub_conn(p->conn, remark,sizeof(remark));
+	standard_sub_advanced(SNUM(conn), conn->user,
+			      conn->connectpath, conn->gid,
+			      get_current_username(),
+			      current_user_info.domain,
+			      remark, sizeof(remark));
 	pstrcpy(path, "C:");
 	pstrcat(path, lp_pathname(snum));
 
@@ -233,10 +254,15 @@ static void init_srv_share_info_502(pipes_struct *p, SRV_SHARE_INFO_502 *sh502, 
 
 static void init_srv_share_info_1004(pipes_struct *p, SRV_SHARE_INFO_1004* sh1004, int snum)
 {
+	connection_struct *conn = p->conn;
         pstring remark;
 
 	pstrcpy(remark, lp_comment(snum));
-	standard_sub_conn(p->conn, remark, sizeof(remark));
+	standard_sub_advanced(SNUM(conn), conn->user,
+			      conn->connectpath, conn->gid,
+			      get_current_username(),
+			      current_user_info.domain,
+			      remark, sizeof(remark));
 
 	ZERO_STRUCTP(sh1004);
   
