@@ -806,7 +806,8 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 
 		status = lookup_usergroups_memberof(domain, mem_ctx, user_dn,
 						    &primary_group,
-						    p_num_groups, user_sids);
+						    &num_groups, user_sids);
+		*p_num_groups = (uint32)num_groups;
 		if (NT_STATUS_IS_OK(status)) {
 			goto done;
 		}
@@ -816,7 +817,8 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 
 		status = lookup_usergroups_member(domain, mem_ctx, user_dn, 
 						  &primary_group,
-						  p_num_groups, user_sids);
+						  &num_groups, user_sids);
+		*p_num_groups = (uint32)num_groups;
 		goto done;
 	}
 
