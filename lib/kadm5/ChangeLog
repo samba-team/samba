@@ -1,5 +1,10 @@
-2006-06-14  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-06-16  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* check-cracklib.pl: Add password reuse checking. From Harald
+	Barth.
+	
+2006-06-14  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* ent_setup.c (attr_to_flags): Add KRB5_KDB_ALLOW_KERBEROS4
 
 	* get_s.c (kadm5_s_get_principal): Add KRB5_KDB_ALLOW_KERBEROS4
