@@ -1430,16 +1430,28 @@ ADS_STATUS ads_add_service_principal_name(ADS_STRUCT *ads, const char *machine_n
 	if (!(host_spn = talloc_asprintf(ctx, "HOST/%s", my_fqdn))) {
 		talloc_destroy(ctx);
 		ads_msgfree(ads, res);
-		return ADS_ERROR(LDAP_NO_SUCH_OBJECT);
+		return ADS_ERROR(LDAP_NO_MEMORY);
 	}
 
 	/* Add the extra principal */
 	psp1 = talloc_asprintf(ctx, "%s/%s", spn, machine_name);
+	if (!psp1) {
+		talloc_destroy(ctx);
+		ads_msgfree(ads, res);
+		return ADS_ERROR(LDAP_NO_MEMORY);
+	}
+
 	strupper_m(psp1);
 	strlower_m(&psp1[strlen(spn)]);
 	DEBUG(5,("ads_add_service_principal_name: INFO: Adding %s to host %s\n", psp1, machine_name));
 	servicePrincipalName[0] = psp1;
 	psp2 = talloc_asprintf(ctx, "%s/%s.%s", spn, machine_name, ads->config.realm);
+	if (!psp2) {
+		talloc_destroy(ctx);
+		ads_msgfree(ads, res);
+		return ADS_ERROR(LDAP_NO_MEMORY);
+	}
+
 	strupper_m(psp2);
 	strlower_m(&psp2[strlen(spn)]);
 	DEBUG(5,("ads_add_service_principal_name: INFO: Adding %s to host %s\n", psp2, machine_name));
@@ -1449,6 +1461,12 @@ ADS_STATUS ads_add_service_principal_name(ADS_STRUCT *ads, const char *machine_n
 	 * the KDC doesn't send "server principal unknown" errors to clients
 	 * which use the DNS name in determining service principal names. */
 	psp3 = talloc_asprintf(ctx, "%s/%s", spn, my_fqdn);
+	if (!psp3) {
+		talloc_destroy(ctx);
+		ads_msgfree(ads, res);
+		return ADS_ERROR(LDAP_NO_MEMORY);
+	}
+
 	strupper_m(psp3);
 	strlower_m(&psp3[strlen(spn)]);
 	if (strcmp(psp2, psp3) != 0) {
