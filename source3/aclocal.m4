@@ -804,7 +804,7 @@ AC_DEFUN( [AC_TRY_RUN_STRICT],
 	old_LDFLAGS="$LDFLAGS";
 	LDFLAGS="$4";
 	export LDFLAGS;
-	AC_TRY_RUN([$1],[$5],[$6],[$7]);
+	AC_TRY_RUN([$1],[$5],[$6],[$7])
 	CFLAGS="$old_CFLAGS";
 	old_CFLAGS="";
 	export CFLAGS;
