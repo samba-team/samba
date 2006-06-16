@@ -369,8 +369,8 @@ static NTSTATUS handle_trans(connection_struct *conn,
 	int name_offset = 0;
 
 	DEBUG(3,("trans <%s> data=%u params=%u setup=%u\n",
-		 state->name,state->total_data,state->total_param,
-		 state->setup_count));
+		 state->name,(unsigned int)state->total_data,(unsigned int)state->total_param,
+		 (unsigned int)state->setup_count));
 
 	/*
 	 * WinCE wierdness....
@@ -481,7 +481,7 @@ int reply_trans(connection_struct *conn, char *inbuf,char *outbuf,
 		state->data = SMB_MALLOC(state->total_data);
 		if (state->data == NULL) {
 			DEBUG(0,("reply_trans: data malloc fail for %u "
-				 "bytes !\n", state->total_data));
+				 "bytes !\n", (unsigned int)state->total_data));
 			TALLOC_FREE(state);
 			END_PROFILE(SMBtrans);
 			return(ERROR_DOS(ERRDOS,ERRnomem));
@@ -501,7 +501,7 @@ int reply_trans(connection_struct *conn, char *inbuf,char *outbuf,
 		state->param = SMB_MALLOC(state->total_param);
 		if (state->param == NULL) {
 			DEBUG(0,("reply_trans: param malloc fail for %u "
-				 "bytes !\n", state->total_param));
+				 "bytes !\n", (unsigned int)state->total_param));
 			SAFE_FREE(state->data);
 			TALLOC_FREE(state);
 			END_PROFILE(SMBtrans);
