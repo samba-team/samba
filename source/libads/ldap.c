@@ -1956,8 +1956,10 @@ char **ads_pull_strings_range(ADS_STRUCT *ads,
 		return NULL;
 	}
 	
-	memcpy(&strings[*num_strings], new_strings,
-	       sizeof(*new_strings) * num_new_strings);
+	if (new_strings && num_new_strings) {
+		memcpy(&strings[*num_strings], new_strings,
+		       sizeof(*new_strings) * num_new_strings);
+	}
 
 	(*num_strings) += num_new_strings;
 
