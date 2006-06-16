@@ -846,7 +846,7 @@ BOOL rename_share_filename(struct share_mode_lock *lck,
 	SDEV_T_VAL(frm,0,lck->dev);
 	SINO_T_VAL(frm,8,lck->ino);
 
-	DEBUG(10,("rename_share_filename: msg_len = %d\n", msg_len ));
+	DEBUG(10,("rename_share_filename: msg_len = %u\n", (unsigned int)msg_len ));
 
 	safe_strcpy(&frm[16], lck->servicepath, sp_len);
 	safe_strcpy(&frm[16 + sp_len + 1], lck->filename, fn_len);
