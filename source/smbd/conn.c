@@ -117,6 +117,10 @@ find_again:
                         oldsz, newsz));
 
                 nbmap = bitmap_allocate(newsz);
+		if (!nbmap) {
+			DEBUG(0,("ERROR! malloc fail.\n"));
+			return NULL;
+		}
 
                 bitmap_copy(nbmap, bmap);
                 bitmap_free(bmap);
