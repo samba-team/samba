@@ -954,7 +954,6 @@ AC_CHECK_TYPE(loff_t,off_t)
 AC_CHECK_TYPE(offset_t,loff_t)
 AC_CHECK_TYPE(ssize_t, int)
 AC_CHECK_TYPE(wchar_t, unsigned short)
-AC_CHECK_TYPE(intptr_t, unsigned long long)
 AC_CHECK_TYPE(comparison_fn_t, 
 [AC_DEFINE(HAVE_COMPARISON_FN_T, 1,[Whether or not we have comparison_fn_t])])
 
@@ -1851,6 +1850,9 @@ main() { long long x = 1000000; x *= x; exit(((x/1000000) == 1000000)? 0: 1); }]
 samba_cv_have_longlong=yes,samba_cv_have_longlong=no,samba_cv_have_longlong=cross)])
 if test x"$samba_cv_have_longlong" = x"yes"; then
     AC_DEFINE(HAVE_LONGLONG,1,[Whether the host supports long long's])
+    AC_CHECK_TYPE(intptr_t, unsigned long long)
+else
+    AC_CHECK_TYPE(intptr_t, unsigned long)
 fi
 
 #
