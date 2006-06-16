@@ -163,7 +163,7 @@ char *getsmbpass(const char *prompt)
 	fprintf(out, "\n");
 	fflush(out);
 
-	if (in != stdin) /* We opened the terminal; now close it.  */
+	if (in && in != stdin) /* We opened the terminal; now close it.  */
 		fclose(in);
 
 	/* Catch problematic signals */
