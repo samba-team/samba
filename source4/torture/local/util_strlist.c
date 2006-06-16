@@ -22,6 +22,7 @@
 
 #include "includes.h"
 #include "torture/torture.h"
+#include "torture/ui.h"
 
 static const char *test_lists_shell_strings[] = {
 	"",
@@ -33,38 +34,34 @@ static const char *test_lists_shell_strings[] = {
 	NULL
 };
 
-static BOOL test_lists_shell(TALLOC_CTX *mem_ctx)
+static BOOL test_lists_shell(struct torture_context *test, const void *_data)
 {
-	int i;
-	for (i = 0; test_lists_shell_strings[i]; i++) {
-		const char **ret1, **ret2, *tmp;
-		BOOL match = True;
+	const char *data = _data;
+	const char **ret1, **ret2, *tmp;
+	BOOL match = True;
 
-		ret1 = str_list_make_shell(mem_ctx, test_lists_shell_strings[i], " ");
-		tmp = str_list_join_shell(mem_ctx, ret1, ' ');
-		ret2 = str_list_make_shell(mem_ctx, tmp, " ");
-		
-		if ((ret1 == NULL || ret2 == NULL) && ret2 != ret1) {
-			match = False;
-		} else {
-			int j;
-			for (j = 0; ret1[j] && ret2[j]; j++) {
-				if (strcmp(ret1[j], ret2[j]) != 0) {
-					match = False;
-					break;
-				}
-			}
+	ret1 = str_list_make_shell(test, data, " ");
+	tmp = str_list_join_shell(test, ret1, ' ');
+	ret2 = str_list_make_shell(test, tmp, " ");
 
-			if (ret1[j] || ret2[j])
+	if ((ret1 == NULL || ret2 == NULL) && ret2 != ret1) {
+		match = False;
+	} else {
+		int j;
+		for (j = 0; ret1[j] && ret2[j]; j++) {
+			if (strcmp(ret1[j], ret2[j]) != 0) {
 				match = False;
+				break;
+			}
 		}
 
-		if (!match) {
-			printf("str_list_{make,join}_shell: Error double parsing, first run:\n%s\nSecond run: \n%s\n", 
-				   test_lists_shell_strings[i],
-				   tmp);
-			return False;
-		}
+		if (ret1[j] || ret2[j])
+			match = False;
+	}
+
+	if (!match) {
+		torture_fail(test, "str_list_{make,join}_shell: Error double parsing, first run:\n%s\nSecond run: \n%s", data, tmp);
+		return False;
 	}
 
 	return True;
@@ -72,11 +69,14 @@ static BOOL test_lists_shell(TALLOC_CTX *mem_ctx)
 
 BOOL torture_local_util_strlist(struct torture_context *torture) 
 {
-	BOOL ret = True;
-	TALLOC_CTX *mem_ctx = talloc_init("test_util_strlist");
+	struct torture_suite *suite = torture_suite_create(torture, "util_strlist");
+	int i;
 
-	ret &= test_lists_shell(mem_ctx);
-	talloc_free(mem_ctx);
+	for (i = 0; test_lists_shell_strings[i]; i++) {
+		torture_suite_add_simple_tcase(suite, 
+									   "lists_shell", test_lists_shell,
+									   &test_lists_shell_strings[i]);
+	}
 
-	return ret;
+	return torture_run_suite(torture, suite);
 }
