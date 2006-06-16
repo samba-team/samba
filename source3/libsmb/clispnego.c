@@ -163,10 +163,17 @@ BOOL spnego_parse_negTokenInit(DATA_BLOB blob,
 	asn1_end_tag(&data);
 
 	ret = !data.has_error;
+	if (data.has_error) {
+		int j;
+		SAFE_FREE(principal);
+		for(j = 0; j < i && j < ASN1_MAX_OIDS-1; j++) {
+			SAFE_FREE(OIDs[j]);
+		}
+	}
+
 	asn1_free(&data);
 	return ret;
 }
-
 
 /*
   generate a negTokenTarg packet given a list of OIDs and a security blob
@@ -212,7 +219,6 @@ DATA_BLOB gen_negTokenTarg(const char *OIDs[], DATA_BLOB blob)
 	return ret;
 }
 
-
 /*
   parse a negTokenTarg packet giving a list of OIDs and a security blob
 */
@@ -248,6 +254,11 @@ BOOL parse_negTokenTarg(DATA_BLOB blob, char *OIDs[ASN1_MAX_OIDS], DATA_BLOB *se
 	asn1_end_tag(&data);
 
 	if (data.has_error) {
+		int j;
+		data_blob_free(secblob);
+		for(j = 0; j < i && j < ASN1_MAX_OIDS-1; j++) {
+			SAFE_FREE(OIDs[j]);
+		}
 		DEBUG(1,("Failed to parse negTokenTarg at offset %d\n", (int)data.ofs));
 		asn1_free(&data);
 		return False;
@@ -312,6 +323,10 @@ BOOL spnego_parse_krb5_wrap(DATA_BLOB blob, DATA_BLOB *ticket, uint8 tok_id[2])
 	asn1_end_tag(&data);
 
 	ret = !data.has_error;
+
+	if (data.has_error) {
+		data_blob_free(ticket);
+	}
 
 	asn1_free(&data);
 
@@ -390,6 +405,12 @@ BOOL spnego_parse_challenge(const DATA_BLOB blob,
 	asn1_end_tag(&data);
 
 	ret = !data.has_error;
+
+	if (data.has_error) {
+		data_blob_free(chal1);
+		data_blob_free(chal2);
+	}
+
 	asn1_free(&data);
 	return ret;
 }
@@ -438,6 +459,7 @@ BOOL spnego_parse_auth(DATA_BLOB blob, DATA_BLOB *auth)
 
 	if (data.has_error) {
 		DEBUG(3,("spnego_parse_auth failed at %d\n", (int)data.ofs));
+		data_blob_free(auth);
 		asn1_free(&data);
 		return False;
 	}
@@ -537,4 +559,3 @@ BOOL spnego_parse_auth_response(DATA_BLOB blob, NTSTATUS nt_status,
 	asn1_free(&data);
 	return True;
 }
-
