@@ -2899,7 +2899,7 @@ int reply_nttrans(connection_struct *conn,
 		 * params and data. */
 		if ((state->data = SMB_MALLOC(state->total_data)) == NULL) {
 			DEBUG(0,("reply_nttrans: data malloc fail for %u "
-				 "bytes !\n", state->total_data));
+				 "bytes !\n", (unsigned int)state->total_data));
 			TALLOC_FREE(state);
 			END_PROFILE(SMBnttrans);
 			return(ERROR_DOS(ERRDOS,ERRnomem));
@@ -2918,7 +2918,7 @@ int reply_nttrans(connection_struct *conn,
 		 * params and data. */
 		if ((state->param = SMB_MALLOC(state->total_param)) == NULL) {
 			DEBUG(0,("reply_nttrans: param malloc fail for %u "
-				 "bytes !\n", state->total_param));
+				 "bytes !\n", (unsigned int)state->total_param));
 			SAFE_FREE(state->data);
 			TALLOC_FREE(state);
 			END_PROFILE(SMBnttrans);
