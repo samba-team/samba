@@ -24,12 +24,11 @@
 #include "torture/ui.h"
 #include "librpc/ndr/libndr.h"
 
-static BOOL test_check_string_terminator(struct torture_context *torture)
+static BOOL test_check_string_terminator(struct torture_context *test,
+										 const void *_data)
 {
 	struct ndr_pull *ndr;
 	DATA_BLOB blob;
-	struct torture_test *test = torture_test(torture, "string_terminator",
-											 "string terminator");
 
 	/* Simple test */
 	blob = strhex_to_data_blob("0000");
@@ -45,7 +44,6 @@ static BOOL test_check_string_terminator(struct torture_context *torture)
 
 	if (NT_STATUS_IS_OK(ndr_check_string_terminator(ndr, 1, 3))) {
 		torture_fail(test, "check_string_terminator checked beyond string boundaries");
-		talloc_free(test);
 		return False;
 	}
 
@@ -68,21 +66,22 @@ static BOOL test_check_string_terminator(struct torture_context *torture)
 	if (NT_STATUS_IS_OK(ndr_check_string_terminator(ndr, 2, 1))) {
 		torture_fail(test, 
 					 "check_string_terminator erroneously reported terminator");
-		talloc_free(test);
 		return False;
 	}
 
 	torture_assert (test, ndr->offset == 0,
 		"check_string_terminator did not reset offset");
 
-	talloc_free(test);
-
 	return True;
 }
 
 BOOL torture_local_ndr(struct torture_context *torture)
 {
-	test_check_string_terminator(torture);
+	struct torture_suite *suite = torture_suite_create(torture, "LOCAL-NDR");
 
-	return torture_result(torture);
+	torture_suite_add_simple_tcase(suite, "string terminator", 
+								   test_check_string_terminator,
+								   NULL);
+
+	return torture_run_suite(torture, suite);
 }

@@ -25,18 +25,16 @@
 #include "torture/torture.h"
 #include "torture/ui.h"
 
-BOOL torture_ntlmssp_self_check(struct torture_context *torture) 
+static BOOL torture_ntlmssp_self_check(struct torture_context *test, 
+								const void *_data) 
 {
 	struct gensec_security *gensec_security;
 	struct gensec_ntlmssp_state *gensec_ntlmssp_state;
 	DATA_BLOB data;
 	DATA_BLOB sig, expected_sig;
-	NTSTATUS status;
-	struct torture_test *test = torture_test(torture, "ntlmssp_self_check", 
-											 "NTLMSSP Self Check");
 
 	torture_assert_ntstatus_ok(test, 
-		gensec_client_start(torture, &gensec_security, NULL),
+		gensec_client_start(test, &gensec_security, NULL),
 		"gensec client start");
 
 	gensec_set_credentials(gensec_security, cmdline_credentials);
@@ -73,7 +71,6 @@ BOOL torture_ntlmssp_self_check(struct torture_context *torture)
 	if (sig.length != expected_sig.length) {
 		torture_fail(test, "Wrong sig length: %d != %d", 
 		       (int)sig.length, (int)expected_sig.length);
-		talloc_free(test);
 		return False;
 	}
 
@@ -83,7 +80,7 @@ BOOL torture_ntlmssp_self_check(struct torture_context *torture)
 	talloc_free(gensec_security);
 
 	torture_assert_ntstatus_ok(test, 
-		gensec_client_start(torture, &gensec_security, NULL),
+		gensec_client_start(test, &gensec_security, NULL),
 		"Failed to start GENSEC for NTLMSSP");
 
 	gensec_set_credentials(gensec_security, cmdline_credentials);
@@ -120,7 +117,6 @@ BOOL torture_ntlmssp_self_check(struct torture_context *torture)
 	if (sig.length != expected_sig.length) {
 		torture_fail(test, "Wrong sig length: %d != %d", 
 		       (int)sig.length, (int)expected_sig.length);
-		talloc_free(test);
 		return False;
 	}
 
@@ -129,8 +125,16 @@ BOOL torture_ntlmssp_self_check(struct torture_context *torture)
 				   "data mismatch");
 
 	talloc_free(gensec_security);
-	torture_ok(test);
-	talloc_free(test);
 
 	return True;
+}
+
+BOOL torture_ntlmssp(struct torture_context *torture)
+{
+	struct torture_suite *suite = torture_suite_create(torture, "AUTH-NTLMSSP");
+
+	torture_suite_add_simple_tcase(suite, "NTLMSSP self check",
+								   torture_ntlmssp_self_check, NULL);
+
+	return torture_run_suite(torture, suite);
 }

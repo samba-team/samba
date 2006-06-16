@@ -31,7 +31,8 @@
 #include "torture/torture.h"
 #include "torture/ui.h"
 
-static BOOL torture_pac_self_check(struct torture_context *torture) 
+static BOOL torture_pac_self_check(struct torture_context *test, 
+								   const void *_data) 
 {
 	NTSTATUS nt_status;
 	DATA_BLOB tmp_blob;
@@ -52,9 +53,6 @@ static BOOL torture_pac_self_check(struct torture_context *torture)
 	struct auth_serversupplied_info *server_info;
 	struct auth_serversupplied_info *server_info_out;
 
-	struct torture_test *test = torture_test(torture, "pac-selfcheck", 
-												"PAC Selfcheck");
-
 	krb5_principal client_principal;
 	time_t logon_time = time(NULL);
 
@@ -73,7 +71,6 @@ static BOOL torture_pac_self_check(struct torture_context *torture)
 		       smb_get_krb5_error_message(smb_krb5_context->krb5_context, 
 						  ret, test));
 		
-		talloc_free(test);
 		return False;
 	}
 
@@ -88,7 +85,6 @@ static BOOL torture_pac_self_check(struct torture_context *torture)
 	
 		krb5_free_keyblock_contents(smb_krb5_context->krb5_context, 
 					    &server_keyblock);
-		talloc_free(test);
 		return False;
 	}
 
@@ -100,7 +96,6 @@ static BOOL torture_pac_self_check(struct torture_context *torture)
 					    &server_keyblock);
 		krb5_free_keyblock_contents(smb_krb5_context->krb5_context, 
 					    &krbtgt_keyblock);
-		talloc_free(test);
 		return False;
 	}
 
@@ -112,7 +107,6 @@ static BOOL torture_pac_self_check(struct torture_context *torture)
 					    &server_keyblock);
 		krb5_free_keyblock_contents(smb_krb5_context->krb5_context, 
 					    &krbtgt_keyblock);
-		talloc_free(test);
 		return False;
 	}
 
@@ -136,7 +130,6 @@ static BOOL torture_pac_self_check(struct torture_context *torture)
 					    &server_keyblock);
 		krb5_free_principal(smb_krb5_context->krb5_context, 
 				    client_principal);
-		talloc_free(test);
 		return False;
 	}
 
@@ -162,7 +155,6 @@ static BOOL torture_pac_self_check(struct torture_context *torture)
 		krb5_free_principal(smb_krb5_context->krb5_context, 
 				    client_principal);
 
-		talloc_free(test);
 		return False;
 	}
 
@@ -188,7 +180,6 @@ static BOOL torture_pac_self_check(struct torture_context *torture)
 		krb5_free_principal(smb_krb5_context->krb5_context, 
 				    client_principal);
 		
-		talloc_free(test);
 		return False;
 	}
 	
@@ -209,7 +200,6 @@ static BOOL torture_pac_self_check(struct torture_context *torture)
 			"(self test) PAC decoding (make server info) failed: %s", 
 		    nt_errstr(nt_status));
 		
-		talloc_free(test);
 		return False;
 	}
 	
@@ -219,12 +209,9 @@ static BOOL torture_pac_self_check(struct torture_context *torture)
 			"(self test) PAC Decode resulted in *different* domain SID: %s != %s",
 		       dom_sid_string(test, server_info->account_sid), 
 		       dom_sid_string(test, server_info_out->account_sid));
-		talloc_free(test);
 		return False;
 	}
 	
-	torture_ok(test);
-	talloc_free(test);
 	return True;
 }
 
@@ -276,11 +263,10 @@ static const uint8_t saved_pac[] = {
 };
 
 /* Check with a known 'well formed' PAC, from my test server */
-static BOOL torture_pac_saved_check(struct torture_context *torture) 
+static BOOL torture_pac_saved_check(struct torture_context *test,
+									const void *_data) 
 {
 	NTSTATUS nt_status;
-	struct torture_test *test = torture_test(torture, "pac-saved-check", 
-											 "PAC saved check");
 	DATA_BLOB tmp_blob, validate_blob;
 	struct PAC_DATA *pac_data, pac_data2;
 	struct PAC_LOGON_INFO *logon_info;
@@ -322,14 +308,12 @@ static BOOL torture_pac_saved_check(struct torture_context *torture)
 	krbtgt_bytes = smbpasswd_gethexpwd(test, pac_kdc_key);
 	if (!krbtgt_bytes) {
 		torture_fail(test, "(saved test) Could not interpret krbtgt key");
-		talloc_free(test);
 		return False;
 	}
 
 	krbsrv_bytes = smbpasswd_gethexpwd(test, pac_member_key);
 	if (!krbsrv_bytes) {
 		torture_fail(test, "(saved test) Could not interpret krbsrv key");
-		talloc_free(test);
 		return False;
 	}
 
@@ -343,7 +327,6 @@ static BOOL torture_pac_saved_check(struct torture_context *torture)
 			  smb_get_krb5_error_message(smb_krb5_context->krb5_context, 
 						     ret, test));
 
-		talloc_free(test);
 		return False;
 	}
 
@@ -359,7 +342,6 @@ static BOOL torture_pac_saved_check(struct torture_context *torture)
 
 		krb5_free_keyblock_contents(smb_krb5_context->krb5_context, 
 					    &server_keyblock);
-		talloc_free(test);
 		return False;
 	}
 
@@ -397,7 +379,6 @@ static BOOL torture_pac_saved_check(struct torture_context *torture)
 					    &krbtgt_keyblock);
 		krb5_free_keyblock_contents(smb_krb5_context->krb5_context, 
 					    &server_keyblock);
-		talloc_free(test);
 		return False;
 	}
 
@@ -418,7 +399,6 @@ static BOOL torture_pac_saved_check(struct torture_context *torture)
 					    &server_keyblock);
 		krb5_free_principal(smb_krb5_context->krb5_context, client_principal);
 		
-		talloc_free(test);
 		return False;
 	}
 
@@ -441,7 +421,6 @@ static BOOL torture_pac_saved_check(struct torture_context *torture)
 			"(saved test) PAC decoding (for logon info) failed: %s", 
 			  nt_errstr(nt_status));
 
-		talloc_free(test);
 		return False;
 	}
 
@@ -461,7 +440,6 @@ static BOOL torture_pac_saved_check(struct torture_context *torture)
 				"(saved test) PAC decoding (make server info) failed: %s", 
 		       nt_errstr(nt_status));
 		
-		talloc_free(test);
 		return False;
 	}
 
@@ -479,7 +457,6 @@ static BOOL torture_pac_saved_check(struct torture_context *torture)
 			"(saved test) PAC Decode resulted in *different* domain SID: %s != %s",
 		    "S-1-5-21-3048156945-3961193616-3706469200-1005", 
 		       dom_sid_string(test, server_info_out->account_sid));
-		talloc_free(test);
 		return False;
 	}
 
@@ -498,7 +475,6 @@ static BOOL torture_pac_saved_check(struct torture_context *torture)
 		krb5_free_principal(smb_krb5_context->krb5_context, client_principal);
 
 		torture_fail(test, "(saved test) PAC push failed");
-		talloc_free(test);
 		return False;
 	}
 
@@ -518,7 +494,6 @@ static BOOL torture_pac_saved_check(struct torture_context *torture)
 		torture_fail(test, 
 			"(saved test) PAC push failed: original buffer length[%u] != created buffer length[%u]",
 			(unsigned)tmp_blob.length, (unsigned)validate_blob.length);
-		talloc_free(test);
 		return False;
 	}
 
@@ -535,7 +510,6 @@ static BOOL torture_pac_saved_check(struct torture_context *torture)
 		DEBUG(0, ("validate_blob:\n"));
 		dump_data(0, validate_blob.data, validate_blob.length);
 
-		talloc_free(test);
 		return False;
 	}
 
@@ -555,7 +529,6 @@ static BOOL torture_pac_saved_check(struct torture_context *torture)
 		krb5_free_principal(smb_krb5_context->krb5_context, client_principal);
 
 		torture_fail(test, "(saved test) regnerated PAC create failed");
-		talloc_free(test);
 		return False;
 	}
 
@@ -582,7 +555,6 @@ static BOOL torture_pac_saved_check(struct torture_context *torture)
 
 		torture_fail(test, "(saved test) PAC regenerate failed: original buffer length[%u] != created buffer length[%u]",
 				(unsigned)tmp_blob.length, (unsigned)validate_blob.length);
-		talloc_free(test);
 		return False;
 	}
 
@@ -607,7 +579,6 @@ static BOOL torture_pac_saved_check(struct torture_context *torture)
 		DEBUG(0, ("validate_blob:\n"));
 		dump_data(0, validate_blob.data, validate_blob.length);
 
-		talloc_free(test);
 		return False;
 	}
 
@@ -627,7 +598,6 @@ static BOOL torture_pac_saved_check(struct torture_context *torture)
 		krb5_free_keyblock_contents(smb_krb5_context->krb5_context, 
 					    &server_keyblock);
 		krb5_free_principal(smb_krb5_context->krb5_context, client_principal);
-		talloc_free(test);
 		return False;
 	}
 
@@ -644,7 +614,6 @@ static BOOL torture_pac_saved_check(struct torture_context *torture)
 					    &krbtgt_keyblock);
 		krb5_free_keyblock_contents(smb_krb5_context->krb5_context, 
 					    &server_keyblock);
-		talloc_free(test);
 		return False;
 	}
 
@@ -662,7 +631,6 @@ static BOOL torture_pac_saved_check(struct torture_context *torture)
 					    &krbtgt_keyblock);
 		krb5_free_keyblock_contents(smb_krb5_context->krb5_context, 
 					    &server_keyblock);
-		talloc_free(test);
 		return False;
 	}
 
@@ -683,7 +651,6 @@ static BOOL torture_pac_saved_check(struct torture_context *torture)
 					    &krbtgt_keyblock);
 		krb5_free_keyblock_contents(smb_krb5_context->krb5_context, 
 					    &server_keyblock);
-		talloc_free(test);
 		return False;
 	}
 
@@ -692,15 +659,18 @@ static BOOL torture_pac_saved_check(struct torture_context *torture)
 	krb5_free_keyblock_contents(smb_krb5_context->krb5_context, 
 				    &server_keyblock);
 
-	torture_ok(test);
-	talloc_free(test);
 	return True;
 }
 
 BOOL torture_pac(struct torture_context *torture) 
 {
-	BOOL ret = True;
-	ret &= torture_pac_self_check(torture);
-	ret &= torture_pac_saved_check(torture);
-	return ret;
+	struct torture_suite *suite = torture_suite_create(torture, "AUTH-PAC");
+
+	torture_suite_add_simple_tcase(suite, "self check", 
+								   torture_pac_self_check, NULL);
+
+	torture_suite_add_simple_tcase(suite, "saved check",
+								   torture_pac_saved_check, NULL);
+
+	return torture_run_suite(torture, suite);
 }

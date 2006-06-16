@@ -19,7 +19,12 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+#ifndef __TORTURE_UI_H__
+#define __TORTURE_UI_H__
+
 struct torture_test;
+struct torture_context;
+struct torture_tcase;
 
 enum torture_result { 
 	TORTURE_OK=0, 
@@ -30,22 +35,14 @@ enum torture_result {
 
 struct torture_ui_ops
 {
-	void (*comment) (struct torture_test *, const char *);
-	void (*test_start) (struct torture_test *);
-	void (*test_result) (struct torture_test *, enum torture_result, 
+	void (*comment) (struct torture_context *, const char *);
+	void (*tcase_start) (struct torture_context *, struct torture_tcase *); 
+	void (*tcase_finish) (struct torture_context *, struct torture_tcase *);
+	void (*test_start) (struct torture_context *, 
+						struct torture_tcase *,
+						struct torture_test *);
+	void (*test_result) (struct torture_context *, enum torture_result, 
 						 const char *reason);
-};
-
-struct torture_test
-{
-	char *name;
-	char *description;
-
-	void *ui_data;
-
-	enum torture_result result;
-
-	struct torture_context *context;
 };
 
 struct torture_context
@@ -53,11 +50,66 @@ struct torture_context
 	const struct torture_ui_ops *ui_ops;
 	void *ui_data;
 
+	struct torture_test *active_test;
+	struct torture_tcase *active_tcase;
+
 	int skipped;
 	int todo;
 	int success;
 	int failed;
 };
+
+struct torture_suite
+{
+	const char *name;
+	const char *description;
+	struct torture_tcase {
+	    const char *name;
+		const char *description;
+		BOOL (*setup) (struct torture_context *tcase, void **data);
+		BOOL (*teardown) (struct torture_context *tcase, void *data); 
+		BOOL fixture_persistent;
+		const void *data;
+		struct torture_test {
+			const char *name;
+			const char *description;
+			const void *data;
+			BOOL (*run) (struct torture_context *test, 
+						 const void *tcase_data,
+						 const void *test_data);
+			struct torture_test *prev, *next;
+		} *tests;
+		struct torture_tcase *prev, *next;
+	} *testcases;
+};
+
+void torture_register_suite(struct torture_suite *suite);
+struct torture_suite *torture_suite_create(TALLOC_CTX *ctx, const char *name);
+void torture_tcase_set_fixture(struct torture_tcase *tcase, 
+		BOOL (*setup) (struct torture_context *, void **),
+		BOOL (*teardown) (struct torture_context *, void *));
+struct torture_test *torture_tcase_add_test(struct torture_tcase *tcase, 
+		const char *name, 
+		BOOL (*run) (struct torture_context *test, const void *tcase_data,
+					 const void *test_data),
+		const void *test_data);
+struct torture_tcase *torture_suite_add_tcase(struct torture_suite *suite, 
+							 const char *name);
+struct torture_tcase *torture_suite_add_simple_tcase(
+		struct torture_suite *suite, 
+		const char *name,
+		BOOL (*run) (struct torture_context *test, const void *test_data),
+		const void *data);
+
+BOOL torture_run_suite(struct torture_context *context, 
+					   struct torture_suite *suite);
+
+BOOL torture_run_tcase(struct torture_context *context, 
+					   struct torture_tcase *tcase);
+
+BOOL torture_run_test(struct torture_context *context, 
+					  struct torture_tcase *tcase,
+					  struct torture_test *test);
 
 #define torture_assert(ctx,expr,string) \
 	if (!(expr)) { \
@@ -103,10 +155,14 @@ struct torture_context
 #define torture_assert_werr_ok(ctx,expr,string) \
 		torture_assert_werr_equal(ctx,expr,WERR_OK,string)
 
-struct torture_test *torture_test(struct torture_context *ctx, const char *name, const char *description);
-struct torture_test *torture_subtest(struct torture_test *parent, const char *name, const char *description);
-void torture_comment(struct torture_test *test, const char *comment, ...) _PRINTF_ATTRIBUTE(2,3);
-void torture_ok(struct torture_test *test);
-void torture_fail(struct torture_test *test, const char *reason, ...) _PRINTF_ATTRIBUTE(2,3);
-void torture_skip(struct torture_test *test, const char *reason, ...) _PRINTF_ATTRIBUTE(2,3);
-BOOL torture_result(struct torture_context *torture);
+void torture_comment(struct torture_context *test, const char *comment, ...) _PRINTF_ATTRIBUTE(2,3);
+void torture_ok(struct torture_context *test);
+void torture_fail(struct torture_context *test, const char *reason, ...) _PRINTF_ATTRIBUTE(2,3);
+void torture_skip(struct torture_context *test, const char *reason, ...) _PRINTF_ATTRIBUTE(2,3);
+const char *torture_setting(struct torture_context *test, const char *name, 
+							const char *default_value);
+
+/* Helper function commonly used */
+BOOL torture_teardown_free(struct torture_context *torture, void *data);
+
+#endif /* __TORTURE_UI_H__ */
