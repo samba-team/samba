@@ -393,20 +393,30 @@ BOOL asn1_check_OID(ASN1_DATA *data, const char *OID)
 BOOL asn1_read_GeneralString(ASN1_DATA *data, char **s)
 {
 	int len;
-	if (!asn1_start_tag(data, ASN1_GENERAL_STRING)) return False;
+	char *str;
+
+	*s = NULL;
+
+	if (!asn1_start_tag(data, ASN1_GENERAL_STRING)) {
+		return False;
+	}
 	len = asn1_tag_remaining(data);
 	if (len < 0) {
 		data->has_error = True;
 		return False;
 	}
-	*s = SMB_MALLOC(len+1);
-	if (! *s) {
+	str = SMB_MALLOC(len+1);
+	if (!str) {
 		data->has_error = True;
 		return False;
 	}
-	asn1_read(data, *s, len);
-	(*s)[len] = 0;
+	asn1_read(data, str, len);
+	str[len] = 0;
 	asn1_end_tag(data);
+
+	if (!data->has_error) {
+		*s = str;
+	}
 	return !data->has_error;
 }
 
