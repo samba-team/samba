@@ -6036,7 +6036,11 @@ smbc_option_get(SMBCCTX *context,
                 /*
                  * Log to standard error instead of standard output.
                  */
+#if defined(__intptr_t_defined) || defined(HAVE_INTPTR_T)
+                return (void *) (intptr_t) context->internal->_debug_stderr;
+#else
                 return (void *) context->internal->_debug_stderr;
+#endif
         } else if (strcmp(option_name, "auth_function") == 0) {
                 /*
                  * Use the new-style authentication function which includes
