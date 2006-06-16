@@ -172,6 +172,11 @@ static struct ea_list *get_ea_list_from_file(TALLOC_CTX *mem_ctx, connection_str
 
 	for (i = 0, ea_namelist = TALLOC(mem_ctx, ea_namelist_size); i < 6;
 			ea_namelist = TALLOC_REALLOC_ARRAY(mem_ctx, ea_namelist, char, ea_namelist_size), i++) {
+
+		if (!ea_namelist) {
+			return NULL;
+		}
+
 		if (fsp && fsp->fh->fd != -1) {
 			sizeret = SMB_VFS_FLISTXATTR(fsp, fsp->fh->fd, ea_namelist, ea_namelist_size);
 		} else {
