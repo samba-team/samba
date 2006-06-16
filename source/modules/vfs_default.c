@@ -1313,11 +1313,11 @@ static vfs_op_tuple vfs_default_ops[] = {
 
 NTSTATUS vfs_default_init(void)
 {
-	int needed = SMB_VFS_OP_LAST + 1; /* convert from index to count */
+	unsigned int needed = SMB_VFS_OP_LAST + 1; /* convert from index to count */
 
 	if (ARRAY_SIZE(vfs_default_ops) != needed) {
-		DEBUG(0, ("%s: %d ops registered, but %d ops are required\n",
-			DEFAULT_VFS_MODULE_NAME, ARRAY_SIZE(vfs_default_ops), needed));
+		DEBUG(0, ("%s: %u ops registered, but %u ops are required\n",
+			DEFAULT_VFS_MODULE_NAME, (unsigned int)ARRAY_SIZE(vfs_default_ops), needed));
 		smb_panic("operation(s) missing from default VFS module");
 	}
 
