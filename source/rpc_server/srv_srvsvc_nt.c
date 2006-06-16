@@ -746,6 +746,8 @@ static void init_srv_sess_info_1(SRV_SESS_INFO_1 *ss1, uint32 *snum, uint32 *sto
 		
 		(*stot) = 0;
 	}
+
+	SAFE_FREE(session_list);
 }
 
 /*******************************************************************
