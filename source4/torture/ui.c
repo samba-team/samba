@@ -102,6 +102,7 @@ struct torture_test *torture_tcase_add_test(struct torture_tcase *tcase,
 	test->name = talloc_strdup(test, name);
 	test->description = NULL;
 	test->run = run;
+	test->dangerous = False;
 	test->data = data;
 
 	DLIST_ADD(tcase->tests, test);
@@ -139,6 +140,37 @@ BOOL torture_run_suite(struct torture_context *context,
 	return ret;
 }
 
+static BOOL internal_torture_run_test(struct torture_context *context, 
+					  struct torture_tcase *tcase,
+					  struct torture_test *test,
+					  void *tcase_data)
+{
+	BOOL ret;
+	void *data = NULL;
+
+	if (test->dangerous && !lp_parm_bool(-1, "torture", "dangerous", False)) {
+		torture_skip(context, "disabled %s - enable dangerous tests to use", 
+					 test->name);
+		return True;
+	}
+
+	if (!tcase_data && tcase->setup && !tcase->setup(context, &data))
+		return False;
+
+	context->active_tcase = tcase;
+	context->active_test = test;
+	context->ui_ops->test_start(context, tcase, test);
+
+	ret = test->run(context, tcase->setup?data:tcase->data, test->data);
+	context->active_test = NULL;
+	context->active_tcase = NULL;
+
+	if (!tcase_data && tcase->teardown && !tcase->teardown(context, data))
+		return False;
+
+	return ret;
+}
+
 BOOL torture_run_tcase(struct torture_context *context, 
 					   struct torture_tcase *tcase)
 {
@@ -155,16 +187,9 @@ BOOL torture_run_tcase(struct torture_context *context,
 			return False;
 
 	for (test = tcase->tests; test; test = test->next) {
-		if (tcase->fixture_persistent) {
-			context->active_test = test;
-			context->ui_ops->test_start(context, tcase, test);
-			ret &= test->run(context, (tcase->setup?data:tcase->data), 
-							 test->data);
-		} else
-			ret &= torture_run_test(context, tcase, test);
-
+		ret &= internal_torture_run_test(context, tcase, test, 
+									(tcase->setup?data:tcase->data));
 	}
-	context->active_test = NULL;
 
 	if (tcase->fixture_persistent && tcase->teardown &&
 		!tcase->teardown(context, data))
@@ -179,23 +204,7 @@ BOOL torture_run_test(struct torture_context *context,
 					  struct torture_tcase *tcase,
 					  struct torture_test *test)
 {
-	BOOL ret;
-	void *data = NULL;
-
-	if (tcase->setup && !tcase->setup(context, &data))
-		return False;
-
-	context->active_tcase = tcase;
-	context->active_test = test;
-	context->ui_ops->test_start(context, tcase, test);
-	ret = test->run(context, tcase->setup?data:tcase->data, test->data);
-	context->active_test = NULL;
-	context->active_tcase = NULL;
-
-	if (tcase->teardown && !tcase->teardown(context, data))
-		return False;
-
-	return ret;
+	return internal_torture_run_test(context, tcase, test, NULL);
 }
 
 const char *torture_setting(struct torture_context *test, const char *name, 

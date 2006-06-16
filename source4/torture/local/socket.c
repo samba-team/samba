@@ -26,20 +26,12 @@
 #include "system/network.h"
 #include "netif/netif.h"
 #include "torture/torture.h"
-
-#define CHECK_STATUS(status, correct) do { \
-	if (!NT_STATUS_EQUAL(status, correct)) { \
-		printf("(%s) Incorrect status %s - should be %s\n", \
-		       __location__, nt_errstr(status), nt_errstr(correct)); \
-		ret = False; \
-		goto done; \
-	}} while (0)
-
+#include "torture/ui.h"
 
 /*
   basic testing of udp routines
 */
-static BOOL test_udp(TALLOC_CTX *mem_ctx)
+static BOOL test_udp(struct torture_context *test, const void *data)
 {
 	struct socket_context *sock1, *sock2;
 	NTSTATUS status;
@@ -49,86 +41,83 @@ static BOOL test_udp(TALLOC_CTX *mem_ctx)
 	size_t sent, nread;
 	BOOL ret = True;
 
-	printf("TESTING UDP SOCKETS\n");
-
 	status = socket_create("ip", SOCKET_TYPE_DGRAM, &sock1, 0);
-	CHECK_STATUS(status, NT_STATUS_OK);
-	talloc_steal(mem_ctx, sock1);
+	torture_assert_ntstatus_ok(test, status, NULL);
+	talloc_steal(test, sock1);
 
 	status = socket_create("ip", SOCKET_TYPE_DGRAM, &sock2, 0);
-	CHECK_STATUS(status, NT_STATUS_OK);
-	talloc_steal(mem_ctx, sock2);
+	torture_assert_ntstatus_ok(test, status, NULL);
+	talloc_steal(test, sock2);
 
 	localhost = socket_address_from_strings(sock1, sock1->backend_name, 
 						iface_best_ip("127.0.0.1"), 0);
-	if (!localhost) {
-		return False;
-	}
+
+	torture_assert(test, localhost, "Localhost not found");
 
 	status = socket_listen(sock1, localhost, 0, 0);
-	CHECK_STATUS(status, NT_STATUS_OK);
+	torture_assert_ntstatus_ok(test, status, NULL);
 
-	srv_addr = socket_get_my_addr(sock1, mem_ctx);
+	srv_addr = socket_get_my_addr(sock1, test);
 	if (srv_addr == NULL || strcmp(srv_addr->addr, iface_best_ip("127.0.0.1")) != 0) {
-		printf("Expected server address of %s but got %s\n",
+		torture_fail(test, "Expected server address of %s but got %s",
 		       iface_best_ip("127.0.0.1"), srv_addr ? srv_addr->addr : NULL);
 		return False;
 	}
 
-	printf("server port is %d\n", srv_addr->port);
+	torture_comment(test, "server port is %d", srv_addr->port);
 
-	blob  = data_blob_talloc(mem_ctx, NULL, size);
-	blob2 = data_blob_talloc(mem_ctx, NULL, size);
+	blob  = data_blob_talloc(test, NULL, size);
+	blob2 = data_blob_talloc(test, NULL, size);
 	generate_random_buffer(blob.data, blob.length);
 
 	sent = size;
 	status = socket_sendto(sock2, &blob, &sent, srv_addr);
-	CHECK_STATUS(status, NT_STATUS_OK);
+	torture_assert_ntstatus_ok(test, status, NULL);
 
 	status = socket_recvfrom(sock1, blob2.data, size, &nread, 
 				 sock1, &from_addr);
-	CHECK_STATUS(status, NT_STATUS_OK);
+	torture_assert_ntstatus_ok(test, status, NULL);
 
 	if (strcmp(from_addr->addr, srv_addr->addr) != 0) {
-		printf("Unexpected recvfrom addr %s\n", from_addr->addr);
-		ret = False;
+		torture_fail(test, "Unexpected recvfrom addr %s", from_addr->addr);
+		return False;
 	}
 	if (nread != size) {
-		printf("Unexpected recvfrom size %d should be %d\n", (int)nread, (int)size);
-		ret = False;
+		torture_fail(test, "Unexpected recvfrom size %d should be %d\n", 
+					 (int)nread, (int)size);
+		return False;
 	}
 
-	if (memcmp(blob2.data, blob.data, size) != 0) {
-		printf("Bad data in recvfrom\n");
-		ret = False;
-	}
+	torture_assert(test, memcmp(blob2.data, blob.data, size) == 0,
+		"Bad data in recvfrom");
 
 	generate_random_buffer(blob.data, blob.length);
 	status = socket_sendto(sock1, &blob, &sent, from_addr);
-	CHECK_STATUS(status, NT_STATUS_OK);
+	torture_assert_ntstatus_ok(test, status, NULL);
 
 	status = socket_recvfrom(sock2, blob2.data, size, &nread, 
 				 sock2, &from_addr);
-	CHECK_STATUS(status, NT_STATUS_OK);
+	torture_assert_ntstatus_ok(test, status, NULL);
 	if (strcmp(from_addr->addr, srv_addr->addr) != 0) {
-		printf("Unexpected recvfrom addr %s\n", from_addr->addr);
-		ret = False;
+		torture_fail(test, "Unexpected recvfrom addr %s\n", from_addr->addr);
+		return False;
 	}
+	
 	if (nread != size) {
-		printf("Unexpected recvfrom size %d should be %d\n", (int)nread, (int)size);
-		ret = False;
-	}
-	if (from_addr->port != srv_addr->port) {
-		printf("Unexpected recvfrom port %d should be %d\n", 
-		       from_addr->port, srv_addr->port);
-		ret = False;
-	}
-	if (memcmp(blob2.data, blob.data, size) != 0) {
-		printf("Bad data in recvfrom\n");
-		ret = False;
+		torture_fail(test, "Unexpected recvfrom size %d should be %d\n", 
+					 (int)nread, (int)size);
+		return False;
 	}
 
-done:
+	if (from_addr->port != srv_addr->port) {
+		torture_fail(test, "Unexpected recvfrom port %d should be %d\n", 
+		       from_addr->port, srv_addr->port);
+		return False;
+	}
+
+	torture_assert(test, memcmp(blob2.data, blob.data, size) == 0, 
+		"Bad data in recvfrom");
+
 	talloc_free(sock1);
 	talloc_free(sock2);
 
@@ -138,7 +127,7 @@ done:
 /*
   basic testing of tcp routines
 */
-static BOOL test_tcp(TALLOC_CTX *mem_ctx)
+static BOOL test_tcp(struct torture_context *test, const void *data)
 {
 	struct socket_context *sock1, *sock2, *sock3;
 	NTSTATUS status;
@@ -147,92 +136,84 @@ static BOOL test_tcp(TALLOC_CTX *mem_ctx)
 	DATA_BLOB blob, blob2;
 	size_t sent, nread;
 	BOOL ret = True;
-	struct event_context *ev = event_context_init(mem_ctx);
-
-	printf("TESTING TCP SOCKETS\n");
+	struct event_context *ev = event_context_init(test);
 
 	status = socket_create("ip", SOCKET_TYPE_STREAM, &sock1, 0);
-	CHECK_STATUS(status, NT_STATUS_OK);
-	talloc_steal(mem_ctx, sock1);
+	torture_assert_ntstatus_ok(test, status, NULL);
+	talloc_steal(test, sock1);
 
 	status = socket_create("ip", SOCKET_TYPE_STREAM, &sock2, 0);
-	CHECK_STATUS(status, NT_STATUS_OK);
-	talloc_steal(mem_ctx, sock2);
+	torture_assert_ntstatus_ok(test, status, NULL);
+	talloc_steal(test, sock2);
 
 	localhost = socket_address_from_strings(sock1, sock1->backend_name, 
 						iface_best_ip("127.0.0.1"), 0);
-	if (!localhost) {
-		return False;
-	}
+	torture_assert(test, localhost, "Localhost not found");
 
 	status = socket_listen(sock1, localhost, 0, 0);
-	CHECK_STATUS(status, NT_STATUS_OK);
+	torture_assert_ntstatus_ok(test, status, NULL);
 
-	srv_addr = socket_get_my_addr(sock1, mem_ctx);
-	if (srv_addr == NULL || !srv_addr->addr) {
-		printf("Unexpected socket_get_my_addr NULL\n");
-		return False;
-	}
+	srv_addr = socket_get_my_addr(sock1, test);
+	torture_assert(test, srv_addr && srv_addr->addr, 
+				   "Unexpected socket_get_my_addr NULL\n");
 
 	if (strcmp(srv_addr->addr, iface_best_ip("127.0.0.1")) != 0) {
-		printf("Expected server address of %s but got %s\n",
+		torture_fail(test, "Expected server address of %s but got %s\n",
 		       iface_best_ip("127.0.0.1"), srv_addr ? srv_addr->addr : NULL);
 		return False;
 	}
 
-	printf("server port is %d\n", srv_addr->port);
+	torture_comment(test, "server port is %d", srv_addr->port);
 
 	status = socket_connect_ev(sock2, NULL, srv_addr, 0, ev);
-	CHECK_STATUS(status, NT_STATUS_OK);
+	torture_assert_ntstatus_ok(test, status, NULL);
 
 	status = socket_accept(sock1, &sock3);
-	CHECK_STATUS(status, NT_STATUS_OK);
-	talloc_steal(mem_ctx, sock3);
+	torture_assert_ntstatus_ok(test, status, NULL);
+	talloc_steal(test, sock3);
 	talloc_free(sock1);
 
-	blob  = data_blob_talloc(mem_ctx, NULL, size);
-	blob2 = data_blob_talloc(mem_ctx, NULL, size);
+	blob  = data_blob_talloc(test, NULL, size);
+	blob2 = data_blob_talloc(test, NULL, size);
 	generate_random_buffer(blob.data, blob.length);
 
 	sent = size;
 	status = socket_send(sock2, &blob, &sent);
-	CHECK_STATUS(status, NT_STATUS_OK);
+	torture_assert_ntstatus_ok(test, status, NULL);
 
 	status = socket_recv(sock3, blob2.data, size, &nread);
-	CHECK_STATUS(status, NT_STATUS_OK);
+	torture_assert_ntstatus_ok(test, status, NULL);
 
-	from_addr = socket_get_peer_addr(sock3, mem_ctx);
+	from_addr = socket_get_peer_addr(sock3, test);
 
-	if (!from_addr || !from_addr->addr) {
-		printf("Unexpected recvfrom addr NULL\n");
+	torture_assert(test, from_addr && from_addr->addr, 
+		"Unexpected recvfrom addr NULL");
+
+	if (strcmp(from_addr->addr, srv_addr->addr) != 0) {
+		torture_fail(test, "Unexpected recvfrom addr %s\n", 
+					 from_addr ? from_addr->addr : NULL);
 		return False;
 	}
-	if (strcmp(from_addr->addr, srv_addr->addr) != 0) {
-		printf("Unexpected recvfrom addr %s\n", from_addr ? from_addr->addr : NULL);
-		ret = False;
-	}
 	if (nread != size) {
-		printf("Unexpected recvfrom size %d should be %d\n", (int)nread, (int)size);
-		ret = False;
+		torture_fail(test, "Unexpected recvfrom size %d should be %d\n", 
+					 (int)nread, (int)size);
+		return False;
 	}
 
-	if (memcmp(blob2.data, blob.data, size) != 0) {
-		printf("Bad data in recv\n");
-		ret = False;
-	}
+	torture_assert(test, 
+				   memcmp(blob2.data, blob.data, size) == 0, 
+				   "Bad data in recv");
 
-done:
-
-	return ret;
+	return True;
 }
 
 BOOL torture_local_socket(struct torture_context *torture) 
 {
-	BOOL ret = True;
-	TALLOC_CTX *mem_ctx = talloc_new(NULL);
+	struct torture_suite *suite = torture_suite_create(torture, 
+													   "LOCAL-SOCKET");
 
-	ret &= test_udp(mem_ctx);
-	ret &= test_tcp(mem_ctx);
+	torture_suite_add_simple_tcase(suite, "udp", test_udp, NULL);
+	torture_suite_add_simple_tcase(suite, "tcp", test_tcp, NULL);
 
-	return ret;
+	return torture_run_suite(torture, suite);
 }
