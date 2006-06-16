@@ -1439,6 +1439,8 @@ update the internal database from the system print queue for a queue
 
 static void print_queue_update(int snum, BOOL force)
 {
+	extern struct current_user current_user;
+	extern userdom_struct current_user_info;
 	fstring key;
 	fstring sharename;
 	pstring lpqcommand, lprmcommand;
@@ -1456,12 +1458,20 @@ static void print_queue_update(int snum, BOOL force)
 	pstrcpy( lpqcommand, lp_lpqcommand(snum));
 	string_sub2( lpqcommand, "%p", PRINTERNAME(snum), sizeof(lpqcommand), 
 		     False, False, False );
-	standard_sub_snum( snum, lpqcommand, sizeof(lpqcommand) );
+	standard_sub_advanced(snum, current_user_info.unix_name, "",
+			      current_user.ut.gid,
+			      get_current_username(),
+			      current_user_info.domain,
+			      lpqcommand, sizeof(lpqcommand) );
 	
 	pstrcpy( lprmcommand, lp_lprmcommand(snum));
 	string_sub2( lprmcommand, "%p", PRINTERNAME(snum), sizeof(lprmcommand), 
 		     False, False, False );
-	standard_sub_snum( snum, lprmcommand, sizeof(lprmcommand) );
+	standard_sub_advanced(snum, current_user_info.unix_name, "",
+			      current_user.ut.gid,
+			      get_current_username(),
+			      current_user_info.domain,
+			      lprmcommand, sizeof(lprmcommand) );
 	
 	/* 
 	 * Make sure that the background queue process exists.  

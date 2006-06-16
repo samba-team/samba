@@ -745,30 +745,3 @@ void standard_sub_advanced(int snum, const char *user,
 		SAFE_FREE( s );
 	}
 }
-
-/****************************************************************************
- Like standard_sub but by snum.
-****************************************************************************/
-
-void standard_sub_snum(int snum, char *str, size_t len)
-{
-	static uid_t cached_uid = -1;
-	static fstring cached_user;
-	char *s;
-	
-	/* calling uidtoname() on every substitute would be too expensive, so
-	   we cache the result here as nearly every call is for the same uid */
-
-	if (cached_uid != current_user.ut.uid) {
-		fstrcpy(cached_user, uidtoname(current_user.ut.uid));
-		cached_uid = current_user.ut.uid;
-	}
-
-	s = alloc_sub_advanced(snum, cached_user, "", current_user.ut.gid,
-			       smb_user_name, current_user_info.domain, str);
-
-	if ( s ) {
-		strncpy( str, s, len );
-		SAFE_FREE( s );
-	}
-}
