@@ -40,17 +40,25 @@ test_noninteractive_no_prompt()
 test_interactive_prompt_stdout()
 {
     prompt="smb"
+    tmpfile=/tmp/smbclient.in.$$
 
-    echo du | \
-	CLI_FORCE_INTERACTIVE=yes \
-	$SMBCLIENT "$@" -U$USERNAME%$PASSWORD //$SERVER/tmp 2>/dev/null | \
+    cat > $tmpfile <<EOF
+du
+quit
+EOF
+
+    CLI_FORCE_INTERACTIVE=yes \
+    $SMBCLIENT "$@" -U$USERNAME%$PASSWORD //$SERVER/tmp \
+	< $tmpfile 2>/dev/null | \
     grep $prompt
 
     if [ $? = 0 ] ; then
 	# got a prompt .. succeed
+	rm -f $tmpfile
 	true
     else
 	echo failed to match interactive prompt on stdout
+	rm -f $tmpfile
 	false
     fi
 }
