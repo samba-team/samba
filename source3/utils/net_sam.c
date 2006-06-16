@@ -672,8 +672,8 @@ static int net_sam_listmem(int argc, const char **argv)
 			return -1;
 		}
 
-		d_printf("%s\\%s has %d members\n", groupdomain, groupname,
-			 num_members);
+		d_printf("%s\\%s has %u members\n", groupdomain, groupname,
+			 (unsigned int)num_members);
 		for (i=0; i<num_members; i++) {
 			const char *dom, *name;
 			if (lookup_sid(tmp_talloc_ctx(), &members[i],
