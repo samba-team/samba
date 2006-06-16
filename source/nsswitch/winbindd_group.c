@@ -184,8 +184,8 @@ static BOOL fill_grent_mem(struct winbindd_domain *domain,
 	*gr_mem = buf;
 	*gr_mem_len = buf_len;
 
-	DEBUG(10, ("num_mem = %d, len = %d, mem = %s\n", *num_gr_mem, 
-		   buf_len, *num_gr_mem ? buf : "NULL")); 
+	DEBUG(10, ("num_mem = %u, len = %u, mem = %s\n", (unsigned int)*num_gr_mem, 
+		   (unsigned int)buf_len, *num_gr_mem ? buf : "NULL")); 
 	result = True;
 
 done:
@@ -795,8 +795,8 @@ void winbindd_getgrent(struct winbindd_cli_state *state)
 				break;
 			}
 
-			DEBUG(10, ("list_len = %d, mem_len = %d\n",
-				   gr_mem_list_len, gr_mem_len));
+			DEBUG(10, ("list_len = %d, mem_len = %u\n",
+				   gr_mem_list_len, (unsigned int)gr_mem_len));
 
 			memcpy(&gr_mem_list[gr_mem_list_len], gr_mem,
 			       gr_mem_len);

@@ -863,8 +863,8 @@ static int check_ads_config( void )
 
 	if (strlen(global_myname()) > 15) {
 		d_printf("Our netbios name can be at most 15 chars long, "
-			 "\"%s\" is %d chars long\n",
-			 global_myname(), strlen(global_myname()));
+			 "\"%s\" is %u chars long\n",
+			 global_myname(), (unsigned int)strlen(global_myname()));
 		return -1;
 	}
 

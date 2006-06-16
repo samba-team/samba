@@ -371,7 +371,7 @@ fam_register_notify(connection_struct * conn,
     }
 
     if ((info = SMB_MALLOC_P(struct fam_req_info)) == NULL) {
-	DEBUG(0, ("malloc of %d bytes failed\n", sizeof(struct fam_req_info)));
+	DEBUG(0, ("malloc of %u bytes failed\n", (unsigned int)sizeof(struct fam_req_info)));
 	return(NULL);
     }
 

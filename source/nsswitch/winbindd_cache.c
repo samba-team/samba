@@ -229,8 +229,8 @@ static time_t centry_time(struct cache_entry *centry)
 {
 	time_t ret;
 	if (centry->len - centry->ofs < sizeof(time_t)) {
-		DEBUG(0,("centry corruption? needed %d bytes, have %d\n", 
-			 sizeof(time_t), centry->len - centry->ofs));
+		DEBUG(0,("centry corruption? needed %u bytes, have %u\n", 
+			 (unsigned int)sizeof(time_t), (unsigned int)(centry->len - centry->ofs)));
 		smb_panic("centry_time");
 	}
 	ret = IVAL(centry->data, centry->ofs); /* FIXME: correct ? */
