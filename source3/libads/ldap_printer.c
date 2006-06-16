@@ -119,6 +119,9 @@ static BOOL map_dword(TALLOC_CTX *ctx, ADS_MODLIST *mods,
 	if (value->type != REG_DWORD)
 		return False;
 	str_value = talloc_asprintf(ctx, "%d", *((uint32 *) value->data_p));
+	if (!str_value) {
+		return False;
+	}
 	status = ads_mod_str(ctx, mods, value->valuename, str_value);
 	return ADS_ERR_OK(status);
 }
@@ -136,6 +139,9 @@ static BOOL map_bool(TALLOC_CTX *ctx, ADS_MODLIST *mods,
 		return False;
 	str_value =  talloc_asprintf(ctx, "%s", 
 				     *(value->data_p) ? "TRUE" : "FALSE");
+	if (!str_value) {
+		return False;
+	}
 	status = ads_mod_str(ctx, mods, value->valuename, str_value);
 	return ADS_ERR_OK(status);
 }
@@ -162,6 +168,9 @@ static BOOL map_multi_sz(TALLOC_CTX *ctx, ADS_MODLIST *mods,
 
 	if (num_vals) {
 		str_values = TALLOC_ARRAY(ctx, char *, num_vals + 1);
+		if (!str_values) {
+			return False;
+		}
 		memset(str_values, '\0', 
 		       (num_vals + 1) * sizeof(char *));
 
