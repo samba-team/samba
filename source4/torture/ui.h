@@ -24,6 +24,7 @@
 
 struct torture_test;
 struct torture_context;
+struct torture_suite;
 struct torture_tcase;
 
 enum torture_result { 
@@ -36,6 +37,8 @@ enum torture_result {
 struct torture_ui_ops
 {
 	void (*comment) (struct torture_context *, const char *);
+	void (*suite_start) (struct torture_context *, struct torture_suite *);
+	void (*suite_finish) (struct torture_context *, struct torture_suite *);
 	void (*tcase_start) (struct torture_context *, struct torture_tcase *); 
 	void (*tcase_finish) (struct torture_context *, struct torture_tcase *);
 	void (*test_start) (struct torture_context *, 

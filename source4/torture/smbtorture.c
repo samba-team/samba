@@ -234,17 +234,16 @@ static void max_runtime_handler(int sig)
 }
 
 static void simple_tcase_start (struct torture_context *ctx, 
-							   struct torture_tcase *tcase,
-							   struct torture_test *test)
+							   struct torture_tcase *tcase)
 {
-	printf("Testing %s...\n", tcase->name);
+	printf("Testing %s\n", tcase->name);
 }
 
 static void simple_test_start (struct torture_context *ctx, 
 							   struct torture_tcase *tcase,
 							   struct torture_test *test)
 {
-	printf("Testing %s/%s...\n", tcase->name, test->name);
+	printf("Testing %s/%s\n", tcase->name, test->name);
 }
 
 static void simple_test_result (struct torture_context *context, 
@@ -353,6 +352,18 @@ const static struct torture_ui_ops harness_ui_ops = {
 	.test_start = harness_test_start,
 	.test_result = harness_test_result
 };
+
+static void quiet_test_start (struct torture_context *ctx, 
+							    struct torture_tcase *tcase,
+								struct torture_test *test)
+{
+	putchar('.');
+}
+
+const static struct torture_ui_ops quiet_ui_ops = {
+	.test_start = quiet_test_start,
+};
+
 
 /****************************************************************************
   main program
@@ -509,6 +520,8 @@ const static struct torture_ui_ops harness_ui_ops = {
 		torture->ui_ops = &subunit_ui_ops;
 	} else if (!strcmp(ui_ops_name, "harness")) {
 		torture->ui_ops = &harness_ui_ops;
+	} else if (!strcmp(ui_ops_name, "quiet")) {
+		torture->ui_ops = &quiet_ui_ops;
 	} else {
 		printf("Unknown output format '%s'\n", ui_ops_name);
 		exit(1);
