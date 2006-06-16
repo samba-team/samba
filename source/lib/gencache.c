@@ -349,7 +349,7 @@ void gencache_iterate(void (*fn)(const char* key, const char *value, time_t time
 		/* ensure null termination of the key string */
 		keystr = SMB_STRNDUP(node->node_key.dptr, node->node_key.dsize);
 		if (!keystr) {
-			return;
+			break;
 		}
 		
 		/* 
@@ -367,7 +367,7 @@ void gencache_iterate(void (*fn)(const char* key, const char *value, time_t time
 		if (!entry) {
 			SAFE_FREE(databuf.dptr);
 			SAFE_FREE(keystr);
-			return;
+			break;
 		}
 
 		SAFE_FREE(databuf.dptr);
@@ -376,7 +376,7 @@ void gencache_iterate(void (*fn)(const char* key, const char *value, time_t time
 		if (!valstr) {
 			SAFE_FREE(entry);
 			SAFE_FREE(keystr);
-			return;
+			break;
 		}
 
 		asprintf(&fmt, READ_CACHE_DATA_FMT_TEMPLATE, (unsigned int)databuf.dsize - TIMEOUT_LEN);
@@ -384,7 +384,7 @@ void gencache_iterate(void (*fn)(const char* key, const char *value, time_t time
 			SAFE_FREE(valstr);
 			SAFE_FREE(entry);
 			SAFE_FREE(keystr);
-			return;
+			break;
 		}
 		status = sscanf(entry, fmt, &u, valstr);
 		SAFE_FREE(fmt);
