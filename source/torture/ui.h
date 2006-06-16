@@ -74,6 +74,7 @@ struct torture_suite
 			const char *name;
 			const char *description;
 			const void *data;
+			BOOL dangerous;
 			BOOL (*run) (struct torture_context *test, 
 						 const void *tcase_data,
 						 const void *test_data);

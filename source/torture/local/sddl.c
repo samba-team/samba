@@ -24,16 +24,19 @@
 #include "libcli/security/security.h"
 #include "torture/torture.h"
 #include "librpc/gen_ndr/ndr_security.h"
+#include "torture/ui.h"
 
 
 /*
   test one SDDL example
 */
-static BOOL test_sddl(TALLOC_CTX *mem_ctx, const char *sddl)
+static BOOL test_sddl(struct torture_context *mem_ctx, const void *_sddl)
 {
 	struct security_descriptor *sd, *sd2;
 	struct dom_sid *domain;
+	const char *sddl = _sddl;
 	const char *sddl2;
+
 
 	domain = dom_sid_parse_talloc(mem_ctx, "S-1-2-3-4");
 	sd = sddl_decode(mem_ctx, sddl, domain);
@@ -97,14 +100,14 @@ static const char *examples[] = {
 /* test a set of example SDDL strings */
 BOOL torture_local_sddl(struct torture_context *torture) 
 {
+	struct torture_suite *suite = torture_suite_create(torture, "LOCAL-SDDL");
 	int i;
-	BOOL ret = True;
-	TALLOC_CTX *mem_ctx = talloc_new(NULL);
 
-	for (i=0;i<ARRAY_SIZE(examples);i++) {
-		ret &= test_sddl(mem_ctx, examples[i]);
+	for (i = 0; i < ARRAY_SIZE(examples); i++) {
+		torture_suite_add_simple_tcase(suite, 
+								talloc_asprintf(suite, "%d", i), 
+								test_sddl, examples[i]);
 	}
 
-	talloc_free(mem_ctx);
-	return ret;
+	return torture_run_suite(torture, suite);
 }
