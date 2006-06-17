@@ -24,7 +24,6 @@
 #include "libcli/security/security.h"
 #include "torture/torture.h"
 #include "librpc/gen_ndr/ndr_security.h"
-#include "torture/ui.h"
 
 
 /*
@@ -98,9 +97,9 @@ static const char *examples[] = {
 };
 
 /* test a set of example SDDL strings */
-BOOL torture_local_sddl(struct torture_context *torture) 
+struct torture_suite *torture_local_sddl(TALLOC_CTX *mem_ctx)
 {
-	struct torture_suite *suite = torture_suite_create(torture, "LOCAL-SDDL");
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "LOCAL-SDDL");
 	int i;
 
 	for (i = 0; i < ARRAY_SIZE(examples); i++) {
@@ -109,5 +108,5 @@ BOOL torture_local_sddl(struct torture_context *torture)
 								test_sddl, examples[i]);
 	}
 
-	return torture_run_suite(torture, suite);
+	return suite;
 }

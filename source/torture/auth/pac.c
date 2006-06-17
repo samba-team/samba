@@ -29,7 +29,6 @@
 #include "samba3/samba3.h"
 #include "libcli/security/security.h"
 #include "torture/torture.h"
-#include "torture/ui.h"
 
 static BOOL torture_pac_self_check(struct torture_context *test, 
 								   const void *_data) 
@@ -662,9 +661,9 @@ static BOOL torture_pac_saved_check(struct torture_context *test,
 	return True;
 }
 
-BOOL torture_pac(struct torture_context *torture) 
+struct torture_suite *torture_pac(TALLOC_CTX *mem_ctx)
 {
-	struct torture_suite *suite = torture_suite_create(torture, "AUTH-PAC");
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "AUTH-PAC");
 
 	torture_suite_add_simple_tcase(suite, "self check", 
 								   torture_pac_self_check, NULL);
@@ -672,5 +671,5 @@ BOOL torture_pac(struct torture_context *torture)
 	torture_suite_add_simple_tcase(suite, "saved check",
 								   torture_pac_saved_check, NULL);
 
-	return torture_run_suite(torture, suite);
+	return suite;
 }

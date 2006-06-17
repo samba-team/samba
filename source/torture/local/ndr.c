@@ -21,7 +21,6 @@
 
 #include "includes.h"
 #include "torture/torture.h"
-#include "torture/ui.h"
 #include "librpc/ndr/libndr.h"
 
 static BOOL test_check_string_terminator(struct torture_context *test,
@@ -75,13 +74,13 @@ static BOOL test_check_string_terminator(struct torture_context *test,
 	return True;
 }
 
-BOOL torture_local_ndr(struct torture_context *torture)
+struct torture_suite *torture_local_ndr(TALLOC_CTX *mem_ctx)
 {
-	struct torture_suite *suite = torture_suite_create(torture, "LOCAL-NDR");
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "LOCAL-NDR");
 
 	torture_suite_add_simple_tcase(suite, "string terminator", 
 								   test_check_string_terminator,
 								   NULL);
 
-	return torture_run_suite(torture, suite);
+	return suite;
 }

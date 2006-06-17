@@ -29,7 +29,6 @@
 #include "lib/events/events.h"
 
 #include "torture/torture.h"
-#include "torture/ui.h"
 #include "build.h"
 #include "dlinklist.h"
 #include "librpc/rpc/dcerpc.h"
@@ -42,42 +41,21 @@ run a specified test or "ALL"
 static BOOL run_test(struct torture_context *torture, const char *name)
 {
 	BOOL ret = True;
-	struct torture_op *o;
+	struct torture_suite_list *o;
 	BOOL matched = False;
 
 	if (strequal(name,"ALL")) {
-		for (o = torture_ops; o; o = o->next) {
-			if (!run_test(torture, o->name)) {
-				ret = False;
-			}
+		for (o = torture_suites; o; o = o->next) {
+			ret &= torture_run_suite(torture, o->suite);
 		}
 		return ret;
 	}
 
-	for (o = torture_ops; o; o = o->next) {
-		if (gen_fnmatch(name, o->name) == 0) {
-			double t;
+	for (o = torture_suites; o; o = o->next) {
+		if (gen_fnmatch(name, o->suite->name) == 0) {
 			matched = True;
 			init_iconv();
-			printf("Running %s\n", o->name);
-			if (o->multi_fn) {
-				BOOL result = False;
-				t = torture_create_procs(o->multi_fn, 
-							 &result);
-				if (!result) { 
-					ret = False;
-					printf("TEST %s FAILED!\n", o->name);
-				}
-					 
-			} else {
-				struct timeval tv = timeval_current();
-				if (!o->fn(torture)) {
-					ret = False;
-					printf("TEST %s FAILED!\n", o->name);
-				}
-				t = timeval_elapsed(&tv);
-			}
-			printf("%s took %g secs\n\n", o->name, t);
+			ret &= torture_run_suite(torture, o->suite);
 		}
 	}
 
@@ -131,7 +109,7 @@ static void parse_dns(const char *dns)
 
 static void usage(poptContext pc)
 {
-	struct torture_op *o;
+	struct torture_suite_list *o;
 	char last_prefix[64];
 	int i;
 
@@ -189,24 +167,24 @@ static void usage(poptContext pc)
 
 	i = 0;
 	last_prefix[0] = '\0';
-	for (o = torture_ops; o; o = o->next) {
+	for (o = torture_suites; o; o = o->next) {
 		const char * sep;
 
-		if ((sep = strchr(o->name, '-'))) {
-			if (strncmp(o->name, last_prefix, sep - o->name) != 0) {
-				strncpy(last_prefix, o->name,
+		if ((sep = strchr(o->suite->name, '-'))) {
+			if (strncmp(o->suite->name, last_prefix, sep-o->suite->name) != 0) {
+				strncpy(last_prefix, o->suite->name,
 					MIN(sizeof(last_prefix),
-					    sep - o->name));
+					    sep - o->suite->name));
 				printf("\n\n  ");
 				i = 0;
 			}
 		}
 
-		if (i + strlen(o->name) >= (MAX_COLS - 2)) {
+		if (i + strlen(o->suite->name) >= (MAX_COLS - 2)) {
 			printf("\n  ");
 			i = 0;
 		}
-		i+=printf("%s ", o->name);
+		i+=printf("%s ", o->suite->name);
 	}
 	printf("\n\n");
 
@@ -233,17 +211,21 @@ static void max_runtime_handler(int sig)
 	exit(1);
 }
 
-static void simple_tcase_start (struct torture_context *ctx, 
-							   struct torture_tcase *tcase)
+struct timeval last_suite_started;
+
+static void simple_suite_start(struct torture_context *ctx,
+							   struct torture_suite *suite)
 {
-	printf("Testing %s\n", tcase->name);
+	last_suite_started = timeval_current();
+	printf("Running %s\n", suite->name);
 }
 
-static void simple_test_start (struct torture_context *ctx, 
-							   struct torture_tcase *tcase,
-							   struct torture_test *test)
+static void simple_suite_finish(struct torture_context *ctx,
+							   struct torture_suite *suite)
 {
-	printf("Testing %s/%s\n", tcase->name, test->name);
+
+	printf("%s took %g secs\n\n", suite->name, 
+		   timeval_elapsed(&last_suite_started));
 }
 
 static void simple_test_result (struct torture_context *context, 
@@ -255,7 +237,7 @@ static void simple_test_result (struct torture_context *context,
 			printf("OK: %s\n", reason);
 		break;
 	case TORTURE_FAIL:
-		printf("ERROR: %s - %s\n", context->active_test->name, reason);
+		printf("TEST %s FAILED! - %s\n", context->active_test->name, reason);
 		break;
 	case TORTURE_TODO:
 		printf("TODO: %s - %s\n", context->active_test->name, reason);
@@ -274,8 +256,8 @@ static void simple_comment (struct torture_context *test, const char *comment)
 
 const static struct torture_ui_ops std_ui_ops = {
 	.comment = simple_comment,
-	.test_start = simple_test_start,
-	.tcase_start = simple_tcase_start,
+	.suite_start = simple_suite_start,
+	.suite_finish = simple_suite_finish,
 	.test_result = simple_test_result
 };
 
@@ -353,15 +335,33 @@ const static struct torture_ui_ops harness_ui_ops = {
 	.test_result = harness_test_result
 };
 
-static void quiet_test_start (struct torture_context *ctx, 
-							    struct torture_tcase *tcase,
-								struct torture_test *test)
+static void quiet_suite_start(struct torture_context *ctx,
+				       		  struct torture_suite *suite)
 {
-	putchar('.');
+	printf("%s: ", suite->name);
+}
+
+static void quiet_suite_finish(struct torture_context *ctx,
+				       		  struct torture_suite *suite)
+{
+	putchar('\n');
+}
+
+static void quiet_test_result (struct torture_context *context, 
+								enum torture_result res, const char *reason)
+{
+	switch (res) {
+	case TORTURE_OK: putchar('.'); break;
+	case TORTURE_FAIL: putchar('E'); break;
+	case TORTURE_TODO: putchar('T'); break;
+	case TORTURE_SKIP: putchar('S'); break;
+	}
 }
 
 const static struct torture_ui_ops quiet_ui_ops = {
-	.test_start = quiet_test_start,
+	.suite_start = quiet_suite_start,
+	.suite_finish = quiet_suite_finish,
+	.test_result = quiet_test_result
 };
 
 

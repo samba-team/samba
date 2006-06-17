@@ -26,7 +26,6 @@
 #include "system/network.h"
 #include "netif/netif.h"
 #include "torture/torture.h"
-#include "torture/ui.h"
 
 /*
   basic testing of udp routines
@@ -135,7 +134,6 @@ static BOOL test_tcp(struct torture_context *test, const void *data)
 	size_t size = 100 + (random() % 100);
 	DATA_BLOB blob, blob2;
 	size_t sent, nread;
-	BOOL ret = True;
 	struct event_context *ev = event_context_init(test);
 
 	status = socket_create("ip", SOCKET_TYPE_STREAM, &sock1, 0);
@@ -207,13 +205,13 @@ static BOOL test_tcp(struct torture_context *test, const void *data)
 	return True;
 }
 
-BOOL torture_local_socket(struct torture_context *torture) 
+struct torture_suite *torture_local_socket(TALLOC_CTX *mem_ctx)
 {
-	struct torture_suite *suite = torture_suite_create(torture, 
+	struct torture_suite *suite = torture_suite_create(mem_ctx, 
 													   "LOCAL-SOCKET");
 
 	torture_suite_add_simple_tcase(suite, "udp", test_udp, NULL);
 	torture_suite_add_simple_tcase(suite, "tcp", test_tcp, NULL);
 
-	return torture_run_suite(torture, suite);
+	return suite;
 }

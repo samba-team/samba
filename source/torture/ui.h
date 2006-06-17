@@ -60,6 +60,9 @@ struct torture_context
 	int todo;
 	int success;
 	int failed;
+
+	enum torture_result last_result;
+	char *last_reason;
 };
 
 struct torture_suite
@@ -87,7 +90,6 @@ struct torture_suite
 	} *testcases;
 };
 
-void torture_register_suite(struct torture_suite *suite);
 struct torture_suite *torture_suite_create(TALLOC_CTX *ctx, const char *name);
 void torture_tcase_set_fixture(struct torture_tcase *tcase, 
 		BOOL (*setup) (struct torture_context *, void **),
@@ -160,7 +162,6 @@ BOOL torture_run_test(struct torture_context *context,
 		torture_assert_werr_equal(ctx,expr,WERR_OK,string)
 
 void torture_comment(struct torture_context *test, const char *comment, ...) _PRINTF_ATTRIBUTE(2,3);
-void torture_ok(struct torture_context *test);
 void torture_fail(struct torture_context *test, const char *reason, ...) _PRINTF_ATTRIBUTE(2,3);
 void torture_skip(struct torture_context *test, const char *reason, ...) _PRINTF_ATTRIBUTE(2,3);
 const char *torture_setting(struct torture_context *test, const char *name, 
