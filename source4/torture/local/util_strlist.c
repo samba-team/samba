@@ -68,7 +68,7 @@ static BOOL test_lists_shell(struct torture_context *test, const void *_data)
 
 struct torture_suite *torture_local_util_strlist(TALLOC_CTX *mem_ctx)
 {
-	struct torture_suite *suite = torture_suite_create(mem_ctx, "util_strlist");
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "LOCAL-STRLIST");
 	int i;
 
 	for (i = 0; test_lists_shell_strings[i]; i++) {
