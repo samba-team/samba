@@ -107,7 +107,8 @@ static void show_buf(const char *name, uint8_t *buf, size_t size)
   "charset", then convert it back again and ensure we get the same
   buffer back
 */
-static int test_buffer(uint8_t *inbuf, size_t size, const char *charset)
+static int test_buffer(struct torture_context *test, 
+					   uint8_t *inbuf, size_t size, const char *charset)
 {
 	uint8_t buf1[1000], buf2[1000], buf3[1000];
 	size_t outsize1, outsize2, outsize3;
@@ -132,7 +133,7 @@ static int test_buffer(uint8_t *inbuf, size_t size, const char *charset)
 		cd = iconv_open(charset, "UTF-16LE");
 		if (cd == (iconv_t)-1) {
 			cd = NULL;
-			return 0;
+			return False;
 		}
 		cd2 = smb_iconv_open(charset, "UTF-16LE");
 		cd3 = smb_iconv_open("UTF-16LE", charset);
@@ -177,25 +178,25 @@ static int test_buffer(uint8_t *inbuf, size_t size, const char *charset)
 	}
 
 	if (ret1 != ret2) {
-		printf("ret1=%d ret2=%d\n", (int)ret1, (int)ret2);
+		torture_fail(test, "ret1=%d ret2=%d", (int)ret1, (int)ret2);
 		ok = 0;
 	}
 
 	if (errno1 != errno2) {
-		printf("e1=%s e2=%s\n", strerror(errno1), strerror(errno2));
+		torture_fail(test, "e1=%s e2=%s", strerror(errno1), strerror(errno2));
 		show_buf(" rem1:", inbuf+(size-size_in1), size_in1);
 		show_buf(" rem2:", inbuf+(size-size_in2), size_in2);
 		ok = 0;
 	}
 	
 	if (outsize1 != outsize2) {
-		printf("\noutsize mismatch outsize1=%d outsize2=%d\n",
+		torture_fail(test, "outsize mismatch outsize1=%d outsize2=%d",
 		       (int)outsize1, (int)outsize2);
 		ok = 0;
 	}
 	
 	if (size_in1 != size_in2) {
-		printf("\nsize_in mismatch size_in1=%d size_in2=%d\n",
+		torture_fail(test, "size_in mismatch size_in1=%d size_in2=%d",
 		       (int)size_in1, (int)size_in2);
 		ok = 0;
 	}
@@ -203,17 +204,17 @@ static int test_buffer(uint8_t *inbuf, size_t size, const char *charset)
 	if (!ok ||
 	    len1 != len2 ||
 	    memcmp(buf1, buf2, len1) != 0) {
-		printf("\nsize=%d ret1=%d ret2=%d\n", (int)size, (int)ret1, (int)ret2);
+		torture_fail(test, "size=%d ret1=%d ret2=%d", (int)size, (int)ret1, (int)ret2);
 		show_buf(" IN1:", inbuf, size-size_in1);
 		show_buf(" IN2:", inbuf, size-size_in2);
 		show_buf("OUT1:", buf1, len1);
 		show_buf("OUT2:", buf2, len2);
 		if (len2 > len1 && memcmp(buf1, buf2, len1) == 0) {
-			printf("next codepoint is %u\n", 
+			torture_comment(test, "next codepoint is %u", 
 			       get_codepoint(buf2+len1, len2-len1, charset));
 		}
 		if (len1 > len2 && memcmp(buf1, buf2, len2) == 0) {
-			printf("next codepoint is %u\n", 
+			torture_comment(test, "next codepoint is %u", 
 			       get_codepoint(buf1+len2,len1-len2, charset));
 		}
 
@@ -239,7 +240,7 @@ static int test_buffer(uint8_t *inbuf, size_t size, const char *charset)
 	}
 
 	if (ret3 != 0) {
-		printf("pull failed - %s\n", strerror(errno));
+		torture_fail(test, "pull failed - %s", strerror(errno));
 		ok = 0;
 	}
 
@@ -250,24 +251,24 @@ static int test_buffer(uint8_t *inbuf, size_t size, const char *charset)
 
 
 	if (outsize3 != sizeof(buf3) - size) {
-		printf("wrong outsize3 - %d should be %d\n", 
+		torture_fail(test, "wrong outsize3 - %d should be %d", 
 		       (int)outsize3, (int)(sizeof(buf3) - size));
 		ok = 0;
 	}
 	
 	if (memcmp(buf3, inbuf, size) != 0) {
-		printf("pull bytes mismatch:\n");
+		torture_fail(test, "pull bytes mismatch:");
 		show_buf("inbuf", inbuf, size);
 		show_buf(" buf3", buf3, sizeof(buf3) - outsize3);
 		ok = 0;
-		printf("next codepoint is %u\n", 
+		torture_comment(test, "next codepoint is %u\n", 
 		       get_codepoint(inbuf+sizeof(buf3) - outsize3, 
 				     size - (sizeof(buf3) - outsize3),
 				     "UTF-16LE"));
 	}
 
 	if (!ok) {
-		printf("test_buffer failed for charset %s\n", charset);
+		torture_fail(test, "test_buffer failed for charset %s", charset);
 	}
 
 	return ok;
@@ -278,18 +279,17 @@ static int test_buffer(uint8_t *inbuf, size_t size, const char *charset)
   test the push_codepoint() and next_codepoint() functions for a given
   codepoint
 */
-static int test_codepoint(unsigned int codepoint)
+static int test_codepoint(struct torture_context *test, const void *data)
 {
 	uint8_t buf[10];
 	size_t size, size2;
+	unsigned int codepoint = *((const unsigned int *)data);
 	codepoint_t c;
 
 	size = push_codepoint(buf, codepoint);
 	if (size == -1) {
-		if (codepoint < 0xd800 || codepoint > 0x10000) {
-			return 0;
-		}
-		return 1;
+		torture_assert(test, codepoint >= 0xd800 && codepoint <= 0x10000, NULL);
+		return True;
 	}
 	buf[size] = random();
 	buf[size+1] = random();
@@ -299,43 +299,36 @@ static int test_codepoint(unsigned int codepoint)
 	c = next_codepoint(buf, &size2);
 
 	if (c != codepoint) {
-		printf("next_codepoint(%u) failed - gave %u\n", codepoint, c);
-		return 0;
+		torture_fail(test, "next_codepoint(%u) failed - gave %u", codepoint, c);
+		return False;
 	}
 
 	if (size2 != size) {
-		printf("next_codepoint(%u) gave wrong size %d (should be %d)\n", 
+		torture_fail(test, "next_codepoint(%u) gave wrong size %d (should be %d)\n", 
 		       codepoint, (int)size2, (int)size);
-		return 0;
+		return False;
 	}
 
-	return 1;
+	return True;
 }
 
-BOOL torture_local_iconv(struct torture_context *torture) 
+static BOOL test_next_codepoint(struct torture_context *test, const void *data)
 {
+	unsigned int codepoint;
+	for (codepoint=0;codepoint<(1<<20);codepoint++) {
+		if (!test_codepoint(test, &codepoint))
+			return False;
+	}
+	return True;
+}
+
+static BOOL test_first_1m(struct torture_context *test, const void *data)
+{
+	unsigned int codepoint;
 	size_t size;
 	unsigned char inbuf[1000];
-	int ok = 1;
-	unsigned int codepoint, i, c;
-	static iconv_t cd;
 
-        srandom(time(NULL));
-
-	cd = iconv_open("UTF-16LE", "UCS-4LE");
-	if (cd == (iconv_t)-1) {
-		printf("unable to test - system iconv library does not support UTF-16LE -> UCS-4LE\n");
-		return True;
-	}
-	iconv_close(cd);
-
-	printf("Testing next_codepoint()\n");
-	for (codepoint=0;ok && codepoint<(1<<20);codepoint++) {
-		ok = test_codepoint(codepoint);
-	}
-
-	printf("Testing first 1M codepoints\n");
-	for (codepoint=0;ok && codepoint<(1<<20);codepoint++) {
+	for (codepoint=0;codepoint<(1<<20);codepoint++) {
 		if (gen_codepoint_utf16(codepoint, inbuf, &size) != 0) {
 			continue;
 		}
@@ -346,15 +339,24 @@ BOOL torture_local_iconv(struct torture_context *torture)
 			}
 		}
 
-		ok = test_buffer(inbuf, size, "UTF-8");
+		if (!test_buffer(test, inbuf, size, "UTF-8"))
+			return False;
 	}
 
+	return True;
+}
 
-	printf("Testing 5M random UTF-16LE sequences\n");
-	for (i=0;ok && i<500000;i++) {
+static BOOL test_random_5m(struct torture_context *test, const void *data)
+{
+	unsigned char inbuf[1000];
+	unsigned int i;
+	for (i=0;i<500000;i++) {
+		size_t size;
+		unsigned int c;
+
 		if (i % 1000 == 0) {
 			if (!lp_parm_bool(-1, "torture", "progress", True)) {
-				printf("i=%u              \r", i);
+				torture_comment(test, "i=%u              \r", i);
 			}
 		}
 
@@ -372,20 +374,48 @@ BOOL torture_local_iconv(struct torture_context *torture)
 				inbuf[c] |= 0xdc;
 			}
 		}
-		ok &= test_buffer(inbuf, size, "UTF-8");
-		ok &= test_buffer(inbuf, size, "CP850");
+		if (!test_buffer(test, inbuf, size, "UTF-8"))
+			return False;
+
+		if (!test_buffer(test, inbuf, size, "CP850"))
+			return False;
 	}
 
-	return ok == 1;
+	return True;
 }
 
+struct torture_suite *torture_local_iconv(TALLOC_CTX *mem_ctx)
+{
+	static iconv_t cd;
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "LOCAL-ICONV");
+
+    srandom(time(NULL));
+
+	cd = iconv_open("UTF-16LE", "UCS-4LE");
+	if (cd == (iconv_t)-1) {
+		printf("unable to test - system iconv library does not support UTF-16LE -> UCS-4LE\n");
+		return suite;
+	}
+	iconv_close(cd);
+
+	torture_suite_add_simple_tcase(suite, "next_codepoint()",
+								   test_next_codepoint, NULL);
+
+	torture_suite_add_simple_tcase(suite, "first 1M codepoints",
+								   test_first_1m, NULL);
+
+	torture_suite_add_simple_tcase(suite, "5M random UTF-16LE sequences",
+								   test_random_5m, NULL);
+
+	return suite;
+}
 
 #else
 
-BOOL torture_local_iconv(struct torture_context *torture) 
+struct torture_suite *torture_local_iconv(TALLOC_CTX *mem_ctx) 
 {
 	printf("No native iconv library - can't run iconv test\n");
-	return True;
+	return NULL;
 }
 
 #endif
