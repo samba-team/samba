@@ -23,6 +23,8 @@
 
 #include "includes.h"
 #include "libcli/ldap/ldap.h"
+#include "torture/torture.h"
+#include "torture/ldap/proto.h"
 
 NTSTATUS torture_ldap_bind(struct ldap_connection *conn, const char *userdn, const char *password)
 {
@@ -94,5 +96,15 @@ NTSTATUS torture_ldap_connection2(TALLOC_CTX *mem_ctx, struct ldap_connection **
 NTSTATUS torture_ldap_close(struct ldap_connection *conn)
 {
 	talloc_free(conn);
+	return NT_STATUS_OK;
+}
+
+NTSTATUS torture_ldap_init(void)
+{
+	register_torture_op("BENCH-CLDAP",   torture_bench_cldap);
+	register_torture_op("LDAP-BASIC", torture_ldap_basic);
+	register_torture_op("LDAP-SCHEMA", torture_ldap_schema);
+	register_torture_op("LDAP-CLDAP", torture_cldap);
+
 	return NT_STATUS_OK;
 }
