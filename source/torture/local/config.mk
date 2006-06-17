@@ -1,6 +1,8 @@
 #################################
 # Start SUBSYSTEM TORTURE_LOCAL
-[SUBSYSTEM::TORTURE_LOCAL]
+[MODULE::TORTURE_LOCAL]
+SUBSYSTEM = torture
+INIT_FUNCTION = torture_local_init
 PRIVATE_PROTO_HEADER = \
 		proto.h
 OBJ_FILES = \
@@ -17,7 +19,8 @@ OBJ_FILES = \
 		util_file.o \
 		sddl.o \
 		ndr.o \
-		event.o
+		event.o \
+		local.o
 PUBLIC_DEPENDENCIES = \
 		RPC_NDR_ECHO \
 		LIBCLI_SMB \

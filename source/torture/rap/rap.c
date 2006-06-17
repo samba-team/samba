@@ -478,3 +478,11 @@ BOOL torture_rap_scan(struct torture_context *torture)
 
 	return True;
 }
+
+NTSTATUS torture_rap_init(void)
+{
+	register_torture_op("RAP-BASIC", torture_rap_basic);
+	register_torture_op("SCAN-RAP",  torture_rap_scan);
+
+	return NT_STATUS_OK;
+}

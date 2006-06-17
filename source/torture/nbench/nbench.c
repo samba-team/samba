@@ -221,3 +221,9 @@ BOOL torture_nbench(struct torture_context *torture)
 	printf("\nThroughput %g MB/sec\n", nbio_result());
 	return correct;
 }
+
+NTSTATUS torture_nbench_init(void)
+{
+	register_torture_op("BENCH-NBENCH",  torture_nbench);
+	return NT_STATUS_OK;
+}
