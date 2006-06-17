@@ -637,7 +637,6 @@ static struct {
 	{"SCAN-EAMAX", torture_max_eas, 0},
 
 	/* local (no server) testers */
-	{"LOCAL-ICONV", torture_local_iconv, 0},
 	{"LOCAL-TALLOC", torture_local_talloc, 0},
 
 	/* ldap testers */
@@ -667,6 +666,7 @@ static struct {
 	torture_local_util_strlist, 
 	torture_local_util_file, 
 	torture_local_idtree, 
+	torture_local_iconv,
 	torture_local_socket, 
 	torture_pac, 
 	torture_registry, 
