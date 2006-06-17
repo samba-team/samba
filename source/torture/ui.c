@@ -137,6 +137,7 @@ BOOL torture_run_suite(struct torture_context *context,
 static BOOL internal_torture_run_test(struct torture_context *context, 
 					  struct torture_tcase *tcase,
 					  struct torture_test *test,
+					  BOOL already_setup,
 					  const void *tcase_data)
 {
 	BOOL ret;
@@ -148,7 +149,7 @@ static BOOL internal_torture_run_test(struct torture_context *context,
 		return True;
 	}
 
-	if (!tcase_data && tcase->setup && !tcase->setup(context, &data))
+	if (!already_setup && tcase->setup && !tcase->setup(context, &data))
 		return False;
 
 	context->active_tcase = tcase;
@@ -160,7 +161,7 @@ static BOOL internal_torture_run_test(struct torture_context *context,
 	context->last_reason = NULL;
 	context->last_result = TORTURE_OK;
 
-	ret = test->run(context, tcase->setup?data:tcase->data, test->data);
+	ret = test->run(context, !already_setup?data:tcase_data, test->data);
 
 	if (context->ui_ops->test_result)
 		context->ui_ops->test_result(context, context->last_result, 
@@ -179,7 +180,7 @@ static BOOL internal_torture_run_test(struct torture_context *context,
 	context->active_test = NULL;
 	context->active_tcase = NULL;
 
-	if (!tcase_data && tcase->teardown && !tcase->teardown(context, data))
+	if (!already_setup && tcase->teardown && !tcase->teardown(context, data))
 		return False;
 
 	return ret;
@@ -204,7 +205,8 @@ BOOL torture_run_tcase(struct torture_context *context,
 
 	for (test = tcase->tests; test; test = test->next) {
 		ret &= internal_torture_run_test(context, tcase, test, 
-									(tcase->setup?data:tcase->data));
+				tcase->fixture_persistent,
+				(tcase->setup?data:tcase->data));
 	}
 
 	if (tcase->fixture_persistent && tcase->teardown &&
@@ -224,7 +226,7 @@ BOOL torture_run_test(struct torture_context *context,
 					  struct torture_tcase *tcase,
 					  struct torture_test *test)
 {
-	return internal_torture_run_test(context, tcase, test, NULL);
+	return internal_torture_run_test(context, tcase, test, False, NULL);
 }
 
 const char *torture_setting(struct torture_context *test, const char *name, 
