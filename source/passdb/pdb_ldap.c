@@ -223,7 +223,10 @@ static NTSTATUS ldapsam_get_seq_num(struct pdb_methods *my_methods, time_t *seq_
 	if (mem_ctx == NULL)
 		return NT_STATUS_NO_MEMORY;
 
-	attrs = TALLOC_ARRAY(mem_ctx, const char *, 2);
+	if ((attrs = TALLOC_ARRAY(mem_ctx, const char *, 2)) == NULL) {
+		ntstatus = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
 
 	/* if we got a syncrepl-rid (up to three digits long) we speak with a consumer */
 	rid = lp_parm_int(-1, "ldapsam", "syncrepl_rid", -1);
@@ -1747,6 +1750,9 @@ static NTSTATUS ldapsam_update_sam_account(struct pdb_methods *my_methods, struc
 	result = pdb_get_backend_private_data(newpwd, my_methods);
 	if (!result) {
 		attr_list = get_userattr_list(NULL, ldap_state->schema_ver);
+		if (pdb_get_username(newpwd) == NULL) {
+			return NT_STATUS_INVALID_PARAMETER;
+		}
 		rc = ldapsam_search_suffix_by_name(ldap_state, pdb_get_username(newpwd), &result, attr_list );
 		TALLOC_FREE( attr_list );
 		if (rc != LDAP_SUCCESS) {
@@ -2350,6 +2356,10 @@ static NTSTATUS ldapsam_enum_group_members(struct pdb_methods *methods,
 				 LDAP_OBJ_POSIXGROUP,
 				 LDAP_OBJ_GROUPMAP,
 				 sid_string_static(group));
+	if (filter == NULL) {
+		ret = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
 
 	rc = smbldap_search(conn, lp_ldap_group_suffix(),
 			    LDAP_SCOPE_SUBTREE, filter, id_attrs, 0,
@@ -2525,6 +2535,10 @@ static NTSTATUS ldapsam_enum_group_memberships(struct pdb_methods *methods,
 	*pp_sids = NULL;
 	num_sids = 0;
 
+	if (pdb_get_username(user) == NULL) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
 	escape_name = escape_ldap_string_alloc(pdb_get_username(user));
 	if (escape_name == NULL)
 		return NT_STATUS_NO_MEMORY;
@@ -2534,6 +2548,10 @@ static NTSTATUS ldapsam_enum_group_memberships(struct pdb_methods *methods,
 				 "(&(objectClass=%s)(uid=%s))",
 				 LDAP_OBJ_SAMBASAMACCOUNT,
 				 escape_name);
+	if (filter == NULL) {
+		ret = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
 
 	rc = smbldap_search(conn, lp_ldap_user_suffix(),
 			    LDAP_SCOPE_SUBTREE, filter, attrs, 0, &result);
@@ -2570,6 +2588,10 @@ static NTSTATUS ldapsam_enum_group_memberships(struct pdb_methods *methods,
 	filter = talloc_asprintf(mem_ctx,
 				 "(&(objectClass=%s)(|(memberUid=%s)(gidNumber=%d)))",
 				 LDAP_OBJ_POSIXGROUP, escape_name, primary_gid);
+	if (filter == NULL) {
+		ret = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
 
 	rc = smbldap_search(conn, lp_ldap_group_suffix(),
 			    LDAP_SCOPE_SUBTREE, filter, attrs, 0, &result);
@@ -3379,6 +3401,10 @@ static NTSTATUS ldapsam_alias_memberships(struct pdb_methods *methods,
 
 	filter = talloc_asprintf(mem_ctx, "%s))", filter);
 
+	if (filter == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
 	rc = smbldap_search(ldap_state->smbldap_state, lp_ldap_group_suffix(),
 			    LDAP_SCOPE_SUBTREE, filter, attrs, 0, &result);
 
@@ -3868,11 +3894,18 @@ const char **talloc_attrs(TALLOC_CTX *mem_ctx, ...)
 		num += 1;
 	va_end(ap);
 
-	result = TALLOC_ARRAY(mem_ctx, const char *, num+1);
+	if ((result = TALLOC_ARRAY(mem_ctx, const char *, num+1)) == NULL) {
+		return NULL;
+	}
 
 	va_start(ap, mem_ctx);
-	for (i=0; i<num; i++)
-		result[i] = talloc_strdup(mem_ctx, va_arg(ap, const char*));
+	for (i=0; i<num; i++) {
+		result[i] = talloc_strdup(result, va_arg(ap, const char*));
+		if (result[i] == NULL) {
+			talloc_free(result);
+			return NULL;
+		}
+	}
 	va_end(ap);
 
 	result[num] = NULL;
@@ -4799,6 +4832,9 @@ static NTSTATUS ldapsam_delete_user(struct pdb_methods *my_methods, TALLOC_CTX *
 				 pdb_get_username(sam_acct),
 				 LDAP_OBJ_POSIXACCOUNT,
 				 LDAP_OBJ_SAMBASAMACCOUNT);
+	if (filter == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	rc = smbldap_search_suffix(ldap_state->smbldap_state, filter, NULL, &result);
 	if (rc != LDAP_SUCCESS) {
@@ -5014,6 +5050,9 @@ static NTSTATUS ldapsam_delete_dom_group(struct pdb_methods *my_methods, TALLOC_
 				 sid_string_static(&group_sid),
 				 LDAP_OBJ_POSIXGROUP,
 				 LDAP_OBJ_GROUPMAP);
+	if (filter == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	rc = smbldap_search_suffix(ldap_state->smbldap_state, filter, NULL, &result);
 	if (rc != LDAP_SUCCESS) {
@@ -5125,6 +5164,9 @@ static NTSTATUS ldapsam_change_groupmem(struct pdb_methods *my_methods,
 				 sid_string_static(&member_sid),
 				 LDAP_OBJ_POSIXACCOUNT,
 				 LDAP_OBJ_SAMBASAMACCOUNT);
+	if (filter == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	/* get the member uid */
 	rc = smbldap_search_suffix(ldap_state->smbldap_state, filter, NULL, &result);
@@ -5291,6 +5333,9 @@ static NTSTATUS ldapsam_set_primary_group(struct pdb_methods *my_methods,
 				 pdb_get_username(sampass),
 				 LDAP_OBJ_POSIXACCOUNT,
 				 LDAP_OBJ_SAMBASAMACCOUNT);
+	if (filter == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	rc = smbldap_search_suffix(ldap_state->smbldap_state, filter, NULL, &result);
 	if (rc != LDAP_SUCCESS) {
