@@ -663,7 +663,7 @@ static BOOL torture_pac_saved_check(struct torture_context *test,
 
 struct torture_suite *torture_pac(TALLOC_CTX *mem_ctx)
 {
-	struct torture_suite *suite = torture_suite_create(mem_ctx, "AUTH-PAC");
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "LOCAL-PAC");
 
 	torture_suite_add_simple_tcase(suite, "self check", 
 								   torture_pac_self_check, NULL);

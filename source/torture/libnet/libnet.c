@@ -24,23 +24,23 @@
 
 NTSTATUS torture_net_init(void)
 {
-	register_torture_op("NET-USERINFO", torture_userinfo, 0);
-	register_torture_op("NET-USERADD", torture_useradd, 0);
-	register_torture_op("NET-USERDEL", torture_userdel, 0);
-	register_torture_op("NET-USERMOD", torture_usermod, 0);
-	register_torture_op("NET-DOMOPEN", torture_domainopen, 0);
-	register_torture_op("NET-API-LOOKUP", torture_lookup, 0);
-	register_torture_op("NET-API-LOOKUPHOST", torture_lookup_host, 0);
-	register_torture_op("NET-API-LOOKUPPDC", torture_lookup_pdc, 0);
-	register_torture_op("NET-API-CREATEUSER", torture_createuser, 0);
-	register_torture_op("NET-API-DELETEUSER", torture_deleteuser, 0);
-	register_torture_op("NET-API-RPCCONN-BIND", torture_rpc_connect_binding, 0);
-	register_torture_op("NET-API-RPCCONN-SRV", torture_rpc_connect_srv, 0);
-	register_torture_op("NET-API-RPCCONN-PDC", torture_rpc_connect_pdc, 0);
-	register_torture_op("NET-API-RPCCONN-DC", torture_rpc_connect_dc, 0);
-	register_torture_op("NET-API-RPCCONN-DCINFO", torture_rpc_connect_dc_info, 0);
-	register_torture_op("NET-API-LISTSHARES", torture_listshares, 0);
-	register_torture_op("NET-API-DELSHARE", torture_delshare, 0);
+	register_torture_op("NET-USERINFO", torture_userinfo);
+	register_torture_op("NET-USERADD", torture_useradd);
+	register_torture_op("NET-USERDEL", torture_userdel);
+	register_torture_op("NET-USERMOD", torture_usermod);
+	register_torture_op("NET-DOMOPEN", torture_domainopen);
+	register_torture_op("NET-API-LOOKUP", torture_lookup);
+	register_torture_op("NET-API-LOOKUPHOST", torture_lookup_host);
+	register_torture_op("NET-API-LOOKUPPDC", torture_lookup_pdc);
+	register_torture_op("NET-API-CREATEUSER", torture_createuser);
+	register_torture_op("NET-API-DELETEUSER", torture_deleteuser);
+	register_torture_op("NET-API-RPCCONN-BIND", torture_rpc_connect_binding);
+	register_torture_op("NET-API-RPCCONN-SRV", torture_rpc_connect_srv);
+	register_torture_op("NET-API-RPCCONN-PDC", torture_rpc_connect_pdc);
+	register_torture_op("NET-API-RPCCONN-DC", torture_rpc_connect_dc);
+	register_torture_op("NET-API-RPCCONN-DCINFO", torture_rpc_connect_dc_info);
+	register_torture_op("NET-API-LISTSHARES", torture_listshares);
+	register_torture_op("NET-API-DELSHARE", torture_delshare);
 
 	return NT_STATUS_OK;
 }
