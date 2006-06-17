@@ -530,11 +530,19 @@ const static struct torture_ui_ops quiet_ui_ops = {
 	if (argc_new == 0) {
 		printf("You must specify a test to run, or 'ALL'\n");
 	} else {
+		int total;
+		double rate;
 		for (i=2;i<argc_new;i++) {
 			if (!run_test(torture, argv_new[i])) {
 				correct = False;
 			}
 		}
+
+		total = torture->skipped+torture->success+torture->failed;
+		rate = ((total - torture->failed) * (100.0 / total));
+		printf("Tests: %d, Errors: %d, Skipped: %d. Success rate: %.2f%%\n",
+			   total, torture->failed, torture->skipped,
+			   rate);
 	}
 
 	talloc_free(torture);
