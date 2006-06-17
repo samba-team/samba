@@ -24,7 +24,6 @@
 #include "lib/registry/registry.h"
 #include "lib/cmdline/popt_common.h"
 #include "torture/torture.h"
-#include "torture/ui.h"
 
 const static struct test_backend_settings {
 	const char *name;
@@ -77,9 +76,9 @@ static BOOL test_hive(struct torture_context *ctx, const void *_backend)
 	return True;
 }
 
-BOOL torture_registry(struct torture_context *torture) 
+struct torture_suite *torture_registry(TALLOC_CTX *mem_ctx) 
 {
-	struct torture_suite *suite = torture_suite_create(torture, 
+	struct torture_suite *suite = torture_suite_create(mem_ctx, 
 													   "LOCAL-REGISTRY");
 	int i;
 
@@ -89,5 +88,5 @@ BOOL torture_registry(struct torture_context *torture)
 		torture_suite_add_simple_tcase(suite, backends[i].name, test_hive, &backends[i]);
 	}
 
-	return torture_run_suite(torture, suite);
+	return suite;
 }

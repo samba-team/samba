@@ -39,51 +39,25 @@ void torture_comment(struct torture_context *context, const char *comment, ...) 
 	talloc_free(tmp);
 }
 
-void torture_ok(struct torture_context *context)
-{
-	context->success++;
-
-	if (!context->ui_ops->test_result)
-		return;
-
-	context->ui_ops->test_result(context, TORTURE_OK, NULL);
-}
-
 void torture_fail(struct torture_context *context, const char *fmt, ...) _PRINTF_ATTRIBUTE(2,3)
 {
 	va_list ap;
-	char *reason;
-	context->failed++;
-
-	if (!context->ui_ops->test_result)
-		return;
 
 	va_start(ap, fmt);
-	reason = talloc_vasprintf(context, fmt, ap);
+	context->last_reason = talloc_vasprintf(context, fmt, ap);
 	va_end(ap);
-	context->ui_ops->test_result(context, TORTURE_FAIL, reason);
-	talloc_free(reason);
+	context->last_result = TORTURE_FAIL;
 }
 
 void torture_skip(struct torture_context *context, const char *fmt, ...) _PRINTF_ATTRIBUTE(2,3)
 {
 	va_list ap;
-	char *reason;
 	context->skipped++;
 
-	if (!context->ui_ops->test_result)
-		return;
-
 	va_start(ap, fmt);
-	reason = talloc_vasprintf(context, fmt, ap);
+	context->last_result = TORTURE_SKIP;
+	context->last_reason = talloc_vasprintf(context, fmt, ap);
 	va_end(ap);
-	context->ui_ops->test_result(context, TORTURE_SKIP, reason);
-	talloc_free(reason);
-}
-
-void torture_register_suite(struct torture_suite *suite)
-{
-	/* FIXME */
 }
 
 struct torture_suite *torture_suite_create(TALLOC_CTX *ctx, const char *name)
@@ -179,10 +153,29 @@ static BOOL internal_torture_run_test(struct torture_context *context,
 
 	context->active_tcase = tcase;
 	context->active_test = test;
+
 	if (context->ui_ops->test_start)
 		context->ui_ops->test_start(context, tcase, test);
 
+	context->last_reason = NULL;
+	context->last_result = TORTURE_OK;
+
 	ret = test->run(context, tcase->setup?data:tcase->data, test->data);
+
+	if (context->ui_ops->test_result)
+		context->ui_ops->test_result(context, context->last_result, 
+									 context->last_reason);
+
+
+	switch (context->last_result) {
+		case TORTURE_SKIP: context->success++; break;
+		case TORTURE_FAIL: context->failed++; break;
+		case TORTURE_TODO: context->todo++; break;
+		case TORTURE_OK: context->success++; break;
+	}
+
+	talloc_free(context->last_reason);
+
 	context->active_test = NULL;
 	context->active_tcase = NULL;
 

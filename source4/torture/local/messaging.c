@@ -24,7 +24,6 @@
 #include "lib/events/events.h"
 #include "lib/messaging/irpc.h"
 #include "torture/torture.h"
-#include "torture/ui.h"
 
 
 static uint32_t msg_pong;
@@ -145,9 +144,9 @@ static BOOL test_ping_speed(struct torture_context *torture, const void *_data)
 	return True;
 }
 
-BOOL torture_local_messaging(struct torture_context *torture) 
+struct torture_suite *torture_local_messaging(TALLOC_CTX *mem_ctx)
 {
-	struct torture_suite *s = torture_suite_create(torture, "LOCAL-MESSAGING");
+	struct torture_suite *s = torture_suite_create(mem_ctx, "LOCAL-MESSAGING");
 	torture_suite_add_simple_tcase(s, "ping_speed", test_ping_speed, NULL);
-	return torture_run_suite(torture, s);
+	return s;
 }

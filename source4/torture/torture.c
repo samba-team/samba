@@ -637,22 +637,8 @@ static struct {
 	{"SCAN-EAMAX", torture_max_eas, 0},
 
 	/* local (no server) testers */
-	{"LOCAL-NTLMSSP", torture_ntlmssp, 0},
 	{"LOCAL-ICONV", torture_local_iconv, 0},
 	{"LOCAL-TALLOC", torture_local_talloc, 0},
-	{"LOCAL-MESSAGING", torture_local_messaging, 0},
-	{"LOCAL-IRPC",  torture_local_irpc, 0},
-	{"LOCAL-BINDING", torture_local_binding_string, 0},
-	{"LOCAL-STRLIST", torture_local_util_strlist, 0},
-	{"LOCAL-FILE", torture_local_util_file, 0},
-	{"LOCAL-IDTREE", torture_local_idtree, 0},
-	{"LOCAL-SOCKET", torture_local_socket, 0},
-	{"LOCAL-PAC", torture_pac, 0},
-	{"LOCAL-REGISTRY", torture_registry, 0},
-	{"LOCAL-RESOLVE", torture_local_resolve, 0},
-	{"LOCAL-SDDL", torture_local_sddl, 0},
-	{"LOCAL-NDR", torture_local_ndr, 0},
-	{"LOCAL-EVENT", torture_local_event, 0},
 
 	/* ldap testers */
 	{"LDAP-BASIC", torture_ldap_basic, 0},
@@ -668,47 +654,113 @@ static struct {
 	{"NBT-WINSREPLICATION-REPLICA", torture_nbt_winsreplication_replica, 0},
 	{"NBT-WINSREPLICATION-OWNED", torture_nbt_winsreplication_owned, 0},
 	
-	{NULL, NULL, 0}};
+	{NULL, NULL, 0}
+};
+
+/* ignore me */ static struct torture_suite *
+	(*suite_generators[]) (TALLOC_CTX *mem_ctx) =
+{ 
+	torture_local_binding_string, 
+	torture_ntlmssp, 
+	torture_local_messaging, 
+	torture_local_irpc, 
+	torture_local_util_strlist, 
+	torture_local_util_file, 
+	torture_local_idtree, 
+	torture_local_socket, 
+	torture_pac, 
+	torture_registry, 
+	torture_local_resolve,
+	torture_local_sddl,
+	torture_local_ndr, 
+	torture_local_event, 
+	NULL
+};
 
 static void register_builtin_ops(void)
 {
 	int i;
+	TALLOC_CTX *mem_ctx = talloc_autofree_context();
+
 	for (i = 0; builtin_torture_ops[i].name; i++) {
 		register_torture_op(builtin_torture_ops[i].name, 
 							builtin_torture_ops[i].fn, 
 							builtin_torture_ops[i].multi_fn);
 	}
+
+	for (i = 0; suite_generators[i]; i++)
+		torture_register_suite(suite_generators[i](mem_ctx));
 }
 
-struct torture_op *torture_ops = NULL;
+struct torture_suite_list *torture_suites = NULL;
 
-_PUBLIC_ NTSTATUS register_torture_op(const char *name, BOOL (*fn)(struct torture_context *), BOOL (*multi_fn)(struct smbcli_state *, int ))
+NTSTATUS torture_register_suite(struct torture_suite *suite)
 {
-	struct torture_op *op, *p;
-	
-	op = talloc(talloc_autofree_context(), struct torture_op);
+	struct torture_suite_list *p, *n;
 
-	op->name = talloc_strdup(op, name);
-	op->fn = fn;
-	op->multi_fn = multi_fn;
+	n = talloc(talloc_autofree_context(), struct torture_suite_list);
+	n->suite = suite;
 
-	for (p = torture_ops; p; p = p->next) {
-		if (strcmp(p->name, op->name) == 0) {
+	for (p = torture_suites; p; p = p->next) {
+		if (strcmp(p->suite->name, suite->name) == 0) {
 			/* Check for duplicates */
-			DEBUG(0,("There already is a torture op registered with the name %s!\n", name));
-			talloc_free(op);
+			DEBUG(0,("There already is a suite registered with the name %s!\n", suite->name));
 			return NT_STATUS_OBJECT_NAME_COLLISION;
 		}
 
-		if (strcmp(p->name, op->name) < 0 && 
-			(!p->next || strcmp(p->next->name, op->name) > 0)) {
-			DLIST_ADD_AFTER(torture_ops, op, p);
+		if (strcmp(p->suite->name, suite->name) < 0 && 
+			(!p->next || strcmp(p->next->suite->name, suite->name) > 0)) {
+			DLIST_ADD_AFTER(torture_suites, n, p);
 			return NT_STATUS_OK;
 		}
 	}
 
-	DLIST_ADD(torture_ops, op);
-	
+	DLIST_ADD(torture_suites, n);
+
+	return NT_STATUS_OK;
+}
+
+static BOOL wrap_old_torture_fn(struct torture_context *torture,
+								const void *_fn)
+{
+	BOOL (*fn)(struct torture_context *) = _fn;
+	return fn(torture);
+}
+
+static BOOL wrap_old_torture_multifn(struct torture_context *torture,
+								const void *_fn)
+{
+	BOOL (*fn)(struct smbcli_state *, int ) = _fn;
+	BOOL result;
+
+	torture_create_procs(fn, &result);
+
+	return result;
+}
+
+_PUBLIC_ NTSTATUS register_torture_op(const char *name, BOOL (*fn)(struct torture_context *), BOOL (*multi_fn)(struct smbcli_state *, int ))
+{
+	struct torture_suite *suite;
+
+	if (fn != NULL) {
+		suite = torture_suite_create(talloc_autofree_context(), name);
+
+		torture_suite_add_simple_tcase(suite, name, 
+									   wrap_old_torture_fn,
+									   fn);
+		torture_register_suite(suite);
+	}
+
+	if (multi_fn != NULL) {
+		suite = torture_suite_create(talloc_autofree_context(), name);
+
+		torture_suite_add_simple_tcase(suite, name, 
+									   wrap_old_torture_multifn,
+									   multi_fn);
+		torture_register_suite(suite);
+	}
+
+
 	return NT_STATUS_OK;
 }
 

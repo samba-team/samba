@@ -23,7 +23,6 @@
 #include "auth/ntlmssp/ntlmssp.h"
 #include "lib/cmdline/popt_common.h"
 #include "torture/torture.h"
-#include "torture/ui.h"
 
 static BOOL torture_ntlmssp_self_check(struct torture_context *test, 
 								const void *_data) 
@@ -129,12 +128,13 @@ static BOOL torture_ntlmssp_self_check(struct torture_context *test,
 	return True;
 }
 
-BOOL torture_ntlmssp(struct torture_context *torture)
+struct torture_suite *torture_ntlmssp(TALLOC_CTX *mem_ctx)
 {
-	struct torture_suite *suite = torture_suite_create(torture, "AUTH-NTLMSSP");
+	struct torture_suite *suite = torture_suite_create(mem_ctx, 
+													   "LOCAL-NTLMSSP");
 
 	torture_suite_add_simple_tcase(suite, "NTLMSSP self check",
 								   torture_ntlmssp_self_check, NULL);
 
-	return torture_run_suite(torture, suite);
+	return suite;
 }

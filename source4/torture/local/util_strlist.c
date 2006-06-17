@@ -22,7 +22,6 @@
 
 #include "includes.h"
 #include "torture/torture.h"
-#include "torture/ui.h"
 
 static const char *test_lists_shell_strings[] = {
 	"",
@@ -67,9 +66,9 @@ static BOOL test_lists_shell(struct torture_context *test, const void *_data)
 	return True;
 }
 
-BOOL torture_local_util_strlist(struct torture_context *torture) 
+struct torture_suite *torture_local_util_strlist(TALLOC_CTX *mem_ctx)
 {
-	struct torture_suite *suite = torture_suite_create(torture, "util_strlist");
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "util_strlist");
 	int i;
 
 	for (i = 0; test_lists_shell_strings[i]; i++) {
@@ -78,5 +77,5 @@ BOOL torture_local_util_strlist(struct torture_context *torture)
 									   &test_lists_shell_strings[i]);
 	}
 
-	return torture_run_suite(torture, suite);
+	return suite;
 }
