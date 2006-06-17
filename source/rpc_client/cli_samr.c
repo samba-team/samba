@@ -1505,6 +1505,12 @@ NTSTATUS rpccli_samr_lookup_rids(struct rpc_pipe_client *cli,
 	*names = TALLOC_ARRAY(mem_ctx, char *, r.num_names1);
 	*name_types = TALLOC_ARRAY(mem_ctx, uint32, r.num_names1);
 
+	if ((*names == NULL) || (*name_types == NULL)) {
+		TALLOC_FREE(*names);
+		TALLOC_FREE(*name_types);
+		return NT_STATUS_NO_MEMORY;
+	}
+
 	for (i = 0; i < r.num_names1; i++) {
 		fstring tmp;
 
@@ -1563,6 +1569,12 @@ NTSTATUS rpccli_samr_lookup_names(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 	*num_rids = r.num_rids1;
 	*rids = TALLOC_ARRAY(mem_ctx, uint32, r.num_rids1);
 	*rid_types = TALLOC_ARRAY(mem_ctx, uint32, r.num_rids1);
+
+	if ((*rids == NULL) || (*rid_types == NULL)) {
+		TALLOC_FREE(*rids);
+		TALLOC_FREE(*rid_types);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	for (i = 0; i < r.num_rids1; i++) {
 		(*rids)[i] = r.rids[i];
