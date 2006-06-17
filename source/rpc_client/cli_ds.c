@@ -100,6 +100,10 @@ NTSTATUS rpccli_ds_enum_domain_trusts(struct rpc_pipe_client *cli,
 		*num_domains = r.num_domains;
 		*trusts = TALLOC_ARRAY(mem_ctx, struct ds_domain_trust, r.num_domains);
 
+		if (*trusts == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+
 		for ( i=0; i< *num_domains; i++ ) {
 			(*trusts)[i].flags = r.domains.trusts[i].flags;
 			(*trusts)[i].parent_index = r.domains.trusts[i].parent_index;
