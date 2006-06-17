@@ -6,17 +6,8 @@ VERSION = 0.0.1
 PUBLIC_HEADERS = torture.h
 PUBLIC_PROTO_HEADER = proto.h
 OBJ_FILES = \
-		torture.o
+		torture.o 
 PUBLIC_DEPENDENCIES = \
-		TORTURE_UTIL \
-		TORTURE_RAW \
-		TORTURE_SMB2 \
-		TORTURE_RAP \
-		TORTURE_AUTH \
-		TORTURE_LOCAL \
-		TORTURE_NBENCH \
-		TORTURE_LDAP \
-		TORTURE_NBT \
 		LIBSAMBA-CONFIG \
 		LIBSAMBA-UTIL
 
@@ -56,13 +47,16 @@ OBJ_FILES = \
 		basic/attr.o \
 		basic/properties.o 
 PUBLIC_DEPENDENCIES = \
-		LIBCLI_SMB POPT_CREDENTIALS
+		LIBCLI_SMB POPT_CREDENTIALS \
+		TORTURE_UTIL
 # End SUBSYSTEM TORTURE_BASIC
 #################################
 
 #################################
 # Start SUBSYSTEM TORTURE_RAW
-[SUBSYSTEM::TORTURE_RAW]
+[MODULE::TORTURE_RAW]
+SUBSYSTEM = torture
+INIT_FUNCTION = torture_raw_init
 PRIVATE_PROTO_HEADER = \
 		raw/proto.h
 OBJ_FILES = \
@@ -89,7 +83,8 @@ OBJ_FILES = \
 		raw/acls.o \
 		raw/seek.o \
 		raw/samba3hide.o \
-		raw/composite.o
+		raw/composite.o \
+		raw/raw.o
 PUBLIC_DEPENDENCIES = \
 		LIBCLI_SMB LIBCLI_LSA LIBCLI_SMB_COMPOSITE \
 		POPT_CREDENTIALS
@@ -97,6 +92,11 @@ PUBLIC_DEPENDENCIES = \
 #################################
 
 include smb2/config.mk
+
+[MODULE::torture_misc]
+SUBSYSTEM = torture
+INIT_FUNCTION = torture_misc_init
+OBJ_FILES = misc.o
 
 [MODULE::torture_rpc]
 # TORTURE_NET and TORTURE_NBT use functions from torture_rpc...
@@ -157,7 +157,9 @@ PUBLIC_DEPENDENCIES = \
 
 #################################
 # Start SUBSYSTEM TORTURE_RAP
-[SUBSYSTEM::TORTURE_RAP]
+[MODULE::TORTURE_RAP]
+SUBSYSTEM = torture
+INIT_FUNCTION = torture_rap_init
 PRIVATE_PROTO_HEADER = \
 		rap/proto.h
 OBJ_FILES = \
@@ -169,7 +171,8 @@ PUBLIC_DEPENDENCIES = \
 
 #################################
 # Start SUBSYSTEM TORTURE_AUTH
-[SUBSYSTEM::TORTURE_AUTH]
+[MODULE::TORTURE_AUTH]
+SUBSYSTEM = torture
 PRIVATE_PROTO_HEADER = \
 		auth/proto.h
 OBJ_FILES = \
@@ -196,7 +199,9 @@ OBJ_FILES = \
 
 #################################
 # Start SUBSYSTEM TORTURE_LDAP
-[SUBSYSTEM::TORTURE_LDAP]
+[MODULE::TORTURE_LDAP]
+SUBSYSTEM = torture
+INIT_FUNCTION = torture_ldap_init
 PRIVATE_PROTO_HEADER = \
 		ldap/proto.h
 OBJ_FILES = \
@@ -212,7 +217,9 @@ PUBLIC_DEPENDENCIES = \
 
 #################################
 # Start SUBSYSTEM TORTURE_NBT
-[SUBSYSTEM::TORTURE_NBT]
+[MODULE::TORTURE_NBT]
+SUBSYSTEM = torture
+INIT_FUNCTION = torture_nbt_init
 PRIVATE_PROTO_HEADER = \
 		nbt/proto.h
 OBJ_FILES = \
@@ -222,7 +229,8 @@ OBJ_FILES = \
 		nbt/winsbench.o \
 		nbt/winsreplication.o \
 		nbt/dgram.o \
-		nbt/browse.o
+		nbt/browse.o \
+		nbt/nbt.o
 PUBLIC_DEPENDENCIES = \
 		LIBCLI_SMB LIBCLI_NBT LIBCLI_DGRAM LIBCLI_WREPL
 # End SUBSYSTEM TORTURE_NBT

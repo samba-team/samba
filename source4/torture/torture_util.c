@@ -24,7 +24,9 @@
 #include "libcli/raw/libcliraw.h"
 #include "libcli/raw/ioctl.h"
 #include "libcli/libcli.h"
+#include "system/filesys.h"
 #include "system/shmem.h"
+#include "system/wait.h"
 #include "system/time.h"
 #include "torture/torture.h"
 
@@ -549,4 +551,186 @@ _PUBLIC_ BOOL check_error(const char *location, struct smbcli_state *c,
 	return True;
 }
 
+static struct smbcli_state *current_cli;
+static int procnum; /* records process count number when forking */
 
+static void sigcont(int sig)
+{
+}
+
+double torture_create_procs(BOOL (*fn)(struct smbcli_state *, int), BOOL *result)
+{
+	int i, status;
+	volatile pid_t *child_status;
+	volatile BOOL *child_status_out;
+	int synccount;
+	int tries = 8;
+	double start_time_limit = 10 + (torture_nprocs * 1.5);
+	char **unc_list = NULL;
+	const char *p;
+	int num_unc_names = 0;
+	struct timeval tv;
+
+	*result = True;
+
+	synccount = 0;
+
+	signal(SIGCONT, sigcont);
+
+	child_status = (volatile pid_t *)shm_setup(sizeof(pid_t)*torture_nprocs);
+	if (!child_status) {
+		printf("Failed to setup shared memory\n");
+		return -1;
+	}
+
+	child_status_out = (volatile BOOL *)shm_setup(sizeof(BOOL)*torture_nprocs);
+	if (!child_status_out) {
+		printf("Failed to setup result status shared memory\n");
+		return -1;
+	}
+
+	p = lp_parm_string(-1, "torture", "unclist");
+	if (p) {
+		unc_list = file_lines_load(p, &num_unc_names, NULL);
+		if (!unc_list || num_unc_names <= 0) {
+			printf("Failed to load unc names list from '%s'\n", p);
+			exit(1);
+		}
+	}
+
+	for (i = 0; i < torture_nprocs; i++) {
+		child_status[i] = 0;
+		child_status_out[i] = True;
+	}
+
+	tv = timeval_current();
+
+	for (i=0;i<torture_nprocs;i++) {
+		procnum = i;
+		if (fork() == 0) {
+			char *myname;
+			char *hostname=NULL, *sharename;
+
+			pid_t mypid = getpid();
+			srandom(((int)mypid) ^ ((int)time(NULL)));
+
+			asprintf(&myname, "CLIENT%d", i);
+			lp_set_cmdline("netbios name", myname);
+			free(myname);
+
+
+			if (unc_list) {
+				if (!smbcli_parse_unc(unc_list[i % num_unc_names],
+						      NULL, &hostname, &sharename)) {
+					printf("Failed to parse UNC name %s\n",
+					       unc_list[i % num_unc_names]);
+					exit(1);
+				}
+			}
+
+			while (1) {
+				if (hostname) {
+					if (torture_open_connection_share(NULL,
+									  &current_cli,
+									  hostname, 
+									  sharename,
+									  NULL)) {
+						break;
+					}
+				} else if (torture_open_connection(&current_cli)) {
+						break;
+				}
+				if (tries-- == 0) {
+					printf("pid %d failed to start\n", (int)getpid());
+					_exit(1);
+				}
+				msleep(100);	
+			}
+
+			child_status[i] = getpid();
+
+			pause();
+
+			if (child_status[i]) {
+				printf("Child %d failed to start!\n", i);
+				child_status_out[i] = 1;
+				_exit(1);
+			}
+
+			child_status_out[i] = fn(current_cli, i);
+			_exit(0);
+		}
+	}
+
+	do {
+		synccount = 0;
+		for (i=0;i<torture_nprocs;i++) {
+			if (child_status[i]) synccount++;
+		}
+		if (synccount == torture_nprocs) break;
+		msleep(100);
+	} while (timeval_elapsed(&tv) < start_time_limit);
+
+	if (synccount != torture_nprocs) {
+		printf("FAILED TO START %d CLIENTS (started %d)\n", torture_nprocs, synccount);
+		*result = False;
+		return timeval_elapsed(&tv);
+	}
+
+	printf("Starting %d clients\n", torture_nprocs);
+
+	/* start the client load */
+	tv = timeval_current();
+	for (i=0;i<torture_nprocs;i++) {
+		child_status[i] = 0;
+	}
+
+	printf("%d clients started\n", torture_nprocs);
+
+	kill(0, SIGCONT);
+
+	for (i=0;i<torture_nprocs;i++) {
+		int ret;
+		while ((ret=waitpid(0, &status, 0)) == -1 && errno == EINTR) /* noop */ ;
+		if (ret == -1 || WEXITSTATUS(status) != 0) {
+			*result = False;
+		}
+	}
+
+	printf("\n");
+	
+	for (i=0;i<torture_nprocs;i++) {
+		if (!child_status_out[i]) {
+			*result = False;
+		}
+	}
+	return timeval_elapsed(&tv);
+}
+
+
+
+static BOOL wrap_old_torture_multifn(struct torture_context *torture,
+								const void *_fn)
+{
+	BOOL (*fn)(struct smbcli_state *, int ) = _fn;
+	BOOL result;
+
+	torture_create_procs(fn, &result);
+
+	return result;
+}
+
+_PUBLIC_ NTSTATUS register_torture_multi_op(const char *name, 
+											BOOL (*multi_fn)(struct smbcli_state *, int ))
+{
+	struct torture_suite *suite;
+
+	suite = torture_suite_create(talloc_autofree_context(), name);
+
+	torture_suite_add_simple_tcase(suite, name, 
+								   wrap_old_torture_multifn,
+								   multi_fn);
+	torture_register_suite(suite);
+
+	return NT_STATUS_OK;
+}
