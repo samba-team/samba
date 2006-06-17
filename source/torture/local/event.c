@@ -24,7 +24,6 @@
 #include "lib/events/events.h"
 #include "system/filesys.h"
 #include "torture/torture.h"
-#include "torture/ui.h"
 
 const struct event_ops *event_standard_get_ops(void);
 const struct event_ops *event_liboop_get_ops(void);
@@ -113,10 +112,9 @@ static BOOL test_event_context(struct torture_context *torture, const void *_dat
 	return True;
 }
 
-BOOL torture_local_event(struct torture_context *torture) 
+struct torture_suite *torture_local_event(TALLOC_CTX *mem_ctx)
 {
-	BOOL retv = True;
-	struct torture_suite *suite = torture_suite_create(torture, "LOCAL-EVENT");
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "LOCAL-EVENT");
 
 	torture_suite_add_simple_tcase(suite, "standard with select",
 								   test_event_context,
@@ -126,5 +124,5 @@ BOOL torture_local_event(struct torture_context *torture)
 								   test_event_context,
 								   (void *)True);
 
-	return retv;
+	return suite;
 }

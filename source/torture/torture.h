@@ -22,16 +22,16 @@
 #ifndef __TORTURE_H__
 #define __TORTURE_H__
 
+#include "torture/ui.h"
+
 struct smbcli_state;
-struct torture_context;
-struct torture_op {
-	const char *name;
-	BOOL (*fn)(struct torture_context *);
-	BOOL (*multi_fn)(struct smbcli_state *, int );
-	struct torture_op *prev, *next;
+
+struct torture_suite_list {
+	struct torture_suite *suite;
+	struct torture_suite_list *prev, *next;
 };
 
-extern struct torture_op * torture_ops;
+extern struct torture_suite_list * torture_suites;
 
 extern BOOL use_oplocks;
 extern BOOL torture_showall;

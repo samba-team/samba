@@ -24,7 +24,6 @@
 #include "librpc/gen_ndr/epmapper.h"
 #include "librpc/rpc/dcerpc.h"
 #include "torture/torture.h"
-#include "torture/ui.h"
 
 static BOOL test_BindingString(struct torture_context *torture, 
 							   const void *_binding)
@@ -111,10 +110,10 @@ static const char *test_strings[] = {
 	"ncacn_unix_stream:[/tmp/epmapper,sign]",
 };
 
-BOOL torture_local_binding_string(struct torture_context *torture) 
+struct torture_suite *torture_local_binding_string(TALLOC_CTX *mem_ctx)
 {
 	int i;
-	struct torture_suite *suite = torture_suite_create(torture, 
+	struct torture_suite *suite = torture_suite_create(mem_ctx, 
 													   "LOCAL-BINDING");
 
 	for (i = 0; i < ARRAY_SIZE(test_strings); i++) {
@@ -122,5 +121,5 @@ BOOL torture_local_binding_string(struct torture_context *torture)
 						test_BindingString, test_strings[i]);
 	}
 
-	return torture_run_suite(torture, suite);
+	return suite;
 }

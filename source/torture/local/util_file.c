@@ -23,7 +23,6 @@
 #include "includes.h"
 #include "system/filesys.h"
 #include "torture/torture.h"
-#include "torture/ui.h"
 
 #define TEST_FILENAME "utilfile.test"
 #define TEST_LINE1 "This is list line 1..."
@@ -83,9 +82,9 @@ static BOOL test_afdgets(struct torture_context *test, const void *data)
 	return True;
 }
 
-BOOL torture_local_util_file(struct torture_context *torture) 
+struct torture_suite *torture_local_util_file(TALLOC_CTX *mem_ctx)
 {
-	struct torture_suite *suite = torture_suite_create(torture, "util_file");
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "util_file");
 
 	torture_suite_add_simple_tcase(suite, "file_load_save", 
 								   test_file_load_save, NULL);
@@ -93,5 +92,5 @@ BOOL torture_local_util_file(struct torture_context *torture)
 	torture_suite_add_simple_tcase(suite, "afdgets", 
 								   test_afdgets, NULL);
 
-	return torture_run_suite(torture, suite);
+	return suite;
 }

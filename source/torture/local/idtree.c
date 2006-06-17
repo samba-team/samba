@@ -22,7 +22,6 @@
 
 #include "includes.h"
 #include "torture/torture.h"
-#include "torture/ui.h"
 
 static BOOL torture_local_idtree_simple(struct torture_context *test, 
 								 const void *_data) 
@@ -93,10 +92,10 @@ static BOOL torture_local_idtree_simple(struct torture_context *test,
 	return True;
 }
 
-BOOL torture_local_idtree(struct torture_context *torture)
+struct torture_suite *torture_local_idtree(TALLOC_CTX *mem_ctx)
 {
-	struct torture_suite *suite = torture_suite_create(torture, "LOCAL-IDTREE");
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "LOCAL-IDTREE");
 	torture_suite_add_simple_tcase(suite, "idtree", torture_local_idtree_simple,
 								   NULL);
-	return torture_run_suite(torture, suite);
+	return suite;
 }

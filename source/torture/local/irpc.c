@@ -25,7 +25,6 @@
 #include "lib/messaging/irpc.h"
 #include "librpc/gen_ndr/ndr_echo.h"
 #include "torture/torture.h"
-#include "torture/ui.h"
 
 const uint32_t MSG_ID1 = 1, MSG_ID2 = 2;
 
@@ -238,9 +237,9 @@ static BOOL irpc_setup(struct torture_context *test, void **_data)
 	return True;
 }
 
-BOOL torture_local_irpc(struct torture_context *torture) 
+struct torture_suite *torture_local_irpc(TALLOC_CTX *mem_ctx)
 {
-	struct torture_suite *suite = torture_suite_create(torture, "LOCAL-IRPC");
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "LOCAL-IRPC");
 	struct torture_tcase *tcase = torture_suite_add_tcase(suite, "irpc");
 	int i;
 	uint32_t values[] = {0, 0x7FFFFFFE, 0xFFFFFFFE, 0xFFFFFFFF, 
@@ -255,5 +254,5 @@ BOOL torture_local_irpc(struct torture_context *torture)
 	torture_tcase_add_test(tcase, "echodata", test_echodata, NULL);
 	torture_tcase_add_test(tcase, "speed", test_speed, NULL);
 
-	return torture_run_suite(torture, suite);
+	return suite;
 }

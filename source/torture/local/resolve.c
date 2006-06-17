@@ -24,7 +24,6 @@
 #include "lib/events/events.h"
 #include "libcli/resolve/resolve.h"
 #include "torture/torture.h"
-#include "torture/ui.h"
 
 static BOOL test_async_resolve(struct torture_context *test, const void *_data)
 {
@@ -81,13 +80,13 @@ static BOOL test_sync_resolve(struct torture_context *test, const void *_data)
 }
 
 
-BOOL torture_local_resolve(struct torture_context *torture) 
+struct torture_suite *torture_local_resolve(TALLOC_CTX *mem_ctx)
 {
-	struct torture_suite *suite = torture_suite_create(torture, 
+	struct torture_suite *suite = torture_suite_create(mem_ctx,
 													   "LOCAL-RESOLVE");
 
 	torture_suite_add_simple_tcase(suite, "async", test_async_resolve, NULL);
 	torture_suite_add_simple_tcase(suite, "sync", test_sync_resolve, NULL);
 
-	return torture_run_suite(torture, suite);
+	return suite;
 }
