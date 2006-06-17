@@ -577,83 +577,80 @@ double torture_create_procs(BOOL (*fn)(struct smbcli_state *, int), BOOL *result
 static struct {
 	const char *name;
 	BOOL (*fn)(struct torture_context *);
-	BOOL (*multi_fn)(struct smbcli_state *, int );
 } builtin_torture_ops[] = {
 	/* benchmarking tests */
-	{"BENCH-HOLDCON",  torture_holdcon, 0},
-	{"BENCH-NBENCH",  torture_nbench, 0},
-	{"BENCH-TORTURE", NULL, run_torture},
-	{"BENCH-NBT",     torture_bench_nbt, 0},
-	{"BENCH-WINS",    torture_bench_wins, 0},
-	{"BENCH-CLDAP",   torture_bench_cldap, 0},
-	{"BENCH-OPLOCK",   torture_bench_oplock, 0},
+	{"BENCH-HOLDCON",  torture_holdcon},
+	{"BENCH-NBENCH",  torture_nbench},
+	{"BENCH-NBT",     torture_bench_nbt},
+	{"BENCH-WINS",    torture_bench_wins},
+	{"BENCH-CLDAP",   torture_bench_cldap},
+	{"BENCH-OPLOCK",   torture_bench_oplock},
 
 	/* RAW smb tests */
-	{"RAW-QFSINFO", torture_raw_qfsinfo, 0},
-	{"RAW-QFILEINFO", torture_raw_qfileinfo, 0},
-	{"RAW-SFILEINFO", torture_raw_sfileinfo, 0},
-	{"RAW-SFILEINFO-BUG", torture_raw_sfileinfo_bug, 0},
-	{"RAW-SEARCH", torture_raw_search, 0},
-	{"RAW-CLOSE", torture_raw_close, 0},
-	{"RAW-OPEN", torture_raw_open, 0},
-	{"RAW-MKDIR", torture_raw_mkdir, 0},
-	{"RAW-OPLOCK", torture_raw_oplock, 0},
-	{"RAW-NOTIFY", torture_raw_notify, 0},
-	{"RAW-MUX", torture_raw_mux, 0},
-	{"RAW-IOCTL", torture_raw_ioctl, 0},
-	{"RAW-CHKPATH", torture_raw_chkpath, 0},
-	{"RAW-UNLINK", torture_raw_unlink, 0},
-	{"RAW-READ", torture_raw_read, 0},
-	{"RAW-WRITE", torture_raw_write, 0},
-	{"RAW-LOCK", torture_raw_lock, 0},
-	{"RAW-CONTEXT", torture_raw_context, 0},
-	{"RAW-RENAME", torture_raw_rename, 0},
-	{"RAW-SEEK", torture_raw_seek, 0},
-	{"RAW-EAS", torture_raw_eas, 0},
-	{"RAW-STREAMS", torture_raw_streams, 0},
-	{"RAW-ACLS", torture_raw_acls, 0},
-	{"RAW-COMPOSITE", torture_raw_composite, 0},
-	{"RAW-SAMBA3HIDE", torture_samba3_hide, 0},
+	{"RAW-QFSINFO", torture_raw_qfsinfo},
+	{"RAW-QFILEINFO", torture_raw_qfileinfo},
+	{"RAW-SFILEINFO", torture_raw_sfileinfo},
+	{"RAW-SFILEINFO-BUG", torture_raw_sfileinfo_bug},
+	{"RAW-SEARCH", torture_raw_search},
+	{"RAW-CLOSE", torture_raw_close},
+	{"RAW-OPEN", torture_raw_open},
+	{"RAW-MKDIR", torture_raw_mkdir},
+	{"RAW-OPLOCK", torture_raw_oplock},
+	{"RAW-NOTIFY", torture_raw_notify},
+	{"RAW-MUX", torture_raw_mux},
+	{"RAW-IOCTL", torture_raw_ioctl},
+	{"RAW-CHKPATH", torture_raw_chkpath},
+	{"RAW-UNLINK", torture_raw_unlink},
+	{"RAW-READ", torture_raw_read},
+	{"RAW-WRITE", torture_raw_write},
+	{"RAW-LOCK", torture_raw_lock},
+	{"RAW-CONTEXT", torture_raw_context},
+	{"RAW-RENAME", torture_raw_rename},
+	{"RAW-SEEK", torture_raw_seek},
+	{"RAW-EAS", torture_raw_eas},
+	{"RAW-STREAMS", torture_raw_streams},
+	{"RAW-ACLS", torture_raw_acls},
+	{"RAW-COMPOSITE", torture_raw_composite},
+	{"RAW-SAMBA3HIDE", torture_samba3_hide},
 
 	/* SMB2 tests */
-	{"SMB2-CONNECT", torture_smb2_connect, 0},
-	{"SMB2-SCAN", torture_smb2_scan, 0},
-	{"SMB2-SCANGETINFO", torture_smb2_getinfo_scan, 0},
-	{"SMB2-SCANSETINFO", torture_smb2_setinfo_scan, 0},
-	{"SMB2-SCANFIND", torture_smb2_find_scan, 0},
-	{"SMB2-GETINFO", torture_smb2_getinfo, 0},
-	{"SMB2-SETINFO", torture_smb2_setinfo, 0},
-	{"SMB2-FIND", torture_smb2_find, 0},
-	{"SMB2-LOCK", torture_smb2_lock, 0},
+	{"SMB2-CONNECT", torture_smb2_connect},
+	{"SMB2-SCAN", torture_smb2_scan},
+	{"SMB2-SCANGETINFO", torture_smb2_getinfo_scan},
+	{"SMB2-SCANSETINFO", torture_smb2_setinfo_scan},
+	{"SMB2-SCANFIND", torture_smb2_find_scan},
+	{"SMB2-GETINFO", torture_smb2_getinfo},
+	{"SMB2-SETINFO", torture_smb2_setinfo},
+	{"SMB2-FIND", torture_smb2_find},
+	{"SMB2-LOCK", torture_smb2_lock},
 
 	/* RAP tests */
-	{"RAP-BASIC", torture_rap_basic, 0},
+	{"RAP-BASIC", torture_rap_basic},
 
 	/* protocol scanners */
-	{"SCAN-MAXFID", NULL, run_maxfidtest},
-	{"SCAN-PIPE_NUMBER", run_pipe_number, 0},
-	{"SCAN-IOCTL",  torture_ioctl_test, 0},
-	{"SCAN-RAP",  torture_rap_scan, 0},
-	{"SCAN-EAMAX", torture_max_eas, 0},
+	{"SCAN-PIPE_NUMBER", run_pipe_number},
+	{"SCAN-IOCTL",  torture_ioctl_test},
+	{"SCAN-RAP",  torture_rap_scan},
+	{"SCAN-EAMAX", torture_max_eas},
 
 	/* local (no server) testers */
-	{"LOCAL-TALLOC", torture_local_talloc, 0},
+	{"LOCAL-TALLOC", torture_local_talloc},
 
 	/* ldap testers */
-	{"LDAP-BASIC", torture_ldap_basic, 0},
-	{"LDAP-SCHEMA", torture_ldap_schema, 0},
-	{"LDAP-CLDAP", torture_cldap, 0},
+	{"LDAP-BASIC", torture_ldap_basic},
+	{"LDAP-SCHEMA", torture_ldap_schema},
+	{"LDAP-CLDAP", torture_cldap},
 
 	/* nbt tests */
-	{"NBT-REGISTER", torture_nbt_register, 0},
-	{"NBT-WINS", torture_nbt_wins, 0},
-	{"NBT-DGRAM", torture_nbt_dgram, 0},
-	{"NBT-BROWSE", torture_nbt_browse, 0},
-	{"NBT-WINSREPLICATION-SIMPLE", torture_nbt_winsreplication_simple, 0},
-	{"NBT-WINSREPLICATION-REPLICA", torture_nbt_winsreplication_replica, 0},
-	{"NBT-WINSREPLICATION-OWNED", torture_nbt_winsreplication_owned, 0},
+	{"NBT-REGISTER", torture_nbt_register},
+	{"NBT-WINS", torture_nbt_wins},
+	{"NBT-DGRAM", torture_nbt_dgram},
+	{"NBT-BROWSE", torture_nbt_browse},
+	{"NBT-WINSREPLICATION-SIMPLE", torture_nbt_winsreplication_simple},
+	{"NBT-WINSREPLICATION-REPLICA", torture_nbt_winsreplication_replica},
+	{"NBT-WINSREPLICATION-OWNED", torture_nbt_winsreplication_owned},
 	
-	{NULL, NULL, 0}
+	{NULL, NULL}
 };
 
 /* ignore me */ static struct torture_suite *
@@ -682,10 +679,13 @@ static void register_builtin_ops(void)
 	int i;
 	TALLOC_CTX *mem_ctx = talloc_autofree_context();
 
+	register_torture_multi_op("BENCH-TORTURE", run_torture);
+	register_torture_multi_op("SCAN-MAXFID", run_maxfidtest);
+
 	for (i = 0; builtin_torture_ops[i].name; i++) {
-		register_torture_op(builtin_torture_ops[i].name, 
-							builtin_torture_ops[i].fn, 
-							builtin_torture_ops[i].multi_fn);
+		if (builtin_torture_ops[i].fn)
+			register_torture_op(builtin_torture_ops[i].name, 
+							builtin_torture_ops[i].fn);
 	}
 
 	for (i = 0; suite_generators[i]; i++)
@@ -738,28 +738,30 @@ static BOOL wrap_old_torture_multifn(struct torture_context *torture,
 	return result;
 }
 
-_PUBLIC_ NTSTATUS register_torture_op(const char *name, BOOL (*fn)(struct torture_context *), BOOL (*multi_fn)(struct smbcli_state *, int ))
+_PUBLIC_ NTSTATUS register_torture_multi_op(const char *name, 
+											BOOL (*multi_fn)(struct smbcli_state *, int ))
 {
 	struct torture_suite *suite;
 
-	if (fn != NULL) {
-		suite = torture_suite_create(talloc_autofree_context(), name);
+	suite = torture_suite_create(talloc_autofree_context(), name);
 
-		torture_suite_add_simple_tcase(suite, name, 
-									   wrap_old_torture_fn,
-									   fn);
-		torture_register_suite(suite);
-	}
+	torture_suite_add_simple_tcase(suite, name, 
+								   wrap_old_torture_multifn,
+								   multi_fn);
+	torture_register_suite(suite);
 
-	if (multi_fn != NULL) {
-		suite = torture_suite_create(talloc_autofree_context(), name);
+	return NT_STATUS_OK;
+}
 
-		torture_suite_add_simple_tcase(suite, name, 
-									   wrap_old_torture_multifn,
-									   multi_fn);
-		torture_register_suite(suite);
-	}
+_PUBLIC_ NTSTATUS register_torture_op(const char *name, BOOL (*fn)(struct torture_context *))
+{
+	struct torture_suite *suite;
+	suite = torture_suite_create(talloc_autofree_context(), name);
 
+	torture_suite_add_simple_tcase(suite, name, 
+								   wrap_old_torture_fn,
+								   fn);
+	torture_register_suite(suite);
 
 	return NT_STATUS_OK;
 }
