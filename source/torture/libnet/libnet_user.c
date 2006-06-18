@@ -27,7 +27,8 @@
 #include "torture/rpc/rpc.h"
 
 
-#define TEST_USERNAME  "libnetusertest"
+#define TEST_USERNAME        "libnetusertest"
+#define TEST_CHANGEDUSERNAME "newlibnetusertest"
 
 
 static BOOL test_cleanup(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
@@ -281,6 +282,61 @@ BOOL torture_deleteuser(struct torture_context *torture)
 	status = libnet_DeleteUser(ctx, mem_ctx, &req);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("libnet_DeleteUser call failed: %s\n", nt_errstr(status));
+		return False;
+	}
+
+done:
+	talloc_free(prep_mem_ctx);
+	talloc_free(mem_ctx);
+	return ret;
+}
+
+
+BOOL torture_modifyuser(struct torture_context *torture)
+{
+	NTSTATUS status;
+	const char *binding;
+	struct dcerpc_pipe *p;
+	TALLOC_CTX *prep_mem_ctx, *mem_ctx;
+	struct policy_handle h;
+	struct lsa_String domain_name;
+	const char *name = TEST_USERNAME;
+	struct libnet_context *ctx;
+	struct libnet_ModifyUser req;
+	BOOL ret = True;
+
+	prep_mem_ctx = talloc_init("prepare test_deleteuser");
+	binding = lp_parm_string(-1, "torture", "binding");
+
+	ctx = libnet_context_init(NULL);
+	ctx->cred = cmdline_credentials;
+
+	status = torture_rpc_connection(prep_mem_ctx,
+					&p,
+					&dcerpc_table_samr);
+	if (!NT_STATUS_IS_OK(status)) {
+		return False;
+	}
+
+	domain_name.string = lp_workgroup();
+	if (!test_opendomain(p, prep_mem_ctx, &h, &domain_name)) {
+		ret = False;
+		goto done;
+	}
+
+	if (!test_createuser(p, prep_mem_ctx, &h, name)) {
+		ret = False;
+		goto done;
+	}
+
+	mem_ctx = talloc_init("test_modifyuser");
+
+	req.in.user_name = TEST_USERNAME;
+	req.in.domain_name = lp_workgroup();
+
+	status = libnet_ModifyUser(ctx, mem_ctx, &req);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("libnet_ModifyUser call failed: %s\n", nt_errstr(status));
 		return False;
 	}
 
