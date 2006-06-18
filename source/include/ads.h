@@ -279,6 +279,10 @@ typedef void **ADS_MODLIST;
 #define KRB5_ADDR_NETBIOS 0x14
 #endif
 
+#ifndef KRB5KRB_ERR_RESPONSE_TOO_BIG
+#define KRB5KRB_ERR_RESPONSE_TOO_BIG (-1765328332L)
+#endif
+
 #ifdef HAVE_KRB5
 typedef struct {
 #if defined(HAVE_MAGIC_IN_KRB5_ADDRESS) && defined(HAVE_ADDRTYPE_IN_KRB5_ADDRESS) /* MIT */
