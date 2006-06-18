@@ -2454,6 +2454,10 @@ static WERROR cmd_spoolss_rffpcnex(struct rpc_pipe_client *cli,
 	option.count = option.ctr.count = 2;
 
 	option.ctr.type = TALLOC_ARRAY(mem_ctx, SPOOL_NOTIFY_OPTION_TYPE, 2);
+	if (option.ctr.type == NULL) {
+		result = WERR_NOMEM;
+		goto done;
+	}
 
 	ZERO_STRUCT(option.ctr.type[0]);
 	option.ctr.type[0].type = PRINTER_NOTIFY_TYPE;
