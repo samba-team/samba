@@ -904,7 +904,13 @@ char *ads_get_dn_canonical(ADS_STRUCT *ads, void *msg)
  **/
 char *ads_parent_dn(const char *dn)
 {
-	char *p = strchr(dn, ',');
+	char *p;
+
+	if (dn == NULL) {
+		return NULL;
+	}
+
+	p = strchr(dn, ',');
 
 	if (p == NULL) {
 		return NULL;
