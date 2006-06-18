@@ -892,6 +892,8 @@ AC_DEFUN([SMB_CHECK_DMAPI],
 	LIBS="$LIBS $samba_dmapi_libs"
 	AC_TRY_LINK(
 		[
+#include <time.h>      /* needed by Tru64 */
+#include <sys/types.h> /* needed by AIX */
 #ifdef HAVE_XFS_DMAPI_H
 #include <xfs/dmapi.h>
 #elif defined(HAVE_SYS_DMI_H)
@@ -906,14 +908,12 @@ AC_DEFUN([SMB_CHECK_DMAPI],
 /* This link test is designed to fail on IRI 6.4, but should
  * succeed on Linux, IRIX 6.5 and AIX.
  */
-void main(void) {
 	char * version;
 	dm_eventset_t events;
 	/* This doesn't take an argument on IRIX 6.4. */
 	dm_init_service(&version);
 	/* IRIX 6.4 expects events to be a pointer. */
 	DMEV_ISSET(DM_EVENT_READ, events);
-}
 		],
 		[
 		    true # DMAPI link test succeeded
