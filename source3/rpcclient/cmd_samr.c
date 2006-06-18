@@ -1680,7 +1680,12 @@ static NTSTATUS cmd_samr_lookup_names(struct rpc_pipe_client *cli,
 	/* Look up names */
 
 	num_names = argc - 2;
-	names = TALLOC_ARRAY(mem_ctx, const char *, num_names);
+	if ((names = TALLOC_ARRAY(mem_ctx, const char *, num_names)) == NULL) {
+		rpccli_samr_close(cli, mem_ctx, &domain_pol);
+		rpccli_samr_close(cli, mem_ctx, &connect_pol);
+		result = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
 
 	for (i = 0; i < argc - 2; i++)
 		names[i] = argv[i + 2];
@@ -1747,6 +1752,12 @@ static NTSTATUS cmd_samr_lookup_rids(struct rpc_pipe_client *cli,
 
 	num_rids = argc - 2;
 	rids = TALLOC_ARRAY(mem_ctx, uint32, num_rids);
+	if ((rids = TALLOC_ARRAY(mem_ctx, uint32, num_rids)) == NULL) {
+		rpccli_samr_close(cli, mem_ctx, &domain_pol);
+		rpccli_samr_close(cli, mem_ctx, &connect_pol);
+		result = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
 
 	for (i = 0; i < argc - 2; i++)
                 sscanf(argv[i + 2], "%i", &rids[i]);
