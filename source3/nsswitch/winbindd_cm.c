@@ -723,6 +723,9 @@ static BOOL find_new_dc(TALLOC_CTX *mem_ctx,
 	if ((num_dcnames == 0) || (num_dcnames != num_addrs))
 		return False;
 
+	if ((addrs == NULL) || (dcnames == NULL))
+		return False;
+
 	if ( !open_any_socket_out(addrs, num_addrs, 10000, &fd_index, fd) ) 
 	{
 		for (i=0; i<num_dcs; i++) {

@@ -276,7 +276,7 @@ static BOOL centry_sid(struct cache_entry *centry, TALLOC_CTX *mem_ctx, DOM_SID 
 {
 	char *sid_string;
 	sid_string = centry_string(centry, mem_ctx);
-	if (!string_to_sid(sid, sid_string)) {
+	if ((sid_string == NULL) || (!string_to_sid(sid, sid_string))) {
 		return False;
 	}
 	return True;
@@ -2136,6 +2136,7 @@ void wcache_flush_cache(void)
 
 	if (!wcache->tdb) {
 		DEBUG(0,("Failed to open winbindd_cache.tdb!\n"));
+		return;
 	}
 
 	tdb_traverse(wcache->tdb, traverse_fn_cleanup, NULL);

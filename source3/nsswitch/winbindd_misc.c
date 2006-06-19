@@ -158,7 +158,10 @@ enum winbindd_result winbindd_dual_list_trusted_domains(struct winbindd_domain *
 	/* This is a bit excessive, but the extra data sooner or later will be
 	   talloc'ed */
 
-	extra_data_len = strlen(extra_data);
+	extra_data_len = 0;
+	if (extra_data != NULL) {
+		extra_data_len = strlen(extra_data);
+	}
 
 	if (extra_data_len > 0) {
 		state->response.extra_data.data = SMB_STRDUP(extra_data);
