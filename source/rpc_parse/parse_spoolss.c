@@ -5005,11 +5005,16 @@ static BOOL uniarray_2_dosarray(BUFFER5 *buf5, fstring **ar)
 		rpcstr_pull(f, src, sizeof(f)-1, -1, STR_TERMINATE);
 		src = skip_unibuf(src, 2*buf5->buf_len - PTR_DIFF(src,buf5->buffer));
 		*ar = SMB_REALLOC_ARRAY(*ar, fstring, n+2);
-		if (!*ar)
+		if (!*ar) {
 			return False;
+		}
 		fstrcpy((*ar)[n], f);
 		n++;
 	}
+	if (!*ar) {
+		return False;
+	}
+
 	fstrcpy((*ar)[n], "");
  
 	return True;
