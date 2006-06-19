@@ -44,6 +44,13 @@ static void print_auditing_category(const char *policy, const char *value)
 	fstring padding;
 	int pad_len, col_len = 30;
 
+	if (policy == NULL) {
+		policy = "Unknown";
+	}
+	if (value == NULL) {
+		value = "Invalid";
+	}
+
 	/* calculate padding space for d_printf to look nicer */
 	pad_len = col_len - strlen(policy);
 	padding[pad_len] = 0;

@@ -574,6 +574,10 @@ static NTSTATUS fetch_account_info(uint32 rid, SAM_ACCOUNT_INFO *delta)
 		}
 	}
 
+	if (pdb_get_group_sid(sam_account) == NULL) {
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
 	group_sid = *pdb_get_group_sid(sam_account);
 
 	if (!pdb_getgrsid(&map, group_sid)) {
@@ -694,7 +698,11 @@ static NTSTATUS fetch_group_mem_info(uint32 rid, SAM_GROUP_MEM_INFO *delta)
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	nt_members = TALLOC_ZERO_ARRAY(t, char *, delta->num_members);
+	if ((nt_members = TALLOC_ZERO_ARRAY(t, char *, delta->num_members)) == NULL) {
+		DEBUG(0, ("talloc failed\n"));
+		talloc_free(t);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	for (i=0; i<delta->num_members; i++) {
 		struct samu *member = NULL;

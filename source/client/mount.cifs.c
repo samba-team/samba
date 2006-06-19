@@ -259,6 +259,11 @@ static int get_password_from_file(int file_descript, char * filename)
 	else 
 		memset(mountpassword, 0, 64);
 
+	if (mountpassword == NULL) {
+		printf("malloc failed\n");
+		exit(1);
+	}
+
 	if(filename != NULL) {
 		file_descript = open(filename, O_RDONLY);
 		if(file_descript < 0) {
