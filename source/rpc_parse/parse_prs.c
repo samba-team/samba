@@ -1469,11 +1469,12 @@ int tdb_prs_fetch(TDB_CONTEXT *tdb, char *keystr, prs_struct *ps, TALLOC_CTX *me
     kbuf.dptr = keystr;
     kbuf.dsize = strlen(keystr)+1;
 
+    prs_init(ps, 0, mem_ctx, UNMARSHALL);
+
     dbuf = tdb_fetch(tdb, kbuf);
     if (!dbuf.dptr)
 	    return -1;
 
-    prs_init(ps, 0, mem_ctx, UNMARSHALL);
     prs_give_memory(ps, dbuf.dptr, dbuf.dsize, True);
 
     return 0;
