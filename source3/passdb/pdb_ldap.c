@@ -2274,25 +2274,6 @@ static NTSTATUS ldapsam_getgrnam(struct pdb_methods *methods, GROUP_MAP *map,
 	return ldapsam_getgroup(methods, filter, map);
 }
 
-static void add_rid_to_array_unique(TALLOC_CTX *mem_ctx,
-				    uint32 rid, uint32 **pp_rids, size_t *p_num)
-{
-	size_t i;
-
-	for (i=0; i<*p_num; i++) {
-		if ((*pp_rids)[i] == rid)
-			return;
-	}
-	
-	*pp_rids = TALLOC_REALLOC_ARRAY(mem_ctx, *pp_rids, uint32, *p_num+1);
-
-	if (*pp_rids == NULL)
-		return;
-
-	(*pp_rids)[*p_num] = rid;
-	*p_num += 1;
-}
-
 static BOOL ldapsam_extract_rid_from_entry(LDAP *ldap_struct,
 					   LDAPMessage *entry,
 					   const DOM_SID *domain_sid,
