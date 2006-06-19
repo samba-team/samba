@@ -653,9 +653,12 @@ BOOL cli_resolve_path( const char *mountpt, struct cli_state *rootcli, const cha
 
 	fullpath[consumed/2] = '\0';
 	dos_clean_name( fullpath );
-	ppath = strchr_m( fullpath, '\\' );
-	ppath = strchr_m( ppath+1, '\\' );
-	ppath = strchr_m( ppath+1, '\\' );
+	if ((ppath = strchr_m( fullpath, '\\' )) == NULL)
+		return False;
+	if ((ppath = strchr_m( ppath+1, '\\' )) == NULL)
+		return False;
+	if ((ppath = strchr_m( ppath+1, '\\' )) == NULL)
+		return False;
 	ppath++;
 	
 	pstr_sprintf( newmount, "%s\\%s", mountpt, ppath );

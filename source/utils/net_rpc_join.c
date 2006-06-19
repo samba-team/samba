@@ -222,7 +222,10 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 		      "could not open domain");
 
 	/* Create domain user */
-	acct_name = talloc_asprintf(mem_ctx, "%s$", global_myname()); 
+	if ((acct_name = talloc_asprintf(mem_ctx, "%s$", global_myname())) == NULL) {
+		result = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
 	strlower_m(acct_name);
 	const_acct_name = acct_name;
 
