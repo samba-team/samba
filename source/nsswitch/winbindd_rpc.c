@@ -579,8 +579,10 @@ NTSTATUS msrpc_lookup_useraliases(struct winbindd_domain *domain,
 		/* process output */
 
 		for (i=0; i<num_aliases_query; i++) {
+			size_t na = *num_aliases;
 			add_rid_to_array_unique(mem_ctx, alias_rids_query[i], 
-						alias_rids, num_aliases);
+						alias_rids, &na);
+			*num_aliases = na;
 		}
 
 		TALLOC_FREE(query_sids);
