@@ -863,8 +863,8 @@ static int check_ads_config( void )
 
 	if (strlen(global_myname()) > 15) {
 		d_printf("Our netbios name can be at most 15 chars long, "
-			 "\"%s\" is %d chars long\n",
-			 global_myname(), strlen(global_myname()));
+			 "\"%s\" is %u chars long\n",
+			 global_myname(), (unsigned int)strlen(global_myname()));
 		return -1;
 	}
 
@@ -1472,7 +1472,7 @@ static int net_ads_password(int argc, const char **argv)
 
 	/* use the realm so we can eventually change passwords for users 
 	in realms other than default */
-	if (!(ads = ads_init(realm, NULL, NULL))) {
+	if (!(ads = ads_init(realm, opt_workgroup, NULL))) {
 		return -1;
 	}
 
@@ -1496,7 +1496,7 @@ static int net_ads_password(int argc, const char **argv)
 	ret = kerberos_set_password(ads->auth.kdc_server, auth_principal, 
 				auth_password, user, new_password, ads->auth.time_offset);
 	if (!ADS_ERR_OK(ret)) {
-		d_fprintf(stderr, "Password change failed :-( ...\n");
+		d_fprintf(stderr, "Password change failed: %s\n", ads_errstr(ret));
 		ads_destroy(&ads);
 		return -1;
 	}

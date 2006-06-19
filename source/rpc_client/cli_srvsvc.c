@@ -108,6 +108,9 @@ WERROR rpccli_srvsvc_net_share_enum(struct rpc_pipe_client *cli, TALLOC_CTX *mem
 	switch(info_level) {
 	case 1:
 		ctr->share.info1 = TALLOC_ARRAY(mem_ctx, SRV_SHARE_INFO_1, ctr->num_entries);
+		if (ctr->share.info1 == NULL) {
+			return WERR_NOMEM;
+		}
 		
 		memset(ctr->share.info1, 0, sizeof(SRV_SHARE_INFO_1));
 
@@ -135,6 +138,9 @@ WERROR rpccli_srvsvc_net_share_enum(struct rpc_pipe_client *cli, TALLOC_CTX *mem
 		break;
 	case 2:
 		ctr->share.info2 = TALLOC_ARRAY(mem_ctx, SRV_SHARE_INFO_2, ctr->num_entries);
+		if (ctr->share.info2 == NULL) {
+			return WERR_NOMEM;
+		}
 		
 		memset(ctr->share.info2, 0, sizeof(SRV_SHARE_INFO_2));
 
@@ -169,6 +175,10 @@ WERROR rpccli_srvsvc_net_share_enum(struct rpc_pipe_client *cli, TALLOC_CTX *mem
 	/* adding info-level 502 here */
 	case 502:
 		ctr->share.info502 = TALLOC_ARRAY(mem_ctx, SRV_SHARE_INFO_502, ctr->num_entries);
+
+		if (ctr->share.info502 == NULL) {
+			return WERR_NOMEM;
+		}
 		
 		memset(ctr->share.info502, 0, sizeof(SRV_SHARE_INFO_502));
 
@@ -534,6 +544,9 @@ WERROR rpccli_srvsvc_net_file_enum(struct rpc_pipe_client *cli, TALLOC_CTX *mem_
 	switch(file_level) {
 	case 3:
 		ctr->file.info3 = TALLOC_ARRAY(mem_ctx, SRV_FILE_INFO_3, ctr->num_entries);
+		if (ctr->file.info3 == NULL) {
+			return WERR_NOMEM;
+		}
 
 		memset(ctr->file.info3, 0, 
 		       sizeof(SRV_FILE_INFO_3) * ctr->num_entries);

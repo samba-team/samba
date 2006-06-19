@@ -447,7 +447,14 @@ static void adjust_do_list_queue(void)
 	 * If the starting point of the queue is more than half way through,
 	 * move everything toward the beginning.
 	 */
-	if (do_list_queue && (do_list_queue_start == do_list_queue_end)) {
+
+	if (do_list_queue == NULL) {
+		DEBUG(4,("do_list_queue is empty\n"));
+		do_list_queue_start = do_list_queue_end = 0;
+		return;
+	}
+		
+	if (do_list_queue_start == do_list_queue_end) {
 		DEBUG(4,("do_list_queue is empty\n"));
 		do_list_queue_start = do_list_queue_end = 0;
 		*do_list_queue = '\0';
@@ -3422,8 +3429,9 @@ static int do_message_op(void)
         /* set default debug level to 0 regardless of what smb.conf sets */
 	setup_logging( "smbclient", True );
 	DEBUGLEVEL_CLASS[DBGC_ALL] = 1;
-	dbf = x_stderr;
-	x_setbuf( x_stderr, NULL );
+	if ((dbf = x_fdup(x_stderr))) {
+		x_setbuf( dbf, NULL );
+	}
 
 	pc = poptGetContext("smbclient", argc, (const char **) argv, long_options, 
 				POPT_CONTEXT_KEEP_FIRST);

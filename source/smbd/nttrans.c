@@ -914,7 +914,7 @@ create_options = 0x%x root_dir_fid = 0x%x\n",
 ****************************************************************************/
 
 static int do_nt_transact_create_pipe( connection_struct *conn, char *inbuf, char *outbuf, int length, int bufsize,
-                                  char **ppsetup, uint32 setup_count,
+                                  uint16 **ppsetup, uint32 setup_count,
 				  char **ppparams, uint32 parameter_count,
 				  char **ppdata, uint32 data_count)
 {
@@ -1063,6 +1063,10 @@ static struct ea_list *read_nttrans_ea_list(TALLOC_CTX *ctx, const char *pdata, 
 		struct ea_list *tmp;
 		struct ea_list *eal = read_ea_list_entry(ctx, pdata + offset + 4, data_size - offset - 4, NULL);
 
+		if (!eal) {
+			return NULL;
+		}
+
 		DLIST_ADD_END(ea_list_head, eal, tmp);
 		if (next_offset == 0) {
 			break;
@@ -1078,7 +1082,7 @@ static struct ea_list *read_nttrans_ea_list(TALLOC_CTX *ctx, const char *pdata, 
 ****************************************************************************/
 
 static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *outbuf, int length, int bufsize,
-                                  char **ppsetup, uint32 setup_count,
+                                  uint16 **ppsetup, uint32 setup_count,
 				  char **ppparams, uint32 parameter_count,
 				  char **ppdata, uint32 data_count, uint32 max_data_count)
 {
@@ -1818,11 +1822,11 @@ int reply_ntrename(connection_struct *conn,
 ****************************************************************************/
 
 static int call_nt_transact_notify_change(connection_struct *conn, char *inbuf, char *outbuf, int length, int bufsize, 
-                                  char **ppsetup, uint32 setup_count,
+                                  uint16 **ppsetup, uint32 setup_count,
 				  char **ppparams, uint32 parameter_count,
 				  char **ppdata, uint32 data_count, uint32 max_data_count)
 {
-	char *setup = *ppsetup;
+	uint16 *setup = *ppsetup;
 	files_struct *fsp;
 	uint32 flags;
 
@@ -1830,7 +1834,7 @@ static int call_nt_transact_notify_change(connection_struct *conn, char *inbuf, 
 		return ERROR_DOS(ERRDOS,ERRbadfunc);
 	}
 
-	fsp = file_fsp(setup,4);
+	fsp = file_fsp((char *)setup,4);
 	flags = IVAL(setup, 0);
 
 	DEBUG(3,("call_nt_transact_notify_change\n"));
@@ -1858,7 +1862,7 @@ name = %s\n", fsp->fsp_name ));
 ****************************************************************************/
 
 static int call_nt_transact_rename(connection_struct *conn, char *inbuf, char *outbuf, int length, int bufsize,
-                                  char **ppsetup, uint32 setup_count,
+                                  uint16 **ppsetup, uint32 setup_count,
 				  char **ppparams, uint32 parameter_count,
 				  char **ppdata, uint32 data_count, uint32 max_data_count)
 {
@@ -1926,7 +1930,7 @@ static size_t get_null_nt_acl(TALLOC_CTX *mem_ctx, SEC_DESC **ppsd)
 ****************************************************************************/
 
 static int call_nt_transact_query_security_desc(connection_struct *conn, char *inbuf, char *outbuf, int length, int bufsize, 
-                                  char **ppsetup, uint32 setup_count,
+                                  uint16 **ppsetup, uint32 setup_count,
 				  char **ppparams, uint32 parameter_count,
 				  char **ppdata, uint32 data_count, uint32 max_data_count)
 {
@@ -2042,7 +2046,7 @@ security descriptor.\n"));
 ****************************************************************************/
 
 static int call_nt_transact_set_security_desc(connection_struct *conn, char *inbuf, char *outbuf, int length, int bufsize,
-                                  char **ppsetup, uint32 setup_count,
+                                  uint16 **ppsetup, uint32 setup_count,
 				  char **ppparams, uint32 parameter_count,
 				  char **ppdata, uint32 data_count, uint32 max_data_count)
 {
@@ -2088,7 +2092,7 @@ static int call_nt_transact_set_security_desc(connection_struct *conn, char *inb
 ****************************************************************************/
 
 static int call_nt_transact_ioctl(connection_struct *conn, char *inbuf, char *outbuf, int length, int bufsize, 
-                                  char **ppsetup, uint32 setup_count,
+                                  uint16 **ppsetup, uint32 setup_count,
 				  char **ppparams, uint32 parameter_count,
 				  char **ppdata, uint32 data_count, uint32 max_data_count)
 {
@@ -2113,7 +2117,7 @@ static int call_nt_transact_ioctl(connection_struct *conn, char *inbuf, char *ou
 	DEBUG(10,("call_nt_transact_ioctl: function[0x%08X] FID[0x%04X] isFSctl[0x%02X] compfilter[0x%02X]\n", 
 		 function, fidnum, isFSctl, compfilter));
 
-	fsp=file_fsp(*ppsetup, 4);
+	fsp=file_fsp((char *)*ppsetup, 4);
 	/* this check is done in each implemented function case for now
 	   because I don't want to break anything... --metze
 	FSP_BELONGS_CONN(fsp,conn);*/
@@ -2338,7 +2342,7 @@ static int call_nt_transact_ioctl(connection_struct *conn, char *inbuf, char *ou
 ****************************************************************************/
 
 static int call_nt_transact_get_user_quota(connection_struct *conn, char *inbuf, char *outbuf, int length, int bufsize, 
-                                  char **ppsetup, uint32 setup_count,
+                                  uint16 **ppsetup, uint32 setup_count,
 				  char **ppparams, uint32 parameter_count,
 				  char **ppdata, uint32 data_count, uint32 max_data_count)
 {
@@ -2594,7 +2598,7 @@ static int call_nt_transact_get_user_quota(connection_struct *conn, char *inbuf,
 ****************************************************************************/
 
 static int call_nt_transact_set_user_quota(connection_struct *conn, char *inbuf, char *outbuf, int length, int bufsize, 
-                                  char **ppsetup, uint32 setup_count,
+                                  uint16 **ppsetup, uint32 setup_count,
 				  char **ppparams, uint32 parameter_count,
 				  char **ppdata, uint32 data_count, uint32 max_data_count)
 {
@@ -2724,7 +2728,7 @@ static int handle_nttrans(connection_struct *conn,
 			START_PROFILE_NESTED(NT_transact_create);
 			outsize = call_nt_transact_create(conn, inbuf, outbuf,
 							  size, bufsize, 
-							(char **)&state->setup, state->setup_count,
+							&state->setup, state->setup_count,
 							&state->param, state->total_param, 
 							&state->data, state->total_data,
 							  state->max_data_return);
@@ -2737,7 +2741,7 @@ static int handle_nttrans(connection_struct *conn,
 			START_PROFILE_NESTED(NT_transact_ioctl);
 			outsize = call_nt_transact_ioctl(conn, inbuf, outbuf,
 							 size, bufsize, 
-							 (char **)&state->setup, state->setup_count,
+							 &state->setup, state->setup_count,
 							 &state->param, state->total_param, 
 							 &state->data, state->total_data, state->max_data_return);
 			END_PROFILE_NESTED(NT_transact_ioctl);
@@ -2749,7 +2753,7 @@ static int handle_nttrans(connection_struct *conn,
 			START_PROFILE_NESTED(NT_transact_set_security_desc);
 			outsize = call_nt_transact_set_security_desc(conn, inbuf, outbuf, 
 							 size, bufsize, 
-							 (char **)&state->setup, state->setup_count,
+							 &state->setup, state->setup_count,
 							 &state->param, state->total_param, 
 							 &state->data, state->total_data, state->max_data_return);
 			END_PROFILE_NESTED(NT_transact_set_security_desc);
@@ -2761,7 +2765,7 @@ static int handle_nttrans(connection_struct *conn,
 			START_PROFILE_NESTED(NT_transact_notify_change);
 			outsize = call_nt_transact_notify_change(conn, inbuf, outbuf, 
 							 size, bufsize, 
-							 (char **)&state->setup, state->setup_count,
+							 &state->setup, state->setup_count,
 							 &state->param, state->total_param, 
 							 &state->data, state->total_data, state->max_data_return);
 			END_PROFILE_NESTED(NT_transact_notify_change);
@@ -2773,7 +2777,7 @@ static int handle_nttrans(connection_struct *conn,
 			START_PROFILE_NESTED(NT_transact_rename);
 			outsize = call_nt_transact_rename(conn, inbuf, outbuf,
 							 size, bufsize, 
-							 (char **)&state->setup, state->setup_count,
+							 &state->setup, state->setup_count,
 							 &state->param, state->total_param, 
 							 &state->data, state->total_data, state->max_data_return);
 			END_PROFILE_NESTED(NT_transact_rename);
@@ -2785,7 +2789,7 @@ static int handle_nttrans(connection_struct *conn,
 			START_PROFILE_NESTED(NT_transact_query_security_desc);
 			outsize = call_nt_transact_query_security_desc(conn, inbuf, outbuf, 
 							 size, bufsize, 
-							 (char **)&state->setup, state->setup_count,
+							 &state->setup, state->setup_count,
 							 &state->param, state->total_param, 
 							 &state->data, state->total_data, state->max_data_return);
 			END_PROFILE_NESTED(NT_transact_query_security_desc);
@@ -2798,7 +2802,7 @@ static int handle_nttrans(connection_struct *conn,
 			START_PROFILE_NESTED(NT_transact_get_user_quota);
 			outsize = call_nt_transact_get_user_quota(conn, inbuf, outbuf, 
 							 size, bufsize, 
-							 (char **)&state->setup, state->setup_count,
+							 &state->setup, state->setup_count,
 							 &state->param, state->total_param, 
 							 &state->data, state->total_data, state->max_data_return);
 			END_PROFILE_NESTED(NT_transact_get_user_quota);
@@ -2810,7 +2814,7 @@ static int handle_nttrans(connection_struct *conn,
 			START_PROFILE_NESTED(NT_transact_set_user_quota);
 			outsize = call_nt_transact_set_user_quota(conn, inbuf, outbuf, 
 							 size, bufsize, 
-							 (char **)&state->setup, state->setup_count,
+							 &state->setup, state->setup_count,
 							 &state->param, state->total_param, 
 							 &state->data, state->total_data, state->max_data_return);
 			END_PROFILE_NESTED(NT_transact_set_user_quota);
@@ -2903,7 +2907,7 @@ int reply_nttrans(connection_struct *conn,
 		 * params and data. */
 		if ((state->data = SMB_MALLOC(state->total_data)) == NULL) {
 			DEBUG(0,("reply_nttrans: data malloc fail for %u "
-				 "bytes !\n", state->total_data));
+				 "bytes !\n", (unsigned int)state->total_data));
 			TALLOC_FREE(state);
 			END_PROFILE(SMBnttrans);
 			return(ERROR_DOS(ERRDOS,ERRnomem));
@@ -2922,7 +2926,7 @@ int reply_nttrans(connection_struct *conn,
 		 * params and data. */
 		if ((state->param = SMB_MALLOC(state->total_param)) == NULL) {
 			DEBUG(0,("reply_nttrans: param malloc fail for %u "
-				 "bytes !\n", state->total_param));
+				 "bytes !\n", (unsigned int)state->total_param));
 			SAFE_FREE(state->data);
 			TALLOC_FREE(state);
 			END_PROFILE(SMBnttrans);

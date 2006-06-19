@@ -1,6 +1,6 @@
                    =================================
-                   Release Notes for Samba 3.0.23rc2
-                              Jun XX, 2006
+                   Release Notes for Samba 3.0.23rc3
+                              Jun 19, 2006
                    =================================
 
 This is the third release candidate of the 3.0.23 code base and is 
@@ -10,12 +10,13 @@ Your testing and feedback is greatly appreciated.
 
 We would like to thank the developers of Klocwork for their analysis 
 of the Samba source tree.  This release candidate includes fixes 
-for over two dozen defects reported by the Klocwork code analyzer.
-
+for over three dozen defects reported by the Klocwork code analyzer.
 
 Common issues addressed in 3.0.23rc3 include:
 
-   o 
+   o Many more warnings from the Klocwork code analyzer.
+   o Various portability bugs on AIX, Solaris, and True64.
+
 
 ######################################################################
 Changes
@@ -32,6 +33,11 @@ o   Jeremy Allison <jra@samba.org>
     * Cleanup pdb_get_XXX() methods and ensure that a failure
       to allocate memory for a samu user structure is reported 
       as a failure to the calling function.
+    * Fix memleak in printing gencache contents.
+    * Fix warnings reported by gcc4 -O6 on 64-bit systems 
+    * Fix naming conflicts with 'net usershare' structures and 
+      Solaris header files.
+    * Fix memleaks on error paths from the ASN.1 parsing code.
 
 
 o   Gerald (Jerry) Carter <jerry@samba.org>
@@ -43,17 +49,37 @@ o   Gerald (Jerry) Carter <jerry@samba.org>
 o   Guenther Deschner <gd@samba.org>
     * Fix memleaks in winbindd ads searches.
     * Fix timestamp bug in pam_winbindd which forced users to change
-      passwords prematurelty.
+      passwords prematurely.
     * Small debug message cleanups.
+    * Small fixes for 'net ads password'.
+    * Add TCP fallback for our implementation of the CHANGEPW 
+      kpasswd calls.
+    * BUG 3843: Allow to set passwords directly when creating users 
+      via "net rpc user add" 
+    * Add "rpc shell" to the usage text for the net command.
+
+
+o   Bjoern Jacke <samba@j3e.de>.
+    * Fix DMAPI compile failures on AIX and True64.
+    * Fix AIX PIC suffix (use .o instead of .po).
 
 
 o   Volker Lendecke <vl@samba.org>
     * Fixes for various Klocwork defect reports.
-    * Fixes for two Coverity defect reports.
+    * Fixes for various Coverity defect reports.
 
 
 o   Jason Mader <jason@ncac.gwu.edu>
     * Compiler warning fixes.
+
+
+o   James Peach <jpeach@sgi.com>
+    * Ensure smbclient always prompts on standard output when in
+      interactive mode.
+
+
+o   Andreas Schwab
+    * Correct syntax error in aclocal.m4.
 
 
 Release Notes for older release follow:

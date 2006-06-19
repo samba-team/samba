@@ -28,6 +28,7 @@
 
 #define TIMEOUT_LEN 12
 #define CACHE_DATA_FMT	"%12u/%s"
+#define READ_CACHE_DATA_FMT_TEMPLATE "%%12u/%%%us"
 
 static TDB_CONTEXT *cache;
 
@@ -242,8 +243,9 @@ BOOL gencache_get(const char *keystr, char **valstr, time_t *timeout)
 	/* fail completely if get null pointers passed */
 	SMB_ASSERT(keystr);
 
-	if (!gencache_init())
+	if (!gencache_init()) {
 		return False;
+	}
 	
 	keybuf.dptr = SMB_STRDUP(keystr);
 	keybuf.dsize = strlen(keystr)+1;
@@ -256,13 +258,26 @@ BOOL gencache_get(const char *keystr, char **valstr, time_t *timeout)
 		time_t t;
 		unsigned u;
 		int status;
+		char *fmt;
 
-		v = SMB_MALLOC(databuf.dsize - TIMEOUT_LEN);
-				
+		v = SMB_MALLOC(databuf.dsize + 1 - TIMEOUT_LEN);
+		if (!v) {
+			return False;
+		}
+
 		SAFE_FREE(databuf.dptr);
-		status = sscanf(entry_buf, CACHE_DATA_FMT, &u, v);
+
+		asprintf(&fmt, READ_CACHE_DATA_FMT_TEMPLATE, (unsigned int)databuf.dsize - TIMEOUT_LEN);
+		if (!fmt) {
+			SAFE_FREE(v);
+			return False;
+		}
+
+		status = sscanf(entry_buf, fmt, &u, v);
+		SAFE_FREE(fmt);
+
 		if ( status != 2 ) {
-		    DEBUG(0, ("gencache_get: Invalid return %d from sscanf\n", status ));
+			DEBUG(0, ("gencache_get: Invalid return %d from sscanf\n", status ));
 		}
 		t = u;
 		SAFE_FREE(entry_buf);
@@ -271,13 +286,15 @@ BOOL gencache_get(const char *keystr, char **valstr, time_t *timeout)
 			   "timeout = %s", t > time(NULL) ? "valid" :
 			   "expired", keystr, v, ctime(&t)));
 
-		if (valstr)
+		if (valstr) {
 			*valstr = v;
-		else
+		} else {
 			SAFE_FREE(v);
+		}
 
-		if (timeout)
+		if (timeout) {
 			*timeout = t;
+		}
 
 		return t > time(NULL);
 
@@ -285,16 +302,16 @@ BOOL gencache_get(const char *keystr, char **valstr, time_t *timeout)
 
 	SAFE_FREE(databuf.dptr);
 
-	if (valstr)
+	if (valstr) {
 		*valstr = NULL;
-	if (timeout)
+	}
+	if (timeout) {
 		timeout = NULL;
+	}
 
 	DEBUG(10, ("Cache entry with key = %s couldn't be found\n", keystr));
-
 	return False;
 }
-
 
 /**
  * Iterate through all entries which key matches to specified pattern
@@ -327,8 +344,13 @@ void gencache_iterate(void (*fn)(const char* key, const char *value, time_t time
 	first_node = node;
 	
 	while (node) {
+		char *fmt;
+
 		/* ensure null termination of the key string */
 		keystr = SMB_STRNDUP(node->node_key.dptr, node->node_key.dsize);
+		if (!keystr) {
+			break;
+		}
 		
 		/* 
 		 * We don't use gencache_get function, because we need to iterate through
@@ -342,11 +364,33 @@ void gencache_iterate(void (*fn)(const char* key, const char *value, time_t time
 			continue;
 		}
 		entry = SMB_STRNDUP(databuf.dptr, databuf.dsize);
+		if (!entry) {
+			SAFE_FREE(databuf.dptr);
+			SAFE_FREE(keystr);
+			break;
+		}
+
 		SAFE_FREE(databuf.dptr);
-		valstr = SMB_MALLOC(databuf.dsize - TIMEOUT_LEN);
-		status = sscanf(entry, CACHE_DATA_FMT, &u, valstr);
+
+		valstr = SMB_MALLOC(databuf.dsize + 1 - TIMEOUT_LEN);
+		if (!valstr) {
+			SAFE_FREE(entry);
+			SAFE_FREE(keystr);
+			break;
+		}
+
+		asprintf(&fmt, READ_CACHE_DATA_FMT_TEMPLATE, (unsigned int)databuf.dsize - TIMEOUT_LEN);
+		if (!fmt) {
+			SAFE_FREE(valstr);
+			SAFE_FREE(entry);
+			SAFE_FREE(keystr);
+			break;
+		}
+		status = sscanf(entry, fmt, &u, valstr);
+		SAFE_FREE(fmt);
+
 		if ( status != 2 ) {
-		    DEBUG(0,("gencache_iterate: invalid return from sscanf %d\n",status));
+			DEBUG(0,("gencache_iterate: invalid return from sscanf %d\n",status));
 		}
 		timeout = u;
 		

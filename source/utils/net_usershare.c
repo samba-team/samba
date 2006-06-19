@@ -259,11 +259,11 @@ static int get_share_list(TALLOC_CTX *ctx, const char *wcard, BOOL only_ours)
 	return 0;
 }
 
-enum priv_op { US_LIST_OP, US_INFO_OP};
+enum us_priv_op { US_LIST_OP, US_INFO_OP};
 
-struct priv_info {
+struct us_priv_info {
 	TALLOC_CTX *ctx;
-	enum priv_op op;
+	enum us_priv_op op;
 };
 
 /***************************************************************************
@@ -290,7 +290,7 @@ static int info_fn(struct file_list *fl, void *priv)
 {
 	SMB_STRUCT_STAT sbuf;
 	char **lines = NULL;
-	struct priv_info *pi = (struct priv_info *)priv;
+	struct us_priv_info *pi = (struct us_priv_info *)priv;
 	TALLOC_CTX *ctx = pi->ctx;
 	int fd = -1;
 	int numlines = 0;
@@ -422,7 +422,7 @@ static int net_usershare_info(int argc, const char **argv)
 	fstring wcard;
 	BOOL only_ours = True;
 	int ret = -1;
-	struct priv_info pi;
+	struct us_priv_info pi;
 	TALLOC_CTX *ctx;
 
 	fstrcpy(wcard, "*");
@@ -785,7 +785,7 @@ static int net_usershare_list(int argc, const char **argv)
 	fstring wcard;
 	BOOL only_ours = True;
 	int ret = -1;
-	struct priv_info pi;
+	struct us_priv_info pi;
 	TALLOC_CTX *ctx;
 
 	fstrcpy(wcard, "*");

@@ -1107,6 +1107,7 @@ BOOL smb_io_unistr2(const char *desc, UNISTR2 *uni2, uint32 buffer, prs_struct *
 
 BOOL prs_unistr4(const char *desc, prs_struct *ps, int depth, UNISTR4 *uni4)
 {
+	void *ptr;
 	prs_debug(ps, depth, desc, "prs_unistr4");
 	depth++;
 
@@ -1115,9 +1116,13 @@ BOOL prs_unistr4(const char *desc, prs_struct *ps, int depth, UNISTR4 *uni4)
 	if ( !prs_uint16("size", ps, depth, &uni4->size ))
 		return False;
 		
-	if ( !prs_pointer( desc, ps, depth, (void**)&uni4->string, sizeof(UNISTR2), (PRS_POINTER_CAST)prs_io_unistr2 ) )
+	ptr = uni4->string;
+
+	if ( !prs_pointer( desc, ps, depth, &ptr, sizeof(UNISTR2), (PRS_POINTER_CAST)prs_io_unistr2 ) )
 		return False;
-		
+
+	uni4->string = (UNISTR2 *)ptr;
+	
 	return True;
 }
 

@@ -172,6 +172,11 @@ static struct ea_list *get_ea_list_from_file(TALLOC_CTX *mem_ctx, connection_str
 
 	for (i = 0, ea_namelist = TALLOC(mem_ctx, ea_namelist_size); i < 6;
 			ea_namelist = TALLOC_REALLOC_ARRAY(mem_ctx, ea_namelist, char, ea_namelist_size), i++) {
+
+		if (!ea_namelist) {
+			return NULL;
+		}
+
 		if (fsp && fsp->fh->fd != -1) {
 			sizeret = SMB_VFS_FLISTXATTR(fsp, fsp->fh->fd, ea_namelist, ea_namelist_size);
 		} else {
@@ -5286,7 +5291,7 @@ int reply_trans2(connection_struct *conn, char *inbuf,char *outbuf,
 		state->data = SMB_MALLOC(state->total_data);
 		if (state->data == NULL) {
 			DEBUG(0,("reply_trans2: data malloc fail for %u "
-				 "bytes !\n", state->total_data));
+				 "bytes !\n", (unsigned int)state->total_data));
 			TALLOC_FREE(state);
 			END_PROFILE(SMBtrans2);
 			return(ERROR_DOS(ERRDOS,ERRnomem));
@@ -5306,7 +5311,7 @@ int reply_trans2(connection_struct *conn, char *inbuf,char *outbuf,
 		state->param = SMB_MALLOC(state->total_param);
 		if (state->param == NULL) {
 			DEBUG(0,("reply_trans: param malloc fail for %u "
-				 "bytes !\n", state->total_param));
+				 "bytes !\n", (unsigned int)state->total_param));
 			SAFE_FREE(state->data);
 			TALLOC_FREE(state);
 			END_PROFILE(SMBtrans2);

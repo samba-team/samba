@@ -38,6 +38,7 @@ static void print_cache_entry(const char* keystr, const char* datastr,
                               const time_t timeout, void* dptr)
 {
 	char *timeout_str;
+	char *alloc_str = NULL;
 	time_t now_t = time(NULL);
 	struct tm timeout_tm, *now_tm;
 	/* localtime returns statically allocated pointer, so timeout_tm
@@ -64,12 +65,18 @@ static void print_cache_entry(const char* keystr, const char* datastr,
 		}	
 		timeout_str[strlen(timeout_str) - 1] = '\0';	/* remove tailing CR */
 	} else {
-		asprintf(&timeout_str, "%.2d:%.2d:%.2d", timeout_tm.tm_hour,
+		asprintf(&alloc_str, "%.2d:%.2d:%.2d", timeout_tm.tm_hour,
 		         timeout_tm.tm_min, timeout_tm.tm_sec);
+		if (!alloc_str) {
+			return;
+		}
+		timeout_str = alloc_str;
 	}
 	
 	d_printf("Key: %s\t Timeout: %s\t Value: %s  %s\n", keystr,
 	         timeout_str, datastr, timeout > now_t ? "": "(expired)");
+
+	SAFE_FREE(alloc_str);
 }
 
 static void delete_cache_entry(const char* keystr, const char* datastr,

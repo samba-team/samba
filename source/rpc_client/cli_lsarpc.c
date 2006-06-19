@@ -1177,6 +1177,12 @@ NTSTATUS rpccli_lsa_enum_account_rights(struct rpc_pipe_client *cli, TALLOC_CTX 
 	privileges = TALLOC_ARRAY( mem_ctx, fstring, *count );
 	names      = TALLOC_ARRAY( mem_ctx, char *, *count );
 
+	if ((privileges == NULL) || (names == NULL)) {
+		TALLOC_FREE(privileges);
+		TALLOC_FREE(names);
+		return NT_STATUS_NO_MEMORY;
+	}
+
 	for ( i=0; i<*count; i++ ) {
 		UNISTR4 *uni_string = &r.rights->strings[i];
 
