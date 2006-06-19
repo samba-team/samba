@@ -583,7 +583,7 @@ static NTSTATUS rpc_user_add_internals(const DOM_SID *domain_sid,
 	uint32 acb_info;
 	uint32 unknown, user_rid;
 
-	if (argc != 1) {
+	if (argc < 1) {
 		d_printf("User must be specified\n");
 		rpc_user_usage(argc, argv);
 		return NT_STATUS_OK;
@@ -620,6 +620,60 @@ static NTSTATUS rpc_user_add_internals(const DOM_SID *domain_sid,
 		goto done;
 	}
 
+	if (argc == 2) {
+
+		uint32 *user_rids, num_rids, *name_types;
+		uint32 flags = 0x000003e8; /* Unknown */
+		SAM_USERINFO_CTR ctr;
+		SAM_USER_INFO_24 p24;
+		uchar pwbuf[516];
+
+		result = rpccli_samr_lookup_names(pipe_hnd, mem_ctx, &domain_pol,
+						  flags, 1, &acct_name,
+						  &num_rids, &user_rids,
+						  &name_types);
+
+		if (!NT_STATUS_IS_OK(result)) {
+			goto done;
+		}
+
+		result = rpccli_samr_open_user(pipe_hnd, mem_ctx, &domain_pol,
+					       MAXIMUM_ALLOWED_ACCESS,
+					       user_rids[0], &user_pol);
+
+		if (!NT_STATUS_IS_OK(result)) {
+			goto done;
+		}
+
+		/* Set password on account */
+
+		ZERO_STRUCT(ctr);
+		ZERO_STRUCT(p24);
+
+		encode_pw_buffer(pwbuf, argv[1], STR_UNICODE);
+
+		init_sam_user_info24(&p24, (char *)pwbuf,24);
+
+		ctr.switch_value = 24;
+		ctr.info.id24 = &p24;
+
+		result = rpccli_samr_set_userinfo(pipe_hnd, mem_ctx, &user_pol, 24, 
+					       &cli->user_session_key, &ctr);
+
+		if (!NT_STATUS_IS_OK(result)) {
+			d_fprintf(stderr, "Failed to set password for user %s - %s\n", 
+				 acct_name, nt_errstr(result));
+
+			result = rpccli_samr_delete_dom_user(pipe_hnd, mem_ctx, &user_pol);
+
+			if (!NT_STATUS_IS_OK(result)) {
+				d_fprintf(stderr, "Failed to delete user %s - %s\n", 
+					 acct_name, nt_errstr(result));
+				 return result;
+			}
+		}
+
+	}
  done:
 	if (!NT_STATUS_IS_OK(result)) {
 		d_fprintf(stderr, "Failed to add user %s - %s\n", acct_name, 
