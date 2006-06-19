@@ -38,6 +38,11 @@
 	TRANS2_CHECK_ASYNC_STATUS_SIMPLE; \
 	ptr = talloc_get_type(op->op_info, type); \
 } while (0)
+#define TRANS2_CHECK(cmd) do { \
+	NTSTATUS _status; \
+	_status = cmd; \
+	NT_STATUS_NOT_OK_RETURN(_status); \
+} while (0)
 
 /*
   hold the state of a nttrans op while in progress. Needed to allow for async backend
@@ -56,58 +61,50 @@ struct trans_op {
 		return NT_STATUS_INFO_LENGTH_MISMATCH; \
 	}} while (0)
 
-/* grow the data allocation size of a trans2 reply - this guarantees
-   that requests to grow the data size later will not change the
-   pointer */
-static BOOL trans2_grow_data_allocation(struct smb_trans2 *trans,
-					uint32_t new_size)
-{
-	if (new_size <= trans->out.data.length) {
-		return True;
-	}
-	trans->out.data.data = talloc_realloc(trans, trans->out.data.data, 
-					      uint8_t, new_size);
-	return (trans->out.data.data != NULL);
-}
-
-
 /* grow the data size of a trans2 reply */
-static BOOL trans2_grow_data(struct smb_trans2 *trans,
-			     uint32_t new_size)
+static NTSTATUS trans2_grow_data(TALLOC_CTX *mem_ctx,
+				 DATA_BLOB *blob,
+				 uint32_t new_size)
 {
-	if (!trans2_grow_data_allocation(trans, new_size)) {
-		return False;
+	if (new_size > blob->length) {
+		blob->data = talloc_realloc(mem_ctx, blob->data, uint8_t, new_size);
+		NT_STATUS_HAVE_NO_MEMORY(blob->data);
 	}
-	trans->out.data.length = new_size;
-	return True;
+	blob->length = new_size;
+	return NT_STATUS_OK;
 }
 
 /* grow the data, zero filling any new bytes */
-static BOOL trans2_grow_data_fill(struct smb_trans2 *trans,
-				  uint32_t new_size)
+static NTSTATUS trans2_grow_data_fill(TALLOC_CTX *mem_ctx,
+				      DATA_BLOB *blob,
+				      uint32_t new_size)
 {
-	uint32_t old_size = trans->out.data.length;
-	if (!trans2_grow_data(trans, new_size)) {
-		return False;
-	}
+	uint32_t old_size = blob->length;
+	TRANS2_CHECK(trans2_grow_data(mem_ctx, blob, new_size));
 	if (new_size > old_size) {
-		memset(trans->out.data.data + old_size, 0, new_size - old_size);
+		memset(blob->data + old_size, 0, new_size - old_size);
 	}
-	return True;
+	return NT_STATUS_OK;
 }
 
 
 /* setup a trans2 reply, given the data and params sizes */
-static void trans2_setup_reply(struct smb_trans2 *trans,
-			       uint16_t param_size, uint16_t data_size,
-			       uint16_t setup_count)
+static NTSTATUS trans2_setup_reply(struct smb_trans2 *trans,
+				   uint16_t param_size, uint16_t data_size,
+				   uint16_t setup_count)
 {
 	trans->out.setup_count = setup_count;
-	if (setup_count != 0) {
+	if (setup_count > 0) {
 		trans->out.setup = talloc_zero_array(trans, uint16_t, setup_count);
+		NT_STATUS_HAVE_NO_MEMORY(trans->out.setup);
 	}
 	trans->out.params = data_blob_talloc(trans, NULL, param_size);
+	if (param_size > 0) NT_STATUS_HAVE_NO_MEMORY(trans->out.params.data);
+
 	trans->out.data = data_blob_talloc(trans, NULL, data_size);
+	if (data_size > 0) NT_STATUS_HAVE_NO_MEMORY(trans->out.data.data);
+
+	return NT_STATUS_OK;
 }
 
 
@@ -138,8 +135,9 @@ static size_t trans2_pull_blob_string(struct smbsrv_request *req,
   push a string into the data section of a trans2 request
   return the number of bytes consumed in the output
 */
-static size_t trans2_push_data_string(struct smbsrv_request *req, 
-				      struct smb_trans2 *trans,
+static size_t trans2_push_data_string(struct smbsrv_request *req,
+				      TALLOC_CTX *mem_ctx,
+				      DATA_BLOB *blob,
 				      uint32_t len_offset,
 				      uint32_t offset,
 				      const struct smb_wire_string *str,
@@ -151,19 +149,19 @@ static size_t trans2_push_data_string(struct smbsrv_request *req,
 	/* we use STR_NO_RANGE_CHECK because the params are allocated
 	   separately in a DATA_BLOB, so we need to do our own range
 	   checking */
-	if (!str->s || offset >= trans->out.data.length) {
+	if (!str->s || offset >= blob->length) {
 		if (flags & STR_LEN8BIT) {
-			SCVAL(trans->out.data.data, len_offset, 0);
+			SCVAL(blob->data, len_offset, 0);
 		} else {
-			SIVAL(trans->out.data.data, len_offset, 0);
+			SIVAL(blob->data, len_offset, 0);
 		}
 		return 0;
 	}
 
 	flags |= STR_NO_RANGE_CHECK;
 
-	if (dest_len == -1 || (dest_len > trans->out.data.length - offset)) {
-		dest_len = trans->out.data.length - offset;
+	if (dest_len == -1 || (dest_len > blob->length - offset)) {
+		dest_len = blob->length - offset;
 	}
 
 	if (!(flags & (STR_ASCII|STR_UNICODE))) {
@@ -173,11 +171,11 @@ static size_t trans2_push_data_string(struct smbsrv_request *req,
 	if ((offset&1) && (flags & STR_UNICODE) && !(flags & STR_NOALIGN)) {
 		alignment = 1;
 		if (dest_len > 0) {
-			SCVAL(trans->out.data.data + offset, 0, 0);
-			ret = push_string(trans->out.data.data + offset + 1, str->s, dest_len-1, flags);
+			SCVAL(blob->data + offset, 0, 0);
+			ret = push_string(blob->data + offset + 1, str->s, dest_len-1, flags);
 		}
 	} else {
-		ret = push_string(trans->out.data.data + offset, str->s, dest_len, flags);
+		ret = push_string(blob->data + offset, str->s, dest_len, flags);
 	}
 
 	/* sometimes the string needs to be terminated, but the length
@@ -191,12 +189,12 @@ static size_t trans2_push_data_string(struct smbsrv_request *req,
 		if ((flags & STR_ASCII) && ret >= 1) {
 			pkt_len = ret-1;
 		}
-	}	
+	}
 
 	if (flags & STR_LEN8BIT) {
-		SCVAL(trans->out.data.data, len_offset, pkt_len);
+		SCVAL(blob->data, len_offset, pkt_len);
 	} else {
-		SIVAL(trans->out.data.data, len_offset, pkt_len);
+		SIVAL(blob->data, len_offset, pkt_len);
 	}
 
 	return ret + alignment;
@@ -207,32 +205,36 @@ static size_t trans2_push_data_string(struct smbsrv_request *req,
   len_offset points to the place in the packet where the length field
   should go
 */
-static void trans2_append_data_string(struct smbsrv_request *req, 
-					struct smb_trans2 *trans,
-					const struct smb_wire_string *str,
-					uint_t len_offset,
-					int flags)
+static NTSTATUS trans2_append_data_string(struct smbsrv_request *req, 
+					  TALLOC_CTX *mem_ctx,
+					  DATA_BLOB *blob,
+					  const struct smb_wire_string *str,
+					  uint_t len_offset,
+					  int flags)
 {
 	size_t ret;
 	uint32_t offset;
 	const int max_bytes_per_char = 3;
 
-	offset = trans->out.data.length;
-	trans2_grow_data(trans, offset + (2+strlen_m(str->s))*max_bytes_per_char);
-	ret = trans2_push_data_string(req, trans, len_offset, offset, str, -1, flags);
-	trans2_grow_data(trans, offset + ret);
+	offset = blob->length;
+	TRANS2_CHECK(trans2_grow_data(mem_ctx, blob, offset + (2+strlen_m(str->s))*max_bytes_per_char));
+	ret = trans2_push_data_string(req, mem_ctx, blob, len_offset, offset, str, -1, flags);
+	if (ret < 0) {
+		return NT_STATUS_FOOBAR;
+	}
+	TRANS2_CHECK(trans2_grow_data(mem_ctx, blob, offset + ret));
+	return NT_STATUS_OK;
 }
 
 /*
   align the end of the data section of a trans reply on an even boundary
 */
-static void trans2_align_data(struct smbsrv_request *req, struct smb_trans2 *trans)
+static NTSTATUS trans2_align_data(struct smb_trans2 *trans)
 {
-	if ((trans->out.data.length & 1) == 0) {
-		return;
+	if (trans->out.data.length & 1) {
+		TRANS2_CHECK(trans2_grow_data_fill(trans, &trans->out.data, trans->out.data.length+1));
 	}
-	trans2_grow_data(trans, trans->out.data.length+1);
-	SCVAL(trans->out.data.data, trans->out.data.length-1, 0);
+	return NT_STATUS_OK;
 }
 
 
@@ -268,7 +270,7 @@ static NTSTATUS trans2_qfsinfo_send(struct trans_op *op)
 		SIVAL(trans->out.data.data,       0, fsinfo->volume.out.serial_number);
 		/* w2k3 implements this incorrectly for unicode - it
 		 * leaves the last byte off the string */
-		trans2_append_data_string(req, trans, 
+		trans2_append_data_string(req, trans, &trans->out.data, 
 					  &fsinfo->volume.out.volume_name, 
 					  4, STR_LEN8BIT|STR_NOALIGN);
 
@@ -281,7 +283,7 @@ static NTSTATUS trans2_qfsinfo_send(struct trans_op *op)
 		push_nttime(trans->out.data.data, 0, fsinfo->volume_info.out.create_time);
 		SIVAL(trans->out.data.data,       8, fsinfo->volume_info.out.serial_number);
 		SSVAL(trans->out.data.data,      16, 0); /* padding */
-		trans2_append_data_string(req, trans, 
+		trans2_append_data_string(req, trans, &trans->out.data,
 					  &fsinfo->volume_info.out.volume_name, 
 					  12, STR_UNICODE);
 
@@ -315,7 +317,7 @@ static NTSTATUS trans2_qfsinfo_send(struct trans_op *op)
 		/* this must not be null terminated or win98 gets
 		   confused!  also note that w2k3 returns this as
 		   unicode even when ascii is negotiated */
-		trans2_append_data_string(req, trans, 
+		trans2_append_data_string(req, trans, &trans->out.data,
 					  &fsinfo->attribute_info.out.fs_type,
 					  8, STR_UNICODE);
 		return NT_STATUS_OK;
@@ -553,18 +555,13 @@ static NTSTATUS trans2_mkdir(struct smbsrv_request *req, struct trans_op *op)
 	return ntvfs_mkdir(req->ntvfs, io);
 }
 
-/*
-  fill in the reply from a qpathinfo or qfileinfo call
-*/
-static NTSTATUS trans2_fileinfo_send(struct trans_op *op)
+static NTSTATUS trans2_push_fileinfo(struct smbsrv_request *req,
+				     union smb_fileinfo *st,
+				     TALLOC_CTX *mem_ctx,
+				     DATA_BLOB *blob)
 {
-	struct smbsrv_request *req = op->req;
-	struct smb_trans2 *trans = op->trans;
-	union smb_fileinfo *st;
 	uint_t i;
 	uint32_t list_size;
-
-	TRANS2_CHECK_ASYNC_STATUS(st, union smb_fileinfo);
 
 	switch (st->generic.level) {
 	case RAW_FILEINFO_GENERIC:
@@ -576,208 +573,202 @@ static NTSTATUS trans2_fileinfo_send(struct trans_op *op)
 
 	case RAW_FILEINFO_BASIC_INFO:
 	case RAW_FILEINFO_BASIC_INFORMATION:
-		trans2_setup_reply(trans, 2, 40, 0);
+		TRANS2_CHECK(trans2_grow_data(mem_ctx, blob, 40));
 
-		SSVAL(trans->out.params.data, 0, 0);
-		push_nttime(trans->out.data.data,  0, st->basic_info.out.create_time);
-		push_nttime(trans->out.data.data,  8, st->basic_info.out.access_time);
-		push_nttime(trans->out.data.data, 16, st->basic_info.out.write_time);
-		push_nttime(trans->out.data.data, 24, st->basic_info.out.change_time);
-		SIVAL(trans->out.data.data,       32, st->basic_info.out.attrib);
-		SIVAL(trans->out.data.data,       36, 0); /* padding */
+		push_nttime(blob->data,  0, st->basic_info.out.create_time);
+		push_nttime(blob->data,  8, st->basic_info.out.access_time);
+		push_nttime(blob->data, 16, st->basic_info.out.write_time);
+		push_nttime(blob->data, 24, st->basic_info.out.change_time);
+		SIVAL(blob->data,       32, st->basic_info.out.attrib);
+		SIVAL(blob->data,       36, 0); /* padding */
 		return NT_STATUS_OK;
 
 	case RAW_FILEINFO_STANDARD:
-		trans2_setup_reply(trans, 2, 22, 0);
+		TRANS2_CHECK(trans2_grow_data(mem_ctx, blob, 22));
 
-		SSVAL(trans->out.params.data, 0, 0);
-		srv_push_dos_date2(req->smb_conn, trans->out.data.data, 0, st->standard.out.create_time);
-		srv_push_dos_date2(req->smb_conn, trans->out.data.data, 4, st->standard.out.access_time);
-		srv_push_dos_date2(req->smb_conn, trans->out.data.data, 8, st->standard.out.write_time);
-		SIVAL(trans->out.data.data,        12, st->standard.out.size);
-		SIVAL(trans->out.data.data,        16, st->standard.out.alloc_size);
-		SSVAL(trans->out.data.data,        20, st->standard.out.attrib);
+		srv_push_dos_date2(req->smb_conn, blob->data, 0, st->standard.out.create_time);
+		srv_push_dos_date2(req->smb_conn, blob->data, 4, st->standard.out.access_time);
+		srv_push_dos_date2(req->smb_conn, blob->data, 8, st->standard.out.write_time);
+		SIVAL(blob->data,        12, st->standard.out.size);
+		SIVAL(blob->data,        16, st->standard.out.alloc_size);
+		SSVAL(blob->data,        20, st->standard.out.attrib);
 		return NT_STATUS_OK;
 
 	case RAW_FILEINFO_EA_SIZE:
-		trans2_setup_reply(trans, 2, 26, 0);
+		TRANS2_CHECK(trans2_grow_data(mem_ctx, blob, 26));
 
-		SSVAL(trans->out.params.data, 0, 0);
-		srv_push_dos_date2(req->smb_conn, trans->out.data.data, 0, st->ea_size.out.create_time);
-		srv_push_dos_date2(req->smb_conn, trans->out.data.data, 4, st->ea_size.out.access_time);
-		srv_push_dos_date2(req->smb_conn, trans->out.data.data, 8, st->ea_size.out.write_time);
-		SIVAL(trans->out.data.data,        12, st->ea_size.out.size);
-		SIVAL(trans->out.data.data,        16, st->ea_size.out.alloc_size);
-		SSVAL(trans->out.data.data,        20, st->ea_size.out.attrib);
-		SIVAL(trans->out.data.data,        22, st->ea_size.out.ea_size);
+		srv_push_dos_date2(req->smb_conn, blob->data, 0, st->ea_size.out.create_time);
+		srv_push_dos_date2(req->smb_conn, blob->data, 4, st->ea_size.out.access_time);
+		srv_push_dos_date2(req->smb_conn, blob->data, 8, st->ea_size.out.write_time);
+		SIVAL(blob->data,        12, st->ea_size.out.size);
+		SIVAL(blob->data,        16, st->ea_size.out.alloc_size);
+		SSVAL(blob->data,        20, st->ea_size.out.attrib);
+		SIVAL(blob->data,        22, st->ea_size.out.ea_size);
 		return NT_STATUS_OK;
 
 	case RAW_FILEINFO_NETWORK_OPEN_INFORMATION:
-		trans2_setup_reply(trans, 2, 56, 0);
+		TRANS2_CHECK(trans2_grow_data(mem_ctx, blob, 56));
 
-		SSVAL(trans->out.params.data, 0, 0);
-		push_nttime(trans->out.data.data,  0, st->network_open_information.out.create_time);
-		push_nttime(trans->out.data.data,  8, st->network_open_information.out.access_time);
-		push_nttime(trans->out.data.data, 16, st->network_open_information.out.write_time);
-		push_nttime(trans->out.data.data, 24, st->network_open_information.out.change_time);
-		SBVAL(trans->out.data.data,       32, st->network_open_information.out.alloc_size);
-		SBVAL(trans->out.data.data,       40, st->network_open_information.out.size);
-		SIVAL(trans->out.data.data,       48, st->network_open_information.out.attrib);
-		SIVAL(trans->out.data.data,       52, 0); /* padding */
+		push_nttime(blob->data,  0, st->network_open_information.out.create_time);
+		push_nttime(blob->data,  8, st->network_open_information.out.access_time);
+		push_nttime(blob->data, 16, st->network_open_information.out.write_time);
+		push_nttime(blob->data, 24, st->network_open_information.out.change_time);
+		SBVAL(blob->data,       32, st->network_open_information.out.alloc_size);
+		SBVAL(blob->data,       40, st->network_open_information.out.size);
+		SIVAL(blob->data,       48, st->network_open_information.out.attrib);
+		SIVAL(blob->data,       52, 0); /* padding */
 		return NT_STATUS_OK;
 
 	case RAW_FILEINFO_STANDARD_INFO:
 	case RAW_FILEINFO_STANDARD_INFORMATION:
-		trans2_setup_reply( trans, 2, 24, 0);
-		SSVAL(trans->out.params.data, 0, 0);
-		SBVAL(trans->out.data.data,  0, st->standard_info.out.alloc_size);
-		SBVAL(trans->out.data.data,  8, st->standard_info.out.size);
-		SIVAL(trans->out.data.data, 16, st->standard_info.out.nlink);
-		SCVAL(trans->out.data.data, 20, st->standard_info.out.delete_pending);
-		SCVAL(trans->out.data.data, 21, st->standard_info.out.directory);
-		SSVAL(trans->out.data.data, 22, 0); /* padding */
+		TRANS2_CHECK(trans2_grow_data(mem_ctx, blob, 24));
+
+		SBVAL(blob->data,  0, st->standard_info.out.alloc_size);
+		SBVAL(blob->data,  8, st->standard_info.out.size);
+		SIVAL(blob->data, 16, st->standard_info.out.nlink);
+		SCVAL(blob->data, 20, st->standard_info.out.delete_pending);
+		SCVAL(blob->data, 21, st->standard_info.out.directory);
+		SSVAL(blob->data, 22, 0); /* padding */
 		return NT_STATUS_OK;
 
 	case RAW_FILEINFO_ATTRIBUTE_TAG_INFORMATION:
-		trans2_setup_reply(trans, 2, 8, 0);
-		SSVAL(trans->out.params.data, 0, 0);
-		SIVAL(trans->out.data.data,  0, st->attribute_tag_information.out.attrib);
-		SIVAL(trans->out.data.data,  4, st->attribute_tag_information.out.reparse_tag);
+		TRANS2_CHECK(trans2_grow_data(mem_ctx, blob, 8));
+
+		SIVAL(blob->data,  0, st->attribute_tag_information.out.attrib);
+		SIVAL(blob->data,  4, st->attribute_tag_information.out.reparse_tag);
 		return NT_STATUS_OK;
 
 	case RAW_FILEINFO_EA_INFO:
 	case RAW_FILEINFO_EA_INFORMATION:
-		trans2_setup_reply(trans, 2, 4, 0);
-		SSVAL(trans->out.params.data, 0, 0);
-		SIVAL(trans->out.data.data,  0, st->ea_info.out.ea_size);
+		TRANS2_CHECK(trans2_grow_data(mem_ctx, blob, 4));
+
+		SIVAL(blob->data,  0, st->ea_info.out.ea_size);
 		return NT_STATUS_OK;
 
 	case RAW_FILEINFO_MODE_INFORMATION:
-		trans2_setup_reply(trans, 2, 4, 0);
-		SSVAL(trans->out.params.data, 0, 0);
-		SIVAL(trans->out.data.data,  0, st->mode_information.out.mode);
+		TRANS2_CHECK(trans2_grow_data(mem_ctx, blob, 4));
+
+		SIVAL(blob->data,  0, st->mode_information.out.mode);
 		return NT_STATUS_OK;
 
 	case RAW_FILEINFO_ALIGNMENT_INFORMATION:
-		trans2_setup_reply(trans, 2, 4, 0);
-		SSVAL(trans->out.params.data, 0, 0);
-		SIVAL(trans->out.data.data,  0, 
+		TRANS2_CHECK(trans2_grow_data(mem_ctx, blob, 4));
+
+		SIVAL(blob->data,  0, 
 		      st->alignment_information.out.alignment_requirement);
 		return NT_STATUS_OK;
 
 	case RAW_FILEINFO_EA_LIST:
 		list_size = ea_list_size(st->ea_list.out.num_eas,
 					 st->ea_list.out.eas);
-		trans2_setup_reply(trans, 2, list_size, 0);
-		SSVAL(trans->out.params.data, 0, 0);
-		ea_put_list(trans->out.data.data, 
+		TRANS2_CHECK(trans2_grow_data(mem_ctx, blob, list_size));
+
+		ea_put_list(blob->data, 
 			    st->ea_list.out.num_eas, st->ea_list.out.eas);
 		return NT_STATUS_OK;
 
 	case RAW_FILEINFO_ALL_EAS:
 		list_size = ea_list_size(st->all_eas.out.num_eas,
 						  st->all_eas.out.eas);
-		trans2_setup_reply(trans, 2, list_size, 0);
-		SSVAL(trans->out.params.data, 0, 0);
-		ea_put_list(trans->out.data.data, 
+		TRANS2_CHECK(trans2_grow_data(mem_ctx, blob, list_size));
+
+		ea_put_list(blob->data, 
 			    st->all_eas.out.num_eas, st->all_eas.out.eas);
 		return NT_STATUS_OK;
 
 	case RAW_FILEINFO_ACCESS_INFORMATION:
-		trans2_setup_reply(trans, 2, 4, 0);
-		SSVAL(trans->out.params.data, 0, 0);
-		SIVAL(trans->out.data.data,  0, st->access_information.out.access_flags);
+		TRANS2_CHECK(trans2_grow_data(mem_ctx, blob, 4));
+
+		SIVAL(blob->data,  0, st->access_information.out.access_flags);
 		return NT_STATUS_OK;
 
 	case RAW_FILEINFO_POSITION_INFORMATION:
-		trans2_setup_reply(trans, 2, 8, 0);
-		SSVAL(trans->out.params.data, 0, 0);
-		SBVAL(trans->out.data.data,  0, st->position_information.out.position);
+		TRANS2_CHECK(trans2_grow_data(mem_ctx, blob, 8));
+
+		SBVAL(blob->data,  0, st->position_information.out.position);
 		return NT_STATUS_OK;
 
 	case RAW_FILEINFO_COMPRESSION_INFO:
 	case RAW_FILEINFO_COMPRESSION_INFORMATION:
-		trans2_setup_reply(trans, 2, 16, 0);
-		SSVAL(trans->out.params.data, 0, 0);
-		SBVAL(trans->out.data.data,  0, st->compression_info.out.compressed_size);
-		SSVAL(trans->out.data.data,  8, st->compression_info.out.format);
-		SCVAL(trans->out.data.data, 10, st->compression_info.out.unit_shift);
-		SCVAL(trans->out.data.data, 11, st->compression_info.out.chunk_shift);
-		SCVAL(trans->out.data.data, 12, st->compression_info.out.cluster_shift);
-		SSVAL(trans->out.data.data, 13, 0); /* 3 bytes padding */
-		SCVAL(trans->out.data.data, 15, 0);
+		TRANS2_CHECK(trans2_grow_data(mem_ctx, blob, 16));
+
+		SBVAL(blob->data,  0, st->compression_info.out.compressed_size);
+		SSVAL(blob->data,  8, st->compression_info.out.format);
+		SCVAL(blob->data, 10, st->compression_info.out.unit_shift);
+		SCVAL(blob->data, 11, st->compression_info.out.chunk_shift);
+		SCVAL(blob->data, 12, st->compression_info.out.cluster_shift);
+		SSVAL(blob->data, 13, 0); /* 3 bytes padding */
+		SCVAL(blob->data, 15, 0);
 		return NT_STATUS_OK;
 
 	case RAW_FILEINFO_IS_NAME_VALID:
-		trans2_setup_reply(trans, 2, 0, 0);
-		SSVAL(trans->out.params.data, 0, 0);
 		return NT_STATUS_OK;
 
 	case RAW_FILEINFO_INTERNAL_INFORMATION:
-		trans2_setup_reply(trans, 2, 8, 0);
-		SSVAL(trans->out.params.data, 0, 0);
-		SBVAL(trans->out.data.data,  0, st->internal_information.out.file_id);
+		TRANS2_CHECK(trans2_grow_data(mem_ctx, blob, 8));
+
+		SBVAL(blob->data,  0, st->internal_information.out.file_id);
 		return NT_STATUS_OK;
 
 	case RAW_FILEINFO_ALL_INFO:
 	case RAW_FILEINFO_ALL_INFORMATION:
-		trans2_setup_reply(trans, 2, 72, 0);
+		TRANS2_CHECK(trans2_grow_data(mem_ctx, blob, 72));
 
-		SSVAL(trans->out.params.data, 0, 0);
-		push_nttime(trans->out.data.data,  0, st->all_info.out.create_time);
-		push_nttime(trans->out.data.data,  8, st->all_info.out.access_time);
-		push_nttime(trans->out.data.data, 16, st->all_info.out.write_time);
-		push_nttime(trans->out.data.data, 24, st->all_info.out.change_time);
-		SIVAL(trans->out.data.data,       32, st->all_info.out.attrib);
-		SIVAL(trans->out.data.data,       36, 0);
-		SBVAL(trans->out.data.data,       40, st->all_info.out.alloc_size);
-		SBVAL(trans->out.data.data,       48, st->all_info.out.size);
-		SIVAL(trans->out.data.data,       56, st->all_info.out.nlink);
-		SCVAL(trans->out.data.data,       60, st->all_info.out.delete_pending);
-		SCVAL(trans->out.data.data,       61, st->all_info.out.directory);
-		SSVAL(trans->out.data.data,       62, 0); /* padding */
-		SIVAL(trans->out.data.data,       64, st->all_info.out.ea_size);
-		trans2_append_data_string(req, trans, &st->all_info.out.fname, 
-					  68, STR_UNICODE);
+		push_nttime(blob->data,  0, st->all_info.out.create_time);
+		push_nttime(blob->data,  8, st->all_info.out.access_time);
+		push_nttime(blob->data, 16, st->all_info.out.write_time);
+		push_nttime(blob->data, 24, st->all_info.out.change_time);
+		SIVAL(blob->data,       32, st->all_info.out.attrib);
+		SIVAL(blob->data,       36, 0);
+		SBVAL(blob->data,       40, st->all_info.out.alloc_size);
+		SBVAL(blob->data,       48, st->all_info.out.size);
+		SIVAL(blob->data,       56, st->all_info.out.nlink);
+		SCVAL(blob->data,       60, st->all_info.out.delete_pending);
+		SCVAL(blob->data,       61, st->all_info.out.directory);
+		SSVAL(blob->data,       62, 0); /* padding */
+		SIVAL(blob->data,       64, st->all_info.out.ea_size);
+		TRANS2_CHECK(trans2_append_data_string(req, mem_ctx, blob,
+						       &st->all_info.out.fname,
+						       68, STR_UNICODE));
 		return NT_STATUS_OK;
 
 	case RAW_FILEINFO_NAME_INFO:
 	case RAW_FILEINFO_NAME_INFORMATION:
-		trans2_setup_reply(trans, 2, 4, 0);
-		SSVAL(trans->out.params.data, 0, 0);
-		trans2_append_data_string(req, trans, &st->name_info.out.fname, 0, STR_UNICODE);
+		TRANS2_CHECK(trans2_grow_data(mem_ctx, blob, 4));
+
+		TRANS2_CHECK(trans2_append_data_string(req, mem_ctx, blob,
+						       &st->name_info.out.fname,
+						       0, STR_UNICODE));
 		return NT_STATUS_OK;
 
 	case RAW_FILEINFO_ALT_NAME_INFO:
 	case RAW_FILEINFO_ALT_NAME_INFORMATION:
-		trans2_setup_reply(trans, 2, 4, 0);
-		SSVAL(trans->out.params.data, 0, 0);
-		trans2_append_data_string(req, trans, &st->alt_name_info.out.fname, 0, STR_UNICODE);
+		TRANS2_CHECK(trans2_grow_data(mem_ctx, blob, 4));
+
+		TRANS2_CHECK(trans2_append_data_string(req, mem_ctx, blob, 
+						       &st->alt_name_info.out.fname,
+						       0, STR_UNICODE));
 		return NT_STATUS_OK;
 
 	case RAW_FILEINFO_STREAM_INFO:
 	case RAW_FILEINFO_STREAM_INFORMATION:
-		trans2_setup_reply(trans, 2, 0, 0);
-
-		SSVAL(trans->out.params.data, 0, 0);
-
 		for (i=0;i<st->stream_info.out.num_streams;i++) {
-			uint32_t data_size = trans->out.data.length;
+			uint32_t data_size = blob->length;
 			uint8_t *data;
 
-			trans2_grow_data(trans, data_size + 24);
-			data = trans->out.data.data + data_size;
+			TRANS2_CHECK(trans2_grow_data(mem_ctx, blob, data_size + 24));
+			data = blob->data + data_size;
 			SBVAL(data,  8, st->stream_info.out.streams[i].size);
 			SBVAL(data, 16, st->stream_info.out.streams[i].alloc_size);
-			trans2_append_data_string(req, trans, 
-						  &st->stream_info.out.streams[i].stream_name, 
-						  data_size + 4, STR_UNICODE);
+			TRANS2_CHECK(trans2_append_data_string(req, mem_ctx, blob,
+							       &st->stream_info.out.streams[i].stream_name,
+							       data_size + 4, STR_UNICODE));
 			if (i == st->stream_info.out.num_streams - 1) {
-				SIVAL(trans->out.data.data, data_size, 0);
+				SIVAL(blob->data, data_size, 0);
 			} else {
-				trans2_grow_data_fill(trans, (trans->out.data.length+7)&~7);
-				SIVAL(trans->out.data.data, data_size, 
-				      trans->out.data.length - data_size);
+				TRANS2_CHECK(trans2_grow_data_fill(mem_ctx, blob, (blob->length+7)&~7));
+				SIVAL(blob->data, data_size, 
+				      blob->length - data_size);
 			}
 		}
 		return NT_STATUS_OK;
@@ -792,6 +783,25 @@ static NTSTATUS trans2_fileinfo_send(struct trans_op *op)
 	}
 
 	return NT_STATUS_INVALID_LEVEL;
+}
+
+/*
+  fill in the reply from a qpathinfo or qfileinfo call
+*/
+static NTSTATUS trans2_fileinfo_send(struct trans_op *op)
+{
+	struct smbsrv_request *req = op->req;
+	struct smb_trans2 *trans = op->trans;
+	union smb_fileinfo *st;
+
+	TRANS2_CHECK_ASYNC_STATUS(st, union smb_fileinfo);
+
+	TRANS2_CHECK(trans2_setup_reply(trans, 2, 0, 0));
+	SSVAL(trans->out.params.data, 0, 0);
+
+	TRANS2_CHECK(trans2_push_fileinfo(req, st, trans, &trans->out.data));
+
+	return NT_STATUS_OK;
 }
 
 /*
@@ -1091,11 +1101,11 @@ static BOOL find_fill_info(struct find_state *state,
 
 	case RAW_SEARCH_STANDARD:
 		if (state->flags & FLAG_TRANS2_FIND_REQUIRE_RESUME) {
-			trans2_grow_data(trans, ofs + 27);
+			trans2_grow_data(trans, &trans->out.data, ofs + 27);
 			SIVAL(trans->out.data.data, ofs, file->standard.resume_key);
 			ofs += 4;
 		} else {
-			trans2_grow_data(trans, ofs + 23);
+			trans2_grow_data(trans, &trans->out.data, ofs + 23);
 		}
 		data = trans->out.data.data + ofs;
 		srv_push_dos_date2(req->smb_conn, data, 0, file->standard.create_time);
@@ -1104,17 +1114,17 @@ static BOOL find_fill_info(struct find_state *state,
 		SIVAL(data, 12, file->standard.size);
 		SIVAL(data, 16, file->standard.alloc_size);
 		SSVAL(data, 20, file->standard.attrib);
-		trans2_append_data_string(req, trans, &file->standard.name, 
+		trans2_append_data_string(req, trans, &trans->out.data, &file->standard.name, 
 					  ofs + 22, STR_LEN8BIT | STR_TERMINATE | STR_LEN_NOTERM);
 		break;
 
 	case RAW_SEARCH_EA_SIZE:
 		if (state->flags & FLAG_TRANS2_FIND_REQUIRE_RESUME) {
-			trans2_grow_data(trans, ofs + 31);
+			trans2_grow_data(trans, &trans->out.data, ofs + 31);
 			SIVAL(trans->out.data.data, ofs, file->ea_size.resume_key);
 			ofs += 4;
 		} else {
-			trans2_grow_data(trans, ofs + 27);
+			trans2_grow_data(trans, &trans->out.data, ofs + 27);
 		}
 		data = trans->out.data.data + ofs;
 		srv_push_dos_date2(req->smb_conn, data, 0, file->ea_size.create_time);
@@ -1124,22 +1134,22 @@ static BOOL find_fill_info(struct find_state *state,
 		SIVAL(data, 16, file->ea_size.alloc_size);
 		SSVAL(data, 20, file->ea_size.attrib);
 		SIVAL(data, 22, file->ea_size.ea_size);
-		trans2_append_data_string(req, trans, &file->ea_size.name, 
+		trans2_append_data_string(req, trans, &trans->out.data, &file->ea_size.name, 
 					  ofs + 26, STR_LEN8BIT | STR_NOALIGN);
-		trans2_grow_data(trans, trans->out.data.length + 1);
+		trans2_grow_data(trans, &trans->out.data, trans->out.data.length + 1);
 		trans->out.data.data[trans->out.data.length-1] = 0;
 		break;
 
 	case RAW_SEARCH_EA_LIST:
 		ea_size = ea_list_size(file->ea_list.eas.num_eas, file->ea_list.eas.eas);
 		if (state->flags & FLAG_TRANS2_FIND_REQUIRE_RESUME) {
-			if (!trans2_grow_data(trans, ofs + 27 + ea_size)) {
+			if (!NT_STATUS_IS_OK(trans2_grow_data(trans, &trans->out.data, ofs + 27 + ea_size))) {
 				return False;
 			}
 			SIVAL(trans->out.data.data, ofs, file->ea_list.resume_key);
 			ofs += 4;
 		} else {
-			if (!trans2_grow_data(trans, ofs + 23 + ea_size)) {
+			if (!NT_STATUS_IS_OK(trans2_grow_data(trans, &trans->out.data, ofs + 23 + ea_size))) {
 				return False;
 			}
 		}
@@ -1151,14 +1161,14 @@ static BOOL find_fill_info(struct find_state *state,
 		SIVAL(data, 16, file->ea_list.alloc_size);
 		SSVAL(data, 20, file->ea_list.attrib);
 		ea_put_list(data+22, file->ea_list.eas.num_eas, file->ea_list.eas.eas);
-		trans2_append_data_string(req, trans, &file->ea_list.name, 
+		trans2_append_data_string(req, trans, &trans->out.data, &file->ea_list.name, 
 					  ofs + 22 + ea_size, STR_LEN8BIT | STR_NOALIGN);
-		trans2_grow_data(trans, trans->out.data.length + 1);
+		trans2_grow_data(trans, &trans->out.data, trans->out.data.length + 1);
 		trans->out.data.data[trans->out.data.length-1] = 0;
 		break;
 
 	case RAW_SEARCH_DIRECTORY_INFO:
-		trans2_grow_data(trans, ofs + 64);
+		trans2_grow_data(trans, &trans->out.data, ofs + 64);
 		data = trans->out.data.data + ofs;
 		SIVAL(data,          4, file->directory_info.file_index);
 		push_nttime(data,    8, file->directory_info.create_time);
@@ -1168,14 +1178,14 @@ static BOOL find_fill_info(struct find_state *state,
 		SBVAL(data,         40, file->directory_info.size);
 		SBVAL(data,         48, file->directory_info.alloc_size);
 		SIVAL(data,         56, file->directory_info.attrib);
-		trans2_append_data_string(req, trans, &file->directory_info.name, 
+		trans2_append_data_string(req, trans, &trans->out.data, &file->directory_info.name, 
 					  ofs + 60, STR_TERMINATE_ASCII);
 		data = trans->out.data.data + ofs;
 		SIVAL(data,          0, trans->out.data.length - ofs);
 		break;
 
 	case RAW_SEARCH_FULL_DIRECTORY_INFO:
-		trans2_grow_data(trans, ofs + 68);
+		trans2_grow_data(trans, &trans->out.data, ofs + 68);
 		data = trans->out.data.data + ofs;
 		SIVAL(data,          4, file->full_directory_info.file_index);
 		push_nttime(data,    8, file->full_directory_info.create_time);
@@ -1186,24 +1196,24 @@ static BOOL find_fill_info(struct find_state *state,
 		SBVAL(data,         48, file->full_directory_info.alloc_size);
 		SIVAL(data,         56, file->full_directory_info.attrib);
 		SIVAL(data,         64, file->full_directory_info.ea_size);
-		trans2_append_data_string(req, trans, &file->full_directory_info.name, 
+		trans2_append_data_string(req, trans, &trans->out.data, &file->full_directory_info.name, 
 					  ofs + 60, STR_TERMINATE_ASCII);
 		data = trans->out.data.data + ofs;
 		SIVAL(data,          0, trans->out.data.length - ofs);
 		break;
 
 	case RAW_SEARCH_NAME_INFO:
-		trans2_grow_data(trans, ofs + 12);
+		trans2_grow_data(trans, &trans->out.data, ofs + 12);
 		data = trans->out.data.data + ofs;
 		SIVAL(data,          4, file->name_info.file_index);
-		trans2_append_data_string(req, trans, &file->name_info.name, 
+		trans2_append_data_string(req, trans, &trans->out.data, &file->name_info.name, 
 					  ofs + 8, STR_TERMINATE_ASCII);
 		data = trans->out.data.data + ofs;
 		SIVAL(data,          0, trans->out.data.length - ofs);
 		break;
 
 	case RAW_SEARCH_BOTH_DIRECTORY_INFO:
-		trans2_grow_data(trans, ofs + 94);
+		trans2_grow_data(trans, &trans->out.data, ofs + 94);
 		data = trans->out.data.data + ofs;
 		SIVAL(data,          4, file->both_directory_info.file_index);
 		push_nttime(data,    8, file->both_directory_info.create_time);
@@ -1216,19 +1226,19 @@ static BOOL find_fill_info(struct find_state *state,
 		SIVAL(data,         64, file->both_directory_info.ea_size);
 		SCVAL(data,         69, 0); /* reserved */
 		memset(data+70,0,24);
-		trans2_push_data_string(req, trans, 
+		trans2_push_data_string(req, trans, &trans->out.data, 
 					68 + ofs, 70 + ofs, 
 					&file->both_directory_info.short_name, 
 					24, STR_UNICODE | STR_LEN8BIT);
-		trans2_append_data_string(req, trans, &file->both_directory_info.name, 
+		trans2_append_data_string(req, trans, &trans->out.data, &file->both_directory_info.name, 
 					  ofs + 60, STR_TERMINATE_ASCII);
-		trans2_align_data(req, trans);
+		trans2_align_data(trans);
 		data = trans->out.data.data + ofs;
 		SIVAL(data,          0, trans->out.data.length - ofs);
 		break;
 
 	case RAW_SEARCH_ID_FULL_DIRECTORY_INFO:
-		trans2_grow_data(trans, ofs + 80);
+		trans2_grow_data(trans, &trans->out.data, ofs + 80);
 		data = trans->out.data.data + ofs;
 		SIVAL(data,          4, file->id_full_directory_info.file_index);
 		push_nttime(data,    8, file->id_full_directory_info.create_time);
@@ -1241,14 +1251,14 @@ static BOOL find_fill_info(struct find_state *state,
 		SIVAL(data,         64, file->id_full_directory_info.ea_size);
 		SIVAL(data,         68, 0); /* padding */
 		SBVAL(data,         72, file->id_full_directory_info.file_id);
-		trans2_append_data_string(req, trans, &file->id_full_directory_info.name, 
+		trans2_append_data_string(req, trans, &trans->out.data, &file->id_full_directory_info.name, 
 					  ofs + 60, STR_TERMINATE_ASCII);
 		data = trans->out.data.data + ofs;
 		SIVAL(data,          0, trans->out.data.length - ofs);
 		break;
 
 	case RAW_SEARCH_ID_BOTH_DIRECTORY_INFO:
-		trans2_grow_data(trans, ofs + 104);
+		trans2_grow_data(trans, &trans->out.data, ofs + 104);
 		data = trans->out.data.data + ofs;
 		SIVAL(data,          4, file->id_both_directory_info.file_index);
 		push_nttime(data,    8, file->id_both_directory_info.create_time);
@@ -1261,12 +1271,12 @@ static BOOL find_fill_info(struct find_state *state,
 		SIVAL(data,         64, file->id_both_directory_info.ea_size);
 		SCVAL(data,         69, 0); /* reserved */
 		memset(data+70,0,26);
-		trans2_push_data_string(req, trans, 
+		trans2_push_data_string(req, trans, &trans->out.data, 
 					68 + ofs, 70 + ofs, 
 					&file->id_both_directory_info.short_name, 
 					24, STR_UNICODE | STR_LEN8BIT);
 		SBVAL(data,         96, file->id_both_directory_info.file_id);
-		trans2_append_data_string(req, trans, &file->id_both_directory_info.name, 
+		trans2_append_data_string(req, trans, &trans->out.data, &file->id_both_directory_info.name, 
 					  ofs + 60, STR_TERMINATE_ASCII);
 		data = trans->out.data.data + ofs;
 		SIVAL(data,          0, trans->out.data.length - ofs);
@@ -1288,7 +1298,7 @@ static BOOL find_callback(void *private, union smb_search_data *file)
 	if (!find_fill_info(state, file) ||
 	    trans->out.data.length > trans->in.max_data) {
 		/* restore the old length and tell the backend to stop */
-		trans2_grow_data(trans, old_length);
+		trans2_grow_data(trans, &trans->out.data, old_length);
 		return False;
 	}
 
