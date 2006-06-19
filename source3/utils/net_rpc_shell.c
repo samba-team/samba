@@ -116,6 +116,10 @@ static BOOL net_sh_process(struct rpc_sh_ctx *ctx,
 		}
 	}
 
+	if (strequal(argv[0], "exit") || strequal(argv[0], "quit")) {
+		return False;
+	}
+
 	if (strequal(argv[0], "help") || strequal(argv[0], "?")) {
 		for (c = ctx->cmds; c->name != NULL; c++) {
 			if (ctx != this_ctx) {
