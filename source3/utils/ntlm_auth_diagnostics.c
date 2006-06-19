@@ -464,7 +464,10 @@ static BOOL test_plaintext(enum ntlm_break break_which)
 
 	nt_response.length = strlen_w(((void *)nt_response.data))*sizeof(smb_ucs2_t);
 
-	password = strdup_upper(opt_password);
+	if ((password = strdup_upper(opt_password)) == NULL) {
+		DEBUG(0, ("strdup_upper failed!\n"));
+		exit(1);
+	}
 
 	if ((convert_string_allocate(NULL, CH_UNIX, 
 				     CH_DOS, password,
