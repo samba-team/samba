@@ -738,6 +738,9 @@ static BOOL lsa_io_dom_query_2(const char *desc, DOM_QUERY_2 *d_q, prs_struct *p
 
 		if (UNMARSHALLING(ps)) {
 			d_q->auditsettings = TALLOC_ZERO_ARRAY(ps->mem_ctx, uint32, d_q->count2);
+			if (!d_q->auditsettings) {
+				return False;
+			}
 		}
 
 		if (!prs_uint32s(False, "auditsettings", ps, depth, d_q->auditsettings, d_q->count2))
