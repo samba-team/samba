@@ -858,7 +858,10 @@ static NTSTATUS rpc_user_rename_internals(const DOM_SID *domain_sid,
 		goto done;
 	}
 
-	names = TALLOC_ARRAY(mem_ctx, const char *, num_names);
+	if ((names = TALLOC_ARRAY(mem_ctx, const char *, num_names)) == NULL) {
+		result = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
 	names[0] = old_name;
 	result = rpccli_samr_lookup_names(pipe_hnd, mem_ctx, &domain_pol,
 				       flags, num_names, names,
@@ -1141,7 +1144,10 @@ static NTSTATUS rpc_user_info_internals(const DOM_SID *domain_sid,
 	/* Look up rids */
 
 	if (num_rids) {
-		rids = TALLOC_ARRAY(mem_ctx, uint32, num_rids);
+		if ((rids = TALLOC_ARRAY(mem_ctx, uint32, num_rids)) == NULL) {
+			result = NT_STATUS_NO_MEMORY;
+			goto done;
+		}
 
 		for (i = 0; i < num_rids; i++)
                 	rids[i] = user_gids[i].g_rid;
@@ -3008,12 +3014,16 @@ static NTSTATUS rpc_share_add_internals(const DOM_SID *domain_sid,
 					const char **argv)
 {
 	WERROR result;
-	char *sharename=talloc_strdup(mem_ctx, argv[0]);
+	char *sharename;
 	char *path;
 	uint32 type = STYPE_DISKTREE; /* only allow disk shares to be added */
 	uint32 num_users=0, perms=0;
 	char *password=NULL; /* don't allow a share password */
 	uint32 level = 2;
+
+	if ((sharename = talloc_strdup(mem_ctx, argv[0])) == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	path = strchr(sharename, '=');
 	if (!path)
@@ -3152,6 +3162,10 @@ static WERROR get_share_info(struct rpc_pipe_client *pipe_hnd,
 		SRV_SHARE_INFO_1 *info1;
 		
 		ctr->share.info1 = TALLOC_ARRAY(mem_ctx, SRV_SHARE_INFO_1, 1);
+		if (ctr->share.info1 == NULL) {
+			result = WERR_NOMEM;
+			goto done;
+		}
 		info1 = ctr->share.info1;
 				
 		memset(ctr->share.info1, 0, sizeof(SRV_SHARE_INFO_1));
@@ -3176,6 +3190,10 @@ static WERROR get_share_info(struct rpc_pipe_client *pipe_hnd,
 		SRV_SHARE_INFO_2 *info2;
 		
 		ctr->share.info2 = TALLOC_ARRAY(mem_ctx, SRV_SHARE_INFO_2, 1);
+		if (ctr->share.info2 == NULL) {
+			result = WERR_NOMEM;
+			goto done;
+		}
 		info2 = ctr->share.info2;
 				
 		memset(ctr->share.info2, 0, sizeof(SRV_SHARE_INFO_2));
@@ -3208,6 +3226,10 @@ static WERROR get_share_info(struct rpc_pipe_client *pipe_hnd,
 		SRV_SHARE_INFO_502 *info502;
 
 		ctr->share.info502 = TALLOC_ARRAY(mem_ctx, SRV_SHARE_INFO_502, 1);
+		if (ctr->share.info502 == NULL) {
+			result = WERR_NOMEM;
+			goto done;
+		}
 		info502 = ctr->share.info502;
 
 		memset(ctr->share.info502, 0, sizeof(SRV_SHARE_INFO_502));
@@ -5461,7 +5483,9 @@ static NTSTATUS rpc_trustdom_del_internals(const DOM_SID *domain_sid,
 
 	strupper_m(acct_name);
 
-	names = TALLOC_ARRAY(mem_ctx, const char *, 1);
+	if ((names = TALLOC_ARRAY(mem_ctx, const char *, 1)) == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
 	names[0] = acct_name;
 
 

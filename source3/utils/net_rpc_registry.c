@@ -408,7 +408,10 @@ static int rpc_registry_dump( int argc, const char **argv )
 	
 	/* get the root of the registry file */
 	
-	nk = regfio_rootkey( registry );
+	if ((nk = regfio_rootkey( registry )) == NULL) {
+		d_fprintf(stderr, "Could not get rootkey\n");
+		return 1;
+	}
 	d_printf("[%s]\n", nk->keyname);
 	dump_values( nk );
 	d_printf("\n");
@@ -455,7 +458,10 @@ static int rpc_registry_copy( int argc, const char **argv )
 	
 	/* get the root of the registry file */
 	
-	nk = regfio_rootkey( infile );
+	if ((nk = regfio_rootkey( infile )) == NULL) {
+		d_fprintf(stderr, "Could not get rootkey\n");
+		goto out_close_infile;
+	}
 	d_printf("RootKey: [%s]\n", nk->keyname);
 
 	write_registry_tree( infile, nk, NULL, outfile, "" );

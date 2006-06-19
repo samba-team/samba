@@ -341,6 +341,10 @@ int smbc_fsetxattr(int fd,
                    int flags)
 {
 	SMBCFILE * file = find_fd(fd);
+	if (file == NULL) {
+		errno = EBADF;
+		return -1;
+	}
         return statcont->setxattr(statcont, file->fname,
                                   name, value, size, flags);
 }
@@ -367,6 +371,10 @@ int smbc_fgetxattr(int fd,
                    size_t size)
 {
 	SMBCFILE * file = find_fd(fd);
+	if (file == NULL) {
+		errno = EBADF;
+		return -1;
+	}
         return statcont->getxattr(statcont, file->fname, name, value, size);
 }
 
@@ -386,6 +394,10 @@ int smbc_fremovexattr(int fd,
                       const char *name)
 {
 	SMBCFILE * file = find_fd(fd);
+	if (file == NULL) {
+		errno = EBADF;
+		return -1;
+	}
         return statcont->removexattr(statcont, file->fname, name);
 }
 
@@ -408,6 +420,10 @@ int smbc_flistxattr(int fd,
                     size_t size)
 {
 	SMBCFILE * file = find_fd(fd);
+	if (file == NULL) {
+		errno = EBADF;
+		return -1;
+	}
         return statcont->listxattr(statcont, file->fname, list, size);
 }
 

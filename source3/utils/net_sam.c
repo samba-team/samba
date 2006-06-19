@@ -840,7 +840,11 @@ static int net_sam_provision(int argc, const char **argv)
 		return -1;
 	}
 
-	ldap_bk = talloc_strdup(tc, lp_passdb_backend());
+	if ((ldap_bk = talloc_strdup(tc, lp_passdb_backend())) == NULL) {
+		d_fprintf(stderr, "talloc failed\n");
+		talloc_free(tc);
+		return -1;
+	}
 	p = strchr(ldap_bk, ':');
 	if (p) {
 		*p = 0;
@@ -1081,7 +1085,10 @@ doma_done:
 				d_fprintf(stderr, "Can't create Guest user, Domain Users group not available!\n");
 				goto done;
 			}
-			pwd = talloc(tc, struct passwd);
+			if ((pwd = talloc(tc, struct passwd)) == NULL) {
+				d_fprintf(stderr, "talloc failed\n");
+				goto done;
+			}
 			pwd->pw_name = talloc_strdup(pwd, lp_guestaccount());
 			if (!winbind_allocate_uid(&(pwd->pw_uid))) {
 				d_fprintf(stderr, "Unable to allocate a new uid to create the Guest user!\n");
