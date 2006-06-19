@@ -299,8 +299,12 @@ BOOL ntsvcs_io_q_get_hw_profile_info(const char *desc, NTSVCS_Q_GET_HW_PROFILE_I
 
 	q_u->buffer_size = 0x000000a8;
 
-	if ( UNMARSHALLING(ps) )
+	if ( UNMARSHALLING(ps) ) {
 		q_u->buffer = TALLOC_ARRAY(get_talloc_ctx(), uint8, q_u->buffer_size );
+		if (!q_u->buffer) {
+			return False;
+		}
+	}
 
 	if ( !prs_uint8s(True, "buffer", ps, depth, q_u->buffer, q_u->buffer_size) )
 		return False;
@@ -329,8 +333,12 @@ BOOL ntsvcs_io_r_get_hw_profile_info(const char *desc, NTSVCS_R_GET_HW_PROFILE_I
 	if ( !prs_align(ps) )
 		return False;
 
-	if ( UNMARSHALLING(ps) )
+	if ( UNMARSHALLING(ps) ) {
 		r_u->buffer = TALLOC_ARRAY(get_talloc_ctx(), uint8, r_u->buffer_size );
+		if (!r_u->buffer) {
+			return False;
+		}
+	}
 
 	if ( !prs_uint8s(True, "buffer", ps, depth, r_u->buffer, r_u->buffer_size) )
 		return False;
