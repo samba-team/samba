@@ -1,5 +1,0 @@
-This is a test of SVK's --patch facility.  I think we should be able to
-generate a patch without write access to the repository, which contains all
-relevant information regarding check-ins.  Let's see.
-
-This line is just a simple change to have one more check-in.
