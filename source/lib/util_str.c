@@ -2250,15 +2250,21 @@ SMB_BIG_UINT STR_TO_SMB_BIG_UINT(const char *nptr, const char **entptr)
 	SMB_BIG_UINT val = -1;
 	const char *p = nptr;
 	
-	while (p && *p && isspace(*p))
+	if (!p) {
+		*entptr = p;
+		return val;
+	}
+
+	while (*p && isspace(*p))
 		p++;
+
 #ifdef LARGE_SMB_OFF_T
 	sscanf(p,"%llu",&val);	
 #else /* LARGE_SMB_OFF_T */
 	sscanf(p,"%lu",&val);
 #endif /* LARGE_SMB_OFF_T */
 	if (entptr) {
-		while (p && *p && isdigit(*p))
+		while (*p && isdigit(*p))
 			p++;
 		*entptr = p;
 	}
