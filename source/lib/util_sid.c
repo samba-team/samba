@@ -647,6 +647,25 @@ void del_sid_from_array(const DOM_SID *sid, DOM_SID **sids, size_t *num)
 	return;
 }
 
+void add_rid_to_array_unique(TALLOC_CTX *mem_ctx,
+				    uint32 rid, uint32 **pp_rids, size_t *p_num)
+{
+	size_t i;
+
+	for (i=0; i<*p_num; i++) {
+		if ((*pp_rids)[i] == rid)
+			return;
+	}
+	
+	*pp_rids = TALLOC_REALLOC_ARRAY(mem_ctx, *pp_rids, uint32, *p_num+1);
+
+	if (*pp_rids == NULL)
+		return;
+
+	(*pp_rids)[*p_num] = rid;
+	*p_num += 1;
+}
+
 BOOL is_null_sid(const DOM_SID *sid)
 {
 	static const DOM_SID null_sid = {0};
