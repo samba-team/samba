@@ -6471,8 +6471,14 @@ static BOOL sam_io_user_info21(const char *desc, SAM_USER_INFO_21 * usr,
 void init_sam_user_info20A(SAM_USER_INFO_20 *usr, struct samu *pw)
 {
 	const char *munged_dial = pdb_get_munged_dial(pw);
-	DATA_BLOB blob = base64_decode_data_blob(munged_dial);
-	
+	DATA_BLOB blob;
+
+	if (munged_dial) {
+		blob = base64_decode_data_blob(munged_dial);
+	} else {
+		blob = data_blob(NULL, 0);
+	}
+
 	init_unistr2_from_datablob(&usr->uni_munged_dial, &blob);
 	init_uni_hdr(&usr->hdr_munged_dial, &usr->uni_munged_dial);
 	data_blob_free(&blob);
