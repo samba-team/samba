@@ -3115,6 +3115,10 @@ static WERROR nt_printer_unpublish_ads(ADS_STRUCT *ads,
 
 	if (ADS_ERR_OK(ads_rc) && ads_count_replies(ads, res)) {
 		prt_dn = ads_get_dn(ads, res);
+		if (!prt_dn) {
+			ads_msgfree(ads, res);
+			return WERR_NOMEM;
+		}
 		ads_rc = ads_del_dn(ads, prt_dn);
 		ads_memfree(ads, prt_dn);
 	}
