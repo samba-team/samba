@@ -904,7 +904,11 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 	members = NULL;
 	num_members = 0;
 
-	attrs = TALLOC_ARRAY(mem_ctx, const char *, 3);
+	if ((attrs = TALLOC_ARRAY(mem_ctx, const char *, 3)) == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+		
 	attrs[1] = talloc_strdup(mem_ctx, "usnChanged");
 	attrs[2] = NULL;
 		
