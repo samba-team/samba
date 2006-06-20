@@ -74,7 +74,7 @@ BOOL torture_smb2_getinfo_scan(struct torture_context *torture)
 		for (i=0;i<0x100;i++) {
 			io.in.level = (i<<8) | c;
 
-			io.in.handle = fhandle;
+			io.in.file.handle = fhandle;
 			status = smb2_getinfo(tree, mem_ctx, &io);
 			if (!NT_STATUS_EQUAL(status, NT_STATUS_INVALID_INFO_CLASS) &&
 			    !NT_STATUS_EQUAL(status, NT_STATUS_INVALID_PARAMETER) &&
@@ -84,7 +84,7 @@ BOOL torture_smb2_getinfo_scan(struct torture_context *torture)
 				dump_data(1, io.out.blob.data, io.out.blob.length);
 			}
 
-			io.in.handle = dhandle;
+			io.in.file.handle = dhandle;
 			status = smb2_getinfo(tree, mem_ctx, &io);
 			if (!NT_STATUS_EQUAL(status, NT_STATUS_INVALID_INFO_CLASS) &&
 			    !NT_STATUS_EQUAL(status, NT_STATUS_INVALID_PARAMETER) &&
@@ -132,7 +132,7 @@ BOOL torture_smb2_setinfo_scan(struct torture_context *torture)
 	for (c=1;c<5;c++) {
 		for (i=0;i<0x100;i++) {
 			io.in.level = (i<<8) | c;
-			io.in.handle = handle;
+			io.in.file.handle = handle;
 			status = smb2_setinfo(tree, &io);
 			if (!NT_STATUS_EQUAL(status, NT_STATUS_INVALID_INFO_CLASS) &&
 			    !NT_STATUS_EQUAL(status, NT_STATUS_NOT_SUPPORTED)) {
