@@ -223,6 +223,7 @@ void cgi_load_variables(void)
   browser. Also doesn't allow for variables[] containing multiple variables
   with the same name and the same or different values.
   ***************************************************************************/
+
 const char *cgi_variable(const char *name)
 {
 	int i;
@@ -231,6 +232,20 @@ const char *cgi_variable(const char *name)
 		if (strcmp(variables[i].name, name) == 0)
 			return variables[i].value;
 	return NULL;
+}
+
+/***************************************************************************
+ Version of the above that can't return a NULL pointer.
+***************************************************************************/
+
+const char *cgi_variable_nonull(const char *name)
+{
+	const char *var = cgi_variable(name);
+	if (var) {
+		return var;
+	} else {
+		return "";
+	}
 }
 
 /***************************************************************************
