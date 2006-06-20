@@ -19,8 +19,10 @@
 */
 
 #include "includes.h"
-#include "torture/torture.h"
 #include "libcli/smb2/smb2.h"
+#include "libcli/smb2/smb2_calls.h"
+
+#include "torture/torture.h"
 #include "torture/smb2/proto.h"
 
 NTSTATUS torture_smb2_init(void)
