@@ -1545,6 +1545,7 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 
 /****************************************************************************
  Reply to a NT CANCEL request.
+ conn POINTER CAN BE NULL HERE !
 ****************************************************************************/
 
 int reply_ntcancel(connection_struct *conn,
