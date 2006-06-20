@@ -140,23 +140,24 @@ static struct afs_ace *new_afs_ace(TALLOC_CTX *mem_ctx,
 		type = SID_NAME_UNKNOWN;
 
 		if (string_to_sid(&sid, name)) {
-			fstring user, domain;
+			const char *user, *domain;
 			/* We have to find the type, look up the SID */
-			lookup_sid(&sid, domain, user, &type);
+			lookup_sid(tmp_talloc_ctx(), &sid,
+				   &domain, &user, &type);
 		}
 
 	} else {
 
-		fstring domain, uname;
+		const char *domain, *uname;
 		char *p;
 
-		p = strchr_m(name, lp_winbind_separator());
+		p = strchr_m(name, *lp_winbind_separator());
 		if (p != NULL) {
 			*p = '\\';
 		}
 
-		if (!lookup_name(name, LOOKUP_NAME_FULL,
-				 domain, uname, &sid, &type)) {
+		if (!lookup_name(tmp_talloc_ctx(), name, LOOKUP_NAME_ALL,
+				 &domain, &uname, &sid, &type)) {
 			DEBUG(10, ("Could not find AFS user %s\n", name));
 
 			sid_copy(&sid, &global_sid_NULL);
@@ -711,8 +712,7 @@ static BOOL nt_to_afs_acl(const char *filename,
 
 	for (i = 0; i < dacl->num_aces; i++) {
 		SEC_ACE *ace = &(dacl->ace[i]);
-		fstring dom_name;
-		fstring name;
+		const char *dom_name, *name;
 		enum SID_NAME_USE name_type;
 		char *p;
 
@@ -730,28 +730,28 @@ static BOOL nt_to_afs_acl(const char *filename,
 		if (sid_compare(&ace->trustee,
 				&global_sid_Builtin_Administrators) == 0) {
 
-			fstrcpy(name, "system:administrators");
+			name = "system:administrators";
 
 		} else if (sid_compare(&ace->trustee,
 				       &global_sid_World) == 0) {
 
-			fstrcpy(name, "system:anyuser");
+			name = "system:anyuser";
 
 		} else if (sid_compare(&ace->trustee,
 				       &global_sid_Authenticated_Users) == 0) {
 
-			fstrcpy(name, "system:authuser");
+			name = "system:authuser";
 
 		} else if (sid_compare(&ace->trustee,
 				       &global_sid_Builtin_Backup_Operators)
 			   == 0) {
 
-			fstrcpy(name, "system:backup");
+			name = "system:backup";
 
 		} else {
 
-			if (!lookup_sid(&ace->trustee,
-					dom_name, name, &name_type)) {
+			if (!lookup_sid(tmp_talloc_ctx(), &ace->trustee,
+					&dom_name, &name, &name_type)) {
 				DEBUG(1, ("AFSACL: Could not lookup SID %s on file %s\n",
 					  sid_string_static(&ace->trustee), filename));
 				continue;
@@ -759,18 +759,26 @@ static BOOL nt_to_afs_acl(const char *filename,
 
 			if ( (name_type == SID_NAME_USER) ||
 			     (name_type == SID_NAME_DOM_GRP) ||
-			     (name_type == SID_NAME_ALIAS) ) { 
-				fstring only_username;
-				fstrcpy(only_username, name);
-				fstr_sprintf(name, "%s%s%s",
-					     dom_name, lp_winbind_separator(),
-					     only_username);
-				strlower_m(name);
+			     (name_type == SID_NAME_ALIAS) ) {
+				char *tmp;
+				tmp = talloc_asprintf(tmp_talloc_ctx(), "%s%s%s",
+						       dom_name, lp_winbind_separator(),
+						       name);
+				if (tmp == NULL) {
+					return False;
+				}
+				strlower_m(tmp);
+				name = tmp;
 			}
 
 			if (sidpts) {
 				/* Expect all users/groups in pts as SIDs */
-				sid_to_string(name, &ace->trustee);
+				name = talloc_strdup(
+					tmp_talloc_ctx(),
+					sid_string_static(&ace->trustee));
+				if (name == NULL) {
+					return False;
+				}
 			}
 		}
 
@@ -1006,7 +1014,7 @@ static int afsacl_connect(vfs_handle_struct *handle,
 			  const char *service, 
 			  const char *user)
 {
-	char *spc;
+	const char *spc;
 
 	spc = lp_parm_const_string(SNUM(handle->conn), "afsacl", "space", "%");
 
