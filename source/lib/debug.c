@@ -513,6 +513,11 @@ static void debuglevel_message(int msg_type, struct process_id src,
 {
 	char *message = debug_list_class_names_and_levels();
 
+	if (!message) {
+		DEBUG(0,("debuglevel_message - debug_list_class_names_and_levels returned NULL\n"));
+		return;
+	}
+
 	DEBUG(1,("INFO: Received REQ_DEBUGLEVEL message from PID %u\n",
 		 (unsigned int)procid_to_pid(&src)));
 	message_send_pid(src, MSG_DEBUGLEVEL, message, strlen(message) + 1, True);
