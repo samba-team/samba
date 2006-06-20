@@ -1647,11 +1647,16 @@ static BOOL create_vk_record( REGF_FILE *file, REGF_VK_REC *vk, REGISTRY_VALUE *
 		uint32 data_size = ( (vk->data_size+sizeof(uint32)) & 0xfffffff8 ) + 8;
 
 		vk->data = TALLOC_MEMDUP( file->mem_ctx, regval_data_p(value), vk->data_size );
+		if (vk->data == NULL) {
+			return False;
+		}
 
 		/* go ahead and store the offset....we'll pick this hbin block back up when 
 		   we stream the data */
 
-		data_hbin = find_free_space(file, data_size );
+		if ((data_hbin = find_free_space(file, data_size )) == NULL) {
+			return False;
+		}
 		vk->data_off = prs_offset( &data_hbin->ps ) + data_hbin->first_hbin_off - HBIN_HDR_SIZE;
 	}
 	else {
@@ -1712,7 +1717,9 @@ static int hashrec_cmp( REGF_HASH_REC *h1, REGF_HASH_REC *h2 )
 
 	size = nk_record_data_size( nk );
 	nk->rec_size = ( size - 1 ) ^ 0XFFFFFFFF;
-	nk->hbin = find_free_space( file, size );
+	if ((nk->hbin = find_free_space( file, size )) == NULL) {
+		return NULL;
+	}
 	nk->hbin_off = prs_offset( &nk->hbin->ps );
 
 	/* Update the hash record in the parent */
@@ -1746,7 +1753,9 @@ static int hashrec_cmp( REGF_HASH_REC *h1, REGF_HASH_REC *h2 )
 		if ( (nk->sec_desc = find_sk_record_by_sec_desc( file, sec_desc )) == NULL ) {
 			/* not found so add it to the list */
 
-			sk_hbin = find_free_space( file, sk_size );
+			if (!(sk_hbin = find_free_space( file, sk_size ))) {
+				return NULL;
+			}
 
 			if ( !(nk->sec_desc = TALLOC_ZERO_P( file->mem_ctx, REGF_SK_REC )) )
 				return NULL;
@@ -1803,7 +1812,9 @@ static int hashrec_cmp( REGF_HASH_REC *h1, REGF_HASH_REC *h2 )
 		uint32 namelen;
 		int i;
 		
-		nk->subkeys.hbin = find_free_space( file, lf_size );
+		if (!(nk->subkeys.hbin = find_free_space( file, lf_size ))) {
+			return NULL;
+		}
 		nk->subkeys.hbin_off = prs_offset( &nk->subkeys.hbin->ps );
 		nk->subkeys.rec_size = (lf_size-1) ^ 0xFFFFFFFF;
 		nk->subkeys_off = prs_offset( &nk->subkeys.hbin->ps ) + nk->subkeys.hbin->first_hbin_off - HBIN_HDR_SIZE;
@@ -1830,7 +1841,9 @@ static int hashrec_cmp( REGF_HASH_REC *h1, REGF_HASH_REC *h2 )
 		uint32 vlist_size = ( ( nk->num_values * sizeof(uint32) ) & 0xfffffff8 ) + 8;
 		int i;
 		
-		vlist_hbin = find_free_space( file, vlist_size );
+		if (!(vlist_hbin = find_free_space( file, vlist_size ))) {
+			return NULL;
+		}
 		nk->values_off = prs_offset( &vlist_hbin->ps ) + vlist_hbin->first_hbin_off - HBIN_HDR_SIZE;
 	
 		if ( !(nk->values = TALLOC_ARRAY( file->mem_ctx, REGF_VK_REC, nk->num_values )) )

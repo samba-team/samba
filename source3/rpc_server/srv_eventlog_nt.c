@@ -682,6 +682,10 @@ NTSTATUS _eventlog_read_eventlog( pipes_struct * p,
 	int bytes_left, record_number;
 	uint32 elog_read_type, elog_read_dir;
 
+	if (info == NULL) {
+		return NT_STATUS_INVALID_HANDLE;
+	}
+
 	info->flags = q_u->flags;
 	ps = &p->out_data.rdata;
 
@@ -768,6 +772,10 @@ NTSTATUS _eventlog_get_oldest_entry( pipes_struct * p,
 {
 	EVENTLOG_INFO *info = find_eventlog_info_by_hnd( p, &q_u->handle );
 
+	if (info == NULL) {
+		return NT_STATUS_INVALID_HANDLE;
+	}
+
 	if ( !( get_oldest_entry_hook( info ) ) )
 		return NT_STATUS_ACCESS_DENIED;
 
@@ -784,6 +792,10 @@ NTSTATUS _eventlog_get_num_records( pipes_struct * p,
 				  EVENTLOG_R_GET_NUM_RECORDS * r_u )
 {
 	EVENTLOG_INFO *info = find_eventlog_info_by_hnd( p, &q_u->handle );
+
+	if (info == NULL) {
+		return NT_STATUS_INVALID_HANDLE;
+	}
 
 	if ( !( get_num_records_hook( info ) ) )
 		return NT_STATUS_ACCESS_DENIED;
