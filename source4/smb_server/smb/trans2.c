@@ -237,6 +237,127 @@ static NTSTATUS trans2_align_data(struct smb_trans2 *trans)
 	return NT_STATUS_OK;
 }
 
+static NTSTATUS trans2_push_fsinfo(struct smbsrv_request *req,
+				   union smb_fsinfo *fsinfo,
+				   TALLOC_CTX *mem_ctx,
+				   DATA_BLOB *blob)
+{
+	uint_t i;
+	DATA_BLOB guid_blob;
+
+	switch (fsinfo->generic.level) {
+	case SMB_QFS_ALLOCATION:
+		TRANS2_CHECK(trans2_grow_data(mem_ctx, blob, 18));
+
+		SIVAL(blob->data,  0, fsinfo->allocation.out.fs_id);
+		SIVAL(blob->data,  4, fsinfo->allocation.out.sectors_per_unit);
+		SIVAL(blob->data,  8, fsinfo->allocation.out.total_alloc_units);
+		SIVAL(blob->data, 12, fsinfo->allocation.out.avail_alloc_units);
+		SSVAL(blob->data, 16, fsinfo->allocation.out.bytes_per_sector);
+
+		return NT_STATUS_OK;
+
+	case SMB_QFS_VOLUME:
+		TRANS2_CHECK(trans2_grow_data(mem_ctx, blob, 5));
+
+		SIVAL(blob->data,       0, fsinfo->volume.out.serial_number);
+		/* w2k3 implements this incorrectly for unicode - it
+		 * leaves the last byte off the string */
+		TRANS2_CHECK(trans2_append_data_string(req, mem_ctx, blob,
+						       &fsinfo->volume.out.volume_name, 
+						       4, STR_LEN8BIT|STR_NOALIGN));
+
+		return NT_STATUS_OK;
+
+	case SMB_QFS_VOLUME_INFO:
+	case SMB_QFS_VOLUME_INFORMATION:
+		TRANS2_CHECK(trans2_grow_data(mem_ctx, blob, 18));
+
+		push_nttime(blob->data, 0, fsinfo->volume_info.out.create_time);
+		SIVAL(blob->data,       8, fsinfo->volume_info.out.serial_number);
+		SSVAL(blob->data,      16, 0); /* padding */
+		TRANS2_CHECK(trans2_append_data_string(req, mem_ctx, blob,
+						       &fsinfo->volume_info.out.volume_name, 
+						       12, STR_UNICODE));
+
+		return NT_STATUS_OK;
+
+	case SMB_QFS_SIZE_INFO:
+	case SMB_QFS_SIZE_INFORMATION:
+		TRANS2_CHECK(trans2_grow_data(mem_ctx, blob, 24));
+
+		SBVAL(blob->data,  0, fsinfo->size_info.out.total_alloc_units);
+		SBVAL(blob->data,  8, fsinfo->size_info.out.avail_alloc_units);
+		SIVAL(blob->data, 16, fsinfo->size_info.out.sectors_per_unit);
+		SIVAL(blob->data, 20, fsinfo->size_info.out.bytes_per_sector);
+
+		return NT_STATUS_OK;
+
+	case SMB_QFS_DEVICE_INFO:
+	case SMB_QFS_DEVICE_INFORMATION:
+		TRANS2_CHECK(trans2_grow_data(mem_ctx, blob, 8));
+
+		SIVAL(blob->data,      0, fsinfo->device_info.out.device_type);
+		SIVAL(blob->data,      4, fsinfo->device_info.out.characteristics);
+
+		return NT_STATUS_OK;
+
+	case SMB_QFS_ATTRIBUTE_INFO:
+	case SMB_QFS_ATTRIBUTE_INFORMATION:
+		TRANS2_CHECK(trans2_grow_data(mem_ctx, blob, 12));
+
+		SIVAL(blob->data, 0, fsinfo->attribute_info.out.fs_attr);
+		SIVAL(blob->data, 4, fsinfo->attribute_info.out.max_file_component_length);
+		/* this must not be null terminated or win98 gets
+		   confused!  also note that w2k3 returns this as
+		   unicode even when ascii is negotiated */
+		TRANS2_CHECK(trans2_append_data_string(req, mem_ctx, blob,
+						       &fsinfo->attribute_info.out.fs_type,
+						       8, STR_UNICODE));
+		return NT_STATUS_OK;
+
+
+	case SMB_QFS_QUOTA_INFORMATION:
+		TRANS2_CHECK(trans2_grow_data(mem_ctx, blob, 48));
+
+		SBVAL(blob->data,   0, fsinfo->quota_information.out.unknown[0]);
+		SBVAL(blob->data,   8, fsinfo->quota_information.out.unknown[1]);
+		SBVAL(blob->data,  16, fsinfo->quota_information.out.unknown[2]);
+		SBVAL(blob->data,  24, fsinfo->quota_information.out.quota_soft);
+		SBVAL(blob->data,  32, fsinfo->quota_information.out.quota_hard);
+		SBVAL(blob->data,  40, fsinfo->quota_information.out.quota_flags);
+
+		return NT_STATUS_OK;
+
+
+	case SMB_QFS_FULL_SIZE_INFORMATION:
+		TRANS2_CHECK(trans2_grow_data(mem_ctx, blob, 32));
+
+		SBVAL(blob->data,  0, fsinfo->full_size_information.out.total_alloc_units);
+		SBVAL(blob->data,  8, fsinfo->full_size_information.out.call_avail_alloc_units);
+		SBVAL(blob->data, 16, fsinfo->full_size_information.out.actual_avail_alloc_units);
+		SIVAL(blob->data, 24, fsinfo->full_size_information.out.sectors_per_unit);
+		SIVAL(blob->data, 28, fsinfo->full_size_information.out.bytes_per_sector);
+
+		return NT_STATUS_OK;
+
+	case SMB_QFS_OBJECTID_INFORMATION:
+		TRANS2_CHECK(trans2_grow_data(mem_ctx, blob, 64));
+
+		TRANS2_CHECK(ndr_push_struct_blob(&guid_blob, mem_ctx, 
+						  &fsinfo->objectid_information.out.guid,
+						  (ndr_push_flags_fn_t)ndr_push_GUID));
+		memcpy(blob->data, guid_blob.data, guid_blob.length);
+
+		for (i=0;i<6;i++) {
+			SBVAL(blob->data, 16 + 8*i, fsinfo->objectid_information.out.unknown[i]);
+		}
+
+		return NT_STATUS_OK;
+	}
+
+	return NT_STATUS_INVALID_LEVEL;
+}
 
 /*
   trans2 qfsinfo implementation send
@@ -246,126 +367,14 @@ static NTSTATUS trans2_qfsinfo_send(struct trans_op *op)
 	struct smbsrv_request *req = op->req;
 	struct smb_trans2 *trans = op->trans;
 	union smb_fsinfo *fsinfo;
-	NTSTATUS status;
-	uint_t i;
-	DATA_BLOB guid_blob;
 
 	TRANS2_CHECK_ASYNC_STATUS(fsinfo, union smb_fsinfo);
 
-	switch (fsinfo->generic.level) {
-	case SMB_QFS_ALLOCATION:
-		trans2_setup_reply(trans, 0, 18, 0);
+	TRANS2_CHECK(trans2_setup_reply(trans, 0, 0, 0));
 
-		SIVAL(trans->out.data.data,  0, fsinfo->allocation.out.fs_id);
-		SIVAL(trans->out.data.data,  4, fsinfo->allocation.out.sectors_per_unit);
-		SIVAL(trans->out.data.data,  8, fsinfo->allocation.out.total_alloc_units);
-		SIVAL(trans->out.data.data, 12, fsinfo->allocation.out.avail_alloc_units);
-		SSVAL(trans->out.data.data, 16, fsinfo->allocation.out.bytes_per_sector);
+	TRANS2_CHECK(trans2_push_fsinfo(req, fsinfo, trans, &trans->out.data));
 
-		return NT_STATUS_OK;
-
-	case SMB_QFS_VOLUME:
-		trans2_setup_reply(trans, 0, 5, 0);
-
-		SIVAL(trans->out.data.data,       0, fsinfo->volume.out.serial_number);
-		/* w2k3 implements this incorrectly for unicode - it
-		 * leaves the last byte off the string */
-		trans2_append_data_string(req, trans, &trans->out.data, 
-					  &fsinfo->volume.out.volume_name, 
-					  4, STR_LEN8BIT|STR_NOALIGN);
-
-		return NT_STATUS_OK;
-
-	case SMB_QFS_VOLUME_INFO:
-	case SMB_QFS_VOLUME_INFORMATION:
-		trans2_setup_reply(trans, 0, 18, 0);
-
-		push_nttime(trans->out.data.data, 0, fsinfo->volume_info.out.create_time);
-		SIVAL(trans->out.data.data,       8, fsinfo->volume_info.out.serial_number);
-		SSVAL(trans->out.data.data,      16, 0); /* padding */
-		trans2_append_data_string(req, trans, &trans->out.data,
-					  &fsinfo->volume_info.out.volume_name, 
-					  12, STR_UNICODE);
-
-		return NT_STATUS_OK;
-
-	case SMB_QFS_SIZE_INFO:
-	case SMB_QFS_SIZE_INFORMATION:
-		trans2_setup_reply(trans, 0, 24, 0);
-
-		SBVAL(trans->out.data.data,  0, fsinfo->size_info.out.total_alloc_units);
-		SBVAL(trans->out.data.data,  8, fsinfo->size_info.out.avail_alloc_units);
-		SIVAL(trans->out.data.data, 16, fsinfo->size_info.out.sectors_per_unit);
-		SIVAL(trans->out.data.data, 20, fsinfo->size_info.out.bytes_per_sector);
-
-		return NT_STATUS_OK;
-
-	case SMB_QFS_DEVICE_INFO:
-	case SMB_QFS_DEVICE_INFORMATION:
-		trans2_setup_reply(trans, 0, 8, 0);
-		SIVAL(trans->out.data.data,      0, fsinfo->device_info.out.device_type);
-		SIVAL(trans->out.data.data,      4, fsinfo->device_info.out.characteristics);
-		return NT_STATUS_OK;
-
-
-	case SMB_QFS_ATTRIBUTE_INFO:
-	case SMB_QFS_ATTRIBUTE_INFORMATION:
-		trans2_setup_reply(trans, 0, 12, 0);
-
-		SIVAL(trans->out.data.data, 0, fsinfo->attribute_info.out.fs_attr);
-		SIVAL(trans->out.data.data, 4, fsinfo->attribute_info.out.max_file_component_length);
-		/* this must not be null terminated or win98 gets
-		   confused!  also note that w2k3 returns this as
-		   unicode even when ascii is negotiated */
-		trans2_append_data_string(req, trans, &trans->out.data,
-					  &fsinfo->attribute_info.out.fs_type,
-					  8, STR_UNICODE);
-		return NT_STATUS_OK;
-
-
-	case SMB_QFS_QUOTA_INFORMATION:
-		trans2_setup_reply(trans, 0, 48, 0);
-
-		SBVAL(trans->out.data.data,   0, fsinfo->quota_information.out.unknown[0]);
-		SBVAL(trans->out.data.data,   8, fsinfo->quota_information.out.unknown[1]);
-		SBVAL(trans->out.data.data,  16, fsinfo->quota_information.out.unknown[2]);
-		SBVAL(trans->out.data.data,  24, fsinfo->quota_information.out.quota_soft);
-		SBVAL(trans->out.data.data,  32, fsinfo->quota_information.out.quota_hard);
-		SBVAL(trans->out.data.data,  40, fsinfo->quota_information.out.quota_flags);
-
-		return NT_STATUS_OK;
-
-
-	case SMB_QFS_FULL_SIZE_INFORMATION:
-		trans2_setup_reply(trans, 0, 32, 0);
-
-		SBVAL(trans->out.data.data,  0, fsinfo->full_size_information.out.total_alloc_units);
-		SBVAL(trans->out.data.data,  8, fsinfo->full_size_information.out.call_avail_alloc_units);
-		SBVAL(trans->out.data.data, 16, fsinfo->full_size_information.out.actual_avail_alloc_units);
-		SIVAL(trans->out.data.data, 24, fsinfo->full_size_information.out.sectors_per_unit);
-		SIVAL(trans->out.data.data, 28, fsinfo->full_size_information.out.bytes_per_sector);
-
-		return NT_STATUS_OK;
-
-	case SMB_QFS_OBJECTID_INFORMATION:
-		trans2_setup_reply(trans, 0, 64, 0);
-
-		status = ndr_push_struct_blob(&guid_blob, req, 
-					      &fsinfo->objectid_information.out.guid,
-					      (ndr_push_flags_fn_t)ndr_push_GUID);
-		if (!NT_STATUS_IS_OK(status)) {
-			return status;
-		}
-
-		memcpy(trans->out.data.data, guid_blob.data, guid_blob.length);
-
-		for (i=0;i<6;i++) {
-			SBVAL(trans->out.data.data, 16 + 8*i, fsinfo->objectid_information.out.unknown[i]);
-		}
-		return NT_STATUS_OK;
-	}
-
-	return NT_STATUS_INVALID_LEVEL;
+	return NT_STATUS_OK;
 }
 
 /*
