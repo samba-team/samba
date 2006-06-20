@@ -75,7 +75,7 @@ struct smb2_getinfo {
 		uint32_t unknown2;
 		uint32_t flags; /* level specific */
 		uint32_t flags2; /* used by all_eas level */
-		struct smb2_handle handle;
+		union smb_handle file;
 	} in;
 
 	struct {
@@ -93,7 +93,7 @@ struct smb2_setinfo {
 	struct {
 		uint16_t level;
 		uint32_t flags;
-		struct smb2_handle handle;
+		union smb_handle file;
 		DATA_BLOB blob;
 	} in;
 };
