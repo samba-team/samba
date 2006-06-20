@@ -718,6 +718,10 @@ BOOL _reg_perfcount_get_instance_info(PERF_INSTANCE_DEFINITION *inst,
 						  inst->data,
 						  uint8,
 						  inst->NameLength);
+		if (inst->data == NULL) {
+			SAFE_FREE(data.dptr);
+			return False;
+		}
 		memcpy(inst->data, name, inst->NameLength);
 		SAFE_FREE(data.dptr);
 	}
@@ -894,7 +898,8 @@ static BOOL _reg_perfcount_init_data_block_perf(PERF_DATA_BLOCK *block,
 /*********************************************************************
 *********************************************************************/
 
-static void _reg_perfcount_init_data_block(PERF_DATA_BLOCK *block, prs_struct *ps, TDB_CONTEXT *names)
+static BOOL _reg_perfcount_init_data_block(PERF_DATA_BLOCK *block,
+					   prs_struct *ps, TDB_CONTEXT *names)
 {
 	wpstring temp;
 	time_t tm;
@@ -920,6 +925,9 @@ static void _reg_perfcount_init_data_block(PERF_DATA_BLOCK *block, prs_struct *p
 	rpcstr_push((void *)temp, global_myname(), sizeof(temp), STR_TERMINATE);
 	block->SystemNameLength = (strlen_w(temp) * 2) + 2;
 	block->data = TALLOC_ZERO_ARRAY(ps->mem_ctx, uint8, block->SystemNameLength + (8 - (block->SystemNameLength % 8)));
+	if (block->data == NULL) {
+		return False;
+	}
 	memcpy(block->data, temp, block->SystemNameLength);
 	block->SystemNameOffset = sizeof(PERF_DATA_BLOCK) - sizeof(block->objects) - sizeof(block->data); 
 	block->HeaderLength = block->SystemNameOffset + block->SystemNameLength;
@@ -927,7 +935,7 @@ static void _reg_perfcount_init_data_block(PERF_DATA_BLOCK *block, prs_struct *p
 	   so that the PERF_OBJECT_TYPE struct comes out 64-bit aligned */
 	block->HeaderLength += 8 - (block->HeaderLength % 8);
 
-	return;
+	return True;
 }
 
 /*********************************************************************
@@ -968,6 +976,9 @@ static uint32 _reg_perfcount_perf_data_block_fixup(PERF_DATA_BLOCK *block, prs_s
 							    temp, 
 							    char, 
 							    counter_data->ByteLength- sizeof(counter_data->ByteLength));
+				if (temp == NULL) {
+					return 0;
+				}
 				memset(temp, 0, counter_data->ByteLength - sizeof(counter_data->ByteLength));
 				src_addr = (char *)counter_data->data;
 				for(i = 0; i < object[obj].NumCounters; i++)
@@ -986,6 +997,9 @@ static uint32 _reg_perfcount_perf_data_block_fixup(PERF_DATA_BLOCK *block, prs_s
 									 counter_data->data,
 									 uint8,
 									 counter_data->ByteLength - sizeof(counter_data->ByteLength) + pad);
+				if (counter_data->data == NULL) {
+					return 0;
+				}
 				memset(counter_data->data, 0, counter_data->ByteLength - sizeof(counter_data->ByteLength) + pad);
 				memcpy(counter_data->data, temp, counter_data->ByteLength - sizeof(counter_data->ByteLength));
 				counter_data->ByteLength += pad;
@@ -1039,7 +1053,11 @@ uint32 reg_perfcount_get_perf_data_block(uint32 base_index,
 		return 0;
 	}
 
-	_reg_perfcount_init_data_block(block, ps, names);
+	if (!_reg_perfcount_init_data_block(block, ps, names)) {
+		DEBUG(0, ("_reg_perfcount_init_data_block failed\n"));
+		tdb_close(names);
+		return 0;
+	}
 
 	last_counter = reg_perfcount_get_last_counter(base_index);
     

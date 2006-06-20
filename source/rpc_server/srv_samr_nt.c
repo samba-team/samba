@@ -3208,8 +3208,14 @@ static NTSTATUS set_user_info_23(TALLOC_CTX *mem_ctx, SAM_USER_INFO_23 *id23,
 	} else  {
 		/* update the UNIX password */
 		if (lp_unix_password_sync() ) {
-			struct passwd *passwd = Get_Pwnam(pdb_get_username(pwd));
-			if (!passwd) {
+			struct passwd *passwd;
+			if (pdb_get_username(pwd) == NULL) {
+				DEBUG(1, ("chgpasswd: User without name???\n"));
+				TALLOC_FREE(pwd);
+				return NT_STATUS_ACCESS_DENIED;
+			}
+
+			if ((passwd = Get_Pwnam(pdb_get_username(pwd))) == NULL) {
 				DEBUG(1, ("chgpasswd: Username does not exist in system !?!\n"));
 			}
 			
@@ -3274,8 +3280,15 @@ static BOOL set_user_info_pw(uint8 *pass, struct samu *pwd)
 	} else {
 		/* update the UNIX password */
 		if (lp_unix_password_sync()) {
-			struct passwd *passwd = Get_Pwnam(pdb_get_username(pwd));
-			if (!passwd) {
+			struct passwd *passwd;
+
+			if (pdb_get_username(pwd) == NULL) {
+				DEBUG(1, ("chgpasswd: User without name???\n"));
+				TALLOC_FREE(pwd);
+				return False;
+			}
+
+			if ((passwd = Get_Pwnam(pdb_get_username(pwd))) == NULL) {
 				DEBUG(1, ("chgpasswd: Username does not exist in system !?!\n"));
 			}
 			
@@ -3803,7 +3816,7 @@ NTSTATUS _samr_query_groupmem(pipes_struct *p, SAMR_Q_QUERY_GROUPMEM *q_u, SAMR_
 
 	attr=TALLOC_ZERO_ARRAY(p->mem_ctx, uint32, num_members);
 	
-	if ((num_members!=0) && (rid==NULL))
+	if ((num_members!=0) && (attr==NULL))
 		return NT_STATUS_NO_MEMORY;
 	
 	for (i=0; i<num_members; i++)
