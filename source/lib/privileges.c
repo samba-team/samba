@@ -530,6 +530,10 @@ NTSTATUS privilege_enumerate_accounts(DOM_SID **sids, int *num_sids)
 	TDB_CONTEXT *tdb = get_account_pol_tdb();
 	PRIV_SID_LIST priv;
 	
+	if (!tdb) {
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
 	ZERO_STRUCT(priv);
 
 	se_priv_copy( &priv.privilege, &se_priv_none );

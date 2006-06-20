@@ -1,6 +1,6 @@
                    =================================
                    Release Notes for Samba 3.0.23rc3
-                              Jun 19, 2006
+                              Jun XX, 2006
                    =================================
 
 This is the third release candidate of the 3.0.23 code base and is 
@@ -57,6 +57,7 @@ o   Guenther Deschner <gd@samba.org>
     * BUG 3843: Allow to set passwords directly when creating users 
       via "net rpc user add" 
     * Add "rpc shell" to the usage text for the net command.
+    * Winbindd user aliases lookup fixes for large domains.
 
 
 o   Bjoern Jacke <samba@j3e.de>.
@@ -67,6 +68,13 @@ o   Bjoern Jacke <samba@j3e.de>.
 o   Volker Lendecke <vl@samba.org>
     * Fixes for various Klocwork defect reports.
     * Fixes for various Coverity defect reports.
+
+
+
+o   Derrell Lipman <derrell@samba.org>
+    [libsmbclient]
+    * BUG 3814: Only set the DFS capability flag in client requests
+      if the share is a DFS root.
 
 
 o   Jason Mader <jason@ncac.gwu.edu>

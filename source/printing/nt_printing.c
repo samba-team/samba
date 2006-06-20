@@ -250,7 +250,7 @@ static TDB_DATA make_printer_tdbkey( const char *sharename )
  generate a new TDB_DATA key for storing a printer security descriptor
 ****************************************************************************/
 
-static char* make_printers_secdesc_tdbkey( const char* sharename  )
+static char *make_printers_secdesc_tdbkey( const char* sharename  )
 {
 	fstring share;
 	static pstring keystr;
@@ -346,32 +346,41 @@ static int sec_desc_upg_fn( TDB_CONTEXT *the_tdb, TDB_DATA key,
 	size_t size_new_sec;
 	DOM_SID sid;
 
-	if (!data.dptr || data.dsize == 0)
+	if (!data.dptr || data.dsize == 0) {
 		return 0;
+	}
 
-	if ( strncmp( key.dptr, SECDESC_PREFIX, strlen(SECDESC_PREFIX) ) != 0 )
+	if ( strncmp( key.dptr, SECDESC_PREFIX, strlen(SECDESC_PREFIX) ) != 0 ) {
 		return 0;
+	}
 
 	/* upgrade the security descriptor */
 
 	ZERO_STRUCT( ps );
 
 	prs_init( &ps, 0, ctx, UNMARSHALL );
-	prs_give_memory( &ps, data.dptr, data.dsize, True );
+	prs_give_memory( &ps, data.dptr, data.dsize, False );
 
 	if ( !sec_io_desc_buf( "sec_desc_upg_fn", &sd_orig, &ps, 1 ) ) {
 		/* delete bad entries */
 		DEBUG(0,("sec_desc_upg_fn: Failed to parse original sec_desc for %si.  Deleting....\n", key.dptr ));
 		tdb_delete( tdb_printers, key );
+		prs_mem_free( &ps );
 		return 0;
 	}
 
+	if (!sd_orig) {
+		prs_mem_free( &ps );
+		return 0;
+	}
 	sec = sd_orig->sec;
 		
 	/* is this even valid? */
 	
-	if ( !sec->dacl )
+	if ( !sec->dacl ) {
+		prs_mem_free( &ps );
 		return 0;
+	}
 		
 	/* update access masks */
 	
@@ -399,13 +408,24 @@ static int sec_desc_upg_fn( TDB_CONTEXT *the_tdb, TDB_DATA key,
 	new_sec = make_sec_desc( ctx, SEC_DESC_REVISION, SEC_DESC_SELF_RELATIVE,
 		&sid, &sid,
 		NULL, NULL, &size_new_sec );
+	if (!new_sec) {
+		prs_mem_free( &ps );
+		return 0;
+	}
 	sd_new = make_sec_desc_buf( ctx, size_new_sec, new_sec );
+	if (!sd_new) {
+		prs_mem_free( &ps );
+		return 0;
+	}
 
 	if ( !(sd_store = sec_desc_merge( ctx, sd_new, sd_orig )) ) {
 		DEBUG(0,("sec_desc_upg_fn: Failed to update sec_desc for %s\n", key.dptr ));
+		prs_mem_free( &ps );
 		return 0;
 	}
 	
+	prs_mem_free( &ps );
+
 	/* store it back */
 	
 	sd_size = sec_desc_size(sd_store->sec) + sizeof(SEC_DESC_BUF);
@@ -413,6 +433,7 @@ static int sec_desc_upg_fn( TDB_CONTEXT *the_tdb, TDB_DATA key,
 
 	if ( !sec_io_desc_buf( "sec_desc_upg_fn", &sd_store, &ps, 1 ) ) {
 		DEBUG(0,("sec_desc_upg_fn: Failed to parse new sec_desc for %s\n", key.dptr ));
+		prs_mem_free( &ps );
 		return 0;
 	}
 
@@ -943,6 +964,10 @@ int get_ntdrivers(fstring **list, const char *architecture, uint32 version)
 	TDB_DATA kbuf, newkey;
 
 	short_archi = get_short_archi(architecture);
+	if (!short_archi) {
+		return 0;
+	}
+
 	slprintf(key, sizeof(key)-1, "%s%s/%d/", DRIVERS_PREFIX, short_archi, version);
 
 	for (kbuf = tdb_firstkey(tdb_drivers);
@@ -965,9 +990,10 @@ int get_ntdrivers(fstring **list, const char *architecture, uint32 version)
 }
 
 /****************************************************************************
-function to do the mapping between the long architecture name and
-the short one.
+ Function to do the mapping between the long architecture name and
+ the short one.
 ****************************************************************************/
+
 const char *get_short_archi(const char *long_archi)
 {
         int i=-1;
@@ -984,7 +1010,6 @@ const char *get_short_archi(const char *long_archi)
         }
 
 	/* this might be client code - but shouldn't this be an fstrcpy etc? */
-
 
         DEBUGADD(108,("index: [%d]\n", i));
         DEBUGADD(108,("long architecture: [%s]\n", archi_table[i].long_archi));
@@ -1546,6 +1571,9 @@ static WERROR clean_up_driver_struct_level_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 *dri
 	}
 
 	architecture = get_short_archi(driver->environment);
+	if (!architecture) {
+		return WERR_UNKNOWN_PRINTER_DRIVER;
+	}
 	
 	/* jfm:7/16/2000 the client always sends the cversion=0.
 	 * The server should check which version the driver is by reading
@@ -1559,7 +1587,7 @@ static WERROR clean_up_driver_struct_level_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 *dri
 	 *	NT2K: cversion=3
 	 */
 	if ((driver->cversion = get_correct_cversion( architecture, driver->driverpath, user, &err)) == -1)
-			return err;
+		return err;
 
 	return WERR_OK;
 }
@@ -1609,6 +1637,9 @@ static WERROR clean_up_driver_struct_level_6(NT_PRINTER_DRIVER_INFO_LEVEL_6 *dri
 	}
 
 	architecture = get_short_archi(driver->environment);
+	if (!architecture) {
+		return WERR_UNKNOWN_PRINTER_DRIVER;
+	}
 
 	/* jfm:7/16/2000 the client always sends the cversion=0.
 	 * The server should check which version the driver is by reading
@@ -1726,6 +1757,9 @@ WERROR move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract
 	}
 
 	architecture = get_short_archi(driver->environment);
+	if (!architecture) {
+		return WERR_UNKNOWN_PRINTER_DRIVER;
+	}
 
 	/*
 	 * Connect to the print$ share under the same account as the user connected to the rpc pipe.
@@ -1901,6 +1935,9 @@ static uint32 add_a_printer_driver_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 *driver)
 	TDB_DATA kbuf, dbuf;
 
 	architecture = get_short_archi(driver->environment);
+	if (!architecture) {
+		return (uint32)-1;
+	}
 
 	/* The names are relative. We store them in the form: \print$\arch\version\driver.xxx
 	 * \\server is added in the rpc server layer.
@@ -2059,9 +2096,9 @@ static WERROR get_a_printer_driver_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 **info_ptr, 
 	ZERO_STRUCT(driver);
 
 	architecture = get_short_archi(arch);
-
-	if ( !architecture )
+	if ( !architecture ) {
 		return WERR_UNKNOWN_PRINTER_DRIVER;
+	}
 	
 	/* Windows 4.0 (i.e. win9x) should always use a version of 0 */
 	
@@ -3075,6 +3112,10 @@ static WERROR nt_printer_unpublish_ads(ADS_STRUCT *ads,
 
 	if (ADS_ERR_OK(ads_rc) && ads_count_replies(ads, res)) {
 		prt_dn = ads_get_dn(ads, res);
+		if (!prt_dn) {
+			ads_msgfree(ads, res);
+			return WERR_NOMEM;
+		}
 		ads_rc = ads_del_dn(ads, prt_dn);
 		ads_memfree(ads, prt_dn);
 	}
@@ -3643,15 +3684,16 @@ static WERROR get_a_printer_2_default(NT_PRINTER_INFO_LEVEL_2 *info, const char 
 	 */
 
 	if (lp_default_devmode(snum)) {
-		if ((info->devmode = construct_nt_devicemode(info->printername)) == NULL)
+		if ((info->devmode = construct_nt_devicemode(info->printername)) == NULL) {
 			goto fail;
-	}
-	else {
+		}
+	} else {
 		info->devmode = NULL;
 	}
 
-	if (!nt_printing_getsec(info, sharename, &info->secdesc_buf))
+	if (!nt_printing_getsec(info, sharename, &info->secdesc_buf)) {
 		goto fail;
+	}
 
 	return WERR_OK;
 
@@ -3675,8 +3717,9 @@ static WERROR get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 *info, const char *servern
 	kbuf = make_printer_tdbkey( sharename );
 
 	dbuf = tdb_fetch(tdb_printers, kbuf);
-	if (!dbuf.dptr)
+	if (!dbuf.dptr) {
 		return get_a_printer_2_default(info, servername, sharename);
+	}
 
 	len += tdb_unpack(dbuf.dptr+len, dbuf.dsize-len, "dddddddddddfffffPfffff",
 			&info->attributes,
@@ -3709,10 +3752,11 @@ static WERROR get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 *info, const char *servern
 	/* Restore the stripped strings. */
 	slprintf(info->servername, sizeof(info->servername)-1, "\\\\%s", servername);
 
-	if ( lp_force_printername(snum) )
+	if ( lp_force_printername(snum) ) {
 		slprintf(printername, sizeof(printername)-1, "\\\\%s\\%s", servername, sharename );
-	else 
+	} else {
 		slprintf(printername, sizeof(printername)-1, "\\\\%s\\%s", servername, info->printername);
+	}
 
 	fstrcpy(info->printername, printername);
 
@@ -3739,6 +3783,7 @@ static WERROR get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 *info, const char *servern
 
 	if ( !(info->data = TALLOC_ZERO_P( info, NT_PRINTER_DATA )) ) {
 		DEBUG(0,("unpack_values: talloc() failed!\n"));
+		SAFE_FREE(dbuf.dptr);
 		return WERR_NOMEM;
 	}
 	len += unpack_values( info->data, dbuf.dptr+len, dbuf.dsize-len );
@@ -3746,12 +3791,16 @@ static WERROR get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 *info, const char *servern
 	/* This will get the current RPC talloc context, but we should be
 	   passing this as a parameter... fixme... JRA ! */
 
-	nt_printing_getsec(info, sharename, &info->secdesc_buf);
+	if (!nt_printing_getsec(info, sharename, &info->secdesc_buf)) {
+		SAFE_FREE(dbuf.dptr);
+		return WERR_NOMEM;
+	}
 
 	/* Fix for OS/2 drivers. */
 
-	if (get_remote_arch() == RA_OS2)
+	if (get_remote_arch() == RA_OS2) {
 		map_to_os2_driver(info->drivername);
+	}
 
 	SAFE_FREE(dbuf.dptr);
 
@@ -4859,6 +4908,9 @@ WERROR delete_printer_driver( NT_PRINTER_DRIVER_INFO_LEVEL_3 *info_3, struct cur
 	/* delete the tdb data first */
 
 	arch = get_short_archi(info_3->environment);
+	if (!arch) {
+		return WERR_UNKNOWN_PRINTER_DRIVER;
+	}
 	slprintf(key, sizeof(key)-1, "%s%s/%d/%s", DRIVERS_PREFIX,
 		arch, version, info_3->name);
 
@@ -4931,7 +4983,10 @@ WERROR nt_printing_setsec(const char *sharename, SEC_DESC_BUF *secdesc_ctr)
 		SEC_DESC *psd = NULL;
 		size_t size;
 
-		nt_printing_getsec(mem_ctx, sharename, &old_secdesc_ctr);
+		if (!nt_printing_getsec(mem_ctx, sharename, &old_secdesc_ctr)) {
+			status = WERR_NOMEM;
+			goto out;
+		}
 
 		/* Pick out correct owner and group sids */
 
@@ -4958,6 +5013,11 @@ WERROR nt_printing_setsec(const char *sharename, SEC_DESC_BUF *secdesc_ctr)
 				    sacl,
 				    dacl,
 				    &size);
+
+		if (!psd) {
+			status = WERR_NOMEM;
+			goto out;
+		}
 
 		new_secdesc_ctr = make_sec_desc_buf(mem_ctx, size, psd);
 	}
@@ -5094,12 +5154,16 @@ BOOL nt_printing_getsec(TALLOC_CTX *ctx, const char *sharename, SEC_DESC_BUF **s
 		sharename = temp + 1;
 	}
 
+	ZERO_STRUCT(ps);
+
 	/* Fetch security descriptor from tdb */
 
 	key = make_printers_secdesc_tdbkey( sharename  );
 
 	if (tdb_prs_fetch(tdb_printers, key, &ps, ctx)!=0 ||
 	    !sec_io_desc_buf("nt_printing_getsec", secdesc_ctr, &ps, 1)) {
+
+		prs_mem_free(&ps);
 
 		DEBUG(4,("using default secdesc for %s\n", sharename));
 
@@ -5112,13 +5176,16 @@ BOOL nt_printing_getsec(TALLOC_CTX *ctx, const char *sharename, SEC_DESC_BUF **s
 		prs_init(&ps, (uint32)sec_desc_size((*secdesc_ctr)->sec) +
 				sizeof(SEC_DESC_BUF), ctx, MARSHALL);
 
-		if (sec_io_desc_buf("nt_printing_getsec", secdesc_ctr, &ps, 1))
+		if (sec_io_desc_buf("nt_printing_getsec", secdesc_ctr, &ps, 1)) {
 			tdb_prs_store(tdb_printers, key, &ps);
+		}
 
 		prs_mem_free(&ps);
 
 		return True;
 	}
+
+	prs_mem_free(&ps);
 
 	/* If security descriptor is owned by S-1-1-0 and winbindd is up,
 	   this security descriptor has been created when winbindd was
@@ -5145,7 +5212,14 @@ BOOL nt_printing_getsec(TALLOC_CTX *ctx, const char *sharename, SEC_DESC_BUF **s
 					    (*secdesc_ctr)->sec->dacl,
 					    &size);
 
+			if (!psd) {
+				return False;
+			}
+
 			new_secdesc_ctr = make_sec_desc_buf(ctx, size, psd);
+			if (!new_secdesc_ctr) {
+				return False;
+			}
 
 			/* Swap with other one */
 
@@ -5175,7 +5249,6 @@ BOOL nt_printing_getsec(TALLOC_CTX *ctx, const char *sharename, SEC_DESC_BUF **s
 		}
 	}
 
-	prs_mem_free(&ps);
 	return True;
 }
 
@@ -5289,7 +5362,11 @@ BOOL print_access_check(struct current_user *user, int snum, int access_type)
 		return False;
 	}
 
-	nt_printing_getsec(mem_ctx, pname, &secdesc);
+	if (!nt_printing_getsec(mem_ctx, pname, &secdesc)) {
+		talloc_destroy(mem_ctx);
+		errno = ENOMEM;
+		return False;
+	}
 
 	if (access_type == JOB_ACCESS_ADMINISTER) {
 		SEC_DESC_BUF *parent_secdesc = secdesc;
@@ -5299,6 +5376,12 @@ BOOL print_access_check(struct current_user *user, int snum, int access_type)
 		   objects of a printer. */
 
 		secdesc = se_create_child_secdesc(mem_ctx, parent_secdesc->sec, False);
+
+		if (!secdesc) {
+			talloc_destroy(mem_ctx);
+			errno = ENOMEM;
+			return False;
+		}
 
 		/* Now this is the bit that really confuses me.  The access
 		   type needs to be changed from JOB_ACCESS_ADMINISTER to
@@ -5324,13 +5407,15 @@ BOOL print_access_check(struct current_user *user, int snum, int access_type)
 	    (token_contains_name_in_list(uidtoname(user->ut.uid), NULL,
 					 user->nt_user_token,
 					 lp_printer_admin(snum)))) {
+		talloc_destroy(mem_ctx);
 		return True;
         }
 
 	talloc_destroy(mem_ctx);
 	
-	if (!result)
+	if (!result) {
 		errno = EACCES;
+	}
 
 	return result;
 }

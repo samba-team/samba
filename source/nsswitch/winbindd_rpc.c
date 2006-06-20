@@ -473,9 +473,14 @@ NTSTATUS msrpc_lookup_useraliases(struct winbindd_domain *domain,
 {
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	POLICY_HND dom_pol;
-	DOM_SID2 *sid2;
+	DOM_SID2 *query_sids;
+	uint32 num_query_sids = 0;
 	int i;
 	struct rpc_pipe_client *cli;
+	uint32 *alias_rids_query, num_aliases_query;
+	int rangesize = MAX_SAM_ENTRIES_W2K;
+	uint32 total_sids = 0;
+	int num_queries = 1;
 
 	*num_aliases = 0;
 	*alias_rids = NULL;
@@ -486,19 +491,57 @@ NTSTATUS msrpc_lookup_useraliases(struct winbindd_domain *domain,
 	if (!NT_STATUS_IS_OK(result))
 		return result;
 
-	sid2 = TALLOC_ARRAY(mem_ctx, DOM_SID2, num_sids);
+	do {
+		/* prepare query */
 
-	if (sid2 == NULL)
-		return NT_STATUS_NO_MEMORY;
+		num_query_sids = MIN(num_sids - total_sids, rangesize);
 
-	for (i=0; i<num_sids; i++) {
-		sid_copy(&sid2[i].sid, &sids[i]);
-		sid2[i].num_auths = sid2[i].sid.num_auths;
-	}
+		DEBUG(10,("rpc: lookup_useraliases: entering query %d for %d sids\n", 
+			num_queries, num_query_sids));	
 
-	result = rpccli_samr_query_useraliases(cli, mem_ctx, &dom_pol,
-					       num_sids, sid2,
-					       num_aliases, alias_rids);
+
+		query_sids = TALLOC_ARRAY(mem_ctx, DOM_SID2, num_query_sids);
+		if (query_sids == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		for (i=0; i<num_query_sids; i++) {
+			sid_copy(&query_sids[i].sid, &sids[total_sids++]);
+			query_sids[i].num_auths = query_sids[i].sid.num_auths;
+		}
+
+		/* do request */
+
+		result = rpccli_samr_query_useraliases(cli, mem_ctx, &dom_pol,
+						       num_query_sids, query_sids,
+						       &num_aliases_query, 
+						       &alias_rids_query);
+
+		if (!NT_STATUS_IS_OK(result)) {
+			*num_aliases = 0;
+			*alias_rids = NULL;
+			TALLOC_FREE(query_sids);
+			goto done;
+		}
+
+		/* process output */
+
+		for (i=0; i<num_aliases_query; i++) {
+			size_t na = *num_aliases;
+			add_rid_to_array_unique(mem_ctx, alias_rids_query[i], 
+						alias_rids, &na);
+			*num_aliases = na;
+		}
+
+		TALLOC_FREE(query_sids);
+
+		num_queries++;
+
+	} while (total_sids < num_sids);
+
+ done:
+	DEBUG(10,("rpc: lookup_useraliases: got %d aliases in %d queries "
+		"(rangesize: %d)\n", *num_aliases, num_queries, rangesize));
 
 	return result;
 }

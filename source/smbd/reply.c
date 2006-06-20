@@ -547,6 +547,7 @@ int reply_special(char *inbuf,char *outbuf)
 
 /****************************************************************************
  Reply to a tcon.
+ conn POINTER CAN BE NULL HERE !
 ****************************************************************************/
 
 int reply_tcon(connection_struct *conn,
@@ -605,6 +606,7 @@ int reply_tcon(connection_struct *conn,
 
 /****************************************************************************
  Reply to a tcon and X.
+ conn POINTER CAN BE NULL HERE !
 ****************************************************************************/
 
 int reply_tcon_and_X(connection_struct *conn, char *inbuf,char *outbuf,int length,int bufsize)
@@ -738,6 +740,7 @@ int reply_unknown(char *inbuf,char *outbuf)
 
 /****************************************************************************
  Reply to an ioctl.
+ conn POINTER CAN BE NULL HERE !
 ****************************************************************************/
 
 int reply_ioctl(connection_struct *conn,
@@ -1591,6 +1594,7 @@ int reply_open_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 
 /****************************************************************************
  Reply to a SMBulogoffX.
+ conn POINTER CAN BE NULL HERE !
 ****************************************************************************/
 
 int reply_ulogoffX(connection_struct *conn, char *inbuf,char *outbuf,int length,int bufsize)
@@ -3236,6 +3240,7 @@ int reply_flush(connection_struct *conn, char *inbuf,char *outbuf, int size, int
 
 /****************************************************************************
  Reply to a exit.
+ conn POINTER CAN BE NULL HERE !
 ****************************************************************************/
 
 int reply_exit(connection_struct *conn, 
@@ -3511,6 +3516,7 @@ int reply_unlock(connection_struct *conn, char *inbuf,char *outbuf, int size,
 
 /****************************************************************************
  Reply to a tdis.
+ conn POINTER CAN BE NULL HERE !
 ****************************************************************************/
 
 int reply_tdis(connection_struct *conn, 
@@ -3538,6 +3544,7 @@ int reply_tdis(connection_struct *conn,
 
 /****************************************************************************
  Reply to a echo.
+ conn POINTER CAN BE NULL HERE !
 ****************************************************************************/
 
 int reply_echo(connection_struct *conn,

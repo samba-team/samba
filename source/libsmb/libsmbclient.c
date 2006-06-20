@@ -3932,7 +3932,9 @@ add_ace(SEC_ACL **the_acl,
 		return True;
 	}
 
-	aces = SMB_CALLOC_ARRAY(SEC_ACE, 1+(*the_acl)->num_aces);
+	if ((aces = SMB_CALLOC_ARRAY(SEC_ACE, 1+(*the_acl)->num_aces)) == NULL) {
+		return False;
+	}
 	memcpy(aces, (*the_acl)->ace, (*the_acl)->num_aces * sizeof(SEC_ACE));
 	memcpy(aces+(*the_acl)->num_aces, ace, sizeof(SEC_ACE));
 	newacl = make_sec_acl(ctx, (*the_acl)->revision,

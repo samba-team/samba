@@ -4989,6 +4989,7 @@ BOOL spool_io_printer_driver_info_level_6(const char *desc, SPOOL_PRINTER_DRIVER
  dynamically allocate memory
  
 ********************************************************************/  
+
 static BOOL uniarray_2_dosarray(BUFFER5 *buf5, fstring **ar)
 {
 	fstring f;
@@ -4999,24 +5000,26 @@ static BOOL uniarray_2_dosarray(BUFFER5 *buf5, fstring **ar)
 		return False;
 
 	src = (char *)buf5->buffer;
-	*ar = NULL;
+	*ar = SMB_MALLOC_ARRAY(fstring, 1);
+	if (!*ar) {
+		return False;
+	}
 
 	while (src < ((char *)buf5->buffer) + buf5->buf_len*2) {
 		rpcstr_pull(f, src, sizeof(f)-1, -1, STR_TERMINATE);
 		src = skip_unibuf(src, 2*buf5->buf_len - PTR_DIFF(src,buf5->buffer));
 		*ar = SMB_REALLOC_ARRAY(*ar, fstring, n+2);
-		if (!*ar)
+		if (!*ar) {
 			return False;
+		}
 		fstrcpy((*ar)[n], f);
 		n++;
 	}
+
 	fstrcpy((*ar)[n], "");
  
 	return True;
 }
-
-
-
 
 /*******************************************************************
  read a UNICODE array with null terminated strings 
@@ -5115,9 +5118,6 @@ BOOL make_spoolss_driver_info_3(TALLOC_CTX *mem_ctx,
 				DRIVER_INFO_3 *info3)
 {
 	uint32		len = 0;
-	uint16		*ptr = info3->dependentfiles;
-	BOOL		done = False;
-	BOOL		null_char = False;
 	SPOOL_PRINTER_DRIVER_INFO_LEVEL_3 *inf;
 
 	if (!(inf=TALLOC_ZERO_P(mem_ctx, SPOOL_PRINTER_DRIVER_INFO_LEVEL_3)))
@@ -5142,31 +5142,35 @@ BOOL make_spoolss_driver_info_3(TALLOC_CTX *mem_ctx,
 	init_unistr2_from_unistr(&inf->monitorname, &info3->monitorname);
 	init_unistr2_from_unistr(&inf->defaultdatatype, &info3->defaultdatatype);
 
-	while (!done)
-	{
-		switch (*ptr)
-		{
-			case 0:
-				/* the null_char BOOL is used to help locate
-				   two '\0's back to back */
-				if (null_char)
-					done = True;
-				else
-					null_char = True;
-				break;
+	if (info3->dependentfiles) {
+		BOOL done = False;
+		BOOL null_char = False;
+		uint16 *ptr = info3->dependentfiles;
+
+		while (!done) {
+			switch (*ptr) {
+				case 0:
+					/* the null_char BOOL is used to help locate
+					   two '\0's back to back */
+					if (null_char) {
+						done = True;
+					} else {
+						null_char = True;
+					}
+					break;
 					
-			default:
-				null_char = False;
-				;;
-				break;				
+				default:
+					null_char = False;
+					break;				
+			}
+			len++;
+			ptr++;
 		}
-		len++;
-		ptr++;
 	}
+
 	inf->dependentfiles_ptr = (info3->dependentfiles != NULL) ? 1 : 0;
-	inf->dependentfilessize = len;
-	if(!make_spoolss_buffer5(mem_ctx, &inf->dependentfiles, len, info3->dependentfiles))
-	{
+	inf->dependentfilessize = (info3->dependentfiles != NULL) ? len : 0;
+	if(!make_spoolss_buffer5(mem_ctx, &inf->dependentfiles, len, info3->dependentfiles)) {
 		SAFE_FREE(inf);
 		return False;
 	}
@@ -5179,13 +5183,18 @@ BOOL make_spoolss_driver_info_3(TALLOC_CTX *mem_ctx,
 /*******************************************************************
  make a BUFFER5 struct from a uint16*
  ******************************************************************/
+
 BOOL make_spoolss_buffer5(TALLOC_CTX *mem_ctx, BUFFER5 *buf5, uint32 len, uint16 *src)
 {
 
 	buf5->buf_len = len;
-	if((buf5->buffer=(uint16*)TALLOC_MEMDUP(mem_ctx, src, sizeof(uint16)*len)) == NULL) {
-		DEBUG(0,("make_spoolss_buffer5: Unable to malloc memory for buffer!\n"));
-		return False;
+	if (src) {
+		if((buf5->buffer=(uint16*)TALLOC_MEMDUP(mem_ctx, src, sizeof(uint16)*len)) == NULL) {
+			DEBUG(0,("make_spoolss_buffer5: Unable to malloc memory for buffer!\n"));
+			return False;
+		}
+	} else {
+		buf5->buffer=NULL;
 	}
 	
 	return True;

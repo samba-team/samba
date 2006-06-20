@@ -360,11 +360,12 @@ static BOOL add_ace(SEC_ACL **the_acl, SEC_ACE *ace)
 	SEC_ACL *new_ace;
 	SEC_ACE *aces;
 	if (! *the_acl) {
-		(*the_acl) = make_sec_acl(ctx, 3, 1, ace);
-		return True;
+		return (((*the_acl) = make_sec_acl(ctx, 3, 1, ace)) != NULL);
 	}
 
-	aces = SMB_CALLOC_ARRAY(SEC_ACE, 1+(*the_acl)->num_aces);
+	if (!(aces = SMB_CALLOC_ARRAY(SEC_ACE, 1+(*the_acl)->num_aces))) {
+		return False;
+	}
 	memcpy(aces, (*the_acl)->ace, (*the_acl)->num_aces * sizeof(SEC_ACE));
 	memcpy(aces+(*the_acl)->num_aces, ace, sizeof(SEC_ACE));
 	new_ace = make_sec_acl(ctx,(*the_acl)->revision,1+(*the_acl)->num_aces, aces);

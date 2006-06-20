@@ -635,6 +635,7 @@ static int reply_spnego_auth(connection_struct *conn, char *inbuf, char *outbuf,
 
 /****************************************************************************
  Reply to a session setup command.
+ conn POINTER CAN BE NULL HERE !
 ****************************************************************************/
 
 static int reply_sesssetup_and_X_spnego(connection_struct *conn, char *inbuf,

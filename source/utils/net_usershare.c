@@ -147,7 +147,10 @@ static int net_usershare_delete(int argc, const char **argv)
 		return net_usershare_delete_usage(argc, argv);
 	}
 
-	sharename = strdup_lower(argv[0]);
+	if ((sharename = strdup_lower(argv[0])) == NULL) {
+		d_fprintf(stderr, "strdup failed\n");
+		return -1;
+	}
 
 	if (!validate_net_name(sharename, INVALID_SHARENAME_CHARS, strlen(sharename))) {
 		d_fprintf(stderr, "net usershare delete: share name %s contains "
@@ -641,7 +644,12 @@ static int net_usershare_add(int argc, const char **argv)
 		}
 
 		/* Get the name */
-		name = talloc_strndup(ctx, pacl, pcolon - pacl);
+		if ((name = talloc_strndup(ctx, pacl, pcolon - pacl)) == NULL) {
+			d_fprintf(stderr, "talloc_strndup failed\n");
+			talloc_destroy(ctx);
+			SAFE_FREE(sharename);
+			return -1;
+		}
 		if (!string_to_sid(&sid, name)) {
 			/* Convert to a SID */
 			NTSTATUS ntstatus = net_lookup_sid_from_name(ctx, name, &sid);

@@ -227,56 +227,6 @@ BOOL smb_io_dom_sid(const char *desc, DOM_SID *sid, prs_struct *ps, int depth)
 }
 
 /*******************************************************************
- Inits a DOM_SID structure.
-
- BIG NOTE: this function only does SIDS where the identauth is not >= 2^32 
- identauth >= 2^32 can be detected because it will be specified in hex
-********************************************************************/
-
-void init_dom_sid(DOM_SID *sid, const char *str_sid)
-{
-	pstring domsid;
-	int identauth;
-	char *p;
-
-	if (str_sid == NULL) {
-		DEBUG(4,("netlogon domain SID: none\n"));
-		sid->sid_rev_num = 0;
-		sid->num_auths = 0;
-		return;
-	}
-		
-	pstrcpy(domsid, str_sid);
-
-	DEBUG(4,("init_dom_sid %d SID:  %s\n", __LINE__, domsid));
-
-	/* assume, but should check, that domsid starts "S-" */
-	p = strtok(domsid+2,"-");
-	sid->sid_rev_num = atoi(p);
-
-	/* identauth in decimal should be <  2^32 */
-	/* identauth in hex     should be >= 2^32 */
-	identauth = atoi(strtok(0,"-"));
-
-	DEBUG(4,("netlogon rev %d\n", sid->sid_rev_num));
-	DEBUG(4,("netlogon %s ia %d\n", p, identauth));
-
-	sid->id_auth[0] = 0;
-	sid->id_auth[1] = 0;
-	sid->id_auth[2] = (identauth & 0xff000000) >> 24;
-	sid->id_auth[3] = (identauth & 0x00ff0000) >> 16;
-	sid->id_auth[4] = (identauth & 0x0000ff00) >> 8;
-	sid->id_auth[5] = (identauth & 0x000000ff);
-
-	sid->num_auths = 0;
-
-	while ((p = strtok(0, "-")) != NULL && sid->num_auths < MAXSUBAUTHS)
-		sid->sub_auths[sid->num_auths++] = atoi(p);
-
-	DEBUG(4,("init_dom_sid: %d SID:  %s\n", __LINE__, domsid));
-}
-
-/*******************************************************************
  Inits a DOM_SID2 structure.
 ********************************************************************/
 

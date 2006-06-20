@@ -72,6 +72,10 @@ LOGIN_CACHE * login_cache_read(struct samu *sampass)
 	if (!login_cache_init())
 		return NULL;
 
+	if (pdb_get_nt_username(sampass) == NULL) {
+		return NULL;
+	}
+
 	keybuf.dptr = SMB_STRDUP(pdb_get_nt_username(sampass));
 	if (!keybuf.dptr || !strlen(keybuf.dptr)) {
 		SAFE_FREE(keybuf.dptr);
@@ -116,6 +120,10 @@ BOOL login_cache_write(const struct samu *sampass, LOGIN_CACHE entry)
 
 	if (!login_cache_init())
 		return False;
+
+	if (pdb_get_nt_username(sampass) == NULL) {
+		return False;
+	}
 
 	keybuf.dptr = SMB_STRDUP(pdb_get_nt_username(sampass));
 	if (!keybuf.dptr || !strlen(keybuf.dptr)) {
@@ -162,6 +170,10 @@ BOOL login_cache_delentry(const struct samu *sampass)
 	
 	if (!login_cache_init()) 
 		return False;	
+
+	if (pdb_get_nt_username(sampass) == NULL) {
+		return False;
+	}
 
 	keybuf.dptr = SMB_STRDUP(pdb_get_nt_username(sampass));
 	if (!keybuf.dptr || !strlen(keybuf.dptr)) {

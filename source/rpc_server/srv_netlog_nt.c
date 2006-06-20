@@ -985,6 +985,11 @@ static NTSTATUS _net_sam_logon_internal(pipes_struct *p,
 		user_sid = pdb_get_user_sid(sampw);
 		group_sid = pdb_get_group_sid(sampw);
 
+		if ((user_sid == NULL) || (group_sid == NULL)) {
+			DEBUG(1, ("_net_sam_logon: User without group or user SID\n"));
+			return NT_STATUS_UNSUCCESSFUL;
+		}
+
 		sid_copy(&domain_sid, user_sid);
 		sid_split_rid(&domain_sid, &user_rid);
 
