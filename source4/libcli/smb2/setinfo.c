@@ -45,7 +45,7 @@ struct smb2_request *smb2_setinfo_send(struct smb2_tree *tree, struct smb2_setin
 	}
 
 	SIVAL(req->out.body, 0x0C, io->in.flags);
-	smb2_push_handle(req->out.body+0x10, &io->in.handle);
+	smb2_push_handle(req->out.body+0x10, &io->in.file.handle);
 
 	smb2_transport_send(req);
 
@@ -92,7 +92,7 @@ struct smb2_request *smb2_setinfo_file_send(struct smb2_tree *tree, union smb_se
 
 	ZERO_STRUCT(b);
 	b.in.level             = smb2_level;
-	b.in.handle            = io->generic.in.file.handle;
+	b.in.file.handle       = io->generic.in.file.handle;
 	if (!smb_raw_setfileinfo_passthru(tree, io->generic.level, io, &b.in.blob)) {
 		return NULL;
 	}
