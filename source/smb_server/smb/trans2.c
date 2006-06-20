@@ -67,8 +67,10 @@ static NTSTATUS trans2_grow_data(TALLOC_CTX *mem_ctx,
 				 uint32_t new_size)
 {
 	if (new_size > blob->length) {
-		blob->data = talloc_realloc(mem_ctx, blob->data, uint8_t, new_size);
-		NT_STATUS_HAVE_NO_MEMORY(blob->data);
+		uint8_t *p;
+		p = talloc_realloc(mem_ctx, blob->data, uint8_t, new_size);
+		NT_STATUS_HAVE_NO_MEMORY(p);
+		blob->data = p;
 	}
 	blob->length = new_size;
 	return NT_STATUS_OK;
