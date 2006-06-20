@@ -105,6 +105,7 @@ static void ping_message(int msg_type, struct process_id src,
 			 void *buf, size_t len)
 {
 	const char *msg = buf ? buf : "none";
+
 	DEBUG(1,("INFO: Received PING message from PID %s [%s]\n",
 		 procid_str_static(&src), msg));
 	message_send_pid(src, MSG_PONG, buf, len, True);
@@ -198,6 +199,11 @@ static BOOL message_send_pid_internal(struct process_id pid, int msg_type,
 	char *ptr;
 	struct message_rec prec;
 
+	/* NULL pointer means implicit length zero. */
+	if (!buf) {
+		SMB_ASSERT(len == 0);
+	}
+
 	/*
 	 * Doing kill with a non-positive pid causes messages to be
 	 * sent to places we don't want.
@@ -209,7 +215,7 @@ static BOOL message_send_pid_internal(struct process_id pid, int msg_type,
 	rec.msg_type = msg_type;
 	rec.dest = pid;
 	rec.src = procid_self();
-	rec.len = len;
+	rec.len = buf ? len : 0;
 
 	kbuf = message_key_pid(pid);
 
@@ -218,7 +224,7 @@ static BOOL message_send_pid_internal(struct process_id pid, int msg_type,
 		return False;
 
 	memcpy(dbuf.dptr, &rec, sizeof(rec));
-	if (len > 0)
+	if (len > 0 && buf)
 		memcpy((void *)((char*)dbuf.dptr+sizeof(rec)), buf, len);
 
 	dbuf.dsize = len + sizeof(rec);
