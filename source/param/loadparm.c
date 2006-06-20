@@ -3251,9 +3251,9 @@ static BOOL handle_debug_list( int snum, const char *pszParmValueIn, char **ptr 
  Handle ldap suffixes - default to ldapsuffix if sub-suffixes are not defined.
 ***************************************************************************/
 
-static char* append_ldap_suffix( const char *str )
+static const char *append_ldap_suffix( const char *str )
 {
-	char *suffix_string;
+	const char *suffix_string;
 
 
 	if (!lp_talloc)
@@ -3262,13 +3262,13 @@ static char* append_ldap_suffix( const char *str )
 	suffix_string = talloc_asprintf( lp_talloc, "%s,%s", str, Globals.szLdapSuffix );
 	if ( !suffix_string ) {
 		DEBUG(0,("append_ldap_suffix: talloc_asprintf() failed!\n"));
-		return NULL;
+		return "";
 	}
 
 	return suffix_string;
 }
 
-char *lp_ldap_machine_suffix(void)
+const char *lp_ldap_machine_suffix(void)
 {
 	if (Globals.szLdapMachineSuffix[0])
 		return append_ldap_suffix(Globals.szLdapMachineSuffix);
@@ -3276,7 +3276,7 @@ char *lp_ldap_machine_suffix(void)
 	return lp_string(Globals.szLdapSuffix);
 }
 
-char *lp_ldap_user_suffix(void)
+const char *lp_ldap_user_suffix(void)
 {
 	if (Globals.szLdapUserSuffix[0])
 		return append_ldap_suffix(Globals.szLdapUserSuffix);
@@ -3284,7 +3284,7 @@ char *lp_ldap_user_suffix(void)
 	return lp_string(Globals.szLdapSuffix);
 }
 
-char *lp_ldap_group_suffix(void)
+const char *lp_ldap_group_suffix(void)
 {
 	if (Globals.szLdapGroupSuffix[0])
 		return append_ldap_suffix(Globals.szLdapGroupSuffix);
@@ -3292,7 +3292,7 @@ char *lp_ldap_group_suffix(void)
 	return lp_string(Globals.szLdapSuffix);
 }
 
-char *lp_ldap_idmap_suffix(void)
+const char *lp_ldap_idmap_suffix(void)
 {
 	if (Globals.szLdapIdmapSuffix[0])
 		return append_ldap_suffix(Globals.szLdapIdmapSuffix);

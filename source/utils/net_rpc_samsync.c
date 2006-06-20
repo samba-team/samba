@@ -1025,7 +1025,7 @@ static NTSTATUS fetch_database(struct rpc_pipe_client *pipe_hnd, uint32 db_type,
 static NTSTATUS populate_ldap_for_ldif(fstring sid, const char *suffix, const char 
 		       *builtin_sid, FILE *add_fd)
 {
-	char *user_suffix, *group_suffix, *machine_suffix, *idmap_suffix;
+	const char *user_suffix, *group_suffix, *machine_suffix, *idmap_suffix;
 	char *user_attr=NULL, *group_attr=NULL;
 	char *suffix_attr;
 	int len;
