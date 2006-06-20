@@ -108,7 +108,7 @@ struct smbsrv_request;
 		smb2srv_send_error(req, NT_STATUS_NO_MEMORY); \
 		return; \
 	} \
-	talloc_steal(req->tcon->ntvfs, req); \
+	(void)talloc_steal(req->tcon->ntvfs, req); \
 	req->ntvfs->frontend_data.private_data = req; \
 } while (0)
 
