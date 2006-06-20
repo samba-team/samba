@@ -1470,6 +1470,11 @@ static BOOL lookup_global_sam_rid(TALLOC_CTX *mem_ctx, uint32 rid,
 
 		unbecome_root();		/* -----> EXIT BECOME_ROOT() */
 		*name = talloc_strdup(mem_ctx, pdb_get_username(sam_account));
+		if (!*name) {
+			TALLOC_FREE(sam_account);
+			return False;
+		}
+
 		*psid_name_use = SID_NAME_USER;
 
 		TALLOC_FREE(sam_account);
