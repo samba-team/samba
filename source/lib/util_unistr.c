@@ -98,8 +98,10 @@ void load_case_tables(void)
 	/* Get the name of the current locale.  */
 	old_locale = setlocale(LC_ALL, NULL);
 
-	/* Save it as it is in static storage. */
-	saved_locale = SMB_STRDUP(old_locale);
+	if (old_locale) {
+		/* Save it as it is in static storage. */
+		saved_locale = SMB_STRDUP(old_locale);
+	}
 
 	/* We set back the locale to C to get ASCII-compatible toupper/lower functions. */
 	setlocale(LC_ALL, "C");
@@ -139,8 +141,10 @@ void load_case_tables(void)
 
 #ifdef HAVE_SETLOCALE
 	/* Restore the old locale. */
-	setlocale (LC_ALL, saved_locale);
-	SAFE_FREE(saved_locale);
+	if (saved_locale) {
+		setlocale (LC_ALL, saved_locale);
+		SAFE_FREE(saved_locale);
+	}
 #endif
 }
 
