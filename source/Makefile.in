@@ -1648,7 +1648,7 @@ clean: delheaders python_clean
 		$(TOPFILES) $(BIN_PROGS) $(SBIN_PROGS) $(ROOT_SBIN_PROGS) \
 		$(MODULES) $(TORTURE_PROGS) $(LIBSMBCLIENT) \
 		$(LIBSMBSHAREMODES) $(EVERYTHING_PROGS) $(LIBMSRPC) \
-		.headers.stamp 
+		.headers.stamp */src/*.o */src/*.@PICSUFFIX@
 	-rm -rf t_dir
 
 # Making this target will just make sure that the prototype files
