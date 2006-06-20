@@ -2845,9 +2845,6 @@ void *talloc_check_name_abort(const void *ptr, const char *name)
 {
 	void *result;
 
-	if (ptr == NULL)
-		return NULL;
-
 	result = talloc_check_name(ptr, name);
 	if (result != NULL)
 		return result;
