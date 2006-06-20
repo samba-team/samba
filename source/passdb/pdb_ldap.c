@@ -1796,6 +1796,19 @@ static NTSTATUS ldapsam_update_sam_account(struct pdb_methods *my_methods, struc
 	ldap_mods_free(mods,True);
 	SAFE_FREE(dn);
 
+	/*
+	 * We need to set the backend private data to NULL here. For example
+	 * setuserinfo level 25 does a pdb_update_sam_account twice on the
+	 * same one, and with the explicit delete / add logic for attribute
+	 * values the second time we would use the wrong "old" value which
+	 * does not exist in LDAP anymore. Thus the LDAP server would refuse
+	 * the update.
+	 * The existing LDAPMessage is still being auto-freed by the
+	 * destructor.
+	 */
+	pdb_set_backend_private_data(newpwd, NULL, NULL, my_methods,
+				     PDB_CHANGED);
+
 	if (!NT_STATUS_IS_OK(ret)) {
 		return ret;
 	}
