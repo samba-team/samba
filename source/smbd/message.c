@@ -34,211 +34,210 @@ static fstring msgfrom;
 static fstring msgto;
 
 /****************************************************************************
-deliver the message
+ Deliver the message.
 ****************************************************************************/
+
 static void msg_deliver(void)
 {
-  pstring name;
-  int i;
-  int fd;
-  char *msg;
-  int len;
-  ssize_t sz;
+	pstring name;
+	int i;
+	int fd;
+	char *msg;
+	int len;
+	ssize_t sz;
 
-  if (! (*lp_msg_command()))
-    {
-      DEBUG(1,("no messaging command specified\n"));
-      msgpos = 0;
-      return;
-    }
+	if (! (*lp_msg_command())) {
+		DEBUG(1,("no messaging command specified\n"));
+		msgpos = 0;
+		return;
+	}
 
-  /* put it in a temporary file */
-  slprintf(name,sizeof(name)-1, "%s/msg.XXXXXX",tmpdir());
-  fd = smb_mkstemp(name);
+	/* put it in a temporary file */
+	slprintf(name,sizeof(name)-1, "%s/msg.XXXXXX",tmpdir());
+	fd = smb_mkstemp(name);
 
-  if (fd == -1) {
-    DEBUG(1,("can't open message file %s\n",name));
-    return;
-  }
+	if (fd == -1) {
+		DEBUG(1,("can't open message file %s\n",name));
+		return;
+	}
 
-  /*
-   * Incoming message is in DOS codepage format. Convert to UNIX.
-   */
+	/*
+	 * Incoming message is in DOS codepage format. Convert to UNIX.
+	 */
   
-  if ((len = (int)convert_string_allocate(NULL,CH_DOS, CH_UNIX, msgbuf, msgpos, (void **)(void *)&msg, True)) < 0 || !msg) {
-    DEBUG(3,("Conversion failed, delivering message in DOS codepage format\n"));
-    for (i = 0; i < msgpos;) {
-      if (msgbuf[i] == '\r' && i < (msgpos-1) && msgbuf[i+1] == '\n') {
-	i++; continue;
-      }
-      sz = write(fd, &msgbuf[i++], 1);
-      if ( sz != 1 ) {
-	DEBUG(0,("Write error to fd %d: %ld(%d)\n",fd, (long)sz, errno ));
-      }
-    }
-  } else {
-    for (i = 0; i < len;) {
-      if (msg[i] == '\r' && i < (len-1) && msg[i+1] == '\n') {
-	i++; continue;
-      }
-      sz = write(fd, &msg[i++],1);
-      if ( sz != 1 ) {
-	DEBUG(0,("Write error to fd %d: %ld(%d)\n",fd, (long)sz, errno ));
-      }
-    }
-    SAFE_FREE(msg);
-  }
-  close(fd);
+	if ((len = (int)convert_string_allocate(NULL,CH_DOS, CH_UNIX, msgbuf, msgpos, (void **)(void *)&msg, True)) < 0 || !msg) {
+		DEBUG(3,("Conversion failed, delivering message in DOS codepage format\n"));
+		for (i = 0; i < msgpos;) {
+			if (msgbuf[i] == '\r' && i < (msgpos-1) && msgbuf[i+1] == '\n') {
+				i++;
+				continue;
+			}
+			sz = write(fd, &msgbuf[i++], 1);
+			if ( sz != 1 ) {
+				DEBUG(0,("Write error to fd %d: %ld(%d)\n",fd, (long)sz, errno ));
+			}
+		}
+	} else {
+		for (i = 0; i < len;) {
+			if (msg[i] == '\r' && i < (len-1) && msg[i+1] == '\n') {
+				i++;
+				continue;
+			}
+			sz = write(fd, &msg[i++],1);
+			if ( sz != 1 ) {
+				DEBUG(0,("Write error to fd %d: %ld(%d)\n",fd, (long)sz, errno ));
+			}
+		}
+		SAFE_FREE(msg);
+	}
+	close(fd);
 
+	/* run the command */
+	if (*lp_msg_command()) {
+		fstring alpha_msgfrom;
+		fstring alpha_msgto;
+		pstring s;
 
-  /* run the command */
-  if (*lp_msg_command())
-    {
-      fstring alpha_msgfrom;
-      fstring alpha_msgto;
-      pstring s;
+		pstrcpy(s,lp_msg_command());
+		pstring_sub(s,"%f",alpha_strcpy(alpha_msgfrom,msgfrom,NULL,sizeof(alpha_msgfrom)));
+		pstring_sub(s,"%t",alpha_strcpy(alpha_msgto,msgto,NULL,sizeof(alpha_msgto)));
+		standard_sub_basic(current_user_info.smb_name, s, sizeof(s));
+		pstring_sub(s,"%s",name);
+		smbrun(s,NULL);
+	}
 
-      pstrcpy(s,lp_msg_command());
-      pstring_sub(s,"%f",alpha_strcpy(alpha_msgfrom,msgfrom,NULL,sizeof(alpha_msgfrom)));
-      pstring_sub(s,"%t",alpha_strcpy(alpha_msgto,msgto,NULL,sizeof(alpha_msgto)));
-      standard_sub_basic(current_user_info.smb_name, s, sizeof(s));
-      pstring_sub(s,"%s",name);
-      smbrun(s,NULL);
-    }
-
-  msgpos = 0;
+	msgpos = 0;
 }
 
-
-
 /****************************************************************************
-  reply to a sends
+ Reply to a sends.
+ conn POINTER CAN BE NULL HERE !
 ****************************************************************************/
-int reply_sends(connection_struct *conn,
-		char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
+
+int reply_sends(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 {
-  int len;
-  char *msg;
-  int outsize = 0;
-  char *p;
+	int len;
+	char *msg;
+	int outsize = 0;
+	char *p;
 
-  START_PROFILE(SMBsends);
+	START_PROFILE(SMBsends);
 
-  msgpos = 0;
+	msgpos = 0;
 
-  if (! (*lp_msg_command())) {
-    END_PROFILE(SMBsends);
-    return(ERROR_DOS(ERRSRV,ERRmsgoff));
-  }
+	if (! (*lp_msg_command())) {
+		END_PROFILE(SMBsends);
+		return(ERROR_DOS(ERRSRV,ERRmsgoff));
+	}
 
-  outsize = set_message(outbuf,0,0,True);
+	outsize = set_message(outbuf,0,0,True);
 
-  p = smb_buf(inbuf)+1;
-  p += srvstr_pull_buf(inbuf, msgfrom, p, sizeof(msgfrom), STR_ASCII|STR_TERMINATE) + 1;
-  p += srvstr_pull_buf(inbuf, msgto, p, sizeof(msgto), STR_ASCII|STR_TERMINATE) + 1;
+	p = smb_buf(inbuf)+1;
+	p += srvstr_pull_buf(inbuf, msgfrom, p, sizeof(msgfrom), STR_ASCII|STR_TERMINATE) + 1;
+	p += srvstr_pull_buf(inbuf, msgto, p, sizeof(msgto), STR_ASCII|STR_TERMINATE) + 1;
 
-  msg = p;
+	msg = p;
 
-  len = SVAL(msg,0);
-  len = MIN(len,sizeof(msgbuf)-msgpos);
+	len = SVAL(msg,0);
+	len = MIN(len,sizeof(msgbuf)-msgpos);
 
-  memset(msgbuf,'\0',sizeof(msgbuf));
+	memset(msgbuf,'\0',sizeof(msgbuf));
 
-  memcpy(&msgbuf[msgpos],msg+2,len);
-  msgpos += len;
+	memcpy(&msgbuf[msgpos],msg+2,len);
+	msgpos += len;
 
-  msg_deliver();
+	msg_deliver();
 
-  END_PROFILE(SMBsends);
-  return(outsize);
+	END_PROFILE(SMBsends);
+	return(outsize);
 }
 
-
 /****************************************************************************
-  reply to a sendstrt
+ Reply to a sendstrt.
+ conn POINTER CAN BE NULL HERE !
 ****************************************************************************/
-int reply_sendstrt(connection_struct *conn,
-		   char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
+
+int reply_sendstrt(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 {
-  int outsize = 0;
-  char *p;
+	int outsize = 0;
+	char *p;
 
-  START_PROFILE(SMBsendstrt);
+	START_PROFILE(SMBsendstrt);
 
-  if (! (*lp_msg_command())) {
-    END_PROFILE(SMBsendstrt);
-    return(ERROR_DOS(ERRSRV,ERRmsgoff));
-  }
+	if (! (*lp_msg_command())) {
+		END_PROFILE(SMBsendstrt);
+		return(ERROR_DOS(ERRSRV,ERRmsgoff));
+	}
 
-  outsize = set_message(outbuf,1,0,True);
+	outsize = set_message(outbuf,1,0,True);
 
-  memset(msgbuf,'\0',sizeof(msgbuf));
-  msgpos = 0;
+	memset(msgbuf,'\0',sizeof(msgbuf));
+	msgpos = 0;
 
-  p = smb_buf(inbuf)+1;
-  p += srvstr_pull_buf(inbuf, msgfrom, p, sizeof(msgfrom), STR_ASCII|STR_TERMINATE) + 1;
-  p += srvstr_pull_buf(inbuf, msgto, p, sizeof(msgto), STR_ASCII|STR_TERMINATE) + 1;
+	p = smb_buf(inbuf)+1;
+	p += srvstr_pull_buf(inbuf, msgfrom, p, sizeof(msgfrom), STR_ASCII|STR_TERMINATE) + 1;
+	p += srvstr_pull_buf(inbuf, msgto, p, sizeof(msgto), STR_ASCII|STR_TERMINATE) + 1;
 
-  DEBUG( 3, ( "SMBsendstrt (from %s to %s)\n", msgfrom, msgto ) );
+	DEBUG( 3, ( "SMBsendstrt (from %s to %s)\n", msgfrom, msgto ) );
 
-  END_PROFILE(SMBsendstrt);
-  return(outsize);
+	END_PROFILE(SMBsendstrt);
+	return(outsize);
 }
 
-
 /****************************************************************************
-  reply to a sendtxt
+ Reply to a sendtxt.
+ conn POINTER CAN BE NULL HERE !
 ****************************************************************************/
-int reply_sendtxt(connection_struct *conn,
-		  char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
+
+int reply_sendtxt(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 {
-  int len;
-  int outsize = 0;
-  char *msg;
-  START_PROFILE(SMBsendtxt);
+	int len;
+	int outsize = 0;
+	char *msg;
+	START_PROFILE(SMBsendtxt);
 
-  if (! (*lp_msg_command())) {
-    END_PROFILE(SMBsendtxt);
-    return(ERROR_DOS(ERRSRV,ERRmsgoff));
-  }
+	if (! (*lp_msg_command())) {
+		END_PROFILE(SMBsendtxt);
+		return(ERROR_DOS(ERRSRV,ERRmsgoff));
+	}
 
-  outsize = set_message(outbuf,0,0,True);
+	outsize = set_message(outbuf,0,0,True);
 
-  msg = smb_buf(inbuf) + 1;
+	msg = smb_buf(inbuf) + 1;
 
-  len = SVAL(msg,0);
-  len = MIN(len,sizeof(msgbuf)-msgpos);
+	len = SVAL(msg,0);
+	len = MIN(len,sizeof(msgbuf)-msgpos);
 
-  memcpy(&msgbuf[msgpos],msg+2,len);
-  msgpos += len;
+	memcpy(&msgbuf[msgpos],msg+2,len);
+	msgpos += len;
 
-  DEBUG( 3, ( "SMBsendtxt\n" ) );
+	DEBUG( 3, ( "SMBsendtxt\n" ) );
 
-  END_PROFILE(SMBsendtxt);
-  return(outsize);
+	END_PROFILE(SMBsendtxt);
+	return(outsize);
 }
 
-
 /****************************************************************************
-  reply to a sendend
+ Reply to a sendend.
+ conn POINTER CAN BE NULL HERE !
 ****************************************************************************/
-int reply_sendend(connection_struct *conn,
-		  char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
+
+int reply_sendend(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 {
-  int outsize = 0;
-  START_PROFILE(SMBsendend);
+	int outsize = 0;
+	START_PROFILE(SMBsendend);
 
-  if (! (*lp_msg_command())) {
-    END_PROFILE(SMBsendend);
-    return(ERROR_DOS(ERRSRV,ERRmsgoff));
-  }
+	if (! (*lp_msg_command())) {
+		END_PROFILE(SMBsendend);
+		return(ERROR_DOS(ERRSRV,ERRmsgoff));
+	}
 
-  outsize = set_message(outbuf,0,0,True);
+	outsize = set_message(outbuf,0,0,True);
 
-  DEBUG(3,("SMBsendend\n"));
+	DEBUG(3,("SMBsendend\n"));
 
-  msg_deliver();
+	msg_deliver();
 
-  END_PROFILE(SMBsendend);
-  return(outsize);
+	END_PROFILE(SMBsendend);
+	return(outsize);
 }

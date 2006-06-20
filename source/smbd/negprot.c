@@ -456,6 +456,7 @@ static const struct {
 
 /****************************************************************************
  Reply to a negprot.
+ conn POINTER CAN BE NULL HERE !
 ****************************************************************************/
 
 int reply_negprot(connection_struct *conn, 
