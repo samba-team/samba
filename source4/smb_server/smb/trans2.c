@@ -133,17 +133,19 @@ static size_t trans2_pull_blob_string(struct smbsrv_request *req,
 			       STR_NO_RANGE_CHECK | flags);
 }
 
+#define TRANS2_REQ_DEFAULT_STR_FLAGS(req) (((req)->flags2 & FLAGS2_UNICODE_STRINGS) ? STR_UNICODE : STR_ASCII)
+
 /*
   push a string into the data section of a trans2 request
   return the number of bytes consumed in the output
 */
-static size_t trans2_push_data_string(struct smbsrv_request *req,
-				      TALLOC_CTX *mem_ctx,
+static size_t trans2_push_data_string(TALLOC_CTX *mem_ctx,
 				      DATA_BLOB *blob,
 				      uint32_t len_offset,
 				      uint32_t offset,
-				      const struct smb_wire_string *str,
+				      const char *str,
 				      int dest_len,
+				      int default_flags,
 				      int flags)
 {
 	int alignment = 0, ret = 0, pkt_len;
@@ -151,7 +153,7 @@ static size_t trans2_push_data_string(struct smbsrv_request *req,
 	/* we use STR_NO_RANGE_CHECK because the params are allocated
 	   separately in a DATA_BLOB, so we need to do our own range
 	   checking */
-	if (!str->s || offset >= blob->length) {
+	if (!str || offset >= blob->length) {
 		if (flags & STR_LEN8BIT) {
 			SCVAL(blob->data, len_offset, 0);
 		} else {
@@ -167,17 +169,17 @@ static size_t trans2_push_data_string(struct smbsrv_request *req,
 	}
 
 	if (!(flags & (STR_ASCII|STR_UNICODE))) {
-		flags |= (req->flags2 & FLAGS2_UNICODE_STRINGS) ? STR_UNICODE : STR_ASCII;
+		flags |= default_flags;
 	}
 
 	if ((offset&1) && (flags & STR_UNICODE) && !(flags & STR_NOALIGN)) {
 		alignment = 1;
 		if (dest_len > 0) {
 			SCVAL(blob->data + offset, 0, 0);
-			ret = push_string(blob->data + offset + 1, str->s, dest_len-1, flags);
+			ret = push_string(blob->data + offset + 1, str, dest_len-1, flags);
 		}
 	} else {
-		ret = push_string(blob->data + offset, str->s, dest_len, flags);
+		ret = push_string(blob->data + offset, str, dest_len, flags);
 	}
 
 	/* sometimes the string needs to be terminated, but the length
@@ -207,11 +209,11 @@ static size_t trans2_push_data_string(struct smbsrv_request *req,
   len_offset points to the place in the packet where the length field
   should go
 */
-static NTSTATUS trans2_append_data_string(struct smbsrv_request *req, 
-					  TALLOC_CTX *mem_ctx,
+static NTSTATUS trans2_append_data_string(TALLOC_CTX *mem_ctx,
 					  DATA_BLOB *blob,
-					  const struct smb_wire_string *str,
+					  const char *str,
 					  uint_t len_offset,
+					  int default_flags,
 					  int flags)
 {
 	size_t ret;
@@ -219,8 +221,8 @@ static NTSTATUS trans2_append_data_string(struct smbsrv_request *req,
 	const int max_bytes_per_char = 3;
 
 	offset = blob->length;
-	TRANS2_CHECK(trans2_grow_data(mem_ctx, blob, offset + (2+strlen_m(str->s))*max_bytes_per_char));
-	ret = trans2_push_data_string(req, mem_ctx, blob, len_offset, offset, str, -1, flags);
+	TRANS2_CHECK(trans2_grow_data(mem_ctx, blob, offset + (2+strlen_m(str))*max_bytes_per_char));
+	ret = trans2_push_data_string(mem_ctx, blob, len_offset, offset, str, -1, default_flags, flags);
 	if (ret < 0) {
 		return NT_STATUS_FOOBAR;
 	}
@@ -265,9 +267,10 @@ static NTSTATUS trans2_push_fsinfo(struct smbsrv_request *req,
 		SIVAL(blob->data,       0, fsinfo->volume.out.serial_number);
 		/* w2k3 implements this incorrectly for unicode - it
 		 * leaves the last byte off the string */
-		TRANS2_CHECK(trans2_append_data_string(req, mem_ctx, blob,
-						       &fsinfo->volume.out.volume_name, 
-						       4, STR_LEN8BIT|STR_NOALIGN));
+		TRANS2_CHECK(trans2_append_data_string(mem_ctx, blob,
+						       fsinfo->volume.out.volume_name.s,
+						       4, TRANS2_REQ_DEFAULT_STR_FLAGS(req),
+						       STR_LEN8BIT|STR_NOALIGN));
 
 		return NT_STATUS_OK;
 
@@ -278,9 +281,10 @@ static NTSTATUS trans2_push_fsinfo(struct smbsrv_request *req,
 		push_nttime(blob->data, 0, fsinfo->volume_info.out.create_time);
 		SIVAL(blob->data,       8, fsinfo->volume_info.out.serial_number);
 		SSVAL(blob->data,      16, 0); /* padding */
-		TRANS2_CHECK(trans2_append_data_string(req, mem_ctx, blob,
-						       &fsinfo->volume_info.out.volume_name, 
-						       12, STR_UNICODE));
+		TRANS2_CHECK(trans2_append_data_string(mem_ctx, blob,
+						       fsinfo->volume_info.out.volume_name.s, 
+						       12, TRANS2_REQ_DEFAULT_STR_FLAGS(req),
+						       STR_UNICODE));
 
 		return NT_STATUS_OK;
 
@@ -313,9 +317,10 @@ static NTSTATUS trans2_push_fsinfo(struct smbsrv_request *req,
 		/* this must not be null terminated or win98 gets
 		   confused!  also note that w2k3 returns this as
 		   unicode even when ascii is negotiated */
-		TRANS2_CHECK(trans2_append_data_string(req, mem_ctx, blob,
-						       &fsinfo->attribute_info.out.fs_type,
-						       8, STR_UNICODE));
+		TRANS2_CHECK(trans2_append_data_string(mem_ctx, blob,
+						       fsinfo->attribute_info.out.fs_type.s,
+						       8, TRANS2_REQ_DEFAULT_STR_FLAGS(req),
+						       STR_UNICODE));
 		return NT_STATUS_OK;
 
 
@@ -740,27 +745,30 @@ static NTSTATUS trans2_push_fileinfo(struct smbsrv_request *req,
 		SCVAL(blob->data,       61, st->all_info.out.directory);
 		SSVAL(blob->data,       62, 0); /* padding */
 		SIVAL(blob->data,       64, st->all_info.out.ea_size);
-		TRANS2_CHECK(trans2_append_data_string(req, mem_ctx, blob,
-						       &st->all_info.out.fname,
-						       68, STR_UNICODE));
+		TRANS2_CHECK(trans2_append_data_string(mem_ctx, blob,
+						       st->all_info.out.fname.s,
+						       68, TRANS2_REQ_DEFAULT_STR_FLAGS(req),
+						       STR_UNICODE));
 		return NT_STATUS_OK;
 
 	case RAW_FILEINFO_NAME_INFO:
 	case RAW_FILEINFO_NAME_INFORMATION:
 		TRANS2_CHECK(trans2_grow_data(mem_ctx, blob, 4));
 
-		TRANS2_CHECK(trans2_append_data_string(req, mem_ctx, blob,
-						       &st->name_info.out.fname,
-						       0, STR_UNICODE));
+		TRANS2_CHECK(trans2_append_data_string(mem_ctx, blob,
+						       st->name_info.out.fname.s,
+						       0, TRANS2_REQ_DEFAULT_STR_FLAGS(req),
+						       STR_UNICODE));
 		return NT_STATUS_OK;
 
 	case RAW_FILEINFO_ALT_NAME_INFO:
 	case RAW_FILEINFO_ALT_NAME_INFORMATION:
 		TRANS2_CHECK(trans2_grow_data(mem_ctx, blob, 4));
 
-		TRANS2_CHECK(trans2_append_data_string(req, mem_ctx, blob, 
-						       &st->alt_name_info.out.fname,
-						       0, STR_UNICODE));
+		TRANS2_CHECK(trans2_append_data_string(mem_ctx, blob, 
+						       st->alt_name_info.out.fname.s,
+						       0, TRANS2_REQ_DEFAULT_STR_FLAGS(req),
+						       STR_UNICODE));
 		return NT_STATUS_OK;
 
 	case RAW_FILEINFO_STREAM_INFO:
@@ -773,9 +781,10 @@ static NTSTATUS trans2_push_fileinfo(struct smbsrv_request *req,
 			data = blob->data + data_size;
 			SBVAL(data,  8, st->stream_info.out.streams[i].size);
 			SBVAL(data, 16, st->stream_info.out.streams[i].alloc_size);
-			TRANS2_CHECK(trans2_append_data_string(req, mem_ctx, blob,
-							       &st->stream_info.out.streams[i].stream_name,
-							       data_size + 4, STR_UNICODE));
+			TRANS2_CHECK(trans2_append_data_string(mem_ctx, blob,
+							       st->stream_info.out.streams[i].stream_name.s,
+							       data_size + 4, TRANS2_REQ_DEFAULT_STR_FLAGS(req),
+							       STR_UNICODE));
 			if (i == st->stream_info.out.num_streams - 1) {
 				SIVAL(blob->data, data_size, 0);
 			} else {
@@ -1137,8 +1146,9 @@ static BOOL find_fill_info(struct find_state *state,
 		SIVAL(data, 12, file->standard.size);
 		SIVAL(data, 16, file->standard.alloc_size);
 		SSVAL(data, 20, file->standard.attrib);
-		trans2_append_data_string(req, trans, &trans->out.data, &file->standard.name, 
-					  ofs + 22, STR_LEN8BIT | STR_TERMINATE | STR_LEN_NOTERM);
+		trans2_append_data_string(trans, &trans->out.data, file->standard.name.s, 
+					  ofs + 22, TRANS2_REQ_DEFAULT_STR_FLAGS(req),
+					  STR_LEN8BIT | STR_TERMINATE | STR_LEN_NOTERM);
 		break;
 
 	case RAW_SEARCH_EA_SIZE:
@@ -1157,8 +1167,9 @@ static BOOL find_fill_info(struct find_state *state,
 		SIVAL(data, 16, file->ea_size.alloc_size);
 		SSVAL(data, 20, file->ea_size.attrib);
 		SIVAL(data, 22, file->ea_size.ea_size);
-		trans2_append_data_string(req, trans, &trans->out.data, &file->ea_size.name, 
-					  ofs + 26, STR_LEN8BIT | STR_NOALIGN);
+		trans2_append_data_string(trans, &trans->out.data, file->ea_size.name.s, 
+					  ofs + 26, TRANS2_REQ_DEFAULT_STR_FLAGS(req),
+					  STR_LEN8BIT | STR_NOALIGN);
 		trans2_grow_data(trans, &trans->out.data, trans->out.data.length + 1);
 		trans->out.data.data[trans->out.data.length-1] = 0;
 		break;
@@ -1184,8 +1195,9 @@ static BOOL find_fill_info(struct find_state *state,
 		SIVAL(data, 16, file->ea_list.alloc_size);
 		SSVAL(data, 20, file->ea_list.attrib);
 		ea_put_list(data+22, file->ea_list.eas.num_eas, file->ea_list.eas.eas);
-		trans2_append_data_string(req, trans, &trans->out.data, &file->ea_list.name, 
-					  ofs + 22 + ea_size, STR_LEN8BIT | STR_NOALIGN);
+		trans2_append_data_string(trans, &trans->out.data, file->ea_list.name.s, 
+					  ofs + 22 + ea_size, TRANS2_REQ_DEFAULT_STR_FLAGS(req),
+					  STR_LEN8BIT | STR_NOALIGN);
 		trans2_grow_data(trans, &trans->out.data, trans->out.data.length + 1);
 		trans->out.data.data[trans->out.data.length-1] = 0;
 		break;
@@ -1201,8 +1213,9 @@ static BOOL find_fill_info(struct find_state *state,
 		SBVAL(data,         40, file->directory_info.size);
 		SBVAL(data,         48, file->directory_info.alloc_size);
 		SIVAL(data,         56, file->directory_info.attrib);
-		trans2_append_data_string(req, trans, &trans->out.data, &file->directory_info.name, 
-					  ofs + 60, STR_TERMINATE_ASCII);
+		trans2_append_data_string(trans, &trans->out.data, file->directory_info.name.s, 
+					  ofs + 60, TRANS2_REQ_DEFAULT_STR_FLAGS(req),
+					  STR_TERMINATE_ASCII);
 		data = trans->out.data.data + ofs;
 		SIVAL(data,          0, trans->out.data.length - ofs);
 		break;
@@ -1219,8 +1232,9 @@ static BOOL find_fill_info(struct find_state *state,
 		SBVAL(data,         48, file->full_directory_info.alloc_size);
 		SIVAL(data,         56, file->full_directory_info.attrib);
 		SIVAL(data,         64, file->full_directory_info.ea_size);
-		trans2_append_data_string(req, trans, &trans->out.data, &file->full_directory_info.name, 
-					  ofs + 60, STR_TERMINATE_ASCII);
+		trans2_append_data_string(trans, &trans->out.data, file->full_directory_info.name.s, 
+					  ofs + 60, TRANS2_REQ_DEFAULT_STR_FLAGS(req),
+					  STR_TERMINATE_ASCII);
 		data = trans->out.data.data + ofs;
 		SIVAL(data,          0, trans->out.data.length - ofs);
 		break;
@@ -1229,8 +1243,9 @@ static BOOL find_fill_info(struct find_state *state,
 		trans2_grow_data(trans, &trans->out.data, ofs + 12);
 		data = trans->out.data.data + ofs;
 		SIVAL(data,          4, file->name_info.file_index);
-		trans2_append_data_string(req, trans, &trans->out.data, &file->name_info.name, 
-					  ofs + 8, STR_TERMINATE_ASCII);
+		trans2_append_data_string(trans, &trans->out.data, file->name_info.name.s, 
+					  ofs + 8, TRANS2_REQ_DEFAULT_STR_FLAGS(req),
+					  STR_TERMINATE_ASCII);
 		data = trans->out.data.data + ofs;
 		SIVAL(data,          0, trans->out.data.length - ofs);
 		break;
@@ -1249,12 +1264,14 @@ static BOOL find_fill_info(struct find_state *state,
 		SIVAL(data,         64, file->both_directory_info.ea_size);
 		SCVAL(data,         69, 0); /* reserved */
 		memset(data+70,0,24);
-		trans2_push_data_string(req, trans, &trans->out.data, 
+		trans2_push_data_string(trans, &trans->out.data, 
 					68 + ofs, 70 + ofs, 
-					&file->both_directory_info.short_name, 
-					24, STR_UNICODE | STR_LEN8BIT);
-		trans2_append_data_string(req, trans, &trans->out.data, &file->both_directory_info.name, 
-					  ofs + 60, STR_TERMINATE_ASCII);
+					file->both_directory_info.short_name.s, 
+					24, TRANS2_REQ_DEFAULT_STR_FLAGS(req),
+					STR_UNICODE | STR_LEN8BIT);
+		trans2_append_data_string(trans, &trans->out.data, file->both_directory_info.name.s, 
+					  ofs + 60, TRANS2_REQ_DEFAULT_STR_FLAGS(req),
+					  STR_TERMINATE_ASCII);
 		trans2_align_data(trans);
 		data = trans->out.data.data + ofs;
 		SIVAL(data,          0, trans->out.data.length - ofs);
@@ -1274,8 +1291,9 @@ static BOOL find_fill_info(struct find_state *state,
 		SIVAL(data,         64, file->id_full_directory_info.ea_size);
 		SIVAL(data,         68, 0); /* padding */
 		SBVAL(data,         72, file->id_full_directory_info.file_id);
-		trans2_append_data_string(req, trans, &trans->out.data, &file->id_full_directory_info.name, 
-					  ofs + 60, STR_TERMINATE_ASCII);
+		trans2_append_data_string(trans, &trans->out.data, file->id_full_directory_info.name.s, 
+					  ofs + 60, TRANS2_REQ_DEFAULT_STR_FLAGS(req),
+					  STR_TERMINATE_ASCII);
 		data = trans->out.data.data + ofs;
 		SIVAL(data,          0, trans->out.data.length - ofs);
 		break;
@@ -1294,13 +1312,15 @@ static BOOL find_fill_info(struct find_state *state,
 		SIVAL(data,         64, file->id_both_directory_info.ea_size);
 		SCVAL(data,         69, 0); /* reserved */
 		memset(data+70,0,26);
-		trans2_push_data_string(req, trans, &trans->out.data, 
+		trans2_push_data_string(trans, &trans->out.data, 
 					68 + ofs, 70 + ofs, 
-					&file->id_both_directory_info.short_name, 
-					24, STR_UNICODE | STR_LEN8BIT);
+					file->id_both_directory_info.short_name.s, 
+					24, TRANS2_REQ_DEFAULT_STR_FLAGS(req),
+					STR_UNICODE | STR_LEN8BIT);
 		SBVAL(data,         96, file->id_both_directory_info.file_id);
-		trans2_append_data_string(req, trans, &trans->out.data, &file->id_both_directory_info.name, 
-					  ofs + 60, STR_TERMINATE_ASCII);
+		trans2_append_data_string(trans, &trans->out.data, file->id_both_directory_info.name.s, 
+					  ofs + 60, TRANS2_REQ_DEFAULT_STR_FLAGS(req),
+					  STR_TERMINATE_ASCII);
 		data = trans->out.data.data + ofs;
 		SIVAL(data,          0, trans->out.data.length - ofs);
 		break;
