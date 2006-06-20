@@ -515,7 +515,7 @@ static void commit_parameters(int snum)
 
 	while ((parm = lp_next_parameter(snum, &i, 1))) {
 		slprintf(label, sizeof(label)-1, "parm_%s", make_parm_name(parm->label));
-		if ((v = cgi_variable(label))) {
+		if ((v = cgi_variable(label)) != NULL) {
 			if (parm->flags & FLAG_HIDE) continue;
 			commit_parameter(snum, parm, v); 
 		}
@@ -678,10 +678,10 @@ static void wizard_page(void)
 	}
 
 	if (cgi_variable("Commit")){
-		SerType = atoi(cgi_variable("ServerType"));
-		winstype = atoi(cgi_variable("WINSType"));
+		SerType = atoi(cgi_variable_nonull("ServerType"));
+		winstype = atoi(cgi_variable_nonull("WINSType"));
 		have_home = lp_servicenumber(HOMES_NAME);
-		HomeExpo = atoi(cgi_variable("HomeExpo"));
+		HomeExpo = atoi(cgi_variable_nonull("HomeExpo"));
 
 		/* Plain text passwords are too badly broken - use encrypted passwords only */
 		lp_do_parameter( GLOBAL_SECTION_SNUM, "encrypt passwords", "Yes");
@@ -714,7 +714,7 @@ static void wizard_page(void)
 				break;
 			case 2:
 				lp_do_parameter( GLOBAL_SECTION_SNUM, "wins support", "No" );
-				lp_do_parameter( GLOBAL_SECTION_SNUM, "wins server", cgi_variable("WINSAddr"));
+				lp_do_parameter( GLOBAL_SECTION_SNUM, "wins server", cgi_variable_nonull("WINSAddr"));
 				break;
 		}
 
@@ -839,7 +839,7 @@ static void globals_page(void)
 	}
 
 	if ( cgi_variable("ViewMode") )
-		mode = atoi(cgi_variable("ViewMode"));
+		mode = atoi(cgi_variable_nonull("ViewMode"));
 	if ( cgi_variable("BasicMode"))
 		mode = 0;
 	if ( cgi_variable("AdvMode"))
@@ -915,7 +915,7 @@ static void shares_page(void)
 	printf("<table>\n");
 
 	if ( cgi_variable("ViewMode") )
-		mode = atoi(cgi_variable("ViewMode"));
+		mode = atoi(cgi_variable_nonull("ViewMode"));
 	if ( cgi_variable("BasicMode"))
 		mode = 0;
 	if ( cgi_variable("AdvMode"))
@@ -1029,7 +1029,7 @@ static void chg_passwd(void)
 	int local_flags = 0;
 
 	/* Make sure users name has been specified */
-	if (strlen(cgi_variable(SWAT_USER)) == 0) {
+	if (strlen(cgi_variable_nonull(SWAT_USER)) == 0) {
 		printf("<p>%s\n", _(" Must specify \"User Name\" "));
 		return;
 	}
@@ -1044,27 +1044,27 @@ static void chg_passwd(void)
 		 * If current user is not root, make sure old password has been specified 
 		 * If REMOTE change, even root must provide old password 
 		 */
-		if (((!am_root()) && (strlen( cgi_variable(OLD_PSWD)) <= 0)) ||
-		    ((cgi_variable(CHG_R_PASSWD_FLAG)) &&  (strlen( cgi_variable(OLD_PSWD)) <= 0))) {
+		if (((!am_root()) && (strlen( cgi_variable_nonull(OLD_PSWD)) <= 0)) ||
+		    ((cgi_variable(CHG_R_PASSWD_FLAG)) &&  (strlen( cgi_variable_nonull(OLD_PSWD)) <= 0))) {
 			printf("<p>%s\n", _(" Must specify \"Old Password\" "));
 			return;
 		}
 
 		/* If changing a users password on a remote hosts we have to know what host */
-		if ((cgi_variable(CHG_R_PASSWD_FLAG)) && (strlen( cgi_variable(RHOST)) <= 0)) {
+		if ((cgi_variable(CHG_R_PASSWD_FLAG)) && (strlen( cgi_variable_nonull(RHOST)) <= 0)) {
 			printf("<p>%s\n", _(" Must specify \"Remote Machine\" "));
 			return;
 		}
 
 		/* Make sure new passwords have been specified */
-		if ((strlen( cgi_variable(NEW_PSWD)) <= 0) ||
-		    (strlen( cgi_variable(NEW2_PSWD)) <= 0)) {
+		if ((strlen( cgi_variable_nonull(NEW_PSWD)) <= 0) ||
+		    (strlen( cgi_variable_nonull(NEW2_PSWD)) <= 0)) {
 			printf("<p>%s\n", _(" Must specify \"New, and Re-typed Passwords\" "));
 			return;
 		}
 
 		/* Make sure new passwords was typed correctly twice */
-		if (strcmp(cgi_variable(NEW_PSWD), cgi_variable(NEW2_PSWD)) != 0) {
+		if (strcmp(cgi_variable_nonull(NEW_PSWD), cgi_variable_nonull(NEW2_PSWD)) != 0) {
 			printf("<p>%s\n", _(" Re-typed password didn't match new password "));
 			return;
 		}
@@ -1091,17 +1091,17 @@ static void chg_passwd(void)
 	
 
 	rslt = change_password(host,
-			       cgi_variable(SWAT_USER),
-			       cgi_variable(OLD_PSWD), cgi_variable(NEW_PSWD),
+			       cgi_variable_nonull(SWAT_USER),
+			       cgi_variable_nonull(OLD_PSWD), cgi_variable_nonull(NEW_PSWD),
 				   local_flags);
 
 	if(cgi_variable(CHG_S_PASSWD_FLAG)) {
 		printf("<p>");
 		if (rslt == True) {
-			printf(_(" The passwd for '%s' has been changed."), cgi_variable(SWAT_USER));
+			printf(_(" The passwd for '%s' has been changed."), cgi_variable_nonull(SWAT_USER));
 			printf("\n");
 		} else {
-			printf(_(" The passwd for '%s' has NOT been changed."), cgi_variable(SWAT_USER));
+			printf(_(" The passwd for '%s' has NOT been changed."), cgi_variable_nonull(SWAT_USER));
 			printf("\n");
 		}
 	}
@@ -1121,7 +1121,7 @@ static void passwd_page(void)
 	 * changed the User box text to another users name, remember it.
 	 */
 	if (cgi_variable(SWAT_USER)) {
-		new_name = cgi_variable(SWAT_USER);
+		new_name = cgi_variable_nonull(SWAT_USER);
 	} 
 
 	if (!new_name) new_name = "";
@@ -1265,7 +1265,7 @@ static void printers_page(void)
 	printf("<FORM name=\"swatform\" method=post>\n");
 
 	if ( cgi_variable("ViewMode") )
-		mode = atoi(cgi_variable("ViewMode"));
+		mode = atoi(cgi_variable_nonull("ViewMode"));
         if ( cgi_variable("BasicMode"))
                 mode = 0;
         if ( cgi_variable("AdvMode"))
