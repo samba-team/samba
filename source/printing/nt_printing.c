@@ -2770,6 +2770,8 @@ int get_printer_subkeys( NT_PRINTER_DATA *data, const char* key, fstring **subke
 	fstring	*subkeys_ptr = NULL;
 	fstring subkeyname;
 	
+	*subkeys = NULL;
+
 	if ( !data )
 		return 0;
 
