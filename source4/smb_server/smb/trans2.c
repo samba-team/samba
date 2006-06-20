@@ -241,10 +241,11 @@ static NTSTATUS trans2_align_data(struct smb_trans2 *trans)
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS trans2_push_fsinfo(struct smbsrv_request *req,
-				   union smb_fsinfo *fsinfo,
+static NTSTATUS trans2_push_fsinfo(struct smbsrv_connection *smb_conn,
 				   TALLOC_CTX *mem_ctx,
-				   DATA_BLOB *blob)
+				   DATA_BLOB *blob,
+				   union smb_fsinfo *fsinfo,
+				   int default_str_flags)
 {
 	uint_t i;
 	DATA_BLOB guid_blob;
@@ -269,7 +270,7 @@ static NTSTATUS trans2_push_fsinfo(struct smbsrv_request *req,
 		 * leaves the last byte off the string */
 		TRANS2_CHECK(trans2_append_data_string(mem_ctx, blob,
 						       fsinfo->volume.out.volume_name.s,
-						       4, TRANS2_REQ_DEFAULT_STR_FLAGS(req),
+						       4, default_str_flags,
 						       STR_LEN8BIT|STR_NOALIGN));
 
 		return NT_STATUS_OK;
@@ -283,7 +284,7 @@ static NTSTATUS trans2_push_fsinfo(struct smbsrv_request *req,
 		SSVAL(blob->data,      16, 0); /* padding */
 		TRANS2_CHECK(trans2_append_data_string(mem_ctx, blob,
 						       fsinfo->volume_info.out.volume_name.s, 
-						       12, TRANS2_REQ_DEFAULT_STR_FLAGS(req),
+						       12, default_str_flags,
 						       STR_UNICODE));
 
 		return NT_STATUS_OK;
@@ -319,7 +320,7 @@ static NTSTATUS trans2_push_fsinfo(struct smbsrv_request *req,
 		   unicode even when ascii is negotiated */
 		TRANS2_CHECK(trans2_append_data_string(mem_ctx, blob,
 						       fsinfo->attribute_info.out.fs_type.s,
-						       8, TRANS2_REQ_DEFAULT_STR_FLAGS(req),
+						       8, default_str_flags,
 						       STR_UNICODE));
 		return NT_STATUS_OK;
 
@@ -379,7 +380,9 @@ static NTSTATUS trans2_qfsinfo_send(struct trans_op *op)
 
 	TRANS2_CHECK(trans2_setup_reply(trans, 0, 0, 0));
 
-	TRANS2_CHECK(trans2_push_fsinfo(req, fsinfo, trans, &trans->out.data));
+	TRANS2_CHECK(trans2_push_fsinfo(req->smb_conn, trans,
+					&trans->out.data, fsinfo,
+					TRANS2_REQ_DEFAULT_STR_FLAGS(req)));
 
 	return NT_STATUS_OK;
 }
@@ -573,10 +576,11 @@ static NTSTATUS trans2_mkdir(struct smbsrv_request *req, struct trans_op *op)
 	return ntvfs_mkdir(req->ntvfs, io);
 }
 
-static NTSTATUS trans2_push_fileinfo(struct smbsrv_request *req,
-				     union smb_fileinfo *st,
+static NTSTATUS trans2_push_fileinfo(struct smbsrv_connection *smb_conn,
 				     TALLOC_CTX *mem_ctx,
-				     DATA_BLOB *blob)
+				     DATA_BLOB *blob,
+				     union smb_fileinfo *st,
+				     int default_str_flags)
 {
 	uint_t i;
 	uint32_t list_size;
@@ -604,9 +608,9 @@ static NTSTATUS trans2_push_fileinfo(struct smbsrv_request *req,
 	case RAW_FILEINFO_STANDARD:
 		TRANS2_CHECK(trans2_grow_data(mem_ctx, blob, 22));
 
-		srv_push_dos_date2(req->smb_conn, blob->data, 0, st->standard.out.create_time);
-		srv_push_dos_date2(req->smb_conn, blob->data, 4, st->standard.out.access_time);
-		srv_push_dos_date2(req->smb_conn, blob->data, 8, st->standard.out.write_time);
+		srv_push_dos_date2(smb_conn, blob->data, 0, st->standard.out.create_time);
+		srv_push_dos_date2(smb_conn, blob->data, 4, st->standard.out.access_time);
+		srv_push_dos_date2(smb_conn, blob->data, 8, st->standard.out.write_time);
 		SIVAL(blob->data,        12, st->standard.out.size);
 		SIVAL(blob->data,        16, st->standard.out.alloc_size);
 		SSVAL(blob->data,        20, st->standard.out.attrib);
@@ -615,9 +619,9 @@ static NTSTATUS trans2_push_fileinfo(struct smbsrv_request *req,
 	case RAW_FILEINFO_EA_SIZE:
 		TRANS2_CHECK(trans2_grow_data(mem_ctx, blob, 26));
 
-		srv_push_dos_date2(req->smb_conn, blob->data, 0, st->ea_size.out.create_time);
-		srv_push_dos_date2(req->smb_conn, blob->data, 4, st->ea_size.out.access_time);
-		srv_push_dos_date2(req->smb_conn, blob->data, 8, st->ea_size.out.write_time);
+		srv_push_dos_date2(smb_conn, blob->data, 0, st->ea_size.out.create_time);
+		srv_push_dos_date2(smb_conn, blob->data, 4, st->ea_size.out.access_time);
+		srv_push_dos_date2(smb_conn, blob->data, 8, st->ea_size.out.write_time);
 		SIVAL(blob->data,        12, st->ea_size.out.size);
 		SIVAL(blob->data,        16, st->ea_size.out.alloc_size);
 		SSVAL(blob->data,        20, st->ea_size.out.attrib);
@@ -747,7 +751,7 @@ static NTSTATUS trans2_push_fileinfo(struct smbsrv_request *req,
 		SIVAL(blob->data,       64, st->all_info.out.ea_size);
 		TRANS2_CHECK(trans2_append_data_string(mem_ctx, blob,
 						       st->all_info.out.fname.s,
-						       68, TRANS2_REQ_DEFAULT_STR_FLAGS(req),
+						       68, default_str_flags,
 						       STR_UNICODE));
 		return NT_STATUS_OK;
 
@@ -757,7 +761,7 @@ static NTSTATUS trans2_push_fileinfo(struct smbsrv_request *req,
 
 		TRANS2_CHECK(trans2_append_data_string(mem_ctx, blob,
 						       st->name_info.out.fname.s,
-						       0, TRANS2_REQ_DEFAULT_STR_FLAGS(req),
+						       0, default_str_flags,
 						       STR_UNICODE));
 		return NT_STATUS_OK;
 
@@ -767,7 +771,7 @@ static NTSTATUS trans2_push_fileinfo(struct smbsrv_request *req,
 
 		TRANS2_CHECK(trans2_append_data_string(mem_ctx, blob, 
 						       st->alt_name_info.out.fname.s,
-						       0, TRANS2_REQ_DEFAULT_STR_FLAGS(req),
+						       0, default_str_flags,
 						       STR_UNICODE));
 		return NT_STATUS_OK;
 
@@ -783,7 +787,7 @@ static NTSTATUS trans2_push_fileinfo(struct smbsrv_request *req,
 			SBVAL(data, 16, st->stream_info.out.streams[i].alloc_size);
 			TRANS2_CHECK(trans2_append_data_string(mem_ctx, blob,
 							       st->stream_info.out.streams[i].stream_name.s,
-							       data_size + 4, TRANS2_REQ_DEFAULT_STR_FLAGS(req),
+							       data_size + 4, default_str_flags,
 							       STR_UNICODE));
 			if (i == st->stream_info.out.num_streams - 1) {
 				SIVAL(blob->data, data_size, 0);
@@ -821,7 +825,9 @@ static NTSTATUS trans2_fileinfo_send(struct trans_op *op)
 	TRANS2_CHECK(trans2_setup_reply(trans, 2, 0, 0));
 	SSVAL(trans->out.params.data, 0, 0);
 
-	TRANS2_CHECK(trans2_push_fileinfo(req, st, trans, &trans->out.data));
+	TRANS2_CHECK(trans2_push_fileinfo(req->smb_conn, trans,
+					  &trans->out.data, st,
+					  TRANS2_REQ_DEFAULT_STR_FLAGS(req)));
 
 	return NT_STATUS_OK;
 }
