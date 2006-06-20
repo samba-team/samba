@@ -566,10 +566,10 @@ are used by some brain-dead clients when printing, and I don't want to
 force write permissions on print services.
 */
 #define AS_USER (1<<0)
-#define NEED_WRITE (1<<1)
+#define NEED_WRITE (1<<1) /* Must be paired with AS_USER */
 #define TIME_INIT (1<<2)
-#define CAN_IPC (1<<3)
-#define AS_GUEST (1<<5)
+#define CAN_IPC (1<<3) /* Must be paired with AS_USER */
+#define AS_GUEST (1<<5) /* Must *NOT* be paired with AS_USER */
 #define DO_CHDIR (1<<6)
 
 /* 
@@ -930,48 +930,46 @@ static int switch_message(int type,char *inbuf,char *outbuf,int size,int bufsize
 			user_struct *vuser = NULL;
 
 			last_session_tag = session_tag;
-			if(session_tag != UID_FIELD_INVALID)
+			if(session_tag != UID_FIELD_INVALID) {
 				vuser = get_valid_user_struct(session_tag);           
-			if(vuser != NULL)
-				set_current_user_info(&vuser->user);
-		}
-
-		/* does this protocol need to be run as root? */
-		if (!(flags & AS_USER))
-			change_to_root_user();
-
-		/* does this protocol need a valid tree connection? */
-		if ((flags & AS_USER) && !conn) {
-			/* Amazingly, the error code depends on the command (from Samba4). */
-			if (type == SMBntcreateX) {
-				return ERROR_NT(NT_STATUS_INVALID_HANDLE);
-			} else {
-				return ERROR_DOS(ERRSRV, ERRinvnid);
+				if (vuser) {
+					set_current_user_info(&vuser->user);
+				}
 			}
 		}
 
+		/* Does this call need to be run as the connected user? */
+		if (flags & AS_USER) {
 
-		/* does this protocol need to be run as the connected user? */
-		if ((flags & AS_USER) && !change_to_user(conn,session_tag)) {
-			if (flags & AS_GUEST) 
-				flags &= ~AS_USER;
-			else
+			/* Does this call need a valid tree connection? */
+			if (!conn) {
+				/* Amazingly, the error code depends on the command (from Samba4). */
+				if (type == SMBntcreateX) {
+					return ERROR_NT(NT_STATUS_INVALID_HANDLE);
+				} else {
+					return ERROR_DOS(ERRSRV, ERRinvnid);
+				}
+			}
+
+			if (!change_to_user(conn,session_tag)) {
 				return(ERROR_NT(NT_STATUS_DOS(ERRSRV,ERRbaduid)));
+			}
+
+			/* All NEED_WRITE and CAN_IPC flags must also have AS_USER. */
+
+			/* Does it need write permission? */
+			if ((flags & NEED_WRITE) && !CAN_WRITE(conn)) {
+				return(ERROR_DOS(ERRSRV,ERRaccess));
+			}
+
+			/* IPC services are limited */
+			if (IS_IPC(conn) && !(flags & CAN_IPC)) {
+				return(ERROR_DOS(ERRSRV,ERRaccess));
+			}
+		} else {
+			/* This call needs to be run as root */
+			change_to_root_user();
 		}
-
-		/* this code is to work around a bug is MS client 3 without
-			introducing a security hole - it needs to be able to do
-			print queue checks as guest if it isn't logged in properly */
-		if (flags & AS_USER)
-			flags &= ~AS_GUEST;
-
-		/* does it need write permission? */
-		if ((flags & NEED_WRITE) && !CAN_WRITE(conn))
-			return(ERROR_DOS(ERRSRV,ERRaccess));
-
-		/* ipc services are limited */
-		if (IS_IPC(conn) && (flags & AS_USER) && !(flags & CAN_IPC))
-			return(ERROR_DOS(ERRSRV,ERRaccess));	    
 
 		/* load service specific parameters */
 		if (conn) {
@@ -983,8 +981,9 @@ static int switch_message(int type,char *inbuf,char *outbuf,int size,int bufsize
 
 		/* does this protocol need to be run as guest? */
 		if ((flags & AS_GUEST) && (!change_to_guest() || 
-				!check_access(smbd_server_fd(), lp_hostsallow(-1), lp_hostsdeny(-1))))
+				!check_access(smbd_server_fd(), lp_hostsallow(-1), lp_hostsdeny(-1)))) {
 			return(ERROR_DOS(ERRSRV,ERRaccess));
+		}
 
 		current_inbuf = inbuf; /* In case we need to defer this message in open... */
 		outsize = smb_messages[type].fn(conn, inbuf,outbuf,size,bufsize);
@@ -994,7 +993,6 @@ static int switch_message(int type,char *inbuf,char *outbuf,int size,int bufsize
 
 	return(outsize);
 }
-
 
 /****************************************************************************
  Construct a reply to the incoming packet.
