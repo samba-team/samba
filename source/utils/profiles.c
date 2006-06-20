@@ -213,7 +213,10 @@ int main( int argc, char *argv[] )
 	
 	/* actually do the update now */
 	
-	nk = regfio_rootkey( infile );
+	if ((nk = regfio_rootkey( infile )) == NULL) {
+		fprintf(stderr, "Could not get rootkey\n");
+		exit(3);
+	}
 	
 	if ( !copy_registry_tree( infile, nk, NULL, outfile, "" ) ) {
 		fprintf(stderr, "Failed to write updated registry file!\n");

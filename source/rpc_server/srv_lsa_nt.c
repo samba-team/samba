@@ -1133,6 +1133,11 @@ NTSTATUS _lsa_lookup_names2(pipes_struct *p, LSA_Q_LOOKUP_NAMES2 *q_u, LSA_R_LOO
 	rids = TALLOC_ZERO_ARRAY(p->mem_ctx, DOM_RID, num_entries);
 	rids2 = TALLOC_ZERO_ARRAY(p->mem_ctx, DOM_RID2, num_entries);
 
+	if ((ref == NULL) || (rids == NULL) || (rids2 == NULL)) {
+		r_u->status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
 	if (!find_policy_by_hnd(p, &q_u->pol, (void **)(void *)&handle)) {
 		r_u->status = NT_STATUS_INVALID_HANDLE;
 		goto done;
