@@ -8,6 +8,7 @@ OBJ_FILES = \
 		sesssetup.o \
 		tcon.o \
 		fileio.o \
+		fileinfo.o \
 		keepalive.o
 PUBLIC_DEPENDENCIES = \
 		ntvfs LIBPACKET LIBCLI_SMB2
