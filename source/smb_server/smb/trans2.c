@@ -117,11 +117,11 @@ static size_t trans2_pull_blob_string(struct smbsrv_request *req,
 				      const char **str,
 				      int flags)
 {
+	*str = NULL;
 	/* we use STR_NO_RANGE_CHECK because the params are allocated
 	   separately in a DATA_BLOB, so we need to do our own range
 	   checking */
 	if (offset >= blob->length) {
-		*str = NULL;
 		return 0;
 	}
 	
@@ -456,7 +456,7 @@ static NTSTATUS trans2_open_send(struct trans_op *op)
 
 	TRANS2_CHECK_ASYNC_STATUS(io, union smb_open);
 
-	trans2_setup_reply(trans, 30, 0, 0);
+	TRANS2_CHECK(trans2_setup_reply(trans, 30, 0, 0));
 
 	smbsrv_push_fnum(trans->out.params.data, VWV(0), io->t2open.out.file.ntvfs);
 	SSVAL(trans->out.params.data, VWV(1), io->t2open.out.attrib);
@@ -481,7 +481,6 @@ static NTSTATUS trans2_open(struct smbsrv_request *req, struct trans_op *op)
 {
 	struct smb_trans2 *trans = op->trans;
 	union smb_open *io;
-	NTSTATUS status;
 
 	/* make sure we got enough parameters */
 	if (trans->in.params.length < 29) {
@@ -505,9 +504,11 @@ static NTSTATUS trans2_open(struct smbsrv_request *req, struct trans_op *op)
 	io->t2open.in.eas          = NULL;
 
 	trans2_pull_blob_string(req, &trans->in.params, 28, &io->t2open.in.fname, 0);
+	if (io->t2open.in.fname == NULL) {
+		return NT_STATUS_FOOBAR;
+	}
 
-	status = ea_pull_list(&trans->in.data, io, &io->t2open.in.num_eas, &io->t2open.in.eas);
-	NT_STATUS_NOT_OK_RETURN(status);
+	TRANS2_CHECK(ea_pull_list(&trans->in.data, io, &io->t2open.in.num_eas, &io->t2open.in.eas));
 
 	op->op_info = io;
 	op->send_fn = trans2_open_send;
@@ -526,7 +527,7 @@ static NTSTATUS trans2_simple_send(struct trans_op *op)
 
 	TRANS2_CHECK_ASYNC_STATUS_SIMPLE;
 
-	trans2_setup_reply(trans, 2, 0, 0);
+	TRANS2_CHECK(trans2_setup_reply(trans, 2, 0, 0));
 
 	SSVAL(trans->out.params.data, VWV(0), 0);
 
@@ -540,7 +541,6 @@ static NTSTATUS trans2_mkdir(struct smbsrv_request *req, struct trans_op *op)
 {
 	struct smb_trans2 *trans = op->trans;
 	union smb_mkdir *io;
-	NTSTATUS status;
 
 	/* make sure we got enough parameters */
 	if (trans->in.params.length < 5) {
@@ -552,11 +552,13 @@ static NTSTATUS trans2_mkdir(struct smbsrv_request *req, struct trans_op *op)
 
 	io->t2mkdir.level = RAW_MKDIR_T2MKDIR;
 	trans2_pull_blob_string(req, &trans->in.params, 4, &io->t2mkdir.in.path, 0);
+	if (io->t2mkdir.in.path == NULL) {
+		return NT_STATUS_FOOBAR;
+	}
 
-	status = ea_pull_list(&trans->in.data, io, 
-			      &io->t2mkdir.in.num_eas, 
-			      &io->t2mkdir.in.eas);
-	NT_STATUS_NOT_OK_RETURN(status);
+	TRANS2_CHECK(ea_pull_list(&trans->in.data, io, 
+				  &io->t2mkdir.in.num_eas, 
+				  &io->t2mkdir.in.eas));
 
 	op->op_info = io;
 	op->send_fn = trans2_simple_send;
@@ -820,7 +822,6 @@ static NTSTATUS trans2_qpathinfo(struct smbsrv_request *req, struct trans_op *op
 {
 	struct smb_trans2 *trans = op->trans;
 	union smb_fileinfo *st;
-	NTSTATUS status;
 	uint16_t level;
 
 	/* make sure we got enough parameters */
@@ -845,10 +846,9 @@ static NTSTATUS trans2_qpathinfo(struct smbsrv_request *req, struct trans_op *op
 	}
 
 	if (st->generic.level == RAW_FILEINFO_EA_LIST) {
-		status = ea_pull_name_list(&trans->in.data, req, 
-					   &st->ea_list.in.num_names,
-					   &st->ea_list.in.ea_names);
-		NT_STATUS_NOT_OK_RETURN(status);
+		TRANS2_CHECK(ea_pull_name_list(&trans->in.data, req, 
+					       &st->ea_list.in.num_names,
+					       &st->ea_list.in.ea_names));
 	}
 
 	op->op_info = st;
@@ -865,7 +865,6 @@ static NTSTATUS trans2_qfileinfo(struct smbsrv_request *req, struct trans_op *op
 {
 	struct smb_trans2 *trans = op->trans;
 	union smb_fileinfo *st;
-	NTSTATUS status;
 	uint16_t level;
 	struct ntvfs_handle *h;
 
@@ -888,10 +887,9 @@ static NTSTATUS trans2_qfileinfo(struct smbsrv_request *req, struct trans_op *op
 	}
 
 	if (st->generic.level == RAW_FILEINFO_EA_LIST) {
-		status = ea_pull_name_list(&trans->in.data, req, 
-					   &st->ea_list.in.num_names,
-					   &st->ea_list.in.ea_names);
-		NT_STATUS_NOT_OK_RETURN(status);
+		TRANS2_CHECK(ea_pull_name_list(&trans->in.data, req, 
+					       &st->ea_list.in.num_names,
+					       &st->ea_list.in.ea_names));
 	}
 
 	op->op_info = st;
@@ -910,6 +908,7 @@ static NTSTATUS trans2_parse_sfileinfo(struct smbsrv_request *req,
 				       const DATA_BLOB *blob)
 {
 	uint32_t len;
+	DATA_BLOB str_blob;
 
 	switch (st->generic.level) {
 	case RAW_SFILEINFO_GENERIC:
@@ -921,9 +920,11 @@ static NTSTATUS trans2_parse_sfileinfo(struct smbsrv_request *req,
 
 	case RAW_SFILEINFO_STANDARD:
 		CHECK_MIN_BLOB_SIZE(blob, 12);
+
 		st->standard.in.create_time = srv_pull_dos_date2(req->smb_conn, blob->data + 0);
 		st->standard.in.access_time = srv_pull_dos_date2(req->smb_conn, blob->data + 4);
 		st->standard.in.write_time  = srv_pull_dos_date2(req->smb_conn, blob->data + 8);
+
 		return NT_STATUS_OK;
 
 	case RAW_SFILEINFO_EA_SET:
@@ -934,53 +935,68 @@ static NTSTATUS trans2_parse_sfileinfo(struct smbsrv_request *req,
 	case SMB_SFILEINFO_BASIC_INFO:
 	case SMB_SFILEINFO_BASIC_INFORMATION:
 		CHECK_MIN_BLOB_SIZE(blob, 36);
+
 		st->basic_info.in.create_time = pull_nttime(blob->data,  0);
 		st->basic_info.in.access_time = pull_nttime(blob->data,  8);
 		st->basic_info.in.write_time =  pull_nttime(blob->data, 16);
 		st->basic_info.in.change_time = pull_nttime(blob->data, 24);
 		st->basic_info.in.attrib =      IVAL(blob->data,        32);
+
 		return NT_STATUS_OK;
 
 	case SMB_SFILEINFO_DISPOSITION_INFO:
 	case SMB_SFILEINFO_DISPOSITION_INFORMATION:
 		CHECK_MIN_BLOB_SIZE(blob, 1);
+
 		st->disposition_info.in.delete_on_close = CVAL(blob->data, 0);
+
 		return NT_STATUS_OK;
 
 	case SMB_SFILEINFO_ALLOCATION_INFO:
 	case SMB_SFILEINFO_ALLOCATION_INFORMATION:
 		CHECK_MIN_BLOB_SIZE(blob, 8);
+
 		st->allocation_info.in.alloc_size = BVAL(blob->data, 0);
+
 		return NT_STATUS_OK;				
 
 	case RAW_SFILEINFO_END_OF_FILE_INFO:
 	case RAW_SFILEINFO_END_OF_FILE_INFORMATION:
 		CHECK_MIN_BLOB_SIZE(blob, 8);
+
 		st->end_of_file_info.in.size = BVAL(blob->data, 0);
+
 		return NT_STATUS_OK;
 
-	case RAW_SFILEINFO_RENAME_INFORMATION: {
-		DATA_BLOB blob2;
-
+	case RAW_SFILEINFO_RENAME_INFORMATION:
 		CHECK_MIN_BLOB_SIZE(blob, 12);
+
 		st->rename_information.in.overwrite = CVAL(blob->data, 0);
 		st->rename_information.in.root_fid  = IVAL(blob->data, 4);
 		len                                 = IVAL(blob->data, 8);
-		blob2.data = blob->data+12;
-		blob2.length = MIN(blob->length, len);
-		trans2_pull_blob_string(req, &blob2, 0, 
-					&st->rename_information.in.new_name, STR_UNICODE);
+		str_blob.data = blob->data+12;
+		str_blob.length = MIN(blob->length, len);
+		trans2_pull_blob_string(req, &str_blob, 0,
+					&st->rename_information.in.new_name,
+					STR_UNICODE);
+		if (st->rename_information.in.new_name == NULL) {
+			return NT_STATUS_FOOBAR;
+		}
+
 		return NT_STATUS_OK;
-	}
 
 	case RAW_SFILEINFO_POSITION_INFORMATION:
 		CHECK_MIN_BLOB_SIZE(blob, 8);
+
 		st->position_information.in.position = BVAL(blob->data, 0);
+
 		return NT_STATUS_OK;
 
 	case RAW_SFILEINFO_MODE_INFORMATION:
 		CHECK_MIN_BLOB_SIZE(blob, 4);
+
 		st->mode_information.in.mode = IVAL(blob->data, 0);
+
 		return NT_STATUS_OK;
 
 	case RAW_SFILEINFO_UNIX_BASIC:
@@ -1005,7 +1021,6 @@ static NTSTATUS trans2_setfileinfo(struct smbsrv_request *req, struct trans_op *
 {
 	struct smb_trans2 *trans = op->trans;
 	union smb_setfileinfo *st;
-	NTSTATUS status;
 	uint16_t level;
 	struct ntvfs_handle *h;
 
@@ -1027,8 +1042,7 @@ static NTSTATUS trans2_setfileinfo(struct smbsrv_request *req, struct trans_op *
 		return NT_STATUS_INVALID_LEVEL;
 	}
 
-	status = trans2_parse_sfileinfo(req, st, &trans->in.data);
-	NT_STATUS_NOT_OK_RETURN(status);
+	TRANS2_CHECK(trans2_parse_sfileinfo(req, st, &trans->in.data));
 
 	op->op_info = st;
 	op->send_fn = trans2_simple_send;
@@ -1044,7 +1058,6 @@ static NTSTATUS trans2_setpathinfo(struct smbsrv_request *req, struct trans_op *
 {
 	struct smb_trans2 *trans = op->trans;
 	union smb_setfileinfo *st;
-	NTSTATUS status;
 	uint16_t level;
 
 	/* make sure we got enough parameters */
@@ -1068,8 +1081,7 @@ static NTSTATUS trans2_setpathinfo(struct smbsrv_request *req, struct trans_op *
 		return NT_STATUS_INVALID_LEVEL;
 	}
 
-	status = trans2_parse_sfileinfo(req, st, &trans->in.data);
-	NT_STATUS_NOT_OK_RETURN(status);
+	TRANS2_CHECK(trans2_parse_sfileinfo(req, st, &trans->in.data));
 
 	op->op_info = st;
 	op->send_fn = trans2_simple_send;
@@ -1348,7 +1360,6 @@ static NTSTATUS trans2_findfirst(struct smbsrv_request *req, struct trans_op *op
 {
 	struct smb_trans2 *trans = op->trans;
 	union smb_search_first *search;
-	NTSTATUS status;
 	uint16_t level;
 	struct find_state *state;
 
@@ -1377,10 +1388,9 @@ static NTSTATUS trans2_findfirst(struct smbsrv_request *req, struct trans_op *op
 	}
 
 	if (search->t2ffirst.level == RAW_SEARCH_EA_LIST) {
-		status = ea_pull_name_list(&trans->in.data, req,
-					   &search->t2ffirst.in.num_names, 
-					   &search->t2ffirst.in.ea_names);
-		NT_STATUS_NOT_OK_RETURN(status);
+		TRANS2_CHECK(ea_pull_name_list(&trans->in.data, req,
+					       &search->t2ffirst.in.num_names, 
+					       &search->t2ffirst.in.ea_names));
 	}
 
 	/* setup the private state structure that the backend will
@@ -1394,7 +1404,7 @@ static NTSTATUS trans2_findfirst(struct smbsrv_request *req, struct trans_op *op
 	state->flags		= search->t2ffirst.in.flags;
 
 	/* setup for just a header in the reply */
-	trans2_setup_reply(trans, 10, 0, 0);
+	TRANS2_CHECK(trans2_setup_reply(trans, 10, 0, 0));
 
 	op->op_info = state;
 	op->send_fn = trans2_findfirst_send;
@@ -1435,7 +1445,6 @@ static NTSTATUS trans2_findnext(struct smbsrv_request *req, struct trans_op *op)
 {
 	struct smb_trans2 *trans = op->trans;
 	union smb_search_next *search;
-	NTSTATUS status;
 	uint16_t level;
 	struct find_state *state;
 
@@ -1464,10 +1473,9 @@ static NTSTATUS trans2_findnext(struct smbsrv_request *req, struct trans_op *op)
 	}
 
 	if (search->t2fnext.level == RAW_SEARCH_EA_LIST) {
-		status = ea_pull_name_list(&trans->in.data, req,
-					   &search->t2fnext.in.num_names, 
-					   &search->t2fnext.in.ea_names);
-		NT_STATUS_NOT_OK_RETURN(status);
+		TRANS2_CHECK(ea_pull_name_list(&trans->in.data, req,
+					       &search->t2fnext.in.num_names, 
+					       &search->t2fnext.in.ea_names));
 	}
 
 	/* setup the private state structure that the backend will give us in the callback */
@@ -1480,7 +1488,7 @@ static NTSTATUS trans2_findnext(struct smbsrv_request *req, struct trans_op *op)
 	state->flags		= search->t2fnext.in.flags;
 
 	/* setup for just a header in the reply */
-	trans2_setup_reply(trans, 8, 0, 0);
+	TRANS2_CHECK(trans2_setup_reply(trans, 8, 0, 0));
 
 	op->op_info = state;
 	op->send_fn = trans2_findnext_send;
