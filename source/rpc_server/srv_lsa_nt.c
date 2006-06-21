@@ -1135,7 +1135,7 @@ NTSTATUS _lsa_lookup_names2(pipes_struct *p, LSA_Q_LOOKUP_NAMES2 *q_u, LSA_R_LOO
 
 	if ((ref == NULL) || (rids == NULL) || (rids2 == NULL)) {
 		r_u->status = NT_STATUS_NO_MEMORY;
-		goto done;
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	if (!find_policy_by_hnd(p, &q_u->pol, (void **)(void *)&handle)) {
@@ -1147,10 +1147,6 @@ NTSTATUS _lsa_lookup_names2(pipes_struct *p, LSA_Q_LOOKUP_NAMES2 *q_u, LSA_R_LOO
 	if (!(handle->access & POLICY_LOOKUP_NAMES)) {
 		r_u->status = NT_STATUS_ACCESS_DENIED;
 		goto done;
-	}
-
-	if (!ref || !rids || !rids2) {
-		return NT_STATUS_NO_MEMORY;
 	}
 
 	/* set up the LSA Lookup RIDs response */
