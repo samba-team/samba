@@ -55,10 +55,9 @@ get_check_entry(const char *name, kadm5_principal_ent_rec *ent)
     memset(ent, 0, sizeof(*ent));
     ret = kadm5_get_principal(kadm_handle, principal, ent, 0);
     krb5_free_principal(context, principal);
-    if(ret) {
-	krb5_warn(context, ret, "kadm5_get_principal(%s) failed", name);
+    if(ret)
 	return 1;
-    }
+
     return 0;
 }
 
@@ -68,7 +67,8 @@ check(void *opt, int argc, char **argv)
 {
     kadm5_principal_ent_rec ent;
     krb5_error_code ret;
-    char *realm, *p;
+    char *realm, *p, *p2;
+    int found;
 
     if (argc == 0) {
 	ret = krb5_get_default_realm(context, &realm);
@@ -146,6 +146,47 @@ check(void *opt, int argc, char **argv)
 
     kadm5_free_principal_ent(kadm_handle, &ent);
 
+    /*
+     * Check for duplicate afs keys 
+     */
+
+    p2 = strdup(realm);
+    if (p2 == NULL) {
+	krb5_warn(context, errno, "malloc");
+	free(p);
+	return 1;
+    }
+    strlwr(p2);
+
+    if (asprintf(&p, "afs/%s@%s", p2, realm) == -1) {
+	krb5_warn(context, errno, "asprintf");
+	free(p2);
+	return 1;
+    }
+    free(p2);
+
+    ret = get_check_entry(p, &ent);
+    free(p);
+    if (ret == 0) {
+	kadm5_free_principal_ent(kadm_handle, &ent);
+	found = 1;
+    } else
+	found = 0;
+
+    if (asprintf(&p, "afs@%s", realm) == -1) {
+	krb5_warn(context, errno, "asprintf");
+	return 1;
+    }
+
+    ret = get_check_entry(p, &ent);
+    free(p);
+    if (ret == 0) {
+	kadm5_free_principal_ent(kadm_handle, &ent);
+	if (found) {
+	    krb5_warnx(context, "afs@REALM and afs/cellname@REALM both exists");
+	    return 1;
+	}
+    }
 
     return 0;
 }
