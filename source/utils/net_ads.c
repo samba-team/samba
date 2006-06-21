@@ -286,6 +286,7 @@ retry:
 			goto retry;
 		} else {
 			DEBUG(0,("ads_connect: %s\n", ads_errstr(status)));
+			ads_destroy(&ads);
 			return NULL;
 		}
 	}
