@@ -162,6 +162,10 @@ static BOOL internal_torture_run_test(struct torture_context *context,
 	context->last_result = TORTURE_OK;
 
 	ret = test->run(context, !already_setup?data:tcase_data, test->data);
+	if (!ret) {
+		context->last_reason = talloc_strdup(context, "...");
+		context->last_result = TORTURE_FAIL;
+	}
 
 	if (context->ui_ops->test_result)
 		context->ui_ops->test_result(context, context->last_result, 
@@ -259,8 +263,8 @@ struct torture_tcase *torture_suite_add_simple_tcase(
 	
 	tcase = torture_suite_add_tcase(suite, name);
 	tcase->data = data;
-	
-	torture_tcase_add_test(tcase, "Test", simple_tcase_helper, run);
+
+	torture_tcase_add_test(tcase, name, simple_tcase_helper, run);
 
 	return tcase;
 }
