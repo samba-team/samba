@@ -443,13 +443,13 @@ char *share_mode_str(int num, struct share_mode_entry *e)
 	slprintf(share_str, sizeof(share_str)-1, "share_mode_entry[%d]: %s "
 		 "pid = %s, share_access = 0x%x, private_options = 0x%x, "
 		 "access_mask = 0x%x, mid = 0x%x, type= 0x%x, file_id = %lu, "
-		 "dev = 0x%x, inode = %.0f",
+		 "uid = %u, dev = 0x%x, inode = %.0f",
 		 num,
 		 e->op_type == UNUSED_SHARE_MODE_ENTRY ? "UNUSED" : "",
 		 procid_str_static(&e->pid),
 		 e->share_access, e->private_options,
 		 e->access_mask, e->op_mid, e->op_type, e->share_file_id,
-		 (unsigned int)e->dev, (double)e->inode );
+		 (unsigned int)e->uid, (unsigned int)e->dev, (double)e->inode );
 
 	return share_str;
 }
@@ -917,7 +917,7 @@ BOOL is_unused_share_mode_entry(const struct share_mode_entry *e)
 
 static void fill_share_mode_entry(struct share_mode_entry *e,
 				  files_struct *fsp,
-				  uint16 mid, uint16 op_type)
+				  uid_t uid, uint16 mid, uint16 op_type)
 {
 	ZERO_STRUCTP(e);
 	e->pid = procid_self();
@@ -928,9 +928,10 @@ static void fill_share_mode_entry(struct share_mode_entry *e,
 	e->op_type = op_type;
 	e->time.tv_sec = fsp->open_time.tv_sec;
 	e->time.tv_usec = fsp->open_time.tv_usec;
-	e->share_file_id = fsp->fh->file_id;
 	e->dev = fsp->dev;
 	e->inode = fsp->inode;
+	e->share_file_id = fsp->fh->file_id;
+	e->uid = (uint32)uid;
 }
 
 static void fill_deferred_open_entry(struct share_mode_entry *e,
@@ -945,6 +946,7 @@ static void fill_deferred_open_entry(struct share_mode_entry *e,
 	e->time.tv_usec = request_time.tv_usec;
 	e->dev = dev;
 	e->inode = ino;
+	e->uid = (uint32)-1;
 }
 
 static void add_share_mode_entry(struct share_mode_lock *lck,
@@ -969,10 +971,10 @@ static void add_share_mode_entry(struct share_mode_lock *lck,
 }
 
 void set_share_mode(struct share_mode_lock *lck, files_struct *fsp,
-		    uint16 mid, uint16 op_type)
+			uid_t uid, uint16 mid, uint16 op_type)
 {
 	struct share_mode_entry entry;
-	fill_share_mode_entry(&entry, fsp, mid, op_type);
+	fill_share_mode_entry(&entry, fsp, uid, mid, op_type);
 	add_share_mode_entry(lck, &entry);
 }
 
@@ -1044,7 +1046,8 @@ BOOL del_share_mode(struct share_mode_lock *lck, files_struct *fsp)
 {
 	struct share_mode_entry entry, *e;
 
-	fill_share_mode_entry(&entry, fsp, 0, NO_OPLOCK);
+	/* Don't care about the pid owner being correct here - just a search. */
+	fill_share_mode_entry(&entry, fsp, (uid_t)-1, 0, NO_OPLOCK);
 
 	e = find_share_mode_entry(lck, &entry);
 	if (e == NULL) {
@@ -1080,7 +1083,8 @@ BOOL remove_share_oplock(struct share_mode_lock *lck, files_struct *fsp)
 {
 	struct share_mode_entry entry, *e;
 
-	fill_share_mode_entry(&entry, fsp, 0, NO_OPLOCK);
+	/* Don't care about the pid owner being correct here - just a search. */
+	fill_share_mode_entry(&entry, fsp, (uid_t)-1, 0, NO_OPLOCK);
 
 	e = find_share_mode_entry(lck, &entry);
 	if (e == NULL) {
@@ -1101,7 +1105,8 @@ BOOL downgrade_share_oplock(struct share_mode_lock *lck, files_struct *fsp)
 {
 	struct share_mode_entry entry, *e;
 
-	fill_share_mode_entry(&entry, fsp, 0, NO_OPLOCK);
+	/* Don't care about the pid owner being correct here - just a search. */
+	fill_share_mode_entry(&entry, fsp, (uid_t)-1, 0, NO_OPLOCK);
 
 	e = find_share_mode_entry(lck, &entry);
 	if (e == NULL) {
