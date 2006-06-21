@@ -891,6 +891,8 @@ BOOL torture_local_talloc(struct torture_context *torture)
 {
 	BOOL ret = True;
 
+	talloc_enable_null_tracking();
+
 	ret &= test_ref1();
 	ret &= test_ref2();
 	ret &= test_ref3();
