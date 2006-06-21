@@ -1,3 +1,7 @@
+2006-06-21  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* check.c: Check if afs@REALM and afs/cellname@REALM both exists.
+	
 2006-06-14  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* util.c (kdb_attrs): Add KRB5_KDB_ALLOW_KERBEROS4
