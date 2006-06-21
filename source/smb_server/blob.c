@@ -1,0 +1,486 @@
+/* 
+   Unix SMB/CIFS implementation.
+
+   Copyright (C) Andrew Tridgell 2003
+   Copyright (C) Stefan Metzmacher 2006
+
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2 of the License, or
+   (at your option) any later version.
+   
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+   
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+*/
+
+#include "includes.h"
+#include "dlinklist.h"
+#include "smb_server/smb_server.h"
+#include "librpc/gen_ndr/ndr_misc.h"
+#include "ntvfs/ntvfs.h"
+#include "libcli/raw/libcliraw.h"
+
+#define BLOB_CHECK(cmd) do { \
+	NTSTATUS _status; \
+	_status = cmd; \
+	NT_STATUS_NOT_OK_RETURN(_status); \
+} while (0)
+
+/* grow the data size of a trans2 reply */
+NTSTATUS smbsrv_blob_grow_data(TALLOC_CTX *mem_ctx,
+			       DATA_BLOB *blob,
+			       uint32_t new_size)
+{
+	if (new_size > blob->length) {
+		uint8_t *p;
+		p = talloc_realloc(mem_ctx, blob->data, uint8_t, new_size);
+		NT_STATUS_HAVE_NO_MEMORY(p);
+		blob->data = p;
+	}
+	blob->length = new_size;
+	return NT_STATUS_OK;
+}
+
+/* grow the data, zero filling any new bytes */
+NTSTATUS smbsrv_blob_fill_data(TALLOC_CTX *mem_ctx,
+			       DATA_BLOB *blob,
+			       uint32_t new_size)
+{
+	uint32_t old_size = blob->length;
+	BLOB_CHECK(smbsrv_blob_grow_data(mem_ctx, blob, new_size));
+	if (new_size > old_size) {
+		memset(blob->data + old_size, 0, new_size - old_size);
+	}
+	return NT_STATUS_OK;
+}
+
+/*
+  pull a string from a blob in a trans2 request
+*/
+size_t smbsrv_blob_pull_string(struct smbsrv_request *req, 
+			       const DATA_BLOB *blob,
+			       uint16_t offset,
+			       const char **str,
+			       int flags)
+{
+	*str = NULL;
+	/* we use STR_NO_RANGE_CHECK because the params are allocated
+	   separately in a DATA_BLOB, so we need to do our own range
+	   checking */
+	if (offset >= blob->length) {
+		return 0;
+	}
+	
+	return req_pull_string(req, str, 
+			       blob->data + offset, 
+			       blob->length - offset,
+			       STR_NO_RANGE_CHECK | flags);
+}
+
+/*
+  push a string into the data section of a trans2 request
+  return the number of bytes consumed in the output
+*/
+size_t smbsrv_blob_push_string(TALLOC_CTX *mem_ctx,
+			       DATA_BLOB *blob,
+			       uint32_t len_offset,
+			       uint32_t offset,
+			       const char *str,
+			       int dest_len,
+			       int default_flags,
+			       int flags)
+{
+	int alignment = 0, ret = 0, pkt_len;
+
+	/* we use STR_NO_RANGE_CHECK because the params are allocated
+	   separately in a DATA_BLOB, so we need to do our own range
+	   checking */
+	if (!str || offset >= blob->length) {
+		if (flags & STR_LEN8BIT) {
+			SCVAL(blob->data, len_offset, 0);
+		} else {
+			SIVAL(blob->data, len_offset, 0);
+		}
+		return 0;
+	}
+
+	flags |= STR_NO_RANGE_CHECK;
+
+	if (dest_len == -1 || (dest_len > blob->length - offset)) {
+		dest_len = blob->length - offset;
+	}
+
+	if (!(flags & (STR_ASCII|STR_UNICODE))) {
+		flags |= default_flags;
+	}
+
+	if ((offset&1) && (flags & STR_UNICODE) && !(flags & STR_NOALIGN)) {
+		alignment = 1;
+		if (dest_len > 0) {
+			SCVAL(blob->data + offset, 0, 0);
+			ret = push_string(blob->data + offset + 1, str, dest_len-1, flags);
+		}
+	} else {
+		ret = push_string(blob->data + offset, str, dest_len, flags);
+	}
+
+	/* sometimes the string needs to be terminated, but the length
+	   on the wire must not include the termination! */
+	pkt_len = ret;
+
+	if ((flags & STR_LEN_NOTERM) && (flags & STR_TERMINATE)) {
+		if ((flags & STR_UNICODE) && ret >= 2) {
+			pkt_len = ret-2;
+		}
+		if ((flags & STR_ASCII) && ret >= 1) {
+			pkt_len = ret-1;
+		}
+	}
+
+	if (flags & STR_LEN8BIT) {
+		SCVAL(blob->data, len_offset, pkt_len);
+	} else {
+		SIVAL(blob->data, len_offset, pkt_len);
+	}
+
+	return ret + alignment;
+}
+
+/*
+  append a string to the data section of a trans2 reply
+  len_offset points to the place in the packet where the length field
+  should go
+*/
+NTSTATUS smbsrv_blob_append_string(TALLOC_CTX *mem_ctx,
+				   DATA_BLOB *blob,
+				   const char *str,
+				   uint_t len_offset,
+				   int default_flags,
+				   int flags)
+{
+	size_t ret;
+	uint32_t offset;
+	const int max_bytes_per_char = 3;
+
+	offset = blob->length;
+	BLOB_CHECK(smbsrv_blob_grow_data(mem_ctx, blob, offset + (2+strlen_m(str))*max_bytes_per_char));
+	ret = smbsrv_blob_push_string(mem_ctx, blob, len_offset, offset, str, -1, default_flags, flags);
+	if (ret < 0) {
+		return NT_STATUS_FOOBAR;
+	}
+	BLOB_CHECK(smbsrv_blob_grow_data(mem_ctx, blob, offset + ret));
+	return NT_STATUS_OK;
+}
+
+NTSTATUS smbsrv_push_passthru_fsinfo(TALLOC_CTX *mem_ctx,
+				     DATA_BLOB *blob,
+				     enum smb_fsinfo_level level,
+				     union smb_fsinfo *fsinfo,
+				     int default_str_flags)
+{
+	uint_t i;
+	DATA_BLOB guid_blob;
+
+	switch (level) {
+	case RAW_QFS_VOLUME_INFORMATION:
+		BLOB_CHECK(smbsrv_blob_grow_data(mem_ctx, blob, 18));
+
+		push_nttime(blob->data, 0, fsinfo->volume_info.out.create_time);
+		SIVAL(blob->data,       8, fsinfo->volume_info.out.serial_number);
+		SSVAL(blob->data,      16, 0); /* padding */
+		BLOB_CHECK(smbsrv_blob_append_string(mem_ctx, blob,
+						     fsinfo->volume_info.out.volume_name.s,
+						     12, default_str_flags,
+						     STR_UNICODE));
+
+		return NT_STATUS_OK;
+
+	case RAW_QFS_SIZE_INFORMATION:
+		BLOB_CHECK(smbsrv_blob_grow_data(mem_ctx, blob, 24));
+
+		SBVAL(blob->data,  0, fsinfo->size_info.out.total_alloc_units);
+		SBVAL(blob->data,  8, fsinfo->size_info.out.avail_alloc_units);
+		SIVAL(blob->data, 16, fsinfo->size_info.out.sectors_per_unit);
+		SIVAL(blob->data, 20, fsinfo->size_info.out.bytes_per_sector);
+
+		return NT_STATUS_OK;
+
+	case RAW_QFS_DEVICE_INFORMATION:
+		BLOB_CHECK(smbsrv_blob_grow_data(mem_ctx, blob, 8));
+
+		SIVAL(blob->data,      0, fsinfo->device_info.out.device_type);
+		SIVAL(blob->data,      4, fsinfo->device_info.out.characteristics);
+
+		return NT_STATUS_OK;
+
+	case RAW_QFS_ATTRIBUTE_INFORMATION:
+		BLOB_CHECK(smbsrv_blob_grow_data(mem_ctx, blob, 12));
+
+		SIVAL(blob->data, 0, fsinfo->attribute_info.out.fs_attr);
+		SIVAL(blob->data, 4, fsinfo->attribute_info.out.max_file_component_length);
+		/* this must not be null terminated or win98 gets
+		   confused!  also note that w2k3 returns this as
+		   unicode even when ascii is negotiated */
+		BLOB_CHECK(smbsrv_blob_append_string(mem_ctx, blob,
+						     fsinfo->attribute_info.out.fs_type.s,
+						     8, default_str_flags,
+						     STR_UNICODE));
+		return NT_STATUS_OK;
+
+
+	case RAW_QFS_QUOTA_INFORMATION:
+		BLOB_CHECK(smbsrv_blob_grow_data(mem_ctx, blob, 48));
+
+		SBVAL(blob->data,   0, fsinfo->quota_information.out.unknown[0]);
+		SBVAL(blob->data,   8, fsinfo->quota_information.out.unknown[1]);
+		SBVAL(blob->data,  16, fsinfo->quota_information.out.unknown[2]);
+		SBVAL(blob->data,  24, fsinfo->quota_information.out.quota_soft);
+		SBVAL(blob->data,  32, fsinfo->quota_information.out.quota_hard);
+		SBVAL(blob->data,  40, fsinfo->quota_information.out.quota_flags);
+
+		return NT_STATUS_OK;
+
+
+	case RAW_QFS_FULL_SIZE_INFORMATION:
+		BLOB_CHECK(smbsrv_blob_grow_data(mem_ctx, blob, 32));
+
+		SBVAL(blob->data,  0, fsinfo->full_size_information.out.total_alloc_units);
+		SBVAL(blob->data,  8, fsinfo->full_size_information.out.call_avail_alloc_units);
+		SBVAL(blob->data, 16, fsinfo->full_size_information.out.actual_avail_alloc_units);
+		SIVAL(blob->data, 24, fsinfo->full_size_information.out.sectors_per_unit);
+		SIVAL(blob->data, 28, fsinfo->full_size_information.out.bytes_per_sector);
+
+		return NT_STATUS_OK;
+
+	case RAW_QFS_OBJECTID_INFORMATION:
+		BLOB_CHECK(smbsrv_blob_grow_data(mem_ctx, blob, 64));
+
+		BLOB_CHECK(ndr_push_struct_blob(&guid_blob, mem_ctx, 
+						&fsinfo->objectid_information.out.guid,
+						(ndr_push_flags_fn_t)ndr_push_GUID));
+		memcpy(blob->data, guid_blob.data, guid_blob.length);
+
+		for (i=0;i<6;i++) {
+			SBVAL(blob->data, 16 + 8*i, fsinfo->objectid_information.out.unknown[i]);
+		}
+
+		return NT_STATUS_OK;
+
+	default:
+		return NT_STATUS_INVALID_LEVEL;
+	}
+
+	return NT_STATUS_INVALID_LEVEL;
+}
+
+NTSTATUS smbsrv_push_passthru_fileinfo(TALLOC_CTX *mem_ctx,
+				       DATA_BLOB *blob,
+				       enum smb_fileinfo_level level,
+				       union smb_fileinfo *st,
+				       int default_str_flags)
+{
+	uint_t i;
+	size_t list_size;
+
+	switch (level) {
+	case RAW_FILEINFO_BASIC_INFORMATION:
+		BLOB_CHECK(smbsrv_blob_grow_data(mem_ctx, blob, 40));
+
+		push_nttime(blob->data,  0, st->basic_info.out.create_time);
+		push_nttime(blob->data,  8, st->basic_info.out.access_time);
+		push_nttime(blob->data, 16, st->basic_info.out.write_time);
+		push_nttime(blob->data, 24, st->basic_info.out.change_time);
+		SIVAL(blob->data,       32, st->basic_info.out.attrib);
+		SIVAL(blob->data,       36, 0); /* padding */
+		return NT_STATUS_OK;
+
+	case RAW_FILEINFO_NETWORK_OPEN_INFORMATION:
+		BLOB_CHECK(smbsrv_blob_grow_data(mem_ctx, blob, 56));
+
+		push_nttime(blob->data,  0, st->network_open_information.out.create_time);
+		push_nttime(blob->data,  8, st->network_open_information.out.access_time);
+		push_nttime(blob->data, 16, st->network_open_information.out.write_time);
+		push_nttime(blob->data, 24, st->network_open_information.out.change_time);
+		SBVAL(blob->data,       32, st->network_open_information.out.alloc_size);
+		SBVAL(blob->data,       40, st->network_open_information.out.size);
+		SIVAL(blob->data,       48, st->network_open_information.out.attrib);
+		SIVAL(blob->data,       52, 0); /* padding */
+		return NT_STATUS_OK;
+
+	case RAW_FILEINFO_STANDARD_INFORMATION:
+		BLOB_CHECK(smbsrv_blob_grow_data(mem_ctx, blob, 24));
+
+		SBVAL(blob->data,  0, st->standard_info.out.alloc_size);
+		SBVAL(blob->data,  8, st->standard_info.out.size);
+		SIVAL(blob->data, 16, st->standard_info.out.nlink);
+		SCVAL(blob->data, 20, st->standard_info.out.delete_pending);
+		SCVAL(blob->data, 21, st->standard_info.out.directory);
+		SSVAL(blob->data, 22, 0); /* padding */
+		return NT_STATUS_OK;
+
+	case RAW_FILEINFO_ATTRIBUTE_TAG_INFORMATION:
+		BLOB_CHECK(smbsrv_blob_grow_data(mem_ctx, blob, 8));
+
+		SIVAL(blob->data,  0, st->attribute_tag_information.out.attrib);
+		SIVAL(blob->data,  4, st->attribute_tag_information.out.reparse_tag);
+		return NT_STATUS_OK;
+
+	case RAW_FILEINFO_EA_INFORMATION:
+		BLOB_CHECK(smbsrv_blob_grow_data(mem_ctx, blob, 4));
+
+		SIVAL(blob->data,  0, st->ea_info.out.ea_size);
+		return NT_STATUS_OK;
+
+	case RAW_FILEINFO_MODE_INFORMATION:
+		BLOB_CHECK(smbsrv_blob_grow_data(mem_ctx, blob, 4));
+
+		SIVAL(blob->data,  0, st->mode_information.out.mode);
+		return NT_STATUS_OK;
+
+	case RAW_FILEINFO_ALIGNMENT_INFORMATION:
+		BLOB_CHECK(smbsrv_blob_grow_data(mem_ctx, blob, 4));
+
+		SIVAL(blob->data,  0, 
+		      st->alignment_information.out.alignment_requirement);
+		return NT_STATUS_OK;
+
+	case RAW_FILEINFO_ACCESS_INFORMATION:
+		BLOB_CHECK(smbsrv_blob_grow_data(mem_ctx, blob, 4));
+
+		SIVAL(blob->data,  0, st->access_information.out.access_flags);
+		return NT_STATUS_OK;
+
+	case RAW_FILEINFO_POSITION_INFORMATION:
+		BLOB_CHECK(smbsrv_blob_grow_data(mem_ctx, blob, 8));
+
+		SBVAL(blob->data,  0, st->position_information.out.position);
+		return NT_STATUS_OK;
+
+	case RAW_FILEINFO_COMPRESSION_INFORMATION:
+		BLOB_CHECK(smbsrv_blob_grow_data(mem_ctx, blob, 16));
+
+		SBVAL(blob->data,  0, st->compression_info.out.compressed_size);
+		SSVAL(blob->data,  8, st->compression_info.out.format);
+		SCVAL(blob->data, 10, st->compression_info.out.unit_shift);
+		SCVAL(blob->data, 11, st->compression_info.out.chunk_shift);
+		SCVAL(blob->data, 12, st->compression_info.out.cluster_shift);
+		SSVAL(blob->data, 13, 0); /* 3 bytes padding */
+		SCVAL(blob->data, 15, 0);
+		return NT_STATUS_OK;
+
+	case RAW_FILEINFO_INTERNAL_INFORMATION:
+		BLOB_CHECK(smbsrv_blob_grow_data(mem_ctx, blob, 8));
+
+		SBVAL(blob->data,  0, st->internal_information.out.file_id);
+		return NT_STATUS_OK;
+
+	case RAW_FILEINFO_ALL_INFORMATION:
+		BLOB_CHECK(smbsrv_blob_grow_data(mem_ctx, blob, 72));
+
+		push_nttime(blob->data,  0, st->all_info.out.create_time);
+		push_nttime(blob->data,  8, st->all_info.out.access_time);
+		push_nttime(blob->data, 16, st->all_info.out.write_time);
+		push_nttime(blob->data, 24, st->all_info.out.change_time);
+		SIVAL(blob->data,       32, st->all_info.out.attrib);
+		SIVAL(blob->data,       36, 0); /* padding */
+		SBVAL(blob->data,       40, st->all_info.out.alloc_size);
+		SBVAL(blob->data,       48, st->all_info.out.size);
+		SIVAL(blob->data,       56, st->all_info.out.nlink);
+		SCVAL(blob->data,       60, st->all_info.out.delete_pending);
+		SCVAL(blob->data,       61, st->all_info.out.directory);
+		SSVAL(blob->data,       62, 0); /* padding */
+		SIVAL(blob->data,       64, st->all_info.out.ea_size);
+		BLOB_CHECK(smbsrv_blob_append_string(mem_ctx, blob,
+						     st->all_info.out.fname.s,
+						     68, default_str_flags,
+						     STR_UNICODE));
+		return NT_STATUS_OK;
+
+	case RAW_FILEINFO_NAME_INFORMATION:
+		BLOB_CHECK(smbsrv_blob_grow_data(mem_ctx, blob, 4));
+
+		BLOB_CHECK(smbsrv_blob_append_string(mem_ctx, blob,
+						     st->name_info.out.fname.s,
+						     0, default_str_flags,
+						     STR_UNICODE));
+		return NT_STATUS_OK;
+
+	case RAW_FILEINFO_ALT_NAME_INFORMATION:
+		BLOB_CHECK(smbsrv_blob_grow_data(mem_ctx, blob, 4));
+
+		BLOB_CHECK(smbsrv_blob_append_string(mem_ctx, blob, 
+						     st->alt_name_info.out.fname.s,
+						     0, default_str_flags,
+						     STR_UNICODE));
+		return NT_STATUS_OK;
+
+	case RAW_FILEINFO_STREAM_INFORMATION:
+		for (i=0;i<st->stream_info.out.num_streams;i++) {
+			uint32_t data_size = blob->length;
+			uint8_t *data;
+
+			BLOB_CHECK(smbsrv_blob_grow_data(mem_ctx, blob, data_size + 24));
+			data = blob->data + data_size;
+			SBVAL(data,  8, st->stream_info.out.streams[i].size);
+			SBVAL(data, 16, st->stream_info.out.streams[i].alloc_size);
+			BLOB_CHECK(smbsrv_blob_append_string(mem_ctx, blob,
+							     st->stream_info.out.streams[i].stream_name.s,
+							     data_size + 4, default_str_flags,
+							     STR_UNICODE));
+			if (i == st->stream_info.out.num_streams - 1) {
+				SIVAL(blob->data, data_size, 0);
+			} else {
+				BLOB_CHECK(smbsrv_blob_fill_data(mem_ctx, blob, (blob->length+7)&~7));
+				SIVAL(blob->data, data_size, 
+				      blob->length - data_size);
+			}
+		}
+		return NT_STATUS_OK;
+
+	case RAW_FILEINFO_SMB2_ALL_EAS:
+		list_size = ea_list_size_chained(st->all_eas.out.num_eas,
+						 st->all_eas.out.eas);
+		BLOB_CHECK(smbsrv_blob_grow_data(mem_ctx, blob, list_size));
+
+		ea_put_list_chained(blob->data,
+				    st->all_eas.out.num_eas,
+				    st->all_eas.out.eas);
+		return NT_STATUS_OK;
+
+	case RAW_FILEINFO_SMB2_ALL_INFORMATION:
+		BLOB_CHECK(smbsrv_blob_grow_data(mem_ctx, blob, 0x64));
+
+		push_nttime(blob->data, 0x00, st->all_info2.out.create_time);
+		push_nttime(blob->data, 0x08, st->all_info2.out.access_time);
+		push_nttime(blob->data, 0x10, st->all_info2.out.write_time);
+		push_nttime(blob->data, 0x18, st->all_info2.out.change_time);
+		SIVAL(blob->data,       0x20, st->all_info2.out.attrib);
+		SIVAL(blob->data,       0x24, st->all_info2.out.unknown1);
+		SBVAL(blob->data,       0x28, st->all_info2.out.alloc_size);
+		SBVAL(blob->data,       0x30, st->all_info2.out.size);
+		SIVAL(blob->data,       0x38, st->all_info2.out.nlink);
+		SCVAL(blob->data,       0x3C, st->all_info2.out.delete_pending);
+		SCVAL(blob->data,       0x3D, st->all_info2.out.directory);
+		SBVAL(blob->data,	0x40, st->all_info2.out.file_id);
+		SIVAL(blob->data,       0x48, st->all_info2.out.ea_size);
+		SIVAL(blob->data,	0x4C, st->all_info2.out.access_mask);
+		SBVAL(blob->data,	0x50, st->all_info2.out.position);
+		SBVAL(blob->data,	0x58, st->all_info2.out.mode);
+		BLOB_CHECK(smbsrv_blob_append_string(mem_ctx, blob,
+						     st->all_info.out.fname.s,
+						     0x60, default_str_flags,
+						     STR_UNICODE));
+		return NT_STATUS_OK;
+
+	default:
+		return NT_STATUS_INVALID_LEVEL;
+	}
+
+	return NT_STATUS_INVALID_LEVEL;
+}
