@@ -346,8 +346,10 @@ static BOOL key_printers_store_keys( const char *key, REGSUBKEY_CTR *subkeys )
 		if ( lookup_printerkey(printer->info_2->data, subkeyname) == -1 ) {
 			DEBUG(5,("key_printers_store_keys: adding key %s\n", 
 				existing_subkeys[i]));
-			if ( add_new_printer_key( printer->info_2->data, subkeyname ) == -1 ) 
+			if ( add_new_printer_key( printer->info_2->data, subkeyname ) == -1 ) {
+				SAFE_FREE( existing_subkeys );
 				return False;
+			}
 		}
 	}
 	
@@ -359,6 +361,8 @@ static BOOL key_printers_store_keys( const char *key, REGSUBKEY_CTR *subkeys )
 	
 	if ( printer )
 		free_a_printer( &printer, 2 );
+
+	SAFE_FREE( existing_subkeys );
 
 	return True;
 }

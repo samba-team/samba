@@ -68,6 +68,7 @@ o   Bjoern Jacke <samba@j3e.de>.
 o   Volker Lendecke <vl@samba.org>
     * Fixes for various Klocwork defect reports.
     * Fixes for various Coverity defect reports.
+    * BUG 3848: Fix WinXP join error in a Samba domain using ldapsam.
 
 
 
