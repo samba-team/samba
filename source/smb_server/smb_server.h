@@ -209,6 +209,8 @@ struct smbsrv_handle {
 /* a set of flags to control handling of request structures */
 #define SMBSRV_REQ_CONTROL_LARGE     (1<<1) /* allow replies larger than max_xmit */
 
+#define SMBSRV_REQ_DEFAULT_STR_FLAGS(req) (((req)->flags2 & FLAGS2_UNICODE_STRINGS) ? STR_UNICODE : STR_ASCII)
+
 /* the context for a single SMB request. This is passed to any request-context 
    functions */
 struct smbsrv_request {
