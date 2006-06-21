@@ -364,26 +364,29 @@ int talloc_unlink(const void *context, void *ptr)
 /*
   add a name to an existing pointer - va_list version
 */
-static void talloc_set_name_v(const void *ptr, const char *fmt, va_list ap) PRINTF_ATTRIBUTE(2,0);
+static const char *talloc_set_name_v(const void *ptr, const char *fmt, va_list ap) PRINTF_ATTRIBUTE(2,0);
 
-static void talloc_set_name_v(const void *ptr, const char *fmt, va_list ap)
+static const char *talloc_set_name_v(const void *ptr, const char *fmt, va_list ap)
 {
 	struct talloc_chunk *tc = talloc_chunk_from_ptr(ptr);
 	tc->name = talloc_vasprintf(ptr, fmt, ap);
 	if (tc->name) {
 		talloc_set_name_const(tc->name, ".name");
 	}
+	return tc->name;
 }
 
 /*
   add a name to an existing pointer
 */
-void talloc_set_name(const void *ptr, const char *fmt, ...)
+const char *talloc_set_name(const void *ptr, const char *fmt, ...)
 {
+	const char *name;
 	va_list ap;
 	va_start(ap, fmt);
-	talloc_set_name_v(ptr, fmt, ap);
+	name = talloc_set_name_v(ptr, fmt, ap);
 	va_end(ap);
+	return name;
 }
 
 /*
@@ -405,13 +408,19 @@ void *talloc_named(const void *context, size_t size, const char *fmt, ...)
 {
 	va_list ap;
 	void *ptr;
+	const char *name;
 
 	ptr = _talloc(context, size);
 	if (ptr == NULL) return NULL;
 
 	va_start(ap, fmt);
-	talloc_set_name_v(ptr, fmt, ap);
+	name = talloc_set_name_v(ptr, fmt, ap);
 	va_end(ap);
+
+	if (name == NULL) {
+		talloc_free(ptr);
+		return NULL;
+	}
 
 	return ptr;
 }
@@ -474,13 +483,19 @@ void *talloc_init(const char *fmt, ...)
 {
 	va_list ap;
 	void *ptr;
+	const char *name;
 
 	ptr = _talloc(NULL, 0);
 	if (ptr == NULL) return NULL;
 
 	va_start(ap, fmt);
-	talloc_set_name_v(ptr, fmt, ap);
+	name = talloc_set_name_v(ptr, fmt, ap);
 	va_end(ap);
+
+	if (name == NULL) {
+		talloc_free(ptr);
+		return NULL;
+	}
 
 	return ptr;
 }
