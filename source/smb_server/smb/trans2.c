@@ -576,24 +576,15 @@ static NTSTATUS trans2_mkdir(struct smbsrv_request *req, struct trans_op *op)
 	return ntvfs_mkdir(req->ntvfs, io);
 }
 
-static NTSTATUS trans2_push_fileinfo(struct smbsrv_connection *smb_conn,
-				     TALLOC_CTX *mem_ctx,
-				     DATA_BLOB *blob,
-				     union smb_fileinfo *st,
-				     int default_str_flags)
+static NTSTATUS trans2_push_passthru_fileinfo(TALLOC_CTX *mem_ctx,
+					      DATA_BLOB *blob,
+					      enum smb_fileinfo_level level,
+					      union smb_fileinfo *st,
+					      int default_str_flags)
 {
 	uint_t i;
-	uint32_t list_size;
 
-	switch (st->generic.level) {
-	case RAW_FILEINFO_GENERIC:
-	case RAW_FILEINFO_GETATTR:
-	case RAW_FILEINFO_GETATTRE:
-	case RAW_FILEINFO_SEC_DESC:
-		/* handled elsewhere */
-		return NT_STATUS_INVALID_LEVEL;
-
-	case RAW_FILEINFO_BASIC_INFO:
+	switch (level) {
 	case RAW_FILEINFO_BASIC_INFORMATION:
 		TRANS2_CHECK(trans2_grow_data(mem_ctx, blob, 40));
 
@@ -604,6 +595,180 @@ static NTSTATUS trans2_push_fileinfo(struct smbsrv_connection *smb_conn,
 		SIVAL(blob->data,       32, st->basic_info.out.attrib);
 		SIVAL(blob->data,       36, 0); /* padding */
 		return NT_STATUS_OK;
+
+	case RAW_FILEINFO_NETWORK_OPEN_INFORMATION:
+		TRANS2_CHECK(trans2_grow_data(mem_ctx, blob, 56));
+
+		push_nttime(blob->data,  0, st->network_open_information.out.create_time);
+		push_nttime(blob->data,  8, st->network_open_information.out.access_time);
+		push_nttime(blob->data, 16, st->network_open_information.out.write_time);
+		push_nttime(blob->data, 24, st->network_open_information.out.change_time);
+		SBVAL(blob->data,       32, st->network_open_information.out.alloc_size);
+		SBVAL(blob->data,       40, st->network_open_information.out.size);
+		SIVAL(blob->data,       48, st->network_open_information.out.attrib);
+		SIVAL(blob->data,       52, 0); /* padding */
+		return NT_STATUS_OK;
+
+	case RAW_FILEINFO_STANDARD_INFORMATION:
+		TRANS2_CHECK(trans2_grow_data(mem_ctx, blob, 24));
+
+		SBVAL(blob->data,  0, st->standard_info.out.alloc_size);
+		SBVAL(blob->data,  8, st->standard_info.out.size);
+		SIVAL(blob->data, 16, st->standard_info.out.nlink);
+		SCVAL(blob->data, 20, st->standard_info.out.delete_pending);
+		SCVAL(blob->data, 21, st->standard_info.out.directory);
+		SSVAL(blob->data, 22, 0); /* padding */
+		return NT_STATUS_OK;
+
+	case RAW_FILEINFO_ATTRIBUTE_TAG_INFORMATION:
+		TRANS2_CHECK(trans2_grow_data(mem_ctx, blob, 8));
+
+		SIVAL(blob->data,  0, st->attribute_tag_information.out.attrib);
+		SIVAL(blob->data,  4, st->attribute_tag_information.out.reparse_tag);
+		return NT_STATUS_OK;
+
+	case RAW_FILEINFO_EA_INFORMATION:
+		TRANS2_CHECK(trans2_grow_data(mem_ctx, blob, 4));
+
+		SIVAL(blob->data,  0, st->ea_info.out.ea_size);
+		return NT_STATUS_OK;
+
+	case RAW_FILEINFO_MODE_INFORMATION:
+		TRANS2_CHECK(trans2_grow_data(mem_ctx, blob, 4));
+
+		SIVAL(blob->data,  0, st->mode_information.out.mode);
+		return NT_STATUS_OK;
+
+	case RAW_FILEINFO_ALIGNMENT_INFORMATION:
+		TRANS2_CHECK(trans2_grow_data(mem_ctx, blob, 4));
+
+		SIVAL(blob->data,  0, 
+		      st->alignment_information.out.alignment_requirement);
+		return NT_STATUS_OK;
+
+	case RAW_FILEINFO_ACCESS_INFORMATION:
+		TRANS2_CHECK(trans2_grow_data(mem_ctx, blob, 4));
+
+		SIVAL(blob->data,  0, st->access_information.out.access_flags);
+		return NT_STATUS_OK;
+
+	case RAW_FILEINFO_POSITION_INFORMATION:
+		TRANS2_CHECK(trans2_grow_data(mem_ctx, blob, 8));
+
+		SBVAL(blob->data,  0, st->position_information.out.position);
+		return NT_STATUS_OK;
+
+	case RAW_FILEINFO_COMPRESSION_INFORMATION:
+		TRANS2_CHECK(trans2_grow_data(mem_ctx, blob, 16));
+
+		SBVAL(blob->data,  0, st->compression_info.out.compressed_size);
+		SSVAL(blob->data,  8, st->compression_info.out.format);
+		SCVAL(blob->data, 10, st->compression_info.out.unit_shift);
+		SCVAL(blob->data, 11, st->compression_info.out.chunk_shift);
+		SCVAL(blob->data, 12, st->compression_info.out.cluster_shift);
+		SSVAL(blob->data, 13, 0); /* 3 bytes padding */
+		SCVAL(blob->data, 15, 0);
+		return NT_STATUS_OK;
+
+	case RAW_FILEINFO_INTERNAL_INFORMATION:
+		TRANS2_CHECK(trans2_grow_data(mem_ctx, blob, 8));
+
+		SBVAL(blob->data,  0, st->internal_information.out.file_id);
+		return NT_STATUS_OK;
+
+	case RAW_FILEINFO_ALL_INFORMATION:
+		TRANS2_CHECK(trans2_grow_data(mem_ctx, blob, 72));
+
+		push_nttime(blob->data,  0, st->all_info.out.create_time);
+		push_nttime(blob->data,  8, st->all_info.out.access_time);
+		push_nttime(blob->data, 16, st->all_info.out.write_time);
+		push_nttime(blob->data, 24, st->all_info.out.change_time);
+		SIVAL(blob->data,       32, st->all_info.out.attrib);
+		SIVAL(blob->data,       36, 0); /* padding */
+		SBVAL(blob->data,       40, st->all_info.out.alloc_size);
+		SBVAL(blob->data,       48, st->all_info.out.size);
+		SIVAL(blob->data,       56, st->all_info.out.nlink);
+		SCVAL(blob->data,       60, st->all_info.out.delete_pending);
+		SCVAL(blob->data,       61, st->all_info.out.directory);
+		SSVAL(blob->data,       62, 0); /* padding */
+		SIVAL(blob->data,       64, st->all_info.out.ea_size);
+		TRANS2_CHECK(trans2_append_data_string(mem_ctx, blob,
+						       st->all_info.out.fname.s,
+						       68, default_str_flags,
+						       STR_UNICODE));
+		return NT_STATUS_OK;
+
+	case RAW_FILEINFO_NAME_INFORMATION:
+		TRANS2_CHECK(trans2_grow_data(mem_ctx, blob, 4));
+
+		TRANS2_CHECK(trans2_append_data_string(mem_ctx, blob,
+						       st->name_info.out.fname.s,
+						       0, default_str_flags,
+						       STR_UNICODE));
+		return NT_STATUS_OK;
+
+	case RAW_FILEINFO_ALT_NAME_INFORMATION:
+		TRANS2_CHECK(trans2_grow_data(mem_ctx, blob, 4));
+
+		TRANS2_CHECK(trans2_append_data_string(mem_ctx, blob, 
+						       st->alt_name_info.out.fname.s,
+						       0, default_str_flags,
+						       STR_UNICODE));
+		return NT_STATUS_OK;
+
+	case RAW_FILEINFO_STREAM_INFORMATION:
+		for (i=0;i<st->stream_info.out.num_streams;i++) {
+			uint32_t data_size = blob->length;
+			uint8_t *data;
+
+			TRANS2_CHECK(trans2_grow_data(mem_ctx, blob, data_size + 24));
+			data = blob->data + data_size;
+			SBVAL(data,  8, st->stream_info.out.streams[i].size);
+			SBVAL(data, 16, st->stream_info.out.streams[i].alloc_size);
+			TRANS2_CHECK(trans2_append_data_string(mem_ctx, blob,
+							       st->stream_info.out.streams[i].stream_name.s,
+							       data_size + 4, default_str_flags,
+							       STR_UNICODE));
+			if (i == st->stream_info.out.num_streams - 1) {
+				SIVAL(blob->data, data_size, 0);
+			} else {
+				TRANS2_CHECK(trans2_grow_data_fill(mem_ctx, blob, (blob->length+7)&~7));
+				SIVAL(blob->data, data_size, 
+				      blob->length - data_size);
+			}
+		}
+		return NT_STATUS_OK;
+
+	default:
+		return NT_STATUS_INVALID_LEVEL;
+	}
+
+	return NT_STATUS_INVALID_LEVEL;
+}
+
+static NTSTATUS trans2_push_fileinfo(struct smbsrv_connection *smb_conn,
+				     TALLOC_CTX *mem_ctx,
+				     DATA_BLOB *blob,
+				     union smb_fileinfo *st,
+				     int default_str_flags)
+{
+	uint32_t list_size;
+	enum smb_fileinfo_level passthru_level;
+
+	switch (st->generic.level) {
+	case RAW_FILEINFO_GENERIC:
+	case RAW_FILEINFO_GETATTR:
+	case RAW_FILEINFO_GETATTRE:
+	case RAW_FILEINFO_SEC_DESC:
+	case RAW_FILEINFO_SMB2_ALL_EAS:
+	case RAW_FILEINFO_SMB2_ALL_INFORMATION:
+		/* handled elsewhere */
+		return NT_STATUS_INVALID_LEVEL;
+
+	case RAW_FILEINFO_UNIX_BASIC:
+	case RAW_FILEINFO_UNIX_LINK:
+		/* not implemented yet */
+		return NT_STATUS_INVALID_LEVEL;
 
 	case RAW_FILEINFO_STANDARD:
 		TRANS2_CHECK(trans2_grow_data(mem_ctx, blob, 22));
@@ -628,58 +793,6 @@ static NTSTATUS trans2_push_fileinfo(struct smbsrv_connection *smb_conn,
 		SIVAL(blob->data,        22, st->ea_size.out.ea_size);
 		return NT_STATUS_OK;
 
-	case RAW_FILEINFO_NETWORK_OPEN_INFORMATION:
-		TRANS2_CHECK(trans2_grow_data(mem_ctx, blob, 56));
-
-		push_nttime(blob->data,  0, st->network_open_information.out.create_time);
-		push_nttime(blob->data,  8, st->network_open_information.out.access_time);
-		push_nttime(blob->data, 16, st->network_open_information.out.write_time);
-		push_nttime(blob->data, 24, st->network_open_information.out.change_time);
-		SBVAL(blob->data,       32, st->network_open_information.out.alloc_size);
-		SBVAL(blob->data,       40, st->network_open_information.out.size);
-		SIVAL(blob->data,       48, st->network_open_information.out.attrib);
-		SIVAL(blob->data,       52, 0); /* padding */
-		return NT_STATUS_OK;
-
-	case RAW_FILEINFO_STANDARD_INFO:
-	case RAW_FILEINFO_STANDARD_INFORMATION:
-		TRANS2_CHECK(trans2_grow_data(mem_ctx, blob, 24));
-
-		SBVAL(blob->data,  0, st->standard_info.out.alloc_size);
-		SBVAL(blob->data,  8, st->standard_info.out.size);
-		SIVAL(blob->data, 16, st->standard_info.out.nlink);
-		SCVAL(blob->data, 20, st->standard_info.out.delete_pending);
-		SCVAL(blob->data, 21, st->standard_info.out.directory);
-		SSVAL(blob->data, 22, 0); /* padding */
-		return NT_STATUS_OK;
-
-	case RAW_FILEINFO_ATTRIBUTE_TAG_INFORMATION:
-		TRANS2_CHECK(trans2_grow_data(mem_ctx, blob, 8));
-
-		SIVAL(blob->data,  0, st->attribute_tag_information.out.attrib);
-		SIVAL(blob->data,  4, st->attribute_tag_information.out.reparse_tag);
-		return NT_STATUS_OK;
-
-	case RAW_FILEINFO_EA_INFO:
-	case RAW_FILEINFO_EA_INFORMATION:
-		TRANS2_CHECK(trans2_grow_data(mem_ctx, blob, 4));
-
-		SIVAL(blob->data,  0, st->ea_info.out.ea_size);
-		return NT_STATUS_OK;
-
-	case RAW_FILEINFO_MODE_INFORMATION:
-		TRANS2_CHECK(trans2_grow_data(mem_ctx, blob, 4));
-
-		SIVAL(blob->data,  0, st->mode_information.out.mode);
-		return NT_STATUS_OK;
-
-	case RAW_FILEINFO_ALIGNMENT_INFORMATION:
-		TRANS2_CHECK(trans2_grow_data(mem_ctx, blob, 4));
-
-		SIVAL(blob->data,  0, 
-		      st->alignment_information.out.alignment_requirement);
-		return NT_STATUS_OK;
-
 	case RAW_FILEINFO_EA_LIST:
 		list_size = ea_list_size(st->ea_list.out.num_eas,
 					 st->ea_list.out.eas);
@@ -698,117 +811,49 @@ static NTSTATUS trans2_push_fileinfo(struct smbsrv_connection *smb_conn,
 			    st->all_eas.out.num_eas, st->all_eas.out.eas);
 		return NT_STATUS_OK;
 
-	case RAW_FILEINFO_ACCESS_INFORMATION:
-		TRANS2_CHECK(trans2_grow_data(mem_ctx, blob, 4));
-
-		SIVAL(blob->data,  0, st->access_information.out.access_flags);
-		return NT_STATUS_OK;
-
-	case RAW_FILEINFO_POSITION_INFORMATION:
-		TRANS2_CHECK(trans2_grow_data(mem_ctx, blob, 8));
-
-		SBVAL(blob->data,  0, st->position_information.out.position);
-		return NT_STATUS_OK;
-
-	case RAW_FILEINFO_COMPRESSION_INFO:
-	case RAW_FILEINFO_COMPRESSION_INFORMATION:
-		TRANS2_CHECK(trans2_grow_data(mem_ctx, blob, 16));
-
-		SBVAL(blob->data,  0, st->compression_info.out.compressed_size);
-		SSVAL(blob->data,  8, st->compression_info.out.format);
-		SCVAL(blob->data, 10, st->compression_info.out.unit_shift);
-		SCVAL(blob->data, 11, st->compression_info.out.chunk_shift);
-		SCVAL(blob->data, 12, st->compression_info.out.cluster_shift);
-		SSVAL(blob->data, 13, 0); /* 3 bytes padding */
-		SCVAL(blob->data, 15, 0);
-		return NT_STATUS_OK;
-
 	case RAW_FILEINFO_IS_NAME_VALID:
 		return NT_STATUS_OK;
 
-	case RAW_FILEINFO_INTERNAL_INFORMATION:
-		TRANS2_CHECK(trans2_grow_data(mem_ctx, blob, 8));
+	case RAW_FILEINFO_BASIC_INFO:
+		passthru_level = RAW_FILEINFO_BASIC_INFORMATION;
+		break;
 
-		SBVAL(blob->data,  0, st->internal_information.out.file_id);
-		return NT_STATUS_OK;
+	case RAW_FILEINFO_STANDARD_INFO:
+		passthru_level = RAW_FILEINFO_STANDARD_INFORMATION;
+		break;
+
+	case RAW_FILEINFO_EA_INFO:
+		passthru_level = RAW_FILEINFO_EA_INFORMATION;
+		break;
+
+	case RAW_FILEINFO_COMPRESSION_INFO:
+		passthru_level = RAW_FILEINFO_COMPRESSION_INFORMATION;
+		break;
 
 	case RAW_FILEINFO_ALL_INFO:
-	case RAW_FILEINFO_ALL_INFORMATION:
-		TRANS2_CHECK(trans2_grow_data(mem_ctx, blob, 72));
-
-		push_nttime(blob->data,  0, st->all_info.out.create_time);
-		push_nttime(blob->data,  8, st->all_info.out.access_time);
-		push_nttime(blob->data, 16, st->all_info.out.write_time);
-		push_nttime(blob->data, 24, st->all_info.out.change_time);
-		SIVAL(blob->data,       32, st->all_info.out.attrib);
-		SIVAL(blob->data,       36, 0);
-		SBVAL(blob->data,       40, st->all_info.out.alloc_size);
-		SBVAL(blob->data,       48, st->all_info.out.size);
-		SIVAL(blob->data,       56, st->all_info.out.nlink);
-		SCVAL(blob->data,       60, st->all_info.out.delete_pending);
-		SCVAL(blob->data,       61, st->all_info.out.directory);
-		SSVAL(blob->data,       62, 0); /* padding */
-		SIVAL(blob->data,       64, st->all_info.out.ea_size);
-		TRANS2_CHECK(trans2_append_data_string(mem_ctx, blob,
-						       st->all_info.out.fname.s,
-						       68, default_str_flags,
-						       STR_UNICODE));
-		return NT_STATUS_OK;
+		passthru_level = RAW_FILEINFO_ALL_INFORMATION;
+		break;
 
 	case RAW_FILEINFO_NAME_INFO:
-	case RAW_FILEINFO_NAME_INFORMATION:
-		TRANS2_CHECK(trans2_grow_data(mem_ctx, blob, 4));
-
-		TRANS2_CHECK(trans2_append_data_string(mem_ctx, blob,
-						       st->name_info.out.fname.s,
-						       0, default_str_flags,
-						       STR_UNICODE));
-		return NT_STATUS_OK;
+		passthru_level = RAW_FILEINFO_NAME_INFORMATION;
+		break;
 
 	case RAW_FILEINFO_ALT_NAME_INFO:
-	case RAW_FILEINFO_ALT_NAME_INFORMATION:
-		TRANS2_CHECK(trans2_grow_data(mem_ctx, blob, 4));
-
-		TRANS2_CHECK(trans2_append_data_string(mem_ctx, blob, 
-						       st->alt_name_info.out.fname.s,
-						       0, default_str_flags,
-						       STR_UNICODE));
-		return NT_STATUS_OK;
+		passthru_level = RAW_FILEINFO_ALT_NAME_INFORMATION;
+		break;
 
 	case RAW_FILEINFO_STREAM_INFO:
-	case RAW_FILEINFO_STREAM_INFORMATION:
-		for (i=0;i<st->stream_info.out.num_streams;i++) {
-			uint32_t data_size = blob->length;
-			uint8_t *data;
+		passthru_level = RAW_FILEINFO_STREAM_INFORMATION;
+		break;
 
-			TRANS2_CHECK(trans2_grow_data(mem_ctx, blob, data_size + 24));
-			data = blob->data + data_size;
-			SBVAL(data,  8, st->stream_info.out.streams[i].size);
-			SBVAL(data, 16, st->stream_info.out.streams[i].alloc_size);
-			TRANS2_CHECK(trans2_append_data_string(mem_ctx, blob,
-							       st->stream_info.out.streams[i].stream_name.s,
-							       data_size + 4, default_str_flags,
-							       STR_UNICODE));
-			if (i == st->stream_info.out.num_streams - 1) {
-				SIVAL(blob->data, data_size, 0);
-			} else {
-				TRANS2_CHECK(trans2_grow_data_fill(mem_ctx, blob, (blob->length+7)&~7));
-				SIVAL(blob->data, data_size, 
-				      blob->length - data_size);
-			}
-		}
-		return NT_STATUS_OK;
-		
-	case RAW_FILEINFO_UNIX_BASIC:
-	case RAW_FILEINFO_UNIX_LINK:
-		return NT_STATUS_INVALID_LEVEL;
-
-	case RAW_FILEINFO_SMB2_ALL_EAS:
-	case RAW_FILEINFO_SMB2_ALL_INFORMATION:
-		return NT_STATUS_INVALID_LEVEL;
+	default:
+		passthru_level = st->generic.level;
+		break;
 	}
 
-	return NT_STATUS_INVALID_LEVEL;
+	return trans2_push_passthru_fileinfo(mem_ctx, blob,
+					     passthru_level, st,
+					     default_str_flags);
 }
 
 /*
