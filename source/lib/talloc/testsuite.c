@@ -351,6 +351,7 @@ static BOOL test_misc(void)
 	void *root, *p1;
 	char *p2;
 	double *d;
+	const char *name;
 
 	printf("TESTING MISCELLANEOUS\n");
 
@@ -387,10 +388,10 @@ static BOOL test_misc(void)
 	CHECK_BLOCKS(p1, 1);
 	CHECK_BLOCKS(root, 2);
 
-	talloc_set_name(p1, "my name is %s", "foo");
+	name = talloc_set_name(p1, "my name is %s", "foo");
 	if (strcmp(talloc_get_name(p1), "my name is foo") != 0) {
-		printf("failed: wrong name after talloc_set_name(my name is foo) - '%s'\n",
-			talloc_get_name(p1));
+		printf("failed: wrong name after talloc_set_name(my name is foo) - '%s'=>'%s'\n",
+			(name?name:"NULL"), talloc_get_name(p1));
 		return False;
 	}
 	CHECK_BLOCKS(p1, 2);
