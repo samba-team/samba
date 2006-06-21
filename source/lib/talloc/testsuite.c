@@ -389,7 +389,8 @@ static BOOL test_misc(void)
 
 	talloc_set_name(p1, "my name is %s", "foo");
 	if (strcmp(talloc_get_name(p1), "my name is foo") != 0) {
-		printf("failed: wrong name after talloc_set_name\n");
+		printf("failed: wrong name after talloc_set_name(my name is foo) - '%s'\n",
+			talloc_get_name(p1));
 		return False;
 	}
 	CHECK_BLOCKS(p1, 2);
@@ -397,7 +398,8 @@ static BOOL test_misc(void)
 
 	talloc_set_name_const(p1, NULL);
 	if (strcmp(talloc_get_name(p1), "UNNAMED") != 0) {
-		printf("failed: wrong name after talloc_set_name(NULL)\n");
+		printf("failed: wrong name after talloc_set_name(NULL) - '%s'\n",
+			talloc_get_name(p1));
 		return False;
 	}
 	CHECK_BLOCKS(p1, 2);
