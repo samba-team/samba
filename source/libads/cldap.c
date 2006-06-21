@@ -225,6 +225,7 @@ static int recv_cldap_netlogon(int sock, struct cldap_netlogon_reply *reply)
 	asn1_end_tag(&data);
 
 	if (data.has_error) {
+		asn1_free(&data);
 		DEBUG(1,("Failed to parse cldap reply\n"));
 		return -1;
 	}
@@ -262,6 +263,8 @@ static int recv_cldap_netlogon(int sock, struct cldap_netlogon_reply *reply)
 	data_blob_free(&os3);
 	data_blob_free(&blob);
 	
+	asn1_free(&data);
+
 	return 0;
 }
 
