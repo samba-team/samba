@@ -14,6 +14,7 @@ OBJ_FILES = \
 		handle.o \
 		tcon.o \
 		session.o \
+		blob.o \
 		management.o
 PRIVATE_PROTO_HEADER = smb_server_proto.h
 PUBLIC_DEPENDENCIES = \
