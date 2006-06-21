@@ -671,6 +671,7 @@ struct share_mode_entry {
 	SMB_DEV_T dev;
 	SMB_INO_T inode;
 	unsigned long share_file_id;
+	uint32 uid;		/* uid of file opener. */
 };
 
 /* oplock break message definition - linearization of share_mode_entry.
@@ -687,10 +688,11 @@ Offset  Data			length.
 28	SMB_DEV_T dev		8 bytes.
 36	SMB_INO_T inode		8 bytes
 44	unsigned long file_id	4 bytes
-48
+48	uint32 uid		4 bytes
+52
 
 */
-#define MSG_SMB_SHARE_MODE_ENTRY_SIZE 48
+#define MSG_SMB_SHARE_MODE_ENTRY_SIZE 52
 
 struct share_mode_lock {
 	const char *servicepath; /* canonicalized. */

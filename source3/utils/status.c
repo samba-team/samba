@@ -108,13 +108,14 @@ static void print_share_mode(const struct share_mode_entry *e, const char *share
 
 	if (count==0) {
 		d_printf("Locked files:\n");
-		d_printf("Pid          DenyMode   Access      R/W        Oplock           SharePath           Name\n");
-		d_printf("----------------------------------------------------------------------------------------\n");
+		d_printf("Pid          Uid        DenyMode   Access      R/W        Oplock           SharePath   Name   Time\n");
+		d_printf("--------------------------------------------------------------------------------------------------\n");
 	}
 	count++;
 
 	if (Ucrit_checkPid(procid_to_pid(&e->pid))) {
 		d_printf("%-11s  ",procid_str_static(&e->pid));
+		d_printf("%-9u  ", (unsigned int)e->uid);
 		switch (map_share_mode_to_deny_mode(e->share_access,
 						    e->private_options)) {
 			case DENY_NONE: d_printf("DENY_NONE  "); break;
