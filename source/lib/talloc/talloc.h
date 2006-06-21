@@ -114,7 +114,7 @@ void _talloc_set_destructor(const void *ptr, int (*destructor)(void *));
 void talloc_increase_ref_count(const void *ptr);
 void *talloc_reference(const void *context, const void *ptr);
 int talloc_unlink(const void *context, void *ptr);
-void talloc_set_name(const void *ptr, const char *fmt, ...) PRINTF_ATTRIBUTE(2,3);
+const char *talloc_set_name(const void *ptr, const char *fmt, ...) PRINTF_ATTRIBUTE(2,3);
 void talloc_set_name_const(const void *ptr, const char *name);
 void *talloc_named(const void *context, size_t size, 
 		   const char *fmt, ...) PRINTF_ATTRIBUTE(3,4);
