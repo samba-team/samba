@@ -583,6 +583,7 @@ static NTSTATUS trans2_push_passthru_fileinfo(TALLOC_CTX *mem_ctx,
 					      int default_str_flags)
 {
 	uint_t i;
+	size_t list_size;
 
 	switch (level) {
 	case RAW_FILEINFO_BASIC_INFORMATION:
@@ -737,6 +738,41 @@ static NTSTATUS trans2_push_passthru_fileinfo(TALLOC_CTX *mem_ctx,
 				      blob->length - data_size);
 			}
 		}
+		return NT_STATUS_OK;
+
+	case RAW_FILEINFO_SMB2_ALL_EAS:
+		list_size = ea_list_size_chained(st->all_eas.out.num_eas,
+						 st->all_eas.out.eas);
+		TRANS2_CHECK(trans2_grow_data(mem_ctx, blob, list_size));
+
+		ea_put_list_chained(blob->data,
+				    st->all_eas.out.num_eas,
+				    st->all_eas.out.eas);
+		return NT_STATUS_OK;
+
+	case RAW_FILEINFO_SMB2_ALL_INFORMATION:
+		TRANS2_CHECK(trans2_grow_data(mem_ctx, blob, 0x64));
+
+		push_nttime(blob->data, 0x00, st->all_info2.out.create_time);
+		push_nttime(blob->data, 0x08, st->all_info2.out.access_time);
+		push_nttime(blob->data, 0x10, st->all_info2.out.write_time);
+		push_nttime(blob->data, 0x18, st->all_info2.out.change_time);
+		SIVAL(blob->data,       0x20, st->all_info2.out.attrib);
+		SIVAL(blob->data,       0x24, st->all_info2.out.unknown1);
+		SBVAL(blob->data,       0x28, st->all_info2.out.alloc_size);
+		SBVAL(blob->data,       0x30, st->all_info2.out.size);
+		SIVAL(blob->data,       0x38, st->all_info2.out.nlink);
+		SCVAL(blob->data,       0x3C, st->all_info2.out.delete_pending);
+		SCVAL(blob->data,       0x3D, st->all_info2.out.directory);
+		SBVAL(blob->data,	0x40, st->all_info2.out.file_id);
+		SIVAL(blob->data,       0x48, st->all_info2.out.ea_size);
+		SIVAL(blob->data,	0x4C, st->all_info2.out.access_mask);
+		SBVAL(blob->data,	0x50, st->all_info2.out.position);
+		SBVAL(blob->data,	0x58, st->all_info2.out.mode);
+		TRANS2_CHECK(trans2_append_data_string(mem_ctx, blob,
+						       st->all_info.out.fname.s,
+						       0x60, default_str_flags,
+						       STR_UNICODE));
 		return NT_STATUS_OK;
 
 	default:
