@@ -241,42 +241,17 @@ static NTSTATUS trans2_align_data(struct smb_trans2 *trans)
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS trans2_push_fsinfo(struct smbsrv_connection *smb_conn,
-				   TALLOC_CTX *mem_ctx,
-				   DATA_BLOB *blob,
-				   union smb_fsinfo *fsinfo,
-				   int default_str_flags)
+static NTSTATUS trans2_push_passthru_fsinfo(TALLOC_CTX *mem_ctx,
+					    DATA_BLOB *blob,
+					    enum smb_fsinfo_level level,
+					    union smb_fsinfo *fsinfo,
+					    int default_str_flags)
 {
 	uint_t i;
 	DATA_BLOB guid_blob;
 
-	switch (fsinfo->generic.level) {
-	case SMB_QFS_ALLOCATION:
-		TRANS2_CHECK(trans2_grow_data(mem_ctx, blob, 18));
-
-		SIVAL(blob->data,  0, fsinfo->allocation.out.fs_id);
-		SIVAL(blob->data,  4, fsinfo->allocation.out.sectors_per_unit);
-		SIVAL(blob->data,  8, fsinfo->allocation.out.total_alloc_units);
-		SIVAL(blob->data, 12, fsinfo->allocation.out.avail_alloc_units);
-		SSVAL(blob->data, 16, fsinfo->allocation.out.bytes_per_sector);
-
-		return NT_STATUS_OK;
-
-	case SMB_QFS_VOLUME:
-		TRANS2_CHECK(trans2_grow_data(mem_ctx, blob, 5));
-
-		SIVAL(blob->data,       0, fsinfo->volume.out.serial_number);
-		/* w2k3 implements this incorrectly for unicode - it
-		 * leaves the last byte off the string */
-		TRANS2_CHECK(trans2_append_data_string(mem_ctx, blob,
-						       fsinfo->volume.out.volume_name.s,
-						       4, default_str_flags,
-						       STR_LEN8BIT|STR_NOALIGN));
-
-		return NT_STATUS_OK;
-
-	case SMB_QFS_VOLUME_INFO:
-	case SMB_QFS_VOLUME_INFORMATION:
+	switch (level) {
+	case RAW_QFS_VOLUME_INFORMATION:
 		TRANS2_CHECK(trans2_grow_data(mem_ctx, blob, 18));
 
 		push_nttime(blob->data, 0, fsinfo->volume_info.out.create_time);
@@ -289,8 +264,7 @@ static NTSTATUS trans2_push_fsinfo(struct smbsrv_connection *smb_conn,
 
 		return NT_STATUS_OK;
 
-	case SMB_QFS_SIZE_INFO:
-	case SMB_QFS_SIZE_INFORMATION:
+	case RAW_QFS_SIZE_INFORMATION:
 		TRANS2_CHECK(trans2_grow_data(mem_ctx, blob, 24));
 
 		SBVAL(blob->data,  0, fsinfo->size_info.out.total_alloc_units);
@@ -300,8 +274,7 @@ static NTSTATUS trans2_push_fsinfo(struct smbsrv_connection *smb_conn,
 
 		return NT_STATUS_OK;
 
-	case SMB_QFS_DEVICE_INFO:
-	case SMB_QFS_DEVICE_INFORMATION:
+	case RAW_QFS_DEVICE_INFORMATION:
 		TRANS2_CHECK(trans2_grow_data(mem_ctx, blob, 8));
 
 		SIVAL(blob->data,      0, fsinfo->device_info.out.device_type);
@@ -309,8 +282,7 @@ static NTSTATUS trans2_push_fsinfo(struct smbsrv_connection *smb_conn,
 
 		return NT_STATUS_OK;
 
-	case SMB_QFS_ATTRIBUTE_INFO:
-	case SMB_QFS_ATTRIBUTE_INFORMATION:
+	case RAW_QFS_ATTRIBUTE_INFORMATION:
 		TRANS2_CHECK(trans2_grow_data(mem_ctx, blob, 12));
 
 		SIVAL(blob->data, 0, fsinfo->attribute_info.out.fs_attr);
@@ -325,7 +297,7 @@ static NTSTATUS trans2_push_fsinfo(struct smbsrv_connection *smb_conn,
 		return NT_STATUS_OK;
 
 
-	case SMB_QFS_QUOTA_INFORMATION:
+	case RAW_QFS_QUOTA_INFORMATION:
 		TRANS2_CHECK(trans2_grow_data(mem_ctx, blob, 48));
 
 		SBVAL(blob->data,   0, fsinfo->quota_information.out.unknown[0]);
@@ -338,7 +310,7 @@ static NTSTATUS trans2_push_fsinfo(struct smbsrv_connection *smb_conn,
 		return NT_STATUS_OK;
 
 
-	case SMB_QFS_FULL_SIZE_INFORMATION:
+	case RAW_QFS_FULL_SIZE_INFORMATION:
 		TRANS2_CHECK(trans2_grow_data(mem_ctx, blob, 32));
 
 		SBVAL(blob->data,  0, fsinfo->full_size_information.out.total_alloc_units);
@@ -349,7 +321,7 @@ static NTSTATUS trans2_push_fsinfo(struct smbsrv_connection *smb_conn,
 
 		return NT_STATUS_OK;
 
-	case SMB_QFS_OBJECTID_INFORMATION:
+	case RAW_QFS_OBJECTID_INFORMATION:
 		TRANS2_CHECK(trans2_grow_data(mem_ctx, blob, 64));
 
 		TRANS2_CHECK(ndr_push_struct_blob(&guid_blob, mem_ctx, 
@@ -362,9 +334,71 @@ static NTSTATUS trans2_push_fsinfo(struct smbsrv_connection *smb_conn,
 		}
 
 		return NT_STATUS_OK;
+
+	default:
+		return NT_STATUS_INVALID_LEVEL;
 	}
 
 	return NT_STATUS_INVALID_LEVEL;
+}
+
+static NTSTATUS trans2_push_fsinfo(struct smbsrv_connection *smb_conn,
+				   TALLOC_CTX *mem_ctx,
+				   DATA_BLOB *blob,
+				   union smb_fsinfo *fsinfo,
+				   int default_str_flags)
+{
+	enum smb_fsinfo_level passthru_level;
+
+	switch (fsinfo->generic.level) {
+	case RAW_QFS_ALLOCATION:
+		TRANS2_CHECK(trans2_grow_data(mem_ctx, blob, 18));
+
+		SIVAL(blob->data,  0, fsinfo->allocation.out.fs_id);
+		SIVAL(blob->data,  4, fsinfo->allocation.out.sectors_per_unit);
+		SIVAL(blob->data,  8, fsinfo->allocation.out.total_alloc_units);
+		SIVAL(blob->data, 12, fsinfo->allocation.out.avail_alloc_units);
+		SSVAL(blob->data, 16, fsinfo->allocation.out.bytes_per_sector);
+
+		return NT_STATUS_OK;
+
+	case RAW_QFS_VOLUME:
+		TRANS2_CHECK(trans2_grow_data(mem_ctx, blob, 5));
+
+		SIVAL(blob->data,       0, fsinfo->volume.out.serial_number);
+		/* w2k3 implements this incorrectly for unicode - it
+		 * leaves the last byte off the string */
+		TRANS2_CHECK(trans2_append_data_string(mem_ctx, blob,
+						       fsinfo->volume.out.volume_name.s,
+						       4, default_str_flags,
+						       STR_LEN8BIT|STR_NOALIGN));
+
+		return NT_STATUS_OK;
+
+	case RAW_QFS_VOLUME_INFO:
+		passthru_level = RAW_QFS_VOLUME_INFORMATION;
+		break;
+
+	case RAW_QFS_SIZE_INFO:
+		passthru_level = RAW_QFS_SIZE_INFORMATION;
+		break;
+
+	case RAW_QFS_DEVICE_INFO:
+		passthru_level = RAW_QFS_DEVICE_INFORMATION;
+		break;
+
+	case RAW_QFS_ATTRIBUTE_INFO:
+		passthru_level = RAW_QFS_ATTRIBUTE_INFORMATION;
+		break;
+
+	default:
+		passthru_level = fsinfo->generic.level;
+		break;
+	}
+
+	return trans2_push_passthru_fsinfo(mem_ctx, blob,
+					   passthru_level, fsinfo,
+					   default_str_flags);
 }
 
 /*
@@ -404,54 +438,18 @@ static NTSTATUS trans2_qfsinfo(struct smbsrv_request *req, struct trans_op *op)
 	fsinfo = talloc(op, union smb_fsinfo);
 	NT_STATUS_HAVE_NO_MEMORY(fsinfo);
 
+	level = SVAL(trans->in.params.data, 0);
+
+	/* work out the backend level - we make it 1-1 in the header */
+	fsinfo->generic.level = (enum smb_fsinfo_level)level;
+	if (fsinfo->generic.level >= RAW_QFS_GENERIC) {
+		return NT_STATUS_INVALID_LEVEL;
+	}
+
 	op->op_info = fsinfo;
 	op->send_fn = trans2_qfsinfo_send;
 
-	level = SVAL(trans->in.params.data, 0);
-
-	switch (level) {
-	case SMB_QFS_ALLOCATION:
-		fsinfo->allocation.level = RAW_QFS_ALLOCATION;
-		return ntvfs_fsinfo(req->ntvfs, fsinfo);
-
-	case SMB_QFS_VOLUME:
-		fsinfo->volume.level = RAW_QFS_VOLUME;
-		return ntvfs_fsinfo(req->ntvfs, fsinfo);
-
-	case SMB_QFS_VOLUME_INFO:
-	case SMB_QFS_VOLUME_INFORMATION:
-		fsinfo->volume_info.level = RAW_QFS_VOLUME_INFO;
-		return ntvfs_fsinfo(req->ntvfs, fsinfo);
-
-	case SMB_QFS_SIZE_INFO:
-	case SMB_QFS_SIZE_INFORMATION:
-		fsinfo->size_info.level = RAW_QFS_SIZE_INFO;
-		return ntvfs_fsinfo(req->ntvfs, fsinfo);
-
-	case SMB_QFS_DEVICE_INFO:
-	case SMB_QFS_DEVICE_INFORMATION:
-		fsinfo->device_info.level = RAW_QFS_DEVICE_INFO;
-		return ntvfs_fsinfo(req->ntvfs, fsinfo);
-
-	case SMB_QFS_ATTRIBUTE_INFO:
-	case SMB_QFS_ATTRIBUTE_INFORMATION:
-		fsinfo->attribute_info.level = RAW_QFS_ATTRIBUTE_INFO;
-		return ntvfs_fsinfo(req->ntvfs, fsinfo);
-
-	case SMB_QFS_QUOTA_INFORMATION:
-		fsinfo->quota_information.level = RAW_QFS_QUOTA_INFORMATION;
-		return ntvfs_fsinfo(req->ntvfs, fsinfo);
-
-	case SMB_QFS_FULL_SIZE_INFORMATION:
-		fsinfo->full_size_information.level = RAW_QFS_FULL_SIZE_INFORMATION;
-		return ntvfs_fsinfo(req->ntvfs, fsinfo);
-
-	case SMB_QFS_OBJECTID_INFORMATION:
-		fsinfo->objectid_information.level = RAW_QFS_OBJECTID_INFORMATION;
-		return ntvfs_fsinfo(req->ntvfs, fsinfo);
-	}
-
-	return NT_STATUS_INVALID_LEVEL;
+	return ntvfs_fsinfo(req->ntvfs, fsinfo);
 }
 
 
