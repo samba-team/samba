@@ -149,6 +149,7 @@ static void create_share_mode_entry(struct share_mode_entry *out,
 	out->access_mask = in->access_mask;
 	out->dev = (SMB_DEV_T)in->dev;
 	out->inode = (SMB_INO_T)in->ino;
+	out->uid = (uint32)geteuid();
 }
 
 /*

@@ -119,6 +119,7 @@ static void print_share_mode(const struct share_mode_entry *e, const char *share
 						    e->private_options);
 
 	printf("<tr><td>%s</td>",_(mapPid2Machine(e->pid)));
+	printf("<td>%u</td>",(unsigned int)e->uid);
 	printf("<td>");
 	switch ((deny_mode>>4)&0xF) {
 	case DENY_NONE: printf("DENY_NONE"); break;
