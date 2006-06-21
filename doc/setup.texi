@@ -15,6 +15,7 @@ doing so.  It will make life easier for you and everyone else.
 * Configuration file::          
 * Creating the database::       
 * Modifying the database::      
+* Checking the setup::
 * keytabs::                     
 * Serving Kerberos 4/524/kaserver::  
 * Remote administration::       
@@ -186,7 +187,7 @@ krbtgt/MY.REALM@@MY.REALM 1:0:1:52b53b61c875ce16:-:0:7:c8943be ...
 kadmin/changepw@@MY.REALM 1:0:1:f48c8af2b340e9fb:-:0:7:e3e6088 ...
 @end smallexample
 
-@node Modifying the database, keytabs, Creating the database, Setting up a realm
+@node Modifying the database, Checking the setup, Creating the database, Setting up a realm
 @section Modifying the database
 
 All modifications of principals are done with with kadmin.
@@ -248,7 +249,28 @@ R second
 
 @c Describe more of kadmin commands here...
 
-@node keytabs, Serving Kerberos 4/524/kaserver, Modifying the database, Setting up a realm
+@node Checking the setup, keytabs, Modifying the database, Setting up a realm
+@section Checking the setup
+
+There are two tools that can check the consistency of the Kerberos
+configuration file and the Kerberos database.
+
+The Kerberos configuration file is checked using
+@command{verify_krb5_conf}. The tool checks for common errors, but
+commonly there are several uncommon configuration entries that are
+never added to the tool and thus generates ``unknown entry'' warnings.
+This is usually nothing to worry about.
+
+The database check is built into the kadmin tool. It will check for
+common configuration error that will cause problems later. Common
+check are for existence and flags on important principals. The
+database check by run by the following command :
+
+@example
+kadmin check REALM.EXAMPLE.ORG
+@end example
+
+@node keytabs, Serving Kerberos 4/524/kaserver, Checking the setup, Setting up a realm
 @section keytabs
 
 To extract a service ticket from the database and put it in a keytab, you
