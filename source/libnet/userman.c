@@ -519,11 +519,13 @@ static NTSTATUS usermod_lookup(struct composite_context *c,
 	   and what if there's more than one rid resolved */
 	if (!s->lookupname.out.rids.count) {
 		c->status = NT_STATUS_NO_SUCH_USER;
-		composite_error(c, c->status);
+		c->state  = COMPOSITE_STATE_ERROR;
+		return c->status;
 
 	} else if (!s->lookupname.out.rids.count > 1) {
 		c->status = NT_STATUS_INVALID_ACCOUNT_NAME;
-		composite_error(c, c->status);
+		c->state  = COMPOSITE_STATE_ERROR;
+		return c->status;
 	}
 
 	/* prepare the next rpc call */
