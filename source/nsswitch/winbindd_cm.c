@@ -783,7 +783,7 @@ static NTSTATUS cm_open_connection(struct winbindd_domain *domain,
 				fstrcpy( domain->dcname, saf_name );
 			} else {
 				add_failed_connection_entry(
-					domain->name, saf_name,
+					domain->name, saf_servername,
 					NT_STATUS_UNSUCCESSFUL);
 			}
 		} 
