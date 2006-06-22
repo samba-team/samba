@@ -1,3 +1,13 @@
+2006-06-22  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* gssapi.h: Add oid_to_str.
+
+	* Makefile.am: add oid_to_str and test_oid
+	
+	* oid_to_str.c: Add gss_oid_to_str
+
+	* test_oid.c: Add test for gss_oid_to_str()
+	
 2006-05-13  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* verify_mic.c: Less pointer signedness warnings.
