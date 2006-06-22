@@ -123,6 +123,7 @@ cat >$CONFFILE<<EOF
 	wins support = yes
 	server role = pdc
 	max xmit = 32K
+	server max protocol = SMB2
 
 [tmp]
 	path = $TMPDIR
