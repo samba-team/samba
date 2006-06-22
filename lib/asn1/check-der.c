@@ -571,16 +571,13 @@ check_fail_universal_string(void)
 static int
 check_fail_heim_integer(void)
 {
-#if 0
     struct test_case tests[] = {
+	{NULL, 1, "\xff", "negative padded 0"}
     };
     int ntests = sizeof(tests) / sizeof(*tests);
 
     return generic_decode_fail(tests, ntests, sizeof(heim_integer),
 			       (generic_decode)der_get_heim_integer);
-#else
-    return 0;
-#endif
 }
 
 static int
@@ -701,6 +698,32 @@ test_heim_int_format(void)
     return ret;
 }
 
+static int
+test_heim_oid_format_same(const char *str, const heim_oid *oid)
+{
+    int ret;
+    char *p;
+
+    ret = der_print_heim_oid(oid, &p);
+    if (ret)
+	return 1;
+    ret = strcmp(p, str);
+    free(p);
+    return ret != 0;
+}
+
+static int
+test_heim_oid_format(void)
+{
+    unsigned sha1_oid_tree[] = { 1, 3, 14, 3, 2, 26 };
+    heim_oid sha1 = { 6, sha1_oid_tree };
+    int ret = 0;
+
+    ret += test_heim_oid_format_same("1 3 14 3 3 2 26", &sha1);
+
+    return ret;
+}
+
 int
 main(int argc, char **argv)
 {
@@ -729,6 +752,7 @@ main(int argc, char **argv)
     ret += check_fail_oid();
     ret += check_fail_bitstring();
     ret += test_heim_int_format();
+    ret += test_heim_oid_format();
 
     return ret;
 }
