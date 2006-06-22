@@ -78,7 +78,7 @@ imath_rsa_public_encrypt(int flen, const unsigned char* from,
 
     size = RSA_size(rsa);
 
-    if (size < 11 || size - 11 < flen)
+    if (size < RSA_PKCS1_PADDING_SIZE || size - RSA_PKCS1_PADDING_SIZE < flen)
 	return -1;
 
     BN2mpz(&n, rsa->n);
@@ -207,7 +207,7 @@ imath_rsa_private_encrypt(int flen, const unsigned char* from,
 
     size = RSA_size(rsa);
 
-    if (size < 11 || size - 11 < flen)
+    if (size < RSA_PKCS1_PADDING_SIZE || size - RSA_PKCS1_PADDING_SIZE < flen)
 	return -1;
 
     BN2mpz(&n, rsa->n);
