@@ -444,6 +444,15 @@ NTSTATUS smbsrv_push_passthru_fileinfo(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_OK;
 
 	case RAW_FILEINFO_SMB2_ALL_EAS:
+		/* if no eas are returned the backend should
+		 * have returned NO_EAS_ON_FILE or NO_MORE_EAS
+		 *
+		 * so it's a programmer error if num_eas == 0
+		 */
+		if (st->all_eas.out.num_eas == 0) {
+			smb_panic("0 eas for SMB2_ALL_EAS - programmer error in ntvfs backend");
+		}
+
 		list_size = ea_list_size_chained(st->all_eas.out.num_eas,
 						 st->all_eas.out.eas);
 		BLOB_CHECK(smbsrv_blob_grow_data(mem_ctx, blob, list_size));
