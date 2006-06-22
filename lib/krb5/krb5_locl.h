@@ -186,6 +186,8 @@ struct _krb5_get_init_creds_opt_private {
     /* PKINIT */
     krb5_pk_init_ctx pk_init_ctx;
     int canonicalize;
+    /* */
+    KRB_ERROR *error;
 };
 
 /*
