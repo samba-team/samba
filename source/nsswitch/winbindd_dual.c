@@ -650,6 +650,10 @@ static void child_msg_onlinestatus(int msg_type, struct process_id src, void *bu
 	}
 	
 	message = collect_onlinestatus(mem_ctx);
+	if (message == NULL) {
+		talloc_destroy(mem_ctx);
+		return;
+	}
 
 	message_send_pid(*sender, MSG_WINBIND_ONLINESTATUS, 
 			 message, strlen(message) + 1, True);
