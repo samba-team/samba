@@ -731,7 +731,7 @@ static BOOL fork_domain_child(struct winbindd_child *child)
 		return False;
 	}
 
-	if (child->domain != NULL) {
+	if (child->domain != NULL && lp_winbind_offline_logon()) {
 		/* We might be in the idmap child...*/
 		child->lockout_policy_event = add_timed_event(
 			child->mem_ctx, timeval_zero(),
