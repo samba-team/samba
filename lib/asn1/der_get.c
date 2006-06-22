@@ -250,10 +250,17 @@ der_get_heim_integer (const unsigned char *p, size_t len,
 	if (p[0] == 0xff) {
 	    p++;
 	    data->length--;
+	    if (data->length == 0) {
+		if (size)
+		    *size = 0;
+		return ASN1_BAD_LENGTH;
+	    }
 	}
 	data->data = malloc(data->length);
 	if (data->data == NULL) {
 	    data->length = 0;
+	    if (size)
+		*size = 0;
 	    return ENOMEM;
 	}
 	q = &((unsigned char*)data->data)[data->length - 1];
@@ -276,6 +283,8 @@ der_get_heim_integer (const unsigned char *p, size_t len,
 	data->data = malloc(data->length);
 	if (data->data == NULL && data->length != 0) {
 	    data->length = 0;
+	    if (size)
+		*size = 0;
 	    return ENOMEM;
 	}
 	memcpy(data->data, p, data->length);
