@@ -70,11 +70,13 @@ struct smbsrv_request;
 		DEBUG(0,("%s: buffer too small 0x%x. Expected 0x%x\n", \
 			 __location__, is_size, want_size)); \
 		smb2srv_send_error(req,  NT_STATUS_FOOBAR); \
+		return; \
 	}\
 	if (field_size != want_size) { \
 		DEBUG(0,("%s: unexpected fixed body size 0x%x. Expected 0x%x\n", \
 			 __location__, field_size, want_size)); \
 		smb2srv_send_error(req,  NT_STATUS_FOOBAR); \
+		return; \
 	} \
 } while (0)
 
