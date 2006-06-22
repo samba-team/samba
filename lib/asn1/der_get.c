@@ -250,11 +250,6 @@ der_get_heim_integer (const unsigned char *p, size_t len,
 	if (p[0] == 0xff) {
 	    p++;
 	    data->length--;
-	    if (data->length == 0) {
-		if (size)
-		    *size = 0;
-		return ASN1_BAD_LENGTH;
-	    }
 	}
 	data->data = malloc(data->length);
 	if (data->data == NULL) {
