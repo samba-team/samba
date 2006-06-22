@@ -63,7 +63,7 @@ static NTSTATUS connect_send_negprot(struct composite_context *c,
 {
 	struct connect_state *state = talloc_get_type(c->private_data, struct connect_state);
 
-	state->req = smb_raw_negotiate_send(state->transport, lp_maxprotocol());
+	state->req = smb_raw_negotiate_send(state->transport, lp_cli_maxprotocol());
 	NT_STATUS_HAVE_NO_MEMORY(state->req);
 
 	state->req->async.fn = request_handler;
