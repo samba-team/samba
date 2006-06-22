@@ -943,7 +943,7 @@ can create user defined shares on demand using the commands below.
 </para>
 
 <refsect3>
-<title>USERSHARE ADD <replaceable>sharename</replaceable> <replaceable>path</replaceable> <replaceable>[comment]</replaceable> <replaceable>[acl]</replaceable> replaceable>[guest_ok=[y|n]]</replaceable></title>
+<title>USERSHARE ADD <replaceable>sharename</replaceable> <replaceable>path</replaceable> <replaceable>[comment]</replaceable> <replaceable>[acl]</replaceable> <replaceable>[guest_ok=[y|n]]</replaceable></title>
 
 <para>
 Add or replace a new user defined share, with name "sharename".
@@ -974,7 +974,7 @@ this share.
 share (no creation of new files or directories or writing to files).
 </para>
 
-</para>
+<para>
 The default if no "acl" is given is "Everyone:R", which means any 
 authenticated user has read-only access.
 </para>
@@ -1051,6 +1051,8 @@ shares created by other users.
 </para>
 
 </refsect3>
+
+</refsect2>
 
 <refsect2>
 <title>HELP [COMMAND]</title>
