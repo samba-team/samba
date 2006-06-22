@@ -97,6 +97,39 @@ _krb5_get_init_creds_opt_copy(krb5_context context,
 }
 
 void KRB5_LIB_FUNCTION
+_krb5_get_init_creds_opt_free_krb5_error(krb5_get_init_creds_opt *opt)
+{
+    if (opt->opt_private == NULL || opt->opt_private->error == NULL)
+	return;
+    free_KRB_ERROR(opt->opt_private->error);
+    free(opt->opt_private->error);
+    opt->opt_private->error = NULL;
+}
+
+void KRB5_LIB_FUNCTION
+_krb5_get_init_creds_opt_set_krb5_error(krb5_context context,
+					krb5_get_init_creds_opt *opt, 
+					const KRB_ERROR *error)
+{
+    krb5_error_code ret;
+
+    if (opt->opt_private == NULL)
+	return;
+
+    _krb5_get_init_creds_opt_free_krb5_error(opt);
+
+    opt->opt_private->error = malloc(sizeof(*opt->opt_private->error));
+    if (opt->opt_private->error == NULL)
+	return;
+    ret = copy_KRB_ERROR(error, *opt->opt_private->error);
+    if (ret) {
+	free(opt->opt_private->error);
+	opt->opt_private->error = NULL;
+    }	
+}
+
+
+void KRB5_LIB_FUNCTION
 krb5_get_init_creds_opt_free(krb5_get_init_creds_opt *opt)
 {
     if (opt->opt_private == NULL)
@@ -104,6 +137,7 @@ krb5_get_init_creds_opt_free(krb5_get_init_creds_opt *opt)
     if (opt->opt_private->refcount < 1) /* abort ? */
 	return;
     if (--opt->opt_private->refcount == 0) {
+	_krb5_get_init_creds_opt_free_krb5_error(opt);
 	_krb5_get_init_creds_opt_free_pkinit(opt);
 	free(opt->opt_private);
     }
@@ -328,5 +362,32 @@ krb5_get_init_creds_opt_set_pac_request(krb5_context context,
     opt->opt_private->req_pac = req_pac ?
 	KRB5_PA_PAC_REQ_TRUE :
 	KRB5_PA_PAC_REQ_FALSE;
+    return 0;
+}
+
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_get_init_creds_opt_get_error(krb5_context context,
+				  krb5_get_init_creds_opt *opt,
+				  KRB_ERROR **error)
+{
+    krb5_error_code ret;
+
+    *error = NULL;
+
+    ret = require_ext_opt(context, opt, "init_creds_opt_get_error");
+    if (ret)
+	return ret;
+
+    if (opt->opt_private->error == NULL)
+	return 0;
+
+    *error = malloc(sizeof(**error));
+    if (*error == NULL) {
+	krb5_set_error_string(context, "malloc - out memory");
+	return ENOMEM;
+    }
+
+    ret = copy_KRB_ERROR(*error, opt->opt_private->error);
+
     return 0;
 }
