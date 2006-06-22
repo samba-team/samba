@@ -1616,7 +1616,8 @@ delheaders:
 	@rm -f include/proto.h include/build_env.h  \
 		nsswitch/winbindd_proto.h web/swat_proto.h \
 		client/client_proto.h utils/net_proto.h \
-		smbd/build_options.c
+		smbd/build_options.c utils/ntlm_auth_proto.h \
+		utils/passwd_proto.h
 
 MKPROTO_SH = $(srcdir)/script/mkproto.sh
 

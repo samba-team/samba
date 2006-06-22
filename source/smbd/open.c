@@ -1685,7 +1685,7 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 			fsp->oplock_type = NO_OPLOCK;
 		}
 	}
-	set_share_mode(lck, fsp, 0, fsp->oplock_type);
+	set_share_mode(lck, fsp, current_user.ut.uid, 0, fsp->oplock_type);
 
 	if (info == FILE_WAS_OVERWRITTEN || info == FILE_WAS_CREATED ||
 				info == FILE_WAS_SUPERSEDED) {
@@ -1991,7 +1991,7 @@ files_struct *open_directory(connection_struct *conn,
 		return NULL;
 	}
 
-	set_share_mode(lck, fsp, 0, NO_OPLOCK);
+	set_share_mode(lck, fsp, current_user.ut.uid, 0, NO_OPLOCK);
 
 	/* For directories the delete on close bit at open time seems
 	   always to be honored on close... See test 19 in Samba4 BASE-DELETE. */

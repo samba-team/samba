@@ -38,12 +38,17 @@ o   Jeremy Allison <jra@samba.org>
     * Fix naming conflicts with 'net usershare' structures and 
       Solaris header files.
     * Fix memleaks on error paths from the ASN.1 parsing code.
+    * Add uid to share_mode_entry structure so we can report who 
+      opened the file.
 
 
 o   Gerald (Jerry) Carter <jerry@samba.org>
     * Fix 'make install' problem when building outside source/.
     * Fix 'net ads join' when the workgroup is set incorrectly in 
       smb.conf.
+    * Re-add code to include the BUILTIN\Administrators SID when
+      winbindd is not running, but the user's token includes the 
+      Domain Admin SID.  Fixes access problem for managing Services.
 
 
 o   Guenther Deschner <gd@samba.org>
