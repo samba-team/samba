@@ -897,13 +897,20 @@ NTSTATUS winbindd_dual_pam_auth_kerberos(struct winbindd_domain *domain,
 		}
 	}
 
-	set_dc_type_and_flags(contact_domain);
+	if (contact_domain->initialized && 
+	    contact_domain->active_directory) {
+	    	goto try_login;
+	}
+
+	if (!contact_domain->initialized) {
+		set_dc_type_and_flags(contact_domain);
+	}
 
 	if (!contact_domain->active_directory) {
 		DEBUG(3,("krb5 auth requested but domain is not Active Directory\n"));
 		return NT_STATUS_INVALID_LOGON_TYPE;
 	}
-
+try_login:
 	result = winbindd_raw_kerberos_login(contact_domain, state, info3);
 done:
 	return result;
