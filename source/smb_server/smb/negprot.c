@@ -509,8 +509,8 @@ void smbsrv_reply_negprot(struct smbsrv_request *req)
 	for (protocol = 0; supported_protocols[protocol].proto_name; protocol++) {
 		int i;
 
-		if (supported_protocols[protocol].protocol_level > lp_maxprotocol()) continue;
-		if (supported_protocols[protocol].protocol_level < lp_minprotocol()) continue;
+		if (supported_protocols[protocol].protocol_level > lp_srv_maxprotocol()) continue;
+		if (supported_protocols[protocol].protocol_level < lp_srv_minprotocol()) continue;
 
 		for (i = 0; i < protos_count; i++) {
 			if (strcmp(supported_protocols[protocol].proto_name, protos[i]) != 0) continue;

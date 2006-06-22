@@ -139,8 +139,10 @@ typedef struct
 	int max_mux;
 	int max_xmit;
 	int pwordlevel;
-	int maxprotocol;
-	int minprotocol;
+	int srv_maxprotocol;
+	int srv_minprotocol;
+	int cli_maxprotocol;
+	int cli_minprotocol;
 	int security;
 	char **AuthMethods;
 	int paranoid_server_security;
@@ -448,8 +450,10 @@ static struct parm_struct parm_table[] = {
 	{"tls crlfile", P_STRING, P_GLOBAL, &Globals.tls_crlfile, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"swat directory", P_STRING, P_GLOBAL, &Globals.swat_directory, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"large readwrite", P_BOOL, P_GLOBAL, &Globals.bLargeReadwrite, NULL, NULL, FLAG_DEVELOPER},
-	{"max protocol", P_ENUM, P_GLOBAL, &Globals.maxprotocol, NULL, enum_protocol, FLAG_DEVELOPER},
-	{"min protocol", P_ENUM, P_GLOBAL, &Globals.minprotocol, NULL, enum_protocol, FLAG_DEVELOPER},
+	{"server max protocol", P_ENUM, P_GLOBAL, &Globals.srv_maxprotocol, NULL, enum_protocol, FLAG_DEVELOPER},
+	{"server min protocol", P_ENUM, P_GLOBAL, &Globals.srv_minprotocol, NULL, enum_protocol, FLAG_DEVELOPER},
+	{"client max protocol", P_ENUM, P_GLOBAL, &Globals.cli_maxprotocol, NULL, enum_protocol, FLAG_DEVELOPER},
+	{"client min protocol", P_ENUM, P_GLOBAL, &Globals.cli_minprotocol, NULL, enum_protocol, FLAG_DEVELOPER},
 	{"unicode", P_BOOL, P_GLOBAL, &Globals.bUnicode, NULL, NULL, FLAG_DEVELOPER},
 	{"read raw", P_BOOL, P_GLOBAL, &Globals.bReadRaw, NULL, NULL, FLAG_DEVELOPER},
 	{"write raw", P_BOOL, P_GLOBAL, &Globals.bWriteRaw, NULL, NULL, FLAG_DEVELOPER},
@@ -647,8 +651,10 @@ static void init_globals(void)
 	do_parameter("max xmit", "12288", NULL);
 	do_parameter("password level", "0", NULL);
 	do_parameter("LargeReadwrite", "True", NULL);
-	do_parameter("min protocol", "CORE", NULL);
-	do_parameter("max protocol", "NT1", NULL);
+	do_parameter("server min protocol", "CORE", NULL);
+	do_parameter("server max protocol", "NT1", NULL);
+	do_parameter("client min protocol", "CORE", NULL);
+	do_parameter("client max protocol", "NT1", NULL);
 	do_parameter("security", "USER", NULL);
 	do_parameter("paranoid server security", "True", NULL);
 	do_parameter("EncryptPasswords", "True", NULL);
@@ -882,8 +888,10 @@ _PUBLIC_ FN_GLOBAL_INTEGER(lp_min_wins_ttl, &Globals.min_wins_ttl)
 _PUBLIC_ FN_GLOBAL_INTEGER(lp_maxmux, &Globals.max_mux)
 _PUBLIC_ FN_GLOBAL_INTEGER(lp_max_xmit, &Globals.max_xmit)
 _PUBLIC_ FN_GLOBAL_INTEGER(lp_passwordlevel, &Globals.pwordlevel)
-_PUBLIC_ FN_GLOBAL_INTEGER(lp_maxprotocol, &Globals.maxprotocol)
-_PUBLIC_ FN_GLOBAL_INTEGER(lp_minprotocol, &Globals.minprotocol)
+_PUBLIC_ FN_GLOBAL_INTEGER(lp_srv_maxprotocol, &Globals.srv_maxprotocol)
+_PUBLIC_ FN_GLOBAL_INTEGER(lp_srv_minprotocol, &Globals.srv_minprotocol)
+_PUBLIC_ FN_GLOBAL_INTEGER(lp_cli_maxprotocol, &Globals.cli_maxprotocol)
+_PUBLIC_ FN_GLOBAL_INTEGER(lp_cli_minprotocol, &Globals.cli_minprotocol)
 _PUBLIC_ FN_GLOBAL_INTEGER(lp_security, &Globals.security)
 _PUBLIC_ FN_GLOBAL_LIST(lp_auth_methods, &Globals.AuthMethods)
 _PUBLIC_ FN_GLOBAL_BOOL(lp_paranoid_server_security, &Globals.paranoid_server_security)
