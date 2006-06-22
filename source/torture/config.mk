@@ -187,14 +187,16 @@ PUBLIC_DEPENDENCIES = \
 include local/config.mk
 
 #################################
-# Start SUBSYSTEM TORTURE_NBENCH
-[SUBSYSTEM::TORTURE_NBENCH]
+# Start MODULE TORTURE_NBENCH
+[MODULE::TORTURE_NBENCH]
+SUBSYSTEM = torture
+INIT_FUNCTION = torture_nbench_init
 PRIVATE_PROTO_HEADER = \
 		nbench/proto.h
 OBJ_FILES = \
 		nbench/nbio.o \
 		nbench/nbench.o
-# End SUBSYSTEM TORTURE_NBENCH
+# End MODULE TORTURE_NBENCH
 #################################
 
 #################################
