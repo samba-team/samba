@@ -146,8 +146,20 @@ loop (unsigned char *buf, size_t len, int indent)
 			errx (1, "der_get_integer: %s", error_message (ret));
 		    printf ("integer %d\n", val);
 		} else {
-		    printf ("BIG NUM integer: length %lu\n", 
-			    (unsigned long)length);
+		    heim_integer vali;
+		    char *p;
+
+		    ret = der_get_heim_integer(buf, length, &vali, NULL);
+		    if (ret)
+			errx (1, "der_get_heim_integer: %s", 
+			      error_message (ret));
+		    ret = der_print_hex_heim_integer(&vali, &p);
+		    if (ret)
+			errx (1, "der_print_hex_heim_integer: %s", 
+			      error_message (ret));
+		    printf ("BIG NUM integer: length %lu %s\n", 
+			    (unsigned long)length, p);
+		    free(p);
 		}
 		break;
 	    }
@@ -181,17 +193,18 @@ loop (unsigned char *buf, size_t len, int indent)
 	    }
 	    case UT_OID: {
 		heim_oid o;
-		int i;
+		char *p;
 
 		ret = der_get_oid(buf, length, &o, NULL);
 		if (ret)
 		    errx (1, "der_get_oid: %s", error_message (ret));
-		
-		for (i = 0; i < o.length ; i++)
-		    printf("%d%s", o.components[i],
-			   i < o.length - 1 ? "." : "");
-		printf("\n");
+		ret = der_print_heim_oid(&o, &p);
 		free_oid(&o);
+		if (ret)
+		    errx (1, "der_print_heim_oid: %s", error_message (ret));
+		printf("%s\n", p);
+		free(p);
+
 		break;
 	    }
 	    case UT_Enumerated: {
