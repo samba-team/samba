@@ -1,3 +1,18 @@
+2006-06-22  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* check-der.c (check_fail_heim_integer): disable test
+
+	* der_get.c (der_get_heim_integer): revert part of previous
+
+	* der_get.c (der_get_heim_integer): Add more checks
+
+	* asn1_print.c: Add printing of bignums and use der_print_heim_oid
+
+	* check-der.c (test_heim_oid_format_same): add printing on failure
+
+	* check-der.c: Add one check for heim_int, add checking for oid
+	printing
+	
 2006-06-06  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* Makefile.am: Impersonation support bits (and sort)
