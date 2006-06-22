@@ -43,7 +43,9 @@ raw="$raw RAW-IOCTL RAW-LOCK RAW-MKDIR RAW-MUX RAW-NOTIFY RAW-OPEN RAW-OPLOCK"
 raw="$raw RAW-QFILEINFO RAW-QFSINFO RAW-READ RAW-RENAME RAW-SEARCH RAW-SEEK"
 raw="$raw RAW-SFILEINFO RAW-SFILEINFO-BUG RAW-STREAMS RAW-UNLINK RAW-WRITE"
 
-tests="$base $raw"
+smb2="SMB2-CONNECT"
+
+tests="$base $raw $smb2"
 
 #
 # please add tests you want to be skipped here!
