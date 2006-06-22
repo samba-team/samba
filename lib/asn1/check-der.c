@@ -705,9 +705,13 @@ test_heim_oid_format_same(const char *str, const heim_oid *oid)
     char *p;
 
     ret = der_print_heim_oid(oid, &p);
-    if (ret)
+    if (ret) {
+	printf("fail to print oid: %s\n", str);
 	return 1;
+    }
     ret = strcmp(p, str);
+    if (ret)
+	printf("oid %s != formated oid %s\n", str, p);
     free(p);
     return ret != 0;
 }
@@ -719,7 +723,7 @@ test_heim_oid_format(void)
     heim_oid sha1 = { 6, sha1_oid_tree };
     int ret = 0;
 
-    ret += test_heim_oid_format_same("1 3 14 3 3 2 26", &sha1);
+    ret += test_heim_oid_format_same("1 3 14 3 2 26", &sha1);
 
     return ret;
 }
