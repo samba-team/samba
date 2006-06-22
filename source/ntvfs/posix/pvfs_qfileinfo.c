@@ -196,7 +196,7 @@ static NTSTATUS pvfs_map_fileinfo(struct pvfs_state *pvfs,
 		info->standard_info.out.alloc_size     = name->dos.alloc_size;
 		info->standard_info.out.size           = name->st.st_size;
 		info->standard_info.out.nlink          = name->dos.nlink;
-		info->standard_info.out.delete_pending = 0;
+		info->standard_info.out.delete_pending = 0; /* only for qfileinfo */
 		info->standard_info.out.directory   = 
 			(name->dos.attrib & FILE_ATTRIBUTE_DIRECTORY)? 1 : 0;
 		return NT_STATUS_OK;
@@ -221,7 +221,7 @@ static NTSTATUS pvfs_map_fileinfo(struct pvfs_state *pvfs,
 		info->all_info.out.alloc_size     = name->dos.alloc_size;
 		info->all_info.out.size           = name->st.st_size;
 		info->all_info.out.nlink          = name->dos.nlink;
-		info->all_info.out.delete_pending = 0;
+		info->all_info.out.delete_pending = 0; /* only set by qfileinfo */
 		info->all_info.out.directory      = 
 			(name->dos.attrib & FILE_ATTRIBUTE_DIRECTORY)? 1 : 0;
 		info->all_info.out.ea_size        = name->dos.ea_size;
@@ -251,15 +251,15 @@ static NTSTATUS pvfs_map_fileinfo(struct pvfs_state *pvfs,
 		return NT_STATUS_OK;
 
 	case RAW_FILEINFO_ACCESS_INFORMATION:
-		info->access_information.out.access_flags = 0;
+		info->access_information.out.access_flags = 0; /* only set by qfileinfo */
 		return NT_STATUS_OK;
 
 	case RAW_FILEINFO_POSITION_INFORMATION:
-		info->position_information.out.position = 0;
+		info->position_information.out.position = 0; /* only set by qfileinfo */
 		return NT_STATUS_OK;
 
 	case RAW_FILEINFO_MODE_INFORMATION:
-		info->mode_information.out.mode = 0;
+		info->mode_information.out.mode = 0; /* only set by qfileinfo */
 		return NT_STATUS_OK;
 
 	case RAW_FILEINFO_ALIGNMENT_INFORMATION:
@@ -283,6 +283,27 @@ static NTSTATUS pvfs_map_fileinfo(struct pvfs_state *pvfs,
 
 	case RAW_FILEINFO_SEC_DESC:
 		return pvfs_acl_query(pvfs, req, name, fd, info);
+
+	case RAW_FILEINFO_SMB2_ALL_INFORMATION:
+		info->all_info2.out.create_time    = name->dos.create_time;
+		info->all_info2.out.access_time    = name->dos.access_time;
+		info->all_info2.out.write_time     = name->dos.write_time;
+		info->all_info2.out.change_time    = name->dos.change_time;
+		info->all_info2.out.attrib         = name->dos.attrib;
+		info->all_info2.out.unknown1       = 0;
+		info->all_info2.out.alloc_size     = name->dos.alloc_size;
+		info->all_info2.out.size           = name->st.st_size;
+		info->all_info2.out.nlink          = name->dos.nlink;
+		info->all_info2.out.delete_pending = 0; /* only set by qfileinfo */
+		info->all_info2.out.directory      = 
+			(name->dos.attrib & FILE_ATTRIBUTE_DIRECTORY)? 1 : 0;
+		info->all_info2.out.file_id        = name->dos.file_id;
+		info->all_info2.out.ea_size        = name->dos.ea_size;
+		info->all_info2.out.access_mask    = 0; /* only set by qfileinfo */
+		info->all_info2.out.position       = 0; /* only set by qfileinfo */
+		info->all_info2.out.mode           = 0; /* only set by qfileinfo */
+		info->all_info2.out.fname.s        = name->original_name;
+		return NT_STATUS_OK;
 	}
 
 	return NT_STATUS_INVALID_LEVEL;
@@ -384,6 +405,16 @@ NTSTATUS pvfs_qfileinfo(struct ntvfs_module_context *ntvfs,
 
 	case RAW_FILEINFO_MODE_INFORMATION:
 		info->mode_information.out.mode = h->mode;
+		break;
+
+	case RAW_FILEINFO_SMB2_ALL_INFORMATION:
+		if (pvfs_delete_on_close_set(pvfs, h, NULL, NULL)) {
+			info->all_info.out.delete_pending = 1;
+			info->all_info.out.nlink--;
+		}
+		info->all_info2.out.position	= h->position;
+		info->all_info2.out.access_mask	= f->access_mask;
+		info->all_info2.out.mode	= h->mode;
 		break;
 
 	default:
