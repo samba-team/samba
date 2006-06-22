@@ -1,3 +1,7 @@
+2006-06-22  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kdc/check-kdc.in: run kadmin check
+	
 2006-06-07  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* kdc/check-kdc.in: test that delegated cred works too
