@@ -274,6 +274,8 @@ get_init_creds_common(krb5_context context,
     if (options == NULL) {
 	krb5_get_init_creds_opt_init (&default_opt);
 	options = &default_opt;
+    } else {
+	_krb5_get_init_creds_opt_free_krb5_error(options);
     }
 
     if (options->opt_private) {
@@ -1175,7 +1177,7 @@ process_pa_data_to_key(krb5_context context,
 
 static krb5_error_code
 init_cred_loop(krb5_context context,
-	       const krb5_get_init_creds_opt *init_cred_opts,
+	       krb5_get_init_creds_opt *init_cred_opts,
 	       const krb5_prompter_fct prompter,
 	       void *prompter_data,
 	       krb5_get_init_creds_ctx *ctx,
@@ -1343,8 +1345,12 @@ out:
 
     if (ret == 0 && ret_as_reply)
 	*ret_as_reply = rep;
-    else
+    else {
+	_krb5_get_init_creds_opt_set_krb5_error(context,
+						init_cred_opts,
+						&rep.error);
 	krb5_free_kdc_rep (context, &rep);
+    }
     return ret;
 }
 
