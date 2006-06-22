@@ -357,7 +357,7 @@ BOOL cli_rpc_pipe_close(struct rpc_pipe_client *cli)
 	ret = cli_close(cli->cli, cli->fnum);
 
 	if (!ret) {
-		DEBUG(0,("cli_rpc_pipe_close: cli_close failed on pipe %s, "
+		DEBUG(1,("cli_rpc_pipe_close: cli_close failed on pipe %s, "
                          "fnum 0x%x "
                          "to machine %s.  Error was %s\n",
                          cli->pipe_name,
