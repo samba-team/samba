@@ -42,6 +42,10 @@
 #endif
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define fnmatch rk_fnmatch
 
 #define	FNM_NOMATCH	1	/* Match failed. */
@@ -52,5 +56,9 @@
 
 int ROKEN_LIB_FUNCTION
 fnmatch (const char *, const char *, int);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* !_FNMATCH_H_ */

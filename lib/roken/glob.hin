@@ -43,6 +43,10 @@
 #endif
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define glob_t rk_glob_t
 #define	glob rk_glob
 #define	globfree rk_globfree
@@ -92,5 +96,9 @@ glob (const char *, int, int (*)(const char *, int), glob_t *);
 
 void ROKEN_LIB_FUNCTION
 globfree (glob_t *);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* !_GLOB_H_ */
