@@ -58,6 +58,7 @@ o   Guenther Deschner <gd@samba.org>
       via "net rpc user add" 
     * Add "rpc shell" to the usage text for the net command.
     * Winbindd user aliases lookup fixes for large domains.
+    * Fix memleak in the CLDAP processing code.
 
 
 o   Bjoern Jacke <samba@j3e.de>.
