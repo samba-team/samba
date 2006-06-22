@@ -800,15 +800,15 @@ announce the shutdown.</para></listitem>
 </refsect2>
 
 <refsect2>
-<title>SAMDUMP</title>
+<title>RPC SAMDUMP</title>
 
 <para>Print out sam database of remote server. You need
-to run this on either a BDC. <!-- 
+to run this on either a BDC or a PDC. <!-- 
 Is that correct? - Jelmer --></para>
 </refsect2>
 
 <refsect2>
-<title>VAMPIRE</title>
+<title>RPC VAMPIRE</title>
 
 <para>Export users, aliases and groups from remote server to 
 local server. Can only be run an a BDC.
@@ -817,7 +817,7 @@ local server. Can only be run an a BDC.
 </refsect2>
 
 <refsect2>
-<title>GETSID</title>
+<title>RPC GETSID</title>
 
 <para>Fetch domain SID and store it in the local <filename>secrets.tdb</filename>. </para>
 
@@ -893,12 +893,164 @@ to show in the result.
 </refsect2>
 
 <refsect2>
-<title>WORKGROUP</title>
+<title>ADS WORKGROUP</title>
 
 <para>Print out workgroup name for specified kerberos realm.</para>
 
 </refsect2>
 
+<refsect2>
+<title>USERSHARE</title>
+
+<para>Starting with version 3.0.23, a Samba server now supports the ability for
+non-root users to add user define shares to be exported using the "net usershare"
+commands.
+</para>
+
+<para>
+To set this up, first set up your smb.conf by adding to the [global] section :
+
+usershare path = /usr/local/samba/lib/usershares
+
+Next create the directory /usr/local/samba/lib/usershares, change the owner to root and
+set the group owner to the UNIX group who should have the ability to create usershares,
+for example a group called "serverops".
+
+Set the permissions on /usr/local/samba/lib/usershares to 01770.
+
+(Owner and group all access, no access for others, plus the sticky bit,
+which means that a file in that directory can be renamed or deleted only
+by the owner of the file).
+
+Finally, tell smbd how many usershares you will allow by adding to the [global]
+section of smb.conf a line such as :
+
+usershare max shares = 100.
+
+To allow 100 usershare definitions. Now, members of the UNIX group "serverops"
+can create user defined shares on demand using the commands below.
+</para>
+
+<para>The usershare commands are:
+
+<simplelist>
+<member>net usershare add sharename path [comment] [acl] [guest_ok=[y|n]] - to add or change a user defined share.</member>
+<member>net usershare delete sharename - to delete a user defined share.</member>
+<member>net usershare info [-l|--long] [wildcard sharename] - to print info about a user defined share.</member>
+<member>net usershare list [-l|--long] [wildcard sharename] - to list user defined shares.</member>
+</simplelist>
+
+</para>
+
+<refsect3>
+<title>USERSHARE ADD <replaceable>sharename</replaceable> <replaceable>path</replaceable> <replaceable>[comment]</replaceable> <replaceable>[acl]</replaceable> replaceable>[guest_ok=[y|n]]</replaceable></title>
+
+<para>
+Add or replace a new user defined share, with name "sharename".
+</para>
+
+<para>
+"path" specifies the absolute pathname on the system to be exported.
+Restrictions may be put on this, see the global smb.conf parameters :
+"usershare owner only", "usershare prefix allow list", and
+"usershare prefix deny list".
+</para>
+
+<para>
+The optional "comment" parameter is the comment that will appear
+on the share when browsed to by a client.
+</para>
+
+<para>The optional "acl" field
+specifies which users have read and write access to the entire share.
+Note that guest connections are not allowed unless the smb.conf parameter
+"usershare allow guests" has been set. The definition of a user
+defined share acl is : "user:permission", where user is a valid
+username on the system and permission can be "F", "R", or "D".
+"F" stands for "full permissions", ie. read and write permissions.
+"D" stands for "deny" for a user, ie. prevent this user from accessing
+this share.
+"R" stands for "read only", ie. only allow read access to this
+share (no creation of new files or directories or writing to files).
+</para>
+
+</para>
+The default if no "acl" is given is "Everyone:R", which means any 
+authenticated user has read-only access.
+</para>
+
+<para>
+The optional "guest_ok" has the same effect as the parameter of the
+same name in smb.conf, in that it allows guest access to this user
+defined share. This parameter is only allowed if the global parameter
+"usershare allow guests" has been set to true in the smb.conf.
+</para>
+
+There is no separate command to modify an existing user defined share,
+just use the "net usershare add [sharename]" command using the same
+sharename as the one you wish to modify and specify the new options
+you wish. The Samba smbd daemon notices user defined share modifications
+at connect time so will see the change immediately, there is no need
+to restart smbd on adding, deleting or changing a user defined share.
+</refsect3>
+
+<refsect3>
+<title>USERSHARE DELETE <replaceable>sharename</replaceable></title>
+
+<para>
+Deletes the user defined share by name. The Samba smbd daemon
+immediately notices this change, although it will not disconnect
+any users currently connected to the deleted share.
+</para>
+
+</refsect3>
+
+<refsect3>
+<title>USERSHARE INFO <replaceable>[-l|--long]</replaceable> <replaceable>[wildcard sharename]</replaceable></title>
+
+<para>
+Get info on user defined shares owned by the current user matching the given pattern, or all users.
+</para>
+
+<para>
+net usershare info on its own dumps out info on the user defined shares that were
+created by the current user, or restricts them to share names that match the given
+wildcard pattern ('*' matches one or more characters, '?' matches only one character).
+If the '-l' or '--long' option is also given, it prints out info on user defined
+shares created by other users.
+</para>
+
+<para>
+The information given about a share looks like :
+
+[foobar]
+path=/home/jeremy
+comment=testme
+usershare_acl=Everyone:F
+guest_ok=n
+
+And is a list of the current settings of the user defined share that can be
+modified by the "net usershare add" command.
+</para>
+
+</refsect3>
+
+<refsect3>
+<title>USERSHARE LIST <replaceable>[-l|--long]</replaceable> <replaceable>wildcard sharename</replaceable></title>
+
+<para>
+List all the user defined shares owned by the current user matching the given pattern, or all users.
+</para>
+
+<para>
+net usershare list on its own list out the names of the user defined shares that were
+created by the current user, or restricts the list to share names that match the given
+wildcard pattern ('*' matches one or more characters, '?' matches only one character).
+If the '-l' or '--long' option is also given, it includes the names of user defined
+shares created by other users.
+</para>
+
+</refsect3>
 
 <refsect2>
 <title>HELP [COMMAND]</title>
