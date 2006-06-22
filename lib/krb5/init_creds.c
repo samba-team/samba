@@ -121,7 +121,7 @@ _krb5_get_init_creds_opt_set_krb5_error(krb5_context context,
     opt->opt_private->error = malloc(sizeof(*opt->opt_private->error));
     if (opt->opt_private->error == NULL)
 	return;
-    ret = copy_KRB_ERROR(error, *opt->opt_private->error);
+    ret = copy_KRB_ERROR(error, opt->opt_private->error);
     if (ret) {
 	free(opt->opt_private->error);
 	opt->opt_private->error = NULL;
