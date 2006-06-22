@@ -797,6 +797,13 @@ gsskrb5_extract_authz_data_from_sec_context
 OM_uint32
 gss_krb5_compat_des3_mic(OM_uint32 *, gss_ctx_id_t, int);
 
+OM_uint32
+gss_oid_to_str
+	(OM_uint32 * /*minor_status*/,
+	 gss_OID /* oid */,
+	 gss_buffer_t /* str */);
+
+
 #ifdef __cplusplus
 }
 #endif
