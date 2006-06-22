@@ -473,7 +473,7 @@ NTSTATUS smbsrv_push_passthru_fileinfo(TALLOC_CTX *mem_ctx,
 		SBVAL(blob->data,	0x50, st->all_info2.out.position);
 		SBVAL(blob->data,	0x58, st->all_info2.out.mode);
 		BLOB_CHECK(smbsrv_blob_append_string(mem_ctx, blob,
-						     st->all_info.out.fname.s,
+						     st->all_info2.out.fname.s,
 						     0x60, default_str_flags,
 						     STR_UNICODE));
 		return NT_STATUS_OK;
