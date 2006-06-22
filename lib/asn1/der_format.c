@@ -103,3 +103,25 @@ der_print_hex_heim_integer (const heim_integer *data, char **p)
     }
     return 0;
 }
+
+int
+der_print_heim_oid (const heim_oid *oid, char **str)
+{
+    struct rk_strpool *p = NULL;
+    int i;
+
+    for (i = 0; i < oid->length ; i++) {
+	p = rk_strpoolprintf(p, "%d%s", 
+			     oid->components[i],
+			     i < oid->length - 1 ? " " : "");
+	if (p == NULL) {
+	    *str = NULL;
+	    return ENOMEM;
+	}
+    }
+
+    *str = rk_strpoolcollect(p);
+    if (*str == NULL)
+	return ENOMEM;
+    return 0;
+}

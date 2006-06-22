@@ -243,4 +243,7 @@ int		der_get_tag_num(const char *);
 int		der_parse_hex_heim_integer(const char *, heim_integer *);
 int		der_print_hex_heim_integer(const heim_integer *, char **);
 
+int		der_print_heim_oid (const heim_oid *data, char **);
+
+
 #endif /* __DER_H__ */
