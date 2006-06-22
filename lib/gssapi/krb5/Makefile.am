@@ -67,14 +67,15 @@ libgssapi_la_SOURCES =		\
 	inquire_cred_by_mech.c	\
 	inquire_mechs_for_name.c \
 	inquire_names_for_mech.c \
+	oid_to_str.c		\
+	process_context_token.c \
 	release_buffer.c	\
 	release_cred.c		\
 	release_name.c		\
 	release_oid_set.c	\
 	sequence.c		\
-	process_context_token.c \
-	ticket_flags.c		\
 	test_oid_set_member.c	\
+	ticket_flags.c		\
 	unwrap.c		\
 	v1.c			\
 	verify_mic.c		\
@@ -90,7 +91,7 @@ spnego_asn1_files: ../asn1/asn1_compile$(EXEEXT) $(srcdir)/spnego.asn1
 
 $(libgssapi_la_OBJECTS): spnego_asn1.h
 
-TESTS = test_sequence
+TESTS = test_sequence test_oid
 
 check_PROGRAMS = test_acquire_cred $(TESTS)
 
