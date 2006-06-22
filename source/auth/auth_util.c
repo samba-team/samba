@@ -688,6 +688,31 @@ static NTSTATUS log_nt_token(TALLOC_CTX *tmp_ctx, NT_USER_TOKEN *token)
 
 static NTSTATUS add_builtin_administrators( TALLOC_CTX *ctx, struct nt_user_token *token )
 {
+	DOM_SID domadm;
+
+	/* nothing to do if we aren't in a domain */
+	
+	if ( !(IS_DC || lp_server_role()==ROLE_DOMAIN_MEMBER) ) {
+		return NT_STATUS_OK;
+	}
+	
+	/* Find the Domain Admins SID */
+	
+	if ( IS_DC ) {
+		sid_copy( &domadm, get_global_sam_sid() );
+	} else {
+		if ( !secrets_fetch_domain_sid( lp_workgroup(), &domadm ) )
+			return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
+	}
+	sid_append_rid( &domadm, DOMAIN_GROUP_RID_ADMINS );
+	
+	/* Add Administrators if the user beloongs to Domain Admins */
+	
+	if ( nt_token_check_sid( &domadm, token ) ) {
+		add_sid_to_array(token, &global_sid_Builtin_Administrators,
+				 &token->user_sids, &token->num_sids);
+	}
+	
 	return NT_STATUS_OK;
 }
 
