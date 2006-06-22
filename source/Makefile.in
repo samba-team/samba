@@ -532,9 +532,6 @@ RPCCLIENT_OBJ = $(RPCCLIENT_OBJ1) \
 PAM_WINBIND_OBJ = nsswitch/pam_winbind.o $(WBCOMMON_OBJ) \
 		  lib/replace1.o $(SNPRINTF_OBJ) @BUILD_INIPARSER@
 
-PAM_WINBIND_PICOBJ = $(PAM_WINBIND_OBJ:.o=.@PICSUFFIX@)
-
-
 SMBW_OBJ1 = smbwrapper/smbw.o \
 		smbwrapper/smbw_dir.o smbwrapper/smbw_stat.o \
 		smbwrapper/realcalls.o smbwrapper/shared.o \
@@ -1262,7 +1259,7 @@ bin/winbindd@EXEEXT@: $(WINBINDD_OBJ) @BUILD_POPT@ bin/.dummy
 		$(LDAP_LIBS) $(KRB5LIBS) \
 		@SONAMEFLAG@`basename $@`@NSSSONAMEVERSIONSUFFIX@
 
-bin/pam_winbind.@SHLIBEXT@: $(PAM_WINBIND_PICOBJ) bin/.dummy
+bin/pam_winbind.@SHLIBEXT@: $(PAM_WINBIND_OBJ:.o=.@PICSUFFIX@) bin/.dummy
 	@echo "Linking shared library $@"
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(PAM_WINBIND_PICOBJ) \
 		@SONAMEFLAG@`basename $@` -lpam @INIPARSERLIBS@
