@@ -649,6 +649,10 @@ static void child_msg_onlinestatus(int msg_type, struct process_id src, void *bu
 	}
 	
 	message = collect_onlinestatus(mem_ctx);
+	if (message == NULL) {
+		talloc_destroy(mem_ctx);
+		return;
+	}
 
 	message_send_pid(*sender, MSG_WINBIND_ONLINESTATUS, 
 			 message, strlen(message) + 1, True);
@@ -730,7 +734,7 @@ static BOOL fork_domain_child(struct winbindd_child *child)
 		return False;
 	}
 
-	if (child->domain != NULL) {
+	if (child->domain != NULL && lp_winbind_offline_logon()) {
 		/* We might be in the idmap child...*/
 		child->lockout_policy_event = add_timed_event(
 			child->mem_ctx, timeval_zero(),

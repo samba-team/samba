@@ -1,21 +1,24 @@
                    =================================
                    Release Notes for Samba 3.0.23rc3
-                              Jun XX, 2006
+                              Jun 23, 2006
                    =================================
 
-This is the third release candidate of the 3.0.23 code base and is 
-provided for testing purposes only.  While close to the final stable 
-release, this snapshot is *not* intended for production servers. 
-Your testing and feedback is greatly appreciated.
+This is the third release candidate of the 3.0.23 code base 
+and is provided for community testing purposes.  If all goes 
+well, we hope that this will become the production 3.0.23 
+release.  Your testing and feedback is greatly appreciated.
 
-We would like to thank the developers of Klocwork for their analysis 
-of the Samba source tree.  This release candidate includes fixes 
-for over three dozen defects reported by the Klocwork code analyzer.
+We would like to thank the developers of Klocwork for their 
+analysis of the Samba source tree.  This release candidate 
+includes fixes for over 170 defects reported by the Klocwork 
+code analyzer.
 
 Common issues addressed in 3.0.23rc3 include:
 
-   o Many more warnings from the Klocwork code analyzer.
+   o Warnings from the Klocwork code analyzer.
    o Various portability bugs on AIX, Solaris, and True64.
+   o Authorization problems when managing services.
+   o Problems joining Windows clients to a Samba/LDAP domain.
 
 
 ######################################################################
@@ -64,6 +67,8 @@ o   Guenther Deschner <gd@samba.org>
     * Add "rpc shell" to the usage text for the net command.
     * Winbindd user aliases lookup fixes for large domains.
     * Fix memleak in the CLDAP processing code.
+    * Enable AD features in winbindd's PAM support only when 
+      communicating with an AD domain controller.
 
 
 o   Bjoern Jacke <samba@j3e.de>.
@@ -91,6 +96,7 @@ o   Jason Mader <jason@ncac.gwu.edu>
 o   James Peach <jpeach@sgi.com>
     * Ensure smbclient always prompts on standard output when in
       interactive mode.
+    * BUG 3801, 3805: Fix MIPSPro compiler warnings on IRIX.
 
 
 o   Andreas Schwab

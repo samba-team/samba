@@ -554,7 +554,22 @@ AC_CANONICAL_SYSTEM
 
 dnl Add #include for broken IRIX header files
   case "$host_os" in
-	*irix6*) AC_ADD_INCLUDE(<standards.h>)
+	*irix6*)
+		AC_ADD_INCLUDE(<standards.h>)
+		if test x"$ac_cv_prog_gcc" != x"yes" ; then
+			dnl Fix sensible defaults for MIPSPro compilers. The
+			dnl error numbers are valid for the 7.3 compilers,
+			dnl hopefully also valid for the 7.4 series.
+			dnl
+			dnl Bugzilla 3801. Force an error on warning 1035
+			dnl so we don't incorrectly detect stdint.h. This
+			dnl warning is emitted for #error directives.
+			CFLAGS="$CFLAGS -diag_error 1035"
+			dnl 1209: Controlling expression is constant
+			dnl 1174: Function foo declared but never referenced
+			dnl 3201: Parameter foo was never referenced
+			CFLAGS="$CFLAGS -woff 1209,1174,3201"
+		fi
 	;;
 esac
 
@@ -5397,7 +5412,7 @@ if test x"$INCLUDED_POPT" = x"yes"; then
     AC_MSG_RESULT(yes)
     BUILD_POPT='$(POPT_OBJS)'
 	POPTLIBS='$(POPT_OBJS)'
-    FLAGS1="-I$srcdir/popt"
+    FLAGS1="-I\$(srcdir)/popt"
 else
     AC_MSG_RESULT(no)
 	BUILD_POPT=""
@@ -5432,7 +5447,7 @@ if test x"$INCLUDED_INIPARSER" = x"yes"; then
     AC_MSG_RESULT(yes)
     BUILD_INIPARSER='$(INIPARSER_OBJ)'
 	INIPARSERLIBS=""
-    FLAGS1="$FLAGS1 -I$srcdir/iniparser/src"
+    FLAGS1="$FLAGS1 -I\$(srcdir)/iniparser/src"
 else
     AC_MSG_RESULT(no)
 	BUILD_INIPARSER=""

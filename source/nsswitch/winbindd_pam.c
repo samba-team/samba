@@ -6,7 +6,7 @@
    Copyright (C) Andrew Tridgell 2000
    Copyright (C) Tim Potter 2001
    Copyright (C) Andrew Bartlett 2001-2002
-   Copyright (C) Guenther Deschner 2005
+   Copyright (C) Guenther Deschner 2005-2006
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -221,6 +221,44 @@ static struct winbindd_domain *find_auth_domain(struct winbindd_cli_state *state
 		return NULL;
 	}
 
+	if (strequal(domain_name, lp_workgroup())) {
+		return find_our_domain();
+	}
+
+#ifdef HAVE_ADS
+
+	/* when trying to login using krb5 with a trusted domain account, we
+	 * need to make sure that our and the remote domain are AD */
+
+	if ((state->request.flags & WBFLAG_PAM_KRB5) &&
+	    (lp_security() == SEC_ADS)) {
+
+		struct winbindd_domain *our_domain = find_our_domain();
+
+		if (!our_domain->active_directory) {
+			DEBUG(3,("find_auth_domain: out domain is not AD\n"));
+			return NULL;
+		}
+		
+		if ((domain = find_domain_from_name_noinit(domain_name)) == NULL) {
+			return NULL;
+		}
+
+		/* do we already know it's AD ? */
+		if (domain->active_directory) {
+			return domain;
+		} 
+
+		set_dc_type_and_flags(domain);
+
+		if (!domain->active_directory) {
+			DEBUG(3,("find_auth_domain: remote domain is not AD\n"));
+			return NULL;
+		}
+
+		return domain;
+	}
+#endif
 	return find_our_domain();
 }
 
@@ -897,13 +935,20 @@ NTSTATUS winbindd_dual_pam_auth_kerberos(struct winbindd_domain *domain,
 		}
 	}
 
-	set_dc_type_and_flags(contact_domain);
+	if (contact_domain->initialized && 
+	    contact_domain->active_directory) {
+	    	goto try_login;
+	}
+
+	if (!contact_domain->initialized) {
+		set_dc_type_and_flags(contact_domain);
+	}
 
 	if (!contact_domain->active_directory) {
 		DEBUG(3,("krb5 auth requested but domain is not Active Directory\n"));
 		return NT_STATUS_INVALID_LOGON_TYPE;
 	}
-
+try_login:
 	result = winbindd_raw_kerberos_login(contact_domain, state, info3);
 done:
 	return result;
