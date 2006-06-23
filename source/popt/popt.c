@@ -927,7 +927,9 @@ int poptGetNextOpt(poptContext con)
 		    if ((opt->argInfo & POPT_ARG_MASK) == POPT_ARG_DOUBLE) {
 			*((double *) opt->arg) = aDouble;
 		    } else {
+#ifndef _ABS
 #define _ABS(a)	((((a) - 0.0) < DBL_EPSILON) ? -(a) : (a))
+#endif
 			if ((_ABS(aDouble) - FLT_MAX) > DBL_EPSILON)
 			    return POPT_ERROR_OVERFLOW;
 			if ((FLT_MIN - _ABS(aDouble)) > DBL_EPSILON)
