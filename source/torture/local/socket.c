@@ -41,11 +41,11 @@ static BOOL test_udp(struct torture_context *test, const void *data)
 	BOOL ret = True;
 
 	status = socket_create("ip", SOCKET_TYPE_DGRAM, &sock1, 0);
-	torture_assert_ntstatus_ok(test, status, NULL);
+	torture_assert_ntstatus_ok(test, status, "creating DGRAM IP socket 1");
 	talloc_steal(test, sock1);
 
 	status = socket_create("ip", SOCKET_TYPE_DGRAM, &sock2, 0);
-	torture_assert_ntstatus_ok(test, status, NULL);
+	torture_assert_ntstatus_ok(test, status, "creating DGRAM IP socket 1");
 	talloc_steal(test, sock2);
 
 	localhost = socket_address_from_strings(sock1, sock1->backend_name, 
@@ -54,7 +54,7 @@ static BOOL test_udp(struct torture_context *test, const void *data)
 	torture_assert(test, localhost, "Localhost not found");
 
 	status = socket_listen(sock1, localhost, 0, 0);
-	torture_assert_ntstatus_ok(test, status, NULL);
+	torture_assert_ntstatus_ok(test, status, "listen on socket 1")
 
 	srv_addr = socket_get_my_addr(sock1, test);
 	if (srv_addr == NULL || strcmp(srv_addr->addr, iface_best_ip("127.0.0.1")) != 0) {
@@ -71,11 +71,11 @@ static BOOL test_udp(struct torture_context *test, const void *data)
 
 	sent = size;
 	status = socket_sendto(sock2, &blob, &sent, srv_addr);
-	torture_assert_ntstatus_ok(test, status, NULL);
+	torture_assert_ntstatus_ok(test, status, "sendto() on socket 2");
 
 	status = socket_recvfrom(sock1, blob2.data, size, &nread, 
 				 sock1, &from_addr);
-	torture_assert_ntstatus_ok(test, status, NULL);
+	torture_assert_ntstatus_ok(test, status, "recvfrom() on socket 1");
 
 	if (strcmp(from_addr->addr, srv_addr->addr) != 0) {
 		torture_fail(test, "Unexpected recvfrom addr %s", from_addr->addr);
@@ -92,11 +92,11 @@ static BOOL test_udp(struct torture_context *test, const void *data)
 
 	generate_random_buffer(blob.data, blob.length);
 	status = socket_sendto(sock1, &blob, &sent, from_addr);
-	torture_assert_ntstatus_ok(test, status, NULL);
+	torture_assert_ntstatus_ok(test, status, "sendto() on socket 1");
 
 	status = socket_recvfrom(sock2, blob2.data, size, &nread, 
 				 sock2, &from_addr);
-	torture_assert_ntstatus_ok(test, status, NULL);
+	torture_assert_ntstatus_ok(test, status, "recvfrom() on socket 2");
 	if (strcmp(from_addr->addr, srv_addr->addr) != 0) {
 		torture_fail(test, "Unexpected recvfrom addr %s\n", from_addr->addr);
 		return False;
@@ -137,11 +137,11 @@ static BOOL test_tcp(struct torture_context *test, const void *data)
 	struct event_context *ev = event_context_init(test);
 
 	status = socket_create("ip", SOCKET_TYPE_STREAM, &sock1, 0);
-	torture_assert_ntstatus_ok(test, status, NULL);
+	torture_assert_ntstatus_ok(test, status, "creating IP stream socket 1");
 	talloc_steal(test, sock1);
 
 	status = socket_create("ip", SOCKET_TYPE_STREAM, &sock2, 0);
-	torture_assert_ntstatus_ok(test, status, NULL);
+	torture_assert_ntstatus_ok(test, status, "creating IP stream socket 1");
 	talloc_steal(test, sock2);
 
 	localhost = socket_address_from_strings(sock1, sock1->backend_name, 
@@ -149,7 +149,7 @@ static BOOL test_tcp(struct torture_context *test, const void *data)
 	torture_assert(test, localhost, "Localhost not found");
 
 	status = socket_listen(sock1, localhost, 0, 0);
-	torture_assert_ntstatus_ok(test, status, NULL);
+	torture_assert_ntstatus_ok(test, status, "listen on socket 1");
 
 	srv_addr = socket_get_my_addr(sock1, test);
 	torture_assert(test, srv_addr && srv_addr->addr, 
@@ -164,10 +164,10 @@ static BOOL test_tcp(struct torture_context *test, const void *data)
 	torture_comment(test, "server port is %d", srv_addr->port);
 
 	status = socket_connect_ev(sock2, NULL, srv_addr, 0, ev);
-	torture_assert_ntstatus_ok(test, status, NULL);
+	torture_assert_ntstatus_ok(test, status, "connect() on socket 2")
 
 	status = socket_accept(sock1, &sock3);
-	torture_assert_ntstatus_ok(test, status, NULL);
+	torture_assert_ntstatus_ok(test, status, "accept() on socket 1");
 	talloc_steal(test, sock3);
 	talloc_free(sock1);
 
@@ -177,10 +177,10 @@ static BOOL test_tcp(struct torture_context *test, const void *data)
 
 	sent = size;
 	status = socket_send(sock2, &blob, &sent);
-	torture_assert_ntstatus_ok(test, status, NULL);
+	torture_assert_ntstatus_ok(test, status, "send() on socket 2");
 
 	status = socket_recv(sock3, blob2.data, size, &nread);
-	torture_assert_ntstatus_ok(test, status, NULL);
+	torture_assert_ntstatus_ok(test, status, "recv() on socket 3");
 
 	from_addr = socket_get_peer_addr(sock3, test);
 

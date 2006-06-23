@@ -161,9 +161,9 @@ BOOL torture_run_test(struct torture_context *context,
 #define torture_assert_werr_ok(ctx,expr,string) \
 		torture_assert_werr_equal(ctx,expr,WERR_OK,string)
 
-void torture_comment(struct torture_context *test, const char *comment, ...) _PRINTF_ATTRIBUTE(2,3);
-void torture_fail(struct torture_context *test, const char *reason, ...) _PRINTF_ATTRIBUTE(2,3);
-void torture_skip(struct torture_context *test, const char *reason, ...) _PRINTF_ATTRIBUTE(2,3);
+void torture_comment(struct torture_context *test, const char *comment, ...) PRINTF_ATTRIBUTE(2,3);
+void torture_fail(struct torture_context *test, const char *reason, ...) PRINTF_ATTRIBUTE(2,3);
+void torture_skip(struct torture_context *test, const char *reason, ...) PRINTF_ATTRIBUTE(2,3);
 const char *torture_setting(struct torture_context *test, const char *name, 
 							const char *default_value);
 

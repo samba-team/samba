@@ -23,7 +23,7 @@
 #include "torture/ui.h"
 #include "dlinklist.h"
 
-void torture_comment(struct torture_context *context, const char *comment, ...) _PRINTF_ATTRIBUTE(2,3)
+void torture_comment(struct torture_context *context, const char *comment, ...)
 {
 	va_list ap;
 	char *tmp;
@@ -39,7 +39,7 @@ void torture_comment(struct torture_context *context, const char *comment, ...) 
 	talloc_free(tmp);
 }
 
-void torture_fail(struct torture_context *context, const char *fmt, ...) _PRINTF_ATTRIBUTE(2,3)
+void torture_fail(struct torture_context *context, const char *fmt, ...)
 {
 	va_list ap;
 
@@ -49,7 +49,7 @@ void torture_fail(struct torture_context *context, const char *fmt, ...) _PRINTF
 	context->last_result = TORTURE_FAIL;
 }
 
-void torture_skip(struct torture_context *context, const char *fmt, ...) _PRINTF_ATTRIBUTE(2,3)
+void torture_skip(struct torture_context *context, const char *fmt, ...)
 {
 	va_list ap;
 	context->skipped++;
