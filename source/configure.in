@@ -557,10 +557,18 @@ dnl Add #include for broken IRIX header files
 	*irix6*)
 		AC_ADD_INCLUDE(<standards.h>)
 		if test x"$ac_cv_prog_gcc" != x"yes" ; then
+			dnl Fix sensible defaults for MIPSPro compilers. The
+			dnl error numbers are valid for the 7.3 compilers,
+			dnl hopefully also valid for the 7.4 series.
+			dnl
 			dnl Bugzilla 3801. Force an error on warning 1035
 			dnl so we don't incorrectly detect stdint.h. This
 			dnl warning is emitted for #error directives.
 			CFLAGS="$CFLAGS -diag_error 1035"
+			dnl 1209: Controlling expression is constant
+			dnl 1174: Function foo declared but never referenced
+			dnl 3201: Parameter foo was never referenced
+			CFLAGS="$CFLAGS -woff 1209,1174,3201"
 		fi
 	;;
 esac
