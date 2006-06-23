@@ -71,14 +71,14 @@ start() {
 stop() {
 	KIND="SMB"
 	echo -n $"Shutting down $KIND services: "
-	killproc smbd -TERM
+	killproc smbd
 	RETVAL=$?
 	[ $RETVAL -eq 0 ] && rm -f /var/run/smbd.pid
 	echo
 	KIND="NMB"
 	if [ x"$ISNETBIOSDISABLED" != x"Yes" ]; then
 		echo -n $"Shutting down $KIND services: "
-		killproc nmbd -TERM
+		killproc nmbd 
 		RETVAL2=$?
 		[ $RETVAL2 -eq 0 ] && rm -f /var/run/nmbd.pid
 		[ $RETVAL -eq 0 -a $RETVAL2 -eq 0 ] && rm -f /var/lock/subsys/smb 
