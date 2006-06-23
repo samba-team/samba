@@ -117,12 +117,11 @@ static NTSTATUS rpc_registry_enumerate_internal(const DOM_SID *domain_sid,
 		return werror_to_ntstatus(result);
 	}
 	
-	if ( strlen( subpath ) != 0 ) {
-		result = rpccli_reg_open_entry(pipe_hnd, mem_ctx, &pol_hive, subpath, MAXIMUM_ALLOWED_ACCESS, &pol_key );
-		if ( !W_ERROR_IS_OK(result) ) {
-			d_fprintf(stderr, "Unable to open [%s]\n", argv[0]);
-			return werror_to_ntstatus(result);
-		}
+	result = rpccli_reg_open_entry(pipe_hnd, mem_ctx, &pol_hive, subpath,
+				       MAXIMUM_ALLOWED_ACCESS, &pol_key );
+	if ( !W_ERROR_IS_OK(result) ) {
+		d_fprintf(stderr, "Unable to open [%s]\n", argv[0]);
+		return werror_to_ntstatus(result);
 	}
 	
 	/* get the subkeys */
