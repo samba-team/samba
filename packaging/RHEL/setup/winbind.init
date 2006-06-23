@@ -49,7 +49,7 @@ stop() {
         echo
 	KIND="Winbind"
 	echo -n $"Shutting down $KIND services: "
-	killproc winbindd -TERM
+	killproc winbindd
 	RETVAL=$?
 	[ $RETVAL -eq 0 ] && rm -f /var/run/winbindd.pid && rm -f /var/lock/subsys/winbindd
 	echo ""
