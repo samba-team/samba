@@ -852,6 +852,7 @@ static struct functable net_func[] = {
 	int argc_new = 0;
 	const char ** argv_new;
 	poptContext pc;
+	BOOL do_talloc_report=False;
 
 	struct poptOption long_options[] = {
 		{"help",	'h', POPT_ARG_NONE,   0, 'h'},
@@ -884,6 +885,7 @@ static struct functable net_func[] = {
 		{"timestamps",	0, POPT_ARG_NONE,     &opt_timestamps},
 		{"exclude",	'e', POPT_ARG_STRING, &opt_exclude},
 		{"destination",	0, POPT_ARG_STRING,   &opt_destination},
+		{"tallocreport", 0, POPT_ARG_NONE, &do_talloc_report},
 
 		POPT_COMMON_SAMBA
 		{ 0, 0, 0, 0}
@@ -945,6 +947,10 @@ static struct functable net_func[] = {
 			argc_new = i;
 			break;
 		}
+	}
+
+	if (do_talloc_report) {
+		talloc_enable_leak_report();
 	}
 
 	if (opt_requester_name) {
