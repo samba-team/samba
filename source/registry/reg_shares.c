@@ -124,6 +124,7 @@ static int shares_value_info( const char *key, REGVAL_CTR *val )
 		num_values = handle_printing_subpath( path, NULL, val );
 #endif
 		
+	SAFE_FREE(path);
 	
 	return num_values;
 }
