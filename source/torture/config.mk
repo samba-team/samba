@@ -100,7 +100,7 @@ OBJ_FILES = misc.o
 
 [MODULE::torture_rpc]
 # TORTURE_NET and TORTURE_NBT use functions from torture_rpc...
-OUTPUT_TYPE = INTEGRATED
+#OUTPUT_TYPE = INTEGRATED
 SUBSYSTEM = torture
 INIT_FUNCTION = torture_rpc_init
 PRIVATE_PROTO_HEADER = \
@@ -270,7 +270,10 @@ PRIVATE_DEPENDENCIES = \
 		torture \
 		LIBPOPT \
 		POPT_SAMBA \
-		POPT_CREDENTIALS
+		POPT_CREDENTIALS \
+		TORTURE_UI \
+		dcerpc \
+		LIBCLI_SMB
 MANPAGE = man/smbtorture.1
 # End BINARY smbtorture
 #################################
