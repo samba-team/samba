@@ -229,8 +229,3 @@ void smb2srv_setinfo_recv(struct smb2srv_request *req)
 {
 	smb2srv_send_error(req, NT_STATUS_NOT_IMPLEMENTED);
 }
-
-void smb2srv_break_recv(struct smb2srv_request *req)
-{
-	smb2srv_send_error(req, NT_STATUS_NOT_IMPLEMENTED);
-}
