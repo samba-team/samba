@@ -307,14 +307,6 @@ BOOL wire_bad_flags(struct smb_wire_string *str, int flags, struct smbcli_state 
 }
 
 /*
-  check if 2 NTTIMEs are equal
-*/
-BOOL nt_time_equal(NTTIME *t1, NTTIME *t2)
-{
-	return *t1 == *t2;
-}
-
-/*
   dump a all_info QFILEINFO structure
 */
 void dump_all_info(TALLOC_CTX *mem_ctx, union smb_fileinfo *finfo)
@@ -707,8 +699,6 @@ double torture_create_procs(BOOL (*fn)(struct smbcli_state *, int), BOOL *result
 	return timeval_elapsed(&tv);
 }
 
-
-
 static BOOL wrap_old_torture_multifn(struct torture_context *torture,
 								const void *_fn)
 {
@@ -734,3 +724,5 @@ _PUBLIC_ NTSTATUS register_torture_multi_op(const char *name,
 
 	return NT_STATUS_OK;
 }
+
+
