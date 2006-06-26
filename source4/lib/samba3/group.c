@@ -72,7 +72,7 @@ NTSTATUS samba3_read_grouptdb(const char *file, TALLOC_CTX *ctx, struct samba3_g
 
 	for (kbuf = tdb_firstkey(tdb); 
 	     kbuf.dptr; 
-	     newkey = tdb_nextkey(tdb, kbuf), safe_free(kbuf.dptr), kbuf=newkey) {
+	     newkey = tdb_nextkey(tdb, kbuf), free(kbuf.dptr), kbuf=newkey) {
 		struct samba3_groupmapping map;
 		const char *k = (const char *)kbuf.dptr;
 
