@@ -1,6 +1,6 @@
 /* 
    Unix SMB/CIFS implementation.
-   SMB torture tester
+   SMB torture tester utility functions
    Copyright (C) Jelmer Vernooij 2006
    
    This program is free software; you can redistribute it and/or modify
@@ -19,40 +19,25 @@
 */
 
 #include "includes.h"
+#include "system/filesys.h"
 #include "torture/torture.h"
-#include "torture/local/proto.h"
-#include "torture/auth/proto.h"
 
-/* ignore me */ static struct torture_suite *
-	(*suite_generators[]) (TALLOC_CTX *mem_ctx) =
-{ 
-	torture_local_binding_string, 
-	torture_ntlmssp, 
-	torture_local_messaging, 
-	torture_local_irpc, 
-	torture_local_util_strlist, 
-	torture_local_util_file, 
-	torture_local_idtree, 
-	torture_local_iconv,
-	torture_local_socket, 
-	torture_pac, 
-	torture_registry, 
-	torture_local_resolve,
-	torture_local_sddl,
-	torture_local_ndr, 
-	torture_local_event, 
-	torture_local_torture,
-	NULL
-};
-
-NTSTATUS torture_local_init(void)
+_PUBLIC_ NTSTATUS torture_temp_dir(TALLOC_CTX *mem_ctx, char **tempdir)
 {
-	int i;
-	TALLOC_CTX *mem_ctx = talloc_autofree_context();
+	*tempdir = talloc_strdup(mem_ctx, "torture-tmp.XXXXXX");
 
-	register_torture_op("LOCAL-TALLOC", torture_local_talloc);
-	for (i = 0; suite_generators[i]; i++)
-		torture_register_suite(suite_generators[i](mem_ctx));
+	if (mkdtemp(*tempdir) == NULL)
+		return NT_STATUS_UNSUCCESSFUL;
 
 	return NT_STATUS_OK;
 }
+
+/**
+  check if 2 NTTIMEs are equal
+*/
+BOOL nt_time_equal(NTTIME *t1, NTTIME *t2)
+{
+	return *t1 == *t2;
+}
+
+
