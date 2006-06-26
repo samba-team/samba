@@ -54,7 +54,7 @@ static BOOL test_udp(struct torture_context *test, const void *data)
 	torture_assert(test, localhost, "Localhost not found");
 
 	status = socket_listen(sock1, localhost, 0, 0);
-	torture_assert_ntstatus_ok(test, status, "listen on socket 1")
+	torture_assert_ntstatus_ok(test, status, "listen on socket 1");
 
 	srv_addr = socket_get_my_addr(sock1, test);
 	if (srv_addr == NULL || strcmp(srv_addr->addr, iface_best_ip("127.0.0.1")) != 0) {
@@ -164,7 +164,7 @@ static BOOL test_tcp(struct torture_context *test, const void *data)
 	torture_comment(test, "server port is %d", srv_addr->port);
 
 	status = socket_connect_ev(sock2, NULL, srv_addr, 0, ev);
-	torture_assert_ntstatus_ok(test, status, "connect() on socket 2")
+	torture_assert_ntstatus_ok(test, status, "connect() on socket 2");
 
 	status = socket_accept(sock1, &sock3);
 	torture_assert_ntstatus_ok(test, status, "accept() on socket 1");

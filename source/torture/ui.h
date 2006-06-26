@@ -125,32 +125,41 @@ BOOL torture_run_test(struct torture_context *context,
 	}
 
 #define torture_assert_werr_equal(ctx,got,expected,string) \
-	if (!W_ERROR_EQUAL(got, expected)) { \
+	do { WERROR __got = got, __expected = expected; \
+	if (!W_ERROR_EQUAL(__got, __expected)) { \
 		torture_fail(ctx, "%s:%d (%s): got %s, expected %s", __FILE__, \
-					 __LINE__, string, win_errstr(got), win_errstr(expected)); \
+					 __LINE__, string, win_errstr(__got), win_errstr(__expected)); \
 		return False; \
-	}
+	} \
+	} while (0)
 
 #define torture_assert_ntstatus_equal(ctx,got,expected,string) \
-	if (!NT_STATUS_EQUAL(got, expected)) { \
+	do { NTSTATUS __got = got, __expected = expected; \
+	if (!NT_STATUS_EQUAL(__got, __expected)) { \
 		torture_fail(ctx, "%s:%d (%s): got %s, expected %s", __FILE__, \
-					 __LINE__, string, nt_errstr(got), nt_errstr(expected)); \
+					 __LINE__, string, nt_errstr(__got), nt_errstr(__expected)); \
 		return False; \
-	}
+	}\
+	} while(0)
+
 
 #define torture_assert_casestr_equal(ctx,got,expected,string) \
-	if (strcasecmp(got, expected) != 0) { \
+	do { const char *__got = got, __expected = expected; \
+	if (strcasecmp(__got, __expected) != 0) { \
 		torture_fail(ctx, "%s:%d (%s): got %s, expected %s", __FILE__, \
 					 __LINE__, string, got, expected); \
 		return False; \
-	}
+	} \
+	} while(0)
 
 #define torture_assert_str_equal(ctx,got,expected,string) \
-	if (strcmp(got, expected) != 0) { \
+	do { const char *__got = got, __expected = expected; \
+	if (strcmp(__got, __expected) != 0) { \
 		torture_fail(ctx, "%s:%d (%s): got %s, expected %s", __FILE__, \
-					 __LINE__, string, got, expected); \
+					 __LINE__, string, __got, __expected); \
 		return False; \
-	}
+	} \
+	} while(0)
 
 
 /* Convenience macros */
