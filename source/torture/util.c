@@ -26,9 +26,10 @@
 /**
  create a temporary directory.
 */
-_PUBLIC_ NTSTATUS torture_temp_dir(TALLOC_CTX *mem_ctx, char **tempdir)
+_PUBLIC_ NTSTATUS torture_temp_dir(TALLOC_CTX *mem_ctx, const char *prefix, 
+								   char **tempdir)
 {
-	*tempdir = talloc_strdup(mem_ctx, "torture-tmp.XXXXXX");
+	*tempdir = talloc_asprintf(mem_ctx, "torture.tmp-%s.XXXXXX", prefix);
 
 	if (mkdtemp(*tempdir) == NULL)
 		return NT_STATUS_UNSUCCESSFUL;
@@ -48,6 +49,7 @@ BOOL nt_time_equal(NTTIME *t1, NTTIME *t2)
  * Provision a Samba installation using @param setupdir_script and start smbd.
  */
 NTSTATUS torture_setup_server(TALLOC_CTX *mem_ctx, 
+							  const char *prefix,
 							  const char *setupdir_script,
 							  const char *smbd_path,
 							  pid_t *smbd_pid)
@@ -61,7 +63,7 @@ NTSTATUS torture_setup_server(TALLOC_CTX *mem_ctx,
 
 	*smbd_pid = -1;
 
-	status = torture_temp_dir(mem_ctx, &tempdir);
+	status = torture_temp_dir(mem_ctx, prefix, &tempdir);
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
 	}
