@@ -371,13 +371,13 @@ const static struct torture_ui_ops quiet_ui_ops = {
  int main(int argc,char *argv[])
 {
 	int opt, i;
-	char *p;
 	BOOL correct = True;
 	int max_runtime=0;
 	int argc_new;
 	struct torture_context *torture;
 	char **argv_new;
 	poptContext pc;
+	static const char *target = "other";
 	static const char *ui_ops_name = "simple";
 	enum {OPT_LOADFILE=1000,OPT_UNCLIST,OPT_TIMELIMIT,OPT_DNS,
 	      OPT_DANGEROUS,OPT_SMB_PORTS,OPT_ASYNC};
@@ -399,6 +399,7 @@ const static struct torture_ui_ops quiet_ui_ops = {
 		{"parse-dns",	'D', POPT_ARG_STRING,	NULL, 	OPT_DNS,	"parse-dns", 	NULL},
 		{"dangerous",	'X', POPT_ARG_NONE,	NULL,   OPT_DANGEROUS,
 		 "run dangerous tests (eg. wiping out password database)", NULL},
+		{"target", 		'T', POPT_ARG_STRING, &target, 0, "samba4|other", NULL},
 		{"async",       'a', POPT_ARG_NONE,     NULL,   OPT_ASYNC,
 		 "run async tests", NULL},
 		{"num-async",    0, POPT_ARG_INT,  &torture_numasync,  0,
@@ -490,9 +491,8 @@ const static struct torture_ui_ops quiet_ui_ops = {
 		exit(1);
 	}
 
-        for(p = argv_new[1]; *p; p++) {
-		if(*p == '\\')
-			*p = '/';
+	if (!strcmp(target, "samba4")) {
+		lp_set_cmdline("target:samba4", "true");
 	}
 
 	/* see if its a RPC transport specifier */
