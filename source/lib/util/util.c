@@ -253,19 +253,6 @@ _PUBLIC_ void become_daemon(BOOL Fork)
 				  attach it to the logfile */
 }
 
-
-/**
- Free memory, checks for NULL.
- Use directly SAFE_FREE()
- Exists only because we need to pass a function pointer somewhere --SSS
-**/
-
-_PUBLIC_ void safe_free(void *p)
-{
-	SAFE_FREE(p);
-}
-
-
 /**
  Get my own name, return in malloc'ed storage.
 **/
