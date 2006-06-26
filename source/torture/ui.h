@@ -146,7 +146,7 @@ BOOL torture_run_test(struct torture_context *context,
 
 
 #define torture_assert_casestr_equal(ctx,got,expected,string) \
-	do { const char *__got = got, __expected = expected; \
+	do { const char *__got = got, *__expected = expected; \
 	if (strcasecmp(__got, __expected) != 0) { \
 		torture_fail(ctx, "%s:%d (%s): got %s, expected %s", __FILE__, \
 					 __LINE__, string, got, expected); \
@@ -155,7 +155,7 @@ BOOL torture_run_test(struct torture_context *context,
 	} while(0)
 
 #define torture_assert_str_equal(ctx,got,expected,string) \
-	do { const char *__got = got, __expected = expected; \
+	do { const char *__got = got, *__expected = expected; \
 	if (strcmp(__got, __expected) != 0) { \
 		torture_fail(ctx, "%s:%d (%s): got %s, expected %s", __FILE__, \
 					 __LINE__, string, __got, __expected); \
