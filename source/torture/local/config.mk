@@ -20,7 +20,8 @@ OBJ_FILES = \
 		sddl.o \
 		ndr.o \
 		event.o \
-		local.o
+		local.o \
+		torture.o
 PUBLIC_DEPENDENCIES = \
 		RPC_NDR_ECHO \
 		LIBCLI_SMB \

@@ -1,6 +1,8 @@
 /* 
    Unix SMB/CIFS implementation.
-   SMB torture tester
+
+   local testing of torture
+
    Copyright (C) Jelmer Vernooij 2006
    
    This program is free software; you can redistribute it and/or modify
@@ -20,39 +22,28 @@
 
 #include "includes.h"
 #include "torture/torture.h"
-#include "torture/local/proto.h"
-#include "torture/auth/proto.h"
+#include "torture/util.h"
 
-/* ignore me */ static struct torture_suite *
-	(*suite_generators[]) (TALLOC_CTX *mem_ctx) =
-{ 
-	torture_local_binding_string, 
-	torture_ntlmssp, 
-	torture_local_messaging, 
-	torture_local_irpc, 
-	torture_local_util_strlist, 
-	torture_local_util_file, 
-	torture_local_idtree, 
-	torture_local_iconv,
-	torture_local_socket, 
-	torture_pac, 
-	torture_registry, 
-	torture_local_resolve,
-	torture_local_sddl,
-	torture_local_ndr, 
-	torture_local_event, 
-	torture_local_torture,
-	NULL
-};
-
-NTSTATUS torture_local_init(void)
+static BOOL test_tempdir(struct torture_context *torture, 
+							   const void *_data)
 {
-	int i;
-	TALLOC_CTX *mem_ctx = talloc_autofree_context();
+	char *location = NULL;
+	
+	torture_assert_ntstatus_ok(torture, torture_temp_dir(torture, &location), 
+								"torture_temp_dir should return NT_STATUS_OK" );
 
-	register_torture_op("LOCAL-TALLOC", torture_local_talloc);
-	for (i = 0; suite_generators[i]; i++)
-		torture_register_suite(suite_generators[i](mem_ctx));
+	torture_assert(torture, directory_exist(location), 
+				   "created dir doesn't exist");
 
-	return NT_STATUS_OK;
+	return True;
+}
+
+struct torture_suite *torture_local_torture(TALLOC_CTX *mem_ctx)
+{
+	struct torture_suite *suite = torture_suite_create(mem_ctx, 
+													   "LOCAL-TORTURE");
+
+	torture_suite_add_simple_tcase(suite, "tempdir", test_tempdir, NULL);
+
+	return suite;
 }
