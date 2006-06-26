@@ -767,45 +767,53 @@ static void usermod_handler(struct rpc_request *req)
 	case USERMOD_LOOKUP:
 		c->status = usermod_lookup(c, s);
 		
-		/* monitor message */
-		msg.type = rpc_lookup_name;
-		msg_lookup = talloc(s, struct msg_rpc_lookup_name);
-
-		msg_lookup->rid   = s->lookupname.out.rids.ids;
-		msg_lookup->count = s->lookupname.out.rids.count;
-		msg.data = (void*)msg_lookup;
-		msg.data_size = sizeof(*msg_lookup);
+		if (NT_STATUS_IS_OK(c->status)) {
+			/* monitor message */
+			msg.type = rpc_lookup_name;
+			msg_lookup = talloc(s, struct msg_rpc_lookup_name);
+			
+			msg_lookup->rid   = s->lookupname.out.rids.ids;
+			msg_lookup->count = s->lookupname.out.rids.count;
+			msg.data = (void*)msg_lookup;
+			msg.data_size = sizeof(*msg_lookup);
+		}
 		break;
 
 	case USERMOD_OPEN:
 		c->status = usermod_open(c, s);
 
-		/* monitor message */
-		msg.type = rpc_open_user;
-		msg_open = talloc(s, struct msg_rpc_open_user);
-
-		msg_open->rid         = s->openuser.in.rid;
-		msg_open->access_mask = s->openuser.in.rid;
-		msg.data = (void*)msg_open;
-		msg.data_size = sizeof(*msg_open);
+		if (NT_STATUS_IS_OK(c->status)) {
+			/* monitor message */
+			msg.type = rpc_open_user;
+			msg_open = talloc(s, struct msg_rpc_open_user);
+			
+			msg_open->rid         = s->openuser.in.rid;
+			msg_open->access_mask = s->openuser.in.rid;
+			msg.data = (void*)msg_open;
+			msg.data_size = sizeof(*msg_open);
+		}
 		break;
 
 	case USERMOD_QUERY:
 		c->status = usermod_query(c, s);
 
-		/* monitor message */
-		msg.type = rpc_query_user;
-		msg.data = NULL;
-		msg.data_size = 0;
+		if (NT_STATUS_IS_OK(c->status)) {
+			/* monitor message */
+			msg.type = rpc_query_user;
+			msg.data = NULL;
+			msg.data_size = 0;
+		}
 		break;
 
 	case USERMOD_MODIFY:
 		c->status = usermod_modify(c, s);
-
-		/* monitor message */
-		msg.type = rpc_set_user;
-		msg.data = NULL;
-		msg.data_size = 0;
+		
+		if (NT_STATUS_IS_OK(c->status)) {
+			/* monitor message */
+			msg.type = rpc_set_user;
+			msg.data = NULL;
+			msg.data_size = 0;
+		}
 		break;
 	}
 
