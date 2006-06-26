@@ -1368,7 +1368,16 @@
 
 	/******************/
 	/* Function: 0x58 */
-	WERROR spoolss_58(
+	WERROR spoolss_XcvData(
+		[in,ref] policy_handle *handle,
+		[in] [string,charset(UTF16)] uint16 function_name[],
+		[in] DATA_BLOB in_data,
+		[in,value(r->in.in_data.length)] uint32 _in_data_length,
+		[in] uint32 offered,
+		[in] uint32 unknown1,
+		[out] DATA_BLOB out_data,
+		[out] uint32 needed,
+		[out] uint32 unknown2
 	);
 
 	/******************/

@@ -36,6 +36,18 @@ WERROR ntptr_OpenPrintServer(struct ntptr_context *ntptr, TALLOC_CTX *mem_ctx,
 	return ntptr->ops->OpenPrintServer(ntptr, mem_ctx, r, printer_name, server);
 }
 
+WERROR ntptr_XcvDataPrintServer(struct ntptr_GenericHandle *server, TALLOC_CTX *mem_ctx,
+				struct spoolss_XcvData *r)
+{
+	if (server->type != NTPTR_HANDLE_SERVER) {
+		return WERR_FOOBAR;
+	}
+	if (!server->ntptr->ops->XcvDataPrintServer) {
+		return WERR_NOT_SUPPORTED;
+	}
+	return server->ntptr->ops->XcvDataPrintServer(server, mem_ctx, r);
+}
+
 
 /* PrintServer PrinterData functions */
 WERROR ntptr_EnumPrintServerData(struct ntptr_GenericHandle *server, TALLOC_CTX *mem_ctx,
@@ -188,14 +200,25 @@ WERROR ntptr_EnumPorts(struct ntptr_context *ntptr, TALLOC_CTX *mem_ctx,
 WERROR ntptr_OpenPort(struct ntptr_context *ntptr, TALLOC_CTX *mem_ctx,
 		      struct spoolss_OpenPrinterEx *r,
 		      const char *port_name,
-		      struct ntptr_GenericHandle **prt)
+		      struct ntptr_GenericHandle **port)
 {
 	if (!ntptr->ops->OpenPort) {
 		return WERR_NOT_SUPPORTED;
 	}
-	return ntptr->ops->OpenPort(ntptr, mem_ctx, r, port_name, prt);
+	return ntptr->ops->OpenPort(ntptr, mem_ctx, r, port_name, port);
 }
 
+WERROR ntptr_XcvDataPort(struct ntptr_GenericHandle *port, TALLOC_CTX *mem_ctx,
+			 struct spoolss_XcvData *r)
+{
+	if (port->type != NTPTR_HANDLE_PORT) {
+		return WERR_FOOBAR;
+	}
+	if (!port->ntptr->ops->XcvDataPort) {
+		return WERR_NOT_SUPPORTED;
+	}
+	return port->ntptr->ops->XcvDataPort(port, mem_ctx, r);
+}
 
 /* Monitor functions */
 WERROR ntptr_EnumMonitors(struct ntptr_context *ntptr, TALLOC_CTX *mem_ctx,
@@ -216,6 +239,18 @@ WERROR ntptr_OpenMonitor(struct ntptr_context *ntptr, TALLOC_CTX *mem_ctx,
 		return WERR_NOT_SUPPORTED;
 	}
 	return ntptr->ops->OpenMonitor(ntptr, mem_ctx, r, monitor_name, monitor);
+}
+
+WERROR ntptr_XcvDataMonitor(struct ntptr_GenericHandle *monitor, TALLOC_CTX *mem_ctx,
+			    struct spoolss_XcvData *r)
+{
+	if (monitor->type != NTPTR_HANDLE_MONITOR) {
+		return WERR_FOOBAR;
+	}
+	if (!monitor->ntptr->ops->XcvDataMonitor) {
+		return WERR_NOT_SUPPORTED;
+	}
+	return monitor->ntptr->ops->XcvDataMonitor(monitor, mem_ctx, r);
 }
 
 
@@ -286,6 +321,18 @@ WERROR ntptr_DeletePrinter(struct ntptr_context *ntptr, TALLOC_CTX *mem_ctx,
 		return WERR_NOT_SUPPORTED;
 	}
 	return ntptr->ops->DeletePrinter(ntptr, mem_ctx, r);
+}
+
+WERROR ntptr_XcvDataPrinter(struct ntptr_GenericHandle *printer, TALLOC_CTX *mem_ctx,
+			    struct spoolss_XcvData *r)
+{
+	if (printer->type != NTPTR_HANDLE_PRINTER) {
+		return WERR_FOOBAR;
+	}
+	if (!printer->ntptr->ops->XcvDataPrinter) {
+		return WERR_NOT_SUPPORTED;
+	}
+	return printer->ntptr->ops->XcvDataPrinter(printer, mem_ctx, r);
 }
 
 

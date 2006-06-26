@@ -1379,12 +1379,41 @@ static WERROR spoolss_57(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx
 
 
 /* 
-  spoolss_58 
+  spoolss_XcvData
 */
-static WERROR spoolss_58(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct spoolss_58 *r)
+static WERROR spoolss_XcvData(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct spoolss_XcvData *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	struct ntptr_GenericHandle *handle;
+	struct dcesrv_handle *h;
+	WERROR status;
+
+	DCESRV_PULL_HANDLE_WERR(h, r->in.handle, DCESRV_HANDLE_ANY);
+	handle = talloc_get_type(h->data, struct ntptr_GenericHandle);
+
+	switch (handle->type) {
+		case NTPTR_HANDLE_SERVER:
+			status = ntptr_XcvDataPrintServer(handle, mem_ctx, r);
+			W_ERROR_NOT_OK_RETURN(status);
+			break;
+		case NTPTR_HANDLE_PRINTER:
+			status = ntptr_XcvDataPrinter(handle, mem_ctx, r);
+			W_ERROR_NOT_OK_RETURN(status);
+			break;
+		case NTPTR_HANDLE_PORT:
+			status = ntptr_XcvDataPort(handle, mem_ctx, r);
+			W_ERROR_NOT_OK_RETURN(status);
+			break;
+		case NTPTR_HANDLE_MONITOR:
+			status = ntptr_XcvDataMonitor(handle, mem_ctx, r);
+			W_ERROR_NOT_OK_RETURN(status);
+			break;
+		default:
+			return WERR_FOOBAR;
+	}
+
+	/* TODO: handle the buffer sizes here! */
+	return WERR_OK;
 }
 
 
