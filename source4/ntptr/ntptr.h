@@ -74,6 +74,7 @@ struct spoolss_EnumPrinters;
 struct spoolss_EnumForms;
 struct spoolss_EnumPorts;
 struct spoolss_EnumPrintProcessors;
+struct spoolss_XcvData;
 
 /* the ntptr operations structure - contains function pointers to 
    the backend implementations of each operation */
@@ -88,6 +89,8 @@ struct ntptr_ops {
 				  struct spoolss_OpenPrinterEx *r,
 				  const char *printer_name,
 				  struct ntptr_GenericHandle **server);
+	WERROR (*XcvDataPrintServer)(struct ntptr_GenericHandle *server, TALLOC_CTX *mem_ctx,
+				     struct spoolss_XcvData *r);
 
 	/* PrintServer PrinterData functions */
 	WERROR (*EnumPrintServerData)(struct ntptr_GenericHandle *server, TALLOC_CTX *mem_ctx,
@@ -125,8 +128,10 @@ struct ntptr_ops {
 	WERROR (*OpenPort)(struct ntptr_context *ntptr, TALLOC_CTX *mem_ctx,
 			   struct spoolss_OpenPrinterEx *r,
 			   const char *port_name,
-			   struct ntptr_GenericHandle **prt);
-
+			   struct ntptr_GenericHandle **port);
+	WERROR (*XcvDataPort)(struct ntptr_GenericHandle *port, TALLOC_CTX *mem_ctx,
+			      struct spoolss_XcvData *r);
+	
 	/* Monitor functions */
 	WERROR (*EnumMonitors)(struct ntptr_context *ntptr, TALLOC_CTX *mem_ctx,
 			       struct spoolss_EnumMonitors *r);
@@ -134,6 +139,8 @@ struct ntptr_ops {
 			      struct spoolss_OpenPrinterEx *r,
 			      const char *monitor_name,
 			      struct ntptr_GenericHandle **monitor);
+	WERROR (*XcvDataMonitor)(struct ntptr_GenericHandle *monitor, TALLOC_CTX *mem_ctx,
+				 struct spoolss_XcvData *r);
 
 	/* PrintProcessor functions */
 	WERROR (*EnumPrintProcessors)(struct ntptr_context *ntptr, TALLOC_CTX *mem_ctx,
@@ -155,6 +162,8 @@ struct ntptr_ops {
 			     struct spoolss_SetPrinter *r);
 	WERROR (*DeletePrinter)(struct ntptr_context *ntptr, TALLOC_CTX *mem_ctx,
 				struct spoolss_DeletePrinter *r);
+	WERROR (*XcvDataPrinter)(struct ntptr_GenericHandle *printer, TALLOC_CTX *mem_ctx,
+				 struct spoolss_XcvData *r);
 
 	/* Printer Driver functions */
 	WERROR (*GetPrinterDriver)(struct ntptr_context *ntptr, TALLOC_CTX *mem_ctx,

@@ -761,7 +761,8 @@ static const struct ntptr_ops ntptr_simple_ldb_ops = {
 
 	/* PrintServer functions */
 	.OpenPrintServer		= sptr_OpenPrintServer,
-
+/*	.XcvDataPrintServer		= sptr_XcvDataPrintServer,
+*/
 	/* PrintServer PrinterData functions */
 /*	.EnumPrintServerData		= sptr_EnumPrintServerData,
 */	.GetPrintServerData		= sptr_GetPrintServerData,
@@ -783,10 +784,12 @@ static const struct ntptr_ops ntptr_simple_ldb_ops = {
 	/* Port functions */
 	.EnumPorts			= sptr_EnumPorts,
 /*	.OpenPort			= sptr_OpenPort,
+	.XcvDataPort			= sptr_XcvDataPort,
 */
 	/* Monitor functions */
 	.EnumMonitors			= sptr_EnumMonitors,
 /*	.OpenMonitor			= sptr_OpenMonitor,
+	.XcvDataMonitor			= sptr_XcvDataMonitor,
 */
 	/* PrintProcessor functions */
 /*	.EnumPrintProcessors		= sptr_EnumPrintProcessors,
@@ -798,6 +801,7 @@ static const struct ntptr_ops ntptr_simple_ldb_ops = {
 	.GetPrinter			= sptr_GetPrinter,
 	.SetPrinter			= sptr_SetPrinter,
 	.DeletePrinter			= sptr_DeletePrinter,
+	.XcvDataPrinter			= sptr_XcvDataPrinter,
 */
 	/* Printer Driver functions */
 /*	.GetPrinterDriver		= sptr_GetPrinterDriver,
