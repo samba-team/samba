@@ -22,6 +22,7 @@
 
 #include "includes.h"
 #include "torture/torture.h"
+#include "system/wait.h"
 #include "torture/util.h"
 
 static BOOL test_tempdir(struct torture_context *torture, 
@@ -38,12 +39,42 @@ static BOOL test_tempdir(struct torture_context *torture,
 	return True;
 }
 
+static BOOL test_setup_server(struct torture_context *torture, 
+							   const void *_data)
+{
+	pid_t pid;
+
+	torture_assert_ntstatus_ok(torture, torture_setup_server(torture, 
+									"./script/tests/mktestsetup.sh",
+									"./bin/smbd", &pid),
+							   "starting smbd failed");
+
+	torture_assert(torture, pid > 0, "Pid invalid");
+
+	torture_comment(torture, "Created smbd with pid %d", pid);
+
+	kill(pid, SIGINT);
+
+	waitpid(pid, NULL, 0);
+
+	torture_assert_ntstatus_equal(torture, torture_setup_server(torture, 
+									"./invalid-script",
+									"./bin/smbd", &pid), 
+								  NT_STATUS_UNSUCCESSFUL,
+							   "invalid script specified");
+
+	torture_assert(torture, pid == -1, "Pid not -1 after failure");
+
+	return True;
+}
+
 struct torture_suite *torture_local_torture(TALLOC_CTX *mem_ctx)
 {
 	struct torture_suite *suite = torture_suite_create(mem_ctx, 
 													   "LOCAL-TORTURE");
 
 	torture_suite_add_simple_tcase(suite, "tempdir", test_tempdir, NULL);
+	torture_suite_add_simple_tcase(suite, "setup server", test_setup_server, NULL);
 
 	return suite;
 }
