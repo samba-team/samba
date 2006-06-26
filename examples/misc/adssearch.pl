@@ -87,7 +87,7 @@ GetOptions(
 	'base|b=s'	=> \$opt_base,
 	'D|DN=s'	=> \$opt_binddn,
 	'debug=i'	=> \$opt_debug,
-	'extendeddn|e'	=> \$opt_display_extendeddn,
+	'extendeddn|e=i'	=> \$opt_display_extendeddn,
 	'help'		=> \$opt_help,
 	'host|h=s'	=> \$opt_host,
 	'machine|P'	=> \$opt_machine,
@@ -1396,12 +1396,12 @@ sub gen_controls {
 		>
 	);
 
-	my $ctl_extended_dn_val = $asn_extended_dn->encode( mode => '1');
-	my $ctl_extended_dn =Net::LDAP::Control->new( 
-		type => $ads_controls{'LDAP_SERVER_EXTENDED_DN_OID'},
-		critical => 'true',
-		value => $ctl_extended_dn_val);
-
+	# only w2k3 accepts '1' and needs the ctl_val, w2k does not accept a ctl_val
+	my $ctl_extended_dn_val = $asn_extended_dn->encode( mode => $opt_display_extendeddn);
+	my $ctl_extended_dn = Net::LDAP::Control->new( 
+			type => $ads_controls{'LDAP_SERVER_EXTENDED_DN_OID'},
+			critical => 'true',
+			value => $opt_display_extendeddn ? $ctl_extended_dn_val : "");
 
 	# setup notify control
 	my $ctl_notification = Net::LDAP::Control->new( 
@@ -1421,7 +1421,7 @@ sub gen_controls {
 		push(@ctrls_s, "LDAP_PAGED_RESULT_OID_STRING" );
 	}
 
-	if ($opt_display_extendeddn) {
+	if (defined($opt_display_extendeddn)) {
 		push(@ctrls, $ctl_extended_dn);
 		push(@ctrls_s, "LDAP_SERVER_EXTENDED_DN_OID");
 	} 
