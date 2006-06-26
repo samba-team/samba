@@ -1471,7 +1471,7 @@ struct byte_range_lock *brl_get_locks(TALLOC_CTX *mem_ctx,
 		if (!validate_lock_entries(&br_lck->num_locks, (struct lock_struct **)&br_lck->lock_data)) {
 			tdb_chainunlock(tdb, key);
 			SAFE_FREE(br_lck->lock_data);
-			SAFE_FREE(br_lck);
+			TALLOC_FREE(br_lck);
 			return NULL;
 		}
 
