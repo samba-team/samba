@@ -1261,7 +1261,7 @@ bin/winbindd@EXEEXT@: $(WINBINDD_OBJ) @BUILD_POPT@ bin/.dummy
 
 bin/pam_winbind.@SHLIBEXT@: $(PAM_WINBIND_OBJ:.o=.@PICSUFFIX@) bin/.dummy
 	@echo "Linking shared library $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(PAM_WINBIND_OBJ:.o=.po.o) \
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(PAM_WINBIND_OBJ:.o=.@PICSUFFIX@) \
 		@SONAMEFLAG@`basename $@` -lpam @INIPARSERLIBS@
 
 bin/builtin.@SHLIBEXT@: $(AUTH_BUILTIN_OBJ:.o=.@PICSUFFIX@)
