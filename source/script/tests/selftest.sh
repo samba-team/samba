@@ -47,6 +47,11 @@ fi
 incdir=`dirname $0`
 . $incdir/test_functions.sh
 
+SMBD_TEST_FIFO="$PREFIX/smbd_test.fifo"
+export SMBD_TEST_FIFO
+SMBD_TEST_LOG="$PREFIX/smbd_test.log"
+export SMBD_TEST_LOG
+
 SOCKET_WRAPPER_DEFAULT_IFACE=1
 export SOCKET_WRAPPER_DEFAULT_IFACE
 smbd_check_or_start
@@ -57,9 +62,8 @@ TORTURE_INTERFACES='127.0.0.26/8,127.0.0.27/8,127.0.0.28/8,127.0.0.29/8,127.0.0.
 TORTURE_OPTIONS="--option=interfaces=$TORTURE_INTERFACES $CONFIGURATION"
 # ensure any one smbtorture call doesn't run too long
 TORTURE_OPTIONS="$TORTURE_OPTIONS --maximum-runtime=$TORTURE_MAXTIME"
-export TORTURE_OPTIONS
-
 TORTURE_OPTIONS="$TORTURE_OPTIONS --option=target:samba4=yes"
+export TORTURE_OPTIONS
 
 if [ x"$RUN_FROM_BUILD_FARM" = x"yes" ];then
 	TORTURE_OPTIONS="$TORTURE_OPTIONS --option=torture:progress=no"
