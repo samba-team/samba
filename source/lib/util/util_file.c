@@ -356,15 +356,6 @@ _PUBLIC_ BOOL file_save(const char *fname, const void *packet, size_t length)
 	return True;
 }
 
-/**
-  see if a file exists
-*/
-_PUBLIC_ BOOL file_exists(const char *path)
-{
-	struct stat st;
-	return (stat(path, &st) == 0);
-}
-
 _PUBLIC_ int vfdprintf(int fd, const char *format, va_list ap) _PRINTF_ATTRIBUTE(2,0)
 {
 	char *p;

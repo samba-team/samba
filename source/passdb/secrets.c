@@ -107,7 +107,7 @@ struct ldb_context *secrets_db_connect(TALLOC_CTX *mem_ctx)
 		return NULL;
 	}
 	
-	existed = file_exists(path);
+	existed = file_exist(path);
 
 	/* Secrets.ldb *must* always be local.  If we call for a
 	 * system_session() we will recurse */
