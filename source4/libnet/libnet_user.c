@@ -24,6 +24,7 @@
 #include "libcli/composite/composite.h"
 #include "auth/credentials/credentials.h"
 #include "librpc/ndr/libndr.h"
+#include "librpc/gen_ndr/samr.h"
 #include "librpc/gen_ndr/ndr_samr.h"
 
 
@@ -348,6 +349,8 @@ struct modify_user_state {
 
 static void continue_rpc_usermod(struct composite_context *ctx);
 static void continue_domain_open_modify(struct composite_context *ctx);
+static NTSTATUS set_user_changes(TALLOC_CTX *mem_ctx, struct usermod_change *mod,
+				 struct libnet_rpc_userinfo *info, struct libnet_ModifyUser *r);
 static void continue_rpc_userinfo(struct composite_context *ctx);
 
 
@@ -428,13 +431,49 @@ static void continue_rpc_userinfo(struct composite_context *ctx)
 	c->status = libnet_rpc_userinfo_recv(ctx, c, &s->user_info);
 	if (!composite_is_ok(c)) return;
 
-	/* TODO: prepare arguments based on requested changes
-	   and received current user info */
+	s->user_mod.in.domain_handle = s->ctx->domain.handle;
+	s->user_mod.in.username      = s->r.in.user_name;
+
+	c->status = set_user_changes(c, &s->user_mod.in.change, &s->user_info, &s->r);
 
 	usermod_req = libnet_rpc_usermod_send(s->ctx->samr_pipe, &s->user_mod, s->monitor_fn);
 	if (composite_nomem(usermod_req, c)) return;
 
 	composite_continue(c, usermod_req, continue_rpc_usermod, c);
+}
+
+
+static NTSTATUS set_user_changes(TALLOC_CTX *mem_ctx, struct usermod_change *mod,
+				 struct libnet_rpc_userinfo *info, struct libnet_ModifyUser *r)
+{
+	struct samr_UserInfo21 *user;
+
+	if (mod == NULL || info == NULL || r == NULL || info->in.level != 21) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	user = &info->out.info.info21;
+	mod->fields = 0;        /* reset flag field before setting individual flags */
+
+	if (r->in.account_name != NULL &&
+	    !strequal_w(user->account_name.string, r->in.account_name)) {
+
+		mod->account_name = talloc_strdup(mem_ctx, r->in.account_name);
+		if (mod->account_name == NULL) return NT_STATUS_NO_MEMORY;
+
+		mod->fields |= USERMOD_FIELD_ACCOUNT_NAME;
+	}
+
+	if (r->in.full_name != NULL &&
+	    !strequal_w(user->full_name.string, r->in.full_name)) {
+		
+		mod->full_name = talloc_strdup(mem_ctx, r->in.full_name);
+		if (mod->full_name == NULL) return NT_STATUS_NO_MEMORY;
+
+		mod->fields |= USERMOD_FIELD_FULL_NAME;
+	}
+
+	return NT_STATUS_OK;
 }
 
 
