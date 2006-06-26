@@ -46,6 +46,7 @@ struct libnet_ModifyUser {
 		const char *user_name;
 		const char *domain_name;
 
+		const char *account_name;
 		const char *full_name;
 		const char *description;
 		const char *comment;
