@@ -30,7 +30,7 @@ static BOOL test_tempdir(struct torture_context *torture,
 {
 	char *location = NULL;
 	
-	torture_assert_ntstatus_ok(torture, torture_temp_dir(torture, &location), 
+	torture_assert_ntstatus_ok(torture, torture_temp_dir(torture, "tempdir", &location), 
 								"torture_temp_dir should return NT_STATUS_OK" );
 
 	torture_assert(torture, directory_exist(location), 
@@ -45,6 +45,7 @@ static BOOL test_setup_server(struct torture_context *torture,
 	pid_t pid;
 
 	torture_assert_ntstatus_ok(torture, torture_setup_server(torture, 
+									"setupserver-success",
 									"./script/tests/mktestsetup.sh",
 									"./bin/smbd", &pid),
 							   "starting smbd failed");
@@ -58,6 +59,7 @@ static BOOL test_setup_server(struct torture_context *torture,
 	waitpid(pid, NULL, 0);
 
 	torture_assert_ntstatus_equal(torture, torture_setup_server(torture, 
+									"setupserver-fail",
 									"./invalid-script",
 									"./bin/smbd", &pid), 
 								  NT_STATUS_UNSUCCESSFUL,

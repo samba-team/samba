@@ -62,7 +62,7 @@ TORTURE_INTERFACES='127.0.0.26/8,127.0.0.27/8,127.0.0.28/8,127.0.0.29/8,127.0.0.
 TORTURE_OPTIONS="--option=interfaces=$TORTURE_INTERFACES $CONFIGURATION"
 # ensure any one smbtorture call doesn't run too long
 TORTURE_OPTIONS="$TORTURE_OPTIONS --maximum-runtime=$TORTURE_MAXTIME"
-TORTURE_OPTIONS="$TORTURE_OPTIONS --option=target:samba4=yes"
+TORTURE_OPTIONS="$TORTURE_OPTIONS --target=samba4"
 export TORTURE_OPTIONS
 
 if [ x"$RUN_FROM_BUILD_FARM" = x"yes" ];then
