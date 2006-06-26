@@ -636,12 +636,7 @@ BOOL dptr_SearchDir(struct dptr_struct *dptr, const char *name, long *poffset, S
 		return False;
 	}
 
-	if (SearchDir(dptr->dir_hnd, name, poffset)) {
-		if (is_visible_file(dptr->conn, dptr->path, name, pst, True)) {
-			return True;
-		}
-	}
-	return False;
+	return SearchDir(dptr->dir_hnd, name, poffset);
 }
 
 /****************************************************************************
@@ -854,6 +849,8 @@ static BOOL user_can_read_file(connection_struct *conn, char *name, SMB_STRUCT_S
 
 	/* If we can't stat it does not show it */
 	if (!VALID_STAT(*pst) && (SMB_VFS_STAT(conn, name, pst) != 0)) {
+		DEBUG(10,("user_can_read_file: SMB_VFS_STAT failed for file %s with error %s\n",
+			name, strerror(errno) ));
 		return False;
 	}
 
@@ -992,6 +989,7 @@ BOOL is_visible_file(connection_struct *conn, const char *dir_path, const char *
 
 	/* If it's a vetoed file, pretend it doesn't even exist */
 	if (use_veto && IS_VETO_PATH(conn, name)) {
+		DEBUG(10,("is_visible_file: file %s is vetoed.\n", name ));
 		return False;
 	}
 
@@ -1003,16 +1001,19 @@ BOOL is_visible_file(connection_struct *conn, const char *dir_path, const char *
 		}
 		/* Honour _hide unreadable_ option */
 		if (hide_unreadable && !user_can_read_file(conn, entry, pst)) {
+			DEBUG(10,("is_visible_file: file %s is unreadable.\n", entry ));
 			SAFE_FREE(entry);
 			return False;
 		}
 		/* Honour _hide unwriteable_ option */
 		if (hide_unwriteable && !user_can_write_file(conn, entry, pst)) {
+			DEBUG(10,("is_visible_file: file %s is unwritable.\n", entry ));
 			SAFE_FREE(entry);
 			return False;
 		}
 		/* Honour _hide_special_ option */
 		if (hide_special && file_is_special(conn, entry, pst)) {
+			DEBUG(10,("is_visible_file: file %s is special.\n", entry ));
 			SAFE_FREE(entry);
 			return False;
 		}
