@@ -1,21 +1,6 @@
 #!/bin/sh
 # Bootstrap Samba and run a number of tests against it.
 
-DOMAIN=SAMBADOMAIN
-USERNAME=administrator
-REALM=SAMBA.EXAMPLE.COM
-PASSWORD=penguin
-SRCDIR=`pwd`
-ROOT=$USER
-SERVER=localhost
-NETBIOSNAME=localtest
-if test -z "$ROOT"; then
-    ROOT=$LOGNAME
-fi
-if test -z "$ROOT"; then
-    ROOT=`whoami`
-fi
-
 if [ $# -lt 1 ]
 then
 	echo "$0 PREFIX"
@@ -26,7 +11,7 @@ if [ -z "$TORTURE_MAXTIME" ]; then
     TORTURE_MAXTIME=300
 fi
 
-
+OLD_PWD=`pwd`
 PREFIX=$1
 PREFIX=`echo $PREFIX | sed s+//+/+`
 export PREFIX
@@ -39,39 +24,18 @@ if [ $TESTS = "all" ]; then
 else
     TLS_ENABLED="no"
 fi
-
-mkdir -p $PREFIX || exit $?
-OLD_PWD=`pwd`
-cd $PREFIX || exit $?
-PREFIX_ABS=`pwd`
-export PREFIX_ABS
-cd $OLD_PWD
-
-TEST_DATA_PREFIX=$PREFIX_ABS
-export TEST_DATA_PREFIX
+export TLS_ENABLED
 
 LD_LIBRARY_PATH=$OLD_PWD/bin:$LD_LIBRARY_PATH
 export LD_LIBRARY_PATH
 
-TMPDIR=$PREFIX_ABS/tmp
-LIBDIR=$PREFIX_ABS/lib
-ETCDIR=$PREFIX_ABS/etc
-PIDDIR=$PREFIX_ABS/pid
-CONFFILE=$ETCDIR/smb.conf
-KRB5_CONFIG=$ETCDIR/krb5.conf
-PRIVATEDIR=$PREFIX_ABS/private
-NCALRPCDIR=$PREFIX_ABS/ncalrpc
-LOCKDIR=$PREFIX_ABS/lockdir
-TLSDIR=$PRIVATEDIR/tls
-WINBINDD_SOCKET_DIR=$PREFIX_ABS/winbind_socket
-CONFIGURATION="--configfile=$CONFFILE"
-export CONFIGURATION
-export CONFFILE
+incdir=`dirname $0`
+echo -n "PROVISIONING..."
+. $incdir/mktestsetup.sh $PREFIX || exit 1
+echo "DONE"
 
-SMBD_TEST_FIFO="$PREFIX/smbd_test.fifo"
-export SMBD_TEST_FIFO
-SMBD_TEST_LOG="$PREFIX/smbd_test.log"
-export SMBD_TEST_LOG
+PATH=bin:$PATH
+export PATH
 
 DO_SOCKET_WRAPPER=$3
 if [ x"$DO_SOCKET_WRAPPER" = x"SOCKET_WRAPPER" ];then
@@ -80,114 +44,26 @@ if [ x"$DO_SOCKET_WRAPPER" = x"SOCKET_WRAPPER" ];then
 	echo "SOCKET_WRAPPER_DIR=$SOCKET_WRAPPER_DIR"
 fi
 
-# start off with 0 failures
-failed=0
-export failed
-
 incdir=`dirname $0`
 . $incdir/test_functions.sh
-
-PATH=bin:$PATH
-export PATH
-
-rm -rf $PREFIX/*
-mkdir -p $PRIVATEDIR $ETCDIR $LIBDIR $PIDDIR $NCALRPCDIR $LOCKDIR $TMPDIR $TLSDIR
-
-cat >$PRIVATEDIR/wins_config.ldif<<EOF
-dn: name=TORTURE_26,CN=PARTNERS
-objectClass: wreplPartner
-name: TORTURE_26
-address: 127.0.0.26
-pullInterval: 0
-pushChangeCount: 0
-type: 0x3
-EOF
-
-cat >$CONFFILE<<EOF
-[global]
-	netbios name = $NETBIOSNAME
-        netbios aliases = $SERVER
-	workgroup = $DOMAIN
-	realm = $REALM
-	private dir = $PRIVATEDIR
-	pid directory = $PIDDIR
-	ncalrpc dir = $NCALRPCDIR
-	lock dir = $LOCKDIR
-	setup directory = $SRCDIR/setup
-	js include = $SRCDIR/scripting/libjs
-        winbindd socket directory = $WINBINDD_SOCKET_DIR
-	name resolve order = bcast
-	interfaces = 127.0.0.1/8
-	tls enabled = $TLS_ENABLED
-	panic action = $SRCDIR/script/gdb_backtrace %PID% %PROG%
-	wins support = yes
-	server role = pdc
-	max xmit = 32K
-	server max protocol = SMB2
-
-[tmp]
-	path = $TMPDIR
-	read only = no
-	ntvfs handler = posix
-	posix:sharedelay = 100000
-	posix:eadb = $LOCKDIR/eadb.tdb
-
-[cifs]
-	read only = no
-	ntvfs handler = cifs
-	cifs:server = $SERVER
-	cifs:user = $USERNAME
-	cifs:password = $PASSWORD
-	cifs:domain = $DOMAIN
-	cifs:share = tmp
-EOF
-
-cat >$KRB5_CONFIG<<EOF
-[libdefaults]
- default_realm = SAMBA.EXAMPLE.COM
- dns_lookup_realm = false
- dns_lookup_kdc = false
- ticket_lifetime = 24h
- forwardable = yes
-
-[realms]
- SAMBA.EXAMPLE.COM = {
-  kdc = 127.0.0.1
-  admin_server = 127.0.0.1
-  default_domain = samba.example.com
- }
-[domain_realm]
- .samba.example.com = SAMBA.EXAMPLE.COM
-EOF
-
-export KRB5_CONFIG
-
-echo -n "PROVISIONING..."
-
-./setup/provision $CONFIGURATION --host-name=$NETBIOSNAME --host-ip=127.0.0.1 \
-    --quiet --domain $DOMAIN --realm $REALM \
-    --adminpass $PASSWORD --root=$ROOT || exit 1
-
-./bin/ldbadd -H $PRIVATEDIR/wins_config.ldb < $PRIVATEDIR/wins_config.ldif >/dev/null || exit 1
-
-echo "DONE"
-
-if [ x"$RUN_FROM_BUILD_FARM" = x"yes" ];then
-	CONFIGURATION="$CONFIGURATION --option=torture:progress=no"
-fi
 
 SOCKET_WRAPPER_DEFAULT_IFACE=1
 export SOCKET_WRAPPER_DEFAULT_IFACE
 smbd_check_or_start
 
-# ensure any one smbtorture call doesn't run too long
 SOCKET_WRAPPER_DEFAULT_IFACE=26
 export SOCKET_WRAPPER_DEFAULT_IFACE
 TORTURE_INTERFACES='127.0.0.26/8,127.0.0.27/8,127.0.0.28/8,127.0.0.29/8,127.0.0.30/8,127.0.0.31/8'
-TORTURE_OPTIONS="--maximum-runtime=$TORTURE_MAXTIME --option=interfaces=$TORTURE_INTERFACES $CONFIGURATION"
+TORTURE_OPTIONS="--option=interfaces=$TORTURE_INTERFACES $CONFIGURATION"
+# ensure any one smbtorture call doesn't run too long
+TORTURE_OPTIONS="$TORTURE_OPTIONS --maximum-runtime=$TORTURE_MAXTIME"
 export TORTURE_OPTIONS
 
 TORTURE_OPTIONS="$TORTURE_OPTIONS --option=target:samba4=yes"
+
+if [ x"$RUN_FROM_BUILD_FARM" = x"yes" ];then
+	TORTURE_OPTIONS="$TORTURE_OPTIONS --option=torture:progress=no"
+fi
 
 START=`date`
 (
@@ -202,7 +78,9 @@ START=`date`
  bin/nmblookup $CONFIGURATION $NETBIOSNAME
  bin/nmblookup $CONFIGURATION -U $SERVER $NETBIOSNAME
 
+# start off with 0 failures
  failed=0
+ export failed
 
  . script/tests/tests_$TESTS.sh
  exit $failed
