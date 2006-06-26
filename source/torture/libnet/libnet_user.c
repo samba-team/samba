@@ -331,12 +331,19 @@ BOOL torture_modifyuser(struct torture_context *torture)
 
 	mem_ctx = talloc_init("test_modifyuser");
 
+	ZERO_STRUCT(req);
 	req.in.user_name = TEST_USERNAME;
 	req.in.domain_name = lp_workgroup();
+	req.in.account_name = TEST_CHANGEDUSERNAME;
 
 	status = libnet_ModifyUser(ctx, mem_ctx, &req);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("libnet_ModifyUser call failed: %s\n", nt_errstr(status));
+		return False;
+	}
+
+	if (!test_cleanup(ctx->samr_pipe, mem_ctx, &ctx->domain.handle, TEST_CHANGEDUSERNAME)) {
+		printf("cleanup failed\n");
 		return False;
 	}
 
