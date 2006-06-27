@@ -185,7 +185,6 @@ int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
 	BOOL First = True;
 	int ff_searchcount=0;
 	int ff_eos=0;
-	int ff_lastname=0;
 	int ff_dir_handle=0;
 	int loop_count = 0;
 	char *rparam=NULL, *rdata=NULL;
@@ -297,11 +296,9 @@ int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
 			ff_dir_handle = SVAL(p,0);
 			ff_searchcount = SVAL(p,2);
 			ff_eos = SVAL(p,4);
-			ff_lastname = SVAL(p,8);
 		} else {
 			ff_searchcount = SVAL(p,0);
 			ff_eos = SVAL(p,2);
-			ff_lastname = SVAL(p,6);
 		}
 
 		if (ff_searchcount == 0) {
