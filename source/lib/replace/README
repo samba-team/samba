@@ -45,6 +45,7 @@ chroot
 bzero
 strerror
 errno
+mkdtemp
 mkstemp (a secure one!)
 pread
 pwrite
@@ -75,4 +76,4 @@ Prerequisites:
 memset (for bzero)
 syslog (for vsyslog)
 setnetgrent, getnetgrent, endnetgrent (for innetgr)
-mktemp (for mkstemp)
+mktemp (for mkstemp and mkdtemp)
