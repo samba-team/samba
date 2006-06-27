@@ -286,7 +286,7 @@ convert:
  * @param dest_len the maximum length in bytes allowed in the
  * destination.  If @p dest_len is -1 then no maximum is used.
  **/
-_PUBLIC_ ssize_t push_ascii(void *dest, const char *src, size_t dest_len, int flags)
+static ssize_t push_ascii(void *dest, const char *src, size_t dest_len, int flags)
 {
 	size_t src_len;
 	ssize_t ret;
@@ -321,7 +321,6 @@ _PUBLIC_ ssize_t push_ascii(void *dest, const char *src, size_t dest_len, int fl
 _PUBLIC_ ssize_t push_ascii_talloc(TALLOC_CTX *ctx, char **dest, const char *src)
 {
 	size_t src_len = strlen(src)+1;
-
 	*dest = NULL;
 	return convert_string_talloc(ctx, CH_UNIX, CH_DOS, src, src_len, (void **)dest);
 }
@@ -342,7 +341,7 @@ _PUBLIC_ ssize_t push_ascii_talloc(TALLOC_CTX *ctx, char **dest, const char *src
  * @param src_len is the length of the source area in bytes.
  * @returns the number of bytes occupied by the string in @p src.
  **/
-_PUBLIC_ ssize_t pull_ascii(char *dest, const void *src, size_t dest_len, size_t src_len, int flags)
+static ssize_t pull_ascii(char *dest, const void *src, size_t dest_len, size_t src_len, int flags)
 {
 	size_t ret;
 
@@ -381,7 +380,7 @@ _PUBLIC_ ssize_t pull_ascii(char *dest, const void *src, size_t dest_len, size_t
  * @param dest_len is the maximum length allowed in the
  * destination. If dest_len is -1 then no maxiumum is used.
  **/
-_PUBLIC_ ssize_t push_ucs2(void *dest, const char *src, size_t dest_len, int flags)
+static ssize_t push_ucs2(void *dest, const char *src, size_t dest_len, int flags)
 {
 	size_t len=0;
 	size_t src_len = strlen(src);
@@ -449,7 +448,6 @@ _PUBLIC_ ssize_t push_ucs2_talloc(TALLOC_CTX *ctx, void **dest, const char *src)
 _PUBLIC_ ssize_t push_utf8_talloc(TALLOC_CTX *ctx, char **dest, const char *src)
 {
 	size_t src_len = strlen(src)+1;
-
 	*dest = NULL;
 	return convert_string_talloc(ctx, CH_UNIX, CH_UTF8, src, src_len, (void **)dest);
 }
@@ -465,7 +463,7 @@ _PUBLIC_ ssize_t push_utf8_talloc(TALLOC_CTX *ctx, char **dest, const char *src)
  The resulting string in "dest" is always null terminated.
 **/
 
-_PUBLIC_ size_t pull_ucs2(char *dest, const void *src, size_t dest_len, size_t src_len, int flags)
+static size_t pull_ucs2(char *dest, const void *src, size_t dest_len, size_t src_len, int flags)
 {
 	size_t ret;
 
@@ -492,6 +490,21 @@ _PUBLIC_ size_t pull_ucs2(char *dest, const void *src, size_t dest_len, size_t s
 		dest[MIN(ret, dest_len-1)] = 0;
 
 	return src_len;
+}
+
+/**
+ * Copy a string from a ASCII src to a unix char * destination, allocating a buffer using talloc
+ *
+ * @param dest always set at least to NULL 
+ *
+ * @returns The number of bytes occupied by the string in the destination
+ **/
+
+_PUBLIC_ ssize_t pull_ascii_talloc(TALLOC_CTX *ctx, char **dest, const char *src)
+{
+	size_t src_len = strlen(src)+1;
+	*dest = NULL;
+	return convert_string_talloc(ctx, CH_DOS, CH_UNIX, src, src_len, (void **)dest);
 }
 
 /**
