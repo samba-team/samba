@@ -236,7 +236,7 @@ smbc_urlencode(char * dest, char * src, int max_dest_len)
  *
  *
  * We accept:
- *  smb://[[[domain;]user[:password@]]server[/share[/path[/file]]]][?options]
+ *  smb://[[[domain;]user[:password]@]server[/share[/path[/file]]]][?options]
  *
  * Meaning of URLs:
  *
@@ -6003,27 +6003,62 @@ smbc_free_context(SMBCCTX *context,
 void
 smbc_option_set(SMBCCTX *context,
                 char *option_name,
-                void *option_value)
+                ... /* option_value */)
 {
-        if (strcmp(option_name, "debug_stderr") == 0) {
+        va_list ap;
+        union {
+                BOOL b;
+                smbc_get_auth_data_with_context_fn auth_fn;
+                void *v;
+        } option_value;
+
+        va_start(ap, option_name);
+
+        if (strcmp(option_name, "debug_to_stderr") == 0) {
                 /*
                  * Log to standard error instead of standard output.
                  */
+                option_value.b = (BOOL) va_arg(ap, int);
+                context->internal->_debug_stderr = option_value.b;
+
+        } else if (strcmp(option_name, "debug_to_stderr") == 0) {
+                /*
+                 * Log to standard error instead of standard output.
+                 *
+                 * This function used to take a third parameter,
+                 * void *option_value.  Since it was a void* and we needed to
+                 * pass a boolean, a boolean value was cast to void* to be
+                 * passed in.  Now that we're using a va_list to retrieve the
+                 * parameters, the casting kludge is unnecessary.
+                 *
+                 * WARNING: DO NOT USE THIS OPTION.
+                 * This option is retained for backward compatibility.  New
+                 * applications should use "debug_to_stderr" and properly pass
+                 * in a boolean (int) value.
+                 */
+                option_value.v = va_arg(ap, void *);
                 context->internal->_debug_stderr =
-                        (option_value == NULL ? False : True);
+                        (option_value.v == NULL ? False : True);
+
         } else if (strcmp(option_name, "auth_function") == 0) {
                 /*
                  * Use the new-style authentication function which includes
                  * the context.
                  */
-                context->internal->_auth_fn_with_context = option_value;
+                option_value.auth_fn =
+                        va_arg(ap, smbc_get_auth_data_with_context_fn);
+                context->internal->_auth_fn_with_context =
+                        option_value.auth_fn;
         } else if (strcmp(option_name, "user_data") == 0) {
                 /*
                  * Save a user data handle which may be retrieved by the user
                  * with smbc_option_get()
                  */
-                context->internal->_user_data = option_value;
+                option_value.v = va_arg(ap, void *);
+                context->internal->_user_data = option_value.v;
         }
+
+        va_end(ap);
 }
 
 
