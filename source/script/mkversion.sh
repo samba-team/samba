@@ -124,6 +124,6 @@ fi
 
 echo "#define SAMBA_VERSION_STRING \"${SAMBA_VERSION_STRING}\"" >> $OUTPUT_FILE
 
-echo "$0: 'version.h' created for Samba(\"${SAMBA_VERSION_STRING}\")"
+echo "$0: '$OUTPUT_FILE' created for Samba(\"${SAMBA_VERSION_STRING}\")"
 
 exit 0
