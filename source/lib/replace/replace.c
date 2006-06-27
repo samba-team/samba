@@ -506,6 +506,21 @@ int rep_mkstemp(char *template)
 }
 #endif
 
+#ifndef HAVE_MKDTEMP
+char * mkdtemp(char *template)
+{
+	char *dname;
+	
+	if (dname = mktemp(template)) {
+		if (mkdir(dname, 0700) >= 0) {
+			return dname;
+		}
+	}
+
+	return NULL;
+}
+#endif
+
 #ifndef HAVE_PREAD
 static ssize_t pread(int __fd, void *__buf, size_t __nbytes, off_t __offset)
 {
