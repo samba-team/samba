@@ -150,8 +150,8 @@ NTSTATUS query_lock(files_struct *fsp,
 	struct byte_range_lock *br_lck = NULL;
 	NTSTATUS status = NT_STATUS_LOCK_NOT_GRANTED;
 
-	if (!OPEN_FSP(fsp) || !fsp->can_lock) {
-		return NT_STATUS_INVALID_HANDLE;
+	if (!fsp->can_lock) {
+		return fsp->is_directory ? NT_STATUS_INVALID_DEVICE_REQUEST : NT_STATUS_INVALID_HANDLE;
 	}
 
 	if (!lp_locking(SNUM(fsp->conn))) {
@@ -190,8 +190,8 @@ NTSTATUS do_lock(files_struct *fsp,
 	struct byte_range_lock *br_lck = NULL;
 	NTSTATUS status = NT_STATUS_LOCK_NOT_GRANTED;
 
-	if (!OPEN_FSP(fsp) || !fsp->can_lock) {
-		return NT_STATUS_INVALID_HANDLE;
+	if (!fsp->can_lock) {
+		return fsp->is_directory ? NT_STATUS_INVALID_DEVICE_REQUEST : NT_STATUS_INVALID_HANDLE;
 	}
 
 	if (!lp_locking(SNUM(fsp->conn))) {
@@ -294,12 +294,12 @@ NTSTATUS do_unlock(files_struct *fsp,
 	BOOL ok = False;
 	struct byte_range_lock *br_lck = NULL;
 	
-	if (!lp_locking(SNUM(fsp->conn))) {
-		return NT_STATUS_OK;
+	if (!fsp->can_lock) {
+		return fsp->is_directory ? NT_STATUS_INVALID_DEVICE_REQUEST : NT_STATUS_INVALID_HANDLE;
 	}
 	
-	if (!OPEN_FSP(fsp) || !fsp->can_lock) {
-		return NT_STATUS_INVALID_HANDLE;
+	if (!lp_locking(SNUM(fsp->conn))) {
+		return NT_STATUS_OK;
 	}
 	
 	DEBUG(10,("do_unlock: unlock start=%.0f len=%.0f requested for fnum %d file %s\n",

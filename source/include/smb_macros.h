@@ -83,8 +83,6 @@
 #define SMB_ASSERT_ARRAY(a,n) SMB_ASSERT((sizeof(a)/sizeof((a)[0])) >= (n))
 
 /* these are useful macros for checking validity of handles */
-#define OPEN_FSP(fsp)    ((fsp) && !(fsp)->is_directory)
-#define OPEN_CONN(conn)    ((conn) && (conn)->open)
 #define IS_IPC(conn)       ((conn) && (conn)->ipc)
 #define IS_PRINT(conn)       ((conn) && (conn)->printer)
 /* you must add the following extern declaration to files using this macro
@@ -96,17 +94,19 @@
 				return(ERROR_DOS(ERRDOS,ERRbadfid));\
 			} while(0)
 
-#define FNUM_OK(fsp,c) (OPEN_FSP(fsp) && (c)==(fsp)->conn && current_user.vuid==(fsp)->vuid)
+#define FNUM_OK(fsp,c) ((fsp) && !(fsp)->is_directory && (c)==(fsp)->conn && current_user.vuid==(fsp)->vuid)
 
 /* you must add the following extern declaration to files using this macro
  * extern struct current_user current_user;
  */
 #define CHECK_FSP(fsp,conn) do {\
 			extern struct current_user current_user;\
-			if (!FNUM_OK(fsp,conn)) \
-				return(ERROR_DOS(ERRDOS,ERRbadfid)); \
+			if ((fsp) && (fsp)->is_directory) \
+				return ERROR_NT(NT_STATUS_INVALID_DEVICE_REQUEST); \
+			else if (!FNUM_OK(fsp,conn)) \
+				return ERROR_NT(NT_STATUS_INVALID_HANDLE); \
 			else if((fsp)->fh->fd == -1) \
-				return(ERROR_DOS(ERRDOS,ERRbadaccess));\
+				return ERROR_NT(NT_STATUS_ACCESS_DENIED); \
 			(fsp)->num_smb_operations++;\
 			} while(0)
 

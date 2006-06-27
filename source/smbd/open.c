@@ -1951,7 +1951,7 @@ NTSTATUS open_directory(connection_struct *conn,
 	fsp->dev = psbuf->st_dev;
 	fsp->vuid = current_user.vuid;
 	fsp->file_pid = global_smbpid;
-	fsp->can_lock = True;
+	fsp->can_lock = False;
 	fsp->can_read = False;
 	fsp->can_write = False;
 

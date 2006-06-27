@@ -130,7 +130,7 @@ NTSTATUS open_fake_file(connection_struct *conn,
 	fsp->fh->fd = -1;
 	fsp->vuid = current_user.vuid;
 	fsp->fh->pos = -1;
-	fsp->can_lock = True; /* Should this be true ? */
+	fsp->can_lock = False; /* Should this be true ? - No, JRA */
 	fsp->access_mask = access_mask;
 	string_set(&fsp->fsp_name,fname);
 	
