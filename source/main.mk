@@ -217,6 +217,9 @@ include/config.h:
 	@echo "You need to rerun ./autogen.sh and ./configure"
 	@/bin/false
 
+$(srcdir)/version.h:
+	@$(SHELL) script/mkversion.sh VERSION version.h $(srcdir)/
+
 clean_pch:
 	@echo "Removing precompiled headers"
 	@-rm -f include/includes.h.gch
