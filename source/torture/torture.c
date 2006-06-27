@@ -41,6 +41,10 @@ NTSTATUS torture_register_suite(struct torture_suite *suite)
 {
 	struct torture_suite_list *p, *n;
 
+	if (!suite) {
+		return NT_STATUS_OK;
+	}
+
 	n = talloc(talloc_autofree_context(), struct torture_suite_list);
 	n->suite = suite;
 
