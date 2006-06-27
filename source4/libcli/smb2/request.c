@@ -509,6 +509,30 @@ NTSTATUS smb2_pull_o32s32_blob(struct smb2_request_buffer *buf, TALLOC_CTX *mem_
 }
 
 /*
+  pull a uint32_t length/ uint32_t ofs/blob triple from a data blob
+  the ptr points to the start of the offset/length pair
+*/
+NTSTATUS smb2_pull_s32o32_blob(struct smb2_request_buffer *buf, TALLOC_CTX *mem_ctx, uint8_t *ptr, DATA_BLOB *blob)
+{
+	uint32_t ofs, size;
+	if (smb2_oob(buf, ptr, 8)) {
+		return NT_STATUS_BUFFER_TOO_SMALL;
+	}
+	size = IVAL(ptr, 0);
+	ofs  = IVAL(ptr, 4);
+	if (ofs == 0 || size == 0) {
+		*blob = data_blob(NULL, 0);
+		return NT_STATUS_OK;
+	}
+	if (smb2_oob(buf, buf->hdr + ofs, size)) {
+		return NT_STATUS_BUFFER_TOO_SMALL;
+	}
+	*blob = data_blob_talloc(mem_ctx, buf->hdr + ofs, size);
+	NT_STATUS_HAVE_NO_MEMORY(blob->data);
+	return NT_STATUS_OK;
+}
+
+/*
   pull a string in a uint16_t ofs/ uint16_t length/blob format
   UTF-16 without termination
 */
