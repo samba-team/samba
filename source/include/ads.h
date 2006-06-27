@@ -5,6 +5,7 @@
 */
 
 enum wb_posix_mapping {
+	WB_POSIX_MAP_UNKNOWN    = -1,
 	WB_POSIX_MAP_TEMPLATE 	= 0, 
 	WB_POSIX_MAP_SFU 	= 1, 
 	WB_POSIX_MAP_RFC2307 	= 2,
