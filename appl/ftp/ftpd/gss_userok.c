@@ -41,8 +41,6 @@ RCSID("$Id$");
    What is the correct way to do this? 
    */
 
-extern krb5_context gssapi_krb5_context;
-
 /* XXX sync with gssapi.c */
 struct gss_data {
     gss_ctx_id_t context_hdl;
@@ -56,67 +54,73 @@ int
 gss_userok(void *app_data, char *username)
 {
     struct gss_data *data = app_data;
-    if(gssapi_krb5_context) {
-	krb5_principal client;
-	krb5_error_code ret;
-	OM_uint32 minor_status;
-        
-	ret = krb5_parse_name(gssapi_krb5_context, data->client_name, &client);
-	if(ret)
-	    return 1;
-	ret = krb5_kuserok(gssapi_krb5_context, client, username);
-        if (!ret) {
-           krb5_free_principal(gssapi_krb5_context, client);
-           return 1;
-        }
-        
-        ret = 0;
-        
-        /* more of krb-depend stuff :-( */
-	/* gss_add_cred() ? */
-        if (data->delegated_cred_handle != GSS_C_NO_CREDENTIAL) {
-           krb5_ccache ccache = NULL; 
-           const char* ticketfile;
-           struct passwd *kpw;
-           
-	   ret = krb5_cc_gen_new(gssapi_krb5_context, &krb5_fcc_ops, &ccache);
-           if (ret)
-	       goto fail;
-	   
-	   ticketfile = krb5_cc_get_name(gssapi_krb5_context, ccache);
-        
-           ret = gss_krb5_copy_ccache(&minor_status,
-				      data->delegated_cred_handle,
-				      ccache);
-           if (ret) {
-	      ret = 0;
-              goto fail;
-	   }
-           
-	   do_destroy_tickets = 1;
+    krb5_context context;
+    krb5_error_code ret;
+    krb5_principal client;
+    OM_uint32 minor_status;
 
-           kpw = getpwnam(username);
-           
-	   if (kpw == NULL) {
-	       unlink(ticketfile);
-	       ret = 1;
-	       goto fail;
-	   }
+    ret = krb5_init_context(&context);
+    if (ret)
+	return 1;
 
-           chown (ticketfile, kpw->pw_uid, kpw->pw_gid);
-           
-	   if (asprintf(&k5ccname, "FILE:%s", ticketfile) != -1) {
-	       esetenv ("KRB5CCNAME", k5ccname, 1);
-	   }
-	   afslog(NULL, 1);
-fail:
-           if (ccache)
-              krb5_cc_close(gssapi_krb5_context, ccache); 
-        }
-           
-	gss_release_cred(&minor_status, &data->delegated_cred_handle);
-	krb5_free_principal(gssapi_krb5_context, client);
-        return ret;
+    ret = krb5_parse_name(context, data->client_name, &client);
+    if(ret) {
+	krb5_free_context(context);
+	return 1;
     }
-    return 1;
+    ret = krb5_kuserok(context, client, username);
+    if (!ret) {
+	krb5_free_principal(context, client);
+	krb5_free_context(context);
+	return 1;
+    }
+        
+    ret = 0;
+        
+    /* more of krb-depend stuff :-( */
+    /* gss_add_cred() ? */
+    if (data->delegated_cred_handle != GSS_C_NO_CREDENTIAL) {
+	krb5_ccache ccache = NULL; 
+	const char* ticketfile;
+	struct passwd *kpw;
+           
+	ret = krb5_cc_gen_new(context, &krb5_fcc_ops, &ccache);
+	if (ret)
+	    goto fail;
+	   
+	ticketfile = krb5_cc_get_name(context, ccache);
+        
+	ret = gss_krb5_copy_ccache(&minor_status,
+				   data->delegated_cred_handle,
+				   ccache);
+	if (ret) {
+	    ret = 0;
+	    goto fail;
+	}
+           
+	do_destroy_tickets = 1;
+
+	kpw = getpwnam(username);
+           
+	if (kpw == NULL) {
+	    unlink(ticketfile);
+	    ret = 1;
+	    goto fail;
+	}
+
+	chown (ticketfile, kpw->pw_uid, kpw->pw_gid);
+           
+	if (asprintf(&k5ccname, "FILE:%s", ticketfile) != -1) {
+	    esetenv ("KRB5CCNAME", k5ccname, 1);
+	}
+	afslog(NULL, 1);
+    fail:
+	if (ccache)
+	    krb5_cc_close(context, ccache); 
+    }
+           
+    gss_release_cred(&minor_status, &data->delegated_cred_handle);
+    krb5_free_principal(context, client);
+    krb5_free_context(context);
+    return ret;
 }
