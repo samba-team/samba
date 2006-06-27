@@ -1,3 +1,8 @@
+2006-06-27  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* ftpd/gss_userok.c (gss_userok): create a local krb5_context and
+	use that instead of the libgssapi context (that might not exist).
+	
 2006-05-05  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* Rename u_intXX_t to uintXX_t
