@@ -29,13 +29,18 @@
  **/
 
 /**
- * Get the next token from a string, return False if none found.
- * Handles double-quotes.
- * 
+ * Internal function to get the next token from a string, return False if none
+ * found.  Handles double-quotes.  This is the work horse function called by
+ * next_token() and next_token_no_ltrim().
+ *
  * Based on a routine by GJC@VILLAGE.COM. 
  * Extensively modified by Andrew.Tridgell@anu.edu.au
- **/
-BOOL next_token(const char **ptr,char *buff, const char *sep, size_t bufsize)
+ */
+static BOOL next_token_internal(const char **ptr,
+                                char *buff,
+                                const char *sep,
+                                size_t bufsize,
+                                int ltrim)
 {
 	char *s;
 	char *pbuf;
@@ -51,8 +56,8 @@ BOOL next_token(const char **ptr,char *buff, const char *sep, size_t bufsize)
 	if (!sep)
 		sep = " \t\n\r";
 
-	/* find the first non sep char */
-	while (*s && strchr_m(sep,*s))
+	/* find the first non sep char, if left-trimming is requested */
+	while (ltrim && *s && strchr_m(sep,*s))
 		s++;
 	
 	/* nothing left? */
@@ -74,6 +79,29 @@ BOOL next_token(const char **ptr,char *buff, const char *sep, size_t bufsize)
 	*pbuf = 0;
 	
 	return(True);
+}
+
+/*
+ * Get the next token from a string, return False if none found.  Handles
+ * double-quotes.  This version trims leading separator characters before
+ * looking for a token.
+ */
+BOOL next_token(const char **ptr, char *buff, const char *sep, size_t bufsize)
+{
+    return next_token_internal(ptr, buff, sep, bufsize, True);
+}
+
+/*
+ * Get the next token from a string, return False if none found.  Handles
+ * double-quotes.  This version does not trim leading separator characters
+ * before looking for a token.
+ */
+BOOL next_token_no_ltrim(const char **ptr,
+                         char *buff,
+                         const char *sep,
+                         size_t bufsize)
+{
+    return next_token_internal(ptr, buff, sep, bufsize, False);
 }
 
 /**
