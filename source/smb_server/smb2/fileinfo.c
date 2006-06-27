@@ -225,7 +225,71 @@ void smb2srv_getinfo_recv(struct smb2srv_request *req)
 	SMB2SRV_CALL_NTVFS_BACKEND(smb2srv_getinfo_backend(op));
 }
 
+struct smb2srv_setinfo_op {
+	struct smb2srv_request *req;
+	struct smb2_setinfo *info;
+};
+
+static void smb2srv_setinfo_send(struct ntvfs_request *ntvfs)
+{
+	struct smb2srv_setinfo_op *op;
+	struct smb2srv_request *req;
+
+	/*
+	 * SMB2 uses NT_STATUS_INVALID_INFO_CLASS
+	 * so we need to translated it here
+	 */
+	if (NT_STATUS_EQUAL(NT_STATUS_INVALID_LEVEL, ntvfs->async_states->status)) {
+		ntvfs->async_states->status = NT_STATUS_INVALID_INFO_CLASS;
+	}
+
+	SMB2SRV_CHECK_ASYNC_STATUS(op, struct smb2srv_setinfo_op);
+
+	SMB2SRV_CHECK(smb2srv_setup_reply(req, 0x02, False, 0));
+
+	smb2srv_send_reply(req);
+}
+
+static NTSTATUS smb2srv_setinfo_backend(struct smb2srv_setinfo_op *op)
+{
+	uint8_t smb2_class;
+	/*uint8_t smb2_level;*/
+
+	smb2_class = 0xFF & op->info->in.level;
+	/*smb2_level = 0xFF & (op->info->in.level>>8);*/
+
+	switch (smb2_class) {
+	case SMB2_GETINFO_FILE:
+		return NT_STATUS_NOT_IMPLEMENTED;
+
+	case SMB2_GETINFO_FS:
+		return NT_STATUS_NOT_IMPLEMENTED;
+
+	case SMB2_GETINFO_SECURITY:
+		return NT_STATUS_NOT_IMPLEMENTED;
+	}
+
+	return NT_STATUS_FOOBAR;
+}
+
 void smb2srv_setinfo_recv(struct smb2srv_request *req)
 {
-	smb2srv_send_error(req, NT_STATUS_NOT_IMPLEMENTED);
+	struct smb2_setinfo *info;
+	struct smb2srv_setinfo_op *op;
+
+	SMB2SRV_CHECK_BODY_SIZE(req, 0x20, True);
+	SMB2SRV_TALLOC_IO_PTR(info, struct smb2_setinfo);
+	/* this overwrites req->io_ptr !*/
+	SMB2SRV_TALLOC_IO_PTR(op, struct smb2srv_setinfo_op);
+	op->req		= req;
+	op->info	= info;
+	SMB2SRV_SETUP_NTVFS_REQUEST(smb2srv_setinfo_send, NTVFS_ASYNC_STATE_MAY_ASYNC);
+
+	info->in.level			= SVAL(req->in.body, 0x02);
+	SMB2SRV_CHECK(smb2_pull_s32o32_blob(&req->in, info, req->in.body+0x04, &info->in.blob));
+	info->in.flags			= IVAL(req->in.body, 0x0C);
+	info->in.file.ntvfs		= smb2srv_pull_handle(req, req->in.body, 0x10);
+
+	SMB2SRV_CHECK_FILE_HANDLE(info->in.file.ntvfs);
+	SMB2SRV_CALL_NTVFS_BACKEND(smb2srv_setinfo_backend(op));
 }
