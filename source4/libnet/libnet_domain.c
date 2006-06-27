@@ -236,7 +236,7 @@ static void domain_open_handler(struct rpc_request *req)
 
 
 /**
- * Sends asynchronous domain_open request
+ * Sends asynchronous DomainOpen request
  *
  * @param ctx initialised libnet context
  * @param io arguments and results of the call
@@ -327,9 +327,9 @@ struct composite_context *libnet_DomainOpen_send(struct libnet_context *ctx,
 
 
 /**
- * Waits for and receives result of asynchronous domain_open call
+ * Waits for and receives result of asynchronous DomainOpen call
  * 
- * @param c composite context returned by asynchronous domain_open call
+ * @param c composite context returned by asynchronous DomainOpen call
  * @param ctx initialised libnet context
  * @param mem_ctx memory context of the call
  * @param io pointer to results (and arguments) of the call
@@ -362,7 +362,7 @@ NTSTATUS libnet_DomainOpen_recv(struct composite_context *c, struct libnet_conte
 
 
 /**
- * Synchronous version of domain_open call
+ * Synchronous version of DomainOpen call
  *
  * @param ctx initialised libnet context
  * @param mem_ctx memory context for the call
