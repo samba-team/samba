@@ -173,6 +173,10 @@ typedef int (*comparison_fn_t)(const void *, const void *);
 int rep_mkstemp(char *temp);
 #endif
 
+#ifndef HAVE_MKDTEMP
+char *mkdtemp(char *template);
+#endif
+
 #ifdef HAVE_LIMITS_H
 #include <limits.h>
 #endif
