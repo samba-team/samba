@@ -91,10 +91,10 @@ BOOL E_deshash(const char *passwd, uint8_t p16[16])
 	BOOL ret = True;
 	fstring dospwd; 
 	ZERO_STRUCT(dospwd);
-	
+
 	/* Password must be converted to DOS charset - null terminated, uppercase. */
-	push_ascii(dospwd, passwd, sizeof(dospwd), STR_UPPER|STR_TERMINATE);
-       
+	push_string(dospwd, passwd, sizeof(dospwd), STR_ASCII|STR_UPPER|STR_TERMINATE);
+
 	/* Only the fisrt 14 chars are considered, password need not be null terminated. */
 	E_P16((const uint8_t *)dospwd, p16);
 
