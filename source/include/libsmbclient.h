@@ -635,7 +635,7 @@ int smbc_free_context(SMBCCTX * context, int shutdown_ctx);
 void
 smbc_option_set(SMBCCTX *context,
                 char *option_name,
-                void *option_value);
+                ... /* option_value */);
 /*
  * Retrieve the current value of an option
  *
