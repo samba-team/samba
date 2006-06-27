@@ -40,7 +40,7 @@ static BOOL next_token_internal(const char **ptr,
                                 char *buff,
                                 const char *sep,
                                 size_t bufsize,
-                                int ltrim)
+                                BOOL ltrim)
 {
 	char *s;
 	char *pbuf;
@@ -57,8 +57,10 @@ static BOOL next_token_internal(const char **ptr,
 		sep = " \t\n\r";
 
 	/* find the first non sep char, if left-trimming is requested */
-	while (ltrim && *s && strchr_m(sep,*s))
-		s++;
+	if (ltrim) {
+		while (*s && strchr_m(sep,*s))
+			s++;
+	}
 	
 	/* nothing left? */
 	if (! *s)
