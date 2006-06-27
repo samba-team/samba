@@ -359,19 +359,19 @@ smbc_parse_path(SMBCCTX *context,
 		pstring username, passwd, domain;
 		const char *u = userinfo;
 
-		next_token(&p, userinfo, "@", sizeof(fstring));
+		next_token_no_ltrim(&p, userinfo, "@", sizeof(fstring));
 
 		username[0] = passwd[0] = domain[0] = 0;
 
 		if (strchr_m(u, ';')) {
       
-			next_token(&u, domain, ";", sizeof(fstring));
+			next_token_no_ltrim(&u, domain, ";", sizeof(fstring));
 
 		}
 
 		if (strchr_m(u, ':')) {
 
-			next_token(&u, username, ":", sizeof(fstring));
+			next_token_no_ltrim(&u, username, ":", sizeof(fstring));
 
 			pstrcpy(passwd, u);
 
