@@ -101,6 +101,15 @@ static void continue_rpc_useradd(struct composite_context *ctx);
 static void continue_domain_open_create(struct composite_context *ctx);
 
 
+/**
+ * Sends request to create user account
+ *
+ * @param ctx initialised libnet context
+ * @param mem_ctx memory context of the call
+ * @param r pointer to a structure containing arguments and results of the call
+ * @param monitor pointer to monitor function
+ * @return compostite context of the request
+ */
 struct composite_context* libnet_CreateUser_send(struct libnet_context *ctx,
 						 TALLOC_CTX *mem_ctx,
 						 struct libnet_CreateUser *r,
@@ -111,6 +120,7 @@ struct composite_context* libnet_CreateUser_send(struct libnet_context *ctx,
 	struct composite_context *create_req;
 	struct composite_context *prereq_ctx;
 
+	/* composite context allocation and setup */
 	c = talloc_zero(mem_ctx, struct composite_context);
 	if (c == NULL) return NULL;
 
@@ -121,25 +131,34 @@ struct composite_context* libnet_CreateUser_send(struct libnet_context *ctx,
 	c->private_data = s;
 	c->event_ctx = ctx->event_ctx;
 
+	/* store arguments in the state structure */
 	s->ctx = ctx;
 	s->r   = *r;
 	ZERO_STRUCT(s->r.out);
 
+	/* prerequisite: make sure the domain is opened */
 	prereq_ctx = domain_opened(ctx, s->r.in.domain_name, c, &s->domain_open,
 				   continue_domain_open_create, monitor);
 	if (prereq_ctx) return prereq_ctx;
-	
+
+	/* prepare arguments for useradd call */
 	s->user_add.in.username       = r->in.user_name;
 	s->user_add.in.domain_handle  = ctx->domain.handle;
 
+	/* send the request */
 	create_req = libnet_rpc_useradd_send(ctx->samr_pipe, &s->user_add, monitor);
 	if (composite_nomem(create_req, c)) return c;
 
+	/* set the next stage */
 	composite_continue(c, create_req, continue_rpc_useradd, c);
 	return c;
 }
 
 
+/*
+ * Stage 0.5 (optional): receive result of domain open request
+ * and send useradd request
+ */
 static void continue_domain_open_create(struct composite_context *ctx)
 {
 	struct composite_context *c;
@@ -150,21 +169,29 @@ static void continue_domain_open_create(struct composite_context *ctx)
 	c = talloc_get_type(ctx->async.private_data, struct composite_context);
 	s = talloc_get_type(c->private_data, struct create_user_state);
 
+	/* receive result of DomainOpen call */
 	c->status = libnet_DomainOpen_recv(ctx, s->ctx, c, &s->domain_open);
 	if (!composite_is_ok(c)) return;
 
+	/* send monitor message */
 	if (s->monitor_fn) s->monitor_fn(&msg);
 	
+	/* prepare arguments for useradd call */
 	s->user_add.in.username       = s->r.in.user_name;
 	s->user_add.in.domain_handle  = s->ctx->domain.handle;
 
+	/* send the request */
 	create_req = libnet_rpc_useradd_send(s->ctx->samr_pipe, &s->user_add, s->monitor_fn);
 	if (composite_nomem(create_req, c)) return;
-	
+
+	/* set the next stage */
 	composite_continue(c, create_req, continue_rpc_useradd, c);
 }
 
 
+/*
+ * Stage 1: receive result of useradd call
+ */
 static void continue_rpc_useradd(struct composite_context *ctx)
 {
 	struct composite_context *c;
@@ -173,15 +200,27 @@ static void continue_rpc_useradd(struct composite_context *ctx)
 
 	c = talloc_get_type(ctx->async.private_data, struct composite_context);
 	s = talloc_get_type(c->private_data, struct create_user_state);
-
+	
+	/* receive result of the call */
 	c->status = libnet_rpc_useradd_recv(ctx, c, &s->user_add);
 	if (!composite_is_ok(c)) return;
 
+	/* send monitor message */
 	if (s->monitor_fn) s->monitor_fn(&msg);
+
+	/* we're done */
 	composite_done(c);
 }
 
 
+/**
+ * Receive result of CreateUser call
+ *
+ * @param c composite context returned by send request routine
+ * @param mem_ctx memory context of the call
+ * @param r pointer to a structure containing arguments and result of the call
+ * @return nt status
+ */
 NTSTATUS libnet_CreateUser_recv(struct composite_context *c, TALLOC_CTX *mem_ctx,
 				struct libnet_CreateUser *r)
 {
@@ -190,10 +229,9 @@ NTSTATUS libnet_CreateUser_recv(struct composite_context *c, TALLOC_CTX *mem_ctx
 
 	r->out.error_string = NULL;
 
+	/* wait for completion and check possible errors */
 	status = composite_wait(c);
-	if (NT_STATUS_IS_OK(status)) {
-		r->out.error_string = NULL;
-	} else {
+	if (!NT_STATUS_IS_OK(status)) {
 		s = talloc_get_type(c->private_data, struct create_user_state);
 		r->out.error_string = talloc_strdup(mem_ctx, nt_errstr(status));
 	}
@@ -202,6 +240,14 @@ NTSTATUS libnet_CreateUser_recv(struct composite_context *c, TALLOC_CTX *mem_ctx
 }
 
 
+/**
+ * Synchronous version of CreateUser call
+ *
+ * @param ctx initialised libnet context
+ * @param mem_ctx memory context of the call
+ * @param r pointer to a structure containing arguments and result of the call
+ * @return nt status
+ */
 NTSTATUS libnet_CreateUser(struct libnet_context *ctx, TALLOC_CTX *mem_ctx,
 			   struct libnet_CreateUser *r)
 {
