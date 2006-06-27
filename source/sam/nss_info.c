@@ -22,6 +22,20 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_IDMAP
 
+static enum wb_posix_mapping wb_posix_map_type(const char *map_str)
+{
+	if (strequal(map_str, "template")) 
+		return WB_POSIX_MAP_TEMPLATE;
+	else if (strequal(map_str, "sfu"))
+		return WB_POSIX_MAP_SFU;
+	else if (strequal(map_str, "rfc2307"))
+		return WB_POSIX_MAP_RFC2307;
+	else if (strequal(map_str, "unixinfo"))
+		return WB_POSIX_MAP_UNIXINFO;
+	
+	return WB_POSIX_MAP_UNKNOWN;
+}
+
 /* winbind nss info = rfc2307 SO36:sfu FHAIN:rfc2307 PANKOW:template
  *
  * syntax is:
@@ -43,7 +57,7 @@ enum wb_posix_mapping get_nss_info(const char *domain_name)
 		return WB_POSIX_MAP_TEMPLATE;
 	}
 
-	if ((map_templ = wb_posix_map_type(list[0])) == -1) {
+	if ((map_templ = wb_posix_map_type(list[0])) == WB_POSIX_MAP_UNKNOWN) {
 		DEBUG(0,("get_nss_info: invalid setting: %s\n", list[0]));
 		return WB_POSIX_MAP_TEMPLATE;
 	}
@@ -64,7 +78,7 @@ enum wb_posix_mapping get_nss_info(const char *domain_name)
 		
 			enum wb_posix_mapping type;
 			
-			if ((type = wb_posix_map_type(p)) == -1) {
+			if ((type = wb_posix_map_type(p)) == WB_POSIX_MAP_UNKNOWN) {
 				DEBUG(0,("get_nss_info: invalid setting: %s\n", p));
 				/* return WB_POSIX_MAP_TEMPLATE; */
 				continue;
@@ -94,18 +108,4 @@ const char *wb_posix_map_str(enum wb_posix_mapping mtype)
 			break;
 	}
 	return NULL;
-}
-
-enum wb_posix_mapping wb_posix_map_type(const char *map_str)
-{
-	if (strequal(map_str, "template")) 
-		return WB_POSIX_MAP_TEMPLATE;
-	else if (strequal(map_str, "sfu"))
-		return WB_POSIX_MAP_SFU;
-	else if (strequal(map_str, "rfc2307"))
-		return WB_POSIX_MAP_RFC2307;
-	else if (strequal(map_str, "unixinfo"))
-		return WB_POSIX_MAP_UNIXINFO;
-	
-	return -1;
 }
