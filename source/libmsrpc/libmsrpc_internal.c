@@ -368,16 +368,16 @@ SAM_USERINFO_CTR *cac_MakeUserInfoCtr(TALLOC_CTX *mem_ctx, CacUserInfo *info) {
    unix_to_nt_time(&pass_must_change_time, info->pass_must_change_time);
 
    /*initialize the strings*/
-   init_unistr2(&user_name, info->username, STR_TERMINATE);
-   init_unistr2(&full_name, info->full_name, STR_TERMINATE);
-   init_unistr2(&home_dir, info->home_dir, STR_TERMINATE);
-   init_unistr2(&dir_drive, info->home_drive, STR_TERMINATE);
-   init_unistr2(&log_scr, info->logon_script, STR_TERMINATE);
-   init_unistr2(&prof_path, info->profile_path, STR_TERMINATE);
-   init_unistr2(&desc, info->description, STR_TERMINATE);
-   init_unistr2(&wkstas, info->workstations, STR_TERMINATE);
-   init_unistr2(&unk, "\0", STR_TERMINATE);
-   init_unistr2(&mung_dial, info->dial, STR_TERMINATE);
+   init_unistr2(&user_name, info->username, UNI_STR_TERMINATE);
+   init_unistr2(&full_name, info->full_name, UNI_STR_TERMINATE);
+   init_unistr2(&home_dir, info->home_dir, UNI_STR_TERMINATE);
+   init_unistr2(&dir_drive, info->home_drive, UNI_STR_TERMINATE);
+   init_unistr2(&log_scr, info->logon_script, UNI_STR_TERMINATE);
+   init_unistr2(&prof_path, info->profile_path, UNI_STR_TERMINATE);
+   init_unistr2(&desc, info->description, UNI_STR_TERMINATE);
+   init_unistr2(&wkstas, info->workstations, UNI_STR_TERMINATE);
+   init_unistr2(&unk, "\0", UNI_STR_TERMINATE);
+   init_unistr2(&mung_dial, info->dial, UNI_STR_TERMINATE);
 
    /*manually set passmustchange*/
    ctr->info.id21->passmustchange = (info->pass_must_change) ? 0x01 : 0x00;
