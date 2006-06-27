@@ -289,12 +289,10 @@ Eventlog_entry *get_eventlog_record( prs_struct * ps, TDB_CONTEXT * tdb,
 	int srecno;
 	int reclen;
 	int len;
-	uint8 *rbuff;
 
 	pstring *wpsource, *wpcomputer, *wpsid, *wpstrs, *puserdata;
 
 	key.dsize = sizeof( int32 );
-	rbuff = NULL;
 
 	srecno = recno;
 	key.dptr = ( char * ) &srecno;

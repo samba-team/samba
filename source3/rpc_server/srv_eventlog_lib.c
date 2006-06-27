@@ -201,6 +201,12 @@ BOOL make_way_for_eventlogs( TDB_CONTEXT * the_tdb, int32 needed,
 
 		len = tdb_unpack( ret.dptr, ret.dsize, "ddddd", &reclen,
 				  &tresv1, &trecnum, &timegen, &timewr );
+		if (len == -1) {
+			DEBUG( 10,("make_way_for_eventlogs: tdb_unpack failed.\n"));
+			tdb_unlock_bystring( the_tdb, EVT_NEXT_RECORD );
+			return False;
+		}
+
 		DEBUG( 8,
 		       ( "read record %d, record size is [%d], total so far [%d]\n",
 			 i, reclen, nbytes ) );
