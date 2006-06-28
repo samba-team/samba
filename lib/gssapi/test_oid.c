@@ -31,7 +31,14 @@
  * SUCH DAMAGE. 
  */
 
-#include "gssapi_locl.h"
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
+#include <stdio.h>
+#include <gssapi.h>
+#include <err.h>
+#include <roken.h>
 
 RCSID("$Id$");
 
