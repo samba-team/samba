@@ -203,6 +203,11 @@ BOOL create_subnets(void)
 	for (i = 0 ; i < num_interfaces; i++) {
 		struct interface *iface = get_interface(i);
 
+		if (!iface) {
+			DEBUG(2,("create_subnets: can't get interface %d.\n", i ));
+			continue;
+		}
+
 		/*
 		 * We don't want to add a loopback interface, in case
 		 * someone has added 127.0.0.1 for smbd, nmbd needs to
