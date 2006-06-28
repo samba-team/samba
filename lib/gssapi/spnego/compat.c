@@ -54,9 +54,9 @@ static gss_OID_desc gss_krb5_mechanism_oid_desc =
 OM_uint32 _gss_spnego_alloc_sec_context (OM_uint32 * minor_status,
 					 gss_ctx_id_t *context_handle)
 {
-    gss_ctx_id_t ctx;
+    gssspnego_ctx ctx;
 
-    ctx = malloc(sizeof(gss_ctx_id_t_desc));
+    ctx = calloc(1, sizeof(*ctx));
     if (ctx == NULL) {
 	*minor_status = ENOMEM;
 	return GSS_S_FAILURE;
@@ -85,7 +85,7 @@ OM_uint32 _gss_spnego_alloc_sec_context (OM_uint32 * minor_status,
 
     HEIMDAL_MUTEX_init(&ctx->ctx_id_mutex);
 
-    *context_handle = ctx;
+    *context_handle = (gss_ctx_id_t)ctx;
 
     return GSS_S_COMPLETE;
 }
@@ -100,7 +100,7 @@ OM_uint32 _gss_spnego_delete_sec_context
             gss_buffer_t output_token
            )
 {
-    gss_ctx_id_t ctx;
+    gssspnego_ctx ctx;
     OM_uint32 ret, minor;
 
     *minor_status = 0;
@@ -114,7 +114,9 @@ OM_uint32 _gss_spnego_delete_sec_context
 	output_token->value = NULL;
     }
 
-    ctx = *context_handle;
+    ctx = (gssspnego_ctx)*context_handle;
+    *context_handle = GSS_C_NO_CONTEXT;
+
     if (ctx == NULL) {
 	return GSS_S_NO_CONTEXT;
     }
@@ -152,9 +154,10 @@ OM_uint32 _gss_spnego_delete_sec_context
  * default is to ignore the mechListMIC unless CFX is used and
  * a non-preferred mechanism was negotiated
  */
+
 OM_uint32
 _gss_spnego_require_mechlist_mic(OM_uint32 *minor_status,
-				 gss_ctx_id_t ctx,
+				 gssspnego_ctx ctx,
 				 int *require_mic)
 {
     gss_buffer_set_t buffer_set = GSS_C_NO_BUFFER_SET;
@@ -163,7 +166,7 @@ _gss_spnego_require_mechlist_mic(OM_uint32 *minor_status,
     *minor_status = 0;
     *require_mic = 0;
 
-    if (ctx == GSS_C_NO_CONTEXT) {
+    if (ctx == NULL) {
 	return GSS_S_COMPLETE;
     }
 
@@ -250,9 +253,8 @@ _gss_spnego_select_mech(OM_uint32 *minor_status,
     size_t mech_len;
     gss_OID_desc oid;
     OM_uint32 ret;
-    gss_mechanism mech;
 
-    ret = der_put_oid (mechbuf + sizeof(mechbuf) - 1,
+    ret = der_put_oid ((unsigned char *)mechbuf + sizeof(mechbuf) - 1,
 		       sizeof(mechbuf),
 		       mechType,
 		       &mech_len);
@@ -271,17 +273,20 @@ _gss_spnego_select_mech(OM_uint32 *minor_status,
 
     /* Translate broken MS Kebreros OID */
     if (gss_oid_equal(&oid, &gss_mskrb_mechanism_oid_desc)) {
+	gssapi_mech_interface mech;
+
 	mech = __gss_get_mechanism(&gss_krb5_mechanism_oid_desc);
 	if (mech == NULL)
 	    return GSS_S_BAD_MECH;
 
 	*mech_p = &gss_mskrb_mechanism_oid_desc;
     } else {
+	gssapi_mech_interface mech;
+
 	mech = __gss_get_mechanism(&oid);
 	if (mech == NULL)
 	    return GSS_S_BAD_MECH;
-
-	*mech_p = &mech->mech_type;
+	*mech_p = &mech->gm_mech_oid;
     }
 
     return GSS_S_COMPLETE;

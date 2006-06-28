@@ -62,7 +62,7 @@ _gss_spnego_encode_response(OM_uint32 *minor_status,
 	    ret = der_put_length_and_tag(buf + buf_size - buf_len - 1,
 					 buf_size - buf_len,
 					 buf_len,
-					 CONTEXT,
+					 ASN1_C_CONTEXT,
 					 CONS,
 					 1,
 					 &tmp);
@@ -137,7 +137,7 @@ send_reject (OM_uint32 *minor_status,
 OM_uint32
 _gss_spnego_indicate_mechtypelist (OM_uint32 *minor_status,
 				   int includeMSCompatOID,
-				   const gss_cred_id_t cred_handle,
+				   const gssspnego_cred cred_handle,
 				   MechTypeList *mechtypelist,
 				   gss_OID *preferred_mech)
 {
@@ -145,7 +145,7 @@ _gss_spnego_indicate_mechtypelist (OM_uint32 *minor_status,
     gss_OID_set supported_mechs = GSS_C_NO_OID_SET;
     int i, count;
 
-    if (cred_handle != GSS_C_NO_CREDENTIAL) {
+    if (cred_handle != NULL) {
 	ret = gss_inquire_cred(minor_status,
 			       cred_handle->negotiated_cred_id,
 			       NULL,
@@ -228,7 +228,7 @@ send_supported_mechs (OM_uint32 *minor_status,
     ni.mechListMIC = NULL;
 
     ret = _gss_spnego_indicate_mechtypelist(minor_status, 1,
-					    GSS_C_NO_CREDENTIAL,
+					    NULL,
 					    &ni.mechTypes, NULL);
     if (ret != GSS_S_COMPLETE) {
 	return ret;
@@ -320,7 +320,7 @@ send_supported_mechs (OM_uint32 *minor_status,
 	    ret = der_put_length_and_tag(buf + buf_size - buf_len - 1,
 					 buf_size - buf_len,
 					 buf_len,
-					 CONTEXT,
+					 ASN1_C_CONTEXT,
 					 CONS,
 					 0,
 					 &tmp);
@@ -368,7 +368,7 @@ send_supported_mechs (OM_uint32 *minor_status,
 
 static OM_uint32
 send_accept (OM_uint32 *minor_status,
-	     gss_ctx_id_t context_handle,
+	     gssspnego_ctx context_handle,
 	     gss_buffer_t mech_token,
 	     int initial_response,
 	     gss_buffer_t mech_buf,
@@ -496,7 +496,7 @@ send_accept (OM_uint32 *minor_status,
 static OM_uint32
 verify_mechlist_mic
 	   (OM_uint32 *minor_status,
-	    gss_ctx_id_t context_handle,
+	    gssspnego_ctx context_handle,
 	    gss_buffer_t mech_buf,
 	    heim_octet_string *mechListMIC
 	   )
@@ -556,9 +556,10 @@ gss_spnego_accept_sec_context
     unsigned int negResult = accept_incomplete;
     gss_buffer_t mech_input_token = GSS_C_NO_BUFFER;
     gss_buffer_t mech_output_token = GSS_C_NO_BUFFER;
-    gss_ctx_id_t ctx;
     gss_buffer_desc mech_buf;
     gss_OID preferred_mech_type = GSS_C_NO_OID;
+    gssspnego_ctx ctx;
+    gssspnego_cred acceptor_cred = (gssspnego_cred)acceptor_cred_handle;
 
     *minor_status = 0;
 
@@ -594,7 +595,7 @@ gss_spnego_accept_sec_context
 	}
     }
 
-    ctx = *context_handle;
+    ctx = (gssspnego_ctx)*context_handle;
 
     /*
      * The GSS-API encapsulation is only present on the initial
@@ -611,7 +612,7 @@ gss_spnego_accept_sec_context
     }
 
     ret = der_match_tag_and_length(data.value, data.length,
-				   CONTEXT, CONS,
+				   ASN1_C_CONTEXT, CONS,
 				   initialToken ? 0 : 1,
 				   &len, &taglen);
     if (ret) {
@@ -625,11 +626,11 @@ gss_spnego_accept_sec_context
     }
 
     if (initialToken) {
-	ret = decode_NegTokenInit((const char *)data.value + taglen, len,
-				  &ni, &ni_len);
+	ret = decode_NegTokenInit((const unsigned char *)data.value + taglen, 
+				  len, &ni, &ni_len);
     } else {
-	ret = decode_NegTokenResp((const char *)data.value + taglen, len,
-				  &na, &na_len);
+	ret = decode_NegTokenResp((const unsigned char *)data.value + taglen, 
+				  len, &na, &na_len);
     }
     if (ret) {
 	*minor_status = ret;
@@ -672,7 +673,6 @@ gss_spnego_accept_sec_context
 
     {
 	gss_buffer_desc ibuf, obuf;
-	OM_uint32 minor;
 	int require_mic, verify_mic, get_mic;
 	int require_response;
 	heim_octet_string *mic;
@@ -696,8 +696,8 @@ gss_spnego_accept_sec_context
 	    gss_cred_id_t mech_delegated_cred;
 	    gss_cred_id_t *mech_delegated_cred_p;
 
-	    if (acceptor_cred_handle != GSS_C_NO_CREDENTIAL)
-		mech_cred = acceptor_cred_handle->negotiated_cred_id;
+	    if (acceptor_cred != NULL)
+		mech_cred = acceptor_cred->negotiated_cred_id;
 	    else
 		mech_cred = GSS_C_NO_CREDENTIAL;
 

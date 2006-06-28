@@ -45,19 +45,18 @@
 
 #include <krb5_locl.h>
 #include <gssapi_spnego.h>
+#include <gssapi.h>
 #include <assert.h>
 #include <der.h>
-#include <mechglue.h>
-
 #include "spnego_asn1.h"
 
-gss_mechanism gss_spnego_initialize(void);
+#include <gssapi_mech.h>
 
-typedef struct gss_cred_id_t_desc_struct {
+typedef struct {
 	gss_cred_id_t		negotiated_cred_id;
-} gss_cred_id_t_desc;
+} *gssspnego_cred;
 
-typedef struct gss_ctx_id_t_desc_struct {
+typedef struct {
 	MechTypeList		initiator_mech_types;
 	gss_OID			preferred_mech_type;
 	gss_OID			negotiated_mech_type;
@@ -71,14 +70,14 @@ typedef struct gss_ctx_id_t_desc_struct {
 	int			require_mic : 1;
 	int			verified_mic : 1;
 	HEIMDAL_MUTEX		ctx_id_mutex;
-} gss_ctx_id_t_desc;
+} *gssspnego_ctx;
 
 OM_uint32
 _gss_spnego_encode_response(OM_uint32 *, const NegTokenResp *,
 			    gss_buffer_t, u_char **);
 OM_uint32
 _gss_spnego_indicate_mechtypelist (OM_uint32 *, int,
-				   const gss_cred_id_t cred_handle,
+				   const gssspnego_cred cred_handle,
 				   MechTypeList *,
 				   gss_OID *preferred_mech);
 OM_uint32 _gss_spnego_alloc_sec_context (OM_uint32 *,
@@ -89,7 +88,7 @@ OM_uint32 _gss_spnego_alloc_sec_context (OM_uint32 *,
  * calling _gss_spnego_delete_sec_context()
  */
 OM_uint32 _gss_spnego_delete_sec_context (OM_uint32 *, gss_ctx_id_t *, gss_buffer_t);
-OM_uint32 _gss_spnego_require_mechlist_mic(OM_uint32 *, gss_ctx_id_t, int *);
+OM_uint32 _gss_spnego_require_mechlist_mic(OM_uint32 *, gssspnego_ctx, int *);
 OM_uint32 gss_spnego_internal_release_oid(OM_uint32 *minor_status, gss_OID *OID);
 int _gss_spnego_add_mech_type(gss_OID, int, MechTypeList *);
 OM_uint32 _gss_spnego_select_mech(OM_uint32 *, MechType *, gss_OID *);
@@ -410,6 +409,7 @@ OM_uint32 gss_spnego_unseal
             int * /*qop_state*/
            );
 
+#if 0
 OM_uint32 gss_spnego_unwrap_ex
            (OM_uint32 * /*minor_status*/,
             const gss_ctx_id_t /*context_handle*/,
@@ -436,6 +436,7 @@ OM_uint32 gss_spnego_complete_auth_token
            (OM_uint32 * /*minor_status*/,
             const gss_ctx_id_t /*context_handle*/,
 	    gss_buffer_t /*input_message_buffer*/);
+#endif
 
 OM_uint32 gss_spnego_inquire_sec_context_by_oid
            (OM_uint32 * /*minor_status*/,

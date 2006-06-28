@@ -45,7 +45,7 @@ RCSID("$Id$");
  */
 static OM_uint32
 spnego_reply_internal(OM_uint32 *minor_status,
-		      gss_ctx_id_t context_handle,
+		      gssspnego_ctx context_handle,
 		      const gss_buffer_t mech_buf,
 		      gss_buffer_t mech_token,
 		      gss_buffer_t output_token)
@@ -148,7 +148,7 @@ spnego_reply_internal(OM_uint32 *minor_status,
 static OM_uint32
 spnego_initial
            (OM_uint32 * minor_status,
-            const gss_cred_id_t initiator_cred_handle,
+	    gssspnego_cred cred,
             gss_ctx_id_t * context_handle,
             const gss_name_t target_name,
             const gss_OID mech_type,
@@ -170,7 +170,8 @@ spnego_initial
     size_t buf_size, buf_len;
     gss_buffer_desc data;
     size_t ni_len;
-    gss_ctx_id_t ctx;
+    gss_ctx_id_t context;
+    gssspnego_ctx ctx;
 
     memset (&ni, 0, sizeof(ni));
 
@@ -178,23 +179,24 @@ spnego_initial
 
     *minor_status = 0;
 
-    sub = _gss_spnego_alloc_sec_context(&minor, &ctx);
+    sub = _gss_spnego_alloc_sec_context(&minor, &context);
     if (GSS_ERROR(sub)) {
 	*minor_status = minor;
 	return sub;
     }
+    ctx = (gssspnego_ctx)context;
 
     HEIMDAL_MUTEX_lock(&ctx->ctx_id_mutex);
 
     ctx->local = 1;
 
     sub = _gss_spnego_indicate_mechtypelist(&minor, 0,
-					    initiator_cred_handle,
+					    cred,
 					    &ni.mechTypes,
 					    &ctx->preferred_mech_type);
     if (GSS_ERROR(sub)) {
 	*minor_status = minor;
-	_gss_spnego_delete_sec_context(&minor, &ctx, GSS_C_NO_BUFFER);
+	_gss_spnego_delete_sec_context(&minor, &context, GSS_C_NO_BUFFER);
 	return sub;
     }
 
@@ -207,9 +209,8 @@ spnego_initial
 
     /* generate optimistic token */
     sub = gss_init_sec_context(&minor,
-			       initiator_cred_handle ?
-				   initiator_cred_handle->negotiated_cred_id :
-				   GSS_C_NO_CREDENTIAL,
+			       (cred != NULL) ? cred->negotiated_cred_id :
+			          GSS_C_NO_CREDENTIAL,
 			       &ctx->negotiated_ctx_id,
 			       target_name,
 			       GSS_C_NO_OID,
@@ -224,7 +225,7 @@ spnego_initial
     if (GSS_ERROR(sub)) {
 	free_NegTokenInit(&ni);
 	*minor_status = minor;
-	_gss_spnego_delete_sec_context(&minor, &ctx, GSS_C_NO_BUFFER);
+	_gss_spnego_delete_sec_context(&minor, &context, GSS_C_NO_BUFFER);
 	return sub;
     }
 
@@ -233,7 +234,7 @@ spnego_initial
 	if (ni.mechToken == NULL) {
 	    free_NegTokenInit(&ni);
 	    gss_release_buffer(&minor, &mech_token);
-	    _gss_spnego_delete_sec_context(&minor, &ctx, GSS_C_NO_BUFFER);
+	    _gss_spnego_delete_sec_context(&minor, &context, GSS_C_NO_BUFFER);
 	    *minor_status = ENOMEM;
 	    return GSS_S_FAILURE;
 	}
@@ -243,7 +244,7 @@ spnego_initial
 	    free_NegTokenInit(&ni);
 	    gss_release_buffer(&minor, &mech_token);
 	    *minor_status = ENOMEM;
-	    _gss_spnego_delete_sec_context(&minor, &ctx, GSS_C_NO_BUFFER);
+	    _gss_spnego_delete_sec_context(&minor, &context, GSS_C_NO_BUFFER);
 	    return GSS_S_FAILURE;
 	}
 	memcpy(ni.mechToken->data, mech_token.value, mech_token.length);
@@ -260,7 +261,7 @@ spnego_initial
     if (buf == NULL) {
 	free_NegTokenInit(&ni);
 	*minor_status = ENOMEM;
-	_gss_spnego_delete_sec_context(&minor, &ctx, GSS_C_NO_BUFFER);
+	_gss_spnego_delete_sec_context(&minor, &context, GSS_C_NO_BUFFER);
 	return GSS_S_FAILURE;
     }
 
@@ -276,7 +277,7 @@ spnego_initial
 	ret = der_put_length_and_tag(buf + buf_size - buf_len - 1,
 				     buf_size - buf_len,
 				     buf_len,
-				     CONTEXT,
+				     ASN1_C_CONTEXT,
 				     CONS,
 				     0,
 				     &tmp);
@@ -287,7 +288,7 @@ spnego_initial
 	*minor_status = ret;
 	free(buf);
 	free_NegTokenInit(&ni);
-	_gss_spnego_delete_sec_context(&minor, &ctx, GSS_C_NO_BUFFER);
+	_gss_spnego_delete_sec_context(&minor, &context, GSS_C_NO_BUFFER);
 	return GSS_S_FAILURE;
     }
 
@@ -307,7 +308,7 @@ spnego_initial
     free (buf);
 
     if (sub) {
-	_gss_spnego_delete_sec_context(&minor, &ctx, GSS_C_NO_BUFFER);
+	_gss_spnego_delete_sec_context(&minor, &context, GSS_C_NO_BUFFER);
 	return sub;
     }
 
@@ -320,7 +321,7 @@ spnego_initial
 
     HEIMDAL_MUTEX_unlock(&ctx->ctx_id_mutex);
 
-    *context_handle = ctx;
+    *context_handle = context;
 
     return GSS_S_CONTINUE_NEEDED;
 }
@@ -328,7 +329,7 @@ spnego_initial
 static OM_uint32
 spnego_reply
            (OM_uint32 * minor_status,
-            const gss_cred_id_t initiator_cred_handle,
+	    const gssspnego_cred cred,
             gss_ctx_id_t * context_handle,
             const gss_name_t target_name,
             const gss_OID mech_type,
@@ -343,7 +344,6 @@ spnego_reply
     )
 {
     OM_uint32 ret, minor;
-    gss_buffer_desc indata;
     NegTokenResp resp;
     u_char oidbuf[17];
     size_t oidlen;
@@ -353,11 +353,11 @@ spnego_reply
     size_t buf_len;
     gss_buffer_desc mic_buf, mech_buf;
     gss_buffer_desc mech_output_token;
-    gss_ctx_id_t ctx;
+    gssspnego_ctx ctx;
 
     *minor_status = 0;
 
-    ctx = *context_handle;
+    ctx = (gssspnego_ctx)*context_handle;
 
     output_token->length = 0;
     output_token->value  = NULL;
@@ -369,14 +369,14 @@ spnego_reply
     mech_buf.length = 0;
 
     ret = der_match_tag_and_length(input_token->value, input_token->length,
-				   CONTEXT, CONS, 1, &len, &taglen);
+				   ASN1_C_CONTEXT, CONS, 1, &len, &taglen);
     if (ret)
 	return ret;
 
-    if (len > indata.length - taglen)
+    if (len > input_token->length - taglen)
 	return ASN1_OVERRUN;
 
-    ret = decode_NegTokenResp((const char *)input_token->value + taglen,
+    ret = decode_NegTokenResp((const unsigned char *)input_token->value+taglen,
 			      len, &resp, NULL);
     if (ret) {
 	*minor_status = ENOMEM;
@@ -414,10 +414,10 @@ spnego_reply
 	mech.length = oidlen;
 	mech.elements = oidbuf + sizeof(oidbuf) - oidlen;
 
-	/* Fall through as if the negotiated mechanism was requested explicitly */
+	/* Fall through as if the negotiated mechanism
+	   was requested explicitly */
 	ret = gss_init_sec_context(&minor,
-				   initiator_cred_handle ?
-				       initiator_cred_handle->negotiated_cred_id :
+				   (cred != NULL) ? cred->negotiated_cred_id :
 				       GSS_C_NO_CREDENTIAL,
 				   &ctx->negotiated_ctx_id,
 				   target_name,
@@ -544,9 +544,11 @@ OM_uint32 gss_spnego_init_sec_context
             OM_uint32 * time_rec
            )
 {
+    gssspnego_cred cred = (gssspnego_cred)initiator_cred_handle;
+
     if (*context_handle == GSS_C_NO_CONTEXT)
 	return spnego_initial (minor_status,
-			       initiator_cred_handle,
+			       cred,
 			       context_handle,
 			       target_name,
 			       mech_type,
@@ -560,7 +562,7 @@ OM_uint32 gss_spnego_init_sec_context
 			       time_rec);
     else
 	return spnego_reply (minor_status,
-			     initiator_cred_handle,
+			     cred,
 			     context_handle,
 			     target_name,
 			     mech_type,
