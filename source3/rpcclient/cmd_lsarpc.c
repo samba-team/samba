@@ -31,7 +31,7 @@ static NTSTATUS name_to_sid(struct rpc_pipe_client *cli,
 			    DOM_SID *sid, const char *name)
 {
 	POLICY_HND pol;
-	uint32 *sid_types;
+	enum SID_NAME_USE *sid_types;
 	NTSTATUS result;
 	DOM_SID *sids;
 
@@ -223,7 +223,7 @@ static NTSTATUS cmd_lsa_lookup_names(struct rpc_pipe_client *cli,
 	POLICY_HND pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	DOM_SID *sids;
-	uint32 *types;
+	enum SID_NAME_USE *types;
 	int i;
 
 	if (argc == 1) {
@@ -272,7 +272,7 @@ static NTSTATUS cmd_lsa_lookup_sids(struct rpc_pipe_client *cli, TALLOC_CTX *mem
 	DOM_SID *sids;
 	char **domains;
 	char **names;
-	uint32 *types;
+	enum SID_NAME_USE *types;
 	int i;
 
 	if (argc == 1) {

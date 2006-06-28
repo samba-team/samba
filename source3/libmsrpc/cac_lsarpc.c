@@ -144,7 +144,7 @@ int cac_LsaGetNamesFromSids(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct Ls
    /*buffers for outputs*/
    char **domains   = NULL;
    char **names     = NULL;
-   uint32 *types    = NULL;
+   enum SID_NAME_USE *types    = NULL;
 
    CacSidInfo *sids_out   = NULL;
    DOM_SID *unknown_out   = NULL;
@@ -267,7 +267,7 @@ int cac_LsaGetSidsFromNames(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct Ls
 
    /*buffers for outputs*/
    DOM_SID *sids     = NULL;
-   uint32 *types     = NULL;
+   enum SID_NAME_USE *types     = NULL;
 
    CacSidInfo *sids_out  = NULL;
    char **unknown_out     = NULL;
@@ -579,7 +579,7 @@ int cac_LsaEnumAccountRights(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct L
 
    if(op->in.name && !op->in.sid) {
       DOM_SID *user_sid = NULL;
-      uint32 *type;
+      enum SID_NAME_USE *type;
 
       /*lookup the SID*/
       hnd->status = rpccli_lsa_lookup_names( pipe_hnd, mem_ctx, op->in.pol, 1, (const char **)&(op->in.name), NULL, &user_sid, &type);
@@ -806,7 +806,7 @@ int cac_LsaOpenAccount(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct LsaOpen
    /*look up the user's SID if we have to*/
    if(op->in.name && !op->in.sid) {
       DOM_SID *user_sid = NULL;
-      uint32 *type;
+      enum SID_NAME_USE *type;
 
       /*lookup the SID*/
       hnd->status = rpccli_lsa_lookup_names( pipe_hnd, mem_ctx, op->in.pol, 1, (const char **)&(op->in.name), NULL, &user_sid, &type);
@@ -840,7 +840,7 @@ int cac_LsaAddPrivileges(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct LsaAd
    struct rpc_pipe_client *pipe_hnd = NULL;
 
    DOM_SID *user_sid = NULL;
-   uint32  *type     = NULL;
+   enum SID_NAME_USE  *type     = NULL;
 
    if(!hnd) {
       return CAC_FAILURE;
@@ -890,7 +890,7 @@ int cac_LsaRemovePrivileges(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct Ls
    struct rpc_pipe_client *pipe_hnd = NULL;
 
    DOM_SID *user_sid = NULL;
-   uint32  *type     = NULL;
+   enum SID_NAME_USE  *type     = NULL;
 
    if(!hnd) {
       return CAC_FAILURE;
@@ -940,7 +940,7 @@ int cac_LsaClearPrivileges(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct Lsa
    struct rpc_pipe_client *pipe_hnd = NULL;
 
    DOM_SID *user_sid = NULL;
-   uint32  *type     = NULL;
+   enum SID_NAME_USE  *type     = NULL;
 
    if(!hnd) {
       return CAC_FAILURE;
@@ -990,7 +990,7 @@ int cac_LsaSetPrivileges(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct LsaAd
    struct rpc_pipe_client *pipe_hnd = NULL;
 
    DOM_SID *user_sid = NULL;
-   uint32  *type     = NULL;
+   enum SID_NAME_USE  *type     = NULL;
 
    if(!hnd) {
       return CAC_FAILURE;
