@@ -1274,7 +1274,7 @@ static int traverse_fn(TDB_CONTEXT *the_tdb, TDB_DATA kbuf, TDB_DATA dbuf,
 	const char *sharepath;
 	const char *fname;
 	int i;
-	void (*traverse_callback)(struct share_mode_entry *, const char *, const char *) = state;
+	LOCKING_FN(traverse_callback) = (LOCKING_FN_CAST())state;
 
 	/* Ensure this is a locking_key record. */
 	if (kbuf.dsize != sizeof(struct locking_key))
