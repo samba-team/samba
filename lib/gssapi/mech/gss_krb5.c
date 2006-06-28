@@ -94,8 +94,29 @@ gss_krb5_import_cred(OM_uint32 *minor_status,
 		     krb5_keytab keytab,
 		     gss_cred_id_t *cred)
 {
-    *minor_status = EINVAL;
-    return GSS_S_FAILURE;
+    OM_uint32 major_status;
+    krb5_storage *sp;
+    krb5_data data;
+    gss_buffer_desc buffer;
+
+    sp = krb5_storage_emem();
+
+    krb5_store_string(sp, "");
+    krb5_store_string(sp, "");
+    krb5_store_string(sp, "");
+
+    krb5_storage_to_data(sp, &data);
+    krb5_storage_free(sp);
+
+    buffer.value = data.data;
+    buffer.length = data.length;
+    
+    major_status = gss_set_cred_option(minor_status,
+				       cred,
+				       GSS_KRB5_IMPORT_CRED_X,
+				       &buffer);
+    krb5_data_free(&data);
+    return major_status;
 }
 
 #if 0
