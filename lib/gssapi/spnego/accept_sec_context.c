@@ -760,32 +760,32 @@ gss_spnego_accept_sec_context
 
 	mic = initialToken ? ni.mechListMIC : na.mechListMIC;
 	if (mic != NULL)
-	    require_mic = TRUE;
+	    require_mic = 1;
 
 	if (ctx->open && require_mic) {
 	    if (mech_input_token == GSS_C_NO_BUFFER) { /* Even/One */
-		verify_mic = TRUE;
-		get_mic = FALSE;
+		verify_mic = 1;
+		get_mic = 0;
 	    } else if (mech_output_token != GSS_C_NO_BUFFER &&
 		       mech_output_token->length == 0) { /* Odd */
-		get_mic = verify_mic = TRUE;
+		get_mic = verify_mic = 1;
 	    } else { /* Even/One */
-		verify_mic = FALSE;
-		get_mic = TRUE;
+		verify_mic = 0;
+		get_mic = 1;
 	    }
 
 	    if (verify_mic || get_mic) {
-		krb5_error_code kret;
+		int eret;
 		size_t buf_len;
 
-    		ASN1_MALLOC_ENCODE(MechTypeList, mech_buf.value, mech_buf.length,
-				   &ctx->initiator_mech_types, &buf_len, kret);
-		if (kret) {
+    		ASN1_MALLOC_ENCODE(MechTypeList, 
+				   mech_buf.value, mech_buf.length,
+				   &ctx->initiator_mech_types, &buf_len, eret);
+		if (eret) {
 		    ret2 = GSS_S_FAILURE;
-		    *minor_status = kret;
+		    *minor_status = eret;
 		    goto out;
 		}
-
 		if (mech_buf.length != buf_len)
 		    abort();
 	    }
@@ -801,7 +801,7 @@ gss_spnego_accept_sec_context
 		ctx->verified_mic = 1;
 	    }
 	} else
-	    verify_mic = get_mic = FALSE;
+	    verify_mic = get_mic = 0;
 
 	if (ctx->mech_flags & GSS_C_DCE_STYLE)
 	    require_response = (negResult != accept_completed);

@@ -451,7 +451,7 @@ spnego_reply
 	 * used and a non-preferred mechanism was selected
 	 */
 	if (resp.mechListMIC != NULL) {
-	    require_mic = TRUE;
+	    require_mic = 1;
 	} else {
 	    ret = _gss_spnego_require_mechlist_mic(minor_status, ctx,
 						   &require_mic);
@@ -463,7 +463,7 @@ spnego_reply
 	    }
 	}
     } else {
-	require_mic = FALSE;
+	require_mic = 0;
     }
 
     if (require_mic) {
