@@ -36,7 +36,6 @@ BOOL eventlog_init_keys( void )
 	pstring evtfilepath;
 	REGSUBKEY_CTR *subkeys;
 	REGVAL_CTR *values;
-	uint32 uiDisplayNameId;
 	uint32 uiMaxSize;
 	uint32 uiRetention;
 	uint32 uiCategoryCount;
@@ -92,7 +91,7 @@ BOOL eventlog_init_keys( void )
 
 			/* hard code some initial values */
 
-			uiDisplayNameId = 0x00000100;
+			/* uiDisplayNameId = 0x00000100; */
 			uiMaxSize = 0x00080000;
 			uiRetention = 0x93A80;
 
