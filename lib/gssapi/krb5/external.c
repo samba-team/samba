@@ -327,7 +327,9 @@ static gssapi_mech_interface_desc krb5_mech = {
     _gsskrb5_canonicalize_name,
     _gsskrb5_duplicate_name,
     _gsskrb5_inquire_sec_context_by_oid,
-    _gsskrb5_inquire_cred_by_oid
+    _gsskrb5_inquire_cred_by_oid,
+    _gsskrb5_set_sec_context_option,
+    _gsskrb5_set_cred_option
 };
 
 gssapi_mech_interface
