@@ -225,7 +225,9 @@ static int key_printers_fetch_keys( const char *key, REGSUBKEY_CTR *subkeys )
 
 	/* get information for a specific printer */
 	
-	reg_split_path( printers_key, &printername, &printerdatakey );
+	if (!reg_split_path( printers_key, &printername, &printerdatakey )) {
+		return -1;
+	}
 
 	/* validate the printer name */
 
@@ -314,7 +316,9 @@ static BOOL key_printers_store_keys( const char *key, REGSUBKEY_CTR *subkeys )
 		return add_printers_by_registry( subkeys );
 	}
 	
-	reg_split_path( printers_key, &printername, &printerdatakey );
+	if (!reg_split_path( printers_key, &printername, &printerdatakey )) {
+		return False;
+	}
 	
 	/* lookup the printer */
 	
@@ -482,7 +486,10 @@ static int key_printers_fetch_values( const char *key, REGVAL_CTR *values )
 	
 	/* lookup the printer object */
 	
-	reg_split_path( printers_key, &printername, &printerdatakey );
+	if (!reg_split_path( printers_key, &printername, &printerdatakey )) {
+		return -1;
+	}
+	
 	if ( !W_ERROR_IS_OK( get_a_printer(NULL, &printer, 2, printername) ) )
 		goto done;
 		
@@ -672,7 +679,9 @@ static BOOL key_printers_store_values( const char *key, REGVAL_CTR *values )
 		return regdb_store_values( KEY_WINNT_PRINTERS, values );
 	}
 	
-	reg_split_path( printers_key, &printername, &keyname );
+	if (!reg_split_path( printers_key, &printername, &keyname )) {
+		return False;
+	}
 
 	if ( !W_ERROR_IS_OK(get_a_printer(NULL, &printer, 2, printername) ) )
 		return False;
@@ -754,7 +763,9 @@ static int key_driver_fetch_keys( const char *key, REGSUBKEY_CTR *subkeys )
 	
 	pstrcpy( key2, keystr );
 	keystr = key2;
-	reg_split_path( keystr, &base, &subkeypath );
+	if (!reg_split_path( keystr, &base, &subkeypath )) {
+		return -1;
+	}
 	
 	/* sanity check */
 	
@@ -777,7 +788,9 @@ static int key_driver_fetch_keys( const char *key, REGSUBKEY_CTR *subkeys )
 	/* more of the key path to process */
 	
 	keystr = subkeypath;
-	reg_split_path( keystr, &base, &subkeypath );	
+	if (!reg_split_path( keystr, &base, &subkeypath )) {
+		return -1;
+	}
 		
 	/* ...\Print\Environements\...\Drivers\ */
 	
@@ -809,7 +822,9 @@ static int key_driver_fetch_keys( const char *key, REGSUBKEY_CTR *subkeys )
 
 	if ( strequal(base, "Print Processors") ) {
 		keystr = subkeypath;
-		reg_split_path( keystr, &base, &subkeypath );
+		if (!reg_split_path( keystr, &base, &subkeypath )) {
+			return -1;
+		}
 
 		/* no subkeys below this point */
 
@@ -824,7 +839,10 @@ static int key_driver_fetch_keys( const char *key, REGSUBKEY_CTR *subkeys )
 	/* only dealing with drivers from here on out */
 
 	keystr = subkeypath;
-	reg_split_path( keystr, &base, &subkeypath );
+	if (!reg_split_path( keystr, &base, &subkeypath )) {
+		return -1;
+	}
+
 	version = atoi(&base[strlen(base)-1]);
 			
 	switch (env_index) {
@@ -947,7 +965,9 @@ static int driver_arch_fetch_values( char *key, REGVAL_CTR *values )
 	NT_PRINTER_DRIVER_INFO_LEVEL	driver_ctr;
 	WERROR		w_result;
 
-	reg_split_path( key, &base, &subkeypath );
+	if (!reg_split_path( key, &base, &subkeypath )) {
+		return -1;
+	}
 	
 	/* no values in 'Environments\Drivers\Windows NT x86' */
 	
@@ -964,7 +984,9 @@ static int driver_arch_fetch_values( char *key, REGVAL_CTR *values )
 	fstrcpy( arch_environment, base );
 	
 	keystr = subkeypath;
-	reg_split_path( keystr, &base, &subkeypath );
+	if (!reg_split_path( keystr, &base, &subkeypath )) {
+		return -1;
+	}
 
 	if ( strequal(base, "Print Processors") )
 		return 0;
@@ -981,7 +1003,9 @@ static int driver_arch_fetch_values( char *key, REGVAL_CTR *values )
 	   The subkey name has to be Version-XX */
 	
 	keystr = subkeypath;
-	reg_split_path( keystr, &base, &subkeypath );
+	if (!reg_split_path( keystr, &base, &subkeypath )) {
+		return -1;
+	}
 
 	if ( !subkeypath )
 		return 0;
@@ -991,7 +1015,9 @@ static int driver_arch_fetch_values( char *key, REGVAL_CTR *values )
 	/* BEGIN PRINTER DRIVER NAME BLOCK */
 	
 	keystr = subkeypath;
-	reg_split_path( keystr, &base, &subkeypath );
+	if (!reg_split_path( keystr, &base, &subkeypath )) {
+		return -1;
+	}
 	
 	/* don't go any deeper for now */
 	
