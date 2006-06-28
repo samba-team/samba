@@ -709,7 +709,7 @@ create_options = 0x%x root_dir_fid = 0x%x\n",
 
 		if(!NT_STATUS_IS_OK(status)) {
 			END_PROFILE(SMBntcreateX);
-			return set_bad_path_error(errno, bad_path, outbuf, ERRDOS,ERRnoaccess);
+			return ERROR_NT(status);
 		}
 	} else {
 		/*
@@ -1351,7 +1351,7 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 		if(!NT_STATUS_IS_OK(status)) {
 			talloc_destroy(ctx);
 			restore_case_semantics(conn, file_attributes);
-			return set_bad_path_error(errno, bad_path, outbuf, ERRDOS,ERRnoaccess);
+			return ERROR_NT(status);
 		}
 
 	} else {
@@ -1392,7 +1392,7 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 				if(!NT_STATUS_IS_OK(status)) {
 					talloc_destroy(ctx);
 					restore_case_semantics(conn, file_attributes);
-					return set_bad_path_error(errno, bad_path, outbuf, ERRDOS,ERRnoaccess);
+					return ERROR_NT(status);
 				}
 			} else {
 				talloc_destroy(ctx);
@@ -1401,7 +1401,7 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 					/* We have re-scheduled this call. */
 					return -1;
 				}
-				return set_bad_path_error(errno, bad_path, outbuf, ERRDOS,ERRnoaccess);
+				return ERROR_NT(status);
 			}
 		} 
 	}
