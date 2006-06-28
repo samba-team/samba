@@ -31,12 +31,12 @@
  * SUCH DAMAGE. 
  */
 
-#include "gssapi_locl.h"
+#include "gsskrb5_locl.h"
 
 RCSID("$Id$");
 
 krb5_error_code
-gssapi_encode_om_uint32(OM_uint32 n, u_char *p)
+_gsskrb5_encode_om_uint32(OM_uint32 n, u_char *p)
 {
   p[0] = (n >> 0)  & 0xFF;
   p[1] = (n >> 8)  & 0xFF;
@@ -46,7 +46,7 @@ gssapi_encode_om_uint32(OM_uint32 n, u_char *p)
 }
 
 krb5_error_code
-gssapi_encode_be_om_uint32(OM_uint32 n, u_char *p)
+_gsskrb5_encode_be_om_uint32(OM_uint32 n, u_char *p)
 {
   p[0] = (n >> 24) & 0xFF;
   p[1] = (n >> 16) & 0xFF;
@@ -56,7 +56,7 @@ gssapi_encode_be_om_uint32(OM_uint32 n, u_char *p)
 }
 
 krb5_error_code
-gssapi_decode_om_uint32(const void *ptr, OM_uint32 *n)
+_gsskrb5_decode_om_uint32(const void *ptr, OM_uint32 *n)
 {
     const u_char *p = ptr;
     *n = (p[0] << 0) | (p[1] << 8) | (p[2] << 16) | (p[3] << 24);
@@ -64,7 +64,7 @@ gssapi_decode_om_uint32(const void *ptr, OM_uint32 *n)
 }
 
 krb5_error_code
-gssapi_decode_be_om_uint32(const void *ptr, OM_uint32 *n)
+_gsskrb5_decode_be_om_uint32(const void *ptr, OM_uint32 *n)
 {
     const u_char *p = ptr;
     *n = (p[0] <<24) | (p[1] << 16) | (p[2] << 8) | (p[3] << 0);
@@ -79,23 +79,23 @@ hash_input_chan_bindings (const gss_channel_bindings_t b,
   MD5_CTX md5;
 
   MD5_Init(&md5);
-  gssapi_encode_om_uint32 (b->initiator_addrtype, num);
+  _gsskrb5_encode_om_uint32 (b->initiator_addrtype, num);
   MD5_Update (&md5, num, sizeof(num));
-  gssapi_encode_om_uint32 (b->initiator_address.length, num);
+  _gsskrb5_encode_om_uint32 (b->initiator_address.length, num);
   MD5_Update (&md5, num, sizeof(num));
   if (b->initiator_address.length)
     MD5_Update (&md5,
 		b->initiator_address.value,
 		b->initiator_address.length);
-  gssapi_encode_om_uint32 (b->acceptor_addrtype, num);
+  _gsskrb5_encode_om_uint32 (b->acceptor_addrtype, num);
   MD5_Update (&md5, num, sizeof(num));
-  gssapi_encode_om_uint32 (b->acceptor_address.length, num);
+  _gsskrb5_encode_om_uint32 (b->acceptor_address.length, num);
   MD5_Update (&md5, num, sizeof(num));
   if (b->acceptor_address.length)
     MD5_Update (&md5,
 		b->acceptor_address.value,
 		b->acceptor_address.length);
-  gssapi_encode_om_uint32 (b->application_data.length, num);
+  _gsskrb5_encode_om_uint32 (b->application_data.length, num);
   MD5_Update (&md5, num, sizeof(num));
   if (b->application_data.length)
     MD5_Update (&md5,
@@ -112,7 +112,7 @@ hash_input_chan_bindings (const gss_channel_bindings_t b,
  */
 
 OM_uint32
-gssapi_krb5_create_8003_checksum (
+_gsskrb5_create_8003_checksum (
 		      OM_uint32 *minor_status,    
 		      const gss_channel_bindings_t input_chan_bindings,
 		      OM_uint32 flags,
@@ -136,7 +136,7 @@ gssapi_krb5_create_8003_checksum (
     }
   
     p = result->checksum.data;
-    gssapi_encode_om_uint32 (16, p);
+    _gsskrb5_encode_om_uint32 (16, p);
     p += 4;
     if (input_chan_bindings == GSS_C_NO_CHANNEL_BINDINGS) {
 	memset (p, 0, 16);
@@ -144,7 +144,7 @@ gssapi_krb5_create_8003_checksum (
 	hash_input_chan_bindings (input_chan_bindings, p);
     }
     p += 16;
-    gssapi_encode_om_uint32 (flags, p);
+    _gsskrb5_encode_om_uint32 (flags, p);
     p += 4;
 
     if (fwd_data->length > 0 && (flags & GSS_C_DELEG_FLAG)) {
@@ -167,7 +167,7 @@ gssapi_krb5_create_8003_checksum (
  */
 
 OM_uint32
-gssapi_krb5_verify_8003_checksum(
+_gsskrb5_verify_8003_checksum(
 		      OM_uint32 *minor_status,    
 		      const gss_channel_bindings_t input_chan_bindings,
 		      const Checksum *cksum,
@@ -192,7 +192,7 @@ gssapi_krb5_verify_8003_checksum(
     }
     
     p = cksum->checksum.data;
-    gssapi_decode_om_uint32(p, &length);
+    _gsskrb5_decode_om_uint32(p, &length);
     if(length != sizeof(hash)) {
 	*minor_status = 0;
 	return GSS_S_BAD_BINDINGS;
@@ -214,7 +214,7 @@ gssapi_krb5_verify_8003_checksum(
     
     p += sizeof(hash);
     
-    gssapi_decode_om_uint32(p, flags);
+    _gsskrb5_decode_om_uint32(p, flags);
     p += 4;
 
     if (cksum->checksum.length > 24 && (*flags & GSS_C_DELEG_FLAG)) {

@@ -31,18 +31,18 @@
  * SUCH DAMAGE. 
  */
 
-#include "gssapi_locl.h"
+#include "gsskrb5_locl.h"
 
 RCSID("$Id$");
 
-OM_uint32 gss_inquire_cred_by_mech (
-            OM_uint32 * minor_status,
-            const gss_cred_id_t cred_handle,
-            const gss_OID mech_type,
-            gss_name_t * name,
-            OM_uint32 * initiator_lifetime,
-            OM_uint32 * acceptor_lifetime,
-            gss_cred_usage_t * cred_usage
+OM_uint32 _gsskrb5_inquire_cred_by_mech (
+    OM_uint32 * minor_status,
+	const gss_cred_id_t cred_handle,
+	const gss_OID mech_type,
+	gss_name_t * name,
+	OM_uint32 * initiator_lifetime,
+	OM_uint32 * acceptor_lifetime,
+	gss_cred_usage_t * cred_usage
     )
 {
     OM_uint32 ret;
@@ -54,19 +54,20 @@ OM_uint32 gss_inquire_cred_by_mech (
 	return GSS_S_BAD_MECH;
     }    
 
-    ret = gss_inquire_cred (minor_status,
-			    cred_handle,
-			    name,
-			    &lifetime,
-			    cred_usage,
-			    NULL);
+    ret = _gsskrb5_inquire_cred (minor_status,
+				 cred_handle,
+				 name,
+				 &lifetime,
+				 cred_usage,
+				 NULL);
     
     if (ret == 0 && cred_handle != GSS_C_NO_CREDENTIAL) {
+	gsskrb5_cred cred = (gsskrb5_cred)cred_handle;
 	gss_cred_usage_t usage;
 
-	HEIMDAL_MUTEX_lock(&cred_handle->cred_id_mutex);
-	usage = cred_handle->usage;
-	HEIMDAL_MUTEX_unlock(&cred_handle->cred_id_mutex);
+	HEIMDAL_MUTEX_lock(&cred->cred_id_mutex);
+	usage = cred->usage;
+	HEIMDAL_MUTEX_unlock(&cred->cred_id_mutex);
 
 	if (initiator_lifetime) {
 	    if (usage == GSS_C_INITIATE || usage == GSS_C_BOTH)

@@ -31,7 +31,7 @@
  * SUCH DAMAGE. 
  */
 
-#include "gssapi_locl.h"
+#include "gsskrb5_locl.h"
 
 RCSID("$Id$");
 
@@ -112,9 +112,9 @@ supplementary_error(OM_uint32 v)
 }
 
 void
-gssapi_krb5_clear_status (void)
+_gsskrb5_clear_status (void)
 {
-    struct gssapi_thr_context *ctx = gssapi_get_thread_context(1);
+    struct gssapi_thr_context *ctx = _gsskrb5_get_thread_context(1);
     if (ctx == NULL)
 	return;
     HEIMDAL_MUTEX_lock(&ctx->mutex);
@@ -125,9 +125,9 @@ gssapi_krb5_clear_status (void)
 }
 
 void
-gssapi_krb5_set_status (const char *fmt, ...)
+_gsskrb5_set_status (const char *fmt, ...)
 {
-    struct gssapi_thr_context *ctx = gssapi_get_thread_context(1);
+    struct gssapi_thr_context *ctx = _gsskrb5_get_thread_context(1);
     va_list args;
 
     if (ctx == NULL)
@@ -143,22 +143,22 @@ gssapi_krb5_set_status (const char *fmt, ...)
 }
 
 void
-gssapi_krb5_set_error_string (void)
+_gsskrb5_set_error_string (void)
 {
     char *e;
 
-    e = krb5_get_error_string(gssapi_krb5_context);
+    e = krb5_get_error_string(_gsskrb5_context);
     if (e) {
-	gssapi_krb5_set_status("%s", e);
-	krb5_free_error_string(gssapi_krb5_context, e);
+	_gsskrb5_set_status("%s", e);
+	krb5_free_error_string(_gsskrb5_context, e);
     } else
-	gssapi_krb5_clear_status();
+	_gsskrb5_clear_status();
 }
 
 char *
-gssapi_krb5_get_error_string (void)
+_gsskrb5_get_error_string (void)
 {
-    struct gssapi_thr_context *ctx = gssapi_get_thread_context(0);
+    struct gssapi_thr_context *ctx = _gsskrb5_get_thread_context(0);
     char *ret;
 
     if (ctx == NULL)
@@ -170,7 +170,7 @@ gssapi_krb5_get_error_string (void)
     return ret;
 }
 
-OM_uint32 gss_display_status
+OM_uint32 _gsskrb5_display_status
            (OM_uint32		*minor_status,
 	    OM_uint32		 status_value,
 	    int			 status_type,
@@ -200,9 +200,9 @@ OM_uint32 gss_display_status
 		    calling_error(GSS_CALLING_ERROR(status_value)),
 		    routine_error(GSS_ROUTINE_ERROR(status_value)));
   } else if (status_type == GSS_C_MECH_CODE) {
-      buf = gssapi_krb5_get_error_string ();
+      buf = _gsskrb5_get_error_string ();
       if (buf == NULL) {
-	  const char *tmp = krb5_get_err_text (gssapi_krb5_context,
+	  const char *tmp = krb5_get_err_text (_gsskrb5_context,
 					       status_value);
 	  if (tmp == NULL)
 	      asprintf(&buf, "unknown mech error-code %u",

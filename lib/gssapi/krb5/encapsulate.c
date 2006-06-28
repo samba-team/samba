@@ -31,7 +31,7 @@
  * SUCH DAMAGE. 
  */
 
-#include "gssapi_locl.h"
+#include "gsskrb5_locl.h"
 
 RCSID("$Id$");
 
@@ -51,7 +51,7 @@ _gssapi_encap_length (size_t data_len,
 }
 
 void
-gssapi_krb5_encap_length (size_t data_len,
+_gsskrb5_encap_length (size_t data_len,
 			  size_t *len,
 			  size_t *total_len,
 			  const gss_OID mech)
@@ -60,7 +60,7 @@ gssapi_krb5_encap_length (size_t data_len,
 }
 
 void *
-gssapi_krb5_make_header (void *ptr,
+_gsskrb5_make_header (void *ptr,
 			 size_t len,
 			 const void *type,
 			 const gss_OID mech)
@@ -129,7 +129,7 @@ _gssapi_encapsulate(
  */
 
 OM_uint32
-gssapi_krb5_encapsulate(
+_gsskrb5_encapsulate(
 			OM_uint32 *minor_status,    
 			const krb5_data *in_data,
 			gss_buffer_t output_token,
@@ -140,7 +140,7 @@ gssapi_krb5_encapsulate(
     size_t len, outer_len;
     u_char *p;
 
-    gssapi_krb5_encap_length (in_data->length, &len, &outer_len, mech);
+    _gsskrb5_encap_length (in_data->length, &len, &outer_len, mech);
     
     output_token->length = outer_len;
     output_token->value  = malloc (outer_len);
@@ -149,7 +149,7 @@ gssapi_krb5_encapsulate(
 	return GSS_S_FAILURE;
     }	
 
-    p = gssapi_krb5_make_header (output_token->value, len, type, mech);
+    p = _gsskrb5_make_header (output_token->value, len, type, mech);
     memcpy (p, in_data->data, in_data->length);
     return GSS_S_COMPLETE;
 }

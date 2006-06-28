@@ -31,11 +31,11 @@
  * SUCH DAMAGE. 
  */
 
-#include "gssapi_locl.h"
+#include "gsskrb5_locl.h"
 
 RCSID("$Id$");
 
-OM_uint32 gss_inquire_context (
+OM_uint32 _gsskrb5_inquire_context (
             OM_uint32 * minor_status,
             const gss_ctx_id_t context_handle,
             gss_name_t * src_name,
@@ -48,28 +48,29 @@ OM_uint32 gss_inquire_context (
            )
 {
   OM_uint32 ret;
+  gsskrb5_ctx ctx = (gsskrb5_ctx)context_handle;
 
-  HEIMDAL_MUTEX_lock(&context_handle->ctx_id_mutex);
+  HEIMDAL_MUTEX_lock(&ctx->ctx_id_mutex);
 
   if (src_name) {
-    ret = gss_duplicate_name (minor_status,
-			      context_handle->source,
-			      src_name);
+    ret = _gsskrb5_duplicate_name (minor_status,
+				   ctx->source,
+				   src_name);
     if (ret)
       goto failed;
   }
 
   if (targ_name) {
-    ret = gss_duplicate_name (minor_status,
-			      context_handle->target,
-			      targ_name);
+    ret = _gsskrb5_duplicate_name (minor_status,
+				   ctx->target,
+				   targ_name);
     if (ret)
 	goto failed;
   }
 
   if (lifetime_rec) {
-      ret = gssapi_lifetime_left(minor_status, 
-				 context_handle->lifetime,
+      ret = _gsskrb5_lifetime_left(minor_status, 
+				 ctx->lifetime,
 				 lifetime_rec);
       if (ret)
 	  goto failed;
@@ -79,19 +80,19 @@ OM_uint32 gss_inquire_context (
     *mech_type = GSS_KRB5_MECHANISM;
 
   if (ctx_flags)
-    *ctx_flags = context_handle->flags;
+    *ctx_flags = ctx->flags;
 
   if (locally_initiated)
-    *locally_initiated = context_handle->more_flags & LOCAL;
+    *locally_initiated = ctx->more_flags & LOCAL;
 
   if (open_context)
-    *open_context = context_handle->more_flags & OPEN;
+    *open_context = ctx->more_flags & OPEN;
 
   *minor_status = 0;
   ret = GSS_S_COMPLETE;
 
  failed:
 
-  HEIMDAL_MUTEX_unlock(&context_handle->ctx_id_mutex);
+  HEIMDAL_MUTEX_unlock(&ctx->ctx_id_mutex);
   return ret;
 }

@@ -31,11 +31,11 @@
  * SUCH DAMAGE. 
  */
 
-#include "gssapi_locl.h"
+#include "gsskrb5_locl.h"
 
 RCSID("$Id$");
 
-OM_uint32 gss_process_context_token (
+OM_uint32 _gsskrb5_process_context_token (
 	OM_uint32          *minor_status,
 	const gss_ctx_id_t context_handle,
 	const gss_buffer_t token_buffer
@@ -50,14 +50,15 @@ OM_uint32 gss_process_context_token (
 
     qop_state = GSS_C_QOP_DEFAULT;
 
-    ret = gss_verify_mic_internal(minor_status, context_handle,
-				  token_buffer, &empty_buffer,
-				  GSS_C_QOP_DEFAULT, "\x01\x02");
+    ret = _gsskrb5_verify_mic_internal(minor_status, 
+				       (gsskrb5_ctx)context_handle,
+				       token_buffer, &empty_buffer,
+				       GSS_C_QOP_DEFAULT, "\x01\x02");
 
     if (ret == GSS_S_COMPLETE)
-	ret = gss_delete_sec_context(minor_status,
-				     rk_UNCONST(&context_handle),
-				     GSS_C_NO_BUFFER);
+	ret = _gsskrb5_delete_sec_context(minor_status,
+					  rk_UNCONST(&context_handle),
+					  GSS_C_NO_BUFFER);
     if (ret == GSS_S_COMPLETE)
 	*minor_status = 0;
 

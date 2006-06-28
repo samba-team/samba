@@ -31,14 +31,14 @@
  * SUCH DAMAGE. 
  */
 
-#include "gssapi_locl.h"
+#include "gsskrb5_locl.h"
 
 RCSID("$Id$");
 
 static OM_uint32
 unwrap_des
            (OM_uint32 * minor_status,
-            const gss_ctx_id_t context_handle,
+            const gsskrb5_ctx context_handle,
             const gss_buffer_t input_message_buffer,
             gss_buffer_t output_message_buffer,
             int * conf_state,
@@ -61,7 +61,7 @@ unwrap_des
   int cmp;
 
   p = input_message_buffer->value;
-  ret = gssapi_krb5_verify_header (&p,
+  ret = _gsskrb5_verify_header (&p,
 				   input_message_buffer->length,
 				   "\x02\x01",
 				   GSS_KRB5_MECHANISM);
@@ -138,7 +138,7 @@ unwrap_des
   memset (&schedule, 0, sizeof(schedule));
 
   seq = p;
-  gssapi_decode_om_uint32(seq, &seq_number);
+  _gsskrb5_decode_om_uint32(seq, &seq_number);
 
   if (context_handle->more_flags & LOCAL)
       cmp = memcmp(&seq[4], "\xff\xff\xff\xff", 4);
@@ -174,7 +174,7 @@ unwrap_des
 static OM_uint32
 unwrap_des3
            (OM_uint32 * minor_status,
-            const gss_ctx_id_t context_handle,
+            const gsskrb5_ctx context_handle,
             const gss_buffer_t input_message_buffer,
             gss_buffer_t output_message_buffer,
             int * conf_state,
@@ -196,7 +196,7 @@ unwrap_des3
   int cmp;
 
   p = input_message_buffer->value;
-  ret = gssapi_krb5_verify_header (&p,
+  ret = _gsskrb5_verify_header (&p,
 				   input_message_buffer->length,
 				   "\x02\x01",
 				   GSS_KRB5_MECHANISM);
@@ -226,18 +226,18 @@ unwrap_des3
       /* decrypt data */
       krb5_data tmp;
 
-      ret = krb5_crypto_init(gssapi_krb5_context, key,
+      ret = krb5_crypto_init(_gsskrb5_context, key,
 			     ETYPE_DES3_CBC_NONE, &crypto);
       if (ret) {
-	  gssapi_krb5_set_error_string ();
+	  _gsskrb5_set_error_string ();
 	  *minor_status = ret;
 	  return GSS_S_FAILURE;
       }
-      ret = krb5_decrypt(gssapi_krb5_context, crypto, KRB5_KU_USAGE_SEAL,
+      ret = krb5_decrypt(_gsskrb5_context, crypto, KRB5_KU_USAGE_SEAL,
 			 p, input_message_buffer->length - len, &tmp);
-      krb5_crypto_destroy(gssapi_krb5_context, crypto);
+      krb5_crypto_destroy(_gsskrb5_context, crypto);
       if (ret) {
-	  gssapi_krb5_set_error_string ();
+	  _gsskrb5_set_error_string ();
 	  *minor_status = ret;
 	  return GSS_S_FAILURE;
       }
@@ -259,10 +259,10 @@ unwrap_des3
 
   p -= 28;
 
-  ret = krb5_crypto_init(gssapi_krb5_context, key,
+  ret = krb5_crypto_init(_gsskrb5_context, key,
 			 ETYPE_DES3_CBC_NONE, &crypto);
   if (ret) {
-      gssapi_krb5_set_error_string ();
+      _gsskrb5_set_error_string ();
       *minor_status = ret;
       HEIMDAL_MUTEX_unlock(&context_handle->ctx_id_mutex);
       return GSS_S_FAILURE;
@@ -271,15 +271,15 @@ unwrap_des3
       DES_cblock ivec;
 
       memcpy(&ivec, p + 8, 8);
-      ret = krb5_decrypt_ivec (gssapi_krb5_context,
+      ret = krb5_decrypt_ivec (_gsskrb5_context,
 			       crypto,
 			       KRB5_KU_USAGE_SEQ,
 			       p, 8, &seq_data,
 			       &ivec);
   }
-  krb5_crypto_destroy (gssapi_krb5_context, crypto);
+  krb5_crypto_destroy (_gsskrb5_context, crypto);
   if (ret) {
-      gssapi_krb5_set_error_string ();
+      _gsskrb5_set_error_string ();
       *minor_status = ret;
       HEIMDAL_MUTEX_unlock(&context_handle->ctx_id_mutex);
       return GSS_S_FAILURE;
@@ -292,7 +292,7 @@ unwrap_des3
   }
 
   seq = seq_data.data;
-  gssapi_decode_om_uint32(seq, &seq_number);
+  _gsskrb5_decode_om_uint32(seq, &seq_number);
 
   if (context_handle->more_flags & LOCAL)
       cmp = memcmp(&seq[4], "\xff\xff\xff\xff", 4);
@@ -325,21 +325,21 @@ unwrap_des3
   csum.checksum.length = 20;
   csum.checksum.data   = cksum;
 
-  ret = krb5_crypto_init(gssapi_krb5_context, key, 0, &crypto);
+  ret = krb5_crypto_init(_gsskrb5_context, key, 0, &crypto);
   if (ret) {
-      gssapi_krb5_set_error_string ();
+      _gsskrb5_set_error_string ();
       *minor_status = ret;
       return GSS_S_FAILURE;
   }
 
-  ret = krb5_verify_checksum (gssapi_krb5_context, crypto,
+  ret = krb5_verify_checksum (_gsskrb5_context, crypto,
 			      KRB5_KU_USAGE_SIGN,
 			      p + 20,
 			      input_message_buffer->length - len + 8,
 			      &csum);
-  krb5_crypto_destroy (gssapi_krb5_context, crypto);
+  krb5_crypto_destroy (_gsskrb5_context, crypto);
   if (ret) {
-      gssapi_krb5_set_error_string ();
+      _gsskrb5_set_error_string ();
       *minor_status = ret;
       return GSS_S_FAILURE;
   }
@@ -357,7 +357,7 @@ unwrap_des3
   return GSS_S_COMPLETE;
 }
 
-OM_uint32 gss_unwrap
+OM_uint32 _gsskrb5_unwrap
            (OM_uint32 * minor_status,
             const gss_ctx_id_t context_handle,
             const gss_buffer_t input_message_buffer,
@@ -369,45 +369,46 @@ OM_uint32 gss_unwrap
   krb5_keyblock *key;
   OM_uint32 ret;
   krb5_keytype keytype;
+  gsskrb5_ctx ctx = (gsskrb5_ctx) context_handle;
 
   output_message_buffer->value = NULL;
   output_message_buffer->length = 0;
 
   if (qop_state != NULL)
       *qop_state = GSS_C_QOP_DEFAULT;
-  ret = gss_krb5_get_subkey(context_handle, &key);
+  ret = _gsskrb5i_get_subkey(ctx, &key);
   if (ret) {
-      gssapi_krb5_set_error_string ();
+      _gsskrb5_set_error_string ();
       *minor_status = ret;
       return GSS_S_FAILURE;
   }
-  krb5_enctype_to_keytype (gssapi_krb5_context, key->keytype, &keytype);
+  krb5_enctype_to_keytype (_gsskrb5_context, key->keytype, &keytype);
 
   *minor_status = 0;
 
   switch (keytype) {
   case KEYTYPE_DES :
-      ret = unwrap_des (minor_status, context_handle,
+      ret = unwrap_des (minor_status, ctx,
 			input_message_buffer, output_message_buffer,
 			conf_state, qop_state, key);
       break;
   case KEYTYPE_DES3 :
-      ret = unwrap_des3 (minor_status, context_handle,
+      ret = unwrap_des3 (minor_status, ctx,
 			 input_message_buffer, output_message_buffer,
 			 conf_state, qop_state, key);
       break;
   case KEYTYPE_ARCFOUR:
   case KEYTYPE_ARCFOUR_56:
-      ret = _gssapi_unwrap_arcfour (minor_status, context_handle,
+      ret = _gssapi_unwrap_arcfour (minor_status, ctx,
 				    input_message_buffer, output_message_buffer,
 				    conf_state, qop_state, key);
       break;
   default :
-      ret = _gssapi_unwrap_cfx (minor_status, context_handle,
+      ret = _gssapi_unwrap_cfx (minor_status, ctx,
 				input_message_buffer, output_message_buffer,
 				conf_state, qop_state, key);
       break;
   }
-  krb5_free_keyblock (gssapi_krb5_context, key);
+  krb5_free_keyblock (_gsskrb5_context, key);
   return ret;
 }

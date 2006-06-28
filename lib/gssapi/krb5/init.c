@@ -31,11 +31,11 @@
  * SUCH DAMAGE. 
  */
 
-#include "gssapi_locl.h"
+#include "gsskrb5_locl.h"
 
 RCSID("$Id$");
 
-static HEIMDAL_MUTEX gssapi_krb5_context_mutex = HEIMDAL_MUTEX_INITIALIZER;
+static HEIMDAL_MUTEX _gsskrb5_context_mutex = HEIMDAL_MUTEX_INITIALIZER;
 static int created_key;
 static HEIMDAL_thread_key gssapi_context_key;
 
@@ -54,12 +54,12 @@ gssapi_destroy_thread_context(void *ptr)
 
 
 struct gssapi_thr_context *
-gssapi_get_thread_context(int createp)
+_gsskrb5_get_thread_context(int createp)
 {
     struct gssapi_thr_context *ctx;
     int ret;
 
-    HEIMDAL_MUTEX_lock(&gssapi_krb5_context_mutex);
+    HEIMDAL_MUTEX_lock(&_gsskrb5_context_mutex);
 
     if (!created_key)
 	abort();
@@ -76,36 +76,36 @@ gssapi_get_thread_context(int createp)
 	if (ret)
 	    goto fail;
     }
-    HEIMDAL_MUTEX_unlock(&gssapi_krb5_context_mutex);
+    HEIMDAL_MUTEX_unlock(&_gsskrb5_context_mutex);
     return ctx;
  fail:
-    HEIMDAL_MUTEX_unlock(&gssapi_krb5_context_mutex);
+    HEIMDAL_MUTEX_unlock(&_gsskrb5_context_mutex);
     if (ctx)
 	free(ctx);
     return NULL;
 }
 
 krb5_error_code
-gssapi_krb5_init (void)
+_gsskrb5_init (void)
 {
     krb5_error_code ret = 0;
 
-    HEIMDAL_MUTEX_lock(&gssapi_krb5_context_mutex);
+    HEIMDAL_MUTEX_lock(&_gsskrb5_context_mutex);
 
-    if(gssapi_krb5_context == NULL)
-	ret = krb5_init_context (&gssapi_krb5_context);
+    if(_gsskrb5_context == NULL)
+	ret = krb5_init_context (&_gsskrb5_context);
     if (ret == 0 && !created_key) {
 	HEIMDAL_key_create(&gssapi_context_key, 
 			   gssapi_destroy_thread_context,
 			   ret);
 	if (ret) {
-	    krb5_free_context(gssapi_krb5_context);
-	    gssapi_krb5_context = NULL;
+	    krb5_free_context(_gsskrb5_context);
+	    _gsskrb5_context = NULL;
 	} else
 	    created_key = 1;
     }
 
-    HEIMDAL_MUTEX_unlock(&gssapi_krb5_context_mutex);
+    HEIMDAL_MUTEX_unlock(&_gsskrb5_context_mutex);
 
     return ret;
 }

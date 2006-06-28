@@ -31,11 +31,11 @@
  * SUCH DAMAGE. 
  */
 
-#include "gssapi_locl.h"
+#include "gsskrb5_locl.h"
 
 RCSID("$Id$");
 
-OM_uint32 gss_compare_name
+OM_uint32 _gsskrb5_compare_name
            (OM_uint32 * minor_status,
             const gss_name_t name1,
             const gss_name_t name2,
@@ -44,7 +44,7 @@ OM_uint32 gss_compare_name
 {
     GSSAPI_KRB5_INIT();
 
-    *name_equal = krb5_principal_compare (gssapi_krb5_context,
+    *name_equal = krb5_principal_compare (_gsskrb5_context,
 					  name1, name2);
     *minor_status = 0;
     return GSS_S_COMPLETE;

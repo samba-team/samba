@@ -31,11 +31,11 @@
  * SUCH DAMAGE. 
  */
 
-#include "gssapi_locl.h"
+#include "gsskrb5_locl.h"
 
 RCSID("$Id$");
 
-OM_uint32 gss_inquire_mechs_for_name (
+OM_uint32 _gsskrb5_inquire_mechs_for_name (
             OM_uint32 * minor_status,
             const gss_name_t input_name,
             gss_OID_set * mech_types
@@ -43,15 +43,15 @@ OM_uint32 gss_inquire_mechs_for_name (
 {
     OM_uint32 ret;
 
-    ret = gss_create_empty_oid_set(minor_status, mech_types);
+    ret = _gsskrb5_create_empty_oid_set(minor_status, mech_types);
     if (ret)
 	return ret;
 
-    ret = gss_add_oid_set_member(minor_status,
-				 GSS_KRB5_MECHANISM,
-				 mech_types);
+    ret = _gsskrb5_add_oid_set_member(minor_status,
+				      GSS_KRB5_MECHANISM,
+				      mech_types);
     if (ret)
-	gss_release_oid_set(NULL, mech_types);
+	_gsskrb5_release_oid_set(NULL, mech_types);
 
     return ret;
 }

@@ -31,7 +31,7 @@
  * SUCH DAMAGE. 
  */
 
-#include "gssapi_locl.h"
+#include "gsskrb5_locl.h"
 
 RCSID("$Id$");
 
@@ -41,7 +41,7 @@ RCSID("$Id$");
  */
 
 ssize_t
-gssapi_krb5_get_mech (const u_char *ptr,
+_gsskrb5_get_mech (const u_char *ptr,
 		      size_t total_len,
 		      const u_char **mech_ret)
 {
@@ -76,7 +76,7 @@ _gssapi_verify_mech_header(u_char **str,
     const u_char *p;
     ssize_t mech_len;
 
-    mech_len = gssapi_krb5_get_mech (*str, total_len, &p);
+    mech_len = _gsskrb5_get_mech (*str, total_len, &p);
     if (mech_len < 0)
 	return GSS_S_DEFECTIVE_TOKEN;
 
@@ -92,7 +92,7 @@ _gssapi_verify_mech_header(u_char **str,
 }
 
 OM_uint32
-gssapi_krb5_verify_header(u_char **str,
+_gsskrb5_verify_header(u_char **str,
 			  size_t total_len,
 			  const void *type,
 			  gss_OID oid)
@@ -154,7 +154,7 @@ _gssapi_decapsulate(
  */
 
 OM_uint32
-gssapi_krb5_decapsulate(OM_uint32 *minor_status,    
+_gsskrb5_decapsulate(OM_uint32 *minor_status,    
 			gss_buffer_t input_token_buffer,
 			krb5_data *out_data,
 			const void *type,
@@ -164,7 +164,7 @@ gssapi_krb5_decapsulate(OM_uint32 *minor_status,
     OM_uint32 ret;
 
     p = input_token_buffer->value;
-    ret = gssapi_krb5_verify_header(&p,
+    ret = _gsskrb5_verify_header(&p,
 				    input_token_buffer->length,
 				    type,
 				    oid);

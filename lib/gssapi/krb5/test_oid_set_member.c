@@ -31,25 +31,25 @@
  * SUCH DAMAGE. 
  */
 
-#include "gssapi_locl.h"
+#include "gsskrb5_locl.h"
 
 RCSID("$Id$");
 
-OM_uint32 gss_test_oid_set_member (
-            OM_uint32 * minor_status,
+OM_uint32 _gsskrb5_test_oid_set_member
+           (OM_uint32 * minor_status,
             const gss_OID member,
             const gss_OID_set set,
             int * present
            )
 {
-  size_t i;
+    size_t i;
 
-  *minor_status = 0;
-  *present = 0;
-  for (i = 0; i < set->count; ++i)
-      if (gss_oid_equal(member, &set->elements[i]) != 0) {
-	  *present = 1;
-	  break;
-      }
-  return GSS_S_COMPLETE;
+    *minor_status = 0;
+    *present = 0;
+    for (i = 0; i < set->count; ++i)
+	if (gss_oid_equal(member, &set->elements[i]) != 0) {
+	    *present = 1;
+	    break;
+	}
+    return GSS_S_COMPLETE;
 }

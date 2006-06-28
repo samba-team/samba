@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003, PADL Software Pty Ltd.
+ * Copyright (c) 2004, PADL Software Pty Ltd.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -30,36 +30,65 @@
  * SUCH DAMAGE.
  */
 
-/* $Id$ */
-
-#ifndef GSSAPI_CFX_H_
-#define GSSAPI_CFX_H_ 1
-
 /*
- * Implementation of draft-ietf-krb-wg-gssapi-cfx-01.txt
+ *  glue routine for _gsskrb5_inquire_sec_context_by_oid
  */
 
-typedef struct gss_cfx_mic_token_desc_struct {
-	u_char TOK_ID[2]; /* 04 04 */
-	u_char Flags;
-	u_char Filler[5];
-	u_char SND_SEQ[8];
-} gss_cfx_mic_token_desc, *gss_cfx_mic_token;
+#include "gsskrb5_locl.h"
 
-typedef struct gss_cfx_wrap_token_desc_struct {
-	u_char TOK_ID[2]; /* 04 05 */
-	u_char Flags;
-	u_char Filler;
-	u_char EC[2];
-	u_char RRC[2];
-	u_char SND_SEQ[8];
-} gss_cfx_wrap_token_desc, *gss_cfx_wrap_token;
+RCSID("$Id$");
 
-typedef struct gss_cfx_delete_token_desc_struct {
-	u_char TOK_ID[2]; /* 05 04 */
-	u_char Flags;
-	u_char Filler[5];
-	u_char SND_SEQ[8];
-} gss_cfx_delete_token_desc, *gss_cfx_delete_token;
+static OM_uint32
+set_compat_des3_mic_context_option
+           (OM_uint32 *minor_status,
+            gss_ctx_id_t *context_handle,
+            const gss_buffer_t value)
+{
+    gsskrb5_ctx ctx;
+    const char *p;
 
-#endif /* GSSAPI_CFX_H_ */
+    if (*context_handle == GSS_C_NO_CONTEXT) {
+	*minor_status = EINVAL;
+	return GSS_S_NO_CONTEXT;
+    }
+
+    if (value->value == NULL || value->length != 1) {
+	*minor_status = EINVAL;
+	return GSS_S_FAILURE;
+    }
+    p = (const char *)value->value;
+
+    ctx = (gsskrb5_ctx)*context_handle;
+    HEIMDAL_MUTEX_lock(&ctx->ctx_id_mutex);
+    if (*p) {
+	ctx->more_flags |= COMPAT_OLD_DES3;
+    } else {
+	ctx->more_flags &= ~COMPAT_OLD_DES3;
+    }
+    ctx->more_flags |= COMPAT_OLD_DES3_SELECTED;
+    HEIMDAL_MUTEX_unlock(&ctx->ctx_id_mutex);
+
+    return GSS_S_COMPLETE;
+}
+
+OM_uint32
+_gsskrb5_set_sec_context_option
+           (OM_uint32 *minor_status,
+            gss_ctx_id_t *context_handle,
+            const gss_OID desired_object,
+            const gss_buffer_t value)
+{
+    if (value == GSS_C_NO_BUFFER) {
+	*minor_status = EINVAL;
+	return GSS_S_FAILURE;
+    }
+
+    if (gss_oid_equal(desired_object, GSS_KRB5_COMPAT_DES3_MIC_X)) {
+	return set_compat_des3_mic_context_option(minor_status,
+						  context_handle,
+						  value);
+    }
+
+    *minor_status = EINVAL;
+    return GSS_S_FAILURE;
+}

@@ -31,12 +31,12 @@
  * SUCH DAMAGE. 
  */
 
-#include "gssapi_locl.h"
+#include "gsskrb5_locl.h"
 
 RCSID("$Id$");
 
 OM_uint32
-gss_import_sec_context (
+_gsskrb5_import_sec_context (
     OM_uint32 * minor_status,
     const gss_buffer_t interprocess_token,
     gss_ctx_id_t * context_handle
@@ -54,8 +54,11 @@ gss_import_sec_context (
     int32_t tmp;
     int32_t flags;
     OM_uint32 minor;
+    gsskrb5_ctx ctx;
 
     GSSAPI_KRB5_INIT ();
+
+    *context_handle = GSS_C_NO_CONTEXT;
 
     localp = remotep = NULL;
 
@@ -66,19 +69,18 @@ gss_import_sec_context (
 	return GSS_S_FAILURE;
     }
 
-    *context_handle = malloc(sizeof(**context_handle));
-    if (*context_handle == NULL) {
+    ctx = calloc(1, sizeof(*ctx));
+    if (ctx == NULL) {
 	*minor_status = ENOMEM;
 	krb5_storage_free (sp);
 	return GSS_S_FAILURE;
     }
-    memset (*context_handle, 0, sizeof(**context_handle));
-    HEIMDAL_MUTEX_init(&(*context_handle)->ctx_id_mutex);
+    HEIMDAL_MUTEX_init(&ctx->ctx_id_mutex);
 
-    kret = krb5_auth_con_init (gssapi_krb5_context,
-			       &(*context_handle)->auth_context);
+    kret = krb5_auth_con_init (_gsskrb5_context,
+			       &ctx->auth_context);
     if (kret) {
-	gssapi_krb5_set_error_string ();
+	_gsskrb5_set_error_string ();
 	*minor_status = kret;
 	ret = GSS_S_FAILURE;
 	goto failure;
@@ -93,7 +95,7 @@ gss_import_sec_context (
 
     /* retrieve the auth context */
 
-    ac = (*context_handle)->auth_context;
+    ac = ctx->auth_context;
     if (krb5_ret_uint32 (sp, &ac->flags) != 0)
 	goto failure;
     if (flags & SC_LOCAL_ADDRESS) {
@@ -106,11 +108,11 @@ gss_import_sec_context (
 	    goto failure;
     }
 
-    krb5_auth_con_setaddrs (gssapi_krb5_context, ac, localp, remotep);
+    krb5_auth_con_setaddrs (_gsskrb5_context, ac, localp, remotep);
     if (localp)
-	krb5_free_address (gssapi_krb5_context, localp);
+	krb5_free_address (_gsskrb5_context, localp);
     if (remotep)
-	krb5_free_address (gssapi_krb5_context, remotep);
+	krb5_free_address (_gsskrb5_context, remotep);
     localp = remotep = NULL;
 
     if (krb5_ret_int16 (sp, &ac->local_port) != 0)
@@ -121,20 +123,20 @@ gss_import_sec_context (
     if (flags & SC_KEYBLOCK) {
 	if (krb5_ret_keyblock (sp, &keyblock) != 0)
 	    goto failure;
-	krb5_auth_con_setkey (gssapi_krb5_context, ac, &keyblock);
-	krb5_free_keyblock_contents (gssapi_krb5_context, &keyblock);
+	krb5_auth_con_setkey (_gsskrb5_context, ac, &keyblock);
+	krb5_free_keyblock_contents (_gsskrb5_context, &keyblock);
     }
     if (flags & SC_LOCAL_SUBKEY) {
 	if (krb5_ret_keyblock (sp, &keyblock) != 0)
 	    goto failure;
-	krb5_auth_con_setlocalsubkey (gssapi_krb5_context, ac, &keyblock);
-	krb5_free_keyblock_contents (gssapi_krb5_context, &keyblock);
+	krb5_auth_con_setlocalsubkey (_gsskrb5_context, ac, &keyblock);
+	krb5_free_keyblock_contents (_gsskrb5_context, &keyblock);
     }
     if (flags & SC_REMOTE_SUBKEY) {
 	if (krb5_ret_keyblock (sp, &keyblock) != 0)
 	    goto failure;
-	krb5_auth_con_setremotesubkey (gssapi_krb5_context, ac, &keyblock);
-	krb5_free_keyblock_contents (gssapi_krb5_context, &keyblock);
+	krb5_auth_con_setremotesubkey (_gsskrb5_context, ac, &keyblock);
+	krb5_free_keyblock_contents (_gsskrb5_context, &keyblock);
     }
     if (krb5_ret_uint32 (sp, &ac->local_seqnumber))
 	goto failure;
@@ -155,11 +157,11 @@ gss_import_sec_context (
     buffer.value  = data.data;
     buffer.length = data.length;
 
-    ret = gss_import_name (minor_status, &buffer, GSS_C_NT_EXPORT_NAME,
-			   &(*context_handle)->source);
+    ret = _gsskrb5_import_name (minor_status, &buffer, GSS_C_NT_EXPORT_NAME,
+				&ctx->source);
     if (ret) {
-	ret = gss_import_name (minor_status, &buffer, GSS_C_NO_OID,
-			       &(*context_handle)->source);
+	ret = _gsskrb5_import_name (minor_status, &buffer, GSS_C_NO_OID,
+				    &ctx->source);
 	if (ret) {
 	    krb5_data_free (&data);
 	    goto failure;
@@ -172,11 +174,11 @@ gss_import_sec_context (
     buffer.value  = data.data;
     buffer.length = data.length;
 
-    ret = gss_import_name (minor_status, &buffer, GSS_C_NT_EXPORT_NAME,
-			   &(*context_handle)->target);
+    ret = _gsskrb5_import_name (minor_status, &buffer, GSS_C_NT_EXPORT_NAME,
+			   &ctx->target);
     if (ret) {
-	ret = gss_import_name (minor_status, &buffer, GSS_C_NO_OID,
-			       &(*context_handle)->target);
+	ret = _gsskrb5_import_name (minor_status, &buffer, GSS_C_NO_OID,
+				    &ctx->target);
 	if (ret) {
 	    krb5_data_free (&data);
 	    goto failure;
@@ -186,37 +188,40 @@ gss_import_sec_context (
 
     if (krb5_ret_int32 (sp, &tmp))
 	goto failure;
-    (*context_handle)->flags = tmp;
+    ctx->flags = tmp;
     if (krb5_ret_int32 (sp, &tmp))
 	goto failure;
-    (*context_handle)->more_flags = tmp;
+    ctx->more_flags = tmp;
     if (krb5_ret_int32 (sp, &tmp))
 	goto failure;
-    (*context_handle)->lifetime = tmp;
+    ctx->lifetime = tmp;
 
-    ret = _gssapi_msg_order_import(minor_status, sp, &(*context_handle)->order);
+    ret = _gssapi_msg_order_import(minor_status, sp, &ctx->order);
     if (ret)
         goto failure;    
     
     krb5_storage_free (sp);
+
+    *context_handle = (gss_ctx_id_t)ctx;
+
     return GSS_S_COMPLETE;
 
 failure:
-    krb5_auth_con_free (gssapi_krb5_context,
-			(*context_handle)->auth_context);
-    if ((*context_handle)->source != NULL)
-	gss_release_name(&minor, &(*context_handle)->source);
-    if ((*context_handle)->target != NULL)
-	gss_release_name(&minor, &(*context_handle)->target);
+    krb5_auth_con_free (_gsskrb5_context,
+			ctx->auth_context);
+    if (ctx->source != NULL)
+	_gsskrb5_release_name(&minor, &ctx->source);
+    if (ctx->target != NULL)
+	_gsskrb5_release_name(&minor, &ctx->target);
     if (localp)
-	krb5_free_address (gssapi_krb5_context, localp);
+	krb5_free_address (_gsskrb5_context, localp);
     if (remotep)
-	krb5_free_address (gssapi_krb5_context, remotep);
-    if((*context_handle)->order)
-	_gssapi_msg_order_destroy(&(*context_handle)->order);
-    HEIMDAL_MUTEX_destroy(&(*context_handle)->ctx_id_mutex);
+	krb5_free_address (_gsskrb5_context, remotep);
+    if(ctx->order)
+	_gssapi_msg_order_destroy(&ctx->order);
+    HEIMDAL_MUTEX_destroy(&ctx->ctx_id_mutex);
     krb5_storage_free (sp);
-    free (*context_handle);
+    free (ctx);
     *context_handle = GSS_C_NO_CONTEXT;
     return ret;
 }

@@ -31,16 +31,16 @@
  * SUCH DAMAGE. 
  */
 
-#include "gssapi_locl.h"
+#include "gsskrb5_locl.h"
 
 RCSID("$Id$");
 
 char *last_out_name;
 
 OM_uint32
-gss_krb5_ccache_name(OM_uint32 *minor_status, 
-		     const char *name,
-		     const char **out_name)
+_gsskrb5_krb5_ccache_name(OM_uint32 *minor_status, 
+			  const char *name,
+			  const char **out_name)
 {
     krb5_error_code kret;
 
@@ -56,10 +56,10 @@ gss_krb5_ccache_name(OM_uint32 *minor_status,
 	    last_out_name = NULL;
 	}
 
-	n = krb5_cc_default_name(gssapi_krb5_context);
+	n = krb5_cc_default_name(_gsskrb5_context);
 	if (n == NULL) {
 	    *minor_status = ENOMEM;
-	    gssapi_krb5_set_error_string ();
+	    _gsskrb5_set_error_string ();
 	    return GSS_S_FAILURE;
 	}
 	last_out_name = strdup(n);
@@ -70,10 +70,10 @@ gss_krb5_ccache_name(OM_uint32 *minor_status,
 	*out_name = last_out_name;
     }
 
-    kret = krb5_cc_set_default_name(gssapi_krb5_context, name);
+    kret = krb5_cc_set_default_name(_gsskrb5_context, name);
     if (kret) {
 	*minor_status = kret;
-	gssapi_krb5_set_error_string ();
+	_gsskrb5_set_error_string ();
 	return GSS_S_FAILURE;
     }
     return GSS_S_COMPLETE;

@@ -31,16 +31,16 @@
  * SUCH DAMAGE. 
  */
 
-#include "gssapi_locl.h"
+#include "gsskrb5_locl.h"
 
 RCSID("$Id$");
 
-OM_uint32 gss_canonicalize_name (
+OM_uint32 _gsskrb5_canonicalize_name (
             OM_uint32 * minor_status,
             const gss_name_t input_name,
             const gss_OID mech_type,
             gss_name_t * output_name
            )
 {
-    return gss_duplicate_name (minor_status, input_name, output_name);
+    return _gsskrb5_duplicate_name (minor_status, input_name, output_name);
 }

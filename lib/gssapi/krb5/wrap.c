@@ -31,24 +31,24 @@
  * SUCH DAMAGE. 
  */
 
-#include "gssapi_locl.h"
+#include "gsskrb5_locl.h"
 
 RCSID("$Id$");
 
 OM_uint32
-gss_krb5_get_subkey(const gss_ctx_id_t context_handle,
-		    krb5_keyblock **key)
+_gsskrb5i_get_subkey(const gsskrb5_ctx ctx,
+		     krb5_keyblock **key)
 {
     krb5_keyblock *skey = NULL;
 
-    HEIMDAL_MUTEX_lock(&context_handle->ctx_id_mutex);
-    if (context_handle->more_flags & LOCAL) {
-	krb5_auth_con_getremotesubkey(gssapi_krb5_context,
-				      context_handle->auth_context, 
+    HEIMDAL_MUTEX_lock(&ctx->ctx_id_mutex);
+    if (ctx->more_flags & LOCAL) {
+	krb5_auth_con_getremotesubkey(_gsskrb5_context,
+				      ctx->auth_context, 
 				      &skey);
     } else {
-	krb5_auth_con_getlocalsubkey(gssapi_krb5_context,
-				     context_handle->auth_context, 
+	krb5_auth_con_getlocalsubkey(_gsskrb5_context,
+				     ctx->auth_context, 
 				     &skey);
     }
     /*
@@ -56,22 +56,22 @@ gss_krb5_get_subkey(const gss_ctx_id_t context_handle,
      * an acceptor subkey was not required.
      */
     if (skey == NULL &&
-	(context_handle->more_flags & ACCEPTOR_SUBKEY) == 0) {
-	if (context_handle->more_flags & LOCAL) {
-	    krb5_auth_con_getlocalsubkey(gssapi_krb5_context,
-					 context_handle->auth_context,
+	(ctx->more_flags & ACCEPTOR_SUBKEY) == 0) {
+	if (ctx->more_flags & LOCAL) {
+	    krb5_auth_con_getlocalsubkey(_gsskrb5_context,
+					 ctx->auth_context,
 					 &skey);
 	} else {
-	    krb5_auth_con_getremotesubkey(gssapi_krb5_context,
-					  context_handle->auth_context,
+	    krb5_auth_con_getremotesubkey(_gsskrb5_context,
+					  ctx->auth_context,
 					  &skey);
 	}
 	if(skey == NULL)
-	    krb5_auth_con_getkey(gssapi_krb5_context,
-				 context_handle->auth_context, 
+	    krb5_auth_con_getkey(_gsskrb5_context,
+				 ctx->auth_context, 
 				 &skey);
     }
-    HEIMDAL_MUTEX_unlock(&context_handle->ctx_id_mutex);
+    HEIMDAL_MUTEX_unlock(&ctx->ctx_id_mutex);
     if(skey == NULL)
 	return GSS_KRB5_S_KG_NO_SUBKEY; /* XXX */
     *key = skey;
@@ -90,7 +90,7 @@ sub_wrap_size (
 
     len = 8 + req_output_size + blocksize + extrasize;
 
-    gssapi_krb5_encap_length(len, &len, &total_len, GSS_KRB5_MECHANISM);
+    _gsskrb5_encap_length(len, &len, &total_len, GSS_KRB5_MECHANISM);
 
     total_len -= req_output_size; /* token length */
     if (total_len < req_output_size) {
@@ -103,7 +103,7 @@ sub_wrap_size (
 }
 
 OM_uint32
-gss_wrap_size_limit (
+_gsskrb5_wrap_size_limit (
             OM_uint32 * minor_status,
             const gss_ctx_id_t context_handle,
             int conf_req_flag,
@@ -115,14 +115,15 @@ gss_wrap_size_limit (
   krb5_keyblock *key;
   OM_uint32 ret;
   krb5_keytype keytype;
+  const gsskrb5_ctx ctx = (const gsskrb5_ctx) context_handle;
 
-  ret = gss_krb5_get_subkey(context_handle, &key);
+  ret = _gsskrb5i_get_subkey(ctx, &key);
   if (ret) {
-      gssapi_krb5_set_error_string ();
+      _gsskrb5_set_error_string ();
       *minor_status = ret;
       return GSS_S_FAILURE;
   }
-  krb5_enctype_to_keytype (gssapi_krb5_context, key->keytype, &keytype);
+  krb5_enctype_to_keytype (_gsskrb5_context, key->keytype, &keytype);
 
   switch (keytype) {
   case KEYTYPE_DES :
@@ -134,12 +135,12 @@ gss_wrap_size_limit (
       ret = sub_wrap_size(req_output_size, max_input_size, 8, 34);
       break;
   default :
-      ret = _gssapi_wrap_size_cfx(minor_status, context_handle, 
+      ret = _gssapi_wrap_size_cfx(minor_status, ctx, 
 				  conf_req_flag, qop_req, 
 				  req_output_size, max_input_size, key);
       break;
   }
-  krb5_free_keyblock (gssapi_krb5_context, key);
+  krb5_free_keyblock (_gsskrb5_context, key);
   *minor_status = 0;
   return ret;
 }
@@ -147,7 +148,7 @@ gss_wrap_size_limit (
 static OM_uint32
 wrap_des
            (OM_uint32 * minor_status,
-            const gss_ctx_id_t context_handle,
+            const gsskrb5_ctx ctx,
             int conf_req_flag,
             gss_qop_t qop_req,
             const gss_buffer_t input_message_buffer,
@@ -169,7 +170,7 @@ wrap_des
   padlength = 8 - (input_message_buffer->length % 8);
   datalen = input_message_buffer->length + padlength + 8;
   len = datalen + 22;
-  gssapi_krb5_encap_length (len, &len, &total_len, GSS_KRB5_MECHANISM);
+  _gsskrb5_encap_length (len, &len, &total_len, GSS_KRB5_MECHANISM);
 
   output_message_buffer->length = total_len;
   output_message_buffer->value  = malloc (total_len);
@@ -179,7 +180,7 @@ wrap_des
     return GSS_S_FAILURE;
   }
 
-  p = gssapi_krb5_make_header(output_message_buffer->value,
+  p = _gsskrb5_make_header(output_message_buffer->value,
 			      len,
 			      "\x02\x01", /* TOK_ID */
 			      GSS_KRB5_MECHANISM);
@@ -221,9 +222,9 @@ wrap_des
   memcpy (p - 8, hash, 8);
 
   /* sequence number */
-  HEIMDAL_MUTEX_lock(&context_handle->ctx_id_mutex);
-  krb5_auth_con_getlocalseqnumber (gssapi_krb5_context,
-			       context_handle->auth_context,
+  HEIMDAL_MUTEX_lock(&ctx->ctx_id_mutex);
+  krb5_auth_con_getlocalseqnumber (_gsskrb5_context,
+			       ctx->auth_context,
 			       &seq_number);
 
   p -= 16;
@@ -232,17 +233,17 @@ wrap_des
   p[2] = (seq_number >> 16) & 0xFF;
   p[3] = (seq_number >> 24) & 0xFF;
   memset (p + 4,
-	  (context_handle->more_flags & LOCAL) ? 0 : 0xFF,
+	  (ctx->more_flags & LOCAL) ? 0 : 0xFF,
 	  4);
 
   DES_set_key (&deskey, &schedule);
   DES_cbc_encrypt ((void *)p, (void *)p, 8,
 		   &schedule, (DES_cblock *)(p + 8), DES_ENCRYPT);
 
-  krb5_auth_con_setlocalseqnumber (gssapi_krb5_context,
-			       context_handle->auth_context,
+  krb5_auth_con_setlocalseqnumber (_gsskrb5_context,
+			       ctx->auth_context,
 			       ++seq_number);
-  HEIMDAL_MUTEX_unlock(&context_handle->ctx_id_mutex);
+  HEIMDAL_MUTEX_unlock(&ctx->ctx_id_mutex);
 
   /* encrypt the data */
   p += 16;
@@ -273,7 +274,7 @@ wrap_des
 static OM_uint32
 wrap_des3
            (OM_uint32 * minor_status,
-            const gss_ctx_id_t context_handle,
+            const gsskrb5_ctx ctx,
             int conf_req_flag,
             gss_qop_t qop_req,
             const gss_buffer_t input_message_buffer,
@@ -294,7 +295,7 @@ wrap_des3
   padlength = 8 - (input_message_buffer->length % 8);
   datalen = input_message_buffer->length + padlength + 8;
   len = datalen + 34;
-  gssapi_krb5_encap_length (len, &len, &total_len, GSS_KRB5_MECHANISM);
+  _gsskrb5_encap_length (len, &len, &total_len, GSS_KRB5_MECHANISM);
 
   output_message_buffer->length = total_len;
   output_message_buffer->value  = malloc (total_len);
@@ -304,7 +305,7 @@ wrap_des3
     return GSS_S_FAILURE;
   }
 
-  p = gssapi_krb5_make_header(output_message_buffer->value,
+  p = _gsskrb5_make_header(output_message_buffer->value,
 			      len,
 			      "\x02\x01", /* TOK_ID */
 			      GSS_KRB5_MECHANISM); 
@@ -330,9 +331,9 @@ wrap_des3
 	  input_message_buffer->length);
   memset (p + 28 + 8 + input_message_buffer->length, padlength, padlength);
 
-  ret = krb5_crypto_init(gssapi_krb5_context, key, 0, &crypto);
+  ret = krb5_crypto_init(_gsskrb5_context, key, 0, &crypto);
   if (ret) {
-      gssapi_krb5_set_error_string ();
+      _gsskrb5_set_error_string ();
       free (output_message_buffer->value);
       output_message_buffer->length = 0;
       output_message_buffer->value = NULL;
@@ -340,16 +341,16 @@ wrap_des3
       return GSS_S_FAILURE;
   }
 
-  ret = krb5_create_checksum (gssapi_krb5_context,
+  ret = krb5_create_checksum (_gsskrb5_context,
 			      crypto,
 			      KRB5_KU_USAGE_SIGN,
 			      0,
 			      p + 20,
 			      datalen + 8,
 			      &cksum);
-  krb5_crypto_destroy (gssapi_krb5_context, crypto);
+  krb5_crypto_destroy (_gsskrb5_context, crypto);
   if (ret) {
-      gssapi_krb5_set_error_string ();
+      _gsskrb5_set_error_string ();
       free (output_message_buffer->value);
       output_message_buffer->length = 0;
       output_message_buffer->value = NULL;
@@ -363,10 +364,10 @@ wrap_des3
   memcpy (p + 8, cksum.checksum.data, cksum.checksum.length);
   free_Checksum (&cksum);
 
-  HEIMDAL_MUTEX_lock(&context_handle->ctx_id_mutex);
+  HEIMDAL_MUTEX_lock(&ctx->ctx_id_mutex);
   /* sequence number */
-  krb5_auth_con_getlocalseqnumber (gssapi_krb5_context,
-			       context_handle->auth_context,
+  krb5_auth_con_getlocalseqnumber (_gsskrb5_context,
+			       ctx->auth_context,
 			       &seq_number);
 
   seq[0] = (seq_number >> 0)  & 0xFF;
@@ -374,11 +375,11 @@ wrap_des3
   seq[2] = (seq_number >> 16) & 0xFF;
   seq[3] = (seq_number >> 24) & 0xFF;
   memset (seq + 4,
-	  (context_handle->more_flags & LOCAL) ? 0 : 0xFF,
+	  (ctx->more_flags & LOCAL) ? 0 : 0xFF,
 	  4);
 
 
-  ret = krb5_crypto_init(gssapi_krb5_context, key, ETYPE_DES3_CBC_NONE,
+  ret = krb5_crypto_init(_gsskrb5_context, key, ETYPE_DES3_CBC_NONE,
 			 &crypto);
   if (ret) {
       free (output_message_buffer->value);
@@ -392,15 +393,15 @@ wrap_des3
       DES_cblock ivec;
 
       memcpy (&ivec, p + 8, 8);
-      ret = krb5_encrypt_ivec (gssapi_krb5_context,
+      ret = krb5_encrypt_ivec (_gsskrb5_context,
 			       crypto,
 			       KRB5_KU_USAGE_SEQ,
 			       seq, 8, &encdata,
 			       &ivec);
   }
-  krb5_crypto_destroy (gssapi_krb5_context, crypto);
+  krb5_crypto_destroy (_gsskrb5_context, crypto);
   if (ret) {
-      gssapi_krb5_set_error_string ();
+      _gsskrb5_set_error_string ();
       free (output_message_buffer->value);
       output_message_buffer->length = 0;
       output_message_buffer->value = NULL;
@@ -413,10 +414,10 @@ wrap_des3
   memcpy (p, encdata.data, encdata.length);
   krb5_data_free (&encdata);
 
-  krb5_auth_con_setlocalseqnumber (gssapi_krb5_context,
-			       context_handle->auth_context,
+  krb5_auth_con_setlocalseqnumber (_gsskrb5_context,
+			       ctx->auth_context,
 			       ++seq_number);
-  HEIMDAL_MUTEX_unlock(&context_handle->ctx_id_mutex);
+  HEIMDAL_MUTEX_unlock(&ctx->ctx_id_mutex);
 
   /* encrypt the data */
   p += 28;
@@ -424,21 +425,21 @@ wrap_des3
   if(conf_req_flag) {
       krb5_data tmp;
 
-      ret = krb5_crypto_init(gssapi_krb5_context, key,
+      ret = krb5_crypto_init(_gsskrb5_context, key,
 			     ETYPE_DES3_CBC_NONE, &crypto);
       if (ret) {
-	  gssapi_krb5_set_error_string ();
+	  _gsskrb5_set_error_string ();
 	  free (output_message_buffer->value);
 	  output_message_buffer->length = 0;
 	  output_message_buffer->value = NULL;
 	  *minor_status = ret;
 	  return GSS_S_FAILURE;
       }
-      ret = krb5_encrypt(gssapi_krb5_context, crypto, KRB5_KU_USAGE_SEAL,
+      ret = krb5_encrypt(_gsskrb5_context, crypto, KRB5_KU_USAGE_SEAL,
 			 p, datalen, &tmp);
-      krb5_crypto_destroy(gssapi_krb5_context, crypto);
+      krb5_crypto_destroy(_gsskrb5_context, crypto);
       if (ret) {
-	  gssapi_krb5_set_error_string ();
+	  _gsskrb5_set_error_string ();
 	  free (output_message_buffer->value);
 	  output_message_buffer->length = 0;
 	  output_message_buffer->value = NULL;
@@ -456,7 +457,7 @@ wrap_des3
   return GSS_S_COMPLETE;
 }
 
-OM_uint32 gss_wrap
+OM_uint32 _gsskrb5_wrap
            (OM_uint32 * minor_status,
             const gss_ctx_id_t context_handle,
             int conf_req_flag,
@@ -469,38 +470,39 @@ OM_uint32 gss_wrap
   krb5_keyblock *key;
   OM_uint32 ret;
   krb5_keytype keytype;
+  const gsskrb5_ctx ctx = (const gsskrb5_ctx) context_handle;
 
-  ret = gss_krb5_get_subkey(context_handle, &key);
+  ret = _gsskrb5i_get_subkey(ctx, &key);
   if (ret) {
-      gssapi_krb5_set_error_string ();
+      _gsskrb5_set_error_string ();
       *minor_status = ret;
       return GSS_S_FAILURE;
   }
-  krb5_enctype_to_keytype (gssapi_krb5_context, key->keytype, &keytype);
+  krb5_enctype_to_keytype (_gsskrb5_context, key->keytype, &keytype);
 
   switch (keytype) {
   case KEYTYPE_DES :
-      ret = wrap_des (minor_status, context_handle, conf_req_flag,
+      ret = wrap_des (minor_status, ctx, conf_req_flag,
 		      qop_req, input_message_buffer, conf_state,
 		      output_message_buffer, key);
       break;
   case KEYTYPE_DES3 :
-      ret = wrap_des3 (minor_status, context_handle, conf_req_flag,
+      ret = wrap_des3 (minor_status, ctx, conf_req_flag,
 		       qop_req, input_message_buffer, conf_state,
 		       output_message_buffer, key);
       break;
   case KEYTYPE_ARCFOUR:
   case KEYTYPE_ARCFOUR_56:
-      ret = _gssapi_wrap_arcfour (minor_status, context_handle, conf_req_flag,
+      ret = _gssapi_wrap_arcfour (minor_status, ctx, conf_req_flag,
 				  qop_req, input_message_buffer, conf_state,
 				  output_message_buffer, key);
       break;
   default :
-      ret = _gssapi_wrap_cfx (minor_status, context_handle, conf_req_flag,
+      ret = _gssapi_wrap_cfx (minor_status, ctx, conf_req_flag,
 			      qop_req, input_message_buffer, conf_state,
 			      output_message_buffer, key);
       break;
   }
-  krb5_free_keyblock (gssapi_krb5_context, key);
+  krb5_free_keyblock (_gsskrb5_context, key);
   return ret;
 }

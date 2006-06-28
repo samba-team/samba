@@ -31,12 +31,12 @@
  * SUCH DAMAGE. 
  */
 
-#include "gssapi_locl.h"
+#include "gsskrb5_locl.h"
 
 RCSID("$Id$");
 
 OM_uint32
-gssapi_lifetime_left(OM_uint32 *minor_status, 
+_gsskrb5_lifetime_left(OM_uint32 *minor_status, 
 		     OM_uint32 lifetime,
 		     OM_uint32 *lifetime_rec)
 {
@@ -48,10 +48,10 @@ gssapi_lifetime_left(OM_uint32 *minor_status,
 	return GSS_S_COMPLETE;
     }
 
-    kret = krb5_timeofday(gssapi_krb5_context, &timeret);
+    kret = krb5_timeofday(_gsskrb5_context, &timeret);
     if (kret) {
 	*minor_status = kret;
-	gssapi_krb5_set_error_string ();
+	_gsskrb5_set_error_string ();
 	return GSS_S_FAILURE;
     }
 
@@ -64,7 +64,7 @@ gssapi_lifetime_left(OM_uint32 *minor_status,
 }
 
 
-OM_uint32 gss_context_time
+OM_uint32 _gsskrb5_context_time
            (OM_uint32 * minor_status,
             const gss_ctx_id_t context_handle,
             OM_uint32 * time_rec
@@ -72,14 +72,15 @@ OM_uint32 gss_context_time
 {
     OM_uint32 lifetime;
     OM_uint32 major_status;
+    const gsskrb5_ctx ctx = (const gsskrb5_ctx) context_handle;
 
     GSSAPI_KRB5_INIT ();
 
-    HEIMDAL_MUTEX_lock(&context_handle->ctx_id_mutex);
-    lifetime = context_handle->lifetime;
-    HEIMDAL_MUTEX_unlock(&context_handle->ctx_id_mutex);
+    HEIMDAL_MUTEX_lock(&ctx->ctx_id_mutex);
+    lifetime = ctx->lifetime;
+    HEIMDAL_MUTEX_unlock(&ctx->ctx_id_mutex);
 
-    major_status = gssapi_lifetime_left(minor_status, lifetime, time_rec);
+    major_status = _gsskrb5_lifetime_left(minor_status, lifetime, time_rec);
     if (major_status != GSS_S_COMPLETE)
 	return major_status;
 

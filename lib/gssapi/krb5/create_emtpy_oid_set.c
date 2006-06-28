@@ -31,11 +31,11 @@
  * SUCH DAMAGE. 
  */
 
-#include "gssapi_locl.h"
+#include "gsskrb5_locl.h"
 
 RCSID("$Id$");
 
-OM_uint32 gss_create_empty_oid_set (
+OM_uint32 _gsskrb5_create_empty_oid_set (
             OM_uint32 * minor_status,
             gss_OID_set * oid_set
            )

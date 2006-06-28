@@ -31,11 +31,11 @@
  * SUCH DAMAGE. 
  */
 
-#include "gssapi_locl.h"
+#include "gsskrb5_locl.h"
 
 RCSID("$Id$");
 
-OM_uint32 gss_release_name
+OM_uint32 _gsskrb5_release_name
            (OM_uint32 * minor_status,
             gss_name_t * input_name
            )
@@ -43,7 +43,7 @@ OM_uint32 gss_release_name
     GSSAPI_KRB5_INIT ();
     if (minor_status)
       *minor_status = 0;
-    krb5_free_principal(gssapi_krb5_context,
+    krb5_free_principal(_gsskrb5_context,
 			*input_name);
     *input_name = GSS_C_NO_NAME;
     return GSS_S_COMPLETE;

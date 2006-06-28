@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003, PADL Software Pty Ltd.
+ * Copyright (c) 2004, PADL Software Pty Ltd.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -30,36 +30,61 @@
  * SUCH DAMAGE.
  */
 
-/* $Id$ */
+#include "gsskrb5_locl.h"
 
-#ifndef GSSAPI_CFX_H_
-#define GSSAPI_CFX_H_ 1
+RCSID("$Id$");
 
-/*
- * Implementation of draft-ietf-krb-wg-gssapi-cfx-01.txt
- */
+OM_uint32 _gsskrb5_inquire_cred_by_oid
+	   (OM_uint32 * minor_status,
+	    const gss_cred_id_t cred_handle,
+	    const gss_OID desired_object,
+	    gss_buffer_set_t *data_set)
+{
+    gsskrb5_cred cred = (gsskrb5_cred)cred_handle;
+    krb5_error_code kret;
+    krb5_ccache_data ccache;
+    gss_buffer_desc ccache_ops_buf;
+    gss_buffer_desc ccache_data_buf;
+    OM_uint32 ret;
 
-typedef struct gss_cfx_mic_token_desc_struct {
-	u_char TOK_ID[2]; /* 04 04 */
-	u_char Flags;
-	u_char Filler[5];
-	u_char SND_SEQ[8];
-} gss_cfx_mic_token_desc, *gss_cfx_mic_token;
+    if (gss_oid_equal(desired_object, GSS_KRB5_COPY_CCACHE_X) == 0) {
+	*minor_status = EINVAL;
+	return GSS_S_FAILURE;
+    }
 
-typedef struct gss_cfx_wrap_token_desc_struct {
-	u_char TOK_ID[2]; /* 04 05 */
-	u_char Flags;
-	u_char Filler;
-	u_char EC[2];
-	u_char RRC[2];
-	u_char SND_SEQ[8];
-} gss_cfx_wrap_token_desc, *gss_cfx_wrap_token;
+    HEIMDAL_MUTEX_lock(&cred->cred_id_mutex);
 
-typedef struct gss_cfx_delete_token_desc_struct {
-	u_char TOK_ID[2]; /* 05 04 */
-	u_char Flags;
-	u_char Filler[5];
-	u_char SND_SEQ[8];
-} gss_cfx_delete_token_desc, *gss_cfx_delete_token;
+    if (cred->ccache == NULL) {
+	HEIMDAL_MUTEX_unlock(&cred->cred_id_mutex);
+	*minor_status = EINVAL;
+	return GSS_S_FAILURE;
+    }
 
-#endif /* GSSAPI_CFX_H_ */
+    kret = krb5_cc_copy_cache(_gsskrb5_context, cred->ccache, &ccache);
+    HEIMDAL_MUTEX_unlock(&cred->cred_id_mutex);
+    if (kret) {
+	*minor_status = kret;
+	_gsskrb5_set_error_string ();
+	return GSS_S_FAILURE;
+    }
+
+    ccache_ops_buf.value = (void *)ccache.ops->prefix;
+    ccache_ops_buf.length = strlen(ccache.ops->prefix);
+
+    ccache_data_buf.value = ccache.data.data;
+    ccache_data_buf.length = ccache.data.length;
+
+    ret = gss_add_buffer_set_member(minor_status,
+				    &ccache_ops_buf,
+				    data_set);
+    if (ret == 0) {
+	ret = gss_add_buffer_set_member(minor_status,
+					&ccache_data_buf,
+					data_set);
+    }
+
+    krb5_cc_close(_gsskrb5_context, &ccache);
+
+    return GSS_S_COMPLETE;
+}
+

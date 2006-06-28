@@ -31,11 +31,11 @@
  * SUCH DAMAGE. 
  */
 
-#include "gssapi_locl.h"
+#include "gsskrb5_locl.h"
 
 RCSID("$Id$");
 
-OM_uint32 gss_duplicate_name (
+OM_uint32 _gsskrb5_duplicate_name (
             OM_uint32 * minor_status,
             const gss_name_t src_name,
             gss_name_t * dest_name
@@ -45,12 +45,12 @@ OM_uint32 gss_duplicate_name (
 
     GSSAPI_KRB5_INIT ();
 
-    kret = krb5_copy_principal (gssapi_krb5_context,
+    kret = krb5_copy_principal (_gsskrb5_context,
 				src_name,
 				dest_name);
     if (kret) {
 	*minor_status = kret;
-	gssapi_krb5_set_error_string ();
+	_gsskrb5_set_error_string ();
 	return GSS_S_FAILURE;
     } else {
 	*minor_status = 0;

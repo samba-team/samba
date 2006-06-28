@@ -31,17 +31,18 @@
  * SUCH DAMAGE. 
  */
 
-#include "gssapi_locl.h"
+#include "gsskrb5_locl.h"
 
 RCSID("$Id$");
 
 OM_uint32
-gss_export_sec_context (
+_gsskrb5_export_sec_context (
     OM_uint32 * minor_status,
     gss_ctx_id_t * context_handle,
     gss_buffer_t interprocess_token
     )
 {
+    const gsskrb5_ctx ctx = (const gsskrb5_ctx) *context_handle;
     krb5_storage *sp;
     krb5_auth_context ac;
     OM_uint32 ret = GSS_S_COMPLETE;
@@ -53,21 +54,21 @@ gss_export_sec_context (
 
     GSSAPI_KRB5_INIT ();
 
-    HEIMDAL_MUTEX_lock(&(*context_handle)->ctx_id_mutex);
+    HEIMDAL_MUTEX_lock(&ctx->ctx_id_mutex);
 
-    if (!((*context_handle)->flags & GSS_C_TRANS_FLAG)) {
-	HEIMDAL_MUTEX_unlock(&(*context_handle)->ctx_id_mutex);
+    if (!(ctx->flags & GSS_C_TRANS_FLAG)) {
+	HEIMDAL_MUTEX_unlock(&ctx->ctx_id_mutex);
 	*minor_status = 0;
 	return GSS_S_UNAVAILABLE;
     }
 
     sp = krb5_storage_emem ();
     if (sp == NULL) {
-	HEIMDAL_MUTEX_unlock(&(*context_handle)->ctx_id_mutex);
+	HEIMDAL_MUTEX_unlock(&ctx->ctx_id_mutex);
 	*minor_status = ENOMEM;
 	return GSS_S_FAILURE;
     }
-    ac = (*context_handle)->auth_context;
+    ac = ctx->auth_context;
 
     /* flagging included fields */
 
@@ -165,19 +166,21 @@ gss_export_sec_context (
 
     /* names */
 
-    ret = gss_export_name (minor_status, (*context_handle)->source, &buffer);
+    ret = _gsskrb5_export_name (minor_status,
+				ctx->source, &buffer);
     if (ret)
 	goto failure;
     data.data   = buffer.value;
     data.length = buffer.length;
     kret = krb5_store_data (sp, data);
-    gss_release_buffer (&minor, &buffer);
+    _gsskrb5_release_buffer (&minor, &buffer);
     if (kret) {
 	*minor_status = kret;
 	goto failure;
     }
 
-    ret = gss_export_name (minor_status, (*context_handle)->target, &buffer);
+    ret = _gsskrb5_export_name (minor_status,
+				ctx->target, &buffer);
     if (ret)
 	goto failure;
     data.data   = buffer.value;
@@ -186,28 +189,28 @@ gss_export_sec_context (
     ret = GSS_S_FAILURE;
 
     kret = krb5_store_data (sp, data);
-    gss_release_buffer (&minor, &buffer);
+    _gsskrb5_release_buffer (&minor, &buffer);
     if (kret) {
 	*minor_status = kret;
 	goto failure;
     }
 
-    kret = krb5_store_int32 (sp, (*context_handle)->flags);
+    kret = krb5_store_int32 (sp, ctx->flags);
     if (kret) {
 	*minor_status = kret;
 	goto failure;
     }
-    kret = krb5_store_int32 (sp, (*context_handle)->more_flags);
+    kret = krb5_store_int32 (sp, ctx->more_flags);
     if (kret) {
 	*minor_status = kret;
 	goto failure;
     }
-    kret = krb5_store_int32 (sp, (*context_handle)->lifetime);
+    kret = krb5_store_int32 (sp, ctx->lifetime);
     if (kret) {
 	*minor_status = kret;
 	goto failure;
     }
-    kret = _gssapi_msg_order_export(sp, (*context_handle)->order);
+    kret = _gssapi_msg_order_export(sp, ctx->order);
     if (kret ) {
         *minor_status = kret;
         goto failure;
@@ -216,21 +219,21 @@ gss_export_sec_context (
     kret = krb5_storage_to_data (sp, &data);
     krb5_storage_free (sp);
     if (kret) {
-	HEIMDAL_MUTEX_unlock(&(*context_handle)->ctx_id_mutex);
+	HEIMDAL_MUTEX_unlock(&ctx->ctx_id_mutex);
 	*minor_status = kret;
 	return GSS_S_FAILURE;
     }
     interprocess_token->length = data.length;
     interprocess_token->value  = data.data;
-    HEIMDAL_MUTEX_unlock(&(*context_handle)->ctx_id_mutex);
-    ret = gss_delete_sec_context (minor_status, context_handle,
-				  GSS_C_NO_BUFFER);
+    HEIMDAL_MUTEX_unlock(&ctx->ctx_id_mutex);
+    ret = _gsskrb5_delete_sec_context (minor_status, context_handle,
+				       GSS_C_NO_BUFFER);
     if (ret != GSS_S_COMPLETE)
-	gss_release_buffer (NULL, interprocess_token);
+	_gsskrb5_release_buffer (NULL, interprocess_token);
     *minor_status = 0;
     return ret;
  failure:
-    HEIMDAL_MUTEX_unlock(&(*context_handle)->ctx_id_mutex);
+    HEIMDAL_MUTEX_unlock(&ctx->ctx_id_mutex);
     krb5_storage_free (sp);
     return ret;
 }

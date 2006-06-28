@@ -31,29 +31,29 @@
  * SUCH DAMAGE. 
  */
 
-#include "gssapi_locl.h"
+#include "gsskrb5_locl.h"
 
 RCSID("$Id$");
 
 OM_uint32
-gss_krb5_get_tkt_flags(OM_uint32 *minor_status,
-		       gss_ctx_id_t context_handle,
+_gsskrb5_get_tkt_flags(OM_uint32 *minor_status,
+		       gsskrb5_ctx ctx,
 		       OM_uint32 *tkt_flags)
 {
-    if (context_handle == GSS_C_NO_CONTEXT) {
+    if (ctx == NULL) {
 	*minor_status = EINVAL;
 	return GSS_S_NO_CONTEXT;
     }
-    HEIMDAL_MUTEX_lock(&context_handle->ctx_id_mutex);
+    HEIMDAL_MUTEX_lock(&ctx->ctx_id_mutex);
 
-    if (context_handle->ticket == NULL) {
-	HEIMDAL_MUTEX_unlock(&context_handle->ctx_id_mutex);
+    if (ctx->ticket == NULL) {
+	HEIMDAL_MUTEX_unlock(&ctx->ctx_id_mutex);
 	*minor_status = EINVAL;
 	return GSS_S_BAD_MECH;
     }
 
-    *tkt_flags = TicketFlags2int(context_handle->ticket->ticket.flags);
-    HEIMDAL_MUTEX_unlock(&context_handle->ctx_id_mutex);
+    *tkt_flags = TicketFlags2int(ctx->ticket->ticket.flags);
+    HEIMDAL_MUTEX_unlock(&ctx->ctx_id_mutex);
 
     *minor_status = 0;
     return GSS_S_COMPLETE;

@@ -31,7 +31,7 @@
  * SUCH DAMAGE. 
  */
 
-#include "gssapi_locl.h"
+#include "gsskrb5_locl.h"
 
 RCSID("$Id$");
 
@@ -42,16 +42,16 @@ parse_krb5_name (OM_uint32 *minor_status,
 {
     krb5_error_code kerr;
 
-    kerr = krb5_parse_name (gssapi_krb5_context, name, output_name);
+    kerr = krb5_parse_name (_gsskrb5_context, name, output_name);
 
     if (kerr == 0)
 	return GSS_S_COMPLETE;
     else if (kerr == KRB5_PARSE_ILLCHAR || kerr == KRB5_PARSE_MALFORMED) {
-	gssapi_krb5_set_error_string ();
+	_gsskrb5_set_error_string ();
 	*minor_status = kerr;
 	return GSS_S_BAD_NAME;
     } else {
-	gssapi_krb5_set_error_string ();
+	_gsskrb5_set_error_string ();
 	*minor_status = kerr;
 	return GSS_S_FAILURE;
     }
@@ -117,7 +117,7 @@ import_hostbased_name (OM_uint32 *minor_status,
 	host = local_hostname;
     }
 
-    kerr = krb5_sname_to_principal (gssapi_krb5_context,
+    kerr = krb5_sname_to_principal (_gsskrb5_context,
 				    host,
 				    tmp,
 				    KRB5_NT_SRV_HST,
@@ -127,11 +127,11 @@ import_hostbased_name (OM_uint32 *minor_status,
     if (kerr == 0)
 	return GSS_S_COMPLETE;
     else if (kerr == KRB5_PARSE_ILLCHAR || kerr == KRB5_PARSE_MALFORMED) {
-	gssapi_krb5_set_error_string ();
+	_gsskrb5_set_error_string ();
 	*minor_status = kerr;
 	return GSS_S_BAD_NAME;
     } else {
-	gssapi_krb5_set_error_string ();
+	_gsskrb5_set_error_string ();
 	*minor_status = kerr;
 	return GSS_S_FAILURE;
     }
@@ -184,18 +184,7 @@ import_export_name (OM_uint32 *minor_status,
     return ret;
 }
 
-int
-gss_oid_equal(const gss_OID a, const gss_OID b)
-{
-	if (a == b)
-		return 1;
-	else if (a == GSS_C_NO_OID || b == GSS_C_NO_OID || a->length != b->length)
-		return 0;
-	else
-		return memcmp(a->elements, b->elements, a->length) == 0;
-}
-
-OM_uint32 gss_import_name
+OM_uint32 _gsskrb5_import_name
            (OM_uint32 * minor_status,
             const gss_buffer_t input_name_buffer,
             const gss_OID input_name_type,

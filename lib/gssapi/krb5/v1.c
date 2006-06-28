@@ -31,13 +31,13 @@
  * SUCH DAMAGE. 
  */
 
-#include "gssapi_locl.h"
+#include "gsskrb5_locl.h"
 
 RCSID("$Id$");
 
 /* These functions are for V1 compatibility */
 
-OM_uint32 gss_sign
+OM_uint32 _gsskrb5_sign
            (OM_uint32 * minor_status,
             gss_ctx_id_t context_handle,
             int qop_req,
@@ -45,14 +45,14 @@ OM_uint32 gss_sign
             gss_buffer_t message_token
            )
 {
-  return gss_get_mic(minor_status,
+  return _gsskrb5_get_mic(minor_status,
 	context_handle,
 	(gss_qop_t)qop_req,
 	message_buffer,
 	message_token);
 }
 
-OM_uint32 gss_verify
+OM_uint32 _gsskrb5_verify
            (OM_uint32 * minor_status,
             gss_ctx_id_t context_handle,
             gss_buffer_t message_buffer,
@@ -60,14 +60,14 @@ OM_uint32 gss_verify
             int * qop_state
            )
 {
-  return gss_verify_mic(minor_status,
+  return _gsskrb5_verify_mic(minor_status,
 	context_handle,
 	message_buffer,
 	token_buffer,
 	(gss_qop_t *)qop_state);
 }
 
-OM_uint32 gss_seal
+OM_uint32 _gsskrb5_seal
            (OM_uint32 * minor_status,
             gss_ctx_id_t context_handle,
             int conf_req_flag,
@@ -77,7 +77,7 @@ OM_uint32 gss_seal
             gss_buffer_t output_message_buffer
            )
 {
-  return gss_wrap(minor_status,
+  return _gsskrb5_wrap(minor_status,
 	context_handle,
 	conf_req_flag,
 	(gss_qop_t)qop_req,
@@ -86,7 +86,7 @@ OM_uint32 gss_seal
 	output_message_buffer);
 }
 
-OM_uint32 gss_unseal
+OM_uint32 _gsskrb5_unseal
            (OM_uint32 * minor_status,
             gss_ctx_id_t context_handle,
             gss_buffer_t input_message_buffer,
@@ -95,7 +95,7 @@ OM_uint32 gss_unseal
             int * qop_state
            )
 {
-  return gss_unwrap(minor_status,
+  return _gsskrb5_unwrap(minor_status,
 	context_handle,
 	input_message_buffer,
 	output_message_buffer,

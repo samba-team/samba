@@ -31,7 +31,7 @@
  * SUCH DAMAGE. 
  */
 
-#include "gssapi_locl.h"
+#include "gsskrb5_locl.h"
 
 RCSID("$Id$");
 
@@ -127,13 +127,13 @@ arcfour_mic_cksum(krb5_keyblock *key, unsigned usage,
     memcpy(ptr + l1, v2, l2);
     memcpy(ptr + l1 + l2, v3, l3);
     
-    ret = krb5_crypto_init(gssapi_krb5_context, key, 0, &crypto);
+    ret = krb5_crypto_init(_gsskrb5_context, key, 0, &crypto);
     if (ret) {
 	free(ptr);
 	return ret;
     }
     
-    ret = krb5_create_checksum(gssapi_krb5_context,
+    ret = krb5_create_checksum(_gsskrb5_context,
 			       crypto,
 			       usage,
 			       0,
@@ -144,7 +144,7 @@ arcfour_mic_cksum(krb5_keyblock *key, unsigned usage,
 	memcpy(sgn_cksum, CKSUM.checksum.data, sgn_cksum_sz);
 	free_Checksum(&CKSUM);
     }
-    krb5_crypto_destroy(gssapi_krb5_context, crypto);
+    krb5_crypto_destroy(_gsskrb5_context, crypto);
 
     return ret;
 }
@@ -152,7 +152,7 @@ arcfour_mic_cksum(krb5_keyblock *key, unsigned usage,
 
 OM_uint32
 _gssapi_get_mic_arcfour(OM_uint32 * minor_status,
-			const gss_ctx_id_t context_handle,
+			const gsskrb5_ctx context_handle,
 			gss_qop_t qop_req,
 			const gss_buffer_t message_buffer,
 			gss_buffer_t message_token,
@@ -164,7 +164,7 @@ _gssapi_get_mic_arcfour(OM_uint32 * minor_status,
     u_char k6_data[16], *p0, *p;
     RC4_KEY rc4_key;
     
-    gssapi_krb5_encap_length (22, &len, &total_len, GSS_KRB5_MECHANISM);
+    _gsskrb5_encap_length (22, &len, &total_len, GSS_KRB5_MECHANISM);
     
     message_token->length = total_len;
     message_token->value  = malloc (total_len);
@@ -195,28 +195,28 @@ _gssapi_get_mic_arcfour(OM_uint32 * minor_status,
 			    message_buffer->value, message_buffer->length,
 			    NULL, 0);
     if (ret) {
-	gss_release_buffer(minor_status, message_token);
+	_gsskrb5_release_buffer(minor_status, message_token);
 	*minor_status = ret;
 	return GSS_S_FAILURE;
     }
 
-    ret = arcfour_mic_key(gssapi_krb5_context, key,
+    ret = arcfour_mic_key(_gsskrb5_context, key,
 			  p0 + 16, 8, /* SGN_CKSUM */
 			  k6_data, sizeof(k6_data));
     if (ret) {
-	gss_release_buffer(minor_status, message_token);
+	_gsskrb5_release_buffer(minor_status, message_token);
 	*minor_status = ret;
 	return GSS_S_FAILURE;
     }
 
     HEIMDAL_MUTEX_lock(&context_handle->ctx_id_mutex);
-    krb5_auth_con_getlocalseqnumber (gssapi_krb5_context,
+    krb5_auth_con_getlocalseqnumber (_gsskrb5_context,
 				     context_handle->auth_context,
 				     &seq_number);
     p = p0 + 8; /* SND_SEQ */
-    gssapi_encode_be_om_uint32(seq_number, p);
+    _gsskrb5_encode_be_om_uint32(seq_number, p);
     
-    krb5_auth_con_setlocalseqnumber (gssapi_krb5_context,
+    krb5_auth_con_setlocalseqnumber (_gsskrb5_context,
 				     context_handle->auth_context,
 				     ++seq_number);
     HEIMDAL_MUTEX_unlock(&context_handle->ctx_id_mutex);
@@ -236,7 +236,7 @@ _gssapi_get_mic_arcfour(OM_uint32 * minor_status,
 
 OM_uint32
 _gssapi_verify_mic_arcfour(OM_uint32 * minor_status,
-			   const gss_ctx_id_t context_handle,
+			   const gsskrb5_ctx context_handle,
 			   const gss_buffer_t message_buffer,
 			   const gss_buffer_t token_buffer,
 			   gss_qop_t * qop_state,
@@ -254,7 +254,7 @@ _gssapi_verify_mic_arcfour(OM_uint32 * minor_status,
 	*qop_state = 0;
 
     p = token_buffer->value;
-    omret = gssapi_krb5_verify_header (&p,
+    omret = _gsskrb5_verify_header (&p,
 				       token_buffer->length,
 				       (u_char *)type,
 				       GSS_KRB5_MECHANISM);
@@ -278,7 +278,7 @@ _gssapi_verify_mic_arcfour(OM_uint32 * minor_status,
 	return GSS_S_FAILURE;
     }
 
-    ret = arcfour_mic_key(gssapi_krb5_context, key,
+    ret = arcfour_mic_key(_gsskrb5_context, key,
 			  cksum_data, sizeof(cksum_data),
 			  k6_data, sizeof(k6_data));
     if (ret) {
@@ -302,7 +302,7 @@ _gssapi_verify_mic_arcfour(OM_uint32 * minor_status,
 	memset(k6_data, 0, sizeof(k6_data));
     }
 
-    gssapi_decode_be_om_uint32(SND_SEQ, &seq_number);
+    _gsskrb5_decode_be_om_uint32(SND_SEQ, &seq_number);
 
     if (context_handle->more_flags & LOCAL)
 	cmp = memcmp(&SND_SEQ[4], "\xff\xff\xff\xff", 4);
@@ -327,7 +327,7 @@ _gssapi_verify_mic_arcfour(OM_uint32 * minor_status,
 
 OM_uint32
 _gssapi_wrap_arcfour(OM_uint32 * minor_status,
-		     const gss_ctx_id_t context_handle,
+		     const gsskrb5_ctx context_handle,
 		     int conf_req_flag,
 		     gss_qop_t qop_req,
 		     const gss_buffer_t input_message_buffer,
@@ -377,13 +377,13 @@ _gssapi_wrap_arcfour(OM_uint32 * minor_status,
     p = NULL;
 
     HEIMDAL_MUTEX_lock(&context_handle->ctx_id_mutex);
-    krb5_auth_con_getlocalseqnumber (gssapi_krb5_context,
+    krb5_auth_con_getlocalseqnumber (_gsskrb5_context,
 				     context_handle->auth_context,
 				     &seq_number);
 
-    gssapi_encode_be_om_uint32(seq_number, p0 + 8);
+    _gsskrb5_encode_be_om_uint32(seq_number, p0 + 8);
 
-    krb5_auth_con_setlocalseqnumber (gssapi_krb5_context,
+    krb5_auth_con_setlocalseqnumber (_gsskrb5_context,
 				     context_handle->auth_context,
 				     ++seq_number);
     HEIMDAL_MUTEX_unlock(&context_handle->ctx_id_mutex);
@@ -407,7 +407,7 @@ _gssapi_wrap_arcfour(OM_uint32 * minor_status,
 			    datalen);
     if (ret) {
 	*minor_status = ret;
-	gss_release_buffer(minor_status, output_message_buffer);
+	_gsskrb5_release_buffer(minor_status, output_message_buffer);
 	return GSS_S_FAILURE;
     }
 
@@ -421,12 +421,12 @@ _gssapi_wrap_arcfour(OM_uint32 * minor_status,
 	for (i = 0; i < 16; i++)
 	    Klocaldata[i] = ((u_char *)key->keyvalue.data)[i] ^ 0xF0;
     }
-    ret = arcfour_mic_key(gssapi_krb5_context, &Klocal,
+    ret = arcfour_mic_key(_gsskrb5_context, &Klocal,
 			  p0 + 8, 4, /* SND_SEQ */
 			  k6_data, sizeof(k6_data));
     memset(Klocaldata, 0, sizeof(Klocaldata));
     if (ret) {
-	gss_release_buffer(minor_status, output_message_buffer);
+	_gsskrb5_release_buffer(minor_status, output_message_buffer);
 	*minor_status = ret;
 	return GSS_S_FAILURE;
     }
@@ -442,11 +442,11 @@ _gssapi_wrap_arcfour(OM_uint32 * minor_status,
     }
     memset(k6_data, 0, sizeof(k6_data));
 
-    ret = arcfour_mic_key(gssapi_krb5_context, key,
+    ret = arcfour_mic_key(_gsskrb5_context, key,
 			  p0 + 16, 8, /* SGN_CKSUM */
 			  k6_data, sizeof(k6_data));
     if (ret) {
-	gss_release_buffer(minor_status, output_message_buffer);
+	_gsskrb5_release_buffer(minor_status, output_message_buffer);
 	*minor_status = ret;
 	return GSS_S_FAILURE;
     }
@@ -468,7 +468,7 @@ _gssapi_wrap_arcfour(OM_uint32 * minor_status,
 }
 
 OM_uint32 _gssapi_unwrap_arcfour(OM_uint32 *minor_status,
-				 const gss_ctx_id_t context_handle,
+				 const gsskrb5_ctx context_handle,
 				 const gss_buffer_t input_message_buffer,
 				 gss_buffer_t output_message_buffer,
 				 int *conf_state,
@@ -524,7 +524,7 @@ OM_uint32 _gssapi_unwrap_arcfour(OM_uint32 *minor_status,
 	return GSS_S_BAD_MIC;
     p = NULL;
 
-    ret = arcfour_mic_key(gssapi_krb5_context, key,
+    ret = arcfour_mic_key(_gsskrb5_context, key,
 			  p0 + 16, 8, /* SGN_CKSUM */
 			  k6_data, sizeof(k6_data));
     if (ret) {
@@ -541,7 +541,7 @@ OM_uint32 _gssapi_unwrap_arcfour(OM_uint32 *minor_status,
 	memset(k6_data, 0, sizeof(k6_data));
     }
 
-    gssapi_decode_be_om_uint32(SND_SEQ, &seq_number);
+    _gsskrb5_decode_be_om_uint32(SND_SEQ, &seq_number);
 
     if (context_handle->more_flags & LOCAL)
 	cmp = memcmp(&SND_SEQ[4], "\xff\xff\xff\xff", 4);
@@ -563,7 +563,7 @@ OM_uint32 _gssapi_unwrap_arcfour(OM_uint32 *minor_status,
 	for (i = 0; i < 16; i++)
 	    Klocaldata[i] = ((u_char *)key->keyvalue.data)[i] ^ 0xF0;
     }
-    ret = arcfour_mic_key(gssapi_krb5_context, &Klocal,
+    ret = arcfour_mic_key(_gsskrb5_context, &Klocal,
 			  SND_SEQ, 4,
 			  k6_data, sizeof(k6_data));
     memset(Klocaldata, 0, sizeof(Klocaldata));
@@ -597,7 +597,7 @@ OM_uint32 _gssapi_unwrap_arcfour(OM_uint32 *minor_status,
 
     ret = _gssapi_verify_pad(output_message_buffer, datalen, &padlen);
     if (ret) {
-	gss_release_buffer(minor_status, output_message_buffer);
+	_gsskrb5_release_buffer(minor_status, output_message_buffer);
 	*minor_status = 0;
 	return ret;
     }
@@ -610,14 +610,14 @@ OM_uint32 _gssapi_unwrap_arcfour(OM_uint32 *minor_status,
 			    output_message_buffer->value, 
 			    output_message_buffer->length + padlen);
     if (ret) {
-	gss_release_buffer(minor_status, output_message_buffer);
+	_gsskrb5_release_buffer(minor_status, output_message_buffer);
 	*minor_status = ret;
 	return GSS_S_FAILURE;
     }
 
     cmp = memcmp(cksum_data, p0 + 16, 8); /* SGN_CKSUM */
     if (cmp) {
-	gss_release_buffer(minor_status, output_message_buffer);
+	_gsskrb5_release_buffer(minor_status, output_message_buffer);
 	*minor_status = 0;
 	return GSS_S_BAD_MIC;
     }

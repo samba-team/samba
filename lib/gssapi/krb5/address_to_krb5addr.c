@@ -31,15 +31,15 @@
  * SUCH DAMAGE. 
  */
 
-#include "gssapi_locl.h"
+#include "gsskrb5_locl.h"
 
 #include <roken.h>
 
 krb5_error_code
-gss_address_to_krb5addr(OM_uint32 gss_addr_type,
-                        gss_buffer_desc *gss_addr,
-                        int16_t port,
-                        krb5_address *address)
+_gsskrb5i_address_to_krb5addr(OM_uint32 gss_addr_type,
+			      gss_buffer_desc *gss_addr,
+			      int16_t port,
+			      krb5_address *address)
 {
    int addr_type;
    struct sockaddr sa;
@@ -61,7 +61,7 @@ gss_address_to_krb5addr(OM_uint32 gss_addr_type,
                            return GSS_S_FAILURE;
    }
                       
-   problem = krb5_h_addr2sockaddr (gssapi_krb5_context,
+   problem = krb5_h_addr2sockaddr (_gsskrb5_context,
 				   addr_type,
                                    gss_addr->value, 
                                    &sa, 
@@ -70,7 +70,7 @@ gss_address_to_krb5addr(OM_uint32 gss_addr_type,
    if (problem)
       return GSS_S_FAILURE;
 
-   problem = krb5_sockaddr2address (gssapi_krb5_context, &sa, address);
+   problem = krb5_sockaddr2address (_gsskrb5_context, &sa, address);
 
    return problem;  
 }

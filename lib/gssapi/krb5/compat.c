@@ -31,42 +31,42 @@
  * SUCH DAMAGE. 
  */
 
-#include "gssapi_locl.h"
+#include "gsskrb5_locl.h"
 
 RCSID("$Id$");
 
 
-krb5_error_code
-_gss_check_compat(OM_uint32 *minor_status, gss_name_t name, 
-		  const char *option, krb5_boolean *compat, 
-		  krb5_boolean match_val)
+static krb5_error_code
+check_compat(OM_uint32 *minor_status, gss_name_t name, 
+	     const char *option, krb5_boolean *compat, 
+	     krb5_boolean match_val)
 {
     krb5_error_code ret = 0;
     char **p, **q;
     krb5_principal match;
 
 
-    p = krb5_config_get_strings(gssapi_krb5_context, NULL, "gssapi",
+    p = krb5_config_get_strings(_gsskrb5_context, NULL, "gssapi",
 				option, NULL);
     if(p == NULL)
 	return 0;
 
     match = NULL;
     for(q = p; *q; q++) {
-	ret = krb5_parse_name(gssapi_krb5_context, *q, &match);
+	ret = krb5_parse_name(_gsskrb5_context, *q, &match);
 	if (ret)
 	    break;
 
-	if (krb5_principal_match(gssapi_krb5_context, name, match)) {
+	if (krb5_principal_match(_gsskrb5_context, name, match)) {
 	    *compat = match_val;
 	    break;
 	}
 	
-	krb5_free_principal(gssapi_krb5_context, match);
+	krb5_free_principal(_gsskrb5_context, match);
 	match = NULL;
     }
     if (match)
-	krb5_free_principal(gssapi_krb5_context, match);
+	krb5_free_principal(_gsskrb5_context, match);
     krb5_config_free_strings(p);
 
     if (ret) {
@@ -83,18 +83,18 @@ _gss_check_compat(OM_uint32 *minor_status, gss_name_t name,
  */
 
 OM_uint32
-_gss_DES3_get_mic_compat(OM_uint32 *minor_status, gss_ctx_id_t ctx)
+_gss_DES3_get_mic_compat(OM_uint32 *minor_status, gsskrb5_ctx ctx)
 {
     krb5_boolean use_compat = FALSE;
     OM_uint32 ret;
 
     if ((ctx->more_flags & COMPAT_OLD_DES3_SELECTED) == 0) {
-	ret = _gss_check_compat(minor_status, ctx->target, 
-				"broken_des3_mic", &use_compat, TRUE);
+	ret = check_compat(minor_status, ctx->target, 
+			   "broken_des3_mic", &use_compat, TRUE);
 	if (ret)
 	    return ret;
-	ret = _gss_check_compat(minor_status, ctx->target, 
-				"correct_des3_mic", &use_compat, FALSE);
+	ret = check_compat(minor_status, ctx->target, 
+			   "correct_des3_mic", &use_compat, FALSE);
 	if (ret)
 	    return ret;
 
@@ -105,6 +105,7 @@ _gss_DES3_get_mic_compat(OM_uint32 *minor_status, gss_ctx_id_t ctx)
     return 0;
 }
 
+#if 0
 OM_uint32
 gss_krb5_compat_des3_mic(OM_uint32 *minor_status, gss_ctx_id_t ctx, int on)
 {
@@ -121,34 +122,4 @@ gss_krb5_compat_des3_mic(OM_uint32 *minor_status, gss_ctx_id_t ctx, int on)
 
     return 0;
 }
-
-/*
- * For compatability with the Windows SPNEGO implementation, the
- * default is to ignore the mechListMIC unless the initiator specified
- * CFX or configured in krb5.conf with the option
- * 	[gssapi]require_mechlist_mic=target-principal-pattern.
- * The option is valid for both initiator and acceptor.
- */
-OM_uint32
-_gss_spnego_require_mechlist_mic(OM_uint32 *minor_status,
-				 gss_ctx_id_t ctx,
-				 krb5_boolean *require_mic)
-{
-    OM_uint32 ret;
-    int is_cfx = 0;
-
-    gsskrb5_is_cfx(ctx, &is_cfx);
-    if (is_cfx) {
-	/* CFX session key was used */
-	*require_mic = TRUE;
-    } else {
-	*require_mic = FALSE;
-	ret = _gss_check_compat(minor_status, ctx->target, 
-				"require_mechlist_mic",
-				require_mic, TRUE);
-	if (ret)
-	    return ret;
-    }
-    *minor_status = 0;
-    return GSS_S_COMPLETE;
-}
+#endif

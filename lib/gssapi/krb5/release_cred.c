@@ -31,43 +31,46 @@
  * SUCH DAMAGE. 
  */
 
-#include "gssapi_locl.h"
+#include "gsskrb5_locl.h"
 
 RCSID("$Id$");
 
-OM_uint32 gss_release_cred
+OM_uint32 _gsskrb5_release_cred
            (OM_uint32 * minor_status,
             gss_cred_id_t * cred_handle
            )
 {
+    gsskrb5_cred cred;
+
     *minor_status = 0;
 
-    if (*cred_handle == GSS_C_NO_CREDENTIAL) {
+    if (*cred_handle == NULL) 
         return GSS_S_COMPLETE;
-    }
+
+    cred = (gsskrb5_cred)*cred_handle;
+    *cred_handle = GSS_C_NO_CREDENTIAL;
 
     GSSAPI_KRB5_INIT ();
 
-    HEIMDAL_MUTEX_lock(&(*cred_handle)->cred_id_mutex);
+    HEIMDAL_MUTEX_lock(&cred->cred_id_mutex);
 
-    if ((*cred_handle)->principal != NULL)
-        krb5_free_principal(gssapi_krb5_context, (*cred_handle)->principal);
-    if ((*cred_handle)->keytab != NULL)
-	krb5_kt_close(gssapi_krb5_context, (*cred_handle)->keytab);
-    if ((*cred_handle)->ccache != NULL) {
+    if (cred->principal != NULL)
+        krb5_free_principal(_gsskrb5_context, cred->principal);
+    if (cred->keytab != NULL)
+	krb5_kt_close(_gsskrb5_context, cred->keytab);
+    if (cred->ccache != NULL) {
 	const krb5_cc_ops *ops;
-	ops = krb5_cc_get_ops(gssapi_krb5_context, (*cred_handle)->ccache);
-	if ((*cred_handle)->cred_flags & GSS_CF_DESTROY_CRED_ON_RELEASE)
-	    krb5_cc_destroy(gssapi_krb5_context, (*cred_handle)->ccache);
+	ops = krb5_cc_get_ops(_gsskrb5_context, cred->ccache);
+	if (cred->cred_flags & GSS_CF_DESTROY_CRED_ON_RELEASE)
+	    krb5_cc_destroy(_gsskrb5_context, cred->ccache);
 	else 
-	    krb5_cc_close(gssapi_krb5_context, (*cred_handle)->ccache);
+	    krb5_cc_close(_gsskrb5_context, cred->ccache);
     }
-    gss_release_oid_set(NULL, &(*cred_handle)->mechanisms);
-    HEIMDAL_MUTEX_unlock(&(*cred_handle)->cred_id_mutex);
-    HEIMDAL_MUTEX_destroy(&(*cred_handle)->cred_id_mutex);
-    memset(*cred_handle, 0, sizeof(**cred_handle));
-    free(*cred_handle);
-    *cred_handle = GSS_C_NO_CREDENTIAL;
+    _gsskrb5_release_oid_set(NULL, &cred->mechanisms);
+    HEIMDAL_MUTEX_unlock(&cred->cred_id_mutex);
+    HEIMDAL_MUTEX_destroy(&cred->cred_id_mutex);
+    memset(cred, 0, sizeof(*cred));
+    free(cred);
     return GSS_S_COMPLETE;
 }
 

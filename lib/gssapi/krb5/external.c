@@ -31,7 +31,8 @@
  * SUCH DAMAGE. 
  */
 
-#include "gssapi_locl.h"
+#include "gsskrb5_locl.h"
+#include <gssapi_mech.h>
 
 RCSID("$Id$");
 
@@ -226,18 +227,6 @@ static gss_OID_desc gss_krb5_mechanism_oid_desc =
 gss_OID GSS_KRB5_MECHANISM = &gss_krb5_mechanism_oid_desc;
 
 /*
- * RFC2478, SPNEGO:
- *  The security mechanism of the initial
- *  negotiation token is identified by the Object Identifier
- *  iso.org.dod.internet.security.mechanism.snego (1.3.6.1.5.5.2).
- */
-
-static gss_OID_desc gss_spnego_mechanism_oid_desc =
-{6, rk_UNCONST("\x2b\x06\x01\x05\x05\x02")};
-
-gss_OID GSS_SPNEGO_MECHANISM = &gss_spnego_mechanism_oid_desc;
-
-/*
  * draft-ietf-cat-iakerb-09, IAKERB:
  *   The mechanism ID for IAKERB proxy GSS-API Kerberos, in accordance
  *   with the mechanism proposed by SPNEGO [7] for negotiating protocol
@@ -261,7 +250,88 @@ static gss_OID_desc gss_iakerb_min_msg_mechanism_oid_desc =
 gss_OID GSS_IAKERB_MIN_MSG_MECHANISM = &gss_iakerb_min_msg_mechanism_oid_desc;
 
 /*
+ *
+ */
+
+static gss_OID_desc gss_c_peer_has_updated_spnego_oid_desc =
+{9, (void *)"\x2b\x06\x01\x04\x01\xa9\x4a\x13\x05"};
+
+gss_OID GSS_C_PEER_HAS_UPDATED_SPNEGO = &gss_c_peer_has_updated_spnego_oid_desc;
+
+/*
+ * GSS-API mechanism extensions
+ *   {iso(1), org(3), dod(6), internet(1), private(4), enterprise(1),
+ *    padl(5322), gssKrb5Extensions(19)}
+ */
+static gss_OID_desc gss_krb5_copy_ccache_x_oid_desc =
+{9, (void *)"\x2b\x06\x01\x04\x01\xa9\x4a\x13\x01"};
+
+gss_OID GSS_KRB5_COPY_CCACHE_X = &gss_krb5_copy_ccache_x_oid_desc;
+
+static gss_OID_desc gss_krb5_get_tkt_flags_x_oid_desc =
+{9, (void *)"\x2b\x06\x01\x04\x01\xa9\x4a\x13\x02"};
+
+gss_OID GSS_KRB5_GET_TKT_FLAGS_X = &gss_krb5_get_tkt_flags_x_oid_desc;
+
+static gss_OID_desc gss_krb5_extract_authz_data_from_sec_context_x_oid_desc =
+{9, (void *)"\x2b\x06\x01\x04\x01\xa9\x4a\x13\x03"};
+
+gss_OID GSS_KRB5_EXTRACT_AUTHZ_DATA_FROM_SEC_CONTEXT_X = &gss_krb5_extract_authz_data_from_sec_context_x_oid_desc;
+
+static gss_OID_desc gss_krb5_compat_des3_mic_x_oid_desc =
+{9, (void *)"\x2b\x06\x01\x04\x01\xa9\x4a\x13\x04"};
+
+gss_OID GSS_KRB5_COMPAT_DES3_MIC_X = &gss_krb5_compat_des3_mic_x_oid_desc;
+
+/*
  * Context for krb5 calls.
  */
 
-krb5_context gssapi_krb5_context;
+krb5_context _gsskrb5_context;
+
+/*
+ *
+ */
+
+static gssapi_mech_interface_desc krb5_mech = {
+    GMI_VERSION,
+    "kerberos 5",
+    {9, "\x2a\x86\x48\x86\xf7\x12\x01\x02\x02" },
+    _gsskrb5_acquire_cred,
+    _gsskrb5_release_cred,
+    _gsskrb5_init_sec_context,
+    _gsskrb5_accept_sec_context,
+    _gsskrb5_process_context_token,
+    _gsskrb5_delete_sec_context,
+    _gsskrb5_context_time,
+    _gsskrb5_get_mic,
+    _gsskrb5_verify_mic,
+    _gsskrb5_wrap,
+    _gsskrb5_unwrap,
+    _gsskrb5_display_status,
+    _gsskrb5_indicate_mechs,
+    _gsskrb5_compare_name,
+    _gsskrb5_display_name,
+    _gsskrb5_import_name,
+    _gsskrb5_export_name,
+    _gsskrb5_release_name,
+    _gsskrb5_inquire_cred,
+    _gsskrb5_inquire_context,
+    _gsskrb5_wrap_size_limit,
+    _gsskrb5_add_cred,
+    _gsskrb5_inquire_cred_by_mech,
+    _gsskrb5_export_sec_context,
+    _gsskrb5_import_sec_context,
+    _gsskrb5_inquire_names_for_mech,
+    _gsskrb5_inquire_mechs_for_name,
+    _gsskrb5_canonicalize_name,
+    _gsskrb5_duplicate_name,
+    _gsskrb5_inquire_sec_context_by_oid,
+    _gsskrb5_inquire_cred_by_oid
+};
+
+gssapi_mech_interface
+__gss_krb5_initialize(void)
+{
+    return &krb5_mech;
+}
