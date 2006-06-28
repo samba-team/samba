@@ -42,7 +42,7 @@ OM_uint32 _gsskrb5_inquire_cred_by_oid
 {
     gsskrb5_cred cred = (gsskrb5_cred)cred_handle;
     krb5_error_code kret;
-    krb5_ccache_data ccache;
+    krb5_ccache ccache;
     gss_buffer_desc ccache_ops_buf;
     gss_buffer_desc ccache_data_buf;
     OM_uint32 ret;
@@ -54,13 +54,17 @@ OM_uint32 _gsskrb5_inquire_cred_by_oid
 
     HEIMDAL_MUTEX_lock(&cred->cred_id_mutex);
 
+    krb5_cc_gen_new(_gsskrb5_context,
+		    &krb5_mcc_ops,
+		    &ccache);
+
     if (cred->ccache == NULL) {
 	HEIMDAL_MUTEX_unlock(&cred->cred_id_mutex);
 	*minor_status = EINVAL;
 	return GSS_S_FAILURE;
     }
 
-    kret = krb5_cc_copy_cache(_gsskrb5_context, cred->ccache, &ccache);
+    kret = krb5_cc_copy_cache(_gsskrb5_context, cred->ccache, ccache);
     HEIMDAL_MUTEX_unlock(&cred->cred_id_mutex);
     if (kret) {
 	*minor_status = kret;
@@ -68,11 +72,13 @@ OM_uint32 _gsskrb5_inquire_cred_by_oid
 	return GSS_S_FAILURE;
     }
 
-    ccache_ops_buf.value = (void *)ccache.ops->prefix;
-    ccache_ops_buf.length = strlen(ccache.ops->prefix);
+    ccache_ops_buf.value = (void *)ccache->ops->prefix;
+    ccache_ops_buf.length = strlen(ccache->ops->prefix);
 
-    ccache_data_buf.value = ccache.data.data;
-    ccache_data_buf.length = ccache.data.length;
+    ccache_data_buf.value = ccache->data.data;
+    ccache_data_buf.length = ccache->data.length;
+
+    free(ccache);
 
     ret = gss_add_buffer_set_member(minor_status,
 				    &ccache_ops_buf,
@@ -82,8 +88,6 @@ OM_uint32 _gsskrb5_inquire_cred_by_oid
 					&ccache_data_buf,
 					data_set);
     }
-
-    krb5_cc_close(_gsskrb5_context, &ccache);
 
     return GSS_S_COMPLETE;
 }
