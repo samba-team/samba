@@ -433,7 +433,7 @@ static int rpc_registry_dump( int argc, const char **argv )
 
 static int rpc_registry_copy( int argc, const char **argv )
 {
-	REGF_FILE   *infile, *outfile;
+	REGF_FILE   *infile = NULL, *outfile = NULL;
 	REGF_NK_REC *nk;
 	int result = 1;
 	
@@ -452,7 +452,7 @@ static int rpc_registry_copy( int argc, const char **argv )
 	d_printf("Opening %s....", argv[1]);
 	if ( !(outfile = regfio_open( argv[1], (O_RDWR|O_CREAT|O_TRUNC), (S_IREAD|S_IWRITE) )) ) {
 		d_fprintf(stderr, "Failed to open %s for writing\n", argv[1]);
-		goto out_close_infile;
+		goto out;
 	}
 	d_printf("ok\n");
 	
@@ -460,7 +460,7 @@ static int rpc_registry_copy( int argc, const char **argv )
 	
 	if ((nk = regfio_rootkey( infile )) == NULL) {
 		d_fprintf(stderr, "Could not get rootkey\n");
-		goto out_close_infile;
+		goto out;
 	}
 	d_printf("RootKey: [%s]\n", nk->keyname);
 
@@ -468,13 +468,18 @@ static int rpc_registry_copy( int argc, const char **argv )
 
 	result = 0;
 
+out:
+
 	d_printf("Closing %s...", argv[1]);
-	regfio_close( outfile );
+	if (outfile) {
+		regfio_close( outfile );
+	}
 	d_printf("ok\n");
 
-out_close_infile:
 	d_printf("Closing %s...", argv[0]);
-	regfio_close( infile );
+	if (infile) {
+		regfio_close( infile );
+	}
 	d_printf("ok\n");
 
 	return( result);
