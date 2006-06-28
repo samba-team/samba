@@ -324,12 +324,14 @@ extern gss_OID GSS_KRB5_MECHANISM;
 #define gss_mech_krb5 GSS_KRB5_MECHANISM
 #define gss_krb5_nt_general_name GSS_KRB5_NT_PRINCIPAL_NAME
 
-/* Extensions */
+/* Extensions contexts */
 extern gss_OID GSS_C_PEER_HAS_UPDATED_SPNEGO;
 extern gss_OID GSS_KRB5_COPY_CCACHE_X;
 extern gss_OID GSS_KRB5_GET_TKT_FLAGS_X;
 extern gss_OID GSS_KRB5_EXTRACT_AUTHZ_DATA_FROM_SEC_CONTEXT_X;
 extern gss_OID GSS_KRB5_COMPAT_DES3_MIC_X;
+/* Extensions creds */
+extern gss_oid GSS_KRB5_IMPORT_CRED_X;
 
 /* Major status codes */
 
