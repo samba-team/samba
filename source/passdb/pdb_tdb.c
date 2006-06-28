@@ -1321,7 +1321,6 @@ static BOOL tdb_update_ridrec_only( struct samu* newpwd, int flag )
 
 static BOOL tdb_update_sam(struct pdb_methods *my_methods, struct samu* newpwd, int flag)
 {
-	uint32		user_rid;
 	BOOL            result = True;
 
 	/* invalidate the existing TDB iterator if it is open */
@@ -1336,7 +1335,7 @@ static BOOL tdb_update_sam(struct pdb_methods *my_methods, struct samu* newpwd, 
 	}
 #endif
 
-	if ( !(user_rid = pdb_get_user_rid(newpwd)) ) {
+	if (!pdb_get_user_rid(newpwd)) {
 		DEBUG(0,("tdb_update_sam: struct samu (%s) with no RID!\n", pdb_get_username(newpwd)));
 		return False;
 	}
