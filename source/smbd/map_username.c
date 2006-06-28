@@ -82,7 +82,7 @@ BOOL map_username(fstring user)
 
 		/* should be either no lines or a single line with the mapped username */
 
-		if (numlines) {
+		if (numlines && qlines) {
 			DEBUG(3,("Mapped user %s to %s\n", user, qlines[0] ));
 			fstrcpy( user, qlines[0] );
 		}
