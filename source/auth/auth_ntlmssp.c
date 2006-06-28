@@ -176,7 +176,7 @@ NTSTATUS auth_ntlmssp_start(AUTH_NTLMSSP_STATE **auth_ntlmssp_state)
 	(*auth_ntlmssp_state)->ntlmssp_state->may_set_challenge = auth_ntlmssp_may_set_challenge;
 	(*auth_ntlmssp_state)->ntlmssp_state->set_challenge = auth_ntlmssp_set_challenge;
 	(*auth_ntlmssp_state)->ntlmssp_state->check_password = auth_ntlmssp_check_password;
-	(*auth_ntlmssp_state)->ntlmssp_state->server_role = lp_server_role();
+	(*auth_ntlmssp_state)->ntlmssp_state->server_role = (enum server_types)lp_server_role();
 
 	return NT_STATUS_OK;
 }
