@@ -288,9 +288,9 @@ const char *pdb_get_workstations(const struct samu *sampass)
 	return sampass->workstations;
 }
 
-const char *pdb_get_unknown_str(const struct samu *sampass)
+const char *pdb_get_comment(const struct samu *sampass)
 {
-	return sampass->unknown_str;
+	return sampass->comment;
 }
 
 const char *pdb_get_munged_dial(const struct samu *sampass)
@@ -752,23 +752,22 @@ BOOL pdb_set_workstations(struct samu *sampass, const char *workstations, enum p
 }
 
 /*********************************************************************
- Set the user's 'unknown_str', whatever the heck this actually is...
  ********************************************************************/
 
-BOOL pdb_set_unknown_str(struct samu *sampass, const char *unknown_str, enum pdb_value_state flag)
+BOOL pdb_set_comment(struct samu *sampass, const char *comment, enum pdb_value_state flag)
 {
-	if (unknown_str) { 
-		sampass->unknown_str = talloc_strdup(sampass, unknown_str);
+	if (comment) { 
+		sampass->comment = talloc_strdup(sampass, comment);
 		
-		if (!sampass->unknown_str) {
-			DEBUG(0, ("pdb_set_unknown_str: talloc_strdup() failed!\n"));
+		if (!sampass->comment) {
+			DEBUG(0, ("pdb_set_comment: talloc_strdup() failed!\n"));
 			return False;
 		}
 	} else {
-		sampass->unknown_str = PDB_NOT_QUITE_NULL;
+		sampass->comment = PDB_NOT_QUITE_NULL;
 	}
 
-	return pdb_set_init_flags(sampass, PDB_UNKNOWNSTR, flag);
+	return pdb_set_init_flags(sampass, PDB_COMMENT, flag);
 }
 
 /*********************************************************************

@@ -327,7 +327,7 @@ SAM_USERINFO_CTR *cac_MakeUserInfoCtr(TALLOC_CTX *mem_ctx, CacUserInfo *info) {
    SAM_USERINFO_CTR *ctr = NULL;
 
    /*the flags we are 'setting'- include/passdb.h*/
-   uint32 flags = ACCT_USERNAME | ACCT_FULL_NAME | ACCT_PRIMARY_GID | ACCT_ADMIN_DESC | ACCT_DESCRIPTION |
+   uint32 flags = ACCT_USERNAME | ACCT_FULL_NAME | ACCT_PRIMARY_GID | ACCT_DESCRIPTION | ACCT_COMMENT |
                      ACCT_HOME_DIR | ACCT_HOME_DRIVE | ACCT_LOGON_SCRIPT | ACCT_PROFILE | ACCT_WORKSTATIONS |
                       ACCT_FLAGS;
 

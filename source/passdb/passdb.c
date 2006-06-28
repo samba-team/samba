@@ -111,7 +111,7 @@ struct samu *samu_new( TALLOC_CTX *ctx )
 	user->profile_path = "";
 	user->acct_desc = "";
 	user->workstations = "";
-	user->unknown_str = "";
+	user->comment = "";
 	user->munged_dial = "";
 
 	user->plaintext_pw = NULL;

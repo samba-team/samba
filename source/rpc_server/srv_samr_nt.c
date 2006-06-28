@@ -3103,9 +3103,11 @@ static NTSTATUS set_user_info_21(TALLOC_CTX *mem_ctx, SAM_USER_INFO_21 *id21,
 	}
 
 	/* we need to separately check for an account rename first */
+	
 	if (rpcstr_pull(new_name, id21->uni_user_name.buffer, 
-			sizeof(new_name), id21->uni_user_name.uni_str_len*2, 0) && 
-	   (!strequal(new_name, pdb_get_username(pwd)))) {
+		sizeof(new_name), id21->uni_user_name.uni_str_len*2, 0) 
+		&& (!strequal(new_name, pdb_get_username(pwd)))) 
+	{
 
 		/* check to see if the new username already exists.  Note: we can't
 		   reliably lock all backends, so there is potentially the 
