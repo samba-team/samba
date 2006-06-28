@@ -1,3 +1,7 @@
+2006-06-28  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* doc/heimdal.texi: Add Doug Rabson's license
+	
 2006-06-22  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/init_creds.c: Add storing and getting KRB-ERROR in the
