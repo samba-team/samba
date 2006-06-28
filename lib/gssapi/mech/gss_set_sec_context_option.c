@@ -60,7 +60,7 @@ gss_set_sec_context_option (OM_uint32 *minor_status,
 
 	if (m->gm_set_sec_context_option != NULL)
 		major_status = m->gm_set_sec_context_option(minor_status,
-		    ctx->gc_ctx, object, value);
+		    &ctx->gc_ctx, object, value);
 	else
 		major_status = GSS_S_BAD_MECH;
 

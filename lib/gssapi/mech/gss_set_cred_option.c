@@ -56,7 +56,7 @@ gss_set_cred_option (OM_uint32 *minor_status,
 
 	if (m->gm_set_cred_option != NULL)
 		major_status = m->gm_set_cred_option(minor_status,
-		    cred->gmc_cred, object, value);
+		    &cred->gmc_cred, object, value);
 	else
 		major_status = GSS_S_BAD_MECH;
 
