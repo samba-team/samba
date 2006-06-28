@@ -2011,7 +2011,7 @@ static NTSTATUS get_sid_from_name(struct cli_state *cli,
 				enum SID_NAME_USE *type)
 {
 	DOM_SID *sids = NULL;
-	uint32 *types = NULL;
+	enum SID_NAME_USE *types = NULL;
 	struct rpc_pipe_client *pipe_hnd;
 	POLICY_HND lsa_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
@@ -2717,7 +2717,7 @@ static NTSTATUS rpc_list_alias_members(struct rpc_pipe_client *pipe_hnd,
 	DOM_SID *alias_sids;
 	char **domains;
 	char **names;
-	uint32 *types;
+	enum SID_NAME_USE *types;
 	int i;
 
 	result = rpccli_samr_open_alias(pipe_hnd, mem_ctx, domain_pol,
@@ -4075,7 +4075,7 @@ static NTSTATUS rpc_aliaslist_dump(const DOM_SID *domain_sid,
 	for (i=0; i<num_server_aliases; i++) {
 		char **names;
 		char **domains;
-		uint32 *types;
+		enum SID_NAME_USE *types;
 		int j;
 
 		struct full_alias *alias = &server_aliases[i];

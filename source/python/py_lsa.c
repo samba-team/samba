@@ -147,7 +147,7 @@ static PyObject *lsa_lookup_names(PyObject *self, PyObject *args)
 	const char **names;
 	DOM_SID *sids;
 	TALLOC_CTX *mem_ctx = NULL;
-	uint32 *name_types;
+	enum SID_NAME_USE *name_types;
 
 	if (!PyArg_ParseTuple(args, "O", &py_names))
 		return NULL;

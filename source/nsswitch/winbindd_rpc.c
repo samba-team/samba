@@ -245,7 +245,7 @@ NTSTATUS msrpc_name_to_sid(struct winbindd_domain *domain,
 {
 	NTSTATUS result;
 	DOM_SID *sids = NULL;
-	uint32 *types = NULL;
+	enum SID_NAME_USE *types = NULL;
 	const char *full_name;
 	struct rpc_pipe_client *cli;
 	POLICY_HND lsa_policy;
@@ -277,7 +277,7 @@ NTSTATUS msrpc_name_to_sid(struct winbindd_domain *domain,
 	/* Return rid and type if lookup successful */
 
 	sid_copy(sid, &sids[0]);
-	*type = (enum SID_NAME_USE)types[0];
+	*type = types[0];
 
 	return NT_STATUS_OK;
 }
