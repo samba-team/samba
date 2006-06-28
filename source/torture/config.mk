@@ -83,6 +83,7 @@ OBJ_FILES = \
 		raw/acls.o \
 		raw/seek.o \
 		raw/samba3hide.o \
+		raw/samba3misc.o \
 		raw/composite.o \
 		raw/raw.o
 PUBLIC_DEPENDENCIES = \
