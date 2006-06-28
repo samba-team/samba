@@ -1442,7 +1442,7 @@ do { if (strequal(ctx->thiscmd, name)) { \
 
 #define SETSTR(name, rec, flag) \
 do { if (strequal(ctx->thiscmd, name)) { \
-	init_unistr2(&usr->uni_##rec, argv[0], STR_TERMINATE); \
+	init_unistr2(&usr->uni_##rec, argv[0], UNI_STR_TERMINATE); \
 	init_uni_hdr(&usr->hdr_##rec, &usr->uni_##rec); \
 	usr->fields_present |= ACCT_##flag; } \
 } while (0);
