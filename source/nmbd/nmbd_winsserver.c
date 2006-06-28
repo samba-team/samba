@@ -76,6 +76,7 @@ static struct name_record *wins_record_to_name_record(TDB_DATA key, TDB_DATA dat
 	if (!namerec) {
 		return NULL;
 	}
+	ZERO_STRUCTP(namerec);
 
 	namerec->data.ip = SMB_MALLOC_ARRAY(struct in_addr, num_ips);
 	if (!namerec->data.ip) {
@@ -294,7 +295,6 @@ BOOL remove_name_from_wins_namelist(struct name_record *namerec)
 	ret = tdb_delete(wins_tdb, key);
 
 	DLIST_REMOVE(wins_server_subnet->namelist, namerec);
-	SAFE_FREE(namerec->data.ip);
 
 	/* namerec must be freed by the caller */
 
