@@ -39,7 +39,7 @@ NTSTATUS net_rpc_lookup_name(TALLOC_CTX *mem_ctx, struct cli_state *cli,
 	NTSTATUS result = NT_STATUS_OK;
 	const char **dom_names;
 	DOM_SID *sids;
-	uint32_t *types;
+	enum SID_NAME_USE *types;
 
 	ZERO_STRUCT(pol);
 
