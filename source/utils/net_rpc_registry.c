@@ -399,6 +399,7 @@ static int rpc_registry_dump( int argc, const char **argv )
 	
 	if ((nk = regfio_rootkey( registry )) == NULL) {
 		d_fprintf(stderr, "Could not get rootkey\n");
+		regfio_close( registry );
 		return 1;
 	}
 	d_printf("[%s]\n", nk->keyname);
