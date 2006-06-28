@@ -86,6 +86,10 @@ void web_set_lang(const char *lang_string)
 		lang_num++;
 	}
 	pl = SMB_MALLOC_ARRAY(struct pri_list, lang_num);
+	if (!pl) {
+		return;
+	}
+
 	for (i = 0; i < lang_num; i++) {
 		char *pri_code;
 		if ((pri_code=strstr(lang_list[i], ";q="))) {
