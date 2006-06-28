@@ -1901,7 +1901,7 @@ static WERROR cmd_spoolss_enum_forms(struct rpc_pipe_client *cli,
 	WERROR werror;
 	char *servername = NULL, *printername = NULL;
 	BOOL got_handle = False;
-	uint32 needed, offered, num_forms, level = 1, i;
+	uint32 num_forms, level = 1, i;
 	FORM_1 *forms;
 	
 	/* Parse the command arguements */
@@ -1928,7 +1928,6 @@ static WERROR cmd_spoolss_enum_forms(struct rpc_pipe_client *cli,
 
 	/* Enumerate forms */
 
-	offered = needed = 0;
 	werror = rpccli_spoolss_enumforms(cli, mem_ctx, &handle, level, &num_forms, &forms);
 
 	if (!W_ERROR_IS_OK(werror))
@@ -2156,7 +2155,7 @@ static WERROR cmd_spoolss_enum_jobs(struct rpc_pipe_client *cli,
 				      const char **argv)
 {
 	WERROR result;
-	uint32 needed, offered, level = 1, num_jobs, i;
+	uint32 level = 1, num_jobs, i;
 	BOOL got_hnd = False;
 	pstring printername;
 	fstring servername, user;
@@ -2191,7 +2190,6 @@ static WERROR cmd_spoolss_enum_jobs(struct rpc_pipe_client *cli,
 
 	/* Enumerate ports */
 
-	offered = needed = 0;
 	result = rpccli_spoolss_enumjobs(cli, mem_ctx, &hnd, level, 0, 1000,
 		&num_jobs, &ctr);
 
