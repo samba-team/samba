@@ -39,27 +39,44 @@ gss_inquire_cred_by_oid (OM_uint32 *minor_status,
 			 const gss_OID desired_object,
 			 gss_buffer_set_t *data_set)
 {
-	struct _gss_mechanism_cred *cred =
-	    (struct _gss_mechanism_cred *) cred_handle;
-	OM_uint32		major_status;
+	struct _gss_cred *cred = (struct _gss_cred *) cred_handle;
+	OM_uint32		status = GSS_S_COMPLETE;
+	struct _gss_mechanism_cred *mc;
 	gssapi_mech_interface	m;
+	gss_buffer_set_t set = GSS_C_NO_BUFFER_SET;
 
 	*minor_status = 0;
 
 	if (cred == NULL)
 		return GSS_S_NO_CRED;
 
-	m = cred->gmc_mech;
+	SLIST_FOREACH(mc, &cred->gc_mc, gmc_link) {
+		gss_buffer_set_t rset = GSS_C_NO_BUFFER_SET;
+		int i;
 
-	if (m == NULL)
-		return GSS_S_BAD_MECH;
+		m = mc->gmc_mech;
+		if (m == NULL)
+			return GSS_S_BAD_MECH;
 
-	if (m->gm_inquire_cred_by_oid != NULL)
-		major_status = m->gm_inquire_cred_by_oid(minor_status,
-		    cred->gmc_cred, desired_object, data_set);
-	else
-		major_status = GSS_S_BAD_MECH;
+		if (m->gm_inquire_cred_by_oid == NULL)
+			continue;
 
-	return major_status;
+		status = m->gm_inquire_cred_by_oid(minor_status,
+		    mc->gmc_cred, desired_object, &rset);
+		if (status != GSS_S_COMPLETE)
+			continue;
+
+		for (i = 0; i < rset->count; i++) { 
+			status = gss_add_buffer_set_member(minor_status,
+			     &rset->elements[i], &set);
+			if (status != GSS_S_COMPLETE)
+				break;
+		}
+		gss_release_buffer_set(minor_status, &rset);
+	}
+	if (set == GSS_C_NO_BUFFER_SET)
+		status = GSS_S_FAILURE;
+	*data_set = set;
+	return status;
 }
 

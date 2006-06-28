@@ -39,27 +39,36 @@ gss_set_cred_option (OM_uint32 *minor_status,
 		     const gss_OID object,
 		     const gss_buffer_t value)
 {
-	struct _gss_mechanism_cred *cred =
-	    (struct _gss_mechanism_cred *) cred_handle;
-	OM_uint32		major_status;
+	struct _gss_cred *cred = (struct _gss_cred *) cred_handle;
+	OM_uint32		major_status = GSS_S_COMPLETE;
+	struct _gss_mechanism_cred *mc;
 	gssapi_mech_interface	m;
+	int one_ok = 0;
 
 	*minor_status = 0;
 
 	if (cred == NULL)
 		return GSS_S_NO_CRED;
 
-	m = cred->gmc_mech;
+	SLIST_FOREACH(mc, &cred->gc_mc, gmc_link) {
 
-	if (m == NULL)
-		return GSS_S_BAD_MECH;
+		m = mc->gmc_mech;
 
-	if (m->gm_set_cred_option != NULL)
+		if (m == NULL)
+			return GSS_S_BAD_MECH;
+
+		if (m->gm_set_cred_option == NULL)
+			continue;
+
 		major_status = m->gm_set_cred_option(minor_status,
-		    &cred->gmc_cred, object, value);
-	else
-		major_status = GSS_S_BAD_MECH;
-
+		    &mc->gmc_cred, object, value);
+		if (major_status == GSS_S_BAD_MECH)
+			one_ok = 1;
+	}
+	if (one_ok) {
+		*minor_status = 0;
+		return GSS_S_COMPLETE;
+	}
 	return major_status;
 }
 
