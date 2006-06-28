@@ -3464,6 +3464,9 @@ static int do_message_op(void)
 			}
 			break;
 		case 'E':
+			if (dbf) {
+				x_fclose(dbf);
+			}
 			dbf = x_stderr;
 			display_set_stderr();
 			break;
