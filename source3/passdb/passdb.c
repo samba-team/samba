@@ -1329,6 +1329,7 @@ BOOL pdb_copy_sam_account(struct samu *dst, struct samu *src )
 
 	len = init_buffer_from_sam_v3(&buf, src, False);
 	if (len == -1 || !buf) {
+		SAFE_FREE(buf);
 		return False;
 	}
 
