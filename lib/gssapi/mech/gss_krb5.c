@@ -37,52 +37,55 @@ gss_krb5_copy_ccache(OM_uint32 *minor_status,
 		     gss_cred_id_t cred,
 		     krb5_ccache out)
 {
-    krb5_context context;
-    OM_uint32 ret;
-    krb5_error_code kret;
     gss_buffer_set_t data_set = GSS_C_NO_BUFFER_SET;
-    const char *prefix;
+    krb5_context context;
+    krb5_error_code kret;
+    krb5_ccache id;
+    OM_uint32 ret;
+    char *str;
 
     ret = gss_inquire_cred_by_oid(minor_status,
 				  cred,
 				  GSS_KRB5_COPY_CCACHE_X,
 				  &data_set);
-    if (ret) {
+    if (ret)
 	return ret;
-    }
 
-    if (data_set == GSS_C_NO_BUFFER_SET ||
-	data_set->count != 2) {
+    if (data_set == GSS_C_NO_BUFFER_SET || data_set->count != 1) {
 	gss_release_buffer_set(minor_status, &data_set);
 	*minor_status = EINVAL;
 	return GSS_S_FAILURE;
     }
 
-    prefix = (const char *)data_set->elements[0].value;
-
     kret = krb5_init_context(&context);
-    if (out->ops == NULL) {
-	*minor_status = ENOENT;
+    if (kret) {
+	*minor_status = kret;
 	gss_release_buffer_set(minor_status, &data_set);
 	return GSS_S_FAILURE;
     }
 
-    out->ops = krb5_cc_get_prefix_ops(context, prefix);
-    krb5_free_context(context);
-    if (out->ops == NULL) {
-	*minor_status = ENOENT;
-	gss_release_buffer_set(minor_status, &data_set);
-	return GSS_S_FAILURE;
-    }
-
-    out->data.data = data_set->elements[1].value;
-    out->data.length = data_set->elements[1].length;
-    data_set->elements[1].value = NULL;
-    data_set->elements[1].length = 0;
-
-    data_set->count--;
-
+    kret = asprintf(&str, "%.*s", (int)data_set->elements[0].length,
+		    (char *)data_set->elements[0].value);
     gss_release_buffer_set(minor_status, &data_set);
+    if (kret == -1) {
+	*minor_status = ENOMEM;
+	return GSS_S_FAILURE;
+    }
+
+    kret = krb5_cc_resolve(context, str, &id);
+    free(str);
+    if (kret) {
+	*minor_status = kret;
+	return GSS_S_FAILURE;
+    }
+
+    kret = krb5_cc_copy_cache(context, id, out);
+    krb5_cc_close(context, id);
+    krb5_free_context(context);
+    if (kret) {
+	*minor_status = kret;
+	return GSS_S_FAILURE;
+    }
 
     return ret;
 }
