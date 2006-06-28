@@ -234,7 +234,7 @@ void printing_end(void)
  when asked for (and only when supported)
 ****************************************************************************/
 
-static struct printif *get_printer_fns_from_type( int type )
+static struct printif *get_printer_fns_from_type( enum printing_types type )
 {
 	struct printif *printer_fns = &generic_printif;
 
@@ -257,7 +257,7 @@ static struct printif *get_printer_fns_from_type( int type )
 
 static struct printif *get_printer_fns( int snum )
 {
-	return get_printer_fns_from_type( lp_printing(snum) );
+	return get_printer_fns_from_type( (enum printing_types)lp_printing(snum) );
 }
 
 
