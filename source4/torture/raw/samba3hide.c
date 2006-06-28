@@ -126,46 +126,6 @@ static NTSTATUS smbcli_chmod(struct smbcli_tree *tree, const char *fname,
 	return smb_raw_setpathinfo(tree, &sfinfo);
 }
 
-static NTSTATUS second_tcon(TALLOC_CTX *mem_ctx,
-			    struct smbcli_session *session,
-			    const char *sharename,
-			    struct smbcli_tree **res)
-{
-	union smb_tcon tcon;
-	struct smbcli_tree *result;
-	TALLOC_CTX *tmp_ctx;
-	NTSTATUS status;
-
-	if ((tmp_ctx = talloc_new(mem_ctx)) == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	result = smbcli_tree_init(session, tmp_ctx, False);
-	if (result == NULL) {
-		talloc_free(tmp_ctx);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	tcon.generic.level = RAW_TCON_TCONX;
-	tcon.tconx.in.flags = 0;
-
-	/* Ignore share mode security here */
-	tcon.tconx.in.password = data_blob(NULL, 0);
-	tcon.tconx.in.path = sharename;
-	tcon.tconx.in.device = "????";
-
-	status = smb_raw_tcon(result, tmp_ctx, &tcon);
-	if (!NT_STATUS_IS_OK(status)) {
-		talloc_free(tmp_ctx);
-		return status;
-	}
-
-	result->tid = tcon.tconx.out.tid;
-	*res = talloc_steal(mem_ctx, result);
-	talloc_free(tmp_ctx);
-	return NT_STATUS_OK;
-}
-
 BOOL torture_samba3_hide(struct torture_context *torture)
 {
 	struct smbcli_state *cli;
@@ -182,16 +142,16 @@ BOOL torture_samba3_hide(struct torture_context *torture)
 		return False;
 	}
 
-	status = second_tcon(torture, cli->session, "hideunread",
-			     &hideunread);
+	status = torture_second_tcon(torture, cli->session, "hideunread",
+				     &hideunread);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("second_tcon(hideunread) failed: %s\n",
 			 nt_errstr(status));
 		return False;
 	}
 
-	status = second_tcon(torture, cli->session, "hideunwrite",
-			     &hideunwrite);
+	status = torture_second_tcon(torture, cli->session, "hideunwrite",
+				     &hideunwrite);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("second_tcon(hideunwrite) failed: %s\n",
 			 nt_errstr(status));
@@ -305,4 +265,3 @@ BOOL torture_samba3_hide(struct torture_context *torture)
 
 	return True;
 }
-
