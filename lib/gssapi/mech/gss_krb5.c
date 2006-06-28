@@ -105,6 +105,8 @@ gss_krb5_import_cred(OM_uint32 *minor_status,
     krb5_data data;
     char *str;
 
+    *cred = GSS_C_NO_CREDENTIAL;
+
     ret = krb5_init_context(&context);
     if (ret) {
 	*minor_status = ret;
