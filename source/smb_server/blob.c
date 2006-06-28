@@ -32,6 +32,12 @@
 	NT_STATUS_NOT_OK_RETURN(_status); \
 } while (0)
 
+#define BLOB_CHECK_MIN_SIZE(blob, size) do { \
+	if ((blob)->length < (size)) { \
+		return NT_STATUS_INFO_LENGTH_MISMATCH; \
+	} \
+} while (0)
+
 /* grow the data size of a trans2 reply */
 NTSTATUS smbsrv_blob_grow_data(TALLOC_CTX *mem_ctx,
 			       DATA_BLOB *blob,
@@ -485,6 +491,87 @@ NTSTATUS smbsrv_push_passthru_fileinfo(TALLOC_CTX *mem_ctx,
 						     st->all_info2.out.fname.s,
 						     0x60, default_str_flags,
 						     STR_UNICODE));
+		return NT_STATUS_OK;
+
+	default:
+		return NT_STATUS_INVALID_LEVEL;
+	}
+
+	return NT_STATUS_INVALID_LEVEL;
+}
+
+NTSTATUS smbsrv_pull_passthru_sfileinfo(TALLOC_CTX *mem_ctx,
+					enum smb_setfileinfo_level level,
+					union smb_setfileinfo *st,
+					const DATA_BLOB *blob,
+					int default_str_flags,
+					struct smbsrv_request *req)
+{
+	uint32_t len;
+	DATA_BLOB str_blob;
+
+	switch (level) {
+	case SMB_SFILEINFO_BASIC_INFORMATION:
+		BLOB_CHECK_MIN_SIZE(blob, 36);
+
+		st->basic_info.in.create_time = pull_nttime(blob->data,  0);
+		st->basic_info.in.access_time = pull_nttime(blob->data,  8);
+		st->basic_info.in.write_time =  pull_nttime(blob->data, 16);
+		st->basic_info.in.change_time = pull_nttime(blob->data, 24);
+		st->basic_info.in.attrib =      IVAL(blob->data,        32);
+
+		return NT_STATUS_OK;
+
+	case SMB_SFILEINFO_DISPOSITION_INFORMATION:
+		BLOB_CHECK_MIN_SIZE(blob, 1);
+
+		st->disposition_info.in.delete_on_close = CVAL(blob->data, 0);
+
+		return NT_STATUS_OK;
+
+	case SMB_SFILEINFO_ALLOCATION_INFORMATION:
+		BLOB_CHECK_MIN_SIZE(blob, 8);
+
+		st->allocation_info.in.alloc_size = BVAL(blob->data, 0);
+
+		return NT_STATUS_OK;				
+
+	case RAW_SFILEINFO_END_OF_FILE_INFORMATION:
+		BLOB_CHECK_MIN_SIZE(blob, 8);
+
+		st->end_of_file_info.in.size = BVAL(blob->data, 0);
+
+		return NT_STATUS_OK;
+
+	case RAW_SFILEINFO_RENAME_INFORMATION:
+		BLOB_CHECK_MIN_SIZE(blob, 12);
+
+		st->rename_information.in.overwrite = CVAL(blob->data, 0);
+		st->rename_information.in.root_fid  = IVAL(blob->data, 4);
+		len                                 = IVAL(blob->data, 8);
+		str_blob.data = blob->data+12;
+		str_blob.length = MIN(blob->length, len);
+		smbsrv_blob_pull_string(req, &str_blob, 0,
+					&st->rename_information.in.new_name,
+					STR_UNICODE);
+		if (st->rename_information.in.new_name == NULL) {
+			return NT_STATUS_FOOBAR;
+		}
+
+		return NT_STATUS_OK;
+
+	case RAW_SFILEINFO_POSITION_INFORMATION:
+		BLOB_CHECK_MIN_SIZE(blob, 8);
+
+		st->position_information.in.position = BVAL(blob->data, 0);
+
+		return NT_STATUS_OK;
+
+	case RAW_SFILEINFO_MODE_INFORMATION:
+		BLOB_CHECK_MIN_SIZE(blob, 4);
+
+		st->mode_information.in.mode = IVAL(blob->data, 0);
+
 		return NT_STATUS_OK;
 
 	default:

@@ -253,7 +253,7 @@ static NTSTATUS trans2_open(struct smbsrv_request *req, struct trans_op *op)
 	io->t2open.in.search_attrs = SVAL(trans->in.params.data, VWV(2));
 	io->t2open.in.file_attrs   = SVAL(trans->in.params.data, VWV(3));
 	io->t2open.in.write_time   = srv_pull_dos_date(req->smb_conn, 
-						    trans->in.params.data + VWV(4));;
+						    trans->in.params.data + VWV(4));
 	io->t2open.in.open_func    = SVAL(trans->in.params.data, VWV(6));
 	io->t2open.in.size         = IVAL(trans->in.params.data, VWV(7));
 	io->t2open.in.timeout      = IVAL(trans->in.params.data, VWV(9));
@@ -546,8 +546,7 @@ static NTSTATUS trans2_parse_sfileinfo(struct smbsrv_request *req,
 				       union smb_setfileinfo *st,
 				       const DATA_BLOB *blob)
 {
-	uint32_t len;
-	DATA_BLOB str_blob;
+	enum smb_setfileinfo_level passthru_level;
 
 	switch (st->generic.level) {
 	case RAW_SFILEINFO_GENERIC:
@@ -573,70 +572,29 @@ static NTSTATUS trans2_parse_sfileinfo(struct smbsrv_request *req,
 
 	case SMB_SFILEINFO_BASIC_INFO:
 	case SMB_SFILEINFO_BASIC_INFORMATION:
-		CHECK_MIN_BLOB_SIZE(blob, 36);
-
-		st->basic_info.in.create_time = pull_nttime(blob->data,  0);
-		st->basic_info.in.access_time = pull_nttime(blob->data,  8);
-		st->basic_info.in.write_time =  pull_nttime(blob->data, 16);
-		st->basic_info.in.change_time = pull_nttime(blob->data, 24);
-		st->basic_info.in.attrib =      IVAL(blob->data,        32);
-
-		return NT_STATUS_OK;
+		passthru_level = SMB_SFILEINFO_BASIC_INFORMATION;
+		break;
 
 	case SMB_SFILEINFO_DISPOSITION_INFO:
 	case SMB_SFILEINFO_DISPOSITION_INFORMATION:
-		CHECK_MIN_BLOB_SIZE(blob, 1);
-
-		st->disposition_info.in.delete_on_close = CVAL(blob->data, 0);
-
-		return NT_STATUS_OK;
+		passthru_level = SMB_SFILEINFO_DISPOSITION_INFORMATION;
+		break;
 
 	case SMB_SFILEINFO_ALLOCATION_INFO:
 	case SMB_SFILEINFO_ALLOCATION_INFORMATION:
-		CHECK_MIN_BLOB_SIZE(blob, 8);
-
-		st->allocation_info.in.alloc_size = BVAL(blob->data, 0);
-
-		return NT_STATUS_OK;				
+		passthru_level = SMB_SFILEINFO_ALLOCATION_INFORMATION;
+		break;
 
 	case RAW_SFILEINFO_END_OF_FILE_INFO:
 	case RAW_SFILEINFO_END_OF_FILE_INFORMATION:
-		CHECK_MIN_BLOB_SIZE(blob, 8);
-
-		st->end_of_file_info.in.size = BVAL(blob->data, 0);
-
-		return NT_STATUS_OK;
+		passthru_level = RAW_SFILEINFO_END_OF_FILE_INFORMATION;
+		break;
 
 	case RAW_SFILEINFO_RENAME_INFORMATION:
-		CHECK_MIN_BLOB_SIZE(blob, 12);
-
-		st->rename_information.in.overwrite = CVAL(blob->data, 0);
-		st->rename_information.in.root_fid  = IVAL(blob->data, 4);
-		len                                 = IVAL(blob->data, 8);
-		str_blob.data = blob->data+12;
-		str_blob.length = MIN(blob->length, len);
-		smbsrv_blob_pull_string(req, &str_blob, 0,
-					&st->rename_information.in.new_name,
-					STR_UNICODE);
-		if (st->rename_information.in.new_name == NULL) {
-			return NT_STATUS_FOOBAR;
-		}
-
-		return NT_STATUS_OK;
-
 	case RAW_SFILEINFO_POSITION_INFORMATION:
-		CHECK_MIN_BLOB_SIZE(blob, 8);
-
-		st->position_information.in.position = BVAL(blob->data, 0);
-
-		return NT_STATUS_OK;
-
 	case RAW_SFILEINFO_MODE_INFORMATION:
-		CHECK_MIN_BLOB_SIZE(blob, 4);
-
-		st->mode_information.in.mode = IVAL(blob->data, 0);
-
-		return NT_STATUS_OK;
+		passthru_level = st->generic.level;
+		break;
 
 	case RAW_SFILEINFO_UNIX_BASIC:
 	case RAW_SFILEINFO_UNIX_LINK:
@@ -650,7 +608,9 @@ static NTSTATUS trans2_parse_sfileinfo(struct smbsrv_request *req,
 		return NT_STATUS_INVALID_LEVEL;
 	}
 
-	return NT_STATUS_INVALID_LEVEL;
+	return smbsrv_pull_passthru_sfileinfo(st, passthru_level, st,
+					      blob, SMBSRV_REQ_DEFAULT_STR_FLAGS(req),
+					      req);
 }
 
 /*
