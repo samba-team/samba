@@ -49,12 +49,13 @@ gss_acquire_cred(OM_uint32 *minor_status,
 	OM_uint32 min_time, cred_time;
 	int i;
 
+	_gss_load_mech();
+
 	/*
 	 * First make sure that at least one of the requested
 	 * mechanisms is one that we support.
 	 */
 	if (mechs) {
-		_gss_load_mech();
 		for (i = 0; i < mechs->count; i++) {
 			int t;
 			gss_test_oid_set_member(minor_status,
