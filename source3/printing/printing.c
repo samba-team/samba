@@ -1370,7 +1370,7 @@ static void print_queue_receive(int msg_type, struct process_id src,
 	}
 
 	print_queue_update_with_lock(sharename, 
-		get_printer_fns_from_type(printing_type),
+		get_printer_fns_from_type((enum printing_types)printing_type),
 		lpqcommand, lprmcommand );
 
 	return;
