@@ -331,7 +331,7 @@ extern gss_OID GSS_KRB5_GET_TKT_FLAGS_X;
 extern gss_OID GSS_KRB5_EXTRACT_AUTHZ_DATA_FROM_SEC_CONTEXT_X;
 extern gss_OID GSS_KRB5_COMPAT_DES3_MIC_X;
 /* Extensions creds */
-extern gss_oid GSS_KRB5_IMPORT_CRED_X;
+extern gss_OID GSS_KRB5_IMPORT_CRED_X;
 
 /* Major status codes */
 
