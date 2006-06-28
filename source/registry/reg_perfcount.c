@@ -372,7 +372,7 @@ static BOOL _reg_perfcount_add_object(PERF_DATA_BLOCK *block,
 				      TDB_CONTEXT *names)
 {
 	int i;
-	BOOL success = False;
+	BOOL success = True;
 	PERF_OBJECT_TYPE *obj;
 
 	block->objects = (PERF_OBJECT_TYPE *)TALLOC_REALLOC_ARRAY(ps->mem_ctx,
@@ -397,12 +397,11 @@ static BOOL _reg_perfcount_add_object(PERF_DATA_BLOCK *block,
 	block->objects[block->NumObjectTypes].DetailLevel = PERF_DETAIL_NOVICE;
 	block->NumObjectTypes+=1;
 
-	for(i = 0; i < (int)obj->NumInstances; i++)
-	{
+	for(i = 0; i < (int)obj->NumInstances; i++) {
 		success = _reg_perfcount_add_instance(obj, ps, i, names);
 	}
 
-	return True;
+	return success;
 }
 
 /*********************************************************************
@@ -608,7 +607,7 @@ static BOOL _reg_perfcount_add_counter(PERF_DATA_BLOCK *block,
 	char *begin, *end, *start, *stop;
 	int parent;
 	PERF_OBJECT_TYPE *obj;
-	BOOL success = False;
+	BOOL success = True;
 	char buf[PERFCOUNT_MAX_LEN];
     
 	obj = NULL;
@@ -620,8 +619,7 @@ static BOOL _reg_perfcount_add_counter(PERF_DATA_BLOCK *block,
 		return False;
 	start = begin+1;
 
-	while(start < end)
-	{
+	while(start < end) {
 		stop = index(start, ',');
 		if(stop == NULL)
 			stop = end;
@@ -629,8 +627,7 @@ static BOOL _reg_perfcount_add_counter(PERF_DATA_BLOCK *block,
 		parent = atoi(start);
 
 		obj = _reg_perfcount_find_obj(block, parent);
-		if(obj == NULL)
-		{
+		if(obj == NULL) {
 			/* At this point we require that the parent object exist.
 			   This can probably be handled better at some later time */
 			DEBUG(3, ("_reg_perfcount_add_counter: Could not find parent object [%d] for counter [%d].\n",
@@ -657,7 +654,7 @@ static BOOL _reg_perfcount_add_counter(PERF_DATA_BLOCK *block,
 	   that the required instances are not there yet, so change NumInstances from
 	   PERF_NO_INSTANCES to 0 */
 
-	return True;
+	return success;
 }
 
 /*********************************************************************
@@ -755,13 +752,9 @@ BOOL _reg_perfcount_add_instance(PERF_OBJECT_TYPE *obj,
 				 int instInd,
 				 TDB_CONTEXT *names)
 {
-	BOOL success;
 	PERF_INSTANCE_DEFINITION *inst;
 
-	success = False;
-
-	if(obj->instances == NULL)
-	{
+	if(obj->instances == NULL) {
 		obj->instances = TALLOC_REALLOC_ARRAY(ps->mem_ctx, 
 						      obj->instances,
 						      PERF_INSTANCE_DEFINITION,
@@ -772,9 +765,7 @@ BOOL _reg_perfcount_add_instance(PERF_OBJECT_TYPE *obj,
     
 	memset(&(obj->instances[instInd]), 0, sizeof(PERF_INSTANCE_DEFINITION));
 	inst = &(obj->instances[instInd]);
-	success = _reg_perfcount_get_instance_info(inst, ps, instInd, obj, names);
-    
-	return True;
+	return _reg_perfcount_get_instance_info(inst, ps, instInd, obj, names);
 }
 
 /*********************************************************************
