@@ -89,7 +89,7 @@ int DoWriteCommand( int argc, char **argv, BOOL debugflag, char *exename )
 	pstring linein;
 	BOOL is_eor;
 	Eventlog_entry ee;
-	int pret, rcnum;
+	int rcnum;
 
 	f1 = stdin;
 	if ( !f1 ) {
@@ -121,7 +121,7 @@ int DoWriteCommand( int argc, char **argv, BOOL debugflag, char *exename )
 		is_eor = False;
 
 
-		pret = parse_logentry( ( char * ) &linein, &ee, &is_eor );
+		parse_logentry( ( char * ) &linein, &ee, &is_eor );
 		/* should we do something with the return code? */
 
 		if ( is_eor ) {
@@ -188,7 +188,7 @@ int main( int argc, char *argv[] )
 			break;
 
 		case 'h':
-			usage( argv[0] );
+			usage( exename );
 			display_eventlog_names(  );
 			exit( 0 );
 			break;
