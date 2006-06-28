@@ -65,6 +65,7 @@ int cac_RegConnect(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct RegConnect 
    key = talloc(mem_ctx, POLICY_HND);
    if(!key) {
       hnd->status = NT_STATUS_NO_MEMORY;
+      return CAC_FAILURE;
    }
 
    err = rpccli_reg_connect( pipe_hnd, mem_ctx, op->in.root, op->in.access, key);
