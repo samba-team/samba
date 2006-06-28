@@ -157,7 +157,7 @@ NTSTATUS net_lookup_name_from_sid(TALLOC_CTX *ctx,
 	struct con_struct *csp = NULL;
 	char **domains;
 	char **names;
-	uint32 *types;
+	enum SID_NAME_USE *types;
 
 	*ppdomain = NULL;
 	*ppname = NULL;
@@ -195,7 +195,7 @@ NTSTATUS net_lookup_sid_from_name(TALLOC_CTX *ctx, const char *full_name, DOM_SI
 	NTSTATUS nt_status;
 	struct con_struct *csp = NULL;
 	DOM_SID *sids = NULL;
-	uint32 *types = NULL;
+	enum SID_NAME_USE *types = NULL;
 
 	csp = create_cs(ctx, &nt_status);
 	if (csp == NULL) {
