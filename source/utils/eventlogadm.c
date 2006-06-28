@@ -161,7 +161,6 @@ int main( int argc, char *argv[] )
 {
 	int opt, rc;
 	char *exename;
-	char *srcname, *eventlogname;
 
 
 	fstring opname;
@@ -173,7 +172,6 @@ int main( int argc, char *argv[] )
 	lp_load( dyn_CONFIGFILE, True, False, False, True);
 
 	exename = argv[0];
-	srcname = NULL;
 
 	/* default */
 
@@ -211,7 +209,6 @@ int main( int argc, char *argv[] )
 	}
 
 	/*  note that the separate command types should call usage if they need to... */
-	eventlogname = *argv;
 	while ( 1 ) {
 		if ( !StrCaseCmp( opname, "addsource" ) ) {
 			rc = DoAddSourceCommand( argc, argv, opt_debug,
