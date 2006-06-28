@@ -738,6 +738,9 @@ uint32 get_c_setprinter(void)
 int get_builtin_ntforms(nt_forms_struct **list)
 {
 	*list = (nt_forms_struct *)memdup(&default_forms[0], sizeof(default_forms));
+	if (!*list) {
+		return 0;
+	}
 	return sizeof(default_forms) / sizeof(default_forms[0]);
 }
 
@@ -2081,6 +2084,10 @@ static WERROR get_a_printer_driver_3_default(NT_PRINTER_DRIVER_INFO_LEVEL_3 **in
 	fstrcpy(info.dependentfiles[0], "");
 
 	*info_ptr = memdup(&info, sizeof(info));
+	if (!*info_ptr) {
+		SAFE_FREE(info.dependentfiles);
+		return WERR_NOMEM;
+	}
 	
 	return WERR_OK;
 }
@@ -2155,6 +2162,10 @@ static WERROR get_a_printer_driver_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 **info_ptr, 
 	}
 
 	*info_ptr = (NT_PRINTER_DRIVER_INFO_LEVEL_3 *)memdup(&driver, sizeof(driver));
+	if (!*info_ptr) {
+		SAFE_FREE(driver.dependentfiles);
+		return WERR_NOMEM;
+	}
 
 	return WERR_OK;
 }
@@ -2655,6 +2666,10 @@ int unpack_devicemode(NT_DEVICEMODE **nt_devmode, char *buf, int buflen)
 	}
 
 	*nt_devmode = (NT_DEVICEMODE *)memdup(&devmode, sizeof(devmode));
+	if (!*nt_devmode) {
+		SAFE_FREE(devmode.nt_dev_private);
+		return -1;
+	}
 
 	DEBUG(8,("Unpacked devicemode [%s](%s)\n", devmode.devicename, devmode.formname));
 	if (devmode.nt_dev_private)

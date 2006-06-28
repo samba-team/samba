@@ -188,6 +188,10 @@ void load_interfaces(void)
 
 	if (total_probed > 0) {
 		probed_ifaces = memdup(ifaces, sizeof(ifaces[0])*total_probed);
+		if (!probed_ifaces) {
+			DEBUG(0,("ERROR: memdup failed\n"));
+			exit(1);
+		}
 	}
 
 	/* if we don't have a interfaces line then use all broadcast capable 

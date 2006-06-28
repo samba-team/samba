@@ -913,6 +913,12 @@ static int tdbsam_traverse_setpwent(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data,
 		/* save a copy of the key */
 		
 		ptr->key.dptr = memdup( key.dptr, key.dsize );
+		if (!ptr->key.dptr) {
+			DEBUG(0,("tdbsam_traverse_setpwent: memdup failed\n"));
+			/* just return 0 and let the traversal continue */
+			return 0;
+		}
+
 		ptr->key.dsize = key.dsize;
 		
 		DLIST_ADD( tdbsam_pwent_list, ptr );
