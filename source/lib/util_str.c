@@ -2402,6 +2402,9 @@ void sprintf_append(TALLOC_CTX *mem_ctx, char **string, ssize_t *len,
 
  error:
 	*len = -1;
+	if (mem_ctx == NULL) {
+		SAFE_FREE(*string);
+	}
 	*string = NULL;
 }
 
