@@ -87,6 +87,17 @@ gss_krb5_copy_ccache(OM_uint32 *minor_status,
     return ret;
 }
 
+OM_uint32
+gss_krb5_import_cred(OM_uint32 *minor_status,
+		     krb5_ccache id,
+		     krb5_principal keytab_principal,
+		     krb5_keytab keytab,
+		     gss_cred_id_t *cred)
+{
+    *minor_status = EINVAL;
+    return GSS_S_FAILURE;
+}
+
 #if 0
 OM_uint32
 gsskrb5_register_acceptor_identity(const char *identity)
