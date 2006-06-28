@@ -72,6 +72,7 @@ static int		smb_print(struct cli_state *, char *, FILE *);
   struct cli_state *cli;	/* SMB interface */
   char null_str[1];
   int tries = 0;
+  const char *dev_uri;
 
   null_str[0] = '\0';
 
@@ -132,8 +133,9 @@ static int		smb_print(struct cli_state *, char *, FILE *);
   * Find the URI...
   */
 
-  if (getenv("DEVICE_URI") != NULL)
-    strncpy(uri, getenv("DEVICE_URI"), sizeof(uri) - 1);
+  dev_uri = getenv("DEVICE_URI");
+  if (dev_uri)
+    strncpy(uri, dev_uri, sizeof(uri) - 1);
   else if (strncmp(argv[0], "smb://", 6) == 0)
     strncpy(uri, argv[0], sizeof(uri) - 1);
   else
