@@ -56,14 +56,15 @@ krb5src = \
 	krb5/inquire_mechs_for_name.c \
 	krb5/inquire_names_for_mech.c \
 	krb5/inquire_sec_context_by_oid.c \
-	krb5/test_oid_set_member.c \
 	krb5/process_context_token.c \
 	krb5/release_buffer.c \
 	krb5/release_cred.c \
 	krb5/release_name.c \
 	krb5/release_oid_set.c \
 	krb5/sequence.c \
+	krb5/set_cred_option.c \
 	krb5/set_sec_context_option.c \
+	krb5/test_oid_set_member.c \
 	krb5/ticket_flags.c \
 	krb5/unwrap.c \
 	krb5/v1.c \
@@ -101,6 +102,7 @@ libgssapi_la_SOURCES  = \
 	mech/gss_inquire_context.c \
 	mech/gss_inquire_cred.c \
 	mech/gss_inquire_cred_by_mech.c \
+	mech/gss_inquire_cred_by_oid.c \
 	mech/gss_inquire_mechs_for_name.c \
 	mech/gss_inquire_names_for_mech.c \
 	mech/gss_krb5.c \
@@ -114,6 +116,8 @@ libgssapi_la_SOURCES  = \
 	mech/gss_release_name.c \
 	mech/gss_release_oid_set.c \
 	mech/gss_seal.c \
+	mech/gss_set_cred_option.c \
+	mech/gss_set_sec_context_option.c \
 	mech/gss_sign.c \
 	mech/gss_test_oid_set_member.c \
 	mech/gss_unseal.c \
