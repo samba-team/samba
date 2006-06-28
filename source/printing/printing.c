@@ -1480,7 +1480,7 @@ static void print_queue_update(int snum, BOOL force)
 	
 	/* get the length */
 
-	len = tdb_pack( buffer, len, "fdPP",
+	len = tdb_pack( NULL, 0, "fdPP",
 		sharename,
 		type,
 		lpqcommand, 
