@@ -283,6 +283,20 @@ typedef OM_uint32 _gss_inquire_cred_by_oid (
 	       gss_buffer_set_t *data_set
 	      );
 
+typedef OM_uint32 _gss_set_sec_context_option (
+	       OM_uint32 *minor_status,
+	       gss_ctx_id_t *cred_handle,
+	       const gss_OID desired_object,
+	       const gss_buffer_t value
+ 	      );
+
+typedef OM_uint32 _gss_set_cred_option (
+	       OM_uint32 *minor_status,
+	       gss_cred_id_t *cred_handle,
+	       const gss_OID desired_object,
+	       const gss_buffer_t value
+ 	      );
+
 
 #define GMI_VERSION 1
 
@@ -321,6 +335,8 @@ typedef struct gssapi_mech_interface_desc {
 	_gss_duplicate_name_t		*gm_duplicate_name;
 	_gss_inquire_sec_context_by_oid	*gm_inquire_sec_context_by_oid;
 	_gss_inquire_cred_by_oid	*gm_inquire_cred_by_oid;
+	_gss_set_sec_context_option	*gm_set_sec_context_option;
+	_gss_set_cred_option		*gm_set_cred_option;
 } gssapi_mech_interface_desc, *gssapi_mech_interface;
 
 gssapi_mech_interface
