@@ -1,0 +1,12 @@
+-- $Id$
+
+GSS-API DEFINITIONS ::= BEGIN
+
+IMPORTS heim_any FROM heim;
+
+GSSAPIContextToken ::= [APPLICATION 0] SEQUENCE {
+	thisMech OBJECT IDENTIFIER,
+	innerContextToken heim_any
+}
+
+END
