@@ -151,6 +151,8 @@ spnego_files =					\
 	asn1_NegTokenInit.x			\
 	asn1_NegTokenResp.x
 
+$(libgssapi_la_OBJECTS): $(srcdir)/krb5/gsskrb5-private.h
+
 BUILT_SOURCES = $(spnego_files:.x=.c) $(gssapi_files:.x=.c)
 
 CLEANFILES = $(BUILT_SOURCES) \
