@@ -321,7 +321,7 @@ static int nt_open_pipe(char *fname, connection_struct *conn,
 	smb_np_struct *p = NULL;
 	uint16 vuid = SVAL(inbuf, smb_uid);
 	int i;
-
+ 
 	DEBUG(4,("nt_open_pipe: Opening pipe %s.\n", fname));
     
 	/* See if it is one we want to handle. */
@@ -350,6 +350,12 @@ static int nt_open_pipe(char *fname, connection_struct *conn,
 		return(ERROR_DOS(ERRSRV,ERRnofids));
 	}
 
+	/* TODO: Add pipe to db */
+	
+	if ( !store_pipe_opendb( p ) ) {
+		DEBUG(3,("nt_open_pipe: failed to store %s pipe open.\n", fname));
+	}
+	
 	*ppnum = p->pnum;
 	return 0;
 }
