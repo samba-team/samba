@@ -612,7 +612,6 @@ static BOOL srv_check_incoming_message(char *inbuf, struct smb_sign_info *si, BO
 	uint32 saved_seq;
 	unsigned char calc_md5_mac[16];
 	unsigned char *server_sent_mac;
-	uint mid;
 
 	if (!si->doing_signing)
 		return True;
@@ -621,8 +620,6 @@ static BOOL srv_check_incoming_message(char *inbuf, struct smb_sign_info *si, BO
 		DEBUG(1, ("srv_check_incoming_message: Can't check signature on short packet! smb_len = %u\n", smb_len(inbuf)));
 		return False;
 	}
-
-	mid = SVAL(inbuf, smb_mid);
 
 	/* We always increment the sequence number. */
 	data->send_seq_num += 2;
