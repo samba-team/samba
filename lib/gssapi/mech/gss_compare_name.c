@@ -26,10 +26,8 @@
  *	$FreeBSD: src/lib/libgssapi/gss_compare_name.c,v 1.1 2005/12/29 14:40:20 dfr Exp $
  */
 
-#include <gssapi/gssapi.h>
-
-#include "mech_switch.h"
-#include "name.h"
+#include "mech_locl.h"
+RCSID("$Id$");
 
 OM_uint32
 gss_compare_name(OM_uint32 *minor_status,
@@ -47,7 +45,7 @@ gss_compare_name(OM_uint32 *minor_status,
 	 */
 	if (name1->gn_value.value && name2->gn_value.value) {
 		*name_equal = 1;
-		if (!_gss_oid_equal(name1->gn_type, name2->gn_type)) {
+		if (!gss_oid_equal(&name1->gn_type, &name2->gn_type)) {
 			*name_equal = 0;
 		} else if (name1->gn_value.length != name2->gn_value.length ||
 		    memcmp(name1->gn_value.value, name1->gn_value.value,

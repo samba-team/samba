@@ -26,10 +26,8 @@
  *	$FreeBSD: src/lib/libgssapi/gss_unwrap.c,v 1.1 2005/12/29 14:40:20 dfr Exp $
  */
 
-#include <gssapi/gssapi.h>
-
-#include "mech_switch.h"
-#include "context.h"
+#include "mech_locl.h"
+RCSID("$Id$");
 
 OM_uint32
 gss_unwrap(OM_uint32 *minor_status,
@@ -40,7 +38,7 @@ gss_unwrap(OM_uint32 *minor_status,
     gss_qop_t *qop_state)
 {
 	struct _gss_context *ctx = (struct _gss_context *) context_handle;
-	struct _gss_mech_switch *m = ctx->gc_mech;
+	gssapi_mech_interface m = ctx->gc_mech;
 
 	return (m->gm_unwrap(minor_status, ctx->gc_ctx,
 		    input_message_buffer, output_message_buffer,

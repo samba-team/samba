@@ -26,9 +26,8 @@
  *	$FreeBSD: src/lib/libgssapi/gss_inquire_names_for_mech.c,v 1.1 2005/12/29 14:40:20 dfr Exp $
  */
 
-#include <gssapi/gssapi.h>
-
-#include "mech_switch.h"
+#include "mech_locl.h"
+RCSID("$Id$");
 
 OM_uint32
 gss_inquire_names_for_mech(OM_uint32 *minor_status,
@@ -36,7 +35,7 @@ gss_inquire_names_for_mech(OM_uint32 *minor_status,
     gss_OID_set *name_types)
 {
 	OM_uint32 major_status;
-	struct _gss_mech_switch *m = _gss_find_mech_switch(mechanism);
+	gssapi_mech_interface m = __gss_get_mechanism(mechanism);
 
 	*minor_status = 0;
 	if (!m)

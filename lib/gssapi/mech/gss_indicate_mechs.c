@@ -26,9 +26,8 @@
  *	$FreeBSD: src/lib/libgssapi/gss_indicate_mechs.c,v 1.1 2005/12/29 14:40:20 dfr Exp $
  */
 
-#include <gssapi/gssapi.h>
-
-#include "mech_switch.h"
+#include "mech_locl.h"
+RCSID("$Id$");
 
 OM_uint32
 gss_indicate_mechs(OM_uint32 *minor_status,
@@ -46,7 +45,7 @@ gss_indicate_mechs(OM_uint32 *minor_status,
 		return (major_status);
 	
 	SLIST_FOREACH(m, &_gss_mechs, gm_link) {
-		major_status = m->gm_indicate_mechs(minor_status, &set);
+		major_status = m->gm_mech.gm_indicate_mechs(minor_status, &set);
 		if (major_status)
 			continue;
 		for (i = 0; i < set->count; i++)

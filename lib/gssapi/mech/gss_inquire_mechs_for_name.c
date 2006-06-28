@@ -26,10 +26,8 @@
  *	$FreeBSD: src/lib/libgssapi/gss_inquire_mechs_for_name.c,v 1.1 2005/12/29 14:40:20 dfr Exp $
  */
 
-#include <gssapi/gssapi.h>
-
-#include "mech_switch.h"
-#include "name.h"
+#include "mech_locl.h"
+RCSID("$Id$");
 
 OM_uint32
 gss_inquire_mechs_for_name(OM_uint32 *minor_status,

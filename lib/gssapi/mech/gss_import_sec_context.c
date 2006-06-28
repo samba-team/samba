@@ -26,12 +26,8 @@
  *	$FreeBSD: src/lib/libgssapi/gss_import_sec_context.c,v 1.1 2005/12/29 14:40:20 dfr Exp $
  */
 
-#include <gssapi/gssapi.h>
-#include <stdlib.h>
-#include <errno.h>
-
-#include "mech_switch.h"
-#include "context.h"
+#include "mech_locl.h"
+RCSID("$Id$");
 
 OM_uint32
 gss_import_sec_context(OM_uint32 *minor_status,
@@ -39,7 +35,7 @@ gss_import_sec_context(OM_uint32 *minor_status,
     gss_ctx_id_t *context_handle)
 {
 	OM_uint32 major_status;
-	struct _gss_mech_switch *m;
+	gssapi_mech_interface m;
 	struct _gss_context *ctx;
 	gss_OID_desc mech_oid;
 	gss_buffer_desc buf;
@@ -64,7 +60,7 @@ gss_import_sec_context(OM_uint32 *minor_status,
 	buf.length = len - 2 - mech_oid.length;
 	buf.value = p + 2 + mech_oid.length;
 	
-	m = _gss_find_mech_switch(&mech_oid);
+	m = __gss_get_mechanism(&mech_oid);
 	if (!m)
 		return (GSS_S_DEFECTIVE_TOKEN);
 

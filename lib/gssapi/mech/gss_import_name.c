@@ -26,13 +26,8 @@
  *	$FreeBSD: src/lib/libgssapi/gss_import_name.c,v 1.1 2005/12/29 14:40:20 dfr Exp $
  */
 
-#include <gssapi/gssapi.h>
-#include <stdlib.h>
-#include <errno.h>
-
-#include "mech_switch.h"
-#include "utils.h"
-#include "name.h"
+#include "mech_locl.h"
+RCSID("$Id$");
 
 static OM_uint32
 _gss_import_export_name(OM_uint32 *minor_status,
@@ -44,9 +39,8 @@ _gss_import_export_name(OM_uint32 *minor_status,
 	size_t len = input_name_buffer->length;
 	size_t t;
 	gss_OID_desc mech_oid;
-	struct _gss_mech_switch *m;
+	gssapi_mech_interface m;
 	struct _gss_name *name;
-	struct _gss_mechanism_name *mn;
 	gss_name_t new_canonical_name;
 
 	*minor_status = 0;
@@ -116,7 +110,7 @@ _gss_import_export_name(OM_uint32 *minor_status,
 	if (len != t)
 		return (GSS_S_BAD_NAME);
 
-	m = _gss_find_mech_switch(&mech_oid);
+	m = __gss_get_mechanism(&mech_oid);
 	if (!m)
 		return (GSS_S_BAD_MECH);
 
@@ -168,7 +162,7 @@ gss_import_name(OM_uint32 *minor_status,
 	 * the mechanism and then import it as an MN. See RFC 2743
 	 * section 3.2 for a description of the format.
 	 */
-	if (_gss_oid_equal(name_type, GSS_C_NT_EXPORT_NAME)) {
+	if (gss_oid_equal(name_type, GSS_C_NT_EXPORT_NAME)) {
 		return _gss_import_export_name(minor_status,
 		    input_name_buffer, output_name);
 	}
@@ -178,13 +172,13 @@ gss_import_name(OM_uint32 *minor_status,
 	 * should figure out the list of supported name types using
 	 * gss_inquire_names_for_mech.
 	 */
-	if (!_gss_oid_equal(name_type, GSS_C_NT_USER_NAME)
-	    && !_gss_oid_equal(name_type, GSS_C_NT_MACHINE_UID_NAME)
-	    && !_gss_oid_equal(name_type, GSS_C_NT_STRING_UID_NAME)
-	    && !_gss_oid_equal(name_type, GSS_C_NT_HOSTBASED_SERVICE_X)
-	    && !_gss_oid_equal(name_type, GSS_C_NT_HOSTBASED_SERVICE)
-	    && !_gss_oid_equal(name_type, GSS_C_NT_ANONYMOUS)
-	    && !_gss_oid_equal(name_type, GSS_KRB5_NT_PRINCIPAL_NAME)) {
+	if (!gss_oid_equal(name_type, GSS_C_NT_USER_NAME)
+	    && !gss_oid_equal(name_type, GSS_C_NT_MACHINE_UID_NAME)
+	    && !gss_oid_equal(name_type, GSS_C_NT_STRING_UID_NAME)
+	    && !gss_oid_equal(name_type, GSS_C_NT_HOSTBASED_SERVICE_X)
+	    && !gss_oid_equal(name_type, GSS_C_NT_HOSTBASED_SERVICE)
+	    && !gss_oid_equal(name_type, GSS_C_NT_ANONYMOUS)
+	    && !gss_oid_equal(name_type, GSS_KRB5_NT_PRINCIPAL_NAME)) {
 		*minor_status = 0;
 		*output_name = 0;
 		return (GSS_S_BAD_NAMETYPE);

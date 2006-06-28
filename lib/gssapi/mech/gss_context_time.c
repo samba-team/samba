@@ -26,10 +26,8 @@
  *	$FreeBSD: src/lib/libgssapi/gss_context_time.c,v 1.1 2005/12/29 14:40:20 dfr Exp $
  */
 
-#include <gssapi/gssapi.h>
-
-#include "mech_switch.h"
-#include "context.h"
+#include "mech_locl.h"
+RCSID("$Id$");
 
 OM_uint32
 gss_context_time(OM_uint32 *minor_status,
@@ -37,7 +35,7 @@ gss_context_time(OM_uint32 *minor_status,
     OM_uint32 *time_rec)
 {
 	struct _gss_context *ctx = (struct _gss_context *) context_handle;
-	struct _gss_mech_switch *m = ctx->gc_mech;
+	gssapi_mech_interface m = ctx->gc_mech;
 
 	return (m->gm_context_time(minor_status, ctx->gc_ctx, time_rec));
 }

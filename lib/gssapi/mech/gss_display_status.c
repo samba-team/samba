@@ -26,10 +26,8 @@
  *	$FreeBSD: src/lib/libgssapi/gss_display_status.c,v 1.1 2005/12/29 14:40:20 dfr Exp $
  */
 
-#include <gssapi/gssapi.h>
-#include <string.h>
-
-#include "mech_switch.h"
+#include "mech_locl.h"
+RCSID("$Id$");
 
 struct _gss_status_desc {
 	OM_uint32	gs_status;
@@ -37,28 +35,28 @@ struct _gss_status_desc {
 };
 
 static struct _gss_status_desc _gss_status_descs[] = {
-	GSS_S_BAD_MECH,		"An unsupported mechanism was requested",
-	GSS_S_BAD_NAME,		"An invalid name was supplied",
-	GSS_S_BAD_NAMETYPE,	"A supplied name was of an unsupported type",
-	GSS_S_BAD_BINDINGS,	"Incorrect channel bindings were supplied",
-	GSS_S_BAD_STATUS,	"An invalid status code was supplied",
-	GSS_S_BAD_MIC,		"A token had an invalid MIC",
-	GSS_S_NO_CRED,		"No credentials were supplied, or the "
-				"credentials were unavailable or inaccessible",
-	GSS_S_NO_CONTEXT,	"No context has been established",
-	GSS_S_DEFECTIVE_TOKEN,	"A token was invalid",
-	GSS_S_DEFECTIVE_CREDENTIAL, "A credential was invalid",
-	GSS_S_CREDENTIALS_EXPIRED, "The referenced credentials have expired",
-	GSS_S_CONTEXT_EXPIRED,	"The context has expired",
-	GSS_S_FAILURE,		"Miscellaneous failure",
-	GSS_S_BAD_QOP,		"The quality-of-protection requested could "
-				"not be provided",
-	GSS_S_UNAUTHORIZED,	"The operation is forbidden by local security "
-				"policy",
-	GSS_S_UNAVAILABLE,	"The operation or option is unavailable",
-	GSS_S_DUPLICATE_ELEMENT, "The requested credential element already "
-				"exists",
-	GSS_S_NAME_NOT_MN,	"The provided name was not a mechanism name"
+	{ GSS_S_BAD_MECH,	"An unsupported mechanism was requested"},
+	{ GSS_S_BAD_NAME,	"An invalid name was supplied"},
+	{ GSS_S_BAD_NAMETYPE,	"A supplied name was of an unsupported type"},
+	{ GSS_S_BAD_BINDINGS,	"Incorrect channel bindings were supplied"},
+	{ GSS_S_BAD_STATUS,	"An invalid status code was supplied"},
+	{ GSS_S_BAD_MIC,	"A token had an invalid MIC"},
+	{ GSS_S_NO_CRED,	"No credentials were supplied, or the "
+	 			"credentials were unavailable or inaccessible"},
+	{ GSS_S_NO_CONTEXT,	"No context has been established"},
+	{ GSS_S_DEFECTIVE_TOKEN,"A token was invalid"},
+	{ GSS_S_DEFECTIVE_CREDENTIAL, "A credential was invalid"},
+	{ GSS_S_CREDENTIALS_EXPIRED, "The referenced credentials have expired"},
+	{ GSS_S_CONTEXT_EXPIRED,	"The context has expired"},
+	{ GSS_S_FAILURE,	"Miscellaneous failure"},
+	{ GSS_S_BAD_QOP,	"The quality-of-protection requested could "
+	 			"not be provided"},
+	{ GSS_S_UNAUTHORIZED,	"The operation is forbidden by local security "
+	 			"policy"},
+	{ GSS_S_UNAVAILABLE,	"The operation or option is unavailable"},
+	{ GSS_S_DUPLICATE_ELEMENT, "The requested credential element already "
+	 			"exists"},
+	{ GSS_S_NAME_NOT_MN,	"The provided name was not a mechanism name"}
 };
 #define _gss_status_desc_count \
 	sizeof(_gss_status_descs) / sizeof(_gss_status_descs[0])
@@ -73,7 +71,6 @@ gss_display_status(OM_uint32 *minor_status,
     gss_buffer_t status_string)
 {
 	OM_uint32 major_status;
-	struct _gss_mech_switch *m;
 	int i;
 	const char *message;
 
@@ -93,17 +90,17 @@ gss_display_status(OM_uint32 *minor_status,
 		 * Fall through to attempt to get some underlying
 		 * implementation to describe the value.
 		 */
-	case GSS_C_MECH_CODE:
-		SLIST_FOREACH(m, &_gss_mechs, gm_link) {
-			if (mech_type &&
-			    !_gss_oid_equal(&m->gm_mech_oid, mech_type))
-				continue;
+	case GSS_C_MECH_CODE: {
+	       gssapi_mech_interface m;
+	       m = __gss_get_mechanism(mech_type);
+	       if (m) {
 			major_status = m->gm_display_status(minor_status,
 			    status_value, status_type, mech_type,
 			    message_content, status_string);
 			if (major_status == GSS_S_COMPLETE)
 				return (GSS_S_COMPLETE);
 		}
+	}
 	}
 
 	return (GSS_S_BAD_STATUS);

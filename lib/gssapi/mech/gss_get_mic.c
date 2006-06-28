@@ -26,10 +26,8 @@
  *	$FreeBSD: src/lib/libgssapi/gss_get_mic.c,v 1.1 2005/12/29 14:40:20 dfr Exp $
  */
 
-#include <gssapi/gssapi.h>
-
-#include "mech_switch.h"
-#include "context.h"
+#include "mech_locl.h"
+RCSID("$Id$");
 
 OM_uint32
 gss_get_mic(OM_uint32 *minor_status,
@@ -39,7 +37,7 @@ gss_get_mic(OM_uint32 *minor_status,
     gss_buffer_t message_token)
 {
 	struct _gss_context *ctx = (struct _gss_context *) context_handle;
-	struct _gss_mech_switch *m = ctx->gc_mech;
+	gssapi_mech_interface m = ctx->gc_mech;
 
 	return (m->gm_get_mic(minor_status, ctx->gc_ctx, qop_req,
 		    message_buffer, message_token));

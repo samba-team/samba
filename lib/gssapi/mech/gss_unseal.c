@@ -26,7 +26,8 @@
  *	$FreeBSD: src/lib/libgssapi/gss_unseal.c,v 1.1 2005/12/29 14:40:20 dfr Exp $
  */
 
-#include <gssapi/gssapi.h>
+#include "mech_locl.h"
+RCSID("$Id$");
 
 OM_uint32
 gss_unseal(OM_uint32 *minor_status,
@@ -39,5 +40,5 @@ gss_unseal(OM_uint32 *minor_status,
 
 	return (gss_unwrap(minor_status,
 		    context_handle, input_message_buffer,
-		    output_message_buffer, conf_state, qop_state));
+		    output_message_buffer, conf_state, (gss_qop_t *)qop_state));
 }

@@ -26,11 +26,8 @@
  *	$FreeBSD: src/lib/libgssapi/gss_inquire_context.c,v 1.1 2005/12/29 14:40:20 dfr Exp $
  */
 
-#include <gssapi/gssapi.h>
-
-#include "mech_switch.h"
-#include "context.h"
-#include "name.h"
+#include "mech_locl.h"
+RCSID("$Id$");
 
 OM_uint32
 gss_inquire_context(OM_uint32 *minor_status,
@@ -45,7 +42,7 @@ gss_inquire_context(OM_uint32 *minor_status,
 {
 	OM_uint32 major_status;
 	struct _gss_context *ctx = (struct _gss_context *) context_handle;
-	struct _gss_mech_switch *m = ctx->gc_mech;
+	gssapi_mech_interface m = ctx->gc_mech;
 	struct _gss_name *name;
 	gss_name_t src_mn, targ_mn;
 

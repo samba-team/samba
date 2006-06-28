@@ -26,7 +26,8 @@
  *	$FreeBSD: src/lib/libgssapi/gss_verify.c,v 1.1 2005/12/29 14:40:20 dfr Exp $
  */
 
-#include <gssapi/gssapi.h>
+#include "mech_locl.h"
+RCSID("$Id$");
 
 OM_uint32
 gss_verify(OM_uint32 *minor_status,
@@ -37,5 +38,6 @@ gss_verify(OM_uint32 *minor_status,
 {
 
 	return (gss_verify_mic(minor_status,
-		    context_handle, message_buffer, token_buffer, qop_state));
+		    context_handle, message_buffer, token_buffer,
+		    (gss_qop_t *)qop_state));
 }

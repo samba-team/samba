@@ -26,12 +26,8 @@
  *	$FreeBSD: src/lib/libgssapi/gss_release_cred.c,v 1.1 2005/12/29 14:40:20 dfr Exp $
  */
 
-#include <gssapi/gssapi.h>
-#include <stdlib.h>
-#include <errno.h>
-
-#include "mech_switch.h"
-#include "cred.h"
+#include "mech_locl.h"
+RCSID("$Id$");
 
 OM_uint32
 gss_release_cred(OM_uint32 *minor_status, gss_cred_id_t *cred_handle)

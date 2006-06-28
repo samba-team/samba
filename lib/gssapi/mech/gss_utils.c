@@ -26,21 +26,8 @@
  *	$FreeBSD: src/lib/libgssapi/gss_utils.c,v 1.1 2005/12/29 14:40:20 dfr Exp $
  */
 
-#include <gssapi/gssapi.h>
-#include <stdlib.h>
-#include <errno.h>
-
-#include "utils.h"
-
-int
-_gss_oid_equal(const gss_OID oid1, const gss_OID oid2)
-{
-	if (oid1->length != oid2->length)
-		return (0);
-	if (memcmp(oid1->elements, oid2->elements, oid1->length))
-		return (0);
-	return (1);
-}
+#include "mech_locl.h"
+RCSID("$Id$");
 
 OM_uint32
 _gss_copy_oid(OM_uint32 *minor_status,

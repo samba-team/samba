@@ -26,11 +26,8 @@
  *	$FreeBSD: src/lib/libgssapi/gss_inquire_cred_by_mech.c,v 1.1 2005/12/29 14:40:20 dfr Exp $
  */
 
-#include <gssapi/gssapi.h>
-
-#include "mech_switch.h"
-#include "cred.h"
-#include "name.h"
+#include "mech_locl.h"
+RCSID("$Id$");
 
 OM_uint32
 gss_inquire_cred_by_mech(OM_uint32 *minor_status,
@@ -42,7 +39,7 @@ gss_inquire_cred_by_mech(OM_uint32 *minor_status,
     gss_cred_usage_t *cred_usage)
 {
 	OM_uint32 major_status;
-	struct _gss_mech_switch *m;
+	gssapi_mech_interface m;
 	struct _gss_mechanism_cred *mcp;
 	gss_cred_id_t mc;
 	gss_name_t mn;
@@ -50,7 +47,7 @@ gss_inquire_cred_by_mech(OM_uint32 *minor_status,
 
 	*minor_status = 0;
 
-	m = _gss_find_mech_switch(mech_type);
+	m = __gss_get_mechanism(mech_type);
 	if (!m)
 		return (GSS_S_NO_CRED);
 

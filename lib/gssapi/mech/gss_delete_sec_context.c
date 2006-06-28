@@ -26,12 +26,8 @@
  *	$FreeBSD: src/lib/libgssapi/gss_delete_sec_context.c,v 1.1 2005/12/29 14:40:20 dfr Exp $
  */
 
-#include <gssapi/gssapi.h>
-#include <stdlib.h>
-#include <errno.h>
-
-#include "mech_switch.h"
-#include "context.h"
+#include "mech_locl.h"
+RCSID("$Id$");
 
 OM_uint32
 gss_delete_sec_context(OM_uint32 *minor_status,

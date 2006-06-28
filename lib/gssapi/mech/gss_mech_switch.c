@@ -26,22 +26,14 @@
  *	$FreeBSD: src/lib/libgssapi/gss_mech_switch.c,v 1.2 2006/02/04 09:40:21 dfr Exp $
  */
 
-#include <gssapi/gssapi.h>
-#include <dlfcn.h>
-#include <errno.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
-#include "mech_switch.h"
-#include "utils.h"
+#include "mech_locl.h"
+RCSID("$Id$");
 
 #ifndef _PATH_GSS_MECH
 #define _PATH_GSS_MECH	"/etc/gss/mech"
 #endif
 
-struct _gss_mech_switch_list _gss_mechs =
-	SLIST_HEAD_INITIALIZER(&_gss_mechs);
+struct _gss_mech_switch_list _gss_mechs = { NULL } ;
 gss_OID_set _gss_mech_oids;
 
 /*
@@ -155,8 +147,8 @@ _gss_string_to_oid(const char* s, gss_OID oid)
 
 #define SYM(name)							\
 do {									\
-	m->gm_ ## name = dlsym(so, "gss_" #name);			\
-	if (!m->gm_ ## name) {						\
+	m->gm_mech.gm_ ## name = dlsym(so, "gss_" #name);		\
+	if (!m->gm_mech.gm_ ## name) {					\
 		fprintf(stderr, "can't find symbol gss_" #name "\n");	\
 		goto bad;						\
 	}								\
@@ -164,13 +156,29 @@ do {									\
 
 #define OPTSYM(name)							\
 do {									\
-	m->gm_ ## name = dlsym(so, "gss_" #name);			\
+	m->gm_mech.gm_ ## name = dlsym(so, "gss_" #name);			\
 } while (0)
 
-#define OPTSYM2(symname, ourname)					\
-do {									\
-	m->ourname = dlsym(so, #symname);			\
-} while (0)
+/*
+ *
+ */
+static int
+add_builtin(gssapi_mech_interface mech)
+{
+    struct _gss_mech_switch *m;
+    OM_uint32 minor_status;
+
+    m = malloc(sizeof(*m));
+    if (m == NULL)
+	return 1;
+    m->gm_so = NULL;
+    m->gm_mech = *mech;
+    gss_add_oid_set_member(&minor_status,
+			   &m->gm_mech.gm_mech_oid, &_gss_mech_oids);
+
+    SLIST_INSERT_HEAD(&_gss_mechs, m, gm_link);
+    return 0;
+}
 
 /*
  * Load the mechanisms file (/etc/gss/mech).
@@ -184,8 +192,6 @@ _gss_load_mech(void)
 	char		*p;
 	char		*name, *oid, *lib, *kobj;
 	struct _gss_mech_switch *m;
-	int		count;
-	char		**pp;
 	void		*so;
 
 	if (SLIST_FIRST(&_gss_mechs))
@@ -196,13 +202,15 @@ _gss_load_mech(void)
 	if (major_status)
 		return;
 
+	add_builtin(__gss_krb5_initialize());
+	add_builtin(__gss_spnego_initialize());
+
 	fp = fopen(_PATH_GSS_MECH, "r");
 	if (!fp) {
-		perror(_PATH_GSS_MECH);
+/*		perror(_PATH_GSS_MECH); */
 		return;
 	}
 
-	count = 0;
 	while (fgets(buf, sizeof(buf), fp)) {
 		if (*buf == '#')
 			continue;
@@ -219,23 +227,23 @@ _gss_load_mech(void)
 
 		so = dlopen(lib, RTLD_LOCAL);
 		if (!so) {
-			fprintf(stderr, "dlopen: %s\n", dlerror());
+/*			fprintf(stderr, "dlopen: %s\n", dlerror()); */
 			continue;
 		}
 
-		m = malloc(sizeof(struct _gss_mech_switch));
+		m = malloc(sizeof(*m));
 		if (!m)
 			break;
 		m->gm_so = so;
-		if (_gss_string_to_oid(oid, &m->gm_mech_oid)) {
+		if (_gss_string_to_oid(oid, &m->gm_mech.gm_mech_oid)) {
 			free(m);
 			continue;
 		}
 		
 		major_status = gss_add_oid_set_member(&minor_status,
-		    &m->gm_mech_oid, &_gss_mech_oids);
+		    &m->gm_mech.gm_mech_oid, &_gss_mech_oids);
 		if (major_status) {
-			free(m->gm_mech_oid.elements);
+			free(m->gm_mech.gm_mech_oid.elements);
 			free(m);
 			continue;
 		}
@@ -269,17 +277,14 @@ _gss_load_mech(void)
 		SYM(inquire_mechs_for_name);
 		SYM(canonicalize_name);
 		SYM(duplicate_name);
-		OPTSYM2(gsskrb5_register_acceptor_identity,
-			gm_krb5_register_acceptor_identity);
-		OPTSYM(krb5_copy_ccache);
-		OPTSYM(krb5_compat_des3_mic);
+		OPTSYM(inquire_cred_by_oid);
+		OPTSYM(inquire_sec_context_by_oid);
 
 		SLIST_INSERT_HEAD(&_gss_mechs, m, gm_link);
-		count++;
 		continue;
 
 	bad:
-		free(m->gm_mech_oid.elements);
+		free(m->gm_mech.gm_mech_oid.elements);
 		free(m);
 		dlclose(so);
 		continue;
@@ -287,15 +292,15 @@ _gss_load_mech(void)
 	fclose(fp);
 }
 
-struct _gss_mech_switch *
-_gss_find_mech_switch(gss_OID mech)
+gssapi_mech_interface
+__gss_get_mechanism(gss_OID mech)
 {
-	struct _gss_mech_switch *m;
+        struct _gss_mech_switch	*m;
 
 	_gss_load_mech();
 	SLIST_FOREACH(m, &_gss_mechs, gm_link) {
-		if (_gss_oid_equal(&m->gm_mech_oid, mech))
-			return m;
+		if (gss_oid_equal(&m->gm_mech.gm_mech_oid, mech))
+			return &m->gm_mech;
 	}
-	return (0);
+	return NULL;
 }

@@ -24,13 +24,14 @@
  * SUCH DAMAGE.
  *
  *	$FreeBSD: src/lib/libgssapi/name.h,v 1.1 2005/12/29 14:40:20 dfr Exp $
+ *	$Id$
  */
 
 #include <sys/queue.h>
 
 struct _gss_mechanism_name {
 	SLIST_ENTRY(_gss_mechanism_name) gmn_link;
-	struct _gss_mech_switch *gmn_mech;	/* mechanism ops for MN */
+	gssapi_mech_interface	gmn_mech;	/* mechanism ops for MN */
 	gss_OID			gmn_mech_oid;	/* mechanism oid for MN */
 	gss_name_t		gmn_name;	/* underlying MN */
 };
@@ -45,4 +46,4 @@ struct _gss_name {
 extern struct _gss_mechanism_name *
 	_gss_find_mn(struct _gss_name *name, gss_OID mech);
 struct _gss_name *
-	_gss_make_name(struct _gss_mech_switch *m, gss_name_t new_mn);
+	_gss_make_name(gssapi_mech_interface m, gss_name_t new_mn);

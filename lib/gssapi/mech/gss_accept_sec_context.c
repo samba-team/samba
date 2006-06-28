@@ -26,14 +26,8 @@
  *	$FreeBSD: src/lib/libgssapi/gss_accept_sec_context.c,v 1.1 2005/12/29 14:40:20 dfr Exp $
  */
 
-#include <gssapi/gssapi.h>
-#include <stdlib.h>
-#include <errno.h>
-
-#include "mech_switch.h"
-#include "context.h"
-#include "cred.h"
-#include "name.h"
+#include "mech_locl.h"
+RCSID("$Id$");
 
 OM_uint32 gss_accept_sec_context(OM_uint32 *minor_status,
     gss_ctx_id_t *context_handle,
@@ -48,7 +42,7 @@ OM_uint32 gss_accept_sec_context(OM_uint32 *minor_status,
     gss_cred_id_t *delegated_cred_handle)
 {
 	OM_uint32 major_status;
-	struct _gss_mech_switch *m;
+	gssapi_mech_interface m;
 	struct _gss_context *ctx = (struct _gss_context *) *context_handle;
 	struct _gss_cred *cred = (struct _gss_cred *) acceptor_cred_handle;
 	struct _gss_mechanism_cred *mc;
@@ -133,7 +127,7 @@ OM_uint32 gss_accept_sec_context(OM_uint32 *minor_status,
 			return (GSS_S_DEFECTIVE_TOKEN);
 		}
 		memset(ctx, 0, sizeof(struct _gss_context));
-		m = ctx->gc_mech = _gss_find_mech_switch(&mech_oid);
+		m = ctx->gc_mech = __gss_get_mechanism(&mech_oid);
 		if (!m) {
 			free(ctx);
 			return (GSS_S_BAD_MECH);
@@ -191,28 +185,28 @@ OM_uint32 gss_accept_sec_context(OM_uint32 *minor_status,
 			m->gm_release_cred(minor_status, &delegated_mc);
 			*ret_flags &= ~GSS_C_DELEG_FLAG;
 		} else {
-			struct _gss_cred *cred;
-			struct _gss_mechanism_cred *mc;
+			struct _gss_cred *dcred;
+			struct _gss_mechanism_cred *dmc;
 
-			cred = malloc(sizeof(struct _gss_cred));
-			if (!cred) {
+			dcred = malloc(sizeof(struct _gss_cred));
+			if (!dcred) {
 				*minor_status = ENOMEM;
 				return (GSS_S_FAILURE);
 			}
-			mc = malloc(sizeof(struct _gss_mechanism_cred));
-			if (!mc) {
-				free(cred);
+			dmc = malloc(sizeof(struct _gss_mechanism_cred));
+			if (!dmc) {
+				free(dcred);
 				*minor_status = ENOMEM;
 				return (GSS_S_FAILURE);
 			}
 			m->gm_inquire_cred(minor_status, delegated_mc,
-			    0, 0, &cred->gc_usage, 0);
-			mc->gmc_mech = m;
-			mc->gmc_mech_oid = &m->gm_mech_oid;
-			mc->gmc_cred = delegated_mc;
-			SLIST_INSERT_HEAD(&cred->gc_mc, mc, gmc_link);
+			    0, 0, &dcred->gc_usage, 0);
+			dmc->gmc_mech = m;
+			dmc->gmc_mech_oid = &m->gm_mech_oid;
+			dmc->gmc_cred = delegated_mc;
+			SLIST_INSERT_HEAD(&cred->gc_mc, dmc, gmc_link);
 
-			*delegated_cred_handle = (gss_cred_id_t) cred;
+			*delegated_cred_handle = (gss_cred_id_t) dcred;
 		}
 	}
 

@@ -26,12 +26,8 @@
  *	$FreeBSD: src/lib/libgssapi/gss_export_sec_context.c,v 1.1 2005/12/29 14:40:20 dfr Exp $
  */
 
-#include <gssapi/gssapi.h>
-#include <stdlib.h>
-#include <errno.h>
-
-#include "mech_switch.h"
-#include "context.h"
+#include "mech_locl.h"
+RCSID("$Id$");
 
 OM_uint32
 gss_export_sec_context(OM_uint32 *minor_status,
@@ -40,7 +36,7 @@ gss_export_sec_context(OM_uint32 *minor_status,
 {
 	OM_uint32 major_status;
 	struct _gss_context *ctx = (struct _gss_context *) *context_handle;
-	struct _gss_mech_switch *m = ctx->gc_mech;
+	gssapi_mech_interface m = ctx->gc_mech;
 	gss_buffer_desc buf;
 
 	major_status = m->gm_export_sec_context(minor_status,

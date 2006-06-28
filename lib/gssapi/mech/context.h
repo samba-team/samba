@@ -24,9 +24,12 @@
  * SUCH DAMAGE.
  *
  *	$FreeBSD: src/lib/libgssapi/context.h,v 1.1 2005/12/29 14:40:20 dfr Exp $
+ *	$Id$
  */
 
+#include <gssapi_mech.h>
+
 struct _gss_context {
-	struct _gss_mech_switch	*gc_mech;
+	gssapi_mech_interface	gc_mech;
 	gss_ctx_id_t		gc_ctx;
 };

@@ -26,18 +26,14 @@
  *	$FreeBSD: src/lib/libgssapi/gss_add_cred.c,v 1.1 2005/12/29 14:40:20 dfr Exp $
  */
 
-#include <gssapi/gssapi.h>
-#include <errno.h>
-
-#include "mech_switch.h"
-#include "cred.h"
-#include "name.h"
+#include "mech_locl.h"
+RCSID("$Id$");
 
 static struct _gss_mechanism_cred *
 _gss_copy_cred(struct _gss_mechanism_cred *mc)
 {
 	struct _gss_mechanism_cred *new_mc;
-	struct _gss_mech_switch *m = mc->gmc_mech;
+	gssapi_mech_interface m = mc->gmc_mech;
 	OM_uint32 major_status, minor_status;
 	gss_name_t name;
 	gss_cred_id_t cred;
@@ -85,15 +81,12 @@ gss_add_cred(OM_uint32 *minor_status,
     OM_uint32 *acceptor_time_rec)
 {
 	OM_uint32 major_status;
-	struct _gss_mech_switch *m;
-	gss_OID_set_desc set;
-	struct _gss_name *name = (struct _gss_name *) desired_name;
+	gssapi_mech_interface m;
 	struct _gss_cred *cred = (struct _gss_cred *) input_cred_handle;
 	struct _gss_cred *new_cred;
 	struct _gss_mechanism_cred *mc, *target_mc, *copy_mc;
 	struct _gss_mechanism_name *mn;
-	OM_uint32 min_time, time, junk;
-	int i;
+	OM_uint32 junk;
 
 	*output_cred_handle = 0;
 	*minor_status = 0;
@@ -115,7 +108,7 @@ gss_add_cred(OM_uint32 *minor_status,
 	target_mc = 0;
 	if (cred) {
 		SLIST_FOREACH(mc, &cred->gc_mc, gmc_link) {
-			if (_gss_oid_equal(mc->gmc_mech, desired_mech)) {
+			if (gss_oid_equal(mc->gmc_mech_oid, desired_mech)) {
 				target_mc = mc;
 			}
 			copy_mc = _gss_copy_cred(mc);
@@ -142,7 +135,7 @@ gss_add_cred(OM_uint32 *minor_status,
 		mn = 0;
 	}
 
-	m = _gss_find_mech_switch(desired_mech);
+	m = __gss_get_mechanism(desired_mech);
 
 	mc = malloc(sizeof(struct _gss_mechanism_cred));
 	if (!mc) {

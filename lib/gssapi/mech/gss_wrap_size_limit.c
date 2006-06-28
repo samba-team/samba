@@ -26,10 +26,8 @@
  *	$FreeBSD: src/lib/libgssapi/gss_wrap_size_limit.c,v 1.1 2005/12/29 14:40:20 dfr Exp $
  */
 
-#include <gssapi/gssapi.h>
-
-#include "mech_switch.h"
-#include "context.h"
+#include "mech_locl.h"
+RCSID("$Id$");
 
 OM_uint32
 gss_wrap_size_limit(OM_uint32 *minor_status,
@@ -40,7 +38,7 @@ gss_wrap_size_limit(OM_uint32 *minor_status,
     OM_uint32 *max_input_size)
 {
 	struct _gss_context *ctx = (struct _gss_context *) context_handle;
-	struct _gss_mech_switch *m = ctx->gc_mech;
+	gssapi_mech_interface m = ctx->gc_mech;
 
 	return (m->gm_wrap_size_limit(minor_status, ctx->gc_ctx,
 		    conf_req_flag, qop_req, req_output_size, max_input_size));

@@ -24,9 +24,9 @@
  * SUCH DAMAGE.
  *
  *	$FreeBSD: src/lib/libgssapi/utils.h,v 1.1 2005/12/29 14:40:20 dfr Exp $
+ *	$Id$
  */
 
-extern int _gss_oid_equal(const gss_OID, const gss_OID);
 extern OM_uint32 _gss_copy_oid(OM_uint32 *, const gss_OID, gss_OID);
 extern OM_uint32 _gss_copy_buffer(OM_uint32 *minor_status,
     const gss_buffer_t from_buf, gss_buffer_t to_buf);

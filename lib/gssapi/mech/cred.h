@@ -24,13 +24,14 @@
  * SUCH DAMAGE.
  *
  *	$FreeBSD: src/lib/libgssapi/cred.h,v 1.1 2005/12/29 14:40:20 dfr Exp $
+ *	$Id$
  */
 
 #include <sys/queue.h>
 
 struct _gss_mechanism_cred {
 	SLIST_ENTRY(_gss_mechanism_cred) gmc_link;
-	struct _gss_mech_switch *gmc_mech;	/* mechanism ops for MC */
+	gssapi_mech_interface	gmc_mech;	/* mechanism ops for MC */
 	gss_OID			gmc_mech_oid;	/* mechanism oid for MC */
 	gss_cred_id_t		gmc_cred;	/* underlying MC */
 };

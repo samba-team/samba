@@ -26,12 +26,8 @@
  *	$FreeBSD: src/lib/libgssapi/gss_canonicalize_name.c,v 1.1 2005/12/29 14:40:20 dfr Exp $
  */
 
-#include <gssapi/gssapi.h>
-#include <stdlib.h>
-#include <errno.h>
-
-#include "mech_switch.h"
-#include "name.h"
+#include "mech_locl.h"
+RCSID("$Id$");
 
 OM_uint32
 gss_canonicalize_name(OM_uint32 *minor_status,
@@ -42,7 +38,7 @@ gss_canonicalize_name(OM_uint32 *minor_status,
 	OM_uint32 major_status;
 	struct _gss_name *name = (struct _gss_name *) input_name;
 	struct _gss_mechanism_name *mn;
-	struct _gss_mech_switch *m = _gss_find_mech_switch(mech_type);
+	gssapi_mech_interface m = __gss_get_mechanism(mech_type);
 	gss_name_t new_canonical_name;
 
 	*minor_status = 0;

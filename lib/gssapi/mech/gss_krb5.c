@@ -26,18 +26,72 @@
  *	$FreeBSD: src/lib/libgssapi/gss_krb5.c,v 1.1 2005/12/29 14:40:20 dfr Exp $
  */
 
-#include <gssapi/gssapi.h>
-#include <stdlib.h>
-#include <errno.h>
+#include "mech_locl.h"
+RCSID("$Id$");
 
-#include "mech_switch.h"
-#include "context.h"
-#include "cred.h"
+#include <krb5.h>
 
+
+OM_uint32
+gss_krb5_copy_ccache(OM_uint32 *minor_status,
+		     gss_cred_id_t cred,
+		     krb5_ccache out)
+{
+    krb5_context context;
+    OM_uint32 ret;
+    krb5_error_code kret;
+    gss_buffer_set_t data_set = GSS_C_NO_BUFFER_SET;
+    const char *prefix;
+
+    ret = gss_inquire_cred_by_oid(minor_status,
+				  cred,
+				  GSS_KRB5_COPY_CCACHE_X,
+				  &data_set);
+    if (ret) {
+	return ret;
+    }
+
+    if (data_set == GSS_C_NO_BUFFER_SET ||
+	data_set->count != 2) {
+	gss_release_buffer_set(minor_status, &data_set);
+	*minor_status = EINVAL;
+	return GSS_S_FAILURE;
+    }
+
+    prefix = (const char *)data_set->elements[0].value;
+
+    kret = krb5_init_context(&context);
+    if (out->ops == NULL) {
+	*minor_status = ENOENT;
+	gss_release_buffer_set(minor_status, &data_set);
+	return GSS_S_FAILURE;
+    }
+
+    out->ops = krb5_cc_get_prefix_ops(context, prefix);
+    krb5_free_context(context);
+    if (out->ops == NULL) {
+	*minor_status = ENOENT;
+	gss_release_buffer_set(minor_status, &data_set);
+	return GSS_S_FAILURE;
+    }
+
+    out->data.data = data_set->elements[1].value;
+    out->data.length = data_set->elements[1].length;
+    data_set->elements[1].value = NULL;
+    data_set->elements[1].length = 0;
+
+    data_set->count--;
+
+    gss_release_buffer_set(minor_status, &data_set);
+
+    return ret;
+}
+
+#if 0
 OM_uint32
 gsskrb5_register_acceptor_identity(const char *identity)
 {
-	struct _gss_mech_switch *m;
+	gssapi_mech_interface m;
 
 	_gss_load_mech();
 	SLIST_FOREACH(m, &_gss_mechs, gm_link) {
@@ -55,7 +109,7 @@ gss_krb5_copy_ccache(OM_uint32 *minor_status,
 {
 	struct _gss_mechanism_cred *mcp;
 	struct _gss_cred *cred = (struct _gss_cred *) cred_handle;
-	struct _gss_mech_switch *m;
+	gssapi_mech_interface m;
 
 	*minor_status = 0;
 
@@ -74,7 +128,7 @@ gss_krb5_compat_des3_mic(OM_uint32 *minor_status,
     gss_ctx_id_t context_handle, int flag)
 {
 	struct _gss_context *ctx = (struct _gss_context *) context_handle;
-	struct _gss_mech_switch *m = ctx->gc_mech;
+	gssapi_mech_interface m = ctx->gc_mech;
 
 	*minor_status = 0;
 
@@ -84,4 +138,5 @@ gss_krb5_compat_des3_mic(OM_uint32 *minor_status,
 
 	return (GSS_S_FAILURE);
 }
+#endif
 

@@ -26,13 +26,8 @@
  *	$FreeBSD: src/lib/libgssapi/gss_inquire_cred.c,v 1.1 2005/12/29 14:40:20 dfr Exp $
  */
 
-#include <gssapi/gssapi.h>
-#include <stdlib.h>
-#include <errno.h>
-
-#include "mech_switch.h"
-#include "name.h"
-#include "cred.h"
+#include "mech_locl.h"
+RCSID("$Id$");
 
 OM_uint32
 gss_inquire_cred(OM_uint32 *minor_status,
@@ -45,7 +40,6 @@ gss_inquire_cred(OM_uint32 *minor_status,
 	OM_uint32 major_status;
 	struct _gss_mech_switch *m;
 	struct _gss_cred *cred = (struct _gss_cred *) cred_handle;
-	struct _gss_mechanism_cred *mc;
 	struct _gss_name *name;
 	struct _gss_mechanism_name *mn;
 	OM_uint32 min_lifetime;
@@ -81,6 +75,8 @@ gss_inquire_cred(OM_uint32 *minor_status,
 
 	min_lifetime = GSS_C_INDEFINITE;
 	if (cred) {
+		struct _gss_mechanism_cred *mc;
+
 		SLIST_FOREACH(mc, &cred->gc_mc, gmc_link) {
 			gss_name_t mc_name;
 			OM_uint32 mc_lifetime;
@@ -118,7 +114,7 @@ gss_inquire_cred(OM_uint32 *minor_status,
 			gss_name_t mc_name;
 			OM_uint32 mc_lifetime;
 
-			major_status = m->gm_inquire_cred(minor_status,
+			major_status = m->gm_mech.gm_inquire_cred(minor_status,
 			    GSS_C_NO_CREDENTIAL, &mc_name, &mc_lifetime,
 			    cred_usage, NULL);
 			if (major_status)
@@ -128,16 +124,16 @@ gss_inquire_cred(OM_uint32 *minor_status,
 				mn = malloc(
 					sizeof(struct _gss_mechanism_name));
 				if (!mn) {
-					mc->gmc_mech->gm_release_name(
+					m->gm_mech.gm_release_name(
 						minor_status, &mc_name);
 					continue;
 				}
-				mn->gmn_mech = mc->gmc_mech;
-				mn->gmn_mech_oid = mc->gmc_mech_oid;
+				mn->gmn_mech = &m->gm_mech;
+				mn->gmn_mech_oid = &m->gm_mech_oid;
 				mn->gmn_name = mc_name;
 				SLIST_INSERT_HEAD(&name->gn_mn, mn, gmn_link);
 			} else if (mc_name) {
-				mc->gmc_mech->gm_release_name(minor_status,
+				m->gm_mech.gm_release_name(minor_status,
 				    &mc_name);
 			}
 

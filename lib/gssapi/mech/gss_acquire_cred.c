@@ -26,13 +26,8 @@
  *	$FreeBSD: src/lib/libgssapi/gss_acquire_cred.c,v 1.1 2005/12/29 14:40:20 dfr Exp $
  */
 
-#include <gssapi/gssapi.h>
-#include <stdlib.h>
-#include <errno.h>
-
-#include "mech_switch.h"
-#include "name.h"
-#include "cred.h"
+#include "mech_locl.h"
+RCSID("$Id$");
 
 OM_uint32
 gss_acquire_cred(OM_uint32 *minor_status,
@@ -48,11 +43,10 @@ gss_acquire_cred(OM_uint32 *minor_status,
 	gss_OID_set mechs = desired_mechs;
 	gss_OID_set_desc set;
 	struct _gss_name *name = (struct _gss_name *) desired_name;
-	struct _gss_mech_switch *m;
+	gssapi_mech_interface m;
 	struct _gss_cred *cred;
 	struct _gss_mechanism_cred *mc;
-	struct _gss_mechanism_name *mn;
-	OM_uint32 min_time, time;
+	OM_uint32 min_time, cred_time;
 	int i;
 
 	/*
@@ -98,7 +92,9 @@ gss_acquire_cred(OM_uint32 *minor_status,
 	set.count = 1;
 	min_time = GSS_C_INDEFINITE;
 	for (i = 0; i < mechs->count; i++) {
-		m = _gss_find_mech_switch(&mechs->elements[i]);
+		struct _gss_mechanism_name *mn = NULL;
+
+		m = __gss_get_mechanism(&mechs->elements[i]);
 		if (!m)
 			continue;
 
@@ -123,13 +119,13 @@ gss_acquire_cred(OM_uint32 *minor_status,
 		    (desired_name != GSS_C_NO_NAME
 			? mn->gmn_name : GSS_C_NO_NAME),
 		    time_req, &set, cred_usage,
-		    &mc->gmc_cred, NULL, &time);
+		    &mc->gmc_cred, NULL, &cred_time);
 		if (major_status) {
 			free(mc);
 			continue;
 		}
-		if (time < min_time)
-			min_time = time;
+		if (cred_time < min_time)
+			min_time = cred_time;
 
 		if (actual_mechs) {
 			major_status = gss_add_oid_set_member(minor_status,

@@ -26,7 +26,8 @@
  *	$FreeBSD: src/lib/libgssapi/gss_seal.c,v 1.1 2005/12/29 14:40:20 dfr Exp $
  */
 
-#include <gssapi/gssapi.h>
+#include "mech_locl.h"
+RCSID("$Id$");
 
 OM_uint32
 gss_seal(OM_uint32 *minor_status,
