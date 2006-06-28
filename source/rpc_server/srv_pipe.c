@@ -679,7 +679,8 @@ static BOOL pipe_ntlmssp_verify_final(pipes_struct *p, DATA_BLOB *p_resp_blob)
 	if (p->pipe_user.ut.ngroups) {
 		if (!(p->pipe_user.ut.groups = memdup(a->server_info->groups,
 						sizeof(gid_t) * p->pipe_user.ut.ngroups))) {
-			DEBUG(0,("failed to memdup group list to p->pipe_user.groups\n"));
+			DEBUG(0,("pipe_ntlmssp_verify_final: failed to memdup group list to p->pipe_user.groups\n"));
+			data_blob_free(&p->session_key);
 			return False;
 		}
 	}
@@ -687,9 +688,17 @@ static BOOL pipe_ntlmssp_verify_final(pipes_struct *p, DATA_BLOB *p_resp_blob)
 	if (a->server_info->ptok) {
 		p->pipe_user.nt_user_token =
 			dup_nt_token(NULL, a->server_info->ptok);
+		if (!p->pipe_user.nt_user_token) {
+			DEBUG(1,("pipe_ntlmssp_verify_final: dup_nt_token failed.\n"));
+			data_blob_free(&p->session_key);
+			SAFE_FREE(p->pipe_user.ut.groups);
+			return False;
+		}
+
 	} else {
-		DEBUG(1,("Error: Authmodule failed to provide nt_user_token\n"));
-		p->pipe_user.nt_user_token = NULL;
+		DEBUG(1,("pipe_ntlmssp_verify_final: Error: Authmodule failed to provide nt_user_token\n"));
+		data_blob_free(&p->session_key);
+		SAFE_FREE(p->pipe_user.ut.groups);
 		return False;
 	}
 
