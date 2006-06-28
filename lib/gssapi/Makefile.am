@@ -136,6 +136,11 @@ libgssapi_la_SOURCES  = \
 	spnego/init_sec_context.c \
 	spnego/spnego_locl.h
 
+libgssapi_la_LIBADD = \
+	../krb5/libkrb5.la \
+	../asn1/libasn1.la \
+	$(LIB_roken)
+
 man_MANS = gssapi.3 gss_acquire_cred.3
 
 include_HEADERS = gssapi.h
@@ -172,10 +177,13 @@ $(srcdir)/krb5/gsskrb5-private.h:
 	cd $(srcdir) && perl ../../cf/make-proto.pl -q -P comment -p krb5/gsskrb5-private.h $(krb5src) || rm -f krb5/gsskrb5-private.h
 
 
-#TESTS = test_sequence test_oid
-#
-#check_PROGRAMS = test_acquire_cred $(TESTS)
-#
-#noinst_PROGRAMS = test_cred test_kcred
-#LDADD = libmech_krb5.la $(LIB_roken)
+TESTS = test_oid
+# test_sequence 
+
+check_PROGRAMS = test_acquire_cred $(TESTS)
+
+noinst_PROGRAMS = test_cred test_kcred
+LDADD = libgssapi.la $(LIB_roken)
+
+test_kcred_LDADD = libgssapi.la ../krb5/libkrb5.la $(LIB_roken)
 
