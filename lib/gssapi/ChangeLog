@@ -1,3 +1,15 @@
+2006-06-28  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* mech: Bug fixes, cleanup, compiler warnings, restructure code.
+
+	* spnego: Rename gss_context_id_t and gss_cred_id_t to local names
+
+	* krb5: repro copy the krb5 files here
+
+	* mech: import Doug Rabson mechglue from freebsd
+	
+	* spnego: Import Luke Howard's SPNEGO from the mechglue branch
+
 2006-06-22  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* gssapi.h: Add oid_to_str.
