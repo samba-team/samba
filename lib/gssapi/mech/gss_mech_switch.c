@@ -279,6 +279,8 @@ _gss_load_mech(void)
 		SYM(duplicate_name);
 		OPTSYM(inquire_cred_by_oid);
 		OPTSYM(inquire_sec_context_by_oid);
+		OPTSYM(set_sec_context_option);
+		OPTSYM(set_cred_option);
 
 		SLIST_INSERT_HEAD(&_gss_mechs, m, gm_link);
 		continue;
