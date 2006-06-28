@@ -3641,7 +3641,7 @@ static NTSTATUS ldapsam_lookup_rids(struct pdb_methods *methods,
 				    int num_rids,
 				    uint32 *rids,
 				    const char **names,
-				    uint32 *attrs)
+				    enum SID_NAME_USE *attrs)
 {
 	struct ldapsam_privates *ldap_state =
 		(struct ldapsam_privates *)methods->private_data;
