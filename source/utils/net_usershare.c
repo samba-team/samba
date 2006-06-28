@@ -368,12 +368,9 @@ static int info_fn(struct file_list *fl, void *priv)
 	pstrcpy(acl_str, "usershare_acl=");
 
 	for (num_aces = 0; num_aces < psd->dacl->num_aces; num_aces++) {
-		char access_str[2];
 		const char *domain;
 		const char *name;
 		NTSTATUS ntstatus;
-
-		access_str[1] = '\0';
 
 		ntstatus = net_lookup_name_from_sid(ctx, &psd->dacl->ace[num_aces].trustee, &domain, &name);
 
@@ -765,7 +762,7 @@ static int net_usershare_add(int argc, const char **argv)
 		const char *my_argv[2];
 		my_argv[0] = sharename;
 		my_argv[1] = NULL;
-		net_usershare_info(1, argv);
+		net_usershare_info(1, my_argv);
 	}
 
 	SAFE_FREE(sharename);
