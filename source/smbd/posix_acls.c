@@ -1483,7 +1483,7 @@ Deny entry after Allow entry. Failing to set on file %s.\n", fsp->fsp_name ));
 		 * Only add to the file ACL if not inherit only.
 		 */
 
-		if (!(psa->flags & SEC_ACE_FLAG_INHERIT_ONLY)) {
+		if (current_ace && !(psa->flags & SEC_ACE_FLAG_INHERIT_ONLY)) {
 			DLIST_ADD_END(file_ace, current_ace, tmp_ace);
 
 			/*
