@@ -761,6 +761,12 @@ gss_set_sec_context_option (OM_uint32 *minor_status,
 			    const gss_OID desired_object,
 			    const gss_buffer_t value);
 
+OM_uint32
+gss_set_cred_option (OM_uint32 *minor_status,
+		     gss_cred_id_t *cred_handle,
+		     const gss_OID object,
+		     const gss_buffer_t value);
+
 int
 gss_oid_equal(const gss_OID a, const gss_OID b);
 
