@@ -1,0 +1,8 @@
+2005-01-11  Luke Howard  <lukeh@padl.com>
+
+	* spnego.asn1: s/request_mic/request-mic
+
+2005-01-10  Luke Howard  <lukeh@padl.com>
+
+	* initial revision
+

@@ -1,0 +1,8 @@
+#ident $Id$
+GSSAPI_2.0 {
+	global:
+		gss_spnego_initialize;
+		GSS_SPNEGO_MECHANISM;
+	local:
+		*;
+};
