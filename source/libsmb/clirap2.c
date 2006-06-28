@@ -211,11 +211,20 @@ int cli_NetGroupAdd(struct cli_state *cli, RAP_GROUP_INFO_1 * grinfo )
 	    +WORDSIZE                    /* info level    */
 	    +WORDSIZE];                  /* reserved word */
 
-  char data[1024];
-    
   /* offset into data of free format strings.  Will be updated */
   /* by PUTSTRINGP macro and end up with total data length.    */
   int soffset = RAP_GROUPNAME_LEN + 1 + DWORDSIZE; 
+  char *data;
+  size_t data_size;
+
+  /* Allocate data. */
+  data_size = MAX(soffset + strlen(grinfo->comment) + 1, 1024);
+
+  data = SMB_MALLOC(data_size);
+  if (!data) {
+    DEBUG (1, ("Malloc fail\n"));
+    return -1;
+  }
 
   /* now send a SMBtrans command with api WGroupAdd */
   
@@ -253,6 +262,7 @@ int cli_NetGroupAdd(struct cli_state *cli, RAP_GROUP_INFO_1 * grinfo )
       DEBUG(4,("NetGroupAdd failed\n"));
     }
   
+  SAFE_FREE(data);
   SAFE_FREE(rparam);
   SAFE_FREE(rdata);
 
