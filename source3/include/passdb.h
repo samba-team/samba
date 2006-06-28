@@ -240,9 +240,11 @@ struct pdb_search {
  * There's no point in allocating arrays in
  * samr_lookup_rids twice. It was done in the srv_samr_nt.c code as well as in
  * the pdb module. Remove the latter, this might happen more often. VL.
+ * changed to version 14 to move lookup_rids and lookup_names to return
+ * enum SID_NAME_USE rather than uint32.
  */
 
-#define PASSDB_INTERFACE_VERSION 13
+#define PASSDB_INTERFACE_VERSION 14
 
 struct pdb_methods 
 {
@@ -363,14 +365,14 @@ struct pdb_methods
 				int num_rids,
 				uint32 *rids,
 				const char **pp_names,
-				uint32 *attrs);
+				enum SID_NAME_USE *attrs);
 
 	NTSTATUS (*lookup_names)(struct pdb_methods *methods,
 				 const DOM_SID *domain_sid,
 				 int num_names,
 				 const char **pp_names,
 				 uint32 *rids,
-				 uint32 *attrs);
+				 enum SID_NAME_USE *attrs);
 
 	NTSTATUS (*get_account_policy)(struct pdb_methods *methods,
 				       int policy_index, uint32 *value);
