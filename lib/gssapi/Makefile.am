@@ -2,98 +2,178 @@
 
 include $(top_srcdir)/Makefile.am.common
 
+AUTOMAKE_OPTIONS = subdir-objects
+
 AM_CPPFLAGS += -I$(srcdir)/../krb5 \
-	-I${srcdir}/../asn1/include \
+	-I$(srcdir)/../asn1 \
+	-I$(srcdir) \
+	-I$(srcdir)/krb5 \
+	-I$(srcdir)/spnego \
+	-I$(srcdir)/mech \
 	$(INCLUDE_des) \
 	$(INCLUDE_krb4)
+
+lib_LTLIBRARIES = libgssapi.la
+
+krb5src = \
+	krb5/8003.c \
+	krb5/accept_sec_context.c \
+	krb5/acquire_cred.c \
+	krb5/add_cred.c \
+	krb5/add_oid_set_member.c \
+	krb5/address_to_krb5addr.c \
+	krb5/arcfour.c \
+	krb5/canonicalize_name.c \
+	krb5/ccache_name.c \
+	krb5/cfx.c \
+	krb5/cfx.h \
+	krb5/compare_name.c \
+	krb5/compat.c \
+	krb5/context_time.c \
+	krb5/copy_ccache.c \
+	krb5/create_emtpy_oid_set.c \
+	krb5/decapsulate.c \
+	krb5/delete_sec_context.c \
+	krb5/display_name.c \
+	krb5/display_status.c \
+	krb5/duplicate_name.c \
+	krb5/encapsulate.c \
+	krb5/export_name.c \
+	krb5/export_sec_context.c \
+	krb5/external.c \
+	krb5/get_mic.c \
+	krb5/gssapi_locl.h \
+	krb5/gsskrb5-private.h \
+	krb5/import_name.c \
+	krb5/import_sec_context.c \
+	krb5/indicate_mechs.c \
+	krb5/init.c \
+	krb5/init_sec_context.c \
+	krb5/inquire_context.c \
+	krb5/inquire_cred.c \
+	krb5/inquire_cred_by_mech.c \
+	krb5/inquire_cred_by_oid.c \
+	krb5/inquire_mechs_for_name.c \
+	krb5/inquire_names_for_mech.c \
+	krb5/inquire_sec_context_by_oid.c \
+	krb5/test_oid_set_member.c \
+	krb5/process_context_token.c \
+	krb5/release_buffer.c \
+	krb5/release_cred.c \
+	krb5/release_name.c \
+	krb5/release_oid_set.c \
+	krb5/sequence.c \
+	krb5/set_sec_context_option.c \
+	krb5/ticket_flags.c \
+	krb5/unwrap.c \
+	krb5/v1.c \
+	krb5/verify_mic.c \
+	krb5/wrap.c
+
+libgssapi_la_SOURCES  = \
+	$(BUILT_SOURCES) \
+	$(krb5src) \
+	mech/context.h \
+	mech/cred.h \
+	mech/gss_accept_sec_context.c \
+	mech/gss_acquire_cred.c \
+	mech/gss_add_cred.c \
+	mech/gss_add_oid_set_member.c \
+	mech/gss_buffer_set.c \
+	mech/gss_canonicalize_name.c \
+	mech/gss_compare_name.c \
+	mech/gss_context_time.c \
+	mech/gss_create_empty_oid_set.c \
+	mech/gss_decapsulate_token.c \
+	mech/gss_delete_sec_context.c \
+	mech/gss_display_name.c \
+	mech/gss_display_status.c \
+	mech/gss_duplicate_name.c \
+	mech/gss_duplicate_oid.c \
+	mech/gss_encapsulate_token.c \
+	mech/gss_export_name.c \
+	mech/gss_export_sec_context.c \
+	mech/gss_get_mic.c \
+	mech/gss_import_name.c \
+	mech/gss_import_sec_context.c \
+	mech/gss_indicate_mechs.c \
+	mech/gss_init_sec_context.c \
+	mech/gss_inquire_context.c \
+	mech/gss_inquire_cred.c \
+	mech/gss_inquire_cred_by_mech.c \
+	mech/gss_inquire_mechs_for_name.c \
+	mech/gss_inquire_names_for_mech.c \
+	mech/gss_krb5.c \
+	mech/gss_mech_switch.c \
+	mech/gss_names.c \
+	mech/gss_oid_equal.c \
+	mech/gss_oid_to_str.c \
+	mech/gss_process_context_token.c \
+	mech/gss_release_buffer.c \
+	mech/gss_release_cred.c \
+	mech/gss_release_name.c \
+	mech/gss_release_oid_set.c \
+	mech/gss_seal.c \
+	mech/gss_sign.c \
+	mech/gss_test_oid_set_member.c \
+	mech/gss_unseal.c \
+	mech/gss_unwrap.c \
+	mech/gss_utils.c \
+	mech/gss_verify.c \
+	mech/gss_verify_mic.c \
+	mech/gss_wrap.c \
+	mech/gss_wrap_size_limit.c \
+	mech/gss_inquire_sec_context_by_oid.c \
+	mech/mech_switch.h \
+	mech/name.h \
+	mech/utils.h \
+	spnego/accept_sec_context.c \
+	spnego/compat.c \
+	spnego/context_stubs.c \
+	spnego/cred_stubs.c \
+	spnego/external.c \
+	spnego/gssapi_spnego.h \
+	spnego/init_sec_context.c \
+	spnego/spnego_locl.h
+
+man_MANS = gssapi.3 gss_acquire_cred.3
+
+include_HEADERS = gssapi.h
+
+gssapi_files = asn1_GSSAPIContextToken.x
 
 spnego_files =					\
 	asn1_ContextFlags.x			\
 	asn1_MechType.x				\
 	asn1_MechTypeList.x			\
 	asn1_NegotiationToken.x			\
+	asn1_NegHints.x				\
 	asn1_NegTokenInit.x			\
-	asn1_NegTokenTarg.x
+	asn1_NegTokenResp.x
 
-BUILT_SOURCES = $(spnego_files:.x=.c)
+BUILT_SOURCES = $(spnego_files:.x=.c) $(gssapi_files:.x=.c)
 
-lib_LTLIBRARIES = libgssapi.la
-libgssapi_la_LDFLAGS = -version-info 4:0:0
-libgssapi_la_LIBADD  = \
-	../krb5/libkrb5.la \
-	$(LIB_des) \
-	../asn1/libasn1.la \
-	$(LIB_roken)
-
-man_MANS = gssapi.3 gss_acquire_cred.3
-
-include_HEADERS = gssapi.h
-
-libgssapi_la_SOURCES =		\
-	$(BUILT_SOURCES)	\
-	8003.c			\
-	accept_sec_context.c	\
-	acquire_cred.c		\
-	add_cred.c		\
-	add_oid_set_member.c	\
-	arcfour.c		\
-	canonicalize_name.c	\
-	ccache_name.c		\
-	cfx.c			\
-	compare_name.c		\
-	compat.c		\
-	context_time.c		\
-	copy_ccache.c		\
-	create_emtpy_oid_set.c	\
-	decapsulate.c		\
-	delete_sec_context.c	\
-	display_name.c		\
-	display_status.c	\
-	duplicate_name.c	\
-	encapsulate.c		\
-	export_sec_context.c	\
-	export_name.c		\
-	external.c		\
-	get_mic.c		\
-	gssapi.h		\
-	gssapi_locl.h		\
-	import_name.c		\
-	import_sec_context.c	\
-	indicate_mechs.c	\
-	init.c			\
-	init_sec_context.c	\
-	inquire_context.c	\
-	inquire_cred.c		\
-	inquire_cred_by_mech.c	\
-	inquire_mechs_for_name.c \
-	inquire_names_for_mech.c \
-	oid_to_str.c		\
-	process_context_token.c \
-	release_buffer.c	\
-	release_cred.c		\
-	release_name.c		\
-	release_oid_set.c	\
-	sequence.c		\
-	test_oid_set_member.c	\
-	ticket_flags.c		\
-	unwrap.c		\
-	v1.c			\
-	verify_mic.c		\
-        wrap.c                  \
-        address_to_krb5addr.c
-
-CLEANFILES = $(BUILT_SOURCES) $(spnego_files) spnego_asn1.h spnego_asn1_files
+CLEANFILES = $(BUILT_SOURCES) \
+	$(spnego_files) spnego_asn1.h spnego_asn1_files \
+	$(gssapi_files) gssapi_asn1.h gssapi_asn1_files
 
 $(spnego_files) spnego_asn1.h: spnego_asn1_files
+$(gssapi_files) gssapi_asn1.h: gssapi_asn1_files
 
-spnego_asn1_files: ../asn1/asn1_compile$(EXEEXT) $(srcdir)/spnego.asn1
-	../asn1/asn1_compile$(EXEEXT) $(srcdir)/spnego.asn1 spnego_asn1
+spnego_asn1_files: ../asn1/asn1_compile$(EXEEXT) $(srcdir)/spnego/spnego.asn1
+	../asn1/asn1_compile$(EXEEXT) $(srcdir)/spnego/spnego.asn1 spnego_asn1
 
-$(libgssapi_la_OBJECTS): spnego_asn1.h
+gssapi_asn1_files: ../asn1/asn1_compile$(EXEEXT) $(srcdir)/mech/gssapi.asn1
+	../asn1/asn1_compile$(EXEEXT) $(srcdir)/mech/gssapi.asn1 gssapi_asn1
 
-TESTS = test_sequence test_oid
+$(srcdir)/krb5/gsskrb5-private.h:
+	cd $(srcdir) && perl ../../cf/make-proto.pl -q -P comment -p krb5/gsskrb5-private.h $(krb5src) || rm -f krb5/gsskrb5-private.h
 
-check_PROGRAMS = test_acquire_cred $(TESTS)
 
-noinst_PROGRAMS = test_cred test_kcred
-LDADD = libgssapi.la $(LIB_roken)
+#TESTS = test_sequence test_oid
+#
+#check_PROGRAMS = test_acquire_cred $(TESTS)
+#
+#noinst_PROGRAMS = test_cred test_kcred
+#LDADD = libmech_krb5.la $(LIB_roken)
+

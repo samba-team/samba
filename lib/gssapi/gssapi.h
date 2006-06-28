@@ -76,10 +76,6 @@ typedef struct gss_OID_set_desc_struct  {
       gss_OID    elements;
 } gss_OID_set_desc, *gss_OID_set;
 
-struct krb5_keytab_data;
-
-struct krb5_ccache_data;
-
 typedef int gss_cred_usage_t;
 
 struct gss_cred_id_t_desc_struct;
@@ -98,6 +94,12 @@ typedef struct gss_channel_bindings_struct {
       gss_buffer_desc application_data;
 } *gss_channel_bindings_t;
 
+/* GGF extension data types */
+typedef struct gss_buffer_set_desc_struct {
+      size_t count;
+      gss_buffer_desc *elements;
+} gss_buffer_set_desc, *gss_buffer_set_t;
+
 /*
  * For now, define a QOP-type as an OM_uint32
  */
@@ -115,6 +117,8 @@ typedef OM_uint32 gss_qop_t;
 #define GSS_C_ANON_FLAG 64
 #define GSS_C_PROT_READY_FLAG 128
 #define GSS_C_TRANS_FLAG 256
+
+#define GSS_C_DCE_STYLE 0x1000 
 
 /*
  * Credential usage options
@@ -162,6 +166,7 @@ typedef OM_uint32 gss_qop_t;
  */
 #define GSS_C_NO_NAME ((gss_name_t) 0)
 #define GSS_C_NO_BUFFER ((gss_buffer_t) 0)
+#define GSS_C_NO_BUFFER_SET ((gss_buffer_set_t) 0)
 #define GSS_C_NO_OID ((gss_OID) 0)
 #define GSS_C_NO_OID_SET ((gss_OID_set) 0)
 #define GSS_C_NO_CONTEXT ((gss_ctx_id_t) 0)
@@ -319,6 +324,13 @@ extern gss_OID GSS_KRB5_MECHANISM;
 #define gss_mech_krb5 GSS_KRB5_MECHANISM
 #define gss_krb5_nt_general_name GSS_KRB5_NT_PRINCIPAL_NAME
 
+/* Extensions */
+extern gss_OID GSS_C_PEER_HAS_UPDATED_SPNEGO;
+extern gss_OID GSS_KRB5_COPY_CCACHE_X;
+extern gss_OID GSS_KRB5_GET_TKT_FLAGS_X;
+extern gss_OID GSS_KRB5_EXTRACT_AUTHZ_DATA_FROM_SEC_CONTEXT_X;
+extern gss_OID GSS_KRB5_COMPAT_DES3_MIC_X;
+
 /* Major status codes */
 
 #define GSS_S_COMPLETE 0
@@ -441,6 +453,11 @@ extern gss_OID GSS_KRB5_MECHANISM;
            /* "Invalid field length in token" */
 #define GSS_KRB5_S_KG_CTX_INCOMPLETE 17
            /* "Attempt to use incomplete security context" */
+
+/*
+ * This is used to make sure mechs that don't want to have external
+ * references don't get any prototypes, and thus can get warnings.
+ */
 
 /*
  * Finally, function prototypes for the GSS-API routines.
@@ -710,6 +727,63 @@ OM_uint32 gss_duplicate_name (
             gss_name_t * /*dest_name*/
            );
 
+OM_uint32 gss_duplicate_oid (
+	    OM_uint32 * /* minor_status */,
+	    gss_OID /* src_oid */,
+	    gss_OID * /* dest_oid */
+           );
+OM_uint32
+gss_release_oid
+	(OM_uint32 * /*minor_status*/,
+	 gss_OID * /* oid */
+	);
+
+OM_uint32
+gss_oid_to_str(
+	    OM_uint32 * /*minor_status*/,
+	    gss_OID /* oid */,
+	    gss_buffer_t /* str */
+           );
+
+OM_uint32
+gss_inquire_sec_context_by_oid(
+	    OM_uint32 * minor_status,
+            const gss_ctx_id_t context_handle,
+            const gss_OID desired_object,
+            gss_buffer_set_t *data_set
+           );
+
+OM_uint32
+gss_set_sec_context_option (OM_uint32 *minor_status,
+			    gss_ctx_id_t *context_handle,
+			    const gss_OID desired_object,
+			    const gss_buffer_t value);
+
+int
+gss_oid_equal(const gss_OID a, const gss_OID b);
+
+OM_uint32 
+gss_create_empty_buffer_set
+	   (OM_uint32 * minor_status,
+	    gss_buffer_set_t *buffer_set);
+
+OM_uint32
+gss_add_buffer_set_member
+	   (OM_uint32 * minor_status,
+	    const gss_buffer_t member_buffer,
+	    gss_buffer_set_t *buffer_set);
+
+OM_uint32
+gss_release_buffer_set
+	   (OM_uint32 * minor_status,
+	    gss_buffer_set_t *buffer_set);
+
+OM_uint32
+gss_inquire_cred_by_oid(OM_uint32 *minor_status,
+	                const gss_cred_id_t cred_handle,
+	                const gss_OID desired_object,
+	                gss_buffer_set_t *data_set);
+
 /*
  * The following routines are obsolete variants of gss_get_mic,
  * gss_verify_mic, gss_wrap and gss_unwrap.  They should be
@@ -760,6 +834,9 @@ OM_uint32 gss_unseal
  * kerberos mechanism specific functions
  */
 
+struct krb5_keytab_data;
+struct krb5_ccache_data;
+
 OM_uint32
 gss_krb5_ccache_name(OM_uint32 * /*minor_status*/, 
 		     const char * /*name */,
@@ -798,10 +875,21 @@ OM_uint32
 gss_krb5_compat_des3_mic(OM_uint32 *, gss_ctx_id_t, int);
 
 OM_uint32
-gss_oid_to_str
-	(OM_uint32 * /*minor_status*/,
-	 gss_OID /* oid */,
-	 gss_buffer_t /* str */);
+gss_inquire_sec_context_by_oid (OM_uint32 *minor_status,
+	                        const gss_ctx_id_t context_handle,
+	                        const gss_OID desired_object,
+	                        gss_buffer_set_t *data_set);
+
+OM_uint32
+gss_encapsulate_token(gss_buffer_t /* input_token */,
+		      gss_OID /* oid */,
+		      gss_buffer_t /* output_token */);
+
+OM_uint32
+gss_decapsulate_token(gss_buffer_t /* input_token */,
+		      gss_OID /* oid */,
+		      gss_buffer_t /* output_token */);
+
 
 
 #ifdef __cplusplus
