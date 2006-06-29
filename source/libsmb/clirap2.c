@@ -220,7 +220,7 @@ int cli_NetGroupAdd(struct cli_state *cli, RAP_GROUP_INFO_1 * grinfo )
   /* Allocate data. */
   data_size = MAX(soffset + strlen(grinfo->comment) + 1, 1024);
 
-  data = SMB_MALLOC(data_size);
+  data = SMB_MALLOC_ARRAY(char, data_size);
   if (!data) {
     DEBUG (1, ("Malloc fail\n"));
     return -1;
