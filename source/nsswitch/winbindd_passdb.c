@@ -530,15 +530,21 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 	NTSTATUS nt_status;
 	struct trustdom_info **domains;
 	int i;
+	TALLOC_CTX *tmp_ctx;
 
 	*num_domains = 0;
 	*names = NULL;
 	*alt_names = NULL;
 	*dom_sids = NULL;
 
-	nt_status = secrets_trusted_domains(mem_ctx, num_domains,
+	if (!(tmp_ctx = talloc_init("trusted_domains"))) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	nt_status = secrets_trusted_domains(tmp_ctx, num_domains,
 					    &domains);
 	if (!NT_STATUS_IS_OK(nt_status)) {
+		TALLOC_FREE(tmp_ctx);
 		return nt_status;
 	}
 
@@ -547,15 +553,21 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 	*dom_sids = TALLOC_ARRAY(mem_ctx, DOM_SID, *num_domains);
 
 	if ((*alt_names == NULL) || (*names == NULL) || (*dom_sids == NULL)) {
+		TALLOC_FREE(tmp_ctx);
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	for (i=0; i<*num_domains; i++) {
 		(*alt_names)[i] = NULL;
-		(*names)[i] = talloc_steal((*names), domains[i]->name);
+		if (!((*names)[i] = talloc_strdup((*names),
+						  domains[i]->name))) {
+			TALLOC_FREE(tmp_ctx);
+			return NT_STATUS_NO_MEMORY;
+		}
 		sid_copy(&(*dom_sids)[i], &domains[i]->sid);
 	}
 
+	TALLOC_FREE(tmp_ctx);
 	return NT_STATUS_OK;
 }
 
