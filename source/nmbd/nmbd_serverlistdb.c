@@ -214,7 +214,7 @@ static uint32 write_this_server_name( struct subnet_record *subrec,
 	struct work_record *iwork;
 
 	/* Go through all the subnets we have already seen. */
-	for (ssub = FIRST_SUBNET; ssub != subrec; ssub = NEXT_SUBNET_INCLUDING_UNICAST(ssub)) {
+	for (ssub = FIRST_SUBNET; ssub && (ssub != subrec); ssub = NEXT_SUBNET_INCLUDING_UNICAST(ssub)) {
 		for(iwork = ssub->workgrouplist; iwork; iwork = iwork->next) {
 			if(find_server_in_workgroup( iwork, servrec->serv.name) != NULL) {
 				/*

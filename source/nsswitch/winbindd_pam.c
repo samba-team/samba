@@ -97,6 +97,7 @@ static NTSTATUS append_info3_as_ndr(TALLOC_CTX *mem_ctx,
 	}
 
 	size = prs_data_size(&ps);
+	SAFE_FREE(state->response.extra_data.data);
 	state->response.extra_data.data = SMB_MALLOC(size);
 	if (!state->response.extra_data.data) {
 		prs_mem_free(&ps);
@@ -1365,6 +1366,7 @@ done:
 		cell += 1;
 
 		/* Append an AFS token string */
+		SAFE_FREE(state->response.extra_data.data);
 		state->response.extra_data.data =
 			afs_createtoken_str(afsname, cell);
 
@@ -1614,6 +1616,7 @@ enum winbindd_result winbindd_dual_pam_auth_crap(struct winbindd_domain *domain,
 
 			DEBUG(5, ("Setting unix username to [%s]\n", username_out));
 
+			SAFE_FREE(state->response.extra_data.data);
 			state->response.extra_data.data = SMB_STRDUP(username_out);
 			if (!state->response.extra_data.data) {
 				result = NT_STATUS_NO_MEMORY;

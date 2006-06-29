@@ -234,7 +234,7 @@ void printing_end(void)
  when asked for (and only when supported)
 ****************************************************************************/
 
-static struct printif *get_printer_fns_from_type( int type )
+static struct printif *get_printer_fns_from_type( enum printing_types type )
 {
 	struct printif *printer_fns = &generic_printif;
 
@@ -257,7 +257,7 @@ static struct printif *get_printer_fns_from_type( int type )
 
 static struct printif *get_printer_fns( int snum )
 {
-	return get_printer_fns_from_type( lp_printing(snum) );
+	return get_printer_fns_from_type( (enum printing_types)lp_printing(snum) );
 }
 
 
@@ -1370,7 +1370,7 @@ static void print_queue_receive(int msg_type, struct process_id src,
 	}
 
 	print_queue_update_with_lock(sharename, 
-		get_printer_fns_from_type(printing_type),
+		get_printer_fns_from_type((enum printing_types)printing_type),
 		lpqcommand, lprmcommand );
 
 	return;
@@ -1480,7 +1480,7 @@ static void print_queue_update(int snum, BOOL force)
 	
 	/* get the length */
 
-	len = tdb_pack( buffer, len, "fdPP",
+	len = tdb_pack( NULL, 0, "fdPP",
 		sharename,
 		type,
 		lpqcommand, 

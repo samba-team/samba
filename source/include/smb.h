@@ -869,6 +869,12 @@ struct byte_range_lock {
 				 enum brl_flavour lock_flav, \
 				 br_off start, br_off size)
 
+#define LOCKING_FN_CAST() \
+	void (*)(struct share_mode_entry *, const char *, const char *)
+
+#define LOCKING_FN(fn) \
+	void (*fn)(struct share_mode_entry *, const char *, const char *)
+
 struct bitmap {
 	uint32 *b;
 	unsigned int n;

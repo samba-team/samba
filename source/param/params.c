@@ -3,9 +3,9 @@
  *
  * This module Copyright (C) 1990-1998 Karl Auer
  *
- * Rewritten almost completely by Christopher R. Hertel
- * at the University of Minnesota, September, 1997.
- * This module Copyright (C) 1997-1998 by the University of Minnesota
+ * Rewritten almost completely by Christopher R. Hertel, 1997.
+ * This module Copyright (C) 1997-1998 by Christopher R. Hertel
+ * 
  * -------------------------------------------------------------------------- **
  *
  * This program is free software; you can redistribute it and/or modify

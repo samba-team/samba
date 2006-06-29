@@ -30,15 +30,8 @@ case "$1" in
   stop)
 	echo -n "Shutting down SMB services: "
 
-	## we have to get all the smbd process here instead of just the
-	## main parent (i.e. killproc) because it can take a long time
-	## for an individual process to process a TERM signal
-	smbdpids=`ps guax | grep smbd | grep -v grep | awk '{print $2}'`
-	for pid in $smbdpids; do
-		kill -TERM $pid
-	done
-	## nmbd is ok to kill using killproc()
-	killproc nmbd -TERM
+	killproc smbd 
+	killproc nmbd 
 	rm -f /var/lock/subsys/smb
 	echo ""
 	;;

@@ -902,12 +902,18 @@ static int tdbsam_traverse_setpwent(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data,
 		/* save a copy of the key */
 		
 		ptr->key.dptr = memdup( key.dptr, key.dsize );
+		if (!ptr->key.dptr) {
+			DEBUG(0,("tdbsam_traverse_setpwent: memdup failed\n"));
+			/* just return 0 and let the traversal continue */
+			SAFE_FREE(ptr);
+			return 0;
+		}
+
 		ptr->key.dsize = key.dsize;
 		
 		DLIST_ADD( tdbsam_pwent_list, ptr );
 	
 	}
-	
 	
 	return 0;
 }
@@ -1304,7 +1310,6 @@ static BOOL tdb_update_ridrec_only( struct samu* newpwd, int flag )
 
 static BOOL tdb_update_sam(struct pdb_methods *my_methods, struct samu* newpwd, int flag)
 {
-	uint32		user_rid;
 	BOOL            result = True;
 
 	/* invalidate the existing TDB iterator if it is open */
@@ -1319,7 +1324,7 @@ static BOOL tdb_update_sam(struct pdb_methods *my_methods, struct samu* newpwd, 
 	}
 #endif
 
-	if ( !(user_rid = pdb_get_user_rid(newpwd)) ) {
+	if (!pdb_get_user_rid(newpwd)) {
 		DEBUG(0,("tdb_update_sam: struct samu (%s) with no RID!\n", pdb_get_username(newpwd)));
 		return False;
 	}

@@ -91,7 +91,7 @@
  * Registry key types
  *	Most keys are going to be GENERIC -- may need a better name?
  *	HKPD and HKPT are used by reg_perfcount.c
- *		they are special keys that congtain performance data
+ *		they are special keys that contain performance data
  */
 #define REG_KEY_GENERIC		0
 #define REG_KEY_HKPD		1
@@ -99,7 +99,7 @@
 
 /* 
  * container for function pointers to enumeration routines
- * for vitural registry view 
+ * for virtual registry view 
  */ 
  
 typedef struct {

@@ -1040,10 +1040,10 @@ uint32 reg_perfcount_get_perf_data_block(uint32 base_index,
 					 PERF_DATA_BLOCK *block,
 					 char *object_ids)
 {
-	uint32 buffer_size = 0, last_counter;
+	uint32 buffer_size = 0;
 	const char *fname = counters_directory( NAMES_DB );
 	TDB_CONTEXT *names;
-	int retval;
+	int retval = 0;
 	
 	names = tdb_open_log(fname, 0, TDB_DEFAULT, O_RDONLY, 0444);
 
@@ -1059,7 +1059,7 @@ uint32 reg_perfcount_get_perf_data_block(uint32 base_index,
 		return 0;
 	}
 
-	last_counter = reg_perfcount_get_last_counter(base_index);
+	reg_perfcount_get_last_counter(base_index);
     
 	if(object_ids == NULL)
 	{
@@ -1074,6 +1074,10 @@ uint32 reg_perfcount_get_perf_data_block(uint32 base_index,
 	buffer_size = _reg_perfcount_perf_data_block_fixup(block, ps);
 
 	tdb_close(names);
+
+	if (retval == -1) {
+		return 0;
+	}
 
 	return buffer_size + block->HeaderLength;
 }

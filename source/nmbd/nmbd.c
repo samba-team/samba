@@ -173,6 +173,11 @@ static BOOL reload_interfaces(time_t t)
 	for (n=iface_count() - 1; n >= 0; n--) {
 		struct interface *iface = get_interface(n);
 
+		if (!iface) {
+			DEBUG(2,("reload_interfaces: failed to get interface %d\n", n));
+			continue;
+		}
+
 		/*
 		 * We don't want to add a loopback interface, in case
 		 * someone has added 127.0.0.1 for smbd, nmbd needs to

@@ -1956,7 +1956,7 @@ static NTSTATUS get_user_info_21(TALLOC_CTX *mem_ctx, SAM_USER_INFO_21 *id21,
 	
 	TALLOC_FREE(sampass);
 
-	return NT_STATUS_OK;
+	return nt_status;
 }
 
 /*******************************************************************
