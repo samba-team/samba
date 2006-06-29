@@ -162,6 +162,8 @@ o   Nicholas Brealey <nick@brealey.org>
 o   Gerald (Jerry) Carter <jerry@samba.org>
     * Use system provided killproc() in RedHat init scripts for 
       more robust shutdown.
+    * Fix a crash in the printer publishing code when adding a 
+      new printer via the APW.
 
 
 o   Guenther Deschner <gd@samba.org>
