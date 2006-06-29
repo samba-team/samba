@@ -332,7 +332,22 @@ static void client_sign_outgoing_message(char *outbuf, struct smb_sign_info *si)
 /*	cli->outbuf[smb_ss_field+2]=0; 
 	Uncomment this to test if the remote server actually verifies signatures...*/
 
-	data->send_seq_num += 2;
+	/* Instead of re-introducing the trans_info_conect we
+	   used to have here, we use the fact that during a
+	   SMBtrans/SMBtrans2/SMBnttrans send that the mid stays
+	   constant. This means that calling store_sequence_for_reply()
+	   will return False for all trans secondaries, as the mid is already
+	   on the stored sequence list. As the send_seqence_number must
+	   remain constant for all primary+secondary trans sends, we
+	   only increment the send sequence number when we successfully
+	   add a new entry to the outstanding sequence list. This means
+	   I can isolate the fix here rather than re-adding the trans
+	   signing on/off calls in libsmb/clitrans2.c JRA.
+	 */
+	
+	if (store_sequence_for_reply(&data->outstanding_packet_list, SVAL(outbuf,smb_mid), data->send_seq_num + 1)) {
+		data->send_seq_num += 2;
+	}
 }
 
 /***********************************************************
@@ -356,7 +371,12 @@ static BOOL client_check_incoming_message(char *inbuf, struct smb_sign_info *si,
 		return False;
 	}
 
-	reply_seq_number = data->send_seq_num - 1;
+	if (!get_sequence_for_reply(&data->outstanding_packet_list, SVAL(inbuf, smb_mid), &reply_seq_number)) {
+		DEBUG(1, ("client_check_incoming_message: received message "
+			"with mid %u with no matching send record.\n", (unsigned int)SVAL(inbuf, smb_mid) ));
+		return False;
+	}
+
 	simple_packet_signature(data, (const unsigned char *)inbuf,
 				reply_seq_number, calc_md5_mac);
 
