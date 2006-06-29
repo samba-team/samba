@@ -1064,7 +1064,6 @@ static NTSTATUS ntvfs_map_write_finish(struct ntvfs_module_context *ntvfs,
 		wr->smb2.out._pad	= 0;
 		wr->smb2.out.nwritten	= wr2->generic.out.nwritten;
 		wr->smb2.out.unknown1	= 0;
-		wr->smb2.out._bug	= 0;
 		break;
 
 	default:

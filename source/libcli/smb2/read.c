@@ -31,7 +31,7 @@ struct smb2_request *smb2_read_send(struct smb2_tree *tree, struct smb2_read *io
 {
 	struct smb2_request *req;
 
-	req = smb2_request_init_tree(tree, SMB2_OP_READ, 0x31, False, 0);
+	req = smb2_request_init_tree(tree, SMB2_OP_READ, 0x30, True, 0);
 	if (req == NULL) return NULL;
 
 	SSVAL(req->out.body, 0x02, 0); /* pad */
@@ -40,7 +40,6 @@ struct smb2_request *smb2_read_send(struct smb2_tree *tree, struct smb2_read *io
 	smb2_push_handle(req->out.body+0x10, &io->in.file.handle);
 	SBVAL(req->out.body, 0x20, io->in.unknown1);
 	SBVAL(req->out.body, 0x28, io->in.unknown2);
-	SCVAL(req->out.body, 0x30, io->in._bug);
 
 	smb2_transport_send(req);
 
