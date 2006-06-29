@@ -3187,7 +3187,7 @@ WERROR nt_printer_publish(Printer_entry *print_hnd, int snum, int action)
 		goto done;
 	}
 
-	ads = ads_init(NULL, NULL, NULL);
+	ads = ads_init(lp_realm(), lp_workgroup(), NULL);
 	if (!ads) {
 		DEBUG(3, ("ads_init() failed\n"));
 		win_rc = WERR_SERVER_UNAVAILABLE;
