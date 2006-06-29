@@ -244,20 +244,17 @@ NTSTATUS smb_raw_fileinfo_passthru_parse(const DATA_BLOB *blob, TALLOC_CTX *mem_
 		return NT_STATUS_OK;
 
 	case RAW_FILEINFO_SEC_DESC: {
-		struct ndr_pull *ndr;
 		NTSTATUS status;
-		ndr = ndr_pull_init_blob(blob, mem_ctx);
-		if (!ndr) {
-			return NT_STATUS_NO_MEMORY;
-		}
+
 		parms->query_secdesc.out.sd = talloc(mem_ctx, struct security_descriptor);
-		if (parms->query_secdesc.out.sd == NULL) {
-			return NT_STATUS_NO_MEMORY;
-		}
-		status = ndr_pull_security_descriptor(ndr, NDR_SCALARS|NDR_BUFFERS, 
-						      parms->query_secdesc.out.sd);
-		talloc_free(ndr);
-		return status;
+		NT_STATUS_HAVE_NO_MEMORY(parms->query_secdesc.out.sd);
+
+		status = ndr_pull_struct_blob(blob, mem_ctx,
+					      parms->query_secdesc.out.sd,
+					      (ndr_pull_flags_fn_t)ndr_pull_security_descriptor);
+		NT_STATUS_NOT_OK_RETURN(status);
+
+		return NT_STATUS_OK;
 	}
 
 	default:

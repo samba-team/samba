@@ -21,6 +21,7 @@
 
 #include "includes.h"
 #include "libcli/raw/libcliraw.h"
+#include "librpc/gen_ndr/ndr_security.h"
 
 
 /*
@@ -83,7 +84,18 @@ BOOL smb_raw_setfileinfo_passthru(TALLOC_CTX *mem_ctx,
 		NEED_BLOB(4);
 		SIVAL(blob->data, 0, parms->mode_information.in.mode);
 		return True;
-		
+
+	case RAW_FILEINFO_SEC_DESC: {
+		NTSTATUS status;
+
+		status = ndr_push_struct_blob(blob, mem_ctx,
+					      parms->set_secdesc.in.sd,
+					      (ndr_push_flags_fn_t)ndr_push_security_descriptor);
+		if (!NT_STATUS_IS_OK(status)) return False;
+
+		return True;
+	}
+
 		/* Unhandled levels */
 	case RAW_SFILEINFO_1023:
 	case RAW_SFILEINFO_1025:
