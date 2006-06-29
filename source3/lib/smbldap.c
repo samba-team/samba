@@ -325,7 +325,7 @@ ATTRIB_MAP_ENTRY sidmap_attr_list[] = {
 		return NULL;
 	}
 
-	if (pull_utf8_talloc(mem_ctx, &result, values[0]) < 0) {
+	if (pull_utf8_talloc(mem_ctx, &result, values[0]) == (size_t)-1) {
 		DEBUG(10, ("pull_utf8_talloc failed\n"));
 		ldap_value_free(values);
 		return NULL;
