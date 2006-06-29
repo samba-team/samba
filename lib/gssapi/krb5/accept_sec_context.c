@@ -400,15 +400,18 @@ _gsskrb5_accept_sec_context
 	goto failure;
 
     if (src_name != NULL) {
+	krb5_principal name;
+
 	kret = krb5_copy_principal (_gsskrb5_context,
 				    ticket->client,
-				    src_name);
+				    &name);
 	if (kret) {
 	    ret = GSS_S_FAILURE;
 	    *minor_status = kret;
 	    _gsskrb5_set_error_string ();
 	    goto failure;
 	}
+	*src_name = (gss_name_t)name;
     }
 
     {

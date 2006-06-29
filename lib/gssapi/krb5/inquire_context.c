@@ -36,63 +36,71 @@
 RCSID("$Id$");
 
 OM_uint32 _gsskrb5_inquire_context (
-            OM_uint32 * minor_status,
-            const gss_ctx_id_t context_handle,
-            gss_name_t * src_name,
-            gss_name_t * targ_name,
-            OM_uint32 * lifetime_rec,
-            gss_OID * mech_type,
-            OM_uint32 * ctx_flags,
-            int * locally_initiated,
-            int * open_context
-           )
+    OM_uint32 * minor_status,
+	const gss_ctx_id_t context_handle,
+	gss_name_t * src_name,
+	gss_name_t * targ_name,
+	OM_uint32 * lifetime_rec,
+	gss_OID * mech_type,
+	OM_uint32 * ctx_flags,
+	int * locally_initiated,
+	int * open_context
+    )
 {
-  OM_uint32 ret;
-  gsskrb5_ctx ctx = (gsskrb5_ctx)context_handle;
+    OM_uint32 ret;
+    gsskrb5_ctx ctx = (gsskrb5_ctx)context_handle;
+    gss_name_t name;
 
-  HEIMDAL_MUTEX_lock(&ctx->ctx_id_mutex);
+    if (src_name)
+	*src_name = GSS_C_NO_NAME;
+    if (targ_name)
+	*targ_name = GSS_C_NO_NAME;
 
-  if (src_name) {
-    ret = _gsskrb5_duplicate_name (minor_status,
-				   ctx->source,
-				   src_name);
-    if (ret)
-      goto failed;
-  }
+    HEIMDAL_MUTEX_lock(&ctx->ctx_id_mutex);
 
-  if (targ_name) {
-    ret = _gsskrb5_duplicate_name (minor_status,
-				   ctx->target,
-				   targ_name);
-    if (ret)
-	goto failed;
-  }
+    if (src_name) {
+	name = (gss_name_t)ctx->source;
+	ret = _gsskrb5_duplicate_name (minor_status, name, src_name);
+	if (ret)
+	    goto failed;
+    }
 
-  if (lifetime_rec) {
-      ret = _gsskrb5_lifetime_left(minor_status, 
-				 ctx->lifetime,
-				 lifetime_rec);
-      if (ret)
-	  goto failed;
-  }
+    if (targ_name) {
+	name = (gss_name_t)ctx->target;
+	ret = _gsskrb5_duplicate_name (minor_status, name, targ_name);
+	if (ret)
+	    goto failed;
+    }
 
-  if (mech_type)
-    *mech_type = GSS_KRB5_MECHANISM;
+    if (lifetime_rec) {
+	ret = _gsskrb5_lifetime_left(minor_status, 
+				     ctx->lifetime,
+				     lifetime_rec);
+	if (ret)
+	    goto failed;
+    }
 
-  if (ctx_flags)
-    *ctx_flags = ctx->flags;
+    if (mech_type)
+	*mech_type = GSS_KRB5_MECHANISM;
 
-  if (locally_initiated)
-    *locally_initiated = ctx->more_flags & LOCAL;
+    if (ctx_flags)
+	*ctx_flags = ctx->flags;
 
-  if (open_context)
-    *open_context = ctx->more_flags & OPEN;
+    if (locally_initiated)
+	*locally_initiated = ctx->more_flags & LOCAL;
 
-  *minor_status = 0;
-  ret = GSS_S_COMPLETE;
+    if (open_context)
+	*open_context = ctx->more_flags & OPEN;
 
- failed:
+    *minor_status = 0;
+    ret = GSS_S_COMPLETE;
 
-  HEIMDAL_MUTEX_unlock(&ctx->ctx_id_mutex);
-  return ret;
+failed:
+    if (src_name)
+	_gsskrb5_release_name(NULL, src_name);
+    if (targ_name)
+	_gsskrb5_release_name(NULL, targ_name);
+
+    HEIMDAL_MUTEX_unlock(&ctx->ctx_id_mutex);
+    return ret;
 }

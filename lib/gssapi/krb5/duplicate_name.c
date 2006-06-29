@@ -41,13 +41,13 @@ OM_uint32 _gsskrb5_duplicate_name (
             gss_name_t * dest_name
            )
 {
+    krb5_const_principal src = (krb5_const_principal)src_name;
+    krb5_principal *dest = (krb5_principal *)dest_name;
     krb5_error_code kret;
 
     GSSAPI_KRB5_INIT ();
 
-    kret = krb5_copy_principal (_gsskrb5_context,
-				src_name,
-				dest_name);
+    kret = krb5_copy_principal (_gsskrb5_context, src, dest);
     if (kret) {
 	*minor_status = kret;
 	_gsskrb5_set_error_string ();

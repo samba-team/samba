@@ -53,8 +53,8 @@ _gsskrb5_import_sec_context (
     krb5_keyblock keyblock;
     int32_t tmp;
     int32_t flags;
-    OM_uint32 minor;
     gsskrb5_ctx ctx;
+    gss_name_t name;
 
     GSSAPI_KRB5_INIT ();
 
@@ -158,15 +158,16 @@ _gsskrb5_import_sec_context (
     buffer.length = data.length;
 
     ret = _gsskrb5_import_name (minor_status, &buffer, GSS_C_NT_EXPORT_NAME,
-				&ctx->source);
+				&name);
     if (ret) {
 	ret = _gsskrb5_import_name (minor_status, &buffer, GSS_C_NO_OID,
-				    &ctx->source);
+				    &name);
 	if (ret) {
 	    krb5_data_free (&data);
 	    goto failure;
 	}
     }
+    ctx->source = (krb5_principal)name;
     krb5_data_free (&data);
 
     if (krb5_ret_data (sp, &data) != 0)
@@ -175,15 +176,16 @@ _gsskrb5_import_sec_context (
     buffer.length = data.length;
 
     ret = _gsskrb5_import_name (minor_status, &buffer, GSS_C_NT_EXPORT_NAME,
-			   &ctx->target);
+				&name);
     if (ret) {
 	ret = _gsskrb5_import_name (minor_status, &buffer, GSS_C_NO_OID,
-				    &ctx->target);
+				    &name);
 	if (ret) {
 	    krb5_data_free (&data);
 	    goto failure;
 	}
     }    
+    ctx->target = (krb5_principal)name;
     krb5_data_free (&data);
 
     if (krb5_ret_int32 (sp, &tmp))
@@ -210,9 +212,9 @@ failure:
     krb5_auth_con_free (_gsskrb5_context,
 			ctx->auth_context);
     if (ctx->source != NULL)
-	_gsskrb5_release_name(&minor, &ctx->source);
+	krb5_free_principal(_gsskrb5_context, ctx->source);
     if (ctx->target != NULL)
-	_gsskrb5_release_name(&minor, &ctx->target);
+	krb5_free_principal(_gsskrb5_context, ctx->target);
     if (localp)
 	krb5_free_address (_gsskrb5_context, localp);
     if (remotep)

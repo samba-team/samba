@@ -167,7 +167,7 @@ _gsskrb5_export_sec_context (
     /* names */
 
     ret = _gsskrb5_export_name (minor_status,
-				ctx->source, &buffer);
+				(gss_name_t)ctx->source, &buffer);
     if (ret)
 	goto failure;
     data.data   = buffer.value;
@@ -180,7 +180,7 @@ _gsskrb5_export_sec_context (
     }
 
     ret = _gsskrb5_export_name (minor_status,
-				ctx->target, &buffer);
+				(gss_name_t)ctx->target, &buffer);
     if (ret)
 	goto failure;
     data.data   = buffer.value;

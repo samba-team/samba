@@ -38,7 +38,7 @@ RCSID("$Id$");
 OM_uint32 _gsskrb5_inquire_cred
 (OM_uint32 * minor_status,
  const gss_cred_id_t cred_handle,
- gss_name_t * name,
+ gss_name_t * output_name,
  OM_uint32 * lifetime,
  gss_cred_usage_t * cred_usage,
  gss_OID_set * mechanisms
@@ -50,8 +50,8 @@ OM_uint32 _gsskrb5_inquire_cred
 
     *minor_status = 0;
 
-    if (name)
-	*name = NULL;
+    if (output_name)
+	*output_name = NULL;
     if (mechanisms)
 	*mechanisms = GSS_C_NO_OID_SET;
 
@@ -72,26 +72,32 @@ OM_uint32 _gsskrb5_inquire_cred
 
     HEIMDAL_MUTEX_lock(&cred->cred_id_mutex);
 
-    if (name != NULL) {
+    if (output_name != NULL) {
 	if (cred->principal != NULL) {
-            ret = _gsskrb5_duplicate_name(minor_status, cred->principal,
-					  name);
+	    gss_name_t name = (gss_name_t)cred->principal;
+
+            ret = _gsskrb5_duplicate_name(minor_status, name, output_name);
             if (ret)
 		goto out;
 	} else if (cred->usage == GSS_C_ACCEPT) {
+	    krb5_principal princ;
 	    *minor_status = krb5_sname_to_principal(_gsskrb5_context, NULL,
-						    NULL, KRB5_NT_SRV_HST, name);
+						    NULL, KRB5_NT_SRV_HST, 
+						    &princ);
 	    if (*minor_status) {
 		ret = GSS_S_FAILURE;
 		goto out;
 	    }
+	    *output_name = (gss_name_t)princ;
 	} else {
+	    krb5_principal princ;
 	    *minor_status = krb5_get_default_principal(_gsskrb5_context,
-						       name);
+						       &princ);
 	    if (*minor_status) {
 		ret = GSS_S_FAILURE;
 		goto out;
 	    }
+	    *output_name = (gss_name_t)princ;
 	}
     }
     if (lifetime != NULL) {

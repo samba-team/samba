@@ -50,9 +50,11 @@ OM_uint32 _gsskrb5_add_cred (
 {
     OM_uint32 ret, lifetime;
     gsskrb5_cred cred, handle;
+    krb5_const_principal dname;
 
     handle = NULL;
     cred = (gsskrb5_cred)input_cred_handle;
+    dname = (krb5_const_principal)desired_name;
 
     if (gss_oid_equal(desired_mech, GSS_KRB5_MECHANISM) == 0) {
 	*minor_status = 0;
@@ -80,8 +82,8 @@ OM_uint32 _gsskrb5_add_cred (
     }
 	
     /* check that we have the same name */
-    if (desired_name != GSS_C_NO_NAME &&
-	krb5_principal_compare(_gsskrb5_context, desired_name,
+    if (dname != NULL &&
+	krb5_principal_compare(_gsskrb5_context, dname, 
 			       cred->principal) != FALSE) {
 	if (output_cred_handle)
 	    HEIMDAL_MUTEX_unlock(&cred->cred_id_mutex);
@@ -91,6 +93,7 @@ OM_uint32 _gsskrb5_add_cred (
 
     /* make a copy */
     if (output_cred_handle) {
+	krb5_error_code kret;
 
 	handle = calloc(1, sizeof(*handle));
 	if (handle == NULL) {
@@ -109,17 +112,16 @@ OM_uint32 _gsskrb5_add_cred (
 	
 	ret = GSS_S_FAILURE;
 
-	ret = _gsskrb5_duplicate_name(minor_status, cred->principal,
-				      &handle->principal);
-	if (ret) {
+	kret = krb5_copy_principal(_gsskrb5_context, cred->principal,
+				  &handle->principal);
+	if (kret) {
 	    HEIMDAL_MUTEX_unlock(&cred->cred_id_mutex);
 	    free(handle);
-	    *minor_status = ENOMEM;
+	    *minor_status = kret;
 	    return GSS_S_FAILURE;
 	}
 
 	if (cred->keytab) {
-	    krb5_error_code kret;
 	    char name[KRB5_KT_PREFIX_MAX_LEN + MAXPATHLEN];
 	    int len;
 	    
@@ -151,7 +153,6 @@ OM_uint32 _gsskrb5_add_cred (
 	}
 
 	if (cred->ccache) {
-	    krb5_error_code kret;
 	    const char *type, *name;
 	    char *type_name;
 
@@ -233,7 +234,7 @@ OM_uint32 _gsskrb5_add_cred (
 
     if (handle) {
 	if (handle->principal)
-	    _gsskrb5_release_name(NULL, &handle->principal);
+	    krb5_free_principal(_gsskrb5_context, handle->principal);
 	if (handle->keytab)
 	    krb5_kt_close(_gsskrb5_context, handle->keytab);
 	if (handle->ccache)

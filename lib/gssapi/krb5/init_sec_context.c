@@ -105,7 +105,7 @@ static void
 do_delegation (krb5_auth_context ac,
 	       krb5_ccache ccache,
 	       krb5_creds *cred,
-	       const gss_name_t target_name,
+	       krb5_const_principal name,
 	       krb5_data *fwd_data,
 	       uint32_t *flags)
 {
@@ -137,14 +137,14 @@ do_delegation (krb5_auth_context ac,
     fwd_flags.b.forwardable = 1;
        
     if ( /*target_name->name.name_type != KRB5_NT_SRV_HST ||*/
-	target_name->name.name_string.len < 2) 
+	name->name.name_string.len < 2) 
 	goto out;
        
     kret = krb5_get_forwarded_creds(_gsskrb5_context,
 				    ac,
 				    ccache,
 				    fwd_flags.i,
-				    target_name->name.name_string.val[1],
+				    name->name.name_string.val[1],
 				    &creds,
 				    fwd_data);
        
@@ -169,7 +169,7 @@ init_auth
 (OM_uint32 * minor_status,
  gsskrb5_cred initiator_cred_handle,
  gss_ctx_id_t * context_handle,
- const gss_name_t target_name,
+ krb5_const_principal name,
  const gss_OID mech_type,
  OM_uint32 req_flags,
  OM_uint32 time_req,
@@ -263,9 +263,7 @@ init_auth
 	goto failure;
     }
 
-    kret = krb5_copy_principal (_gsskrb5_context,
-				target_name,
-				&ctx->target);
+    kret = krb5_copy_principal (_gsskrb5_context, name, &ctx->target);
     if (kret) {
 	_gsskrb5_set_error_string ();
 	*minor_status = kret;
@@ -343,7 +341,7 @@ init_auth
 	krb5_boolean delegate;
     
 	krb5_appdefault_boolean(_gsskrb5_context,
-				"gssapi", target_name->realm,
+				"gssapi", name->realm,
 				"ok-as-delegate", FALSE, &delegate);
 	if (delegate)
 	    req_flags &= ~GSS_C_DELEG_FLAG;
@@ -353,7 +351,7 @@ init_auth
     ap_options = 0;
     if (req_flags & GSS_C_DELEG_FLAG)
 	do_delegation (ctx->auth_context,
-		       ccache, cred, target_name, &fwd_data, &flags);
+		       ccache, cred, name, &fwd_data, &flags);
     
     if (req_flags & GSS_C_MUTUAL_FLAG) {
 	flags |= GSS_C_MUTUAL_FLAG;
@@ -482,7 +480,6 @@ repl_mutual
            (OM_uint32 * minor_status,
 	    const gsskrb5_cred initiator_cred_handle,
             gss_ctx_id_t * context_handle,
-            const gss_name_t target_name,
             const gss_OID mech_type,
             OM_uint32 req_flags,
             OM_uint32 time_req,
@@ -584,6 +581,7 @@ OM_uint32 _gsskrb5_init_sec_context
     )
 {
     gsskrb5_cred cred = (gsskrb5_cred)initiator_cred_handle;
+    krb5_const_principal name = (krb5_const_principal)target_name;
 
     GSSAPI_KRB5_INIT ();
 
@@ -611,7 +609,7 @@ OM_uint32 _gsskrb5_init_sec_context
 	return init_auth (minor_status,
 			  cred,
 			  context_handle,
-			  target_name,
+			  name,
 			  mech_type,
 			  req_flags,
 			  time_req,
@@ -625,7 +623,6 @@ OM_uint32 _gsskrb5_init_sec_context
 	return repl_mutual(minor_status,
 			   cred,
 			   context_handle,
-			   target_name,
 			   mech_type,
 			   req_flags,
 			   time_req,

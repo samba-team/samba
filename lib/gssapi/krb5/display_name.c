@@ -42,14 +42,13 @@ OM_uint32 _gsskrb5_display_name
             gss_OID * output_name_type
            )
 {
+    krb5_const_principal name = (krb5_const_principal)input_name;
     krb5_error_code kret;
     char *buf;
     size_t len;
 
     GSSAPI_KRB5_INIT ();
-    kret = krb5_unparse_name (_gsskrb5_context,
-			      input_name,
-			      &buf);
+    kret = krb5_unparse_name (_gsskrb5_context, name, &buf);
     if (kret) {
 	*minor_status = kret;
 	_gsskrb5_set_error_string ();

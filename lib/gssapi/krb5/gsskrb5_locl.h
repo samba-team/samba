@@ -57,7 +57,7 @@ struct gss_msg_order;
 
 typedef struct {
   struct krb5_auth_context_data *auth_context;
-  gss_name_t source, target;
+  krb5_principal source, target;
   OM_uint32 flags;
   enum { LOCAL = 1, OPEN = 2, 
 	 COMPAT_OLD_DES3 = 4,
@@ -71,7 +71,7 @@ typedef struct {
 } *gsskrb5_ctx;
 
 typedef struct {
-  gss_name_t principal;
+  krb5_principal principal;
   int cred_flags;
 #define GSS_CF_DESTROY_CRED_ON_RELEASE	1
   struct krb5_keytab_data *keytab;
@@ -81,6 +81,8 @@ typedef struct {
   struct krb5_ccache_data *ccache;
   HEIMDAL_MUTEX cred_id_mutex;
 } *gsskrb5_cred;
+
+typedef struct Principal *gsskrb5_name;
 
 /*
  *

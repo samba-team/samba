@@ -40,21 +40,22 @@ parse_krb5_name (OM_uint32 *minor_status,
 		 const char *name,
 		 gss_name_t *output_name)
 {
+    krb5_principal princ;
     krb5_error_code kerr;
 
-    kerr = krb5_parse_name (_gsskrb5_context, name, output_name);
+    kerr = krb5_parse_name (_gsskrb5_context, name, &princ);
 
-    if (kerr == 0)
+    if (kerr == 0) {
+	*output_name = (gss_name_t)princ;
 	return GSS_S_COMPLETE;
-    else if (kerr == KRB5_PARSE_ILLCHAR || kerr == KRB5_PARSE_MALFORMED) {
-	_gsskrb5_set_error_string ();
-	*minor_status = kerr;
-	return GSS_S_BAD_NAME;
-    } else {
-	_gsskrb5_set_error_string ();
-	*minor_status = kerr;
-	return GSS_S_FAILURE;
     }
+    _gsskrb5_set_error_string ();
+    *minor_status = kerr;
+
+    if (kerr == KRB5_PARSE_ILLCHAR || kerr == KRB5_PARSE_MALFORMED)
+	return GSS_S_BAD_NAME;
+
+    return GSS_S_FAILURE;
 }
 
 static OM_uint32
@@ -91,8 +92,7 @@ import_hostbased_name (OM_uint32 *minor_status,
     char *p;
     char *host;
     char local_hostname[MAXHOSTNAMELEN];
-
-    *output_name = NULL;
+    krb5_principal princ = NULL;
 
     tmp = malloc (input_name_buffer->length + 1);
     if (tmp == NULL) {
@@ -121,20 +121,20 @@ import_hostbased_name (OM_uint32 *minor_status,
 				    host,
 				    tmp,
 				    KRB5_NT_SRV_HST,
-				    output_name);
+				    &princ);
     free (tmp);
     *minor_status = kerr;
-    if (kerr == 0)
+    if (kerr == 0) {
+	*output_name = (gss_name_t)princ;
 	return GSS_S_COMPLETE;
-    else if (kerr == KRB5_PARSE_ILLCHAR || kerr == KRB5_PARSE_MALFORMED) {
-	_gsskrb5_set_error_string ();
-	*minor_status = kerr;
-	return GSS_S_BAD_NAME;
-    } else {
-	_gsskrb5_set_error_string ();
-	*minor_status = kerr;
-	return GSS_S_FAILURE;
     }
+    _gsskrb5_set_error_string ();
+	*minor_status = kerr;
+
+    if (kerr == KRB5_PARSE_ILLCHAR || kerr == KRB5_PARSE_MALFORMED)
+	return GSS_S_BAD_NAME;
+
+    return GSS_S_FAILURE;
 }
 
 static OM_uint32

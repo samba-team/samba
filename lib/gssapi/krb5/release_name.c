@@ -40,11 +40,16 @@ OM_uint32 _gsskrb5_release_name
             gss_name_t * input_name
            )
 {
+    krb5_principal name = (krb5_principal)*input_name;
+
     GSSAPI_KRB5_INIT ();
+
     if (minor_status)
       *minor_status = 0;
-    krb5_free_principal(_gsskrb5_context,
-			*input_name);
+
     *input_name = GSS_C_NO_NAME;
+
+    krb5_free_principal(_gsskrb5_context, name);
+
     return GSS_S_COMPLETE;
 }
