@@ -516,7 +516,6 @@ static BOOL get_sam_user_entries(struct getent_state *ent, TALLOC_CTX *mem_ctx)
 	uint32 num_entries;
 	WINBIND_USERINFO *info;
 	struct getpwent_user *name_list = NULL;
-	BOOL result = False;
 	struct winbindd_domain *domain;
 	struct winbindd_methods *methods;
 	unsigned int i;
@@ -544,12 +543,18 @@ static BOOL get_sam_user_entries(struct getent_state *ent, TALLOC_CTX *mem_ctx)
 	status = methods->query_user_list(domain, mem_ctx, &num_entries, 
 					  &info);
 		
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(10,("get_sam_user_entries: query_user_list failed with %s\n",
+			nt_errstr(status) ));
+		return False;
+	}
+
 	if (num_entries) {
 		name_list = SMB_REALLOC_ARRAY(name_list, struct getpwent_user, ent->num_sam_entries + num_entries);
 		
 		if (!name_list) {
 			DEBUG(0,("get_sam_user_entries realloc failed.\n"));
-			goto done;
+			return False;
 		}
 	}
 
@@ -594,11 +599,7 @@ static BOOL get_sam_user_entries(struct getent_state *ent, TALLOC_CTX *mem_ctx)
 	
 	ent->sam_entries = name_list;
 	ent->sam_entry_index = 0;
-	result = ent->num_sam_entries > 0;
-
- done:
-
-	return result;
+	return ent->num_sam_entries > 0;
 }
 
 /* Fetch next passwd entry from ntdom database */
@@ -748,6 +749,10 @@ void winbindd_list_users(struct winbindd_cli_state *state)
 		/* Query display info */
 		status = methods->query_user_list(domain, state->mem_ctx, 
 						  &num_entries, &info);
+
+		if (!NT_STATUS_IS_OK(status)) {
+			continue;
+		}
 
 		if (num_entries == 0)
 			continue;
