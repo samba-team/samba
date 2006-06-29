@@ -105,10 +105,10 @@ static void continue_domain_open_create(struct composite_context *ctx);
  * Sends request to create user account
  *
  * @param ctx initialised libnet context
- * @param mem_ctx memory context of the call
- * @param r pointer to a structure containing arguments and results of the call
- * @param monitor pointer to monitor function
- * @return compostite context of the request
+ * @param mem_ctx memory context of this call
+ * @param r pointer to a structure containing arguments and results of this call
+ * @param monitor function pointer for receiving monitor messages
+ * @return compostite context of this request
  */
 struct composite_context* libnet_CreateUser_send(struct libnet_context *ctx,
 						 TALLOC_CTX *mem_ctx,
@@ -217,8 +217,8 @@ static void continue_rpc_useradd(struct composite_context *ctx)
  * Receive result of CreateUser call
  *
  * @param c composite context returned by send request routine
- * @param mem_ctx memory context of the call
- * @param r pointer to a structure containing arguments and result of the call
+ * @param mem_ctx memory context of this call
+ * @param r pointer to a structure containing arguments and result of this call
  * @return nt status
  */
 NTSTATUS libnet_CreateUser_recv(struct composite_context *c, TALLOC_CTX *mem_ctx,
@@ -229,7 +229,7 @@ NTSTATUS libnet_CreateUser_recv(struct composite_context *c, TALLOC_CTX *mem_ctx
 
 	r->out.error_string = NULL;
 
-	/* wait for completion and check possible errors */
+	/* wait for result of async request and check status code */
 	status = composite_wait(c);
 	if (!NT_STATUS_IS_OK(status)) {
 		s = talloc_get_type(c->private_data, struct create_user_state);
@@ -244,8 +244,8 @@ NTSTATUS libnet_CreateUser_recv(struct composite_context *c, TALLOC_CTX *mem_ctx
  * Synchronous version of CreateUser call
  *
  * @param ctx initialised libnet context
- * @param mem_ctx memory context of the call
- * @param r pointer to a structure containing arguments and result of the call
+ * @param mem_ctx memory context of this call
+ * @param r pointer to a structure containing arguments and result of this call
  * @return nt status
  */
 NTSTATUS libnet_CreateUser(struct libnet_context *ctx, TALLOC_CTX *mem_ctx,
@@ -273,6 +273,14 @@ static void continue_rpc_userdel(struct composite_context *ctx);
 static void continue_domain_open_delete(struct composite_context *ctx);
 
 
+/**
+ * Sends request to delete user account
+ *
+ * @param ctx initialised libnet context
+ * @param mem_ctx memory context of this call
+ * @param r pointer to structure containing arguments and result of this call
+ * @param monitor function pointer for receiving monitor messages
+ */
 struct composite_context *libnet_DeleteUser_send(struct libnet_context *ctx,
 						 TALLOC_CTX *mem_ctx,
 						 struct libnet_DeleteUser *r,
@@ -283,6 +291,7 @@ struct composite_context *libnet_DeleteUser_send(struct libnet_context *ctx,
 	struct composite_context *delete_req;
 	struct composite_context *prereq_ctx;
 
+	/* composite context allocation and setup */
 	c = talloc_zero(mem_ctx, struct composite_context);
 	if (c == NULL) return NULL;
 
@@ -293,25 +302,34 @@ struct composite_context *libnet_DeleteUser_send(struct libnet_context *ctx,
 	c->state = COMPOSITE_STATE_IN_PROGRESS;
 	c->event_ctx = ctx->event_ctx;
 
+	/* store arguments in state structure */
 	s->ctx = ctx;
-	s->r = *r;
+	s->r   = *r;
 	ZERO_STRUCT(s->r.out);
 	
+	/* prerequisite: make sure the domain is opened before proceeding */
 	prereq_ctx = domain_opened(ctx, s->r.in.domain_name, c, &s->domain_open,
 				   continue_domain_open_delete, monitor);
 	if (prereq_ctx) return prereq_ctx;
 
+	/* prepare arguments for userdel call */
 	s->user_del.in.username       = r->in.user_name;
 	s->user_del.in.domain_handle  = ctx->domain.handle;
-	
+
+	/* send request */
 	delete_req = libnet_rpc_userdel_send(ctx->samr_pipe, &s->user_del, monitor);
 	if (composite_nomem(delete_req, c)) return c;
 	
+	/* set the next stage */
 	composite_continue(c, delete_req, continue_rpc_userdel, c);
 	return c;
 }
 
 
+/*
+ * Stage 0.5 (optional): receive result of domain open request
+ * and send useradd request
+ */
 static void continue_domain_open_delete(struct composite_context *ctx)
 {
 	struct composite_context *c;
@@ -322,17 +340,22 @@ static void continue_domain_open_delete(struct composite_context *ctx)
 	c = talloc_get_type(ctx->async.private_data, struct composite_context);
 	s = talloc_get_type(c->private_data, struct delete_user_state);
 
+	/* receive result of DomainOpen call */
 	c->status = libnet_DomainOpen_recv(ctx, s->ctx, c, &s->domain_open);
 	if (!composite_is_ok(c)) return;
-
-	if (s->monitor_fn) s->monitor_fn(&msg);
 	
+	/* send monitor message */
+	if (s->monitor_fn) s->monitor_fn(&msg);
+
+	/* prepare arguments for userdel call */
 	s->user_del.in.username       = s->r.in.user_name;
 	s->user_del.in.domain_handle  = s->ctx->domain.handle;
 
+	/* send request */
 	delete_req = libnet_rpc_userdel_send(s->ctx->samr_pipe, &s->user_del, s->monitor_fn);
 	if (composite_nomem(delete_req, c)) return;
-	
+
+	/* set the next stage */
 	composite_continue(c, delete_req, continue_rpc_userdel, c);
 }
 
@@ -346,24 +369,36 @@ static void continue_rpc_userdel(struct composite_context *ctx)
 	c = talloc_get_type(ctx->async.private_data, struct composite_context);
 	s = talloc_get_type(c->private_data, struct delete_user_state);
 
+	/* receive result of userdel call */
 	c->status = libnet_rpc_userdel_recv(ctx, c, &s->user_del);
 	if (!composite_is_ok(c)) return;
 
+	/* send monitor message */
 	if (s->monitor_fn) s->monitor_fn(&msg);
+
+	/* we're done */
 	composite_done(c);
 }
 
 
+/**
+ * Receives result of asynchronous DeleteUser call
+ *
+ * @param c composite context returned by async DeleteUser call
+ * @param mem_ctx memory context of this call
+ * @param r pointer to structure containing arguments and result
+ */
 NTSTATUS libnet_DeleteUser_recv(struct composite_context *c, TALLOC_CTX *mem_ctx,
 				struct libnet_DeleteUser *r)
 {
 	NTSTATUS status;
 	struct delete_user_state *s;
 
+	r->out.error_string = NULL;
+
+	/* wait for result of async request and check status code */
 	status = composite_wait(c);
-	if (NT_STATUS_IS_OK(status)) {
-		r->out.error_string = NULL;
-	} else {
+	if (!NT_STATUS_IS_OK(status)) {
 		s = talloc_get_type(c->private_data, struct delete_user_state);
 		r->out.error_string = talloc_steal(mem_ctx, s->r.out.error_string);
 	}
@@ -372,6 +407,13 @@ NTSTATUS libnet_DeleteUser_recv(struct composite_context *c, TALLOC_CTX *mem_ctx
 }
 
 
+/**
+ * Synchronous version of DeleteUser call
+ *
+ * @param ctx initialised libnet context
+ * @param mem_ctx memory context of this call
+ * @param r pointer to structure containing arguments and result
+ */
 NTSTATUS libnet_DeleteUser(struct libnet_context *ctx, TALLOC_CTX *mem_ctx,
 			   struct libnet_DeleteUser *r)
 {
@@ -501,6 +543,9 @@ static NTSTATUS set_user_changes(TALLOC_CTX *mem_ctx, struct usermod_change *mod
 	user = &info->out.info.info21;
 	mod->fields = 0;        /* reset flag field before setting individual flags */
 
+	/*
+	 * account name change
+	 */
 	if (r->in.account_name != NULL &&
 	    !strequal_w(user->account_name.string, r->in.account_name)) {
 
@@ -510,6 +555,9 @@ static NTSTATUS set_user_changes(TALLOC_CTX *mem_ctx, struct usermod_change *mod
 		mod->fields |= USERMOD_FIELD_ACCOUNT_NAME;
 	}
 
+	/*
+	 * full name change
+	 */
 	if (r->in.full_name != NULL &&
 	    !strequal_w(user->full_name.string, r->in.full_name)) {
 		
@@ -517,6 +565,18 @@ static NTSTATUS set_user_changes(TALLOC_CTX *mem_ctx, struct usermod_change *mod
 		if (mod->full_name == NULL) return NT_STATUS_NO_MEMORY;
 
 		mod->fields |= USERMOD_FIELD_FULL_NAME;
+	}
+
+	/*
+	 * description change
+	 */
+	if (r->in.description != NULL &&
+	    !strequal_w(user->description.string, r->in.description)) {
+
+		mod->description = talloc_strdup(mem_ctx, r->in.description);
+		if (mod->description == NULL) return NT_STATUS_NO_MEMORY;
+
+		mod->fields |= USERMOD_FIELD_DESCRIPTION;
 	}
 
 	return NT_STATUS_OK;
