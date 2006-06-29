@@ -802,19 +802,34 @@ NTSTATUS secrets_trusted_domains(TALLOC_CTX *mem_ctx, uint32 *num_domains,
 {
 	TDB_LIST_NODE *keys, *k;
 	char *pattern;
+	TALLOC_CTX *tmp_ctx;
+
+	if (!(tmp_ctx = talloc_new(mem_ctx))) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	if (!secrets_init()) return NT_STATUS_ACCESS_DENIED;
 	
 	/* generate searching pattern */
-	pattern = talloc_asprintf(mem_ctx, "%s/*", SECRETS_DOMTRUST_ACCT_PASS);
+	pattern = talloc_asprintf(tmp_ctx, "%s/*", SECRETS_DOMTRUST_ACCT_PASS);
 	if (pattern == NULL) {
 		DEBUG(0, ("secrets_trusted_domains: talloc_asprintf() "
 			  "failed!\n"));
+		TALLOC_FREE(tmp_ctx);
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	*domains = NULL;
 	*num_domains = 0;
+
+	/*
+	 * Make sure that a talloc context for the trustdom_info structs
+	 * exists
+	 */
+
+	if (!(*domains = TALLOC_ARRAY(mem_ctx, struct trustdom_info *, 1))) {
+		TALLOC_FREE(tmp_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	/* fetching trusted domains' data and collecting them in a list */
 	keys = tdb_search_keys(tdb, pattern);
@@ -828,12 +843,13 @@ NTSTATUS secrets_trusted_domains(TALLOC_CTX *mem_ctx, uint32 *num_domains,
 		struct trustdom_info *dom_info;
 		
 		/* important: ensure null-termination of the key string */
-		secrets_key = talloc_strndup(mem_ctx,
+		secrets_key = talloc_strndup(tmp_ctx,
 					     k->node_key.dptr,
 					     k->node_key.dsize);
 		if (!secrets_key) {
 			DEBUG(0, ("strndup failed!\n"));
 			tdb_search_list_free(keys);
+			TALLOC_FREE(tmp_ctx);
 			return NT_STATUS_NO_MEMORY;
 		}
 
@@ -857,30 +873,31 @@ NTSTATUS secrets_trusted_domains(TALLOC_CTX *mem_ctx, uint32 *num_domains,
 			continue;
 		}
 
-		dom_info = TALLOC_P(mem_ctx, struct trustdom_info);
-		if (dom_info == NULL) {
+		if (!(dom_info = TALLOC_P(*domains, struct trustdom_info))) {
 			DEBUG(0, ("talloc failed\n"));
 			tdb_search_list_free(keys);
+			TALLOC_FREE(tmp_ctx);
 			return NT_STATUS_NO_MEMORY;
 		}
 
-		if (pull_ucs2_talloc(mem_ctx, &dom_info->name,
+		if (pull_ucs2_talloc(dom_info, &dom_info->name,
 				     pass.uni_name) == (size_t)-1) {
 			DEBUG(2, ("pull_ucs2_talloc failed\n"));
 			tdb_search_list_free(keys);
+			TALLOC_FREE(tmp_ctx);
 			return NT_STATUS_NO_MEMORY;
 		}
 
 		sid_copy(&dom_info->sid, &pass.domain_sid);
 
-		ADD_TO_ARRAY(mem_ctx, struct trustdom_info *, dom_info,
+		ADD_TO_ARRAY(*domains, struct trustdom_info *, dom_info,
 			     domains, num_domains);
 
 		if (*domains == NULL) {
 			tdb_search_list_free(keys);
+			TALLOC_FREE(tmp_ctx);
 			return NT_STATUS_NO_MEMORY;
 		}
-		talloc_steal(*domains, dom_info);
 	}
 	
 	DEBUG(5, ("secrets_get_trusted_domains: got %d domains\n",
@@ -888,6 +905,7 @@ NTSTATUS secrets_trusted_domains(TALLOC_CTX *mem_ctx, uint32 *num_domains,
 
 	/* free the results of searching the keys */
 	tdb_search_list_free(keys);
+	TALLOC_FREE(tmp_ctx);
 
 	return NT_STATUS_OK;
 }
