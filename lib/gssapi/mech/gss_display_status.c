@@ -102,6 +102,7 @@ gss_display_status(OM_uint32 *minor_status,
 		}
 	}
 	}
-
+	status_string->value = NULL;
+	status_string->length = 0;
 	return (GSS_S_BAD_STATUS);
 }
