@@ -178,7 +178,6 @@ void smb2srv_read_recv(struct smb2srv_request *req)
 	io->smb2.in.file.ntvfs		= smb2srv_pull_handle(req, req->in.body, 0x10);
 	io->smb2.in.unknown1		= BVAL(req->in.body, 0x20);
 	io->smb2.in.unknown2		= BVAL(req->in.body, 0x28);
-	io->smb2.in._bug		= CVAL(req->in.body, 0x30);
 
 	SMB2SRV_CHECK_FILE_HANDLE(io->smb2.in.file.ntvfs);
 
@@ -202,7 +201,6 @@ static void smb2srv_write_send(struct ntvfs_request *ntvfs)
 	SSVAL(req->out.body,	0x02,	io->smb2.out._pad);
 	SIVAL(req->out.body,	0x04,	io->smb2.out.nwritten);
 	SBVAL(req->out.body,	0x08,	io->smb2.out.unknown1);
-	SCVAL(req->out.body,	0x10,	io->smb2.out._bug);
 
 	smb2srv_send_reply(req);
 }

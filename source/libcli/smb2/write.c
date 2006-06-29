@@ -63,12 +63,11 @@ NTSTATUS smb2_write_recv(struct smb2_request *req, struct smb2_write *io)
 		return smb2_request_destroy(req);
 	}
 
-	SMB2_CHECK_PACKET_RECV(req, 0x11, False);
+	SMB2_CHECK_PACKET_RECV(req, 0x10, True);
 
 	io->out._pad     = SVAL(req->in.body, 0x02);
 	io->out.nwritten = IVAL(req->in.body, 0x04);
 	io->out.unknown1 = BVAL(req->in.body, 0x08);
-	io->out._bug     = CVAL(req->in.body, 0x10);
 
 	return smb2_request_destroy(req);
 }

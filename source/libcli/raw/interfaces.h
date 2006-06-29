@@ -1649,7 +1649,6 @@ union smb_read {
 			/* struct smb2_handle handle; */
 			uint64_t unknown1; /* 0x0000000000000000 */
 			uint64_t unknown2; /* 0x0000000000000000 */
-			uint8_t _bug;
 		} in;
 		struct {
 			/* static body buffer 16 (0x10) bytes */
@@ -1771,11 +1770,10 @@ union smb_write {
 		} in;
 		struct {
 			/* static body buffer 17 (0x11) bytes */
-			/* uint16_t buffer_code;  0x11 */
+			/* uint16_t buffer_code;  0x11 = 0x10 + 1*/
 			uint16_t _pad;
 			uint32_t nwritten;
 			uint64_t unknown1; /* 0x0000000000000000 */
-			uint8_t _bug;
 		} out;
 	} smb2;
 };
