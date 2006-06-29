@@ -1,5 +1,7 @@
 2006-06-29  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* mech/gss_add_cred.c: avoid type-punned/strict aliasing rules
+
 	* gssapi.h: Make gss_name_t an opaque type.
 	
 	* krb5: make gss_name_t an opaque type
