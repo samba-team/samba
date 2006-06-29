@@ -163,19 +163,17 @@ NTSTATUS libnet_LookupHost(struct libnet_context *ctx, TALLOC_CTX *mem_ctx,
 
 
 /**
- * Sends asynchronous LookupPdc request
+ * Sends asynchronous LookupDCs request
  */
 struct composite_context* libnet_LookupDCs_send(struct libnet_context *ctx,
 						TALLOC_CTX *mem_ctx,
 						struct libnet_LookupDCs *io)
 {
-	struct messaging_context *msg_ctx = messaging_client_init(mem_ctx, ctx->event_ctx);
 	struct composite_context *c;
-	c = finddcs_send(mem_ctx,
-			 io->in.domain_name, 
-			 NBT_NAME_PDC,
-			 NULL, ctx->name_res_methods,
-			 ctx->event_ctx, msg_ctx);
+	struct messaging_context *msg_ctx = messaging_client_init(mem_ctx, ctx->event_ctx);
+
+	c = finddcs_send(mem_ctx, io->in.domain_name, io->in.name_type,
+			 NULL, ctx->name_res_methods, ctx->event_ctx, msg_ctx);
 	return c;
 }
 
