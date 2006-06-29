@@ -35,6 +35,24 @@
 TDB_CONTEXT *wins_tdb;
 
 /****************************************************************************
+ Delete all the temporary name records on the in-memory linked list.
+*****************************************************************************/
+
+static void wins_delete_all_tmp_in_memory_records(void)
+{
+	struct name_record *nr = NULL;
+	struct name_record *nrnext = NULL;
+
+	/* Delete all temporary name records on the wins subnet linked list. */
+	for( nr = wins_server_subnet->namelist; nr; nr = nrnext) {
+		nrnext = nr->next;
+		DLIST_REMOVE(wins_server_subnet->namelist, nr);
+		SAFE_FREE(nr->data.ip);
+		SAFE_FREE(nr);
+	}
+}
+
+/****************************************************************************
  Convert a wins.tdb record to a struct name_record. Add in our global_scope().
 *****************************************************************************/
 
@@ -214,6 +232,14 @@ struct name_record *find_name_on_wins_subnet(const struct nmb_name *nmbname, BOO
 	SAFE_FREE( data.dptr );
 
 	if (!namerec) {
+		return NULL;
+	}
+
+	/* Self names only - these include permanent names. */
+	if( self_only && (namerec->data.source != SELF_NAME) && (namerec->data.source != PERMANENT_NAME) ) {
+		DEBUG( 9, ( "find_name_on_wins_subnet: self name %s NOT FOUND\n", nmb_namestr(nmbname) ) );
+		SAFE_FREE(namerec->data.ip);
+		SAFE_FREE(namerec);
 		return NULL;
 	}
 
@@ -1739,6 +1765,11 @@ static void process_wins_dmb_query_request(struct subnet_record *subrec,
 
 	num_ips = 0;
 
+	/* First, clear the in memory list - we're going to re-populate
+	   it with the tdb_traversal in fetch_all_active_wins_1b_names. */
+
+	wins_delete_all_tmp_in_memory_records();
+
 	fetch_all_active_wins_1b_names();
 
 	for( namerec = subrec->namelist; namerec; namerec = namerec->next ) {
@@ -2176,8 +2207,6 @@ we are not the wins owner !\n", nmb_namestr(&namerec->name)));
 void initiate_wins_processing(time_t t)
 {
 	static time_t lasttime = 0;
-	struct name_record *nr = NULL;
-	struct name_record *nrnext = NULL;
 
 	if (!lasttime) {
 		lasttime = t;
@@ -2193,14 +2222,7 @@ void initiate_wins_processing(time_t t)
 
 	tdb_traverse(wins_tdb, wins_processing_traverse_fn, &t);
 
-	
-	/* Delete all temporary name records on the wins subnet linked list. */
-	for( nr = wins_server_subnet->namelist; nr; nr = nrnext) {
-		nrnext = nr->next;
-		DLIST_REMOVE(wins_server_subnet->namelist, nr);
-		SAFE_FREE(nr->data.ip);
-		SAFE_FREE(nr);
-	}
+	wins_delete_all_tmp_in_memory_records();
 
 	wins_write_database(t, True);
 

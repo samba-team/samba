@@ -120,7 +120,7 @@ struct name_record *find_name_on_subnet(struct subnet_record *subrec,
 		if( self_only && (name_ret->data.source != SELF_NAME) && (name_ret->data.source != PERMANENT_NAME) ) {
 			DEBUG( 9, ( "find_name_on_subnet: on subnet %s - self name %s NOT FOUND\n",
 						subrec->subnet_name, nmb_namestr(nmbname) ) );
-			return False;
+			return NULL;
 		}
 
 		DEBUG( 9, ("find_name_on_subnet: on subnet %s - found name %s source=%d\n",
