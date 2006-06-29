@@ -1408,7 +1408,7 @@ ADS_STATUS ads_add_service_principal_name(ADS_STRUCT *ads, const char *machine_n
 	ADS_STATUS ret;
 	TALLOC_CTX *ctx;
 	LDAPMessage *res = NULL;
-	char *host_spn, *psp1, *psp2, *psp3;
+	char *psp1, *psp2, *psp3;
 	ADS_MODLIST mods;
 	fstring my_fqdn;
 	char *dn_string = NULL;
@@ -1432,12 +1432,6 @@ ADS_STATUS ads_add_service_principal_name(ADS_STRUCT *ads, const char *machine_n
 
 	name_to_fqdn(my_fqdn, machine_name);
 	strlower_m(my_fqdn);
-
-	if (!(host_spn = talloc_asprintf(ctx, "HOST/%s", my_fqdn))) {
-		talloc_destroy(ctx);
-		ads_msgfree(ads, res);
-		return ADS_ERROR(LDAP_NO_MEMORY);
-	}
 
 	/* Add the extra principal */
 	psp1 = talloc_asprintf(ctx, "%s/%s", spn, machine_name);
