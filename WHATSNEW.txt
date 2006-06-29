@@ -1,531 +1,32 @@
-                   =================================
-                   Release Notes for Samba 3.0.23rc3
-                              Jun 23, 2006
-                   =================================
-
-This is the third release candidate of the 3.0.23 code base 
-and is provided for community testing purposes.  If all goes 
-well, we hope that this will become the production 3.0.23 
-release.  Your testing and feedback is greatly appreciated.
+                   ==============================
+                   Release Notes for Samba 3.0.23
+                              Jun XX, 2006
+                   ==============================
 
 We would like to thank the developers of Klocwork for their 
-analysis of the Samba source tree.  This release candidate 
-includes fixes for over 170 defects reported by the Klocwork 
-code analyzer.
-
-Common issues addressed in 3.0.23rc3 include:
-
-   o Warnings from the Klocwork code analyzer.
-   o Various portability bugs on AIX, Solaris, and True64.
-   o Authorization problems when managing services.
-   o Problems joining Windows clients to a Samba/LDAP domain.
-
-
-######################################################################
-Changes
-#######
-
-Changes since 3.0.23rc2
------------------------
-
-commits
--------
-
-o   Jeremy Allison <jra@samba.org>
-    * Fixes for various Klocwork defect reports.
-    * Cleanup pdb_get_XXX() methods and ensure that a failure
-      to allocate memory for a samu user structure is reported 
-      as a failure to the calling function.
-    * Fix memleak in printing gencache contents.
-    * Fix warnings reported by gcc4 -O6 on 64-bit systems 
-    * Fix naming conflicts with 'net usershare' structures and 
-      Solaris header files.
-    * Fix memleaks on error paths from the ASN.1 parsing code.
-    * Add uid to share_mode_entry structure so we can report who 
-      opened the file.
-
-
-o   Gerald (Jerry) Carter <jerry@samba.org>
-    * Fix 'make install' problem when building outside source/.
-    * Fix 'net ads join' when the workgroup is set incorrectly in 
-      smb.conf.
-    * Re-add code to include the BUILTIN\Administrators SID when
-      winbindd is not running, but the user's token includes the 
-      Domain Admin SID.  Fixes access problem for managing Services.
-
-
-o   Guenther Deschner <gd@samba.org>
-    * Fix memleaks in winbindd ads searches.
-    * Fix timestamp bug in pam_winbindd which forced users to change
-      passwords prematurely.
-    * Small debug message cleanups.
-    * Small fixes for 'net ads password'.
-    * Add TCP fallback for our implementation of the CHANGEPW 
-      kpasswd calls.
-    * BUG 3843: Allow to set passwords directly when creating users 
-      via "net rpc user add" 
-    * Add "rpc shell" to the usage text for the net command.
-    * Winbindd user aliases lookup fixes for large domains.
-    * Fix memleak in the CLDAP processing code.
-    * Enable AD features in winbindd's PAM support only when 
-      communicating with an AD domain controller.
-
-
-o   Bjoern Jacke <samba@j3e.de>.
-    * Fix DMAPI compile failures on AIX and True64.
-    * Fix AIX PIC suffix (use .o instead of .po).
-
-
-o   Volker Lendecke <vl@samba.org>
-    * Fixes for various Klocwork defect reports.
-    * Fixes for various Coverity defect reports.
-    * BUG 3848: Fix WinXP join error in a Samba domain using ldapsam.
-
-
-
-o   Derrell Lipman <derrell@samba.org>
-    [libsmbclient]
-    * BUG 3814: Only set the DFS capability flag in client requests
-      if the share is a DFS root.
-
-
-o   Jason Mader <jason@ncac.gwu.edu>
-    * Compiler warning fixes.
-
-
-o   James Peach <jpeach@sgi.com>
-    * Ensure smbclient always prompts on standard output when in
-      interactive mode.
-    * BUG 3801, 3805: Fix MIPSPro compiler warnings on IRIX.
-
-
-o   Andreas Schwab
-    * Correct syntax error in aclocal.m4.
-
-
-Release Notes for older release follow:
-
-      --------------------------------------------------
-                   =================================
-                   Release Notes for Samba 3.0.23rc2
-                              Jun 9, 2006
-                   =================================
-
-Thanks very much to those people who spent time testing the RC1 
-release and reported their findings.  We would like to especially 
-thank Thomas Bork <tombork@web.de> for his numerous reports. 
-We believe that RC2 is in much better shape in a large part due 
-to his efforts.
-
-We would also like to thank the developers of Klocwork for their
-analysis of the Samba source tree.  This release candidate includes 
-multiple fixes based on reports from the Klocwork code analyzer.
-
-Common issues addressed in 3.0.23rc2 include:
-
-   o Winbindd & Samba PDC integration issues.
-   o Join problems from Windows clients in a Samba domain.
-   o Winbind & AD trust failures.
-
-
-Group Mapping Changes
-=====================
-
-The default mapping entries for groups such as "Domain Admins"
-are no longer created when using an smbpasswd file or a tdbsam passdb 
-backend.  This means that it is necessary to use 'net groupmap add'
-rather than 'net groupmap modify' to set these entries.  This change
-has no effect on winbindd's IDmap functionality for domain groups.
-
-
-
-######################################################################
-Changes
-#######
-
-Changes since 3.0.23rc1
------------------------
-
-commits
--------
-
-o   Jeremy Allison <jra@samba.org>
-    * Ensure we use sys_write in password chats so we're not 
-      interrupted.
-    * Ensure all new rid allocation goes through the same pdb_ldap 
-      interface.
-    * BUG 3308: Stop us returning duplicate mid replies on path 
-      based set-EOF trans2 calls.
-    * Pass RAW-OPLOCK with kernel oplocks off.
-    * Fix bug in OS/2 Warp - it doesn't set the ff_last offset 
-      correctly when doing info level 1 directory scans.
-    * Add Samba4 replacement for timegm() to work on Solaris.
-    * Remove extra add-byte in the trans2 UNIX_BASIC infolevel.
-
-
-o   Alexander Bokovoy <ab@samba.org>
-    * Fix absolute symlinks in the installbin.sh script.
-
-
-o   Gerald (Jerry) Carter <jerry@samba.org>
-    * Only call the printer publishing calls if 'security = ads'.
-
-
-o   Guenther Deschner <gd@samba.org>
-    * Set our internal domains to "online" by default in winbindd.
-    * BUG 3800: Fill the password_policy method in winbindd for 
-      winbindd_passdb.
-    * Fix memory leak when LDAP POSIX attribute queries fail.
-    * Honor the krb5 principal name change (of the new ads join code) 
-      in the kerberized winbind pam_auth.
-    * Correctly handle the case when there is no configuration file 
-      for pam_winbind.
-    * Adding "own-domain" switch to wbinfo which is handy from time 
-      to time.
-    * BUG 3823: Fix in-forest domain trust enumeration in winbindd.
-    * Fix winbindd group enumeration for groups with no members.
-    * Correct "net ads changetrustpw" to use the sAMAccountName.
-    * Fix winbindd in ADS domains by removing code using the 
-      UPN and rely upon the sAMAccountName.
-    * Fix a eDir related memory leak.
-    * Don't try to add the sn attribute twice to an LDAP 
-      inetOrgPerson + samSamAccount entry.
-    * Fix winbind function table typo.
-
-
-o   Aleksey Fedoseev <fedoseev@ru.ibm.com>
-    * Fix parameter type for 'acl compatibility'.
-
-
-o   Paul Green <paulg@samba.org>
-    * Properly rebuild time limit on systems with executable extensions.
-
-
-o   Björn Jacke <samba@j3e.de>
-    * Fall back to less-preferred clocks until we find one that we 
-      can use if clock_gmtime() is not available at run-time.
-
-
-o   Volker Lendecke <vl@samba.org>
-    * Fix more potential seg-faults when something on our way to a 
-      DC connection fails.
-    * Never fall back to using the IP address for a DC's name in RPC 
-      connections.
-    * Implement recycle:subdir_mode.
-    * Activate RPC-AUTHCONTEXT in "make test".
-    * Portability fixes for 'make test'.
-    * Correctly set the group RID in init_sam_from_buffer.
-    * Fix missing prompt in smbclient.
-    * Return correct error code upon success from _net_srv_pwset().
-    * Fix Windows XP joins to a Samba domain.
-    * Fix 'valid users = +unixgroup' which was failing with smbpasswd
-      when mapped to a non-algorithmic rid.
-    * Fix regression which upper-cased machine names passed to the
-      'add machine script'.
-    * Correct parsing error in parse_net.c for user's with no group
-      membership.
-    * Fix off by one error in client SPNEGO code and other klocwork
-      bug fixes.
-
-
-o   Jason Mader <jason@ncac.gwu.edu>
-    * Compiler warning fixes.
-
-
-o   John E. Malmberg <wb8tyw@qsl.net>
-    * Make smbldap obey config tests.
-
-
-o   Jim McDonough <jmcd@us.ibm.com>
-    * Fixes for 'make test' on AIX.
-
-
-o   Stefan Metzmacher <metze@samba.org>
-    * Add more tests to 'make test'.
-    * Try to make timelimit.c more portable.
-
-
-o   James Peach <jpeach@sgi.com>
-    * Introduce command line options to set the remainder of the 
-      parameters in dynconfig.c.
-    * Avoid pulling in -lpthreads caused by -lrt.
-    * Fix build failures on IRIX 6.4 due to DMAPI support.
-    * Isolate the slow CLOCK_REALTIME message in the profiling code.
-
-
-o   Aruna Prabakar <aruna.prabakar@hp.com>
-    * Show -W option in smbpasswd usage text.
-
-
-o   Simo Sorce <idra@samba.org>
-    * Pam modules install fix.
-    * Allow "net changesecretpw" to accept a password via stdin.
-
-
-o   Shlomi Yaakobovich <Shlomi@exanet.com>
-    * Fix for machine password time_t overflow.
-
-
-
-Release Notes for older release follow:
-
-      --------------------------------------------------
-                   =================================
-                   Release Notes for Samba 3.0.23rc1
-                               May 24, 2006
-                   =================================
-
-New features in 3.0.23rc1 include:
-
+analysis of the Samba source tree.  This release includes 
+fixes for over 200 defects reported by the Klocwork code 
+analyzer.
+
+Thanks very much to those people who spent time testing the 
+release candidates and reported their findings.  We would 
+like to especially thank Thomas Bork <tombork@web.de> for 
+his numerous reports.  We believe that the final is in much 
+better shape in a large part due to his efforts.
+
+
+New features in 3.0.23 include:
+
+   o Improved 'make test'
+   o New offline mode in winbindd.
+   o New Kerberos support for pam_winbind.so.
+   o New handling of unmapped users and groups. 
+   o New non-root share management tools.
+   o Improved support for local and BUILTIN groups.
    o Winbind IDMAP integration with RFC2307 schema objects 
      supported by Windows 2003 R2.
    o Rewritten 'net ads join' to mimic Windows XP without 
      requiring administrative rights to join a domain.
-
-
-######################################################################
-Changes
-#######
-
-Changes since 3.0.23pre1
-------------------------
-
-smb.conf changes
-----------------
-
-    Parameter Name                      Description	  Default
-    --------------                      -----------	  -------
-    change notify timeout		Changed Scope
-    enable core files			New               Yes
-    hosts equiv 			Removed
-    passdb expand explicit		Changed default   No
-    usershare allow guests		New               No
-    wins partners			Removed
-
-commits
--------
-o   Jeremy Allison <jra@samba.org>
-    * BUG 3592: Ignore a file in the tar output from smbclient if the 
-      read failed (e.g. due to ACCESS_DENIED).  (Based on ideas from
-      Justin Best <justinb@pdxmission.org>).
-    * BUG 3668: Workaround issues in Windows server code with LARGE_READX.
-    * Push/Pull kerberos principal and realm names to/from UTF-8.
-    * Fix incorrect boolean in assert to make POSIX lock tests
-      pass with CIFSFS.
-    * Don't ever set O_SYNC on open unless "strict sync = yes".
-    * Remove dead printing code.
-    * Allow configurable guest access to Samba's usershare functionality.
-    * BUG 3587: Make byte-range locking tdb self-cleaning.
-    * Ensure every exit error path in the session setup code calls 
-      nt_status_squash().
-    * Use portable wrapper functions instead of seteuid directly in 
-      winbindd.
-    * Make "change notify timeout" a per-share parameter.
-    * Fix regression in SAMBA_4_0's smbtorture DENY tests.
-    * Fix valgrind-spotted issue in BASE-DELETE test.
-    * Fix early termination condition in winbindd when trying to 
-      connect to a remote DC.
-    * Instruct winbindd to ignore fd_set when select() returns -1.
-    * BUG 3779: Make nmbd udp sockets non-blocking to prevent problem
-      with select returning true but no data being available.
-    * Backport talloc_steal() fixes from SAMBA_4_0 (original fixes by 
-      Andrew Tridgell).
-
-
-o   Timur Bakeyev <timur@com.bat.ru>
-    * BUG 2961: Fix compile warnings for pam_smbpass.
-    * BUG 2746, 3763: Fix compile warnings in pam_winbind.
-
-
-o   Andrew Bartlett <abartlet@samba.org>
-    * Work around abort() in the OpenLDAP client libs caused by a NULL 
-      msg pointer.
-
-
-o   Gerald (Jerry) Carter <jerry@samba.org>
-    * Normalize printing keys when deleting.
-    * Only store LANMAN passwords on a change if 'lanman auth = yes'.
-    * Look at the NT password (not lanman one) when determining if 'smbpasswd 
-      -e' should probably for a password.
-    * Default eventlog tdbs to mode 0660 to allow easier access by 
-      BUILTIN\Administrators.
-    * Remove extra call to create_user on member servers without winbindd.
-    * Replace the use of OpenLDAP's ldap_domain2hostlist() for locating 
-      AD DC's with out own DNS SRV queries.
-    * Fix compile error on HP-UX reported by Ryan Novosielski.
-    * Rewrite 'net ads join' to share common code with 'net rpc join' 
-      and behave more like a Windows XP client.
-    * Remove --with-ldapsam option from configure (only used for 
-      backwards compatibility for 2.2 smb.conf files).
-    * Remove 'wins partners' and 'hosts equiv' smb.conf parameters.
-    * Remove rhosts authentication module.
-    * Reimplement 'net ads leave' to disable the machine account in the 
-      domain rather than removing it.
-
-
-o   Guenther Deschner <gd@samba.org>
-    [pam_winbind]
-    * Attempt to send the correct warning from pam_winbind when a password 
-      change was attempted too early.
-    * Don't use cached credentials when changing passwords.
-    * Correctly disallow unauthorized access when logging on with the
-      kerberized pam_winbind and workstation restrictions are in effect.
-    * Save useless round trips in pam_winbind's auth calls.
-    * Make the existence of the /etc/security/pam_winbind.conf file
-      non-critical and fallback to only parse the argv options in that 
-      case.
-
-
-    [winbindd]
-    * Add winbind debug class to the main winbindd process.
-    * Be consistent between rpc and ads winbind backend: let the 
-      ads backend query the samlogon cache first as well.
-    * Ignore BUILTIN groups when searching AD for group memberships.
-    * Fix KRB5KDC_ERR_POLICY -> NTSTATUS mapping.
-    * Cleanup credential caches from winbind's linked list.
-    * Fix 'winbindd -n' for new persistent caches.
-    * Fix searching by SID in winbindd.
-    * Add "smbcontrol winbind onlinestatus" for debugging purpose.
-    * Prefer to use the indexed objectCategory attribute (instead of
-      objectClass which is not indexed on AD) in LDAP queries.
-    * Free LDAP result in ads_get_attrname_by_oid().
-    * Prevent unnecessary storing of password in a WINBINDD_CCACHE_ENTRY.
-    * Prevent passwords of winbindd's list of credential caches from 
-      being swapped to disk using mlock().
-    * BUG 3345: Expand the "winbind nss info" to also take "rfc2307" to 
-      support the plain posix attributes LDAP schema from win2k3-r2
-      (based on patches from Howard Wilkinson and Bob Gautier).
-    * Add more robust code for fallback when lookup_usergroups() fails.
-
-    [misc]
-    * Fix 'net rpc join' for winbindd running on a Samba DC.
-    * Add help text for new 'net rpc audit' utility.
-    * Add net ads search SID.
-    * samrQueryDomainInfo level 5 should return the domain name, not our 
-      netbios name when we are a DC.
-    * Add some more client rpc for the querydominfo calls (from samba4 idl).
-    * Process all the supported info levels in the samr_query_domain_info2 
-      call.
-    * Wrap the samr_query_domain_info2() call around 
-      samr_query_domain_info().
-    * Fix segv in smbctool.
-    * Honour the time_offset also when verifying kerberos tickets.
-    * Prevent unnecessary longstanding LDAP connection to eDirectory.
-    * Fix segv in smbspool.
-    * BUG 1914: Allow to store 24 password history entries in ldapsam.
-
-
-o   Aleksey Fedoseev <fedoseev@ru.ibm.com>
-    * Fixes for msgtest torture tool.
-
-
-o   Paul Green <paulg@samba.org>
-    * Fix build on platforms that do not support shared libs.
-    * Remove dead code in the auth_script module. 
-
-
-o   Deryck Hodge <deryck@samba.org>
-    * Fix import of python modules broken by the rpc_client rewrite
-      for 3.0.21.
-    * BUG 3702: Fix segv in SWAT.
-    * Fix 'make installswat'.
-
-
-o   William Jojo <jojowil@hvcc.edu>
-    * Fixes for the winbind NSS library on AIX.
-
-
-o   Leonid Kabanov <lkabanov@mail.ru> 
-    * BUG 3711: Shell portability fixes for 'make test'.
-
-
-o   Volker Lendecke <vl@samba.org>
-    * Memory leak fixes in 'net sam'.
-    * BUG 3720: Fix uninitialized error return variable.
-    * Default "passdb expand explicit" to no.
-    * BUG 3741: Re-enable algorithmic SID mapping in one critical place.
-    * Fix user NT token creation when utilizing a username map.
-    * More coverity fixes.
-    * Fix a VUID bug in 'security = share'.
-    * Correctly fill in the gid for local users.
-    * Fix some warnings on True64.
-    * Add special close handling for fake files.
-    * BUG 3788: Fix nss_winbind's getgrouplist() call on AIX.
-    * BUG 3435: Fix 'msdfs root = yes' in [homes].
-    * Instruct winbindd to find a trusted DC on its own when running on 
-      a Samba DC.
-    * Fix segv in child winbindd processes caused by a failed tconX 
-      to the DC.
-
-
-o   Jim McDonough <jmcd@us.ibm.com>
-    * Ensure we do a wildcard search for SID's starting with the global SAM 
-      sid, not an exact search (from John Janosik).
-    * Adapt smbclient fix to smbtree to enable long share names.
-
-
-o   Stefan Metzmacher <metze@samba.org>
-    * Fix linking of smbmount tools with --enable-socket-wrapper.
-    * Pass 'target:samba3=yes' to samba4's smbtorture when running 
-      samba3's make test.
-    * Miscellaneous fixes for 'make test'.
-
-
-o   Lars Müller <lmuelle@samba.org>
-    * Fix lock calls in the python tdb bindings.
-
-
-o   James Peach <jpeach@sgi.com>
-    * Correct comparison logic so that libunwind can be correctly detected.
-    * Implement a "stacktrace" smbcontrol option using libunwind's remote
-      stack tracing support (ia64 only).
-    * Use dynamic buffers in the IRIX nsswitch module to prevent truncation
-      of long group lists.
-    * New autoconf macro to test for sysconf variables.
-    * Change profiling data macros to use stack variables rather than
-      globals. This catches mismatched start/end calls and removes
-      the need for special nested profiling calls.
-    * Rewrite AC_LIBTESTFUNC so that it works like the callers
-      of it expect.
-    * Use clock_gettime for profiling timstamps if it is available. Use
-      the fastest clock available on uniprocessors.
-    * Preserve errno in fcntl lock wrappers.
-    * Initialize our saved uid and gid so that we can tell when we 
-      created the profiling shmem segment and don't bogusly refuse to 
-      look at it.
-    * Add a new option "enable core files" which can be used to disable 
-      automatic core file dumping. 
-    * Update our internal copy of popt to that distributed with the RPM 
-      4.2 source code.
-
-
-o   Tim Potter <tpot@samba.org>
-    * Build janitorial duties.
-    * BUG 3725: Put references to $PICFLAGS in quotes.
-
-
-o   Simo Sorce <idra@samba.org>
-    * Implement 'net setdomainsid' command.
-
-
-o   Ronan Waide <waider@waider.ie>
-    * Add 'wbinfo -i' functionality to exercise winbindd's getpwnam() 
-      functionality.
-
-      --------------------------------------------------
-                    ==================================
-                   Release Notes for Samba 3.0.23pre1
-                               Apr 22, 2006
-                   ==================================
-
-New features introduced in 3.0.23pre1 include:
-
-  o New offline mode in winbindd.
-  o New kerberos support for pam_winbind.so.
-  o New handling of unmapped users and groups. 
-  o New non-root share management tools.
-  o Improved support for local and BUILTIN groups.
-
 
 User and Group changes
 ======================
@@ -574,6 +75,16 @@ mapping entry for the group 'developers' to point at the
 S-1-5-21-647511796-4126122067-3123570092-2565 SID.
 
 
+Group Mapping Changes
+=====================
+
+The default mapping entries for groups such as "Domain Admins"
+are no longer created when using an smbpasswd file or a tdbsam passdb 
+backend.  This means that it is necessary to use 'net groupmap add'
+rather than 'net groupmap modify' to set these entries.  This change
+has no effect on winbindd's IDmap functionality for domain groups.
+
+
 LDAP Changes
 ============
 
@@ -589,9 +100,6 @@ There has been no change to actual data storage schema.
 Changes
 #######
 
-Changes since 3.0.21/22
------------------------
-
 smb.conf changes
 ----------------
 
@@ -599,16 +107,21 @@ smb.conf changes
     --------------                      -----------	  -------
     acl group control			Deprecated	  No
     add port command			New		  ""
+    change notify timeout		Changed Scope
     dmapi support			New		  No
     dos filemode			Modified	  No
     enable asu support			Changed default	  No
+    enable core files			New               Yes
     enable privileges			Changed default	  Yes
     enable rid algorithm		Removed
     fam change notify			New		  Yes
+    hosts equiv 			Removed
     host msdfs				Changed default	  Yes
     msdfs root				Changed default	  Yes
     open files database hash size	New		  10007
+    passdb expand explicit		Changed default   No
     strict locking			Changed default	  auto
+    usershare allow guests		New               No
     usershare max shares		New		  0
     usershare owner only		New		  Yes
     usershare path			New		  ${lockdir}
@@ -621,11 +134,95 @@ smb.conf changes
     winbind offline logon		New		  No
     winbind refresh tickets		New		  No
     winbind max idle children		Removed
+    wins partners			Removed
 
+
+Changes since 3.0.23rc3
+-----------------------
 
 commits
 -------
 o   Jeremy Allison <jra@samba.org>
+    * BUG 3858: Ensure that all files are removed by a wildcard 
+      delete when 'hide unreadable = yes'.
+    * Fix various issues raised by the Klocwork code analyzer.
+    * Fix nmbd WINS serving bug causing duplicate IPs in the *<1b> 
+      query reply ("enhanced browsing = yes").
+
+
+o   Nicholas Brealey <nick@brealey.org>
+    * Compile fix for pam_winbind.
+
+
+o   Gerald (Jerry) Carter <jerry@samba.org>
+    * Use system provided killproc() in RedHat init scripts for 
+      more robust shutdown.
+
+
+o   Guenther Deschner <gd@samba.org>
+    * Fix different extended_dn handling in adssearch.pl
+      (Thanks to Frederic Brin at Novell).
+
+
+o   Volker Lendecke <vl@samba.org>
+    * Fix a memleak in the server registry code for enumeration 
+      shares.
+
+
+o   Jason Mader <jason@ncac.gwu.edu>
+    * Compiler warning fixes.
+
+
+Changes since 3.0.22
+--------------------
+o   Jeremy Allison <jra@samba.org>
+    * Fixes for various Klocwork defect reports.
+    * Cleanup pdb_get_XXX() methods and ensure that a failure
+      to allocate memory for a samu user structure is reported 
+      as a failure to the calling function.
+    * Fix memleak in printing gencache contents.
+    * Fix warnings reported by gcc4 -O6 on 64-bit systems 
+    * Fix naming conflicts with 'net usershare' structures and 
+      Solaris header files.
+    * Fix memleaks on error paths from the ASN.1 parsing code.
+    * Add uid to share_mode_entry structure so we can report who 
+      opened the file.
+    * Ensure we use sys_write in password chats so we're not 
+      interrupted.
+    * Ensure all new rid allocation goes through the same pdb_ldap 
+      interface.
+    * BUG 3308: Stop us returning duplicate mid replies on path 
+      based set-EOF trans2 calls.
+    * Pass RAW-OPLOCK with kernel oplocks off.
+    * Fix bug in OS/2 Warp - it doesn't set the ff_last offset 
+      correctly when doing info level 1 directory scans.
+    * Add Samba4 replacement for timegm() to work on Solaris.
+    * Remove extra add-byte in the trans2 UNIX_BASIC infolevel.
+    * BUG 3592: Ignore a file in the tar output from smbclient if the 
+      read failed (e.g. due to ACCESS_DENIED).  (Based on ideas from
+      Justin Best <justinb@pdxmission.org>).
+    * BUG 3668: Workaround issues in Windows server code with LARGE_READX.
+    * Push/Pull Kerberos principal and realm names to/from UTF-8.
+    * Fix incorrect boolean in assert to make POSIX lock tests
+      pass with CIFSFS.
+    * Don't ever set O_SYNC on open unless "strict sync = yes".
+    * Remove dead printing code.
+    * Allow configurable guest access to Samba's usershare functionality.
+    * BUG 3587: Make byte-range locking tdb self-cleaning.
+    * Ensure every exit error path in the session setup code calls 
+      nt_status_squash().
+    * Use portable wrapper functions instead of seteuid directly in 
+      winbindd.
+    * Make "change notify timeout" a per-share parameter.
+    * Fix regression in SAMBA_4_0's smbtorture DENY tests.
+    * Fix valgrind-spotted issue in BASE-DELETE test.
+    * Fix early termination condition in winbindd when trying to 
+      connect to a remote DC.
+    * Instruct winbindd to ignore fd_set when select() returns -1.
+    * BUG 3779: Make nmbd udp sockets non-blocking to prevent problem
+      with select returning true but no data being available.
+    * Back port talloc_steal() fixes from SAMBA_4_0 (original fixes by 
+      Andrew Tridgell).
     * BUG 3467: Fix delete on close semantics needed by WinXP Media 
       Center Ed. for simultaneous recording and playback (thanks to 
       Jason Qian for the debugging assistance).
@@ -677,8 +274,19 @@ o   Jeremy Allison <jra@samba.org>
       you ask for exactly 64k bytes it returns 0.
 
 
+o   Andrew Bartlett <abartlet@samba.org>
+    * Work around abort() in the OpenLDAP client libs caused by a NULL 
+      msg pointer.
+
+
+o   Timur Bakeyev <timur@com.bat.ru>
+    * BUG 2961: Fix compile warnings for pam_smbpass.
+    * BUG 2746, 3763: Fix compile warnings in pam_winbind.
+
+
 o   Alexander Bokovoy <ab@samba.org>
     * Fix 'smbcontrol shutdown' messages for nmbd and winbindd.
+    * Fix absolute symlinks in the installbin.sh script.
 
 
 o   Max N. Boyarov <m.boyarov@sam-solutions.net>
@@ -686,6 +294,31 @@ o   Max N. Boyarov <m.boyarov@sam-solutions.net>
 
 
 o   Gerald (Jerry) Carter <jerry@samba.org>
+    * Fix 'make install' problem when building outside source/.
+    * Fix 'net ads join' when the workgroup is set incorrectly in 
+      smb.conf.
+    * Re-add code to include the BUILTIN\Administrators SID when
+      winbindd is not running, but the user's token includes the 
+      Domain Admin SID.  Fixes access problem for managing Services.
+    * Only call the printer publishing calls if 'security = ads'.
+    * Normalize printing keys when deleting.
+    * Only store LANMAN passwords on a change if 'lanman auth = yes'.
+    * Look at the NT password (not lanman one) when determining if 'smbpasswd 
+      -e' should probably for a password.
+    * Default eventlog tdbs to mode 0660 to allow easier access by 
+      BUILTIN\Administrators.
+    * Remove extra call to create_user on member servers without winbindd.
+    * Replace the use of OpenLDAP's ldap_domain2hostlist() for locating 
+      AD DC's with out own DNS SRV queries.
+    * Fix compile error on HP-UX reported by Ryan Novosielski.
+    * Rewrite 'net ads join' to share common code with 'net rpc join' 
+      and behave more like a Windows XP client.
+    * Remove --with-ldapsam option from configure (only used for 
+      backwards compatibility for 2.2 smb.conf files).
+    * Remove 'wins partners' and 'hosts equiv' smb.conf parameters.
+    * Remove rhosts authentication module.
+    * Reimplement 'net ads leave' to disable the machine account in the 
+      domain rather than removing it.
     * Rewrite of tdbsam file descriptor handling.
     * Add server affinity support when selecting a remote 
       domain controller.
@@ -743,7 +376,86 @@ o   Gerald (Jerry) Carter <jerry@samba.org>
       is running but having problems.
 
 
+o   Mathias Dietz <MDIETZ@de.ibm.com>
+    * EPERM can be a valid return from getting an xattr. 
+      Don't disable if we get it.
+
+
 o   Guenther Deschner <gd@samba.org>
+    * Fix memleaks in winbindd ads searches.
+    * Fix timestamp bug in pam_winbindd which forced users to change
+      passwords prematurely.
+    * Small debug message cleanups.
+    * Small fixes for 'net ads password'.
+    * BUG 3843: Allow to set passwords directly when creating users 
+      via "net rpc user add" 
+    * Add "rpc shell" to the usage text for the net command.
+    * Winbindd user aliases lookup fixes for large domains.
+    * Fix memleak in the CLDAP processing code.
+    * Enable AD features in winbindd's PAM support only when 
+      communicating with an AD domain controller.
+    * Set our internal domains to "online" by default in winbindd.
+    * BUG 3800: Fill the password_policy method in winbindd for 
+      winbindd_passdb.
+    * Fix memory leak when LDAP POSIX attribute queries fail.
+    * Honor the krb5 principal name change (of the new ads join code) 
+      in the kerberized winbind pam_auth.
+    * Correctly handle the case when there is no configuration file 
+      for pam_winbind.
+    * Adding "own-domain" switch to wbinfo which is handy from time 
+      to time.
+    * BUG 3823: Fix in-forest domain trust enumeration in winbindd.
+    * Fix winbindd group enumeration for groups with no members.
+    * Correct "net ads changetrustpw" to use the sAMAccountName.
+    * Fix winbindd in ADS domains by removing code using the 
+      UPN and rely upon the sAMAccountName.
+    * Fix a eDir related memory leak.
+    * Don't try to add the sn attribute twice to an LDAP 
+      inetOrgPerson + samSamAccount entry.
+    * Fix winbind function table typo.
+    * Attempt to send the correct warning from pam_winbind when a password 
+      change was attempted too early.
+    * Don't use cached credentials when changing passwords.
+    * Correctly disallow unauthorized access when logging on with the
+      kerberized pam_winbind and workstation restrictions are in effect.
+    * Save useless round trips in pam_winbind's auth calls.
+    * Make the existence of the /etc/security/pam_winbind.conf file
+      non-critical and fallback to only parse the argv options in that 
+      case.
+    * Add winbind debug class to the main winbindd process.
+    * Be consistent between rpc and ads winbind backend: let the 
+      ads backend query the samlogon cache first as well.
+    * Ignore BUILTIN groups when searching AD for group memberships.
+    * Fix KRB5KDC_ERR_POLICY -> NTSTATUS mapping.
+    * Cleanup credential caches from winbind's linked list.
+    * Fix 'winbindd -n' for new persistent caches.
+    * Fix searching by SID in winbindd.
+    * Add "smbcontrol winbind onlinestatus" for debugging purpose.
+    * Prefer to use the indexed objectCategory attribute (instead of
+      objectClass which is not indexed on AD) in LDAP queries.
+    * Free LDAP result in ads_get_attrname_by_oid().
+    * Prevent unnecessary storing of password in a WINBINDD_CCACHE_ENTRY.
+    * Prevent passwords of winbindd's list of credential caches from 
+      being swapped to disk using mlock().
+    * BUG 3345: Expand the "winbind nss info" to also take "rfc2307" to 
+      support the plain posix attributes LDAP schema from win2k3-r2
+      (based on patches from Howard Wilkinson and Bob Gautier).
+    * Add more robust code for fallback when lookup_usergroups() fails.
+    * Fix 'net rpc join' for winbindd running on a Samba DC.
+    * Add help text for new 'net rpc audit' utility.
+    * Add net ads search SID.
+    * samrQueryDomainInfo level 5 should return the domain name, not our 
+      netbios name when we are a DC.
+    * Add some more client rpc for the querydominfo calls (from samba4 idl).
+    * Process all the supported info levels in the samr_query_domain_info2 
+      call.
+    * Wrap the samr_query_domain_info2() call around 
+      samr_query_domain_info().
+    * Fix segv in smbctool.
+    * Honour the time_offset also when verifying Kerberos tickets.
+    * Prevent unnecessary longstanding LDAP connection to eDirectory.
+    * Fix segv in smbspool.
+    * BUG 1914: Allow to store 24 password history entries in ldapsam.
     * Enhancements to various commands in rpcclient 
     * Don't force 'Administrator' to change an expired password on 
       logon.
@@ -789,12 +501,9 @@ o   Guenther Deschner <gd@samba.org>
       in /etc/security/pam_winbind.conf.
 
 
-o   Mathias Dietz <MDIETZ@de.ibm.com>
-    * EPERM can be a valid return from getting an xattr. 
-      Don't disable if we get it.
-
-
-o   Aleksey Fedoseev <aleksey@fedoseev.net>
+o   Aleksey Fedoseev <fedoseev@ru.ibm.com>
+    * Fix parameter type for 'acl compatibility'.
+    * Fixes for msgtest torture tool.
     * Fix crash bug in the file locking code.
 
 
@@ -802,7 +511,17 @@ o   Arek Glabek <aglabek@centeris.com>
     *  Fix parsing error on input parameters in eventlogadm.
 
 
-o   Bjoern Jacke <bjacke@sernet.de>.
+o   Paul Green <paulg@samba.org>
+    * Properly rebuild time limit on systems with executable extensions.
+    * Fix build on platforms that do not support shared libs.
+    * Remove dead code in the auth_script module. 
+
+
+o   Bjoern Jacke <samba@j3e.de>.
+    * Fix DMAPI compile failures on AIX and True64.
+    * Fix AIX PIC suffix (use .o instead of .po).
+    * Fall back to less-preferred clocks until we find one that we 
+      can use if clock_gmtime() is not available at run-time.
     * Fix EA support on AIX platforms.
     * Automatically disable file shares with no explicit path set.
     * Remove the local hack to set the RO bit on directories in 
@@ -813,11 +532,54 @@ o   Bjoern Jacke <bjacke@sernet.de>.
 
 
 o   William Jojo <jojowil@hvcc.edu>
+    * Fixes for the winbind NSS library on AIX.
     * Fix VFS builds on AIX platforms.
     * Fixes for the AIX version of libnss_winbind.so
 
 
+o   Leonid Kabanov <lkabanov@mail.ru> 
+    * BUG 3711: Shell portability fixes for 'make test'.
+
+
 o   Volker Lendecke <vl@samba.org>
+    * Fixes for various Klocwork defect reports.
+    * Fixes for various Coverity defect reports.
+    * BUG 3848: Fix WinXP join error in a Samba domain using ldapsam.
+    * Fix more potential seg-faults when something on our way to a 
+      DC connection fails.
+    * Never fall back to using the IP address for a DC's name in RPC 
+      connections.
+    * Implement recycle:subdir_mode.
+    * Activate RPC-AUTHCONTEXT in "make test".
+    * Portability fixes for 'make test'.
+    * Correctly set the group RID in init_sam_from_buffer.
+    * Fix missing prompt in smbclient.
+    * Return correct error code upon success from _net_srv_pwset().
+    * Fix Windows XP joins to a Samba domain.
+    * Fix 'valid users = +unixgroup' which was failing with smbpasswd
+      when mapped to a non-algorithmic rid.
+    * Fix regression which upper-cased machine names passed to the
+      'add machine script'.
+    * Correct parsing error in parse_net.c for user's with no group
+      membership.
+    * Fix off by one error in client SPNEGO code and other klocwork
+      bug fixes.
+    * Memory leak fixes in 'net sam'.
+    * BUG 3720: Fix uninitialized error return variable.
+    * Default "passdb expand explicit" to no.
+    * BUG 3741: Re-enable algorithmic SID mapping in one critical place.
+    * Fix user NT token creation when utilizing a username map.
+    * More coverity fixes.
+    * Fix a VUID bug in 'security = share'.
+    * Correctly fill in the gid for local users.
+    * Fix some warnings on True64.
+    * Add special close handling for fake files.
+    * BUG 3788: Fix nss_winbind's getgrouplist() call on AIX.
+    * BUG 3435: Fix 'msdfs root = yes' in [homes].
+    * Instruct winbindd to find a trusted DC on its own when running on 
+      a Samba DC.
+    * Fix segv in child winbindd processes caused by a failed tconX 
+      to the DC.
     * Dynamically compute the maximum password age based no the 
       last change time rather than reading the must change time 
       from the passdb record.
@@ -839,6 +601,8 @@ o   Volker Lendecke <vl@samba.org>
 
 o   Derrell Lipman <derrell@samba.org>
     [libsmbclient]
+    * BUG 3814: Only set the DFS capability flag in client requests
+      if the share is a DFS root.
     * Fix bug causing previous settings to be re-initialized 
       when parsing new configuration files.
     * BUG 3446: Don't ignore the authentication domain when parsing 
@@ -849,10 +613,18 @@ o   Derrell Lipman <derrell@samba.org>
 
 
 o   Jason Mader <jason@ncac.gwu.edu>
-    * Compiler warning fixes.
+    * Numerous compiler warning fixes.
+
+
+o   John E. Malmberg <wb8tyw@qsl.net>
+    * Make smbldap obey config tests.
 
 
 o   Jim McDonough <jmcd@us.ibm.com>
+    * Fixes for 'make test' on AIX.
+    * Ensure we do a wildcard search for SID's starting with the global SAM 
+      sid, not an exact search (from John Janosik).
+    * Adapt smbclient fix to smbtree to enable long share names.
     * Prevent machines and users with no home directory from 
       getting the previous entries home path when migrating via 
       'net rpc vampire' (based on a patch from Richard Renard).
@@ -862,6 +634,12 @@ o   Jim McDonough <jmcd@us.ibm.com>
 
 
 o   Stefan Metzmacher <metze@samba.org>
+    * Add more tests to 'make test'.
+    * Try to make timelimit.c more portable.
+    * Fix linking of smbmount tools with --enable-socket-wrapper.
+    * Pass 'target:samba3=yes' to samba4's smbtorture when running 
+      samba3's make test.
+    * Miscellaneous fixes for 'make test'.
     * Add improved support for 'make test' including making 
       use of smbtorture from SAMBA_4_0.
     * Add --no-process-group to all server programs 
@@ -870,6 +648,7 @@ o   Stefan Metzmacher <metze@samba.org>
 
 
 o   Lars Müller <lmuelle@samba.org>
+    * Fix lock calls in the python tdb bindings.
     * Add -k switch to tdbdump for accessing a single key.
     * Debian packaging fixes.
     * Add -t|--password-from-stdin option to pdbedit as we had 
@@ -878,6 +657,35 @@ o   Lars Müller <lmuelle@samba.org>
 
 
 o   James Peach <jpeach@sgi.com>
+    * Ensure smbclient always prompts on standard output when in
+      interactive mode.
+    * BUG 3801, 3805: Fix MIPSPro compiler warnings on IRIX.
+    * Introduce command line options to set the remainder of the 
+      parameters in dynconfig.c.
+    * Avoid pulling in -lpthreads caused by -lrt.
+    * Fix build failures on IRIX 6.4 due to DMAPI support.
+    * Isolate the slow CLOCK_REALTIME message in the profiling code.
+    * Correct comparison logic so that libunwind can be correctly detected.
+    * Implement a "stacktrace" smbcontrol option using libunwind's remote
+      stack tracing support (ia64 only).
+    * Use dynamic buffers in the IRIX nsswitch module to prevent truncation
+      of long group lists.
+    * New autoconf macro to test for sysconf variables.
+    * Change profiling data macros to use stack variables rather than
+      globals. This catches mismatched start/end calls and removes
+      the need for special nested profiling calls.
+    * Rewrite AC_LIBTESTFUNC so that it works like the callers
+      of it expect.
+    * Use clock_gettime for profiling timstamps if it is available. Use
+      the fastest clock available on uniprocessors.
+    * Preserve errno in fcntl lock wrappers.
+    * Initialize our saved uid and gid so that we can tell when we 
+      created the profiling shmem segment and don't bogusly refuse to 
+      look at it.
+    * Add a new option "enable core files" which can be used to disable 
+      automatic core file dumping. 
+    * Update our internal copy of popt to that distributed with the RPM 
+      4.2 source code.
     * Add support for FAM for file change notification.
     * Disable sendfile if the 'write cache;' has been enabled.
     * Refactor capability interface from being IRIX-specific to 
@@ -891,7 +699,28 @@ o   James Peach <jpeach@sgi.com>
       a DMAPI-based HSM is interested in.
 
 
+o   Tim Potter <tpot@samba.org>
+    * Build janitorial duties.
+    * BUG 3725: Put references to $PICFLAGS in quotes.
+
+
+o   Aruna Prabakar <aruna.prabakar@hp.com>
+    * Show -W option in smbpasswd usage text.
+
+
+o   ISHIKAWA Tomonori <toishika@fsi.co.jp>
+    * BUG 2715: Fix nmbd datagram comment buffer size for multibyte 
+      character strings
+
+
+o   Andreas Schwab
+    * Correct syntax error in aclocal.m4.
+
+
 o   Simo Sorce <idra@samba.org>
+    * Pam modules install fix.
+    * Allow "net changesecretpw" to accept a password via stdin.
+    * Implement 'net setdomainsid' command.
     * Ensure that sid -> group conversion are done as root.
     * BUG 3413: Sanity check for existence of 'ldap admin 
       dn' before setting a password in secrets.tdb (based on
@@ -899,10 +728,21 @@ o   Simo Sorce <idra@samba.org>
     * New revision of the snprintf replace code.
 
 
-o   ISHIKAWA Tomonori <toishika@fsi.co.jp>
-    * BUG 2715: Fix nmbd datagram comment buffer size for multibyte 
-      character strings
+o   Todd Stecher
+    * Add TCP fallback for our implementation of the CHANGEPW 
+      kpasswd calls.
 
+
+o   Ronan Waide <waider@waider.ie>
+    * Add 'wbinfo -i' functionality to exercise winbindd's getpwnam() 
+      functionality.
+
+
+o   Shlomi Yaakobovich <Shlomi@exanet.com>
+    * Fix for machine password time_t overflow.
+
+
+Release Notes for older release follow:
 
       --------------------------------------------------
                    ==============================
@@ -1095,7 +935,7 @@ o   Jeremy Allison <jra@samba.org>
     * Consistency fixes: Remove use of uint8_t -> uint8.
     * BUG 3346: Fix crash bug in big-endian boxes by linearizing 
       structure when passing through the messaging API.
-    * BUG 3421: Fix segv in the kerberos key tab code (Thanks to 
+    * BUG 3421: Fix segv in the Kerberos key tab code (Thanks to 
       Luke Deller).
     * Force smbd to exit if the guest account internal setup fails.
     * BUG 3419: vfs_full_audit fixes for multiple connections.
@@ -1325,7 +1165,7 @@ o   Volker Lendecke <vl@samba.org>
 
 Common bugs fixed in 3.0.21 include:
 
-  o Missing groups in a user's token when logging in via kerberos
+  o Missing groups in a user's token when logging in via Kerberos
   o Incompatibilities with newer MS Windows hotfixes and 
     embedded OS platforms
   o Portability and crash bugs.
@@ -1505,7 +1345,7 @@ o   Gerald (Jerry) Carter <jerry@samba.org>
     * Allow winbindd to select the appropriate backend methods
       based on the DC attributes and not the security parameter.
     * Re-add the netsamlogon_cache tdb and ensure that user entries
-      are updated from the PAC data during kerberos ticket 
+      are updated from the PAC data during Kerberos ticket 
       validation.
     * Fix lockup when running 'wbinfo -t' on a Samba PDC caused 
       by mangling machine names in sub_set_smb_name().
@@ -1550,7 +1390,7 @@ o   Guenther Deschner <gd@samba.org>
     * Use LDAP bitwise matching rule when searching for groups 
       in ADS.
     * Avoid an infinite loop when retrying to connect in smbspool.
-    * Memory leak fixes in the kerberos PAC parsing code.
+    * Memory leak fixes in the Kerberos PAC parsing code.
     * Improve NT_STATUS error messages returned from pam_winbind.
     * Rename unknown samr group fields in samr structures with 
       the correct name.removed separate "builtin" search enumeration.
@@ -1605,7 +1445,7 @@ o   Volker Lendecke <vl@samba.org>
     * Fix connection bug to port 445 and 139 after a successful 
       getdcname response.
     * Add additional calls to initialize_krb5_error_table() for 
-      kerberos client code.
+      Kerberos client code.
     * Implement the possibility to have AFS users as SIDs in pts.
     * Removed unused alternative_name code from winbindd.
     * Protect against NULL alternative_name strings in winbindd.
@@ -1874,7 +1714,7 @@ o   Guenther Deschner <gd@samba.org>
     * Prevent BUILTIN sids returned in the user's token from 
       a Windows DC from being applied to any local group mappings
       on the Samba host.
-    * Plug memory leaks in the kerberos keytab code.
+    * Plug memory leaks in the Kerberos keytab code.
     * Ensure BUILTIN groups are returned from winbindd's idmap_rid
       backend when 'winbind nested groups' is enabled.
     * Fix crash bug in winbindd caused by 64-bit build issues.
@@ -2191,7 +2031,7 @@ o   Andrew Bartlett <abartlet@samba.org>
       printers when  connecting via MS-RPC.
     * BUG 2391: Fix segv caused by free a static pointer returned 
       from getpwnam().
-    * Support kerberos authentication in smbd when using a keytab
+    * Support Kerberos authentication in smbd when using a keytab
       and participating in a non-Microsoft Kerberos realm.
 
 
@@ -2414,7 +2254,7 @@ o   Steven Edwards <steven_ed4153@yahoo.com>.
 
 
 o   Rodrigo Fernandez-Vizarra <Rodrigo.Fernandez-Vizarra@Sun.COM>
-    * BUG 1780: Add kerberos (file based ticket cache) support 
+    * BUG 1780: Add Kerberos (file based ticket cache) support 
       to smbspool.
 
 
@@ -3269,7 +3109,7 @@ o   John Terpstra <jht@samba.org>
 
 
 o   Doug VanLeuven <roamdad@sonic.net> 
-    * Add more case/realm/name permutations to the kerberos keytab.
+    * Add more case/realm/name permutations to the Kerberos keytab.
     * AIX compile fixes.
 
 
@@ -3402,7 +3242,7 @@ o   Jeremy Allison <jra@samba.org>
       Mrinal Kalakrishnan <mail@mrinal.net>).
     * BUG 2270: Fix memory leaks in cups printing backend support 
       (based on work by Lars Mueller).
-    * BUG 2255: Fix debug level in kerberos error messages.
+    * BUG 2255: Fix debug level in Kerberos error messages.
     * BUG 2110: Ensure we convert to ucs2 correctly after the 
       CAN-2004-0930 patch.
     * Make strict locking an enum. Auto means use oplock optimization.
@@ -3886,7 +3726,7 @@ Common bugs fixed in 3.0.8 include:
   o Inconsistencies in the username map functionality when 
     configured on domain member servers.
   o Various compile warnings and errors on various platforms.
-  o Fixes for kerberos interoperability with Windows 200x 
+  o Fixes for Kerberos interoperability with Windows 200x 
     domains when using DES keys.
   o Fix for CAN-2004-0930 -- smbd remote DoS vulnerability.
   o Fix for CAN-2004-0882 -- possible buffer overrun in smbd.
@@ -3921,7 +3761,7 @@ Change in Username Map
 
 Previous Samba releases would only support reading the fully qualified 
 username (e.g. DOMAIN\user) from the username map when performing a 
-kerberos login from a client.  However, when looking up a map 
+Kerberos login from a client.  However, when looking up a map 
 entry for a user authenticated by NTLM[SSP], only the login name would be
 used for matches.  This resulted in inconsistent behavior sometimes
 even on the same server.
@@ -4505,8 +4345,8 @@ New features introduced in this release include:
   o Using a cups server other than localhost.
   o Maintaining the service principal entry in the system 
     keytab for integration with other kerberized services.
-    Please refer to the 'use kerberos keytab' entry in 
-    smb.conf(5).  When using the heimdal kerberos libraries,
+    Please refer to the 'use Kerberos keytab' entry in 
+    smb.conf(5).  When using the heimdal Kerberos libraries,
     you must also specify the following in /etc/krb5.conf:
     [libdefaults]
        default_keytab_name = FILE:/etc/krb5.keytab
@@ -4572,7 +4412,7 @@ smb.conf changes
     force unknown acl user      New
     ldap timeout                New
     printcap cache time         New
-    use kerberos keytab         New
+    use Kerberos keytab         New
     
 commits
 -------
@@ -4759,7 +4599,7 @@ o   Guenther Deschner <gd@sernet.de>
       the owner uid is set to the current uid. Same for group sid.
     * Ensure that REG_SZ values in the SetPrinterData actually 
       get written in UNICODE strings rather than ASCII.
-    * Ensure that the last kerberos error return is not invalid.
+    * Ensure that the last Kerberos error return is not invalid.
     * Display share ACL entries from rpcclient.
     * Correct infinite loop in pam_winbind's verification of 
       group membership in the 'other sids' field in the user_info3 
@@ -4822,7 +4662,7 @@ o   Volker Lendecke <vl@samba.org>
     * Fix two memleaks in login_cache.c.
     * fixes memory bloat when unmarshalling strings.
     * Fix compile errors using gcc 3.2 on SuSE 8.2.
-    * Fix the build for systems without kerberos headers.
+    * Fix the build for systems without Kerberos headers.
     * Allow winbindd to handle authentication requests only when 
       started without either an 'idmap uid' or 'idmap gid' range.
     * Fix the build for systems without ldap headers.
@@ -4888,7 +4728,7 @@ o   Buchan Milne <bgmilne@mandrake.org>
 o   Lars Mueller <lmuelle@samba.org>
     * BUG 1279: Added 'printcap cache time' parameter.
     * Fix afs related build issues on SuSE.
-    * Fix compiler warnings in the kerberos client code.
+    * Fix compiler warnings in the Kerberos client code.
 
 
 o   James Peach <jpeach@sgi.com>
@@ -5888,7 +5728,7 @@ o   Volker Lendecke <vl@samba.org>
     * Add a German translation for SWAT.
     * Fix a segfaults in winbindd.
     * Fix the user's domain passed to register_vuid() from 
-      reply_spnego_kerberos().
+      reply_spnego_Kerberos().
     * Add NSS example code in nss_winbind to convert UNIX 
       id's <-> Windows SIDs.
     * Display more descriptive error messages for login via 'net'.
@@ -6265,7 +6105,7 @@ o   Ensure the ${libdir} is created by the installclientlib script.
 o   Fix detection of Windows 2003 client architecture in the smb.conf
     %a variable.
 o   Ensure that smbd calls the add user script for a missing UNIX 
-    user on kerberos auth call (bug 445).
+    user on Kerberos auth call (bug 445).
 o   Fix bugs in hosts allow/deny when using a mismatched 
     network/netmask pair.
 o   Protect alloc_sub_basic() from crashing when the source string 
@@ -6655,9 +6495,9 @@ aware of when moving to Samba 3.0.
      with an Active Directory domain using the native Windows
      Kerberos 5 and LDAP protocols.
 
-     MIT kerberos 1.3.1 supports the ARCFOUR-HMAC-MD5 encryption 
+     MIT Kerberos 1.3.1 supports the ARCFOUR-HMAC-MD5 encryption 
      type which is neccessary for servers on which the 
-     administrator password has not been changed, or kerberos-enabled 
+     administrator password has not been changed, or Kerberos-enabled 
      SMB connections to servers that require Kerberos SMB signing.
      Besides this one difference, either MIT or Heimdal Kerberos
      distributions are usable by Samba 3.0.
