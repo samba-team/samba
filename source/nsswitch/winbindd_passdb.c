@@ -365,15 +365,21 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 	const DOM_SID **sids;
 	struct lsa_dom_info *lsa_domains;
 	struct lsa_name_info *lsa_names;
+	TALLOC_CTX *tmp_ctx;
 
 	if (!sid_check_is_in_our_domain(group_sid)) {
 		/* There's no groups, only aliases in BUILTIN */
 		return NT_STATUS_NO_SUCH_GROUP;
 	}
 
-	result = pdb_enum_group_members(mem_ctx, group_sid, &rids,
+	if (!(tmp_ctx = talloc_init("lookup_groupmem"))) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	result = pdb_enum_group_members(tmp_ctx, group_sid, &rids,
 					&num_members);
 	if (!NT_STATUS_IS_OK(result)) {
+		TALLOC_FREE(tmp_ctx);
 		return result;
 	}
 
@@ -382,29 +388,39 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 		*sid_mem = NULL;
 		*names = NULL;
 		*name_types = NULL;
+		TALLOC_FREE(tmp_ctx);
 		return NT_STATUS_OK;
 	}
 
 	*sid_mem = TALLOC_ARRAY(mem_ctx, DOM_SID, num_members);
 	*names = TALLOC_ARRAY(mem_ctx, char *, num_members);
 	*name_types = TALLOC_ARRAY(mem_ctx, uint32, num_members);
-	sids = TALLOC_ARRAY(mem_ctx, const DOM_SID *, num_members);
+	sids = TALLOC_ARRAY(tmp_ctx, const DOM_SID *, num_members);
 
 	if (((*sid_mem) == NULL) || ((*names) == NULL) ||
 	    ((*name_types) == NULL) || (sids == NULL)) {
+		TALLOC_FREE(tmp_ctx);
 		return NT_STATUS_NO_MEMORY;
 	}
 
+	/*
+	 * Prepare an array of sid pointers for the lookup_sids calling
+	 * convention.
+	 */
+
 	for (i=0; i<num_members; i++) {
 		DOM_SID *sid = &((*sid_mem)[i]);
-		sid_copy(sid, &domain->sid);
-		sid_append_rid(sid, rids[i]);
+		if (!sid_compose(sid, &domain->sid, rids[i])) {
+			TALLOC_FREE(tmp_ctx);
+			return NT_STATUS_INTERNAL_ERROR;
+		}
 		sids[i] = sid;
 	}
 
-	result = lookup_sids(mem_ctx, num_members, sids, 1,
+	result = lookup_sids(tmp_ctx, num_members, sids, 1,
 			     &lsa_domains, &lsa_names);
 	if (!NT_STATUS_IS_OK(result)) {
+		TALLOC_FREE(tmp_ctx);
 		return result;
 	}
 
@@ -415,8 +431,12 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 				  sid_type_lookup(lsa_names[i].type)));
 			continue;
 		}
-		(*names)[i] = talloc_steal((*names),
-					   lsa_names[i].name);
+		if (!((*names)[i] = talloc_strdup((*names),
+						  lsa_names[i].name))) {
+			TALLOC_FREE(tmp_ctx);
+			return NT_STATUS_NO_MEMORY;
+		}
+
 		(*name_types)[i] = lsa_names[i].type;
 
 		num_mapped += 1;
@@ -424,6 +444,7 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 
 	*num_names = num_mapped;
 
+	TALLOC_FREE(tmp_ctx);
 	return NT_STATUS_OK;
 }
 
