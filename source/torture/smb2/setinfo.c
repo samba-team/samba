@@ -28,6 +28,9 @@
 #include "torture/torture.h"
 #include "torture/smb2/proto.h"
 
+#include "libcli/security/security.h"
+#include "librpc/gen_ndr/ndr_security.h"
+
 #define BASEDIR ""
 
 /* basic testing of all SMB2 setinfo calls 
@@ -44,6 +47,9 @@ BOOL torture_smb2_setinfo(struct torture_context *torture)
 	char *fname_new;
 	union smb_fileinfo finfo2;
 	union smb_setfileinfo sfinfo;
+	struct security_ace ace;
+	struct security_descriptor *sd;
+	struct dom_sid *test_sid;
 	NTSTATUS status, status2;
 	const char *call_name;
 	time_t basetime = (time(NULL) - 86400) & ~1;
@@ -92,7 +98,7 @@ BOOL torture_smb2_setinfo(struct torture_context *torture)
 		finfo2.generic.in.file.handle = handle; \
 		status2 = smb2_getinfo_file(tree, mem_ctx, &finfo2); \
 		if (!NT_STATUS_IS_OK(status2)) { \
-			printf("%s - %s\n", #call, nt_errstr(status2)); \
+			printf("(%s) %s - %s\n", __location__, #call, nt_errstr(status2)); \
 		} \
 	}} while (0)
 
@@ -134,7 +140,6 @@ BOOL torture_smb2_setinfo(struct torture_context *torture)
 		ret = False; \
 		goto done; \
 	}} while (0)
-
 
 	torture_smb2_all_info(tree, handle);
 	
@@ -229,6 +234,63 @@ BOOL torture_smb2_setinfo(struct torture_context *torture)
 	sfinfo.mode_information.in.mode = 0;
 	CHECK_CALL(MODE_INFORMATION, NT_STATUS_OK);
 	CHECK_VALUE(MODE_INFORMATION, mode_information, mode, 0);
+
+	printf("test sec_desc level\n");
+	test_sid = dom_sid_parse_talloc(mem_ctx, "S-1-5-32-1234-5432");
+	ace.type = SEC_ACE_TYPE_ACCESS_ALLOWED;
+	ace.flags = 0;
+	ace.access_mask = SEC_STD_ALL;
+	ace.trustee = *test_sid;
+	ZERO_STRUCT(finfo2);
+	finfo2.query_secdesc.in.secinfo_flags =
+		SECINFO_OWNER |
+		SECINFO_GROUP |
+		SECINFO_DACL;
+ 	CHECK1(SEC_DESC);
+	sd = finfo2.query_secdesc.out.sd;
+
+	test_sid = dom_sid_parse_talloc(mem_ctx, "S-1-5-32-1234-5432");
+	ace.type = SEC_ACE_TYPE_ACCESS_ALLOWED;
+	ace.flags = 0;
+	ace.access_mask = SEC_STD_ALL;
+	ace.trustee = *test_sid;
+	status = security_descriptor_dacl_add(sd, &ace);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	printf("add a new ACE to the DACL\n");
+
+	sfinfo.set_secdesc.in.secinfo_flags = finfo2.query_secdesc.in.secinfo_flags;
+	sfinfo.set_secdesc.in.sd = sd;
+	CHECK_CALL(SEC_DESC, NT_STATUS_OK);
+ 	CHECK1(SEC_DESC);
+
+	if (!security_acl_equal(finfo2.query_secdesc.out.sd->dacl, sd->dacl)) {
+		printf("%s: security descriptors don't match!\n", __location__);
+		printf("got:\n");
+		NDR_PRINT_DEBUG(security_descriptor, finfo2.query_secdesc.out.sd);
+		printf("expected:\n");
+		NDR_PRINT_DEBUG(security_descriptor, sd);
+		ret = False;
+	}
+
+	printf("remove it again\n");
+
+	status = security_descriptor_dacl_del(sd, test_sid);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	sfinfo.set_secdesc.in.secinfo_flags = finfo2.query_secdesc.in.secinfo_flags;
+	sfinfo.set_secdesc.in.sd = sd;
+	CHECK_CALL(SEC_DESC, NT_STATUS_OK);
+ 	CHECK1(SEC_DESC);
+
+	if (!security_acl_equal(finfo2.query_secdesc.out.sd->dacl, sd->dacl)) {
+		printf("%s: security descriptors don't match!\n", __location__);
+		printf("got:\n");
+		NDR_PRINT_DEBUG(security_descriptor, finfo2.query_secdesc.out.sd);
+		printf("expected:\n");
+		NDR_PRINT_DEBUG(security_descriptor, sd);
+		ret = False;
+	}
 
 done:
 	status = smb2_util_close(tree, handle);
