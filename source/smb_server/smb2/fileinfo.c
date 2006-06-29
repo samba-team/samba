@@ -250,23 +250,61 @@ static void smb2srv_setinfo_send(struct ntvfs_request *ntvfs)
 	smb2srv_send_reply(req);
 }
 
+static NTSTATUS smb2srv_setinfo_file(struct smb2srv_setinfo_op *op, uint8_t smb2_level)
+{
+	return NT_STATUS_FOOBAR;
+}
+
+static NTSTATUS smb2srv_setinfo_fs(struct smb2srv_setinfo_op *op, uint8_t smb2_level)
+{
+	return NT_STATUS_FOOBAR;
+}
+
+static NTSTATUS smb2srv_setinfo_security(struct smb2srv_setinfo_op *op, uint8_t smb2_level)
+{
+	union smb_setfileinfo *io;
+	NTSTATUS status;
+
+	switch (smb2_level) {
+	case 0x00:
+		io = talloc(op, union smb_setfileinfo);
+		NT_STATUS_HAVE_NO_MEMORY(io);
+
+		io->set_secdesc.level            = RAW_SFILEINFO_SEC_DESC;
+		io->set_secdesc.in.file.ntvfs    = op->info->in.file.ntvfs;
+		io->set_secdesc.in.secinfo_flags = op->info->in.flags;
+
+		io->set_secdesc.in.sd = talloc(io, struct security_descriptor);
+		NT_STATUS_HAVE_NO_MEMORY(io->set_secdesc.in.sd);
+
+		status = ndr_pull_struct_blob(&op->info->in.blob, io, 
+					      io->set_secdesc.in.sd, 
+					      (ndr_pull_flags_fn_t)ndr_pull_security_descriptor);
+		NT_STATUS_NOT_OK_RETURN(status);
+
+		return ntvfs_setfileinfo(op->req->ntvfs, io);
+	}
+
+	return NT_STATUS_INVALID_INFO_CLASS;
+}
+
 static NTSTATUS smb2srv_setinfo_backend(struct smb2srv_setinfo_op *op)
 {
 	uint8_t smb2_class;
-	/*uint8_t smb2_level;*/
+	uint8_t smb2_level;
 
 	smb2_class = 0xFF & op->info->in.level;
-	/*smb2_level = 0xFF & (op->info->in.level>>8);*/
+	smb2_level = 0xFF & (op->info->in.level>>8);
 
 	switch (smb2_class) {
 	case SMB2_GETINFO_FILE:
-		return NT_STATUS_NOT_IMPLEMENTED;
+		return smb2srv_setinfo_file(op, smb2_level);
 
 	case SMB2_GETINFO_FS:
-		return NT_STATUS_NOT_IMPLEMENTED;
+		return smb2srv_setinfo_fs(op, smb2_level);
 
 	case SMB2_GETINFO_SECURITY:
-		return NT_STATUS_NOT_IMPLEMENTED;
+		return smb2srv_setinfo_security(op, smb2_level);
 	}
 
 	return NT_STATUS_FOOBAR;
