@@ -3449,8 +3449,6 @@ static NTSTATUS ldapsam_set_account_policy_in_ldap(struct pdb_methods *methods,
 	struct ldapsam_privates *ldap_state =
 		(struct ldapsam_privates *)methods->private_data;
 
-	const char *attrs[2];
-
 	DEBUG(10,("ldapsam_set_account_policy_in_ldap\n"));
 
 	if (!ldap_state->domain_dn) {
@@ -3463,9 +3461,6 @@ static NTSTATUS ldapsam_set_account_policy_in_ldap(struct pdb_methods *methods,
 			 "policy\n"));
 		return ntstatus;
 	}
-
-	attrs[0] = policy_attr;
-	attrs[1] = NULL;
 
 	slprintf(value_string, sizeof(value_string) - 1, "%i", value);
 
