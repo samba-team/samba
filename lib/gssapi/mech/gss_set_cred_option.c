@@ -39,31 +39,68 @@ gss_set_cred_option (OM_uint32 *minor_status,
 		     const gss_OID object,
 		     const gss_buffer_t value)
 {
-	struct _gss_cred *cred = (struct _gss_cred *) cred_handle;
-	OM_uint32		major_status = GSS_S_COMPLETE;
+	struct _gss_cred *cred = (struct _gss_cred *) *cred_handle;
+	OM_uint32	major_status = GSS_S_COMPLETE;
 	struct _gss_mechanism_cred *mc;
-	gssapi_mech_interface	m;
 	int one_ok = 0;
 
 	*minor_status = 0;
 
-	if (cred == NULL)
-		return GSS_S_NO_CRED;
+	if (cred == NULL) {
+		struct _gss_mech_switch *m;
 
-	SLIST_FOREACH(mc, &cred->gc_mc, gmc_link) {
+		cred = malloc(sizeof(*cred));
+		if (cred == NULL)
+		    return GSS_S_FAILURE;
 
-		m = mc->gmc_mech;
+		cred->gc_usage = GSS_C_BOTH; /* XXX */
+		SLIST_INIT(&cred->gc_mc);
 
-		if (m == NULL)
-			return GSS_S_BAD_MECH;
+		SLIST_FOREACH(m, &_gss_mechs, gm_link) {
 
-		if (m->gm_set_cred_option == NULL)
-			continue;
+			if (m->gm_mech.gm_set_cred_option == NULL)
+				continue;
 
-		major_status = m->gm_set_cred_option(minor_status,
-		    &mc->gmc_cred, object, value);
-		if (major_status == GSS_S_BAD_MECH)
+			mc = malloc(sizeof(*mc));
+			if (mc == NULL) {
+			    /* XXX free the other mc's */
+			    return GSS_S_FAILURE;
+			}
+
+			mc->gmc_mech = &m->gm_mech;
+			mc->gmc_mech_oid = &m->gm_mech_oid;
+			mc->gmc_cred = GSS_C_NO_CREDENTIAL;
+
+			major_status = m->gm_mech.gm_set_cred_option(minor_status,
+			    &mc->gmc_cred, object, value);
+
+			if (major_status) {
+				free(mc);
+				continue;
+			}
 			one_ok = 1;
+			SLIST_INSERT_HEAD(&cred->gc_mc, mc, gmc_link);
+		}
+		if (one_ok)
+		    *cred_handle = (gss_cred_id_t)cred;
+
+	} else {
+		gssapi_mech_interface	m;
+
+		SLIST_FOREACH(mc, &cred->gc_mc, gmc_link) {
+			m = mc->gmc_mech;
+	
+			if (m == NULL)
+				return GSS_S_BAD_MECH;
+	
+			if (m->gm_set_cred_option == NULL)
+				continue;
+	
+			major_status = m->gm_set_cred_option(minor_status,
+			    &mc->gmc_cred, object, value);
+			if (major_status == GSS_S_BAD_MECH)
+				one_ok = 1;
+		}
 	}
 	if (one_ok) {
 		*minor_status = 0;
