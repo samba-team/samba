@@ -71,18 +71,16 @@ const char *reg_type_lookup(uint32 type)
 NTSTATUS reg_pull_multi_sz(TALLOC_CTX *mem_ctx, const void *buf, size_t len,
 			   int *num_values, char ***values)
 {
-	int nvals;
-	char **vals;
-	const smb_ucs2_t *p = buf;
-	TALLOC_CTX *tmp_ctx;
-	NTSTATUS result = NT_STATUS_NO_MEMORY;
+	const smb_ucs2_t *p = (const smb_ucs2_t *)buf;
+	*num_values = 0;
 
-	if (!(tmp_ctx = talloc_new(mem_ctx))) {
+	/*
+	 * Make sure that a talloc context for the strings retrieved exists
+	 */
+
+	if (!(*values = TALLOC_ARRAY(mem_ctx, char *, 1))) {
 		return NT_STATUS_NO_MEMORY;
 	}
-
-	nvals = 0;
-	vals = NULL;
 
 	len /= 2; 		/* buf is a set of UCS2 strings */
 
@@ -91,29 +89,22 @@ NTSTATUS reg_pull_multi_sz(TALLOC_CTX *mem_ctx, const void *buf, size_t len,
 		size_t dstlen, thislen;
 
 		thislen = strnlen_w(p, len) + 1;
-		dstlen = convert_string_allocate(tmp_ctx, CH_UCS2, CH_UNIX,
-						 p, thislen*2, (void *)&val,
+		dstlen = convert_string_allocate(*values, CH_UCS2, CH_UNIX,
+						 p, thislen*2, (void **)&val,
 						 True);
 		if (dstlen == (size_t)-1) {
-			goto done;
+			TALLOC_FREE(*values);
+			return NT_STATUS_NO_MEMORY;
 		}
 
-		ADD_TO_ARRAY(tmp_ctx, char *, val, &vals, &nvals);
-		if (vals == NULL) {
-			goto done;
+		ADD_TO_ARRAY(*values, char *, val, values, num_values);
+		if (*values == NULL) {
+			return NT_STATUS_NO_MEMORY;
 		}
-
-		talloc_steal(vals, val);
 
 		p += thislen;
 		len -= thislen;
 	}
 
-	*num_values = nvals;
-	*values = talloc_steal(mem_ctx, vals);
-	result = NT_STATUS_OK;
-
- done:
-	TALLOC_FREE(tmp_ctx);
-	return result;
+	return NT_STATUS_OK;
 }
