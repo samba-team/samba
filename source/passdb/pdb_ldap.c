@@ -3797,7 +3797,7 @@ static NTSTATUS ldapsam_lookup_rids(struct pdb_methods *methods,
 			continue;
 		}
 
-		type = atol(attr);
+		type = (enum SID_NAME_USE)atol(attr);
 
 		/* Consistency checks */
 		if ((is_builtin && (type != SID_NAME_ALIAS)) ||
@@ -4561,7 +4561,7 @@ static BOOL ldapsam_sid_to_id(struct pdb_methods *methods,
 		}
 
 		id->gid = strtoul(gid_str, NULL, 10);
-		*type = strtoul(value, NULL, 10);
+		*type = (enum SID_NAME_USE)strtoul(value, NULL, 10);
 		ret = True;
 		goto done;
 	}
