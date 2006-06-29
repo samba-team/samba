@@ -172,7 +172,9 @@
  * for WACK replies
  */
 #define NBT_RES_REC_LEVEL(rr_type, rdata) (\
-	(((rr_type) == NBT_QTYPE_NETBIOS) && ((rdata).data.length == 2)) \
+	(((rr_type) == NBT_QTYPE_NETBIOS) && \
+	talloc_check_name(ndr, "struct ndr_push") && \
+	((rdata).data.length == 2)) \
 	? 0 : rr_type)
 
 	typedef [flag(LIBNDR_PRINT_ARRAY_HEX)] struct {
