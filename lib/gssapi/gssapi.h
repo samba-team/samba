@@ -51,17 +51,8 @@ typedef uint32_t OM_uint32;
 
 typedef uint32_t gss_uint32;
 
-/*
- * This is to avoid having to include <krb5.h>
- */
-
-struct krb5_auth_context_data;
-
-struct Principal;
-
-/* typedef void *gss_name_t; */
-
-typedef struct Principal *gss_name_t;
+struct gss_name_t_desc_struct;
+typedef struct gss_name_t_desc_struct *gss_name_t;
 
 struct gss_ctx_id_t_desc_struct;
 typedef struct gss_ctx_id_t_desc_struct *gss_ctx_id_t;
@@ -844,6 +835,7 @@ OM_uint32 gss_unseal
 
 struct krb5_keytab_data;
 struct krb5_ccache_data;
+struct Principal;
 
 OM_uint32
 gss_krb5_ccache_name(OM_uint32 * /*minor_status*/, 
