@@ -124,6 +124,12 @@ enum winbindd_result winbindd_dual_list_trusted_domains(struct winbindd_domain *
 						  &num_domains, &names,
 						  &alt_names, &sids);
 
+	if (!NT_STATUS_IS_OK(result)) {
+		DEBUG(3, ("winbindd_dual_list_trusted_domains: trusted_domains returned %s\n",
+			nt_errstr(result) ));
+		num_domains = 0;
+	}
+
 	extra_data = talloc_strdup(state->mem_ctx, "");
 
 	if (num_domains > 0)
