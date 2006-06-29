@@ -544,6 +544,13 @@ NTSTATUS smbsrv_pull_passthru_sfileinfo(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_OK;
 
 	case RAW_SFILEINFO_RENAME_INFORMATION:
+		if (!req) {
+			/* 
+			 * TODO: get rid of smbsrv_request argument of
+			 * smbsrv_blob_pull_string()
+			 */
+			return NT_STATUS_NOT_IMPLEMENTED;
+		}
 		BLOB_CHECK_MIN_SIZE(blob, 12);
 
 		st->rename_information.in.overwrite = CVAL(blob->data, 0);
