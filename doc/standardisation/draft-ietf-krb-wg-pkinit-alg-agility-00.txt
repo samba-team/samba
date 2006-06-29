@@ -1,0 +1,672 @@
+
+
+
+Network Working Group                               L. Hornquist Astrand
+Internet-Draft                                      Stockholm University
+Expires: September 2, 2006                                        L. Zhu
+                                                   Microsoft Corporation
+                                                              March 2006
+
+
+                       PK-INIT algorithm agility
+                draft-ietf-krb-wg-pkinit-alg-agility-00
+
+Status of this Memo
+
+   By submitting this Internet-Draft, each author represents that any
+   applicable patent or other IPR claims of which he or she is aware
+   have been or will be disclosed, and any of which he or she becomes
+   aware will be disclosed, in accordance with Section 6 of BCP 79.
+
+   Internet-Drafts are working documents of the Internet Engineering
+   Task Force (IETF), its areas, and its working groups.  Note that
+   other groups may also distribute working documents as Internet-
+   Drafts.
+
+   Internet-Drafts are draft documents valid for a maximum of six months
+   and may be updated, replaced, or obsoleted by other documents at any
+   time.  It is inappropriate to use Internet-Drafts as reference
+   material or to cite them other than as "work in progress."
+
+   The list of current Internet-Drafts can be accessed at
+   http://www.ietf.org/ietf/1id-abstracts.txt.
+
+   The list of Internet-Draft Shadow Directories can be accessed at
+   http://www.ietf.org/shadow.html.
+
+   This Internet-Draft will expire on September 2, 2006.
+
+Copyright Notice
+
+   Copyright (C) The Internet Society (2006).
+
+Abstract
+
+   The PK-INIT protocol have in several places hard coded crypto
+   algorithms.  The protocol specification needs to be updated so it can
+   support negotiation to upgrading to newer versions of crypto
+   algorithms.  This document addresses this issue.
+
+
+
+
+
+
+Hornquist Astrand & Zhu  Expires September 2, 2006              [Page 1]
+
+Internet-Draft          PK-INIT algorithm agility             March 2006
+
+
+Table of Contents
+
+   1.  Introduction . . . . . . . . . . . . . . . . . . . . . . . . .  3
+   2.  Requirements notation  . . . . . . . . . . . . . . . . . . . .  4
+   3.  paChecksum agility . . . . . . . . . . . . . . . . . . . . . .  5
+   4.  CMS Digest Algorithm agility . . . . . . . . . . . . . . . . .  6
+   5.  Certificate Signer Algorithm Identifier agility  . . . . . . .  7
+   6.  octetstring2key function agility . . . . . . . . . . . . . . .  8
+   7.  Security Considerations  . . . . . . . . . . . . . . . . . . .  9
+   8.  IANA Considerations  . . . . . . . . . . . . . . . . . . . . . 10
+   9.  Normative References . . . . . . . . . . . . . . . . . . . . . 10
+   Authors' Addresses . . . . . . . . . . . . . . . . . . . . . . . . 11
+   Intellectual Property and Copyright Statements . . . . . . . . . . 12
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Hornquist Astrand & Zhu  Expires September 2, 2006              [Page 2]
+
+Internet-Draft          PK-INIT algorithm agility             March 2006
+
+
+1.  Introduction
+
+   The Kerberos PK-INIT document contains several hardcoded algorithms
+   that was know designed at design time that they had to be replaced by
+   something else at a later time, this document described how to use
+   other algorithms other then those that are hard-coded.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Hornquist Astrand & Zhu  Expires September 2, 2006              [Page 3]
+
+Internet-Draft          PK-INIT algorithm agility             March 2006
+
+
+2.  Requirements notation
+
+   The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
+   "SHOULD", "SHOULD NOT", "RECOMMENDED", "MAY", and "OPTIONAL" in this
+   document are to be interpreted as described in [RFC2119].
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Hornquist Astrand & Zhu  Expires September 2, 2006              [Page 4]
+
+Internet-Draft          PK-INIT algorithm agility             March 2006
+
+
+3.  paChecksum agility
+
+   The paChecksum binds the PK-INIT part of the request to main body of
+   the Kerberos request (KDC-REQ-BODY).  This is to makes sure an
+   attacker can not change the request from the client to the server.
+   The problem is that paChecksum is hardcoded to use SHA1-1, however,
+   there is a mechaism to provide algorithm agility for the paChecksum
+   within the PK-INIT prototcol.  Newer clients can choose not send the
+   paChecksum field, but rather add some new fields after the existing
+   fields, older KDC will send back know failure-code so that newer
+   clients can fall back to the old protocol if local policy allows
+   that.
+
+   If the attacker can preserve the checksum in paChecksum, an attacker
+   can, for example, change the KDC-REQ-BODY is to downgrade the
+   encryption types used, expend the expiration time, etc, and then try
+   to brute-force the request.
+
+   In the Public Key Encryption case of PK-INIT the reply contains a
+   checksum over the whole request in the asChecksum field, in this case
+   the client will detect any modifications to the request.  Since the
+   asChecksum is using the associated checksum of the session key
+   encryption type, asChecksum field is algorithm agile.
+
+   One way to solve this problem is to add the asChecksum to the Diffie-
+   Hellman case reply too, and just ignore the paCheckSum field.  The
+   KDC should still not issue tickets that are too weak, since that
+   exposes the problem.  This is regardless of the using PK-INIT or not.
+
+   Questions for wg: Wait for Kerberos Extensions that will solve this
+   problem (ignore the problem for how), or use add asChecksum to DH
+   case.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Hornquist Astrand & Zhu  Expires September 2, 2006              [Page 5]
+
+Internet-Draft          PK-INIT algorithm agility             March 2006
+
+
+4.  CMS Digest Algorithm agility
+
+   The client can tell KDC what the supported CMS types are in the
+   requset packet, but there are no equivalent for KDC to the the client
+   what the digest algorithm are support in an reply.
+
+   Have KDC send the CMS list of supported encryption types in the
+   e-data field of KRB-ERROR when returning the
+   KDC_ERR_DIGEST_IN_SIGNED_DATA_NOT_ACCEPTED error.
+
+   DER encoded TS-SD-PARAMETERS specifies supported digest algorithms.
+   The list is in decreasing preference order.
+
+
+
+   TD-SD-PARAMETERS ::= SEQUENCE OF AlgorithmIdentifier
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Hornquist Astrand & Zhu  Expires September 2, 2006              [Page 6]
+
+Internet-Draft          PK-INIT algorithm agility             March 2006
+
+
+5.  Certificate Signer Algorithm Identifier agility
+
+   The KDC can reject a certificate based on the signers hash algorithm
+   with the error KDC_ERR_DIGEST_IN_CERT_NOT_ACCEPTED, but doesn't tell
+   the client what algorithm are supported.
+
+   DER encoded TS-DC-PARAMETERS specifies supported certificate digest
+   algorithms.  The AllowedAlgorithms is in decreasing preference order.
+   RejectedAlgorithm may be include my the KDC to tell what algorithm
+   was rejected in case the rejected certificate was part of a computed
+   chain.
+
+
+
+   TD-DC-PARAMETERS ::= SEQUENCE {
+       AllowedAlgorithms [0] SEQUENCE OF AlgorithmIdentifier,
+       RejectedAlgorithm [1] AlgorithmIdentifier OPTIONAL
+   }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Hornquist Astrand & Zhu  Expires September 2, 2006              [Page 7]
+
+Internet-Draft          PK-INIT algorithm agility             March 2006
+
+
+6.  octetstring2key function agility
+
+   The PK-INIT standard uses a home-grown string 2 key function in the
+   DH case.  The function uses SHA-1 to mix and stretch the DH shared
+   key.
+
+   Describe how the client announces that is supports the new String to
+   key function.  Probably by stuffing it into the supportCMSTypes field
+   in the request.
+
+   Use NIST SP 800 56B when its published.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Hornquist Astrand & Zhu  Expires September 2, 2006              [Page 8]
+
+Internet-Draft          PK-INIT algorithm agility             March 2006
+
+
+7.  Security Considerations
+
+   This document describes negotiation of checksum types and other
+   cryptographic functions.  Most of this negotiation is done
+   unauthenticated with no way to very
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Hornquist Astrand & Zhu  Expires September 2, 2006              [Page 9]
+
+Internet-Draft          PK-INIT algorithm agility             March 2006
+
+
+8.  IANA Considerations
+
+   No IANA considerations.
+
+9.  Normative References
+
+   [RFC2119]  Bradner, S., "Key words for use in RFCs to Indicate
+              Requirement Levels", BCP 14, RFC 2119, March 1997.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Hornquist Astrand & Zhu  Expires September 2, 2006             [Page 10]
+
+Internet-Draft          PK-INIT algorithm agility             March 2006
+
+
+Authors' Addresses
+
+   Love Hornquist Astrand
+   Stockholm University
+   SE-106 91  STOCKHOLM
+   SWEDEN
+
+   Email: lha@it.su.se
+
+
+   Larry Zhu
+   Microsoft Corporation
+   One Microsoft Way
+   Redmond, WA  98052
+   US
+
+   Email: lzhu@microsoft.com
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Hornquist Astrand & Zhu  Expires September 2, 2006             [Page 11]
+
+Internet-Draft          PK-INIT algorithm agility             March 2006
+
+
+Intellectual Property Statement
+
+   The IETF takes no position regarding the validity or scope of any
+   Intellectual Property Rights or other rights that might be claimed to
+   pertain to the implementation or use of the technology described in
+   this document or the extent to which any license under such rights
+   might or might not be available; nor does it represent that it has
+   made any independent effort to identify any such rights.  Information
+   on the procedures with respect to rights in RFC documents can be
+   found in BCP 78 and BCP 79.
+
+   Copies of IPR disclosures made to the IETF Secretariat and any
+   assurances of licenses to be made available, or the result of an
+   attempt made to obtain a general license or permission for the use of
+   such proprietary rights by implementers or users of this
+   specification can be obtained from the IETF on-line IPR repository at
+   http://www.ietf.org/ipr.
+
+   The IETF invites any interested party to bring to its attention any
+   copyrights, patents or patent applications, or other proprietary
+   rights that may cover technology that may be required to implement
+   this standard.  Please address the information to the IETF at
+   ietf-ipr@ietf.org.
+
+
+Disclaimer of Validity
+
+   This document and the information contained herein are provided on an
+   "AS IS" basis and THE CONTRIBUTOR, THE ORGANIZATION HE/SHE REPRESENTS
+   OR IS SPONSORED BY (IF ANY), THE INTERNET SOCIETY AND THE INTERNET
+   ENGINEERING TASK FORCE DISCLAIM ALL WARRANTIES, EXPRESS OR IMPLIED,
+   INCLUDING BUT NOT LIMITED TO ANY WARRANTY THAT THE USE OF THE
+   INFORMATION HEREIN WILL NOT INFRINGE ANY RIGHTS OR ANY IMPLIED
+   WARRANTIES OF MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE.
+
+
+Copyright Statement
+
+   Copyright (C) The Internet Society (2006).  This document is subject
+   to the rights, licenses and restrictions contained in BCP 78, and
+   except as set forth therein, the authors retain all their rights.
+
+
+Acknowledgment
+
+   Funding for the RFC Editor function is currently provided by the
+   Internet Society.
+
+
+
+
+Hornquist Astrand & Zhu  Expires September 2, 2006             [Page 12]
+

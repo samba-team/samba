@@ -1,0 +1,610 @@
+
+
+
+NETWORK WORKING GROUP                                             L. Zhu
+Internet-Draft                                             K. Jaganathan
+Expires: March 17, 2006                                        K. Lauter
+                                                   Microsoft Corporation
+                                                      September 13, 2005
+
+
+                         ECC Support for PKINIT
+                        draft-zhu-pkinit-ecc-00
+
+Status of this Memo
+
+   By submitting this Internet-Draft, each author represents that any
+   applicable patent or other IPR claims of which he or she is aware
+   have been or will be disclosed, and any of which he or she becomes
+   aware will be disclosed, in accordance with Section 6 of BCP 79.
+
+   Internet-Drafts are working documents of the Internet Engineering
+   Task Force (IETF), its areas, and its working groups.  Note that
+   other groups may also distribute working documents as Internet-
+   Drafts.
+
+   Internet-Drafts are draft documents valid for a maximum of six months
+   and may be updated, replaced, or obsoleted by other documents at any
+   time.  It is inappropriate to use Internet-Drafts as reference
+   material or to cite them other than as "work in progress."
+
+   The list of current Internet-Drafts can be accessed at
+   http://www.ietf.org/ietf/1id-abstracts.txt.
+
+   The list of Internet-Draft Shadow Directories can be accessed at
+   http://www.ietf.org/shadow.html.
+
+   This Internet-Draft will expire on March 17, 2006.
+
+Copyright Notice
+
+   Copyright (C) The Internet Society (2005).
+
+Abstract
+
+   This document describes the use of Elliptic Curve certificates,
+   Elliptic Curve signature schemes and Elliptic Curve Diffie-Hellman
+   (ECDH) key agreement within the framework of PKINIT - the Kerberos
+   Version 5 extension that provides for the use of public key
+   cryptography.
+
+
+
+
+
+Zhu, et al.              Expires March 17, 2006                 [Page 1]
+
+Internet-Draft           ECC Support for PKINIT           September 2005
+
+
+Table of Contents
+
+   1.  Introduction . . . . . . . . . . . . . . . . . . . . . . . . .  3
+   2.  Conventions Used in This Document  . . . . . . . . . . . . . .  3
+   3.  Using Elliptic Curve Certificates and Elliptic Curve
+       Signature Schemes  . . . . . . . . . . . . . . . . . . . . . .  3
+   4.  Using ECDH Key Exchange  . . . . . . . . . . . . . . . . . . .  4
+   5.  Choosing the Domain Parameters and the Key Size  . . . . . . .  6
+   6.  Security Considerations  . . . . . . . . . . . . . . . . . . .  7
+   7.  IANA Considerations  . . . . . . . . . . . . . . . . . . . . .  8
+   8.  Acknowledgements . . . . . . . . . . . . . . . . . . . . . . .  8
+   9.  References . . . . . . . . . . . . . . . . . . . . . . . . . .  8
+     9.1.  Normative References . . . . . . . . . . . . . . . . . . .  8
+     9.2.  Informative References . . . . . . . . . . . . . . . . . .  9
+   Authors' Addresses . . . . . . . . . . . . . . . . . . . . . . . . 10
+   Intellectual Property and Copyright Statements . . . . . . . . . . 11
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Zhu, et al.              Expires March 17, 2006                 [Page 2]
+
+Internet-Draft           ECC Support for PKINIT           September 2005
+
+
+1.  Introduction
+
+   Elliptic Curve Cryptography (ECC) is emerging as an attractive
+   public-key cryptosystem that provides security equivalent to
+   currently popular public-key mechanisms such as RSA and DSA with
+   smaller key sizes [LENSTRA] [NISTSP80057].
+
+   Currently [PKINIT] permits the use of ECC algorithms but it does not
+   specify how ECC parameters are chosen and how to derive the shared
+   key for key delivery using Elliptic Curve Diffie-Hellman (ECDH)
+   [IEEE1363].
+
+   This document describes how to use Elliptic Curve certificates,
+   Elliptic Curve signature schemes, and ECDH with [PKINIT].  However,
+   it should be noted that there is no syntactic or semantic change to
+   the existing [PKINIT] messages.  Both the client and the KDC
+   contribute one ECDH key pair using the key agrement protocol
+   described in this document.
+
+
+2.  Conventions Used in This Document
+
+   The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
+   "SHOULD", "SHOULD NOT", "RECOMMENDED", "MAY", and "OPTIONAL" in this
+   document are to be interpreted as described in [RFC2119].
+
+
+3.  Using Elliptic Curve Certificates and Elliptic Curve Signature
+    Schemes
+
+   ECC certificates and signature schemes can be used in the
+   Cryptographic Message Syntax (CMS) [RFC3369] content type
+   'SignedData'.
+
+   X.509 certificates [RFC3280] containing ECC public keys or signed
+   using ECC signature schemes MUST comply with [RFC3279].
+
+   The elliptic curve domain parameters recommended in [X9.62],
+   [FIPS186-2], and [SECG] SHOULD be used.
+
+   The signatureAlgorithm field of the CMS data type SignerInfo can
+   contain one of the following ECC signature algorithm identifiers:
+
+      ecdsa-with-Sha1   [ECCPKALGS]
+      ecdsa-with-Sha256 [ECCPKALGS]
+      ecdsa-with-Sha384 [ECCPKALGS]
+      ecdsa-with-Sha512 [ECCPKALGS]
+
+
+
+
+Zhu, et al.              Expires March 17, 2006                 [Page 3]
+
+Internet-Draft           ECC Support for PKINIT           September 2005
+
+
+   The corresponding digestAlgorithm field contains one of the following
+   hash algorithm identifiers respectively:
+
+      id-sha1           [RFC3279]
+      id-sha256         [ECCPKALGS]
+      id-sha384         [ECCPKALGS]
+      id-sha512         [ECCPKALGS]
+
+   Namely id-sha1 MUST be used in conjunction with ecdsa-with-Sha1, id-
+   sha256 MUST be used in conjunction with ecdsa-with-Sha256, id-sha384
+   MUST be used in conjunction with ecdsa-with-Sha384, and id-sha512
+   MUST be used in conjunction with ecdsa-with-Sha512.
+
+   Implementations of this specfication MUST support ecdsa-with-Sha256
+   and SHOULD support ecdsa-with-Sha1.
+
+
+4.  Using ECDH Key Exchange
+
+   This section describes how ECDH can be used as the AS reply key
+   delivery method [PKINIT].  Note that the protocol description is
+   similar to that of Modular Exponential Diffie-Hellman (MODP DH), as
+   described in [PKINIT].
+
+   If the client wishes to use ECDH key agreement method, it encodes its
+   ECDH public key value and the domain parameters [IEEE1363] for its
+   ECDH public key in clientPublicValue of the PA-PK-AS-REQ message
+   [PKINIT].
+
+   As described in [PKINIT], the ECDH domain parameters for the client's
+   public key are specified in the algorithm field of the type
+   SubjectPublicKeyInfo [RFC3279] and the client's ECDH public key value
+   is mapped to a subjectPublicKey (a BIT STRING) according to
+   [RFC3279].
+
+   The following algorithm identifier is used to identify the client's
+   choice of the ECDH key agreement method for key delivery.
+
+        id-ecPublicKey (Elliptic Curve Diffie-Hellman [IEEE1363])
+
+   If the domain parameters are not accepted by the KDC, the KDC sends
+   back an error message [RFC4120] with the code
+   KDC_ERR_DH_KEY_PARAMETERS_NOT_ACCEPTED [PKINIT].  This error message
+   contains the list of domain parameters acceptable to the KDC.  This
+   list is encoded as TD-DH-PARAMETERS [PKINIT], and it is in the KDC's
+   decreasing preference order.  The client can then pick a set of
+   domain parameters from the list and retry the authentication.
+
+
+
+
+Zhu, et al.              Expires March 17, 2006                 [Page 4]
+
+Internet-Draft           ECC Support for PKINIT           September 2005
+
+
+   Both the client and the KDC MUST have local policy that specifies
+   which set of domain parameters are acceptable if they do not have a
+   priori knowledge of the chosen domain parameters.  The need for such
+   local policy is explained in Section 6.
+
+   If the ECDH domain parameters are accepted by the KDC, the KDC sends
+   back its ECDH public key value in the subjectPublicKey field of the
+   PA-PK-AS-REP message [PKINIT].
+
+   As described in [PKINIT], the KDC's ECDH public key value is encoded
+   as a BIT STRING according to [RFC3279].
+
+   Note that in the steps above, the client can indicate to the KDC that
+   it wishes to reuse ECDH keys or to allow the KDC to do so, by
+   including the clientDHNonce field in the request [PKINIT], and the
+   KDC can then reuse the ECDH keys and include serverDHNonce field in
+   the reply [PKINIT].  This logic is the same as that of the Modular
+   Exponential Diffie-Hellman key agreement method [PKINIT].
+
+   If ECDH is negotiated as the key delivery method, both the KDC and
+   the client calculate the shared secret value and derive the reply key
+   as follows:
+
+   1) Let DHSharedSecret be the x-coordinate of the shared secret value
+      (an elliptic curve point).  DHSharedSecret is the output of
+      operation ECSVDP-DH as described in Section 7.2.1 of [IEEE1363].
+
+   2) DHSharedSecret is first padded with leading zeros such that the
+      size of DHSharedSecret in octets is the same as that of the
+      modulus, then represented as a string of octets in big-endian
+      order.
+
+   3) The DHSharedSecret value derived above is used as input to the
+      octetstring2key() function to derive the AS reply key k, as
+      described in Section 3.2.3.1 of [PKINIT].
+
+   Both the client and KDC then proceed as described in [PKINIT] and
+   [RFC4120].
+
+   Lastly it should be noted that ECDH can be used with any certificates
+   and signature schemes.  However, a significant advantage of using
+   ECDH together with ECC certificates and signature schemes is that the
+   ECC domain parameters in the client or KDC certificates can be used.
+   This obviates the need of locally preconfigured domain parameters as
+   described in Section 6.
+
+
+
+
+
+
+Zhu, et al.              Expires March 17, 2006                 [Page 5]
+
+Internet-Draft           ECC Support for PKINIT           September 2005
+
+
+5.  Choosing the Domain Parameters and the Key Size
+
+   The domain parameters and the key size should be chosen so as to
+   provide sufficient cryptographic security [RFC3766].  The following
+   table, based on table 2 on page 63 of NIST SP800-57 part 1
+   [NISTSP80057], gives approximate comparable key sizes for symmetric-
+   and asymmetric-key cryptosystems based on the best-known algorithms
+   for attacking them.
+
+
+                 Symmetric    |  ECC       |   RSA
+                 -------------+----------- +------------
+                    80        |  160 - 223 |   1024
+                   112        |  224 - 255 |   2048
+                   128        |  256 - 383 |   3072
+                   192        |  384 - 511 |   7680
+                   256        |  512+      |  15360
+
+                Table 1: Comparable key sizes (in bits)
+
+   Thus, for example, when securing a 128-bit symmetric key, it is
+   prudent to use 256-bit Elliptic Curve Cryptography (ECC), e.g. group
+   P-256 (secp256r1) as described below.
+
+   A set of ECDH domain parameters is also known as a curve.  A curve is
+   a named curve if the domain paratmeters are well known and can be
+   identified by an Object Identifier, otherwise it is called a custom
+   curve.  [PKINIT] supports both named curves and custom curves, see
+   Section 6 on the tradeoff of choosing between named curves and custom
+   curves.
+
+   The named curves recommended in this document are also recommended by
+   NIST [FIPS186-2].  These fifteen ECC curves are given in the
+   following table [FIPS186-2] [SECG].
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Zhu, et al.              Expires March 17, 2006                 [Page 6]
+
+Internet-Draft           ECC Support for PKINIT           September 2005
+
+
+              Description                      SEC 2 OID
+              -----------------                ---------
+
+              ECPRGF192Random  group P-192     secp192r1
+              EC2NGF163Random  group B-163     sect163r2
+              EC2NGF163Koblitz group K-163     sect163k1
+
+              ECPRGF224Random  group P-224     secp224r1
+              EC2NGF233Random  group B-233     sect233r1
+              EC2NGF233Koblitz group K-233     sect233k1
+
+              ECPRGF256Random  group P-256     secp256r1
+              EC2NGF283Random  group B-283     sect283r1
+              EC2NGF283Koblitz group K-283     sect283k1
+
+              ECPRGF384Random  group P-384     secp384r1
+              EC2NGF409Random  group B-409     sect409r1
+              EC2NGF409Koblitz group K-409     sect409k1
+
+              ECPRGF521Random  group P-521     secp521r1
+              EC2NGF571Random  group B-571     sect571r1
+              EC2NGF571Koblitz group K-571     sect571k1
+
+
+6.  Security Considerations
+
+   Kerberos error messages are not integrity protected, as a result, the
+   domain parameters sent by the KDC as TD-DH-PARAMETERS can be tampered
+   with by an attacker so that the set of domain parameters selected
+   could be either weaker or not mutually preferred.  Local policy can
+   configure sets of domain parameters acceptable locally, or disallow
+   the negotiation of ECDH domain parameters.
+
+   Beyond elliptic curve size, the main issue is elliptic curve
+   structure.  As a general principle, it is more conservative to use
+   elliptic curves with as little algebraic structure as possible - thus
+   random curves are more conservative than special curves such as
+   Koblitz curves, and curves over F_p with p random are more
+   conservative than curves over F_p with p of a special form (and
+   curves over F_p with p random might be considered more conservative
+   than curves over F_2^m as there is no choice between multiple fields
+   of similar size for characteristic 2).  Note, however, that algebraic
+   structure can also lead to implementation efficiencies and
+   implementors and users may, therefore, need to balance conservatism
+   against a need for efficiency.  Concrete attacks are known against
+   only very few special classes of curves, such as supersingular
+   curves, and these classes are excluded from the ECC standards such as
+   [IEEE1363] and [X9.62].
+
+
+
+Zhu, et al.              Expires March 17, 2006                 [Page 7]
+
+Internet-Draft           ECC Support for PKINIT           September 2005
+
+
+   Another issue is the potential for catastrophic failures when a
+   single elliptic curve is widely used.  In this case, an attack on the
+   elliptic curve might result in the compromise of a large number of
+   keys.  Again, this concern may need to be balanced against efficiency
+   and interoperability improvements associated with widely-used curves.
+   Substantial additional information on elliptic curve choice can be
+   found in [IEEE1363], [X9.62] and [FIPS186-2].
+
+
+7.  IANA Considerations
+
+   No IANA actions are required for this document.
+
+
+8.  Acknowledgements
+
+   The following people have made significant contributions to this
+   draft: Paul Leach, Dan Simon, Kelvin Yiu, David Cross and Sam
+   Hartman.
+
+
+9.  References
+
+9.1.  Normative References
+
+   [ECCPKALGS]
+              RFC-Editor: To be replaced by RFC number for draft-ietf-
+              pkix-ecc-pkalgs.  Work in Progress.
+
+   [FIPS186-2]
+              NIST, "Digital Signature Standard", FIPS 186-2, 2000.
+
+   [IEEE1363]
+              IEEE, "Standard Specifications for Public Key Cryptography",
+              IEEE 1363, 2000.
+
+   [NISTSP80057]
+              NIST, "Recommendation on Key Management", 
+              http://csrc.nist.gov/publications/nistpubs/, SP 800-57,
+              August 2005.
+                            
+   [PKINIT]   RFC-Editor: To be replaced by RFC number for draft-ietf-
+              cat-kerberos-pk-init.  Work in Progress.
+
+
+Zhu, et al.              Expires March 17, 2006                 [Page 8]
+
+Internet-Draft           ECC Support for PKINIT           September 2005
+
+
+
+   [RFC2119]  Bradner, S., "Key words for use in RFCs to Indicate
+              Requirement Levels", BCP 14, RFC 2119, March 1997.
+
+   [RFC3279]  Bassham, L., Polk, W., and R. Housley, "Algorithms and
+              Identifiers for the Internet X.509 Public Key
+              Infrastructure Certificate and Certificate Revocation List
+              (CRL) Profile", RFC 3279, April 2002.
+
+   [RFC3280]  Housley, R., Polk, W., Ford, W., and D. Solo, "Internet
+              X.509 Public Key Infrastructure Certificate and
+              Certificate Revocation List (CRL) Profile", RFC 3280,
+              April 2002.
+
+   [RFC3369]  Housley, R., "Cryptographic Message Syntax (CMS)",
+              RFC 3369, August 2002.
+
+   [RFC3766]  Orman, H. and P. Hoffman, "Determining Strengths For
+              Public Keys Used For Exchanging Symmetric Keys", BCP 86,
+              RFC 3766, April 2004.
+
+   [RFC4120]  Neuman, C., Yu, T., Hartman, S., and K. Raeburn, "The
+              Kerberos Network Authentication Service (V5)", RFC 4120,
+              July 2005.
+              
+   [X9.62]    ANSI, "Public Key Cryptography For The Financial Services
+              Industry: The Elliptic Curve Digital Signature Algorithm
+              (ECDSA)", ANSI X9.62, 1998.
+
+9.2.  Informative References
+
+   [LENSTRA]  Lenstra, A. and E. Verheul, "Selecting Cryptographic Key 
+              Sizes", Journal of Cryptology 14 (2001) 255-293.
+
+   [SECG]     SECG, "Elliptic Curve Cryptography", SEC 1, 2000,
+              <http://www.secg.org/>.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Zhu, et al.              Expires March 17, 2006                 [Page 9]
+
+Internet-Draft           ECC Support for PKINIT           September 2005
+
+
+Authors' Addresses
+
+   Larry Zhu
+   Microsoft Corporation
+   One Microsoft Way
+   Redmond, WA  98052
+   US
+
+   Email: lzhu@microsoft.com
+
+
+   Karthik Jaganathan
+   Microsoft Corporation
+   One Microsoft Way
+   Redmond, WA  98052
+   US
+
+   Email: karthikj@microsoft.com
+
+
+   Kristin Lauter
+   Microsoft Corporation
+   One Microsoft Way
+   Redmond, WA  98052
+   US
+
+   Email: klauter@microsoft.com
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Zhu, et al.              Expires March 17, 2006                [Page 10]
+
+Internet-Draft           ECC Support for PKINIT           September 2005
+
+
+Intellectual Property Statement
+
+   The IETF takes no position regarding the validity or scope of any
+   Intellectual Property Rights or other rights that might be claimed to
+   pertain to the implementation or use of the technology described in
+   this document or the extent to which any license under such rights
+   might or might not be available; nor does it represent that it has
+   made any independent effort to identify any such rights.  Information
+   on the procedures with respect to rights in RFC documents can be
+   found in BCP 78 and BCP 79.
+
+   Copies of IPR disclosures made to the IETF Secretariat and any
+   assurances of licenses to be made available, or the result of an
+   attempt made to obtain a general license or permission for the use of
+   such proprietary rights by implementers or users of this
+   specification can be obtained from the IETF on-line IPR repository at
+   http://www.ietf.org/ipr.
+
+   The IETF invites any interested party to bring to its attention any
+   copyrights, patents or patent applications, or other proprietary
+   rights that may cover technology that may be required to implement
+   this standard.  Please address the information to the IETF at
+   ietf-ipr@ietf.org.
+
+
+Disclaimer of Validity
+
+   This document and the information contained herein are provided on an
+   "AS IS" basis and THE CONTRIBUTOR, THE ORGANIZATION HE/SHE REPRESENTS
+   OR IS SPONSORED BY (IF ANY), THE INTERNET SOCIETY AND THE INTERNET
+   ENGINEERING TASK FORCE DISCLAIM ALL WARRANTIES, EXPRESS OR IMPLIED,
+   INCLUDING BUT NOT LIMITED TO ANY WARRANTY THAT THE USE OF THE
+   INFORMATION HEREIN WILL NOT INFRINGE ANY RIGHTS OR ANY IMPLIED
+   WARRANTIES OF MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE.
+
+
+Copyright Statement
+
+   Copyright (C) The Internet Society (2005).  This document is subject
+   to the rights, licenses and restrictions contained in BCP 78, and
+   except as set forth therein, the authors retain all their rights.
+
+
+Acknowledgment
+
+   Funding for the RFC Editor function is currently provided by the
+   Internet Society.
+
+
+
+
+Zhu, et al.              Expires March 17, 2006                [Page 11]
+
+
