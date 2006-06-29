@@ -173,7 +173,7 @@ static NTSTATUS smb2srv_getinfo_security(struct smb2srv_getinfo_op *op, uint8_t 
 		return ntvfs_qfileinfo(op->req->ntvfs, io);
 	}
 
-	return NT_STATUS_INVALID_INFO_CLASS;
+	return NT_STATUS_INVALID_PARAMETER;
 }
 
 static NTSTATUS smb2srv_getinfo_backend(struct smb2srv_getinfo_op *op)
@@ -193,9 +193,12 @@ static NTSTATUS smb2srv_getinfo_backend(struct smb2srv_getinfo_op *op)
 
 	case SMB2_GETINFO_SECURITY:
 		return smb2srv_getinfo_security(op, smb2_level);
+
+	case 0x04:
+		return NT_STATUS_NOT_SUPPORTED;
 	}
 
-	return NT_STATUS_FOOBAR;
+	return NT_STATUS_INVALID_PARAMETER;
 }
 
 void smb2srv_getinfo_recv(struct smb2srv_request *req)
@@ -257,7 +260,21 @@ static NTSTATUS smb2srv_setinfo_file(struct smb2srv_setinfo_op *op, uint8_t smb2
 
 static NTSTATUS smb2srv_setinfo_fs(struct smb2srv_setinfo_op *op, uint8_t smb2_level)
 {
-	return NT_STATUS_FOOBAR;
+	switch (smb2_level) {
+	case 0x02:
+		return NT_STATUS_NOT_IMPLEMENTED;
+
+	case 0x06:
+		return NT_STATUS_ACCESS_DENIED;
+
+	case 0x08:
+		return NT_STATUS_ACCESS_DENIED;
+
+	case 0x0A:
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	return NT_STATUS_INVALID_INFO_CLASS;
 }
 
 static NTSTATUS smb2srv_setinfo_security(struct smb2srv_setinfo_op *op, uint8_t smb2_level)
@@ -305,9 +322,12 @@ static NTSTATUS smb2srv_setinfo_backend(struct smb2srv_setinfo_op *op)
 
 	case SMB2_GETINFO_SECURITY:
 		return smb2srv_setinfo_security(op, smb2_level);
+
+	case 0x04:
+		return NT_STATUS_NOT_SUPPORTED;
 	}
 
-	return NT_STATUS_FOOBAR;
+	return NT_STATUS_INVALID_PARAMETER;
 }
 
 void smb2srv_setinfo_recv(struct smb2srv_request *req)
