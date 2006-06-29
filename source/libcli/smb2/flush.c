@@ -50,7 +50,7 @@ struct smb2_request *smb2_flush_send(struct smb2_tree *tree, struct smb2_flush *
 NTSTATUS smb2_flush_recv(struct smb2_request *req, struct smb2_flush *io)
 {
 	if (!smb2_request_receive(req) || 
-	    smb2_request_is_error(req)) {
+	    !smb2_request_is_ok(req)) {
 		return smb2_request_destroy(req);
 	}
 

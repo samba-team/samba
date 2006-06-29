@@ -51,7 +51,7 @@ struct smb2_request *smb2_close_send(struct smb2_tree *tree, struct smb2_close *
 NTSTATUS smb2_close_recv(struct smb2_request *req, struct smb2_close *io)
 {
 	if (!smb2_request_receive(req) || 
-	    smb2_request_is_error(req)) {
+	    !smb2_request_is_ok(req)) {
 		return smb2_request_destroy(req);
 	}
 

@@ -48,7 +48,7 @@ struct smb2_request *smb2_keepalive_send(struct smb2_transport *transport)
 NTSTATUS smb2_keepalive_recv(struct smb2_request *req)
 {
 	if (!smb2_request_receive(req) || 
-	    smb2_request_is_error(req)) {
+	    !smb2_request_is_ok(req)) {
 		return smb2_request_destroy(req);
 	}
 
