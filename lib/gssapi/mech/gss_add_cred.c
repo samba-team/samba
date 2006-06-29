@@ -84,6 +84,7 @@ gss_add_cred(OM_uint32 *minor_status,
 	gssapi_mech_interface m;
 	struct _gss_cred *cred = (struct _gss_cred *) input_cred_handle;
 	struct _gss_cred *new_cred;
+	gss_cred_id_t release_cred;
 	struct _gss_mechanism_cred *mc, *target_mc, *copy_mc;
 	struct _gss_mechanism_name *mn;
 	OM_uint32 junk;
@@ -113,7 +114,8 @@ gss_add_cred(OM_uint32 *minor_status,
 			}
 			copy_mc = _gss_copy_cred(mc);
 			if (!copy_mc) {
-				gss_release_cred(&junk, (gss_cred_id_t*) &new_cred);
+				release_cred = (gss_cred_id_t)new_cred;
+				gss_release_cred(&junk, &release_cred);
 				*minor_status = ENOMEM;
 				return (GSS_S_FAILURE);
 			}
@@ -139,7 +141,8 @@ gss_add_cred(OM_uint32 *minor_status,
 
 	mc = malloc(sizeof(struct _gss_mechanism_cred));
 	if (!mc) {
-		gss_release_cred(&junk, (gss_cred_id_t*) &new_cred);
+		release_cred = (gss_cred_id_t)new_cred;
+		gss_release_cred(&junk, &release_cred);
 		*minor_status = ENOMEM;
 		return (GSS_S_FAILURE);
 	}
@@ -159,7 +162,8 @@ gss_add_cred(OM_uint32 *minor_status,
 	    acceptor_time_rec);
 
 	if (major_status) {
-		gss_release_cred(&junk, (gss_cred_id_t*) &new_cred);
+		release_cred = (gss_cred_id_t)new_cred;
+		gss_release_cred(&junk, &release_cred);
 		free(mc);
 		return (major_status);
 	}
