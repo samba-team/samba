@@ -357,7 +357,7 @@ static BOOL winbind_lookup_rids(TALLOC_CTX *mem_ctx,
 				const DOM_SID *domain_sid,
 				int num_rids, uint32 *rids,
 				const char **domain_name,
-				const char **names, uint32 *types)
+				const char **names, enum SID_NAME_USE *types)
 {
 	/* Unless the winbind interface is upgraded, fall back to ask for
 	 * individual sids. I imagine introducing a lookuprids operation that

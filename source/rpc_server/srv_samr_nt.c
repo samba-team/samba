@@ -1619,12 +1619,14 @@ NTSTATUS _samr_lookup_rids(pipes_struct *p, SAMR_Q_LOOKUP_RIDS *q_u, SAMR_R_LOOK
 {
 	const char **names;
 	enum SID_NAME_USE *attrs = NULL;
+	uint32 *wire_attrs = NULL;
 	UNIHDR *hdr_name = NULL;
 	UNISTR2 *uni_name = NULL;
 	DOM_SID pol_sid;
 	int num_rids = q_u->num_rids1;
 	uint32 acc_granted;
-	
+	int i;
+
 	r_u->status = NT_STATUS_OK;
 
 	DEBUG(5,("_samr_lookup_rids: %d\n", __LINE__));
@@ -1640,9 +1642,10 @@ NTSTATUS _samr_lookup_rids(pipes_struct *p, SAMR_Q_LOOKUP_RIDS *q_u, SAMR_R_LOOK
 	}
 
 	names = TALLOC_ZERO_ARRAY(p->mem_ctx, const char *, num_rids);
-	attrs = TALLOC_ZERO_ARRAY(p->mem_ctx, uint32, num_rids);
+	attrs = TALLOC_ZERO_ARRAY(p->mem_ctx, enum SID_NAME_USE, num_rids);
+	wire_attrs = TALLOC_ZERO_ARRAY(p->mem_ctx, uint32, num_rids);
 
-	if ((num_rids != 0) && ((names == NULL) || (attrs == NULL)))
+	if ((num_rids != 0) && ((names == NULL) || (attrs == NULL) || wire_attrs))
 		return NT_STATUS_NO_MEMORY;
 
 	become_root();  /* lookup_sid can require root privs */
@@ -1658,7 +1661,12 @@ NTSTATUS _samr_lookup_rids(pipes_struct *p, SAMR_Q_LOOKUP_RIDS *q_u, SAMR_R_LOOK
 				  &hdr_name, &uni_name))
 		return NT_STATUS_NO_MEMORY;
 
-	init_samr_r_lookup_rids(r_u, num_rids, hdr_name, uni_name, attrs);
+	/* Convert from enum SID_NAME_USE to uint32 for wire format. */
+	for (i = 0; i < num_rids; i++) {
+		wire_attrs[i] = (uint32)attrs[i];
+	}
+
+	init_samr_r_lookup_rids(r_u, num_rids, hdr_name, uni_name, wire_attrs);
 
 	DEBUG(5,("_samr_lookup_rids: %d\n", __LINE__));
 
