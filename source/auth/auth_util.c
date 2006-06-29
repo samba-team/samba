@@ -611,12 +611,17 @@ NTSTATUS make_server_info_sam(auth_serversupplied_info **server_info,
  * Add alias SIDs from memberships within the partially created token SID list
  */
 
-static NTSTATUS add_aliases(TALLOC_CTX *tmp_ctx, const DOM_SID *domain_sid,
+static NTSTATUS add_aliases(const DOM_SID *domain_sid,
 			    struct nt_user_token *token)
 {
 	uint32 *aliases;
 	size_t i, num_aliases;
 	NTSTATUS status;
+	TALLOC_CTX *tmp_ctx;
+
+	if (!(tmp_ctx = talloc_init("add_aliases"))) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	aliases = NULL;
 	num_aliases = 0;
@@ -629,6 +634,7 @@ static NTSTATUS add_aliases(TALLOC_CTX *tmp_ctx, const DOM_SID *domain_sid,
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10, ("pdb_enum_alias_memberships failed: %s\n",
 			   nt_errstr(status)));
+		TALLOC_FREE(tmp_ctx);
 		return status;
 	}
 
@@ -640,10 +646,12 @@ static NTSTATUS add_aliases(TALLOC_CTX *tmp_ctx, const DOM_SID *domain_sid,
 					&token->num_sids);
 		if (token->user_sids == NULL) {
 			DEBUG(0, ("add_sid_to_array failed\n"));
+			TALLOC_FREE(tmp_ctx);
 			return NT_STATUS_NO_MEMORY;
 		}
 	}
 
+	TALLOC_FREE(tmp_ctx);
 	return NT_STATUS_OK;
 }
 
@@ -686,7 +694,7 @@ static NTSTATUS log_nt_token(TALLOC_CTX *tmp_ctx, NT_USER_TOKEN *token)
 /*******************************************************************
 *******************************************************************/
 
-static NTSTATUS add_builtin_administrators( TALLOC_CTX *ctx, struct nt_user_token *token )
+static NTSTATUS add_builtin_administrators( struct nt_user_token *token )
 {
 	DOM_SID domadm;
 
@@ -808,22 +816,14 @@ static struct nt_user_token *create_local_nt_token(TALLOC_CTX *mem_ctx,
 						   int num_groupsids,
 						   const DOM_SID *groupsids)
 {
-	TALLOC_CTX *tmp_ctx;
 	struct nt_user_token *result = NULL;
 	int i;
 	NTSTATUS status;
 	gid_t gid;
 
-	tmp_ctx = talloc_new(mem_ctx);
-	if (tmp_ctx == NULL) {
-		DEBUG(0, ("talloc_new failed\n"));
-		return NULL;
-	}
-
-	result = TALLOC_ZERO_P(tmp_ctx, NT_USER_TOKEN);
-	if (result == NULL) {
+	if (!(result = TALLOC_ZERO_P(mem_ctx, NT_USER_TOKEN))) {
 		DEBUG(0, ("talloc failed\n"));
-		goto done;
+		return NULL;
 	}
 
 	/* Add the user and primary group sid */
@@ -875,10 +875,10 @@ static struct nt_user_token *create_local_nt_token(TALLOC_CTX *mem_ctx,
 			unbecome_root();
 		}
 		else {
-			status = add_builtin_administrators( tmp_ctx, result );	
+			status = add_builtin_administrators( result );
 			if ( !NT_STATUS_IS_OK(status) ) {			
-				result = NULL;
-				goto done;
+				TALLOC_FREE(result);
+				return NULL;
 			}			
 		}		
 	}
@@ -895,7 +895,7 @@ static struct nt_user_token *create_local_nt_token(TALLOC_CTX *mem_ctx,
 			become_root();
 			status = create_builtin_users( );
 			if ( !NT_STATUS_IS_OK(status) ) {
-				DEBUG(0,("create_local_nt_token: Failed to create BUILTIN\\Administrators group!\n"));
+				DEBUG(0,("create_local_nt_token: Failed to create BUILTIN\\Users group!\n"));
 				/* don't fail, just log the message */
 			}
 			unbecome_root();
@@ -908,31 +908,26 @@ static struct nt_user_token *create_local_nt_token(TALLOC_CTX *mem_ctx,
 
 		/* Now add the aliases. First the one from our local SAM */
 
-		status = add_aliases(tmp_ctx, get_global_sam_sid(), result);
+		status = add_aliases(get_global_sam_sid(), result);
 
 		if (!NT_STATUS_IS_OK(status)) {
-			result = NULL;
-			goto done;
+			TALLOC_FREE(result);
+			return NULL;
 		}
 
 		/* Finally the builtin ones */
 
-		status = add_aliases(tmp_ctx, &global_sid_Builtin, result);
+		status = add_aliases(&global_sid_Builtin, result);
 
 		if (!NT_STATUS_IS_OK(status)) {
-			result = NULL;
-			goto done;
+			TALLOC_FREE(result);
+			return NULL;
 		}
 	} 
 
 
 	get_privileges_for_sids(&result->privileges, result->user_sids,
 				result->num_sids);
-
-	talloc_steal(mem_ctx, result);
-
- done:
-	TALLOC_FREE(tmp_ctx);
 	return result;
 }
 
