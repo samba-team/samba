@@ -60,6 +60,7 @@ NTSTATUS smb2srv_setup_reply(struct smb2srv_request *req, uint16_t body_fixed_si
 
 	req->out.hdr		= req->out.buffer	+ NBT_HDR_SIZE;
 	req->out.body		= req->out.hdr		+ SMB2_HDR_BODY;
+	req->out.body_fixed	= body_fixed_size;
 	req->out.body_size	= body_fixed_size;
 	req->out.dynamic	= (body_dynamic_size ? req->out.body + body_fixed_size : NULL);
 
@@ -294,10 +295,11 @@ NTSTATUS smbsrv_recv_smb2_request(void *private, DATA_BLOB blob)
 	req->in.dynamic 	= NULL;
 
 	buffer_code		= SVAL(req->in.body, 0);
-	dynamic_size		= req->in.body_size - (buffer_code & ~1);
+	req->in.body_fixed	= (buffer_code & ~1);
+	dynamic_size		= req->in.body_size - req->in.body_fixed;
 
 	if (dynamic_size != 0 && (buffer_code & 1)) {
-		req->in.dynamic = req->in.body + (buffer_code & ~1);
+		req->in.dynamic = req->in.body + req->in.body_fixed;
 		if (smb2_oob(&req->in, req->in.dynamic, dynamic_size)) {
 			DEBUG(1,("SMB2 request invalid dynamic size 0x%x\n", 
 				 dynamic_size));

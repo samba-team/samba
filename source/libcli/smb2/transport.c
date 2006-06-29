@@ -193,10 +193,11 @@ static NTSTATUS smb2_transport_finish_recv(void *private, DATA_BLOB blob)
 	}
 
 	buffer_code = SVAL(req->in.body, 0);
+	req->in.body_fixed = (buffer_code & ~1);
 	req->in.dynamic = NULL;
-	dynamic_size = req->in.body_size - (buffer_code & ~1);
+	dynamic_size = req->in.body_size - req->in.body_fixed;
 	if (dynamic_size != 0 && (buffer_code & 1)) {
-		req->in.dynamic = req->in.body + (buffer_code & ~1);
+		req->in.dynamic = req->in.body + req->in.body_fixed;
 		if (smb2_oob(&req->in, req->in.dynamic, dynamic_size)) {
 			DEBUG(1,("SMB2 request invalid dynamic size 0x%x\n", 
 				 dynamic_size));

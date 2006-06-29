@@ -87,6 +87,7 @@ struct smb2_request_buffer {
 	
 	/* the packet body */
 	uint8_t *body;
+	size_t body_fixed;
 	size_t body_size;
 
 	/* this point to the next dynamic byte that can be used
