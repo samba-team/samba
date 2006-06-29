@@ -1,4 +1,50 @@
+2006-06-29  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* gssapi.h: Make gss_name_t an opaque type.
+	
+	* krb5: make gss_name_t an opaque type
+
+	* krb5/set_cred_option.c: Add
+
+	* mech/gss_set_cred_option.c (gss_set_cred_option): support the
+	case where *cred_handle == NULL
+
+	* mech/gss_krb5.c (gss_krb5_import_cred): make sure cred is
+	GSS_C_NO_CREDENTIAL on failure.
+
+	* mech/gss_acquire_cred.c (gss_acquire_cred): if desired_mechs is
+	NO_OID_SET, there is a need to load the mechs, so always do that.
+	
 2006-06-28  Love Hörnquist Åstrand  <lha@it.su.se>
+	
+	* krb5/inquire_cred_by_oid.c: Reimplement GSS_KRB5_COPY_CCACHE_X
+	to instead pass a fullname to the credential, then resolve and
+	copy out the content, and then close the cred.
+
+	* mech/gss_krb5.c: Reimplement GSS_KRB5_COPY_CCACHE_X to instead
+	pass a fullname to the credential, then resolve and copy out the
+	content, and then close the cred.
+	
+	* krb5/inquire_cred_by_oid.c: make "work", GSS_KRB5_COPY_CCACHE_X
+	interface needs to be re-done, currently its utterly broken.
+
+	* mech/gss_set_cred_option.c: Make work.
+
+	* krb5/external.c: Add _gsskrb5_set_{sec_context,cred}_option
+
+	* mech/gss_krb5.c (gss_krb5_import_cred): implement
+
+	* Makefile.am: Add gss_set_{sec_context,cred}_option and sort
+	
+	* mech/gss_set_{sec_context,cred}_option.c: add
+
+	* gssapi.h: Add GSS_KRB5_IMPORT_CRED_X
+
+	* test_*.c: make compile again
+
+	* Makefile.am: Add lib dependencies and test programs
+
+	* spnego: remove dependency on libkrb5
 
 	* mech: Bug fixes, cleanup, compiler warnings, restructure code.
 
