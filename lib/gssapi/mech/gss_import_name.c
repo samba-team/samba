@@ -202,7 +202,8 @@ gss_import_name(OM_uint32 *minor_status,
 	major_status = _gss_copy_buffer(minor_status,
 	    input_name_buffer, &name->gn_value);
 	if (major_status) {
-		gss_release_name(minor_status, (gss_name_t*) &name);
+		gss_name_t rname = (gss_name_t)name;
+		gss_release_name(minor_status, &rname);
 		return (GSS_S_FAILURE);
 	}
 
