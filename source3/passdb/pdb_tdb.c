@@ -905,6 +905,7 @@ static int tdbsam_traverse_setpwent(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data,
 		if (!ptr->key.dptr) {
 			DEBUG(0,("tdbsam_traverse_setpwent: memdup failed\n"));
 			/* just return 0 and let the traversal continue */
+			SAFE_FREE(ptr);
 			return 0;
 		}
 
@@ -913,7 +914,6 @@ static int tdbsam_traverse_setpwent(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data,
 		DLIST_ADD( tdbsam_pwent_list, ptr );
 	
 	}
-	
 	
 	return 0;
 }
