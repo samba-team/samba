@@ -1735,8 +1735,8 @@ if test "$enable_shared" = "yes"; then
 			DYNEXP="-Wl,-brtl,-bexpall,-bbigtoc"
 			PICFLAGS="-O2"
 			# as AIX code is always position independent...
-			# .po will just create compile warnings, use .o:
-			PICSUFFIX="o"
+			# .po will just create compile warnings, use po.o:
+			PICSUFFIX="po.o"
 			if test "${GCC}" != "yes"; then
 				## for funky AIX compiler using strncpy()
 				CFLAGS="$CFLAGS -D_LINUX_SOURCE_COMPAT -qmaxmem=32000"
@@ -3093,7 +3093,7 @@ fi
 #################################################
 # check whether to compile AFS/NT ACL mapping module
 samba_cv_WITH_VFS_AFSACL=no
-AC_MSG_CHECKING(whether to use AFS fake-kaserver)
+AC_MSG_CHECKING(whether to use AFS ACL mapping module)
 AC_ARG_WITH(vfs-afsacl,
 [  --with-vfs-afsacl       Include AFS to NT ACL mapping module (default=no) ],
 [ case "$withval" in
