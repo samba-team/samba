@@ -236,11 +236,6 @@ BOOL torture_smb2_setinfo(struct torture_context *torture)
 	CHECK_VALUE(MODE_INFORMATION, mode_information, mode, 0);
 
 	printf("test sec_desc level\n");
-	test_sid = dom_sid_parse_talloc(mem_ctx, "S-1-5-32-1234-5432");
-	ace.type = SEC_ACE_TYPE_ACCESS_ALLOWED;
-	ace.flags = 0;
-	ace.access_mask = SEC_STD_ALL;
-	ace.trustee = *test_sid;
 	ZERO_STRUCT(finfo2);
 	finfo2.query_secdesc.in.secinfo_flags =
 		SECINFO_OWNER |
@@ -250,6 +245,7 @@ BOOL torture_smb2_setinfo(struct torture_context *torture)
 	sd = finfo2.query_secdesc.out.sd;
 
 	test_sid = dom_sid_parse_talloc(mem_ctx, "S-1-5-32-1234-5432");
+	ZERO_STRUCT(ace);
 	ace.type = SEC_ACE_TYPE_ACCESS_ALLOWED;
 	ace.flags = 0;
 	ace.access_mask = SEC_STD_ALL;
