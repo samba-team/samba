@@ -69,6 +69,7 @@ struct smb2_request *smb2_request_init(struct smb2_transport *transport, uint16_
 
 	req->out.hdr       = req->out.buffer + NBT_HDR_SIZE;
 	req->out.body      = req->out.hdr + SMB2_HDR_BODY;
+	req->out.body_fixed= body_fixed_size;
 	req->out.body_size = body_fixed_size;
 	req->out.dynamic   = (body_dynamic_size ? req->out.body + body_fixed_size : NULL);
 
@@ -198,6 +199,14 @@ size_t smb2_padding_size(uint32_t offset, size_t n)
 	return n - (offset & (n-1));
 }
 
+static size_t smb2_padding_fix(struct smb2_request_buffer *buf)
+{
+	if (buf->dynamic == (buf->body + buf->body_fixed)) {
+		return 1;
+	}
+	return 0;
+}
+
 /*
   grow a SMB2 buffer by the specified amount
 */
@@ -261,6 +270,7 @@ NTSTATUS smb2_push_o16s16_blob(struct smb2_request_buffer *buf,
 	NTSTATUS status;
 	size_t offset;
 	size_t padding_length;
+	size_t padding_fix;
 	uint8_t *ptr = buf->body+ofs;
 
 	if (buf->dynamic == NULL) {
@@ -286,6 +296,7 @@ NTSTATUS smb2_push_o16s16_blob(struct smb2_request_buffer *buf,
 	offset = buf->dynamic - buf->hdr;
 	padding_length = smb2_padding_size(offset, 2);
 	offset += padding_length;
+	padding_fix = smb2_padding_fix(buf);
 
 	SSVAL(ptr, 0, offset);
 	SSVAL(ptr, 2, blob.length);
@@ -299,8 +310,8 @@ NTSTATUS smb2_push_o16s16_blob(struct smb2_request_buffer *buf,
 	memcpy(buf->dynamic, blob.data, blob.length);
 	buf->dynamic += blob.length;
 
-	buf->size += blob.length + padding_length;
-	buf->body_size += blob.length + padding_length;
+	buf->size += blob.length + padding_length - padding_fix;
+	buf->body_size += blob.length + padding_length - padding_fix;
 
 	return NT_STATUS_OK;
 }
@@ -317,6 +328,7 @@ NTSTATUS smb2_push_o16s32_blob(struct smb2_request_buffer *buf,
 	NTSTATUS status;
 	size_t offset;
 	size_t padding_length;
+	size_t padding_fix;
 	uint8_t *ptr = buf->body+ofs;
 
 	if (buf->dynamic == NULL) {
@@ -337,6 +349,7 @@ NTSTATUS smb2_push_o16s32_blob(struct smb2_request_buffer *buf,
 	offset = buf->dynamic - buf->hdr;
 	padding_length = smb2_padding_size(offset, 2);
 	offset += padding_length;
+	padding_fix = smb2_padding_fix(buf);
 
 	SSVAL(ptr, 0, offset);
 	SIVAL(ptr, 2, blob.length);
@@ -350,8 +363,8 @@ NTSTATUS smb2_push_o16s32_blob(struct smb2_request_buffer *buf,
 	memcpy(buf->dynamic, blob.data, blob.length);
 	buf->dynamic += blob.length;
 
-	buf->size += blob.length + padding_length;
-	buf->body_size += blob.length + padding_length;
+	buf->size += blob.length + padding_length - padding_fix;
+	buf->body_size += blob.length + padding_length - padding_fix;
 
 	return NT_STATUS_OK;
 }
@@ -368,6 +381,7 @@ NTSTATUS smb2_push_o32s32_blob(struct smb2_request_buffer *buf,
 	NTSTATUS status;
 	size_t offset;
 	size_t padding_length;
+	size_t padding_fix;
 	uint8_t *ptr = buf->body+ofs;
 
 	if (buf->dynamic == NULL) {
@@ -388,6 +402,7 @@ NTSTATUS smb2_push_o32s32_blob(struct smb2_request_buffer *buf,
 	offset = buf->dynamic - buf->hdr;
 	padding_length = smb2_padding_size(offset, 8);
 	offset += padding_length;
+	padding_fix = smb2_padding_fix(buf);
 
 	SIVAL(ptr, 0, offset);
 	SIVAL(ptr, 4, blob.length);
@@ -401,8 +416,8 @@ NTSTATUS smb2_push_o32s32_blob(struct smb2_request_buffer *buf,
 	memcpy(buf->dynamic, blob.data, blob.length);
 	buf->dynamic += blob.length;
 
-	buf->size += blob.length + padding_length;
-	buf->body_size += blob.length + padding_length;
+	buf->size += blob.length + padding_length - padding_fix;
+	buf->body_size += blob.length + padding_length - padding_fix;
 
 	return NT_STATUS_OK;
 }
@@ -419,6 +434,7 @@ NTSTATUS smb2_push_s32o32_blob(struct smb2_request_buffer *buf,
 	NTSTATUS status;
 	size_t offset;
 	size_t padding_length;
+	size_t padding_fix;
 	uint8_t *ptr = buf->body+ofs;
 
 	if (buf->dynamic == NULL) {
@@ -439,6 +455,7 @@ NTSTATUS smb2_push_s32o32_blob(struct smb2_request_buffer *buf,
 	offset = buf->dynamic - buf->hdr;
 	padding_length = smb2_padding_size(offset, 8);
 	offset += padding_length;
+	padding_fix = smb2_padding_fix(buf);
 
 	SIVAL(ptr, 0, blob.length);
 	SIVAL(ptr, 4, offset);
@@ -452,8 +469,8 @@ NTSTATUS smb2_push_s32o32_blob(struct smb2_request_buffer *buf,
 	memcpy(buf->dynamic, blob.data, blob.length);
 	buf->dynamic += blob.length;
 
-	buf->size += blob.length + padding_length;
-	buf->body_size += blob.length + padding_length;
+	buf->size += blob.length + padding_length - padding_fix;
+	buf->body_size += blob.length + padding_length - padding_fix;
 
 	return NT_STATUS_OK;
 }
