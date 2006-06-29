@@ -357,11 +357,11 @@ static BOOL wb_lookup_rids(TALLOC_CTX *mem_ctx,
 			   const DOM_SID *domain_sid,
 			   int num_rids, uint32 *rids,
 			   const char **domain_name,
-			   const char **names, uint32 *types)
+			   const char **names, enum SID_NAME_USE *types)
 {
 	int i;
 	const char **my_names;
-	uint32 *my_types;
+	enum SID_NAME_USE *my_types;
 
 	if (!winbind_lookup_rids(mem_ctx, domain_sid, num_rids, rids,
 				 domain_name, &my_names, &my_types)) {

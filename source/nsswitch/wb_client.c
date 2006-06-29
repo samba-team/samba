@@ -117,7 +117,7 @@ BOOL winbind_lookup_rids(TALLOC_CTX *mem_ctx,
 			 const DOM_SID *domain_sid,
 			 int num_rids, uint32 *rids,
 			 const char **domain_name,
-			 const char ***names, uint32 **types)
+			 const char ***names, enum SID_NAME_USE **types)
 {
 	size_t i, buflen;
 	ssize_t len;
@@ -183,7 +183,7 @@ BOOL winbind_lookup_rids(TALLOC_CTX *mem_ctx,
 			goto fail;
 		}
 			
-		(*types)[i] = strtoul(p, &q, 10);
+		(*types)[i] = (enum SID_NAME_USE)strtoul(p, &q, 10);
 
 		if (*q != ' ') {
 			DEBUG(10, ("Got invalid reply: %s\n",
