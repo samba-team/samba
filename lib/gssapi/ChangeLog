@@ -1,5 +1,8 @@
 2006-06-30  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* krb5/init_sec_context.c: Make work on compilers that are
+	somewhat more picky then gcc4 (like gcc2.95)
+
 	* krb5/init_sec_context.c (do_delegation): use KDCOptions2int to
 	convert fwd_flags to an integer, since otherwise int2KDCOptions in
 	krb5_get_forwarded_creds wont do the right thing.
