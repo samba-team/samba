@@ -542,6 +542,7 @@ AC_CONFIG_FILES(Makefile 		\
 	appl/ftp/common/Makefile	\
 	appl/ftp/ftp/Makefile		\
 	appl/ftp/ftpd/Makefile		\
+	appl/gssmask/Makefile		\
 	appl/kx/Makefile		\
 	appl/login/Makefile		\
 	appl/otp/Makefile		\
