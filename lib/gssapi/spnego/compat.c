@@ -64,8 +64,8 @@ OM_uint32 _gss_spnego_alloc_sec_context (OM_uint32 * minor_status,
 
     ctx->initiator_mech_types.len = 0;
     ctx->initiator_mech_types.val = NULL;
-    ctx->preferred_mech_type = NULL;
-    ctx->negotiated_mech_type = NULL;
+    ctx->preferred_mech_type = GSS_C_NO_OID;
+    ctx->negotiated_mech_type = GSS_C_NO_OID;
     ctx->negotiated_ctx_id = GSS_C_NO_CONTEXT;
 
     /*
@@ -126,7 +126,7 @@ OM_uint32 _gss_spnego_delete_sec_context
 
     _gss_spnego_release_cred(&minor, &ctx->delegated_cred_id);
 
-    ctx->preferred_mech_type = GSS_C_NO_OID;
+    gss_release_oid(&minor, &ctx->preferred_mech_type);
     ctx->negotiated_mech_type = GSS_C_NO_OID;
 
     gss_release_name(&minor, &ctx->mech_src_name);
@@ -279,16 +279,21 @@ _gss_spnego_select_mech(OM_uint32 *minor_status,
 	if (mech == NULL)
 	    return GSS_S_BAD_MECH;
 
-	*mech_p = &gss_mskrb_mechanism_oid_desc;
+	ret = gss_duplicate_oid(minor_status,
+				&gss_mskrb_mechanism_oid_desc,
+				mech_p);
     } else {
 	gssapi_mech_interface mech;
 
 	mech = __gss_get_mechanism(&oid);
 	if (mech == NULL)
 	    return GSS_S_BAD_MECH;
-	*mech_p = &mech->gm_mech_oid;
+
+	ret = gss_duplicate_oid(minor_status,
+				&mech->gm_mech_oid,
+				mech_p);
     }
 
-    return GSS_S_COMPLETE;
+    return ret;
 }
 
