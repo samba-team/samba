@@ -73,8 +73,8 @@ gss_set_cred_option (OM_uint32 *minor_status,
 			mc->gmc_mech_oid = &m->gm_mech_oid;
 			mc->gmc_cred = GSS_C_NO_CREDENTIAL;
 
-			major_status = m->gm_mech.gm_set_cred_option(minor_status,
-			    &mc->gmc_cred, object, value);
+			major_status = m->gm_mech.gm_set_cred_option(
+			    minor_status, &mc->gmc_cred, object, value);
 
 			if (major_status) {
 				free(mc);
@@ -83,8 +83,9 @@ gss_set_cred_option (OM_uint32 *minor_status,
 			one_ok = 1;
 			SLIST_INSERT_HEAD(&cred->gc_mc, mc, gmc_link);
 		}
-		if (one_ok)
-		    *cred_handle = (gss_cred_id_t)cred;
+		*cred_handle = (gss_cred_id_t)cred;
+		if (!one_ok)
+			gss_release_cred(&minor_status, cred_handle);
 
 	} else {
 		gssapi_mech_interface	m;
