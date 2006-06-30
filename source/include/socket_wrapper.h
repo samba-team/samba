@@ -32,16 +32,60 @@ ssize_t swrap_sendto(int  s,  const  void *buf, size_t len, int flags, const str
 int swrap_close(int);
 
 #ifdef SOCKET_WRAPPER_REPLACE
+
+#ifdef accept
+#undef accept
+#endif
 #define accept(s,addr,addrlen)		swrap_accept(s,addr,addrlen)
+
+#ifdef connect
+#undef connect
+#endif
 #define connect(s,serv_addr,addrlen)	swrap_connect(s,serv_addr,addrlen)
+
+#ifdef bind
+#undef bind
+#endif
 #define bind(s,myaddr,addrlen)		swrap_bind(s,myaddr,addrlen)
+
+#ifdef getpeername
+#undef getpeername
+#endif
 #define getpeername(s,name,addrlen)	swrap_getpeername(s,name,addrlen)
+
+#ifdef getsockname
+#undef getsockname
+#endif
 #define getsockname(s,name,addrlen)	swrap_getsockname(s,name,addrlen)
+
+#ifdef getsockopt
+#undef getsockopt
+#endif
 #define getsockopt(s,level,optname,optval,optlen) swrap_getsockopt(s,level,optname,optval,optlen)
+
+#ifdef setsockopt
+#undef setsockopt
+#endif
 #define setsockopt(s,level,optname,optval,optlen) swrap_setsockopt(s,level,optname,optval,optlen)
+
+#ifdef recvfrom
+#undef recvfrom
+#endif
 #define recvfrom(s,buf,len,flags,from,fromlen) 	  swrap_recvfrom(s,buf,len,flags,from,fromlen)
+
+#ifdef sendto
+#undef sendto
+#endif
 #define sendto(s,buf,len,flags,to,tolen)          swrap_sendto(s,buf,len,flags,to,tolen)
+
+#ifdef socket
+#undef socket
+#endif
 #define socket(domain,type,protocol)	swrap_socket(domain,type,protocol)
+
+#ifdef close
+#undef close
+#endif
 #define close(s)			swrap_close(s)
 #endif
 
