@@ -187,8 +187,8 @@ TESTS = test_oid
 
 check_PROGRAMS = test_acquire_cred $(TESTS)
 
+bin_PROGRAMS = gss
 noinst_PROGRAMS = test_cred test_kcred
 LDADD = libgssapi.la $(LIB_roken)
 
 test_kcred_LDADD = libgssapi.la ../krb5/libkrb5.la $(LIB_roken)
-
