@@ -1,5 +1,11 @@
-2006-06-22  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-06-30  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* rtbl.c: Add rtbl_add_column_entryv functions, printf like
+
+	* rtbl.h: Add rtbl_add_column_entryv functions, printf like
+	
+2006-06-22  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* glob.hin: Add extern "C" for C++. From joerg at britannica dot
 	bec dot de
 
