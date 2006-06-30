@@ -1,5 +1,29 @@
 2006-06-30  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* krb5/init_sec_context.c (do_delegation): use KDCOptions2int to
+	convert fwd_flags to an integer, since otherwise int2KDCOptions in
+	krb5_get_forwarded_creds wont do the right thing.
+
+	* mech/gss_set_cred_option.c (gss_set_cred_option): free memory on
+	failure
+
+	* krb5/set_sec_context_option.c (_gsskrb5_set_sec_context_option):
+	init global kerberos context
+
+	* krb5/set_cred_option.c (_gsskrb5_set_cred_option): init global
+	kerberos context
+
+	* mech/gss_accept_sec_context.c: Insert the delegated sub cred on
+	the delegated cred handle, not cred handle
+
+	* mech/gss_accept_sec_context.c (gss_accept_sec_context): handle
+	the case where ret_flags == NULL
+
+	* mech/gss_mech_switch.c (add_builtin): set
+	_gss_mech_switch->gm_mech_oid
+
+	* mech/gss_set_cred_option.c (gss_set_cred_option): laod mechs
+
 	* test_cred.c (gss_print_errors): don't try to print error when
 	gss_display_status failed
 
