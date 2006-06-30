@@ -164,6 +164,7 @@ o   Gerald (Jerry) Carter <jerry@samba.org>
       more robust shutdown.
     * Fix a crash in the printer publishing code when adding a 
       new printer via the APW.
+    * Fix broken compile of unsupported smbwrapper utility.
 
 
 o   Guenther Deschner <gd@samba.org>
