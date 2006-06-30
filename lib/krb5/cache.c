@@ -188,7 +188,7 @@ krb5_cc_new_unique(krb5_context context, const char *type,
     const krb5_cc_ops *ops;
 
     if (type == NULL)
-	type = "FILE";
+	type = KRB5_DEFAULT_CCNAME;
 
     ops = krb5_cc_get_prefix_ops(context, type);
     if (ops == NULL) {
