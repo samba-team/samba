@@ -143,7 +143,7 @@ do_delegation (krb5_auth_context ac,
     kret = krb5_get_forwarded_creds(_gsskrb5_context,
 				    ac,
 				    ccache,
-				    fwd_flags.i,
+				    KDCOptions2int(fwd_flags),
 				    name->name.name_string.val[1],
 				    &creds,
 				    fwd_data);
