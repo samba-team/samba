@@ -69,11 +69,11 @@ struct smb2_request *smb2_session_setup_send(struct smb2_session *session,
 	NTSTATUS status;
 	
 	req = smb2_request_init(session->transport, SMB2_OP_SESSSETUP, 
-				0x10, True, io->in.secblob.length);
+				0x18, True, io->in.secblob.length);
 	if (req == NULL) return NULL;
 
 	SBVAL(req->out.hdr,  SMB2_HDR_UID, session->uid);
-	SSVAL(req->out.body, 0x02, 0); /* pad */
+	SSVAL(req->out.body, 0x02, io->in._pad); /* pad */
 	SIVAL(req->out.body, 0x04, io->in.unknown2);
 	SIVAL(req->out.body, 0x08, io->in.unknown3);
 
@@ -84,6 +84,7 @@ struct smb2_request *smb2_session_setup_send(struct smb2_session *session,
 		talloc_free(req);
 		return NULL;
 	}
+	SBVAL(req->out.body, 0x10, io->in.unknown4);
 
 	smb2_transport_send(req);
 
@@ -209,9 +210,10 @@ struct composite_context *smb2_session_setup_spnego_send(struct smb2_session *se
 	c->event_ctx = session->transport->socket->event.ctx;
 
 	ZERO_STRUCT(state->io);
-	state->io.in._pad = 0x0;
-	state->io.in.unknown2 = 0xF;
-	state->io.in.unknown3 = 0x00;
+	state->io.in._pad = 0x0000;
+	state->io.in.unknown2 = 0x0000000F;
+	state->io.in.unknown3 = 0x00000000;
+	state->io.in.unknown4 = 0; /* uint64_t */
 
 	c->status = gensec_set_credentials(session->gensec, credentials);
 	if (!NT_STATUS_IS_OK(c->status)) {

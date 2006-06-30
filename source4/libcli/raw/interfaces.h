@@ -372,13 +372,18 @@ union smb_sesssetup {
 		enum smb_sesssetup_level level;
 
 		struct {
-			/* static body buffer 16 (0x10) bytes */
-			/* uint16_t buffer_code;  0x11 = 0x10 + 1 */
+			/* NOTE: this was 0x11 = 0x10 + 1 in vista-CTP
+			 * and changed in vista-beta2, but both server's
+			 * can handle the 0x18 clients
+			 */
+			/* static body buffer 24 (0x18) bytes */
+			/* uint16_t buffer_code;  0x19 = 0x18 + 1 */
 			uint16_t _pad;
-			uint32_t unknown2; /* 0xF */
-			uint32_t unknown3; /* 0x00 */
+			uint32_t unknown2; /* 0x0000000F(vista-CTP) 0x00000007(vista-beta2) */
+			uint32_t unknown3; /* 0x0000000 */
 			/* uint16_t secblob_ofs */
 			/* uint16_t secblob_size */
+			uint64_t unknown4; /* 0x0000000000000000 only present in vista-beta2 */
 
 			/* dynamic body */
 			DATA_BLOB secblob;
