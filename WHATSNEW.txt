@@ -3,21 +3,20 @@
                               Jun XX, 2006
                    ==============================
 
-This is the latest stable release of Samba. This is the version
-that production Samba servers should be running for all current
-bug-fixes.  Please read the following important changes in this
-release.
+This is the latest stable release of Samba. This is the version 
+that production Samba servers should be running for all current 
+bug-fixes.  Please read the changes in this section for details on 
+new features and difference in behavior from previous releases.
 
 We would like to thank the developers of Klocwork for their 
 analysis of the Samba source tree.  This release includes fixes 
 for over 200 defects reported by the Klocwork code analyzer.
 
 Thanks very much to those people who spent time testing the 
-release candidates and reported their findings.  We would 
-like to especially thank Thomas Bork <tombork@web.de> for his 
-numerous reports.  We believe that the final is in much better 
+release candidates and reported their findings.  We would like to 
+especially thank Thomas Bork <tombork@web.de> for his numerous 
+reports.  We believe that the final release is in much better 
 shape in a large part due to his efforts.
-
 
 New features in 3.0.23 include:
 
@@ -32,72 +31,84 @@ New features in 3.0.23 include:
    o Rewritten 'net ads join' to mimic Windows XP without requiring 
      administrative rights to join a domain.
 
+
 User and Group changes
 ======================
 
-The user and group internal management routines have been rewritten
-to prevent overlaps of assigned Relative Identifiers (RIDs).  
-In the past the has been a potential problem when either manually 
-mapping Unix groups with the 'net groupmap' command or when 
-migrating a Windows domain to a Samba domain using 'net rpc vampire'.
+The user and group internal management routines have been 
+rewritten to prevent overlaps of assigned Relative Identifiers 
+(RIDs).  In the past the has been a potential problem when either 
+manually mapping Unix groups with the 'net groupmap' command or 
+when migrating a Windows domain to a Samba domain using 'net rpc 
+vampire'.
 
-Unmapped users are now assigned a SID in the S-1-22-1 domain and
-unmapped groups are assigned a SID in the S-1-22-2 domain.
+Unmapped users are now assigned a SID in the S-1-22-1 domain and 
+unmapped groups are assigned a SID in the S-1-22-2 domain. 
 Previously they were assign a RID within the SAM on the Samba 
-server.  For a DC this would have been under the authority of 
-the domain SID where as on a member server or standalone host,
-this would have been under the authority of the local SAM 
-(hint: net getlocalsid).
+server.  For a DC this would have been under the authority of the 
+domain SID where as on a member server or standalone host, this 
+would have been under the authority of the local SAM (hint: net 
+getlocalsid).
 
 The result is that any unmapped users or groups on an upgraded 
-Samba domain controller may be assigned a new SID.  Because the
-SID rather than a name is stored in Windows security descriptors,
-this can cause a user to no longer have access to a resource
-for example if a file was copied from a Samba file server to
-a local NTFS partition.  Any files stored on the Samba server 
-itself will continue to be accessible because Unix stores the
-Unix gid and not the SID for authorization checks.
+Samba domain controller may be assigned a new SID.  Because the 
+SID rather than a name is stored in Windows security descriptors, 
+this can cause a user to no longer have access to a resource for 
+example if a file was copied from a Samba file server to a local 
+NTFS partition.  Any files stored on the Samba server itself will 
+continue to be accessible because Unix stores the Unix gid and not 
+the SID for authorization checks.
 
-A further example will help illustrate the change.  Assume 
-that a group named 'developers' exists with a Unix gid of 
-782 but this user does not exist in Samba's group mapping 
-table. it would be perfectly normal for this group to be 
-appear in an ACL editor.  Prior to 3.0.23, the group SID might 
-appear as S-1-5-21-647511796-4126122067-3123570092-2565.
-With 3.0.23, the group SID would be reported as S-1-22-2-782.
-Any security descriptors associated with files stored on 
-an NTFS disk partition would not allow access based on the 
-group permissions if the user was not a member of the 
-S-1-5-21-647511796-4126122067-3123570092-2565 group.
-Because this group SID not reported in a user's token is 
-S-1-22-2-782, Windows would fail the authorization check 
-even though both SIDs in some respect referred to the same 
-Unix group.
+A further example will help illustrate the change.  Assume that a 
+group named 'developers' exists with a Unix gid of 782 but this 
+user does not exist in Samba's group mapping table. it would be 
+perfectly normal for this group to be appear in an ACL editor.  
+Prior to 3.0.23, the group SID might appear as 
+S-1-5-21-647511796-4126122067-3123570092-2565. With 3.0.23, the 
+group SID would be reported as S-1-22-2-782. Any security 
+descriptors associated with files stored on an NTFS disk partition 
+would not allow access based on the group permissions if the user 
+was not a member of the 
+S-1-5-21-647511796-4126122067-3123570092-2565 group. Because this 
+group SID not reported in a user's token is S-1-22-2-782, Windows 
+would fail the authorization check even though both SIDs in some 
+respect referred to the same Unix group.
 
-The current workaround is to create a manual domain group 
-mapping entry for the group 'developers' to point at the 
+The current workaround is to create a manual domain group mapping 
+entry for the group 'developers' to point at the 
 S-1-5-21-647511796-4126122067-3123570092-2565 SID.
+
+
+Passdb Changes
+==============
+
+The "passdb backend" parameter no long accepts multiple backends 
+in a chaining configuration.  Also be aware that the SQL and XML 
+based passdb modules have been removed in this release.  More 
+information of external support for a SQL passdb module can be 
+found at http://pdbsql.sourceforge.net/.
 
 
 Group Mapping Changes
 =====================
 
-The default mapping entries for groups such as "Domain Admins"
-are no longer created when using an smbpasswd file or a tdbsam passdb 
-backend.  This means that it is necessary to use 'net groupmap add'
-rather than 'net groupmap modify' to set these entries.  This change
-has no effect on winbindd's IDmap functionality for domain groups.
+The default mapping entries for groups such as "Domain Admins" are 
+no longer created when using an smbpasswd file or a tdbsam passdb 
+backend.  This means that it is necessary to use 'net groupmap 
+add' rather than 'net groupmap modify' to set these entries.  
+This change has no effect on winbindd's IDmap functionality for 
+domain groups.
 
 
 LDAP Changes
 ============
 
-There has also been a minor update the Samba LDAP schema file.
-A substring matching rule has been added to the sambaSID attribute 
+There has also been a minor update the Samba LDAP schema file. A 
+substring matching rule has been added to the sambaSID attribute 
 definition.  For OpenLDAP servers, this will require the addition 
 of 'index sambaSID sub' to the slapd.conf configuration file.  It 
-will be necessary to run slapindex after making this change.
-There has been no change to actual data storage schema.
+will be necessary to run slapindex after making this change. There 
+has been no change to actual data storage schema.
 
 
 ######################################################################
@@ -736,7 +747,7 @@ o   Simo Sorce <idra@samba.org>
     * New revision of the snprintf replace code.
 
 
-o   Todd Stecher
+o   Todd Stecher <tstecher@isilon.com>
     * Add TCP fallback for our implementation of the CHANGEPW 
       kpasswd calls.
 
