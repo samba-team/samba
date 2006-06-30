@@ -110,7 +110,7 @@ do_delegation (krb5_auth_context ac,
 	       uint32_t *flags)
 {
     krb5_creds creds;
-    krb5_kdc_flags fwd_flags;
+    KDCOptions fwd_flags;
     krb5_error_code kret;
        
     memset (&creds, 0, sizeof(creds));
@@ -132,9 +132,9 @@ do_delegation (krb5_auth_context ac,
        
     creds.times.endtime = 0;
        
-    fwd_flags.i = 0;
-    fwd_flags.b.forwarded = 1;
-    fwd_flags.b.forwardable = 1;
+    memset(&fwd_flags, 0, sizeof(fwd_flags));
+    fwd_flags.forwarded = 1;
+    fwd_flags.forwardable = 1;
        
     if ( /*target_name->name.name_type != KRB5_NT_SRV_HST ||*/
 	name->name.name_string.len < 2) 
