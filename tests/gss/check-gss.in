@@ -1,8 +1,9 @@
 #!/bin/sh
 
 objdir="@objdir@"
+gssdir="${objdir}/../../lib/gssapi"
 
-${objdir}/gss > /dev/null || exit 1
+${gssdir}/gss > /dev/null || exit 1
 
 exit 0
 
