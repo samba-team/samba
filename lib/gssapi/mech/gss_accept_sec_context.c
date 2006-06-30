@@ -205,7 +205,7 @@ OM_uint32 gss_accept_sec_context(OM_uint32 *minor_status,
 			dmc->gmc_mech = m;
 			dmc->gmc_mech_oid = &m->gm_mech_oid;
 			dmc->gmc_cred = delegated_mc;
-			SLIST_INSERT_HEAD(&cred->gc_mc, dmc, gmc_link);
+			SLIST_INSERT_HEAD(&dcred->gc_mc, dmc, gmc_link);
 
 			*delegated_cred_handle = (gss_cred_id_t) dcred;
 		}
