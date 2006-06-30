@@ -47,6 +47,10 @@
 #define __attribute__(x)
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 struct rtbl_data;
 typedef struct rtbl_data *rtbl_t;
 
@@ -106,5 +110,9 @@ rtbl_set_prefix (rtbl_t, const char*);
 
 int ROKEN_LIB_FUNCTION
 rtbl_set_separator (rtbl_t, const char*);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* __rtbl_h__ */
