@@ -315,6 +315,24 @@ rtbl_add_column_entry_by_id (rtbl_t table, unsigned int id, const char *data)
 }
 
 int ROKEN_LIB_FUNCTION
+rtbl_add_column_entryv_by_id (rtbl_t table, unsigned int id,
+			      const char *fmt, ...)
+{
+    va_list ap;
+    char *str;
+    int ret;
+
+    va_start(ap, fmt);
+    ret = vasprintf(&str, fmt, ap);
+    va_end(ap);
+    if (ret == -1)
+	return -1;
+    ret = rtbl_add_column_entry_by_id(table, id, str);
+    free(str);
+    return ret;
+}
+
+int ROKEN_LIB_FUNCTION
 rtbl_add_column_entry (rtbl_t table, const char *column, const char *data)
 {
     struct column_data *c = rtbl_get_column (table, column);
@@ -324,6 +342,24 @@ rtbl_add_column_entry (rtbl_t table, const char *column, const char *data)
 
     return add_column_entry(c, data);
 }
+
+int ROKEN_LIB_FUNCTION
+rtbl_add_column_entryv (rtbl_t table, const char *column, const char *fmt, ...)
+{
+    va_list ap;
+    char *str;
+    int ret;
+
+    va_start(ap, fmt);
+    ret = vasprintf(&str, fmt, ap);
+    va_end(ap);
+    if (ret == -1)
+	return -1;
+    ret = rtbl_add_column_entry(table, column, str);
+    free(str);
+    return ret;
+}
+
 
 int ROKEN_LIB_FUNCTION
 rtbl_format (rtbl_t table, FILE * f)

@@ -43,6 +43,10 @@
 #endif
 #endif
 
+#if !defined(__GNUC__) && !defined(__attribute__)
+#define __attribute__(x)
+#endif
+
 struct rtbl_data;
 typedef struct rtbl_data *rtbl_t;
 
@@ -59,7 +63,16 @@ int ROKEN_LIB_FUNCTION
 rtbl_add_column_by_id (rtbl_t, unsigned int, const char*, unsigned int);
 
 int ROKEN_LIB_FUNCTION
+rtbl_add_column_entryv_by_id (rtbl_t table, unsigned int id,
+			      const char *fmt, ...)
+	__attribute__ ((format (printf, 3, 0)));
+
+int ROKEN_LIB_FUNCTION
 rtbl_add_column_entry (rtbl_t, const char*, const char*);
+
+int ROKEN_LIB_FUNCTION
+rtbl_add_column_entryv (rtbl_t, const char*, const char*, ...)
+	__attribute__ ((format (printf, 3, 0)));
 
 int ROKEN_LIB_FUNCTION
 rtbl_add_column_entry_by_id (rtbl_t, unsigned int, const char*);
