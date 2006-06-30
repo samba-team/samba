@@ -126,22 +126,12 @@ static void smb2srv_sesssetup_send(struct smb2srv_request *req, union smb_sessse
 		return;
 	}
 
-	status = smb2srv_setup_reply(req, 0x08, True, io->smb2.out.secblob.length);
-	if (!NT_STATUS_IS_OK(status)) {
-		smbsrv_terminate_connection(req->smb_conn, nt_errstr(status));
-		talloc_free(req);
-		return;
-	}
+	SMB2SRV_CHECK(smb2srv_setup_reply(req, 0x08, True, io->smb2.out.secblob.length));
 
 	SBVAL(req->out.hdr, SMB2_HDR_UID,    io->smb2.out.uid);
 
 	SSVAL(req->out.body, 0x02, io->smb2.out._pad);
-	status = smb2_push_o16s16_blob(&req->out, 0x04, io->smb2.out.secblob);
-	if (!NT_STATUS_IS_OK(status)) {
-		smbsrv_terminate_connection(req->smb_conn, nt_errstr(status));
-		talloc_free(req);
-		return;
-	}
+	SMB2SRV_CHECK(smb2_push_o16s16_blob(&req->out, 0x04, io->smb2.out.secblob));
 
 	smb2srv_send_reply(req);
 }
@@ -151,31 +141,18 @@ void smb2srv_sesssetup_recv(struct smb2srv_request *req)
 	union smb_sesssetup *io;
 	NTSTATUS status;
 
-	if (req->in.body_size < 0x10) {
-		smb2srv_send_error(req,  NT_STATUS_FOOBAR);
-		return;
-	}
 
-	io = talloc(req, union smb_sesssetup);
-	if (!io) {
-		smbsrv_terminate_connection(req->smb_conn, nt_errstr(NT_STATUS_NO_MEMORY));
-		talloc_free(req);
-		return;
-	}
+	SMB2SRV_CHECK_BODY_SIZE(req, 0x18, True);
+	SMB2SRV_TALLOC_IO_PTR(io, union smb_sesssetup);
 
 	io->smb2.level		= RAW_SESSSETUP_SMB2;
 	io->smb2.in._pad	= SVAL(req->in.body, 0x02);
 	io->smb2.in.unknown2	= IVAL(req->in.body, 0x04);
 	io->smb2.in.unknown3	= IVAL(req->in.body, 0x08);
-	status = smb2_pull_o16s16_blob(&req->in, io, req->in.body+0x0C, &io->smb2.in.secblob);
-	if (!NT_STATUS_IS_OK(status)) {
-		smbsrv_terminate_connection(req->smb_conn, nt_errstr(status));
-		talloc_free(req);
-		return;
-	}
+	SMB2SRV_CHECK(smb2_pull_o16s16_blob(&req->in, io, req->in.body+0x0C, &io->smb2.in.secblob));
+	io->smb2.in.unknown4	= BVAL(req->in.body, 0x10);
 
 	req->status = smb2srv_sesssetup_backend(req, io);
-
 	if (req->control_flags & SMB2SRV_REQ_CTRL_FLAG_NOT_REPLY) {
 		talloc_free(req);
 		return;
@@ -200,12 +177,7 @@ static void smb2srv_logoff_send(struct smb2srv_request *req)
 		return;
 	}
 
-	status = smb2srv_setup_reply(req, 0x04, False, 0);
-	if (!NT_STATUS_IS_OK(status)) {
-		smbsrv_terminate_connection(req->smb_conn, nt_errstr(status));
-		talloc_free(req);
-		return;
-	}
+	SMB2SRV_CHECK(smb2srv_setup_reply(req, 0x04, False, 0));
 
 	SSVAL(req->out.body, 0x02, 0);
 
@@ -216,10 +188,7 @@ void smb2srv_logoff_recv(struct smb2srv_request *req)
 {
 	uint16_t _pad;
 
-	if (req->in.body_size < 0x04) {
-		smb2srv_send_error(req,  NT_STATUS_FOOBAR);
-		return;
-	}
+	SMB2SRV_CHECK_BODY_SIZE(req, 0x04, False);
 
 	_pad	= SVAL(req->in.body, 0x02);
 
