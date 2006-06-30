@@ -1,5 +1,8 @@
 2006-06-30  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* test_cred.c (gss_print_errors): don't try to print error when
+	gss_display_status failed
+
 	* Makefile.am: Add mech/gss_release_oid.c
 	
 	* mech/gss_release_oid.c: Add gss_release_oid, reverse of
