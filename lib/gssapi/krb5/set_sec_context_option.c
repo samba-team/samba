@@ -78,6 +78,8 @@ _gsskrb5_set_sec_context_option
             const gss_OID desired_object,
             const gss_buffer_t value)
 {
+    GSSAPI_KRB5_INIT ();
+
     if (value == GSS_C_NO_BUFFER) {
 	*minor_status = EINVAL;
 	return GSS_S_FAILURE;
