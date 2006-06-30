@@ -1,4 +1,23 @@
+2006-06-30  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* Makefile.am: Add mech/gss_release_oid.c
+	
+	* mech/gss_release_oid.c: Add gss_release_oid, reverse of
+	gss_duplicate_oid
+
+	* spnego/compat.c: preferred_mech_type was allocated with
+	gss_duplicate_oid in one place and assigned static varianbles a
+	the second place. change that static assignement to
+	gss_duplicate_oid and bring back gss_release_oid.
+
+	* spnego/compat.c (_gss_spnego_delete_sec_context): don't release
+	preferred_mech_type and negotiated_mech_type, they where never
+	allocated from the begining.
+	
 2006-06-29  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* mech/gss_import_name.c (gss_import_name): avoid
+	type-punned/strict aliasing rules
 
 	* mech/gss_add_cred.c: avoid type-punned/strict aliasing rules
 
