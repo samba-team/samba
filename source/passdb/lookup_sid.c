@@ -63,6 +63,7 @@ BOOL lookup_name(TALLOC_CTX *mem_ctx,
 
 	if ((domain == NULL) || (name == NULL)) {
 		DEBUG(0, ("talloc failed\n"));
+		TALLOC_FREE(tmp_ctx);
 		return False;
 	}
 
@@ -74,7 +75,8 @@ BOOL lookup_name(TALLOC_CTX *mem_ctx,
 			sid_append_rid(&sid, rid);
 			goto ok;
 		}
-		goto failed;
+		TALLOC_FREE(tmp_ctx);
+		return False;
 	}
 
 	if (strequal(domain, builtin_domain_name())) {
@@ -86,7 +88,8 @@ BOOL lookup_name(TALLOC_CTX *mem_ctx,
 			type = SID_NAME_ALIAS;
 			goto ok;
 		}
-		goto failed;
+		TALLOC_FREE(tmp_ctx);
+		return False;
 	}
 
 	/* Try the explicit winbind lookup first, don't let it guess the
@@ -102,7 +105,8 @@ BOOL lookup_name(TALLOC_CTX *mem_ctx,
 			type = SID_NAME_USER;
 			goto ok;
 		}
-		goto failed;
+		TALLOC_FREE(tmp_ctx);
+		return False;
 	}
 
 	if (strequal(domain, unix_groups_domain_name())) {
@@ -110,11 +114,13 @@ BOOL lookup_name(TALLOC_CTX *mem_ctx,
 			type = SID_NAME_DOM_GRP;
 			goto ok;
 		}
-		goto failed;
+		TALLOC_FREE(tmp_ctx);
+		return False;
 	}
 
 	if ((domain[0] == '\0') && (!(flags & LOOKUP_NAME_ISOLATED))) {
-		goto failed;
+		TALLOC_FREE(tmp_ctx);
+		return False;
 	}
 
 	/*
@@ -201,7 +207,8 @@ BOOL lookup_name(TALLOC_CTX *mem_ctx,
 	if (strequal(name, get_global_sam_name())) {
 		if (!secrets_fetch_domain_sid(name, &sid)) {
 			DEBUG(3, ("Could not fetch my SID\n"));
-			goto failed;
+			TALLOC_FREE(tmp_ctx);
+			return False;
 		}
 		/* Swap domain and name */
 		tmp = name; name = domain; domain = tmp;
@@ -214,7 +221,8 @@ BOOL lookup_name(TALLOC_CTX *mem_ctx,
 	if (!IS_DC && strequal(name, lp_workgroup())) {
 		if (!secrets_fetch_domain_sid(name, &sid)) {
 			DEBUG(3, ("Could not fetch the domain SID\n"));
-			goto failed;
+			TALLOC_FREE(tmp_ctx);
+			return False;
 		}
 		/* Swap domain and name */
 		tmp = name; name = domain; domain = tmp;
@@ -258,7 +266,8 @@ BOOL lookup_name(TALLOC_CTX *mem_ctx,
 	/* Now our local possibilities are exhausted. */
 
 	if (!(flags & LOOKUP_NAME_REMOTE)) {
-		goto failed;
+		TALLOC_FREE(tmp_ctx);
+		return False;
 	}
 
 	/* If we are not a DC, we have to ask in our primary domain. Let
@@ -298,7 +307,8 @@ BOOL lookup_name(TALLOC_CTX *mem_ctx,
 		    (domain_type != SID_NAME_DOMAIN)) {
 			DEBUG(2, ("winbind could not find the domain's name "
 				  "it just looked up for us\n"));
-			goto failed;
+			TALLOC_FREE(tmp_ctx);
+			return False;
 		}
 		goto ok;
 	}
@@ -320,7 +330,10 @@ BOOL lookup_name(TALLOC_CTX *mem_ctx,
 		goto ok;
 	}
 
- failed:
+	/*
+	 * Ok, all possibilities tried. Fail.
+	 */
+
 	TALLOC_FREE(tmp_ctx);
 	return False;
 
@@ -331,14 +344,26 @@ BOOL lookup_name(TALLOC_CTX *mem_ctx,
 		return False;
 	}
 
-	if (ret_name != NULL) {
-		*ret_name = talloc_steal(mem_ctx, name);
+	/*
+	 * Hand over the results to the talloc context we've been given.
+	 */
+
+	if ((ret_name != NULL) &&
+	    !(*ret_name = talloc_strdup(mem_ctx, name))) {
+		DEBUG(0, ("talloc failed\n"));
+		TALLOC_FREE(tmp_ctx);
+		return False;
 	}
 
 	if (ret_domain != NULL) {
-		char *tmp_dom = talloc_strdup(tmp_ctx, domain);
+		char *tmp_dom;
+		if (!(tmp_dom = talloc_strdup(tmp_ctx, domain))) {
+			DEBUG(0, ("talloc failed\n"));
+			TALLOC_FREE(tmp_ctx);
+			return False;
+		}
 		strupper_m(tmp_dom);
-		*ret_domain = talloc_steal(mem_ctx, tmp_dom);
+		*ret_domain = tmp_dom;
 	}
 
 	if (ret_sid != NULL) {
@@ -362,8 +387,13 @@ static BOOL wb_lookup_rids(TALLOC_CTX *mem_ctx,
 	int i;
 	const char **my_names;
 	enum SID_NAME_USE *my_types;
+	TALLOC_CTX *tmp_ctx;
 
-	if (!winbind_lookup_rids(mem_ctx, domain_sid, num_rids, rids,
+	if (!(tmp_ctx = talloc_init("wb_lookup_rids"))) {
+		return False;
+	}
+
+	if (!winbind_lookup_rids(tmp_ctx, domain_sid, num_rids, rids,
 				 domain_name, &my_names, &my_types)) {
 		for (i=0; i<num_rids; i++) {
 			types[i] = SID_NAME_UNKNOWN;
@@ -378,13 +408,16 @@ static BOOL wb_lookup_rids(TALLOC_CTX *mem_ctx,
 
 	for (i=0; i<num_rids; i++) {
 		if (my_names[i] == NULL) {
+			TALLOC_FREE(tmp_ctx);
 			return False;
 		}
-		names[i] = talloc_steal(names, my_names[i]);
+		if (!(names[i] = talloc_strdup(names, my_names[i]))) {
+			TALLOC_FREE(tmp_ctx);
+			return False;
+		}
 		types[i] = my_types[i];
 	}
-	TALLOC_FREE(my_names);
-	TALLOC_FREE(my_types);
+	TALLOC_FREE(tmp_ctx);
 	return True;
 }
 
@@ -823,9 +856,7 @@ BOOL lookup_sid(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
 	TALLOC_CTX *tmp_ctx;
 	BOOL ret = False;
 
-	tmp_ctx = talloc_new(mem_ctx);
-
-	if (tmp_ctx == NULL) {
+	if (!(tmp_ctx = talloc_new(mem_ctx))) {
 		DEBUG(0, ("talloc_new failed\n"));
 		return False;
 	}
@@ -839,12 +870,14 @@ BOOL lookup_sid(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
 		goto done;
 	}
 
-	if (ret_domain != NULL) {
-		*ret_domain = talloc_steal(mem_ctx, domain->name);
+	if ((ret_domain != NULL) &&
+	    !(*ret_domain = talloc_strdup(mem_ctx, domain->name))) {
+		goto done;
 	}
 
-	if (ret_name != NULL) {
-		*ret_name = talloc_steal(mem_ctx, name->name);
+	if ((ret_name != NULL) && 
+	    !(*ret_name = talloc_strdup(mem_ctx, name->name))) {
+		goto done;
 	}
 
 	if (ret_type != NULL) {
