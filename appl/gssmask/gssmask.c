@@ -222,6 +222,74 @@ convert_krb5_to_gsm(krb5_error_code ret)
     }
 }
 
+/*
+ *
+ */
+
+static int32_t
+acquire_cred(struct client *c,
+	     krb5_principal principal,
+	     krb5_get_init_creds_opt *opt,
+	     int32_t *handle)
+{
+    krb5_error_code ret;
+    krb5_creds cred;
+    krb5_ccache id;
+    gss_cred_id_t gcred;
+    OM_uint32 maj_stat, min_stat;
+
+    *handle = 0;
+
+    krb5_get_init_creds_opt_set_forwardable (opt, 1);
+    krb5_get_init_creds_opt_set_renew_life (opt, 3600 * 24 * 30);
+
+    memset(&cred, 0, sizeof(cred));
+
+    ret = krb5_get_init_creds_password (context,
+					&cred,
+					principal,
+					NULL,
+					NULL,
+					NULL,
+					0,
+					NULL,
+					opt);
+    if (ret) {
+	logmessage(c, __FILE__, __LINE__, 0,
+		   "krb5_get_init_creds failed: %d", ret);
+	return convert_krb5_to_gsm(ret);
+    }
+	
+    ret = krb5_cc_new_unique(context, "MEMORY", NULL, &id);
+    if (ret)
+	krb5_err (context, 1, ret, "krb5_cc_initialize");
+
+    ret = krb5_cc_initialize (context, id, cred.client);
+    if (ret)
+	krb5_err (context, 1, ret, "krb5_cc_initialize");
+    
+    ret = krb5_cc_store_cred (context, id, &cred);
+    if (ret)
+	krb5_err (context, 1, ret, "krb5_cc_store_cred");
+
+    krb5_free_cred_contents (context, &cred);
+
+    maj_stat = gss_krb5_import_cred(&min_stat,
+				    id,
+				    NULL,
+				    NULL,
+				    &gcred);
+    krb5_cc_close(context, id);
+    if (maj_stat) {
+	logmessage(c, __FILE__, __LINE__, 0,
+		   "krb5 import creds failed with: %d", maj_stat);
+	return convert_gss_to_gsm(maj_stat);
+    }
+
+    *handle = add_handle(c, handle_cred, gcred);
+
+    return 0;
+}
 
 
 /*
@@ -505,10 +573,6 @@ HandleOP(AcquireCreds)
     krb5_principal principal;
     krb5_get_init_creds_opt *opt;
     krb5_error_code ret;
-    krb5_creds cred;
-    krb5_ccache id;
-    gss_cred_id_t gcred;
-    OM_uint32 maj_stat, min_stat;
 
     retstring(c, name);
     retstring(c, password);
@@ -523,66 +587,20 @@ HandleOP(AcquireCreds)
 	goto out;
     }
     
-    memset(&cred, 0, sizeof(cred));
-
     ret = krb5_get_init_creds_opt_alloc (context, &opt);
     if (ret)
 	krb5_err(context, 1, ret, "krb5_get_init_creds_opt_alloc");
     
-    krb5_get_init_creds_opt_set_forwardable (opt, 1);
-    krb5_get_init_creds_opt_set_renew_life (opt, 3600 * 24 * 30);
+    krb5_get_init_creds_opt_set_pa_password(context, opt, password, NULL);
 
-    ret = krb5_get_init_creds_password (context,
-					&cred,
-					principal,
-					password,
-					NULL,
-					NULL,
-					0,
-					NULL,
-					opt);
-    if (ret) {
-	logmessage(c, __FILE__, __LINE__, 0,
-		   "krb5_get_init_creds failed: %d", ret);
-	gsm_error = convert_krb5_to_gsm(ret);
-	goto out;
-    }
-	
-    ret = krb5_cc_new_unique(context, "MEMORY", NULL, &id);
-    if (ret)
-	krb5_err (context, 1, ret, "krb5_cc_initialize");
-
-    ret = krb5_cc_initialize (context, id, cred.client);
-    if (ret)
-	krb5_err (context, 1, ret, "krb5_cc_initialize");
-    
-    ret = krb5_cc_store_cred (context, id, &cred);
-    if (ret)
-	krb5_err (context, 1, ret, "krb5_cc_store_cred");
-
-    krb5_free_cred_contents (context, &cred);
-
-    maj_stat = gss_krb5_import_cred(&min_stat,
-				    id,
-				    NULL,
-				    NULL,
-				    &gcred);
-    if (maj_stat) {
-	gsm_error = convert_gss_to_gsm(maj_stat);
-	logmessage(c, __FILE__, __LINE__, 0,
-		   "krb5 import creds failed with: %d", maj_stat);
-    }
-
-    krb5_cc_close(context, id);
-
-    handle = add_handle(c, handle_cred, gcred);
-
-    gsm_error = 0;
+    gsm_error = acquire_cred(c, principal, opt, &handle);
 
 out:
     logmessage(c, __FILE__, __LINE__, 0,
 	       "AcquireCreds handle: %d return code: %d", handle, gsm_error);
 
+    if (principal)
+	krb5_free_principal(context, principal);
     free(name);
     free(password);
 
