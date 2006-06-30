@@ -13,6 +13,7 @@ SUBDIRS = 					\
 	  ftp					\
 	  login					\
 	  $(dir_otp)				\
+	  gssmask				\
 	  popper				\
 	  push					\
 	  rsh					\
