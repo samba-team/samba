@@ -1,0 +1,9 @@
+#!/bin/sh
+
+objdir="@objdir@"
+
+${objdir}/gss > /dev/null || exit 1
+
+exit 0
+
+
