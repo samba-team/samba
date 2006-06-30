@@ -113,7 +113,6 @@ import_cred(OM_uint32 *minor_status,
 
     major_stat = _gsskrb5_import_cred(minor_status, id, keytab_principal,
 				      keytab, cred_handle);
-
 out:
     if (id)
 	krb5_cc_close(_gsskrb5_context, id);
@@ -135,6 +134,8 @@ _gsskrb5_set_cred_option
             const gss_OID desired_object,
             const gss_buffer_t value)
 {
+    GSSAPI_KRB5_INIT ();
+
     if (value == GSS_C_NO_BUFFER) {
 	*minor_status = EINVAL;
 	return GSS_S_FAILURE;
