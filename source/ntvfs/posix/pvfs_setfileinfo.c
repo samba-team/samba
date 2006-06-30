@@ -493,7 +493,9 @@ NTSTATUS pvfs_setpathinfo(struct ntvfs_module_context *ntvfs,
 		if (!null_time(info->setattr.in.write_time)) {
 			unix_to_nt_time(&newstats.dos.write_time, info->setattr.in.write_time);
 		}
-		if (info->setattr.in.attrib != FILE_ATTRIBUTE_NORMAL) {
+		if (info->setattr.in.attrib == 0) {
+			newstats.dos.attrib = FILE_ATTRIBUTE_NORMAL;
+		} else if (info->setattr.in.attrib != FILE_ATTRIBUTE_NORMAL) {
 			newstats.dos.attrib = info->setattr.in.attrib;
 		}
   		break;
