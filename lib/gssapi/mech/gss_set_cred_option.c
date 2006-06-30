@@ -46,6 +46,8 @@ gss_set_cred_option (OM_uint32 *minor_status,
 
 	*minor_status = 0;
 
+	_gss_load_mech();
+
 	if (cred == NULL) {
 		struct _gss_mech_switch *m;
 
