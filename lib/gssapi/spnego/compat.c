@@ -126,8 +126,8 @@ OM_uint32 _gss_spnego_delete_sec_context
 
     _gss_spnego_release_cred(&minor, &ctx->delegated_cred_id);
 
-    gss_release_oid(&minor, &ctx->preferred_mech_type);
-    gss_release_oid(&minor, &ctx->negotiated_mech_type);
+    ctx->preferred_mech_type = GSS_C_NO_OID;
+    ctx->negotiated_mech_type = GSS_C_NO_OID;
 
     gss_release_name(&minor, &ctx->mech_src_name);
 
