@@ -20,4 +20,8 @@
     size, just the block size unit reported to the client.
     </para>
 </description>
+
+<value type="default">1024</value>
+<value type="example">4096</value>
+
 </samba:parameter>
