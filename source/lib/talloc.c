@@ -85,6 +85,7 @@
 static const void *null_context;
 static void *cleanup_context;
 
+static void *talloc_steal(const void *new_ctx, const void *ptr);
 
 struct talloc_reference_handle {
 	struct talloc_reference_handle *next, *prev;
@@ -665,7 +666,7 @@ void *_talloc_realloc(const void *context, void *ptr, size_t size, const char *n
    ptr on success, or NULL if it could not be transferred.
    passing NULL as ptr will always return NULL with no side effects.
 */
-void *talloc_steal(const void *new_ctx, const void *ptr)
+static void *talloc_steal(const void *new_ctx, const void *ptr)
 {
 	struct talloc_chunk *tc, *new_tc;
 

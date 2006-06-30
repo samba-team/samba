@@ -656,6 +656,7 @@ static BOOL test_type(void)
 	return True;
 }
 
+#if 0
 /*
   test steal
 */
@@ -709,6 +710,7 @@ static BOOL test_steal(void)
 
 	return True;
 }
+#endif
 
 /*
   test talloc_realloc_fn
@@ -819,7 +821,7 @@ BOOL torture_local_talloc(void)
 	ret &= test_misc();
 	ret &= test_realloc();
 	ret &= test_realloc_child();
-	ret &= test_steal();
+/* 	ret &= test_steal(); */
 	ret &= test_unref_reparent();
 	ret &= test_realloc_fn();
 	ret &= test_type();
