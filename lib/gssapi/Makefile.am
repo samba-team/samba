@@ -114,6 +114,7 @@ libgssapi_la_SOURCES  = \
 	mech/gss_release_buffer.c \
 	mech/gss_release_cred.c \
 	mech/gss_release_name.c \
+	mech/gss_release_oid.c \
 	mech/gss_release_oid_set.c \
 	mech/gss_seal.c \
 	mech/gss_set_cred_option.c \
