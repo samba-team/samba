@@ -1,3 +1,13 @@
+2006-06-30  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* appl/gssmask/gssmask.c: split out fetching of credentials for
+	easier reuse for pk-init testing
+
+	* appl/gssmask: maggot replacement, handles context testing
+
+	* lib/krb5/cache.c (krb5_cc_new_unique): use KRB5_DEFAULT_CCNAME
+	as the default prefix
+	
 2006-06-28  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* doc/heimdal.texi: Add Doug Rabson's license
