@@ -74,13 +74,16 @@ krb5_storage_from_fd(int fd)
     fd = dup(fd);
     if (fd < 0)
 	return NULL;
-    sp = malloc(sizeof(krb5_storage));
 
-    if (sp == NULL)
+    sp = malloc(sizeof(krb5_storage));
+    if (sp == NULL) {
+	close(fd);
 	return NULL;
+    }
 
     sp->data = malloc(sizeof(fd_storage));
     if (sp->data == NULL) {
+	close(fd);
 	free(sp);
 	return NULL;
     }
