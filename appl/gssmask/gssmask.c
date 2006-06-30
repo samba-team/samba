@@ -1,0 +1,908 @@
+/*
+ * Copyright (c) 2006 Kungliga Tekniska Högskolan
+ * (Royal Institute of Technology, Stockholm, Sweden). 
+ * All rights reserved. 
+ *
+ * Redistribution and use in source and binary forms, with or without 
+ * modification, are permitted provided that the following conditions 
+ * are met: 
+ *
+ * 1. Redistributions of source code must retain the above copyright 
+ *    notice, this list of conditions and the following disclaimer. 
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright 
+ *    notice, this list of conditions and the following disclaimer in the 
+ *    documentation and/or other materials provided with the distribution. 
+ *
+ * 3. Neither the name of KTH nor the names of its contributors may be
+ *    used to endorse or promote products derived from this software without
+ *    specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY KTH AND ITS CONTRIBUTORS ``AS IS'' AND ANY
+ * EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL KTH OR ITS CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR
+ * BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+ * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
+ * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+RCSID("$Id$");
+
+#include <sys/param.h>
+
+#include <krb5.h>
+#include <gssapi.h>
+#include <unistd.h>
+
+#include <roken.h>
+#include <getarg.h>
+
+#include "protocol.h"
+
+/*
+ *
+ */
+
+enum handle_type { handle_context, handle_cred };
+
+struct handle {
+    int32_t idx;
+    enum handle_type type;
+    void *ptr;
+    struct handle *next;
+};
+
+struct client {
+    krb5_storage *master;
+    krb5_storage *logging;
+    char *moniker;
+    int32_t nHandle;
+    struct handle *handle;
+    struct sockaddr_storage sa;
+    socklen_t salen;
+};
+
+FILE *logfile;
+static char *targetname;
+krb5_context context;
+
+/*
+ *
+ */
+
+static krb5_error_code
+store_string(krb5_storage *sp, char *str)
+{
+    size_t len = strlen(str) + 1;
+    krb5_error_code ret;
+
+    ret = krb5_store_int32(sp, len);
+    if (ret)
+	return ret;
+    ret = krb5_storage_write(sp, str, len);
+    if (ret != len)
+	return EINVAL;
+    return 0;
+}
+
+/*
+ *
+ */
+
+static void
+logmessage(struct client *c, const char *file, unsigned int lineno,
+	   int level, const char *fmt, ...)
+{
+    char *message;
+    va_list ap;
+    int32_t ackid;
+
+    va_start(ap, fmt);
+    vasprintf(&message, fmt, ap);
+    va_end(ap);
+
+    if (logfile)
+	fprintf(logfile, "%s:%u: %d %s\n", file, lineno, level, message);
+
+    if (c->logging) {
+	if (krb5_store_int32(c->logging, eLogInfo) != 0)
+	    errx(1, "krb5_store_int32: log level");
+	if (krb5_store_string(c->logging, file) != 0)
+	    errx(1, "krb5_store_string: filename");
+	if (krb5_store_int32(c->logging, lineno) != 0)
+	    errx(1, "krb5_store_string: filename");
+	if (krb5_store_string(c->logging, message) != 0)
+	    errx(1, "krb5_store_string: message");
+	if (krb5_ret_int32(c->logging, &ackid) != 0)
+	    errx(1, "krb5_ret_int32: ackid");
+    }
+    free(message);
+}
+
+/*
+ *
+ */
+
+static int32_t
+add_handle(struct client *c, enum handle_type type, void *data)
+{
+    struct handle *h;
+
+    h = ecalloc(1, sizeof(*h));
+
+    h->idx = ++c->nHandle;
+    h->type = type;
+    h->ptr = data;
+    h->next = c->handle;
+    c->handle = h;
+
+    return h->idx;
+}
+
+static void
+del_handle(struct handle **h, int32_t idx)
+{
+    OM_uint32 min_stat;
+
+    if (idx == 0)
+	return;
+
+    while (*h) {
+	if ((*h)->idx == idx) {
+	    struct handle *p = *h;
+	    *h = (*h)->next;
+	    switch(p->type) {
+	    case handle_context: {
+		gss_ctx_id_t c = p->ptr;
+		gss_delete_sec_context(&min_stat, &c, NULL);
+		break; }
+	    case handle_cred: {
+		gss_cred_id_t c = p->ptr;
+		gss_release_cred(&min_stat, &c);
+		break; }
+	    }
+	    return;
+	}
+	h = &((*h)->next);
+    }
+    errx(1, "tried to delete an unexisting handle");
+}
+
+static void *
+find_handle(struct handle *h, int32_t idx, enum handle_type type)
+{
+    if (idx == 0)
+	return NULL;
+    
+    while (h) {
+	if (h->idx == idx) {
+	    if (type == h->type)
+		return h->ptr;
+	    errx(1, "monger switched type on handle!");
+	}
+	h = h->next;
+    }
+    return NULL;    
+}
+
+
+static int32_t
+convert_gss_to_gsm(OM_uint32 maj_stat)
+{
+    switch(maj_stat) {
+    case 0:
+	return GSMERR_OK;
+    case GSS_S_CONTINUE_NEEDED:
+	return GSMERR_CONTINUE_NEEDED;
+    case GSS_S_DEFECTIVE_TOKEN:
+        return GSMERR_INVALID_TOKEN;
+    case GSS_S_BAD_MIC:
+	return GSMERR_AP_MODIFIED;
+    default:
+	return GSMERR_ERROR;
+    }
+}
+
+static int32_t
+convert_krb5_to_gsm(krb5_error_code ret)
+{
+    switch(ret) {
+    case 0:
+	return GSMERR_OK;
+    default:
+	return GSMERR_ERROR;
+    }
+}
+
+
+
+/*
+ *
+ */
+
+#define HandleOP(h) \
+handle##h(enum gssMaggotOp op, struct client *c)
+
+#define ret32(_client, num)					\
+    do {							\
+        if (krb5_ret_int32((_client)->master, &(num)) != 0)	\
+	    errx(1, "krb5_ret_int32 " #num);		\
+    } while(0)
+
+#define retdata(_client, data)					\
+    do {							\
+        if (krb5_ret_data((_client)->master, &(data)) != 0)	\
+	    errx(1, "krb5_ret_data " #data);		\
+    } while(0)
+
+#define retstring(_client, data)					\
+    do {							\
+        if (krb5_ret_string((_client)->master, &(data)) != 0)	\
+	    errx(1, "krb5_ret_data " #data);		\
+    } while(0)
+
+
+#define put32(_client, num)					\
+    do {							\
+        if (krb5_store_int32((_client)->master, num) != 0)	\
+	    errx(1, "krb5_store_int32 " #num);	\
+    } while(0)
+
+#define putdata(_client, data)					\
+    do {							\
+        if (krb5_store_data((_client)->master, data) != 0)	\
+	    errx(1, "krb5_store_data " #data);	\
+    } while(0)
+
+#define putstring(_client, str)					\
+    do {							\
+        if (store_string((_client)->master, str) != 0)		\
+	    errx(1, "krb5_store_str " #str);			\
+    } while(0)
+
+/*
+ *
+ */
+
+static int
+HandleOP(GetVersionInfo)
+{
+    put32(c, GSSMAGGOTPROTOCOL);
+    return 0;
+}
+
+static int
+HandleOP(GoodBye)
+{
+    return 1;
+}
+
+static int
+HandleOP(InitContext)
+{
+    OM_uint32 maj_stat, min_stat, ret_flags;
+    int32_t hContext, hCred, flags;
+    krb5_data target_name, in_token;
+    int32_t new_context_id = 0, gsm_error = 0;
+    krb5_data out_token = { 0 , NULL };
+
+    gss_ctx_id_t ctx;
+    gss_cred_id_t creds;
+    gss_name_t gss_target_name;
+    gss_buffer_desc input_token, output_token;
+    gss_OID oid = GSS_C_NO_OID;
+    gss_buffer_t input_token_ptr = GSS_C_NO_BUFFER;
+
+    ret32(c, hContext);
+    ret32(c, hCred);
+    ret32(c, flags);
+    retdata(c, target_name);
+    retdata(c, in_token);
+
+    logmessage(c, __FILE__, __LINE__, 0,
+	       "targetname: <%.*s>", (int)target_name.length,
+	       (char *)target_name.data);
+
+    ctx = find_handle(c->handle, hContext, handle_context);
+    if (ctx == NULL)
+	hContext = 0;
+    creds = find_handle(c->handle, hCred, handle_cred);
+    if (creds == NULL)
+	abort();
+
+    input_token.length = target_name.length;
+    input_token.value = target_name.data;
+
+    maj_stat = gss_import_name(&min_stat,
+			       &input_token,
+			       GSS_KRB5_NT_PRINCIPAL_NAME,
+			       &gss_target_name);
+    if (GSS_ERROR(maj_stat)) {
+	logmessage(c, __FILE__, __LINE__, 0,
+		   "import name creds failed with: %d", maj_stat);
+	gsm_error = convert_gss_to_gsm(maj_stat);
+	goto out;
+    }
+
+    /* oid from flags */
+
+    if (in_token.length) {
+	input_token.length = in_token.length;
+	input_token.value = in_token.data;
+	input_token_ptr = &input_token;
+	if (ctx == NULL)
+	    krb5_errx(context, 1, "initcreds, context NULL, but not first req");
+    } else {
+	input_token.length = 0;
+	input_token.value = NULL;
+	if (ctx)
+	    krb5_errx(context, 1, "initcreds, context not NULL, but first req");
+    }
+	
+    if ((flags & GSS_C_DELEG_FLAG) != 0)
+	logmessage(c, __FILE__, __LINE__, 0, "init_sec_context delegating");
+
+    maj_stat = gss_init_sec_context(&min_stat,
+				    creds,
+				    &ctx,
+				    gss_target_name,
+				    oid,
+				    flags & 0x7f,
+				    0, 
+				    NULL,
+				    input_token_ptr,
+				    NULL,
+				    &output_token,
+				    &ret_flags,
+				    NULL);
+    if (GSS_ERROR(maj_stat)) {
+	if (hContext != 0)
+	    del_handle(&c->handle, hContext);
+	new_context_id = 0;
+	logmessage(c, __FILE__, __LINE__, 0,
+		   "gss_init_sec_context returns code: %d/%d", 
+		   maj_stat, min_stat);
+    } else {
+	if (input_token.length == 0)
+	    new_context_id = add_handle(c, handle_context, ctx);
+	else
+	    new_context_id = hContext;
+    }
+
+    gsm_error = convert_gss_to_gsm(maj_stat);
+
+    if (output_token.length) {
+	out_token.data = output_token.value;
+	out_token.length = output_token.length;
+    }
+
+out:
+    logmessage(c, __FILE__, __LINE__, 0,
+	       "InitContext return code: %d", gsm_error);
+
+    put32(c, new_context_id);
+    put32(c, gsm_error);
+    putdata(c, out_token);
+
+    gss_release_name(&min_stat, &gss_target_name);
+    if (output_token.length)
+	gss_release_buffer(&min_stat, &output_token);
+    krb5_data_free(&in_token);
+    krb5_data_free(&target_name);
+
+    return 0;
+}
+
+static int
+HandleOP(AcceptContext)
+{
+    OM_uint32 maj_stat, min_stat, ret_flags;
+    int32_t hContext, deleg_hcred, flags;
+    krb5_data in_token;
+    int32_t new_context_id = 0, gsm_error = 0;
+    krb5_data out_token = { 0 , NULL };
+
+    gss_ctx_id_t ctx;
+    gss_cred_id_t deleg_cred = GSS_C_NO_CREDENTIAL;
+    gss_buffer_desc input_token, output_token;
+    gss_buffer_t input_token_ptr = GSS_C_NO_BUFFER;
+
+    ret32(c, hContext);
+    ret32(c, flags);
+    retdata(c, in_token);
+
+    ctx = find_handle(c->handle, hContext, handle_context);
+    if (ctx == NULL)
+	hContext = 0;
+
+    if (in_token.length) {
+	input_token.length = in_token.length;
+	input_token.value = in_token.data;
+	input_token_ptr = &input_token;
+    } else {
+	input_token.length = 0;
+	input_token.value = NULL;
+    }
+
+    maj_stat = gss_accept_sec_context(&min_stat,
+				      &ctx,
+				      GSS_C_NO_CREDENTIAL,
+				      &input_token,
+				      GSS_C_NO_CHANNEL_BINDINGS,
+				      NULL,
+				      NULL,
+				      &output_token,
+				      &ret_flags,
+				      NULL,
+				      &deleg_cred);
+    if (GSS_ERROR(maj_stat)) {
+	if (hContext != 0)
+	    del_handle(&c->handle, hContext);
+	logmessage(c, __FILE__, __LINE__, 0,
+		   "gss_accept_sec_context returns code: %d/%d", 
+		   maj_stat, min_stat);
+	new_context_id = 0;
+    } else {
+	if (hContext == 0)
+	    new_context_id = add_handle(c, handle_context, ctx);
+	else
+	    new_context_id = hContext;
+    }
+    if (output_token.length) {
+	out_token.data = output_token.value;
+	out_token.length = output_token.length;
+    }
+    if ((ret_flags & GSS_C_DELEG_FLAG) != 0) {
+	deleg_hcred = add_handle(c, handle_cred, deleg_cred);
+	logmessage(c, __FILE__, __LINE__, 0,
+		   "accept_context delegated handle: %d", deleg_hcred);
+    } else {
+	gss_release_cred(&min_stat, &deleg_cred);
+	deleg_hcred = 0;
+    }
+	 
+    
+    gsm_error = convert_gss_to_gsm(maj_stat);
+
+    put32(c, hContext);
+    put32(c, gsm_error);
+    putdata(c, out_token);
+    put32(c, deleg_hcred);
+
+    if (output_token.length)
+	gss_release_buffer(&min_stat, &output_token);
+    krb5_data_free(&in_token);
+
+    return 0;
+}
+
+static int
+HandleOP(ToastResource)
+{
+    int32_t handle;
+
+    ret32(c, handle);
+    logmessage(c, __FILE__, __LINE__, 0, "toasting %d", handle);
+    del_handle(&c->handle, handle);
+    put32(c, GSMERR_OK);
+
+    return 0;
+}
+
+static int
+HandleOP(AcquireCreds)
+{
+    char *name, *password;
+    int32_t gsm_error, flags, handle = 0;
+    krb5_principal principal;
+    krb5_get_init_creds_opt *opt;
+    krb5_error_code ret;
+    krb5_creds cred;
+    krb5_ccache id;
+    gss_cred_id_t gcred;
+    OM_uint32 maj_stat, min_stat;
+
+    retstring(c, name);
+    retstring(c, password);
+    ret32(c, flags);
+
+    logmessage(c, __FILE__, __LINE__, 0,
+	       "username: %s password: %s", name, password);
+
+    ret = krb5_parse_name(context, name, &principal);
+    if (ret) {
+	gsm_error = convert_krb5_to_gsm(ret);
+	goto out;
+    }
+    
+    memset(&cred, 0, sizeof(cred));
+
+    ret = krb5_get_init_creds_opt_alloc (context, &opt);
+    if (ret)
+	krb5_err(context, 1, ret, "krb5_get_init_creds_opt_alloc");
+    
+    krb5_get_init_creds_opt_set_forwardable (opt, 1);
+    krb5_get_init_creds_opt_set_renew_life (opt, 3600 * 24 * 30);
+
+    ret = krb5_get_init_creds_password (context,
+					&cred,
+					principal,
+					password,
+					NULL,
+					NULL,
+					0,
+					NULL,
+					opt);
+    if (ret) {
+	logmessage(c, __FILE__, __LINE__, 0,
+		   "krb5_get_init_creds failed: %d", ret);
+	gsm_error = convert_krb5_to_gsm(ret);
+	goto out;
+    }
+	
+    ret = krb5_cc_new_unique(context, "MEMORY", NULL, &id);
+    if (ret)
+	krb5_err (context, 1, ret, "krb5_cc_initialize");
+
+    ret = krb5_cc_initialize (context, id, cred.client);
+    if (ret)
+	krb5_err (context, 1, ret, "krb5_cc_initialize");
+    
+    ret = krb5_cc_store_cred (context, id, &cred);
+    if (ret)
+	krb5_err (context, 1, ret, "krb5_cc_store_cred");
+
+    krb5_free_cred_contents (context, &cred);
+
+    maj_stat = gss_krb5_import_cred(&min_stat,
+				    id,
+				    NULL,
+				    NULL,
+				    &gcred);
+    if (maj_stat) {
+	gsm_error = convert_gss_to_gsm(maj_stat);
+	logmessage(c, __FILE__, __LINE__, 0,
+		   "krb5 import creds failed with: %d", maj_stat);
+    }
+
+    krb5_cc_close(context, id);
+
+    handle = add_handle(c, handle_cred, gcred);
+
+    gsm_error = 0;
+
+out:
+    logmessage(c, __FILE__, __LINE__, 0,
+	       "AcquireCreds handle: %d return code: %d", handle, gsm_error);
+
+    free(name);
+    free(password);
+
+    put32(c, gsm_error);
+    put32(c, handle);
+
+    return 0;
+}
+
+static int
+HandleOP(Encrypt)
+{
+    return 0;
+}
+
+static int
+HandleOP(Decrypt)
+{
+    return 0;
+}
+
+static int
+HandleOP(Sign)
+{
+    return 0;
+}
+
+static int
+HandleOP(Verify)
+{
+    return 0;
+}
+
+static int
+HandleOP(GetVersionAndCapabilities)
+{
+    int32_t cap = 0x10; /* has moniker */
+
+    if (targetname)
+	cap |= 0x1; /* is server */
+
+    put32(c, GSSMAGGOTPROTOCOL);
+    put32(c, cap);
+    putstring(c, "gssmask"); 
+
+    return 0;
+}
+
+static int
+HandleOP(GetTargetName)
+{
+    if (targetname)
+	putstring(c, targetname);
+    return 0;
+}
+
+static int
+HandleOP(SetLoggingSocket)
+{
+    struct sockaddr_storage sa;
+    int32_t portnum;
+    int fd, ret;
+
+    ret32(c, portnum);
+
+    logmessage(c, __FILE__, __LINE__, 0,
+	       "logging port on peer is: %d", (int)portnum);
+
+    sa = c->sa;
+    socket_set_port((struct sockaddr *)(&c->sa), portnum);
+
+    logmessage(c, __FILE__, __LINE__, 0, "socket");
+    fd = socket(((struct sockaddr *)&c->sa)->sa_family, SOCK_STREAM, 0);
+    if (fd < 0)
+	return 0;
+
+    logmessage(c, __FILE__, __LINE__, 0, "connect");
+    ret = connect(fd, (struct sockaddr *)&c->sa, c->salen);
+    if (ret < 0) {
+	logmessage(c, __FILE__, __LINE__, 0, "failed connect to log port: %s",
+		   strerror(errno));
+	close(fd);
+	return 0;
+    }
+
+    logmessage(c, __FILE__, __LINE__, 0, "sp");
+    if (c->logging)
+	krb5_storage_free(c->logging);
+    c->logging = krb5_storage_from_fd(fd);
+    close(fd);
+
+    krb5_store_int32(c->logging, eLogSetMoniker);
+    store_string(c->logging, "gssmask");
+    
+    return 0;
+}
+    
+
+static int
+HandleOP(ChangePassword)
+{
+    return 0;
+}
+
+static int
+HandleOP(SetPasswordSelf)
+{
+    return 0;
+}
+
+static int
+HandleOP(Wrap)
+{
+    return 0;
+}
+ 
+
+static int
+HandleOP(Unwrap)
+{
+    return 0;
+}
+
+static int
+HandleOP(ConnectLoggingService2)
+{
+    return 0;
+}
+
+static int
+HandleOP(GetMoniker)
+{
+    putstring(c, c->moniker);
+    return 0;
+}
+
+static int
+HandleOP(CallExtension)
+{
+    return 0;
+}
+
+static int
+HandleOP(AcquirePKInitCreds)
+{
+    return 0;
+}
+
+/*
+ *
+ */
+
+struct handler {
+    enum gssMaggotOp op;
+    const char *name;
+    int (*func)(enum gssMaggotOp, struct client *);
+};
+
+#define S(a) { e##a, #a, handle##a }
+
+struct handler handlers[] = {
+    S(GetVersionInfo),
+    S(GoodBye),
+    S(InitContext),
+    S(AcceptContext),
+    S(ToastResource),
+    S(AcquireCreds),
+    S(Encrypt),
+    S(Decrypt),
+    S(Sign),
+    S(Verify),
+    S(GetVersionAndCapabilities),
+    S(GetTargetName),
+    S(SetLoggingSocket),
+    S(ChangePassword),
+    S(SetPasswordSelf),
+    S(Wrap),
+    S(Unwrap),
+    S(ConnectLoggingService2),
+    S(GetMoniker),
+    S(CallExtension),
+    S(AcquirePKInitCreds)
+};
+
+#undef S
+
+/*
+ *
+ */
+
+static struct handler *
+find_op(int32_t op)
+{
+    int i;
+
+    for (i = 0; i < sizeof(handlers)/sizeof(handlers[0]); i++)
+	if (handlers[i].op == op)
+	    return &handlers[i];
+    return NULL;
+}
+
+static void
+handleServer(int fd)
+{
+    struct handler *handler;
+    struct client c;
+    int32_t op;
+    char servername[MAXHOSTNAMELEN];
+    char hostname[MAXHOSTNAMELEN];
+
+    memset(&c, 0, sizeof(c));
+
+    gethostname(hostname, sizeof(hostname));
+    asprintf(&c.moniker, "gssmask: %s", hostname);
+
+    {
+	c.salen = sizeof(c.sa);
+	getpeername(fd, (struct sockaddr *)&c.sa, &c.salen);
+	
+	getnameinfo((struct sockaddr *)&c.sa, c.salen, 
+		    servername, sizeof(servername), NULL, 0, NI_NUMERICHOST);
+    }
+
+    c.master = krb5_storage_from_fd(fd);
+    if (c.master == NULL)
+	errx(1, "krb5_storage_from_fd");
+    
+    close(fd);
+
+    while(1) {
+	ret32(&c, op);
+
+	handler = find_op(op);
+	if (handler == NULL) {
+	    logmessage(&c, __FILE__, __LINE__, 0,
+		       "op %d not supported", (int)op);
+	    exit(1);
+	}
+
+	logmessage(&c, __FILE__, __LINE__, 0,
+		   "---> Got op %s from server %s", 
+		   handler->name, servername);
+
+	if ((handler->func)(handler->op, &c))
+	    break;
+    }
+    krb5_storage_free(c.master);
+    if (c.logging)
+	krb5_storage_free(c.logging);
+}
+
+
+static char *port_str;
+static int version_flag;
+static int help_flag;
+
+static int port = 4711;
+
+struct getargs args[] = {
+    { "spn",	0,   arg_string,	&targetname,	"This host's SPN",
+      "number-of-service" },
+    { "port",	'p', arg_string,	&port_str,	"Use this port",
+      "number-of-service" },
+    { "version", 0,  arg_flag,		&version_flag,	"Print version",
+      NULL },
+    { "help",	 0,  arg_flag,		&help_flag,	NULL,
+      NULL }
+};
+
+static void
+usage(int ret)
+{
+    arg_printusage (args,
+		    sizeof(args) / sizeof(args[0]),
+		    NULL,
+		    "");
+    exit (ret);
+}
+
+int
+main(int argc, char **argv)
+{
+    int optidx	= 0;
+
+    setprogname (argv[0]);
+
+    if (getarg (args, sizeof(args) / sizeof(args[0]), argc, argv, &optidx))
+	usage (1);
+
+    if (help_flag)
+	usage (0);
+
+    if (version_flag) {
+	print_version (NULL);
+	return 0;
+    }
+
+    if (optidx != argc)
+	usage (1);
+
+    if (port_str) {
+	char *ptr;
+
+	port = strtol (port_str, &ptr, 10);
+	if (port == 0 && ptr == port_str)
+	    errx (1, "Bad port `%s'", port_str);
+    }
+
+    krb5_init_context(&context);
+
+    logfile = fopen("/dev/tty", "w");
+    if (logfile == NULL)
+	err(1, "error opening /dev/tty");
+
+    mini_inetd(port);
+    fprintf(logfile, "connected\n");
+
+    handleServer(0);
+
+    krb5_free_context(context);
+
+    return 0;
+}
