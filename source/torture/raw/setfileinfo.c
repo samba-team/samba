@@ -144,6 +144,7 @@ BOOL torture_raw_sfileinfo(struct torture_context *torture)
 		} \
 		if (!NT_STATUS_IS_OK(status2)) { \
 			printf("%s - %s\n", #call, nt_errstr(status2)); \
+			ret = False; \
 		} \
 	}} while (0)
 
@@ -154,6 +155,7 @@ BOOL torture_raw_sfileinfo(struct torture_context *torture)
 		       call_name, #stype, #field, \
 		       (uint_t)value, (uint_t)finfo2.stype.out.field); \
 		dump_all_info(mem_ctx, &finfo1); \
+		ret = False; \
 	}} while (0)
 
 #define CHECK_TIME(call, stype, field, value) do { \
@@ -166,6 +168,7 @@ BOOL torture_raw_sfileinfo(struct torture_context *torture)
 		printf("\t%s", timestring(mem_ctx, value)); \
 		printf("\t%s\n", nt_time_string(mem_ctx, finfo2.stype.out.field)); \
 		dump_all_info(mem_ctx, &finfo1); \
+		ret = False; \
 	}} while (0)
 
 #define CHECK_STR(call, stype, field, value) do { \
@@ -176,6 +179,7 @@ BOOL torture_raw_sfileinfo(struct torture_context *torture)
 		        value, \
 			finfo2.stype.out.field); \
 		dump_all_info(mem_ctx, &finfo1); \
+		ret = False; \
 	}} while (0)
 
 #define CHECK_STATUS(status, correct) do { \
@@ -253,13 +257,13 @@ BOOL torture_raw_sfileinfo(struct torture_context *torture)
 	unix_to_nt_time(&sfinfo.basic_info.in.access_time, 0);
 	unix_to_nt_time(&sfinfo.basic_info.in.write_time,  0);
 	unix_to_nt_time(&sfinfo.basic_info.in.change_time, 0);
-	sfinfo.basic_info.in.attrib = FILE_ATTRIBUTE_NORMAL;
+	sfinfo.basic_info.in.attrib = 0;
 	CHECK_CALL_FNUM(BASIC_INFO, NT_STATUS_OK);
 	CHECK_TIME(ALL_INFO, all_info, create_time, basetime + 100);
 	CHECK_TIME(ALL_INFO, all_info, access_time, basetime + 200);
 	CHECK_TIME(ALL_INFO, all_info, write_time,  basetime + 300);
 	CHECK_TIME(ALL_INFO, all_info, change_time, basetime + 400);
-	CHECK_VALUE(ALL_INFO, all_info, attrib,     FILE_ATTRIBUTE_NORMAL);
+	CHECK_VALUE(ALL_INFO, all_info, attrib,     FILE_ATTRIBUTE_READONLY);
 
 	printf("test basic_information level\n");
 	basetime += 86400;
@@ -267,20 +271,20 @@ BOOL torture_raw_sfileinfo(struct torture_context *torture)
 	unix_to_nt_time(&sfinfo.basic_info.in.access_time, basetime + 200);
 	unix_to_nt_time(&sfinfo.basic_info.in.write_time,  basetime + 300);
 	unix_to_nt_time(&sfinfo.basic_info.in.change_time, basetime + 400);
-	sfinfo.basic_info.in.attrib = FILE_ATTRIBUTE_READONLY;
+	sfinfo.basic_info.in.attrib = FILE_ATTRIBUTE_NORMAL;
 	CHECK_CALL_FNUM(BASIC_INFORMATION, NT_STATUS_OK);
 	CHECK_TIME(ALL_INFO, all_info, create_time, basetime + 100);
 	CHECK_TIME(ALL_INFO, all_info, access_time, basetime + 200);
 	CHECK_TIME(ALL_INFO, all_info, write_time,  basetime + 300);
 	CHECK_TIME(ALL_INFO, all_info, change_time, basetime + 400);
-	CHECK_VALUE(ALL_INFO, all_info, attrib,     FILE_ATTRIBUTE_READONLY);
+	CHECK_VALUE(ALL_INFO, all_info, attrib,     FILE_ATTRIBUTE_NORMAL);
 
 	CHECK_CALL_PATH(BASIC_INFORMATION, NT_STATUS_OK);
 	CHECK_TIME(ALL_INFO, all_info, create_time, basetime + 100);
 	CHECK_TIME(ALL_INFO, all_info, access_time, basetime + 200);
 	CHECK_TIME(ALL_INFO, all_info, write_time,  basetime + 300);
 	CHECK_TIME(ALL_INFO, all_info, change_time, basetime + 400);
-	CHECK_VALUE(ALL_INFO, all_info, attrib,     FILE_ATTRIBUTE_READONLY);
+	CHECK_VALUE(ALL_INFO, all_info, attrib,     FILE_ATTRIBUTE_NORMAL);
 
 	printf("a zero time means don't change\n");
 	unix_to_nt_time(&sfinfo.basic_info.in.create_time, 0);
