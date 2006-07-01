@@ -421,18 +421,6 @@ static void reply_nt1(struct smbsrv_request *req, uint16_t choice)
 	smbsrv_send_reply_nosign(req);	
 }
 
-/*
- after a SMB2 2.001 negprot reply to a SMB negprot request
- no (SMB or SMB2) requests are allowed anymore,
- vista resets the connection in this case 
-*/
-static NTSTATUS smbsrv_recv_disabled_request(void *private, DATA_BLOB blob)
-{
-	struct smbsrv_connection *smb_conn = talloc_get_type(private, struct smbsrv_connection);
-	smbsrv_terminate_connection(smb_conn, "Receive Packet after SMB -> SMB2 negprot");
-	return NT_STATUS_OK;
-}
-
 /****************************************************************************
  Reply for the SMB2 2.001 protocol
 ****************************************************************************/
@@ -441,11 +429,9 @@ static void reply_smb2(struct smbsrv_request *req, uint16_t choice)
 	struct smbsrv_connection *smb_conn = req->smb_conn;
 
 	/* reply with a SMB2 packet */
+	packet_set_callback(smb_conn->packet, smbsrv_recv_smb2_request);
 	smb2srv_reply_smb_negprot(req);
 	req = NULL;
-
-	/* disallow requests */
-	packet_set_callback(smb_conn->packet, smbsrv_recv_disabled_request);
 }
 
 /* List of supported protocols, most desired first */
