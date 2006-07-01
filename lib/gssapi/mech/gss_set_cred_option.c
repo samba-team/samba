@@ -84,9 +84,10 @@ gss_set_cred_option (OM_uint32 *minor_status,
 			SLIST_INSERT_HEAD(&cred->gc_mc, mc, gmc_link);
 		}
 		*cred_handle = (gss_cred_id_t)cred;
-		if (!one_ok)
-			gss_release_cred(&minor_status, cred_handle);
-
+		if (!one_ok) {
+			OM_uint32 junk;
+			gss_release_cred(&junk, cred_handle);
+		}
 	} else {
 		gssapi_mech_interface	m;
 
