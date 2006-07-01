@@ -232,7 +232,7 @@ void smb2srv_lock_recv(struct smb2srv_request *req)
 
 void smb2srv_ioctl_recv(struct smb2srv_request *req)
 {
-	smb2srv_send_error(req, NT_STATUS_NOT_IMPLEMENTED);
+	smb2srv_send_error(req, NT_STATUS_FS_DRIVER_REQUIRED);
 }
 
 void smb2srv_cancel_recv(struct smb2srv_request *req)
