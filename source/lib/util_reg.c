@@ -90,7 +90,7 @@ NTSTATUS reg_pull_multi_sz(TALLOC_CTX *mem_ctx, const void *buf, size_t len,
 
 		thislen = strnlen_w(p, len) + 1;
 		dstlen = convert_string_allocate(*values, CH_UCS2, CH_UNIX,
-						 p, thislen*2, (void **)&val,
+						 p, thislen*2, (void *)&val,
 						 True);
 		if (dstlen == (size_t)-1) {
 			TALLOC_FREE(*values);

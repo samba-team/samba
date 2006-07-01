@@ -516,13 +516,14 @@ size_t convert_string(charset_t from, charset_t to,
  **/
 
 size_t convert_string_allocate(TALLOC_CTX *ctx, charset_t from, charset_t to,
-			       void const *src, size_t srclen, void **dest, BOOL allow_bad_conv)
+			       void const *src, size_t srclen, void *dst, BOOL allow_bad_conv)
 {
 	size_t i_len, o_len, destlen = MAX(srclen, 512);
 	size_t retval;
 	const char *inbuf = (const char *)src;
 	char *outbuf = NULL, *ob = NULL;
 	smb_iconv_t descriptor;
+	void **dest = (void **)dst;
 
 	*dest = NULL;
 

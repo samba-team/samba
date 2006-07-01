@@ -3854,7 +3854,7 @@ BOOL samr_io_r_query_aliasinfo(const char *desc, SAMR_R_QUERY_ALIASINFO *out,
 	if(!prs_align(ps))
 		return False;
 
-	if ( !prs_pointer("alias", ps, depth, (void**)&out->ctr, sizeof(ALIAS_INFO_CTR), (PRS_POINTER_CAST)samr_alias_info_ctr))
+	if ( !prs_pointer("alias", ps, depth, (void*)&out->ctr, sizeof(ALIAS_INFO_CTR), (PRS_POINTER_CAST)samr_alias_info_ctr))
 		return False;
 	if(!prs_align(ps))
 		return False;
@@ -4896,7 +4896,7 @@ inits a SAMR_R_LOOKUP_NAMES structure.
 
 NTSTATUS init_samr_r_lookup_names(TALLOC_CTX *ctx, SAMR_R_LOOKUP_NAMES * r_u,
 			      uint32 num_rids,
-			      uint32 *rid, uint32 *type,
+			      uint32 *rid, enum SID_NAME_USE *type,
 			      NTSTATUS status)
 {
 	DEBUG(5, ("init_samr_r_lookup_names\n"));

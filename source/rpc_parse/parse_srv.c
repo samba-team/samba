@@ -1820,19 +1820,19 @@ BOOL srv_io_q_net_sess_enum(const char *desc, SRV_Q_NET_SESS_ENUM *q_u, prs_stru
 	if(!prs_align(ps))
 		return False;
 
-	if(!prs_pointer("servername", ps, depth, (void**)&q_u->servername, sizeof(UNISTR2), (PRS_POINTER_CAST)prs_io_unistr2))
+	if(!prs_pointer("servername", ps, depth, (void*)&q_u->servername, sizeof(UNISTR2), (PRS_POINTER_CAST)prs_io_unistr2))
 		return False;
 
 	if(!prs_align(ps))
 		return False;
 
-	if(!prs_pointer("qualifier", ps, depth, (void**)&q_u->qualifier, sizeof(UNISTR2), (PRS_POINTER_CAST)prs_io_unistr2))
+	if(!prs_pointer("qualifier", ps, depth, (void*)&q_u->qualifier, sizeof(UNISTR2), (PRS_POINTER_CAST)prs_io_unistr2))
 		return False;
 
 	if(!prs_align(ps))
 		return False;
 
-	if(!prs_pointer("username", ps, depth, (void**)&q_u->username, sizeof(UNISTR2), (PRS_POINTER_CAST)prs_io_unistr2))
+	if(!prs_pointer("username", ps, depth, (void*)&q_u->username, sizeof(UNISTR2), (PRS_POINTER_CAST)prs_io_unistr2))
 		return False;
 
 	if(!prs_align(ps))
@@ -2547,17 +2547,17 @@ BOOL srv_io_q_net_file_enum(const char *desc, SRV_Q_NET_FILE_ENUM *q_u, prs_stru
 	if(!prs_align(ps))
 		return False;
 
-	if(!prs_pointer("servername", ps, depth, (void**)&q_u->servername, sizeof(UNISTR2), (PRS_POINTER_CAST)prs_io_unistr2))
+	if(!prs_pointer("servername", ps, depth, (void*)&q_u->servername, sizeof(UNISTR2), (PRS_POINTER_CAST)prs_io_unistr2))
 		return False;
 	if(!prs_align(ps))
 		return False;
 
-	if(!prs_pointer("qualifier", ps, depth, (void**)&q_u->qualifier, sizeof(UNISTR2), (PRS_POINTER_CAST)prs_io_unistr2))
+	if(!prs_pointer("qualifier", ps, depth, (void*)&q_u->qualifier, sizeof(UNISTR2), (PRS_POINTER_CAST)prs_io_unistr2))
 		return False;
 	if(!prs_align(ps))
 		return False;
 
-	if(!prs_pointer("username", ps, depth, (void**)&q_u->username, sizeof(UNISTR2), (PRS_POINTER_CAST)prs_io_unistr2))
+	if(!prs_pointer("username", ps, depth, (void*)&q_u->username, sizeof(UNISTR2), (PRS_POINTER_CAST)prs_io_unistr2))
 		return False;
 	if(!prs_align(ps))
 		return False;
@@ -3294,7 +3294,7 @@ BOOL srv_io_q_net_name_validate(const char *desc, SRV_Q_NET_NAME_VALIDATE *q_n, 
 	if(!prs_align(ps))
 		return False;
 
-	if(!prs_pointer("servername", ps, depth, (void**)&q_n->servername, sizeof(UNISTR2), (PRS_POINTER_CAST)prs_io_unistr2))
+	if(!prs_pointer("servername", ps, depth, (void*)&q_n->servername, sizeof(UNISTR2), (PRS_POINTER_CAST)prs_io_unistr2))
 		return False;
 
 	if(!prs_align(ps))
@@ -3527,7 +3527,7 @@ BOOL srv_io_q_net_file_close(const char *desc, SRV_Q_NET_FILE_CLOSE *q_u, prs_st
 	if(!prs_align(ps))
 		return False;
 
-	if(!prs_pointer("servername", ps, depth, (void**)&q_u->servername, sizeof(UNISTR2), (PRS_POINTER_CAST)prs_io_unistr2))
+	if(!prs_pointer("servername", ps, depth, (void*)&q_u->servername, sizeof(UNISTR2), (PRS_POINTER_CAST)prs_io_unistr2))
 		return False;
 	if(!prs_align(ps))
 		return False;

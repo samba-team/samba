@@ -624,9 +624,10 @@ BOOL prs_uint8(const char *name, prs_struct *ps, int depth, uint8 *data8)
  ********************************************************************/
 
 BOOL prs_pointer( const char *name, prs_struct *ps, int depth, 
-                 void **data, size_t data_size,
+                 void *dta, size_t data_size,
                  BOOL(*prs_fn)(const char*, prs_struct*, int, void*) )
 {
+	void ** data = (void **)dta;
 	uint32 data_p;
 
 	/* output f000baaa to stream if the pointer is non-zero. */
