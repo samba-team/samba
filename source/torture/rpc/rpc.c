@@ -97,6 +97,7 @@ NTSTATUS torture_rpc_init(void)
 
 	register_torture_op("RPC-LSA", torture_rpc_lsa);
 	register_torture_op("RPC-LSALOOKUP", torture_rpc_lsa_lookup);
+	register_torture_op("RPC-LSA-GETUSER", torture_rpc_lsa_get_user);
 	register_torture_op("RPC-SECRETS", torture_rpc_lsa_secrets);
 	register_torture_op("RPC-ECHO", torture_rpc_echo);
 	register_torture_op("RPC-DFS", torture_rpc_dfs);
