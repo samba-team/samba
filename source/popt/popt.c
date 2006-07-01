@@ -443,8 +443,12 @@ if (_popt_debug)
 #endif
 
     rc = execvp(argv[0], (char *const *)argv);
-
-    return POPT_ERROR_ERRNO;
+    /* notreached */
+    if (rc) {
+        return POPT_ERROR_ERRNO;
+    }
+ 
+    return 0;
 }
 /*@=bounds =boundswrite @*/
 
