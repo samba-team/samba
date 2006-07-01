@@ -78,9 +78,9 @@ struct smb2_request *smb2_request_init(struct smb2_transport *transport, uint16_
 	SSVAL(req->out.hdr, SMB2_HDR_PAD1,    0);
 	SIVAL(req->out.hdr, SMB2_HDR_STATUS,  0);
 	SSVAL(req->out.hdr, SMB2_HDR_OPCODE,  opcode);
-	SSVAL(req->out.hdr, SMB2_HDR_PAD2,    0);
+	SSVAL(req->out.hdr, SMB2_HDR_UNKNOWN1,0);
 	SIVAL(req->out.hdr, SMB2_HDR_FLAGS,   0);
-	SIVAL(req->out.hdr, SMB2_HDR_UNKNOWN, 0);
+	SIVAL(req->out.hdr, SMB2_HDR_UNKNOWN2,0);
 	SBVAL(req->out.hdr, SMB2_HDR_SEQNUM,  req->seqnum);
 	SIVAL(req->out.hdr, SMB2_HDR_PID,     0);
 	SIVAL(req->out.hdr, SMB2_HDR_TID,     0);
