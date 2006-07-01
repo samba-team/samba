@@ -116,7 +116,7 @@ static void idmap_set_mapping_recv(TALLOC_CTX *mem_ctx, BOOL success,
 				   struct winbindd_response *response,
 				   void *c, void *private_data)
 {
-	void (*cont)(void *priv, BOOL succ) = c;
+	void (*cont)(void *priv, BOOL succ) = (void (*)(void *, BOOL))c;
 
 	if (!success) {
 		DEBUG(5, ("Could not trigger idmap_set_mapping\n"));
@@ -149,7 +149,7 @@ void idmap_set_mapping_async(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
 	sid_to_string(request.data.dual_idmapset.sid, sid);
 
 	do_async(mem_ctx, idmap_child(), &request, idmap_set_mapping_recv,
-		 cont, private_data);
+		 (void *)cont, private_data);
 }
 
 enum winbindd_result winbindd_dual_idmapset(struct winbindd_domain *domain,
@@ -188,7 +188,7 @@ void idmap_sid2uid_async(TALLOC_CTX *mem_ctx, const DOM_SID *sid, BOOL alloc,
 	sid_to_string(request.data.dual_sid2id.sid, sid);
 	request.data.dual_sid2id.alloc = alloc;
 	do_async(mem_ctx, idmap_child(), &request, idmap_sid2uid_recv,
-		 cont, private_data);
+		 (void *)cont, private_data);
 }
 
 enum winbindd_result winbindd_dual_sid2uid(struct winbindd_domain *domain,
@@ -220,7 +220,8 @@ static void idmap_sid2uid_recv(TALLOC_CTX *mem_ctx, BOOL success,
 			       struct winbindd_response *response,
 			       void *c, void *private_data)
 {
-	void (*cont)(void *priv, BOOL succ, uid_t uid) = c;
+	void (*cont)(void *priv, BOOL succ, uid_t uid) =
+		(void (*)(void *, BOOL, uid_t))c;
 
 	if (!success) {
 		DEBUG(5, ("Could not trigger sid2uid\n"));
@@ -251,7 +252,7 @@ void winbindd_uid2name_async(TALLOC_CTX *mem_ctx, uid_t uid,
 	request.cmd = WINBINDD_DUAL_UID2NAME;
 	request.data.uid = uid;
 	do_async(mem_ctx, idmap_child(), &request, uid2name_recv,
-		 cont, private_data);
+		 (void *)cont, private_data);
 }
 
 enum winbindd_result winbindd_dual_uid2name(struct winbindd_domain *domain,
@@ -277,7 +278,8 @@ static void uid2name_recv(TALLOC_CTX *mem_ctx, BOOL success,
 			  struct winbindd_response *response,
 			  void *c, void *private_data)
 {
-	void (*cont)(void *priv, BOOL succ, const char *name) = c;
+	void (*cont)(void *priv, BOOL succ, const char *name) =
+		(void (*)(void *, BOOL, const char *))c;
 
 	if (!success) {
 		DEBUG(5, ("Could not trigger uid2name\n"));
@@ -336,7 +338,8 @@ static void name2uid_recv(TALLOC_CTX *mem_ctx, BOOL success,
 			  struct winbindd_response *response,
 			  void *c, void *private_data)
 {
-	void (*cont)(void *priv, BOOL succ, uid_t uid) = c;
+	void (*cont)(void *priv, BOOL succ, uid_t uid) =
+		(void (*)(void *, BOOL, uid_t))c;
 
 	if (!success) {
 		DEBUG(5, ("Could not trigger name2uid\n"));
@@ -412,7 +415,8 @@ static void idmap_sid2gid_recv(TALLOC_CTX *mem_ctx, BOOL success,
 			       struct winbindd_response *response,
 			       void *c, void *private_data)
 {
-	void (*cont)(void *priv, BOOL succ, gid_t gid) = c;
+	void (*cont)(void *priv, BOOL succ, gid_t gid) =
+		(void (*)(void *, BOOL, gid_t))c;
 
 	if (!success) {
 		DEBUG(5, ("Could not trigger sid2gid\n"));
@@ -433,7 +437,8 @@ static void gid2name_recv(TALLOC_CTX *mem_ctx, BOOL success,
 			  struct winbindd_response *response,
 			  void *c, void *private_data)
 {
-	void (*cont)(void *priv, BOOL succ, const char *name) = c;
+	void (*cont)(void *priv, BOOL succ, const char *name) =
+		(void (*)(void *, BOOL, const char *))c;
 
 	if (!success) {
 		DEBUG(5, ("Could not trigger gid2name\n"));
@@ -521,7 +526,8 @@ static void name2gid_recv(TALLOC_CTX *mem_ctx, BOOL success,
 			  struct winbindd_response *response,
 			  void *c, void *private_data)
 {
-	void (*cont)(void *priv, BOOL succ, gid_t gid) = c;
+	void (*cont)(void *priv, BOOL succ, gid_t gid) =
+		(void (*)(void *, BOOL, gid_t))c;
 
 	if (!success) {
 		DEBUG(5, ("Could not trigger name2gid\n"));
@@ -544,7 +550,9 @@ static void lookupsid_recv(TALLOC_CTX *mem_ctx, BOOL success,
 			   void *c, void *private_data)
 {
 	void (*cont)(void *priv, BOOL succ, const char *dom_name,
-		     const char *name, enum SID_NAME_USE type) = c;
+		     const char *name, enum SID_NAME_USE type) =
+		(void (*)(void *, BOOL, const char *, const char *,
+			  enum SID_NAME_USE))c;
 
 	if (!success) {
 		DEBUG(5, ("Could not trigger lookupsid\n"));
@@ -628,7 +636,8 @@ static void lookupname_recv(TALLOC_CTX *mem_ctx, BOOL success,
 			    void *c, void *private_data)
 {
 	void (*cont)(void *priv, BOOL succ, const DOM_SID *sid,
-		     enum SID_NAME_USE type) = c;
+		     enum SID_NAME_USE type) =
+		(void (*)(void *, BOOL, const DOM_SID *, enum SID_NAME_USE))c;
 	DOM_SID sid;
 
 	if (!success) {
@@ -854,7 +863,8 @@ static void getsidaliases_recv(TALLOC_CTX *mem_ctx, BOOL success,
 			       void *c, void *private_data)
 {
 	void (*cont)(void *priv, BOOL succ,
-		     DOM_SID *aliases, size_t num_aliases) = c;
+		     DOM_SID *aliases, size_t num_aliases) =
+		(void (*)(void *, BOOL, DOM_SID *, size_t))c;
 	char *aliases_str;
 	DOM_SID *sids = NULL;
 	size_t num_sids = 0;
@@ -871,7 +881,7 @@ static void getsidaliases_recv(TALLOC_CTX *mem_ctx, BOOL success,
 		return;
 	}
 
-	aliases_str = response->extra_data.data;
+	aliases_str = (char *)response->extra_data.data;
 
 	if (aliases_str == NULL) {
 		DEBUG(10, ("getsidaliases return 0 SIDs\n"));
@@ -1064,7 +1074,7 @@ static void gettoken_recvdomgroups(TALLOC_CTX *mem_ctx, BOOL success,
 		return;
 	}
 
-	sids_str = response->extra_data.data;
+	sids_str = (char *)response->extra_data.data;
 
 	if (sids_str == NULL) {
 		/* This could be normal if we are dealing with a
@@ -1108,7 +1118,7 @@ static void gettoken_recvaliases(void *private_data, BOOL success,
 				 const DOM_SID *aliases,
 				 size_t num_aliases)
 {
-	struct gettoken_state *state = private_data;
+	struct gettoken_state *state = (struct gettoken_state *)private_data;
 	size_t i;
 
 	if (!success) {
@@ -1475,7 +1485,9 @@ static void query_user_recv(TALLOC_CTX *mem_ctx, BOOL success,
 {
 	void (*cont)(void *priv, BOOL succ, const char *acct_name,
 		     const char *full_name, const char *homedir, 
-		     const char *shell, uint32 group_rid) = c;
+		     const char *shell, uint32 group_rid) =
+		(void (*)(void *, BOOL, const char *, const char *,
+			  const char *, const char *, uint32))c;
 
 	if (!success) {
 		DEBUG(5, ("Could not trigger query_user\n"));
