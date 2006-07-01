@@ -80,8 +80,8 @@ NTSTATUS remove_ccache_by_ccname(const char *ccname)
 #ifdef DEBUG_PASSWORD
 				DEBUG(10,("unlocking memory: %p\n", entry->pass));
 #endif
-				memset(&(entry->pass), 0, len);
-				if ((munlock(&entry->pass, len)) == -1) {
+				memset(entry->pass, 0, len);
+				if ((munlock(entry->pass, len)) == -1) {
 					DEBUG(0,("failed to munlock memory: %s (%d)\n", 
 						strerror(errno), errno));
 					return map_nt_error_from_unix(errno);
