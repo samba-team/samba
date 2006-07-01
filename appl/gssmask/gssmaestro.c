@@ -49,7 +49,7 @@ static int num_clients;
 #endif
 
 static struct client *
-connect_client(const char *name)
+connect_client(const char *name, const char *port)
 {
     struct client *c = ecalloc(1, sizeof(*c));
     struct addrinfo hints, *res0, *res;
@@ -61,7 +61,7 @@ connect_client(const char *name)
     hints.ai_family = PF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
 
-    ret = getaddrinfo(name, "4711", &hints, &res0);
+    ret = getaddrinfo(name, port, &hints, &res0);
     if (ret)
 	errx(1, "error resolving %s", name);
 
@@ -163,12 +163,24 @@ goodbye(struct client *client)
     return GSMERR_OK;
 }
 
+static int
+get_targetname(struct client *client, 
+	       char **target)
+{
+    put32(client, eGetTargetName);
+    retstring(client, *target);
+    return GSMERR_OK;
+}
+
 static int version_flag;
 static int help_flag;
 static getarg_strings principals;
+static getarg_strings slaves;
 
 struct getargs args[] = {
     { "principals", 0,  arg_strings,	&principals,	"Test principal",
+      NULL },
+    { "slaves", 0,  arg_strings,	&slaves,	"Slaves",
       NULL },
     { "version", 0,  arg_flag,		&version_flag,	"Print version",
       NULL },
@@ -190,6 +202,10 @@ int
 main(int argc, char **argv)
 {
     int optidx= 0;
+    char *user;
+    char *password;
+    char *slavename;
+    char *slaveport;
 
     setprogname (argv[0]);
 
@@ -207,23 +223,36 @@ main(int argc, char **argv)
     if (optidx != argc)
 	usage (1);
 
-    if (principals.num_strings > 0) {
+    if (principals.num_strings == 0)
+	errx(1, "no principals");
+
+    user = estrdup(principals.strings[0]);
+    password = strchr(user, ':');
+    if (password == NULL)
+	errx(1, "password missing from %s", user);
+    *password++ = 0;
+	
+
+    if (slaves.num_strings == 0)
+	errx(1, "no principals");
+
+    slavename = estrdup(slaves.strings[0]);
+    slaveport = strchr(slavename, ':');
+    if (slaveport == NULL)
+	errx(1, "port missing from %s", slavename);
+    *slaveport++ = 0;
+
+    {
 	struct client *c;
 	int32_t hCred, delegCred;
 	int32_t clientC, serverC;
-	const char *target = "host/nutcracker.it.su.se@SU.SE";
 	krb5_data itoken, otoken;
+	char *target;
 
-	char *user = strdup(principals.strings[0]);
-	char *password = strchr(user, ':');
-
-	if (password == NULL)
-	    errx(1, "password missing from %s", user);
-	*password++ = 0;
-	
 	krb5_data_zero(&itoken);
-	c = connect_client("localhost");
+	c = connect_client(slavename, slaveport);
 	acquire_cred(c, user, password, 1, &hCred);
+	get_targetname(c, &target);
 	init_sec_context(c, &clientC, &hCred, 
 			 GSS_C_DELEG_FLAG|GSS_C_MUTUAL_FLAG, 
 			 target, &itoken, &otoken);
