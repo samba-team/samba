@@ -262,19 +262,12 @@ failed:
 
 static void smb2srv_tcon_send(struct smb2srv_request *req, union smb_tcon *io)
 {
-	NTSTATUS status;
-
 	if (NT_STATUS_IS_ERR(req->status)) {
 		smb2srv_send_error(req, req->status);
 		return;
 	}
 
-	status = smb2srv_setup_reply(req, 0x10, False, 0);
-	if (!NT_STATUS_IS_OK(status)) {
-		smbsrv_terminate_connection(req->smb_conn, nt_errstr(status));
-		talloc_free(req);
-		return;
-	}
+	SMB2SRV_CHECK(smb2srv_setup_reply(req, 0x10, False, 0));
 
 	SBVAL(req->out.hdr,	SMB2_HDR_TID,	io->smb2.out.tid);
 
@@ -289,28 +282,13 @@ static void smb2srv_tcon_send(struct smb2srv_request *req, union smb_tcon *io)
 void smb2srv_tcon_recv(struct smb2srv_request *req)
 {
 	union smb_tcon *io;
-	NTSTATUS status;
 
-	if (req->in.body_size < 0x08) {
-		smb2srv_send_error(req,  NT_STATUS_FOOBAR);
-		return;
-	}
-
-	io = talloc(req, union smb_tcon);
-	if (!io) {
-		smbsrv_terminate_connection(req->smb_conn, nt_errstr(NT_STATUS_NO_MEMORY));
-		talloc_free(req);
-		return;
-	}
+	SMB2SRV_CHECK_BODY_SIZE(req, 0x08, True);
+	SMB2SRV_TALLOC_IO_PTR(io, union smb_tcon);
 
 	io->smb2.level		= RAW_TCON_SMB2;
 	io->smb2.in.unknown1	= SVAL(req->in.body, 0x02);
-	status = smb2_pull_o16s16_string(&req->in, io, req->in.body+0x04, &io->smb2.in.path);
-	if (!NT_STATUS_IS_OK(status)) {
-		smbsrv_terminate_connection(req->smb_conn, nt_errstr(status));
-		talloc_free(req);
-		return;
-	}
+	SMB2SRV_CHECK(smb2_pull_o16s16_string(&req->in, io, req->in.body+0x04, &io->smb2.in.path));
 
 	req->status = smb2srv_tcon_backend(req, io);
 
@@ -354,10 +332,7 @@ void smb2srv_tdis_recv(struct smb2srv_request *req)
 {
 	uint16_t _pad;
 
-	if (req->in.body_size < 0x04) {
-		smb2srv_send_error(req,  NT_STATUS_FOOBAR);
-		return;
-	}
+	SMB2SRV_CHECK_BODY_SIZE(req, 0x04, False);
 
 	_pad	= SVAL(req->in.body, 0x02);
 
