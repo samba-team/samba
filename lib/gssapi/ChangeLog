@@ -1,3 +1,7 @@
+2006-07-01  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* mech/gss_set_cred_option.c: fix argument to gss_release_cred
+	
 2006-06-30  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* krb5/init_sec_context.c: Make work on compilers that are
