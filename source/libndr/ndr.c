@@ -151,6 +151,7 @@ DATA_BLOB ndr_push_blob(struct ndr_push *ndr)
 	DATA_BLOB blob;
 	blob.data = ndr->data;
 	blob.length = ndr->offset;
+	blob.free = NULL;
 	if (ndr->alloc_size > ndr->offset) {
 		ndr->data[ndr->offset] = 0;
 	}
