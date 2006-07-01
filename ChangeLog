@@ -3,6 +3,8 @@
 	* appl/gssmask/gssmaestro.c: externalize slave handling, add
 	GetTargetName glue
 
+	* appl/gssmask/gssmaestro.c: externalize principal/password handling
+
 	* lib/krb5/principal.c (krb5_parse_name): set *principal to NULL
 	the first thing we do, so that on failure its set to a known value
 
