@@ -876,9 +876,10 @@ static struct nt_user_token *create_local_nt_token(TALLOC_CTX *mem_ctx,
 		}
 		else {
 			status = add_builtin_administrators( result );
-			if ( !NT_STATUS_IS_OK(status) ) {			
-				TALLOC_FREE(result);
-				return NULL;
+			if ( !NT_STATUS_IS_OK(status) ) {
+				/* just log a complaint but do not fail */
+				DEBUG(3,("create_local_nt_token: failed to check for local Administrators"
+					" membership (%s)\n", nt_errstr(status)));
 			}			
 		}		
 	}
