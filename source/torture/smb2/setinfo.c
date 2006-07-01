@@ -89,6 +89,7 @@ BOOL torture_smb2_setinfo(struct torture_context *torture)
 		printf("(%s) %s - %s (should be %s)\n", __location__, #call, \
 			nt_errstr(status), nt_errstr(rightstatus)); \
 		ret = False; \
+		goto done; \
 	} \
 	} while (0)
 
@@ -99,6 +100,8 @@ BOOL torture_smb2_setinfo(struct torture_context *torture)
 		status2 = smb2_getinfo_file(tree, mem_ctx, &finfo2); \
 		if (!NT_STATUS_IS_OK(status2)) { \
 			printf("(%s) %s - %s\n", __location__, #call, nt_errstr(status2)); \
+		ret = False; \
+		goto done; \
 		} \
 	}} while (0)
 
@@ -109,6 +112,8 @@ BOOL torture_smb2_setinfo(struct torture_context *torture)
 		       call_name, #stype, #field, \
 		       (uint_t)value, (uint_t)finfo2.stype.out.field); \
 		torture_smb2_all_info(tree, handle); \
+		ret = False; \
+		goto done; \
 	}} while (0)
 
 #define CHECK_TIME(call, stype, field, value) do { \
@@ -121,6 +126,8 @@ BOOL torture_smb2_setinfo(struct torture_context *torture)
 		printf("\t%s", timestring(mem_ctx, value)); \
 		printf("\t%s\n", nt_time_string(mem_ctx, finfo2.stype.out.field)); \
 		torture_smb2_all_info(tree, handle); \
+		ret = False; \
+		goto done; \
 	}} while (0)
 
 #define CHECK_STR(call, stype, field, value) do { \
@@ -131,6 +138,8 @@ BOOL torture_smb2_setinfo(struct torture_context *torture)
 		        value, \
 			finfo2.stype.out.field); \
 		torture_smb2_all_info(tree, handle); \
+		ret = False; \
+		goto done; \
 	}} while (0)
 
 #define CHECK_STATUS(status, correct) do { \
