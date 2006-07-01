@@ -237,7 +237,7 @@ int main(int argc, char **argv)
 	struct pdb_methods *pdb;
 	poptContext pc;
 	static char *backend = NULL;
-	static char *unix_user = "nobody";
+	static const char *unix_user = "nobody";
 	struct poptOption long_options[] = {
 		{"username", 'u', POPT_ARG_STRING, &unix_user, 0, "Unix user to use for testing", "USERNAME" },
 		{"backend", 'b', POPT_ARG_STRING, &backend, 0, "Backend to use if not default", "BACKEND[:SETTINGS]" },
