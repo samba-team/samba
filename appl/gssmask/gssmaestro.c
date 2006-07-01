@@ -165,8 +165,11 @@ goodbye(struct client *client)
 
 static int version_flag;
 static int help_flag;
+static getarg_strings principals;
 
 struct getargs args[] = {
+    { "principals", 0,  arg_strings,	&principals,	"Test principal",
+      NULL },
     { "version", 0,  arg_flag,		&version_flag,	"Print version",
       NULL },
     { "help",	 0,  arg_flag,		&help_flag,	NULL,
@@ -204,17 +207,23 @@ main(int argc, char **argv)
     if (optidx != argc)
 	usage (1);
 
-    {
+    if (principals.num_strings > 0) {
 	struct client *c;
 	int32_t hCred, delegCred;
 	int32_t clientC, serverC;
-	const char *user = "lha/test@SU.SE";
 	const char *target = "host/nutcracker.it.su.se@SU.SE";
 	krb5_data itoken, otoken;
 
+	char *user = strdup(principals.strings[0]);
+	char *password = strchr(user, ':');
+
+	if (password == NULL)
+	    errx(1, "password missing from %s", user);
+	*password++ = 0;
+	
 	krb5_data_zero(&itoken);
 	c = connect_client("localhost");
-	acquire_cred(c, user, "nothere", 1, &hCred);
+	acquire_cred(c, user, password, 1, &hCred);
 	init_sec_context(c, &clientC, &hCred, 
 			 GSS_C_DELEG_FLAG|GSS_C_MUTUAL_FLAG, 
 			 target, &itoken, &otoken);
