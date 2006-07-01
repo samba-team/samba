@@ -1720,7 +1720,7 @@ struct user_search {
 static BOOL next_entry_users(struct pdb_search *s,
 			     struct samr_displayentry *entry)
 {
-	struct user_search *state = s->private_data;
+	struct user_search *state = (struct user_search *)s->private_data;
 	struct samu *user = NULL;
 
  next:
@@ -1795,7 +1795,7 @@ struct group_search {
 static BOOL next_entry_groups(struct pdb_search *s,
 			      struct samr_displayentry *entry)
 {
-	struct group_search *state = s->private_data;
+	struct group_search *state = (struct group_search *)s->private_data;
 	uint32 rid;
 	GROUP_MAP *map = &state->groups[state->current_group];
 
@@ -1813,7 +1813,8 @@ static BOOL next_entry_groups(struct pdb_search *s,
 
 static void search_end_groups(struct pdb_search *search)
 {
-	struct group_search *state = search->private_data;
+	struct group_search *state =
+		(struct group_search *)search->private_data;
 	SAFE_FREE(state->groups);
 }
 
