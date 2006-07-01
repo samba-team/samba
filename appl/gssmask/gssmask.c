@@ -501,7 +501,7 @@ HandleOP(AcquireCreds)
 {
     char *name, *password;
     int32_t gsm_error, flags, handle = 0;
-    krb5_principal principal;
+    krb5_principal principal = NULL;
     krb5_get_init_creds_opt *opt;
     krb5_error_code ret;
 
@@ -585,6 +585,8 @@ HandleOP(GetTargetName)
 {
     if (targetname)
 	putstring(c, targetname);
+    else
+	putstring(c, "");
     return 0;
 }
 
