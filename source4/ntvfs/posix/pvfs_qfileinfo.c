@@ -409,8 +409,8 @@ NTSTATUS pvfs_qfileinfo(struct ntvfs_module_context *ntvfs,
 
 	case RAW_FILEINFO_SMB2_ALL_INFORMATION:
 		if (pvfs_delete_on_close_set(pvfs, h, NULL, NULL)) {
-			info->all_info.out.delete_pending = 1;
-			info->all_info.out.nlink--;
+			info->all_info2.out.delete_pending = 1;
+			info->all_info2.out.nlink--;
 		}
 		info->all_info2.out.position	= h->position;
 		info->all_info2.out.access_mask	= f->access_mask;
