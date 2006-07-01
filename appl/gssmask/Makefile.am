@@ -2,8 +2,10 @@
 
 include $(top_srcdir)/Makefile.am.common
 
-noinst_PROGRAMS = gssmask
+noinst_PROGRAMS = gssmask gssmaestro
 
-gssmask_SOURCES = gssmask.c protocol.h
+gssmask_SOURCES = gssmask.c common.c common.h protocol.h
+
+gssmaestro_SOURCES = gssmaestro.c common.c common.h protocol.h
 
 LDADD = $(top_builddir)/lib/gssapi/libgssapi.la

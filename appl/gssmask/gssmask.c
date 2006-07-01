@@ -31,21 +31,8 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "common.h"
 RCSID("$Id$");
-
-#include <sys/param.h>
-
-#include <krb5.h>
-#include <gssapi.h>
-#include <unistd.h>
-
-#include <roken.h>
-#include <getarg.h>
-
-#include "protocol.h"
 
 /*
  *
@@ -61,7 +48,7 @@ struct handle {
 };
 
 struct client {
-    krb5_storage *master;
+    krb5_storage *sock;
     krb5_storage *logging;
     char *moniker;
     int32_t nHandle;
@@ -73,25 +60,6 @@ struct client {
 FILE *logfile;
 static char *targetname;
 krb5_context context;
-
-/*
- *
- */
-
-static krb5_error_code
-store_string(krb5_storage *sp, char *str)
-{
-    size_t len = strlen(str) + 1;
-    krb5_error_code ret;
-
-    ret = krb5_store_int32(sp, len);
-    if (ret)
-	return ret;
-    ret = krb5_storage_write(sp, str, len);
-    if (ret != len)
-	return EINVAL;
-    return 0;
-}
 
 /*
  *
@@ -298,43 +266,6 @@ acquire_cred(struct client *c,
 
 #define HandleOP(h) \
 handle##h(enum gssMaggotOp op, struct client *c)
-
-#define ret32(_client, num)					\
-    do {							\
-        if (krb5_ret_int32((_client)->master, &(num)) != 0)	\
-	    errx(1, "krb5_ret_int32 " #num);		\
-    } while(0)
-
-#define retdata(_client, data)					\
-    do {							\
-        if (krb5_ret_data((_client)->master, &(data)) != 0)	\
-	    errx(1, "krb5_ret_data " #data);		\
-    } while(0)
-
-#define retstring(_client, data)					\
-    do {							\
-        if (krb5_ret_string((_client)->master, &(data)) != 0)	\
-	    errx(1, "krb5_ret_data " #data);		\
-    } while(0)
-
-
-#define put32(_client, num)					\
-    do {							\
-        if (krb5_store_int32((_client)->master, num) != 0)	\
-	    errx(1, "krb5_store_int32 " #num);	\
-    } while(0)
-
-#define putdata(_client, data)					\
-    do {							\
-        if (krb5_store_data((_client)->master, data) != 0)	\
-	    errx(1, "krb5_store_data " #data);	\
-    } while(0)
-
-#define putstring(_client, str)					\
-    do {							\
-        if (store_string((_client)->master, str) != 0)		\
-	    errx(1, "krb5_store_str " #str);			\
-    } while(0)
 
 /*
  *
@@ -824,8 +755,8 @@ handleServer(int fd)
 		    servername, sizeof(servername), NULL, 0, NI_NUMERICHOST);
     }
 
-    c.master = krb5_storage_from_fd(fd);
-    if (c.master == NULL)
+    c.sock = krb5_storage_from_fd(fd);
+    if (c.sock == NULL)
 	errx(1, "krb5_storage_from_fd");
     
     close(fd);
@@ -847,7 +778,7 @@ handleServer(int fd)
 	if ((handler->func)(handler->op, &c))
 	    break;
     }
-    krb5_storage_free(c.master);
+    krb5_storage_free(c.sock);
     if (c.logging)
 	krb5_storage_free(c.logging);
 }
