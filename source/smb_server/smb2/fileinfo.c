@@ -255,7 +255,22 @@ static void smb2srv_setinfo_send(struct ntvfs_request *ntvfs)
 
 static NTSTATUS smb2srv_setinfo_file(struct smb2srv_setinfo_op *op, uint8_t smb2_level)
 {
-	return NT_STATUS_FOOBAR;
+	union smb_setfileinfo *io;
+	NTSTATUS status;
+
+	io = talloc(op, union smb_setfileinfo);
+	NT_STATUS_HAVE_NO_MEMORY(io);
+
+	/* the levels directly map to the passthru levels */
+	io->generic.level		= smb2_level + 1000;
+	io->generic.in.file.ntvfs	= op->info->in.file.ntvfs;
+
+	status = smbsrv_pull_passthru_sfileinfo(io, io->generic.level, io,
+						&op->info->in.blob,
+						STR_UNICODE, NULL);
+	NT_STATUS_NOT_OK_RETURN(status);
+
+	return ntvfs_setfileinfo(op->req->ntvfs, io);
 }
 
 static NTSTATUS smb2srv_setinfo_fs(struct smb2srv_setinfo_op *op, uint8_t smb2_level)
