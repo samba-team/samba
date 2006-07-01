@@ -516,9 +516,10 @@ static BOOL parse_share_modes(TDB_DATA dbuf, struct share_mode_lock *lck)
 			smb_panic("PANIC: parse_share_modes: buffer too short.\n");
 		}
 				  
-		lck->share_modes = talloc_memdup(lck, dbuf.dptr+sizeof(*data),
-						 lck->num_share_modes *
-						 sizeof(struct share_mode_entry));
+		lck->share_modes = (struct share_mode_entry *)
+			talloc_memdup(lck, dbuf.dptr+sizeof(*data),
+				      lck->num_share_modes *
+				      sizeof(struct share_mode_entry));
 
 		if (lck->share_modes == NULL) {
 			smb_panic("talloc failed\n");
@@ -635,7 +636,7 @@ static TDB_DATA unparse_share_modes(struct share_mode_lock *lck)
 		delete_token_size +
 		sp_len + 1 +
 		strlen(lck->filename) + 1;
-	result.dptr = talloc_size(lck, result.dsize);
+	result.dptr = TALLOC_ARRAY(lck, char, result.dsize);
 
 	if (result.dptr == NULL) {
 		smb_panic("talloc failed\n");
@@ -838,7 +839,7 @@ BOOL rename_share_filename(struct share_mode_lock *lck,
 	msg_len = MSG_FILE_RENAMED_MIN_SIZE + sp_len + 1 + fn_len + 1;
 
 	/* Set up the name changed message. */
-	frm = TALLOC(lck, msg_len);
+	frm = TALLOC_ARRAY(lck, char, msg_len);
 	if (!frm) {
 		return False;
 	}
@@ -1305,5 +1306,5 @@ int share_mode_forall(void (*fn)(const struct share_mode_entry *, const char *, 
 {
 	if (tdb == NULL)
 		return 0;
-	return tdb_traverse(tdb, traverse_fn, fn);
+	return tdb_traverse(tdb, traverse_fn, (void *)fn);
 }
