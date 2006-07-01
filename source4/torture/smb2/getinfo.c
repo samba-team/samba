@@ -113,13 +113,17 @@ static BOOL torture_smb2_fileinfo(struct smb2_tree *tree)
 		file_levels[i].finfo.generic.in.file.handle = hfile;
 		file_levels[i].fstatus = smb2_getinfo_file(tree, tree, &file_levels[i].finfo);
 		if (!NT_STATUS_IS_OK(file_levels[i].fstatus)) {
-			printf("%s failed on file - %s\n", file_levels[i].name, nt_errstr(file_levels[i].fstatus));
+			printf("(%s) %s failed on file - %s\n", __location__,
+				file_levels[i].name, nt_errstr(file_levels[i].fstatus));
+			goto failed;
 		}
 		file_levels[i].dinfo.generic.level = file_levels[i].level;
 		file_levels[i].dinfo.generic.in.file.handle = hdir;
 		file_levels[i].dstatus = smb2_getinfo_file(tree, tree, &file_levels[i].dinfo);
 		if (!NT_STATUS_IS_OK(file_levels[i].dstatus)) {
-			printf("%s failed on dir - %s\n", file_levels[i].name, nt_errstr(file_levels[i].dstatus));
+			printf("(%s) %s failed on dir - %s\n", __location__,
+				file_levels[i].name, nt_errstr(file_levels[i].dstatus));
+			goto failed;
 		}
 	}
 
@@ -152,6 +156,7 @@ static BOOL torture_smb2_fsinfo(struct smb2_tree *tree)
 		fs_levels[i].status = smb2_getinfo_fs(tree, tree, &fs_levels[i].info);
 		if (!NT_STATUS_IS_OK(fs_levels[i].status)) {
 			printf("%s failed - %s\n", fs_levels[i].name, nt_errstr(fs_levels[i].status));
+			return False;
 		}
 	}
 
