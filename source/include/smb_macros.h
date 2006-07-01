@@ -376,6 +376,6 @@ do { \
 } while (0)
 
 #define ADD_TO_LARGE_ARRAY(mem_ctx, type, elem, array, num, size) \
-	add_to_large_array((mem_ctx), sizeof(type), &(elem), (void **)(array), (num), (size));
+	add_to_large_array((mem_ctx), sizeof(type), &(elem), (void *)(array), (num), (size));
 
 #endif /* _SMB_MACROS_H */

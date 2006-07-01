@@ -828,10 +828,11 @@ ADS_STATUS ads_search(ADS_STRUCT *ads, void **res,
  * @param attrs Attributes to retrieve
  * @return status of search
  **/
-ADS_STATUS ads_search_dn(ADS_STRUCT *ads, void **res, 
+ADS_STATUS ads_search_dn(ADS_STRUCT *ads, void *_res, 
 			 const char *dn, 
 			 const char **attrs)
 {
+	void **res = (void **)_res;
 	return ads_do_search(ads, dn, LDAP_SCOPE_BASE, "(objectclass=*)", attrs, res);
 }
 
@@ -970,8 +971,9 @@ ADS_MODLIST ads_init_mods(TALLOC_CTX *ctx)
 */
 static ADS_STATUS ads_modlist_add(TALLOC_CTX *ctx, ADS_MODLIST *mods, 
 				  int mod_op, const char *name, 
-				  const void **invals)
+				  const void *_invals)
 {
+	const void **invals = (const void **)_invals;
 	int curmod;
 	LDAPMod **modlist = (LDAPMod **) *mods;
 	struct berval **ber_values = NULL;
@@ -1034,8 +1036,7 @@ ADS_STATUS ads_mod_str(TALLOC_CTX *ctx, ADS_MODLIST *mods,
 
 	if (!val)
 		return ads_modlist_add(ctx, mods, LDAP_MOD_DELETE, name, NULL);
-	return ads_modlist_add(ctx, mods, LDAP_MOD_REPLACE, name, 
-			       (const void **) values);
+	return ads_modlist_add(ctx, mods, LDAP_MOD_REPLACE, name, values);
 }
 
 /**

@@ -1468,12 +1468,22 @@ struct byte_range_lock *brl_get_locks(TALLOC_CTX *mem_ctx,
 		/* Go through and ensure all entries exist - remove any that don't. */
 		/* Makes the lockdb self cleaning at low cost. */
 
-		if (!validate_lock_entries(&br_lck->num_locks, (struct lock_struct **)&br_lck->lock_data)) {
+		struct lock_struct *locks =
+			(struct lock_struct *)br_lck->lock_data;
+
+		if (!validate_lock_entries(&br_lck->num_locks, &locks)) {
 			tdb_chainunlock(tdb, key);
 			SAFE_FREE(br_lck->lock_data);
 			TALLOC_FREE(br_lck);
 			return NULL;
 		}
+
+		/*
+		 * validate_lock_entries might have changed locks. We can't
+		 * use a direct pointer here because otherwise gcc warnes
+		 * about strict aliasing rules being violated.
+		 */
+		br_lck->lock_data = locks;
 
 		/* Mark the lockdb as "clean" as seen from this open file. */
 		fsp->lockdb_clean = True;
