@@ -215,8 +215,7 @@ static NTSTATUS ntvfs_map_open_finish(struct ntvfs_module_context *ntvfs,
 		io->smb2.out.change_time	= io2->generic.out.change_time;
 		io->smb2.out.alloc_size		= io2->generic.out.alloc_size;
 		io->smb2.out.size		= io2->generic.out.size;
-		/*io->smb2.out.file_attr	= io2->generic.out.attrib; would this be correct? */
-		io->smb2.out.file_attr		= 0;
+		io->smb2.out.file_attr		= io2->generic.out.attrib;
 		io->smb2.out._pad		= 0;
 		io->smb2.out.blob		= data_blob(NULL, 0);
 		break;
