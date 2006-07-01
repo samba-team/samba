@@ -176,6 +176,8 @@ o   Gerald (Jerry) Carter <jerry@samba.org>
     * Fix a crash in the printer publishing code when adding a 
       new printer via the APW.
     * Fix broken compile of unsupported smbwrapper utility.
+    * BUG 3905: Fix smbd startup failure caused by a failure to
+      create an NT token for the guest account.
 
 
 o   Guenther Deschner <gd@samba.org>
