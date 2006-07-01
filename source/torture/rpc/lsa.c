@@ -1755,9 +1755,7 @@ static BOOL test_QueryInfoPolicy2(struct dcerpc_pipe *p,
 	return ret;
 }
 
-static BOOL test_GetUserName(struct dcerpc_pipe *p, 
-				  TALLOC_CTX *mem_ctx, 
-				  struct policy_handle *handle)
+static BOOL test_GetUserName(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 {
 	struct lsa_GetUserName r;
 	NTSTATUS status;
@@ -1766,8 +1764,8 @@ static BOOL test_GetUserName(struct dcerpc_pipe *p,
 
 	printf("\nTesting GetUserName\n");
 
-	r.in.system_name = "\\";	
-	r.in.account_name = NULL;	
+	r.in.system_name = "\\";
+	r.in.account_name = NULL;
 	r.in.authority_name = &authority_name_p;
 	authority_name_p.string = NULL;
 
@@ -1873,10 +1871,6 @@ BOOL torture_rpc_lsa(struct torture_context *torture)
 			ret = False;
 		}
 		
-		if (!test_GetUserName(p, mem_ctx, handle)) {
-			ret = False;
-		}
-		
 #if 0
 		if (!test_Delete(p, mem_ctx, handle)) {
 			ret = False;
@@ -1894,6 +1888,34 @@ BOOL torture_rpc_lsa(struct torture_context *torture)
 		if (!test_many_LookupSids(p, mem_ctx, handle)) {
 			ret = False;
 		}
+	}
+
+	if (!test_GetUserName(p, mem_ctx)) {
+		ret = False;
+	}
+		
+	talloc_free(mem_ctx);
+
+	return ret;
+}
+
+BOOL torture_rpc_lsa_get_user(struct torture_context *torture)
+{
+        NTSTATUS status;
+        struct dcerpc_pipe *p;
+	TALLOC_CTX *mem_ctx;
+	BOOL ret = True;
+
+	mem_ctx = talloc_init("torture_rpc_lsa_get_user");
+
+	status = torture_rpc_connection(mem_ctx, &p, &dcerpc_table_lsarpc);
+	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(mem_ctx);
+		return False;
+	}
+
+	if (!test_GetUserName(p, mem_ctx)) {
+		ret = False;
 	}
 		
 	talloc_free(mem_ctx);
