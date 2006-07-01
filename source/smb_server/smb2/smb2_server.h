@@ -116,7 +116,7 @@ struct smbsrv_request;
 
 #define SMB2SRV_CHECK_FILE_HANDLE(handle) do { \
 	if (!handle) { \
-		smb2srv_send_error(req, NT_STATUS_NOT_FOUND); \
+		smb2srv_send_error(req, NT_STATUS_FILE_CLOSED); \
 		return; \
 	} \
 } while (0)

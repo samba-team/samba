@@ -220,7 +220,7 @@ BOOL torture_smb2_connect(struct torture_context *torture)
 	}
 
 	status = smb2_util_close(tree, h1);
-	if (!NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_FILE_CLOSED)) {
 		printf("close should have closed the handle - %s\n", nt_errstr(status));
 		return False;
 	}
