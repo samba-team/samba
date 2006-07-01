@@ -204,9 +204,9 @@ void smb2srv_reply_smb_negprot(struct smbsrv_request *smb_req)
 	SSVAL(req->in.hdr, SMB2_HDR_PAD1,    0);
 	SIVAL(req->in.hdr, SMB2_HDR_STATUS,  0);
 	SSVAL(req->in.hdr, SMB2_HDR_OPCODE,  SMB2_OP_NEGPROT);
-	SSVAL(req->in.hdr, SMB2_HDR_PAD2,    0);
+	SSVAL(req->in.hdr, SMB2_HDR_UNKNOWN1,0);
 	SIVAL(req->in.hdr, SMB2_HDR_FLAGS,   0);
-	SIVAL(req->in.hdr, SMB2_HDR_UNKNOWN, 0);
+	SIVAL(req->in.hdr, SMB2_HDR_UNKNOWN2,0);
 	SBVAL(req->in.hdr, SMB2_HDR_SEQNUM,  0);
 	SIVAL(req->in.hdr, SMB2_HDR_PID,     0);
 	SIVAL(req->in.hdr, SMB2_HDR_TID,     0);

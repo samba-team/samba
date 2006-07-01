@@ -119,16 +119,21 @@ failed:
 
 static void smb2srv_sesssetup_send(struct smb2srv_request *req, union smb_sesssetup *io)
 {
-	NTSTATUS status;
+	uint16_t unknown1;
 
-	if (NT_STATUS_IS_ERR(req->status) && !NT_STATUS_EQUAL(req->status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+	if (NT_STATUS_IS_OK(req->status)) {
+		unknown1 = 0x0003;
+	} else if (NT_STATUS_EQUAL(req->status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+		unknown1 = 0x0002;
+	} else {
 		smb2srv_send_error(req, req->status);
 		return;
 	}
 
 	SMB2SRV_CHECK(smb2srv_setup_reply(req, 0x08, True, io->smb2.out.secblob.length));
 
-	SBVAL(req->out.hdr, SMB2_HDR_UID,    io->smb2.out.uid);
+	SSVAL(req->out.hdr, SMB2_HDR_UNKNOWN1,	unknown1);
+	SBVAL(req->out.hdr, SMB2_HDR_UID,	io->smb2.out.uid);
 
 	SSVAL(req->out.body, 0x02, io->smb2.out._pad);
 	SMB2SRV_CHECK(smb2_push_o16s16_blob(&req->out, 0x04, io->smb2.out.secblob));
@@ -139,8 +144,6 @@ static void smb2srv_sesssetup_send(struct smb2srv_request *req, union smb_sessse
 void smb2srv_sesssetup_recv(struct smb2srv_request *req)
 {
 	union smb_sesssetup *io;
-	NTSTATUS status;
-
 
 	SMB2SRV_CHECK_BODY_SIZE(req, 0x18, True);
 	SMB2SRV_TALLOC_IO_PTR(io, union smb_sesssetup);
@@ -170,8 +173,6 @@ static NTSTATUS smb2srv_logoff_backend(struct smb2srv_request *req)
 
 static void smb2srv_logoff_send(struct smb2srv_request *req)
 {
-	NTSTATUS status;
-
 	if (NT_STATUS_IS_ERR(req->status)) {
 		smb2srv_send_error(req, req->status);
 		return;
