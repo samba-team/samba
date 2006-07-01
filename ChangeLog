@@ -1,4 +1,12 @@
+2006-07-01  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* appl/gssmask: break out common function; add gssmaestro (that
+	only tests one context for now)
+
 2006-06-30  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/store_fd.c (krb5_storage_from_fd): don't leak fd on
+	malloc failure
 
 	* appl/gssmask/gssmask.c: split out fetching of credentials for
 	easier reuse for pk-init testing
