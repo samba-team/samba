@@ -69,9 +69,9 @@ NTSTATUS smb2srv_setup_reply(struct smb2srv_request *req, uint16_t body_fixed_si
 	SSVAL(req->out.hdr, SMB2_HDR_PAD1,    0);
 	SIVAL(req->out.hdr, SMB2_HDR_STATUS,  NT_STATUS_V(req->status));
 	SSVAL(req->out.hdr, SMB2_HDR_OPCODE,  SVAL(req->in.hdr, SMB2_HDR_OPCODE));
-	SSVAL(req->out.hdr, SMB2_HDR_PAD2,    0);
+	SSVAL(req->out.hdr, SMB2_HDR_UNKNOWN1,0x0001);
 	SIVAL(req->out.hdr, SMB2_HDR_FLAGS,   0x00000001);
-	SIVAL(req->out.hdr, SMB2_HDR_UNKNOWN, 0);
+	SIVAL(req->out.hdr, SMB2_HDR_UNKNOWN2,0);
 	SBVAL(req->out.hdr, SMB2_HDR_SEQNUM,  req->seqnum);
 	SIVAL(req->out.hdr, SMB2_HDR_PID,     IVAL(req->in.hdr, SMB2_HDR_PID));
 	SIVAL(req->out.hdr, SMB2_HDR_TID,     IVAL(req->in.hdr, SMB2_HDR_TID));
