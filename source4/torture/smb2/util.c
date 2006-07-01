@@ -147,15 +147,16 @@ static NTSTATUS smb2_create_complex(struct smb2_tree *tree, const char *fname,
 	setfile.generic.level = RAW_SFILEINFO_BASIC_INFORMATION;
 	setfile.generic.in.file.handle = *handle;
 
-	setfile.basic_info.in.create_time = t +  9*30*24*60*60;
-	setfile.basic_info.in.access_time = t +  6*30*24*60*60;
-	setfile.basic_info.in.write_time  = t +  3*30*24*60*60;
-	setfile.basic_info.in.change_time = t +  1*30*24*60*60;
+	unix_to_nt_time(&setfile.basic_info.in.create_time, t + 9*30*24*60*60);
+	unix_to_nt_time(&setfile.basic_info.in.access_time, t + 6*30*24*60*60);
+	unix_to_nt_time(&setfile.basic_info.in.write_time,  t + 3*30*24*60*60);
+	unix_to_nt_time(&setfile.basic_info.in.change_time, t + 1*30*24*60*60);
 	setfile.basic_info.in.attrib      = FILE_ATTRIBUTE_NORMAL;
 
 	status = smb2_setinfo_file(tree, &setfile);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Failed to setup file times - %s\n", nt_errstr(status));
+		return status;
 	}
 
 	/* make sure all the timestamps aren't the same */
@@ -165,19 +166,28 @@ static NTSTATUS smb2_create_complex(struct smb2_tree *tree, const char *fname,
 	status = smb2_getinfo_file(tree, tree, &fileinfo);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Failed to query file times - %s\n", nt_errstr(status));
+		return status;
+		
 	}
 
-	if (setfile.basic_info.in.create_time != fileinfo.basic_info.out.create_time) {
-		printf("create_time not setup correctly\n");
-	}
-	if (setfile.basic_info.in.access_time != fileinfo.basic_info.out.access_time) {
-		printf("access_time not setup correctly\n");
-	}
-	if (setfile.basic_info.in.write_time != fileinfo.basic_info.out.write_time) {
-		printf("write_time not setup correctly\n");
-	}
-	
-	return NT_STATUS_OK;
+#define CHECK_TIME(field) do {\
+	if (setfile.basic_info.in.field != fileinfo.basic_info.out.field) { \
+		printf("(%s) " #field " not setup correctly: %s(%llu) => %s(%llu)\n", \
+			__location__, \
+			nt_time_string(tree, setfile.basic_info.in.field), \
+			setfile.basic_info.in.field, \
+			nt_time_string(tree, fileinfo.basic_info.out.field), \
+			fileinfo.basic_info.out.field); \
+		status = NT_STATUS_INVALID_PARAMETER; \
+	} \
+} while (0)
+
+	CHECK_TIME(create_time);
+	CHECK_TIME(access_time);
+	CHECK_TIME(write_time);
+	CHECK_TIME(change_time);
+
+	return status;
 }
 
 /*
