@@ -82,7 +82,7 @@ static BOOL test_valid_request(TALLOC_CTX *mem_ctx, struct smb2_tree *tree)
 
 	lck.in.file.handle.data[0] +=1;
 	status = smb2_lock(tree, &lck);
-	CHECK_STATUS(status, NT_STATUS_NOT_FOUND);
+	CHECK_STATUS(status, NT_STATUS_FILE_CLOSED);
 	lck.in.file.handle.data[0] -=1;
 
 	lck.in.unknown1		= 0x0001;
