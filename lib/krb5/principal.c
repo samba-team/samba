@@ -110,6 +110,8 @@ krb5_parse_name(krb5_context context,
     char c;
     int got_realm = 0;
   
+    *principal = NULL;
+
     /* count number of component */
     ncomp = 1;
     for(p = name; *p; p++){
