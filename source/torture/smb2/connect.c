@@ -203,9 +203,21 @@ BOOL torture_smb2_connect(struct torture_context *torture)
 
 	h1 = torture_smb2_create(tree, "test9.dat");
 	h2 = torture_smb2_create(tree, "test9.dat");
-	torture_smb2_write(tree, h1);
-	torture_smb2_close(tree, h1);
-	torture_smb2_close(tree, h2);
+	status = torture_smb2_write(tree, h1);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("Write failed - %s\n", nt_errstr(status));
+		return False;
+	}
+	status = torture_smb2_close(tree, h1);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("Close failed - %s\n", nt_errstr(status));
+		return False;
+	}
+	status = torture_smb2_close(tree, h2);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("Close failed - %s\n", nt_errstr(status));
+		return False;
+	}
 
 	status = smb2_util_close(tree, h1);
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
