@@ -253,6 +253,11 @@ BOOL torture_samba3_badpath(struct torture_context *torture)
 	status = smbcli_chkpath(cli_dos->tree, "..");
 	CHECK_STATUS(status, NT_STATUS_DOS(ERRDOS, ERRinvalidpath));
 
+	status = smbcli_chkpath(cli_nt->tree, ".");
+	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_INVALID);
+	status = smbcli_chkpath(cli_dos->tree, ".");
+	CHECK_STATUS(status, NT_STATUS_DOS(ERRDOS, ERRbadpath));
+
 	status = smbcli_chkpath(cli_nt->tree, "\t");
 	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_INVALID);
 	status = smbcli_chkpath(cli_dos->tree, "\t");

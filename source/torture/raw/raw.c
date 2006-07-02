@@ -54,6 +54,7 @@ NTSTATUS torture_raw_init(void)
 	register_torture_op("RAW-COMPOSITE", torture_raw_composite);
 	register_torture_op("RAW-SAMBA3HIDE", torture_samba3_hide);
 	register_torture_op("RAW-SAMBA3CHECKFSP", torture_samba3_checkfsp);
+	register_torture_op("RAW-SAMBA3BADPATH", torture_samba3_badpath);
 	register_torture_op("SCAN-EAMAX", torture_max_eas);
 
 	return NT_STATUS_OK;
