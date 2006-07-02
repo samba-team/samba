@@ -91,7 +91,7 @@
 #define FSP_BELONGS_CONN(fsp,conn) do {\
 			extern struct current_user current_user;\
 			if (!((fsp) && (conn) && ((conn)==(fsp)->conn) && (current_user.vuid==(fsp)->vuid))) \
-				return(ERROR_DOS(ERRDOS,ERRbadfid));\
+				return ERROR_NT(NT_STATUS_INVALID_HANDLE); \
 			} while(0)
 
 #define FNUM_OK(fsp,c) ((fsp) && !(fsp)->is_directory && (c)==(fsp)->conn && current_user.vuid==(fsp)->vuid)
@@ -101,11 +101,13 @@
  */
 #define CHECK_FSP(fsp,conn) do {\
 			extern struct current_user current_user;\
-			if ((fsp) && (fsp)->is_directory) \
-				return ERROR_NT(NT_STATUS_INVALID_DEVICE_REQUEST); \
-			else if (!FNUM_OK(fsp,conn)) \
+			if (!(fsp) || !(conn)) \
 				return ERROR_NT(NT_STATUS_INVALID_HANDLE); \
-			else if((fsp)->fh->fd == -1) \
+			else if (((conn) != (fsp)->conn) || current_user.vuid != (fsp)->vuid) \
+				return ERROR_NT(NT_STATUS_INVALID_HANDLE); \
+			else if ((fsp)->is_directory) \
+				return ERROR_NT(NT_STATUS_INVALID_DEVICE_REQUEST); \
+			else if ((fsp)->fh->fd == -1) \
 				return ERROR_NT(NT_STATUS_ACCESS_DENIED); \
 			(fsp)->num_smb_operations++;\
 			} while(0)
