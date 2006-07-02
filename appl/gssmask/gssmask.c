@@ -55,6 +55,7 @@ struct client {
     struct handle *handle;
     struct sockaddr_storage sa;
     socklen_t salen;
+    char servername[MAXHOSTNAMELEN];
 };
 
 FILE *logfile;
@@ -735,54 +736,68 @@ find_op(int32_t op)
     return NULL;
 }
 
-static void
-handleServer(int fd)
+static struct client *
+create_client(int fd)
 {
-    struct handler *handler;
-    struct client c;
-    int32_t op;
-    char servername[MAXHOSTNAMELEN];
+    struct client *c;
     char hostname[MAXHOSTNAMELEN];
 
-    memset(&c, 0, sizeof(c));
+    c = ecalloc(1, sizeof(*c));
 
     gethostname(hostname, sizeof(hostname));
-    asprintf(&c.moniker, "gssmask: %s", hostname);
+    asprintf(&c->moniker, "gssmask: %s", hostname);
 
     {
-	c.salen = sizeof(c.sa);
-	getpeername(fd, (struct sockaddr *)&c.sa, &c.salen);
+	c->salen = sizeof(c->sa);
+	getpeername(fd, (struct sockaddr *)&c->sa, &c->salen);
 	
-	getnameinfo((struct sockaddr *)&c.sa, c.salen, 
-		    servername, sizeof(servername), NULL, 0, NI_NUMERICHOST);
+	getnameinfo((struct sockaddr *)&c->sa, c->salen, 
+		    c->servername, sizeof(c->servername), 
+		    NULL, 0, NI_NUMERICHOST);
     }
 
-    c.sock = krb5_storage_from_fd(fd);
-    if (c.sock == NULL)
+    c->sock = krb5_storage_from_fd(fd);
+    if (c->sock == NULL)
 	errx(1, "krb5_storage_from_fd");
     
     close(fd);
 
+    return c;
+}
+
+
+static void *
+handleServer(void *ptr)
+{
+    struct handler *handler;
+    struct client *c;
+    int32_t op;
+
+    c = (struct client *)ptr;
+
+
     while(1) {
-	ret32(&c, op);
+	ret32(c, op);
 
 	handler = find_op(op);
 	if (handler == NULL) {
-	    logmessage(&c, __FILE__, __LINE__, 0,
+	    logmessage(c, __FILE__, __LINE__, 0,
 		       "op %d not supported", (int)op);
 	    exit(1);
 	}
 
-	logmessage(&c, __FILE__, __LINE__, 0,
+	logmessage(c, __FILE__, __LINE__, 0,
 		   "---> Got op %s from server %s", 
-		   handler->name, servername);
+		   handler->name, c->servername);
 
-	if ((handler->func)(handler->op, &c))
+	if ((handler->func)(handler->op, c))
 	    break;
     }
-    krb5_storage_free(c.sock);
-    if (c.logging)
-	krb5_storage_free(c.logging);
+    krb5_storage_free(c->sock);
+    if (c->logging)
+	krb5_storage_free(c->logging);
+
+    return NULL;
 }
 
 
@@ -851,7 +866,14 @@ main(int argc, char **argv)
     mini_inetd(port);
     fprintf(logfile, "connected\n");
 
-    handleServer(0);
+    {
+	struct client *c; 
+
+	c = create_client(0);
+	/* close(0); */
+
+	handleServer(c);
+    }
 
     krb5_free_context(context);
 
