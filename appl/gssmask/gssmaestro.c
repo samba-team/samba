@@ -172,6 +172,84 @@ get_targetname(struct client *client,
     return GSMERR_OK;
 }
 
+static int
+build_context(struct client *ipeer, struct client *apeer,
+	      int32_t flags, int32_t hCred,
+	      int32_t *iContext, int32_t *aContext, int32_t *hDelegCred)
+{
+    int32_t val, ic = 0, ac = 0, deleg = 0;
+    krb5_data itoken, otoken;
+    char *target;
+    int iDone = 0, aDone = 0;
+
+    krb5_data_zero(&itoken);
+
+    get_targetname(apeer, &target);
+
+    while (!iDone && !aDone) {
+
+	if (iDone)
+	    errx(1, "iPeer already done, aPeer want extra rtt");
+
+	val = init_sec_context(ipeer, &ic, &hCred, flags, target,
+			       &itoken, &otoken);
+	switch(val) {
+	case GSMERR_OK:
+	    iDone = 1;
+	    if (aDone)
+		continue;
+	    break;
+	case GSMERR_CONTINUE_NEEDED:
+	    break;
+	default:
+	    errx(1, "iPeer %s failed with %d", ipeer->name, (int)val);
+	}
+
+	if (aDone)
+	    errx(1, "aPeer already done, iPeer want extra rtt");
+
+	val = accept_sec_context(apeer, &ac, &otoken, &itoken, &deleg);
+	switch(val) {
+	case GSMERR_OK:
+	    aDone = 1;
+	    if (iDone)
+		continue;
+	    break;
+	case GSMERR_CONTINUE_NEEDED:
+	    break;
+	default:
+	    errx(1, "aPeer %s failed with %d", apeer->name, (int)val);
+	}
+
+	val = GSMERR_OK;
+    }
+
+    if (iContext == NULL || val != GSMERR_OK) {
+	if (ic)
+	    toast_resource(ipeer, ic);
+	*iContext = 0;
+    } else
+	*iContext = ic;
+
+    if (aContext == NULL || val != GSMERR_OK) {
+	if (ac)
+	    toast_resource(apeer, ac);
+	*aContext = 0;
+    } else
+	*aContext = ac;
+
+    if (hDelegCred == NULL || val != GSMERR_OK) {
+	if (deleg)
+	    toast_resource(apeer, deleg);
+	*hDelegCred = 0;
+    } else
+	*hDelegCred = 0;
+
+    return val;
+}
+			 
+
+
 static int version_flag;
 static int help_flag;
 static getarg_strings principals;
@@ -246,27 +324,54 @@ main(int argc, char **argv)
 	struct client *c;
 	int32_t hCred, delegCred;
 	int32_t clientC, serverC;
-	krb5_data itoken, otoken;
-	char *target;
+	int32_t val;
 
-	krb5_data_zero(&itoken);
 	c = connect_client(slavename, slaveport);
-	acquire_cred(c, user, password, 1, &hCred);
-	get_targetname(c, &target);
-	init_sec_context(c, &clientC, &hCred, 
-			 GSS_C_DELEG_FLAG|GSS_C_MUTUAL_FLAG, 
-			 target, &itoken, &otoken);
-	accept_sec_context(c, &serverC, &otoken, &itoken, &delegCred);
-	init_sec_context(c, &clientC, &hCred, GSS_C_DELEG_FLAG,
-			 target, &itoken, &otoken);
+	if (c == NULL)
+	    errx(1, "failed to contact %s:%s", slavename, slaveport);
 
-	toast_resource(c, clientC);
-	toast_resource(c, serverC);
+	/*
+	 *
+	 */
+
+	val = acquire_cred(c, user, password, 1, &hCred);
+	if (val != GSMERR_OK)
+	    errx(1, "failed to acquire_cred");
+
+	/*
+	 *
+	 */
+
+	val = build_context(c, c, GSS_C_DELEG_FLAG|GSS_C_MUTUAL_FLAG,
+			    hCred, &clientC, &serverC, &delegCred);
+	if (val == GSMERR_OK) {
+	    toast_resource(c, clientC);
+	    toast_resource(c, serverC);
+	    if (delegCred)
+		toast_resource(c, delegCred);
+	} else {
+	    warnx("build_context failed: %d", (int)val);
+	}
+
+	/*
+	 *
+	 */
+	val = build_context(c, c, 0,
+			    hCred, &clientC, &serverC, &delegCred);
+	if (val == GSMERR_OK) {
+	    toast_resource(c, clientC);
+	    toast_resource(c, serverC);
+	    if (delegCred)
+		toast_resource(c, delegCred);
+	} else {
+	    warnx("build_context failed: %d", (int)val);
+	}
+
 	toast_resource(c, hCred);
-	if (delegCred)
-	    toast_resource(c, delegCred);
+	/*
+	 *
+	 */
 	goodbye(c);
-
     }
     printf("done\n");
 
