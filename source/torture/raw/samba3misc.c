@@ -155,3 +155,138 @@ BOOL torture_samba3_checkfsp(struct torture_context *torture)
 
 	return ret;
 }
+
+BOOL torture_samba3_badpath(struct torture_context *torture)
+{
+	struct smbcli_state *cli_nt;
+	struct smbcli_state *cli_dos;
+	const char *fname = "test.txt";
+	const char *dirname = "testdir";
+	char *fpath;
+	int fnum;
+	NTSTATUS status;
+	BOOL ret = True;
+	TALLOC_CTX *mem_ctx;
+	ssize_t nread;
+	char buf[16];
+	struct smbcli_tree *tree2;
+	BOOL nt_status_support;
+
+	if (!(mem_ctx = talloc_init("torture_samba3_badpath"))) {
+		d_printf("talloc_init failed\n");
+		return False;
+	}
+
+	nt_status_support = lp_nt_status_support();
+
+	if (!lp_set_cmdline("nt status support", "yes")) {
+		printf("Could not set 'nt status support = yes'\n");
+		goto fail;
+	}
+
+	if (!torture_open_connection(&cli_nt)) {
+		goto fail;
+	}
+
+	if (!lp_set_cmdline("nt status support", "no")) {
+		printf("Could not set 'nt status support = yes'\n");
+		goto fail;
+	}
+
+	if (!torture_open_connection(&cli_dos)) {
+		goto fail;
+	}
+
+	if (!lp_set_cmdline("nt status support",
+			    nt_status_support ? "yes":"no")) {
+		printf("Could not reset 'nt status support = yes'");
+		goto fail;
+	}
+
+	smbcli_deltree(cli_nt->tree, dirname);
+
+	status = smbcli_mkdir(cli_nt->tree, dirname);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("smbcli_mkdir failed: %s\n", nt_errstr(status));
+		ret = False;
+		goto done;
+	}
+
+	status = smbcli_chkpath(cli_nt->tree, dirname);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	status = smbcli_chkpath(cli_nt->tree,
+				talloc_asprintf(mem_ctx, "%s\\bla", dirname));
+	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_NOT_FOUND);
+
+	status = smbcli_chkpath(cli_dos->tree,
+				talloc_asprintf(mem_ctx, "%s\\bla", dirname));
+	CHECK_STATUS(status, NT_STATUS_DOS(ERRDOS, ERRbadpath));
+
+	status = smbcli_chkpath(cli_nt->tree,
+				talloc_asprintf(mem_ctx, "%s\\bla\\blub",
+						dirname));
+	CHECK_STATUS(status, NT_STATUS_OBJECT_PATH_NOT_FOUND);
+	status = smbcli_chkpath(cli_dos->tree,
+				talloc_asprintf(mem_ctx, "%s\\bla\\blub",
+						dirname));
+	CHECK_STATUS(status, NT_STATUS_DOS(ERRDOS, ERRbadpath));
+
+	if (!(fpath = talloc_asprintf(mem_ctx, "%s\\%s", dirname, fname))) {
+		goto fail;
+	}
+	fnum = smbcli_open(cli_nt->tree, fpath, O_RDWR | O_CREAT, DENY_NONE);
+	if (fnum == -1) {
+		d_printf("Could not create file %s: %s\n", fpath,
+			 smbcli_errstr(cli_nt->tree));
+		goto fail;
+	}
+	smbcli_close(cli_nt->tree, fnum);
+
+	status = smbcli_chkpath(cli_nt->tree, fpath);
+	CHECK_STATUS(status, NT_STATUS_NOT_A_DIRECTORY);
+	status = smbcli_chkpath(cli_dos->tree, fpath);
+	CHECK_STATUS(status, NT_STATUS_DOS(ERRDOS, ERRbadpath));
+
+	status = smbcli_chkpath(cli_nt->tree, "..");
+	CHECK_STATUS(status, NT_STATUS_OBJECT_PATH_SYNTAX_BAD);
+	status = smbcli_chkpath(cli_dos->tree, "..");
+	CHECK_STATUS(status, NT_STATUS_DOS(ERRDOS, ERRinvalidpath));
+
+	status = smbcli_chkpath(cli_nt->tree, "\t");
+	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_INVALID);
+	status = smbcli_chkpath(cli_dos->tree, "\t");
+	CHECK_STATUS(status, NT_STATUS_DOS(ERRDOS, ERRbadpath));
+
+	status = smbcli_chkpath(cli_nt->tree, "\t\\bla");
+	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_INVALID);
+	status = smbcli_chkpath(cli_dos->tree, "\t\\bla");
+	CHECK_STATUS(status, NT_STATUS_DOS(ERRDOS, ERRbadpath));
+
+	status = smbcli_chkpath(cli_nt->tree, "<");
+	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_INVALID);
+	status = smbcli_chkpath(cli_dos->tree, "<");
+	CHECK_STATUS(status, NT_STATUS_DOS(ERRDOS, ERRbadpath));
+
+	status = smbcli_chkpath(cli_nt->tree, "<\\bla");
+	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_INVALID);
+	status = smbcli_chkpath(cli_dos->tree, "<\\bla");
+	CHECK_STATUS(status, NT_STATUS_DOS(ERRDOS, ERRbadpath));
+
+	goto done;
+
+ fail:
+	ret = False;
+
+ done:
+	if (cli_nt != NULL) {
+		smbcli_deltree(cli_nt->tree, dirname);
+		torture_close_connection(cli_nt);
+	}
+	if (cli_dos != NULL) {
+		torture_close_connection(cli_dos);
+	}
+	talloc_free(mem_ctx);
+
+	return ret;
+}
