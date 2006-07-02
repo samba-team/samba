@@ -1600,6 +1600,10 @@ static BOOL deltest21(struct smbcli_state **ppcli1, struct smbcli_state **ppcli2
 
 	cli1 = *ppcli1;
 
+	/* On slow build farm machines it might happen that they are not fast
+	 * enogh to delete the file for this test */
+	msleep(200);
+
 	/* File should not be there. */
 	fnum1 = smbcli_nt_create_full(cli1->tree, fname, 0, 
 				      SEC_RIGHTS_FILE_READ,
