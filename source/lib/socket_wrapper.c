@@ -411,11 +411,15 @@ _PUBLIC_ int swrap_socket(int domain, int type, int protocol)
 		return real_socket(domain, type, protocol);
 	}
 	
+	si = (struct socket_info *)calloc(1, sizeof(struct socket_info));
+	if (si == NULL) {
+		errno = ENOMEM;
+		return -1;
+	}
+
 	fd = real_socket(AF_UNIX, type, 0);
 
 	if (fd == -1) return -1;
-
-	si = calloc(1, sizeof(struct socket_info));
 
 	si->domain = domain;
 	si->type = type;
@@ -457,7 +461,12 @@ _PUBLIC_ int swrap_accept(int s, struct sockaddr *addr, socklen_t *addrlen)
 				       parent_si->domain, addr, addrlen);
 	if (ret == -1) return ret;
 
-	child_si = malloc(sizeof(struct socket_info));
+	child_si = (struct socket_info *)malloc(sizeof(struct socket_info));
+	if (child_si == NULL) {
+		close(fd);
+		errno = ENOMEM;
+		return -1;
+	}
 	memset(child_si, 0, sizeof(*child_si));
 
 	child_si->fd = fd;
@@ -466,7 +475,7 @@ _PUBLIC_ int swrap_accept(int s, struct sockaddr *addr, socklen_t *addrlen)
 	child_si->protocol = parent_si->protocol;
 	child_si->bound = 1;
 
-	ret = real_getsockname(fd, &un_my_addr, &un_my_addrlen);
+	ret = real_getsockname(fd, (struct sockaddr *)&un_my_addr, &un_my_addrlen);
 	if (ret == -1) return ret;
 
 	ret = sockaddr_convert_from_un(child_si, &un_my_addr, un_my_addrlen,
