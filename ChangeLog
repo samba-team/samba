@@ -1,3 +1,11 @@
+2006-07-03  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* appl/gssmask/gssmask.c: break out creation of a client and make
+	handleServer pthread_create compatible
+
+	* appl/gssmask/gssmaestro.c: break out out the build context
+	function
+	
 2006-07-01  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* appl/gssmask/gssmaestro.c: externalize slave handling, add
