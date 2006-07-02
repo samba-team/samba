@@ -151,6 +151,34 @@ static BOOL wbinfo_get_userinfo(char *user)
 	return True;
 }
 
+/* pull grent for a given group */
+static BOOL wbinfo_get_groupinfo(char *group)
+{
+	struct winbindd_request request;
+	struct winbindd_response response;
+	NSS_STATUS result;
+
+	ZERO_STRUCT(request);
+	ZERO_STRUCT(response);
+
+	/* Send request */
+
+	fstrcpy(request.data.groupname, group);
+
+	result = winbindd_request_response(WINBINDD_GETGRNAM, &request,
+					   &response);
+
+	if ( result != NSS_STATUS_SUCCESS)
+		return False;
+
+  	d_printf( "%s:%s:%d\n",
+		  response.data.gr.gr_name,
+		  response.data.gr.gr_passwd,
+		  response.data.gr.gr_gid );
+	
+	return True;
+}
+
 /* List groups a user is a member of */
 
 static BOOL wbinfo_get_usergroups(char *user)
@@ -201,7 +229,7 @@ static BOOL wbinfo_get_usersids(char *user_sid)
 	if (result != NSS_STATUS_SUCCESS)
 		return False;
 
-	s = response.extra_data.data;
+	s = (const char *)response.extra_data.data;
 	for (i = 0; i < response.data.num_entries; i++) {
 		d_printf("%s\n", s);
 		s += strlen(s) + 1;
@@ -1147,7 +1175,8 @@ enum {
 	OPT_ALLOCATE_GID,
 	OPT_SEPARATOR,
 	OPT_LIST_ALL_DOMAINS,
-	OPT_LIST_OWN_DOMAIN
+	OPT_LIST_OWN_DOMAIN,
+	OPT_GROUP_INFO,
 };
 
 int main(int argc, char **argv)
@@ -1188,6 +1217,7 @@ int main(int argc, char **argv)
 		{ "sequence", 0, POPT_ARG_NONE, 0, OPT_SEQUENCE, "Show sequence numbers of all domains" },
 		{ "domain-info", 'D', POPT_ARG_STRING, &string_arg, 'D', "Show most of the info we have about the domain" },
 		{ "user-info", 'i', POPT_ARG_STRING, &string_arg, 'i', "Get user info", "USER" },
+		{ "group-info", 0, POPT_ARG_STRING, &string_arg, OPT_GROUP_INFO, "Get group info", "GROUP" },
 		{ "user-groups", 'r', POPT_ARG_STRING, &string_arg, 'r', "Get user groups", "USER" },
 		{ "user-domgroups", 0, POPT_ARG_STRING, &string_arg,
 		  OPT_USERDOMGROUPS, "Get user domain groups", "SID" },
@@ -1360,6 +1390,13 @@ int main(int argc, char **argv)
 				goto done;
 			}
 			break;
+		case OPT_GROUP_INFO:
+			if ( !wbinfo_get_groupinfo(string_arg)) {
+				d_fprintf(stderr, "Could not get info for "
+					  "group %s\n", string_arg);
+				goto done;
+			}
+            break;
 		case 'r':
 			if (!wbinfo_get_usergroups(string_arg)) {
 				d_fprintf(stderr, "Could not get groups for user %s\n", 
