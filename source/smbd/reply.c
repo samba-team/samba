@@ -426,13 +426,13 @@ size_t srvstr_get_path_wcard(char *inbuf, char *dest, const char *src, size_t de
 		*err = check_path_syntax_posix(dest, tmppath);
 	} else {
 		*err = check_path_syntax_wcard(dest, tmppath, contains_wcard);
-	}
 
-	/* Strange DOS error code semantics... */
-	if (!(SVAL(inbuf,smb_flg2) & FLAGS2_32_BIT_ERROR_CODES)) {
-		if (NT_STATUS_EQUAL(NT_STATUS_OBJECT_NAME_INVALID,*err)) {
-			/* We need to map to ERRbadpath */
-			*err = NT_STATUS_OBJECT_PATH_NOT_FOUND;
+		/* Strange DOS error code semantics... */
+		if (!(SVAL(inbuf,smb_flg2) & FLAGS2_32_BIT_ERROR_CODES)) {
+			if (NT_STATUS_EQUAL(NT_STATUS_OBJECT_NAME_INVALID,*err)) {
+				/* We need to map to ERRbadpath */
+				*err = NT_STATUS_OBJECT_PATH_NOT_FOUND;
+			}
 		}
 	}
 
@@ -461,13 +461,13 @@ size_t srvstr_get_path(char *inbuf, char *dest, const char *src, size_t dest_len
 		*err = check_path_syntax_posix(dest, tmppath);
 	} else {
 		*err = check_path_syntax(dest, tmppath);
-	}
 
-	/* Strange DOS error code semantics... */
-	if (!(SVAL(inbuf,smb_flg2) & FLAGS2_32_BIT_ERROR_CODES)) {
-		if (NT_STATUS_EQUAL(NT_STATUS_OBJECT_NAME_INVALID,*err)) {
-			/* We need to map to ERRbadpath */
-			*err = NT_STATUS_OBJECT_PATH_NOT_FOUND;
+		/* Strange DOS error code semantics... */
+		if (!(SVAL(inbuf,smb_flg2) & FLAGS2_32_BIT_ERROR_CODES)) {
+			if (NT_STATUS_EQUAL(NT_STATUS_OBJECT_NAME_INVALID,*err)) {
+				/* We need to map to ERRbadpath */
+				*err = NT_STATUS_OBJECT_PATH_NOT_FOUND;
+			}
 		}
 	}
 
