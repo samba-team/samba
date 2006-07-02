@@ -786,7 +786,7 @@ static NTSTATUS create_builtin_administrators( void )
 	}
 			
 	/* add root */
-	if ( (ctx = talloc_init(NULL)) == NULL ) {
+	if ( (ctx = talloc_init("create_builtin_administrators")) == NULL ) {
 		return NT_STATUS_NO_MEMORY;
 	}
 	fstr_sprintf( root_name, "%s\\root", get_global_sam_name() );
