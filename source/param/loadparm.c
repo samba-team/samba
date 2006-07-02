@@ -1671,7 +1671,7 @@ void lp_TALLOC_FREE(void)
 TALLOC_CTX *tmp_talloc_ctx(void)
 {
 	if (lp_talloc == NULL) {
-		lp_talloc = talloc_init(NULL);
+		lp_talloc = talloc_init("tmp_talloc_ctx");
 	}
 
 	if (lp_talloc == NULL) {
