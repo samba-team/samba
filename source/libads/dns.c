@@ -39,8 +39,12 @@
 #define MAX_DNS_PACKET_SIZE 0xffff
 
 #ifdef NS_HFIXEDSZ	/* Bind 8/9 interface */
+#if !defined(C_IN)	/* AIX 5.3 already defines C_IN */
 #  define C_IN		ns_c_in
+#endif
+#if !defined(T_A)	/* AIX 5.3 already defines T_A */
 #  define T_A   	ns_t_a
+#endif
 #  define T_SRV 	ns_t_srv
 #else
 #  ifdef HFIXEDSZ
