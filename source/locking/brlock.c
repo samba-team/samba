@@ -1346,7 +1346,7 @@ static int traverse_fn(TDB_CONTEXT *ttdb, TDB_DATA kbuf, TDB_DATA dbuf, void *st
 	}
 
 	if (orig_num_locks != num_locks) {
-		dbuf.dptr = (void *)locks;
+		dbuf.dptr = (char *)locks;
 		dbuf.dsize = num_locks * sizeof(*locks);
 
 		if (dbuf.dsize) {
@@ -1408,7 +1408,7 @@ static int byte_range_lock_destructor(void *p)
 		}
 	} else {
 		TDB_DATA data;
-		data.dptr = br_lck->lock_data;
+		data.dptr = (char *)br_lck->lock_data;
 		data.dsize = br_lck->num_locks * sizeof(struct lock_struct);
 
 		if (tdb_store(tdb, key, data, TDB_REPLACE) == -1) {
@@ -1472,7 +1472,6 @@ struct byte_range_lock *brl_get_locks(TALLOC_CTX *mem_ctx,
 			(struct lock_struct *)br_lck->lock_data;
 
 		if (!validate_lock_entries(&br_lck->num_locks, &locks)) {
-			tdb_chainunlock(tdb, key);
 			SAFE_FREE(br_lck->lock_data);
 			TALLOC_FREE(br_lck);
 			return NULL;
