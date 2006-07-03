@@ -620,7 +620,10 @@ static BOOL pipe_ntlmssp_verify_final(pipes_struct *p, DATA_BLOB *p_resp_blob)
 	p->pipe_user.ut.ngroups = 0;
 	SAFE_FREE( p->pipe_user.ut.groups);
 
+	/* this has to be done as root in order to verify the password */
+	become_root();
 	status = auth_ntlmssp_update(a, *p_resp_blob, &reply);
+	unbecome_root();
 
 	/* Don't generate a reply. */
 	data_blob_free(&reply);

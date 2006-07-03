@@ -178,6 +178,8 @@ o   Gerald (Jerry) Carter <jerry@samba.org>
     * Fix broken compile of unsupported smbwrapper utility.
     * BUG 3905: Fix smbd startup failure caused by a failure to
       create an NT token for the guest account.
+    * BUG 3908: Fix RPC bind authentication failure which broke
+      user password changes.
 
 
 o   Guenther Deschner <gd@samba.org>
