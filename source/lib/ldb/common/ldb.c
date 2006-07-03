@@ -294,7 +294,7 @@ int ldb_transaction_cancel(struct ldb_context *ldb)
 	return ldb_transaction_cancel_internal(ldb);
 }
 
-int ldb_autotransaction_start(struct ldb_context *ldb)
+static int ldb_autotransaction_start(struct ldb_context *ldb)
 {
 	/* explicit transaction active, ignore autotransaction request */
 	if (ldb->transaction_active)
@@ -303,7 +303,7 @@ int ldb_autotransaction_start(struct ldb_context *ldb)
 	return ldb_transaction_start_internal(ldb);
 }
 
-int ldb_autotransaction_commit(struct ldb_context *ldb)
+static int ldb_autotransaction_commit(struct ldb_context *ldb)
 {
 	/* explicit transaction active, ignore autotransaction request */
 	if (ldb->transaction_active)
@@ -312,7 +312,7 @@ int ldb_autotransaction_commit(struct ldb_context *ldb)
 	return ldb_transaction_commit_internal(ldb);
 }
 
-int ldb_autotransaction_cancel(struct ldb_context *ldb)
+static int ldb_autotransaction_cancel(struct ldb_context *ldb)
 {
 	/* explicit transaction active, ignore autotransaction request */
 	if (ldb->transaction_active)
