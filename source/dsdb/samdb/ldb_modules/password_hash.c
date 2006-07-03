@@ -82,6 +82,8 @@ struct ph_async_context {
 	struct ldb_async_result *search_res;
 
 	struct ldb_request *mod_req;
+
+	struct dom_sid *domain_sid;
 };
 
 struct domain_data {
@@ -474,8 +476,7 @@ static int get_domain_data_callback(struct ldb_context *ldb, void *context, stru
 	return LDB_SUCCESS;
 }
 
-static int build_domain_data_request(struct ph_async_context *ac,
-				     struct dom_sid *sid)
+static int build_domain_data_request(struct ph_async_context *ac)
 {
 	/* attrs[] is returned from this function in
 	   ac->dom_req->op.search.attrs, so it must be static, as
@@ -492,8 +493,8 @@ static int build_domain_data_request(struct ph_async_context *ac,
 	ac->dom_req->op.search.base = samdb_base_dn(ac);
 	ac->dom_req->op.search.scope = LDB_SCOPE_SUBTREE;
 
-	filter = talloc_asprintf(ac->dom_req, "(&(objectSid=%s)(objectClass=domain))", 
-				 ldap_encode_ndr_dom_sid(ac->dom_req, sid));
+	filter = talloc_asprintf(ac->dom_req, "(&(objectSid=%s)(|(objectClass=domain)(objectClass=builtinDomain)))", 
+				 ldap_encode_ndr_dom_sid(ac->dom_req, ac->domain_sid));
 	if (filter == NULL) {
 		ldb_debug(ac->module->ldb, LDB_DEBUG_ERROR, "Out of Memory!\n");
 		talloc_free(ac->dom_req);
@@ -516,18 +517,21 @@ static int build_domain_data_request(struct ph_async_context *ac,
 	return LDB_SUCCESS;
 }
 
-static struct domain_data *get_domain_data(struct ldb_module *module, void *mem_ctx, struct ldb_async_result *res)
+static struct domain_data *get_domain_data(struct ldb_module *module, void *ctx, struct ldb_async_result *res)
 {
 	struct domain_data *data;
 	const char *tmp;
+	struct ph_async_context *ac;
 	
-	data = talloc_zero(mem_ctx, struct domain_data);
+	ac = talloc_get_type(ctx, struct ph_async_context);
+
+	data = talloc_zero(ac, struct domain_data);
 	if (data == NULL) {
 		return NULL;
 	}
 
 	if (res == NULL) {
-		ldb_debug(module->ldb, LDB_DEBUG_ERROR, "Could not find this user's domain!\n");
+		ldb_debug(module->ldb, LDB_DEBUG_ERROR, "Could not find this user's domain: %s!\n", dom_sid_string(data, ac->domain_sid));
 		talloc_free(data);
 		return NULL;
 	}
@@ -542,7 +546,7 @@ static struct domain_data *get_domain_data(struct ldb_module *module, void *mem_
 			ldb_debug(module->ldb, LDB_DEBUG_ERROR, "Out of memory!\n");
 			return NULL;
 		}
-		data->realm = strupper_talloc(mem_ctx, tmp);
+		data->realm = strupper_talloc(data, tmp);
 		if (data->realm == NULL) {
 			ldb_debug(module->ldb, LDB_DEBUG_ERROR, "Out of memory!\n");
 			return NULL;
@@ -556,8 +560,9 @@ static int password_hash_add(struct ldb_module *module, struct ldb_request *req)
 {
 	struct ldb_async_handle *h;
 	struct ph_async_context *ac;
-	struct ldb_message_element *attribute;
-	struct dom_sid *domain_sid;
+	struct ldb_message_element *sambaAttr;
+	struct ldb_message_element *ntAttr;
+	struct ldb_message_element *lmAttr;
 	int ret;
 
 	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "password_hash_add\n");
@@ -572,10 +577,14 @@ static int password_hash_add(struct ldb_module *module, struct ldb_request *req)
 		return LDB_ERR_UNWILLING_TO_PERFORM;
 	}
 
-	/* If no part of this touches the sambaPassword, then we don't
-	 * need to make any changes.  For password changes/set there should
-	 * be a 'delete' or a 'modify' on this attribute. */
-	if ((attribute = ldb_msg_find_element(req->op.add.message, "sambaPassword")) == NULL ) {
+	/* If no part of this ADD touches the sambaPassword, or the NT
+	 * or LM hashes, then we don't need to make any changes.  */
+
+	sambaAttr = ldb_msg_find_element(req->op.mod.message, "sambaPassword");
+	ntAttr = ldb_msg_find_element(req->op.mod.message, "ntPwdHash");
+	lmAttr = ldb_msg_find_element(req->op.mod.message, "lmPwdHash");
+
+	if ((!sambaAttr) && (!ntAttr) && (!lmAttr)) {
 		return ldb_next_request(module, req);
 	}
 
@@ -588,16 +597,31 @@ static int password_hash_add(struct ldb_module *module, struct ldb_request *req)
 
 	/* check sambaPassword is single valued here */
 	/* TODO: remove this when sambaPassword will be single valued in schema */
-	if (attribute->num_values > 1) {
+	if (sambaAttr->num_values > 1) {
 		ldb_set_errstring(module->ldb, 
 				  talloc_asprintf(req,
 						  "mupltiple values for sambaPassword not allowed!\n"));
 		return LDB_ERR_CONSTRAINT_VIOLATION;
 	}
 
+	if (ntAttr && (ntAttr->num_values > 1)) {
+		ldb_set_errstring(module->ldb, 
+				  talloc_asprintf(req,
+						  "mupltiple values for lmPwdHash not allowed!\n"));
+		return LDB_ERR_CONSTRAINT_VIOLATION;
+	}
+	if (lmAttr && (lmAttr->num_values > 1)) {
+		ldb_set_errstring(module->ldb, 
+				  talloc_asprintf(req,
+						  "mupltiple values for lmPwdHash not allowed!\n"));
+		return LDB_ERR_CONSTRAINT_VIOLATION;
+	}
+
+	ac = talloc_get_type(h->private_data, struct ph_async_context);
+
 	/* get user domain data */
-	domain_sid = samdb_result_sid_prefix(req, req->op.add.message, "objectSid");
-	if (domain_sid == NULL) {
+	ac->domain_sid = samdb_result_sid_prefix(ac, req->op.add.message, "objectSid");
+	if (ac->domain_sid == NULL) {
 		ldb_debug(module->ldb, LDB_DEBUG_ERROR, "can't handle entry with missing objectSid!\n");
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
@@ -606,9 +630,7 @@ static int password_hash_add(struct ldb_module *module, struct ldb_request *req)
 	if (!h) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
-	ac = talloc_get_type(h->private_data, struct ph_async_context);
-
-	ret = build_domain_data_request(ac, domain_sid);
+	ret = build_domain_data_request(ac);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
@@ -625,7 +647,9 @@ static int password_hash_add_do_add(struct ldb_async_handle *h) {
 	struct ph_async_context *ac;
 	struct domain_data *domain;
 	struct smb_krb5_context *smb_krb5_context;
+	struct ldb_message_element *sambaAttr;
 	struct ldb_message *msg;
+	int ret;
 
 	ac = talloc_get_type(h->private_data, struct ph_async_context);
 
@@ -650,30 +674,36 @@ static int password_hash_add_do_add(struct ldb_async_handle *h) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	/* we can compute new password hashes from the unicode password */
-	if (add_password_hashes(ac->module, msg, 0) != LDB_SUCCESS) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	/* now add krb5 keys based on unicode password */
-	if (add_krb5_keys_from_password(ac->module, msg, smb_krb5_context, domain,
-					ldb_msg_find_string(msg, "samAccountName", NULL),
-					ldb_msg_find_string(msg, "userPrincipalName", NULL),
-					ldb_msg_check_string_attribute(msg, "objectClass", "computer")
-				       ) != LDB_SUCCESS) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	/* add also kr5 keys based on NT the hash */
-	if (add_krb5_keys_from_NThash(ac->module, msg, smb_krb5_context) != LDB_SUCCESS) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	/* if both the domain properties and the user account controls do not permit
-	 * clear text passwords then wipe out the sambaPassword */
-	if ((!(domain->pwdProperties & DOMAIN_PASSWORD_STORE_CLEARTEXT)) ||
-	    (!(ldb_msg_find_uint(msg, "userAccountControl", 0) & UF_ENCRYPTED_TEXT_PASSWORD_ALLOWED))) {
-		ldb_msg_remove_attr(msg, "sambaPassword");
+	/* if we have sambaPassword in the original message add the operatio on it here */
+	sambaAttr = ldb_msg_find_element(msg, "sambaPassword");
+	if (sambaAttr) {
+		ret = add_password_hashes(ac->module, msg, 0);
+		/* we can compute new password hashes from the unicode password */
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+		
+		/* now add krb5 keys based on unicode password */
+		ret = add_krb5_keys_from_password(ac->module, msg, smb_krb5_context, domain,
+						  ldb_msg_find_string(msg, "samAccountName", NULL),
+						  ldb_msg_find_string(msg, "userPrincipalName", NULL),
+						  ldb_msg_check_string_attribute(msg, "objectClass", "computer"));
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+		
+		/* add also kr5 keys based on NT the hash */
+		ret = add_krb5_keys_from_NThash(ac->module, msg, smb_krb5_context);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+		
+		/* if both the domain properties and the user account controls do not permit
+		 * clear text passwords then wipe out the sambaPassword */
+		if ((!(domain->pwdProperties & DOMAIN_PASSWORD_STORE_CLEARTEXT)) ||
+		    (!(ldb_msg_find_uint(msg, "userAccountControl", 0) & UF_ENCRYPTED_TEXT_PASSWORD_ALLOWED))) {
+			ldb_msg_remove_attr(msg, "sambaPassword");
+		}
 	}
 
 	/* don't touch it if a value is set. It could be an incoming samsync */
@@ -871,20 +901,19 @@ static int password_hash_mod_search_self(struct ldb_async_handle *h) {
 static int password_hash_mod_search_dom(struct ldb_async_handle *h) {
 
 	struct ph_async_context *ac;
-	struct dom_sid *domain_sid;
 	int ret;
 
 	ac = talloc_get_type(h->private_data, struct ph_async_context);
 
 	/* get object domain sid */
-	domain_sid = samdb_result_sid_prefix(ac, ac->search_res->message, "objectSid");
-	if (domain_sid == NULL) {
+	ac->domain_sid = samdb_result_sid_prefix(ac, ac->search_res->message, "objectSid");
+	if (ac->domain_sid == NULL) {
 		ldb_debug(ac->module->ldb, LDB_DEBUG_ERROR, "can't handle entry with missing objectSid!\n");
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	/* get user domain data */
-	ret = build_domain_data_request(ac, domain_sid);
+	ret = build_domain_data_request(ac);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
@@ -902,6 +931,8 @@ static int password_hash_mod_do_mod(struct ldb_async_handle *h) {
 	struct ldb_message_element *sambaAttr;
 	struct ldb_message *msg;
 	int phlen;
+	int ret;
+	BOOL added_hashes = False;
 
 	ac = talloc_get_type(h->private_data, struct ph_async_context);
 
@@ -936,7 +967,7 @@ static int password_hash_mod_do_mod(struct ldb_async_handle *h) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	/* if we have sambaPassword in the original message add the operatio on it here */
+	/* if we have sambaPassword in the original message add the operation on it here */
 	sambaAttr = ldb_msg_find_element(ac->orig_req->op.mod.message, "sambaPassword");
 	if (sambaAttr) {
 
@@ -944,21 +975,26 @@ static int password_hash_mod_do_mod(struct ldb_async_handle *h) {
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 
-		/* we are not deleteing it add password hashes */
-	       	if ((sambaAttr->flags & LDB_FLAG_MOD_MASK) != LDB_FLAG_MOD_DELETE) {
-		
+		/* if we are actually settting a new unicode password,
+		 * use it to generate the password hashes */
+	       	if (((sambaAttr->flags & LDB_FLAG_MOD_MASK) != LDB_FLAG_MOD_DELETE)
+		    && (sambaAttr->num_values == 1)) {
 			/* we can compute new password hashes from the unicode password */
-			if (add_password_hashes(ac->module, msg, 1) != LDB_SUCCESS) {
-				return LDB_ERR_OPERATIONS_ERROR;
+			ret = add_password_hashes(ac->module, msg, 1);
+			if (ret != LDB_SUCCESS) {
+				return ret;
 			}
 
+			added_hashes = True;
+
 			/* now add krb5 keys based on unicode password */
-			if (add_krb5_keys_from_password(ac->module, msg, smb_krb5_context, domain,
-				ldb_msg_find_string(ac->search_res->message, "samAccountName", NULL),
-				ldb_msg_find_string(ac->search_res->message, "userPrincipalName", NULL),
-				ldb_msg_check_string_attribute(ac->search_res->message, "objectClass", "computer")
-						       ) != LDB_SUCCESS) {
-				return LDB_ERR_OPERATIONS_ERROR;
+			ret = add_krb5_keys_from_password(ac->module, msg, smb_krb5_context, domain,
+							  ldb_msg_find_string(ac->search_res->message, "samAccountName", NULL),
+							  ldb_msg_find_string(ac->search_res->message, "userPrincipalName", NULL),
+							  ldb_msg_check_string_attribute(ac->search_res->message, "objectClass", "computer"));
+
+			if (ret != LDB_SUCCESS) {
+				return ret;
 			}
 
 			/* if the domain properties or the user account controls do not permit
@@ -971,8 +1007,8 @@ static int password_hash_mod_do_mod(struct ldb_async_handle *h) {
 		}
 	}
 
-	/* if we don't have sambaPassword or we are trying to delete it try with nt or lm hasehs */
-	if ((!sambaAttr) || ((sambaAttr->flags & LDB_FLAG_MOD_MASK) == LDB_FLAG_MOD_DELETE)) {
+	/* if we didn't create the hashes above, try using values supplied directly */
+	if (!added_hashes) {
 		struct ldb_message_element *el;
 		
 		el = ldb_msg_find_element(ac->orig_req->op.mod.message, "ntPwdHash");
@@ -997,10 +1033,14 @@ static int password_hash_mod_do_mod(struct ldb_async_handle *h) {
 	}
 
 	/* don't touch it if a value is set. It could be an incoming samsync */
-	if (add_keyVersionNumber(ac->module, msg,
-				 ldb_msg_find_uint(msg, "msDS-KeyVersionNumber", 0)
-				) != LDB_SUCCESS) {
-		return LDB_ERR_OPERATIONS_ERROR;
+	if (!ldb_msg_find_element(ac->orig_req->op.mod.message, 
+				 "msDS-KeyVersionNumber")) {
+		if (add_keyVersionNumber(ac->module, msg,
+					 ldb_msg_find_uint(ac->search_res->message, 
+							   "msDS-KeyVersionNumber", 0)
+			    ) != LDB_SUCCESS) {
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
 	}
 
 	if ((phlen = samdb_result_uint(ac->dom_res->message, "pwdHistoryLength", 0)) > 0) {
