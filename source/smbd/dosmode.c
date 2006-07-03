@@ -316,6 +316,57 @@ static BOOL set_ea_dos_attribute(connection_struct *conn, const char *path, SMB_
 }
 
 /****************************************************************************
+ Change a unix mode to a dos mode for an ms dfs link.
+****************************************************************************/
+
+uint32 dos_mode_msdfs(connection_struct *conn, const char *path,SMB_STRUCT_STAT *sbuf)
+{
+	uint32 result = 0;
+
+	DEBUG(8,("dos_mode_msdfs: %s\n", path));
+
+	if (!VALID_STAT(*sbuf)) {
+		return 0;
+	}
+
+	/* First do any modifications that depend on the path name. */
+	/* hide files with a name starting with a . */
+	if (lp_hide_dot_files(SNUM(conn))) {
+		const char *p = strrchr_m(path,'/');
+		if (p) {
+			p++;
+		} else {
+			p = path;
+		}
+		
+		if (p[0] == '.' && p[1] != '.' && p[1] != 0) {
+			result |= aHIDDEN;
+		}
+	}
+	
+	result |= dos_mode_from_sbuf(conn, path, sbuf);
+
+	/* Optimization : Only call is_hidden_path if it's not already
+	   hidden. */
+	if (!(result & aHIDDEN) && IS_HIDDEN_PATH(conn,path)) {
+		result |= aHIDDEN;
+	}
+
+	DEBUG(8,("dos_mode_msdfs returning "));
+
+	if (result & aHIDDEN) DEBUG(8, ("h"));
+	if (result & aRONLY ) DEBUG(8, ("r"));
+	if (result & aSYSTEM) DEBUG(8, ("s"));
+	if (result & aDIR   ) DEBUG(8, ("d"));
+	if (result & aARCH  ) DEBUG(8, ("a"));
+	if (result & FILE_ATTRIBUTE_SPARSE ) DEBUG(8, ("[sparse]"));
+	
+	DEBUG(8,("\n"));
+
+	return(result);
+}
+
+/****************************************************************************
  Change a unix mode to a dos mode.
 ****************************************************************************/
 
