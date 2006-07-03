@@ -327,7 +327,7 @@ int samdb_search_string_multiple(struct ldb_context *sam_ldb,
 /*
   pull a uint from a result set. 
 */
-uint_t samdb_result_uint(struct ldb_message *msg, const char *attr, uint_t default_value)
+uint_t samdb_result_uint(const struct ldb_message *msg, const char *attr, uint_t default_value)
 {
 	return ldb_msg_find_uint(msg, attr, default_value);
 }
@@ -335,7 +335,7 @@ uint_t samdb_result_uint(struct ldb_message *msg, const char *attr, uint_t defau
 /*
   pull a (signed) int64 from a result set. 
 */
-int64_t samdb_result_int64(struct ldb_message *msg, const char *attr, int64_t default_value)
+int64_t samdb_result_int64(const struct ldb_message *msg, const char *attr, int64_t default_value)
 {
 	return ldb_msg_find_int64(msg, attr, default_value);
 }
@@ -343,13 +343,13 @@ int64_t samdb_result_int64(struct ldb_message *msg, const char *attr, int64_t de
 /*
   pull a string from a result set. 
 */
-const char *samdb_result_string(struct ldb_message *msg, const char *attr, 
+const char *samdb_result_string(const struct ldb_message *msg, const char *attr, 
 				const char *default_value)
 {
 	return ldb_msg_find_string(msg, attr, default_value);
 }
 
-struct ldb_dn *samdb_result_dn(TALLOC_CTX *mem_ctx, struct ldb_message *msg,
+struct ldb_dn *samdb_result_dn(TALLOC_CTX *mem_ctx, const struct ldb_message *msg,
 			       const char *attr, struct ldb_dn *default_value)
 {
 	const char *string = samdb_result_string(msg, attr, NULL);
@@ -360,7 +360,7 @@ struct ldb_dn *samdb_result_dn(TALLOC_CTX *mem_ctx, struct ldb_message *msg,
 /*
   pull a rid from a objectSid in a result set. 
 */
-uint32_t samdb_result_rid_from_sid(TALLOC_CTX *mem_ctx, struct ldb_message *msg, 
+uint32_t samdb_result_rid_from_sid(TALLOC_CTX *mem_ctx, const struct ldb_message *msg, 
 				   const char *attr, uint32_t default_value)
 {
 	struct dom_sid *sid;
@@ -378,7 +378,7 @@ uint32_t samdb_result_rid_from_sid(TALLOC_CTX *mem_ctx, struct ldb_message *msg,
 /*
   pull a dom_sid structure from a objectSid in a result set. 
 */
-struct dom_sid *samdb_result_dom_sid(TALLOC_CTX *mem_ctx, struct ldb_message *msg, 
+struct dom_sid *samdb_result_dom_sid(TALLOC_CTX *mem_ctx, const struct ldb_message *msg, 
 				     const char *attr)
 {
 	const struct ldb_val *v;
@@ -432,7 +432,7 @@ struct GUID samdb_result_guid(const struct ldb_message *msg, const char *attr)
   pull a sid prefix from a objectSid in a result set. 
   this is used to find the domain sid for a user
 */
-struct dom_sid *samdb_result_sid_prefix(TALLOC_CTX *mem_ctx, struct ldb_message *msg, 
+struct dom_sid *samdb_result_sid_prefix(TALLOC_CTX *mem_ctx, const struct ldb_message *msg, 
 					const char *attr)
 {
 	struct dom_sid *sid = samdb_result_dom_sid(mem_ctx, msg, attr);
@@ -1128,6 +1128,9 @@ _PUBLIC_ NTSTATUS samdb_set_password(struct ldb_context *ctx, TALLOC_CTX *mem_ct
 		/* pull the domain parameters */
 		count = gendb_search_dn(ctx, mem_ctx, domain_dn, &res, domain_attrs);
 		if (count != 1) {
+			DEBUG(2, ("samdb_set_password: Domain DN %s is invalid, for user %s\n", 
+				  ldb_dn_linearize(mem_ctx, domain_dn),
+				  ldb_dn_linearize(mem_ctx, user_dn)));
 			return NT_STATUS_NO_SUCH_DOMAIN;
 		}
 	} else {
@@ -1141,6 +1144,9 @@ _PUBLIC_ NTSTATUS samdb_set_password(struct ldb_context *ctx, TALLOC_CTX *mem_ct
 				     "(objectSid=%s)", 
 				     ldap_encode_ndr_dom_sid(mem_ctx, domain_sid));
 		if (count != 1) {
+			DEBUG(2, ("samdb_set_password: Could not find domain to match SID: %s, for user %s\n", 
+				  dom_sid_string(mem_ctx, domain_sid),
+				  ldb_dn_linearize(mem_ctx, user_dn)));
 			return NT_STATUS_NO_SUCH_DOMAIN;
 		}
 	}
