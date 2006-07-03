@@ -388,8 +388,8 @@
 	} samr_GroupInfoAll;
 
 	typedef struct {
-		uint32 unknown;
-	} samr_GroupInfoX;
+		samr_GroupAttrs attributes;
+	} samr_GroupInfoAttributes;
 
 	typedef struct {
 		lsa_String description;
@@ -398,17 +398,17 @@
 	typedef enum {
 		GROUPINFOALL          = 1,
 		GROUPINFONAME         = 2,
-		GROUPINFOX            = 3,
+		GROUPINFOATTRIBUTES   = 3,
 		GROUPINFODESCRIPTION  = 4,
 		GROUPINFOALL2         = 5
 	} samr_GroupInfoEnum;
 
 	typedef [switch_type(samr_GroupInfoEnum)] union {
-		[case(GROUPINFOALL)]         samr_GroupInfoAll    all;
-		[case(GROUPINFONAME)]        lsa_String           name;
-		[case(GROUPINFOX)]           samr_GroupInfoX      unknown;
-		[case(GROUPINFODESCRIPTION)] lsa_String           description;
-		[case(GROUPINFOALL2)]        samr_GroupInfoAll    all2;
+		[case(GROUPINFOALL)]         samr_GroupInfoAll        all;
+		[case(GROUPINFONAME)]        lsa_String               name;
+		[case(GROUPINFOATTRIBUTES)]  samr_GroupInfoAttributes attributes;
+		[case(GROUPINFODESCRIPTION)] lsa_String               description;
+		[case(GROUPINFOALL2)]        samr_GroupInfoAll        all2;
 	} samr_GroupInfo;
 
 	NTSTATUS samr_QueryGroupInfo(

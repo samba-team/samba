@@ -1642,18 +1642,24 @@ static NTSTATUS samr_QueryGroupInfo(struct dcesrv_call_state *dce_call, TALLOC_C
 	switch (r->in.level) {
 	case GROUPINFOALL:
 		QUERY_STRING(msg, all.name.string,        "sAMAccountName");
-		r->out.info->all.attributes = 7; /* Do like w2k3 */
+		r->out.info->all.attributes = SE_GROUP_MANDATORY | SE_GROUP_ENABLED_BY_DEFAULT | SE_GROUP_ENABLED; /* Do like w2k3 */
 		QUERY_UINT  (msg, all.num_members,      "numMembers")
 		QUERY_STRING(msg, all.description.string, "description");
 		break;
 	case GROUPINFONAME:
 		QUERY_STRING(msg, name.string,            "sAMAccountName");
 		break;
-	case GROUPINFOX:
-		r->out.info->unknown.unknown = 7;
+	case GROUPINFOATTRIBUTES:
+		r->out.info->attributes.attributes = SE_GROUP_MANDATORY | SE_GROUP_ENABLED_BY_DEFAULT | SE_GROUP_ENABLED; /* Do like w2k3 */
 		break;
 	case GROUPINFODESCRIPTION:
 		QUERY_STRING(msg, description.string, "description");
+		break;
+	case GROUPINFOALL2:
+		QUERY_STRING(msg, all2.name.string,        "sAMAccountName");
+		r->out.info->all.attributes = SE_GROUP_MANDATORY | SE_GROUP_ENABLED_BY_DEFAULT | SE_GROUP_ENABLED; /* Do like w2k3 */
+		QUERY_UINT  (msg, all2.num_members,      "numMembers")
+		QUERY_STRING(msg, all2.description.string, "description");
 		break;
 	default:
 		r->out.info = NULL;
@@ -1698,7 +1704,7 @@ static NTSTATUS samr_SetGroupInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX
 		 * sAMAccountName attribute */
 		SET_STRING(msg, name.string,                "sAMAccountName");
 		break;
-	case GROUPINFOX:
+	case GROUPINFOATTRIBUTES:
 		/* This does not do anything obviously visible in W2k3 LDAP */
 		break;
 	default:
@@ -3193,7 +3199,7 @@ static NTSTATUS samr_TestPrivateFunctionsDomain(struct dcesrv_call_state *dce_ca
 static NTSTATUS samr_TestPrivateFunctionsUser(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct samr_TestPrivateFunctionsUser *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
 
