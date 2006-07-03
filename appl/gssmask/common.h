@@ -38,6 +38,9 @@
 #endif
 
 #include <sys/param.h>
+#ifdef HAVE_SYS_UTSNAME_H
+#include <sys/utsname.h>
+#endif
 
 #include <krb5.h>
 #include <gssapi.h>
