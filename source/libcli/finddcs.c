@@ -110,7 +110,7 @@ failed:
  * can find the target's all-important name.  (Kerberos and some
  * netlogon operations are quite picky about names) 
  *
- * The name is a courtasy, if we don't find it, don't compleatly fail.
+ * The name is a courtesy, if we don't find it, don't completely fail.
  *
  * However, if the nbt server is down, fall back to a node status
  * request
