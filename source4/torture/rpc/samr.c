@@ -150,6 +150,11 @@ static BOOL test_QuerySecurity(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	s.in.sec_info = 7;
 	s.in.sdbuf = r.out.sdbuf;
 
+	if (lp_parm_bool(-1, "target", "samba4", False)) {
+		printf("skipping SetSecurity test against Samba4\n");
+		return True;
+	}
+
 	status = dcerpc_samr_SetSecurity(p, mem_ctx, &s);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("SetSecurity failed - %s\n", nt_errstr(status));
@@ -353,6 +358,11 @@ static BOOL test_SetUserInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	TEST_USERINFO_INT(21, logon_hours.bits[3], 21, logon_hours.bits[3], 4, 
 			  SAMR_FIELD_LOGON_HOURS);
 
+	if (lp_parm_bool(-1, "target", "samba4", False)) {
+		printf("skipping Set Account Flag tests against Samba4\n");
+		return ret;
+	}
+
 	TEST_USERINFO_INT_EXP(16, acct_flags, 5, acct_flags, 
 			      (base_acct_flags  | ACB_DISABLED | ACB_HOMDIRREQ), 
 			      (base_acct_flags  | ACB_DISABLED | ACB_HOMDIRREQ | user_extra_flags), 
@@ -372,12 +382,19 @@ static BOOL test_SetUserInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			      (base_acct_flags | ACB_DISABLED | ACB_HOMDIRREQ | user_extra_flags), 
 			      0);
 
+
 	/* The 'autolock' flag doesn't stick - check this */
 	TEST_USERINFO_INT_EXP(16, acct_flags, 21, acct_flags, 
 			      (base_acct_flags | ACB_DISABLED | ACB_AUTOLOCK), 
 			      (base_acct_flags | ACB_DISABLED | user_extra_flags), 
 			      0);
-
+#if 0
+	/* Removing the 'disabled' flag doesn't stick - check this */
+	TEST_USERINFO_INT_EXP(16, acct_flags, 21, acct_flags, 
+			      (base_acct_flags), 
+			      (base_acct_flags | ACB_DISABLED | user_extra_flags), 
+			      0);
+#endif
 	/* The 'store plaintext' flag does stick */
 	TEST_USERINFO_INT_EXP(16, acct_flags, 21, acct_flags, 
 			      (base_acct_flags | ACB_DISABLED | ACB_ENC_TXT_PWD_ALLOWED), 
