@@ -68,7 +68,7 @@ int tdb_brlock_len(struct tdb_context *tdb, tdb_off_t offset,
 		if (!probe && lck_type != F_SETLK) {
 			/* Ensure error code is set for log fun to examine. */
 			tdb->ecode = TDB_ERR_LOCK;
-			TDB_LOG((tdb, 5,"tdb_brlock failed (fd=%d) at offset %d rw_type=%d lck_type=%d len=%d\n", 
+			TDB_LOG((tdb, TDB_DEBUG_TRACE,"tdb_brlock failed (fd=%d) at offset %d rw_type=%d lck_type=%d len=%d\n", 
 				 tdb->fd, offset, rw_type, lck_type, len));
 		}
 		return TDB_ERRCODE(TDB_ERR_LOCK, -1);
@@ -99,7 +99,7 @@ int tdb_brlock_upgrade(struct tdb_context *tdb, tdb_off_t offset, size_t len)
 		tv.tv_usec = 1;
 		select(0, NULL, NULL, NULL, &tv);
 	}
-	TDB_LOG((tdb, 5,"tdb_brlock_upgrade failed at offset %d\n", offset));
+	TDB_LOG((tdb, TDB_DEBUG_TRACE,"tdb_brlock_upgrade failed at offset %d\n", offset));
 	return -1;
 }
 
@@ -119,7 +119,7 @@ int tdb_brlock(struct tdb_context *tdb, tdb_off_t offset,
 int tdb_lock(struct tdb_context *tdb, int list, int ltype)
 {
 	if (list < -1 || list >= (int)tdb->header.hash_size) {
-		TDB_LOG((tdb, 0,"tdb_lock: invalid list %d for ltype=%d\n", 
+		TDB_LOG((tdb, TDB_DEBUG_ERROR,"tdb_lock: invalid list %d for ltype=%d\n", 
 			   list, ltype));
 		return -1;
 	}
@@ -130,7 +130,7 @@ int tdb_lock(struct tdb_context *tdb, int list, int ltype)
 	   and simply bump the count for future ones */
 	if (tdb->locked[list+1].count == 0) {
 		if (tdb->methods->tdb_brlock(tdb,FREELIST_TOP+4*list,ltype,F_SETLKW, 0)) {
-			TDB_LOG((tdb, 0,"tdb_lock failed on list %d ltype=%d (%s)\n", 
+			TDB_LOG((tdb, TDB_DEBUG_ERROR, "tdb_lock failed on list %d ltype=%d (%s)\n", 
 				 list, ltype, strerror(errno)));
 			return -1;
 		}
@@ -153,12 +153,12 @@ int tdb_unlock(struct tdb_context *tdb, int list, int ltype)
 
 	/* Sanity checks */
 	if (list < -1 || list >= (int)tdb->header.hash_size) {
-		TDB_LOG((tdb, 0, "tdb_unlock: list %d invalid (%d)\n", list, tdb->header.hash_size));
+		TDB_LOG((tdb, TDB_DEBUG_ERROR, "tdb_unlock: list %d invalid (%d)\n", list, tdb->header.hash_size));
 		return ret;
 	}
 
 	if (tdb->locked[list+1].count==0) {
-		TDB_LOG((tdb, 0, "tdb_unlock: count is 0\n"));
+		TDB_LOG((tdb, TDB_DEBUG_ERROR, "tdb_unlock: count is 0\n"));
 		return ret;
 	}
 
@@ -172,7 +172,7 @@ int tdb_unlock(struct tdb_context *tdb, int list, int ltype)
 	tdb->locked[list+1].count--;
 
 	if (ret)
-		TDB_LOG((tdb, 0,"tdb_unlock: An error occurred unlocking!\n")); 
+		TDB_LOG((tdb, TDB_DEBUG_ERROR, "tdb_unlock: An error occurred unlocking!\n")); 
 	return ret;
 }
 

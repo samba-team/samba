@@ -197,7 +197,8 @@ struct tdb_context {
 	struct tdb_context *next; /* all tdbs to avoid multiple opens */
 	dev_t device;	/* uniquely identifies this tdb */
 	ino_t inode;	/* uniquely identifies this tdb */
-	void (*log_fn)(struct tdb_context *tdb, int level, const char *, ...) PRINTF_ATTRIBUTE(3,4); /* logging function */
+	tdb_log_func log_fn;
+	void *log_private;
 	unsigned int (*hash_fn)(TDB_DATA *key);
 	int open_flags; /* flags used in the open - needed by reopen */
 	unsigned int num_locks; /* number of chain locks held */

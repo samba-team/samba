@@ -79,9 +79,9 @@ static void print_asc(unsigned char *buf,int len)
 }
 
 #ifdef PRINTF_ATTRIBUTE
-static void tdb_log(struct tdb_context *t, int level, const char *format, ...) PRINTF_ATTRIBUTE(3,4);
+static void tdb_log(struct tdb_context *t, enum tdb_debug_level level, const char *format, ...) PRINTF_ATTRIBUTE(3,4);
 #endif
-static void tdb_log(struct tdb_context *t, int level, const char *format, ...)
+static void tdb_log(struct tdb_context *t, enum tdb_debug_level level, const char *format, ...)
 {
 	va_list ap;
     
@@ -190,7 +190,7 @@ static void create_tdb(void)
 	}
 	if (tdb) tdb_close(tdb);
 	tdb = tdb_open_ex(tok, 0, TDB_CLEAR_IF_FIRST,
-			  O_RDWR | O_CREAT | O_TRUNC, 0600, tdb_log, NULL);
+			  O_RDWR | O_CREAT | O_TRUNC, 0600, tdb_log, NULL, NULL);
 	if (!tdb) {
 		printf("Could not create %s: %s\n", tok, strerror(errno));
 	}
@@ -204,7 +204,7 @@ static void open_tdb(void)
 		return;
 	}
 	if (tdb) tdb_close(tdb);
-	tdb = tdb_open_ex(tok, 0, 0, O_RDWR, 0600, tdb_log, NULL);
+	tdb = tdb_open_ex(tok, 0, 0, O_RDWR, 0600, tdb_log, NULL, NULL);
 	if (!tdb) {
 		printf("Could not open %s: %s\n", tok, strerror(errno));
 	}
@@ -340,7 +340,7 @@ static void move_rec(void)
 	
 	print_rec(tdb, key, dbuf, NULL);
 	
-	dst_tdb = tdb_open_ex(file, 0, 0, O_RDWR, 0600, tdb_log, NULL);
+	dst_tdb = tdb_open_ex(file, 0, 0, O_RDWR, 0600, tdb_log, NULL, NULL);
 	if ( !dst_tdb ) {
 		terror("unable to open destination tdb");
 		return;

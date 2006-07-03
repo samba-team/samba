@@ -236,7 +236,7 @@ static int tdb_delete_hash(struct tdb_context *tdb, TDB_DATA key, u32 hash)
 	}
 
 	if (tdb_unlock(tdb, BUCKET(rec.full_hash), F_WRLCK) != 0)
-		TDB_LOG((tdb, 0, "tdb_delete: WARNING tdb_unlock failed!\n"));
+		TDB_LOG((tdb, TDB_DEBUG_WARNING, "tdb_delete: WARNING tdb_unlock failed!\n"));
 	return ret;
 }
 

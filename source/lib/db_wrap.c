@@ -144,22 +144,40 @@ struct ldb_context *ldb_wrap_connect(TALLOC_CTX *mem_ctx,
 /*
  Log tdb messages via DEBUG().
 */
-static void tdb_wrap_log(TDB_CONTEXT *tdb, int level, 
+static void tdb_wrap_log(TDB_CONTEXT *tdb, enum tdb_debug_level level, 
 			 const char *format, ...) PRINTF_ATTRIBUTE(3,4);
 
-static void tdb_wrap_log(TDB_CONTEXT *tdb, int level, 
+static void tdb_wrap_log(TDB_CONTEXT *tdb, enum tdb_debug_level level, 
 			 const char *format, ...)
 {
 	va_list ap;
 	char *ptr = NULL;
+	int debug_level;
 
 	va_start(ap, format);
 	vasprintf(&ptr, format, ap);
 	va_end(ap);
 	
+	switch (level) {
+	case TDB_DEBUG_FATAL:
+		debug_level = 0;
+		break;
+	case TDB_DEBUG_ERROR:
+		debug_level = 1;
+		break;
+	case TDB_DEBUG_WARNING:
+		debug_level = 2;
+		break;
+	case TDB_DEBUG_TRACE:
+		debug_level = 5;
+		break;
+	default:
+		debug_level = 0;
+	}		
+
 	if (ptr != NULL) {
 		const char *name = tdb_name(tdb);
-		DEBUG(level, ("tdb(%s): %s", name ? name : "unnamed", ptr));
+		DEBUG(debug_level, ("tdb(%s): %s", name ? name : "unnamed", ptr));
 		free(ptr);
 	}
 }
@@ -197,7 +215,7 @@ struct tdb_wrap *tdb_wrap_open(TALLOC_CTX *mem_ctx,
 	w->name = talloc_strdup(w, name);
 
 	w->tdb = tdb_open_ex(name, hash_size, tdb_flags, 
-			     open_flags, mode, tdb_wrap_log, NULL);
+			     open_flags, mode, tdb_wrap_log, NULL, NULL);
 	if (w->tdb == NULL) {
 		talloc_free(w);
 		return NULL;
