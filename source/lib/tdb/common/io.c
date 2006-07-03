@@ -65,7 +65,7 @@ static int tdb_oob(struct tdb_context *tdb, tdb_off_t len, int probe)
 		if (!probe) {
 			/* Ensure ecode is set for log fn. */
 			tdb->ecode = TDB_ERR_IO;
-			TDB_LOG((tdb, 0,"tdb_oob len %d beyond internal malloc size %d\n",
+			TDB_LOG((tdb, TDB_DEBUG_FATAL,"tdb_oob len %d beyond internal malloc size %d\n",
 				 (int)len, (int)tdb->map_size));
 		}
 		return TDB_ERRCODE(TDB_ERR_IO, -1);
@@ -79,7 +79,7 @@ static int tdb_oob(struct tdb_context *tdb, tdb_off_t len, int probe)
 		if (!probe) {
 			/* Ensure ecode is set for log fn. */
 			tdb->ecode = TDB_ERR_IO;
-			TDB_LOG((tdb, 0,"tdb_oob len %d beyond eof at %d\n",
+			TDB_LOG((tdb, TDB_DEBUG_FATAL,"tdb_oob len %d beyond eof at %d\n",
 				 (int)len, (int)st.st_size));
 		}
 		return TDB_ERRCODE(TDB_ERR_IO, -1);
@@ -114,7 +114,7 @@ static int tdb_write(struct tdb_context *tdb, tdb_off_t off,
 	} else if (pwrite(tdb->fd, buf, len, off) != (ssize_t)len) {
 		/* Ensure ecode is set for log fn. */
 		tdb->ecode = TDB_ERR_IO;
-		TDB_LOG((tdb, 0,"tdb_write failed at %d len=%d (%s)\n",
+		TDB_LOG((tdb, TDB_DEBUG_FATAL,"tdb_write failed at %d len=%d (%s)\n",
 			   off, len, strerror(errno)));
 		return TDB_ERRCODE(TDB_ERR_IO, -1);
 	}
@@ -146,7 +146,7 @@ static int tdb_read(struct tdb_context *tdb, tdb_off_t off, void *buf,
 		if (ret != (ssize_t)len) {
 			/* Ensure ecode is set for log fn. */
 			tdb->ecode = TDB_ERR_IO;
-			TDB_LOG((tdb, 0,"tdb_read failed at %d len=%d ret=%d (%s) map_size=%d\n",
+			TDB_LOG((tdb, TDB_DEBUG_FATAL,"tdb_read failed at %d len=%d ret=%d (%s) map_size=%d\n",
 				 off, len, ret, strerror(errno), tdb->map_size));
 			return TDB_ERRCODE(TDB_ERR_IO, -1);
 		}
@@ -217,7 +217,7 @@ void tdb_mmap(struct tdb_context *tdb)
 
 		if (tdb->map_ptr == MAP_FAILED) {
 			tdb->map_ptr = NULL;
-			TDB_LOG((tdb, 2, "tdb_mmap failed for size %d (%s)\n", 
+			TDB_LOG((tdb, TDB_DEBUG_WARNING, "tdb_mmap failed for size %d (%s)\n", 
 				 tdb->map_size, strerror(errno)));
 		}
 	} else {
@@ -242,7 +242,7 @@ static int tdb_expand_file(struct tdb_context *tdb, tdb_off_t size, tdb_off_t ad
 	if (ftruncate(tdb->fd, size+addition) == -1) {
 		char b = 0;
 		if (pwrite(tdb->fd,  &b, 1, (size+addition) - 1) != 1) {
-			TDB_LOG((tdb, 0, "expand_file to %d failed (%s)\n", 
+			TDB_LOG((tdb, TDB_DEBUG_FATAL, "expand_file to %d failed (%s)\n", 
 				 size+addition, strerror(errno)));
 			return -1;
 		}
@@ -256,7 +256,7 @@ static int tdb_expand_file(struct tdb_context *tdb, tdb_off_t size, tdb_off_t ad
 		int n = addition>sizeof(buf)?sizeof(buf):addition;
 		int ret = pwrite(tdb->fd, buf, n, size);
 		if (ret != n) {
-			TDB_LOG((tdb, 0, "expand_file write of %d failed (%s)\n", 
+			TDB_LOG((tdb, TDB_DEBUG_FATAL, "expand_file write of %d failed (%s)\n", 
 				   n, strerror(errno)));
 			return -1;
 		}
@@ -275,7 +275,7 @@ int tdb_expand(struct tdb_context *tdb, tdb_off_t size)
 	tdb_off_t offset;
 
 	if (tdb_lock(tdb, -1, F_WRLCK) == -1) {
-		TDB_LOG((tdb, 0, "lock failed in tdb_expand\n"));
+		TDB_LOG((tdb, TDB_DEBUG_ERROR, "lock failed in tdb_expand\n"));
 		return -1;
 	}
 
@@ -363,7 +363,7 @@ unsigned char *tdb_alloc_read(struct tdb_context *tdb, tdb_off_t offset, tdb_len
 	if (!(buf = malloc(len))) {
 		/* Ensure ecode is set for log fn. */
 		tdb->ecode = TDB_ERR_OOM;
-		TDB_LOG((tdb, 0,"tdb_alloc_read malloc failed len=%d (%s)\n",
+		TDB_LOG((tdb, TDB_DEBUG_ERROR,"tdb_alloc_read malloc failed len=%d (%s)\n",
 			   len, strerror(errno)));
 		return TDB_ERRCODE(TDB_ERR_OOM, buf);
 	}
@@ -382,7 +382,7 @@ int tdb_rec_read(struct tdb_context *tdb, tdb_off_t offset, struct list_struct *
 	if (TDB_BAD_MAGIC(rec)) {
 		/* Ensure ecode is set for log fn. */
 		tdb->ecode = TDB_ERR_CORRUPT;
-		TDB_LOG((tdb, 0,"tdb_rec_read bad magic 0x%x at offset=%d\n", rec->magic, offset));
+		TDB_LOG((tdb, TDB_DEBUG_FATAL,"tdb_rec_read bad magic 0x%x at offset=%d\n", rec->magic, offset));
 		return TDB_ERRCODE(TDB_ERR_CORRUPT, -1);
 	}
 	return tdb->methods->tdb_oob(tdb, rec->next+sizeof(*rec), 0);

@@ -116,5 +116,6 @@ int ltdb_index_del_value(struct ldb_module *module, const char *dn,
 
 struct tdb_context *ltdb_wrap_open(TALLOC_CTX *mem_ctx,
 				   const char *path, int hash_size, int tdb_flags,
-				   int open_flags, mode_t mode);
+				   int open_flags, mode_t mode,
+				   struct ldb_context *ldb);
 

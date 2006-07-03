@@ -58,6 +58,40 @@ static int ltdb_wrap_destructor(struct ltdb_wrap *w)
 	return 0;
 }				 
 
+static void ltdb_log_fn(struct tdb_context *tdb, enum tdb_debug_level level, const char *fmt, ...) PRINTF_ATTRIBUTE(3, 4);
+static void ltdb_log_fn(struct tdb_context *tdb, enum tdb_debug_level level, const char *fmt, ...)
+{
+	va_list ap;
+	const char *name = tdb_name(tdb);
+	struct ldb_context *ldb = talloc_get_type(tdb_logging_private(tdb), struct ldb_context);
+	enum ldb_debug_level ldb_level;
+	char *message; 
+	va_start(ap, fmt);
+	message = talloc_vasprintf(ldb, fmt, ap);
+	va_end(ap);
+
+	switch (level) {
+	case TDB_DEBUG_FATAL:
+		ldb_level = LDB_DEBUG_FATAL;
+		break;
+	case TDB_DEBUG_ERROR:
+		ldb_level = LDB_DEBUG_ERROR;
+		break;
+	case TDB_DEBUG_WARNING:
+		ldb_level = LDB_DEBUG_WARNING;
+		break;
+	case TDB_DEBUG_TRACE:
+		ldb_level = LDB_DEBUG_TRACE;
+		break;
+	default:
+		ldb_level = LDB_DEBUG_FATAL;
+	}
+
+	ldb_debug(ldb, ldb_level, "ltdb: tdb(%s): %s", name, message);
+	talloc_free(message);
+}
+
+
 /*
   wrapped connection to a tdb database. The caller should _not_ free
   this as it is not a talloc structure (as tdb does not use talloc
@@ -65,8 +99,10 @@ static int ltdb_wrap_destructor(struct ltdb_wrap *w)
   passed to this call
  */
 struct tdb_context *ltdb_wrap_open(TALLOC_CTX *mem_ctx,
-				   const char *path, int hash_size, int tdb_flags,
-				   int open_flags, mode_t mode)
+				   const char *path, int hash_size, 
+				   int tdb_flags,
+				   int open_flags, mode_t mode, 
+				   struct ldb_context *ldb)
 {
 	struct ltdb_wrap *w;
 	struct stat st;
@@ -85,7 +121,7 @@ struct tdb_context *ltdb_wrap_open(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	w->tdb = tdb_open(path, hash_size, tdb_flags, open_flags, mode);
+	w->tdb = tdb_open_ex(path, hash_size, tdb_flags, open_flags, mode, ltdb_log_fn, ldb, NULL);
 	if (w->tdb == NULL) {
 		talloc_free(w);
 		return NULL;
