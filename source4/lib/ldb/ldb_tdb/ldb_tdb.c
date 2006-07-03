@@ -969,7 +969,6 @@ static const struct ldb_module_ops ltdb_ops = {
 	.sequence_number   = ltdb_sequence_number
 };
 
-
 /*
   connect to the database
 */
@@ -1012,7 +1011,8 @@ static int ltdb_connect(struct ldb_context *ldb, const char *url,
 	}
 
 	/* note that we use quite a large default hash size */
-	ltdb->tdb = ltdb_wrap_open(ltdb, path, 10000, tdb_flags, open_flags, 0666);
+	ltdb->tdb = ltdb_wrap_open(ltdb, path, 10000, 
+				   tdb_flags, open_flags, 0666, ldb);
 	if (!ltdb->tdb) {
 		ldb_debug(ldb, LDB_DEBUG_ERROR, "Unable to open tdb '%s'\n", path);
 		talloc_free(ltdb);

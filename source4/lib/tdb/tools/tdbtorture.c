@@ -53,9 +53,9 @@ static int in_transaction;
 static int error_count;
 
 #ifdef PRINTF_ATTRIBUTE
-static void tdb_log(struct tdb_context *tdb, int level, const char *format, ...) PRINTF_ATTRIBUTE(3,4);
+static void tdb_log(struct tdb_context *tdb, enum tdb_debug_level level, const char *format, ...) PRINTF_ATTRIBUTE(3,4);
 #endif
-static void tdb_log(struct tdb_context *tdb, int level, const char *format, ...)
+static void tdb_log(struct tdb_context *tdb, enum tdb_debug_level level, const char *format, ...)
 {
 	va_list ap;
     
@@ -266,7 +266,7 @@ static void usage(void)
 	}
 
 	db = tdb_open_ex("torture.tdb", hash_size, TDB_CLEAR_IF_FIRST, 
-			 O_RDWR | O_CREAT, 0600, tdb_log, NULL);
+			 O_RDWR | O_CREAT, 0600, tdb_log, NULL, NULL);
 	if (!db) {
 		fatal("db open failed");
 	}

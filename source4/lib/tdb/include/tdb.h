@@ -55,6 +55,10 @@ enum TDB_ERROR {TDB_SUCCESS=0, TDB_ERR_CORRUPT, TDB_ERR_IO, TDB_ERR_LOCK,
 		TDB_ERR_OOM, TDB_ERR_EXISTS, TDB_ERR_NOLOCK, TDB_ERR_LOCK_TIMEOUT,
 		TDB_ERR_NOEXIST, TDB_ERR_EINVAL, TDB_ERR_RDONLY};
 
+/* debugging uses one of the following levels */
+enum tdb_debug_level {TDB_DEBUG_FATAL = 0, TDB_DEBUG_ERROR, 
+		      TDB_DEBUG_WARNING, TDB_DEBUG_TRACE};
+
 typedef struct TDB_DATA {
 	unsigned char *dptr;
 	size_t dsize;
@@ -76,19 +80,20 @@ typedef struct TDB_DATA {
 typedef struct tdb_context TDB_CONTEXT;
 
 typedef int (*tdb_traverse_func)(struct tdb_context *, TDB_DATA, TDB_DATA, void *);
-typedef void (*tdb_log_func)(struct tdb_context *, int , const char *, ...);
+typedef void (*tdb_log_func)(struct tdb_context *, enum tdb_debug_level, const char *, ...) PRINTF_ATTRIBUTE(3, 4);
 typedef unsigned int (*tdb_hash_func)(TDB_DATA *key);
 
 struct tdb_context *tdb_open(const char *name, int hash_size, int tdb_flags,
 		      int open_flags, mode_t mode);
 struct tdb_context *tdb_open_ex(const char *name, int hash_size, int tdb_flags,
 			 int open_flags, mode_t mode,
-			 tdb_log_func log_fn,
+			 tdb_log_func log_fn, void *log_private,
 			 tdb_hash_func hash_fn);
+void *tdb_logging_private(struct tdb_context *tdb);
 
 int tdb_reopen(struct tdb_context *tdb);
 int tdb_reopen_all(int parent_longlived);
-void tdb_logging_function(struct tdb_context *tdb, tdb_log_func);
+void tdb_logging_function(struct tdb_context *tdb, tdb_log_func log_fn, void *log_private);
 enum TDB_ERROR tdb_error(struct tdb_context *tdb);
 const char *tdb_errorstr(struct tdb_context *tdb);
 TDB_DATA tdb_fetch(struct tdb_context *tdb, TDB_DATA key);
@@ -106,6 +111,7 @@ void tdb_unlockall(struct tdb_context *tdb);
 const char *tdb_name(struct tdb_context *tdb);
 int tdb_fd(struct tdb_context *tdb);
 tdb_log_func tdb_log_fn(struct tdb_context *tdb);
+void *tdb_get_logging_private(struct tdb_context *tdb);
 int tdb_transaction_start(struct tdb_context *tdb);
 int tdb_transaction_commit(struct tdb_context *tdb);
 int tdb_transaction_cancel(struct tdb_context *tdb);
