@@ -617,6 +617,10 @@ static int password_hash_add(struct ldb_module *module, struct ldb_request *req)
 		return LDB_ERR_CONSTRAINT_VIOLATION;
 	}
 
+	h = ph_init_handle(req, module, PH_ADD);
+	if (!h) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
 	ac = talloc_get_type(h->private_data, struct ph_async_context);
 
 	/* get user domain data */
@@ -626,10 +630,6 @@ static int password_hash_add(struct ldb_module *module, struct ldb_request *req)
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	h = ph_init_handle(req, module, PH_ADD);
-	if (!h) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
 	ret = build_domain_data_request(ac);
 	if (ret != LDB_SUCCESS) {
 		return ret;
