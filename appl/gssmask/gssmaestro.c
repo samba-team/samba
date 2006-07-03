@@ -41,51 +41,14 @@ RCSID("$Id$");
 struct client {
     char *name;
     krb5_storage *sock;
+    int32_t capabilities;
+    char *target_name;
 };
 
 #if 0
 static struct client *clients;
 static int num_clients;
 #endif
-
-static struct client *
-connect_client(const char *name, const char *port)
-{
-    struct client *c = ecalloc(1, sizeof(*c));
-    struct addrinfo hints, *res0, *res;
-    int ret, fd;
-
-    c->name = estrdup(name);
-    
-    memset(&hints, 0, sizeof(hints));
-    hints.ai_family = PF_UNSPEC;
-    hints.ai_socktype = SOCK_STREAM;
-
-    ret = getaddrinfo(name, port, &hints, &res0);
-    if (ret)
-	errx(1, "error resolving %s", name);
-
-    for (res = res0, fd = -1; res; res = res->ai_next) {
-	fd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
-	if (fd < 0)
-	    continue;
-	if (connect(fd, res->ai_addr, res->ai_addrlen) < 0) {
-	    close(fd);
-	    fd = -1;
-	    continue;
-	}
-	break;  /* okay we got one */
-    }
-    if (fd < 0)
-	err(1, "connect to host: %s", name);
-    freeaddrinfo(res);
-
-    c->sock = krb5_storage_from_fd(fd);
-    close(fd);
-    if (c->sock == NULL)
-	errx(1, "krb5_storage_from_fd");
-    return c;
-}
 
 static int
 init_sec_context(struct client *client, 
@@ -173,25 +136,39 @@ get_targetname(struct client *client,
 }
 
 static int
+get_version_capa(struct client *client, 
+		 int32_t *version, int32_t *capa,
+		 char **version_str)
+{
+    put32(client, eGetVersionAndCapabilities);
+    ret32(client, *version);
+    ret32(client, *capa);
+    retstring(client, *version_str);
+    return GSMERR_OK;
+}
+
+
+static int
 build_context(struct client *ipeer, struct client *apeer,
 	      int32_t flags, int32_t hCred,
 	      int32_t *iContext, int32_t *aContext, int32_t *hDelegCred)
 {
     int32_t val, ic = 0, ac = 0, deleg = 0;
     krb5_data itoken, otoken;
-    char *target;
     int iDone = 0, aDone = 0;
 
-    krb5_data_zero(&itoken);
+    if (apeer->target_name == NULL)
+	errx(1, "apeer %s have no target name", apeer->name);
 
-    get_targetname(apeer, &target);
+
+    krb5_data_zero(&itoken);
 
     while (!iDone && !aDone) {
 
 	if (iDone)
 	    errx(1, "iPeer already done, aPeer want extra rtt");
 
-	val = init_sec_context(ipeer, &ic, &hCred, flags, target,
+	val = init_sec_context(ipeer, &ic, &hCred, flags, apeer->target_name,
 			       &itoken, &otoken);
 	switch(val) {
 	case GSMERR_OK:
@@ -248,7 +225,57 @@ build_context(struct client *ipeer, struct client *apeer,
     return val;
 }
 			 
+static struct client *
+connect_client(const char *name, const char *port)
+{
+    struct client *c = ecalloc(1, sizeof(*c));
+    struct addrinfo hints, *res0, *res;
+    int ret, fd;
 
+    c->name = estrdup(name);
+    
+    memset(&hints, 0, sizeof(hints));
+    hints.ai_family = PF_UNSPEC;
+    hints.ai_socktype = SOCK_STREAM;
+
+    ret = getaddrinfo(name, port, &hints, &res0);
+    if (ret)
+	errx(1, "error resolving %s", name);
+
+    for (res = res0, fd = -1; res; res = res->ai_next) {
+	fd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
+	if (fd < 0)
+	    continue;
+	if (connect(fd, res->ai_addr, res->ai_addrlen) < 0) {
+	    close(fd);
+	    fd = -1;
+	    continue;
+	}
+	break;  /* okay we got one */
+    }
+    if (fd < 0)
+	err(1, "connect to host: %s", name);
+    freeaddrinfo(res);
+
+    c->sock = krb5_storage_from_fd(fd);
+    close(fd);
+    if (c->sock == NULL)
+	errx(1, "krb5_storage_from_fd");
+
+    get_targetname(c, &c->target_name);
+
+    {
+	int32_t version;
+	char *str = NULL;
+	get_version_capa(c, &version, &c->capabilities, &str);
+	if (str) {
+	    printf("client %s is using %s\n", c->name, str);
+	    free(str);
+	}
+    }
+
+    return c;
+}
 
 static int version_flag;
 static int help_flag;
@@ -336,7 +363,7 @@ main(int argc, char **argv)
 
 	val = acquire_cred(c, user, password, 1, &hCred);
 	if (val != GSMERR_OK)
-	    errx(1, "failed to acquire_cred");
+	    errx(1, "failed to acquire_cred: %d", (int)val);
 
 	/*
 	 *
