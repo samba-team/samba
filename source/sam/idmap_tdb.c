@@ -129,38 +129,51 @@ static NTSTATUS db_allocate_id(unid_t *id, int id_type)
 static NTSTATUS internal_get_sid_from_id(DOM_SID *sid, unid_t id, int id_type)
 {
 	TDB_DATA key, data;
-	fstring keystr;
+	TALLOC_CTX *memctx;
 	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
 
 	if (!sid)
 		return NT_STATUS_INVALID_PARAMETER;
 
-	switch (id_type & ID_TYPEMASK) {
-		case ID_USERID:
-			slprintf(keystr, sizeof(keystr), "UID %lu", (unsigned long)id.uid);
-			break;
-		case ID_GROUPID:
-			slprintf(keystr, sizeof(keystr), "GID %lu", (unsigned long)id.gid);
-			break;
-		default:
-			return NT_STATUS_UNSUCCESSFUL;
+	if ((memctx = talloc_new(NULL)) == NULL) {
+		DEBUG(0, ("ERROR: Out of memory!\n"));
+		return NT_STATUS_NO_MEMORY;
 	}
 
-	key.dptr = keystr;
-	key.dsize = strlen(keystr) + 1;
+	switch (id_type & ID_TYPEMASK) {
+		case ID_USERID:
+			key.dptr = talloc_asprintf(memctx, "UID %lu", (unsigned long)id.uid);
+			break;
+		case ID_GROUPID:
+			key.dptr = talloc_asprintf(memctx, "GID %lu", (unsigned long)id.gid);
+			break;
+		default:
+			ret = NT_STATUS_UNSUCCESSFUL;
+			goto done;
+	}
 
-	DEBUG(10,("internal_get_sid_from_id: fetching record %s\n", keystr ));
+	if (key.dptr == NULL) {
+		DEBUG(0, ("ERROR: Out of memory!\n"));
+		ret = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
+	key.dsize = strlen(key.dptr) + 1;
+
+	DEBUG(10,("internal_get_sid_from_id: fetching record %s\n", key.dptr));
 
 	data = tdb_fetch(idmap_tdb, key);
 
 	if (data.dptr) {
 		if (string_to_sid(sid, data.dptr)) {
-			DEBUG(10,("internal_get_sid_from_id: fetching record %s -> %s\n", keystr, data.dptr ));
+			DEBUG(10,("internal_get_sid_from_id: fetching record %s -> %s\n", key.dptr, data.dptr ));
 			ret = NT_STATUS_OK;
 		}
 		SAFE_FREE(data.dptr);
 	}
 
+done:
+	talloc_free(memctx);
 	return ret;
 }
 
@@ -170,39 +183,45 @@ enum getidfromsiderr { GET_ID_FROM_SID_OK = 0, GET_ID_FROM_SID_NOTFOUND, GET_ID_
 static enum getidfromsiderr internal_get_id_from_sid(unid_t *id, int *id_type, const DOM_SID *sid) 
 {
 	enum getidfromsiderr ret = GET_ID_FROM_SID_ERR;
-	fstring keystr;
-	TDB_DATA key, data;
 	int type = *id_type & ID_TYPEMASK;
+	TDB_DATA key, data;
+	TALLOC_CTX *memctx;
+
+	if ((memctx = talloc_new(NULL)) == NULL) {
+		DEBUG(0, ("ERROR: Out of memory!\n"));
+		return GET_ID_FROM_SID_ERR;
+	}
 
 	/* Check if sid is present in database */
-	sid_to_string(keystr, sid);
+	if ((key.dptr = talloc_asprintf(memctx, "%s", sid_string_static(sid))) == NULL) {
+		DEBUG(0, ("ERROR: Out of memory!\n"));
+		ret = GET_ID_FROM_SID_ERR;
+		goto done;
+	}
+	key.dsize = strlen(key.dptr) + 1;
 
-	key.dptr = keystr;
-	key.dsize = strlen(keystr) + 1;
-
-	DEBUG(10,("internal_get_id_from_sid: fetching record %s of type 0x%x\n", keystr, type ));
+	DEBUG(10,("internal_get_id_from_sid: fetching record %s of type 0x%x\n", key.dptr, type));
 
 	data = tdb_fetch(idmap_tdb, key);
 	if (!data.dptr) {
-		DEBUG(10,("internal_get_id_from_sid: record %s not found\n", keystr ));
-		return GET_ID_FROM_SID_NOTFOUND;
+		DEBUG(10,("internal_get_id_from_sid: record %s not found\n", key.dptr));
+		ret = GET_ID_FROM_SID_NOTFOUND;
+		goto done;
 	} else {
-		DEBUG(10,("internal_get_id_from_sid: record %s -> %s\n", keystr, data.dptr ));
+		DEBUG(10,("internal_get_id_from_sid: record %s -> %s\n", key.dptr, data.dptr));
 	}
 
 	if (type == ID_EMPTY || type == ID_USERID) {
-		fstring scanstr;
+
 		/* Parse and return existing uid */
-		fstrcpy(scanstr, "UID %d");
-		
-		if (sscanf(data.dptr, scanstr, &((*id).uid)) == 1) {
+		if (sscanf(data.dptr, "UID %d", &((*id).uid)) == 1) {
 			/* uid ok? */
 			if (type == ID_EMPTY) {
 				*id_type = ID_USERID;
 			}
 			DEBUG(10,("internal_get_id_from_sid: %s fetching record %s -> %s \n",
 						(type == ID_EMPTY) ? "ID_EMPTY" : "ID_USERID",
-						keystr, data.dptr ));
+						key.dptr, data.dptr ));
 			ret = GET_ID_FROM_SID_OK;
 		} else {
 			ret = GET_ID_FROM_SID_WRONG_TYPE;
@@ -210,18 +229,16 @@ static enum getidfromsiderr internal_get_id_from_sid(unid_t *id, int *id_type, c
 	}
 	
 	if ((ret != GET_ID_FROM_SID_OK) && (type == ID_EMPTY || type == ID_GROUPID)) {
-		fstring scanstr;
+
 		/* Parse and return existing gid */
-		fstrcpy(scanstr, "GID %d");
-		
-		if (sscanf(data.dptr, scanstr, &((*id).gid)) == 1) {
+		if (sscanf(data.dptr, "GID %d", &((*id).gid)) == 1) {
 			/* gid ok? */
 			if (type == ID_EMPTY) {
 				*id_type = ID_GROUPID;
 			}
 			DEBUG(10,("internal_get_id_from_sid: %s fetching record %s -> %s \n",
 						(type == ID_EMPTY) ? "ID_EMPTY" : "ID_GROUPID",
-						keystr, data.dptr ));
+						key.dptr, data.dptr ));
 			ret = GET_ID_FROM_SID_OK;
 		} else {
 			ret = GET_ID_FROM_SID_WRONG_TYPE;
@@ -230,6 +247,8 @@ static enum getidfromsiderr internal_get_id_from_sid(unid_t *id, int *id_type, c
 	
 	SAFE_FREE(data.dptr);
 
+done:
+	talloc_free(memctx);
 	return ret;
 }
 
@@ -273,6 +292,7 @@ static NTSTATUS db_get_id_from_sid(unid_t *id, int *id_type, const DOM_SID *sid)
 {
 	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
 	enum getidfromsiderr iderr;
+	DOM_SID sid_tmp;
 
 	DEBUG(10,("db_get_id_from_sid\n"));
 
@@ -280,88 +300,106 @@ static NTSTATUS db_get_id_from_sid(unid_t *id, int *id_type, const DOM_SID *sid)
 		return NT_STATUS_INVALID_PARAMETER;
 
 	iderr = internal_get_id_from_sid(id, id_type, sid);
-	if (iderr == GET_ID_FROM_SID_OK) {
-		DOM_SID sid_tmp;
+	switch (iderr) {
+	case GET_ID_FROM_SID_OK:
 		ret = internal_get_sid_from_id(&sid_tmp, *id, *id_type);
 		if (NT_STATUS_IS_OK(ret)) {
 			if (!sid_equal(&sid_tmp, sid)) {
-				return NT_STATUS_UNSUCCESSFUL;
+				ret = NT_STATUS_UNSUCCESSFUL;
 			}
 		}
-	} else if (iderr == GET_ID_FROM_SID_WRONG_TYPE) {
+
+		return ret;
+
+	case GET_ID_FROM_SID_WRONG_TYPE:
 		/* We found a record but not the type we wanted.
 		 * This is an error, not an opportunity to overwrite...
 		 * JRA.
 		 */
 		return NT_STATUS_UNSUCCESSFUL;
-	}
 
-	if (!(*id_type & ID_QUERY_ONLY) && (iderr != GET_ID_FROM_SID_OK) &&
-		   (((*id_type & ID_TYPEMASK) == ID_USERID)
-		    || (*id_type & ID_TYPEMASK) == ID_GROUPID)) {
-		TDB_DATA sid_data;
-		TDB_DATA ugid_data;
-		fstring sid_string;
-		
-		sid_to_string(sid_string, sid);
-		
-		sid_data.dptr = sid_string;
-		sid_data.dsize = strlen(sid_string)+1;
+	default:
+		if ( (!(*id_type & ID_QUERY_ONLY)) &&
+		     (((*id_type & ID_TYPEMASK) == ID_USERID) ||
+		     (*id_type & ID_TYPEMASK) == ID_GROUPID)) {
+			TDB_DATA sid_data;
+			TDB_DATA ugid_data;
+			TALLOC_CTX *memctx;
 
-		/* Lock the record for this SID. */
-		if (tdb_chainlock(idmap_tdb, sid_data) != 0) {
-			DEBUG(10,("db_get_id_from_sid: failed to lock record %s. Error %s\n",
-					sid_string, tdb_errorstr(idmap_tdb) ));
-			return NT_STATUS_UNSUCCESSFUL;
-		}
-
-		do {
-			fstring ugid_str;
-
-			/* Allocate a new id for this sid */
-			ret = db_allocate_id(id, *id_type);
-			if (!NT_STATUS_IS_OK(ret))
-				break;
-			
-			/* Store the UID side */
-			/* Store new id */
-			if (*id_type & ID_USERID) {
-				slprintf(ugid_str, sizeof(ugid_str), "UID %lu", 
-					 (unsigned long)((*id).uid));
-			} else {
-				slprintf(ugid_str, sizeof(ugid_str), "GID %lu", 
-					 (unsigned long)((*id).gid));
+			if ((memctx = talloc_new(NULL)) == NULL) {
+				DEBUG(0, ("ERROR: Out of memory!\n"));
+				return NT_STATUS_NO_MEMORY;
 			}
-			
-			ugid_data.dptr = ugid_str;
-			ugid_data.dsize = strlen(ugid_str) + 1;
 
-			DEBUG(10,("db_get_id_from_sid: storing %s -> %s\n",
-					ugid_data.dptr, sid_data.dptr ));
-
-			if (tdb_store(idmap_tdb, ugid_data, sid_data, TDB_INSERT) != -1) {
-				ret = NT_STATUS_OK;
-				break;
+			if ((sid_data.dptr = talloc_asprintf(memctx, "%s", sid_string_static(sid))) == NULL) {
+				DEBUG(0, ("ERROR: Out of memory!\n"));
+				ret = NT_STATUS_NO_MEMORY;
+				goto done;
 			}
-			if (tdb_error(idmap_tdb) != TDB_ERR_EXISTS)
-				DEBUG(10,("db_get_id_from_sid: error %s\n", tdb_errorstr(idmap_tdb) ));
-			ret = NT_STATUS_UNSUCCESSFUL;
-		} while (tdb_error(idmap_tdb) == TDB_ERR_EXISTS);
+			sid_data.dsize = strlen(sid_data.dptr) + 1;
 
-		if (NT_STATUS_IS_OK(ret)) {
 
-			DEBUG(10,("db_get_id_from_sid: storing %s -> %s\n",
-				sid_data.dptr, ugid_data.dptr ));
-
-			if (tdb_store(idmap_tdb, sid_data, ugid_data, TDB_REPLACE) == -1) {
-				DEBUG(10,("db_get_id_from_sid: error %s\n", tdb_errorstr(idmap_tdb) ));
-				/* TODO: print tdb error !! */
-				tdb_chainunlock(idmap_tdb, sid_data);
+			/* Lock the record for this SID. */
+			if (tdb_chainlock(idmap_tdb, sid_data) != 0) {
+				DEBUG(10,("db_get_id_from_sid: failed to lock record %s. Error %s\n",
+						sid_data.dptr, tdb_errorstr(idmap_tdb) ));
 				return NT_STATUS_UNSUCCESSFUL;
 			}
-		}
 
-		tdb_chainunlock(idmap_tdb, sid_data);
+			do {
+				/* Allocate a new id for this sid */
+				ret = db_allocate_id(id, *id_type);
+				if (!NT_STATUS_IS_OK(ret))
+					break;
+			
+				/* Store the UID side */
+				/* Store new id */
+				if (*id_type & ID_USERID) {
+					ugid_data.dptr = talloc_asprintf(memctx, "UID %lu",
+									(unsigned long)((*id).uid));
+				} else {
+					ugid_data.dptr = talloc_asprintf(memctx, "GID %lu",
+									(unsigned long)((*id).gid));
+				}
+				if (ugid_data.dptr == NULL) {
+					DEBUG(0, ("ERROR: Out of memory!\n"));
+					ret = NT_STATUS_NO_MEMORY;
+					goto done;
+				}
+				ugid_data.dsize = strlen(ugid_data.dptr) + 1;
+			
+
+				DEBUG(10,("db_get_id_from_sid: storing %s -> %s\n",
+						ugid_data.dptr, sid_data.dptr ));
+
+				if (tdb_store(idmap_tdb, ugid_data, sid_data, TDB_INSERT) != -1) {
+					ret = NT_STATUS_OK;
+					break;
+				}
+				if (tdb_error(idmap_tdb) != TDB_ERR_EXISTS) {
+					DEBUG(10,("db_get_id_from_sid: error %s\n", tdb_errorstr(idmap_tdb)));
+				}
+				
+				ret = NT_STATUS_UNSUCCESSFUL;
+
+			} while (tdb_error(idmap_tdb) == TDB_ERR_EXISTS);
+
+			if (NT_STATUS_IS_OK(ret)) {
+
+				DEBUG(10,("db_get_id_from_sid: storing %s -> %s\n",
+					sid_data.dptr, ugid_data.dptr ));
+
+				if (tdb_store(idmap_tdb, sid_data, ugid_data, TDB_REPLACE) == -1) {
+					DEBUG(10,("db_get_id_from_sid: error %s\n", tdb_errorstr(idmap_tdb) ));
+					/* TODO: print tdb error !! */
+					tdb_chainunlock(idmap_tdb, sid_data);
+					ret = NT_STATUS_UNSUCCESSFUL;
+				}
+			}
+done:
+			tdb_chainunlock(idmap_tdb, sid_data);
+			talloc_free(memctx);
+		}
 	}
 	
 	return ret;
@@ -369,30 +407,43 @@ static NTSTATUS db_get_id_from_sid(unid_t *id, int *id_type, const DOM_SID *sid)
 
 static NTSTATUS db_set_mapping(const DOM_SID *sid, unid_t id, int id_type)
 {
+	NTSTATUS ret;
 	TDB_DATA ksid, kid, data;
-	fstring ksidstr;
-	fstring kidstr;
+	TALLOC_CTX *memctx;
 
 	DEBUG(10,("db_set_mapping: id_type = 0x%x\n", id_type));
 
 	if (!sid)
 		return NT_STATUS_INVALID_PARAMETER;
 
-	sid_to_string(ksidstr, sid);
-
-	ksid.dptr = ksidstr;
-	ksid.dsize = strlen(ksidstr) + 1;
-
-	if (id_type & ID_USERID) {
-		slprintf(kidstr, sizeof(kidstr), "UID %lu", (unsigned long)id.uid);
-	} else if (id_type & ID_GROUPID) {
-		slprintf(kidstr, sizeof(kidstr), "GID %lu", (unsigned long)id.gid);
-	} else {
-		return NT_STATUS_INVALID_PARAMETER;
+	if ((memctx = talloc_new(NULL)) == NULL) {
+		DEBUG(0, ("ERROR: Out of memory!\n"));
+		return NT_STATUS_NO_MEMORY;
 	}
 
-	kid.dptr = kidstr;
-	kid.dsize = strlen(kidstr) + 1;
+	if ((ksid.dptr = talloc_asprintf(memctx, "%s", sid_string_static(sid))) == NULL) {
+		DEBUG(0, ("ERROR: Out of memory!\n"));
+		ret = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+	ksid.dsize = strlen(ksid.dptr) + 1;
+
+	if (id_type & ID_USERID) {
+		kid.dptr = talloc_asprintf(memctx, "UID %lu", (unsigned long)id.uid);
+	} else if (id_type & ID_GROUPID) {
+		kid.dptr = talloc_asprintf(memctx, "GID %lu", (unsigned long)id.gid);
+	} else {
+		ret = NT_STATUS_INVALID_PARAMETER;
+		goto done;
+	}
+	if (kid.dptr == NULL) {
+		DEBUG(0, ("ERROR: Out of memory!\n"));
+		ret = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+	kid.dsize = strlen(kid.dptr) + 1;
+
+
 
 	/* *DELETE* prevoius mappings if any.
 	 * This is done both SID and [U|G]ID passed in */
@@ -400,7 +451,7 @@ static NTSTATUS db_set_mapping(const DOM_SID *sid, unid_t id, int id_type)
 	/* Lock the record for this SID. */
 	if (tdb_chainlock(idmap_tdb, ksid) != 0) {
 		DEBUG(10,("db_set_mapping: failed to lock record %s. Error %s\n",
-				ksidstr, tdb_errorstr(idmap_tdb) ));
+				ksid.dptr, tdb_errorstr(idmap_tdb) ));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
@@ -424,17 +475,22 @@ static NTSTATUS db_set_mapping(const DOM_SID *sid, unid_t id, int id_type)
 	if (tdb_store(idmap_tdb, ksid, kid, TDB_INSERT) == -1) {
 		DEBUG(0, ("idb_set_mapping: tdb_store 1 error: %s\n", tdb_errorstr(idmap_tdb)));
 		tdb_chainunlock(idmap_tdb, ksid);
-		return NT_STATUS_UNSUCCESSFUL;
+		ret = NT_STATUS_UNSUCCESSFUL;
+		goto done;
 	}
 	if (tdb_store(idmap_tdb, kid, ksid, TDB_INSERT) == -1) {
 		DEBUG(0, ("idb_set_mapping: tdb_store 2 error: %s\n", tdb_errorstr(idmap_tdb)));
 		tdb_chainunlock(idmap_tdb, ksid);
-		return NT_STATUS_UNSUCCESSFUL;
+		ret = NT_STATUS_UNSUCCESSFUL;
+		goto done;
 	}
 
 	tdb_chainunlock(idmap_tdb, ksid);
 	DEBUG(10,("db_set_mapping: stored %s -> %s and %s -> %s\n", ksid.dptr, kid.dptr, kid.dptr, ksid.dptr ));
-	return NT_STATUS_OK;
+	ret = NT_STATUS_OK;
+done:
+	talloc_free(memctx);
+	return ret;
 }
 
 /*****************************************************************************
