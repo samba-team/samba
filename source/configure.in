@@ -3167,6 +3167,18 @@ if test x"$with_ldap_support" != x"no"; then
 	
 	with_ldap_support=no
   fi
+
+  ##################################################################
+  # HP/UX does not have ber_tag_t, disable LDAP there
+  AC_CHECK_TYPE(ber_tag_t,,,[#include <lber.h>])
+  if test x"$ac_cv_type_ber_tag_t" != x"yes"; then
+	if test x"$with_ldap_support" = x"yes"; then
+	 AC_MSG_ERROR(ber_tag_t is needed for LDAP support)
+	else
+	 AC_MSG_WARN(ber_tag_t is needed for LDAP support)
+	fi
+	with_ldap_support=no
+  fi
 fi
 
 if test x"$with_ldap_support" != x"no"; then
