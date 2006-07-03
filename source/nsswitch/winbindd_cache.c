@@ -827,6 +827,7 @@ NTSTATUS wcache_cached_creds_exist(struct winbindd_domain *domain, const DOM_SID
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 
+	SAFE_FREE(data.dptr);
 	return NT_STATUS_OK;
 }
 
