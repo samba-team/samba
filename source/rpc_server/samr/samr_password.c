@@ -139,8 +139,8 @@ NTSTATUS samr_ChangePasswordUser(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	/* set the password on the user DN specified.  This may fail
-	 * due to password policies */
+	/* setup password modify mods on the user DN specified.  This may fail
+	 * due to password policies.  */
 	status = samdb_set_password(sam_ctx, mem_ctx,
 				    a_state->account_dn, a_state->domain_state->domain_dn,
 				    msg, NULL, &new_lmPwdHash, &new_ntPwdHash, 
