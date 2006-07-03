@@ -369,7 +369,7 @@ int tdb_close(struct tdb_context *tdb)
 void tdb_logging_function(struct tdb_context *tdb, tdb_log_func log_fn, void *log_private)
 {
 	tdb->log_fn = log_fn?log_fn:null_log_fn;
-	tdb->log_fn = log_fn?log_private:NULL;
+	tdb->log_private = log_fn?log_private:NULL;
 }
 
 void *tdb_logging_private(struct tdb_context *tdb)
