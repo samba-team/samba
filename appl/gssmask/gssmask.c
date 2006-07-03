@@ -570,13 +570,27 @@ static int
 HandleOP(GetVersionAndCapabilities)
 {
     int32_t cap = 0x10; /* has moniker */
+    char name[256] = "unknown", *str;
 
     if (targetname)
 	cap |= 0x1; /* is server */
 
+#ifdef HAVE_UNAME
+    {
+	struct utsname ut;
+	if (uname(&ut) == 0) {
+	    snprintf(name, sizeof(name), "%s-%s-%s", 
+		     ut.sysname, ut.version, ut.machine);
+	}
+    }
+#endif
+
+    asprintf(&str, "gssmask %s %s", PACKAGE_STRING, name);
+
     put32(c, GSSMAGGOTPROTOCOL);
     put32(c, cap);
-    putstring(c, "gssmask"); 
+    putstring(c, str); 
+    free(str);
 
     return 0;
 }
