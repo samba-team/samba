@@ -1091,6 +1091,8 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 
 	while (!found) {
 		BOOL got_match;
+		BOOL ms_dfs_link = False;
+
 		/* Needed if we run out of space */
 		long curr_dirpos = prev_dirpos = dptr_TellDir(conn->dirptr);
 		dname = dptr_ReadDirName(conn->dirptr,&curr_dirpos,&sbuf);
@@ -1154,8 +1156,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 
 				if(lp_host_msdfs() && 
 				   lp_msdfs_root(SNUM(conn)) &&
-				   is_msdfs_link(NULL,conn, pathreal, NULL, NULL,
-						 &sbuf)) {
+				   ((ms_dfs_link = is_msdfs_link(NULL,conn, pathreal, NULL, NULL, &sbuf)) == True)) {
 
 					DEBUG(5,("get_lanman2_dir_entry: Masquerading msdfs link %s as a directory\n", pathreal));
 					sbuf.st_mode = (sbuf.st_mode & 0xFFF) | S_IFDIR;
@@ -1168,7 +1169,11 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 				}
 			}
 
-			mode = dos_mode(conn,pathreal,&sbuf);
+			if (ms_dfs_link) {
+				mode = dos_mode_msdfs(conn,pathreal,&sbuf);
+			} else {
+				mode = dos_mode(conn,pathreal,&sbuf);
+			}
 
 			if (!dir_check_ftype(conn,mode,dirtype)) {
 				DEBUG(5,("[%s] attribs didn't match %x\n",fname,dirtype));
