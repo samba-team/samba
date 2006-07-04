@@ -22,6 +22,7 @@
 
 #include "includes.h"
 #include "torture/torture.h"
+#include "system/time.h"
 #include "librpc/gen_ndr/lsa.h"
 #include "librpc/gen_ndr/ndr_samr_c.h"
 #include "smb.h"
@@ -1472,6 +1473,11 @@ static BOOL test_alias_ops(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		ret = False;
 	}
 
+	if (lp_parm_bool(-1, "target", "samba4", False)) {
+		printf("skipping MultipleMembers Alias tests against Samba4\n");
+		return ret;
+	}
+
 	if (!test_AddMultipleMembersToAlias(p, mem_ctx, alias_handle)) {
 		ret = False;
 	}
@@ -1586,7 +1592,7 @@ static BOOL test_DeleteAlias_byname(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	return True;
 
 failed:
-	printf("DeleteUser_byname(%s) failed - %s\n", name, nt_errstr(status));
+	printf("DeleteAlias_byname(%s) failed - %s\n", name, nt_errstr(status));
 	return False;
 }
 
@@ -2663,6 +2669,21 @@ static BOOL test_QueryDomainInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	uint16_t set_ok[] = {1, 0, 1, 1, 0, 1, 1, 0, 1,  0,  1,  0};
 	int i;
 	BOOL ret = True;
+	const char *domain_comment = talloc_asprintf(mem_ctx, 
+				  "Tortured by Samba4 RPC-SAMR: %s", 
+				  timestring(mem_ctx, time(NULL)));
+
+	s.in.domain_handle = handle;
+	s.in.level = 4;
+	s.in.info = talloc(mem_ctx, union samr_DomainInfo);
+	
+	s.in.info->info4.comment.string = domain_comment;
+	status = dcerpc_samr_SetDomainInfo(p, mem_ctx, &s);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("SetDomainInfo level %u (set comment) failed - %s\n", 
+		       r.in.level, nt_errstr(status));
+		return False;
+	}
 
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
 		printf("Testing QueryDomainInfo level %u\n", levels[i]);
@@ -2676,6 +2697,30 @@ static BOOL test_QueryDomainInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			       r.in.level, nt_errstr(status));
 			ret = False;
 			continue;
+		}
+
+		switch (levels[i]) {
+		case 2:
+			if (strcmp(r.out.info->info2.comment.string, domain_comment) != 0) {
+				printf("QueryDomainInfo level %u returned different comment (%s, expected %s)\n",
+				       levels[i], r.out.info->info2.comment.string, domain_comment);
+				ret = False;
+			}
+			break;
+		case 4:
+			if (strcmp(r.out.info->info4.comment.string, domain_comment) != 0) {
+				printf("QueryDomainInfo level %u returned different comment (%s, expected %s)\n",
+				       levels[i], r.out.info->info4.comment.string, domain_comment);
+				ret = False;
+			}
+			break;
+		case 11:
+			if (strcmp(r.out.info->info11.info2.comment.string, domain_comment) != 0) {
+				printf("QueryDomainInfo level %u returned different comment (%s, expected %s)\n",
+				       levels[i], r.out.info->info11.info2.comment.string, domain_comment);
+				ret = False;
+			}
+			break;
 		}
 
 		printf("Testing SetDomainInfo level %u\n", levels[i]);
@@ -2987,16 +3032,21 @@ static BOOL test_AddGroupMember(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		return False;
 	}
 
-	/* this one is quite strange. I am using random inputs in the
-	   hope of triggering an error that might give us a clue */
-	s.in.group_handle = group_handle;
-	s.in.unknown1 = random();
-	s.in.unknown2 = random();
+	if (lp_parm_bool(-1, "target", "samba4", False)) {
+		printf("skipping SetMemberAttributesOfGroup test against Samba4\n");
+	} else {
+		/* this one is quite strange. I am using random inputs in the
+		   hope of triggering an error that might give us a clue */
 
-	status = dcerpc_samr_SetMemberAttributesOfGroup(p, mem_ctx, &s);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("SetMemberAttributesOfGroup failed - %s\n", nt_errstr(status));
-		return False;
+		s.in.group_handle = group_handle;
+		s.in.unknown1 = random();
+		s.in.unknown2 = random();
+
+		status = dcerpc_samr_SetMemberAttributesOfGroup(p, mem_ctx, &s);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("SetMemberAttributesOfGroup failed - %s\n", nt_errstr(status));
+			return False;
+		}
 	}
 
 	q.in.group_handle = group_handle;
@@ -3150,8 +3200,13 @@ static BOOL test_OpenDomain(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	ret &= test_QueryDisplayInfo2(p, mem_ctx, &domain_handle);
 	ret &= test_QueryDisplayInfo3(p, mem_ctx, &domain_handle);
 	ret &= test_QueryDisplayInfo_continue(p, mem_ctx, &domain_handle);
-	ret &= test_GetDisplayEnumerationIndex(p, mem_ctx, &domain_handle);
-	ret &= test_GetDisplayEnumerationIndex2(p, mem_ctx, &domain_handle);
+	
+	if (lp_parm_bool(-1, "target", "samba4", False)) {
+		printf("skipping GetDisplayEnumerationIndex test against Samba4\n");
+	} else {
+		ret &= test_GetDisplayEnumerationIndex(p, mem_ctx, &domain_handle);
+		ret &= test_GetDisplayEnumerationIndex2(p, mem_ctx, &domain_handle);
+	}
 	ret &= test_GroupList(p, mem_ctx, &domain_handle);
 	ret &= test_TestPrivateFunctionsDomain(p, mem_ctx, &domain_handle);
 	ret &= test_RidToSid(p, mem_ctx, sid, &domain_handle);
