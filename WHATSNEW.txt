@@ -8,15 +8,18 @@ that production Samba servers should be running for all current
 bug-fixes.  Please read the changes in this section for details on 
 new features and difference in behavior from previous releases.
 
-We would like to thank the developers of Klocwork for their 
-analysis of the Samba source tree.  This release includes fixes 
-for over 200 defects reported by the Klocwork code analyzer.
+There has been a substantial amount of cleanup work done during 
+this development cycle.  We would like to thank both Coverity 
+(http://www.coverity.com/) and Klocwork (http://www.klocwork.com/)
+for anaylzing the Sambs source code. As a result, this release 
+includes fixes for over 400 defects.  The coverage was approximately 
+even with over 200 defects reported by each tool.
 
 Thanks very much to those people who spent time testing the 
 release candidates and reported their findings.  We would like to 
 especially thank Thomas Bork <tombork@web.de> for his numerous 
-reports.  We believe that the final release is in much better 
-shape in a large part due to his efforts.
+reports.  We believe that the final release is in much better shape 
+in a large part due to his efforts.
 
 New features in 3.0.23 include:
 
@@ -164,6 +167,7 @@ o   Jeremy Allison <jra@samba.org>
     * Fix nmbd WINS serving bug causing duplicate IPs in the *<1b> 
       query reply ("enhanced browsing = yes").
     * Fix SMB signing failures in client tools.
+    * BUG 3909: Avoid EA lookups on MS-DFS links.
 
 
 o   Nicholas Brealey <nick@brealey.org>
@@ -185,11 +189,13 @@ o   Gerald (Jerry) Carter <jerry@samba.org>
 o   Guenther Deschner <gd@samba.org>
     * Fix different extended_dn handling in adssearch.pl
       (Thanks to Frederic Brin at Novell).
+    * Fix a memleak in winbindd's credentials cache.
 
 
 o   Volker Lendecke <vl@samba.org>
     * Fix a memleak in the server registry code for enumeration 
       shares.
+    * Fix an niavlid munlock call in winbindd's credentials cache.
 
 
 o   Jason Mader <jason@ncac.gwu.edu>
