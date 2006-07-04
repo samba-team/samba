@@ -8,22 +8,22 @@
 	<pubdate>June 30, 2003</pubdate>
 </chapterinfo>
 
-<title>Upgrading from Samba-2.x to Samba-3.0.20</title>
+<title>Upgrading from Samba-2.x to Samba-3.0.23</title>
 
 <para>
 <indexterm><primary>Samba differences</primary></indexterm>
 <indexterm><primary>changed parameters</primary></indexterm>
 <indexterm><primary>simple guide</primary></indexterm>
-This chapter deals exclusively with the differences between Samba-3.0.20 and Samba-2.2.8a.
+This chapter deals exclusively with the differences between Samba-3.0.23 and Samba-2.2.8a.
 It points out where configuration parameters have changed, and provides a simple guide for 
-the move from 2.2.x to 3.0.20.
+the move from 2.2.x to 3.0.23.
 </para>
 
 <sect1>
 <title>Quick Migration Guide</title>
 
 <para>
-Samba-3.0.20 default behavior should be approximately the same as Samba-2.2.x.
+Samba-3.0.23 default behavior should be approximately the same as Samba-2.2.x.
 The default behavior when the new parameter <smbconfoption name="passdb backend"/>
 is not defined in the &smb.conf; file provides the same default behavior as Samba-2.2.x
 with <smbconfoption name="encrypt passwords">Yes</smbconfoption> and
@@ -34,7 +34,7 @@ will use the <filename>smbpasswd</filename> database.
 <indexterm><primary>behavior approximately same</primary></indexterm>
 <indexterm><primary>differing protocol</primary></indexterm>
 So why say that <emphasis>behavior should be approximately the same as Samba-2.2.x</emphasis>? Because
-Samba-3.0.20 can negotiate new protocols, such as support for native Unicode, that may result in
+Samba-3.0.23 can negotiate new protocols, such as support for native Unicode, that may result in
 differing protocol code paths being taken. The new behavior under such circumstances is not
 exactly the same as the old one. The good news is that the domain and machine SIDs will be
 preserved across the upgrade.
@@ -169,9 +169,20 @@ Plus lots of other improvements!
 <title>Configuration Parameter Changes</title>
 
 <para>
-This section contains a brief listing of changes to &smb.conf; options since the Samba-2.2.x series up to an
-including Samba-3.0.21. Please refer to the smb.conf(5) man page for complete descriptions of new or modified
+This section contains a brief listing of changes to &smb.conf; options since the Samba-2.2.x series up to and
+including Samba-3.0.23.
+</para>
+
+<para>
+Please refer to the smb.conf(5) man page for complete descriptions of new or modified
 parameters.
+</para>
+
+<para>
+Whenever a Samba update or upgrade is performed it is highly recommended to read the file called
+<emphasis>WHATSNEW.txt</emphasis> that is part of the Samba distribution tarball. This file may also
+be obtain on-line from <ulink url="http://www.samba.org/samba/">Samba web site, in the right column, under
+Current Stable Release, by clicking on <emphasis>Release Notes</emphasis>.
 </para>
 
 <sect2>
@@ -179,7 +190,7 @@ parameters.
 
 <indexterm><primary>deleted parameters</primary></indexterm>
 <para>
-In alphabetical order, these are the parameters eliminated from Samba-2.2.x through 3.0.21.
+In alphabetical order, these are the parameters eliminated from Samba-2.2.x through 3.0.23.
 </para>
 
 <itemizedlist>
@@ -191,8 +202,10 @@ In alphabetical order, these are the parameters eliminated from Samba-2.2.x thro
 	<listitem><para>coding system</para></listitem>
 	<listitem><para>domain admin group</para></listitem>
 	<listitem><para>domain guest group</para></listitem>
+	<listitem><para>enable rid algorithm</para></listitem>
 	<listitem><para>enable svcctl</para></listitem>
 	<listitem><para>force unknown acl user</para></listitem>
+	<listitem><para>hosts equiv</para></listitem>
 	<listitem><para>ldap filter</para></listitem>
 	<listitem><para>min password length</para></listitem>
 	<listitem><para>nt smb support</para></listitem>
@@ -211,6 +224,8 @@ In alphabetical order, these are the parameters eliminated from Samba-2.2.x thro
 	<listitem><para>valid chars</para></listitem>
 	<listitem><para>vfs options</para></listitem>
 	<listitem><para>winbind enable local accounts</para></listitem>
+	<listitem><para>winbind max idle children</para></listitem>
+	<listitem><para>wins partners</para></listitem>
 </itemizedlist>
 
 </sect2>
@@ -218,7 +233,7 @@ In alphabetical order, these are the parameters eliminated from Samba-2.2.x thro
 <sect2>
 <title>New Parameters</title>
 
-<para>New parameters in the Samba 3.0.0 series prior to release of Samba 3.0.20 are grouped by function):</para>
+<para>The following new parameters have been released up to and including Samba 3.0.23 (grouped by function:)</para>
 
 <para>Remote Management</para>
 
@@ -256,6 +271,7 @@ In alphabetical order, these are the parameters eliminated from Samba-2.2.x thro
 <para>Protocol Options</para>
 
 <itemizedlist>
+	<listitem><para>add port command</para></listitem>
 	<listitem><para>afs token lifetime</para></listitem>
 	<listitem><para>client lanman auth</para></listitem>
 	<listitem><para>client NTLMv2 auth</para></listitem>
@@ -264,6 +280,7 @@ In alphabetical order, these are the parameters eliminated from Samba-2.2.x thro
 	<listitem><para>client use spnego</para></listitem>
 	<listitem><para>defer sharing violations</para></listitem>
 	<listitem><para>disable netbios</para></listitem>
+	<listitem><para>dmapi support</para></listitem>
 	<listitem><para>enable privileges</para></listitem>
 	<listitem><para>use kerberos keytab</para></listitem>
 	<listitem><para>log nt token command</para></listitem>
@@ -290,6 +307,7 @@ In alphabetical order, these are the parameters eliminated from Samba-2.2.x thro
 	<listitem><para>dfree command</para></listitem>
 	<listitem><para>ea support</para></listitem>
 	<listitem><para>enable asu support</para></listitem>
+	<listitem><para>fam change notify</para></listitem>
 	<listitem><para>force unknown acl user</para></listitem>
 	<listitem><para>get quota command</para></listitem>
 	<listitem><para>hide special files</para></listitem>
@@ -302,9 +320,17 @@ In alphabetical order, these are the parameters eliminated from Samba-2.2.x thro
 	<listitem><para>map read only</para></listitem>
 	<listitem><para>max stat cache size</para></listitem>
 	<listitem><para>msdfs proxy</para></listitem>
+	<listitem><para>open files database hash size</para></listitem>
 	<listitem><para>set quota command</para></listitem>
 	<listitem><para>store dos attributes</para></listitem>
 	<listitem><para>use sendfile</para></listitem>
+	<listitem><para>usershare allow guests</para></listitem>
+	<listitem><para>usershare max shares</para></listitem>
+	<listitem><para>usershare owner only</para></listitem>
+	<listitem><para>usershare path</para></listitem>
+	<listitem><para>usershare prefix allow list</para></listitem>
+	<listitem><para>usershare prefix deny list</para></listitem>
+	<listitem><para>usershare template share</para></listitem>
 	<listitem><para>vfs objects</para></listitem>
 </itemizedlist>
 
@@ -335,11 +361,11 @@ In alphabetical order, these are the parameters eliminated from Samba-2.2.x thro
 	<listitem><para>idmap gid</para></listitem>
 	<listitem><para>idmap uid</para></listitem>
 	<listitem><para>username map script</para></listitem>
-	<listitem><para>winbind nested groups</para></listitem>
 	<listitem><para>winbind nss info</para></listitem>
+	<listitem><para>winbind offline logon</para></listitem>
+	<listitem><para>winbind refresh tickets</para></listitem>
 	<listitem><para>winbind trusted domains only</para></listitem>
 	<listitem><para>template primary group</para></listitem>
-	<listitem><para>enable rid algorithm</para></listitem>
 </itemizedlist>
 
 <para>LDAP</para>
@@ -370,18 +396,27 @@ In alphabetical order, these are the parameters eliminated from Samba-2.2.x thro
 <title>Modified Parameters (Changes in Behavior)</title>
 
 <itemizedlist>
+	<listitem><para>acl group control (new default is No, deprecated parameter)<para></listitem>
+	<listitem><para>change notify timeout (scope changed)</para></listitem>
+	<listitem><para>dos filemode (disabled by default)</para></listitem>
 	<listitem><para>dos filetimes (enabled by default)</para></listitem>
+	<listitem><para>enable asu support (disabled by default)</para></listitem>
+	<listitem><para>enable privileges (enabled by default)</para></listitem>
 	<listitem><para>encrypt passwords (enabled by default) </para></listitem>
+	<listitem><para>host msdfs (enabled by default)</para></listitem>
 	<listitem><para>mangling method (set to hash2 by default) </para></listitem>
 	<listitem><para>map to guest</para></listitem>
 	<listitem><para>only user (deprecated)</para></listitem>
-	<listitem><para>passwd chat </para></listitem>
-	<listitem><para>passwd program </para></listitem>
-	<listitem><para>password server </para></listitem>
-	<listitem><para>restrict anonymous (integer value) </para></listitem>
-	<listitem><para>security (new ads value) </para></listitem>
-	<listitem><para>strict locking (enabled by default) </para></listitem>
-	<listitem><para>winbind cache time (increased to 5 minutes) </para></listitem>
+	<listitem><para>passwd chat</para></listitem>
+	<listitem><para>passwd program</para></listitem>
+	<listitem><para>password server</para></listitem>
+	<listitem><para>restrict anonymous (integer value)</para></listitem>
+	<listitem><para>security (new ads value)</para></listitem>
+	<listitem><para>strict locking (auto by default)</para></listitem>
+	<listitem><para>winbind cache time (increased to 5 minutes)</para></listitem>
+	<listitem><para>winbind enum groups (disabled by default)</para></listitem>
+	<listitem><para>winbind enum users (disabled by default)</para></listitem>
+	<listitem><para>winbind nested groups (enabled by default)</para></listitem>
 	<listitem><para>winbind uid (deprecated in favor of idmap uid)</para></listitem>
 	<listitem><para>winbind gid (deprecated in favor of idmap gid)</para></listitem>
 	<listitem><para>winbindd nss info</para></listitem>
