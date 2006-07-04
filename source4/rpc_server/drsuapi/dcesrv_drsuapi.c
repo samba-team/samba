@@ -171,10 +171,10 @@ static WERROR DRSUAPI_VERIFY_NAMES(struct dcesrv_call_state *dce_call, TALLOC_CT
 
 
 /* 
-  DRSUAPI_GET_MEMBERSHIPS 
+  drsuapi_DsGetMemberships 
 */
-static WERROR DRSUAPI_GET_MEMBERSHIPS(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct DRSUAPI_GET_MEMBERSHIPS *r)
+static WERROR drsuapi_DsGetMemberships(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct drsuapi_DsGetMemberships *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
@@ -332,16 +332,14 @@ static WERROR DRSUAPI_ADD_SID_HISTORY(struct dcesrv_call_state *dce_call, TALLOC
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
-
 /* 
-  DRSUAPI_GET_MEMBERSHIPS2 
+  drsuapi_DsGetMemberships2 
 */
-static WERROR DRSUAPI_GET_MEMBERSHIPS2(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct DRSUAPI_GET_MEMBERSHIPS2 *r)
+static WERROR drsuapi_DsGetMemberships2(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct drsuapi_DsGetMemberships2 *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
-
 
 /* 
   DRSUAPI_REPLICA_VERIFY_OBJECTS 
