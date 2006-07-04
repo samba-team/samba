@@ -7,11 +7,13 @@
   authservice("ldap"),
   helpstring("Active Directory Replication"),
   pointer_default(unique),
-  depends(security,misc),
+  depends(security,misc,samr),
   keepref
 ] 
 interface drsuapi
 {
+	declare bitmap samr_GroupAttrs;
+
 	/*****************/
         /* Function 0x00 */
         typedef [bitmap32bit] bitmap {
@@ -767,7 +769,51 @@ interface drsuapi
 
 	/*****************/
         /* Function 0x09 */
-	WERROR DRSUAPI_GET_MEMBERSHIPS();
+
+	/* how are type 4 and 7 different from 2 and 3 ? */
+	typedef [v1_enum] enum {
+		DRSUAPI_DS_MEMBERSHIP_TYPE_UNIVERSAL_AND_DOMAIN_GROUPS = 1,
+		DRSUAPI_DS_MEMBERSHIP_TYPE_DOMAIN_LOCAL_GROUPS 	= 2,
+		DRSUAPI_DS_MEMBERSHIP_TYPE_DOMAIN_GROUPS	= 3,
+		DRSUAPI_DS_MEMBERSHIP_TYPE_DOMAIN_LOCAL_GROUPS2	= 4,
+		DRSUAPI_DS_MEMBERSHIP_TYPE_UNIVERSAL_GROUPS	= 5,
+		DRSUAPI_DS_MEMBERSHIP_TYPE_GROUPMEMBERS		= 6,
+		DRSUAPI_DS_MEMBERSHIP_TYPE_DOMAIN_GROUPS2	= 7
+	} drsuapi_DsMembershipType;
+
+	typedef struct {
+		NTSTATUS status;
+		[range(0,10000)] uint32 num_memberships;
+		[range(0,10000)] uint32 num_sids;
+		[size_is(num_memberships)] drsuapi_DsReplicaObjectIdentifier **info_array;
+		[size_is(num_memberships)] samr_GroupAttrs *group_attrs;
+		[size_is(num_sids)] dom_sid28 **sids;
+	} drsuapi_DsGetMembershipsCtr1;
+
+	typedef [switch_type(int32)] union {
+		[case(1)] drsuapi_DsGetMembershipsCtr1 ctr1;
+	} drsuapi_DsGetMembershipsCtr;
+
+	const int DRSUAPI_DS_MEMBERSHIP_FLAG_GROUP_ATTR	= 0x1;
+
+	typedef struct {
+		[range(1,10000)] uint32 count;
+		[size_is(count)] drsuapi_DsReplicaObjectIdentifier **info_array;
+		uint32 flags;
+		drsuapi_DsMembershipType type;
+		drsuapi_DsReplicaObjectIdentifier *domain;
+	} drsuapi_DsGetMembershipsRequest1;
+
+	typedef [switch_type(int32)] union {
+		[case(1)] drsuapi_DsGetMembershipsRequest1 req1;
+	} drsuapi_DsGetMembershipsRequest;
+
+	WERROR drsuapi_DsGetMemberships(
+		[in] policy_handle *bind_handle,
+		[in,out] int32 level,
+		[in] [switch_is(level)] drsuapi_DsGetMembershipsRequest req,
+		[out] [switch_is(level)] drsuapi_DsGetMembershipsCtr ctr
+		);
 
 	/*****************/
         /* Function 0x0a */
@@ -1370,7 +1416,32 @@ interface drsuapi
 
 	/*****************/
         /* Function 0x15 */
-	WERROR DRSUAPI_GET_MEMBERSHIPS2();
+
+	typedef struct {
+		[range(0,10000)] uint32 num_entries;
+		[size_is(num_entries)] drsuapi_DsGetMembershipsCtr1 **ctrl_array;
+	} drsuapi_DsGetMemberships2Ctr1;
+
+	typedef [switch_type(int32)] union {
+		[case(1)] drsuapi_DsGetMembershipsCtr1 ctr1;
+	} drsuapi_DsGetMemberships2Ctr;
+
+	typedef struct {
+		[range(1,10000)] uint32 num_req;
+		[size_is(num_req)] drsuapi_DsGetMembershipsRequest1 **req_array;
+	} drsuapi_DsGetMemberships2Request1;
+
+	typedef [switch_type(int32)] union {
+		[case(1)] drsuapi_DsGetMemberships2Request1 req1;
+	} drsuapi_DsGetMemberships2Request;
+
+	WERROR drsuapi_DsGetMemberships2(
+		[in] policy_handle *bind_handle,
+		[in,out] int32 level,
+		[in] [switch_is(level)] drsuapi_DsGetMemberships2Request req,
+		[out] [switch_is(level)] drsuapi_DsGetMemberships2Ctr ctr
+		);
+
 
 	/*****************/
         /* Function 0x16 */
