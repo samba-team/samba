@@ -298,14 +298,6 @@ WERROR _dfs_Enum(pipes_struct *p, NETDFS_Q_DFS_ENUM *q_u, NETDFS_R_DFS_ENUM *r_u
 		r_u->info.e.u.info3.ptr0_s = 1;
 		r_u->info.e.u.info3.size_s = num_jn;
 		break;
-	case 4:
-		if ((r_u->info.e.u.info4.s = TALLOC_ARRAY(p->mem_ctx, NETDFS_DFS_INFO4, num_jn)) == NULL) {
-			return WERR_NOMEM;
-		}
-		r_u->info.e.u.info4.count = num_jn;
-		r_u->info.e.u.info4.ptr0_s = 1;
-		r_u->info.e.u.info4.size_s = num_jn;
-		break;
 	default:
 		return WERR_INVALID_PARAM;
 	}
