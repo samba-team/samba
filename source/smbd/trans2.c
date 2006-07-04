@@ -4404,7 +4404,7 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 		case SMB_FILE_RENAME_INFORMATION:
 		{
 			BOOL overwrite;
-			uint32 root_fid;
+			/* uint32 root_fid; */  /* Not used */
 			uint32 len;
 			pstring newname;
 			pstring base_name;
@@ -4415,7 +4415,7 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 			}
 
 			overwrite = (CVAL(pdata,0) ? True : False);
-			root_fid = IVAL(pdata,4);
+			/* root_fid = IVAL(pdata,4); */
 			len = IVAL(pdata,8);
 			srvstr_get_path(inbuf, newname, &pdata[12], sizeof(newname), len, 0, &status);
 			if (!NT_STATUS_IS_OK(status)) {

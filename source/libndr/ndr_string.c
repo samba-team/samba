@@ -31,7 +31,7 @@ NTSTATUS ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, const char **s)
 	uint32_t len1, ofs, len2;
 	uint16_t len3;
 	int ret;
-	int chset = CH_UCS2;
+	charset_t chset = CH_UCS2;
 	unsigned byte_mul = 2;
 	unsigned flags = ndr->flags;
 	unsigned c_len_term = 0;
@@ -282,7 +282,7 @@ NTSTATUS ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, const char **s)
 NTSTATUS ndr_push_string(struct ndr_push *ndr, int ndr_flags, const char *s)
 {
 	ssize_t s_len, c_len, d_len;
-	int chset = CH_UCS2;
+	charset_t chset = CH_UCS2;
 	unsigned flags = ndr->flags;
 	unsigned byte_mul = 2;
 	uint8_t *dest = NULL;
@@ -575,7 +575,8 @@ NTSTATUS ndr_pull_charset(struct ndr_pull *ndr, int ndr_flags, const char **var,
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_push_charset(struct ndr_push *ndr, int ndr_flags, const char *var, uint32_t length, uint8_t byte_mul, int chset)
+NTSTATUS ndr_push_charset(struct ndr_push *ndr, int ndr_flags, const char *var,
+			  uint32_t length, uint8_t byte_mul, charset_t chset)
 {
 	ssize_t ret, required;
 

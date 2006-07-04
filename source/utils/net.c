@@ -77,6 +77,7 @@ const char *opt_target_workgroup = NULL;
 int opt_machine_pass = 0;
 BOOL opt_localgroup = False;
 BOOL opt_domaingroup = False;
+static BOOL do_talloc_report=False;
 const char *opt_newntname = "";
 int opt_rid = 0;
 int opt_acls = 0;
@@ -852,7 +853,6 @@ static struct functable net_func[] = {
 	int argc_new = 0;
 	const char ** argv_new;
 	poptContext pc;
-	BOOL do_talloc_report=False;
 
 	struct poptOption long_options[] = {
 		{"help",	'h', POPT_ARG_NONE,   0, 'h'},

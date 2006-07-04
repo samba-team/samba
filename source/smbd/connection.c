@@ -356,5 +356,5 @@ BOOL delete_pipe_opendb( smb_np_struct *p )
 	
 done:
 	TALLOC_FREE( prec );
-	return True;
+	return ret;
 }

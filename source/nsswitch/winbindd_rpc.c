@@ -824,7 +824,6 @@ static NTSTATUS sequence_number(struct winbindd_domain *domain, uint32 *seq)
 	NTSTATUS result;
 	POLICY_HND dom_pol;
 	BOOL got_seq_num = False;
-	int retry;
 	struct rpc_pipe_client *cli;
 
 	DEBUG(10,("rpc: fetch sequence_number for %s\n", domain->name));
@@ -833,8 +832,6 @@ static NTSTATUS sequence_number(struct winbindd_domain *domain, uint32 *seq)
 
 	if (!(mem_ctx = talloc_init("sequence_number[rpc]")))
 		return NT_STATUS_NO_MEMORY;
-
-	retry = 0;
 
 #ifdef HAVE_LDAP
 	if ( domain->native_mode ) 

@@ -567,7 +567,8 @@ static void lookupsid_recv(TALLOC_CTX *mem_ctx, BOOL success,
 	}
 
 	cont(private_data, True, response->data.name.dom_name,
-	     response->data.name.name, response->data.name.type);
+	     response->data.name.name,
+	     (enum SID_NAME_USE)response->data.name.type);
 }
 
 void winbindd_lookupsid_async(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
@@ -659,7 +660,8 @@ static void lookupname_recv(TALLOC_CTX *mem_ctx, BOOL success,
 		return;
 	}
 
-	cont(private_data, True, &sid, response->data.sid.type);
+	cont(private_data, True, &sid,
+	     (enum SID_NAME_USE)response->data.sid.type);
 }
 
 void winbindd_lookupname_async(TALLOC_CTX *mem_ctx, const char *dom_name,

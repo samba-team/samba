@@ -223,8 +223,9 @@ static NTTIME centry_nttime(struct cache_entry *centry)
 }
 
 /*
-  pull a time_t from a cache entry 
+  pull a time_t from a cache entry -- apparently unused 
 */
+#if 0 
 static time_t centry_time(struct cache_entry *centry)
 {
 	time_t ret;
@@ -237,6 +238,7 @@ static time_t centry_time(struct cache_entry *centry)
 	centry->ofs += sizeof(time_t);
 	return ret;
 }
+#endif
 
 /* pull a string from a cache entry, using the supplied
    talloc context 
@@ -259,7 +261,7 @@ static char *centry_string(struct cache_entry *centry, TALLOC_CTX *mem_ctx)
 		smb_panic("centry_string");
 	}
 
-	ret = TALLOC(mem_ctx, len+1);
+	ret = TALLOC_ARRAY(mem_ctx, char, len+1);
 	if (!ret) {
 		smb_panic("centry_string out of memory\n");
 	}
@@ -567,7 +569,8 @@ static void centry_expand(struct cache_entry *centry, uint32 len)
 	if (centry->len - centry->ofs >= len)
 		return;
 	centry->len *= 2;
-	centry->data = SMB_REALLOC(centry->data, centry->len);
+	centry->data = SMB_REALLOC_ARRAY(centry->data, unsigned char,
+					 centry->len);
 	if (!centry->data) {
 		DEBUG(0,("out of memory: needed %d bytes in centry_expand\n", centry->len));
 		smb_panic("out of memory in centry_expand");
@@ -840,7 +843,6 @@ NTSTATUS wcache_get_creds(struct winbindd_domain *domain,
 	struct winbind_cache *cache = get_cache(domain);
 	struct cache_entry *centry = NULL;
 	NTSTATUS status;
-	time_t t;
 	uint32 rid;
 
 	if (!cache->tdb) {
@@ -863,7 +865,6 @@ NTSTATUS wcache_get_creds(struct winbindd_domain *domain,
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 
-	t = centry_time(centry);
 	*cached_nt_pass = (const uint8 *)centry_string(centry, mem_ctx);
 
 #if DEBUG_PASSWORD
@@ -2035,7 +2036,7 @@ void cache_store_response(pid_t pid, struct winbindd_response *response)
 
 	fstr_sprintf(key_str, "DR/%d", pid);
 	if (tdb_store(wcache->tdb, string_tdb_data(key_str), 
-		      make_tdb_data((void *)response, sizeof(*response)),
+		      make_tdb_data((const char *)response, sizeof(*response)),
 		      TDB_REPLACE) == -1)
 		return;
 
@@ -2049,7 +2050,7 @@ void cache_store_response(pid_t pid, struct winbindd_response *response)
 
 	fstr_sprintf(key_str, "DE/%d", pid);
 	if (tdb_store(wcache->tdb, string_tdb_data(key_str),
-		      make_tdb_data(response->extra_data.data,
+		      make_tdb_data((const char *)response->extra_data.data,
 				    response->length - sizeof(*response)),
 		      TDB_REPLACE) == 0)
 		return;
