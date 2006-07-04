@@ -1022,9 +1022,9 @@ maryo:x:15000:15003:Mary Orville:/home/MIDEARTH/maryo:/bin/false
 #### Keep this as a shell script for future re-use
 			
 # First assign well known groups
-net groupmap modify ntgroup="Domain Admins" unixgroup=ntadmins
-net groupmap modify ntgroup="Domain Users"  unixgroup=users
-net groupmap modify ntgroup="Domain Guests" unixgroup=nobody
+net groupmap add ntgroup="Domain Admins" unixgroup=ntadmins rid=512 type=d
+net groupmap add ntgroup="Domain Users"  unixgroup=users rid=513 type=
+net groupmap add ntgroup="Domain Guests" unixgroup=nobody rid=514 type=d
 
 # Now for our added Domain Groups
 net groupmap add ntgroup="Designers" unixgroup=designers type=d

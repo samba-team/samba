@@ -19,7 +19,7 @@
 <indexterm><primary>groupmap</primary></indexterm>
 <indexterm><primary>net</primary></indexterm>
 	Starting with Samba-3, new group mapping functionality is available to create associations
-	between Windows group SIDs and UNIX groups. The <command>groupmap</command> subcommand
+	between Windows group SIDs and UNIX group GIDs. The <command>groupmap</command> subcommand
 	included with the &net; tool can be used to manage these associations.
 	</para>
 
@@ -183,12 +183,12 @@
 		</para></listitem>
 
 		<listitem><para>
-		Map this domadm group to the <quote>Domain Admins</quote> group by running the command:
+		Map this domadm group to the <quote>Domain Admins</quote> group by executing the command:
 		</para>
 
 		<para>
 <screen>
-&rootprompt;<userinput>net groupmap add ntgroup="Domain Admins" unixgroup=domadm</userinput>
+&rootprompt;<userinput>net groupmap add ntgroup="Domain Admins" unixgroup=domadm rid=512 type=d</userinput>
 </screen>
 		</para>
 		
@@ -213,7 +213,7 @@
 
 	<para>
 <screen>
-&rootprompt;<userinput>net groupmap add rid=1000 ntgroup="Accounting" unixgroup=acct</userinput>
+&rootprompt;<userinput>net groupmap add rid=1000 ntgroup="Accounting" unixgroup=acct type=d</userinput>
 </screen>
 	The <literal>ntgroup</literal> value must be in quotes if it contains space characters to prevent
 	the space from being interpreted as a command delimiter.
@@ -350,7 +350,7 @@
 <indexterm><primary>alias group</primary></indexterm>
 	In effect, Samba supplements the <filename>/etc/group</filename> data via the dynamic
 	<command>libnss_winbind</command> mechanism. Beginning with Samba-3.0.3, this facility is used to provide
-	local groups in the same manner as Windows does it. It works by expanding the local groups on the
+	local groups in the same manner as Windows. It works by expanding the local groups on the
 	fly as they are accessed. For example, the <constant>Domain Users</constant> group of the domain is made
 	a member of the local group <constant>demo</constant>. Whenever Samba needs to resolve membership of the
 	<constant>demo</constant> local (alias) group, winbind asks the domain controller for demo members of the Domain Users
@@ -509,8 +509,8 @@
 <indexterm><primary>ldapsam</primary></indexterm>
 <indexterm><primary>domain groups</primary></indexterm>
 <indexterm><primary>RID</primary></indexterm>
-	When the <parameter>passdb backend</parameter> uses LDAP (<constant>ldapsam</constant>), it is the
-	administrator's responsibility to create the essential domain groups and to assign each its default RID.
+	It is the administrator's responsibility to create the essential domain groups and to assign each
+	its default RID.
 	</para></note>
 
 	<para>
@@ -785,9 +785,9 @@ exit 0
 <programlisting>
 #!/bin/bash
 
-net groupmap modify ntgroup="Domain Admins" unixgroup=ntadmin
-net groupmap modify ntgroup="Domain Users" unixgroup=users
-net groupmap modify ntgroup="Domain Guests" unixgroup=nobody
+net groupmap add ntgroup="Domain Admins" unixgroup=ntadmin rid=512 type=d
+net groupmap add ntgroup="Domain Users" unixgroup=users rid=513 type=d
+net groupmap add ntgroup="Domain Guests" unixgroup=nobody rid=514 type=d
 
 groupadd Orks
 groupadd Elves
@@ -805,6 +805,15 @@ net groupmap add ntgroup="Gnomes" unixgroup=Gnomes type=d
 	For information regarding the use of the <command>net groupmap</command> tool please
 	refer to the man page.
 	</para>
+
+	<note><para>
+	Versions of Samba-3 prior to 3.0.23 automatically create default group mapping for the
+	<literal>Domain Admins, Domain Users</literal> and <literal>Domain Guests</literal> Windows
+	groups, but do not map them to UNIX GIDs. This was a cause of administrative confusion and 
+	trouble. Commencing with Samba-3.0.23 this annomaly has been fixed - thus all Windows groups
+	must now be manually and explicitly created and mapped to a valid UNIX GID by the Samba 
+	administrator.
+	</para></note>
 
 	</sect2>
 

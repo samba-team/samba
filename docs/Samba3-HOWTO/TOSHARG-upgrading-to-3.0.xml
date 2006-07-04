@@ -181,8 +181,8 @@ parameters.
 <para>
 Whenever a Samba update or upgrade is performed it is highly recommended to read the file called
 <emphasis>WHATSNEW.txt</emphasis> that is part of the Samba distribution tarball. This file may also
-be obtain on-line from <ulink url="http://www.samba.org/samba/">Samba web site, in the right column, under
-Current Stable Release, by clicking on <emphasis>Release Notes</emphasis>.
+be obtain on-line from the Samba <ulink url="http://www.samba.org/samba/">web site</ulink>, in 
+the right column, under Current Stable Release, by clicking on <emphasis>Release Notes</emphasis>.
 </para>
 
 <sect2>
