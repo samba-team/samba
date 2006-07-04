@@ -1058,6 +1058,7 @@ static int form_junctions(TALLOC_CTX *ctx, int snum, struct junction_map *jucn, 
 	ref->ttl = REFERRAL_TTL;
 	if (*lp_msdfs_proxy(snum) != '\0') {
 		pstrcpy(ref->alternate_path, lp_msdfs_proxy(snum));
+		cnt++;
 		goto out;
 	}
 		
