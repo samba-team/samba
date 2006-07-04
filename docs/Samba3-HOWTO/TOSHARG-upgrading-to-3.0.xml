@@ -396,7 +396,7 @@ In alphabetical order, these are the parameters eliminated from Samba-2.2.x thro
 <title>Modified Parameters (Changes in Behavior)</title>
 
 <itemizedlist>
-	<listitem><para>acl group control (new default is No, deprecated parameter)<para></listitem>
+	<listitem><para>acl group control (new default is No, deprecated parameter)</para></listitem>
 	<listitem><para>change notify timeout (scope changed)</para></listitem>
 	<listitem><para>dos filemode (disabled by default)</para></listitem>
 	<listitem><para>dos filetimes (enabled by default)</para></listitem>
