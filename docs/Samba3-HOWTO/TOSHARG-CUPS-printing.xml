@@ -5110,6 +5110,10 @@ Print Administrator to do this for all users. Here is how I do in on XP:
 	<orderedlist>
 		<listitem><para>Open the <guilabel>Printers</guilabel> folder.</para></listitem>
 
+		<listitem><para>Right-click on the printer (<guilabel>remoteprinter on
+		cupshost</guilabel>) and select the context menu
+		<guimenuitem>Properties</guimenuitem>.</para></listitem>
+
 		<listitem><para>Click on the <guilabel>Advanced</guilabel>
 		tab. (If everything is <quote>grayed out,</quote> then you are not logged
 		in as a user with enough privileges).</para></listitem>
