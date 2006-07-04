@@ -416,7 +416,7 @@ void winbindd_gid_to_sid(struct winbindd_cli_state *state)
 
 	if (NT_STATUS_IS_OK(status)) {
 		sid_to_string(state->response.data.sid.sid, &sid);
-		state->response.data.sid.type = SID_NAME_USER;
+		state->response.data.sid.type = SID_NAME_DOM_GRP;
 		request_ok(state);
 		return;
 	}
