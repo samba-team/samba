@@ -340,6 +340,11 @@ SupportEngrs (S-1-5-21-72630-4128915-11681869-3007) -> SupportEngrs
 	and <constant>delete</constant>. An example of each operation is shown here.
 	</para>
 
+	<note><para>
+	Commencing with Samba-3.0.23 Windows Domain Groups must be explicitly created. By default, all
+	UNIX groups are exposed to Windows networking as Windows local groups.
+	</para></note>
+
 	<para>
 	An existing UNIX group may be mapped to an existing Windows group by this example:
 <screen>
