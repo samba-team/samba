@@ -125,7 +125,7 @@ workaround is no longer needed.
 The <smbconfoption name="passdb backend"/> parameter no long accepts multiple passdb backends in a
 chained configuration.  Also be aware that the SQL and XML based passdb modules have been
 removed in the Samba-3.0.23 release.  More information regarding external support for a SQL
-passdb module can be found on the  <ulink url="http://pdbsql.sourceforge.net/">pdbsql</ulink web site.
+passdb module can be found on the  <ulink url="http://pdbsql.sourceforge.net/">pdbsql</ulink> web site.
 </para>
 
 </sect1>
