@@ -334,7 +334,7 @@ out:
 	return status;
 }
 
-static NTSTATUS rid_idmap_init(char *init_param)
+static NTSTATUS rid_idmap_init(const char *init_param)
 {
 	int i, j;
 	uid_t u_low, u_high;
@@ -432,7 +432,8 @@ out:
 	return nt_status;
 }
 
-static NTSTATUS rid_idmap_get_sid_from_id(DOM_SID *sid, unid_t unid, int id_type)
+static NTSTATUS rid_idmap_get_sid_from_id(DOM_SID *sid, unid_t unid, enum idmap_type id_type, int flags)
+
 {
 	fstring sid_string;
 	int i;
@@ -469,7 +470,7 @@ static NTSTATUS rid_idmap_get_sid_from_id(DOM_SID *sid, unid_t unid, int id_type
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS rid_idmap_get_id_from_sid(unid_t *unid, int *id_type, const DOM_SID *sid)
+static NTSTATUS rid_idmap_get_id_from_sid(unid_t *unid, enum idmap_type *id_type, const DOM_SID *sid, int flags)
 {
 	fstring sid_string;
 	int i;
@@ -521,7 +522,7 @@ static NTSTATUS rid_idmap_get_id_from_sid(unid_t *unid, int *id_type, const DOM_
 
 }
 
-static NTSTATUS rid_idmap_set_mapping(const DOM_SID *sid, unid_t id, int id_type)
+static NTSTATUS rid_idmap_set_mapping(const DOM_SID *sid, unid_t id, enum idmap_type id_type)
 {
 	return NT_STATUS_NOT_IMPLEMENTED;
 }

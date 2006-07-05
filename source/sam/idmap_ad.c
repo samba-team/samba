@@ -139,7 +139,7 @@ static ADS_STRUCT *ad_idmap_cached_connection(void)
 	return ads;
 }
 
-static NTSTATUS ad_idmap_init(char *uri)
+static NTSTATUS ad_idmap_init(const char *uri)
 {
 	ad_idmap_uri = SMB_STRDUP(uri);
 	if (ad_idmap_uri == NULL) {
@@ -149,7 +149,7 @@ static NTSTATUS ad_idmap_init(char *uri)
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS ad_idmap_get_sid_from_id(DOM_SID *sid, unid_t unid, int id_type)
+static NTSTATUS ad_idmap_get_sid_from_id(DOM_SID *sid, unid_t unid, enum idmap_type id_type, int flags)
 {
 	ADS_STATUS rc;
 	NTSTATUS status = NT_STATUS_NONE_MAPPED;
@@ -171,7 +171,7 @@ static NTSTATUS ad_idmap_get_sid_from_id(DOM_SID *sid, unid_t unid, int id_type)
 		return NT_STATUS_NOT_SUPPORTED;
 	}
 
-	switch (id_type & ID_TYPEMASK) {
+	switch (id_type) {
 		case ID_USERID:
 			if (asprintf(&expr, "(&(|(sAMAccountType=%d)(sAMAccountType=%d)(sAMAccountType=%d))(%s=%d))",
 				ATYPE_NORMAL_ACCOUNT, ATYPE_WORKSTATION_TRUST, ATYPE_INTERDOMAIN_TRUST,
@@ -231,7 +231,7 @@ done:
 	return status;
 }
 
-static NTSTATUS ad_idmap_get_id_from_sid(unid_t *unid, int *id_type, const DOM_SID *sid)
+static NTSTATUS ad_idmap_get_id_from_sid(unid_t *unid, enum idmap_type *id_type, const DOM_SID *sid, int flags)
 {
 	ADS_STATUS rc;
 	NTSTATUS status = NT_STATUS_NONE_MAPPED;
@@ -331,7 +331,7 @@ done:
 
 }
 
-static NTSTATUS ad_idmap_set_mapping(const DOM_SID *sid, unid_t id, int id_type)
+static NTSTATUS ad_idmap_set_mapping(const DOM_SID *sid, unid_t id, enum idmap_type id_type)
 {
 	/* Not supported, and probably won't be... */
 	/* (It's not particularly feasible with a single-master model.) */
