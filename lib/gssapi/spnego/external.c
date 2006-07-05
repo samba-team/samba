@@ -58,7 +58,7 @@ static gssapi_mech_interface_desc spnego_mech = {
     gss_spnego_wrap,
     gss_spnego_unwrap,
     gss_spnego_display_status,
-    gss_spnego_indicate_mechs,
+    NULL,
     gss_spnego_compare_name,
     gss_spnego_display_name,
     gss_spnego_import_name,
