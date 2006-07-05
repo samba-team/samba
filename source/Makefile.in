@@ -481,7 +481,8 @@ SMBSH_OBJ = smbwrapper/smbsh.o smbwrapper/shared.o \
             $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) $(RPC_PARSE_OBJ1) $(LIBSAMBA_OBJ) \
 	    $(DOSERR_OBJ) $(SECRETS_OBJ)
 
-STATUS_OBJ = utils/status.o $(LOCKING_OBJ) $(PARAM_OBJ) \
+STATUS_OBJ = utils/status.o utils/status_profile.o \
+	     $(LOCKING_OBJ) $(PARAM_OBJ) \
              $(PROFILE_OBJ) $(LIB_NONSMBD_OBJ) $(POPT_LIB_OBJ) \
 	     $(SECRETS_OBJ) $(LIBSAMBA_OBJ) $(ERRORMAP_OBJ) $(RPC_PARSE_OBJ1) \
              $(DOSERR_OBJ)

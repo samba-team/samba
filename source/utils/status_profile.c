@@ -1,205 +1,56 @@
-/* 
-   Unix SMB/CIFS implementation.
-   status reporting
-   Copyright (C) Andrew Tridgell 1994-1998
-   
-   This program is free software; you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2 of the License, or
-   (at your option) any later version.
-   
-   This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-   
-   You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
-
-   Revision History:
-
-   12 aug 96: Erik.Devriendt@te6.siemens.be
-   added support for shared memory implementation of share mode locking
-
-   21-Jul-1998: rsharpe@ns.aus.com (Richard Sharpe)
-   Added -L (locks only) -S (shares only) flags and code
-
-*/
-
 /*
- * This program reports current SMB connections
+ * Unix SMB/CIFS implementation.
+ * status reporting
+ * Copyright (C) Andrew Tridgell 1994-1998
+ * Copyright (C) James Peach 2005-2006
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
 #include "includes.h"
 
-#define SMB_MAXPIDS		2048
-static uid_t 		Ucrit_uid = 0;               /* added by OH */
-static pid_t		Ucrit_pid[SMB_MAXPIDS];  /* Ugly !!! */   /* added by OH */
-static int		Ucrit_MaxPid=0;                    /* added by OH */
-static unsigned int	Ucrit_IsActive = 0;                /* added by OH */
-
-static int verbose, brief;
-static int            shares_only = 0;            /* Added by RJS */
-static int            locks_only  = 0;            /* Added by RJS */
-static BOOL processes_only=False;
-static int show_brl;
-static BOOL numeric_only = False;
-
-const char *username = NULL;
-
-extern BOOL status_profile_dump(BOOL be_verbose);
-extern BOOL status_profile_rates(BOOL be_verbose);
-
-/* added by OH */
-static void Ucrit_addUid(uid_t uid)
+static void profile_separator(const char * title)
 {
-	Ucrit_uid = uid;
-	Ucrit_IsActive = 1;
+    char line[79 + 1];
+    char * end;
+
+    snprintf(line, sizeof(line), "**** %s ", title);
+
+    for (end = line + strlen(line); end < &line[sizeof(line) -1]; ++end) {
+	    *end = '*';
+    }
+
+    line[sizeof(line) - 1] = '\0';
+    d_printf("%s\n", line);
 }
-
-static unsigned int Ucrit_checkUid(uid_t uid)
-{
-	if ( !Ucrit_IsActive ) 
-		return 1;
-	
-	if ( uid == Ucrit_uid ) 
-		return 1;
-	
-	return 0;
-}
-
-static unsigned int Ucrit_checkPid(pid_t pid)
-{
-	int i;
-	
-	if ( !Ucrit_IsActive ) 
-		return 1;
-	
-	for (i=0;i<Ucrit_MaxPid;i++) {
-		if( pid == Ucrit_pid[i] ) 
-			return 1;
-	}
-	
-	return 0;
-}
-
-static BOOL Ucrit_addPid( pid_t pid )
-{
-	if ( !Ucrit_IsActive )
-		return True;
-
-	if ( Ucrit_MaxPid >= SMB_MAXPIDS ) {
-		d_printf("ERROR: More than %d pids for user %s!\n",
-			 SMB_MAXPIDS, uidtoname(Ucrit_uid));
-
-		return False;
-	}
-
-	Ucrit_pid[Ucrit_MaxPid++] = pid;
-	
-	return True;
-}
-
-static void print_share_mode(const struct share_mode_entry *e, const char *sharepath, const char *fname)
-{
-	static int count;
-
-	if (!is_valid_share_mode_entry(e)) {
-		return;
-	}
-
-	if (count==0) {
-		d_printf("Locked files:\n");
-		d_printf("Pid          Uid        DenyMode   Access      R/W        Oplock           SharePath   Name   Time\n");
-		d_printf("--------------------------------------------------------------------------------------------------\n");
-	}
-	count++;
-
-	if (Ucrit_checkPid(procid_to_pid(&e->pid))) {
-		d_printf("%-11s  ",procid_str_static(&e->pid));
-		d_printf("%-9u  ", (unsigned int)e->uid);
-		switch (map_share_mode_to_deny_mode(e->share_access,
-						    e->private_options)) {
-			case DENY_NONE: d_printf("DENY_NONE  "); break;
-			case DENY_ALL:  d_printf("DENY_ALL   "); break;
-			case DENY_DOS:  d_printf("DENY_DOS   "); break;
-			case DENY_READ: d_printf("DENY_READ  "); break;
-			case DENY_WRITE:printf("DENY_WRITE "); break;
-			case DENY_FCB:  d_printf("DENY_FCB "); break;
-			default: {
-				d_printf("unknown-please report ! "
-					 "e->share_access = 0x%x, "
-					 "e->private_options = 0x%x\n",
-					 (unsigned int)e->share_access,
-					 (unsigned int)e->private_options );
-				break;
-			}
-		}
-		d_printf("0x%-8x  ",(unsigned int)e->access_mask);
-		if ((e->access_mask & (FILE_READ_DATA|FILE_WRITE_DATA))==
-				(FILE_READ_DATA|FILE_WRITE_DATA)) {
-			d_printf("RDWR       ");
-		} else if (e->access_mask & FILE_WRITE_DATA) {
-			d_printf("WRONLY     ");
-		} else {
-			d_printf("RDONLY     ");
-		}
-
-		if((e->op_type & (EXCLUSIVE_OPLOCK|BATCH_OPLOCK)) == 
-					(EXCLUSIVE_OPLOCK|BATCH_OPLOCK)) {
-			d_printf("EXCLUSIVE+BATCH ");
-		} else if (e->op_type & EXCLUSIVE_OPLOCK) {
-			d_printf("EXCLUSIVE       ");
-		} else if (e->op_type & BATCH_OPLOCK) {
-			d_printf("BATCH           ");
-		} else if (e->op_type & LEVEL_II_OPLOCK) {
-			d_printf("LEVEL_II        ");
-		} else {
-			d_printf("NONE            ");
-		}
-
-		d_printf(" %s   %s   %s",sharepath, fname, time_to_asc((time_t *)&e->time.tv_sec));
-	}
-}
-
-static void print_brl(SMB_DEV_T dev,
-			SMB_INO_T ino,
-			struct process_id pid, 
-			enum brl_type lock_type,
-			enum brl_flavour lock_flav,
-			br_off start,
-			br_off size)
-{
-	static int count;
-	if (count==0) {
-		d_printf("Byte range locks:\n");
-		d_printf("   Pid     dev:inode  R/W      start        size\n");
-		d_printf("------------------------------------------------\n");
-	}
-	count++;
-
-	d_printf("%8s   %05x:%05x    %s  %9.0f   %9.0f\n", 
-	       procid_str_static(&pid), (int)dev, (int)ino, 
-	       lock_type==READ_LOCK?"R":"W",
-	       (double)start, (double)size);
-}
-
 
 /*******************************************************************
  dump the elements of the profile structure
   ******************************************************************/
-static int profile_dump(void)
+BOOL status_profile_dump(BOOL verbose)
 {
 #ifdef WITH_PROFILE
 	if (!profile_setup(True)) {
 		fprintf(stderr,"Failed to initialise profile memory\n");
-		return -1;
+		return False;
 	}
 
 	d_printf("smb_count:                      %u\n", profile_p->smb_count);
 	d_printf("uid_changes:                    %u\n", profile_p->uid_changes);
-	d_printf("************************ System Calls ****************************\n");
+
+	profile_separator("System Calls");
 	d_printf("opendir_count:                  %u\n", profile_p->syscall_opendir_count);
 	d_printf("opendir_time:                   %u\n", profile_p->syscall_opendir_time);
 	d_printf("readdir_count:                  %u\n", profile_p->syscall_readdir_count);
@@ -267,11 +118,13 @@ static int profile_dump(void)
 	d_printf("readlink_time:                  %u\n", profile_p->syscall_readlink_time);
 	d_printf("symlink_count:                  %u\n", profile_p->syscall_symlink_count);
 	d_printf("symlink_time:                   %u\n", profile_p->syscall_symlink_time);
-	d_printf("************************ Statcache *******************************\n");
+
+	profile_separator("Stat Cache");
 	d_printf("lookups:                        %u\n", profile_p->statcache_lookups);
 	d_printf("misses:                         %u\n", profile_p->statcache_misses);
 	d_printf("hits:                           %u\n", profile_p->statcache_hits);
-	d_printf("************************ Writecache ******************************\n");
+
+	profile_separator("Write Cache");
 	d_printf("read_hits:                      %u\n", profile_p->writecache_read_hits);
 	d_printf("abutted_writes:                 %u\n", profile_p->writecache_abutted_writes);
 	d_printf("total_writes:                   %u\n", profile_p->writecache_total_writes);
@@ -289,7 +142,8 @@ static int profile_dump(void)
 	d_printf("num_perfect_writes:             %u\n", profile_p->writecache_num_perfect_writes);
 	d_printf("num_write_caches:               %u\n", profile_p->writecache_num_write_caches);
 	d_printf("allocated_write_caches:         %u\n", profile_p->writecache_allocated_write_caches);
-	d_printf("************************ SMB Calls *******************************\n");
+
+	profile_separator("SMB Calls");
 	d_printf("mkdir_count:                    %u\n", profile_p->SMBmkdir_count);
 	d_printf("mkdir_time:                     %u\n", profile_p->SMBmkdir_time);
 	d_printf("rmdir_count:                    %u\n", profile_p->SMBrmdir_count);
@@ -438,10 +292,12 @@ static int profile_dump(void)
 	d_printf("sendtxt_time:                   %u\n", profile_p->SMBsendtxt_time);
 	d_printf("invalid_count:                  %u\n", profile_p->SMBinvalid_count);
 	d_printf("invalid_time:                   %u\n", profile_p->SMBinvalid_time);
-	d_printf("************************ Pathworks Calls *************************\n");
+
+	profile_separator("Pathworks Calls");
 	d_printf("setdir_count:                   %u\n", profile_p->pathworks_setdir_count);
 	d_printf("setdir_time:                    %u\n", profile_p->pathworks_setdir_time);
-	d_printf("************************ Trans2 Calls ****************************\n");
+
+	profile_separator("Trans2 Calls");
 	d_printf("open_count:                     %u\n", profile_p->Trans2_open_count);
 	d_printf("open_time:                      %u\n", profile_p->Trans2_open_time);
 	d_printf("findfirst_count:                %u\n", profile_p->Trans2_findfirst_count);
@@ -476,7 +332,8 @@ static int profile_dump(void)
 	d_printf("get_dfs_referral_time:          %u\n", profile_p->Trans2_get_dfs_referral_time);
 	d_printf("report_dfs_inconsistancy_count: %u\n", profile_p->Trans2_report_dfs_inconsistancy_count);
 	d_printf("report_dfs_inconsistancy_time:  %u\n", profile_p->Trans2_report_dfs_inconsistancy_time);
-	d_printf("************************ NT Transact Calls ***********************\n");
+
+	profile_separator("NT Transact Calls");
 	d_printf("create_count:                   %u\n", profile_p->NT_transact_create_count);
 	d_printf("create_time:                    %u\n", profile_p->NT_transact_create_time);
 	d_printf("ioctl_count:                    %u\n", profile_p->NT_transact_ioctl_count);
@@ -489,7 +346,8 @@ static int profile_dump(void)
 	d_printf("rename_time:                    %u\n", profile_p->NT_transact_rename_time);
 	d_printf("query_security_desc_count:      %u\n", profile_p->NT_transact_query_security_desc_count);
 	d_printf("query_security_desc_time:       %u\n", profile_p->NT_transact_query_security_desc_time);
-	d_printf("************************ ACL Calls *******************************\n");
+
+	profile_separator("ACL Calls");
 	d_printf("get_nt_acl_count:               %u\n", profile_p->get_nt_acl_count);
 	d_printf("get_nt_acl_time:                %u\n", profile_p->get_nt_acl_time);
 	d_printf("fget_nt_acl_count:              %u\n", profile_p->fget_nt_acl_count);
@@ -502,7 +360,8 @@ static int profile_dump(void)
 	d_printf("chmod_acl_time:                 %u\n", profile_p->chmod_acl_time);
 	d_printf("fchmod_acl_count:               %u\n", profile_p->fchmod_acl_count);
 	d_printf("fchmod_acl_time:                %u\n", profile_p->fchmod_acl_time);
-	d_printf("************************ NMBD Calls ****************************\n");
+
+	profile_separator("NMBD Calls");
 	d_printf("name_release_count:             %u\n", profile_p->name_release_count);
 	d_printf("name_release_time:              %u\n", profile_p->name_release_time);
 	d_printf("name_refresh_count:             %u\n", profile_p->name_refresh_count);
@@ -543,210 +402,143 @@ static int profile_dump(void)
 	fprintf(stderr, "Profile data unavailable\n");
 #endif /* WITH_PROFILE */
 
-	return 0;
+	return True;
 }
 
+#ifdef WITH_PROFILE
 
-static int traverse_fn1(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf, void *state)
+static void sample_delay(int delay_msec)
 {
-	struct connections_data crec;
+	poll(NULL, 0, delay_msec);
+}
 
-	if (dbuf.dsize != sizeof(crec))
-		return 0;
+/* Convert microseconds to milliseconds. */
+#define usec_to_msec(s) ((s) / 1000)
+/* Convert microseconds to seconds. */
+#define usec_to_sec(s) ((s) / 1000000)
+/* One second in microseconds. */
+#define one_second_usec (1000000)
 
-	memcpy(&crec, dbuf.dptr, sizeof(crec));
+#define sample_interval_usec one_second_usec
 
-	if (crec.cnum == -1)
-		return 0;
+#define percent_time(used, period) ((double)(used) / (double)(period) * 100.0 )
 
-	if (!process_exists(crec.pid) || !Ucrit_checkUid(crec.uid)) {
+static int print_count_samples(
+	const struct profile_stats * const current,
+	const struct profile_stats * const last,
+	SMB_BIG_UINT delta_usec)
+{
+	int i;
+	int count = 0;
+	unsigned step;
+	SMB_BIG_UINT spent;
+	int delta_sec;
+	const char * name;
+	char buf[40];
+
+	if (delta_usec == 0) {
 		return 0;
 	}
 
-	d_printf("%-10s   %s   %-12s  %s",
-	       crec.name,procid_str_static(&crec.pid),
-	       crec.machine,
-	       time_to_asc(&crec.start));
+	buf[0] = '\0';
+	delta_sec = usec_to_sec(delta_usec);
 
-	return 0;
-}
+	for (i = 0; i < PR_VALUE_MAX; ++i) {
+		step = current->count[i] - last->count[i];
+		spent = current->time[i] - last->time[i];
 
-static int traverse_sessionid(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf, void *state)
-{
-	struct sessionid sessionid;
-	fstring uid_str, gid_str;
+		if (step) {
+			++count;
 
-	if (dbuf.dsize != sizeof(sessionid))
-		return 0;
+			name = profile_value_name(i);
 
-	memcpy(&sessionid, dbuf.dptr, sizeof(sessionid));
-
-	if (!process_exists_by_pid(sessionid.pid) || !Ucrit_checkUid(sessionid.uid)) {
-		return 0;
-	}
-
-	Ucrit_addPid( sessionid.pid );
-
-	fstr_sprintf(uid_str, "%d", sessionid.uid);
-	fstr_sprintf(gid_str, "%d", sessionid.gid);
-
-	d_printf("%5d   %-12s  %-12s  %-12s (%s)\n",
-		 (int)sessionid.pid,
-		 numeric_only ? uid_str : uidtoname(sessionid.uid),
-		 numeric_only ? gid_str : gidtoname(sessionid.gid), 
-		 sessionid.remote_machine, sessionid.hostname);
-	
-	return 0;
-}
-
-
-
-
- int main(int argc, char *argv[])
-{
-	int c;
-	int profile_only = 0;
-	TDB_CONTEXT *tdb;
-	BOOL show_processes, show_locks, show_shares;
-	poptContext pc;
-	struct poptOption long_options[] = {
-		POPT_AUTOHELP
-		{"processes",	'p', POPT_ARG_NONE,	&processes_only, 'p', "Show processes only" },
-		{"verbose",	'v', POPT_ARG_NONE, &verbose, 'v', "Be verbose" },
-		{"locks",	'L', POPT_ARG_NONE,	&locks_only, 'L', "Show locks only" },
-		{"shares",	'S', POPT_ARG_NONE,	&shares_only, 'S', "Show shares only" },
-		{"user", 	'u', POPT_ARG_STRING,	&username, 'u', "Switch to user" },
-		{"brief",	'b', POPT_ARG_NONE, 	&brief, 'b', "Be brief" },
-		{"profile",     'P', POPT_ARG_NONE, NULL, 'P', "Do profiling" },
-		{"profile-rates", 'R', POPT_ARG_NONE, NULL, 'R', "Show call rates" },
-		{"byterange",	'B', POPT_ARG_NONE,	&show_brl, 'B', "Include byte range locks"},
-		{"numeric",	'n', POPT_ARG_NONE,	&numeric_only, 'n', "Numeric uid/gid"},
-		POPT_COMMON_SAMBA
-		POPT_TABLEEND
-	};
-
-	sec_init();
-	load_case_tables();
-
-	setup_logging(argv[0],True);
-	
-	dbf = x_stderr;
-	
-	if (getuid() != geteuid()) {
-		d_printf("smbstatus should not be run setuid\n");
-		return(1);
-	}
-
-	pc = poptGetContext(NULL, argc, (const char **) argv, long_options, 
-			    POPT_CONTEXT_KEEP_FIRST);
-	
-	while ((c = poptGetNextOpt(pc)) != -1) {
-		switch (c) {
-		case 'u':                                      
-			Ucrit_addUid(nametouid(poptGetOptArg(pc)));
-			break;
-		case 'P':
-		case 'R':
-			profile_only = c;
+			if (buf[0] == '\0') {
+				snprintf(buf, sizeof(buf),
+					"%s %d/sec (%.2f%%)",
+					name, step / delta_sec,
+					percent_time(spent, delta_usec));
+			} else {
+				printf("%-40s %s %d/sec (%.2f%%)\n",
+					buf, name, step / delta_sec,
+					percent_time(spent, delta_usec));
+				buf[0] = '\0';
+			}
 		}
 	}
 
-	/* setup the flags based on the possible combincations */
+	return count;
+}
 
-	show_processes = !(shares_only || locks_only || profile_only) || processes_only;
-	show_locks     = !(shares_only || processes_only || profile_only) || locks_only;
-	show_shares    = !(processes_only || locks_only || profile_only) || shares_only;
+static struct profile_stats	sample_data[2];
+static SMB_BIG_UINT		sample_time[2];
 
-	if ( username )
-		Ucrit_addUid( nametouid(username) );
+BOOL status_profile_rates(BOOL verbose)
+{
+	SMB_BIG_UINT remain_usec;
+	SMB_BIG_UINT next_usec;
+	SMB_BIG_UINT delta_usec;
+
+	int last = 0;
+	int current = 1;
+	int tmp;
 
 	if (verbose) {
-		d_printf("using configfile = %s\n", dyn_CONFIGFILE);
+	    fprintf(stderr, "Sampling stats at %d sec intervals\n",
+		    usec_to_sec(sample_interval_usec));
 	}
 
-	if (!lp_load(dyn_CONFIGFILE,False,False,False,True)) {
-		fprintf(stderr, "Can't load %s - run testparm to debug it\n", dyn_CONFIGFILE);
-		return (-1);
+	if (!profile_setup(True)) {
+		fprintf(stderr,"Failed to initialise profile memory\n");
+		return False;
 	}
 
-	switch (profile_only) {
-		case 'P':
-			/* Dump profile data */
-			return status_profile_dump(verbose);
-		case 'R':
-			/* Continuously display rate-converted data */
-			return status_profile_rates(verbose);
-		default:
-			break;
-	}
+	memcpy(&sample_data[last], profile_p, sizeof(*profile_p));
+	for (;;) {
+		sample_time[current] = profile_timestamp();
+		next_usec = sample_time[current] + sample_interval_usec;
 
-	if ( show_processes ) {
-		tdb = tdb_open_log(lock_path("sessionid.tdb"), 0, TDB_DEFAULT, O_RDONLY, 0);
-		if (!tdb) {
-			d_printf("sessionid.tdb not initialised\n");
-		} else {
-			d_printf("\nSamba version %s\n",SAMBA_VERSION_STRING);
-			d_printf("PID     Username      Group         Machine                        \n");
-			d_printf("-------------------------------------------------------------------\n");
+		/* Take a sample. */
+		memcpy(&sample_data[current], profile_p, sizeof(*profile_p));
 
-			tdb_traverse(tdb, traverse_sessionid, NULL);
-			tdb_close(tdb);
+		/* Rate convert some values and print results. */
+		delta_usec = sample_time[current] - sample_time[last];
+
+		if (print_count_samples(&sample_data[current],
+			&sample_data[last], delta_usec)) {
+			printf("\n");
 		}
 
-		if (processes_only) 
-			exit(0);	
-	}
-  
-	if ( show_shares ) {
-		tdb = tdb_open_log(lock_path("connections.tdb"), 0, TDB_DEFAULT, O_RDONLY, 0);
-		if (!tdb) {
-			d_printf("%s not initialised\n", lock_path("connections.tdb"));
-			d_printf("This is normal if an SMB client has never connected to your server.\n");
-		}  else  {
+		/* Swap sampling buffers. */
+		tmp = last;
+		last = current;
+		current = tmp;
+
+		/* Delay until next sample time. */
+		remain_usec = next_usec - profile_timestamp();
+		if (remain_usec > sample_interval_usec) {
+			fprintf(stderr, "eek! falling behind sampling rate!\n");
+		} else {
 			if (verbose) {
-				d_printf("Opened %s\n", lock_path("connections.tdb"));
+			    fprintf(stderr,
+				    "delaying for %lu msec\n",
+				    (unsigned long )usec_to_msec(remain_usec));
 			}
 
-			if (brief) 
-				exit(0);
-		
-			d_printf("\nService      pid     machine       Connected at\n");
-			d_printf("-------------------------------------------------------\n");
-	
-			tdb_traverse(tdb, traverse_fn1, NULL);
-			tdb_close(tdb);
-
-			d_printf("\n");
+			sample_delay(usec_to_msec(remain_usec));
 		}
 
-		if ( shares_only )
-			exit(0);
 	}
 
-	if ( show_locks ) {
-		int ret;
-
-		if (!locking_init(1)) {
-			d_printf("Can't initialise locking module - exiting\n");
-			exit(1);
-		}
-		
-		ret = share_mode_forall(print_share_mode);
-
-		if (ret == 0) {
-			d_printf("No locked files\n");
-		} else if (ret == -1) {
-			d_printf("locked file list truncated\n");
-		}
-		
-		d_printf("\n");
-
-		if (show_brl) {
-			brl_forall(print_brl);
-		}
-		
-		locking_end();
-	}
-
-	return (0);
+	return True;
 }
+
+#else /* WITH_PROFILE */
+
+BOOL status_profile_rates(BOOL verbose)
+{
+	fprintf(stderr, "Profile data unavailable\n");
+	return False;
+}
+
+#endif /* WITH_PROFILE */
+
