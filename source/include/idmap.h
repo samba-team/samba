@@ -36,6 +36,7 @@
 
 enum idmap_type { ID_USERID, ID_GROUPID };
 
+#define IDMAP_FLAG_NONE		0x0
 #define IDMAP_FLAG_QUERY_ONLY	0x1	/* Don't ever allocate, just query. */
 #define IDMAP_FLAG_CACHE_ONLY   0x2	/* Only look in our local cache, not remote. */
 
