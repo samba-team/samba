@@ -223,9 +223,8 @@ static NTTIME centry_nttime(struct cache_entry *centry)
 }
 
 /*
-  pull a time_t from a cache entry -- apparently unused 
+  pull a time_t from a cache entry 
 */
-#if 0 
 static time_t centry_time(struct cache_entry *centry)
 {
 	time_t ret;
@@ -238,7 +237,6 @@ static time_t centry_time(struct cache_entry *centry)
 	centry->ofs += sizeof(time_t);
 	return ret;
 }
-#endif
 
 /* pull a string from a cache entry, using the supplied
    talloc context 
@@ -843,6 +841,7 @@ NTSTATUS wcache_get_creds(struct winbindd_domain *domain,
 	struct winbind_cache *cache = get_cache(domain);
 	struct cache_entry *centry = NULL;
 	NTSTATUS status;
+	time_t t;
 	uint32 rid;
 
 	if (!cache->tdb) {
@@ -865,6 +864,7 @@ NTSTATUS wcache_get_creds(struct winbindd_domain *domain,
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 
+	t = centry_time(centry);
 	*cached_nt_pass = (const uint8 *)centry_string(centry, mem_ctx);
 
 #if DEBUG_PASSWORD
