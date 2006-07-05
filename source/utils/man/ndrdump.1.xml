@@ -48,7 +48,7 @@
 
 	<para>The primary function of ndrdump is debugging Samba's internal 
 		DCE/RPC parsing functions. The file being parsed is usually 
-		one exported by ethereal's <quote>Export selected packet bytes</quote> 
+		one exported by wiresharks <quote>Export selected packet bytes</quote> 
 		function.</para>
 
 	<para>The context argument can be used to load context data from the request 
@@ -65,7 +65,7 @@
 <refsect1>
 	<title>SEE ALSO</title>
 
-	<para>ethereal, pidl</para>
+	<para>wireshark, pidl</para>
 
 </refsect1>
 

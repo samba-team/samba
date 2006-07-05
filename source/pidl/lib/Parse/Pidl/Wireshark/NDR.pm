@@ -10,18 +10,18 @@
 
 =head1 NAME
 
-Parse::Pidl::Ethereal::NDR - Parser generator for Ethereal
+Parse::Pidl::Wireshark::NDR - Parser generator for Wireshark
 
 =cut
 
-package Parse::Pidl::Ethereal::NDR;
+package Parse::Pidl::Wireshark::NDR;
 
 use strict;
 use Parse::Pidl::Typelist qw(getType);
 use Parse::Pidl::Util qw(has_property ParseExpr property_matches make_str);
 use Parse::Pidl::NDR qw(ContainsString GetNextLevel);
 use Parse::Pidl::Dump qw(DumpTypedef DumpFunction);
-use Parse::Pidl::Ethereal::Conformance qw(ReadConformance);
+use Parse::Pidl::Wireshark::Conformance qw(ReadConformance);
 use File::Basename;	
 
 use vars qw($VERSION);
@@ -822,7 +822,7 @@ sub Initialize($)
 }
 
 #####################################################################
-# Generate ethereal parser and header code
+# Generate Wireshark parser and header code
 sub Parse($$$$)
 {
 	my($ndr,$idl_file,$h_filename,$cnf_file) = @_;
@@ -841,9 +841,9 @@ sub Parse($$$$)
 	from $idl_file and $cnf_file.
 	
 	Pidl is a perl based IDL compiler for DCE/RPC idl files. 
-	It is maintained by the Samba team, not the Ethereal team.
+	It is maintained by the Samba team, not the Wireshark team.
 	Instructions on how to download and install Pidl can be 
-	found at http://wiki.ethereal.com/Pidl
+	found at http://wiki.wireshark.org/Pidl
 */
 
 ";
@@ -867,7 +867,7 @@ sub Parse($$$$)
 	$res{headers} .= "#include \"$h_basename\"\n";
 	pidl_code "";
 
-	# Ethereal protocol registration
+	# Wireshark protocol registration
 
 	ProcessInterface($_) foreach (@$ndr);
 
