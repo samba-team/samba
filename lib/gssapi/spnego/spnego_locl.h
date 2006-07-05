@@ -214,11 +214,6 @@ OM_uint32 gss_spnego_display_status
             gss_buffer_t /*status_string*/
            );
 
-OM_uint32 gss_spnego_indicate_mechs
-           (OM_uint32 * /*minor_status*/,
-            gss_OID_set * /*mech_set*/
-           );
-
 OM_uint32 gss_spnego_compare_name
            (OM_uint32 * /*minor_status*/,
             const gss_name_t /*name1*/,
