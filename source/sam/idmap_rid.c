@@ -533,7 +533,7 @@ static NTSTATUS rid_idmap_close(void)
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS rid_idmap_allocate_id(unid_t *id, int id_type)
+static NTSTATUS rid_idmap_allocate_id(unid_t *id, enum idmap_type id_type)
 {
 	return NT_STATUS_NOT_IMPLEMENTED;
 }

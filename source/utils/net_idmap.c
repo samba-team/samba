@@ -185,6 +185,7 @@ static NTSTATUS net_idmap_fixup_hwm(void)
 /***********************************************************
  Write entries from stdin to current local idmap
  **********************************************************/
+
 static int net_idmap_restore(int argc, const char **argv)
 {
 	if (!idmap_init(lp_idmap_backend())) {
@@ -193,10 +194,11 @@ static int net_idmap_restore(int argc, const char **argv)
 	}
 
 	while (!feof(stdin)) {
-		fstring line, sid_string, fmt_string;
+		fstring line, sid_string, fmt_string1, fmt_string2;
 		int len;
 		unid_t id;
-		int type = ID_EMPTY;
+		enum idmap_type type;
+		unsigned long idval;
 		DOM_SID sid;
 
 		if (fgets(line, sizeof(line)-1, stdin) == NULL)
@@ -207,20 +209,16 @@ static int net_idmap_restore(int argc, const char **argv)
 		if ( (len > 0) && (line[len-1] == '\n') )
 			line[len-1] = '\0';
 
-		/* Yuck - this is broken for sizeof(gid_t) != sizeof(int) */
-		snprintf(fmt_string, sizeof(fmt_string), "GID %%d %%%us", FSTRING_LEN);
-		if (sscanf(line, fmt_string, &id.gid, sid_string) == 2) {
+		snprintf(fmt_string1, sizeof(fmt_string1), "GID %%ul %%%us", FSTRING_LEN);
+		snprintf(fmt_string2, sizeof(fmt_string2), "UID %%ul %%%us", FSTRING_LEN);
+
+		if (sscanf(line, fmt_string1, &idval, sid_string) == 2) {
 			type = ID_GROUPID;
-		}
-
-		/* Yuck - this is broken for sizeof(uid_t) != sizeof(int) */
-
-		snprintf(fmt_string, sizeof(fmt_string), "UID %%d %%%us", FSTRING_LEN);
-		if (sscanf(line, fmt_string, &id.uid, sid_string) == 2) {
+			id.gid = (gid_t)idval;
+		} else if (sscanf(line, fmt_string2, &idval, sid_string) == 2) {
 			type = ID_USERID;
-		}
-
-		if (type == ID_EMPTY) {
+			id.uid = (uid_t)idval;
+		} else {
 			d_printf("ignoring invalid line [%s]\n", line);
 			continue;
 		}

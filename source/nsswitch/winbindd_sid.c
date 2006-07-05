@@ -195,8 +195,8 @@ void winbindd_sid_to_uid(struct winbindd_cli_state *state)
 
 	/* Query only the local tdb, everything else might possibly block */
 
-	result = idmap_sid_to_uid(&sid, &(state->response.data.uid),
-				  ID_QUERY_ONLY|ID_CACHE_ONLY);
+	result = idmap_sid_to_uid(&sid, &state->response.data.uid,
+				  IDMAP_FLAG_QUERY_ONLY|IDMAP_FLAG_CACHE_ONLY);
 
 	if (NT_STATUS_IS_OK(result)) {
 		request_ok(state);
@@ -253,8 +253,8 @@ void winbindd_sid_to_gid(struct winbindd_cli_state *state)
 
 	/* Query only the local tdb, everything else might possibly block */
 
-	result = idmap_sid_to_gid(&sid, &(state->response.data.gid),
-				  ID_QUERY_ONLY|ID_CACHE_ONLY);
+	result = idmap_sid_to_gid(&sid, &state->response.data.gid,
+				  IDMAP_FLAG_QUERY_ONLY|IDMAP_FLAG_CACHE_ONLY);
 
 	if (NT_STATUS_IS_OK(result)) {
 		request_ok(state);
@@ -313,7 +313,7 @@ void winbindd_uid_to_sid(struct winbindd_cli_state *state)
 	}
 
 	status = idmap_uid_to_sid(&sid, state->request.data.uid,
-				  ID_QUERY_ONLY | ID_CACHE_ONLY);
+				  IDMAP_FLAG_QUERY_ONLY|IDMAP_FLAG_CACHE_ONLY);
 
 	if (NT_STATUS_IS_OK(status)) {
 		sid_to_string(state->response.data.sid.sid, &sid);
@@ -440,7 +440,7 @@ void winbindd_gid_to_sid(struct winbindd_cli_state *state)
 	}
 
 	status = idmap_gid_to_sid(&sid, state->request.data.gid,
-				  ID_QUERY_ONLY | ID_CACHE_ONLY);
+				  IDMAP_FLAG_QUERY_ONLY|IDMAP_FLAG_CACHE_ONLY);
 
 	if (NT_STATUS_IS_OK(status)) {
 		sid_to_string(state->response.data.sid.sid, &sid);

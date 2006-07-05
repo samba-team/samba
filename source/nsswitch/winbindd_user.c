@@ -399,7 +399,7 @@ void winbindd_getpwuid(struct winbindd_cli_state *state)
 		  (unsigned long)state->request.data.uid));
 
 	status = idmap_uid_to_sid(&user_sid, state->request.data.uid,
-				  ID_QUERY_ONLY | ID_CACHE_ONLY);
+				  IDMAP_FLAG_QUERY_ONLY | IDMAP_FLAG_CACHE_ONLY);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(5, ("Could not find SID for uid %lu\n",

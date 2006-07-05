@@ -211,7 +211,7 @@ enum winbindd_result winbindd_dual_sid2uid(struct winbindd_domain *domain,
 
 	result = idmap_sid_to_uid(&sid, &(state->response.data.uid),
 				  state->request.data.dual_sid2id.alloc ?
-				  0 : ID_QUERY_ONLY);
+				  0 : IDMAP_FLAG_QUERY_ONLY);
 
 	return NT_STATUS_IS_OK(result) ? WINBINDD_OK : WINBINDD_ERROR;
 }
@@ -395,9 +395,9 @@ enum winbindd_result winbindd_dual_sid2gid(struct winbindd_domain *domain,
 	/* Find gid for this sid and return it, possibly ask the slow remote
 	 * idmap */
 
-	result = idmap_sid_to_gid(&sid, &(state->response.data.gid),
+	result = idmap_sid_to_gid(&sid, &state->response.data.gid,
 				  state->request.data.dual_sid2id.alloc ?
-				  0 : ID_QUERY_ONLY);
+				  0 : IDMAP_FLAG_QUERY_ONLY);
 
 	/* If the lookup failed, the perhaps we need to look 
 	   at the passdb for local groups */
@@ -1193,7 +1193,7 @@ void winbindd_sid2uid_async(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
 
 	/* Query only the local tdb, everything else might possibly block */
 
-	result = idmap_sid_to_uid(sid, &uid, ID_QUERY_ONLY|ID_CACHE_ONLY);
+	result = idmap_sid_to_uid(sid, &uid, IDMAP_FLAG_QUERY_ONLY|IDMAP_FLAG_CACHE_ONLY);
 
 	if (NT_STATUS_IS_OK(result)) {
 		cont(private_data, True, uid);
@@ -1355,7 +1355,7 @@ void winbindd_sid2gid_async(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
 
 	/* Query only the local tdb, everything else might possibly block */
 
-	result = idmap_sid_to_gid(sid, &gid, ID_QUERY_ONLY|ID_CACHE_ONLY);
+	result = idmap_sid_to_gid(sid, &gid, IDMAP_FLAG_QUERY_ONLY|IDMAP_FLAG_CACHE_ONLY);
 
 	if (NT_STATUS_IS_OK(result)) {
 		cont(private_data, True, gid);
