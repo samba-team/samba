@@ -380,7 +380,10 @@ static BOOL wbinfo_domain_info(const char *domain_name)
 	ZERO_STRUCT(request);
 	ZERO_STRUCT(response);
 
-	fstrcpy(request.domain_name, domain_name);
+	if ((strequal(domain_name, ".")) || (domain_name[0] == '\0'))
+		fstrcpy(request.domain_name, get_winbind_domain());
+	else
+		fstrcpy(request.domain_name, domain_name);
 
 	/* Send request */
 
@@ -905,9 +908,9 @@ static BOOL print_domain_users(const char *domain)
 	ZERO_STRUCT(response);
 	
 	if (domain) {
-		/* '.' is the special sign for our own domwin */
+		/* '.' is the special sign for our own domain */
 		if ( strequal(domain, ".") )
-			fstrcpy( request.domain_name, lp_workgroup() );
+			fstrcpy( request.domain_name, get_winbind_domain() );
 		else
 			fstrcpy( request.domain_name, domain );
 	}
@@ -945,7 +948,7 @@ static BOOL print_domain_groups(const char *domain)
 
 	if (domain) {
 		if ( strequal(domain, ".") )
-			fstrcpy( request.domain_name, lp_workgroup() );
+			fstrcpy( request.domain_name, get_winbind_domain() );
 		else
 			fstrcpy( request.domain_name, domain );
 	}
