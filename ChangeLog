@@ -1,4 +1,19 @@
+2006-07-05  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kdc/connect.c (handle_vanilla_tcp): use unsigned integer for for
+	length
+	(handle_tcp): if the high bit it set in the unknown case, send
+	back a KRB_ERR_FIELD_TOOLONG
+	
 2006-07-03  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* appl/gssmask/gssmaestro.c: Add get_version_capa, cache
+	target_name.
+
+	* appl/gssmask/gssmask.c: use utname() to find the local hostname
+	and version of operatingsystem
+
+	* appl/gssmask/common.h: include <sys/utsname.h>
 
 	* appl/gssmask/gssmask.c: break out creation of a client and make
 	handleServer pthread_create compatible
