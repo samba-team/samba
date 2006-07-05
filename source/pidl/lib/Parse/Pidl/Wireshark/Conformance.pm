@@ -1,5 +1,5 @@
 ###################################################
-# parse an ethereal conformance file
+# parse an Wireshark conformance file
 # Copyright jelmer@samba.org 2005
 # released under the GNU GPL
 
@@ -7,15 +7,15 @@
 
 =head1 NAME
 
-Parse::Pidl::Ethereal::Conformance - Conformance file parser for Ethereal
+Parse::Pidl::Wireshark::Conformance - Conformance file parser for Wireshark
 
 =head1 DESCRIPTION
 
-This module supports parsing Ethereal conformance files (*.cnf).
+This module supports parsing Wireshark conformance files (*.cnf).
 
 =head1 FILE FORMAT
 
-Pidl needs additional data for ethereal output. This data is read from 
+Pidl needs additional data for Wireshark output. This data is read from 
 so-called conformance files. This section describes the format of these 
 files.
 
@@ -59,7 +59,7 @@ Remove the specified prefix from all function names (if present).
 =item I<PROTOCOL> longname shortname filtername
 
 Change the short-, long- and filter-name for the current interface in
-Ethereal.
+Wireshark.
 
 =item I<FIELD_DESCRIPTION> field desc
 
@@ -89,7 +89,7 @@ ett/hf variables for a particular element as the NOEMIT command does.
 
 =cut
 
-package Parse::Pidl::Ethereal::Conformance;
+package Parse::Pidl::Wireshark::Conformance;
 
 require Exporter;
 use vars qw($VERSION);
