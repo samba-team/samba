@@ -587,3 +587,149 @@ NTSTATUS smbsrv_pull_passthru_sfileinfo(TALLOC_CTX *mem_ctx,
 
 	return NT_STATUS_INVALID_LEVEL;
 }
+
+/*
+  fill a single entry in a trans2 find reply 
+*/
+NTSTATUS smbsrv_push_passthru_search(TALLOC_CTX *mem_ctx,
+				     DATA_BLOB *blob,
+				     enum smb_search_level level,
+				     union smb_search_data *file,
+				     int default_str_flags)
+{
+	uint8_t *data;
+	uint_t ofs = blob->length;
+
+	switch (level) {
+	case RAW_SEARCH_DIRECTORY_INFO:
+		BLOB_CHECK(smbsrv_blob_grow_data(mem_ctx, blob, ofs + 64));
+		data = blob->data + ofs;
+		SIVAL(data,          4, file->directory_info.file_index);
+		push_nttime(data,    8, file->directory_info.create_time);
+		push_nttime(data,   16, file->directory_info.access_time);
+		push_nttime(data,   24, file->directory_info.write_time);
+		push_nttime(data,   32, file->directory_info.change_time);
+		SBVAL(data,         40, file->directory_info.size);
+		SBVAL(data,         48, file->directory_info.alloc_size);
+		SIVAL(data,         56, file->directory_info.attrib);
+		BLOB_CHECK(smbsrv_blob_append_string(mem_ctx, blob, file->directory_info.name.s,
+						     ofs + 60, default_str_flags,
+						     STR_TERMINATE_ASCII));
+		data = blob->data + ofs;
+		SIVAL(data,          0, blob->length - ofs);
+		return NT_STATUS_OK;
+
+	case RAW_SEARCH_FULL_DIRECTORY_INFO:
+		BLOB_CHECK(smbsrv_blob_grow_data(mem_ctx, blob, ofs + 68));
+		data = blob->data + ofs;
+		SIVAL(data,          4, file->full_directory_info.file_index);
+		push_nttime(data,    8, file->full_directory_info.create_time);
+		push_nttime(data,   16, file->full_directory_info.access_time);
+		push_nttime(data,   24, file->full_directory_info.write_time);
+		push_nttime(data,   32, file->full_directory_info.change_time);
+		SBVAL(data,         40, file->full_directory_info.size);
+		SBVAL(data,         48, file->full_directory_info.alloc_size);
+		SIVAL(data,         56, file->full_directory_info.attrib);
+		SIVAL(data,         64, file->full_directory_info.ea_size);
+		BLOB_CHECK(smbsrv_blob_append_string(mem_ctx, blob, file->full_directory_info.name.s, 
+						     ofs + 60, default_str_flags,
+						     STR_TERMINATE_ASCII));
+		data = blob->data + ofs;
+		SIVAL(data,          0, blob->length - ofs);
+		return NT_STATUS_OK;
+
+	case RAW_SEARCH_NAME_INFO:
+		BLOB_CHECK(smbsrv_blob_grow_data(mem_ctx, blob, ofs + 12));
+		data = blob->data + ofs;
+		SIVAL(data,          4, file->name_info.file_index);
+		BLOB_CHECK(smbsrv_blob_append_string(mem_ctx, blob, file->name_info.name.s, 
+						     ofs + 8, default_str_flags,
+						     STR_TERMINATE_ASCII));
+		data = blob->data + ofs;
+		SIVAL(data,          0, blob->length - ofs);
+		return NT_STATUS_OK;
+
+	case RAW_SEARCH_BOTH_DIRECTORY_INFO:
+		BLOB_CHECK(smbsrv_blob_grow_data(mem_ctx, blob, ofs + 94));
+		data = blob->data + ofs;
+		SIVAL(data,          4, file->both_directory_info.file_index);
+		push_nttime(data,    8, file->both_directory_info.create_time);
+		push_nttime(data,   16, file->both_directory_info.access_time);
+		push_nttime(data,   24, file->both_directory_info.write_time);
+		push_nttime(data,   32, file->both_directory_info.change_time);
+		SBVAL(data,         40, file->both_directory_info.size);
+		SBVAL(data,         48, file->both_directory_info.alloc_size);
+		SIVAL(data,         56, file->both_directory_info.attrib);
+		SIVAL(data,         64, file->both_directory_info.ea_size);
+		SCVAL(data,         69, 0); /* reserved */
+		memset(data+70,0,24);
+		smbsrv_blob_push_string(mem_ctx, blob, 
+					68 + ofs, 70 + ofs, 
+					file->both_directory_info.short_name.s, 
+					24, default_str_flags,
+					STR_UNICODE | STR_LEN8BIT);
+		BLOB_CHECK(smbsrv_blob_append_string(mem_ctx, blob, file->both_directory_info.name.s, 
+						     ofs + 60, default_str_flags,
+						     STR_TERMINATE_ASCII));
+		/* align the end of the blob on an even boundary */
+		if (blob->length & 1) {
+			BLOB_CHECK(smbsrv_blob_fill_data(blob, blob, blob->length+1));
+		}
+		data = blob->data + ofs;
+		SIVAL(data,          0, blob->length - ofs);
+		return NT_STATUS_OK;
+
+	case RAW_SEARCH_ID_FULL_DIRECTORY_INFO:
+		BLOB_CHECK(smbsrv_blob_grow_data(mem_ctx, blob, ofs + 80));
+		data = blob->data + ofs;
+		SIVAL(data,          4, file->id_full_directory_info.file_index);
+		push_nttime(data,    8, file->id_full_directory_info.create_time);
+		push_nttime(data,   16, file->id_full_directory_info.access_time);
+		push_nttime(data,   24, file->id_full_directory_info.write_time);
+		push_nttime(data,   32, file->id_full_directory_info.change_time);
+		SBVAL(data,         40, file->id_full_directory_info.size);
+		SBVAL(data,         48, file->id_full_directory_info.alloc_size);
+		SIVAL(data,         56, file->id_full_directory_info.attrib);
+		SIVAL(data,         64, file->id_full_directory_info.ea_size);
+		SIVAL(data,         68, 0); /* padding */
+		SBVAL(data,         72, file->id_full_directory_info.file_id);
+		BLOB_CHECK(smbsrv_blob_append_string(mem_ctx, blob, file->id_full_directory_info.name.s, 
+						     ofs + 60, default_str_flags,
+						     STR_TERMINATE_ASCII));
+		data = blob->data + ofs;
+		SIVAL(data,          0, blob->length - ofs);
+		return NT_STATUS_OK;
+
+	case RAW_SEARCH_ID_BOTH_DIRECTORY_INFO:
+		BLOB_CHECK(smbsrv_blob_grow_data(mem_ctx, blob, ofs + 104));
+		data = blob->data + ofs;
+		SIVAL(data,          4, file->id_both_directory_info.file_index);
+		push_nttime(data,    8, file->id_both_directory_info.create_time);
+		push_nttime(data,   16, file->id_both_directory_info.access_time);
+		push_nttime(data,   24, file->id_both_directory_info.write_time);
+		push_nttime(data,   32, file->id_both_directory_info.change_time);
+		SBVAL(data,         40, file->id_both_directory_info.size);
+		SBVAL(data,         48, file->id_both_directory_info.alloc_size);
+		SIVAL(data,         56, file->id_both_directory_info.attrib);
+		SIVAL(data,         64, file->id_both_directory_info.ea_size);
+		SCVAL(data,         69, 0); /* reserved */
+		memset(data+70,0,26);
+		smbsrv_blob_push_string(mem_ctx, blob, 
+					68 + ofs, 70 + ofs, 
+					file->id_both_directory_info.short_name.s, 
+					24, default_str_flags,
+					STR_UNICODE | STR_LEN8BIT);
+		SBVAL(data,         96, file->id_both_directory_info.file_id);
+		BLOB_CHECK(smbsrv_blob_append_string(mem_ctx, blob, file->id_both_directory_info.name.s, 
+						     ofs + 60, default_str_flags,
+						     STR_TERMINATE_ASCII));
+		data = blob->data + ofs;
+		SIVAL(data,          0, blob->length - ofs);
+		return NT_STATUS_OK;
+
+	default:
+		return NT_STATUS_INVALID_LEVEL;
+	}
+
+	return NT_STATUS_INVALID_LEVEL;
+}
