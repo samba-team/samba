@@ -80,17 +80,6 @@ static NTSTATUS trans2_setup_reply(struct smb_trans2 *trans,
 	return NT_STATUS_OK;
 }
 
-/*
-  align the end of the data section of a trans reply on an even boundary
-*/
-static NTSTATUS trans2_align_data(struct smb_trans2 *trans)
-{
-	if (trans->out.data.length & 1) {
-		TRANS2_CHECK(smbsrv_blob_fill_data(trans, &trans->out.data, trans->out.data.length+1));
-	}
-	return NT_STATUS_OK;
-}
-
 static NTSTATUS trans2_push_fsinfo(struct smbsrv_connection *smb_conn,
 				   TALLOC_CTX *mem_ctx,
 				   DATA_BLOB *blob,
@@ -785,127 +774,13 @@ static NTSTATUS find_fill_info(struct find_state *state,
 		break;
 
 	case RAW_SEARCH_DIRECTORY_INFO:
-		TRANS2_CHECK(smbsrv_blob_grow_data(trans, &trans->out.data, ofs + 64));
-		data = trans->out.data.data + ofs;
-		SIVAL(data,          4, file->directory_info.file_index);
-		push_nttime(data,    8, file->directory_info.create_time);
-		push_nttime(data,   16, file->directory_info.access_time);
-		push_nttime(data,   24, file->directory_info.write_time);
-		push_nttime(data,   32, file->directory_info.change_time);
-		SBVAL(data,         40, file->directory_info.size);
-		SBVAL(data,         48, file->directory_info.alloc_size);
-		SIVAL(data,         56, file->directory_info.attrib);
-		TRANS2_CHECK(smbsrv_blob_append_string(trans, &trans->out.data, file->directory_info.name.s,
-						       ofs + 60, SMBSRV_REQ_DEFAULT_STR_FLAGS(req),
-						       STR_TERMINATE_ASCII));
-		data = trans->out.data.data + ofs;
-		SIVAL(data,          0, trans->out.data.length - ofs);
-		break;
-
 	case RAW_SEARCH_FULL_DIRECTORY_INFO:
-		TRANS2_CHECK(smbsrv_blob_grow_data(trans, &trans->out.data, ofs + 68));
-		data = trans->out.data.data + ofs;
-		SIVAL(data,          4, file->full_directory_info.file_index);
-		push_nttime(data,    8, file->full_directory_info.create_time);
-		push_nttime(data,   16, file->full_directory_info.access_time);
-		push_nttime(data,   24, file->full_directory_info.write_time);
-		push_nttime(data,   32, file->full_directory_info.change_time);
-		SBVAL(data,         40, file->full_directory_info.size);
-		SBVAL(data,         48, file->full_directory_info.alloc_size);
-		SIVAL(data,         56, file->full_directory_info.attrib);
-		SIVAL(data,         64, file->full_directory_info.ea_size);
-		TRANS2_CHECK(smbsrv_blob_append_string(trans, &trans->out.data, file->full_directory_info.name.s, 
-						       ofs + 60, SMBSRV_REQ_DEFAULT_STR_FLAGS(req),
-						       STR_TERMINATE_ASCII));
-		data = trans->out.data.data + ofs;
-		SIVAL(data,          0, trans->out.data.length - ofs);
-		break;
-
 	case RAW_SEARCH_NAME_INFO:
-		TRANS2_CHECK(smbsrv_blob_grow_data(trans, &trans->out.data, ofs + 12));
-		data = trans->out.data.data + ofs;
-		SIVAL(data,          4, file->name_info.file_index);
-		TRANS2_CHECK(smbsrv_blob_append_string(trans, &trans->out.data, file->name_info.name.s, 
-						       ofs + 8, SMBSRV_REQ_DEFAULT_STR_FLAGS(req),
-						       STR_TERMINATE_ASCII));
-		data = trans->out.data.data + ofs;
-		SIVAL(data,          0, trans->out.data.length - ofs);
-		break;
-
 	case RAW_SEARCH_BOTH_DIRECTORY_INFO:
-		TRANS2_CHECK(smbsrv_blob_grow_data(trans, &trans->out.data, ofs + 94));
-		data = trans->out.data.data + ofs;
-		SIVAL(data,          4, file->both_directory_info.file_index);
-		push_nttime(data,    8, file->both_directory_info.create_time);
-		push_nttime(data,   16, file->both_directory_info.access_time);
-		push_nttime(data,   24, file->both_directory_info.write_time);
-		push_nttime(data,   32, file->both_directory_info.change_time);
-		SBVAL(data,         40, file->both_directory_info.size);
-		SBVAL(data,         48, file->both_directory_info.alloc_size);
-		SIVAL(data,         56, file->both_directory_info.attrib);
-		SIVAL(data,         64, file->both_directory_info.ea_size);
-		SCVAL(data,         69, 0); /* reserved */
-		memset(data+70,0,24);
-		smbsrv_blob_push_string(trans, &trans->out.data, 
-					68 + ofs, 70 + ofs, 
-					file->both_directory_info.short_name.s, 
-					24, SMBSRV_REQ_DEFAULT_STR_FLAGS(req),
-					STR_UNICODE | STR_LEN8BIT);
-		TRANS2_CHECK(smbsrv_blob_append_string(trans, &trans->out.data, file->both_directory_info.name.s, 
-						       ofs + 60, SMBSRV_REQ_DEFAULT_STR_FLAGS(req),
-						       STR_TERMINATE_ASCII));
-		TRANS2_CHECK(trans2_align_data(trans));
-		data = trans->out.data.data + ofs;
-		SIVAL(data,          0, trans->out.data.length - ofs);
-		break;
-
 	case RAW_SEARCH_ID_FULL_DIRECTORY_INFO:
-		TRANS2_CHECK(smbsrv_blob_grow_data(trans, &trans->out.data, ofs + 80));
-		data = trans->out.data.data + ofs;
-		SIVAL(data,          4, file->id_full_directory_info.file_index);
-		push_nttime(data,    8, file->id_full_directory_info.create_time);
-		push_nttime(data,   16, file->id_full_directory_info.access_time);
-		push_nttime(data,   24, file->id_full_directory_info.write_time);
-		push_nttime(data,   32, file->id_full_directory_info.change_time);
-		SBVAL(data,         40, file->id_full_directory_info.size);
-		SBVAL(data,         48, file->id_full_directory_info.alloc_size);
-		SIVAL(data,         56, file->id_full_directory_info.attrib);
-		SIVAL(data,         64, file->id_full_directory_info.ea_size);
-		SIVAL(data,         68, 0); /* padding */
-		SBVAL(data,         72, file->id_full_directory_info.file_id);
-		TRANS2_CHECK(smbsrv_blob_append_string(trans, &trans->out.data, file->id_full_directory_info.name.s, 
-						       ofs + 60, SMBSRV_REQ_DEFAULT_STR_FLAGS(req),
-						       STR_TERMINATE_ASCII));
-		data = trans->out.data.data + ofs;
-		SIVAL(data,          0, trans->out.data.length - ofs);
-		break;
-
 	case RAW_SEARCH_ID_BOTH_DIRECTORY_INFO:
-		TRANS2_CHECK(smbsrv_blob_grow_data(trans, &trans->out.data, ofs + 104));
-		data = trans->out.data.data + ofs;
-		SIVAL(data,          4, file->id_both_directory_info.file_index);
-		push_nttime(data,    8, file->id_both_directory_info.create_time);
-		push_nttime(data,   16, file->id_both_directory_info.access_time);
-		push_nttime(data,   24, file->id_both_directory_info.write_time);
-		push_nttime(data,   32, file->id_both_directory_info.change_time);
-		SBVAL(data,         40, file->id_both_directory_info.size);
-		SBVAL(data,         48, file->id_both_directory_info.alloc_size);
-		SIVAL(data,         56, file->id_both_directory_info.attrib);
-		SIVAL(data,         64, file->id_both_directory_info.ea_size);
-		SCVAL(data,         69, 0); /* reserved */
-		memset(data+70,0,26);
-		smbsrv_blob_push_string(trans, &trans->out.data, 
-					68 + ofs, 70 + ofs, 
-					file->id_both_directory_info.short_name.s, 
-					24, SMBSRV_REQ_DEFAULT_STR_FLAGS(req),
-					STR_UNICODE | STR_LEN8BIT);
-		SBVAL(data,         96, file->id_both_directory_info.file_id);
-		TRANS2_CHECK(smbsrv_blob_append_string(trans, &trans->out.data, file->id_both_directory_info.name.s, 
-						       ofs + 60, SMBSRV_REQ_DEFAULT_STR_FLAGS(req),
-						       STR_TERMINATE_ASCII));
-		data = trans->out.data.data + ofs;
-		SIVAL(data,          0, trans->out.data.length - ofs);
-		break;
+		return smbsrv_push_passthru_search(trans, &trans->out.data, state->level, file,
+						   SMBSRV_REQ_DEFAULT_STR_FLAGS(req));
 	}
 
 	return NT_STATUS_OK;
