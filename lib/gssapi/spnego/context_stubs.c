@@ -459,15 +459,6 @@ OM_uint32 gss_spnego_import_sec_context (
     return GSS_S_COMPLETE;
 }
 
-OM_uint32 gss_spnego_inquire_names_for_mech (
-            OM_uint32 * minor_status,
-            const gss_OID mechanism,
-            gss_OID_set * name_types
-           )
-{
-    return gss_create_empty_oid_set(minor_status, name_types);
-}
-
 OM_uint32 gss_spnego_inquire_mechs_for_name (
             OM_uint32 * minor_status,
             const gss_name_t input_name,
@@ -496,10 +487,7 @@ OM_uint32 gss_spnego_canonicalize_name (
             gss_name_t * output_name
            )
 {
-    return gss_canonicalize_name(minor_status,
-				 input_name,
-				 mech_type,
-				 output_name);
+    return gss_duplicate_name(minor_status, input_name, output_name);
 }
 
 OM_uint32 gss_spnego_duplicate_name (

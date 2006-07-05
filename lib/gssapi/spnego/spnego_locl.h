@@ -345,12 +345,6 @@ OM_uint32 gss_spnego_test_oid_set_member (
             int * /*present*/
            );
 
-OM_uint32 gss_spnego_inquire_names_for_mech (
-            OM_uint32 * /*minor_status*/,
-            const gss_OID /*mechanism*/,
-            gss_OID_set * /*name_types*/
-           );
-
 OM_uint32 gss_spnego_inquire_mechs_for_name (
             OM_uint32 * /*minor_status*/,
             const gss_name_t /*input_name*/,
