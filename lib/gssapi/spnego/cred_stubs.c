@@ -87,46 +87,46 @@ _gss_spnego_alloc_cred(OM_uint32 *minor_status,
  * more functionality.
  */
 OM_uint32 gss_spnego_acquire_cred
-           (OM_uint32 *minor_status,
-            const gss_name_t desired_name,
-            OM_uint32 time_req,
-            const gss_OID_set desired_mechs,
-            gss_cred_usage_t cred_usage,
-            gss_cred_id_t * output_cred_handle,
-            gss_OID_set * actual_mechs,
-            OM_uint32 * time_rec
-           )
+(OM_uint32 *minor_status,
+ const gss_name_t desired_name,
+ OM_uint32 time_req,
+ const gss_OID_set desired_mechs,
+ gss_cred_usage_t cred_usage,
+ gss_cred_id_t * output_cred_handle,
+ gss_OID_set * actual_mechs,
+ OM_uint32 * time_rec
+    )
 {
     OM_uint32 ret, tmp;
     gss_OID_set_desc actual_desired_mechs;
+    gss_OID_set mechs;
     int i, j;
     gss_cred_id_t cred_handle = GSS_C_NO_CREDENTIAL;
     gssspnego_cred cred;
 
     *output_cred_handle = GSS_C_NO_CREDENTIAL;
 
+    ret = gss_indicate_mechs(minor_status, &mechs);
+    if (ret != GSS_S_COMPLETE)
+	return ret;
+
     /* Remove ourselves from this list */
-    actual_desired_mechs.count = desired_mechs->count;
+    actual_desired_mechs.count = mechs->count;
     actual_desired_mechs.elements = malloc(actual_desired_mechs.count *
-	sizeof(gss_OID_desc));
+					   sizeof(gss_OID_desc));
     if (actual_desired_mechs.elements == NULL) {
 	*minor_status = ENOMEM;
 	ret = GSS_S_FAILURE;
 	goto out;
     }
 
-    for (i = 0, j = 0; i < desired_mechs->count; i++) {
-	if (gss_oid_equal(&desired_mechs->elements[i],
-			  GSS_SPNEGO_MECHANISM))
+    for (i = 0, j = 0; i < mechs->count; i++) {
+	if (gss_oid_equal(&mechs->elements[i], GSS_SPNEGO_MECHANISM))
 	    continue;
 
-	actual_desired_mechs.elements[j].length =
-	    desired_mechs->elements[i].length;
-	actual_desired_mechs.elements[j].elements =
-	    desired_mechs->elements[i].elements;
+	actual_desired_mechs.elements[j] = mechs->elements[i];
 	j++;
     }
-
     actual_desired_mechs.count = j;
 
     ret = _gss_spnego_alloc_cred(minor_status, GSS_C_NO_CREDENTIAL,
@@ -146,6 +146,7 @@ OM_uint32 gss_spnego_acquire_cred
     *output_cred_handle = cred_handle;
 
 out:
+    gss_release_oid_set(&tmp, &mechs);
     if (actual_desired_mechs.elements != NULL) {
 	free(actual_desired_mechs.elements);
     }
