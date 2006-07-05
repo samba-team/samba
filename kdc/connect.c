@@ -395,6 +395,39 @@ addr_to_string(krb5_context context,
 }
 
 /*
+ *
+ */
+
+static void
+send_reply(krb5_context context, 
+	   krb5_kdc_configuration *config,
+	   krb5_boolean prependlength,
+	   struct descr *d,
+	   krb5_data *reply)
+{
+    kdc_log(context, config, 5,
+	    "sending %lu bytes to %s", (unsigned long)reply->length,
+	    d->addr_string);
+    if(prependlength){
+	unsigned char l[4];
+	l[0] = (reply->length >> 24) & 0xff;
+	l[1] = (reply->length >> 16) & 0xff;
+	l[2] = (reply->length >> 8) & 0xff;
+	l[3] = reply->length & 0xff;
+	if(sendto(d->s, l, sizeof(l), 0, d->sa, d->sock_len) < 0) {
+	    kdc_log (context, config, 
+		     0, "sendto(%s): %s", d->addr_string, strerror(errno));
+	    return;
+	}
+    }
+    if(sendto(d->s, reply->data, reply->length, 0, d->sa, d->sock_len) < 0) {
+	kdc_log (context, config, 
+		 0, "sendto(%s): %s", d->addr_string, strerror(errno));
+	return;
+    }
+}
+
+/*
  * Handle the request in `buf, len' to socket `d'
  */
 
@@ -410,34 +443,14 @@ do_request(krb5_context context,
     krb5_data_zero(&reply);
     ret = krb5_kdc_process_generic_request(context, config, 
 					   buf, len, &reply, &prependlength,
-			  d->addr_string, d->sa);
+					   d->addr_string, d->sa);
     if(reply.length){
-	kdc_log(context, config, 5,
-		"sending %lu bytes to %s", (unsigned long)reply.length,
-		d->addr_string);
-	if(prependlength){
-	    unsigned char l[4];
-	    l[0] = (reply.length >> 24) & 0xff;
-	    l[1] = (reply.length >> 16) & 0xff;
-	    l[2] = (reply.length >> 8) & 0xff;
-	    l[3] = reply.length & 0xff;
-	    if(sendto(d->s, l, sizeof(l), 0, d->sa, d->sock_len) < 0) {
-		kdc_log (context, config, 
-			 0, "sendto(%s): %s", d->addr_string, strerror(errno));
-		krb5_data_free(&reply);
-		return;
-	    }
-	}
-	if(sendto(d->s, reply.data, reply.length, 0, d->sa, d->sock_len) < 0) {
-	    kdc_log (context, config, 
-		     0, "sendto(%s): %s", d->addr_string, strerror(errno));
-	    krb5_data_free(&reply);
-	    return;
-	}
+	send_reply(context, config, prependlength, d, &reply);
 	krb5_data_free(&reply);
     }
     if(ret)
-	kdc_log(context, config, 0, "Failed processing %lu byte request from %s", 
+	kdc_log(context, config, 0, 
+		"Failed processing %lu byte request from %s", 
 		(unsigned long)len, d->addr_string);
 }
 
@@ -584,14 +597,14 @@ handle_vanilla_tcp (krb5_context context,
 		    struct descr *d)
 {
     krb5_storage *sp;
-    int32_t len;
+    uint32_t len;
 
     sp = krb5_storage_from_mem(d->buf, d->len);
     if (sp == NULL) {
 	kdc_log (context, config, 0, "krb5_storage_from_mem failed");
 	return -1;
     }
-    krb5_ret_int32(sp, &len);
+    krb5_ret_uint32(sp, &len);
     krb5_storage_free(sp);
     if(d->len - 4 >= len) {
 	memmove(d->buf, d->buf + 4, d->len - 4);
@@ -759,6 +772,25 @@ handle_tcp(krb5_context context,
 		 0, "TCP data of strange type from %s to %s/%d",
 		 d[idx].addr_string, descr_type(d + idx), 
 		 ntohs(d[idx].port));
+	if (d[idx].buf[0] & 0x80) {
+	    krb5_data reply;
+
+	    kdc_log (context, config, 0, "TCP extension not supported");
+
+	    ret = krb5_mk_error(context,
+				KRB5KRB_ERR_FIELD_TOOLONG,
+				NULL,
+				NULL,
+				NULL,
+				NULL,
+				NULL,
+				NULL,
+				&reply);
+	    if (ret == 0) {
+		send_reply(context, config, TRUE, d + idx, &reply);
+		krb5_data_free(&reply);
+	    }
+	}
 	clear_descr(d + idx);
 	return;
     }
