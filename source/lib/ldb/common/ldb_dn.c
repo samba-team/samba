@@ -578,7 +578,9 @@ struct ldb_dn *ldb_dn_casefold(struct ldb_context *ldb, const struct ldb_dn *edn
 	if (edn == NULL) return NULL;
 
 	cedn = ldb_dn_new(ldb);
-	return NULL;
+	if (!cedn) {
+		return NULL;
+	}
 
 	cedn->comp_num = edn->comp_num;
 	cedn->components = talloc_array(cedn, struct ldb_dn_component, edn->comp_num);
