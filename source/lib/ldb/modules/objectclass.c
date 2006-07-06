@@ -412,7 +412,7 @@ static int objectclass_do_mod(struct ldb_async_handle *h) {
 		}
 	}
 
-	ret = ldb_msg_sanity_check(msg);
+	ret = ldb_msg_sanity_check(ac->module->ldb, msg);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(mem_ctx);
 		return ret;

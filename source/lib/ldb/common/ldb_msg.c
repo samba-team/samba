@@ -550,18 +550,20 @@ struct ldb_message *ldb_msg_diff(struct ldb_context *ldb,
 	return mod;
 }
 
-int ldb_msg_sanity_check(const struct ldb_message *msg)
+int ldb_msg_sanity_check(struct ldb_context *ldb, 
+			 const struct ldb_message *msg)
 {
 	int i, j;
 
 	/* basic check on DN */
 	if (msg->dn == NULL) {
 		/* TODO: return also an error string */
+		ldb_set_errstring(ldb, talloc_strdup(ldb, "ldb message lacks a DN!"));
 		return LDB_ERR_INVALID_DN_SYNTAX;
 	}
 	if (msg->dn->comp_num == 0) {
 		/* root dse has empty dn */
-		/* TODO: return also an error string */
+		ldb_set_errstring(ldb, talloc_strdup(ldb, "DN on new ldb message is '' (not permitted)!"));
 		return LDB_ERR_ENTRY_ALREADY_EXISTS;
 	}
 
@@ -569,8 +571,13 @@ int ldb_msg_sanity_check(const struct ldb_message *msg)
 	for (i = 0; i < msg->num_elements; i++) {
 		for (j = 0; j < msg->elements[i].num_values; j++) {
 			if (msg->elements[i].values[j].length == 0) {
+				TALLOC_CTX *mem_ctx = talloc_new(ldb);
 				/* an attribute cannot be empty */
 				/* TODO: return also an error string */
+				ldb_set_errstring(ldb, talloc_asprintf(mem_ctx, "Element %s has empty attribute in ldb message (%s)!",
+								       msg->elements[i].name, 
+								       ldb_dn_linearize(mem_ctx, msg->dn)));
+				talloc_free(mem_ctx);
 				return LDB_ERR_INVALID_ATTRIBUTE_SYNTAX;
 			}
 		}
