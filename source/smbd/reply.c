@@ -426,14 +426,6 @@ size_t srvstr_get_path_wcard(char *inbuf, char *dest, const char *src, size_t de
 		*err = check_path_syntax_posix(dest, tmppath);
 	} else {
 		*err = check_path_syntax_wcard(dest, tmppath, contains_wcard);
-
-		/* Strange DOS error code semantics... */
-		if (!(SVAL(inbuf,smb_flg2) & FLAGS2_32_BIT_ERROR_CODES)) {
-			if (NT_STATUS_EQUAL(NT_STATUS_OBJECT_NAME_INVALID,*err)) {
-				/* We need to map to ERRbadpath */
-				*err = NT_STATUS_OBJECT_PATH_NOT_FOUND;
-			}
-		}
 	}
 
 	return ret;
@@ -461,14 +453,6 @@ size_t srvstr_get_path(char *inbuf, char *dest, const char *src, size_t dest_len
 		*err = check_path_syntax_posix(dest, tmppath);
 	} else {
 		*err = check_path_syntax(dest, tmppath);
-
-		/* Strange DOS error code semantics... */
-		if (!(SVAL(inbuf,smb_flg2) & FLAGS2_32_BIT_ERROR_CODES)) {
-			if (NT_STATUS_EQUAL(NT_STATUS_OBJECT_NAME_INVALID,*err)) {
-				/* We need to map to ERRbadpath */
-				*err = NT_STATUS_OBJECT_PATH_NOT_FOUND;
-			}
-		}
 	}
 
 	return ret;
@@ -827,6 +811,14 @@ int reply_chkpth(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 	srvstr_get_path(inbuf, name, smb_buf(inbuf) + 1, sizeof(name), 0, STR_TERMINATE, &status);
 	if (!NT_STATUS_IS_OK(status)) {
 		END_PROFILE(SMBchkpth);
+
+		/* Strange DOS error code semantics only for chkpth... */
+		if (!(SVAL(inbuf,smb_flg2) & FLAGS2_32_BIT_ERROR_CODES)) {
+			if (NT_STATUS_EQUAL(NT_STATUS_OBJECT_NAME_INVALID,status)) {
+				/* We need to map to ERRbadpath */
+				status = NT_STATUS_OBJECT_PATH_NOT_FOUND;
+			}
+		}
 		return ERROR_NT(status);
 	}
 
