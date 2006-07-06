@@ -194,7 +194,6 @@ static NTSTATUS smb_raw_search_close_old(struct smbcli_tree *tree,
 static NTSTATUS smb_raw_search_first_blob(struct smbcli_tree *tree,
 					  TALLOC_CTX *mem_ctx,	/* used to allocate output blobs */
 					  union smb_search_first *io,
-					  uint16_t info_level,
 					  DATA_BLOB *out_param_blob,
 					  DATA_BLOB *out_data_blob)
 {
@@ -211,7 +210,15 @@ static NTSTATUS smb_raw_search_first_blob(struct smbcli_tree *tree,
 	tp.in.max_data = 0xFFFF;
 	tp.in.setup = &setup;
 
-	if (info_level == RAW_SEARCH_EA_LIST) {
+	if (io->t2ffirst.level != RAW_SEARCH_TRANS2) {
+		return NT_STATUS_INVALID_LEVEL;
+	}
+
+	if (io->t2ffirst.data_level >= RAW_SEARCH_DATA_GENERIC) {
+		return NT_STATUS_INVALID_LEVEL;
+	}
+
+	if (io->t2ffirst.data_level == RAW_SEARCH_DATA_EA_LIST) {
 		if (!ea_push_name_list(mem_ctx, 
 				       &tp.in.data,
 				       io->t2ffirst.in.num_names,
@@ -219,7 +226,7 @@ static NTSTATUS smb_raw_search_first_blob(struct smbcli_tree *tree,
 			return NT_STATUS_NO_MEMORY;
 		}		
 	}
-	
+
 	tp.in.params = data_blob_talloc(mem_ctx, NULL, 12);
 	if (!tp.in.params.data) {
 		return NT_STATUS_NO_MEMORY;
@@ -228,7 +235,7 @@ static NTSTATUS smb_raw_search_first_blob(struct smbcli_tree *tree,
 	SSVAL(tp.in.params.data, 0, io->t2ffirst.in.search_attrib);
 	SSVAL(tp.in.params.data, 2, io->t2ffirst.in.max_count);	
 	SSVAL(tp.in.params.data, 4, io->t2ffirst.in.flags);
-	SSVAL(tp.in.params.data, 6, info_level);
+	SSVAL(tp.in.params.data, 6, io->t2ffirst.data_level);
 	SIVAL(tp.in.params.data, 8, io->t2ffirst.in.storage_type);
 
 	smbcli_blob_append_string(tree->session, mem_ctx, &tp.in.params,
@@ -255,7 +262,6 @@ static NTSTATUS smb_raw_search_first_blob(struct smbcli_tree *tree,
 static NTSTATUS smb_raw_search_next_blob(struct smbcli_tree *tree,
 					 TALLOC_CTX *mem_ctx,
 					 union smb_search_next *io,
-					 uint16_t info_level,
 					 DATA_BLOB *out_param_blob,
 					 DATA_BLOB *out_data_blob)
 {
@@ -272,7 +278,15 @@ static NTSTATUS smb_raw_search_next_blob(struct smbcli_tree *tree,
 	tp.in.max_data = 0xFFFF;
 	tp.in.setup = &setup;
 
-	if (info_level == RAW_SEARCH_EA_LIST) {
+	if (io->t2fnext.level != RAW_SEARCH_TRANS2) {
+		return NT_STATUS_INVALID_LEVEL;
+	}
+
+	if (io->t2fnext.data_level >= RAW_SEARCH_DATA_GENERIC) {
+		return NT_STATUS_INVALID_LEVEL;
+	}
+
+	if (io->t2fnext.data_level == RAW_SEARCH_DATA_EA_LIST) {
 		if (!ea_push_name_list(mem_ctx, 
 				       &tp.in.data,
 				       io->t2fnext.in.num_names,
@@ -287,8 +301,8 @@ static NTSTATUS smb_raw_search_next_blob(struct smbcli_tree *tree,
 	}
 	
 	SSVAL(tp.in.params.data, 0, io->t2fnext.in.handle);
-	SSVAL(tp.in.params.data, 2, io->t2fnext.in.max_count);	
-	SSVAL(tp.in.params.data, 4, info_level);
+	SSVAL(tp.in.params.data, 2, io->t2fnext.in.max_count);
+	SSVAL(tp.in.params.data, 4, io->t2fnext.data_level);
 	SIVAL(tp.in.params.data, 6, io->t2fnext.in.resume_key);
 	SSVAL(tp.in.params.data, 10, io->t2fnext.in.flags);
 
@@ -315,7 +329,7 @@ static NTSTATUS smb_raw_search_next_blob(struct smbcli_tree *tree,
   SMB2
 */
 NTSTATUS smb_raw_search_common(TALLOC_CTX *mem_ctx, 
-			       enum smb_search_level level,
+			       enum smb_search_data_level level,
 			       const DATA_BLOB *blob,
 			       union smb_search_data *data,
 			       uint_t *next_ofs,
@@ -335,7 +349,7 @@ NTSTATUS smb_raw_search_common(TALLOC_CTX *mem_ctx,
 	}
 
 	switch (level) {
-	case RAW_SEARCH_DIRECTORY_INFO:
+	case RAW_SEARCH_DATA_DIRECTORY_INFO:
 		if (blen < 65) return NT_STATUS_INFO_LENGTH_MISMATCH;
 		data->directory_info.file_index  = IVAL(blob->data,             4);
 		data->directory_info.create_time = smbcli_pull_nttime(blob->data,  8);
@@ -353,7 +367,7 @@ NTSTATUS smb_raw_search_common(TALLOC_CTX *mem_ctx,
 		}
 		return NT_STATUS_OK;
 
-	case RAW_SEARCH_FULL_DIRECTORY_INFO:
+	case RAW_SEARCH_DATA_FULL_DIRECTORY_INFO:
 		if (blen < 69) return NT_STATUS_INFO_LENGTH_MISMATCH;
 		data->full_directory_info.file_index  = IVAL(blob->data,                4);
 		data->full_directory_info.create_time = smbcli_pull_nttime(blob->data,  8);
@@ -372,7 +386,7 @@ NTSTATUS smb_raw_search_common(TALLOC_CTX *mem_ctx,
 		}
 		return NT_STATUS_OK;
 
-	case RAW_SEARCH_NAME_INFO:
+	case RAW_SEARCH_DATA_NAME_INFO:
 		if (blen < 13) return NT_STATUS_INFO_LENGTH_MISMATCH;
 		data->name_info.file_index  = IVAL(blob->data, 4);
 		len = smbcli_blob_pull_string(NULL, mem_ctx, blob,
@@ -384,7 +398,7 @@ NTSTATUS smb_raw_search_common(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_OK;
 
 
-	case RAW_SEARCH_BOTH_DIRECTORY_INFO:
+	case RAW_SEARCH_DATA_BOTH_DIRECTORY_INFO:
 		if (blen < 95) return NT_STATUS_INFO_LENGTH_MISMATCH;
 		data->both_directory_info.file_index  = IVAL(blob->data,                4);
 		data->both_directory_info.create_time = smbcli_pull_nttime(blob->data,  8);
@@ -407,7 +421,7 @@ NTSTATUS smb_raw_search_common(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_OK;
 
 
-	case RAW_SEARCH_ID_FULL_DIRECTORY_INFO:
+	case RAW_SEARCH_DATA_ID_FULL_DIRECTORY_INFO:
 		if (blen < 81) return NT_STATUS_INFO_LENGTH_MISMATCH;
 		data->id_full_directory_info.file_index  = IVAL(blob->data,             4);
 		data->id_full_directory_info.create_time = smbcli_pull_nttime(blob->data,  8);
@@ -427,7 +441,7 @@ NTSTATUS smb_raw_search_common(TALLOC_CTX *mem_ctx,
 		}
 		return NT_STATUS_OK;
 
-	case RAW_SEARCH_ID_BOTH_DIRECTORY_INFO:
+	case RAW_SEARCH_DATA_ID_BOTH_DIRECTORY_INFO:
 		if (blen < 105) return NT_STATUS_INFO_LENGTH_MISMATCH;
 		data->id_both_directory_info.file_index  = IVAL(blob->data,             4);
 		data->id_both_directory_info.create_time = smbcli_pull_nttime(blob->data,  8);
@@ -467,7 +481,7 @@ NTSTATUS smb_raw_search_common(TALLOC_CTX *mem_ctx,
 */
 static int parse_trans2_search(struct smbcli_tree *tree,
 			       TALLOC_CTX *mem_ctx, 
-			       enum smb_search_level level,
+			       enum smb_search_data_level level,
 			       uint16_t flags,
 			       DATA_BLOB *blob,
 			       union smb_search_data *data)
@@ -478,15 +492,12 @@ static int parse_trans2_search(struct smbcli_tree *tree,
 	NTSTATUS status;
 
 	switch (level) {
-	case RAW_SEARCH_GENERIC:
-	case RAW_SEARCH_SEARCH:
-	case RAW_SEARCH_FFIRST:
-	case RAW_SEARCH_FUNIQUE:
-	case RAW_SEARCH_SMB2:
+	case RAW_SEARCH_DATA_GENERIC:
+	case RAW_SEARCH_DATA_SEARCH:
 		/* handled elsewhere */
 		return -1;
 
-	case RAW_SEARCH_STANDARD:
+	case RAW_SEARCH_DATA_STANDARD:
 		if (flags & FLAG_TRANS2_FIND_REQUIRE_RESUME) {
 			if (blob->length < 4) return -1;
 			data->standard.resume_key = IVAL(blob->data, 0);
@@ -508,7 +519,7 @@ static int parse_trans2_search(struct smbcli_tree *tree,
 					   22, 23, STR_LEN8BIT | STR_TERMINATE | STR_LEN_NOTERM);
 		return len + 23;
 
-	case RAW_SEARCH_EA_SIZE:
+	case RAW_SEARCH_DATA_EA_SIZE:
 		if (flags & FLAG_TRANS2_FIND_REQUIRE_RESUME) {
 			if (blob->length < 4) return -1;
 			data->ea_size.resume_key = IVAL(blob->data, 0);
@@ -531,7 +542,7 @@ static int parse_trans2_search(struct smbcli_tree *tree,
 					   26, 27, STR_LEN8BIT | STR_TERMINATE | STR_NOALIGN);
 		return len + 27 + 1;
 
-	case RAW_SEARCH_EA_LIST:
+	case RAW_SEARCH_DATA_EA_LIST:
 		if (flags & FLAG_TRANS2_FIND_REQUIRE_RESUME) {
 			if (blob->length < 4) return -1;
 			data->ea_list.resume_key = IVAL(blob->data, 0);
@@ -569,7 +580,7 @@ static int parse_trans2_search(struct smbcli_tree *tree,
 					      STR_LEN8BIT | STR_NOALIGN);
 		return len + ea_size + 23 + 1;
 
-	case RAW_SEARCH_UNIX_INFO:
+	case RAW_SEARCH_DATA_UNIX_INFO:
 		if (blob->length < 109) return -1;
 		ofs                                  = IVAL(blob->data,             0);
 		data->unix_info.file_index           = IVAL(blob->data,             4);
@@ -594,12 +605,12 @@ static int parse_trans2_search(struct smbcli_tree *tree,
 		}
 		return ofs;
 
-	case RAW_SEARCH_DIRECTORY_INFO:
-	case RAW_SEARCH_FULL_DIRECTORY_INFO:
-	case RAW_SEARCH_NAME_INFO:
-	case RAW_SEARCH_BOTH_DIRECTORY_INFO:
-	case RAW_SEARCH_ID_FULL_DIRECTORY_INFO:
-	case RAW_SEARCH_ID_BOTH_DIRECTORY_INFO: {
+	case RAW_SEARCH_DATA_DIRECTORY_INFO:
+	case RAW_SEARCH_DATA_FULL_DIRECTORY_INFO:
+	case RAW_SEARCH_DATA_NAME_INFO:
+	case RAW_SEARCH_DATA_BOTH_DIRECTORY_INFO:
+	case RAW_SEARCH_DATA_ID_FULL_DIRECTORY_INFO:
+	case RAW_SEARCH_DATA_ID_BOTH_DIRECTORY_INFO: {
 		uint_t str_flags = STR_UNICODE;
 		if (!(tree->session->transport->negotiate.capabilities & CAP_UNICODE)) {
 			str_flags = STR_ASCII;
@@ -622,7 +633,7 @@ static int parse_trans2_search(struct smbcli_tree *tree,
 ****************************************************************************/
 static NTSTATUS smb_raw_t2search_backend(struct smbcli_tree *tree,
 					 TALLOC_CTX *mem_ctx,
-					 enum smb_search_level level,
+					 enum smb_search_data_level level,
 					 uint16_t flags,
 					 int16_t count,
 					 DATA_BLOB *blob,
@@ -668,22 +679,24 @@ NTSTATUS smb_raw_search_first(struct smbcli_tree *tree,
 			      union smb_search_first *io, void *private,
 			      BOOL (*callback)(void *private, union smb_search_data *file))
 {
-	uint16_t info_level = 0;
 	DATA_BLOB p_blob, d_blob;
 	NTSTATUS status;
-			
-	if (io->generic.level == RAW_SEARCH_SEARCH ||
-	    io->generic.level == RAW_SEARCH_FFIRST ||
-	    io->generic.level == RAW_SEARCH_FUNIQUE) {
+
+	switch (io->generic.level) {
+	case RAW_SEARCH_SEARCH:
+	case RAW_SEARCH_FFIRST:
+	case RAW_SEARCH_FUNIQUE:
 		return smb_raw_search_first_old(tree, mem_ctx, io, private, callback);
-	}
-	if (io->generic.level >= RAW_SEARCH_GENERIC) {
+
+	case RAW_SEARCH_TRANS2:
+		break;
+
+	case RAW_SEARCH_SMB2:
 		return NT_STATUS_INVALID_LEVEL;
 	}
-	info_level = (uint16_t)io->generic.level;
 
 	status = smb_raw_search_first_blob(tree, mem_ctx,
-					   io, info_level, &p_blob, &d_blob);
+					   io, &p_blob, &d_blob);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -698,9 +711,9 @@ NTSTATUS smb_raw_search_first(struct smbcli_tree *tree,
 	io->t2ffirst.out.handle = SVAL(p_blob.data, 0);
 	io->t2ffirst.out.count = SVAL(p_blob.data, 2);
 	io->t2ffirst.out.end_of_search = SVAL(p_blob.data, 4);
-		
+
 	status = smb_raw_t2search_backend(tree, mem_ctx,
-					  io->generic.level, 
+					  io->generic.data_level, 
 					  io->t2ffirst.in.flags, io->t2ffirst.out.count,
 					  &d_blob, private, callback);
 	
@@ -714,21 +727,26 @@ NTSTATUS smb_raw_search_next(struct smbcli_tree *tree,
 			     union smb_search_next *io, void *private,
 			     BOOL (*callback)(void *private, union smb_search_data *file))
 {
-	uint16_t info_level = 0;
 	DATA_BLOB p_blob, d_blob;
 	NTSTATUS status;
 
-	if (io->generic.level == RAW_SEARCH_SEARCH ||
-	    io->generic.level == RAW_SEARCH_FFIRST) {
+	switch (io->generic.level) {
+	case RAW_SEARCH_SEARCH:
+	case RAW_SEARCH_FFIRST:
 		return smb_raw_search_next_old(tree, mem_ctx, io, private, callback);
-	}
-	if (io->generic.level >= RAW_SEARCH_GENERIC) {
+
+	case RAW_SEARCH_FUNIQUE:
+		return NT_STATUS_INVALID_LEVEL;
+
+	case RAW_SEARCH_TRANS2:
+		break;
+
+	case RAW_SEARCH_SMB2:
 		return NT_STATUS_INVALID_LEVEL;
 	}
-	info_level = (uint16_t)io->generic.level;
 
 	status = smb_raw_search_next_blob(tree, mem_ctx,
-					  io, info_level, &p_blob, &d_blob);
+					  io, &p_blob, &d_blob);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -744,7 +762,7 @@ NTSTATUS smb_raw_search_next(struct smbcli_tree *tree,
 	io->t2fnext.out.end_of_search = SVAL(p_blob.data, 2);
 		
 	status = smb_raw_t2search_backend(tree, mem_ctx,
-					  io->generic.level, 
+					  io->generic.data_level, 
 					  io->t2fnext.in.flags, io->t2fnext.out.count,
 					  &d_blob, private, callback);
 	

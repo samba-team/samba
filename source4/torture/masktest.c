@@ -128,7 +128,7 @@ static void get_real_name(struct smbcli_state *cli,
 
 	smbcli_list_new(cli->tree, mask, 
 			FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_DIRECTORY, 
-			RAW_SEARCH_BOTH_DIRECTORY_INFO,
+			RAW_SEARCH_DATA_BOTH_DIRECTORY_INFO,
 			listfn, NULL);
 
 	if (f_info_hit) {
@@ -169,7 +169,7 @@ static void testpair(struct smbcli_state *cli, char *mask, char *file)
 	fstrcpy(res1, "---");
 	smbcli_list_new(cli->tree, mask, 
 			FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_DIRECTORY, 
-			RAW_SEARCH_BOTH_DIRECTORY_INFO,
+			RAW_SEARCH_DATA_BOTH_DIRECTORY_INFO,
 			listfn, NULL);
 
 	res2 = reg_test(cli, mask, long_name, short_name);
