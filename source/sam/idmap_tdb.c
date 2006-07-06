@@ -381,7 +381,7 @@ static NTSTATUS db_get_id_from_sid(unid_t *id, enum idmap_type *id_type, const D
 			DEBUG(10,("db_get_sid_from_id: sid %s reverse mapping mismatch "
 				"tmp_id_type = %u, id_type = %u\n",
 					sid_string_static(sid),
-					(unsigned int)tmp_id_type, (unsigned int)id_type ));
+					(unsigned int)tmp_id_type, (unsigned int)(*id_type) ));
 			return NT_STATUS_NO_SUCH_USER;
 		}
 
@@ -391,7 +391,7 @@ static NTSTATUS db_get_id_from_sid(unid_t *id, enum idmap_type *id_type, const D
 				DEBUG(10,("db_get_sid_from_id: sid %s reverse mapping SID mismatch"
 					"id = %u, id_type = %u\n",
 						sid_string_static(sid),
-						(unsigned int)id->uid, (unsigned int)id_type ));
+						(unsigned int)id->uid, (unsigned int)(*id_type) ));
 				return NT_STATUS_NO_SUCH_USER;
 			}
 		}
