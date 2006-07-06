@@ -78,7 +78,7 @@ static NTSTATUS vampire_samdump_handle_secret(TALLOC_CTX *mem_ctx,
 	const char *name = delta->delta_id_union.name;
 	struct samdump_secret *new = talloc(samdump_state, struct samdump_secret);
 
-	new->name = talloc_steal(new, name);
+	new->name = talloc_strdup(new, name);
 	new->secret = data_blob_talloc(new, secret->current_cipher.cipher_data, secret->current_cipher.maxlen);
 	new->mtime = secret->current_cipher_set_time;
 
@@ -96,7 +96,7 @@ static NTSTATUS vampire_samdump_handle_trusted_domain(TALLOC_CTX *mem_ctx,
 
 	struct samdump_trusted_domain *new = talloc(samdump_state, struct samdump_trusted_domain);
 
-	new->name = talloc_steal(new, trusted_domain->domain_name.string);
+	new->name = talloc_strdup(new, trusted_domain->domain_name.string);
 	new->sid = talloc_steal(new, dom_sid);
 
 	DLIST_ADD(samdump_state->trusted_domains, new);
@@ -121,8 +121,8 @@ static NTSTATUS libnet_samdump_fn(TALLOC_CTX *mem_ctx,
 		if (database == SAM_DATABASE_DOMAIN) {
 			nt_status = vampire_samdump_handle_user(mem_ctx, 
 								delta);
-			break;
 		}
+		break;
 	}
 	case NETR_DELTA_SECRET:
 	{
