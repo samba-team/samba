@@ -981,9 +981,9 @@ groupadd acctsdep
 groupadd finsrvcs
 
 # Map Windows Domain Groups to UNIX groups
-net groupmap modify ntgroup="Domain Admins"  unixgroup=root
-net groupmap modify ntgroup="Domain Users"   unixgroup=users
-net groupmap modify ntgroup="Domain Guests"  unixgroup=nobody
+net groupmap add ntgroup="Domain Admins"  unixgroup=root type=d
+net groupmap add ntgroup="Domain Users"   unixgroup=users type=d
+net groupmap add ntgroup="Domain Guests"  unixgroup=nobody type=d
 
 # Add Functional Domain Groups
 net groupmap add ntgroup="Accounts Dept"  unixgroup=acctsdep type=d
