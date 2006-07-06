@@ -1178,7 +1178,8 @@ static BOOL test_EnumAccountRights(struct dcerpc_pipe *p,
 
 	status = dcerpc_lsa_EnumAccountRights(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("EnumAccountRights failed - %s\n", nt_errstr(status));
+		printf("EnumAccountRights of %s failed - %s\n", 
+		       dom_sid_string(mem_ctx, sid), nt_errstr(status));
 		return False;
 	}
 
@@ -1193,6 +1194,11 @@ static BOOL test_QuerySecurity(struct dcerpc_pipe *p,
 {
 	NTSTATUS status;
 	struct lsa_QuerySecurity r;
+
+	if (lp_parm_bool(-1, "target", "samba4", False)) {
+		printf("skipping QuerySecurity test against Samba4\n");
+		return True;
+	}
 
 	printf("Testing QuerySecurity\n");
 
@@ -1250,6 +1256,7 @@ static BOOL test_EnumAccounts(struct dcerpc_pipe *p,
 	struct lsa_SidArray sids1, sids2;
 	uint32_t resume_handle = 0;
 	int i;
+	BOOL ret = True;
 
 	printf("\ntesting EnumAccounts\n");
 
@@ -1284,14 +1291,14 @@ static BOOL test_EnumAccounts(struct dcerpc_pipe *p,
 
 		printf("testing all accounts\n");
 		for (i=0;i<sids1.num_sids;i++) {
-			test_OpenAccount(p, mem_ctx, handle, sids1.sids[i].sid);
-			test_EnumAccountRights(p, mem_ctx, handle, sids1.sids[i].sid);
+			ret &= test_OpenAccount(p, mem_ctx, handle, sids1.sids[i].sid);
+			ret &= test_EnumAccountRights(p, mem_ctx, handle, sids1.sids[i].sid);
 		}
 		printf("\n");
 	}
 
 	if (sids1.num_sids < 3) {
-		return True;
+		return ret;
 	}
 	
 	printf("trying EnumAccounts partial listing (asking for 1 at 2)\n");
@@ -1580,8 +1587,12 @@ static BOOL test_EnumTrustDom(struct dcerpc_pipe *p,
 			return False;
 		}
 		
-		ret &= test_query_each_TrustDom(p, mem_ctx, handle, &domains);
-
+		if (lp_parm_bool(-1, "target", "samba4", False)) {
+			printf("skipping 'each' Trusted Domains tests against Samba4\n");
+		} else {
+			ret &= test_query_each_TrustDom(p, mem_ctx, handle, &domains);
+		}
+		
 	} while ((NT_STATUS_EQUAL(enum_status, STATUS_MORE_ENTRIES)));
 
 	return ret;
@@ -1666,6 +1677,11 @@ static BOOL test_QueryDomainInfoPolicy(struct dcerpc_pipe *p,
 	NTSTATUS status;
 	int i;
 	BOOL ret = True;
+	if (lp_parm_bool(-1, "target", "samba4", False)) {
+		printf("skipping QueryDomainInformationPolicy test against Samba4\n");
+		return True;
+	}
+
 	printf("\nTesting QueryDomainInformationPolicy\n");
 
 	for (i=2;i<4;i++) {
@@ -1696,6 +1712,11 @@ static BOOL test_QueryInfoPolicy(struct dcerpc_pipe *p,
 	int i;
 	BOOL ret = True;
 	printf("\nTesting QueryInfoPolicy\n");
+
+	if (lp_parm_bool(-1, "target", "samba4", False)) {
+		printf("skipping QueryInfoPolicy2 against Samba4\n");
+		return True;
+	}
 
 	for (i=1;i<13;i++) {
 		r.in.handle = handle;
@@ -1730,6 +1751,10 @@ static BOOL test_QueryInfoPolicy2(struct dcerpc_pipe *p,
 	int i;
 	BOOL ret = True;
 	printf("\nTesting QueryInfoPolicy2\n");
+	if (lp_parm_bool(-1, "target", "samba4", False)) {
+		printf("skipping QueryInfoPolicy2 against Samba4\n");
+		return True;
+	}
 
 	for (i=1;i<13;i++) {
 		r.in.handle = handle;
