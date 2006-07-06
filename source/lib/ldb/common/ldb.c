@@ -527,11 +527,8 @@ int ldb_search(struct ldb_context *ldb,
 	struct ldb_request *req;
 	int ret;
 
-	*res = talloc_zero(ldb, struct ldb_result);
-	if (! *res) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
+	*res = NULL;
+	
 	req = talloc(ldb, struct ldb_request);
 	if (req == NULL) {
 		ldb_set_errstring(ldb, talloc_strdup(ldb, "Out of memory!"));
@@ -545,6 +542,12 @@ int ldb_search(struct ldb_context *ldb,
 	req->op.search.tree = ldb_parse_tree(req, expression);
 	if (req->op.search.tree == NULL) {
 		ldb_set_errstring(ldb, talloc_strdup(ldb, "Unable to parse search expression"));
+		talloc_free(req);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	*res = talloc_zero(ldb, struct ldb_result);
+	if (! *res) {
 		talloc_free(req);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
@@ -581,9 +584,11 @@ int ldb_add(struct ldb_context *ldb,
 	struct ldb_request *req;
 	int ret;
 
-	ret = ldb_msg_sanity_check(message);
-	if (ret != LDB_SUCCESS) return ret;
-
+	ret = ldb_msg_sanity_check(ldb, message);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+		
 	req = talloc(ldb, struct ldb_request);
 	if (req == NULL) {
 		ldb_set_errstring(ldb, talloc_strdup(ldb, "Out of memory!"));
@@ -613,7 +618,7 @@ int ldb_modify(struct ldb_context *ldb,
 	struct ldb_request *req;
 	int ret;
 
-	ret = ldb_msg_sanity_check(message);
+	ret = ldb_msg_sanity_check(ldb, message);
 	if (ret != LDB_SUCCESS) return ret;
 
 	req = talloc(ldb, struct ldb_request);
