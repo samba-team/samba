@@ -43,6 +43,7 @@ gss_inquire_cred(OM_uint32 *minor_status,
 	struct _gss_name *name;
 	struct _gss_mechanism_name *mn;
 	OM_uint32 min_lifetime;
+	int found = 0;
 
 	*minor_status = 0;
 	if (name_ret)
@@ -108,6 +109,7 @@ gss_inquire_cred(OM_uint32 *minor_status,
 			if (mechanisms)
 				gss_add_oid_set_member(minor_status,
 				    mc->gmc_mech_oid, mechanisms);
+			found++;
 		}
 	} else {
 		SLIST_FOREACH(m, &_gss_mechs, gm_link) {
@@ -143,9 +145,10 @@ gss_inquire_cred(OM_uint32 *minor_status,
 			if (mechanisms)
 				gss_add_oid_set_member(minor_status,
 				    &m->gm_mech_oid, mechanisms);
+			found++;
 		}
 
-		if ((*mechanisms)->count == 0) {
+		if (found == 0) {
 			gss_release_oid_set(minor_status, mechanisms);
 			*minor_status = 0;
 			return (GSS_S_NO_CRED);
