@@ -34,6 +34,39 @@
 
 RCSID("$Id$");
 
+OM_uint32
+_gss_spnego_supported_mechs(OM_uint32 *minor_status, gss_OID_set *mechs)
+{
+    OM_uint32 ret, junk;
+    gss_OID_set m;
+    int i;
+
+    ret = gss_indicate_mechs(minor_status, &m);
+    if (ret != GSS_S_COMPLETE)
+	return ret;
+
+    ret = gss_create_empty_oid_set(minor_status, mechs);
+    if (ret != GSS_S_COMPLETE) {
+	gss_release_oid_set(&junk, &m);
+	return ret;
+    }
+
+    for (i = 0; i < m->count; i++) {
+	if (gss_oid_equal(&m->elements[i], GSS_SPNEGO_MECHANISM))
+	    continue;
+
+	ret = gss_add_oid_set_member(minor_status, &m->elements[i], mechs);
+	if (ret) {
+	    gss_release_oid_set(&junk, &m);
+	    gss_release_oid_set(&junk, mechs);
+	    return ret;
+	}
+    }
+    return ret;
+}
+
+
+
 OM_uint32 gss_spnego_process_context_token
            (OM_uint32 *minor_status,
             const gss_ctx_id_t context_handle,
@@ -439,6 +472,49 @@ OM_uint32 gss_spnego_import_sec_context (
     return GSS_S_COMPLETE;
 }
 
+OM_uint32 gss_spnego_inquire_names_for_mech (
+            OM_uint32 * minor_status,
+            const gss_OID mechanism,
+            gss_OID_set * name_types
+           )
+{
+    gss_OID_set mechs, names, n;
+    OM_uint32 ret, junk;
+    int i, j;
+
+    *name_types = NULL;
+
+    ret = _gss_spnego_supported_mechs(minor_status, &mechs);
+    if (ret != GSS_S_COMPLETE)
+	return ret;
+
+    ret = gss_create_empty_oid_set(minor_status, &names);
+    if (ret != GSS_S_COMPLETE)
+	goto out;
+
+    for (i = 0; i < mechs->count; i++) {
+	ret = gss_inquire_names_for_mech(minor_status,
+					 &mechs->elements[i],
+					 &n);
+	if (ret)
+	    continue;
+
+	for (j = 0; j < n->count; j++)
+	    gss_add_oid_set_member(minor_status,
+				   &n->elements[j],
+				   &names);
+	gss_release_oid_set(&junk, &n);
+    }
+
+    ret = GSS_S_COMPLETE;
+    *name_types = names;
+out:
+
+    gss_release_oid_set(&junk, &mechs);
+
+    return GSS_S_COMPLETE;
+}
+
 OM_uint32 gss_spnego_inquire_mechs_for_name (
             OM_uint32 * minor_status,
             const gss_name_t input_name,
@@ -467,6 +543,7 @@ OM_uint32 gss_spnego_canonicalize_name (
             gss_name_t * output_name
            )
 {
+    /* XXX */
     return gss_duplicate_name(minor_status, input_name, output_name);
 }
 

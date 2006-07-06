@@ -102,6 +102,9 @@ OM_uint32 _gss_spnego_select_mech(OM_uint32 *, MechType *, gss_OID *);
 OM_uint32 _gss_spnego_alloc_cred(OM_uint32 *, gss_cred_id_t, gss_cred_id_t *);
 OM_uint32 _gss_spnego_release_cred(OM_uint32 *, gss_cred_id_t *);
 
+OM_uint32 _gss_spnego_supported_mechs(OM_uint32 *, gss_OID_set *);
+
+
 /*
  * Finally, function prototypes for the GSS-API routines.
  */
@@ -213,6 +216,12 @@ OM_uint32 gss_spnego_display_status
             OM_uint32 * /*message_context*/,
             gss_buffer_t /*status_string*/
            );
+
+OM_uint32 gss_spnego_inquire_names_for_mech (
+            OM_uint32 * minor_status,
+            const gss_OID mechanism,
+            gss_OID_set * name_types
+	   );
 
 OM_uint32 gss_spnego_compare_name
            (OM_uint32 * /*minor_status*/,
