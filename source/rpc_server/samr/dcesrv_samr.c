@@ -2527,6 +2527,7 @@ static NTSTATUS samr_AddAliasMember(struct dcesrv_call_state *dce_call, TALLOC_C
 	const char * const attrs[] = { NULL };
 	struct ldb_dn *memberdn = NULL;
 	int ret;
+	NTSTATUS status;
 
 	DCESRV_PULL_HANDLE(h, r->in.alias_handle, SAMR_HANDLE_ALIAS);
 
@@ -2544,58 +2545,13 @@ static NTSTATUS samr_AddAliasMember(struct dcesrv_call_state *dce_call, TALLOC_C
 			 ret, dom_sid_string(mem_ctx, r->in.sid)));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	} else if (ret == 0) {
-		struct ldb_message *msg;
-		struct ldb_dn *basedn;
-		const char *sidstr;
-
-		sidstr = dom_sid_string(mem_ctx, r->in.sid);
-		NT_STATUS_HAVE_NO_MEMORY(sidstr);
-
-		/* We might have to create a ForeignSecurityPrincipal, even if this user
-		 * is in our own domain */
-
-		msg = ldb_msg_new(mem_ctx);
-		if (msg == NULL) {
-			return NT_STATUS_NO_MEMORY;
-		}
-
-		/* TODO: Hmmm. This feels wrong. How do I find the base dn to
-		 * put the ForeignSecurityPrincipals? d_state->domain_dn does
-		 * not work, this is wrong for the Builtin domain, there's no
-		 * cn=For...,cn=Builtin,dc={BASEDN}.  -- vl
-		 */
-
-		basedn = samdb_search_dn(d_state->sam_ctx, mem_ctx, samdb_base_dn(mem_ctx),
-					 "(&(objectClass=container)(cn=ForeignSecurityPrincipals))");
-
-		if (basedn == NULL) {
-			DEBUG(0, ("Failed to find DN for "
-				  "ForeignSecurityPrincipal container\n"));
-			return NT_STATUS_INTERNAL_DB_CORRUPTION;
-		}
-
-		/* add core elements to the ldb_message for the alias */
-		msg->dn = ldb_dn_build_child(mem_ctx, "CN", sidstr, basedn);
-		if (msg->dn == NULL)
-			return NT_STATUS_NO_MEMORY;
-
-		memberdn = msg->dn;
-
-		samdb_msg_add_string(d_state->sam_ctx, mem_ctx, msg,
-				     "objectClass",
-				     "foreignSecurityPrincipal");
-
-		/* create the alias */
-		ret = samdb_add(d_state->sam_ctx, mem_ctx, msg);
-		if (ret != 0) {
-			DEBUG(0,("Failed to create foreignSecurityPrincipal "
-				 "record %s: %s\n", 
-				 ldb_dn_linearize(mem_ctx, msg->dn),
-				 ldb_errstring(d_state->sam_ctx)));
-			return NT_STATUS_INTERNAL_DB_CORRUPTION;
+		status = samdb_create_foreign_security_principal(d_state->sam_ctx, mem_ctx, 
+								 r->in.sid, &memberdn);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
 		}
 	} else {
-		DEBUG(0, ("samdb_search returned %d\n", ret));
+		DEBUG(0, ("samdb_search returned %d: %s\n", ret, ldb_errstring(d_state->sam_ctx)));
 	}
 
 	if (memberdn == NULL) {

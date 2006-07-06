@@ -4,7 +4,9 @@
    interface functions for the sam database
 
    Copyright (C) Andrew Tridgell 2004
-   
+   Copyright (C) Volker Lendecke 2004
+   Copyright (C) Andrew Bartlett <abartlet@samba.org> 2006
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 2 of the License, or
@@ -25,6 +27,7 @@
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "librpc/gen_ndr/ndr_security.h"
 #include "lib/ldb/include/ldb.h"
+#include "lib/ldb/include/ldb_private.h"
 #include "lib/ldb/include/ldb_errors.h"
 #include "libcli/security/security.h"
 #include "auth/credentials/credentials.h"
@@ -621,51 +624,121 @@ uint16_t samdb_result_acct_flags(struct ldb_message *msg, const char *attr)
 	return samdb_uf2acb(userAccountControl);
 }
 
+
+/* Find an attribute, with a particular value */
+struct ldb_message_element *samdb_find_attribute(struct ldb_context *ldb, 
+						 const struct ldb_message *msg, 
+						 const char *name, const char *value)
+{
+	int i;
+	struct ldb_message_element *el = ldb_msg_find_element(msg, name);
+	struct ldb_val v;
+
+	v.data = discard_const_p(uint8_t, value);
+	v.length = strlen(value);
+
+	if (!el) {
+		return NULL;
+	}
+
+	for (i=0;i<el->num_values;i++) {
+		if (strcasecmp(value, (char *)el->values[i].data) == 0) {
+			return el;
+		}
+	}
+
+	return NULL;
+}
+
+int samdb_find_or_add_value(struct ldb_context *ldb, struct ldb_message *msg, const char *name, const char *set_value)
+{
+	if (samdb_find_attribute(ldb, msg, name, set_value) == NULL) {
+		return samdb_msg_add_string(ldb, msg, msg, name, set_value);
+	}
+	return LDB_SUCCESS;
+}
+
+int samdb_find_or_add_attribute(struct ldb_context *ldb, struct ldb_message *msg, const char *name, const char *set_value)
+{
+	struct ldb_message_element *el;
+
+       	el = ldb_msg_find_element(msg, name);
+	if (el) {
+		return LDB_SUCCESS;
+	}
+		
+	return samdb_msg_add_string(ldb, msg, msg, name, set_value);
+}
+
+
 /*
   copy from a template record to a message
 */
-int samdb_copy_template(struct ldb_context *sam_ldb, TALLOC_CTX *mem_ctx, 
-			struct ldb_message *msg, const char *expression)
+int samdb_copy_template(struct ldb_context *ldb, 
+			struct ldb_message *msg, const char *filter)
 {
-	struct ldb_message **res, *t;
+	struct ldb_result *res;
+	struct ldb_message *t;
 	int ret, i, j;
 	
-	struct ldb_dn *basedn = ldb_dn_explode(msg, "cn=Templates");
+	struct ldb_dn *basedn = ldb_dn_explode(ldb, "cn=Templates");
 
 	/* pull the template record */
-	ret = gendb_search(sam_ldb, mem_ctx, basedn, &res, NULL, "%s", expression);
-	if (ret != 1) {
-		DEBUG(1,("samdb: ERROR: template '%s' matched %d records\n", 
-			 expression, ret));
-		return -1;
+	ret = ldb_search(ldb, basedn, LDB_SCOPE_SUBTREE, filter, NULL, &res);
+	talloc_free(basedn);
+	if (ret != LDB_SUCCESS) {
+		return ret;
 	}
-	t = res[0];
+	if (res->count != 1) {
+		ldb_set_errstring(ldb, talloc_asprintf(ldb, "samdb_copy_template: ERROR: template '%s' matched %d records, expected 1\n", filter, 
+						       res->count));
+		talloc_free(res);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	t = res->msgs[0];
 
-	for (i=0;i<t->num_elements;i++) {
+	for (i = 0; i < t->num_elements; i++) {
 		struct ldb_message_element *el = &t->elements[i];
 		/* some elements should not be copied from the template */
 		if (strcasecmp(el->name, "cn") == 0 ||
 		    strcasecmp(el->name, "name") == 0 ||
-		    strcasecmp(el->name, "sAMAccountName") == 0) {
+		    strcasecmp(el->name, "sAMAccountName") == 0 ||
+		    strcasecmp(el->name, "objectGUID") == 0) {
 			continue;
 		}
-		for (j=0;j<el->num_values;j++) {
-			if (strcasecmp(el->name, "objectClass") == 0 &&
-			    (strcasecmp((char *)el->values[j].data, "Template") == 0 ||
-			     strcasecmp((char *)el->values[j].data, "userTemplate") == 0 ||
-			     strcasecmp((char *)el->values[j].data, "groupTemplate") == 0 ||
-			     strcasecmp((char *)el->values[j].data, "foreignSecurityTemplate") == 0 ||
-			     strcasecmp((char *)el->values[j].data, "aliasTemplate") == 0 || 
-			     strcasecmp((char *)el->values[j].data, "trustedDomainTemplate") == 0 || 
-			     strcasecmp((char *)el->values[j].data, "secretTemplate") == 0)) {
-				continue;
+		for (j = 0; j < el->num_values; j++) {
+			if (strcasecmp(el->name, "objectClass") == 0) {
+				if (strcasecmp((char *)el->values[j].data, "Template") == 0 ||
+				    strcasecmp((char *)el->values[j].data, "userTemplate") == 0 ||
+				    strcasecmp((char *)el->values[j].data, "groupTemplate") == 0 ||
+				    strcasecmp((char *)el->values[j].data, "foreignSecurityPrincipalTemplate") == 0 ||
+				    strcasecmp((char *)el->values[j].data, "aliasTemplate") == 0 || 
+				    strcasecmp((char *)el->values[j].data, "trustedDomainTemplate") == 0 || 
+				    strcasecmp((char *)el->values[j].data, "secretTemplate") == 0) {
+					continue;
+				}
+				ret = samdb_find_or_add_value(ldb, msg, el->name, 
+							      (char *)el->values[j].data);
+				if (ret) {
+					ldb_set_errstring(ldb, talloc_asprintf(ldb, "Adding objectClass %s failed.\n", el->values[j].data));
+					talloc_free(res);
+					return ret;
+				}
+			} else {
+				ret = samdb_find_or_add_attribute(ldb, msg, el->name, 
+								  (char *)el->values[j].data);
+				if (ret) {
+					ldb_set_errstring(ldb, talloc_asprintf(ldb, "Adding attribute %s failed.\n", el->name));
+					talloc_free(res);
+					return ret;
+				}
 			}
-			samdb_msg_add_string(sam_ldb, mem_ctx, msg, el->name, 
-					     (char *)el->values[j].data);
 		}
 	}
 
-	return 0;
+	talloc_free(res);
+
+	return LDB_SUCCESS;
 }
 
 
@@ -678,7 +751,7 @@ int samdb_msg_add_string(struct ldb_context *sam_ldb, TALLOC_CTX *mem_ctx, struc
 	char *s = talloc_strdup(mem_ctx, str);
 	char *a = talloc_strdup(mem_ctx, attr_name);
 	if (s == NULL || a == NULL) {
-		return -1;
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 	return ldb_msg_add_string(msg, a, s);
 }
@@ -1446,3 +1519,58 @@ NTSTATUS security_token_create(TALLOC_CTX *mem_ctx,
 }
 
 
+NTSTATUS samdb_create_foreign_security_principal(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx, 
+						 struct dom_sid *sid, struct ldb_dn **ret_dn) 
+{
+	struct ldb_message *msg;
+	struct ldb_dn *basedn;
+	const char *sidstr;
+	int ret;
+	
+	sidstr = dom_sid_string(mem_ctx, sid);
+	NT_STATUS_HAVE_NO_MEMORY(sidstr);
+	
+	/* We might have to create a ForeignSecurityPrincipal, even if this user
+	 * is in our own domain */
+	
+	msg = ldb_msg_new(mem_ctx);
+	if (msg == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	
+	/* TODO: Hmmm. This feels wrong. How do I find the base dn to
+	 * put the ForeignSecurityPrincipals? d_state->domain_dn does
+	 * not work, this is wrong for the Builtin domain, there's no
+	 * cn=For...,cn=Builtin,dc={BASEDN}.  -- vl
+	 */
+	
+	basedn = samdb_search_dn(sam_ctx, mem_ctx, samdb_base_dn(mem_ctx),
+				 "(&(objectClass=container)(cn=ForeignSecurityPrincipals))");
+	
+	if (basedn == NULL) {
+		DEBUG(0, ("Failed to find DN for "
+			  "ForeignSecurityPrincipal container\n"));
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+	
+	/* add core elements to the ldb_message for the alias */
+	msg->dn = ldb_dn_build_child(mem_ctx, "CN", sidstr, basedn);
+	if (msg->dn == NULL)
+		return NT_STATUS_NO_MEMORY;
+	
+	samdb_msg_add_string(sam_ctx, mem_ctx, msg,
+			     "objectClass",
+			     "foreignSecurityPrincipal");
+	
+	/* create the alias */
+	ret = samdb_add(sam_ctx, mem_ctx, msg);
+	if (ret != 0) {
+		DEBUG(0,("Failed to create foreignSecurityPrincipal "
+			 "record %s: %s\n", 
+			 ldb_dn_linearize(mem_ctx, msg->dn),
+			 ldb_errstring(sam_ctx)));
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+	*ret_dn = msg->dn;
+	return NT_STATUS_OK;
+}
