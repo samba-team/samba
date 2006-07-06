@@ -149,18 +149,20 @@ BOOL ads_try_connect(ADS_STRUCT *ads, const char *server )
 	SAFE_FREE(ads->config.realm);
 	SAFE_FREE(ads->config.bind_path);
 	SAFE_FREE(ads->config.ldap_server_name);
+	SAFE_FREE(ads->server.workgroup);
 
 	ads->config.ldap_server_name   = SMB_STRDUP(cldap_reply.hostname);
 	strupper_m(cldap_reply.domain);
 	ads->config.realm              = SMB_STRDUP(cldap_reply.domain);
 	ads->config.bind_path          = ads_build_dn(ads->config.realm);
+	ads->server.workgroup          = SMB_STRDUP(cldap_reply.netbios_domain);
 
 	ads->ldap_port = LDAP_PORT;
 	ads->ldap_ip = *interpret_addr2(srv);
 	SAFE_FREE(srv);
 	
 	/* cache the successful connection */
-	
+
 	saf_store( ads->server.workgroup, server );
 
 	return True;
