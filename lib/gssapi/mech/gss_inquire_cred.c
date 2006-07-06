@@ -147,12 +147,12 @@ gss_inquire_cred(OM_uint32 *minor_status,
 				    &m->gm_mech_oid, mechanisms);
 			found++;
 		}
+	}
 
-		if (found == 0) {
-			gss_release_oid_set(minor_status, mechanisms);
-			*minor_status = 0;
-			return (GSS_S_NO_CRED);
-		}
+	if (found == 0) {
+		gss_release_oid_set(minor_status, mechanisms);
+		*minor_status = 0;
+		return (GSS_S_NO_CRED);
 	}
 
 	*minor_status = 0;
