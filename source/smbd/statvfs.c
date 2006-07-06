@@ -21,7 +21,7 @@
 
 #include "includes.h"
 
-#if defined(LINUX)
+#if defined(LINUX) && defined(HAVE_FSID_INT)
 static int linux_statvfs(const char *path, vfs_statvfs_struct *statbuf)
 {
 	struct statvfs statvfs_buf;
@@ -51,7 +51,7 @@ static int linux_statvfs(const char *path, vfs_statvfs_struct *statbuf)
 */
 int sys_statvfs(const char *path, vfs_statvfs_struct *statbuf)
 {
-#if defined(LINUX)
+#if defined(LINUX) && defined(HAVE_FSID_INT)
 	return linux_statvfs(path, statbuf);
 #else
 	/* BB change this to return invalid level */

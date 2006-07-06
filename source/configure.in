@@ -4579,6 +4579,16 @@ if test $space = no; then
   fi
 fi
 
+# smbd/statvfs.c assumes that statvfs.f_fsid is an integer.
+# This is not the case on ancient Linux systems.
+
+AC_CACHE_CHECK([that statvfs.f_fsid is an integer],samba_cv_fsid_int, [
+    AC_TRY_COMPILE([#include <sys/statvfs.h>],[struct statvfs buf; buf.f_fsid = 0],
+	samba_cv_fsid_int=yes,samba_cv_fsid_int=no)])
+if test x"$samba_cv_fsid_int" = x"yes"; then
+    AC_DEFINE(HAVE_FSID_INT, 1, [Whether statvfs.f_fsid is an integer])
+fi
+
 if test $space = no; then
   # DEC Alpha running OSF/1
   AC_MSG_CHECKING([for 3-argument statfs function (DEC OSF/1)])
