@@ -1207,7 +1207,8 @@ int ldb_msg_check_string_attribute(const struct ldb_message *msg,
    LDB_ERR_INVALID_ATTRIBUTE_SYNTAX) if there is a problem with a
    message.
 */
-int ldb_msg_sanity_check(const struct ldb_message *msg);
+int ldb_msg_sanity_check(struct ldb_context *ldb,
+			 const struct ldb_message *msg);
 
 /**
    Duplicate an ldb_val structure
