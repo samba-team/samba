@@ -38,7 +38,7 @@ base="$base BASE-XCOPY"
 # just add them to the skipped line below
 # this should be the complete list smbtorture offers as RAW-* tests
 #
-raw="RAW-ACLS RAW-CHKPATH RAW-CLOSE RAW-COMPOSITE RAW-CONTEXT RAW-EAS"
+raw="RAW-CHKPATH RAW-CLOSE RAW-COMPOSITE RAW-CONTEXT RAW-EAS"
 raw="$raw RAW-IOCTL RAW-LOCK RAW-MKDIR RAW-MUX RAW-NOTIFY RAW-OPEN RAW-OPLOCK"
 raw="$raw RAW-QFILEINFO RAW-QFSINFO RAW-READ RAW-RENAME RAW-SEARCH RAW-SEEK"
 raw="$raw RAW-SFILEINFO RAW-SFILEINFO-BUG RAW-STREAMS RAW-UNLINK RAW-WRITE"
@@ -50,7 +50,7 @@ tests="$base $raw $smb2"
 #
 # please add tests you want to be skipped here!
 #
-skipped="BASE-CHARSET BASE-DEFER_OPEN BASE-DELAYWRITE RAW-COMPOSITE RAW-OPLOCK"
+skipped="BASE-CHARSET BASE-DEFER_OPEN BASE-DELAYWRITE RAW-COMPOSITE RAW-OPLOCK RAW-ACLS"
 
 echo "WARNING: Skipping tests $skipped"
 
