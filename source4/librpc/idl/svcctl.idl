@@ -83,7 +83,7 @@
 
 	/*****************/
 	/* Function 0x00 */
-	uint32 svcctl_CloseServiceHandle(
+	WERROR svcctl_CloseServiceHandle(
 						[in,out,ref] policy_handle *handle
 						);
 
@@ -97,7 +97,7 @@
 	WERROR svcctl_ControlService(
 								 [in,ref] policy_handle *handle,
 								 [in] uint32 control,
-								 [out] SERVICE_STATUS status
+								 [out,ref] SERVICE_STATUS *status
 								 );
 
 	/*****************/
@@ -164,19 +164,22 @@
 
 	/*****************/
 	/* Function 0x0c */
-	WERROR svcctl_CreateServiceW([in,ref] policy_handle *handle,
-								[in] [string,charset(UTF16)] uint16 *ServiceName,
+	WERROR svcctl_CreateServiceW([in,ref] policy_handle *scmanager_handle,
+								[in,ref] [string,charset(UTF16)] uint16 *ServiceName,
 								[in] [string,charset(UTF16)] uint16 *DisplayName,
 								[in] uint32 desired_access,
 								[in] uint32 type,
 								[in] uint32 start_type,
 								[in] uint32 error_control,
-								[in] [string,charset(UTF16)] uint16 *binary_path,
+								[in,ref] [string,charset(UTF16)] uint16 *binary_path,
 								[in] [string,charset(UTF16)] uint16 *LoadOrderGroupKey,
-  								[out] uint32 *TagId,
+  								[in,out] uint32 *TagId,
 								[in] [string,charset(UTF16)] uint16 *dependencies,
+								[in] uint32 fix_len_dependencies,
 								[in] [string,charset(UTF16)] uint16 *service_start_name,
-								[in] [string,charset(UTF16)] uint16 *password);
+								[in] [string,charset(UTF16)] uint16 *password,
+								[in] uint32 fix_len_password,
+								[out,ref] policy_handle *handle);
 
 	/*****************/
 	/* Function 0x0d */
@@ -210,8 +213,9 @@
 	/*****************/
 	/* Function 0x10 */
 	WERROR svcctl_OpenServiceW([in,ref] policy_handle *scmanager_handle,
-							  [in] [string,charset(UTF16)] uint16 *ServiceName,
-							  [in] uint32 access_mask);
+							  [in,ref] [string,charset(UTF16)] uint16 *ServiceName,
+							  [in] uint32 access_mask,
+					                  [out,ref] policy_handle *handle);
 
 	/*****************/
 	/* Function 0x11 */
