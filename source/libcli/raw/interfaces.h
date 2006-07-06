@@ -2146,33 +2146,41 @@ struct smb_notify {
 	} out;
 };
 
-enum smb_search_level {RAW_SEARCH_GENERIC                 = 0xF000, 
-		       RAW_SEARCH_SEARCH,                 /* SMBsearch */ 
-		       RAW_SEARCH_FFIRST,                 /* SMBffirst */ 
-		       RAW_SEARCH_FUNIQUE,                /* SMBfunique */
-		       RAW_SEARCH_SMB2,                   /* SMB2 Find */
-		       RAW_SEARCH_STANDARD                = SMB_FIND_STANDARD,
-		       RAW_SEARCH_EA_SIZE                 = SMB_FIND_EA_SIZE,
-		       RAW_SEARCH_EA_LIST                 = SMB_FIND_EA_LIST,
-		       RAW_SEARCH_DIRECTORY_INFO          = SMB_FIND_DIRECTORY_INFO,
-		       RAW_SEARCH_FULL_DIRECTORY_INFO     = SMB_FIND_FULL_DIRECTORY_INFO,
-		       RAW_SEARCH_NAME_INFO               = SMB_FIND_NAME_INFO,
-		       RAW_SEARCH_BOTH_DIRECTORY_INFO     = SMB_FIND_BOTH_DIRECTORY_INFO,
-		       RAW_SEARCH_ID_FULL_DIRECTORY_INFO  = SMB_FIND_ID_FULL_DIRECTORY_INFO,
-		       RAW_SEARCH_ID_BOTH_DIRECTORY_INFO  = SMB_FIND_ID_BOTH_DIRECTORY_INFO,
-		       RAW_SEARCH_UNIX_INFO               = SMB_FIND_UNIX_INFO};
+enum smb_search_level {
+	RAW_SEARCH_SEARCH,	/* SMBsearch */ 
+	RAW_SEARCH_FFIRST,	/* SMBffirst */ 
+	RAW_SEARCH_FUNIQUE,	/* SMBfunique */
+	RAW_SEARCH_TRANS2,	/* SMBtrans2 */
+	RAW_SEARCH_SMB2		/* SMB2 Find */
+};
 
+enum smb_search_data_level {
+	RAW_SEARCH_DATA_GENERIC			= 0x10000, /* only used in the smbcli_ code */
+	RAW_SEARCH_DATA_SEARCH,
+	RAW_SEARCH_DATA_STANDARD		= SMB_FIND_STANDARD,
+	RAW_SEARCH_DATA_EA_SIZE			= SMB_FIND_EA_SIZE,
+	RAW_SEARCH_DATA_EA_LIST			= SMB_FIND_EA_LIST,
+	RAW_SEARCH_DATA_DIRECTORY_INFO		= SMB_FIND_DIRECTORY_INFO,
+	RAW_SEARCH_DATA_FULL_DIRECTORY_INFO	= SMB_FIND_FULL_DIRECTORY_INFO,
+	RAW_SEARCH_DATA_NAME_INFO		= SMB_FIND_NAME_INFO,
+	RAW_SEARCH_DATA_BOTH_DIRECTORY_INFO	= SMB_FIND_BOTH_DIRECTORY_INFO,
+	RAW_SEARCH_DATA_ID_FULL_DIRECTORY_INFO	= SMB_FIND_ID_FULL_DIRECTORY_INFO,
+	RAW_SEARCH_DATA_ID_BOTH_DIRECTORY_INFO	= SMB_FIND_ID_BOTH_DIRECTORY_INFO,
+	RAW_SEARCH_DATA_UNIX_INFO		= SMB_FIND_UNIX_INFO
+};
 	
 /* union for file search */
 union smb_search_first {
 	struct {
 		enum smb_search_level level;
+		enum smb_search_data_level data_level;
 	} generic;
 	
 	/* search (old) findfirst interface. 
 	   Also used for ffirst and funique. */
 	struct {
 		enum smb_search_level level;
+		enum smb_search_data_level data_level;
 	
 		struct {
 			uint16_t max_count;
@@ -2187,6 +2195,7 @@ union smb_search_first {
 	/* trans2 findfirst interface */
 	struct {
 		enum smb_search_level level;
+		enum smb_search_data_level data_level;
 		
 		struct {
 			uint16_t search_attrib;
@@ -2207,7 +2216,7 @@ union smb_search_first {
 	} t2ffirst;
 
 /*
-  SMB2 uses different level numbers for the same old SMB search levels
+  SMB2 uses different level numbers for the same old SMB trans2 search levels
 */
 #define SMB2_FIND_DIRECTORY_INFO         0x01
 #define SMB2_FIND_FULL_DIRECTORY_INFO    0x02
@@ -2218,6 +2227,7 @@ union smb_search_first {
 	/* SMB2 Find */
 	struct smb2_find {
 		enum smb_search_level level;
+		enum smb_search_data_level data_level;
 		struct {
 			union smb_handle file;
 
@@ -2228,7 +2238,7 @@ union smb_search_first {
 			uint32_t unknown; /* perhaps a continue token? */
 			/* struct smb2_handle handle; */
 			/* uint16_t pattern_ofs; */
-			/* uint32_t pattern_size; */
+			/* uint16_t pattern_size; */
 			uint32_t max_response_size;
 	
 			/* dynamic body */
@@ -2250,12 +2260,14 @@ union smb_search_first {
 union smb_search_next {
 	struct {
 		enum smb_search_level level;
+		enum smb_search_data_level data_level;
 	} generic;
 
 	/* search (old) findnext interface. Also used
 	   for ffirst when continuing */
 	struct {
 		enum smb_search_level level;
+		enum smb_search_data_level data_level;
 	
 		struct {
 			uint16_t max_count;
@@ -2276,6 +2288,7 @@ union smb_search_next {
 	/* trans2 findnext interface */
 	struct {
 		enum smb_search_level level;
+		enum smb_search_data_level data_level;
 		
 		struct {
 			uint16_t handle;
@@ -2297,7 +2310,10 @@ union smb_search_next {
 
 /* union for search reply file data */
 union smb_search_data {
-	/* search (old) findfirst */
+	/*
+	 * search (old) findfirst 
+	 * RAW_SEARCH_DATA_SEARCH
+	 */
 	struct {
 		uint16_t attrib;
 		time_t write_time;
@@ -2305,8 +2321,8 @@ union smb_search_data {
 		struct smb_search_id id;
 		const char *name;
 	} search;
-	
-	/* trans2 findfirst RAW_SEARCH_STANDARD level */
+
+	/* trans2 findfirst RAW_SEARCH_DATA_STANDARD level */
 	struct {
 		uint32_t resume_key;
 		time_t create_time;
@@ -2318,7 +2334,7 @@ union smb_search_data {
 		struct smb_wire_string name;
 	} standard;
 
-	/* trans2 findfirst RAW_SEARCH_EA_SIZE level */
+	/* trans2 findfirst RAW_SEARCH_DATA_EA_SIZE level */
 	struct {
 		uint32_t resume_key;
 		time_t create_time;
@@ -2331,7 +2347,7 @@ union smb_search_data {
 		struct smb_wire_string name;
 	} ea_size;
 
-	/* trans2 findfirst RAW_SEARCH_EA_LIST level */
+	/* trans2 findfirst RAW_SEARCH_DATA_EA_LIST level */
 	struct {
 		uint32_t resume_key;
 		time_t create_time;
@@ -2344,7 +2360,7 @@ union smb_search_data {
 		struct smb_wire_string name;
 	} ea_list;
 
-	/* RAW_SEARCH_DIRECTORY_INFO interface */
+	/* RAW_SEARCH_DATA_DIRECTORY_INFO interface */
 	struct {
 		uint32_t file_index;
 		NTTIME create_time;
@@ -2357,7 +2373,7 @@ union smb_search_data {
 		struct smb_wire_string name;
 	} directory_info;
 
-	/* RAW_SEARCH_FULL_DIRECTORY_INFO interface */
+	/* RAW_SEARCH_DATA_FULL_DIRECTORY_INFO interface */
 	struct {
 		uint32_t file_index;
 		NTTIME create_time;
@@ -2371,13 +2387,13 @@ union smb_search_data {
 		struct smb_wire_string name;
 	} full_directory_info;
 
-	/* RAW_SEARCH_NAME_INFO interface */
+	/* RAW_SEARCH_DATA_NAME_INFO interface */
 	struct {
 		uint32_t file_index;
 		struct smb_wire_string name;
 	} name_info;
 
-	/* RAW_SEARCH_BOTH_DIRECTORY_INFO interface */
+	/* RAW_SEARCH_DATA_BOTH_DIRECTORY_INFO interface */
 	struct {
 		uint32_t file_index;
 		NTTIME create_time;
@@ -2392,7 +2408,7 @@ union smb_search_data {
 		struct smb_wire_string name;
 	} both_directory_info;
 
-	/* RAW_SEARCH_ID_FULL_DIRECTORY_INFO interface */
+	/* RAW_SEARCH_DATA_ID_FULL_DIRECTORY_INFO interface */
 	struct {
 		uint32_t file_index;
 		NTTIME create_time;
@@ -2407,7 +2423,7 @@ union smb_search_data {
 		struct smb_wire_string name;
 	} id_full_directory_info;
 
-	/* RAW_SEARCH_ID_BOTH_DIRECTORY_INFO interface */
+	/* RAW_SEARCH_DATA_ID_BOTH_DIRECTORY_INFO interface */
 	struct {
 		uint32_t file_index;
 		NTTIME create_time;
@@ -2423,7 +2439,7 @@ union smb_search_data {
 		struct smb_wire_string name;
 	} id_both_directory_info;
 
-	/* RAW_SEARCH_UNIX_INFO interface */
+	/* RAW_SEARCH_DATA_UNIX_INFO interface */
 	struct {
 		uint32_t file_index;
 		uint64_t size;

@@ -593,7 +593,7 @@ NTSTATUS smbsrv_pull_passthru_sfileinfo(TALLOC_CTX *mem_ctx,
 */
 NTSTATUS smbsrv_push_passthru_search(TALLOC_CTX *mem_ctx,
 				     DATA_BLOB *blob,
-				     enum smb_search_level level,
+				     enum smb_search_data_level level,
 				     union smb_search_data *file,
 				     int default_str_flags)
 {
@@ -601,7 +601,7 @@ NTSTATUS smbsrv_push_passthru_search(TALLOC_CTX *mem_ctx,
 	uint_t ofs = blob->length;
 
 	switch (level) {
-	case RAW_SEARCH_DIRECTORY_INFO:
+	case RAW_SEARCH_DATA_DIRECTORY_INFO:
 		BLOB_CHECK(smbsrv_blob_grow_data(mem_ctx, blob, ofs + 64));
 		data = blob->data + ofs;
 		SIVAL(data,          4, file->directory_info.file_index);
@@ -619,7 +619,7 @@ NTSTATUS smbsrv_push_passthru_search(TALLOC_CTX *mem_ctx,
 		SIVAL(data,          0, blob->length - ofs);
 		return NT_STATUS_OK;
 
-	case RAW_SEARCH_FULL_DIRECTORY_INFO:
+	case RAW_SEARCH_DATA_FULL_DIRECTORY_INFO:
 		BLOB_CHECK(smbsrv_blob_grow_data(mem_ctx, blob, ofs + 68));
 		data = blob->data + ofs;
 		SIVAL(data,          4, file->full_directory_info.file_index);
@@ -638,7 +638,7 @@ NTSTATUS smbsrv_push_passthru_search(TALLOC_CTX *mem_ctx,
 		SIVAL(data,          0, blob->length - ofs);
 		return NT_STATUS_OK;
 
-	case RAW_SEARCH_NAME_INFO:
+	case RAW_SEARCH_DATA_NAME_INFO:
 		BLOB_CHECK(smbsrv_blob_grow_data(mem_ctx, blob, ofs + 12));
 		data = blob->data + ofs;
 		SIVAL(data,          4, file->name_info.file_index);
@@ -649,7 +649,7 @@ NTSTATUS smbsrv_push_passthru_search(TALLOC_CTX *mem_ctx,
 		SIVAL(data,          0, blob->length - ofs);
 		return NT_STATUS_OK;
 
-	case RAW_SEARCH_BOTH_DIRECTORY_INFO:
+	case RAW_SEARCH_DATA_BOTH_DIRECTORY_INFO:
 		BLOB_CHECK(smbsrv_blob_grow_data(mem_ctx, blob, ofs + 94));
 		data = blob->data + ofs;
 		SIVAL(data,          4, file->both_directory_info.file_index);
@@ -679,7 +679,7 @@ NTSTATUS smbsrv_push_passthru_search(TALLOC_CTX *mem_ctx,
 		SIVAL(data,          0, blob->length - ofs);
 		return NT_STATUS_OK;
 
-	case RAW_SEARCH_ID_FULL_DIRECTORY_INFO:
+	case RAW_SEARCH_DATA_ID_FULL_DIRECTORY_INFO:
 		BLOB_CHECK(smbsrv_blob_grow_data(mem_ctx, blob, ofs + 80));
 		data = blob->data + ofs;
 		SIVAL(data,          4, file->id_full_directory_info.file_index);
@@ -700,7 +700,7 @@ NTSTATUS smbsrv_push_passthru_search(TALLOC_CTX *mem_ctx,
 		SIVAL(data,          0, blob->length - ofs);
 		return NT_STATUS_OK;
 
-	case RAW_SEARCH_ID_BOTH_DIRECTORY_INFO:
+	case RAW_SEARCH_DATA_ID_BOTH_DIRECTORY_INFO:
 		BLOB_CHECK(smbsrv_blob_grow_data(mem_ctx, blob, ofs + 104));
 		data = blob->data + ofs;
 		SIVAL(data,          4, file->id_both_directory_info.file_index);

@@ -185,6 +185,7 @@ void smbsrv_reply_search(struct smbsrv_request *req)
 		sn->search_next.in.id.client_cookie = IVAL(p, 17);
 
 		sn->search_next.level = level;
+		sn->search_next.data_level = RAW_SEARCH_DATA_SEARCH;
 		sn->search_next.in.max_count     = SVAL(req->in.vwv, VWV(0));
 		sn->search_next.in.search_attrib = SVAL(req->in.vwv, VWV(1));
 
@@ -195,6 +196,7 @@ void smbsrv_reply_search(struct smbsrv_request *req)
 
 		/* do a search first operation */
 		sf->search_first.level = level;
+		sf->search_first.data_level = RAW_SEARCH_DATA_SEARCH;
 		sf->search_first.in.search_attrib = SVAL(req->in.vwv, VWV(1));
 		sf->search_first.in.max_count     = SVAL(req->in.vwv, VWV(0));
 

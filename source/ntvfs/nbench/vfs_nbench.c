@@ -819,13 +819,13 @@ static void nbench_search_first_send(struct ntvfs_request *req)
 	union smb_search_first *io = req->async_states->private_data;
 	
 	switch (io->generic.level) {
-	case RAW_SEARCH_BOTH_DIRECTORY_INFO:
+	case RAW_SEARCH_TRANS2:
 		if (NT_STATUS_IS_ERR(req->async_states->status)) {
 			ZERO_STRUCT(io->t2ffirst.out);
 		}
 		nbench_log(req, "FIND_FIRST \"%s\" %d %d %d %s\n", 
 			   io->t2ffirst.in.pattern,
-			   io->generic.level,
+			   io->t2ffirst.data_level,
 			   io->t2ffirst.in.max_count,
 			   io->t2ffirst.out.count,
 			   get_nt_error_c_code(req->async_states->status));

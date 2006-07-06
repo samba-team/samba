@@ -38,10 +38,11 @@
 static NTSTATUS single_search(struct smbcli_state *cli,
                               TALLOC_CTX *mem_ctx, const char *pattern)
 {
-        union smb_search_first io;
-        NTSTATUS status;
-                                                                                                                                   
-        io.generic.level = RAW_SEARCH_STANDARD;
+	union smb_search_first io;
+	NTSTATUS status;
+
+	io.t2ffirst.level = RAW_SEARCH_TRANS2;
+	io.t2ffirst.data_level = RAW_SEARCH_DATA_STANDARD;
 	io.t2ffirst.in.search_attrib = 0;
 	io.t2ffirst.in.max_count = 1;
 	io.t2ffirst.in.flags = FLAG_TRANS2_FIND_CLOSE;
@@ -49,9 +50,9 @@ static NTSTATUS single_search(struct smbcli_state *cli,
 	io.t2ffirst.in.pattern = pattern;
 
 	status = smb_raw_search_first(cli->tree, mem_ctx,
-			&io, NULL, NULL);
-                                                                                                                                   
-        return status;
+				      &io, NULL, NULL);
+
+	return status;
 }
 
 static BOOL test_path(struct smbcli_state *cli, const char *path, NTSTATUS expected, NTSTATUS dos_expected)

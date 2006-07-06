@@ -101,27 +101,27 @@ NTSTATUS smb2_find_level_recv(struct smb2_request *req, TALLOC_CTX *mem_ctx,
 	struct smb2_find f;
 	NTSTATUS status;
 	DATA_BLOB b;
-	enum smb_search_level smb_level;
+	enum smb_search_data_level smb_level;
 	uint_t next_ofs=0;
 
 	switch (level) {
 	case SMB2_FIND_DIRECTORY_INFO:
-		smb_level = RAW_SEARCH_DIRECTORY_INFO;
+		smb_level = RAW_SEARCH_DATA_DIRECTORY_INFO;
 		break;
 	case SMB2_FIND_FULL_DIRECTORY_INFO:
-		smb_level = RAW_SEARCH_FULL_DIRECTORY_INFO;
+		smb_level = RAW_SEARCH_DATA_FULL_DIRECTORY_INFO;
 		break;
 	case SMB2_FIND_BOTH_DIRECTORY_INFO:
-		smb_level = RAW_SEARCH_BOTH_DIRECTORY_INFO;
+		smb_level = RAW_SEARCH_DATA_BOTH_DIRECTORY_INFO;
 		break;
 	case SMB2_FIND_NAME_INFO:
-		smb_level = RAW_SEARCH_NAME_INFO;
+		smb_level = RAW_SEARCH_DATA_NAME_INFO;
 		break;
 	case SMB2_FIND_ID_FULL_DIRECTORY_INFO:
-		smb_level = RAW_SEARCH_ID_FULL_DIRECTORY_INFO;
+		smb_level = RAW_SEARCH_DATA_ID_FULL_DIRECTORY_INFO;
 		break;
 	case SMB2_FIND_ID_BOTH_DIRECTORY_INFO:
-		smb_level = RAW_SEARCH_ID_BOTH_DIRECTORY_INFO;
+		smb_level = RAW_SEARCH_DATA_ID_BOTH_DIRECTORY_INFO;
 		break;
 	default:
 		return NT_STATUS_INVALID_INFO_CLASS;

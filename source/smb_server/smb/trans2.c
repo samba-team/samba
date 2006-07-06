@@ -682,7 +682,7 @@ static NTSTATUS trans2_setpathinfo(struct smbsrv_request *req, struct trans_op *
 struct find_state {
 	struct trans_op *op;
 	void *search;
-	enum smb_search_level level;
+	enum smb_search_data_level data_level;
 	uint16_t last_entry_offset;
 	uint16_t flags;
 };
@@ -699,16 +699,13 @@ static NTSTATUS find_fill_info(struct find_state *state,
 	uint_t ofs = trans->out.data.length;
 	uint32_t ea_size;
 
-	switch (state->level) {
-	case RAW_SEARCH_SEARCH:
-	case RAW_SEARCH_FFIRST:
-	case RAW_SEARCH_FUNIQUE:
-	case RAW_SEARCH_GENERIC:
-	case RAW_SEARCH_SMB2:
+	switch (state->data_level) {
+	case RAW_SEARCH_DATA_GENERIC:
+	case RAW_SEARCH_DATA_SEARCH:
 		/* handled elsewhere */
 		return NT_STATUS_INVALID_LEVEL;
 
-	case RAW_SEARCH_STANDARD:
+	case RAW_SEARCH_DATA_STANDARD:
 		if (state->flags & FLAG_TRANS2_FIND_REQUIRE_RESUME) {
 			TRANS2_CHECK(smbsrv_blob_grow_data(trans, &trans->out.data, ofs + 27));
 			SIVAL(trans->out.data.data, ofs, file->standard.resume_key);
@@ -728,7 +725,7 @@ static NTSTATUS find_fill_info(struct find_state *state,
 						       STR_LEN8BIT | STR_TERMINATE | STR_LEN_NOTERM));
 		break;
 
-	case RAW_SEARCH_EA_SIZE:
+	case RAW_SEARCH_DATA_EA_SIZE:
 		if (state->flags & FLAG_TRANS2_FIND_REQUIRE_RESUME) {
 			TRANS2_CHECK(smbsrv_blob_grow_data(trans, &trans->out.data, ofs + 31));
 			SIVAL(trans->out.data.data, ofs, file->ea_size.resume_key);
@@ -750,7 +747,7 @@ static NTSTATUS find_fill_info(struct find_state *state,
 		TRANS2_CHECK(smbsrv_blob_fill_data(trans, &trans->out.data, trans->out.data.length + 1));
 		break;
 
-	case RAW_SEARCH_EA_LIST:
+	case RAW_SEARCH_DATA_EA_LIST:
 		ea_size = ea_list_size(file->ea_list.eas.num_eas, file->ea_list.eas.eas);
 		if (state->flags & FLAG_TRANS2_FIND_REQUIRE_RESUME) {
 			TRANS2_CHECK(smbsrv_blob_grow_data(trans, &trans->out.data, ofs + 27 + ea_size));
@@ -773,14 +770,17 @@ static NTSTATUS find_fill_info(struct find_state *state,
 		TRANS2_CHECK(smbsrv_blob_fill_data(trans, &trans->out.data, trans->out.data.length + 1));
 		break;
 
-	case RAW_SEARCH_DIRECTORY_INFO:
-	case RAW_SEARCH_FULL_DIRECTORY_INFO:
-	case RAW_SEARCH_NAME_INFO:
-	case RAW_SEARCH_BOTH_DIRECTORY_INFO:
-	case RAW_SEARCH_ID_FULL_DIRECTORY_INFO:
-	case RAW_SEARCH_ID_BOTH_DIRECTORY_INFO:
-		return smbsrv_push_passthru_search(trans, &trans->out.data, state->level, file,
+	case RAW_SEARCH_DATA_DIRECTORY_INFO:
+	case RAW_SEARCH_DATA_FULL_DIRECTORY_INFO:
+	case RAW_SEARCH_DATA_NAME_INFO:
+	case RAW_SEARCH_DATA_BOTH_DIRECTORY_INFO:
+	case RAW_SEARCH_DATA_ID_FULL_DIRECTORY_INFO:
+	case RAW_SEARCH_DATA_ID_BOTH_DIRECTORY_INFO:
+		return smbsrv_push_passthru_search(trans, &trans->out.data, state->data_level, file,
 						   SMBSRV_REQ_DEFAULT_STR_FLAGS(req));
+
+	case RAW_SEARCH_DATA_UNIX_INFO:
+		return NT_STATUS_INVALID_LEVEL;
 	}
 
 	return NT_STATUS_OK;
@@ -861,12 +861,13 @@ static NTSTATUS trans2_findfirst(struct smbsrv_request *req, struct trans_op *op
 		return NT_STATUS_FOOBAR;
 	}
 
-	search->t2ffirst.level = (enum smb_search_level)level;
-	if (search->t2ffirst.level >= RAW_SEARCH_GENERIC) {
+	search->t2ffirst.level = RAW_SEARCH_TRANS2;
+	search->t2ffirst.data_level = (enum smb_search_data_level)level;
+	if (search->t2ffirst.data_level >= RAW_SEARCH_DATA_GENERIC) {
 		return NT_STATUS_INVALID_LEVEL;
 	}
 
-	if (search->t2ffirst.level == RAW_SEARCH_EA_LIST) {
+	if (search->t2ffirst.data_level == RAW_SEARCH_DATA_EA_LIST) {
 		TRANS2_CHECK(ea_pull_name_list(&trans->in.data, req,
 					       &search->t2ffirst.in.num_names, 
 					       &search->t2ffirst.in.ea_names));
@@ -878,7 +879,7 @@ static NTSTATUS trans2_findfirst(struct smbsrv_request *req, struct trans_op *op
 	NT_STATUS_HAVE_NO_MEMORY(state);
 	state->op		= op;
 	state->search		= search;
-	state->level		= search->t2ffirst.level;
+	state->data_level	= search->t2ffirst.data_level;
 	state->last_entry_offset= 0;
 	state->flags		= search->t2ffirst.in.flags;
 
@@ -946,12 +947,13 @@ static NTSTATUS trans2_findnext(struct smbsrv_request *req, struct trans_op *op)
 		return NT_STATUS_FOOBAR;
 	}
 
-	search->t2fnext.level = (enum smb_search_level)level;
-	if (search->t2fnext.level >= RAW_SEARCH_GENERIC) {
+	search->t2fnext.level = RAW_SEARCH_TRANS2;
+	search->t2fnext.data_level = (enum smb_search_data_level)level;
+	if (search->t2fnext.data_level >= RAW_SEARCH_DATA_GENERIC) {
 		return NT_STATUS_INVALID_LEVEL;
 	}
 
-	if (search->t2fnext.level == RAW_SEARCH_EA_LIST) {
+	if (search->t2fnext.data_level == RAW_SEARCH_DATA_EA_LIST) {
 		TRANS2_CHECK(ea_pull_name_list(&trans->in.data, req,
 					       &search->t2fnext.in.num_names, 
 					       &search->t2fnext.in.ea_names));
@@ -962,7 +964,7 @@ static NTSTATUS trans2_findnext(struct smbsrv_request *req, struct trans_op *op)
 	NT_STATUS_HAVE_NO_MEMORY(state);
 	state->op		= op;
 	state->search		= search;
-	state->level		= search->t2fnext.level;
+	state->data_level	= search->t2fnext.data_level;
 	state->last_entry_offset= 0;
 	state->flags		= search->t2fnext.in.flags;
 

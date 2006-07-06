@@ -47,6 +47,7 @@ NTSTATUS torture_single_search(struct smbcli_state *cli,
 			       TALLOC_CTX *mem_ctx,
 			       const char *pattern,
 			       enum smb_search_level level,
+			       enum smb_search_data_level data_level,
 			       uint16_t attrib,
 			       union smb_search_data *data)
 {
@@ -54,19 +55,29 @@ NTSTATUS torture_single_search(struct smbcli_state *cli,
 	union smb_search_close c;
 	NTSTATUS status;
 
-	io.generic.level = level;
-	if (level == RAW_SEARCH_SEARCH ||
-	    level == RAW_SEARCH_FFIRST ||
-	    level == RAW_SEARCH_FUNIQUE) {
+	switch (level) {
+	case RAW_SEARCH_SEARCH:
+	case RAW_SEARCH_FFIRST:
+	case RAW_SEARCH_FUNIQUE:
+		io.search_first.level = level;
+		io.search_first.data_level = RAW_SEARCH_DATA_SEARCH;
 		io.search_first.in.max_count = 1;
 		io.search_first.in.search_attrib = attrib;
 		io.search_first.in.pattern = pattern;
-	} else {
+		break;
+
+	case RAW_SEARCH_TRANS2:
+		io.t2ffirst.level = RAW_SEARCH_TRANS2;
+		io.t2ffirst.data_level = data_level;
 		io.t2ffirst.in.search_attrib = attrib;
 		io.t2ffirst.in.max_count = 1;
 		io.t2ffirst.in.flags = FLAG_TRANS2_FIND_CLOSE;
 		io.t2ffirst.in.storage_type = 0;
 		io.t2ffirst.in.pattern = pattern;
+		break;
+
+	case RAW_SEARCH_SMB2:
+		return NT_STATUS_INVALID_LEVEL;
 	}
 
 	status = smb_raw_search_first(cli->tree, mem_ctx,
@@ -87,57 +98,70 @@ NTSTATUS torture_single_search(struct smbcli_state *cli,
 static struct {
 	const char *name;
 	enum smb_search_level level;
+	enum smb_search_data_level data_level;
 	int name_offset;
 	int resume_key_offset;
 	uint32_t capability_mask;
 	NTSTATUS status;
 	union smb_search_data data;
 } levels[] = {
-	{"FFIRST",                 RAW_SEARCH_FFIRST, 
+	{"FFIRST",
+	 RAW_SEARCH_FFIRST, RAW_SEARCH_DATA_SEARCH,
 	 offsetof(union smb_search_data, search.name),
 	 -1,
 	},
-	{"FUNIQUE",                RAW_SEARCH_FUNIQUE, 
+	{"FUNIQUE",
+	 RAW_SEARCH_FUNIQUE, RAW_SEARCH_DATA_SEARCH,
 	 offsetof(union smb_search_data, search.name),
 	 -1,
 	},
-	{"SEARCH",                 RAW_SEARCH_SEARCH, 
+	{"SEARCH",
+	 RAW_SEARCH_SEARCH, RAW_SEARCH_DATA_SEARCH,
 	 offsetof(union smb_search_data, search.name),
 	 -1,
 	},
-	{"STANDARD",               RAW_SEARCH_STANDARD, 
+	{"STANDARD",
+	 RAW_SEARCH_TRANS2, RAW_SEARCH_DATA_STANDARD, 
 	 offsetof(union smb_search_data, standard.name.s),
 	 offsetof(union smb_search_data, standard.resume_key),
 	},
-	{"EA_SIZE",                RAW_SEARCH_EA_SIZE, 
+	{"EA_SIZE",
+	 RAW_SEARCH_TRANS2, RAW_SEARCH_DATA_EA_SIZE, 
 	 offsetof(union smb_search_data, ea_size.name.s),
 	 offsetof(union smb_search_data, ea_size.resume_key),
 	},
-	{"DIRECTORY_INFO",         RAW_SEARCH_DIRECTORY_INFO, 
+	{"DIRECTORY_INFO",
+	 RAW_SEARCH_TRANS2, RAW_SEARCH_DATA_DIRECTORY_INFO, 
 	 offsetof(union smb_search_data, directory_info.name.s),
 	 offsetof(union smb_search_data, directory_info.file_index),
 	},
-	{"FULL_DIRECTORY_INFO",    RAW_SEARCH_FULL_DIRECTORY_INFO, 
+	{"FULL_DIRECTORY_INFO",
+	 RAW_SEARCH_TRANS2, RAW_SEARCH_DATA_FULL_DIRECTORY_INFO, 
 	 offsetof(union smb_search_data, full_directory_info.name.s),
 	 offsetof(union smb_search_data, full_directory_info.file_index),
 	},
-	{"NAME_INFO",              RAW_SEARCH_NAME_INFO, 
+	{"NAME_INFO",
+	 RAW_SEARCH_TRANS2, RAW_SEARCH_DATA_NAME_INFO, 
 	 offsetof(union smb_search_data, name_info.name.s),
 	 offsetof(union smb_search_data, name_info.file_index),
 	},
-	{"BOTH_DIRECTORY_INFO",    RAW_SEARCH_BOTH_DIRECTORY_INFO, 
+	{"BOTH_DIRECTORY_INFO",
+	 RAW_SEARCH_TRANS2, RAW_SEARCH_DATA_BOTH_DIRECTORY_INFO, 
 	 offsetof(union smb_search_data, both_directory_info.name.s),
 	 offsetof(union smb_search_data, both_directory_info.file_index),
 	},
-	{"ID_FULL_DIRECTORY_INFO", RAW_SEARCH_ID_FULL_DIRECTORY_INFO, 
+	{"ID_FULL_DIRECTORY_INFO",
+	 RAW_SEARCH_TRANS2, RAW_SEARCH_DATA_ID_FULL_DIRECTORY_INFO, 
 	 offsetof(union smb_search_data, id_full_directory_info.name.s),
 	 offsetof(union smb_search_data, id_full_directory_info.file_index),
 	},
-	{"ID_BOTH_DIRECTORY_INFO", RAW_SEARCH_ID_BOTH_DIRECTORY_INFO, 
+	{"ID_BOTH_DIRECTORY_INFO",
+	 RAW_SEARCH_TRANS2, RAW_SEARCH_DATA_ID_BOTH_DIRECTORY_INFO, 
 	 offsetof(union smb_search_data, id_both_directory_info.name.s),
 	 offsetof(union smb_search_data, id_both_directory_info.file_index),
 	},
-	{"UNIX_INFO",              RAW_SEARCH_UNIX_INFO, 
+	{"UNIX_INFO",
+	 RAW_SEARCH_TRANS2, RAW_SEARCH_DATA_UNIX_INFO, 
 	 offsetof(union smb_search_data, unix_info.name),
 	 offsetof(union smb_search_data, unix_info.file_index),
 	 CAP_UNIX}
@@ -147,11 +171,13 @@ static struct {
 /*
   return level name
 */
-static const char *level_name(enum smb_search_level level)
+static const char *level_name(enum smb_search_level level,
+			      enum smb_search_data_level data_level)
 {
 	int i;
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
-		if (level == levels[i].level) {
+		if (level == levels[i].level &&
+		    data_level == levels[i].data_level) {
 			return levels[i].name;
 		}
 	}
@@ -161,11 +187,13 @@ static const char *level_name(enum smb_search_level level)
 /*
   extract the name from a smb_data structure and level
 */
-static const char *extract_name(void *data, enum smb_search_level level)
+static const char *extract_name(void *data, enum smb_search_level level,
+				enum smb_search_data_level data_level)
 {
 	int i;
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
-		if (level == levels[i].level) {
+		if (level == levels[i].level &&
+		    data_level == levels[i].data_level) {
 			return *(const char **)(levels[i].name_offset + (char *)data);
 		}
 	}
@@ -175,11 +203,13 @@ static const char *extract_name(void *data, enum smb_search_level level)
 /*
   extract the name from a smb_data structure and level
 */
-static int extract_resume_key(void *data, enum smb_search_level level)
+static int extract_resume_key(void *data, enum smb_search_level level,
+			      enum smb_search_data_level data_level)
 {
 	int i;
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
-		if (level == levels[i].level) {
+		if (level == levels[i].level &&
+		    data_level == levels[i].data_level) {
 			return (int)*(uint32_t *)(levels[i].resume_key_offset + (char *)data);
 		}
 	}
@@ -230,7 +260,9 @@ static BOOL test_one_file(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 		printf("testing %s\n", levels[i].name);
 
 		levels[i].status = torture_single_search(cli, mem_ctx, fname, 
-							 levels[i].level, 0,
+							 levels[i].level,
+							 levels[i].data_level,
+							 0,
 							 &levels[i].data);
 
 		/* see if this server claims to support this level */
@@ -249,7 +281,9 @@ static BOOL test_one_file(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 		}
 
 		status = torture_single_search(cli, mem_ctx, fname2, 
-					       levels[i].level, 0,
+					       levels[i].level,
+					       levels[i].data_level,
+					       0,
 					       &levels[i].data);
 		
 		expected_status = NT_STATUS_NO_SUCH_FILE;
@@ -517,7 +551,7 @@ enum continue_type {CONT_FLAGS, CONT_NAME, CONT_RESUME_KEY};
 static NTSTATUS multiple_search(struct smbcli_state *cli, 
 				TALLOC_CTX *mem_ctx,
 				const char *pattern,
-				enum smb_search_level level,
+				enum smb_search_data_level data_level,
 				enum continue_type cont_type,
 				void *data)
 {
@@ -527,12 +561,15 @@ static NTSTATUS multiple_search(struct smbcli_state *cli,
 	const int per_search = 100;
 	struct multiple_result *result = data;
 
-	io.generic.level = level;
-	if (level == RAW_SEARCH_SEARCH) {
+	if (data_level == RAW_SEARCH_DATA_SEARCH) {
+		io.search_first.level = RAW_SEARCH_SEARCH;
+		io.search_first.data_level = RAW_SEARCH_DATA_SEARCH;
 		io.search_first.in.max_count = per_search;
 		io.search_first.in.search_attrib = 0;
 		io.search_first.in.pattern = pattern;
 	} else {
+		io.t2ffirst.level = RAW_SEARCH_TRANS2;
+		io.t2ffirst.data_level = data_level;
 		io.t2ffirst.in.search_attrib = 0;
 		io.t2ffirst.in.max_count = per_search;
 		io.t2ffirst.in.flags = FLAG_TRANS2_FIND_CLOSE_IF_END;
@@ -549,12 +586,15 @@ static NTSTATUS multiple_search(struct smbcli_state *cli,
 	
 
 	while (NT_STATUS_IS_OK(status)) {
-		io2.generic.level = level;
-		if (level == RAW_SEARCH_SEARCH) {
+		if (data_level == RAW_SEARCH_DATA_SEARCH) {
+			io2.search_next.level = RAW_SEARCH_SEARCH;
+			io2.search_next.data_level = RAW_SEARCH_DATA_SEARCH;
 			io2.search_next.in.max_count = per_search;
 			io2.search_next.in.search_attrib = 0;
 			io2.search_next.in.id = result->list[result->count-1].search.id;
 		} else {
+			io2.t2fnext.level = RAW_SEARCH_TRANS2;
+			io2.t2fnext.data_level = data_level;
 			io2.t2fnext.in.handle = io.t2ffirst.out.handle;
 			io2.t2fnext.in.max_count = per_search;
 			io2.t2fnext.in.resume_key = 0;
@@ -562,17 +602,19 @@ static NTSTATUS multiple_search(struct smbcli_state *cli,
 			io2.t2fnext.in.last_name = "";
 			switch (cont_type) {
 			case CONT_RESUME_KEY:
-				io2.t2fnext.in.resume_key = extract_resume_key(&result->list[result->count-1], level);
+				io2.t2fnext.in.resume_key = extract_resume_key(&result->list[result->count-1],
+									       io2.t2fnext.level, io2.t2fnext.data_level);
 				if (io2.t2fnext.in.resume_key <= 0) {
 					printf("Server does not support resume by key for level %s\n",
-					       level_name(level));
+					       level_name(io2.t2fnext.level, io2.t2fnext.data_level));
 					return NT_STATUS_NOT_SUPPORTED;
 				}
 				io2.t2fnext.in.flags |= FLAG_TRANS2_FIND_REQUIRE_RESUME |
 					FLAG_TRANS2_FIND_BACKUP_INTENT;
 				break;
 			case CONT_NAME:
-				io2.t2fnext.in.last_name = extract_name(&result->list[result->count-1], level);
+				io2.t2fnext.in.last_name = extract_name(&result->list[result->count-1],
+									io2.t2fnext.level, io2.t2fnext.data_level);
 				break;
 			case CONT_FLAGS:
 				io2.t2fnext.in.flags |= FLAG_TRANS2_FIND_CONTINUE;
@@ -585,7 +627,7 @@ static NTSTATUS multiple_search(struct smbcli_state *cli,
 		if (!NT_STATUS_IS_OK(status)) {
 			break;
 		}
-		if (level == RAW_SEARCH_SEARCH) {
+		if (data_level == RAW_SEARCH_DATA_SEARCH) {
 			if (io2.search_next.out.count == 0) {
 				break;
 			}
@@ -622,13 +664,21 @@ static NTSTATUS multiple_search(struct smbcli_state *cli,
 	}} while (0)
 
 
-static enum smb_search_level compare_level;
+static enum smb_search_data_level compare_data_level;
 
 static int search_compare(union smb_search_data *d1, union smb_search_data *d2)
 {
 	const char *s1, *s2;
-	s1 = extract_name(d1, compare_level);
-	s2 = extract_name(d2, compare_level);
+	enum smb_search_level level;
+
+	if (compare_data_level == RAW_SEARCH_DATA_SEARCH) {
+		level = RAW_SEARCH_SEARCH;
+	} else {
+		level = RAW_SEARCH_TRANS2;
+	}
+
+	s1 = extract_name(d1, level, compare_data_level);
+	s2 = extract_name(d2, level, compare_data_level);
 	return strcmp_safe(s1, s2);
 }
 
@@ -648,31 +698,31 @@ static BOOL test_many_files(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	struct {
 		const char *name;
 		const char *cont_name;
-		enum smb_search_level level;
+		enum smb_search_data_level data_level;
 		enum continue_type cont_type;
 	} search_types[] = {
-		{"SEARCH",              "ID",    RAW_SEARCH_SEARCH,              CONT_RESUME_KEY},
-		{"BOTH_DIRECTORY_INFO", "NAME",  RAW_SEARCH_BOTH_DIRECTORY_INFO, CONT_NAME},
-		{"BOTH_DIRECTORY_INFO", "FLAGS", RAW_SEARCH_BOTH_DIRECTORY_INFO, CONT_FLAGS},
-		{"BOTH_DIRECTORY_INFO", "KEY",   RAW_SEARCH_BOTH_DIRECTORY_INFO, CONT_RESUME_KEY},
-		{"STANDARD",            "FLAGS", RAW_SEARCH_STANDARD,            CONT_FLAGS},
-		{"STANDARD",            "KEY",   RAW_SEARCH_STANDARD,            CONT_RESUME_KEY},
-		{"STANDARD",            "NAME",  RAW_SEARCH_STANDARD,            CONT_NAME},
-		{"EA_SIZE",             "FLAGS", RAW_SEARCH_EA_SIZE,             CONT_FLAGS},
-		{"EA_SIZE",             "KEY",   RAW_SEARCH_EA_SIZE,             CONT_RESUME_KEY},
-		{"EA_SIZE",             "NAME",  RAW_SEARCH_EA_SIZE,             CONT_NAME},
-		{"DIRECTORY_INFO",      "FLAGS", RAW_SEARCH_DIRECTORY_INFO,      CONT_FLAGS},
-		{"DIRECTORY_INFO",      "KEY",   RAW_SEARCH_DIRECTORY_INFO,      CONT_RESUME_KEY},
-		{"DIRECTORY_INFO",      "NAME",  RAW_SEARCH_DIRECTORY_INFO,      CONT_NAME},
-		{"FULL_DIRECTORY_INFO",    "FLAGS", RAW_SEARCH_FULL_DIRECTORY_INFO,    CONT_FLAGS},
-		{"FULL_DIRECTORY_INFO",    "KEY",   RAW_SEARCH_FULL_DIRECTORY_INFO,    CONT_RESUME_KEY},
-		{"FULL_DIRECTORY_INFO",    "NAME",  RAW_SEARCH_FULL_DIRECTORY_INFO,    CONT_NAME},
-		{"ID_FULL_DIRECTORY_INFO", "FLAGS", RAW_SEARCH_ID_FULL_DIRECTORY_INFO, CONT_FLAGS},
-		{"ID_FULL_DIRECTORY_INFO", "KEY",   RAW_SEARCH_ID_FULL_DIRECTORY_INFO, CONT_RESUME_KEY},
-		{"ID_FULL_DIRECTORY_INFO", "NAME",  RAW_SEARCH_ID_FULL_DIRECTORY_INFO, CONT_NAME},
-		{"ID_BOTH_DIRECTORY_INFO", "NAME",  RAW_SEARCH_ID_BOTH_DIRECTORY_INFO, CONT_NAME},
-		{"ID_BOTH_DIRECTORY_INFO", "FLAGS", RAW_SEARCH_ID_BOTH_DIRECTORY_INFO, CONT_FLAGS},
-		{"ID_BOTH_DIRECTORY_INFO", "KEY",   RAW_SEARCH_ID_BOTH_DIRECTORY_INFO, CONT_RESUME_KEY}
+		{"SEARCH",              "ID",    RAW_SEARCH_DATA_SEARCH,              CONT_RESUME_KEY},
+		{"BOTH_DIRECTORY_INFO", "NAME",  RAW_SEARCH_DATA_BOTH_DIRECTORY_INFO, CONT_NAME},
+		{"BOTH_DIRECTORY_INFO", "FLAGS", RAW_SEARCH_DATA_BOTH_DIRECTORY_INFO, CONT_FLAGS},
+		{"BOTH_DIRECTORY_INFO", "KEY",   RAW_SEARCH_DATA_BOTH_DIRECTORY_INFO, CONT_RESUME_KEY},
+		{"STANDARD",            "FLAGS", RAW_SEARCH_DATA_STANDARD,            CONT_FLAGS},
+		{"STANDARD",            "KEY",   RAW_SEARCH_DATA_STANDARD,            CONT_RESUME_KEY},
+		{"STANDARD",            "NAME",  RAW_SEARCH_DATA_STANDARD,            CONT_NAME},
+		{"EA_SIZE",             "FLAGS", RAW_SEARCH_DATA_EA_SIZE,             CONT_FLAGS},
+		{"EA_SIZE",             "KEY",   RAW_SEARCH_DATA_EA_SIZE,             CONT_RESUME_KEY},
+		{"EA_SIZE",             "NAME",  RAW_SEARCH_DATA_EA_SIZE,             CONT_NAME},
+		{"DIRECTORY_INFO",      "FLAGS", RAW_SEARCH_DATA_DIRECTORY_INFO,      CONT_FLAGS},
+		{"DIRECTORY_INFO",      "KEY",   RAW_SEARCH_DATA_DIRECTORY_INFO,      CONT_RESUME_KEY},
+		{"DIRECTORY_INFO",      "NAME",  RAW_SEARCH_DATA_DIRECTORY_INFO,      CONT_NAME},
+		{"FULL_DIRECTORY_INFO",    "FLAGS", RAW_SEARCH_DATA_FULL_DIRECTORY_INFO,    CONT_FLAGS},
+		{"FULL_DIRECTORY_INFO",    "KEY",   RAW_SEARCH_DATA_FULL_DIRECTORY_INFO,    CONT_RESUME_KEY},
+		{"FULL_DIRECTORY_INFO",    "NAME",  RAW_SEARCH_DATA_FULL_DIRECTORY_INFO,    CONT_NAME},
+		{"ID_FULL_DIRECTORY_INFO", "FLAGS", RAW_SEARCH_DATA_ID_FULL_DIRECTORY_INFO, CONT_FLAGS},
+		{"ID_FULL_DIRECTORY_INFO", "KEY",   RAW_SEARCH_DATA_ID_FULL_DIRECTORY_INFO, CONT_RESUME_KEY},
+		{"ID_FULL_DIRECTORY_INFO", "NAME",  RAW_SEARCH_DATA_ID_FULL_DIRECTORY_INFO, CONT_NAME},
+		{"ID_BOTH_DIRECTORY_INFO", "NAME",  RAW_SEARCH_DATA_ID_BOTH_DIRECTORY_INFO, CONT_NAME},
+		{"ID_BOTH_DIRECTORY_INFO", "FLAGS", RAW_SEARCH_DATA_ID_BOTH_DIRECTORY_INFO, CONT_FLAGS},
+		{"ID_BOTH_DIRECTORY_INFO", "KEY",   RAW_SEARCH_DATA_ID_BOTH_DIRECTORY_INFO, CONT_RESUME_KEY}
 	};
 
 	if (!torture_setup_dir(cli, BASEDIR)) {
@@ -701,7 +751,7 @@ static BOOL test_many_files(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 		printf("Continue %s via %s\n", search_types[t].name, search_types[t].cont_name);
 
 		status = multiple_search(cli, mem_ctx, BASEDIR "\\*.*", 
-					 search_types[t].level,
+					 search_types[t].data_level,
 					 search_types[t].cont_type,
 					 &result);
 	
@@ -714,14 +764,20 @@ static BOOL test_many_files(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 		}
 		CHECK_VALUE(result.count, num_files);
 
-		compare_level = search_types[t].level;
+		compare_data_level = search_types[t].data_level;
 
 		qsort(result.list, result.count, sizeof(result.list[0]), 
 		      QSORT_CAST  search_compare);
 
 		for (i=0;i<result.count;i++) {
 			const char *s;
-			s = extract_name(&result.list[i], compare_level);
+			enum smb_search_level level;
+			if (compare_data_level == RAW_SEARCH_DATA_SEARCH) {
+				level = RAW_SEARCH_SEARCH;
+			} else {
+				level = RAW_SEARCH_TRANS2;
+			}
+			s = extract_name(&result.list[i], level, compare_data_level);
 			fname = talloc_asprintf(cli, "t%03d-%d.txt", i, i);
 			if (strcmp(fname, s)) {
 				printf("Incorrect name %s at entry %d\n", s, i);
@@ -810,7 +866,8 @@ static BOOL test_modify_search(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	ZERO_STRUCT(result);
 	result.mem_ctx = talloc_new(mem_ctx);
 
-	io.generic.level = RAW_SEARCH_BOTH_DIRECTORY_INFO;
+	io.t2ffirst.level = RAW_SEARCH_TRANS2;
+	io.t2ffirst.data_level = RAW_SEARCH_DATA_BOTH_DIRECTORY_INFO;
 	io.t2ffirst.in.search_attrib = 0;
 	io.t2ffirst.in.max_count = 0;
 	io.t2ffirst.in.flags = 0;
@@ -823,7 +880,8 @@ static BOOL test_modify_search(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_VALUE(result.count, 1);
 	
 	printf("pulling the second file\n");
-	io2.generic.level = RAW_SEARCH_BOTH_DIRECTORY_INFO;
+	io2.t2fnext.level = RAW_SEARCH_TRANS2;
+	io2.t2fnext.data_level = RAW_SEARCH_DATA_BOTH_DIRECTORY_INFO;
 	io2.t2fnext.in.handle = io.t2ffirst.out.handle;
 	io2.t2fnext.in.max_count = 1;
 	io2.t2fnext.in.resume_key = 0;
@@ -852,7 +910,8 @@ static BOOL test_modify_search(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	status = smb_raw_setfileinfo(cli->tree, &sfinfo);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
-	io2.generic.level = RAW_SEARCH_BOTH_DIRECTORY_INFO;
+	io2.t2fnext.level = RAW_SEARCH_TRANS2;
+	io2.t2fnext.data_level = RAW_SEARCH_DATA_BOTH_DIRECTORY_INFO;
 	io2.t2fnext.in.handle = io.t2ffirst.out.handle;
 	io2.t2fnext.in.max_count = num_files + 3;
 	io2.t2fnext.in.resume_key = 0;
@@ -927,7 +986,7 @@ static BOOL test_sorted(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	result.mem_ctx = mem_ctx;
 	
 	status = multiple_search(cli, mem_ctx, BASEDIR "\\*.*", 
-				 RAW_SEARCH_BOTH_DIRECTORY_INFO,
+				 RAW_SEARCH_DATA_BOTH_DIRECTORY_INFO,
 				 CONT_NAME, &result);	
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_VALUE(result.count, num_files);
@@ -1007,7 +1066,8 @@ static BOOL test_many_dirs(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	for (i=0;i<num_dirs;i++) {
 		union smb_search_first io;
-		io.generic.level = RAW_SEARCH_SEARCH;
+		io.search_first.level = RAW_SEARCH_SEARCH;
+		io.search_first.data_level = RAW_SEARCH_DATA_SEARCH;
 		io.search_first.in.max_count = 1;
 		io.search_first.in.search_attrib = 0;
 		io.search_first.in.pattern = talloc_asprintf(mem_ctx, BASEDIR "\\d%d\\*.txt", i);
@@ -1039,7 +1099,8 @@ static BOOL test_many_dirs(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	for (i=0;i<num_dirs;i++) {
 		union smb_search_next io2;
 
-		io2.generic.level = RAW_SEARCH_SEARCH;
+		io2.search_next.level = RAW_SEARCH_SEARCH;
+		io2.search_next.data_level = RAW_SEARCH_DATA_SEARCH;
 		io2.search_next.in.max_count = 1;
 		io2.search_next.in.search_attrib = 0;
 		io2.search_next.in.id = file[i].search.id;
@@ -1072,7 +1133,8 @@ static BOOL test_many_dirs(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	for (i=0;i<num_dirs;i++) {
 		union smb_search_next io2;
 
-		io2.generic.level = RAW_SEARCH_SEARCH;
+		io2.search_next.level = RAW_SEARCH_SEARCH;
+		io2.search_next.data_level = RAW_SEARCH_DATA_SEARCH;
 		io2.search_next.in.max_count = 1;
 		io2.search_next.in.search_attrib = 0;
 		io2.search_next.in.id = file[i].search.id;
@@ -1153,7 +1215,8 @@ static BOOL test_os2_delete(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	ZERO_STRUCT(result);
 	result.mem_ctx = mem_ctx;
 
-	io.t2ffirst.level = RAW_SEARCH_EA_SIZE;
+	io.t2ffirst.level = RAW_SEARCH_TRANS2;
+	io.t2ffirst.data_level = RAW_SEARCH_DATA_EA_SIZE;
 	io.t2ffirst.in.search_attrib = 0;
 	io.t2ffirst.in.max_count = 100;
 	io.t2ffirst.in.flags = FLAG_TRANS2_FIND_REQUIRE_RESUME;
@@ -1172,7 +1235,8 @@ static BOOL test_os2_delete(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 		talloc_free(fname);
 	}
 
-	io2.t2fnext.level = RAW_SEARCH_EA_SIZE;
+	io2.t2fnext.level = RAW_SEARCH_TRANS2;
+	io2.t2fnext.data_level = RAW_SEARCH_DATA_EA_SIZE;
 	io2.t2fnext.in.handle = io.t2ffirst.out.handle;
 	io2.t2fnext.in.max_count = 100;
 	io2.t2fnext.in.resume_key = result.list[i-1].ea_size.resume_key;
@@ -1273,7 +1337,8 @@ static BOOL test_ea_list(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	ZERO_STRUCT(result);
 	result.mem_ctx = mem_ctx;
 
-	io.t2ffirst.level = RAW_SEARCH_EA_LIST;
+	io.t2ffirst.level = RAW_SEARCH_TRANS2;
+	io.t2ffirst.data_level = RAW_SEARCH_DATA_EA_LIST;
 	io.t2ffirst.in.search_attrib = 0;
 	io.t2ffirst.in.max_count = 2;
 	io.t2ffirst.in.flags = FLAG_TRANS2_FIND_REQUIRE_RESUME;
@@ -1289,7 +1354,8 @@ static BOOL test_ea_list(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_VALUE(result.count, 2);
 
-	nxt.t2fnext.level = RAW_SEARCH_EA_LIST;
+	nxt.t2fnext.level = RAW_SEARCH_TRANS2;
+	nxt.t2fnext.data_level = RAW_SEARCH_DATA_EA_LIST;
 	nxt.t2fnext.in.handle = io.t2ffirst.out.handle;
 	nxt.t2fnext.in.max_count = 2;
 	nxt.t2fnext.in.resume_key = result.list[1].ea_list.resume_key;

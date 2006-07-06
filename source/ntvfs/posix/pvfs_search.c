@@ -68,7 +68,7 @@ static void pvfs_search_setup_timer(struct pvfs_search_state *search)
   fill in a single search result for a given info level
 */
 static NTSTATUS fill_search_info(struct pvfs_state *pvfs,
-				 enum smb_search_level level,
+				 enum smb_search_data_level level,
 				 const char *unix_path,
 				 const char *fname, 
 				 struct pvfs_search_state *search,
@@ -90,9 +90,7 @@ static NTSTATUS fill_search_info(struct pvfs_state *pvfs,
 	}
 
 	switch (level) {
-	case RAW_SEARCH_SEARCH:
-	case RAW_SEARCH_FFIRST:
-	case RAW_SEARCH_FUNIQUE:
+	case RAW_SEARCH_DATA_SEARCH:
 		shortname = pvfs_short_name(pvfs, name, name);
 		file->search.attrib           = name->dos.attrib;
 		file->search.write_time       = nt_time_to_unix(name->dos.write_time);
@@ -107,7 +105,7 @@ static NTSTATUS fill_search_info(struct pvfs_state *pvfs,
 		file->search.id.client_cookie = 0;
 		return NT_STATUS_OK;
 
-	case RAW_SEARCH_STANDARD:
+	case RAW_SEARCH_DATA_STANDARD:
 		file->standard.resume_key   = dir_index;
 		file->standard.create_time  = nt_time_to_unix(name->dos.create_time);
 		file->standard.access_time  = nt_time_to_unix(name->dos.access_time);
@@ -118,7 +116,7 @@ static NTSTATUS fill_search_info(struct pvfs_state *pvfs,
 		file->standard.name.s       = fname;
 		return NT_STATUS_OK;
 
-	case RAW_SEARCH_EA_SIZE:
+	case RAW_SEARCH_DATA_EA_SIZE:
 		file->ea_size.resume_key   = dir_index;
 		file->ea_size.create_time  = nt_time_to_unix(name->dos.create_time);
 		file->ea_size.access_time  = nt_time_to_unix(name->dos.access_time);
@@ -130,7 +128,7 @@ static NTSTATUS fill_search_info(struct pvfs_state *pvfs,
 		file->ea_size.name.s       = fname;
 		return NT_STATUS_OK;
 
-	case RAW_SEARCH_EA_LIST:
+	case RAW_SEARCH_DATA_EA_LIST:
 		file->ea_list.resume_key   = dir_index;
 		file->ea_list.create_time  = nt_time_to_unix(name->dos.create_time);
 		file->ea_list.access_time  = nt_time_to_unix(name->dos.access_time);
@@ -144,7 +142,7 @@ static NTSTATUS fill_search_info(struct pvfs_state *pvfs,
 					  search->ea_names,
 					  &file->ea_list.eas);
 
-	case RAW_SEARCH_DIRECTORY_INFO:
+	case RAW_SEARCH_DATA_DIRECTORY_INFO:
 		file->directory_info.file_index   = dir_index;
 		file->directory_info.create_time  = name->dos.create_time;
 		file->directory_info.access_time  = name->dos.access_time;
@@ -156,7 +154,7 @@ static NTSTATUS fill_search_info(struct pvfs_state *pvfs,
 		file->directory_info.name.s       = fname;
 		return NT_STATUS_OK;
 
-	case RAW_SEARCH_FULL_DIRECTORY_INFO:
+	case RAW_SEARCH_DATA_FULL_DIRECTORY_INFO:
 		file->full_directory_info.file_index   = dir_index;
 		file->full_directory_info.create_time  = name->dos.create_time;
 		file->full_directory_info.access_time  = name->dos.access_time;
@@ -169,12 +167,12 @@ static NTSTATUS fill_search_info(struct pvfs_state *pvfs,
 		file->full_directory_info.name.s       = fname;
 		return NT_STATUS_OK;
 
-	case RAW_SEARCH_NAME_INFO:
+	case RAW_SEARCH_DATA_NAME_INFO:
 		file->name_info.file_index   = dir_index;
 		file->name_info.name.s       = fname;
 		return NT_STATUS_OK;
 
-	case RAW_SEARCH_BOTH_DIRECTORY_INFO:
+	case RAW_SEARCH_DATA_BOTH_DIRECTORY_INFO:
 		file->both_directory_info.file_index   = dir_index;
 		file->both_directory_info.create_time  = name->dos.create_time;
 		file->both_directory_info.access_time  = name->dos.access_time;
@@ -188,7 +186,7 @@ static NTSTATUS fill_search_info(struct pvfs_state *pvfs,
 		file->both_directory_info.name.s       = fname;
 		return NT_STATUS_OK;
 
-	case RAW_SEARCH_ID_FULL_DIRECTORY_INFO:
+	case RAW_SEARCH_DATA_ID_FULL_DIRECTORY_INFO:
 		file->id_full_directory_info.file_index   = dir_index;
 		file->id_full_directory_info.create_time  = name->dos.create_time;
 		file->id_full_directory_info.access_time  = name->dos.access_time;
@@ -202,7 +200,7 @@ static NTSTATUS fill_search_info(struct pvfs_state *pvfs,
 		file->id_full_directory_info.name.s       = fname;
 		return NT_STATUS_OK;
 
-	case RAW_SEARCH_ID_BOTH_DIRECTORY_INFO:
+	case RAW_SEARCH_DATA_ID_BOTH_DIRECTORY_INFO:
 		file->id_both_directory_info.file_index   = dir_index;
 		file->id_both_directory_info.create_time  = name->dos.create_time;
 		file->id_both_directory_info.access_time  = name->dos.access_time;
@@ -217,7 +215,7 @@ static NTSTATUS fill_search_info(struct pvfs_state *pvfs,
 		file->id_both_directory_info.name.s       = fname;
 		return NT_STATUS_OK;
 
-	case RAW_SEARCH_GENERIC:
+	case RAW_SEARCH_DATA_GENERIC:
 		break;
 	}
 
@@ -231,7 +229,7 @@ static NTSTATUS fill_search_info(struct pvfs_state *pvfs,
 static NTSTATUS pvfs_search_fill(struct pvfs_state *pvfs, TALLOC_CTX *mem_ctx, 
 				 uint_t max_count, 
 				 struct pvfs_search_state *search,
-				 enum smb_search_level level,
+				 enum smb_search_data_level level,
 				 uint_t *reply_count,
 				 void *search_private, 
 				 BOOL (*callback)(void *, union smb_search_data *))
@@ -378,7 +376,7 @@ static NTSTATUS pvfs_search_first_old(struct ntvfs_module_context *ntvfs,
 
 	talloc_set_destructor(search, pvfs_search_destructor);
 
-	status = pvfs_search_fill(pvfs, req, io->search_first.in.max_count, search, io->generic.level,
+	status = pvfs_search_fill(pvfs, req, io->search_first.in.max_count, search, io->generic.data_level,
 				  &reply_count, search_private, callback);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -422,7 +420,7 @@ static NTSTATUS pvfs_search_next_old(struct ntvfs_module_context *ntvfs,
 	search->last_used = time(NULL);
 	dir = search->dir;
 
-	status = pvfs_search_fill(pvfs, req, max_count, search, io->generic.level,
+	status = pvfs_search_fill(pvfs, req, max_count, search, io->generic.data_level,
 				  &reply_count, search_private, callback);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -441,10 +439,10 @@ static NTSTATUS pvfs_search_next_old(struct ntvfs_module_context *ntvfs,
 /* 
    list files in a directory matching a wildcard pattern
 */
-NTSTATUS pvfs_search_first(struct ntvfs_module_context *ntvfs,
-			   struct ntvfs_request *req, union smb_search_first *io, 
-			   void *search_private, 
-			   BOOL (*callback)(void *, union smb_search_data *))
+static NTSTATUS pvfs_search_first_trans2(struct ntvfs_module_context *ntvfs,
+					 struct ntvfs_request *req, union smb_search_first *io, 
+					 void *search_private, 
+					 BOOL (*callback)(void *, union smb_search_data *))
 {
 	struct pvfs_dir *dir;
 	struct pvfs_state *pvfs = ntvfs->private_data;
@@ -455,10 +453,6 @@ NTSTATUS pvfs_search_first(struct ntvfs_module_context *ntvfs,
 	NTSTATUS status;
 	struct pvfs_filename *name;
 	int id;
-
-	if (io->generic.level >= RAW_SEARCH_SEARCH) {
-		return pvfs_search_first_old(ntvfs, req, io, search_private, callback);
-	}
 
 	search_attrib = io->t2ffirst.in.search_attrib;
 	pattern       = io->t2ffirst.in.pattern;
@@ -512,7 +506,7 @@ NTSTATUS pvfs_search_first(struct ntvfs_module_context *ntvfs,
 	DLIST_ADD(pvfs->search.list, search);
 	talloc_set_destructor(search, pvfs_search_destructor);
 
-	status = pvfs_search_fill(pvfs, req, max_count, search, io->generic.level,
+	status = pvfs_search_fill(pvfs, req, max_count, search, io->generic.data_level,
 				  &reply_count, search_private, callback);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -541,10 +535,10 @@ NTSTATUS pvfs_search_first(struct ntvfs_module_context *ntvfs,
 }
 
 /* continue a search */
-NTSTATUS pvfs_search_next(struct ntvfs_module_context *ntvfs,
-			  struct ntvfs_request *req, union smb_search_next *io, 
-			  void *search_private, 
-			  BOOL (*callback)(void *, union smb_search_data *))
+static NTSTATUS pvfs_search_next_trans2(struct ntvfs_module_context *ntvfs,
+					struct ntvfs_request *req, union smb_search_next *io, 
+					void *search_private, 
+					BOOL (*callback)(void *, union smb_search_data *))
 {
 	struct pvfs_state *pvfs = ntvfs->private_data;
 	struct pvfs_search_state *search;
@@ -552,10 +546,6 @@ NTSTATUS pvfs_search_next(struct ntvfs_module_context *ntvfs,
 	uint_t reply_count;
 	uint16_t handle;
 	NTSTATUS status;
-
-	if (io->generic.level >= RAW_SEARCH_SEARCH) {
-		return pvfs_search_next_old(ntvfs, req, io, search_private, callback);
-	}
 
 	handle = io->t2fnext.in.handle;
 
@@ -586,7 +576,7 @@ NTSTATUS pvfs_search_next(struct ntvfs_module_context *ntvfs,
 	search->num_ea_names = io->t2fnext.in.num_names;
 	search->ea_names = io->t2fnext.in.ea_names;
 
-	status = pvfs_search_fill(pvfs, req, io->t2fnext.in.max_count, search, io->generic.level,
+	status = pvfs_search_fill(pvfs, req, io->t2fnext.in.max_count, search, io->generic.data_level,
 				  &reply_count, search_private, callback);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -605,18 +595,68 @@ NTSTATUS pvfs_search_next(struct ntvfs_module_context *ntvfs,
 	return NT_STATUS_OK;
 }
 
+/* 
+   list files in a directory matching a wildcard pattern
+*/
+NTSTATUS pvfs_search_first(struct ntvfs_module_context *ntvfs,
+			   struct ntvfs_request *req, union smb_search_first *io, 
+			   void *search_private, 
+			   BOOL (*callback)(void *, union smb_search_data *))
+{
+	switch (io->generic.level) {
+	case RAW_SEARCH_SEARCH:
+	case RAW_SEARCH_FFIRST:
+	case RAW_SEARCH_FUNIQUE:
+		return pvfs_search_first_old(ntvfs, req, io, search_private, callback);
+
+	case RAW_SEARCH_TRANS2:
+		return pvfs_search_first_trans2(ntvfs, req, io, search_private, callback);
+	}
+
+	return NT_STATUS_INVALID_LEVEL;
+}
+
+/* continue a search */
+NTSTATUS pvfs_search_next(struct ntvfs_module_context *ntvfs,
+			  struct ntvfs_request *req, union smb_search_next *io, 
+			  void *search_private, 
+			  BOOL (*callback)(void *, union smb_search_data *))
+{
+	switch (io->generic.level) {
+	case RAW_SEARCH_SEARCH:
+	case RAW_SEARCH_FFIRST:
+		return pvfs_search_next_old(ntvfs, req, io, search_private, callback);
+
+	case RAW_SEARCH_FUNIQUE:
+		return NT_STATUS_INVALID_LEVEL;
+
+	case RAW_SEARCH_TRANS2:
+		return pvfs_search_next_trans2(ntvfs, req, io, search_private, callback);
+	}
+
+	return NT_STATUS_INVALID_LEVEL;
+}
+
+
 /* close a search */
 NTSTATUS pvfs_search_close(struct ntvfs_module_context *ntvfs,
 			   struct ntvfs_request *req, union smb_search_close *io)
 {
 	struct pvfs_state *pvfs = ntvfs->private_data;
 	struct pvfs_search_state *search;
-	uint16_t handle;
+	uint16_t handle = 0;
 
-	if (io->generic.level == RAW_FINDCLOSE_FCLOSE) {
+	switch (io->generic.level) {
+	case RAW_FINDCLOSE_GENERIC:
+		return NT_STATUS_INVALID_LEVEL;
+
+	case RAW_FINDCLOSE_FCLOSE:
 		handle = io->fclose.in.id.handle;
-	} else {
+		break;
+
+	case RAW_FINDCLOSE_FINDCLOSE:
 		handle = io->findclose.in.handle;
+		break;
 	}
 
 	search = idr_find(pvfs->search.idtree, handle);
