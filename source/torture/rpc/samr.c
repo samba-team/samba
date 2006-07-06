@@ -942,7 +942,7 @@ static BOOL test_ChangePasswordUser(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	BOOL ret = True;
 	struct samr_Password hash1, hash2, hash3, hash4, hash5, hash6;
 	struct policy_handle user_handle;
-	char *oldpass = *password;
+	char *oldpass;
 	uint8_t old_nt_hash[16], new_nt_hash[16];
 	uint8_t old_lm_hash[16], new_lm_hash[16];
 
@@ -963,6 +963,13 @@ static BOOL test_ChangePasswordUser(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	newpass = samr_rand_pass(mem_ctx, policy_min_pw_len);
 
 	printf("Testing ChangePasswordUser\n");
+
+	if (!*password) {
+		printf("Failing ChangePasswordUser as old password was NULL.  Previous test failed?\n");
+		return False;
+	}
+
+	oldpass = *password;
 
 	E_md4hash(oldpass, old_nt_hash);
 	E_md4hash(newpass, new_nt_hash);
@@ -1015,7 +1022,7 @@ static BOOL test_OemChangePasswordUser2(struct dcerpc_pipe *p, TALLOC_CTX *mem_c
 	struct samr_Password lm_verifier;
 	struct samr_CryptPassword lm_pass;
 	struct lsa_AsciiString server, account, account_bad;
-	char *oldpass = *password;
+	char *oldpass;
 	char *newpass;
 	uint8_t old_lm_hash[16], new_lm_hash[16];
 
@@ -1023,10 +1030,18 @@ static BOOL test_OemChangePasswordUser2(struct dcerpc_pipe *p, TALLOC_CTX *mem_c
 	int policy_min_pw_len = 0;
 
 	struct lsa_String domain_name;
+
 	domain_name.string = "";
 	dom_pw_info.in.domain_name = &domain_name;
 
 	printf("Testing OemChangePasswordUser2\n");
+
+	if (!*password) {
+		printf("Failing OemChangePasswordUser2 as old password was NULL.  Previous test failed?\n");
+		return False;
+	}
+
+	oldpass = *password;
 
 	status = dcerpc_samr_GetDomPwInfo(p, mem_ctx, &dom_pw_info);
 	if (NT_STATUS_IS_OK(status)) {
@@ -1109,7 +1124,7 @@ static BOOL test_ChangePasswordUser2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	struct lsa_String server, account;
 	struct samr_CryptPassword nt_pass, lm_pass;
 	struct samr_Password nt_verifier, lm_verifier;
-	char *oldpass = *password;
+	char *oldpass;
 	char *newpass;
 	uint8_t old_nt_hash[16], new_nt_hash[16];
 	uint8_t old_lm_hash[16], new_lm_hash[16];
@@ -1118,10 +1133,18 @@ static BOOL test_ChangePasswordUser2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	int policy_min_pw_len = 0;
 
 	struct lsa_String domain_name;
+
+
 	domain_name.string = "";
 	dom_pw_info.in.domain_name = &domain_name;
 
 	printf("Testing ChangePasswordUser2\n");
+
+	if (!*password) {
+		printf("Failing ChangePasswordUser3 as old password was NULL.  Previous test failed?\n");
+		return False;
+	}
+	oldpass = *password;
 
 	status = dcerpc_samr_GetDomPwInfo(p, mem_ctx, &dom_pw_info);
 	if (NT_STATUS_IS_OK(status)) {
@@ -1180,13 +1203,19 @@ BOOL test_ChangePasswordUser3(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	struct lsa_String server, account, account_bad;
 	struct samr_CryptPassword nt_pass, lm_pass;
 	struct samr_Password nt_verifier, lm_verifier;
-	char *oldpass = *password;
+	char *oldpass;
 	char *newpass = samr_rand_pass(mem_ctx, policy_min_pw_len);	
 	uint8_t old_nt_hash[16], new_nt_hash[16];
 	uint8_t old_lm_hash[16], new_lm_hash[16];
 
 	printf("Testing ChangePasswordUser3\n");
 
+	if (!*password) {
+		printf("Failing ChangePasswordUser3 as old password was NULL.  Previous test failed?\n");
+		return False;
+	}
+
+	oldpass = *password;
 	server.string = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
 	init_lsa_String(&account, account_string);
 
@@ -1776,7 +1805,7 @@ static BOOL test_CreateUser(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	if (!test_SetUserPass(p, user_ctx, user_handle, &password)) {
 		ret = False;
-	}	
+	}
 
 	for (i = 0; password_fields[i]; i++) {
 		if (!test_SetUserPass_23(p, user_ctx, user_handle, password_fields[i], &password)) {
