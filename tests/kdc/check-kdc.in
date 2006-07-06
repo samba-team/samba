@@ -95,6 +95,7 @@ ${kadmin} ext -k ${keytab} ${ps} || exit 1
 
 ${kadmin} add -p kaka --use-defaults ${server2}@${R2} || exit 1
 ${kadmin} ext -k ${keytab} ${server2}@${R2} || exit 1
+${kadmin} add -p foo --use-defaults remove2@${R2} || exit 1
 
 ${kadmin} add -p cross1 --use-defaults krbtgt/${R2}@${R} || exit 1
 ${kadmin} add -p cross2 --use-defaults krbtgt/${R}@${R2} || exit 1
@@ -190,6 +191,13 @@ ${kinit} --password-file=${objdir}/foopassword remove@$R || exitcode=1
 ${kadmin} delete remove@${R} || exit 1
 echo "try getting ticket with deleted user"
 ${kgetcred} ${server}@${R} 2> /dev/null && exitcode=1
+${kdestroy}
+
+echo "cross realm case (removed user)"
+${kinit} --password-file=${objdir}/foopassword remove2@$R2 || exitcode=1
+${kgetcred} krbtgt/${R}@${R2} 2> /dev/null || exitcode=1
+${kadmin} delete remove2@${R2} || exit 1
+${kgetcred} ${server}@${R} 2> /dev/null || exitcode=1
 ${kdestroy}
 
 #echo deleting all but aes enctypes on krbtgt
