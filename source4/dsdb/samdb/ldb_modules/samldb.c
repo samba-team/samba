@@ -307,8 +307,8 @@ int samldb_notice_sid(struct ldb_module *module,
 		}
 		talloc_free(res);
 	} else {
-		ldb_set_errstring(module->ldb, talloc_asprintf(module, "samldb_notice_sid: error searching to see if sid %s is in use: %s\n", 
-							       dom_sid_string(dom_res, sid), 
+		ldb_set_errstring(module->ldb, talloc_asprintf(mem_ctx, "samldb_notice_sid: error searching to see if sid %s is in use: %s\n", 
+							       dom_sid_string(mem_ctx, sid), 
 							       ldb_errstring(module->ldb)));
 		return ret;
 	}
