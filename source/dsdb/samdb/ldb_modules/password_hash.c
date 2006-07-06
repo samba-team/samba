@@ -597,7 +597,7 @@ static int password_hash_add(struct ldb_module *module, struct ldb_request *req)
 
 	/* check sambaPassword is single valued here */
 	/* TODO: remove this when sambaPassword will be single valued in schema */
-	if (sambaAttr->num_values > 1) {
+	if (sambaAttr && sambaAttr->num_values > 1) {
 		ldb_set_errstring(module->ldb, 
 				  talloc_asprintf(req,
 						  "mupltiple values for sambaPassword not allowed!\n"));
