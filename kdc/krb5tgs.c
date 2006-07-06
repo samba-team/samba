@@ -1036,8 +1036,9 @@ server_lookup:
 	 *
 	 */
 
-	krbtgt_realm = krb5_principal_get_realm(context,
-						krbtgt->entry.principal);
+	krbtgt_realm = 
+	    krb5_principal_get_comp_string(context, 
+					   krbtgt->entry.principal, 1);
 
 	if(strcmp(krb5_principal_get_realm(context, cp), krbtgt_realm) == 0) {
 	    if (ret == HDB_ERR_NOENTRY)
