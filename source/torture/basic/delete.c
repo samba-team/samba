@@ -44,7 +44,9 @@ static BOOL check_delete_on_close(struct smbcli_state *cli, int fnum,
 	BOOL res = True;
 
 	status = torture_single_search(cli, mem_ctx,
-				       fname, RAW_SEARCH_FULL_DIRECTORY_INFO,
+				       fname,
+				       RAW_SEARCH_TRANS2,
+				       RAW_SEARCH_DATA_FULL_DIRECTORY_INFO,
 				       FILE_ATTRIBUTE_DIRECTORY,
 				       &data);
 	if (!NT_STATUS_IS_OK(status)) {

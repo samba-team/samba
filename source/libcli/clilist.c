@@ -29,7 +29,7 @@ struct search_private {
 	int dirlist_len;
 	int ff_searchcount;  /* total received in 1 server trip */
 	int total_received;  /* total received all together */
-	enum smb_search_level info_level;
+	enum smb_search_data_level data_level;
 	const char *last_name;     /* used to continue trans2 search */
 	struct smb_search_id id;   /* used for old-style search */
 };
@@ -38,7 +38,7 @@ struct search_private {
 /****************************************************************************
  Interpret a long filename structure.
 ****************************************************************************/
-static BOOL interpret_long_filename(enum smb_search_level level,
+static BOOL interpret_long_filename(enum smb_search_data_level level,
 				    union smb_search_data *info,
 				    struct clilist_file_info *finfo)
 {
@@ -48,7 +48,7 @@ static BOOL interpret_long_filename(enum smb_search_level level,
 	ZERO_STRUCTP(finfo);
 
 	switch (level) {
-	case RAW_SEARCH_STANDARD:
+	case RAW_SEARCH_DATA_STANDARD:
 		finfo->size = info->standard.size;
 		finfo->mtime = info->standard.write_time;
 		finfo->attrib = info->standard.attrib;
@@ -56,7 +56,7 @@ static BOOL interpret_long_filename(enum smb_search_level level,
 		finfo->short_name = info->standard.name.s;
 		break;
 
-	case RAW_SEARCH_BOTH_DIRECTORY_INFO:
+	case RAW_SEARCH_DATA_BOTH_DIRECTORY_INFO:
 		finfo->size = info->both_directory_info.size;
 		finfo->mtime = nt_time_to_unix(info->both_directory_info.write_time);
 		finfo->attrib = info->both_directory_info.attrib;
@@ -89,7 +89,7 @@ static BOOL smbcli_list_new_callback(void *private, union smb_search_data *file)
 	state->dirlist = tdl;
 	state->dirlist_len++;
 
-	interpret_long_filename(state->info_level, file, &state->dirlist[state->total_received]);
+	interpret_long_filename(state->data_level, file, &state->dirlist[state->total_received]);
 
 	state->last_name = state->dirlist[state->total_received].name;
 	state->total_received++;
@@ -99,7 +99,7 @@ static BOOL smbcli_list_new_callback(void *private, union smb_search_data *file)
 }
 
 int smbcli_list_new(struct smbcli_tree *tree, const char *Mask, uint16_t attribute, 
-		    enum smb_search_level level,
+		    enum smb_search_data_level level,
 		    void (*fn)(struct clilist_file_info *, const char *, void *), 
 		    void *caller_state)
 {
@@ -122,21 +122,22 @@ int smbcli_list_new(struct smbcli_tree *tree, const char *Mask, uint16_t attribu
 	state.dirlist = talloc_new(state.mem_ctx);
 	mask = talloc_strdup(state.mem_ctx, Mask);
 
-	if (level == RAW_SEARCH_GENERIC) {
+	if (level == RAW_SEARCH_DATA_GENERIC) {
 		if (tree->session->transport->negotiate.capabilities & CAP_NT_SMBS) {
-			level = RAW_SEARCH_BOTH_DIRECTORY_INFO;
+			level = RAW_SEARCH_DATA_BOTH_DIRECTORY_INFO;
 		} else {
-			level = RAW_SEARCH_STANDARD;
+			level = RAW_SEARCH_DATA_STANDARD;
 		}
 	}
-	state.info_level = level;
+	state.data_level = level;
 
 	while (1) {
 		state.ff_searchcount = 0;
 		if (first) {
 			NTSTATUS status;
 
-			first_parms.t2ffirst.level = state.info_level;
+			first_parms.t2ffirst.level = RAW_SEARCH_TRANS2;
+			first_parms.t2ffirst.data_level = state.data_level;
 			first_parms.t2ffirst.in.max_count = max_matches;
 			first_parms.t2ffirst.in.search_attrib = attribute;
 			first_parms.t2ffirst.in.pattern = mask;
@@ -162,7 +163,8 @@ int smbcli_list_new(struct smbcli_tree *tree, const char *Mask, uint16_t attribu
 		} else {
 			NTSTATUS status;
 
-			next_parms.t2fnext.level = state.info_level;
+			next_parms.t2fnext.level = RAW_SEARCH_TRANS2;
+			next_parms.t2fnext.data_level = state.data_level;
 			next_parms.t2fnext.in.max_count = max_matches;
 			next_parms.t2fnext.in.last_name = state.last_name;
 			next_parms.t2fnext.in.handle = ff_dir_handle;
@@ -201,20 +203,29 @@ int smbcli_list_new(struct smbcli_tree *tree, const char *Mask, uint16_t attribu
  Interpret a short filename structure.
  The length of the structure is returned.
 ****************************************************************************/
-static BOOL interpret_short_filename(int level,
-				union smb_search_data *info,
-				struct clilist_file_info *finfo)
+static BOOL interpret_short_filename(enum smb_search_data_level level,
+				     union smb_search_data *info,
+				     struct clilist_file_info *finfo)
 {
 	struct clilist_file_info finfo2;
 
 	if (!finfo) finfo = &finfo2;
 	ZERO_STRUCTP(finfo);
+
+	switch (level) {
+	case RAW_SEARCH_DATA_SEARCH:
+		finfo->mtime = info->search.write_time;
+		finfo->size = info->search.size;
+		finfo->attrib = info->search.attrib;
+		finfo->name = info->search.name;
+		finfo->short_name = info->search.name;
+		break;
+
+	default:
+		DEBUG(0,("Unhandled level %d in interpret_short_filename\n", (int)level));
+		return False;
+	}
 	
-	finfo->mtime = info->search.write_time;
-	finfo->size = info->search.size;
-	finfo->attrib = info->search.attrib;
-	finfo->name = info->search.name;
-	finfo->short_name = info->search.name;
 	return True;
 }
 
@@ -236,7 +247,7 @@ static BOOL smbcli_list_old_callback(void *private, union smb_search_data *file)
 	state->dirlist = tdl;
 	state->dirlist_len++;
 
-	interpret_short_filename(state->info_level, file, &state->dirlist[state->total_received]);
+	interpret_short_filename(state->data_level, file, &state->dirlist[state->total_received]);
 
 	state->total_received++;
 	state->ff_searchcount++;
@@ -273,6 +284,7 @@ int smbcli_list_old(struct smbcli_tree *tree, const char *Mask, uint16_t attribu
 			NTSTATUS status;
 
 			first_parms.search_first.level = RAW_SEARCH_SEARCH;
+			first_parms.search_first.data_level = RAW_SEARCH_DATA_SEARCH;
 			first_parms.search_first.in.max_count = num_asked;
 			first_parms.search_first.in.search_attrib = attribute;
 			first_parms.search_first.in.pattern = mask;
@@ -294,6 +306,7 @@ int smbcli_list_old(struct smbcli_tree *tree, const char *Mask, uint16_t attribu
 			NTSTATUS status;
 
 			next_parms.search_next.level = RAW_SEARCH_SEARCH;
+			next_parms.search_next.data_level = RAW_SEARCH_DATA_SEARCH;
 			next_parms.search_next.in.max_count = num_asked;
 			next_parms.search_next.in.search_attrib = attribute;
 			next_parms.search_next.in.id = state.id;
@@ -336,5 +349,5 @@ int smbcli_list(struct smbcli_tree *tree, const char *Mask,uint16_t attribute,
 {
 	if (tree->session->transport->negotiate.protocol <= PROTOCOL_LANMAN1)
 		return smbcli_list_old(tree, Mask, attribute, fn, state);
-	return smbcli_list_new(tree, Mask, attribute, RAW_SEARCH_GENERIC, fn, state);
+	return smbcli_list_new(tree, Mask, attribute, RAW_SEARCH_DATA_GENERIC, fn, state);
 }
