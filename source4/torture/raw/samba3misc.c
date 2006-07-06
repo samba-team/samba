@@ -243,6 +243,10 @@ BOOL torture_samba3_badpath(struct torture_context *torture)
 	}
 	smbcli_close(cli_nt->tree, fnum);
 
+	/*
+	 * Do a whole bunch of error code checks on chkpath
+	 */
+
 	status = smbcli_chkpath(cli_nt->tree, fpath);
 	CHECK_STATUS(status, NT_STATUS_NOT_A_DIRECTORY);
 	status = smbcli_chkpath(cli_dos->tree, fpath);
@@ -277,6 +281,46 @@ BOOL torture_samba3_badpath(struct torture_context *torture)
 	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_INVALID);
 	status = smbcli_chkpath(cli_dos->tree, "<\\bla");
 	CHECK_STATUS(status, NT_STATUS_DOS(ERRDOS, ERRbadpath));
+
+	/*
+	 * .... And the same gang against getatr. Note that the error codes
+	 * differ....
+	 */
+
+	status = smbcli_getatr(cli_nt->tree, fpath, NULL, NULL, NULL);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	status = smbcli_getatr(cli_dos->tree, fpath, NULL, NULL, NULL);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	status = smbcli_getatr(cli_nt->tree, "..", NULL, NULL, NULL);
+	CHECK_STATUS(status, NT_STATUS_OBJECT_PATH_SYNTAX_BAD);
+	status = smbcli_getatr(cli_dos->tree, "..", NULL, NULL, NULL);
+	CHECK_STATUS(status, NT_STATUS_DOS(ERRDOS, ERRinvalidpath));
+
+	status = smbcli_getatr(cli_nt->tree, ".", NULL, NULL, NULL);
+	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_INVALID);
+	status = smbcli_getatr(cli_dos->tree, ".", NULL, NULL, NULL);
+	CHECK_STATUS(status, NT_STATUS_DOS(ERRDOS, ERRinvalidname));
+
+	status = smbcli_getatr(cli_nt->tree, "\t", NULL, NULL, NULL);
+	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_INVALID);
+	status = smbcli_getatr(cli_dos->tree, "\t", NULL, NULL, NULL);
+	CHECK_STATUS(status, NT_STATUS_DOS(ERRDOS, ERRinvalidname));
+
+	status = smbcli_getatr(cli_nt->tree, "\t\\bla", NULL, NULL, NULL);
+	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_INVALID);
+	status = smbcli_getatr(cli_dos->tree, "\t\\bla", NULL, NULL, NULL);
+	CHECK_STATUS(status, NT_STATUS_DOS(ERRDOS, ERRinvalidname));
+
+	status = smbcli_getatr(cli_nt->tree, "<", NULL, NULL, NULL);
+	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_INVALID);
+	status = smbcli_getatr(cli_dos->tree, "<", NULL, NULL, NULL);
+	CHECK_STATUS(status, NT_STATUS_DOS(ERRDOS, ERRinvalidname));
+
+	status = smbcli_getatr(cli_nt->tree, "<\\bla", NULL, NULL, NULL);
+	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_INVALID);
+	status = smbcli_getatr(cli_dos->tree, "<\\bla", NULL, NULL, NULL);
+	CHECK_STATUS(status, NT_STATUS_DOS(ERRDOS, ERRinvalidname));
 
 	goto done;
 
