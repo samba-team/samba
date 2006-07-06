@@ -45,45 +45,6 @@
 int samldb_notice_sid(struct ldb_module *module, 
 		      TALLOC_CTX *mem_ctx, const struct dom_sid *sid);
 
-/* if value is not null also check for attribute to have exactly that value */
-static struct ldb_message_element *samldb_find_attribute(const struct ldb_message *msg, const char *name, const char *value)
-{
-	int j;
-	struct ldb_message_element *el = ldb_msg_find_element(msg, name);
-	if (!el) {
-		return NULL;
-	}
-
-	if (!value) {
-		return el;
-	}
-
-	for (j = 0; j < el->num_values; j++) {
-		if (strcasecmp(value, 
-			       (char *)el->values[j].data) == 0) {
-			return el;
-		}
-	}
-
-	return NULL;
-}
-
-static BOOL samldb_msg_add_string(struct ldb_module *module, struct ldb_message *msg, const char *name, const char *value)
-{
-	char *aval = talloc_strdup(msg, value);
-
-	if (aval == NULL) {
-		ldb_debug(module->ldb, LDB_DEBUG_FATAL, "samldb_msg_add_string: talloc_strdup failed!\n");
-		return False;
-	}
-
-	if (ldb_msg_add_string(msg, name, aval) != 0) {
-		return False;
-	}
-
-	return True;
-}
-
 static BOOL samldb_msg_add_sid(struct ldb_module *module, struct ldb_message *msg, const char *name, const struct dom_sid *sid)
 {
 	struct ldb_val v;
@@ -94,34 +55,6 @@ static BOOL samldb_msg_add_sid(struct ldb_module *module, struct ldb_message *ms
 		return -1;
 	}
 	return (ldb_msg_add_value(msg, name, &v) == 0);
-}
-
-static BOOL samldb_find_or_add_value(struct ldb_module *module, struct ldb_message *msg, const char *name, const char *value, const char *set_value)
-{
-	if (msg == NULL || name == NULL || value == NULL || set_value == NULL) {
-		return False;
-	}
-
-	if (samldb_find_attribute(msg, name, value) == NULL) {
-		return samldb_msg_add_string(module, msg, name, set_value);
-	}
-	return True;
-}
-
-static BOOL samldb_find_or_add_attribute(struct ldb_module *module, struct ldb_message *msg, const char *name, const char *set_value)
-{
-	struct ldb_message_element *el;
-
-	if (msg == NULL || name == NULL || set_value == NULL) {
-		return False;
-	}
-
-       	el = ldb_msg_find_element(msg, name);
-	if (el) {
-		return True;
-	}
-		
-	return samldb_msg_add_string(module, msg, name, set_value);
 }
 
 /*
@@ -484,69 +417,6 @@ static char *samldb_generate_samAccountName(struct ldb_module *module, TALLOC_CT
 	} while (1);
 }
 
-static int samldb_copy_template(struct ldb_module *module, struct ldb_message *msg, const char *filter)
-{
-	struct ldb_result *res;
-	struct ldb_message *t;
-	int ret, i, j;
-	
-	struct ldb_dn *basedn = ldb_dn_explode(msg, "cn=Templates");
-
-	/* pull the template record */
-	ret = ldb_search(module->ldb, basedn, LDB_SCOPE_SUBTREE, filter, NULL, &res);
-	if (ret != LDB_SUCCESS) {
-		return ret;
-	}
-	if (res->count != 1) {
-		ldb_set_errstring(module->ldb, talloc_asprintf(module, "samldb_copy_template: ERROR: template '%s' matched %d records, expected 1\n", filter, 
-					  res->count));
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-	t = res->msgs[0];
-
-	for (i = 0; i < t->num_elements; i++) {
-		struct ldb_message_element *el = &t->elements[i];
-		/* some elements should not be copied from the template */
-		if (strcasecmp(el->name, "cn") == 0 ||
-		    strcasecmp(el->name, "name") == 0 ||
-		    strcasecmp(el->name, "sAMAccountName") == 0 ||
-		    strcasecmp(el->name, "objectGUID") == 0) {
-			continue;
-		}
-		for (j = 0; j < el->num_values; j++) {
-			if (strcasecmp(el->name, "objectClass") == 0) {
-				if (strcasecmp((char *)el->values[j].data, "Template") == 0 ||
-				    strcasecmp((char *)el->values[j].data, "userTemplate") == 0 ||
-				    strcasecmp((char *)el->values[j].data, "groupTemplate") == 0 ||
-				    strcasecmp((char *)el->values[j].data, "foreignSecurityPrincipalTemplate") == 0 ||
-				    strcasecmp((char *)el->values[j].data, "aliasTemplate") == 0 || 
-				    strcasecmp((char *)el->values[j].data, "trustedDomainTemplate") == 0 || 
-				    strcasecmp((char *)el->values[j].data, "secretTemplate") == 0) {
-					continue;
-				}
-				if ( ! samldb_find_or_add_value(module, msg, el->name, 
-								(char *)el->values[j].data,
-								(char *)el->values[j].data)) {
-					ldb_set_errstring(module->ldb, talloc_asprintf(module, "Adding objectClass %s failed.\n", el->values[j].data));
-					talloc_free(res);
-					return LDB_ERR_OPERATIONS_ERROR;
-				}
-			} else {
-				if ( ! samldb_find_or_add_attribute(module, msg, el->name, 
-								    (char *)el->values[j].data)) {
-					ldb_set_errstring(module->ldb, talloc_asprintf(module, "Adding attribute %s failed.\n", el->name));
-					talloc_free(res);
-					return LDB_ERR_OPERATIONS_ERROR;
-				}
-			}
-		}
-	}
-
-	talloc_free(res);
-
-	return LDB_SUCCESS;
-}
-
 static int samldb_fill_group_object(struct ldb_module *module, const struct ldb_message *msg,
 						    struct ldb_message **ret_msg)
 {
@@ -567,7 +437,7 @@ static int samldb_fill_group_object(struct ldb_module *module, const struct ldb_
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	ret = samldb_copy_template(module, msg2, "(&(CN=TemplateGroup)(objectclass=groupTemplate))");
+	ret = samdb_copy_template(module->ldb, msg2, "(&(CN=TemplateGroup)(objectclass=groupTemplate))");
 	if (ret != 0) {
 		talloc_free(mem_ctx);
 		return ret;
@@ -588,9 +458,10 @@ static int samldb_fill_group_object(struct ldb_module *module, const struct ldb_
 			talloc_free(mem_ctx);
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
-		if ( ! samldb_find_or_add_attribute(module, msg2, "sAMAccountName", name)) {
+		ret = samdb_find_or_add_attribute(module->ldb, msg2, "sAMAccountName", name);
+		if (ret) {
 			talloc_free(mem_ctx);
-			return LDB_ERR_OPERATIONS_ERROR;
+			return ret;
 		}
 	}
 	
@@ -625,9 +496,9 @@ static int samldb_fill_user_or_computer_object(struct ldb_module *module, const 
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	if (samldb_find_attribute(msg, "objectclass", "computer") != NULL) {
+	if (samdb_find_attribute(module->ldb, msg, "objectclass", "computer") != NULL) {
 
-		ret = samldb_copy_template(module, msg2, "(&(CN=TemplateComputer)(objectclass=userTemplate))");
+		ret = samdb_copy_template(module->ldb, msg2, "(&(CN=TemplateComputer)(objectclass=userTemplate))");
 		if (ret) {
 			ldb_debug(module->ldb, LDB_DEBUG_WARNING, "samldb_fill_user_or_computer_object: Error copying computer template!\n");
 			talloc_free(mem_ctx);
@@ -635,26 +506,29 @@ static int samldb_fill_user_or_computer_object(struct ldb_module *module, const 
 		}
 
 		/* readd user and then computer objectclasses */
-		if ( ! samldb_find_or_add_value(module, msg2, "objectclass", "user", "user")) {
+		ret = samdb_find_or_add_value(module->ldb, msg2, "objectclass", "user");
+		if (ret) {
 			talloc_free(mem_ctx);
-			return LDB_ERR_OPERATIONS_ERROR;
+			return ret;
 		}
-		if ( ! samldb_find_or_add_value(module, msg2, "objectclass", "computer", "computer")) {
+		ret = samdb_find_or_add_value(module->ldb, msg2, "objectclass", "computer");
+		if (ret) {
 			talloc_free(mem_ctx);
-			return LDB_ERR_OPERATIONS_ERROR;
+			return ret;
 		}
 		
 	} else {
-		ret = samldb_copy_template(module, msg2, "(&(CN=TemplateUser)(objectclass=userTemplate))");
+		ret = samdb_copy_template(module->ldb, msg2, "(&(CN=TemplateUser)(objectclass=userTemplate))");
 		if (ret) {
 			ldb_debug(module->ldb, LDB_DEBUG_WARNING, "samldb_fill_user_or_computer_object: Error copying user template!\n");
 			talloc_free(mem_ctx);
 			return ret;
 		}
 		/* readd user objectclass */
-		if ( ! samldb_find_or_add_value(module, msg2, "objectclass", "user", "user")) {
+		ret = samdb_find_or_add_value(module->ldb, msg2, "objectclass", "user");
+		if (ret) {
 			talloc_free(mem_ctx);
-			return LDB_ERR_OPERATIONS_ERROR;
+			return ret;
 		}
 	}
 
@@ -672,9 +546,10 @@ static int samldb_fill_user_or_computer_object(struct ldb_module *module, const 
 			talloc_free(mem_ctx);
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
-		if ( ! samldb_find_or_add_attribute(module, msg2, "sAMAccountName", name)) {
+		ret = samdb_find_or_add_attribute(module->ldb, msg2, "sAMAccountName", name);
+		if (ret) {
 			talloc_free(mem_ctx);
-			return LDB_ERR_OPERATIONS_ERROR;
+			return ret;
 		}
 	}
 
@@ -719,7 +594,7 @@ static int samldb_fill_foreignSecurityPrincipal_object(struct ldb_module *module
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	ret = samldb_copy_template(module, msg2, "(&(CN=TemplateForeignSecurityPrincipal)(objectclass=foreignSecurityPrincipalTemplate))");
+	ret = samdb_copy_template(module->ldb, msg2, "(&(CN=TemplateForeignSecurityPrincipal)(objectclass=foreignSecurityPrincipalTemplate))");
 	if (ret != 0) {
 		ldb_debug(module->ldb, LDB_DEBUG_WARNING, "samldb_fill_foreignSecurityPrincipal_object: Error copying template!\n");
 		talloc_free(mem_ctx);
@@ -815,8 +690,8 @@ static int samldb_add(struct ldb_module *module, struct ldb_request *req)
 	}
 
 	/* is user or computer? */
-	if ((samldb_find_attribute(msg, "objectclass", "user") != NULL) ||
-	    (samldb_find_attribute(msg, "objectclass", "computer") != NULL)) {
+	if ((samdb_find_attribute(module->ldb, msg, "objectclass", "user") != NULL) ||
+	    (samdb_find_attribute(module->ldb, msg, "objectclass", "computer") != NULL)) {
 		/*  add all relevant missing objects */
 		ret = samldb_fill_user_or_computer_object(module, msg, &msg2);
 		if (ret) {
@@ -826,7 +701,7 @@ static int samldb_add(struct ldb_module *module, struct ldb_request *req)
 
 	/* is group? add all relevant missing objects */
 	if ( ! msg2 ) {
-		if (samldb_find_attribute(msg, "objectclass", "group") != NULL) {
+		if (samdb_find_attribute(module->ldb, msg, "objectclass", "group") != NULL) {
 			ret = samldb_fill_group_object(module, msg, &msg2);
 			if (ret) {
 				return ret;
@@ -836,7 +711,7 @@ static int samldb_add(struct ldb_module *module, struct ldb_request *req)
 
 	/* perhaps a foreignSecurityPrincipal? */
 	if ( ! msg2 ) {
-		if (samldb_find_attribute(msg, "objectclass", "foreignSecurityPrincipal") != NULL) {
+		if (samdb_find_attribute(module->ldb, msg, "objectclass", "foreignSecurityPrincipal") != NULL) {
 			ret = samldb_fill_foreignSecurityPrincipal_object(module, msg, &msg2);
 			if (ret) {
 				return ret;
