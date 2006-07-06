@@ -87,8 +87,9 @@ struct gensec_security_ops **gensec_use_kerberos_mechs(TALLOC_CTX *mem_ctx,
 				j++;
 			}
 			break;
-		case CRED_AUTO_USE_KERBEROS:
-			break;
+		default:
+			/* Can't happen or invalid parameter */
+			return NULL;
 		}
 	}
 	new_gensec_list[j] = NULL; 

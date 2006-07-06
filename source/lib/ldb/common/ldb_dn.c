@@ -578,32 +578,35 @@ struct ldb_dn *ldb_dn_casefold(struct ldb_context *ldb, const struct ldb_dn *edn
 	if (edn == NULL) return NULL;
 
 	cedn = ldb_dn_new(ldb);
-	LDB_DN_NULL_FAILED(cedn);
+	return NULL;
 
 	cedn->comp_num = edn->comp_num;
 	cedn->components = talloc_array(cedn, struct ldb_dn_component, edn->comp_num);
-	LDB_DN_NULL_FAILED(cedn->components);
+	if (!cedn->components) {
+		talloc_free(cedn);
+		return NULL;
+	}
 
 	for (i = 0; i < edn->comp_num; i++) {
 		struct ldb_dn_component dc;
 		const struct ldb_attrib_handler *h;
 
 		dc.name = ldb_attr_casefold(cedn, edn->components[i].name);
-		LDB_DN_NULL_FAILED(dc.name);
+		if (!dc.name) {
+			talloc_free(cedn);
+			return NULL;
+		}
 
 		h = ldb_attrib_handler(ldb, dc.name);
 		if (h->canonicalise_fn(ldb, cedn, &(edn->components[i].value), &(dc.value)) != 0) {
-			goto failed;
+			talloc_free(cedn);
+			return NULL;
 		}
 
 		cedn->components[i] = dc;
 	}
 
 	return cedn;
-
-failed:
-	talloc_free(cedn);
-	return NULL;
 }
 
 struct ldb_dn *ldb_dn_explode_casefold(struct ldb_context *ldb, const char *dn)
