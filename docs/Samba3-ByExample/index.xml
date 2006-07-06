@@ -9,7 +9,7 @@
 		<authorgroup>
 			<author>&person.jht;</author>
 		</authorgroup>
-		<pubdate>June, 2005</pubdate>
+		<pubdate>July, 2006</pubdate>
 	</bookinfo>
 
 	<?latex \clearpage ?>
@@ -39,6 +39,7 @@
 <para>
 This section of <emphasis>Samba-3 by Example</emphasis> provides example network
 configurations that can be copied, or modified as needed, and deployed as-is.
+The contents have been marginally updated to reflect changes made in Samba=3.0.23.
 </para>
 
 <para>
