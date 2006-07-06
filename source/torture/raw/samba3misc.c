@@ -156,6 +156,67 @@ BOOL torture_samba3_checkfsp(struct torture_context *torture)
 	return ret;
 }
 
+static NTSTATUS raw_smbcli_open(struct smbcli_tree *tree, const char *fname, int flags, int share_mode, int *fnum)
+{
+        union smb_open open_parms;
+        uint_t openfn=0;
+        uint_t accessmode=0;
+        TALLOC_CTX *mem_ctx;
+        NTSTATUS status;
+
+        mem_ctx = talloc_init("raw_open");
+        if (!mem_ctx) return NT_STATUS_NO_MEMORY;
+
+        if (flags & O_CREAT) {
+                openfn |= OPENX_OPEN_FUNC_CREATE;
+        }
+        if (!(flags & O_EXCL)) {
+                if (flags & O_TRUNC) {
+                        openfn |= OPENX_OPEN_FUNC_TRUNC;
+                } else {
+                        openfn |= OPENX_OPEN_FUNC_OPEN;
+                }
+        }
+
+        accessmode = (share_mode<<OPENX_MODE_DENY_SHIFT);
+
+        if ((flags & O_ACCMODE) == O_RDWR) {
+                accessmode |= OPENX_MODE_ACCESS_RDWR;
+        } else if ((flags & O_ACCMODE) == O_WRONLY) {
+                accessmode |= OPENX_MODE_ACCESS_WRITE;
+        }
+
+#if defined(O_SYNC)
+        if ((flags & O_SYNC) == O_SYNC) {
+                accessmode |= OPENX_MODE_WRITE_THRU;
+        }
+#endif
+
+        if (share_mode == DENY_FCB) {
+                accessmode = OPENX_MODE_ACCESS_FCB | OPENX_MODE_DENY_FCB;
+        }
+
+        open_parms.openx.level = RAW_OPEN_OPENX;
+        open_parms.openx.in.flags = 0;
+        open_parms.openx.in.open_mode = accessmode;
+        open_parms.openx.in.search_attrs = FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN;
+        open_parms.openx.in.file_attrs = 0;
+        open_parms.openx.in.write_time = 0;
+        open_parms.openx.in.open_func = openfn;
+        open_parms.openx.in.size = 0;
+        open_parms.openx.in.timeout = 0;
+        open_parms.openx.in.fname = fname;
+
+        status = smb_raw_open(tree, mem_ctx, &open_parms);
+        talloc_free(mem_ctx);
+
+        if (fnum && NT_STATUS_IS_OK(status)) {
+                *fnum = open_parms.openx.out.file.fnum;
+        }
+
+        return status;
+}
+
 BOOL torture_samba3_badpath(struct torture_context *torture)
 {
 	struct smbcli_state *cli_nt;
@@ -283,7 +344,7 @@ BOOL torture_samba3_badpath(struct torture_context *torture)
 	CHECK_STATUS(status, NT_STATUS_DOS(ERRDOS, ERRbadpath));
 
 	/*
-	 * .... And the same gang against getatr. Note that the error codes
+	 * .... And the same gang against getatr. Note that the DOS error codes
 	 * differ....
 	 */
 
@@ -320,6 +381,38 @@ BOOL torture_samba3_badpath(struct torture_context *torture)
 	status = smbcli_getatr(cli_nt->tree, "<\\bla", NULL, NULL, NULL);
 	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_INVALID);
 	status = smbcli_getatr(cli_dos->tree, "<\\bla", NULL, NULL, NULL);
+	CHECK_STATUS(status, NT_STATUS_DOS(ERRDOS, ERRinvalidname));
+
+	/* Try the same set with openX. */
+
+	status = raw_smbcli_open(cli_nt->tree, "..", O_RDONLY, DENY_NONE, NULL);
+	CHECK_STATUS(status, NT_STATUS_OBJECT_PATH_SYNTAX_BAD);
+	status = raw_smbcli_open(cli_dos->tree, "..", O_RDONLY, DENY_NONE, NULL);
+	CHECK_STATUS(status, NT_STATUS_DOS(ERRDOS, ERRinvalidpath));
+
+	status = raw_smbcli_open(cli_nt->tree, ".", O_RDONLY, DENY_NONE, NULL);
+	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_INVALID);
+	status = raw_smbcli_open(cli_dos->tree, ".", O_RDONLY, DENY_NONE, NULL);
+	CHECK_STATUS(status, NT_STATUS_DOS(ERRDOS, ERRinvalidname));
+
+	status = raw_smbcli_open(cli_nt->tree, "\t", O_RDONLY, DENY_NONE, NULL);
+	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_INVALID);
+	status = raw_smbcli_open(cli_dos->tree, "\t", O_RDONLY, DENY_NONE, NULL);
+	CHECK_STATUS(status, NT_STATUS_DOS(ERRDOS, ERRinvalidname));
+
+	status = raw_smbcli_open(cli_nt->tree, "\t\\bla", O_RDONLY, DENY_NONE, NULL);
+	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_INVALID);
+	status = raw_smbcli_open(cli_dos->tree, "\t\\bla", O_RDONLY, DENY_NONE, NULL);
+	CHECK_STATUS(status, NT_STATUS_DOS(ERRDOS, ERRinvalidname));
+
+	status = raw_smbcli_open(cli_nt->tree, "<", O_RDONLY, DENY_NONE, NULL);
+	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_INVALID);
+	status = raw_smbcli_open(cli_dos->tree, "<", O_RDONLY, DENY_NONE, NULL);
+	CHECK_STATUS(status, NT_STATUS_DOS(ERRDOS, ERRinvalidname));
+
+	status = raw_smbcli_open(cli_nt->tree, "<\\bla", O_RDONLY, DENY_NONE, NULL);
+	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_INVALID);
+	status = raw_smbcli_open(cli_dos->tree, "<\\bla", O_RDONLY, DENY_NONE, NULL);
 	CHECK_STATUS(status, NT_STATUS_DOS(ERRDOS, ERRinvalidname));
 
 	goto done;
