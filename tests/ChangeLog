@@ -1,3 +1,9 @@
+2006-07-06  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kdc/check-kdc.in: Check for cross realm case where remove user
+	doesn't exists in the database, this is ok assuming the cross
+	realm isn't local. In the general case this isn't true.
+
 2006-06-22  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* kdc/check-kdc.in: run kadmin check
