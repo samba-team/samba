@@ -44,8 +44,9 @@ OM_uint32 _gsskrb5_inquire_cred
  gss_OID_set * mechanisms
     )
 {
-    gss_cred_id_t aqcred = GSS_C_NO_CREDENTIAL;
-    gsskrb5_cred cred;
+    gss_cred_id_t aqcred_init = GSS_C_NO_CREDENTIAL;
+    gss_cred_id_t aqcred_accept = GSS_C_NO_CREDENTIAL;
+    gsskrb5_cred acred = NULL, icred = NULL;
     OM_uint32 ret;
 
     *minor_status = 0;
@@ -60,26 +61,49 @@ OM_uint32 _gsskrb5_inquire_cred
 				    GSS_C_NO_NAME,
 				    GSS_C_INDEFINITE,
 				    GSS_C_NO_OID_SET,
-				    GSS_C_BOTH,
-				    &aqcred,
+				    GSS_C_ACCEPT,
+				    &aqcred_accept,
 				    NULL,
 				    NULL);
-	if (ret)
-	    return ret;
-	cred = (gsskrb5_cred)aqcred;
-    } else
-	cred = (gsskrb5_cred)cred_handle;
+	if (ret == GSS_S_COMPLETE)
+	    acred = (gsskrb5_cred)aqcred_accept;
 
-    HEIMDAL_MUTEX_lock(&cred->cred_id_mutex);
+	ret = _gsskrb5_acquire_cred(minor_status, 
+				    GSS_C_NO_NAME,
+				    GSS_C_INDEFINITE,
+				    GSS_C_NO_OID_SET,
+				    GSS_C_INITIATE,
+				    &aqcred_init,
+				    NULL,
+				    NULL);
+	if (ret == GSS_S_COMPLETE)
+	    acred = (gsskrb5_cred)aqcred_init;
+
+	if (icred == NULL && acred == NULL) {
+	    *minor_status = 0;
+	    return GSS_S_NO_CRED;
+	}
+    } else
+	acred = (gsskrb5_cred)cred_handle;
+
+    if (acred)
+	HEIMDAL_MUTEX_lock(&icred->cred_id_mutex);
+    if (icred)
+	HEIMDAL_MUTEX_lock(&acred->cred_id_mutex);
 
     if (output_name != NULL) {
-	if (cred->principal != NULL) {
-	    gss_name_t name = (gss_name_t)cred->principal;
-
+	if (icred && icred->principal != NULL) {
+	    gss_name_t name;
+	    
+	    if (acred)
+		name = (gss_name_t)acred->principal;
+	    else
+		name = (gss_name_t)icred->principal;
+		
             ret = _gsskrb5_duplicate_name(minor_status, name, output_name);
             if (ret)
 		goto out;
-	} else if (cred->usage == GSS_C_ACCEPT) {
+	} else if (acred && acred->usage == GSS_C_ACCEPT) {
 	    krb5_principal princ;
 	    *minor_status = krb5_sname_to_principal(_gsskrb5_context, NULL,
 						    NULL, KRB5_NT_SRV_HST, 
@@ -101,31 +125,54 @@ OM_uint32 _gsskrb5_inquire_cred
 	}
     }
     if (lifetime != NULL) {
+	OM_uint32 alife = GSS_C_INDEFINITE, ilife = GSS_C_INDEFINITE;
+
+	if (acred) alife = acred->lifetime;
+	if (icred) ilife = icred->lifetime;
+
 	ret = _gsskrb5_lifetime_left(minor_status, 
-				   cred->lifetime,
-				   lifetime);
+				     min(alife,ilife),
+				     lifetime);
 	if (ret)
 	    goto out;
     }
-    if (cred_usage != NULL)
-        *cred_usage = cred->usage;
+    if (cred_usage != NULL) {
+	if (acred && icred)
+	    *cred_usage = GSS_C_BOTH;
+	else if (acred)
+	    *cred_usage = GSS_C_ACCEPT;
+	else if (icred)
+	    *cred_usage = GSS_C_INITIATE;
+	else
+	    abort();
+    }
 
     if (mechanisms != NULL) {
         ret = _gsskrb5_create_empty_oid_set(minor_status, mechanisms);
         if (ret)
 	    goto out;
-        ret = _gsskrb5_add_oid_set_member(minor_status,
-					  &cred->mechanisms->elements[0],
-					  mechanisms);
+	if (acred)
+	    ret = _gsskrb5_add_oid_set_member(minor_status,
+					      &acred->mechanisms->elements[0],
+					      mechanisms);
+	if (ret == GSS_S_COMPLETE && icred)
+	    ret = _gsskrb5_add_oid_set_member(minor_status,
+					      &icred->mechanisms->elements[0],
+					      mechanisms);
         if (ret)
 	    goto out;
     }
     ret = GSS_S_COMPLETE;
 out:
-    HEIMDAL_MUTEX_unlock(&cred->cred_id_mutex);
+    if (acred)
+	HEIMDAL_MUTEX_unlock(&acred->cred_id_mutex);
+    if (icred)
+	HEIMDAL_MUTEX_unlock(&icred->cred_id_mutex);
 
-    if (aqcred != GSS_C_NO_CREDENTIAL)
-	ret = _gsskrb5_release_cred(minor_status, &aqcred);
+    if (aqcred_init != GSS_C_NO_CREDENTIAL)
+	ret = _gsskrb5_release_cred(minor_status, &aqcred_init);
+    if (aqcred_accept != GSS_C_NO_CREDENTIAL)
+	ret = _gsskrb5_release_cred(minor_status, &aqcred_accept);
 
     return ret;
 }
