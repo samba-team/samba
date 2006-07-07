@@ -103,6 +103,8 @@ NTSTATUS torture_rpc_init(void)
 	register_torture_op("RPC-DFS", torture_rpc_dfs);
 	register_torture_op("RPC-SPOOLSS", torture_rpc_spoolss);
 	register_torture_op("RPC-SAMR", torture_rpc_samr);
+	register_torture_op("RPC-SAMR-USERS", torture_rpc_samr_users);
+	register_torture_op("RPC-SAMR-PASSWORDS", torture_rpc_samr_passwords);
 	register_torture_op("RPC-UNIXINFO", torture_rpc_unixinfo);
 	register_torture_op("RPC-NETLOGON", torture_rpc_netlogon);
 	register_torture_op("RPC-SAMLOGON", torture_rpc_samlogon);
