@@ -302,6 +302,13 @@ NTSTATUS netdom_join_domain( TALLOC_CTX *mem_ctx, struct cli_state *cli,
 	status = rpccli_samr_set_userinfo(pipe_hnd, mem_ctx, &user_pol, 
 			24, &cli->user_session_key, &ctr);
 
+	if ( !NT_STATUS_IS_OK(status) ) {
+		d_fprintf( stderr, "Failed to set password for machine account (%s)\n", 
+			nt_errstr(status));
+		return status;
+	}
+
+
 	/* Why do we have to try to (re-)set the ACB to be the same as what
 	   we passed in the samr_create_dom_user() call?  When a NT
 	   workstation is joined to a domain by an administrator the
