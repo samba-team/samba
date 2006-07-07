@@ -37,6 +37,11 @@
 #define TEST_MACHINENAME "samrtestmach$"
 #define TEST_DOMAINNAME "samrtestdom$"
 
+enum torture_samr_choice {
+	TORTURE_SAMR_PASSWORDS,
+	TORTURE_SAMR_USER_ATTRIBUTES,
+	TORTURE_SAMR_OTHER
+};
 
 static BOOL test_QueryUserInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
 			       struct policy_handle *handle);
@@ -46,6 +51,10 @@ static BOOL test_QueryUserInfo2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 static BOOL test_QueryAliasInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			       struct policy_handle *handle);
+
+static BOOL test_ChangePassword(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
+				const char *acct_name, 
+				struct policy_handle *domain_handle, char **password);
 
 static void init_lsa_String(struct lsa_String *string, const char *s)
 {
@@ -935,6 +944,7 @@ static BOOL test_ChangePasswordNT3(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 #endif
 
 static BOOL test_ChangePasswordUser(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
+				    const char *acct_name, 
 				    struct policy_handle *handle, char **password)
 {
 	NTSTATUS status;
@@ -950,7 +960,7 @@ static BOOL test_ChangePasswordUser(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	struct samr_GetUserPwInfo pwp;
 	int policy_min_pw_len = 0;
 
-	status = test_OpenUser_byname(p, mem_ctx, handle, TEST_ACCOUNT_NAME, &user_handle);
+	status = test_OpenUser_byname(p, mem_ctx, handle, acct_name, &user_handle);
 	if (!NT_STATUS_IS_OK(status)) {
 		return False;
 	}
@@ -1014,6 +1024,7 @@ static BOOL test_ChangePasswordUser(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 
 static BOOL test_OemChangePasswordUser2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
+					const char *acct_name,
 					struct policy_handle *handle, char **password)
 {
 	NTSTATUS status;
@@ -1051,7 +1062,7 @@ static BOOL test_OemChangePasswordUser2(struct dcerpc_pipe *p, TALLOC_CTX *mem_c
 	newpass = samr_rand_pass(mem_ctx, policy_min_pw_len);
 
 	server.string = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
-	account.string = TEST_ACCOUNT_NAME;
+	account.string = acct_name;
 
 	E_deshash(oldpass, old_lm_hash);
 	E_deshash(newpass, new_lm_hash);
@@ -1116,6 +1127,7 @@ static BOOL test_OemChangePasswordUser2(struct dcerpc_pipe *p, TALLOC_CTX *mem_c
 
 
 static BOOL test_ChangePasswordUser2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
+				     const char *acct_name,
 				     struct policy_handle *handle, char **password)
 {
 	NTSTATUS status;
@@ -1154,7 +1166,7 @@ static BOOL test_ChangePasswordUser2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	newpass = samr_rand_pass(mem_ctx, policy_min_pw_len);
 
 	server.string = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
-	init_lsa_String(&account, TEST_ACCOUNT_NAME);
+	init_lsa_String(&account, acct_name);
 
 	E_md4hash(oldpass, old_nt_hash);
 	E_md4hash(newpass, new_nt_hash);
@@ -1447,36 +1459,91 @@ static BOOL test_TestPrivateFunctionsUser(struct dcerpc_pipe *p, TALLOC_CTX *mem
 
 
 static BOOL test_user_ops(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
-			  struct policy_handle *handle, uint32_t base_acct_flags, 
-			  const char *base_acct_name)
+			  struct policy_handle *user_handle, 
+			  struct policy_handle *domain_handle, 
+			  uint32_t base_acct_flags, 
+			  const char *base_acct_name, enum torture_samr_choice which_ops)
 {
+	TALLOC_CTX *user_ctx;
+	char *password = NULL;
+
 	BOOL ret = True;
+	int i;
+	const uint32_t password_fields[] = {
+		SAMR_FIELD_PASSWORD,
+		SAMR_FIELD_PASSWORD2,
+		SAMR_FIELD_PASSWORD | SAMR_FIELD_PASSWORD2,
+		0
+	};
+	
+	user_ctx = talloc_named(mem_ctx, 0, "test_user_ops per-user context");
+	switch (which_ops) {
+	case TORTURE_SAMR_USER_ATTRIBUTES:
+		if (!test_QuerySecurity(p, user_ctx, user_handle)) {
+			ret = False;
+		}
 
-	if (!test_QuerySecurity(p, mem_ctx, handle)) {
-		ret = False;
+		if (!test_QueryUserInfo(p, user_ctx, user_handle)) {
+			ret = False;
+		}
+
+		if (!test_QueryUserInfo2(p, user_ctx, user_handle)) {
+			ret = False;
+		}
+
+		if (!test_SetUserInfo(p, user_ctx, user_handle, base_acct_flags,
+				      base_acct_name)) {
+			ret = False;
+		}	
+
+		if (!test_GetUserPwInfo(p, user_ctx, user_handle)) {
+			ret = False;
+		}
+
+		if (!test_TestPrivateFunctionsUser(p, user_ctx, user_handle)) {
+			ret = False;
+		}
+
+		if (!test_SetUserPass(p, user_ctx, user_handle, &password)) {
+			ret = False;
+		}
+		break;
+	case TORTURE_SAMR_PASSWORDS:
+		for (i = 0; password_fields[i]; i++) {
+			if (!test_SetUserPass_23(p, user_ctx, user_handle, password_fields[i], &password)) {
+				ret = False;
+			}	
+		
+			/* check it was set right */
+			if (!test_ChangePasswordUser3(p, user_ctx, base_acct_name, 0, &password)) {
+				ret = False;
+			}
+		}		
+
+		for (i = 0; password_fields[i]; i++) {
+			if (!test_SetUserPass_25(p, user_ctx, user_handle, password_fields[i], &password)) {
+				ret = False;
+			}	
+		
+			/* check it was set right */
+			if (!test_ChangePasswordUser3(p, user_ctx, base_acct_name, 0, &password)) {
+				ret = False;
+			}
+		}		
+
+		if (!test_SetUserPassEx(p, user_ctx, user_handle, &password)) {
+			ret = False;
+		}	
+
+		if (!test_ChangePassword(p, user_ctx, base_acct_name, domain_handle, &password)) {
+			ret = False;
+		}	
+		break;
+	case TORTURE_SAMR_OTHER:
+		/* Can't happen */
+		break;
 	}
-
-	if (!test_QueryUserInfo(p, mem_ctx, handle)) {
-		ret = False;
-	}
-
-	if (!test_QueryUserInfo2(p, mem_ctx, handle)) {
-		ret = False;
-	}
-
-	if (!test_SetUserInfo(p, mem_ctx, handle, base_acct_flags,
-			      base_acct_name)) {
-		ret = False;
-	}	
-
-	if (!test_GetUserPwInfo(p, mem_ctx, handle)) {
-		ret = False;
-	}
-
-	if (!test_TestPrivateFunctionsUser(p, mem_ctx, handle)) {
-		ret = False;
-	}
-
+	talloc_free(user_ctx);
 	return ret;
 }
 
@@ -1692,6 +1759,7 @@ static BOOL test_CreateAlias(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 }
 
 static BOOL test_ChangePassword(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
+				const char *acct_name,
 				struct policy_handle *domain_handle, char **password)
 {
 	BOOL ret = True;
@@ -1700,25 +1768,25 @@ static BOOL test_ChangePassword(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		return False;
 	}
 
-	if (!test_ChangePasswordUser(p, mem_ctx, domain_handle, password)) {
+	if (!test_ChangePasswordUser(p, mem_ctx, acct_name, domain_handle, password)) {
 		ret = False;
 	}
 
-	if (!test_ChangePasswordUser2(p, mem_ctx, domain_handle, password)) {
+	if (!test_ChangePasswordUser2(p, mem_ctx, acct_name, domain_handle, password)) {
 		ret = False;
 	}
 
-	if (!test_OemChangePasswordUser2(p, mem_ctx, domain_handle, password)) {
+	if (!test_OemChangePasswordUser2(p, mem_ctx, acct_name, domain_handle, password)) {
 		ret = False;
 	}
 
 	/* we change passwords twice - this has the effect of verifying
 	   they were changed correctly for the final call */
-	if (!test_ChangePasswordUser3(p, mem_ctx, TEST_ACCOUNT_NAME, 0, password)) {
+	if (!test_ChangePasswordUser3(p, mem_ctx, acct_name, 0, password)) {
 		ret = False;
 	}
 
-	if (!test_ChangePasswordUser3(p, mem_ctx, TEST_ACCOUNT_NAME, 0, password)) {
+	if (!test_ChangePasswordUser3(p, mem_ctx, acct_name, 0, password)) {
 		ret = False;
 	}
 
@@ -1726,36 +1794,31 @@ static BOOL test_ChangePassword(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 }
 
 static BOOL test_CreateUser(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
-			    struct policy_handle *domain_handle, struct policy_handle *user_handle)
+			    struct policy_handle *domain_handle, 
+			    enum torture_samr_choice which_ops)
 {
+
+	TALLOC_CTX *user_ctx;
+
 	NTSTATUS status;
 	struct samr_CreateUser r;
 	struct samr_QueryUserInfo q;
+	struct samr_DeleteUser d;
 	uint32_t rid;
-	char *password = NULL;
-
-	int i;
-	const uint32_t password_fields[] = {
-		SAMR_FIELD_PASSWORD,
-		SAMR_FIELD_PASSWORD2,
-		SAMR_FIELD_PASSWORD | SAMR_FIELD_PASSWORD2,
-		0
-	};
-	
-	TALLOC_CTX *user_ctx;
 
 	/* This call creates a 'normal' account - check that it really does */
 	const uint32_t acct_flags = ACB_NORMAL;
 	struct lsa_String name;
 	BOOL ret = True;
 
+	struct policy_handle user_handle;
 	user_ctx = talloc_named(mem_ctx, 0, "test_CreateUser2 per-user context");
 	init_lsa_String(&name, TEST_ACCOUNT_NAME);
 
 	r.in.domain_handle = domain_handle;
 	r.in.account_name = &name;
 	r.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
-	r.out.user_handle = user_handle;
+	r.out.user_handle = &user_handle;
 	r.out.rid = &rid;
 
 	printf("Testing CreateUser(%s)\n", r.in.account_name->string);
@@ -1763,8 +1826,7 @@ static BOOL test_CreateUser(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	status = dcerpc_samr_CreateUser(p, user_ctx, &r);
 
 	if (NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
-		printf("Server refused create of '%s'\n", r.in.account_name->string);
-		ZERO_STRUCTP(user_handle);
+		printf("Server refused create of '%s': %s\n", r.in.account_name->string, nt_errstr(status));
 		talloc_free(user_ctx);
 		return True;
 	}
@@ -1780,62 +1842,41 @@ static BOOL test_CreateUser(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		talloc_free(user_ctx);
 		printf("CreateUser failed - %s\n", nt_errstr(status));
 		return False;
-	}
-
-	q.in.user_handle = user_handle;
-	q.in.level = 16;
-
-	status = dcerpc_samr_QueryUserInfo(p, user_ctx, &q);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("QueryUserInfo level %u failed - %s\n", 
-		       q.in.level, nt_errstr(status));
-		ret = False;
 	} else {
-		if ((q.out.info->info16.acct_flags & acct_flags) != acct_flags) {
-			printf("QuerUserInfo level 16 failed, it returned 0x%08x (%u) when we expected flags of 0x%08x (%u)\n",
-			       q.out.info->info16.acct_flags, q.out.info->info16.acct_flags, 
-			       acct_flags, acct_flags);
-			ret = False;
-		}
-	}
-
-	if (!test_user_ops(p, user_ctx, user_handle, acct_flags, name.string)) {
-		ret = False;
-	}
-
-	if (!test_SetUserPass(p, user_ctx, user_handle, &password)) {
-		ret = False;
-	}
-
-	for (i = 0; password_fields[i]; i++) {
-		if (!test_SetUserPass_23(p, user_ctx, user_handle, password_fields[i], &password)) {
-			ret = False;
-		}	
+		q.in.user_handle = &user_handle;
+		q.in.level = 16;
 		
-		/* check it was set right */
-		if (!test_ChangePasswordUser3(p, user_ctx, TEST_ACCOUNT_NAME, 0, &password)) {
+		status = dcerpc_samr_QueryUserInfo(p, user_ctx, &q);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("QueryUserInfo level %u failed - %s\n", 
+			       q.in.level, nt_errstr(status));
 			ret = False;
+		} else {
+			if ((q.out.info->info16.acct_flags & acct_flags) != acct_flags) {
+				printf("QuerUserInfo level 16 failed, it returned 0x%08x when we expected flags of 0x%08x\n",
+				       q.out.info->info16.acct_flags, 
+				       acct_flags);
+				ret = False;
+			}
 		}
-	}		
-
-	for (i = 0; password_fields[i]; i++) {
-		if (!test_SetUserPass_25(p, user_ctx, user_handle, password_fields[i], &password)) {
-			ret = False;
-		}	
 		
-		/* check it was set right */
-		if (!test_ChangePasswordUser3(p, user_ctx, TEST_ACCOUNT_NAME, 0, &password)) {
+		if (!test_user_ops(p, user_ctx, &user_handle, domain_handle, 
+				   acct_flags, name.string, which_ops)) {
 			ret = False;
 		}
-	}		
-
-	if (!test_SetUserPassEx(p, user_ctx, user_handle, &password)) {
-		ret = False;
-	}	
-
-	if (!test_ChangePassword(p, user_ctx, domain_handle, &password)) {
-		ret = False;
-	}	
+		
+		printf("Testing DeleteUser (createuser2 test)\n");
+		
+		d.in.user_handle = &user_handle;
+		d.out.user_handle = &user_handle;
+		
+		status = dcerpc_samr_DeleteUser(p, user_ctx, &d);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("DeleteUser failed - %s\n", nt_errstr(status));
+				ret = False;
+		}
+		
+	}
 
 	talloc_free(user_ctx);
 	
@@ -1843,29 +1884,8 @@ static BOOL test_CreateUser(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 }
 
 
-static BOOL test_DeleteUser(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
-			    struct policy_handle *user_handle)
-{
-    	struct samr_DeleteUser d;
-	NTSTATUS status;
-	BOOL ret = True;
-
-	printf("Testing DeleteUser\n");
-
-	d.in.user_handle = user_handle;
-	d.out.user_handle = user_handle;
-
-	status = dcerpc_samr_DeleteUser(p, mem_ctx, &d);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("DeleteUser failed - %s\n", nt_errstr(status));
-		ret = False;
-	}
-
-	return ret;
-}
-
 static BOOL test_CreateUser2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
-			     struct policy_handle *handle)
+			     struct policy_handle *domain_handle, enum torture_samr_choice which_ops)
 {
 	NTSTATUS status;
 	struct samr_CreateUser2 r;
@@ -1906,7 +1926,7 @@ static BOOL test_CreateUser2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		user_ctx = talloc_named(mem_ctx, 0, "test_CreateUser2 per-user context");
 		init_lsa_String(&name, account_types[i].account_name);
 
-		r.in.domain_handle = handle;
+		r.in.domain_handle = domain_handle;
 		r.in.account_name = &name;
 		r.in.acct_flags = acct_flags;
 		r.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
@@ -1924,7 +1944,7 @@ static BOOL test_CreateUser2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			continue;
 
 		} else if (NT_STATUS_EQUAL(status, NT_STATUS_USER_EXISTS)) {
-			if (!test_DeleteUser_byname(p, user_ctx, handle, r.in.account_name->string)) {
+			if (!test_DeleteUser_byname(p, user_ctx, domain_handle, r.in.account_name->string)) {
 				talloc_free(user_ctx);
 				ret = False;
 				continue;
@@ -1956,7 +1976,8 @@ static BOOL test_CreateUser2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 				}
 			}
 		
-			if (!test_user_ops(p, user_ctx, &user_handle, acct_flags, name.string)) {
+			if (!test_user_ops(p, user_ctx, &user_handle, domain_handle, 
+					   acct_flags, name.string, which_ops)) {
 				ret = False;
 			}
 
@@ -3181,17 +3202,16 @@ static BOOL test_Connect(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			 struct policy_handle *handle);
 
 static BOOL test_OpenDomain(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
-			    struct policy_handle *handle, struct dom_sid *sid)
+			    struct policy_handle *handle, struct dom_sid *sid,
+			    enum torture_samr_choice which_ops)
 {
 	NTSTATUS status;
 	struct samr_OpenDomain r;
 	struct policy_handle domain_handle;
-	struct policy_handle user_handle;
 	struct policy_handle alias_handle;
 	struct policy_handle group_handle;
 	BOOL ret = True;
 
-	ZERO_STRUCT(user_handle);
 	ZERO_STRUCT(alias_handle);
 	ZERO_STRUCT(group_handle);
 	ZERO_STRUCT(domain_handle);
@@ -3213,37 +3233,39 @@ static BOOL test_OpenDomain(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	   the servers reference counting */
 	ret &= test_samr_handle_Close(p, mem_ctx, handle);
 
-	ret &= test_QuerySecurity(p, mem_ctx, &domain_handle);
-	ret &= test_RemoveMemberFromForeignDomain(p, mem_ctx, &domain_handle);
-	ret &= test_CreateUser2(p, mem_ctx, &domain_handle);
-	ret &= test_CreateUser(p, mem_ctx, &domain_handle, &user_handle);
-	ret &= test_CreateAlias(p, mem_ctx, &domain_handle, &alias_handle, sid);
-	ret &= test_CreateDomainGroup(p, mem_ctx, &domain_handle, &group_handle);
-	ret &= test_QueryDomainInfo(p, mem_ctx, &domain_handle);
-	ret &= test_QueryDomainInfo2(p, mem_ctx, &domain_handle);
-	ret &= test_EnumDomainUsers(p, mem_ctx, &domain_handle);
-	ret &= test_EnumDomainUsers_async(p, mem_ctx, &domain_handle);
-	ret &= test_EnumDomainGroups(p, mem_ctx, &domain_handle);
-	ret &= test_EnumDomainAliases(p, mem_ctx, &domain_handle);
-	ret &= test_QueryDisplayInfo(p, mem_ctx, &domain_handle);
-	ret &= test_QueryDisplayInfo2(p, mem_ctx, &domain_handle);
-	ret &= test_QueryDisplayInfo3(p, mem_ctx, &domain_handle);
-	ret &= test_QueryDisplayInfo_continue(p, mem_ctx, &domain_handle);
-	
-	if (lp_parm_bool(-1, "target", "samba4", False)) {
-		printf("skipping GetDisplayEnumerationIndex test against Samba4\n");
-	} else {
-		ret &= test_GetDisplayEnumerationIndex(p, mem_ctx, &domain_handle);
-		ret &= test_GetDisplayEnumerationIndex2(p, mem_ctx, &domain_handle);
-	}
-	ret &= test_GroupList(p, mem_ctx, &domain_handle);
-	ret &= test_TestPrivateFunctionsDomain(p, mem_ctx, &domain_handle);
-	ret &= test_RidToSid(p, mem_ctx, sid, &domain_handle);
-	ret &= test_GetBootKeyInformation(p, mem_ctx, &domain_handle);
-
-	if (!policy_handle_empty(&user_handle) &&
-	    !test_DeleteUser(p, mem_ctx, &user_handle)) {
-		ret = False;
+	switch (which_ops) {
+	case TORTURE_SAMR_USER_ATTRIBUTES:
+	case TORTURE_SAMR_PASSWORDS:
+		ret &= test_CreateUser(p, mem_ctx, &domain_handle, which_ops);
+		ret &= test_CreateUser2(p, mem_ctx, &domain_handle, which_ops);
+		break;
+	case TORTURE_SAMR_OTHER:
+		ret &= test_QuerySecurity(p, mem_ctx, &domain_handle);
+		ret &= test_RemoveMemberFromForeignDomain(p, mem_ctx, &domain_handle);
+		ret &= test_CreateAlias(p, mem_ctx, &domain_handle, &alias_handle, sid);
+		ret &= test_CreateDomainGroup(p, mem_ctx, &domain_handle, &group_handle);
+		ret &= test_QueryDomainInfo(p, mem_ctx, &domain_handle);
+		ret &= test_QueryDomainInfo2(p, mem_ctx, &domain_handle);
+		ret &= test_EnumDomainUsers(p, mem_ctx, &domain_handle);
+		ret &= test_EnumDomainUsers_async(p, mem_ctx, &domain_handle);
+		ret &= test_EnumDomainGroups(p, mem_ctx, &domain_handle);
+		ret &= test_EnumDomainAliases(p, mem_ctx, &domain_handle);
+		ret &= test_QueryDisplayInfo(p, mem_ctx, &domain_handle);
+		ret &= test_QueryDisplayInfo2(p, mem_ctx, &domain_handle);
+		ret &= test_QueryDisplayInfo3(p, mem_ctx, &domain_handle);
+		ret &= test_QueryDisplayInfo_continue(p, mem_ctx, &domain_handle);
+		
+		if (lp_parm_bool(-1, "target", "samba4", False)) {
+			printf("skipping GetDisplayEnumerationIndex test against Samba4\n");
+		} else {
+			ret &= test_GetDisplayEnumerationIndex(p, mem_ctx, &domain_handle);
+			ret &= test_GetDisplayEnumerationIndex2(p, mem_ctx, &domain_handle);
+		}
+		ret &= test_GroupList(p, mem_ctx, &domain_handle);
+		ret &= test_TestPrivateFunctionsDomain(p, mem_ctx, &domain_handle);
+		ret &= test_RidToSid(p, mem_ctx, sid, &domain_handle);
+		ret &= test_GetBootKeyInformation(p, mem_ctx, &domain_handle);
+		break;
 	}
 
 	if (!policy_handle_empty(&alias_handle) &&
@@ -3265,14 +3287,16 @@ static BOOL test_OpenDomain(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 }
 
 static BOOL test_LookupDomain(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
-			      struct policy_handle *handle, struct lsa_String *domain)
+			      struct policy_handle *handle, const char *domain,
+			      enum torture_samr_choice which_ops)
 {
 	NTSTATUS status;
 	struct samr_LookupDomain r;
+	struct lsa_String n1;
 	struct lsa_String n2;
 	BOOL ret = True;
 
-	printf("Testing LookupDomain(%s)\n", domain->string);
+	printf("Testing LookupDomain(%s)\n", domain);
 
 	/* check for correct error codes */
 	r.in.connect_handle = handle;
@@ -3285,7 +3309,7 @@ static BOOL test_LookupDomain(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		ret = False;
 	}
 
-	n2.string = "xxNODOMAINxx";
+	init_lsa_String(&n2, "xxNODOMAINxx");
 
 	status = dcerpc_samr_LookupDomain(p, mem_ctx, &r);
 	if (!NT_STATUS_EQUAL(NT_STATUS_NO_SUCH_DOMAIN, status)) {
@@ -3294,7 +3318,9 @@ static BOOL test_LookupDomain(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	}
 
 	r.in.connect_handle = handle;
-	r.in.domain_name = domain;
+
+	init_lsa_String(&n1, domain);
+	r.in.domain_name = &n1;
 
 	status = dcerpc_samr_LookupDomain(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -3302,11 +3328,11 @@ static BOOL test_LookupDomain(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		ret = False;
 	}
 
-	if (!test_GetDomPwInfo(p, mem_ctx, domain)) {
+	if (!test_GetDomPwInfo(p, mem_ctx, &n1)) {
 		ret = False;
 	}
 
-	if (!test_OpenDomain(p, mem_ctx, handle, r.out.sid)) {
+	if (!test_OpenDomain(p, mem_ctx, handle, r.out.sid, which_ops)) {
 		ret = False;
 	}
 
@@ -3315,7 +3341,7 @@ static BOOL test_LookupDomain(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 
 static BOOL test_EnumDomains(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
-			     struct policy_handle *handle)
+			     struct policy_handle *handle, enum torture_samr_choice which_ops)
 {
 	NTSTATUS status;
 	struct samr_EnumDomains r;
@@ -3340,7 +3366,7 @@ static BOOL test_EnumDomains(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	for (i=0;i<r.out.sam->count;i++) {
 		if (!test_LookupDomain(p, mem_ctx, handle, 
-				       &r.out.sam->entries[i].name)) {
+				       r.out.sam->entries[i].name.string, which_ops)) {
 			ret = False;
 		}
 	}
@@ -3469,8 +3495,8 @@ static BOOL test_Connect(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 BOOL torture_rpc_samr(struct torture_context *torture)
 {
-    NTSTATUS status;
-    struct dcerpc_pipe *p;
+	NTSTATUS status;
+	struct dcerpc_pipe *p;
 	BOOL ret = True;
 	struct policy_handle handle;
 
@@ -3483,11 +3509,61 @@ BOOL torture_rpc_samr(struct torture_context *torture)
 
 	ret &= test_QuerySecurity(p, torture, &handle);
 
-	ret &= test_EnumDomains(p, torture, &handle);
+	ret &= test_EnumDomains(p, torture, &handle, TORTURE_SAMR_OTHER);
 
 	ret &= test_SetDsrmPassword(p, torture, &handle);
 
 	ret &= test_Shutdown(p, torture, &handle);
+
+	ret &= test_samr_handle_Close(p, torture, &handle);
+
+	return ret;
+}
+
+
+BOOL torture_rpc_samr_users(struct torture_context *torture)
+{
+	NTSTATUS status;
+	struct dcerpc_pipe *p;
+	BOOL ret = True;
+	struct policy_handle handle;
+
+	status = torture_rpc_connection(torture, &p, &dcerpc_table_samr);
+	if (!NT_STATUS_IS_OK(status)) {
+		return False;
+	}
+
+	ret &= test_Connect(p, torture, &handle);
+
+	ret &= test_QuerySecurity(p, torture, &handle);
+
+	ret &= test_EnumDomains(p, torture, &handle, TORTURE_SAMR_USER_ATTRIBUTES);
+
+	ret &= test_SetDsrmPassword(p, torture, &handle);
+
+	ret &= test_Shutdown(p, torture, &handle);
+
+	ret &= test_samr_handle_Close(p, torture, &handle);
+
+	return ret;
+}
+
+
+BOOL torture_rpc_samr_passwords(struct torture_context *torture)
+{
+	NTSTATUS status;
+	struct dcerpc_pipe *p;
+	BOOL ret = True;
+	struct policy_handle handle;
+
+	status = torture_rpc_connection(torture, &p, &dcerpc_table_samr);
+	if (!NT_STATUS_IS_OK(status)) {
+		return False;
+	}
+
+	ret &= test_Connect(p, torture, &handle);
+
+	ret &= test_EnumDomains(p, torture, &handle, TORTURE_SAMR_PASSWORDS);
 
 	ret &= test_samr_handle_Close(p, torture, &handle);
 
