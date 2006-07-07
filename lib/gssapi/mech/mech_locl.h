@@ -35,7 +35,8 @@
 
 #include <config.h>
 
-#include <sys/queue.h>
+#include <krb5-types.h>
+
 #include <sys/types.h>
 
 #include <stdio.h>
@@ -56,3 +57,4 @@
 #include "mech_switch.h"
 #include "name.h"
 #include "utils.h"
+#include "mechqueue.h"
