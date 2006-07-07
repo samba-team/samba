@@ -201,7 +201,7 @@ static void writetarheader(int f, const char *aname, SMB_BIG_UINT size, time_t m
 	oct_it((SMB_BIG_UINT)0, 8, hb.dbuf.uid);
 	oct_it((SMB_BIG_UINT)0, 8, hb.dbuf.gid);
 	oct_it((SMB_BIG_UINT) size, 13, hb.dbuf.size);
-	if (size > (SMB_BIG_UINT)077777777777LL) {    
+	if (size > (SMB_BIG_UINT)077777777777) {    
 
 		/* This is a non-POSIX compatible extention to store files
 			greater than 8GB. */
