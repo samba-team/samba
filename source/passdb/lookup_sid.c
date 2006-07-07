@@ -1074,7 +1074,7 @@ void uid_to_sid(DOM_SID *psid, uid_t uid)
 		sid_append_rid(psid, algorithmic_pdb_uid_to_user_rid(uid));
 		goto done;
 	} else {
-		uid_to_unix_users_sid(psid, uid);
+		uid_to_unix_users_sid(uid, psid);
 		goto done;
 	}
 
