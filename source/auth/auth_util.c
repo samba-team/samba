@@ -1081,14 +1081,13 @@ NTSTATUS create_token_from_username(TALLOC_CTX *mem_ctx, const char *username,
 		if (!pdb_getsampwsid(sam_acct, &user_sid)) {
 			DEBUG(1, ("pdb_getsampwsid(%s) for user %s failed\n",
 				  sid_string_static(&user_sid), username));
-			result = NT_STATUS_NO_SUCH_USER;
-			goto done;
+			DEBUGADD(1, ("Fall back to unix user %s\n", username));
+			goto unix_user;
 		}
 
 		gr_sid = pdb_get_group_sid(sam_acct);
 		if (!gr_sid) {
-			result = NT_STATUS_NO_MEMORY;
-			goto done;
+			goto unix_user;
 		}
 
 		sid_copy(&primary_group_sid, gr_sid);
@@ -1096,7 +1095,8 @@ NTSTATUS create_token_from_username(TALLOC_CTX *mem_ctx, const char *username,
 		if (!sid_to_gid(&primary_group_sid, gid)) {
 			DEBUG(1, ("sid_to_gid(%s) failed\n",
 				  sid_string_static(&primary_group_sid)));
-			goto done;
+			DEBUGADD(1, ("Fall back to unix user %s\n", username));
+			goto unix_user;
 		}
 
 		result = pdb_enum_group_memberships(tmp_ctx, sam_acct,
@@ -1105,7 +1105,8 @@ NTSTATUS create_token_from_username(TALLOC_CTX *mem_ctx, const char *username,
 		if (!NT_STATUS_IS_OK(result)) {
 			DEBUG(10, ("enum_group_memberships failed for %s\n",
 				   username));
-			goto done;
+			DEBUGADD(1, ("Fall back to unix user %s\n", username));
+			goto unix_user;
 		}
 
 		*found_username = talloc_strdup(mem_ctx,
@@ -1118,6 +1119,16 @@ NTSTATUS create_token_from_username(TALLOC_CTX *mem_ctx, const char *username,
 
 		struct passwd *pass;
 		size_t i;
+
+		/*
+		 * This goto target is used as a fallback for the passdb
+		 * case. The concrete bug report is when passdb gave us an
+		 * unmapped gid.
+		 */
+
+	unix_user:
+
+		uid_to_unix_users_sid(*uid, &user_sid);
 
 		pass = getpwuid_alloc(tmp_ctx, *uid);
 		if (pass == NULL) {
