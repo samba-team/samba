@@ -190,13 +190,15 @@ static struct ldb_dn *samldb_search_domain(struct ldb_module *module, TALLOC_CTX
 	struct ldb_dn *sdn;
 	struct ldb_result *res = NULL;
 	int ret = 0;
+	const char *attrs[] = { NULL };
 
 	local_ctx = talloc_new(mem_ctx);
 	if (local_ctx == NULL) return NULL;
 
 	sdn = ldb_dn_copy(local_ctx, dn);
 	do {
-		ret = ldb_search(module->ldb, sdn, LDB_SCOPE_BASE, "objectClass=domain", NULL, &res);
+		ret = ldb_search(module->ldb, sdn, LDB_SCOPE_BASE, 
+				 "(|(objectClass=domain)(objectClass=builtinDomain))", attrs, &res);
 		talloc_steal(local_ctx, res);
 		if (ret == LDB_SUCCESS && res->count == 1)
 			break;
