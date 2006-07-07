@@ -875,7 +875,7 @@ static NTSTATUS test_OpenUser_byname(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	r.out.user_handle = user_handle;
 	status = dcerpc_samr_OpenUser(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("OpenUser_byname(%s) failed - %s\n", name, nt_errstr(status));
+		printf("OpenUser_byname(%s -> %d) failed - %s\n", name, rid, nt_errstr(status));
 	}
 
 	return status;
@@ -1540,7 +1540,7 @@ static BOOL test_user_ops(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		}	
 		break;
 	case TORTURE_SAMR_OTHER:
-		/* Can't happen */
+		/* We just need the account to exist */
 		break;
 	}
 	talloc_free(user_ctx);
@@ -1581,6 +1581,26 @@ static BOOL test_alias_ops(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	return ret;
 }
 
+
+static BOOL test_DeleteUser(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+				     struct policy_handle *user_handle)
+{
+    	struct samr_DeleteUser d;
+	NTSTATUS status;
+	BOOL ret = True;
+	printf("Testing DeleteUser\n");
+
+	d.in.user_handle = user_handle;
+	d.out.user_handle = user_handle;
+
+	status = dcerpc_samr_DeleteUser(p, mem_ctx, &d);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("DeleteUser failed - %s\n", nt_errstr(status));
+		ret = False;
+	}
+
+	return ret;
+}
 
 BOOL test_DeleteUser_byname(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
 			    struct policy_handle *handle, const char *name)
@@ -1795,6 +1815,7 @@ static BOOL test_ChangePassword(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 static BOOL test_CreateUser(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
 			    struct policy_handle *domain_handle, 
+			    struct policy_handle *user_handle_out, 
 			    enum torture_samr_choice which_ops)
 {
 
@@ -1865,15 +1886,19 @@ static BOOL test_CreateUser(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			ret = False;
 		}
 		
-		printf("Testing DeleteUser (createuser2 test)\n");
-		
-		d.in.user_handle = &user_handle;
-		d.out.user_handle = &user_handle;
-		
-		status = dcerpc_samr_DeleteUser(p, user_ctx, &d);
-		if (!NT_STATUS_IS_OK(status)) {
-			printf("DeleteUser failed - %s\n", nt_errstr(status));
+		if (user_handle_out) {
+			*user_handle_out = user_handle;
+		} else {
+			printf("Testing DeleteUser (createuser test)\n");
+			
+			d.in.user_handle = &user_handle;
+			d.out.user_handle = &user_handle;
+			
+			status = dcerpc_samr_DeleteUser(p, user_ctx, &d);
+			if (!NT_STATUS_IS_OK(status)) {
+				printf("DeleteUser failed - %s\n", nt_errstr(status));
 				ret = False;
+			}
 		}
 		
 	}
@@ -2805,7 +2830,7 @@ static BOOL test_QueryDomainInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	return True;	
+	return ret;	
 }
 
 
@@ -3050,6 +3075,7 @@ static BOOL test_AddGroupMember(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	status = test_LookupName(p, mem_ctx, domain_handle, TEST_ACCOUNT_NAME, &rid);
 	if (!NT_STATUS_IS_OK(status)) {
+		printf("test_AddGroupMember looking up name " TEST_ACCOUNT_NAME " failed - %s\n", nt_errstr(status));
 		return False;
 	}
 
@@ -3150,9 +3176,20 @@ static BOOL test_CreateDomainGroup(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		return True;
 	}
 
-	if (NT_STATUS_EQUAL(status, NT_STATUS_GROUP_EXISTS) ||
-	    NT_STATUS_EQUAL(status, NT_STATUS_USER_EXISTS)) {
+	if (NT_STATUS_EQUAL(status, NT_STATUS_GROUP_EXISTS)) {
 		if (!test_DeleteGroup_byname(p, mem_ctx, domain_handle, r.in.name->string)) {
+			
+			printf("CreateDomainGroup failed: Could not delete domain group %s - %s\n", r.in.name->string, 
+			       nt_errstr(status));
+			return False;
+		}
+		status = dcerpc_samr_CreateDomainGroup(p, mem_ctx, &r);
+	}
+	if (NT_STATUS_EQUAL(status, NT_STATUS_USER_EXISTS)) {
+		if (!test_DeleteUser_byname(p, mem_ctx, domain_handle, r.in.name->string)) {
+			
+			printf("CreateDomainGroup failed: Could not delete user %s - %s\n", r.in.name->string, 
+			       nt_errstr(status));
 			return False;
 		}
 		status = dcerpc_samr_CreateDomainGroup(p, mem_ctx, &r);
@@ -3163,6 +3200,7 @@ static BOOL test_CreateDomainGroup(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	}
 
 	if (!test_AddGroupMember(p, mem_ctx, domain_handle, group_handle)) {
+		printf("CreateDomainGroup failed - %s\n", nt_errstr(status));
 		ret = False;
 	}
 
@@ -3209,10 +3247,12 @@ static BOOL test_OpenDomain(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	struct samr_OpenDomain r;
 	struct policy_handle domain_handle;
 	struct policy_handle alias_handle;
+	struct policy_handle user_handle;
 	struct policy_handle group_handle;
 	BOOL ret = True;
 
 	ZERO_STRUCT(alias_handle);
+	ZERO_STRUCT(user_handle);
 	ZERO_STRUCT(group_handle);
 	ZERO_STRUCT(domain_handle);
 
@@ -3236,10 +3276,11 @@ static BOOL test_OpenDomain(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	switch (which_ops) {
 	case TORTURE_SAMR_USER_ATTRIBUTES:
 	case TORTURE_SAMR_PASSWORDS:
-		ret &= test_CreateUser(p, mem_ctx, &domain_handle, which_ops);
+		ret &= test_CreateUser(p, mem_ctx, &domain_handle, NULL, which_ops);
 		ret &= test_CreateUser2(p, mem_ctx, &domain_handle, which_ops);
 		break;
 	case TORTURE_SAMR_OTHER:
+		ret &= test_CreateUser(p, mem_ctx, &domain_handle, &user_handle, which_ops);
 		ret &= test_QuerySecurity(p, mem_ctx, &domain_handle);
 		ret &= test_RemoveMemberFromForeignDomain(p, mem_ctx, &domain_handle);
 		ret &= test_CreateAlias(p, mem_ctx, &domain_handle, &alias_handle, sid);
@@ -3266,6 +3307,11 @@ static BOOL test_OpenDomain(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		ret &= test_RidToSid(p, mem_ctx, sid, &domain_handle);
 		ret &= test_GetBootKeyInformation(p, mem_ctx, &domain_handle);
 		break;
+	}
+
+	if (!policy_handle_empty(&user_handle) &&
+	    !test_DeleteUser(p, mem_ctx, &user_handle)) {
+		ret = False;
 	}
 
 	if (!policy_handle_empty(&alias_handle) &&
