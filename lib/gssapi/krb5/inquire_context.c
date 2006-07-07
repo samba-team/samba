@@ -93,7 +93,9 @@ OM_uint32 _gsskrb5_inquire_context (
 	*open_context = ctx->more_flags & OPEN;
 
     *minor_status = 0;
-    ret = GSS_S_COMPLETE;
+
+    HEIMDAL_MUTEX_unlock(&ctx->ctx_id_mutex);
+    return GSS_S_COMPLETE;
 
 failed:
     if (src_name)
