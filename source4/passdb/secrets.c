@@ -136,7 +136,7 @@ struct dom_sid *secrets_get_domain_sid(TALLOC_CTX *mem_ctx,
 	ldb = secrets_db_connect(mem_ctx);
 	if (ldb == NULL) {
 		DEBUG(5, ("secrets_db_connect failed\n"));
-		goto done;
+		return NULL;
 	}
 
 	ldb_ret = gendb_search(ldb, ldb,
@@ -144,25 +144,33 @@ struct dom_sid *secrets_get_domain_sid(TALLOC_CTX *mem_ctx,
 			       &msgs, attrs,
 			       SECRETS_PRIMARY_DOMAIN_FILTER, domain);
 
+	if (ldb_ret == -1) {
+		DEBUG(5, ("Error searching for domain SID for %s: %s", 
+			  domain, ldb_errstring(ldb))); 
+		talloc_free(ldb);
+		return NULL;
+	}
+
 	if (ldb_ret == 0) {
 		DEBUG(5, ("Did not find domain record for %s\n", domain));
-		goto done;
+		talloc_free(ldb);
+		return NULL;
 	}
 
 	if (ldb_ret > 1) {
 		DEBUG(5, ("Found more than one (%d) domain records for %s\n",
 			  ldb_ret, domain));
-		goto done;
+		talloc_free(ldb);
+		return NULL;
 	}
 
 	result = samdb_result_dom_sid(mem_ctx, msgs[0], "objectSid");
 	if (result == NULL) {
 		DEBUG(0, ("Domain object for %s does not contain a SID!\n",
 			  domain));
-		goto done;
+		talloc_free(ldb);
+		return NULL;
 	}
 
- done:
-	talloc_free(ldb);
 	return result;
 }
