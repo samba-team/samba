@@ -184,22 +184,31 @@ o   Gerald (Jerry) Carter <jerry@samba.org>
       create an NT token for the guest account.
     * BUG 3908: Fix RPC bind authentication failure which broke
       user password changes.
+    * Ensure that "net ads join" reports failure correctly if
+      it cannot set the machine account password.
 
 
 o   Guenther Deschner <gd@samba.org>
     * Fix different extended_dn handling in adssearch.pl
       (Thanks to Frederic Brin at Novell).
     * Fix a memleak in winbindd's credentials cache.
+    * Protect against crashes in CLDAP request processing.
+    * Remove incomplete DfsEnum() info level to avoid an smbd crash.
 
 
 o   Volker Lendecke <vl@samba.org>
     * Fix a memleak in the server registry code for enumeration 
       shares.
     * Fix an invalid munlock() call in winbindd's credentials cache.
+    * Fix compile warnings when passing NULL to snprintf().
 
 
 o   Jason Mader <jason@ncac.gwu.edu>
     * Compiler warning fixes.
+
+
+o   Simo Sorce <idra@samba.org>
+    * Set the correct sid type when looking up a gid.
 
 
 Changes since 3.0.22
