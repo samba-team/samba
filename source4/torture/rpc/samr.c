@@ -3283,6 +3283,10 @@ static BOOL test_OpenDomain(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	/* reconnect the main handle */
 	ret &= test_Connect(p, mem_ctx, handle);
 
+	if (!ret) {
+		printf("Testing domain %s failed!\n", dom_sid_string(mem_ctx, sid));
+	}
+
 	return ret;
 }
 
