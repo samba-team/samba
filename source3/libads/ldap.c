@@ -123,7 +123,7 @@ BOOL ads_try_connect(ADS_STRUCT *ads, const char *server )
 	}
 	
 	DEBUG(5,("ads_try_connect: sending CLDAP request to %s (realm: %s)\n", 
-		server, ads->config.realm));
+		server, ads->server.realm));
 
 	/* this copes with inet_ntoa brokenness */
 	
@@ -131,7 +131,7 @@ BOOL ads_try_connect(ADS_STRUCT *ads, const char *server )
 
 	ZERO_STRUCT( cldap_reply );
 
-	if ( !ads_cldap_netlogon( srv, ads->config.realm, &cldap_reply ) ) {
+	if ( !ads_cldap_netlogon( srv, ads->server.realm, &cldap_reply ) ) {
 		DEBUG(3,("ads_try_connect: CLDAP request %s failed.\n", srv));
 		return False;
 	}
