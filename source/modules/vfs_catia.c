@@ -94,14 +94,14 @@ static SMB_STRUCT_DIRENT *catia_readdir(vfs_handle_struct *handle,
 }
 
 static int catia_open(vfs_handle_struct *handle,
-		      const char *fname, int flags, mode_t mode)
+		      const char *fname, files_struct *fsp, int flags, mode_t mode)
 {
         pstring name;
 
         pstrcpy(name, fname);
         to_unix(name);
  
-        return SMB_VFS_NEXT_OPEN(handle, name, flags, mode);
+        return SMB_VFS_NEXT_OPEN(handle, name, fsp, flags, mode);
 }
 
 static int catia_rename(vfs_handle_struct *handle,

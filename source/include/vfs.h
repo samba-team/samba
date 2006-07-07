@@ -63,7 +63,8 @@
 /* Changed to version 15 as we added the statvfs call. JRA */
 /* Changed to version 16 as we added the getlock call. JRA */
 /* Changed to version 17 as we removed redundant connection_struct parameters. --jpeach */
-#define SMB_VFS_INTERFACE_VERSION 17
+/* Changed to version 18 to add fsp parameter to the open call -- jpeach */
+#define SMB_VFS_INTERFACE_VERSION 18
 
 
 /* to bug old modules which are trying to compile with the old functions */
@@ -242,7 +243,7 @@ struct vfs_ops {
 		
 		/* File operations */
 		
-		int (*open)(struct vfs_handle_struct *handle, const char *fname, int flags, mode_t mode);
+		int (*open)(struct vfs_handle_struct *handle, const char *fname, files_struct *fsp, int flags, mode_t mode);
 		int (*close_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp, int fd);
 		ssize_t (*read)(struct vfs_handle_struct *handle, struct files_struct *fsp, int fd, void *data, size_t n);
 		ssize_t (*pread)(struct vfs_handle_struct *handle, struct files_struct *fsp, int fd, void *data, size_t n, SMB_OFF_T offset);

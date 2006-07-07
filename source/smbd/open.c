@@ -38,24 +38,29 @@ struct deferred_open_record {
  fd support routines - attempt to do a dos_open.
 ****************************************************************************/
 
-static int fd_open(struct connection_struct *conn,
+static BOOL fd_open(struct connection_struct *conn,
 			const char *fname, 
+			files_struct *fsp,
 			int flags,
 			mode_t mode)
 {
-	int fd;
+	int sav;
+
 #ifdef O_NOFOLLOW
 	if (!lp_symlinks(SNUM(conn))) {
 		flags |= O_NOFOLLOW;
 	}
 #endif
 
-	fd = SMB_VFS_OPEN(conn,fname,flags,mode);
+	fsp->fh->fd = SMB_VFS_OPEN(conn,fname,fsp,flags,mode);
+	sav = errno;
 
-	DEBUG(10,("fd_open: name %s, flags = 0%o mode = 0%o, fd = %d. %s\n", fname,
-		flags, (int)mode, fd, (fd == -1) ? strerror(errno) : "" ));
+	DEBUG(10,("fd_open: name %s, flags = 0%o mode = 0%o, fd = %d. %s\n",
+		    fname, flags, (int)mode, fsp->fh->fd,
+		(fsp->fh->fd == -1) ? strerror(errno) : "" ));
 
-	return fd;
+	errno = sav;
+	return fsp->fh->fd != -1;
 }
 
 /****************************************************************************
@@ -269,8 +274,7 @@ static NTSTATUS open_file(files_struct *fsp,
 		}
 
 		/* Actually do the open */
-		fsp->fh->fd = fd_open(conn, fname, local_flags, unx_mode);
-		if (fsp->fh->fd == -1)  {
+		if (!fd_open(conn, fname, fsp, local_flags, unx_mode)) {
 			DEBUG(3,("Error opening file %s (%s) (local_flags=%d) "
 				 "(flags=%d)\n",
 				 fname,strerror(errno),local_flags,flags));

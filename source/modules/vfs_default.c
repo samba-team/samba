@@ -186,7 +186,8 @@ static int vfswrap_closedir(vfs_handle_struct *handle,  SMB_STRUCT_DIR *dirp)
 
 /* File operations */
 
-static int vfswrap_open(vfs_handle_struct *handle,  const char *fname, int flags, mode_t mode)
+static int vfswrap_open(vfs_handle_struct *handle,  const char *fname,
+	files_struct *fsp, int flags, mode_t mode)
 {
 	int result;
 

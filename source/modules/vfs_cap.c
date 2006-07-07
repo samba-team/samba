@@ -71,12 +71,12 @@ static int cap_rmdir(vfs_handle_struct *handle, const char *path)
 	return SMB_VFS_NEXT_RMDIR(handle, cappath);
 }
 
-static int cap_open(vfs_handle_struct *handle, const char *fname, int flags, mode_t mode)
+static int cap_open(vfs_handle_struct *handle, const char *fname, files_struct *fsp, int flags, mode_t mode)
 {
         pstring capname;
 	DEBUG(3,("cap: cap_open for %s\n", fname));
 	capencode(capname, fname);
-	return SMB_VFS_NEXT_OPEN(handle, capname, flags, mode);
+	return SMB_VFS_NEXT_OPEN(handle, capname, fsp, flags, mode);
 }
 
 static int cap_rename(vfs_handle_struct *handle, const char *oldname, const char *newname)

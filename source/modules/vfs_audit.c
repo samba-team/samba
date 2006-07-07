@@ -34,7 +34,7 @@ static void audit_disconnect(vfs_handle_struct *handle);
 static SMB_STRUCT_DIR *audit_opendir(vfs_handle_struct *handle, const char *fname, const char *mask, uint32 attr);
 static int audit_mkdir(vfs_handle_struct *handle, const char *path, mode_t mode);
 static int audit_rmdir(vfs_handle_struct *handle, const char *path);
-static int audit_open(vfs_handle_struct *handle, const char *fname, int flags, mode_t mode);
+static int audit_open(vfs_handle_struct *handle, const char *fname, files_struct *fsp, int flags, mode_t mode);
 static int audit_close(vfs_handle_struct *handle, files_struct *fsp, int fd);
 static int audit_rename(vfs_handle_struct *handle, const char *oldname, const char *newname);
 static int audit_unlink(vfs_handle_struct *handle, const char *path);
@@ -184,11 +184,11 @@ static int audit_rmdir(vfs_handle_struct *handle, const char *path)
 	return result;
 }
 
-static int audit_open(vfs_handle_struct *handle, const char *fname, int flags, mode_t mode)
+static int audit_open(vfs_handle_struct *handle, const char *fname, files_struct *fsp, int flags, mode_t mode)
 {
 	int result;
 
-	result = SMB_VFS_NEXT_OPEN(handle, fname, flags, mode);
+	result = SMB_VFS_NEXT_OPEN(handle, fname, fsp, flags, mode);
 
 	syslog(audit_syslog_priority(handle), "open %s (fd %d) %s%s%s\n", 
 	       fname, result,
