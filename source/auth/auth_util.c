@@ -1066,44 +1066,7 @@ NTSTATUS create_token_from_username(TALLOC_CTX *mem_ctx, const char *username,
 		goto done;
 	}
 
-	if (sid_check_is_in_unix_users(&user_sid)) {
-
-		/* This is a unix user not in passdb. We need to ask nss
-		 * directly, without consulting passdb */
-
-		struct passwd *pass;
-		size_t i;
-
-		pass = getpwuid_alloc(tmp_ctx, *uid);
-		if (pass == NULL) {
-			DEBUG(1, ("getpwuid(%d) for user %s failed\n",
-				  *uid, username));
-			goto done;
-		}
-
-		*gid = pass->pw_gid;
-		gid_to_sid(&primary_group_sid, pass->pw_gid);
-
-		if (!getgroups_unix_user(tmp_ctx, username, pass->pw_gid,
-					 &gids, &num_group_sids)) {
-			DEBUG(1, ("getgroups_unix_user for user %s failed\n",
-				  username));
-			goto done;
-		}
-
-		group_sids = talloc_array(tmp_ctx, DOM_SID, num_group_sids);
-		if (group_sids == NULL) {
-			DEBUG(1, ("talloc_array failed\n"));
-			result = NT_STATUS_NO_MEMORY;
-			goto done;
-		}
-
-		for (i=0; i<num_group_sids; i++) {
-			gid_to_sid(&group_sids[i], gids[i]);
-		}
-		*found_username = talloc_strdup(mem_ctx, pass->pw_name);
-
-	} else if (sid_check_is_in_our_domain(&user_sid)) {
+	if (sid_check_is_in_our_domain(&user_sid)) {
 
 		/* This is a passdb user, so ask passdb */
 
@@ -1147,6 +1110,43 @@ NTSTATUS create_token_from_username(TALLOC_CTX *mem_ctx, const char *username,
 
 		*found_username = talloc_strdup(mem_ctx,
 						pdb_get_username(sam_acct));
+
+	} else 	if (sid_check_is_in_unix_users(&user_sid)) {
+
+		/* This is a unix user not in passdb. We need to ask nss
+		 * directly, without consulting passdb */
+
+		struct passwd *pass;
+		size_t i;
+
+		pass = getpwuid_alloc(tmp_ctx, *uid);
+		if (pass == NULL) {
+			DEBUG(1, ("getpwuid(%d) for user %s failed\n",
+				  *uid, username));
+			goto done;
+		}
+
+		*gid = pass->pw_gid;
+		gid_to_sid(&primary_group_sid, pass->pw_gid);
+
+		if (!getgroups_unix_user(tmp_ctx, username, pass->pw_gid,
+					 &gids, &num_group_sids)) {
+			DEBUG(1, ("getgroups_unix_user for user %s failed\n",
+				  username));
+			goto done;
+		}
+
+		group_sids = talloc_array(tmp_ctx, DOM_SID, num_group_sids);
+		if (group_sids == NULL) {
+			DEBUG(1, ("talloc_array failed\n"));
+			result = NT_STATUS_NO_MEMORY;
+			goto done;
+		}
+
+		for (i=0; i<num_group_sids; i++) {
+			gid_to_sid(&group_sids[i], gids[i]);
+		}
+		*found_username = talloc_strdup(mem_ctx, pass->pw_name);
 
 	} else {
 
