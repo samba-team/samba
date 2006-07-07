@@ -642,12 +642,10 @@ static int samldb_fill_foreignSecurityPrincipal_object(struct ldb_module *module
 			   "(&(objectSid=%s)(objectclass=domain))",
 			   ldap_encode_ndr_dom_sid(mem_ctx, dom_sid));
 	if (ret >= 1) {
+		/* We don't really like the idea of foreign sids that are not foreign, but it happens */
 		const char *name = samdb_result_string(dom_msgs[0], "name", NULL);
-		ldb_set_errstring(module->ldb, talloc_asprintf(mem_ctx, 
-							       "Attempt to add foreign SID record with SID %s rejected, because this domian (%s) is already in the database", 
-							       dom_sid_string(mem_ctx, sid), name)); 
-		/* We don't really like the idea of foreign sids that are not foreign */
-		return LDB_ERR_CONSTRAINT_VIOLATION;
+		ldb_debug(module->ldb, LDB_DEBUG_TRACE, "NOTE (strange but valid): Adding foreign SID record with SID %s, but this domian (%s) is already in the database", 
+			  dom_sid_string(mem_ctx, sid), name); 
 	} else if (ret == -1) {
 		ldb_set_errstring(module->ldb, talloc_asprintf(mem_ctx, 
 							       "samldb_fill_foreignSecurityPrincipal_object: error searching for a domain with this sid: %s\n", 
