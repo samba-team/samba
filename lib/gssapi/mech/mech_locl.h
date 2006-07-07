@@ -52,9 +52,10 @@
 #include <gssapi.h>
 #include <gssapi_mech.h>
 
+#include "mechqueue.h"
+
 #include "context.h"
 #include "cred.h"
 #include "mech_switch.h"
 #include "name.h"
 #include "utils.h"
-#include "mechqueue.h"
