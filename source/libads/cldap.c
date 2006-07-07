@@ -115,10 +115,12 @@ static int send_cldap_netlogon(int sock, const char *domain,
 	asn1_write_BOOLEAN2(&data, False);
 	asn1_push_tag(&data, ASN1_CONTEXT(0));
 
-	asn1_push_tag(&data, ASN1_CONTEXT(3));
-	asn1_write_OctetString(&data, "DnsDomain", 9);
-	asn1_write_OctetString(&data, domain, strlen(domain));
-	asn1_pop_tag(&data);
+	if (domain) {
+		asn1_push_tag(&data, ASN1_CONTEXT(3));
+		asn1_write_OctetString(&data, "DnsDomain", 9);
+		asn1_write_OctetString(&data, domain, strlen(domain));
+		asn1_pop_tag(&data);
+	}
 
 	asn1_push_tag(&data, ASN1_CONTEXT(3));
 	asn1_write_OctetString(&data, "Host", 4);
