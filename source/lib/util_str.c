@@ -5,6 +5,7 @@
    Copyright (C) Andrew Tridgell 1992-2001
    Copyright (C) Simo Sorce      2001-2002
    Copyright (C) Martin Pool     2003
+   Copyright (C) James Peach	 2006
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -2301,6 +2302,59 @@ SMB_BIG_UINT STR_TO_SMB_BIG_UINT(const char *nptr, const char **entptr)
 	}
 
 	return val;
+}
+
+/* Convert a size specification to a count of bytes. We accept the following
+ * suffixes:
+ *	    bytes if there is no suffix
+ *	kK  kibibytes
+ *	mM  mebibytes
+ *	gG  gibibytes
+ *	tT  tibibytes
+ *	pP  whatever the ISO name for petabytes is
+ *
+ *  Returns 0 if the string can't be converted.
+ */
+SMB_OFF_T conv_str_size(const char * str)
+{
+        SMB_OFF_T lval;
+	char * end;
+
+        if (str == NULL || *str == '\0') {
+                return 0;
+        }
+
+#ifdef HAVE_STRTOULL
+	if (sizeof(SMB_OFF_T) == 8) {
+	    lval = strtoull(str, &end, 10 /* base */);
+	} else {
+	    lval = strtoul(str, &end, 10 /* base */);
+	}
+#else
+	lval = strtoul(str, &end, 10 /* base */);
+#endif
+
+        if (end == NULL || end == str) {
+                return 0;
+        }
+
+        if (*end) {
+                if (strwicmp(end, "K") == 0) {
+                        lval *= 1024ULL;
+                } else if (strwicmp(end, "M") == 0) {
+                        lval *= (1024ULL * 1024ULL);
+                } else if (strwicmp(end, "G") == 0) {
+                        lval *= (1024ULL * 1024ULL * 1024ULL);
+                } else if (strwicmp(end, "T") == 0) {
+                        lval *= (1024ULL * 1024ULL * 1024ULL * 1024ULL);
+                } else if (strwicmp(end, "P") == 0) {
+                        lval *= (1024ULL * 1024ULL * 1024ULL * 1024ULL * 1024ULL);
+                } else {
+                        return 0;
+                }
+        }
+
+	return lval;
 }
 
 void string_append(char **left, const char *right)

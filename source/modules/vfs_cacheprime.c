@@ -42,44 +42,6 @@ static int module_debug;
 static ssize_t g_readsz = 0;
 static void * g_readbuf = NULL;
 
-static SMB_OFF_T conv_str_size(const char * str)
-{
-        SMB_OFF_T lval;
-        char * end;
-
-        if (str == NULL || *str == '\0') {
-                return 0;
-        }
-
-        if (sizeof(SMB_OFF_T) == 8) {
-                lval = strtoull(str, &end, 10 /* base */);
-        } else {
-                lval = strtoul(str, &end, 10 /* base */);
-        }
-
-        if (end == NULL || end == str) {
-                return 0;
-        }
-
-        if (*end) {
-                if (strwicmp(end, "K") == 0) {
-                        lval *= 1024ULL;
-                } else if (strwicmp(end, "M") == 0) {
-                        lval *= (1024ULL * 1024ULL);
-                } else if (strwicmp(end, "G") == 0) {
-                        lval *= (1024ULL * 1024ULL * 1024ULL);
-                } else if (strwicmp(end, "T") == 0) {
-                        lval *= (1024ULL * 1024ULL * 1024ULL * 1024ULL);
-                } else if (strwicmp(end, "P") == 0) {
-                        lval *= (1024ULL * 1024ULL * 1024ULL * 1024ULL * 1024ULL);
-                } else {
-                        return 0;
-                }
-            }
-
-        return lval;
-}
-
 /* Prime the kernel buffer cache with data from the specified file. We use
  * per-fsp data to make sure we only ever do this once. If pread is being
  * emulated by seek/read/seek, when this will suck quite a lot.
