@@ -1122,8 +1122,7 @@ void uid_to_sid(DOM_SID *psid, uid_t uid)
 		sid_append_rid(psid, algorithmic_pdb_uid_to_user_rid(uid));
 		goto done;
 	} else {
-		sid_copy(psid, &global_sid_Unix_Users);
-		sid_append_rid(psid, uid);
+		uid_to_unix_users_sid(uid, psid);
 		goto done;
 	}
 

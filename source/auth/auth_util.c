@@ -1061,13 +1061,69 @@ NTSTATUS create_token_from_username(TALLOC_CTX *mem_ctx, const char *username,
 		goto done;
 	}
 
-	if (sid_check_is_in_unix_users(&user_sid)) {
+	if (sid_check_is_in_our_domain(&user_sid)) {
+
+		/* This is a passdb user, so ask passdb */
+
+		struct samu *sam_acct = NULL;
+		const DOM_SID *gr_sid = NULL;
+
+		if ( !(sam_acct = samu_new( tmp_ctx )) ) {
+			result = NT_STATUS_NO_MEMORY;
+			goto done;
+		}
+
+		if (!pdb_getsampwsid(sam_acct, &user_sid)) {
+			DEBUG(1, ("pdb_getsampwsid(%s) for user %s failed\n",
+				  sid_string_static(&user_sid), username));
+			DEBUGADD(1, ("Fall back to unix user %s\n", username));
+			goto unix_user;
+		}
+
+		gr_sid = pdb_get_group_sid(sam_acct);
+		if (!gr_sid) {
+			goto unix_user;
+		}
+
+		sid_copy(&primary_group_sid, gr_sid);
+
+		if (!sid_to_gid(&primary_group_sid, gid)) {
+			DEBUG(1, ("sid_to_gid(%s) failed\n",
+				  sid_string_static(&primary_group_sid)));
+			DEBUGADD(1, ("Fall back to unix user %s\n", username));
+			goto unix_user;
+		}
+
+		result = pdb_enum_group_memberships(tmp_ctx, sam_acct,
+						    &group_sids, &gids,
+						    &num_group_sids);
+		if (!NT_STATUS_IS_OK(result)) {
+			DEBUG(10, ("enum_group_memberships failed for %s\n",
+				   username));
+			DEBUGADD(1, ("Fall back to unix user %s\n", username));
+			goto unix_user;
+		}
+
+		*found_username = talloc_strdup(mem_ctx,
+						pdb_get_username(sam_acct));
+
+	} else 	if (sid_check_is_in_unix_users(&user_sid)) {
 
 		/* This is a unix user not in passdb. We need to ask nss
 		 * directly, without consulting passdb */
 
 		struct passwd *pass;
 		size_t i;
+
+		/*
+		 * This goto target is used as a fallback for the passdb
+		 * case. The concrete bug report is when passdb gave us an
+		 * unmapped gid.
+		 */
+
+	unix_user:
+
+		uid_to_unix_users_sid(*uid, &user_sid);
 
 		pass = getpwuid_alloc(tmp_ctx, *uid);
 		if (pass == NULL) {
@@ -1097,51 +1153,6 @@ NTSTATUS create_token_from_username(TALLOC_CTX *mem_ctx, const char *username,
 			gid_to_sid(&group_sids[i], gids[i]);
 		}
 		*found_username = talloc_strdup(mem_ctx, pass->pw_name);
-
-	} else if (sid_check_is_in_our_domain(&user_sid)) {
-
-		/* This is a passdb user, so ask passdb */
-
-		struct samu *sam_acct = NULL;
-		const DOM_SID *gr_sid = NULL;
-
-		if ( !(sam_acct = samu_new( tmp_ctx )) ) {
-			result = NT_STATUS_NO_MEMORY;
-			goto done;
-		}
-
-		if (!pdb_getsampwsid(sam_acct, &user_sid)) {
-			DEBUG(1, ("pdb_getsampwsid(%s) for user %s failed\n",
-				  sid_string_static(&user_sid), username));
-			result = NT_STATUS_NO_SUCH_USER;
-			goto done;
-		}
-
-		gr_sid = pdb_get_group_sid(sam_acct);
-		if (!gr_sid) {
-			result = NT_STATUS_NO_MEMORY;
-			goto done;
-		}
-
-		sid_copy(&primary_group_sid, gr_sid);
-
-		if (!sid_to_gid(&primary_group_sid, gid)) {
-			DEBUG(1, ("sid_to_gid(%s) failed\n",
-				  sid_string_static(&primary_group_sid)));
-			goto done;
-		}
-
-		result = pdb_enum_group_memberships(tmp_ctx, sam_acct,
-						    &group_sids, &gids,
-						    &num_group_sids);
-		if (!NT_STATUS_IS_OK(result)) {
-			DEBUG(10, ("enum_group_memberships failed for %s\n",
-				   username));
-			goto done;
-		}
-
-		*found_username = talloc_strdup(mem_ctx,
-						pdb_get_username(sam_acct));
 
 	} else {
 
