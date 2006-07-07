@@ -36,6 +36,12 @@ BOOL sid_check_is_in_unix_users(const DOM_SID *sid)
 	return sid_check_is_unix_users(&dom_sid);
 }
 
+BOOL uid_to_unix_users_sid(uid_t uid, DOM_SID *sid)
+{
+	sid_copy(sid, &global_sid_Unix_Users);
+	return sid_append_rid(sid, uid);
+}
+
 const char *unix_users_domain_name(void)
 {
 	return "Unix User";
