@@ -115,9 +115,9 @@ static int skel_closedir(vfs_handle_struct *handle,  SMB_STRUCT_DIR *dir)
 	return SMB_VFS_NEXT_CLOSEDIR(handle, dir);
 }
 
-static int skel_open(vfs_handle_struct *handle,  const char *fname, int flags, mode_t mode)
+static int skel_open(vfs_handle_struct *handle,  const char *fname, files_struct *fsp, int flags, mode_t mode)
 {
-	return SMB_VFS_NEXT_OPEN(handle, fname, flags, mode);
+	return SMB_VFS_NEXT_OPEN(handle, fname, fsp, flags, mode);
 }
 
 static int skel_close(vfs_handle_struct *handle, files_struct *fsp, int fd)
