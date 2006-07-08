@@ -994,7 +994,7 @@
 	Windows networking.
 	</para>
 
-	<qandaset defaultlabel="chap01qa">
+	<qandaset defaultlabel="chap01qa" type="number">
 	<qandaentry>
 	<question>
 

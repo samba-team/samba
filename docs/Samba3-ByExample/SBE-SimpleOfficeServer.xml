@@ -1321,7 +1321,7 @@ application/octet-stream
 	is to expose some of the hidden implications.
 	</para>
 
-	<qandaset defaultlabel="chap02qa">
+	<qandaset defaultlabel="chap02qa" type="number">
 	<qandaentry>
 	<question>
 

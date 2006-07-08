@@ -1318,7 +1318,7 @@ index default               sub
 	These questions are just a few of those frequently asked.
 	</para>
 
-	<qandaset defaultlabel="chap07qa">
+	<qandaset defaultlabel="chap07qa" type="number">
 	<qandaentry>
 	<question>
 
