@@ -301,7 +301,7 @@ NTSTATUS smb2_push_o16s16_blob(struct smb2_request_buffer *buf,
 	SSVAL(ptr, 0, offset);
 	SSVAL(ptr, 2, blob.length);
 
-	status = smb2_grow_buffer(buf, padding_length + blob.length);
+	status = smb2_grow_buffer(buf, blob.length + padding_length - padding_fix);
 	NT_STATUS_NOT_OK_RETURN(status);
 
 	memset(buf->dynamic, 0, padding_length);
@@ -311,7 +311,7 @@ NTSTATUS smb2_push_o16s16_blob(struct smb2_request_buffer *buf,
 	buf->dynamic += blob.length;
 
 	buf->size += blob.length + padding_length - padding_fix;
-	buf->body_size += blob.length + padding_length - padding_fix;
+	buf->body_size += blob.length + padding_length;
 
 	return NT_STATUS_OK;
 }
@@ -354,7 +354,7 @@ NTSTATUS smb2_push_o16s32_blob(struct smb2_request_buffer *buf,
 	SSVAL(ptr, 0, offset);
 	SIVAL(ptr, 2, blob.length);
 
-	status = smb2_grow_buffer(buf, padding_length + blob.length);
+	status = smb2_grow_buffer(buf, blob.length + padding_length - padding_fix);
 	NT_STATUS_NOT_OK_RETURN(status);
 
 	memset(buf->dynamic, 0, padding_length);
@@ -364,7 +364,7 @@ NTSTATUS smb2_push_o16s32_blob(struct smb2_request_buffer *buf,
 	buf->dynamic += blob.length;
 
 	buf->size += blob.length + padding_length - padding_fix;
-	buf->body_size += blob.length + padding_length - padding_fix;
+	buf->body_size += blob.length + padding_length;
 
 	return NT_STATUS_OK;
 }
@@ -407,7 +407,7 @@ NTSTATUS smb2_push_o32s32_blob(struct smb2_request_buffer *buf,
 	SIVAL(ptr, 0, offset);
 	SIVAL(ptr, 4, blob.length);
 
-	status = smb2_grow_buffer(buf, padding_length + blob.length);
+	status = smb2_grow_buffer(buf, blob.length + padding_length - padding_fix);
 	NT_STATUS_NOT_OK_RETURN(status);
 
 	memset(buf->dynamic, 0, padding_length);
@@ -417,7 +417,7 @@ NTSTATUS smb2_push_o32s32_blob(struct smb2_request_buffer *buf,
 	buf->dynamic += blob.length;
 
 	buf->size += blob.length + padding_length - padding_fix;
-	buf->body_size += blob.length + padding_length - padding_fix;
+	buf->body_size += blob.length + padding_length;
 
 	return NT_STATUS_OK;
 }
@@ -460,7 +460,7 @@ NTSTATUS smb2_push_s32o32_blob(struct smb2_request_buffer *buf,
 	SIVAL(ptr, 0, blob.length);
 	SIVAL(ptr, 4, offset);
 
-	status = smb2_grow_buffer(buf, padding_length + blob.length);
+	status = smb2_grow_buffer(buf, blob.length + padding_length - padding_fix);
 	NT_STATUS_NOT_OK_RETURN(status);
 
 	memset(buf->dynamic, 0, padding_length);
@@ -470,7 +470,7 @@ NTSTATUS smb2_push_s32o32_blob(struct smb2_request_buffer *buf,
 	buf->dynamic += blob.length;
 
 	buf->size += blob.length + padding_length - padding_fix;
-	buf->body_size += blob.length + padding_length - padding_fix;
+	buf->body_size += blob.length + padding_length;
 
 	return NT_STATUS_OK;
 }
