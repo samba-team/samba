@@ -160,7 +160,7 @@ static NTSTATUS smb2_create_complex(struct smb2_tree *tree, const char *fname,
 	}
 
 	/* make sure all the timestamps aren't the same */
-	fileinfo.generic.level = RAW_FILEINFO_BASIC_INFORMATION;
+	fileinfo.generic.level = RAW_FILEINFO_SMB2_ALL_INFORMATION;
 	fileinfo.generic.in.file.handle = *handle;
 
 	status = smb2_getinfo_file(tree, tree, &fileinfo);
@@ -171,7 +171,7 @@ static NTSTATUS smb2_create_complex(struct smb2_tree *tree, const char *fname,
 	}
 
 #define CHECK_TIME(field) do {\
-	if (setfile.basic_info.in.field != fileinfo.basic_info.out.field) { \
+	if (setfile.basic_info.in.field != fileinfo.all_info2.out.field) { \
 		printf("(%s) " #field " not setup correctly: %s(%llu) => %s(%llu)\n", \
 			__location__, \
 			nt_time_string(tree, setfile.basic_info.in.field), \
