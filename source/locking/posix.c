@@ -1,7 +1,7 @@
 /* 
    Unix SMB/CIFS implementation.
    Locking functions
-   Copyright (C) Jeremy Allison 1992-2000
+   Copyright (C) Jeremy Allison 1992-2006
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -50,7 +50,308 @@ struct posix_lock {
 	SMB_OFF_T start;
 	SMB_OFF_T size;
 	int lock_type;
+	enum brl_flavour lock_flav;
+	struct lock_context lock_ctx;
 };
+
+/****************************************************************************
+ First - the functions that deal with the underlying system locks - these
+ functions are used no matter if we're mapping CIFS Windows locks or CIFS
+ POSIX locks onto POSIX.
+****************************************************************************/
+
+/****************************************************************************
+ Calculate if locks have any overlap at all.
+****************************************************************************/
+
+static BOOL does_lock_overlap(SMB_OFF_T start1, SMB_OFF_T size1, SMB_OFF_T start2, SMB_OFF_T size2)
+{
+	if (start1 >= start2 && start1 <= start2 + size2) {
+		return True;
+	}
+
+	if (start1 < start2 && start1 + size1 > start2) {
+		return True;
+	}
+
+	return False;
+}
+
+/****************************************************************************
+ Utility function to map a lock type correctly depending on the open
+ mode of a file.
+****************************************************************************/
+
+static int map_posix_lock_type( files_struct *fsp, enum brl_type lock_type)
+{
+	if((lock_type == WRITE_LOCK) && !fsp->can_write) {
+		/*
+		 * Many UNIX's cannot get a write lock on a file opened read-only.
+		 * Win32 locking semantics allow this.
+		 * Do the best we can and attempt a read-only lock.
+		 */
+		DEBUG(10,("map_posix_lock_type: Downgrading write lock to read due to read-only file.\n"));
+		return F_RDLCK;
+	}
+
+	/*
+	 * This return should be the most normal, as we attempt
+	 * to always open files read/write.
+	 */
+
+	return (lock_type == READ_LOCK) ? F_RDLCK : F_WRLCK;
+}
+
+/****************************************************************************
+ Debugging aid :-).
+****************************************************************************/
+
+static const char *posix_lock_type_name(int lock_type)
+{
+	return (lock_type == F_RDLCK) ? "READ" : "WRITE";
+}
+
+/****************************************************************************
+ Check to see if the given unsigned lock range is within the possible POSIX
+ range. Modifies the given args to be in range if possible, just returns
+ False if not.
+****************************************************************************/
+
+static BOOL posix_lock_in_range(SMB_OFF_T *offset_out, SMB_OFF_T *count_out,
+				SMB_BIG_UINT u_offset, SMB_BIG_UINT u_count)
+{
+	SMB_OFF_T offset = (SMB_OFF_T)u_offset;
+	SMB_OFF_T count = (SMB_OFF_T)u_count;
+
+	/*
+	 * For the type of system we are, attempt to
+	 * find the maximum positive lock offset as an SMB_OFF_T.
+	 */
+
+#if defined(MAX_POSITIVE_LOCK_OFFSET) /* Some systems have arbitrary limits. */
+
+	SMB_OFF_T max_positive_lock_offset = (MAX_POSITIVE_LOCK_OFFSET);
+
+#elif defined(LARGE_SMB_OFF_T) && !defined(HAVE_BROKEN_FCNTL64_LOCKS)
+
+	/*
+	 * In this case SMB_OFF_T is 64 bits,
+	 * and the underlying system can handle 64 bit signed locks.
+	 */
+
+	SMB_OFF_T mask2 = ((SMB_OFF_T)0x4) << (SMB_OFF_T_BITS-4);
+	SMB_OFF_T mask = (mask2<<1);
+	SMB_OFF_T max_positive_lock_offset = ~mask;
+
+#else /* !LARGE_SMB_OFF_T || HAVE_BROKEN_FCNTL64_LOCKS */
+
+	/*
+	 * In this case either SMB_OFF_T is 32 bits,
+	 * or the underlying system cannot handle 64 bit signed locks.
+	 * All offsets & counts must be 2^31 or less.
+	 */
+
+	SMB_OFF_T max_positive_lock_offset = 0x7FFFFFFF;
+
+#endif /* !LARGE_SMB_OFF_T || HAVE_BROKEN_FCNTL64_LOCKS */
+
+	/*
+	 * POSIX locks of length zero mean lock to end-of-file.
+	 * Win32 locks of length zero are point probes. Ignore
+	 * any Win32 locks of length zero. JRA.
+	 */
+
+	if (count == (SMB_OFF_T)0) {
+		DEBUG(10,("posix_lock_in_range: count = 0, ignoring.\n"));
+		return False;
+	}
+
+	/*
+	 * If the given offset was > max_positive_lock_offset then we cannot map this at all
+	 * ignore this lock.
+	 */
+
+	if (u_offset & ~((SMB_BIG_UINT)max_positive_lock_offset)) {
+		DEBUG(10,("posix_lock_in_range: (offset = %.0f) offset > %.0f and we cannot handle this. Ignoring lock.\n",
+				(double)u_offset, (double)((SMB_BIG_UINT)max_positive_lock_offset) ));
+		return False;
+	}
+
+	/*
+	 * We must truncate the count to less than max_positive_lock_offset.
+	 */
+
+	if (u_count & ~((SMB_BIG_UINT)max_positive_lock_offset)) {
+		count = max_positive_lock_offset;
+	}
+
+	/*
+	 * Truncate count to end at max lock offset.
+	 */
+
+	if (offset + count < 0 || offset + count > max_positive_lock_offset) {
+		count = max_positive_lock_offset - offset;
+	}
+
+	/*
+	 * If we ate all the count, ignore this lock.
+	 */
+
+	if (count == 0) {
+		DEBUG(10,("posix_lock_in_range: Count = 0. Ignoring lock u_offset = %.0f, u_count = %.0f\n",
+				(double)u_offset, (double)u_count ));
+		return False;
+	}
+
+	/*
+	 * The mapping was successful.
+	 */
+
+	DEBUG(10,("posix_lock_in_range: offset_out = %.0f, count_out = %.0f\n",
+			(double)offset, (double)count ));
+
+	*offset_out = offset;
+	*count_out = count;
+	
+	return True;
+}
+
+/****************************************************************************
+ Actual function that does POSIX locks. Copes with 64 -> 32 bit cruft and
+ broken NFS implementations.
+****************************************************************************/
+
+static BOOL posix_fcntl_lock(files_struct *fsp, int op, SMB_OFF_T offset, SMB_OFF_T count, int type)
+{
+	BOOL ret;
+
+	DEBUG(8,("posix_fcntl_lock %d %d %.0f %.0f %d\n",fsp->fh->fd,op,(double)offset,(double)count,type));
+
+	ret = SMB_VFS_LOCK(fsp,fsp->fh->fd,op,offset,count,type);
+
+	if (!ret && ((errno == EFBIG) || (errno == ENOLCK) || (errno ==  EINVAL))) {
+
+		DEBUG(0,("posix_fcntl_lock: WARNING: lock request at offset %.0f, length %.0f returned\n",
+					(double)offset,(double)count));
+		DEBUG(0,("an %s error. This can happen when using 64 bit lock offsets\n", strerror(errno)));
+		DEBUG(0,("on 32 bit NFS mounted file systems.\n"));
+
+		/*
+		 * If the offset is > 0x7FFFFFFF then this will cause problems on
+		 * 32 bit NFS mounted filesystems. Just ignore it.
+		 */
+
+		if (offset & ~((SMB_OFF_T)0x7fffffff)) {
+			DEBUG(0,("Offset greater than 31 bits. Returning success.\n"));
+			return True;
+		}
+
+		if (count & ~((SMB_OFF_T)0x7fffffff)) {
+			/* 32 bit NFS file system, retry with smaller offset */
+			DEBUG(0,("Count greater than 31 bits - retrying with 31 bit truncated length.\n"));
+			errno = 0;
+			count &= 0x7fffffff;
+			ret = SMB_VFS_LOCK(fsp,fsp->fh->fd,op,offset,count,type);
+		}
+	}
+
+	DEBUG(8,("posix_fcntl_lock: Lock call %s\n", ret ? "successful" : "failed"));
+	return ret;
+}
+
+/****************************************************************************
+ Actual function that gets POSIX locks. Copes with 64 -> 32 bit cruft and
+ broken NFS implementations.
+****************************************************************************/
+
+static BOOL posix_fcntl_getlock(files_struct *fsp, SMB_OFF_T *poffset, SMB_OFF_T *pcount, int *ptype)
+{
+	pid_t pid;
+	BOOL ret;
+
+	DEBUG(8,("posix_fcntl_getlock %d %.0f %.0f %d\n",
+		fsp->fh->fd,(double)*poffset,(double)*pcount,*ptype));
+
+	ret = SMB_VFS_GETLOCK(fsp,fsp->fh->fd,poffset,pcount,ptype,&pid);
+
+	if (!ret && ((errno == EFBIG) || (errno == ENOLCK) || (errno ==  EINVAL))) {
+
+		DEBUG(0,("posix_fcntl_getlock: WARNING: lock request at offset %.0f, length %.0f returned\n",
+					(double)*poffset,(double)*pcount));
+		DEBUG(0,("an %s error. This can happen when using 64 bit lock offsets\n", strerror(errno)));
+		DEBUG(0,("on 32 bit NFS mounted file systems.\n"));
+
+		/*
+		 * If the offset is > 0x7FFFFFFF then this will cause problems on
+		 * 32 bit NFS mounted filesystems. Just ignore it.
+		 */
+
+		if (*poffset & ~((SMB_OFF_T)0x7fffffff)) {
+			DEBUG(0,("Offset greater than 31 bits. Returning success.\n"));
+			return True;
+		}
+
+		if (*pcount & ~((SMB_OFF_T)0x7fffffff)) {
+			/* 32 bit NFS file system, retry with smaller offset */
+			DEBUG(0,("Count greater than 31 bits - retrying with 31 bit truncated length.\n"));
+			errno = 0;
+			*pcount &= 0x7fffffff;
+			ret = SMB_VFS_GETLOCK(fsp,fsp->fh->fd,poffset,pcount,ptype,&pid);
+		}
+	}
+
+	DEBUG(8,("posix_fcntl_getlock: Lock query call %s\n", ret ? "successful" : "failed"));
+	return ret;
+}
+
+/****************************************************************************
+ POSIX function to see if a file region is locked. Returns True if the
+ region is locked, False otherwise.
+****************************************************************************/
+
+BOOL is_posix_locked(files_struct *fsp,
+			SMB_BIG_UINT *pu_offset,
+			SMB_BIG_UINT *pu_count,
+			enum brl_type *plock_type,
+			enum brl_flavour lock_flav)
+{
+	SMB_OFF_T offset;
+	SMB_OFF_T count;
+	int posix_lock_type = map_posix_lock_type(fsp,*plock_type);
+
+	DEBUG(10,("is_posix_locked: File %s, offset = %.0f, count = %.0f, type = %s\n",
+		fsp->fsp_name, (double)*pu_offset, (double)*pu_count, posix_lock_type_name(*plock_type) ));
+
+	/*
+	 * If the requested lock won't fit in the POSIX range, we will
+	 * never set it, so presume it is not locked.
+	 */
+
+	if(!posix_lock_in_range(&offset, &count, *pu_offset, *pu_count)) {
+		return False;
+	}
+
+	if (!posix_fcntl_getlock(fsp,&offset,&count,&posix_lock_type)) {
+		return False;
+	}
+
+	if (posix_lock_type == F_UNLCK) {
+		return False;
+	}
+
+	if (lock_flav == POSIX_LOCK) {
+		/* Only POSIX lock queries need to know the details. */
+		*pu_offset = (SMB_BIG_UINT)offset;
+		*pu_count = (SMB_BIG_UINT)count;
+		*plock_type = (posix_lock_type == F_RDLCK) ? READ_LOCK : WRITE_LOCK;
+	}
+	return True;
+}
+
+/****************************************************************************
+ Next - the functions that deal with in memory database storing representations
+ of either Windows CIFS locks or POSIX CIFS locks.
+****************************************************************************/
 
 /*
  * The data in POSIX pending close records is an unsorted linear array of int
@@ -91,6 +392,80 @@ static TDB_DATA locking_key_fsp(files_struct *fsp)
 	return locking_key(fsp->dev, fsp->inode);
 }
 
+/*******************************************************************
+ Create the in-memory POSIX lock databases.
+********************************************************************/
+
+BOOL posix_locking_init(int read_only)
+{
+	if (posix_lock_tdb && posix_pending_close_tdb) {
+		return True;
+	}
+	
+	if (!posix_lock_tdb) {
+		posix_lock_tdb = tdb_open_log(NULL, 0, TDB_INTERNAL,
+					  read_only?O_RDONLY:(O_RDWR|O_CREAT), 0644);
+	}
+
+	if (!posix_lock_tdb) {
+		DEBUG(0,("Failed to open POSIX byte range locking database.\n"));
+		return False;
+	}
+	if (!posix_pending_close_tdb) {
+		posix_pending_close_tdb = tdb_open_log(NULL, 0, TDB_INTERNAL,
+						   read_only?O_RDONLY:(O_RDWR|O_CREAT), 0644);
+	}
+	if (!posix_pending_close_tdb) {
+		DEBUG(0,("Failed to open POSIX pending close database.\n"));
+		return False;
+	}
+
+	return True;
+}
+
+/*******************************************************************
+ Delete the in-memory POSIX lock databases.
+********************************************************************/
+
+BOOL posix_locking_end(void)
+{
+	if (posix_lock_tdb && tdb_close(posix_lock_tdb) != 0) {
+		return False;
+	}
+	if (posix_pending_close_tdb && tdb_close(posix_pending_close_tdb) != 0) {
+		return False;
+	}
+	return True;
+}
+
+/****************************************************************************
+ Remove all lock entries for a specific dev/inode pair from the tdb.
+****************************************************************************/
+
+static void delete_posix_lock_entries(files_struct *fsp)
+{
+	TDB_DATA kbuf = locking_key_fsp(fsp);
+
+	if (tdb_delete(posix_lock_tdb, kbuf) == -1) {
+		DEBUG(0,("delete_close_entries: tdb_delete fail !\n"));
+	}
+}
+
+/****************************************************************************
+ Debug function.
+****************************************************************************/
+
+static void dump_entry(struct posix_lock *pl)
+{
+	DEBUG(10,("entry: start=%.0f, size=%.0f, type=%d, fd=%i\n",
+		(double)pl->start, (double)pl->size, (int)pl->lock_type, pl->fd ));
+}
+
+/****************************************************************************
+ Next - the functions that deal with storing fd's that have outstanding
+ POSIX locks when closed.
+****************************************************************************/
+
 /****************************************************************************
  Add an fd to the pending close tdb.
 ****************************************************************************/
@@ -130,8 +505,9 @@ static void delete_close_entries(files_struct *fsp)
 {
 	TDB_DATA kbuf = locking_key_fsp(fsp);
 
-	if (tdb_delete(posix_pending_close_tdb, kbuf) == -1)
+	if (tdb_delete(posix_pending_close_tdb, kbuf) == -1) {
 		DEBUG(0,("delete_close_entries: tdb_delete fail !\n"));
+	}
 }
 
 /****************************************************************************
@@ -292,17 +668,70 @@ int fd_close_posix(struct connection_struct *conn, files_struct *fsp)
 }
 
 /****************************************************************************
- Debugging aid :-).
+ Remove any locks on this fd. Called from file_close().
 ****************************************************************************/
 
-static const char *posix_lock_type_name(int lock_type)
+void posix_locking_close_file(files_struct *fsp)
 {
-	return (lock_type == F_RDLCK) ? "READ" : "WRITE";
+	struct posix_lock *entries = NULL;
+	size_t count, i;
+
+	/*
+	 * Optimization for the common case where we are the only
+	 * opener of a file. If all fd entries are our own, we don't
+	 * need to explicitly release all the locks via the POSIX functions,
+	 * we can just remove all the entries in the tdb and allow the
+	 * close to remove the real locks.
+	 */
+
+	count = get_posix_lock_entries(fsp, &entries);
+
+	if (count == 0) {
+		DEBUG(10,("posix_locking_close_file: file %s has no outstanding locks.\n", fsp->fsp_name ));
+		return;
+	}
+
+	for (i = 0; i < count; i++) {
+		if (entries[i].fd != fsp->fh->fd ) {
+			break;
+		}
+
+		dump_entry(&entries[i]);
+	}
+
+	if (i == count) {
+		/* All locks are ours. */
+		DEBUG(10,("posix_locking_close_file: file %s has %u outstanding locks, but all on one fd.\n", 
+			fsp->fsp_name, (unsigned int)count ));
+		SAFE_FREE(entries);
+		delete_posix_lock_entries(fsp);
+		return;
+	}
+
+	/*
+	 * Difficult case. We need to delete all our locks, whilst leaving
+	 * all other POSIX locks in place.
+	 */
+
+	for (i = 0; i < count; i++) {
+		struct posix_lock *pl = &entries[i];
+		if (pl->fd == fsp->fh->fd) {
+			release_posix_lock_windows_flavour(fsp, (SMB_BIG_UINT)pl->start, (SMB_BIG_UINT)pl->size );
+		}
+	}
+	SAFE_FREE(entries);
 }
 
+
 /****************************************************************************
- Delete a POSIX lock entry by index number. Used if the tdb add succeeds, but
- then the POSIX fcntl lock fails.
+ Next - the functions that deal with the mapping CIFS Windows locks onto
+ the underlying system POSIX locks.
+****************************************************************************/
+
+/****************************************************************************
+ Delete a lock entry by index number.
+ Used when dealing with POSIX locks created from Windows lock requests if the
+ tdb add succeeds, but then the system POSIX fcntl lock fails.
 ****************************************************************************/
 
 static BOOL delete_posix_lock_entry_by_index(files_struct *fsp, size_t entry)
@@ -345,12 +774,19 @@ static BOOL delete_posix_lock_entry_by_index(files_struct *fsp, size_t entry)
 }
 
 /****************************************************************************
- Add an entry into the POSIX locking tdb. We return the index number of the
+ Add an entry into the locking tdb. This function is used when mapping Windows
+ flavour locks onto underlying system POSIX locks. We return the index number of the
  added lock (used in case we need to delete *exactly* this entry). Returns
  False on fail, True on success.
 ****************************************************************************/
 
-static BOOL add_posix_lock_entry(files_struct *fsp, SMB_OFF_T start, SMB_OFF_T size, int lock_type, size_t *pentry_num)
+static BOOL add_posix_lock_entry(files_struct *fsp,
+				SMB_OFF_T start,
+				SMB_OFF_T size,
+				int lock_type,
+				struct lock_context *lock_ctx,
+				enum brl_flavour lock_flav,
+				size_t *pentry_num)
 {
 	TDB_DATA kbuf = locking_key_fsp(fsp);
 	TDB_DATA dbuf;
@@ -371,6 +807,8 @@ static BOOL add_posix_lock_entry(files_struct *fsp, SMB_OFF_T start, SMB_OFF_T s
 	pl.start = start;
 	pl.size = size;
 	pl.lock_type = lock_type;
+	pl.lock_flav = lock_flav;
+	pl.lock_ctx = *lock_ctx;
 
 	dbuf.dptr = SMB_REALLOC(dbuf.dptr, dbuf.dsize + sizeof(struct posix_lock));
 	if (!dbuf.dptr) {
@@ -401,22 +839,8 @@ static BOOL add_posix_lock_entry(files_struct *fsp, SMB_OFF_T start, SMB_OFF_T s
 }
 
 /****************************************************************************
- Calculate if locks have any overlap at all.
-****************************************************************************/
-
-static BOOL does_lock_overlap(SMB_OFF_T start1, SMB_OFF_T size1, SMB_OFF_T start2, SMB_OFF_T size2)
-{
-	if (start1 >= start2 && start1 <= start2 + size2)
-		return True;
-
-	if (start1 < start2 && start1 + size1 > start2)
-		return True;
-
-	return False;
-}
-
-/****************************************************************************
- Delete an entry from the POSIX locking tdb. Returns a copy of the entry being
+ Delete an entry from the POSIX locking tdb. Used by Windows flavour locks being
+ mapped onto underlying system POSIX locks. Returns a copy of the entry being
  deleted and the number of records that are overlapped by this one, or -1 on error.
 ****************************************************************************/
 
@@ -484,9 +908,9 @@ static int delete_posix_lock_entry(files_struct *fsp, SMB_OFF_T start, SMB_OFF_T
 	for (i = 0; i < count; i++) {
 		struct posix_lock *entry = &locks[i];
 
-		if (fsp->fh->fd == entry->fd &&
-			does_lock_overlap( start, size, entry->start, entry->size))
-				num_overlapping_records++;
+		if (fsp->fh->fd == entry->fd && does_lock_overlap( start, size, entry->start, entry->size)) {
+			num_overlapping_records++;
+		}
 	}
 
 	DEBUG(10,("delete_posix_lock_entry: type = %s: start=%.0f size=%.0f, num_records = %d\n",
@@ -501,277 +925,6 @@ static int delete_posix_lock_entry(files_struct *fsp, SMB_OFF_T start, SMB_OFF_T
 
 	SAFE_FREE(dbuf.dptr);
 	return -1;
-}
-
-/****************************************************************************
- Utility function to map a lock type correctly depending on the open
- mode of a file.
-****************************************************************************/
-
-static int map_posix_lock_type( files_struct *fsp, enum brl_type lock_type)
-{
-	if((lock_type == WRITE_LOCK) && !fsp->can_write) {
-		/*
-		 * Many UNIX's cannot get a write lock on a file opened read-only.
-		 * Win32 locking semantics allow this.
-		 * Do the best we can and attempt a read-only lock.
-		 */
-		DEBUG(10,("map_posix_lock_type: Downgrading write lock to read due to read-only file.\n"));
-		return F_RDLCK;
-	}
-#if 0
-	/* We no longer open files write-only. */
-	 else if((lock_type == READ_LOCK) && !fsp->can_read) {
-		/*
-		 * Ditto for read locks on write only files.
-		 */
-		DEBUG(10,("map_posix_lock_type: Changing read lock to write due to write-only file.\n"));
-		return F_WRLCK;
-	}
-#endif
-
-	/*
-	 * This return should be the most normal, as we attempt
-	 * to always open files read/write.
-	 */
-
-	return (lock_type == READ_LOCK) ? F_RDLCK : F_WRLCK;
-}
-
-/****************************************************************************
- Check to see if the given unsigned lock range is within the possible POSIX
- range. Modifies the given args to be in range if possible, just returns
- False if not.
-****************************************************************************/
-
-static BOOL posix_lock_in_range(SMB_OFF_T *offset_out, SMB_OFF_T *count_out,
-				SMB_BIG_UINT u_offset, SMB_BIG_UINT u_count)
-{
-	SMB_OFF_T offset = (SMB_OFF_T)u_offset;
-	SMB_OFF_T count = (SMB_OFF_T)u_count;
-
-	/*
-	 * For the type of system we are, attempt to
-	 * find the maximum positive lock offset as an SMB_OFF_T.
-	 */
-
-#if defined(MAX_POSITIVE_LOCK_OFFSET) /* Some systems have arbitrary limits. */
-
-	SMB_OFF_T max_positive_lock_offset = (MAX_POSITIVE_LOCK_OFFSET);
-
-#elif defined(LARGE_SMB_OFF_T) && !defined(HAVE_BROKEN_FCNTL64_LOCKS)
-
-	/*
-	 * In this case SMB_OFF_T is 64 bits,
-	 * and the underlying system can handle 64 bit signed locks.
-	 */
-
-	SMB_OFF_T mask2 = ((SMB_OFF_T)0x4) << (SMB_OFF_T_BITS-4);
-	SMB_OFF_T mask = (mask2<<1);
-	SMB_OFF_T max_positive_lock_offset = ~mask;
-
-#else /* !LARGE_SMB_OFF_T || HAVE_BROKEN_FCNTL64_LOCKS */
-
-	/*
-	 * In this case either SMB_OFF_T is 32 bits,
-	 * or the underlying system cannot handle 64 bit signed locks.
-	 * All offsets & counts must be 2^31 or less.
-	 */
-
-	SMB_OFF_T max_positive_lock_offset = 0x7FFFFFFF;
-
-#endif /* !LARGE_SMB_OFF_T || HAVE_BROKEN_FCNTL64_LOCKS */
-
-	/*
-	 * POSIX locks of length zero mean lock to end-of-file.
-	 * Win32 locks of length zero are point probes. Ignore
-	 * any Win32 locks of length zero. JRA.
-	 */
-
-	if (count == (SMB_OFF_T)0) {
-		DEBUG(10,("posix_lock_in_range: count = 0, ignoring.\n"));
-		return False;
-	}
-
-	/*
-	 * If the given offset was > max_positive_lock_offset then we cannot map this at all
-	 * ignore this lock.
-	 */
-
-	if (u_offset & ~((SMB_BIG_UINT)max_positive_lock_offset)) {
-		DEBUG(10,("posix_lock_in_range: (offset = %.0f) offset > %.0f and we cannot handle this. Ignoring lock.\n",
-				(double)u_offset, (double)((SMB_BIG_UINT)max_positive_lock_offset) ));
-		return False;
-	}
-
-	/*
-	 * We must truncate the count to less than max_positive_lock_offset.
-	 */
-
-	if (u_count & ~((SMB_BIG_UINT)max_positive_lock_offset))
-		count = max_positive_lock_offset;
-
-	/*
-	 * Truncate count to end at max lock offset.
-	 */
-
-	if (offset + count < 0 || offset + count > max_positive_lock_offset)
-		count = max_positive_lock_offset - offset;
-
-	/*
-	 * If we ate all the count, ignore this lock.
-	 */
-
-	if (count == 0) {
-		DEBUG(10,("posix_lock_in_range: Count = 0. Ignoring lock u_offset = %.0f, u_count = %.0f\n",
-				(double)u_offset, (double)u_count ));
-		return False;
-	}
-
-	/*
-	 * The mapping was successful.
-	 */
-
-	DEBUG(10,("posix_lock_in_range: offset_out = %.0f, count_out = %.0f\n",
-			(double)offset, (double)count ));
-
-	*offset_out = offset;
-	*count_out = count;
-	
-	return True;
-}
-
-/****************************************************************************
- Actual function that does POSIX locks. Copes with 64 -> 32 bit cruft and
- broken NFS implementations.
-****************************************************************************/
-
-static BOOL posix_fcntl_lock(files_struct *fsp, int op, SMB_OFF_T offset, SMB_OFF_T count, int type)
-{
-	BOOL ret;
-
-	DEBUG(8,("posix_fcntl_lock %d %d %.0f %.0f %d\n",fsp->fh->fd,op,(double)offset,(double)count,type));
-
-	ret = SMB_VFS_LOCK(fsp,fsp->fh->fd,op,offset,count,type);
-
-	if (!ret && ((errno == EFBIG) || (errno == ENOLCK) || (errno ==  EINVAL))) {
-
-		DEBUG(0,("posix_fcntl_lock: WARNING: lock request at offset %.0f, length %.0f returned\n",
-					(double)offset,(double)count));
-		DEBUG(0,("an %s error. This can happen when using 64 bit lock offsets\n", strerror(errno)));
-		DEBUG(0,("on 32 bit NFS mounted file systems.\n"));
-
-		/*
-		 * If the offset is > 0x7FFFFFFF then this will cause problems on
-		 * 32 bit NFS mounted filesystems. Just ignore it.
-		 */
-
-		if (offset & ~((SMB_OFF_T)0x7fffffff)) {
-			DEBUG(0,("Offset greater than 31 bits. Returning success.\n"));
-			return True;
-		}
-
-		if (count & ~((SMB_OFF_T)0x7fffffff)) {
-			/* 32 bit NFS file system, retry with smaller offset */
-			DEBUG(0,("Count greater than 31 bits - retrying with 31 bit truncated length.\n"));
-			errno = 0;
-			count &= 0x7fffffff;
-			ret = SMB_VFS_LOCK(fsp,fsp->fh->fd,op,offset,count,type);
-		}
-	}
-
-	DEBUG(8,("posix_fcntl_lock: Lock call %s\n", ret ? "successful" : "failed"));
-	return ret;
-}
-
-/****************************************************************************
- Actual function that gets POSIX locks. Copes with 64 -> 32 bit cruft and
- broken NFS implementations.
-****************************************************************************/
-
-static BOOL posix_fcntl_getlock(files_struct *fsp, SMB_OFF_T *poffset, SMB_OFF_T *pcount, int *ptype)
-{
-	pid_t pid;
-	BOOL ret;
-
-	DEBUG(8,("posix_fcntl_getlock %d %.0f %.0f %d\n",
-		fsp->fh->fd,(double)*poffset,(double)*pcount,*ptype));
-
-	ret = SMB_VFS_GETLOCK(fsp,fsp->fh->fd,poffset,pcount,ptype,&pid);
-
-	if (!ret && ((errno == EFBIG) || (errno == ENOLCK) || (errno ==  EINVAL))) {
-
-		DEBUG(0,("posix_fcntl_getlock: WARNING: lock request at offset %.0f, length %.0f returned\n",
-					(double)*poffset,(double)*pcount));
-		DEBUG(0,("an %s error. This can happen when using 64 bit lock offsets\n", strerror(errno)));
-		DEBUG(0,("on 32 bit NFS mounted file systems.\n"));
-
-		/*
-		 * If the offset is > 0x7FFFFFFF then this will cause problems on
-		 * 32 bit NFS mounted filesystems. Just ignore it.
-		 */
-
-		if (*poffset & ~((SMB_OFF_T)0x7fffffff)) {
-			DEBUG(0,("Offset greater than 31 bits. Returning success.\n"));
-			return True;
-		}
-
-		if (*pcount & ~((SMB_OFF_T)0x7fffffff)) {
-			/* 32 bit NFS file system, retry with smaller offset */
-			DEBUG(0,("Count greater than 31 bits - retrying with 31 bit truncated length.\n"));
-			errno = 0;
-			*pcount &= 0x7fffffff;
-			ret = SMB_VFS_GETLOCK(fsp,fsp->fh->fd,poffset,pcount,ptype,&pid);
-		}
-	}
-
-	DEBUG(8,("posix_fcntl_getlock: Lock query call %s\n", ret ? "successful" : "failed"));
-	return ret;
-}
-
-
-/****************************************************************************
- POSIX function to see if a file region is locked. Returns True if the
- region is locked, False otherwise.
-****************************************************************************/
-
-BOOL is_posix_locked(files_struct *fsp,
-			SMB_BIG_UINT *pu_offset,
-			SMB_BIG_UINT *pu_count,
-			enum brl_type *plock_type,
-			enum brl_flavour lock_flav)
-{
-	SMB_OFF_T offset;
-	SMB_OFF_T count;
-	int posix_lock_type = map_posix_lock_type(fsp,*plock_type);
-
-	DEBUG(10,("is_posix_locked: File %s, offset = %.0f, count = %.0f, type = %s\n",
-		fsp->fsp_name, (double)*pu_offset, (double)*pu_count, posix_lock_type_name(*plock_type) ));
-
-	/*
-	 * If the requested lock won't fit in the POSIX range, we will
-	 * never set it, so presume it is not locked.
-	 */
-
-	if(!posix_lock_in_range(&offset, &count, *pu_offset, *pu_count)) {
-		return False;
-	}
-
-	if (!posix_fcntl_getlock(fsp,&offset,&count,&posix_lock_type)) {
-		return False;
-	}
-
-	if (posix_lock_type == F_UNLCK) {
-		return False;
-	}
-
-	if (lock_flav == POSIX_LOCK) {
-		/* Only POSIX lock queries need to know the details. */
-		*pu_offset = (SMB_BIG_UINT)offset;
-		*pu_count = (SMB_BIG_UINT)count;
-		*plock_type = (posix_lock_type == F_RDLCK) ? READ_LOCK : WRITE_LOCK;
-	}
-	return True;
 }
 
 /*
@@ -803,8 +956,9 @@ static struct lock_list *posix_lock_list(TALLOC_CTX *ctx, struct lock_list *lhea
 
 	dbuf = tdb_fetch(posix_lock_tdb, kbuf);
 
-	if (!dbuf.dptr)
+	if (!dbuf.dptr) {
 		return lhead;
+	}
 	
 	locks = (struct posix_lock *)dbuf.dptr;
 	num_locks = (size_t)(dbuf.dsize / sizeof(struct posix_lock));
@@ -836,7 +990,7 @@ static struct lock_list *posix_lock_list(TALLOC_CTX *ctx, struct lock_list *lhea
 			if ( (l_curr->start >= (lock->start + lock->size)) ||
 				 (lock->start >= (l_curr->start + l_curr->size))) {
 
-				/* No overlap with this lock - leave this range alone. */
+				/* No overlap with existing lock - leave this range alone. */
 /*********************************************
                                              +---------+
                                              | l_curr  |
@@ -858,8 +1012,8 @@ OR....
 						(l_curr->start + l_curr->size <= lock->start + lock->size) ) {
 
 				/*
-				 * This unlock is completely overlapped by this existing lock range
-				 * and thus should have no effect (not be unlocked). Delete it from the list.
+				 * This range is completely overlapped by this existing lock range
+				 * and thus should have no effect. Delete it from the list.
 				 */
 /*********************************************
                 +---------+
@@ -875,8 +1029,9 @@ OR....
 				DEBUG(10,("delete case.\n" ));
 
 				DLIST_REMOVE(lhead, l_curr);
-				if(lhead == NULL)
+				if(lhead == NULL) {
 					break; /* No more list... */
+				}
 
 				l_curr = ul_next;
 				
@@ -885,7 +1040,7 @@ OR....
 						(l_curr->start + l_curr->size > lock->start + lock->size) ) {
 
 				/*
-				 * This unlock overlaps the existing lock range at the high end.
+				 * This range overlaps the existing lock range at the high end.
 				 * Truncate by moving start to existing range end and reducing size.
 				 */
 /*********************************************
@@ -914,7 +1069,7 @@ BECOMES....
 						(l_curr->start + l_curr->size <= lock->start + lock->size) ) {
 
 				/*
-				 * This unlock overlaps the existing lock range at the low end.
+				 * This range overlaps the existing lock range at the low end.
 				 * Truncate by reducing size.
 				 */
 /*********************************************
@@ -940,10 +1095,10 @@ BECOMES....
 			} else if ( (l_curr->start < lock->start) &&
 						(l_curr->start + l_curr->size > lock->start + lock->size) ) {
 				/*
-				 * Worst case scenario. Unlock request completely overlaps an existing
+				 * Worst case scenario. Range completely overlaps an existing
 				 * lock range. Split the request into two, push the new (upper) request
-				 * into the dlink list, and continue with the entry after ul_new (as we
-				 * know that ul_new will not overlap with this lock).
+				 * into the dlink list, and continue with the entry after l_new (as we
+				 * know that l_new will not overlap with this lock).
 				 */
 /*********************************************
         +---------------------------+
@@ -1011,15 +1166,15 @@ lock: start = %.0f, size = %.0f\n", (double)l_curr->start, (double)l_curr->size,
 /****************************************************************************
  POSIX function to acquire a lock. Returns True if the
  lock could be granted, False if not.
- TODO -- Fix POSIX lock flavour semantics.
 ****************************************************************************/
 
-BOOL set_posix_lock(files_struct *fsp,
+BOOL set_posix_lock_windows_flavour(files_struct *fsp,
 			SMB_BIG_UINT u_offset,
 			SMB_BIG_UINT u_count,
 			enum brl_type lock_type,
-			enum brl_flavour lock_flav)
+			int *errno_ret)
 {
+	struct lock_context lock_ctx;
 	SMB_OFF_T offset;
 	SMB_OFF_T count;
 	BOOL ret = True;
@@ -1030,7 +1185,9 @@ BOOL set_posix_lock(files_struct *fsp,
 	struct lock_list *ll = NULL;
 	int posix_lock_type = map_posix_lock_type(fsp,lock_type);
 
-	DEBUG(5,("set_posix_lock: File %s, offset = %.0f, count = %.0f, type = %s\n",
+	ZERO_STRUCT(lock_ctx);
+
+	DEBUG(5,("set_posix_lock_windows_flavour: File %s, offset = %.0f, count = %.0f, type = %s\n",
 			fsp->fsp_name, (double)u_offset, (double)u_count, posix_lock_type_name(lock_type) ));
 
 	/*
@@ -1038,8 +1195,9 @@ BOOL set_posix_lock(files_struct *fsp,
 	 * pretend it was successful.
 	 */
 
-	if(!posix_lock_in_range(&offset, &count, u_offset, u_count))
+	if(!posix_lock_in_range(&offset, &count, u_offset, u_count)) {
 		return True;
+	}
 
 	/*
 	 * Windows is very strange. It allows read locks to be overlayed
@@ -1063,12 +1221,12 @@ BOOL set_posix_lock(files_struct *fsp,
 	 */
 	
 	if ((l_ctx = talloc_init("set_posix_lock")) == NULL) {
-		DEBUG(0,("set_posix_lock: unable to init talloc context.\n"));
+		DEBUG(0,("set_posix_lock_windows_flavour: unable to init talloc context.\n"));
 		return True; /* Not a fatal error. */
 	}
 
 	if ((ll = TALLOC_P(l_ctx, struct lock_list)) == NULL) {
-		DEBUG(0,("set_posix_lock: unable to talloc unlock list.\n"));
+		DEBUG(0,("set_posix_lock_windows_flavour: unable to talloc unlock list.\n"));
 		talloc_destroy(l_ctx);
 		return True; /* Not a fatal error. */
 	}
@@ -1100,8 +1258,14 @@ BOOL set_posix_lock(files_struct *fsp,
 	 * added here in case we have to remove it on POSIX lock fail.
 	 */
 
-	if (!add_posix_lock_entry(fsp,offset,count,posix_lock_type,&entry_num)) {
-		DEBUG(0,("set_posix_lock: Unable to create posix lock entry !\n"));
+	if (!add_posix_lock_entry(fsp,
+			offset,
+			count,
+			posix_lock_type,
+			&lock_ctx,
+			WINDOWS_LOCK,
+			&entry_num)) {
+		DEBUG(0,("set_posix_lock_windows_flavour: Unable to create posix lock entry !\n"));
 		talloc_destroy(l_ctx);
 		return False;
 	}
@@ -1116,11 +1280,12 @@ BOOL set_posix_lock(files_struct *fsp,
 		offset = ll->start;
 		count = ll->size;
 
-		DEBUG(5,("set_posix_lock: Real lock: Type = %s: offset = %.0f, count = %.0f\n",
+		DEBUG(5,("set_posix_lock_windows_flavour: Real lock: Type = %s: offset = %.0f, count = %.0f\n",
 			posix_lock_type_name(posix_lock_type), (double)offset, (double)count ));
 
 		if (!posix_fcntl_lock(fsp,SMB_F_SETLK,offset,count,posix_lock_type)) {
-			DEBUG(5,("set_posix_lock: Lock fail !: Type = %s: offset = %.0f, count = %.0f. Errno = %s\n",
+			*errno_ret = errno;
+			DEBUG(5,("set_posix_lock_windows_flavour: Lock fail !: Type = %s: offset = %.0f, count = %.0f. Errno = %s\n",
 				posix_lock_type_name(posix_lock_type), (double)offset, (double)count, strerror(errno) ));
 			ret = False;
 			break;
@@ -1137,7 +1302,7 @@ BOOL set_posix_lock(files_struct *fsp,
 			offset = ll->start;
 			count = ll->size;
 
-			DEBUG(5,("set_posix_lock: Backing out locks: Type = %s: offset = %.0f, count = %.0f\n",
+			DEBUG(5,("set_posix_lock_windows_flavour: Backing out locks: Type = %s: offset = %.0f, count = %.0f\n",
 				posix_lock_type_name(posix_lock_type), (double)offset, (double)count ));
 
 			posix_fcntl_lock(fsp,SMB_F_SETLK,offset,count,F_UNLCK);
@@ -1159,7 +1324,9 @@ BOOL set_posix_lock(files_struct *fsp,
  lock could be released, False if not.
 ****************************************************************************/
 
-BOOL release_posix_lock(files_struct *fsp, SMB_BIG_UINT u_offset, SMB_BIG_UINT u_count)
+BOOL release_posix_lock_windows_flavour(files_struct *fsp,
+				SMB_BIG_UINT u_offset,
+				SMB_BIG_UINT u_count)
 {
 	SMB_OFF_T offset;
 	SMB_OFF_T count;
@@ -1170,7 +1337,7 @@ BOOL release_posix_lock(files_struct *fsp, SMB_BIG_UINT u_offset, SMB_BIG_UINT u
 	struct posix_lock deleted_lock;
 	int num_overlapped_entries;
 
-	DEBUG(5,("release_posix_lock: File %s, offset = %.0f, count = %.0f\n",
+	DEBUG(5,("release_posix_lock_windows_flavour: File %s, offset = %.0f, count = %.0f\n",
 		fsp->fsp_name, (double)u_offset, (double)u_count ));
 
 	/*
@@ -1178,8 +1345,9 @@ BOOL release_posix_lock(files_struct *fsp, SMB_BIG_UINT u_offset, SMB_BIG_UINT u
 	 * pretend it was successful.
 	 */
 
-	if(!posix_lock_in_range(&offset, &count, u_offset, u_count))
+	if(!posix_lock_in_range(&offset, &count, u_offset, u_count)) {
 		return True;
+	}
 
 	/*
 	 * We treat this as one unlock request for POSIX accounting purposes even
@@ -1191,7 +1359,7 @@ BOOL release_posix_lock(files_struct *fsp, SMB_BIG_UINT u_offset, SMB_BIG_UINT u
 	num_overlapped_entries = delete_posix_lock_entry(fsp, offset, count, &deleted_lock);
 
 	if (num_overlapped_entries == -1) {
-		smb_panic("release_posix_lock: unable find entry to delete !\n");
+		smb_panic("release_posix_lock_windows_flavour: unable find entry to delete !\n");
 	}
 
 	/*
@@ -1203,18 +1371,18 @@ BOOL release_posix_lock(files_struct *fsp, SMB_BIG_UINT u_offset, SMB_BIG_UINT u
 
 	if (num_overlapped_entries > 0 && deleted_lock.lock_type == F_WRLCK) {
 		if (!posix_fcntl_lock(fsp,SMB_F_SETLK,offset,count,F_RDLCK)) {
-			DEBUG(0,("release_posix_lock: downgrade of lock failed with error %s !\n", strerror(errno) ));
+			DEBUG(0,("release_posix_lock_windows_flavour: downgrade of lock failed with error %s !\n", strerror(errno) ));
 			return False;
 		}
 	}
 
 	if ((ul_ctx = talloc_init("release_posix_lock")) == NULL) {
-		DEBUG(0,("release_posix_lock: unable to init talloc context.\n"));
+		DEBUG(0,("release_posix_lock_windows_flavour: unable to init talloc context.\n"));
 		return True; /* Not a fatal error. */
 	}
 
 	if ((ul = TALLOC_P(ul_ctx, struct lock_list)) == NULL) {
-		DEBUG(0,("release_posix_lock: unable to talloc unlock list.\n"));
+		DEBUG(0,("release_posix_lock_windows_flavour: unable to talloc unlock list.\n"));
 		talloc_destroy(ul_ctx);
 		return True; /* Not a fatal error. */
 	}
@@ -1249,11 +1417,12 @@ BOOL release_posix_lock(files_struct *fsp, SMB_BIG_UINT u_offset, SMB_BIG_UINT u
 		offset = ulist->start;
 		count = ulist->size;
 
-		DEBUG(5,("release_posix_lock: Real unlock: offset = %.0f, count = %.0f\n",
+		DEBUG(5,("release_posix_lock_windows_flavour: Real unlock: offset = %.0f, count = %.0f\n",
 			(double)offset, (double)count ));
 
-		if (!posix_fcntl_lock(fsp,SMB_F_SETLK,offset,count,F_UNLCK))
+		if (!posix_fcntl_lock(fsp,SMB_F_SETLK,offset,count,F_UNLCK)) {
 			ret = False;
+		}
 	}
 
 	talloc_destroy(ul_ctx);
@@ -1262,116 +1431,34 @@ BOOL release_posix_lock(files_struct *fsp, SMB_BIG_UINT u_offset, SMB_BIG_UINT u
 }
 
 /****************************************************************************
- Remove all lock entries for a specific dev/inode pair from the tdb.
+ Next - the functions that deal with mapping CIFS POSIX locks onto
+ the underlying system POSIX locks.
 ****************************************************************************/
-
-static void delete_posix_lock_entries(files_struct *fsp)
-{
-	TDB_DATA kbuf = locking_key_fsp(fsp);
-
-	if (tdb_delete(posix_lock_tdb, kbuf) == -1)
-		DEBUG(0,("delete_close_entries: tdb_delete fail !\n"));
-}
 
 /****************************************************************************
- Debug function.
+ POSIX function to acquire a lock. Returns True if the
+ lock could be granted, False if not.
 ****************************************************************************/
 
-static void dump_entry(struct posix_lock *pl)
+BOOL set_posix_lock_posix_flavour(files_struct *fsp,
+			SMB_BIG_UINT u_offset,
+			SMB_BIG_UINT u_count,
+			enum brl_type lock_type,
+			const struct lock_context *plock_ctx,
+			int *errno_ret)
 {
-	DEBUG(10,("entry: start=%.0f, size=%.0f, type=%d, fd=%i\n",
-		(double)pl->start, (double)pl->size, (int)pl->lock_type, pl->fd ));
-}
-
-/****************************************************************************
- Remove any locks on this fd. Called from file_close().
-****************************************************************************/
-
-void posix_locking_close_file(files_struct *fsp)
-{
-	struct posix_lock *entries = NULL;
-	size_t count, i;
-
-	/*
-	 * Optimization for the common case where we are the only
-	 * opener of a file. If all fd entries are our own, we don't
-	 * need to explicitly release all the locks via the POSIX functions,
-	 * we can just remove all the entries in the tdb and allow the
-	 * close to remove the real locks.
-	 */
-
-	count = get_posix_lock_entries(fsp, &entries);
-
-	if (count == 0) {
-		DEBUG(10,("posix_locking_close_file: file %s has no outstanding locks.\n", fsp->fsp_name ));
-		return;
-	}
-
-	for (i = 0; i < count; i++) {
-		if (entries[i].fd != fsp->fh->fd )
-			break;
-
-		dump_entry(&entries[i]);
-	}
-
-	if (i == count) {
-		/* All locks are ours. */
-		DEBUG(10,("posix_locking_close_file: file %s has %u outstanding locks, but all on one fd.\n", 
-			fsp->fsp_name, (unsigned int)count ));
-		SAFE_FREE(entries);
-		delete_posix_lock_entries(fsp);
-		return;
-	}
-
-	/*
-	 * Difficult case. We need to delete all our locks, whilst leaving
-	 * all other POSIX locks in place.
-	 */
-
-	for (i = 0; i < count; i++) {
-		struct posix_lock *pl = &entries[i];
-		if (pl->fd == fsp->fh->fd)
-			release_posix_lock(fsp, (SMB_BIG_UINT)pl->start, (SMB_BIG_UINT)pl->size );
-	}
-	SAFE_FREE(entries);
-}
-
-/*******************************************************************
- Create the in-memory POSIX lock databases.
-********************************************************************/
-
-BOOL posix_locking_init(int read_only)
-{
-	if (posix_lock_tdb && posix_pending_close_tdb)
-		return True;
-	
-	if (!posix_lock_tdb)
-		posix_lock_tdb = tdb_open_log(NULL, 0, TDB_INTERNAL,
-					  read_only?O_RDONLY:(O_RDWR|O_CREAT), 0644);
-	if (!posix_lock_tdb) {
-		DEBUG(0,("Failed to open POSIX byte range locking database.\n"));
-		return False;
-	}
-	if (!posix_pending_close_tdb)
-		posix_pending_close_tdb = tdb_open_log(NULL, 0, TDB_INTERNAL,
-						   read_only?O_RDONLY:(O_RDWR|O_CREAT), 0644);
-	if (!posix_pending_close_tdb) {
-		DEBUG(0,("Failed to open POSIX pending close database.\n"));
-		return False;
-	}
-
 	return True;
 }
 
-/*******************************************************************
- Delete the in-memory POSIX lock databases.
-********************************************************************/
+/****************************************************************************
+ POSIX function to release a lock. Returns True if the
+ lock could be released, False if not.
+****************************************************************************/
 
-BOOL posix_locking_end(void)
+BOOL release_posix_lock_posix_flavour(files_struct *fsp,
+				SMB_BIG_UINT u_offset,
+				SMB_BIG_UINT u_count,
+				const struct lock_context *plock_ctx)
 {
-    if (posix_lock_tdb && tdb_close(posix_lock_tdb) != 0)
-		return False;
-    if (posix_pending_close_tdb && tdb_close(posix_pending_close_tdb) != 0)
-		return False;
 	return True;
 }

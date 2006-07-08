@@ -859,6 +859,16 @@ struct parm_struct {
 enum brl_type {READ_LOCK, WRITE_LOCK, PENDING_LOCK, UNLOCK_LOCK};
 enum brl_flavour {WINDOWS_LOCK = 0, POSIX_LOCK = 1};
 
+/* This contains elements that differentiate locks. The smbpid is a
+   client supplied pid, and is essentially the locking context for
+   this client */
+
+struct lock_context {
+        uint16 smbpid;
+        uint16 tid;
+        struct process_id pid;
+};
+
 /* The key used in the brlock database. */
 
 struct lock_key {

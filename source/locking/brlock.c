@@ -32,16 +32,6 @@
 
 #define ZERO_ZERO 0
 
-/* This contains elements that differentiate locks. The smbpid is a
-   client supplied pid, and is essentially the locking context for
-   this client */
-
-struct lock_context {
-	uint16 smbpid;
-	uint16 tid;
-	struct process_id pid;
-};
-
 /* The data in brlock records is an unsorted linear array of these
    records.  It is unnecessary to store the count as tdb provides the
    size of the record */
@@ -83,7 +73,7 @@ static void print_lock_struct(unsigned int i, struct lock_struct *pls)
  See if two locking contexts are equal.
 ****************************************************************************/
 
-static BOOL brl_same_context(const struct lock_context *ctx1, 
+BOOL brl_same_context(const struct lock_context *ctx1, 
 			     const struct lock_context *ctx2)
 {
 	return (procid_equal(&ctx1->pid, &ctx2->pid) &&
@@ -343,13 +333,16 @@ static NTSTATUS brl_lock_windows(struct byte_range_lock *br_lck,
 
 	/* We can get the Windows lock, now see if it needs to
 	   be mapped into a lower level POSIX one, and if so can
-	   we get it ? We tell the lower lock layer about the
-	   lock type so it can cope with the difference between
-	   Windows "stacking" locks and POSIX "flat" ones. */
+	   we get it ? */
 
 	if ((plock->lock_type != PENDING_LOCK) && lp_posix_locking(SNUM(fsp->conn))) {
-		if (!set_posix_lock(fsp, plock->start, plock->size, plock->lock_type, WINDOWS_LOCK)) {
-			if (errno == EACCES || errno == EAGAIN) {
+		int errno_ret;
+		if (!set_posix_lock_windows_flavour(fsp,
+				plock->start,
+				plock->size,
+				plock->lock_type,
+				&errno_ret)) {
+			if (errno_ret == EACCES || errno_ret == EAGAIN) {
 				return NT_STATUS_FILE_LOCK_CONFLICT;
 			} else {
 				return map_nt_error_from_unix(errno);
@@ -375,9 +368,9 @@ static NTSTATUS brl_lock_windows(struct byte_range_lock *br_lck,
  Cope with POSIX range splits and merges.
 ****************************************************************************/
 
-static unsigned int brlock_posix_split_merge(struct lock_struct *lck_arr,
-						const struct lock_struct *ex,
-						const struct lock_struct *plock,
+static unsigned int brlock_posix_split_merge(struct lock_struct *lck_arr,		/* Output array. */
+						const struct lock_struct *ex,		/* existing lock. */
+						const struct lock_struct *plock,	/* proposed lock. */
 						BOOL *lock_was_added)
 {
 	BOOL lock_types_differ = (ex->lock_type != plock->lock_type);
@@ -577,6 +570,7 @@ static NTSTATUS brl_lock_posix(struct byte_range_lock *br_lck,
 			BOOL *my_lock_ctx)
 {
 	unsigned int i, count;
+	files_struct *fsp = br_lck->fsp;
 	struct lock_struct *locks = (struct lock_struct *)br_lck->lock_data;
 	struct lock_struct *tp;
 	BOOL lock_was_added = False;
@@ -633,18 +627,18 @@ static NTSTATUS brl_lock_posix(struct byte_range_lock *br_lck,
 
 	/* We can get the POSIX lock, now see if it needs to
 	   be mapped into a lower level POSIX one, and if so can
-	   we get it ? We well the lower lock layer about the
-	   lock type so it can cope with the difference between
-	   Windows "stacking" locks and POSIX "flat" ones. */
-
-#if 0
-	/* FIXME - this call doesn't work correctly yet for POSIX locks... */
+	   we get it ? */
 
 	if ((plock->lock_type != PENDING_LOCK) && lp_posix_locking(SNUM(fsp->conn))) {
-		files_struct *fsp = br_lck->fsp;
+		int errno_ret;
 
-		if (!set_posix_lock(fsp, plock->start, plock->size, plock->lock_type, POSIX_LOCK)) {
-			if (errno == EACCES || errno == EAGAIN) {
+		if (!set_posix_lock_posix_flavour(fsp,
+				plock->start,
+				plock->size,
+				plock->lock_type,
+				&plock->context,
+				&errno_ret)) {
+			if (errno_ret == EACCES || errno_ret == EAGAIN) {
 				SAFE_FREE(tp);
 				return NT_STATUS_FILE_LOCK_CONFLICT;
 			} else {
@@ -653,7 +647,6 @@ static NTSTATUS brl_lock_posix(struct byte_range_lock *br_lck,
 			}
 		}
 	}
-#endif
 
 	if (!lock_was_added) {
 		memcpy(&tp[count], plock, sizeof(struct lock_struct));
@@ -783,9 +776,11 @@ static BOOL brl_unlock_windows(struct byte_range_lock *br_lck, const struct lock
 		return False;
 	}
 
-	/* Unlock any POSIX regions. */
+	/* Unlock the underlying POSIX regions. */
 	if(lp_posix_locking(br_lck->fsp->conn->cnum)) {
-		release_posix_lock(br_lck->fsp, plock->start, plock->size);
+		release_posix_lock_windows_flavour(br_lck->fsp,
+				plock->start,
+				plock->size);
 	}
 
 	/* Send unlock messages to any pending waiters that overlap. */
@@ -933,14 +928,10 @@ static BOOL brl_unlock_posix(struct byte_range_lock *br_lck, const struct lock_s
 		return True;
 	}
 
-#if 0
-	/* FIXME - this call doesn't work correctly yet for POSIX locks... */
-
 	/* Unlock any POSIX regions. */
 	if(lp_posix_locking(br_lck->fsp->conn->cnum)) {
-		release_posix_lock(br_lck->fsp, plock->start, plock->size);
+		release_posix_lock_posix_flavour(br_lck->fsp, plock->start, plock->size, &plock->context);
 	}
-#endif
 
 	/* Realloc so we don't leak entries per unlock call. */
 	if (count) {
