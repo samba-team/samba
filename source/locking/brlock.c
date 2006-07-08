@@ -391,26 +391,26 @@ static unsigned int brlock_posix_split_merge(struct lock_struct *lck_arr,		/* Ou
                                              +---------+
                                              | ex      |
                                              +---------+
-                                +-------+
-                                | plock |
-                                +-------+
+                              +-------+
+                              | plock |
+                              +-------+
 OR....
              +---------+
              |  ex     |
              +---------+
 **********************************************/
 
-	if ( (ex->start >= (plock->start + plock->size)) ||
-			(plock->start >= (ex->start + ex->size))) {
+	if ( (ex->start > (plock->start + plock->size)) ||
+			(plock->start > (ex->start + ex->size))) {
 		/* No overlap with this lock - copy existing. */
 		memcpy(&lck_arr[0], ex, sizeof(struct lock_struct));
 		return 1;
 	}
 
 /*********************************************
-                +---------+
-                |  ex     |
-                +---------+
+        +---------------------------+
+        |          ex               |
+        +---------------------------+
         +---------------------------+
         |       plock               | -> replace with plock.
         +---------------------------+
@@ -424,24 +424,32 @@ OR....
 	}
 
 /*********************************************
-                +---------------+
-                |  ex           |
-                +---------------+
+        +-----------------------+
+        |          ex           |
+        +-----------------------+
         +---------------+
         |   plock       |
         +---------------+
+OR....
+                        +-------+
+                        |  ex   |
+                        +-------+
+        +---------------+
+        |   plock       |
+        +---------------+
+
 BECOMES....
         +---------------+-------+
         |   plock       | ex    | - different lock types.
         +---------------+-------+
-OR....
+OR.... (merge)
         +-----------------------+
         |   ex                  | - same lock type.
         +-----------------------+
 **********************************************/
 
 	if ( (ex->start >= plock->start) &&
-				(ex->start < plock->start + plock->size) &&
+				(ex->start <= plock->start + plock->size) &&
 				(ex->start + ex->size > plock->start + plock->size) ) {
 
 		*lock_was_added = True;
@@ -468,9 +476,16 @@ OR....
 	}
 
 /*********************************************
-   +---------------+
-   |  ex           |
-   +---------------+
+   +-----------------------+
+   |  ex                   |
+   +-----------------------+
+           +---------------+
+           |   plock       |
+           +---------------+
+OR....
+   +-------+        
+   |  ex   |
+   +-------+
            +---------------+
            |   plock       |
            +---------------+
@@ -479,7 +494,7 @@ BECOMES....
    | ex    |   plock       | - different lock types
    +-------+---------------+
 
-OR
+OR.... (merge)
    +-----------------------+
    | ex                    | - same lock type.
    +-----------------------+
@@ -487,7 +502,7 @@ OR
 **********************************************/
 
 	if ( (ex->start < plock->start) &&
-			(ex->start + ex->size > plock->start) &&
+			(ex->start + ex->size >= plock->start) &&
 			(ex->start + ex->size <= plock->start + plock->size) ) {
 
 		*lock_was_added = True;
