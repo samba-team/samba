@@ -54,7 +54,7 @@ static void smb2srv_getinfo_send(struct ntvfs_request *ntvfs)
 		SMB2SRV_CHECK(op->send_fn(op));
 	}
 
-	SMB2SRV_CHECK(smb2srv_setup_reply(req, 0x08, True, 0));
+	SMB2SRV_CHECK(smb2srv_setup_reply(req, 0x08, True, op->info->out.blob.length));
 
 	/* TODO: this is maybe a o16s32_blob */
 	SMB2SRV_CHECK(smb2_push_o16s16_blob(&req->out, 0x02, op->info->out.blob));
