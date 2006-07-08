@@ -234,6 +234,7 @@ NTSTATUS smb_raw_fileinfo_passthru_parse(const DATA_BLOB *blob, TALLOC_CTX *mem_
 		parms->all_info2.out.nlink          = IVAL(blob->data, 0x38);
 		parms->all_info2.out.delete_pending = CVAL(blob->data, 0x3C);
 		parms->all_info2.out.directory      = CVAL(blob->data, 0x3D);
+		/* 0x3E-0x3F padding */
 		parms->all_info2.out.file_id        = BVAL(blob->data, 0x40);
 		parms->all_info2.out.ea_size        = IVAL(blob->data, 0x48);
 		parms->all_info2.out.access_mask    = IVAL(blob->data, 0x4C);
