@@ -181,6 +181,9 @@ struct pvfs_file {
 
 	/* for directories, a buffer of pending notify events */
 	struct pvfs_notify_buffer *notify_buffer;
+
+	/* for directories, the state of an incomplete SMB2 Find */
+	struct pvfs_search_state *search;
 };
 
 /* the state of a search started with pvfs_search_first() */
