@@ -1311,7 +1311,7 @@ static NTSTATUS smbpasswd_getsampwnam(struct pdb_methods *my_methods,
 	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
 	struct smbpasswd_privates *smbpasswd_state = (struct smbpasswd_privates*)my_methods->private_data;
 	struct smb_passwd *smb_pw;
-	void *fp = NULL;
+	FILE *fp = NULL;
 
 	DEBUG(10, ("getsampwnam (smbpasswd): search by name: %s\n", username));
 
@@ -1355,7 +1355,7 @@ static NTSTATUS smbpasswd_getsampwsid(struct pdb_methods *my_methods, struct sam
 	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
 	struct smbpasswd_privates *smbpasswd_state = (struct smbpasswd_privates*)my_methods->private_data;
 	struct smb_passwd *smb_pw;
-	void *fp = NULL;
+	FILE *fp = NULL;
 	fstring sid_str;
 	uint32 rid;
 	

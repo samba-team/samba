@@ -52,7 +52,7 @@ const char *my_sam_name(void)
 
 static int samu_destroy(void *p) 
 {
-	struct samu *user = p;
+	struct samu *user = (struct samu *)p;
 
 	data_blob_clear_free( &user->lm_pw );
 	data_blob_clear_free( &user->nt_pw );
@@ -992,7 +992,7 @@ BOOL init_sam_from_buffer_v3(struct samu *sampass, uint8 *buf, uint32 buflen)
 
 	pdb_get_account_policy(AP_PASSWORD_HISTORY, &pwHistLen);
 	if (pwHistLen) {
-		uint8 *pw_hist = SMB_MALLOC(pwHistLen * PW_HISTORY_ENTRY_LEN);
+		uint8 *pw_hist = (uint8 *)SMB_MALLOC(pwHistLen * PW_HISTORY_ENTRY_LEN);
 		if (!pw_hist) {
 			ret = False;
 			goto done;

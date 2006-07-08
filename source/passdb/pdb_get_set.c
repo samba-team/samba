@@ -1020,7 +1020,7 @@ BOOL pdb_set_plaintext_passwd(struct samu *sampass, const char *plaintext)
 
 				if (current_history_len < pwHistLen) {
 					/* Ensure we have space for the needed history. */
-					uchar *new_history = TALLOC(sampass,
+					uchar *new_history = (uchar *)TALLOC(sampass,
 								pwHistLen*PW_HISTORY_ENTRY_LEN);
 					if (!new_history) {
 						return False;

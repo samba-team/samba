@@ -105,7 +105,8 @@ BOOL secrets_store(const char *key, const void *data, size_t size)
 	if (!tdb)
 		return False;
 	return tdb_trans_store(tdb, string_tdb_data(key),
-			       make_tdb_data(data, size), TDB_REPLACE) == 0;
+			       make_tdb_data((const char *)data, size),
+			       TDB_REPLACE) == 0;
 }
 
 
@@ -288,7 +289,8 @@ BOOL secrets_fetch_trust_account_password(const char *domain, uint8 ret_pwd[16],
 		return True;
 	}
 
-	if (!(pass = secrets_fetch(trust_keystr(domain), &size))) {
+	if (!(pass = (struct machine_acct_pass *)secrets_fetch(
+		      trust_keystr(domain), &size))) {
 		DEBUG(5, ("secrets_fetch failed!\n"));
 		return False;
 	}
@@ -466,7 +468,8 @@ BOOL secrets_fetch_trusted_domain_password(const char *domain, char** pwd,
 	ZERO_STRUCT(pass);
 
 	/* fetching trusted domain password structure */
-	if (!(pass_buf = secrets_fetch(trustdom_keystr(domain), &size))) {
+	if (!(pass_buf = (char *)secrets_fetch(trustdom_keystr(domain),
+					       &size))) {
 		DEBUG(5, ("secrets_fetch failed!\n"));
 		return False;
 	}
@@ -624,7 +627,7 @@ char *secrets_fetch_machine_password(const char *domain,
 		uint32 *last_set_time;
 		asprintf(&key, "%s/%s", SECRETS_MACHINE_LAST_CHANGE_TIME, domain);
 		strupper_m(key);
-		last_set_time = secrets_fetch(key, &size);
+		last_set_time = (unsigned int *)secrets_fetch(key, &size);
 		if (last_set_time) {
 			*pass_last_set_time = IVAL(last_set_time,0);
 			SAFE_FREE(last_set_time);
@@ -639,7 +642,7 @@ char *secrets_fetch_machine_password(const char *domain,
 		uint32 *channel_type;
 		asprintf(&key, "%s/%s", SECRETS_MACHINE_SEC_CHANNEL_TYPE, domain);
 		strupper_m(key);
-		channel_type = secrets_fetch(key, &size);
+		channel_type = (unsigned int *)secrets_fetch(key, &size);
 		if (channel_type) {
 			*channel = IVAL(channel_type,0);
 			SAFE_FREE(channel_type);
@@ -743,7 +746,7 @@ BOOL fetch_ldap_pw(char **dn, char** pw)
 		DEBUG(0, ("fetch_ldap_pw: asprintf failed!\n"));
 	}
 	
-	*pw=secrets_fetch(key, &size);
+	*pw=(char *)secrets_fetch(key, &size);
 	SAFE_FREE(key);
 
 	if (!size) {
@@ -761,7 +764,7 @@ BOOL fetch_ldap_pw(char **dn, char** pw)
 		for (p=old_style_key; *p; p++)
 			if (*p == ',') *p = '/';
 	
-		data=secrets_fetch(old_style_key, &size);
+		data=(char *)secrets_fetch(old_style_key, &size);
 		if (!size && size < sizeof(old_style_pw)) {
 			DEBUG(0,("fetch_ldap_pw: neither ldap secret retrieved!\n"));
 			SAFE_FREE(old_style_key);
@@ -853,7 +856,7 @@ NTSTATUS secrets_trusted_domains(TALLOC_CTX *mem_ctx, uint32 *num_domains,
 			return NT_STATUS_NO_MEMORY;
 		}
 
-		packed_pass = secrets_fetch(secrets_key, &size);
+		packed_pass = (char *)secrets_fetch(secrets_key, &size);
 		packed_size = tdb_trusted_dom_pass_unpack(packed_pass, size,
 							  &pass);
 		/* packed representation isn't needed anymore */
@@ -1006,9 +1009,9 @@ BOOL secrets_fetch_afs_key(const char *cell, struct afs_key *result)
 *******************************************************************************/
 void secrets_fetch_ipc_userpass(char **username, char **domain, char **password)
 {
-	*username = secrets_fetch(SECRETS_AUTH_USER, NULL);
-	*domain = secrets_fetch(SECRETS_AUTH_DOMAIN, NULL);
-	*password = secrets_fetch(SECRETS_AUTH_PASSWORD, NULL);
+	*username = (char *)secrets_fetch(SECRETS_AUTH_USER, NULL);
+	*domain = (char *)secrets_fetch(SECRETS_AUTH_DOMAIN, NULL);
+	*password = (char *)secrets_fetch(SECRETS_AUTH_PASSWORD, NULL);
 	
 	if (*username && **username) {
 
@@ -1113,7 +1116,7 @@ BOOL secrets_store_schannel_session_info(TALLOC_CTX *mem_ctx,
 				pdc->remote_machine,
 				pdc->domain);
 
-	value.dptr = TALLOC(mem_ctx, value.dsize);
+	value.dptr = (char *)TALLOC(mem_ctx, value.dsize);
 	if (!value.dptr) {
 		TALLOC_FREE(keystr);
 		return False;

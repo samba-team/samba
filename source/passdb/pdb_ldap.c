@@ -790,7 +790,7 @@ static BOOL init_sam_from_ldap(struct ldapsam_privates *ldap_state,
 
 		pwHistLen = MIN(pwHistLen, MAX_PW_HISTORY_LEN);
 
-		if ((pwhist = SMB_MALLOC(pwHistLen * PW_HISTORY_ENTRY_LEN)) == NULL){
+		if ((pwhist = SMB_MALLOC_ARRAY(uint8, pwHistLen * PW_HISTORY_ENTRY_LEN)) == NULL){
 			DEBUG(0, ("init_sam_from_ldap: malloc failed!\n"));
 			return False;
 		}
@@ -1748,7 +1748,7 @@ static NTSTATUS ldapsam_update_sam_account(struct pdb_methods *my_methods, struc
 	LDAPMod **mods = NULL;
 	const char **attr_list;
 
-	result = pdb_get_backend_private_data(newpwd, my_methods);
+	result = (LDAPMessage *)pdb_get_backend_private_data(newpwd, my_methods);
 	if (!result) {
 		attr_list = get_userattr_list(NULL, ldap_state->schema_ver);
 		if (pdb_get_username(newpwd) == NULL) {
@@ -3924,7 +3924,8 @@ struct ldap_search_state {
 
 static BOOL ldapsam_search_firstpage(struct pdb_search *search)
 {
-	struct ldap_search_state *state = search->private_data;
+	struct ldap_search_state *state =
+		(struct ldap_search_state *)search->private_data;
 	LDAP *ld;
 	int rc = LDAP_OPERATIONS_ERROR;
 
@@ -3976,7 +3977,8 @@ static BOOL ldapsam_search_firstpage(struct pdb_search *search)
 
 static BOOL ldapsam_search_nextpage(struct pdb_search *search)
 {
-	struct ldap_search_state *state = search->private_data;
+	struct ldap_search_state *state =
+		(struct ldap_search_state *)search->private_data;
 	int rc;
 
 	if (!state->connection->paged_results) {
@@ -4006,7 +4008,8 @@ static BOOL ldapsam_search_nextpage(struct pdb_search *search)
 static BOOL ldapsam_search_next_entry(struct pdb_search *search,
 				      struct samr_displayentry *entry)
 {
-	struct ldap_search_state *state = search->private_data;
+	struct ldap_search_state *state =
+		(struct ldap_search_state *)search->private_data;
 	BOOL result;
 
  retry:
@@ -4041,7 +4044,8 @@ static BOOL ldapsam_search_next_entry(struct pdb_search *search,
 
 static void ldapsam_search_end(struct pdb_search *search)
 {
-	struct ldap_search_state *state = search->private_data;
+	struct ldap_search_state *state =
+		(struct ldap_search_state *)search->private_data;
 	int rc;
 
 	if (state->pagedresults_cookie == NULL)
@@ -4157,7 +4161,8 @@ static BOOL ldapsam_search_users(struct pdb_methods *methods,
 				 struct pdb_search *search,
 				 uint32 acct_flags)
 {
-	struct ldapsam_privates *ldap_state = methods->private_data;
+	struct ldapsam_privates *ldap_state =
+		(struct ldapsam_privates *)methods->private_data;
 	struct ldap_search_state *state;
 
 	state = TALLOC_P(search->mem_ctx, struct ldap_search_state);
@@ -4315,7 +4320,8 @@ static BOOL ldapsam_search_grouptype(struct pdb_methods *methods,
                                      const DOM_SID *sid,
 				     enum SID_NAME_USE type)
 {
-	struct ldapsam_privates *ldap_state = methods->private_data;
+	struct ldapsam_privates *ldap_state =
+		(struct ldapsam_privates *)methods->private_data;
 	struct ldap_search_state *state;
 
 	state = TALLOC_P(search->mem_ctx, struct ldap_search_state);
@@ -4474,8 +4480,8 @@ static NTSTATUS ldapsam_new_rid_internal(struct pdb_methods *methods, uint32 *ri
 	int i;
 
 	for (i=0; i<10; i++) {
-		NTSTATUS result = ldapsam_get_new_rid(methods->private_data,
-						      rid);
+		NTSTATUS result = ldapsam_get_new_rid(
+			(struct ldapsam_privates *)methods->private_data, rid);
 		if (NT_STATUS_IS_OK(result)) {
 			return result;
 		}
@@ -4501,7 +4507,8 @@ static BOOL ldapsam_sid_to_id(struct pdb_methods *methods,
 			      const DOM_SID *sid,
 			      union unid_t *id, enum SID_NAME_USE *type)
 {
-	struct ldapsam_privates *priv = methods->private_data;
+	struct ldapsam_privates *priv =
+		(struct ldapsam_privates *)methods->private_data;
 	char *filter;
 	const char *attrs[] = { "sambaGroupType", "gidNumber", "uidNumber",
 				NULL };
@@ -5488,7 +5495,7 @@ NTSTATUS pdb_init_ldapsam_compat(struct pdb_methods **pdb_method, const char *lo
 
 	(*pdb_method)->name = "ldapsam_compat";
 
-	ldap_state = (*pdb_method)->private_data;
+	ldap_state = (struct ldapsam_privates *)((*pdb_method)->private_data);
 	ldap_state->schema_ver = SCHEMAVER_SAMBAACCOUNT;
 
 	sid_copy(&ldap_state->domain_sid, get_global_sam_sid());
@@ -5546,7 +5553,7 @@ NTSTATUS pdb_init_ldapsam(struct pdb_methods **pdb_method, const char *location)
 		}
 	}
 
-	ldap_state = (*pdb_method)->private_data;
+	ldap_state = (struct ldapsam_privates *)((*pdb_method)->private_data);
 	ldap_state->schema_ver = SCHEMAVER_SAMBASAMACCOUNT;
 
 	/* Try to setup the Domain Name, Domain SID, algorithmic rid base */
