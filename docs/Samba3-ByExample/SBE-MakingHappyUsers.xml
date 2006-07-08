@@ -4255,7 +4255,7 @@ veto oplock files = /*.pdf/*.PST/
 	remember so much. There are bound to be some sticky issues here.
 	</para>
 
-	<qandaset defaultlabel="chap06qa">
+	<qandaset defaultlabel="chap06qa" type="number">
 	<qandaentry>
 	<question>
 
