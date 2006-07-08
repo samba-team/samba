@@ -482,6 +482,7 @@ NTSTATUS smbsrv_push_passthru_fileinfo(TALLOC_CTX *mem_ctx,
 		SIVAL(blob->data,       0x38, st->all_info2.out.nlink);
 		SCVAL(blob->data,       0x3C, st->all_info2.out.delete_pending);
 		SCVAL(blob->data,       0x3D, st->all_info2.out.directory);
+		SSVAL(blob->data,       0x3E, 0); /* padding */
 		SBVAL(blob->data,	0x40, st->all_info2.out.file_id);
 		SIVAL(blob->data,       0x48, st->all_info2.out.ea_size);
 		SIVAL(blob->data,	0x4C, st->all_info2.out.access_mask);
