@@ -1176,6 +1176,7 @@ static NTSTATUS ntvfs_map_read_finish(struct ntvfs_module_context *ntvfs,
 		break;
 	case RAW_READ_SMB2:
 		rd->smb2.out.data.length= rd2->generic.out.nread;
+		rd->smb2.out.unknown1	= 0;
 		break;
 	default:
 		return NT_STATUS_INVALID_LEVEL;
@@ -1307,11 +1308,13 @@ _PUBLIC_ NTSTATUS ntvfs_map_close(struct ntvfs_module_context *ntvfs,
 	case RAW_CLOSE_SPLCLOSE:
 		cl2->generic.level		= RAW_CLOSE_CLOSE;
 		cl2->generic.in.file.ntvfs	= cl->splclose.in.file.ntvfs;
+		cl2->generic.in.write_time	= 0;
 		break;
 
 	case RAW_CLOSE_SMB2:
 		cl2->generic.level		= RAW_CLOSE_CLOSE;
 		cl2->generic.in.file.ntvfs	= cl->smb2.in.file.ntvfs;
+		cl2->generic.in.write_time	= 0;
 		/* SMB2 Close has output parameter, but we just zero them */
 		ZERO_STRUCT(cl->smb2.out);
 		break;
