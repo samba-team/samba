@@ -154,11 +154,10 @@ static void smb2srv_read_send(struct ntvfs_request *ntvfs)
 	union smb_read *io;
 
 	SMB2SRV_CHECK_ASYNC_STATUS(io, union smb_read);
-	SMB2SRV_CHECK(smb2srv_setup_reply(req, 0x10, True, 0));
+	SMB2SRV_CHECK(smb2srv_setup_reply(req, 0x10, True, io->smb2.out.data.length));
 
 	SMB2SRV_CHECK(smb2_push_o16s32_blob(&req->out, 0x02, io->smb2.out.data));
 	SBVAL(req->out.body,	0x08,	io->smb2.out.unknown1);
-	SCVAL(req->out.body,	0x10,	0);
 
 	smb2srv_send_reply(req);
 }
