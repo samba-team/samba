@@ -2424,7 +2424,7 @@ Nmap run completed -- 1 IP address (1 host up) scanned in 168 seconds
 	<para>
 	</para>
 
-	<qandaset>
+	<qandaset defaultlable="missed01" type="number">
 	<qandaentry>
 	<question>
 
