@@ -9,6 +9,7 @@ OBJ_FILES = \
 		tcon.o \
 		fileio.o \
 		fileinfo.o \
+		find.o \
 		keepalive.o
 PUBLIC_DEPENDENCIES = \
 		ntvfs LIBPACKET LIBCLI_SMB2
