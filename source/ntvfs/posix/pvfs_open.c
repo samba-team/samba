@@ -266,6 +266,7 @@ static NTSTATUS pvfs_open_directory(struct pvfs_state *pvfs,
 	f->access_mask   = access_mask;
 	f->brl_handle	 = NULL;
 	f->notify_buffer = NULL;
+	f->search        = NULL;
 
 	f->handle->pvfs              = pvfs;
 	f->handle->name              = talloc_steal(f->handle, name);
@@ -698,6 +699,7 @@ static NTSTATUS pvfs_create_file(struct pvfs_state *pvfs,
 	f->access_mask       = access_mask;
 	f->impersonation     = io->generic.in.impersonation;
 	f->notify_buffer     = NULL;
+	f->search            = NULL;
 
 	f->handle->pvfs              = pvfs;
 	f->handle->name              = talloc_steal(f->handle, name);
@@ -1126,6 +1128,7 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 	f->access_mask   = access_mask;
 	f->impersonation = io->generic.in.impersonation;
 	f->notify_buffer = NULL;
+	f->search        = NULL;
 
 	f->handle->pvfs              = pvfs;
 	f->handle->fd                = -1;

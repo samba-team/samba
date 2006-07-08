@@ -58,6 +58,7 @@ static void pvfs_search_timer(struct event_context *ev, struct timed_event *te,
 static void pvfs_search_setup_timer(struct pvfs_search_state *search)
 {
 	struct event_context *ev = search->pvfs->ntvfs->ctx->event_ctx;
+	if (search->handle == -1) return;
 	talloc_free(search->te);
 	search->te = event_add_timed(ev, search, 
 				     timeval_current_ofs(search->pvfs->search.inactivity_time, 0), 
@@ -595,6 +596,159 @@ static NTSTATUS pvfs_search_next_trans2(struct ntvfs_module_context *ntvfs,
 	return NT_STATUS_OK;
 }
 
+static NTSTATUS pvfs_search_first_smb2(struct ntvfs_module_context *ntvfs,
+				       struct ntvfs_request *req, const struct smb2_find *io, 
+				       void *search_private, 
+				       BOOL (*callback)(void *, union smb_search_data *))
+{
+	struct pvfs_dir *dir;
+	struct pvfs_state *pvfs = ntvfs->private_data;
+	struct pvfs_search_state *search;
+	uint_t reply_count;
+	uint16_t max_count;
+	const char *pattern;
+	NTSTATUS status;
+	struct pvfs_filename *name;
+	struct pvfs_file *f;
+
+	f = pvfs_find_fd(pvfs, req, io->in.file.ntvfs);
+	if (!f) {
+		return NT_STATUS_FILE_CLOSED;
+	}
+
+	/* its only valid for directories */
+	if (f->handle->fd != -1) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	if (!(f->access_mask & SEC_DIR_LIST)) {
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	if (f->search) {
+		talloc_free(f->search);
+		f->search = NULL;
+	}
+
+	if (strequal(io->in.pattern, "")) {
+		return NT_STATUS_OBJECT_NAME_INVALID;
+	}
+	if (strchr_m(io->in.pattern, '\\')) {
+		return NT_STATUS_OBJECT_NAME_INVALID;
+	}
+	if (strchr_m(io->in.pattern, '/')) {
+		return NT_STATUS_OBJECT_NAME_INVALID;
+	}
+
+	if (strequal("", f->handle->name->original_name)) {
+		pattern = talloc_asprintf(req, "\\%s", io->in.pattern);
+		NT_STATUS_HAVE_NO_MEMORY(pattern);
+	} else {
+		pattern = talloc_asprintf(req, "\\%s\\%s",
+					  f->handle->name->original_name,
+					  io->in.pattern);
+		NT_STATUS_HAVE_NO_MEMORY(pattern);
+	}
+
+	/* resolve the cifs name to a posix name */
+	status = pvfs_resolve_name(pvfs, req, pattern, PVFS_RESOLVE_WILDCARD, &name);
+	NT_STATUS_NOT_OK_RETURN(status);
+
+	if (!name->has_wildcard && !name->exists) {
+		return NT_STATUS_NO_SUCH_FILE;
+	}
+
+	/* we initially make search a child of the request, then if we
+	   need to keep it long term we steal it for the private
+	   structure */
+	search = talloc(req, struct pvfs_search_state);
+	NT_STATUS_HAVE_NO_MEMORY(search);
+
+	/* do the actual directory listing */
+	status = pvfs_list_start(pvfs, name, search, &dir);
+	NT_STATUS_NOT_OK_RETURN(status);
+
+	search->pvfs		= pvfs;
+	search->handle		= -1;
+	search->dir		= dir;
+	search->current_index	= 0;
+	search->search_attrib	= 0;
+	search->must_attrib	= 0;
+	search->last_used	= 0;
+	search->num_ea_names	= 0;
+	search->ea_names	= NULL;
+	search->te		= NULL;
+
+	if (io->in.continue_flags & SMB2_CONTINUE_FLAG_SINGLE) {
+		max_count = 1;
+	} else {
+		max_count = UINT16_MAX;
+	}
+
+	status = pvfs_search_fill(pvfs, req, max_count, search, io->data_level,
+				  &reply_count, search_private, callback);
+	NT_STATUS_NOT_OK_RETURN(status);
+
+	/* not matching any entries is an error */
+	if (reply_count == 0) {
+		return NT_STATUS_NO_SUCH_FILE;
+	}
+
+	f->search = talloc_steal(f, search);
+
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS pvfs_search_next_smb2(struct ntvfs_module_context *ntvfs,
+				      struct ntvfs_request *req, const struct smb2_find *io, 
+				      void *search_private, 
+				      BOOL (*callback)(void *, union smb_search_data *))
+{
+	struct pvfs_state *pvfs = ntvfs->private_data;
+	struct pvfs_search_state *search;
+	uint_t reply_count;
+	uint16_t max_count;
+	NTSTATUS status;
+	struct pvfs_file *f;
+
+	f = pvfs_find_fd(pvfs, req, io->in.file.ntvfs);
+	if (!f) {
+		return NT_STATUS_FILE_CLOSED;
+	}
+
+	/* its only valid for directories */
+	if (f->handle->fd != -1) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	/* if there's no search started on the dir handle, it's like a search_first */
+	search = f->search;
+	if (!search) {
+		return pvfs_search_first_smb2(ntvfs, req, io, search_private, callback);
+	}
+
+	if (io->in.continue_flags & SMB2_CONTINUE_FLAG_RESTART) {
+		search->current_index = 0;
+	}
+
+	if (io->in.continue_flags & SMB2_CONTINUE_FLAG_SINGLE) {
+		max_count = 1;
+	} else {
+		max_count = UINT16_MAX;
+	}
+
+	status = pvfs_search_fill(pvfs, req, max_count, search, io->data_level,
+				  &reply_count, search_private, callback);
+	NT_STATUS_NOT_OK_RETURN(status);
+
+	/* not matching any entries is an error */
+	if (reply_count == 0) {
+		return STATUS_NO_MORE_FILES;
+	}
+
+	return NT_STATUS_OK;
+}
+
 /* 
    list files in a directory matching a wildcard pattern
 */
@@ -611,6 +765,9 @@ NTSTATUS pvfs_search_first(struct ntvfs_module_context *ntvfs,
 
 	case RAW_SEARCH_TRANS2:
 		return pvfs_search_first_trans2(ntvfs, req, io, search_private, callback);
+
+	case RAW_SEARCH_SMB2:
+		return pvfs_search_first_smb2(ntvfs, req, &io->smb2, search_private, callback);
 	}
 
 	return NT_STATUS_INVALID_LEVEL;
@@ -632,6 +789,9 @@ NTSTATUS pvfs_search_next(struct ntvfs_module_context *ntvfs,
 
 	case RAW_SEARCH_TRANS2:
 		return pvfs_search_next_trans2(ntvfs, req, io, search_private, callback);
+
+	case RAW_SEARCH_SMB2:
+		return pvfs_search_next_smb2(ntvfs, req, &io->smb2, search_private, callback);
 	}
 
 	return NT_STATUS_INVALID_LEVEL;
