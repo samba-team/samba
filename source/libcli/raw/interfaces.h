@@ -2224,6 +2224,12 @@ union smb_search_first {
 #define SMB2_FIND_NAME_INFO              0x0C
 #define SMB2_FIND_ID_BOTH_DIRECTORY_INFO 0x25
 #define SMB2_FIND_ID_FULL_DIRECTORY_INFO 0x26
+
+/* flags for RAW_FILEINFO_SMB2_ALL_EAS */
+#define SMB2_CONTINUE_FLAG_RESTART    0x01
+#define SMB2_CONTINUE_FLAG_SINGLE     0x02
+#define SMB2_CONTINUE_FLAG_NEW        0x10
+
 	/* SMB2 Find */
 	struct smb2_find {
 		enum smb_search_level level;
@@ -2306,6 +2312,9 @@ union smb_search_next {
 			uint16_t end_of_search;
 		} out;
 	} t2fnext;
+
+	/* SMB2 Find */
+	struct smb2_find smb2;
 };
 
 /* union for search reply file data */

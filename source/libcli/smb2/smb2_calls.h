@@ -57,10 +57,6 @@ struct smb2_negprot {
 #define SMB2_GETINFO_FS                 0x02
 #define SMB2_GETINFO_SECURITY           0x03
 
-/* flags for RAW_FILEINFO_SMB2_ALL_EAS */
-#define SMB2_CONTINUE_FLAG_RESTART    0x01
-#define SMB2_CONTINUE_FLAG_SINGLE     0x02
-
 /* NOTE! the getinfo fs and file levels exactly match up with the
    'passthru' SMB levels, which are levels >= 1000. The SMB2 client
    lib uses the names from the libcli/raw/ library */
