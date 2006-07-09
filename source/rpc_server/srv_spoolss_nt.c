@@ -4064,7 +4064,7 @@ static BOOL convert_nt_devicemode( DEVICEMODE *devmode, NT_DEVICEMODE *ntdevmode
  Create a DEVMODE struct. Returns malloced memory.
 ****************************************************************************/
 
-DEVICEMODE *construct_dev_mode(int snum)
+DEVICEMODE *construct_dev_mode(const char *servicename)
 {
 	NT_PRINTER_INFO_LEVEL 	*printer = NULL;
 	DEVICEMODE 		*devmode = NULL;
@@ -4073,7 +4073,7 @@ DEVICEMODE *construct_dev_mode(int snum)
 	
 	DEBUGADD(8,("getting printer characteristics\n"));
 
-	if (!W_ERROR_IS_OK(get_a_printer(NULL, &printer, 2, lp_const_servicename(snum)))) 
+	if (!W_ERROR_IS_OK(get_a_printer(NULL, &printer, 2, servicename)))
 		return NULL;
 
 	if ( !printer->info_2->devmode ) {
@@ -4145,7 +4145,7 @@ static BOOL construct_printer_info_2(Printer_entry *print_hnd, PRINTER_INFO_2 *p
 	printer->cjobs = count;							/* jobs */
 	printer->averageppm = ntprinter->info_2->averageppm;			/* average pages per minute */
 			
-	if ( !(printer->devmode = construct_dev_mode(snum)) )
+	if ( !(printer->devmode = construct_dev_mode(lp_const_servicename(snum))) )
 		DEBUG(8, ("Returning NULL Devicemode!\n"));
 
 	printer->secdesc = NULL;
@@ -6528,7 +6528,7 @@ static WERROR enumjobs_level2(print_queue_struct *queue, int snum,
 		
 	/* this should not be a failure condition if the devmode is NULL */
 	
-	devmode = construct_dev_mode(snum);
+	devmode = construct_dev_mode(lp_const_servicename(snum));
 
 	for (i=0; i<*returned; i++)
 		fill_job_info_2(&(info[i]), &queue[i], i, snum, ntprinter, devmode);
@@ -8755,7 +8755,7 @@ static WERROR getjob_level_2(print_queue_struct **queue, int count, int snum,
 	 */
 	 
 	if ( !(nt_devmode=print_job_devmode( lp_const_servicename(snum), jobid )) )
-		devmode = construct_dev_mode(snum);
+		devmode = construct_dev_mode(lp_const_servicename(snum));
 	else {
 		if ((devmode = SMB_MALLOC_P(DEVICEMODE)) != NULL) {
 			ZERO_STRUCTP( devmode );
