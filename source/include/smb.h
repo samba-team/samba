@@ -540,11 +540,15 @@ struct dfree_cached_info {
 
 struct dptr_struct;
 
+struct share_params {
+	int service;
+};
+
 typedef struct connection_struct {
 	struct connection_struct *next, *prev;
 	TALLOC_CTX *mem_ctx;
 	unsigned cnum; /* an index passed over the wire */
-	int service;
+	struct share_params *params;
 	BOOL force_user;
 	BOOL force_group;
 	struct vuid_cache vuid_cache;
