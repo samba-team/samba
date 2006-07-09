@@ -275,14 +275,15 @@ done:
 	return ret;
 }
 
-static BOOL is_8_3(const char *fname, BOOL check_case, BOOL allow_wildcards, int snum)
+static BOOL is_8_3(const char *fname, BOOL check_case, BOOL allow_wildcards,
+		   const struct share_params *p)
 {
 	const char *f;
 	smb_ucs2_t *ucs2name;
 	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
 	size_t size;
 
-	magic_char = lp_magicchar(snum);
+	magic_char = lp_magicchar(p);
 
 	if (!fname || !*fname)
 		return False;
@@ -360,11 +361,11 @@ static void init_chartest( void )
  *
  * ************************************************************************** **
  */
-static BOOL is_mangled(const char *s, int snum)
+static BOOL is_mangled(const char *s, const struct share_params *p)
 {
 	char *magic;
 
-	magic_char = lp_magicchar(snum);
+	magic_char = lp_magicchar(p);
 
 	if( !ct_initialized )
 		init_chartest();
@@ -460,13 +461,13 @@ static void cache_mangled_name( const char mangled_name[13], char *raw_name )
  * ************************************************************************** **
  */
 
-static BOOL check_cache( char *s, size_t maxlen, int snum )
+static BOOL check_cache( char *s, size_t maxlen, const struct share_params *p )
 {
 	TDB_DATA data_val;
 	char *ext_start = NULL;
 	char *saved_ext = NULL;
 
-	magic_char = lp_magicchar(snum);
+	magic_char = lp_magicchar(p);
 
 	/* If the cache isn't initialized, give up. */
 	if( !tdb_mangled_cache )
@@ -606,10 +607,11 @@ static void to_8_3(char *s, int default_case)
  * ****************************************************************************
  */
 
-static void name_map(char *OutName, BOOL need83, BOOL cache83, int default_case, int snum)
+static void name_map(char *OutName, BOOL need83, BOOL cache83,
+		     int default_case, const struct share_params *p)
 {
 	smb_ucs2_t *OutName_ucs2;
-	magic_char = lp_magicchar(snum);
+	magic_char = lp_magicchar(p);
 
 	DEBUG(5,("name_map( %s, need83 = %s, cache83 = %s)\n", OutName,
 		 need83 ? "True" : "False", cache83 ? "True" : "False"));

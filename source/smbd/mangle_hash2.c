@@ -268,7 +268,7 @@ static BOOL is_mangled_component(const char *name, size_t len)
    directory separators. It should return true if any component is
    mangled
  */
-static BOOL is_mangled(const char *name, int snum)
+static BOOL is_mangled(const char *name, const struct share_params *parm)
 {
 	const char *p;
 	const char *s;
@@ -293,7 +293,7 @@ static BOOL is_mangled(const char *name, int snum)
    simplifies things greatly (it means that we know the string won't
    get larger when converted from UNIX to DOS formats)
 */
-static BOOL is_8_3(const char *name, BOOL check_case, BOOL allow_wildcards, int snum)
+static BOOL is_8_3(const char *name, BOOL check_case, BOOL allow_wildcards, const struct share_params *p)
 {
 	int len, i;
 	char *dot_p;
@@ -370,7 +370,7 @@ static void mangle_reset(void)
   try to find a 8.3 name in the cache, and if found then
   replace the string with the original long name. 
 */
-static BOOL check_cache(char *name, size_t maxlen, int snum)
+static BOOL check_cache(char *name, size_t maxlen, const struct share_params *p)
 {
 	unsigned int hash, multiplier;
 	unsigned int i;
@@ -378,7 +378,7 @@ static BOOL check_cache(char *name, size_t maxlen, int snum)
 	char extension[4];
 
 	/* make sure that this is a mangled name from this cache */
-	if (!is_mangled(name, snum)) {
+	if (!is_mangled(name, p)) {
 		M_DEBUG(10,("check_cache: %s -> not mangled\n", name));
 		return False;
 	}
@@ -510,7 +510,7 @@ static BOOL is_legal_name(const char *name)
 
   the name parameter must be able to hold 13 bytes
 */
-static void name_map(fstring name, BOOL need83, BOOL cache83, int default_case, int snum)
+static void name_map(fstring name, BOOL need83, BOOL cache83, int default_case, const struct share_params *p)
 {
 	char *dot_p;
 	char lead_chars[7];
@@ -524,7 +524,7 @@ static void name_map(fstring name, BOOL need83, BOOL cache83, int default_case, 
 	if (!is_reserved_name(name)) {
 		/* if the name is already a valid 8.3 name then we don't need to 
 		   do anything */
-		if (is_8_3(name, False, False, snum)) {
+		if (is_8_3(name, False, False, p)) {
 			return;
 		}
 
@@ -724,22 +724,22 @@ struct mangle_fns *mangle_hash2_init(void)
 static void posix_mangle_reset(void)
 {;}
 
-static BOOL posix_is_mangled(const char *s, int snum)
+static BOOL posix_is_mangled(const char *s, const struct share_params *p)
 {
 	return False;
 }
 
-static BOOL posix_is_8_3(const char *fname, BOOL check_case, BOOL allow_wildcards, int snum)
+static BOOL posix_is_8_3(const char *fname, BOOL check_case, BOOL allow_wildcards, const struct share_params *p)
 {
 	return False;
 }
 
-static BOOL posix_check_cache( char *s, size_t maxlen, int snum )
+static BOOL posix_check_cache( char *s, size_t maxlen, const struct share_params *p )
 {
 	return False;
 }
 
-static void posix_name_map(char *OutName, BOOL need83, BOOL cache83, int default_case, int snum)
+static void posix_name_map(char *OutName, BOOL need83, BOOL cache83, int default_case, const struct share_params *p)
 {
 	if (need83) {
 		memset(OutName, '\0', 13);
