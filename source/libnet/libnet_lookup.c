@@ -32,9 +32,12 @@
 #include "libcli/finddcs.h"
 
 struct lookup_state {
-	struct composite_context *resolve_ctx;
 	struct nbt_name hostname;
+	const char *address;
 };
+
+
+static void continue_name_resolved(struct composite_context *ctx);
 
 
 /**
@@ -48,20 +51,30 @@ struct composite_context *libnet_Lookup_send(struct libnet_context *ctx,
 {
 	struct composite_context *c;
 	struct lookup_state *s;
+	struct composite_context *cresolve_req;
 	const char** methods;
-
-	if (!io) return NULL;
 
 	/* allocate context and state structures */
 	c = talloc_zero(NULL, struct composite_context);
-	if (c == NULL) goto failed;
+	if (c == NULL) return NULL;
 
 	s = talloc_zero(c, struct lookup_state);
-	if (s == NULL) goto failed;
+	if (s == NULL) {
+		composite_error(c, NT_STATUS_NO_MEMORY);
+		return c;
+	}
 	
 	/* prepare event context */
 	c->event_ctx = event_context_find(c);
-	if (c->event_ctx == NULL) goto failed;
+	if (c->event_ctx == NULL) {
+		composite_error(c, NT_STATUS_NO_MEMORY);
+		return c;
+	}
+
+	if (io == NULL || io->in.hostname == NULL) {
+		composite_error(c, NT_STATUS_INVALID_PARAMETER);
+		return c;
+	}
 
 	/* parameters */
 	s->hostname.name   = talloc_strdup(s, io->in.hostname);
@@ -79,13 +92,25 @@ struct composite_context *libnet_Lookup_send(struct libnet_context *ctx,
 	c->state	= COMPOSITE_STATE_IN_PROGRESS;
 
 	/* send resolve request */
-	s->resolve_ctx = resolve_name_send(&s->hostname, c->event_ctx, methods);
+	cresolve_req = resolve_name_send(&s->hostname, c->event_ctx, methods);
+
+	composite_continue(c, cresolve_req, continue_name_resolved, c);
 
 	return c;
+}
 
-failed:
-	talloc_free(c);
-	return NULL;
+
+static void continue_name_resolved(struct composite_context *ctx)
+{
+	struct composite_context *c;
+	struct lookup_state *s;
+
+	c = talloc_get_type(ctx->async.private_data, struct composite_context);
+	s = talloc_get_type(c->private_data, struct lookup_state);
+
+	c->status = resolve_name_recv(ctx, s, &s->address);
+	
+	composite_done(c);
 }
 
 
@@ -103,16 +128,16 @@ NTSTATUS libnet_Lookup_recv(struct composite_context *c, TALLOC_CTX *mem_ctx,
 {
 	NTSTATUS status;
 	struct lookup_state *s;
-	const char *address;
 
-	s = talloc_get_type(c->private_data, struct lookup_state);
-
-	status = resolve_name_recv(s->resolve_ctx, mem_ctx, &address);
+	status = composite_wait(c);
 	if (NT_STATUS_IS_OK(status)) {
-		io->out.address = str_list_make(mem_ctx, address, NULL);
+		s = talloc_get_type(c->private_data, struct lookup_state);
+
+		io->out.address = str_list_make(mem_ctx, s->address, NULL);
 		NT_STATUS_HAVE_NO_MEMORY(io->out.address);
 	}
 
+	talloc_free(c);
 	return status;
 }
 
@@ -198,7 +223,7 @@ NTSTATUS libnet_LookupDCs_recv(struct composite_context *c, TALLOC_CTX *mem_ctx,
 }
 
 /**
- * Synchronous version of LookupPdc
+ * Synchronous version of LookupDCs
  */
 NTSTATUS libnet_LookupDCs(struct libnet_context *ctx, TALLOC_CTX *mem_ctx,
 			  struct libnet_LookupDCs *io)
