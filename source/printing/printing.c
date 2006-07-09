@@ -2338,7 +2338,7 @@ uint32 print_job_start(struct current_user *user, int snum, char *jobname, NT_DE
 		return (uint32)-1;
 	}
 
-	if (!print_time_access_check(snum)) {
+	if (!print_time_access_check(lp_servicename(snum))) {
 		DEBUG(3, ("print_job_start: job start denied by time check\n"));
 		release_print_db(pdb);
 		return (uint32)-1;

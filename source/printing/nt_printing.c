@@ -5445,7 +5445,7 @@ BOOL print_access_check(struct current_user *user, int snum, int access_type)
  Check the time parameters allow a print operation.
 *****************************************************************************/
 
-BOOL print_time_access_check(int snum)
+BOOL print_time_access_check(const char *servicename)
 {
 	NT_PRINTER_INFO_LEVEL *printer = NULL;
 	BOOL ok = False;
@@ -5453,7 +5453,7 @@ BOOL print_time_access_check(int snum)
 	struct tm *t;
 	uint32 mins;
 
-	if (!W_ERROR_IS_OK(get_a_printer(NULL, &printer, 2, lp_servicename(snum))))
+	if (!W_ERROR_IS_OK(get_a_printer(NULL, &printer, 2, servicename)))
 		return False;
 
 	if (printer->info_2->starttime == 0 && printer->info_2->untiltime == 0)
