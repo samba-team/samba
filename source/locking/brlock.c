@@ -639,19 +639,14 @@ static NTSTATUS brl_lock_posix(struct byte_range_lock *br_lck,
 	if ((plock->lock_type != PENDING_LOCK) && lp_posix_locking(SNUM(br_lck->fsp->conn))) {
 		int errno_ret;
 
-		/* We pass in the entire new lock array to
-		   allow the lower layer to pick out the POSIX
-		   locks with the same PID. This allows the system
-		   layer to avoid walking the lock list doing the same
-		   split/merge game we've just done. */
+		/* The lower layer just needs to attempt to
+		   get the system POSIX lock. We've weeded out
+		   any conflicts above. */
 
 		if (!set_posix_lock_posix_flavour(br_lck->fsp,
 				plock->start,
 				plock->size,
 				plock->lock_type,
-				&plock->context,
-				count,
-				tp,
 				&errno_ret)) {
 			if (errno_ret == EACCES || errno_ret == EAGAIN) {
 				SAFE_FREE(tp);
@@ -901,13 +896,18 @@ static BOOL brl_unlock_posix(struct byte_range_lock *br_lck, const struct lock_s
 				SMB_ASSERT(tmp_lock[0].lock_type == locks[i].lock_type);
 				SMB_ASSERT(tmp_lock[1].lock_type == UNLOCK_LOCK);
 				memcpy(&tp[count], &tmp_lock[0], sizeof(struct lock_struct));
+				if (tmp_lock[0].size != locks[i].size) {
+					overlap_found = True;
+				}
 			} else {
 				SMB_ASSERT(tmp_lock[0].lock_type == UNLOCK_LOCK);
 				SMB_ASSERT(tmp_lock[1].lock_type == locks[i].lock_type);
 				memcpy(&tp[count], &tmp_lock[1], sizeof(struct lock_struct));
+				if (tmp_lock[1].start != locks[i].start) {
+					overlap_found = True;
+				}
 			}
 			count++;
-			overlap_found = True;
 			continue;
 		} else {
 			/* tmp_count == 3 - (we split a lock range in two). */
@@ -942,7 +942,12 @@ static BOOL brl_unlock_posix(struct byte_range_lock *br_lck, const struct lock_s
 #if 0
 	/* Unlock any POSIX regions. */
 	if(lp_posix_locking(br_lck->fsp->conn->cnum)) {
-		release_posix_lock_posix_flavour(br_lck->fsp, plock->start, plock->size, &plock->context);
+		release_posix_lock_posix_flavour(br_lck->fsp,
+						plock->start,
+						plock->size,
+						&plock->context,
+						tp,
+						count);
 	}
 #endif
 

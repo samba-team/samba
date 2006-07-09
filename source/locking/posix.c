@@ -578,9 +578,11 @@ int fd_close_posix(struct connection_struct *conn, files_struct *fsp)
 	int *fd_array = NULL;
 	BOOL locks_on_other_fds = False;
 
-	if (!lp_posix_locking(SNUM(conn))) {
+	if (!lp_posix_locking(SNUM(conn)) || lp_posix_cifsu_locktype()) {
 		/*
-		 * No POSIX to worry about, just close.
+		 * No POSIX to worry about or we want POSIX semantics
+		 * which will lose all locks on all fd's open on this dev/inode,
+		 * just close.
 		 */
 		ret = SMB_VFS_CLOSE(fsp,fsp->fh->fd);
 		fsp->fh->fd = -1;
@@ -675,6 +677,16 @@ void posix_locking_close_file(files_struct *fsp)
 {
 	struct posix_lock *entries = NULL;
 	size_t count, i;
+
+	if (lp_posix_cifsu_locktype()) {
+		/* If we have CIFS POSIX locking semantics enabled
+		   we want to lose all locks on first close and we
+		   know there are no stored POSIX lock entries, just
+		   return. */
+		DEBUG(10,("posix_locking_close_file: unix semantics - ignoring locks.\n"));
+		return;
+		   
+	}
 
 	/*
 	 * Optimization for the common case where we are the only
@@ -1438,32 +1450,21 @@ BOOL release_posix_lock_windows_flavour(files_struct *fsp,
 /****************************************************************************
  POSIX function to acquire a lock. Returns True if the
  lock could be granted, False if not.
- This function takes a complete lock state on this dev/ino pair from the
- upper (CIFS) lock layer and makes a copy of all the locks that are owned by
- this process. We can then apply the requested lock as given as a system
- POSIX lock. We know it doesn't conflict with any existing lock owned
- by this process as the upper layer would have caught that. We don't need
- to "stack" the locks or do any split/merge calculations like the Windows
- flavour of this function does as the upper layer has already done any
- lock manipulation neccessary and POSIX locks overwrite, not stack.
+ As POSIX locks don't stack or conflict (they just overwrite)
+ we can map the requested lock directly onto a system one. We
+ know it doesn't conflict with locks on other contexts as the
+ upper layer would have refused it.
 ****************************************************************************/
 
 BOOL set_posix_lock_posix_flavour(files_struct *fsp,
 			SMB_BIG_UINT u_offset,
 			SMB_BIG_UINT u_count,
 			enum brl_type lock_type,
-			const struct lock_context *plock_ctx,
-			int num_locks,
-			const struct lock_struct *plocks,
 			int *errno_ret)
 {
 	SMB_OFF_T offset;
 	SMB_OFF_T count;
 	int posix_lock_type = map_posix_lock_type(fsp,lock_type);
-	TDB_DATA kbuf = locking_key_fsp(fsp);
-	TDB_DATA dbuf;
-	struct posix_lock *posix_locks;
-	int i, num_posix_locks;
 
 	/*
 	 * If the requested lock won't fit in the POSIX range, we will
@@ -1474,76 +1475,29 @@ BOOL set_posix_lock_posix_flavour(files_struct *fsp,
 		return True;
 	}
 
-	posix_locks = SMB_MALLOC_ARRAY(struct posix_lock, count);
-	if (!posix_locks) {
-		DEBUG(0,("set_posix_lock_posix_flavour: malloc fail !\n"));
-		return False;
-	}
-
-	dbuf.dptr = (char *)posix_locks;
-
 	if (!posix_fcntl_lock(fsp,SMB_F_SETLK,offset,count,posix_lock_type)) {
 		*errno_ret = errno;
 		DEBUG(5,("set_posix_lock_posix_flavour: Lock fail !: Type = %s: offset = %.0f, count = %.0f. Errno = %s\n",
 			posix_lock_type_name(posix_lock_type), (double)offset, (double)count, strerror(errno) ));
-		SAFE_FREE(dbuf.dptr);
 		return False;
 	}
-
-	/* Copy all the locks held by this process into the memory tdb. */
-	num_posix_locks = 0;
-	for( i = 0; i < num_locks; i++) {
-		files_struct *fsp_i;
-		struct posix_lock *pl = &posix_locks[num_posix_locks];
-		const struct lock_struct *lock = &plocks[i];
-
-		if (!procid_equal(&lock->context.pid, &plock_ctx->pid)) {
-			/* Not one of ours... */
-			continue;
-		}
-
-		SMB_ASSERT(lock->lock_flav == POSIX_LOCK);
-
-		fsp_i = file_fnum(lock->fnum);
-		if (!fsp_i) {
-			/* This *MUST* be known to us.... */
-			smb_panic("set_posix_lock_posix_flavour: logic error.\n");
-		}
-
-		SMB_ASSERT(fsp_i->fh->fd != -1);
-
-		pl->fd = fsp_i->fh->fd;
-		pl->start = lock->start;
-		pl->size = lock->size;
-		pl->lock_type = lock->lock_type;
-		pl->lock_flav = POSIX_LOCK;
-		pl->lock_ctx = lock->context;
-
-		num_posix_locks++;
-	}
-
-	/* There must be at least one - the lock we added ! */
-	SMB_ASSERT(num_posix_locks > 0);
-
-	dbuf.dsize = sizeof(struct posix_lock) * num_posix_locks;
-
-	if (tdb_store(posix_lock_tdb, kbuf, dbuf, TDB_REPLACE) == -1) {
-		DEBUG(0,("set_posix_lock_posix_flavour: Failed to add lock entry on file %s\n", fsp->fsp_name));
-		SAFE_FREE(dbuf.dptr);
-	}
-
 	return True;
 }
 
 /****************************************************************************
  POSIX function to release a lock. Returns True if the
  lock could be released, False if not.
+ We are given a complete lock state from the upper layer, so what
+ we do is punch out holes in the unlock range where locks owned by this process
+ have a different lock context.
 ****************************************************************************/
 
 BOOL release_posix_lock_posix_flavour(files_struct *fsp,
 				SMB_BIG_UINT u_offset,
 				SMB_BIG_UINT u_count,
-				const struct lock_context *plock_ctx)
+				const struct lock_context *plock_ctx,
+				const struct lock_struct *plocks,
+				int num_locks)
 {
 	return True;
 }
