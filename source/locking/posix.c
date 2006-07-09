@@ -51,7 +51,6 @@ struct posix_lock {
 	SMB_OFF_T size;
 	int lock_type;
 	enum brl_flavour lock_flav;
-	struct lock_context lock_ctx;
 };
 
 /****************************************************************************
@@ -796,7 +795,6 @@ static BOOL add_posix_lock_entry(files_struct *fsp,
 				SMB_OFF_T start,
 				SMB_OFF_T size,
 				int lock_type,
-				struct lock_context *lock_ctx,
 				enum brl_flavour lock_flav,
 				size_t *pentry_num)
 {
@@ -820,7 +818,6 @@ static BOOL add_posix_lock_entry(files_struct *fsp,
 	pl.size = size;
 	pl.lock_type = lock_type;
 	pl.lock_flav = lock_flav;
-	pl.lock_ctx = *lock_ctx;
 
 	dbuf.dptr = SMB_REALLOC(dbuf.dptr, dbuf.dsize + sizeof(struct posix_lock));
 	if (!dbuf.dptr) {
@@ -949,6 +946,7 @@ struct lock_list {
 	struct lock_list *prev;
 	SMB_OFF_T start;
 	SMB_OFF_T size;
+	unsigned int lock_num; /* Used by the POSIX lock flavour code. */
 };
 
 /****************************************************************************
@@ -1186,7 +1184,6 @@ BOOL set_posix_lock_windows_flavour(files_struct *fsp,
 			enum brl_type lock_type,
 			int *errno_ret)
 {
-	struct lock_context lock_ctx;
 	SMB_OFF_T offset;
 	SMB_OFF_T count;
 	int posix_lock_type = map_posix_lock_type(fsp,lock_type);
@@ -1196,8 +1193,6 @@ BOOL set_posix_lock_windows_flavour(files_struct *fsp,
 	TALLOC_CTX *l_ctx = NULL;
 	struct lock_list *llist = NULL;
 	struct lock_list *ll = NULL;
-
-	ZERO_STRUCT(lock_ctx);
 
 	DEBUG(5,("set_posix_lock_windows_flavour: File %s, offset = %.0f, count = %.0f, type = %s\n",
 			fsp->fsp_name, (double)u_offset, (double)u_count, posix_lock_type_name(lock_type) ));
@@ -1274,7 +1269,6 @@ BOOL set_posix_lock_windows_flavour(files_struct *fsp,
 			offset,
 			count,
 			posix_lock_type,
-			&lock_ctx,
 			WINDOWS_LOCK,
 			&entry_num)) {
 		DEBUG(0,("set_posix_lock_windows_flavour: Unable to create posix lock entry !\n"));
