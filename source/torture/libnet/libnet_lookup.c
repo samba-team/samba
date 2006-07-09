@@ -23,6 +23,7 @@
 #include "lib/cmdline/popt_common.h"
 #include "libnet/libnet.h"
 #include "librpc/gen_ndr/nbt.h"
+#include "librpc/rpc/dcerpc.h"
 #include "torture/torture.h"
 
 
@@ -33,6 +34,8 @@ BOOL torture_lookup(struct torture_context *torture)
 	TALLOC_CTX *mem_ctx;
 	struct libnet_context *ctx;
 	struct libnet_Lookup lookup;
+	struct dcerpc_binding *bind;
+	const char *bindstr;
 	const char *address;
 
 	mem_ctx = talloc_init("test_lookup");
@@ -43,6 +46,14 @@ BOOL torture_lookup(struct torture_context *torture)
 	address = talloc_array(ctx, const char, 16);
 
 	lookup.in.hostname = lp_parm_string(-1, "torture", "host");
+	if (lookup.in.hostname == NULL) {
+		bindstr = lp_parm_string(-1, "torture", "binding");
+		status = dcerpc_parse_binding(mem_ctx, bindstr, &bind);
+		if (NT_STATUS_IS_OK(status)) {
+			lookup.in.hostname = bind->host;
+		}
+	}
+
 	lookup.in.type     = NBT_NAME_CLIENT;
 	lookup.in.methods  = NULL;
 	lookup.out.address = &address;
@@ -70,6 +81,8 @@ BOOL torture_lookup_host(struct torture_context *torture)
 	TALLOC_CTX *mem_ctx;
 	struct libnet_context *ctx;
 	struct libnet_Lookup lookup;
+	struct dcerpc_binding *bind;
+	const char *bindstr;
 	const char *address;
 
 	mem_ctx = talloc_init("test_lookup_host");
@@ -80,6 +93,14 @@ BOOL torture_lookup_host(struct torture_context *torture)
 	address = talloc_array(mem_ctx, const char, 16);
 
 	lookup.in.hostname = lp_parm_string(-1, "torture", "host");
+	if (lookup.in.hostname == NULL) {
+		bindstr = lp_parm_string(-1, "torture", "binding");
+		status = dcerpc_parse_binding(mem_ctx, bindstr, &bind);
+		if (NT_STATUS_IS_OK(status)) {
+			lookup.in.hostname = bind->host;
+		}
+	}
+
 	lookup.in.methods  = NULL;
 	lookup.out.address = &address;
 
