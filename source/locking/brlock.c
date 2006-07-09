@@ -32,19 +32,6 @@
 
 #define ZERO_ZERO 0
 
-/* The data in brlock records is an unsorted linear array of these
-   records.  It is unnecessary to store the count as tdb provides the
-   size of the record */
-
-struct lock_struct {
-	struct lock_context context;
-	br_off start;
-	br_off size;
-	int fnum;
-	enum brl_type lock_type;
-	enum brl_flavour lock_flav;
-};
-
 /* The open brlock.tdb database. */
 
 static TDB_CONTEXT *tdb;
@@ -640,6 +627,11 @@ static NTSTATUS brl_lock_posix(struct byte_range_lock *br_lck,
 		}
 	}
 
+	if (!lock_was_added) {
+		memcpy(&tp[count], plock, sizeof(struct lock_struct));
+		count++;
+	}
+
 	/* We can get the POSIX lock, now see if it needs to
 	   be mapped into a lower level POSIX one, and if so can
 	   we get it ? */
@@ -647,11 +639,19 @@ static NTSTATUS brl_lock_posix(struct byte_range_lock *br_lck,
 	if ((plock->lock_type != PENDING_LOCK) && lp_posix_locking(SNUM(fsp->conn))) {
 		int errno_ret;
 
+		/* We pass in the entire new lock array to
+		   allow the lower layer to pick out the POSIX
+		   locks with the same PID. This allows the system
+		   layer to avoid walking the lock list doing the same
+		   split/merge game we've just done. */
+
 		if (!set_posix_lock_posix_flavour(fsp,
 				plock->start,
 				plock->size,
 				plock->lock_type,
 				&plock->context,
+				tp,
+				count,
 				&errno_ret)) {
 			if (errno_ret == EACCES || errno_ret == EAGAIN) {
 				SAFE_FREE(tp);
@@ -661,11 +661,6 @@ static NTSTATUS brl_lock_posix(struct byte_range_lock *br_lck,
 				return map_nt_error_from_unix(errno);
 			}
 		}
-	}
-
-	if (!lock_was_added) {
-		memcpy(&tp[count], plock, sizeof(struct lock_struct));
-		count++;
 	}
 
 	/* Realloc so we don't leak entries per lock call. */

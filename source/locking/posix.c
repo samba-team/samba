@@ -1445,6 +1445,8 @@ BOOL set_posix_lock_posix_flavour(files_struct *fsp,
 			SMB_BIG_UINT u_count,
 			enum brl_type lock_type,
 			const struct lock_context *plock_ctx,
+			const struct lock_struct *locks,
+			int count,
 			int *errno_ret)
 {
 	return True;

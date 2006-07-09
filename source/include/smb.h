@@ -853,63 +853,12 @@ struct parm_struct {
 #define FLAG_HIDE  	0x2000 /* options that should be hidden in SWAT */
 #define FLAG_DOS_STRING 0x4000 /* convert from UNIX to DOS codepage when reading this string. */
 
-/* passed to br lock code - the UNLOCK_LOCK should never be stored into the tdb
-   and is used in calculating POSIX unlock ranges only. */
-
-enum brl_type {READ_LOCK, WRITE_LOCK, PENDING_LOCK, UNLOCK_LOCK};
-enum brl_flavour {WINDOWS_LOCK = 0, POSIX_LOCK = 1};
-
-/* This contains elements that differentiate locks. The smbpid is a
-   client supplied pid, and is essentially the locking context for
-   this client */
-
-struct lock_context {
-        uint16 smbpid;
-        uint16 tid;
-        struct process_id pid;
-};
-
-/* The key used in the brlock database. */
-
-struct lock_key {
-	SMB_DEV_T device;
-	SMB_INO_T inode;
-};
-
-struct byte_range_lock {
-	files_struct *fsp;
-	unsigned int num_locks;
-	BOOL modified;
-	struct lock_key key;
-	void *lock_data;
-};
-
-#define BRLOCK_FN_CAST() \
-	void (*)(SMB_DEV_T dev, SMB_INO_T ino, struct process_id pid, \
-				 enum brl_type lock_type, \
-				 enum brl_flavour lock_flav, \
-				 br_off start, br_off size)
-
-#define BRLOCK_FN(fn) \
-	void (*fn)(SMB_DEV_T dev, SMB_INO_T ino, struct process_id pid, \
-				 enum brl_type lock_type, \
-				 enum brl_flavour lock_flav, \
-				 br_off start, br_off size)
-
-#define LOCKING_FN_CAST() \
-	void (*)(struct share_mode_entry *, const char *, const char *)
-
-#define LOCKING_FN(fn) \
-	void (*fn)(struct share_mode_entry *, const char *, const char *)
+#include "locking.h"
 
 struct bitmap {
 	uint32 *b;
 	unsigned int n;
 };
-
-#ifndef LOCKING_VERSION
-#define LOCKING_VERSION 4
-#endif /* LOCKING_VERSION */
 
 /* the basic packet size, assuming no words or bytes */
 #define smb_size 39
