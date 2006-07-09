@@ -24,6 +24,7 @@
 #include "libnet/libnet.h"
 #include "librpc/gen_ndr/nbt.h"
 #include "librpc/rpc/dcerpc.h"
+#include "libcli/libcli.h"
 #include "torture/torture.h"
 
 
@@ -36,7 +37,6 @@ BOOL torture_lookup(struct torture_context *torture)
 	struct libnet_Lookup lookup;
 	struct dcerpc_binding *bind;
 	const char *bindstr;
-	const char *address;
 
 	mem_ctx = talloc_init("test_lookup");
 
@@ -126,6 +126,7 @@ BOOL torture_lookup_pdc(struct torture_context *torture)
 	TALLOC_CTX *mem_ctx;
 	struct libnet_context *ctx;
 	struct libnet_LookupDCs *lookup;
+	int i;
 
 	mem_ctx = talloc_init("test_lookup_pdc");
 
@@ -146,12 +147,19 @@ BOOL torture_lookup_pdc(struct torture_context *torture)
 	status = libnet_LookupDCs(ctx, mem_ctx, lookup);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("Couldn't lookup pdc %s: %s\n", lookup->in.domain_name, nt_errstr(status));
+		printf("Couldn't lookup pdc %s: %s\n", lookup->in.domain_name,
+		       nt_errstr(status));
 		ret = False;
 		goto done;
 	}
 
 	ret = True;
+
+	printf("DCs of domain [%s] found.\n", lookup->in.domain_name);
+	for (i = 0; i < lookup->out.num_dcs; i++) {
+		printf("\tDC[%d]: name=%s, address=%s\n", i, lookup->out.dcs[i].name,
+		       lookup->out.dcs[i].address);
+	}
 
 done:
 	talloc_free(mem_ctx);
