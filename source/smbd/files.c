@@ -462,24 +462,16 @@ void file_free(files_struct *fsp)
 }
 
 /****************************************************************************
- Get a fsp from a packet given the offset of a 16 bit fnum.
+ Get an fsp from a 16 bit fnum.
 ****************************************************************************/
 
-files_struct *file_fsp(char *buf, int where)
+files_struct *file_fnum(uint16 fnum)
 {
-	int fnum, count=0;
 	files_struct *fsp;
-
-	if (chain_fsp)
-		return chain_fsp;
-
-	if (!buf)
-		return NULL;
-	fnum = SVAL(buf, where);
+	int count=0;
 
 	for (fsp=Files;fsp;fsp=fsp->next, count++) {
 		if (fsp->fnum == fnum) {
-			chain_fsp = fsp;
 			if (count > 10) {
 				DLIST_PROMOTE(Files, fsp);
 			}
@@ -487,6 +479,29 @@ files_struct *file_fsp(char *buf, int where)
 		}
 	}
 	return NULL;
+}
+
+/****************************************************************************
+ Get an fsp from a packet given the offset of a 16 bit fnum.
+****************************************************************************/
+
+files_struct *file_fsp(char *buf, int where)
+{
+	files_struct *fsp;
+
+	if (chain_fsp) {
+		return chain_fsp;
+	}
+
+	if (!buf) {
+		return NULL;
+	}
+
+	fsp = file_fnum(SVAL(buf, where));
+	if (fsp) {
+		chain_fsp = fsp;
+	}
+	return fsp;
 }
 
 /****************************************************************************

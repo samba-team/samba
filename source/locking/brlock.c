@@ -650,8 +650,8 @@ static NTSTATUS brl_lock_posix(struct byte_range_lock *br_lck,
 				plock->size,
 				plock->lock_type,
 				&plock->context,
-				tp,
 				count,
+				tp,
 				&errno_ret)) {
 			if (errno_ret == EACCES || errno_ret == EAGAIN) {
 				SAFE_FREE(tp);

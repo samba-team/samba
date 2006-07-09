@@ -80,7 +80,7 @@ struct lock_struct {
 	struct lock_context context;
 	br_off start;
 	br_off size;
-	int fnum;
+	uint16 fnum;
 	enum brl_type lock_type;
 	enum brl_flavour lock_flav;
 };
