@@ -43,8 +43,6 @@ BOOL torture_lookup(struct torture_context *torture)
 	ctx = libnet_context_init(NULL);
 	ctx->cred = cmdline_credentials;
 
-	address = talloc_array(ctx, const char, 16);
-
 	lookup.in.hostname = lp_parm_string(-1, "torture", "host");
 	if (lookup.in.hostname == NULL) {
 		bindstr = lp_parm_string(-1, "torture", "binding");
@@ -56,7 +54,7 @@ BOOL torture_lookup(struct torture_context *torture)
 
 	lookup.in.type     = NBT_NAME_CLIENT;
 	lookup.in.methods  = NULL;
-	lookup.out.address = &address;
+	lookup.out.address = NULL;
 
 	status = libnet_Lookup(ctx, mem_ctx, &lookup);
 
@@ -67,6 +65,8 @@ BOOL torture_lookup(struct torture_context *torture)
 	}
 
 	ret = True;
+
+	printf("Name [%s] found at adrress: %s.\n", lookup.in.hostname, *lookup.out.address);
 
 done:
 	talloc_free(mem_ctx);
@@ -83,14 +83,11 @@ BOOL torture_lookup_host(struct torture_context *torture)
 	struct libnet_Lookup lookup;
 	struct dcerpc_binding *bind;
 	const char *bindstr;
-	const char *address;
 
 	mem_ctx = talloc_init("test_lookup_host");
 
 	ctx = libnet_context_init(NULL);
 	ctx->cred = cmdline_credentials;
-
-	address = talloc_array(mem_ctx, const char, 16);
 
 	lookup.in.hostname = lp_parm_string(-1, "torture", "host");
 	if (lookup.in.hostname == NULL) {
@@ -102,7 +99,7 @@ BOOL torture_lookup_host(struct torture_context *torture)
 	}
 
 	lookup.in.methods  = NULL;
-	lookup.out.address = &address;
+	lookup.out.address = NULL;
 
 	status = libnet_LookupHost(ctx, mem_ctx, &lookup);
 
@@ -113,6 +110,8 @@ BOOL torture_lookup_host(struct torture_context *torture)
 	}
 
 	ret = True;
+
+	printf("Host [%s] found at adrress: %s.\n", lookup.in.hostname, *lookup.out.address);
 
 done:
 	talloc_free(mem_ctx);
