@@ -1445,7 +1445,7 @@ BOOL release_posix_lock_windows_flavour(files_struct *fsp,
  by this process as the upper layer would have caught that. We don't need
  to "stack" the locks or do any split/merge calculations like the Windows
  flavour of this function does as the upper layer has already done any
- lock manipulation neccessary and POSIX locks overwrite, not split.
+ lock manipulation neccessary and POSIX locks overwrite, not stack.
 ****************************************************************************/
 
 BOOL set_posix_lock_posix_flavour(files_struct *fsp,

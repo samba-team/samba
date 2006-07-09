@@ -572,7 +572,6 @@ static NTSTATUS brl_lock_posix(struct byte_range_lock *br_lck,
 			BOOL *my_lock_ctx)
 {
 	unsigned int i, count;
-	files_struct *fsp = br_lck->fsp;
 	struct lock_struct *locks = (struct lock_struct *)br_lck->lock_data;
 	struct lock_struct *tp;
 	BOOL lock_was_added = False;
@@ -636,7 +635,8 @@ static NTSTATUS brl_lock_posix(struct byte_range_lock *br_lck,
 	   be mapped into a lower level POSIX one, and if so can
 	   we get it ? */
 
-	if ((plock->lock_type != PENDING_LOCK) && lp_posix_locking(SNUM(fsp->conn))) {
+#if 0
+	if ((plock->lock_type != PENDING_LOCK) && lp_posix_locking(SNUM(br_lck->fsp->conn))) {
 		int errno_ret;
 
 		/* We pass in the entire new lock array to
@@ -645,7 +645,7 @@ static NTSTATUS brl_lock_posix(struct byte_range_lock *br_lck,
 		   layer to avoid walking the lock list doing the same
 		   split/merge game we've just done. */
 
-		if (!set_posix_lock_posix_flavour(fsp,
+		if (!set_posix_lock_posix_flavour(br_lck->fsp,
 				plock->start,
 				plock->size,
 				plock->lock_type,
@@ -662,6 +662,7 @@ static NTSTATUS brl_lock_posix(struct byte_range_lock *br_lck,
 			}
 		}
 	}
+#endif
 
 	/* Realloc so we don't leak entries per lock call. */
 	tp = (struct lock_struct *)SMB_REALLOC(tp, count * sizeof(*locks));
@@ -938,10 +939,12 @@ static BOOL brl_unlock_posix(struct byte_range_lock *br_lck, const struct lock_s
 		return True;
 	}
 
+#if 0
 	/* Unlock any POSIX regions. */
 	if(lp_posix_locking(br_lck->fsp->conn->cnum)) {
 		release_posix_lock_posix_flavour(br_lck->fsp, plock->start, plock->size, &plock->context);
 	}
+#endif
 
 	/* Realloc so we don't leak entries per unlock call. */
 	if (count) {
