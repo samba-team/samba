@@ -839,10 +839,9 @@ static int traverse_fn_delete(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data, void 
  Check if the print queue has been updated recently enough.
 ****************************************************************************/
 
-static void print_cache_flush(int snum)
+static void print_cache_flush(const char *sharename)
 {
 	fstring key;
-	const char *sharename = lp_const_servicename(snum);
 	struct tdb_print_db *pdb = get_print_db_byname(sharename);
 
 	if (!pdb)
@@ -2073,7 +2072,7 @@ pause, or resume print job. User name: %s. Printer name: %s.",
 	}
 
 	/* force update the database */
-	print_cache_flush(snum);
+	print_cache_flush(lp_const_servicename(snum));
 
 	/* Send a printer notify message */
 
@@ -2131,7 +2130,7 @@ pause, or resume print job. User name: %s. Printer name: %s.",
 	}
 
 	/* force update the database */
-	print_cache_flush(snum);
+	print_cache_flush(lp_const_servicename(snum));
 
 	/* Send a printer notify message */
 
@@ -2751,7 +2750,7 @@ BOOL print_queue_pause(struct current_user *user, int snum, WERROR *errcode)
 	}
 
 	/* force update the database */
-	print_cache_flush(snum);
+	print_cache_flush(lp_const_servicename(snum));
 
 	/* Send a printer notify message */
 
