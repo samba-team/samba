@@ -54,4 +54,7 @@ for transport in $transports; do
  done
 done
 
+name="RPC-ECHO on ncacn_np over smb2"
+testit "$name" bin/smbtorture $TORTURE_OPTIONS ncacn_np:"$server[smb2]" -U"$username"%"$password" -W $domain RPC-ECHO "$*" || failed=`expr $failed + 1`
+
 testok $0 $failed
