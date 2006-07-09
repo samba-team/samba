@@ -1942,9 +1942,10 @@ static BOOL print_job_delete1(int snum, uint32 jobid)
  Return true if the current user owns the print job.
 ****************************************************************************/
 
-static BOOL is_owner(struct current_user *user, int snum, uint32 jobid)
+static BOOL is_owner(struct current_user *user, const char *servicename,
+		     uint32 jobid)
 {
-	struct printjob *pjob = print_job_find(lp_const_servicename(snum), jobid);
+	struct printjob *pjob = print_job_find(servicename, jobid);
 	user_struct *vuser;
 
 	if (!pjob || !user)
@@ -1970,7 +1971,7 @@ BOOL print_job_delete(struct current_user *user, int snum, uint32 jobid, WERROR 
 
 	*errcode = WERR_OK;
 		
-	owner = is_owner(user, snum, jobid);
+	owner = is_owner(user, lp_const_servicename(snum), jobid);
 	
 	/* Check access against security descriptor or whether the user
 	   owns their job. */
@@ -2049,7 +2050,7 @@ BOOL print_job_pause(struct current_user *user, int snum, uint32 jobid, WERROR *
 		return False;
 	}
 
-	if (!is_owner(user, snum, jobid) &&
+	if (!is_owner(user, lp_const_servicename(snum), jobid) &&
 	    !print_access_check(user, snum, JOB_ACCESS_ADMINISTER)) {
 		DEBUG(3, ("pause denied by security descriptor\n"));
 
@@ -2109,7 +2110,7 @@ BOOL print_job_resume(struct current_user *user, int snum, uint32 jobid, WERROR 
 		return False;
 	}
 
-	if (!is_owner(user, snum, jobid) &&
+	if (!is_owner(user, lp_const_servicename(snum), jobid) &&
 	    !print_access_check(user, snum, JOB_ACCESS_ADMINISTER)) {
 		DEBUG(3, ("resume denied by security descriptor\n"));
 		*errcode = WERR_ACCESS_DENIED;
@@ -2817,7 +2818,7 @@ BOOL print_queue_purge(struct current_user *user, int snum, WERROR *errcode)
 		become_root();
 
 	for (i=0;i<njobs;i++) {
-		BOOL owner = is_owner(user, snum, queue[i].job);
+		BOOL owner = is_owner(user, lp_const_servicename(snum), queue[i].job);
 
 		if (owner || can_job_admin) {
 			print_job_delete1(snum, queue[i].job);
