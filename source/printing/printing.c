@@ -1793,7 +1793,7 @@ NT_DEVICEMODE *print_job_devmode(const char* sharename, uint32 jobid)
  Set the place in the queue for a job.
 ****************************************************************************/
 
-BOOL print_job_set_place(int snum, uint32 jobid, int place)
+BOOL print_job_set_place(const char *sharename, uint32 jobid, int place)
 {
 	DEBUG(2,("print_job_set_place not implemented yet\n"));
 	return False;
@@ -1803,9 +1803,8 @@ BOOL print_job_set_place(int snum, uint32 jobid, int place)
  Set the name of a job. Only possible for owner.
 ****************************************************************************/
 
-BOOL print_job_set_name(int snum, uint32 jobid, char *name)
+BOOL print_job_set_name(const char *sharename, uint32 jobid, char *name)
 {
-	const char* sharename = lp_const_servicename(snum);
 	struct printjob *pjob;
 
 	pjob = print_job_find(sharename, jobid);

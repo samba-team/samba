@@ -2546,7 +2546,6 @@ static BOOL api_PrintJobInfo(connection_struct *conn,uint16 vuid,char *param,cha
 	char *str2 = skip_string(str1,1);
 	char *p = skip_string(str2,1);
 	uint32 jobid;
-	int snum;
 	fstring sharename;
 	int uLevel = SVAL(p,2);
 	int function = SVAL(p,4);
@@ -2560,9 +2559,9 @@ static BOOL api_PrintJobInfo(connection_struct *conn,uint16 vuid,char *param,cha
 		return False;
 	}
 
-	if ( (snum = lp_servicenumber(sharename)) == -1 ) {
-		DEBUG(0,("api_PrintJobInfo: unable to get service number from sharename [%s]\n",
-			sharename));
+	if (!share_defined(sharename)) {
+		DEBUG(0,("api_PrintJobInfo: sharen [%s] not defined\n",
+			 sharename));
 		return False;
 	}
   
@@ -2585,14 +2584,14 @@ static BOOL api_PrintJobInfo(connection_struct *conn,uint16 vuid,char *param,cha
 		/* change job place in the queue, 
 		   data gives the new place */
 		place = SVAL(data,0);
-		if (print_job_set_place(snum, jobid, place)) {
+		if (print_job_set_place(sharename, jobid, place)) {
 			errcode=NERR_Success;
 		}
 		break;
 
 	case 0xb:   
 		/* change print job name, data gives the name */
-		if (print_job_set_name(snum, jobid, data)) {
+		if (print_job_set_name(sharename, jobid, data)) {
 			errcode=NERR_Success;
 		}
 		break;
