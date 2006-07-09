@@ -71,6 +71,9 @@ NTSTATUS pvfs_ioctl(struct ntvfs_module_context *ntvfs,
 
 	case RAW_IOCTL_NTIOCTL:
 		return pvfs_ntioctl(ntvfs, req, io);
+
+	case RAW_IOCTL_SMB2:
+		return NT_STATUS_FS_DRIVER_REQUIRED;
 	}
 
 	return NT_STATUS_INVALID_LEVEL;
