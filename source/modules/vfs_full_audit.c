@@ -645,7 +645,7 @@ static char *audit_prefix(connection_struct *conn)
 
 	pstrcpy(prefix, lp_parm_const_string(SNUM(conn), "full_audit",
 					     "prefix", "%u|%I"));
-	standard_sub_advanced(SNUM(conn), conn->user,
+	standard_sub_advanced(lp_servicename(SNUM(conn)), conn->user,
 			      conn->connectpath, conn->gid,
 			      get_current_username(),
 			      current_user_info.domain,

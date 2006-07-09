@@ -749,7 +749,7 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 	{
 		pstring s;
 		pstrcpy(s,lp_pathname(snum));
-		standard_sub_advanced(SNUM(conn), conn->user,
+		standard_sub_advanced(lp_servicename(SNUM(conn)), conn->user,
 				      conn->connectpath, conn->gid,
 				      get_current_username(),
 				      current_user_info.domain,
@@ -828,7 +828,7 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 	if (*lp_rootpreexec(snum)) {
 		pstring cmd;
 		pstrcpy(cmd,lp_rootpreexec(snum));
-		standard_sub_advanced(SNUM(conn), conn->user,
+		standard_sub_advanced(lp_servicename(SNUM(conn)), conn->user,
 				      conn->connectpath, conn->gid,
 				      get_current_username(),
 				      current_user_info.domain,
@@ -865,7 +865,7 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 	if (*lp_preexec(snum)) {
 		pstring cmd;
 		pstrcpy(cmd,lp_preexec(snum));
-		standard_sub_advanced(SNUM(conn), conn->user,
+		standard_sub_advanced(lp_servicename(SNUM(conn)), conn->user,
 				      conn->connectpath, conn->gid,
 				      get_current_username(),
 				      current_user_info.domain,
@@ -1163,7 +1163,7 @@ void close_cnum(connection_struct *conn, uint16 vuid)
 	    change_to_user(conn, vuid))  {
 		pstring cmd;
 		pstrcpy(cmd,lp_postexec(SNUM(conn)));
-		standard_sub_advanced(SNUM(conn), conn->user,
+		standard_sub_advanced(lp_servicename(SNUM(conn)), conn->user,
 				      conn->connectpath, conn->gid,
 				      get_current_username(),
 				      current_user_info.domain,
@@ -1177,7 +1177,7 @@ void close_cnum(connection_struct *conn, uint16 vuid)
 	if (*lp_rootpostexec(SNUM(conn)))  {
 		pstring cmd;
 		pstrcpy(cmd,lp_rootpostexec(SNUM(conn)));
-		standard_sub_advanced(SNUM(conn), conn->user,
+		standard_sub_advanced(lp_servicename(SNUM(conn)), conn->user,
 				      conn->connectpath, conn->gid,
 				      get_current_username(),
 				      current_user_info.domain,

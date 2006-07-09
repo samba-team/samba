@@ -665,7 +665,7 @@ char *talloc_sub_specified(TALLOC_CTX *mem_ctx,
 /****************************************************************************
 ****************************************************************************/
 
-char *alloc_sub_advanced(int snum, const char *user, 
+char *alloc_sub_advanced(const char *servicename, const char *user, 
 			 const char *connectpath, gid_t gid, 
 			 const char *smb_name, const char *domain_name,
 			 const char *str)
@@ -695,7 +695,7 @@ char *alloc_sub_advanced(int snum, const char *user,
 			a_string = realloc_string_sub(a_string, "%P", connectpath); 
 			break;
 		case 'S': 
-			a_string = realloc_string_sub(a_string, "%S", lp_servicename(snum)); 
+			a_string = realloc_string_sub(a_string, "%S", servicename);
 			break;
 		case 'g': 
 			a_string = realloc_string_sub(a_string, "%g", gidtoname(gid)); 
@@ -712,7 +712,8 @@ char *alloc_sub_advanced(int snum, const char *user,
 			 * "path =" string in [homes] and so needs the
 			 * service name, not the username.  */
 		case 'p': 
-			a_string = realloc_string_sub(a_string, "%p", automount_path(lp_servicename(snum))); 
+			a_string = realloc_string_sub(a_string, "%p",
+						      automount_path(servicename)); 
 			break;
 			
 		default: 
@@ -730,15 +731,15 @@ char *alloc_sub_advanced(int snum, const char *user,
 	return ret_string;
 }
 
-void standard_sub_advanced(int snum, const char *user, 
+void standard_sub_advanced(const char *servicename, const char *user, 
 			   const char *connectpath, gid_t gid, 
 			   const char *smb_name, const char *domain_name,
 			   char *str, size_t len)
 {
 	char *s;
 	
-	s = alloc_sub_advanced(snum, user, connectpath, gid, smb_name,
-			       domain_name, str);
+	s = alloc_sub_advanced(servicename, user, connectpath,
+			       gid, smb_name, domain_name, str);
 
 	if ( s ) {
 		strncpy( str, s, len );

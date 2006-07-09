@@ -1458,7 +1458,8 @@ static void print_queue_update(int snum, BOOL force)
 	pstrcpy( lpqcommand, lp_lpqcommand(snum));
 	string_sub2( lpqcommand, "%p", PRINTERNAME(snum), sizeof(lpqcommand), 
 		     False, False, False );
-	standard_sub_advanced(snum, current_user_info.unix_name, "",
+	standard_sub_advanced(lp_servicename(snum),
+			      current_user_info.unix_name, "",
 			      current_user.ut.gid,
 			      get_current_username(),
 			      current_user_info.domain,
@@ -1467,7 +1468,8 @@ static void print_queue_update(int snum, BOOL force)
 	pstrcpy( lprmcommand, lp_lprmcommand(snum));
 	string_sub2( lprmcommand, "%p", PRINTERNAME(snum), sizeof(lprmcommand), 
 		     False, False, False );
-	standard_sub_advanced(snum, current_user_info.unix_name, "",
+	standard_sub_advanced(lp_servicename(snum),
+			      current_user_info.unix_name, "",
 			      current_user.ut.gid,
 			      get_current_username(),
 			      current_user_info.domain,

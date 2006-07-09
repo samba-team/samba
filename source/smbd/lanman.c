@@ -72,7 +72,7 @@ static int CopyExpanded(connection_struct *conn,
 
 	StrnCpy(buf,src,sizeof(buf)/2);
 	pstring_sub(buf,"%S",lp_servicename(snum));
-	standard_sub_advanced(SNUM(conn), conn->user,
+	standard_sub_advanced(lp_servicename(SNUM(conn)), conn->user,
 			      conn->connectpath, conn->gid,
 			      get_current_username(),
 			      current_user_info.domain,
@@ -103,7 +103,7 @@ static int StrlenExpanded(connection_struct *conn, int snum, char *s)
 	}
 	StrnCpy(buf,s,sizeof(buf)/2);
 	pstring_sub(buf,"%S",lp_servicename(snum));
-	standard_sub_advanced(SNUM(conn), conn->user,
+	standard_sub_advanced(lp_servicename(SNUM(conn)), conn->user,
 			      conn->connectpath, conn->gid,
 			      get_current_username(),
 			      current_user_info.domain,
@@ -119,7 +119,7 @@ static char *Expand(connection_struct *conn, int snum, char *s)
 	}
 	StrnCpy(buf,s,sizeof(buf)/2);
 	pstring_sub(buf,"%S",lp_servicename(snum));
-	standard_sub_advanced(SNUM(conn), conn->user,
+	standard_sub_advanced(lp_servicename(SNUM(conn)), conn->user,
 			      conn->connectpath, conn->gid,
 			      get_current_username(),
 			      current_user_info.domain,
@@ -2713,7 +2713,7 @@ static BOOL api_RNetServerGetInfo(connection_struct *conn,uint16 vuid, char *par
 			SIVAL(p,6,0);
 		} else {
 			SIVAL(p,6,PTR_DIFF(p2,*rdata));
-			standard_sub_advanced(SNUM(conn), conn->user,
+			standard_sub_advanced(lp_servicename(SNUM(conn)), conn->user,
 					      conn->connectpath, conn->gid,
 					      get_current_username(),
 					      current_user_info.domain,

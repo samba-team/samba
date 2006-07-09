@@ -245,7 +245,7 @@ static void init_srv_share_info_1(pipes_struct *p, SRV_SHARE_INFO_1 *sh1, int sn
 
 	char *net_name = lp_servicename(snum);
 	pstrcpy(remark, lp_comment(snum));
-	standard_sub_advanced(SNUM(conn), conn->user,
+	standard_sub_advanced(lp_servicename(SNUM(conn)), conn->user,
 			      conn->connectpath, conn->gid,
 			      get_current_username(),
 			      current_user_info.domain,
@@ -271,7 +271,7 @@ static void init_srv_share_info_2(pipes_struct *p, SRV_SHARE_INFO_2 *sh2, int sn
 	char *net_name = lp_servicename(snum);
 	
 	pstrcpy(remark, lp_comment(snum));
-	standard_sub_advanced(SNUM(conn), conn->user,
+	standard_sub_advanced(lp_servicename(SNUM(conn)), conn->user,
 			      conn->connectpath, conn->gid,
 			      get_current_username(),
 			      current_user_info.domain,
@@ -368,7 +368,7 @@ static void init_srv_share_info_501(pipes_struct *p, SRV_SHARE_INFO_501 *sh501, 
 
 	const char *net_name = lp_servicename(snum);
 	pstrcpy(remark, lp_comment(snum));
-	standard_sub_advanced(SNUM(conn), conn->user,
+	standard_sub_advanced(lp_servicename(SNUM(conn)), conn->user,
 			      conn->connectpath, conn->gid,
 			      get_current_username(),
 			      current_user_info.domain,
@@ -398,7 +398,7 @@ static void init_srv_share_info_502(pipes_struct *p, SRV_SHARE_INFO_502 *sh502, 
 
 	pstrcpy(net_name, lp_servicename(snum));
 	pstrcpy(remark, lp_comment(snum));
-	standard_sub_advanced(SNUM(conn), conn->user,
+	standard_sub_advanced(lp_servicename(SNUM(conn)), conn->user,
 			      conn->connectpath, conn->gid,
 			      get_current_username(),
 			      current_user_info.domain,
@@ -431,7 +431,7 @@ static void init_srv_share_info_1004(pipes_struct *p, SRV_SHARE_INFO_1004* sh100
         pstring remark;
 
 	pstrcpy(remark, lp_comment(snum));
-	standard_sub_advanced(SNUM(conn), conn->user,
+	standard_sub_advanced(lp_servicename(SNUM(conn)), conn->user,
 			      conn->connectpath, conn->gid,
 			      get_current_username(),
 			      current_user_info.domain,

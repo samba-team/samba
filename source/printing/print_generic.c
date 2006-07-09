@@ -58,7 +58,8 @@ static int print_run_command(int snum, const char* printername, BOOL do_sub,
 	pstring_sub( syscmd, "%p", printername );
 
 	if ( do_sub && snum != -1 )
-		standard_sub_advanced(snum, current_user_info.unix_name, "",
+		standard_sub_advanced(lp_servicename(snum),
+				      current_user_info.unix_name, "",
 				      current_user.ut.gid,
 				      get_current_username(),
 				      current_user_info.domain,

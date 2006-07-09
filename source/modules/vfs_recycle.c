@@ -386,7 +386,8 @@ static int recycle_unlink(vfs_handle_struct *handle, const char *file_name)
 	BOOL exist;
 	int rc = -1;
 
-	repository = alloc_sub_advanced(SNUM(conn),  conn->user,
+	repository = alloc_sub_advanced(lp_servicename(SNUM(conn)),
+					conn->user,
 					conn->connectpath, conn->gid,
 					get_current_username(),
 					current_user_info.domain,
