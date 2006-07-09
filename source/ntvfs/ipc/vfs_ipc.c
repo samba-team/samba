@@ -31,6 +31,7 @@
 #include "libcli/rap/rap.h"
 #include "ntvfs/ipc/proto.h"
 #include "rpc_server/dcerpc_server.h"
+#include "libcli/raw/ioctl.h"
 
 /* this is the private structure used to keep the state of an open
    ipc$ connection. It needs to keep information about all open
@@ -128,16 +129,6 @@ static NTSTATUS ipc_disconnect(struct ntvfs_module_context *ntvfs)
 static NTSTATUS ipc_unlink(struct ntvfs_module_context *ntvfs,
 			   struct ntvfs_request *req,
 			   union smb_unlink *unl)
-{
-	return NT_STATUS_ACCESS_DENIED;
-}
-
-
-/*
-  ioctl interface - we don't do any
-*/
-static NTSTATUS ipc_ioctl(struct ntvfs_module_context *ntvfs,
-			  struct ntvfs_request *req, union smb_ioctl *io)
 {
 	return NT_STATUS_ACCESS_DENIED;
 }
@@ -311,6 +302,34 @@ static NTSTATUS ipc_open_openx(struct ntvfs_module_context *ntvfs,
 }
 
 /*
+  open a file with SMB2 Create - used for MSRPC pipes
+*/
+static NTSTATUS ipc_open_smb2(struct ntvfs_module_context *ntvfs,
+			      struct ntvfs_request *req, union smb_open *oi)
+{
+	struct pipe_state *p;
+	NTSTATUS status;
+
+	status = ipc_open_generic(ntvfs, req, oi->smb2.in.fname, &p);
+	NT_STATUS_NOT_OK_RETURN(status);
+
+	oi->smb2.out.file.ntvfs		= p->handle;
+	oi->smb2.out.oplock_flags	= oi->smb2.in.oplock_flags;
+	oi->smb2.out.create_action	= NTCREATEX_ACTION_EXISTED;
+	oi->smb2.out.create_time	= 0;
+	oi->smb2.out.access_time	= 0;
+	oi->smb2.out.write_time		= 0;
+	oi->smb2.out.change_time	= 0;
+	oi->smb2.out.alloc_size		= 4096;
+	oi->smb2.out.size		= 0;
+	oi->smb2.out.file_attr		= FILE_ATTRIBUTE_NORMAL;
+	oi->smb2.out._pad		= 0;
+	oi->smb2.out.blob		= data_blob(NULL, 0);
+
+	return status;
+}
+
+/*
   open a file - used for MSRPC pipes
 */
 static NTSTATUS ipc_open(struct ntvfs_module_context *ntvfs,
@@ -324,6 +343,9 @@ static NTSTATUS ipc_open(struct ntvfs_module_context *ntvfs,
 		break;
 	case RAW_OPEN_OPENX:
 		status = ipc_open_openx(ntvfs, req, oi);
+		break;
+	case RAW_OPEN_SMB2:
+		status = ipc_open_smb2(ntvfs, req, oi);
 		break;
 	default:
 		status = NT_STATUS_NOT_SUPPORTED;
@@ -764,6 +786,69 @@ static NTSTATUS ipc_trans(struct ntvfs_module_context *ntvfs,
 	return status;
 }
 
+static NTSTATUS ipc_ioctl_smb2(struct ntvfs_module_context *ntvfs,
+			       struct ntvfs_request *req, union smb_ioctl *io)
+{
+	struct pipe_state *p;
+	struct ipc_private *private = ntvfs->private_data;
+	NTSTATUS status;
+
+	switch (io->smb2.in.function) {
+	case FSCTL_NAMED_PIPE_READ_WRITE:
+		break;
+
+	default:
+		return NT_STATUS_FS_DRIVER_REQUIRED;
+	}
+
+	p = pipe_state_find(private, io->smb2.in.file.ntvfs);
+	if (!p) {
+		return NT_STATUS_INVALID_HANDLE;
+	}
+
+	io->smb2.out.out = data_blob_talloc(req, NULL, io->smb2.in.max_response_size);
+	NT_STATUS_HAVE_NO_MEMORY(io->smb2.out.out.data);
+
+	/* pass the data to the dcerpc server. Note that we don't
+	   expect this to fail, and things like NDR faults are not
+	   reported at this stage. Those sorts of errors happen in the
+	   dcesrv_output stage */
+	status = dcesrv_input(p->dce_conn, &io->smb2.in.out);
+	NT_STATUS_NOT_OK_RETURN(status);
+
+	/*
+	  now ask the dcerpc system for some output. This doesn't yet handle
+	  async calls. Again, we only expect NT_STATUS_OK. If the call fails then
+	  the error is encoded at the dcerpc level
+	*/
+	status = dcesrv_output(p->dce_conn, &io->smb2.out.out, ipc_trans_dcesrv_output);
+	NT_STATUS_IS_ERR_RETURN(status);
+
+	io->smb2.out._pad	= 0;
+	io->smb2.out.function	= io->smb2.in.function;
+	io->smb2.out.unknown2	= 0;
+	io->smb2.out.unknown3	= 0;
+	io->smb2.out.in		= io->smb2.in.out;
+
+	return status;
+}
+
+/*
+  ioctl interface
+*/
+static NTSTATUS ipc_ioctl(struct ntvfs_module_context *ntvfs,
+			  struct ntvfs_request *req, union smb_ioctl *io)
+{
+	switch (io->generic.level) {
+	case RAW_IOCTL_SMB2:
+		return ipc_ioctl_smb2(ntvfs, req, io);
+
+	default:
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	return NT_STATUS_ACCESS_DENIED;
+}
 
 
 /*
