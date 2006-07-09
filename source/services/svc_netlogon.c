@@ -32,7 +32,7 @@ static WERROR netlogon_status( const char *service, SERVICE_STATUS *service_stat
         service_status->type              = 0x20;
         service_status->controls_accepted = SVCCTL_ACCEPT_NONE;
 
-	if ( lp_servicenumber("NETLOGON") != -1 ) {
+	if ( share_defined("NETLOGON") ) {
 		service_status->state              = SVCCTL_RUNNING;
 		service_status->win32_exit_code    = WERR_SERVICE_NEVER_STARTED;
 	}
@@ -57,7 +57,7 @@ static WERROR netlogon_stop( const char *service, SERVICE_STATUS *service_status
 
 static WERROR netlogon_start( const char *service )
 {
-	if ( lp_servicenumber("NETLOGON") == -1 )
+	if ( share_defined("NETLOGON") )
 		return WERR_SERVICE_DISABLED;
 
 	return WERR_ACCESS_DENIED;
