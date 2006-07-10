@@ -100,6 +100,10 @@ extern const char *panic_action;
  */
 #define realloc_p(p, type, count) (type *)realloc_array(p, sizeof(type), count)
 
+#define data_blob(ptr, size) data_blob_named(ptr, size, "DATA_BLOB: "__location__)
+#define data_blob_talloc(ctx, ptr, size) data_blob_talloc_named(ctx, ptr, size, "DATA_BLOB: "__location__)
+#define data_blob_dup_talloc(ctx, blob) data_blob_talloc_named(ctx, (blob)->data, (blob)->length, "DATA_BLOB: "__location__)
+
 #if defined(VALGRIND)
 #define strlen(x) valgrind_strlen(x)
 #endif
