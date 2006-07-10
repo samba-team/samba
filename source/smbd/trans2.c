@@ -2571,11 +2571,10 @@ cap_low = 0x%x, cap_high = 0x%x\n",
 					lp_set_posix_pathnames();
 					mangle_change_to_posix();
 				}
-#if defined(DEVELOPER)
+
 				if (client_unix_cap_low & CIFS_UNIX_FCNTL_LOCKS_CAP) {
 					lp_set_posix_cifsx_locktype(POSIX_LOCK);
 				}
-#endif
 				break;
 			}
 		case SMB_FS_QUOTA_INFORMATION:
@@ -3010,7 +3009,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 			}
 			break;
 		}
-#if defined(DEVELOPER)
+
 		case SMB_QUERY_POSIX_LOCK:
 		{
 			if (fsp == NULL || fsp->fh->fd == -1) {
@@ -3032,7 +3031,6 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 				return ERROR_NT(NT_STATUS_NO_MEMORY);
 			}
 		}
-#endif
 		default:
 			break;
 	}
@@ -3563,7 +3561,6 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 #endif
 
 
-#if defined(DEVELOPER)
 		case SMB_QUERY_POSIX_LOCK:
 		{
 			NTSTATUS status = NT_STATUS_INVALID_LEVEL;
@@ -3636,7 +3633,6 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 			}
 			break;
 		}
-#endif
 
 		default:
 			return ERROR_NT(NT_STATUS_INVALID_LEVEL);
@@ -4511,7 +4507,6 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 		}
 #endif
 
-#if defined(DEVELOPER)
 		case SMB_SET_POSIX_LOCK:
 		{
 			SMB_BIG_UINT count;
@@ -4609,7 +4604,6 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 			send_trans2_replies(outbuf, bufsize, params, 2, *ppdata, 0);
 			return(-1);
 		}
-#endif
 
 		default:
 			return ERROR_NT(NT_STATUS_INVALID_LEVEL);
