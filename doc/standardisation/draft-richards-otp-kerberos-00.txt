@@ -1,0 +1,728 @@
+
+
+
+Network Working Group                                        G. Richards
+Internet-Draft                                      RSA Security UK Ltd.
+Expires: December 4, 2006                                   June 2, 2006
+
+
+                              OTP Kerberos
+                      draft-richards-otp-kerberos-00
+
+Status of this Memo
+
+   By submitting this Internet-Draft, each author represents that any
+   applicable patent or other IPR claims of which he or she is aware
+   have been or will be disclosed, and any of which he or she becomes
+   aware will be disclosed, in accordance with Section 6 of BCP 79.
+
+   Internet-Drafts are working documents of the Internet Engineering
+   Task Force (IETF), its areas, and its working groups.  Note that
+   other groups may also distribute working documents as Internet-
+   Drafts.
+
+   Internet-Drafts are draft documents valid for a maximum of six months
+   and may be updated, replaced, or obsoleted by other documents at any
+   time.  It is inappropriate to use Internet-Drafts as reference
+   material or to cite them other than as "work in progress."
+
+   The list of current Internet-Drafts can be accessed at
+   http://www.ietf.org/ietf/1id-abstracts.txt.
+
+   The list of Internet-Draft Shadow Directories can be accessed at
+   http://www.ietf.org/shadow.html.
+
+   This Internet-Draft will expire on December 4, 2006.
+
+Copyright Notice
+
+   Copyright (C) The Internet Society (2006).
+
+Abstract
+
+   The Kerberos protocol provides a framework authenticating a client
+   using the exchange of pre-authentication data.  This document
+   describes the use of this framework to carry out One Time Password
+   (OTP) authentication.
+
+
+
+
+
+
+
+
+Richards                Expires December 4, 2006                [Page 1]
+
+Internet-Draft                OTP Kerberos                     June 2006
+
+
+Table of Contents
+
+   1.  Introduction . . . . . . . . . . . . . . . . . . . . . . . . .  3
+   2.  Usage Overview . . . . . . . . . . . . . . . . . . . . . . . .  3
+     2.1.  Pre-Authentication . . . . . . . . . . . . . . . . . . . .  3
+     2.2.  PIN Change . . . . . . . . . . . . . . . . . . . . . . . .  4
+     2.3.  OTP Hardening  . . . . . . . . . . . . . . . . . . . . . .  4
+     2.4.  Key Derivation . . . . . . . . . . . . . . . . . . . . . .  5
+   3.  OTP Kerberos Types . . . . . . . . . . . . . . . . . . . . . .  6
+     3.1.  PA-OTP-CHALLENGE . . . . . . . . . . . . . . . . . . . . .  6
+     3.2.  PA-OTP-RESPONSE  . . . . . . . . . . . . . . . . . . . . .  7
+     3.3.  PA-OTP-CONFIRM . . . . . . . . . . . . . . . . . . . . . .  8
+     3.4.  PA-ENC-PIN . . . . . . . . . . . . . . . . . . . . . . . .  9
+   4.  IANA Considerations  . . . . . . . . . . . . . . . . . . . . .  9
+   5.  Security Considerations  . . . . . . . . . . . . . . . . . . .  9
+     5.1.  Active attacks . . . . . . . . . . . . . . . . . . . . . .  9
+     5.2.  Denial of service attacks  . . . . . . . . . . . . . . . .  9
+     5.3.  Use of Hardening Value . . . . . . . . . . . . . . . . . . 10
+   6.  References . . . . . . . . . . . . . . . . . . . . . . . . . . 10
+     6.1.  Normative References . . . . . . . . . . . . . . . . . . . 10
+     6.2.  Informative References . . . . . . . . . . . . . . . . . . 11
+   Author's Address . . . . . . . . . . . . . . . . . . . . . . . . . 12
+   Intellectual Property and Copyright Statements . . . . . . . . . . 13
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Richards                Expires December 4, 2006                [Page 2]
+
+Internet-Draft                OTP Kerberos                     June 2006
+
+
+1.  Introduction
+
+   A One-Time Password (OTP) token may be a handheld hardware device, a
+   hardware device connected to a personal computer through an
+   electronic interface such as USB, or a software module resident on a
+   personal computer, which generates one-time passwords that may be
+   used to authenticate a user towards some service.  This document
+   describes an extensions to Kerberos V5 [RFC4120] to support pre-
+   authentication using a OTPs.
+
+   In this proposal, the KDC sends the client information on which token
+   to be used and how the OTP is to be generated.  The client then uses
+   the OTP value instead of the conventional password to generate the
+   timestamp encryption key and sends the encrypted timestamp along with
+   information on the OTP to the KDC in in pre-authentication data of a
+   KRB_AS_REQ.  The KDC then uses the OTP information provided by the
+   client to generate the same encryption key, allowing it to verify the
+   timestamp.
+
+   This proposal is partially based upon previous work on integrating
+   single-use authentication mechanisms into Kerberos [NeZoHo98] and
+   uses the existing password-change extensions to handle PIN change as
+   described in [RFC3244].
+
+   The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
+   "SHOULD", "SHOULD NOT", "RECOMMENDED", "MAY", and "OPTIONAL" in this
+   document are to be interpreted as described in [RFC2119].
+
+   << This is the first draft of this document and so is liable to
+   change significantly. >>
+
+
+2.  Usage Overview
+
+2.1.  Pre-Authentication
+
+   The approach uses pre-authentication data in KRB_AS_REQ, KRB_AS_REP
+   and KRB_ERROR.  The client begins by sending an initial KRB_AS_REQ to
+   the KDC possibly containing pre-authentication data such as the
+   standard Kerberos password data.  The KDC will then determine in an
+   implementation dependent fashion whether OTP authentication is
+   required and if it is, it will respond with a KRB_ERROR message with:
+
+   o  An error code of KDC_ERR_PREAUTH_REQUIRED
+   o  An e-data field containing PA-DATA with a PA-OTP-CHALLENGE.
+
+   The PA-OTP-CHALLENGE contains information on the type of OTP required
+   and the token to be used to generate it.  The client uses this
+
+
+
+Richards                Expires December 4, 2006                [Page 3]
+
+Internet-Draft                OTP Kerberos                     June 2006
+
+
+   information to locate the token and generate the OTP which is used,
+   instead of the user's password, to generate an encryption key and
+   encrypt a timestamp.
+
+   The encrypted timestamp is then sent to the KDC as pre-auth data in a
+   second KRB_AS_REQ in the standard manner but additional information
+   on the OTP and the key derivation is also sent in a PA-OTP-RESPONSE.
+
+   The KDC then uses the information in the PA-OTP-RESPONSE to generate
+   the same key as the client allowing it to validate the encrypted
+   timestamp.  If the validation succeeds then the KDC returns the TGT
+   in a KRB_AS_REP.
+
+2.2.  PIN Change
+
+   If, following successful validation of a PA-OTP-RESPONSE in a
+   KRB_AS_REQ, the KDC requires that the user changes their PIN then it
+   will return PA-DATA of type PA-OTP-PIN-CHANGE in the KRB_AS_REP.
+   This pre-auth data can be used to return a new PIN to the user if the
+   KDC has updated the PIN or to indicate to the user that they must
+   change their PIN.
+
+   In the latter case, user PIN change shall be handled by a PIN change
+   service supporting the ChangePasswdData in a KRB_AP_REQ as described
+   in [RFC3244].  If such a user PIN change is required then the KDC
+   SHALL return a TGT in the KRB_AS_REP but it is RECOMMENDED that it
+   only issues tickets for the PIN change service until the PIN has been
+   changed.
+
+2.3.  OTP Hardening
+
+   Since OTPs may be relatively short, it is important to slow down an
+   attacker sufficiently so that it is economically unattractive to
+   brute-force search for an OTP given an observed OTP-Kerberos
+   exchange.  One way to do this is to derive the Kerberos user key from
+   the OTP instead of the password in the same manner as described in
+   [RFC3962] but to use a high number of iterated hashes of the OTP in
+   the PBKDF2 key derivation function from [RFC2898].  Another is for
+   the client to include a hardening value unknown to the attacker in
+   the key derivation.
+
+   Unlike the a traditional "salt" value which is normally sent in the
+   clear, this hardening value will instead be transferred from the KDC
+   to the client in encrypted form.  When the client receives a PA-OTP-
+   CHALLENGE from a KDC it will search for an associated hardening
+   value.  If it finds a value then it will use it in the key derivation
+   as specified in Section 2.4.
+
+
+
+
+Richards                Expires December 4, 2006                [Page 4]
+
+Internet-Draft                OTP Kerberos                     June 2006
+
+
+   The use of a hardening value will influence the iteration count used
+   by the client in the random-to-key calculation.  The value sent by
+   the KDC in the s2kparams of the ETYPE-INFO2 pre-authentication type
+   specifies the value used if there is no hardening value stored on the
+   client for the server.  If the client has a hardening value stored
+   for the server, then the iteration count of 1 SHOULD be used as the
+   security of the scheme is provided through the hardening value.  If
+   the client does not have a hardening value stored, then it SHOULD set
+   the iteration count in the key derivation to the maximum value that
+   is both supported by the KDC and permitted by any local policy
+   constraints.  The identifier of any hardening value used and the
+   value of the iteration count are sent by the client to the KDC in a
+   PA-OTP_RESPONSE included in the KRB_AS_REQ.
+
+   When the KDC receives a PA-OTP-RESPONSE, it will use the identifier
+   to locate the hardening value.  If a hardening value is found then it
+   will be used along with the iterationCount to generate the user key.
+   If the hardening value identifier is omitted then only the
+   iterationCount SHALL be used.  If a hardening value identifier is
+   included but the corresponding value could not be found then the KDC
+   SHALL respond with a KDC_ERR_PREAUTH_REQUIRED error as described
+   above but SHALL set the noHardening flag in the PA-OTP-CHALLENGE.
+
+   The hardening value to be used by the client in the next KRB_AS_REQ
+   will be sent by the KDC in a PA-OTP-CONFIRM contained in the
+   KRB_AS_REP.  The inclusion of a PA-OTP-CONFIRM is only REQUIRED if
+   the client did not use a hardening value to generate the timestamp
+   encryption key.  However, it is RECOMMENDED that it be included in
+   all such responses to ensure that a new hardening value is used in
+   all client requests.
+
+2.4.  Key Derivation
+
+   The encryption key used to encrypt the time stamp SHALL be generated
+   using the PBKDF2 password-based key derivation function as specified
+   in [RFC3962].  Conformant KDCs MUST support at least one of the
+   encryption types aes128-cts-hmac-sha1-96 and aes256-cts-hmac-sha1-96
+   defined in [RFC3962] and MUST return PA-ETYPE-INFO2 pre-
+   authentication types with the corresponding etype values.
+
+   In order to use the hardening scheme described in Section 2.3, the
+   information provided by the KDC in the ETYPE-INFO2 pre-authentication
+   type SHALL be used by the client as follows:
+
+   o  If the client does not have a hardening value associated with the
+      KDC then the number of iterations specified in the s2kparams SHALL
+      be used.  If the client has a hardening value then an iteration
+      count of 1 SHALL be used instead.
+
+
+
+Richards                Expires December 4, 2006                [Page 5]
+
+Internet-Draft                OTP Kerberos                     June 2006
+
+
+   o  The salt value SHALL have the hardening value concatenated if
+      there is one associated with the KDC.
+
+             tkey = random-to-key(PBKDF2(OTP, salt|hardening,
+                           iteration_count, key_length))
+             key = DK(tkey, "kerberos")
+
+
+3.  OTP Kerberos Types
+
+3.1.  PA-OTP-CHALLENGE
+
+   This is a pre-authentication type sent by the KDC to the client in a
+   KRB_ERROR.  It contains information for the client on how to generate
+   an OTP and how to use the OTP in the generation of the key used to
+   encrypt the pre-authentication data.
+
+             PA-OTP-CHALLENGE ::= SEQUENCE {
+               flags            ChallengeFlags
+               otp-challenge[0] OCTET STRING OPTIONAL,
+               otp-length   [1] INTEGER      OPTIONAL,
+               otp-service  [2] UTF8String   OPTIONAL,
+               otp-keyID    [3] OCTET STRING OPTIONAL,
+               otp-algID    [4] INTEGER      OPTIONAL
+             }
+             ChallengeFlags ::= KerberosFlags
+             -- noHardening (0),
+
+   noHardening
+      If the noHardening flag is set then the client MUST NOT use any
+      stored hardening value in the key derivation.  Instead, it MUST
+      use the iteration count provided by the KDC.
+   otp-challenge
+      The otp-challenge is used by the KDC to send a challenge value for
+      use in the OTP calculation.  The challenge is an optional octet
+      string that SHOULD be uniquely generated for each request it is
+      present in, and SHOULD be eight octets or longer when present.
+      When the challenge is not present, the OTP will be calculated on
+      the current token state only.  The client MAY ignore a provided
+      challenge if and only if the OTP token the client is interacting
+      with is not capable of including a challenge in the OTP
+      calculation.  In this case, KDC policies will determine whether to
+      accept a provided OTP value or not.
+
+
+
+
+
+
+
+
+Richards                Expires December 4, 2006                [Page 6]
+
+Internet-Draft                OTP Kerberos                     June 2006
+
+
+   otp-length
+      The otp-length is used by the KDC to specify the desired length of
+      the generated OTP.
+
+   otp-service
+      An identifier of the service supported by the KDC.  This value can
+      be used by the client to locate information such as the hardening
+      value and OTP key to use.
+
+   otp-keyID
+      The identifier of the OTP key to be used in the OTP calculation.
+      If this value is not present then the client SHOULD use other
+      values such as the otp-service and otp-algiID to locate the
+      appropriate key.
+   otp-algID
+      The identifier of the algorithm to use when generating the OTP.
+
+3.2.  PA-OTP-RESPONSE
+
+   This is a pre-authentication type sent by the client to the KDC in a
+   KRB_AS_REQ containing the encrypted pre-authentication data.  It
+   contains information on the OTP used and how the key was generated
+   that encrypts the pre-authentication data.  This information will
+   then allow the KDC to generate the same key and validate the pre-
+   authentication data.
+
+             PA-OTP-RESPONSE ::= SEQUENCE {
+               iterationCount[0] INTEGER      OPTIONAL,
+               identifier    [1] OCTET STRING OPTIONAL,
+               otp-challenge [2] OCTET STRING OPTIONAL,
+               otp-time      [2] KerberosTime OPTIONAL,
+               otp-counter   [3] OCTET STRING OPTIONAL,
+               otp-format    [4] OTPFormat    OPTIONAL,
+               otp-keyID     [5] OCTET STRING OPTIONAL
+             }
+
+             OTPFormat ::= INTEGER {
+                 decimal(0),
+                 hexadecimal(1),
+                 alphanumeric(2),
+                 binary(3)
+             }
+
+   iterationCount
+      The actual value of the iteration count used by the client in the
+      key derivation.  If omitted then the specified or default
+      iteration count is used.  If present then it will generally be
+      less than the value used in the string-to-key parameters if a
+
+
+
+Richards                Expires December 4, 2006                [Page 7]
+
+Internet-Draft                OTP Kerberos                     June 2006
+
+
+      hardening value is used.
+
+   identifier
+      An octet string identifying the hardening value used by the client
+      in the key derivation.  If omitted then no hardening was used.
+
+   otp-challenge
+      Value used by the client to send the challenge used in the OTP
+      calculation.  It MUST be sent to the KDC if and only if the value
+      would otherwise be unknown to the KDC.  For example, the token or
+      client modified or generated challenge.
+
+   otp-time
+      Value used by the client to send the time used in the OTP
+      calculation.
+
+   otp-counter
+      The counter value used in the OTP calculation.  Use of this
+      element is OPTIONAL but it MAY be used by a client to simplify the
+      OTP calculations of the KDC to contain the counter value as
+      reported by the OTP token.
+
+   otp-format
+      The format of the generated OTP.
+
+   otp-keyID
+      The identifier of the OTP key used.
+
+3.3.  PA-OTP-CONFIRM
+
+   Pre-authentication type returned by the KDC in a KRB_AS_REP if the
+   client requires a new hardening value.
+
+             PA-OTP-CONFIRM ::= SEQUENCE {
+               identifier        OCTET STRING,
+               encHardeningValue EncryptedData  -- EncHardeningValue
+             }
+             EncHardeningValue ::= OCTET STRING SIZE (16..MAX)
+
+   identifier
+      An octet string identifying the hardening value used by the client
+      in the key derivation.
+
+   encHardeningValue
+      The hardening value that the client SHOULD use in future key
+      derivations.  It is encrypted as described in section 5.2.9 of
+      [RFC4120] using the current user key as derived by the KDC from
+      the OTP.
+
+
+
+Richards                Expires December 4, 2006                [Page 8]
+
+Internet-Draft                OTP Kerberos                     June 2006
+
+
+3.4.  PA-ENC-PIN
+
+   Pre-authentication type returned by the KDC in a KRB_AS_REP if the
+   user must change their PIN or if the user's PIN has been changed.
+
+             PA-ENC-PIN     ::= EncryptedData -- PA-ENC-PIN-ENC
+             PA-ENC-PIN-ENC ::= SEQUENCE {
+               flags         PinFlags
+               pin       [0] UTF8String OPTIONAL
+               minLength [1] INTEGER    OPTIONAL
+               maxLength [2] INTEGER    OPTIONAL
+             }
+
+             PinFlags ::= KerberosFlags
+             -- systemSetPin (0)
+
+   If the systemSetPin flag is set then the pin field MUST be present
+   and the presence of this pre-auth type indicates that the user's PIN
+   has been changed to the value contained within the pin field.
+
+   If the pin field is omitted then this pre-auth type indicates that
+   the user must change their PIN using the PIN change service and that
+   the KDC will only issue tickets for the PIN change service until the
+   PIN has been changed.
+
+   If the pin field is present and the systemPin flag is not set then
+   the user must change their PIN subject to the restrictions of the
+   other fields or may alternatively use the returned PIN.
+
+
+4.  IANA Considerations
+
+   A registry may be required for the otp-AlgID values as introduced in
+   Section 3.1.  No other IANA actions are anticipated.
+
+
+5.  Security Considerations
+
+5.1.  Active attacks
+
+   <<TBD: Could an attacker change the iteration count in the PA-
+   ETYPE_INFO2? >>
+
+5.2.  Denial of service attacks
+
+   An active attacker may replace the iteration count value in the PA-
+   OTP-RESPONSE sent by the client to slow down an authentication
+   server.  Authentication servers SHOULD protect against this, e.g. by
+
+
+
+Richards                Expires December 4, 2006                [Page 9]
+
+Internet-Draft                OTP Kerberos                     June 2006
+
+
+   disregarding PA-OTP-RESPONSE elements with an iteration count value
+   higher than some pre- or dynamically- (depending on load) set number.
+
+5.3.  Use of Hardening Value
+
+   As described in Section 2.3, the use of a hardening value will slow
+   down an attacker's search for a matching OTP.  The ability to
+   transfer a hardening value in encrypted form from the KDC to the
+   client means that, even though there may be an initial computational
+   cost for the KDC to authenticate the user due to a high iteration
+   count, subsequent authentications will be efficient, while at the
+   same time more secure, since a pre-shared, 128 bits long, hardening
+   value will not be easily found by an attacker.
+
+   If a client does not have a hardening value for a KDC then it will
+   have to generate the user key using only an iteration count.  An
+   attacker observing such a KRB_AS_REQ may, depending on available
+   resources, be able to successfully attack that request.  Once the
+   correct OTP has been found, eavesdropping on the KDC's PA_OTP_CONFIRM
+   will potentially give the attacker access to the server-provided
+   hardening value.  For this reason, initial exchanges with KDC servers
+   SHOULD occur in a secure environment, and if not, the iteration count
+   MUST be significantly higher than for messages where a pre-shared
+   hardening value is used.  The lifetime of this value must also be
+   calculated with this in mind.  Finally, the value MUST be securely
+   stored by the client and the KDC, associated with the user.
+
+
+6.  References
+
+6.1.  Normative References
+
+   [RFC2119]  Bradner, S., "Key words for use in RFCs to Indicate
+              Requirement Levels", BCP 14, RFC 2119, March 1997.
+
+   [RFC2898]  Kaliski, B., "PKCS #5: Password-Based Cryptography
+              Specification Version 2.0", RFC 2898, September 2000.
+
+   [RFC3244]  Swift, M., Trostle, J., and J. Brezak, "Microsoft Windows
+              2000 Kerberos Change Password and Set Password Protocols",
+              RFC 3244, February 2002.
+
+   [RFC3962]  Raeburn, K., "Advanced Encryption Standard (AES)
+              Encryption for Kerberos 5", RFC 3962, February 2005.
+
+   [RFC4120]  Neuman, C., Yu, T., Hartman, S., and K. Raeburn, "The
+              Kerberos Network Authentication Service (V5)", RFC 4120,
+              July 2005.
+
+
+
+Richards                Expires December 4, 2006               [Page 10]
+
+Internet-Draft                OTP Kerberos                     June 2006
+
+
+6.2.  Informative References
+
+   [NeZoHo98]
+              Neuman, C., Zorn, G., Trostle, J., and K. Horstein,
+              "Integrating Single-use Authentication Mechanisms with
+              Kerberos", draft-ietf-cat-kerberos-password-04 (work in
+              progress), November 1998.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Richards                Expires December 4, 2006               [Page 11]
+
+Internet-Draft                OTP Kerberos                     June 2006
+
+
+Author's Address
+
+   Gareth Richards
+   RSA Security UK Ltd.
+   RSA House
+   Western Road
+   Bracknell, Berkshire  RG12 1RT
+   UK
+
+   Email: grichards@rsasecurity.com
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Richards                Expires December 4, 2006               [Page 12]
+
+Internet-Draft                OTP Kerberos                     June 2006
+
+
+Intellectual Property Statement
+
+   The IETF takes no position regarding the validity or scope of any
+   Intellectual Property Rights or other rights that might be claimed to
+   pertain to the implementation or use of the technology described in
+   this document or the extent to which any license under such rights
+   might or might not be available; nor does it represent that it has
+   made any independent effort to identify any such rights.  Information
+   on the procedures with respect to rights in RFC documents can be
+   found in BCP 78 and BCP 79.
+
+   Copies of IPR disclosures made to the IETF Secretariat and any
+   assurances of licenses to be made available, or the result of an
+   attempt made to obtain a general license or permission for the use of
+   such proprietary rights by implementers or users of this
+   specification can be obtained from the IETF on-line IPR repository at
+   http://www.ietf.org/ipr.
+
+   The IETF invites any interested party to bring to its attention any
+   copyrights, patents or patent applications, or other proprietary
+   rights that may cover technology that may be required to implement
+   this standard.  Please address the information to the IETF at
+   ietf-ipr@ietf.org.
+
+
+Disclaimer of Validity
+
+   This document and the information contained herein are provided on an
+   "AS IS" basis and THE CONTRIBUTOR, THE ORGANIZATION HE/SHE REPRESENTS
+   OR IS SPONSORED BY (IF ANY), THE INTERNET SOCIETY AND THE INTERNET
+   ENGINEERING TASK FORCE DISCLAIM ALL WARRANTIES, EXPRESS OR IMPLIED,
+   INCLUDING BUT NOT LIMITED TO ANY WARRANTY THAT THE USE OF THE
+   INFORMATION HEREIN WILL NOT INFRINGE ANY RIGHTS OR ANY IMPLIED
+   WARRANTIES OF MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE.
+
+
+Copyright Statement
+
+   Copyright (C) The Internet Society (2006).  This document is subject
+   to the rights, licenses and restrictions contained in BCP 78, and
+   except as set forth therein, the authors retain all their rights.
+
+
+Acknowledgment
+
+   Funding for the RFC Editor function is currently provided by the
+   Internet Society.
+
+
+
+
+Richards                Expires December 4, 2006               [Page 13]
+
