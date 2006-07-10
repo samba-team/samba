@@ -193,7 +193,7 @@ static void create_tdb(void)
 	}
 	if (tdb) tdb_close(tdb);
 	tdb = tdb_open_ex(tok, 0, TDB_CLEAR_IF_FIRST,
-			  O_RDWR | O_CREAT | O_TRUNC, 0600, log_ctx, NULL);
+			  O_RDWR | O_CREAT | O_TRUNC, 0600, &log_ctx, NULL);
 	if (!tdb) {
 		printf("Could not create %s: %s\n", tok, strerror(errno));
 	}
@@ -201,13 +201,16 @@ static void create_tdb(void)
 
 static void open_tdb(void)
 {
+	struct tdb_logging_context log_ctx;
+	log_ctx.log_fn = tdb_log;
+
 	char *tok = get_token(1);
 	if (!tok) {
 		help();
 		return;
 	}
 	if (tdb) tdb_close(tdb);
-	tdb = tdb_open_ex(tok, 0, 0, O_RDWR, 0600, tdb_log, NULL, NULL);
+	tdb = tdb_open_ex(tok, 0, 0, O_RDWR, 0600, &log_ctx, NULL);
 	if (!tdb) {
 		printf("Could not open %s: %s\n", tok, strerror(errno));
 	}
@@ -316,6 +319,9 @@ static void move_rec(void)
 	TDB_DATA key, dbuf;
 	struct tdb_context *dst_tdb;
 
+	struct tdb_logging_context log_ctx;
+	log_ctx.log_fn = tdb_log;
+
 	if (!k) {
 		help();
 		return;
@@ -343,7 +349,7 @@ static void move_rec(void)
 	
 	print_rec(tdb, key, dbuf, NULL);
 	
-	dst_tdb = tdb_open_ex(file, 0, 0, O_RDWR, 0600, tdb_log, NULL, NULL);
+	dst_tdb = tdb_open_ex(file, 0, 0, O_RDWR, 0600, &log_ctx, NULL);
 	if ( !dst_tdb ) {
 		terror("unable to open destination tdb");
 		return;
