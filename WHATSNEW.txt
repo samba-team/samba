@@ -1,6 +1,6 @@
                    ==============================
                    Release Notes for Samba 3.0.23
-                              Jun XX, 2006
+                            Jul 10, 2006
                    ==============================
 
 This is the latest stable release of Samba. This is the version 
@@ -203,6 +203,7 @@ o   Volker Lendecke <vl@samba.org>
     * Fix compile warnings when passing NULL to snprintf().
     * BUG 3915: Fall back to a pure unix user with S-1-22 SIDs in the
       token in case anything weird is going on with the 'force user'.
+    * CVE-2006-3403: Fix minor memory exhaustion DoS in smbd.
 
 
 o   Jason Mader <jason@ncac.gwu.edu>
