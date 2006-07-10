@@ -68,6 +68,8 @@
 
 static BOOL bLoaded = False;
 
+#define standard_sub_basic(str,len)
+
 /* some helpful bits */
 #define LP_SNUM_OK(i) (((i) >= 0) && ((i) < iNumServices) && ServicePtrs[(i)]->valid)
 #define VALID(i) ServicePtrs[i]->valid
