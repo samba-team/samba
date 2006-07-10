@@ -156,6 +156,7 @@ static NTSTATUS smb2srv_tcon_backend(struct smb2srv_request *req, union smb_tcon
 	NTSTATUS status;
 	enum ntvfs_type type;
 	uint16_t type_smb2;
+	uint32_t unknown2;
 	int snum;
 	const char *service = io->smb2.in.path;
 
@@ -183,12 +184,15 @@ static NTSTATUS smb2srv_tcon_backend(struct smb2srv_request *req, union smb_tcon
 	if (strcmp(lp_fstype(snum), "IPC") == 0) {
 		type = NTVFS_IPC;
 		type_smb2 = 0x0002;
+		unknown2 = 0x00000030;
 	} else if (lp_print_ok(snum)) {
 		type = NTVFS_PRINT;
 		type_smb2 = 0x0003;
+		unknown2 = 0x00000000;
 	} else {
 		type = NTVFS_DISK;
 		type_smb2 = 0x0001;
+		unknown2 = 0x00000800;
 	}
 
 	tcon = smbsrv_smb2_tcon_new(req->session, lp_servicename(snum));
@@ -254,7 +258,7 @@ static NTSTATUS smb2srv_tcon_backend(struct smb2srv_request *req, union smb_tcon
 	}
 
 	io->smb2.out.unknown1	= type_smb2; /* 1 - DISK, 2 - Print, 3 - IPC */
-	io->smb2.out.unknown2	= 0x00000000;
+	io->smb2.out.unknown2	= unknown2;
 	io->smb2.out.unknown3	= 0x00000000;
 	io->smb2.out.access_mask= SEC_RIGHTS_FILE_ALL;
 
@@ -270,14 +274,24 @@ failed:
 
 static void smb2srv_tcon_send(struct smb2srv_request *req, union smb_tcon *io)
 {
-	if (NT_STATUS_IS_ERR(req->status)) {
+	uint16_t unknown1;
+
+	if (!NT_STATUS_IS_OK(req->status)) {
 		smb2srv_send_error(req, req->status);
 		return;
+	}
+
+	if (io->smb2.out.unknown1 == 0x0002) {
+		/* if it's an IPC share vista returns 0x0005 */
+		unknown1 = 0x0005;
+	} else {
+		unknown1 = 0x0001;
 	}
 
 	SMB2SRV_CHECK(smb2srv_setup_reply(req, 0x10, False, 0));
 
 	SIVAL(req->out.hdr,	SMB2_HDR_TID,	io->smb2.out.tid);
+	SSVAL(req->out.hdr,	SMB2_HDR_UNKNOWN1,unknown1);
 
 	SSVAL(req->out.body,	0x02,		io->smb2.out.unknown1);
 	SIVAL(req->out.body,	0x04,		io->smb2.out.unknown2);
