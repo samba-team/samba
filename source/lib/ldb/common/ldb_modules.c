@@ -338,9 +338,13 @@ int ldb_load_modules(struct ldb_context *ldb, const char *options[])
   when ldb is extended
 */
 #define FIND_OP(module, op) do { \
+	struct ldb_context *ldb = module->ldb; \
 	module = module->next; \
 	while (module && module->ops->op == NULL) module = module->next; \
-	if (module == NULL) return LDB_ERR_OPERATIONS_ERROR; \
+	if (module == NULL) { \
+		ldb_set_errstring(ldb, talloc_strdup(ldb, "Unable to find backend operation for " #op )); \
+		return LDB_ERR_OPERATIONS_ERROR;	\
+	}						\
 } while (0)
 
 
