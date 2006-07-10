@@ -182,10 +182,10 @@ static NTSTATUS smb2srv_tcon_backend(struct smb2srv_request *req, union smb_tcon
 	/* work out what sort of connection this is */
 	if (strcmp(lp_fstype(snum), "IPC") == 0) {
 		type = NTVFS_IPC;
-		type_smb2 = 0x0003;
+		type_smb2 = 0x0002;
 	} else if (lp_print_ok(snum)) {
 		type = NTVFS_PRINT;
-		type_smb2 = 0x0002;
+		type_smb2 = 0x0003;
 	} else {
 		type = NTVFS_DISK;
 		type_smb2 = 0x0001;
