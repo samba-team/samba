@@ -119,7 +119,7 @@ static int tdb_already_open(dev_t device,
 struct tdb_context *tdb_open(const char *name, int hash_size, int tdb_flags,
 		      int open_flags, mode_t mode)
 {
-	return tdb_open_ex(name, hash_size, tdb_flags, open_flags, mode, NULL, NULL, NULL);
+	return tdb_open_ex(name, hash_size, tdb_flags, open_flags, mode, NULL, NULL);
 }
 
 /* a default logging function */
@@ -131,7 +131,7 @@ static void null_log_fn(struct tdb_context *tdb, enum tdb_debug_level level, con
 
 struct tdb_context *tdb_open_ex(const char *name, int hash_size, int tdb_flags,
 				int open_flags, mode_t mode,
-				tdb_log_func log_fn, void *log_private,
+				const struct tdb_logging_context *log_ctx,
 				tdb_hash_func hash_fn)
 {
 	struct tdb_context *tdb;
@@ -151,8 +151,12 @@ struct tdb_context *tdb_open_ex(const char *name, int hash_size, int tdb_flags,
 	tdb->map_ptr = NULL;
 	tdb->flags = tdb_flags;
 	tdb->open_flags = open_flags;
-	tdb->log_fn = log_fn?log_fn:null_log_fn;
-	tdb->log_private = log_fn?log_private:NULL;
+	if (log_ctx) {
+		tdb->log = *log_ctx;
+	} else {
+		tdb->log.log_fn = null_log_fn;
+		tdb->log.log_private = NULL;
+	}
 	tdb->hash_fn = hash_fn ? hash_fn : default_tdb_hash;
 
 	/* cache the page size */
@@ -366,15 +370,15 @@ int tdb_close(struct tdb_context *tdb)
 }
 
 /* register a loging function */
-void tdb_logging_function(struct tdb_context *tdb, tdb_log_func log_fn, void *log_private)
+void tdb_set_logging_function(struct tdb_context *tdb,
+                              const struct tdb_logging_context *log)
 {
-	tdb->log_fn = log_fn?log_fn:null_log_fn;
-	tdb->log_private = log_fn?log_private:NULL;
+        tdb->log = *log;
 }
 
-void *tdb_logging_private(struct tdb_context *tdb)
+void *tdb_get_logging_private(struct tdb_context *tdb)
 {
-	return tdb->log_private;
+	return tdb->log.log_private;
 }
 
 /* reopen a tdb - this can be used after a fork to ensure that we have an independent

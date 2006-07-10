@@ -63,7 +63,7 @@ static void ltdb_log_fn(struct tdb_context *tdb, enum tdb_debug_level level, con
 {
 	va_list ap;
 	const char *name = tdb_name(tdb);
-	struct ldb_context *ldb = talloc_get_type(tdb_logging_private(tdb), struct ldb_context);
+	struct ldb_context *ldb = talloc_get_type(tdb_get_logging_private(tdb), struct ldb_context);
 	enum ldb_debug_level ldb_level;
 	char *message; 
 	va_start(ap, fmt);
@@ -106,6 +106,9 @@ struct tdb_context *ltdb_wrap_open(TALLOC_CTX *mem_ctx,
 {
 	struct ltdb_wrap *w;
 	struct stat st;
+	struct tdb_logging_context log_ctx;
+	log_ctx.log_fn = ltdb_log_fn;
+	log_ctx.log_private = ldb;
 
 	if (stat(path, &st) == 0) {
 		for (w=tdb_list;w;w=w->next) {
@@ -121,7 +124,7 @@ struct tdb_context *ltdb_wrap_open(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	w->tdb = tdb_open_ex(path, hash_size, tdb_flags, open_flags, mode, ltdb_log_fn, ldb, NULL);
+	w->tdb = tdb_open_ex(path, hash_size, tdb_flags, open_flags, mode, &log_ctx, NULL);
 	if (w->tdb == NULL) {
 		talloc_free(w);
 		return NULL;
