@@ -201,6 +201,8 @@ o   Volker Lendecke <vl@samba.org>
       shares.
     * Fix an invalid munlock() call in winbindd's credentials cache.
     * Fix compile warnings when passing NULL to snprintf().
+    * BUG 3915: Fall back to a pure unix user with S-1-22 SIDs in the
+      token in case anything weird is going on with the 'force user'.
 
 
 o   Jason Mader <jason@ncac.gwu.edu>
