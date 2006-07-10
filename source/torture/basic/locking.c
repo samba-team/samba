@@ -46,7 +46,8 @@ BOOL torture_locktest1(struct torture_context *torture)
 	time_t t1, t2;
 	uint_t lock_timeout;
 
-	if (!torture_open_connection(&cli1) || !torture_open_connection(&cli2)) {
+	if (!torture_open_connection(&cli1, 0) ||
+	    !torture_open_connection(&cli2, 1)) {
 		return False;
 	}
 
@@ -202,7 +203,7 @@ BOOL torture_locktest2(struct torture_context *torture)
 	int fnum1, fnum2, fnum3;
 	BOOL correct = True;
 
-	if (!torture_open_connection(&cli)) {
+	if (!torture_open_connection(&cli, 0)) {
 		return False;
 	}
 
@@ -347,7 +348,8 @@ BOOL torture_locktest3(struct torture_context *torture)
 
 #define NEXT_OFFSET offset += (~(uint32_t)0) / torture_numops
 
-	if (!torture_open_connection(&cli1) || !torture_open_connection(&cli2)) {
+	if (!torture_open_connection(&cli1, 0) ||
+	    !torture_open_connection(&cli2, 1)) {
 		return False;
 	}
 
@@ -479,7 +481,8 @@ BOOL torture_locktest4(struct torture_context *torture)
 	uint8_t buf[1000];
 	BOOL correct = True;
 
-	if (!torture_open_connection(&cli1) || !torture_open_connection(&cli2)) {
+	if (!torture_open_connection(&cli1, 0) ||
+	    !torture_open_connection(&cli2, 1)) {
 		return False;
 	}
 
@@ -649,7 +652,8 @@ BOOL torture_locktest5(struct torture_context *torture)
 	uint8_t buf[1000];
 	BOOL correct = True;
 
-	if (!torture_open_connection(&cli1) || !torture_open_connection(&cli2)) {
+	if (!torture_open_connection(&cli1, 0) ||
+	    !torture_open_connection(&cli2, 1)) {
 		return False;
 	}
 
@@ -771,7 +775,7 @@ BOOL torture_locktest6(struct torture_context *torture)
 	int fnum;
 	NTSTATUS status;
 
-	if (!torture_open_connection(&cli)) {
+	if (!torture_open_connection(&cli, 0)) {
 		return False;
 	}
 
@@ -815,7 +819,7 @@ BOOL torture_locktest7(struct torture_context *torture)
 	uint8_t buf[200];
 	BOOL correct = False;
 
-	if (!torture_open_connection(&cli1)) {
+	if (!torture_open_connection(&cli1, 0)) {
 		return False;
 	}
 

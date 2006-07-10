@@ -157,7 +157,7 @@ static BOOL run_pipe_number(struct torture_context *torture)
 	int num_pipes = 0;
 
 	printf("starting pipenumber test\n");
-	if (!torture_open_connection(&cli1)) {
+	if (!torture_open_connection(&cli1, 0)) {
 		return False;
 	}
 
@@ -198,7 +198,7 @@ static BOOL run_pipe_number(struct torture_context *torture)
 	cli = malloc_array_p(struct smbcli_state *, torture_numops);
 
 	for (i=0;i<torture_numops;i++) {
-		if (!torture_open_connection(&cli[i])) {
+		if (!torture_open_connection(&cli[i], i)) {
 			return False;
 		}
 		printf("opened %d connections\r", i);
@@ -346,7 +346,7 @@ static BOOL torture_ioctl_test(struct torture_context *torture)
 	union smb_ioctl parms;
 	TALLOC_CTX *mem_ctx;
 
-	if (!torture_open_connection(&cli)) {
+	if (!torture_open_connection(&cli, 0)) {
 		return False;
 	}
 

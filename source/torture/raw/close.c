@@ -41,7 +41,7 @@ BOOL torture_raw_close(struct torture_context *torture)
 	union smb_fileinfo finfo, finfo2;
 	NTSTATUS status;
 
-	if (!torture_open_connection(&cli)) {
+	if (!torture_open_connection(&cli, 0)) {
 		return False;
 	}
 

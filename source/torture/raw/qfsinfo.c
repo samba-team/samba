@@ -130,7 +130,7 @@ BOOL torture_raw_qfsinfo(struct torture_context *torture)
 	union smb_fsinfo *s1, *s2;	
 	TALLOC_CTX *mem_ctx;
 
-	if (!torture_open_connection(&cli)) {
+	if (!torture_open_connection(&cli, 0)) {
 		return False;
 	}
 

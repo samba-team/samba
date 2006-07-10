@@ -388,7 +388,7 @@ BOOL torture_trans2_aliases(struct torture_context *torture)
 {
 	struct smbcli_state *cli;
 
-	if (!torture_open_connection(&cli)) {
+	if (!torture_open_connection(&cli, 0)) {
 		return False;
 	}
 
