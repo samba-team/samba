@@ -843,6 +843,9 @@ static NTSTATUS ipc_ioctl(struct ntvfs_module_context *ntvfs,
 	case RAW_IOCTL_SMB2:
 		return ipc_ioctl_smb2(ntvfs, req, io);
 
+	case RAW_IOCTL_SMB2_NO_HANDLE:
+		return NT_STATUS_FS_DRIVER_REQUIRED;
+
 	default:
 		return NT_STATUS_ACCESS_DENIED;
 	}

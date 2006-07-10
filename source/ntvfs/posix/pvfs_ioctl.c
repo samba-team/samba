@@ -73,6 +73,7 @@ NTSTATUS pvfs_ioctl(struct ntvfs_module_context *ntvfs,
 		return pvfs_ntioctl(ntvfs, req, io);
 
 	case RAW_IOCTL_SMB2:
+	case RAW_IOCTL_SMB2_NO_HANDLE:
 		return NT_STATUS_FS_DRIVER_REQUIRED;
 	}
 
