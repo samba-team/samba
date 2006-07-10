@@ -236,7 +236,8 @@ _gsskrb5_accept_sec_context
     *minor_status = 0;
 
     if (src_name != NULL)
-	*src_name = NULL;
+	*src_name = GSS_C_NO_NAME;
+
     if (mech_type)
 	*mech_type = GSS_KRB5_MECHANISM;
 
