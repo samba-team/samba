@@ -502,7 +502,6 @@ void smbsrv_reply_negprot(struct smbsrv_request *req)
 			if (strcmp(supported_protocols[protocol].proto_name, protos[i]) != 0) continue;
 
 			supported_protocols[protocol].proto_reply_fn(req, i);
-			sub_set_remote_proto(supported_protocols[protocol].short_name);
 			DEBUG(3,("Selected protocol [%d][%s]\n",
 				i, supported_protocols[protocol].proto_name));
 			return;
