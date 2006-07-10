@@ -7,6 +7,23 @@ exec smbscript "$0" ${1+"$@"}
 
 var ldb = ldb_init();
 var sys;
+var options = GetOptions(ARGV, 
+		"POPT_AUTOHELP",
+		"POPT_COMMON_SAMBA");
+if (options == undefined) {
+   println("Failed to parse options");
+   return -1;
+}
+
+libinclude("base.js");
+
+if (options.ARGV.length != 1) {
+   println("Usage: ldap.js <HOST>");
+   return -1;
+}
+
+prefix = options.ARGV[0];
+
 function basic_tests(ldb)
 {
 	println("Running basic tests");
@@ -65,7 +82,16 @@ function setup_modules(ldb)
 {
 	ok = ldb.add("
 dn: @MODULES
-@LIST: operational,objectguid,rdn_name
+@LIST: rootdse,operational,objectguid,rdn_name,partition
+
+dn: cn=ROOTDSE
+defaultNamingContext: cn=Test
+
+dn: @PARTITION
+partition: cn=SideTest:" + prefix +  "testside.ldb
+partition: cn=Sub,cn=Test:" + prefix +  "testsub.ldb
+partition: cn=Test:" + prefix +  "testpartition.ldb
+partition: cn=Sub,cn=Sub,cn=Test:" + prefix +  "testsubsub.ldb
 ");
 }
 
@@ -80,7 +106,10 @@ dn: cn=x8,cn=test
 objectClass: foo
 x: 8
 ");
-	assert(ok);
+	if (!ok) {
+		println("Failed to add: " + ldb.errstring());
+		assert(ok);
+	}
 
 	ok = ldb.add("
 dn: cn=x9,cn=test
@@ -88,9 +117,12 @@ objectClass: foo
 x: 9
 cn: X9
 ");
-	assert(ok);
+	if (!ok) {
+		println("Failed to add: " + ldb.errstring());
+		assert(ok);
+	}
 
-	var res = ldb.search("x=8", NULL, ldb.SCOPE_DEFAULT);
+	var res = ldb.search("x=8", "cn=test", ldb.SCOPE_DEFAULT);
 	assert(res[0].objectGUID != undefined);
 	assert(res[0].createTimestamp == undefined);
 	assert(res[0].whenCreated != undefined);
@@ -98,7 +130,7 @@ cn: X9
 	assert(res[0].cn == "x8");
 
 	var attrs = new Array("*", "createTimestamp");
-	var res2 = ldb.search("x=9", NULL, ldb.SCOPE_DEFAULT, attrs);
+	var res2 = ldb.search("x=9", "cn=test", ldb.SCOPE_DEFAULT, attrs);
 	assert(res2[0].objectGUID != undefined);
 	assert(res2[0].createTimestamp != undefined);
 	assert(res2[0].whenCreated != undefined);
@@ -107,22 +139,50 @@ cn: X9
 
 	assert(res[0].objectGUID != res2[0].objectGUID);
 
+	var attrs = new Array("*");
+	var res3 = ldb.search("", "", ldb.SCOPE_BASE, attrs);
+	assert(res3[0].cn == undefined);
+	assert(res3[0].distinguishedName == undefined);
+	assert(res3[0].name == undefined);
+	assert(res3[0].currentTime != undefined);
+	assert(res3[0].highestCommittedUSN != undefined);
+	println(res3[0].namingContexts[0]);
+	println(res3[0].namingContexts[1]);
+	println(res3[0].namingContexts[2]);
+	println(res3[0].namingContexts[3]);
+
+	assert(res3[0].namingContexts[0] == "cn=Test");
+	assert(res3[0].namingContexts[1] == "cn=SideTest");
+	assert(res3[0].namingContexts[2] == "cn=Sub,cn=Test");
+	assert(res3[0].namingContexts[3] == "cn=Sub,cn=Sub,cn=Test");
+	var usn = res3[0].highestCommittedUSN;
+	
 }
 
 sys = sys_init();
 var dbfile = "test.ldb";
-sys.unlink(dbfile);
-var ok = ldb.connect("tdb://" + dbfile);
+
+sys.unlink(prefix + dbfile);
+sys.unlink(prefix + "testpartition.ldb");
+sys.unlink(prefix + "testsub.ldb");
+sys.unlink(prefix + "testsubsub.ldb");
+sys.unlink(prefix + "testside.ldb");
+
+var ok = ldb.connect("tdb://" + prefix + dbfile);
 assert(ok);
 
 basic_tests(ldb);
 
 setup_modules(ldb);
 ldb = ldb_init();
-var ok = ldb.connect("tdb://" + dbfile);
+var ok = ldb.connect("tdb://" + prefix + dbfile);
 assert(ok);
 
 modules_test(ldb);
 
-sys.unlink(dbfile);
+sys.unlink(prefix + dbfile);
+sys.unlink(prefix + "testpartition.ldb");
+sys.unlink(prefix + "testsub.ldb");
+sys.unlink(prefix + "testsubsub.ldb");
+sys.unlink(prefix + "testside.ldb");
 return 0;
