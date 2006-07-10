@@ -134,7 +134,7 @@ static BOOL test_delayed_write_update2(struct smbcli_state *cli, TALLOC_CTX *mem
 
 	printf("Testing delayed update of write time using 2 connections\n");
 
-	if (!torture_open_connection(&cli2)) {
+	if (!torture_open_connection(&cli2, 1)) {
 		return False;
 	}
 
@@ -525,7 +525,7 @@ static BOOL test_finfo_after_write(struct smbcli_state *cli, TALLOC_CTX *mem_ctx
 		goto done;
 	}
 
-	if (!torture_open_connection(&cli2)) {
+	if (!torture_open_connection(&cli2, 1)) {
 		return False;
 	}
 
@@ -632,7 +632,7 @@ BOOL torture_delay_write(struct torture_context *torture)
 	BOOL ret = True;
 	TALLOC_CTX *mem_ctx;
 
-	if (!torture_open_connection(&cli)) {
+	if (!torture_open_connection(&cli, 0)) {
 		return False;
 	}
 

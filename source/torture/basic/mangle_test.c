@@ -163,7 +163,7 @@ BOOL torture_mangle(struct torture_context *torture)
 
 	printf("starting mangle test\n");
 
-	if (!torture_open_connection(&cli)) {
+	if (!torture_open_connection(&cli, 0)) {
 		return False;
 	}
 

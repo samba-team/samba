@@ -222,7 +222,7 @@ BOOL torture_raw_chkpath(struct torture_context *torture)
 	int fnum;
 	TALLOC_CTX *mem_ctx;
 
-	if (!torture_open_connection(&cli)) {
+	if (!torture_open_connection(&cli, 0)) {
 		return False;
 	}
 

@@ -38,7 +38,7 @@ BOOL torture_test_rename(struct torture_context *torture)
 
 	printf("starting rename test\n");
 	
-	if (!torture_open_connection(&cli1)) {
+	if (!torture_open_connection(&cli1, 0)) {
 		return False;
 	}
 	

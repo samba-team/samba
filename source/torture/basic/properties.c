@@ -100,7 +100,7 @@ BOOL torture_test_properties(struct torture_context *torture)
 	
 	ZERO_STRUCT(cli);
 
-	if (!torture_open_connection(&cli)) {
+	if (!torture_open_connection(&cli, 0)) {
 		return False;
 	}
 	

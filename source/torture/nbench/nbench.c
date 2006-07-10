@@ -187,7 +187,7 @@ BOOL torture_nbench(struct torture_context *torture)
 	}
 
 	if (torture_nprocs > 1) {
-		if (!torture_open_connection(&cli)) {
+		if (!torture_open_connection(&cli, 0)) {
 			return False;
 		}
 

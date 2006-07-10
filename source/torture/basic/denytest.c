@@ -1420,7 +1420,7 @@ BOOL torture_denytest1(struct torture_context *torture)
 	const char *fnames[2] = {"\\denytest1.dat", "\\denytest1.exe"};
 	int failures=0;
 
-	if (!torture_open_connection(&cli1)) {
+	if (!torture_open_connection(&cli1, 0)) {
 		return False;
 	}
 
@@ -1519,7 +1519,8 @@ BOOL torture_denytest2(struct torture_context *torture)
 	struct timeval tv, tv_start;
 	int failures=0;
 
-	if (!torture_open_connection(&cli1) || !torture_open_connection(&cli2)) {
+	if (!torture_open_connection(&cli1, 0) ||
+	    !torture_open_connection(&cli2, 1)) {
 		return False;
 	}
 
@@ -1620,10 +1621,10 @@ BOOL torture_denytest3(struct torture_context *torture)
 
 	printf("Testing simple deny modes\n");
 	
-	if (!torture_open_connection(&cli1)) {
+	if (!torture_open_connection(&cli1, 0)) {
 		return False;
 	}
-	if (!torture_open_connection(&cli2)) {
+	if (!torture_open_connection(&cli2, 1)) {
 		return False;
 	}
 
@@ -1943,11 +1944,11 @@ BOOL torture_ntdenytest2(struct torture_context *torture)
 	struct smbcli_state *cli1, *cli2;
 	BOOL ret;
 
-	if (!torture_open_connection(&cli1)) {
+	if (!torture_open_connection(&cli1, 0)) {
 		return False;
 	}
 
-	if (!torture_open_connection(&cli2)) {
+	if (!torture_open_connection(&cli2, 1)) {
 		return False;
 	}
 
@@ -1992,7 +1993,7 @@ BOOL torture_denydos_sharing(struct torture_context *torture)
 	union smb_setfileinfo sfinfo;
 	TALLOC_CTX *mem_ctx;
 
-	if (!torture_open_connection(&cli)) {
+	if (!torture_open_connection(&cli, 0)) {
 		return False;
 	}
 

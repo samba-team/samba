@@ -45,7 +45,7 @@ BOOL torture_dirtest1(struct torture_context *torture)
 
 	printf("starting dirtest1\n");
 
-	if (!torture_open_connection(&cli)) {
+	if (!torture_open_connection(&cli, 0)) {
 		return False;
 	}
 
@@ -99,7 +99,7 @@ BOOL torture_dirtest2(struct torture_context *torture)
 
 	printf("starting dirtest2\n");
 
-	if (!torture_open_connection(&cli)) {
+	if (!torture_open_connection(&cli, 0)) {
 		return False;
 	}
 

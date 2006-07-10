@@ -43,7 +43,7 @@ BOOL torture_unlinktest(struct torture_context *torture)
 	union smb_open io;
 	NTSTATUS status;
 
-	if (!torture_open_connection(&cli)) {
+	if (!torture_open_connection(&cli, 0)) {
 		return False;
 	}
 

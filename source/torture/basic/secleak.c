@@ -62,7 +62,7 @@ BOOL torture_sec_leak(struct torture_context *torture)
 	time_t t1 = time(NULL);
 	int timelimit = lp_parm_int(-1, "torture", "timelimit", 20);
 
-	if (!torture_open_connection(&cli)) {
+	if (!torture_open_connection(&cli, 0)) {
 		return False;
 	}
 

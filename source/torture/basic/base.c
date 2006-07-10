@@ -123,7 +123,8 @@ static BOOL run_fdpasstest(struct torture_context *torture)
 	int fnum1, oldtid;
 	uint8_t buf[1024];
 
-	if (!torture_open_connection(&cli1) || !torture_open_connection(&cli2)) {
+	if (!torture_open_connection(&cli1, 0) ||
+	    !torture_open_connection(&cli2, 1)) {
 		return False;
 	}
 
@@ -184,7 +185,7 @@ static BOOL run_attrtest(struct torture_context *torture)
 
 	printf("starting attrib test\n");
 
-	if (!torture_open_connection(&cli)) {
+	if (!torture_open_connection(&cli, 0)) {
 		return False;
 	}
 
@@ -258,7 +259,7 @@ static BOOL run_trans2test(struct torture_context *torture)
 
 	printf("starting trans2 test\n");
 
-	if (!torture_open_connection(&cli)) {
+	if (!torture_open_connection(&cli, 0)) {
 		return False;
 	}
 
@@ -410,7 +411,7 @@ static BOOL run_negprot_nowait(struct torture_context *torture)
 	}
 
 	printf("Opening secondary connection\n");
-	if (!torture_open_connection(&cli2)) {
+	if (!torture_open_connection(&cli2, 1)) {
 		printf("Failed to open secondary connection\n");
 		correct = False;
 	}
@@ -445,7 +446,7 @@ static BOOL run_tcon_test(struct torture_context *torture)
 	const char *share = lp_parm_string(-1, "torture", "share");
 	const char *password = lp_parm_string(-1, "torture", "password");
 
-	if (!torture_open_connection(&cli)) {
+	if (!torture_open_connection(&cli, 0)) {
 		return False;
 	}
 
@@ -690,7 +691,8 @@ static BOOL run_readwritetest(struct torture_context *torture)
 	struct smbcli_state *cli1, *cli2;
 	BOOL test1, test2 = True;
 
-	if (!torture_open_connection(&cli1) || !torture_open_connection(&cli2)) {
+	if (!torture_open_connection(&cli1, 0) ||
+	    !torture_open_connection(&cli2, 1)) {
 		return False;
 	}
 
@@ -808,7 +810,7 @@ static BOOL run_vuidtest(struct torture_context *torture)
 
 	printf("starting vuid test\n");
 
-	if (!torture_open_connection(&cli)) {
+	if (!torture_open_connection(&cli, 0)) {
 		return False;
 	}
 
@@ -877,7 +879,7 @@ static BOOL run_vuidtest(struct torture_context *torture)
 
 	printf("starting open test\n");
 	
-	if (!torture_open_connection(&cli1)) {
+	if (!torture_open_connection(&cli1, 0)) {
 		return False;
 	}
 	
@@ -1054,7 +1056,7 @@ error_test3:
 error_test4:	
 	/* Test the non-io opens... */
 
-	if (!torture_open_connection(&cli2)) {
+	if (!torture_open_connection(&cli2, 1)) {
 		return False;
 	}
 	
@@ -1406,7 +1408,7 @@ static BOOL run_xcopy(struct torture_context *torture)
 
 	printf("starting xcopy test\n");
 	
-	if (!torture_open_connection(&cli1)) {
+	if (!torture_open_connection(&cli1, 0)) {
 		return False;
 	}
 	
@@ -1453,7 +1455,7 @@ static BOOL run_iometer(struct torture_context *torture)
 
 	memset(buf, 0, sizeof(buf));
 
-	if (!torture_open_connection(&cli)) {
+	if (!torture_open_connection(&cli, 0)) {
 		return False;
 	}
 
@@ -1533,7 +1535,7 @@ static BOOL torture_chkpath_test(struct torture_context *torture)
 	int fnum;
 	BOOL ret;
 
-	if (!torture_open_connection(&cli)) {
+	if (!torture_open_connection(&cli, 0)) {
 		return False;
 	}
 
@@ -1636,7 +1638,7 @@ static BOOL torture_samba3_errorpaths(struct torture_context *torture)
 		goto fail;
 	}
 
-	if (!torture_open_connection(&cli_nt)) {
+	if (!torture_open_connection(&cli_nt, 0)) {
 		goto fail;
 	}
 
@@ -1645,7 +1647,7 @@ static BOOL torture_samba3_errorpaths(struct torture_context *torture)
 		goto fail;
 	}
 
-	if (!torture_open_connection(&cli_dos)) {
+	if (!torture_open_connection(&cli_dos, 1)) {
 		goto fail;
 	}
 

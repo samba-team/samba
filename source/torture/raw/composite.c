@@ -398,7 +398,7 @@ BOOL torture_raw_composite(struct torture_context *torture)
 	BOOL ret = True;
 	TALLOC_CTX *mem_ctx;
 
-	if (!torture_open_connection(&cli)) {
+	if (!torture_open_connection(&cli, 0)) {
 		return False;
 	}
 

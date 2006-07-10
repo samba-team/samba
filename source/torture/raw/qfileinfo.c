@@ -167,7 +167,7 @@ BOOL torture_raw_qfileinfo(struct torture_context *torture)
 	const char *correct_name;
 	BOOL skip_streams = False;
 
-	if (!torture_open_connection(&cli)) {
+	if (!torture_open_connection(&cli, 0)) {
 		return False;
 	}
 

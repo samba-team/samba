@@ -482,7 +482,7 @@ BOOL torture_open_connection_share(TALLOC_CTX *mem_ctx,
 	return True;
 }
 
-_PUBLIC_ BOOL torture_open_connection(struct smbcli_state **c)
+_PUBLIC_ BOOL torture_open_connection(struct smbcli_state **c, int conn_index)
 {
 	const char *host = lp_parm_string(-1, "torture", "host");
 	const char *share = lp_parm_string(-1, "torture", "share");
@@ -629,7 +629,7 @@ double torture_create_procs(BOOL (*fn)(struct smbcli_state *, int), BOOL *result
 									  NULL)) {
 						break;
 					}
-				} else if (torture_open_connection(&current_cli)) {
+				} else if (torture_open_connection(&current_cli, 0)) {
 						break;
 				}
 				if (tries-- == 0) {

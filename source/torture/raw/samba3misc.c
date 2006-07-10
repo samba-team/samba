@@ -228,9 +228,6 @@ BOOL torture_samba3_badpath(struct torture_context *torture)
 	NTSTATUS status;
 	BOOL ret = True;
 	TALLOC_CTX *mem_ctx;
-	ssize_t nread;
-	char buf[16];
-	struct smbcli_tree *tree2;
 	BOOL nt_status_support;
 
 	if (!(mem_ctx = talloc_init("torture_samba3_badpath"))) {
@@ -245,7 +242,7 @@ BOOL torture_samba3_badpath(struct torture_context *torture)
 		goto fail;
 	}
 
-	if (!torture_open_connection(&cli_nt)) {
+	if (!torture_open_connection(&cli_nt, 0)) {
 		goto fail;
 	}
 
@@ -254,7 +251,7 @@ BOOL torture_samba3_badpath(struct torture_context *torture)
 		goto fail;
 	}
 
-	if (!torture_open_connection(&cli_dos)) {
+	if (!torture_open_connection(&cli_dos, 1)) {
 		goto fail;
 	}
 

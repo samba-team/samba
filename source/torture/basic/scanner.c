@@ -251,7 +251,7 @@ BOOL torture_trans2_scan(struct torture_context *torture)
 
 	printf("starting trans2 scan test\n");
 
-	if (!torture_open_connection(&cli)) {
+	if (!torture_open_connection(&cli, 0)) {
 		return False;
 	}
 
@@ -492,7 +492,7 @@ BOOL torture_nttrans_scan(struct torture_context *torture)
 
 	printf("starting nttrans scan test\n");
 
-	if (!torture_open_connection(&cli)) {
+	if (!torture_open_connection(&cli, 0)) {
 		return False;
 	}
 
@@ -533,7 +533,7 @@ BOOL torture_smb_scan(struct torture_context *torture)
 	for (op=0x0;op<=0xFF;op++) {
 		if (op == SMBreadbraw) continue;
 
-		if (!torture_open_connection(&cli)) {
+		if (!torture_open_connection(&cli, 0)) {
 			return False;
 		}
 
