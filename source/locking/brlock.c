@@ -740,9 +740,12 @@ static BOOL brl_unlock_windows(struct byte_range_lock *br_lck, const struct lock
 	unsigned int i, j;
 	struct lock_struct *lock = NULL;
 	struct lock_struct *locks = (struct lock_struct *)br_lck->lock_data;
-	enum brl_type deleted_lock_type;
+	enum brl_type deleted_lock_type = READ_LOCK; /* shut the compiler up.... */
 
 #if ZERO_ZERO
+	/* Delete write locks by preference... The lock list
+	   is sorted in the zero zero case. */
+
 	for (i = 0; i < br_lck->num_locks; i++) {
 		lock = &locks[i];
 
@@ -755,16 +758,13 @@ static BOOL brl_unlock_windows(struct byte_range_lock *br_lck, const struct lock
 
 			/* found it - delete it */
 			deleted_lock_type = lock->lock_type;
-
-			if (i < br_lck->num_locks - 1) {
-				memmove(&locks[i], &locks[i+1], 
-					sizeof(*locks)*((br_lck->num_locks-1) - i));
-			}
-
-			br_lck->num_locks -= 1;
-			br_lck->modified = True;
-			return True;
+			break;
 		}
+	}
+
+	if (i != br_lck->num_locks) {
+		/* We found it - don't search again. */
+		goto unlock_continue;
 	}
 #endif
 
@@ -786,6 +786,10 @@ static BOOL brl_unlock_windows(struct byte_range_lock *br_lck, const struct lock
 		/* we didn't find it */
 		return False;
 	}
+
+#if ZERO_ZERO
+  unlock_continue:
+#endif
 
 	/* Actually delete the lock. */
 	if (i < br_lck->num_locks - 1) {
