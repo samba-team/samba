@@ -86,14 +86,6 @@ typedef void TALLOC_CTX;
 
 #define talloc_memdup(t, p, size) _talloc_memdup(t, p, size, __location__)
 
-#define malloc_p(type) (type *)malloc(sizeof(type))
-#define malloc_array_p(type, count) (type *)realloc_array(NULL, sizeof(type), count)
-#define realloc_p(p, type, count) (type *)realloc_array(p, sizeof(type), count)
-
-#define data_blob(ptr, size) data_blob_named(ptr, size, "DATA_BLOB: "__location__)
-#define data_blob_talloc(ctx, ptr, size) data_blob_talloc_named(ctx, ptr, size, "DATA_BLOB: "__location__)
-#define data_blob_dup_talloc(ctx, blob) data_blob_talloc_named(ctx, (blob)->data, (blob)->length, "DATA_BLOB: "__location__)
-
 #define talloc_set_type(ptr, type) talloc_set_name_const(ptr, #type)
 #define talloc_get_type(ptr, type) (type *)talloc_check_name(ptr, #type)
 
