@@ -1949,7 +1949,8 @@ union smb_lpq {
 enum smb_ioctl_level {
 	RAW_IOCTL_IOCTL,
 	RAW_IOCTL_NTIOCTL,
-	RAW_IOCTL_SMB2
+	RAW_IOCTL_SMB2,
+	RAW_IOCTL_SMB2_NO_HANDLE
 };
 
 /*

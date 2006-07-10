@@ -239,7 +239,14 @@ static void smb2srv_ioctl_send(struct ntvfs_request *ntvfs)
 
 	SSVAL(req->out.body,	0x02,	io->smb2.out._pad);
 	SIVAL(req->out.body,	0x04,	io->smb2.out.function);
-	smb2srv_push_handle(req->out.body, 0x08,io->smb2.in.file.ntvfs);
+	if (io->smb2.level == RAW_IOCTL_SMB2_NO_HANDLE) {
+		struct smb2_handle h;
+		h.data[0] = UINT64_MAX;
+		h.data[1] = UINT64_MAX;
+		smb2_push_handle(req->out.body + 0x08, &h);
+	} else {
+		smb2srv_push_handle(req->out.body, 0x08,io->smb2.in.file.ntvfs);
+	}
 	SMB2SRV_CHECK(smb2_push_o32s32_blob(&req->out, 0x18, io->smb2.out.in));
 	SMB2SRV_CHECK(smb2_push_o32s32_blob(&req->out, 0x20, io->smb2.out.out));
 	SIVAL(req->out.body,	0x28,	io->smb2.out.unknown2);
@@ -251,23 +258,31 @@ static void smb2srv_ioctl_send(struct ntvfs_request *ntvfs)
 void smb2srv_ioctl_recv(struct smb2srv_request *req)
 {
 	union smb_ioctl *io;
+	struct smb2_handle h;
 
 	SMB2SRV_CHECK_BODY_SIZE(req, 0x38, True);
 	SMB2SRV_TALLOC_IO_PTR(io, union smb_ioctl);
 	SMB2SRV_SETUP_NTVFS_REQUEST(smb2srv_ioctl_send, NTVFS_ASYNC_STATE_MAY_ASYNC);
 
 	/* TODO: avoid the memcpy */
-	io->smb2.level			= RAW_IOCTL_SMB2;
 	io->smb2.in._pad		= SVAL(req->in.body, 0x02);
 	io->smb2.in.function		= IVAL(req->in.body, 0x04);
-	io->smb2.in.file.ntvfs		= smb2srv_pull_handle(req, req->in.body, 0x08);
+	/* file handle ... */
 	SMB2SRV_CHECK(smb2_pull_o32s32_blob(&req->in, io, req->in.body+0x18, &io->smb2.in.out));
 	io->smb2.in.unknown2		= IVAL(req->in.body, 0x20);
 	SMB2SRV_CHECK(smb2_pull_o32s32_blob(&req->in, io, req->in.body+0x24, &io->smb2.in.in));
 	io->smb2.in.max_response_size	= IVAL(req->in.body, 0x2C);
 	io->smb2.in.flags		= BVAL(req->in.body, 0x30);
 
-	SMB2SRV_CHECK_FILE_HANDLE(io->smb2.in.file.ntvfs);
+	smb2_pull_handle(req->in.body + 0x08, &h);
+	if (h.data[0] == UINT64_MAX && h.data[1] == UINT64_MAX) {
+		io->smb2.level		= RAW_IOCTL_SMB2_NO_HANDLE;
+	} else {
+		io->smb2.level		= RAW_IOCTL_SMB2;
+		io->smb2.in.file.ntvfs	= smb2srv_pull_handle(req, req->in.body, 0x08);
+		SMB2SRV_CHECK_FILE_HANDLE(io->smb2.in.file.ntvfs);
+	}
+
 	SMB2SRV_CALL_NTVFS_BACKEND(ntvfs_ioctl(req->ntvfs, io));
 }
 
