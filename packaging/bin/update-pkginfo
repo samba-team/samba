@@ -4,6 +4,12 @@ VERSION=$1
 RELEASE=$2
 REVISION=$3
 
+if [ "x${REVISION}" = "x" ]; then
+	RPMREVISION=""
+else
+	RPMREVISION=".${REVISION}"
+fi
+
 if [ $# -ne 3 ]; then
     echo Usage: update-pkginfo VERSION RELEASE REVISION
     exit 1
@@ -17,6 +23,6 @@ for f in `du -a | awk '{print $2}' | grep \.tmpl$`; do
         sed -e s/PVERSION/$VERSION/g \
 		-e s/PRELEASE/$RELEASE/g \
 		-e s/PREVISION/${REVISION}/g \
-		-e s/PRPMREV/.${REVISION}/g < $f > $f2
+		-e s/PRPMREV/${RPMREVISION}/g < $f > $f2
 done
 
