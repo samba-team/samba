@@ -666,7 +666,7 @@ static BOOL test_notify_tdis(TALLOC_CTX *mem_ctx)
 
 	printf("TESTING CHANGE NOTIFY FOLLOWED BY TDIS\n");
 
-	if (!torture_open_connection(&cli)) {
+	if (!torture_open_connection(&cli, 0)) {
 		return False;
 	}
 
@@ -726,7 +726,7 @@ static BOOL test_notify_exit(TALLOC_CTX *mem_ctx)
 
 	printf("TESTING CHANGE NOTIFY FOLLOWED BY EXIT\n");
 
-	if (!torture_open_connection(&cli)) {
+	if (!torture_open_connection(&cli, 0)) {
 		return False;
 	}
 
@@ -786,7 +786,7 @@ static BOOL test_notify_ulogoff(TALLOC_CTX *mem_ctx)
 
 	printf("TESTING CHANGE NOTIFY FOLLOWED BY ULOGOFF\n");
 
-	if (!torture_open_connection(&cli)) {
+	if (!torture_open_connection(&cli, 0)) {
 		return False;
 	}
 
@@ -1018,7 +1018,7 @@ BOOL torture_raw_notify(struct torture_context *torture)
 	BOOL ret = True;
 	TALLOC_CTX *mem_ctx;
 		
-	if (!torture_open_connection(&cli)) {
+	if (!torture_open_connection(&cli, 0)) {
 		return False;
 	}
 

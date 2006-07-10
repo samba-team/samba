@@ -41,7 +41,7 @@ BOOL torture_utable(struct torture_context *torture)
 
 	printf("Generating valid character table\n");
 
-	if (!torture_open_connection(&cli)) {
+	if (!torture_open_connection(&cli, 0)) {
 		return False;
 	}
 
@@ -131,7 +131,7 @@ BOOL torture_casetable(struct torture_context *torture)
 	codepoint_t equiv[0x10000][MAX_EQUIVALENCE];
 	printf("starting casetable\n");
 
-	if (!torture_open_connection(&cli)) {
+	if (!torture_open_connection(&cli, 0)) {
 		return False;
 	}
 

@@ -99,7 +99,7 @@ BOOL torture_openattrtest(struct torture_context *torture)
 
 	printf("starting open attr test\n");
 	
-	if (!torture_open_connection(&cli1)) {
+	if (!torture_open_connection(&cli1, 0)) {
 		return False;
 	}
 	

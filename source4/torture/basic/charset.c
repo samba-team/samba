@@ -237,7 +237,7 @@ BOOL torture_charset(struct torture_context *torture)
 
 	mem_ctx = talloc_init("torture_charset");
 
-	if (!torture_open_connection(&cli)) {
+	if (!torture_open_connection(&cli, 0)) {
 		return False;
 	}
 

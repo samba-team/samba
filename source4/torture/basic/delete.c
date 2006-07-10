@@ -1596,7 +1596,7 @@ static BOOL deltest21(struct smbcli_state **ppcli1, struct smbcli_state **ppcli2
 
 	fnum1 = -1;
 
-	if (!torture_open_connection(ppcli1)) {
+	if (!torture_open_connection(ppcli1, 0)) {
 		return False;
 	}
 
@@ -1636,11 +1636,11 @@ BOOL torture_test_delete(struct torture_context *torture)
 	
 	printf("starting delete test\n");
 	
-	if (!torture_open_connection(&cli1)) {
+	if (!torture_open_connection(&cli1, 0)) {
 		return False;
 	}
 
-	if (!torture_open_connection(&cli2)) {
+	if (!torture_open_connection(&cli2, 1)) {
 		printf("(%s) failed to open second connection.\n",
 		       __location__);
 		correct = False;

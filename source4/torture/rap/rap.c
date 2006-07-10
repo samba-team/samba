@@ -434,7 +434,7 @@ BOOL torture_rap_basic(struct torture_context *torture)
 	BOOL ret = True;
 	TALLOC_CTX *mem_ctx;
 
-	if (!torture_open_connection(&cli)) {
+	if (!torture_open_connection(&cli, 0)) {
 		return False;
 	}
 
@@ -458,7 +458,7 @@ BOOL torture_rap_scan(struct torture_context *torture)
 
 	mem_ctx = talloc_init("torture_rap_scan");
 
-	if (!torture_open_connection(&cli)) {
+	if (!torture_open_connection(&cli, 0)) {
 		return False;
 	}
 	

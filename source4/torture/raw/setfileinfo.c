@@ -54,7 +54,7 @@ BOOL torture_raw_sfileinfo(struct torture_context *torture)
 	asprintf(&fnum_fname, BASEDIR "\\fnum_test_%d.txt", n);
 	asprintf(&fnum_fname_new, BASEDIR "\\fnum_test_new_%d.txt", n);
 
-	if (!torture_open_connection(&cli)) {
+	if (!torture_open_connection(&cli, 0)) {
 		return False;
 	}
 
@@ -551,7 +551,7 @@ BOOL torture_raw_sfileinfo_bug(struct torture_context *torture)
 		return True;
 	}
 
-	if (!torture_open_connection(&cli)) {
+	if (!torture_open_connection(&cli, 0)) {
 		return False;
 	}
 
