@@ -257,31 +257,6 @@ struct smbsrv_request {
 	struct request_buffer out;
 };
 
-/* this contains variables that should be used in % substitutions for
- * smb.conf parameters */
-struct substitute_context {
-	char *remote_arch;
-
-	/* our local netbios name, as give to us by the client */
-	char *local_machine;
-
-	/* the remote netbios name, as give to us by the client */
-	char *remote_machine;
-
-	/* the select remote protocol */
-	char *remote_proto;	
-
-	/* the name of the client as should be displayed in
-	 * smbstatus. Can be an IP or a netbios name */
-	char *client_name; 
-
-	/* the username for %U */
-	char *user_name;
-};
-
-/* Remote architectures we know about. */
-enum remote_arch_types {RA_UNKNOWN, RA_WFWG, RA_OS2, RA_WIN95, RA_WINNT, RA_WIN2K, RA_WINXP, RA_SAMBA};
-
 enum security_types {SEC_SHARE,SEC_USER};
 
 /* smb server context structure. This should contain all the state
@@ -312,10 +287,6 @@ struct smbsrv_connection {
 		 * Can be modified by the max xmit parameter.
 		 */
 		unsigned max_recv; /* init to BUFFER_SIZE */
-	
-		/* a guess at the remote architecture. Try not to rely on this - in almost
-		   all cases using these values is the wrong thing to do */
-		enum remote_arch_types ra_type;
 	
 		/* the negotiatiated protocol */
 		enum protocol_types protocol;
