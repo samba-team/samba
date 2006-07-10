@@ -38,8 +38,3 @@ BOOL conn_snum_used(int snum)
 {
 	return False;
 }
-
-files_struct *file_fnum(uint16 fnum)
-{
-	return NULL;
-}

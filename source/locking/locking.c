@@ -334,25 +334,15 @@ NTSTATUS do_unlock(files_struct *fsp,
 void locking_close_file(files_struct *fsp)
 {
 	struct byte_range_lock *br_lck;
-	struct process_id pid = procid_self();
 
-	if (!lp_locking(SNUM(fsp->conn)))
+	if (!lp_locking(SNUM(fsp->conn))) {
 		return;
-
-	/*
-	 * Just release all the brl locks, no need to release individually.
-	 */
+	}
 
 	br_lck = brl_get_locks(NULL,fsp);
 	if (br_lck) {
-		brl_close_fnum(br_lck, pid);
+		brl_close_fnum(br_lck);
 		TALLOC_FREE(br_lck);
-	}
-
-	if(lp_posix_locking(SNUM(fsp->conn))) {
-	 	/* Release all the POSIX locks.*/
-		posix_locking_close_file(fsp);
-
 	}
 }
 

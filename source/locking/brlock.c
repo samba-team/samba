@@ -328,6 +328,9 @@ static NTSTATUS brl_lock_windows(struct byte_range_lock *br_lck,
 				plock->start,
 				plock->size,
 				plock->lock_type,
+				&plock->context,
+				locks,
+				br_lck->num_locks,
 				&errno_ret)) {
 			if (errno_ret == EACCES || errno_ret == EAGAIN) {
 				return NT_STATUS_FILE_LOCK_CONFLICT;
@@ -635,7 +638,6 @@ static NTSTATUS brl_lock_posix(struct byte_range_lock *br_lck,
 	   be mapped into a lower level POSIX one, and if so can
 	   we get it ? */
 
-#if 0
 	if ((plock->lock_type != PENDING_LOCK) && lp_posix_locking(SNUM(br_lck->fsp->conn))) {
 		int errno_ret;
 
@@ -657,7 +659,6 @@ static NTSTATUS brl_lock_posix(struct byte_range_lock *br_lck,
 			}
 		}
 	}
-#endif
 
 	/* Realloc so we don't leak entries per lock call. */
 	tp = (struct lock_struct *)SMB_REALLOC(tp, count * sizeof(*locks));
@@ -739,6 +740,7 @@ static BOOL brl_unlock_windows(struct byte_range_lock *br_lck, const struct lock
 	unsigned int i, j;
 	struct lock_struct *lock = NULL;
 	struct lock_struct *locks = (struct lock_struct *)br_lck->lock_data;
+	enum brl_type deleted_lock_type;
 
 #if ZERO_ZERO
 	for (i = 0; i < br_lck->num_locks; i++) {
@@ -752,6 +754,8 @@ static BOOL brl_unlock_windows(struct byte_range_lock *br_lck, const struct lock
 		    lock->size == plock->size) {
 
 			/* found it - delete it */
+			deleted_lock_type = lock->lock_type;
+
 			if (i < br_lck->num_locks - 1) {
 				memmove(&locks[i], &locks[i+1], 
 					sizeof(*locks)*((br_lck->num_locks-1) - i));
@@ -773,6 +777,7 @@ static BOOL brl_unlock_windows(struct byte_range_lock *br_lck, const struct lock
 					lock->lock_flav == WINDOWS_LOCK &&
 					lock->start == plock->start &&
 					lock->size == plock->size ) {
+			deleted_lock_type = lock->lock_type;
 			break;
 		}
 	}
@@ -782,11 +787,24 @@ static BOOL brl_unlock_windows(struct byte_range_lock *br_lck, const struct lock
 		return False;
 	}
 
+	/* Actually delete the lock. */
+	if (i < br_lck->num_locks - 1) {
+		memmove(&locks[i], &locks[i+1], 
+			sizeof(*locks)*((br_lck->num_locks-1) - i));
+	}
+
+	br_lck->num_locks -= 1;
+	br_lck->modified = True;
+
 	/* Unlock the underlying POSIX regions. */
 	if(lp_posix_locking(br_lck->fsp->conn->cnum)) {
 		release_posix_lock_windows_flavour(br_lck->fsp,
 				plock->start,
-				plock->size);
+				plock->size,
+				deleted_lock_type,
+				&plock->context,
+				locks,
+				br_lck->num_locks);
 	}
 
 	/* Send unlock messages to any pending waiters that overlap. */
@@ -811,14 +829,6 @@ static BOOL brl_unlock_windows(struct byte_range_lock *br_lck, const struct lock
 		}
 	}
 
-	/* Actually delete the lock. */
-	if (i < br_lck->num_locks - 1) {
-		memmove(&locks[i], &locks[i+1], 
-			sizeof(*locks)*((br_lck->num_locks-1) - i));
-	}
-
-	br_lck->num_locks -= 1;
-	br_lck->modified = True;
 	return True;
 }
 
@@ -939,7 +949,6 @@ static BOOL brl_unlock_posix(struct byte_range_lock *br_lck, const struct lock_s
 		return True;
 	}
 
-#if 0
 	/* Unlock any POSIX regions. */
 	if(lp_posix_locking(br_lck->fsp->conn->cnum)) {
 		release_posix_lock_posix_flavour(br_lck->fsp,
@@ -949,7 +958,6 @@ static BOOL brl_unlock_posix(struct byte_range_lock *br_lck, const struct lock_s
 						tp,
 						count);
 	}
-#endif
 
 	/* Realloc so we don't leak entries per unlock call. */
 	if (count) {
@@ -1201,18 +1209,75 @@ BOOL brl_remove_pending_lock(struct byte_range_lock *br_lck,
 	return True;
 }
 
-
 /****************************************************************************
  Remove any locks associated with a open file.
+ We return True if this process owns any other Windows locks on this
+ fd and so we should not immediately close the fd.
 ****************************************************************************/
 
-void brl_close_fnum(struct byte_range_lock *br_lck, struct process_id pid)
+void brl_close_fnum(struct byte_range_lock *br_lck)
 {
 	files_struct *fsp = br_lck->fsp;
 	uint16 tid = fsp->conn->cnum;
 	int fnum = fsp->fnum;
 	unsigned int i, j, dcount=0;
 	struct lock_struct *locks = (struct lock_struct *)br_lck->lock_data;
+	struct process_id pid = procid_self();
+	BOOL unlock_individually = False;
+
+	if(lp_posix_locking(fsp->conn->cnum) && !lp_posix_cifsu_locktype()) {
+
+		/* Check if there are any Windows locks associated with this dev/ino
+		   pair that are not this fnum. If so we need to call unlock on each
+		   one in order to release the system POSIX locks correctly. */
+
+		for (i=0; i < br_lck->num_locks; i++) {
+			struct lock_struct *lock = &locks[i];
+
+			if (!procid_equal(&lock->context.pid, &pid)) {
+				continue;
+			}
+
+			if (lock->lock_type != READ_LOCK && lock->lock_type != WRITE_LOCK) {
+				continue; /* Ignore pending. */
+			}
+
+			if (lock->context.tid != tid || lock->fnum != fnum) {
+				unlock_individually = True;
+				break;
+			}
+		}
+
+		if (unlock_individually) {
+			struct lock_struct *locks_copy;
+
+			/* Copy the current lock array. */
+			locks_copy = TALLOC_MEMDUP(br_lck, locks, br_lck->num_locks * sizeof(struct lock_struct));
+			if (!locks_copy) {
+				DEBUG(0,("brl_close_fnum: talloc fail.\n"));
+			}
+
+			for (i=0; i < br_lck->num_locks; i++) {
+				struct lock_struct *lock = &locks_copy[i];
+
+				if (lock->context.tid == tid && procid_equal(&lock->context.pid, &pid) &&
+						(lock->fnum == fnum)) {
+					brl_unlock(br_lck,
+						lock->context.smbpid,
+						pid,
+						lock->start,
+						lock->size,
+						lock->lock_flav);
+				}
+			}
+			return;
+		}
+	}
+
+	/* We can bulk delete - any POSIX locks will be removed when the fd closes. */
+
+	/* Zero any lock reference count on this dev/ino pair. */
+	zero_windows_lock_ref_count(fsp);
 
 	/* Remove any existing locks for this fnum (or any fnum if they're POSIX). */
 
