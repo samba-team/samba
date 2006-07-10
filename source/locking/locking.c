@@ -863,9 +863,9 @@ BOOL rename_share_filename(struct share_mode_lock *lck,
 			continue;
 		}
 
-		DEBUG(10,("rename_share_filename: sending rename message to pid %u "
+		DEBUG(10,("rename_share_filename: sending rename message to pid %s "
 			"dev %x, inode  %.0f sharepath %s newname %s\n",
-			(unsigned int)procid_to_pid(&se->pid),
+			procid_str_static(&se->pid),
 			(unsigned int)lck->dev, (double)lck->ino,
 			lck->servicepath, lck->filename ));
 
