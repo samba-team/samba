@@ -44,6 +44,24 @@ struct partition_private_data {
 	struct partition **partitions;
 };
 
+struct ldb_module *make_module_for_next_request(TALLOC_CTX *mem_ctx, 
+						struct ldb_context *ldb,
+						struct ldb_module *module) 
+{
+	struct ldb_module *current;
+	static const struct ldb_module_ops ops; /* zero */
+	current = talloc_zero(mem_ctx, struct ldb_module);
+	if (current == NULL) {
+		return module;
+	}
+	
+	current->ldb = ldb;
+	current->ops = &ops;
+	current->prev = NULL;
+	current->next = module;
+	return current;
+}
+
 struct ldb_module *find_backend(struct ldb_module *module, struct ldb_request *req, const struct ldb_dn *dn)
 {
 	int i;
@@ -56,18 +74,7 @@ struct ldb_module *find_backend(struct ldb_module *module, struct ldb_request *r
 		if (ldb_dn_compare_base(module->ldb, 
 					data->partitions[i]->dn, 
 					dn) == 0) {
-			struct ldb_module *current;
-			static const struct ldb_module_ops ops; /* zero */
-			current = talloc_zero(req, struct ldb_module);
-			if (current == NULL) {
-				return module;
-			}
-
-			current->ldb = module->ldb;
-			current->ops = &ops;
-			current->prev = module;
-			current->next = data->partitions[i]->module;
-			return current;
+			return make_module_for_next_request(req, module->ldb, data->partitions[i]->module);
 		}
 	}
 
@@ -137,27 +144,128 @@ static int partition_rename(struct ldb_module *module, struct ldb_request *req)
 	return ldb_next_request(backend, req);
 }
 
-#if 0
-/* We should do this over the entire list of partitions */
-
 /* start a transaction */
 static int partition_start_trans(struct ldb_module *module)
 {
-	return ldb_next_start_trans(module);
+	int i, ret;
+	struct partition_private_data *data = talloc_get_type(module->private_data, 
+							      struct partition_private_data);
+	/* Look at base DN */
+	/* Figure out which partition it is under */
+	/* Skip the lot if 'data' isn't here yet (initialistion) */
+	ret = ldb_next_start_trans(module);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	for (i=0; data && data->partitions && data->partitions[i]; i++) {
+		struct ldb_module *next = make_module_for_next_request(module, module->ldb, data->partitions[i]->module);
+
+		ret = ldb_next_start_trans(next);
+		talloc_free(next);
+		if (ret != LDB_SUCCESS) {
+			/* Back it out, if it fails on one */
+			for (i--; i >= 0; i--) {
+				next = make_module_for_next_request(module, module->ldb, data->partitions[i]->module);
+				ldb_next_del_trans(next);
+				talloc_free(next);
+			}
+			return ret;
+		}
+	}
+	return LDB_SUCCESS;
 }
 
 /* end a transaction */
 static int partition_end_trans(struct ldb_module *module)
 {
-	return ldb_next_end_trans(module);
+	int i, ret, ret2 = LDB_SUCCESS;
+	struct partition_private_data *data = talloc_get_type(module->private_data, 
+							      struct partition_private_data);
+	ret = ldb_next_end_trans(module);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	/* Look at base DN */
+	/* Figure out which partition it is under */
+	/* Skip the lot if 'data' isn't here yet (initialistion) */
+	for (i=0; data && data->partitions && data->partitions[i]; i++) {
+		struct ldb_module *next = make_module_for_next_request(module, module->ldb, data->partitions[i]->module);
+		
+		ret = ldb_next_end_trans(next);
+		talloc_free(next);
+		if (ret != LDB_SUCCESS) {
+			ret2 = ret;
+		}
+	}
+
+	if (ret != LDB_SUCCESS) {
+		/* Back it out, if it fails on one */
+		for (i=0; data && data->partitions && data->partitions[i]; i++) {
+			struct ldb_module *next = make_module_for_next_request(module, module->ldb, data->partitions[i]->module);
+			ldb_next_del_trans(next);
+			talloc_free(next);
+		}
+	}
+	return ret;
 }
 
 /* delete a transaction */
 static int partition_del_trans(struct ldb_module *module)
 {
-	return ldb_next_del_trans(module);
+	int i, ret, ret2 = LDB_SUCCESS;
+	struct partition_private_data *data = talloc_get_type(module->private_data, 
+							      struct partition_private_data);
+	/* Look at base DN */
+	/* Figure out which partition it is under */
+	/* Skip the lot if 'data' isn't here yet (initialistion) */
+	for (i=0; data && data->partitions && data->partitions[i]; i++) {
+		struct ldb_module *next = make_module_for_next_request(module, module->ldb, data->partitions[i]->module);
+		
+		ret = ldb_next_del_trans(next);
+		talloc_free(next);
+		if (ret != LDB_SUCCESS) {
+			ret2 = ret;
+		}
+	}
+	return ret2;
 }
-#endif
+
+static int partition_sequence_number(struct ldb_module *module, struct ldb_request *req)
+{
+	int i, ret;
+	uint64_t seq_number = 0;
+	struct partition_private_data *data = talloc_get_type(module->private_data, 
+							      struct partition_private_data);
+	/* Look at base DN */
+	/* Figure out which partition it is under */
+	/* Skip the lot if 'data' isn't here yet (initialistion) */
+	for (i=0; data && data->partitions && data->partitions[i]; i++) {
+		struct ldb_module *next = make_module_for_next_request(req, module->ldb, data->partitions[i]->module);
+		
+		ret = ldb_next_request(next, req);
+		talloc_free(next);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+		seq_number = seq_number + req->op.seq_num.seq_num;
+	}
+	req->op.seq_num.seq_num = seq_number;
+	return LDB_SUCCESS;
+}
+
+static int sort_compare(void *void1,
+			void *void2, void *opaque)
+{
+	struct ldb_context *ldb = talloc_get_type(opaque, struct ldb_context);
+	struct partition **pp1 = void1;
+	struct partition **pp2 = void2;
+	struct partition *partition1 = talloc_get_type(*pp1, struct partition);
+	struct partition *partition2 = talloc_get_type(*pp2, struct partition);
+
+	return -ldb_dn_compare(ldb, partition1->dn, partition2->dn);
+}
 
 static int partition_init(struct ldb_module *module)
 {
@@ -213,8 +321,6 @@ static int partition_init(struct ldb_module *module)
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 	for (i=0; i < partition_attributes->num_values; i++) {
-		struct ldb_request *req;
-
 		char *base = talloc_strdup(data->partitions, (char *)partition_attributes->values[i].data);
 		char *p = strchr(base, ':');
 		if (!p) {
@@ -250,7 +356,15 @@ static int partition_init(struct ldb_module *module)
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}
-		
+	}
+	data->partitions[i] = NULL;
+
+	/* sort these into order */
+	ldb_qsort(data->partitions, partition_attributes->num_values, sizeof(*data->partitions), 
+		  module->ldb, sort_compare);
+
+	for (i=0; data->partitions[i]; i++) {
+		struct ldb_request *req;
 		req = talloc_zero(mem_ctx, struct ldb_request);
 		if (req == NULL) {
 			ldb_debug(module->ldb, LDB_DEBUG_ERROR, "partition: Out of memory!\n");
@@ -267,7 +381,6 @@ static int partition_init(struct ldb_module *module)
 		}
 		talloc_free(req);
 	}
-	data->partitions[i] = NULL;
 
 	module->private_data = data;
 	talloc_steal(module, data);
@@ -284,11 +397,10 @@ static const struct ldb_module_ops partition_ops = {
 	.modify            = partition_modify,
 	.del               = partition_delete,
 	.rename            = partition_rename,
-#if 0
 	.start_transaction = partition_start_trans,
 	.end_transaction   = partition_end_trans,
 	.del_transaction   = partition_del_trans,
-#endif
+	.sequence_number   = partition_sequence_number
 };
 
 int ldb_partition_init(void)
