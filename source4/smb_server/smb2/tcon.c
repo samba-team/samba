@@ -53,10 +53,18 @@ struct ntvfs_handle *smb2srv_pull_handle(struct smb2srv_request *req, const uint
 		return NULL;
 	}
 
+	/* if it's the wildcard handle, don't waste time to search it... */
+	if (hid == UINT64_MAX && tid == UINT32_MAX) {
+		return NULL;
+	}
+
 /* TODO: add comments */
 	tcon = req->tcon;
 	if (tid != req->tcon->tid) {
 		tcon = smbsrv_smb2_tcon_find(req->session, tid, req->request_time);
+		if (!tcon) {
+			return NULL;
+		}
 	}
 
 	handle = smbsrv_smb2_handle_find(tcon, hid, req->request_time);
