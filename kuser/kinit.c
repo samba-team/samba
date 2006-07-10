@@ -449,11 +449,19 @@ get_new_tickets(krb5_context context,
     if (password_file) {
 	FILE *f;
 
-	f = fopen(password_file, "r");
+	if (strcasecmp("STDIN", password_file) == 0)
+	    f = stdin;
+	else
+	    f = fopen(password_file, "r");
+	if (f == NULL)
+	    krb5_errx(context, 1, "Failed to open the password file %s",
+		      password_file);
+
 	if (fgets(passwd, sizeof(passwd), f) == NULL)
 	    krb5_errx(context, 1, 
-		      "failed to read password from file %s", password_file);
-	fclose(f);
+		      "Failed to read password from file %s", password_file);
+	if (f != stdin)
+	    fclose(f);
 	passwd[strcspn(passwd, "\n")] = '\0';
     }
 
