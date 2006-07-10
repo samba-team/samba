@@ -1,3 +1,7 @@
+2006-07-10  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/krb5_string_to_key.3: Remove duplicate to.
+	
 2006-07-06  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* kdc/krb5tgs.c: (tgs_build_reply): when checking for removed
