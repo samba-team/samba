@@ -277,7 +277,7 @@ static void smb2srv_tcon_send(struct smb2srv_request *req, union smb_tcon *io)
 
 	SMB2SRV_CHECK(smb2srv_setup_reply(req, 0x10, False, 0));
 
-	SBVAL(req->out.hdr,	SMB2_HDR_TID,	io->smb2.out.tid);
+	SIVAL(req->out.hdr,	SMB2_HDR_TID,	io->smb2.out.tid);
 
 	SSVAL(req->out.body,	0x02,		io->smb2.out.unknown1);
 	SIVAL(req->out.body,	0x04,		io->smb2.out.unknown2);
