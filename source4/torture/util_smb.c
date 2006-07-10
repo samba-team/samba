@@ -486,6 +486,28 @@ _PUBLIC_ BOOL torture_open_connection(struct smbcli_state **c, int conn_index)
 {
 	const char *host = lp_parm_string(-1, "torture", "host");
 	const char *share = lp_parm_string(-1, "torture", "share");
+	char **unc_list = NULL;
+	int num_unc_names = 0;
+	const char *p;
+	
+	p = lp_parm_string(-1, "torture", "unclist");
+	if (p) {
+		char *h, *s;
+		unc_list = file_lines_load(p, &num_unc_names, NULL);
+		if (!unc_list || num_unc_names <= 0) {
+			printf("Failed to load unc names list from '%s'\n", p);
+			exit(1);
+		}
+
+		if (!smbcli_parse_unc(unc_list[conn_index % num_unc_names],
+				      NULL, &h, &s)) {
+			printf("Failed to parse UNC name %s\n",
+			       unc_list[conn_index % num_unc_names]);
+			exit(1);
+		}
+		host = h;
+		share = s;
+	}
 
 	return torture_open_connection_share(NULL, c, host, share, NULL);
 }
@@ -558,9 +580,6 @@ double torture_create_procs(BOOL (*fn)(struct smbcli_state *, int), BOOL *result
 	int synccount;
 	int tries = 8;
 	double start_time_limit = 10 + (torture_nprocs * 1.5);
-	char **unc_list = NULL;
-	const char *p;
-	int num_unc_names = 0;
 	struct timeval tv;
 
 	*result = True;
@@ -581,15 +600,6 @@ double torture_create_procs(BOOL (*fn)(struct smbcli_state *, int), BOOL *result
 		return -1;
 	}
 
-	p = lp_parm_string(-1, "torture", "unclist");
-	if (p) {
-		unc_list = file_lines_load(p, &num_unc_names, NULL);
-		if (!unc_list || num_unc_names <= 0) {
-			printf("Failed to load unc names list from '%s'\n", p);
-			exit(1);
-		}
-	}
-
 	for (i = 0; i < torture_nprocs; i++) {
 		child_status[i] = 0;
 		child_status_out[i] = True;
@@ -601,7 +611,6 @@ double torture_create_procs(BOOL (*fn)(struct smbcli_state *, int), BOOL *result
 		procnum = i;
 		if (fork() == 0) {
 			char *myname;
-			char *hostname=NULL, *sharename;
 
 			pid_t mypid = getpid();
 			srandom(((int)mypid) ^ ((int)time(NULL)));
@@ -611,26 +620,9 @@ double torture_create_procs(BOOL (*fn)(struct smbcli_state *, int), BOOL *result
 			free(myname);
 
 
-			if (unc_list) {
-				if (!smbcli_parse_unc(unc_list[i % num_unc_names],
-						      NULL, &hostname, &sharename)) {
-					printf("Failed to parse UNC name %s\n",
-					       unc_list[i % num_unc_names]);
-					exit(1);
-				}
-			}
-
 			while (1) {
-				if (hostname) {
-					if (torture_open_connection_share(NULL,
-									  &current_cli,
-									  hostname, 
-									  sharename,
-									  NULL)) {
-						break;
-					}
-				} else if (torture_open_connection(&current_cli, 0)) {
-						break;
+				if (torture_open_connection(&current_cli, i)) {
+					break;
 				}
 				if (tries-- == 0) {
 					printf("pid %d failed to start\n", (int)getpid());
