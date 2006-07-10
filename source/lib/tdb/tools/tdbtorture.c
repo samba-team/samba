@@ -237,6 +237,9 @@ static void usage(void)
 	extern char *optarg;
 	pid_t *pids;
 
+	struct tdb_logging_context log_ctx;
+	log_ctx.log_fn = tdb_log;
+
 	while ((c = getopt(argc, argv, "n:l:s:H:h")) != -1) {
 		switch (c) {
 		case 'n':
@@ -266,7 +269,7 @@ static void usage(void)
 	}
 
 	db = tdb_open_ex("torture.tdb", hash_size, TDB_CLEAR_IF_FIRST, 
-			 O_RDWR | O_CREAT, 0600, tdb_log, NULL, NULL);
+			 O_RDWR | O_CREAT, 0600, &log_ctx, NULL);
 	if (!db) {
 		fatal("db open failed");
 	}

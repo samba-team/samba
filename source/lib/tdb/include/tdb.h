@@ -83,17 +83,21 @@ typedef int (*tdb_traverse_func)(struct tdb_context *, TDB_DATA, TDB_DATA, void 
 typedef void (*tdb_log_func)(struct tdb_context *, enum tdb_debug_level, const char *, ...) PRINTF_ATTRIBUTE(3, 4);
 typedef unsigned int (*tdb_hash_func)(TDB_DATA *key);
 
+struct tdb_logging_context {
+        tdb_log_func log_fn;
+        void *log_private;
+};
+
 struct tdb_context *tdb_open(const char *name, int hash_size, int tdb_flags,
 		      int open_flags, mode_t mode);
 struct tdb_context *tdb_open_ex(const char *name, int hash_size, int tdb_flags,
 			 int open_flags, mode_t mode,
-			 tdb_log_func log_fn, void *log_private,
+			 const struct tdb_logging_context *log_ctx,
 			 tdb_hash_func hash_fn);
-void *tdb_logging_private(struct tdb_context *tdb);
 
 int tdb_reopen(struct tdb_context *tdb);
 int tdb_reopen_all(int parent_longlived);
-void tdb_logging_function(struct tdb_context *tdb, tdb_log_func log_fn, void *log_private);
+void tdb_set_logging_function(struct tdb_context *tdb, const struct tdb_logging_context *log);
 enum TDB_ERROR tdb_error(struct tdb_context *tdb);
 const char *tdb_errorstr(struct tdb_context *tdb);
 TDB_DATA tdb_fetch(struct tdb_context *tdb, TDB_DATA key);

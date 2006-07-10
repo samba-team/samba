@@ -183,6 +183,9 @@ static char *get_token(int startover)
 
 static void create_tdb(void)
 {
+	struct tdb_logging_context log_ctx;
+	log_ctx.log_fn = tdb_log;
+
 	char *tok = get_token(1);
 	if (!tok) {
 		help();
@@ -190,7 +193,7 @@ static void create_tdb(void)
 	}
 	if (tdb) tdb_close(tdb);
 	tdb = tdb_open_ex(tok, 0, TDB_CLEAR_IF_FIRST,
-			  O_RDWR | O_CREAT | O_TRUNC, 0600, tdb_log, NULL, NULL);
+			  O_RDWR | O_CREAT | O_TRUNC, 0600, log_ctx, NULL);
 	if (!tdb) {
 		printf("Could not create %s: %s\n", tok, strerror(errno));
 	}

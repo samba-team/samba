@@ -402,7 +402,7 @@ int tdb_fd(struct tdb_context *tdb)
 */
 tdb_log_func tdb_log_fn(struct tdb_context *tdb)
 {
-	return tdb->log_fn;
+	return tdb->log.log_fn;
 }
 
 
