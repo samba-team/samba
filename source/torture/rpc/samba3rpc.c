@@ -1219,7 +1219,7 @@ static BOOL test_NetShareGetInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 {
 	NTSTATUS status;
 	struct srvsvc_NetShareGetInfo r;
-	uint32_t levels[] = { 0, 1, 2, 501, 502, 1004, 1005, 1006, 1007 };
+	uint32_t levels[] = { 0, 1, 2, 501, 502, 1004, 1005, 1006, 1007, 1501 };
 	int i;
 	BOOL ret = True;
 
