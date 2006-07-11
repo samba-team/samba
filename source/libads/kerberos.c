@@ -334,12 +334,12 @@ char* kerberos_secrets_fetch_des_salt( void )
 		return False;
 	}
 
+	salt = (char*)secrets_fetch( key, NULL );
+
 	if ( !salt ) {
 		DEBUG(8,("kerberos_secrets_fetch_des_salt: NULL salt!\n"));
 		secrets_delete( key );
 	}
-
-	salt = (char*)secrets_fetch( key, NULL );
 
 	SAFE_FREE( key );
 
