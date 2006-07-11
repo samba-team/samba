@@ -1891,7 +1891,8 @@ static BOOL init_wcache(void)
 	/* when working offline we must not clear the cache on restart */
 	wcache->tdb = tdb_open_log(lock_path("winbindd_cache.tdb"),
 				WINBINDD_CACHE_TDB_DEFAULT_HASH_SIZE, 
-				TDB_DEFAULT /*TDB_CLEAR_IF_FIRST*/, O_RDWR|O_CREAT, 0600);
+				lp_winbind_offline_logon() ? TDB_DEFAULT : (TDB_DEFAULT | TDB_CLEAR_IF_FIRST), 
+				O_RDWR|O_CREAT, 0600);
 
 	if (wcache->tdb == NULL) {
 		DEBUG(0,("Failed to open winbindd_cache.tdb!\n"));
@@ -2133,7 +2134,8 @@ void wcache_flush_cache(void)
 	/* when working offline we must not clear the cache on restart */
 	wcache->tdb = tdb_open_log(lock_path("winbindd_cache.tdb"),
 				WINBINDD_CACHE_TDB_DEFAULT_HASH_SIZE, 
-				TDB_DEFAULT /* TDB_CLEAR_IF_FIRST */, O_RDWR|O_CREAT, 0600);
+				lp_winbind_offline_logon() ? TDB_DEFAULT : (TDB_DEFAULT | TDB_CLEAR_IF_FIRST), 
+				O_RDWR|O_CREAT, 0600);
 
 	if (!wcache->tdb) {
 		DEBUG(0,("Failed to open winbindd_cache.tdb!\n"));
