@@ -217,6 +217,11 @@ static int partition_del_trans(struct ldb_module *module)
 	int i, ret, ret2 = LDB_SUCCESS;
 	struct partition_private_data *data = talloc_get_type(module->private_data, 
 							      struct partition_private_data);
+	ret = ldb_next_del_trans(module);
+	if (ret != LDB_SUCCESS) {
+		ret2 = ret;
+	}
+
 	/* Look at base DN */
 	/* Figure out which partition it is under */
 	/* Skip the lot if 'data' isn't here yet (initialistion) */
@@ -238,6 +243,12 @@ static int partition_sequence_number(struct ldb_module *module, struct ldb_reque
 	uint64_t seq_number = 0;
 	struct partition_private_data *data = talloc_get_type(module->private_data, 
 							      struct partition_private_data);
+	ret = ldb_next_request(module, req);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+	seq_number = seq_number + req->op.seq_num.seq_num;
+
 	/* Look at base DN */
 	/* Figure out which partition it is under */
 	/* Skip the lot if 'data' isn't here yet (initialistion) */
@@ -264,7 +275,7 @@ static int sort_compare(void *void1,
 	struct partition *partition1 = talloc_get_type(*pp1, struct partition);
 	struct partition *partition2 = talloc_get_type(*pp2, struct partition);
 
-	return -ldb_dn_compare(ldb, partition1->dn, partition2->dn);
+	return ldb_dn_compare(ldb, partition1->dn, partition2->dn);
 }
 
 static int partition_init(struct ldb_module *module)
@@ -359,7 +370,7 @@ static int partition_init(struct ldb_module *module)
 	}
 	data->partitions[i] = NULL;
 
-	/* sort these into order */
+	/* sort these into order, most to least specific */
 	ldb_qsort(data->partitions, partition_attributes->num_values, sizeof(*data->partitions), 
 		  module->ldb, sort_compare);
 
