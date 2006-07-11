@@ -49,6 +49,13 @@
 #define DSROLE_BDC			4
 #define DSROLE_PDC			5
 
+/* Settings for the domainFunctionality attribteu in the rootDSE */
+
+#define DS_DOMAIN_FUNCTION_2000		0
+#define DS_DOMAIN_FUCNTION_2003_MIXED	1
+#define DS_DOMAIN_FUNCTION_2003		2
+
+
 
 typedef struct
 {

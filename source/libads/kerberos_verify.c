@@ -202,8 +202,12 @@ static BOOL ads_secrets_verify_ticket(krb5_context context, krb5_auth_context au
 	BOOL auth_ok = False;
 	char *password_s = NULL;
 	krb5_data password;
-	krb5_enctype *enctypes = NULL;
+	krb5_enctype enctypes[4] = { ENCTYPE_DES_CBC_CRC, ENCTYPE_DES_CBC_MD5, 0, 0 };
 	int i;
+
+#if defined(ENCTYPE_ARCFOUR_HMAC)
+	enctypes[2] = ENCTYPE_ARCFOUR_HMAC;
+#endif
 
 	ZERO_STRUCTP(keyblock);
 
@@ -222,12 +226,6 @@ static BOOL ads_secrets_verify_ticket(krb5_context context, krb5_auth_context au
 	password.length = strlen(password_s);
 
 	/* CIFS doesn't use addresses in tickets. This would break NAT. JRA */
-
-	if ((ret = get_kerberos_allowed_etypes(context, &enctypes))) {
-		DEBUG(1,("ads_secrets_verify_ticket: krb5_get_permitted_enctypes failed (%s)\n", 
-			 error_message(ret)));
-		goto out;
-	}
 
 	p_packet->length = ticket->length;
 	p_packet->data = (krb5_pointer)ticket->data;
@@ -273,8 +271,6 @@ static BOOL ads_secrets_verify_ticket(krb5_context context, krb5_auth_context au
 	}
 
  out:
-
-	free_kerberos_etypes(context, enctypes);
 	SAFE_FREE(password_s);
 
 	return auth_ok;
