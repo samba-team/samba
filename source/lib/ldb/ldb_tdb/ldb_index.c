@@ -762,7 +762,7 @@ int ltdb_search_indexed(struct ldb_async_handle *handle)
 static int ltdb_index_add1_new(struct ldb_context *ldb, 
 			       struct ldb_message *msg,
 			       struct ldb_message_element *el,
-			       char *dn)
+			       const char *dn)
 {
 	struct ldb_message_element *el2;
 
@@ -784,7 +784,7 @@ static int ltdb_index_add1_new(struct ldb_context *ldb,
 		return -1;
 	}
 	msg->elements[msg->num_elements].values[0].length = strlen(dn);
-	msg->elements[msg->num_elements].values[0].data = (uint8_t *)dn;
+	msg->elements[msg->num_elements].values[0].data = discard_const_p(uint8_t, dn);
 	msg->elements[msg->num_elements].num_values = 1;
 	msg->num_elements++;
 
@@ -800,7 +800,7 @@ static int ltdb_index_add1_add(struct ldb_context *ldb,
 			       struct ldb_message *msg,
 			       struct ldb_message_element *el,
 			       int idx,
-			       char *dn)
+			       const char *dn)
 {
 	struct ldb_val *v2;
 	unsigned int i;
@@ -821,7 +821,7 @@ static int ltdb_index_add1_add(struct ldb_context *ldb,
 	msg->elements[idx].values = v2;
 
 	msg->elements[idx].values[msg->elements[idx].num_values].length = strlen(dn);
-	msg->elements[idx].values[msg->elements[idx].num_values].data = (uint8_t *)dn;
+	msg->elements[idx].values[msg->elements[idx].num_values].data = discard_const_p(uint8_t, dn);
 	msg->elements[idx].num_values++;
 
 	return 0;
@@ -830,7 +830,7 @@ static int ltdb_index_add1_add(struct ldb_context *ldb,
 /*
   add an index entry for one message element
 */
-static int ltdb_index_add1(struct ldb_module *module, char *dn, 
+static int ltdb_index_add1(struct ldb_module *module, const char *dn, 
 			   struct ldb_message_element *el, int v_idx)
 {
 	struct ldb_context *ldb = module->ldb;
@@ -886,7 +886,7 @@ static int ltdb_index_add1(struct ldb_module *module, char *dn,
 	return ret;
 }
 
-static int ltdb_index_add0(struct ldb_module *module, char *dn,
+static int ltdb_index_add0(struct ldb_module *module, const char *dn,
 			   struct ldb_message_element *elements, int num_el)
 {
 	struct ltdb_private *ltdb = module->private_data;
@@ -911,7 +911,6 @@ static int ltdb_index_add0(struct ldb_module *module, char *dn,
 		for (j = 0; j < elements[i].num_values; j++) {
 			ret = ltdb_index_add1(module, dn, &elements[i], j);
 			if (ret == -1) {
-				talloc_free(dn);
 				return -1;
 			}
 		}
