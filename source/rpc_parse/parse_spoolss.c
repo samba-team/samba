@@ -606,7 +606,7 @@ static BOOL spool_io_user_level(const char *desc, SPOOL_USER_CTR *q_u, prs_struc
 	switch ( q_u->level ) 
 	{	
 		case 1:
-			if ( !prs_pointer( "" , ps, depth, (void**)&q_u->user.user1, 
+			if ( !prs_pointer( "" , ps, depth, (void*)&q_u->user.user1, 
 				sizeof(SPOOL_USER_1), (PRS_POINTER_CAST)spool_io_user_level_1 )) 
 			{
 				return False;

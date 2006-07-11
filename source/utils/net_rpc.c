@@ -4934,12 +4934,12 @@ static int rpc_file_close(int argc, const char **argv)
  * @param str3   strings for FILE_INFO_3
  **/
 
-static void display_file_info_3(FILE_INFO_3 *info3, FILE_INFO_3_STR *str3)
+static void display_file_info_3( FILE_INFO_3 *info3 )
 {
 	fstring user = "", path = "";
 
-	rpcstr_pull_unistr2_fstring(user, &str3->uni_user_name);
-	rpcstr_pull_unistr2_fstring(path, &str3->uni_path_name);
+	rpcstr_pull_unistr2_fstring(user, info3->user);
+	rpcstr_pull_unistr2_fstring(path, info3->path);
 
 	d_printf("%-7.1d %-20.20s 0x%-4.2x %-6.1d %s\n",
 		 info3->id, user, info3->perms, info3->num_locks, path);
@@ -4994,8 +4994,7 @@ static NTSTATUS rpc_file_list_internals(const DOM_SID *domain_sid,
 		 "\nFileId  Opened by            Perms  Locks  Path"\
 		 "\n------  ---------            -----  -----  ---- \n");
 	for (i = 0; i < ctr.num_entries; i++)
-		display_file_info_3(&ctr.file.info3[i].info_3, 
-				    &ctr.file.info3[i].info_3_str);
+		display_file_info_3(&ctr.file.info3[i]);
  done:
 	return W_ERROR_IS_OK(result) ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
 }
@@ -6269,7 +6268,7 @@ static int rpc_trustdom(int argc, const char **argv)
  */
 BOOL net_rpc_check(unsigned flags)
 {
-	struct cli_state cli;
+	struct cli_state *cli;
 	BOOL ret = False;
 	struct in_addr server_ip;
 	char *server_name = NULL;
@@ -6278,23 +6277,23 @@ BOOL net_rpc_check(unsigned flags)
 	if (!net_find_server(NULL, flags, &server_ip, &server_name))
 		return False;
 
-	ZERO_STRUCT(cli);
-	if (cli_initialise(&cli) == False)
+	if ((cli = cli_initialise()) == NULL) {
 		return False;
+	}
 
-	if (!cli_connect(&cli, server_name, &server_ip))
+	if (!cli_connect(cli, server_name, &server_ip))
 		goto done;
 	if (!attempt_netbios_session_request(&cli, global_myname(), 
 					     server_name, &server_ip))
 		goto done;
-	if (!cli_negprot(&cli))
+	if (!cli_negprot(cli))
 		goto done;
-	if (cli.protocol < PROTOCOL_NT1)
+	if (cli->protocol < PROTOCOL_NT1)
 		goto done;
 
 	ret = True;
  done:
-	cli_shutdown(&cli);
+	cli_shutdown(cli);
 	return ret;
 }
 

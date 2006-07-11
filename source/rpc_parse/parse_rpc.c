@@ -191,6 +191,16 @@ interface/version dce/rpc pipe identification
 	}, 0x00				    \
 }
 
+#define SYNT_UNIXINFO_V0                    \
+{                                           \
+	{                                   \
+		0x9c54e310, 0xa955, 0x4885, \
+		{ 0xbd, 0x31 },		    \
+                { 0x78, 0x78,               \
+                  0x71, 0x47, 0xdf, 0xa6 }  \
+	}, 0x00                             \
+}
+
 #define SYNT_NTSVCS_V1                      \
 {                                           \
 	{                                   \
@@ -222,6 +232,7 @@ const struct pipe_id_info pipe_names [] =
 	{ PIPE_SHUTDOWN, SYNT_SHUTDOWN_V1      , PIPE_SHUTDOWN , TRANS_SYNT_V2 },
 	{ PIPE_SVCCTL  , SYNT_SVCCTL_V2        , PIPE_NTSVCS   , TRANS_SYNT_V2 },
 	{ PIPE_EVENTLOG, SYNT_EVENTLOG_V0      , PIPE_EVENTLOG , TRANS_SYNT_V2 },
+	{ PIPE_UNIXINFO, SYNT_UNIXINFO_V0      , PIPE_UNIXINFO , TRANS_SYNT_V2 },
 	{ PIPE_NTSVCS  , SYNT_NTSVCS_V1        , PIPE_NTSVCS   , TRANS_SYNT_V2 },
 	{ NULL         , SYNT_NONE_V0          , NULL          , SYNT_NONE_V0  }
 };

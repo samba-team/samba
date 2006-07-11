@@ -28,15 +28,19 @@ open a print file and setup a fsp for it. This is a wrapper around
 print_job_start().
 ***************************************************************************/
 
-files_struct *print_fsp_open(connection_struct *conn, const char *fname)
+NTSTATUS print_fsp_open(connection_struct *conn, const char *fname,
+			files_struct **result)
 {
 	int jobid;
 	SMB_STRUCT_STAT sbuf;
-	files_struct *fsp = file_new(conn);
+	files_struct *fsp;
 	fstring name;
+	NTSTATUS status;
 
-	if(!fsp)
-		return NULL;
+	status = file_new(conn, &fsp);
+	if(!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
 
 	fstrcpy( name, "Remote Downlevel Document");
 	if (fname) {
@@ -50,8 +54,9 @@ files_struct *print_fsp_open(connection_struct *conn, const char *fname)
 
 	jobid = print_job_start(&current_user, SNUM(conn), name, NULL);
 	if (jobid == -1) {
+		status = map_nt_error_from_unix(errno);
 		file_free(fsp);
-		return NULL;
+		return status;
 	}
 
 	/* Convert to RAP id. */
@@ -60,7 +65,7 @@ files_struct *print_fsp_open(connection_struct *conn, const char *fname)
 		/* We need to delete the entry in the tdb. */
 		pjob_delete(lp_const_servicename(SNUM(conn)), jobid);
 		file_free(fsp);
-		return NULL;
+		return NT_STATUS_ACCESS_DENIED;	/* No errno around here */
 	}
 
 	/* setup a full fsp */
@@ -87,7 +92,8 @@ files_struct *print_fsp_open(connection_struct *conn, const char *fname)
 
 	conn->num_files_open++;
 
-	return fsp;
+	*result = fsp;
+	return NT_STATUS_OK;
 }
 
 /****************************************************************************

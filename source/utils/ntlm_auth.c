@@ -515,7 +515,7 @@ static NTSTATUS ntlm_auth_start_ntlmssp_server(NTLMSSP_STATE **ntlmssp_state)
 	NTSTATUS status = ntlmssp_server_start(ntlmssp_state);
 	
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1, ("Could not start NTLMSSP client: %s\n",
+		DEBUG(1, ("Could not start NTLMSSP server: %s\n",
 			  nt_errstr(status)));
 		return status;
 	}

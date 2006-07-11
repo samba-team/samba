@@ -516,13 +516,14 @@ size_t convert_string(charset_t from, charset_t to,
  **/
 
 size_t convert_string_allocate(TALLOC_CTX *ctx, charset_t from, charset_t to,
-			       void const *src, size_t srclen, void **dest, BOOL allow_bad_conv)
+			       void const *src, size_t srclen, void *dst, BOOL allow_bad_conv)
 {
 	size_t i_len, o_len, destlen = MAX(srclen, 512);
 	size_t retval;
 	const char *inbuf = (const char *)src;
 	char *outbuf = NULL, *ob = NULL;
 	smb_iconv_t descriptor;
+	void **dest = (void **)dst;
 
 	*dest = NULL;
 
@@ -702,9 +703,11 @@ size_t convert_string_allocate(TALLOC_CTX *ctx, charset_t from, charset_t to,
  *
  * @returns Size in bytes of the converted string; or -1 in case of error.
  **/
-static size_t convert_string_talloc(TALLOC_CTX *ctx, charset_t from, charset_t to,
-		      		void const *src, size_t srclen, void **dest, BOOL allow_bad_conv)
+size_t convert_string_talloc(TALLOC_CTX *ctx, charset_t from, charset_t to,
+			     void const *src, size_t srclen, void *dst,
+			     BOOL allow_bad_conv)
 {
+	void **dest = (void **)dst;
 	size_t dest_len;
 
 	*dest = NULL;
@@ -944,9 +947,9 @@ size_t pull_ascii(char *dest, const void *src, size_t dest_len, size_t src_len, 
 
 	if (flags & STR_TERMINATE) {
 		if (src_len == (size_t)-1) {
-			src_len = strlen(src) + 1;
+			src_len = strlen((const char *)src) + 1;
 		} else {
-			size_t len = strnlen(src, src_len);
+			size_t len = strnlen((const char *)src, src_len);
 			if (len < src_len)
 				len++;
 			src_len = len;
@@ -1034,7 +1037,7 @@ size_t push_ucs2(const void *base_ptr, void *dest, const char *src, size_t dest_
 	len += ret;
 
 	if (flags & STR_UPPER) {
-		smb_ucs2_t *dest_ucs2 = dest;
+		smb_ucs2_t *dest_ucs2 = (smb_ucs2_t *)dest;
 		size_t i;
 		for (i = 0; i < (dest_len / 2) && dest_ucs2[i]; i++) {
 			smb_ucs2_t v = toupper_w(dest_ucs2[i]);
@@ -1178,7 +1181,8 @@ size_t pull_ucs2(const void *base_ptr, char *dest, const void *src, size_t dest_
 	if (flags & STR_TERMINATE) {
 		/* src_len -1 is the default for null terminated strings. */
 		if (src_len != (size_t)-1) {
-			size_t len = strnlen_w(src, src_len/2);
+			size_t len = strnlen_w((const smb_ucs2_t *)src,
+						src_len/2);
 			if (len < src_len/2)
 				len++;
 			src_len = len*2;

@@ -94,28 +94,27 @@ void *shm_setup(int size)
 }
 
 
-static BOOL open_nbt_connection(struct cli_state *c)
+static struct cli_state *open_nbt_connection(void)
 {
 	struct nmb_name called, calling;
 	struct in_addr ip;
-
-	ZERO_STRUCTP(c);
+	struct cli_state *c;
 
 	make_nmb_name(&calling, myname, 0x0);
 	make_nmb_name(&called , host, 0x20);
 
         zero_ip(&ip);
 
-	if (!cli_initialise(c)) {
+	if (!(c = cli_initialise())) {
 		printf("Failed initialize cli_struct to connect with %s\n", host);
-		return False;
+		return NULL;
 	}
 
 	c->port = port_to_use;
 
 	if (!cli_connect(c, host, &ip)) {
 		printf("Failed to connect with %s\n", host);
-		return False;
+		return NULL;
 	}
 
 	c->use_kerberos = use_kerberos;
@@ -131,7 +130,7 @@ static BOOL open_nbt_connection(struct cli_state *c)
 		 */
 		if (!cli_connect(c, host, &ip)) {
 			printf("Failed to connect with %s\n", host);
-			return False;
+			return NULL;
 		}
 
 		make_nmb_name(&called, "*SMBSERVER", 0x20);
@@ -140,11 +139,11 @@ static BOOL open_nbt_connection(struct cli_state *c)
 			printf("We tried with a called name of %s & %s\n",
 				host, "*SMBSERVER");
 			cli_shutdown(c);
-			return False;
+			return NULL;
 		}
 	}
 
-	return True;
+	return c;
 }
 
 BOOL torture_open_connection(struct cli_state **c)
@@ -462,8 +461,8 @@ static BOOL rw_torture2(struct cli_state *c1, struct cli_state *c2)
 	int fnum1;
 	int fnum2;
 	int i;
-	uchar buf[131072];
-	uchar buf_rd[131072];
+	char buf[131072];
+	char buf_rd[131072];
 	BOOL correct = True;
 	ssize_t bytes_read;
 
@@ -494,7 +493,7 @@ static BOOL rw_torture2(struct cli_state *c1, struct cli_state *c2)
 			printf("%d\r", i); fflush(stdout);
 		}
 
-		generate_random_buffer(buf, buf_size);
+		generate_random_buffer((unsigned char *)buf, buf_size);
 
 		if (cli_write(c1, fnum1, 0, buf, 0, buf_size) != buf_size) {
 			printf("write failed (%s)\n", cli_errstr(c1));
@@ -2174,20 +2173,20 @@ static void rand_buf(char *buf, int len)
 static BOOL run_negprot_nowait(int dummy)
 {
 	int i;
-	static struct cli_state cli;
+	static struct cli_state *cli;
 	BOOL correct = True;
 
 	printf("starting negprot nowait test\n");
 
-	if (!open_nbt_connection(&cli)) {
+	if (!(cli = open_nbt_connection())) {
 		return False;
 	}
 
 	for (i=0;i<50000;i++) {
-		cli_negprot_send(&cli);
+		cli_negprot_send(cli);
 	}
 
-	if (!torture_close_connection(&cli)) {
+	if (!torture_close_connection(cli)) {
 		correct = False;
 	}
 
@@ -2202,7 +2201,7 @@ static BOOL run_randomipc(int dummy)
 {
 	char *rparam = NULL;
 	char *rdata = NULL;
-	int rdrcnt,rprcnt;
+	unsigned int rdrcnt,rprcnt;
 	pstring param;
 	int api, param_len, i;
 	struct cli_state *cli;
@@ -4418,7 +4417,8 @@ static BOOL run_eatest(int dummy)
 
 	for (i = 0; i < num_eas; i++) {
 		printf("%d: ea_name = %s. Val = ", i, ea_list[i].name);
-		dump_data(0, ea_list[i].value.data, ea_list[i].value.length);
+		dump_data(0, (char *)ea_list[i].value.data,
+			  ea_list[i].value.length);
 	}
 
 	/* Setting EA's to zero length deletes them. Test this */
@@ -4445,7 +4445,8 @@ static BOOL run_eatest(int dummy)
 	printf("num_eas = %d\n", num_eas);
 	for (i = 0; i < num_eas; i++) {
 		printf("%d: ea_name = %s. Val = ", i, ea_list[i].name);
-		dump_data(0, ea_list[i].value.data, ea_list[i].value.length);
+		dump_data(0, (char *)ea_list[i].value.data,
+			  ea_list[i].value.length);
 	}
 
 	if (num_eas != 0) {
@@ -4550,8 +4551,8 @@ static BOOL run_dirtest1(int dummy)
 
 static BOOL run_error_map_extract(int dummy) {
 	
-	static struct cli_state c_dos;
-	static struct cli_state c_nt;
+	static struct cli_state *c_dos;
+	static struct cli_state *c_nt;
 
 	uint32 error;
 
@@ -4564,81 +4565,81 @@ static BOOL run_error_map_extract(int dummy) {
 
 	/* NT-Error connection */
 
-	if (!open_nbt_connection(&c_nt)) {
+	if (!(c_nt = open_nbt_connection())) {
 		return False;
 	}
 
-	c_nt.use_spnego = False;
+	c_nt->use_spnego = False;
 
-	if (!cli_negprot(&c_nt)) {
-		printf("%s rejected the NT-error negprot (%s)\n",host, cli_errstr(&c_nt));
-		cli_shutdown(&c_nt);
+	if (!cli_negprot(c_nt)) {
+		printf("%s rejected the NT-error negprot (%s)\n",host, cli_errstr(c_nt));
+		cli_shutdown(c_nt);
 		return False;
 	}
 
-	if (!cli_session_setup(&c_nt, "", "", 0, "", 0,
+	if (!cli_session_setup(c_nt, "", "", 0, "", 0,
 			       workgroup)) {
-		printf("%s rejected the NT-error initial session setup (%s)\n",host, cli_errstr(&c_nt));
+		printf("%s rejected the NT-error initial session setup (%s)\n",host, cli_errstr(c_nt));
 		return False;
 	}
 
 	/* DOS-Error connection */
 
-	if (!open_nbt_connection(&c_dos)) {
+	if (!(c_dos = open_nbt_connection())) {
 		return False;
 	}
 
-	c_dos.use_spnego = False;
-	c_dos.force_dos_errors = True;
+	c_dos->use_spnego = False;
+	c_dos->force_dos_errors = True;
 
-	if (!cli_negprot(&c_dos)) {
-		printf("%s rejected the DOS-error negprot (%s)\n",host, cli_errstr(&c_dos));
-		cli_shutdown(&c_dos);
+	if (!cli_negprot(c_dos)) {
+		printf("%s rejected the DOS-error negprot (%s)\n",host, cli_errstr(c_dos));
+		cli_shutdown(c_dos);
 		return False;
 	}
 
-	if (!cli_session_setup(&c_dos, "", "", 0, "", 0,
+	if (!cli_session_setup(c_dos, "", "", 0, "", 0,
 			       workgroup)) {
-		printf("%s rejected the DOS-error initial session setup (%s)\n",host, cli_errstr(&c_dos));
+		printf("%s rejected the DOS-error initial session setup (%s)\n",host, cli_errstr(c_dos));
 		return False;
 	}
 
 	for (error=(0xc0000000 | 0x1); error < (0xc0000000| 0xFFF); error++) {
 		fstr_sprintf(user, "%X", error);
 
-		if (cli_session_setup(&c_nt, user, 
+		if (cli_session_setup(c_nt, user, 
 				       password, strlen(password),
 				       password, strlen(password),
 				      workgroup)) {
 			printf("/** Session setup succeeded.  This shouldn't happen...*/\n");
 		}
 		
-		flgs2 = SVAL(c_nt.inbuf,smb_flg2);
+		flgs2 = SVAL(c_nt->inbuf,smb_flg2);
 		
 		/* Case #1: 32-bit NT errors */
 		if (flgs2 & FLAGS2_32_BIT_ERROR_CODES) {
-			nt_status = NT_STATUS(IVAL(c_nt.inbuf,smb_rcls));
+			nt_status = NT_STATUS(IVAL(c_nt->inbuf,smb_rcls));
 		} else {
 			printf("/** Dos error on NT connection! (%s) */\n", 
-			       cli_errstr(&c_nt));
+			       cli_errstr(c_nt));
 			nt_status = NT_STATUS(0xc0000000);
 		}
 
-		if (cli_session_setup(&c_dos, user, 
+		if (cli_session_setup(c_dos, user, 
 				       password, strlen(password),
 				       password, strlen(password),
 				       workgroup)) {
 			printf("/** Session setup succeeded.  This shouldn't happen...*/\n");
 		}
-		flgs2 = SVAL(c_dos.inbuf,smb_flg2), errnum;
+		flgs2 = SVAL(c_dos->inbuf,smb_flg2), errnum;
 		
 		/* Case #1: 32-bit NT errors */
 		if (flgs2 & FLAGS2_32_BIT_ERROR_CODES) {
 			printf("/** NT error on DOS connection! (%s) */\n", 
-			       cli_errstr(&c_nt));
+			       cli_errstr(c_nt));
 			errnum = errclass = 0;
 		} else {
-			cli_dos_error(&c_dos, &errclass, &errnum);
+			cli_dos_error(c_dos, &errclass, &errnum);
 		}
 
 		if (NT_STATUS_V(nt_status) != error) { 
@@ -4653,6 +4654,42 @@ static BOOL run_error_map_extract(int dummy) {
 		       get_nt_error_c_code(NT_STATUS(error)));
 	}
 	return True;
+}
+
+static BOOL run_local_substitute(int dummy)
+{
+	TALLOC_CTX *mem_ctx;
+	int diff = 0;
+
+	if ((mem_ctx = talloc_init("run_local_subst")) == NULL) {
+		printf("talloc_init failed\n");
+		return False;
+	}
+
+	diff |= strcmp(talloc_sub_specified(mem_ctx, "%U", "bla", "", -1, -1),
+		       "bla");
+	diff |= strcmp(talloc_sub_specified(mem_ctx, "%u%U", "bla", "", -1, -1),
+		       "blabla");
+	diff |= strcmp(talloc_sub_specified(mem_ctx, "%g", "", "", -1, -1),
+		       "NO_GROUP");
+	diff |= strcmp(talloc_sub_specified(mem_ctx, "%G", "", "", -1, -1),
+		       "NO_GROUP");
+	diff |= strcmp(talloc_sub_specified(mem_ctx, "%g", "", "", -1, 0),
+		       gidtoname(0));
+	diff |= strcmp(talloc_sub_specified(mem_ctx, "%G", "", "", -1, 0),
+		       gidtoname(0));
+	diff |= strcmp(talloc_sub_specified(mem_ctx, "%D%u", "u", "dom", -1, 0),
+		       "domu");
+	diff |= strcmp(talloc_sub_specified(mem_ctx, "%i %I", "", "", -1, -1),
+		       "0.0.0.0 0.0.0.0");
+
+	/* Different captialization rules in sub_basic... */
+
+	diff |= strcmp(talloc_sub_basic(mem_ctx, "BLA", "dom", "%U%D"),
+		       "blaDOM");
+
+	TALLOC_FREE(mem_ctx);
+	return (diff == 0);
 }
 
 static double create_procs(BOOL (*fn)(int), BOOL *result)
@@ -4805,6 +4842,7 @@ static struct {
 	{"CHKPATH",  torture_chkpath_test, 0},
 	{"FDSESS", run_fdsesstest, 0},
 	{ "EATEST", run_eatest, 0},
+	{ "LOCAL-SUBSTITUTE", run_local_substitute, 0},
 	{NULL, NULL, 0}};
 
 

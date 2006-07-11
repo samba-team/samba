@@ -3854,7 +3854,7 @@ BOOL samr_io_r_query_aliasinfo(const char *desc, SAMR_R_QUERY_ALIASINFO *out,
 	if(!prs_align(ps))
 		return False;
 
-	if ( !prs_pointer("alias", ps, depth, (void**)&out->ctr, sizeof(ALIAS_INFO_CTR), (PRS_POINTER_CAST)samr_alias_info_ctr))
+	if ( !prs_pointer("alias", ps, depth, (void*)&out->ctr, sizeof(ALIAS_INFO_CTR), (PRS_POINTER_CAST)samr_alias_info_ctr))
 		return False;
 	if(!prs_align(ps))
 		return False;
@@ -4896,7 +4896,7 @@ inits a SAMR_R_LOOKUP_NAMES structure.
 
 NTSTATUS init_samr_r_lookup_names(TALLOC_CTX *ctx, SAMR_R_LOOKUP_NAMES * r_u,
 			      uint32 num_rids,
-			      uint32 *rid, uint32 *type,
+			      uint32 *rid, enum SID_NAME_USE *type,
 			      NTSTATUS status)
 {
 	DEBUG(5, ("init_samr_r_lookup_names\n"));
@@ -5741,8 +5741,8 @@ void init_sam_user_info23W(SAM_USER_INFO_23 * usr, NTTIME * logon_time,	/* all z
 	copy_unistr2(&usr->uni_workstations, wkstas);
 	init_uni_hdr(&usr->hdr_workstations, &usr->uni_workstations);
 
-	copy_unistr2(&usr->uni_unknown_str, unk_str);
-	init_uni_hdr(&usr->hdr_unknown_str, &usr->uni_unknown_str);
+	copy_unistr2(&usr->uni_comment, unk_str);
+	init_uni_hdr(&usr->hdr_comment, &usr->uni_comment);
 
 	copy_unistr2(&usr->uni_munged_dial, mung_dial);
 	init_uni_hdr(&usr->hdr_munged_dial, &usr->uni_munged_dial);
@@ -5835,8 +5835,8 @@ void init_sam_user_info23A(SAM_USER_INFO_23 * usr, NTTIME * logon_time,	/* all z
 	init_unistr2(&usr->uni_workstations, wkstas, UNI_FLAGS_NONE);
 	init_uni_hdr(&usr->hdr_workstations, &usr->uni_workstations);
 
-	init_unistr2(&usr->uni_unknown_str, unk_str, UNI_FLAGS_NONE);
-	init_uni_hdr(&usr->hdr_unknown_str, &usr->uni_unknown_str);
+	init_unistr2(&usr->uni_comment, unk_str, UNI_FLAGS_NONE);
+	init_uni_hdr(&usr->hdr_comment, &usr->uni_comment);
 
 	init_unistr2_from_datablob(&usr->uni_munged_dial, &blob);
 	init_uni_hdr(&usr->hdr_munged_dial, &usr->uni_munged_dial);
@@ -5895,7 +5895,7 @@ static BOOL sam_io_user_info23(const char *desc, SAM_USER_INFO_23 * usr,
 		return False;
 	if(!smb_io_unihdr("hdr_workstations", &usr->hdr_workstations, ps, depth))	/* wkstas user can log on from */
 		return False;
-	if(!smb_io_unihdr("hdr_unknown_str ", &usr->hdr_unknown_str, ps, depth))	/* unknown string */
+	if(!smb_io_unihdr("hdr_comment ", &usr->hdr_comment, ps, depth))	/* unknown string */
 		return False;
 	if(!smb_io_unihdr("hdr_munged_dial ", &usr->hdr_munged_dial, ps, depth))	/* wkstas user can log on from */
 		return False;
@@ -5963,7 +5963,7 @@ static BOOL sam_io_user_info23(const char *desc, SAM_USER_INFO_23 * usr,
 	if(!smb_io_unistr2("uni_workstations", &usr->uni_workstations, usr->hdr_workstations.buffer, ps, depth))	/* worksations user can log on from */
 		return False;
 
-	if(!smb_io_unistr2("uni_unknown_str ", &usr->uni_unknown_str, usr->hdr_unknown_str.buffer, ps, depth))	/* unknown string */
+	if(!smb_io_unistr2("uni_comment ", &usr->uni_comment, usr->hdr_comment.buffer, ps, depth))	/* unknown string */
 		return False;
 
 	if(!smb_io_unistr2("uni_munged_dial ", &usr->uni_munged_dial, usr->hdr_munged_dial.buffer, ps, depth))
@@ -6025,7 +6025,7 @@ static BOOL sam_io_user_info25(const char *desc, SAM_USER_INFO_25 * usr, prs_str
 		return False;
 	if(!smb_io_unihdr("hdr_workstations", &usr->hdr_workstations, ps, depth))	/* wkstas user can log on from */
 		return False;
-	if(!smb_io_unihdr("hdr_unknown_str ", &usr->hdr_unknown_str, ps, depth))	/* unknown string */
+	if(!smb_io_unihdr("hdr_comment ", &usr->hdr_comment, ps, depth))	/* unknown string */
 		return False;
 	if(!smb_io_unihdr("hdr_munged_dial ", &usr->hdr_munged_dial, ps, depth))	/* wkstas user can log on from */
 		return False;
@@ -6076,7 +6076,7 @@ static BOOL sam_io_user_info25(const char *desc, SAM_USER_INFO_25 * usr, prs_str
 	if(!smb_io_unistr2("uni_workstations", &usr->uni_workstations, usr->hdr_workstations.buffer, ps, depth))	/* worksations user can log on from */
 		return False;
 
-	if(!smb_io_unistr2("uni_unknown_str ", &usr->uni_unknown_str, usr->hdr_unknown_str.buffer, ps, depth))	/* unknown string */
+	if(!smb_io_unistr2("uni_comment ", &usr->uni_comment, usr->hdr_comment.buffer, ps, depth))	/* unknown string */
 		return False;
 
 	if(!smb_io_unistr2("uni_munged_dial ", &usr->uni_munged_dial, usr->hdr_munged_dial.buffer, ps, depth))
@@ -6182,8 +6182,8 @@ void init_sam_user_info21W(SAM_USER_INFO_21 * usr,
 	copy_unistr2(&usr->uni_workstations, wkstas);
 	init_uni_hdr(&usr->hdr_workstations, &usr->uni_workstations);
 
-	copy_unistr2(&usr->uni_unknown_str, unk_str);
-	init_uni_hdr(&usr->hdr_unknown_str, &usr->uni_unknown_str);
+	copy_unistr2(&usr->uni_comment, unk_str);
+	init_uni_hdr(&usr->hdr_comment, &usr->uni_comment);
 
 	copy_unistr2(&usr->uni_munged_dial, mung_dial);
 	init_uni_hdr(&usr->hdr_munged_dial, &usr->uni_munged_dial);
@@ -6331,8 +6331,8 @@ NTSTATUS init_sam_user_info21A(SAM_USER_INFO_21 *usr, struct samu *pw, DOM_SID *
 	init_unistr2(&usr->uni_workstations, workstations, UNI_STR_TERMINATE);
 	init_uni_hdr(&usr->hdr_workstations, &usr->uni_workstations);
 
-	init_unistr2(&usr->uni_unknown_str, NULL, UNI_STR_TERMINATE);
-	init_uni_hdr(&usr->hdr_unknown_str, &usr->uni_unknown_str);
+	init_unistr2(&usr->uni_comment, NULL, UNI_STR_TERMINATE);
+	init_uni_hdr(&usr->hdr_comment, &usr->uni_comment);
 
 	init_unistr2_from_datablob(&usr->uni_munged_dial, &munged_dial_blob);
 	init_uni_hdr(&usr->hdr_munged_dial, &usr->uni_munged_dial);
@@ -6398,7 +6398,7 @@ static BOOL sam_io_user_info21(const char *desc, SAM_USER_INFO_21 * usr,
 		return False;
 	if(!smb_io_unihdr("hdr_workstations", &usr->hdr_workstations, ps, depth))	/* wkstas user can log on from */
 		return False;
-	if(!smb_io_unihdr("hdr_unknown_str ", &usr->hdr_unknown_str, ps, depth))	/* unknown string */
+	if(!smb_io_unihdr("hdr_comment ", &usr->hdr_comment, ps, depth))	/* unknown string */
 		return False;
 	if(!smb_io_unihdr("hdr_munged_dial ", &usr->hdr_munged_dial, ps, depth))	/* wkstas user can log on from */
 		return False;
@@ -6438,25 +6438,25 @@ static BOOL sam_io_user_info21(const char *desc, SAM_USER_INFO_21 * usr,
 
 	/* here begins pointed-to data */
 
-	if(!smb_io_unistr2("uni_user_name   ", &usr->uni_user_name,usr->hdr_user_name.buffer, ps, depth))	/* username unicode string */
+	if(!smb_io_unistr2("uni_user_name   ", &usr->uni_user_name,usr->hdr_user_name.buffer, ps, depth))
 		return False;
-	if(!smb_io_unistr2("uni_full_name   ", &usr->uni_full_name, usr->hdr_full_name.buffer, ps, depth))	/* user's full name unicode string */
+	if(!smb_io_unistr2("uni_full_name   ", &usr->uni_full_name, usr->hdr_full_name.buffer, ps, depth))
 		return False;
-	if(!smb_io_unistr2("uni_home_dir    ", &usr->uni_home_dir, usr->hdr_home_dir.buffer, ps, depth))	/* home directory unicode string */
+	if(!smb_io_unistr2("uni_home_dir    ", &usr->uni_home_dir, usr->hdr_home_dir.buffer, ps, depth))
 		return False;
-	if(!smb_io_unistr2("uni_dir_drive   ", &usr->uni_dir_drive, usr->hdr_dir_drive.buffer, ps, depth))	/* home directory drive unicode string */
+	if(!smb_io_unistr2("uni_dir_drive   ", &usr->uni_dir_drive, usr->hdr_dir_drive.buffer, ps, depth))
 		return False;
-	if(!smb_io_unistr2("uni_logon_script", &usr->uni_logon_script, usr->hdr_logon_script.buffer, ps, depth))	/* logon script unicode string */
+	if(!smb_io_unistr2("uni_logon_script", &usr->uni_logon_script, usr->hdr_logon_script.buffer, ps, depth))
 		return False;
-	if(!smb_io_unistr2("uni_profile_path", &usr->uni_profile_path, usr->hdr_profile_path.buffer, ps, depth))	/* profile path unicode string */
+	if(!smb_io_unistr2("uni_profile_path", &usr->uni_profile_path, usr->hdr_profile_path.buffer, ps, depth))
 		return False;
-	if(!smb_io_unistr2("uni_acct_desc   ", &usr->uni_acct_desc, usr->hdr_acct_desc.buffer, ps, depth))	/* user desc unicode string */
+	if(!smb_io_unistr2("uni_acct_desc   ", &usr->uni_acct_desc, usr->hdr_acct_desc.buffer, ps, depth))
 		return False;
-	if(!smb_io_unistr2("uni_workstations", &usr->uni_workstations, usr->hdr_workstations.buffer, ps, depth))	/* worksations user can log on from */
+	if(!smb_io_unistr2("uni_workstations", &usr->uni_workstations, usr->hdr_workstations.buffer, ps, depth))
 		return False;
-	if(!smb_io_unistr2("uni_unknown_str ", &usr->uni_unknown_str, usr->hdr_unknown_str.buffer, ps, depth))	/* unknown string */
+	if(!smb_io_unistr2("uni_comment", &usr->uni_comment, usr->hdr_comment.buffer, ps, depth))
 		return False;
-	if(!smb_io_unistr2("uni_munged_dial ", &usr->uni_munged_dial,usr->hdr_munged_dial.buffer, ps, depth))	/* worksations user can log on from */
+	if(!smb_io_unistr2("uni_munged_dial ", &usr->uni_munged_dial,usr->hdr_munged_dial.buffer, ps, depth))
 		return False;
 
 	/* ok, this is only guess-work (as usual) */

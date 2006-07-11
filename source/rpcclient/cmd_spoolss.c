@@ -709,17 +709,23 @@ static void display_reg_value(REGISTRY_VALUE value)
 		break;
 	}
 	case REG_MULTI_SZ: {
-		uint16 *curstr = (uint16 *) value.data_p;
-		uint8 *start = value.data_p;
-		printf("%s: REG_MULTI_SZ:\n", value.valuename);
-		while (((uint8 *) curstr < start + value.size)) {
-			rpcstr_pull(text, curstr, sizeof(text), -1, 
-				    STR_TERMINATE);
-			printf("  %s\n", *text != 0 ? text : "NULL");
-			curstr += strlen(text) + 1;
+		int i, num_values;
+		char **values;
+
+		if (!NT_STATUS_IS_OK(reg_pull_multi_sz(NULL, value.data_p,
+						       value.size,
+						       &num_values,
+						       &values))) {
+			d_printf("reg_pull_multi_sz failed\n");
+			break;
 		}
+
+		for (i=0; i<num_values; i++) {
+			d_printf("%s\n", values[i]);
+		}
+		TALLOC_FREE(values);
+		break;
 	}
-	break;
 	default:
 		printf("%s: unknown type %d\n", value.valuename, value.type);
 	}
@@ -2012,7 +2018,7 @@ static WERROR cmd_spoolss_setprinterdata(struct rpc_pipe_client *cli,
         if (!W_ERROR_IS_OK(result))
                 goto done;
 		
-	printf("%s\n", timestring(True));
+	printf("%s\n", current_timestring(True));
 	printf("\tchange_id (before set)\t:[0x%x]\n", info.change_id);
 
 	/* Set the printer data */
@@ -2088,7 +2094,7 @@ static WERROR cmd_spoolss_setprinterdata(struct rpc_pipe_client *cli,
         if (!W_ERROR_IS_OK(result))
                 goto done;
 		
-	printf("%s\n", timestring(True));
+	printf("%s\n", current_timestring(True));
 	printf("\tchange_id (after set)\t:[0x%x]\n", info.change_id);
 
 done:

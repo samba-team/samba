@@ -145,6 +145,8 @@ static void newblock( dbg_Token old, dbg_Token newtok )
     case dbg_lineno:
       (void)printf( ")" );
       break;
+    default:
+      break;
     }
 
   switch( newtok )
@@ -157,6 +159,8 @@ static void newblock( dbg_Token old, dbg_Token newtok )
       break;
     case dbg_lineno:
       (void)printf( "(" );
+      break;
+    default:
       break;
     }
   } /* newblock */

@@ -135,6 +135,7 @@ static BOOL try_unlock(struct cli_state *c, int fstype,
 
 static void print_brl(SMB_DEV_T dev, SMB_INO_T ino, struct process_id pid, 
 		      enum brl_type lock_type,
+		      enum brl_flavour lock_flav,
 		      br_off start, br_off size)
 {
 	printf("%6d   %05x:%05x    %s  %.0f:%.0f(%.0f)\n", 

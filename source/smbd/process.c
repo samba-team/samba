@@ -21,7 +21,7 @@
 
 #include "includes.h"
 
-extern uint16 global_smbpid;
+uint16 global_smbpid;
 extern int keepalive;
 extern struct auth_context *negprot_global_auth_context;
 extern int smb_echo_count;
@@ -172,7 +172,6 @@ BOOL open_was_deferred(uint16 mid)
 
 	for (pml = deferred_open_queue; pml; pml = pml->next) {
 		if (SVAL(pml->buf.data,smb_mid) == mid) {
-			set_saved_ntstatus(NT_STATUS_OK);
 			return True;
 		}
 	}
@@ -459,11 +458,20 @@ static BOOL receive_message_or_smb(char *buffer, int buffer_len, int timeout)
 		}
 	}
 	
-	maxfd = select_on_fd(smbd_server_fd(), maxfd, &fds);
-	maxfd = select_on_fd(change_notify_fd(), maxfd, &fds);
-	maxfd = select_on_fd(oplock_notify_fd(), maxfd, &fds);
+	{
+		int sav;
+		START_PROFILE(smbd_idle);
 
-	selrtn = sys_select(maxfd+1,&fds,NULL,NULL,&to);
+		maxfd = select_on_fd(smbd_server_fd(), maxfd, &fds);
+		maxfd = select_on_fd(change_notify_fd(), maxfd, &fds);
+		maxfd = select_on_fd(oplock_notify_fd(), maxfd, &fds);
+
+		selrtn = sys_select(maxfd+1,&fds,NULL,NULL,&to);
+		sav = errno;
+
+		END_PROFILE(smbd_idle);
+		errno = sav;
+	}
 
 	/* if we get EINTR then maybe we have received an oplock
 	   signal - treat this as select returning 1. This is ugly, but
@@ -885,7 +893,6 @@ static int switch_message(int type,char *inbuf,char *outbuf,int size,int bufsize
 		pid = sys_getpid();
 
 	errno = 0;
-	set_saved_ntstatus(NT_STATUS_OK);
 
 	last_message = type;
 
@@ -954,7 +961,7 @@ static int switch_message(int type,char *inbuf,char *outbuf,int size,int bufsize
 			}
 
 			if (!change_to_user(conn,session_tag)) {
-				return(ERROR_FORCE_DOS(ERRSRV,ERRbaduid));
+				return(ERROR_NT(NT_STATUS_DOS(ERRSRV,ERRbaduid)));
 			}
 
 			/* All NEED_WRITE and CAN_IPC flags must also have AS_USER. */

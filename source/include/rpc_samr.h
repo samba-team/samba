@@ -174,7 +174,7 @@ typedef struct sam_user_info_23
 	UNIHDR hdr_profile_path; /* profile path unicode string header */
 	UNIHDR hdr_acct_desc  ;  /* user description */
 	UNIHDR hdr_workstations; /* comma-separated workstations user can log in from */
-	UNIHDR hdr_unknown_str ; /* don't know what this is, yet. */
+	UNIHDR hdr_comment;
 	UNIHDR hdr_munged_dial ; /* munged path name and dial-back tel number */
 
 	uint8 lm_pwd[16];    /* lm user passwords */
@@ -211,7 +211,7 @@ typedef struct sam_user_info_23
 	UNISTR2 uni_profile_path; /* profile path unicode string */
 	UNISTR2 uni_acct_desc  ;  /* user description unicode string */
 	UNISTR2 uni_workstations; /* login from workstations unicode string */
-	UNISTR2 uni_unknown_str ; /* don't know what this is, yet. */
+	UNISTR2 uni_comment;
 	UNISTR2 uni_munged_dial ; /* munged path name and dial-back tel no */
 
 	LOGON_HRS logon_hrs;
@@ -250,7 +250,7 @@ typedef struct sam_user_info_25
 	UNIHDR hdr_profile_path; /* profile path unicode string header */
 	UNIHDR hdr_acct_desc  ;  /* user description */
 	UNIHDR hdr_workstations; /* comma-separated workstations user can log in from */
-	UNIHDR hdr_unknown_str ; /* don't know what this is, yet. */
+	UNIHDR hdr_comment;
 	UNIHDR hdr_munged_dial ; /* munged path name and dial-back tel number */
 
 	uint8 lm_pwd[16];    /* lm user passwords */
@@ -274,7 +274,7 @@ typedef struct sam_user_info_25
 	UNISTR2 uni_profile_path; /* profile path unicode string */
 	UNISTR2 uni_acct_desc  ;  /* user description unicode string */
 	UNISTR2 uni_workstations; /* login from workstations unicode string */
-	UNISTR2 uni_unknown_str ; /* don't know what this is, yet. */
+	UNISTR2 uni_comment;
 	UNISTR2 uni_munged_dial ; /* munged path name and dial-back tel no */
 } SAM_USER_INFO_25;
 
@@ -304,7 +304,7 @@ typedef struct sam_user_info_21
 	UNIHDR hdr_profile_path; /* profile path unicode string header */
 	UNIHDR hdr_acct_desc  ;  /* user description */
 	UNIHDR hdr_workstations; /* comma-separated workstations user can log in from */
-	UNIHDR hdr_unknown_str ; /* don't know what this is, yet. */
+	UNIHDR hdr_comment;
 	UNIHDR hdr_munged_dial ; /* munged path name and dial-back tel number */
 
 	uint8 lm_pwd[16];    /* lm user passwords */
@@ -340,7 +340,7 @@ typedef struct sam_user_info_21
 	UNISTR2 uni_profile_path; /* profile path unicode string */
 	UNISTR2 uni_acct_desc  ;  /* user description unicode string */
 	UNISTR2 uni_workstations; /* login from workstations unicode string */
-	UNISTR2 uni_unknown_str ; /* don't know what this is, yet. */
+	UNISTR2 uni_comment;
 	UNISTR2 uni_munged_dial ; /* munged path name and dial-back tel number */
 
 	LOGON_HRS logon_hrs;

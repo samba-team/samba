@@ -981,7 +981,7 @@ BOOL dbghdr( int level, const char *file, const char *func, int line )
   
 		/* Print it all out at once to prevent split syslog output. */
 		(void)Debug1( "[%s, %d%s] %s:%s(%d)\n",
-			timestring(lp_debug_hires_timestamp()), level,
+			current_timestring(lp_debug_hires_timestamp()), level,
 			header_str, file, func, line );
 	}
 

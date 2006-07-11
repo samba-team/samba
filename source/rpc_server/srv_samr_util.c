@@ -195,14 +195,13 @@ void copy_id21_to_sam_passwd(struct samu *to, SAM_USER_INFO_21 *from)
 			pdb_set_workstations(to  , new_string, PDB_CHANGED);
 	}
 
-	/* is this right? */
-	if ((from->fields_present & ACCT_ADMIN_DESC) &&
-	    (from->hdr_unknown_str.buffer)) {
-		old_string = pdb_get_unknown_str(to);
-		new_string = unistr2_static(&from->uni_unknown_str);
-		DEBUG(10,("INFO_21 UNI_UNKNOWN_STR: %s -> %s\n",old_string, new_string));
+	if ((from->fields_present & ACCT_COMMENT) &&
+	    (from->hdr_comment.buffer)) {
+		old_string = pdb_get_comment(to);
+		new_string = unistr2_static(&from->uni_comment);
+		DEBUG(10,("INFO_21 UNI_COMMENT: %s -> %s\n",old_string, new_string));
 		if (STRING_CHANGED)
-			pdb_set_unknown_str(to   , new_string, PDB_CHANGED);
+			pdb_set_comment(to, new_string, PDB_CHANGED);
 	}
 	
 	if ((from->fields_present & ACCT_CALLBACK) &&
@@ -445,14 +444,13 @@ void copy_id23_to_sam_passwd(struct samu *to, SAM_USER_INFO_23 *from)
 			pdb_set_workstations(to  , new_string, PDB_CHANGED);
 	}
 
-	/* is this right? */
-	if ((from->fields_present & ACCT_ADMIN_DESC) &&
-	    (from->hdr_unknown_str.buffer)) {
-		old_string = pdb_get_unknown_str(to);
-		new_string = unistr2_static(&from->uni_unknown_str);
+	if ((from->fields_present & ACCT_COMMENT) &&
+	    (from->hdr_comment.buffer)) {
+		old_string = pdb_get_comment(to);
+		new_string = unistr2_static(&from->uni_comment);
 		DEBUG(10,("INFO_23 UNI_UNKNOWN_STR: %s -> %s\n",old_string, new_string));
 		if (STRING_CHANGED)
-			pdb_set_unknown_str(to   , new_string, PDB_CHANGED);
+			pdb_set_comment(to   , new_string, PDB_CHANGED);
 	}
 	
 	if ((from->fields_present & ACCT_CALLBACK) &&
@@ -683,14 +681,13 @@ void copy_id25_to_sam_passwd(struct samu *to, SAM_USER_INFO_25 *from)
 			pdb_set_workstations(to  , new_string, PDB_CHANGED);
 	}
 
-	/* is this right? */
-	if ((from->fields_present & ACCT_ADMIN_DESC) &&
-	    (from->hdr_unknown_str.buffer)) {
-		old_string = pdb_get_unknown_str(to);
-		new_string = unistr2_static(&from->uni_unknown_str);
+	if ((from->fields_present & ACCT_COMMENT) &&
+	    (from->hdr_comment.buffer)) {
+		old_string = pdb_get_comment(to);
+		new_string = unistr2_static(&from->uni_comment);
 		DEBUG(10,("INFO_25 UNI_UNKNOWN_STR: %s -> %s\n",old_string, new_string));
 		if (STRING_CHANGED)
-			pdb_set_unknown_str(to   , new_string, PDB_CHANGED);
+			pdb_set_comment(to   , new_string, PDB_CHANGED);
 	}
 	
 	if ((from->fields_present & ACCT_CALLBACK) &&

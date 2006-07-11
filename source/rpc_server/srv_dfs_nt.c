@@ -40,7 +40,6 @@ uint32 _dfs_GetManagerVersion(pipes_struct *p, NETDFS_Q_DFS_GETMANAGERVERSION *q
 
 WERROR _dfs_Add(pipes_struct *p, NETDFS_Q_DFS_ADD* q_u, NETDFS_R_DFS_ADD *r_u)
 {
-	struct current_user user;
 	struct junction_map jn;
 	struct referral* old_referral_list = NULL;
 	BOOL exists = False;
@@ -48,9 +47,7 @@ WERROR _dfs_Add(pipes_struct *p, NETDFS_Q_DFS_ADD* q_u, NETDFS_R_DFS_ADD *r_u)
 	pstring dfspath, servername, sharename;
 	pstring altpath;
 
-	get_current_user(&user,p);
-
-	if (user.ut.uid != 0) {
+	if (p->pipe_user.ut.uid != 0) {
 		DEBUG(10,("_dfs_add: uid != 0. Access denied.\n"));
 		return WERR_ACCESS_DENIED;
 	}
@@ -104,16 +101,13 @@ WERROR _dfs_Add(pipes_struct *p, NETDFS_Q_DFS_ADD* q_u, NETDFS_R_DFS_ADD *r_u)
 WERROR _dfs_Remove(pipes_struct *p, NETDFS_Q_DFS_REMOVE *q_u, 
                    NETDFS_R_DFS_REMOVE *r_u)
 {
-	struct current_user user;
 	struct junction_map jn;
 	BOOL found = False;
 
 	pstring dfspath, servername, sharename;
 	pstring altpath;
 
-	get_current_user(&user,p);
-
-	if (user.ut.uid != 0) {
+	if (p->pipe_user.ut.uid != 0) {
 		DEBUG(10,("_dfs_remove: uid != 0. Access denied.\n"));
 		return WERR_ACCESS_DENIED;
 	}

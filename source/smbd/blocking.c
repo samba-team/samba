@@ -34,7 +34,7 @@ typedef struct _blocking_lock_record {
 	int lock_num;
 	SMB_BIG_UINT offset;
 	SMB_BIG_UINT count;
-	uint16 lock_pid;
+	uint32 lock_pid;
 	enum brl_flavour lock_flav;
 	enum brl_type lock_type;
 	char *inbuf;
@@ -74,7 +74,7 @@ BOOL push_blocking_lock_request( char *inbuf, int length,
 		files_struct *fsp,
 		int lock_timeout,
 		int lock_num,
-		uint16 lock_pid,
+		uint32 lock_pid,
 		enum brl_type lock_type,
 		enum brl_flavour lock_flav,
 		SMB_BIG_UINT offset, SMB_BIG_UINT count)
@@ -121,7 +121,7 @@ BOOL push_blocking_lock_request( char *inbuf, int length,
 	memcpy(blr->inbuf, inbuf, length);
 	blr->length = length;
 
-	br_lck = brl_get_locks(blr->fsp);
+	br_lck = brl_get_locks(NULL, blr->fsp);
 	if (!br_lck) {
 		free_blocking_lock_record(blr);
 		return False;
@@ -136,7 +136,7 @@ BOOL push_blocking_lock_request( char *inbuf, int length,
 			PENDING_LOCK,
 			blr->lock_flav,
 			&my_lock_ctx);
-	byte_range_lock_destructor(br_lck);
+	TALLOC_FREE(br_lck);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("push_blocking_lock_request: failed to add PENDING_LOCK record.\n"));
@@ -236,7 +236,7 @@ static void reply_lockingX_error(blocking_lock_record *blr, NTSTATUS status)
 	files_struct *fsp = blr->fsp;
 	uint16 num_ulocks = SVAL(inbuf,smb_vwv6);
 	SMB_BIG_UINT count = (SMB_BIG_UINT)0, offset = (SMB_BIG_UINT) 0;
-	uint16 lock_pid;
+	uint32 lock_pid;
 	unsigned char locktype = CVAL(inbuf,smb_vwv3);
 	BOOL large_file_format = (locktype & LOCKING_ANDX_LARGE_FILES);
 	char *data;
@@ -344,7 +344,7 @@ static BOOL process_lockread(blocking_lock_record *blr)
 	data = smb_buf(outbuf) + 3;
  
 	status = do_lock_spin(fsp,
-				SVAL(inbuf,smb_pid),
+				(uint32)SVAL(inbuf,smb_pid),
 				(SMB_BIG_UINT)numtoread,
 				startpos,
 				READ_LOCK,
@@ -417,7 +417,7 @@ static BOOL process_lock(blocking_lock_record *blr)
 
 	errno = 0;
 	status = do_lock_spin(fsp,
-				SVAL(inbuf,smb_pid),
+				(uint32)SVAL(inbuf,smb_pid),
 				count,
 				offset,
 				WRITE_LOCK,
@@ -471,7 +471,7 @@ static BOOL process_lockingX(blocking_lock_record *blr)
 	uint16 num_ulocks = SVAL(inbuf,smb_vwv6);
 	uint16 num_locks = SVAL(inbuf,smb_vwv7);
 	SMB_BIG_UINT count = (SMB_BIG_UINT)0, offset = (SMB_BIG_UINT)0;
-	uint16 lock_pid;
+	uint32 lock_pid;
 	BOOL large_file_format = (locktype & LOCKING_ANDX_LARGE_FILES);
 	char *data;
 	BOOL my_lock_ctx = False;
@@ -625,7 +625,7 @@ void remove_pending_lock_requests_by_fid(files_struct *fsp)
 	for(blr = blocking_lock_queue; blr; blr = next) {
 		next = blr->next;
 		if(blr->fsp->fnum == fsp->fnum) {
-			struct byte_range_lock *br_lck = brl_get_locks(fsp);
+			struct byte_range_lock *br_lck = brl_get_locks(NULL, fsp);
 
 			if (br_lck) {
 				DEBUG(10,("remove_pending_lock_requests_by_fid - removing request type %d for \
@@ -637,7 +637,7 @@ file %s fnum = %d\n", blr->com_type, fsp->fsp_name, fsp->fnum ));
 					blr->offset,
 					blr->count,
 					blr->lock_flav);
-				byte_range_lock_destructor(br_lck);
+				TALLOC_FREE(br_lck);
 
 			}
 
@@ -658,7 +658,7 @@ void remove_pending_lock_requests_by_mid(int mid)
 		next = blr->next;
 		if(SVAL(blr->inbuf,smb_mid) == mid) {
 			files_struct *fsp = blr->fsp;
-			struct byte_range_lock *br_lck = brl_get_locks(fsp);
+			struct byte_range_lock *br_lck = brl_get_locks(NULL, fsp);
 
 			if (br_lck) {
 				DEBUG(10,("remove_pending_lock_requests_by_mid - removing request type %d for \
@@ -670,7 +670,7 @@ file %s fnum = %d\n", blr->com_type, fsp->fsp_name, fsp->fnum ));
 					blr->offset,
 					blr->count,
 					blr->lock_flav);
-				byte_range_lock_destructor(br_lck);
+				TALLOC_FREE(br_lck);
 			}
 
 			blocking_lock_reply_error(blr,NT_STATUS_FILE_LOCK_CONFLICT);
@@ -754,7 +754,7 @@ void process_blocking_lock_queue(time_t t)
 			fsp->fnum, fsp->fsp_name ));
 
 		if((blr->expire_time != -1) && (blr->expire_time <= t)) {
-			struct byte_range_lock *br_lck = brl_get_locks(fsp);
+			struct byte_range_lock *br_lck = brl_get_locks(NULL, fsp);
 
 			/*
 			 * Lock expired - throw away all previously
@@ -771,7 +771,7 @@ void process_blocking_lock_queue(time_t t)
 					blr->offset,
 					blr->count,
 					blr->lock_flav);
-				byte_range_lock_destructor(br_lck);
+				TALLOC_FREE(br_lck);
 			}
 
 			blocking_lock_reply_error(blr,NT_STATUS_FILE_LOCK_CONFLICT);
@@ -780,7 +780,7 @@ void process_blocking_lock_queue(time_t t)
 		}
 
 		if(!change_to_user(conn,vuid)) {
-			struct byte_range_lock *br_lck = brl_get_locks(fsp);
+			struct byte_range_lock *br_lck = brl_get_locks(NULL, fsp);
 
 			/*
 			 * Remove the entry and return an error to the client.
@@ -793,7 +793,7 @@ void process_blocking_lock_queue(time_t t)
 					blr->offset,
 					blr->count,
 					blr->lock_flav);
-				byte_range_lock_destructor(br_lck);
+				TALLOC_FREE(br_lck);
 			}
 
 			DEBUG(0,("process_blocking_lock_queue: Unable to become user vuid=%d.\n",
@@ -804,7 +804,7 @@ void process_blocking_lock_queue(time_t t)
 		}
 
 		if(!set_current_service(conn,SVAL(blr->inbuf,smb_flg),True)) {
-			struct byte_range_lock *br_lck = brl_get_locks(fsp);
+			struct byte_range_lock *br_lck = brl_get_locks(NULL, fsp);
 
 			/*
 			 * Remove the entry and return an error to the client.
@@ -817,7 +817,7 @@ void process_blocking_lock_queue(time_t t)
 					blr->offset,
 					blr->count,
 					blr->lock_flav);
-				byte_range_lock_destructor(br_lck);
+				TALLOC_FREE(br_lck);
 			}
 
 			DEBUG(0,("process_blocking_lock_queue: Unable to become service Error was %s.\n", strerror(errno) ));
@@ -834,7 +834,7 @@ void process_blocking_lock_queue(time_t t)
 		 */
 
 		if(blocking_lock_record_process(blr)) {
-			struct byte_range_lock *br_lck = brl_get_locks(fsp);
+			struct byte_range_lock *br_lck = brl_get_locks(NULL, fsp);
 
 			if (br_lck) {
 				brl_remove_pending_lock(br_lck,
@@ -843,7 +843,7 @@ void process_blocking_lock_queue(time_t t)
 					blr->offset,
 					blr->count,
 					blr->lock_flav);
-				byte_range_lock_destructor(br_lck);
+				TALLOC_FREE(br_lck);
 			}
 
 			free_blocking_lock_record(blr);

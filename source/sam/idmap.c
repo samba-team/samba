@@ -4,7 +4,7 @@
    Copyright (C) Tim Potter 2000
    Copyright (C) Jim McDonough <jmcd@us.ibm.com>	2003
    Copyright (C) Simo Sorce 2003
-   Copyright (C) Jeremy Allison 2003.
+   Copyright (C) Jeremy Allison 2006
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -182,13 +182,14 @@ BOOL idmap_proxyonly(void)
  set up for a sid to a POSIX id.
 **************************************************************************/
 
-NTSTATUS idmap_set_mapping(const DOM_SID *sid, unid_t id, int id_type)
+NTSTATUS idmap_set_mapping(const DOM_SID *sid, unid_t id, enum idmap_type id_type)
 {
 	struct idmap_methods *map = remote_map;
 	DOM_SID tmp_sid;
 
-	if (proxyonly)
+	if (proxyonly) {
 		return NT_STATUS_UNSUCCESSFUL;
+	}
 
 	if (sid_check_is_in_our_domain(sid)) {
 		DEBUG(3, ("Refusing to add SID %s to idmap, it's our own "
@@ -204,14 +205,12 @@ NTSTATUS idmap_set_mapping(const DOM_SID *sid, unid_t id, int id_type)
 
 	DEBUG(10, ("idmap_set_mapping: Set %s to %s %lu\n",
 		   sid_string_static(sid),
-		   ((id_type & ID_TYPEMASK) == ID_USERID) ? "UID" : "GID",
-		   ((id_type & ID_TYPEMASK) == ID_USERID) ? (unsigned long)id.uid : 
+		   (id_type == ID_USERID) ? "UID" : "GID",
+		   (id_type == ID_USERID) ? (unsigned long)id.uid : 
 		   (unsigned long)id.gid));
 
-	if ( (NT_STATUS_IS_OK(cache_map->
-			      get_sid_from_id(&tmp_sid, id,
-					      id_type | ID_QUERY_ONLY))) &&
-	     sid_equal(sid, &tmp_sid) ) {
+	if ( (NT_STATUS_IS_OK(cache_map->get_sid_from_id(&tmp_sid, id, id_type, IDMAP_FLAG_QUERY_ONLY))) &&
+				sid_equal(sid, &tmp_sid) ) {
 		/* Nothing to do, we already have that mapping */
 		DEBUG(10, ("idmap_set_mapping: Mapping already there\n"));
 		return NT_STATUS_OK;
@@ -230,14 +229,14 @@ NTSTATUS idmap_set_mapping(const DOM_SID *sid, unid_t id, int id_type)
  Get ID from SID. This can create a mapping for a SID to a POSIX id.
 **************************************************************************/
 
-NTSTATUS idmap_get_id_from_sid(unid_t *id, int *id_type, const DOM_SID *sid)
+NTSTATUS idmap_get_id_from_sid(unid_t *id, enum idmap_type *id_type, const DOM_SID *sid, int flags)
 {
 	NTSTATUS ret;
-	int loc_type;
-	unid_t loc_id;
+	int cache_flags = flags;
 
-	if (proxyonly)
+	if (proxyonly) {
 		return NT_STATUS_UNSUCCESSFUL;
+	}
 
 	if (sid_check_is_in_our_domain(sid)) {
 		DEBUG(9, ("sid %s is in our domain -- go look in passdb\n",
@@ -251,55 +250,24 @@ NTSTATUS idmap_get_id_from_sid(unid_t *id, int *id_type, const DOM_SID *sid)
 		return NT_STATUS_NONE_MAPPED;
 	}
 
-	loc_type = *id_type;
-
 	if (remote_map) {
 		/* We have a central remote idmap so only look in
-                   cache, don't allocate */
-		loc_type |= ID_QUERY_ONLY;
+                   cache, ensure we don't allocate */
+		cache_flags |= IDMAP_FLAG_QUERY_ONLY;
 	}
 
-	ret = cache_map->get_id_from_sid(id, &loc_type, sid);
-
+	ret = cache_map->get_id_from_sid(id, id_type, sid, cache_flags);
 	if (NT_STATUS_IS_OK(ret)) {
-		*id_type = loc_type & ID_TYPEMASK;
 		return NT_STATUS_OK;
 	}
 
-	if ((remote_map == NULL) || (loc_type & ID_CACHE_ONLY)) {
+	if ((remote_map == NULL) || (flags & IDMAP_FLAG_CACHE_ONLY)) {
 		return ret;
 	}
 
-	/* Before forking out to the possibly slow remote map, lets see if we
-	 * already have the sid as uid when asking for a gid or vice versa. */
+	/* Ok, the mapping was not in the cache, give the remote map a try. */
 
-	loc_type = *id_type & ID_TYPEMASK;
-
-	switch (loc_type) {
-	case ID_USERID:
-		loc_type = ID_GROUPID;
-		break;
-	case ID_GROUPID:
-		loc_type = ID_USERID;
-		break;
-	default:
-		loc_type = ID_EMPTY;
-	}
-
-	loc_type |= ID_QUERY_ONLY;
-
-	ret = cache_map->get_id_from_sid(&loc_id, &loc_type, sid);
-
-	if (NT_STATUS_IS_OK(ret)) {
-		/* Ok, we have the uid as gid or vice versa. The remote map
-		 * would not know anything different, so return here. */
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
-	/* Ok, the mapping was not in the cache, give the remote map a
-           second try. */
-
-	ret = remote_map->get_id_from_sid(id, id_type, sid);
+	ret = remote_map->get_id_from_sid(id, id_type, sid, flags);
 	
 	if (NT_STATUS_IS_OK(ret)) {
 		/* The remote backend gave us a valid mapping, cache it. */
@@ -313,30 +281,34 @@ NTSTATUS idmap_get_id_from_sid(unid_t *id, int *id_type, const DOM_SID *sid)
  Get SID from ID. This must have been created before.
 **************************************************************************/
 
-NTSTATUS idmap_get_sid_from_id(DOM_SID *sid, unid_t id, int id_type)
+NTSTATUS idmap_get_sid_from_id(DOM_SID *sid, unid_t id, enum idmap_type id_type, int flags)
 {
 	NTSTATUS ret;
-	int loc_type;
+	int cache_flags = flags;
 
-	if (proxyonly)
+	if (proxyonly) {
 		return NT_STATUS_UNSUCCESSFUL;
-
-	loc_type = id_type;
-	if (remote_map) {
-		loc_type = id_type | ID_QUERY_ONLY;
 	}
 
-	ret = cache_map->get_sid_from_id(sid, id, loc_type);
+	if (remote_map) {
+		/* We have a central remote idmap so only look in
+                   cache, ensure we don't allocate */
+		cache_flags |= IDMAP_FLAG_QUERY_ONLY;
+	}
 
-	if (NT_STATUS_IS_OK(ret))
+	ret = cache_map->get_sid_from_id(sid, id, id_type, cache_flags);
+
+	if (NT_STATUS_IS_OK(ret)) {
 		return ret;
+	}
 
-	if ((remote_map == NULL) || (loc_type & ID_CACHE_ONLY))
+	if ((remote_map == NULL) || (flags & IDMAP_FLAG_CACHE_ONLY)) {
 		return ret;
+	}
 
-	/* We have a second chance, ask our authoritative backend */
+	/* Not in cache, ask our authoritative backend */
 
-	ret = remote_map->get_sid_from_id(sid, id, id_type);
+	ret = remote_map->get_sid_from_id(sid, id, id_type, flags);
 
 	if (NT_STATUS_IS_OK(ret)) {
 		/* The remote backend gave us a valid mapping, cache it. */
@@ -350,15 +322,17 @@ NTSTATUS idmap_get_sid_from_id(DOM_SID *sid, unid_t id, int id_type)
  Alloocate a new UNIX uid/gid
 **************************************************************************/
 
-NTSTATUS idmap_allocate_id(unid_t *id, int id_type)
+NTSTATUS idmap_allocate_id(unid_t *id, enum idmap_type id_type)
 {
 	/* we have to allocate from the authoritative backend */
 	
-	if (proxyonly)
+	if (proxyonly) {
 		return NT_STATUS_UNSUCCESSFUL;
+	}
 
-	if ( remote_map )
+	if ( remote_map ) {
 		return remote_map->allocate_id( id, id_type );
+	}
 
 	return cache_map->allocate_id( id, id_type );
 }
@@ -371,8 +345,9 @@ NTSTATUS idmap_close(void)
 {
 	NTSTATUS ret;
 
-	if (proxyonly)
+	if (proxyonly) {
 		return NT_STATUS_OK;
+	}
 
 	ret = cache_map->close_fn();
 	if (!NT_STATUS_IS_OK(ret)) {
@@ -398,6 +373,7 @@ NTSTATUS idmap_close(void)
 void idmap_status(void)
 {
 	cache_map->status();
-	if (remote_map)
+	if (remote_map) {
 		remote_map->status();
+	}
 }

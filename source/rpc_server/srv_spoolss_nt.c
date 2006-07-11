@@ -331,7 +331,7 @@ WERROR delete_printer_hook( NT_USER_TOKEN *token, const char *sharename )
 	/* go ahead and re-read the services immediately */
 	reload_services( False );
 	
-	if ( lp_servicenumber( sharename )  < 0 )
+	if ( !share_defined( sharename ) )
 		return WERR_ACCESS_DENIED;
 		
 	return WERR_OK;
@@ -1509,7 +1509,6 @@ WERROR _spoolss_open_printer_ex( pipes_struct *p, SPOOL_Q_OPEN_PRINTER_EX *q_u, 
 
 	fstring name;
 	int snum;
-	struct current_user user;
 	Printer_entry *Printer=NULL;
 
 	if ( !q_u->printername )
@@ -1532,8 +1531,6 @@ WERROR _spoolss_open_printer_ex( pipes_struct *p, SPOOL_Q_OPEN_PRINTER_EX *q_u, 
 		close_printer_handle(p,handle);
 		return WERR_INVALID_PRINTER_NAME;
 	}
-
-	get_current_user(&user, p);
 
 	/*
 	 * First case: the user is opening the print server:
@@ -1599,12 +1596,12 @@ WERROR _spoolss_open_printer_ex( pipes_struct *p, SPOOL_Q_OPEN_PRINTER_EX *q_u, 
 			/* if the user is not root, doesn't have SE_PRINT_OPERATOR privilege,
 			   and not a printer admin, then fail */
 			
-			if ((user.ut.uid != 0) &&
-			    !user_has_privileges(user.nt_user_token,
+			if ((p->pipe_user.ut.uid != 0) &&
+			    !user_has_privileges(p->pipe_user.nt_user_token,
 						 &se_printop ) &&
 			    !token_contains_name_in_list(
-				    uidtoname(user.ut.uid), NULL,
-				    user.nt_user_token,
+				    uidtoname(p->pipe_user.ut.uid), NULL,
+				    p->pipe_user.nt_user_token,
 				    lp_printer_admin(snum))) {
 				close_printer_handle(p, handle);
 				return WERR_ACCESS_DENIED;
@@ -1657,9 +1654,9 @@ WERROR _spoolss_open_printer_ex( pipes_struct *p, SPOOL_Q_OPEN_PRINTER_EX *q_u, 
 			return WERR_ACCESS_DENIED;
 		}
 
-		if (!user_ok_token(uidtoname(user.ut.uid), user.nt_user_token,
-				   snum) ||
-		    !print_access_check(&user, snum,
+		if (!user_ok_token(uidtoname(p->pipe_user.ut.uid),
+				   p->pipe_user.nt_user_token, snum) ||
+		    !print_access_check(&p->pipe_user, snum,
 					printer_default->access_required)) {
 			DEBUG(3, ("access DENIED for printer open\n"));
 			close_printer_handle(p, handle);
@@ -1953,20 +1950,17 @@ WERROR _spoolss_deleteprinterdriver(pipes_struct *p, SPOOL_Q_DELETEPRINTERDRIVER
 	NT_PRINTER_DRIVER_INFO_LEVEL	info;
 	NT_PRINTER_DRIVER_INFO_LEVEL	info_win2k;
 	int				version;
-	struct current_user		user;
 	WERROR				status;
 	WERROR				status_win2k = WERR_ACCESS_DENIED;
 	SE_PRIV                         se_printop = SE_PRINT_OPERATOR;	
 	
-	get_current_user(&user, p);
-	 
 	/* if the user is not root, doesn't have SE_PRINT_OPERATOR privilege,
 	   and not a printer admin, then fail */
 			
-	if ( (user.ut.uid != 0) 
-		&& !user_has_privileges(user.nt_user_token, &se_printop ) 
-		&& !token_contains_name_in_list( uidtoname(user.ut.uid), 
-		    NULL, user.nt_user_token, lp_printer_admin(-1)) ) 
+	if ( (p->pipe_user.ut.uid != 0) 
+		&& !user_has_privileges(p->pipe_user.nt_user_token, &se_printop ) 
+		&& !token_contains_name_in_list( uidtoname(p->pipe_user.ut.uid), 
+		    NULL, p->pipe_user.nt_user_token, lp_printer_admin(-1)) ) 
 	{
 		return WERR_ACCESS_DENIED;
 	}
@@ -2013,7 +2007,7 @@ WERROR _spoolss_deleteprinterdriver(pipes_struct *p, SPOOL_Q_DELETEPRINTERDRIVER
 			/* if we get to here, we now have 2 driver info structures to remove */
 			/* remove the Win2k driver first*/
 		
-			status_win2k = delete_printer_driver(info_win2k.info_3, &user, 3, False );
+			status_win2k = delete_printer_driver(info_win2k.info_3, &p->pipe_user, 3, False );
 			free_a_printer_driver( info_win2k, 3 );
 		
 			/* this should not have failed---if it did, report to client */
@@ -2025,7 +2019,7 @@ WERROR _spoolss_deleteprinterdriver(pipes_struct *p, SPOOL_Q_DELETEPRINTERDRIVER
 		}
 	}
 	
-	status = delete_printer_driver(info.info_3, &user, version, False);
+	status = delete_printer_driver(info.info_3, &p->pipe_user, version, False);
 	
 	/* if at least one of the deletes succeeded return OK */
 	
@@ -2051,20 +2045,17 @@ WERROR _spoolss_deleteprinterdriverex(pipes_struct *p, SPOOL_Q_DELETEPRINTERDRIV
 	int				version;
 	uint32				flags = q_u->delete_flags;
 	BOOL				delete_files;
-	struct current_user		user;
 	WERROR				status;
 	WERROR				status_win2k = WERR_ACCESS_DENIED;
 	SE_PRIV                         se_printop = SE_PRINT_OPERATOR;	
 	
-	get_current_user(&user, p);
-	
 	/* if the user is not root, doesn't have SE_PRINT_OPERATOR privilege,
 	   and not a printer admin, then fail */
 			
-	if ( (user.ut.uid != 0) 
-		&& !user_has_privileges(user.nt_user_token, &se_printop ) 
-		&& !token_contains_name_in_list( uidtoname(user.ut.uid), 
-		    NULL, user.nt_user_token, lp_printer_admin(-1)) ) 
+	if ( (p->pipe_user.ut.uid != 0) 
+		&& !user_has_privileges(p->pipe_user.nt_user_token, &se_printop ) 
+		&& !token_contains_name_in_list( uidtoname(p->pipe_user.ut.uid), 
+		    NULL, p->pipe_user.nt_user_token, lp_printer_admin(-1)) ) 
 	{
 		return WERR_ACCESS_DENIED;
 	}
@@ -2150,7 +2141,7 @@ WERROR _spoolss_deleteprinterdriverex(pipes_struct *p, SPOOL_Q_DELETEPRINTERDRIV
 			/* if we get to here, we now have 2 driver info structures to remove */
 			/* remove the Win2k driver first*/
 		
-			status_win2k = delete_printer_driver(info_win2k.info_3, &user, 3, delete_files);
+			status_win2k = delete_printer_driver(info_win2k.info_3, &p->pipe_user, 3, delete_files);
 			free_a_printer_driver( info_win2k, 3 );
 				
 			/* this should not have failed---if it did, report to client */
@@ -2160,7 +2151,7 @@ WERROR _spoolss_deleteprinterdriverex(pipes_struct *p, SPOOL_Q_DELETEPRINTERDRIV
 		}
 	}
 
-	status = delete_printer_driver(info.info_3, &user, version, delete_files);
+	status = delete_printer_driver(info.info_3, &p->pipe_user, version, delete_files);
 
 	if ( W_ERROR_IS_OK(status) || W_ERROR_IS_OK(status_win2k) )
 		status = WERR_OK;
@@ -4073,7 +4064,7 @@ static BOOL convert_nt_devicemode( DEVICEMODE *devmode, NT_DEVICEMODE *ntdevmode
  Create a DEVMODE struct. Returns malloced memory.
 ****************************************************************************/
 
-DEVICEMODE *construct_dev_mode(int snum)
+DEVICEMODE *construct_dev_mode(const char *servicename)
 {
 	NT_PRINTER_INFO_LEVEL 	*printer = NULL;
 	DEVICEMODE 		*devmode = NULL;
@@ -4082,7 +4073,7 @@ DEVICEMODE *construct_dev_mode(int snum)
 	
 	DEBUGADD(8,("getting printer characteristics\n"));
 
-	if (!W_ERROR_IS_OK(get_a_printer(NULL, &printer, 2, lp_const_servicename(snum)))) 
+	if (!W_ERROR_IS_OK(get_a_printer(NULL, &printer, 2, servicename)))
 		return NULL;
 
 	if ( !printer->info_2->devmode ) {
@@ -4154,7 +4145,7 @@ static BOOL construct_printer_info_2(Printer_entry *print_hnd, PRINTER_INFO_2 *p
 	printer->cjobs = count;							/* jobs */
 	printer->averageppm = ntprinter->info_2->averageppm;			/* average pages per minute */
 			
-	if ( !(printer->devmode = construct_dev_mode(snum)) )
+	if ( !(printer->devmode = construct_dev_mode(lp_const_servicename(snum))) )
 		DEBUG(8, ("Returning NULL Devicemode!\n"));
 
 	printer->secdesc = NULL;
@@ -5640,14 +5631,11 @@ WERROR _spoolss_startdocprinter(pipes_struct *p, SPOOL_Q_STARTDOCPRINTER *q_u, S
 	pstring jobname;
 	fstring datatype;
 	Printer_entry *Printer = find_printer_index_by_hnd(p, handle);
-	struct current_user user;
 
 	if (!Printer) {
 		DEBUG(2,("_spoolss_startdocprinter: Invalid handle (%s:%u:%u)\n", OUR_HANDLE(handle)));
 		return WERR_BADFID;
 	}
-
-	get_current_user(&user, p);
 
 	/*
 	 * a nice thing with NT is it doesn't listen to what you tell it.
@@ -5672,7 +5660,7 @@ WERROR _spoolss_startdocprinter(pipes_struct *p, SPOOL_Q_STARTDOCPRINTER *q_u, S
 
 	unistr2_to_ascii(jobname, &info_1->docname, sizeof(jobname));
 	
-	Printer->jobid = print_job_start(&user, snum, jobname, Printer->nt_devmode);
+	Printer->jobid = print_job_start(&p->pipe_user, snum, jobname, Printer->nt_devmode);
 
 	/* An error occured in print_job_start() so return an appropriate
 	   NT error code. */
@@ -5745,12 +5733,9 @@ WERROR _spoolss_writeprinter(pipes_struct *p, SPOOL_Q_WRITEPRINTER *q_u, SPOOL_R
 static WERROR control_printer(POLICY_HND *handle, uint32 command,
 			      pipes_struct *p)
 {
-	struct current_user user;
 	int snum;
 	WERROR errcode = WERR_BADFUNC;
 	Printer_entry *Printer = find_printer_index_by_hnd(p, handle);
-
-	get_current_user(&user, p);
 
 	if (!Printer) {
 		DEBUG(2,("control_printer: Invalid handle (%s:%u:%u)\n", OUR_HANDLE(handle)));
@@ -5762,18 +5747,18 @@ static WERROR control_printer(POLICY_HND *handle, uint32 command,
 
 	switch (command) {
 	case PRINTER_CONTROL_PAUSE:
-		if (print_queue_pause(&user, snum, &errcode)) {
+		if (print_queue_pause(&p->pipe_user, snum, &errcode)) {
 			errcode = WERR_OK;
 		}
 		break;
 	case PRINTER_CONTROL_RESUME:
 	case PRINTER_CONTROL_UNPAUSE:
-		if (print_queue_resume(&user, snum, &errcode)) {
+		if (print_queue_resume(&p->pipe_user, snum, &errcode)) {
 			errcode = WERR_OK;
 		}
 		break;
 	case PRINTER_CONTROL_PURGE:
-		if (print_queue_purge(&user, snum, &errcode)) {
+		if (print_queue_purge(&p->pipe_user, snum, &errcode)) {
 			errcode = WERR_OK;
 		}
 		break;
@@ -5795,7 +5780,6 @@ WERROR _spoolss_abortprinter(pipes_struct *p, SPOOL_Q_ABORTPRINTER *q_u, SPOOL_R
 	POLICY_HND	*handle = &q_u->handle;
 	Printer_entry 	*Printer = find_printer_index_by_hnd(p, handle);
 	int		snum;
-	struct 		current_user user;
 	WERROR 		errcode = WERR_OK;
 	
 	if (!Printer) {
@@ -5806,9 +5790,7 @@ WERROR _spoolss_abortprinter(pipes_struct *p, SPOOL_Q_ABORTPRINTER *q_u, SPOOL_R
 	if (!get_printer_snum(p, handle, &snum))
 		return WERR_BADFID;
 	
-	get_current_user( &user, p );	
-	
-	print_job_delete( &user, snum, Printer->jobid, &errcode );	
+	print_job_delete( &p->pipe_user, snum, Printer->jobid, &errcode );	
 	
 	return errcode;
 }
@@ -6018,7 +6000,9 @@ BOOL add_printer_hook(NT_USER_TOKEN *token, NT_PRINTER_INFO_LEVEL *printer)
 	SE_PRIV se_printop = SE_PRINT_OPERATOR;
 	BOOL is_print_op = False;
 
-	standard_sub_basic(current_user_info.smb_name, remote_machine,sizeof(remote_machine));
+	standard_sub_basic(current_user_info.smb_name,
+			   current_user_info.domain,
+			   remote_machine,sizeof(remote_machine));
 	
 	slprintf(command, sizeof(command)-1, "%s \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\"",
 			cmd, printer->info_2->printername, printer->info_2->sharename,
@@ -6544,7 +6528,7 @@ static WERROR enumjobs_level2(print_queue_struct *queue, int snum,
 		
 	/* this should not be a failure condition if the devmode is NULL */
 	
-	devmode = construct_dev_mode(snum);
+	devmode = construct_dev_mode(lp_const_servicename(snum));
 
 	for (i=0; i<*returned; i++)
 		fill_job_info_2(&(info[i]), &queue[i], i, snum, ntprinter, devmode);
@@ -6664,7 +6648,6 @@ WERROR _spoolss_setjob(pipes_struct *p, SPOOL_Q_SETJOB *q_u, SPOOL_R_SETJOB *r_u
 	uint32 jobid = q_u->jobid;
 	uint32 command = q_u->command;
 
-	struct current_user user;
 	int snum;
 	WERROR errcode = WERR_BADFUNC;
 		
@@ -6676,23 +6659,21 @@ WERROR _spoolss_setjob(pipes_struct *p, SPOOL_Q_SETJOB *q_u, SPOOL_R_SETJOB *r_u
 		return WERR_INVALID_PRINTER_NAME;
 	}
 
-	get_current_user(&user, p);	
-
 	switch (command) {
 	case JOB_CONTROL_CANCEL:
 	case JOB_CONTROL_DELETE:
-		if (print_job_delete(&user, snum, jobid, &errcode)) {
+		if (print_job_delete(&p->pipe_user, snum, jobid, &errcode)) {
 			errcode = WERR_OK;
 		}
 		break;
 	case JOB_CONTROL_PAUSE:
-		if (print_job_pause(&user, snum, jobid, &errcode)) {
+		if (print_job_pause(&p->pipe_user, snum, jobid, &errcode)) {
 			errcode = WERR_OK;
 		}		
 		break;
 	case JOB_CONTROL_RESTART:
 	case JOB_CONTROL_RESUME:
-		if (print_job_resume(&user, snum, jobid, &errcode)) {
+		if (print_job_resume(&p->pipe_user, snum, jobid, &errcode)) {
 			errcode = WERR_OK;
 		}
 		break;
@@ -7618,26 +7599,23 @@ WERROR _spoolss_addprinterdriver(pipes_struct *p, SPOOL_Q_ADDPRINTERDRIVER *q_u,
 	SPOOL_PRINTER_DRIVER_INFO_LEVEL *info = &q_u->info;
 	WERROR err = WERR_OK;
 	NT_PRINTER_DRIVER_INFO_LEVEL driver;
-	struct current_user user;
 	fstring driver_name;
 	uint32 version;
 
 	ZERO_STRUCT(driver);
 
-	get_current_user(&user, p);
-	
 	if (!convert_printer_driver_info(info, &driver, level)) {
 		err = WERR_NOMEM;
 		goto done;
 	}
 
 	DEBUG(5,("Cleaning driver's information\n"));
-	err = clean_up_driver_struct(driver, level, &user);
+	err = clean_up_driver_struct(driver, level, &p->pipe_user);
 	if (!W_ERROR_IS_OK(err))
 		goto done;
 
 	DEBUG(5,("Moving driver to final destination\n"));
-	if( !W_ERROR_IS_OK(err = move_driver_to_download_area(driver, level, &user, &err)) ) {
+	if( !W_ERROR_IS_OK(err = move_driver_to_download_area(driver, level, &p->pipe_user, &err)) ) {
 		goto done;
 	}
 
@@ -8777,7 +8755,7 @@ static WERROR getjob_level_2(print_queue_struct **queue, int count, int snum,
 	 */
 	 
 	if ( !(nt_devmode=print_job_devmode( lp_const_servicename(snum), jobid )) )
-		devmode = construct_dev_mode(snum);
+		devmode = construct_dev_mode(lp_const_servicename(snum));
 	else {
 		if ((devmode = SMB_MALLOC_P(DEVICEMODE)) != NULL) {
 			ZERO_STRUCTP( devmode );

@@ -52,11 +52,6 @@
 #define Auto (2)
 #define Required (3)
 
-#ifndef _BOOL
-typedef int BOOL;
-#define _BOOL       /* So we don't typedef BOOL again in vfs.h */
-#endif
-
 #define SIZEOFWORD 2
 
 #ifndef DEF_CREATE_MASK
@@ -197,6 +192,7 @@ typedef smb_ucs2_t wfstring[FSTRING_LEN];
 #define PIPE_EPM      "\\PIPE\\epmapper"
 #define PIPE_SVCCTL   "\\PIPE\\svcctl"
 #define PIPE_EVENTLOG "\\PIPE\\eventlog"
+#define PIPE_UNIXINFO    "\\PIPE\\unixinfo"
 
 #define PIPE_NETLOGON_PLAIN "\\NETLOGON"
 
@@ -213,8 +209,9 @@ typedef smb_ucs2_t wfstring[FSTRING_LEN];
 #define PI_SHUTDOWN		10
 #define PI_SVCCTL		11
 #define PI_EVENTLOG 		12
-#define PI_NTSVCS		13
-#define PI_MAX_PIPES		14
+#define PI_UNIXINFO		13
+#define PI_NTSVCS		14
+#define PI_MAX_PIPES		15
 
 /* 64 bit time (100usec) since ????? - cifs6.txt, section 3.5, page 30 */
 typedef struct nttime_info {
@@ -411,6 +408,14 @@ struct timed_event;
 struct idle_event;
 struct share_mode_entry;
 
+struct vfs_fsp_data {
+    struct vfs_fsp_data *next;
+    struct vfs_handle_struct *owner;
+    /* NOTE: This structure contains two pointers so that we can guarantee
+     * that the end of the structure is always both 4-byte and 8-byte aligned.
+     */
+};
+
 typedef struct files_struct {
 	struct files_struct *next, *prev;
 	int fnum;
@@ -449,6 +454,8 @@ typedef struct files_struct {
 	BOOL aio_write_behind;
 	BOOL lockdb_clean;
 	char *fsp_name;
+
+	struct vfs_fsp_data *vfs_extension;
  	FAKE_FILE_HANDLE *fake_file_handle;
 } files_struct;
 
@@ -533,11 +540,15 @@ struct dfree_cached_info {
 
 struct dptr_struct;
 
+struct share_params {
+	int service;
+};
+
 typedef struct connection_struct {
 	struct connection_struct *next, *prev;
 	TALLOC_CTX *mem_ctx;
 	unsigned cnum; /* an index passed over the wire */
-	int service;
+	struct share_params *params;
 	BOOL force_user;
 	BOOL force_group;
 	struct vuid_cache vuid_cache;
@@ -733,6 +744,16 @@ struct locking_data {
         */
 };
 
+/* Used to store pipe open records for NetFileEnum() */
+
+struct pipe_open_rec {
+	struct process_id pid;
+	uid_t uid;
+	int pnum;
+	fstring name;
+};
+
+
 #define NT_HASH_LEN 16
 #define LM_HASH_LEN 16
 
@@ -836,53 +857,12 @@ struct parm_struct {
 #define FLAG_HIDE  	0x2000 /* options that should be hidden in SWAT */
 #define FLAG_DOS_STRING 0x4000 /* convert from UNIX to DOS codepage when reading this string. */
 
-/* passed to br lock code - the UNLOCK_LOCK should never be stored into the tdb
-   and is used in calculating POSIX unlock ranges only. */
-
-enum brl_type {READ_LOCK, WRITE_LOCK, PENDING_LOCK, UNLOCK_LOCK};
-enum brl_flavour {WINDOWS_LOCK = 0, POSIX_LOCK = 1};
-
-/* The key used in the brlock database. */
-
-struct lock_key {
-	SMB_DEV_T device;
-	SMB_INO_T inode;
-};
-
-struct byte_range_lock {
-	files_struct *fsp;
-	unsigned int num_locks;
-	BOOL modified;
-	struct lock_key key;
-	void *lock_data;
-};
-
-#define BRLOCK_FN_CAST() \
-	void (*)(SMB_DEV_T dev, SMB_INO_T ino, struct process_id pid, \
-				 enum brl_type lock_type, \
-				 enum brl_flavour lock_flav, \
-				 br_off start, br_off size)
-
-#define BRLOCK_FN(fn) \
-	void (*fn)(SMB_DEV_T dev, SMB_INO_T ino, struct process_id pid, \
-				 enum brl_type lock_type, \
-				 enum brl_flavour lock_flav, \
-				 br_off start, br_off size)
-
-#define LOCKING_FN_CAST() \
-	void (*)(struct share_mode_entry *, const char *, const char *)
-
-#define LOCKING_FN(fn) \
-	void (*fn)(struct share_mode_entry *, const char *, const char *)
+#include "locking.h"
 
 struct bitmap {
 	uint32 *b;
 	unsigned int n;
 };
-
-#ifndef LOCKING_VERSION
-#define LOCKING_VERSION 4
-#endif /* LOCKING_VERSION */
 
 /* the basic packet size, assuming no words or bytes */
 #define smb_size 39

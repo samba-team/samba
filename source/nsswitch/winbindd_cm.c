@@ -214,7 +214,7 @@ static NTSTATUS cm_prepare_connection(const struct winbindd_domain *domain,
 		goto done;
 	}
 
-	if ((*cli = cli_initialise(NULL)) == NULL) {
+	if ((*cli = cli_initialise()) == NULL) {
 		DEBUG(1, ("Could not cli_initialize\n"));
 		result = NT_STATUS_NO_MEMORY;
 		goto done;

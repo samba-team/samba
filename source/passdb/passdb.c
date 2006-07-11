@@ -52,7 +52,7 @@ const char *my_sam_name(void)
 
 static int samu_destroy(void *p) 
 {
-	struct samu *user = p;
+	struct samu *user = (struct samu *)p;
 
 	data_blob_clear_free( &user->lm_pw );
 	data_blob_clear_free( &user->nt_pw );
@@ -111,7 +111,7 @@ struct samu *samu_new( TALLOC_CTX *ctx )
 	user->profile_path = "";
 	user->acct_desc = "";
 	user->workstations = "";
-	user->unknown_str = "";
+	user->comment = "";
 	user->munged_dial = "";
 
 	user->plaintext_pw = NULL;
@@ -926,14 +926,15 @@ BOOL init_sam_from_buffer_v3(struct samu *sampass, uint8 *buf, uint32 buflen)
 	if (homedir) {
 		fstrcpy( tmpstring, homedir );
 		if (expand_explicit) {
-			standard_sub_basic( username, tmpstring,
+			standard_sub_basic( username, domain, tmpstring,
 					    sizeof(tmpstring) );
 		}
 		pdb_set_homedir(sampass, tmpstring, PDB_SET);
 	}
 	else {
 		pdb_set_homedir(sampass, 
-			talloc_sub_basic(sampass, username, lp_logon_home()),
+			talloc_sub_basic(sampass, username, domain,
+					 lp_logon_home()),
 			PDB_DEFAULT);
 	}
 
@@ -945,28 +946,29 @@ BOOL init_sam_from_buffer_v3(struct samu *sampass, uint8 *buf, uint32 buflen)
 	if (logon_script) {
 		fstrcpy( tmpstring, logon_script );
 		if (expand_explicit) {
-			standard_sub_basic( username, tmpstring,
+			standard_sub_basic( username, domain, tmpstring,
 					    sizeof(tmpstring) );
 		}
 		pdb_set_logon_script(sampass, tmpstring, PDB_SET);
 	}
 	else {
 		pdb_set_logon_script(sampass, 
-			talloc_sub_basic(sampass, username, lp_logon_script()),
+			talloc_sub_basic(sampass, username, domain,
+					 lp_logon_script()),
 			PDB_DEFAULT);
 	}
 	
 	if (profile_path) {	
 		fstrcpy( tmpstring, profile_path );
 		if (expand_explicit) {
-			standard_sub_basic( username, tmpstring,
+			standard_sub_basic( username, domain, tmpstring,
 					    sizeof(tmpstring) );
 		}
 		pdb_set_profile_path(sampass, tmpstring, PDB_SET);
 	} 
 	else {
 		pdb_set_profile_path(sampass, 
-			talloc_sub_basic(sampass, username, lp_logon_path()),
+			talloc_sub_basic(sampass, username, domain, lp_logon_path()),
 			PDB_DEFAULT);
 	}
 
@@ -990,7 +992,7 @@ BOOL init_sam_from_buffer_v3(struct samu *sampass, uint8 *buf, uint32 buflen)
 
 	pdb_get_account_policy(AP_PASSWORD_HISTORY, &pwHistLen);
 	if (pwHistLen) {
-		uint8 *pw_hist = SMB_MALLOC(pwHistLen * PW_HISTORY_ENTRY_LEN);
+		uint8 *pw_hist = (uint8 *)SMB_MALLOC(pwHistLen * PW_HISTORY_ENTRY_LEN);
 		if (!pw_hist) {
 			ret = False;
 			goto done;

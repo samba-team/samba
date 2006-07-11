@@ -48,6 +48,11 @@ END {
   printf "BOOL %s(int );\n", a[2]
 }
 
+/^FN_LOCAL_PARM_BOOL/ {
+  split($0,a,"[,()]")
+  printf "BOOL %s(const struct share_params *p );\n", a[2]
+}
+
 /^FN_LOCAL_LIST/ {
   split($0,a,"[,()]")
   printf "const char **%s(int );\n", a[2]
@@ -56,6 +61,11 @@ END {
 /^FN_LOCAL_STRING/ {
   split($0,a,"[,()]")
   printf "char *%s(int );\n", a[2]
+}
+
+/^FN_LOCAL_PARM_STRING/ {
+  split($0,a,"[,()]")
+  printf "char *%s(const struct share_params *p );\n", a[2]
 }
 
 /^FN_LOCAL_CONST_STRING/ {
@@ -70,7 +80,7 @@ END {
 
 /^FN_LOCAL_CHAR/ {
   split($0,a,"[,()]")
-  printf "char %s(int );\n", a[2]
+  printf "char %s(const struct share_params *p );\n", a[2]
 }
 
 /^FN_GLOBAL_BOOL/ {

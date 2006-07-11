@@ -1011,7 +1011,6 @@ BOOL afsacl_set_nt_acl(vfs_handle_struct *handle,
 }
 
 static int afsacl_connect(vfs_handle_struct *handle, 
-			  connection_struct *conn, 
 			  const char *service, 
 			  const char *user)
 {
@@ -1022,7 +1021,7 @@ static int afsacl_connect(vfs_handle_struct *handle,
 	if (spc != NULL)
 		space_replacement = spc[0];
 	
-	return SMB_VFS_NEXT_CONNECT(handle, conn, service, user);
+	return SMB_VFS_NEXT_CONNECT(handle, service, user);
 }
 
 /* VFS operations structure */

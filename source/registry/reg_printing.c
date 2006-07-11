@@ -382,7 +382,6 @@ static void fill_in_printer_values( NT_PRINTER_INFO_LEVEL_2 *info2, REGVAL_CTR *
 	UNISTR2		data;
 	char 		*p;
 	uint32 printer_status = PRINTER_STATUS_OK;
-	int snum;
 	
 	regval_ctr_addvalue( values, "Attributes",       REG_DWORD, (char*)&info2->attributes,       sizeof(info2->attributes) );
 	regval_ctr_addvalue( values, "Priority",         REG_DWORD, (char*)&info2->priority,         sizeof(info2->attributes) );
@@ -438,8 +437,7 @@ static void fill_in_printer_values( NT_PRINTER_INFO_LEVEL_2 *info2, REGVAL_CTR *
 
 	/* stream the device mode */
 		
-	snum = lp_servicenumber(info2->sharename);
-	if ( (devmode = construct_dev_mode( snum )) != NULL ) {			
+	if ( (devmode = construct_dev_mode( info2->sharename )) != NULL ) {
 		if ( spoolss_io_devmode( "devmode", &prs, 0, devmode ) ) {
 			offset = prs_offset( &prs );
 			regval_ctr_addvalue( values, "Default Devmode", REG_BINARY, prs_data_p(&prs), offset );

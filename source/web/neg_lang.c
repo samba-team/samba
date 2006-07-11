@@ -57,8 +57,8 @@ static int qsort_cmp_list(const void *x, const void *y) {
 	struct pri_list *a = (struct pri_list *)x;
 	struct pri_list *b = (struct pri_list *)y;
 	if (a->pri > b->pri) return -1;
-	if (a->pri == b->pri) return 0;
-	return 1;
+	if (a->pri < b->pri) return 1;
+	return 0;
 }
 
 /*

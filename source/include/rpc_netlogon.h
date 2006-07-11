@@ -43,11 +43,6 @@
 #define NET_DSR_GETSITENAME	0x1c
 #define NET_SAMLOGON_EX		0x27
 
-/* Secure Channel types.  used in NetrServerAuthenticate negotiation */
-#define SEC_CHAN_WKSTA   2
-#define SEC_CHAN_DOMAIN  4
-#define SEC_CHAN_BDC     6
-
 /* Returned delta types */
 #define SAM_DELTA_DOMAIN_INFO    0x01
 #define SAM_DELTA_GROUP_INFO     0x02
@@ -65,11 +60,6 @@
 #define SAM_DELTA_DELETE_GROUP   0x14
 #define SAM_DELTA_DELETE_USER    0x15
 #define SAM_DELTA_MODIFIED_COUNT 0x16
-
-/* SAM database types */
-#define SAM_DATABASE_DOMAIN    0x00 /* Domain users and groups */
-#define SAM_DATABASE_BUILTIN   0x01 /* BUILTIN users and groups */
-#define SAM_DATABASE_PRIVS     0x02 /* Privileges */
 
 /* flags use when sending a NETLOGON_CONTROL request */
 

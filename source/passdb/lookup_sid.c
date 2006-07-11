@@ -63,6 +63,7 @@ BOOL lookup_name(TALLOC_CTX *mem_ctx,
 
 	if ((domain == NULL) || (name == NULL)) {
 		DEBUG(0, ("talloc failed\n"));
+		TALLOC_FREE(tmp_ctx);
 		return False;
 	}
 
@@ -74,7 +75,8 @@ BOOL lookup_name(TALLOC_CTX *mem_ctx,
 			sid_append_rid(&sid, rid);
 			goto ok;
 		}
-		goto failed;
+		TALLOC_FREE(tmp_ctx);
+		return False;
 	}
 
 	if (strequal(domain, builtin_domain_name())) {
@@ -86,7 +88,8 @@ BOOL lookup_name(TALLOC_CTX *mem_ctx,
 			type = SID_NAME_ALIAS;
 			goto ok;
 		}
-		goto failed;
+		TALLOC_FREE(tmp_ctx);
+		return False;
 	}
 
 	/* Try the explicit winbind lookup first, don't let it guess the
@@ -102,7 +105,8 @@ BOOL lookup_name(TALLOC_CTX *mem_ctx,
 			type = SID_NAME_USER;
 			goto ok;
 		}
-		goto failed;
+		TALLOC_FREE(tmp_ctx);
+		return False;
 	}
 
 	if (strequal(domain, unix_groups_domain_name())) {
@@ -110,11 +114,13 @@ BOOL lookup_name(TALLOC_CTX *mem_ctx,
 			type = SID_NAME_DOM_GRP;
 			goto ok;
 		}
-		goto failed;
+		TALLOC_FREE(tmp_ctx);
+		return False;
 	}
 
 	if ((domain[0] == '\0') && (!(flags & LOOKUP_NAME_ISOLATED))) {
-		goto failed;
+		TALLOC_FREE(tmp_ctx);
+		return False;
 	}
 
 	/*
@@ -201,7 +207,8 @@ BOOL lookup_name(TALLOC_CTX *mem_ctx,
 	if (strequal(name, get_global_sam_name())) {
 		if (!secrets_fetch_domain_sid(name, &sid)) {
 			DEBUG(3, ("Could not fetch my SID\n"));
-			goto failed;
+			TALLOC_FREE(tmp_ctx);
+			return False;
 		}
 		/* Swap domain and name */
 		tmp = name; name = domain; domain = tmp;
@@ -214,7 +221,8 @@ BOOL lookup_name(TALLOC_CTX *mem_ctx,
 	if (!IS_DC && strequal(name, lp_workgroup())) {
 		if (!secrets_fetch_domain_sid(name, &sid)) {
 			DEBUG(3, ("Could not fetch the domain SID\n"));
-			goto failed;
+			TALLOC_FREE(tmp_ctx);
+			return False;
 		}
 		/* Swap domain and name */
 		tmp = name; name = domain; domain = tmp;
@@ -258,7 +266,8 @@ BOOL lookup_name(TALLOC_CTX *mem_ctx,
 	/* Now our local possibilities are exhausted. */
 
 	if (!(flags & LOOKUP_NAME_REMOTE)) {
-		goto failed;
+		TALLOC_FREE(tmp_ctx);
+		return False;
 	}
 
 	/* If we are not a DC, we have to ask in our primary domain. Let
@@ -298,7 +307,8 @@ BOOL lookup_name(TALLOC_CTX *mem_ctx,
 		    (domain_type != SID_NAME_DOMAIN)) {
 			DEBUG(2, ("winbind could not find the domain's name "
 				  "it just looked up for us\n"));
-			goto failed;
+			TALLOC_FREE(tmp_ctx);
+			return False;
 		}
 		goto ok;
 	}
@@ -320,7 +330,10 @@ BOOL lookup_name(TALLOC_CTX *mem_ctx,
 		goto ok;
 	}
 
- failed:
+	/*
+	 * Ok, all possibilities tried. Fail.
+	 */
+
 	TALLOC_FREE(tmp_ctx);
 	return False;
 
@@ -331,14 +344,26 @@ BOOL lookup_name(TALLOC_CTX *mem_ctx,
 		return False;
 	}
 
-	if (ret_name != NULL) {
-		*ret_name = talloc_steal(mem_ctx, name);
+	/*
+	 * Hand over the results to the talloc context we've been given.
+	 */
+
+	if ((ret_name != NULL) &&
+	    !(*ret_name = talloc_strdup(mem_ctx, name))) {
+		DEBUG(0, ("talloc failed\n"));
+		TALLOC_FREE(tmp_ctx);
+		return False;
 	}
 
 	if (ret_domain != NULL) {
-		char *tmp_dom = talloc_strdup(tmp_ctx, domain);
+		char *tmp_dom;
+		if (!(tmp_dom = talloc_strdup(tmp_ctx, domain))) {
+			DEBUG(0, ("talloc failed\n"));
+			TALLOC_FREE(tmp_ctx);
+			return False;
+		}
 		strupper_m(tmp_dom);
-		*ret_domain = talloc_steal(mem_ctx, tmp_dom);
+		*ret_domain = tmp_dom;
 	}
 
 	if (ret_sid != NULL) {
@@ -353,34 +378,46 @@ BOOL lookup_name(TALLOC_CTX *mem_ctx,
 	return True;
 }
 
-static BOOL winbind_lookup_rids(TALLOC_CTX *mem_ctx,
-				const DOM_SID *domain_sid,
-				int num_rids, uint32 *rids,
-				const char **domain_name,
-				const char **names, enum SID_NAME_USE *types)
+static BOOL wb_lookup_rids(TALLOC_CTX *mem_ctx,
+			   const DOM_SID *domain_sid,
+			   int num_rids, uint32 *rids,
+			   const char **domain_name,
+			   const char **names, enum SID_NAME_USE *types)
 {
-	/* Unless the winbind interface is upgraded, fall back to ask for
-	 * individual sids. I imagine introducing a lookuprids operation that
-	 * directly proxies to lsa_lookupsids to the correct DC. -- vl */
-
 	int i;
-	for (i=0; i<num_rids; i++) {
-		DOM_SID sid;
+	const char **my_names;
+	enum SID_NAME_USE *my_types;
+	TALLOC_CTX *tmp_ctx;
 
-		sid_copy(&sid, domain_sid);
-		sid_append_rid(&sid, rids[i]);
+	if (!(tmp_ctx = talloc_init("wb_lookup_rids"))) {
+		return False;
+	}
 
-		if (winbind_lookup_sid(mem_ctx, &sid,
-				       *domain_name == NULL ?
-				       domain_name : NULL,
-				       &names[i], &types[i])) {
-			if ((names[i] == NULL) || ((*domain_name) == NULL)) {
-				return False;
-			}
-		} else {
+	if (!winbind_lookup_rids(tmp_ctx, domain_sid, num_rids, rids,
+				 domain_name, &my_names, &my_types)) {
+		for (i=0; i<num_rids; i++) {
 			types[i] = SID_NAME_UNKNOWN;
 		}
+		return True;
 	}
+
+	/*
+	 * winbind_lookup_rids allocates its own array. We've been given the
+	 * array, so copy it over
+	 */
+
+	for (i=0; i<num_rids; i++) {
+		if (my_names[i] == NULL) {
+			TALLOC_FREE(tmp_ctx);
+			return False;
+		}
+		if (!(names[i] = talloc_strdup(names, my_names[i]))) {
+			TALLOC_FREE(tmp_ctx);
+			return False;
+		}
+		types[i] = my_types[i];
+	}
+	TALLOC_FREE(tmp_ctx);
 	return True;
 }
 
@@ -489,8 +526,8 @@ static BOOL lookup_rids(TALLOC_CTX *mem_ctx, const DOM_SID *domain_sid,
 		return True;
 	}
 
-	return winbind_lookup_rids(mem_ctx, domain_sid, num_rids, rids,
-				   domain_name, *names, *types);
+	return wb_lookup_rids(mem_ctx, domain_sid, num_rids, rids,
+			      domain_name, *names, *types);
 }
 
 /*
@@ -627,18 +664,17 @@ NTSTATUS lookup_sids(TALLOC_CTX *mem_ctx, int num_sids,
 
 	int i, j;
 
-	tmp_ctx = talloc_new(mem_ctx);
-	if (tmp_ctx == NULL) {
+	if (!(tmp_ctx = talloc_new(mem_ctx))) {
 		DEBUG(0, ("talloc_new failed\n"));
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	name_infos = TALLOC_ARRAY(tmp_ctx, struct lsa_name_info, num_sids);
-	dom_infos = TALLOC_ZERO_ARRAY(tmp_ctx, struct lsa_dom_info,
+	name_infos = TALLOC_ARRAY(mem_ctx, struct lsa_name_info, num_sids);
+	dom_infos = TALLOC_ZERO_ARRAY(mem_ctx, struct lsa_dom_info,
 				      MAX_REF_DOMAINS);
 	if ((name_infos == NULL) || (dom_infos == NULL)) {
 		result = NT_STATUS_NO_MEMORY;
-		goto done;
+		goto fail;
 	}
 
 	/* First build up the data structures:
@@ -673,7 +709,7 @@ NTSTATUS lookup_sids(TALLOC_CTX *mem_ctx, int num_sids,
 			 */
 			if (domain_name == NULL) {
 				result = NT_STATUS_NO_MEMORY;
-				goto done;
+				goto fail;
 			}
 				
 			name_infos[i].rid = 0;
@@ -687,14 +723,14 @@ NTSTATUS lookup_sids(TALLOC_CTX *mem_ctx, int num_sids,
 					name_infos, builtin_domain_name());
 				if (name_infos[i].name == NULL) {
 					result = NT_STATUS_NO_MEMORY;
-					goto done;
+					goto fail;
 				}
 			}
 		} else {
 			/* This is a normal SID with rid component */
 			if (!sid_split_rid(&sid, &rid)) {
 				result = NT_STATUS_INVALID_PARAMETER;
-				goto done;
+				goto fail;
 			}
 		}
 
@@ -717,7 +753,7 @@ NTSTATUS lookup_sids(TALLOC_CTX *mem_ctx, int num_sids,
 		if (j == MAX_REF_DOMAINS) {
 			/* TODO: What's the right error message here? */
 			result = NT_STATUS_NONE_MAPPED;
-			goto done;
+			goto fail;
 		}
 
 		if (!dom_infos[j].valid) {
@@ -730,7 +766,11 @@ NTSTATUS lookup_sids(TALLOC_CTX *mem_ctx, int num_sids,
 				/* This name was being found above in the case
 				 * when we found a domain SID */
 				dom_infos[j].name =
-					talloc_steal(dom_infos, domain_name);
+					talloc_strdup(dom_infos, domain_name);
+				if (dom_infos[j].name == NULL) {
+					result = NT_STATUS_NO_MEMORY;
+					goto fail;
+				}
 			} else {
 				/* lookup_rids will take care of this */
 				dom_infos[j].name = NULL;
@@ -747,7 +787,7 @@ NTSTATUS lookup_sids(TALLOC_CTX *mem_ctx, int num_sids,
 
 			if (dom_infos[j].idxs == NULL) {
 				result = NT_STATUS_NO_MEMORY;
-				goto done;
+				goto fail;
 			}
 		}
 	}
@@ -756,6 +796,7 @@ NTSTATUS lookup_sids(TALLOC_CTX *mem_ctx, int num_sids,
 
 	for (i=0; i<MAX_REF_DOMAINS; i++) {
 		uint32_t *rids;
+		const char *domain_name = NULL;
 		const char **names;
 		enum SID_NAME_USE *types;
 		struct lsa_dom_info *dom = &dom_infos[i];
@@ -765,11 +806,9 @@ NTSTATUS lookup_sids(TALLOC_CTX *mem_ctx, int num_sids,
 			break;
 		}
 
-		rids = TALLOC_ARRAY(tmp_ctx, uint32, dom->num_idxs);
-
-		if (rids == NULL) {
+		if (!(rids = TALLOC_ARRAY(tmp_ctx, uint32, dom->num_idxs))) {
 			result = NT_STATUS_NO_MEMORY;
-			goto done;
+			goto fail;
 		}
 
 		for (j=0; j<dom->num_idxs; j++) {
@@ -777,31 +816,40 @@ NTSTATUS lookup_sids(TALLOC_CTX *mem_ctx, int num_sids,
 		}
 
 		if (!lookup_rids(tmp_ctx, &dom->sid,
-				 dom->num_idxs, rids, &dom->name,
+				 dom->num_idxs, rids, &domain_name,
 				 &names, &types)) {
 			result = NT_STATUS_NO_MEMORY;
-			goto done;
+			goto fail;
 		}
 
-		talloc_steal(dom_infos, dom->name);
-
+		if (!(dom->name = talloc_strdup(dom_infos, domain_name))) {
+			result = NT_STATUS_NO_MEMORY;
+			goto fail;
+		}
+			
 		for (j=0; j<dom->num_idxs; j++) {
 			int idx = dom->idxs[j];
 			name_infos[idx].type = types[j];
 			if (types[j] != SID_NAME_UNKNOWN) {
 				name_infos[idx].name =
-					talloc_steal(name_infos, names[j]);
+					talloc_strdup(name_infos, names[j]);
+				if (name_infos[idx].name == NULL) {
+					result = NT_STATUS_NO_MEMORY;
+					goto fail;
+				}
 			} else {
 				name_infos[idx].name = NULL;
 			}
 		}
 	}
 
-	*ret_domains = talloc_steal(mem_ctx, dom_infos);
-	*ret_names = talloc_steal(mem_ctx, name_infos);
-	result = NT_STATUS_OK;
+	*ret_domains = dom_infos;
+	*ret_names = name_infos;
+	return NT_STATUS_OK;
 
- done:
+ fail:
+	TALLOC_FREE(dom_infos);
+	TALLOC_FREE(name_infos);
 	TALLOC_FREE(tmp_ctx);
 	return result;
 }
@@ -819,9 +867,7 @@ BOOL lookup_sid(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
 	TALLOC_CTX *tmp_ctx;
 	BOOL ret = False;
 
-	tmp_ctx = talloc_new(mem_ctx);
-
-	if (tmp_ctx == NULL) {
+	if (!(tmp_ctx = talloc_new(mem_ctx))) {
 		DEBUG(0, ("talloc_new failed\n"));
 		return False;
 	}
@@ -835,12 +881,14 @@ BOOL lookup_sid(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
 		goto done;
 	}
 
-	if (ret_domain != NULL) {
-		*ret_domain = talloc_steal(mem_ctx, domain->name);
+	if ((ret_domain != NULL) &&
+	    !(*ret_domain = talloc_strdup(mem_ctx, domain->name))) {
+		goto done;
 	}
 
-	if (ret_name != NULL) {
-		*ret_name = talloc_steal(mem_ctx, name->name);
+	if ((ret_name != NULL) && 
+	    !(*ret_name = talloc_strdup(mem_ctx, name->name))) {
+		goto done;
 	}
 
 	if (ret_type != NULL) {

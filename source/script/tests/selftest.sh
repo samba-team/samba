@@ -111,12 +111,22 @@ cat >$SERVERCONFFILE<<EOF
 	bind interfaces only = yes
 	include = $COMMONCONFFILE
 
+	; Necessary to add the build farm hacks
+	add user script = /bin/false
+	add machine script = /bin/false
+
 	kernel oplocks = no
 
 [tmp]
 	path = $PREFIX_ABS/tmp
 	read only = no
 	smbd:sharedelay = 100000
+[hideunread]
+	copy = tmp
+	hide unreadable = yes
+[hideunwrite]
+	copy = tmp
+	hide unwriteable files = yes
 EOF
 
 
@@ -181,8 +191,8 @@ START=`date`
  bin/nmblookup $CONFIGURATION $SERVER
  # make sure smbd is also up set
  echo "wait for smbd"
- bin/smbclient $CONFIGURATION -L $SERVER_IP -N -p 139 | head -2
- bin/smbclient $CONFIGURATION -L $SERVER_IP -N -p 139 | head -2
+ bin/smbclient $CONFIGURATION -L $SERVER_IP -U% -p 139 | head -2
+ bin/smbclient $CONFIGURATION -L $SERVER_IP -U% -p 139 | head -2
 
  failed=0
 

@@ -5,6 +5,7 @@
    Copyright (C) Andrew Tridgell 1992-2001
    Copyright (C) Simo Sorce      2001-2002
    Copyright (C) Martin Pool     2003
+   Copyright (C) James Peach	 2006
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -1914,13 +1915,14 @@ int str_list_count( const char **list )
  for the work
  *****************************************************************************/
  
-BOOL str_list_sub_basic( char **list, const char *smb_name )
+BOOL str_list_sub_basic( char **list, const char *smb_name,
+			 const char *domain_name )
 {
 	char *s, *tmpstr;
 	
 	while ( *list ) {
 		s = *list;
-		tmpstr = alloc_sub_basic(smb_name, s);
+		tmpstr = alloc_sub_basic(smb_name, domain_name, s);
 		if ( !tmpstr ) {
 			DEBUG(0,("str_list_sub_basic: alloc_sub_basic() return NULL!\n"));
 			return False;
@@ -2302,6 +2304,73 @@ SMB_BIG_UINT STR_TO_SMB_BIG_UINT(const char *nptr, const char **entptr)
 	return val;
 }
 
+/* Convert a size specification to a count of bytes. We accept the following
+ * suffixes:
+ *	    bytes if there is no suffix
+ *	kK  kibibytes
+ *	mM  mebibytes
+ *	gG  gibibytes
+ *	tT  tibibytes
+ *	pP  whatever the ISO name for petabytes is
+ *
+ *  Returns 0 if the string can't be converted.
+ */
+SMB_OFF_T conv_str_size(const char * str)
+{
+        SMB_OFF_T lval;
+	char * end;
+
+        if (str == NULL || *str == '\0') {
+                return 0;
+        }
+
+#ifdef HAVE_STRTOULL
+	if (sizeof(SMB_OFF_T) == 8) {
+	    lval = strtoull(str, &end, 10 /* base */);
+	} else {
+	    lval = strtoul(str, &end, 10 /* base */);
+	}
+#else
+	lval = strtoul(str, &end, 10 /* base */);
+#endif
+
+        if (end == NULL || end == str) {
+                return 0;
+        }
+
+        if (*end) {
+		SMB_OFF_T lval_orig = lval;
+
+                if (strwicmp(end, "K") == 0) {
+                        lval *= (SMB_OFF_T)1024;
+                } else if (strwicmp(end, "M") == 0) {
+                        lval *= ((SMB_OFF_T)1024 * (SMB_OFF_T)1024);
+                } else if (strwicmp(end, "G") == 0) {
+                        lval *= ((SMB_OFF_T)1024 * (SMB_OFF_T)1024 *
+				(SMB_OFF_T)1024);
+                } else if (strwicmp(end, "T") == 0) {
+                        lval *= ((SMB_OFF_T)1024 * (SMB_OFF_T)1024 *
+				(SMB_OFF_T)1024 * (SMB_OFF_T)1024);
+                } else if (strwicmp(end, "P") == 0) {
+                        lval *= ((SMB_OFF_T)1024 * (SMB_OFF_T)1024 *
+				(SMB_OFF_T)1024 * (SMB_OFF_T)1024 *
+				(SMB_OFF_T)1024);
+                } else {
+                        return 0;
+                }
+
+		/* Primitive attempt to detect wrapping on platforms with
+		 * 4-byte SMB_OFF_T. It's better to let the caller handle
+		 * a failure than some random number.
+		 */
+		if (lval_orig <= lval) {
+			return 0;
+		}
+        }
+
+	return lval;
+}
+
 void string_append(char **left, const char *right)
 {
 	int new_len = strlen(right) + 1;
@@ -2452,5 +2521,54 @@ BOOL validate_net_name( const char *name, const char *invalid_chars, int max_len
 	}
 
 	return True;
+}
+
+
+/**
+return the number of bytes occupied by a buffer in ASCII format
+the result includes the null termination
+limited by 'n' bytes
+**/
+size_t ascii_len_n(const char *src, size_t n)
+{
+	size_t len;
+
+	len = strnlen(src, n);
+	if (len+1 <= n) {
+		len += 1;
+	}
+
+	return len;
+}
+
+/**
+return the number of bytes occupied by a buffer in CH_UTF16 format
+the result includes the null termination
+**/
+size_t utf16_len(const void *buf)
+{
+	size_t len;
+
+	for (len = 0; SVAL(buf,len); len += 2) ;
+
+	return len + 2;
+}
+
+/**
+return the number of bytes occupied by a buffer in CH_UTF16 format
+the result includes the null termination
+limited by 'n' bytes
+**/
+size_t utf16_len_n(const void *src, size_t n)
+{
+	size_t len;
+
+	for (len = 0; (len+2 < n) && SVAL(src, len); len += 2) ;
+
+	if (len+2 <= n) {
+		len += 2;
+	}
+
+	return len;
 }
 

@@ -55,7 +55,7 @@ int cac_SamConnect(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SamConnect 
 
    /*initialize for samr pipe if we have to*/
    if(!hnd->_internal.pipes[PI_SAMR]) {
-      if(!(pipe_hnd = cli_rpc_pipe_open_noauth(&srv->cli, PI_SAMR, &(hnd->status)))) {
+      if(!(pipe_hnd = cli_rpc_pipe_open_noauth(srv->cli, PI_SAMR, &hnd->status))) {
          return CAC_FAILURE;
       }
 
@@ -1507,7 +1507,7 @@ int cac_SamUserChangePasswd(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct Sa
 
    /*open a session on SAMR if we don't have one*/
    if(!hnd->_internal.pipes[PI_SAMR]) {
-      if(!(pipe_hnd = cli_rpc_pipe_open_noauth(&srv->cli, PI_SAMR, &(hnd->status)))) {
+      if(!(pipe_hnd = cli_rpc_pipe_open_noauth(srv->cli, PI_SAMR, &hnd->status))) {
          return CAC_FAILURE;
       }
 
@@ -1576,7 +1576,7 @@ int cac_SamEnableUser(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, POLICY_HND *use
    }
 
    /*now set the userinfo*/
-   hnd->status = rpccli_samr_set_userinfo2( pipe_hnd, mem_ctx, user_hnd, 0x10, &(srv->cli.user_session_key), ctr);
+   hnd->status = rpccli_samr_set_userinfo2( pipe_hnd, mem_ctx, user_hnd, 0x10, &srv->cli->user_session_key, ctr);
 
    /*this will only work properly if we use set_userinfo2 - fail if it is not supported*/
    if(!NT_STATUS_IS_OK(hnd->status))
@@ -1630,7 +1630,7 @@ int cac_SamDisableUser(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, POLICY_HND *us
    ctr->info.id16->acb_info ^= ACB_DISABLED;
 
    /*this will only work properly if we use set_userinfo2*/
-   hnd->status = rpccli_samr_set_userinfo2( pipe_hnd, mem_ctx, user_hnd, 0x10, &(srv->cli.user_session_key), ctr);
+   hnd->status = rpccli_samr_set_userinfo2( pipe_hnd, mem_ctx, user_hnd, 0x10, &srv->cli->user_session_key, ctr);
 
    /*this will only work properly if we use set_userinfo2 fail if it is not supported*/
    if(!NT_STATUS_IS_OK(hnd->status))
@@ -1682,7 +1682,7 @@ int cac_SamSetPassword(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SamSetP
    ctr.switch_value = 24;
    ctr.info.id24 = &info24;
 
-   hnd->status = rpccli_samr_set_userinfo( pipe_hnd, mem_ctx, op->in.user_hnd, 24, &(srv->cli.user_session_key), &ctr);
+   hnd->status = rpccli_samr_set_userinfo( pipe_hnd, mem_ctx, op->in.user_hnd, 24, &srv->cli->user_session_key, &ctr);
 
    if(!NT_STATUS_IS_OK(hnd->status))
       return CAC_FAILURE;
@@ -1767,11 +1767,11 @@ int cac_SamSetUserInfo(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SamSetU
    }
 
    if(hnd->_internal.srv_level >= SRV_WIN_NT4) {
-      hnd->status = rpccli_samr_set_userinfo2( pipe_hnd, mem_ctx, op->in.user_hnd, 21, &(srv->cli.user_session_key), ctr);
+      hnd->status = rpccli_samr_set_userinfo2( pipe_hnd, mem_ctx, op->in.user_hnd, 21, &srv->cli->user_session_key, ctr);
    }
 
    if(hnd->_internal.srv_level < SRV_WIN_NT4 || !NT_STATUS_IS_OK(hnd->status)) {
-      hnd->status = rpccli_samr_set_userinfo( pipe_hnd, mem_ctx, op->in.user_hnd, 21, &(srv->cli.user_session_key), ctr);
+      hnd->status = rpccli_samr_set_userinfo( pipe_hnd, mem_ctx, op->in.user_hnd, 21, &srv->cli->user_session_key, ctr);
 
       if(NT_STATUS_IS_OK(hnd->status) && hnd->_internal.srv_level > SRV_WIN_NT4) {
          hnd->_internal.srv_level = SRV_WIN_NT4;
@@ -1850,7 +1850,7 @@ int cac_SamSetUserInfoCtr(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SamS
    }
 
 
-   hnd->status = rpccli_samr_set_userinfo( pipe_hnd, mem_ctx, op->in.user_hnd, op->in.ctr->switch_value, &(srv->cli.user_session_key), op->in.ctr);
+   hnd->status = rpccli_samr_set_userinfo( pipe_hnd, mem_ctx, op->in.user_hnd, op->in.ctr->switch_value, &srv->cli->user_session_key, op->in.ctr);
 
    if(!NT_STATUS_IS_OK(hnd->status))
       return CAC_FAILURE;
@@ -1899,7 +1899,7 @@ int cac_SamRenameUser(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SamRenam
    ctr.switch_value = 7;
    ctr.info.id7 = &info7;
 
-   hnd->status = rpccli_samr_set_userinfo( pipe_hnd, mem_ctx, op->in.user_hnd, 7, &(srv->cli.user_session_key), &ctr);
+   hnd->status = rpccli_samr_set_userinfo( pipe_hnd, mem_ctx, op->in.user_hnd, 7, &srv->cli->user_session_key, &ctr);
 
    if(!NT_STATUS_IS_OK(hnd->status))
       return CAC_FAILURE;

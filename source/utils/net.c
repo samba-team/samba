@@ -77,6 +77,7 @@ const char *opt_target_workgroup = NULL;
 int opt_machine_pass = 0;
 BOOL opt_localgroup = False;
 BOOL opt_domaingroup = False;
+static BOOL do_talloc_report=False;
 const char *opt_newntname = "";
 int opt_rid = 0;
 int opt_acls = 0;
@@ -513,7 +514,7 @@ static int net_changesecretpw(int argc, const char **argv)
 			set_line_buffering(stdout);
 			set_line_buffering(stderr);
 		}
-		
+
 		trust_pw = get_pass("Enter machine password: ", opt_stdin);
 
 		if (!secrets_store_machine_password(trust_pw, lp_workgroup(), sec_channel_type)) {
@@ -884,6 +885,7 @@ static struct functable net_func[] = {
 		{"timestamps",	0, POPT_ARG_NONE,     &opt_timestamps},
 		{"exclude",	'e', POPT_ARG_STRING, &opt_exclude},
 		{"destination",	0, POPT_ARG_STRING,   &opt_destination},
+		{"tallocreport", 0, POPT_ARG_NONE, &do_talloc_report},
 
 		POPT_COMMON_SAMBA
 		{ 0, 0, 0, 0}
@@ -945,6 +947,10 @@ static struct functable net_func[] = {
 			argc_new = i;
 			break;
 		}
+	}
+
+	if (do_talloc_report) {
+		talloc_enable_leak_report();
 	}
 
 	if (opt_requester_name) {

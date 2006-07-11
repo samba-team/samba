@@ -30,8 +30,10 @@ static time_t cli_servertime(const char *host, struct in_addr *ip, int *zone)
 	time_t ret = 0;
 	struct cli_state *cli = NULL;
 
-	cli = cli_initialise(NULL);
-	if (!cli) goto done;
+	cli = cli_initialise();
+	if (!cli) {
+		goto done;
+	}
 
 	if (!cli_connect(cli, host, ip)) {
 		fprintf(stderr,"Can't contact server\n");
@@ -58,7 +60,9 @@ static time_t cli_servertime(const char *host, struct in_addr *ip, int *zone)
 	if (zone) *zone = cli->serverzone;
 
 done:
-	if (cli) cli_shutdown(cli);
+	if (cli) {
+		cli_shutdown(cli);
+	}
 	return ret;
 }
 

@@ -29,11 +29,11 @@ extern struct current_user current_user;
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_VFS
 
-static int fake_perms_stat(vfs_handle_struct *handle, connection_struct *conn, const char *fname, SMB_STRUCT_STAT *sbuf)
+static int fake_perms_stat(vfs_handle_struct *handle, const char *fname, SMB_STRUCT_STAT *sbuf)
 {
 	int ret = -1;
 
-	ret = SMB_VFS_NEXT_STAT(handle, conn, fname, sbuf);
+	ret = SMB_VFS_NEXT_STAT(handle, fname, sbuf);
 	if (ret == 0) {
 		if (S_ISDIR(sbuf->st_mode)) {
 			sbuf->st_mode = S_IFDIR | S_IRWXU;

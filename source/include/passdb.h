@@ -34,8 +34,8 @@
 #define ACCT_FULL_NAME		0x00000002
 #define ACCT_RID		0x00000004
 #define ACCT_PRIMARY_GID	0x00000008
-#define ACCT_ADMIN_DESC		0x00000010
-#define ACCT_DESCRIPTION	0x00000020
+#define ACCT_DESCRIPTION	0x00000010
+#define ACCT_COMMENT		0x00000020
 #define ACCT_HOME_DIR		0x00000040
 #define ACCT_HOME_DRIVE		0x00000080
 #define ACCT_LOGON_SCRIPT	0x00000100
@@ -90,7 +90,7 @@ enum pdb_elements {
 	PDB_UNIXHOMEDIR,
 	PDB_ACCTDESC,
 	PDB_WORKSTATIONS,
-	PDB_UNKNOWNSTR,
+	PDB_COMMENT,
 	PDB_MUNGEDDIAL,
 	PDB_HOURS,
 	PDB_FIELDS_PRESENT,
@@ -160,7 +160,7 @@ struct samu {
 	const char *profile_path; /* profile path string */
 	const char *acct_desc;    /* user description string */
 	const char *workstations; /* login from workstations string */
-	const char *unknown_str;  /* don't know what this is, yet. */
+	const char *comment;
 	const char *munged_dial;  /* munged path name and dial-back tel number */
 		
 	DOM_SID user_sid;  
