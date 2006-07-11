@@ -1211,13 +1211,13 @@ void winbindd_flush_nscd_cache(void)
 	int ret = nscd_flush_cache("passwd");
 	if (ret) {
 		DEBUG(5,("failed to flush nscd cache for 'passwd' service: %s\n",
-			strerror(ret)));
+			strerror(errno)));
 	}
 
 	ret = nscd_flush_cache("group");
 	if (ret) {
 		DEBUG(5,("failed to flush nscd cache for 'group' service: %s\n",
-			strerror(ret)));
+			strerror(errno)));
 	}
 #else
 	return;
