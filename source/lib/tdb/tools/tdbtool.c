@@ -183,10 +183,11 @@ static char *get_token(int startover)
 
 static void create_tdb(void)
 {
+	char *tok = get_token(1);
+
 	struct tdb_logging_context log_ctx;
 	log_ctx.log_fn = tdb_log;
 
-	char *tok = get_token(1);
 	if (!tok) {
 		help();
 		return;
