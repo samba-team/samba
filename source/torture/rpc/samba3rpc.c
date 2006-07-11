@@ -28,6 +28,8 @@
 #include "librpc/gen_ndr/ndr_samr_c.h"
 #include "librpc/gen_ndr/ndr_netlogon.h"
 #include "librpc/gen_ndr/ndr_netlogon_c.h"
+#include "librpc/gen_ndr/ndr_srvsvc.h"
+#include "librpc/gen_ndr/ndr_srvsvc_c.h"
 #include "lib/cmdline/popt_common.h"
 #include "librpc/rpc/dcerpc.h"
 #include "torture/rpc/rpc.h"
@@ -1139,7 +1141,7 @@ BOOL torture_samba3_sessionkey(struct torture_context *torture)
 		wks_name = get_myname();
 	}
 
-	mem_ctx = talloc_init("torture_bind_authcontext");
+	mem_ctx = talloc_init("torture_samba3_sessionkey");
 
 	if (mem_ctx == NULL) {
 		d_printf("talloc_init failed\n");
@@ -1209,5 +1211,123 @@ BOOL torture_samba3_sessionkey(struct torture_context *torture)
 
  done:
 
+	return ret;
+}
+
+static BOOL test_NetShareGetInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+				 const char *sharename)
+{
+	NTSTATUS status;
+	struct srvsvc_NetShareGetInfo r;
+	uint32_t levels[] = { 0, 1, 2, 501, 502, 1004, 1005, 1006, 1007 };
+	int i;
+	BOOL ret = True;
+
+	r.in.server_unc = talloc_asprintf(mem_ctx, "\\\\%s",
+					  dcerpc_server_name(p));
+	r.in.share_name = sharename;
+
+	for (i=0;i<ARRAY_SIZE(levels);i++) {
+		r.in.level = levels[i];
+
+		ZERO_STRUCT(r.out);
+
+		printf("testing NetShareGetInfo level %u on share '%s'\n", 
+		       r.in.level, r.in.share_name);
+
+		status = dcerpc_srvsvc_NetShareGetInfo(p, mem_ctx, &r);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("NetShareGetInfo level %u on share '%s' failed"
+			       " - %s\n", r.in.level, r.in.share_name,
+			       nt_errstr(status));
+			ret = False;
+			continue;
+		}
+		if (!W_ERROR_IS_OK(r.out.result)) {
+			printf("NetShareGetInfo level %u on share '%s' failed "
+			       "- %s\n", r.in.level, r.in.share_name,
+			       win_errstr(r.out.result));
+			ret = False;
+			continue;
+		}
+	}
+
+	return ret;
+}
+
+static BOOL test_NetShareEnum(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+			      const char **one_sharename)
+{
+	NTSTATUS status;
+	struct srvsvc_NetShareEnum r;
+	struct srvsvc_NetShareCtr0 c0;
+	uint32_t levels[] = { 0, 1, 2, 501, 502, 1004, 1005, 1006, 1007 };
+	int i;
+	BOOL ret = True;
+
+	r.in.server_unc = talloc_asprintf(mem_ctx,"\\\\%s",dcerpc_server_name(p));
+	r.in.ctr.ctr0 = &c0;
+	r.in.ctr.ctr0->count = 0;
+	r.in.ctr.ctr0->array = NULL;
+	r.in.max_buffer = (uint32_t)-1;
+	r.in.resume_handle = NULL;
+
+	for (i=0;i<ARRAY_SIZE(levels);i++) {
+		r.in.level = levels[i];
+
+		ZERO_STRUCT(r.out);
+
+		printf("testing NetShareEnum level %u\n", r.in.level);
+		status = dcerpc_srvsvc_NetShareEnum(p, mem_ctx, &r);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("NetShareEnum level %u failed - %s\n",
+			       r.in.level, nt_errstr(status));
+			ret = False;
+			continue;
+		}
+		if (!W_ERROR_IS_OK(r.out.result)) {
+			printf("NetShareEnum level %u failed - %s\n",
+			       r.in.level, win_errstr(r.out.result));
+			continue;
+		}
+		if (r.in.level == 0) {
+			struct srvsvc_NetShareCtr0 *ctr = r.out.ctr.ctr0;
+			if (ctr->count > 0) {
+				*one_sharename = ctr->array[0].name;
+			}
+		}
+	}
+
+	return ret;
+}
+
+BOOL torture_samba3_rpc_srvsvc(struct torture_context *torture)
+{
+	NTSTATUS status;
+	struct dcerpc_pipe *p;
+	TALLOC_CTX *mem_ctx;
+	BOOL ret = True;
+	const char *sharename = NULL;
+
+	if (!(mem_ctx = talloc_new(torture))) {
+		return False;
+	}
+
+	status = torture_rpc_connection(mem_ctx, &p, &dcerpc_table_srvsvc);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("torture_rpc_connection failed: %s\n",
+		       nt_errstr(status));
+		ret = False;
+		goto done;
+	}
+
+	ret &= test_NetShareEnum(p, mem_ctx, &sharename);
+	if (sharename == NULL) {
+		printf("did not get sharename\n");
+	} else {
+		ret &= test_NetShareGetInfo(p, mem_ctx, sharename);
+	}
+ done:
+	talloc_free(mem_ctx);
 	return ret;
 }
