@@ -184,7 +184,7 @@ struct cli_state *connect_one(char *share)
         zero_ip(&ip);
 
 	/* have to open a new connection */
-	if (!(c=cli_initialise(NULL)) || !cli_connect(c, server_n, &ip)) {
+	if (!(c=cli_initialise()) || !cli_connect(c, server_n, &ip)) {
 		DEBUG(0,("Connection to %s failed\n", server_n));
 		return NULL;
 	}

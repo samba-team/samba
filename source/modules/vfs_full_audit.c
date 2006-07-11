@@ -72,48 +72,44 @@ struct vfs_full_audit_private_data {
 
 /* Function prototypes */
 
-static int smb_full_audit_connect(vfs_handle_struct *handle, connection_struct *conn,
+static int smb_full_audit_connect(vfs_handle_struct *handle,
 			 const char *svc, const char *user);
-static void smb_full_audit_disconnect(vfs_handle_struct *handle,
-			     connection_struct *conn);
+static void smb_full_audit_disconnect(vfs_handle_struct *handle);
 static SMB_BIG_UINT smb_full_audit_disk_free(vfs_handle_struct *handle,
-				    connection_struct *conn, const char *path,
+				    const char *path,
 				    BOOL small_query, SMB_BIG_UINT *bsize, 
 				    SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize);
 static int smb_full_audit_get_quota(struct vfs_handle_struct *handle,
-			   struct connection_struct *conn,
 			   enum SMB_QUOTA_TYPE qtype, unid_t id,
 			   SMB_DISK_QUOTA *qt);
 static int smb_full_audit_set_quota(struct vfs_handle_struct *handle,
-			   struct connection_struct *conn,
 			   enum SMB_QUOTA_TYPE qtype, unid_t id,
 			   SMB_DISK_QUOTA *qt);
 static int smb_full_audit_get_shadow_copy_data(struct vfs_handle_struct *handle,
                                 struct files_struct *fsp,
                                 SHADOW_COPY_DATA *shadow_copy_data, BOOL labels);
 static int smb_full_audit_statvfs(struct vfs_handle_struct *handle,
-				struct connection_struct *conn,
 				const char *path,
 				struct vfs_statvfs_struct *statbuf);
 
-static SMB_STRUCT_DIR *smb_full_audit_opendir(vfs_handle_struct *handle, connection_struct *conn,
+static SMB_STRUCT_DIR *smb_full_audit_opendir(vfs_handle_struct *handle,
 			  const char *fname, const char *mask, uint32 attr);
 static SMB_STRUCT_DIRENT *smb_full_audit_readdir(vfs_handle_struct *handle,
-				    connection_struct *conn, SMB_STRUCT_DIR *dirp);
-static void smb_full_audit_seekdir(vfs_handle_struct *handle, connection_struct *conn,
+				    SMB_STRUCT_DIR *dirp);
+static void smb_full_audit_seekdir(vfs_handle_struct *handle,
 			SMB_STRUCT_DIR *dirp, long offset);
-static long smb_full_audit_telldir(vfs_handle_struct *handle, connection_struct *conn,
+static long smb_full_audit_telldir(vfs_handle_struct *handle,
 			SMB_STRUCT_DIR *dirp);
-static void smb_full_audit_rewinddir(vfs_handle_struct *handle, connection_struct *conn,
+static void smb_full_audit_rewinddir(vfs_handle_struct *handle,
 			SMB_STRUCT_DIR *dirp);
-static int smb_full_audit_mkdir(vfs_handle_struct *handle, connection_struct *conn,
+static int smb_full_audit_mkdir(vfs_handle_struct *handle,
 		       const char *path, mode_t mode);
-static int smb_full_audit_rmdir(vfs_handle_struct *handle, connection_struct *conn,
+static int smb_full_audit_rmdir(vfs_handle_struct *handle,
 		       const char *path);
-static int smb_full_audit_closedir(vfs_handle_struct *handle, connection_struct *conn,
+static int smb_full_audit_closedir(vfs_handle_struct *handle,
 			  SMB_STRUCT_DIR *dirp);
-static int smb_full_audit_open(vfs_handle_struct *handle, connection_struct *conn,
-		      const char *fname, int flags, mode_t mode);
+static int smb_full_audit_open(vfs_handle_struct *handle,
+		      const char *fname, files_struct *fsp, int flags, mode_t mode);
 static int smb_full_audit_close(vfs_handle_struct *handle, files_struct *fsp, int fd);
 static ssize_t smb_full_audit_read(vfs_handle_struct *handle, files_struct *fsp,
 			  int fd, void *data, size_t n);
@@ -130,30 +126,30 @@ static ssize_t smb_full_audit_sendfile(vfs_handle_struct *handle, int tofd,
 			      files_struct *fsp, int fromfd,
 			      const DATA_BLOB *hdr, SMB_OFF_T offset,
 			      size_t n);
-static int smb_full_audit_rename(vfs_handle_struct *handle, connection_struct *conn,
+static int smb_full_audit_rename(vfs_handle_struct *handle,
 			const char *oldname, const char *newname);
 static int smb_full_audit_fsync(vfs_handle_struct *handle, files_struct *fsp, int fd);
-static int smb_full_audit_stat(vfs_handle_struct *handle, connection_struct *conn,
+static int smb_full_audit_stat(vfs_handle_struct *handle,
 		      const char *fname, SMB_STRUCT_STAT *sbuf);
 static int smb_full_audit_fstat(vfs_handle_struct *handle, files_struct *fsp, int fd,
 		       SMB_STRUCT_STAT *sbuf);
-static int smb_full_audit_lstat(vfs_handle_struct *handle, connection_struct *conn,
+static int smb_full_audit_lstat(vfs_handle_struct *handle,
 		       const char *path, SMB_STRUCT_STAT *sbuf);
-static int smb_full_audit_unlink(vfs_handle_struct *handle, connection_struct *conn,
+static int smb_full_audit_unlink(vfs_handle_struct *handle,
 			const char *path);
-static int smb_full_audit_chmod(vfs_handle_struct *handle, connection_struct *conn,
+static int smb_full_audit_chmod(vfs_handle_struct *handle,
 		       const char *path, mode_t mode);
 static int smb_full_audit_fchmod(vfs_handle_struct *handle, files_struct *fsp, int fd,
 			mode_t mode);
-static int smb_full_audit_chown(vfs_handle_struct *handle, connection_struct *conn,
+static int smb_full_audit_chown(vfs_handle_struct *handle,
 		       const char *path, uid_t uid, gid_t gid);
 static int smb_full_audit_fchown(vfs_handle_struct *handle, files_struct *fsp, int fd,
 			uid_t uid, gid_t gid);
-static int smb_full_audit_chdir(vfs_handle_struct *handle, connection_struct *conn,
+static int smb_full_audit_chdir(vfs_handle_struct *handle,
 		       const char *path);
-static char *smb_full_audit_getwd(vfs_handle_struct *handle, connection_struct *conn,
+static char *smb_full_audit_getwd(vfs_handle_struct *handle,
 			 char *path);
-static int smb_full_audit_utime(vfs_handle_struct *handle, connection_struct *conn,
+static int smb_full_audit_utime(vfs_handle_struct *handle,
 		       const char *path, struct utimbuf *times);
 static int smb_full_audit_ftruncate(vfs_handle_struct *handle, files_struct *fsp,
 			   int fd, SMB_OFF_T len);
@@ -161,15 +157,15 @@ static BOOL smb_full_audit_lock(vfs_handle_struct *handle, files_struct *fsp, in
 		       int op, SMB_OFF_T offset, SMB_OFF_T count, int type);
 static BOOL smb_full_audit_getlock(vfs_handle_struct *handle, files_struct *fsp, int fd,
 		       SMB_OFF_T *poffset, SMB_OFF_T *pcount, int *ptype, pid_t *ppid);
-static int smb_full_audit_symlink(vfs_handle_struct *handle, connection_struct *conn,
+static int smb_full_audit_symlink(vfs_handle_struct *handle,
 			 const char *oldpath, const char *newpath);
-static int smb_full_audit_readlink(vfs_handle_struct *handle, connection_struct *conn,
+static int smb_full_audit_readlink(vfs_handle_struct *handle,
 			  const char *path, char *buf, size_t bufsiz);
-static int smb_full_audit_link(vfs_handle_struct *handle, connection_struct *conn,
+static int smb_full_audit_link(vfs_handle_struct *handle,
 		      const char *oldpath, const char *newpath);
-static int smb_full_audit_mknod(vfs_handle_struct *handle, connection_struct *conn,
+static int smb_full_audit_mknod(vfs_handle_struct *handle,
 		       const char *pathname, mode_t mode, SMB_DEV_T dev);
-static char *smb_full_audit_realpath(vfs_handle_struct *handle, connection_struct *conn,
+static char *smb_full_audit_realpath(vfs_handle_struct *handle,
 			    const char *path, char *resolved_path);
 static size_t smb_full_audit_fget_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
 				int fd, uint32 security_info,
@@ -183,120 +179,99 @@ static BOOL smb_full_audit_fset_nt_acl(vfs_handle_struct *handle, files_struct *
 static BOOL smb_full_audit_set_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
 			     const char *name, uint32 security_info_sent,
 			     SEC_DESC *psd);
-static int smb_full_audit_chmod_acl(vfs_handle_struct *handle, connection_struct *conn,
+static int smb_full_audit_chmod_acl(vfs_handle_struct *handle,
 			   const char *path, mode_t mode);
 static int smb_full_audit_fchmod_acl(vfs_handle_struct *handle, files_struct *fsp,
 			    int fd, mode_t mode);
 static int smb_full_audit_sys_acl_get_entry(vfs_handle_struct *handle,
-				   connection_struct *conn,
 				   SMB_ACL_T theacl, int entry_id,
 				   SMB_ACL_ENTRY_T *entry_p);
 static int smb_full_audit_sys_acl_get_tag_type(vfs_handle_struct *handle,
-				      connection_struct *conn,
 				      SMB_ACL_ENTRY_T entry_d,
 				      SMB_ACL_TAG_T *tag_type_p);
 static int smb_full_audit_sys_acl_get_permset(vfs_handle_struct *handle,
-				     connection_struct *conn,
 				     SMB_ACL_ENTRY_T entry_d,
 				     SMB_ACL_PERMSET_T *permset_p);
 static void * smb_full_audit_sys_acl_get_qualifier(vfs_handle_struct *handle,
-					  connection_struct *conn,
 					  SMB_ACL_ENTRY_T entry_d);
 static SMB_ACL_T smb_full_audit_sys_acl_get_file(vfs_handle_struct *handle,
-					connection_struct *conn,
 					const char *path_p,
 					SMB_ACL_TYPE_T type);
 static SMB_ACL_T smb_full_audit_sys_acl_get_fd(vfs_handle_struct *handle,
 				      files_struct *fsp,
 				      int fd);
 static int smb_full_audit_sys_acl_clear_perms(vfs_handle_struct *handle,
-				     connection_struct *conn,
 				     SMB_ACL_PERMSET_T permset);
 static int smb_full_audit_sys_acl_add_perm(vfs_handle_struct *handle,
-				  connection_struct *conn,
 				  SMB_ACL_PERMSET_T permset,
 				  SMB_ACL_PERM_T perm);
 static char * smb_full_audit_sys_acl_to_text(vfs_handle_struct *handle,
-				    connection_struct *conn, SMB_ACL_T theacl,
+				    SMB_ACL_T theacl,
 				    ssize_t *plen);
 static SMB_ACL_T smb_full_audit_sys_acl_init(vfs_handle_struct *handle,
-				    connection_struct *conn,
 				    int count);
 static int smb_full_audit_sys_acl_create_entry(vfs_handle_struct *handle,
-				      connection_struct *conn, SMB_ACL_T *pacl,
+				      SMB_ACL_T *pacl,
 				      SMB_ACL_ENTRY_T *pentry);
 static int smb_full_audit_sys_acl_set_tag_type(vfs_handle_struct *handle,
-				      connection_struct *conn,
 				      SMB_ACL_ENTRY_T entry,
 				      SMB_ACL_TAG_T tagtype);
 static int smb_full_audit_sys_acl_set_qualifier(vfs_handle_struct *handle,
-				       connection_struct *conn,
 				       SMB_ACL_ENTRY_T entry,
 				       void *qual);
 static int smb_full_audit_sys_acl_set_permset(vfs_handle_struct *handle,
-				     connection_struct *conn,
 				     SMB_ACL_ENTRY_T entry,
 				     SMB_ACL_PERMSET_T permset);
 static int smb_full_audit_sys_acl_valid(vfs_handle_struct *handle,
-			       connection_struct *conn,
 			       SMB_ACL_T theacl );
 static int smb_full_audit_sys_acl_set_file(vfs_handle_struct *handle,
-				  connection_struct *conn,
 				  const char *name, SMB_ACL_TYPE_T acltype,
 				  SMB_ACL_T theacl);
 static int smb_full_audit_sys_acl_set_fd(vfs_handle_struct *handle, files_struct *fsp,
 				int fd, SMB_ACL_T theacl);
 static int smb_full_audit_sys_acl_delete_def_file(vfs_handle_struct *handle,
-					 connection_struct *conn,
 					 const char *path);
 static int smb_full_audit_sys_acl_get_perm(vfs_handle_struct *handle,
-				  connection_struct *conn,
 				  SMB_ACL_PERMSET_T permset,
 				  SMB_ACL_PERM_T perm);
 static int smb_full_audit_sys_acl_free_text(vfs_handle_struct *handle,
-				   connection_struct *conn,
 				   char *text);
 static int smb_full_audit_sys_acl_free_acl(vfs_handle_struct *handle,
-				  connection_struct *conn,
 				  SMB_ACL_T posix_acl);
 static int smb_full_audit_sys_acl_free_qualifier(vfs_handle_struct *handle,
-					connection_struct *conn,
 					void *qualifier,
 					SMB_ACL_TAG_T tagtype);
 static ssize_t smb_full_audit_getxattr(struct vfs_handle_struct *handle,
-			      struct connection_struct *conn, const char *path,
+			      const char *path,
 			      const char *name, void *value, size_t size);
 static ssize_t smb_full_audit_lgetxattr(struct vfs_handle_struct *handle,
-			       struct connection_struct *conn,
 			       const char *path, const char *name,
 			       void *value, size_t size);
 static ssize_t smb_full_audit_fgetxattr(struct vfs_handle_struct *handle,
 			       struct files_struct *fsp, int fd,
 			       const char *name, void *value, size_t size);
 static ssize_t smb_full_audit_listxattr(struct vfs_handle_struct *handle,
-			       struct connection_struct *conn,
 			       const char *path, char *list, size_t size);
 static ssize_t smb_full_audit_llistxattr(struct vfs_handle_struct *handle,
-				struct connection_struct *conn,
 				const char *path, char *list, size_t size);
 static ssize_t smb_full_audit_flistxattr(struct vfs_handle_struct *handle,
 				struct files_struct *fsp, int fd, char *list,
 				size_t size);
 static int smb_full_audit_removexattr(struct vfs_handle_struct *handle,
-			     struct connection_struct *conn, const char *path,
+			     const char *path,
 			     const char *name);
 static int smb_full_audit_lremovexattr(struct vfs_handle_struct *handle,
-			      struct connection_struct *conn, const char *path,
+			      const char *path,
 			      const char *name);
 static int smb_full_audit_fremovexattr(struct vfs_handle_struct *handle,
 			      struct files_struct *fsp, int fd,
 			      const char *name);
 static int smb_full_audit_setxattr(struct vfs_handle_struct *handle,
-			  struct connection_struct *conn, const char *path,
+			  const char *path,
 			  const char *name, const void *value, size_t size,
 			  int flags);
 static int smb_full_audit_lsetxattr(struct vfs_handle_struct *handle,
-			   struct connection_struct *conn, const char *path,
+			   const char *path,
 			   const char *name, const void *value, size_t size,
 			   int flags);
 static int smb_full_audit_fsetxattr(struct vfs_handle_struct *handle,
@@ -666,10 +641,15 @@ static int audit_syslog_priority(vfs_handle_struct *handle)
 static char *audit_prefix(connection_struct *conn)
 {
 	static pstring prefix;
+	extern userdom_struct current_user_info;
 
 	pstrcpy(prefix, lp_parm_const_string(SNUM(conn), "full_audit",
 					     "prefix", "%u|%I"));
-	standard_sub_snum(SNUM(conn), prefix, sizeof(prefix)-1);
+	standard_sub_advanced(lp_servicename(SNUM(conn)), conn->user,
+			      conn->connectpath, conn->gid,
+			      get_current_username(),
+			      current_user_info.domain,
+			      prefix, sizeof(prefix));
 	return prefix;
 }
 
@@ -811,7 +791,7 @@ static void free_private_data(void **p_data)
 /* Implementation of vfs_ops.  Pass everything on to the default
    operation but log event first. */
 
-static int smb_full_audit_connect(vfs_handle_struct *handle, connection_struct *conn,
+static int smb_full_audit_connect(vfs_handle_struct *handle,
 			 const char *svc, const char *user)
 {
 	int result;
@@ -832,17 +812,17 @@ static int smb_full_audit_connect(vfs_handle_struct *handle, connection_struct *
 	openlog("smbd_audit", 0, audit_syslog_facility(handle));
 
 	init_bitmap(&pd->success_ops,
-		    lp_parm_string_list(SNUM(conn), "full_audit", "success",
+		    lp_parm_string_list(SNUM(handle->conn), "full_audit", "success",
 					none));
 	init_bitmap(&pd->failure_ops,
-		    lp_parm_string_list(SNUM(conn), "full_audit", "failure",
+		    lp_parm_string_list(SNUM(handle->conn), "full_audit", "failure",
 					all));
 
 	/* Store the private data. */
 	SMB_VFS_HANDLE_SET_DATA(handle, pd, free_private_data,
 				struct vfs_full_audit_private_data, return -1);
 
-	result = SMB_VFS_NEXT_CONNECT(handle, conn, svc, user);
+	result = SMB_VFS_NEXT_CONNECT(handle, svc, user);
 
 	do_log(SMB_VFS_OP_CONNECT, True, handle,
 	       "%s", svc);
@@ -850,13 +830,12 @@ static int smb_full_audit_connect(vfs_handle_struct *handle, connection_struct *
 	return result;
 }
 
-static void smb_full_audit_disconnect(vfs_handle_struct *handle,
-			     connection_struct *conn)
+static void smb_full_audit_disconnect(vfs_handle_struct *handle)
 {
-	SMB_VFS_NEXT_DISCONNECT(handle, conn);
+	SMB_VFS_NEXT_DISCONNECT(handle);
 
 	do_log(SMB_VFS_OP_DISCONNECT, True, handle,
-	       "%s", lp_servicename(SNUM(conn)));
+	       "%s", lp_servicename(SNUM(handle->conn)));
 
 	/* The bitmaps will be disconnected when the private
 	   data is deleted. */
@@ -865,13 +844,13 @@ static void smb_full_audit_disconnect(vfs_handle_struct *handle,
 }
 
 static SMB_BIG_UINT smb_full_audit_disk_free(vfs_handle_struct *handle,
-				    connection_struct *conn, const char *path,
+				    const char *path,
 				    BOOL small_query, SMB_BIG_UINT *bsize, 
 				    SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize)
 {
 	SMB_BIG_UINT result;
 
-	result = SMB_VFS_NEXT_DISK_FREE(handle, conn, path, small_query, bsize,
+	result = SMB_VFS_NEXT_DISK_FREE(handle, path, small_query, bsize,
 					dfree, dsize);
 
 	/* Don't have a reasonable notion of failure here */
@@ -882,13 +861,12 @@ static SMB_BIG_UINT smb_full_audit_disk_free(vfs_handle_struct *handle,
 }
 
 static int smb_full_audit_get_quota(struct vfs_handle_struct *handle,
-			   struct connection_struct *conn,
 			   enum SMB_QUOTA_TYPE qtype, unid_t id,
 			   SMB_DISK_QUOTA *qt)
 {
 	int result;
 
-	result = SMB_VFS_NEXT_GET_QUOTA(handle, conn, qtype, id, qt);
+	result = SMB_VFS_NEXT_GET_QUOTA(handle, qtype, id, qt);
 
 	do_log(SMB_VFS_OP_GET_QUOTA, (result >= 0), handle, "");
 
@@ -897,13 +875,12 @@ static int smb_full_audit_get_quota(struct vfs_handle_struct *handle,
 
 	
 static int smb_full_audit_set_quota(struct vfs_handle_struct *handle,
-			   struct connection_struct *conn,
 			   enum SMB_QUOTA_TYPE qtype, unid_t id,
 			   SMB_DISK_QUOTA *qt)
 {
 	int result;
 
-	result = SMB_VFS_NEXT_SET_QUOTA(handle, conn, qtype, id, qt);
+	result = SMB_VFS_NEXT_SET_QUOTA(handle, qtype, id, qt);
 
 	do_log(SMB_VFS_OP_SET_QUOTA, (result >= 0), handle, "");
 
@@ -924,25 +901,24 @@ static int smb_full_audit_get_shadow_copy_data(struct vfs_handle_struct *handle,
 }
 
 static int smb_full_audit_statvfs(struct vfs_handle_struct *handle,
-				struct connection_struct *conn,
 				const char *path,
 				struct vfs_statvfs_struct *statbuf)
 {
 	int result;
 
-	result = SMB_VFS_NEXT_STATVFS(handle, conn, path, statbuf);
+	result = SMB_VFS_NEXT_STATVFS(handle, path, statbuf);
 
 	do_log(SMB_VFS_OP_STATVFS, (result >= 0), handle, "");
 
 	return result;
 }
 
-static SMB_STRUCT_DIR *smb_full_audit_opendir(vfs_handle_struct *handle, connection_struct *conn,
+static SMB_STRUCT_DIR *smb_full_audit_opendir(vfs_handle_struct *handle,
 			  const char *fname, const char *mask, uint32 attr)
 {
 	SMB_STRUCT_DIR *result;
 
-	result = SMB_VFS_NEXT_OPENDIR(handle, conn, fname, mask, attr);
+	result = SMB_VFS_NEXT_OPENDIR(handle, fname, mask, attr);
 
 	do_log(SMB_VFS_OP_OPENDIR, (result != NULL), handle, "%s", fname);
 
@@ -950,11 +926,11 @@ static SMB_STRUCT_DIR *smb_full_audit_opendir(vfs_handle_struct *handle, connect
 }
 
 static SMB_STRUCT_DIRENT *smb_full_audit_readdir(vfs_handle_struct *handle,
-				    connection_struct *conn, SMB_STRUCT_DIR *dirp)
+				    SMB_STRUCT_DIR *dirp)
 {
 	SMB_STRUCT_DIRENT *result;
 
-	result = SMB_VFS_NEXT_READDIR(handle, conn, dirp);
+	result = SMB_VFS_NEXT_READDIR(handle, dirp);
 
 	/* This operation has no reasonable error condition
 	 * (End of dir is also failure), so always succeed.
@@ -964,78 +940,78 @@ static SMB_STRUCT_DIRENT *smb_full_audit_readdir(vfs_handle_struct *handle,
 	return result;
 }
 
-static void smb_full_audit_seekdir(vfs_handle_struct *handle, connection_struct *conn,
+static void smb_full_audit_seekdir(vfs_handle_struct *handle,
 			SMB_STRUCT_DIR *dirp, long offset)
 {
-	SMB_VFS_NEXT_SEEKDIR(handle, conn, dirp, offset);
+	SMB_VFS_NEXT_SEEKDIR(handle, dirp, offset);
 
 	do_log(SMB_VFS_OP_SEEKDIR, True, handle, "");
 	return;
 }
 
-static long smb_full_audit_telldir(vfs_handle_struct *handle, connection_struct *conn,
+static long smb_full_audit_telldir(vfs_handle_struct *handle,
 			SMB_STRUCT_DIR *dirp)
 {
 	long result;
 
-	result = SMB_VFS_NEXT_TELLDIR(handle, conn, dirp);
+	result = SMB_VFS_NEXT_TELLDIR(handle, dirp);
 
 	do_log(SMB_VFS_OP_TELLDIR, True, handle, "");
 
 	return result;
 }
 
-static void smb_full_audit_rewinddir(vfs_handle_struct *handle, connection_struct *conn,
+static void smb_full_audit_rewinddir(vfs_handle_struct *handle,
 			SMB_STRUCT_DIR *dirp)
 {
-	SMB_VFS_NEXT_REWINDDIR(handle, conn, dirp);
+	SMB_VFS_NEXT_REWINDDIR(handle, dirp);
 
 	do_log(SMB_VFS_OP_REWINDDIR, True, handle, "");
 	return;
 }
 
-static int smb_full_audit_mkdir(vfs_handle_struct *handle, connection_struct *conn,
+static int smb_full_audit_mkdir(vfs_handle_struct *handle,
 		       const char *path, mode_t mode)
 {
 	int result;
 	
-	result = SMB_VFS_NEXT_MKDIR(handle, conn, path, mode);
+	result = SMB_VFS_NEXT_MKDIR(handle, path, mode);
 	
 	do_log(SMB_VFS_OP_MKDIR, (result >= 0), handle, "%s", path);
 
 	return result;
 }
 
-static int smb_full_audit_rmdir(vfs_handle_struct *handle, connection_struct *conn,
+static int smb_full_audit_rmdir(vfs_handle_struct *handle,
 		       const char *path)
 {
 	int result;
 	
-	result = SMB_VFS_NEXT_RMDIR(handle, conn, path);
+	result = SMB_VFS_NEXT_RMDIR(handle, path);
 
 	do_log(SMB_VFS_OP_RMDIR, (result >= 0), handle, "%s", path);
 
 	return result;
 }
 
-static int smb_full_audit_closedir(vfs_handle_struct *handle, connection_struct *conn,
+static int smb_full_audit_closedir(vfs_handle_struct *handle,
 			  SMB_STRUCT_DIR *dirp)
 {
 	int result;
 
-	result = SMB_VFS_NEXT_CLOSEDIR(handle, conn, dirp);
+	result = SMB_VFS_NEXT_CLOSEDIR(handle, dirp);
 	
 	do_log(SMB_VFS_OP_CLOSEDIR, (result >= 0), handle, "");
 
 	return result;
 }
 
-static int smb_full_audit_open(vfs_handle_struct *handle, connection_struct *conn,
-		      const char *fname, int flags, mode_t mode)
+static int smb_full_audit_open(vfs_handle_struct *handle,
+		      const char *fname, files_struct *fsp, int flags, mode_t mode)
 {
 	int result;
 	
-	result = SMB_VFS_NEXT_OPEN(handle, conn, fname, flags, mode);
+	result = SMB_VFS_NEXT_OPEN(handle, fname, fsp, flags, mode);
 
 	do_log(SMB_VFS_OP_OPEN, (result >= 0), handle, "%s|%s",
 	       ((flags & O_WRONLY) || (flags & O_RDWR))?"w":"r",
@@ -1133,12 +1109,12 @@ static ssize_t smb_full_audit_sendfile(vfs_handle_struct *handle, int tofd,
 	return result;
 }
 
-static int smb_full_audit_rename(vfs_handle_struct *handle, connection_struct *conn,
+static int smb_full_audit_rename(vfs_handle_struct *handle,
 			const char *oldname, const char *newname)
 {
 	int result;
 	
-	result = SMB_VFS_NEXT_RENAME(handle, conn, oldname, newname);
+	result = SMB_VFS_NEXT_RENAME(handle, oldname, newname);
 
 	do_log(SMB_VFS_OP_RENAME, (result >= 0), handle, "%s|%s", oldname, newname);
 
@@ -1156,12 +1132,12 @@ static int smb_full_audit_fsync(vfs_handle_struct *handle, files_struct *fsp, in
 	return result;    
 }
 
-static int smb_full_audit_stat(vfs_handle_struct *handle, connection_struct *conn,
+static int smb_full_audit_stat(vfs_handle_struct *handle,
 		      const char *fname, SMB_STRUCT_STAT *sbuf)
 {
 	int result;
 	
-	result = SMB_VFS_NEXT_STAT(handle, conn, fname, sbuf);
+	result = SMB_VFS_NEXT_STAT(handle, fname, sbuf);
 
 	do_log(SMB_VFS_OP_STAT, (result >= 0), handle, "%s", fname);
 
@@ -1180,36 +1156,36 @@ static int smb_full_audit_fstat(vfs_handle_struct *handle, files_struct *fsp, in
 	return result;
 }
 
-static int smb_full_audit_lstat(vfs_handle_struct *handle, connection_struct *conn,
+static int smb_full_audit_lstat(vfs_handle_struct *handle,
 		       const char *path, SMB_STRUCT_STAT *sbuf)
 {
 	int result;
 	
-	result = SMB_VFS_NEXT_LSTAT(handle, conn, path, sbuf);
+	result = SMB_VFS_NEXT_LSTAT(handle, path, sbuf);
 
 	do_log(SMB_VFS_OP_LSTAT, (result >= 0), handle, "%s", path);
 
 	return result;    
 }
 
-static int smb_full_audit_unlink(vfs_handle_struct *handle, connection_struct *conn,
+static int smb_full_audit_unlink(vfs_handle_struct *handle,
 			const char *path)
 {
 	int result;
 	
-	result = SMB_VFS_NEXT_UNLINK(handle, conn, path);
+	result = SMB_VFS_NEXT_UNLINK(handle, path);
 
 	do_log(SMB_VFS_OP_UNLINK, (result >= 0), handle, "%s", path);
 
 	return result;
 }
 
-static int smb_full_audit_chmod(vfs_handle_struct *handle, connection_struct *conn,
+static int smb_full_audit_chmod(vfs_handle_struct *handle,
 		       const char *path, mode_t mode)
 {
 	int result;
 
-	result = SMB_VFS_NEXT_CHMOD(handle, conn, path, mode);
+	result = SMB_VFS_NEXT_CHMOD(handle, path, mode);
 
 	do_log(SMB_VFS_OP_CHMOD, (result >= 0), handle, "%s|%o", path, mode);
 
@@ -1229,12 +1205,12 @@ static int smb_full_audit_fchmod(vfs_handle_struct *handle, files_struct *fsp, i
 	return result;
 }
 
-static int smb_full_audit_chown(vfs_handle_struct *handle, connection_struct *conn,
+static int smb_full_audit_chown(vfs_handle_struct *handle,
 		       const char *path, uid_t uid, gid_t gid)
 {
 	int result;
 
-	result = SMB_VFS_NEXT_CHOWN(handle, conn, path, uid, gid);
+	result = SMB_VFS_NEXT_CHOWN(handle, path, uid, gid);
 
 	do_log(SMB_VFS_OP_CHOWN, (result >= 0), handle, "%s|%ld|%ld",
 	       path, (long int)uid, (long int)gid);
@@ -1255,36 +1231,36 @@ static int smb_full_audit_fchown(vfs_handle_struct *handle, files_struct *fsp, i
 	return result;
 }
 
-static int smb_full_audit_chdir(vfs_handle_struct *handle, connection_struct *conn,
+static int smb_full_audit_chdir(vfs_handle_struct *handle,
 		       const char *path)
 {
 	int result;
 
-	result = SMB_VFS_NEXT_CHDIR(handle, conn, path);
+	result = SMB_VFS_NEXT_CHDIR(handle, path);
 
 	do_log(SMB_VFS_OP_CHDIR, (result >= 0), handle, "chdir|%s", path);
 
 	return result;
 }
 
-static char *smb_full_audit_getwd(vfs_handle_struct *handle, connection_struct *conn,
+static char *smb_full_audit_getwd(vfs_handle_struct *handle,
 			 char *path)
 {
 	char *result;
 
-	result = SMB_VFS_NEXT_GETWD(handle, conn, path);
+	result = SMB_VFS_NEXT_GETWD(handle, path);
 	
 	do_log(SMB_VFS_OP_GETWD, (result != NULL), handle, "%s", path);
 
 	return result;
 }
 
-static int smb_full_audit_utime(vfs_handle_struct *handle, connection_struct *conn,
+static int smb_full_audit_utime(vfs_handle_struct *handle,
 		       const char *path, struct utimbuf *times)
 {
 	int result;
 
-	result = SMB_VFS_NEXT_UTIME(handle, conn, path, times);
+	result = SMB_VFS_NEXT_UTIME(handle, path, times);
 
 	do_log(SMB_VFS_OP_UTIME, (result >= 0), handle, "%s", path);
 
@@ -1328,12 +1304,12 @@ static BOOL smb_full_audit_getlock(vfs_handle_struct *handle, files_struct *fsp,
 	return result;
 }
 
-static int smb_full_audit_symlink(vfs_handle_struct *handle, connection_struct *conn,
+static int smb_full_audit_symlink(vfs_handle_struct *handle,
 			 const char *oldpath, const char *newpath)
 {
 	int result;
 
-	result = SMB_VFS_NEXT_SYMLINK(handle, conn, oldpath, newpath);
+	result = SMB_VFS_NEXT_SYMLINK(handle, oldpath, newpath);
 
 	do_log(SMB_VFS_OP_SYMLINK, (result >= 0), handle,
 	       "%s|%s", oldpath, newpath);
@@ -1341,24 +1317,24 @@ static int smb_full_audit_symlink(vfs_handle_struct *handle, connection_struct *
 	return result;
 }
 
-static int smb_full_audit_readlink(vfs_handle_struct *handle, connection_struct *conn,
+static int smb_full_audit_readlink(vfs_handle_struct *handle,
 			  const char *path, char *buf, size_t bufsiz)
 {
 	int result;
 
-	result = SMB_VFS_NEXT_READLINK(handle, conn, path, buf, bufsiz);
+	result = SMB_VFS_NEXT_READLINK(handle, path, buf, bufsiz);
 
 	do_log(SMB_VFS_OP_READLINK, (result >= 0), handle, "%s", path);
 
 	return result;
 }
 
-static int smb_full_audit_link(vfs_handle_struct *handle, connection_struct *conn,
+static int smb_full_audit_link(vfs_handle_struct *handle,
 		      const char *oldpath, const char *newpath)
 {
 	int result;
 
-	result = SMB_VFS_NEXT_LINK(handle, conn, oldpath, newpath);
+	result = SMB_VFS_NEXT_LINK(handle, oldpath, newpath);
 
 	do_log(SMB_VFS_OP_LINK, (result >= 0), handle,
 	       "%s|%s", oldpath, newpath);
@@ -1366,24 +1342,24 @@ static int smb_full_audit_link(vfs_handle_struct *handle, connection_struct *con
 	return result;
 }
 
-static int smb_full_audit_mknod(vfs_handle_struct *handle, connection_struct *conn,
+static int smb_full_audit_mknod(vfs_handle_struct *handle,
 		       const char *pathname, mode_t mode, SMB_DEV_T dev)
 {
 	int result;
 
-	result = SMB_VFS_NEXT_MKNOD(handle, conn, pathname, mode, dev);
+	result = SMB_VFS_NEXT_MKNOD(handle, pathname, mode, dev);
 
 	do_log(SMB_VFS_OP_MKNOD, (result >= 0), handle, "%s", pathname);
 
 	return result;
 }
 
-static char *smb_full_audit_realpath(vfs_handle_struct *handle, connection_struct *conn,
+static char *smb_full_audit_realpath(vfs_handle_struct *handle,
 			    const char *path, char *resolved_path)
 {
 	char *result;
 
-	result = SMB_VFS_NEXT_REALPATH(handle, conn, path, resolved_path);
+	result = SMB_VFS_NEXT_REALPATH(handle, path, resolved_path);
 
 	do_log(SMB_VFS_OP_REALPATH, (result != NULL), handle, "%s", path);
 
@@ -1448,12 +1424,12 @@ static BOOL smb_full_audit_set_nt_acl(vfs_handle_struct *handle, files_struct *f
 	return result;
 }
 
-static int smb_full_audit_chmod_acl(vfs_handle_struct *handle, connection_struct *conn,
+static int smb_full_audit_chmod_acl(vfs_handle_struct *handle,
 			   const char *path, mode_t mode)
 {
 	int result;
 	
-	result = SMB_VFS_NEXT_CHMOD_ACL(handle, conn, path, mode);
+	result = SMB_VFS_NEXT_CHMOD_ACL(handle, path, mode);
 
 	do_log(SMB_VFS_OP_CHMOD_ACL, (result >= 0), handle,
 	       "%s|%o", path, mode);
@@ -1475,13 +1451,13 @@ static int smb_full_audit_fchmod_acl(vfs_handle_struct *handle, files_struct *fs
 }
 
 static int smb_full_audit_sys_acl_get_entry(vfs_handle_struct *handle,
-				   connection_struct *conn,
+
 				   SMB_ACL_T theacl, int entry_id,
 				   SMB_ACL_ENTRY_T *entry_p)
 {
 	int result;
 
-	result = SMB_VFS_NEXT_SYS_ACL_GET_ENTRY(handle, conn, theacl, entry_id,
+	result = SMB_VFS_NEXT_SYS_ACL_GET_ENTRY(handle, theacl, entry_id,
 						entry_p);
 
 	do_log(SMB_VFS_OP_SYS_ACL_GET_ENTRY, (result >= 0), handle,
@@ -1491,13 +1467,13 @@ static int smb_full_audit_sys_acl_get_entry(vfs_handle_struct *handle,
 }
 
 static int smb_full_audit_sys_acl_get_tag_type(vfs_handle_struct *handle,
-				      connection_struct *conn,
+
 				      SMB_ACL_ENTRY_T entry_d,
 				      SMB_ACL_TAG_T *tag_type_p)
 {
 	int result;
 
-	result = SMB_VFS_NEXT_SYS_ACL_GET_TAG_TYPE(handle, conn, entry_d,
+	result = SMB_VFS_NEXT_SYS_ACL_GET_TAG_TYPE(handle, entry_d,
 						   tag_type_p);
 
 	do_log(SMB_VFS_OP_SYS_ACL_GET_TAG_TYPE, (result >= 0), handle,
@@ -1507,13 +1483,13 @@ static int smb_full_audit_sys_acl_get_tag_type(vfs_handle_struct *handle,
 }
 
 static int smb_full_audit_sys_acl_get_permset(vfs_handle_struct *handle,
-				     connection_struct *conn,
+
 				     SMB_ACL_ENTRY_T entry_d,
 				     SMB_ACL_PERMSET_T *permset_p)
 {
 	int result;
 
-	result = SMB_VFS_NEXT_SYS_ACL_GET_PERMSET(handle, conn, entry_d,
+	result = SMB_VFS_NEXT_SYS_ACL_GET_PERMSET(handle, entry_d,
 						  permset_p);
 
 	do_log(SMB_VFS_OP_SYS_ACL_GET_PERMSET, (result >= 0), handle,
@@ -1523,12 +1499,12 @@ static int smb_full_audit_sys_acl_get_permset(vfs_handle_struct *handle,
 }
 
 static void * smb_full_audit_sys_acl_get_qualifier(vfs_handle_struct *handle,
-					  connection_struct *conn,
+
 					  SMB_ACL_ENTRY_T entry_d)
 {
 	void *result;
 
-	result = SMB_VFS_NEXT_SYS_ACL_GET_QUALIFIER(handle, conn, entry_d);
+	result = SMB_VFS_NEXT_SYS_ACL_GET_QUALIFIER(handle, entry_d);
 
 	do_log(SMB_VFS_OP_SYS_ACL_GET_QUALIFIER, (result != NULL), handle,
 	       "");
@@ -1537,13 +1513,12 @@ static void * smb_full_audit_sys_acl_get_qualifier(vfs_handle_struct *handle,
 }
 
 static SMB_ACL_T smb_full_audit_sys_acl_get_file(vfs_handle_struct *handle,
-					connection_struct *conn,
 					const char *path_p,
 					SMB_ACL_TYPE_T type)
 {
 	SMB_ACL_T result;
 
-	result = SMB_VFS_NEXT_SYS_ACL_GET_FILE(handle, conn, path_p, type);
+	result = SMB_VFS_NEXT_SYS_ACL_GET_FILE(handle, path_p, type);
 
 	do_log(SMB_VFS_OP_SYS_ACL_GET_FILE, (result != NULL), handle,
 	       "%s", path_p);
@@ -1565,12 +1540,12 @@ static SMB_ACL_T smb_full_audit_sys_acl_get_fd(vfs_handle_struct *handle,
 }
 
 static int smb_full_audit_sys_acl_clear_perms(vfs_handle_struct *handle,
-				     connection_struct *conn,
+
 				     SMB_ACL_PERMSET_T permset)
 {
 	int result;
 
-	result = SMB_VFS_NEXT_SYS_ACL_CLEAR_PERMS(handle, conn, permset);
+	result = SMB_VFS_NEXT_SYS_ACL_CLEAR_PERMS(handle, permset);
 
 	do_log(SMB_VFS_OP_SYS_ACL_CLEAR_PERMS, (result >= 0), handle,
 	       "");
@@ -1579,13 +1554,13 @@ static int smb_full_audit_sys_acl_clear_perms(vfs_handle_struct *handle,
 }
 
 static int smb_full_audit_sys_acl_add_perm(vfs_handle_struct *handle,
-				  connection_struct *conn,
+
 				  SMB_ACL_PERMSET_T permset,
 				  SMB_ACL_PERM_T perm)
 {
 	int result;
 
-	result = SMB_VFS_NEXT_SYS_ACL_ADD_PERM(handle, conn, permset, perm);
+	result = SMB_VFS_NEXT_SYS_ACL_ADD_PERM(handle, permset, perm);
 
 	do_log(SMB_VFS_OP_SYS_ACL_ADD_PERM, (result >= 0), handle,
 	       "");
@@ -1594,12 +1569,12 @@ static int smb_full_audit_sys_acl_add_perm(vfs_handle_struct *handle,
 }
 
 static char * smb_full_audit_sys_acl_to_text(vfs_handle_struct *handle,
-				    connection_struct *conn, SMB_ACL_T theacl,
+				    SMB_ACL_T theacl,
 				    ssize_t *plen)
 {
 	char * result;
 
-	result = SMB_VFS_NEXT_SYS_ACL_TO_TEXT(handle, conn, theacl, plen);
+	result = SMB_VFS_NEXT_SYS_ACL_TO_TEXT(handle, theacl, plen);
 
 	do_log(SMB_VFS_OP_SYS_ACL_TO_TEXT, (result != NULL), handle,
 	       "");
@@ -1608,12 +1583,12 @@ static char * smb_full_audit_sys_acl_to_text(vfs_handle_struct *handle,
 }
 
 static SMB_ACL_T smb_full_audit_sys_acl_init(vfs_handle_struct *handle,
-				    connection_struct *conn,
+
 				    int count)
 {
 	SMB_ACL_T result;
 
-	result = SMB_VFS_NEXT_SYS_ACL_INIT(handle, conn, count);
+	result = SMB_VFS_NEXT_SYS_ACL_INIT(handle, count);
 
 	do_log(SMB_VFS_OP_SYS_ACL_INIT, (result != NULL), handle,
 	       "");
@@ -1622,12 +1597,12 @@ static SMB_ACL_T smb_full_audit_sys_acl_init(vfs_handle_struct *handle,
 }
 
 static int smb_full_audit_sys_acl_create_entry(vfs_handle_struct *handle,
-				      connection_struct *conn, SMB_ACL_T *pacl,
+				      SMB_ACL_T *pacl,
 				      SMB_ACL_ENTRY_T *pentry)
 {
 	int result;
 
-	result = SMB_VFS_NEXT_SYS_ACL_CREATE_ENTRY(handle, conn, pacl, pentry);
+	result = SMB_VFS_NEXT_SYS_ACL_CREATE_ENTRY(handle, pacl, pentry);
 
 	do_log(SMB_VFS_OP_SYS_ACL_CREATE_ENTRY, (result >= 0), handle,
 	       "");
@@ -1636,13 +1611,13 @@ static int smb_full_audit_sys_acl_create_entry(vfs_handle_struct *handle,
 }
 
 static int smb_full_audit_sys_acl_set_tag_type(vfs_handle_struct *handle,
-				      connection_struct *conn,
+
 				      SMB_ACL_ENTRY_T entry,
 				      SMB_ACL_TAG_T tagtype)
 {
 	int result;
 
-	result = SMB_VFS_NEXT_SYS_ACL_SET_TAG_TYPE(handle, conn, entry,
+	result = SMB_VFS_NEXT_SYS_ACL_SET_TAG_TYPE(handle, entry,
 						   tagtype);
 
 	do_log(SMB_VFS_OP_SYS_ACL_SET_TAG_TYPE, (result >= 0), handle,
@@ -1652,13 +1627,13 @@ static int smb_full_audit_sys_acl_set_tag_type(vfs_handle_struct *handle,
 }
 
 static int smb_full_audit_sys_acl_set_qualifier(vfs_handle_struct *handle,
-				       connection_struct *conn,
+
 				       SMB_ACL_ENTRY_T entry,
 				       void *qual)
 {
 	int result;
 
-	result = SMB_VFS_NEXT_SYS_ACL_SET_QUALIFIER(handle, conn, entry, qual);
+	result = SMB_VFS_NEXT_SYS_ACL_SET_QUALIFIER(handle, entry, qual);
 
 	do_log(SMB_VFS_OP_SYS_ACL_SET_QUALIFIER, (result >= 0), handle,
 	       "");
@@ -1667,13 +1642,13 @@ static int smb_full_audit_sys_acl_set_qualifier(vfs_handle_struct *handle,
 }
 
 static int smb_full_audit_sys_acl_set_permset(vfs_handle_struct *handle,
-				     connection_struct *conn,
+
 				     SMB_ACL_ENTRY_T entry,
 				     SMB_ACL_PERMSET_T permset)
 {
 	int result;
 
-	result = SMB_VFS_NEXT_SYS_ACL_SET_PERMSET(handle, conn, entry, permset);
+	result = SMB_VFS_NEXT_SYS_ACL_SET_PERMSET(handle, entry, permset);
 
 	do_log(SMB_VFS_OP_SYS_ACL_SET_PERMSET, (result >= 0), handle,
 	       "");
@@ -1682,12 +1657,12 @@ static int smb_full_audit_sys_acl_set_permset(vfs_handle_struct *handle,
 }
 
 static int smb_full_audit_sys_acl_valid(vfs_handle_struct *handle,
-			       connection_struct *conn,
+
 			       SMB_ACL_T theacl )
 {
 	int result;
 
-	result = SMB_VFS_NEXT_SYS_ACL_VALID(handle, conn, theacl);
+	result = SMB_VFS_NEXT_SYS_ACL_VALID(handle, theacl);
 
 	do_log(SMB_VFS_OP_SYS_ACL_VALID, (result >= 0), handle,
 	       "");
@@ -1696,13 +1671,13 @@ static int smb_full_audit_sys_acl_valid(vfs_handle_struct *handle,
 }
 
 static int smb_full_audit_sys_acl_set_file(vfs_handle_struct *handle,
-				  connection_struct *conn,
+
 				  const char *name, SMB_ACL_TYPE_T acltype,
 				  SMB_ACL_T theacl)
 {
 	int result;
 
-	result = SMB_VFS_NEXT_SYS_ACL_SET_FILE(handle, conn, name, acltype,
+	result = SMB_VFS_NEXT_SYS_ACL_SET_FILE(handle, name, acltype,
 					       theacl);
 
 	do_log(SMB_VFS_OP_SYS_ACL_SET_FILE, (result >= 0), handle,
@@ -1725,12 +1700,12 @@ static int smb_full_audit_sys_acl_set_fd(vfs_handle_struct *handle, files_struct
 }
 
 static int smb_full_audit_sys_acl_delete_def_file(vfs_handle_struct *handle,
-					 connection_struct *conn,
+
 					 const char *path)
 {
 	int result;
 
-	result = SMB_VFS_NEXT_SYS_ACL_DELETE_DEF_FILE(handle, conn, path);
+	result = SMB_VFS_NEXT_SYS_ACL_DELETE_DEF_FILE(handle, path);
 
 	do_log(SMB_VFS_OP_SYS_ACL_DELETE_DEF_FILE, (result >= 0), handle,
 	       "%s", path);
@@ -1739,13 +1714,13 @@ static int smb_full_audit_sys_acl_delete_def_file(vfs_handle_struct *handle,
 }
 
 static int smb_full_audit_sys_acl_get_perm(vfs_handle_struct *handle,
-				  connection_struct *conn,
+
 				  SMB_ACL_PERMSET_T permset,
 				  SMB_ACL_PERM_T perm)
 {
 	int result;
 
-	result = SMB_VFS_NEXT_SYS_ACL_GET_PERM(handle, conn, permset, perm);
+	result = SMB_VFS_NEXT_SYS_ACL_GET_PERM(handle, permset, perm);
 
 	do_log(SMB_VFS_OP_SYS_ACL_GET_PERM, (result >= 0), handle,
 	       "");
@@ -1754,12 +1729,12 @@ static int smb_full_audit_sys_acl_get_perm(vfs_handle_struct *handle,
 }
 
 static int smb_full_audit_sys_acl_free_text(vfs_handle_struct *handle,
-				   connection_struct *conn,
+
 				   char *text)
 {
 	int result;
 
-	result = SMB_VFS_NEXT_SYS_ACL_FREE_TEXT(handle, conn, text);
+	result = SMB_VFS_NEXT_SYS_ACL_FREE_TEXT(handle, text);
 
 	do_log(SMB_VFS_OP_SYS_ACL_FREE_TEXT, (result >= 0), handle,
 	       "");
@@ -1768,12 +1743,12 @@ static int smb_full_audit_sys_acl_free_text(vfs_handle_struct *handle,
 }
 
 static int smb_full_audit_sys_acl_free_acl(vfs_handle_struct *handle,
-				  connection_struct *conn,
+
 				  SMB_ACL_T posix_acl)
 {
 	int result;
 
-	result = SMB_VFS_NEXT_SYS_ACL_FREE_ACL(handle, conn, posix_acl);
+	result = SMB_VFS_NEXT_SYS_ACL_FREE_ACL(handle, posix_acl);
 
 	do_log(SMB_VFS_OP_SYS_ACL_FREE_ACL, (result >= 0), handle,
 	       "");
@@ -1782,13 +1757,12 @@ static int smb_full_audit_sys_acl_free_acl(vfs_handle_struct *handle,
 }
 
 static int smb_full_audit_sys_acl_free_qualifier(vfs_handle_struct *handle,
-					connection_struct *conn,
 					void *qualifier,
 					SMB_ACL_TAG_T tagtype)
 {
 	int result;
 
-	result = SMB_VFS_NEXT_SYS_ACL_FREE_QUALIFIER(handle, conn, qualifier,
+	result = SMB_VFS_NEXT_SYS_ACL_FREE_QUALIFIER(handle, qualifier,
 						     tagtype);
 
 	do_log(SMB_VFS_OP_SYS_ACL_FREE_QUALIFIER, (result >= 0), handle,
@@ -1798,12 +1772,12 @@ static int smb_full_audit_sys_acl_free_qualifier(vfs_handle_struct *handle,
 }
 
 static ssize_t smb_full_audit_getxattr(struct vfs_handle_struct *handle,
-			      struct connection_struct *conn, const char *path,
+			      const char *path,
 			      const char *name, void *value, size_t size)
 {
 	ssize_t result;
 
-	result = SMB_VFS_NEXT_GETXATTR(handle, conn, path, name, value, size);
+	result = SMB_VFS_NEXT_GETXATTR(handle, path, name, value, size);
 
 	do_log(SMB_VFS_OP_GETXATTR, (result >= 0), handle,
 	       "%s|%s", path, name);
@@ -1812,13 +1786,12 @@ static ssize_t smb_full_audit_getxattr(struct vfs_handle_struct *handle,
 }
 
 static ssize_t smb_full_audit_lgetxattr(struct vfs_handle_struct *handle,
-			       struct connection_struct *conn,
 			       const char *path, const char *name,
 			       void *value, size_t size)
 {
 	ssize_t result;
 
-	result = SMB_VFS_NEXT_LGETXATTR(handle, conn, path, name, value, size);
+	result = SMB_VFS_NEXT_LGETXATTR(handle, path, name, value, size);
 
 	do_log(SMB_VFS_OP_LGETXATTR, (result >= 0), handle,
 	       "%s|%s", path, name);
@@ -1841,12 +1814,11 @@ static ssize_t smb_full_audit_fgetxattr(struct vfs_handle_struct *handle,
 }
 
 static ssize_t smb_full_audit_listxattr(struct vfs_handle_struct *handle,
-			       struct connection_struct *conn,
 			       const char *path, char *list, size_t size)
 {
 	ssize_t result;
 
-	result = SMB_VFS_NEXT_LISTXATTR(handle, conn, path, list, size);
+	result = SMB_VFS_NEXT_LISTXATTR(handle, path, list, size);
 
 	do_log(SMB_VFS_OP_LISTXATTR, (result >= 0), handle, "%s", path);
 
@@ -1854,12 +1826,11 @@ static ssize_t smb_full_audit_listxattr(struct vfs_handle_struct *handle,
 }
 
 static ssize_t smb_full_audit_llistxattr(struct vfs_handle_struct *handle,
-				struct connection_struct *conn,
 				const char *path, char *list, size_t size)
 {
 	ssize_t result;
 
-	result = SMB_VFS_NEXT_LLISTXATTR(handle, conn, path, list, size);
+	result = SMB_VFS_NEXT_LLISTXATTR(handle, path, list, size);
 
 	do_log(SMB_VFS_OP_LLISTXATTR, (result >= 0), handle, "%s", path);
 
@@ -1881,12 +1852,12 @@ static ssize_t smb_full_audit_flistxattr(struct vfs_handle_struct *handle,
 }
 
 static int smb_full_audit_removexattr(struct vfs_handle_struct *handle,
-			     struct connection_struct *conn, const char *path,
+			     const char *path,
 			     const char *name)
 {
 	int result;
 
-	result = SMB_VFS_NEXT_REMOVEXATTR(handle, conn, path, name);
+	result = SMB_VFS_NEXT_REMOVEXATTR(handle, path, name);
 
 	do_log(SMB_VFS_OP_REMOVEXATTR, (result >= 0), handle,
 	       "%s|%s", path, name);
@@ -1895,12 +1866,12 @@ static int smb_full_audit_removexattr(struct vfs_handle_struct *handle,
 }
 
 static int smb_full_audit_lremovexattr(struct vfs_handle_struct *handle,
-			      struct connection_struct *conn, const char *path,
+			      const char *path,
 			      const char *name)
 {
 	int result;
 
-	result = SMB_VFS_NEXT_LREMOVEXATTR(handle, conn, path, name);
+	result = SMB_VFS_NEXT_LREMOVEXATTR(handle, path, name);
 
 	do_log(SMB_VFS_OP_LREMOVEXATTR, (result >= 0), handle,
 	       "%s|%s", path, name);
@@ -1923,13 +1894,13 @@ static int smb_full_audit_fremovexattr(struct vfs_handle_struct *handle,
 }
 
 static int smb_full_audit_setxattr(struct vfs_handle_struct *handle,
-			  struct connection_struct *conn, const char *path,
+			  const char *path,
 			  const char *name, const void *value, size_t size,
 			  int flags)
 {
 	int result;
 
-	result = SMB_VFS_NEXT_SETXATTR(handle, conn, path, name, value, size,
+	result = SMB_VFS_NEXT_SETXATTR(handle, path, name, value, size,
 				       flags);
 
 	do_log(SMB_VFS_OP_SETXATTR, (result >= 0), handle,
@@ -1939,13 +1910,13 @@ static int smb_full_audit_setxattr(struct vfs_handle_struct *handle,
 }
 
 static int smb_full_audit_lsetxattr(struct vfs_handle_struct *handle,
-			   struct connection_struct *conn, const char *path,
+			   const char *path,
 			   const char *name, const void *value, size_t size,
 			   int flags)
 {
 	int result;
 
-	result = SMB_VFS_NEXT_LSETXATTR(handle, conn, path, name, value, size,
+	result = SMB_VFS_NEXT_LSETXATTR(handle, path, name, value, size,
 					flags);
 
 	do_log(SMB_VFS_OP_LSETXATTR, (result >= 0), handle,

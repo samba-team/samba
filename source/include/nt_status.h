@@ -56,7 +56,6 @@ typedef uint32 WERROR;
 
 #define NT_STATUS_IS_OK(x) (NT_STATUS_V(x) == 0)
 #define NT_STATUS_IS_ERR(x) ((NT_STATUS_V(x) & 0xc0000000) == 0xc0000000)
-#define NT_STATUS_IS_INVALID(x) (NT_STATUS_V(x) == 0xFFFFFFFF)
 #define NT_STATUS_EQUAL(x,y) (NT_STATUS_V(x) == NT_STATUS_V(y))
 #define W_ERROR_IS_OK(x) (W_ERROR_V(x) == 0)
 #define W_ERROR_EQUAL(x,y) (W_ERROR_V(x) == W_ERROR_V(y))
@@ -66,5 +65,13 @@ typedef uint32 WERROR;
                 return NT_STATUS_NO_MEMORY;\
         }\
 } while (0)
+
+/* this defines special NTSTATUS codes to represent DOS errors.  I
+   have chosen this macro to produce status codes in the invalid
+   NTSTATUS range */
+#define NT_STATUS_DOS(class, code) NT_STATUS(0xF1000000 | ((class)<<16) | code)
+#define NT_STATUS_IS_DOS(status) ((NT_STATUS_V(status) & 0xFF000000) == 0xF1000000)
+#define NT_STATUS_DOS_CLASS(status) ((NT_STATUS_V(status) >> 16) & 0xFF)
+#define NT_STATUS_DOS_CODE(status) (NT_STATUS_V(status) & 0xFFFF)
 
 #endif

@@ -234,17 +234,9 @@ typedef struct pipes_struct {
 	struct dcinfo *dc; /* Keeps the creds data from netlogon. */
 
 	/*
-	 * Windows user info.
-	 */
-	fstring user_name;
-	fstring domain;
-	fstring wks;
-
-	/*
-	 * Unix user name and credentials used when a pipe is authenticated.
+	 * Credentials used for the pipe operations
 	 */
 
-	fstring pipe_user_name;
 	struct current_user pipe_user;
 	DATA_BLOB session_key;
  

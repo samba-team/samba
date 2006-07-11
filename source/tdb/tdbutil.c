@@ -19,8 +19,20 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#include "includes.h"
+#include "tdb_private.h"
 #include <fnmatch.h>
+
+/***************************************************************
+ Allow a caller to set a "alarm" flag that tdb can check to abort
+ a blocking lock on SIGALRM.
+***************************************************************/
+
+static sig_atomic_t *palarm_fired;
+
+static void tdb_set_lock_alarm(sig_atomic_t *palarm)
+{
+	palarm_fired = palarm;
+}
 
 /* these are little tdb utility functions that are meant to make
    dealing with a tdb database a little less cumbersome in Samba */
@@ -641,129 +653,6 @@ int tdb_unpack(char *buf, int bufsize, const char *fmt, ...)
 }
 
 
-/**
- * Pack SID passed by pointer
- *
- * @param pack_buf pointer to buffer which is to be filled with packed data
- * @param bufsize size of packing buffer
- * @param sid pointer to sid to be packed
- *
- * @return length of the packed representation of the whole structure
- **/
-size_t tdb_sid_pack(char* pack_buf, int bufsize, DOM_SID* sid)
-{
-	int idx;
-	size_t len = 0;
-	
-	if (!sid || !pack_buf) return -1;
-	
-	len += tdb_pack(pack_buf + len, bufsize - len, "bb", sid->sid_rev_num,
-	                sid->num_auths);
-	
-	for (idx = 0; idx < 6; idx++) {
-		len += tdb_pack(pack_buf + len, bufsize - len, "b", sid->id_auth[idx]);
-	}
-	
-	for (idx = 0; idx < MAXSUBAUTHS; idx++) {
-		len += tdb_pack(pack_buf + len, bufsize - len, "d", sid->sub_auths[idx]);
-	}
-	
-	return len;
-}
-
-
-/**
- * Unpack SID into a pointer
- *
- * @param pack_buf pointer to buffer with packed representation
- * @param bufsize size of the buffer
- * @param sid pointer to sid structure to be filled with unpacked data
- *
- * @return size of structure unpacked from buffer
- **/
-size_t tdb_sid_unpack(char* pack_buf, int bufsize, DOM_SID* sid)
-{
-	int idx, len = 0;
-	
-	if (!sid || !pack_buf) return -1;
-
-	len += tdb_unpack(pack_buf + len, bufsize - len, "bb",
-	                  &sid->sid_rev_num, &sid->num_auths);
-			  
-	for (idx = 0; idx < 6; idx++) {
-		len += tdb_unpack(pack_buf + len, bufsize - len, "b", &sid->id_auth[idx]);
-	}
-	
-	for (idx = 0; idx < MAXSUBAUTHS; idx++) {
-		len += tdb_unpack(pack_buf + len, bufsize - len, "d", &sid->sub_auths[idx]);
-	}
-	
-	return len;
-}
-
-
-/**
- * Pack TRUSTED_DOM_PASS passed by pointer
- *
- * @param pack_buf pointer to buffer which is to be filled with packed data
- * @param bufsize size of the buffer
- * @param pass pointer to trusted domain password to be packed
- *
- * @return length of the packed representation of the whole structure
- **/
-size_t tdb_trusted_dom_pass_pack(char* pack_buf, int bufsize, TRUSTED_DOM_PASS* pass)
-{
-	int idx, len = 0;
-	
-	if (!pack_buf || !pass) return -1;
-	
-	/* packing unicode domain name and password */
-	len += tdb_pack(pack_buf + len, bufsize - len, "d", pass->uni_name_len);
-	
-	for (idx = 0; idx < 32; idx++)
-		len +=  tdb_pack(pack_buf + len, bufsize - len, "w", pass->uni_name[idx]);
-	
-	len += tdb_pack(pack_buf + len, bufsize - len, "dPd", pass->pass_len,
-	                     pass->pass, pass->mod_time);
-
-	/* packing SID structure */
-	len += tdb_sid_pack(pack_buf + len, bufsize - len, &pass->domain_sid);
-
-	return len;
-}
-
-
-/**
- * Unpack TRUSTED_DOM_PASS passed by pointer
- *
- * @param pack_buf pointer to buffer with packed representation
- * @param bufsize size of the buffer
- * @param pass pointer to trusted domain password to be filled with unpacked data
- *
- * @return size of structure unpacked from buffer
- **/
-size_t tdb_trusted_dom_pass_unpack(char* pack_buf, int bufsize, TRUSTED_DOM_PASS* pass)
-{
-	int idx, len = 0;
-	
-	if (!pack_buf || !pass) return -1;
-
-	/* unpack unicode domain name and plaintext password */
-	len += tdb_unpack(pack_buf, bufsize - len, "d", &pass->uni_name_len);
-	
-	for (idx = 0; idx < 32; idx++)
-		len +=  tdb_unpack(pack_buf + len, bufsize - len, "w", &pass->uni_name[idx]);
-
-	len += tdb_unpack(pack_buf + len, bufsize - len, "dPd", &pass->pass_len, &pass->pass,
-	                  &pass->mod_time);
-	
-	/* unpack domain sid */
-	len += tdb_sid_unpack(pack_buf + len, bufsize - len, &pass->domain_sid);
-	
-	return len;	
-}
-
-
 /****************************************************************************
  Log tdb messages via DEBUG().
 ****************************************************************************/
@@ -803,15 +692,6 @@ TDB_CONTEXT *tdb_open_log(const char *name, int hash_size, int tdb_flags,
 		return NULL;
 
 	return tdb;
-}
-
-/****************************************************************************
-  return the name of the current tdb file useful for external logging
-  functions
-****************************************************************************/
-const char *tdb_name(struct tdb_context *tdb)
-{
-	return tdb->name;
 }
 
 /****************************************************************************
@@ -892,4 +772,44 @@ void tdb_search_list_free(TDB_LIST_NODE* node)
 		SAFE_FREE(node);
 		node = next_node;
 	};
+}
+
+size_t tdb_map_size(struct tdb_context *tdb)
+{
+	return tdb->map_size;
+}
+
+int tdb_get_flags(struct tdb_context *tdb)
+{
+	return tdb->flags;
+}
+
+/****************************************************************************
+ tdb_store, wrapped in a transaction. This way we make sure that a process
+ that dies within writing does not leave a corrupt tdb behind.
+****************************************************************************/
+
+int tdb_trans_store(struct tdb_context *tdb, TDB_DATA key, TDB_DATA dbuf,
+		    int flag)
+{
+	int res;
+
+	if ((res = tdb_transaction_start(tdb)) != 0) {
+		DEBUG(5, ("tdb_transaction_start failed\n"));
+		return res;
+	}
+
+	if ((res = tdb_store(tdb, key, dbuf, flag)) != 0) {
+		DEBUG(10, ("tdb_store failed\n"));
+		if (tdb_transaction_cancel(tdb) != 0) {
+			smb_panic("Cancelling transaction failed\n");
+		}
+		return res;
+	}
+
+	if ((res = tdb_transaction_commit(tdb)) != 0) {
+		DEBUG(5, ("tdb_transaction_commit failed\n"));
+	}
+
+	return res;
 }

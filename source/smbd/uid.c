@@ -102,7 +102,7 @@ static BOOL check_user_ok(connection_struct *conn, user_struct *vuser,int snum)
 
 	readonly_share = is_share_read_only_for_token(vuser->user.unix_name,
 						      vuser->nt_user_token,
-						      conn->service);
+						      SNUM(conn));
 
 	if (!readonly_share &&
 	    !share_access_check(conn, snum, vuser, FILE_WRITE_DATA)) {
@@ -129,7 +129,7 @@ static BOOL check_user_ok(connection_struct *conn, user_struct *vuser,int snum)
 
 	ent->admin_user = token_contains_name_in_list(
 		vuser->user.unix_name, NULL, vuser->nt_user_token,
-		lp_admin_users(conn->service));
+		lp_admin_users(SNUM(conn)));
 
 	conn->read_only = ent->read_only;
 	conn->admin_user = ent->admin_user;

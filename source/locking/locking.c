@@ -37,7 +37,6 @@
 */
 
 #include "includes.h"
-uint16 global_smbpid;
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_LOCKING
@@ -74,6 +73,7 @@ const char *lock_flav_name(enum brl_flavour lock_flav)
 ****************************************************************************/
 
 BOOL is_locked(files_struct *fsp,
+		uint32 smbpid,
 		SMB_BIG_UINT count,
 		SMB_BIG_UINT offset, 
 		enum brl_type lock_type)
@@ -100,32 +100,32 @@ BOOL is_locked(files_struct *fsp,
 			DEBUG(10,("is_locked: optimisation - level II oplock on file %s\n", fsp->fsp_name ));
 			ret = False;
 		} else {
-			struct byte_range_lock *br_lck = brl_get_locks(fsp);
+			struct byte_range_lock *br_lck = brl_get_locks(NULL, fsp);
 			if (!br_lck) {
 				return False;
 			}
 			ret = !brl_locktest(br_lck,
-					global_smbpid,
+					smbpid,
 					procid_self(),
 					offset,
 					count,
 					lock_type,
 					lock_flav);
-			byte_range_lock_destructor(br_lck);
+			TALLOC_FREE(br_lck);
 		}
 	} else {
-		struct byte_range_lock *br_lck = brl_get_locks(fsp);
+		struct byte_range_lock *br_lck = brl_get_locks(NULL, fsp);
 		if (!br_lck) {
 			return False;
 		}
 		ret = !brl_locktest(br_lck,
-				global_smbpid,
+				smbpid,
 				procid_self(),
 				offset,
 				count,
 				lock_type,
 				lock_flav);
-		byte_range_lock_destructor(br_lck);
+		TALLOC_FREE(br_lck);
 	}
 
 	DEBUG(10,("is_locked: flavour = %s brl start=%.0f len=%.0f %s for fnum %d file %s\n",
@@ -141,7 +141,7 @@ BOOL is_locked(files_struct *fsp,
 ****************************************************************************/
 
 NTSTATUS query_lock(files_struct *fsp,
-			uint16 *psmbpid,
+			uint32 *psmbpid,
 			SMB_BIG_UINT *pcount,
 			SMB_BIG_UINT *poffset,
 			enum brl_type *plock_type,
@@ -150,15 +150,15 @@ NTSTATUS query_lock(files_struct *fsp,
 	struct byte_range_lock *br_lck = NULL;
 	NTSTATUS status = NT_STATUS_LOCK_NOT_GRANTED;
 
-	if (!OPEN_FSP(fsp) || !fsp->can_lock) {
-		return NT_STATUS_INVALID_HANDLE;
+	if (!fsp->can_lock) {
+		return fsp->is_directory ? NT_STATUS_INVALID_DEVICE_REQUEST : NT_STATUS_INVALID_HANDLE;
 	}
 
 	if (!lp_locking(SNUM(fsp->conn))) {
 		return NT_STATUS_OK;
 	}
 
-	br_lck = brl_get_locks(fsp);
+	br_lck = brl_get_locks(NULL, fsp);
 	if (!br_lck) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -171,7 +171,7 @@ NTSTATUS query_lock(files_struct *fsp,
 			plock_type,
 			lock_flav);
 
-	byte_range_lock_destructor(br_lck);
+	TALLOC_FREE(br_lck);
 	return status;
 }
 
@@ -180,7 +180,7 @@ NTSTATUS query_lock(files_struct *fsp,
 ****************************************************************************/
 
 NTSTATUS do_lock(files_struct *fsp,
-			uint16 lock_pid,
+			uint32 lock_pid,
 			SMB_BIG_UINT count,
 			SMB_BIG_UINT offset,
 			enum brl_type lock_type,
@@ -190,8 +190,8 @@ NTSTATUS do_lock(files_struct *fsp,
 	struct byte_range_lock *br_lck = NULL;
 	NTSTATUS status = NT_STATUS_LOCK_NOT_GRANTED;
 
-	if (!OPEN_FSP(fsp) || !fsp->can_lock) {
-		return NT_STATUS_INVALID_HANDLE;
+	if (!fsp->can_lock) {
+		return fsp->is_directory ? NT_STATUS_INVALID_DEVICE_REQUEST : NT_STATUS_INVALID_HANDLE;
 	}
 
 	if (!lp_locking(SNUM(fsp->conn))) {
@@ -204,7 +204,7 @@ NTSTATUS do_lock(files_struct *fsp,
 		lock_flav_name(lock_flav), lock_type_name(lock_type),
 		(double)offset, (double)count, fsp->fnum, fsp->fsp_name ));
 
-	br_lck = brl_get_locks(fsp);
+	br_lck = brl_get_locks(NULL, fsp);
 	if (!br_lck) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -218,7 +218,7 @@ NTSTATUS do_lock(files_struct *fsp,
 			lock_flav,
 			my_lock_ctx);
 
-	byte_range_lock_destructor(br_lck);
+	TALLOC_FREE(br_lck);
 	return status;
 }
 
@@ -230,7 +230,7 @@ NTSTATUS do_lock(files_struct *fsp,
 ****************************************************************************/
 
 NTSTATUS do_lock_spin(files_struct *fsp,
-			uint16 lock_pid,
+			uint32 lock_pid,
 			SMB_BIG_UINT count,
 			SMB_BIG_UINT offset,
 			enum brl_type lock_type,
@@ -286,7 +286,7 @@ NTSTATUS do_lock_spin(files_struct *fsp,
 ****************************************************************************/
 
 NTSTATUS do_unlock(files_struct *fsp,
-			uint16 lock_pid,
+			uint32 lock_pid,
 			SMB_BIG_UINT count,
 			SMB_BIG_UINT offset,
 			enum brl_flavour lock_flav)
@@ -294,18 +294,18 @@ NTSTATUS do_unlock(files_struct *fsp,
 	BOOL ok = False;
 	struct byte_range_lock *br_lck = NULL;
 	
-	if (!lp_locking(SNUM(fsp->conn))) {
-		return NT_STATUS_OK;
+	if (!fsp->can_lock) {
+		return fsp->is_directory ? NT_STATUS_INVALID_DEVICE_REQUEST : NT_STATUS_INVALID_HANDLE;
 	}
 	
-	if (!OPEN_FSP(fsp) || !fsp->can_lock) {
-		return NT_STATUS_INVALID_HANDLE;
+	if (!lp_locking(SNUM(fsp->conn))) {
+		return NT_STATUS_OK;
 	}
 	
 	DEBUG(10,("do_unlock: unlock start=%.0f len=%.0f requested for fnum %d file %s\n",
 		  (double)offset, (double)count, fsp->fnum, fsp->fsp_name ));
 
-	br_lck = brl_get_locks(fsp);
+	br_lck = brl_get_locks(NULL, fsp);
 	if (!br_lck) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -317,7 +317,7 @@ NTSTATUS do_unlock(files_struct *fsp,
 			count,
 			lock_flav);
    
-	byte_range_lock_destructor(br_lck);
+	TALLOC_FREE(br_lck);
 
 	if (!ok) {
 		DEBUG(10,("do_unlock: returning ERRlock.\n" ));
@@ -334,25 +334,15 @@ NTSTATUS do_unlock(files_struct *fsp,
 void locking_close_file(files_struct *fsp)
 {
 	struct byte_range_lock *br_lck;
-	struct process_id pid = procid_self();
 
-	if (!lp_locking(SNUM(fsp->conn)))
+	if (!lp_locking(SNUM(fsp->conn))) {
 		return;
-
-	/*
-	 * Just release all the brl locks, no need to release individually.
-	 */
-
-	br_lck = brl_get_locks(fsp);
-	if (br_lck) {
-		brl_close_fnum(br_lck, pid);
-		byte_range_lock_destructor(br_lck);
 	}
 
-	if(lp_posix_locking(SNUM(fsp->conn))) {
-	 	/* Release all the POSIX locks.*/
-		posix_locking_close_file(fsp);
-
+	br_lck = brl_get_locks(NULL,fsp);
+	if (br_lck) {
+		brl_close_fnum(br_lck);
+		TALLOC_FREE(br_lck);
 	}
 }
 
@@ -516,9 +506,10 @@ static BOOL parse_share_modes(TDB_DATA dbuf, struct share_mode_lock *lck)
 			smb_panic("PANIC: parse_share_modes: buffer too short.\n");
 		}
 				  
-		lck->share_modes = talloc_memdup(lck, dbuf.dptr+sizeof(*data),
-						 lck->num_share_modes *
-						 sizeof(struct share_mode_entry));
+		lck->share_modes = (struct share_mode_entry *)
+			talloc_memdup(lck, dbuf.dptr+sizeof(*data),
+				      lck->num_share_modes *
+				      sizeof(struct share_mode_entry));
 
 		if (lck->share_modes == NULL) {
 			smb_panic("talloc failed\n");
@@ -635,7 +626,7 @@ static TDB_DATA unparse_share_modes(struct share_mode_lock *lck)
 		delete_token_size +
 		sp_len + 1 +
 		strlen(lck->filename) + 1;
-	result.dptr = talloc_size(lck, result.dsize);
+	result.dptr = TALLOC_ARRAY(lck, char, result.dsize);
 
 	if (result.dptr == NULL) {
 		smb_panic("talloc failed\n");
@@ -838,7 +829,7 @@ BOOL rename_share_filename(struct share_mode_lock *lck,
 	msg_len = MSG_FILE_RENAMED_MIN_SIZE + sp_len + 1 + fn_len + 1;
 
 	/* Set up the name changed message. */
-	frm = TALLOC(lck, msg_len);
+	frm = TALLOC_ARRAY(lck, char, msg_len);
 	if (!frm) {
 		return False;
 	}
@@ -862,9 +853,9 @@ BOOL rename_share_filename(struct share_mode_lock *lck,
 			continue;
 		}
 
-		DEBUG(10,("rename_share_filename: sending rename message to pid %u "
+		DEBUG(10,("rename_share_filename: sending rename message to pid %s "
 			"dev %x, inode  %.0f sharepath %s newname %s\n",
-			(unsigned int)procid_to_pid(&se->pid),
+			procid_str_static(&se->pid),
 			(unsigned int)lck->dev, (double)lck->ino,
 			lck->servicepath, lck->filename ));
 
@@ -1305,5 +1296,5 @@ int share_mode_forall(void (*fn)(const struct share_mode_entry *, const char *, 
 {
 	if (tdb == NULL)
 		return 0;
-	return tdb_traverse(tdb, traverse_fn, fn);
+	return tdb_traverse(tdb, traverse_fn, (void *)fn);
 }

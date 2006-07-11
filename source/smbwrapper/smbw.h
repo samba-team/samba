@@ -32,7 +32,7 @@
 
 struct smbw_server {
 	struct smbw_server *next, *prev;
-	struct cli_state cli;
+	struct cli_state *cli;
 	char *server_name;
 	char *share_name;
 	char *workgroup;

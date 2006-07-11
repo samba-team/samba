@@ -981,3 +981,97 @@ clockid_t clk = $1;
 	AC_MSG_RESULT(no)
     ])
 ])
+
+dnl SMB_IF_RTSIGNAL_BUG([actions if true],
+dnl			[actions if false],
+dnl			[actions if cross compiling])
+dnl Test whether we can call sigaction with RT_SIGNAL_NOTIFY and
+dnl RT_SIGNAL_LEASE (also RT_SIGNAL_AIO for good measure, though
+dnl I don't believe that triggers any bug.
+dnl
+dnl See the samba-technical thread titled "Failed to setup
+dnl RT_SIGNAL_NOTIFY handler" for details on the bug in question.
+AC_DEFUN([SMB_IF_RTSIGNAL_BUG],
+[
+    rt_signal_notify_works=yes
+    rt_signal_lease_works=yes
+    rt_signal_aio_works=yes
+
+    AC_MSG_CHECKING(if sigaction works with realtime signals)
+    AC_TRY_RUN(
+	[
+#include <sys/types.h>
+#include <fcntl.h>
+#include <signal.h>
+
+/* from smbd/notify_kernel.c */
+#ifndef RT_SIGNAL_NOTIFY
+#define RT_SIGNAL_NOTIFY (SIGRTMIN+2)
+#endif
+
+/* from smbd/aio.c */
+#ifndef RT_SIGNAL_AIO
+#define RT_SIGNAL_AIO (SIGRTMIN+3)
+#endif
+
+/* from smbd/oplock_linux.c */
+#ifndef RT_SIGNAL_LEASE
+#define RT_SIGNAL_LEASE (SIGRTMIN+1)
+#endif
+
+static void signal_handler(int sig, siginfo_t *info, void *unused)
+{
+    int do_nothing = 0;
+}
+
+int main(void)
+{
+    int result = 0;
+    struct sigaction act = {0};
+
+    act.sa_sigaction = signal_handler;
+    act.sa_flags = SA_SIGINFO;
+    sigemptyset( &act.sa_mask );
+
+    if (sigaction(RT_SIGNAL_LEASE, &act, 0) != 0) {
+	    /* Failed to setup RT_SIGNAL_LEASE handler */
+	    result += 1;
+    }
+
+    if (sigaction(RT_SIGNAL_NOTIFY, &act, 0) != 0) {
+	    /* Failed to setup RT_SIGNAL_NOTIFY handler */
+	    result += 10;
+    }
+
+    if (sigaction(RT_SIGNAL_AIO, &act, 0) != 0) {
+	    /* Failed to setup RT_SIGNAL_AIO handler */
+	    result += 100;
+    }
+
+    /* zero on success */
+    return result;
+}
+	],
+	[
+	    AC_MSG_RESULT(yes)
+	    $2
+	],
+	[
+	    AC_MSG_RESULT(no)
+	    case "$ac_status" in
+		1|11|101|111)  rt_signal_lease_ok=no ;;
+	    esac
+	    case "$ac_status" in
+		10|11|110|111)  rt_signal_notify_ok=no ;;
+	    esac
+	    case "$ac_status" in
+		100|110|101|111)  rt_signal_aio_ok=no ;;
+	    esac
+	    $2
+	],
+	[
+	    AC_MSG_RESULT(cross)
+	    $3
+	])
+])
+

@@ -112,7 +112,7 @@ static krb5_error_code smb_krb5_parse_name_norealm_conv(krb5_context context,
 
 #ifndef HAVE_KRB5_SET_REAL_TIME
 /*
- * This function is not in the Heimdal mainline.
+ * Thir function is not in the Heimdal mainline.
  */
  krb5_error_code krb5_set_real_time(krb5_context context, int32_t seconds, int32_t microseconds)
 {

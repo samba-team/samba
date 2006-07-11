@@ -837,16 +837,16 @@ static int call_trans2open(connection_struct *conn, char *inbuf, char *outbuf, i
 		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 	}
 
-	fsp = open_file_ntcreate(conn,fname,&sbuf,
+	status = open_file_ntcreate(conn,fname,&sbuf,
 		access_mask,
 		share_mode,
 		create_disposition,
 		create_options,
 		open_attr,
 		oplock_request,
-		&smb_action);
+		&smb_action, &fsp);
       
-	if (!fsp) {
+	if (!NT_STATUS_IS_OK(status)) {
 		talloc_destroy(ctx);
 		if (open_was_deferred(SVAL(inbuf,smb_mid))) {
 			/* We have re-scheduled this call. */
@@ -1070,7 +1070,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 	BOOL was_8_3;
 	uint32 nt_extmode; /* Used for NT connections instead of mode */
 	BOOL needslash = ( conn->dirpath[strlen(conn->dirpath) -1] != '/');
-	BOOL check_mangled_names = lp_manglednames(SNUM(conn));
+	BOOL check_mangled_names = lp_manglednames(conn->params);
 
 	*fname = 0;
 	*out_of_space = False;
@@ -1117,7 +1117,8 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 		if(!(got_match = *got_exact_match = exact_match(fname, mask, conn->case_sensitive)))
 			got_match = mask_match(fname, mask, conn->case_sensitive);
 
-		if(!got_match && check_mangled_names && !mangle_is_8_3(fname, False, SNUM(conn))) {
+		if(!got_match && check_mangled_names &&
+		   !mangle_is_8_3(fname, False, conn->params)) {
 
 			/*
 			 * It turns out that NT matches wildcards against
@@ -1128,7 +1129,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 
 			pstring newname;
 			pstrcpy( newname, fname);
-			mangle_map( newname, True, False, SNUM(conn));
+			mangle_map( newname, True, False, conn->params);
 			if(!(got_match = *got_exact_match = exact_match(newname, mask, conn->case_sensitive)))
 				got_match = mask_match(newname, mask, conn->case_sensitive);
 		}
@@ -1202,7 +1203,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 		}
 	}
 
-	mangle_map(fname,False,True,SNUM(conn));
+	mangle_map(fname,False,True,conn->params);
 
 	p = pdata;
 	last_entry_ptr = p;
@@ -1338,7 +1339,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 
 		case SMB_FIND_FILE_BOTH_DIRECTORY_INFO:
 			DEBUG(10,("get_lanman2_dir_entry: SMB_FIND_FILE_BOTH_DIRECTORY_INFO\n"));
-			was_8_3 = mangle_is_8_3(fname, True, SNUM(conn));
+			was_8_3 = mangle_is_8_3(fname, True, conn->params);
 			p += 4;
 			SIVAL(p,0,reskey); p += 4;
 			put_long_date(p,cdate); p += 8;
@@ -1361,7 +1362,8 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 			if (!was_8_3 && check_mangled_names) {
 				pstring mangled_name;
 				pstrcpy(mangled_name, fname);
-				mangle_map(mangled_name,True,True,SNUM(conn));
+				mangle_map(mangled_name,True,True,
+					   conn->params);
 				mangled_name[12] = 0;
 				len = srvstr_push(outbuf, p+2, mangled_name, 24, STR_UPPER|STR_UNICODE);
 				if (len < 24) {
@@ -1480,7 +1482,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 
 		case SMB_FIND_ID_BOTH_DIRECTORY_INFO:
 			DEBUG(10,("get_lanman2_dir_entry: SMB_FIND_ID_BOTH_DIRECTORY_INFO\n"));
-			was_8_3 = mangle_is_8_3(fname, True, SNUM(conn));
+			was_8_3 = mangle_is_8_3(fname, True, conn->params);
 			p += 4;
 			SIVAL(p,0,reskey); p += 4;
 			put_long_date(p,cdate); p += 8;
@@ -1503,7 +1505,8 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 			if (!was_8_3 && check_mangled_names) {
 				pstring mangled_name;
 				pstrcpy(mangled_name, fname);
-				mangle_map(mangled_name,True,True,SNUM(conn));
+				mangle_map(mangled_name,True,True,
+					   conn->params);
 				mangled_name[12] = 0;
 				len = srvstr_push(outbuf, p+2, mangled_name, 24, STR_UPPER|STR_UNICODE);
 				SSVAL(p, 0, len);
@@ -1871,8 +1874,8 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 	 * (see PR#13758). JRA.
 	 */
 
-	if(!mangle_is_8_3_wildcards( mask, False, SNUM(conn)))
-		mangle_map(mask, True, True, SNUM(conn));
+	if(!mangle_is_8_3_wildcards( mask, False, conn->params))
+		mangle_map(mask, True, True, conn->params);
 
 	return(-1);
 }
@@ -2068,8 +2071,9 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 		 * could be mangled. Ensure we check the unmangled name.
 		 */
 
-		if (mangle_is_mangled(resume_name, SNUM(conn))) {
-			mangle_check_cache(resume_name, sizeof(resume_name)-1, SNUM(conn));
+		if (mangle_is_mangled(resume_name, conn->params)) {
+			mangle_check_cache(resume_name, sizeof(resume_name)-1,
+					   conn->params);
 		}
 
 		/*
@@ -2441,17 +2445,10 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 			SSVAL(pdata,0,CIFS_UNIX_MAJOR_VERSION);
 			SSVAL(pdata,2,CIFS_UNIX_MINOR_VERSION);
 			/* We have POSIX ACLs, pathname and locking capability. */
-#if defined(DEVELOPER) /* Not quite finished yet... */
 			SBIG_UINT(pdata,4,((SMB_BIG_UINT)(
 					CIFS_UNIX_POSIX_ACLS_CAP|
 					CIFS_UNIX_POSIX_PATHNAMES_CAP|
 					CIFS_UNIX_FCNTL_LOCKS_CAP)));
-#else
-			SBIG_UINT(pdata,4,((SMB_BIG_UINT)(
-					CIFS_UNIX_POSIX_ACLS_CAP|
-					CIFS_UNIX_POSIX_PATHNAMES_CAP|
-					0)));
-#endif
 			break;
 
 		case SMB_QUERY_POSIX_FS_INFO:
@@ -2567,11 +2564,10 @@ cap_low = 0x%x, cap_high = 0x%x\n",
 					lp_set_posix_pathnames();
 					mangle_change_to_posix();
 				}
-#if defined(DEVELOPER)
+
 				if (client_unix_cap_low & CIFS_UNIX_FCNTL_LOCKS_CAP) {
 					lp_set_posix_cifsx_locktype(POSIX_LOCK);
 				}
-#endif
 				break;
 			}
 		case SMB_FS_QUOTA_INFORMATION:
@@ -2832,9 +2828,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 	TALLOC_CTX *data_ctx = NULL;
 	struct ea_list *ea_list = NULL;
 	uint32 access_mask = 0x12019F; /* Default - GENERIC_EXECUTE mapping from Windows */
-#if defined(DEVELOPER)
 	char *lock_data = NULL;
-#endif
 
 	if (!params)
 		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
@@ -3006,7 +3000,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 			}
 			break;
 		}
-#if defined(DEVELOPER)
+
 		case SMB_QUERY_POSIX_LOCK:
 		{
 			if (fsp == NULL || fsp->fh->fd == -1) {
@@ -3028,7 +3022,6 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 				return ERROR_NT(NT_STATUS_NO_MEMORY);
 			}
 		}
-#endif
 		default:
 			break;
 	}
@@ -3229,8 +3222,8 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 			DEBUG(10,("call_trans2qfilepathinfo: SMB_FILE_ALTERNATE_NAME_INFORMATION\n"));
 			pstrcpy(short_name,base_name);
 			/* Mangle if not already 8.3 */
-			if(!mangle_is_8_3(short_name, True, SNUM(conn))) {
-				mangle_map(short_name,True,True,SNUM(conn));
+			if(!mangle_is_8_3(short_name, True, conn->params)) {
+				mangle_map(short_name,True,True,conn->params);
 			}
 			len = srvstr_push(outbuf, pdata+4, short_name, -1, STR_UNICODE);
 			data_size = 4 + len;
@@ -3448,7 +3441,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 
 			{
 				int i;
-				DEBUG(4,("call_trans2qfilepathinfo: SMB_QUERY_FILE_UNIX_BASIC"));
+				DEBUG(4,("call_trans2qfilepathinfo: SMB_QUERY_FILE_UNIX_BASIC "));
 
 				for (i=0; i<100; i++)
 					DEBUG(4,("%d=%x, ",i, (*ppdata)[i]));
@@ -3559,13 +3552,12 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 #endif
 
 
-#if defined(DEVELOPER)
 		case SMB_QUERY_POSIX_LOCK:
 		{
 			NTSTATUS status = NT_STATUS_INVALID_LEVEL;
 			SMB_BIG_UINT count;
 			SMB_BIG_UINT offset;
-			uint16 lock_pid;
+			uint32 lock_pid;
 			enum brl_type lock_type;
 
 			if (total_data != POSIX_LOCK_DATA_SIZE) {
@@ -3586,7 +3578,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 					return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 			}
 
-			lock_pid = (uint16)IVAL(pdata, POSIX_LOCK_PID_OFFSET);
+			lock_pid = IVAL(pdata, POSIX_LOCK_PID_OFFSET);
 #if defined(HAVE_LONGLONG)
 			offset = (((SMB_BIG_UINT) IVAL(pdata,(POSIX_LOCK_START_OFFSET+4))) << 32) |
 					((SMB_BIG_UINT) IVAL(pdata,POSIX_LOCK_START_OFFSET));
@@ -3632,7 +3624,6 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 			}
 			break;
 		}
-#endif
 
 		default:
 			return ERROR_NT(NT_STATUS_INVALID_LEVEL);
@@ -4030,16 +4021,16 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 				if (fd == -1) {
 					files_struct *new_fsp = NULL;
  
-					new_fsp = open_file_ntcreate(conn, fname, &sbuf,
+					status = open_file_ntcreate(conn, fname, &sbuf,
 									FILE_WRITE_DATA,
 									FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,
 									FILE_OPEN,
 									0,
 									FILE_ATTRIBUTE_NORMAL,
 									FORCE_OPLOCK_BREAK_TO_NONE,
-									NULL);
+									NULL, &new_fsp);
  
-					if (new_fsp == NULL) {
+					if (!NT_STATUS_IS_OK(status)) {
 						if (open_was_deferred(SVAL(inbuf,smb_mid))) {
 							/* We have re-scheduled this call. */
 							return -1;
@@ -4404,7 +4395,7 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 		case SMB_FILE_RENAME_INFORMATION:
 		{
 			BOOL overwrite;
-			uint32 root_fid;
+			/* uint32 root_fid; */  /* Not used */
 			uint32 len;
 			pstring newname;
 			pstring base_name;
@@ -4415,7 +4406,7 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 			}
 
 			overwrite = (CVAL(pdata,0) ? True : False);
-			root_fid = IVAL(pdata,4);
+			/* root_fid = IVAL(pdata,4); */
 			len = IVAL(pdata,8);
 			srvstr_get_path(inbuf, newname, &pdata[12], sizeof(newname), len, 0, &status);
 			if (!NT_STATUS_IS_OK(status)) {
@@ -4507,12 +4498,11 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 		}
 #endif
 
-#if defined(DEVELOPER)
 		case SMB_SET_POSIX_LOCK:
 		{
 			SMB_BIG_UINT count;
 			SMB_BIG_UINT offset;
-			uint16 lock_pid;
+			uint32 lock_pid;
 			BOOL lock_blocking;
 			enum brl_type lock_type;
 			BOOL my_lock_ctx;
@@ -4551,7 +4541,7 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 				return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 			}
 
-			lock_pid = (uint16)IVAL(pdata, POSIX_LOCK_PID_OFFSET);
+			lock_pid = IVAL(pdata, POSIX_LOCK_PID_OFFSET);
 #if defined(HAVE_LONGLONG)
 			offset = (((SMB_BIG_UINT) IVAL(pdata,(POSIX_LOCK_START_OFFSET+4))) << 32) |
 					((SMB_BIG_UINT) IVAL(pdata,POSIX_LOCK_START_OFFSET));
@@ -4605,7 +4595,6 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 			send_trans2_replies(outbuf, bufsize, params, 2, *ppdata, 0);
 			return(-1);
 		}
-#endif
 
 		default:
 			return ERROR_NT(NT_STATUS_INVALID_LEVEL);
@@ -4673,16 +4662,16 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 		if (fd == -1) {
 			files_struct *new_fsp = NULL;
 
-			new_fsp = open_file_ntcreate(conn, fname, &sbuf,
+			status = open_file_ntcreate(conn, fname, &sbuf,
 						FILE_WRITE_DATA,
 						FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,
 						FILE_OPEN,
 						0,
 						FILE_ATTRIBUTE_NORMAL,
 						FORCE_OPLOCK_BREAK_TO_NONE,
-						NULL);
+						NULL, &new_fsp);
 	
-			if (new_fsp == NULL) {
+			if (!NT_STATUS_IS_OK(status)) {
 				if (open_was_deferred(SVAL(inbuf,smb_mid))) {
 					/* We have re-scheduled this call. */
 					return -1;

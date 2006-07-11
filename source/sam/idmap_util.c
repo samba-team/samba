@@ -2,6 +2,7 @@
    Unix SMB/CIFS implementation.
    ID Mapping
    Copyright (C) Simo Sorce 2003
+   Copyright (C) Jeremy Allison 2006
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -32,10 +33,9 @@ NTSTATUS idmap_uid_to_sid(DOM_SID *sid, uid_t uid, int flags)
 
 	DEBUG(10,("idmap_uid_to_sid: uid = [%lu]\n", (unsigned long)uid));
 
-	flags |= ID_USERID;
 	id.uid = uid;
 	
-	return idmap_get_sid_from_id(sid, id, flags);
+	return idmap_get_sid_from_id(sid, id, ID_USERID, flags);
 }
 
 /*****************************************************************
@@ -49,10 +49,9 @@ NTSTATUS idmap_gid_to_sid(DOM_SID *sid, gid_t gid, int flags)
 
 	DEBUG(10,("idmap_gid_to_sid: gid = [%lu]\n", (unsigned long)gid));
 
-	flags |= ID_GROUPID;
 	id.gid = gid;
 
-	return idmap_get_sid_from_id(sid, id, flags);
+	return idmap_get_sid_from_id(sid, id, ID_GROUPID, flags);
 }
 
 /*****************************************************************
@@ -62,24 +61,32 @@ NTSTATUS idmap_gid_to_sid(DOM_SID *sid, gid_t gid, int flags)
  was done correctly, False if not.
 *****************************************************************/  
 
-NTSTATUS idmap_sid_to_uid(const DOM_SID *sid, uid_t *uid, uint32 flags)
+NTSTATUS idmap_sid_to_uid(const DOM_SID *sid, uid_t *uid, int flags)
 {
-	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS ret;
+	enum idmap_type id_type;
 	unid_t id;
 
 	DEBUG(10,("idmap_sid_to_uid: sid = [%s]\n", sid_string_static(sid)));
 
-	flags |= ID_USERID;
+	/* For the LDAP and tdb backends we must *KNOW* what we're looking for.
+	   This interface design *SUCKS* ! JRA. */
 
-	ret = idmap_get_id_from_sid(&id, (int *)&flags, sid);
-	
-	if ( NT_STATUS_IS_OK(ret) ) {
-		DEBUG(10,("idmap_sid_to_uid: uid = [%lu]\n", (unsigned long)id.uid));
-		*uid = id.uid;
-	} 
+	id_type = ID_USERID;
+	ret = idmap_get_id_from_sid(&id, &id_type, sid, flags);
 
-	return ret;
+	if (!NT_STATUS_IS_OK(ret)) {
+		return ret;
+	}
 
+	if (id_type != ID_USERID) {
+		return NT_STATUS_NONE_MAPPED;
+	}
+
+	DEBUG(10,("idmap_sid_to_uid: uid = [%lu]\n", (unsigned long)id.uid));
+	*uid = id.uid;
+
+	return NT_STATUS_OK;
 }
 
 /*****************************************************************
@@ -91,22 +98,30 @@ NTSTATUS idmap_sid_to_uid(const DOM_SID *sid, uid_t *uid, uint32 flags)
  was done correctly, False if not.
 *****************************************************************/  
 
-NTSTATUS idmap_sid_to_gid(const DOM_SID *sid, gid_t *gid, uint32 flags)
+NTSTATUS idmap_sid_to_gid(const DOM_SID *sid, gid_t *gid, int flags)
 {
-	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS ret;
+	enum idmap_type id_type;
 	unid_t id;
 
 	DEBUG(10,("sid_to_gid: sid = [%s]\n", sid_string_static(sid)));
 
-	flags |= ID_GROUPID;
+	/* For the LDAP and tdb backends we must *KNOW* what we're looking for.
+	   This interface design *SUCKS* ! JRA. */
 
-	ret = idmap_get_id_from_sid(&id, (int *)&flags, sid);
+	id_type = ID_GROUPID;
+	ret = idmap_get_id_from_sid(&id, &id_type, sid, flags);
 	
-	if ( NT_STATUS_IS_OK(ret) ) 
-	{
-		DEBUG(10,("idmap_sid_to_gid: gid = [%lu]\n", (unsigned long)id.gid));
-		*gid = id.gid;
+	if (!NT_STATUS_IS_OK(ret)) {
+		return ret;
 	}
 
-	return ret;
+	if (id_type != ID_GROUPID) {
+		return NT_STATUS_NONE_MAPPED;
+	}
+
+	DEBUG(10,("idmap_sid_to_gid: gid = [%lu]\n", (unsigned long)id.gid));
+	*gid = id.gid;
+
+	return NT_STATUS_OK;
 }

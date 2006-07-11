@@ -361,6 +361,15 @@ static NTSTATUS pdb_default_create_user(struct pdb_methods *methods,
 		add_ret = smbrun(add_script,NULL);
 		DEBUG(add_ret ? 0 : 3, ("_samr_create_user: Running the command `%s' gave %d\n",
 					add_script, add_ret));
+
+#ifdef ENABLE_BUILD_FARM_HACKS
+		if (add_ret != 0) {
+			DEBUG(1, ("Creating a faked user %s for build farm "
+				  "purposes", name));
+			faked_create_user(name);
+		}
+#endif
+
 		flush_pwnam_cache();
 
 		pwd = Get_Pwnam_alloc(tmp_ctx, name);
@@ -1711,7 +1720,7 @@ struct user_search {
 static BOOL next_entry_users(struct pdb_search *s,
 			     struct samr_displayentry *entry)
 {
-	struct user_search *state = s->private_data;
+	struct user_search *state = (struct user_search *)s->private_data;
 	struct samu *user = NULL;
 
  next:
@@ -1786,7 +1795,7 @@ struct group_search {
 static BOOL next_entry_groups(struct pdb_search *s,
 			      struct samr_displayentry *entry)
 {
-	struct group_search *state = s->private_data;
+	struct group_search *state = (struct group_search *)s->private_data;
 	uint32 rid;
 	GROUP_MAP *map = &state->groups[state->current_group];
 
@@ -1804,7 +1813,8 @@ static BOOL next_entry_groups(struct pdb_search *s,
 
 static void search_end_groups(struct pdb_search *search)
 {
-	struct group_search *state = search->private_data;
+	struct group_search *state =
+		(struct group_search *)search->private_data;
 	SAFE_FREE(state->groups);
 }
 

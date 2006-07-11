@@ -77,7 +77,7 @@ static int copy_fn(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf, void *state)
 	TDB_CONTEXT *tdb_new = (TDB_CONTEXT *)state;
 
 	if (tdb_store(tdb_new, key, dbuf, TDB_INSERT) != 0) {
-		fprintf(stderr,"Failed to insert into %s\n", tdb_new->name);
+		fprintf(stderr,"Failed to insert into %s\n", tdb_name(tdb));
 		failed = 1;
 		return 1;
 	}
@@ -122,7 +122,7 @@ int backup_tdb(const char *old_name, const char *new_name)
 
 	/* create the new tdb */
 	unlink(tmp_name);
-	tdb_new = tdb_open(tmp_name, tdb->header.hash_size, 
+	tdb_new = tdb_open(tmp_name, tdb_hash_size(tdb),
 			   TDB_DEFAULT, O_RDWR|O_CREAT|O_EXCL, 
 			   st.st_mode & 0777);
 	if (!tdb_new) {
@@ -179,7 +179,7 @@ int backup_tdb(const char *old_name, const char *new_name)
 	}
 
 	/* make sure the new tdb has reached stable storage */
-	fsync(tdb_new->fd);
+	fsync(tdb_fd(tdb_new));
 
 	/* close the new tdb and rename it to .bak */
 	tdb_close(tdb_new);

@@ -52,7 +52,7 @@ void stat_cache_add( const char *full_orig_name, const char *orig_translated_pat
 	if (!lp_stat_cache())
 		return;
 
-	if (sc_size && (tdb_stat_cache->map_size > sc_size*1024)) {
+	if (sc_size && (tdb_map_size(tdb_stat_cache) > sc_size*1024)) {
 		reset_stat_cache();
 	}
 
@@ -291,12 +291,12 @@ BOOL stat_cache_lookup(connection_struct *conn, pstring name, pstring dirpath,
  JRA. Use a djb-algorithm hash for speed.
 ***************************************************************/
                                                                                                      
-u32 fast_string_hash(TDB_DATA *key)
+unsigned int fast_string_hash(TDB_DATA *key)
 {
-        u32 n = 0;
+        unsigned int n = 0;
         const char *p;
         for (p = key->dptr; *p != '\0'; p++) {
-                n = ((n << 5) + n) ^ (u32)(*p);
+                n = ((n << 5) + n) ^ (unsigned int)(*p);
         }
         return n;
 }

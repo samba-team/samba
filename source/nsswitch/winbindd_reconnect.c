@@ -125,6 +125,30 @@ static NTSTATUS sid_to_name(struct winbindd_domain *domain,
 	return result;
 }
 
+static NTSTATUS rids_to_names(struct winbindd_domain *domain,
+			      TALLOC_CTX *mem_ctx,
+			      const DOM_SID *sid,
+			      uint32 *rids,
+			      size_t num_rids,
+			      char **domain_name,
+			      char ***names,
+			      enum SID_NAME_USE **types)
+{
+	NTSTATUS result;
+
+	result = msrpc_methods.rids_to_names(domain, mem_ctx, sid,
+					     rids, num_rids,
+					     domain_name, names, types);
+	if (NT_STATUS_EQUAL(result, NT_STATUS_UNSUCCESSFUL)) {
+		result = msrpc_methods.rids_to_names(domain, mem_ctx, sid,
+						     rids, num_rids,
+						     domain_name, names,
+						     types);
+	}
+
+	return result;
+}
+
 /* Lookup user information from a rid or username. */
 static NTSTATUS query_user(struct winbindd_domain *domain, 
 			   TALLOC_CTX *mem_ctx, 
@@ -280,6 +304,7 @@ struct winbindd_methods reconnect_methods = {
 	enum_local_groups,
 	name_to_sid,
 	sid_to_name,
+	rids_to_names,
 	query_user,
 	lookup_usergroups,
 	lookup_useraliases,

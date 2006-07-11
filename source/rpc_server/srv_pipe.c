@@ -46,6 +46,11 @@ static void free_pipe_ntlmssp_auth_data(struct pipe_auth_data *auth)
 	auth->a_u.auth_ntlmssp_state = NULL;
 }
 
+static DATA_BLOB generic_session_key(void)
+{
+	return data_blob("SystemLibraryDTC", 16);
+}
+
 /*******************************************************************
  Generate the next PDU to be returned from the data in p->rdata. 
  Handle NTLMSSP.
@@ -610,16 +615,6 @@ static BOOL pipe_ntlmssp_verify_final(pipes_struct *p, DATA_BLOB *p_resp_blob)
 
 	ZERO_STRUCT(reply);
 
-	memset(p->user_name, '\0', sizeof(p->user_name));
-	memset(p->pipe_user_name, '\0', sizeof(p->pipe_user_name));
-	memset(p->domain, '\0', sizeof(p->domain));
-	memset(p->wks, '\0', sizeof(p->wks));
-
-	/* Set up for non-authenticated user. */
-	TALLOC_FREE(p->pipe_user.nt_user_token);
-	p->pipe_user.ut.ngroups = 0;
-	SAFE_FREE( p->pipe_user.ut.groups);
-
 	/* this has to be done as root in order to verify the password */
 	become_root();
 	status = auth_ntlmssp_update(a, *p_resp_blob, &reply);
@@ -629,6 +624,12 @@ static BOOL pipe_ntlmssp_verify_final(pipes_struct *p, DATA_BLOB *p_resp_blob)
 	data_blob_free(&reply);
 
 	if (!NT_STATUS_IS_OK(status)) {
+		return False;
+	}
+
+	if (a->server_info->ptok == NULL) {
+		DEBUG(1,("Error: Authmodule failed to provide nt_user_token\n"));
+		p->pipe_user.nt_user_token = NULL;
 		return False;
 	}
 
@@ -653,13 +654,9 @@ static BOOL pipe_ntlmssp_verify_final(pipes_struct *p, DATA_BLOB *p_resp_blob)
 		}
 	}
 	
-	fstrcpy(p->user_name, a->ntlmssp_state->user);
-	fstrcpy(p->pipe_user_name, a->server_info->unix_name);
-	fstrcpy(p->domain, a->ntlmssp_state->domain);
-	fstrcpy(p->wks, a->ntlmssp_state->workstation);
-
 	DEBUG(5,("pipe_ntlmssp_verify_final: OK: user: %s domain: %s workstation: %s\n",
-		p->user_name, p->domain, p->wks));
+		 a->ntlmssp_state->user, a->ntlmssp_state->domain,
+		 a->ntlmssp_state->workstation));
 
 	/*
 	 * Store the UNIX credential data (uid/gid pair) in the pipe structure.
@@ -669,11 +666,13 @@ static BOOL pipe_ntlmssp_verify_final(pipes_struct *p, DATA_BLOB *p_resp_blob)
 	p->pipe_user.ut.gid = a->server_info->gid;
 	
 	/*
-	 * Copy the session key from the ntlmssp state.
+	 * We're an authenticated bind over smb, so the session key needs to
+	 * be set to "SystemLibraryDTC". Weird, but this is what Windows
+	 * does. See the RPC-SAMBA3SESSIONKEY.
 	 */
 
 	data_blob_free(&p->session_key);
-	p->session_key = data_blob(a->ntlmssp_state->session_key.data, a->ntlmssp_state->session_key.length);
+	p->session_key = generic_session_key();
 	if (!p->session_key.data) {
 		return False;
 	}
@@ -688,18 +687,16 @@ static BOOL pipe_ntlmssp_verify_final(pipes_struct *p, DATA_BLOB *p_resp_blob)
 		}
 	}
 
-	if (a->server_info->ptok) {
-		p->pipe_user.nt_user_token =
-			dup_nt_token(NULL, a->server_info->ptok);
-		if (!p->pipe_user.nt_user_token) {
-			DEBUG(1,("pipe_ntlmssp_verify_final: dup_nt_token failed.\n"));
-			data_blob_free(&p->session_key);
-			SAFE_FREE(p->pipe_user.ut.groups);
-			return False;
-		}
-
-	} else {
+	if (!a->server_info->ptok) {
 		DEBUG(1,("pipe_ntlmssp_verify_final: Error: Authmodule failed to provide nt_user_token\n"));
+		data_blob_free(&p->session_key);
+		SAFE_FREE(p->pipe_user.ut.groups);
+		return False;
+	}
+
+	p->pipe_user.nt_user_token = dup_nt_token(NULL, a->server_info->ptok);
+	if (!p->pipe_user.nt_user_token) {
+		DEBUG(1,("pipe_ntlmssp_verify_final: dup_nt_token failed.\n"));
 		data_blob_free(&p->session_key);
 		SAFE_FREE(p->pipe_user.ut.groups);
 		return False;
@@ -1361,7 +1358,20 @@ static BOOL pipe_schannel_auth_bind(pipes_struct *p, prs_struct *rpc_in_p,
 	 * JRA. Should we also copy the schannel session key into the pipe session key p->session_key
 	 * here ? We do that for NTLMSSP, but the session key is already set up from the vuser
 	 * struct of the person who opened the pipe. I need to test this further. JRA.
+	 *
+	 * VL. As we are mapping this to guest set the generic key
+	 * "SystemLibraryDTC" key here. It's a bit difficult to test against
+	 * W2k3, as it does not allow schannel binds against SAMR and LSA
+	 * anymore.
 	 */
+
+	data_blob_free(&p->session_key);
+	p->session_key = generic_session_key();
+	if (p->session_key.data == NULL) {
+		DEBUG(0, ("pipe_schannel_auth_bind: Could not alloc session"
+			  " key\n"));
+		return False;
+	}
 
 	init_rpc_hdr_auth(&auth_info, RPC_SCHANNEL_AUTH_TYPE, pauth_info->auth_level, RPC_HDR_AUTH_LEN, 1);
 	if(!smb_io_rpc_hdr_auth("", &auth_info, pout_auth, 0)) {
@@ -1390,6 +1400,12 @@ static BOOL pipe_schannel_auth_bind(pipes_struct *p, prs_struct *rpc_in_p,
 	/* We're finished with this bind - no more packets. */
 	p->auth.auth_data_free_func = NULL;
 	p->auth.auth_type = PIPE_AUTH_TYPE_SCHANNEL;
+
+	if (!set_current_user_guest(&p->pipe_user)) {
+		DEBUG(1, ("pipe_schannel_auth_bind: Could not set guest "
+			  "token\n"));
+		return False;
+	}
 
 	p->pipe_bound = True;
 
@@ -1641,11 +1657,18 @@ BOOL api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p)
 
 		case RPC_ANONYMOUS_AUTH_TYPE:
 			/* Unauthenticated bind request. */
+			/* Get the authenticated pipe user from current_user */
+			if (!copy_current_user(&p->pipe_user, &current_user)) {
+				DEBUG(10, ("Could not copy current user\n"));
+				goto err_exit;
+			}
 			/* We're finished - no more packets. */
 			p->auth.auth_type = PIPE_AUTH_TYPE_NONE;
 			/* We must set the pipe auth_level here also. */
 			p->auth.auth_level = PIPE_AUTH_LEVEL_NONE;
 			p->pipe_bound = True;
+			/* The session key was initialized from the SMB
+			 * session in make_internal_rpc_pipe_p */
 			break;
 
 		default:
@@ -2149,23 +2172,6 @@ BOOL api_pipe_schannel_process(pipes_struct *p, prs_struct *rpc_in, uint32 *p_ss
 }
 
 /****************************************************************************
- Return a user struct for a pipe user.
-****************************************************************************/
-
-struct current_user *get_current_user(struct current_user *user, pipes_struct *p)
-{
-	if (p->pipe_bound &&
-			(p->auth.auth_type == PIPE_AUTH_TYPE_NTLMSSP ||
-			(p->auth.auth_type == PIPE_AUTH_TYPE_SPNEGO_NTLMSSP))) {
-		memcpy(user, &p->pipe_user, sizeof(struct current_user));
-	} else {
-		memcpy(user, &current_user, sizeof(struct current_user));
-	}
-
-	return user;
-}
-
-/****************************************************************************
  Find the set of RPC functions associated with this context_id
 ****************************************************************************/
 
@@ -2219,9 +2225,7 @@ BOOL api_pipe_request(pipes_struct *p)
 	BOOL changed_user = False;
 	PIPE_RPC_FNS *pipe_fns;
 	
-	if (p->pipe_bound &&
-			((p->auth.auth_type == PIPE_AUTH_TYPE_NTLMSSP) ||
-			 (p->auth.auth_type == PIPE_AUTH_TYPE_SPNEGO_NTLMSSP))) {
+	if (p->pipe_bound) {
 		if(!become_authenticated_pipe_user(p)) {
 			prs_mem_free(&p->out_data.rdata);
 			return False;
@@ -2372,6 +2376,9 @@ void get_pipe_fns( int idx, struct api_struct **fns, int *n_fns )
 			break;
 	        case PI_EVENTLOG:
 			eventlog_get_pipe_fns( &cmds, &n_cmds );
+			break;
+		case PI_UNIXINFO:
+			unixinfo_get_pipe_fns( &cmds, &n_cmds );
 			break;
 		case PI_NTSVCS:
 			ntsvcs_get_pipe_fns( &cmds, &n_cmds );

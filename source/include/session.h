@@ -1,8 +1,10 @@
 /* 
    Unix SMB/CIFS implementation.
    session handling for recording currently vailid vuids
+   
    Copyright (C) tridge@samba.org 2001
    Copyright (C) Andew Bartlett <abartlet@samba.org> 2001
+   Copyright (C) Gerald (Jerry) Carter  2006
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -36,5 +38,6 @@ struct sessionid {
 	uint32  id_num;
 	uint32  pid;
 	fstring ip_addr;
+	time_t connect_start;
 };
 

@@ -1435,7 +1435,7 @@ NTSTATUS _samr_lookup_names(pipes_struct *p, SAMR_Q_LOOKUP_NAMES *q_u, SAMR_R_LO
 		}
 	}
 
-	init_samr_r_lookup_names(p->mem_ctx, r_u, num_rids, rid, (uint32 *)type, r_u->status);
+	init_samr_r_lookup_names(p->mem_ctx, r_u, num_rids, rid, type, r_u->status);
 
 	DEBUG(5,("_samr_lookup_names: %d\n", __LINE__));
 
@@ -2508,7 +2508,8 @@ NTSTATUS _samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u,
 	}
 		
 	DEBUG(5, ("_samr_create_user: %s can add this account : %s\n",
-		p->pipe_user_name, can_add_account ? "True":"False" ));
+		  uidtoname(p->pipe_user.ut.uid),
+		  can_add_account ? "True":"False" ));
 		
 	/********** BEGIN Admin BLOCK **********/
 
@@ -3110,9 +3111,11 @@ static NTSTATUS set_user_info_21(TALLOC_CTX *mem_ctx, SAM_USER_INFO_21 *id21,
 	}
 
 	/* we need to separately check for an account rename first */
+	
 	if (rpcstr_pull(new_name, id21->uni_user_name.buffer, 
-			sizeof(new_name), id21->uni_user_name.uni_str_len*2, 0) && 
-	   (!strequal(new_name, pdb_get_username(pwd)))) {
+		sizeof(new_name), id21->uni_user_name.uni_str_len*2, 0) 
+		&& (!strequal(new_name, pdb_get_username(pwd)))) 
+	{
 
 		/* check to see if the new username already exists.  Note: we can't
 		   reliably lock all backends, so there is potentially the 
@@ -3435,7 +3438,8 @@ NTSTATUS _samr_set_userinfo(pipes_struct *p, SAMR_Q_SET_USERINFO *q_u, SAMR_R_SE
 	}
 	
 	DEBUG(5, ("_samr_set_userinfo: %s does%s possess sufficient rights\n",
-		p->pipe_user_name, has_enough_rights ? "" : " not"));
+		  uidtoname(p->pipe_user.ut.uid),
+		  has_enough_rights ? "" : " not"));
 
 	/* ================ BEGIN SeMachineAccountPrivilege BLOCK ================ */
 	
@@ -3593,7 +3597,8 @@ NTSTATUS _samr_set_userinfo2(pipes_struct *p, SAMR_Q_SET_USERINFO2 *q_u, SAMR_R_
 	}
 	
 	DEBUG(5, ("_samr_set_userinfo2: %s does%s possess sufficient rights\n",
-		p->pipe_user_name, has_enough_rights ? "" : " not"));
+		  uidtoname(p->pipe_user.ut.uid),
+		  has_enough_rights ? "" : " not"));
 
 	/* ================ BEGIN SeMachineAccountPrivilege BLOCK ================ */
 	

@@ -753,7 +753,7 @@ ssize_t transfer_file_internal(int infd, int outfd, size_t n, ssize_t (*read_fn)
 	size_t num_to_read_thistime;
 	size_t num_written = 0;
 
-	if ((buf = SMB_MALLOC(TRANSFER_BUF_SIZE)) == NULL)
+	if ((buf = SMB_MALLOC_ARRAY(char, TRANSFER_BUF_SIZE)) == NULL)
 		return -1;
 
 	while (total < n) {
@@ -1052,9 +1052,11 @@ void *realloc_array(void *p, size_t el_size, unsigned int count, BOOL free_old_o
 ****************************************************************************/
 
 void add_to_large_array(TALLOC_CTX *mem_ctx, size_t element_size,
-			void *element, void **array, uint32 *num_elements,
+			void *element, void *_array, uint32 *num_elements,
 			ssize_t *array_size)
 {
+	void **array = (void **)_array;
+
 	if (*array_size < 0) {
 		return;
 	}

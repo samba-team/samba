@@ -42,7 +42,7 @@ static void display_group_mem_info(uint32 rid, SAM_GROUP_MEM_INFO *g)
 	d_printf("\n");
 }
 
-static const char *display_time(NTTIME *nttime)
+static const char *display_time(const UINT64_S *nttime)
 {
 	static fstring string;
 
@@ -123,11 +123,19 @@ static void display_account_info(uint32 rid, SAM_ACCOUNT_INFO *a)
 	       pdb_encode_acct_ctrl(a->acb_info, NEW_PW_FORMAT_SPACE_PADDED_LEN));
 }
 
+static time_t uint64s_nt_time_to_unix_abs(const UINT64_S *src)
+{
+	NTTIME nttime;
+	nttime.high = src->high;
+	nttime.low = src->low;
+	return nt_time_to_unix_abs(&nttime);
+}
+
 static void display_domain_info(SAM_DOMAIN_INFO *a)
 {
 	time_t u_logout;
 
-	u_logout = nt_time_to_unix_abs((NTTIME *)&a->force_logoff);
+	u_logout = uint64s_nt_time_to_unix_abs(&a->force_logoff);
 
 	d_printf("Domain name: %s\n", unistr2_static(&a->uni_dom_name));
 
@@ -136,11 +144,11 @@ static void display_domain_info(SAM_DOMAIN_INFO *a)
 
 	d_printf("Force Logoff: %d\n", (int)u_logout);
 
-	d_printf("Max Password Age: %s\n", display_time((NTTIME *)&a->max_pwd_age));
-	d_printf("Min Password Age: %s\n", display_time((NTTIME *)&a->min_pwd_age));
+	d_printf("Max Password Age: %s\n", display_time(&a->max_pwd_age));
+	d_printf("Min Password Age: %s\n", display_time(&a->min_pwd_age));
 
-	d_printf("Lockout Time: %s\n", display_time((NTTIME *)&a->account_lockout.lockout_duration));
-	d_printf("Lockout Reset Time: %s\n", display_time((NTTIME *)&a->account_lockout.reset_count));
+	d_printf("Lockout Time: %s\n", display_time(&a->account_lockout.lockout_duration));
+	d_printf("Lockout Reset Time: %s\n", display_time(&a->account_lockout.reset_count));
 
 	d_printf("Bad Attempt Lockout: %d\n", a->account_lockout.bad_attempt_lockout);
 	d_printf("User must logon to change password: %d\n", a->logon_chgpass);
@@ -858,11 +866,11 @@ static NTSTATUS fetch_domain_info(uint32 rid, SAM_DOMAIN_INFO *delta)
 	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
 	pstring domname;
 
-	u_max_age = nt_time_to_unix_abs((NTTIME *)&delta->max_pwd_age);
-	u_min_age = nt_time_to_unix_abs((NTTIME *)&delta->min_pwd_age);
-	u_logout = nt_time_to_unix_abs((NTTIME *)&delta->force_logoff);
-	u_lockoutreset = nt_time_to_unix_abs((NTTIME *)&delta->account_lockout.reset_count);
-	u_lockouttime = nt_time_to_unix_abs((NTTIME *)&delta->account_lockout.lockout_duration);
+	u_max_age = uint64s_nt_time_to_unix_abs(&delta->max_pwd_age);
+	u_min_age = uint64s_nt_time_to_unix_abs(&delta->min_pwd_age);
+	u_logout = uint64s_nt_time_to_unix_abs(&delta->force_logoff);
+	u_lockoutreset = uint64s_nt_time_to_unix_abs(&delta->account_lockout.reset_count);
+	u_lockouttime = uint64s_nt_time_to_unix_abs(&delta->account_lockout.lockout_duration);
 
 	unistr2_to_ascii(domname, &delta->uni_dom_name, sizeof(domname) - 1);
 

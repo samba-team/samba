@@ -58,6 +58,7 @@ BOOL bLoaded = False;
 
 extern pstring user_socket_options;
 extern enum protocol_types Protocol;
+extern userdom_struct current_user_info;
 
 #ifndef GLOBAL_NAME
 #define GLOBAL_NAME "global"
@@ -1702,11 +1703,13 @@ static char *lp_string(const char *s)
 	if (!lp_talloc)
 		lp_talloc = talloc_init("lp_talloc");
 
-	tmpstr = alloc_sub_basic(get_current_username(), s);
+	tmpstr = alloc_sub_basic(get_current_username(),
+				 current_user_info.domain, s);
 	if (trim_char(tmpstr, '\"', '\"')) {
 		if (strchr(tmpstr,'\"') != NULL) {
 			SAFE_FREE(tmpstr);
-			tmpstr = alloc_sub_basic(get_current_username(),s);
+			tmpstr = alloc_sub_basic(get_current_username(),
+						 current_user_info.domain, s);
 		}
 	}
 	ret = talloc_strdup(lp_talloc, tmpstr);
@@ -1741,10 +1744,15 @@ static char *lp_string(const char *s)
  const char **fn_name(int i) {return(const char **)(LP_SNUM_OK(i)? ServicePtrs[(i)]->val : sDefault.val);}
 #define FN_LOCAL_BOOL(fn_name,val) \
  BOOL fn_name(int i) {return(LP_SNUM_OK(i)? ServicePtrs[(i)]->val : sDefault.val);}
-#define FN_LOCAL_CHAR(fn_name,val) \
- char fn_name(int i) {return(LP_SNUM_OK(i)? ServicePtrs[(i)]->val : sDefault.val);}
 #define FN_LOCAL_INTEGER(fn_name,val) \
  int fn_name(int i) {return(LP_SNUM_OK(i)? ServicePtrs[(i)]->val : sDefault.val);}
+
+#define FN_LOCAL_PARM_BOOL(fn_name,val) \
+ BOOL fn_name(const struct share_params *p) {return(LP_SNUM_OK(p->service)? ServicePtrs[(p->service)]->val : sDefault.val);}
+#define FN_LOCAL_PARM_STRING(fn_name,val) \
+ char *fn_name(const struct share_params *p) {return(lp_string((LP_SNUM_OK(p->service) && ServicePtrs[(p->service)]->val) ? ServicePtrs[(p->service)]->val : sDefault.val));}
+#define FN_LOCAL_CHAR(fn_name,val) \
+ char fn_name(const struct share_params *p) {return(LP_SNUM_OK(p->service)? ServicePtrs[(p->service)]->val : sDefault.val);}
 
 FN_GLOBAL_STRING(lp_smb_ports, &Globals.smb_ports)
 FN_GLOBAL_STRING(lp_dos_charset, &Globals.dos_charset)
@@ -1981,7 +1989,7 @@ FN_LOCAL_STRING(lp_fstype, fstype)
 FN_LOCAL_LIST(lp_vfs_objects, szVfsObjects)
 FN_LOCAL_STRING(lp_msdfs_proxy, szMSDfsProxy)
 static FN_LOCAL_STRING(lp_volume, volume)
-FN_LOCAL_STRING(lp_mangled_map, szMangledMap)
+FN_LOCAL_PARM_STRING(lp_mangled_map, szMangledMap)
 FN_LOCAL_STRING(lp_veto_files, szVetoFiles)
 FN_LOCAL_STRING(lp_hide_files, szHideFiles)
 FN_LOCAL_STRING(lp_veto_oplocks, szVetoOplockFiles)
@@ -2015,7 +2023,7 @@ FN_LOCAL_BOOL(lp_share_modes, bShareModes)
 FN_LOCAL_BOOL(lp_oplocks, bOpLocks)
 FN_LOCAL_BOOL(lp_level2_oplocks, bLevel2OpLocks)
 FN_LOCAL_BOOL(lp_onlyuser, bOnlyUser)
-FN_LOCAL_BOOL(lp_manglednames, bMangledNames)
+FN_LOCAL_PARM_BOOL(lp_manglednames, bMangledNames)
 FN_LOCAL_BOOL(lp_widelinks, bWidelinks)
 FN_LOCAL_BOOL(lp_symlinks, bSymlinks)
 FN_LOCAL_BOOL(lp_syncalways, bSyncAlways)
@@ -3002,7 +3010,9 @@ BOOL lp_file_list_changed(void)
 		time_t mod_time;
 
 		pstrcpy(n2, f->name);
-		standard_sub_basic( get_current_username(), n2, sizeof(n2) );
+		standard_sub_basic( get_current_username(),
+				    current_user_info.domain,
+				    n2, sizeof(n2) );
 
 		DEBUGADD(6, ("file %s -> %s  last mod_time: %s\n",
 			     f->name, n2, ctime(&f->modtime)));
@@ -3036,7 +3046,8 @@ static BOOL handle_netbios_name(int snum, const char *pszParmValue, char **ptr)
 
 	pstrcpy(netbios_name, pszParmValue);
 
-	standard_sub_basic(get_current_username(), netbios_name,sizeof(netbios_name));
+	standard_sub_basic(get_current_username(), current_user_info.domain,
+			   netbios_name, sizeof(netbios_name));
 
 	ret = set_global_myname(netbios_name);
 	string_set(&Globals.szNetbiosName,global_myname());
@@ -3094,7 +3105,8 @@ static BOOL handle_include(int snum, const char *pszParmValue, char **ptr)
 	pstring fname;
 	pstrcpy(fname, pszParmValue);
 
-	standard_sub_basic(get_current_username(), fname,sizeof(fname));
+	standard_sub_basic(get_current_username(), current_user_info.domain,
+			   fname,sizeof(fname));
 
 	add_to_file_list(pszParmValue, fname);
 
@@ -4936,7 +4948,8 @@ BOOL lp_load(const char *pszFname,
 
 	pstrcpy(n2, pszFname);
 	
-	standard_sub_basic( get_current_username(), n2,sizeof(n2) );
+	standard_sub_basic( get_current_username(), current_user_info.domain,
+			    n2,sizeof(n2) );
 
 	add_to_file_list(pszFname, n2);
 
@@ -5080,7 +5093,9 @@ int lp_servicenumber(const char *pszServiceName)
 			 * service names
 			 */
 			fstrcpy(serviceName, ServicePtrs[iService]->szService);
-			standard_sub_basic(get_current_username(), serviceName,sizeof(serviceName));
+			standard_sub_basic(get_current_username(),
+					   current_user_info.domain,
+					   serviceName,sizeof(serviceName));
 			if (strequal(serviceName, pszServiceName)) {
 				break;
 			}
@@ -5114,6 +5129,11 @@ int lp_servicenumber(const char *pszServiceName)
 	}
 
 	return (iService);
+}
+
+BOOL share_defined(const char *service_name)
+{
+	return (lp_servicenumber(service_name) != -1);
 }
 
 /*******************************************************************

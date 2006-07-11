@@ -345,6 +345,7 @@ static struct winbindd_child_dispatch_table child_dispatch_table[] = {
 	
 	{ WINBINDD_LOOKUPSID,            winbindd_dual_lookupsid,             "LOOKUPSID" },
 	{ WINBINDD_LOOKUPNAME,           winbindd_dual_lookupname,            "LOOKUPNAME" },
+	{ WINBINDD_LOOKUPRIDS,           winbindd_dual_lookuprids,            "LOOKUPRIDS" },
 	{ WINBINDD_LIST_TRUSTDOM,        winbindd_dual_list_trusted_domains,  "LIST_TRUSTDOM" },
 	{ WINBINDD_INIT_CONNECTION,      winbindd_dual_init_connection,       "INIT_CONNECTION" },
 	{ WINBINDD_GETDCNAME,            winbindd_dual_getdcname,             "GETDCNAME" },

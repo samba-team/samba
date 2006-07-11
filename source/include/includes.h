@@ -101,6 +101,10 @@
 #include <stdint.h>
 #endif
 
+#if HAVE_INTTYPES_H
+#include <inttypes.h>
+#endif
+
 #ifdef TIME_WITH_SYS_TIME
 #include <sys/time.h>
 #include <time.h>
@@ -873,6 +877,11 @@ struct timespec {
 #define MAX(a,b) ((a)>(b)?(a):(b))
 #endif
 
+#ifndef _BOOL
+typedef int BOOL;
+#define _BOOL       /* So we don't typedef BOOL again in vfs.h */
+#endif
+
 #ifndef HAVE_STRERROR
 extern char *sys_errlist[];
 #define strerror(i) sys_errlist[i]
@@ -905,8 +914,8 @@ extern int errno;
 #include "intl.h"
 #include "dlinklist.h"
 #include "tdb/tdb.h"
-#include "tdb/spinlock.h"
 #include "tdb/tdbutil.h"
+#include "tdb/tdbback.h"
 
 #include "talloc.h"
 /* And a little extension. Abort on type mismatch */
@@ -961,6 +970,7 @@ extern int errno;
 #include "rpc_ds.h"
 #include "rpc_echo.h"
 #include "rpc_shutdown.h"
+#include "rpc_unixinfo.h"
 #include "rpc_perfcount.h"
 #include "rpc_perfcount_defs.h"
 #include "nt_printing.h"
@@ -980,6 +990,8 @@ extern int errno;
 #include "spnego.h"
 #include "rpc_client.h"
 #include "event.h"
+
+#include "libndr/libndr.h"
 
 /*
  * Type for wide character dirent structure.
@@ -1053,6 +1065,10 @@ enum flush_reason_enum {
     SIZECHANGE_FLUSH,
     /* NUM_FLUSH_REASONS must remain the last value in the enumeration. */
     NUM_FLUSH_REASONS};
+
+#ifndef HAVE_COMPARISON_FN_T
+typedef int (*comparison_fn_t)(const void *, const void *);
+#endif
 
 /***** automatically generated prototypes *****/
 #ifndef NO_PROTO_H

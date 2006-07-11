@@ -741,7 +741,7 @@ BOOL dir_check_ftype(connection_struct *conn, uint32 mode, uint32 dirtype)
 
 static BOOL mangle_mask_match(connection_struct *conn, fstring filename, char *mask)
 {
-	mangle_map(filename,True,False,SNUM(conn));
+	mangle_map(filename,True,False,conn->params);
 	return mask_match_search(filename,mask,False);
 }
 
@@ -787,8 +787,9 @@ BOOL get_dir_entry(connection_struct *conn,char *mask,uint32 dirtype, pstring fn
 		    mask_match_search(filename,mask,False) ||
 		    mangle_mask_match(conn,filename,mask)) {
 
-			if (!mangle_is_8_3(filename, False, SNUM(conn)))
-				mangle_map(filename,True,False,SNUM(conn));
+			if (!mangle_is_8_3(filename, False, conn->params))
+				mangle_map(filename,True,False,
+					   conn->params);
 
 			pstrcpy(fname,filename);
 			*path = 0;
@@ -857,17 +858,17 @@ static BOOL user_can_read_file(connection_struct *conn, char *name, SMB_STRUCT_S
 	/* Pseudo-open the file (note - no fd's created). */
 
 	if(S_ISDIR(pst->st_mode)) {
-		 fsp = open_directory(conn, name, pst,
+		 status = open_directory(conn, name, pst,
 			READ_CONTROL_ACCESS,
 			FILE_SHARE_READ|FILE_SHARE_WRITE,
 			FILE_OPEN,
 			0, /* no create options. */
-			NULL);
+			NULL, &fsp);
 	} else {
-		fsp = open_file_stat(conn, name, pst);
+		status = open_file_stat(conn, name, pst, &fsp);
 	}
 
-	if (!fsp) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return False;
 	}
 
@@ -920,17 +921,17 @@ static BOOL user_can_write_file(connection_struct *conn, char *name, SMB_STRUCT_
 	if(S_ISDIR(pst->st_mode)) {
 		return True;
 	} else {
-		fsp = open_file_ntcreate(conn, name, pst,
+		status = open_file_ntcreate(conn, name, pst,
 			FILE_WRITE_ATTRIBUTES,
 			FILE_SHARE_READ|FILE_SHARE_WRITE,
 			FILE_OPEN,
 			0,
 			FILE_ATTRIBUTE_NORMAL,
 			INTERNAL_OPEN_ONLY,
-			&info);
+			&info, &fsp);
 	}
 
-	if (!fsp) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return False;
 	}
 

@@ -579,7 +579,7 @@ DYNEXP=
 
 dnl Add modules that have to be built by default here
 dnl These have to be built static:
-default_static_modules="pdb_smbpasswd pdb_tdbsam rpc_lsa rpc_samr rpc_reg rpc_lsa_ds rpc_wks rpc_svcctl rpc_ntsvcs rpc_net rpc_netdfs rpc_srv rpc_spoolss rpc_eventlog auth_sam auth_unix auth_winbind auth_server auth_domain auth_builtin"
+default_static_modules="pdb_smbpasswd pdb_tdbsam rpc_lsa rpc_samr rpc_reg rpc_lsa_ds rpc_wks rpc_svcctl rpc_ntsvcs rpc_net rpc_netdfs rpc_srv rpc_spoolss rpc_eventlog rpc_unixinfo auth_sam auth_unix auth_winbind auth_server auth_domain auth_builtin vfs_default"
 
 dnl These are preferably build shared, and static if dlopen() is not available
 default_shared_modules="vfs_recycle vfs_audit vfs_extd_audit vfs_full_audit vfs_netatalk vfs_fake_perms vfs_default_quota vfs_readonly vfs_cap vfs_expand_msdfs vfs_shadow_copy charset_CP850 charset_CP437 auth_script"
@@ -864,6 +864,7 @@ AC_CHECK_HEADERS(sys/termio.h sys/statfs.h sys/dustat.h sys/statvfs.h stdarg.h s
 AC_CHECK_HEADERS(sys/sysmacros.h security/_pam_macros.h dlfcn.h)
 AC_CHECK_HEADERS(sys/syslog.h syslog.h)
 AC_CHECK_HEADERS(langinfo.h locale.h)
+AC_CHECK_HEADERS(xfs/libxfs.h)
 
 AC_CHECK_HEADERS(rpcsvc/yp_prot.h,,,[[
 #if HAVE_RPC_RPC_H
@@ -969,6 +970,8 @@ AC_CHECK_TYPE(loff_t,off_t)
 AC_CHECK_TYPE(offset_t,loff_t)
 AC_CHECK_TYPE(ssize_t, int)
 AC_CHECK_TYPE(wchar_t, unsigned short)
+AC_CHECK_TYPE(comparison_fn_t, 
+[AC_DEFINE(HAVE_COMPARISON_FN_T, 1,[Whether or not we have comparison_fn_t])])
 
 ############################################
 # for cups support we need libcups, and a handful of header files
@@ -1263,7 +1266,8 @@ if test x"$ac_cv_func_execl" = x"no"; then
     EXTRA_BIN_PROGS="$EXTRA_BIN_PROGS bin/smbrun\$(EXEEXT)"
 fi
 
-AC_CHECK_FUNCS(dlopen dlclose dlsym dlerror waitpid getcwd strdup strndup strnlen strtoul strerror chown fchown chmod fchmod chroot link mknod mknod64)
+AC_CHECK_FUNCS(dlopen dlclose dlsym dlerror waitpid getcwd strdup strndup strnlen strerror chown fchown chmod fchmod chroot link mknod mknod64)
+AC_CHECK_FUNCS(strtol strtoll strtoul strtoull)
 AC_CHECK_FUNCS(fstat strchr utime utimes getrlimit fsync memset strlcpy strlcat setpgid)
 AC_CHECK_FUNCS(memmove vsnprintf snprintf asprintf vasprintf setsid glob strpbrk pipe crypt16 getauthuid)
 AC_CHECK_FUNCS(strftime sigprocmask sigblock sigaction sigset innetgr setnetgrent getnetgrent endnetgrent)
@@ -2072,15 +2076,11 @@ if test x"$samba_cv_WITH_PROFILE" = x"yes"; then
 
     AC_LIBTESTFUNC(rt, clock_gettime,
 	    [
-		SMB_IS_LIBPTHREAD_LINKED(
-			[ SMB_REMOVELIB(rt) ],
-			[
-			    AC_DEFINE(HAVE_CLOCK_GETTIME, 1,
-				[Whether clock_gettime is available])
-			    SMB_CHECK_CLOCK_ID(CLOCK_MONOTONIC)
-			    SMB_CHECK_CLOCK_ID(CLOCK_PROCESS_CPUTIME_ID)
-			    SMB_CHECK_CLOCK_ID(CLOCK_REALTIME)
-			])
+		AC_DEFINE(HAVE_CLOCK_GETTIME, 1,
+		    [Whether clock_gettime is available])
+		SMB_CHECK_CLOCK_ID(CLOCK_MONOTONIC)
+		SMB_CHECK_CLOCK_ID(CLOCK_PROCESS_CPUTIME_ID)
+		SMB_CHECK_CLOCK_ID(CLOCK_REALTIME)
 	    ])
 
 fi
@@ -3167,6 +3167,18 @@ if test x"$with_ldap_support" != x"no"; then
 	 AC_MSG_WARN(ldap.h is needed for LDAP support)
 	fi
 	
+	with_ldap_support=no
+  fi
+
+  ##################################################################
+  # HP/UX does not have ber_tag_t, disable LDAP there
+  AC_CHECK_TYPE(ber_tag_t,,,[#include <lber.h>])
+  if test x"$ac_cv_type_ber_tag_t" != x"yes"; then
+	if test x"$with_ldap_support" = x"yes"; then
+	 AC_MSG_ERROR(ber_tag_t is needed for LDAP support)
+	else
+	 AC_MSG_WARN(ber_tag_t is needed for LDAP support)
+	fi
 	with_ldap_support=no
   fi
 fi
@@ -4569,6 +4581,16 @@ if test $space = no; then
   fi
 fi
 
+# smbd/statvfs.c assumes that statvfs.f_fsid is an integer.
+# This is not the case on ancient Linux systems.
+
+AC_CACHE_CHECK([that statvfs.f_fsid is an integer],samba_cv_fsid_int, [
+    AC_TRY_COMPILE([#include <sys/statvfs.h>],[struct statvfs buf; buf.f_fsid = 0],
+	samba_cv_fsid_int=yes,samba_cv_fsid_int=no)])
+if test x"$samba_cv_fsid_int" = x"yes"; then
+    AC_DEFINE(HAVE_FSID_INT, 1, [Whether statvfs.f_fsid is an integer])
+fi
+
 if test $space = no; then
   # DEC Alpha running OSF/1
   AC_MSG_CHECKING([for 3-argument statfs function (DEC OSF/1)])
@@ -5545,6 +5567,7 @@ SMB_MODULE(rpc_spoolss, \$(RPC_SPOOLSS_OBJ), "bin/librpc_spoolss.$SHLIBEXT", RPC
 SMB_MODULE(rpc_eventlog, \$(RPC_EVENTLOG_OBJ), "bin/librpc_eventlog.$SHLIBEXT", RPC)
 SMB_MODULE(rpc_samr, \$(RPC_SAMR_OBJ), "bin/librpc_samr.$SHLIBEXT", RPC)
 SMB_MODULE(rpc_echo, \$(RPC_ECHO_OBJ), "bin/librpc_echo.$SHLIBEXT", RPC)
+SMB_MODULE(rpc_unixinfo, \$(RPC_UNIXINFO_OBJ), "bin/librpc_unixinfo.$SHLIBEXT", RPC)
 SMB_SUBSYSTEM(RPC,smbd/server.o)
 
 SMB_MODULE(idmap_ldap, sam/idmap_ldap.o, "bin/ldap.$SHLIBEXT", IDMAP)
@@ -5568,6 +5591,7 @@ SMB_MODULE(auth_builtin, \$(AUTH_BUILTIN_OBJ), "bin/builtin.$SHLIBEXT", AUTH)
 SMB_MODULE(auth_script, \$(AUTH_SCRIPT_OBJ), "bin/script.$SHLIBEXT", AUTH)
 SMB_SUBSYSTEM(AUTH,auth/auth.o)
 
+SMB_MODULE(vfs_default, \$(VFS_DEFAULT_OBJ), "bin/default.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_recycle, \$(VFS_RECYCLE_OBJ), "bin/recycle.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_audit, \$(VFS_AUDIT_OBJ), "bin/audit.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_extd_audit, \$(VFS_EXTD_AUDIT_OBJ), "bin/extd_audit.$SHLIBEXT", VFS)
@@ -5581,6 +5605,10 @@ SMB_MODULE(vfs_expand_msdfs, \$(VFS_EXPAND_MSDFS_OBJ), "bin/expand_msdfs.$SHLIBE
 SMB_MODULE(vfs_shadow_copy, \$(VFS_SHADOW_COPY_OBJ), "bin/shadow_copy.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_afsacl, \$(VFS_AFSACL_OBJ), "bin/afsacl.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_catia, \$(VFS_CATIA_OBJ), "bin/catia.$SHLIBEXT", VFS)
+SMB_MODULE(vfs_cacheprime, \$(VFS_CACHEPRIME_OBJ), "bin/cacheprime.$SHLIBEXT", VFS)
+SMB_MODULE(vfs_prealloc, \$(VFS_PREALLOC_OBJ), "bin/prealloc.$SHLIBEXT", VFS)
+SMB_MODULE(vfs_commit, \$(VFS_COMMIT_OBJ), "bin/commit.$SHLIBEXT", VFS)
+
 SMB_SUBSYSTEM(VFS,smbd/vfs.o)
 
 AC_DEFINE_UNQUOTED(STRING_STATIC_MODULES, "$string_static_modules", [String list of builtin modules])
@@ -5590,6 +5618,89 @@ AC_DEFINE_UNQUOTED(STRING_STATIC_MODULES, "$string_static_modules", [String list
 
 if test "${ac_cv_prog_CC}" = "insure"; then
 	CPPFLAGS="$CPPFLAGS -D__INSURE__"
+fi
+
+#################################################
+# If run from the build farm, enable NASTY hacks
+#################################################
+AC_MSG_CHECKING(whether to enable build farm hacks)
+if test x"$RUN_FROM_BUILD_FARM" = x"yes"; then
+	AC_MSG_RESULT(yes)
+	AC_DEFINE(ENABLE_BUILD_FARM_HACKS, 1, [Defined if running in the build farm])
+else
+	AC_MSG_RESULT(no)
+fi
+
+#################################################
+# check for bad librt/libpthread interactions
+
+if test x"$samba_cv_HAVE_KERNEL_OPLOCKS_LINUX" = x"yes" -o \
+    x"$samba_cv_HAVE_KERNEL_CHANGE_NOTIFY" = x"yes" -o \
+    x"$samba_cv_HAVE_AIO64" = x"yes" -o \
+    x"$samba_cv_HAVE_AIO" = x"yes" ; then
+
+SMB_IF_RTSIGNAL_BUG(
+	[
+	    # Have RT_SIGNAL bug, need to check whether the problem will
+	    # affect anything we have configured.
+
+	    rt_do_error=no
+	    if test x"$samba_cv_HAVE_KERNEL_OPLOCKS_LINUX" = x"yes"; then
+		if test x"$rt_signal_lease_ok" = x"no" ; then
+		    rt_do_error=yes
+		fi
+	    fi
+
+	    if test x"$samba_cv_HAVE_KERNEL_CHANGE_NOTIFY" = x"yes"; then
+		if test x"$rt_signal_notify_ok" = x"no" ; then
+		    rt_do_error=yes
+		fi
+	    fi
+
+	    if test x"$samba_cv_HAVE_AIO64" = x"yes" -o \
+		    x"$samba_cv_HAVE_AIO" = x"yes" ; then
+		if test x"$rt_signal_aio_ok" = x"no" ; then
+		    rt_do_error=yes
+		fi
+	    fi
+
+	    if test x"$rt_do_error" = x"yes" ; then
+		SMB_IS_LIBPTHREAD_LINKED(
+		    [
+			cat<<MSG
+
+*** On this platforms, linking Samba against pthreads causes problems
+*** with the oplock and change notification mechanisms. You may be
+*** using pthreads as a side-effect of using the --with-aio-support
+*** or --with-profiling-data options. Please remove these and try again.
+
+MSG
+		    ],
+		    [
+			cat<<MSG
+
+*** On this platform, the oplock and change notification mechanisms do not
+*** appear to work. Please report this problem to samba-technical@samba.org
+*** and attach the config.log file from this directory.
+
+MSG
+		    ])
+		AC_MSG_ERROR(unable to use realtime signals on this platform)
+	    fi
+	],
+	[
+	    # no RT_SIGNAL bug, we are golden
+	    SMB_IS_LIBPTHREAD_LINKED(
+		[
+		    AC_MSG_WARN(using libpthreads - this may degrade performance)
+		])
+
+	],
+	[
+	    # cross compiling, I hope you know what you are doing
+	    true
+	])
+
 fi
 
 #################################################

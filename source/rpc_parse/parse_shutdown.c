@@ -100,12 +100,12 @@ BOOL shutdown_io_q_init(const char *desc, SHUTDOWN_Q_INIT *q_s, prs_struct *ps,
 	if (!prs_align(ps))
 		return False;
 
-	if (!prs_pointer("server", ps, depth, (void**)&q_s->server, sizeof(uint16), (PRS_POINTER_CAST)prs_uint16))
+	if (!prs_pointer("server", ps, depth, (void*)&q_s->server, sizeof(uint16), (PRS_POINTER_CAST)prs_uint16))
 		return False;
 	if (!prs_align(ps))
 		return False;
 
-	if (!prs_pointer("message", ps, depth, (void**)&q_s->message, sizeof(UNISTR4), (PRS_POINTER_CAST)prs_unistr4))
+	if (!prs_pointer("message", ps, depth, (void*)&q_s->message, sizeof(UNISTR4), (PRS_POINTER_CAST)prs_unistr4))
 		return False;
 
 	if (!prs_align(ps))
@@ -159,12 +159,12 @@ BOOL shutdown_io_q_init_ex(const char *desc, SHUTDOWN_Q_INIT_EX * q_s, prs_struc
 	if (!prs_align(ps))
 		return False;
 
-	if (!prs_pointer("server", ps, depth, (void**)&q_s->server, sizeof(uint16), (PRS_POINTER_CAST)prs_uint16))
+	if (!prs_pointer("server", ps, depth, (void*)&q_s->server, sizeof(uint16), (PRS_POINTER_CAST)prs_uint16))
 		return False;
 	if (!prs_align(ps))
 		return False;
 
-	if (!prs_pointer("message", ps, depth, (void**)&q_s->message, sizeof(UNISTR4), (PRS_POINTER_CAST)prs_unistr4))
+	if (!prs_pointer("message", ps, depth, (void*)&q_s->message, sizeof(UNISTR4), (PRS_POINTER_CAST)prs_unistr4))
 		return False;
 
 	if (!prs_align(ps))
@@ -238,7 +238,7 @@ BOOL shutdown_io_q_abort(const char *desc, SHUTDOWN_Q_ABORT *q_s,
 	if (!prs_align(ps))
 		return False;
 
-	if (!prs_pointer("server", ps, depth, (void**)&q_s->server, sizeof(uint16), (PRS_POINTER_CAST)prs_uint16))
+	if (!prs_pointer("server", ps, depth, (void*)&q_s->server, sizeof(uint16), (PRS_POINTER_CAST)prs_uint16))
 		return False;
 	if (!prs_align(ps))
 		return False;
