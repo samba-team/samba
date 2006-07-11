@@ -633,7 +633,6 @@ void smbsrv_reply_readbraw(struct smbsrv_request *req)
 	req->ntvfs = ntvfs_request_create(req->tcon->ntvfs, req,
 					  req->session->session_info,
 					  SVAL(req->in.hdr,HDR_PID),
-					  SVAL(req->in.hdr,HDR_MID),
 					  req->request_time,
 					  req, NULL, 0);
 	if (!req->ntvfs) {
@@ -2197,10 +2196,24 @@ void smbsrv_reply_ntcreate_and_X(struct smbsrv_request *req)
 ****************************************************************************/
 void smbsrv_reply_ntcancel(struct smbsrv_request *req)
 {
-	/* NOTE: this request does not generate a reply */
-	SMBSRV_SETUP_NTVFS_REQUEST(NULL,0);
-	ntvfs_cancel(req->ntvfs);
-	talloc_free(req);
+	struct smbsrv_request *r;
+	uint16_t mid = SVAL(req->in.hdr,HDR_MID);
+	uint16_t pid = SVAL(req->in.hdr,HDR_PID);
+
+	for (r = req->smb_conn->requests; r; r = r->next) {
+		if (mid != SVAL(r->in.hdr,HDR_MID)) continue;
+		/* do we really need to check the PID? */
+		if (pid != SVAL(r->in.hdr,HDR_PID)) continue;
+
+		SMBSRV_CHECK(ntvfs_cancel(r->ntvfs));
+
+		/* NOTE: this request does not generate a reply */
+		talloc_free(req);
+		return;
+	}
+
+	/* TODO: workout the correct error code */
+	smbsrv_send_error(req, NT_STATUS_FOOBAR);
 }
 
 /*

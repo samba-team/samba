@@ -253,9 +253,6 @@ struct ntvfs_request {
 	/* the smb pid is needed for locking contexts */
 	uint16_t smbpid;
 
-	/* the smb mid is needed for matching requests */
-	uint16_t smbmid;
-
 	/* some statictics for the management tools */
 	struct {
 		/* the system time when the request arrived */
