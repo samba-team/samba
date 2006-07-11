@@ -748,8 +748,8 @@ static int _winbind_read_password(pam_handle_t * pamh,
 						}
 					}
 				} else {
-					_pam_log(LOG_NOTICE
-						 ,"could not recover authentication token");
+					_pam_log(LOG_NOTICE, "could not recover authentication token");
+					retval = PAM_AUTHTOK_RECOVER_ERR;
 				}
 
 			}
