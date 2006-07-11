@@ -4590,6 +4590,10 @@ NTSTATUS _samr_set_aliasinfo(pipes_struct *p, SAMR_Q_SET_ALIASINFO *q_u, SAMR_R_
 
 	switch (ctr->level) {
 		case 2:
+		{
+			fstring group_name;
+			enum SID_NAME_USE type;
+
 			/* We currently do not support renaming groups in the
 			   the BUILTIN domain.  Refer to util_builtin.c to understand 
 			   why.  The eventually needs to be fixed to be like Windows
@@ -4599,13 +4603,26 @@ NTSTATUS _samr_set_aliasinfo(pipes_struct *p, SAMR_Q_SET_ALIASINFO *q_u, SAMR_R_
 				return NT_STATUS_SPECIAL_ACCOUNT;
 			}
 
-			if ( ctr->alias.info2.name.string ) {
-				unistr2_to_ascii( info.acct_name, ctr->alias.info2.name.string, 
-					sizeof(info.acct_name)-1 );
+			/* There has to be a valid name */
+			if ( !ctr->alias.info2.name.string ) 
+				return NT_STATUS_INVALID_PARAMETER;
+
+			unistr2_to_ascii( info.acct_name, ctr->alias.info2.name.string, 
+				sizeof(info.acct_name)-1 );
+
+			/* make sure the name doesn't already exist as a user 
+			   or local group */
+
+			fstr_sprintf( group_name, "%s\\%s", global_myname(), info.acct_name );
+			if ( lookup_name( p->mem_ctx, group_name, 0, NULL, NULL, NULL, &type) ) {
+				if ( type == SID_NAME_USER ) {
+					return NT_STATUS_USER_EXISTS;
+				}
+
+				return NT_STATUS_ALIAS_EXISTS;
 			}
-			else
-				fstrcpy( info.acct_name, "" );
 			break;
+		}
 		case 3:
 			if ( ctr->alias.info3.description.string ) {
 				unistr2_to_ascii( info.acct_desc, 
