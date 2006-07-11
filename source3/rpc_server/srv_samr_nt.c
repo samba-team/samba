@@ -4592,7 +4592,7 @@ NTSTATUS _samr_set_aliasinfo(pipes_struct *p, SAMR_Q_SET_ALIASINFO *q_u, SAMR_R_
 		case 2:
 		{
 			fstring group_name;
-			enum SID_NAME_USE type;
+			NTSTATUS status;
 
 			/* We currently do not support renaming groups in the
 			   the BUILTIN domain.  Refer to util_builtin.c to understand 
@@ -4614,13 +4614,9 @@ NTSTATUS _samr_set_aliasinfo(pipes_struct *p, SAMR_Q_SET_ALIASINFO *q_u, SAMR_R_
 			   or local group */
 
 			fstr_sprintf( group_name, "%s\\%s", global_myname(), info.acct_name );
-			if ( lookup_name( p->mem_ctx, group_name, 0, NULL, NULL, NULL, &type) ) {
-				if ( type == SID_NAME_USER ) {
-					return NT_STATUS_USER_EXISTS;
-				}
-
-				return NT_STATUS_ALIAS_EXISTS;
-			}
+			status = can_create( p->mem_ctx, group_name );
+			if ( !NT_STATUS_IS_OK( status ) ) 
+				return status;
 			break;
 		}
 		case 3:
