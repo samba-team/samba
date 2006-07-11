@@ -927,7 +927,7 @@ static int ltdb_sequence_number(struct ldb_module *module, struct ldb_request *r
 {
 	TALLOC_CTX *tmp_ctx = talloc_new(req);
 	struct ldb_message *msg = NULL;
-	struct ldb_dn *dn = ldb_dn_explode(tmp_ctx, "@BASEINFO");
+	struct ldb_dn *dn = ldb_dn_explode(tmp_ctx, LTDB_BASEINFO);
 	int tret;
 
 	if (tmp_ctx == NULL) {
@@ -949,7 +949,7 @@ static int ltdb_sequence_number(struct ldb_module *module, struct ldb_request *r
 		return LDB_SUCCESS;
 	}
 
-	req->op.seq_num.seq_num = ldb_msg_find_uint64(msg, "sequenceNumber", 0);
+	req->op.seq_num.seq_num = ldb_msg_find_uint64(msg, LTDB_SEQUENCE_NUMBER, 0);
 	talloc_free(tmp_ctx);
 	return LDB_SUCCESS;
 }
