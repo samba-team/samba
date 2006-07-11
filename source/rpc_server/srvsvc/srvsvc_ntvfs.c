@@ -113,7 +113,6 @@ NTSTATUS srvsvc_create_ntvfs_context(struct dcesrv_call_state *dce_call,
 	ntvfs_req = ntvfs_request_create(c->ntvfs, mem_ctx,
 					 dce_call->conn->auth_state.session_info,
 					 0, /* TODO: fill in PID */
-					 0, /* TODO: fill in MID */
 					 dce_call->time,
 					 NULL, NULL, 0);
 	NT_STATUS_HAVE_NO_MEMORY(ntvfs_req);

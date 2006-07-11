@@ -803,7 +803,7 @@ static NTSTATUS cvfs_cancel(struct ntvfs_module_context *ntvfs,
 
 	/* find the matching request */
 	for (a=private->pending;a;a=a->next) {
-		if (a->req->smbmid == req->smbmid) {
+		if (a->req == req) {
 			break;
 		}
 	}
