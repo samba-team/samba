@@ -34,7 +34,7 @@ typedef struct _blocking_lock_record {
 	int lock_num;
 	SMB_BIG_UINT offset;
 	SMB_BIG_UINT count;
-	uint16 lock_pid;
+	uint32 lock_pid;
 	enum brl_flavour lock_flav;
 	enum brl_type lock_type;
 	char *inbuf;
@@ -74,7 +74,7 @@ BOOL push_blocking_lock_request( char *inbuf, int length,
 		files_struct *fsp,
 		int lock_timeout,
 		int lock_num,
-		uint16 lock_pid,
+		uint32 lock_pid,
 		enum brl_type lock_type,
 		enum brl_flavour lock_flav,
 		SMB_BIG_UINT offset, SMB_BIG_UINT count)
@@ -236,7 +236,7 @@ static void reply_lockingX_error(blocking_lock_record *blr, NTSTATUS status)
 	files_struct *fsp = blr->fsp;
 	uint16 num_ulocks = SVAL(inbuf,smb_vwv6);
 	SMB_BIG_UINT count = (SMB_BIG_UINT)0, offset = (SMB_BIG_UINT) 0;
-	uint16 lock_pid;
+	uint32 lock_pid;
 	unsigned char locktype = CVAL(inbuf,smb_vwv3);
 	BOOL large_file_format = (locktype & LOCKING_ANDX_LARGE_FILES);
 	char *data;
@@ -344,7 +344,7 @@ static BOOL process_lockread(blocking_lock_record *blr)
 	data = smb_buf(outbuf) + 3;
  
 	status = do_lock_spin(fsp,
-				SVAL(inbuf,smb_pid),
+				(uint32)SVAL(inbuf,smb_pid),
 				(SMB_BIG_UINT)numtoread,
 				startpos,
 				READ_LOCK,
@@ -417,7 +417,7 @@ static BOOL process_lock(blocking_lock_record *blr)
 
 	errno = 0;
 	status = do_lock_spin(fsp,
-				SVAL(inbuf,smb_pid),
+				(uint32)SVAL(inbuf,smb_pid),
 				count,
 				offset,
 				WRITE_LOCK,
@@ -471,7 +471,7 @@ static BOOL process_lockingX(blocking_lock_record *blr)
 	uint16 num_ulocks = SVAL(inbuf,smb_vwv6);
 	uint16 num_locks = SVAL(inbuf,smb_vwv7);
 	SMB_BIG_UINT count = (SMB_BIG_UINT)0, offset = (SMB_BIG_UINT)0;
-	uint16 lock_pid;
+	uint32 lock_pid;
 	BOOL large_file_format = (locktype & LOCKING_ANDX_LARGE_FILES);
 	char *data;
 	BOOL my_lock_ctx = False;

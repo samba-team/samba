@@ -3566,7 +3566,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 			NTSTATUS status = NT_STATUS_INVALID_LEVEL;
 			SMB_BIG_UINT count;
 			SMB_BIG_UINT offset;
-			uint16 lock_pid;
+			uint32 lock_pid;
 			enum brl_type lock_type;
 
 			if (total_data != POSIX_LOCK_DATA_SIZE) {
@@ -3587,7 +3587,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 					return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 			}
 
-			lock_pid = (uint16)IVAL(pdata, POSIX_LOCK_PID_OFFSET);
+			lock_pid = IVAL(pdata, POSIX_LOCK_PID_OFFSET);
 #if defined(HAVE_LONGLONG)
 			offset = (((SMB_BIG_UINT) IVAL(pdata,(POSIX_LOCK_START_OFFSET+4))) << 32) |
 					((SMB_BIG_UINT) IVAL(pdata,POSIX_LOCK_START_OFFSET));
@@ -4511,7 +4511,7 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 		{
 			SMB_BIG_UINT count;
 			SMB_BIG_UINT offset;
-			uint16 lock_pid;
+			uint32 lock_pid;
 			BOOL lock_blocking;
 			enum brl_type lock_type;
 			BOOL my_lock_ctx;
@@ -4550,7 +4550,7 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 				return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 			}
 
-			lock_pid = (uint16)IVAL(pdata, POSIX_LOCK_PID_OFFSET);
+			lock_pid = IVAL(pdata, POSIX_LOCK_PID_OFFSET);
 #if defined(HAVE_LONGLONG)
 			offset = (((SMB_BIG_UINT) IVAL(pdata,(POSIX_LOCK_START_OFFSET+4))) << 32) |
 					((SMB_BIG_UINT) IVAL(pdata,POSIX_LOCK_START_OFFSET));

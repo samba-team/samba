@@ -676,7 +676,7 @@ static NTSTATUS brl_lock_posix(struct byte_range_lock *br_lck,
 ****************************************************************************/
 
 NTSTATUS brl_lock(struct byte_range_lock *br_lck,
-		uint16 smbpid,
+		uint32 smbpid,
 		struct process_id pid,
 		br_off start,
 		br_off size, 
@@ -1012,7 +1012,7 @@ static BOOL brl_unlock_posix(struct byte_range_lock *br_lck, const struct lock_s
 ****************************************************************************/
 
 BOOL brl_unlock(struct byte_range_lock *br_lck,
-		uint16 smbpid,
+		uint32 smbpid,
 		struct process_id pid,
 		br_off start,
 		br_off size,
@@ -1042,7 +1042,7 @@ BOOL brl_unlock(struct byte_range_lock *br_lck,
 ****************************************************************************/
 
 BOOL brl_locktest(struct byte_range_lock *br_lck,
-		uint16 smbpid,
+		uint32 smbpid,
 		struct process_id pid,
 		br_off start,
 		br_off size, 
@@ -1100,7 +1100,7 @@ BOOL brl_locktest(struct byte_range_lock *br_lck,
 ****************************************************************************/
 
 NTSTATUS brl_lockquery(struct byte_range_lock *br_lck,
-		uint16 *psmbpid,
+		uint32 *psmbpid,
 		struct process_id pid,
 		br_off *pstart,
 		br_off *psize, 
@@ -1169,7 +1169,7 @@ NTSTATUS brl_lockquery(struct byte_range_lock *br_lck,
 ****************************************************************************/
 
 BOOL brl_remove_pending_lock(struct byte_range_lock *br_lck,
-		uint16 smbpid,
+		uint32 smbpid,
 		struct process_id pid,
 		br_off start,
 		br_off size,

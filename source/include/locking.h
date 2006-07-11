@@ -33,9 +33,9 @@ enum brl_flavour {WINDOWS_LOCK = 0, POSIX_LOCK = 1};
    this client */
 
 struct lock_context {
-        uint16 smbpid;
-        uint16 tid;
-        struct process_id pid;
+	uint32 smbpid;
+	uint16 tid;
+	struct process_id pid;
 };
 
 /* The key used in the brlock database. */

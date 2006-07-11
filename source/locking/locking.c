@@ -37,7 +37,6 @@
 */
 
 #include "includes.h"
-uint16 global_smbpid;
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_LOCKING
@@ -74,6 +73,7 @@ const char *lock_flav_name(enum brl_flavour lock_flav)
 ****************************************************************************/
 
 BOOL is_locked(files_struct *fsp,
+		uint32 smbpid,
 		SMB_BIG_UINT count,
 		SMB_BIG_UINT offset, 
 		enum brl_type lock_type)
@@ -105,7 +105,7 @@ BOOL is_locked(files_struct *fsp,
 				return False;
 			}
 			ret = !brl_locktest(br_lck,
-					global_smbpid,
+					smbpid,
 					procid_self(),
 					offset,
 					count,
@@ -119,7 +119,7 @@ BOOL is_locked(files_struct *fsp,
 			return False;
 		}
 		ret = !brl_locktest(br_lck,
-				global_smbpid,
+				smbpid,
 				procid_self(),
 				offset,
 				count,
@@ -141,7 +141,7 @@ BOOL is_locked(files_struct *fsp,
 ****************************************************************************/
 
 NTSTATUS query_lock(files_struct *fsp,
-			uint16 *psmbpid,
+			uint32 *psmbpid,
 			SMB_BIG_UINT *pcount,
 			SMB_BIG_UINT *poffset,
 			enum brl_type *plock_type,
@@ -180,7 +180,7 @@ NTSTATUS query_lock(files_struct *fsp,
 ****************************************************************************/
 
 NTSTATUS do_lock(files_struct *fsp,
-			uint16 lock_pid,
+			uint32 lock_pid,
 			SMB_BIG_UINT count,
 			SMB_BIG_UINT offset,
 			enum brl_type lock_type,
@@ -230,7 +230,7 @@ NTSTATUS do_lock(files_struct *fsp,
 ****************************************************************************/
 
 NTSTATUS do_lock_spin(files_struct *fsp,
-			uint16 lock_pid,
+			uint32 lock_pid,
 			SMB_BIG_UINT count,
 			SMB_BIG_UINT offset,
 			enum brl_type lock_type,
@@ -286,7 +286,7 @@ NTSTATUS do_lock_spin(files_struct *fsp,
 ****************************************************************************/
 
 NTSTATUS do_unlock(files_struct *fsp,
-			uint16 lock_pid,
+			uint32 lock_pid,
 			SMB_BIG_UINT count,
 			SMB_BIG_UINT offset,
 			enum brl_flavour lock_flav)

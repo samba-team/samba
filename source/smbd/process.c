@@ -21,7 +21,7 @@
 
 #include "includes.h"
 
-extern uint16 global_smbpid;
+uint16 global_smbpid;
 extern int keepalive;
 extern struct auth_context *negprot_global_auth_context;
 extern int smb_echo_count;
