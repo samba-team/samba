@@ -89,9 +89,9 @@ defaultNamingContext: cn=Test
 
 dn: @PARTITION
 partition: cn=SideTest:" + prefix +  "testside.ldb
-partition: cn=Sub,cn=Test:" + prefix +  "testsub.ldb
-partition: cn=Test:" + prefix +  "testpartition.ldb
-partition: cn=Sub,cn=Sub,cn=Test:" + prefix +  "testsubsub.ldb
+partition: cn=Sub,cn=PartTest:" + prefix +  "testsub.ldb
+partition: cn=PartTest:" + prefix +  "testpartition.ldb
+partition: cn=Sub,cn=Sub,cn=PartTest:" + prefix +  "testsubsub.ldb
 ");
 }
 
@@ -102,7 +102,7 @@ function modules_test(ldb)
 {
         println("Running modules tests");
 	ok = ldb.add("
-dn: cn=x8,cn=test
+dn: cn=x8,cn=PartTest
 objectClass: foo
 x: 8
 ");
@@ -112,7 +112,7 @@ x: 8
 	}
 
 	ok = ldb.add("
-dn: cn=x9,cn=test
+dn: cn=x9,cn=PartTest
 objectClass: foo
 x: 9
 cn: X9
@@ -122,7 +122,7 @@ cn: X9
 		assert(ok);
 	}
 
-	var res = ldb.search("x=8", "cn=test", ldb.SCOPE_DEFAULT);
+	var res = ldb.search("x=8", "cn=PartTest", ldb.SCOPE_DEFAULT);
 	assert(res[0].objectGUID != undefined);
 	assert(res[0].createTimestamp == undefined);
 	assert(res[0].whenCreated != undefined);
@@ -130,7 +130,7 @@ cn: X9
 	assert(res[0].cn == "x8");
 
 	var attrs = new Array("*", "createTimestamp");
-	var res2 = ldb.search("x=9", "cn=test", ldb.SCOPE_DEFAULT, attrs);
+	var res2 = ldb.search("x=9", "cn=PartTest", ldb.SCOPE_DEFAULT, attrs);
 	assert(res2[0].objectGUID != undefined);
 	assert(res2[0].createTimestamp != undefined);
 	assert(res2[0].whenCreated != undefined);
@@ -146,17 +146,89 @@ cn: X9
 	assert(res3[0].name == undefined);
 	assert(res3[0].currentTime != undefined);
 	assert(res3[0].highestCommittedUSN != undefined);
-	println(res3[0].namingContexts[0]);
-	println(res3[0].namingContexts[1]);
-	println(res3[0].namingContexts[2]);
-	println(res3[0].namingContexts[3]);
 
-	assert(res3[0].namingContexts[0] == "cn=Test");
-	assert(res3[0].namingContexts[1] == "cn=SideTest");
-	assert(res3[0].namingContexts[2] == "cn=Sub,cn=Test");
-	assert(res3[0].namingContexts[3] == "cn=Sub,cn=Sub,cn=Test");
+	assert(res3[0].namingContexts[0] == "cn=Sub,cn=Sub,cn=PartTest");
+	assert(res3[0].namingContexts[1] == "cn=Sub,cn=PartTest");
+	assert(res3[0].namingContexts[2] == "cn=PartTest");
+	assert(res3[0].namingContexts[3] == "cn=SideTest");
 	var usn = res3[0].highestCommittedUSN;
+
+	/* Start a transaction.  We are going to abort it later, to
+	 * show we clean up all partitions */
+
+	ok = ldb.transaction_start()
+	if (!ok) {
+		println("Failed to start a transaction: " + ldb.errstring());
+		assert(ok);
+	}
+
 	
+	ok = ldb.add("
+dn: cn=x10,cn=parttest
+objectClass: foo
+x: 10
+");
+	if (!ok) {
+		println("Failed to add: " + ldb.errstring());
+		assert(ok);
+	}
+
+	var attrs = new Array("highestCommittedUSN");
+	var res4 = ldb.search("", "", ldb.SCOPE_BASE, attrs);
+	var usn2 = res4[0].highestCommittedUSN;
+	assert(usn < res4[0].highestCommittedUSN);
+
+	ok = ldb.add("
+dn: cn=x11,cn=sub,cn=parttest
+objectClass: foo
+x: 11
+");
+	if (!ok) {
+		println("Failed to add: " + ldb.errstring());
+		assert(ok);
+	}
+
+	var attrs = new Array("highestCommittedUSN");
+	var res5 = ldb.search("", "", ldb.SCOPE_BASE, attrs);
+	assert(usn2 < res5[0].highestCommittedUSN);
+	
+	var attrs = new Array("*", "createTimestamp");
+	var res6 = ldb.search("x=11", "cn=parttest", ldb.SCOPE_SUB, attrs);
+	assert(res6.length == 0);
+
+	var attrs = new Array("*", "createTimestamp");
+	var res7 = ldb.search("x=10", "cn=sub,cn=parttest", ldb.SCOPE_DEFAULT, attrs);
+	assert(res7.length == 0);
+
+	var res8 = ldb.search("x=11", "cn=sub,cn=parttest", ldb.SCOPE_DEFAULT, attrs);
+	assert(res8[0].objectGUID != undefined);
+	assert(res8[0].createTimestamp != undefined);
+	assert(res8[0].whenCreated != undefined);
+	assert(res8[0].name == "x11");
+	assert(res8[0].cn == "x11");
+
+	/* Now abort the transaction to show that even with
+	 * partitions, it is aborted everywhere */
+	ok = ldb.transaction_cancel();
+	if (!ok) {
+		println("Failed to cancel a transaction: " + ldb.errstring());
+		assert(ok);
+	}
+
+	/* now check it all went away */
+
+	var attrs = new Array("highestCommittedUSN");
+	var res9 = ldb.search("", "", ldb.SCOPE_BASE, attrs);
+	assert(usn == res9[0].highestCommittedUSN);
+	
+	var attrs = new Array("*");
+	var res10 = ldb.search("x=11", "cn=sub,cn=parttest", ldb.SCOPE_DEFAULT, attrs);
+	assert(res10.length == 0);
+
+	var attrs = new Array("*");
+	var res11 = ldb.search("x=10", "cn=parttest", ldb.SCOPE_DEFAULT, attrs);
+	assert(res11.length == 0);
+
 }
 
 sys = sys_init();
