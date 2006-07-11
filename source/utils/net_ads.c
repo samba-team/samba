@@ -1030,6 +1030,61 @@ static ADS_STATUS net_precreate_machine_acct( ADS_STRUCT *ads, const char *ou )
 	return rc;
 }
 
+/************************************************************************
+ ************************************************************************/
+
+static BOOL net_derive_salting_principal( TALLOC_CTX *ctx, ADS_STRUCT *ads )
+{
+	uint32 domain_func;
+	ADS_STATUS status;
+	fstring salt;
+	char *std_salt;
+	LDAPMessage *res = NULL;
+	const char *machine_name = global_myname();
+
+	status = ads_domain_func_level( ads, &domain_func );
+	if ( !ADS_ERR_OK(status) ) {
+		DEBUG(2,("Failed to determine domain functional level!\n"));
+		return False;
+	}
+
+	/* go ahead and setup the default salt */
+
+	if ( (std_salt = kerberos_standard_des_salt()) == NULL ) {
+		DEBUG(0,("net_derive_salting_principal: failed to obtain stanard DES salt\n"));
+		return False;
+	}
+
+	fstrcpy( salt, std_salt );
+	SAFE_FREE( std_salt );
+	
+	/* if it's a Windows functional domain, we have to look for the UPN */
+	   
+	if ( domain_func == DS_DOMAIN_FUNCTION_2000 ) {	
+		char *upn;
+		int count;
+		
+		status = ads_find_machine_acct(ads, (void **)(void *)&res, machine_name);
+		if (!ADS_ERR_OK(status)) {
+			return False;
+		}
+		
+		if ( (count = ads_count_replies(ads, res)) != 1 ) {
+			DEBUG(1,("net_set_machine_spn: %d entries returned!\n", count));
+			return False;
+		}
+		
+		upn = ads_pull_string(ads, ctx, res, "userPrincipalName");
+		if ( upn ) {
+			fstrcpy( salt, upn );
+		}
+		
+		ads_msgfree(ads, res);
+	}
+
+	return kerberos_secrets_store_des_salt( salt );
+}
+
 /*******************************************************************
   join a domain using ADS (LDAP mods)
  ********************************************************************/
@@ -1140,30 +1195,16 @@ int net_ads_join(int argc, const char **argv)
 		/* don't fail */
 	}
 
-#if defined(HAVE_KRB5) 
-	if (asprintf(&machine_account, "%s$", global_myname()) == -1) {
-		d_fprintf(stderr, "asprintf failed\n");
-		ads_destroy(&ads);
-		return -1;
-	}
-
-	if (!kerberos_derive_salting_principal(machine_account)) {
+	if ( !net_derive_salting_principal( ctx, ads ) ) {
 		DEBUG(1,("Failed to determine salting principal\n"));
 		ads_destroy(&ads);
 		return -1;
 	}
 
-	if (!kerberos_derive_cifs_salting_principals()) {
-		DEBUG(1,("Failed to determine salting principals\n"));
-		ads_destroy(&ads);
-		return -1;
-	}
-	
 	/* Now build the keytab, using the same ADS connection */
 	if (lp_use_kerberos_keytab() && ads_keytab_create_default(ads)) {
 		DEBUG(1,("Error creating host keytab!\n"));
 	}
-#endif
 
 	d_printf("Joined '%s' to realm '%s'\n", global_myname(), ads->config.realm);
 
