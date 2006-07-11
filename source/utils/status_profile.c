@@ -21,6 +21,7 @@
 
 #include "includes.h"
 
+#ifdef WITH_PROFILE
 static void profile_separator(const char * title)
 {
     char line[79 + 1];
@@ -35,6 +36,7 @@ static void profile_separator(const char * title)
     line[sizeof(line) - 1] = '\0';
     d_printf("%s\n", line);
 }
+#endif
 
 /*******************************************************************
  dump the elements of the profile structure
