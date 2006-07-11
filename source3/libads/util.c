@@ -48,14 +48,6 @@ ADS_STATUS ads_change_trust_account_password(ADS_STRUCT *ads, char *host_princip
 		goto failed;
 	}
 
-	/* Determine if the KDC is salting keys for this principal in a
-	 * non-obvious way. */
-	if (!kerberos_derive_salting_principal(host_principal)) {
-		DEBUG(1,("Failed to determine correct salting principal for %s\n", host_principal));
-		ret = ADS_ERROR_SYSTEM(EACCES);
-		goto failed;
-	}
-
 failed:
 	SAFE_FREE(password);
 	return ret;
