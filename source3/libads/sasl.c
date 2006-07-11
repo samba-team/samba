@@ -278,7 +278,6 @@ static ADS_STATUS ads_sasl_gssapi_bind(ADS_STRUCT *ads)
 	uint8 *p;
 	uint32 max_msg_size;
 	char *sname;
-	unsigned sec_layer;
 	ADS_STATUS status;
 	krb5_principal principal;
 	krb5_context ctx = NULL;
@@ -391,7 +390,6 @@ static ADS_STATUS ads_sasl_gssapi_bind(ADS_STRUCT *ads)
 	file_save("sasl_gssapi.dat", output_token.value, output_token.length);
 #endif
 	max_msg_size = (p[1]<<16) | (p[2]<<8) | p[3];
-	sec_layer = *p;
 
 	gss_release_buffer(&minor_status, &output_token);
 

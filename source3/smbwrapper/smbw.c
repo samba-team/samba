@@ -432,7 +432,7 @@ return a connection to a server (existing or new)
 struct smbw_server *smbw_server(char *server, char *share)
 {
 	struct smbw_server *srv=NULL;
-	struct cli_state c;
+	struct cli_state *c;
 	char *username;
 	char *password;
 	char *workgroup;
@@ -499,13 +499,13 @@ struct smbw_server *smbw_server(char *server, char *share)
 	}
 
 	/* have to open a new connection */
-	if (!cli_initialise(&c) || !cli_connect(&c, server_n, &ip)) {
+	if (((c = cli_initialise()) == NULL) || !cli_connect(c, server_n, &ip)) {
 		errno = ENOENT;
 		return NULL;
 	}
 
-	if (!cli_session_request(&c, &calling, &called)) {
-		cli_shutdown(&c);
+	if (!cli_session_request(c, &calling, &called)) {
+		cli_shutdown(c);
 		if (strcmp(called.name, "*SMBSERVER")) {
 			make_nmb_name(&called , "*SMBSERVER", 0x20);
 			goto again;
@@ -516,29 +516,29 @@ struct smbw_server *smbw_server(char *server, char *share)
 
 	DEBUG(4,(" session request ok\n"));
 
-	if (!cli_negprot(&c)) {
-		cli_shutdown(&c);
+	if (!cli_negprot(c)) {
+		cli_shutdown(c);
 		errno = ENOENT;
 		return NULL;
 	}
 
-	if (!cli_session_setup(&c, username, 
+	if (!cli_session_setup(c, username, 
 			       password, strlen(password),
 			       password, strlen(password),
 			       workgroup) &&
 	    /* try an anonymous login if it failed */
-	    !cli_session_setup(&c, "", "", 1,"", 0, workgroup)) {
-		cli_shutdown(&c);
+	    !cli_session_setup(c, "", "", 1,"", 0, workgroup)) {
+		cli_shutdown(c);
 		errno = EPERM;
 		return NULL;
 	}
 
 	DEBUG(4,(" session setup ok\n"));
 
-	if (!cli_send_tconX(&c, share, "?????",
+	if (!cli_send_tconX(c, share, "?????",
 			    password, strlen(password)+1)) {
-		errno = smbw_errno(&c);
-		cli_shutdown(&c);
+		errno = smbw_errno(c);
+		cli_shutdown(c);
 		return NULL;
 	}
 
@@ -584,11 +584,11 @@ struct smbw_server *smbw_server(char *server, char *share)
 
 	/* some programs play with file descriptors fairly intimately. We
 	   try to get out of the way by duping to a high fd number */
-	if (fcntl(SMBW_CLI_FD + srv->cli.fd, F_GETFD) && errno == EBADF) {
-		if (dup2(srv->cli.fd,SMBW_CLI_FD+srv->cli.fd) == 
-		    srv->cli.fd+SMBW_CLI_FD) {
-			close(srv->cli.fd);
-			srv->cli.fd += SMBW_CLI_FD;
+	if (fcntl(SMBW_CLI_FD + srv->cli->fd, F_GETFD) && errno == EBADF) {
+		if (dup2(srv->cli->fd,SMBW_CLI_FD+srv->cli->fd) == 
+		    srv->cli->fd+SMBW_CLI_FD) {
+			close(srv->cli->fd);
+			srv->cli->fd += SMBW_CLI_FD;
 		}
 	}
 
@@ -597,7 +597,7 @@ struct smbw_server *smbw_server(char *server, char *share)
 	return srv;
 
  failed:
-	cli_shutdown(&c);
+	cli_shutdown(c);
 	if (!srv) return NULL;
 
 	SAFE_FREE(srv->server_name);

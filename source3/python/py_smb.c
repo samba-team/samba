@@ -43,7 +43,7 @@ static PyObject *py_smb_connect(PyObject *self, PyObject *args, PyObject *kw)
 	if (!PyArg_ParseTupleAndKeywords(args, kw, "s", kwlist, &server))
 		return NULL;
 
-	if (!(cli = cli_initialise(NULL)))
+	if (!(cli = cli_initialise()))
 		return NULL;
 
 	ZERO_STRUCT(ip);

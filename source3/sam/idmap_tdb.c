@@ -6,6 +6,7 @@
    Copyright (C) Tim Potter 2000
    Copyright (C) Jim McDonough <jmcd@us.ibm.com> 2003
    Copyright (C) Simo Sorce 2003
+   Copyright (C) Jeremy Allison 2006
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -46,16 +47,13 @@ static struct idmap_state {
  Allocate either a user or group id from the pool 
 **********************************************************************/
  
-static NTSTATUS db_allocate_id(unid_t *id, int id_type)
+static NTSTATUS db_allocate_id(unid_t *id, enum idmap_type id_type)
 {
 	BOOL ret;
 	int hwm;
 
-	if (!id)
-		return NT_STATUS_INVALID_PARAMETER;
-
 	/* Get current high water mark */
-	switch (id_type & ID_TYPEMASK) {
+	switch (id_type) {
 		case ID_USERID:
 
 			if ((hwm = tdb_fetch_int32(idmap_tdb, HWM_USER)) == -1) {
@@ -125,274 +123,327 @@ static NTSTATUS db_allocate_id(unid_t *id, int id_type)
 	return NT_STATUS_OK;
 }
 
-/* Get a sid from an id */
-static NTSTATUS internal_get_sid_from_id(DOM_SID *sid, unid_t id, int id_type)
+/* Get a sid from an id - internal non-reverse map checking function. */
+
+static NTSTATUS db_internal_get_sid_from_id(DOM_SID *sid, unid_t id, enum idmap_type id_type)
 {
 	TDB_DATA key, data;
-	fstring keystr;
+	TALLOC_CTX *memctx;
 	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
 
-	if (!sid)
-		return NT_STATUS_INVALID_PARAMETER;
-
-	switch (id_type & ID_TYPEMASK) {
-		case ID_USERID:
-			slprintf(keystr, sizeof(keystr), "UID %lu", (unsigned long)id.uid);
-			break;
-		case ID_GROUPID:
-			slprintf(keystr, sizeof(keystr), "GID %lu", (unsigned long)id.gid);
-			break;
-		default:
-			return NT_STATUS_UNSUCCESSFUL;
+	if ((memctx = talloc_new(NULL)) == NULL) {
+		DEBUG(0, ("ERROR: Out of memory!\n"));
+		return NT_STATUS_NO_MEMORY;
 	}
 
-	key.dptr = keystr;
-	key.dsize = strlen(keystr) + 1;
+	switch (id_type) {
+		case ID_USERID:
+			key.dptr = talloc_asprintf(memctx, "UID %lu", (unsigned long)id.uid);
+			break;
+		case ID_GROUPID:
+			key.dptr = talloc_asprintf(memctx, "GID %lu", (unsigned long)id.gid);
+			break;
+		default:
+			ret = NT_STATUS_INVALID_PARAMETER;
+			goto done;
+	}
 
-	DEBUG(10,("internal_get_sid_from_id: fetching record %s\n", keystr ));
+	if (key.dptr == NULL) {
+		DEBUG(0, ("ERROR: Out of memory!\n"));
+		ret = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
+	key.dsize = strlen(key.dptr) + 1;
+
+	DEBUG(10,("db_internal_get_sid_from_id: fetching record %s\n", key.dptr));
 
 	data = tdb_fetch(idmap_tdb, key);
 
 	if (data.dptr) {
 		if (string_to_sid(sid, data.dptr)) {
-			DEBUG(10,("internal_get_sid_from_id: fetching record %s -> %s\n", keystr, data.dptr ));
+			DEBUG(10,("db_internal_get_sid_from_id: fetching record %s -> %s\n", key.dptr, data.dptr ));
 			ret = NT_STATUS_OK;
 		}
 		SAFE_FREE(data.dptr);
 	}
 
+done:
+	talloc_free(memctx);
 	return ret;
 }
 
-/* Error codes for get_id_from_sid */
-enum getidfromsiderr { GET_ID_FROM_SID_OK = 0, GET_ID_FROM_SID_NOTFOUND, GET_ID_FROM_SID_WRONG_TYPE, GET_ID_FROM_SID_ERR };
+/* Get an id from a sid - internal non-reverse map checking function. */
 
-static enum getidfromsiderr internal_get_id_from_sid(unid_t *id, int *id_type, const DOM_SID *sid) 
+static NTSTATUS db_internal_get_id_from_sid(unid_t *id, enum idmap_type *id_type, const DOM_SID *sid)
 {
-	enum getidfromsiderr ret = GET_ID_FROM_SID_ERR;
-	fstring keystr;
+	NTSTATUS ret;
 	TDB_DATA key, data;
-	int type = *id_type & ID_TYPEMASK;
+	TALLOC_CTX *memctx;
+	unsigned long rec_id;
+
+	if ((memctx = talloc_new(NULL)) == NULL) {
+		DEBUG(0, ("ERROR: Out of memory!\n"));
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	/* Check if sid is present in database */
-	sid_to_string(keystr, sid);
+	if ((key.dptr = talloc_asprintf(memctx, "%s", sid_string_static(sid))) == NULL) {
+		DEBUG(0, ("ERROR: Out of memory!\n"));
+		ret = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
 
-	key.dptr = keystr;
-	key.dsize = strlen(keystr) + 1;
+	key.dsize = strlen(key.dptr) + 1;
 
-	DEBUG(10,("internal_get_id_from_sid: fetching record %s of type 0x%x\n", keystr, type ));
+	DEBUG(10,("db_internal_get_id_from_sid: fetching record %s\n", key.dptr));
 
 	data = tdb_fetch(idmap_tdb, key);
 	if (!data.dptr) {
-		DEBUG(10,("internal_get_id_from_sid: record %s not found\n", keystr ));
-		return GET_ID_FROM_SID_NOTFOUND;
+		DEBUG(10,("db_internal_get_id_from_sid: record %s not found\n", key.dptr));
+		ret = NT_STATUS_NO_SUCH_USER;
+		goto done;
 	} else {
-		DEBUG(10,("internal_get_id_from_sid: record %s -> %s\n", keystr, data.dptr ));
+		DEBUG(10,("db_internal_get_id_from_sid: record %s -> %s\n", key.dptr, data.dptr));
 	}
 
-	if (type == ID_EMPTY || type == ID_USERID) {
-		fstring scanstr;
-		/* Parse and return existing uid */
-		fstrcpy(scanstr, "UID %d");
-		
-		if (sscanf(data.dptr, scanstr, &((*id).uid)) == 1) {
-			/* uid ok? */
-			if (type == ID_EMPTY) {
-				*id_type = ID_USERID;
-			}
-			DEBUG(10,("internal_get_id_from_sid: %s fetching record %s -> %s \n",
-						(type == ID_EMPTY) ? "ID_EMPTY" : "ID_USERID",
-						keystr, data.dptr ));
-			ret = GET_ID_FROM_SID_OK;
-		} else {
-			ret = GET_ID_FROM_SID_WRONG_TYPE;
-		}
-	}
-	
-	if ((ret != GET_ID_FROM_SID_OK) && (type == ID_EMPTY || type == ID_GROUPID)) {
-		fstring scanstr;
-		/* Parse and return existing gid */
-		fstrcpy(scanstr, "GID %d");
-		
-		if (sscanf(data.dptr, scanstr, &((*id).gid)) == 1) {
-			/* gid ok? */
-			if (type == ID_EMPTY) {
-				*id_type = ID_GROUPID;
-			}
-			DEBUG(10,("internal_get_id_from_sid: %s fetching record %s -> %s \n",
-						(type == ID_EMPTY) ? "ID_EMPTY" : "ID_GROUPID",
-						keystr, data.dptr ));
-			ret = GET_ID_FROM_SID_OK;
-		} else {
-			ret = GET_ID_FROM_SID_WRONG_TYPE;
-		}
+	/* What type of record is this ? */
+
+	/* Try and parse and return a uid */
+	if (sscanf(data.dptr, "UID %lu", &rec_id) == 1) {
+		id->uid = (uid_t)rec_id;
+		*id_type = ID_USERID;
+		DEBUG(10,("db_internal_get_id_from_sid: fetching uid record %s -> %s \n",
+						key.dptr, data.dptr ));
+		ret = NT_STATUS_OK;
+	} else if (sscanf(data.dptr, "GID %lu", &rec_id) == 1) { /* Try a GID record. */
+		id->gid = (uid_t)rec_id;
+		*id_type = ID_GROUPID;
+		DEBUG(10,("db_internal_get_id_from_sid: fetching gid record %s -> %s \n",
+						key.dptr, data.dptr ));
+		ret = NT_STATUS_OK;
+	} else {
+		/* Unknown record type ! */
+		ret = NT_STATUS_INTERNAL_DB_ERROR;
 	}
 	
 	SAFE_FREE(data.dptr);
 
+done:
+	talloc_free(memctx);
 	return ret;
 }
 
-/* Get a sid from an id */
-static NTSTATUS db_get_sid_from_id(DOM_SID *sid, unid_t id, int id_type_in)
+/* Get a sid from an id - internal non-reverse map checking function. */
+
+static NTSTATUS db_get_sid_from_id(DOM_SID *sid, unid_t id, enum idmap_type id_type, int flags)
 {
-	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
-	enum getidfromsiderr iderr;
-	int id_type = id_type_in & ID_TYPEMASK;
-	unid_t id_tmp = id;
-	int id_type_tmp = id_type;
+	NTSTATUS ret;
+	unid_t tmp_id;
+	enum idmap_type tmp_id_type;
 
-	DEBUG(10,("db_get_sid_from_id: id_type_in = 0x%x\n", id_type_in));
+	ret = db_internal_get_sid_from_id(sid, id, id_type);
 
-	ret = internal_get_sid_from_id(sid, id, id_type);
 	if (!NT_STATUS_IS_OK(ret)) {
 		return ret;
 	}
-	
-	iderr = internal_get_id_from_sid(&id_tmp, &id_type_tmp, sid);
-	if (iderr != GET_ID_FROM_SID_OK) {
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-	if (id_type_tmp != id_type) {
-		return NT_STATUS_UNSUCCESSFUL;
-	} else if (id_type == ID_USERID) { 
-		if (id_tmp.uid != id.uid) {
-			return NT_STATUS_UNSUCCESSFUL;
+
+	/* Ensure the reverse mapping exists. */
+
+	ret = db_internal_get_id_from_sid(&tmp_id, &tmp_id_type, sid);
+	if (NT_STATUS_IS_OK(ret)) {
+		/* Check the reverse mapping is the same. */
+		if (tmp_id.uid != id.uid || tmp_id_type != id_type) {
+			DEBUG(10,("db_get_sid_from_id: reverse mapping mismatch "
+				"tmp_id = %u, id = %u, tmp_id_type = %u, id_type = %u\n",
+					(unsigned int)tmp_id.uid, (unsigned int)id.uid,
+					(unsigned int)tmp_id_type, (unsigned int)id_type ));
+			return NT_STATUS_NO_SUCH_USER;
 		}
-	} else if (id_type == ID_GROUPID) {
-		if (id_tmp.gid != id.gid) {
-			return NT_STATUS_UNSUCCESSFUL;
-		}
-	} else {
-		return NT_STATUS_UNSUCCESSFUL;
 	}
+
 	return ret;
 }
-/* Get an id from a sid */
-static NTSTATUS db_get_id_from_sid(unid_t *id, int *id_type, const DOM_SID *sid)
+
+/***********************************************************************
+ Why is this function internal and not part of the interface ?????
+ This *sucks* and is bad design and needs fixing. JRA.
+***********************************************************************/
+
+static NTSTATUS db_internal_allocate_new_id_for_sid(unid_t *id, enum idmap_type *id_type, const DOM_SID *sid)
 {
 	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
-	enum getidfromsiderr iderr;
+	TDB_DATA sid_data;
+	TDB_DATA ugid_data;
+	TALLOC_CTX *memctx;
 
-	DEBUG(10,("db_get_id_from_sid\n"));
+	if ((memctx = talloc_new(NULL)) == NULL) {
+		DEBUG(0, ("ERROR: Out of memory!\n"));
+		return NT_STATUS_NO_MEMORY;
+	}
 
-	if (!sid || !id || !id_type)
-		return NT_STATUS_INVALID_PARAMETER;
+	if ((sid_data.dptr = talloc_asprintf(memctx, "%s", sid_string_static(sid))) == NULL) {
+		DEBUG(0, ("ERROR: Out of memory!\n"));
+		talloc_free(memctx);
+		return NT_STATUS_NO_MEMORY;
+	}
 
-	iderr = internal_get_id_from_sid(id, id_type, sid);
-	if (iderr == GET_ID_FROM_SID_OK) {
-		DOM_SID sid_tmp;
-		ret = internal_get_sid_from_id(&sid_tmp, *id, *id_type);
-		if (NT_STATUS_IS_OK(ret)) {
-			if (!sid_equal(&sid_tmp, sid)) {
-				return NT_STATUS_UNSUCCESSFUL;
-			}
-		}
-	} else if (iderr == GET_ID_FROM_SID_WRONG_TYPE) {
-		/* We found a record but not the type we wanted.
-		 * This is an error, not an opportunity to overwrite...
-		 * JRA.
-		 */
+	sid_data.dsize = strlen(sid_data.dptr) + 1;
+
+	/* Lock the record for this SID. */
+	if (tdb_chainlock(idmap_tdb, sid_data) != 0) {
+		DEBUG(10,("db_internal_allocate_new_id_for_sid: failed to lock record %s. Error %s\n",
+				sid_data.dptr, tdb_errorstr(idmap_tdb) ));
+		talloc_free(memctx);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	if (!(*id_type & ID_QUERY_ONLY) && (iderr != GET_ID_FROM_SID_OK) &&
-		   (((*id_type & ID_TYPEMASK) == ID_USERID)
-		    || (*id_type & ID_TYPEMASK) == ID_GROUPID)) {
-		TDB_DATA sid_data;
-		TDB_DATA ugid_data;
-		fstring sid_string;
-		
-		sid_to_string(sid_string, sid);
-		
-		sid_data.dptr = sid_string;
-		sid_data.dsize = strlen(sid_string)+1;
-
-		/* Lock the record for this SID. */
-		if (tdb_chainlock(idmap_tdb, sid_data) != 0) {
-			DEBUG(10,("db_get_id_from_sid: failed to lock record %s. Error %s\n",
-					sid_string, tdb_errorstr(idmap_tdb) ));
-			return NT_STATUS_UNSUCCESSFUL;
+	do {
+		/* Allocate a new id for this sid */
+		ret = db_allocate_id(id, *id_type);
+		if (!NT_STATUS_IS_OK(ret)) {
+			goto done;
+		}
+			
+		/* Store the UID side */
+		/* Store new id */
+		if (*id_type == ID_USERID) {
+			ugid_data.dptr = talloc_asprintf(memctx, "UID %lu",
+							(unsigned long)((*id).uid));
+		} else {
+			ugid_data.dptr = talloc_asprintf(memctx, "GID %lu",
+							(unsigned long)((*id).gid));
 		}
 
-		do {
-			fstring ugid_str;
-
-			/* Allocate a new id for this sid */
-			ret = db_allocate_id(id, *id_type);
-			if (!NT_STATUS_IS_OK(ret))
-				break;
-			
-			/* Store the UID side */
-			/* Store new id */
-			if (*id_type & ID_USERID) {
-				slprintf(ugid_str, sizeof(ugid_str), "UID %lu", 
-					 (unsigned long)((*id).uid));
-			} else {
-				slprintf(ugid_str, sizeof(ugid_str), "GID %lu", 
-					 (unsigned long)((*id).gid));
-			}
-			
-			ugid_data.dptr = ugid_str;
-			ugid_data.dsize = strlen(ugid_str) + 1;
-
-			DEBUG(10,("db_get_id_from_sid: storing %s -> %s\n",
-					ugid_data.dptr, sid_data.dptr ));
-
-			if (tdb_store(idmap_tdb, ugid_data, sid_data, TDB_INSERT) != -1) {
-				ret = NT_STATUS_OK;
-				break;
-			}
-			if (tdb_error(idmap_tdb) != TDB_ERR_EXISTS)
-				DEBUG(10,("db_get_id_from_sid: error %s\n", tdb_errorstr(idmap_tdb) ));
-			ret = NT_STATUS_UNSUCCESSFUL;
-		} while (tdb_error(idmap_tdb) == TDB_ERR_EXISTS);
-
-		if (NT_STATUS_IS_OK(ret)) {
-
-			DEBUG(10,("db_get_id_from_sid: storing %s -> %s\n",
-				sid_data.dptr, ugid_data.dptr ));
-
-			if (tdb_store(idmap_tdb, sid_data, ugid_data, TDB_REPLACE) == -1) {
-				DEBUG(10,("db_get_id_from_sid: error %s\n", tdb_errorstr(idmap_tdb) ));
-				/* TODO: print tdb error !! */
-				tdb_chainunlock(idmap_tdb, sid_data);
-				return NT_STATUS_UNSUCCESSFUL;
-			}
+		if (ugid_data.dptr == NULL) {
+			DEBUG(0, ("ERROR: Out of memory!\n"));
+			ret = NT_STATUS_NO_MEMORY;
+			goto done;
 		}
 
-		tdb_chainunlock(idmap_tdb, sid_data);
+		ugid_data.dsize = strlen(ugid_data.dptr) + 1;
+			
+		DEBUG(10,("db_internal_allocate_new_id_for_sid: storing %s -> %s\n",
+				ugid_data.dptr, sid_data.dptr ));
+
+		if (tdb_store(idmap_tdb, ugid_data, sid_data, TDB_INSERT) != -1) {
+			ret = NT_STATUS_OK;
+			break;
+		}
+		if (tdb_error(idmap_tdb) != TDB_ERR_EXISTS) {
+			DEBUG(10,("db_internal_allocate_new_id_for_sid: error %s\n", tdb_errorstr(idmap_tdb)));
+		}
+				
+		ret = NT_STATUS_INTERNAL_DB_ERROR;
+
+	} while (tdb_error(idmap_tdb) == TDB_ERR_EXISTS);
+
+	if (NT_STATUS_IS_OK(ret)) {
+		DEBUG(10,("db_internal_allocate_new_id_for_sid: storing %s -> %s\n",
+			sid_data.dptr, ugid_data.dptr ));
+
+		if (tdb_store(idmap_tdb, sid_data, ugid_data, TDB_REPLACE) == -1) {
+			DEBUG(10,("db_internal_allocate_new_id_for_sid: error %s\n", tdb_errorstr(idmap_tdb) ));
+			ret = NT_STATUS_INTERNAL_DB_ERROR;
+		}
 	}
-	
+
+  done:
+
+	tdb_chainunlock(idmap_tdb, sid_data);
+	talloc_free(memctx);
+
 	return ret;
 }
 
-static NTSTATUS db_set_mapping(const DOM_SID *sid, unid_t id, int id_type)
+/***********************************************************************
+ Get an id from a sid - urg. This is assuming the *output* parameter id_type
+ has been initialized with the correct needed type - ID_USERID or ID_GROUPID.
+ This function also allocates new mappings ! WTF ??????
+ This *sucks* and is bad design and needs fixing. JRA.
+***********************************************************************/
+
+static NTSTATUS db_get_id_from_sid(unid_t *id, enum idmap_type *id_type, const DOM_SID *sid, int flags)
 {
-	TDB_DATA ksid, kid, data;
-	fstring ksidstr;
-	fstring kidstr;
+	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
+	enum idmap_type tmp_id_type = *id_type;
 
-	DEBUG(10,("db_set_mapping: id_type = 0x%x\n", id_type));
+	DEBUG(10,("db_get_id_from_sid %s\n", sid_string_static(sid)));
 
-	if (!sid)
-		return NT_STATUS_INVALID_PARAMETER;
+	ret = db_internal_get_id_from_sid(id, &tmp_id_type, sid);
 
-	sid_to_string(ksidstr, sid);
+	if (NT_STATUS_IS_OK(ret)) {
+		DOM_SID sid_tmp;
 
-	ksid.dptr = ksidstr;
-	ksid.dsize = strlen(ksidstr) + 1;
+		/* Check the reverse mapping is the same. Remember *id_type was set as a parameter
+		   to this call... */
+		if (tmp_id_type != *id_type) {
+			DEBUG(10,("db_get_sid_from_id: sid %s reverse mapping mismatch "
+				"tmp_id_type = %u, id_type = %u\n",
+					sid_string_static(sid),
+					(unsigned int)tmp_id_type, (unsigned int)(*id_type) ));
+			return NT_STATUS_NO_SUCH_USER;
+		}
 
-	if (id_type & ID_USERID) {
-		slprintf(kidstr, sizeof(kidstr), "UID %lu", (unsigned long)id.uid);
-	} else if (id_type & ID_GROUPID) {
-		slprintf(kidstr, sizeof(kidstr), "GID %lu", (unsigned long)id.gid);
-	} else {
-		return NT_STATUS_INVALID_PARAMETER;
+		ret = db_internal_get_sid_from_id(&sid_tmp, *id, *id_type);
+		if (NT_STATUS_IS_OK(ret)) {
+			if (!sid_equal(&sid_tmp, sid)) {
+				DEBUG(10,("db_get_sid_from_id: sid %s reverse mapping SID mismatch"
+					"id = %u, id_type = %u\n",
+						sid_string_static(sid),
+						(unsigned int)id->uid, (unsigned int)(*id_type) ));
+				return NT_STATUS_NO_SUCH_USER;
+			}
+		}
+		return ret;
 	}
 
-	kid.dptr = kidstr;
-	kid.dsize = strlen(kidstr) + 1;
+	if (flags & IDMAP_FLAG_QUERY_ONLY) {
+		return ret;
+	}
+
+	/* We're in to bad design territory.... This call is now
+	   *allocating* and storing a new mapping for sid -> id. This SHOULD
+	   NOT BE DONE HERE ! There needs to be a separate upper
+	   level call for this... I think the reason this was badly
+	   designed this way was the desire to reuse cache code with
+	   a tdb idmap implementation. They MUST be separated ! JRA */
+
+	return db_internal_allocate_new_id_for_sid(id, id_type, sid);
+}
+
+static NTSTATUS db_set_mapping(const DOM_SID *sid, unid_t id, enum idmap_type id_type)
+{
+	NTSTATUS ret;
+	TDB_DATA ksid, kid, data;
+	TALLOC_CTX *memctx;
+
+	DEBUG(10,("db_set_mapping: id_type = 0x%x\n", (unsigned int)id_type));
+
+	if ((memctx = talloc_new(NULL)) == NULL) {
+		DEBUG(0, ("ERROR: Out of memory!\n"));
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	if ((ksid.dptr = talloc_asprintf(memctx, "%s", sid_string_static(sid))) == NULL) {
+		DEBUG(0, ("ERROR: Out of memory!\n"));
+		ret = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+	ksid.dsize = strlen(ksid.dptr) + 1;
+
+	if (id_type == ID_USERID) {
+		kid.dptr = talloc_asprintf(memctx, "UID %lu", (unsigned long)id.uid);
+	} else {
+		kid.dptr = talloc_asprintf(memctx, "GID %lu", (unsigned long)id.gid);
+	}
+
+	if (kid.dptr == NULL) {
+		DEBUG(0, ("ERROR: Out of memory!\n"));
+		ret = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+	kid.dsize = strlen(kid.dptr) + 1;
 
 	/* *DELETE* prevoius mappings if any.
 	 * This is done both SID and [U|G]ID passed in */
@@ -400,7 +451,7 @@ static NTSTATUS db_set_mapping(const DOM_SID *sid, unid_t id, int id_type)
 	/* Lock the record for this SID. */
 	if (tdb_chainlock(idmap_tdb, ksid) != 0) {
 		DEBUG(10,("db_set_mapping: failed to lock record %s. Error %s\n",
-				ksidstr, tdb_errorstr(idmap_tdb) ));
+				ksid.dptr, tdb_errorstr(idmap_tdb) ));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
@@ -424,24 +475,29 @@ static NTSTATUS db_set_mapping(const DOM_SID *sid, unid_t id, int id_type)
 	if (tdb_store(idmap_tdb, ksid, kid, TDB_INSERT) == -1) {
 		DEBUG(0, ("idb_set_mapping: tdb_store 1 error: %s\n", tdb_errorstr(idmap_tdb)));
 		tdb_chainunlock(idmap_tdb, ksid);
-		return NT_STATUS_UNSUCCESSFUL;
+		ret = NT_STATUS_UNSUCCESSFUL;
+		goto done;
 	}
 	if (tdb_store(idmap_tdb, kid, ksid, TDB_INSERT) == -1) {
 		DEBUG(0, ("idb_set_mapping: tdb_store 2 error: %s\n", tdb_errorstr(idmap_tdb)));
 		tdb_chainunlock(idmap_tdb, ksid);
-		return NT_STATUS_UNSUCCESSFUL;
+		ret = NT_STATUS_UNSUCCESSFUL;
+		goto done;
 	}
 
 	tdb_chainunlock(idmap_tdb, ksid);
 	DEBUG(10,("db_set_mapping: stored %s -> %s and %s -> %s\n", ksid.dptr, kid.dptr, kid.dptr, ksid.dptr ));
-	return NT_STATUS_OK;
+	ret = NT_STATUS_OK;
+done:
+	talloc_free(memctx);
+	return ret;
 }
 
 /*****************************************************************************
  Initialise idmap database. 
 *****************************************************************************/
 
-static NTSTATUS db_idmap_init( char *params )
+static NTSTATUS db_idmap_init( const char *params )
 {
 	SMB_STRUCT_STAT stbuf;
 	char *tdbfile = NULL;

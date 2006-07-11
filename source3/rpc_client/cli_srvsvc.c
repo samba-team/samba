@@ -5,6 +5,8 @@
    Copyright (C) Tim Potter 2001
    Copyright (C) Jim McDonough <jmcd@us.ibm.com> 2002
    Copyright (C) Jeremy Allison  2005.
+   Copyright (C) Gerald (Jerry) Carter        2006.
+
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -537,38 +539,37 @@ WERROR rpccli_srvsvc_net_file_enum(struct rpc_pipe_client *cli, TALLOC_CTX *mem_
 
 	ZERO_STRUCTP(ctr);
 
-	ctr->switch_value = file_level;
+	ctr->level = file_level;
 
 	ctr->num_entries = ctr->num_entries2 = r.ctr.num_entries;
 	
 	switch(file_level) {
 	case 3:
-		ctr->file.info3 = TALLOC_ARRAY(mem_ctx, SRV_FILE_INFO_3, ctr->num_entries);
-		if (ctr->file.info3 == NULL) {
+		if ( (ctr->file.info3 = TALLOC_ARRAY(mem_ctx, FILE_INFO_3, ctr->num_entries)) == NULL ) {
 			return WERR_NOMEM;
 		}
 
-		memset(ctr->file.info3, 0, 
-		       sizeof(SRV_FILE_INFO_3) * ctr->num_entries);
+		memset(ctr->file.info3, 0, sizeof(FILE_INFO_3) * ctr->num_entries);
 
 		for (i = 0; i < r.ctr.num_entries; i++) {
-			SRV_FILE_INFO_3 *info3 = &ctr->file.info3[i];
+			FILE_INFO_3 *info3 = &ctr->file.info3[i];
 			char *s;
 			
 			/* Copy pointer crap */
 
-			memcpy(&info3->info_3, &r.ctr.file.info3[i].info_3, 
-			       sizeof(FILE_INFO_3));
+			memcpy(info3, &r.ctr.file.info3[i], sizeof(FILE_INFO_3));
 
 			/* Duplicate strings */
 
-			s = unistr2_tdup(mem_ctx, &r.ctr.file.info3[i].info_3_str.uni_path_name);
-			if (s)
-				init_unistr2(&info3->info_3_str.uni_path_name, s, UNI_STR_TERMINATE);
+			if ( (s = unistr2_tdup(mem_ctx, r.ctr.file.info3[i].path)) != NULL ) {
+				info3->path = TALLOC_P( mem_ctx, UNISTR2 );
+				init_unistr2(info3->path, s, UNI_STR_TERMINATE);
+			}
 		
-			s = unistr2_tdup(mem_ctx, &r.ctr.file.info3[i].info_3_str.uni_user_name);
-			if (s)
-				init_unistr2(&info3->info_3_str.uni_user_name, s, UNI_STR_TERMINATE);
+			if ( (s = unistr2_tdup(mem_ctx, r.ctr.file.info3[i].user)) != NULL ) {
+				info3->user = TALLOC_P( mem_ctx, UNISTR2 );
+				init_unistr2(info3->user, s, UNI_STR_TERMINATE);
+			}
 
 		}		
 

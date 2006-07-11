@@ -51,7 +51,7 @@ static struct client_connection *connections;
 static struct cli_state *do_connect( const char *server, const char *share,
                                      BOOL show_sessetup )
 {
-	struct cli_state *c;
+	struct cli_state *c = NULL;
 	struct nmb_name called, calling;
 	const char *server_n;
 	struct in_addr ip;
@@ -83,7 +83,7 @@ static struct cli_state *do_connect( const char *server, const char *share,
 		ip = dest_ip;
 
 	/* have to open a new connection */
-	if (!(c=cli_initialise(NULL)) || (cli_set_port(c, port) != port) ||
+	if (!(c=cli_initialise()) || (cli_set_port(c, port) != port) ||
 	    !cli_connect(c, server_n, &ip)) {
 		d_printf("Connection to %s failed\n", server_n);
 		return NULL;
@@ -99,6 +99,7 @@ static struct cli_state *do_connect( const char *server, const char *share,
 		d_printf("session request to %s failed (%s)\n", 
 			 called.name, cli_errstr(c));
 		cli_shutdown(c);
+		c = NULL;
 		if ((p=strchr_m(called.name, '.'))) {
 			*p = 0;
 			goto again;

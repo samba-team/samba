@@ -149,7 +149,7 @@ static struct cli_state *do_connection(char *the_service)
 	if (have_ip) ip = dest_ip;
 
 	/* have to open a new connection */
-	if (!(c=cli_initialise(NULL)) || (cli_set_port(c, smb_port) != smb_port) ||
+	if (!(c=cli_initialise()) || (cli_set_port(c, smb_port) != smb_port) ||
 	    !cli_connect(c, server_n, &ip)) {
 		DEBUG(0,("%d: Connection to %s failed\n", sys_getpid(), server_n));
 		if (c) {

@@ -935,10 +935,20 @@ int main(int argc, char ** argv)
 		    ++nomtab;
 		    break;
 		case 'b':
+#ifdef MS_BIND
 			flags |= MS_BIND;
+#else
+			fprintf(stderr,
+				"option 'b' (MS_BIND) not supported\n");
+#endif
 			break;
 		case 'm':
+#ifdef MS_MOVE		      
 			flags |= MS_MOVE;
+#else
+			fprintf(stderr,
+				"option 'm' (MS_MOVE) not supported\n");
+#endif
 			break;
 		case 'o':
 			orgoptions = strdup(optarg);

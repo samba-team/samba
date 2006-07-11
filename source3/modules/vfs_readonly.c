@@ -55,7 +55,6 @@
 
 #define MODULE_NAME "readonly"
 static int readonly_connect(vfs_handle_struct *handle, 
-			    connection_struct *conn, 
 			    const char *service, 
 			    const char *user)    
 {
@@ -71,10 +70,10 @@ static int readonly_connect(vfs_handle_struct *handle,
     time_t end_period   = get_date(period[1], &current_time);
 
     if ((current_time >= begin_period) && (current_time <= end_period)) {
-      conn->read_only = True;
+      handle->conn->read_only = True;
     }
 
-    return SMB_VFS_NEXT_CONNECT(handle, conn, service, user);
+    return SMB_VFS_NEXT_CONNECT(handle, service, user);
 
   } else {
     

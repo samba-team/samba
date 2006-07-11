@@ -169,7 +169,8 @@ static BOOL init_sam_from_buffer_v0(struct samu *sampass, uint8 *buf, uint32 buf
 	}
 	else {
 		pdb_set_homedir(sampass, 
-			talloc_sub_basic(sampass, username, lp_logon_home()),
+			talloc_sub_basic(sampass, username, domain,
+					 lp_logon_home()),
 			PDB_DEFAULT);
 	}
 
@@ -177,7 +178,8 @@ static BOOL init_sam_from_buffer_v0(struct samu *sampass, uint8 *buf, uint32 buf
 		pdb_set_dir_drive(sampass, dir_drive, PDB_SET);
 	else {
 		pdb_set_dir_drive(sampass, 
-			talloc_sub_basic(sampass,  username, lp_logon_drive()),
+			talloc_sub_basic(sampass, username, domain,
+					 lp_logon_drive()),
 			PDB_DEFAULT);
 	}
 
@@ -185,7 +187,8 @@ static BOOL init_sam_from_buffer_v0(struct samu *sampass, uint8 *buf, uint32 buf
 		pdb_set_logon_script(sampass, logon_script, PDB_SET);
 	else {
 		pdb_set_logon_script(sampass, 
-			talloc_sub_basic(sampass, username, lp_logon_script()),
+			talloc_sub_basic(sampass, username, domain,
+					 lp_logon_script()),
 			PDB_DEFAULT);
 	}
 	
@@ -193,7 +196,8 @@ static BOOL init_sam_from_buffer_v0(struct samu *sampass, uint8 *buf, uint32 buf
 		pdb_set_profile_path(sampass, profile_path, PDB_SET);
 	} else {
 		pdb_set_profile_path(sampass, 
-			talloc_sub_basic(sampass, username, lp_logon_path()),
+			talloc_sub_basic(sampass, username, domain,
+					 lp_logon_path()),
 			PDB_DEFAULT);
 	}
 
@@ -356,7 +360,8 @@ static BOOL init_sam_from_buffer_v1(struct samu *sampass, uint8 *buf, uint32 buf
 	}
 	else {
 		pdb_set_homedir(sampass, 
-			talloc_sub_basic(sampass, username, lp_logon_home()),
+			talloc_sub_basic(sampass, username, domain,
+					 lp_logon_home()),
 			PDB_DEFAULT);
 	}
 
@@ -364,7 +369,8 @@ static BOOL init_sam_from_buffer_v1(struct samu *sampass, uint8 *buf, uint32 buf
 		pdb_set_dir_drive(sampass, dir_drive, PDB_SET);
 	else {
 		pdb_set_dir_drive(sampass, 
-			talloc_sub_basic(sampass,  username, lp_logon_drive()),
+			talloc_sub_basic(sampass, username, domain,
+					 lp_logon_drive()),
 			PDB_DEFAULT);
 	}
 
@@ -372,7 +378,8 @@ static BOOL init_sam_from_buffer_v1(struct samu *sampass, uint8 *buf, uint32 buf
 		pdb_set_logon_script(sampass, logon_script, PDB_SET);
 	else {
 		pdb_set_logon_script(sampass, 
-			talloc_sub_basic(sampass, username, lp_logon_script()),
+			talloc_sub_basic(sampass, username, domain,
+					 lp_logon_script()),
 			PDB_DEFAULT);
 	}
 	
@@ -380,7 +387,8 @@ static BOOL init_sam_from_buffer_v1(struct samu *sampass, uint8 *buf, uint32 buf
 		pdb_set_profile_path(sampass, profile_path, PDB_SET);
 	} else {
 		pdb_set_profile_path(sampass, 
-			talloc_sub_basic(sampass, username, lp_logon_path()),
+			talloc_sub_basic(sampass, username, domain,
+					 lp_logon_path()),
 			PDB_DEFAULT);
 	}
 
@@ -541,14 +549,15 @@ BOOL init_sam_from_buffer_v2(struct samu *sampass, uint8 *buf, uint32 buflen)
 	if (homedir) {
 		fstrcpy( tmpstring, homedir );
 		if (expand_explicit) {
-			standard_sub_basic( username, tmpstring,
+			standard_sub_basic( username, domain, tmpstring,
 					    sizeof(tmpstring) );
 		}
 		pdb_set_homedir(sampass, tmpstring, PDB_SET);
 	}
 	else {
 		pdb_set_homedir(sampass, 
-			talloc_sub_basic(sampass, username, lp_logon_home()),
+			talloc_sub_basic(sampass, username, domain,
+					 lp_logon_home()),
 			PDB_DEFAULT);
 	}
 
@@ -560,28 +569,30 @@ BOOL init_sam_from_buffer_v2(struct samu *sampass, uint8 *buf, uint32 buflen)
 	if (logon_script) {
 		fstrcpy( tmpstring, logon_script );
 		if (expand_explicit) {
-			standard_sub_basic( username, tmpstring,
+			standard_sub_basic( username, domain, tmpstring,
 					    sizeof(tmpstring) );
 		}
 		pdb_set_logon_script(sampass, tmpstring, PDB_SET);
 	}
 	else {
 		pdb_set_logon_script(sampass, 
-			talloc_sub_basic(sampass, username, lp_logon_script()),
+			talloc_sub_basic(sampass, username, domain,
+					 lp_logon_script()),
 			PDB_DEFAULT);
 	}
 	
 	if (profile_path) {	
 		fstrcpy( tmpstring, profile_path );
 		if (expand_explicit) {
-			standard_sub_basic( username, tmpstring,
+			standard_sub_basic( username, domain, tmpstring,
 					    sizeof(tmpstring) );
 		}
 		pdb_set_profile_path(sampass, tmpstring, PDB_SET);
 	} 
 	else {
 		pdb_set_profile_path(sampass, 
-			talloc_sub_basic(sampass, username, lp_logon_path()),
+			talloc_sub_basic(sampass, username, domain,
+					 lp_logon_path()),
 			PDB_DEFAULT);
 	}
 
@@ -606,7 +617,7 @@ BOOL init_sam_from_buffer_v2(struct samu *sampass, uint8 *buf, uint32 buflen)
 	/* Change from V1 is addition of password history field. */
 	pdb_get_account_policy(AP_PASSWORD_HISTORY, &pwHistLen);
 	if (pwHistLen) {
-		uint8 *pw_hist = SMB_MALLOC(pwHistLen * PW_HISTORY_ENTRY_LEN);
+		uint8 *pw_hist = SMB_MALLOC_ARRAY(uint8, pwHistLen * PW_HISTORY_ENTRY_LEN);
 		if (!pw_hist) {
 			ret = False;
 			goto done;
@@ -901,7 +912,7 @@ static int tdbsam_traverse_setpwent(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data,
 		
 		/* save a copy of the key */
 		
-		ptr->key.dptr = memdup( key.dptr, key.dsize );
+		ptr->key.dptr = (char *)memdup( key.dptr, key.dsize );
 		if (!ptr->key.dptr) {
 			DEBUG(0,("tdbsam_traverse_setpwent: memdup failed\n"));
 			/* just return 0 and let the traversal continue */

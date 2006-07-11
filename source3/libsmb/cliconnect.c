@@ -1394,8 +1394,9 @@ NTSTATUS cli_start_connection(struct cli_state **output_cli,
 	if (!my_name) 
 		my_name = global_myname();
 	
-	if (!(cli = cli_initialise(NULL)))
+	if (!(cli = cli_initialise())) {
 		return NT_STATUS_NO_MEMORY;
+	}
 	
 	make_nmb_name(&calling, my_name, 0x0);
 	make_nmb_name(&called , dest_host, 0x20);
@@ -1495,6 +1496,8 @@ NTSTATUS cli_full_connection(struct cli_state **output_cli,
 	struct cli_state *cli = NULL;
 	int pw_len = password ? strlen(password)+1 : 0;
 
+	*output_cli = NULL;
+
 	if (password == NULL) {
 		password = "";
 	}
@@ -1513,8 +1516,9 @@ NTSTATUS cli_full_connection(struct cli_state **output_cli,
 			nt_status = cli_nt_error(cli);
 			DEBUG(1,("failed session setup with %s\n", nt_errstr(nt_status)));
 			cli_shutdown(cli);
-			if (NT_STATUS_IS_OK(nt_status)) 
+			if (NT_STATUS_IS_OK(nt_status)) {
 				nt_status = NT_STATUS_UNSUCCESSFUL;
+			}
 			return nt_status;
 		}
 	} 
@@ -1541,7 +1545,7 @@ NTSTATUS cli_full_connection(struct cli_state **output_cli,
  Attempt a NetBIOS session request, falling back to *SMBSERVER if needed.
 ****************************************************************************/
 
-BOOL attempt_netbios_session_request(struct cli_state *cli, const char *srchost, const char *desthost,
+BOOL attempt_netbios_session_request(struct cli_state **ppcli, const char *srchost, const char *desthost,
                                      struct in_addr *pdest_ip)
 {
 	struct nmb_name calling, called;
@@ -1553,12 +1557,13 @@ BOOL attempt_netbios_session_request(struct cli_state *cli, const char *srchost,
 	 * then use *SMBSERVER immediately.
 	 */
 
-	if(is_ipaddress(desthost))
+	if(is_ipaddress(desthost)) {
 		make_nmb_name(&called, "*SMBSERVER", 0x20);
-	else
+	} else {
 		make_nmb_name(&called, desthost, 0x20);
+	}
 
-	if (!cli_session_request(cli, &calling, &called)) {
+	if (!cli_session_request(*ppcli, &calling, &called)) {
 		struct nmb_name smbservername;
 
 		make_nmb_name(&smbservername , "*SMBSERVER", 0x20);
@@ -1575,23 +1580,23 @@ BOOL attempt_netbios_session_request(struct cli_state *cli, const char *srchost,
 			 */
 
 			DEBUG(0,("attempt_netbios_session_request: %s rejected the session for name *SMBSERVER \
-with error %s.\n", desthost, cli_errstr(cli) ));
+with error %s.\n", desthost, cli_errstr(*ppcli) ));
 			return False;
 		}
 
-		/*
-		 * We need to close the connection here but can't call cli_shutdown as
-		 * will free an allocated cli struct. cli_close_connection was invented
-		 * for this purpose. JRA. Based on work by "Kim R. Pedersen" <krp@filanet.dk>.
-		 */
+		/* Try again... */
+		cli_shutdown(*ppcli);
 
-		cli_close_connection(cli);
+		*ppcli = cli_initialise();
+		if (!*ppcli) {
+			/* Out of memory... */
+			return False;
+		}
 
-		if (!cli_initialise(cli) ||
-				!cli_connect(cli, desthost, pdest_ip) ||
-				!cli_session_request(cli, &calling, &smbservername)) {
+		if (!cli_connect(*ppcli, desthost, pdest_ip) ||
+				!cli_session_request(*ppcli, &calling, &smbservername)) {
 			DEBUG(0,("attempt_netbios_session_request: %s rejected the session for \
-name *SMBSERVER with error %s\n", desthost, cli_errstr(cli) ));
+name *SMBSERVER with error %s\n", desthost, cli_errstr(*ppcli) ));
 			return False;
 		}
 	}

@@ -90,7 +90,7 @@ static NTSTATUS ldap_set_mapping(const DOM_SID *sid, unid_t id, int id_type)
  Allocate a new uid or gid
 *****************************************************************************/
 
-static NTSTATUS ldap_allocate_id(unid_t *id, int id_type)
+static NTSTATUS ldap_allocate_id(unid_t *id, enum idmap_type id_type)
 {
 	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
 	uid_t	luid, huid;
@@ -104,7 +104,11 @@ static NTSTATUS ldap_allocate_id(unid_t *id, int id_type)
 	const char *id_attrib;
 	char *mod;
 
-	id_attrib = (id_type & ID_USERID) ? "uidNumber" : "gidNumber";
+	if (id_type != ID_USERID && id_type != ID_GROUPID) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	id_attrib = (id_type == ID_USERID) ? "uidNumber" : "gidNumber";
 
 	idpool_s = new_ldap_search_message(lp_ldap_suffix(),
 					   LDAP_SEARCH_SCOPE_SUB,
@@ -129,7 +133,7 @@ static NTSTATUS ldap_allocate_id(unid_t *id, int id_type)
 	
 	/* make sure we still have room to grow */
 	
-	if (id_type & ID_USERID) {
+	if (id_type == ID_USERID) {
 		id->uid = value;
 		if (id->uid > huid ) {
 			DEBUG(0,("ldap_allocate_id: Cannot allocate uid "

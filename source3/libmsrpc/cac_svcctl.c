@@ -51,7 +51,7 @@ int cac_SvcOpenScm(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SvcOpenScm 
 
    /*initialize for samr pipe if we have to*/
    if(!hnd->_internal.pipes[PI_SVCCTL]) {
-      if(!(pipe_hnd = cli_rpc_pipe_open_noauth(&srv->cli, PI_SVCCTL, &(hnd->status)))) {
+      if(!(pipe_hnd = cli_rpc_pipe_open_noauth(srv->cli, PI_SVCCTL, &(hnd->status)))) {
          hnd->status = NT_STATUS_UNSUCCESSFUL;
          return CAC_FAILURE;
       }

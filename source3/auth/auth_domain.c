@@ -50,6 +50,8 @@ static NTSTATUS connect_to_domain_password_server(struct cli_state **cli,
         NTSTATUS result;
 	struct rpc_pipe_client *netlogon_pipe = NULL;
 
+	*cli = NULL;
+
 	*pipe_ret = NULL;
 
 	/* TODO: Send a SAMLOGON request to determine whether this is a valid
@@ -79,6 +81,11 @@ static NTSTATUS connect_to_domain_password_server(struct cli_state **cli,
 		/* map to something more useful */
 		if (NT_STATUS_EQUAL(result, NT_STATUS_UNSUCCESSFUL)) {
 			result = NT_STATUS_NO_LOGON_SERVERS;
+		}
+
+		if (*cli) {
+			cli_shutdown(*cli);
+			*cli = NULL;
 		}
 
 		release_server_mutex();
@@ -111,6 +118,7 @@ static NTSTATUS connect_to_domain_password_server(struct cli_state **cli,
 		DEBUG(0,("connect_to_domain_password_server: unable to open the domain client session to \
 machine %s. Error was : %s.\n", dc_name, nt_errstr(result)));
 		cli_shutdown(*cli);
+		*cli = NULL;
 		release_server_mutex();
 		return result;
 	}
@@ -126,6 +134,7 @@ machine %s. Error was : %s.\n", dc_name, nt_errstr(result)));
 			"trust account password for domain '%s'\n",
 				domain));
 			cli_shutdown(*cli);
+			*cli = NULL;
 			release_server_mutex();
 			return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 		}
@@ -141,6 +150,7 @@ machine %s. Error was : %s.\n", dc_name, nt_errstr(result)));
 
 		if (!NT_STATUS_IS_OK(result)) {
 			cli_shutdown(*cli);
+			*cli = NULL;
 			release_server_mutex();
 			return result;
 		}
@@ -150,6 +160,7 @@ machine %s. Error was : %s.\n", dc_name, nt_errstr(result)));
 		DEBUG(0,("connect_to_domain_password_server: unable to open the domain client session to \
 machine %s. Error was : %s.\n", dc_name, cli_errstr(*cli)));
 		cli_shutdown(*cli);
+		*cli = NULL;
 		release_server_mutex();
 		return NT_STATUS_NO_LOGON_SERVERS;
 	}

@@ -83,7 +83,7 @@ BOOL yield_connection(connection_struct *conn, const char *name)
 struct count_stat {
 	pid_t mypid;
 	int curr_connections;
-	char *name;
+	const char *name;
 	BOOL Clear;
 };
 
@@ -124,43 +124,55 @@ static int count_fn( TDB_CONTEXT *the_tdb, TDB_DATA kbuf, TDB_DATA dbuf, void *u
  Claim an entry in the connections database.
 ****************************************************************************/
 
+int count_current_connections( const char *sharename, BOOL clear  )
+{
+	struct count_stat cs;
+
+	cs.mypid = sys_getpid();
+	cs.curr_connections = 0;
+	cs.name = sharename;
+	cs.Clear = clear;
+
+	/*
+	 * This has a race condition, but locking the chain before hand is worse
+	 * as it leads to deadlock.
+	 */
+
+	if (tdb_traverse(tdb, count_fn, &cs) == -1) {
+		DEBUG(0,("claim_connection: traverse of connections.tdb failed with error %s.\n",
+			tdb_errorstr(tdb) ));
+		return False;
+	}
+	
+	return cs.curr_connections;
+}
+
+/****************************************************************************
+ Claim an entry in the connections database.
+****************************************************************************/
+
 BOOL claim_connection(connection_struct *conn, const char *name,int max_connections,BOOL Clear, uint32 msg_flags)
 {
 	struct connections_key key;
 	struct connections_data crec;
 	TDB_DATA kbuf, dbuf;
 
-	if (!tdb)
-		tdb = tdb_open_log(lock_path("connections.tdb"), 0, TDB_CLEAR_IF_FIRST|TDB_DEFAULT, 
-			       O_RDWR | O_CREAT, 0644);
-
-	if (!tdb)
-		return False;
-
+	if (!tdb) {
+		if ( (tdb =conn_tdb_ctx()) == NULL ) {
+			return False;
+		}
+	}
+	
 	/*
 	 * Enforce the max connections parameter.
 	 */
 
 	if (max_connections > 0) {
-		struct count_stat cs;
+		int curr_connections;
+		
+		curr_connections = count_current_connections( lp_servicename(SNUM(conn)), True );
 
-		cs.mypid = sys_getpid();
-		cs.curr_connections = 0;
-		cs.name = lp_servicename(SNUM(conn));
-		cs.Clear = Clear;
-
-		/*
-		 * This has a race condition, but locking the chain before hand is worse
-		 * as it leads to deadlock.
-		 */
-
-		if (tdb_traverse(tdb, count_fn, &cs) == -1) {
-			DEBUG(0,("claim_connection: traverse of connections.tdb failed with error %s.\n",
-				tdb_errorstr(tdb) ));
-			return False;
-		}
-
-		if (cs.curr_connections >= max_connections) {
+		if (curr_connections >= max_connections) {
 			DEBUG(1,("claim_connection: Max connections (%d) exceeded for %s\n",
 				max_connections, name ));
 			return False;
@@ -240,4 +252,109 @@ BOOL register_message_flags(BOOL doreg, uint32 msg_flags)
 
 	SAFE_FREE(dbuf.dptr);
 	return True;
+}
+
+/*********************************************************************
+*********************************************************************/
+
+static TDB_DATA* make_pipe_rec_key( struct pipe_open_rec *prec )
+{
+	TDB_DATA *kbuf = NULL;
+	fstring key_string;
+	
+	if ( !prec )
+		return NULL;
+	
+	if ( (kbuf = TALLOC_P(prec, TDB_DATA)) == NULL ) {
+		return NULL;
+	}
+	
+	snprintf( key_string, sizeof(key_string), "%s/%d/%d",
+		prec->name, procid_to_pid(&prec->pid), prec->pnum );
+		
+	if ( (kbuf->dptr = talloc_strdup(prec, key_string)) == NULL )
+		return NULL;
+		
+	kbuf->dsize = strlen(key_string)+1;
+	
+	return kbuf;
+}
+
+/*********************************************************************
+*********************************************************************/
+
+static void fill_pipe_open_rec( struct pipe_open_rec *prec, smb_np_struct *p )
+{
+	prec->pid = pid_to_procid(sys_getpid());
+	prec->pnum = p->pnum;
+	prec->uid = geteuid();
+	fstrcpy( prec->name, p->name );
+
+	return;
+}
+
+/*********************************************************************
+*********************************************************************/
+
+BOOL store_pipe_opendb( smb_np_struct *p )
+{
+	struct pipe_open_rec *prec;
+	TDB_DATA *key;
+	TDB_DATA data;
+	TDB_CONTEXT *pipe_tdb;
+	BOOL ret = False;
+	
+	if ( (prec = TALLOC_P( NULL, struct pipe_open_rec)) == NULL ) {
+		DEBUG(0,("store_pipe_opendb: talloc failed!\n"));
+		return False;
+	}
+	
+	fill_pipe_open_rec( prec, p );
+	if ( (key = make_pipe_rec_key( prec )) == NULL ) {
+		goto done;
+	}
+	
+	data.dptr = (char*)prec;
+	data.dsize = sizeof(struct pipe_open_rec);
+	
+	if ( (pipe_tdb = conn_tdb_ctx() ) == NULL ) {
+		goto done;
+	}
+	
+	ret = (tdb_store( pipe_tdb, *key, data, TDB_REPLACE ) != -1);
+	
+done:
+	TALLOC_FREE( prec );	
+	return ret;
+}
+
+/*********************************************************************
+*********************************************************************/
+
+BOOL delete_pipe_opendb( smb_np_struct *p )
+{
+	struct pipe_open_rec *prec;
+	TDB_DATA *key;
+	TDB_CONTEXT *pipe_tdb;
+	BOOL ret = False;
+	
+	if ( (prec = TALLOC_P( NULL, struct pipe_open_rec)) == NULL ) {
+		DEBUG(0,("store_pipe_opendb: talloc failed!\n"));
+		return False;
+	}
+	
+	fill_pipe_open_rec( prec, p );
+	if ( (key = make_pipe_rec_key( prec )) == NULL ) {
+		goto done;
+	}
+	
+	if ( (pipe_tdb = conn_tdb_ctx() ) == NULL ) {
+		goto done;
+	}
+
+	ret = (tdb_delete( pipe_tdb, *key ) != -1 );
+	
+done:
+	TALLOC_FREE( prec );
+	return ret;
 }

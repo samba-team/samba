@@ -912,17 +912,11 @@ void build_options(BOOL screen);
 	if (!message_init())
 		exit(1);
 
-	/* Initialize our global sam sid first -- quite a lot of the other
-	 * initialization routines further down depend on it.
-	 */
-
 	/* Initialise the password backed before the global_sam_sid
 	   to ensure that we fetch from ldap before we make a domain sid up */
 
 	if(!initialize_password_db(False))
 		exit(1);
-
-	/* Fail gracefully if we can't open secrets.tdb */
 
 	if (!secrets_init()) {
 		DEBUG(0, ("ERROR: smbd can not open secrets.tdb\n"));

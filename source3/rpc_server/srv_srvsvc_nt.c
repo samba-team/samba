@@ -4,6 +4,7 @@
  *  Copyright (C) Andrew Tridgell              1992-1997,
  *  Copyright (C) Jeremy Allison               2001.
  *  Copyright (C) Nigel Williams               2001.
+ *  Copyright (C) Gerald (Jerry) Carter        2006.
  *  
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -25,9 +26,178 @@
 #include "includes.h"
 
 extern struct generic_mapping file_generic_mapping;
+extern userdom_struct current_user_info;
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
+
+/* Use for enumerating connections, pipes, & files */
+
+struct file_enum_count {
+	TALLOC_CTX *ctx;
+	int count;
+	FILE_INFO_3 *info;
+};
+
+struct sess_file_count {
+	pid_t pid;
+	uid_t uid;
+	int count;
+};
+
+/****************************************************************************
+ Count the entries belonging to a service in the connection db.
+****************************************************************************/
+
+static int pipe_enum_fn( TDB_CONTEXT *the_tdb, TDB_DATA kbuf, TDB_DATA dbuf, void *p)
+{
+	struct pipe_open_rec prec;
+	struct file_enum_count *fenum = (struct file_enum_count *)p;
+ 
+	if (dbuf.dsize != sizeof(struct pipe_open_rec))
+		return 0;
+
+	memcpy(&prec, dbuf.dptr, sizeof(struct pipe_open_rec));
+ 
+	if ( process_exists(prec.pid) ) {
+		FILE_INFO_3 *f;
+		int i = fenum->count;
+		pstring fullpath;
+		
+		snprintf( fullpath, sizeof(fullpath), "\\PIPE\\%s", prec.name );
+		
+		f = TALLOC_REALLOC_ARRAY( fenum->ctx, fenum->info, FILE_INFO_3, i+1 );
+		if ( !f ) {
+			DEBUG(0,("conn_enum_fn: realloc failed for %d items\n", i+1));
+			return 1;
+		}
+		fenum->info = f;
+		
+		
+		init_srv_file_info3( &fenum->info[i], 
+			(uint32)((procid_to_pid(&prec.pid)<<16) & prec.pnum),
+			(FILE_READ_DATA|FILE_WRITE_DATA), 
+			0,
+			uidtoname( prec.uid ),
+			fullpath );
+			
+		fenum->count++;
+	}
+
+	return 0;
+}
+
+/*******************************************************************
+********************************************************************/
+
+static WERROR net_enum_pipes( TALLOC_CTX *ctx, FILE_INFO_3 **info, 
+                              uint32 *count, uint32 resume )
+{
+	struct file_enum_count fenum;
+	TDB_CONTEXT *conn_tdb = conn_tdb_ctx();
+
+	if ( !conn_tdb ) {
+		DEBUG(0,("net_enum_pipes: Failed to retrieve the connections tdb handle!\n"));
+		return WERR_ACCESS_DENIED;
+	}
+	
+	fenum.ctx = ctx;
+	fenum.count = *count;
+	fenum.info = *info;
+
+	if (tdb_traverse(conn_tdb, pipe_enum_fn, &fenum) == -1) {
+		DEBUG(0,("net_enum_pipes: traverse of connections.tdb failed with error %s.\n",
+			tdb_errorstr(conn_tdb) ));
+		return WERR_NOMEM;
+	}
+	
+	*info  = fenum.info;
+	*count = fenum.count;
+	
+	return WERR_OK;}
+
+/*******************************************************************
+********************************************************************/
+
+/* global needed to make use of the share_mode_forall() callback */
+static struct file_enum_count f_enum_cnt;
+
+static void enum_file_fn( const struct share_mode_entry *e, 
+                          const char *sharepath, const char *fname )
+{
+	struct file_enum_count *fenum = &f_enum_cnt;
+ 
+	/* If the pid was not found delete the entry from connections.tdb */
+
+	if ( process_exists(e->pid) ) {
+		FILE_INFO_3 *f;
+		int i = fenum->count;
+		files_struct fsp;
+		struct byte_range_lock *brl;
+		int num_locks = 0;
+		pstring fullpath;
+		uint32 permissions;
+		
+		f = TALLOC_REALLOC_ARRAY( fenum->ctx, fenum->info, FILE_INFO_3, i+1 );			
+		if ( !f ) {
+			DEBUG(0,("conn_enum_fn: realloc failed for %d items\n", i+1));
+			return;
+		}
+		fenum->info = f;
+
+		/* need to count the number of locks on a file */
+		
+		ZERO_STRUCT( fsp );		
+		fsp.dev   = e->dev;
+		fsp.inode = e->inode;
+		
+		if ( (brl = brl_get_locks(NULL,&fsp)) != NULL ) {
+			num_locks = brl->num_locks;
+			TALLOC_FREE( brl );
+		}
+		
+		if ( strcmp( fname, "." ) == 0 ) {
+			pstr_sprintf( fullpath, "C:%s", sharepath );
+		} else {
+			pstr_sprintf( fullpath, "C:%s/%s", sharepath, fname );
+		}
+		string_replace( fullpath, '/', '\\' );
+		
+		/* mask out create (what ever that is) */
+		permissions = e->share_access & (FILE_READ_DATA|FILE_WRITE_DATA);
+
+		/* now fill in the FILE_INFO_3 struct */
+		init_srv_file_info3( &fenum->info[i], 
+			e->share_file_id,
+			permissions,
+			num_locks,
+			uidtoname(e->uid),
+			fullpath );
+			
+		fenum->count++;
+	}
+
+	return;
+
+}
+
+/*******************************************************************
+********************************************************************/
+
+static WERROR net_enum_files( TALLOC_CTX *ctx, FILE_INFO_3 **info, 
+                              uint32 *count, uint32 resume )
+{
+	f_enum_cnt.ctx = ctx;
+	f_enum_cnt.count = *count;
+	f_enum_cnt.info = *info;
+	
+	share_mode_forall( enum_file_fn );
+	
+	*info  = f_enum_cnt.info;
+	*count = f_enum_cnt.count;
+	
+	return WERR_OK;
+}
 
 /*******************************************************************
  Utility function to get the 'type' of a share from an snum.
@@ -70,11 +240,16 @@ static void init_srv_share_info_0(pipes_struct *p, SRV_SHARE_INFO_0 *sh0, int sn
 
 static void init_srv_share_info_1(pipes_struct *p, SRV_SHARE_INFO_1 *sh1, int snum)
 {
+	connection_struct *conn = p->conn;
 	pstring remark;
 
 	char *net_name = lp_servicename(snum);
 	pstrcpy(remark, lp_comment(snum));
-	standard_sub_conn(p->conn, remark,sizeof(remark));
+	standard_sub_advanced(lp_servicename(SNUM(conn)), conn->user,
+			      conn->connectpath, conn->gid,
+			      get_current_username(),
+			      current_user_info.domain,
+			      remark, sizeof(remark));
 
 	init_srv_share_info1(&sh1->info_1, net_name, get_share_type(snum), remark);
 	init_srv_share_info1_str(&sh1->info_1_str, net_name, remark);
@@ -86,15 +261,21 @@ static void init_srv_share_info_1(pipes_struct *p, SRV_SHARE_INFO_1 *sh1, int sn
 
 static void init_srv_share_info_2(pipes_struct *p, SRV_SHARE_INFO_2 *sh2, int snum)
 {
+	connection_struct *conn = p->conn;
 	pstring remark;
 	pstring path;
 	pstring passwd;
 	int max_connections = lp_max_connections(snum);
 	uint32 max_uses = max_connections!=0 ? max_connections : 0xffffffff;
-
+	int count = 0;
 	char *net_name = lp_servicename(snum);
+	
 	pstrcpy(remark, lp_comment(snum));
-	standard_sub_conn(p->conn, remark,sizeof(remark));
+	standard_sub_advanced(lp_servicename(SNUM(conn)), conn->user,
+			      conn->connectpath, conn->gid,
+			      get_current_username(),
+			      current_user_info.domain,
+			      remark, sizeof(remark));
 	pstrcpy(path, "C:");
 	pstrcat(path, lp_pathname(snum));
 
@@ -107,7 +288,10 @@ static void init_srv_share_info_2(pipes_struct *p, SRV_SHARE_INFO_2 *sh2, int sn
 
 	pstrcpy(passwd, "");
 
-	init_srv_share_info2(&sh2->info_2, net_name, get_share_type(snum), remark, 0, max_uses, 1, path, passwd);
+	count = count_current_connections( net_name, False  );
+	init_srv_share_info2(&sh2->info_2, net_name, get_share_type(snum), 
+		remark, 0, max_uses, count, path, passwd);
+
 	init_srv_share_info2_str(&sh2->info_2_str, net_name, remark, path, passwd);
 }
 
@@ -179,11 +363,16 @@ out:
 
 static void init_srv_share_info_501(pipes_struct *p, SRV_SHARE_INFO_501 *sh501, int snum)
 {
+	connection_struct *conn = p->conn;
 	pstring remark;
 
 	const char *net_name = lp_servicename(snum);
 	pstrcpy(remark, lp_comment(snum));
-	standard_sub_conn(p->conn, remark, sizeof(remark));
+	standard_sub_advanced(lp_servicename(SNUM(conn)), conn->user,
+			      conn->connectpath, conn->gid,
+			      get_current_username(),
+			      current_user_info.domain,
+			      remark, sizeof(remark));
 
 	init_srv_share_info501(&sh501->info_501, net_name, get_share_type(snum), remark, (lp_csc_policy(snum) << 4));
 	init_srv_share_info501_str(&sh501->info_501_str, net_name, remark);
@@ -195,6 +384,7 @@ static void init_srv_share_info_501(pipes_struct *p, SRV_SHARE_INFO_501 *sh501, 
 
 static void init_srv_share_info_502(pipes_struct *p, SRV_SHARE_INFO_502 *sh502, int snum)
 {
+	connection_struct *conn = p->conn;
 	pstring net_name;
 	pstring remark;
 	pstring path;
@@ -208,7 +398,11 @@ static void init_srv_share_info_502(pipes_struct *p, SRV_SHARE_INFO_502 *sh502, 
 
 	pstrcpy(net_name, lp_servicename(snum));
 	pstrcpy(remark, lp_comment(snum));
-	standard_sub_conn(p->conn, remark,sizeof(remark));
+	standard_sub_advanced(lp_servicename(SNUM(conn)), conn->user,
+			      conn->connectpath, conn->gid,
+			      get_current_username(),
+			      current_user_info.domain,
+			      remark, sizeof(remark));
 	pstrcpy(path, "C:");
 	pstrcat(path, lp_pathname(snum));
 
@@ -233,10 +427,15 @@ static void init_srv_share_info_502(pipes_struct *p, SRV_SHARE_INFO_502 *sh502, 
 
 static void init_srv_share_info_1004(pipes_struct *p, SRV_SHARE_INFO_1004* sh1004, int snum)
 {
+	connection_struct *conn = p->conn;
         pstring remark;
 
 	pstrcpy(remark, lp_comment(snum));
-	standard_sub_conn(p->conn, remark, sizeof(remark));
+	standard_sub_advanced(lp_servicename(SNUM(conn)), conn->user,
+			      conn->connectpath, conn->gid,
+			      get_current_username(),
+			      current_user_info.domain,
+			      remark, sizeof(remark));
 
 	ZERO_STRUCTP(sh1004);
   
@@ -633,16 +832,6 @@ static void init_srv_r_net_share_get_info(pipes_struct *p, SRV_R_NET_SHARE_GET_I
 }
 
 /*******************************************************************
- fill in a sess info level 1 structure.
- ********************************************************************/
-
-static void init_srv_sess_0_info(SESS_INFO_0 *se0, SESS_INFO_0_STR *str0, char *name)
-{
-	init_srv_sess_info0(se0, name);
-	init_srv_sess_info0_str(str0, name);
-}
-
-/*******************************************************************
  fill in a sess info level 0 structure.
  ********************************************************************/
 
@@ -662,11 +851,7 @@ static void init_srv_sess_info_0(SRV_SESS_INFO_0 *ss0, uint32 *snum, uint32 *sto
 
 	if (snum) {
 		for (; (*snum) < (*stot) && num_entries < MAX_SESS_ENTRIES; (*snum)++) {
-			init_srv_sess_0_info(&ss0->info_0[num_entries],
-								 &ss0->info_0_str[num_entries], session_list[(*snum)].remote_machine);
-
-			/* move on to creating next session */
-			/* move on to creating next sess */
+			init_srv_sess_info0( &ss0->info_0[num_entries], session_list[(*snum)].remote_machine);
 			num_entries++;
 		}
 
@@ -687,17 +872,35 @@ static void init_srv_sess_info_0(SRV_SESS_INFO_0 *ss0, uint32 *snum, uint32 *sto
 }
 
 /*******************************************************************
- fill in a sess info level 1 structure.
- ********************************************************************/
+********************************************************************/
 
-static void init_srv_sess_1_info(SESS_INFO_1 *se1, SESS_INFO_1_STR *str1,
-				char *name, char *user,
-				uint32 num_opens,
-				uint32 open_time, uint32 idle_time,
-				uint32 usr_flgs)
+/* global needed to make use of the share_mode_forall() callback */
+static struct sess_file_count s_file_cnt;
+
+static void sess_file_fn( const struct share_mode_entry *e, 
+                          const char *sharepath, const char *fname )
 {
-	init_srv_sess_info1(se1 , name, user, num_opens, open_time, idle_time, usr_flgs);
-	init_srv_sess_info1_str(str1, name, user);
+	struct sess_file_count *sess = &s_file_cnt;
+ 
+	if ( (procid_to_pid(&e->pid) == sess->pid) && (sess->uid == e->uid) ) {
+		sess->count++;
+	}
+	
+	return;
+}
+
+/*******************************************************************
+********************************************************************/
+
+static int net_count_files( uid_t uid, pid_t pid )
+{
+	s_file_cnt.count = 0;
+	s_file_cnt.uid = uid;
+	s_file_cnt.pid = pid;
+	
+	share_mode_forall( sess_file_fn );
+	
+	return s_file_cnt.count;
 }
 
 /*******************************************************************
@@ -708,43 +911,58 @@ static void init_srv_sess_info_1(SRV_SESS_INFO_1 *ss1, uint32 *snum, uint32 *sto
 {
 	struct sessionid *session_list;
 	uint32 num_entries = 0;
-	(*stot) = list_sessions(&session_list);
+	time_t now = time(NULL);
 
-	if (ss1 == NULL) {
-		(*snum) = 0;
-		SAFE_FREE(session_list);
-		return;
-	}
-
-	DEBUG(5,("init_srv_sess_1_ss1\n"));
-
-	if (snum) {
-		for (; (*snum) < (*stot) && num_entries < MAX_SESS_ENTRIES; (*snum)++) {
-			init_srv_sess_1_info(&ss1->info_1[num_entries],
-					     &ss1->info_1_str[num_entries],
-					    session_list[*snum].remote_machine,
-					     session_list[*snum].username,
-			                     1, 10, 5, 0);
-
-			/* move on to creating next session */
-			/* move on to creating next sess */
-			num_entries++;
-		}
-
-		ss1->num_entries_read  = num_entries;
-		ss1->ptr_sess_info     = num_entries > 0 ? 1 : 0;
-		ss1->num_entries_read2 = num_entries;
-		
-		if ((*snum) >= (*stot)) {
-			(*snum) = 0;
-		}
-
-	} else {
+	if ( !snum ) {
 		ss1->num_entries_read = 0;
 		ss1->ptr_sess_info = 0;
 		ss1->num_entries_read2 = 0;
 		
 		(*stot) = 0;
+
+		return;
+	}
+	
+	if (ss1 == NULL) {
+		(*snum) = 0;
+		return;
+	}
+
+	(*stot) = list_sessions(&session_list);
+	
+
+	for (; (*snum) < (*stot) && num_entries < MAX_SESS_ENTRIES; (*snum)++) {
+		uint32 num_files;
+		uint32 connect_time;
+		struct passwd *pw = sys_getpwnam(session_list[*snum].username);
+		BOOL guest;
+			
+		if ( !pw ) {
+			DEBUG(10,("init_srv_sess_info_1: failed to find owner: %s\n",
+				session_list[*snum].username));
+			continue;
+		}
+				
+		connect_time = (uint32)(now - session_list[*snum].connect_start);
+		num_files = net_count_files(pw->pw_uid, session_list[*snum].pid);
+		guest = strequal( session_list[*snum].username, lp_guestaccount() );
+					
+		init_srv_sess_info1( &ss1->info_1[num_entries], 
+		                     session_list[*snum].remote_machine,
+				     session_list[*snum].username, 
+				     num_files,
+				     connect_time,
+				     0, 
+				     guest);
+		num_entries++;
+	}
+
+	ss1->num_entries_read  = num_entries;
+	ss1->ptr_sess_info     = num_entries > 0 ? 1 : 0;
+	ss1->num_entries_read2 = num_entries;
+	
+	if ((*snum) >= (*stot)) {
+		(*snum) = 0;
 	}
 
 	SAFE_FREE(session_list);
@@ -964,66 +1182,53 @@ static void init_srv_r_net_conn_enum(SRV_R_NET_CONN_ENUM *r_n,
  makes a SRV_R_NET_FILE_ENUM structure.
 ********************************************************************/
 
-static WERROR init_srv_file_info_ctr(pipes_struct *p, SRV_FILE_INFO_CTR *ctr,
-				     int switch_value, uint32 *resume_hnd, 
-				     uint32 *total_entries)  
+static WERROR net_file_enum_3( SRV_R_NET_FILE_ENUM *r, uint32 resume_hnd )
 {
-	WERROR status = WERR_OK;
-	TALLOC_CTX *ctx = p->mem_ctx;
-	DEBUG(5,("init_srv_file_info_ctr: %d\n", __LINE__));
-	*total_entries = 1; /* dummy entries only, for */
+	TALLOC_CTX *ctx = get_talloc_ctx();
+	SRV_FILE_INFO_CTR *ctr = &r->ctr;
 
-	ctr->switch_value = switch_value;
-	ctr->num_entries = *total_entries - *resume_hnd;
+	/* TODO -- Windows enumerates 
+	   (b) active pipes
+	   (c) open directories and files */
+
+	r->status = net_enum_files( ctx, &ctr->file.info3, &ctr->num_entries, resume_hnd );
+	if ( !W_ERROR_IS_OK(r->status))
+		goto done;
+		
+	r->status = net_enum_pipes( ctx, &ctr->file.info3, &ctr->num_entries, resume_hnd );
+	if ( !W_ERROR_IS_OK(r->status))
+		goto done;
+	
+	r->level = ctr->level = 3;
+	r->total_entries = ctr->num_entries;
+	/* ctr->num_entries = r->total_entries - resume_hnd; */
 	ctr->num_entries2 = ctr->num_entries;
+	ctr->ptr_file_info = 1;
 
-	switch (switch_value) {
-	case 3: {
-		int i;
-		if (*total_entries > 0) {
-			ctr->ptr_entries = 1;
-			ctr->file.info3 = TALLOC_ARRAY(ctx, SRV_FILE_INFO_3, ctr->num_entries);
-		}
-		for (i=0 ;i<ctr->num_entries;i++) {
-			init_srv_file_info3(&ctr->file.info3[i].info_3, i+*resume_hnd, 0x35, 0, "\\PIPE\\samr", "dummy user");
-			init_srv_file_info3_str(&ctr->file.info3[i].info_3_str,  "\\PIPE\\samr", "dummy user");
-			
-		}
-		ctr->ptr_file_info = 1;
-		*resume_hnd = 0;
-		break;
-	}
-	default:
-		DEBUG(5,("init_srv_file_info_ctr: unsupported switch value %d\n", switch_value));
-		(*resume_hnd = 0);
-		(*total_entries) = 0;
-		ctr->ptr_entries = 0;
-		status = WERR_UNKNOWN_LEVEL;
-		break;
-	}
+	r->status = WERR_OK;
 
-	return status;
+done:
+	if ( ctr->num_entries > 0 ) 
+		ctr->ptr_entries = 1;
+
+	init_enum_hnd(&r->enum_hnd, 0);
+
+	return r->status;
 }
 
 /*******************************************************************
- makes a SRV_R_NET_FILE_ENUM structure.
-********************************************************************/
+*******************************************************************/
 
-static void init_srv_r_net_file_enum(pipes_struct *p, SRV_R_NET_FILE_ENUM *r_n,
-				uint32 resume_hnd, int file_level, int switch_value)  
+WERROR _srv_net_file_enum(pipes_struct *p, SRV_Q_NET_FILE_ENUM *q_u, SRV_R_NET_FILE_ENUM *r_u)
 {
-	DEBUG(5,("init_srv_r_net_file_enum: %d\n", __LINE__));
-
-	r_n->file_level  = file_level;
-	if (file_level == 0)
-		r_n->status = WERR_UNKNOWN_LEVEL;
-	else
-		r_n->status = init_srv_file_info_ctr(p, &r_n->ctr, switch_value, &resume_hnd, &(r_n->total_entries));
-
-	if (!W_ERROR_IS_OK(r_n->status))
-		resume_hnd = 0;
-
-	init_enum_hnd(&r_n->enum_hnd, resume_hnd);
+	switch ( q_u->level ) {
+	case 3:
+		return net_file_enum_3( r_u, get_enum_hnd(&q_u->enum_hnd) );	
+	default:
+		return WERR_UNKNOWN_LEVEL;
+	}
+	
+	return WERR_OK;
 }
 
 /*******************************************************************
@@ -1110,25 +1315,6 @@ WERROR _srv_net_srv_set_info(pipes_struct *p, SRV_Q_NET_SRV_SET_INFO *q_u, SRV_R
 }
 
 /*******************************************************************
-net file enum
-********************************************************************/
-
-WERROR _srv_net_file_enum(pipes_struct *p, SRV_Q_NET_FILE_ENUM *q_u, SRV_R_NET_FILE_ENUM *r_u)
-{
-	DEBUG(5,("srv_net_file_enum: %d\n", __LINE__));
-
-	/* set up the */
-	init_srv_r_net_file_enum(p, r_u,
-				get_enum_hnd(&q_u->enum_hnd),
-				q_u->file_level,
-				q_u->ctr.switch_value);
-
-	DEBUG(5,("srv_net_file_enum: %d\n", __LINE__));
-
-	return r_u->status;
-}
-
-/*******************************************************************
 net conn enum
 ********************************************************************/
 
@@ -1185,7 +1371,6 @@ net sess del
 WERROR _srv_net_sess_del(pipes_struct *p, SRV_Q_NET_SESS_DEL *q_u, SRV_R_NET_SESS_DEL *r_u)
 {
 	struct sessionid *session_list;
-	struct current_user user;
 	int num_sessions, snum;
 	fstring username;
 	fstring machine;
@@ -1205,11 +1390,9 @@ WERROR _srv_net_sess_del(pipes_struct *p, SRV_Q_NET_SESS_DEL *q_u, SRV_R_NET_SES
 
 	r_u->status = WERR_ACCESS_DENIED;
 
-	get_current_user(&user, p);
-
 	/* fail out now if you are not root or not a domain admin */
 
-	if ((user.ut.uid != sec_initial_uid()) && 
+	if ((p->pipe_user.ut.uid != sec_initial_uid()) && 
 		( ! nt_token_check_domain_rid(p->pipe_user.nt_user_token, DOMAIN_GROUP_RID_ADMINS))) {
 
 		goto done;
@@ -1220,7 +1403,7 @@ WERROR _srv_net_sess_del(pipes_struct *p, SRV_Q_NET_SESS_DEL *q_u, SRV_R_NET_SES
 		if ((strequal(session_list[snum].username, username) || username[0] == '\0' ) &&
 		    strequal(session_list[snum].remote_machine, machine)) {
 		
-			if (user.ut.uid != sec_initial_uid()) {
+			if (p->pipe_user.ut.uid != sec_initial_uid()) {
 				not_root = True;
 				become_root();
 			}
@@ -1337,7 +1520,6 @@ char *valid_share_pathname(char *dos_pathname)
 
 WERROR _srv_net_share_set_info(pipes_struct *p, SRV_Q_NET_SHARE_SET_INFO *q_u, SRV_R_NET_SHARE_SET_INFO *r_u)
 {
-	struct current_user user;
 	pstring command;
 	fstring share_name;
 	fstring comment;
@@ -1374,13 +1556,11 @@ WERROR _srv_net_share_set_info(pipes_struct *p, SRV_Q_NET_SHARE_SET_INFO *q_u, S
 	if (lp_print_ok(snum))
 		return WERR_ACCESS_DENIED;
 
-	get_current_user(&user,p);
-
 	is_disk_op = user_has_privileges( p->pipe_user.nt_user_token, &se_diskop );
 	
 	/* fail out now if you are not root and not a disk op */
 	
-	if ( user.ut.uid != sec_initial_uid() && !is_disk_op )
+	if ( p->pipe_user.ut.uid != sec_initial_uid() && !is_disk_op )
 		return WERR_ACCESS_DENIED;
 
 	switch (q_u->info_level) {
@@ -1525,7 +1705,6 @@ WERROR _srv_net_share_set_info(pipes_struct *p, SRV_Q_NET_SHARE_SET_INFO *q_u, S
 
 WERROR _srv_net_share_add(pipes_struct *p, SRV_Q_NET_SHARE_ADD *q_u, SRV_R_NET_SHARE_ADD *r_u)
 {
-	struct current_user user;
 	pstring command;
 	fstring share_name;
 	fstring comment;
@@ -1543,11 +1722,9 @@ WERROR _srv_net_share_add(pipes_struct *p, SRV_Q_NET_SHARE_ADD *q_u, SRV_R_NET_S
 
 	r_u->parm_error = 0;
 
-	get_current_user(&user,p);
-
 	is_disk_op = user_has_privileges( p->pipe_user.nt_user_token, &se_diskop );
 
-	if (user.ut.uid != sec_initial_uid()  && !is_disk_op ) 
+	if (p->pipe_user.ut.uid != sec_initial_uid()  && !is_disk_op ) 
 		return WERR_ACCESS_DENIED;
 
 	if (!lp_add_share_cmd() || !*lp_add_share_cmd()) {
@@ -1682,7 +1859,6 @@ WERROR _srv_net_share_add(pipes_struct *p, SRV_Q_NET_SHARE_ADD *q_u, SRV_R_NET_S
 
 WERROR _srv_net_share_del(pipes_struct *p, SRV_Q_NET_SHARE_DEL *q_u, SRV_R_NET_SHARE_DEL *r_u)
 {
-	struct current_user user;
 	pstring command;
 	fstring share_name;
 	int ret;
@@ -1710,11 +1886,9 @@ WERROR _srv_net_share_del(pipes_struct *p, SRV_Q_NET_SHARE_DEL *q_u, SRV_R_NET_S
 	if (lp_print_ok(snum))
 		return WERR_ACCESS_DENIED;
 
-	get_current_user(&user,p);
-
 	is_disk_op = user_has_privileges( p->pipe_user.nt_user_token, &se_diskop );
 
-	if (user.ut.uid != sec_initial_uid()  && !is_disk_op ) 
+	if (p->pipe_user.ut.uid != sec_initial_uid()  && !is_disk_op ) 
 		return WERR_ACCESS_DENIED;
 
 	if (!lp_delete_share_cmd() || !*lp_delete_share_cmd()) {
@@ -1826,7 +2000,6 @@ WERROR _srv_net_file_query_secdesc(pipes_struct *p, SRV_Q_NET_FILE_QUERY_SECDESC
 	SMB_STRUCT_STAT st;
 	BOOL bad_path;
 	NTSTATUS nt_status;
-	struct current_user user;
 	connection_struct *conn = NULL;
 	BOOL became_user = False; 
 
@@ -1839,10 +2012,8 @@ WERROR _srv_net_file_query_secdesc(pipes_struct *p, SRV_Q_NET_FILE_QUERY_SECDESC
 	/* Null password is ok - we are already an authenticated user... */
 	null_pw = data_blob(NULL, 0);
 
-	get_current_user(&user, p);
-
 	become_root();
-	conn = make_connection(qualname, null_pw, "A:", user.vuid, &nt_status);
+	conn = make_connection(qualname, null_pw, "A:", p->pipe_user.vuid, &nt_status);
 	unbecome_root();
 
 	if (conn == NULL) {
@@ -1872,18 +2043,18 @@ WERROR _srv_net_file_query_secdesc(pipes_struct *p, SRV_Q_NET_FILE_QUERY_SECDESC
 		goto error_exit;
 	}
 
-	fsp = open_file_stat(conn, filename, &st);
-	if (!fsp) {
+	nt_status = open_file_stat(conn, filename, &st, &fsp);
+	if (!NT_STATUS_IS_OK(nt_status)) {
 		/* Perhaps it is a directory */
-		if (errno == EISDIR)
-			fsp = open_directory(conn, filename, &st,
+		if (NT_STATUS_EQUAL(nt_status, NT_STATUS_FILE_IS_A_DIRECTORY))
+			nt_status = open_directory(conn, filename, &st,
 					READ_CONTROL_ACCESS,
 					FILE_SHARE_READ|FILE_SHARE_WRITE,
 					FILE_OPEN,
 					0,
-					NULL);
+					NULL, &fsp);
 
-		if (!fsp) {
+		if (!NT_STATUS_IS_OK(nt_status)) {
 			DEBUG(3,("_srv_net_file_query_secdesc: Unable to open file %s\n", filename));
 			r_u->status = WERR_ACCESS_DENIED;
 			goto error_exit;
@@ -1908,7 +2079,7 @@ WERROR _srv_net_file_query_secdesc(pipes_struct *p, SRV_Q_NET_FILE_QUERY_SECDESC
 
 	close_file(fsp, NORMAL_CLOSE);
 	unbecome_user();
-	close_cnum(conn, user.vuid);
+	close_cnum(conn, p->pipe_user.vuid);
 	return r_u->status;
 
 error_exit:
@@ -1921,7 +2092,7 @@ error_exit:
 		unbecome_user();
 
 	if (conn) 
-		close_cnum(conn, user.vuid);
+		close_cnum(conn, p->pipe_user.vuid);
 
 	return r_u->status;
 }
@@ -1941,7 +2112,6 @@ WERROR _srv_net_file_set_secdesc(pipes_struct *p, SRV_Q_NET_FILE_SET_SECDESC *q_
 	SMB_STRUCT_STAT st;
 	BOOL bad_path;
 	NTSTATUS nt_status;
-	struct current_user user;
 	connection_struct *conn = NULL;
 	BOOL became_user = False;
 
@@ -1954,10 +2124,8 @@ WERROR _srv_net_file_set_secdesc(pipes_struct *p, SRV_Q_NET_FILE_SET_SECDESC *q_
 	/* Null password is ok - we are already an authenticated user... */
 	null_pw = data_blob(NULL, 0);
 
-	get_current_user(&user, p);
-
 	become_root();
-	conn = make_connection(qualname, null_pw, "A:", user.vuid, &nt_status);
+	conn = make_connection(qualname, null_pw, "A:", p->pipe_user.vuid, &nt_status);
 	unbecome_root();
 
 	if (conn == NULL) {
@@ -1988,19 +2156,19 @@ WERROR _srv_net_file_set_secdesc(pipes_struct *p, SRV_Q_NET_FILE_SET_SECDESC *q_
 	}
 
 
-	fsp = open_file_stat(conn, filename, &st);
+	nt_status = open_file_stat(conn, filename, &st, &fsp);
 
-	if (!fsp) {
+	if (!NT_STATUS_IS_OK(nt_status)) {
 		/* Perhaps it is a directory */
-		if (errno == EISDIR)
-			fsp = open_directory(conn, filename, &st,
+		if (NT_STATUS_EQUAL(nt_status, NT_STATUS_FILE_IS_A_DIRECTORY))
+			nt_status = open_directory(conn, filename, &st,
 						FILE_READ_ATTRIBUTES,
 						FILE_SHARE_READ|FILE_SHARE_WRITE,
 						FILE_OPEN,
 						0,
-						NULL);
+						NULL, &fsp);
 
-		if (!fsp) {
+		if (!NT_STATUS_IS_OK(nt_status)) {
 			DEBUG(3,("_srv_net_file_set_secdesc: Unable to open file %s\n", filename));
 			r_u->status = WERR_ACCESS_DENIED;
 			goto error_exit;
@@ -2017,7 +2185,7 @@ WERROR _srv_net_file_set_secdesc(pipes_struct *p, SRV_Q_NET_FILE_SET_SECDESC *q_
 
 	close_file(fsp, NORMAL_CLOSE);
 	unbecome_user();
-	close_cnum(conn, user.vuid);
+	close_cnum(conn, p->pipe_user.vuid);
 	return r_u->status;
 
 error_exit:
@@ -2031,7 +2199,7 @@ error_exit:
 	}
 
 	if (conn) {
-		close_cnum(conn, user.vuid);
+		close_cnum(conn, p->pipe_user.vuid);
 	}
 
 	return r_u->status;
@@ -2133,7 +2301,7 @@ WERROR _srv_net_name_validate(pipes_struct *p, SRV_Q_NET_NAME_VALIDATE *q_u, SRV
 
 	switch ( q_u->type ) {
 	case 0x9:
-		rpcstr_pull(sharename, q_u->uni_name.buffer, sizeof(sharename), q_u->uni_name.uni_str_len*2, 0);
+		rpcstr_pull(sharename, q_u->sharename.buffer, sizeof(sharename), q_u->sharename.uni_str_len*2, 0);
 		if ( !validate_net_name( sharename, INVALID_SHARENAME_CHARS, sizeof(sharename) ) ) {
 			DEBUG(5,("_srv_net_name_validate: Bad sharename \"%s\"\n", sharename));
 			return WERR_INVALID_NAME;
@@ -2146,3 +2314,13 @@ WERROR _srv_net_name_validate(pipes_struct *p, SRV_Q_NET_NAME_VALIDATE *q_u, SRV
 
 	return WERR_OK;
 }
+
+
+/********************************************************************
+********************************************************************/
+
+WERROR _srv_net_file_close(pipes_struct *p, SRV_Q_NET_FILE_CLOSE *q_u, SRV_R_NET_FILE_CLOSE *r_u)
+{
+	return WERR_ACCESS_DENIED;
+}
+

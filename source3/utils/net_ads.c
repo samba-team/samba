@@ -506,7 +506,8 @@ static int ads_user_info(int argc, const char **argv)
 		return -1;
 	}
 	
-	grouplist = ldap_get_values(ads->ld, res, "memberOf");
+	grouplist = ldap_get_values((LDAP *)ads->ld,
+				    (LDAPMessage *)res, "memberOf");
 
 	if (grouplist) {
 		int i;
@@ -591,7 +592,7 @@ int net_ads_user(int argc, const char **argv)
 					  shortattrs, usergrp_display, 
 					  disp_fields);
 		ads_destroy(&ads);
-		return 0;
+		return ADS_ERR_OK(rc) ? 0 : -1;
 	}
 
 	return net_run_function(argc, argv, func, net_ads_user_usage);
@@ -716,7 +717,7 @@ int net_ads_group(int argc, const char **argv)
 					  disp_fields);
 
 		ads_destroy(&ads);
-		return 0;
+		return ADS_ERR_OK(rc) ? 0 : -1;
 	}
 	return net_run_function(argc, argv, func, net_ads_group_usage);
 }
@@ -1011,7 +1012,7 @@ static ADS_STATUS net_precreate_machine_acct( ADS_STRUCT *ads, const char *ou )
 	asprintf(&dn, "%s,%s", ou_str, ads->config.bind_path);
 	free(ou_str);
 
-	rc = ads_search_dn(ads, (void**)&res, dn, NULL);
+	rc = ads_search_dn(ads, &res, dn, NULL);
 	ads_msgfree(ads, res);
 
 	if (ADS_ERR_OK(rc)) {
@@ -1340,7 +1341,7 @@ static int net_ads_printer_publish(int argc, const char **argv)
 		return -1;
 	}
 
-	srv_dn = ldap_get_dn(ads->ld, res);
+	srv_dn = ldap_get_dn((LDAP *)ads->ld, (LDAPMessage *)res);
 	srv_cn = ldap_explode_dn(srv_dn, 1);
 
 	asprintf(&prt_dn, "cn=%s-%s,%s", srv_cn[0], printername, srv_dn);

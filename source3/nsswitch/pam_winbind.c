@@ -128,6 +128,24 @@ static void _pam_winbind_cleanup_func(pam_handle_t *pamh, void *data, int error_
 	SAFE_FREE(data);
 }
 
+/*
+ * Work around the pam API that has functions with void ** as parameters.
+ * These lead to strict aliasing warnings with gcc.
+ */
+static int _pam_get_item(const pam_handle_t *pamh, int item_type,
+			 const void *_item)
+{
+	const void **item = (const void **)_item;
+	return pam_get_item(pamh, item_type, item);
+}
+static int _pam_get_data(const pam_handle_t *pamh,
+			 const char *module_data_name, const void *_data)
+{
+	const void **data = (const void **)_data;
+	return pam_get_data(pamh, module_data_name, data);
+}
+
+
 static const struct ntstatus_errors {
 	const char *ntstatus_string;
 	const char *error_string;
@@ -173,7 +191,7 @@ static int converse(pam_handle_t *pamh, int nargs,
 	int retval;
 	struct pam_conv *conv;
 
-	retval = pam_get_item(pamh, PAM_CONV, (const void **) &conv );
+	retval = _pam_get_item(pamh, PAM_CONV, &conv );
 	if (retval == PAM_SUCCESS) {
 		retval = conv->conv(nargs, (const struct pam_message **)message,
 				    response, conv->appdata_ptr);
@@ -676,7 +694,7 @@ static int _winbind_read_password(pam_handle_t * pamh,
 	 */
 
 	if (on(WINBIND_TRY_FIRST_PASS_ARG, ctrl) || on(WINBIND_USE_FIRST_PASS_ARG, ctrl)) {
-		retval = pam_get_item(pamh, authtok_flag, (const void **) &item);
+		retval = _pam_get_item(pamh, authtok_flag, &item);
 		if (retval != PAM_SUCCESS) {
 			/* very strange. */
 			_pam_log(LOG_ALERT, 
@@ -778,7 +796,7 @@ static int _winbind_read_password(pam_handle_t * pamh,
 	retval = pam_set_item(pamh, authtok_flag, token);
 	_pam_delete(token);	/* clean it up */
 	if (retval != PAM_SUCCESS || 
-	    (retval = pam_get_item(pamh, authtok_flag, (const void **) &item)) != PAM_SUCCESS) {
+	    (retval = _pam_get_item(pamh, authtok_flag, &item)) != PAM_SUCCESS) {
 		
 		_pam_log(LOG_CRIT, "error manipulating password");
 		return retval;
@@ -1251,8 +1269,7 @@ int pam_sm_chauthtok(pam_handle_t * pamh, int flags,
 		 * get the old token back. 
 		 */
 		
-		retval = pam_get_item(pamh, PAM_OLDAUTHTOK,
-				      (const void **) &pass_old);
+		retval = _pam_get_item(pamh, PAM_OLDAUTHTOK, &pass_old);
 		
 		if (retval != PAM_SUCCESS) {
 			_pam_log(LOG_NOTICE, "user not authenticated");
@@ -1300,7 +1317,8 @@ int pam_sm_chauthtok(pam_handle_t * pamh, int flags,
 		 * By reaching here we have approved the passwords and must now
 		 * rebuild the password database file.
 		 */
-		pam_get_data( pamh, PAM_WINBIND_PWD_LAST_SET, (const void **)&pwdlastset_update);
+		_pam_get_data( pamh, PAM_WINBIND_PWD_LAST_SET,
+			       &pwdlastset_update);
 
 		retval = winbind_chauthtok_request(pamh, ctrl, user, pass_old, pass_new, pwdlastset_update);
 		if (retval) {
