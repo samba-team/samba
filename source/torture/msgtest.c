@@ -114,7 +114,7 @@ void pong_message(int msg_type, struct process_id src, void *buf, size_t len)
 		size_t timelimit = n;
 		size_t ping_count = 0;
 
-		printf("Sending pings for %d seconds\n", timelimit);
+		printf("Sending pings for %d seconds\n", (int)timelimit);
 		while (timeval_elapsed(&tv) < timelimit) {				
 			if(message_send_pid(pid_to_procid(pid), MSG_PING,
 								buf, 11, False)) ping_count++;
@@ -127,14 +127,14 @@ void pong_message(int msg_type, struct process_id src, void *buf, size_t len)
 		}
 		
 		printf("waiting for %d remaining replies (done %d)\n", 
-			   ping_count - pong_count, pong_count);
+		       (int)(ping_count - pong_count), pong_count);
 		while (timeval_elapsed(&tv) < 30 && pong_count < ping_count) {
 			message_dispatch();
 		}
 		
 		if (ping_count != pong_count) {
-			fprintf(stderr, "ping test failed! received %d, sent %d\n", 
-		       pong_count, ping_count);
+			fprintf(stderr, "ping test failed! received %d, sent "
+				"%d\n", pong_count, (int)ping_count);
 		}
 		
 		printf("ping rate of %.0f messages/sec\n", 
