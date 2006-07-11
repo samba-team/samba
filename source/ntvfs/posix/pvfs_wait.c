@@ -179,8 +179,7 @@ NTSTATUS pvfs_cancel(struct ntvfs_module_context *ntvfs, struct ntvfs_request *r
 	struct pvfs_wait *pwait;
 
 	for (pwait=pvfs->wait_list;pwait;pwait=pwait->next) {
-		if (req->smbmid == pwait->req->smbmid &&
-		    req->smbpid == pwait->req->smbpid) {
+		if (pwait->req == req) {
 			/* trigger a cancel on the request */
 			pwait->reason = PVFS_WAIT_CANCEL;
 			ntvfs_async_setup(pwait->req, pwait);

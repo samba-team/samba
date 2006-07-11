@@ -28,7 +28,7 @@
 
 _PUBLIC_ struct ntvfs_request *ntvfs_request_create(struct ntvfs_context *ctx, TALLOC_CTX *mem_ctx,
 						    struct auth_session_info *session_info,
-						    uint16_t smbpid, uint16_t smbmid,
+						    uint16_t smbpid,
 						    struct timeval request_time,
 						    void *private_data,
 						    void (*send_fn)(struct ntvfs_request *),
@@ -43,7 +43,6 @@ _PUBLIC_ struct ntvfs_request *ntvfs_request_create(struct ntvfs_context *ctx, T
 	req->async_states		= NULL;
 	req->session_info		= session_info;
 	req->smbpid			= smbpid;
-	req->smbmid			= smbmid;
 	req->statistics.request_time	= request_time;
 
 	async = talloc(req, struct ntvfs_async_state);

@@ -33,6 +33,12 @@
 /* we over allocate the data buffer to prevent too many realloc calls */
 #define REQ_OVER_ALLOCATION 0
 
+static int smbsrv_request_destructor(struct smbsrv_request *req)
+{
+	DLIST_REMOVE(req->smb_conn->requests, req);
+	return 0;
+}
+
 /****************************************************************************
 construct a basic request packet, mostly used to construct async packets
 such as change notify and oplock break requests
@@ -48,6 +54,8 @@ struct smbsrv_request *smbsrv_init_request(struct smbsrv_connection *smb_conn)
 
 	/* setup the request context */
 	req->smb_conn = smb_conn;
+
+	talloc_set_destructor(req, smbsrv_request_destructor);
 
 	return req;
 }

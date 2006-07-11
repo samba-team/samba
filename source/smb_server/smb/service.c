@@ -89,7 +89,6 @@ static NTSTATUS make_connection_snum(struct smbsrv_request *req,
 	req->ntvfs = ntvfs_request_create(req->tcon->ntvfs, req,
 					  req->session->session_info,
 					  SVAL(req->in.hdr,HDR_PID),
-					  SVAL(req->in.hdr,HDR_MID),
 					  req->request_time,
 					  req, NULL, 0);
 	if (!req->ntvfs) {

@@ -103,7 +103,6 @@ struct smbsrv_request;
 	req->ntvfs = ntvfs_request_create(req->tcon->ntvfs, req, \
 					  req->session->session_info,\
 					  0, \
-					  0, \
 					  req->request_time, \
 					  req, send_fn, state); \
 	if (!req->ntvfs) { \

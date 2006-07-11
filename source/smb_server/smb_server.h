@@ -24,6 +24,7 @@
 #include "libcli/raw/interfaces.h"
 #include "lib/events/events.h"
 #include "lib/socket/socket.h"
+#include "dlinklist.h"
 
 /*
   this header declares the core context structures associated with smb
@@ -320,15 +321,11 @@ struct smbsrv_connection {
 	/* context associated with currently valid session setups */
 	struct smbsrv_sessions_context sessions;
 
-	/* the server_context holds a linked list of pending requests,
-	 * this is used for blocking locks and requests blocked due to oplock
-	 * break requests */
-	struct _smbsrv_pending_request {
-		struct _smbsrv_pending_request *next, *prev;
-	
-		/* the request itself - needs to be freed */
-		struct smbsrv_request *request;
-	} *requests;
+	/*
+	 * the server_context holds a linked list of pending requests,
+	 * this is used for finding the request structures on ntcancel requests
+	 */
+	struct smbsrv_request *requests;
 
 	struct smb_signing_context signing;
 
@@ -387,7 +384,6 @@ struct smbsrv_connection {
 	req->ntvfs = ntvfs_request_create(req->tcon->ntvfs, req, \
 					  req->session->session_info,\
 					  SVAL(req->in.hdr,HDR_PID), \
-					  SVAL(req->in.hdr,HDR_MID), \
 					  req->request_time, \
 					  req, send_fn, state); \
 	if (!req->ntvfs) { \
@@ -418,6 +414,15 @@ struct smbsrv_connection {
 	} \
 } while (0)
 
+#define SMBSRV_CHECK(cmd) do {\
+	NTSTATUS _status; \
+	_status = cmd; \
+	if (!NT_STATUS_IS_OK(_status)) { \
+		smbsrv_send_error(req,  _status); \
+		return; \
+	} \
+} while (0)
+
 /* 
    check if the backend wants to handle the request asynchronously.
    if it wants it handled synchronously then call the send function
@@ -425,7 +430,9 @@ struct smbsrv_connection {
 */
 #define SMBSRV_CALL_NTVFS_BACKEND(cmd) do { \
 	req->ntvfs->async_states->status = cmd; \
-	if (!(req->ntvfs->async_states->state & NTVFS_ASYNC_STATE_ASYNC)) { \
+	if (req->ntvfs->async_states->state & NTVFS_ASYNC_STATE_ASYNC) { \
+		DLIST_ADD_END(req->smb_conn->requests, req, struct smbsrv_request *); \
+	} else { \
 		req->ntvfs->async_states->send_fn(req->ntvfs); \
 	} \
 } while (0)

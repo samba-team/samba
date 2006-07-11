@@ -1417,7 +1417,6 @@ static WERROR srvsvc_NetGetFileSecurity(struct dcesrv_call_state *dce_call, TALL
 	ntvfs_req = ntvfs_request_create(ntvfs_ctx, mem_ctx,
 					 dce_call->conn->auth_state.session_info,
 					 0,
-					 0,
 					 dce_call->time,
 					 NULL, NULL, 0);
 	W_ERROR_HAVE_NO_MEMORY(ntvfs_req);
@@ -1458,7 +1457,6 @@ static WERROR srvsvc_NetSetFileSecurity(struct dcesrv_call_state *dce_call, TALL
 
 	ntvfs_req = ntvfs_request_create(ntvfs_ctx, mem_ctx,
 					 dce_call->conn->auth_state.session_info,
-					 0,
 					 0,
 					 dce_call->time,
 					 NULL, NULL, 0);
