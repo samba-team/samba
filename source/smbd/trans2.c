@@ -2445,17 +2445,10 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 			SSVAL(pdata,0,CIFS_UNIX_MAJOR_VERSION);
 			SSVAL(pdata,2,CIFS_UNIX_MINOR_VERSION);
 			/* We have POSIX ACLs, pathname and locking capability. */
-#if defined(DEVELOPER) /* Not quite finished yet... */
 			SBIG_UINT(pdata,4,((SMB_BIG_UINT)(
 					CIFS_UNIX_POSIX_ACLS_CAP|
 					CIFS_UNIX_POSIX_PATHNAMES_CAP|
 					CIFS_UNIX_FCNTL_LOCKS_CAP)));
-#else
-			SBIG_UINT(pdata,4,((SMB_BIG_UINT)(
-					CIFS_UNIX_POSIX_ACLS_CAP|
-					CIFS_UNIX_POSIX_PATHNAMES_CAP|
-					0)));
-#endif
 			break;
 
 		case SMB_QUERY_POSIX_FS_INFO:
@@ -2835,9 +2828,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 	TALLOC_CTX *data_ctx = NULL;
 	struct ea_list *ea_list = NULL;
 	uint32 access_mask = 0x12019F; /* Default - GENERIC_EXECUTE mapping from Windows */
-#if defined(DEVELOPER)
 	char *lock_data = NULL;
-#endif
 
 	if (!params)
 		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
