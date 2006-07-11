@@ -503,7 +503,7 @@ static BOOL rw_torture2(struct cli_state *c1, struct cli_state *c2)
 
 		if ((bytes_read = cli_read(c2, fnum2, buf_rd, 0, buf_size)) != buf_size) {
 			printf("read failed (%s)\n", cli_errstr(c2));
-			printf("read %d, expected %ld\n", bytes_read, 
+			printf("read %d, expected %ld\n", (int)bytes_read, 
 			       (unsigned long)buf_size); 
 			correct = False;
 			break;
@@ -4257,7 +4257,8 @@ BOOL torture_ioctl_test(int dummy)
 			status = cli_raw_ioctl(cli, fnum, code, &blob);
 
 			if (NT_STATUS_IS_OK(status)) {
-				printf("ioctl 0x%x OK : %d bytes\n", code, blob.length);
+				printf("ioctl 0x%x OK : %d bytes\n", (int)code,
+				       blob.length);
 				data_blob_free(&blob);
 			}
 		}
@@ -4408,7 +4409,7 @@ static BOOL run_eatest(int dummy)
 		correct = False;
 	}
 
-	printf("num_eas = %d\n", num_eas);
+	printf("num_eas = %d\n", (int)num_eas);
 
 	if (num_eas != 20) {
 		printf("Should be 20 EA's stored... failing.\n");
@@ -4442,7 +4443,7 @@ static BOOL run_eatest(int dummy)
 		correct = False;
 	}
 
-	printf("num_eas = %d\n", num_eas);
+	printf("num_eas = %d\n", (int)num_eas);
 	for (i = 0; i < num_eas; i++) {
 		printf("%d: ea_name = %s. Val = ", i, ea_list[i].name);
 		dump_data(0, (char *)ea_list[i].value.data,
