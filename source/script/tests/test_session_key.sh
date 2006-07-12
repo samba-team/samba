@@ -27,6 +27,7 @@ for bindoptions in validate seal; do
         "-k no --option=usespnego=yes" \
         "-k no --option=usespnego=yes --option=ntlmssp_client:128bit=no" \
         "-k no --option=usespnego=yes --option=ntlmssp_client:56bit=yes" \
+        "-k no --option=usespnego=yes --option=ntlmssp_client:56bit=no" \
         "-k no --option=usespnego=yes --option=ntlmssp_client:128bit=no --option=ntlmssp_client:56bit=yes" \
         "-k no --option=usespnego=yes --option=ntlmssp_client:128bit=no --option=ntlmssp_client:56bit=no" \
         "-k no --option=usespnego=yes --option=clientntlmv2auth=yes" \
