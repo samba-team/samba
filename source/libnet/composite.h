@@ -33,6 +33,10 @@
 #define  rpc_delete_user        (0x00000006)        /* userman.h */
 #define  rpc_set_user           (0x00000007)        /* userman.h */
 
+#define  net_lookup_dc          (0x00000100)        /* libnet_rpc.h */
+#define  net_pipe_connected     (0x00000200)        /* libnet_rpc.h */
+
+
 struct monitor_msg {
 	uint32_t   type;
 	void       *data;
