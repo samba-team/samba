@@ -36,6 +36,7 @@ NTSTATUS torture_smb2_init(void)
 	register_torture_op("SMB2-SETINFO", torture_smb2_setinfo);
 	register_torture_op("SMB2-FIND", torture_smb2_find);
 	register_torture_op("SMB2-LOCK", torture_smb2_lock);
+	register_torture_op("SMB2-NOTIFY", torture_smb2_notify);
 
 	return NT_STATUS_OK;
 }
