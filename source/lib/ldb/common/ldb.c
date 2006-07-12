@@ -103,7 +103,7 @@ static ldb_connect_fn ldb_find_backend(const char *url)
   This allows modules to get at only the backend module, for example where a module 
   may wish to direct certain requests at a particular backend.
 */
-int ldb_connect_backend(struct ldb_context *ldb, const char *url, unsigned int flags, const char *options[],
+int ldb_connect_backend(struct ldb_context *ldb, const char *url, const char *options[],
 			struct ldb_module **backend_module)
 {
 	int ret;
@@ -132,7 +132,7 @@ int ldb_connect_backend(struct ldb_context *ldb, const char *url, unsigned int f
 		return LDB_ERR_OTHER;
 	}
 
-	ret = fn(ldb, url, flags, options, backend_module);
+	ret = fn(ldb, url, ldb->flags, options, backend_module);
 
 	if (ret != LDB_SUCCESS) {
 		ldb_debug(ldb, LDB_DEBUG_ERROR, "Failed to connect to '%s'\n", url);
@@ -156,7 +156,9 @@ int ldb_connect(struct ldb_context *ldb, const char *url, unsigned int flags, co
 {
 	int ret;
 
-	ret = ldb_connect_backend(ldb, url, flags, options, &ldb->modules);
+	ldb->flags = flags;
+
+	ret = ldb_connect_backend(ldb, url, options, &ldb->modules);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
@@ -701,7 +703,7 @@ int ldb_rename(struct ldb_context *ldb, const struct ldb_dn *olddn, const struct
 
 
 /*
-  rename a record in the database
+  return the global sequence number
 */
 int ldb_sequence_number(struct ldb_context *ldb, uint64_t *seq_num)
 {

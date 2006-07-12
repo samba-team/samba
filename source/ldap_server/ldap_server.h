@@ -32,6 +32,8 @@ struct ldapsrv_connection {
 	/* are we using gensec wrapping? */
 	BOOL enable_wrap;
 
+	BOOL global_catalog;
+
 	struct packet_context *packet;
 
 	struct {

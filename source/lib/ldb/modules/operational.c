@@ -349,6 +349,7 @@ static int operational_add(struct ldb_module *module, struct ldb_request *req)
 	struct ldb_request *down_req;
 	struct ldb_message *msg;
 	time_t t = time(NULL);
+	uint64_t seq_num;
 	int ret;
 
 	if (ldb_dn_is_special(req->op.add.message->dn)) {
@@ -373,9 +374,9 @@ static int operational_add(struct ldb_module *module, struct ldb_request *req)
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	/* see if the backend can give us the USN */
-	if (module->ldb->sequence_number != NULL) {
-		uint64_t seq_num = module->ldb->sequence_number(module->ldb);
+	/* Get a sequence number from the backend */
+	ret = ldb_sequence_number(module->ldb, &seq_num);
+	if (ret == LDB_SUCCESS) {
 		if (add_uint64_element(msg, "uSNCreated", seq_num) != 0 ||
 		    add_uint64_element(msg, "uSNChanged", seq_num) != 0) {
 			talloc_free(down_req);
@@ -405,6 +406,7 @@ static int operational_modify(struct ldb_module *module, struct ldb_request *req
 	struct ldb_request *down_req;
 	struct ldb_message *msg;
 	time_t t = time(NULL);
+	uint64_t seq_num;
 	int ret;
 
 	if (ldb_dn_is_special(req->op.mod.message->dn)) {
@@ -428,12 +430,15 @@ static int operational_modify(struct ldb_module *module, struct ldb_request *req
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	/* update the records USN if possible */
-	if (module->ldb->sequence_number != NULL &&
-	    add_uint64_element(msg, "uSNChanged", 
-			       module->ldb->sequence_number(module->ldb)) != 0) {
-		talloc_free(down_req);
-		return -1;
+	/* Get a sequence number from the backend */
+	ret = ldb_sequence_number(module->ldb, &seq_num);
+	if (ret == LDB_SUCCESS) {
+		/* update the records USN if possible */
+		if (add_uint64_element(msg, "uSNChanged", 
+				       seq_num) != 0) {
+			talloc_free(down_req);
+			return -1;
+		}
 	}
 	
 	ldb_set_timeout_from_prev_req(module->ldb, req, down_req);
