@@ -642,7 +642,7 @@ int fd_close_posix(struct connection_struct *conn, files_struct *fsp)
 	int *fd_array = NULL;
 	size_t count, i;
 
-	if (!lp_locking(SNUM(fsp->conn)) || !lp_posix_locking(SNUM(conn)) || lp_posix_cifsu_locktype()) {
+	if (!lp_locking(SNUM(fsp->conn)) || !lp_posix_locking(SNUM(conn))) {
 		/*
 		 * No locking or POSIX to worry about or we want POSIX semantics
 		 * which will lose all locks on all fd's open on this dev/inode,
