@@ -1229,7 +1229,7 @@ void brl_close_fnum(struct byte_range_lock *br_lck)
 	struct process_id pid = procid_self();
 	BOOL unlock_individually = False;
 
-	if(lp_posix_locking(fsp->conn->cnum) && !lp_posix_cifsu_locktype()) {
+	if(lp_posix_locking(fsp->conn->cnum)) {
 
 		/* Check if there are any Windows locks associated with this dev/ino
 		   pair that are not this fnum. If so we need to call unlock on each
@@ -1279,9 +1279,6 @@ void brl_close_fnum(struct byte_range_lock *br_lck)
 	}
 
 	/* We can bulk delete - any POSIX locks will be removed when the fd closes. */
-
-	/* Zero any lock reference count on this dev/ino pair. */
-	zero_windows_lock_ref_count(fsp);
 
 	/* Remove any existing locks for this fnum (or any fnum if they're POSIX). */
 
@@ -1336,6 +1333,9 @@ void brl_close_fnum(struct byte_range_lock *br_lck)
 			dcount++;
 		}
 	}
+
+	/* Reduce the lock reference count on this dev/ino pair. */
+	reduce_windows_lock_ref_count(fsp, dcount);
 }
 
 /****************************************************************************

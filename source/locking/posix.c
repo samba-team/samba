@@ -492,10 +492,10 @@ static void decrement_windows_lock_ref_count(files_struct *fsp)
 }
 
 /****************************************************************************
- Ensure the lock ref count is zero.
+ Bulk delete - subtract as many locks as we've just deleted.
 ****************************************************************************/
 
-void zero_windows_lock_ref_count(files_struct *fsp)
+void reduce_windows_lock_ref_count(files_struct *fsp, unsigned int dcount)
 {
 	TDB_DATA kbuf = locking_ref_count_key_fsp(fsp);
 	TDB_DATA dbuf;
@@ -507,19 +507,19 @@ void zero_windows_lock_ref_count(files_struct *fsp)
 	}
 
 	memcpy(&lock_ref_count, dbuf.dptr, sizeof(int));
-	if (lock_ref_count < 0) {
-		smb_panic("zero_windows_lock_ref_count: lock_count logic error.\n");
-	}
+	lock_ref_count -= dcount;
 
-	lock_ref_count = 0;
+	if (lock_ref_count < 0) {
+		smb_panic("reduce_windows_lock_ref_count: lock_count logic error.\n");
+	}
 	memcpy(dbuf.dptr, &lock_ref_count, sizeof(int));
 	
 	if (tdb_store(posix_pending_close_tdb, kbuf, dbuf, TDB_REPLACE) == -1) {
-		smb_panic("zero_windows_lock_ref_count: tdb_store_fail.\n");
+		smb_panic("reduce_windows_lock_ref_count: tdb_store_fail.\n");
 	}
 	SAFE_FREE(dbuf.dptr);
 
-	DEBUG(10,("zero_windows_lock_ref_count for file now %s = %d\n",
+	DEBUG(10,("reduce_windows_lock_ref_count for file now %s = %d\n",
 		fsp->fsp_name, lock_ref_count ));
 }
 
