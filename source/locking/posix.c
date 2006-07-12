@@ -981,6 +981,7 @@ BOOL set_posix_lock_windows_flavour(files_struct *fsp,
 	 */
 
 	if(!posix_lock_in_range(&offset, &count, u_offset, u_count)) {
+		increment_windows_lock_ref_count(fsp);
 		return True;
 	}
 
@@ -1004,13 +1005,13 @@ BOOL set_posix_lock_windows_flavour(files_struct *fsp,
 	
 	if ((l_ctx = talloc_init("set_posix_lock")) == NULL) {
 		DEBUG(0,("set_posix_lock_windows_flavour: unable to init talloc context.\n"));
-		return True; /* Not a fatal error. */
+		return False;
 	}
 
 	if ((ll = TALLOC_P(l_ctx, struct lock_list)) == NULL) {
 		DEBUG(0,("set_posix_lock_windows_flavour: unable to talloc unlock list.\n"));
 		talloc_destroy(l_ctx);
-		return True; /* Not a fatal error. */
+		return False;
 	}
 
 	/*
@@ -1108,6 +1109,9 @@ BOOL release_posix_lock_windows_flavour(files_struct *fsp,
 	DEBUG(5,("release_posix_lock_windows_flavour: File %s, offset = %.0f, count = %.0f\n",
 		fsp->fsp_name, (double)u_offset, (double)u_count ));
 
+	/* Remember the number of Windows locks we have on this dev/ino pair. */
+	decrement_windows_lock_ref_count(fsp);
+
 	/*
 	 * If the requested lock won't fit in the POSIX range, we will
 	 * pretend it was successful.
@@ -1117,18 +1121,15 @@ BOOL release_posix_lock_windows_flavour(files_struct *fsp,
 		return True;
 	}
 
-	/* Remember the number of Windows locks we have on this dev/ino pair. */
-	decrement_windows_lock_ref_count(fsp);
-
 	if ((ul_ctx = talloc_init("release_posix_lock")) == NULL) {
 		DEBUG(0,("release_posix_lock_windows_flavour: unable to init talloc context.\n"));
-		return True; /* Not a fatal error. */
+		return False;
 	}
 
 	if ((ul = TALLOC_P(ul_ctx, struct lock_list)) == NULL) {
 		DEBUG(0,("release_posix_lock_windows_flavour: unable to talloc unlock list.\n"));
 		talloc_destroy(ul_ctx);
-		return True; /* Not a fatal error. */
+		return False;
 	}
 
 	/*
