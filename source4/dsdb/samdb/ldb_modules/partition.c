@@ -363,7 +363,7 @@ static int partition_init(struct ldb_module *module)
 		}
 
 		data->partitions[i]->backend = private_path(data->partitions[i], p);
-		ret = ldb_connect_backend(module->ldb, data->partitions[i]->backend, 0, NULL, &data->partitions[i]->module);
+		ret = ldb_connect_backend(module->ldb, data->partitions[i]->backend, NULL, &data->partitions[i]->module);
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}

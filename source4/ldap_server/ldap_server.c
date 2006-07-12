@@ -433,6 +433,8 @@ static void ldapsrv_accept(struct stream_connection *c)
 			ldapsrv_terminate_connection(conn, "ldapsrv_accept: tls_init_server() failed");
 			return;
 		}
+	} else if (port == 3268) /* Global catalog */ {
+		conn->global_catalog = True;
 	}
 	conn->packet = packet_init(conn);
 	if (conn->packet == NULL) {
