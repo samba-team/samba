@@ -84,7 +84,7 @@ static struct {
 static struct {
 	int notify_count;
 	NTSTATUS status;
-	struct smb_notify notify;
+	union smb_notify notify;
 } notifies[NSERVERS][NINSTANCES];
 
 /* info relevant to the current operation */
@@ -682,7 +682,7 @@ static struct ea_struct gen_ea_struct(void)
 */
 static void async_notify(struct smbcli_request *req)
 {
-	struct smb_notify notify;
+	union smb_notify notify;
 	NTSTATUS status;
 	int i, j;
 	uint16_t tid;
@@ -690,13 +690,14 @@ static void async_notify(struct smbcli_request *req)
 
 	tid = SVAL(req->in.hdr, HDR_TID);
 
+	notify.nttrans.level = RAW_NOTIFY_NTTRANS;
 	status = smb_raw_changenotify_recv(req, current_op.mem_ctx, &notify);
 	if (NT_STATUS_IS_OK(status)) {
 		printf("notify tid=%d num_changes=%d action=%d name=%s\n", 
 		       tid, 
-		       notify.out.num_changes,
-		       notify.out.changes[0].action,
-		       notify.out.changes[0].name.s);
+		       notify.nttrans.out.num_changes,
+		       notify.nttrans.out.changes[0].action,
+		       notify.nttrans.out.changes[0].name.s);
 	}
 
 	for (i=0;i<NSERVERS;i++) {
@@ -892,7 +893,7 @@ again:
 	for (j=0;j<NINSTANCES;j++) {
 		for (i=1;i<NSERVERS;i++) {
 			int n;
-			struct smb_notify not1, not2;
+			union smb_notify not1, not2;
 
 			if (notifies[0][j].notify_count != notifies[i][j].notify_count) {
 				if (tries++ < 10) goto again;
@@ -919,26 +920,26 @@ again:
 			not1 = notifies[0][j].notify;
 			not2 = notifies[i][j].notify;
 
-			for (n=0;n<not1.out.num_changes;n++) {
-				if (not1.out.changes[n].action != 
-				    not2.out.changes[n].action) {
+			for (n=0;n<not1.nttrans.out.num_changes;n++) {
+				if (not1.nttrans.out.changes[n].action != 
+				    not2.nttrans.out.changes[n].action) {
 					printf("Notify action %d inconsistent %d %d\n", n,
-					       not1.out.changes[n].action,
-					       not2.out.changes[n].action);
+					       not1.nttrans.out.changes[n].action,
+					       not2.nttrans.out.changes[n].action);
 					return False;
 				}
-				if (strcmp(not1.out.changes[n].name.s,
-					   not2.out.changes[n].name.s)) {
+				if (strcmp(not1.nttrans.out.changes[n].name.s,
+					   not2.nttrans.out.changes[n].name.s)) {
 					printf("Notify name %d inconsistent %s %s\n", n,
-					       not1.out.changes[n].name.s,
-					       not2.out.changes[n].name.s);
+					       not1.nttrans.out.changes[n].name.s,
+					       not2.nttrans.out.changes[n].name.s);
 					return False;
 				}
-				if (not1.out.changes[n].name.private_length !=
-				    not2.out.changes[n].name.private_length) {
+				if (not1.nttrans.out.changes[n].name.private_length !=
+				    not2.nttrans.out.changes[n].name.private_length) {
 					printf("Notify name length %d inconsistent %d %d\n", n,
-					       not1.out.changes[n].name.private_length,
-					       not2.out.changes[n].name.private_length);
+					       not1.nttrans.out.changes[n].name.private_length,
+					       not2.nttrans.out.changes[n].name.private_length);
 					return False;
 				}
 			}
@@ -1820,17 +1821,18 @@ static BOOL handler_sfileinfo(int instance)
 */
 static BOOL handler_notify(int instance)
 {
-	struct smb_notify parm[NSERVERS];
+	union smb_notify parm[NSERVERS];
 	int n;
 
 	ZERO_STRUCT(parm[0]);
-	parm[0].in.buffer_size = gen_io_count();
-	parm[0].in.completion_filter = gen_bits_mask(0xFF);
-	parm[0].in.file.fnum = gen_fnum(instance);
-	parm[0].in.recursive = gen_bool();
+	parm[0].nttrans.level			= RAW_NOTIFY_NTTRANS;
+	parm[0].nttrans.in.buffer_size		= gen_io_count();
+	parm[0].nttrans.in.completion_filter	= gen_bits_mask(0xFF);
+	parm[0].nttrans.in.file.fnum		= gen_fnum(instance);
+	parm[0].nttrans.in.recursive		= gen_bool();
 
 	GEN_COPY_PARM;
-	GEN_SET_FNUM(in.file.fnum);
+	GEN_SET_FNUM(nttrans.in.file.fnum);
 
 	for (n=0;n<NSERVERS;n++) {
 		struct smbcli_request *req;

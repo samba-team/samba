@@ -520,7 +520,7 @@ static NTSTATUS unixuid_cancel(struct ntvfs_module_context *ntvfs,
   change notify
 */
 static NTSTATUS unixuid_notify(struct ntvfs_module_context *ntvfs,
-			       struct ntvfs_request *req, struct smb_notify *info)
+			       struct ntvfs_request *req, union smb_notify *info)
 {
 	NTSTATUS status;
 

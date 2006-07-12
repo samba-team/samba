@@ -2128,23 +2128,60 @@ struct smb_nttrans {
 	} out;
 };
 
+enum smb_notify_level {
+	RAW_NOTIFY_NTTRANS,
+	RAW_NOTIFY_SMB2
+};
 
-/* struct for nttrans change notify call */
-struct smb_notify {
+union smb_notify {
+	/* struct for nttrans change notify call */
 	struct {
-		union smb_handle file;
-		uint32_t buffer_size;
-		uint32_t completion_filter;
-		BOOL recursive;
-	} in;
+		enum smb_notify_level level;
 
-	struct {
-		uint32_t num_changes;
-		struct notify_changes {
-			uint32_t action;
-			struct smb_wire_string name;
-		} *changes;
-	} out;
+		struct {
+			union smb_handle file;
+			uint32_t buffer_size;
+			uint32_t completion_filter;
+			BOOL recursive;
+		} in;
+
+		struct {
+			uint32_t num_changes;
+			struct notify_changes {
+				uint32_t action;
+				struct smb_wire_string name;
+			} *changes;
+		} out;
+	} nttrans;
+
+	struct smb2_notify {
+		enum smb_notify_level level;
+		
+		struct {
+			union smb_handle file;
+			/* static body buffer 32 (0x20) bytes */
+			/* uint16_t buffer_code;  0x32 */
+			uint16_t recursive;
+			uint32_t buffer_size;
+			/*struct  smb2_handle file;*/
+			uint32_t completion_filter;
+			uint32_t unknown;
+		} in;
+
+		struct {
+			/* static body buffer 8 (0x08) bytes */
+			/* uint16_t buffer_code; 0x09 = 0x08 + 1 */
+			/* uint16_t blob_ofs; */
+			/* uint16_t blob_size; */
+
+			/* dynamic body */
+			/*DATA_BLOB blob;*/
+
+			/* DATA_BLOB content */
+			uint32_t num_changes;
+			struct notify_changes *changes;
+		} out;
+	} smb2;
 };
 
 enum smb_search_level {
