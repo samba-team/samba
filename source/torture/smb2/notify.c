@@ -43,6 +43,8 @@
 		goto done; \
 	}} while (0)
 
+#define FNAME "smb2-notify01.dat"
+
 static BOOL test_valid_request(TALLOC_CTX *mem_ctx, struct smb2_tree *tree)
 {
 	BOOL ret = True;
@@ -54,18 +56,82 @@ static BOOL test_valid_request(TALLOC_CTX *mem_ctx, struct smb2_tree *tree)
 	status = smb2_util_roothandle(tree, &dh);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
-	n.in.recursive		= 0x0001;
-	n.in.buffer_size	= 0x00000020;
+	n.in.recursive		= 0x0000;
+	n.in.buffer_size	= 0x00080000;
 	n.in.file.handle	= dh;
-	n.in.completion_filter	= 0x0000001F;
+	n.in.completion_filter	= 0x00000FFF;
 	n.in.unknown		= 0x00000000;
 	req = smb2_notify_send(tree, &n);
 
-	status = torture_setup_complex_file(tree, "smb2-notify1.dat");
+	status = torture_setup_complex_file(tree, FNAME);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	status = smb2_notify_recv(req, mem_ctx, &n);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	/* 
+	 * if the change response doesn't fit in the buffer
+	 * NOTIFY_ENUM_DIR is returned.
+	 */
+	n.in.buffer_size	= 0x00000000;
+	req = smb2_notify_send(tree, &n);
+
+	status = torture_setup_complex_file(tree, FNAME);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 	status = smb2_notify_recv(req, mem_ctx, &n);
 	CHECK_STATUS(status, STATUS_NOTIFY_ENUM_DIR);
+
+	/* 
+	 * if the change response fits in the buffer we get
+	 * NT_STATUS_OK again
+	 */
+	n.in.buffer_size	= 0x00080000;
+	req = smb2_notify_send(tree, &n);
+
+	status = torture_setup_complex_file(tree, FNAME);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	status = smb2_notify_recv(req, mem_ctx, &n);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	/* if the first notify returns NOTIFY_ENUM_DIR, all do */
+	status = smb2_util_close(tree, dh);
+	CHECK_STATUS(status, NT_STATUS_OK);	
+	status = smb2_util_roothandle(tree, &dh);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	n.in.recursive		= 0x0000;
+	n.in.buffer_size	= 0x00000001;
+	n.in.file.handle	= dh;
+	n.in.completion_filter	= 0x00000FFF;
+	n.in.unknown		= 0x00000000;
+	req = smb2_notify_send(tree, &n);
+
+	status = torture_setup_complex_file(tree, FNAME);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	status = smb2_notify_recv(req, mem_ctx, &n);
+	CHECK_STATUS(status, STATUS_NOTIFY_ENUM_DIR);
+
+	n.in.buffer_size	= 0x00080000;
+	req = smb2_notify_send(tree, &n);
+
+	status = torture_setup_complex_file(tree, FNAME);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	status = smb2_notify_recv(req, mem_ctx, &n);
+	CHECK_STATUS(status, STATUS_NOTIFY_ENUM_DIR);
+
+	/* if the buffer size is too large, we get invalid parameter */
+	n.in.recursive		= 0x0000;
+	n.in.buffer_size	= 0x00080001;
+	n.in.file.handle	= dh;
+	n.in.completion_filter	= 0x00000FFF;
+	n.in.unknown		= 0x00000000;
+	req = smb2_notify_send(tree, &n);
+	status = smb2_notify_recv(req, mem_ctx, &n);
+	CHECK_STATUS(status, NT_STATUS_INVALID_PARAMETER);
 
 done:
 	return ret;
