@@ -4567,7 +4567,7 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 						POSIX_LOCK,
 						&my_lock_ctx);
 
-				if (lp_blocking_locks(SNUM(conn)) && ERROR_WAS_LOCK_DENIED(status)) {
+				if (lock_blocking && lp_blocking_locks(SNUM(conn)) && ERROR_WAS_LOCK_DENIED(status)) {
 					/*
 					 * A blocking lock was requested. Package up
 					 * this smb into a queued request and push it
