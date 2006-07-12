@@ -1628,6 +1628,8 @@ static BOOL cmp_fileinfo(int instance,
 	case RAW_FILEINFO_EA_LIST:
 	case RAW_FILEINFO_UNIX_BASIC:
 	case RAW_FILEINFO_UNIX_LINK:
+	case RAW_FILEINFO_SMB2_ALL_EAS:
+	case RAW_FILEINFO_SMB2_ALL_INFORMATION:	
 		break;
 	}
 
