@@ -73,26 +73,32 @@ static BOOL parse_dfs_path(char *pathname, struct dfs_path *pdp)
 }
 
 /**********************************************************************
-  Parse the pathname  of the form /hostname/service/reqpath
-  into the dfs_path structure 
+ Parse the pathname  of the form /hostname/service/reqpath
+ into the dfs_path structure 
+ This code is dependent on the fact that check_path_syntax() will
+ convert '\\' characters to '/'.
+ When POSIX pathnames have been selected this doesn't happen, so we
+ must look for the unaltered separator of '\\' instead of the modified '/'.
+ JRA.
  **********************************************************************/
 
 static BOOL parse_processed_dfs_path(char* pathname, struct dfs_path *pdp, BOOL allow_wcards)
 {
 	pstring pathname_local;
 	char *p,*temp;
+	const char sepchar = lp_posix_pathnames() ? '\\' : '/';
 
 	pstrcpy(pathname_local,pathname);
 	p = temp = pathname_local;
 
 	ZERO_STRUCTP(pdp);
 
-	trim_char(temp,'/','/');
+	trim_char(temp,sepchar,sepchar);
 	DEBUG(10,("temp in parse_processed_dfs_path: .%s. after trimming \\'s\n",temp));
 
 	/* now tokenize */
 	/* parse out hostname */
-	p = strchr_m(temp,'/');
+	p = strchr_m(temp,sepchar);
 	if(p == NULL) {
 		return False;
 	}
@@ -102,7 +108,7 @@ static BOOL parse_processed_dfs_path(char* pathname, struct dfs_path *pdp, BOOL 
 
 	/* parse out servicename */
 	temp = p+1;
-	p = strchr_m(temp,'/');
+	p = strchr_m(temp,sepchar);
 	if(p == NULL) {
 		pstrcpy(pdp->servicename,temp);
 		pdp->reqpath[0] = '\0';
