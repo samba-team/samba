@@ -2197,12 +2197,15 @@ void smbsrv_reply_ntcreate_and_X(struct smbsrv_request *req)
 void smbsrv_reply_ntcancel(struct smbsrv_request *req)
 {
 	struct smbsrv_request *r;
+	uint16_t tid = SVAL(req->in.hdr,HDR_TID);
+	uint16_t uid = SVAL(req->in.hdr,HDR_UID);
 	uint16_t mid = SVAL(req->in.hdr,HDR_MID);
 	uint16_t pid = SVAL(req->in.hdr,HDR_PID);
 
 	for (r = req->smb_conn->requests; r; r = r->next) {
+		if (tid != SVAL(r->in.hdr,HDR_TID)) continue;
+		if (uid != SVAL(r->in.hdr,HDR_UID)) continue;
 		if (mid != SVAL(r->in.hdr,HDR_MID)) continue;
-		/* do we really need to check the PID? */
 		if (pid != SVAL(r->in.hdr,HDR_PID)) continue;
 
 		SMBSRV_CHECK(ntvfs_cancel(r->ntvfs));
@@ -2212,8 +2215,12 @@ void smbsrv_reply_ntcancel(struct smbsrv_request *req)
 		return;
 	}
 
-	/* TODO: workout the correct error code */
-	smbsrv_send_error(req, NT_STATUS_FOOBAR);
+	/* TODO: workout the correct error code,
+	 *       until we know how the smb signing works
+	 *       for ntcancel replies, don't send an error
+	 */
+	/*smbsrv_send_error(req, NT_STATUS_FOOBAR);*/
+	talloc_free(req);
 }
 
 /*
