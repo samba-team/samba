@@ -14,6 +14,7 @@ OBJ_FILES = \
 		setinfo.o \
 		find.o \
 		lock.o \
+		notify.o \
 		smb2.o
 PUBLIC_DEPENDENCIES = \
 		LIBCLI_SMB2 POPT_CREDENTIALS
