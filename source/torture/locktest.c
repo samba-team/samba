@@ -104,12 +104,14 @@ static struct record *recorded;
 /***************************************************** 
 return a connection to a server
 *******************************************************/
-static struct smbcli_state *connect_one(char *share, int snum)
+static struct smbcli_state *connect_one(char *share, int snum, int conn)
 {
 	struct smbcli_state *c;
 	fstring server, myname;
 	NTSTATUS status;
 	int retries = 10;
+
+	printf("connect_one(%s, %d, %d)\n", share, snum, conn);
 
 	fstrcpy(server,share+2);
 	share = strchr_m(server,'\\');
@@ -117,10 +119,36 @@ static struct smbcli_state *connect_one(char *share, int snum)
 	*share = 0;
 	share++;
 
+	if (snum == 0) {
+		char **unc_list = NULL;
+		int num_unc_names;
+		const char *p;
+		p = lp_parm_string(-1, "torture", "unclist");
+		if (p) {
+			char *h, *s;
+			unc_list = file_lines_load(p, &num_unc_names, NULL);
+			if (!unc_list || num_unc_names <= 0) {
+				printf("Failed to load unc names list from '%s'\n", p);
+				exit(1);
+			}
+
+			if (!smbcli_parse_unc(unc_list[conn % num_unc_names],
+					      NULL, &h, &s)) {
+				printf("Failed to parse UNC name %s\n",
+				       unc_list[conn % num_unc_names]);
+				exit(1);
+			}
+			fstrcpy(server, h);
+			fstrcpy(share, s);
+		}
+	}
+
+
 	slprintf(myname,sizeof(myname), "lock-%u-%u", getpid(), snum);
 	cli_credentials_set_workstation(servers[snum], myname, CRED_SPECIFIED);
 
 	do {
+		printf("\\\\%s\\%s\n", server, share);
 		status = smbcli_full_connection(NULL, &c, 
 						server, 
 						share, NULL,
@@ -154,7 +182,7 @@ static void reconnect(struct smbcli_state *cli[NSERVERS][NCONNECTIONS], int fnum
 			}
 			talloc_free(cli[server][conn]);
 		}
-		cli[server][conn] = connect_one(share[server], server);
+		cli[server][conn] = connect_one(share[server], server, conn);
 		if (!cli[server][conn]) {
 			DEBUG(0,("Failed to connect to %s\n", share[server]));
 			exit(1);
@@ -446,6 +474,7 @@ static void usage(void)
         -R range    set lock range\n\
         -B base     set lock base\n\
         -M min      set min lock length\n\
+        -l filename unclist file\n\
 ");
 }
 
@@ -487,7 +516,7 @@ static void usage(void)
 
 	seed = time(NULL);
 
-	while ((opt = getopt(argc, argv, "U:s:ho:aAW:OR:B:M:EZW:")) != EOF) {
+	while ((opt = getopt(argc, argv, "U:s:ho:aAW:OR:B:M:EZW:l:")) != EOF) {
 		switch (opt) {
 		case 'U':
 			if (username_count == 2) {
@@ -530,6 +559,9 @@ static void usage(void)
 			break;
 		case 'E':
 			exact_error_codes = True;
+			break;
+		case 'l':
+			lp_set_cmdline("torture:unclist", optarg);
 			break;
 		case 'W':
 			lp_set_cmdline("workgroup", optarg);
