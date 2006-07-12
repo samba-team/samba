@@ -94,28 +94,6 @@ struct smb2_setinfo {
 	} in;
 };
 
-struct smb2_notify {
-	struct {
-		/* static body buffer 32 (0x20) bytes */
-		/* uint16_t buffer_code;  0x32 */
-		uint16_t recursive;
-		uint32_t buffer_size;
-		union smb_handle file;
-		uint32_t completion_filter;
-		uint32_t unknown;
-	} in;
-
-	struct {
-		/* static body buffer 8 (0x08) bytes */
-		/* uint16_t buffer_code; 0x09 = 0x08 + 1 */
-		/* uint16_t blob_ofs; */
-		/* uint16_t blob_size; */
-
-		/* dynamic body */
-		DATA_BLOB blob;
-	} out;
-};
-
 struct cli_credentials;
 struct event_context;
 #include "libcli/smb2/smb2_proto.h"

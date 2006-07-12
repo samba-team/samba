@@ -25,19 +25,23 @@
 /****************************************************************************
 change notify (async send)
 ****************************************************************************/
-struct smbcli_request *smb_raw_changenotify_send(struct smbcli_tree *tree, struct smb_notify *parms)
+struct smbcli_request *smb_raw_changenotify_send(struct smbcli_tree *tree, union smb_notify *parms)
 {
 	struct smb_nttrans nt;
 	uint16_t setup[4];
 
+	if (parms->nttrans.level != RAW_NOTIFY_NTTRANS) {
+		return NULL;
+	}
+
 	nt.in.max_setup = 0;
-	nt.in.max_param = parms->in.buffer_size;
+	nt.in.max_param = parms->nttrans.in.buffer_size;
 	nt.in.max_data = 0;
 	nt.in.setup_count = 4;
 	nt.in.setup = setup;
-	SIVAL(setup, 0, parms->in.completion_filter);
-	SSVAL(setup, 4, parms->in.file.fnum);
-	SSVAL(setup, 6, parms->in.recursive);	
+	SIVAL(setup, 0, parms->nttrans.in.completion_filter);
+	SSVAL(setup, 4, parms->nttrans.in.file.fnum);
+	SSVAL(setup, 6, parms->nttrans.in.recursive);	
 	nt.in.function = NT_TRANSACT_NOTIFY_CHANGE;
 	nt.in.params = data_blob(NULL, 0);
 	nt.in.data = data_blob(NULL, 0);
@@ -49,41 +53,45 @@ struct smbcli_request *smb_raw_changenotify_send(struct smbcli_tree *tree, struc
 change notify (async recv)
 ****************************************************************************/
 NTSTATUS smb_raw_changenotify_recv(struct smbcli_request *req, 
-				   TALLOC_CTX *mem_ctx, struct smb_notify *parms)
+				   TALLOC_CTX *mem_ctx, union smb_notify *parms)
 {
 	struct smb_nttrans nt;
 	NTSTATUS status;
 	uint32_t ofs, i;
 	struct smbcli_session *session = req?req->session:NULL;
 
+	if (parms->nttrans.level != RAW_NOTIFY_NTTRANS) {
+		return NT_STATUS_INVALID_LEVEL;
+	}
+
 	status = smb_raw_nttrans_recv(req, mem_ctx, &nt);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	parms->out.changes = NULL;
-	parms->out.num_changes = 0;
+	parms->nttrans.out.changes = NULL;
+	parms->nttrans.out.num_changes = 0;
 	
 	/* count them */
 	for (ofs=0; nt.out.params.length - ofs > 12; ) {
 		uint32_t next = IVAL(nt.out.params.data, ofs);
-		parms->out.num_changes++;
+		parms->nttrans.out.num_changes++;
 		if (next == 0 ||
 		    ofs + next >= nt.out.params.length) break;
 		ofs += next;
 	}
 
 	/* allocate array */
-	parms->out.changes = talloc_array(mem_ctx, struct notify_changes, parms->out.num_changes);
-	if (!parms->out.changes) {
+	parms->nttrans.out.changes = talloc_array(mem_ctx, struct notify_changes, parms->nttrans.out.num_changes);
+	if (!parms->nttrans.out.changes) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	for (i=ofs=0; i<parms->out.num_changes; i++) {
-		parms->out.changes[i].action = IVAL(nt.out.params.data, ofs+4);
+	for (i=ofs=0; i<parms->nttrans.out.num_changes; i++) {
+		parms->nttrans.out.changes[i].action = IVAL(nt.out.params.data, ofs+4);
 		smbcli_blob_pull_string(session, mem_ctx, &nt.out.params, 
-				     &parms->out.changes[i].name, 
-				     ofs+8, ofs+12, STR_UNICODE);
+					&parms->nttrans.out.changes[i].name, 
+					ofs+8, ofs+12, STR_UNICODE);
 		ofs += IVAL(nt.out.params.data, ofs);
 	}
 

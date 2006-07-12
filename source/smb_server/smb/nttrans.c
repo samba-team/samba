@@ -345,7 +345,7 @@ static NTSTATUS nttrans_ioctl(struct smbsrv_request *req,
  */
 static NTSTATUS nttrans_notify_change_send(struct nttrans_op *op)
 {
-	struct smb_notify *info = talloc_get_type(op->op_info, struct smb_notify);
+	union smb_notify *info = talloc_get_type(op->op_info, union smb_notify);
 	size_t size = 0;
 	int i;
 	NTSTATUS status;
@@ -353,8 +353,8 @@ static NTSTATUS nttrans_notify_change_send(struct nttrans_op *op)
 #define MAX_BYTES_PER_CHAR 3
 	
 	/* work out how big the reply buffer could be */
-	for (i=0;i<info->out.num_changes;i++) {
-		size += 12 + 3 + (1+strlen(info->out.changes[i].name.s)) * MAX_BYTES_PER_CHAR;
+	for (i=0;i<info->nttrans.out.num_changes;i++) {
+		size += 12 + 3 + (1+strlen(info->nttrans.out.changes[i].name.s)) * MAX_BYTES_PER_CHAR;
 	}
 
 	status = nttrans_setup_reply(op, op->trans, size, 0, 0);
@@ -362,16 +362,16 @@ static NTSTATUS nttrans_notify_change_send(struct nttrans_op *op)
 	p = op->trans->out.params.data;
 
 	/* construct the changes buffer */
-	for (i=0;i<info->out.num_changes;i++) {
+	for (i=0;i<info->nttrans.out.num_changes;i++) {
 		uint32_t ofs;
 		ssize_t len;
 
-		SIVAL(p, 4, info->out.changes[i].action);
-		len = push_string(p + 12, info->out.changes[i].name.s, 
+		SIVAL(p, 4, info->nttrans.out.changes[i].action);
+		len = push_string(p + 12, info->nttrans.out.changes[i].name.s, 
 				  op->trans->out.params.length - 
 				  (p+12 - op->trans->out.params.data), STR_UNICODE);
 		SIVAL(p, 8, len);
-		
+
 		ofs = len + 12;
 
 		if (ofs & 3) {
@@ -380,7 +380,7 @@ static NTSTATUS nttrans_notify_change_send(struct nttrans_op *op)
 			ofs += pad;
 		}
 
-		if (i == info->out.num_changes-1) {
+		if (i == info->nttrans.out.num_changes-1) {
 			SIVAL(p, 0, 0);
 		} else {
 			SIVAL(p, 0, ofs);
@@ -401,25 +401,26 @@ static NTSTATUS nttrans_notify_change(struct smbsrv_request *req,
 				      struct nttrans_op *op)
 {
 	struct smb_nttrans *trans = op->trans;
-	struct smb_notify *info;
+	union smb_notify *info;
 
 	/* should have at least 4 setup words */
 	if (trans->in.setup_count != 4) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	info = talloc(op, struct smb_notify);
+	info = talloc(op, union smb_notify);
 	NT_STATUS_HAVE_NO_MEMORY(info);
 
-	info->in.completion_filter = IVAL(trans->in.setup, 0);
-	info->in.file.ntvfs        = smbsrv_pull_fnum(req, (uint8_t *)trans->in.setup, 4);
-	info->in.recursive         = SVAL(trans->in.setup, 6);
-	info->in.buffer_size       = trans->in.max_param;
+	info->nttrans.level			= RAW_NOTIFY_NTTRANS;
+	info->nttrans.in.completion_filter	= IVAL(trans->in.setup, 0);
+	info->nttrans.in.file.ntvfs		= smbsrv_pull_fnum(req, (uint8_t *)trans->in.setup, 4);
+	info->nttrans.in.recursive		= SVAL(trans->in.setup, 6);
+	info->nttrans.in.buffer_size		= trans->in.max_param;
 
 	op->op_info = info;
 	op->send_fn = nttrans_notify_change_send;
-	
-	SMBSRV_CHECK_FILE_HANDLE_NTSTATUS(info->in.file.ntvfs);
+
+	SMBSRV_CHECK_FILE_HANDLE_NTSTATUS(info->nttrans.in.file.ntvfs);
 	return ntvfs_notify(req->ntvfs, info);
 }
 
