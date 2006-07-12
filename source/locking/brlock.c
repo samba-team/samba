@@ -1225,6 +1225,7 @@ void brl_close_fnum(struct byte_range_lock *br_lck)
 	uint16 tid = fsp->conn->cnum;
 	int fnum = fsp->fnum;
 	unsigned int i, j, dcount=0;
+	int num_deleted_windows_locks = 0;
 	struct lock_struct *locks = (struct lock_struct *)br_lck->lock_data;
 	struct process_id pid = procid_self();
 	BOOL unlock_individually = False;
@@ -1289,6 +1290,7 @@ void brl_close_fnum(struct byte_range_lock *br_lck)
 		if (lock->context.tid == tid && procid_equal(&lock->context.pid, &pid)) {
 			if ((lock->lock_flav == WINDOWS_LOCK) && (lock->fnum == fnum)) {
 				del_this_lock = True;
+				num_deleted_windows_locks++;
 			} else if (lock->lock_flav == POSIX_LOCK) {
 				del_this_lock = True;
 			}
@@ -1334,8 +1336,10 @@ void brl_close_fnum(struct byte_range_lock *br_lck)
 		}
 	}
 
-	/* Reduce the lock reference count on this dev/ino pair. */
-	reduce_windows_lock_ref_count(fsp, dcount);
+	if (num_deleted_windows_locks) {
+		/* Reduce the Windows lock reference count on this dev/ino pair. */
+		reduce_windows_lock_ref_count(fsp, num_deleted_windows_locks);
+	}
 }
 
 /****************************************************************************
