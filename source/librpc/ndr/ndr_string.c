@@ -556,7 +556,7 @@ _PUBLIC_ NTSTATUS ndr_check_string_terminator(struct ndr_pull *ndr, uint32_t cou
 	return NT_STATUS_OK;
 }
 
-_PUBLIC_ NTSTATUS ndr_pull_charset(struct ndr_pull *ndr, int ndr_flags, const char **var, uint32_t length, uint8_t byte_mul, int chset)
+_PUBLIC_ NTSTATUS ndr_pull_charset(struct ndr_pull *ndr, int ndr_flags, const char **var, uint32_t length, uint8_t byte_mul, charset_t chset)
 {
 	int ret;
 	if (length == 0) {
@@ -584,7 +584,7 @@ _PUBLIC_ NTSTATUS ndr_pull_charset(struct ndr_pull *ndr, int ndr_flags, const ch
 	return NT_STATUS_OK;
 }
 
-_PUBLIC_ NTSTATUS ndr_push_charset(struct ndr_push *ndr, int ndr_flags, const char *var, uint32_t length, uint8_t byte_mul, int chset)
+_PUBLIC_ NTSTATUS ndr_push_charset(struct ndr_push *ndr, int ndr_flags, const char *var, uint32_t length, uint8_t byte_mul, charset_t chset)
 {
 	ssize_t ret, required;
 
@@ -614,7 +614,7 @@ _PUBLIC_ NTSTATUS ndr_push_charset(struct ndr_push *ndr, int ndr_flags, const ch
 }
 
 /* Return number of elements in a string in the specified charset */
-_PUBLIC_ uint32_t ndr_charset_length(const void *var, int chset)
+_PUBLIC_ uint32_t ndr_charset_length(const void *var, charset_t chset)
 {
 	/* FIXME: Treat special chars special here, taking chset into account */
 	/* Also include 0 byte */
