@@ -260,9 +260,6 @@ void ntlmssp_handle_neg_flags(struct gensec_ntlmssp_state *gensec_ntlmssp_state,
 
 	if (!(neg_flags & NTLMSSP_NEGOTIATE_128)) {
 		gensec_ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_128;
-		if (neg_flags & NTLMSSP_NEGOTIATE_56) {
-			gensec_ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_56;
-		}
 	}
 
 	if (!(neg_flags & NTLMSSP_NEGOTIATE_56)) {
@@ -271,6 +268,12 @@ void ntlmssp_handle_neg_flags(struct gensec_ntlmssp_state *gensec_ntlmssp_state,
 
 	if (!(neg_flags & NTLMSSP_NEGOTIATE_KEY_EXCH)) {
 		gensec_ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_KEY_EXCH;
+	}
+
+	/* Woop Woop - unknown flag for Windows compatibility...
+	   What does this really do ? JRA. */
+	if (!(neg_flags & NTLMSSP_UNKNOWN_02000000)) {
+		gensec_ntlmssp_state->neg_flags &= ~NTLMSSP_UNKNOWN_02000000;
 	}
 
 	if ((neg_flags & NTLMSSP_REQUEST_TARGET)) {
