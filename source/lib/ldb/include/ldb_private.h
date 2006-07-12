@@ -117,8 +117,7 @@ struct ldb_context {
 
 	int default_timeout;
 
-	/* a backend supplied highestCommittedUSN function */
-	uint64_t (*sequence_number)(struct ldb_context *);
+	unsigned int flags;
 };
 
 #ifndef ARRAY_SIZE
@@ -132,7 +131,7 @@ struct ldb_context {
 
 /* The following definitions come from lib/ldb/common/ldb.c  */
 
-int ldb_connect_backend(struct ldb_context *ldb, const char *url, unsigned int flags, const char *options[],
+int ldb_connect_backend(struct ldb_context *ldb, const char *url, const char *options[],
 			struct ldb_module **backend_module);
 
 /* The following definitions come from lib/ldb/common/ldb_modules.c  */

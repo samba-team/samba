@@ -24,7 +24,7 @@
 #include "libcli/ldap/ldap.h"
 #include "lib/ldb/include/ldb.h"
 #include "lib/ldb/include/ldb_errors.h"
-#include "dsdb/samdb/samdb.h"
+#include "lib/db_wrap.h"
 
 #define VALID_DN_SYNTAX(dn,i) do {\
 	if (!(dn)) {\
@@ -49,11 +49,16 @@ static int map_ldb_error(struct ldb_context *ldb, int err, const char **errstrin
 */
 NTSTATUS ldapsrv_backend_Init(struct ldapsrv_connection *conn) 
 {
-	conn->ldb = samdb_connect(conn, conn->session_info);
+	conn->ldb = ldb_wrap_connect(conn, lp_sam_url(), conn->session_info,
+				     NULL, conn->global_catalog ? LDB_FLG_RDONLY : 0, NULL);
 	if (conn->ldb == NULL) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 	ldb_set_opaque(conn->ldb, "server_credentials", conn->server_credentials);
+
+	if (conn->global_catalog) {
+		ldb_set_opaque(conn->ldb, "global_catalog", (void *)(-1));
+	}
 
 	return NT_STATUS_OK;
 }
