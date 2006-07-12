@@ -1000,18 +1000,22 @@ static void async_changenotify(struct smbcli_request *c_req)
 /* change notify request - always async */
 static NTSTATUS cvfs_notify(struct ntvfs_module_context *ntvfs, 
 			    struct ntvfs_request *req,
-			    struct smb_notify *io)
+			    union smb_notify *io)
 {
 	struct cvfs_private *private = ntvfs->private_data;
 	struct smbcli_request *c_req;
 	int saved_timeout = private->transport->options.request_timeout;
 	struct cvfs_file *f;
 
+	if (io->nttrans.level != RAW_NOTIFY_NTTRANS) {
+		return NT_STATUS_NOT_IMPLEMENTED;
+	}
+
 	SETUP_PID;
 
-	f = ntvfs_handle_get_backend_data(io->in.file.ntvfs, ntvfs);
+	f = ntvfs_handle_get_backend_data(io->nttrans.in.file.ntvfs, ntvfs);
 	if (!f) return NT_STATUS_INVALID_HANDLE;
-	io->in.file.fnum = f->fnum;
+	io->nttrans.in.file.fnum = f->fnum;
 
 	/* this request doesn't make sense unless its async */
 	if (!(req->async_states->state & NTVFS_ASYNC_STATE_MAY_ASYNC)) {

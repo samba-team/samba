@@ -40,7 +40,7 @@ struct pvfs_notify_buffer {
 	struct notify_pending {
 		struct notify_pending *next, *prev;
 		struct ntvfs_request *req;
-		struct smb_notify *info;
+		union smb_notify *info;
 	} *pending;
 };
 
@@ -64,7 +64,7 @@ static void pvfs_notify_send(struct pvfs_notify_buffer *notify_buffer,
 {
 	struct notify_pending *pending = notify_buffer->pending;
 	struct ntvfs_request *req;
-	struct smb_notify *info;
+	union smb_notify *info;
 
 	if (notify_buffer->current_buffer_size > notify_buffer->max_buffer_size && 
 	    notify_buffer->num_changes != 0) {
@@ -87,15 +87,15 @@ static void pvfs_notify_send(struct pvfs_notify_buffer *notify_buffer,
 	req = pending->req;
 	info = pending->info;
 
-	info->out.num_changes = notify_buffer->num_changes;
-	info->out.changes = talloc_steal(req, notify_buffer->changes);
+	info->nttrans.out.num_changes = notify_buffer->num_changes;
+	info->nttrans.out.changes = talloc_steal(req, notify_buffer->changes);
 	notify_buffer->num_changes = 0;
 	notify_buffer->changes = NULL;
 	notify_buffer->current_buffer_size = 0;
 
 	talloc_free(pending);
 
-	if (info->out.num_changes != 0) {
+	if (info->nttrans.out.num_changes != 0) {
 		status = NT_STATUS_OK;
 	}
 
@@ -219,7 +219,7 @@ static void pvfs_notify_end(void *private, enum pvfs_wait_notice reason)
    event buffer is non-empty */
 NTSTATUS pvfs_notify(struct ntvfs_module_context *ntvfs, 
 		     struct ntvfs_request *req,
-		     struct smb_notify *info)
+		     union smb_notify *info)
 {
 	struct pvfs_state *pvfs = talloc_get_type(ntvfs->private_data, 
 						  struct pvfs_state);
@@ -227,7 +227,11 @@ NTSTATUS pvfs_notify(struct ntvfs_module_context *ntvfs,
 	NTSTATUS status;
 	struct notify_pending *pending;
 
-	f = pvfs_find_fd(pvfs, req, info->in.file.ntvfs);
+	if (info->nttrans.level != RAW_NOTIFY_NTTRANS) {
+		return NT_STATUS_NOT_IMPLEMENTED;
+	}
+
+	f = pvfs_find_fd(pvfs, req, info->nttrans.in.file.ntvfs);
 	if (!f) {
 		return NT_STATUS_INVALID_HANDLE;
 	}
@@ -246,15 +250,15 @@ NTSTATUS pvfs_notify(struct ntvfs_module_context *ntvfs,
 	   create one */
 	if (f->notify_buffer == NULL) {
 		status = pvfs_notify_setup(pvfs, f, 
-					   info->in.buffer_size, 
-					   info->in.completion_filter,
-					   info->in.recursive);
+					   info->nttrans.in.buffer_size, 
+					   info->nttrans.in.completion_filter,
+					   info->nttrans.in.recursive);
 		NT_STATUS_NOT_OK_RETURN(status);
 	}
 
 	/* we update the max_buffer_size on each call, but we do not
 	   update the recursive flag or filter */
-	f->notify_buffer->max_buffer_size = info->in.buffer_size;
+	f->notify_buffer->max_buffer_size = info->nttrans.in.buffer_size;
 
 	pending = talloc(f->notify_buffer, struct notify_pending);
 	NT_STATUS_HAVE_NO_MEMORY(pending);

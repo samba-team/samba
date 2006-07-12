@@ -56,17 +56,44 @@ NTSTATUS smb2_notify_recv(struct smb2_request *req, TALLOC_CTX *mem_ctx,
 			  struct smb2_notify *io)
 {
 	NTSTATUS status;
+	DATA_BLOB blob;
+	uint32_t ofs, i;
 
 	if (!smb2_request_receive(req) || 
-	    smb2_request_is_error(req)) {
+	    !smb2_request_is_ok(req)) {
 		return smb2_request_destroy(req);
 	}
 
 	SMB2_CHECK_PACKET_RECV(req, 0x08, True);
 
-	status = smb2_pull_o16s32_blob(&req->in, mem_ctx, req->in.body+0x02, &io->out.blob);
+	status = smb2_pull_o16s32_blob(&req->in, mem_ctx, req->in.body+0x02, &blob);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
+	}
+
+	io->out.changes = NULL;
+	io->out.num_changes = 0;
+
+	/* count them */
+	for (ofs=0; blob.length - ofs > 12; ) {
+		uint32_t next = IVAL(blob.data, ofs);
+		io->out.num_changes++;
+		if (next == 0 || (ofs + next) >= blob.length) break;
+		ofs += next;
+	}
+
+	/* allocate array */
+	io->out.changes = talloc_array(mem_ctx, struct notify_changes, io->out.num_changes);
+	if (!io->out.changes) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	for (i=ofs=0; i<io->out.num_changes; i++) {
+		io->out.changes[i].action = IVAL(blob.data, ofs+4);
+		smbcli_blob_pull_string(NULL, mem_ctx, &blob,
+					&io->out.changes[i].name,
+					ofs+8, ofs+12, STR_UNICODE);
+		ofs += IVAL(blob.data, ofs);
 	}
 
 	return smb2_request_destroy(req);
