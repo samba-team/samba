@@ -97,7 +97,8 @@ static double dir_total;
 
 struct cli_state *cli;
 
-
+static char CLI_DIRSEP_CHAR = '\\';
+static char CLI_DIRSEP_STR[] = { '\\', '\0' };
 
 /****************************************************************************
  Write to a local file with CR/LF->LF translation if appropriate. Return the 
@@ -264,18 +265,18 @@ static int do_cd(char *newdir)
 
 	pstrcpy(saved_dir, cur_dir);
 
-	if (*p == '\\')
+	if (*p == CLI_DIRSEP_CHAR)
 		pstrcpy(cur_dir,p);
 	else
 		pstrcat(cur_dir,p);
 
-	if ((cur_dir[0] != '\0') && (*(cur_dir+strlen(cur_dir)-1) != '\\')) {
-		pstrcat(cur_dir, "\\");
+	if ((cur_dir[0] != '\0') && (*(cur_dir+strlen(cur_dir)-1) != CLI_DIRSEP_CHAR)) {
+		pstrcat(cur_dir, CLI_DIRSEP_STR);
 	}
 	
 	dos_clean_name(cur_dir);
 	pstrcpy( dname, cur_dir );
-	pstrcat(cur_dir,"\\");
+	pstrcat(cur_dir,CLI_DIRSEP_STR);
 	dos_clean_name(cur_dir);
 	
 	if ( !cli_resolve_path( "", cli, dname, &targetcli, targetpath ) ) {
@@ -285,7 +286,7 @@ static int do_cd(char *newdir)
 	}
 
 	
-	if ( strequal(targetpath,"\\" ) )
+	if ( strequal(targetpath,CLI_DIRSEP_STR ) )
 		return 0;   
 		
 	/* Use a trans2_qpathinfo to test directories for modern servers.
@@ -304,7 +305,7 @@ static int do_cd(char *newdir)
 			goto out;
 		}		
 	} else {
-		pstrcat( targetpath, "\\" );
+		pstrcat( targetpath, CLI_DIRSEP_STR );
 		dos_clean_name( targetpath );
 		
 		if ( !cli_chkpath(targetcli, targetpath) ) {
@@ -524,7 +525,7 @@ static void do_list_helper(const char *mntpoint, file_info *f, const char *mask,
 
 	/* save the directory */
 	pstrcpy( f->dir, mask );
-	if ( (dir_end = strrchr( f->dir, '\\' )) != NULL ) {
+	if ( (dir_end = strrchr( f->dir, CLI_DIRSEP_CHAR )) != NULL ) {
 		*dir_end = '\0';
 	}
 
@@ -545,7 +546,7 @@ static void do_list_helper(const char *mntpoint, file_info *f, const char *mask,
 
 			pstrcpy(mask2, mntpoint);
 			pstrcat(mask2, mask);
-			p = strrchr_m(mask2,'\\');
+			p = strrchr_m(mask2,CLI_DIRSEP_CHAR);
 			if (!p)
 				return;
 			p[1] = 0;
@@ -612,14 +613,14 @@ void do_list(const char *mask,uint16 attribute,void (*fn)(file_info *),BOOL rec,
 				char* save_ch = 0;
 				if ((strlen(next_file) >= 2) &&
 				    (next_file[strlen(next_file) - 1] == '*') &&
-				    (next_file[strlen(next_file) - 2] == '\\')) {
+				    (next_file[strlen(next_file) - 2] == CLI_DIRSEP_CHAR)) {
 					save_ch = next_file +
 						strlen(next_file) - 2;
 					*save_ch = '\0';
 				}
 				d_printf("\n%s\n",next_file);
 				if (save_ch) {
-					*save_ch = '\\';
+					*save_ch = CLI_DIRSEP_CHAR;
 				}
 			}
 		}
@@ -652,17 +653,17 @@ static int cmd_dir(void)
 	int rc;
 	
 	dir_total = 0;
-	if (strcmp(cur_dir, "\\") != 0) {
+	if (strcmp(cur_dir, CLI_DIRSEP_STR) != 0) {
 		pstrcpy(mask,cur_dir);
-		if ((mask[0] != '\0') && (mask[strlen(mask)-1]!='\\'))
-			pstrcat(mask,"\\");
+		if ((mask[0] != '\0') && (mask[strlen(mask)-1]!=CLI_DIRSEP_CHAR))
+			pstrcat(mask,CLI_DIRSEP_STR);
 	} else {
-		pstrcpy(mask, "\\");
+		pstrcpy(mask, CLI_DIRSEP_STR);
 	}
 	
 	if (next_token_nr(NULL,buf,NULL,sizeof(buf))) {
 		dos_format(p);
-		if (*p == '\\')
+		if (*p == CLI_DIRSEP_CHAR)
 			pstrcpy(mask,p + 1);
 		else
 			pstrcat(mask,p);
@@ -693,12 +694,12 @@ static int cmd_du(void)
 	
 	dir_total = 0;
 	pstrcpy(mask,cur_dir);
-	if ((mask[0] != '\0') && (mask[strlen(mask)-1]!='\\'))
-		pstrcat(mask,"\\");
+	if ((mask[0] != '\0') && (mask[strlen(mask)-1]!=CLI_DIRSEP_CHAR))
+		pstrcat(mask,CLI_DIRSEP_STR);
 	
 	if (next_token_nr(NULL,buf,NULL,sizeof(buf))) {
 		dos_format(p);
-		if (*p == '\\')
+		if (*p == CLI_DIRSEP_CHAR)
 			pstrcpy(mask,p);
 		else
 			pstrcat(mask,p);
@@ -871,7 +872,7 @@ static int cmd_get(void)
 	char *p;
 
 	pstrcpy(rname,cur_dir);
-	pstrcat(rname,"\\");
+	pstrcat(rname,CLI_DIRSEP_STR);
 	
 	p = rname + strlen(rname);
 	
@@ -927,7 +928,7 @@ static void do_mget(file_info *finfo)
 	pstrcpy(saved_curdir,cur_dir);
 
 	pstrcat(cur_dir,finfo->name);
-	pstrcat(cur_dir,"\\");
+	pstrcat(cur_dir,CLI_DIRSEP_STR);
 
 	unix_format(finfo->name);
 	if (lowercase)
@@ -966,7 +967,7 @@ static int cmd_more(void)
 	int rc = 0;
 
 	pstrcpy(rname,cur_dir);
-	pstrcat(rname,"\\");
+	pstrcat(rname,CLI_DIRSEP_STR);
 	
 	slprintf(lname,sizeof(lname)-1, "%s/smbmore.XXXXXX",tmpdir());
 	fd = smb_mkstemp(lname);
@@ -1015,10 +1016,10 @@ static int cmd_mget(void)
 
 	while (next_token_nr(NULL,p,NULL,sizeof(buf))) {
 		pstrcpy(mget_mask,cur_dir);
-		if ((mget_mask[0] != '\0') && (mget_mask[strlen(mget_mask)-1]!='\\'))
-			pstrcat(mget_mask,"\\");
+		if ((mget_mask[0] != '\0') && (mget_mask[strlen(mget_mask)-1]!=CLI_DIRSEP_CHAR))
+			pstrcat(mget_mask,CLI_DIRSEP_STR);
 		
-		if (*p == '\\')
+		if (*p == CLI_DIRSEP_CHAR)
 			pstrcpy(mget_mask,p);
 		else
 			pstrcat(mget_mask,p);
@@ -1027,8 +1028,8 @@ static int cmd_mget(void)
 
 	if (!*mget_mask) {
 		pstrcpy(mget_mask,cur_dir);
-		if(mget_mask[strlen(mget_mask)-1]!='\\')
-			pstrcat(mget_mask,"\\");
+		if(mget_mask[strlen(mget_mask)-1]!=CLI_DIRSEP_CHAR)
+			pstrcat(mget_mask,CLI_DIRSEP_STR);
 		pstrcat(mget_mask,"*");
 		do_list(mget_mask, attribute,do_mget,False,True);
 	}
@@ -1120,7 +1121,7 @@ static int cmd_mkdir(void)
 			if (!cli_chkpath(cli, ddir2)) { 
 				do_mkdir(ddir2);
 			}
-			pstrcat(ddir2,"\\");
+			pstrcat(ddir2,CLI_DIRSEP_STR);
 			p = strtok(NULL,"/\\");
 		}	 
 	} else {
@@ -1300,7 +1301,7 @@ static int cmd_put(void)
 	char *p=buf;
 	
 	pstrcpy(rname,cur_dir);
-	pstrcat(rname,"\\");
+	pstrcat(rname,CLI_DIRSEP_STR);
   
 	if (!next_token_nr(NULL,p,NULL,sizeof(buf))) {
 		d_printf("put <filename>\n");
@@ -1687,8 +1688,17 @@ static int cmd_open(void)
 		return 1;
 	}
 	
-	fnum = cli_nt_create(targetcli, targetname, FILE_READ_DATA);
-	d_printf("open file %s: fnum %d\n", targetname, fnum);
+	fnum = cli_nt_create(targetcli, targetname, FILE_READ_DATA|FILE_WRITE_DATA);
+	if (fnum == -1) {
+		fnum = cli_nt_create(targetcli, targetname, FILE_READ_DATA);
+		if (fnum != -1) {
+			d_printf("open file %s: for read/write fnum %d\n", targetname, fnum);
+		} else {
+			d_printf("Failed to open file %s. %s\n", targetname, cli_errstr(cli));
+		}
+	} else {
+		d_printf("open file %s: for read/write fnum %d\n", targetname, fnum);
+	}
 
 	return 0;
 }
@@ -1754,8 +1764,97 @@ static int cmd_posix(void)
 	}
 
 	d_printf("Selecting server supported CIFS capabilities %s\n", caps);
+
+	if (caplow & CIFS_UNIX_POSIX_PATHNAMES_CAP) {
+		CLI_DIRSEP_CHAR = '/';
+		*CLI_DIRSEP_STR = '/';
+		pstrcpy(cur_dir, CLI_DIRSEP_STR);
+	}
+
 	return 0;
 }
+
+static int cmd_lock(void)
+{
+	fstring buf;
+	SMB_BIG_UINT start, len;
+	enum brl_type lock_type;
+	int fnum;
+
+	if (!next_token_nr(NULL,buf,NULL,sizeof(buf))) {
+		d_printf("lock <fnum> [r|w] <hex-start> <hex-len>\n");
+		return 1;
+	}
+	fnum = atoi(buf);
+
+	if (!next_token_nr(NULL,buf,NULL,sizeof(buf))) {
+		d_printf("lock <fnum> [r|w] <hex-start> <hex-len>\n");
+		return 1;
+	}
+
+	if (*buf == 'r' || *buf == 'R') {
+		lock_type = READ_LOCK;
+	} else if (*buf == 'w' || *buf == 'W') {
+		lock_type = WRITE_LOCK;
+	} else {
+		d_printf("lock <fnum> [r|w] <hex-start> <hex-len>\n");
+		return 1;
+	}
+
+	if (!next_token_nr(NULL,buf,NULL,sizeof(buf))) {
+		d_printf("lock <fnum> [r|w] <hex-start> <hex-len>\n");
+		return 1;
+	}
+
+	start = (SMB_BIG_UINT)strtol(buf, (char **)NULL, 16);
+
+	if (!next_token_nr(NULL,buf,NULL,sizeof(buf))) {
+		d_printf("lock <fnum> [r|w] <hex-start> <hex-len>\n");
+		return 1;
+	}
+
+	len = (SMB_BIG_UINT)strtol(buf, (char **)NULL, 16);
+
+	if (!cli_posix_lock(cli, fnum, start, len, True, lock_type)) {
+		d_printf("lock failed %d: %s\n", fnum, cli_errstr(cli));
+	}
+
+	return 0;
+}
+
+static int cmd_unlock(void)
+{
+	fstring buf;
+	SMB_BIG_UINT start, len;
+	int fnum;
+
+	if (!next_token_nr(NULL,buf,NULL,sizeof(buf))) {
+		d_printf("unlock <fnum> <hex-start> <hex-len>\n");
+		return 1;
+	}
+	fnum = atoi(buf);
+
+	if (!next_token_nr(NULL,buf,NULL,sizeof(buf))) {
+		d_printf("unlock <fnum> <hex-start> <hex-len>\n");
+		return 1;
+	}
+
+	start = (SMB_BIG_UINT)strtol(buf, (char **)NULL, 16);
+
+	if (!next_token_nr(NULL,buf,NULL,sizeof(buf))) {
+		d_printf("unlock <fnum> <hex-start> <hex-len>\n");
+		return 1;
+	}
+
+	len = (SMB_BIG_UINT)strtol(buf, (char **)NULL, 16);
+
+	if (!cli_posix_unlock(cli, fnum, start, len)) {
+		d_printf("unlock failed %d: %s\n", fnum, cli_errstr(cli));
+	}
+
+	return 0;
+}
+
 
 /****************************************************************************
  Remove a directory.
@@ -2535,7 +2634,7 @@ static int cmd_reget(void)
 	char *p;
 
 	pstrcpy(remote_name, cur_dir);
-	pstrcat(remote_name, "\\");
+	pstrcat(remote_name, CLI_DIRSEP_STR);
 	
 	p = remote_name + strlen(remote_name);
 	
@@ -2564,7 +2663,7 @@ static int cmd_reput(void)
 	SMB_STRUCT_STAT st;
 	
 	pstrcpy(remote_name, cur_dir);
-	pstrcat(remote_name, "\\");
+	pstrcat(remote_name, CLI_DIRSEP_STR);
   
 	if (!next_token_nr(NULL, p, NULL, sizeof(buf))) {
 		d_printf("reput <filename>\n");
@@ -2861,6 +2960,7 @@ static struct
   {"history",cmd_history,"displays the command history",{COMPL_NONE,COMPL_NONE}},
   {"lcd",cmd_lcd,"[directory] change/report the local current working directory",{COMPL_LOCAL,COMPL_NONE}},
   {"link",cmd_link,"<oldname> <newname> create a UNIX hard link",{COMPL_REMOTE,COMPL_REMOTE}},
+  {"lock",cmd_lock,"lock <fnum> [r|w] <hex-start> <hex-len> : set a POSIX lock",{COMPL_REMOTE,COMPL_REMOTE}},
   {"lowercase",cmd_lowercase,"toggle lowercasing of filenames for get",{COMPL_NONE,COMPL_NONE}},  
   {"ls",cmd_dir,"<mask> list the contents of the current directory",{COMPL_REMOTE,COMPL_NONE}},
   {"mask",cmd_select,"<mask> mask all filenames against this",{COMPL_REMOTE,COMPL_NONE}},
@@ -2892,6 +2992,7 @@ static struct
   {"tar",cmd_tar,"tar <c|x>[IXFqbgNan] current directory to/from <file name>",{COMPL_NONE,COMPL_NONE}},
   {"tarmode",cmd_tarmode,"<full|inc|reset|noreset> tar's behaviour towards archive bits",{COMPL_NONE,COMPL_NONE}},
   {"translate",cmd_translate,"toggle text translation for printing",{COMPL_NONE,COMPL_NONE}},
+  {"unlock",cmd_unlock,"unlock <fnum> <hex-start> <hex-len> : remove a POSIX lock",{COMPL_REMOTE,COMPL_REMOTE}},
   {"volume",cmd_volume,"print the volume name",{COMPL_NONE,COMPL_NONE}},
   {"vuid",cmd_vuid,"change current vuid",{COMPL_NONE,COMPL_NONE}},
   {"logon",cmd_logon,"establish new logon",{COMPL_NONE,COMPL_NONE}},
@@ -3075,7 +3176,7 @@ static char **remote_completion(const char *text, int len)
 	info.matches[0] = NULL;
 
 	for (i = len-1; i >= 0; i--) {
-		if ((text[i] == '/') || (text[i] == '\\')) {
+		if ((text[i] == '/') || (text[i] == CLI_DIRSEP_CHAR)) {
 			break;
 		}
 	}
