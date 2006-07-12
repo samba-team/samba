@@ -549,7 +549,7 @@ NTSTATUS ndr_check_string_terminator(struct ndr_pull *ndr, uint32_t count, uint3
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_charset(struct ndr_pull *ndr, int ndr_flags, const char **var, uint32_t length, uint8_t byte_mul, int chset)
+NTSTATUS ndr_pull_charset(struct ndr_pull *ndr, int ndr_flags, const char **var, uint32_t length, uint8_t byte_mul, charset_t chset)
 {
 	int ret;
 	if (length == 0) {
