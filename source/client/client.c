@@ -1672,7 +1672,8 @@ static int cmd_open(void)
 	pstring buf;
 	struct cli_state *targetcli;
 	pstring targetname;
-	
+	int fnum;
+
 	pstrcpy(mask,cur_dir);
 	
 	if (!next_token_nr(NULL,buf,NULL,sizeof(buf))) {
@@ -1686,11 +1687,75 @@ static int cmd_open(void)
 		return 1;
 	}
 	
-	cli_nt_create(targetcli, targetname, FILE_READ_DATA);
+	fnum = cli_nt_create(targetcli, targetname, FILE_READ_DATA);
+	d_printf("open file %s: fnum %d\n", targetname, fnum);
 
 	return 0;
 }
 
+static int cmd_close(void)
+{
+	fstring buf;
+	int fnum;
+
+	if (!next_token_nr(NULL,buf,NULL,sizeof(buf))) {
+		d_printf("close <fnum>\n");
+		return 1;
+	}
+
+	fnum = atoi(buf);
+	/* We really should use the targetcli here.... */
+	if (!cli_close(cli, fnum)) {
+		d_printf("close %d: %s\n", fnum, cli_errstr(cli));
+		return 1;
+	}
+	return 0;
+}
+
+static int cmd_posix(void)
+{
+	uint16 major, minor;
+	uint32 caplow, caphigh;
+	pstring caps;
+
+	if (!SERVER_HAS_UNIX_CIFS(cli)) {
+		d_printf("Server doesn't support UNIX CIFS extensions.\n");
+		return 1;
+	}
+
+	if (!cli_unix_extensions_version(cli, &major, &minor, &caplow, &caphigh)) {
+		d_printf("Can't get UNIX CIFS extensions version from server.\n");
+		return 1;
+	}
+
+	d_printf("Server supports CIFS extensions %u.%u\n", (unsigned int)major, (unsigned int)minor);
+
+	*caps = '\0';
+        if (caplow & CIFS_UNIX_FCNTL_LOCKS_CAP) {
+		pstrcat(caps, "locks ");
+	}
+        if (caplow & CIFS_UNIX_POSIX_ACLS_CAP) {
+		pstrcat(caps, "acls ");
+	}
+        if (caplow & CIFS_UNIX_XATTTR_CAP) {
+		pstrcat(caps, "eas ");
+	}
+        if (caplow & CIFS_UNIX_POSIX_PATHNAMES_CAP) {
+		pstrcat(caps, "pathnames ");
+	}
+
+	if (strlen(caps) > 0 && caps[strlen(caps)-1] == ' ') {
+		caps[strlen(caps)-1] = '\0';
+	}
+
+	if (!cli_set_unix_extensions_capabilities(cli, major, minor, caplow, caphigh)) {
+		d_printf("Can't set UNIX CIFS extensions capabilities. %s.\n", cli_errstr(cli));
+		return 1;
+	}
+
+	d_printf("Selecting server supported CIFS capabilities %s\n", caps);
+	return 0;
+}
 
 /****************************************************************************
  Remove a directory.
@@ -2784,6 +2849,7 @@ static struct
   {"cd",cmd_cd,"[directory] change/report the remote directory",{COMPL_REMOTE,COMPL_NONE}},
   {"chmod",cmd_chmod,"<src> <mode> chmod a file using UNIX permission",{COMPL_REMOTE,COMPL_REMOTE}},
   {"chown",cmd_chown,"<src> <uid> <gid> chown a file using UNIX uids and gids",{COMPL_REMOTE,COMPL_REMOTE}},
+  {"close",cmd_close,"<fid> close a file given a fid",{COMPL_REMOTE,COMPL_REMOTE}},
   {"del",cmd_del,"<mask> delete all matching files",{COMPL_REMOTE,COMPL_NONE}},
   {"dir",cmd_dir,"<mask> list the contents of the current directory",{COMPL_REMOTE,COMPL_NONE}},
   {"du",cmd_du,"<mask> computes the total size of the current directory",{COMPL_REMOTE,COMPL_NONE}},
@@ -2805,6 +2871,7 @@ static struct
   {"mput",cmd_mput,"<mask> put all matching files",{COMPL_REMOTE,COMPL_NONE}},
   {"newer",cmd_newer,"<file> only mget files newer than the specified local file",{COMPL_LOCAL,COMPL_NONE}},
   {"open",cmd_open,"<mask> open a file",{COMPL_REMOTE,COMPL_NONE}},
+  {"posix", cmd_posix, "turn on all POSIX capabilities", {COMPL_REMOTE,COMPL_NONE}},
   {"print",cmd_print,"<file name> print a file",{COMPL_NONE,COMPL_NONE}},
   {"prompt",cmd_prompt,"toggle prompting for filenames for mget and mput",{COMPL_NONE,COMPL_NONE}},  
   {"put",cmd_put,"<local name> [remote name] put a file",{COMPL_LOCAL,COMPL_REMOTE}},
