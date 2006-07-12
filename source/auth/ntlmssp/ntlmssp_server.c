@@ -800,7 +800,7 @@ NTSTATUS gensec_ntlmssp_server_start(struct gensec_security *gensec_security)
 	gensec_ntlmssp_state->server_multiple_authentications = False;
 	
 	gensec_ntlmssp_state->neg_flags = 
-		NTLMSSP_NEGOTIATE_NTLM;
+		NTLMSSP_NEGOTIATE_NTLM | NTLMSSP_UNKNOWN_02000000;
 
 	gensec_ntlmssp_state->lm_resp = data_blob(NULL, 0);
 	gensec_ntlmssp_state->nt_resp = data_blob(NULL, 0);
@@ -808,6 +808,10 @@ NTSTATUS gensec_ntlmssp_server_start(struct gensec_security *gensec_security)
 
 	if (lp_parm_bool(-1, "ntlmssp_server", "128bit", True)) {
 		gensec_ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_128;		
+	}
+
+	if (lp_parm_bool(-1, "ntlmssp_server", "56bit", True)) {
+		gensec_ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_56;		
 	}
 
 	if (lp_parm_bool(-1, "ntlmssp_server", "keyexchange", True)) {
