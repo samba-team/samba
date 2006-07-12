@@ -19,6 +19,8 @@
 */
 
 
+#include "librpc/rpc/dcerpc.h"
+
 /*
  * struct definition for connecting to a dcerpc inferface
  */
@@ -53,4 +55,22 @@ struct libnet_RpcConnect {
 
 		const char *error_string;
 	} out;
+};
+
+
+/*
+ * Monitor messages sent from libnet_rpc.c functions
+ */
+
+struct msg_net_lookup_dc {
+	const char *domain_name;
+	const char *hostname;
+	const char *address;
+};
+
+
+struct msg_net_pipe_connected {
+	const char *host;
+	const char *endpoint;
+	enum dcerpc_transport_t transport;
 };
