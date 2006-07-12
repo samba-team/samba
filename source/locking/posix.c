@@ -1331,5 +1331,5 @@ BOOL release_posix_lock_posix_flavour(files_struct *fsp,
 	}
 
 	talloc_destroy(ul_ctx);
-	return True;
+	return ret;
 }
