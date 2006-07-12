@@ -43,6 +43,14 @@
 		goto done; \
 	}} while (0)
 
+#define CHECK_WIRE_STR(field, value) do { \
+	if (!field.s || strcmp(field.s, value)) { \
+		printf("(%s) %s [%s] != %s\n", \
+			  __location__, #field, field.s, value); \
+		ret = False; \
+		goto done; \
+	}} while (0)
+
 #define FNAME "smb2-notify01.dat"
 
 static BOOL test_valid_request(TALLOC_CTX *mem_ctx, struct smb2_tree *tree)
@@ -68,6 +76,9 @@ static BOOL test_valid_request(TALLOC_CTX *mem_ctx, struct smb2_tree *tree)
 
 	status = smb2_notify_recv(req, mem_ctx, &n);
 	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_VALUE(n.out.num_changes, 1);
+	CHECK_VALUE(n.out.changes[0].action, NOTIFY_ACTION_REMOVED);
+	CHECK_WIRE_STR(n.out.changes[0].name, FNAME);
 
 	/* 
 	 * if the change response doesn't fit in the buffer
@@ -94,10 +105,17 @@ static BOOL test_valid_request(TALLOC_CTX *mem_ctx, struct smb2_tree *tree)
 
 	status = smb2_notify_recv(req, mem_ctx, &n);
 	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_VALUE(n.out.num_changes, 3);
+	CHECK_VALUE(n.out.changes[0].action, NOTIFY_ACTION_REMOVED);
+	CHECK_WIRE_STR(n.out.changes[0].name, FNAME);
+	CHECK_VALUE(n.out.changes[1].action, NOTIFY_ACTION_ADDED);
+	CHECK_WIRE_STR(n.out.changes[1].name, FNAME);
+	CHECK_VALUE(n.out.changes[2].action, NOTIFY_ACTION_MODIFIED);
+	CHECK_WIRE_STR(n.out.changes[2].name, FNAME);
 
 	/* if the first notify returns NOTIFY_ENUM_DIR, all do */
 	status = smb2_util_close(tree, dh);
-	CHECK_STATUS(status, NT_STATUS_OK);	
+	CHECK_STATUS(status, NT_STATUS_OK);
 	status = smb2_util_roothandle(tree, &dh);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
