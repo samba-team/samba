@@ -98,8 +98,6 @@ static HDBFlags uf2HDBFlags(krb5_context context, int userAccountControl, enum h
 {
 	HDBFlags flags = int2HDBFlags(0);
 
-	krb5_warnx(context, "uf2HDBFlags: userAccountControl: %08x\n", userAccountControl);
-
 	/* we don't allow kadmin deletes */
 	flags.immutable = 1;
 
@@ -151,20 +149,13 @@ static HDBFlags uf2HDBFlags(krb5_context context, int userAccountControl, enum h
 	}
 */
 /*
-	if (userAccountControl & UF_PASSWORD_CANT_CHANGE) {
-		flags.invalid = 1;
-	}
-*/
-/*
-	if (userAccountControl & UF_ENCRYPTED_TEXT_PASSWORD_ALLOWED) {
-		flags.invalid = 1;
-	}
+	UF_PASSWORD_CANT_CHANGE and UF_ENCRYPTED_TEXT_PASSWORD_ALLOWED are irrelevent
 */
 	if (userAccountControl & UF_TEMP_DUPLICATE_ACCOUNT) {
 		flags.invalid = 1;
 	}
 
-/* UF_DONT_EXPIRE_PASSWD handled in LDB_message2entry() */
+/* UF_DONT_EXPIRE_PASSWD and UF_USE_DES_KEY_ONLY handled in LDB_message2entry() */
 
 /*
 	if (userAccountControl & UF_MNS_LOGON_ACCOUNT) {
@@ -182,20 +173,12 @@ static HDBFlags uf2HDBFlags(krb5_context context, int userAccountControl, enum h
 		flags.proxiable = 1;
 	}
 
-/*
-	if (userAccountControl & UF_SMARTCARD_USE_DES_KEY_ONLY) {
-		flags.invalid = 1;
-	}
-*/
 	if (userAccountControl & UF_DONT_REQUIRE_PREAUTH) {
 		flags.require_preauth = 0;
 	} else {
 		flags.require_preauth = 1;
 
 	}
-
-	krb5_warnx(context, "uf2HDBFlags: HDBFlags: %08x\n", HDBFlags2int(flags));
-
 	return flags;
 }
 
@@ -245,8 +228,6 @@ static krb5_error_code LDB_message2entry(krb5_context context, HDB *db,
 	}
 
 	memset(entry_ex, 0, sizeof(*entry_ex));
-
-	krb5_warnx(context, "LDB_message2entry:\n");
 
 	if (!realm) {
 		krb5_set_error_string(context, "talloc_strdup: out of memory");
@@ -395,16 +376,32 @@ static krb5_error_code LDB_message2entry(krb5_context context, HDB *db,
 			ret = ENOMEM;
 			goto out;
 		}
-		entry_ex->entry.keys.len = ldb_keys->num_values;
+
+		entry_ex->entry.keys.len = 0;
 
 		/* Decode Kerberos keys into the hdb structure */
-		for (i=0; i < entry_ex->entry.keys.len; i++) {
+		for (i=0; i < ldb_keys->num_values; i++) {
 			size_t decode_len;
+			Key key;
 			ret = decode_Key(ldb_keys->values[i].data, ldb_keys->values[i].length, 
-					 &entry_ex->entry.keys.val[i], &decode_len);
+					 &key, &decode_len);
 			if (ret) {
 				/* Could be bougus data in the entry, or out of memory */
 				goto out;
+			}
+
+			if (userAccountControl & UF_USE_DES_KEY_ONLY) {
+				switch (key.key.keytype) {
+				case KEYTYPE_DES:
+					entry_ex->entry.keys.val[entry_ex->entry.keys.len] = key;
+					entry_ex->entry.keys.len++;
+				default:
+					/* We must use DES keys only */
+					break;
+				}
+			} else {
+				entry_ex->entry.keys.val[entry_ex->entry.keys.len] = key;
+				entry_ex->entry.keys.len++;
 			}
 		}
 	} 
@@ -929,8 +926,6 @@ static krb5_error_code LDB_firstkey(krb5_context context, HDB *db, unsigned flag
 	realm_dn = samdb_result_dn(mem_ctx, realm_ref_msgs[0], "nCName", NULL);
 
 	priv->realm_ref_msgs = talloc_steal(priv, realm_ref_msgs);
-
-	krb5_warnx(context, "LDB_firstkey: realm ok\n");
 
 	lret = ldb_search(ldb_ctx, realm_dn,
 				 LDB_SCOPE_SUBTREE, "(objectClass=user)",
