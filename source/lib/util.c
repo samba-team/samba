@@ -2830,9 +2830,28 @@ BOOL unix_wild_match(const char *pattern, const char *string)
 void name_to_fqdn(fstring fqdn, const char *name)
 {
 	struct hostent *hp = sys_gethostbyname(name);
+
 	if ( hp && hp->h_name && *hp->h_name ) {
-		DEBUG(10,("name_to_fqdn: lookup for %s -> %s.\n", name, hp->h_name));
-		fstrcpy(fqdn,hp->h_name);
+		char *full = NULL;
+
+		/* find out i fthe fqdn is returned as an alias
+		 * to cope with /etc/hosts files where the first
+		 * name is not the fqdn but the short name */
+		if (hp->h_aliases && (! strchr_m(hp->h_name, '.'))) {
+			int i;
+			for (i = 0; hp->h_aliases[i]; i++) {
+				if (strchr_m(hp->h_aliases[i], '.')) {
+					full = hp->h_aliases[i];
+					break;
+				}
+			}
+		}
+		if (!full) {
+			full = hp->h_name;
+		}
+
+		DEBUG(10,("name_to_fqdn: lookup for %s -> %s.\n", name, full));
+		fstrcpy(fqdn, full);
 	} else {
 		DEBUG(10,("name_to_fqdn: lookup for %s failed.\n", name));
 		fstrcpy(fqdn, name);
