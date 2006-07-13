@@ -1226,7 +1226,7 @@ _kdc_pk_check_client(krb5_context context,
     }
 
     ret = hdb_entry_get_pkinit_acl(&client->entry, &acl);
-    if (ret == 0) {
+    if (ret == 0 && acl != NULL) {
 	/*
 	 * Cheat here and compare the generated name with the string
 	 * and not the reverse.
