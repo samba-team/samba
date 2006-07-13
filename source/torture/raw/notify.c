@@ -842,7 +842,7 @@ done:
 static void tcp_dis_handler(struct smbcli_transport *t, void *p)
 {
 	struct smbcli_state *cli = p;
-	smbcli_transport_dead(cli->transport);
+	smbcli_transport_dead(cli->transport, NT_STATUS_LOCAL_DISCONNECT);
 	cli->transport = NULL;
 	cli->tree = NULL;
 }
@@ -898,7 +898,7 @@ static BOOL test_notify_tcp_dis(TALLOC_CTX *mem_ctx)
 	smbcli_transport_idle_handler(cli->transport, tcp_dis_handler, 250, cli);
 
 	status = smb_raw_changenotify_recv(req, mem_ctx, &notify);
-	CHECK_STATUS(status, NT_STATUS_NET_WRITE_FAULT);
+	CHECK_STATUS(status, NT_STATUS_LOCAL_DISCONNECT);
 
 done:
 	torture_close_connection(cli);

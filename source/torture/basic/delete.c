@@ -1592,7 +1592,7 @@ static BOOL deltest21(struct smbcli_state **ppcli1, struct smbcli_state **ppcli2
 	correct &= check_delete_on_close(cli1, fnum1, fname, True, __location__);
 
 	/* Now yank the rug from under cli1. */
-	smbcli_transport_dead(cli1->transport);
+	smbcli_transport_dead(cli1->transport, NT_STATUS_LOCAL_DISCONNECT);
 
 	fnum1 = -1;
 

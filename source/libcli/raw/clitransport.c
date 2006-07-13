@@ -52,7 +52,7 @@ static void smbcli_transport_event_handler(struct event_context *ev,
  */
 static int transport_destructor(struct smbcli_transport *transport)
 {
-	smbcli_transport_dead(transport);
+	smbcli_transport_dead(transport, NT_STATUS_LOCAL_DISCONNECT);
 	return 0;
 }
 
@@ -63,7 +63,7 @@ static int transport_destructor(struct smbcli_transport *transport)
 static void smbcli_transport_error(void *private, NTSTATUS status)
 {
 	struct smbcli_transport *transport = talloc_get_type(private, struct smbcli_transport);
-	smbcli_transport_dead(transport);
+	smbcli_transport_dead(transport, status);
 }
 
 static NTSTATUS smbcli_transport_finish_recv(void *private, DATA_BLOB blob);
@@ -130,15 +130,19 @@ struct smbcli_transport *smbcli_transport_init(struct smbcli_socket *sock,
 /*
   mark the transport as dead
 */
-void smbcli_transport_dead(struct smbcli_transport *transport)
+void smbcli_transport_dead(struct smbcli_transport *transport, NTSTATUS status)
 {
 	smbcli_sock_dead(transport->socket);
+
+	if (NT_STATUS_EQUAL(NT_STATUS_UNSUCCESSFUL, status)) {
+		status = NT_STATUS_UNEXPECTED_NETWORK_ERROR;
+	}
 
 	/* kill all pending receives */
 	while (transport->pending_recv) {
 		struct smbcli_request *req = transport->pending_recv;
 		req->state = SMBCLI_REQUEST_ERROR;
-		req->status = NT_STATUS_NET_WRITE_FAULT;
+		req->status = status;
 		DLIST_REMOVE(transport->pending_recv, req);
 		if (req->async.fn) {
 			req->async.fn(req);
