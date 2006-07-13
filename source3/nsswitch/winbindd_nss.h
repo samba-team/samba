@@ -65,6 +65,7 @@ enum winbindd_cmd {
 	WINBINDD_PAM_AUTH_CRAP,
 	WINBINDD_PAM_CHAUTHTOK,
 	WINBINDD_PAM_LOGOFF,
+	WINBINDD_PAM_CHNG_PSWD_AUTH_CRAP,
 
 	/* List various things */
 
@@ -225,6 +226,18 @@ struct winbindd_request {
                     fstring oldpass;
                     fstring newpass;
                 } chauthtok;         /* pam_winbind passwd module */
+		struct {
+			fstring user;
+			fstring domain;
+			unsigned char new_nt_pswd[516];
+			uint16	new_nt_pswd_len;
+			unsigned char old_nt_hash_enc[16];
+			uint16 	old_nt_hash_enc_len;
+			unsigned char new_lm_pswd[516];
+			uint16	new_lm_pswd_len;
+			unsigned char old_lm_hash_enc[16];
+			uint16	old_lm_hash_enc_len;
+		} chng_pswd_auth_crap;/* pam_winbind passwd module */
 		struct {
 			fstring user;
 			fstring krb5ccname;
