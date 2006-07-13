@@ -54,10 +54,14 @@ GENERATION ::= SEQUENCE {
 
 HDB-Ext-PKINIT-acl ::= SEQUENCE OF SEQUENCE {
 	subject[0]	UTF8String,
-	issuer[1]	UTF8String
+	issuer[1]	UTF8String OPTIONAL,
+	anchor[2]	UTF8String OPTIONAL
 }
 
-HDB-Ext-PKINIT-certificate ::= SEQUENCE OF OCTET STRING
+HDB-Ext-PKINIT-hash ::= SEQUENCE OF SEQUENCE {
+	digest-type[0] OBJECT IDENTIFIER,
+	digest[1] OCTET STRING
+}
 
 HDB-Ext-Constrained-delegation-acl ::= SEQUENCE OF Principal
 
@@ -82,7 +86,7 @@ HDB-extension ::= SEQUENCE {
                                         --   be rejected
         data[1]          CHOICE {
 	        pkinit-acl[0]			HDB-Ext-PKINIT-acl,
-	        pkinit-cert[1]  		HDB-Ext-PKINIT-certificate,
+	        pkinit-cert-hash[1]  		HDB-Ext-PKINIT-hash,
 		allowed-to-delegate-to[2]   HDB-Ext-Constrained-delegation-acl,
 --		referral-info[3]		HDB-Ext-Referrals,
 		lm-owf[4]			HDB-Ext-Lan-Manager-OWF,
