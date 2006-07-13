@@ -26,6 +26,7 @@
 #include "smb_server/smb_server.h"
 #include "smb_server/service_smb_proto.h"
 #include "smb_server/smb2/smb2_server.h"
+#include "smbd/service_stream.h"
 #include "lib/stream/packet.h"
 
 
@@ -98,6 +99,12 @@ void smb2srv_send_reply(struct smb2srv_request *req)
 	DATA_BLOB blob;
 	NTSTATUS status;
 
+	if (req->smb_conn->connection->event.fde == NULL) {
+		/* the socket has been destroyed - no point trying to send a reply! */
+		talloc_free(req);
+		return;
+	}
+
 	if (req->out.size > NBT_HDR_SIZE) {
 		_smb2_setlen(req->out.buffer, req->out.size - NBT_HDR_SIZE);
 	}
@@ -113,6 +120,12 @@ void smb2srv_send_reply(struct smb2srv_request *req)
 void smb2srv_send_error(struct smb2srv_request *req, NTSTATUS error)
 {
 	NTSTATUS status;
+
+	if (req->smb_conn->connection->event.fde == NULL) {
+		/* the socket has been destroyed - no point trying to send an error! */
+		talloc_free(req);
+		return;
+	}
 
 	status = smb2srv_setup_reply(req, 8, True, 0);
 	if (!NT_STATUS_IS_OK(status)) {
