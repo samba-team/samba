@@ -289,6 +289,7 @@ void smbsrv_send_reply_nosign(struct smbsrv_request *req)
 
 	if (req->smb_conn->connection->event.fde == NULL) {
 		/* we are in the process of shutting down this connection */
+		talloc_free(req);
 		return;
 	}
 
@@ -312,6 +313,11 @@ void smbsrv_send_reply_nosign(struct smbsrv_request *req)
 */
 void smbsrv_send_reply(struct smbsrv_request *req)
 {
+	if (req->smb_conn->connection->event.fde == NULL) {
+		/* we are in the process of shutting down this connection */
+		talloc_free(req);
+		return;
+	}
 	smbsrv_sign_packet(req);
 
 	smbsrv_send_reply_nosign(req);
