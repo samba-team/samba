@@ -1901,3 +1901,151 @@ process_result:
 	return NT_STATUS_IS_OK(result) ? WINBINDD_OK : WINBINDD_ERROR;
 }
 
+/* Change user password with auth crap*/
+
+void winbindd_pam_chng_pswd_auth_crap(struct winbindd_cli_state *state)
+{
+	struct winbindd_domain *domain = NULL;
+	const char *domain_name = NULL;
+
+	/* Ensure null termination */
+	state->request.data.chng_pswd_auth_crap.user[
+		sizeof(state->request.data.chng_pswd_auth_crap.user)-1]=0;
+	state->request.data.chng_pswd_auth_crap.domain[
+		sizeof(state->request.data.chng_pswd_auth_crap.domain)-1]=0;
+	
+	DEBUG(3, ("[%5lu]: pam change pswd auth crap domain: %s user: %s\n",
+		  (unsigned long)state->pid,
+		  state->request.data.chng_pswd_auth_crap.domain,
+		  state->request.data.chng_pswd_auth_crap.user));
+	
+	if (*state->request.data.chng_pswd_auth_crap.domain != '\0') {
+		domain_name = state->request.data.chng_pswd_auth_crap.domain;
+	} else if (lp_winbind_use_default_domain()) {
+		domain_name = lp_workgroup();
+	}
+
+	if (domain_name != NULL)
+		domain = find_domain_from_name(domain_name);
+
+	if (domain != NULL) {
+		DEBUG(7, ("[%5lu]: pam auth crap changing pswd in domain: "
+			  "%s\n", (unsigned long)state->pid,domain->name));
+		sendto_domain(state, domain);
+		return;
+	}
+
+	set_auth_errors(&state->response, NT_STATUS_NO_SUCH_USER);
+	DEBUG(5, ("CRAP change password  for %s\\%s returned %s (PAM: %d)\n",
+		  state->request.data.chng_pswd_auth_crap.domain,
+		  state->request.data.chng_pswd_auth_crap.user, 
+		  state->response.data.auth.nt_status_string,
+		  state->response.data.auth.pam_error));
+	request_error(state);
+	return;
+}
+
+enum winbindd_result winbindd_dual_pam_chng_pswd_auth_crap(struct winbindd_domain *domainSt, struct winbindd_cli_state *state)
+{
+	NTSTATUS result;
+	DATA_BLOB new_nt_password;
+	DATA_BLOB old_nt_hash_enc;
+	DATA_BLOB new_lm_password;
+	DATA_BLOB old_lm_hash_enc;
+	fstring  domain,user;
+	POLICY_HND dom_pol;
+	struct winbindd_domain *contact_domain = domainSt;
+	struct rpc_pipe_client *cli;
+
+	/* Ensure null termination */
+	state->request.data.chng_pswd_auth_crap.user[
+		sizeof(state->request.data.chng_pswd_auth_crap.user)-1]=0;
+	state->request.data.chng_pswd_auth_crap.domain[
+		sizeof(state->request.data.chng_pswd_auth_crap.domain)-1]=0;
+	*domain = 0;
+	*user = 0;
+	
+	DEBUG(3, ("[%5lu]: pam change pswd auth crap domain: %s user: %s\n",
+		  (unsigned long)state->pid,
+		  state->request.data.chng_pswd_auth_crap.domain,
+		  state->request.data.chng_pswd_auth_crap.user));
+	
+	if (*state->request.data.chng_pswd_auth_crap.domain) {
+		fstrcpy(domain,state->request.data.chng_pswd_auth_crap.domain);
+	} else {
+		parse_domain_user(state->request.data.chng_pswd_auth_crap.user,
+				  domain, user);
+
+		if(!*domain) {
+			DEBUG(3,("no domain specified with username (%s) - "
+				 "failing auth\n",
+				 state->request.data.chng_pswd_auth_crap.user));
+			result = NT_STATUS_NO_SUCH_USER;
+			goto done;
+		}
+	}
+
+	if (!*domain && lp_winbind_use_default_domain()) {
+		fstrcpy(domain,(char *)lp_workgroup());
+	}
+
+	if(!*user) {
+		fstrcpy(user, state->request.data.chng_pswd_auth_crap.user);
+	}
+
+	DEBUG(3, ("[%5lu]: pam auth crap domain: %s user: %s\n",
+		  (unsigned long)state->pid, domain, user));
+	
+	/* Change password */
+	new_nt_password = data_blob_talloc(
+		state->mem_ctx,
+		state->request.data.chng_pswd_auth_crap.new_nt_pswd,
+		state->request.data.chng_pswd_auth_crap.new_nt_pswd_len);
+
+	old_nt_hash_enc = data_blob_talloc(
+		state->mem_ctx,
+		state->request.data.chng_pswd_auth_crap.old_nt_hash_enc,
+		state->request.data.chng_pswd_auth_crap.old_nt_hash_enc_len);
+
+	if(state->request.data.chng_pswd_auth_crap.new_lm_pswd_len > 0)	{
+		new_lm_password = data_blob_talloc(
+			state->mem_ctx,
+			state->request.data.chng_pswd_auth_crap.new_lm_pswd,
+			state->request.data.chng_pswd_auth_crap.new_lm_pswd_len);
+
+		old_lm_hash_enc = data_blob_talloc(
+			state->mem_ctx,
+			state->request.data.chng_pswd_auth_crap.old_lm_hash_enc,
+			state->request.data.chng_pswd_auth_crap.old_lm_hash_enc_len);
+	} else {
+		new_lm_password.length = 0;
+		old_lm_hash_enc.length = 0;
+	}
+
+	/* Get sam handle */
+
+	result = cm_connect_sam(contact_domain, state->mem_ctx, &cli, &dom_pol);
+	if (!NT_STATUS_IS_OK(result)) {
+		DEBUG(1, ("could not get SAM handle on DC for %s\n", domain));
+		goto done;
+	}
+
+	result = rpccli_samr_chng_pswd_auth_crap(
+		cli, state->mem_ctx, user, new_nt_password, old_nt_hash_enc,
+		new_lm_password, old_lm_hash_enc);
+
+ done:    
+	state->response.data.auth.nt_status = NT_STATUS_V(result);
+	fstrcpy(state->response.data.auth.nt_status_string, nt_errstr(result));
+	fstrcpy(state->response.data.auth.error_string,
+		get_friendly_nt_error_msg(result));
+	state->response.data.auth.pam_error = nt_status_to_pam(result);
+
+	DEBUG(NT_STATUS_IS_OK(result) ? 5 : 2, 
+	      ("Password change for user [%s]\\[%s] returned %s (PAM: %d)\n", 
+	       domain, user,
+	       state->response.data.auth.nt_status_string,
+	       state->response.data.auth.pam_error));	      
+
+	return NT_STATUS_IS_OK(result) ? WINBINDD_OK : WINBINDD_ERROR;
+}

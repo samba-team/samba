@@ -38,6 +38,7 @@ enum stdio_helper_mode {
 	GSS_SPNEGO,
 	GSS_SPNEGO_CLIENT,
 	NTLM_SERVER_1,
+	NTLM_CHANGE_PASSWORD_1,
 	NUM_HELPER_MODES
 };
 
@@ -62,6 +63,8 @@ static void manage_gss_spnego_client_request (enum stdio_helper_mode stdio_helpe
 static void manage_ntlm_server_1_request (enum stdio_helper_mode stdio_helper_mode, 
 					  char *buf, int length);
 
+static void manage_ntlm_change_password_1_request(enum stdio_helper_mode helper_mode, char *buf, int length);
+
 static const struct {
 	enum stdio_helper_mode mode;
 	const char *name;
@@ -74,6 +77,7 @@ static const struct {
 	{ GSS_SPNEGO, "gss-spnego", manage_gss_spnego_request},
 	{ GSS_SPNEGO_CLIENT, "gss-spnego-client", manage_gss_spnego_client_request},
 	{ NTLM_SERVER_1, "ntlm-server-1", manage_ntlm_server_1_request},
+	{ NTLM_CHANGE_PASSWORD_1, "ntlm-change-password-1", manage_ntlm_change_password_1_request},
 	{ NUM_HELPER_MODES, NULL, NULL}
 };
 
@@ -328,6 +332,10 @@ NTSTATUS contact_winbind_auth_crap(const char *username,
 	if (require_membership_of_sid)
 		fstrcpy(request.data.auth_crap.require_membership_of_sid, require_membership_of_sid);
 
+	/* We can't authenticate anonymous users this way in any case */
+	if (!username || !username[0]) {
+		return NT_STATUS_LOGON_FAILURE;
+	}
         fstrcpy(request.data.auth_crap.user, username);
 	fstrcpy(request.data.auth_crap.domain, domain);
 
@@ -390,7 +398,87 @@ NTSTATUS contact_winbind_auth_crap(const char *username,
 	free_response(&response);
 	return nt_status;
 }
-				   
+
+/* contact server to change user password using auth crap */
+static NTSTATUS contact_winbind_change_pswd_auth_crap(const char *username,
+						      const char *domain,
+						      const DATA_BLOB new_nt_pswd,
+						      const DATA_BLOB old_nt_hash_enc,
+						      const DATA_BLOB new_lm_pswd,
+						      const DATA_BLOB old_lm_hash_enc,
+						      char  **error_string)
+{
+	NTSTATUS nt_status;
+	NSS_STATUS result;
+	struct winbindd_request request;
+	struct winbindd_response response;
+
+	if (!get_require_membership_sid())
+	{
+		if(error_string)
+			*error_string = smb_xstrdup("Can't get membership sid.");
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	ZERO_STRUCT(request);
+	ZERO_STRUCT(response);
+
+	if(username != NULL)
+		fstrcpy(request.data.chng_pswd_auth_crap.user, username);
+	if(domain != NULL)
+		fstrcpy(request.data.chng_pswd_auth_crap.domain,domain);
+
+	if(new_nt_pswd.length)
+	{
+		memcpy(request.data.chng_pswd_auth_crap.new_nt_pswd, new_nt_pswd.data, sizeof(request.data.chng_pswd_auth_crap.new_nt_pswd));
+		request.data.chng_pswd_auth_crap.new_nt_pswd_len = new_nt_pswd.length;
+	}
+
+	if(old_nt_hash_enc.length)
+	{
+		memcpy(request.data.chng_pswd_auth_crap.old_nt_hash_enc, old_nt_hash_enc.data, sizeof(request.data.chng_pswd_auth_crap.old_nt_hash_enc));
+		request.data.chng_pswd_auth_crap.old_nt_hash_enc_len = old_nt_hash_enc.length;
+	}
+
+	if(new_lm_pswd.length)
+	{
+		memcpy(request.data.chng_pswd_auth_crap.new_lm_pswd, new_lm_pswd.data, sizeof(request.data.chng_pswd_auth_crap.new_lm_pswd));
+		request.data.chng_pswd_auth_crap.new_lm_pswd_len = new_lm_pswd.length;
+	}
+
+	if(old_lm_hash_enc.length)
+	{
+		memcpy(request.data.chng_pswd_auth_crap.old_lm_hash_enc, old_lm_hash_enc.data, sizeof(request.data.chng_pswd_auth_crap.old_lm_hash_enc));
+		request.data.chng_pswd_auth_crap.old_lm_hash_enc_len = old_lm_hash_enc.length;
+	}
+	
+	result = winbindd_request_response(WINBINDD_PAM_CHNG_PSWD_AUTH_CRAP, &request, &response);
+
+	/* Display response */
+
+	if ((result != NSS_STATUS_SUCCESS) && (response.data.auth.nt_status == 0))
+	{
+		nt_status = NT_STATUS_UNSUCCESSFUL;
+		if (error_string)
+			*error_string = smb_xstrdup("Reading winbind reply failed!");
+		free_response(&response);
+		return nt_status;
+	}
+	
+	nt_status = (NT_STATUS(response.data.auth.nt_status));
+	if (!NT_STATUS_IS_OK(nt_status))
+	{
+		if (error_string) 
+			*error_string = smb_xstrdup(response.data.auth.error_string);
+		free_response(&response);
+		return nt_status;
+	}
+
+	free_response(&response);
+	
+    return nt_status;
+}
+
 static NTSTATUS winbind_pw_check(struct ntlmssp_state *ntlmssp_state, DATA_BLOB *user_session_key, DATA_BLOB *lm_session_key) 
 {
 	static const char zeros[16];
@@ -1575,6 +1663,216 @@ static void manage_ntlm_server_1_request(enum stdio_helper_mode stdio_helper_mod
 		ntlm_server_1_user_session_key = strequal(parameter, "Yes");
 	} else if (strequal(request, "Request-LanMan-Session-Key")) {
 		ntlm_server_1_lm_session_key = strequal(parameter, "Yes");
+	} else {
+		x_fprintf(x_stdout, "Error: Unknown request %s\n.\n", request);
+	}
+}
+
+static void manage_ntlm_change_password_1_request(enum stdio_helper_mode helper_mode, char *buf, int length)
+{
+	char *request, *parameter;	
+	static DATA_BLOB new_nt_pswd;
+	static DATA_BLOB old_nt_hash_enc;
+	static DATA_BLOB new_lm_pswd;
+	static DATA_BLOB old_lm_hash_enc;
+	static char *full_username = NULL;
+	static char *username = NULL;
+	static char *domain = NULL;
+	static char *newpswd =  NULL;
+	static char *oldpswd = NULL;
+
+	if (strequal(buf, "."))	{
+		if(newpswd && oldpswd) {
+			uchar old_nt_hash[16];
+			uchar old_lm_hash[16];
+			uchar new_nt_hash[16];
+			uchar new_lm_hash[16];
+
+			new_nt_pswd = data_blob(NULL, 516);
+			old_nt_hash_enc = data_blob(NULL, 16);
+			
+			/* Calculate the MD4 hash (NT compatible) of the
+			 * password */
+			E_md4hash(oldpswd, old_nt_hash);
+			E_md4hash(newpswd, new_nt_hash);
+
+			/* E_deshash returns false for 'long'
+			   passwords (> 14 DOS chars).  
+			   
+			   Therefore, don't send a buffer
+			   encrypted with the truncated hash
+			   (it could allow an even easier
+			   attack on the password)
+
+			   Likewise, obey the admin's restriction
+			*/
+
+			if (lp_client_lanman_auth() &&
+			    E_deshash(newpswd, new_lm_hash) &&
+			    E_deshash(oldpswd, old_lm_hash)) {
+				new_lm_pswd = data_blob(NULL, 516);
+				old_lm_hash_enc = data_blob(NULL, 16);
+				encode_pw_buffer(new_lm_pswd.data, newpswd,
+						 STR_UNICODE);
+
+				SamOEMhash(new_lm_pswd.data, old_nt_hash, 516);
+				E_old_pw_hash(new_nt_hash, old_lm_hash,
+					      old_lm_hash_enc.data);
+			} else {
+				new_lm_pswd.data = NULL;
+				new_lm_pswd.length = 0;
+				old_lm_hash_enc.data = NULL;
+				old_lm_hash_enc.length = 0;
+			}
+
+			encode_pw_buffer(new_nt_pswd.data, newpswd,
+					 STR_UNICODE);
+	
+			SamOEMhash(new_nt_pswd.data, old_nt_hash, 516);
+			E_old_pw_hash(new_nt_hash, old_nt_hash,
+				      old_nt_hash_enc.data);
+		}
+		
+		if (!full_username && !username) {	
+			x_fprintf(x_stdout, "Error: No username supplied!\n");
+		} else if ((!new_nt_pswd.data || !old_nt_hash_enc.data) &&
+			   (!new_lm_pswd.data || old_lm_hash_enc.data) ) {
+			x_fprintf(x_stdout, "Error: No NT or LM password "
+				  "blobs supplied!\n");
+		} else {
+			char *error_string = NULL;
+			
+			if (full_username && !username)	{
+				fstring fstr_user;
+				fstring fstr_domain;
+				
+				if (!parse_ntlm_auth_domain_user(full_username,
+								 fstr_user,
+								 fstr_domain)) {
+					/* username might be 'tainted', don't
+					 * print into our new-line
+					 * deleimianted stream */
+					x_fprintf(x_stdout, "Error: Could not "
+						  "parse into domain and "
+						  "username\n");
+					SAFE_FREE(username);
+					username = smb_xstrdup(full_username);
+				} else {
+					SAFE_FREE(username);
+					SAFE_FREE(domain);
+					username = smb_xstrdup(fstr_user);
+					domain = smb_xstrdup(fstr_domain);
+				}
+				
+			}
+
+			if(!NT_STATUS_IS_OK(contact_winbind_change_pswd_auth_crap(
+						    username, domain,
+						    new_nt_pswd,
+						    old_nt_hash_enc,
+						    new_lm_pswd,
+						    old_lm_hash_enc,
+						    &error_string))) {
+				x_fprintf(x_stdout, "Password-Change: No\n");
+				x_fprintf(x_stdout, "Password-Change-Error: "
+					  "%s\n.\n", error_string);
+			} else {
+				x_fprintf(x_stdout, "Password-Change: Yes\n");
+			}
+
+			SAFE_FREE(error_string);
+		}
+		/* clear out the state */
+		new_nt_pswd = data_blob(NULL, 0);
+		old_nt_hash_enc = data_blob(NULL, 0);
+		new_lm_pswd = data_blob(NULL, 0);
+		old_nt_hash_enc = data_blob(NULL, 0);
+		SAFE_FREE(full_username);
+		SAFE_FREE(username);
+		SAFE_FREE(domain);
+		SAFE_FREE(newpswd);
+		SAFE_FREE(oldpswd);
+		x_fprintf(x_stdout, ".\n");
+
+		return;
+	}
+
+	request = buf;
+
+	/* Indicates a base64 encoded structure */
+	parameter = strstr_m(request, ":: ");
+	if (!parameter) {
+		parameter = strstr_m(request, ": ");
+		
+		if (!parameter)	{
+			DEBUG(0, ("Parameter not found!\n"));
+			x_fprintf(x_stdout, "Error: Parameter not found!\n.\n");
+			return;
+		}
+		
+		parameter[0] ='\0';
+		parameter++;
+		parameter[0] ='\0';
+		parameter++;
+	} else {
+		parameter[0] ='\0';
+		parameter++;
+		parameter[0] ='\0';
+		parameter++;
+		parameter[0] ='\0';
+		parameter++;
+
+		base64_decode_inplace(parameter);
+	}
+
+	if (strequal(request, "new-nt-password-blob")) {
+		new_nt_pswd = strhex_to_data_blob(NULL, parameter);
+		if (new_nt_pswd.length != 516) {
+			x_fprintf(x_stdout, "Error: hex decode of %s failed! "
+				  "(got %d bytes, expected 516)\n.\n", 
+				  parameter,
+				  (int)new_nt_pswd.length);
+			new_nt_pswd = data_blob(NULL, 0);
+		}
+	} else if (strequal(request, "old-nt-hash-blob")) {
+		old_nt_hash_enc = strhex_to_data_blob(NULL, parameter);
+		if (old_nt_hash_enc.length != 16) {
+			x_fprintf(x_stdout, "Error: hex decode of %s failed! "
+				  "(got %d bytes, expected 16)\n.\n", 
+				  parameter,
+				  (int)old_nt_hash_enc.length);
+			old_nt_hash_enc = data_blob(NULL, 0);
+		}
+	} else if (strequal(request, "new-lm-password-blob")) {
+		new_lm_pswd = strhex_to_data_blob(NULL, parameter);
+		if (new_lm_pswd.length != 516) {
+			x_fprintf(x_stdout, "Error: hex decode of %s failed! "
+				  "(got %d bytes, expected 516)\n.\n", 
+				  parameter,
+				  (int)new_lm_pswd.length);
+			new_lm_pswd = data_blob(NULL, 0);
+		}
+	}
+	else if (strequal(request, "old-lm-hash-blob"))	{
+		old_lm_hash_enc = strhex_to_data_blob(NULL, parameter);
+		if (old_lm_hash_enc.length != 16)
+		{
+			x_fprintf(x_stdout, "Error: hex decode of %s failed! "
+				  "(got %d bytes, expected 16)\n.\n", 
+				  parameter,
+				  (int)old_lm_hash_enc.length);
+			old_lm_hash_enc = data_blob(NULL, 0);
+		}
+	} else if (strequal(request, "nt-domain")) {
+		domain = smb_xstrdup(parameter);
+	} else if(strequal(request, "username")) {
+		username = smb_xstrdup(parameter);
+	} else if(strequal(request, "full-username")) {
+		username = smb_xstrdup(parameter);
+	} else if(strequal(request, "new-password")) {
+		newpswd = smb_xstrdup(parameter);
+	} else if (strequal(request, "old-password")) {
+		oldpswd = smb_xstrdup(parameter);
 	} else {
 		x_fprintf(x_stdout, "Error: Unknown request %s\n.\n", request);
 	}
