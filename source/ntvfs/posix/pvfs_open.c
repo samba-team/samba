@@ -992,6 +992,7 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 	uint32_t create_options;
 	uint32_t share_access;
 	uint32_t access_mask;
+	BOOL del_on_close;
 	BOOL stream_existed, stream_truncate=False;
 	uint32_t oplock_level = OPLOCK_NONE, oplock_granted;
 
@@ -1169,6 +1170,17 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 	talloc_set_destructor(f, pvfs_fnum_destructor);
 	talloc_set_destructor(f->handle, pvfs_handle_destructor);
 
+	/* 
+	 * Only SMB2 takes care of the delete_on_close,
+	 * on existing files
+	 */
+	if (create_options & NTCREATEX_OPTIONS_DELETE_ON_CLOSE &&
+	    req->ctx->protocol == PROTOCOL_SMB2) {
+		del_on_close = True;
+	} else {
+		del_on_close = False;
+	}
+
 	if (pvfs->flags & PVFS_FLAG_FAKE_OPLOCKS) {
 		oplock_level = OPLOCK_NONE;
 	} else if (io->ntcreatex.in.flags & NTCREATEX_FLAGS_REQUEST_BATCH_OPLOCK) {
@@ -1179,8 +1191,8 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 
 	/* see if we are allowed to open at the same time as existing opens */
 	status = odb_open_file(lck, f->handle, f->handle->name->stream_id,
-			       share_access, access_mask, False, name->full_name,
-			       oplock_level, &oplock_granted);
+			       share_access, access_mask, del_on_close,
+			       name->full_name, oplock_level, &oplock_granted);
 
 	/* on a sharing violation we need to retry when the file is closed by 
 	   the other user, or after 1 second */
