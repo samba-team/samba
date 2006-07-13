@@ -4199,7 +4199,8 @@ static void set_server_role(void)
 		case SEC_SERVER:
 			if (lp_domain_logons())
 				DEBUG(0, ("Server's Role (logon server) conflicts with server-level security\n"));
-			server_role = ROLE_DOMAIN_MEMBER;
+			/* this used to be considered ROLE_DOMAIN_MEMBER but that's just wrong */
+			server_role = ROLE_STANDALONE;
 			break;
 		case SEC_DOMAIN:
 			if (lp_domain_logons()) {
