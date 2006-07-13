@@ -4,7 +4,7 @@
    Async helpers for blocking functions
 
    Copyright (C) Volker Lendecke 2005
-   Copyright (C) Volker Lendecke 2006
+   Copyright (C) Gerald Carter 2006
    
    The helpers always consist of three functions: 
 

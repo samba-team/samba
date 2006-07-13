@@ -1375,9 +1375,6 @@ fi
 
 AC_SUBST(LIBUNWIND_PTRACE)
 
-# syscall() is needed for smbwrapper.
-AC_CHECK_FUNCS(syscall)
-
 AC_CHECK_FUNCS(_dup _dup2 _opendir _readdir _seekdir _telldir _closedir)
 AC_CHECK_FUNCS(__dup __dup2 __opendir __readdir __seekdir __telldir __closedir)
 AC_CHECK_FUNCS(__getcwd _getcwd)
@@ -1650,8 +1647,8 @@ PICSUFFIX="po"
 SHLIBEXT="so"
 
 if test "$enable_shared" = "yes"; then
-  # this bit needs to be modified for each OS that is suported by
-  # smbwrapper. You need to specify how to create a shared library and
+  # this bit needs to be modified for each OS that supports share libs
+  # You need to specify how to create a shared library and
   # how to compile C code to produce PIC object files
 
   AC_MSG_CHECKING([ability to build shared libraries])
@@ -2980,47 +2977,6 @@ if test x"$samba_cv_REALPATH_TAKES_NULL" = x"yes"; then
 fi
 
 #################################################
-# check for smbwrapper support
-AC_MSG_CHECKING(whether to use smbwrapper)
-AC_ARG_WITH(smbwrapper,
-[  --with-smbwrapper       Include SMB wrapper support (default=no) ],
-[ case "$withval" in
-  yes)
-    AC_MSG_RESULT(yes)
-    AC_DEFINE(WITH_SMBWRAPPER,1,[Whether to include smbwrapper support])
-	WRAPPROG="bin/smbsh\$(EXEEXT)"
-	WRAP="bin/smbwrapper.$SHLIBEXT"
-	WRAP_OBJS="\$(SMBW_OBJ1) \$(SMBWRAPPER_OBJ1)"
-	WRAP_INC="-I\$(srcdir)/smbwrapper"
-
-# Conditions under which smbwrapper should not be built.
-
-	if test x"$PICFLAGS" = x; then
-	   echo No support for PIC code - disabling smbwrapper and smbsh
-	   WRAPPROG=""
-	   WRAP=""
-	   WRAP_OBJS=""
-	   WRAP_INC=""
-	elif test x$ac_cv_func_syscall = xno; then
-	   AC_MSG_RESULT([No syscall() -- disabling smbwrapper and smbsh])
-	   WRAPPROG=""
-	   WRAP=""
-	   WRAP_OBJS=""
-	   WRAP_INC=""
-	fi
-	EXTRA_ALL_TARGETS="$EXTRA_ALL_TARGETS $WRAPPROG $WRAP"
-	SMBWRAPPER="$WRAPPROG $WRAP"
-	SMBWRAP_OBJS="$WRAP_OBJS"
-	SMBWRAP_INC="$WRAP_INC"
-    ;;
-  *)
-    AC_MSG_RESULT(no)
-    ;;
-  esac ],
-  AC_MSG_RESULT(no)
-)
-
-#################################################
 # check for AFS clear-text auth support
 samba_cv_WITH_AFS=no
 AC_MSG_CHECKING(whether to use AFS clear-text auth)
@@ -4324,7 +4280,7 @@ fi
 
 AC_CACHE_CHECK([whether the old quota support works],samba_cv_QUOTA_WORKS,[
 SAVE_CPPFLAGS="$CPPFLAGS"
-CPPFLAGS="$CPPFLAGS -I${srcdir-.}/ -I. -I${srcdir-.}/include -I${srcdir-.}/ubiqx -I${srcdir-.}/popt -I${srcdir-.}/nsswitch -I${srcdir-.}/smbwrapper"
+CPPFLAGS="$CPPFLAGS -I${srcdir-.}/ -I. -I${srcdir-.}/include -I${srcdir-.}/ubiqx -I${srcdir-.}/popt -I${srcdir-.}/nsswitch"
 AC_TRY_COMPILE([
 #include "confdefs.h"
 #define NO_PROTO_H 1
