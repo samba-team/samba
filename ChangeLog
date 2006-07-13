@@ -1,3 +1,19 @@
+2006-07-13  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kdc/pkinit.c (_kdc_pk_check_client): make it not crash when
+	there are no acl
+
+	* kdc/pkinit.c (_kdc_pk_check_client): use the acl in the kerberos
+	database
+
+	* lib/hdb/hdb.asn1: Rename HDB-Ext-PKINIT-certificate to
+	HDB-Ext-PKINIT-hash.  Add trust anchor to HDB-Ext-PKINIT-acl.
+
+	* lib/hdb/Makefile.am: rename asn1_HDB_Ext_PKINIT_certificate to
+	asn1_HDB_Ext_PKINIT_hash
+
+	* lib/hdb/ext.c: Add hdb_entry_get_pkinit_hash().
+	
 2006-07-10  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* kuser/kinit.c: If --password-file gets STDIN, read the password
