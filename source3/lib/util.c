@@ -3008,4 +3008,3 @@ int this_is_smp(void)
 	return 0;
 #endif
 }
-
