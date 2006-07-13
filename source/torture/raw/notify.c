@@ -706,6 +706,7 @@ static BOOL test_notify_tdis(TALLOC_CTX *mem_ctx)
 
 	status = smbcli_tdis(cli);
 	CHECK_STATUS(status, NT_STATUS_OK);
+	cli->tree = NULL;
 
 	status = smb_raw_changenotify_recv(req, mem_ctx, &notify);
 	CHECK_STATUS(status, NT_STATUS_OK);
@@ -838,6 +839,71 @@ done:
 	return ret;
 }
 
+static void tcp_dis_handler(struct smbcli_transport *t, void *p)
+{
+	struct smbcli_state *cli = p;
+	smbcli_transport_dead(cli->transport);
+	cli->transport = NULL;
+	cli->tree = NULL;
+}
+/*
+  basic testing of change notifies followed by tcp disconnect
+*/
+static BOOL test_notify_tcp_dis(TALLOC_CTX *mem_ctx)
+{
+	BOOL ret = True;
+	NTSTATUS status;
+	union smb_notify notify;
+	union smb_open io;
+	int fnum;
+	struct smbcli_request *req;
+	struct smbcli_state *cli = NULL;
+
+	printf("TESTING CHANGE NOTIFY FOLLOWED BY TCP DISCONNECT\n");
+
+	if (!torture_open_connection(&cli, 0)) {
+		return False;
+	}
+
+	/*
+	  get a handle on the directory
+	*/
+	io.generic.level = RAW_OPEN_NTCREATEX;
+	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.flags = 0;
+	io.ntcreatex.in.access_mask = SEC_FILE_ALL;
+	io.ntcreatex.in.create_options = NTCREATEX_OPTIONS_DIRECTORY;
+	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
+	io.ntcreatex.in.share_access = NTCREATEX_SHARE_ACCESS_READ | NTCREATEX_SHARE_ACCESS_WRITE;
+	io.ntcreatex.in.alloc_size = 0;
+	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_OPEN;
+	io.ntcreatex.in.impersonation = NTCREATEX_IMPERSONATION_ANONYMOUS;
+	io.ntcreatex.in.security_flags = 0;
+	io.ntcreatex.in.fname = BASEDIR;
+
+	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	fnum = io.ntcreatex.out.file.fnum;
+
+	/* ask for a change notify,
+	   on file or directory name changes */
+	notify.nttrans.level = RAW_NOTIFY_NTTRANS;
+	notify.nttrans.in.buffer_size = 1000;
+	notify.nttrans.in.completion_filter = FILE_NOTIFY_CHANGE_NAME;
+	notify.nttrans.in.file.fnum = fnum;
+	notify.nttrans.in.recursive = True;
+
+	req = smb_raw_changenotify_send(cli->tree, &notify);
+
+	smbcli_transport_idle_handler(cli->transport, tcp_dis_handler, 250, cli);
+
+	status = smb_raw_changenotify_recv(req, mem_ctx, &notify);
+	CHECK_STATUS(status, NT_STATUS_NET_WRITE_FAULT);
+
+done:
+	torture_close_connection(cli);
+	return ret;
+}
 
 /* 
    test setting up two change notify requests on one handle
@@ -1044,6 +1110,7 @@ BOOL torture_raw_notify(struct torture_context *torture)
 	ret &= test_notify_tdis(mem_ctx);
 	ret &= test_notify_exit(mem_ctx);
 	ret &= test_notify_ulogoff(mem_ctx);
+	ret &= test_notify_tcp_dis(mem_ctx);
 	ret &= test_notify_double(cli, mem_ctx);
 	ret &= test_notify_tree(cli, mem_ctx);
 
