@@ -40,4 +40,3 @@ struct libnet_LookupDCs {
 		struct nbt_dc_name *dcs;
 	} out;
 };
-
