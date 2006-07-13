@@ -41,8 +41,15 @@ static BOOL fill_grent(struct winbindd_gr *gr, const char *dom_name,
 		       const char *gr_name, gid_t unix_gid)
 {
 	fstring full_group_name;
+	BOOL can_assume = False;
 
-	fill_domain_username( full_group_name, dom_name, gr_name, False);
+	/* I *hate* winbind use default domain!!!! Somehow I will figure out 
+	   how to remove this parameter.    -jerry */
+
+	if ( (lp_server_role() == ROLE_DOMAIN_MEMBER) && strequal(dom_name, lp_workgroup() ) )
+		can_assume = True;
+
+	fill_domain_username( full_group_name, dom_name, gr_name, can_assume);
 
 	gr->gr_gid = unix_gid;
     
