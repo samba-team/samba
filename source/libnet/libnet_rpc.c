@@ -23,13 +23,16 @@
 #include "libnet/libnet.h"
 #include "libcli/libcli.h"
 #include "libcli/composite/composite.h"
+#include "librpc/rpc/dcerpc.h"
 #include "librpc/gen_ndr/ndr_lsa_c.h"
 #include "librpc/gen_ndr/ndr_samr.h"
 
 
 struct rpc_connect_srv_state {
+	struct libnet_context *ctx;
 	struct libnet_RpcConnect r;
 	const char *binding;
+	enum dcerpc_transport_t trans;
 };
 
 
@@ -64,15 +67,21 @@ static struct composite_context* libnet_RpcConnectSrv_send(struct libnet_context
 	c->private_data = s;
 	c->event_ctx = ctx->event_ctx;
 
+	s->ctx = ctx;
 	s->r = *r;
 	ZERO_STRUCT(s->r.out);
 
 	/* prepare binding string */
 	switch (r->level) {
 	case LIBNET_RPC_CONNECT_DC:
+		s->binding = talloc_asprintf(s, "ncacn_ip_tcp:%s", r->in.name);
+		s->trans = NCACN_IP_TCP;
+		break;
+
 	case LIBNET_RPC_CONNECT_PDC:
 	case LIBNET_RPC_CONNECT_SERVER:
 		s->binding = talloc_asprintf(s, "ncacn_np:%s", r->in.name);
+		s->trans = NCACN_NP;
 		break;
 
 	case LIBNET_RPC_CONNECT_BINDING:
@@ -104,13 +113,45 @@ static void continue_pipe_connect(struct composite_context *ctx)
 {
 	struct composite_context *c;
 	struct rpc_connect_srv_state *s;
+	struct composite_context *pipe_connect_req;
 
 	c = talloc_get_type(ctx->async.private_data, struct composite_context);
 	s = talloc_get_type(c->private_data, struct rpc_connect_srv_state);
 
 	/* receive result of rpc pipe connection */
 	c->status = dcerpc_pipe_connect_recv(ctx, c, &s->r.out.dcerpc_pipe);
-	if (!composite_is_ok(c)) return;
+
+	if (NT_STATUS_EQUAL(c->status, NT_STATUS_IO_TIMEOUT)) {
+		switch (s->r.level) {
+		case LIBNET_RPC_CONNECT_DC:
+			if (s->trans == NCACN_IP_TCP) {
+				s->binding = talloc_asprintf(s, "ncacn_np:%s", s->r.in.name);
+				s->trans = NCACN_NP;
+			}
+			break;
+			
+		case LIBNET_RPC_CONNECT_SERVER:
+			if (s->trans == NCACN_NP) {
+				s->binding = talloc_asprintf(s, "ncacn_ip_tcp:%s", s->r.in.name);
+				s->trans = NCACN_IP_TCP;
+			}
+			break;
+
+		default:
+			if (!composite_is_ok(c)) return;
+			s->r.out.error_string = NULL;
+			composite_done(c);
+		}
+
+		/* connect to remote dcerpc pipe */
+		pipe_connect_req = dcerpc_pipe_connect_send(c, &s->r.out.dcerpc_pipe,
+							    s->binding, s->r.in.dcerpc_iface,
+							    s->ctx->cred, c->event_ctx);
+		if (composite_nomem(pipe_connect_req, c)) return;
+		
+		composite_continue(c, pipe_connect_req, continue_pipe_connect, c);
+		return;
+	}
 
 	s->r.out.error_string = NULL;
 	composite_done(c);
@@ -166,6 +207,9 @@ struct rpc_connect_dc_state {
 	struct libnet_RpcConnect r2;
 	struct libnet_LookupDCs f;
 	const char *connect_name;
+
+	/* information about the progress */
+	void (*monitor_fn)(struct monitor_msg *);
 };
 
 
@@ -217,6 +261,7 @@ static struct composite_context* libnet_RpcConnectDC_send(struct libnet_context 
 	default:
 		break;
 	}
+
 	s->f.in.domain_name = r->in.name;
 	s->f.out.num_dcs    = 0;
 	s->f.out.dcs        = NULL;
@@ -239,6 +284,8 @@ static void continue_lookup_dc(struct composite_context *ctx)
 	struct composite_context *c;
 	struct rpc_connect_dc_state *s;
 	struct composite_context *rpc_connect_req;
+	struct monitor_msg msg;
+	struct msg_net_lookup_dc data;
 	
 	c = talloc_get_type(ctx->async.private_data, struct composite_context);
 	s = talloc_get_type(c->private_data, struct rpc_connect_dc_state);
@@ -247,15 +294,34 @@ static void continue_lookup_dc(struct composite_context *ctx)
 	c->status = libnet_LookupDCs_recv(ctx, c, &s->f);
 	if (!composite_is_ok(c)) return;
 
-	/* we might not have got back a name.  Fall back to the IP */
-	if (s->f.out.dcs[0].name) {
+	/* decide on preferred address type depending on DC type */
+	switch (s->r.level) {
+	case LIBNET_RPC_CONNECT_PDC:
 		s->connect_name = s->f.out.dcs[0].name;
-	} else {
+		break;
+
+	case LIBNET_RPC_CONNECT_DC:
 		s->connect_name = s->f.out.dcs[0].address;
+		break;
+
+	default:
+		/* we shouldn't absolutely get here */
+		composite_error(c, NT_STATUS_INVALID_LEVEL);
 	}
 
+	/* prepare a monitor message and post it */
+	msg.type         = net_lookup_dc;
+	msg.data         = &data;
+	msg.data_size    = sizeof(data);
+
+	data.domain_name = s->f.in.domain_name;
+	data.hostname    = s->f.out.dcs[0].name;
+	data.address     = s->f.out.dcs[0].address;
+	
+	if (s->monitor_fn) s->monitor_fn(&msg);
+
 	/* ok, pdc has been found so do attempt to rpc connect */
-	s->r2.level	       = LIBNET_RPC_CONNECT_SERVER;
+	s->r2.level	       = s->r.level;
 
 	/* this will cause yet another name resolution, but at least
 	 * we pass the right name down the stack now */
@@ -263,7 +329,7 @@ static void continue_lookup_dc(struct composite_context *ctx)
 	s->r2.in.dcerpc_iface  = s->r.in.dcerpc_iface;	
 
 	/* send rpc connect request to the server */
-	rpc_connect_req = libnet_RpcConnect_send(s->ctx, c, &s->r2);
+	rpc_connect_req = libnet_RpcConnectSrv_send(s->ctx, c, &s->r2);
 	if (composite_nomem(rpc_connect_req, c)) return;
 
 	composite_continue(c, rpc_connect_req, continue_rpc_connect, c);
@@ -277,17 +343,30 @@ static void continue_rpc_connect(struct composite_context *ctx)
 {
 	struct composite_context *c;
 	struct rpc_connect_dc_state *s;
+	struct monitor_msg msg;
+	struct msg_net_pipe_connected data;
 
 	c = talloc_get_type(ctx->async.private_data, struct composite_context);
 	s = talloc_get_type(c->private_data, struct rpc_connect_dc_state);
 
-	c->status = libnet_RpcConnect_recv(ctx, s->ctx, c, &s->r2);
+	c->status = libnet_RpcConnectSrv_recv(ctx, s->ctx, c, &s->r2);
 
 	/* error string is to be passed anyway */
 	s->r.out.error_string  = s->r2.out.error_string;
 	if (!composite_is_ok(c)) return;
 
 	s->r.out.dcerpc_pipe = s->r2.out.dcerpc_pipe;
+
+	/* prepare a monitor message and post it */
+	msg.type       = net_pipe_connected;
+	msg.data       = NULL;
+	msg.data_size  = 0;
+
+	data.host      = s->r.out.dcerpc_pipe->binding->host;
+	data.endpoint  = s->r.out.dcerpc_pipe->binding->endpoint;
+	data.transport = s->r.out.dcerpc_pipe->binding->transport;
+
+	if (s->monitor_fn) s->monitor_fn(&msg);
 
 	composite_done(c);
 }
