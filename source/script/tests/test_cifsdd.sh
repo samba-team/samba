@@ -64,7 +64,7 @@ compare $sourcepath $destpath || failtest
 # Check whether we can do a round trip
 runcopy "Testing local -> remote copy" \
 	    if=$sourcepath of=//$SERVER/$SHARE/$sourcepath bs=$bs || failtest
-runcopy "Testing remote ->local copy" \
+runcopy "Testing remote -> local copy" \
 	    if=//$SERVER/$SHARE/$sourcepath of=$destpath bs=$bs || failtest
 compare $sourcepath $destpath || failtest
 
@@ -73,7 +73,7 @@ runcopy "Testing local -> remote copy" \
 	    if=//$SERVER/$SHARE/$sourcepath of=//$SERVER/$SHARE/$sourcepath bs=$bs || failtest
 runcopy "Testing remote -> remote copy" \
 	    if=//$SERVER/$SHARE/$sourcepath of=//$SERVER/$SHARE/$destpath bs=$bs || failtest
-runcopy "Testing remote ->local copy" \
+runcopy "Testing remote -> local copy" \
 	    if=//$SERVER/$SHARE/$destpath of=$destpath bs=$bs || failtest
 compare $sourcepath $destpath || failtest
 
