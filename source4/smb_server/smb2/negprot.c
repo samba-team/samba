@@ -88,6 +88,8 @@ static NTSTATUS smb2srv_negprot_backend(struct smb2srv_request *req, struct smb2
 	struct timeval current_time;
 	struct timeval boot_time;
 
+	req->smb_conn->negotiate.protocol = PROTOCOL_SMB2;
+
 	current_time = timeval_current(); /* TODO: handle timezone?! */
 	boot_time = timeval_current(); /* TODO: fix me */
 
