@@ -958,23 +958,48 @@ NTSTATUS create_local_token(auth_serversupplied_info *server_info)
 						    &server_info->gid,
 						    &server_info->unix_name,
 						    &server_info->ptok);
-		
+		if (!NT_STATUS_IS_OK(status)) {
+			TALLOC_FREE(mem_ctx);
+			return status;
+		}
 	} else {
-		server_info->ptok = create_local_nt_token(
+		struct nt_user_token *token;
+
+		token = create_local_nt_token(
 			server_info,
 			pdb_get_user_sid(server_info->sam_account),
 			pdb_get_group_sid(server_info->sam_account),
 			server_info->guest,
 			server_info->num_sids, server_info->sids);
-		status = server_info->ptok ?
-			NT_STATUS_OK : NT_STATUS_NO_SUCH_USER;
+
+		if (token == NULL) {
+			TALLOC_FREE(mem_ctx);
+			return NT_STATUS_NO_SUCH_USER;
+		}
+
+		/*
+		 * We need to add the unix user sid as not necessarily the
+		 * unix username resolves to the domain user sid. This is an
+		 * artifact of an incomplete lookup_name/sid implementation
+		 * when winbind is not around.
+		 */
+
+		if (!winbind_ping()) {
+			DOM_SID unix_user_sid;
+			uid_to_unix_users_sid(server_info->uid,
+					      &unix_user_sid);
+
+			add_sid_to_array(token, &unix_user_sid,
+					 &token->user_sids, &token->num_sids);
+			if (token->user_sids == NULL) {
+				TALLOC_FREE(mem_ctx);
+				return NT_STATUS_NO_MEMORY;
+			}
+		}
+		server_info->ptok = token;
+		status = NT_STATUS_OK;
 	}
 
-	if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(mem_ctx);
-		return status;
-	}
-	
 	/* Convert the SIDs to gids. */
 
 	server_info->n_groups = 0;
