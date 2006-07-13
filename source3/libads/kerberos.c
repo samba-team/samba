@@ -311,6 +311,7 @@ BOOL kerberos_secrets_store_des_salt( const char* salt )
 	if ( !salt ) {
 		DEBUG(8,("kerberos_secrets_store_des_salt: deleting salt\n"));
 		secrets_delete( key );
+		return True;
 	}
 
 	DEBUG(3,("kerberos_secrets_store_des_salt: Storing salt \"%s\"\n", salt));
