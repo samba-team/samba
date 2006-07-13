@@ -1194,6 +1194,7 @@ _kdc_pk_check_client(krb5_context context,
 		     pk_client_params *client_params,
 		     char **subject_name)
 {
+    const HDB_Ext_PKINIT_acl *acl;
     krb5_error_code ret;
     hx509_name name;
     int i;
@@ -1224,6 +1225,28 @@ _kdc_pk_check_client(krb5_context context,
 	}
     }
 
+    ret = hdb_entry_get_pkinit_acl(&client->entry, &acl);
+    if (ret == 0) {
+	/*
+	 * Cheat here and compare the generated name with the string
+	 * and not the reverse.
+	 */
+	for (i = 0; i < acl->len; i++) {
+	    if (strcmp(*subject_name, acl->val[0].subject) != 0)
+		continue;
+
+	    /* Don't support isser and anchor checking right now */
+	    if (acl->val[0].issuer)
+		continue;
+	    if (acl->val[0].anchor)
+		continue;
+
+	    kdc_log(context, config, 5,
+		    "Found matching PK-INIT database ACL");
+	    return 0;
+	}
+    }
+
     for (i = 0; i < principal_mappings.len; i++) {
 	krb5_boolean b;
 
@@ -1234,11 +1257,14 @@ _kdc_pk_check_client(krb5_context context,
 	    continue;
 	if (strcmp(principal_mappings.val[i].subject, *subject_name) != 0)
 	    continue;
+	kdc_log(context, config, 5,
+		"Found matching PK-INIT FILE ACL");
 	return 0;
     }
-    free(*subject_name);
 
+    free(*subject_name);
     *subject_name = NULL;
+
     krb5_set_error_string(context, "PKINIT no matching principals");
     return KRB5_KDC_ERR_CLIENT_NAME_MISMATCH;
 }
