@@ -386,7 +386,7 @@ static int recycle_unlink(vfs_handle_struct *handle, const char *file_name)
 	BOOL exist;
 	int rc = -1;
 
-	repository = alloc_sub_advanced(lp_servicename(SNUM(conn)),
+	repository = talloc_sub_advanced(NULL, lp_servicename(SNUM(conn)),
 					conn->user,
 					conn->connectpath, conn->gid,
 					get_current_username(),
@@ -534,7 +534,7 @@ done:
 	SAFE_FREE(path_name);
 	SAFE_FREE(temp_name);
 	SAFE_FREE(final_name);
-	SAFE_FREE(repository);
+	TALLOC_FREE(repository);
 	return rc;
 }
 

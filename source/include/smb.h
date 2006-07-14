@@ -544,6 +544,10 @@ struct share_params {
 	int service;
 };
 
+struct share_iterator {
+	int next_id;
+};
+
 typedef struct connection_struct {
 	struct connection_struct *next, *prev;
 	TALLOC_CTX *mem_ctx;

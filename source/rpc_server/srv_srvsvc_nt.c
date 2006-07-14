@@ -200,19 +200,19 @@ static WERROR net_enum_files( TALLOC_CTX *ctx, FILE_INFO_3 **info,
 }
 
 /*******************************************************************
- Utility function to get the 'type' of a share from an snum.
+ Utility function to get the 'type' of a share from a share definition.
  ********************************************************************/
-static uint32 get_share_type(int snum) 
+static uint32 get_share_type(const struct share_params *params)
 {
-	char *net_name = lp_servicename(snum);
+	char *net_name = lp_servicename(params->service);
 	int len_net_name = strlen(net_name);
 	
 	/* work out the share type */
 	uint32 type = STYPE_DISKTREE;
 
-	if (lp_print_ok(snum))
+	if (lp_print_ok(params->service))
 		type = STYPE_PRINTQ;
-	if (strequal(lp_fstype(snum), "IPC"))
+	if (strequal(lp_fstype(params->service), "IPC"))
 		type = STYPE_IPC;
 	if (net_name[len_net_name] == '$')
 		type |= STYPE_HIDDEN;
@@ -224,12 +224,10 @@ static uint32 get_share_type(int snum)
  Fill in a share info level 0 structure.
  ********************************************************************/
 
-static void init_srv_share_info_0(pipes_struct *p, SRV_SHARE_INFO_0 *sh0, int snum)
+static void init_srv_share_info_0(pipes_struct *p, SRV_SHARE_INFO_0 *sh0,
+				  const struct share_params *params)
 {
-	pstring net_name;
-
-	pstrcpy(net_name, lp_servicename(snum));
-
+	char *net_name = lp_servicename(params->service);
 	init_srv_share_info0(&sh0->info_0, net_name);
 	init_srv_share_info0_str(&sh0->info_0_str, net_name);
 }
@@ -238,20 +236,21 @@ static void init_srv_share_info_0(pipes_struct *p, SRV_SHARE_INFO_0 *sh0, int sn
  Fill in a share info level 1 structure.
  ********************************************************************/
 
-static void init_srv_share_info_1(pipes_struct *p, SRV_SHARE_INFO_1 *sh1, int snum)
+static void init_srv_share_info_1(pipes_struct *p, SRV_SHARE_INFO_1 *sh1,
+				  const struct share_params *params)
 {
 	connection_struct *conn = p->conn;
-	pstring remark;
+	char *net_name = lp_servicename(params->service);
+	char *remark;
 
-	char *net_name = lp_servicename(snum);
-	pstrcpy(remark, lp_comment(snum));
-	standard_sub_advanced(lp_servicename(SNUM(conn)), conn->user,
-			      conn->connectpath, conn->gid,
-			      get_current_username(),
-			      current_user_info.domain,
-			      remark, sizeof(remark));
+	remark = talloc_sub_advanced(p->mem_ctx, lp_servicename(SNUM(conn)),
+				     conn->user, conn->connectpath, conn->gid,
+				     get_current_username(),
+				     current_user_info.domain,
+				     lp_comment(params->service));
 
-	init_srv_share_info1(&sh1->info_1, net_name, get_share_type(snum), remark);
+	init_srv_share_info1(&sh1->info_1, net_name, get_share_type(params),
+			     remark);
 	init_srv_share_info1_str(&sh1->info_1_str, net_name, remark);
 }
 
@@ -259,40 +258,37 @@ static void init_srv_share_info_1(pipes_struct *p, SRV_SHARE_INFO_1 *sh1, int sn
  Fill in a share info level 2 structure.
  ********************************************************************/
 
-static void init_srv_share_info_2(pipes_struct *p, SRV_SHARE_INFO_2 *sh2, int snum)
+static void init_srv_share_info_2(pipes_struct *p, SRV_SHARE_INFO_2 *sh2,
+				  const struct share_params *params)
 {
 	connection_struct *conn = p->conn;
-	pstring remark;
-	pstring path;
-	pstring passwd;
-	int max_connections = lp_max_connections(snum);
+	char *remark;
+	char *path;
+	int max_connections = lp_max_connections(params->service);
 	uint32 max_uses = max_connections!=0 ? max_connections : 0xffffffff;
 	int count = 0;
-	char *net_name = lp_servicename(snum);
+	char *net_name = lp_servicename(params->service);
 	
-	pstrcpy(remark, lp_comment(snum));
-	standard_sub_advanced(lp_servicename(SNUM(conn)), conn->user,
-			      conn->connectpath, conn->gid,
-			      get_current_username(),
-			      current_user_info.domain,
-			      remark, sizeof(remark));
-	pstrcpy(path, "C:");
-	pstrcat(path, lp_pathname(snum));
+	remark = talloc_sub_advanced(p->mem_ctx, lp_servicename(SNUM(conn)),
+				     conn->user, conn->connectpath, conn->gid,
+				     get_current_username(),
+				     current_user_info.domain,
+				     lp_comment(params->service));
+	path = talloc_asprintf(p->mem_ctx, "C:%s",
+			       lp_pathname(params->service));
 
 	/*
-	 * Change / to \\ so that win2k will see it as a valid path.  This was added to
-	 * enable use of browsing in win2k add share dialog.
+	 * Change / to \\ so that win2k will see it as a valid path.  This was
+	 * added to enable use of browsing in win2k add share dialog.
 	 */ 
 
 	string_replace(path, '/', '\\');
 
-	pstrcpy(passwd, "");
-
 	count = count_current_connections( net_name, False  );
-	init_srv_share_info2(&sh2->info_2, net_name, get_share_type(snum), 
-		remark, 0, max_uses, count, path, passwd);
+	init_srv_share_info2(&sh2->info_2, net_name, get_share_type(params), 
+			     remark, 0, max_uses, count, path, "");
 
-	init_srv_share_info2_str(&sh2->info_2_str, net_name, remark, path, passwd);
+	init_srv_share_info2_str(&sh2->info_2_str, net_name, remark, path, "");
 }
 
 /*******************************************************************
@@ -361,20 +357,22 @@ out:
  Fill in a share info level 501 structure.
 ********************************************************************/
 
-static void init_srv_share_info_501(pipes_struct *p, SRV_SHARE_INFO_501 *sh501, int snum)
+static void init_srv_share_info_501(pipes_struct *p, SRV_SHARE_INFO_501 *sh501,
+				    const struct share_params *params)
 {
 	connection_struct *conn = p->conn;
-	pstring remark;
+	char *remark;
+	const char *net_name = lp_servicename(params->service);
 
-	const char *net_name = lp_servicename(snum);
-	pstrcpy(remark, lp_comment(snum));
-	standard_sub_advanced(lp_servicename(SNUM(conn)), conn->user,
-			      conn->connectpath, conn->gid,
-			      get_current_username(),
-			      current_user_info.domain,
-			      remark, sizeof(remark));
+	remark = talloc_sub_advanced(p->mem_ctx, lp_servicename(SNUM(conn)),
+				     conn->user, conn->connectpath, conn->gid,
+				     get_current_username(),
+				     current_user_info.domain,
+				     lp_comment(params->service));
 
-	init_srv_share_info501(&sh501->info_501, net_name, get_share_type(snum), remark, (lp_csc_policy(snum) << 4));
+	init_srv_share_info501(&sh501->info_501, net_name,
+			       get_share_type(params), remark,
+			       (lp_csc_policy(params->service) << 4));
 	init_srv_share_info501_str(&sh501->info_501_str, net_name, remark);
 }
 
@@ -382,13 +380,13 @@ static void init_srv_share_info_501(pipes_struct *p, SRV_SHARE_INFO_501 *sh501, 
  Fill in a share info level 502 structure.
  ********************************************************************/
 
-static void init_srv_share_info_502(pipes_struct *p, SRV_SHARE_INFO_502 *sh502, int snum)
+static void init_srv_share_info_502(pipes_struct *p, SRV_SHARE_INFO_502 *sh502,
+				    const struct share_params *params)
 {
 	connection_struct *conn = p->conn;
-	pstring net_name;
-	pstring remark;
-	pstring path;
-	pstring passwd;
+	char *net_name;
+	char *remark;
+	char *path;
 	SEC_DESC *sd;
 	size_t sd_size;
 	TALLOC_CTX *ctx = p->mem_ctx;
@@ -396,46 +394,50 @@ static void init_srv_share_info_502(pipes_struct *p, SRV_SHARE_INFO_502 *sh502, 
 
 	ZERO_STRUCTP(sh502);
 
-	pstrcpy(net_name, lp_servicename(snum));
-	pstrcpy(remark, lp_comment(snum));
-	standard_sub_advanced(lp_servicename(SNUM(conn)), conn->user,
-			      conn->connectpath, conn->gid,
-			      get_current_username(),
-			      current_user_info.domain,
-			      remark, sizeof(remark));
-	pstrcpy(path, "C:");
-	pstrcat(path, lp_pathname(snum));
+	net_name = lp_servicename(params->service);
+	
+	remark = talloc_sub_advanced(p->mem_ctx, lp_servicename(SNUM(conn)),
+				     conn->user, conn->connectpath, conn->gid,
+				     get_current_username(),
+				     current_user_info.domain,
+				     lp_comment(params->service));
+
+	path = talloc_asprintf(p->mem_ctx, "C:%s",
+			       lp_pathname(params->service));
 
 	/*
-	 * Change / to \\ so that win2k will see it as a valid path.  This was added to
-	 * enable use of browsing in win2k add share dialog.
+	 * Change / to \\ so that win2k will see it as a valid path.  This was
+	 * added to enable use of browsing in win2k add share dialog.
 	 */ 
 
 	string_replace(path, '/', '\\');
 
-	pstrcpy(passwd, "");
+	sd = get_share_security(ctx, lp_servicename(params->service),
+				&sd_size);
 
-	sd = get_share_security(ctx, lp_servicename(snum), &sd_size);
-
-	init_srv_share_info502(&sh502->info_502, net_name, get_share_type(snum), remark, 0, 0xffffffff, 1, path, passwd, sd, sd_size);
-	init_srv_share_info502_str(&sh502->info_502_str, net_name, remark, path, passwd, sd, sd_size);
+	init_srv_share_info502(&sh502->info_502, net_name,
+			       get_share_type(params), remark, 0, 0xffffffff,
+			       1, path, "", sd, sd_size);
+	init_srv_share_info502_str(&sh502->info_502_str, net_name, remark,
+				   path, "", sd, sd_size);
 }
 
 /***************************************************************************
  Fill in a share info level 1004 structure.
  ***************************************************************************/
 
-static void init_srv_share_info_1004(pipes_struct *p, SRV_SHARE_INFO_1004* sh1004, int snum)
+static void init_srv_share_info_1004(pipes_struct *p,
+				     SRV_SHARE_INFO_1004* sh1004,
+				     const struct share_params *params)
 {
 	connection_struct *conn = p->conn;
-        pstring remark;
+	char *remark;
 
-	pstrcpy(remark, lp_comment(snum));
-	standard_sub_advanced(lp_servicename(SNUM(conn)), conn->user,
-			      conn->connectpath, conn->gid,
-			      get_current_username(),
-			      current_user_info.domain,
-			      remark, sizeof(remark));
+	remark = talloc_sub_advanced(p->mem_ctx, lp_servicename(SNUM(conn)),
+				     conn->user, conn->connectpath, conn->gid,
+				     get_current_username(),
+				     current_user_info.domain,
+				     lp_comment(params->service));
 
 	ZERO_STRUCTP(sh1004);
   
@@ -447,21 +449,25 @@ static void init_srv_share_info_1004(pipes_struct *p, SRV_SHARE_INFO_1004* sh100
  Fill in a share info level 1005 structure.
  ***************************************************************************/
 
-static void init_srv_share_info_1005(pipes_struct *p, SRV_SHARE_INFO_1005* sh1005, int snum)
+static void init_srv_share_info_1005(pipes_struct *p,
+				     SRV_SHARE_INFO_1005* sh1005,
+				     const struct share_params *params)
 {
 	sh1005->share_info_flags = 0;
 
-	if(lp_host_msdfs() && lp_msdfs_root(snum))
+	if(lp_host_msdfs() && lp_msdfs_root(params->service))
 		sh1005->share_info_flags |= 
 			SHARE_1005_IN_DFS | SHARE_1005_DFS_ROOT;
 	sh1005->share_info_flags |= 
-		lp_csc_policy(snum) << SHARE_1005_CSC_POLICY_SHIFT;
+		lp_csc_policy(params->service) << SHARE_1005_CSC_POLICY_SHIFT;
 }
 /***************************************************************************
  Fill in a share info level 1006 structure.
  ***************************************************************************/
 
-static void init_srv_share_info_1006(pipes_struct *p, SRV_SHARE_INFO_1006* sh1006, int snum)
+static void init_srv_share_info_1006(pipes_struct *p,
+				     SRV_SHARE_INFO_1006* sh1006,
+				     const struct share_params *params)
 {
 	sh1006->max_uses = -1;
 }
@@ -470,22 +476,28 @@ static void init_srv_share_info_1006(pipes_struct *p, SRV_SHARE_INFO_1006* sh100
  Fill in a share info level 1007 structure.
  ***************************************************************************/
 
-static void init_srv_share_info_1007(pipes_struct *p, SRV_SHARE_INFO_1007* sh1007, int snum)
+static void init_srv_share_info_1007(pipes_struct *p,
+				     SRV_SHARE_INFO_1007* sh1007,
+				     const struct share_params *params)
 {
         pstring alternate_directory_name = "";
 	uint32 flags = 0;
 
 	ZERO_STRUCTP(sh1007);
   
-	init_srv_share_info1007(&sh1007->info_1007, flags, alternate_directory_name);
-	init_srv_share_info1007_str(&sh1007->info_1007_str, alternate_directory_name);
+	init_srv_share_info1007(&sh1007->info_1007, flags,
+				alternate_directory_name);
+	init_srv_share_info1007_str(&sh1007->info_1007_str,
+				    alternate_directory_name);
 }
 
 /*******************************************************************
  Fill in a share info level 1501 structure.
  ********************************************************************/
 
-static void init_srv_share_info_1501(pipes_struct *p, SRV_SHARE_INFO_1501 *sh1501, int snum)
+static void init_srv_share_info_1501(pipes_struct *p,
+				     SRV_SHARE_INFO_1501 *sh1501,
+				     const struct share_params *params)
 {
 	SEC_DESC *sd;
 	size_t sd_size;
@@ -493,7 +505,8 @@ static void init_srv_share_info_1501(pipes_struct *p, SRV_SHARE_INFO_1501 *sh150
 
 	ZERO_STRUCTP(sh1501);
 
-	sd = get_share_security(ctx, lp_servicename(snum), &sd_size);
+	sd = get_share_security(ctx, lp_servicename(params->service),
+				&sd_size);
 
 	sh1501->sdb = make_sec_desc_buf(p->mem_ctx, sd_size, sd);
 }
@@ -502,11 +515,11 @@ static void init_srv_share_info_1501(pipes_struct *p, SRV_SHARE_INFO_1501 *sh150
  True if it ends in '$'.
  ********************************************************************/
 
-static BOOL is_hidden_share(int snum)
+static BOOL is_hidden_share(const struct share_params *params)
 {
-	const char *net_name = lp_servicename(snum);
+	const char *net_name = lp_servicename(params->service);
 
-	return (net_name[strlen(net_name) - 1] == '$') ? True : False;
+	return (net_name[strlen(net_name) - 1] == '$');
 }
 
 /*******************************************************************
@@ -519,9 +532,9 @@ static WERROR init_srv_share_info_ctr(pipes_struct *p,
 				      uint32 *total_entries, BOOL all_shares)
 {
 	int num_entries = 0;
-	int num_services = 0;
-	int snum;
 	TALLOC_CTX *ctx = p->mem_ctx;
+	struct share_iterator *shares;
+	struct share_params *share;
 
 	DEBUG(5,("init_srv_share_info_ctr\n"));
 
@@ -532,18 +545,23 @@ static WERROR init_srv_share_info_ctr(pipes_struct *p,
 
 	/* Ensure all the usershares are loaded. */
 	become_root();
-	num_services = load_usershare_shares();
+	load_usershare_shares();
 	unbecome_root();
 
 	num_entries = 0;
 
 	ZERO_STRUCT(ctr->share);
 
-	for (snum = *resume_hnd; snum < num_services; snum++) {
-		if (!lp_snum_ok(snum) || !lp_browseable(snum)) {
+	if (!(shares = share_list_all(ctx))) {
+		DEBUG(5, ("Could not list shares\n"));
+		return WERR_ACCESS_DENIED;
+	}
+
+	while ((share = next_share(shares)) != NULL) {
+		if (!lp_browseable(share->service)) {
 			continue;
 		}
-		if (!all_shares && is_hidden_share(snum)) {
+		if (!all_shares && is_hidden_share(share)) {
 			continue;
 		}
 
@@ -551,7 +569,7 @@ static WERROR init_srv_share_info_ctr(pipes_struct *p,
 		case 0:
 		{
 			SRV_SHARE_INFO_0 i;
-			init_srv_share_info_0(p, &i, snum);
+			init_srv_share_info_0(p, &i, share);
 			ADD_TO_ARRAY(ctx, SRV_SHARE_INFO_0, i,
 				     &ctr->share.info0, &num_entries);
 			if (ctr->share.info0 == NULL) {
@@ -563,7 +581,7 @@ static WERROR init_srv_share_info_ctr(pipes_struct *p,
 		case 1:
 		{
 			SRV_SHARE_INFO_1 i;
-			init_srv_share_info_1(p, &i, snum);
+			init_srv_share_info_1(p, &i, share);
 			ADD_TO_ARRAY(ctx, SRV_SHARE_INFO_1, i,
 				     &ctr->share.info1, &num_entries);
 			if (ctr->share.info1 == NULL) {
@@ -575,7 +593,7 @@ static WERROR init_srv_share_info_ctr(pipes_struct *p,
 		case 2:
 		{
 			SRV_SHARE_INFO_2 i;
-			init_srv_share_info_2(p, &i, snum);
+			init_srv_share_info_2(p, &i, share);
 			ADD_TO_ARRAY(ctx, SRV_SHARE_INFO_2, i,
 				     &ctr->share.info2, &num_entries);
 			if (ctr->share.info2 == NULL) {
@@ -587,7 +605,7 @@ static WERROR init_srv_share_info_ctr(pipes_struct *p,
 		case 501:
 		{
 			SRV_SHARE_INFO_501 i;
-			init_srv_share_info_501(p, &i, snum);
+			init_srv_share_info_501(p, &i, share);
 			ADD_TO_ARRAY(ctx, SRV_SHARE_INFO_501, i,
 				     &ctr->share.info501, &num_entries);
 			if (ctr->share.info501 == NULL) {
@@ -599,7 +617,7 @@ static WERROR init_srv_share_info_ctr(pipes_struct *p,
 		case 502:
 		{
 			SRV_SHARE_INFO_502 i;
-			init_srv_share_info_502(p, &i, snum);
+			init_srv_share_info_502(p, &i, share);
 			ADD_TO_ARRAY(ctx, SRV_SHARE_INFO_502, i,
 				     &ctr->share.info502, &num_entries);
 			if (ctr->share.info502 == NULL) {
@@ -614,7 +632,7 @@ static WERROR init_srv_share_info_ctr(pipes_struct *p,
 		case 1004:
 		{
 			SRV_SHARE_INFO_1004 i;
-			init_srv_share_info_1004(p, &i, snum);
+			init_srv_share_info_1004(p, &i, share);
 			ADD_TO_ARRAY(ctx, SRV_SHARE_INFO_1004, i,
 				     &ctr->share.info1004, &num_entries);
 			if (ctr->share.info1004 == NULL) {
@@ -626,7 +644,7 @@ static WERROR init_srv_share_info_ctr(pipes_struct *p,
 		case 1005:
 		{
 			SRV_SHARE_INFO_1005 i;
-			init_srv_share_info_1005(p, &i, snum);
+			init_srv_share_info_1005(p, &i, share);
 			ADD_TO_ARRAY(ctx, SRV_SHARE_INFO_1005, i,
 				     &ctr->share.info1005, &num_entries);
 			if (ctr->share.info1005 == NULL) {
@@ -638,7 +656,7 @@ static WERROR init_srv_share_info_ctr(pipes_struct *p,
 		case 1006:
 		{
 			SRV_SHARE_INFO_1006 i;
-			init_srv_share_info_1006(p, &i, snum);
+			init_srv_share_info_1006(p, &i, share);
 			ADD_TO_ARRAY(ctx, SRV_SHARE_INFO_1006, i,
 				     &ctr->share.info1006, &num_entries);
 			if (ctr->share.info1006 == NULL) {
@@ -650,7 +668,7 @@ static WERROR init_srv_share_info_ctr(pipes_struct *p,
 		case 1007:
 		{
 			SRV_SHARE_INFO_1007 i;
-			init_srv_share_info_1007(p, &i, snum);
+			init_srv_share_info_1007(p, &i, share);
 			ADD_TO_ARRAY(ctx, SRV_SHARE_INFO_1007, i,
 				     &ctr->share.info1007, &num_entries);
 			if (ctr->share.info1007 == NULL) {
@@ -662,7 +680,7 @@ static WERROR init_srv_share_info_ctr(pipes_struct *p,
 		case 1501:
 		{
 			SRV_SHARE_INFO_1501 i;
-			init_srv_share_info_1501(p, &i, snum);
+			init_srv_share_info_1501(p, &i, share);
 			ADD_TO_ARRAY(ctx, SRV_SHARE_INFO_1501, i,
 				     &ctr->share.info1501, &num_entries);
 			if (ctr->share.info1501 == NULL) {
@@ -675,6 +693,8 @@ static WERROR init_srv_share_info_ctr(pipes_struct *p,
 				 "value %d\n", info_level));
 			return WERR_UNKNOWN_LEVEL;
 		}
+
+		TALLOC_FREE(share);
 	}
 
 	*total_entries = num_entries;
@@ -708,52 +728,63 @@ static void init_srv_r_net_share_get_info(pipes_struct *p, SRV_R_NET_SHARE_GET_I
 				  char *share_name, uint32 info_level)
 {
 	WERROR status = WERR_OK;
-	int snum;
+	const struct share_params *params;
 
 	DEBUG(5,("init_srv_r_net_share_get_info: %d\n", __LINE__));
 
 	r_n->info.switch_value = info_level;
 
-	snum = find_service(share_name);
+	params = get_share_params(p->mem_ctx, share_name);
 
-	if (snum >= 0) {
+	if (params != NULL) {
 		switch (info_level) {
 		case 0:
-			init_srv_share_info_0(p, &r_n->info.share.info0, snum);
+			init_srv_share_info_0(p, &r_n->info.share.info0,
+					      params);
 			break;
 		case 1:
-			init_srv_share_info_1(p, &r_n->info.share.info1, snum);
+			init_srv_share_info_1(p, &r_n->info.share.info1,
+					      params);
 			break;
 		case 2:
-			init_srv_share_info_2(p, &r_n->info.share.info2, snum);
+			init_srv_share_info_2(p, &r_n->info.share.info2,
+					      params);
 			break;
 		case 501:
-			init_srv_share_info_501(p, &r_n->info.share.info501, snum);
+			init_srv_share_info_501(p, &r_n->info.share.info501,
+						params);
 			break;
 		case 502:
-			init_srv_share_info_502(p, &r_n->info.share.info502, snum);
+			init_srv_share_info_502(p, &r_n->info.share.info502,
+						params);
 			break;
 
 			/* here for completeness */
 		case 1004:
-			init_srv_share_info_1004(p, &r_n->info.share.info1004, snum);
+			init_srv_share_info_1004(p, &r_n->info.share.info1004,
+						 params);
 			break;
 		case 1005:
-			init_srv_share_info_1005(p, &r_n->info.share.info1005, snum);
+			init_srv_share_info_1005(p, &r_n->info.share.info1005,
+						 params);
 			break;
 
 			/* here for completeness 1006 - 1501 */
 		case 1006:
-			init_srv_share_info_1006(p, &r_n->info.share.info1006, snum);
+			init_srv_share_info_1006(p, &r_n->info.share.info1006,
+						 params);
 			break;
 		case 1007:
-			init_srv_share_info_1007(p, &r_n->info.share.info1007, snum);
+			init_srv_share_info_1007(p, &r_n->info.share.info1007,
+						 params);
 			break;
 		case 1501:
-			init_srv_share_info_1501(p, &r_n->info.share.info1501, snum);
+			init_srv_share_info_1501(p, &r_n->info.share.info1501,
+						 params);
 			break;
 		default:
-			DEBUG(5,("init_srv_net_share_get_info: unsupported switch value %d\n", info_level));
+			DEBUG(5,("init_srv_net_share_get_info: unsupported "
+				 "switch value %d\n", info_level));
 			status = WERR_UNKNOWN_LEVEL;
 			break;
 		}

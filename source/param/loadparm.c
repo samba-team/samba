@@ -5137,6 +5137,65 @@ BOOL share_defined(const char *service_name)
 	return (lp_servicenumber(service_name) != -1);
 }
 
+struct share_params *get_share_params(TALLOC_CTX *mem_ctx,
+				      const char *sharename)
+{
+	struct share_params *result;
+	fstring sname;
+	int snum;
+
+	fstrcpy(sname, sharename);
+
+	snum = find_service(sname);
+	if (snum < 0) {
+		return NULL;
+	}
+
+	if (!(result = TALLOC_P(mem_ctx, struct share_params))) {
+		DEBUG(0, ("talloc failed\n"));
+		return NULL;
+	}
+
+	result->service = snum;
+	return result;
+}
+
+struct share_iterator *share_list_all(TALLOC_CTX *mem_ctx)
+{
+	struct share_iterator *result;
+
+	if (!(result = TALLOC_P(mem_ctx, struct share_iterator))) {
+		DEBUG(0, ("talloc failed\n"));
+		return NULL;
+	}
+
+	result->next_id = 0;
+	return result;
+}
+
+struct share_params *next_share(struct share_iterator *list)
+{
+	struct share_params *result;
+
+	while (!lp_snum_ok(list->next_id) &&
+	       (list->next_id < lp_numservices())) {
+		list->next_id += 1;
+	}
+
+	if (list->next_id >= lp_numservices()) {
+		return NULL;
+	}
+
+	if (!(result = TALLOC_P(list, struct share_params))) {
+		DEBUG(0, ("talloc failed\n"));
+		return NULL;
+	}
+
+	result->service = list->next_id;
+	list->next_id += 1;
+	return result;
+}
+
 /*******************************************************************
  A useful volume label function. 
 ********************************************************************/
