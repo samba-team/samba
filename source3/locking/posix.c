@@ -539,6 +539,7 @@ static int get_windows_lock_ref_count(files_struct *fsp)
 	} else {
 		memcpy(&lock_ref_count, dbuf.dptr, sizeof(int));
 	}
+	SAFE_FREE(dbuf.dptr);
 
 	DEBUG(10,("get_windows_lock_count for file %s = %d\n",
 		fsp->fsp_name, lock_ref_count ));
