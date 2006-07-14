@@ -51,6 +51,11 @@ struct oc_async_context {
 	struct ldb_request *mod_req;
 };
 
+struct class_list {
+	struct class_list *prev, *next;
+	const char *objectclass;
+};
+
 static struct ldb_async_handle *oc_init_handle(struct ldb_request *req, struct ldb_module *module)
 {
 	struct oc_async_context *ac;
@@ -82,11 +87,126 @@ static struct ldb_async_handle *oc_init_handle(struct ldb_request *req, struct l
 	return h;
 }
 
+static int objectclass_sort(struct ldb_module *module,
+			    TALLOC_CTX *mem_ctx,
+			    struct ldb_message_element *objectclass_element,
+			    struct class_list **sorted_out) 
+{
+	int i;
+	int layer;
+	struct class_list *sorted = NULL, *parent_class = NULL,
+		*subclass = NULL, *unsorted = NULL, *current, *poss_subclass;
+	/* DESIGN:
+	 *
+	 * We work on 4 different 'bins' (implemented here as linked lists):
+	 *
+	 * * sorted:       the eventual list, in the order we wish to push
+	 *                 into the database.  This is the only ordered list.
+	 *
+	 * * parent_class: The current parent class 'bin' we are
+	 *                 trying to find subclasses for
+	 *
+	 * * subclass:     The subclasses we have found so far
+	 *
+	 * * unsorted:     The remaining objectClasses
+	 *
+	 * The process is a matter of filtering objectClasses up from
+	 * unsorted into sorted.  Order is irrelevent in the later 3 'bins'.
+	 * 
+	 * We start with 'top' (found and promoted to parent_class
+	 * initially).  Then we find (in unsorted) all the direct
+	 * subclasses of 'top'.  parent_classes is concatenated onto
+	 * the end of 'sorted', and subclass becomes the list in
+	 * parent_class.
+	 *
+	 * We then repeat, until we find no more subclasses.  Any left
+	 * over classes are added to the end.
+	 *
+	 */
+
+	/* Firstly, dump all the objectClass elements into the
+	 * unsorted bin, except for 'top', which is special */
+	for (i=0; i < objectclass_element->num_values; i++) {
+		current = talloc(mem_ctx, struct class_list);
+		if (!current) {
+			ldb_set_errstring(module->ldb, talloc_asprintf(mem_ctx, "objectclass: out of memory allocating objectclass list"));
+			talloc_free(mem_ctx);
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+		current->objectclass = (const char *)objectclass_element->values[i].data;
+
+		/* this is the root of the tree.  We will start
+		 * looking for subclasses from here */
+		if (ldb_attr_cmp("top", current->objectclass) == 0) {
+			DLIST_ADD(parent_class, current);
+		} else {
+			DLIST_ADD(unsorted, current);
+		}
+	}
+
+	/* DEBUGGING aid:  how many layers are we down now? */
+	layer = 0;
+	do {
+		layer++;
+		/* Find all the subclasses of classes in the
+		 * parent_classes.  Push them onto the subclass list */
+
+		/* Ensure we don't bother if there are no unsorted entries left */
+		for (current = parent_class; unsorted && current; current = current->next) {
+			const char **subclasses = ldb_subclass_list(module->ldb, current->objectclass);
+
+			/* Walk the list of possible subclasses in unsorted */
+			for (poss_subclass = unsorted; poss_subclass; ) {
+				struct class_list *next;
+				
+				/* Save the next pointer, as the DLIST_ macros will change poss_subclass->next */
+				next = poss_subclass->next;
+
+				for (i = 0; subclasses && subclasses[i]; i++) {
+					if (ldb_attr_cmp(poss_subclass->objectclass, subclasses[i]) == 0) {
+						DLIST_REMOVE(unsorted, poss_subclass);
+						DLIST_ADD(subclass, poss_subclass);
+
+						break;
+					}
+				}
+				poss_subclass = next;
+			}
+		}
+
+		/* Now push the parent_classes as sorted, we are done with
+		these.  Add to the END of the list by concatenation */
+		DLIST_CONCATENATE(sorted, parent_class, struct class_list *);
+
+		/* and now find subclasses of these */
+		parent_class = subclass;
+		subclass = NULL;
+
+		/* If we didn't find any subclasses we will fall out
+		 * the bottom here */
+	} while (parent_class);
+
+	/* This shouldn't happen, and would break MMC, but we can't
+	 * afford to loose objectClasses.  Perhaps there was no 'top',
+	 * or some other schema error? 
+	 *
+	 * Detecting schema errors is the job of the schema module, so
+	 * at this layer we just try not to loose data
+ 	 */
+	DLIST_CONCATENATE(sorted, unsorted, struct class_list *);
+
+	*sorted_out = sorted;
+	return LDB_SUCCESS;
+}
+
 static int objectclass_add(struct ldb_module *module, struct ldb_request *req)
 {
-	struct ldb_async_handle *h;
-	struct oc_async_context *ac;
-	struct ldb_message_element *objectClassAttr;
+	struct ldb_message_element *objectclass_element;
+	struct class_list *sorted, *current;
+	struct ldb_request *down_req;
+	struct ldb_message *msg;
+	int ret;
+	TALLOC_CTX *mem_ctx;
 
 	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "objectclass_add\n");
 
@@ -94,87 +214,210 @@ static int objectclass_add(struct ldb_module *module, struct ldb_request *req)
 		return ldb_next_request(module, req);
 	}
 	
-	objectClassAttr = ldb_msg_find_element(req->op.add.message, "objectClass");
+	objectclass_element = ldb_msg_find_element(req->op.add.message, "objectClass");
 
 	/* If no part of this add has an objectClass, then we don't
 	 * need to make any changes. cn=rootdse doesn't have an objectClass */
-	if (!objectClassAttr) {
+	if (!objectclass_element) {
 		return ldb_next_request(module, req);
 	}
 
-	h = oc_init_handle(req, module);
-	if (!h) {
+	mem_ctx = talloc_new(req);
+	if (mem_ctx == NULL) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
-	ac = talloc_get_type(h->private_data, struct oc_async_context);
 
-	/* return or own handle to deal with this call */
-	req->async.handle = h;
+	ret = objectclass_sort(module, mem_ctx, objectclass_element, &sorted);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
 
 	/* prepare the first operation */
-	ac->down_req = talloc_zero(ac, struct ldb_request);
-	if (ac->down_req == NULL) {
+	down_req = talloc(req, struct ldb_request);
+	if (down_req == NULL) {
 		ldb_set_errstring(module->ldb, talloc_asprintf(module->ldb, "Out of memory!"));
+		talloc_free(mem_ctx);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	*(ac->down_req) = *req; /* copy the request */
+	*down_req = *req; /* copy the request */
 
-	ac->down_req->async.context = NULL;
-	ac->down_req->async.callback = NULL;
-	ldb_set_timeout_from_prev_req(module->ldb, req, ac->down_req);
+	down_req->op.add.message = msg = ldb_msg_copy_shallow(down_req, req->op.add.message);
 
-	ac->step = OC_DO_REQ;
+	if (down_req->op.add.message == NULL) {
+		talloc_free(mem_ctx);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
 
-	return ldb_next_request(module, ac->down_req);
+	ldb_msg_remove_attr(msg, "objectClass");
+	ret = ldb_msg_add_empty(msg, "objectClass", 0);
+	
+	if (ret != LDB_SUCCESS) {
+		talloc_free(mem_ctx);
+		return ret;
+	}
+
+	/* We must completely replace the existing objectClass entry,
+	 * because we need it sorted */
+
+	/* Move from the linked list back into an ldb msg */
+	for (current = sorted; current; current = current->next) {
+		ret = ldb_msg_add_string(msg, "objectClass", current->objectclass);
+		if (ret != LDB_SUCCESS) {
+			ldb_set_errstring(module->ldb, talloc_asprintf(mem_ctx, "objectclass: could not re-add sorted objectclass to modify msg"));
+			talloc_free(mem_ctx);
+			return ret;
+		}
+	}
+
+	talloc_free(mem_ctx);
+	ret = ldb_msg_sanity_check(module->ldb, msg);
+
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	/* go on with the call chain */
+	ret = ldb_next_request(module, down_req);
+
+	/* do not free down_req as the call results may be linked to it,
+	 * it will be freed when the upper level request get freed */
+	if (ret == LDB_SUCCESS) {
+		req->async.handle = down_req->async.handle;
+	}
+	return ret;
 }
 
 static int objectclass_modify(struct ldb_module *module, struct ldb_request *req)
 {
-	struct ldb_async_handle *h;
-	struct oc_async_context *ac;
-	struct ldb_message_element *objectClassAttr;
-
+	struct ldb_message_element *objectclass_element;
+	struct ldb_message *msg;
 	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "objectclass_modify\n");
 
 	if (ldb_dn_is_special(req->op.mod.message->dn)) { /* do not manipulate our control entries */
 		return ldb_next_request(module, req);
 	}
 	
-	objectClassAttr = ldb_msg_find_element(req->op.mod.message, "objectClass");
+	objectclass_element = ldb_msg_find_element(req->op.mod.message, "objectClass");
 
 	/* If no part of this touches the objectClass, then we don't
 	 * need to make any changes.  */
 	/* If the only operation is the deletion of the objectClass then go on */
-	if (!objectClassAttr) {
+	if (!objectclass_element) {
 		return ldb_next_request(module, req);
 	}
 
-	h = oc_init_handle(req, module);
-	if (!h) {
-		return LDB_ERR_OPERATIONS_ERROR;
+	switch (objectclass_element->flags & LDB_FLAG_MOD_MASK) {
+	case LDB_FLAG_MOD_DELETE:
+		/* Delete everything?  Probably totally illigal, but hey! */
+		if (objectclass_element->num_values == 0) {
+			return ldb_next_request(module, req);
+		}
+		break;
+	case LDB_FLAG_MOD_REPLACE:
+	{
+		struct ldb_request *down_req;
+		struct class_list *sorted, *current;
+		TALLOC_CTX *mem_ctx;
+		int ret;
+		mem_ctx = talloc_new(req);
+		if (mem_ctx == NULL) {
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+
+		/* prepare the first operation */
+		down_req = talloc(req, struct ldb_request);
+		if (down_req == NULL) {
+			ldb_set_errstring(module->ldb, talloc_asprintf(module->ldb, "Out of memory!"));
+			talloc_free(mem_ctx);
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+		
+		*down_req = *req; /* copy the request */
+		
+		down_req->op.mod.message = msg = ldb_msg_copy_shallow(down_req, req->op.mod.message);
+		
+		if (down_req->op.add.message == NULL) {
+			talloc_free(mem_ctx);
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+		
+		ret = objectclass_sort(module, mem_ctx, objectclass_element, &sorted);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+
+		/* We must completely replace the existing objectClass entry,
+		 * because we need it sorted */
+		
+		ldb_msg_remove_attr(msg, "objectClass");
+		ret = ldb_msg_add_empty(msg, "objectClass", LDB_FLAG_MOD_REPLACE);
+		
+		if (ret != LDB_SUCCESS) {
+			talloc_free(mem_ctx);
+			return ret;
+		}
+
+		/* Move from the linked list back into an ldb msg */
+		for (current = sorted; current; current = current->next) {
+			ret = ldb_msg_add_string(msg, "objectClass", current->objectclass);
+			if (ret != LDB_SUCCESS) {
+				ldb_set_errstring(module->ldb, talloc_asprintf(mem_ctx, "objectclass: could not re-add sorted objectclass to modify msg"));
+				talloc_free(mem_ctx);
+				return ret;
+			}
+		}
+		
+		talloc_free(mem_ctx);
+
+		ret = ldb_msg_sanity_check(module->ldb, msg);
+		if (ret != LDB_SUCCESS) {
+			talloc_free(mem_ctx);
+			return ret;
+		}
+		
+		/* go on with the call chain */
+		ret = ldb_next_request(module, down_req);
+		
+		/* do not free down_req as the call results may be linked to it,
+		 * it will be freed when the upper level request get freed */
+		if (ret == LDB_SUCCESS) {
+			req->async.handle = down_req->async.handle;
+		}
+		return ret;
 	}
-	ac = talloc_get_type(h->private_data, struct oc_async_context);
-
-	/* return or own handle to deal with this call */
-	req->async.handle = h;
-
-	/* prepare the first operation */
-	ac->down_req = talloc_zero(ac, struct ldb_request);
-	if (ac->down_req == NULL) {
-		ldb_set_errstring(module->ldb, talloc_asprintf(module->ldb, "Out of memory!"));
-		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	*(ac->down_req) = *req; /* copy the request */
+	{
+		struct ldb_async_handle *h;
+		struct oc_async_context *ac;
+		
+		h = oc_init_handle(req, module);
+		if (!h) {
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+		ac = talloc_get_type(h->private_data, struct oc_async_context);
+		
+		/* return or own handle to deal with this call */
+		req->async.handle = h;
+		
+		/* prepare the first operation */
+		ac->down_req = talloc(ac, struct ldb_request);
+		if (ac->down_req == NULL) {
+			ldb_set_errstring(module->ldb, talloc_asprintf(module->ldb, "Out of memory!"));
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+		
+		*(ac->down_req) = *req; /* copy the request */
+		
+		ac->down_req->async.context = NULL;
+		ac->down_req->async.callback = NULL;
+		ldb_set_timeout_from_prev_req(module->ldb, req, ac->down_req);
+		
+		ac->step = OC_DO_REQ;
 
-	ac->down_req->async.context = NULL;
-	ac->down_req->async.callback = NULL;
-	ldb_set_timeout_from_prev_req(module->ldb, req, ac->down_req);
-
-	ac->step = OC_DO_REQ;
-
-	return ldb_next_request(module, ac->down_req);
+		return ldb_next_request(module, ac->down_req);
+	}
 }
 
 static int get_self_callback(struct ldb_context *ldb, void *context, struct ldb_async_result *ares)
@@ -243,14 +486,7 @@ static int objectclass_do_mod(struct ldb_async_handle *h) {
 	struct ldb_message_element *objectclass_element;
 	struct ldb_message *msg;
 	TALLOC_CTX *mem_ctx;
-	struct class_list {
-		struct class_list *prev, *next;
-		const char *objectclass;
-	};
-	struct class_list *sorted = NULL, *parent_class = NULL,
-		*subclass = NULL, *unsorted = NULL, *current, *poss_subclass;
-	int i;
-	int layer;
+	struct class_list *sorted, *current;
 	int ret;
       
 	ac = talloc_get_type(h->private_data, struct oc_async_context);
@@ -280,116 +516,22 @@ static int objectclass_do_mod(struct ldb_async_handle *h) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	/* modify dn */
-	msg->dn = ac->orig_req->op.mod.message->dn;
-
 	/* This is now the objectClass list from the database */
 	objectclass_element = ldb_msg_find_element(ac->search_res->message, 
 						   "objectClass");
 	if (!objectclass_element) {
-		/* Perhaps the above was a remove?  Move along now, nothing to see here */
+		/* Where did it go?  Move along now, nothing to see here */
 		talloc_free(mem_ctx);
 		return LDB_SUCCESS;
 	}
 	
-	/* DESIGN:
-	 *
-	 * We work on 4 different 'bins' (implemented here as linked lists):
-	 *
-	 * * sorted:       the eventual list, in the order we wish to push
-	 *                 into the database.  This is the only ordered list.
-	 *
-	 * * parent_class: The current parent class 'bin' we are
-	 *                 trying to find subclasses for
-	 *
-	 * * subclass:     The subclasses we have found so far
-	 *
-	 * * unsorted:     The remaining objectClasses
-	 *
-	 * The process is a matter of filtering objectClasses up from
-	 * unsorted into sorted.  Order is irrelevent in the later 3 'bins'.
-	 * 
-	 * We start with 'top' (found and promoted to parent_class
-	 * initially).  Then we find (in unsorted) all the direct
-	 * subclasses of 'top'.  parent_classes is concatenated onto
-	 * the end of 'sorted', and subclass becomes the list in
-	 * parent_class.
-	 *
-	 * We then repeat, until we find no more subclasses.  Any left
-	 * over classes are added to the end.
-	 *
-	 */
+	/* modify dn */
+	msg->dn = ac->orig_req->op.mod.message->dn;
 
-	/* Firstly, dump all the objectClass elements into the
-	 * unsorted bin, except for 'top', which is special */
-	for (i=0; i < objectclass_element->num_values; i++) {
-		current = talloc(mem_ctx, struct class_list);
-		if (!current) {
-			ldb_set_errstring(ac->module->ldb, talloc_asprintf(ac, "objectclass: out of memory allocating objectclass list"));
-			talloc_free(mem_ctx);
-			return LDB_ERR_OPERATIONS_ERROR;
-		}
-		current->objectclass = (const char *)objectclass_element->values[i].data;
-
-		/* this is the root of the tree.  We will start
-		 * looking for subclasses from here */
-		if (ldb_attr_cmp("top", current->objectclass) == 0) {
-			DLIST_ADD(parent_class, current);
-		} else {
-			DLIST_ADD(unsorted, current);
-		}
+	ret = objectclass_sort(ac->module, mem_ctx, objectclass_element, &sorted);
+	if (ret != LDB_SUCCESS) {
+		return ret;
 	}
-
-	/* DEBUGGING aid:  how many layers are we down now? */
-	layer = 0;
-	do {
-		layer++;
-		/* Find all the subclasses of classes in the
-		 * parent_classes.  Push them onto the subclass list */
-
-		/* Ensure we don't bother if there are no unsorted entries left */
-		for (current = parent_class; unsorted && current; current = current->next) {
-			const char **subclasses = ldb_subclass_list(ac->module->ldb, current->objectclass);
-
-			/* Walk the list of possible subclasses in unsorted */
-			for (poss_subclass = unsorted; poss_subclass; ) {
-				struct class_list *next;
-				
-				/* Save the next pointer, as the DLIST_ macros will change poss_subclass->next */
-				next = poss_subclass->next;
-
-				for (i = 0; subclasses && subclasses[i]; i++) {
-					if (ldb_attr_cmp(poss_subclass->objectclass, subclasses[i]) == 0) {
-						DLIST_REMOVE(unsorted, poss_subclass);
-						DLIST_ADD(subclass, poss_subclass);
-
-						break;
-					}
-				}
-				poss_subclass = next;
-			}
-		}
-
-		/* Now push the parent_classes as sorted, we are done with
-		these.  Add to the END of the list by concatenation */
-		DLIST_CONCATENATE(sorted, parent_class, struct class_list *);
-
-		/* and now find subclasses of these */
-		parent_class = subclass;
-		subclass = NULL;
-
-		/* If we didn't find any subclasses we will fall out
-		 * the bottom here */
-	} while (parent_class);
-
-	/* This shouldn't happen, and would break MMC, but we can't
-	 * afford to loose objectClasses.  Perhaps there was no 'top',
-	 * or some other schema error? 
-	 *
-	 * Detecting schema errors is the job of the schema module, so
-	 * at this layer we just try not to loose data
- 	 */
-	DLIST_CONCATENATE(sorted, unsorted, struct class_list *);
 
 	/* We must completely replace the existing objectClass entry.
 	 * We could do a constrained add/del, but we are meant to be
