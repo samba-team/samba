@@ -1,0 +1,3 @@
+This branch is a mirror of the SAMBA_3_0 devleopment tree
+(svn://svnanon.samba.org/samba/branches/SAMBA_3_0)
+using the svn:externals property settings.
