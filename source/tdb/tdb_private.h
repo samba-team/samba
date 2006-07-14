@@ -25,7 +25,6 @@
 */
 
 #ifndef _SAMBA_BUILD_
-#include "config.h"
 #include <stdlib.h>
 #include <stdio.h>
 #ifdef HAVE_STDINT_H
