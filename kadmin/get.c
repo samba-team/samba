@@ -272,10 +272,16 @@ format_field(kadm5_principal_ent_t princ, unsigned int field,
 
 	    buf[0] = '\0';
 	    for (i = 0; i < acl.len; i++) {
-		strlcpy(buf, "P: ", buf_len);
+		strlcpy(buf, "subject: ", buf_len);
 		strlcpy(buf, acl.val[i].subject, buf_len);
-		strlcpy(buf, " ", buf_len);
-		strlcpy(buf, acl.val[i].issuer, buf_len);
+		if (acl.val[i].issuer) {
+		    strlcpy(buf, " issuer:", buf_len);
+		    strlcpy(buf, *acl.val[i].issuer, buf_len);
+		}
+		if (acl.val[i].anchor) {
+		    strlcpy(buf, " anchor:", buf_len);
+		    strlcpy(buf, *acl.val[i].anchor, buf_len);
+		}
 		if (i + 1 < acl.len)
 		    strlcpy(buf, ", ", buf_len);
 	    }
