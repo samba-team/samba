@@ -338,7 +338,7 @@ BOOL share_access_check(connection_struct *conn, int snum, user_struct *vuser, u
 	if (mem_ctx == NULL)
 		return False;
 
-	psd = get_share_security(mem_ctx, snum, &sd_size);
+	psd = get_share_security(mem_ctx, lp_servicename(snum), &sd_size);
 
 	if (!psd)
 		goto out;
@@ -415,7 +415,7 @@ static void init_srv_share_info_502(pipes_struct *p, SRV_SHARE_INFO_502 *sh502, 
 
 	pstrcpy(passwd, "");
 
-	sd = get_share_security(ctx, snum, &sd_size);
+	sd = get_share_security(ctx, lp_servicename(snum), &sd_size);
 
 	init_srv_share_info502(&sh502->info_502, net_name, get_share_type(snum), remark, 0, 0xffffffff, 1, path, passwd, sd, sd_size);
 	init_srv_share_info502_str(&sh502->info_502_str, net_name, remark, path, passwd, sd, sd_size);
@@ -493,7 +493,7 @@ static void init_srv_share_info_1501(pipes_struct *p, SRV_SHARE_INFO_1501 *sh150
 
 	ZERO_STRUCTP(sh1501);
 
-	sd = get_share_security(ctx, snum, &sd_size);
+	sd = get_share_security(ctx, lp_servicename(snum), &sd_size);
 
 	sh1501->sdb = make_sec_desc_buf(p->mem_ctx, sd_size, sd);
 }
@@ -1684,7 +1684,8 @@ WERROR _srv_net_share_set_info(pipes_struct *p, SRV_Q_NET_SHARE_SET_INFO *q_u, S
 		SEC_DESC *old_sd;
 		size_t sd_size;
 
-		old_sd = get_share_security(p->mem_ctx, snum, &sd_size);
+		old_sd = get_share_security(p->mem_ctx, lp_servicename(snum),
+					    &sd_size);
 
 		if (old_sd && !sec_desc_equal(old_sd, psd)) {
 			if (!set_share_security(p->mem_ctx, share_name, psd))
