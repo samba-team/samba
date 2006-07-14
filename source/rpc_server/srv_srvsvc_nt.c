@@ -513,8 +513,10 @@ static BOOL is_hidden_share(int snum)
  Fill in a share info structure.
  ********************************************************************/
 
-static BOOL init_srv_share_info_ctr(pipes_struct *p, SRV_SHARE_INFO_CTR *ctr,
-	       uint32 info_level, uint32 *resume_hnd, uint32 *total_entries, BOOL all_shares)
+static WERROR init_srv_share_info_ctr(pipes_struct *p,
+				      SRV_SHARE_INFO_CTR *ctr,
+				      uint32 info_level, uint32 *resume_hnd,
+				      uint32 *total_entries, BOOL all_shares)
 {
 	int num_entries = 0;
 	int num_services = 0;
@@ -523,7 +525,7 @@ static BOOL init_srv_share_info_ctr(pipes_struct *p, SRV_SHARE_INFO_CTR *ctr,
 
 	DEBUG(5,("init_srv_share_info_ctr\n"));
 
-	ZERO_STRUCTPN(ctr);
+	ZERO_STRUCT(ctr->share);
 
 	ctr->info_level = ctr->switch_value = info_level;
 	*resume_hnd = 0;
@@ -533,218 +535,153 @@ static BOOL init_srv_share_info_ctr(pipes_struct *p, SRV_SHARE_INFO_CTR *ctr,
 	num_services = load_usershare_shares();
 	unbecome_root();
 
-	/* Count the number of entries. */
-	for (snum = 0; snum < num_services; snum++) {
-		if (lp_browseable(snum) && lp_snum_ok(snum) && (all_shares || !is_hidden_share(snum)) )
-			num_entries++;
+	num_entries = 0;
+
+	ZERO_STRUCT(ctr->share);
+
+	for (snum = *resume_hnd; snum < num_services; snum++) {
+		if (!lp_snum_ok(snum) || !lp_browseable(snum)) {
+			continue;
+		}
+		if (!all_shares && is_hidden_share(snum)) {
+			continue;
+		}
+
+		switch (info_level) {
+		case 0:
+		{
+			SRV_SHARE_INFO_0 i;
+			init_srv_share_info_0(p, &i, snum);
+			ADD_TO_ARRAY(ctx, SRV_SHARE_INFO_0, i,
+				     &ctr->share.info0, &num_entries);
+			if (ctr->share.info0 == NULL) {
+				return WERR_NOMEM;
+			}
+			break;
+		}
+
+		case 1:
+		{
+			SRV_SHARE_INFO_1 i;
+			init_srv_share_info_1(p, &i, snum);
+			ADD_TO_ARRAY(ctx, SRV_SHARE_INFO_1, i,
+				     &ctr->share.info1, &num_entries);
+			if (ctr->share.info1 == NULL) {
+				return WERR_NOMEM;
+			}
+			break;
+		}
+
+		case 2:
+		{
+			SRV_SHARE_INFO_2 i;
+			init_srv_share_info_2(p, &i, snum);
+			ADD_TO_ARRAY(ctx, SRV_SHARE_INFO_2, i,
+				     &ctr->share.info2, &num_entries);
+			if (ctr->share.info2 == NULL) {
+				return WERR_NOMEM;
+			}
+			break;
+		}
+
+		case 501:
+		{
+			SRV_SHARE_INFO_501 i;
+			init_srv_share_info_501(p, &i, snum);
+			ADD_TO_ARRAY(ctx, SRV_SHARE_INFO_501, i,
+				     &ctr->share.info501, &num_entries);
+			if (ctr->share.info501 == NULL) {
+				return WERR_NOMEM;
+			}
+			break;
+		}
+
+		case 502:
+		{
+			SRV_SHARE_INFO_502 i;
+			init_srv_share_info_502(p, &i, snum);
+			ADD_TO_ARRAY(ctx, SRV_SHARE_INFO_502, i,
+				     &ctr->share.info502, &num_entries);
+			if (ctr->share.info502 == NULL) {
+				return WERR_NOMEM;
+			}
+			break;
+		}
+
+		/* here for completeness but not currently used with enum
+		 * (1004 - 1501)*/
+	
+		case 1004:
+		{
+			SRV_SHARE_INFO_1004 i;
+			init_srv_share_info_1004(p, &i, snum);
+			ADD_TO_ARRAY(ctx, SRV_SHARE_INFO_1004, i,
+				     &ctr->share.info1004, &num_entries);
+			if (ctr->share.info1004 == NULL) {
+				return WERR_NOMEM;
+			}
+			break;
+		}
+
+		case 1005:
+		{
+			SRV_SHARE_INFO_1005 i;
+			init_srv_share_info_1005(p, &i, snum);
+			ADD_TO_ARRAY(ctx, SRV_SHARE_INFO_1005, i,
+				     &ctr->share.info1005, &num_entries);
+			if (ctr->share.info1005 == NULL) {
+				return WERR_NOMEM;
+			}
+			break;
+		}
+
+		case 1006:
+		{
+			SRV_SHARE_INFO_1006 i;
+			init_srv_share_info_1006(p, &i, snum);
+			ADD_TO_ARRAY(ctx, SRV_SHARE_INFO_1006, i,
+				     &ctr->share.info1006, &num_entries);
+			if (ctr->share.info1006 == NULL) {
+				return WERR_NOMEM;
+			}
+			break;
+		}
+
+		case 1007:
+		{
+			SRV_SHARE_INFO_1007 i;
+			init_srv_share_info_1007(p, &i, snum);
+			ADD_TO_ARRAY(ctx, SRV_SHARE_INFO_1007, i,
+				     &ctr->share.info1007, &num_entries);
+			if (ctr->share.info1007 == NULL) {
+				return WERR_NOMEM;
+			}
+			break;
+		}
+
+		case 1501:
+		{
+			SRV_SHARE_INFO_1501 i;
+			init_srv_share_info_1501(p, &i, snum);
+			ADD_TO_ARRAY(ctx, SRV_SHARE_INFO_1501, i,
+				     &ctr->share.info1501, &num_entries);
+			if (ctr->share.info1501 == NULL) {
+				return WERR_NOMEM;
+			}
+			break;
+		}
+		default:
+			DEBUG(5,("init_srv_share_info_ctr: unsupported switch "
+				 "value %d\n", info_level));
+			return WERR_UNKNOWN_LEVEL;
+		}
 	}
 
 	*total_entries = num_entries;
 	ctr->num_entries2 = ctr->num_entries = num_entries;
 	ctr->ptr_share_info = ctr->ptr_entries = 1;
 
-	if (!num_entries)
-		return True;
-
-	switch (info_level) {
-	case 0:
-	{
-		SRV_SHARE_INFO_0 *info0 = TALLOC_ARRAY(ctx, SRV_SHARE_INFO_0, num_entries);
-		int i = 0;
-
-		if (!info0) {
-			return False;
-		}
-
-		for (snum = *resume_hnd; snum < num_services; snum++) {
-			if (lp_browseable(snum) && lp_snum_ok(snum) && (all_shares || !is_hidden_share(snum)) ) {
-				init_srv_share_info_0(p, &info0[i++], snum);
-			}
-		}
-
-		ctr->share.info0 = info0;
-		break;
-
-	}
-
-	case 1:
-	{
-		SRV_SHARE_INFO_1 *info1 = TALLOC_ARRAY(ctx, SRV_SHARE_INFO_1, num_entries);
-		int i = 0;
-
-		if (!info1) {
-			return False;
-		}
-
-		for (snum = *resume_hnd; snum < num_services; snum++) {
-			if (lp_browseable(snum) && lp_snum_ok(snum) && (all_shares || !is_hidden_share(snum)) ) {
-				init_srv_share_info_1(p, &info1[i++], snum);
-			}
-		}
-
-		ctr->share.info1 = info1;
-		break;
-	}
-
-	case 2:
-	{
-		SRV_SHARE_INFO_2 *info2 = TALLOC_ARRAY(ctx, SRV_SHARE_INFO_2, num_entries);
-		int i = 0;
-
-		if (!info2) {
-			return False;
-		}
-
-		for (snum = *resume_hnd; snum < num_services; snum++) {
-			if (lp_browseable(snum) && lp_snum_ok(snum) && (all_shares || !is_hidden_share(snum)) ) {
-				init_srv_share_info_2(p, &info2[i++], snum);
-			}
-		}
-
-		ctr->share.info2 = info2;
-		break;
-	}
-
-	case 501:
-	{
-		SRV_SHARE_INFO_501 *info501 = TALLOC_ARRAY(ctx, SRV_SHARE_INFO_501, num_entries);
-		int i = 0;
-	
-		if (!info501) {
-			return False;
-		}
-
-		for (snum = *resume_hnd; snum < num_services; snum++) {
-			if (lp_browseable(snum) && lp_snum_ok(snum) && (all_shares || !is_hidden_share(snum)) ) {
-				init_srv_share_info_501(p, &info501[i++], snum);
-			}
-		}
-	
-		ctr->share.info501 = info501;
-		break;
-	}
-
-	case 502:
-	{
-		SRV_SHARE_INFO_502 *info502 = TALLOC_ARRAY(ctx, SRV_SHARE_INFO_502, num_entries);
-		int i = 0;
-
-		if (!info502) {
-			return False;
-		}
-
-		for (snum = *resume_hnd; snum < num_services; snum++) {
-			if (lp_browseable(snum) && lp_snum_ok(snum) && (all_shares || !is_hidden_share(snum)) ) {
-				init_srv_share_info_502(p, &info502[i++], snum);
-			}
-		}
-
-		ctr->share.info502 = info502;
-		break;
-	}
-
-	/* here for completeness but not currently used with enum (1004 - 1501)*/
-	
-	case 1004:
-	{
-		SRV_SHARE_INFO_1004 *info1004 = TALLOC_ARRAY(ctx, SRV_SHARE_INFO_1004, num_entries);
-		int i = 0;
-
-		if (!info1004) {
-			return False;
-		}
-
-		for (snum = *resume_hnd; snum < num_services; snum++) {
-			if (lp_browseable(snum) && lp_snum_ok(snum) && (all_shares || !is_hidden_share(snum)) ) {
-				init_srv_share_info_1004(p, &info1004[i++], snum);
-			}
-		}
-
-		ctr->share.info1004 = info1004;
-		break;
-	}
-
-	case 1005:
-	{
-		SRV_SHARE_INFO_1005 *info1005 = TALLOC_ARRAY(ctx, SRV_SHARE_INFO_1005, num_entries);
-		int i = 0;
-
-		if (!info1005) {
-			return False;
-		}
-
-		for (snum = *resume_hnd; snum < num_services; snum++) {
-			if (lp_browseable(snum) && lp_snum_ok(snum) && (all_shares || !is_hidden_share(snum)) ) {
-				init_srv_share_info_1005(p, &info1005[i++], snum);
-			}
-		}
-
-		ctr->share.info1005 = info1005;
-		break;
-	}
-
-	case 1006:
-	{
-		SRV_SHARE_INFO_1006 *info1006 = TALLOC_ARRAY(ctx, SRV_SHARE_INFO_1006, num_entries);
-		int i = 0;
-
-		if (!info1006) {
-			return False;
-		}
-
-		for (snum = *resume_hnd; snum < num_services; snum++) {
-			if (lp_browseable(snum) && lp_snum_ok(snum) && (all_shares || !is_hidden_share(snum)) ) {
-				init_srv_share_info_1006(p, &info1006[i++], snum);
-			}
-		}
-
-		ctr->share.info1006 = info1006;
-		break;
-	}
-
-	case 1007:
-	{
-		SRV_SHARE_INFO_1007 *info1007 = TALLOC_ARRAY(ctx, SRV_SHARE_INFO_1007, num_entries);
-		int i = 0;
-
-		if (!info1007) {
-			return False;
-		}
-
-		for (snum = *resume_hnd; snum < num_services; snum++) {
-			if (lp_browseable(snum) && lp_snum_ok(snum) && (all_shares || !is_hidden_share(snum)) ) {
-				init_srv_share_info_1007(p, &info1007[i++], snum);
-			}
-		}
-
-		ctr->share.info1007 = info1007;
-		break;
-	}
-
-	case 1501:
-	{
-		SRV_SHARE_INFO_1501 *info1501 = TALLOC_ARRAY(ctx, SRV_SHARE_INFO_1501, num_entries);
-		int i = 0;
-
-		if (!info1501) {
-			return False;
-		}
-
-		for (snum = *resume_hnd; snum < num_services; snum++) {
-			if (lp_browseable(snum) && lp_snum_ok(snum) && (all_shares || !is_hidden_share(snum)) ) {
-				init_srv_share_info_1501(p, &info1501[i++], snum);
-			}
-		}
-
-		ctr->share.info1501 = info1501;
-		break;
-	}
-	default:
-		DEBUG(5,("init_srv_share_info_ctr: unsupported switch value %d\n", info_level));
-		return False;
-	}
-
-	return True;
+	return WERR_OK;
 }
 
 /*******************************************************************
@@ -756,12 +693,9 @@ static void init_srv_r_net_share_enum(pipes_struct *p, SRV_R_NET_SHARE_ENUM *r_n
 {
 	DEBUG(5,("init_srv_r_net_share_enum: %d\n", __LINE__));
 
-	if (init_srv_share_info_ctr(p, &r_n->ctr, info_level,
-				    &resume_hnd, &r_n->total_entries, all)) {
-		r_n->status = WERR_OK;
-	} else {
-		r_n->status = WERR_UNKNOWN_LEVEL;
-	}
+	r_n->status = init_srv_share_info_ctr(p, &r_n->ctr, info_level,
+					      &resume_hnd,
+					      &r_n->total_entries, all);
 
 	init_enum_hnd(&r_n->enum_hnd, resume_hnd);
 }
