@@ -665,7 +665,7 @@ char *talloc_sub_specified(TALLOC_CTX *mem_ctx,
 /****************************************************************************
 ****************************************************************************/
 
-char *alloc_sub_advanced(const char *servicename, const char *user, 
+static char *alloc_sub_advanced(const char *servicename, const char *user, 
 			 const char *connectpath, gid_t gid, 
 			 const char *smb_name, const char *domain_name,
 			 const char *str)
@@ -730,6 +730,29 @@ char *alloc_sub_advanced(const char *servicename, const char *user,
 	SAFE_FREE(a_string);
 	return ret_string;
 }
+
+/*
+ * This obviously is inefficient and needs to be merged into
+ * alloc_sub_advanced...
+ */
+
+char *talloc_sub_advanced(TALLOC_CTX *mem_ctx,
+			  const char *servicename, const char *user, 
+			  const char *connectpath, gid_t gid, 
+			  const char *smb_name, const char *domain_name,
+			  const char *str)
+{
+	char *a, *t;
+
+	if (!(a = alloc_sub_advanced(servicename, user, connectpath, gid,
+				     smb_name, domain_name, str))) {
+		return NULL;
+	}
+	t = talloc_strdup(mem_ctx, a);
+	SAFE_FREE(a);
+	return t;
+}
+
 
 void standard_sub_advanced(const char *servicename, const char *user, 
 			   const char *connectpath, gid_t gid, 
