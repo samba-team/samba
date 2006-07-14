@@ -666,6 +666,7 @@ static NTSTATUS brl_lock_posix(struct byte_range_lock *br_lck,
 		return NT_STATUS_NO_MEMORY;
 	}
 	br_lck->num_locks = count;
+	SAFE_FREE(br_lck->lock_data);
 	br_lck->lock_data = (void *)tp;
 	br_lck->modified = True;
 	return NT_STATUS_OK;
@@ -956,6 +957,7 @@ static BOOL brl_unlock_posix(struct byte_range_lock *br_lck, const struct lock_s
 	}
 
 	br_lck->num_locks = count;
+	SAFE_FREE(br_lck->lock_data);
 	br_lck->lock_data = (void *)tp;
 	br_lck->modified = True;
 
