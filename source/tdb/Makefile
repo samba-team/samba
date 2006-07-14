@@ -7,7 +7,7 @@ CC = gcc
 
 ADMINPROGS = tdbdump tdbbackup
 PROGS = tdbtest tdbtool tdbtorture
-TDB_OBJ = tdb.o spinlock.o tdbback.o
+TDB_OBJ = tdb.o tdbback.o dump.o error.o freelist.o io.o lock.o open.o traverse.o transaction.o
 
 default: $(PROGS)
 
