@@ -108,7 +108,8 @@ SEC_DESC *get_share_security_default( TALLOC_CTX *ctx, size_t *psize, uint32 def
  Pull a security descriptor from the share tdb.
  ********************************************************************/
 
-SEC_DESC *get_share_security( TALLOC_CTX *ctx, int snum, size_t *psize)
+SEC_DESC *get_share_security( TALLOC_CTX *ctx, const char *servicename,
+			      size_t *psize)
 {
 	prs_struct ps;
 	fstring key;
@@ -122,12 +123,13 @@ SEC_DESC *get_share_security( TALLOC_CTX *ctx, int snum, size_t *psize)
 
 	/* Fetch security descriptor from tdb */
  
-	slprintf(key, sizeof(key)-1, "SECDESC/%s", lp_servicename(snum));
+	slprintf(key, sizeof(key)-1, "SECDESC/%s", servicename);
  
 	if (tdb_prs_fetch(share_tdb, key, &ps, ctx)!=0 ||
 		!sec_io_desc("get_share_security", &psd, &ps, 1)) {
  
-		DEBUG(4,("get_share_security: using default secdesc for %s\n", lp_servicename(snum) ));
+		DEBUG(4, ("get_share_security: using default secdesc for %s\n",
+			  servicename));
  
 		return get_share_security_default(ctx, psize, GENERIC_ALL_ACCESS);
 	}

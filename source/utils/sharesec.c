@@ -382,7 +382,8 @@ int main(int argc, const char *argv[])
 		
 	switch ( mode ) {
 		case SMB_ACL_VIEW:
-			if (!(secdesc = get_share_security( ctx, snum, &sd_size )) ) {
+			if (!(secdesc = get_share_security( ctx, sharename,
+							    &sd_size )) ) {
 				fprintf(stderr, "Unable to retrieve permissions for share [%s]\n", sharename);
 				return -1;
 			}
