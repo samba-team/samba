@@ -959,6 +959,7 @@ static BOOL brl_unlock_posix(struct byte_range_lock *br_lck, const struct lock_s
 	br_lck->num_locks = count;
 	SAFE_FREE(br_lck->lock_data);
 	br_lck->lock_data = (void *)tp;
+	locks = (struct lock_struct *)br_lck->lock_data;
 	br_lck->modified = True;
 
 	/* Send unlock messages to any pending waiters that overlap. */
