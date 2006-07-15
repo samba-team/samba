@@ -1272,7 +1272,7 @@ static struct dom_sid *name2sid(TALLOC_CTX *mem_ctx,
 	struct lsa_LookupNames l;
 	struct lsa_TransSidArray sids;
 	struct lsa_String lsa_name;
-	uint32_t count = 1;
+	uint32_t count = 0;
 	struct dom_sid *result;
 	TALLOC_CTX *tmp_ctx;
 
