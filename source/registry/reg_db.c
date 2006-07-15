@@ -229,7 +229,7 @@ BOOL regdb_init( void )
 	/* always setup the necessary keys and values */
 
 	if ( !init_registry_data() ) {
-		DEBUG(0,("init_registry: Failed to initiailize data in registry!\n"));
+		DEBUG(0,("init_registry: Failed to initialize data in registry!\n"));
 		return False;
 	}
 
@@ -313,7 +313,9 @@ static BOOL regdb_store_keys_internal( const char *key, REGSUBKEY_CTR *ctr )
 
 	/* allocate some initial memory */
 		
-	buffer = SMB_MALLOC(sizeof(pstring));
+	if (!(buffer = SMB_MALLOC(sizeof(pstring)))) {
+		return False;
+	}
 	buflen = sizeof(pstring);
 	len = 0;
 	
