@@ -723,7 +723,7 @@ NTSTATUS brl_lock(struct byte_range_lock *br_lck,
  Check if an unlock overlaps a pending lock.
 ****************************************************************************/
 
-static BOOL brl_pending_overlap(struct lock_struct *lock, struct lock_struct *pend_lock)
+static BOOL brl_pending_overlap(const struct lock_struct *lock, const struct lock_struct *pend_lock)
 {
 	if ((lock->start <= pend_lock->start) && (lock->start + lock->size > pend_lock->start))
 		return True;
@@ -739,12 +739,11 @@ static BOOL brl_pending_overlap(struct lock_struct *lock, struct lock_struct *pe
 static BOOL brl_unlock_windows(struct byte_range_lock *br_lck, const struct lock_struct *plock)
 {
 	unsigned int i, j;
-	struct lock_struct *lock = NULL;
 	struct lock_struct *locks = (struct lock_struct *)br_lck->lock_data;
 
 #if ZERO_ZERO
 	for (i = 0; i < br_lck->num_locks; i++) {
-		lock = &locks[i];
+		struct lock_struct *lock = &locks[i];
 
 		if (lock->lock_type == WRITE_LOCK &&
 		    brl_same_context(&lock->context, &plock->context) &&
@@ -767,7 +766,7 @@ static BOOL brl_unlock_windows(struct byte_range_lock *br_lck, const struct lock
 #endif
 
 	for (i = 0; i < br_lck->num_locks; i++) {
-		lock = &locks[i];
+		struct lock_struct *lock = &locks[i];
 
 		/* Only remove our own locks that match in start, size, and flavour. */
 		if (brl_same_context(&lock->context, &plock->context) &&
@@ -799,7 +798,7 @@ static BOOL brl_unlock_windows(struct byte_range_lock *br_lck, const struct lock
 		}
 
 		/* We could send specific lock info here... */
-		if (brl_pending_overlap(lock, pend_lock)) {
+		if (brl_pending_overlap(plock, pend_lock)) {
 			DEBUG(10,("brl_unlock: sending unlock message to pid %s\n",
 				procid_str_static(&pend_lock->context.pid )));
 
@@ -829,7 +828,6 @@ static BOOL brl_unlock_windows(struct byte_range_lock *br_lck, const struct lock
 static BOOL brl_unlock_posix(struct byte_range_lock *br_lck, const struct lock_struct *plock)
 {
 	unsigned int i, j, count;
-	struct lock_struct *lock = NULL;
 	struct lock_struct *tp;
 	struct lock_struct *locks = (struct lock_struct *)br_lck->lock_data;
 	BOOL overlap_found = False;
@@ -858,11 +856,11 @@ static BOOL brl_unlock_posix(struct byte_range_lock *br_lck, const struct lock_s
 
 	count = 0;
 	for (i = 0; i < br_lck->num_locks; i++) {
+		struct lock_struct *lock = &locks[i];
 		struct lock_struct tmp_lock[3];
 		BOOL lock_was_added = False;
 		unsigned int tmp_count;
 
-		lock = &locks[i];
 
 		/* Only remove our own locks - ignore fnum. */
 		if (lock->lock_type == PENDING_LOCK ||
@@ -958,12 +956,10 @@ static BOOL brl_unlock_posix(struct byte_range_lock *br_lck, const struct lock_s
 
 	br_lck->num_locks = count;
 	SAFE_FREE(br_lck->lock_data);
-	br_lck->lock_data = (void *)tp;
-	locks = (struct lock_struct *)br_lck->lock_data;
+	locks = br_lck->lock_data = (void *)tp;
 	br_lck->modified = True;
 
 	/* Send unlock messages to any pending waiters that overlap. */
-	locks = tp;
 
 	for (j=0; j < br_lck->num_locks; j++) {
 		struct lock_struct *pend_lock = &locks[j];
@@ -974,7 +970,7 @@ static BOOL brl_unlock_posix(struct byte_range_lock *br_lck, const struct lock_s
 		}
 
 		/* We could send specific lock info here... */
-		if (brl_pending_overlap(lock, pend_lock)) {
+		if (brl_pending_overlap(plock, pend_lock)) {
 			DEBUG(10,("brl_unlock: sending unlock message to pid %s\n",
 				procid_str_static(&pend_lock->context.pid )));
 
