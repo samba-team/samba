@@ -666,6 +666,7 @@ static NTSTATUS brl_lock_posix(struct byte_range_lock *br_lck,
 		return NT_STATUS_NO_MEMORY;
 	}
 	br_lck->num_locks = count;
+	SAFE_FREE(br_lck->lock_data);
 	br_lck->lock_data = (void *)tp;
 	br_lck->modified = True;
 	return NT_STATUS_OK;
@@ -977,6 +978,7 @@ static BOOL brl_unlock_posix(struct byte_range_lock *br_lck, const struct lock_s
 	}
 
 	br_lck->num_locks = count;
+	SAFE_FREE(br_lck->lock_data);
 	br_lck->lock_data = (void *)tp;
 	br_lck->modified = True;
 
@@ -1052,7 +1054,7 @@ BOOL brl_locktest(struct byte_range_lock *br_lck,
 	BOOL ret = True;
 	unsigned int i;
 	struct lock_struct lock;
-	struct lock_struct *locks = (struct lock_struct *)br_lck->lock_data;
+	const struct lock_struct *locks = (struct lock_struct *)br_lck->lock_data;
 	files_struct *fsp = br_lck->fsp;
 
 	lock.context.smbpid = smbpid;
@@ -1109,7 +1111,7 @@ NTSTATUS brl_lockquery(struct byte_range_lock *br_lck,
 {
 	unsigned int i;
 	struct lock_struct lock;
-	struct lock_struct *locks = (struct lock_struct *)br_lck->lock_data;
+	const struct lock_struct *locks = (struct lock_struct *)br_lck->lock_data;
 	files_struct *fsp = br_lck->fsp;
 
 	lock.context.smbpid = *psmbpid;
@@ -1123,7 +1125,7 @@ NTSTATUS brl_lockquery(struct byte_range_lock *br_lck,
 
 	/* Make sure existing locks don't conflict */
 	for (i=0; i < br_lck->num_locks; i++) {
-		struct lock_struct *exlock = &locks[i];
+		const struct lock_struct *exlock = &locks[i];
 		BOOL conflict = False;
 
 		if (exlock->lock_flav == WINDOWS_LOCK) {
@@ -1162,7 +1164,6 @@ NTSTATUS brl_lockquery(struct byte_range_lock *br_lck,
 
 	return NT_STATUS_OK;
 }
-
 
 /****************************************************************************
  Remove a particular pending lock.
