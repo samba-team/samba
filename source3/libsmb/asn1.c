@@ -31,7 +31,8 @@ BOOL asn1_write(ASN1_DATA *data, const void *p, int len)
 {
 	if (data->has_error) return False;
 	if (data->length < data->ofs+len) {
-		data->data = SMB_REALLOC(data->data, data->ofs+len);
+		data->data = SMB_REALLOC_ARRAY(data->data, unsigned char,
+					       data->ofs+len);
 		if (!data->data) {
 			data->has_error = True;
 			return False;
@@ -213,7 +214,7 @@ BOOL asn1_check_BOOLEAN(ASN1_DATA *data, BOOL v)
 BOOL asn1_load(ASN1_DATA *data, DATA_BLOB blob)
 {
 	ZERO_STRUCTP(data);
-	data->data = memdup(blob.data, blob.length);
+	data->data = (unsigned char *)memdup(blob.data, blob.length);
 	if (!data->data) {
 		data->has_error = True;
 		return False;
@@ -405,7 +406,7 @@ BOOL asn1_read_GeneralString(ASN1_DATA *data, char **s)
 		data->has_error = True;
 		return False;
 	}
-	str = SMB_MALLOC(len+1);
+	str = SMB_MALLOC_ARRAY(char, len+1);
 	if (!str) {
 		data->has_error = True;
 		return False;
