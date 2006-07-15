@@ -324,10 +324,11 @@ static NTSTATUS get_usr_handle(struct smbcli_state *cli,
 			       struct cli_credentials *admin_creds,
 			       uint8_t auth_type,
 			       uint8_t auth_level,
-			       const char *wks_name,
+			       const char *username,
 			       char **domain,
 			       struct dcerpc_pipe **result_pipe,
-			       struct policy_handle **result_handle)
+			       struct policy_handle **result_handle,
+			       struct dom_sid **sid)
 {
 	struct dcerpc_pipe *samr_pipe;
 	NTSTATUS status;
@@ -434,9 +435,9 @@ static NTSTATUS get_usr_handle(struct smbcli_state *cli,
 	}
 
 	c.in.domain_handle = &domain_handle;
-	user_name.string = talloc_asprintf(mem_ctx, "%s$", wks_name);
+	user_name.string = username;
 	c.in.account_name = &user_name;
-	c.in.acct_flags = ACB_WSTRUST;
+	c.in.acct_flags = ACB_NORMAL;
 	c.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	user_handle = talloc(mem_ctx, struct policy_handle);
 	c.out.user_handle = user_handle;
@@ -462,7 +463,7 @@ static NTSTATUS get_usr_handle(struct smbcli_state *cli,
 
 		ou.in.domain_handle = &domain_handle;
 		ou.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
-		ou.in.rid = ln.out.rids.ids[0];
+		user_rid = ou.in.rid = ln.out.rids.ids[0];
 		ou.out.user_handle = user_handle;
 
 		status = dcerpc_samr_OpenUser(samr_pipe, mem_ctx, &ou);
@@ -480,10 +481,170 @@ static NTSTATUS get_usr_handle(struct smbcli_state *cli,
 
 	*result_pipe = samr_pipe;
 	*result_handle = user_handle;
+	if (sid != NULL) {
+		*sid = dom_sid_add_rid(mem_ctx, l.out.sid, user_rid);
+	}
 	return NT_STATUS_OK;
 
  fail:
 	return status;
+}
+
+/*
+ * Create a test user
+ */
+
+static BOOL create_user(TALLOC_CTX *mem_ctx, struct smbcli_state *cli,
+			struct cli_credentials *admin_creds,
+			const char *username, const char *password,
+			char **domain_name,
+			struct dom_sid **user_sid)
+{
+	TALLOC_CTX *tmp_ctx;
+	NTSTATUS status;
+	struct dcerpc_pipe *samr_pipe;
+	struct policy_handle *wks_handle;
+	BOOL ret = False;
+
+	if (!(tmp_ctx = talloc_new(mem_ctx))) {
+		d_printf("talloc_init failed\n");
+		return False;
+	}
+
+	status = get_usr_handle(cli, tmp_ctx, admin_creds,
+				DCERPC_AUTH_TYPE_NTLMSSP,
+				DCERPC_AUTH_LEVEL_INTEGRITY,
+				username, domain_name, &samr_pipe, &wks_handle,
+				user_sid);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("get_wks_handle failed: %s\n", nt_errstr(status));
+		goto done;
+	}
+
+	{
+		struct samr_SetUserInfo2 sui2;
+		struct samr_SetUserInfo sui;
+		struct samr_QueryUserInfo qui;
+		union samr_UserInfo u_info;
+		DATA_BLOB session_key;
+
+		encode_pw_buffer(u_info.info24.password.data, password,
+				 STR_UNICODE);
+		u_info.info24.pw_len =	strlen_m(password)*2;
+
+		status = dcerpc_fetch_session_key(samr_pipe, &session_key);
+		if (!NT_STATUS_IS_OK(status)) {
+			d_printf("dcerpc_fetch_session_key failed\n");
+			goto done;
+		}
+		arcfour_crypt_blob(u_info.info24.password.data, 516,
+				   &session_key);
+		sui2.in.user_handle = wks_handle;
+		sui2.in.info = &u_info;
+		sui2.in.level = 24;
+
+		status = dcerpc_samr_SetUserInfo2(samr_pipe, tmp_ctx, &sui2);
+		if (!NT_STATUS_IS_OK(status)) {
+			d_printf("samr_SetUserInfo(24) failed: %s\n",
+				 nt_errstr(status));
+			goto done;
+		}
+
+		u_info.info16.acct_flags = ACB_NORMAL;
+		sui.in.user_handle = wks_handle;
+		sui.in.info = &u_info;
+		sui.in.level = 16;
+
+		status = dcerpc_samr_SetUserInfo(samr_pipe, tmp_ctx, &sui);
+		if (!NT_STATUS_IS_OK(status)) {
+			d_printf("samr_SetUserInfo(16) failed\n");
+			goto done;
+		}
+
+		qui.in.user_handle = wks_handle;
+		qui.in.level = 21;
+
+		status = dcerpc_samr_QueryUserInfo(samr_pipe, tmp_ctx, &qui);
+		if (!NT_STATUS_IS_OK(status)) {
+			d_printf("samr_QueryUserInfo(21) failed\n");
+			goto done;
+		}
+
+		qui.out.info->info21.allow_password_change = 0;
+		qui.out.info->info21.force_password_change = 0;
+		qui.out.info->info21.account_name.string = NULL;
+		qui.out.info->info21.rid = 0;
+		qui.out.info->info21.fields_present = 0x81827fa; /* copy usrmgr.exe */
+
+		u_info.info21 = qui.out.info->info21;
+		sui.in.user_handle = wks_handle;
+		sui.in.info = &u_info;
+		sui.in.level = 21;
+
+		status = dcerpc_samr_SetUserInfo(samr_pipe, tmp_ctx, &sui);
+		if (!NT_STATUS_IS_OK(status)) {
+			d_printf("samr_SetUserInfo(21) failed\n");
+			goto done;
+		}
+	}
+
+	*domain_name= talloc_steal(mem_ctx, *domain_name);
+	*user_sid = talloc_steal(mem_ctx, *user_sid);
+	ret = True;
+ done:
+	talloc_free(tmp_ctx);
+	return ret;
+}
+
+/*
+ * Delete a test user
+ */
+
+static BOOL delete_user(struct smbcli_state *cli,
+			struct cli_credentials *admin_creds,
+			const char *username)
+{
+	TALLOC_CTX *mem_ctx;
+	NTSTATUS status;
+	char *dom_name;
+	struct dcerpc_pipe *samr_pipe;
+	struct policy_handle *user_handle;
+	BOOL ret = False;
+
+	if ((mem_ctx = talloc_init("leave")) == NULL) {
+		d_printf("talloc_init failed\n");
+		return False;
+	}
+
+	status = get_usr_handle(cli, mem_ctx, admin_creds,
+				DCERPC_AUTH_TYPE_NTLMSSP,
+				DCERPC_AUTH_LEVEL_INTEGRITY,
+				username, &dom_name, &samr_pipe,
+				&user_handle, NULL);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("get_wks_handle failed: %s\n", nt_errstr(status));
+		goto done;
+	}
+
+	{
+		struct samr_DeleteUser d;
+
+		d.in.user_handle = user_handle;
+		d.out.user_handle = user_handle;
+
+		status = dcerpc_samr_DeleteUser(samr_pipe, mem_ctx, &d);
+		if (!NT_STATUS_IS_OK(status)) {
+			d_printf("samr_DeleteUser failed\n");
+			goto done;
+		}
+	}
+
+	ret = True;
+
+ done:
+	talloc_free(mem_ctx);
+	return ret;
 }
 
 /*
@@ -507,11 +668,13 @@ static BOOL join3(struct smbcli_state *cli,
 		return False;
 	}
 
-	status = get_usr_handle(cli, mem_ctx, admin_creds,
-				DCERPC_AUTH_TYPE_NTLMSSP,
-				DCERPC_AUTH_LEVEL_PRIVACY,
-				cli_credentials_get_workstation(wks_creds),
-				&dom_name, &samr_pipe, &wks_handle);
+	status = get_usr_handle(
+		cli, mem_ctx, admin_creds,
+		DCERPC_AUTH_TYPE_NTLMSSP,
+		DCERPC_AUTH_LEVEL_PRIVACY,
+		talloc_asprintf(mem_ctx, "%s$",
+				cli_credentials_get_workstation(wks_creds)),
+		&dom_name, &samr_pipe, &wks_handle, NULL);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("get_wks_handle failed: %s\n", nt_errstr(status));
@@ -930,46 +1093,12 @@ static BOOL leave(struct smbcli_state *cli,
 		  struct cli_credentials *admin_creds,
 		  struct cli_credentials *wks_creds)
 {
-	TALLOC_CTX *mem_ctx;
-	NTSTATUS status;
-	char *dom_name;
-	struct dcerpc_pipe *samr_pipe;
-	struct policy_handle *wks_handle;
-	BOOL ret = False;
+	char *wks_name = talloc_asprintf(
+		NULL, "%s$", cli_credentials_get_workstation(wks_creds));
+	BOOL ret;
 
-	if ((mem_ctx = talloc_init("leave")) == NULL) {
-		d_printf("talloc_init failed\n");
-		return False;
-	}
-
-	status = get_usr_handle(cli, mem_ctx, admin_creds,
-				DCERPC_AUTH_TYPE_NTLMSSP,
-				DCERPC_AUTH_LEVEL_PRIVACY,
-				cli_credentials_get_workstation(wks_creds),
-				&dom_name, &samr_pipe, &wks_handle);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		d_printf("get_wks_handle failed: %s\n", nt_errstr(status));
-		goto done;
-	}
-
-	{
-		struct samr_DeleteUser d;
-
-		d.in.user_handle = wks_handle;
-		d.out.user_handle = wks_handle;
-
-		status = dcerpc_samr_DeleteUser(samr_pipe, mem_ctx, &d);
-		if (!NT_STATUS_IS_OK(status)) {
-			d_printf("samr_DeleteUser failed\n");
-			goto done;
-		}
-	}
-
-	ret = True;
-
- done:
-	talloc_free(mem_ctx);
+	ret = delete_user(cli, admin_creds, wks_name);
+	talloc_free(wks_name);
 	return ret;
 }
 
@@ -1394,7 +1523,10 @@ BOOL torture_samba3_rpc_getusername(struct torture_context *torture)
 	TALLOC_CTX *mem_ctx;
 	BOOL ret = True;
 	struct dom_sid *user_sid;
+	struct dom_sid *created_sid;
 	struct cli_credentials *anon_creds;
+	struct cli_credentials *user_creds;
+	char *domain_name;
 
 	if (!(mem_ctx = talloc_new(torture))) {
 		return False;
@@ -1443,6 +1575,99 @@ BOOL torture_samba3_rpc_getusername(struct torture_context *torture)
 			   dom_sid_parse_talloc(mem_ctx, "s-1-5-7"))) {
 		d_printf("Anon lsa_GetUserName returned %s, expected S-1-5-7",
 			 dom_sid_string(mem_ctx, user_sid));
+		ret = False;
+	}
+
+	if (!(user_creds = cli_credentials_init(mem_ctx))) {
+		d_printf("cli_credentials_init failed\n");
+		ret = False;
+		goto done;
+	}
+
+	cli_credentials_set_conf(user_creds);
+	cli_credentials_set_username(user_creds, "torture_username",
+				     CRED_SPECIFIED);
+	cli_credentials_set_password(user_creds,
+				     generate_random_str(user_creds, 8),
+				     CRED_SPECIFIED);
+
+	if (!create_user(mem_ctx, cli, cmdline_credentials,
+			 cli_credentials_get_username(user_creds),
+			 cli_credentials_get_password(user_creds),
+			 &domain_name, &created_sid)) {
+		d_printf("create_user failed\n");
+		ret = False;
+		goto done;
+	}
+
+	cli_credentials_set_domain(user_creds, domain_name,
+				   CRED_SPECIFIED);
+
+	{
+		struct smbcli_session *session2;
+		struct smb_composite_sesssetup setup;
+		struct smbcli_tree *tree;
+		union smb_tcon tcon;
+
+		session2 = smbcli_session_init(cli->transport, mem_ctx, False);
+		if (session2 == NULL) {
+			d_printf("smbcli_session_init failed\n");
+			goto done;
+		}
+
+		setup.in.sesskey = cli->transport->negotiate.sesskey;
+		setup.in.capabilities = cli->transport->negotiate.capabilities;
+		setup.in.workgroup = "";
+		setup.in.credentials = user_creds;
+
+		status = smb_composite_sesssetup(session2, &setup);
+		if (!NT_STATUS_IS_OK(status)) {
+			d_printf("anon session setup failed: %s\n",
+				 nt_errstr(status));
+			ret = False;
+			goto done;
+		}
+
+		if (!(tree = smbcli_tree_init(session2, mem_ctx, False))) {
+			d_printf("smbcli_tree_init failed\n");
+			ret = False;
+			goto done;
+		}
+
+		tcon.generic.level = RAW_TCON_TCONX;
+		tcon.tconx.in.flags = 0;
+		tcon.tconx.in.password = data_blob(NULL, 0);
+		tcon.tconx.in.path = "IPC$";
+		tcon.tconx.in.device = "?????";
+	
+		status = smb_raw_tcon(tree, mem_ctx, &tcon);
+		if (!NT_STATUS_IS_OK(status)) {
+			d_printf("smb_raw_tcon failed\n");
+			ret = False;
+			goto done;
+		}
+
+		tree->tid = tcon.tconx.out.tid;
+
+		if (!(user_sid = whoami(mem_ctx, tree))) {
+			d_printf("whoami on user connection failed\n");
+			ret = False;
+			goto delete;
+		}
+	}
+
+	d_printf("Created %s, found %s\n",
+		 dom_sid_string(mem_ctx, created_sid),
+		 dom_sid_string(mem_ctx, user_sid));
+
+	if (!dom_sid_equal(created_sid, user_sid)) {
+		ret = False;
+	}
+
+ delete:
+	if (!delete_user(cli, cmdline_credentials,
+			 cli_credentials_get_username(user_creds))) {
+		d_printf("delete_user failed\n");
 		ret = False;
 	}
 
@@ -1570,6 +1795,7 @@ BOOL torture_samba3_rpc_srvsvc(struct torture_context *torture)
 	} else {
 		ret &= test_NetShareGetInfo(p, mem_ctx, sharename);
 	}
+
  done:
 	talloc_free(mem_ctx);
 	return ret;
