@@ -1,3 +1,15 @@
+samba (3.0.23-1) stable; urgency=low
+
+  * samba 3.0.23 Samba Team Release
+
+ -- Simo Sorce <idra@samba.org>  Sat, 15 Jul 2006 10:01:30 -0400
+
+samba (3.0.22-1) stable; urgency=high
+
+  * samba 3.0.22 Samba Team Release
+
+ -- Simo Sorce <idra@samba.org>  Fri, 07 Apr 2006 15:45:30 -0400
+
 samba (3.0.21b-1) stable; urgency=high
 
   * samba 3.0.21b Samba Team Release
