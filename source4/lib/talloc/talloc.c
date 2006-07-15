@@ -585,10 +585,6 @@ int talloc_free(void *ptr)
 		tc->destructor = NULL;
 	}
 
-	tc->flags |= TALLOC_FLAG_LOOP;
-
-	talloc_free_children(ptr);
-
 	if (tc->parent) {
 		_TLIST_REMOVE(tc->parent->child, tc);
 		if (tc->parent->child) {
@@ -599,8 +595,10 @@ int talloc_free(void *ptr)
 		if (tc->next) tc->next->prev = tc->prev;
 	}
 
-	tc->flags |= TALLOC_FLAG_FREE;
+	tc->flags |= TALLOC_FLAG_LOOP;
+	talloc_free_children(ptr);
 
+	tc->flags |= TALLOC_FLAG_FREE;
 	old_errno = errno;
 	free(tc);
 	errno = old_errno;
