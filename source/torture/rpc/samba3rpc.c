@@ -21,7 +21,9 @@
 */
 
 #include "includes.h"
+#include "libcli/raw/libcliraw.h"
 #include "torture/torture.h"
+#include "torture/util.h"
 #include "librpc/gen_ndr/ndr_lsa.h"
 #include "librpc/gen_ndr/ndr_lsa_c.h"
 #include "librpc/gen_ndr/ndr_samr.h"
@@ -39,6 +41,21 @@
 #include "libcli/auth/libcli_auth.h"
 #include "libcli/auth/credentials.h"
 #include "lib/crypto/crypto.h"
+#include "libcli/security/proto.h"
+
+static struct cli_credentials *create_anon_creds(TALLOC_CTX *mem_ctx)
+{
+	struct cli_credentials *result;
+
+	if (!(result = cli_credentials_init(mem_ctx))) {
+		return NULL;
+	}
+
+	cli_credentials_set_conf(result);
+	cli_credentials_set_anonymous(result);
+
+	return result;
+}
 
 /*
  * This tests a RPC call using an invalid vuid
@@ -128,14 +145,10 @@ BOOL torture_bind_authcontext(struct torture_context *torture)
 		goto done;
 	}
 
-	anon_creds = cli_credentials_init(mem_ctx);
-	if (anon_creds == NULL) {
-		d_printf("cli_credentials_init failed\n");
+	if (!(anon_creds = create_anon_creds(mem_ctx))) {
+		d_printf("create_anon_creds failed\n");
 		goto done;
 	}
-
-	cli_credentials_set_conf(anon_creds);
-	cli_credentials_set_anonymous(anon_creds);
 
 	setup.in.sesskey = cli->transport->negotiate.sesskey;
 	setup.in.capabilities = cli->transport->negotiate.capabilities;
@@ -986,14 +999,10 @@ BOOL torture_netlogon_samba3(struct torture_context *torture)
 		return False;
 	}
 
-	anon_creds = cli_credentials_init(mem_ctx);
-	if (anon_creds == NULL) {
-		d_printf("cli_credentials_init failed\n");
+	if (!(anon_creds = create_anon_creds(mem_ctx))) {
+		d_printf("create_anon_creds failed\n");
 		goto done;
 	}
-
-	cli_credentials_set_conf(anon_creds);
-	cli_credentials_set_anonymous(anon_creds);
 
 	status = smbcli_full_connection(mem_ctx, &cli,
 					lp_parm_string(-1, "torture", "host"),
@@ -1148,14 +1157,10 @@ BOOL torture_samba3_sessionkey(struct torture_context *torture)
 		return False;
 	}
 
-	anon_creds = cli_credentials_init(mem_ctx);
-	if (anon_creds == NULL) {
-		d_printf("cli_credentials_init failed\n");
+	if (!(anon_creds = create_anon_creds(mem_ctx))) {
+		d_printf("create_anon_creds failed\n");
 		goto done;
 	}
-
-	cli_credentials_set_conf(anon_creds);
-	cli_credentials_set_anonymous(anon_creds);
 
 	ret = True;
 
@@ -1211,6 +1216,235 @@ BOOL torture_samba3_sessionkey(struct torture_context *torture)
 
  done:
 
+	return ret;
+}
+
+/*
+ * open pipe and bind, given an IPC$ context
+ */
+
+static struct dcerpc_pipe *pipe_bind_smb(TALLOC_CTX *mem_ctx,
+					 struct smbcli_tree *tree,
+					 const char *pipe_name,
+					 const struct dcerpc_interface_table *iface)
+{
+	struct dcerpc_pipe *result;
+	NTSTATUS status;
+
+	if (!(result = dcerpc_pipe_init(
+		      mem_ctx, tree->session->transport->socket->event.ctx))) {
+		return NULL;
+	}
+
+	status = dcerpc_pipe_open_smb(result->conn, tree, pipe_name);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("dcerpc_pipe_open_smb failed: %s\n",
+			 nt_errstr(status));
+		talloc_free(result);
+		return NULL;
+	}
+
+	status = dcerpc_bind_auth_none(result, iface);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("schannel bind failed: %s\n", nt_errstr(status));
+		talloc_free(result);
+		return NULL;
+	}
+
+	return result;
+}
+
+/*
+ * Sane wrapper around lsa_LookupNames
+ */
+
+static struct dom_sid *name2sid(TALLOC_CTX *mem_ctx,
+				struct dcerpc_pipe *p,
+				const char *name,
+				const char *domain)
+{
+	struct lsa_ObjectAttribute attr;
+	struct lsa_QosInfo qos;
+	struct lsa_OpenPolicy2 r;
+	struct lsa_Close c;
+	NTSTATUS status;
+	struct policy_handle handle;
+	struct lsa_LookupNames l;
+	struct lsa_TransSidArray sids;
+	struct lsa_String lsa_name;
+	uint32_t count = 1;
+	struct dom_sid *result;
+	TALLOC_CTX *tmp_ctx;
+
+	if (!(tmp_ctx = talloc_new(mem_ctx))) {
+		return NULL;
+	}
+
+	qos.len = 0;
+	qos.impersonation_level = 2;
+	qos.context_mode = 1;
+	qos.effective_only = 0;
+
+	attr.len = 0;
+	attr.root_dir = NULL;
+	attr.object_name = NULL;
+	attr.attributes = 0;
+	attr.sec_desc = NULL;
+	attr.sec_qos = &qos;
+
+	r.in.system_name = "\\";
+	r.in.attr = &attr;
+	r.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
+	r.out.handle = &handle;
+
+	status = dcerpc_lsa_OpenPolicy2(p, tmp_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("OpenPolicy2 failed - %s\n", nt_errstr(status));
+		talloc_free(tmp_ctx);
+		return NULL;
+	}
+
+	sids.count = 0;
+	sids.sids = NULL;
+
+	lsa_name.string = talloc_asprintf(tmp_ctx, "%s\\%s", domain, name);
+
+	l.in.handle = &handle;
+	l.in.num_names = 1;
+	l.in.names = &lsa_name;
+	l.in.sids = &sids;
+	l.in.level = 1;
+	l.in.count = &count;
+	l.out.count = &count;
+	l.out.sids = &sids;
+
+	status = dcerpc_lsa_LookupNames(p, tmp_ctx, &l);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("LookupNames failed - %s\n", nt_errstr(status));
+		talloc_free(tmp_ctx);
+		return False;
+	}
+
+	result = dom_sid_add_rid(mem_ctx, l.out.domains->domains[0].sid,
+				 l.out.sids->sids[0].rid);
+
+	c.in.handle = &handle;
+	c.out.handle = &handle;
+
+	status = dcerpc_lsa_Close(p, tmp_ctx, &c);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("dcerpc_lsa_Close failed - %s\n", nt_errstr(status));
+		talloc_free(tmp_ctx);
+		return NULL;
+	}
+	
+	talloc_free(tmp_ctx);
+	return result;
+}
+
+/*
+ * Find out the user SID on this connection
+ */
+
+static struct dom_sid *whoami(TALLOC_CTX *mem_ctx, struct smbcli_tree *tree)
+{
+	struct dcerpc_pipe *lsa;
+	struct lsa_GetUserName r;
+	NTSTATUS status;
+	struct lsa_StringPointer authority_name_p;
+	struct dom_sid *result;
+
+	if (!(lsa = pipe_bind_smb(mem_ctx, tree, "\\pipe\\lsarpc",
+				  &dcerpc_table_lsarpc))) {
+		d_printf("Could not bind to LSA\n");
+		return NULL;
+	}
+
+	r.in.system_name = "\\";
+	r.in.account_name = NULL;
+	authority_name_p.string = NULL;
+	r.in.authority_name = &authority_name_p;
+
+	status = dcerpc_lsa_GetUserName(lsa, mem_ctx, &r);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("GetUserName failed - %s\n", nt_errstr(status));
+		talloc_free(lsa);
+		return NULL;
+	}
+
+	result = name2sid(mem_ctx, lsa, r.out.account_name->string,
+			  r.out.authority_name->string->string);
+
+	talloc_free(lsa);
+	return result;
+}
+
+/*
+ * Test the getusername behaviour
+ */
+
+BOOL torture_samba3_rpc_getusername(struct torture_context *torture)
+{
+	NTSTATUS status;
+	struct smbcli_state *cli;
+	TALLOC_CTX *mem_ctx;
+	BOOL ret = True;
+	struct dom_sid *user_sid;
+	struct cli_credentials *anon_creds;
+
+	if (!(mem_ctx = talloc_new(torture))) {
+		return False;
+	}
+
+	status = smbcli_full_connection(
+		mem_ctx, &cli, lp_parm_string(-1, "torture", "host"),
+		"IPC$", NULL, cmdline_credentials, NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("smbcli_full_connection failed: %s\n",
+			 nt_errstr(status));
+		ret = False;
+		goto done;
+	}
+
+	if (!(user_sid = whoami(mem_ctx, cli->tree))) {
+		d_printf("whoami on auth'ed connection failed\n");
+		ret = False;
+	}
+
+	talloc_free(cli);
+
+	if (!(anon_creds = create_anon_creds(mem_ctx))) {
+		d_printf("create_anon_creds failed\n");
+		ret = False;
+		goto done;
+	}
+
+	status = smbcli_full_connection(
+		mem_ctx, &cli, lp_parm_string(-1, "torture", "host"),
+		"IPC$", NULL, anon_creds, NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("anon smbcli_full_connection failed: %s\n",
+			 nt_errstr(status));
+		ret = False;
+		goto done;
+	}
+
+	if (!(user_sid = whoami(mem_ctx, cli->tree))) {
+		d_printf("whoami on anon connection failed\n");
+		ret = False;
+		goto done;
+	}
+
+	if (!dom_sid_equal(user_sid,
+			   dom_sid_parse_talloc(mem_ctx, "s-1-5-7"))) {
+		d_printf("Anon lsa_GetUserName returned %s, expected S-1-5-7",
+			 dom_sid_string(mem_ctx, user_sid));
+		ret = False;
+	}
+
+ done:
+	talloc_free(mem_ctx);
 	return ret;
 }
 
@@ -1303,20 +1537,26 @@ static BOOL test_NetShareEnum(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 BOOL torture_samba3_rpc_srvsvc(struct torture_context *torture)
 {
-	NTSTATUS status;
 	struct dcerpc_pipe *p;
 	TALLOC_CTX *mem_ctx;
 	BOOL ret = True;
 	const char *sharename = NULL;
+	struct smbcli_state *cli;
 
 	if (!(mem_ctx = talloc_new(torture))) {
 		return False;
 	}
 
-	status = torture_rpc_connection(mem_ctx, &p, &dcerpc_table_srvsvc);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("torture_rpc_connection failed: %s\n",
-		       nt_errstr(status));
+	if (!(torture_open_connection_share(
+		      mem_ctx, &cli, lp_parm_string(-1, "torture", "host"),
+		      "IPC$", NULL))) {
+		talloc_free(mem_ctx);
+		return False;
+	}
+
+	if (!(p = pipe_bind_smb(mem_ctx, cli->tree, "\\pipe\\srvsvc",
+				&dcerpc_table_srvsvc))) {
+		d_printf("could not bind to srvsvc pipe\n");
 		ret = False;
 		goto done;
 	}
