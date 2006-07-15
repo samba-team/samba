@@ -845,9 +845,8 @@ static BOOL test_lifeless(void)
 	talloc_report_full(top, stdout);
 	talloc_free(top);
 	talloc_free(child_owner);
-#if 0
 	talloc_free(child);
-#endif
+
 	return True;
 }
 
