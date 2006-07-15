@@ -237,13 +237,8 @@ void talloc_increase_ref_count(const void *ptr)
 */
 static int talloc_reference_destructor(struct talloc_reference_handle *handle)
 {
-	struct talloc_chunk *tc1 = talloc_chunk_from_ptr(handle);
-	struct talloc_chunk *tc2 = talloc_chunk_from_ptr(handle->ptr);
-	if (tc1->destructor != (talloc_destructor_t)-1) {
-		tc1->destructor = NULL;
-	}
-	_TLIST_REMOVE(tc2->refs, handle);
-	talloc_free(handle);
+	struct talloc_chunk *ptr_tc = talloc_chunk_from_ptr(handle->ptr);
+	_TLIST_REMOVE(ptr_tc->refs, handle);
 	return 0;
 }
 
@@ -302,10 +297,7 @@ static int talloc_unreference(const void *context, const void *ptr)
 		return -1;
 	}
 
-	talloc_set_destructor(h, NULL);
-	_TLIST_REMOVE(tc->refs, h);
-	talloc_free(h);
-	return 0;
+	return talloc_free(h);
 }
 
 /*
@@ -558,9 +550,15 @@ int talloc_free(void *ptr)
 
 	if (tc->refs) {
 		int is_child;
-		struct talloc_reference_handle *handle = tc->refs;
-		is_child = talloc_is_parent(handle, handle->ptr);
-		talloc_reference_destructor(tc->refs);
+		/* check this is a reference from a child or grantchild
+		 * back to it's parent or grantparent
+		 *
+		 * in that case we need to remove the reference and
+		 * call another instance of talloc_free() on the current
+		 * pointer.
+		 */
+		is_child = talloc_is_parent(tc->refs, ptr);
+		talloc_free(tc->refs);
 		if (is_child) {
 			return talloc_free(ptr);
 		}
