@@ -1514,14 +1514,26 @@ NTSTATUS _lsa_enum_accounts(pipes_struct *p, LSA_Q_ENUM_ACCOUNTS *q_u, LSA_R_ENU
 
 NTSTATUS _lsa_unk_get_connuser(pipes_struct *p, LSA_Q_UNK_GET_CONNUSER *q_u, LSA_R_UNK_GET_CONNUSER *r_u)
 {
-	fstring username, domname;
+	const char *username, *domname;
 	user_struct *vuser = get_valid_user_struct(p->vuid);
   
 	if (vuser == NULL)
 		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
-  
-	fstrcpy(username, vuser->user.smb_name);
-	fstrcpy(domname, vuser->user.domain);
+
+	if (vuser->guest) {
+		/*
+		 * I'm 99% sure this is not the right place to do this,
+		 * global_sid_Anonymous should probably be put into the token
+		 * instead of the guest id -- vl
+		 */
+		if (!lookup_sid(p->mem_ctx, &global_sid_Anonymous,
+				&domname, &username, NULL)) {
+			return NT_STATUS_NO_MEMORY;
+		}
+	} else {
+		username = vuser->user.smb_name;
+		domname = vuser->user.domain;
+	}
   
 	r_u->ptr_user_name = 1;
 	init_unistr2(&r_u->uni2_user_name, username, UNI_STR_TERMINATE);
