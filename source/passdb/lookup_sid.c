@@ -357,7 +357,7 @@ BOOL lookup_name(TALLOC_CTX *mem_ctx,
 
 	if (ret_domain != NULL) {
 		char *tmp_dom;
-		if (!(tmp_dom = talloc_strdup(tmp_ctx, domain))) {
+		if (!(tmp_dom = talloc_strdup(mem_ctx, domain))) {
 			DEBUG(0, ("talloc failed\n"));
 			TALLOC_FREE(tmp_ctx);
 			return False;
