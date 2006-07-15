@@ -594,7 +594,8 @@ static BOOL join3(struct smbcli_state *cli,
 
 		status = dcerpc_samr_SetUserInfo2(samr_pipe, mem_ctx, &sui2);
 		if (!NT_STATUS_IS_OK(status)) {
-			d_printf("samr_SetUserInfo(24) failed\n");
+			d_printf("samr_SetUserInfo(24) failed: %s\n",
+				 nt_errstr(status));
 			goto done;
 		}
 
@@ -1023,7 +1024,9 @@ BOOL torture_netlogon_samba3(struct torture_context *torture)
 	cli_credentials_set_secure_channel_type(wks_creds, SEC_CHAN_WKSTA);
 	cli_credentials_set_username(wks_creds, wks_name, CRED_SPECIFIED);
 	cli_credentials_set_workstation(wks_creds, wks_name, CRED_SPECIFIED);
-	cli_credentials_set_password(wks_creds, "", CRED_SPECIFIED);
+	cli_credentials_set_password(wks_creds,
+				     generate_random_str(wks_creds, 8),
+				     CRED_SPECIFIED);
 
 	if (!join3(cli, False, cmdline_credentials, wks_creds)) {
 		d_printf("join failed\n");
