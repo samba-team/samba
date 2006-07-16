@@ -32,7 +32,6 @@ struct rpc_connect_srv_state {
 	struct libnet_context *ctx;
 	struct libnet_RpcConnect r;
 	const char *binding;
-	enum dcerpc_transport_t trans;
 };
 
 
@@ -74,14 +73,9 @@ static struct composite_context* libnet_RpcConnectSrv_send(struct libnet_context
 	/* prepare binding string */
 	switch (r->level) {
 	case LIBNET_RPC_CONNECT_DC:
-		s->binding = talloc_asprintf(s, "ncacn_ip_tcp:%s", r->in.name);
-		s->trans = NCACN_IP_TCP;
-		break;
-
 	case LIBNET_RPC_CONNECT_PDC:
 	case LIBNET_RPC_CONNECT_SERVER:
 		s->binding = talloc_asprintf(s, "ncacn_np:%s", r->in.name);
-		s->trans = NCACN_NP;
 		break;
 
 	case LIBNET_RPC_CONNECT_BINDING:
@@ -120,38 +114,6 @@ static void continue_pipe_connect(struct composite_context *ctx)
 
 	/* receive result of rpc pipe connection */
 	c->status = dcerpc_pipe_connect_recv(ctx, c, &s->r.out.dcerpc_pipe);
-
-	if (NT_STATUS_EQUAL(c->status, NT_STATUS_IO_TIMEOUT)) {
-		switch (s->r.level) {
-		case LIBNET_RPC_CONNECT_DC:
-			if (s->trans == NCACN_IP_TCP) {
-				s->binding = talloc_asprintf(s, "ncacn_np:%s", s->r.in.name);
-				s->trans = NCACN_NP;
-			}
-			break;
-			
-		case LIBNET_RPC_CONNECT_SERVER:
-			if (s->trans == NCACN_NP) {
-				s->binding = talloc_asprintf(s, "ncacn_ip_tcp:%s", s->r.in.name);
-				s->trans = NCACN_IP_TCP;
-			}
-			break;
-
-		default:
-			if (!composite_is_ok(c)) return;
-			s->r.out.error_string = NULL;
-			composite_done(c);
-		}
-
-		/* connect to remote dcerpc pipe */
-		pipe_connect_req = dcerpc_pipe_connect_send(c, &s->r.out.dcerpc_pipe,
-							    s->binding, s->r.in.dcerpc_iface,
-							    s->ctx->cred, c->event_ctx);
-		if (composite_nomem(pipe_connect_req, c)) return;
-		
-		composite_continue(c, pipe_connect_req, continue_pipe_connect, c);
-		return;
-	}
 
 	s->r.out.error_string = NULL;
 	composite_done(c);
