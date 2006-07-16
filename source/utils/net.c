@@ -796,45 +796,9 @@ static int net_maxrid(int argc, const char **argv)
 	return 0;
 }
 
-#include "/data/pth-2.0.7/include/pth.h"
-
-static void *thread_routine(void *arg)
-{
-	d_printf("In thread\n");
-	return arg;
-}
-
-static int net_pthtest(int argc, const char **argv)
-{
-	int res;
-	void *x;
-	pth_t t;
-	pth_attr_t t_attr;
-
-	if ((res = pth_init()) < 0) {
-		d_printf("pth_init failed: %d\n", res);
-		return -1;
-	}
-
-	t_attr = pth_attr_new();
-
-	if (!(t = pth_spawn(t_attr, thread_routine, &res))) {
-		d_printf("pth_spawn failed\n");
-		return -1;
-	}
-
-	if ((res = pth_join(t, &x)) < 0) {
-		d_printf("pth_join failed\n");
-		return -1;
-	}
-
-	return 0;
-}
-
 /* main function table */
 static struct functable net_func[] = {
 	{"RPC", net_rpc},
-	{"PTH", net_pthtest},
 	{"RAP", net_rap},
 	{"ADS", net_ads},
 
