@@ -128,6 +128,12 @@ struct smb2_request {
 
 	uint64_t seqnum;
 
+	struct {
+		BOOL do_cancel;
+		BOOL can_cancel;
+		uint32_t pending_id;
+	} cancel;
+
 	/* the NT status for this request. Set by packet receive code
 	   or code detecting error. */
 	NTSTATUS status;
