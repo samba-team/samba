@@ -455,6 +455,7 @@
 		uint32 current_users;
 		[string,charset(UTF16)] uint16 *path;
 		[string,charset(UTF16)] uint16 *password;
+		/* maybe here is a struct sec_desc_buf following */
 		uint32 unknown;
 		[subcontext(4)] security_descriptor *sd;
 	} srvsvc_NetShareInfo502;
@@ -502,13 +503,8 @@
 	} srvsvc_NetShareCtr1007;
 
 	typedef struct {
-		[range(0,0x40000),value(ndr_size_security_descriptor(sd,ndr->flags))] uint32 sd_size;
-		[subcontext(4)] security_descriptor *sd;
-	} srvsvc_NetShareInfo1501;
-
-	typedef struct {
 		uint32 count;
-		[size_is(count)] srvsvc_NetShareInfo1501 *array;
+		[size_is(count)] sec_desc_buf *array;
 	} srvsvc_NetShareCtr1501;
 
 	typedef union {
@@ -521,7 +517,7 @@
 		[case(1005)] srvsvc_NetShareInfo1005 *info1005;
 		[case(1006)] srvsvc_NetShareInfo1006 *info1006;
 		[case(1007)] srvsvc_NetShareInfo1007 *info1007;
-		[case(1501)] srvsvc_NetShareInfo1501 *info1501;
+		[case(1501)] sec_desc_buf *info1501;
 		[default] ;
 	} srvsvc_NetShareInfo;
 

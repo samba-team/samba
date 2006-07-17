@@ -1891,7 +1891,7 @@ static NTSTATUS set_sharesec(TALLOC_CTX *mem_ctx,
 	TALLOC_CTX *tmp_ctx;
 	struct dcerpc_pipe *p;
 	NTSTATUS status;
-	struct srvsvc_NetShareInfo1501 i;
+	struct sec_desc_buf i;
 	struct srvsvc_NetShareSetInfo r;
 	uint32_t error = 0;
 
