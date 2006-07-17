@@ -307,3 +307,39 @@ void smb2_transport_send(struct smb2_request *req)
 
 	talloc_set_destructor(req, smb2_request_destructor);
 }
+
+static void idle_handler(struct event_context *ev, 
+			 struct timed_event *te, struct timeval t, void *private)
+{
+	struct smb2_transport *transport = talloc_get_type(private,
+							   struct smb2_transport);
+	struct timeval next = timeval_add(&t, 0, transport->idle.period);
+	transport->socket->event.te = event_add_timed(transport->socket->event.ctx, 
+						      transport,
+						      next,
+						      idle_handler, transport);
+	transport->idle.func(transport, transport->idle.private);
+}
+
+/*
+  setup the idle handler for a transport
+  the period is in microseconds
+*/
+void smb2_transport_idle_handler(struct smb2_transport *transport, 
+				 void (*idle_func)(struct smb2_transport *, void *),
+				 uint64_t period,
+				 void *private)
+{
+	transport->idle.func = idle_func;
+	transport->idle.private = private;
+	transport->idle.period = period;
+
+	if (transport->socket->event.te != NULL) {
+		talloc_free(transport->socket->event.te);
+	}
+
+	transport->socket->event.te = event_add_timed(transport->socket->event.ctx, 
+						      transport,
+						      timeval_current_ofs(0, period),
+						      idle_handler, transport);
+}
