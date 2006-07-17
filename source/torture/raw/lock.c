@@ -462,11 +462,6 @@ static BOOL test_async(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	time_t t;
 	struct smbcli_request *req;
 
-	if (lp_parm_bool(-1, "target", "samba3", False)) {
-		printf("SAMBA3: ignore testing LOCKING_ANDX_CANCEL_LOCK...\n");
-		return True;
-	}
-
 	if (!torture_setup_dir(cli, BASEDIR)) {
 		return False;
 	}
@@ -795,11 +790,6 @@ static BOOL test_errorcode(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	struct smbcli_request *req;
 	time_t start;
 	int t;
-
-	if (lp_parm_bool(-1, "target", "samba3", False)) {
-		printf("SAMBA3: ignore testing LOCK_NOT_GRANTED vs. FILE_LOCK_CONFLICT...\n");
-		return True;
-	}
 
 	if (!torture_setup_dir(cli, BASEDIR)) {
 		return False;
