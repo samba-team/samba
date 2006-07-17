@@ -1327,3 +1327,67 @@ _PUBLIC_ NTSTATUS ntvfs_map_close(struct ntvfs_module_context *ntvfs,
 
 	return ntvfs->ops->close(ntvfs, req, cl2);
 }
+
+/* 
+   NTVFS notify generic to any mapper
+*/
+static NTSTATUS ntvfs_map_notify_finish(struct ntvfs_module_context *ntvfs,
+					struct ntvfs_request *req,
+					union smb_notify *nt, 
+					union smb_notify *nt2, 
+					NTSTATUS status)
+{
+	NT_STATUS_NOT_OK_RETURN(status);
+
+	switch (nt->nttrans.level) {
+	case RAW_NOTIFY_SMB2:
+		if (nt2->nttrans.out.num_changes == 0) {
+			return STATUS_NOTIFY_ENUM_DIR;
+		}
+		nt->smb2.out.num_changes	= nt2->nttrans.out.num_changes;
+		nt->smb2.out.changes		= talloc_steal(req, nt2->nttrans.out.changes);
+		break;
+
+	default:
+		return NT_STATUS_INVALID_LEVEL;
+	}
+
+	return status;
+}
+
+
+/* 
+   NTVFS notify generic to any mapper
+*/
+_PUBLIC_ NTSTATUS ntvfs_map_notify(struct ntvfs_module_context *ntvfs,
+				   struct ntvfs_request *req,
+				   union smb_notify *nt)
+{
+	union smb_notify *nt2;
+	NTSTATUS status;
+
+	nt2 = talloc(req, union smb_notify);
+	NT_STATUS_HAVE_NO_MEMORY(nt2);
+
+	status = ntvfs_map_async_setup(ntvfs, req, nt, nt2, 
+				       (second_stage_t)ntvfs_map_notify_finish);
+	NT_STATUS_NOT_OK_RETURN(status);
+
+	nt2->nttrans.level = RAW_NOTIFY_NTTRANS;
+
+	switch (nt->nttrans.level) {
+	case RAW_NOTIFY_NTTRANS:
+		status = NT_STATUS_INVALID_LEVEL;
+		break;
+
+	case RAW_NOTIFY_SMB2:
+		nt2->nttrans.in.file.ntvfs		= nt->smb2.in.file.ntvfs;
+		nt2->nttrans.in.buffer_size		= nt->smb2.in.buffer_size;
+		nt2->nttrans.in.completion_filter	= nt->smb2.in.completion_filter;
+		nt2->nttrans.in.recursive		= nt->smb2.in.recursive;
+		status = ntvfs->ops->notify(ntvfs, req, nt2);
+		break;
+	}
+
+	return ntvfs_map_async_finish(req, status);
+}

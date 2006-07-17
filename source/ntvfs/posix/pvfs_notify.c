@@ -226,7 +226,7 @@ NTSTATUS pvfs_notify(struct ntvfs_module_context *ntvfs,
 	struct notify_pending *pending;
 
 	if (info->nttrans.level != RAW_NOTIFY_NTTRANS) {
-		return NT_STATUS_NOT_IMPLEMENTED;
+		return ntvfs_map_notify(ntvfs, req, info);
 	}
 
 	f = pvfs_find_fd(pvfs, req, info->nttrans.in.file.ntvfs);
