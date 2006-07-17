@@ -767,11 +767,16 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 	 */
 
 	{
-		BOOL can_write = share_access_check(conn, snum, vuser,
+		NT_USER_TOKEN *token = conn->nt_user_token ?
+			conn->nt_user_token : vuser->nt_user_token;
+
+		BOOL can_write = share_access_check(token,
+						    lp_servicename(snum),
 						    FILE_WRITE_DATA);
 
 		if (!can_write) {
-			if (!share_access_check(conn, snum, vuser,
+			if (!share_access_check(token,
+						lp_servicename(snum),
 						FILE_READ_DATA)) {
 				/* No access, read or write. */
 				DEBUG(0,("make_connection: connection to %s "
