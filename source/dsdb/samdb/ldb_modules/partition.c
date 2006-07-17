@@ -44,6 +44,43 @@ struct partition_private_data {
 	struct partition **partitions;
 };
 
+struct partition_async_context {
+	struct ldb_module *module;
+	struct ldb_request *orig_req;
+
+	struct ldb_request **search_req;
+	BOOL *finished_search;
+	int num_searches;
+};
+
+static struct ldb_async_handle *partition_init_handle(struct ldb_request *req, struct ldb_module *module)
+{
+	struct partition_async_context *ac;
+	struct ldb_async_handle *h;
+
+	h = talloc_zero(req, struct ldb_async_handle);
+	if (h == NULL) {
+		ldb_set_errstring(module->ldb, talloc_asprintf(module, "Out of Memory"));
+		return NULL;
+	}
+
+	h->module = module;
+
+	ac = talloc_zero(h, struct partition_async_context);
+	if (ac == NULL) {
+		ldb_set_errstring(module->ldb, talloc_asprintf(module, "Out of Memory"));
+		talloc_free(h);
+		return NULL;
+	}
+
+	h->private_data = (void *)ac;
+
+	ac->module = module;
+	ac->orig_req = req;
+
+	return h;
+}
+
 struct ldb_module *make_module_for_next_request(TALLOC_CTX *mem_ctx, 
 						struct ldb_context *ldb,
 						struct ldb_module *module) 
@@ -81,17 +118,98 @@ struct ldb_module *find_backend(struct ldb_module *module, struct ldb_request *r
 	return module;
 };
 
+static int partition_send_search(struct partition_async_context *ac, struct ldb_module *partition)
+{
+	int ret;
+	struct ldb_module *next = make_module_for_next_request(ac->module, ac->module->ldb, partition);
+	
+	ac->search_req = talloc_realloc(ac, ac->search_req, 
+					struct ldb_request *, ac->num_searches + 1);
+	if (!ac->search_req) {
+		ldb_set_errstring(ac->module->ldb, talloc_asprintf(ac->module->ldb, "Out of memory!"));
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	ac->search_req[ac->num_searches] = talloc(ac, struct ldb_request);
+	if (ac->search_req[ac->num_searches] == NULL) {
+		ldb_set_errstring(ac->module->ldb, talloc_asprintf(ac->module->ldb, "Out of memory!"));
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	
+	*ac->search_req[ac->num_searches] = *ac->orig_req; /* copy the request */
+	
+	/* Spray off search requests to all backends */
+	ret = ldb_next_request(next, ac->search_req[ac->num_searches]); 
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+	
+	ac->num_searches++;
+	return LDB_SUCCESS;
+}
+
 /* search */
 static int partition_search(struct ldb_module *module, struct ldb_request *req)
 {
 	/* Find backend */
-	struct ldb_module *backend = find_backend(module, req, req->op.search.base);
-	
+	struct partition_private_data *data = talloc_get_type(module->private_data, 
+							      struct partition_private_data);
 	/* issue request */
 
 	/* (later) consider if we should be searching multiple
 	 * partitions (for 'invisible' partition behaviour */
-	return ldb_next_request(backend, req);
+	if (ldb_get_opaque(module->ldb, "global_catalog")) {
+		int ret, i;
+		struct ldb_async_handle *h;
+		struct partition_async_context *ac;
+		
+		h = partition_init_handle(req, module);
+		if (!h) {
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+		/* return our own handle to deal with this call */
+		req->async.handle = h;
+		
+		ac = talloc_get_type(h->private_data, struct partition_async_context);
+		
+		ac->orig_req = req;
+		ac->num_searches = 0;
+
+		for (i=0; data && data->partitions && data->partitions[i]; i++) {
+			/* Find all partitions under the search base */
+			if (ldb_dn_compare_base(module->ldb, 
+						req->op.search.base,
+						data->partitions[i]->dn) == 0) {
+				ret = partition_send_search(ac, data->partitions[i]->module);
+				if (ret != LDB_SUCCESS) {
+					return ret;
+				}
+			}
+		}
+
+		/* Perhaps we didn't match any partitions.  Try the main partition, then all partitions */
+		if (ac->num_searches == 0) {
+			ret = partition_send_search(ac, module->next);
+			if (ret != LDB_SUCCESS) {
+				return ret;
+			}
+			for (i=0; data && data->partitions && data->partitions[i]; i++) {
+				ret = partition_send_search(ac, data->partitions[i]->module);
+				if (ret != LDB_SUCCESS) {
+					return ret;
+				}
+			}
+		}
+		
+		ac->finished_search = talloc_zero_array(ac, BOOL, ac->num_searches);
+		if (!ac->finished_search) {
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+		return LDB_SUCCESS;
+	} else {
+		struct ldb_module *backend = find_backend(module, req, req->op.search.base);
+	
+		return ldb_next_request(backend, req);
+	}
 }
 
 /* add */
@@ -400,6 +518,72 @@ static int partition_init(struct ldb_module *module)
 	return ldb_next_init(module);
 }
 
+static int partition_async_wait_none(struct ldb_async_handle *handle) {
+	struct partition_async_context *ac;
+	int ret;
+	int i;
+    
+	if (!handle || !handle->private_data) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	if (handle->state == LDB_ASYNC_DONE) {
+		return handle->status;
+	}
+
+	handle->state = LDB_ASYNC_PENDING;
+	handle->status = LDB_SUCCESS;
+
+	ac = talloc_get_type(handle->private_data, struct partition_async_context);
+
+	for (i=0; i < ac->num_searches; i++) {
+		ret = ldb_async_wait(ac->search_req[i]->async.handle, LDB_WAIT_NONE);
+		
+		if (ret != LDB_SUCCESS) {
+			handle->status = ret;
+			goto done;
+		}
+		if (ac->search_req[i]->async.handle->status != LDB_SUCCESS) {
+			handle->status = ac->search_req[i]->async.handle->status;
+			goto done;
+		}
+		
+		if (ac->search_req[i]->async.handle->state != LDB_ASYNC_DONE) {
+			return LDB_SUCCESS;
+		}
+	}
+
+	ret = LDB_SUCCESS;
+
+done:
+	handle->state = LDB_ASYNC_DONE;
+	return ret;
+}
+
+
+static int partition_async_wait_all(struct ldb_async_handle *handle) {
+
+	int ret;
+
+	while (handle->state != LDB_ASYNC_DONE) {
+		ret = partition_async_wait_none(handle);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+	}
+
+	return handle->status;
+}
+
+static int partition_async_wait(struct ldb_async_handle *handle, enum ldb_async_wait_type type)
+{
+	if (type == LDB_WAIT_ALL) {
+		return partition_async_wait_all(handle);
+	} else {
+		return partition_async_wait_none(handle);
+	}
+}
+
 static const struct ldb_module_ops partition_ops = {
 	.name		   = "partition",
 	.init_context	   = partition_init,
@@ -411,7 +595,8 @@ static const struct ldb_module_ops partition_ops = {
 	.start_transaction = partition_start_trans,
 	.end_transaction   = partition_end_trans,
 	.del_transaction   = partition_del_trans,
-	.sequence_number   = partition_sequence_number
+	.sequence_number   = partition_sequence_number,
+	.async_wait        = partition_async_wait
 };
 
 int ldb_partition_init(void)
