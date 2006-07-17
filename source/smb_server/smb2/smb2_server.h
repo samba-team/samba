@@ -53,6 +53,9 @@ struct smb2srv_request {
 	/* for matching request and reply */
 	uint64_t seqnum;
 
+	/* the id that can be used to cancel the request */
+	uint32_t pending_id;
+
 	struct smb2_request_buffer in;
 	struct smb2_request_buffer out;
 };
@@ -127,7 +130,13 @@ struct smbsrv_request;
 */
 #define SMB2SRV_CALL_NTVFS_BACKEND(cmd) do { \
 	req->ntvfs->async_states->status = cmd; \
-	if (!(req->ntvfs->async_states->state & NTVFS_ASYNC_STATE_ASYNC)) { \
+	if (req->ntvfs->async_states->state & NTVFS_ASYNC_STATE_ASYNC) { \
+		NTSTATUS _status; \
+		_status = smb2srv_queue_pending(req); \
+		if (!NT_STATUS_IS_OK(_status)) { \
+			ntvfs_cancel(req->ntvfs); \
+		} \
+	} else { \
 		req->ntvfs->async_states->send_fn(req->ntvfs); \
 	} \
 } while (0)

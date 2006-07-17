@@ -324,8 +324,25 @@ struct smbsrv_connection {
 	/*
 	 * the server_context holds a linked list of pending requests,
 	 * this is used for finding the request structures on ntcancel requests
+	 * For SMB only
 	 */
 	struct smbsrv_request *requests;
+
+	/*
+	 * the server_context holds a linked list of pending requests,
+	 * and an idtree for finding the request structures on SMB2 Cancel
+	 * For SMB2 only
+	 */
+	struct {
+		/* an id tree used to allocate ids */
+		struct idr_context *idtree_req;
+
+		/* this is the limit of pending requests values for this connection */
+		uint32_t idtree_limit;
+
+		/* list of open tree connects */
+		struct smb2srv_request *list;
+	} requests2;
 
 	struct smb_signing_context signing;
 
