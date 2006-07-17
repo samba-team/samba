@@ -211,29 +211,33 @@ static BOOL brl_conflict_other(const struct lock_struct *lck1, const struct lock
 } 
 
 /****************************************************************************
- Amazingly enough, w2k3 "remembers" whether the last lock failure
+ Amazingly enough, w2k3 "remembers" whether the last lock failure on a fnum
  is the same as this one and changes its error code. I wonder if any
  app depends on this ?
 ****************************************************************************/
 
-static NTSTATUS brl_lock_failed(const struct lock_struct *lock)
+static NTSTATUS brl_lock_failed(files_struct *fsp, const struct lock_struct *lock, int32 lock_timeout)
 {
-	static struct lock_struct last_lock_failure;
-
-	if (brl_same_context(&lock->context, &last_lock_failure.context) &&
-			lock->fnum == last_lock_failure.fnum &&
-			lock->start == last_lock_failure.start &&
-			lock->size == last_lock_failure.size) {
-		return NT_STATUS_FILE_LOCK_CONFLICT;
-	}
-	last_lock_failure = *lock;
-	if (lock->start >= 0xEF000000 &&
-			(lock->start >> 63) == 0) {
+	if (lock->start >= 0xEF000000 && (lock->start >> 63) == 0) {
 		/* amazing the little things you learn with a test
 		   suite. Locks beyond this offset (as a 64 bit
 		   number!) always generate the conflict error code,
 		   unless the top bit is set */
+		if (lock_timeout == 0) {
+			fsp->last_lock_failure = *lock;
+		}
 		return NT_STATUS_FILE_LOCK_CONFLICT;
+	}
+
+	if (procid_equal(&lock->context.pid, &fsp->last_lock_failure.context.pid) &&
+			lock->context.tid == fsp->last_lock_failure.context.tid &&
+			lock->fnum == fsp->last_lock_failure.fnum &&
+			lock->start == fsp->last_lock_failure.start) {
+		return NT_STATUS_FILE_LOCK_CONFLICT;
+	}
+
+	if (lock_timeout == 0) {
+		fsp->last_lock_failure = *lock;
 	}
 	return NT_STATUS_LOCK_NOT_GRANTED;
 }
@@ -293,8 +297,7 @@ static int lock_compare(const struct lock_struct *lck1,
 ****************************************************************************/
 
 static NTSTATUS brl_lock_windows(struct byte_range_lock *br_lck,
-			const struct lock_struct *plock,
-			BOOL *my_lock_ctx)
+			const struct lock_struct *plock, int32 lock_timeout)
 {
 	unsigned int i;
 	files_struct *fsp = br_lck->fsp;
@@ -303,12 +306,7 @@ static NTSTATUS brl_lock_windows(struct byte_range_lock *br_lck,
 	for (i=0; i < br_lck->num_locks; i++) {
 		/* Do any Windows or POSIX locks conflict ? */
 		if (brl_conflict(&locks[i], plock)) {
-			NTSTATUS status = brl_lock_failed(plock);;
-			/* Did we block ourselves ? */
-			if (brl_same_context(&locks[i].context, &plock->context)) {
-				*my_lock_ctx = True;
-			}
-			return status;
+			return brl_lock_failed(fsp,plock,lock_timeout);
 		}
 #if ZERO_ZERO
 		if (plock->start == 0 && plock->size == 0 && 
@@ -571,8 +569,7 @@ OR
 ****************************************************************************/
 
 static NTSTATUS brl_lock_posix(struct byte_range_lock *br_lck,
-			const struct lock_struct *plock,
-			BOOL *my_lock_ctx)
+			const struct lock_struct *plock)
 {
 	unsigned int i, count;
 	struct lock_struct *locks = (struct lock_struct *)br_lck->lock_data;
@@ -604,10 +601,6 @@ static NTSTATUS brl_lock_posix(struct byte_range_lock *br_lck,
 		if (locks[i].lock_flav == WINDOWS_LOCK) {
 			/* Do any Windows flavour locks conflict ? */
 			if (brl_conflict(&locks[i], plock)) {
-				/* Did we block ourselves ? */
-				if (brl_same_context(&locks[i].context, &plock->context)) {
-					*my_lock_ctx = True;
-				}
 				/* No games with error messages. */
 				SAFE_FREE(tp);
 				return NT_STATUS_FILE_LOCK_CONFLICT;
@@ -683,12 +676,10 @@ NTSTATUS brl_lock(struct byte_range_lock *br_lck,
 		br_off size, 
 		enum brl_type lock_type,
 		enum brl_flavour lock_flav,
-		BOOL *my_lock_ctx)
+		int32 lock_timeout)
 {
 	NTSTATUS ret;
 	struct lock_struct lock;
-
-	*my_lock_ctx = False;
 
 #if !ZERO_ZERO
 	if (start == 0 && size == 0) {
@@ -706,9 +697,9 @@ NTSTATUS brl_lock(struct byte_range_lock *br_lck,
 	lock.lock_flav = lock_flav;
 
 	if (lock_flav == WINDOWS_LOCK) {
-		ret = brl_lock_windows(br_lck, &lock, my_lock_ctx);
+		ret = brl_lock_windows(br_lck, &lock, lock_timeout);
 	} else {
-		ret = brl_lock_posix(br_lck, &lock, my_lock_ctx);
+		ret = brl_lock_posix(br_lck, &lock);
 	}
 
 #if ZERO_ZERO
@@ -1165,7 +1156,7 @@ NTSTATUS brl_lockquery(struct byte_range_lock *br_lck,
  Remove a particular pending lock.
 ****************************************************************************/
 
-BOOL brl_remove_pending_lock(struct byte_range_lock *br_lck,
+BOOL brl_lock_cancel(struct byte_range_lock *br_lck,
 		uint32 smbpid,
 		struct process_id pid,
 		br_off start,
