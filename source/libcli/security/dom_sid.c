@@ -215,6 +215,24 @@ struct dom_sid *dom_sid_add_rid(TALLOC_CTX *mem_ctx,
 	return sid;
 }
 
+/*
+  Split up a SID into its domain and RID part
+*/
+NTSTATUS dom_sid_split_rid(TALLOC_CTX *mem_ctx, const struct dom_sid *sid,
+			   struct dom_sid **domain, uint32_t *rid)
+{
+	if (sid->num_auths == 0) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	if (!(*domain = dom_sid_dup(mem_ctx, sid))) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	(*domain)->num_auths -= 1;
+	*rid = (*domain)->sub_auths[(*domain)->num_auths];
+	return NT_STATUS_OK;
+}
 
 /*
   return True if the 2nd sid is in the domain given by the first sid
