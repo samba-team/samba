@@ -888,7 +888,7 @@ static BOOL auth2(struct smbcli_state *cli,
 }
 
 /*
- * Do a couple of channel protected Netlogon ops: Interactive and Network
+ * Do a couple of schannel protected Netlogon ops: Interactive and Network
  * login, and change the wks password
  */
 
@@ -1513,6 +1513,49 @@ static struct dom_sid *whoami(TALLOC_CTX *mem_ctx, struct smbcli_tree *tree)
 }
 
 /*
+ * Do a tcon, given a session
+ */
+
+NTSTATUS secondary_tcon(TALLOC_CTX *mem_ctx,
+			struct smbcli_session *session,
+			const char *sharename,
+			struct smbcli_tree **res)
+{
+	struct smbcli_tree *result;
+	TALLOC_CTX *tmp_ctx;
+	union smb_tcon tcon;
+	NTSTATUS status;
+
+	if (!(tmp_ctx = talloc_new(mem_ctx))) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (!(result = smbcli_tree_init(session, mem_ctx, False))) {
+		talloc_free(tmp_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	tcon.generic.level = RAW_TCON_TCONX;
+	tcon.tconx.in.flags = 0;
+	tcon.tconx.in.password = data_blob(NULL, 0);
+	tcon.tconx.in.path = sharename;
+	tcon.tconx.in.device = "?????";
+
+	status = smb_raw_tcon(result, tmp_ctx, &tcon);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("smb_raw_tcon failed: %s\n", nt_errstr(status));
+		talloc_free(tmp_ctx);
+		return status;
+	}
+
+	result->tid = tcon.tconx.out.tid;
+	result = talloc_steal(mem_ctx, result);
+	talloc_free(tmp_ctx);
+	*res = result;
+	return NT_STATUS_OK;
+}
+
+/*
  * Test the getusername behaviour
  */
 
@@ -1607,7 +1650,6 @@ BOOL torture_samba3_rpc_getusername(struct torture_context *torture)
 		struct smbcli_session *session2;
 		struct smb_composite_sesssetup setup;
 		struct smbcli_tree *tree;
-		union smb_tcon tcon;
 
 		session2 = smbcli_session_init(cli->transport, mem_ctx, False);
 		if (session2 == NULL) {
@@ -1628,32 +1670,20 @@ BOOL torture_samba3_rpc_getusername(struct torture_context *torture)
 			goto done;
 		}
 
-		if (!(tree = smbcli_tree_init(session2, mem_ctx, False))) {
-			d_printf("smbcli_tree_init failed\n");
+		if (!NT_STATUS_IS_OK(secondary_tcon(mem_ctx, session2,
+						    "IPC$", &tree))) {
+			d_printf("secondary_tcon failed\n");
 			ret = False;
 			goto done;
 		}
-
-		tcon.generic.level = RAW_TCON_TCONX;
-		tcon.tconx.in.flags = 0;
-		tcon.tconx.in.password = data_blob(NULL, 0);
-		tcon.tconx.in.path = "IPC$";
-		tcon.tconx.in.device = "?????";
-	
-		status = smb_raw_tcon(tree, mem_ctx, &tcon);
-		if (!NT_STATUS_IS_OK(status)) {
-			d_printf("smb_raw_tcon failed\n");
-			ret = False;
-			goto done;
-		}
-
-		tree->tid = tcon.tconx.out.tid;
 
 		if (!(user_sid = whoami(mem_ctx, tree))) {
 			d_printf("whoami on user connection failed\n");
 			ret = False;
 			goto delete;
 		}
+
+		talloc_free(tree);
 	}
 
 	d_printf("Created %s, found %s\n",
@@ -1797,6 +1827,247 @@ BOOL torture_samba3_rpc_srvsvc(struct torture_context *torture)
 	}
 
  done:
+	talloc_free(mem_ctx);
+	return ret;
+}
+
+static struct security_descriptor *get_sharesec(TALLOC_CTX *mem_ctx,
+						struct smbcli_session *sess,
+						const char *sharename)
+{
+	struct smbcli_tree *tree;
+	TALLOC_CTX *tmp_ctx;
+	struct dcerpc_pipe *p;
+	NTSTATUS status;
+	struct srvsvc_NetShareGetInfo r;
+	struct security_descriptor *result;
+
+	if (!(tmp_ctx = talloc_new(mem_ctx))) {
+		d_printf("talloc_new failed\n");
+		return NULL;
+	}
+
+	if (!NT_STATUS_IS_OK(secondary_tcon(tmp_ctx, sess, "IPC$", &tree))) {
+		d_printf("secondary_tcon failed\n");
+		talloc_free(tmp_ctx);
+		return NULL;
+	}
+
+	if (!(p = pipe_bind_smb(mem_ctx, tree, "\\pipe\\srvsvc",
+				&dcerpc_table_srvsvc))) {
+		d_printf("could not bind to srvsvc pipe\n");
+		talloc_free(tmp_ctx);
+		return NULL;
+	}
+
+#if 0
+	p->conn->flags |= DCERPC_DEBUG_PRINT_IN | DCERPC_DEBUG_PRINT_OUT;
+#endif
+
+	r.in.server_unc = talloc_asprintf(tmp_ctx, "\\\\%s",
+					  dcerpc_server_name(p));
+	r.in.share_name = sharename;
+	r.in.level = 502;
+
+	status = dcerpc_srvsvc_NetShareGetInfo(p, tmp_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("srvsvc_NetShareGetInfo failed: %s\n",
+			 nt_errstr(status));
+		talloc_free(tmp_ctx);
+		return NULL;
+	}
+
+	result = talloc_steal(mem_ctx, r.out.info.info502->sd);
+	talloc_free(tmp_ctx);
+	return result;
+}
+
+static NTSTATUS set_sharesec(TALLOC_CTX *mem_ctx,
+			     struct smbcli_session *sess,
+			     const char *sharename,
+			     struct security_descriptor *sd)
+{
+	struct smbcli_tree *tree;
+	TALLOC_CTX *tmp_ctx;
+	struct dcerpc_pipe *p;
+	NTSTATUS status;
+	struct srvsvc_NetShareInfo1501 i;
+	struct srvsvc_NetShareSetInfo r;
+	uint32_t error = 0;
+
+	if (!(tmp_ctx = talloc_new(mem_ctx))) {
+		d_printf("talloc_new failed\n");
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (!NT_STATUS_IS_OK(secondary_tcon(tmp_ctx, sess, "IPC$", &tree))) {
+		d_printf("secondary_tcon failed\n");
+		talloc_free(tmp_ctx);
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	if (!(p = pipe_bind_smb(mem_ctx, tree, "\\pipe\\srvsvc",
+				&dcerpc_table_srvsvc))) {
+		d_printf("could not bind to srvsvc pipe\n");
+		talloc_free(tmp_ctx);
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+#if 0
+	p->conn->flags |= DCERPC_DEBUG_PRINT_IN | DCERPC_DEBUG_PRINT_OUT;
+#endif
+
+	r.in.server_unc = talloc_asprintf(tmp_ctx, "\\\\%s",
+					  dcerpc_server_name(p));
+	r.in.share_name = sharename;
+	r.in.level = 1501;
+	i.sd = sd;
+	r.in.info.info1501 = &i;
+	r.in.parm_error = &error;
+
+	status = dcerpc_srvsvc_NetShareSetInfo(p, tmp_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("srvsvc_NetShareGetInfo failed: %s\n",
+			 nt_errstr(status));
+	}
+
+	talloc_free(tmp_ctx);
+	return status;
+}
+
+BOOL try_tcon(TALLOC_CTX *mem_ctx,
+	      struct security_descriptor *orig_sd,
+	      struct smbcli_session *session,
+	      const char *sharename, const struct dom_sid *user_sid,
+	      unsigned int access, NTSTATUS expected_tcon,
+	      NTSTATUS expected_mkdir)
+{
+	TALLOC_CTX *tmp_ctx;
+	struct smbcli_tree *rmdir_tree, *tree;
+	struct dom_sid *domain_sid;
+	uint32_t rid;
+	struct security_descriptor *sd;
+	NTSTATUS status;
+	BOOL ret = True;
+
+	if (!(tmp_ctx = talloc_new(mem_ctx))) {
+		d_printf("talloc_new failed\n");
+		return False;
+	}
+
+	status = secondary_tcon(tmp_ctx, session, sharename, &rmdir_tree);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("first tcon to delete dir failed\n");
+		talloc_free(tmp_ctx);
+		return False;
+	}
+
+	smbcli_rmdir(rmdir_tree, "sharesec_testdir");
+
+	if (!NT_STATUS_IS_OK(dom_sid_split_rid(tmp_ctx, user_sid,
+					       &domain_sid, &rid))) {
+		d_printf("dom_sid_split_rid failed\n");
+		talloc_free(tmp_ctx);
+		return False;
+	}
+
+	sd = security_descriptor_create(
+		tmp_ctx, "S-1-5-32-544",
+		dom_sid_string(mem_ctx, dom_sid_add_rid(mem_ctx, domain_sid,
+							DOMAIN_RID_USERS)),
+		dom_sid_string(mem_ctx, user_sid),
+		SEC_ACE_TYPE_ACCESS_ALLOWED, access, 0, NULL);
+	if (sd == NULL) {
+		d_printf("security_descriptor_create failed\n");
+		talloc_free(tmp_ctx);
+                return False;
+        }
+
+	status = set_sharesec(mem_ctx, session, sharename, sd);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("custom set_sharesec failed: %s\n",
+			 nt_errstr(status));
+		talloc_free(tmp_ctx);
+                return False;
+	}
+
+	status = secondary_tcon(tmp_ctx, session, sharename, &tree);
+	if (!NT_STATUS_EQUAL(status, expected_tcon)) {
+		d_printf("Expected %s, got %s\n", nt_errstr(expected_tcon),
+			 nt_errstr(status));
+		ret = False;
+		goto done;
+	}
+
+	if (!NT_STATUS_IS_OK(status)) {
+		/* An expected non-access, no point in trying to write */
+		goto done;
+	}
+
+	status = smbcli_mkdir(tree, "sharesec_testdir");
+	if (!NT_STATUS_EQUAL(status, expected_mkdir)) {
+		d_printf("Expected %s, got %s\n", nt_errstr(expected_mkdir),
+			 nt_errstr(status));
+		ret = False;
+	}
+
+ done:
+	smbcli_rmdir(rmdir_tree, "sharesec_testdir");
+
+	status = set_sharesec(mem_ctx, session, sharename, orig_sd);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("custom set_sharesec failed: %s\n",
+			 nt_errstr(status));
+		talloc_free(tmp_ctx);
+                return False;
+	}
+
+	talloc_free(tmp_ctx);
+	return ret;
+}
+
+BOOL torture_samba3_rpc_sharesec(struct torture_context *torture)
+{
+	TALLOC_CTX *mem_ctx;
+	BOOL ret = True;
+	struct smbcli_state *cli;
+	struct security_descriptor *sd;
+	struct dom_sid *user_sid;
+
+	if (!(mem_ctx = talloc_new(torture))) {
+		return False;
+	}
+
+	if (!(torture_open_connection_share(
+		      mem_ctx, &cli, lp_parm_string(-1, "torture", "host"),
+		      "IPC$", NULL))) {
+		d_printf("IPC$ connection failed\n");
+		talloc_free(mem_ctx);
+		return False;
+	}
+
+	if (!(user_sid = whoami(mem_ctx, cli->tree))) {
+		d_printf("whoami failed\n");
+		talloc_free(mem_ctx);
+		return False;
+	}
+
+	sd = get_sharesec(mem_ctx, cli->session, lp_parm_string(-1, "torture",
+								"share"));
+
+	ret &= try_tcon(mem_ctx, sd, cli->session,
+			lp_parm_string(-1, "torture", "share"),
+			user_sid, 0, NT_STATUS_ACCESS_DENIED, NT_STATUS_OK);
+
+	ret &= try_tcon(mem_ctx, sd, cli->session,
+			lp_parm_string(-1, "torture", "share"),
+			user_sid, SEC_FILE_READ_DATA, NT_STATUS_OK,
+			NT_STATUS_NETWORK_ACCESS_DENIED);
+
+	ret &= try_tcon(mem_ctx, sd, cli->session,
+			lp_parm_string(-1, "torture", "share"),
+			user_sid, SEC_FILE_ALL, NT_STATUS_OK, NT_STATUS_OK);
+
 	talloc_free(mem_ctx);
 	return ret;
 }

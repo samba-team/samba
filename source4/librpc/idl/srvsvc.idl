@@ -502,7 +502,7 @@
 	} srvsvc_NetShareCtr1007;
 
 	typedef struct {
-		uint32 reserved;
+		[range(0,0x40000),value(ndr_size_security_descriptor(sd,ndr->flags))] uint32 sd_size;
 		[subcontext(4)] security_descriptor *sd;
 	} srvsvc_NetShareInfo1501;
 
