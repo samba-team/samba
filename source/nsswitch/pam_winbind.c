@@ -47,15 +47,17 @@ static int _pam_parse(int argc, const char **argv, dictionary **d)
 {
 	int ctrl = 0;
 	const char *config_file = NULL;
+	int i;
+	const char **v;
 
 	if (d == NULL) {
 		goto config_from_pam;
 	}
 
-	for (; argc-- > 0; ++argv) {
-		if (!strncasecmp(*argv, "config", strlen("config"))) {
+	for (i=argc,v=argv; i-- > 0; ++v) {
+		if (!strncasecmp(*v, "config", strlen("config"))) {
 			ctrl |= WINBIND_CONFIG_FILE;
-			config_file = argv[argc];
+			config_file = v[i];
 			break;
 		}
 	}
@@ -92,31 +94,31 @@ static int _pam_parse(int argc, const char **argv, dictionary **d)
 
 config_from_pam:
 	/* step through arguments */
-	for (; argc-- > 0; ++argv) {
+	for (i=argc,v=argv; i-- > 0; ++v) {
 
 		/* generic options */
-		if (!strcmp(*argv,"debug"))
+		if (!strcmp(*v,"debug"))
 			ctrl |= WINBIND_DEBUG_ARG;
-		else if (!strcasecmp(*argv, "use_authtok"))
+		else if (!strcasecmp(*v, "use_authtok"))
 			ctrl |= WINBIND_USE_AUTHTOK_ARG;
-		else if (!strcasecmp(*argv, "use_first_pass"))
+		else if (!strcasecmp(*v, "use_first_pass"))
 			ctrl |= WINBIND_USE_FIRST_PASS_ARG;
-		else if (!strcasecmp(*argv, "try_first_pass"))
+		else if (!strcasecmp(*v, "try_first_pass"))
 			ctrl |= WINBIND_TRY_FIRST_PASS_ARG;
-		else if (!strcasecmp(*argv, "unknown_ok"))
+		else if (!strcasecmp(*v, "unknown_ok"))
 			ctrl |= WINBIND_UNKNOWN_OK_ARG;
-		else if (!strncasecmp(*argv, "require_membership_of", strlen("require_membership_of")))
+		else if (!strncasecmp(*v, "require_membership_of", strlen("require_membership_of")))
 			ctrl |= WINBIND_REQUIRED_MEMBERSHIP;
-		else if (!strncasecmp(*argv, "require-membership-of", strlen("require-membership-of")))
+		else if (!strncasecmp(*v, "require-membership-of", strlen("require-membership-of")))
 			ctrl |= WINBIND_REQUIRED_MEMBERSHIP;
-		else if (!strcasecmp(*argv, "krb5_auth"))
+		else if (!strcasecmp(*v, "krb5_auth"))
 			ctrl |= WINBIND_KRB5_AUTH;
-		else if (!strncasecmp(*argv, "krb5_ccache_type", strlen("krb5_ccache_type")))
+		else if (!strncasecmp(*v, "krb5_ccache_type", strlen("krb5_ccache_type")))
 			ctrl |= WINBIND_KRB5_CCACHE_TYPE;
-		else if (!strcasecmp(*argv, "cached_login"))
+		else if (!strcasecmp(*v, "cached_login"))
 			ctrl |= WINBIND_CACHED_LOGIN;
 		else {
-			_pam_log(LOG_ERR, "pam_parse: unknown option; %s", *argv);
+			_pam_log(LOG_ERR, "pam_parse: unknown option; %s", *v);
 		}
 
 	}

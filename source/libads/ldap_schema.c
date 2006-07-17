@@ -283,22 +283,27 @@ ADS_STATUS ads_check_posix_schema_mapping(ADS_STRUCT *ads, enum wb_posix_mapping
 
 		if (strequal(ADS_ATTR_RFC2307_UIDNUMBER_OID, oids_out[i]) ||
 		    strequal(ADS_ATTR_SFU_UIDNUMBER_OID, oids_out[i])) {
+			SAFE_FREE(ads->schema.posix_uidnumber_attr);
 			ads->schema.posix_uidnumber_attr = SMB_STRDUP(names_out[i]);
 		}
 		if (strequal(ADS_ATTR_RFC2307_GIDNUMBER_OID, oids_out[i]) ||
 		    strequal(ADS_ATTR_SFU_GIDNUMBER_OID, oids_out[i])) {
+			SAFE_FREE(ads->schema.posix_gidnumber_attr);
 			ads->schema.posix_gidnumber_attr = SMB_STRDUP(names_out[i]);
 		}
 		if (strequal(ADS_ATTR_RFC2307_HOMEDIR_OID, oids_out[i]) ||
 		    strequal(ADS_ATTR_SFU_HOMEDIR_OID, oids_out[i])) {
+			SAFE_FREE(ads->schema.posix_homedir_attr);
 			ads->schema.posix_homedir_attr = SMB_STRDUP(names_out[i]);
 		}
 		if (strequal(ADS_ATTR_RFC2307_SHELL_OID, oids_out[i]) ||
 		    strequal(ADS_ATTR_SFU_SHELL_OID, oids_out[i])) {
+			SAFE_FREE(ads->schema.posix_shell_attr);
 			ads->schema.posix_shell_attr = SMB_STRDUP(names_out[i]);
 		}
 		if (strequal(ADS_ATTR_RFC2307_GECOS_OID, oids_out[i]) ||
 		    strequal(ADS_ATTR_SFU_GECOS_OID, oids_out[i])) {
+			SAFE_FREE(ads->schema.posix_gecos_attr);
 			ads->schema.posix_gecos_attr = SMB_STRDUP(names_out[i]);
 		}
 	}

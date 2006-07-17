@@ -39,17 +39,18 @@ diff -uNr samba-3.0.0beta1.orig/source/web/diagnose.c samba-3.0.0beta1/source/we
  	if (!cli_initialise(&cli))
  		return False;
  
---- samba-3.0.1/source/script/installbin.sh.orig	2003-10-10 14:08:36.000000000 -0400
-+++ samba-3.0.1/source/script/installbin.sh	2003-12-17 10:51:45.000000000 -0500
-@@ -24,12 +24,14 @@
-  chmod $INSTALLPERMS $BINDIR/$p2
+--- samba-3.0.23/source/script/installbin.sh.in.orig	2006-07-15 09:08:36.000000000 -0400
++++ samba-3.0.23/source/script/installbin.sh.in	2006-07-15 09:51:45.000000000 -0400
+@@ -21,13 +21,14 @@
+  chmod $INSTALLPERMS $DESTDIR/$BINDIR/$p2
  
   # this is a special case, mount needs this in a specific location
 - if [ $p2 = smbmount ]; then
--   if [ ! -d $DESTDIR/sbin ]; then
--      mkdir $DESTDIR/sbin
--   fi 
--   ln -sf $BINDIR/$p2 $DESTDIR/sbin/mount.smbfs
+-   if [ ! -d $DESTDIR/@rootsbindir@ ]; then
+-      mkdir $DESTDIR/@rootsbindir@
+-   fi
+-   echo "Creating sym link $DESTDIR/@rootsbindir@/mount.smbfs to $BINDIR/$p2 "
+-   ln -sf $BINDIR/$p2 $DESTDIR/@rootsbindir@/mount.smbfs
 - fi
 +# Commented out for the Debian Samba package. We take care of this
 +# important symlink in debian/rules. (peloy@debian.org)

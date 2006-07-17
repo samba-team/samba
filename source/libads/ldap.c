@@ -5,6 +5,7 @@
    Copyright (C) Remus Koos 2001
    Copyright (C) Jim McDonough <jmcd@us.ibm.com> 2002
    Copyright (C) Guenther Deschner 2005
+   Copyright (C) Gerald Carter 2006
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -286,15 +287,8 @@ got_connection:
 	DEBUG(3,("Connected to LDAP server %s\n", inet_ntoa(ads->ldap_ip)));
 
 	if (!ads->auth.user_name) {
-		/* have to use the userPrincipalName value here and 
-		   not servicePrincipalName; found by Guenther Deschner @ Sernet.
-
-		   Is this still correct?  The comment does not match
-		   the code.   --jerry 
-		   
-		   Yes it is :) 
-		   - Guenther
-		   */
+		/* Must use the userPrincipalName value here or sAMAccountName
+		   and not servicePrincipalName; found by Guenther Deschner */
 
 		asprintf(&ads->auth.user_name, "%s$", global_myname() );
 	}
@@ -1402,20 +1396,21 @@ ADS_STATUS ads_clear_service_principal_names(ADS_STRUCT *ads, const char *machin
  * (found by hostname) in AD.
  * @param ads An initialized ADS_STRUCT
  * @param machine_name the NetBIOS name of the computer, which is used to identify the computer account.
+ * @param my_fqdn The fully qualified DNS name of the machine
  * @param spn A string of the service principal to add, i.e. 'host'
  * @return 0 upon sucess, or non-zero if a failure occurs
  **/
 
-ADS_STATUS ads_add_service_principal_name(ADS_STRUCT *ads, const char *machine_name, const char *spn)
+ADS_STATUS ads_add_service_principal_name(ADS_STRUCT *ads, const char *machine_name, 
+                                          const char *my_fqdn, const char *spn)
 {
 	ADS_STATUS ret;
 	TALLOC_CTX *ctx;
 	LDAPMessage *res = NULL;
-	char *host_spn, *psp1, *psp2, *psp3;
+	char *psp1, *psp2;
 	ADS_MODLIST mods;
-	fstring my_fqdn;
 	char *dn_string = NULL;
-	const char *servicePrincipalName[4] = {NULL, NULL, NULL, NULL};
+	const char *servicePrincipalName[3] = {NULL, NULL, NULL};
 
 	ret = ads_find_machine_acct(ads, (void **)(void *)&res, machine_name);
 	if (!ADS_ERR_OK(ret) || ads_count_replies(ads, res) != 1) {
@@ -1433,84 +1428,59 @@ ADS_STATUS ads_add_service_principal_name(ADS_STRUCT *ads, const char *machine_n
 		return ADS_ERROR(LDAP_NO_MEMORY);
 	}
 
-	name_to_fqdn(my_fqdn, machine_name);
-	strlower_m(my_fqdn);
-
-	if (!(host_spn = talloc_asprintf(ctx, "HOST/%s", my_fqdn))) {
+	/* add short name spn */
+	
+	if ( (psp1 = talloc_asprintf(ctx, "%s/%s", spn, machine_name)) == NULL ) {
 		talloc_destroy(ctx);
 		ads_msgfree(ads, res);
 		return ADS_ERROR(LDAP_NO_MEMORY);
 	}
-
-	/* Add the extra principal */
-	psp1 = talloc_asprintf(ctx, "%s/%s", spn, machine_name);
-	if (!psp1) {
-		talloc_destroy(ctx);
-		ads_msgfree(ads, res);
-		return ADS_ERROR(LDAP_NO_MEMORY);
-	}
-
 	strupper_m(psp1);
 	strlower_m(&psp1[strlen(spn)]);
-	DEBUG(5,("ads_add_service_principal_name: INFO: Adding %s to host %s\n", psp1, machine_name));
 	servicePrincipalName[0] = psp1;
-	psp2 = talloc_asprintf(ctx, "%s/%s.%s", spn, machine_name, ads->config.realm);
-	if (!psp2) {
-		talloc_destroy(ctx);
-		ads_msgfree(ads, res);
-		return ADS_ERROR(LDAP_NO_MEMORY);
-	}
+	
+	DEBUG(5,("ads_add_service_principal_name: INFO: Adding %s to host %s\n", 
+		psp1, machine_name));
 
+
+	/* add fully qualified spn */
+	
+	if ( (psp2 = talloc_asprintf(ctx, "%s/%s", spn, my_fqdn)) == NULL ) {
+		ret = ADS_ERROR(LDAP_NO_MEMORY);
+		goto out;
+	}
 	strupper_m(psp2);
 	strlower_m(&psp2[strlen(spn)]);
-	DEBUG(5,("ads_add_service_principal_name: INFO: Adding %s to host %s\n", psp2, machine_name));
 	servicePrincipalName[1] = psp2;
 
-	/* Add another principal in case the realm != the DNS domain, so that
-	 * the KDC doesn't send "server principal unknown" errors to clients
-	 * which use the DNS name in determining service principal names. */
-	psp3 = talloc_asprintf(ctx, "%s/%s", spn, my_fqdn);
-	if (!psp3) {
-		talloc_destroy(ctx);
-		ads_msgfree(ads, res);
-		return ADS_ERROR(LDAP_NO_MEMORY);
-	}
+	DEBUG(5,("ads_add_service_principal_name: INFO: Adding %s to host %s\n", 
+		psp2, machine_name));
 
-	strupper_m(psp3);
-	strlower_m(&psp3[strlen(spn)]);
-	if (strcmp(psp2, psp3) != 0) {
-		DEBUG(5,("ads_add_service_principal_name: INFO: Adding %s to host %s\n", psp3, machine_name));
-		servicePrincipalName[2] = psp3;
+	if ( (mods = ads_init_mods(ctx)) == NULL ) {
+		ret = ADS_ERROR(LDAP_NO_MEMORY);
+		goto out;
 	}
-
-	if (!(mods = ads_init_mods(ctx))) {
-		talloc_destroy(ctx);
-		ads_msgfree(ads, res);
-		return ADS_ERROR(LDAP_NO_MEMORY);
-	}
+	
 	ret = ads_add_strlist(ctx, &mods, "servicePrincipalName", servicePrincipalName);
 	if (!ADS_ERR_OK(ret)) {
 		DEBUG(1,("ads_add_service_principal_name: Error: Updating Service Principals in LDAP\n"));
-		talloc_destroy(ctx);
-		ads_msgfree(ads, res);
-		return ret;
+		goto out;
 	}
-	dn_string = ads_get_dn(ads, res);
-	if (!dn_string) {
-		talloc_destroy(ctx);
-		ads_msgfree(ads, res);
-		return ADS_ERROR(LDAP_NO_MEMORY);
+	
+	if ( (dn_string = ads_get_dn(ads, res)) == NULL ) {
+		ret = ADS_ERROR(LDAP_NO_MEMORY);
+		goto out;
 	}
+	
 	ret = ads_gen_mod(ads, dn_string, mods);
 	ads_memfree(ads,dn_string);
 	if (!ADS_ERR_OK(ret)) {
 		DEBUG(1,("ads_add_service_principal_name: Error: Updating Service Principals in LDAP\n"));
-		talloc_destroy(ctx);
-		ads_msgfree(ads, res);
-		return ret;
+		goto out;
 	}
 
-	talloc_destroy(ctx);
+ out:
+	TALLOC_FREE( ctx );
 	ads_msgfree(ads, res);
 	return ret;
 }
@@ -2241,13 +2211,9 @@ static time_t ads_parse_time(const char *str)
 	return timegm(&tm);
 }
 
-/**
- * Find the servers name and realm - this can be done before authentication 
- *  The ldapServiceName field on w2k  looks like this:
- *    vnet3.home.samba.org:win2000-vnet3$@VNET3.HOME.SAMBA.ORG
- * @param ads connection to ads server
- * @return status of search
- **/
+/********************************************************************
+********************************************************************/
+
 ADS_STATUS ads_current_time(ADS_STRUCT *ads)
 {
 	const char *attrs[] = {"currentTime", NULL};
@@ -2257,7 +2223,7 @@ ADS_STATUS ads_current_time(ADS_STRUCT *ads)
 	TALLOC_CTX *ctx;
 	ADS_STRUCT *ads_s = ads;
 
-	if (!(ctx = talloc_init("ads_server_info"))) {
+	if (!(ctx = talloc_init("ads_current_time"))) {
 		return ADS_ERROR(LDAP_NO_MEMORY);
 	}
 
@@ -2277,14 +2243,12 @@ ADS_STATUS ads_current_time(ADS_STRUCT *ads)
 
 	status = ads_do_search(ads_s, "", LDAP_SCOPE_BASE, "(objectclass=*)", attrs, &res);
 	if (!ADS_ERR_OK(status)) {
-		talloc_destroy(ctx);
 		goto done;
 	}
 
 	timestr = ads_pull_string(ads_s, ctx, res, "currentTime");
 	if (!timestr) {
 		ads_msgfree(ads, res);
-		talloc_destroy(ctx);
 		status = ADS_ERROR(LDAP_NO_RESULTS_RETURNED);
 		goto done;
 	}
@@ -2308,6 +2272,60 @@ done:
 		ads_destroy( &ads_s );
 	}
 	talloc_destroy(ctx);
+
+	return status;
+}
+
+/********************************************************************
+********************************************************************/
+
+ADS_STATUS ads_domain_func_level(ADS_STRUCT *ads, uint32 *val)
+{
+	const char *attrs[] = {"domainFunctionality", NULL};
+	ADS_STATUS status;
+	void *res;
+	ADS_STRUCT *ads_s = ads;
+	
+	*val = DS_DOMAIN_FUNCTION_2000;
+
+        /* establish a new ldap tcp session if necessary */
+
+	if ( !ads->ld ) {
+		if ( (ads_s = ads_init( ads->server.realm, ads->server.workgroup, 
+			ads->server.ldap_server )) == NULL )
+		{
+			goto done;
+		}
+		ads_s->auth.flags = ADS_AUTH_ANON_BIND;
+		status = ads_connect( ads_s );
+		if ( !ADS_ERR_OK(status))
+			goto done;
+	}
+
+	/* If the attribute does not exist assume it is a Windows 2000 
+	   functional domain */
+	   
+	status = ads_do_search(ads_s, "", LDAP_SCOPE_BASE, "(objectclass=*)", attrs, &res);
+	if (!ADS_ERR_OK(status)) {
+		if ( status.err.rc == LDAP_NO_SUCH_ATTRIBUTE ) {
+			status = ADS_SUCCESS;
+		}
+		goto done;
+	}
+
+	if ( !ads_pull_uint32(ads_s, res, "domainFunctionality", val) ) {
+		DEBUG(5,("ads_domain_func_level: Failed to pull the domainFunctionality attribute.\n"));
+	}
+	DEBUG(3,("ads_domain_func_level: %d\n", *val));
+
+	
+	ads_msgfree(ads, res);
+
+done:
+	/* free any temporary ads connections */
+	if ( ads_s != ads ) {
+		ads_destroy( &ads_s );
+	}
 
 	return status;
 }
@@ -2620,6 +2638,102 @@ int ads_pull_sids_from_extendeddn(ADS_STRUCT *ads,
 	TALLOC_FREE(dn_strings);
 
 	return dn_count;
+}
+
+/********************************************************************
+********************************************************************/
+
+char* ads_get_dnshostname( ADS_STRUCT *ads, TALLOC_CTX *ctx, const char *machine_name )
+{
+	LDAPMessage *res = NULL;
+	ADS_STATUS status;
+	int count = 0;
+	char *name = NULL;
+	
+	status = ads_find_machine_acct(ads, (void **)(void *)&res, global_myname());
+	if (!ADS_ERR_OK(status)) {
+		DEBUG(0,("ads_get_dnshostname: Failed to find account for %s\n",
+			global_myname()));
+		goto out;
+	}
+		
+	if ( (count = ads_count_replies(ads, res)) != 1 ) {
+		DEBUG(1,("ads_get_dnshostname: %d entries returned!\n", count));
+		goto out;
+	}
+		
+	if ( (name = ads_pull_string(ads, ctx, res, "dNSHostName")) == NULL ) {
+		DEBUG(0,("ads_get_dnshostname: No dNSHostName attribute!\n"));
+	}
+
+out:
+	ads_msgfree(ads, res);
+	
+	return name;
+}
+
+/********************************************************************
+********************************************************************/
+
+char* ads_get_upn( ADS_STRUCT *ads, TALLOC_CTX *ctx, const char *machine_name )
+{
+	LDAPMessage *res = NULL;
+	ADS_STATUS status;
+	int count = 0;
+	char *name = NULL;
+	
+	status = ads_find_machine_acct(ads, (void **)(void *)&res, global_myname());
+	if (!ADS_ERR_OK(status)) {
+		DEBUG(0,("ads_get_dnshostname: Failed to find account for %s\n",
+			global_myname()));
+		goto out;
+	}
+		
+	if ( (count = ads_count_replies(ads, res)) != 1 ) {
+		DEBUG(1,("ads_get_dnshostname: %d entries returned!\n", count));
+		goto out;
+	}
+		
+	if ( (name = ads_pull_string(ads, ctx, res, "userPrincipalName")) == NULL ) {
+		DEBUG(0,("ads_get_dnshostname: No userPrincipalName attribute!\n"));
+	}
+
+out:
+	ads_msgfree(ads, res);
+	
+	return name;
+}
+
+/********************************************************************
+********************************************************************/
+
+char* ads_get_samaccountname( ADS_STRUCT *ads, TALLOC_CTX *ctx, const char *machine_name )
+{
+	LDAPMessage *res = NULL;
+	ADS_STATUS status;
+	int count = 0;
+	char *name = NULL;
+	
+	status = ads_find_machine_acct(ads, (void **)(void *)&res, global_myname());
+	if (!ADS_ERR_OK(status)) {
+		DEBUG(0,("ads_get_dnshostname: Failed to find account for %s\n",
+			global_myname()));
+		goto out;
+	}
+		
+	if ( (count = ads_count_replies(ads, res)) != 1 ) {
+		DEBUG(1,("ads_get_dnshostname: %d entries returned!\n", count));
+		goto out;
+	}
+		
+	if ( (name = ads_pull_string(ads, ctx, res, "sAMAccountName")) == NULL ) {
+		DEBUG(0,("ads_get_dnshostname: No sAMAccountName attribute!\n"));
+	}
+
+out:
+	ads_msgfree(ads, res);
+	
+	return name;
 }
 
 #endif
