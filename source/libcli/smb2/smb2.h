@@ -48,6 +48,15 @@ struct smb2_transport {
 
 	/* context of the stream -> packet parser */
 	struct packet_context *packet;
+
+	/* an idle function - if this is defined then it will be
+	   called once every period microseconds while we are waiting
+	   for a packet */
+	struct {
+		void (*func)(struct smb2_transport *, void *);
+		void *private;
+		uint_t period;
+	} idle;
 };
 
 
