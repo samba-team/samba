@@ -481,7 +481,7 @@ static int net_group(int argc, const char **argv)
 
 static int net_join(int argc, const char **argv)
 {
-	if (net_ads_check() == 0) {
+	if (net_ads_check_our_domain() == 0) {
 		if (net_ads_join(argc, argv) == 0)
 			return 0;
 		else
@@ -492,7 +492,7 @@ static int net_join(int argc, const char **argv)
 
 static int net_changetrustpw(int argc, const char **argv)
 {
-	if (net_ads_check() == 0)
+	if (net_ads_check_our_domain() == 0)
 		return net_ads_changetrustpw(argc, argv);
 
 	return net_rpc_changetrustpw(argc, argv);
