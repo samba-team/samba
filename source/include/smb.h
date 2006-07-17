@@ -440,6 +440,7 @@ typedef struct files_struct {
 	int oplock_type;
 	int sent_oplock_break;
 	struct timed_event *oplock_timeout;
+	struct lock_struct last_lock_failure;
 
 	struct share_mode_entry *pending_break_messages;
 	int num_pending_break_messages;
@@ -860,8 +861,6 @@ struct parm_struct {
 #define FLAG_DEPRECATED 0x1000 /* options that should no longer be used */
 #define FLAG_HIDE  	0x2000 /* options that should be hidden in SWAT */
 #define FLAG_DOS_STRING 0x4000 /* convert from UNIX to DOS codepage when reading this string. */
-
-#include "locking.h"
 
 struct bitmap {
 	uint32 *b;

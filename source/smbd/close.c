@@ -268,8 +268,6 @@ static int close_normal_file(files_struct *fsp, enum file_close_type close_type)
 	int err = 0;
 	int err1 = 0;
 
-	remove_pending_lock_requests_by_fid(fsp);
-
 	if (fsp->aio_write_behind) {
 		/*
 	 	 * If we're finishing write behind on a close we can get a write

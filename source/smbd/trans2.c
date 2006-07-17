@@ -4505,7 +4505,6 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 			uint32 lock_pid;
 			BOOL lock_blocking;
 			enum brl_type lock_type;
-			BOOL my_lock_ctx;
 
 			if (fsp == NULL || fsp->fh->fd == -1) {
 				return ERROR_NT(NT_STATUS_INVALID_HANDLE);
@@ -4564,8 +4563,7 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 						count,
 						offset,
 						lock_type,
-						POSIX_LOCK,
-						&my_lock_ctx);
+						POSIX_LOCK);
 
 				if (lock_blocking && lp_blocking_locks(SNUM(conn)) && ERROR_WAS_LOCK_DENIED(status)) {
 					/*

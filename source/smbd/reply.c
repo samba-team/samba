@@ -2371,7 +2371,6 @@ int reply_lockread(connection_struct *conn, char *inbuf,char *outbuf, int length
 	size_t numtoread;
 	NTSTATUS status;
 	files_struct *fsp = file_fsp(inbuf,smb_vwv0);
-	BOOL my_lock_ctx = False;
 	START_PROFILE(SMBlockread);
 
 	CHECK_FSP(fsp,conn);
@@ -2396,13 +2395,13 @@ int reply_lockread(connection_struct *conn, char *inbuf,char *outbuf, int length
 	 * Note that the requested lock size is unaffected by max_recv.
 	 */
 	
-	status = do_lock_spin(fsp,
-				(uint32)SVAL(inbuf,smb_pid), 
-				(SMB_BIG_UINT)numtoread,
-				(SMB_BIG_UINT)startpos,
-				WRITE_LOCK,
-				WINDOWS_LOCK,
-				&my_lock_ctx);
+	status = do_lock(fsp,
+			(uint32)SVAL(inbuf,smb_pid), 
+			(SMB_BIG_UINT)numtoread,
+			(SMB_BIG_UINT)startpos,
+			WRITE_LOCK,
+			WINDOWS_LOCK,
+			0 /* zero timeout. */);
 
 	if (NT_STATUS_V(status)) {
 #if 0
@@ -2412,7 +2411,7 @@ int reply_lockread(connection_struct *conn, char *inbuf,char *outbuf, int length
 		 * tester. JRA.
 		 */
 
-		if (lp_blocking_locks(SNUM(conn)) && !my_lock_ctx && ERROR_WAS_LOCK_DENIED(status)) {
+		if (lp_blocking_locks(SNUM(conn)) && ERROR_WAS_LOCK_DENIED(status)) {
 			/*
 			 * A blocking lock was requested. Package up
 			 * this smb into a queued request and push it
@@ -3418,7 +3417,6 @@ int reply_lock(connection_struct *conn,
 	SMB_BIG_UINT count,offset;
 	NTSTATUS status;
 	files_struct *fsp = file_fsp(inbuf,smb_vwv0);
-	BOOL my_lock_ctx = False;
 
 	START_PROFILE(SMBlock);
 
@@ -3432,17 +3430,18 @@ int reply_lock(connection_struct *conn,
 	DEBUG(3,("lock fd=%d fnum=%d offset=%.0f count=%.0f\n",
 		 fsp->fh->fd, fsp->fnum, (double)offset, (double)count));
 
-	status = do_lock_spin(fsp,
-				(uint32)SVAL(inbuf,smb_pid),
-				count,
-				offset,
-				WRITE_LOCK,
-				WINDOWS_LOCK,
-				&my_lock_ctx);
+	status = do_lock(fsp,
+			(uint32)SVAL(inbuf,smb_pid),
+			count,
+			offset,
+			WRITE_LOCK,
+			WINDOWS_LOCK,
+			0 /* zero timeout. */);
+
 	if (NT_STATUS_V(status)) {
 #if 0
 		/* Tests using Samba4 against W2K show this call never creates a blocking lock. */
-		if (lp_blocking_locks(SNUM(conn)) && !my_lock_ctx && ERROR_WAS_LOCK_DENIED(status)) {
+		if (lp_blocking_locks(SNUM(conn)) && ERROR_WAS_LOCK_DENIED(status)) {
 			/*
 			 * A blocking lock was requested. Package up
 			 * this smb into a queued request and push it
@@ -5228,7 +5227,6 @@ int reply_lockingX(connection_struct *conn, char *inbuf, char *outbuf,
 	BOOL large_file_format =
 		(locktype & LOCKING_ANDX_LARGE_FILES)?True:False;
 	BOOL err;
-	BOOL my_lock_ctx = False;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 
 	START_PROFILE(SMBlockingX);
@@ -5242,11 +5240,6 @@ int reply_lockingX(connection_struct *conn, char *inbuf, char *outbuf,
 		   and XP reboot so I don't really want to be
 		   compatible! (tridge) */
 		return ERROR_NT(NT_STATUS_DOS(ERRDOS, ERRnoatomiclocks));
-	}
-	
-	if (locktype & LOCKING_ANDX_CANCEL_LOCK) {
-		/* Need to make this like a cancel.... JRA. */
-		return ERROR_NT(NT_STATUS_UNSUCCESSFUL);
 	}
 	
 	/* Check if this is an oplock break on a file
@@ -5360,7 +5353,11 @@ int reply_lockingX(connection_struct *conn, char *inbuf, char *outbuf,
 
 	/* Setup the timeout in seconds. */
 
-	lock_timeout = ((lock_timeout == -1) ? -1 : (lock_timeout+999)/1000);
+	if (lp_blocking_locks(SNUM(conn))) {
+		lock_timeout = ((lock_timeout == -1) ? -1 : (lock_timeout+999)/1000);
+	} else {
+		lock_timeout = 0;
+	}
 	
 	/* Now do any requested locks */
 	data += ((large_file_format ? 20 : 10)*num_ulocks);
@@ -5369,7 +5366,8 @@ int reply_lockingX(connection_struct *conn, char *inbuf, char *outbuf,
 	   of smb_lkrng structs */
 	
 	for(i = 0; i < (int)num_locks; i++) {
-		enum brl_type lock_type = ((locktype & 1) ? READ_LOCK:WRITE_LOCK);
+		enum brl_type lock_type = ((locktype & LOCKING_ANDX_SHARED_LOCK) ?
+				READ_LOCK:WRITE_LOCK);
 		lock_pid = get_lock_pid( data, i, large_file_format);
 		count = get_lock_count( data, i, large_file_format);
 		offset = get_lock_offset( data, i, large_file_format, &err);
@@ -5387,31 +5385,54 @@ int reply_lockingX(connection_struct *conn, char *inbuf, char *outbuf,
 			  (double)count, (unsigned int)lock_pid,
 			  fsp->fsp_name, (int)lock_timeout ));
 		
-		status = do_lock_spin(fsp,
+		if (locktype & LOCKING_ANDX_CANCEL_LOCK) {
+			if (lp_blocking_locks(SNUM(conn))) {
+
+				/* Schedule a message to ourselves to
+				   remove the blocking lock record and
+				   return the right error. */
+
+				if (!blocking_lock_cancel(fsp,
+						lock_pid,
+						offset,
+						count,
+						WINDOWS_LOCK,
+						locktype,
+						NT_STATUS_FILE_LOCK_CONFLICT)) {
+					END_PROFILE(SMBlockingX);
+					return ERROR_NT(NT_STATUS_DOS(ERRDOS, ERRcancelviolation));
+				}
+			}
+			/* Remove a matching pending lock. */
+			status = do_lock_cancel(fsp,
+						lock_pid,
+						count,
+						offset,
+						WINDOWS_LOCK);
+		} else {
+			status = do_lock(fsp,
 					lock_pid,
 					count,
 					offset, 
 					lock_type,
 					WINDOWS_LOCK,
-					&my_lock_ctx);
+					lock_timeout);
 
-		if (NT_STATUS_V(status)) {
-			/*
-			 * Interesting fact found by IFSTEST /t
-			 * LockOverlappedTest...  Even if it's our own lock
-			 * context, we need to wait here as there may be an
-			 * unlock on the way.  So I removed a "&&
-			 * !my_lock_ctx" from the following if statement. JRA.
-			 */
-			if ((lock_timeout != 0) &&
-			    lp_blocking_locks(SNUM(conn)) &&
-			    ERROR_WAS_LOCK_DENIED(status)) {
+			if (NT_STATUS_V(status)) {
 				/*
-				 * A blocking lock was requested. Package up
-				 * this smb into a queued request and push it
-				 * onto the blocking lock queue.
+				 * Interesting fact found by IFSTEST /t
+				 * LockOverlappedTest...  Even if it's our own lock
+				 * context, we need to wait here as there may be an
+				 * unlock on the way. JRA.
 				 */
-				if(push_blocking_lock_request(inbuf, length,
+				if ((lock_timeout != 0) &&
+				    ERROR_WAS_LOCK_DENIED(status)) {
+					/*
+					 * A blocking lock was requested. Package up
+					 * this smb into a queued request and push it
+					 * onto the blocking lock queue.
+					 */
+					if(push_blocking_lock_request(inbuf, length,
 							      fsp,
 							      lock_timeout,
 						 	      i,
@@ -5420,17 +5441,25 @@ int reply_lockingX(connection_struct *conn, char *inbuf, char *outbuf,
 							      WINDOWS_LOCK,
 							      offset,
 							      count)) {
-					END_PROFILE(SMBlockingX);
-					return -1;
+						END_PROFILE(SMBlockingX);
+						return -1;
+					}
 				}
 			}
-			break;
+		}
+
+		if (NT_STATUS_V(status)) {
+			END_PROFILE(SMBlockingX);
+			return ERROR_NT(status);
 		}
 	}
 	
 	/* If any of the above locks failed, then we must unlock
 	   all of the previous locks (X/Open spec). */
-	if (i != num_locks && num_locks != 0) {
+
+	if (!(locktype & LOCKING_ANDX_CANCEL_LOCK) &&
+			(i != num_locks) &&
+			(num_locks != 0)) {
 		/*
 		 * Ensure we don't do a remove on the lock that just failed,
 		 * as under POSIX rules, if we have a lock already there, we
