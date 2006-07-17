@@ -80,6 +80,17 @@ int net_ads_usage(int argc, const char **argv)
 	return -1;
 }
 
+/* when we do not have sufficient input parameters to contact a remote domain
+ * we always fall back to our own realm - Guenther*/
+
+static const char *assume_own_realm(void)
+{
+	if (!opt_host && strequal(lp_workgroup(), opt_target_workgroup)) {
+		return lp_realm();
+	}
+
+	return NULL;
+}
 
 /*
   do a cldap netlogon query
@@ -161,10 +172,7 @@ static int net_ads_lookup(int argc, const char **argv)
 {
 	ADS_STRUCT *ads;
 	ADS_STATUS status;
-	const char *realm = NULL;
-
-	if ( strequal(lp_workgroup(), opt_target_workgroup ) )
-		realm = lp_realm();
+	const char *realm = assume_own_realm();
 
 	ads = ads_init(realm, opt_target_workgroup, opt_host);
 	if (ads) {
@@ -190,8 +198,9 @@ static int net_ads_lookup(int argc, const char **argv)
 static int net_ads_info(int argc, const char **argv)
 {
 	ADS_STRUCT *ads;
+	const char *realm = assume_own_realm();
 
-	if ( (ads = ads_init(lp_realm(), opt_target_workgroup, opt_host)) != NULL ) {
+	if ( (ads = ads_init(realm, opt_target_workgroup, opt_host)) != NULL ) {
 		ads->auth.flags |= ADS_AUTH_NO_BIND;
 	}
 
@@ -228,20 +237,25 @@ static void use_in_memory_ccache(void) {
 	setenv(KRB5_ENV_CCNAME, "MEMORY:net_ads", 1);
 }
 
-static ADS_STRUCT *ads_startup(void)
+static ADS_STRUCT *ads_startup(BOOL only_own_domain)
 {
 	ADS_STRUCT *ads;
 	ADS_STATUS status;
 	BOOL need_password = False;
 	BOOL second_time = False;
 	char *cp;
+	const char *realm = NULL;
 	
 	/* lp_realm() should be handled by a command line param, 
 	   However, the join requires that realm be set in smb.conf
 	   and compares our realm with the remote server's so this is
 	   ok until someone needs more flexibility */
-	   
-	ads = ads_init(lp_realm(), opt_target_workgroup, opt_host);
+
+ 	if (only_own_domain) {
+		realm = lp_realm();
+	}
+   
+	ads = ads_init(realm, opt_target_workgroup, opt_host);
 
 	if (!opt_user_name) {
 		opt_user_name = "administrator";
@@ -299,12 +313,12 @@ retry:
   ads_startup() stores the password in opt_password if it needs to so
   that rpc or rap can use it without re-prompting.
 */
-int net_ads_check(void)
+static int net_ads_check_int(const char *realm, const char *workgroup, const char *host)
 {
 	ADS_STRUCT *ads;
 	ADS_STATUS status;
 
-	if ( (ads = ads_init( lp_realm(), lp_workgroup(), NULL )) == NULL ) {
+	if ( (ads = ads_init( realm, workgroup, host )) == NULL ) {
 		return -1;
 	}
 
@@ -319,6 +333,15 @@ int net_ads_check(void)
 	return 0;
 }
 
+int net_ads_check_our_domain(void)
+{
+	return net_ads_check_int(lp_realm(), lp_workgroup(), NULL);
+}
+
+int net_ads_check(void)
+{
+	return net_ads_check_int(NULL, opt_workgroup, opt_host);
+}
 /* 
    determine the netbios workgroup name for a domain
  */
@@ -326,11 +349,8 @@ static int net_ads_workgroup(int argc, const char **argv)
 {
 	ADS_STRUCT *ads;
 	ADS_STATUS status;
-	const char *realm = NULL;
+	const char *realm = assume_own_realm();
 	struct cldap_netlogon_reply reply;
-
-	if ( strequal(lp_workgroup(), opt_target_workgroup ) )
-		realm = lp_realm();
 
 	ads = ads_init(realm, opt_target_workgroup, opt_host);
 	if (ads) {
@@ -405,7 +425,7 @@ static int ads_user_add(int argc, const char **argv)
 
 	if (argc < 1) return net_ads_user_usage(argc, argv);
 	
-	if (!(ads = ads_startup())) {
+	if (!(ads = ads_startup(False))) {
 		return -1;
 	}
 
@@ -490,7 +510,7 @@ static int ads_user_info(int argc, const char **argv)
 		return -1;
 	}
 
-	if (!(ads = ads_startup())) {
+	if (!(ads = ads_startup(False))) {
 		SAFE_FREE(escaped_user);
 		return -1;
 	}
@@ -537,7 +557,7 @@ static int ads_user_delete(int argc, const char **argv)
 		return net_ads_user_usage(argc, argv);
 	}
 	
-	if (!(ads = ads_startup())) {
+	if (!(ads = ads_startup(False))) {
 		return -1;
 	}
 
@@ -577,7 +597,7 @@ int net_ads_user(int argc, const char **argv)
 	char *disp_fields[2] = {NULL, NULL};
 	
 	if (argc == 0) {
-		if (!(ads = ads_startup())) {
+		if (!(ads = ads_startup(False))) {
 			return -1;
 		}
 
@@ -614,7 +634,7 @@ static int ads_group_add(int argc, const char **argv)
 		return net_ads_group_usage(argc, argv);
 	}
 	
-	if (!(ads = ads_startup())) {
+	if (!(ads = ads_startup(False))) {
 		return -1;
 	}
 
@@ -663,7 +683,7 @@ static int ads_group_delete(int argc, const char **argv)
 		return net_ads_group_usage(argc, argv);
 	}
 	
-	if (!(ads = ads_startup())) {
+	if (!(ads = ads_startup(False))) {
 		return -1;
 	}
 
@@ -702,7 +722,7 @@ int net_ads_group(int argc, const char **argv)
 	char *disp_fields[2] = {NULL, NULL};
 
 	if (argc == 0) {
-		if (!(ads = ads_startup())) {
+		if (!(ads = ads_startup(False))) {
 			return -1;
 		}
 
@@ -728,7 +748,7 @@ static int net_ads_status(int argc, const char **argv)
 	ADS_STATUS rc;
 	void *res;
 
-	if (!(ads = ads_startup())) {
+	if (!(ads = ads_startup(True))) {
 		return -1;
 	}
 
@@ -777,7 +797,7 @@ static int net_ads_leave(int argc, const char **argv)
 	/* The finds a DC and takes care of getting the 
 	   user creds if necessary */
 
-	if (!(ads = ads_startup())) {
+	if (!(ads = ads_startup(True))) {
 		return -1;
 	}
 
@@ -827,7 +847,7 @@ static int net_ads_join_ok(void)
 
 	net_use_machine_password();
 
-	if (!(ads = ads_startup())) {
+	if (!(ads = ads_startup(True))) {
 		return -1;
 	}
 
@@ -1105,7 +1125,7 @@ int net_ads_join(int argc, const char **argv)
 		return -1;
 	}
 
-	if ( (ads = ads_startup()) == NULL ) {
+	if ( (ads = ads_startup(True)) == NULL ) {
 		return -1;
 	}
 
@@ -1244,7 +1264,7 @@ static int net_ads_printer_search(int argc, const char **argv)
 	ADS_STATUS rc;
 	void *res = NULL;
 
-	if (!(ads = ads_startup())) {
+	if (!(ads = ads_startup(False))) {
 		return -1;
 	}
 
@@ -1277,7 +1297,7 @@ static int net_ads_printer_info(int argc, const char **argv)
 	const char *servername, *printername;
 	void *res = NULL;
 
-	if (!(ads = ads_startup())) {
+	if (!(ads = ads_startup(False))) {
 		return -1;
 	}
 
@@ -1336,7 +1356,7 @@ static int net_ads_printer_publish(int argc, const char **argv)
 	char *prt_dn, *srv_dn, **srv_cn;
 	void *res = NULL;
 
-	if (!(ads = ads_startup())) {
+	if (!(ads = ads_startup(True))) {
 		return -1;
 	}
 
@@ -1419,7 +1439,7 @@ static int net_ads_printer_remove(int argc, const char **argv)
 	char *prt_dn;
 	void *res = NULL;
 
-	if (!(ads = ads_startup())) {
+	if (!(ads = ads_startup(True))) {
 		return -1;
 	}
 
@@ -1515,7 +1535,7 @@ static int net_ads_password(int argc, const char **argv)
 
 	/* use the realm so we can eventually change passwords for users 
 	in realms other than default */
-	if (!(ads = ads_init(realm, opt_workgroup, NULL))) {
+	if (!(ads = ads_init(realm, opt_workgroup, opt_host))) {
 		return -1;
 	}
 
@@ -1566,7 +1586,7 @@ int net_ads_changetrustpw(int argc, const char **argv)
 
 	use_in_memory_ccache();
 
-	if (!(ads = ads_startup())) {
+	if (!(ads = ads_startup(True))) {
 		return -1;
 	}
 
@@ -1631,7 +1651,7 @@ static int net_ads_search(int argc, const char **argv)
 		return net_ads_search_usage(argc, argv);
 	}
 
-	if (!(ads = ads_startup())) {
+	if (!(ads = ads_startup(False))) {
 		return -1;
 	}
 
@@ -1691,7 +1711,7 @@ static int net_ads_dn(int argc, const char **argv)
 		return net_ads_dn_usage(argc, argv);
 	}
 
-	if (!(ads = ads_startup())) {
+	if (!(ads = ads_startup(False))) {
 		return -1;
 	}
 
@@ -1751,7 +1771,7 @@ static int net_ads_sid(int argc, const char **argv)
 		return net_ads_sid_usage(argc, argv);
 	}
 
-	if (!(ads = ads_startup())) {
+	if (!(ads = ads_startup(False))) {
 		return -1;
 	}
 
@@ -1808,7 +1828,7 @@ static int net_ads_keytab_flush(int argc, const char **argv)
 	int ret;
 	ADS_STRUCT *ads;
 
-	if (!(ads = ads_startup())) {
+	if (!(ads = ads_startup(True))) {
 		return -1;
 	}
 	ret = ads_keytab_flush(ads);
@@ -1823,7 +1843,7 @@ static int net_ads_keytab_add(int argc, const char **argv)
 	ADS_STRUCT *ads;
 
 	d_printf("Processing principals to add...\n");
-	if (!(ads = ads_startup())) {
+	if (!(ads = ads_startup(True))) {
 		return -1;
 	}
 	for (i = 0; i < argc; i++) {
@@ -1838,7 +1858,7 @@ static int net_ads_keytab_create(int argc, const char **argv)
 	ADS_STRUCT *ads;
 	int ret;
 
-	if (!(ads = ads_startup())) {
+	if (!(ads = ads_startup(True))) {
 		return -1;
 	}
 	ret = ads_keytab_create_default(ads);
@@ -1957,6 +1977,11 @@ int net_ads_group(int argc, const char **argv)
 
 /* this one shouldn't display a message */
 int net_ads_check(void)
+{
+	return -1;
+}
+
+int net_ads_check_our_domain(void)
 {
 	return -1;
 }
