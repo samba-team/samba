@@ -20,5 +20,6 @@ OBJ_FILES = \
 	flush.o \
 	lock.o \
 	notify.o \
+	cancel.o \
 	keepalive.o
 PUBLIC_DEPENDENCIES = LIBCLI_RAW LIBPACKET gensec

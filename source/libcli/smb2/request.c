@@ -35,6 +35,7 @@ struct smb2_request *smb2_request_init(struct smb2_transport *transport, uint16_
 				       uint32_t body_dynamic_size)
 {
 	struct smb2_request *req;
+	uint64_t seqnum;
 
 	if (body_dynamic_present) {
 		if (body_dynamic_size == 0) {
@@ -47,17 +48,23 @@ struct smb2_request *smb2_request_init(struct smb2_transport *transport, uint16_
 	req = talloc(transport, struct smb2_request);
 	if (req == NULL) return NULL;
 
+	seqnum = transport->seqnum++;
+	if (seqnum == UINT64_MAX) {
+		seqnum = transport->seqnum++;
+	}
+
 	req->state     = SMB2_REQUEST_INIT;
 	req->transport = transport;
 	req->session   = NULL;
 	req->tree      = NULL;
-	req->seqnum    = transport->seqnum++;
+	req->seqnum    = seqnum;
 	req->status    = NT_STATUS_OK;
 	req->async.fn  = NULL;
 	req->next = req->prev = NULL;
 
+	ZERO_STRUCT(req->cancel);
 	ZERO_STRUCT(req->in);
-	
+
 	req->out.size      = SMB2_HDR_BODY+NBT_HDR_SIZE+body_fixed_size;
 
 	req->out.allocated = req->out.size + body_dynamic_size;

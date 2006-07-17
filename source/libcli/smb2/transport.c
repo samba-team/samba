@@ -152,8 +152,10 @@ static NTSTATUS smb2_transport_finish_recv(void *private, DATA_BLOB blob)
 	int len;
 	struct smb2_request *req = NULL;
 	uint64_t seqnum;
+	uint32_t flags;
 	uint16_t buffer_code;
 	uint32_t dynamic_size;
+	uint32_t i;
 
 	buffer = blob.data;
 	len = blob.length;
@@ -165,7 +167,8 @@ static NTSTATUS smb2_transport_finish_recv(void *private, DATA_BLOB blob)
 		goto error;
 	}
 
-	seqnum = BVAL(hdr, SMB2_HDR_SEQNUM);
+	flags	= IVAL(hdr, SMB2_HDR_FLAGS);
+	seqnum	= BVAL(hdr, SMB2_HDR_SEQNUM);
 
 	/* match the incoming request against the list of pending requests */
 	for (req=transport->pending_recv; req; req=req->next) {
@@ -190,8 +193,13 @@ static NTSTATUS smb2_transport_finish_recv(void *private, DATA_BLOB blob)
 	req->status       = NT_STATUS(IVAL(hdr, SMB2_HDR_STATUS));
 
 	if (NT_STATUS_EQUAL(req->status, STATUS_PENDING)) {
-		/* the server has helpfully told us that this request is still being
-		   processed. how useful :) */
+		if (flags & 0x00000002) {
+			req->cancel.can_cancel = True;
+			req->cancel.pending_id = IVAL(hdr, SMB2_HDR_PID);
+			for (i=0; i< req->cancel.do_cancel; i++) {
+				smb2_cancel(req);
+			}
+		}
 		talloc_free(buffer);
 		return NT_STATUS_OK;
 	}
