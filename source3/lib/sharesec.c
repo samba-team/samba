@@ -206,6 +206,37 @@ BOOL delete_share_security(int snum)
 	return True;
 }
 
+/*******************************************************************
+ Can this user access with share with the required permissions ?
+********************************************************************/
+
+BOOL share_access_check(const NT_USER_TOKEN *token, const char *sharename,
+			uint32 desired_access)
+{
+	uint32 granted;
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx = NULL;
+	SEC_DESC *psd = NULL;
+	size_t sd_size;
+	BOOL ret = True;
+
+	if (!(mem_ctx = talloc_init("share_access_check"))) {
+		return False;
+	}
+
+	psd = get_share_security(mem_ctx, sharename, &sd_size);
+
+	if (!psd) {
+		TALLOC_FREE(mem_ctx);
+		return True;
+	}
+
+	ret = se_access_check(psd, token, desired_access, &granted, &status);
+
+	talloc_destroy(mem_ctx);
+	return ret;
+}
+
 /***************************************************************************
  Parse the contents of an acl string from a usershare file.
 ***************************************************************************/
