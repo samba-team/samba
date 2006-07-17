@@ -286,11 +286,6 @@ void smb2srv_ioctl_recv(struct smb2srv_request *req)
 	SMB2SRV_CALL_NTVFS_BACKEND(ntvfs_ioctl(req->ntvfs, io));
 }
 
-void smb2srv_cancel_recv(struct smb2srv_request *req)
-{
-	smb2srv_send_error(req, NT_STATUS_NOT_IMPLEMENTED);
-}
-
 static void smb2srv_notify_send(struct ntvfs_request *ntvfs)
 {
 	struct smb2srv_request *req;

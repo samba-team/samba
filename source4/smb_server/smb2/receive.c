@@ -28,7 +28,21 @@
 #include "smb_server/smb2/smb2_server.h"
 #include "smbd/service_stream.h"
 #include "lib/stream/packet.h"
+#include "ntvfs/ntvfs.h"
 
+static int smb2srv_request_destructor(struct smb2srv_request *req)
+{
+	DLIST_REMOVE(req->smb_conn->requests2.list, req);
+	if (req->pending_id) {
+		idr_remove(req->smb_conn->requests2.idtree_req, req->pending_id);
+	}
+	return 0;
+}
+
+static int smb2srv_request_deny_destructor(struct smb2srv_request *req)
+{
+	return -1;
+}
 
 static struct smb2srv_request *smb2srv_init_request(struct smbsrv_connection *smb_conn)
 {
@@ -39,12 +53,24 @@ static struct smb2srv_request *smb2srv_init_request(struct smbsrv_connection *sm
 
 	req->smb_conn = smb_conn;
 
+	talloc_set_destructor(req, smb2srv_request_destructor);
+
 	return req;
 }
 
 NTSTATUS smb2srv_setup_reply(struct smb2srv_request *req, uint16_t body_fixed_size,
 			     BOOL body_dynamic_present, uint32_t body_dynamic_size)
 {
+	uint32_t flags = 0x00000001;
+	uint32_t pid = IVAL(req->in.hdr, SMB2_HDR_PID);
+	uint32_t tid = IVAL(req->in.hdr, SMB2_HDR_TID);
+
+	if (req->pending_id) {
+		flags |= 0x00000002;
+		pid = req->pending_id;
+		tid = 0;
+	}
+
 	if (body_dynamic_present) {
 		if (body_dynamic_size == 0) {
 			body_dynamic_size = 1;
@@ -71,11 +97,11 @@ NTSTATUS smb2srv_setup_reply(struct smb2srv_request *req, uint16_t body_fixed_si
 	SIVAL(req->out.hdr, SMB2_HDR_STATUS,  NT_STATUS_V(req->status));
 	SSVAL(req->out.hdr, SMB2_HDR_OPCODE,  SVAL(req->in.hdr, SMB2_HDR_OPCODE));
 	SSVAL(req->out.hdr, SMB2_HDR_UNKNOWN1,0x0001);
-	SIVAL(req->out.hdr, SMB2_HDR_FLAGS,   0x00000001);
+	SIVAL(req->out.hdr, SMB2_HDR_FLAGS,   flags);
 	SIVAL(req->out.hdr, SMB2_HDR_UNKNOWN2,0);
 	SBVAL(req->out.hdr, SMB2_HDR_SEQNUM,  req->seqnum);
-	SIVAL(req->out.hdr, SMB2_HDR_PID,     IVAL(req->in.hdr, SMB2_HDR_PID));
-	SIVAL(req->out.hdr, SMB2_HDR_TID,     IVAL(req->in.hdr, SMB2_HDR_TID));
+	SIVAL(req->out.hdr, SMB2_HDR_PID,     pid);
+	SIVAL(req->out.hdr, SMB2_HDR_TID,     tid);
 	SBVAL(req->out.hdr, SMB2_HDR_UID,     BVAL(req->in.hdr, SMB2_HDR_UID));
 	memset(req->out.hdr+SMB2_HDR_SIG, 0, 16);
 
@@ -216,8 +242,6 @@ static NTSTATUS smb2srv_reply(struct smb2srv_request *req)
 		smb2srv_ioctl_recv(req);
 		return NT_STATUS_OK;
 	case SMB2_OP_CANCEL:
-		if (!req->session) goto nosession;
-		if (!req->tcon)	goto notcon;
 		smb2srv_cancel_recv(req);
 		return NT_STATUS_OK;
 	case SMB2_OP_KEEPALIVE:
@@ -329,6 +353,72 @@ NTSTATUS smbsrv_recv_smb2_request(void *private, DATA_BLOB blob)
 	return smb2srv_reply(req);
 }
 
+static NTSTATUS smb2srv_init_pending(struct smbsrv_connection *smb_conn)
+{
+	smb_conn->requests2.idtree_req = idr_init(smb_conn);
+	NT_STATUS_HAVE_NO_MEMORY(smb_conn->requests2.idtree_req);
+	smb_conn->requests2.idtree_limit	= 0x00FFFFFF & (UINT32_MAX - 1);
+	smb_conn->requests2.list		= NULL;
+
+	return NT_STATUS_OK;
+}
+
+NTSTATUS smb2srv_queue_pending(struct smb2srv_request *req)
+{
+	int id;
+
+	if (req->pending_id) {
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	id = idr_get_new_above(req->smb_conn->requests2.idtree_req, req, 
+			       1, req->smb_conn->requests2.idtree_limit);
+	if (id == -1) {
+		return NT_STATUS_INSUFFICIENT_RESOURCES;
+	}
+
+	DLIST_ADD_END(req->smb_conn->requests2.list, req, struct smb2srv_request *);
+	req->pending_id = id;
+
+	talloc_set_destructor(req, smb2srv_request_deny_destructor);
+	smb2srv_send_error(req, STATUS_PENDING);
+	talloc_set_destructor(req, smb2srv_request_destructor);
+
+	return NT_STATUS_OK;
+}
+
+void smb2srv_cancel_recv(struct smb2srv_request *req)
+{
+	uint32_t pending_id;
+	uint32_t flags;
+	void *p;
+	struct smb2srv_request *r;
+
+	if (!req->session) goto done;
+
+	flags		= IVAL(req->in.hdr, SMB2_HDR_FLAGS);
+	pending_id	= IVAL(req->in.hdr, SMB2_HDR_PID);
+
+	if (!(flags & 0x00000002)) {
+		/* TODO: what to do here? */
+		goto done;
+	}
+ 
+ 	p = idr_find(req->smb_conn->requests2.idtree_req, pending_id);
+	if (!p) goto done;
+
+	r = talloc_get_type(p, struct smb2srv_request);
+	if (!r) goto done;
+
+	if (!r->ntvfs) goto done;
+
+	ntvfs_cancel(r->ntvfs);
+
+done:
+	/* we never generate a reply for a SMB2 Cancel */
+	talloc_free(req);
+}
+
 /*
  * init the SMB2 protocol related stuff
  */
@@ -349,6 +439,9 @@ NTSTATUS smbsrv_init_smb2_connection(struct smbsrv_connection *smb_conn)
 	smb_conn->config.nt_status_support = True;
 
 	status = smbsrv_init_sessions(smb_conn, UINT64_MAX);
+	NT_STATUS_NOT_OK_RETURN(status);
+
+	status = smb2srv_init_pending(smb_conn);
 	NT_STATUS_NOT_OK_RETURN(status);
 
 	return NT_STATUS_OK;
