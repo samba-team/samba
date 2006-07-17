@@ -4503,7 +4503,7 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 			SMB_BIG_UINT count;
 			SMB_BIG_UINT offset;
 			uint32 lock_pid;
-			BOOL lock_blocking;
+			BOOL lock_blocking = False;
 			enum brl_type lock_type;
 
 			if (fsp == NULL || fsp->fh->fd == -1) {
@@ -4540,6 +4540,10 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 				return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 			}
 
+			if (!lp_blocking_locks(SNUM(conn))) { 
+				lock_blocking = False;
+			}
+
 			lock_pid = IVAL(pdata, POSIX_LOCK_PID_OFFSET);
 #if defined(HAVE_LONGLONG)
 			offset = (((SMB_BIG_UINT) IVAL(pdata,(POSIX_LOCK_START_OFFSET+4))) << 32) |
@@ -4563,9 +4567,10 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 						count,
 						offset,
 						lock_type,
+						lock_blocking ? -1 : 0,						
 						POSIX_LOCK);
 
-				if (lock_blocking && lp_blocking_locks(SNUM(conn)) && ERROR_WAS_LOCK_DENIED(status)) {
+				if (lock_blocking && ERROR_WAS_LOCK_DENIED(status)) {
 					/*
 					 * A blocking lock was requested. Package up
 					 * this smb into a queued request and push it
