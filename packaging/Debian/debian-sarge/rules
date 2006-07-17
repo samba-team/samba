@@ -76,7 +76,8 @@ ifeq ($(DEB_HOST_GNU_SYSTEM),linux)
   conf_args += \
 		--with-smbmount \
 		--with-acl-support \
-		--with-quotas
+		--with-quotas \
+		--with-cifsmount
   mount_cifs	= yes
   smbfs		= yes
 else
@@ -120,9 +121,6 @@ build-stamp:
 
 	$(MAKE) -C source headers
 	$(MAKE) -C source all nsswitch/libnss_wins.so python_ext
-ifeq ($(mount_cifs),yes)
-	$(MAKE) -C source client/mount.cifs
-endif
 
 	touch build-stamp
 
@@ -138,7 +136,7 @@ clean: unpatch
 
 	# Delete stuff left after a build that is not deleted by 'make clean'
 	rm -f source/bin/wbinfo source/bin/winbindd source/bin/debug2html \
-		source/bin/libsmbclient.a source/client/mount.cifs \
+		source/bin/libsmbclient.a source/bin/mount.cifs \
 		source/include/stamp-h
 
 	sed -e "s/@libacl@/`type-handling any linux-gnu`/g" \
@@ -179,14 +177,11 @@ install: build
 	install -m 0755 debian/mksmbpasswd.awk $(DESTDIR)/usr/sbin/mksmbpasswd
 
 	# Install winbind stuff not installed by 'make install'
-	install -m 0644 source/nsswitch/libnss_winbind.so \
-		$(DESTDIR)/lib/libnss_winbind.so.2
-	install -m 0644 source/bin/pam_winbind.so \
-		$(DESTDIR)/lib/security/
+	install -m 0644 source/bin/pam_winbind.so $(DESTDIR)/lib/security/
+	install -m 0644 source/nsswitch/libnss_winbind.so $(DESTDIR)/lib/libnss_winbind.so.2
 
 	# Install libnss_wins.so, which is not installed by 'make install' either.
-	install -m 0644 source/nsswitch/libnss_wins.so \
-		$(DESTDIR)/lib/libnss_wins.so.2
+	install -m 0644 source/nsswitch/libnss_wins.so  $(DESTDIR)/lib/libnss_wins.so.2
 
 	# pam_smbpass.so isn't being installed by 'make install'.
 	#	We'll move it here to $(DESTDIR)/lib/security/ and then
@@ -208,7 +203,7 @@ endif
 
 ifeq ($(mount_cifs),yes)
 	# Install mount.cifs and its man page
-	install -m 04755 source/client/mount.cifs $(DESTDIR)/sbin/
+	install -m 04755 source/bin/mount.cifs $(DESTDIR)/sbin/
 	install -m 0644 docs/manpages/mount.cifs.8 $(DESTDIR)/usr/share/man/man8/
 endif
 

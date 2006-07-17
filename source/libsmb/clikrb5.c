@@ -112,7 +112,7 @@ static krb5_error_code smb_krb5_parse_name_norealm_conv(krb5_context context,
 
 #ifndef HAVE_KRB5_SET_REAL_TIME
 /*
- * This function is not in the Heimdal mainline.
+ * Thir function is not in the Heimdal mainline.
  */
  krb5_error_code krb5_set_real_time(krb5_context context, int32_t seconds, int32_t microseconds)
 {
@@ -682,7 +682,7 @@ failed:
 	else
 		err = krb5_auth_con_getlocalsubkey(context, auth_context, &skey);
 	if (err == 0 && skey != NULL) {
-		DEBUG(10, ("Got KRB5 session key of length %d\n",  KRB5_KEY_LENGTH(skey)));
+		DEBUG(10, ("Got KRB5 session key of length %d\n",  (int)KRB5_KEY_LENGTH(skey)));
 		*session_key = data_blob(KRB5_KEY_DATA(skey), KRB5_KEY_LENGTH(skey));
 		dump_data_pw("KRB5 Session Key:\n", session_key->data, session_key->length);
 
