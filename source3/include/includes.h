@@ -936,6 +936,7 @@ extern int errno;
 #include "debugparse.h"
 #include "version.h"
 #include "privileges.h"
+#include "locking.h"
 #include "smb.h"
 #include "ads_cldap.h"
 #include "nameserv.h"

@@ -45,8 +45,10 @@ struct lock_key {
 	SMB_INO_T inode;
 };
 
+struct files_struct;
+
 struct byte_range_lock {
-	files_struct *fsp;
+	struct files_struct *fsp;
 	unsigned int num_locks;
 	BOOL modified;
 	struct lock_key key;

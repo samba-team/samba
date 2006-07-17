@@ -185,7 +185,7 @@ NTSTATUS do_lock(files_struct *fsp,
 			SMB_BIG_UINT offset,
 			enum brl_type lock_type,
 			enum brl_flavour lock_flav,
-			BOOL *my_lock_ctx)
+			int32 lock_timeout)
 {
 	struct byte_range_lock *br_lck = NULL;
 	NTSTATUS status = NT_STATUS_LOCK_NOT_GRANTED;
@@ -216,69 +216,10 @@ NTSTATUS do_lock(files_struct *fsp,
 			count, 
 			lock_type,
 			lock_flav,
-			my_lock_ctx);
+			lock_timeout);
 
 	TALLOC_FREE(br_lck);
 	return status;
-}
-
-/****************************************************************************
- Utility function called by locking requests. This is *DISGUSTING*. It also
- appears to be "What Windows Does" (tm). Andrew, ever wonder why Windows 2000
- is so slow on the locking tests...... ? This is the reason. Much though I hate
- it, we need this. JRA.
-****************************************************************************/
-
-NTSTATUS do_lock_spin(files_struct *fsp,
-			uint32 lock_pid,
-			SMB_BIG_UINT count,
-			SMB_BIG_UINT offset,
-			enum brl_type lock_type,
-			enum brl_flavour lock_flav,
-			BOOL *my_lock_ctx)
-{
-	int j, maxj = lp_lock_spin_count();
-	int sleeptime = lp_lock_sleep_time();
-	NTSTATUS status, ret;
-
-	if (maxj <= 0) {
-		maxj = 1;
-	}
-
-	ret = NT_STATUS_OK; /* to keep dumb compilers happy */
-
-	for (j = 0; j < maxj; j++) {
-		status = do_lock(fsp,
-				lock_pid,
-				count,
-				offset,
-				lock_type,
-				lock_flav,
-				my_lock_ctx);
-
-		if (!NT_STATUS_EQUAL(status, NT_STATUS_LOCK_NOT_GRANTED) &&
-		    !NT_STATUS_EQUAL(status, NT_STATUS_FILE_LOCK_CONFLICT)) {
-			return status;
-		}
-		/* if we do fail then return the first error code we got */
-		if (j == 0) {
-			ret = status;
-			/* Don't spin if we blocked ourselves. */
-			if (*my_lock_ctx) {
-				return ret;
-			}
-
-			/* Only spin for Windows locks. */
-			if (lock_flav == POSIX_LOCK) {
-				return ret;
-			}
-		}
-
-		if (sleeptime) {
-			sys_usleep(sleeptime);
-		}
-	}
-	return ret;
 }
 
 /****************************************************************************
@@ -328,6 +269,53 @@ NTSTATUS do_unlock(files_struct *fsp,
 }
 
 /****************************************************************************
+ Cancel any pending blocked locks.
+****************************************************************************/
+
+NTSTATUS do_lock_cancel(files_struct *fsp,
+			uint32 lock_pid,
+			SMB_BIG_UINT count,
+			SMB_BIG_UINT offset,
+			enum brl_flavour lock_flav)
+{
+	BOOL ok = False;
+	struct byte_range_lock *br_lck = NULL;
+	
+	if (!fsp->can_lock) {
+		return fsp->is_directory ?
+			NT_STATUS_INVALID_DEVICE_REQUEST : NT_STATUS_INVALID_HANDLE;
+	}
+	
+	if (!lp_locking(SNUM(fsp->conn))) {
+		return NT_STATUS_DOS(ERRDOS, ERRcancelviolation);
+	}
+
+	DEBUG(10,("do_lock_cancel: cancel start=%.0f len=%.0f requested for fnum %d file %s\n",
+		  (double)offset, (double)count, fsp->fnum, fsp->fsp_name ));
+
+	br_lck = brl_get_locks(NULL, fsp);
+	if (!br_lck) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	ok = brl_lock_cancel(br_lck,
+			lock_pid,
+			procid_self(),
+			offset,
+			count,
+			lock_flav);
+   
+	TALLOC_FREE(br_lck);
+
+	if (!ok) {
+		DEBUG(10,("do_lock_cancel: returning ERRcancelviolation.\n" ));
+		return NT_STATUS_DOS(ERRDOS, ERRcancelviolation);
+	}
+
+	return NT_STATUS_OK;
+}
+
+/****************************************************************************
  Remove any locks on this fd. Called from file_close().
 ****************************************************************************/
 
@@ -340,7 +328,9 @@ void locking_close_file(files_struct *fsp)
 	}
 
 	br_lck = brl_get_locks(NULL,fsp);
+
 	if (br_lck) {
+		cancel_pending_lock_requests_by_fid(fsp, br_lck);
 		brl_close_fnum(br_lck);
 		TALLOC_FREE(br_lck);
 	}
