@@ -320,36 +320,30 @@ static void map_generic_share_sd_bits(SEC_DESC *psd)
  Can this user access with share with the required permissions ?
 ********************************************************************/
 
-BOOL share_access_check(connection_struct *conn, int snum, user_struct *vuser, uint32 desired_access)
+BOOL share_access_check(const NT_USER_TOKEN *token, const char *sharename,
+			uint32 desired_access)
 {
 	uint32 granted;
 	NTSTATUS status;
 	TALLOC_CTX *mem_ctx = NULL;
 	SEC_DESC *psd = NULL;
 	size_t sd_size;
-	NT_USER_TOKEN *token = NULL;
 	BOOL ret = True;
 
-	mem_ctx = talloc_init("share_access_check");
-	if (mem_ctx == NULL)
+	if (!(mem_ctx = talloc_init("share_access_check"))) {
 		return False;
+	}
 
-	psd = get_share_security(mem_ctx, lp_servicename(snum), &sd_size);
+	psd = get_share_security(mem_ctx, sharename, &sd_size);
 
-	if (!psd)
-		goto out;
-
-	if (conn->nt_user_token)
-		token = conn->nt_user_token;
-	else 
-		token = vuser->nt_user_token;
+	if (!psd) {
+		TALLOC_FREE(mem_ctx);
+		return True;
+	}
 
 	ret = se_access_check(psd, token, desired_access, &granted, &status);
 
-out:
-
 	talloc_destroy(mem_ctx);
-
 	return ret;
 }
 
