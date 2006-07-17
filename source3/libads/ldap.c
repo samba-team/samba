@@ -134,6 +134,7 @@ BOOL ads_try_connect(ADS_STRUCT *ads, const char *server )
 
 	if ( !ads_cldap_netlogon( srv, ads->server.realm, &cldap_reply ) ) {
 		DEBUG(3,("ads_try_connect: CLDAP request %s failed.\n", srv));
+		SAFE_FREE( srv );
 		return False;
 	}
 

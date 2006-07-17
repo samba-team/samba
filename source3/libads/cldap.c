@@ -191,6 +191,11 @@ static int recv_cldap_netlogon(int sock, struct cldap_netlogon_reply *reply)
 	char *p;
 
 	blob = data_blob(NULL, 8192);
+	if (blob.data == NULL) {
+		DEBUG(1, ("data_blob failed\n"));
+		errno = ENOMEM;
+		return -1;
+	}
 
 	/* Setup timeout */
 	gotalarm = 0;
@@ -206,6 +211,7 @@ static int recv_cldap_netlogon(int sock, struct cldap_netlogon_reply *reply)
 
 	if (ret <= 0) {
 		DEBUG(1,("no reply received to cldap netlogon\n"));
+		data_blob_free(&blob);
 		return -1;
 	}
 	blob.length = ret;
@@ -227,6 +233,7 @@ static int recv_cldap_netlogon(int sock, struct cldap_netlogon_reply *reply)
 	asn1_end_tag(&data);
 
 	if (data.has_error) {
+		data_blob_free(&blob);
 		asn1_free(&data);
 		DEBUG(1,("Failed to parse cldap reply\n"));
 		return -1;
