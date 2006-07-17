@@ -47,11 +47,10 @@ struct pvfs_notify_buffer {
 /*
   send a notify on the next event run. 
 */
-void pvfs_notify_send_next(struct event_context *ev, struct timed_event *te, 
-			   struct timeval t, void *ptr)
+static void pvfs_notify_send_next(struct event_context *ev, struct timed_event *te, 
+				  struct timeval t, void *ptr)
 {
 	struct ntvfs_request *req = talloc_get_type(ptr, struct ntvfs_request);
-	talloc_free(req);
 	req->async_states->send_fn(req);
 }
 
@@ -109,7 +108,6 @@ static void pvfs_notify_send(struct pvfs_notify_buffer *notify_buffer,
 	/* we can't call pvfs_notify_send() directly here, as that
 	   would free the request, and the ntvfs modules above us
 	   could use it, so call it on the next event */
-	talloc_reference(notify_buffer, req);
 	event_add_timed(req->ctx->event_ctx, 
 			req, timeval_zero(), pvfs_notify_send_next, req);
 }
