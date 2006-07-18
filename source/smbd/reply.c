@@ -2371,6 +2371,7 @@ int reply_lockread(connection_struct *conn, char *inbuf,char *outbuf, int length
 	size_t numtoread;
 	NTSTATUS status;
 	files_struct *fsp = file_fsp(inbuf,smb_vwv0);
+	struct byte_range_lock *br_lck = NULL;
 	START_PROFILE(SMBlockread);
 
 	CHECK_FSP(fsp,conn);
@@ -2395,42 +2396,17 @@ int reply_lockread(connection_struct *conn, char *inbuf,char *outbuf, int length
 	 * Note that the requested lock size is unaffected by max_recv.
 	 */
 	
-	status = do_lock(fsp,
+	br_lck = do_lock(fsp,
 			(uint32)SVAL(inbuf,smb_pid), 
 			(SMB_BIG_UINT)numtoread,
 			(SMB_BIG_UINT)startpos,
 			WRITE_LOCK,
 			WINDOWS_LOCK,
-			0 /* zero timeout. */);
+			False, /* Non-blocking lock. */
+			&status);
+	TALLOC_FREE(br_lck);
 
 	if (NT_STATUS_V(status)) {
-#if 0
-		/*
-		 * We used to make lockread a blocking lock. It turns out
-		 * that this isn't on W2k. Found by the Samba 4 RAW-READ torture
-		 * tester. JRA.
-		 */
-
-		if (lp_blocking_locks(SNUM(conn)) && ERROR_WAS_LOCK_DENIED(status)) {
-			/*
-			 * A blocking lock was requested. Package up
-			 * this smb into a queued request and push it
-			 * onto the blocking lock queue.
-			 */
-			if(push_blocking_lock_request(inbuf, length,
-					fsp,
-					-1,
-					0,
-					SVAL(inbuf,smb_pid),
-					WRITE_LOCK,
-					WINDOWS_LOCK,
-					(SMB_BIG_UINT)startpos,
-					(SMB_BIG_UINT)numtoread)) {
-				END_PROFILE(SMBlockread);
-				return -1;
-			}
-		}
-#endif
 		END_PROFILE(SMBlockread);
 		return ERROR_NT(status);
 	}
@@ -3417,6 +3393,7 @@ int reply_lock(connection_struct *conn,
 	SMB_BIG_UINT count,offset;
 	NTSTATUS status;
 	files_struct *fsp = file_fsp(inbuf,smb_vwv0);
+	struct byte_range_lock *br_lck = NULL;
 
 	START_PROFILE(SMBlock);
 
@@ -3430,36 +3407,18 @@ int reply_lock(connection_struct *conn,
 	DEBUG(3,("lock fd=%d fnum=%d offset=%.0f count=%.0f\n",
 		 fsp->fh->fd, fsp->fnum, (double)offset, (double)count));
 
-	status = do_lock(fsp,
+	br_lck = do_lock(fsp,
 			(uint32)SVAL(inbuf,smb_pid),
 			count,
 			offset,
 			WRITE_LOCK,
 			WINDOWS_LOCK,
-			0 /* zero timeout. */);
+			False, /* Non-blocking lock. */
+			&status);
+
+	TALLOC_FREE(br_lck);
 
 	if (NT_STATUS_V(status)) {
-#if 0
-		/* Tests using Samba4 against W2K show this call never creates a blocking lock. */
-		if (lp_blocking_locks(SNUM(conn)) && ERROR_WAS_LOCK_DENIED(status)) {
-			/*
-			 * A blocking lock was requested. Package up
-			 * this smb into a queued request and push it
-			 * onto the blocking lock queue.
-			 */
-			if(push_blocking_lock_request(inbuf, length,
-				fsp,
-				-1,
-				0,
-				SVAL(inbuf,smb_pid),
-				WRITE_LOCK,
-				WINDOWS_LOCK,
-				offset, count)) {
-				END_PROFILE(SMBlock);
-				return -1;
-			}
-		}
-#endif
 		END_PROFILE(SMBlock);
 		return ERROR_NT(status);
 	}
@@ -5353,9 +5312,7 @@ int reply_lockingX(connection_struct *conn, char *inbuf, char *outbuf,
 
 	/* Setup the timeout in seconds. */
 
-	if (lp_blocking_locks(SNUM(conn))) {
-		lock_timeout = ((lock_timeout == -1) ? -1 : (lock_timeout+999)/1000);
-	} else {
+	if (!lp_blocking_locks(SNUM(conn))) {
 		lock_timeout = 0;
 	}
 	
@@ -5410,42 +5367,57 @@ int reply_lockingX(connection_struct *conn, char *inbuf, char *outbuf,
 						offset,
 						WINDOWS_LOCK);
 		} else {
-			status = do_lock(fsp,
+			BOOL blocking_lock = lock_timeout ? True : False;
+			BOOL defer_lock = False;
+			struct byte_range_lock *br_lck;
+
+			br_lck = do_lock(fsp,
 					lock_pid,
 					count,
 					offset, 
 					lock_type,
 					WINDOWS_LOCK,
-					lock_timeout);
+					blocking_lock,
+					&status);
 
-			if (NT_STATUS_V(status)) {
+			if (br_lck && blocking_lock && ERROR_WAS_LOCK_DENIED(status)) {
+				defer_lock = True;
+			}
+
+			/* This heuristic seems to match W2K3 very well. If a
+			   lock sent with timeout of zero would fail with NT_STATUS_FILE_LOCK_CONFLICT
+			   it pretends we asked for a timeout of between 150 - 300 milliseconds as
+			   far as I can tell. Replacement for do_lock_spin(). JRA. */
+
+			if (br_lck && lp_blocking_locks(SNUM(conn)) && !blocking_lock &&
+					NT_STATUS_EQUAL((status), NT_STATUS_FILE_LOCK_CONFLICT)) {
+				defer_lock = True;
+				lock_timeout = 200;
+			}
+
+			if (br_lck && defer_lock) {
 				/*
-				 * Interesting fact found by IFSTEST /t
-				 * LockOverlappedTest...  Even if it's our own lock
-				 * context, we need to wait here as there may be an
-				 * unlock on the way. JRA.
+				 * A blocking lock was requested. Package up
+				 * this smb into a queued request and push it
+				 * onto the blocking lock queue.
 				 */
-				if ((lock_timeout != 0) &&
-				    ERROR_WAS_LOCK_DENIED(status)) {
-					/*
-					 * A blocking lock was requested. Package up
-					 * this smb into a queued request and push it
-					 * onto the blocking lock queue.
-					 */
-					if(push_blocking_lock_request(inbuf, length,
-							      fsp,
-							      lock_timeout,
-						 	      i,
-							      lock_pid,
-							      lock_type,
-							      WINDOWS_LOCK,
-							      offset,
-							      count)) {
-						END_PROFILE(SMBlockingX);
-						return -1;
-					}
+				if(push_blocking_lock_request(br_lck,
+							inbuf, length,
+							fsp,
+							lock_timeout,
+							i,
+							lock_pid,
+							lock_type,
+							WINDOWS_LOCK,
+							offset,
+							count)) {
+					TALLOC_FREE(br_lck);
+					END_PROFILE(SMBlockingX);
+					return -1;
 				}
 			}
+
+			TALLOC_FREE(br_lck);
 		}
 
 		if (NT_STATUS_V(status)) {
