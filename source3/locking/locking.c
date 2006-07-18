@@ -179,23 +179,25 @@ NTSTATUS query_lock(files_struct *fsp,
  Utility function called by locking requests.
 ****************************************************************************/
 
-NTSTATUS do_lock(files_struct *fsp,
+struct byte_range_lock *do_lock(files_struct *fsp,
 			uint32 lock_pid,
 			SMB_BIG_UINT count,
 			SMB_BIG_UINT offset,
 			enum brl_type lock_type,
 			enum brl_flavour lock_flav,
-			int32 lock_timeout)
+			BOOL blocking_lock,
+			NTSTATUS *perr)
 {
 	struct byte_range_lock *br_lck = NULL;
-	NTSTATUS status = NT_STATUS_LOCK_NOT_GRANTED;
 
 	if (!fsp->can_lock) {
-		return fsp->is_directory ? NT_STATUS_INVALID_DEVICE_REQUEST : NT_STATUS_INVALID_HANDLE;
+		*perr = fsp->is_directory ? NT_STATUS_INVALID_DEVICE_REQUEST : NT_STATUS_INVALID_HANDLE;
+		return NULL;
 	}
 
 	if (!lp_locking(SNUM(fsp->conn))) {
-		return NT_STATUS_OK;
+		*perr = NT_STATUS_OK;
+		return NULL;
 	}
 
 	/* NOTE! 0 byte long ranges ARE allowed and should be stored  */
@@ -206,20 +208,20 @@ NTSTATUS do_lock(files_struct *fsp,
 
 	br_lck = brl_get_locks(NULL, fsp);
 	if (!br_lck) {
-		return NT_STATUS_NO_MEMORY;
+		*perr = NT_STATUS_NO_MEMORY;
+		return NULL;
 	}
 
-	status = brl_lock(br_lck,
+	*perr = brl_lock(br_lck,
 			lock_pid,
 			procid_self(),
 			offset,
 			count, 
 			lock_type,
 			lock_flav,
-			lock_timeout);
+			blocking_lock);
 
-	TALLOC_FREE(br_lck);
-	return status;
+	return br_lck;
 }
 
 /****************************************************************************

@@ -1276,7 +1276,7 @@ int chain_reply(char *inbuf,char *outbuf,int size,int bufsize)
 }
 
 /****************************************************************************
- Setup the needed select timeout.
+ Setup the needed select timeout in milliseconds.
 ****************************************************************************/
 
 static int setup_select_timeout(void)
@@ -1284,16 +1284,17 @@ static int setup_select_timeout(void)
 	int select_timeout;
 	int t;
 
-	select_timeout = blocking_locks_timeout(SMBD_SELECT_TIMEOUT);
-	select_timeout *= 1000;
+	select_timeout = blocking_locks_timeout_ms(SMBD_SELECT_TIMEOUT*1000);
 
 	t = change_notify_timeout();
 	DEBUG(10, ("change_notify_timeout: %d\n", t));
-	if (t != -1)
+	if (t != -1) {
 		select_timeout = MIN(select_timeout, t*1000);
+	}
 
-	if (print_notify_messages_pending())
+	if (print_notify_messages_pending()) {
 		select_timeout = MIN(select_timeout, 1000);
+	}
 
 	return select_timeout;
 }
@@ -1482,7 +1483,7 @@ machine %s in domain %s.\n", global_myname(), lp_workgroup()));
 	 * Check to see if we have any blocking locks
 	 * outstanding on the queue.
 	 */
-	process_blocking_lock_queue(t);
+	process_blocking_lock_queue();
 
 	/* update printer queue caches if necessary */
   

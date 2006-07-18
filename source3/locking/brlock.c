@@ -216,14 +216,14 @@ static BOOL brl_conflict_other(const struct lock_struct *lck1, const struct lock
  app depends on this ?
 ****************************************************************************/
 
-static NTSTATUS brl_lock_failed(files_struct *fsp, const struct lock_struct *lock, int32 lock_timeout)
+static NTSTATUS brl_lock_failed(files_struct *fsp, const struct lock_struct *lock, BOOL blocking_lock)
 {
 	if (lock->start >= 0xEF000000 && (lock->start >> 63) == 0) {
 		/* amazing the little things you learn with a test
 		   suite. Locks beyond this offset (as a 64 bit
 		   number!) always generate the conflict error code,
 		   unless the top bit is set */
-		if (lock_timeout == 0) {
+		if (!blocking_lock) {
 			fsp->last_lock_failure = *lock;
 		}
 		return NT_STATUS_FILE_LOCK_CONFLICT;
@@ -236,7 +236,7 @@ static NTSTATUS brl_lock_failed(files_struct *fsp, const struct lock_struct *loc
 		return NT_STATUS_FILE_LOCK_CONFLICT;
 	}
 
-	if (lock_timeout == 0) {
+	if (!blocking_lock) {
 		fsp->last_lock_failure = *lock;
 	}
 	return NT_STATUS_LOCK_NOT_GRANTED;
@@ -297,7 +297,7 @@ static int lock_compare(const struct lock_struct *lck1,
 ****************************************************************************/
 
 static NTSTATUS brl_lock_windows(struct byte_range_lock *br_lck,
-			const struct lock_struct *plock, int32 lock_timeout)
+			const struct lock_struct *plock, BOOL blocking_lock)
 {
 	unsigned int i;
 	files_struct *fsp = br_lck->fsp;
@@ -306,7 +306,7 @@ static NTSTATUS brl_lock_windows(struct byte_range_lock *br_lck,
 	for (i=0; i < br_lck->num_locks; i++) {
 		/* Do any Windows or POSIX locks conflict ? */
 		if (brl_conflict(&locks[i], plock)) {
-			return brl_lock_failed(fsp,plock,lock_timeout);
+			return brl_lock_failed(fsp,plock,blocking_lock);
 		}
 #if ZERO_ZERO
 		if (plock->start == 0 && plock->size == 0 && 
@@ -676,7 +676,7 @@ NTSTATUS brl_lock(struct byte_range_lock *br_lck,
 		br_off size, 
 		enum brl_type lock_type,
 		enum brl_flavour lock_flav,
-		int32 lock_timeout)
+		BOOL blocking_lock)
 {
 	NTSTATUS ret;
 	struct lock_struct lock;
@@ -697,7 +697,7 @@ NTSTATUS brl_lock(struct byte_range_lock *br_lck,
 	lock.lock_flav = lock_flav;
 
 	if (lock_flav == WINDOWS_LOCK) {
-		ret = brl_lock_windows(br_lck, &lock, lock_timeout);
+		ret = brl_lock_windows(br_lck, &lock, blocking_lock);
 	} else {
 		ret = brl_lock_posix(br_lck, &lock);
 	}
