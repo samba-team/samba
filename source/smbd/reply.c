@@ -5381,6 +5381,11 @@ int reply_lockingX(connection_struct *conn, char *inbuf, char *outbuf,
 					&status);
 
 			if (br_lck && blocking_lock && ERROR_WAS_LOCK_DENIED(status)) {
+				/* Windows internal resolution for blocking locks seems
+				   to be about 200ms... Don't wait for less than that. JRA. */
+				if (lock_timeout != -1 && lock_timeout < 200) {
+					lock_timeout = 200;
+				}
 				defer_lock = True;
 			}
 
