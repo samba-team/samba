@@ -4,8 +4,12 @@
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>The time in microseconds that smbd should 
-	pause before attempting to gain a failed lock.  See
-	<smbconfoption name="lock spin count"/> for more details.</para>
+	keep waiting to see if a failed lock request can
+	be granted. This parameter has changed in default
+	value from Samba 3.0.23 from 10 to 200. The associated
+	<smbconfoption name="lock spin count"/> parameter is
+	no longer used in Samba 3.0.24. You should not need
+	to change the value of this parameter.</para>
 </description>
-<value type="default">10</value>
+<value type="default">200</value>
 </samba:parameter>
