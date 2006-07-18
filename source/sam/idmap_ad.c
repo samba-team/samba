@@ -35,7 +35,6 @@
 NTSTATUS init_module(void);
 
 static ADS_STRUCT *ad_idmap_ads = NULL;
-static char *ad_idmap_uri = NULL;
 
 static char *attr_uidnumber = NULL;
 static char *attr_gidnumber = NULL;
@@ -140,12 +139,12 @@ static ADS_STRUCT *ad_idmap_cached_connection(void)
 }
 
 /* no op */
-static NTSTATUS ad_idmap_init(char *uri)
+static NTSTATUS ad_idmap_init(const char *uri)
 {
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS ad_idmap_get_sid_from_id(DOM_SID *sid, unid_t unid, int id_type)
+static NTSTATUS ad_idmap_get_sid_from_id(DOM_SID *sid, unid_t unid, enum idmap_type id_type, int flags)
 {
 	ADS_STATUS rc;
 	NTSTATUS status = NT_STATUS_NONE_MAPPED;
@@ -167,7 +166,7 @@ static NTSTATUS ad_idmap_get_sid_from_id(DOM_SID *sid, unid_t unid, int id_type)
 		return NT_STATUS_NOT_SUPPORTED;
 	}
 
-	switch (id_type & ID_TYPEMASK) {
+	switch (id_type) {
 		case ID_USERID:
 			if (asprintf(&expr, "(&(|(sAMAccountType=%d)(sAMAccountType=%d)(sAMAccountType=%d))(%s=%d))",
 				ATYPE_NORMAL_ACCOUNT, ATYPE_WORKSTATION_TRUST, ATYPE_INTERDOMAIN_TRUST,
@@ -227,7 +226,7 @@ done:
 	return status;
 }
 
-static NTSTATUS ad_idmap_get_id_from_sid(unid_t *unid, int *id_type, const DOM_SID *sid)
+static NTSTATUS ad_idmap_get_id_from_sid(unid_t *unid, enum idmap_type *id_type, const DOM_SID *sid, int flags)
 {
 	ADS_STATUS rc;
 	NTSTATUS status = NT_STATUS_NONE_MAPPED;
@@ -327,7 +326,7 @@ done:
 
 }
 
-static NTSTATUS ad_idmap_set_mapping(const DOM_SID *sid, unid_t id, int id_type)
+static NTSTATUS ad_idmap_set_mapping(const DOM_SID *sid, unid_t id, enum idmap_type id_type)
 {
 	/* Not supported, and probably won't be... */
 	/* (It's not particularly feasible with a single-master model.) */
@@ -352,7 +351,7 @@ static NTSTATUS ad_idmap_close(void)
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS ad_idmap_allocate_id(unid_t *id, int id_type)
+static NTSTATUS ad_idmap_allocate_id(unid_t *id, enum idmap_type id_type)
 {
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
@@ -374,7 +373,7 @@ static struct idmap_methods ad_methods = {
 
 
 /* support for new authentication subsystem */
-NTSTATUS init_module(void)
+NTSTATUS idmap_ad_init(void)
 {
 	return smb_register_idmap(SMB_IDMAP_INTERFACE_VERSION, "ad", &ad_methods);
 }
