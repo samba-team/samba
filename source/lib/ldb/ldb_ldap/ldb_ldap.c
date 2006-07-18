@@ -42,6 +42,7 @@
 #include "includes.h"
 #include "ldb/include/includes.h"
 
+#define LDAP_DEPRECATED 1
 #include <ldap.h>
 
 struct lldb_private {
@@ -664,7 +665,7 @@ static int lldb_async_wait(struct ldb_async_handle *handle, enum ldb_async_wait_
 	case LDB_WAIT_NONE:
 
 		if ((ac->timeout != -1) &&
-		    ((ac->starttime + timeout) > time(NULL))) {
+		    ((ac->starttime + ac->timeout) > time(NULL))) {
 			return LDB_ERR_TIME_LIMIT_EXCEEDED;
 		}
 
