@@ -69,7 +69,7 @@ BOOL torture_bind_authcontext(struct torture_context *torture)
 	struct lsa_ObjectAttribute objectattr;
 	struct lsa_OpenPolicy2 openpolicy;
 	struct policy_handle handle;
-	struct lsa_Close close;
+	struct lsa_Close close_handle;
 	struct smbcli_session *tmp;
 	struct smbcli_session *session2;
 	struct smbcli_state *cli;
@@ -129,10 +129,10 @@ BOOL torture_bind_authcontext(struct torture_context *torture)
 		goto done;
 	}
 
-	close.in.handle = &handle;
-	close.out.handle = &handle;
+	close_handle.in.handle = &handle;
+	close_handle.out.handle = &handle;
 
-	status = dcerpc_lsa_Close(lsa_pipe, mem_ctx, &close);
+	status = dcerpc_lsa_Close(lsa_pipe, mem_ctx, &close_handle);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("dcerpc_lsa_Close failed: %s\n",
 			 nt_errstr(status));
@@ -201,7 +201,7 @@ static BOOL bindtest(struct smbcli_state *cli,
 	struct lsa_OpenPolicy2 openpolicy;
 	struct lsa_QueryInfoPolicy query;
 	struct policy_handle handle;
-	struct lsa_Close close;
+	struct lsa_Close close_handle;
 
 	if ((mem_ctx = talloc_init("bindtest")) == NULL) {
 		d_printf("talloc_init failed\n");
@@ -255,10 +255,10 @@ static BOOL bindtest(struct smbcli_state *cli,
 		goto done;
 	}
 
-	close.in.handle = &handle;
-	close.out.handle = &handle;
+	close_handle.in.handle = &handle;
+	close_handle.out.handle = &handle;
 
-	status = dcerpc_lsa_Close(lsa_pipe, mem_ctx, &close);
+	status = dcerpc_lsa_Close(lsa_pipe, mem_ctx, &close_handle);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("dcerpc_lsa_Close failed: %s\n",
 			 nt_errstr(status));
@@ -1939,7 +1939,7 @@ BOOL try_tcon(TALLOC_CTX *mem_ctx,
 	      struct security_descriptor *orig_sd,
 	      struct smbcli_session *session,
 	      const char *sharename, const struct dom_sid *user_sid,
-	      unsigned int access, NTSTATUS expected_tcon,
+	      unsigned int access_mask, NTSTATUS expected_tcon,
 	      NTSTATUS expected_mkdir)
 {
 	TALLOC_CTX *tmp_ctx;
@@ -1976,7 +1976,7 @@ BOOL try_tcon(TALLOC_CTX *mem_ctx,
 		dom_sid_string(mem_ctx, dom_sid_add_rid(mem_ctx, domain_sid,
 							DOMAIN_RID_USERS)),
 		dom_sid_string(mem_ctx, user_sid),
-		SEC_ACE_TYPE_ACCESS_ALLOWED, access, 0, NULL);
+		SEC_ACE_TYPE_ACCESS_ALLOWED, access_mask, 0, NULL);
 	if (sd == NULL) {
 		d_printf("security_descriptor_create failed\n");
 		talloc_free(tmp_ctx);
