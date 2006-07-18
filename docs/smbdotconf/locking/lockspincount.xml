@@ -3,15 +3,10 @@
 				 type="integer"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
-	<para>This parameter controls the number of times
-	that smbd should attempt to gain a byte range lock on the 
-	behalf of a client request.  Experiments have shown that
-	Windows 2k servers do not reply with a failure if the lock
-	could not be immediately granted, but try a few more times
-	in case the lock could later be acquired.  This behavior
-	is used to support PC database formats such as MS Access
-	and FoxPro.
+	<para>This parameter has been made inoperative in Samba 3.0.24.
+	The functionality it contolled is now controlled by the parameter
+	<smbconfoption name="lock spin time"/>.
 	</para>
 </description>
-<value type="default">3</value>
+<value type="default">0</value>
 </samba:parameter>
