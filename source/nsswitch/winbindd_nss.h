@@ -4,6 +4,7 @@
    Winbind daemon for ntdom nss module
 
    Copyright (C) Tim Potter 2000
+   Copyright (C) Gerald Carter 2006
    
    You are free to use this interface definition in any way you see
    fit, including without restriction, using this header in your own
@@ -35,6 +36,17 @@
 /* Update this when you change the interface.  */
 
 #define WINBIND_INTERFACE_VERSION 14
+
+/* Have to deal with time_t being 4 or 8 bytes due to structure alignment.
+   On a 64bit Linux box, we have to support a constant structure size
+   between /lib/libnss_winbind.so.2 and /li64/libnss_winbind.so.2.
+   The easiest way to do this is to always use 8byte values for time_t. */
+
+#if defined(uint64)
+#  define SMB_TIME_T uint64
+#else
+#  define SMB_TIME_t time_t
+#endif
 
 /* Socket commands */
 
@@ -184,6 +196,14 @@ typedef struct winbindd_gr {
 
 /* Winbind request structure */
 
+/*******************************************************************************
+ * This structure MUST be the same size in the 32bit and 64bit builds
+ * for compatibility between /lib64/libnss_winbind.so and /lib/libnss_winbind.so
+ * 
+ * DO NOT CHANGE THIS STRUCTURE WITHOUT TESTING THE 32BIT NSS LIB AGAINST
+ * A 64BIT WINBINDD    --jerry
+ ******************************************************************************/
+
 struct winbindd_request {
 	uint32 length;
 	enum winbindd_cmd cmd;   /* Winbindd command to execute */
@@ -213,9 +233,9 @@ struct winbindd_request {
                         fstring user;
                         fstring domain;
                         fstring lm_resp;
-                        uint16 lm_resp_len;
+                        uint32 lm_resp_len;
                         fstring nt_resp;
-                        uint16 nt_resp_len;
+                        uint32 nt_resp_len;
 			fstring workstation;
 		        fstring require_membership_of_sid;
                 } auth_crap;
@@ -255,11 +275,15 @@ struct winbindd_request {
 			fstring sid;
 		} dual_idmapset;
 		BOOL list_all_domains;
+
+		/* padding -- needed to fix alignment between 32bit and 64bit libs.
+		   The size if the sizeof the union without the padding aligned on 
+		   an 8 byte boundary.   --jerry */
+
+		char padding[1560];
 	} data;
 	union {
-#if defined(uint64)
-		uint64 z;
-#endif
+		SMB_TIME_T padding;
 		char *data;
 	} extra_data;
 	uint32 extra_len;
@@ -275,6 +299,14 @@ enum winbindd_result {
 };
 
 /* Winbind response structure */
+
+/*******************************************************************************
+ * This structure MUST be the same size in the 32bit and 64bit builds
+ * for compatibility between /lib64/libnss_winbind.so and /lib/libnss_winbind.so
+ * 
+ * DO NOT CHANGE THIS STRUCTURE WITHOUT TESTING THE 32BIT NSS LIB AGAINST
+ * A 64BIT WINBINDD    --jerry
+ ******************************************************************************/
 
 struct winbindd_response {
     
@@ -326,30 +358,32 @@ struct winbindd_response {
 			char user_session_key[16];
 			char first_8_lm_hash[8];
 			fstring krb5ccname;
-			struct policy_settings {
-				uint16 min_length_password;
-				uint16 password_history;
-				uint32 password_properties;
-				time_t expire;
-				time_t min_passwordage;
-			} policy;
 			uint32 reject_reason;
+			uint32 padding;
+			struct policy_settings {
+				uint32 min_length_password;
+				uint32 password_history;
+				uint32 password_properties;
+				uint32 padding;
+				SMB_TIME_T expire;
+				SMB_TIME_T min_passwordage;
+			} policy;
 			struct info3_text {
-				time_t logon_time;
-				time_t logoff_time;
-				time_t kickoff_time;
-				time_t pass_last_set_time;
-				time_t pass_can_change_time;
-				time_t pass_must_change_time;
-				uint16 logon_count;
-				uint16 bad_pw_count;
+				SMB_TIME_T logon_time;
+				SMB_TIME_T logoff_time;
+				SMB_TIME_T kickoff_time;
+				SMB_TIME_T pass_last_set_time;
+				SMB_TIME_T pass_can_change_time;
+				SMB_TIME_T pass_must_change_time;
+				uint32 logon_count;
+				uint32 bad_pw_count;
 				uint32 user_rid;
 				uint32 group_rid;
-				fstring dom_sid;
 				uint32 num_groups;
 				uint32 user_flgs;
 				uint32 acct_flags;
 				uint32 num_other_sids;
+				fstring dom_sid;
 				fstring user_name;
 				fstring full_name;
 				fstring logon_script;
@@ -381,9 +415,7 @@ struct winbindd_response {
 	/* Variable length return data */
 
 	union {
-#if defined(uint64)
-		uint64 z;
-#endif
+		SMB_TIME_T padding;
 		void *data;
 	} extra_data;
 };
