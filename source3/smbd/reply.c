@@ -5383,8 +5383,8 @@ int reply_lockingX(connection_struct *conn, char *inbuf, char *outbuf,
 			if (br_lck && blocking_lock && ERROR_WAS_LOCK_DENIED(status)) {
 				/* Windows internal resolution for blocking locks seems
 				   to be about 200ms... Don't wait for less than that. JRA. */
-				if (lock_timeout != -1 && lock_timeout < WINDOWS_MINIMUM_LOCK_TIMEOUT_MS) {
-					lock_timeout = WINDOWS_MINIMUM_LOCK_TIMEOUT_MS;
+				if (lock_timeout != -1 && lock_timeout < lp_lock_spin_time()) {
+					lock_timeout = lp_lock_spin_time();
 				}
 				defer_lock = True;
 			}
@@ -5397,7 +5397,7 @@ int reply_lockingX(connection_struct *conn, char *inbuf, char *outbuf,
 			if (br_lck && lp_blocking_locks(SNUM(conn)) && !blocking_lock &&
 					NT_STATUS_EQUAL((status), NT_STATUS_FILE_LOCK_CONFLICT)) {
 				defer_lock = True;
-				lock_timeout = WINDOWS_MINIMUM_LOCK_TIMEOUT_MS;
+				lock_timeout = lp_lock_spin_time();
 			}
 
 			if (br_lck && defer_lock) {
