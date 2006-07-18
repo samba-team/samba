@@ -139,13 +139,9 @@ static ADS_STRUCT *ad_idmap_cached_connection(void)
 	return ads;
 }
 
+/* no op */
 static NTSTATUS ad_idmap_init(const char *uri)
 {
-	ad_idmap_uri = SMB_STRDUP(uri);
-	if (ad_idmap_uri == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
 	return NT_STATUS_OK;
 }
 
