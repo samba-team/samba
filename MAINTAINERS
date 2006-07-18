@@ -26,11 +26,10 @@ libmsrpc		Chris Nichols <skel@samba.org>
 
 libsmbclient		Derrell Lipman <derrell@samba.org>
 
-pdb_*sql		<samba-pdbsql@samba.org>
-			Peter Rindfuss: pdb_mysql
-			Darrell McGuire: pdb_mysql
-			Ulrich Meis: pdb_pgsql 
-			Filip Jirsák: pdb_pgsql
+pdb_*sql		Wilco Baan Hofman <synnack@users.sf.net>
+			Florian Effenberger <floeff@users.sf.net>
+
+			http://pdbsql.sourceforge.net/
 
 printing		Gerald (Jerry) Carter <jerry@samba.org>
 
