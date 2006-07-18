@@ -4503,7 +4503,7 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 			SMB_BIG_UINT count;
 			SMB_BIG_UINT offset;
 			uint32 lock_pid;
-			BOOL lock_blocking = False;
+			BOOL blocking_lock = False;
 			enum brl_type lock_type;
 
 			if (fsp == NULL || fsp->fh->fd == -1) {
@@ -4533,15 +4533,15 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 			}
 
 			if (SVAL(pdata,POSIX_LOCK_FLAGS_OFFSET) == POSIX_LOCK_FLAG_NOWAIT) {
-				lock_blocking = False;
+				blocking_lock = False;
 			} else if (SVAL(pdata,POSIX_LOCK_FLAGS_OFFSET) == POSIX_LOCK_FLAG_WAIT) {
-				lock_blocking = True;
+				blocking_lock = True;
 			} else {
 				return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 			}
 
 			if (!lp_blocking_locks(SNUM(conn))) { 
-				lock_blocking = False;
+				blocking_lock = False;
 			}
 
 			lock_pid = IVAL(pdata, POSIX_LOCK_PID_OFFSET);
@@ -4562,21 +4562,23 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 						offset,
 						POSIX_LOCK);
 			} else {
-				status = do_lock(fsp,
-						lock_pid,
-						count,
-						offset,
-						lock_type,
-						lock_blocking ? -1 : 0,						
-						POSIX_LOCK);
+				struct byte_range_lock *br_lck = do_lock(fsp,
+									lock_pid,
+									count,
+									offset,
+									lock_type,
+									blocking_lock,
+									POSIX_LOCK,
+									&status);
 
-				if (lock_blocking && ERROR_WAS_LOCK_DENIED(status)) {
+				if (br_lck && blocking_lock && ERROR_WAS_LOCK_DENIED(status)) {
 					/*
 					 * A blocking lock was requested. Package up
 					 * this smb into a queued request and push it
 					 * onto the blocking lock queue.
 					 */
-					if(push_blocking_lock_request(inbuf, length,
+					if(push_blocking_lock_request(br_lck,
+								inbuf, length,
 								fsp,
 								-1, /* infinite timeout. */
 								0,
@@ -4585,9 +4587,11 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 								POSIX_LOCK,
 								offset,
 								count)) {
+						TALLOC_FREE(br_lck);
 						return -1;
 					}
 				}
+				TALLOC_FREE(br_lck);
 			}
 
 			if (!NT_STATUS_IS_OK(status)) {
