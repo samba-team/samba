@@ -35,7 +35,6 @@
 NTSTATUS init_module(void);
 
 static ADS_STRUCT *ad_idmap_ads = NULL;
-static char *ad_idmap_uri = NULL;
 
 static char *attr_uidnumber = NULL;
 static char *attr_gidnumber = NULL;
