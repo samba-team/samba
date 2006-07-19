@@ -1549,9 +1549,6 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 			     access_mask);
 
 	if (!NT_STATUS_IS_OK(fsp_open)) {
-		if (lck != NULL) {
-			TALLOC_FREE(lck);
-		}
 		file_free(fsp);
 		return fsp_open;
 	}
