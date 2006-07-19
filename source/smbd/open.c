@@ -245,7 +245,7 @@ static NTSTATUS open_file(files_struct *fsp,
 	}
 
 	if ((access_mask & (FILE_READ_DATA|FILE_WRITE_DATA|FILE_APPEND_DATA|FILE_EXECUTE)) ||
-	    (local_flags & O_CREAT) ||
+	    (!file_existed && (local_flags & O_CREAT)) ||
 	    ((local_flags & O_TRUNC) == O_TRUNC) ) {
 
 		/*
