@@ -42,13 +42,13 @@ RCSID("$Id$");
 #define CFXSealed		(1 << 1)
 #define CFXAcceptorSubkey	(1 << 2)
 
-static krb5_error_code
-wrap_length_cfx(krb5_crypto crypto,
-		int conf_req_flag,
-		size_t input_length,
-		size_t *output_length,
-		size_t *cksumsize,
-		uint16_t *padlength)
+krb5_error_code
+_gsskrb5cfx_wrap_length_cfx(krb5_crypto crypto,
+			    int conf_req_flag,
+			    size_t input_length,
+			    size_t *output_length,
+			    size_t *cksumsize,
+			    uint16_t *padlength)
 {
     krb5_error_code ret;
     krb5_cksumtype type;
@@ -58,14 +58,12 @@ wrap_length_cfx(krb5_crypto crypto,
     *padlength = 0;
 
     ret = krb5_crypto_get_checksum_type(_gsskrb5_context, crypto, &type);
-    if (ret) {
+    if (ret)
 	return ret;
-    }
 
     ret = krb5_checksumsize(_gsskrb5_context, type, cksumsize);
-    if (ret) {
+    if (ret)
 	return ret;
-    }
 
     if (conf_req_flag) {
 	size_t padsize;
@@ -80,10 +78,10 @@ wrap_length_cfx(krb5_crypto crypto,
 	if (padsize > 1) {
 	    /* XXX check this */
 	    *padlength = padsize - (input_length % padsize);
-	}
 
-	/* We add the pad ourselves (noted here for completeness only) */
-	input_length += *padlength;
+	    /* We add the pad ourselves (noted here for completeness only) */
+	    input_length += *padlength;
+	}
 
 	*output_length += krb5_get_wrapped_length(_gsskrb5_context,
 						  crypto, input_length);
@@ -97,6 +95,66 @@ wrap_length_cfx(krb5_crypto crypto,
     return 0;
 }
 
+krb5_error_code
+_gsskrb5cfx_max_wrap_length_cfx(krb5_crypto crypto,
+				int conf_req_flag,
+				size_t input_length,
+				OM_uint32 *output_length)
+{
+    krb5_error_code ret;
+
+    *output_length = 0;
+
+    /* 16-byte header is always first */
+    if (input_length < 16)
+	return 0;
+    input_length -= 16;
+
+    if (conf_req_flag) {
+	size_t wrapped_size, sz;
+
+	wrapped_size = input_length + 1;
+	do {
+	    wrapped_size--;
+	    sz = krb5_get_wrapped_length(_gsskrb5_context, 
+					 crypto, wrapped_size);
+	} while (wrapped_size && sz > input_length);
+	if (wrapped_size == 0) {
+	    *output_length = 0;
+	    return 0;
+	}
+
+	/* inner header */
+	if (wrapped_size < 16) {
+	    *output_length = 0;
+	    return 0;
+	}
+	wrapped_size -= 16;
+
+	*output_length = wrapped_size;
+    } else {
+	krb5_cksumtype type;
+	size_t cksumsize;
+
+	ret = krb5_crypto_get_checksum_type(_gsskrb5_context, crypto, &type);
+	if (ret)
+	    return ret;
+
+	ret = krb5_checksumsize(_gsskrb5_context, type, &cksumsize);
+	if (ret)
+	    return ret;
+
+	if (input_length < cksumsize)
+	    return 0;
+
+	/* Checksum is concatenated with data */
+	*output_length = input_length - cksumsize;
+    }
+
+    return 0;
+}
+
+
 OM_uint32 _gssapi_wrap_size_cfx(OM_uint32 *minor_status,
 				const gsskrb5_ctx context_handle,
 				int conf_req_flag,
@@ -107,8 +165,6 @@ OM_uint32 _gssapi_wrap_size_cfx(OM_uint32 *minor_status,
 {
     krb5_error_code ret;
     krb5_crypto crypto;
-    uint16_t padlength;
-    size_t output_length, cksumsize;
 
     ret = krb5_crypto_init(_gsskrb5_context, key, 0, &crypto);
     if (ret != 0) {
@@ -117,22 +173,13 @@ OM_uint32 _gssapi_wrap_size_cfx(OM_uint32 *minor_status,
 	return GSS_S_FAILURE;
     }
 
-    ret = wrap_length_cfx(crypto, conf_req_flag, 
-			  req_output_size,
-			  &output_length, &cksumsize, &padlength);
+    ret = _gsskrb5cfx_max_wrap_length_cfx(crypto, conf_req_flag, 
+					  req_output_size, max_input_size);
     if (ret != 0) {
 	_gsskrb5_set_error_string();
 	*minor_status = ret;
 	krb5_crypto_destroy(_gsskrb5_context, crypto);
 	return GSS_S_FAILURE;
-    }
-
-    if (output_length < req_output_size) {
-	*max_input_size = (req_output_size - output_length);
-	*max_input_size -= padlength;
-    } else {
-	/* Should this return an error? */
-	*max_input_size = 0;
     }
 
     krb5_crypto_destroy(_gsskrb5_context, crypto);
@@ -210,9 +257,9 @@ OM_uint32 _gssapi_wrap_cfx(OM_uint32 *minor_status,
 	return GSS_S_FAILURE;
     }
 
-    ret = wrap_length_cfx(crypto, conf_req_flag, 
-			  input_message_buffer->length,
-			  &wrapped_len, &cksumsize, &padlength);
+    ret = _gsskrb5cfx_wrap_length_cfx(crypto, conf_req_flag, 
+				      input_message_buffer->length,
+				      &wrapped_len, &cksumsize, &padlength);
     if (ret != 0) {
 	_gsskrb5_set_error_string();
 	*minor_status = ret;
