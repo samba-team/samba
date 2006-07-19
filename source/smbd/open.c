@@ -623,8 +623,11 @@ static BOOL delay_for_oplocks(struct share_mode_lock *lck,
 	BOOL delay_it = False;
 	BOOL have_level2 = False;
 
-	if ((oplock_request & INTERNAL_OPEN_ONLY) || is_stat_open(fsp->access_mask)) {
+	if (oplock_request & INTERNAL_OPEN_ONLY) {
 		fsp->oplock_type = NO_OPLOCK;
+	}
+
+	if ((oplock_request & INTERNAL_OPEN_ONLY) || is_stat_open(fsp->access_mask)) {
 		return False;
 	}
 
@@ -1582,9 +1585,42 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 		return NT_STATUS_SHARING_VIOLATION;
 	}
 
+	/*
+	 * The share entry is again *locked*.....
+	 */
+
+	/* First pass - send break only on batch oplocks. */
+	if (delay_for_oplocks(lck, fsp, 1, oplock_request)) {
+		schedule_defer_open(lck, request_time);
+		fd_close(conn, fsp);
+		file_free(fsp);
+		TALLOC_FREE(lck);
+		return NT_STATUS_SHARING_VIOLATION;
+	}
+
 	status = open_mode_check(conn, fname, lck,
 				 access_mask, share_access,
 				 create_options, &file_existed);
+
+	if (NT_STATUS_IS_OK(status)) {
+		/* We might be going to allow this open. Check oplock status again. */
+		/* Second pass - send break for both batch or exclusive oplocks. */
+		if (delay_for_oplocks(lck, fsp, 2, oplock_request)) {
+			schedule_defer_open(lck, request_time);
+			fd_close(conn, fsp);
+			file_free(fsp);
+			TALLOC_FREE(lck);
+			return NT_STATUS_SHARING_VIOLATION;
+		}
+	}
+
+	if (NT_STATUS_EQUAL(status, NT_STATUS_DELETE_PENDING)) {
+		/* DELETE_PENDING is not deferred for a second */
+		fd_close(conn, fsp);
+		file_free(fsp);
+		TALLOC_FREE(lck);
+		return status;
+	}
 
 	if (!NT_STATUS_IS_OK(status)) {
 		struct deferred_open_record state;
@@ -1608,10 +1644,6 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 		TALLOC_FREE(lck);
 		return status;
 	}
-
-	/*
-	 * The share entry is again *locked*.....
-	 */
 
 	/* note that we ignore failure for the following. It is
            basically a hack for NFS, and NFS will never set one of
@@ -1653,6 +1685,11 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 	fsp->access_mask = access_mask;
 
 	if (file_existed) {
+		/* stat opens on existing files don't get oplocks. */
+		if (is_stat_open(fsp->access_mask)) {
+			fsp->oplock_type = NO_OPLOCK;
+		}
+
 		if (!(flags2 & O_TRUNC)) {
 			info = FILE_WAS_OPENED;
 		} else {
