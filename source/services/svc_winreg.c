@@ -46,6 +46,7 @@ static WERROR winreg_status( const char *service, SERVICE_STATUS *service_status
 	ZERO_STRUCTP( service_status );
 
 	service_status->type              = 0x20;
+	service_status->controls_accepted = SVCCTL_ACCEPT_NONE;
 	service_status->state              = SVCCTL_RUNNING;
 	
 	return WERR_OK;
