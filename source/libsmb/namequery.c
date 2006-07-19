@@ -1051,16 +1051,18 @@ static BOOL resolve_ads(const char *name, int name_type,
 		return False;
 	}
 
-	i = 0;
-	while ( i < numdcs ) {
+	*return_count = 0;
+
+	for (i=0;i<numdcs;i++) {
+		struct ip_service *r = &(*return_iplist)[*return_count];
 
 		/* use the IP address from the SRV structure if we have one */
 		if ( is_zero_ip( dcs[i].ip ) )
-			(*return_iplist)[i].ip   = *interpret_addr2(dcs[i].hostname);
+			r->ip   = *interpret_addr2(dcs[i].hostname);
 		else
-			(*return_iplist)[i].ip = dcs[i].ip;
+			r->ip = dcs[i].ip;
 
-		(*return_iplist)[i].port = dcs[i].port;
+		r->port = dcs[i].port;
 			
 		/* make sure it is a valid IP.  I considered checking the negative
 		   connection cache, but this is the wrong place for it.  Maybe only
@@ -1069,15 +1071,11 @@ static BOOL resolve_ads(const char *name, int name_type,
 		   The standard reason for falling back to netbios lookups is that 
 		   our DNS server doesn't know anything about the DC's   -- jerry */	
 			   
-		if ( is_zero_ip((*return_iplist)[i].ip) )
-			continue;		
-
-		i++;
+		if ( ! is_zero_ip(r->ip) )
+			(*return_count)++;
 	}
 		
 	TALLOC_FREE( dcs );
-		
-	*return_count = i;
 				
 	return True;
 }
