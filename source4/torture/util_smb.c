@@ -512,11 +512,35 @@ _PUBLIC_ BOOL torture_open_connection(struct smbcli_state **c, int conn_index)
 	return torture_open_connection_share(NULL, c, host, share, NULL);
 }
 
-_PUBLIC_ BOOL torture_open_connection_ev(struct smbcli_state **c, 
+_PUBLIC_ BOOL torture_open_connection_ev(struct smbcli_state **c,
+					 int conn_index,
 					 struct event_context *ev)
 {
 	const char *host = lp_parm_string(-1, "torture", "host");
 	const char *share = lp_parm_string(-1, "torture", "share");
+	char **unc_list = NULL;
+	int num_unc_names = 0;
+	const char *p;
+	
+	p = lp_parm_string(-1, "torture", "unclist");
+	if (p) {
+		char *h, *s;
+		unc_list = file_lines_load(p, &num_unc_names, NULL);
+		if (!unc_list || num_unc_names <= 0) {
+			printf("Failed to load unc names list from '%s'\n", p);
+			exit(1);
+		}
+
+		if (!smbcli_parse_unc(unc_list[conn_index % num_unc_names],
+				      NULL, &h, &s)) {
+			printf("Failed to parse UNC name %s\n",
+			       unc_list[conn_index % num_unc_names]);
+			exit(1);
+		}
+		host = h;
+		share = s;
+	}
+
 
 	return torture_open_connection_share(NULL, c, host, share, ev);
 }
