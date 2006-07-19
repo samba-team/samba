@@ -1594,13 +1594,6 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 					 access_mask, share_access,
 					 create_options, &file_existed);
 
-		if (NT_STATUS_EQUAL(status, NT_STATUS_DELETE_PENDING)) {
-			/* DELETE_PENDING is not deferred for a second */
-			TALLOC_FREE(lck);
-			file_free(fsp);
-			return status;
-		}
-
 		if (!NT_STATUS_IS_OK(status)) {
 			struct deferred_open_record state;
 
