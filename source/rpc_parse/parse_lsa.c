@@ -986,6 +986,9 @@ static BOOL lsa_io_query_info_ctr(const char *desc, prs_struct *ps, int depth, L
 	if(!prs_uint16("info_class", ps, depth, &ctr->info_class))
 		return False;
 
+	if(!prs_align(ps))
+		return False;
+
 	switch (ctr->info_class) {
 	case 1:
 		if(!lsa_io_dom_query_1("", &ctr->info.id1, ps, depth))
