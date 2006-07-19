@@ -39,6 +39,7 @@ IDMAP_LIBS=@IDMAP_LIBS@
 KRB5LIBS=@KRB5_LIBS@
 LDAP_LIBS=@LDAP_LIBS@
 NSCD_LIBS=@NSCD_LIBS@
+UUID_LIBS=@UUID_LIBS@
 
 INSTALLCMD=@INSTALL@
 INSTALLLIBCMD_SH=@INSTALLLIBCMD_SH@
@@ -115,7 +116,7 @@ LIBSMBSHAREMODES=bin/libsmbsharemodes.a @LIBSMBSHAREMODES_SHARED@
 LIBSMBSHAREMODES_MAJOR=0
 LIBSMBSHAREMODES_MINOR=2
 
-FLAGS1 = $(CFLAGS) @FLAGS1@ -Iinclude -I$(srcdir)/include -I$(srcdir)/tdb @SMBWRAP_INC@ -I. $(CPPFLAGS) -I$(srcdir) -D_SAMBA_BUILD_
+FLAGS1 = $(CFLAGS) @FLAGS1@ -Iinclude -I$(srcdir)/include -I$(srcdir)/tdb @SMBWRAP_INC@ -I. $(CPPFLAGS) -I$(srcdir) -D_SAMBA_BUILD_ 
 FLAGS2 =
 FLAGS3 = 
 FLAGS4 = 
@@ -157,7 +158,7 @@ BIN_PROGS = $(BIN_PROGS1) $(BIN_PROGS2) $(BIN_PROGS3) @EXTRA_BIN_PROGS@
 EVERYTHING_PROGS = bin/debug2html@EXEEXT@ bin/smbfilter@EXEEXT@ bin/talloctort@EXEEXT@ \
 	bin/log2pcap@EXEEXT@
 
-SHLIBS = @SHLIB_PROGS@ @LIBSMBCLIENT@ @LIBSMBSHAREMODES@ @LIBMSRPC@
+SHLIBS = @SHLIB_PROGS@ @LIBSMBCLIENT@ @LIBSMBSHAREMODES@ @LIBMSRPC@ 
 
 PAM_MODULES = @PAM_MODULES@
 
@@ -572,11 +573,11 @@ NET_OBJ1 = utils/net.o utils/net_ads.o utils/net_domain.o utils/net_help.o \
 	   utils/net_rpc_service.o utils/net_rpc_registry.o utils/net_usershare.o \
 	   utils/netlookup.o utils/net_sam.o utils/net_rpc_shell.o \
 	   utils/net_util.o utils/net_rpc_sh_acct.o utils/net_rpc_audit.o \
-	   utils/passwd_util.o
+	   utils/passwd_util.o  utils/net_dns.o
 
 NET_OBJ = $(NET_OBJ1) $(PARAM_OBJ) $(SECRETS_OBJ) $(LIBSMB_OBJ) \
 	  $(RPC_PARSE_OBJ) $(PASSDB_OBJ) $(GROUPDB_OBJ) \
-	  $(KRBCLIENT_OBJ) $(LIB_NONSMBD_OBJ) \
+	  $(KRBCLIENT_OBJ) $(LIB_NONSMBD_OBJ)  \
 	  $(LIBMSRPC_OBJ) $(IDMAP_OBJ) \
 	  $(LIBADS_OBJ) $(LIBADS_SERVER_OBJ) $(POPT_LIB_OBJ) \
 	  $(SMBLDAP_OBJ) $(DCUTIL_OBJ) $(SERVER_MUTEX_OBJ) \
@@ -693,14 +694,6 @@ PROTO_OBJ = $(SMBD_OBJ_MAIN) $(LIBNDR_OBJ) \
 WINBIND_WINS_NSS_OBJ = nsswitch/wins.o $(PARAM_OBJ) \
 	$(LIBSMB_OBJ) $(LIB_NONSMBD_OBJ) $(NSSWINS_OBJ) $(KRBCLIENT_OBJ)
 
-WINBIND_WINS_NSS_PICOBJS = $(WINBIND_WINS_NSS_OBJ:.o=.@PICSUFFIX@)
-
-PICOBJS = $(SMBWRAPPER_OBJ:.o=.@PICSUFFIX@)
-LIBSMBCLIENT_PICOBJS = $(LIBSMBCLIENT_OBJ:.o=.@PICSUFFIX@)
-LIBSMBSHAREMODES_PICOBJS = $(LIBSMBSHAREMODES_OBJ:.o=.@PICSUFFIX@)
-CAC_PICOBJS = $(CAC_OBJ:.o=.@PICSUFFIX@)
-
-
 PAM_SMBPASS_OBJ_0 = pam_smbpass/pam_smb_auth.o pam_smbpass/pam_smb_passwd.o \
 		pam_smbpass/pam_smb_acct.o pam_smbpass/support.o \
 		$(PARAM_OBJ) $(LIB_NONSMBD_OBJ) $(PASSDB_OBJ) $(GROUPDB_OBJ) \
@@ -744,9 +737,7 @@ WINBINDD_OBJ = \
 WBINFO_OBJ = nsswitch/wbinfo.o $(LIBSAMBA_OBJ) $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) \
 		$(SECRETS_OBJ) $(POPT_LIB_OBJ) $(AFS_SETTOKEN_OBJ) $(RPC_PARSE_OBJ1) $(DOSERR_OBJ)
 
-WINBIND_NSS_OBJ = $(WBCOMMON_OBJ) lib/replace1.o @WINBIND_NSS_EXTRA_OBJS@
-
-WINBIND_NSS_PICOBJS = $(WINBIND_NSS_OBJ:.o=.@PICSUFFIX@) lib/snprintf.@PICSUFFIX@
+WINBIND_NSS_OBJ = $(WBCOMMON_OBJ) lib/replace1.o lib/snprintf.o @WINBIND_NSS_EXTRA_OBJS@
 
 POPT_OBJS=popt/findme.o popt/popt.o popt/poptconfig.o \
           popt/popthelp.o popt/poptparse.o
@@ -944,7 +935,7 @@ bin/smbctool@EXEEXT@: $(TOOL_OBJ) @BUILD_POPT@ bin/.dummy
 
 bin/net@EXEEXT@: $(NET_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) @PIE_LDFLAGS@ -o $@ $(NET_OBJ) $(DYNEXP) $(LDFLAGS) $(LIBS) @POPTLIBS@ $(KRB5LIBS) $(LDAP_LIBS) $(PASSDB_LIBS) $(TERMLDFLAGS) $(TERMLIBS)
+	@$(CC) $(FLAGS) @PIE_LDFLAGS@ -o $@ $(NET_OBJ) $(DYNEXP) $(LDFLAGS) $(LIBS) @POPTLIBS@ $(KRB5LIBS) $(UUID_LIBS) $(LDAP_LIBS) $(PASSDB_LIBS) $(TERMLDFLAGS) $(TERMLIBS)
 
 bin/profiles@EXEEXT@: $(PROFILES_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
@@ -1086,34 +1077,34 @@ bin/smbfilter@EXEEXT@: $(SMBFILTER_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) @PIE_LDFLAGS@ -o $@ $(SMBFILTER_OBJ) $(LDFLAGS) $(LIBS) $(KRB5LIBS) $(LDAP_LIBS)
 
-bin/libsmbclient.@SHLIBEXT@: $(LIBSMBCLIENT_PICOBJS)
+bin/libsmbclient.@SHLIBEXT@: $(LIBSMBCLIENT_OBJ:.o=.@PICSUFFIX@)
 	@echo Linking libsmbclient shared library $@
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(LIBSMBCLIENT_PICOBJS) $(LDFLAGS) $(LIBS) \
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(LIBSMBCLIENT_OBJ:.o=.@PICSUFFIX@) $(LDFLAGS) $(LIBS) \
 		$(KRB5LIBS) $(LDAP_LIBS) \
 		@SONAMEFLAG@`basename $@`.$(LIBSMBCLIENT_MAJOR)
 
-bin/libsmbclient.a: $(LIBSMBCLIENT_PICOBJS)
+bin/libsmbclient.a: $(LIBSMBCLIENT_OBJ:.o=.@PICSUFFIX@)
 	@echo Linking libsmbclient non-shared library $@
-	@-$(AR) -rc $@ $(LIBSMBCLIENT_PICOBJS)
+	@-$(AR) -rc $@ $(LIBSMBCLIENT_OBJ:.o=.@PICSUFFIX@)
 
-bin/libsmbsharemodes.@SHLIBEXT@: $(LIBSMBSHAREMODES_PICOBJS)
+bin/libsmbsharemodes.@SHLIBEXT@: $(LIBSMBSHAREMODES_OBJ:.o=.@PICSUFFIX@)
 	@echo Linking libsmbsharemodes shared library $@
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(LIBSMBSHAREMODES_PICOBJS) $(LDFLAGS) $(LIBS) \
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(LIBSMBSHAREMODES_OBJ:.o=.@PICSUFFIX@) $(LDFLAGS) $(LIBS) \
 		$(KRB5LIBS) $(LDAP_LIBS) \
 		@SONAMEFLAG@`basename $@`.$(LIBSMBSHAREMODES_MAJOR)
 
-bin/libsmbsharemodes.a: $(LIBSMBSHAREMODES_PICOBJS)
+bin/libsmbsharemodes.a: $(LIBSMBSHAREMODES_OBJ:.o=.@PICSUFFIX@)
 	@echo Linking libsmbsharemodes non-shared library $@
-	@-$(AR) -rc $@ $(LIBSMBSHAREMODES_PICOBJS)
+	@-$(AR) -rc $@ $(LIBSMBSHAREMODES_OBJ:.o=.@PICSUFFIX@)
 
-bin/libmsrpc.@SHLIBEXT@: $(CAC_PICOBJS)
+bin/libmsrpc.@SHLIBEXT@: $(CAC_OBJ:.o=.@PICSUFFIX@)
 	@echo Linking libmsrpc shared library $@
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(CAC_PICOBJS) $(LDFLAGS) $(LIBS) \
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(CAC_OBJ:.o=.@PICSUFFIX@) $(LDFLAGS) $(LIBS) \
 	@SONAMEFLAG@`basename $@`.$(LIBMSRPC_MAJOR)
 
-bin/libmsrpc.a: $(CAC_PICOBJS)
+bin/libmsrpc.a: $(CAC_OBJ:.o=.@PICSUFFIX@)
 	@echo Linking libmsrpc non-shared library $@
-	@-$(AR) -rc $@ $(CAC_PICOBJS)
+	@-$(AR) -rc $@ $(CAC_OBJ:.o=.@PICSUFFIX@)
 
 # This is probably wrong for anything other than the GNU linker. 
 bin/libbigballofmud.@SHLIBEXT@: $(LIBBIGBALLOFMUD_PICOBJS)
@@ -1210,14 +1201,14 @@ bin/winbindd@EXEEXT@: $(WINBINDD_OBJ) @BUILD_POPT@ bin/.dummy
 # Please don't add .o files to libnss_winbind, libnss_wins, or the pam_winbind
 # libraries.  Add to the appropriate PICOBJ variable instead.
 
-@WINBIND_NSS@: $(WINBIND_NSS_PICOBJS)
+@WINBIND_NSS@: $(WINBIND_NSS_OBJ:.o=.@PICSUFFIX@)
 	@echo "Linking $@"
-	@$(SHLD) $(WINBIND_NSS_LDSHFLAGS) -o $@ $(WINBIND_NSS_PICOBJS) \
+	@$(SHLD) $(WINBIND_NSS_LDSHFLAGS) -o $@ $(WINBIND_NSS_OBJ:.o=.@PICSUFFIX@) \
 		@WINBIND_NSS_EXTRA_LIBS@ @SONAMEFLAG@`basename $@`@NSSSONAMEVERSIONSUFFIX@
 
-@WINBIND_WINS_NSS@: $(WINBIND_WINS_NSS_PICOBJS)
+@WINBIND_WINS_NSS@: $(WINBIND_WINS_NSS_OBJ:.o=.@PICSUFFIX@)
 	@echo "Linking $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(WINBIND_WINS_NSS_PICOBJS) \
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(WINBIND_WINS_NSS_OBJ:.o=.@PICSUFFIX@) \
 		$(LDAP_LIBS) $(KRB5LIBS) \
 		@SONAMEFLAG@`basename $@`@NSSSONAMEVERSIONSUFFIX@
 
@@ -1433,7 +1424,8 @@ bin/timelimit@EXEEXT@: script/tests/timelimit.o
 	@echo Linking $@
 	@$(CC) $(FLAGS) @PIE_LDFLAGS@ -o $@ $(DYNEXP) script/tests/timelimit.o
 
-install: installservers installbin @INSTALL_CIFSMOUNT@ installman installscripts installdat installswat installmodules @INSTALL_LIBSMBCLIENT@ @INSTALL_LIBMSRPC@ @INSTALL_PAM_MODULES@
+install: installservers installbin @INSTALL_CIFSMOUNT@ installman installscripts installdat installswat installmodules @INSTALL_LIBSMBCLIENT@ @INSTALL_LIBMSRPC@ @INSTALL_PAM_MODULES@ @INSTALL_LIBSMBSHAREMODES@ 
+
 
 install-everything: install installmodules
 
@@ -1499,6 +1491,11 @@ installlibmsrpc: installdirs libmsrpc
 	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS) $(DESTDIR) ${prefix}/include
 	-$(INSTALLCMD) $(srcdir)/include/libmsrpc.h $(DESTDIR)${prefix}/include
 
+installlibsmbsharemodes: installdirs libsmbsharemodes
+	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS) $(DESTDIR) $(LIBDIR)
+	-$(INSTALLLIBCMD_SH) bin/libsmbsharemodes.@SHLIBEXT@ $(DESTDIR)$(LIBDIR)
+	-$(INSTALLLIBCMD_A) bin/libsmbsharemodes.a $(DESTDIR)$(LIBDIR)
+
 installpammodules: $(PAM_MODULES)
 	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS) $(DESTDIR) $(PAMMODULESDIR)
 	@for module in $(PAM_MODULES); do \
@@ -1563,7 +1560,7 @@ showlayout:
 	@echo "  swatdir:     $(SWATDIR)"
 
 
-uninstall: uninstallman uninstallservers uninstallbin @UNINSTALL_CIFSMOUNT@ uninstallscripts uninstalldat uninstallswat uninstallmodules @UNINSTALL_LIBSMBCLIENT@ @UNINSTALL_LIBMSRPC@ @UNINSTALL_PAM_MODULES@
+uninstall: uninstallman uninstallservers uninstallbin @UNINSTALL_CIFSMOUNT@ uninstallscripts uninstalldat uninstallswat uninstallmodules @UNINSTALL_LIBSMBCLIENT@ @UNINSTALL_LIBMSRPC@ @UNINSTALL_PAM_MODULES@ @UNINSTALL_LIBSMBSHAREMODES@ 
 
 uninstallman:
 	@$(SHELL) $(srcdir)/script/uninstallman.sh $(DESTDIR)$(MANDIR) $(srcdir) C
@@ -1597,15 +1594,19 @@ uninstallmsg:
 uninstallswat: uninstallmsg
 	@$(SHELL) $(srcdir)/script/uninstallswat.sh $(DESTDIR) $(SWATDIR) $(srcdir)
 
-uninstallclientlib: installdirs libsmbclient
+uninstallclientlib: 
 	-$(UNINSTALLLIBCMD_SH) $(DESTDIR)$(LIBDIR)/libsmbclient.@SHLIBEXT@
 	-$(UNINSTALLLIBCMD_A) $(DESTDIR)$(LIBDIR)/libsmbclient.a
 	-rm -f $(DESTDIR)${prefix}/include/libsmbclient.h
 
-uninstalllibmsrpc: installdirs libmsrpc
+uninstalllibmsrpc: 
 	-$(UNINSTALLLIBCMD_SH) $(DESTDIR)$(LIBDIR)/libmsrpc.@SHLIBEXT@
 	-$(UNINSTALLLIBCMD_A) $(DESTDIR)$(LIBDIR)/libmsrpc.a
 	-rm -f $(DESTDIR)${prefix}/include/libmsrpc.h
+
+uninstalllibsmbsharemodes: 
+	-$(UNINSTALLLIBCMD_SH) $(DESTDIR)$(LIBDIR)/libsmbsharemodes.@SHLIBEXT@
+	-$(UNINSTALLLIBCMD_A) $(DESTDIR)$(LIBDIR)/libsmbsharemodes.a
 
 uninstallpammodules:
 	@for module in $(PAM_MODULES); do \

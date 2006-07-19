@@ -264,6 +264,7 @@ AC_SUBST(UNINSTALL_LIBSMBCLIENT)
 AC_SUBST(LIBSMBCLIENT_SHARED)
 AC_SUBST(LIBSMBCLIENT)
 AC_SUBST(INSTALL_LIBSMBSHAREMODES)
+AC_SUBST(UNINSTALL_LIBSMBSHAREMODES)
 AC_SUBST(LIBSMBSHAREMODES_SHARED)
 AC_SUBST(LIBSMBSHAREMODES)
 AC_SUBST(PRINT_LIBS)
@@ -272,6 +273,7 @@ AC_SUBST(ACL_LIBS)
 AC_SUBST(PASSDB_LIBS)
 AC_SUBST(IDMAP_LIBS)
 AC_SUBST(KRB5_LIBS)
+AC_SUBST(UUID_LIBS)
 AC_SUBST(LDAP_LIBS)
 AC_SUBST(SHLIB_PROGS)
 AC_SUBST(PAM_MODULES)
@@ -3786,6 +3788,7 @@ fi
 
 AC_CHECK_LIB_EXT(nscd, NSCD_LIBS, nscd_flush_cache)
 
+
 #################################################
 # check for automount support
 AC_MSG_CHECKING(whether to use automount)
@@ -4401,6 +4404,7 @@ AC_ARG_WITH(libmsrpc,
   UNINSTALL_LIBMSRPC=uninstalllibmsrpc
 )
 
+
 #################################################
 # should we build libsmbclient?
 INSTALL_LIBSMBCLIENT=
@@ -4470,6 +4474,7 @@ AC_ARG_WITH(libsmbsharemodes,
         LIBSMBSHAREMODES=libsmbsharemodes
      fi
      INSTALL_LIBSMBSHAREMODES=installlibsmbsharemodes
+     UNINSTALL_LIBSMBSHAREMODES=uninstalllibsmbsharemodes
      ;;
   esac ],
 [
