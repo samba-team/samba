@@ -1831,6 +1831,7 @@ static NTSTATUS ldapsam_rename_sam_account(struct pdb_methods *my_methods,
 	const char *oldname;
 	int rc;
 	pstring rename_script;
+	fstring oldname_lower, newname_lower;
 
 	if (!old_acct) {
 		DEBUG(0, ("ldapsam_rename_sam_account: old_acct was NULL!\n"));
@@ -1852,10 +1853,17 @@ static NTSTATUS ldapsam_rename_sam_account(struct pdb_methods *my_methods,
 	DEBUG (3, ("ldapsam_rename_sam_account: Renaming user %s to %s.\n", 
 		   oldname, newname));
 
-	/* we have to allow the account name to end with a '$' */
-	string_sub2(rename_script, "%unew", newname, sizeof(pstring), 
+	/* We have to allow the account name to end with a '$'.
+	   Also, follow the semantics in _samr_create_user() and lower case the
+	   posix name but preserve the case in passdb */
+
+	fstrcpy( oldname_lower, oldname );
+	strlower_m( oldname_lower );
+	fstrcpy( newname_lower, newname );
+	strlower_m( newname_lower );
+	string_sub2(rename_script, "%unew", newname_lower, sizeof(pstring), 
 		    True, False, True);
-	string_sub2(rename_script, "%uold", oldname, sizeof(pstring), 
+	string_sub2(rename_script, "%uold", oldname_lower, sizeof(pstring), 
 		    True, False, True);
 	rc = smbrun(rename_script, NULL);
 

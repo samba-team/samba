@@ -2471,8 +2471,6 @@ NTSTATUS _samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	strlower_m(account);
-
 	nt_status = can_create(p->mem_ctx, account);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
@@ -3214,7 +3212,7 @@ static NTSTATUS set_user_info_23(TALLOC_CTX *mem_ctx, SAM_USER_INFO_23 *id23,
 	if (    ( (acct_ctrl &  ACB_DOMTRUST) == ACB_DOMTRUST ) ||
 		( (acct_ctrl &  ACB_WSTRUST) ==  ACB_WSTRUST) ||
 		( (acct_ctrl &  ACB_SVRTRUST) ==  ACB_SVRTRUST) ) {
-		DEBUG(5, ("Changing trust account or non-unix-user password, not updating /etc/passwd\n"));
+		DEBUG(5, ("Changing trust account.  Not updating /etc/passwd\n"));
 	} else  {
 		/* update the UNIX password */
 		if (lp_unix_password_sync() ) {
@@ -3396,10 +3394,25 @@ NTSTATUS _samr_set_userinfo(pipes_struct *p, SAMR_Q_SET_USERINFO *q_u, SAMR_R_SE
 	if (!get_lsa_policy_samr_sid(p, pol, &sid, &acc_granted, &disp_info))
 		return NT_STATUS_INVALID_HANDLE;
 
-	/* observed when joining an XP client to a Samba domain */
+	/* This is tricky.  A WinXP domain join sets 
+	  (SA_RIGHT_USER_SET_PASSWORD|SA_RIGHT_USER_SET_ATTRIBUTES|SA_RIGHT_USER_ACCT_FLAGS_EXPIRY)
+	  The MMC lusrmgr plugin includes these perms and more in the SamrOpenUser().  But the 
+	  standard Win32 API calls just ask for SA_RIGHT_USER_SET_PASSWORD in the SamrOpenUser().  
+	  This should be enough for levels 18, 24, 25,& 26.  Info level 23 can set more so 
+	  we'll use the set from the WinXP join as the basis. */
 	
-	acc_required = SA_RIGHT_USER_SET_PASSWORD | SA_RIGHT_USER_SET_ATTRIBUTES | SA_RIGHT_USER_ACCT_FLAGS_EXPIRY;	
-
+	switch (switch_value) {
+	case 18:
+	case 24:
+	case 25:
+	case 26:
+		acc_required = SA_RIGHT_USER_SET_PASSWORD;
+		break;
+	default:
+		acc_required = SA_RIGHT_USER_SET_PASSWORD | SA_RIGHT_USER_SET_ATTRIBUTES | SA_RIGHT_USER_ACCT_FLAGS_EXPIRY;
+		break;
+	}
+	
 	if (!NT_STATUS_IS_OK(r_u->status = access_check_samr_function(acc_granted, acc_required, "_samr_set_userinfo"))) {
 		return r_u->status;
 	}
@@ -4040,6 +4053,7 @@ NTSTATUS _samr_delete_dom_user(pipes_struct *p, SAMR_Q_DELETE_DOM_USER *q_u, SAM
 	BOOL can_add_accounts;
 	uint32 acb_info;
 	DISP_INFO *disp_info = NULL;
+	BOOL ret;
 
 	DEBUG(5, ("_samr_delete_dom_user: %d\n", __LINE__));
 
@@ -4059,7 +4073,11 @@ NTSTATUS _samr_delete_dom_user(pipes_struct *p, SAMR_Q_DELETE_DOM_USER *q_u, SAM
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	if(!pdb_getsampwsid(sam_pass, &user_sid)) {
+	become_root();
+	ret = pdb_getsampwsid(sam_pass, &user_sid);
+	unbecome_root();
+
+	if( !ret ) {
 		DEBUG(5,("_samr_delete_dom_user:User %s doesn't exist.\n", 
 			sid_string_static(&user_sid)));
 		TALLOC_FREE(sam_pass);
