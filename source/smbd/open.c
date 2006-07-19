@@ -1117,6 +1117,7 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 	uint16 mid = get_current_mid();
 	struct timeval request_time = timeval_zero();
 	struct share_mode_lock *lck = NULL;
+	uint32 open_access_mask = access_mask;
 	NTSTATUS status;
 
 	if (conn->printer) {
@@ -1208,12 +1209,14 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 			/* If file exists replace/overwrite. If file doesn't
 			 * exist create. */
 			flags2 |= (O_CREAT | O_TRUNC);
+			open_access_mask |= FILE_WRITE_DATA; /* This will cause oplock breaks. */
 			break;
 
 		case FILE_OVERWRITE_IF:
 			/* If file exists replace/overwrite. If file doesn't
 			 * exist create. */
 			flags2 |= (O_CREAT | O_TRUNC);
+			open_access_mask |= FILE_WRITE_DATA; /* This will cause oplock breaks. */
 			break;
 
 		case FILE_OPEN:
@@ -1238,6 +1241,7 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 				return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 			}
 			flags2 |= O_TRUNC;
+			open_access_mask |= FILE_WRITE_DATA; /* This will cause oplock breaks. */
 			break;
 
 		case FILE_CREATE:
@@ -1289,7 +1293,10 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 
 	/* This is a nasty hack - must fix... JRA. */
 	if (access_mask == MAXIMUM_ALLOWED_ACCESS) {
-		access_mask = FILE_GENERIC_ALL;
+		open_access_mask = access_mask = FILE_GENERIC_ALL;
+		if (flags2 & O_TRUNC) {
+			open_access_mask |= FILE_WRITE_DATA; /* This will cause oplock breaks. */
+		}
 	}
 
 	/*
@@ -1353,7 +1360,7 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 	fsp->inode = psbuf->st_ino;
 	fsp->share_access = share_access;
 	fsp->fh->private_options = create_options;
-	fsp->access_mask = access_mask;
+	fsp->access_mask = open_access_mask; /* We change this to the requested access_mask after the open is done. */
 	/* Ensure no SAMBA_PRIVATE bits can be set. */
 	fsp->oplock_type = (oplock_request & ~SAMBA_PRIVATE_OPLOCK_MASK);
 
@@ -1383,6 +1390,7 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 			return NT_STATUS_SHARING_VIOLATION;
 		}
 
+		/* Use the client requested access mask here, not the one we open with. */
 		status = open_mode_check(conn, fname, lck,
 					 access_mask, share_access,
 					 create_options, &file_existed);
@@ -1417,6 +1425,8 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 			    (NTCREATEX_OPTIONS_PRIVATE_DENY_DOS|
 			     NTCREATEX_OPTIONS_PRIVATE_DENY_FCB)) {
 				files_struct *fsp_dup;
+
+				/* Use the client requested access mask here, not the one we open with. */
 				fsp_dup = fcb_or_dos_open(conn, fname, dev,
 							  inode, access_mask,
 							  share_access,
@@ -1533,114 +1543,92 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 		 (unsigned int)flags, (unsigned int)flags2,
 		 (unsigned int)unx_mode));
 
-	/* Drop the lock before doing any real file access. Allows kernel
-	   oplock breaks to be processed. Handle any races after the open
-	   call when we re-acquire the lock. */
-
-	if (lck) {
-		TALLOC_FREE(lck);
-	}
-
 	/*
 	 * open_file strips any O_TRUNC flags itself.
 	 */
 
-	fsp_open = open_file(fsp,conn,fname,psbuf,flags|flags2,unx_mode,
-			     access_mask);
+	fsp_open = open_file(fsp,conn,fname,psbuf,flags|flags2,unx_mode, open_access_mask);
 
 	if (!NT_STATUS_IS_OK(fsp_open)) {
+		if (lck != NULL) {
+			TALLOC_FREE(lck);
+		}
 		file_free(fsp);
 		return fsp_open;
 	}
 
-	/*
-	 * Deal with the race condition where two smbd's detect the
-	 * file doesn't exist and do the create at the same time. One
-	 * of them will win and set a share mode, the other (ie. this
-	 * one) should check if the requested share mode for this
-	 * create is allowed.
-	 */
+	if (!file_existed) {
 
-	/*
-	 * Now the file exists and fsp is successfully opened,
-	 * fsp->dev and fsp->inode are valid and should replace the
-	 * dev=0,inode=0 from a non existent file. Spotted by
-	 * Nadav Danieli <nadavd@exanet.com>. JRA.
-	 */
+		/*
+		 * Deal with the race condition where two smbd's detect the
+		 * file doesn't exist and do the create at the same time. One
+		 * of them will win and set a share mode, the other (ie. this
+		 * one) should check if the requested share mode for this
+		 * create is allowed.
+		 */
 
-	dev = fsp->dev;
-	inode = fsp->inode;
+		/*
+		 * Now the file exists and fsp is successfully opened,
+		 * fsp->dev and fsp->inode are valid and should replace the
+		 * dev=0,inode=0 from a non existent file. Spotted by
+		 * Nadav Danieli <nadavd@exanet.com>. JRA.
+		 */
 
-	lck = get_share_mode_lock(NULL, dev, inode,
-				conn->connectpath,
-				fname);
+		dev = fsp->dev;
+		inode = fsp->inode;
 
-	if (lck == NULL) {
-		DEBUG(0, ("open_file_ntcreate: Could not get share mode lock for %s\n", fname));
-		fd_close(conn, fsp);
-		file_free(fsp);
-		return NT_STATUS_SHARING_VIOLATION;
-	}
+		lck = get_share_mode_lock(NULL, dev, inode,
+					conn->connectpath,
+					fname);
 
-	/*
-	 * The share entry is again *locked*.....
-	 */
-
-	/* First pass - send break only on batch oplocks. */
-	if (delay_for_oplocks(lck, fsp, 1, oplock_request)) {
-		schedule_defer_open(lck, request_time);
-		fd_close(conn, fsp);
-		file_free(fsp);
-		TALLOC_FREE(lck);
-		return NT_STATUS_SHARING_VIOLATION;
-	}
-
-	status = open_mode_check(conn, fname, lck,
-				 access_mask, share_access,
-				 create_options, &file_existed);
-
-	if (NT_STATUS_IS_OK(status)) {
-		/* We might be going to allow this open. Check oplock status again. */
-		/* Second pass - send break for both batch or exclusive oplocks. */
-		if (delay_for_oplocks(lck, fsp, 2, oplock_request)) {
-			schedule_defer_open(lck, request_time);
+		if (lck == NULL) {
+			DEBUG(0, ("open_file_ntcreate: Could not get share mode lock for %s\n", fname));
 			fd_close(conn, fsp);
 			file_free(fsp);
-			TALLOC_FREE(lck);
 			return NT_STATUS_SHARING_VIOLATION;
 		}
+
+		status = open_mode_check(conn, fname, lck,
+					 access_mask, share_access,
+					 create_options, &file_existed);
+
+		if (NT_STATUS_EQUAL(status, NT_STATUS_DELETE_PENDING)) {
+			/* DELETE_PENDING is not deferred for a second */
+			TALLOC_FREE(lck);
+			file_free(fsp);
+			return status;
+		}
+
+		if (!NT_STATUS_IS_OK(status)) {
+			struct deferred_open_record state;
+
+			fd_close(conn, fsp);
+			file_free(fsp);
+
+			state.delayed_for_oplocks = False;
+			state.dev = dev;
+			state.inode = inode;
+
+			/* Do it all over again immediately. In the second
+			 * round we will find that the file existed and handle
+			 * the DELETE_PENDING and FCB cases correctly. No need
+			 * to duplicate the code here. Essentially this is a
+			 * "goto top of this function", but don't tell
+			 * anybody... */
+
+			defer_open(lck, request_time, timeval_zero(),
+				   &state);
+			TALLOC_FREE(lck);
+			return status;
+		}
+
+		/*
+		 * We exit this block with the share entry *locked*.....
+		 */
+
 	}
 
-	if (NT_STATUS_EQUAL(status, NT_STATUS_DELETE_PENDING)) {
-		/* DELETE_PENDING is not deferred for a second */
-		fd_close(conn, fsp);
-		file_free(fsp);
-		TALLOC_FREE(lck);
-		return status;
-	}
-
-	if (!NT_STATUS_IS_OK(status)) {
-		struct deferred_open_record state;
-
-		fd_close(conn, fsp);
-		file_free(fsp);
-
-		state.delayed_for_oplocks = False;
-		state.dev = dev;
-		state.inode = inode;
-
-		/* Do it all over again immediately. In the second
-		 * round we will find that the file existed and handle
-		 * the DELETE_PENDING and FCB cases correctly. No need
-		 * to duplicate the code here. Essentially this is a
-		 * "goto top of this function", but don't tell
-		 * anybody... */
-
-		defer_open(lck, request_time, timeval_zero(),
-			   &state);
-		TALLOC_FREE(lck);
-		return status;
-	}
+	SMB_ASSERT(lck != NULL);
 
 	/* note that we ignore failure for the following. It is
            basically a hack for NFS, and NFS will never set one of
@@ -1683,7 +1671,7 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 
 	if (file_existed) {
 		/* stat opens on existing files don't get oplocks. */
-		if (is_stat_open(fsp->access_mask)) {
+		if (is_stat_open(open_access_mask)) {
 			fsp->oplock_type = NO_OPLOCK;
 		}
 
