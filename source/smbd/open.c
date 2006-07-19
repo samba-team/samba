@@ -190,7 +190,8 @@ static NTSTATUS open_file(files_struct *fsp,
 			SMB_STRUCT_STAT *psbuf,
 			int flags,
 			mode_t unx_mode,
-			uint32 access_mask)
+			uint32 access_mask, /* client requested access mask. */
+			uint32 open_access_mask) /* what we're actually using in the open. */
 {
 	int accmode = (flags & O_ACCMODE);
 	int local_flags = flags;
@@ -244,7 +245,7 @@ static NTSTATUS open_file(files_struct *fsp,
 		local_flags = (flags & ~O_ACCMODE)|O_RDWR;
 	}
 
-	if ((access_mask & (FILE_READ_DATA|FILE_WRITE_DATA|FILE_APPEND_DATA|FILE_EXECUTE)) ||
+	if ((open_access_mask & (FILE_READ_DATA|FILE_WRITE_DATA|FILE_APPEND_DATA|FILE_EXECUTE)) ||
 	    (!file_existed && (local_flags & O_CREAT)) ||
 	    ((local_flags & O_TRUNC) == O_TRUNC) ) {
 
@@ -1547,7 +1548,8 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 	 * open_file strips any O_TRUNC flags itself.
 	 */
 
-	fsp_open = open_file(fsp,conn,fname,psbuf,flags|flags2,unx_mode, open_access_mask);
+	fsp_open = open_file(fsp,conn,fname,psbuf,flags|flags2,unx_mode,
+				access_mask, open_access_mask);
 
 	if (!NT_STATUS_IS_OK(fsp_open)) {
 		if (lck != NULL) {
@@ -1814,7 +1816,7 @@ NTSTATUS open_file_fchmod(connection_struct *conn, const char *fname,
 
 	/* note! we must use a non-zero desired access or we don't get
            a real file descriptor. Oh what a twisted web we weave. */
-	status = open_file(fsp,conn,fname,psbuf,O_WRONLY,0,FILE_WRITE_DATA);
+	status = open_file(fsp,conn,fname,psbuf,O_WRONLY,0,FILE_WRITE_DATA,FILE_WRITE_DATA);
 
 	/* 
 	 * This is not a user visible file open.
