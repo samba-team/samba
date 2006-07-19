@@ -4752,6 +4752,20 @@ if test "x$with_spinlocks" = "xyes"; then
 fi
 
 #################################################
+# check for cluster extensions
+
+AC_MSG_CHECKING(whether to include cluster support)
+AC_ARG_WITH(cluster-support, 
+[  --with-cluster-support  Enable cluster extensions (default=no)])
+if test "x$with_cluster_support" = "xyes"; then
+    AC_DEFINE(CLUSTER_SUPPORT,1,[Whether to enable cluster extensions])
+    AC_MSG_RESULT(yes)
+else
+    AC_MSG_RESULT(no)
+fi
+
+
+#################################################
 # check for ACL support
 
 AC_MSG_CHECKING(whether to support ACLs)

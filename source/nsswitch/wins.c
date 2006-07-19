@@ -80,6 +80,7 @@ static void nss_wins_init(void)
 
 	TimeInit();
 	setup_logging("nss_wins",False);
+	load_case_tables();
 	lp_load(dyn_CONFIGFILE,True,False,False,True);
 	load_interfaces();
 }

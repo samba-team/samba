@@ -3912,7 +3912,7 @@ BOOL set_unix_posix_acl(connection_struct *conn, files_struct *fsp, const char *
  Return -1 if no match, 0 if match and denied, 1 if match and allowed.
 ****************************************************************************/
 
-static int check_posix_acl_group_write(connection_struct *conn, const char *fname, SMB_STRUCT_STAT *psbuf)
+static int check_posix_acl_group_access(connection_struct *conn, const char *fname, SMB_STRUCT_STAT *psbuf, uint32 access_mask)
 {
 	SMB_ACL_T posix_acl = NULL;
 	int entry_id = SMB_ACL_FIRST_ENTRY;
@@ -3923,17 +3923,21 @@ static int check_posix_acl_group_write(connection_struct *conn, const char *fnam
 	int ret = -1;
 	gid_t cu_gid;
 
+	DEBUG(10,("check_posix_acl_group_access: requesting 0x%x on file %s\n",
+		(unsigned int)access_mask, fname ));
+
 	if ((posix_acl = SMB_VFS_SYS_ACL_GET_FILE(conn, fname, SMB_ACL_TYPE_ACCESS)) == NULL) {
 		goto check_stat;
 	}
 
-	/* First ensure the group mask allows group read. */
+	/* First ensure the group mask allows group access. */
 	/* Also check any user entries (these take preference over group). */
 
 	while ( SMB_VFS_SYS_ACL_GET_ENTRY(conn, posix_acl, entry_id, &entry) == 1) {
 		SMB_ACL_TAG_T tagtype;
 		SMB_ACL_PERMSET_T permset;
 		int have_write = -1;
+		int have_read = -1;
 
 		/* get_next... */
 		if (entry_id == SMB_ACL_FIRST_ENTRY)
@@ -3947,6 +3951,11 @@ static int check_posix_acl_group_write(connection_struct *conn, const char *fnam
 			goto check_stat;
 		}
 
+		have_read = SMB_VFS_SYS_ACL_GET_PERM(conn, permset, SMB_ACL_READ);
+		if (have_read == -1) {
+			goto check_stat;
+		}
+
 		have_write = SMB_VFS_SYS_ACL_GET_PERM(conn, permset, SMB_ACL_WRITE);
 		if (have_write == -1) {
 			goto check_stat;
@@ -3957,16 +3966,36 @@ static int check_posix_acl_group_write(connection_struct *conn, const char *fnam
 		 * canonicalize to 0 or 1.
 		 */	
 		have_write = (have_write ? 1 : 0);
+		have_read = (have_read ? 1 : 0);
 
 		switch(tagtype) {
 			case SMB_ACL_MASK:
 				seen_mask = True;
-				if (!have_write) {
-					/* We don't have any group or explicit user write permission. */
-					ret = -1; /* Allow caller to check "other" permissions. */
-					DEBUG(10,("check_posix_acl_group_write: file %s \
-refusing write due to mask.\n", fname));
-					goto done;
+				switch (access_mask) {
+					case FILE_READ_DATA:
+						if (!have_read) {
+							ret = -1;
+							DEBUG(10,("check_posix_acl_group_access: file %s "
+								"refusing read due to mask.\n", fname));
+							goto done;
+						}
+						break;
+					case FILE_WRITE_DATA:
+						if (!have_write) {
+							ret = -1;
+							DEBUG(10,("check_posix_acl_group_access: file %s "
+								"refusing write due to mask.\n", fname));
+							goto done;
+						}
+						break;
+					default: /* FILE_READ_DATA|FILE_WRITE_DATA */
+						if (!have_write || !have_read) {
+							ret = -1;
+							DEBUG(10,("check_posix_acl_group_access: file %s "
+								"refusing read/write due to mask.\n", fname));
+							goto done;
+						}
+						break;
 				}
 				break;
 			case SMB_ACL_USER:
@@ -3978,9 +4007,21 @@ refusing write due to mask.\n", fname));
 				}
 				if (current_user.ut.uid == *puid) {
 					/* We have a uid match but we must ensure we have seen the acl mask. */
-					ret = have_write;
-					DEBUG(10,("check_posix_acl_group_write: file %s \
-match on user %u -> %s.\n", fname, (unsigned int)*puid, ret ? "can write" : "cannot write"));
+					switch (access_mask) {
+						case FILE_READ_DATA:
+							ret = have_read;
+							break;
+						case FILE_WRITE_DATA:
+							ret = have_write;
+							break;
+						default: /* FILE_READ_DATA|FILE_WRITE_DATA */
+							ret = (have_write & have_read);
+							break;
+					}
+					DEBUG(10,("check_posix_acl_group_access: file %s "
+						"match on user %u -> %s.\n",
+						fname, (unsigned int)*puid,
+						ret ? "can access" : "cannot access"));
 					if (seen_mask) {
 						goto done;
 					}
@@ -4003,6 +4044,7 @@ match on user %u -> %s.\n", fname, (unsigned int)*puid, ret ? "can write" : "can
 		SMB_ACL_TAG_T tagtype;
 		SMB_ACL_PERMSET_T permset;
 		int have_write = -1;
+		int have_read = -1;
 
 		/* get_next... */
 		if (entry_id == SMB_ACL_FIRST_ENTRY)
@@ -4016,6 +4058,11 @@ match on user %u -> %s.\n", fname, (unsigned int)*puid, ret ? "can write" : "can
 			goto check_stat;
 		}
 
+		have_read = SMB_VFS_SYS_ACL_GET_PERM(conn, permset, SMB_ACL_READ);
+		if (have_read == -1) {
+			goto check_stat;
+		}
+
 		have_write = SMB_VFS_SYS_ACL_GET_PERM(conn, permset, SMB_ACL_WRITE);
 		if (have_write == -1) {
 			goto check_stat;
@@ -4026,6 +4073,7 @@ match on user %u -> %s.\n", fname, (unsigned int)*puid, ret ? "can write" : "can
 		 * canonicalize to 0 or 1.
 		 */	
 		have_write = (have_write ? 1 : 0);
+		have_read = (have_read ? 1 : 0);
 
 		switch(tagtype) {
 			case SMB_ACL_GROUP:
@@ -4050,13 +4098,25 @@ match on user %u -> %s.\n", fname, (unsigned int)*puid, ret ? "can write" : "can
 				for (cu_gid = get_current_user_gid_first(&i); cu_gid != (gid_t)-1;
 							cu_gid = get_current_user_gid_next(&i)) {
 					if (cu_gid == *pgid) {
-						ret = have_write;
-						DEBUG(10,("check_posix_acl_group_write: file %s \
-match on group %u -> can write.\n", fname, (unsigned int)cu_gid ));
+						switch (access_mask) {
+							case FILE_READ_DATA:
+								ret = have_read;
+								break;
+							case FILE_WRITE_DATA:
+								ret = have_write;
+								break;
+							default: /* FILE_READ_DATA|FILE_WRITE_DATA */
+								ret = (have_write & have_read);
+								break;
+						}
 
-						/* If we don't have write permission this entry doesn't
+						DEBUG(10,("check_posix_acl_group_access: file %s "
+							"match on group %u -> can access.\n",
+							fname, (unsigned int)cu_gid ));
+
+						/* If we don't have access permission this entry doesn't
 							terminate the enumeration of the entries. */
-						if (have_write) {
+						if (ret) {
 							goto done;
 						}
 						/* But does terminate the group iteration. */
@@ -4073,12 +4133,12 @@ match on group %u -> can write.\n", fname, (unsigned int)cu_gid ));
 	/* If ret is -1 here we didn't match on the user entry or
 	   supplemental group entries. */
 	
-	DEBUG(10,("check_posix_acl_group_write: ret = %d before check_stat:\n", ret));
+	DEBUG(10,("check_posix_acl_group_access: ret = %d before check_stat:\n", ret));
 
   check_stat:
 
 	/*
-	 * We only check the S_IWGRP permissions if we haven't already
+	 * We only check the S_I[RW]GRP permissions if we haven't already
 	 * seen an owning group SMB_ACL_GROUP_OBJ ace entry. If there is an
 	 * SMB_ACL_GROUP_OBJ ace entry then the group bits in st_gid are
 	 * the same as the SMB_ACL_MASK bits, not the SMB_ACL_GROUP_OBJ
@@ -4095,16 +4155,33 @@ match on group %u -> can write.\n", fname, (unsigned int)cu_gid ));
 		for (cu_gid = get_current_user_gid_first(&i); cu_gid != (gid_t)-1;
 						cu_gid = get_current_user_gid_next(&i)) {
 			if (cu_gid == psbuf->st_gid) {
-				ret = (psbuf->st_mode & S_IWGRP) ? 1 : 0;
-				DEBUG(10,("check_posix_acl_group_write: file %s \
-match on owning group %u -> %s.\n", fname, (unsigned int)psbuf->st_gid, ret ? "can write" : "cannot write"));
+				switch (access_mask) {
+					case FILE_READ_DATA:
+						ret = (psbuf->st_mode & S_IRGRP) ? 1 : 0;
+						break;
+					case FILE_WRITE_DATA:
+						ret = (psbuf->st_mode & S_IWGRP) ? 1 : 0;
+						break;
+					default: /* FILE_READ_DATA|FILE_WRITE_DATA */
+						if ((psbuf->st_mode & (S_IWGRP|S_IRGRP)) == (S_IWGRP|S_IRGRP)) {
+							ret = 1;
+						} else {
+							ret = 0;
+						}
+						break;
+				}
+				DEBUG(10,("check_posix_acl_group_access: file %s "
+					"match on owning group %u -> %s.\n",
+					fname, (unsigned int)psbuf->st_gid,
+					ret ? "can access" : "cannot access"));
 				break;
 			}
 		}
 
 		if (cu_gid == (gid_t)-1) {
-			DEBUG(10,("check_posix_acl_group_write: file %s \
-failed to match on user or group in token (ret = %d).\n", fname, ret ));
+			DEBUG(10,("check_posix_acl_group_access: file %s "
+				"failed to match on user or group in token (ret = %d).\n",
+				fname, ret ));
 		}
 	}
 
@@ -4114,7 +4191,7 @@ failed to match on user or group in token (ret = %d).\n", fname, ret ));
 		SMB_VFS_SYS_ACL_FREE_ACL(conn, posix_acl);
 	}
 
-	DEBUG(10,("check_posix_acl_group_write: file %s returning (ret = %d).\n", fname, ret ));
+	DEBUG(10,("check_posix_acl_group_access: file %s returning (ret = %d).\n", fname, ret ));
 	return ret;
 }
 
@@ -4170,7 +4247,7 @@ BOOL can_delete_file_in_directory(connection_struct *conn, const char *fname)
 #endif
 
 	/* Check group or explicit user acl entry write access. */
-	ret = check_posix_acl_group_write(conn, dname, &sbuf);
+	ret = check_posix_acl_group_access(conn, dname, &sbuf, FILE_WRITE_DATA);
 	if (ret == 0 || ret == 1) {
 		return ret ? True : False;
 	}
@@ -4180,14 +4257,22 @@ BOOL can_delete_file_in_directory(connection_struct *conn, const char *fname)
 }
 
 /****************************************************************************
- Actually emulate the in-kernel access checking for write access. We need
+ Actually emulate the in-kernel access checking for read/write access. We need
  this to successfully check for ability to write for dos filetimes.
  Note this doesn't take into account share write permissions.
 ****************************************************************************/
 
-BOOL can_write_to_file(connection_struct *conn, const char *fname, SMB_STRUCT_STAT *psbuf)
+BOOL can_access_file(connection_struct *conn, const char *fname, SMB_STRUCT_STAT *psbuf, uint32 access_mask)
 {
 	int ret;
+
+	if (!(access_mask & (FILE_READ_DATA|FILE_WRITE_DATA))) {
+		return False;
+	}
+	access_mask &= (FILE_READ_DATA|FILE_WRITE_DATA);
+
+	DEBUG(10,("can_access_file: requesting 0x%x on file %s\n",
+		(unsigned int)access_mask, fname ));
 
 	if (current_user.ut.uid == 0 || conn->admin_user) {
 		/* I'm sorry sir, I didn't know you were root... */
@@ -4201,19 +4286,56 @@ BOOL can_write_to_file(connection_struct *conn, const char *fname, SMB_STRUCT_ST
 		}
 	}
 
-	/* Check primary owner write access. */
+	/* Check primary owner access. */
 	if (current_user.ut.uid == psbuf->st_uid) {
-		return (psbuf->st_mode & S_IWUSR) ? True : False;
+		switch (access_mask) {
+			case FILE_READ_DATA:
+				return (psbuf->st_mode & S_IRUSR) ? True : False;
+
+			case FILE_WRITE_DATA:
+				return (psbuf->st_mode & S_IWUSR) ? True : False;
+
+			default: /* FILE_READ_DATA|FILE_WRITE_DATA */
+
+				if ((psbuf->st_mode & (S_IWUSR|S_IRUSR)) == (S_IWUSR|S_IRUSR)) {
+					return True;
+				} else {
+					return False;
+				}
+		}
 	}
 
-	/* Check group or explicit user acl entry write access. */
-	ret = check_posix_acl_group_write(conn, fname, psbuf);
+	/* Check group or explicit user acl entry access. */
+	ret = check_posix_acl_group_access(conn, fname, psbuf, access_mask);
 	if (ret == 0 || ret == 1) {
 		return ret ? True : False;
 	}
 
-	/* Finally check other write access. */
-	return (psbuf->st_mode & S_IWOTH) ? True : False;
+	/* Finally check other access. */
+	switch (access_mask) {
+		case FILE_READ_DATA:
+			return (psbuf->st_mode & S_IROTH) ? True : False;
+
+		case FILE_WRITE_DATA:
+			return (psbuf->st_mode & S_IWOTH) ? True : False;
+
+		default: /* FILE_READ_DATA|FILE_WRITE_DATA */
+
+			if ((psbuf->st_mode & (S_IWOTH|S_IROTH)) == (S_IWOTH|S_IROTH)) {
+				return True;
+			}
+	}
+	return False;
+}
+
+/****************************************************************************
+ Userspace check for write access.
+ Note this doesn't take into account share write permissions.
+****************************************************************************/
+
+BOOL can_write_to_file(connection_struct *conn, const char *fname, SMB_STRUCT_STAT *psbuf)
+{
+	return can_access_file(conn, fname, psbuf, FILE_WRITE_DATA);
 }
 
 /********************************************************************
