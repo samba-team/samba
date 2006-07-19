@@ -50,5 +50,12 @@ struct dns_rr_srv {
 	struct in_addr ip;
 };
 
+/* SRV records */
+
+struct dns_rr_ns {
+	const char *hostname;
+	struct in_addr ip;
+};
+
 
 #endif	/* _ADS_DNS_H */
