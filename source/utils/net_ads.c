@@ -24,22 +24,6 @@
 #include "includes.h"
 #include "utils/net.h"
 
-/* Macro for checking RPC error codes to make things more readable */
-
-#if 0
-#define CHECK_RPC_ERR(rpc, msg) \
-        if (!NT_STATUS_IS_OK(result = rpc)) { \
-                DEBUG(0, (msg ": %s\n", nt_errstr(result))); \
-                goto done; \
-        }
-
-#define CHECK_RPC_ERR_DEBUG(rpc, debug_args) \
-        if (!NT_STATUS_IS_OK(result = rpc)) { \
-                DEBUG(0, debug_args); \
-                goto done; \
-        }
-
-#endif
 #ifdef HAVE_ADS
 
 int net_ads_usage(int argc, const char **argv)
@@ -1208,11 +1192,24 @@ int net_ads_join(int argc, const char **argv)
 	
 	status = net_set_machine_spn( ctx, ads );
 	if ( !ADS_ERR_OK(status) )  {
-		d_fprintf(stderr, "Failed to set servicePrincipalNames. Only NTLM authentication will be possible.\n");
-		d_fprintf(stderr, "Please ensure that the DNS domain of this server matches the AD domain,\n");
-		d_fprintf(stderr, "Or rejoin with using Domain Admin credentials.\n");
 
-		/* don't fail */
+		d_fprintf(stderr, "Failed to set servicePrincipalNames. Please ensure that\n");
+		d_fprintf(stderr, "the DNS domain of this server matches the AD domain,\n");
+		d_fprintf(stderr, "Or rejoin with using Domain Admin credentials.\n");
+		
+		/* Disable the machine account in AD.  Better to fail than to leave 
+		   a confused admin.  */
+		
+		if ( net_ads_leave( 0, NULL ) != 0 ) {
+			d_fprintf( stderr, "Failed to disable machine account in AD.  Please do so manually.\n");
+		}
+		
+		/* clear out the machine password */
+		
+		netdom_store_machine_account( lp_workgroup(), domain_sid, "" ); 
+		netdom_store_machine_account( short_domain_name, domain_sid, "" );
+		
+		return -1;
 	}
 
 	if ( !net_derive_salting_principal( ctx, ads ) ) {
@@ -1891,15 +1888,12 @@ int net_ads_help(int argc, const char **argv)
 		{"GROUP", net_ads_group_usage},
 		{"PRINTER", net_ads_printer_usage},
 		{"SEARCH", net_ads_search_usage},
-#if 0
 		{"INFO", net_ads_info},
 		{"JOIN", net_ads_join},
-		{"JOIN2", net_ads_join2},
 		{"LEAVE", net_ads_leave},
 		{"STATUS", net_ads_status},
 		{"PASSWORD", net_ads_password},
 		{"CHANGETRUSTPW", net_ads_changetrustpw},
-#endif
 		{NULL, NULL}
 	};
 
@@ -1991,4 +1985,4 @@ int net_ads(int argc, const char **argv)
 	return net_ads_usage(argc, argv);
 }
 
-#endif
+#endif	/* WITH_ADS */
