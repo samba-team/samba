@@ -859,7 +859,7 @@ void message_to_share_mode_entry(struct share_mode_entry *e, char *msg)
 
 BOOL init_oplocks(void)
 {
-	DEBUG(3,("open_oplock_ipc: initializing messages.\n"));
+	DEBUG(3,("init_oplocks: initializing messages.\n"));
 
 	message_register(MSG_SMB_BREAK_REQUEST,
 			 process_oplock_break_message);
