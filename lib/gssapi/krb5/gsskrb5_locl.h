@@ -102,7 +102,7 @@ struct gssapi_thr_context {
  * Prototypes
  */
 
-krb5_error_code _gsskrb5_init (void);
+#include <gsskrb5-private.h>
 
 #define GSSAPI_KRB5_INIT() do {					\
     krb5_error_code kret_gss_init;				\
@@ -111,8 +111,6 @@ krb5_error_code _gsskrb5_init (void);
 	return GSS_S_FAILURE;					\
     }								\
 } while (0)
-
-#include <gsskrb5-private.h>
 
 /* sec_context flags */
 
