@@ -102,10 +102,10 @@ main(int argc, char **argv)
 {
     gss_buffer_desc name_buffer;
     OM_uint32 maj_stat, min_stat;
-    gss_name_t name, MNname;
+    gss_name_t name, MNname, MNname2;
     int optidx = 0;
     char *str;
-    int len;
+    int len, equal;
 
     setprogname(argv[0]);
     if(getarg(args, sizeof(args) / sizeof(args[0]), argc, argv, &optidx))
@@ -121,6 +121,10 @@ main(int argc, char **argv)
 
     argc -= optidx;
     argv += optidx;
+
+    /*
+     * test import/export
+     */
 
     len = asprintf(&str, "ftp@freeze-arrow.mit.edu");
     if (len == -1)
@@ -143,14 +147,68 @@ main(int argc, char **argv)
     if (maj_stat != GSS_S_COMPLETE)
 	gss_err(1, min_stat, "canonicalize name error");
 
-    maj_stat = gss_export_name(&maj_stat,
+    maj_stat = gss_export_name(&min_stat,
 			       MNname,
 			       &name_buffer);
     if (maj_stat != GSS_S_COMPLETE)
 	gss_err(1, min_stat, "export name error (KRB5)");
 
-    gss_release_name(&min_stat, &MNname);
+    /*
+     * Import the exported name and compare
+     */
+
+    maj_stat = gss_import_name(&min_stat, &name_buffer,
+			       GSS_C_NT_EXPORT_NAME,
+			       &MNname2);
+    if (maj_stat != GSS_S_COMPLETE)
+	gss_err(1, min_stat, "import name error (exported KRB5 name)");
+
+
+    maj_stat = gss_compare_name(&min_stat, MNname, MNname2, &equal);
+    if (maj_stat != GSS_S_COMPLETE)
+	errx(1, "gss_compare_name");
+    if (!equal)
+	errx(1, "names not equal");
+
+    gss_release_name(&min_stat, &MNname2);
     gss_release_buffer(&min_stat, &name_buffer);
+    gss_release_name(&min_stat, &MNname);
+    gss_release_name(&min_stat, &name);
+
+    /*
+     * Import oid less name and compare to mech name.
+     * Dovecot SASL lib does this.
+     */
+
+    len = asprintf(&str, "lha");
+    if (len == -1)
+	errx(1, "asprintf");
+
+    name_buffer.value = str;
+    name_buffer.length = len;
+
+    maj_stat = gss_import_name(&min_stat, &name_buffer,
+			       GSS_C_NO_OID,
+			       &name);
+    if (maj_stat != GSS_S_COMPLETE)
+	gss_err(1, min_stat, "import (no oid) name error");
+
+    maj_stat = gss_import_name(&min_stat, &name_buffer,
+			       GSS_KRB5_NT_USER_NAME,
+			       &MNname);
+    if (maj_stat != GSS_S_COMPLETE)
+	gss_err(1, min_stat, "import (krb5 mn) name error");
+
+    free(str);
+
+    maj_stat = gss_compare_name(&min_stat, name, MNname, &equal);
+    if (maj_stat != GSS_S_COMPLETE)
+	errx(1, "gss_compare_name");
+    if (!equal)
+	errx(1, "names not equal");
+
+    gss_release_name(&min_stat, &MNname);
+    gss_release_name(&min_stat, &name);
 
 #if 0
     maj_stat = gss_canonicalize_name (&min_stat,
@@ -170,7 +228,6 @@ main(int argc, char **argv)
     gss_release_name(&min_stat, &MNname);
     gss_release_buffer(&min_stat, &name_buffer);
 #endif
-    gss_release_name(&min_stat, &name);
 
     return 0;
 }
