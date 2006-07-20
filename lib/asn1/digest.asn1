@@ -15,16 +15,16 @@ DigestInitReply ::= SEQUENCE {
 
 
 DigestRequest ::= SEQUENCE  {
-    type		UTF8String, -- http-digest, sasl --
+    type		UTF8String, -- http-digest, sasl, chap --
     digest		UTF8String, -- md5/md5-sess --
     username		UTF8String,
     authentication-user	[0] UTF8String OPTIONAL,
-    realm		UTF8String,
-    method		[1] UTF8String OPTIONAL,
-    uri			UTF8String,
+    realm		[1] UTF8String OPTIONAL,
+    method		[2] UTF8String OPTIONAL,
+    uri			[3] UTF8String OPTIONAL,
     serverNonce		UTF8String,
-    clientNonce		UTF8String,
-    nonceCount		UTF8String,
+    clientNonce		[4] UTF8String OPTIONAL,
+    nonceCount		[5] UTF8String OPTIONAL,
     qop			[2] UTF8String OPTIONAL,
     opaque		UTF8String
 }
