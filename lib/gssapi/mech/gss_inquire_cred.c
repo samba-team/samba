@@ -45,6 +45,8 @@ gss_inquire_cred(OM_uint32 *minor_status,
 	OM_uint32 min_lifetime;
 	int found = 0;
 
+	_gss_load_mech();
+
 	*minor_status = 0;
 	if (name_ret)
 		*name_ret = 0;
