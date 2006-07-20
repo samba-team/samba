@@ -45,7 +45,7 @@
 #if defined(uint64)
 #  define SMB_TIME_T uint64
 #else
-#  define SMB_TIME_t time_t
+#  define SMB_TIME_T time_t
 #endif
 
 /* Socket commands */
