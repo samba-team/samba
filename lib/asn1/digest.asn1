@@ -1,0 +1,89 @@
+-- $Id$
+
+DIGEST DEFINITIONS ::=
+BEGIN
+
+DigestInit ::= SEQUENCE {
+    cb-type		[0] UTF8String OPTIONAL,
+    cb-binding		[1] UTF8String OPTIONAL
+}
+
+DigestInitReply ::= SEQUENCE {
+    nonce		UTF8String,
+    opaque		UTF8String
+}
+
+
+DigestRequest ::= SEQUENCE  {
+    type		UTF8String, -- http-digest, sasl --
+    digest		UTF8String, -- md5/md5-sess --
+    username		UTF8String,
+    authentication-user	[0] UTF8String OPTIONAL,
+    realm		UTF8String,
+    method		[1] UTF8String OPTIONAL,
+    uri			UTF8String,
+    serverNonce		UTF8String,
+    clientNonce		UTF8String,
+    nonceCount		UTF8String,
+    qop			[2] UTF8String OPTIONAL,
+    opaque		UTF8String
+}
+
+DigestError ::= SEQUENCE {
+    reason		UTF8String
+}
+
+DigestResponse ::= SEQUENCE  {
+    responseData	UTF8String,
+    rsp			[0] UTF8String OPTIONAL,
+    tickets		[1] SEQUENCE OF OCTET STRING OPTIONAL,
+    channel		[2] SEQUENCE {
+    	cb-type		UTF8String,
+    	cb-binding	UTF8String
+    } OPTIONAL,
+    hash-a1		[3] OCTET STRING OPTIONAL
+}
+
+DigestReq ::= CHOICE {
+    init		[0] DigestInit,
+    request		[1] DigestRequest
+}
+
+DigestReply ::= CHOICE {
+    error		[0] DigestError,
+    response		[1] DigestResponse
+}
+
+-- HTTP
+
+-- md5
+-- A1 = unq(username-value) ":" unq(realm-value) ":" passwd
+-- md5-sess
+-- A1 = HEX(H(unq(username-value) ":" unq(realm-value) ":" passwd ) ":" unq(nonce-value) ":" unq(cnonce-value))
+
+-- qop == auth
+-- A2 = Method ":" digest-uri-value
+-- qop == auth-int
+-- A2 = Method ":" digest-uri-value ":" H(entity-body) 
+
+-- request-digest  = HEX(KD(HEX(H(A1)),
+--    unq(nonce-value) ":" nc-value ":" unq(cnonce-value) ":" unq(qop-value) ":" HEX(H(A2))))
+-- no "qop"
+-- request-digest  = HEX(KD(HEX(H(A1)), unq(nonce-value) ":" HEX(H(A2))))
+
+
+-- SASL:
+-- SS = H( { unq(username-value), ":", unq(realm-value), ":", password } )
+-- A1 = { SS, ":", unq(nonce-value), ":", unq(cnonce-value) }
+-- A1 = { SS, ":", unq(nonce-value), ":", unq(cnonce-value), ":", unq(authzid-value) }
+
+-- A2 = "AUTHENTICATE:", ":", digest-uri-value
+-- qop == auth-int,auth-conf
+-- A2 = "AUTHENTICATE:", ":", digest-uri-value, ":00000000000000000000000000000000"
+
+-- response-value = HEX( KD ( HEX(H(A1)),
+--                 { unq(nonce-value), ":" nc-value, ":",
+--                   unq(cnonce-value), ":", qop-value, ":",
+--                   HEX(H(A2)) }))
+
+END
