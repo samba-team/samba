@@ -139,12 +139,7 @@ ENCTYPE ::= INTEGER {
 	ETYPE_DES_CFB64_NONE(-0x1002),
 	ETYPE_DES_PCBC_NONE(-0x1003),
 	ETYPE_DIGEST_MD5_NONE(-0x1004),		-- private use, lukeh@padl.com
-	ETYPE_CRAM_MD5_NONE(-0x1005),		-- private use, lukeh@padl.com
-	ETYPE_RC2_CBC_NONE(-0x1006),
-	ETYPE_AES128_CBC_NONE(-0x1007),
-	ETYPE_AES192_CBC_NONE(-0x1008),
-	ETYPE_AES256_CBC_NONE(-0x1009),
-	ETYPE_DES3_CBC_NONE_CMS(-0x100a)
+	ETYPE_CRAM_MD5_NONE(-0x1005)		-- private use, lukeh@padl.com
 }
 
 
@@ -608,17 +603,6 @@ PA-S4U2Self ::= SEQUENCE {
         cksum[2]	Checksum,
         auth[3]		GeneralString
 }
-
--- This is really part of CMS, but its here because KCRYPTO provides
--- the crypto framework for CMS glue in heimdal.
-
-RC2CBCParameter ::= SEQUENCE {
-	rc2ParameterVersion	krb5int32,
-	iv			OCTET STRING -- exactly 8 octets
-}
-
-CBCParameter ::= OCTET STRING
-
 
 END
 
