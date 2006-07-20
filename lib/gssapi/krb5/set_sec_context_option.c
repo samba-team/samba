@@ -89,7 +89,28 @@ _gsskrb5_set_sec_context_option
 	return set_compat_des3_mic_context_option(minor_status,
 						  context_handle,
 						  value);
+    } else if (gss_oid_equal(desired_object, GSS_KRB5_REGISTER_ACCEPTOR_IDENTITY_X)) {
+	char *str;
+
+	if (value == NULL || value->length == 0) {
+	    str = NULL;
+	} else {
+	    str = malloc(value->length + 1);
+	    if (str) {
+		minor_status = 0;
+		return GSS_S_UNAVAILABLE;
+	    }
+	    memcpy(str, value->value, value->length);
+	    str[value->length] = '\0';
+	}
+
+	_gsskrb5_register_acceptor_identity(str);
+	free(str);
+
+	minor_status = 0;
+	return GSS_S_FAILURE;
     }
+
 
     *minor_status = EINVAL;
     return GSS_S_FAILURE;
