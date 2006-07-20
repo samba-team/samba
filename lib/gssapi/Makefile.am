@@ -182,8 +182,10 @@ $(srcdir)/krb5/gsskrb5-private.h:
 	cd $(srcdir) && perl ../../cf/make-proto.pl -q -P comment -p krb5/gsskrb5-private.h $(krb5src) || rm -f krb5/gsskrb5-private.h
 
 
-TESTS = test_oid
+TESTS = test_oid test_names test_cfx
 # test_sequence 
+
+test_cfx_SOURCES = krb5/test_cfx.c
 
 check_PROGRAMS = test_acquire_cred $(TESTS)
 
@@ -192,3 +194,4 @@ noinst_PROGRAMS = test_cred test_kcred
 LDADD = libgssapi.la $(LIB_roken)
 
 test_kcred_LDADD = libgssapi.la ../krb5/libkrb5.la $(LIB_roken)
+test_cfx_LDADD = $(test_kcred_LDADD)
