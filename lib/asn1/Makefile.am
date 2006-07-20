@@ -17,6 +17,7 @@ BUILT_SOURCES =				\
 	$(gen_files_pkcs8:.x=.c)	\
 	$(gen_files_pkcs9:.x=.c)	\
 	$(gen_files_pkcs12:.x=.c)	\
+	$(gen_files_digest:.x=.c)	\
 	asn1_err.h			\
 	asn1_err.c
 
@@ -33,7 +34,6 @@ gen_files_k5 =						\
 	asn1_AUTHDATA_TYPE.x				\
 	asn1_Authenticator.x				\
 	asn1_AuthorizationData.x			\
-	asn1_CBCParameter.x				\
 	asn1_CKSUMTYPE.x				\
 	asn1_ChangePasswdDataMS.x			\
 	asn1_Checksum.x					\
@@ -85,7 +85,6 @@ gen_files_k5 =						\
 	asn1_PROV_SRV_LOCATION.x			\
 	asn1_Principal.x				\
 	asn1_PrincipalName.x				\
-	asn1_RC2CBCParameter.x				\
 	asn1_Realm.x					\
 	asn1_SAMFlags.x					\
 	asn1_TGS_REP.x					\
@@ -367,6 +366,16 @@ gen_files_test =					\
 	asn1_TESTLargeTag.x				\
 	asn1_TESTSeq.x
 
+gen_files_digest =					\
+	asn1_DigestInit.x				\
+	asn1_DigestInitReply.x				\
+	asn1_DigestReq.x				\
+	asn1_DigestRequest.x				\
+	asn1_DigestError.x				\
+	asn1_DigestResponse.x				\
+	asn1_DigestReply.x
+	
+
 noinst_PROGRAMS = asn1_compile asn1_print asn1_gen
 
 check_PROGRAMS = check-der check-gen
@@ -428,6 +437,7 @@ CLEANFILES = lex.c parse.c parse.h \
 	$(gen_files_pkcs8) \
 	$(gen_files_pkcs9) \
 	$(gen_files_pkcs12) \
+	$(gen_files_digest) \
 	$(gen_files_test) \
 	rfc2459_asn1_files rfc2459_asn1.h \
 	cms_asn1_files cms_asn1.h \
@@ -436,6 +446,7 @@ CLEANFILES = lex.c parse.c parse.h \
 	pkcs8_asn1_files pkcs8_asn1.h \
 	pkcs9_asn1_files pkcs9_asn1.h \
 	pkcs12_asn1_files pkcs12_asn1.h \
+	digest_asn1_files digest_asn1.h \
 	test_asn1_files test_asn1.h
 
 
@@ -447,6 +458,7 @@ include_HEADERS += rfc2459_asn1.h
 include_HEADERS += pkcs8_asn1.h
 include_HEADERS += pkcs9_asn1.h
 include_HEADERS += pkcs12_asn1.h
+include_HEADERS += digest_asn1.h
 
 $(asn1_compile_OBJECTS): parse.h parse.c
 
@@ -455,6 +467,7 @@ $(gen_files_pkinit) pkinit_asn1.h: pkinit_asn1_files
 $(gen_files_pkcs8) pkcs8_asn1.h: pkcs8_asn1_files
 $(gen_files_pkcs9) pkcs9_asn1.h: pkcs9_asn1_files
 $(gen_files_pkcs12) pkcs12_asn1.h: pkcs12_asn1_files
+$(gen_files_digest) digest_asn1.h: digest_asn1_files
 $(gen_files_rfc2459) rfc2459_asn1.h: rfc2459_asn1_files
 $(gen_files_cms) cms_asn1.h: cms_asn1_files
 $(gen_files_test) test_asn1.h: test_asn1_files
@@ -479,6 +492,9 @@ pkcs9_asn1_files: asn1_compile$(EXEEXT) $(srcdir)/pkcs9.asn1
 
 pkcs12_asn1_files: asn1_compile$(EXEEXT) $(srcdir)/pkcs12.asn1
 	./asn1_compile$(EXEEXT) $(srcdir)/pkcs12.asn1 pkcs12_asn1 || (rm -f pkcs12_asn1_files ; exit 1)
+
+digest_asn1_files: asn1_compile$(EXEEXT) $(srcdir)/digest.asn1
+	./asn1_compile$(EXEEXT) $(srcdir)/digest.asn1 digest_asn1 || (rm -f digest_asn1_files ; exit 1)
 
 test_asn1_files: asn1_compile$(EXEEXT) $(srcdir)/test.asn1
 	./asn1_compile$(EXEEXT) $(srcdir)/test.asn1 test_asn1 || (rm -f test_asn1_files ; exit 1)
