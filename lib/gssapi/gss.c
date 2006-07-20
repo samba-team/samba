@@ -42,6 +42,7 @@
 #include <getarg.h>
 #include <rtbl.h>
 #include <gss-commands.h>
+#include <krb5.h>
 
 RCSID("$Id$");
 
@@ -110,6 +111,10 @@ supported_mechs(void *argptr, int argc, char **argv)
     return 0;
 }
 
+/*
+ *
+ */
+
 int
 help(void *opt, int argc, char **argv)
 {
@@ -164,10 +169,10 @@ main(int argc, char **argv)
     argc -= optidx;
     argv += optidx;
 
-    if (argc == 0)
+    if (argc == 0) {
 	help(NULL, argc, argv);
-    else
-	sl_command (commands, argc, argv);
+	return 1;
+    }
 
-    return 0;
+    return sl_command (commands, argc, argv);
 }
