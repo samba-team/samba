@@ -18,6 +18,7 @@ Common bugs fixed in 3.0.23a include:
     running winbindd.
   o Failure to add users or groups to ACLs using the Windows
     object picker.
+  o Failure in file serving code when 'kernel oplocks = yes'.
 
 New features in 3.0.23a include:
 
@@ -69,7 +70,7 @@ o   Gerald (Jerry) Carter <jerry@samba.org>
 
 o   Guenther Deschner <gd@samba.org>
     * Don't clear the cache when starting winbindd in off line mode.
-    * Fix erron reporting in pam_winbind debug messages.
+    * Fix errno reporting in pam_winbind debug messages.
     * BUG 3937: Fix segv in libnss_wins.so.
 
 
@@ -78,7 +79,7 @@ o   Volker Lendecke <vl@samba.org>
       request code.
     * AIX portability fixes for DNS client code.
     * BUG 3811, 3948: Fix alignment bug in on lsaquery. 
-    * BUG 3949: Fixed authorization issue no domain member 
+    * BUG 3949: Fixed authorization issue on domain member 
       servers not running winbindd.
 
 
