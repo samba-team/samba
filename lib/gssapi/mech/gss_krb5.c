@@ -30,6 +30,7 @@
 RCSID("$Id$");
 
 #include <krb5.h>
+#include <roken.h>
 
 
 OM_uint32
@@ -180,56 +181,24 @@ out:
     return major_status;
 }
 
-#if 0
 OM_uint32
 gsskrb5_register_acceptor_identity(const char *identity)
 {
-	gssapi_mech_interface m;
+        struct _gss_mech_switch	*m;
+	gss_buffer_desc buffer;
+	OM_uint32 junk;
 
 	_gss_load_mech();
+
+	buffer.value = rk_UNCONST(identity);
+	buffer.length = strlen(identity);
+
 	SLIST_FOREACH(m, &_gss_mechs, gm_link) {
-		if (m->gm_krb5_register_acceptor_identity)
-			m->gm_krb5_register_acceptor_identity(identity);
+		if (m->gm_mech.gm_set_sec_context_option == NULL)
+			continue;
+		m->gm_mech.gm_set_sec_context_option(&junk, NULL,
+		    GSS_KRB5_REGISTER_ACCEPTOR_IDENTITY_X, &buffer);
 	}
 
 	return (GSS_S_COMPLETE);
 }
-
-OM_uint32
-gss_krb5_copy_ccache(OM_uint32 *minor_status,
-    gss_cred_id_t cred_handle,
-    struct krb5_ccache_data *out)
-{
-	struct _gss_mechanism_cred *mcp;
-	struct _gss_cred *cred = (struct _gss_cred *) cred_handle;
-	gssapi_mech_interface m;
-
-	*minor_status = 0;
-
-	SLIST_FOREACH(mcp, &cred->gc_mc, gmc_link) {
-		m = mcp->gmc_mech;
-		if (m->gm_krb5_copy_ccache)
-			return (m->gm_krb5_copy_ccache(minor_status,
-				mcp->gmc_cred, out));
-	}
-
-	return (GSS_S_FAILURE);
-}
-
-OM_uint32
-gss_krb5_compat_des3_mic(OM_uint32 *minor_status,
-    gss_ctx_id_t context_handle, int flag)
-{
-	struct _gss_context *ctx = (struct _gss_context *) context_handle;
-	gssapi_mech_interface m = ctx->gc_mech;
-
-	*minor_status = 0;
-
-	if (m->gm_krb5_compat_des3_mic)
-		return (m->gm_krb5_compat_des3_mic(minor_status,
-			ctx->gc_ctx, flag));
-
-	return (GSS_S_FAILURE);
-}
-#endif
-
