@@ -261,9 +261,7 @@ typedef enum krb5_keytype {
     KEYTYPE_AES128	= 17,
     KEYTYPE_AES256	= 18,
     KEYTYPE_ARCFOUR	= 23,
-    KEYTYPE_ARCFOUR_56	= 24,
-    KEYTYPE_RC2		= -0x1005,
-    KEYTYPE_AES192	= -0x1006
+    KEYTYPE_ARCFOUR_56	= 24
 } krb5_keytype;
 
 typedef EncryptionKey krb5_keyblock;
