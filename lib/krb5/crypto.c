@@ -780,18 +780,6 @@ static struct key_type keytype_aes128 = {
     AES_salt
 };
 
-static struct key_type keytype_aes192 = {
-    KEYTYPE_AES192,
-    "aes-192",
-    192,
-    24,
-    24,
-    sizeof(struct krb5_aes_schedule),
-    NULL,
-    AES_schedule,
-    AES_salt
-};
-
 static struct key_type keytype_aes256 = {
     KEYTYPE_AES256,
     "aes-256",
@@ -822,7 +810,6 @@ static struct key_type *keytypes[] = {
     &keytype_des3_derived,
     &keytype_des3,
     &keytype_aes128,
-    &keytype_aes192,
     &keytype_aes256,
     &keytype_arcfour
 };
