@@ -1,5 +1,100 @@
-2006-07-01  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-07-20  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* Makefile.am: Add test_cfx
+
+	* krb5/external.c: add GSS_KRB5_REGISTER_ACCEPTOR_IDENTITY_X
+
+	* krb5/set_sec_context_option.c: catch
+	GSS_KRB5_REGISTER_ACCEPTOR_IDENTITY_X
+
+	* krb5/accept_sec_context.c: reimplement
+	gsskrb5_register_acceptor_identity
+
+	* mech/gss_krb5.c: implement gsskrb5_register_acceptor_identity
+
+	* mech/gss_inquire_mechs_for_name.c: call _gss_load_mech
+
+	* mech/gss_inquire_cred.c (gss_inquire_cred): call _gss_load_mech
+
+	* mech/gss_mech_switch.c: Make _gss_load_mech() atomic and run
+	only once, this have the side effect that _gss_mechs and
+	_gss_mech_oids is only initialized once, so if just the users of
+	these two global variables calls _gss_load_mech() first, it will
+	act as a barrier and make sure the variables are never changed and
+	we don't need to lock them.
+
+	* mech/utils.h: no need to mark functions extern.
+
+	* mech/name.h: no need to mark _gss_find_mn extern.
+	
+2006-07-19  Love Hörnquist Åstrand <lha@it.su.se>
+	
+	* krb5/cfx.c: Redo the wrap length calculations.
+
+	* krb5/test_cfx.c: test max_wrap_size in cfx.c
+
+	* mech/gss_display_status.c: Handle more error codes.
+	
+2006-07-07  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* mech/mech_locl.h: Include <krb5-types.h> and "mechqueue.h"
+
+	* mech/mechqueue.h: Add SLIST macros.
+
+	* krb5/inquire_context.c: Don't free return values on success.
+
+	* krb5/inquire_cred.c (_gsskrb5_inquire_cred): When cred provided
+	is the default cred, acquire the acceptor cred and initator cred
+	in two diffrent steps and then query them for the information,
+	this way, the code wont fail if there are no keytab, but there is
+	a credential cache.
+
+	* mech/gss_inquire_cred.c: move the check if we found any cred
+	where it matter for both cases
+	(default cred and provided cred)
+
+	* mech/gss_init_sec_context.c: If the desired mechanism can't
+	convert the name to a MN, fail with GSS_S_BAD_NAME rather then a
+	NULL de-reference.
+	
+2006-07-06  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* spnego/external.c: readd gss_spnego_inquire_names_for_mech
+
+	* spnego/spnego_locl.h: reimplement
+	gss_spnego_inquire_names_for_mech add support function
+	_gss_spnego_supported_mechs
+
+	* spnego/context_stubs.h: reimplement
+	gss_spnego_inquire_names_for_mech add support function
+	_gss_spnego_supported_mechs
+
+	* spnego/context_stubs.c: drop gss_spnego_indicate_mechs
+	
+	* mech/gss_indicate_mechs.c: if the underlaying mech doesn't
+	support gss_indicate_mechs, use the oid in the mechswitch
+	structure
+
+	* spnego/external.c: let the mech glue layer implement
+	gss_indicate_mechs
+
+	* spnego/cred_stubs.c (gss_spnego_acquire_cred): don't care about
+	desired_mechs, get our own list with indicate_mechs and remove
+	ourself.
+	
+2006-07-05 Love Hörnquist Åstrand <lha@it.su.se>
+
+	* spnego/external.c: remove gss_spnego_inquire_names_for_mech, let
+	the mechglue layer implement it
+	
+	* spnego/context_stubs.c: remove gss_spnego_inquire_names_for_mech, let
+	the mechglue layer implement it
+
+	* spnego/spnego_locl.c: remove gss_spnego_inquire_names_for_mech, let
+	the mechglue layer implement it
+
+2006-07-01  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* mech/gss_set_cred_option.c: fix argument to gss_release_cred
 	
 2006-06-30  Love Hörnquist Åstrand  <lha@it.su.se>
