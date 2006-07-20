@@ -42,7 +42,7 @@ static BOOL fill_grent(struct winbindd_gr *gr, const char *dom_name,
 {
 	fstring full_group_name;
 
-	fill_domain_username( full_group_name, dom_name, gr_name, False);
+	fill_domain_username( full_group_name, dom_name, gr_name, True );
 
 	gr->gr_gid = unix_gid;
     
@@ -146,7 +146,7 @@ static BOOL fill_grent_mem(struct winbindd_domain *domain,
 
 		/* Append domain name */
 
-		fill_domain_username(name, domain->name, the_name, False);
+		fill_domain_username(name, domain->name, the_name, True);
 
 		len = strlen(name);
 		
@@ -752,7 +752,7 @@ void winbindd_getgrent(struct winbindd_cli_state *state)
 		/* Fill in group entry */
 
 		fill_domain_username(domain_group_name, ent->domain_name, 
-			 name_list[ent->sam_entry_index].acct_name, False);
+			 name_list[ent->sam_entry_index].acct_name, True);
 
 		result = fill_grent(&group_list[group_list_ndx], 
 				    ent->domain_name,
@@ -929,7 +929,7 @@ void winbindd_list_groups(struct winbindd_cli_state *state)
 					    groups.sam_entries)[i].acct_name; 
 			fstring name;
 
-			fill_domain_username(name, domain->name, group_name, False);
+			fill_domain_username(name, domain->name, group_name, True);
 			/* Append to extra data */			
 			memcpy(&extra_data[extra_data_len], name, 
                                strlen(name));
