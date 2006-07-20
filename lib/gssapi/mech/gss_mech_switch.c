@@ -27,6 +27,7 @@
  */
 
 #include "mech_locl.h"
+#include <heim_threads.h>
 RCSID("$Id$");
 
 #ifndef _PATH_GSS_MECH
@@ -35,6 +36,7 @@ RCSID("$Id$");
 
 struct _gss_mech_switch_list _gss_mechs = { NULL } ;
 gss_OID_set _gss_mech_oids;
+static HEIMDAL_MUTEX _gss_mech_mutex = HEIMDAL_MUTEX_INITIALIZER;
 
 /*
  * Convert a string containing an OID in 'dot' form
@@ -195,13 +197,20 @@ _gss_load_mech(void)
 	struct _gss_mech_switch *m;
 	void		*so;
 
-	if (SLIST_FIRST(&_gss_mechs))
+
+	HEIMDAL_MUTEX_lock(&_gss_mech_mutex);
+
+	if (SLIST_FIRST(&_gss_mechs)) {
+		HEIMDAL_MUTEX_unlock(&_gss_mech_mutex);
 		return;
+	}
 
 	major_status = gss_create_empty_oid_set(&minor_status,
 	    &_gss_mech_oids);
-	if (major_status)
+	if (major_status) {
+		HEIMDAL_MUTEX_unlock(&_gss_mech_mutex);
 		return;
+	}
 
 	add_builtin(__gss_krb5_initialize());
 	add_builtin(__gss_spnego_initialize());
@@ -209,6 +218,7 @@ _gss_load_mech(void)
 	fp = fopen(_PATH_GSS_MECH, "r");
 	if (!fp) {
 /*		perror(_PATH_GSS_MECH); */
+		HEIMDAL_MUTEX_unlock(&_gss_mech_mutex);
 		return;
 	}
 
@@ -293,6 +303,7 @@ _gss_load_mech(void)
 		continue;
 	}
 	fclose(fp);
+	HEIMDAL_MUTEX_unlock(&_gss_mech_mutex);
 }
 
 gssapi_mech_interface
