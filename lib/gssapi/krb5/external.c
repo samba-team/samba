@@ -283,6 +283,11 @@ static gss_OID_desc gss_krb5_compat_des3_mic_x_oid_desc =
 
 gss_OID GSS_KRB5_COMPAT_DES3_MIC_X = &gss_krb5_compat_des3_mic_x_oid_desc;
 
+static gss_OID_desc gss_krb5_register_acceptor_identity_x_desc =
+{9, (void *)"\x2b\x06\x01\x04\x01\xa9\x4a\x13\x05"}; /* XXX */
+
+gss_OID GSS_KRB5_REGISTER_ACCEPTOR_IDENTITY_X = &gss_krb5_register_acceptor_identity_x_desc;
+
 /*
  * Context for krb5 calls.
  */
