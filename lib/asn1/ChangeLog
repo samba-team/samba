@@ -1,5 +1,14 @@
-2006-06-22  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-07-20  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* Makefile.am: Remove CMS symmetric encryption support.  Add
+	DigestProtocol.
+
+	* digest.asn1: DigestProtocol
+
+	* k5.asn1: Remove CMS symmetric encryption support.
+	
+2006-06-22  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* check-der.c (check_fail_heim_integer): disable test
 
 	* der_get.c (der_get_heim_integer): revert part of previous
