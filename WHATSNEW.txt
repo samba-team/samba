@@ -5,8 +5,26 @@
 
 This is the latest stable release of Samba. This is the version 
 that production Samba servers should be running for all current 
-bug-fixes.  Please read the changes in this section for details on 
-new features and difference in behavior from previous releases.
+bug-fixes.  Please read the changes in this section and for the 
+original 3.0.23 release regarding new features and difference 
+in behavior from previous releases.
+
+Common bugs fixed in 3.0.23a include:
+
+  o Failure to strip the domain name from groups when 'winbind 
+    use default domain = yes'
+  o Failure in pam_winbind to correctly parse arguments.
+  o Bad token creation of local users on member servers not 
+    running winbindd.
+  o Failure to add users or groups to ACLs using the Windows
+    object picker.
+
+New features in 3.0.23a include:
+
+  o New "createupn" option to "net ads join"
+  o Rewritten Kerberos keytab generation when 'use kerberos 
+    keytab = yes'
+
 
 
 ######################################################################
@@ -19,12 +37,62 @@ Changes since 3.0.23
 commits
 -------
 o   Jeremy Allison <jra@samba.org>
+    * Fix memory leaks in the POSIX locking for for the Linux CIFS fs 
+      client.
+    * Fix memory leaks in the AD schema parsing code.
+    * Fixed bug in interaction with Linux kernel oplocks.
+
 
 o   Gerald (Jerry) Carter <jerry@samba.org>
+    * Rewrite the detection of the correct DES salting principal name
+      when joining an Active Directory Domain.
+    * Rewrite the keytab generation code based on existing SPN, 
+      UPN, and sAMAccountName attributes in the AD machine object.
+    * Cleanup of dead code from idmap_ad.
+    * Fix Winbind 32bit/64bit portability issues.
+    * Fail 'net ads join' and disable the machine account if we cannot 
+      set any SPNs for ourselves.
+    * Make sure to lower case all usernames before calling the create, 
+      delete, or rename hooks.
+    * Preserve case for usernames in passdb
+    * Flush the getpwnam cache after renaming a user
+    * Add become/unbecome root block in _samr_delete_dom_user() when 
+      trying to verify the account's existence.
+    * Changed 'net ads join' syntax for specifying an alternate 
+      OU.  New syntax is createcomputer=<ou path top to bottom>.
+    * Add createupn=[UPN] option to 'net ads join' for setting the
+      userPrincipalName attribute.
+    * Bug 3920: Restore winbind use default domain behavior for domain 
+      groups.  This break local users and 'winbind nested groups' on 
+      domain members.
+
 
 o   Guenther Deschner <gd@samba.org>
+    * Don't clear the cache when starting winbindd in off line mode.
+    * Fix erron reporting in pam_winbind debug messages.
+    * BUG 3937: Fix segv in libnss_wins.so.
+
 
 o   Volker Lendecke <vl@samba.org>
+    * Fix memory leaks in the in error paths out of the CLDAP 
+      request code.
+    * AIX portability fixes for DNS client code.
+    * BUG 3811, 3948: Fix alignment bug in on lsaquery. 
+    * BUG 3949: Fixed authorization issue no domain member 
+      servers not running winbindd.
+
+
+o   Andrew Tridgell <tridge@samba.org>
+    * Fixed a bug which caused resolve_ads() to spin forever if 
+      one of the DCs isn't resolvable in DNS.
+
+
+o   Simo Sorce <idra@samba.org>
+    * Debian packaging fixes.
+
+
+o   Dietrich Streifert <dietrich.streifert@visionet.de>
+    * BUG 3916: Fix error parsing pam_winbind config arguments.
 
 
 Release Notes for older release follow:
@@ -480,7 +548,7 @@ o   Guenther Deschner <gd@samba.org>
     * Add help text for new 'net rpc audit' utility.
     * Add net ads search SID.
     * samrQueryDomainInfo level 5 should return the domain name, not our 
-      netbios name when we are a DC.
+      NetBIOS name when we are a DC.
     * Add some more client rpc for the querydominfo calls (from samba4 idl).
     * Process all the supported info levels in the samr_query_domain_info2 
       call.
