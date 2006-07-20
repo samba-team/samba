@@ -344,6 +344,7 @@ static NTSTATUS pdb_default_create_user(struct pdb_methods *methods,
 	if ( !(pwd = Get_Pwnam_alloc(tmp_ctx, name)) ) {
 		pstring add_script;
 		int add_ret;
+		fstring name2;
 
 		if ((acb_info & ACB_NORMAL) && name[strlen(name)-1] != '$') {
 			pstrcpy(add_script, lp_adduser_script());
@@ -357,7 +358,11 @@ static NTSTATUS pdb_default_create_user(struct pdb_methods *methods,
 			return NT_STATUS_NO_SUCH_USER;
 		}
 
-		all_string_sub(add_script, "%u", name, sizeof(add_script));
+		/* lowercase the username before creating the Unix account for 
+		   compatibility with previous Samba releases */
+		fstrcpy( name2, name );
+		strlower_m( name2 );
+		all_string_sub(add_script, "%u", name2, sizeof(add_script));
 		add_ret = smbrun(add_script,NULL);
 		DEBUG(add_ret ? 0 : 3, ("_samr_create_user: Running the command `%s' gave %d\n",
 					add_script, add_ret));
@@ -382,6 +387,10 @@ static NTSTATUS pdb_default_create_user(struct pdb_methods *methods,
 		DEBUG(0, ("Could not get RID of fresh user\n"));
 		return NT_STATUS_INTERNAL_ERROR;
 	}
+
+	/* Use the username case specified in the original request */
+
+	pdb_set_username( sam_pass, name, PDB_SET );
 
 	/* Disable the account on creation, it does not have a reasonable password yet. */
 
@@ -435,6 +444,7 @@ static NTSTATUS pdb_default_delete_user(struct pdb_methods *methods,
 					struct samu *sam_acct)
 {
 	NTSTATUS status;
+	fstring username;
 
 	status = pdb_delete_sam_account(sam_acct);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -447,7 +457,14 @@ static NTSTATUS pdb_default_delete_user(struct pdb_methods *methods,
 	 * not necessary present and maybe the sysadmin doesn't want to delete
 	 * the unix side
 	 */
-	smb_delete_user( pdb_get_username(sam_acct) );
+
+	/* always lower case the username before handing it off to 
+	   external scripts */
+
+	fstrcpy( username, pdb_get_username(sam_acct) );
+	strlower_m( username );
+
+	smb_delete_user( username );
 	
 	return status;
 }
@@ -504,6 +521,7 @@ NTSTATUS pdb_rename_sam_account(struct samu *oldname, const char *newname)
 {
 	struct pdb_methods *pdb = pdb_get_methods();
 	uid_t uid;
+	NTSTATUS status;
 
 	if (csamuser != NULL) {
 		TALLOC_FREE(csamuser);
@@ -520,7 +538,12 @@ NTSTATUS pdb_rename_sam_account(struct samu *oldname, const char *newname)
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	return pdb->rename_sam_account(pdb, oldname, newname);
+	status = pdb->rename_sam_account(pdb, oldname, newname);
+
+	/* always flush the cache here just to be safe */
+	flush_pwnam_cache();
+
+	return status;
 }
 
 NTSTATUS pdb_update_login_attempts(struct samu *sam_acct, BOOL success)

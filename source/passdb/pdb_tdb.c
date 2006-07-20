@@ -1388,6 +1388,8 @@ static NTSTATUS tdbsam_rename_sam_account(struct pdb_methods *my_methods,
 	pstring          rename_script;
 	BOOL             interim_account = False;
 	int              rename_ret;
+	fstring          oldname_lower;
+	fstring          newname_lower;
 
 	/* can't do anything without an external script */
 	
@@ -1431,11 +1433,19 @@ static NTSTATUS tdbsam_rename_sam_account(struct pdb_methods *my_methods,
 		goto done;
 	}
 
-	/* rename the posix user */
-	string_sub2(rename_script, "%unew", newname, sizeof(pstring), 
-		    True, False, True);
-	string_sub2(rename_script, "%uold", pdb_get_username(old_acct), 
-		    sizeof(pstring), True, False, True);
+	/* Rename the posix user.  Follow the semantics of _samr_create_user()
+	   so that we lower case the posix name but preserve the case in passdb */
+
+	fstrcpy( oldname_lower, pdb_get_username(old_acct) );
+	strlower_m( oldname_lower );
+
+	fstrcpy( newname_lower, newname );
+	strlower_m( newname_lower );
+
+	string_sub2(rename_script, "%unew", newname_lower, sizeof(pstring), 
+		True, False, True);
+	string_sub2(rename_script, "%uold", oldname_lower, sizeof(pstring), 
+		True, False, True);
 	rename_ret = smbrun(rename_script, NULL);
 
 	DEBUG(rename_ret ? 0 : 3,("Running the command `%s' gave %d\n", rename_script, rename_ret));
