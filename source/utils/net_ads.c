@@ -928,7 +928,7 @@ done:
 static ADS_STATUS net_set_machine_spn(TALLOC_CTX *ctx, ADS_STRUCT *ads_s )
 {
 	ADS_STATUS status = ADS_ERROR(LDAP_SERVER_DOWN);
-	char *host_upn, *new_dn;
+	char *new_dn;
 	ADS_MODLIST mods;
 	const char *servicePrincipalName[3] = {NULL, NULL, NULL};
 	char *psp;
@@ -964,9 +964,7 @@ static ADS_STATUS net_set_machine_spn(TALLOC_CTX *ctx, ADS_STRUCT *ads_s )
 		return ADS_ERROR(LDAP_NO_MEMORY);
 	}
 
-	/* Windows only creates HOST/shortname & HOST/fqdn.  We create 
-	   the UPN as well so that 'kinit -k' will work.  You can only 
-	   request a TGT for entries with a UPN in AD. */
+	/* Windows only creates HOST/shortname & HOST/fqdn. */
 	   
 	if ( !(psp = talloc_asprintf(ctx, "HOST/%s", machine_name)) ) 
 		goto done;
@@ -978,11 +976,6 @@ static ADS_STATUS net_set_machine_spn(TALLOC_CTX *ctx, ADS_STRUCT *ads_s )
 	if ( !(psp = talloc_asprintf(ctx, "HOST/%s", my_fqdn)) ) 
 		goto done;
 	servicePrincipalName[1] = psp;
-	
-	if (!(host_upn = talloc_asprintf(ctx, "%s@%s", servicePrincipalName[0], ads_s->config.realm)))
-		goto done;
-
-	/* now do the mods */
 	
 	if (!(mods = ads_init_mods(ctx))) {
 		goto done;
@@ -1001,6 +994,63 @@ done:
 	return status;
 }
 
+/*******************************************************************
+ Set a machines dNSHostName and servicePrincipalName attributes
+ ********************************************************************/
+
+static ADS_STATUS net_set_machine_upn(TALLOC_CTX *ctx, ADS_STRUCT *ads_s, const char *upn )
+{
+	ADS_STATUS status = ADS_ERROR(LDAP_SERVER_DOWN);
+	char *new_dn;
+	ADS_MODLIST mods;
+	LDAPMessage *res = NULL;
+	char *dn_string = NULL;
+	const char *machine_name = global_myname();
+	int count;
+	
+	if ( !machine_name ) {
+		return ADS_ERROR(LDAP_NO_MEMORY);
+	}
+	
+	/* Find our DN */
+	
+	status = ads_find_machine_acct(ads_s, (void **)(void *)&res, machine_name);
+	if (!ADS_ERR_OK(status)) 
+		return status;
+		
+	if ( (count = ads_count_replies(ads_s, res)) != 1 ) {
+		DEBUG(1,("net_set_machine_spn: %d entries returned!\n", count));
+		return ADS_ERROR(LDAP_NO_MEMORY);	
+	}
+	
+	if ( (dn_string = ads_get_dn(ads_s, res)) == NULL ) {
+		DEBUG(1, ("ads_add_machine_acct: ads_get_dn returned NULL (malloc failure?)\n"));
+		goto done;
+	}
+	
+	new_dn = talloc_strdup(ctx, dn_string);
+	ads_memfree(ads_s, dn_string);
+	if (!new_dn) {
+		return ADS_ERROR(LDAP_NO_MEMORY);
+	}
+	
+	/* now do the mods */
+	
+	if (!(mods = ads_init_mods(ctx))) {
+		goto done;
+	}
+	
+	/* fields of primary importance */
+	
+	ads_mod_str(ctx, &mods, "userPrincipalName", upn);
+
+	status = ads_gen_mod(ads_s, new_dn, mods);
+
+done:
+	ads_msgfree(ads_s, res);
+	
+	return status;
+}
 
 /*******************************************************************
   join a domain using ADS (LDAP mods)
@@ -1089,6 +1139,19 @@ static BOOL net_derive_salting_principal( TALLOC_CTX *ctx, ADS_STRUCT *ads )
 	return kerberos_secrets_store_des_salt( salt );
 }
 
+/*********************************************************
+ utility function to parse an integer parameter from 
+ "parameter = value"
+**********************************************************/
+static char* get_string_param( const char* param )
+{
+	char *p;
+	
+	if ( (p = strchr( param, '=' )) == NULL )
+		return NULL;
+		
+	return (p+1);
+}
 /*******************************************************************
   join a domain using ADS (LDAP mods)
  ********************************************************************/
@@ -1103,6 +1166,10 @@ int net_ads_join(int argc, const char **argv)
 	struct cldap_netlogon_reply cldap_reply;
 	TALLOC_CTX *ctx;
 	DOM_SID *domain_sid = NULL;
+	BOOL createupn = False;
+	const char *machineupn = NULL;
+	const char *create_in_ou = NULL;
+	int i;
 	
 	if ( check_ads_config() != 0 ) {
 		d_fprintf(stderr, "Invalid configuration.  Exiting....\n");
@@ -1126,11 +1193,30 @@ int net_ads_join(int argc, const char **argv)
 		return -1;
 	}
 
-	/* If we were given an OU, try to create the machine in the OU account 
-	   first and then do the normal RPC join */
+	/* process additional command line args */
+	
+	for ( i=0; i<argc; i++ ) {
+		if ( !StrnCaseCmp(argv[i], "createupn", strlen("createupn")) ) {
+			createupn = True;
+			machineupn = get_string_param(argv[i]);
+		}
+		else if ( !StrnCaseCmp(argv[i], "createcomputer", strlen("createcomputer")) ) {
+			if ( (create_in_ou = get_string_param(argv[i])) == NULL ) {
+				d_fprintf(stderr, "Please supply a valid OU path\n");
+				return -1;
+			}		
+		}
+		else {
+			d_fprintf(stderr, "Bad option: %s\n", argv[i]);
+			return -1;
+		}
+	}
 
-	if ( argc > 0 ) {
-		status = net_precreate_machine_acct( ads, argv[0] );
+	/* If we were given an OU, try to create the machine in 
+	   the OU account first and then do the normal RPC join */
+
+	if  ( create_in_ou ) {
+		status = net_precreate_machine_acct( ads, create_in_ou );
 		if ( !ADS_ERR_OK(status) ) {
 			d_fprintf( stderr, "Failed to pre-create the machine object "
 				"in OU %s.\n", argv[0]);
@@ -1216,6 +1302,22 @@ int net_ads_join(int argc, const char **argv)
 		DEBUG(1,("Failed to determine salting principal\n"));
 		ads_destroy(&ads);
 		return -1;
+	}
+
+	if ( createupn ) {
+		pstring upn;
+		
+		/* default to using the short UPN name */
+		if ( !machineupn ) {
+			snprintf( upn, sizeof(upn), "host/%s@%s", global_myname(), 
+				ads->config.realm );
+			machineupn = upn;
+		}
+		
+		status = net_set_machine_upn( ctx, ads, machineupn );
+		if ( !ADS_ERR_OK(status) )  {
+			d_fprintf(stderr, "Failed to set userPrincipalName.  Are you a Domain Admin?\n");
+		}
 	}
 
 	/* Now build the keytab, using the same ADS connection */
