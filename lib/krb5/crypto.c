@@ -667,115 +667,6 @@ AES_schedule(krb5_context context,
 }
 
 /*
- * RC2
- */
-
-struct _RC2_params {
-    int maximum_effective_key;
-};
-
-static krb5_error_code
-rc2_get_params(krb5_context context,
-	       const krb5_data *data,
-	       void **params,
-	       krb5_data *ivec)
-{
-    RC2CBCParameter rc2params;
-    struct _RC2_params *p;
-    krb5_error_code ret;
-    size_t size;
-
-    ret = decode_RC2CBCParameter(data->data, data->length, &rc2params, &size);
-    if (ret) {
-	krb5_set_error_string(context, "Can't decode RC2 parameters");
-	return ret;
-    }
-    p = malloc(sizeof(*p));
-    if (p == NULL) {
-	free_RC2CBCParameter(&rc2params);
-	krb5_set_error_string(context, "malloc - out of memory");
-	return ENOMEM;
-    }
-    /* XXX  */
-    switch(rc2params.rc2ParameterVersion) {
-    case 160:
-	p->maximum_effective_key = 40;
-	break;
-    case 120:
-	p->maximum_effective_key = 64;
-	break;
-    case 58:
-	p->maximum_effective_key = 128;
-	break;
-	
-    }
-    if (ivec)
-	ret = copy_octet_string(&rc2params.iv, ivec);
-    free_RC2CBCParameter(&rc2params);
-    *params = p;
-
-    return ret;
-}
-
-static krb5_error_code
-rc2_set_params(krb5_context context,
-	       const void *params,
-	       const krb5_data *ivec,
-	       krb5_data *data)
-{
-    RC2CBCParameter rc2params;
-    const struct _RC2_params *p = params;
-    int maximum_effective_key = 128;
-    krb5_error_code ret;
-    size_t size;
-
-    memset(&rc2params, 0, sizeof(rc2params));
-
-    if (p)
-	maximum_effective_key = p->maximum_effective_key;
-
-    /* XXX */
-    switch(maximum_effective_key) {
-    case 40:
-	rc2params.rc2ParameterVersion = 160;
-	break;
-    case 64:
-	rc2params.rc2ParameterVersion = 120;
-	break;
-    case 128:
-	rc2params.rc2ParameterVersion = 58;
-	break;
-    }
-    ret = copy_octet_string(ivec, &rc2params.iv);
-    if (ret)
-	return ret;
-
-    ASN1_MALLOC_ENCODE(RC2CBCParameter, data->data, data->length,
-		       &rc2params, &size, ret);
-    if (ret == 0 && size != data->length)
-	krb5_abortx(context, "Internal asn1 encoder failure");
-    free_RC2CBCParameter(&rc2params);
-
-    return ret;
-}
-
-static void
-rc2_schedule(krb5_context context,
-	     struct key_data *kd,
-	     const void *params)
-{
-    const struct _RC2_params *p = params;
-    int maximum_effective_key = 128;
-    if (p)
-	maximum_effective_key = p->maximum_effective_key;
-    RC2_set_key (kd->schedule->data,
-		 kd->key->keyvalue.length,
-		 kd->key->keyvalue.data,
-		 maximum_effective_key);
-}
-
-
-/*
  *
  */
 
@@ -934,21 +825,6 @@ static struct key_type keytype_arcfour = {
     arcfour_salt
 };
 
-static struct key_type keytype_rc2 = {
-    KEYTYPE_RC2,
-    "rc2",
-    128,
-    16,
-    1,
-    sizeof(RC2_KEY),
-    NULL,
-    rc2_schedule,
-    NULL, /* XXX salt */
-    NULL,
-    rc2_get_params,
-    rc2_set_params
-};
-
 static struct key_type *keytypes[] = {
     &keytype_null,
     &keytype_des,
@@ -957,7 +833,6 @@ static struct key_type *keytypes[] = {
     &keytype_aes128,
     &keytype_aes192,
     &keytype_aes256,
-    &keytype_rc2,
     &keytype_arcfour
 };
 
@@ -3613,10 +3488,8 @@ derive_key(krb5_context context,
     unsigned char *k;
     unsigned int nblocks = 0, i;
     krb5_error_code ret = 0;
-    
     struct key_type *kt = et->keytype;
-    /* since RC2 is only the weird crypto alg with parameter and this
-     * function not defined with work with RC2, this is ok */
+
     ret = _key_schedule(context, key, NULL);
     if(ret)
 	return ret;
