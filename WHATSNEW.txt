@@ -1,12 +1,40 @@
-                   ==============================
-                   Release Notes for Samba 3.0.23
-                            Jul 10, 2006
-                   ==============================
+                   ===============================
+                   Release Notes for Samba 3.0.23a
+                             Jul 21, 2006
+                   ===============================
 
 This is the latest stable release of Samba. This is the version 
 that production Samba servers should be running for all current 
 bug-fixes.  Please read the changes in this section for details on 
 new features and difference in behavior from previous releases.
+
+
+######################################################################
+Changes
+#######
+
+Changes since 3.0.23
+--------------------
+
+commits
+-------
+o   Jeremy Allison <jra@samba.org>
+
+o   Gerald (Jerry) Carter <jerry@samba.org>
+
+o   Guenther Deschner <gd@samba.org>
+
+o   Volker Lendecke <vl@samba.org>
+
+
+Release Notes for older release follow:
+
+      --------------------------------------------------
+
+                   ==============================
+                   Release Notes for Samba 3.0.23
+                            Jul 10, 2006
+                   ==============================
 
 There has been a substantial amount of cleanup work done during 
 this development cycle.  We would like to thank both Coverity 
@@ -155,67 +183,11 @@ smb.conf changes
     wins partners			Removed
 
 
-Changes since 3.0.23rc3
------------------------
+Changes since 3.0.22
+--------------------
 
 commits
 -------
-o   Jeremy Allison <jra@samba.org>
-    * BUG 3858: Ensure that all files are removed by a wildcard 
-      delete when 'hide unreadable = yes'.
-    * Fix various issues raised by the Klocwork code analyzer.
-    * Fix nmbd WINS serving bug causing duplicate IPs in the *<1b> 
-      query reply ("enhanced browsing = yes").
-    * Fix SMB signing failures in client tools.
-    * BUG 3909: Avoid EA lookups on MS-DFS links.
-
-
-o   Nicholas Brealey <nick@brealey.org>
-    * Compile fix for pam_winbind.
-
-
-o   Gerald (Jerry) Carter <jerry@samba.org>
-    * Use system provided killproc() in RedHat init scripts for 
-      more robust shutdown.
-    * Fix a crash in the printer publishing code when adding a 
-      new printer via the APW.
-    * Fix broken compile of unsupported smbwrapper utility.
-    * BUG 3905: Fix smbd startup failure caused by a failure to
-      create an NT token for the guest account.
-    * BUG 3908: Fix RPC bind authentication failure which broke
-      user password changes.
-    * Ensure that "net ads join" reports failure correctly if
-      it cannot set the machine account password.
-
-
-o   Guenther Deschner <gd@samba.org>
-    * Fix different extended_dn handling in adssearch.pl
-      (Thanks to Frederic Brin at Novell).
-    * Fix a memleak in winbindd's credentials cache.
-    * Protect against crashes in CLDAP request processing.
-    * Remove incomplete DfsEnum() info level to avoid an smbd crash.
-
-
-o   Volker Lendecke <vl@samba.org>
-    * Fix a memleak in the server registry code for enumeration 
-      shares.
-    * Fix an invalid munlock() call in winbindd's credentials cache.
-    * Fix compile warnings when passing NULL to snprintf().
-    * BUG 3915: Fall back to a pure unix user with S-1-22 SIDs in the
-      token in case anything weird is going on with the 'force user'.
-    * CVE-2006-3403: Fix minor memory exhaustion DoS in smbd.
-
-
-o   Jason Mader <jason@ncac.gwu.edu>
-    * Compiler warning fixes.
-
-
-o   Simo Sorce <idra@samba.org>
-    * Set the correct sid type when looking up a gid.
-
-
-Changes since 3.0.22
---------------------
 o   Jeremy Allison <jra@samba.org>
     * Fixes for various Klocwork defect reports.
     * Cleanup pdb_get_XXX() methods and ensure that a failure
@@ -313,6 +285,13 @@ o   Jeremy Allison <jra@samba.org>
       read fails (inspired by Justin Best).
     * BUG 3668: Workaround Windows bug with LARGE_READX where if 
       you ask for exactly 64k bytes it returns 0.
+    * BUG 3858: Ensure that all files are removed by a wildcard 
+      delete when 'hide unreadable = yes'.
+    * Fix various issues raised by the Klocwork code analyzer.
+    * Fix nmbd WINS serving bug causing duplicate IPs in the *<1b> 
+      query reply ("enhanced browsing = yes").
+    * Fix SMB signing failures in client tools.
+    * BUG 3909: Avoid EA lookups on MS-DFS links.
 
 
 o   Andrew Bartlett <abartlet@samba.org>
@@ -332,6 +311,10 @@ o   Alexander Bokovoy <ab@samba.org>
 
 o   Max N. Boyarov <m.boyarov@sam-solutions.net>
     * Fix crash bug in perfmon daemon example code.
+
+
+o   Nicholas Brealey <nick@brealey.org>
+    * Compile fix for pam_winbind.
 
 
 o   Gerald (Jerry) Carter <jerry@samba.org>
@@ -415,6 +398,17 @@ o   Gerald (Jerry) Carter <jerry@samba.org>
     * Add defensive checks about create local accounts (i.e. calling
       'add user script') on domain member servers when winbindd
       is running but having problems.
+    * Use system provided killproc() in RedHat init scripts for 
+      more robust shutdown.
+    * Fix a crash in the printer publishing code when adding a 
+      new printer via the APW.
+    * Fix broken compile of unsupported smbwrapper utility.
+    * BUG 3905: Fix smbd startup failure caused by a failure to
+      create an NT token for the guest account.
+    * BUG 3908: Fix RPC bind authentication failure which broke
+      user password changes.
+    * Ensure that "net ads join" reports failure correctly if
+      it cannot set the machine account password.
 
 
 o   Mathias Dietz <MDIETZ@de.ibm.com>
@@ -540,6 +534,11 @@ o   Guenther Deschner <gd@samba.org>
       http://ndevilla.free.fr/iniparser/ for use by pam_winbind
       (rather than linking in loadparm.c).  Settings are now stored
       in /etc/security/pam_winbind.conf.
+    * Fix different extended_dn handling in adssearch.pl
+      (Thanks to Frederic Brin at Novell).
+    * Fix a memleak in winbindd's credentials cache.
+    * Protect against crashes in CLDAP request processing.
+    * Remove incomplete DfsEnum() info level to avoid an smbd crash.
 
 
 o   Aleksey Fedoseev <fedoseev@ru.ibm.com>
@@ -638,6 +637,13 @@ o   Volker Lendecke <vl@samba.org>
       dependent routines are called.
     * Enhance consistency checks on local configuration when joining
       a domain.
+    * Fix a memleak in the server registry code for enumeration 
+      shares.
+    * Fix an invalid munlock() call in winbindd's credentials cache.
+    * Fix compile warnings when passing NULL to snprintf().
+    * BUG 3915: Fall back to a pure unix user with S-1-22 SIDs in the
+      token in case anything weird is going on with the 'force user'.
+    * CVE-2006-3403: Fix minor memory exhaustion DoS in smbd.
 
 
 o   Derrell Lipman <derrell@samba.org>
@@ -767,6 +773,7 @@ o   Simo Sorce <idra@samba.org>
       dn' before setting a password in secrets.tdb (based on
       work by William Jojo).
     * New revision of the snprintf replace code.
+    * Set the correct sid type when looking up a gid.
 
 
 o   Todd Stecher <tstecher@isilon.com>
@@ -782,8 +789,6 @@ o   Ronan Waide <waider@waider.ie>
 o   Shlomi Yaakobovich <Shlomi@exanet.com>
     * Fix for machine password time_t overflow.
 
-
-Release Notes for older release follow:
 
       --------------------------------------------------
                    ==============================
