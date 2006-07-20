@@ -41,15 +41,8 @@ static BOOL fill_grent(struct winbindd_gr *gr, const char *dom_name,
 		       const char *gr_name, gid_t unix_gid)
 {
 	fstring full_group_name;
-	BOOL can_assume = False;
 
-	/* I *hate* winbind use default domain!!!! Somehow I will figure out 
-	   how to remove this parameter.    -jerry */
-
-	if ( (lp_server_role() == ROLE_DOMAIN_MEMBER) && strequal(dom_name, lp_workgroup() ) )
-		can_assume = True;
-
-	fill_domain_username( full_group_name, dom_name, gr_name, can_assume);
+	fill_domain_username( full_group_name, dom_name, gr_name, True );
 
 	gr->gr_gid = unix_gid;
     
@@ -153,7 +146,7 @@ static BOOL fill_grent_mem(struct winbindd_domain *domain,
 
 		/* Append domain name */
 
-		fill_domain_username(name, domain->name, the_name, False);
+		fill_domain_username(name, domain->name, the_name, True);
 
 		len = strlen(name);
 		
@@ -759,7 +752,7 @@ void winbindd_getgrent(struct winbindd_cli_state *state)
 		/* Fill in group entry */
 
 		fill_domain_username(domain_group_name, ent->domain_name, 
-			 name_list[ent->sam_entry_index].acct_name, False);
+			 name_list[ent->sam_entry_index].acct_name, True);
 
 		result = fill_grent(&group_list[group_list_ndx], 
 				    ent->domain_name,
@@ -936,7 +929,7 @@ void winbindd_list_groups(struct winbindd_cli_state *state)
 					    groups.sam_entries)[i].acct_name; 
 			fstring name;
 
-			fill_domain_username(name, domain->name, group_name, False);
+			fill_domain_username(name, domain->name, group_name, True);
 			/* Append to extra data */			
 			memcpy(&extra_data[extra_data_len], name, 
                                strlen(name));

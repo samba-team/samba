@@ -812,14 +812,28 @@ BOOL is_in_gid_range(gid_t gid)
 
 /* Is this a domain which we may assume no DOMAIN\ prefix? */
 
-static BOOL assume_domain(const char *domain) {
-	if ((lp_winbind_use_default_domain()  
-		  || lp_winbind_trusted_domains_only()) &&
-	    strequal(lp_workgroup(), domain)) 
-		return True;
+static BOOL assume_domain(const char *domain)
+{
+	/* never assume the domain on a standalone server */
 
-	if (strequal(get_global_sam_name(), domain)) 
+	if ( lp_server_role() == ROLE_STANDALONE )
+		return False;
+
+	/* domain member servers may possibly assume for the domain name */
+
+	if ( lp_server_role() == ROLE_DOMAIN_MEMBER ) {
+		if ( !strequal(lp_workgroup(), domain) )
+			return False;
+
+		if ( lp_winbind_use_default_domain() || lp_winbind_trusted_domains_only() )
+			return True;
+	} 
+
+	/* only left with a domain controller */
+
+	if ( strequal(get_global_sam_name(), domain) )  {
 		return True;
+	}
 	
 	return False;
 }
@@ -832,7 +846,7 @@ BOOL parse_domain_user(const char *domuser, fstring domain, fstring user)
 
 	if ( !p ) {
 		fstrcpy(user, domuser);
-		
+
 		if ( assume_domain(lp_workgroup())) {
 			fstrcpy(domain, lp_workgroup());
 		} else {
