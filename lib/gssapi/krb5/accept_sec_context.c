@@ -38,9 +38,8 @@ RCSID("$Id$");
 HEIMDAL_MUTEX gssapi_keytab_mutex = HEIMDAL_MUTEX_INITIALIZER;
 krb5_keytab _gsskrb5_keytab;
 
-#if 0
 OM_uint32
-gsskrb5_register_acceptor_identity (const char *identity)
+_gsskrb5_register_acceptor_identity (const char *identity)
 {
     krb5_error_code ret;
 
@@ -51,11 +50,11 @@ gsskrb5_register_acceptor_identity (const char *identity)
     HEIMDAL_MUTEX_lock(&gssapi_keytab_mutex);
 
     if(_gsskrb5_keytab != NULL) {
-	krb5_kt_close(_gsskrb5_context, gssapi_krb5_keytab);
+	krb5_kt_close(_gsskrb5_context, _gsskrb5_keytab);
 	_gsskrb5_keytab = NULL;
     }
     if (identity == NULL) {
-	ret = krb5_kt_default(_gsskrb5_context, &gssapi_krb5_keytab);
+	ret = krb5_kt_default(_gsskrb5_context, &_gsskrb5_keytab);
     } else {
 	char *p;
 
@@ -64,7 +63,7 @@ gsskrb5_register_acceptor_identity (const char *identity)
 	    HEIMDAL_MUTEX_unlock(&gssapi_keytab_mutex);
 	    return GSS_S_FAILURE;
 	}
-	ret = krb5_kt_resolve(_gsskrb5_context, p, &gssapi_krb5_keytab);
+	ret = krb5_kt_resolve(_gsskrb5_context, p, &_gsskrb5_keytab);
 	free(p);
     }
     HEIMDAL_MUTEX_unlock(&gssapi_keytab_mutex);
@@ -72,7 +71,6 @@ gsskrb5_register_acceptor_identity (const char *identity)
 	return GSS_S_FAILURE;
     return GSS_S_COMPLETE;
 }
-#endif
 
 void
 _gsskrb5i_is_cfx(gsskrb5_ctx ctx, int *is_cfx)
