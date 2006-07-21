@@ -741,16 +741,6 @@ static NTSTATUS gensec_gssapi_wrap(struct gensec_security *gensec_security,
 	input_token.length = in->length;
 	input_token.value = in->data;
 
-	if (gensec_gssapi_state->sasl) {
-		size_t max_input_size = gensec_gssapi_max_input_size(gensec_security);
-		if (max_input_size < in->length) {
-			DEBUG(1, ("gensec_gssapi_wrap: INPUT data (%u) is larger than SASL negotiated maximum size (%u)\n",
-				  in->length, 
-				  (unsigned int)max_input_size));
-		}
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-	
 	maj_stat = gss_wrap(&min_stat, 
 			    gensec_gssapi_state->gssapi_context, 
 			    gensec_have_feature(gensec_security, GENSEC_FEATURE_SEAL),
@@ -767,6 +757,17 @@ static NTSTATUS gensec_gssapi_wrap(struct gensec_security *gensec_security,
 	*out = data_blob_talloc(mem_ctx, output_token.value, output_token.length);
 	gss_release_buffer(&min_stat, &output_token);
 
+	if (gensec_gssapi_state->sasl) {
+		size_t max_wrapped_size = gensec_gssapi_max_wrapped_size(gensec_security);
+		if (max_wrapped_size < out->length) {
+			DEBUG(1, ("gensec_gssapi_wrap: when wrapped, INPUT data (%u) is grew to be larger than SASL negotiated maximum output size (%u > %u)\n",
+				  in->length, 
+				  out->length, 
+				  (unsigned int)max_wrapped_size));
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+	}
+	
 	if (gensec_have_feature(gensec_security, GENSEC_FEATURE_SEAL)
 	    && !conf_state) {
 		return NT_STATUS_ACCESS_DENIED;
