@@ -364,7 +364,7 @@ talloc_realloc(ctx, ptr, type, 0)  ==> talloc_free(ptr);</programlisting>
 	  data if you do this.
         </para>
     </refsect2>
-    <refsect2><title>off_t talloc_total_size(const void *<emphasis role="italic">ptr</emphasis>);</title>
+    <refsect2><title>size_t talloc_total_size(const void *<emphasis role="italic">ptr</emphasis>);</title>
         <para>
 	  The talloc_total_size() function returns the total size in bytes
 	  used by this pointer and all child pointers.	Mostly useful for
@@ -376,7 +376,7 @@ talloc_realloc(ctx, ptr, type, 0)  ==> talloc_free(ptr);</programlisting>
 	  talloc_enable_leak_report_full() has been called.
         </para>
     </refsect2>
-    <refsect2><title>off_t talloc_total_blocks(const void *<emphasis role="italic">ptr</emphasis>);</title>
+    <refsect2><title>size_t talloc_total_blocks(const void *<emphasis role="italic">ptr</emphasis>);</title>
         <para>
 	  The talloc_total_blocks() function returns the total memory block
 	  count used by this pointer and all child pointers.  Mostly useful
