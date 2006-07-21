@@ -66,6 +66,7 @@ _PUBLIC_ NTSTATUS socket_create_with_ops(TALLOC_CTX *mem_ctx, const struct socke
 	/* by enabling "testnonblock" mode, all socket receive and
 	   send calls on non-blocking sockets will randomly recv/send
 	   less data than requested */
+
 	if (!(flags & SOCKET_FLAG_BLOCK) &&
 	    type == SOCKET_TYPE_STREAM &&
 	    lp_parm_bool(-1, "socket", "testnonblock", False)) {
@@ -185,14 +186,21 @@ _PUBLIC_ NTSTATUS socket_recv(struct socket_context *sock, void *buf,
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
 
-	if ((sock->flags & SOCKET_FLAG_TESTNONBLOCK) && wantlen > 1) {
-		if (random() % 10 == 0) {
-			*nread = 0;
-			return STATUS_MORE_ENTRIES;
+	if ((sock->flags & SOCKET_FLAG_TESTNONBLOCK) 
+	    && wantlen > 1) {
+
+		/* The returning of 0 and MORE_ENTRIES is incompatible
+		   with TLS and SASL sockets, as there is not a
+		   constant event source to re-trigger the reads */
+
+		if (!(sock->flags & SOCKET_FLAG_FAKE)) {
+			if (random() % 10 == 0) {
+				*nread = 0;
+				return STATUS_MORE_ENTRIES;
+			}
 		}
 		return sock->ops->fn_recv(sock, buf, 1+(random() % wantlen), nread);
 	}
-
 	return sock->ops->fn_recv(sock, buf, wantlen, nread);
 }
 
@@ -229,17 +237,21 @@ _PUBLIC_ NTSTATUS socket_send(struct socket_context *sock,
 	if (!sock->ops->fn_send) {
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
-
-	if ((sock->flags & SOCKET_FLAG_TESTNONBLOCK) && blob->length > 1) {
-		DATA_BLOB blob2 = *blob;
+	
+	if ((sock->flags & SOCKET_FLAG_TESTNONBLOCK)
+	    && blob->length > 1) {
 		if (random() % 10 == 0) {
 			*sendlen = 0;
 			return STATUS_MORE_ENTRIES;
 		}
-		blob2.length = 1+(random() % blob2.length);
-		return sock->ops->fn_send(sock, &blob2, sendlen);
+		/* The variable size sends are incompatilbe with TLS and SASL
+		 * sockets, which require re-sends to be consistant */
+		if (!(sock->flags & SOCKET_FLAG_FAKE)) {
+			DATA_BLOB blob2 = *blob;
+			blob2.length = 1+(random() % blob2.length);
+			return sock->ops->fn_send(sock, &blob2, sendlen);
+		}
 	}
-
 	return sock->ops->fn_send(sock, blob, sendlen);
 }
 

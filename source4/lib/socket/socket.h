@@ -102,6 +102,7 @@ enum socket_state {
 #define SOCKET_FLAG_BLOCK        0x00000001
 #define SOCKET_FLAG_PEEK         0x00000002
 #define SOCKET_FLAG_TESTNONBLOCK 0x00000004
+#define SOCKET_FLAG_FAKE         0x00000008 /* This is an implementation not directly on top of a real socket */
 
 struct socket_context {
 	enum socket_type type;
