@@ -167,7 +167,8 @@ BUILT_SOURCES = $(spnego_files:.x=.c) $(gssapi_files:.x=.c)
 
 CLEANFILES = $(BUILT_SOURCES) \
 	$(spnego_files) spnego_asn1.h spnego_asn1_files \
-	$(gssapi_files) gssapi_asn1.h gssapi_asn1_files
+	$(gssapi_files) gssapi_asn1.h gssapi_asn1_files \
+	gss-commands.h gss-commands.c
 
 $(spnego_files) spnego_asn1.h: spnego_asn1_files
 $(gssapi_files) gssapi_asn1.h: gssapi_asn1_files
@@ -195,3 +196,18 @@ LDADD = libgssapi.la $(LIB_roken)
 
 test_kcred_LDADD = libgssapi.la ../krb5/libkrb5.la $(LIB_roken)
 test_cfx_LDADD = $(test_kcred_LDADD)
+
+# gss
+
+gss_SOURCES = gss.c gss-commands.c gss-commands.h
+gss_LDADD = libgssapi.la \
+ 	$(top_builddir)/lib/sl/libsl.la \
+	$(top_builddir)/lib/krb5/libkrb5.la \
+	$(LIB_readline) \
+	$(LIB_roken)
+
+SLC = $(top_builddir)/lib/sl/slc
+
+gss-commands.c gss-commands.h: gss-commands.in
+	$(SLC) $(srcdir)/gss-commands.in
+
