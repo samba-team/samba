@@ -16,5 +16,8 @@ if test x$SMB_ENABLE_GNUTLS = xNO; then
 	fi
 	SMB_EXT_LIB(GNUTLS, $GNUTLS_LIBS)
 fi
+if test x$SMB_ENABLE_GNUTLS = xYES; then
+	AC_DEFINE(HAVE_LIBGNUTLS,1,[Whether we have gnutls support (SSL)])
+fi
 # end SMB_EXT_LIB_GNUTLS
 ###############################
