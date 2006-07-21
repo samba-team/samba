@@ -78,6 +78,8 @@ struct gensec_security_ops {
 				const uint8_t *whole_pdu, size_t pdu_length, 
 				DATA_BLOB *sig);
 	size_t   (*sig_size)(struct gensec_security *gensec_security, size_t data_size);
+	size_t   (*max_input_size)(struct gensec_security *gensec_security);
+	size_t   (*max_wrapped_size)(struct gensec_security *gensec_security);
 	NTSTATUS (*check_packet)(struct gensec_security *gensec_security, TALLOC_CTX *sig_mem_ctx, 
 				 const uint8_t *data, size_t length, 
 				 const uint8_t *whole_pdu, size_t pdu_length, 
