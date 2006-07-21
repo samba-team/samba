@@ -381,6 +381,12 @@ VFS_CAP_OBJ = modules/vfs_cap.o
 VFS_EXPAND_MSDFS_OBJ = modules/vfs_expand_msdfs.o
 VFS_SHADOW_COPY_OBJ = modules/vfs_shadow_copy.o
 VFS_AFSACL_OBJ = modules/vfs_afsacl.o
+VFS_POSIXACL_OBJ = modules/vfs_posixacl.o
+VFS_AIXACL_OBJ = modules/vfs_aixacl.o modules/vfs_aixacl_util.o
+VFS_SOLARISACL_OBJ = modules/vfs_solarisacl.o
+VFS_HPUXACL_OBJ = modules/vfs_hpuxacl.o
+VFS_IRIXACL_OBJ = modules/vfs_irixacl.o
+VFS_TRU64ACL_OBJ = modules/vfs_tru64acl.o
 VFS_CATIA_OBJ = modules/vfs_catia.o
 VFS_CACHEPRIME_OBJ = modules/vfs_cacheprime.o
 VFS_PREALLOC_OBJ = modules/vfs_prealloc.o
@@ -1350,6 +1356,36 @@ bin/expand_msdfs.@SHLIBEXT@: $(VFS_EXPAND_MSDFS_OBJ:.o=.@PICSUFFIX@)
 bin/afsacl.@SHLIBEXT@: $(VFS_AFSACL_OBJ:.o=.po)
 	@echo "Building plugin $@"
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_AFSACL_OBJ:.o=.po) \
+		@SONAMEFLAG@`basename $@`
+
+bin/posixacl.@SHLIBEXT@: $(VFS_POSIXACL_OBJ:.o=.@PICSUFFIX@)
+	@echo "Building plugin $@"
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_POSIXACL_OBJ:.o=.@PICSUFFIX@) \
+		@SONAMEFLAG@`basename $@`
+
+bin/aixacl.@SHLIBEXT@: $(VFS_AIXACL_OBJ:.o=.@PICSUFFIX@)
+	@echo "Building plugin $@"
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_AIXACL_OBJ:.o=.@PICSUFFIX@) \
+		@SONAMEFLAG@`basename $@`
+
+bin/solarisacl.@SHLIBEXT@: $(VFS_SOLARISACL_OBJ:.o=.@PICSUFFIX@)
+	@echo "Building plugin $@"
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_SOLARISACL_OBJ:.o=.@PICSUFFIX@) \
+		@SONAMEFLAG@`basename $@`
+
+bin/irixacl.@SHLIBEXT@: $(VFS_IRIXACL_OBJ:.o=.@PICSUFFIX@)
+	@echo "Building plugin $@"
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_IRIXACL_OBJ:.o=.@PICSUFFIX@) \
+		@SONAMEFLAG@`basename $@`
+
+bin/hpuxacl.@SHLIBEXT@: $(VFS_HPUXACL_OBJ:.o=.@PICSUFFIX@)
+	@echo "Building plugin $@"
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_HPUXACL_OBJ:.o=.@PICSUFFIX@) \
+		@SONAMEFLAG@`basename $@`
+
+bin/tru64acl.@SHLIBEXT@: $(VFS_TRU64ACL_OBJ:.o=.@PICSUFFIX@)
+	@echo "Building plugin $@"
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_TRU64ACL_OBJ:.o=.@PICSUFFIX@) \
 		@SONAMEFLAG@`basename $@`
 
 bin/catia.@SHLIBEXT@: $(VFS_CATIA_OBJ:.o=.@PICSUFFIX@)
