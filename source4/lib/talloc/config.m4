@@ -8,9 +8,7 @@ fi
 
 AC_CHECK_TYPE(intptr_t, unsigned long long)
 AC_CHECK_HEADERS(stdint.h stdarg.h unistd.h sys/types.h)
-AC_CHECK_SIZEOF(off_t,cross)
 AC_CHECK_SIZEOF(size_t,cross)
-AC_CHECK_SIZEOF(ssize_t,cross)
 AC_CHECK_SIZEOF(void *,cross)
 
 if test $ac_cv_sizeof_size_t -lt $ac_cv_sizeof_void_p; then

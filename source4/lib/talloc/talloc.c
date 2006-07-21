@@ -735,11 +735,11 @@ void *_talloc_steal(const void *new_ctx, const void *ptr)
 /*
   return the total size of a talloc pool (subtree)
 */
-off_t talloc_total_size(const void *ptr)
+size_t talloc_total_size(const void *ptr)
 {
-	off_t total = 0;
+	size_t total = 0;
 	struct talloc_chunk *c, *tc;
-	
+
 	if (ptr == NULL) {
 		ptr = null_context;
 	}
@@ -768,9 +768,9 @@ off_t talloc_total_size(const void *ptr)
 /*
   return the total number of blocks in a talloc pool (subtree)
 */
-off_t talloc_total_blocks(const void *ptr)
+size_t talloc_total_blocks(const void *ptr)
 {
-	off_t total = 0;
+	size_t total = 0;
 	struct talloc_chunk *c, *tc = talloc_chunk_from_ptr(ptr);
 
 	if (tc->flags & TALLOC_FLAG_LOOP) {

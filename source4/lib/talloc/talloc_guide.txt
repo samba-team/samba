@@ -318,7 +318,7 @@ as to your sanity or the safety of your data if you do this.
 talloc_steal (new_ctx, NULL) will return NULL with no sideeffects.
 
 =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-off_t talloc_total_size(const void *ptr);
+size_t talloc_total_size(const void *ptr);
 
 The talloc_total_size() function returns the total size in bytes used
 by this pointer and all child pointers. Mostly useful for debugging.
@@ -329,7 +329,7 @@ been called.
 
 
 =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-off_t talloc_total_blocks(const void *ptr);
+size_t talloc_total_blocks(const void *ptr);
 
 The talloc_total_blocks() function returns the total memory block
 count used by this pointer and all child pointers. Mostly useful for
