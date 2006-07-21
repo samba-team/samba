@@ -575,6 +575,9 @@ static void print_canon_ace(canon_ace *pace, int num)
 		case SMB_ACL_OTHER:
 			dbgtext( "SMB_ACL_OTHER ");
 			break;
+		default:
+			dbgtext( "MASK " );
+			break;
 	}
 	if (pace->inherited)
 		dbgtext( "(inherited) ");
@@ -2433,17 +2436,6 @@ static BOOL set_canon_ace_list(files_struct *fsp, canon_ace *the_ace, BOOL defau
 			DEBUG(0,("set_canon_ace_list: Failed to add mask permset. (%s)\n", strerror(errno) ));
 			goto fail;
 		}
-	}
-
-	/*
-	 * Check if the ACL is valid.
-	 */
-
-	if (SMB_VFS_SYS_ACL_VALID(conn, the_acl) == -1) {
-		DEBUG(0,("set_canon_ace_list: ACL type (%s) is invalid for set (%s).\n",
-				the_acl_type == SMB_ACL_TYPE_DEFAULT ? "directory default" : "file",
-				strerror(errno) ));
-		goto fail;
 	}
 
 	/*
