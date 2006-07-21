@@ -815,6 +815,24 @@ size_t gensec_sig_size(struct gensec_security *gensec_security, size_t data_size
 	return gensec_security->ops->sig_size(gensec_security, data_size);
 }
 
+size_t gensec_max_input_size(struct gensec_security *gensec_security) 
+{
+	if (!gensec_security->ops->max_input_size) {
+		return (1 << 17) - gensec_sig_size(gensec_security, 1 << 17);
+	}
+	
+	return gensec_security->ops->max_input_size(gensec_security);
+}
+
+size_t gensec_max_wrapped_size(struct gensec_security *gensec_security) 
+{
+	if (!gensec_security->ops->max_wrapped_size) {
+		return (1 << 17);
+	}
+	
+	return gensec_security->ops->max_wrapped_size(gensec_security);
+}
+
 _PUBLIC_ NTSTATUS gensec_wrap(struct gensec_security *gensec_security, 
 		     TALLOC_CTX *mem_ctx, 
 		     const DATA_BLOB *in, 
