@@ -101,7 +101,10 @@ static BOOL Ucrit_addPid( pid_t pid )
 	return True;
 }
 
-static void print_share_mode(const struct share_mode_entry *e, const char *sharepath, const char *fname)
+static void print_share_mode(const struct share_mode_entry *e,
+			     const char *sharepath,
+			     const char *fname,
+			     void *dummy)
 {
 	static int count;
 
@@ -369,7 +372,7 @@ static int traverse_sessionid(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf, vo
 			exit(1);
 		}
 		
-		ret = share_mode_forall(print_share_mode);
+		ret = share_mode_forall(print_share_mode, NULL);
 
 		if (ret == 0) {
 			d_printf("No locked files\n");

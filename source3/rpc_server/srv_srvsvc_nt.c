@@ -123,7 +123,8 @@ static WERROR net_enum_pipes( TALLOC_CTX *ctx, FILE_INFO_3 **info,
 static struct file_enum_count f_enum_cnt;
 
 static void enum_file_fn( const struct share_mode_entry *e, 
-                          const char *sharepath, const char *fname )
+                          const char *sharepath, const char *fname,
+			  void *dummy )
 {
 	struct file_enum_count *fenum = &f_enum_cnt;
  
@@ -191,7 +192,7 @@ static WERROR net_enum_files( TALLOC_CTX *ctx, FILE_INFO_3 **info,
 	f_enum_cnt.count = *count;
 	f_enum_cnt.info = *info;
 	
-	share_mode_forall( enum_file_fn );
+	share_mode_forall( enum_file_fn, NULL );
 	
 	*info  = f_enum_cnt.info;
 	*count = f_enum_cnt.count;
@@ -802,13 +803,11 @@ static void init_srv_sess_info_0(SRV_SESS_INFO_0 *ss0, uint32 *snum, uint32 *sto
 /*******************************************************************
 ********************************************************************/
 
-/* global needed to make use of the share_mode_forall() callback */
-static struct sess_file_count s_file_cnt;
-
 static void sess_file_fn( const struct share_mode_entry *e, 
-                          const char *sharepath, const char *fname )
+                          const char *sharepath, const char *fname,
+			  void *private_data )
 {
-	struct sess_file_count *sess = &s_file_cnt;
+	struct sess_file_count *sess = (struct sess_file_count *)private_data;
  
 	if ( (procid_to_pid(&e->pid) == sess->pid) && (sess->uid == e->uid) ) {
 		sess->count++;
@@ -822,11 +821,13 @@ static void sess_file_fn( const struct share_mode_entry *e,
 
 static int net_count_files( uid_t uid, pid_t pid )
 {
+	struct sess_file_count s_file_cnt;
+
 	s_file_cnt.count = 0;
 	s_file_cnt.uid = uid;
 	s_file_cnt.pid = pid;
 	
-	share_mode_forall( sess_file_fn );
+	share_mode_forall( sess_file_fn, (void *)&s_file_cnt );
 	
 	return s_file_cnt.count;
 }
