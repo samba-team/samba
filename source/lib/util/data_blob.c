@@ -206,7 +206,7 @@ _PUBLIC_ NTSTATUS data_blob_realloc(TALLOC_CTX *mem_ctx, DATA_BLOB *blob, size_t
   append some data to a data blob
 **/
 _PUBLIC_ NTSTATUS data_blob_append(TALLOC_CTX *mem_ctx, DATA_BLOB *blob,
-			  const void *p, size_t length)
+				   const void *p, size_t length)
 {
 	blob->data = talloc_realloc_size(mem_ctx, blob->data,
 					 blob->length + length);
