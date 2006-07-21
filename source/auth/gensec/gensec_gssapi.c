@@ -67,7 +67,12 @@ struct gensec_gssapi_state {
 	uint8_t sasl_protection; /* What was negotiated at the SASL
 				  * layer, independent of the GSSAPI
 				  * layer... */
+
+	size_t max_wrap_buf_size;
 };
+
+static size_t gensec_gssapi_max_input_size(struct gensec_security *gensec_security);
+static size_t gensec_gssapi_max_wrapped_size(struct gensec_security *gensec_security);
 
 static char *gssapi_error_string(TALLOC_CTX *mem_ctx, 
 				 OM_uint32 maj_stat, OM_uint32 min_stat)
@@ -129,6 +134,9 @@ static NTSTATUS gensec_gssapi_start(struct gensec_security *gensec_security)
 		return NT_STATUS_NO_MEMORY;
 	}
 	
+	gensec_gssapi_state->max_wrap_buf_size
+		= lp_parm_int(-1, "gensec_gssapi", "max wrap buf size", 65535);
+		
 	gensec_gssapi_state->sasl = False;
 	gensec_gssapi_state->sasl_state = STAGE_GSS_NEG;
 
@@ -490,6 +498,7 @@ static NTSTATUS gensec_gssapi_update(struct gensec_security *gensec_security,
 		}
 		break;
 	}
+
 	/* These last two stages are only done if we were invoked as SASL */
 	case STAGE_SASL_SSF_NEG:
 	{
@@ -497,11 +506,17 @@ static NTSTATUS gensec_gssapi_update(struct gensec_security *gensec_security,
 		case GENSEC_CLIENT:
 		{
 			uint8_t maxlength_proposed[4]; 
+			uint8_t maxlength_accepted[4]; 
 			uint8_t security_supported;
 			int conf_state;
 			gss_qop_t qop_state;
 			input_token.length = in.length;
 			input_token.value = in.data;
+
+			/* As a client, we have just send a
+			 * zero-length blob to the server (after the
+			 * normal GSSAPI exchange), and it has replied
+			 * with it's SASL negotiation */
 			
 			maj_stat = gss_unwrap(&min_stat, 
 					      gensec_gssapi_state->gssapi_context, 
@@ -521,10 +536,14 @@ static NTSTATUS gensec_gssapi_update(struct gensec_security *gensec_security,
 
 			memcpy(maxlength_proposed, output_token.value, 4);
 			gss_release_buffer(&min_stat, &output_token);
-		
+
 			/* first byte is the proposed security */
 			security_supported = maxlength_proposed[0];
 			maxlength_proposed[0] = '\0';
+			
+			/* Rest is the proposed max wrap length */
+			gensec_gssapi_state->max_wrap_buf_size = MIN(RIVAL(maxlength_proposed, 0), 
+								     gensec_gssapi_state->max_wrap_buf_size);
 			gensec_gssapi_state->sasl_protection = 0;
 			if (gensec_have_feature(gensec_security, GENSEC_FEATURE_SEAL)) {
 				if (security_supported & NEG_SEAL) {
@@ -540,13 +559,15 @@ static NTSTATUS gensec_gssapi_update(struct gensec_security *gensec_security,
 				DEBUG(1, ("Remote server does not support unprotected connections"));
 				return NT_STATUS_ACCESS_DENIED;
 			}
+
+			/* Send back the negotiated max length */
+
+			RSIVAL(maxlength_accepted, 0, gensec_gssapi_state->max_wrap_buf_size);
+
+			maxlength_accepted[0] = gensec_gssapi_state->sasl_protection;
 			
-			/* We just accept their max length, and send
-			 * it back with the SASL flags */
-			maxlength_proposed[0] = gensec_gssapi_state->sasl_protection;
-			
-			input_token.value = maxlength_proposed;
-			input_token.length = sizeof(maxlength_proposed);
+			input_token.value = maxlength_accepted;
+			input_token.length = sizeof(maxlength_accepted);
 
 			maj_stat = gss_wrap(&min_stat, 
 					    gensec_gssapi_state->gssapi_context, 
@@ -583,8 +604,14 @@ static NTSTATUS gensec_gssapi_update(struct gensec_security *gensec_security,
 			uint8_t security_supported = 0x0;
 			int conf_state;
 
-			/* TODO: Need some better ideas for this */
-			RSIVAL(maxlength_proposed, 0, 0xFFFFFF);
+			/* As a server, we have just been sent a zero-length blob (note this, but it isn't fatal) */
+			if (in.length != 0) {
+				DEBUG(1, ("SASL/GSSAPI: client sent non-zero length starting SASL negotiation!\n"));
+			}
+			
+			/* Give the client some idea what we will support */
+			  
+			RSIVAL(maxlength_proposed, 0, gensec_gssapi_state->max_wrap_buf_size);
 			/* first byte is the proposed security */
 			maxlength_proposed[0] = '\0';
 			
@@ -599,11 +626,9 @@ static NTSTATUS gensec_gssapi_update(struct gensec_security *gensec_security,
 				/* If we don't support anything, this must be 0 */
 				RSIVAL(maxlength_proposed, 0, 0x0);
 			}
-				
+
 			/* TODO:  We may not wish to support this */
 			security_supported |= NEG_NONE;
-			
-			/* Ignore 'in' */
 			maxlength_proposed[0] = security_supported;
 			
 			input_token.value = maxlength_proposed;
@@ -636,8 +661,8 @@ static NTSTATUS gensec_gssapi_update(struct gensec_security *gensec_security,
 	/* This is s server-only stage */
 	case STAGE_SASL_SSF_ACCEPT:
 	{
-		uint8_t maxlength_proposed[4]; 
-		uint8_t security_proposed;
+		uint8_t maxlength_accepted[4]; 
+		uint8_t security_accepted;
 		int conf_state;
 		gss_qop_t qop_state;
 		input_token.length = in.length;
@@ -659,24 +684,27 @@ static NTSTATUS gensec_gssapi_update(struct gensec_security *gensec_security,
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 
-		memcpy(maxlength_proposed, output_token.value, 4);
+		memcpy(maxlength_accepted, output_token.value, 4);
 		gss_release_buffer(&min_stat, &output_token);
 		
 		/* first byte is the proposed security */
-		/* TODO: We should do something with the rest, but for now... */
-		security_proposed = maxlength_proposed[0];
+		security_accepted = maxlength_accepted[0];
+		maxlength_accepted[0] = '\0';
+		
+		/* Rest is the proposed max wrap length */
+		gensec_gssapi_state->max_wrap_buf_size = MIN(RIVAL(maxlength_accepted, 0), 
+							     gensec_gssapi_state->max_wrap_buf_size);
 
-		maxlength_proposed[0] = 0x0;
 		gensec_gssapi_state->sasl_protection = 0;
 		if (gensec_have_feature(gensec_security, GENSEC_FEATURE_SEAL)) {
-			if (security_proposed & NEG_SEAL) {
+			if (security_accepted & NEG_SEAL) {
 				gensec_gssapi_state->sasl_protection |= NEG_SEAL;
 			}
 		} else if (gensec_have_feature(gensec_security, GENSEC_FEATURE_SIGN)) {
-			if (security_proposed & NEG_SIGN) {
+			if (security_accepted & NEG_SIGN) {
 				gensec_gssapi_state->sasl_protection |= NEG_SIGN;
 			}
-		} else if (security_proposed & NEG_NONE) {
+		} else if (security_accepted & NEG_NONE) {
 			gensec_gssapi_state->sasl_protection |= NEG_NONE;
 		} else {
 			DEBUG(1, ("Remote client does not support unprotected connections, but we failed to negotiate anything better"));
@@ -712,6 +740,16 @@ static NTSTATUS gensec_gssapi_wrap(struct gensec_security *gensec_security,
 	int conf_state;
 	input_token.length = in->length;
 	input_token.value = in->data;
+
+	if (gensec_gssapi_state->sasl) {
+		size_t max_input_size = gensec_gssapi_max_input_size(gensec_security);
+		if (max_input_size < in->length) {
+			DEBUG(1, ("gensec_gssapi_wrap: INPUT data (%u) is larger than SASL negotiated maximum size (%u)\n",
+				  in->length, 
+				  (unsigned int)max_input_size));
+		}
+		return NT_STATUS_INVALID_PARAMETER;
+	}
 	
 	maj_stat = gss_wrap(&min_stat, 
 			    gensec_gssapi_state->gssapi_context, 
@@ -748,6 +786,14 @@ static NTSTATUS gensec_gssapi_unwrap(struct gensec_security *gensec_security,
 	gss_qop_t qop_state;
 	input_token.length = in->length;
 	input_token.value = in->data;
+	
+	if (gensec_gssapi_state->sasl) {
+		size_t max_wrapped_size = gensec_gssapi_max_wrapped_size(gensec_security);
+		if (max_wrapped_size < in->length) {
+			DEBUG(1, ("gensec_gssapi_unwrap: WRAPPED data is larger than SASL negotiated maximum size\n"));
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+	}
 	
 	maj_stat = gss_unwrap(&min_stat, 
 			      gensec_gssapi_state->gssapi_context, 
@@ -797,7 +843,7 @@ static size_t gensec_gssapi_sig_size(struct gensec_security *gensec_security, si
 				     &output_size);
 	if (GSS_ERROR(maj_stat)) {
 		TALLOC_CTX *mem_ctx = talloc_new(NULL); 
-		DEBUG(1, ("gensec_gssapi_seal_packet: determinaing signature size with gss_wrap_size_limit failed: %s\n", 
+		DEBUG(1, ("gensec_gssapi_sig_size: determinaing signature size with gsskrb5_wrap_size failed: %s\n", 
 			  gssapi_error_string(mem_ctx, maj_stat, min_stat)));
 		talloc_free(mem_ctx);
 		return 0;
@@ -809,6 +855,38 @@ static size_t gensec_gssapi_sig_size(struct gensec_security *gensec_security, si
 
 	/* The difference between the max output and the max input must be the signature */
 	return output_size - data_size;
+}
+
+/* Find out the maximum input size negotiated on this connection */
+
+static size_t gensec_gssapi_max_input_size(struct gensec_security *gensec_security) 
+{
+	struct gensec_gssapi_state *gensec_gssapi_state = gensec_security->private_data;
+	OM_uint32 maj_stat, min_stat;
+	OM_uint32 max_input_size;
+
+	maj_stat = gss_wrap_size_limit(&min_stat, 
+				       gensec_gssapi_state->gssapi_context,
+				       gensec_have_feature(gensec_security, GENSEC_FEATURE_SEAL),
+				       GSS_C_QOP_DEFAULT,
+				       gensec_gssapi_state->max_wrap_buf_size,
+				       &max_input_size);
+	if (GSS_ERROR(maj_stat)) {
+		TALLOC_CTX *mem_ctx = talloc_new(NULL); 
+		DEBUG(1, ("gensec_gssapi_max_input_size: determinaing signature size with gss_wrap_size_limit failed: %s\n", 
+			  gssapi_error_string(mem_ctx, maj_stat, min_stat)));
+		talloc_free(mem_ctx);
+		return 0;
+	}
+
+	return max_input_size;
+}
+
+/* Find out the maximum output size negotiated on this connection */
+static size_t gensec_gssapi_max_wrapped_size(struct gensec_security *gensec_security) 
+{
+	struct gensec_gssapi_state *gensec_gssapi_state = gensec_security->private_data;
+	return gensec_gssapi_state->max_wrap_buf_size;
 }
 
 static NTSTATUS gensec_gssapi_seal_packet(struct gensec_security *gensec_security, 
@@ -1287,18 +1365,20 @@ static const struct gensec_security_ops gensec_gssapi_krb5_security_ops = {
 
 /* As a server, this could in theory accept any GSSAPI mech */
 static const struct gensec_security_ops gensec_gssapi_sasl_krb5_security_ops = {
-	.name		= "gssapi_krb5_sasl",
-	.sasl_name      = "GSSAPI",
-	.client_start   = gensec_gssapi_sasl_client_start,
-	.server_start   = gensec_gssapi_sasl_server_start,
-	.update 	= gensec_gssapi_update,
-	.session_key	= gensec_gssapi_session_key,
-	.session_info	= gensec_gssapi_session_info,
-	.wrap           = gensec_gssapi_wrap,
-	.unwrap         = gensec_gssapi_unwrap,
-	.have_feature   = gensec_gssapi_have_feature,
-	.enabled        = True,
-	.kerberos       = True
+	.name		  = "gssapi_krb5_sasl",
+	.sasl_name        = "GSSAPI",
+	.client_start     = gensec_gssapi_sasl_client_start,
+	.server_start     = gensec_gssapi_sasl_server_start,
+	.update 	  = gensec_gssapi_update,
+	.session_key	  = gensec_gssapi_session_key,
+	.session_info	  = gensec_gssapi_session_info,
+	.max_input_size	  = gensec_gssapi_max_input_size,
+	.max_wrapped_size = gensec_gssapi_max_wrapped_size,
+	.wrap             = gensec_gssapi_wrap,
+	.unwrap           = gensec_gssapi_unwrap,
+	.have_feature     = gensec_gssapi_have_feature,
+	.enabled          = True,
+	.kerberos         = True
 };
 
 NTSTATUS gensec_gssapi_init(void)
