@@ -24,7 +24,7 @@ incdir=`dirname $0`
 . $incdir/test_functions.sh
 
 for p in $PROTOCOLS; do
- for options in "" "-U$USERNAME%$PASSWORD"; do
+ for options in "" "--option=socket:testnonblock=true" "-U$USERNAME%$PASSWORD --option=socket:testnonblock=true" "-U$USERNAME%$PASSWORD"; do
     echo "TESTING PROTOCOL $p with options $options"
 
     testit "RootDSE" bin/ldbsearch $CONFIGURATION $options --basedn='' -H $p://$SERVER -s base DUMMY=x dnsHostName highestCommittedUSN || failed=`expr $failed + 1`
