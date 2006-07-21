@@ -443,7 +443,8 @@ struct socket_context *tls_init_server(struct tls_params *params,
 	NTSTATUS nt_status;
 	
 	nt_status = socket_create_with_ops(socket, &tls_socket_ops, &new_sock, 
-					   SOCKET_TYPE_STREAM, 0);
+					   SOCKET_TYPE_STREAM, 
+					   socket->flags | SOCKET_FLAG_FAKE);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		return NULL;
 	}
@@ -522,7 +523,8 @@ struct socket_context *tls_init_client(struct socket_context *socket,
 	NTSTATUS nt_status;
 	
 	nt_status = socket_create_with_ops(socket, &tls_socket_ops, &new_sock, 
-					   SOCKET_TYPE_STREAM, 0);
+					   SOCKET_TYPE_STREAM, 
+					   socket->flags | SOCKET_FLAG_FAKE);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		return NULL;
 	}
