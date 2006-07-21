@@ -110,6 +110,9 @@ static NTSTATUS ntlmssp_make_packet_signature(struct gensec_ntlmssp_state *gense
 		memcpy(sig->data + 4, digest, 8);
 		memcpy(sig->data + 12, seq_num, 4);
 
+		DEBUG(10, ("NTLM2: created signature over %llu bytes of input:\n", (unsigned long long)pdu_length));
+		dump_data(11, sig->data, sig->length);
+			
 	} else {
 		uint32_t crc;
 		crc = crc32_calc_buffer(data, length);
@@ -119,8 +122,10 @@ static NTSTATUS ntlmssp_make_packet_signature(struct gensec_ntlmssp_state *gense
 		gensec_ntlmssp_state->crypt.ntlm.seq_num++;
 
 		arcfour_crypt_sbox(gensec_ntlmssp_state->crypt.ntlm.arcfour_state, sig->data+4, sig->length-4);
+
+		DEBUG(10, ("NTLM1: created signature over %llu bytes of input:\n", (unsigned long long)length));
+		dump_data(11, sig->data, sig->length);
 	}
-	dump_data_pw("calculated ntlmssp signature\n", sig->data, sig->length);
 	return NT_STATUS_OK;
 }
 
@@ -179,26 +184,26 @@ NTSTATUS gensec_ntlmssp_check_packet(struct gensec_security *gensec_security,
 		if (local_sig.length != sig->length ||
 		    memcmp(local_sig.data, 
 			   sig->data, sig->length) != 0) {
-			DEBUG(5, ("BAD SIG NTLM2: wanted signature of\n"));
+			DEBUG(5, ("BAD SIG NTLM2: wanted signature over %llu bytes of input:\n", (unsigned long long)pdu_length));
 			dump_data(5, local_sig.data, local_sig.length);
 			
-			DEBUG(5, ("BAD SIG: got signature of\n"));
+			DEBUG(5, ("BAD SIG: got signature over %llu bytes of input:\n", (unsigned long long)pdu_length));
 			dump_data(5, sig->data, sig->length);
 			
-			DEBUG(0, ("NTLMSSP NTLM2 packet check failed due to invalid signature!\n"));
+			DEBUG(0, ("NTLMSSP NTLM2 packet check failed due to invalid signature on %llu bytes of input!\n", (unsigned long long)pdu_length));
 			return NT_STATUS_ACCESS_DENIED;
 		}
 	} else {
 		if (local_sig.length != sig->length ||
 		    memcmp(local_sig.data + 8, 
 			   sig->data + 8, sig->length - 8) != 0) {
-			DEBUG(5, ("BAD SIG NTLM1: wanted signature of\n"));
+			DEBUG(5, ("BAD SIG NTLM1: wanted signature of %llu bytes of input:\n", (unsigned long long)length));
 			dump_data(5, local_sig.data, local_sig.length);
 			
-			DEBUG(5, ("BAD SIG: got signature of\n"));
+			DEBUG(5, ("BAD SIG: got signature of %llu bytes of input:\n", (unsigned long long)length));
 			dump_data(5, sig->data, sig->length);
 			
-			DEBUG(0, ("NTLMSSP NTLM1 packet check failed due to invalid signature!\n"));
+			DEBUG(0, ("NTLMSSP NTLM1 packet check failed due to invalid signature on %llu bytes of input:\n", (unsigned long long)length));
 			return NT_STATUS_ACCESS_DENIED;
 		}
 	}
@@ -456,6 +461,9 @@ NTSTATUS gensec_ntlmssp_wrap(struct gensec_security *gensec_security,
 	if (gensec_have_feature(gensec_security, GENSEC_FEATURE_SEAL)) {
 
 		*out = data_blob_talloc(sig_mem_ctx, NULL, in->length + NTLMSSP_SIG_SIZE);
+		if (!out->data) {
+			return NT_STATUS_NO_MEMORY;
+		}
 		memcpy(out->data + NTLMSSP_SIG_SIZE, in->data, in->length);
 		
 	        nt_status = gensec_ntlmssp_seal_packet(gensec_security, sig_mem_ctx, 
@@ -473,6 +481,9 @@ NTSTATUS gensec_ntlmssp_wrap(struct gensec_security *gensec_security,
 	} else if (gensec_have_feature(gensec_security, GENSEC_FEATURE_SIGN)) {
 
 		*out = data_blob_talloc(sig_mem_ctx, NULL, in->length + NTLMSSP_SIG_SIZE);
+		if (!out->data) {
+			return NT_STATUS_NO_MEMORY;
+		}
 		memcpy(out->data + NTLMSSP_SIG_SIZE, in->data, in->length);
 
 	        nt_status = gensec_ntlmssp_sign_packet(gensec_security, sig_mem_ctx, 
