@@ -1243,14 +1243,16 @@ void brl_close_fnum(struct byte_range_lock *br_lck)
 
 		if (unlock_individually) {
 			struct lock_struct *locks_copy;
+			unsigned int num_locks_copy;
 
 			/* Copy the current lock array. */
 			locks_copy = TALLOC_MEMDUP(br_lck, locks, br_lck->num_locks * sizeof(struct lock_struct));
 			if (!locks_copy) {
 				smb_panic("brl_close_fnum: talloc fail.\n");
 			}
+			num_locks_copy = br_lck->num_locks;
 
-			for (i=0; i < br_lck->num_locks; i++) {
+			for (i=0; i < num_locks_copy; i++) {
 				struct lock_struct *lock = &locks_copy[i];
 
 				if (lock->context.tid == tid && procid_equal(&lock->context.pid, &pid) &&
