@@ -56,11 +56,11 @@ struct ildb_private {
 	struct ldb_context *ldb;
 };
 
-struct ildb_async_context {
+struct ildb_context {
 	struct ldb_module *module;
 	struct ldap_request *req;
 	void *context;
-	int (*callback)(struct ldb_context *, void *, struct ldb_async_result *);
+	int (*callback)(struct ldb_context *, void *, struct ldb_reply *);
 };
 
 /*
@@ -136,8 +136,8 @@ static int ildb_map_error(struct ildb_private *ildb, NTSTATUS status)
 static void ildb_request_timeout(struct event_context *ev, struct timed_event *te,
 				 struct timeval t, void *private_data)
 {
-	struct ldb_async_handle *handle = talloc_get_type(private_data, struct ldb_async_handle);
-	struct ildb_async_context *ac = talloc_get_type(handle->private_data, struct ildb_async_context);
+	struct ldb_handle *handle = talloc_get_type(private_data, struct ldb_handle);
+	struct ildb_context *ac = talloc_get_type(handle->private_data, struct ildb_context);
 
 	if (ac->req->state == LDAP_REQUEST_PENDING) {
 		DLIST_REMOVE(ac->req->conn->pending, ac->req);
@@ -150,8 +150,8 @@ static void ildb_request_timeout(struct event_context *ev, struct timed_event *t
 
 static void ildb_callback(struct ldap_request *req)
 {
-	struct ldb_async_handle *handle = talloc_get_type(req->async.private_data, struct ldb_async_handle);
-	struct ildb_async_context *ac = talloc_get_type(handle->private_data, struct ildb_async_context);
+	struct ldb_handle *handle = talloc_get_type(req->async.private_data, struct ldb_handle);
+	struct ildb_context *ac = talloc_get_type(handle->private_data, struct ildb_context);
 	struct ildb_private *ildb = talloc_get_type(ac->module->private_data, struct ildb_private);
 	NTSTATUS status;
 	int i;
@@ -230,11 +230,11 @@ static void ildb_callback(struct ldap_request *req)
 		/* loop over all messages */
 		for (i = 0; i < req->num_replies; i++) {
 			struct ldap_SearchResEntry *search;
-			struct ldb_async_result *ares = NULL;
+			struct ldb_reply *ares = NULL;
 			struct ldap_message *msg;
 			int ret;
 
-			ares = talloc_zero(ac, struct ldb_async_result);
+			ares = talloc_zero(ac, struct ldb_reply);
 			if (!ares) {
 				handle->status = LDB_ERR_OPERATIONS_ERROR;
 				return;
@@ -325,16 +325,16 @@ static void ildb_callback(struct ldap_request *req)
 
 static int ildb_request_send(struct ldb_module *module, struct ldap_message *msg,
 			     void *context,
-			     int (*callback)(struct ldb_context *, void *, struct ldb_async_result *),
+			     int (*callback)(struct ldb_context *, void *, struct ldb_reply *),
 			     int timeout,
-			     struct ldb_async_handle **handle)
+			     struct ldb_handle **handle)
 {
 	struct ildb_private *ildb = talloc_get_type(module->private_data, struct ildb_private);
-	struct ildb_async_context *ildb_ac;
-	struct ldb_async_handle *h;
+	struct ildb_context *ildb_ac;
+	struct ldb_handle *h;
 	struct ldap_request *req;
 
-	h = talloc_zero(ildb->ldap, struct ldb_async_handle);
+	h = talloc_zero(ildb->ldap, struct ldb_handle);
 	if (h == NULL) {
 		ldb_set_errstring(module->ldb, talloc_asprintf(module, "Out of Memory"));
 		return LDB_ERR_OPERATIONS_ERROR;
@@ -342,7 +342,7 @@ static int ildb_request_send(struct ldb_module *module, struct ldap_message *msg
 
 	h->module = module;
 
-	ildb_ac = talloc(h, struct ildb_async_context);
+	ildb_ac = talloc(h, struct ildb_context);
 	if (ildb_ac == NULL) {
 		ldb_set_errstring(module->ldb, talloc_asprintf(module, "Out of Memory"));
 		talloc_free(h);
@@ -665,9 +665,9 @@ static int ildb_request(struct ldb_module *module, struct ldb_request *req)
 	return LDB_ERR_OPERATIONS_ERROR;
 }
 
-static int ildb_async_wait(struct ldb_async_handle *handle, enum ldb_async_wait_type type)
+static int ildb_wait(struct ldb_handle *handle, enum ldb_wait_type type)
 {
-	struct ildb_async_context *ac = talloc_get_type(handle->private_data, struct ildb_async_context);
+	struct ildb_context *ac = talloc_get_type(handle->private_data, struct ildb_context);
 
 	if (handle->state == LDB_ASYNC_DONE) {
 		return handle->status;
@@ -699,7 +699,7 @@ static int ildb_async_wait(struct ldb_async_handle *handle, enum ldb_async_wait_
 	return handle->status;
 }
 
-static int ildb_rootdse_callback(struct ldb_context *ldb, void *context, struct ldb_async_result *ares)
+static int ildb_rootdse_callback(struct ldb_context *ldb, void *context, struct ldb_reply *ares)
 {
 	struct ildb_private *ildb;
 
@@ -767,7 +767,7 @@ static int ildb_init(struct ldb_module *module)
 		return ret;
 	}
 
-	ret = ildb_async_wait(req->async.handle, LDB_WAIT_ALL);
+	ret = ildb_wait(req->async.handle, LDB_WAIT_ALL);
 	
 	talloc_free(req);
 	return ret;
@@ -784,7 +784,7 @@ static const struct ldb_module_ops ildb_ops = {
 	.start_transaction = ildb_start_trans,
 	.end_transaction   = ildb_end_trans,
 	.del_transaction   = ildb_del_trans,
-	.async_wait        = ildb_async_wait,
+	.wait              = ildb_wait,
 	.init_context	   = ildb_init
 };
 

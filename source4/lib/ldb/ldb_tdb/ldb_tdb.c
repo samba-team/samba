@@ -78,14 +78,14 @@ static int ltdb_err_map(enum TDB_ERROR tdb_code)
 }
 
 
-struct ldb_async_handle *init_ltdb_handle(struct ltdb_private *ltdb, struct ldb_module *module,
+struct ldb_handle *init_ltdb_handle(struct ltdb_private *ltdb, struct ldb_module *module,
 					  void *context,
-					  int (*callback)(struct ldb_context *, void *, struct ldb_async_result *))
+					  int (*callback)(struct ldb_context *, void *, struct ldb_reply *))
 {
-	struct ltdb_async_context *ac;
-	struct ldb_async_handle *h;
+	struct ltdb_context *ac;
+	struct ldb_handle *h;
 
-	h = talloc_zero(ltdb, struct ldb_async_handle);
+	h = talloc_zero(ltdb, struct ldb_handle);
 	if (h == NULL) {
 		ldb_set_errstring(module->ldb, talloc_asprintf(module, "Out of Memory"));
 		return NULL;
@@ -93,7 +93,7 @@ struct ldb_async_handle *init_ltdb_handle(struct ltdb_private *ltdb, struct ldb_
 
 	h->module = module;
 
-	ac = talloc_zero(h, struct ltdb_async_context);
+	ac = talloc_zero(h, struct ltdb_context);
 	if (ac == NULL) {
 		ldb_set_errstring(module->ldb, talloc_asprintf(module, "Out of Memory"));
 		talloc_free(h);
@@ -288,7 +288,7 @@ static int ltdb_add_internal(struct ldb_module *module, const struct ldb_message
 static int ltdb_add(struct ldb_module *module, struct ldb_request *req)
 {
 	struct ltdb_private *ltdb = talloc_get_type(module->private_data, struct ltdb_private);
-	struct ltdb_async_context *ltdb_ac;
+	struct ltdb_context *ltdb_ac;
 	int tret, ret = LDB_SUCCESS;
 
 	if (req->controls != NULL) {
@@ -302,7 +302,7 @@ static int ltdb_add(struct ldb_module *module, struct ldb_request *req)
 	if (req->async.handle == NULL) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
-	ltdb_ac = talloc_get_type(req->async.handle->private_data, struct ltdb_async_context);
+	ltdb_ac = talloc_get_type(req->async.handle->private_data, struct ltdb_context);
 
 	tret = ltdb_add_internal(module, req->op.add.message);
 	if (tret != LDB_SUCCESS) {
@@ -390,7 +390,7 @@ static int ltdb_delete_internal(struct ldb_module *module, const struct ldb_dn *
 static int ltdb_delete(struct ldb_module *module, struct ldb_request *req)
 {
 	struct ltdb_private *ltdb = talloc_get_type(module->private_data, struct ltdb_private);
-	struct ltdb_async_context *ltdb_ac;
+	struct ltdb_context *ltdb_ac;
 	int tret, ret = LDB_SUCCESS;
 
 	if (req->controls != NULL) {
@@ -410,7 +410,7 @@ static int ltdb_delete(struct ldb_module *module, struct ldb_request *req)
 	if (req->async.handle == NULL) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
-	ltdb_ac = talloc_get_type(req->async.handle->private_data, struct ltdb_async_context);
+	ltdb_ac = talloc_get_type(req->async.handle->private_data, struct ltdb_context);
 
 	tret = ltdb_delete_internal(module, req->op.del.dn);
 	if (tret != LDB_SUCCESS) {
@@ -754,7 +754,7 @@ failed:
 static int ltdb_modify(struct ldb_module *module, struct ldb_request *req)
 {
 	struct ltdb_private *ltdb = talloc_get_type(module->private_data, struct ltdb_private);
-	struct ltdb_async_context *ltdb_ac;
+	struct ltdb_context *ltdb_ac;
 	int tret, ret = LDB_SUCCESS;
 
 	if (req->controls != NULL) {
@@ -770,7 +770,7 @@ static int ltdb_modify(struct ldb_module *module, struct ldb_request *req)
 	if (req->async.handle == NULL) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
-	ltdb_ac = talloc_get_type(req->async.handle->private_data, struct ltdb_async_context);
+	ltdb_ac = talloc_get_type(req->async.handle->private_data, struct ltdb_context);
 
 	tret = ltdb_check_special_dn(module, req->op.mod.message);
 	if (tret != LDB_SUCCESS) {
@@ -803,7 +803,7 @@ done:
 static int ltdb_rename(struct ldb_module *module, struct ldb_request *req)
 {
 	struct ltdb_private *ltdb = talloc_get_type(module->private_data, struct ltdb_private);
-	struct ltdb_async_context *ltdb_ac;
+	struct ltdb_context *ltdb_ac;
 	struct ldb_message *msg;
 	int tret, ret = LDB_SUCCESS;
 
@@ -824,7 +824,7 @@ static int ltdb_rename(struct ldb_module *module, struct ldb_request *req)
 	if (req->async.handle == NULL) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
-	ltdb_ac = talloc_get_type(req->async.handle->private_data, struct ltdb_async_context);
+	ltdb_ac = talloc_get_type(req->async.handle->private_data, struct ltdb_context);
 
 	msg = talloc(ltdb_ac, struct ldb_message);
 	if (msg == NULL) {
@@ -901,7 +901,7 @@ static int ltdb_del_trans(struct ldb_module *module)
 	return LDB_SUCCESS;
 }
 
-static int ltdb_async_wait(struct ldb_async_handle *handle, enum ldb_async_wait_type type)
+static int ltdb_wait(struct ldb_handle *handle, enum ldb_wait_type type)
 {
 	return handle->status;
 }
@@ -965,7 +965,7 @@ static const struct ldb_module_ops ltdb_ops = {
 	.start_transaction = ltdb_start_trans,
 	.end_transaction   = ltdb_end_trans,
 	.del_transaction   = ltdb_del_trans,
-	.async_wait        = ltdb_async_wait,
+	.wait              = ltdb_wait,
 	.sequence_number   = ltdb_sequence_number
 };
 

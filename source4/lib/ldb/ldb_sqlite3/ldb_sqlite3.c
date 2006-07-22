@@ -44,27 +44,27 @@ struct lsqlite3_private {
         sqlite3 *sqlite;
 };
 
-struct lsql_async_context {
+struct lsql_context {
 	struct ldb_module *module;
 
 	/* search stuff */
 	long long current_eid;
 	const char * const * attrs;
-	struct ldb_async_result *ares;
+	struct ldb_reply *ares;
 
 	/* async stuff */
 	void *context;
-	int (*callback)(struct ldb_context *, void *, struct ldb_async_result *);
+	int (*callback)(struct ldb_context *, void *, struct ldb_reply *);
 };
 
-static struct ldb_async_handle *init_handle(struct lsqlite3_private *lsqlite3, struct ldb_module *module,
+static struct ldb_handle *init_handle(struct lsqlite3_private *lsqlite3, struct ldb_module *module,
 					    void *context,
-					    int (*callback)(struct ldb_context *, void *, struct ldb_async_result *))
+					    int (*callback)(struct ldb_context *, void *, struct ldb_reply *))
 {
-	struct lsql_async_context *ac;
-	struct ldb_async_handle *h;
+	struct lsql_context *ac;
+	struct ldb_handle *h;
 
-	h = talloc_zero(lsqlite3, struct ldb_async_handle);
+	h = talloc_zero(lsqlite3, struct ldb_handle);
 	if (h == NULL) {
 		ldb_set_errstring(module->ldb, talloc_asprintf(module, "Out of Memory"));
 		return NULL;
@@ -72,7 +72,7 @@ static struct ldb_async_handle *init_handle(struct lsqlite3_private *lsqlite3, s
 
 	h->module = module;
 
-	ac = talloc(h, struct lsql_async_context);
+	ac = talloc(h, struct lsql_context);
 	if (ac == NULL) {
 		ldb_set_errstring(module->ldb, talloc_asprintf(module, "Out of Memory"));
 		talloc_free(h);
@@ -711,8 +711,8 @@ static int lsqlite3_eid_callback(void *result, int col_num, char **cols, char **
  */
 static int lsqlite3_search_callback(void *result, int col_num, char **cols, char **names)
 {
-	struct ldb_async_handle *handle = talloc_get_type(result, struct ldb_async_handle);
-	struct lsql_async_context *ac = talloc_get_type(handle->private_data, struct lsql_async_context);
+	struct ldb_handle *handle = talloc_get_type(result, struct ldb_handle);
+	struct lsql_context *ac = talloc_get_type(handle->private_data, struct lsql_context);
 	struct ldb_message *msg;
 	long long eid;
 	int i;
@@ -738,7 +738,7 @@ static int lsqlite3_search_callback(void *result, int col_num, char **cols, char
 		}
 
 		/* start over */
-		ac->ares = talloc_zero(ac, struct ldb_async_result);
+		ac->ares = talloc_zero(ac, struct ldb_reply);
 		if (!ac->ares)
 			return SQLITE_ABORT;
 
@@ -842,7 +842,7 @@ done:
  * Interface functions referenced by lsqlite3_ops
  */
 
-static int lsql_search_sync_callback(struct ldb_context *ldb, void *context, struct ldb_async_result *ares)
+static int lsql_search_sync_callback(struct ldb_context *ldb, void *context, struct ldb_reply *ares)
 {
 	struct ldb_result *res = NULL;
 	
@@ -891,11 +891,11 @@ int lsql_search_async(struct ldb_module *module, const struct ldb_dn *base,
 		      enum ldb_scope scope, struct ldb_parse_tree *tree,
 		      const char * const *attrs,
 		      void *context,
-		      int (*callback)(struct ldb_context *, void *, struct ldb_async_result *),
-		      struct ldb_async_handle **handle)
+		      int (*callback)(struct ldb_context *, void *, struct ldb_reply *),
+		      struct ldb_handle **handle)
 {
 	struct lsqlite3_private *lsqlite3 = talloc_get_type(module->private_data, struct lsqlite3_private);
-	struct lsql_async_context *lsql_ac;
+	struct lsql_context *lsql_ac;
 	char *norm_basedn;
 	char *sqlfilter;
 	char *errmsg;
@@ -908,7 +908,7 @@ int lsql_search_async(struct ldb_module *module, const struct ldb_dn *base,
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	lsql_ac = talloc_get_type((*handle)->private_data, struct lsql_async_context);
+	lsql_ac = talloc_get_type((*handle)->private_data, struct lsql_context);
 
 	if (base) {
 		norm_basedn = ldb_dn_linearize(lsql_ac, ldb_dn_casefold(module->ldb, base));
@@ -1075,7 +1075,7 @@ static int lsql_search_bytree(struct ldb_module * module, const struct ldb_dn* b
 			      enum ldb_scope scope, struct ldb_parse_tree * tree,
 			      const char * const * attrs, struct ldb_result ** res)
 {
-	struct ldb_async_handle *handle;
+	struct ldb_handle *handle;
 	int ret;
 
 	*res = talloc_zero(module, struct ldb_result);
@@ -1088,7 +1088,7 @@ static int lsql_search_bytree(struct ldb_module * module, const struct ldb_dn* b
 				&handle);
 
 	if (ret == LDB_SUCCESS) {
-		ret = ldb_async_wait(handle, LDB_WAIT_ALL);
+		ret = ldb_wait(handle, LDB_WAIT_ALL);
 		talloc_free(handle);
 	}
 
@@ -1102,11 +1102,11 @@ static int lsql_search_bytree(struct ldb_module * module, const struct ldb_dn* b
 /* add a record */
 static int lsql_add_async(struct ldb_module *module, struct ldb_message *msg,
 			  void *context,
-			  int (*callback)(struct ldb_context *, void *, struct ldb_async_result *),
-			  struct ldb_async_handle **handle)
+			  int (*callback)(struct ldb_context *, void *, struct ldb_reply *),
+			  struct ldb_handle **handle)
 {
 	struct lsqlite3_private *lsqlite3 = talloc_get_type(module->private_data, struct lsqlite3_private);
-	struct lsql_async_context *lsql_ac;
+	struct lsql_context *lsql_ac;
         long long eid;
 	char *dn, *ndn;
 	char *errmsg;
@@ -1118,7 +1118,7 @@ static int lsql_add_async(struct ldb_module *module, struct ldb_message *msg,
 	if (*handle == NULL) {
 		goto failed;
 	}
-	lsql_ac = talloc_get_type((*handle)->private_data, struct lsql_async_context);
+	lsql_ac = talloc_get_type((*handle)->private_data, struct lsql_context);
 	(*handle)->state = LDB_ASYNC_DONE;
 	(*handle)->status = LDB_SUCCESS;
 
@@ -1242,7 +1242,7 @@ failed:
 
 static int lsql_add(struct ldb_module *module, const struct ldb_message *msg)
 {
-	struct ldb_async_handle *handle;
+	struct ldb_handle *handle;
 	int ret;
 
 	ret = lsql_add_async(module, msg, NULL, NULL, &handle);
@@ -1250,7 +1250,7 @@ static int lsql_add(struct ldb_module *module, const struct ldb_message *msg)
 	if (ret != LDB_SUCCESS)
 		return ret;
 
-	ret = ldb_async_wait(handle, LDB_WAIT_ALL);
+	ret = ldb_wait(handle, LDB_WAIT_ALL);
 
 	talloc_free(handle);
 	return ret;
@@ -1260,11 +1260,11 @@ static int lsql_add(struct ldb_module *module, const struct ldb_message *msg)
 /* modify a record */
 static int lsql_modify_async(struct ldb_module *module, const struct ldb_message *msg,
 			     void *context,
-			     int (*callback)(struct ldb_context *, void *, struct ldb_async_result *),
-			     struct ldb_async_handle **handle)
+			     int (*callback)(struct ldb_context *, void *, struct ldb_reply *),
+			     struct ldb_handle **handle)
 {
 	struct lsqlite3_private *lsqlite3 = talloc_get_type(module->private_data, struct lsqlite3_private);
-	struct lsql_async_context *lsql_ac;
+	struct lsql_context *lsql_ac;
         long long eid;
 	char *errmsg;
 	int i;
@@ -1274,7 +1274,7 @@ static int lsql_modify_async(struct ldb_module *module, const struct ldb_message
 	if (*handle == NULL) {
 		goto failed;
 	}
-	lsql_ac = talloc_get_type((*handle)->private_data, struct lsql_async_context);
+	lsql_ac = talloc_get_type((*handle)->private_data, struct lsql_context);
 	(*handle)->state = LDB_ASYNC_DONE;
 	(*handle)->status = LDB_SUCCESS;
 
@@ -1456,7 +1456,7 @@ failed:
 
 static int lsql_modify(struct ldb_module *module, const struct ldb_message *msg)
 {
-	struct ldb_async_handle *handle;
+	struct ldb_handle *handle;
 	int ret;
 
 	ret = lsql_modify_async(module, msg, NULL, NULL, &handle);
@@ -1464,7 +1464,7 @@ static int lsql_modify(struct ldb_module *module, const struct ldb_message *msg)
 	if (ret != LDB_SUCCESS)
 		return ret;
 
-	ret = ldb_async_wait(handle, LDB_WAIT_ALL);
+	ret = ldb_wait(handle, LDB_WAIT_ALL);
 
 	talloc_free(handle);
 	return ret;
@@ -1473,11 +1473,11 @@ static int lsql_modify(struct ldb_module *module, const struct ldb_message *msg)
 /* delete a record */
 static int lsql_delete_async(struct ldb_module *module, const struct ldb_dn *dn,
 			     void *context,
-			     int (*callback)(struct ldb_context *, void *, struct ldb_async_result *),
-			     struct ldb_async_handle **handle)
+			     int (*callback)(struct ldb_context *, void *, struct ldb_reply *),
+			     struct ldb_handle **handle)
 {
 	struct lsqlite3_private *lsqlite3 = talloc_get_type(module->private_data, struct lsqlite3_private);
-	struct lsql_async_context *lsql_ac;
+	struct lsql_context *lsql_ac;
         long long eid;
 	char *errmsg;
 	char *query;
@@ -1488,7 +1488,7 @@ static int lsql_delete_async(struct ldb_module *module, const struct ldb_dn *dn,
 	if (*handle == NULL) {
 		goto failed;
 	}
-	lsql_ac = talloc_get_type((*handle)->private_data, struct lsql_async_context);
+	lsql_ac = talloc_get_type((*handle)->private_data, struct lsql_context);
 	(*handle)->state = LDB_ASYNC_DONE;
 	(*handle)->status = LDB_SUCCESS;
 
@@ -1530,7 +1530,7 @@ failed:
 
 static int lsql_delete(struct ldb_module *module, const struct ldb_dn *dn)
 {
-	struct ldb_async_handle *handle;
+	struct ldb_handle *handle;
 	int ret;
 
 	/* ignore ltdb specials */
@@ -1543,7 +1543,7 @@ static int lsql_delete(struct ldb_module *module, const struct ldb_dn *dn)
 	if (ret != LDB_SUCCESS)
 		return ret;
 
-	ret = ldb_async_wait(handle, LDB_WAIT_ALL);
+	ret = ldb_wait(handle, LDB_WAIT_ALL);
 
 	talloc_free(handle);
 	return ret;
@@ -1552,11 +1552,11 @@ static int lsql_delete(struct ldb_module *module, const struct ldb_dn *dn)
 /* rename a record */
 static int lsql_rename_async(struct ldb_module *module, const struct ldb_dn *olddn, const struct ldb_dn *newdn,
 			     void *context,
-			     int (*callback)(struct ldb_context *, void *, struct ldb_async_result *),
-			     struct ldb_async_handle **handle)
+			     int (*callback)(struct ldb_context *, void *, struct ldb_reply *),
+			     struct ldb_handle **handle)
 {
 	struct lsqlite3_private *lsqlite3 = talloc_get_type(module->private_data, struct lsqlite3_private);
-	struct lsql_async_context *lsql_ac;
+	struct lsql_context *lsql_ac;
 	char *new_dn, *new_cdn, *old_cdn;
 	char *errmsg;
 	char *query;
@@ -1566,7 +1566,7 @@ static int lsql_rename_async(struct ldb_module *module, const struct ldb_dn *old
 	if (*handle == NULL) {
 		goto failed;
 	}
-	lsql_ac = talloc_get_type((*handle)->private_data, struct lsql_async_context);
+	lsql_ac = talloc_get_type((*handle)->private_data, struct lsql_context);
 	(*handle)->state = LDB_ASYNC_DONE;
 	(*handle)->status = LDB_SUCCESS;
 
@@ -1610,7 +1610,7 @@ failed:
 
 static int lsql_rename(struct ldb_module *module, const struct ldb_dn *olddn, const struct ldb_dn *newdn)
 {
-	struct ldb_async_handle *handle;
+	struct ldb_handle *handle;
 	int ret;
 
 	/* ignore ltdb specials */
@@ -1624,7 +1624,7 @@ static int lsql_rename(struct ldb_module *module, const struct ldb_dn *olddn, co
 	if (ret != LDB_SUCCESS)
 		return ret;
 
-	ret = ldb_async_wait(handle, LDB_WAIT_ALL);
+	ret = ldb_wait(handle, LDB_WAIT_ALL);
 
 	talloc_free(handle);
 	return ret;
@@ -1971,7 +1971,7 @@ static int destructor(struct lsqlite3_private *lsqlite3)
 	return 0;
 }
 
-static int lsql_async_wait(struct ldb_async_handle *handle, enum ldb_async_wait_type type)
+static int lsql_wait(struct ldb_handle *handle, enum ldb_wait_type type)
 {
 	return handle->status;
 }
@@ -2066,7 +2066,7 @@ static const struct ldb_module_ops lsqlite3_ops = {
 	.start_transaction = lsql_start_trans,
 	.end_transaction   = lsql_end_trans,
 	.del_transaction   = lsql_del_trans,
-	.async_wait        = lsql_async_wait,
+	.wait              = lsql_wait,
 };
 
 /*

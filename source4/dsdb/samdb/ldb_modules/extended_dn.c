@@ -171,7 +171,7 @@ struct extended_async_context {
 
 	struct ldb_module *module;
 	void *up_context;
-	int (*up_callback)(struct ldb_context *, void *, struct ldb_async_result *);
+	int (*up_callback)(struct ldb_context *, void *, struct ldb_reply *);
 
 	const char * const *attrs;
 	BOOL remove_guid;
@@ -179,7 +179,7 @@ struct extended_async_context {
 	int extended_type;
 };
 
-static int extended_async_callback(struct ldb_context *ldb, void *context, struct ldb_async_result *ares)
+static int extended_async_callback(struct ldb_context *ldb, void *context, struct ldb_reply *ares)
 {
 	struct extended_async_context *ac;
 

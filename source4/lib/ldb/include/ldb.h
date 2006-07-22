@@ -578,12 +578,12 @@ enum ldb_reply_type {
 	LDB_REPLY_DONE
 };
 
-enum ldb_async_wait_type {
+enum ldb_wait_type {
 	LDB_WAIT_ALL,
 	LDB_WAIT_NONE
 };
 
-enum ldb_async_state {
+enum ldb_state {
 	LDB_ASYNC_INIT,
 	LDB_ASYNC_PENDING,
 	LDB_ASYNC_DONE
@@ -596,16 +596,16 @@ struct ldb_result {
 	struct ldb_control **controls;
 };
 
-struct ldb_async_result {
+struct ldb_reply {
 	enum ldb_reply_type type;
 	struct ldb_message *message;
 	char *referral;
 	struct ldb_control **controls;
 };
 
-struct ldb_async_handle {
+struct ldb_handle {
 	int status;
-	enum ldb_async_state state;
+	enum ldb_state state;
 	void *private_data;
 	struct ldb_module *module;
 };
@@ -666,17 +666,17 @@ struct ldb_request {
 
 	struct {
 		void *context;
-		int (*callback)(struct ldb_context *, void *, struct ldb_async_result *);
+		int (*callback)(struct ldb_context *, void *, struct ldb_reply *);
 
 		int timeout;
 		time_t starttime;
-		struct ldb_async_handle *handle;
+		struct ldb_handle *handle;
 	} async;
 };
 
 int ldb_request(struct ldb_context *ldb, struct ldb_request *request);
 
-int ldb_async_wait(struct ldb_async_handle *handle, enum ldb_async_wait_type type);
+int ldb_wait(struct ldb_handle *handle, enum ldb_wait_type type);
 
 int ldb_set_timeout(struct ldb_context *ldb, struct ldb_request *req, int timeout);
 int ldb_set_timeout_from_prev_req(struct ldb_context *ldb, struct ldb_request *oldreq, struct ldb_request *newreq);
