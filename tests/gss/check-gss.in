@@ -1,9 +1,11 @@
 #!/bin/sh
+# $Id$
 
 objdir="@objdir@"
 gssdir="${objdir}/../../lib/gssapi"
 
-${gssdir}/gss > /dev/null || exit 1
+${gssdir}/gss help > /dev/null || exit 1
+${gssdir}/gss supported-mechanisms > /dev/null || exit 1
 
 exit 0
 
