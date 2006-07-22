@@ -1,4 +1,13 @@
+2006-07-22  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* Makefile.am: Make gss objects depend on the slc built
+	gss-commands.h
+	
 2006-07-20  Love Hörnquist Åstrand  <lha@it.su.se>
+	
+	* gss-commands.in: add slc commands for gss
+
+	* krb5/gsskrb5_locl.h: Remove dup prototype of _gsskrb5_init()
 
 	* Makefile.am: Add test_cfx
 
