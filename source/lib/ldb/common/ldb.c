@@ -335,7 +335,7 @@ static int ldb_autotransaction_request(struct ldb_context *ldb, struct ldb_reque
 
 	ret = ldb_request(ldb, req);
 	if (ret == LDB_SUCCESS) {
-		ret = ldb_async_wait(req->async.handle, LDB_WAIT_ALL);
+		ret = ldb_wait(req->async.handle, LDB_WAIT_ALL);
 	}
 
 	if (ret == LDB_SUCCESS) {
@@ -353,13 +353,13 @@ static int ldb_autotransaction_request(struct ldb_context *ldb, struct ldb_reque
 	return ret;
 }
 
-int ldb_async_wait(struct ldb_async_handle *handle, enum ldb_async_wait_type type)
+int ldb_wait(struct ldb_handle *handle, enum ldb_wait_type type)
 {
 	if (!handle) {
 		return LDB_SUCCESS;
 	}
 
-	return handle->module->ops->async_wait(handle, type);
+	return handle->module->ops->wait(handle, type);
 }
 
 /* set the specified timeout or, if timeout is 0 set the default timeout */
@@ -454,7 +454,7 @@ int ldb_request(struct ldb_context *ldb, struct ldb_request *req)
   Use talloc_free to free the ldb_message returned in 'res', if successful
 
 */
-static int ldb_search_callback(struct ldb_context *ldb, void *context, struct ldb_async_result *ares)
+static int ldb_search_callback(struct ldb_context *ldb, void *context, struct ldb_reply *ares)
 {
 	struct ldb_result *res;
 	int n;
@@ -563,7 +563,7 @@ int ldb_search(struct ldb_context *ldb,
 	ret = ldb_request(ldb, req);
 	
 	if (ret == LDB_SUCCESS) {
-		ret = ldb_async_wait(req->async.handle, LDB_WAIT_ALL);
+		ret = ldb_wait(req->async.handle, LDB_WAIT_ALL);
 	}
 	
 	if (ret != LDB_SUCCESS) {

@@ -41,20 +41,20 @@
 #define ASQ_CTRL_UNWILLING_TO_PERFORM		53
 #define ASQ_CTRL_AFFECTS_MULTIPLE_DSA		71
 
-struct asq_async_context {
+struct asq_context {
 
 	enum {ASQ_SEARCH_BASE, ASQ_SEARCH_MULTI} step;
 
 	struct ldb_module *module;
 	void *up_context;
-	int (*up_callback)(struct ldb_context *, void *, struct ldb_async_result *);
+	int (*up_callback)(struct ldb_context *, void *, struct ldb_reply *);
 
 	const char * const *req_attrs;
 	char *req_attribute;
 	int asq_ret;
 
 	struct ldb_request *base_req;
-	struct ldb_async_result *base_res;
+	struct ldb_reply *base_res;
 
 	struct ldb_request **reqs;
 	int num_reqs;
@@ -63,14 +63,14 @@ struct asq_async_context {
 	struct ldb_control **controls;
 };
 
-static struct ldb_async_handle *init_handle(void *mem_ctx, struct ldb_module *module,
+static struct ldb_handle *init_handle(void *mem_ctx, struct ldb_module *module,
 					    void *context,
-					    int (*callback)(struct ldb_context *, void *, struct ldb_async_result *))
+					    int (*callback)(struct ldb_context *, void *, struct ldb_reply *))
 {
-	struct asq_async_context *ac;
-	struct ldb_async_handle *h;
+	struct asq_context *ac;
+	struct ldb_handle *h;
 
-	h = talloc_zero(mem_ctx, struct ldb_async_handle);
+	h = talloc_zero(mem_ctx, struct ldb_handle);
 	if (h == NULL) {
 		ldb_set_errstring(module->ldb, talloc_asprintf(module, "Out of Memory"));
 		return NULL;
@@ -78,7 +78,7 @@ static struct ldb_async_handle *init_handle(void *mem_ctx, struct ldb_module *mo
 
 	h->module = module;
 
-	ac = talloc_zero(h, struct asq_async_context);
+	ac = talloc_zero(h, struct asq_context);
 	if (ac == NULL) {
 		ldb_set_errstring(module->ldb, talloc_asprintf(module, "Out of Memory"));
 		talloc_free(h);
@@ -97,19 +97,19 @@ static struct ldb_async_handle *init_handle(void *mem_ctx, struct ldb_module *mo
 	return h;
 }
 
-static int asq_terminate(struct ldb_async_handle *handle)
+static int asq_terminate(struct ldb_handle *handle)
 {
-	struct asq_async_context *ac;
-	struct ldb_async_result *ares;
+	struct asq_context *ac;
+	struct ldb_reply *ares;
 	struct ldb_asq_control *asq;
 	int i;
 
-	ac = talloc_get_type(handle->private_data, struct asq_async_context);
+	ac = talloc_get_type(handle->private_data, struct asq_context);
 
 	handle->status = LDB_SUCCESS;
 	handle->state = LDB_ASYNC_DONE;
 
-	ares = talloc_zero(ac, struct ldb_async_result);
+	ares = talloc_zero(ac, struct ldb_reply);
 	if (ares == NULL)
 		return LDB_ERR_OPERATIONS_ERROR;
 
@@ -149,16 +149,16 @@ static int asq_terminate(struct ldb_async_handle *handle)
 	return LDB_SUCCESS;
 }
 
-static int asq_base_callback(struct ldb_context *ldb, void *context, struct ldb_async_result *ares)
+static int asq_base_callback(struct ldb_context *ldb, void *context, struct ldb_reply *ares)
 {
-	struct asq_async_context *ac;
+	struct asq_context *ac;
 
 	if (!context || !ares) {
 		ldb_set_errstring(ldb, talloc_asprintf(ldb, "NULL Context or Result in callback"));
 		goto error;
 	}
 
-	ac = talloc_get_type(context, struct asq_async_context);
+	ac = talloc_get_type(context, struct asq_context);
 
 	/* we are interested only in the single reply (base search) we receive here */
 	if (ares->type == LDB_REPLY_ENTRY) {
@@ -173,16 +173,16 @@ error:
 	return LDB_ERR_OPERATIONS_ERROR;
 }
 
-static int asq_reqs_callback(struct ldb_context *ldb, void *context, struct ldb_async_result *ares)
+static int asq_reqs_callback(struct ldb_context *ldb, void *context, struct ldb_reply *ares)
 {
-	struct asq_async_context *ac;
+	struct asq_context *ac;
 
 	if (!context || !ares) {
 		ldb_set_errstring(ldb, talloc_asprintf(ldb, "NULL Context or Result in callback"));
 		goto error;
 	}
 
-	ac = talloc_get_type(context, struct asq_async_context);
+	ac = talloc_get_type(context, struct asq_context);
 
 	/* we are interested only in the single reply (base search) we receive here */
 	if (ares->type == LDB_REPLY_ENTRY) {
@@ -205,8 +205,8 @@ static int asq_search(struct ldb_module *module, struct ldb_request *req)
 {
 	struct ldb_control *control;
 	struct ldb_asq_control *asq_ctrl;
-	struct asq_async_context *ac;
-	struct ldb_async_handle *h;
+	struct asq_context *ac;
+	struct ldb_handle *h;
 	char **base_attrs;
 	int ret;
 
@@ -234,7 +234,7 @@ static int asq_search(struct ldb_module *module, struct ldb_request *req)
 	if (!h) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
-	ac = talloc_get_type(h->private_data, struct asq_async_context);
+	ac = talloc_get_type(h->private_data, struct asq_context);
 
 	req->async.handle = h;
 
@@ -281,12 +281,12 @@ static int asq_search(struct ldb_module *module, struct ldb_request *req)
 	return LDB_SUCCESS;
 }
 
-static int asq_async_requests(struct ldb_async_handle *handle) {
-	struct asq_async_context *ac;
+static int asq_requests(struct ldb_handle *handle) {
+	struct asq_context *ac;
 	struct ldb_message_element *el;
 	int i;
 
-	ac = talloc_get_type(handle->private_data, struct asq_async_context);
+	ac = talloc_get_type(handle->private_data, struct asq_context);
 
 	/* look up the DNs */
 	el = ldb_msg_find_element(ac->base_res->message, ac->req_attribute);
@@ -329,9 +329,9 @@ static int asq_async_requests(struct ldb_async_handle *handle) {
 	return LDB_SUCCESS;
 }
 
-static int asq_async_wait_none(struct ldb_async_handle *handle)
+static int asq_wait_none(struct ldb_handle *handle)
 {
-	struct asq_async_context *ac;
+	struct asq_context *ac;
 	int ret;
     
 	if (!handle || !handle->private_data) {
@@ -345,12 +345,12 @@ static int asq_async_wait_none(struct ldb_async_handle *handle)
 	handle->state = LDB_ASYNC_PENDING;
 	handle->status = LDB_SUCCESS;
 
-	ac = talloc_get_type(handle->private_data, struct asq_async_context);
+	ac = talloc_get_type(handle->private_data, struct asq_context);
 
 
 	switch (ac->step) {
 	case ASQ_SEARCH_BASE:
-		ret = ldb_async_wait(ac->base_req->async.handle, LDB_WAIT_NONE);
+		ret = ldb_wait(ac->base_req->async.handle, LDB_WAIT_NONE);
 		
 		if (ret != LDB_SUCCESS) {
 			handle->status = ret;
@@ -365,7 +365,7 @@ static int asq_async_wait_none(struct ldb_async_handle *handle)
 			return LDB_SUCCESS;
 		}
 
-		ret = asq_async_requests(handle);
+		ret = asq_requests(handle);
 
 	case ASQ_SEARCH_MULTI:
 
@@ -376,7 +376,7 @@ static int asq_async_wait_none(struct ldb_async_handle *handle)
 			}
 		}
 
-		ret = ldb_async_wait(ac->reqs[ac->cur_req]->async.handle, LDB_WAIT_NONE);
+		ret = ldb_wait(ac->reqs[ac->cur_req]->async.handle, LDB_WAIT_NONE);
 		
 		if (ret != LDB_SUCCESS) {
 			handle->status = ret;
@@ -408,12 +408,12 @@ done:
 	return ret;
 }
 
-static int asq_async_wait_all(struct ldb_async_handle *handle)
+static int asq_wait_all(struct ldb_handle *handle)
 {
 	int ret;
 
 	while (handle->state != LDB_ASYNC_DONE) {
-		ret = asq_async_wait_none(handle);
+		ret = asq_wait_none(handle);
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}
@@ -422,12 +422,12 @@ static int asq_async_wait_all(struct ldb_async_handle *handle)
 	return handle->status;
 }
 
-static int asq_async_wait(struct ldb_async_handle *handle, enum ldb_async_wait_type type)
+static int asq_wait(struct ldb_handle *handle, enum ldb_wait_type type)
 {
 	if (type == LDB_WAIT_ALL) {
-		return asq_async_wait_all(handle);
+		return asq_wait_all(handle);
 	} else {
-		return asq_async_wait_none(handle);
+		return asq_wait_none(handle);
 	}
 }
 
@@ -458,7 +458,7 @@ static int asq_init(struct ldb_module *module)
 static const struct ldb_module_ops asq_ops = {
 	.name		   = "asq",
 	.search		   = asq_search,
-	.async_wait        = asq_async_wait,
+	.wait              = asq_wait,
 	.init_context	   = asq_init
 };
 

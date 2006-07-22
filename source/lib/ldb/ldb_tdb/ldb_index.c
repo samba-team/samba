@@ -628,17 +628,17 @@ static int ltdb_index_dn(struct ldb_module *module,
   extracting just the given attributes
 */
 static int ltdb_index_filter(const struct dn_list *dn_list, 
-			     struct ldb_async_handle *handle)
+			     struct ldb_handle *handle)
 {
-	struct ltdb_async_context *ac = talloc_get_type(handle->private_data, struct ltdb_async_context);
-	struct ldb_async_result *ares = NULL;
+	struct ltdb_context *ac = talloc_get_type(handle->private_data, struct ltdb_context);
+	struct ldb_reply *ares = NULL;
 	unsigned int i;
 
 	for (i = 0; i < dn_list->count; i++) {
 		struct ldb_dn *dn;
 		int ret;
 
-		ares = talloc_zero(ac, struct ldb_async_result);
+		ares = talloc_zero(ac, struct ldb_reply);
 		if (!ares) {
 			handle->status = LDB_ERR_OPERATIONS_ERROR;
 			handle->state = LDB_ASYNC_DONE;
@@ -707,9 +707,9 @@ static int ltdb_index_filter(const struct dn_list *dn_list,
   returns -1 if an indexed search is not possible, in which
   case the caller should call ltdb_search_full() 
 */
-int ltdb_search_indexed(struct ldb_async_handle *handle)
+int ltdb_search_indexed(struct ldb_handle *handle)
 {
-	struct ltdb_async_context *ac = talloc_get_type(handle->private_data, struct ltdb_async_context);
+	struct ltdb_context *ac = talloc_get_type(handle->private_data, struct ltdb_context);
 	struct ltdb_private *ltdb = talloc_get_type(ac->module->private_data, struct ltdb_private);
 	struct dn_list *dn_list;
 	int ret;

@@ -378,9 +378,9 @@ int ltdb_filter_attrs(struct ldb_message *msg, const char * const *attrs)
  */
 static int search_func(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, void *state)
 {
-	struct ldb_async_handle *handle = talloc_get_type(state, struct ldb_async_handle);
-	struct ltdb_async_context *ac = talloc_get_type(handle->private_data, struct ltdb_async_context);
-	struct ldb_async_result *ares = NULL;
+	struct ldb_handle *handle = talloc_get_type(state, struct ldb_handle);
+	struct ltdb_context *ac = talloc_get_type(handle->private_data, struct ltdb_context);
+	struct ldb_reply *ares = NULL;
 	int ret;
 
 	if (key.dsize < 4 || 
@@ -388,7 +388,7 @@ static int search_func(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, voi
 		return 0;
 	}
 
-	ares = talloc_zero(ac, struct ldb_async_result);
+	ares = talloc_zero(ac, struct ldb_reply);
 	if (!ares) {
 		handle->status = LDB_ERR_OPERATIONS_ERROR;
 		handle->state = LDB_ASYNC_DONE;
@@ -454,9 +454,9 @@ static int search_func(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, voi
   search the database with a LDAP-like expression.
   this is the "full search" non-indexed variant
 */
-static int ltdb_search_full(struct ldb_async_handle *handle)
+static int ltdb_search_full(struct ldb_handle *handle)
 {
-	struct ltdb_async_context *ac = talloc_get_type(handle->private_data, struct ltdb_async_context);
+	struct ltdb_context *ac = talloc_get_type(handle->private_data, struct ltdb_context);
 	struct ltdb_private *ltdb = talloc_get_type(ac->module->private_data, struct ltdb_private);
 	int ret;
 
@@ -477,7 +477,7 @@ static int ltdb_search_full(struct ldb_async_handle *handle)
 int ltdb_search(struct ldb_module *module, struct ldb_request *req)
 {
 	struct ltdb_private *ltdb = talloc_get_type(module->private_data, struct ltdb_private);
-	struct ltdb_async_context *ltdb_ac;
+	struct ltdb_context *ltdb_ac;
 	int ret;
 
 	if ((req->op.search.base == NULL || req->op.search.base->comp_num == 0) &&
@@ -504,7 +504,7 @@ int ltdb_search(struct ldb_module *module, struct ldb_request *req)
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	ltdb_ac = talloc_get_type(req->async.handle->private_data, struct ltdb_async_context);
+	ltdb_ac = talloc_get_type(req->async.handle->private_data, struct ltdb_context);
 
 	ltdb_ac->tree = req->op.search.tree;
 	ltdb_ac->scope = req->op.search.scope;

@@ -65,7 +65,7 @@
  *
  */
 
-struct ph_async_context {
+struct ph_context {
 
 	enum ph_type {PH_ADD, PH_MOD} type;
 	enum ph_step {PH_ADD_SEARCH_DOM, PH_ADD_DO_ADD, PH_MOD_DO_REQ, PH_MOD_SEARCH_SELF, PH_MOD_SEARCH_DOM, PH_MOD_DO_MOD} step;
@@ -74,12 +74,12 @@ struct ph_async_context {
 	struct ldb_request *orig_req;
 
 	struct ldb_request *dom_req;
-	struct ldb_async_result *dom_res;
+	struct ldb_reply *dom_res;
 
 	struct ldb_request *down_req;
 
 	struct ldb_request *search_req;
-	struct ldb_async_result *search_res;
+	struct ldb_reply *search_res;
 
 	struct ldb_request *mod_req;
 
@@ -418,12 +418,12 @@ static int setPwdHistory(struct ldb_module *module, struct ldb_message *msg, str
 	return LDB_SUCCESS;
 }
 
-static struct ldb_async_handle *ph_init_handle(struct ldb_request *req, struct ldb_module *module, enum ph_type type)
+static struct ldb_handle *ph_init_handle(struct ldb_request *req, struct ldb_module *module, enum ph_type type)
 {
-	struct ph_async_context *ac;
-	struct ldb_async_handle *h;
+	struct ph_context *ac;
+	struct ldb_handle *h;
 
-	h = talloc_zero(req, struct ldb_async_handle);
+	h = talloc_zero(req, struct ldb_handle);
 	if (h == NULL) {
 		ldb_set_errstring(module->ldb, talloc_asprintf(module, "Out of Memory"));
 		return NULL;
@@ -431,7 +431,7 @@ static struct ldb_async_handle *ph_init_handle(struct ldb_request *req, struct l
 
 	h->module = module;
 
-	ac = talloc_zero(h, struct ph_async_context);
+	ac = talloc_zero(h, struct ph_context);
 	if (ac == NULL) {
 		ldb_set_errstring(module->ldb, talloc_asprintf(module, "Out of Memory"));
 		talloc_free(h);
@@ -450,16 +450,16 @@ static struct ldb_async_handle *ph_init_handle(struct ldb_request *req, struct l
 	return h;
 }
 
-static int get_domain_data_callback(struct ldb_context *ldb, void *context, struct ldb_async_result *ares)
+static int get_domain_data_callback(struct ldb_context *ldb, void *context, struct ldb_reply *ares)
 {
-	struct ph_async_context *ac;
+	struct ph_context *ac;
 
 	if (!context || !ares) {
 		ldb_set_errstring(ldb, talloc_asprintf(ldb, "NULL Context or Result in callback"));
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	ac = talloc_get_type(context, struct ph_async_context);
+	ac = talloc_get_type(context, struct ph_context);
 
 	/* we are interested only in the single reply (base search) we receive here */
 	if (ares->type == LDB_REPLY_ENTRY) {
@@ -476,7 +476,7 @@ static int get_domain_data_callback(struct ldb_context *ldb, void *context, stru
 	return LDB_SUCCESS;
 }
 
-static int build_domain_data_request(struct ph_async_context *ac)
+static int build_domain_data_request(struct ph_context *ac)
 {
 	/* attrs[] is returned from this function in
 	   ac->dom_req->op.search.attrs, so it must be static, as
@@ -517,13 +517,13 @@ static int build_domain_data_request(struct ph_async_context *ac)
 	return LDB_SUCCESS;
 }
 
-static struct domain_data *get_domain_data(struct ldb_module *module, void *ctx, struct ldb_async_result *res)
+static struct domain_data *get_domain_data(struct ldb_module *module, void *ctx, struct ldb_reply *res)
 {
 	struct domain_data *data;
 	const char *tmp;
-	struct ph_async_context *ac;
+	struct ph_context *ac;
 	
-	ac = talloc_get_type(ctx, struct ph_async_context);
+	ac = talloc_get_type(ctx, struct ph_context);
 
 	data = talloc_zero(ac, struct domain_data);
 	if (data == NULL) {
@@ -558,8 +558,8 @@ static struct domain_data *get_domain_data(struct ldb_module *module, void *ctx,
 
 static int password_hash_add(struct ldb_module *module, struct ldb_request *req)
 {
-	struct ldb_async_handle *h;
-	struct ph_async_context *ac;
+	struct ldb_handle *h;
+	struct ph_context *ac;
 	struct ldb_message_element *sambaAttr;
 	struct ldb_message_element *ntAttr;
 	struct ldb_message_element *lmAttr;
@@ -621,7 +621,7 @@ static int password_hash_add(struct ldb_module *module, struct ldb_request *req)
 	if (!h) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
-	ac = talloc_get_type(h->private_data, struct ph_async_context);
+	ac = talloc_get_type(h->private_data, struct ph_context);
 
 	/* get user domain data */
 	ac->domain_sid = samdb_result_sid_prefix(ac, req->op.add.message, "objectSid");
@@ -642,16 +642,16 @@ static int password_hash_add(struct ldb_module *module, struct ldb_request *req)
 	return ldb_next_request(module, ac->dom_req);
 }
 
-static int password_hash_add_do_add(struct ldb_async_handle *h) {
+static int password_hash_add_do_add(struct ldb_handle *h) {
 
-	struct ph_async_context *ac;
+	struct ph_context *ac;
 	struct domain_data *domain;
 	struct smb_krb5_context *smb_krb5_context;
 	struct ldb_message_element *sambaAttr;
 	struct ldb_message *msg;
 	int ret;
 
-	ac = talloc_get_type(h->private_data, struct ph_async_context);
+	ac = talloc_get_type(h->private_data, struct ph_context);
 
 	domain = get_domain_data(ac->module, ac, ac->dom_res);
 	if (domain == NULL) {
@@ -731,12 +731,12 @@ static int password_hash_add_do_add(struct ldb_async_handle *h) {
 	return ldb_next_request(ac->module, ac->down_req);
 }
 
-static int password_hash_mod_search_self(struct ldb_async_handle *h);
+static int password_hash_mod_search_self(struct ldb_handle *h);
 
 static int password_hash_modify(struct ldb_module *module, struct ldb_request *req)
 {
-	struct ldb_async_handle *h;
-	struct ph_async_context *ac;
+	struct ldb_handle *h;
+	struct ph_context *ac;
 	struct ldb_message_element *sambaAttr;
 	struct ldb_message_element *ntAttr;
 	struct ldb_message_element *lmAttr;
@@ -784,7 +784,7 @@ static int password_hash_modify(struct ldb_module *module, struct ldb_request *r
 	if (!h) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
-	ac = talloc_get_type(h->private_data, struct ph_async_context);
+	ac = talloc_get_type(h->private_data, struct ph_context);
 
 	/* return or own handle to deal with this call */
 	req->async.handle = h;
@@ -824,16 +824,16 @@ static int password_hash_modify(struct ldb_module *module, struct ldb_request *r
 	return ldb_next_request(module, ac->down_req);
 }
 
-static int get_self_callback(struct ldb_context *ldb, void *context, struct ldb_async_result *ares)
+static int get_self_callback(struct ldb_context *ldb, void *context, struct ldb_reply *ares)
 {
-	struct ph_async_context *ac;
+	struct ph_context *ac;
 
 	if (!context || !ares) {
 		ldb_set_errstring(ldb, talloc_asprintf(ldb, "NULL Context or Result in callback"));
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	ac = talloc_get_type(context, struct ph_async_context);
+	ac = talloc_get_type(context, struct ph_context);
 
 	/* we are interested only in the single reply (base search) we receive here */
 	if (ares->type == LDB_REPLY_ENTRY) {
@@ -859,9 +859,9 @@ static int get_self_callback(struct ldb_context *ldb, void *context, struct ldb_
 	return LDB_SUCCESS;
 }
 
-static int password_hash_mod_search_self(struct ldb_async_handle *h) {
+static int password_hash_mod_search_self(struct ldb_handle *h) {
 
-	struct ph_async_context *ac;
+	struct ph_context *ac;
 	static const char * const attrs[] = { "userAccountControl", "sambaLMPwdHistory", 
 					      "sambaNTPwdHistory", 
 					      "objectSid", "msDS-KeyVersionNumber", 
@@ -870,7 +870,7 @@ static int password_hash_mod_search_self(struct ldb_async_handle *h) {
 					      "lmPwdHash", "ntPwdHash",
 					      NULL };
 
-	ac = talloc_get_type(h->private_data, struct ph_async_context);
+	ac = talloc_get_type(h->private_data, struct ph_context);
 
 	/* prepare the search operation */
 	ac->search_req = talloc_zero(ac, struct ldb_request);
@@ -898,12 +898,12 @@ static int password_hash_mod_search_self(struct ldb_async_handle *h) {
 	return ldb_next_request(ac->module, ac->search_req);
 }
 
-static int password_hash_mod_search_dom(struct ldb_async_handle *h) {
+static int password_hash_mod_search_dom(struct ldb_handle *h) {
 
-	struct ph_async_context *ac;
+	struct ph_context *ac;
 	int ret;
 
-	ac = talloc_get_type(h->private_data, struct ph_async_context);
+	ac = talloc_get_type(h->private_data, struct ph_context);
 
 	/* get object domain sid */
 	ac->domain_sid = samdb_result_sid_prefix(ac, ac->search_res->message, "objectSid");
@@ -923,9 +923,9 @@ static int password_hash_mod_search_dom(struct ldb_async_handle *h) {
 	return ldb_next_request(ac->module, ac->dom_req);
 }
 
-static int password_hash_mod_do_mod(struct ldb_async_handle *h) {
+static int password_hash_mod_do_mod(struct ldb_handle *h) {
 
-	struct ph_async_context *ac;
+	struct ph_context *ac;
 	struct domain_data *domain;
 	struct smb_krb5_context *smb_krb5_context;
 	struct ldb_message_element *sambaAttr;
@@ -934,7 +934,7 @@ static int password_hash_mod_do_mod(struct ldb_async_handle *h) {
 	int ret;
 	BOOL added_hashes = False;
 
-	ac = talloc_get_type(h->private_data, struct ph_async_context);
+	ac = talloc_get_type(h->private_data, struct ph_context);
 
 	domain = get_domain_data(ac->module, ac, ac->dom_res);
 	if (domain == NULL) {
@@ -1060,8 +1060,8 @@ static int password_hash_mod_do_mod(struct ldb_async_handle *h) {
 	return ldb_next_request(ac->module, ac->mod_req);
 }
 
-static int ph_async_wait(struct ldb_async_handle *handle) {
-	struct ph_async_context *ac;
+static int ph_wait(struct ldb_handle *handle) {
+	struct ph_context *ac;
 	int ret;
     
 	if (!handle || !handle->private_data) {
@@ -1075,11 +1075,11 @@ static int ph_async_wait(struct ldb_async_handle *handle) {
 	handle->state = LDB_ASYNC_PENDING;
 	handle->status = LDB_SUCCESS;
 
-	ac = talloc_get_type(handle->private_data, struct ph_async_context);
+	ac = talloc_get_type(handle->private_data, struct ph_context);
 
 	switch (ac->step) {
 	case PH_ADD_SEARCH_DOM:
-		ret = ldb_async_wait(ac->dom_req->async.handle, LDB_WAIT_NONE);
+		ret = ldb_wait(ac->dom_req->async.handle, LDB_WAIT_NONE);
 
 		if (ret != LDB_SUCCESS) {
 			handle->status = ret;
@@ -1098,7 +1098,7 @@ static int ph_async_wait(struct ldb_async_handle *handle) {
 		return password_hash_add_do_add(handle);
 
 	case PH_ADD_DO_ADD:
-		ret = ldb_async_wait(ac->down_req->async.handle, LDB_WAIT_NONE);
+		ret = ldb_wait(ac->down_req->async.handle, LDB_WAIT_NONE);
 
 		if (ret != LDB_SUCCESS) {
 			handle->status = ret;
@@ -1116,7 +1116,7 @@ static int ph_async_wait(struct ldb_async_handle *handle) {
 		break;
 		
 	case PH_MOD_DO_REQ:
-		ret = ldb_async_wait(ac->down_req->async.handle, LDB_WAIT_NONE);
+		ret = ldb_wait(ac->down_req->async.handle, LDB_WAIT_NONE);
 
 		if (ret != LDB_SUCCESS) {
 			handle->status = ret;
@@ -1135,7 +1135,7 @@ static int ph_async_wait(struct ldb_async_handle *handle) {
 		return password_hash_mod_search_self(handle);
 		
 	case PH_MOD_SEARCH_SELF:
-		ret = ldb_async_wait(ac->search_req->async.handle, LDB_WAIT_NONE);
+		ret = ldb_wait(ac->search_req->async.handle, LDB_WAIT_NONE);
 
 		if (ret != LDB_SUCCESS) {
 			handle->status = ret;
@@ -1154,7 +1154,7 @@ static int ph_async_wait(struct ldb_async_handle *handle) {
 		return password_hash_mod_search_dom(handle);
 		
 	case PH_MOD_SEARCH_DOM:
-		ret = ldb_async_wait(ac->dom_req->async.handle, LDB_WAIT_NONE);
+		ret = ldb_wait(ac->dom_req->async.handle, LDB_WAIT_NONE);
 
 		if (ret != LDB_SUCCESS) {
 			handle->status = ret;
@@ -1173,7 +1173,7 @@ static int ph_async_wait(struct ldb_async_handle *handle) {
 		return password_hash_mod_do_mod(handle);
 
 	case PH_MOD_DO_MOD:
-		ret = ldb_async_wait(ac->mod_req->async.handle, LDB_WAIT_NONE);
+		ret = ldb_wait(ac->mod_req->async.handle, LDB_WAIT_NONE);
 
 		if (ret != LDB_SUCCESS) {
 			handle->status = ret;
@@ -1202,12 +1202,12 @@ done:
 	return ret;
 }
 
-static int ph_async_wait_all(struct ldb_async_handle *handle) {
+static int ph_wait_all(struct ldb_handle *handle) {
 
 	int ret;
 
 	while (handle->state != LDB_ASYNC_DONE) {
-		ret = ph_async_wait(handle);
+		ret = ph_wait(handle);
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}
@@ -1216,12 +1216,12 @@ static int ph_async_wait_all(struct ldb_async_handle *handle) {
 	return handle->status;
 }
 
-static int password_hash_async_wait(struct ldb_async_handle *handle, enum ldb_async_wait_type type)
+static int password_hash_wait(struct ldb_handle *handle, enum ldb_wait_type type)
 {
 	if (type == LDB_WAIT_ALL) {
-		return ph_async_wait_all(handle);
+		return ph_wait_all(handle);
 	} else {
-		return ph_async_wait(handle);
+		return ph_wait(handle);
 	}
 }
 
@@ -1229,7 +1229,7 @@ static const struct ldb_module_ops password_hash_ops = {
 	.name          = "password_hash",
 	.add           = password_hash_add,
 	.modify        = password_hash_modify,
-	.async_wait    = password_hash_async_wait
+	.wait          = password_hash_wait
 };
 
 

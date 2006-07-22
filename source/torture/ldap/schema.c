@@ -102,7 +102,7 @@ struct test_rootDSE {
 	const char *schemadn;
 };
 
-struct test_schema_async_ctx {
+struct test_schema_ctx {
 	struct ldb_paged_control *ctrl;
 	uint32_t count;
 	BOOL pending;
@@ -143,9 +143,9 @@ static BOOL test_search_rootDSE(struct ldb_context *ldb, struct test_rootDSE *ro
 	return True;
 }
 
-static int test_schema_search_callback(struct ldb_context *ldb, void *context, struct ldb_async_result *ares)
+static int test_schema_search_callback(struct ldb_context *ldb, void *context, struct ldb_reply *ares)
 {
-	struct test_schema_async_ctx *actx = talloc_get_type(context, struct test_schema_async_ctx);
+	struct test_schema_ctx *actx = talloc_get_type(context, struct test_schema_ctx);
 	int ret = LDB_SUCCESS;
 
 	switch (ares->type) {
@@ -208,10 +208,10 @@ static BOOL test_create_schema_type(struct ldb_context *ldb, struct test_rootDSE
 	struct ldb_paged_control *control;
 	struct ldb_request *req;
 	int ret;
-	struct test_schema_async_ctx *actx;
+	struct test_schema_ctx *actx;
 
 	req = talloc(ldb, struct ldb_request);
-	actx = talloc(req, struct test_schema_async_ctx);
+	actx = talloc(req, struct test_schema_ctx);
 
 	ctrl = talloc_array(req, struct ldb_control *, 2);
 	ctrl[0] = talloc(ctrl, struct ldb_control);
@@ -248,7 +248,7 @@ again:
 		return False;
 	}
 
-	ret = ldb_async_wait(req->async.handle, LDB_WAIT_ALL);
+	ret = ldb_wait(req->async.handle, LDB_WAIT_ALL);
        	if (ret != LDB_SUCCESS) {
 		d_printf("search error - %s\n", ldb_errstring(ldb));
 		return False;

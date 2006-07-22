@@ -230,12 +230,12 @@ struct operational_async_context {
 
 	struct ldb_module *module;
 	void *up_context;
-	int (*up_callback)(struct ldb_context *, void *, struct ldb_async_result *);
+	int (*up_callback)(struct ldb_context *, void *, struct ldb_reply *);
 
 	const char * const *attrs;
 };
 
-static int operational_async_callback(struct ldb_context *ldb, void *context, struct ldb_async_result *ares)
+static int operational_async_callback(struct ldb_context *ldb, void *context, struct ldb_reply *ares)
 {
 	struct operational_async_context *ac;
 
