@@ -128,7 +128,7 @@ static int rdn_name_add(struct ldb_module *module, struct ldb_request *req)
 	/* do not free down_req as the call results may be linked to it,
 	 * it will be freed when the upper level request get freed */
 	if (ret == LDB_SUCCESS) {
-		req->async.handle = down_req->async.handle;
+		req->handle = down_req->handle;
 	}
 
 	return ret;
@@ -181,7 +181,7 @@ static int rdn_name_rename(struct ldb_module *module, struct ldb_request *req)
 
 	ac->step = RENAME_RENAME;
 
-	req->async.handle = h;
+	req->handle = h;
 
 	/* rename first, modify "name" if rename is ok */
 	return ldb_next_request(module, ac->down_req);
@@ -254,17 +254,17 @@ static int rename_wait(struct ldb_handle *handle)
 
 	switch(ac->step) {
 	case RENAME_RENAME:
-		ret = ldb_wait(ac->down_req->async.handle, LDB_WAIT_NONE);
+		ret = ldb_wait(ac->down_req->handle, LDB_WAIT_NONE);
 		if (ret != LDB_SUCCESS) {
 			handle->status = ret;
 			goto done;
 		}
-		if (ac->down_req->async.handle->status != LDB_SUCCESS) {
-			handle->status = ac->down_req->async.handle->status;
+		if (ac->down_req->handle->status != LDB_SUCCESS) {
+			handle->status = ac->down_req->handle->status;
 			goto done;
 		}
 
-		if (ac->down_req->async.handle->state != LDB_ASYNC_DONE) {
+		if (ac->down_req->handle->state != LDB_ASYNC_DONE) {
 			return LDB_SUCCESS;
 		}
 
@@ -272,17 +272,17 @@ static int rename_wait(struct ldb_handle *handle)
 		return rdn_name_rename_do_mod(handle);
 
 	case RENAME_MODIFY:
-		ret = ldb_wait(ac->mod_req->async.handle, LDB_WAIT_NONE);
+		ret = ldb_wait(ac->mod_req->handle, LDB_WAIT_NONE);
 		if (ret != LDB_SUCCESS) {
 			handle->status = ret;
 			goto done;
 		}
-		if (ac->mod_req->async.handle->status != LDB_SUCCESS) {
-			handle->status = ac->mod_req->async.handle->status;
+		if (ac->mod_req->handle->status != LDB_SUCCESS) {
+			handle->status = ac->mod_req->handle->status;
 			goto done;
 		}
 
-		if (ac->mod_req->async.handle->state != LDB_ASYNC_DONE) {
+		if (ac->mod_req->handle->state != LDB_ASYNC_DONE) {
 			return LDB_SUCCESS;
 		}
 

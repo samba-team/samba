@@ -664,14 +664,12 @@ struct ldb_request {
 
 	struct ldb_control **controls;
 
-	struct {
-		void *context;
-		int (*callback)(struct ldb_context *, void *, struct ldb_reply *);
+	void *context;
+	int (*callback)(struct ldb_context *, void *, struct ldb_reply *);
 
-		int timeout;
-		time_t starttime;
-		struct ldb_handle *handle;
-	} async;
+	int timeout;
+	time_t starttime;
+	struct ldb_handle *handle;
 };
 
 int ldb_request(struct ldb_context *ldb, struct ldb_request *request);

@@ -251,9 +251,9 @@ static int paged_search(struct ldb_module *module, struct ldb_request *req)
 
 	private_data = talloc_get_type(module->private_data, struct private_data);
 
-	req->async.handle = NULL;
+	req->handle = NULL;
 
-	if (!req->async.callback || !req->async.context) {
+	if (!req->callback || !req->context) {
 		ldb_set_errstring(module->ldb, talloc_asprintf(module,
 				  "Async interface called with NULL callback function or NULL context"));
 		return LDB_ERR_OPERATIONS_ERROR;
@@ -264,7 +264,7 @@ static int paged_search(struct ldb_module *module, struct ldb_request *req)
 		return LDB_ERR_PROTOCOL_ERROR;
 	}
 
-	h = init_handle(req, module, req->async.context, req->async.callback);
+	h = init_handle(req, module, req->context, req->callback);
 	if (!h) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
@@ -299,8 +299,8 @@ static int paged_search(struct ldb_module *module, struct ldb_request *req)
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 
-		ac->store->req->async.context = ac;
-		ac->store->req->async.callback = paged_search_callback;
+		ac->store->req->context = ac;
+		ac->store->req->callback = paged_search_callback;
 		ldb_set_timeout_from_prev_req(module->ldb, req, ac->store->req);
 
 		ret = ldb_next_request(module, ac->store->req);
@@ -323,7 +323,7 @@ static int paged_search(struct ldb_module *module, struct ldb_request *req)
 		ret = LDB_SUCCESS;
 	}
 
-	req->async.handle = h;
+	req->handle = h;
 
 	/* check if it is an abandon */
 	if (ac->size == 0) {
@@ -463,7 +463,7 @@ static int paged_wait(struct ldb_handle *handle, enum ldb_wait_type type)
 
 	ac = talloc_get_type(handle->private_data, struct paged_context);
 
-	if (ac->store->req->async.handle->state == LDB_ASYNC_DONE) {
+	if (ac->store->req->handle->state == LDB_ASYNC_DONE) {
 		/* if lower level is finished we do not need to call it anymore */
 		/* return all we have until size == 0 or we empty storage */
 		ret = paged_results(handle);
@@ -478,8 +478,8 @@ static int paged_wait(struct ldb_handle *handle, enum ldb_wait_type type)
 	}
 
 	if (type == LDB_WAIT_ALL) {
-		while (ac->store->req->async.handle->state != LDB_ASYNC_DONE) {
-			ret = ldb_wait(ac->store->req->async.handle, type);
+		while (ac->store->req->handle->state != LDB_ASYNC_DONE) {
+			ret = ldb_wait(ac->store->req->handle, type);
 			if (ret != LDB_SUCCESS) {
 				handle->state = LDB_ASYNC_DONE;
 				handle->status = ret;
@@ -498,7 +498,7 @@ static int paged_wait(struct ldb_handle *handle, enum ldb_wait_type type)
 		return ret;
 	}
 
-	ret = ldb_wait(ac->store->req->async.handle, type);
+	ret = ldb_wait(ac->store->req->handle, type);
 	if (ret != LDB_SUCCESS) {
 		handle->state = LDB_ASYNC_DONE;
 		handle->status = ret;
@@ -508,7 +508,7 @@ static int paged_wait(struct ldb_handle *handle, enum ldb_wait_type type)
 	handle->status = ret;
 
 	if (ac->store->num_entries >= ac->size ||
-	    ac->store->req->async.handle->state == LDB_ASYNC_DONE) {
+	    ac->store->req->handle->state == LDB_ASYNC_DONE) {
 
 		ret = paged_results(handle);
 

@@ -231,8 +231,8 @@ static BOOL test_create_schema_type(struct ldb_context *ldb, struct test_rootDSE
 	if (req->op.search.tree == NULL) return -1;
 	req->op.search.attrs = NULL;
 	req->controls = ctrl;
-	req->async.context = actx;
-	req->async.callback = test_schema_search_callback;
+	req->context = actx;
+	req->callback = test_schema_search_callback;
 	ldb_set_timeout(ldb, req, 0);
 
 	actx->count		= 0;
@@ -248,7 +248,7 @@ again:
 		return False;
 	}
 
-	ret = ldb_wait(req->async.handle, LDB_WAIT_ALL);
+	ret = ldb_wait(req->handle, LDB_WAIT_ALL);
        	if (ret != LDB_SUCCESS) {
 		d_printf("search error - %s\n", ldb_errstring(ldb));
 		return False;
