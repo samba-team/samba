@@ -134,6 +134,7 @@ NTSTATUS torture_rpc_init(void)
 			    torture_samba3_rpc_sharesec);
 	register_torture_op("RPC-SAMBA3-GETUSERNAME",
 			    torture_samba3_rpc_getusername);
+	register_torture_op("RPC-SAMBA3-LSA", torture_samba3_rpc_lsa);
 	register_torture_op("RPC-DRSUAPI", torture_rpc_drsuapi);
 	register_torture_op("RPC-CRACKNAMES", torture_rpc_drsuapi_cracknames);
 	register_torture_op("RPC-ROT", torture_rpc_rot);

@@ -2071,3 +2071,80 @@ BOOL torture_samba3_rpc_sharesec(struct torture_context *torture)
 	talloc_free(mem_ctx);
 	return ret;
 }
+
+BOOL torture_samba3_rpc_lsa(struct torture_context *torture)
+{
+	TALLOC_CTX *mem_ctx;
+	BOOL ret = True;
+	struct smbcli_state *cli;
+	struct dcerpc_pipe *p;
+	struct policy_handle lsa_handle;
+	NTSTATUS status;
+	struct dom_sid *domain_sid;
+
+	if (!(mem_ctx = talloc_new(torture))) {
+		return False;
+	}
+
+	if (!(torture_open_connection_share(
+		      mem_ctx, &cli, lp_parm_string(-1, "torture", "host"),
+		      "IPC$", NULL))) {
+		d_printf("IPC$ connection failed\n");
+		talloc_free(mem_ctx);
+		return False;
+	}
+
+	p = pipe_bind_smb(mem_ctx, cli->tree, "\\lsarpc",
+			  &dcerpc_table_lsarpc);
+	if (p == NULL) {
+		d_printf("(%s) pipe_bind_smb failed\n", __location__);
+		talloc_free(mem_ctx);
+		return False;
+	}
+
+	{
+		struct lsa_ObjectAttribute attr;
+		struct lsa_OpenPolicy2 o;
+		o.in.system_name = talloc_asprintf(
+			mem_ctx, "\\\\%s", dcerpc_server_name(p));
+		ZERO_STRUCT(attr);
+		o.in.attr = &attr;
+		o.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
+		o.out.handle = &lsa_handle;
+		status = dcerpc_lsa_OpenPolicy2(p, mem_ctx, &o);
+		if (!NT_STATUS_IS_OK(status)) {
+			d_printf("(%s) dcerpc_lsa_OpenPolicy2 failed: %s\n",
+				 __location__, nt_errstr(status));
+			talloc_free(mem_ctx);
+			return False;
+		}
+	}
+
+#if 0
+	p->conn->flags |= DCERPC_DEBUG_PRINT_IN | DCERPC_DEBUG_PRINT_OUT;
+#endif
+
+	{
+		int i;
+		int levels[] = { 2,3,5,6 };
+
+		for (i=0; i<ARRAY_SIZE(levels); i++) {
+			struct lsa_QueryInfoPolicy r;
+			r.in.handle = &lsa_handle;
+			r.in.level = levels[i];
+			status = dcerpc_lsa_QueryInfoPolicy(p, mem_ctx, &r);
+			if (!NT_STATUS_IS_OK(status)) {
+				d_printf("(%s) dcerpc_lsa_QueryInfoPolicy %d "
+					 "failed: %s\n", __location__,
+					 levels[i], nt_errstr(status));
+				talloc_free(mem_ctx);
+				return False;
+			}
+			if (levels[i] == 5) {
+				domain_sid = r.out.info->account_domain.sid;
+			}
+		}
+	}
+
+	return ret;
+}
