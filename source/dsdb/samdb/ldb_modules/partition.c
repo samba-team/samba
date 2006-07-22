@@ -167,7 +167,7 @@ static int partition_search(struct ldb_module *module, struct ldb_request *req)
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 		/* return our own handle to deal with this call */
-		req->async.handle = h;
+		req->handle = h;
 		
 		ac = talloc_get_type(h->private_data, struct partition_context);
 		
@@ -537,18 +537,18 @@ static int partition_wait_none(struct ldb_handle *handle) {
 	ac = talloc_get_type(handle->private_data, struct partition_context);
 
 	for (i=0; i < ac->num_searches; i++) {
-		ret = ldb_wait(ac->search_req[i]->async.handle, LDB_WAIT_NONE);
+		ret = ldb_wait(ac->search_req[i]->handle, LDB_WAIT_NONE);
 		
 		if (ret != LDB_SUCCESS) {
 			handle->status = ret;
 			goto done;
 		}
-		if (ac->search_req[i]->async.handle->status != LDB_SUCCESS) {
-			handle->status = ac->search_req[i]->async.handle->status;
+		if (ac->search_req[i]->handle->status != LDB_SUCCESS) {
+			handle->status = ac->search_req[i]->handle->status;
 			goto done;
 		}
 		
-		if (ac->search_req[i]->async.handle->state != LDB_ASYNC_DONE) {
+		if (ac->search_req[i]->handle->state != LDB_ASYNC_DONE) {
 			return LDB_SUCCESS;
 		}
 	}

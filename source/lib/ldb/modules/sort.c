@@ -242,14 +242,14 @@ static int server_sort_search(struct ldb_module *module, struct ldb_request *req
 		return ldb_next_request(module, req);
 	}
 
-	req->async.handle = NULL;
+	req->handle = NULL;
 
-	if (!req->async.callback || !req->async.context) {
+	if (!req->callback || !req->context) {
 		ldb_set_errstring(module->ldb, talloc_asprintf(module, "Async interface called with NULL callback function or NULL context"));
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 	
-	h = init_handle(req, module, req->async.context, req->async.callback);
+	h = init_handle(req, module, req->context, req->callback);
 	if (!h) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
@@ -310,11 +310,11 @@ static int server_sort_search(struct ldb_module *module, struct ldb_request *req
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	ac->req->async.context = ac;
-	ac->req->async.callback = server_sort_search_callback;
+	ac->req->context = ac;
+	ac->req->callback = server_sort_search_callback;
 	ldb_set_timeout_from_prev_req(module->ldb, req, ac->req);
 
-	req->async.handle = h;
+	req->handle = h;
 
 	return ldb_next_request(module, ac->req);
 }
@@ -398,15 +398,15 @@ static int server_sort_wait(struct ldb_handle *handle, enum ldb_wait_type type)
 
 	ac = talloc_get_type(handle->private_data, struct sort_context);
 
-	ret = ldb_wait(ac->req->async.handle, type);
+	ret = ldb_wait(ac->req->handle, type);
 
 	if (ret != LDB_SUCCESS) {
 		handle->status = ret;
 		return ret;
 	}
 		
-	handle->state = ac->req->async.handle->state;
-	handle->status = ac->req->async.handle->status;
+	handle->state = ac->req->handle->state;
+	handle->status = ac->req->handle->status;
 
 	if (handle->status != LDB_SUCCESS) {
 		return handle->status;

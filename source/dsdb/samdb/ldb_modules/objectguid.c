@@ -107,7 +107,7 @@ static int objectguid_add(struct ldb_module *module, struct ldb_request *req)
 	/* do not free down_req as the call results may be linked to it,
 	 * it will be freed when the upper level request get freed */
 	if (ret == LDB_SUCCESS) {
-		req->async.handle = down_req->async.handle;
+		req->handle = down_req->handle;
 	}
 
 	return ret;

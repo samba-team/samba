@@ -498,27 +498,27 @@ int ltdb_search(struct ldb_module *module, struct ldb_request *req)
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	req->async.handle = init_ltdb_handle(ltdb, module, req->async.context, req->async.callback);
-	if (req->async.handle == NULL) {
+	req->handle = init_ltdb_handle(ltdb, module, req->context, req->callback);
+	if (req->handle == NULL) {
 		ltdb_unlock_read(module);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	ltdb_ac = talloc_get_type(req->async.handle->private_data, struct ltdb_context);
+	ltdb_ac = talloc_get_type(req->handle->private_data, struct ltdb_context);
 
 	ltdb_ac->tree = req->op.search.tree;
 	ltdb_ac->scope = req->op.search.scope;
 	ltdb_ac->base = req->op.search.base;
 	ltdb_ac->attrs = req->op.search.attrs;
 
-	ret = ltdb_search_indexed(req->async.handle);
+	ret = ltdb_search_indexed(req->handle);
 	if (ret == -1) {
-		ret = ltdb_search_full(req->async.handle);
+		ret = ltdb_search_full(req->handle);
 	}
 	if (ret != LDB_SUCCESS) {
 		ldb_set_errstring(module->ldb, talloc_strdup(module->ldb, "Indexed and full searches both failed!\n"));
-		req->async.handle->state = LDB_ASYNC_DONE;
-		req->async.handle->status = ret;
+		req->handle->state = LDB_ASYNC_DONE;
+		req->handle->status = ret;
 	}
 
 	ltdb_unlock_read(module);

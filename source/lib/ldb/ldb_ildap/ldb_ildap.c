@@ -391,9 +391,9 @@ static int ildb_search(struct ldb_module *module, struct ldb_request *req)
 	struct ldap_message *msg;
 	int n;
 
-	req->async.handle = NULL;
+	req->handle = NULL;
 
-	if (!req->async.callback || !req->async.context) {
+	if (!req->callback || !req->context) {
 		ldb_set_errstring(module->ldb, talloc_asprintf(module, "Async interface called with NULL callback function or NULL context"));
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
@@ -444,7 +444,7 @@ static int ildb_search(struct ldb_module *module, struct ldb_request *req)
 	msg->r.SearchRequest.attributes = discard_const(req->op.search.attrs);
 	msg->controls = req->controls;
 
-	return ildb_request_send(module, msg, req->async.context, req->async.callback, req->async.timeout, &(req->async.handle));
+	return ildb_request_send(module, msg, req->context, req->callback, req->timeout, &(req->handle));
 }
 
 /*
@@ -457,7 +457,7 @@ static int ildb_add(struct ldb_module *module, struct ldb_request *req)
 	struct ldap_mod **mods;
 	int i,n;
 
-	req->async.handle = NULL;
+	req->handle = NULL;
 
 	/* ignore ltdb specials */
 	if (ldb_dn_is_special(req->op.add.message->dn)) {
@@ -494,7 +494,7 @@ static int ildb_add(struct ldb_module *module, struct ldb_request *req)
 		msg->r.AddRequest.attributes[i] = mods[i]->attrib;
 	}
 
-	return ildb_request_send(module, msg, req->async.context, req->async.callback, req->async.timeout, &(req->async.handle));
+	return ildb_request_send(module, msg, req->context, req->callback, req->timeout, &(req->handle));
 }
 
 /*
@@ -507,7 +507,7 @@ static int ildb_modify(struct ldb_module *module, struct ldb_request *req)
 	struct ldap_mod **mods;
 	int i,n;
 
-	req->async.handle = NULL;
+	req->handle = NULL;
 
 	/* ignore ltdb specials */
 	if (ldb_dn_is_special(req->op.mod.message->dn)) {
@@ -544,11 +544,7 @@ static int ildb_modify(struct ldb_module *module, struct ldb_request *req)
 		msg->r.ModifyRequest.mods[i] = *mods[i];
 	}
 
-	return ildb_request_send(module, msg,
-				req->async.context,
-				req->async.callback,
-				req->async.timeout,
-				&(req->async.handle));
+	return ildb_request_send(module, msg, req->context, req->callback, req->timeout, &(req->handle));
 }
 
 /*
@@ -559,7 +555,7 @@ static int ildb_delete(struct ldb_module *module, struct ldb_request *req)
 	struct ildb_private *ildb = talloc_get_type(module->private_data, struct ildb_private);
 	struct ldap_message *msg;
 
-	req->async.handle = NULL;
+	req->handle = NULL;
 
 	/* ignore ltdb specials */
 	if (ldb_dn_is_special(req->op.del.dn)) {
@@ -579,11 +575,7 @@ static int ildb_delete(struct ldb_module *module, struct ldb_request *req)
 		return LDB_ERR_INVALID_DN_SYNTAX;
 	}
 
-	return ildb_request_send(module, msg,
-				req->async.context,
-				req->async.callback,
-				req->async.timeout,
-				&(req->async.handle));
+	return ildb_request_send(module, msg, req->context, req->callback, req->timeout, &(req->handle));
 }
 
 /*
@@ -594,7 +586,7 @@ static int ildb_rename(struct ldb_module *module, struct ldb_request *req)
 	struct ildb_private *ildb = talloc_get_type(module->private_data, struct ildb_private);
 	struct ldap_message *msg;
 
-	req->async.handle = NULL;
+	req->handle = NULL;
 
 	/* ignore ltdb specials */
 	if (ldb_dn_is_special(req->op.rename.olddn) || ldb_dn_is_special(req->op.rename.newdn)) {
@@ -632,11 +624,7 @@ static int ildb_rename(struct ldb_module *module, struct ldb_request *req)
 
 	msg->r.ModifyDNRequest.deleteolddn = True;
 
-	return ildb_request_send(module, msg,
-				req->async.context,
-				req->async.callback,
-				req->async.timeout,
-				&(req->async.handle));
+	return ildb_request_send(module, msg, req->context, req->callback, req->timeout, &(req->handle));
 }
 
 static int ildb_start_trans(struct ldb_module *module)
@@ -757,8 +745,8 @@ static int ildb_init(struct ldb_module *module)
 	req->op.search.tree = ldb_parse_tree(req, "dn=dc=rootDSE");
 	req->op.search.attrs = NULL;
 	req->controls = NULL;
-	req->async.context = ildb;
-	req->async.callback = ildb_rootdse_callback;
+	req->context = ildb;
+	req->callback = ildb_rootdse_callback;
 	ldb_set_timeout(module->ldb, req, 60);
 
 	ret = ildb_search(module, req);
@@ -767,7 +755,7 @@ static int ildb_init(struct ldb_module *module)
 		return ret;
 	}
 
-	ret = ildb_wait(req->async.handle, LDB_WAIT_ALL);
+	ret = ildb_wait(req->handle, LDB_WAIT_ALL);
 	
 	talloc_free(req);
 	return ret;

@@ -509,9 +509,9 @@ static int build_domain_data_request(struct ph_context *ac)
 	}
 	ac->dom_req->op.search.attrs = attrs;
 	ac->dom_req->controls = NULL;
-	ac->dom_req->async.context = ac;
-	ac->dom_req->async.callback = get_domain_data_callback;
-	ac->dom_req->async.timeout = ac->orig_req->async.timeout;
+	ac->dom_req->context = ac;
+	ac->dom_req->callback = get_domain_data_callback;
+	ac->dom_req->timeout = ac->orig_req->timeout;
 	ldb_set_timeout_from_prev_req(ac->module->ldb, ac->orig_req, ac->dom_req);
 
 	return LDB_SUCCESS;
@@ -637,7 +637,7 @@ static int password_hash_add(struct ldb_module *module, struct ldb_request *req)
 
 	ac->step = PH_ADD_SEARCH_DOM;
 
-	req->async.handle = h;
+	req->handle = h;
 
 	return ldb_next_request(module, ac->dom_req);
 }
@@ -787,7 +787,7 @@ static int password_hash_modify(struct ldb_module *module, struct ldb_request *r
 	ac = talloc_get_type(h->private_data, struct ph_context);
 
 	/* return or own handle to deal with this call */
-	req->async.handle = h;
+	req->handle = h;
 
 	/* prepare the first operation */
 	ac->down_req = talloc_zero(ac, struct ldb_request);
@@ -814,8 +814,8 @@ static int password_hash_modify(struct ldb_module *module, struct ldb_request *r
 		return password_hash_mod_search_self(h);
 	}
 	
-	ac->down_req->async.context = NULL;
-	ac->down_req->async.callback = NULL;
+	ac->down_req->context = NULL;
+	ac->down_req->callback = NULL;
 
 	ac->step = PH_MOD_DO_REQ;
 
@@ -889,8 +889,8 @@ static int password_hash_mod_search_self(struct ldb_handle *h) {
 	}
 	ac->search_req->op.search.attrs = attrs;
 	ac->search_req->controls = NULL;
-	ac->search_req->async.context = ac;
-	ac->search_req->async.callback = get_self_callback;
+	ac->search_req->context = ac;
+	ac->search_req->callback = get_self_callback;
 	ldb_set_timeout_from_prev_req(ac->module->ldb, ac->orig_req, ac->search_req);
 
 	ac->step = PH_MOD_SEARCH_SELF;
@@ -1079,18 +1079,18 @@ static int ph_wait(struct ldb_handle *handle) {
 
 	switch (ac->step) {
 	case PH_ADD_SEARCH_DOM:
-		ret = ldb_wait(ac->dom_req->async.handle, LDB_WAIT_NONE);
+		ret = ldb_wait(ac->dom_req->handle, LDB_WAIT_NONE);
 
 		if (ret != LDB_SUCCESS) {
 			handle->status = ret;
 			goto done;
 		}
-		if (ac->dom_req->async.handle->status != LDB_SUCCESS) {
-			handle->status = ac->dom_req->async.handle->status;
+		if (ac->dom_req->handle->status != LDB_SUCCESS) {
+			handle->status = ac->dom_req->handle->status;
 			goto done;
 		}
 
-		if (ac->dom_req->async.handle->state != LDB_ASYNC_DONE) {
+		if (ac->dom_req->handle->state != LDB_ASYNC_DONE) {
 			return LDB_SUCCESS;
 		}
 
@@ -1098,36 +1098,36 @@ static int ph_wait(struct ldb_handle *handle) {
 		return password_hash_add_do_add(handle);
 
 	case PH_ADD_DO_ADD:
-		ret = ldb_wait(ac->down_req->async.handle, LDB_WAIT_NONE);
+		ret = ldb_wait(ac->down_req->handle, LDB_WAIT_NONE);
 
 		if (ret != LDB_SUCCESS) {
 			handle->status = ret;
 			goto done;
 		}
-		if (ac->down_req->async.handle->status != LDB_SUCCESS) {
-			handle->status = ac->down_req->async.handle->status;
+		if (ac->down_req->handle->status != LDB_SUCCESS) {
+			handle->status = ac->down_req->handle->status;
 			goto done;
 		}
 
-		if (ac->down_req->async.handle->state != LDB_ASYNC_DONE) {
+		if (ac->down_req->handle->state != LDB_ASYNC_DONE) {
 			return LDB_SUCCESS;
 		}
 
 		break;
 		
 	case PH_MOD_DO_REQ:
-		ret = ldb_wait(ac->down_req->async.handle, LDB_WAIT_NONE);
+		ret = ldb_wait(ac->down_req->handle, LDB_WAIT_NONE);
 
 		if (ret != LDB_SUCCESS) {
 			handle->status = ret;
 			goto done;
 		}
-		if (ac->down_req->async.handle->status != LDB_SUCCESS) {
-			handle->status = ac->down_req->async.handle->status;
+		if (ac->down_req->handle->status != LDB_SUCCESS) {
+			handle->status = ac->down_req->handle->status;
 			goto done;
 		}
 
-		if (ac->down_req->async.handle->state != LDB_ASYNC_DONE) {
+		if (ac->down_req->handle->state != LDB_ASYNC_DONE) {
 			return LDB_SUCCESS;
 		}
 
@@ -1135,18 +1135,18 @@ static int ph_wait(struct ldb_handle *handle) {
 		return password_hash_mod_search_self(handle);
 		
 	case PH_MOD_SEARCH_SELF:
-		ret = ldb_wait(ac->search_req->async.handle, LDB_WAIT_NONE);
+		ret = ldb_wait(ac->search_req->handle, LDB_WAIT_NONE);
 
 		if (ret != LDB_SUCCESS) {
 			handle->status = ret;
 			goto done;
 		}
-		if (ac->search_req->async.handle->status != LDB_SUCCESS) {
-			handle->status = ac->search_req->async.handle->status;
+		if (ac->search_req->handle->status != LDB_SUCCESS) {
+			handle->status = ac->search_req->handle->status;
 			goto done;
 		}
 
-		if (ac->search_req->async.handle->state != LDB_ASYNC_DONE) {
+		if (ac->search_req->handle->state != LDB_ASYNC_DONE) {
 			return LDB_SUCCESS;
 		}
 
@@ -1154,18 +1154,18 @@ static int ph_wait(struct ldb_handle *handle) {
 		return password_hash_mod_search_dom(handle);
 		
 	case PH_MOD_SEARCH_DOM:
-		ret = ldb_wait(ac->dom_req->async.handle, LDB_WAIT_NONE);
+		ret = ldb_wait(ac->dom_req->handle, LDB_WAIT_NONE);
 
 		if (ret != LDB_SUCCESS) {
 			handle->status = ret;
 			goto done;
 		}
-		if (ac->dom_req->async.handle->status != LDB_SUCCESS) {
-			handle->status = ac->dom_req->async.handle->status;
+		if (ac->dom_req->handle->status != LDB_SUCCESS) {
+			handle->status = ac->dom_req->handle->status;
 			goto done;
 		}
 
-		if (ac->dom_req->async.handle->state != LDB_ASYNC_DONE) {
+		if (ac->dom_req->handle->state != LDB_ASYNC_DONE) {
 			return LDB_SUCCESS;
 		}
 
@@ -1173,18 +1173,18 @@ static int ph_wait(struct ldb_handle *handle) {
 		return password_hash_mod_do_mod(handle);
 
 	case PH_MOD_DO_MOD:
-		ret = ldb_wait(ac->mod_req->async.handle, LDB_WAIT_NONE);
+		ret = ldb_wait(ac->mod_req->handle, LDB_WAIT_NONE);
 
 		if (ret != LDB_SUCCESS) {
 			handle->status = ret;
 			goto done;
 		}
-		if (ac->mod_req->async.handle->status != LDB_SUCCESS) {
-			handle->status = ac->mod_req->async.handle->status;
+		if (ac->mod_req->handle->status != LDB_SUCCESS) {
+			handle->status = ac->mod_req->handle->status;
 			goto done;
 		}
 
-		if (ac->mod_req->async.handle->state != LDB_ASYNC_DONE) {
+		if (ac->mod_req->handle->state != LDB_ASYNC_DONE) {
 			return LDB_SUCCESS;
 		}
 

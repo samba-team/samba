@@ -224,8 +224,8 @@ static int do_search(struct ldb_context *ldb,
 	if (req->op.search.tree == NULL) return -1;
 	req->op.search.attrs = attrs;
 	req->controls = sctx->req_ctrls;
-	req->async.context = sctx;
-	req->async.callback = &search_callback;
+	req->context = sctx;
+	req->callback = &search_callback;
 	ldb_set_timeout(ldb, req, 0); /* TODO: make this settable by command line */
 
 again:
@@ -237,7 +237,7 @@ again:
 		return -1;
 	}
 
-	ret = ldb_wait(req->async.handle, LDB_WAIT_ALL);
+	ret = ldb_wait(req->handle, LDB_WAIT_ALL);
        	if (ret != LDB_SUCCESS) {
 		printf("search error - %s\n", ldb_errstring(ldb));
 		return -1;

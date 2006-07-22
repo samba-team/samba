@@ -283,7 +283,7 @@ static int objectclass_add(struct ldb_module *module, struct ldb_request *req)
 	/* do not free down_req as the call results may be linked to it,
 	 * it will be freed when the upper level request get freed */
 	if (ret == LDB_SUCCESS) {
-		req->async.handle = down_req->async.handle;
+		req->handle = down_req->handle;
 	}
 	return ret;
 }
@@ -382,7 +382,7 @@ static int objectclass_modify(struct ldb_module *module, struct ldb_request *req
 		/* do not free down_req as the call results may be linked to it,
 		 * it will be freed when the upper level request get freed */
 		if (ret == LDB_SUCCESS) {
-			req->async.handle = down_req->async.handle;
+			req->handle = down_req->handle;
 		}
 		return ret;
 	}
@@ -399,7 +399,7 @@ static int objectclass_modify(struct ldb_module *module, struct ldb_request *req
 		ac = talloc_get_type(h->private_data, struct oc_context);
 		
 		/* return or own handle to deal with this call */
-		req->async.handle = h;
+		req->handle = h;
 		
 		/* prepare the first operation */
 		ac->down_req = talloc(ac, struct ldb_request);
@@ -410,8 +410,8 @@ static int objectclass_modify(struct ldb_module *module, struct ldb_request *req
 		
 		*(ac->down_req) = *req; /* copy the request */
 		
-		ac->down_req->async.context = NULL;
-		ac->down_req->async.callback = NULL;
+		ac->down_req->context = NULL;
+		ac->down_req->callback = NULL;
 		ldb_set_timeout_from_prev_req(module->ldb, req, ac->down_req);
 		
 		ac->step = OC_DO_REQ;
@@ -471,8 +471,8 @@ static int objectclass_search_self(struct ldb_handle *h) {
 	}
 	ac->search_req->op.search.attrs = attrs;
 	ac->search_req->controls = NULL;
-	ac->search_req->async.context = ac;
-	ac->search_req->async.callback = get_self_callback;
+	ac->search_req->context = ac;
+	ac->search_req->callback = get_self_callback;
 	ldb_set_timeout_from_prev_req(ac->module->ldb, ac->orig_req, ac->search_req);
 
 	ac->step = OC_SEARCH_SELF;
@@ -504,8 +504,8 @@ static int objectclass_do_mod(struct ldb_handle *h) {
 
 	ac->mod_req->operation = LDB_MODIFY;
 	ac->mod_req->controls = NULL;
-	ac->mod_req->async.context = ac;
-	ac->mod_req->async.callback = NULL;
+	ac->mod_req->context = ac;
+	ac->mod_req->callback = NULL;
 	ldb_set_timeout_from_prev_req(ac->module->ldb, ac->orig_req, ac->mod_req);
 	
 	/* use a new message structure */
@@ -590,18 +590,18 @@ static int oc_wait(struct ldb_handle *handle) {
 
 	switch (ac->step) {
 	case OC_DO_REQ:
-		ret = ldb_wait(ac->down_req->async.handle, LDB_WAIT_NONE);
+		ret = ldb_wait(ac->down_req->handle, LDB_WAIT_NONE);
 
 		if (ret != LDB_SUCCESS) {
 			handle->status = ret;
 			goto done;
 		}
-		if (ac->down_req->async.handle->status != LDB_SUCCESS) {
-			handle->status = ac->down_req->async.handle->status;
+		if (ac->down_req->handle->status != LDB_SUCCESS) {
+			handle->status = ac->down_req->handle->status;
 			goto done;
 		}
 
-		if (ac->down_req->async.handle->state != LDB_ASYNC_DONE) {
+		if (ac->down_req->handle->state != LDB_ASYNC_DONE) {
 			return LDB_SUCCESS;
 		}
 
@@ -609,18 +609,18 @@ static int oc_wait(struct ldb_handle *handle) {
 		return objectclass_search_self(handle);
 
 	case OC_SEARCH_SELF:
-		ret = ldb_wait(ac->search_req->async.handle, LDB_WAIT_NONE);
+		ret = ldb_wait(ac->search_req->handle, LDB_WAIT_NONE);
 
 		if (ret != LDB_SUCCESS) {
 			handle->status = ret;
 			goto done;
 		}
-		if (ac->search_req->async.handle->status != LDB_SUCCESS) {
-			handle->status = ac->search_req->async.handle->status;
+		if (ac->search_req->handle->status != LDB_SUCCESS) {
+			handle->status = ac->search_req->handle->status;
 			goto done;
 		}
 
-		if (ac->search_req->async.handle->state != LDB_ASYNC_DONE) {
+		if (ac->search_req->handle->state != LDB_ASYNC_DONE) {
 			return LDB_SUCCESS;
 		}
 
@@ -628,18 +628,18 @@ static int oc_wait(struct ldb_handle *handle) {
 		return objectclass_do_mod(handle);
 
 	case OC_DO_MOD:
-		ret = ldb_wait(ac->mod_req->async.handle, LDB_WAIT_NONE);
+		ret = ldb_wait(ac->mod_req->handle, LDB_WAIT_NONE);
 
 		if (ret != LDB_SUCCESS) {
 			handle->status = ret;
 			goto done;
 		}
-		if (ac->mod_req->async.handle->status != LDB_SUCCESS) {
-			handle->status = ac->mod_req->async.handle->status;
+		if (ac->mod_req->handle->status != LDB_SUCCESS) {
+			handle->status = ac->mod_req->handle->status;
 			goto done;
 		}
 
-		if (ac->mod_req->async.handle->state != LDB_ASYNC_DONE) {
+		if (ac->mod_req->handle->state != LDB_ASYNC_DONE) {
 			return LDB_SUCCESS;
 		}
 

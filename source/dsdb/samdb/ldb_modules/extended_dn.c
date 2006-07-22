@@ -167,7 +167,7 @@ static BOOL inject_extended_dn(struct ldb_message *msg,
 }
 
 /* search */
-struct extended_async_context {
+struct extended_context {
 
 	struct ldb_module *module;
 	void *up_context;
@@ -179,16 +179,16 @@ struct extended_async_context {
 	int extended_type;
 };
 
-static int extended_async_callback(struct ldb_context *ldb, void *context, struct ldb_reply *ares)
+static int extended_callback(struct ldb_context *ldb, void *context, struct ldb_reply *ares)
 {
-	struct extended_async_context *ac;
+	struct extended_context *ac;
 
 	if (!context || !ares) {
 		ldb_set_errstring(ldb, talloc_asprintf(ldb, "NULL Context or Result in callback"));
 		goto error;
 	}
 
-	ac = talloc_get_type(context, struct extended_async_context);
+	ac = talloc_get_type(context, struct extended_context);
 
 	if (ares->type == LDB_REPLY_ENTRY) {
 		/* for each record returned post-process to add any derived
@@ -205,12 +205,12 @@ error:
 	return LDB_ERR_OPERATIONS_ERROR;
 }
 
-static int extended_search_async(struct ldb_module *module, struct ldb_request *req)
+static int extended_search(struct ldb_module *module, struct ldb_request *req)
 {
 	struct ldb_control *control;
 	struct ldb_extended_dn_control *extended_ctrl;
 	struct ldb_control **saved_controls;
-	struct extended_async_context *ac;
+	struct extended_context *ac;
 	struct ldb_request *down_req;
 	char **new_attrs;
 	int ret;
@@ -227,14 +227,14 @@ static int extended_search_async(struct ldb_module *module, struct ldb_request *
 		return LDB_ERR_PROTOCOL_ERROR;
 	}
 
-	ac = talloc(req, struct extended_async_context);
+	ac = talloc(req, struct extended_context);
 	if (ac == NULL) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	ac->module = module;
-	ac->up_context = req->async.context;
-	ac->up_callback = req->async.callback;
+	ac->up_context = req->context;
+	ac->up_callback = req->callback;
 	ac->attrs = req->op.search.attrs;
 	ac->remove_guid = False;
 	ac->remove_sid = False;
@@ -285,8 +285,8 @@ static int extended_search_async(struct ldb_module *module, struct ldb_request *
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	down_req->async.context = ac;
-	down_req->async.callback = extended_async_callback;
+	down_req->context = ac;
+	down_req->callback = extended_callback;
 	ldb_set_timeout_from_prev_req(module->ldb, req, down_req);
 
 	/* perform the search */
@@ -295,7 +295,7 @@ static int extended_search_async(struct ldb_module *module, struct ldb_request *
 	/* do not free down_req as the call results may be linked to it,
 	 * it will be freed when the upper level request get freed */
 	if (ret == LDB_SUCCESS) {
-		req->async.handle = down_req->async.handle;
+		req->handle = down_req->handle;
 	}
 
 	return ret;
@@ -328,7 +328,7 @@ static int extended_init(struct ldb_module *module)
 
 static const struct ldb_module_ops extended_dn_ops = {
 	.name		   = "extended_dn",
-	.search            = extended_search_async,
+	.search            = extended_search,
 	.init_context	   = extended_init
 };
 
