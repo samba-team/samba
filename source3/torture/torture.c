@@ -4258,7 +4258,7 @@ BOOL torture_ioctl_test(int dummy)
 
 			if (NT_STATUS_IS_OK(status)) {
 				printf("ioctl 0x%x OK : %d bytes\n", (int)code,
-				       blob.length);
+				       (int)blob.length);
 				data_blob_free(&blob);
 			}
 		}
