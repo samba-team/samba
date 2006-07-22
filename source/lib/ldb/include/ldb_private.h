@@ -63,6 +63,7 @@ struct ldb_module_ops {
 	int (*del)(struct ldb_module *, struct ldb_request *); /* delete */
 	int (*rename)(struct ldb_module *, struct ldb_request *); /* rename */
 	int (*request)(struct ldb_module *, struct ldb_request *); /* match any other operation */
+	int (*extended)(struct ldb_module *, struct ldb_request *); /* extended operations */
 	int (*start_transaction)(struct ldb_module *);
 	int (*end_transaction)(struct ldb_module *);
 	int (*del_transaction)(struct ldb_module *);
