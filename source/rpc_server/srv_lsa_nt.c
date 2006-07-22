@@ -1015,8 +1015,8 @@ NTSTATUS _lsa_lookup_sids3(pipes_struct *p,
 			  LSA_R_LOOKUP_SIDS3 *r_u)
 {
 	uint32 mapped_count = 0;
-	DOM_R_REF ref;
-	LSA_TRANS_NAME_ENUM2 names;
+	DOM_R_REF *ref;
+	LSA_TRANS_NAME_ENUM2 *names;
 
 	if ((q_u->level < 1) || (q_u->level > 6)) {
 		return NT_STATUS_INVALID_PARAMETER;
@@ -1024,9 +1024,16 @@ NTSTATUS _lsa_lookup_sids3(pipes_struct *p,
 
 	r_u->status = NT_STATUS_RPC_PROTSEQ_NOT_SUPPORTED;
 
-	ZERO_STRUCT(ref);
-	ZERO_STRUCT(names);
-	init_reply_lookup_sids3(r_u, &ref, &names, mapped_count);
+	ref = TALLOC_ZERO_P(p->mem_ctx, DOM_R_REF);
+	names = TALLOC_ZERO_P(p->mem_ctx, LSA_TRANS_NAME_ENUM2);
+
+	if ((ref == NULL) || (names == NULL)) {
+		/* We would segfault later on in lsa_io_r_lookup_sids3 anyway,
+		 * so do a planned exit here. We NEEEED pidl! */
+		smb_panic("talloc failed");
+	}
+
+	init_reply_lookup_sids3(r_u, ref, names, mapped_count);
 	return r_u->status;
 }
 
