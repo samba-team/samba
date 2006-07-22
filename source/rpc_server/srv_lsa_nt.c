@@ -1004,43 +1004,29 @@ NTSTATUS _lsa_lookup_sids2(pipes_struct *p,
 
 /***************************************************************************
  _lsa_lookup_sida3
+
+ Before someone actually re-activates this, please present a sniff showing
+ this call against some Windows server. I (vl) could not make it work against
+ w2k3 at all.
  ***************************************************************************/
 
 NTSTATUS _lsa_lookup_sids3(pipes_struct *p,
 			  LSA_Q_LOOKUP_SIDS3 *q_u,
 			  LSA_R_LOOKUP_SIDS3 *r_u)
 {
-	int num_sids = q_u->sids.num_entries;
 	uint32 mapped_count = 0;
-	DOM_R_REF *ref = NULL;
-	LSA_TRANS_NAME_ENUM2 *names = NULL;
+	DOM_R_REF ref;
+	LSA_TRANS_NAME_ENUM2 names;
 
 	if ((q_u->level < 1) || (q_u->level > 6)) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	/* No policy handle on this call. Restrict to crypto connections. */
-	if (p->auth.auth_type != PIPE_AUTH_TYPE_SCHANNEL) {
-		DEBUG(0,("_lsa_lookup_sids3: client %s not using schannel for netlogon\n",
-			get_remote_machine_name() ));
-		return NT_STATUS_INVALID_PARAMETER;
-	}
+	r_u->status = NT_STATUS_RPC_PROTSEQ_NOT_SUPPORTED;
 
-	if (num_sids >  MAX_LOOKUP_SIDS) {
-		DEBUG(5,("_lsa_lookup_sids3: limit of %d exceeded, requested %d\n",
-			 MAX_LOOKUP_SIDS, num_sids));
-		return NT_STATUS_NONE_MAPPED;
-	}
-
-	r_u->status = _lsa_lookup_sids_internal(p,
-						q_u->level,
-						num_sids, 
-						q_u->sids.sid,
-						&ref,
-						&names,
-						&mapped_count);
-
-	init_reply_lookup_sids3(r_u, ref, names, mapped_count);
+	ZERO_STRUCT(ref);
+	ZERO_STRUCT(names);
+	init_reply_lookup_sids3(r_u, &ref, &names, mapped_count);
 	return r_u->status;
 }
 
