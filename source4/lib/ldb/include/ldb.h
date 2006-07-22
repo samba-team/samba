@@ -494,6 +494,14 @@ typedef int (*ldb_qsort_cmp_fn_t) (void *v1, void *v2, void *opaque);
 */
 #define LDB_CONTROL_VLV_RESP_OID	"2.16.840.1.113730.3.4.10"
 
+/**
+   OID for LDAP Extended Operation START_TLS.
+
+   This Extended operation is used to start a new TLS
+   channel on top of a clear text channel.
+*/
+#define LDB_EXTENDED_STATRT_TLS_OID	"1.3.6.1.4.1.1466.20037"
+
 struct ldb_paged_control {
 	int size;
 	int cookie_len;
@@ -567,6 +575,7 @@ enum ldb_request_type {
 	LDB_MODIFY,
 	LDB_DELETE,
 	LDB_RENAME,
+	LDB_EXTENDED,
 	LDB_REQ_REGISTER_CONTROL,
 	LDB_REQ_REGISTER_PARTITION,
 	LDB_SEQUENCE_NUMBER
@@ -575,6 +584,7 @@ enum ldb_request_type {
 enum ldb_reply_type {
 	LDB_REPLY_ENTRY,
 	LDB_REPLY_REFERRAL,
+	LDB_REPLY_EXTENDED,
 	LDB_REPLY_DONE
 };
 
@@ -596,9 +606,16 @@ struct ldb_result {
 	struct ldb_control **controls;
 };
 
+struct ldb_extended {
+	const char *oid;
+	const char *value;
+	int value_len;
+};
+
 struct ldb_reply {
 	enum ldb_reply_type type;
 	struct ldb_message *message;
+	struct ldb_extended *response;
 	char *referral;
 	struct ldb_control **controls;
 };
