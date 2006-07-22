@@ -211,3 +211,4 @@ SLC = $(top_builddir)/lib/sl/slc
 gss-commands.c gss-commands.h: gss-commands.in
 	$(SLC) $(srcdir)/gss-commands.in
 
+$(gss_OBJECTS): gss-commands.h
