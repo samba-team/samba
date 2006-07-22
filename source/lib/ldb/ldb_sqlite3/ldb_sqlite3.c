@@ -2018,38 +2018,38 @@ static int lsql_request(struct ldb_module *module, struct ldb_request *req)
 					req->op.search.scope, 
 					req->op.search.tree, 
 					req->op.search.attrs,
-					req->async.context,
-					req->async.callback,
-					&req->async.handle);
+					req->context,
+					req->callback,
+					&req->handle);
 /*
 	case LDB_ADD:
 		return lsql_add_async(module,
 					req->op.add.message,
-					req->async.context,
-					req->async.callback,
-					&req->async.handle);
+					req->context,
+					req->callback,
+					&req->handle);
 
 	case LDB_MODIFY:
 		return lsql_modify_async(module,
 					req->op.mod.message,
-					req->async.context,
-					req->async.callback,
-					&req->async.handle);
+					req->context,
+					req->callback,
+					&req->handle);
 */
 	case LDB_DELETE:
 		return lsql_delete_async(module,
 					req->op.del.dn,
-					req->async.context,
-					req->async.callback,
-					&req->async.handle);
+					req->context,
+					req->callback,
+					&req->handle);
 
 	case LDB_RENAME:
 		return lsql_rename_async(module,
 					req->op.rename.olddn,
 					req->op.rename.newdn,
-					req->async.context,
-					req->async.callback,
-					&req->async.handle);
+					req->context,
+					req->callback,
+					&req->handle);
 
 	default:
 		return LDB_ERR_OPERATIONS_ERROR;

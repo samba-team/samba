@@ -250,8 +250,8 @@ static NTSTATUS ldapsrv_SearchRequest(struct ldapsrv_call *call)
 
 	lreq->controls = call->request->controls;
 
-	lreq->async.context = res;
-	lreq->async.callback = ldapsrv_SearchCallback;
+	lreq->context = res;
+	lreq->callback = ldapsrv_SearchCallback;
 
 	/* Copy the timeout from the incoming call */
 	ldb_set_timeout(samdb, lreq, req->timelimit);
@@ -262,7 +262,7 @@ static NTSTATUS ldapsrv_SearchRequest(struct ldapsrv_call *call)
 		goto reply;
 	}
 
-	ldb_ret = ldb_wait(lreq->async.handle, LDB_WAIT_ALL);
+	ldb_ret = ldb_wait(lreq->handle, LDB_WAIT_ALL);
 
 	if (ldb_ret == LDB_SUCCESS) {
 		for (i = 0; i < res->count; i++) {

@@ -98,7 +98,7 @@ static const char *user_name(TALLOC_CTX *mem_ctx, struct ldb_module *module)
 }
 
 /* search */
-struct kludge_acl_async_context {
+struct kludge_acl_context {
 
 	struct ldb_module *module;
 	void *up_context;
@@ -107,9 +107,9 @@ struct kludge_acl_async_context {
 	enum user_is user_type;
 };
 
-static int kludge_acl_async_callback(struct ldb_context *ldb, void *context, struct ldb_reply *ares)
+static int kludge_acl_callback(struct ldb_context *ldb, void *context, struct ldb_reply *ares)
 {
-	struct kludge_acl_async_context *ac;
+	struct kludge_acl_context *ac;
 	struct kludge_private_data *data;
 	int i;
 
@@ -118,7 +118,7 @@ static int kludge_acl_async_callback(struct ldb_context *ldb, void *context, str
 		goto error;
 	}
 
-	ac = talloc_get_type(context, struct kludge_acl_async_context);
+	ac = talloc_get_type(context, struct kludge_acl_context);
 	data = talloc_get_type(ac->module->private_data, struct kludge_private_data);
 
 	if (ares->type == LDB_REPLY_ENTRY
@@ -143,22 +143,22 @@ error:
 	return LDB_ERR_OPERATIONS_ERROR;
 }
 
-static int kludge_acl_search_async(struct ldb_module *module, struct ldb_request *req)
+static int kludge_acl_search(struct ldb_module *module, struct ldb_request *req)
 {
-	struct kludge_acl_async_context *ac;
+	struct kludge_acl_context *ac;
 	struct ldb_request *down_req;
 	int ret;
 
-	req->async.handle = NULL;
+	req->handle = NULL;
 
-	ac = talloc(req, struct kludge_acl_async_context);
+	ac = talloc(req, struct kludge_acl_context);
 	if (ac == NULL) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	ac->module = module;
-	ac->up_context = req->async.context;
-	ac->up_callback = req->async.callback;
+	ac->up_context = req->context;
+	ac->up_callback = req->callback;
 	ac->user_type = what_is_user(module);
 
 	down_req = talloc_zero(req, struct ldb_request);
@@ -174,8 +174,8 @@ static int kludge_acl_search_async(struct ldb_module *module, struct ldb_request
 	
 	down_req->controls = req->controls;
 
-	down_req->async.context = ac;
-	down_req->async.callback = kludge_acl_async_callback;
+	down_req->context = ac;
+	down_req->callback = kludge_acl_callback;
 	ldb_set_timeout_from_prev_req(module->ldb, req, down_req);
 
 	/* perform the search */
@@ -184,7 +184,7 @@ static int kludge_acl_search_async(struct ldb_module *module, struct ldb_request
 	/* do not free down_req as the call results may be linked to it,
 	 * it will be freed when the upper level request get freed */
 	if (ret == LDB_SUCCESS) {
-		req->async.handle = down_req->async.handle;
+		req->handle = down_req->handle;
 	}
 
 	return ret;
@@ -271,7 +271,7 @@ done:
 
 static const struct ldb_module_ops kludge_acl_ops = {
 	.name		   = "kludge_acl",
-	.search            = kludge_acl_search_async,
+	.search            = kludge_acl_search,
 	.add               = kludge_acl_change,
 	.modify            = kludge_acl_change,
 	.del               = kludge_acl_change,
