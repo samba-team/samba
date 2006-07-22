@@ -66,7 +66,7 @@ usage (int ret)
 #define COL_NAME	"Name"
 
 int
-supported_mechs(void *argptr, int argc, char **argv)
+supported_mechanisms(void *argptr, int argc, char **argv)
 {
     OM_uint32 maj_stat, min_stat;
     gss_OID_set mechs;

@@ -33,7 +33,7 @@
 /* $Id$ */
 
 command = {
-	name = "supported-mechs"
+	name = "supported-mechanisms"
 	help = "Print the supported mechanisms"
 }
 command = {
