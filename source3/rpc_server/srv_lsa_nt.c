@@ -873,8 +873,9 @@ static NTSTATUS _lsa_lookup_sids_internal(pipes_struct *p,
 
 		if (name->type == SID_NAME_UNKNOWN) {
 			name->dom_idx = -1;
-			name->name = talloc_asprintf(p->mem_ctx, "%8.8x",
-						     name->rid);
+			/* unknown sids should return the string representation of the SID */
+			name->name = talloc_asprintf(p->mem_ctx, "%s", 
+			                             sid_string_static(sids[i]));
 			if (name->name == NULL) {
 				return NT_STATUS_NO_MEMORY;
 			}
